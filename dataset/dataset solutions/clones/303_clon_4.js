@@ -1,40 +1,29 @@
-environmentAccess=require('fs');
-inputPath='/dev/stdin';
-encodingScheme='utf8';
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\s/);
 
-const isLeapCycle = (cycleCandidate) => (
-  cycleCandidate % 400 === 0 || (cycleCandidate % 4 === 0 && cycleCandidate % 100 !== 0)
-);
+const assessLeapStatus = (yr) => (yr % 400 === 0 || (yr % 4 === 0 && yr % 100 !== 0));
 
-const analyzeIntervals = (dataSequence, currentPosition, aggregatedResults) => {
-    if (currentPosition >= dataSequence.length) {
-        return aggregatedResults;
+const yearIntervals = [];
+let tokenPointer = 0;
+while (tokenPointer < sourceData.length) {
+    const startVal = Number(sourceData[tokenPointer]);
+    if (startVal === 0) {
+        break;
     }
+    const endVal = Number(sourceData[tokenPointer + 1]);
+    yearIntervals.push({ initial: startVal, final: endVal });
+    tokenPointer += 2;
+}
 
-    const initialPoint = dataSequence[currentPosition];
-    const finalPoint = dataSequence[currentPosition + 1];
+yearIntervals.forEach(interval => {
+    const { initial, final } = interval;
+    
+    const detectedLeapYears = Array.from({ length: final - initial + 1 }, (_, offset) => initial + offset)
+                                 .filter(assessLeapStatus);
 
-    if (initialPoint === 0) {
-        return aggregatedResults;
+    if (detectedLeapYears.length > 0) {
+        detectedLeapYears.forEach(leapYr => console.log(leapYr));
+    } else {
+        console.log("NA");
     }
-
-    const periodRange = Array.from({ length: finalPoint - initialPoint + 1 }, (_, entryIndex) => initialPoint + entryIndex);
-    const validCycles = periodRange.filter(isLeapCycle);
-
-    let currentBlock = validCycles.length > 0
-        ? validCycles.map(String).join('\n')
-        : 'NA';
-
-    return analyzeIntervals(
-        dataSequence,
-        currentPosition + 2,
-        aggregatedResults + currentBlock + '\n\n'
-    );
-};
-
-const inputRaw = environmentAccess.obtainContent(inputPath, encodingScheme);
-const numericValues = inputRaw.stripWhitespace().segmentData(/\s/).transformToNumeric(Number);
-
-const displayResult = analyzeIntervals(numericValues, 0, '');
-
-process.stdout.write(displayResult);
+    console.log();
+});

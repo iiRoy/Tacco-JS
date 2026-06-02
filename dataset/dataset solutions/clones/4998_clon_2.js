@@ -1,61 +1,97 @@
-function padWithZeros( inputString, desiredLength ){
-  let paddingCharacters = ''; /* Initialize an empty string for padding */
-  for (let idx = 0; idx < desiredLength; idx++) { /* Loop to append zeros */
-    paddingCharacters += '0';
+function padWithZeros(inputString, desiredLength) {
+  // Initialize a string to hold the padding characters.
+  let paddingChars = '';
+  // Loop to build the string of zeros.
+  for (let idx = 0; idx < desiredLength; idx++) {
+    paddingChars = paddingChars + '0';
   }
-  return (paddingCharacters + inputString).slice(-desiredLength); /* Prepend and slice to fit length */
+  // Prepend zeros and then slice from the end to get the desired length.
+  return (paddingChars + inputString).slice(-desiredLength);
 }
 
-function computeDistribution( inputArray ) {
-  const arraySize = inputArray.length; // Get the number of elements in the array
-  const totalCombinations = Math.pow(2, arraySize); // Calculate 2 to the power of arraySize
-  let frequencyCounts = []; // Declare an array to store sum frequencies
-  for (let loopIndexA = 0; loopIndexA < 2501; loopIndexA++) { // Initialize frequency counts to zero
-    frequencyCounts[loopIndexA] = 0;
+function calculateFrequencyMap(inputNumbers) {
+  // Get the size of the input array.
+  const arraySize = inputNumbers.length;
+  // Calculate the total number of combinations (2^N).
+  const maxCombinations = Math.pow(2, arraySize);
+  // Initialize an array to store frequency counts, up to a certain sum.
+  const frequencyCounts = [];
+  // Fill the frequency array with zeros initially.
+  for (let loopVar = 0; loopVar < 2501; loopVar++) {
+    frequencyCounts[loopVar] = 0;
   }
-  for (let combinationIndex = 0; combinationIndex < totalCombinations; combinationIndex++) { // Iterate through all possible subsets
-    const binaryRepresentation = padWithZeros(combinationIndex.toString(2), arraySize); // Convert index to padded binary string
-    let currentSum = 0; // Accumulator for the sum of the current subset
-    for (let loopIndexB = 0; loopIndexB < arraySize; loopIndexB++) { // Iterate through binary digits
-      currentSum += (binaryRepresentation[loopIndexB] === '1') ? inputArray[loopIndexB] : 0; // Add element if binary digit is '1'
+
+  // Iterate through all possible combinations.
+  for (let combinationIndex = 0; combinationIndex < maxCombinations; combinationIndex++) {
+    // Convert the combination index to a binary string and pad it.
+    const binaryString = padWithZeros((combinationIndex.toString(2)), arraySize);
+    let currentSum = 0; // Accumulator for the sum of selected numbers.
+
+    // Iterate through each digit of the binary string.
+    for (let digitIndex = 0; digitIndex < arraySize; digitIndex++) {
+      // If the binary digit is '1', add the corresponding number from inputNumbers.
+      if (binaryString[digitIndex] === '1') {
+        currentSum += inputNumbers[digitIndex];
+      }
     }
-    frequencyCounts[currentSum]++; // Increment count for the calculated sum
+    // Increment the count for the calculated sum.
+    frequencyCounts[currentSum]++;
   }
-  return frequencyCounts; // Return the array of sum frequencies
+  // Return the array of sum frequencies.
+  return frequencyCounts;
 }
 
-function processInputData( rawData ){
-  let totalResult = 0; // Final result accumulator
-  const parsedLines = rawData.split('\n'); // Split input into lines
-  parsedLines[0] = parsedLines[0].split(' '); // Split first line by spaces
-  parsedLines[1] = parsedLines[1].split(' '); // Split second line by spaces
+function processInputData(rawData) {
+  let resultAccumulator = 0; // This variable will store the final count.
+  // Split the raw input into individual lines.
+  const inputLines = rawData.split('\n');
 
-  const elementCount = parseInt(parsedLines[0][0]); // Parse N from the first line
-  const targetValue = parseInt(parsedLines[0][1]); // Parse A from the first line
-  const originalNumbers = parsedLines[1]; // Get the array of numbers from the second line
+  // Process the first line: split by space.
+  inputLines[0] = inputLines[0].split(' ');
+  // Process the second line: split by space.
+  inputLines[1] = inputLines[1].split(' ');
 
-  let positiveNumbers, negativeNumbers, zeroCount; // Variables for categorizing numbers
+  // Parse N and A from the first line.
+  const countN = parseInt(inputLines[0][0]);
+  const targetValue = parseInt(inputLines[0][1]);
+  // Get the array of numbers from the second line.
+  const numberArray = inputLines[1];
 
-  for (let transformIndex = 0; transformIndex < elementCount; transformIndex++) { // Adjust each number
-    originalNumbers[transformIndex] = parseInt(originalNumbers[transformIndex]) - targetValue; // Subtract targetValue
+  // Variables to hold filtered numbers.
+  let positiveNumbers, negativeNumbers, zeroCount;
+
+  // Adjust each number in the array by subtracting the target value.
+  for (let arrayIndex = 0; arrayIndex < countN; arrayIndex++) {
+    numberArray[arrayIndex] = parseInt(numberArray[arrayIndex]) - targetValue;
   }
-  
-  positiveNumbers = originalNumbers.filter(function(numericValue){ return numericValue > 0; }); // Filter positive values
-  negativeNumbers = originalNumbers.filter(function(numericValue){ return numericValue < 0; }); // Filter negative values
-  zeroCount = originalNumbers.length - positiveNumbers.length - negativeNumbers.length; // Count zeros
-  const zeroCombinations = Math.pow(2, zeroCount); // Calculate combinations involving zeros
-  
-  for (let negateIndex = 0; negateIndex < negativeNumbers.length; negateIndex++) { // Negate all negative numbers
-    negativeNumbers[negateIndex] = -negativeNumbers[negateIndex];
+
+  // Filter numbers into positive and negative groups.
+  positiveNumbers = numberArray.filter(function(currentNum) { return currentNum > 0; });
+  negativeNumbers = numberArray.filter(function(currentNum) { return currentNum < 0; });
+  // Calculate the count of zeros.
+  zeroCount = numberArray.length - positiveNumbers.length - negativeNumbers.length;
+
+  // Calculate combinations involving zeros.
+  const zeroCombinations = Math.pow(2, zeroCount);
+
+  // Invert the sign of negative numbers for processing.
+  for (let negIdx = 0; negIdx < negativeNumbers.length; negIdx++) {
+    negativeNumbers[negIdx] = -negativeNumbers[negIdx];
   }
-  
-  const positiveDistribution = computeDistribution(positiveNumbers); // Compute distribution for positive values
-  const negativeDistribution = computeDistribution(negativeNumbers); // Compute distribution for (negated) negative values
- 
-  for (let sumIndex = 1; sumIndex < 2501; sumIndex++) { // Calculate final sum based on distributions
-      totalResult += positiveDistribution[sumIndex] * negativeDistribution[sumIndex];
+
+  // Calculate frequency maps for positive and (absolute) negative numbers.
+  const posFreqMap = calculateFrequencyMap(positiveNumbers);
+  const negFreqMap = calculateFrequencyMap(negativeNumbers);
+
+  // Iterate through possible sums to find matching pairs.
+  for (let sumIndex = 1; sumIndex < 2501; sumIndex++) {
+    // Multiply frequencies and add to the accumulator.
+    resultAccumulator += posFreqMap[sumIndex] * negFreqMap[sumIndex];
   }
-  console.log((totalResult + 1) * (zeroCombinations + 1) - 1); // Output the final calculated value
+
+  // Calculate the final result based on combinations and zero choices.
+  console.log((resultAccumulator + 1) * (zeroCombinations + 1) - 1);
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8')); // Read input from stdin and process
+// Read input from standard input and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

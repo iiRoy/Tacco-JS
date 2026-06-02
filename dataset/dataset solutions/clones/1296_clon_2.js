@@ -1,47 +1,43 @@
-var inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input stream
 
-// The raw input string is first cleaned by removing any leading or trailing whitespace,
-// then it is divided into an array of separate lines based on the newline character.
-var dataRows = (inputContent.trim()).split("\n");
+const lineArray = rawData.trim().split('\n'); // Process raw data: remove leading/trailing whitespace and split into an array of lines
 
-// Begin iterating through each individual data record provided in the input.
-for (var currentLineIndex = 0; currentLineIndex < dataRows.length; currentLineIndex++) {
-   // For the current line, split it by spaces and convert each resulting part into a numerical value.
-   var parsedNumbers = dataRows[currentLineIndex].split(" ").map(Number);
+// Iterate over each line of processed input
+for (let lineIndex = 0; lineIndex < lineArray.length; lineIndex++) {
+    // Parse the current line into an array of numbers
+    const numPair = lineArray[lineIndex].split(' ').map(Number);
 
-   // Extract the two key numerical parameters from the parsed array for this specific problem instance.
-   var limitValue = parsedNumbers[0];
-   var targetTotal = parsedNumbers[1];
+    let upperBound = numPair[0]; // Extract the first number as the upper limit (n)
+    let targetSum = numPair[1];  // Extract the second number as the desired sum (x)
 
-   // Check if the termination condition (both parameters being zero) has been met.
-   if (limitValue === 0 && targetTotal === 0) {
-      break; // If so, exit the main processing loop.
-   }
+    // Check for the termination condition (n=0 and x=0)
+    if (upperBound === 0 && targetSum === 0) {
+        break; // Exit the loop if the termination condition is met
+    }
 
-   // Initialize a counter to keep track of valid combinations of three distinct numbers.
-   var validCombinationCounter = 0;
+    let combinationCount = 0; // Initialize a counter for valid combinations of three distinct numbers
 
-   // Start the first loop to select the first number of the triplet.
-   // This number ranges from 1 up to the defined limitValue.
-   for (var firstComponent = 1; firstComponent <= limitValue; firstComponent++) {
-      // Start the second loop to select the second number.
-      // It must be greater than the firstComponent to ensure distinctness and avoid duplicates.
-      for (var secondComponent = firstComponent + 1; secondComponent <= limitValue; secondComponent++) {
-         // Implement an optimization: if the sum of the first two numbers already equals or exceeds
-         // the targetTotal, no valid third number can exist (since numbers are positive and distinct).
-         if (firstComponent + secondComponent >= targetTotal) {
-            break; // Break from this inner loop and try a new secondComponent.
-         }
+    // First loop: iterate for the first number (i) from 1 up to 'upperBound'
+    for (let firstNum = 1; firstNum <= upperBound; firstNum++) {
+        // Second loop: iterate for the second number (j) from 'firstNum + 1' up to 'upperBound'
+        // This ensures j > i and all numbers are distinct
+        for (let secondNum = firstNum + 1; secondNum <= upperBound; secondNum++) {
+            // Optimization: If the sum of the first two numbers already equals or exceeds the target sum,
+            // any larger 'secondNum' will also exceed it, so break this inner loop.
+            if (firstNum + secondNum >= targetSum) {
+                break;
+            }
 
-         // Calculate the value that the third number must have to reach the targetTotal.
-         var thirdComponent = targetTotal - (firstComponent + secondComponent);
+            // Calculate the required third number (k) to reach the 'targetSum'
+            const thirdNum = targetSum - (firstNum + secondNum);
 
-         // Verify if the calculated third number is distinct from the second and within the allowed range.
-         if (thirdComponent > secondComponent && thirdComponent <= limitValue) {
-            validCombinationCounter++; // If all conditions are met, increment the counter.
-         }
-      }
-   }
-   // Output the final count of valid triplets found for the current set of parameters.
-   console.log(validCombinationCounter);
+            // Check if the calculated 'thirdNum' is valid:
+            // 1. It must be greater than 'secondNum' (to ensure distinctness and i < j < k)
+            // 2. It must be within the allowed range (1 to 'upperBound')
+            if (thirdNum > secondNum && thirdNum <= upperBound) {
+                combinationCount++; // Increment the counter if a valid triplet (i, j, k) is found
+            }
+        }
+    }
+    console.log(combinationCount); // Output the total count of valid combinations for the current input line
 }

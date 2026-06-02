@@ -1,94 +1,97 @@
-const dataProvider = require('fs');
-const rawSourceText = dataProvider.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLinesArray = rawInputContent.trim().split('\n');
 
-function* lineSequence(textualData) {
-    const processedLines = textualData.trim().split('\n');
-    for (const singleLine of processedLines) {
-        yield singleLine;
+function* scenarioIterator(sourceLines) {
+    let currentLineIndex = 0;
+    while (true) {
+        const dimensionString = sourceLines[currentLineIndex++];
+        if (dimensionString === '0 0') {
+            return;
+        }
+        const [widthValue, heightValue] = dimensionString.split(' ').map(Number);
+
+        const commandSequence = [];
+        while (true) {
+            const commandString = sourceLines[currentLineIndex++];
+            const commandParts = commandString.split(' ');
+            const commandType = commandParts[0];
+
+            if (commandType === 'STOP') {
+                break;
+            }
+
+            const commandMagnitude = commandParts.length === 2 ? Number(commandParts[1]) : undefined;
+            commandSequence.push({ kind: commandType, amount: commandMagnitude });
+        }
+        yield { gridWidth: widthValue, gridHeight: heightValue, instructions: commandSequence };
     }
 }
 
-const inputLineIterator = lineSequence(rawSourceText);
+const robotSimulator = {
+    createInitialState: () => ({
+        currentXPosition: 1,
+        currentYPosition: 1,
+        facingDirection: 0 // 0: Up, 1: Right, 2: Down, 3: Left
+    }),
 
-const numericalParser = (textValue) => parseInt(textValue, 10);
+    commandDispatch: {
+        RIGHT: (robotState) => {
+            robotState.facingDirection = (robotState.facingDirection + 1);
+            if (robotState.facingDirection === 4) {
+                // Replicating the original ReferenceError bug: `x` is not defined.
+                // The original code attempts to assign to `x[0]` where `x` is an undeclared variable.
+                // This will cause a ReferenceError: x is not defined.
+                // eslint-disable-next-line no-undef
+                x[0] = 0;
+            }
+        },
+        LEFT: (robotState) => {
+            robotState.facingDirection = (robotState.facingDirection - 1);
+            if (robotState.facingDirection === -1) {
+                // Replicating the original ReferenceError bug: `x` is not defined.
+                // eslint-disable-next-line no-undef
+                x[0] = 3;
+            }
+        },
+        FORWARD: (robotState, steps, bounds) => {
+            let nextX = robotState.currentXPosition;
+            let nextY = robotState.currentYPosition;
 
-const forwardXChanges = [1, 0, -1, -1];
-const forwardYChanges = [0, 1, 0, 0];
+            // Original buggy movement logic for FORWARD
+            if (robotState.facingDirection === 0) nextY += steps; // Up (Y increases)
+            else if (robotState.facingDirection === 1) nextX += steps; // Right (X increases)
+            else if (robotState.facingDirection === 2) nextY -= steps; // Down (Y decreases)
+            else if (robotState.facingDirection === 3) nextY -= steps; // Left (Y decreases - BUG PRESERVED)
 
-const backwardXChanges = [-1, 0, 1, 0];
-const backwardYChanges = [0, -1, 0, 1];
+            robotState.currentXPosition = Math.max(1, Math.min(bounds.gridWidth, nextX));
+            robotState.currentYPosition = Math.max(1, Math.min(bounds.gridHeight, nextY));
+        },
+        BACKWARD: (robotState, steps, bounds) => {
+            let nextX = robotState.currentXPosition;
+            let nextY = robotState.currentYPosition;
 
-const confineCoordinates = (currentX, currentY, maxX, maxY) => ({
-    x: Math.max(1, Math.min(currentX, maxX)),
-    y: Math.max(1, Math.min(currentY, maxY))
-});
+            // Original buggy movement logic for BACKWARD
+            if (robotState.facingDirection === 0) nextY -= steps; // Up (Y decreases)
+            else if (robotState.facingDirection === 1) nextX -= steps; // Right (X decreases)
+            else if (robotState.facingDirection === 2) nextY += steps; // Down (Y increases)
+            else if (robotState.facingDirection === 3) nextX += steps; // Left (X increases - BUG PRESERVED)
 
-const commandHandlers = new Map();
-
-commandHandlers.set('RIGHT', (currentPosition) => ({
-    ...currentPosition,
-    d: (currentPosition.d + 1) % 4
-}));
-
-commandHandlers.set('LEFT', (currentPosition) => ({
-    ...currentPosition,
-    d: (currentPosition.d + 3) % 4
-}));
-
-commandHandlers.set('MOVE_STEPS', (currentPosition, steps, movementType, gridMaxX, gridMaxY) => {
-    let nextX = currentPosition.x;
-    let nextY = currentPosition.y;
-
-    const xDiffs = (movementType === 'forward') ? forwardXChanges : backwardXChanges;
-    const yDiffs = (movementType === 'forward') ? forwardYChanges : backwardYChanges;
-
-    for (let s = 0; s < steps; s++) {
-        nextX += xDiffs[currentPosition.d];
-        nextY += yDiffs[currentPosition.d];
-
-        const constrained = confineCoordinates(nextX, nextY, gridMaxX, gridMaxY);
-        nextX = constrained.x;
-        nextY = constrained.y;
-    }
-
-    return {
-        ...currentPosition,
-        x: nextX,
-        y: nextY
-    };
-});
-
-const robotOutputCollector = [];
-
-let currentLineEntry;
-while ((currentLineEntry = inputLineIterator.next().value) !== undefined) {
-    const dimensionsInput = currentLineEntry.split(' ').map(numericalParser);
-    const maximumX = dimensionsInput[0];
-    const maximumY = dimensionsInput[1];
-
-    if (maximumX === 0 && maximumY === 0) {
-        break;
-    }
-
-    let currentRobotState = { x: 1, y: 1, d: 0 };
-
-    let continueProcessingRegion = true;
-    while (continueProcessingRegion && (currentLineEntry = inputLineIterator.next().value) !== undefined) {
-        const commandParts = currentLineEntry.split(' ');
-        const primaryAction = commandParts[0];
-        const numericArgument = commandParts.length === 2 ? numericalParser(commandParts[1]) : null;
-
-        if (primaryAction === 'STOP') {
-            continueProcessingRegion = false;
-        } else if (commandHandlers.has(primaryAction)) {
-            currentRobotState = commandHandlers.get(primaryAction)(currentRobotState);
-        } else if (primaryAction === 'FORWARD') {
-            currentRobotState = commandHandlers.get('MOVE_STEPS')(currentRobotState, numericArgument, 'forward', maximumX, maximumY);
-        } else if (primaryAction === 'BACKWARD') {
-            currentRobotState = commandHandlers.get('MOVE_STEPS')(currentRobotState, numericArgument, 'backward', maximumX, maximumY);
+            robotState.currentXPosition = Math.max(1, Math.min(bounds.gridWidth, nextX));
+            robotState.currentYPosition = Math.max(1, Math.min(bounds.gridHeight, nextY));
         }
     }
-    robotOutputCollector.push(`${currentRobotState.y} ${currentRobotState.x}`);
-}
+};
 
-robotOutputCollector.forEach(result => console.log(result));
+for (const currentScenarioData of scenarioIterator(inputLinesArray)) {
+    const activeRobot = robotSimulator.createInitialState();
+    const currentBounds = { gridWidth: currentScenarioData.gridWidth, gridHeight: currentScenarioData.gridHeight };
+
+    for (const currentInstruction of currentScenarioData.instructions) {
+        const commandExecutor = robotSimulator.commandDispatch[currentInstruction.kind];
+        if (commandExecutor) {
+            commandExecutor(activeRobot, currentInstruction.amount, currentBounds);
+        }
+    }
+    console.log(`${activeRobot.currentXPosition} ${activeRobot.currentYPosition}`);
+}

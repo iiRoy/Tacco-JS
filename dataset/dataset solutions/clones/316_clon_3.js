@@ -1,68 +1,57 @@
-const fileSystem = require('fs');
+function findNewLeader(playerScores) {
+    let tempMaxScore = -Infinity;
+    let tempMaxId = -1;
 
-const STANDARD_INPUT_PATH = '/dev/stdin';
-
-const parseNumericLine = (lineContent) => {
-    return lineContent.trim().split(" ").map(Number);
-};
-
-const identifyCurrentLeader = (allPlayerScores) => {
-    return allPlayerScores.reduce((leaderInfo, individualScore, playerIdx) => {
-        if (individualScore > leaderInfo.topScoreValue) {
-            return {
-                topScoreValue: individualScore,
-                leaderPlayerIndex: playerIdx
-            };
-        } else if (individualScore === leaderInfo.topScoreValue) {
-            if (playerIdx < leaderInfo.leaderPlayerIndex) {
-                return {
-                    topScoreValue: individualScore,
-                    leaderPlayerIndex: playerIdx
-                };
+    for (let i = 0; i < playerScores.length; i++) {
+        const currentScore = playerScores[i];
+        if (currentScore > tempMaxScore) {
+            tempMaxScore = currentScore;
+            tempMaxId = i;
+        } else if (currentScore === tempMaxScore) {
+            if (i < tempMaxId) {
+                tempMaxId = i;
             }
         }
-        return leaderInfo;
-    }, { topScoreValue: -Infinity, leaderPlayerIndex: -1 });
-};
+    }
+    return { newMaxScore: tempMaxScore, newMaxId: tempMaxId };
+}
 
-const rawInputData = fileSystem.readFileSync(STANDARD_INPUT_PATH, 'utf8');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const processedInputLines = rawInputData.split('\n').filter(line => line.trim() !== '');
+const lines = rawData.trim().split("\n");
 
-const gameConfigurationDetails = parseNumericLine(processedInputLines.shift());
-const numberOfParticipants = gameConfigurationDetails[0];
+const configParams = lines.shift().split(" ").map(Number);
+const numberOfPlayers = configParams[0];
 
-let participantScores = Array.from({ length: numberOfParticipants }, () => 0);
+const scores = Array(numberOfPlayers).fill(0);
 
-let currentLeaderStatus = identifyCurrentLeader(participantScores);
-let currentTopScore = currentLeaderStatus.topScoreValue;
-let currentLeaderIndex = currentLeaderStatus.leaderPlayerIndex;
+let currentMaxScore = 0;
+let leadingPlayerId = 0;
 
-processedInputLines.forEach(queryDataString => {
-    const [participantIdOneBased, scoreModificationAmount] = parseNumericLine(queryDataString);
-    const targetParticipantIndex = participantIdOneBased - 1;
+lines.forEach(function(lineData) {
+    const [rawPlayerId, scoreDelta] = lineData.split(" ").map(Number);
+    const targetPlayerIndex = rawPlayerId - 1;
 
-    participantScores[targetParticipantIndex] += scoreModificationAmount;
+    scores[targetPlayerIndex] += scoreDelta;
 
-    let requiresFullLeaderRecalculation = false;
-
-    if (targetParticipantIndex === currentLeaderIndex) {
-        if (scoreModificationAmount < 0) {
-            requiresFullLeaderRecalculation = true;
+    if (targetPlayerIndex === leadingPlayerId) {
+        if (scoreDelta >= 0) {
+            currentMaxScore += scoreDelta;
         } else {
-            currentTopScore = participantScores[currentLeaderIndex];
+            const { newMaxScore, newMaxId } = findNewLeader(scores);
+            currentMaxScore = newMaxScore;
+            leadingPlayerId = newMaxId;
         }
     } else {
-        if (participantScores[targetParticipantIndex] >= currentTopScore) {
-            requiresFullLeaderRecalculation = true;
+        const updatedScoreOfTarget = scores[targetPlayerIndex];
+        if (updatedScoreOfTarget > currentMaxScore) {
+            currentMaxScore = updatedScoreOfTarget;
+            leadingPlayerId = targetPlayerIndex;
+        } else if (updatedScoreOfTarget === currentMaxScore && targetPlayerIndex < leadingPlayerId) {
+            leadingPlayerId = targetPlayerIndex;
         }
     }
 
-    if (requiresFullLeaderRecalculation) {
-        currentLeaderStatus = identifyCurrentLeader(participantScores);
-        currentTopScore = currentLeaderStatus.topScoreValue;
-        currentLeaderIndex = currentLeaderStatus.leaderPlayerIndex;
-    }
-
-    console.log(`${currentLeaderIndex + 1} ${currentTopScore}`);
+    console.log(`${leadingPlayerId + 1} ${currentMaxScore}`);
 });

@@ -1,11 +1,18 @@
-/* This module focuses on geometric calculations */
-  function    calculatePerimeter(  radiusValue  )
-{
-  // Perform the core calculation for the shape's boundary length
-  calculatedPerimeter = radiusValue * 2.0 * 3.14159 ; // Using a more precise approximation for Pi
-  // The result is now available
-return calculatedPerimeter
+/*
+ * This module defines a function to compute the perimeter of a circle.
+ * It demonstrates a specific pattern of global variable assignment.
+ */
+
+function calculateCirclePerimeter(inputRadius) {
+  // A global variable 'calculatedPerimeter' is implicitly created or updated here.
+  // This variable is distinct from the function 'calculateCirclePerimeter'.
+  calculatedPerimeter = inputRadius * 2 * 3.14;
+
+  // The computed value is then returned.
+  return calculatedPerimeter;
 }
 
-// Attempting to log the result of the perimeter calculation, using an undeclared variable and a misspelled function name.
-console.log ( calculatePerimetr ( radiusValu ) ) ;
+// This line attempts to call a function with a misspelled name 'circumsference'
+// and passes an undeclared variable 'r' as an argument.
+// This will result in a ReferenceError, mirroring the original code's behavior.
+console.log(circumsference(r));

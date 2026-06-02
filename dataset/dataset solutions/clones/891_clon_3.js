@@ -1,258 +1,230 @@
-const MODULO_CONSTANT = 1000000007;
-
-const outputChannel = console.info;
-
-function isDigitChar(charValue) {
-    if (typeof charValue !== 'string' || charValue.length !== 1) {
-        return false;
-    }
-    const charCode = charValue.charCodeAt(0);
-    return charCode >= 48 && charCode <= 57;
-}
-
-if (typeof process !== "undefined" && process.stdin && typeof process.stdin.resume === 'function') {
-    let receivedDataBuffer = "";
+const outputLog = console.log;
+if (typeof process !== "undefined") {
+    let rawInputBuffer = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', (dataSegment) => {
-        receivedDataBuffer += dataSegment;
+    process.stdin.on('data', function(chunk) {
+        rawInputBuffer += chunk;
     });
-
-    process.stdin.on('end', () => {
-        const inputLines = receivedDataBuffer.split("\n").filter(line => line.trim() !== '');
-        executeProcessing(inputLines);
+    process.stdin.on('end', function() {
+        const processedInputLines = rawInputBuffer.split("\n");
+        processAllInput(processedInputLines);
     });
 }
 
-function calculateRecursiveModulus(baseVal, exponentVal) {
-    if (typeof baseVal !== 'number' || typeof exponentVal !== 'number' || isNaN(baseVal) || isNaN(exponentVal)) {
-        outputChannel(`Error: Invalid numeric input to calculateRecursiveModulus: base=${baseVal}, exp=${exponentVal}`);
-        return 0;
-    }
 
-    if (baseVal > 90000000 && exponentVal > 1) {
-        const remainderTerm = exponentVal % 2;
-        const halfExponent = Math.floor(exponentVal / 2);
-        const recursiveResult = calculateRecursiveModulus(baseVal, halfExponent);
-
-        let intermediateSum;
-        if (remainderTerm === 1) {
-            intermediateSum = (2 * recursiveResult + baseVal) % MODULO_CONSTANT;
-        } else {
-            intermediateSum = (2 * recursiveResult) % MODULO_CONSTANT;
+function processAllInput(processedInputLines) {
+    for (const currentLine of processedInputLines) {
+        if (currentLine !== "#") {
+            processExpressionLine(currentLine);
         }
-        return intermediateSum % MODULO_CONSTANT;
     }
-    return (baseVal * exponentVal) % MODULO_CONSTANT;
+    outputLog('');
 }
 
-function calculateSquareRecursive(valueParam) {
-    if (typeof valueParam !== 'number' || isNaN(valueParam)) {
-        outputChannel(`Warning: Non-numeric input for calculateSquareRecursive: ${valueParam}`);
-        return 0;
+function computeModularPower(baseValue, powerExponent) {
+    const modulusConstant = 1000000007;
+    const LARGE_BASE_THRESHOLD = 90000000;
+
+    if (baseValue > LARGE_BASE_THRESHOLD && powerExponent > 1) {
+        const exponentRemainder = powerExponent % 2;
+        const halfExponent = Math.floor(powerExponent / 2);
+        const subProblemResult = computeModularPower(baseValue, halfExponent);
+
+        let currentSum;
+        if (exponentRemainder) {
+            currentSum = (2 * subProblemResult + baseValue) % modulusConstant;
+        } else {
+            currentSum = (2 * subProblemResult) % modulusConstant;
+        }
+        return currentSum % modulusConstant;
     }
-    return calculateRecursiveModulus(valueParam, valueParam);
+    return (baseValue * powerExponent) % modulusConstant;
 }
 
-function calculateShiftedDivision(numeratorVal, shiftAmount) {
-    if (typeof numeratorVal !== 'number' || isNaN(numeratorVal) || typeof shiftAmount !== 'number' || isNaN(shiftAmount) || shiftAmount < 0) {
-        outputChannel(`Warning: Invalid input for calculateShiftedDivision: num=${numeratorVal}, shift=${shiftAmount}`);
-        return 0;
-    }
-    const divisorPowerOfTwo = 1 << shiftAmount;
-    if (divisorPowerOfTwo === 0) { // Guard against huge shiftAmount resulting in 0 or negative
-        return 0;
-    }
-    return Math.floor(numeratorVal / divisorPowerOfTwo);
+
+//S<x>?????????
+function calculateSFunction(xValue) {
+    return computeModularPower(xValue, xValue);
+}
+//x>>y?????????
+function calculateTFunction(xVal, yVal) {
+    return Math.floor(xVal / Math.pow(2, yVal));
 }
 
-function cleanInputString(rawString) {
-    if (typeof rawString !== 'string') {
-        outputChannel("Warning: cleanInputString received non-string input.");
-        return "";
-    }
-    const charactersToRemoveRegex = /[\sS]/g;
-    return rawString.replace(charactersToRemoveRegex, '');
+//remove s and spaces
+function stripSpecialChars(inputString) {
+    const cleanupRegex = /\s|S/g;
+    return inputString.replace(cleanupRegex, '');
 }
 
-function segmentInputTokens(rawInputString) {
-    if (!rawInputString || typeof rawInputString !== 'string') {
-        return [];
-    }
+//x ??? string
+function isNumericCharacter(charCandidate) {
+    const parsedNumberValue = Number(charCandidate);
+    return !isNaN(parsedNumberValue);
+}
 
-    const inputChars = rawInputString.split('');
+//<,>,??°????????????
+function segmentInputTokens(charArray) {
+    const inputChars = Array.isArray(charArray) ? charArray : Array.from(charArray);
     const arrayLength = inputChars.length;
-    const tokenizedSegments = [];
-    let segmentStartIdx = 0;
-    let currentlyParsingNumber = false;
+    let segmentStart = 0;
+    let segmentEnd = 0;
+    const outputTokens = [];
+    let isParsingNumber = false;
 
     for (let i = 0; i < arrayLength; i++) {
-        const currentChar = inputChars[i];
+        const currentElement = inputChars[i];
+        const elementIsNumeric = isNumericCharacter(currentElement);
 
-        if (isDigitChar(currentChar)) {
-            if (!currentlyParsingNumber) {
-                segmentStartIdx = i;
-                currentlyParsingNumber = true;
-            }
+        if (!isParsingNumber && elementIsNumeric) {
+            segmentStart = i;
+            isParsingNumber = true;
+        } else if (isParsingNumber && !elementIsNumeric) {
+            segmentEnd = i;
+            isParsingNumber = false;
+            const numberSegment = inputChars.slice(segmentStart, segmentEnd).join('');
+            const finalNumber = Number(numberSegment);
+            outputTokens.push(finalNumber);
+        }
+
+        if (!elementIsNumeric) {
+            outputTokens.push(currentElement);
+        }
+    }
+
+    if (isParsingNumber) {
+        segmentEnd = arrayLength;
+        const numberSegment = inputChars.slice(segmentStart, segmentEnd).join('');
+        const finalNumber = Number(numberSegment);
+        outputTokens.push(finalNumber);
+    }
+    return outputTokens;
+}
+
+//>??????S<>????????¨?????????>>????????¨?????????????????????
+/*
+??????????????????????¨???????
+p...S<x>???<
+q...S<x>???>
+L...19,331???????????°???(literal)
+t...>>????????¨
+??????t????¬???????????????????p???L????????\????????¨????????§???????????¨?????????????????????
+??????????????????>????¬??????????>???L??????????????????????????????????????????§????????°??????>????????????..??????
+ */
+function isSingleGreaterThanToken(checkIndex, tokenList) {
+    let isSingleToken = true;
+    const nextChar = tokenList[checkIndex + 1];
+    if (nextChar === '>') {
+        const charAfterNext = tokenList[checkIndex + 2];
+        if (isNumericCharacter(charAfterNext) || charAfterNext === '<') {
+            isSingleToken = false;
+        }
+    }
+    return isSingleToken;
+}
+
+//token????????????<???p??????>???q??????>>???t?????????
+//[p,p,p,10,q,t,10,q,t,10,q]?????????????????????
+function mapSymbolicTokens(tokenList) {
+    const symbolicTokens = [];
+    const listLength = tokenList.length;
+
+    for (let i = 0; i < listLength; i++) {
+        const tokenChar = tokenList[i];
+
+        if (isNumericCharacter(tokenChar)) {
+            symbolicTokens.push(tokenChar);
         } else {
-            if (currentlyParsingNumber) {
-                const numberChars = inputChars.slice(segmentStartIdx, i);
-                const numberString = numberChars.join('');
-                const parsedNumber = Number(numberString);
-                tokenizedSegments.push(parsedNumber);
-                currentlyParsingNumber = false;
-            }
-            tokenizedSegments.push(currentChar);
-        }
-    }
-
-    if (currentlyParsingNumber) {
-        const numberChars = inputChars.slice(segmentStartIdx, arrayLength);
-        const numberString = numberChars.join('');
-        const parsedNumber = Number(numberString);
-        tokenizedSegments.push(parsedNumber);
-    }
-    return tokenizedSegments;
-}
-
-function isClosingBracketToken(currentIndex, tokenSequence) {
-    if (currentIndex + 1 < tokenSequence.length && tokenSequence[currentIndex + 1] === '>') {
-        if (currentIndex + 2 < tokenSequence.length) {
-            const nextCharAfterDoubleArrow = tokenSequence[currentIndex + 2];
-            if (isDigitChar(String(nextCharAfterDoubleArrow)) || nextCharAfterDoubleArrow === '<') {
-                return false;
+            switch (tokenChar) {
+                case '<':
+                    symbolicTokens.push('p');
+                    break;
+                case '>':
+                    if (isSingleGreaterThanToken(i, tokenList)) {
+                        symbolicTokens.push('q');
+                    } else {
+                        symbolicTokens.push('t');
+                        i += 1;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }
-    return true;
+    return symbolicTokens;
 }
 
-function convertSegmentsToTokens(segmentedInput) {
-    if (!segmentedInput || !Array.isArray(segmentedInput)) {
-        return [];
-    }
+//?¨?????????¨?????¢?????????
+function evaluateTokenTree(expressionTree) {
+    let currentIndex = 0;
 
-    const processedTokens = [];
-    const segmentCount = segmentedInput.length;
+    const applyOperationAndReduce = (opResult, startIndex, countToRemove) => {
+        expressionTree.splice(startIndex, countToRemove);
+        expressionTree.splice(startIndex, 0, opResult); // Insert at startIndex
+        currentIndex = startIndex - 1;
+    };
 
-    for (let i = 0; i < segmentCount; i++) {
-        const currentSegment = segmentedInput[i];
+    while (expressionTree.length > 1 && currentIndex < expressionTree.length) {
+        const currentOp = expressionTree[currentIndex];
 
-        if (typeof currentSegment === 'number') {
-            processedTokens.push(currentSegment);
-        } else if (currentSegment === '<') {
-            processedTokens.push('p');
-        } else if (currentSegment === '>') {
-            if (isClosingBracketToken(i, segmentedInput)) {
-                processedTokens.push('q');
-            } else {
-                processedTokens.push('t');
-                i++;
-            }
-        }
-    }
-    return processedTokens;
-}
-
-function evaluateTokenTree(tokenList) {
-    if (!tokenList || !Array.isArray(tokenList)) {
-        return [NaN];
-    }
-
-    const evaluationStack = [...tokenList];
-    let currentIdx = 0;
-
-    while (evaluationStack.length > 1 && currentIdx < evaluationStack.length) {
-        const currentToken = evaluationStack[currentIdx];
-
-        if (typeof currentToken === 'number') {
-            if (currentIdx >= 2 && evaluationStack[currentIdx - 1] === 't') {
-                const shiftAmount = currentToken;
-                const numerator = evaluationStack[currentIdx - 2];
-                if (typeof numerator === 'number') {
-                    const result = calculateShiftedDivision(numerator, shiftAmount);
-                    evaluationStack.splice(currentIdx - 2, 3, result);
-                    currentIdx -= 2;
+        if (isNumericCharacter(currentOp)) {
+            if (currentIndex > 0 && expressionTree[currentIndex - 1] === 't') {
+                const leftOperand = expressionTree[currentIndex - 2];
+                const rightOperand = expressionTree[currentIndex];
+                if (isNumericCharacter(leftOperand) && isNumericCharacter(rightOperand)) {
+                    const result = calculateTFunction(leftOperand, rightOperand);
+                    applyOperationAndReduce(result, currentIndex - 2, 3);
                 } else {
-                    outputChannel(`Error: 't' operator not preceded by a number at index ${currentIdx - 2}`);
-                    return [NaN];
+                    currentIndex++;
                 }
             } else {
-                currentIdx++;
+                currentIndex++;
             }
-        } else if (currentToken === 'q') {
-            if (currentIdx >= 2 && evaluationStack[currentIdx - 2] === 'p' && typeof evaluationStack[currentIdx - 1] === 'number') {
-                const valueForS = evaluationStack[currentIdx - 1];
-                const result = calculateSquareRecursive(valueForS);
-                evaluationStack.splice(currentIdx - 2, 3, result);
-                currentIdx -= 2;
+        } else if (currentOp === 'p') {
+            currentIndex++;
+        } else if (currentOp === 'q') {
+            const operand = expressionTree[currentIndex - 1];
+            if (currentIndex > 0 && expressionTree[currentIndex - 2] === 'p' && isNumericCharacter(operand)) {
+                const result = calculateSFunction(operand);
+                applyOperationAndReduce(result, currentIndex - 2, 3);
             } else {
-                outputChannel(`Error: 'q' operator malformed or misplaced at index ${currentIdx}`);
-                return [NaN];
+                currentIndex++;
             }
-        } else if (currentToken === 'p' || currentToken === 't') {
-            currentIdx++;
+        } else if (currentOp === 't') {
+            currentIndex++;
         } else {
-            outputChannel(`Warning: Unrecognized token '${currentToken}' encountered at index ${currentIdx}`);
-            currentIdx++;
+            currentIndex++;
         }
     }
-
-    if (evaluationStack.length !== 1 || isNaN(evaluationStack[0])) {
-        outputChannel(`Error: Evaluation did not yield a single valid result. Final stack: ${evaluationStack}`);
-        return [NaN];
-    }
-    return evaluationStack;
+    return expressionTree;
 }
 
-function handleSingleLine(rawInputString) {
-    let processedString = cleanInputString(rawInputString);
-    if (!processedString) {
-        outputChannel('');
+function processExpressionLine(inputLine) {
+    let processedResult = stripSpecialChars(inputLine);
+    if (!processedResult) {
+        outputLog('');
         return;
     }
 
-    let segmentedData = segmentInputTokens(processedString);
-    if (!segmentedData || segmentedData.length === 0) {
-        outputChannel('');
+    processedResult = segmentInputTokens(processedResult);
+    if (!processedResult) {
+        outputLog('');
         return;
     }
 
-    let tokenSequence = convertSegmentsToTokens(segmentedData);
-    if (!tokenSequence || tokenSequence.length === 0) {
-        outputChannel('');
+    processedResult = mapSymbolicTokens(processedResult);
+    if (!processedResult) {
+        outputLog('');
         return;
     }
 
-    let evaluationResult = evaluateTokenTree(tokenSequence);
-    if (!evaluationResult || evaluationResult.length !== 1 || isNaN(evaluationResult[0])) {
-        outputChannel('Evaluation Error');
+    processedResult = evaluateTokenTree(processedResult);
+    if (!processedResult) {
+        outputLog('');
         return;
     }
 
-    outputChannel(evaluationResult[0]);
-}
-
-function executeProcessing(inputStrings) {
-    if (!inputStrings || !Array.isArray(inputStrings) || inputStrings.length === 0) {
-        outputChannel("No input lines provided for processing.");
-        return;
-    }
-
-    let validLinesProcessed = 0;
-    for (const currentString of inputStrings) {
-        const trimmedString = currentString.trim();
-        if (trimmedString === "#") {
-            break;
-        }
-        if (trimmedString.length > 0) {
-            handleSingleLine(trimmedString);
-            validLinesProcessed++;
-        }
-    }
-
-    if (validLinesProcessed === 0) {
-        outputChannel("No valid non-empty lines were processed.");
-    }
+    outputLog(processedResult[0]);
 }

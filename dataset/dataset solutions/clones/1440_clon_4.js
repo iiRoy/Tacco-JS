@@ -1,53 +1,26 @@
-const fileSystem = require('node:fs');
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const retrieveRawData = (sourcePath) => {
-    return fileSystem.readFileSync(sourcePath, { encoding: 'utf8' }).trim();
+const createPoint = (xCoord, yCoord) => ({
+    xComponent: xCoord,
+    yComponent: yCoord
+});
+
+const calculateDistance = (inputString) => {
+    const numericalValues = inputString.trim().split(' ').map(Number);
+
+    const pointOne = createPoint(numericalValues[0], numericalValues[1]);
+    const pointTwo = createPoint(numericalValues[2], numericalValues[3]);
+
+    const squareValue = (val) => val * val;
+
+    const deltaX = pointOne.xComponent - pointTwo.xComponent;
+    const deltaY = pointOne.yComponent - pointTwo.yComponent;
+
+    const sumOfSquaredDifferences = squareValue(deltaX) + squareValue(deltaY);
+
+    return Math.sqrt(sumOfSquaredDifferences);
 };
 
-const convertToNumericArray = (textString) => {
-    const stringComponents = textString.split(' ');
-    const numericElements = [];
-    for (let i = 0; i < stringComponents.length; i++) {
-        numericElements.push(parseFloat(stringComponents[i]));
-    }
-    return numericElements;
-};
+const finalComputedDistance = calculateDistance(fileData);
 
-const computeSpatialDistance = (pA_x, pA_y, pB_x, pB_y) => {
-    const horizontalDisplacement = pA_x - pB_x;
-    const verticalDisplacement = pA_y - pB_y;
-    return Math.hypot(horizontalDisplacement, verticalDisplacement);
-};
-
-const formatDecimalValue = (valueToFormat, precisionDigits) => {
-    let multiplier = 1;
-    for (let i = 0; i < precisionDigits; i++) {
-        multiplier *= 10;
-    }
-    const roundedValue = Math.round(valueToFormat * multiplier) / multiplier;
-    let [integralSegment, fractionalSegment = ''] = roundedValue.toString().split('.');
-
-    while (fractionalSegment.length < precisionDigits) {
-        fractionalSegment += '0';
-    }
-    fractionalSegment = fractionalSegment.slice(0, precisionDigits);
-
-    return `${integralSegment}.${fractionalSegment}`;
-};
-
-const sourceLocation = '/dev/stdin';
-const dataPayload = retrieveRawData(sourceLocation);
-const parsedNumericInfo = convertToNumericArray(dataPayload);
-
-const [firstPointCoordX, firstPointCoordY, secondPointCoordX, secondPointCoordY] = parsedNumericInfo;
-
-const calculatedSpan = computeSpatialDistance(
-    firstPointCoordX,
-    firstPointCoordY,
-    secondPointCoordX,
-    secondPointCoordY
-);
-
-const displayResult = formatDecimalValue(calculatedSpan, 5);
-
-console.log(displayResult);
+console.log(finalComputedDistance.toFixed(5));

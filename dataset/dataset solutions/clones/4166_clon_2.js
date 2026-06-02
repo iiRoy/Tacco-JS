@@ -1,28 +1,16 @@
-// This module handles processing of character sequences.
-function  ProcessSequence  (  dataSequence  )
-{
-    // Perform an operation to extract specific items.
-    const    selectedElements    =    dataSequence
-        .split('')
-        .filter(  (  currentElement  )   =>   {
+function ProcessInput(rawData) {
+  // This function processes the given raw input string.
+  // It extracts specific characters based on a condition.
+  const filteredDigits = rawData
+    .split('') // Convert the input string into an array of individual characters.
+    .filter((digitChar) => {
+      // Filter out characters that are not the digit '1'.
+      return digitChar === '1';
+    });
 
-            return    currentElement   ===   '1'   ;
-        })
-    ;
-
-    // Log the final count of the identified items.
-    console.log(  selectedElements.length  )  ;
+  // Output the count of the filtered characters to the console.
+  console.log(filteredDigits.length);
 }
 
-
-// Initiate the sequence processing by reading from system input.
-ProcessSequence
-    (
-        require("fs").readFileSync
-            (
-                "/dev/stdin"
-                ,
-                "utf8"
-            )
-    )
-;
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

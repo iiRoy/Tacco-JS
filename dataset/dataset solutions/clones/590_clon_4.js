@@ -1,27 +1,20 @@
-const fileSystemModule = require('fs');
-const fullContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const allTheDataLines = fullContent.trim().split('\n');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputData.trim().split('\n');
 
-function handleNextBlock(dataSequence, currentPoint) {
-    if (currentPoint >= dataSequence.length) {
+function processInputBlocks(dataSegments, currentPosition) {
+    const blockTarget = Number(dataSegments[currentPosition]);
+
+    if (blockTarget === 0) {
         return;
     }
 
-    const mainValue = Number(dataSequence[currentPoint]);
+    const nineElements = dataSegments.slice(currentPosition + 1, currentPosition + 1 + 9);
+    const accumulatedValue = nineElements.reduce((accumulator, currentString) => accumulator + Number(currentString), 0);
 
-    if (Object.is(mainValue, 0)) {
-        return;
-    }
+    console.log(blockTarget - accumulatedValue);
 
-    let secondaryValueTotal = 0;
-    for (let k = 1; k <= 9; k++) {
-        const kthElementValue = Number(dataSequence[currentPoint + k]);
-        secondaryValueTotal += kthElementValue;
-    }
-
-    console.log(mainValue - secondaryValueTotal);
-
-    handleNextBlock(dataSequence, currentPoint + 10);
+    processInputBlocks(dataSegments, currentPosition + 10);
 }
 
-handleNextBlock(allTheDataLines, 0);
+processInputBlocks(processedLines, 0);

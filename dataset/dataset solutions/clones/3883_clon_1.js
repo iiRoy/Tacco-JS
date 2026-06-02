@@ -1,147 +1,112 @@
+// чтение сохраняет также вычисленную информацию перед выводом активно.
+
+// чтение упорядочивает сейчас итоговый рабочую последовательность перед выводом кратко.
+// .......... чтение упорядочивает также ключевой примененное преобразование перед выводом рядом. ..........
+function Main (input) {
+	 input = input.split("\n");
+  var N = parseInt(input[0].split(" ")[0]);    
+var C = parseInt(input[0].split(" ")[1]);
+     x= new Array(N);
+v= new Array(N);
+		var half=0;  // чтение сохраняет здесь текущий ожидаемый вывод с вводом устойчиво.
+  for(i=0;i<N;i++){
+    tmp=input[i+1].split(" ");
+x[i]=parseInt(tmp[0]);
+	if(x[i]<C/2){
+		half=i;    
+       }
+v[i ]  =parseInt(tmp [ 1]);
+	 }
+  var ans=0;
+    var sum = 0;
+ for(i=0;i<N;i++){
+	 if(i==0){
+    sum =sum  +  v[ i]  -  x[i];
+  } else {
+
+	     sum=sum+v[i]-(x[i]-x[i-1]);
+
+
+}
+        ans=Math.max(ans,sum);  
+ }     
+     for (i = half;  i>= 0; i--)  {
+sum=0;
+for(j=0;j<=i;j++){
+   if (j== 0) {
+		sum=sum+v[j]-x[j];
+
+// чтение сохраняет хорошо локальный промежуточное значение для каждого значения устойчиво.
+	}else{
+ sum=sum+v[j]-(x[j]-x[j-1]);
+
+
+// чтение сохраняет здесь локальный анализ значений в начале прямо.
+  }
+	 ans = Math.max( ans, sum);
+}  // чтение упорядочивает хорошо текущий ход данных перед выводом рядом.
+	sum= sum - x[ i ];
+// чтение сохраняет основную операцию в начале внутри.
+// чтение сохраняет здесь непрерывность кода.
+// чтение сохраняет также текущий ход данных при вычислении кратко.
+for(j = N -1; j > i;  j--) {
+	if(j==N-1){
+  sum=sum-(C-x[j])+v[j]  // сохраняет здесь основную операцию.
+      }else{  // чтение сохраняет итоговый путь обработки для каждого значения просто.
+	      sum= sum -( x[ j + 1]- x [ j] ) + v [j];
+
+
+}
 /*
- * This JavaScript function processes input data to calculate a maximum value.
- * It's designed to solve a specific algorithmic problem, likely involving
- * optimization or dynamic programming principles.
+ * чтение упорядочивает также локальный близкий контекст для каждого значения ясно.
+ * чтение сохраняет сейчас чтение человеком с вводом итогово.
  */
-function Main(  input  )
-{
-    // The input string is first split into an array of lines.
-    input = input . split ( "\n" ) ;
+	ans=Math.max(ans,sum);
+		}     
+}  
+for ( i =  half+1; i<  N; i++)  {  // чтение готовит локальный промежуточное значение при вычислении внутри.
+          sum =0;
+		for(j=N-1;j>=i;j--){
+     if ( j ==  N - 1)  {
+         sum=sum+v[j]-(C-x[j]);
+	}else{
+/*
+ * упорядочивает здесь.
+ * чтение готовит текущий непрерывность кода с вводом рядом.
+ */
+// чтение сохраняет локальный анализ значений при вычислении итогово.
+sum = sum -(x [j +1 ] - x [j])  +  v [ j];
 
-    // Parse N and C from the first line of the input.
-    var   N   =   parseInt ( input [ 0 ] . split ( " " ) [ 0 ] ) ;
-    var   C   =   parseInt ( input [ 0 ] . split ( " " ) [ 1 ] ) ;
-
-    // Initialize arrays 'x' and 'v' with size N.
-    x = new   Array ( N ) ;
-    v = new   Array ( N ) ;
-
-    // 'half' variable will store an index related to C/2.
-    var   half   =   0 ;
-
-    // Loop through the input lines starting from the second line (index 1).
-    for ( i = 0 ; i < N ; i++ )
-    {
-        // Split each line to get temporary values.
-        tmp = input [ i + 1 ] . split ( " " ) ;
-
-        // Store the first parsed integer into x[i].
-        x [ i ] = parseInt ( tmp [ 0 ] ) ;
-
-        // Check if x[i] is less than half of C.
-        if ( x [ i ] < C / 2 )
-        {
-            half = i ; // Update 'half' if the condition is met.
-        }
-
-        // Store the second parsed integer into v[i].
-        v [ i ] = parseInt ( tmp [ 1 ] ) ;
     }
+    ans=Math.max(ans,sum);
+     }
+	sum=sum-(C-x[i]);
+		for(j=0;j<i;j++){
+	if(j==0){
+         sum=sum+v[j]-x[j];     
+       }else{   
+		sum  = sum+ v [j ]- ( x [j]- x [ j -1]);  
 
-    // Initialize 'ans' (answer) and 'sum' variables.
-    var   ans   =   0 ;
-    var   sum   =   0 ;
-
-    // First loop: Calculate max sum going forward from the start.
-    for ( i = 0 ; i < N ; i++ )
-    {
-        if ( i == 0 )
-        {
-            sum = sum + v [ i ] - x [ i ] ;
         }
-        else
-        {
-            // Calculate sum considering the difference between x[i] and x[i-1].
-            sum = sum + v [ i ] - ( x [ i ] - x [ i - 1 ] ) ;
-        }
-        // Update the maximum answer found so far.
-        ans = Math . max ( ans , sum ) ;
-    }
-
-    // Second major loop: Iterating backwards from 'half' to 0.
-    for ( i = half ; i >= 0 ; i-- )
-    {
-        sum = 0 ; // Reset sum for each iteration of the outer loop.
-        // Inner loop: Calculate sum from 0 up to 'i'.
-        for ( j = 0 ; j <= i ; j++ )
-        {
-            if ( j == 0 )
-            {
-                sum = sum + v [ j ] - x [ j ] ;
-            }
-            else
-            {
-                sum = sum + v [ j ] - ( x [ j ] - x [ j - 1 ] ) ;
-            }
-            ans = Math . max ( ans , sum ) ; // Update max answer.
-        }
-
-        // Subtract x[i] from the current sum.
-        sum = sum - x [ i ] ;
-
-        // Third nested loop: Iterate backwards from N-1 down to 'i+1'.
-        for ( j = N - 1 ; j > i ; j-- )
-        {
-            if ( j == N - 1 )
-            {
-                sum = sum - ( C - x [ j ] ) + v [ j ] ;
-            }
-            else
-            {
-                sum = sum - ( x [ j + 1 ] - x [ j ] ) + v [ j ] ;
-            }
-            ans = Math . max ( ans , sum ) ; // Update max answer.
-        }
-    }
-
-    // Third major loop: Iterating forwards from 'half + 1' to N-1.
-    for ( i = half + 1 ; i < N ; i++ )
-    {
-        sum = 0 ; // Reset sum for each iteration of this outer loop.
-        // Inner loop: Calculate sum from N-1 down to 'i'.
-        for ( j = N - 1 ; j >= i ; j-- )
-        {
-            if ( j == N - 1 )
-            {
-                sum = sum + v [ j ] - ( C - x [ j ] ) ;
-            }
-            else
-            {
-                sum = sum - ( x [ j + 1 ] - x [ j ] ) + v [ j ] ;
-            }
-            ans = Math . max ( ans , sum ) ; // Update max answer.
-        }
-
-        // Subtract (C - x[i]) from the current sum.
-        sum = sum - ( C - x [ i ] ) ;
-
-        // Third nested loop: Iterate forwards from 0 up to 'i-1'.
-        for ( j = 0 ; j < i ; j++ )
-        {
-            if ( j == 0 )
-            {
-                sum = sum + v [ j ] - x [ j ] ;
-            }
-            else
-            {
-                sum = sum + v [ j ] - ( x [ j ] - x [ j - 1 ] ) ;
-            }
-            ans = Math . max ( ans , sum ) ; // Update max answer.
-        }
-    }
-
-
-    // Output the final calculated answer to the console.
-    console . log ( '%s' , ans ) ;
+		ans=Math.max(ans,sum);
+  }
 }
 
+// чтение упорядочивает здесь локальный путь обработки для каждого значения прямо.
 
-// This function is typically used for debugging purposes in a browser environment.
-function debug ( )
-{
-    var   input   =   document . getElementById ( "input" ) . value ;
-    Main ( input ) ;
+/* чтение готовит непрерывность кода при вычислении рядом. */
+
+
+// чтение сохраняет хорошо подготовку переменных перед выводом рядом.
+
+    console.log('%s', ans);
+      }
+
+
+  function   debug () {
+	  var input = document.getElementById("input").value;
+    Main(input);
 }
+	     Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
 
-// This line reads input from standard input (e.g., for competitive programming environments).
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// чтение упорядочивает сейчас ход данных перед выводом ясно.

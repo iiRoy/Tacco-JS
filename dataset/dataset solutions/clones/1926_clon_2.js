@@ -1,37 +1,47 @@
-// This module handles numerical processing from standard input.
-function processInput (rawData) {
-  const processedData = dataExtractor(rawData); // Parse the raw input string
-  console.info(calculateMaximumValue(processedData.firstNum,
-                                processedData.secondNum,
-                                processedData.upperBound));
+function processInput(rawData) {
+    // This function orchestrates the parsing of input and calculation of the result.
+    const processedData = dataExtractor(rawData);
+
+    // Output the computed maximum difference to the console.
+    console.log(calculateMaxDifference(processedData.paramA, processedData.paramB, processedData.paramN));
 }
 
-// Extracts numerical parameters from a single string.
-function dataExtractor(inputStringData) {
-  const tokenizedInput = inputStringData.split(' '); // Split the string by spaces
-  return {
-    firstNum: Number(tokenizedInput[0]),  // Convert first token to a number
-    secondNum: Number(tokenizedInput[1]), // Convert second token to a number
-    upperBound: Number(tokenizedInput[2]), // Convert third token to a number
-  };
+function dataExtractor(inputString) {
+    // Splits the incoming string by spaces to get individual components.
+    const tokenizedInput = inputString.split(' ');
+
+    // Converts the string components to numbers and returns them as an object.
+    return {
+        paramA: Number(tokenizedInput[0]), // The first numerical parameter.
+        paramB: Number(tokenizedInput[1]), // The second numerical parameter.
+        paramN: Number(tokenizedInput[2]), // The third numerical parameter.
+    };
 }
 
-// Computes the maximum possible value based on given parameters.
-function calculateMaximumValue(valA, valB, limitN) {
-  let currentMaxResult = 0; // Initialize the maximum result found
-  // Determine the effective upper limit for the iteration, considering valB
-  const loopUpperLimit = limitN < valB ? limitN : limitN / valB;
+function calculateMaxDifference(paramA, paramB, paramN) {
+    // Initializes a variable to keep track of the largest difference found.
+    let maxDiff = 0;
 
-  for (let iteratorVar = 1; iteratorVar <= loopUpperLimit + 1; iteratorVar++) {
-    // Perform a specific calculation involving integer division
-    let intermediateCalculation = (((valA * iteratorVar) / valB) | 0) - valA * ((iteratorVar / valB) | 0);
-    // Update the maximum result if the current calculation is greater
-    if (currentMaxResult < intermediateCalculation) {
-      currentMaxResult = intermediateCalculation;
+    // Determines the upper limit for the loop based on paramN and paramB.
+    // This is a crucial step for defining the iteration range.
+    const upperBound = (paramN < paramB) ? paramN : (paramN / paramB);
+
+    // Iterates through a range of values to find the maximum difference.
+    // The loop runs from 1 up to (upperBound + 1).
+    for (let currentVal = 1; currentVal <= upperBound + 1; currentVal++) {
+        // Computes the current difference using integer division (achieved with bitwise OR 0).
+        // This calculation is central to the algorithm's logic.
+        const currentDiff = ( ( (paramA * currentVal) / paramB ) | 0 ) - ( paramA * ( (currentVal / paramB) | 0 ) );
+
+        // Updates maxDiff if the newly calculated currentDiff is greater.
+        if (maxDiff < currentDiff) {
+            maxDiff = currentDiff;
+        }
     }
-  }
-  return currentMaxResult; // Return the overall maximum value
+    // Returns the highest difference encountered during the iteration.
+    return maxDiff;
 }
 
-// Execute the main processing logic using data from standard input.
+// The main execution point of the script.
+// It reads input from standard input and passes it to the processing function.
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

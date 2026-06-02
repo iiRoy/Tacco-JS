@@ -1,31 +1,31 @@
-// This module handles character validation against an alphabet.
-function ProcessInput(incomingText) {
-  // Normalize the input string by removing leading/trailing whitespace.
-  incomingText = incomingText.trim();
+function ProcessInput(rawData) {
+  // Clean up the incoming data by removing leading/trailing whitespace.
+  rawData = rawData.trim();
 
-  // Define the set of available lowercase English alphabet characters.
-  const characterPool = "abcdefghijklmnopqrstuvwxyz".split("");
+  // Initialize a collection of all lowercase English alphabet characters.
+  var availableChars = "abcdefghijklmnopqrstuvwxyz".split("");
 
-  // Iterate through each character of the provided input string.
-  for (let charIndex = 0; charIndex < incomingText.length; charIndex++) {
-    // Extract the current character for examination.
-    let currentChar = incomingText.slice(charIndex, charIndex + 1);
+  // Iterate through each character of the processed input string.
+  for (var idx = 0; idx < rawData.length; idx++) {
+    // Extract the current character at the current index.
+    var currentChar = rawData.slice(idx, idx + 1);
 
-    // Check if the current character exists within our character pool.
-    if (characterPool.indexOf(currentChar) !== -1) {
-      // If found, remove it from the pool to ensure unique usage.
-      characterPool.splice(characterPool.indexOf(currentChar), 1);
+    // Check if the current character exists in our collection of available characters.
+    if (availableChars.indexOf(currentChar) !== -1) {
+      // If found, remove this character from the collection to mark it as used.
+      availableChars.splice(availableChars.indexOf(currentChar), 1);
     } else {
-      // If a character is not found in the pool (or already used),
-      // it means the input is invalid based on the unique character rule.
+      // If the character is not found (meaning it's either not a lowercase letter
+      // or it has already been used), print "no" and terminate the function.
       console.log("no");
-      return; // Exit the function immediately upon invalidity.
+      return;
     }
   }
 
-  // If the loop completes without returning, all characters were valid and unique.
+  // If the loop completes without encountering any issues, it means all characters
+  // in the input were unique lowercase letters from the alphabet.
   console.log("yes");
 }
 
-// Entry point: Read input from standard input and process it.
+// Execute the main processing function with content read from standard input.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

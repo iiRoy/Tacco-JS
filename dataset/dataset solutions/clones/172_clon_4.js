@@ -1,67 +1,66 @@
-const systemIO = require('node:fs');
+class InputSource {
+    constructor() {
+        const fileDescriptor = require('fs').fstatSync(process.stdin.fd);
+        const bufferSize = fileDescriptor.size;
+        const dataBuffer = Buffer.alloc(bufferSize);
+        const bytesRead = require('fs').readSync(process.stdin.fd, dataBuffer, 0, bufferSize, 0);
+        this.lineSegments = dataBuffer.toString('utf8', 0, bytesRead).split('\n');
+        this.currentSegmentIndex = 0;
+    }
 
-function* inputLineProvider() {
-    const rawContent = systemIO.readFileSync(0, 'utf8');
-    const lines = rawContent.split('\n');
-    let currentIndex = 0;
-
-    while (currentIndex < lines.length) {
-        const line = lines[currentIndex++].trim();
-        if (line === '') continue;
-
-        if (line.includes(',')) {
-            const parts = line.split(',').map(Number);
-            yield { benefit: parts[0], mass: parts[1] };
-        } else {
-            yield Number(line);
+    retrieveNextLine() {
+        if (this.currentSegmentIndex < this.lineSegments.length) {
+            return this.lineSegments[this.currentSegmentIndex++];
         }
+        return null;
+    }
+
+    retrieveNextNumericValue() {
+        const lineContent = this.retrieveNextLine();
+        return lineContent !== null ? parseInt(lineContent, 10) : null;
+    }
+
+    retrieveNextCommaSeparatedValues() {
+        const lineContent = this.retrieveNextLine();
+        return lineContent !== null ? lineContent.split(',').map(Number) : null;
     }
 }
 
-function processCases() {
-    const lineSource = inputLineProvider();
-    let caseCounter = 1;
+function processKnapsackCases() {
+    const inputHandler = new InputSource();
+    let currentCaseIdentifier = 1;
 
-    for (;;) {
-        const capacityEntry = lineSource.next();
-        if (capacityEntry.done) break;
-        const currentCapacity = capacityEntry.value;
-
-        if (currentCapacity === 0) {
+    while (true) {
+        const knapsackCapacityLimit = inputHandler.retrieveNextNumericValue();
+        if (knapsackCapacityLimit === 0) {
             break;
         }
 
-        const itemsCountEntry = lineSource.next();
-        if (itemsCountEntry.done) break;
-        const totalItems = itemsCountEntry.value;
+        const totalItems = inputHandler.retrieveNextNumericValue();
+        const maximumValuesPerWeight = new Int32Array(knapsackCapacityLimit + 1);
 
-        const valueAccumulator = new Array(currentCapacity + 1).fill(0);
+        for (let itemCounter = 0; itemCounter < totalItems; itemCounter++) {
+            const itemAttributes = inputHandler.retrieveNextCommaSeparatedValues();
+            const itemWorth = itemAttributes[0];
+            const itemLoad = itemAttributes[1];
 
-        for (let itemIndex = 0; itemIndex < totalItems; itemIndex++) {
-            const itemDataEntry = lineSource.next();
-            if (itemDataEntry.done) break;
-            const { benefit: itemBenefit, mass: itemMass } = itemDataEntry.value;
-
-            for (let currentMass = currentCapacity; currentMass >= itemMass; currentMass--) {
-                valueAccumulator[currentMass] = Math.max(
-                    valueAccumulator[currentMass],
-                    valueAccumulator[currentMass - itemMass] + itemBenefit
+            for (let currentLoadCapacity = knapsackCapacityLimit; currentLoadCapacity >= itemLoad; currentLoadCapacity--) {
+                maximumValuesPerWeight[currentLoadCapacity] = Math.max(
+                    maximumValuesPerWeight[currentLoadCapacity],
+                    maximumValuesPerWeight[currentLoadCapacity - itemLoad] + itemWorth
                 );
             }
         }
 
-        let maxAchievedValue = 0;
-        let correspondingMass = 0;
-        
-        for (let m = 0; m <= currentCapacity; m++) {
-            if (valueAccumulator[m] > maxAchievedValue) {
-                maxAchievedValue = valueAccumulator[m];
-                correspondingMass = m;
+        const finalOutcome = maximumValuesPerWeight.reduce((accumulator, currentValue, currentIndex) => {
+            if (currentValue > accumulator.bestValue) {
+                return { bestValue: currentValue, bestWeight: currentIndex };
             }
-        }
+            return accumulator;
+        }, { bestValue: 0, bestWeight: 0 });
 
-        console.log(`Case ${caseCounter++}:\n${maxAchievedValue}\n${correspondingMass}`);
+        console.log(`Case ${currentCaseIdentifier++}:\n${finalOutcome.bestValue}\n${finalOutcome.bestWeight}`);
     }
 }
 
-processCases();
+processKnapsackCases();

@@ -1,45 +1,60 @@
-const outputLog = console.log;
+const outputResult = console.log;
 
-const fetchInputData = () => {
-    const rawContent = require("fs").readFileSync(0, "utf-8");
-    return rawContent.split("\n").filter(line => line.length > 0);
+const retrieveInputLines = () => {
+  const fileContent = require("fs").readFileSync("/dev/stdin", "utf-8");
+  return fileContent.split("\n").filter(Boolean);
 };
 
-const parseStringLineIntoNumbers = (textLine, delimiter = " ") => {
-    return textLine.split(delimiter).map(value => Number(value));
-};
+const convertToNumber = (strValue) => Number(strValue);
 
-const calculateGridCellDistance = (firstPointCoordinate, secondPointCoordinate, gridColumns) => {
-    const firstPointRow = Math.floor(firstPointCoordinate / gridColumns);
-    const firstPointCol = firstPointCoordinate % gridColumns;
-    const secondPointRow = Math.floor(secondPointCoordinate / gridColumns);
-    const secondPointCol = secondPointCoordinate % gridColumns;
+const parseNumericLine = (lineContent, separator = " ") =>
+  lineContent.split(separator).map(convertToNumber);
 
-    return Math.abs(firstPointRow - secondPointRow) + Math.abs(firstPointCol - secondPointCol);
-};
+(() => {
+  const inputData = retrieveInputLines();
 
-(function runApplication() {
-    const inputRecords = fetchInputData();
+  const totalSize = convertToNumber(inputData[0]);
+  const [startPointA_raw, startPointB_raw] = parseNumericLine(inputData[1]);
+  const [endPointC_raw, endPointD_raw] = parseNumericLine(inputData[2]);
 
-    const dimensionLimit = Number(inputRecords[0]);
-    
-    const firstPointPair = parseStringLineIntoNumbers(inputRecords[1]);
-    const pointOneIndex = firstPointPair[0] - 1;
-    const pointTwoIndex = firstPointPair[1] - 1;
+  const startPointA = startPointA_raw - 1;
+  const startPointB = startPointB_raw - 1;
+  const endPointC = endPointC_raw - 1;
+  const endPointD = endPointD_raw - 1;
 
-    const secondPointPair = parseStringLineIntoNumbers(inputRecords[2]);
-    const pointThreeIndex = secondPointPair[0] - 1;
-    const pointFourIndex = secondPointPair[1] - 1;
+  const computeManhattanGridDistance = (
+    firstIndex,
+    secondIndex,
+    gridDimension
+  ) => {
+    const firstColumn = firstIndex % gridDimension;
+    const firstRow = Math.floor(firstIndex / gridDimension);
+    const secondColumn = secondIndex % gridDimension;
+    const secondRow = Math.floor(secondIndex / gridDimension);
 
-    const possibleLayoutWidths = Array.from({ length: dimensionLimit - 1 }, (_, index) => index + 1);
+    return (
+      Math.abs(firstColumn - secondColumn) + Math.abs(firstRow - secondRow)
+    );
+  };
 
-    const overallMinimum = possibleLayoutWidths.reduce((currentMinDistance, currentLayoutWidth) => {
-        const distanceBetweenFirstPoints = calculateGridCellDistance(pointOneIndex, pointTwoIndex, currentLayoutWidth);
-        const distanceBetweenSecondPoints = calculateGridCellDistance(pointThreeIndex, pointFourIndex, currentLayoutWidth);
-        const currentCombinedDistance = distanceBetweenFirstPoints + distanceBetweenSecondPoints;
-        
-        return Math.min(currentMinDistance, currentCombinedDistance);
-    }, dimensionLimit * dimensionLimit);
+  const minimumCombinedDistance = Array.from(
+    { length: totalSize - 1 },
+    (_, index) => index + 1
+  ).reduce((currentMinimum, currentGridWidth) => {
+    const distanceForAB = computeManhattanGridDistance(
+      startPointA,
+      startPointB,
+      currentGridWidth
+    );
+    const distanceForCD = computeManhattanGridDistance(
+      endPointC,
+      endPointD,
+      currentGridWidth
+    );
+    const combinedDistance = distanceForAB + distanceForCD;
 
-    outputLog(overallMinimum);
+    return Math.min(currentMinimum, combinedDistance);
+  }, totalSize * totalSize);
+
+  outputResult(minimumCombinedDistance);
 })();

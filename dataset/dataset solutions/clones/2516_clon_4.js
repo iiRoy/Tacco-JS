@@ -1,99 +1,139 @@
-let incomingDataAccumulator = '';
-let processedInputLines = [];
-
-process.stdin.on('data', segment => {
-    incomingDataAccumulator += segment.toString();
+let inputCollector = [];
+require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+}).on('line', (line) => inputCollector.push(line))
+  .on('close', () => {
+    const dataHandler = new InputProcessor(inputCollector);
+    console.error("\n");
+    const executionStart = Date.now();
+    processGraphAnalysis(dataHandler);
+    const executionEnd = Date.now() - executionStart;
+    debugLog(`time : ${executionEnd}ms`);
+    debugLog(`memory : ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
 });
 
-process.stdin.on('end', () => {
-    processedInputLines = incomingDataAccumulator.split('\n').filter(line => line.length > 0);
-    
-    const operationStart = Date.now();
-    performCoreLogic();
-    const operationEnd = Date.now();
+class InputProcessor {
+    constructor(lines) {
+        this.sourceLines = lines;
+        this.currentLineIndex = 0;
+    }
 
-    reportDiagnostic("Duration: " + (operationEnd - operationStart) + "ms");
-    reportDiagnostic("Memory Footprint: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-});
+    hasMoreLines() {
+        return this.currentLineIndex < this.sourceLines.length;
+    }
 
-let lineCursor = 0;
-const extractInteger = () => parseInt(processedInputLines[lineCursor++], 10);
-const extractCharacterArray = () => processedInputLines[lineCursor++].split('');
+    fetchNextLine() {
+        if (!this.hasMoreLines()) {
+            throw new Error("ArrayIndexOutOfBoundsException ‚There is no more input");
+        }
+        return this.sourceLines[this.currentLineIndex++];
+    }
 
-const displayResult = val => console.log(val);
-const reportDiagnostic = msg => console.error("debugInfo:" + JSON.stringify(msg));
+    extractInt() {
+        return parseInt(this.fetchNextLine(), 10);
+    }
 
-function performCoreLogic() {
-    const totalVertexCount = extractInteger();
-    
-    // Graph representation: maps each vertex to a Set of its direct connections
-    const adjacencyLists = Array.from({ length: totalVertexCount }, () => new Set());
-    
-    // Populate the adjacency lists based on the input matrix
-    Array.from({ length: totalVertexCount }).forEach((_, currentVertexIndex) => {
-        const matrixRowData = extractCharacterArray();
-        matrixRowData.forEach((charValue, connectedVertexIndex) => {
-            if (currentVertexIndex !== connectedVertexIndex && charValue === "1") {
-                adjacencyLists[currentVertexIndex].add(connectedVertexIndex);
+    extractCharSequence() {
+        return this.fetchNextLine().split('');
+    }
+}
+
+function printOutput(content) {
+    console.log(content);
+}
+
+function debugLog(content) {
+    console.error(`debug:${require("util").inspect(content, false, null)}`);
+}
+
+function processGraphAnalysis(dataHandler) {
+    const nodeCount = dataHandler.extractInt();
+
+    const adjacencyMap = new Map(); // Map<NodeIndex, Set<NeighborNodeIndex>>
+    const nodeDepths = new Map();   // Map<NodeIndex, Number> for depths
+    const visitedStatus = new Set(); // Set<NodeIndex> for visited status
+
+    // Initialize adjacency map for all nodes
+    Array.from({ length: nodeCount }, (_, idx) => idx).forEach(idx => {
+        adjacencyMap.set(idx, new Set());
+    });
+
+    // Build graph from input
+    Array.from({ length: nodeCount }, (_, sourceNode) => {
+        const connectionIndicators = dataHandler.extractCharSequence();
+        connectionIndicators.forEach((indicator, targetNode) => {
+            if (sourceNode !== targetNode && indicator === '1') {
+                adjacencyMap.get(sourceNode).add(targetNode);
             }
         });
     });
 
-    let calculatedMaxPath = -1;
+    let maxDepthReached = -1;
+    let traversalInitiated = false;
     
-    // Search for a suitable starting node for the breadth-first traversal
-    // A suitable node is one with exactly one connection
-    const initialTraversalCandidateIndex = Array.from({ length: totalVertexCount }).findIndex((_, idx) =>
-        adjacencyLists[idx].size === 1
+    // Find a starting node for BFS: a node with exactly one outgoing edge
+    const potentialStartNode = Array.from(adjacencyMap.keys()).find(nodeIdx => 
+        adjacencyMap.get(nodeIdx).size === 1
     );
 
-    if (initialTraversalCandidateIndex !== -1) {
-        const visitedFlags = Array(totalVertexCount).fill(false);
-        const vertexDistances = Array(totalVertexCount).fill(0); // 0 signifies unvisited/unassigned distance
+    if (potentialStartNode !== undefined) {
+        traversalInitiated = true;
 
-        let currentWavefront = [initialTraversalCandidateIndex];
-        visitedFlags[initialTraversalCandidateIndex] = true;
-        vertexDistances[initialTraversalCandidateIndex] = 1; // The starting node is at distance 1
+        // BFS traversal using a generator
+        function* bfsGenerator(startNode) {
+            const traversalQueue = [[startNode, 1]]; // [node, currentDepth]
+            visitedStatus.add(startNode);
+            nodeDepths.set(startNode, 1);
 
-        let maximumDistanceAchieved = 1; 
+            while (traversalQueue.length > 0) {
+                const [currentNode, currentDepth] = traversalQueue.shift();
+                yield { node: currentNode, depth: currentDepth };
 
-        // Execute a level-by-level Breadth-First Search (BFS)
-        while (currentWavefront.length > 0) {
-            const nextWavefront = [];
-            for (const activeVertex of currentWavefront) {
-                const currentVertexDistance = vertexDistances[activeVertex];
-                maximumDistanceAchieved = Math.max(maximumDistanceAchieved, currentVertexDistance);
-
-                for (const connectedNeighbor of adjacencyLists[activeVertex]) {
-                    if (!visitedFlags[connectedNeighbor]) {
-                        visitedFlags[connectedNeighbor] = true;
-                        vertexDistances[connectedNeighbor] = currentVertexDistance + 1;
-                        nextWavefront.push(connectedNeighbor);
+                for (const neighbor of adjacencyMap.get(currentNode)) {
+                    if (!visitedStatus.has(neighbor)) {
+                        visitedStatus.add(neighbor);
+                        nodeDepths.set(neighbor, currentDepth + 1);
+                        traversalQueue.push([neighbor, currentDepth + 1]);
                     }
                 }
             }
-            currentWavefront = nextWavefront;
         }
-        calculatedMaxPath = maximumDistanceAchieved;
 
-        // Validate the structure: check if any two nodes at the same distance are directly connected
-        const structuralIntegrityIssue = Array.from({ length: totalVertexCount }).some((_, firstNodeIdx) =>
-            Array.from({ length: totalVertexCount }).some((_, secondNodeIdx) => {
-                // Ensure we only check unique pairs and avoid self-comparison
-                if (firstNodeIdx >= secondNodeIdx) return false; 
-
-                // Both nodes must have been reached by BFS (distance > 0)
-                // They must be at the same distance AND be directly connected
-                return vertexDistances[firstNodeIdx] > 0 && vertexDistances[secondNodeIdx] > 0 &&
-                       vertexDistances[firstNodeIdx] === vertexDistances[secondNodeIdx] &&
-                       (adjacencyLists[firstNodeIdx].has(secondNodeIdx) || adjacencyLists[secondNodeIdx].has(firstNodeIdx));
-            })
-        );
-
-        if (structuralIntegrityIssue) {
-            calculatedMaxPath = -1;
+        // Execute BFS and update maxDepthReached
+        for (const { node, depth } of bfsGenerator(potentialStartNode)) {
+            maxDepthReached = Math.max(maxDepthReached, depth);
         }
     }
-    
-    displayResult(calculatedMaxPath);
+
+    if (!traversalInitiated) {
+        printOutput(maxDepthReached); // Will be -1
+        return;
+    }
+
+    let finalResult = maxDepthReached;
+
+    // Post-traversal validation: Check for connections between nodes at the same depth
+    // Using nested functional iterations instead of imperative loops
+    Array.from({ length: nodeCount - 1 }, (_, i) => i).some(nodeA => {
+        return Array.from({ length: nodeCount - 1 - nodeA }, (_, j) => j + nodeA + 1).some(nodeB => {
+            // If a node was not visited, its depth is implicitly 1 as per original logic
+            const depthA = nodeDepths.has(nodeA) ? nodeDepths.get(nodeA) : 1;
+            const depthB = nodeDepths.has(nodeB) ? nodeDepths.get(nodeB) : 1;
+
+            if (depthA === depthB) {
+                const connectedAtoB = adjacencyMap.get(nodeA).has(nodeB);
+                const connectedBtoA = adjacencyMap.get(nodeB).has(nodeA);
+
+                if (connectedAtoB || connectedBtoA) {
+                    debugLog({ i: nodeA, j: nodeB }); // Preserve debug output format
+                    finalResult = -1;
+                    return true; // Break inner loop (equivalent to `break` in for loop)
+                }
+            }
+            return false; // Continue inner loop
+        });
+    });
+
+    printOutput(finalResult);
 }

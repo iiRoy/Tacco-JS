@@ -1,17 +1,11 @@
-const processData = (sourceText) => {
-    const contentParts = sourceText.trim().split(' ');
-    const firstOperand = Number(contentParts[0]);
-    const secondOperand = Number(contentParts[1]);
+((sourceText) => {
+    const [firstNumeric, secondNumeric] = sourceText.split(' ').map(Number);
 
-    const fixedValue = 10;
-    const factorValue = 100;
+    const primaryValue = firstNumeric;
+    const secondaryValue = secondNumeric;
 
-    const calculatedDifference = fixedValue - firstOperand;
-    const nonNegativeAdjustment = Math.max(0, calculatedDifference);
+    const adjustmentFactor = Math.max(0, 10 - primaryValue);
+    const finalOutcome = secondaryValue + 100 * adjustmentFactor;
 
-    const resultantValue = secondOperand + factorValue * nonNegativeAdjustment;
-
-    console.log(resultantValue);
-};
-
-processData(require("fs").readFileSync("/dev/stdin","utf8"));
+    console.log(finalOutcome);
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

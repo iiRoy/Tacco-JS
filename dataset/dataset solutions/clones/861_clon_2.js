@@ -1,157 +1,162 @@
-// This file contains a collection of utility functions and a main processing routine.
+let output = console.log;
 
-output = console.info; // Renamed console.log for output operations.
-input_data_lines = require("node:fs").readFileSync("/proc/self/fd/0", 'UTF8').split('\n'); // Changed module path, file path, encoding, and method name.
-input_data_lines.splice(-1, 1); // Different way to remove the last empty line from input.
+// Read input from standard input, split by newlines, and remove the last empty line.
+let inputLines = require("fs").readFileSync("/dev/stdin", "utf-8").split("\n");
+inputLines.length--;
 
-// Augmenting built-in Object prototype for debugging purposes.
-Object.prototype.dbgLog = function() {
-    output(String(this)); // Changed string conversion method.
-    return this;
+// Extend Object prototype with a debugging method.
+Object.prototype.showValue = function() {
+  output(this + "");
+  return this;
 };
 
-// Augmenting built-in String prototype to convert a string into an array of numbers.
-String.prototype.toNumArr = function(separator_char) {
-    return this.split(separator_char || ' ').map(parseNumber); // Changed separator default and mapping function.
+// Extend String prototype to convert a string of space-separated numbers into an array of integers.
+String.prototype.toNumbers = function(separatorChar) {
+  return this.split(separatorChar || " ").map(parseInteger);
 };
 
-// Alias for Array prototype for convenience and shorter access to custom methods.
-const array_utilities = Array.prototype;
+// Alias for Array.prototype for brevity in custom array methods.
+let arrayProto = Array.prototype;
 
-// Custom method for Array prototype: logs the array itself.
-array_utilities.logSelf = function() {
-    output(this);
-    return this;
+// Custom array method to display array contents.
+arrayProto.displayContents = function() {
+  output(this);
+  return this;
 };
 
-// Custom method for Array prototype: retrieves the maximum value within the array.
-array_utilities.getMaximum = function() {
-    return Reflect.apply(Math.max, null, this); // Using Reflect.apply for method invocation.
+// Custom array method to find the maximum value.
+arrayProto.findMaximum = function() {
+  return Math.max.apply(null, this);
 };
 
-// Custom method for Array prototype: retrieves the minimum value within the array.
-array_utilities.getMinimum = function() {
-    return Reflect.apply(Math.min, null, this); // Using Reflect.apply for method invocation.
+// Custom array method to find the minimum value.
+arrayProto.findMinimum = function() {
+  return Math.min.apply(null, this);
 };
 
-// Custom method for Array prototype: creates a shallow duplicate of the array.
-array_utilities.duplicate = function() {
-    return this.map(identityFn); // Changed mapping function.
+// Custom array method to create a shallow copy of the array.
+arrayProto.duplicate = function() {
+  return this.map(identityFunction);
 };
 
-// Custom method for Array prototype: rotates the array elements by a specified amount.
-array_utilities.shiftElements = function(rotation_val) {
-    return this.slice(rotation_val, this.length).concat(this.slice(0, rotation_val));
+// Custom array method to perform a circular shift (rotation).
+arrayProto.circularShift = function(shiftAmount) {
+  return this.slice(shiftAmount, this.length).concat(this.slice(0, shiftAmount));
 };
 
-// Custom method for Array prototype: generates all possible permutations of the array's elements.
-array_utilities.generatePermutations = function() {
-    if (this.length === 0) {
-        return [];
-    }
-    if (this.length === 1) {
-        return [this];
-    }
-    let resultSet = [],
-        sourceArray = this,
-        elementIndex = 0;
-    for (; elementIndex < sourceArray.length; ++elementIndex) {
-        resultSet = resultSet.concat(
-            sourceArray.slice(0, elementIndex)
-            .concat(sourceArray.slice(elementIndex + 1, sourceArray.length))
-            .generatePermutations() // Recursive call using new name.
-            .map(function(current_permutation) {
-                return current_permutation.concat(sourceArray[elementIndex]);
-            })
-        );
-    }
-    return resultSet;
+// Custom array method to generate all permutations of the array elements.
+arrayProto.generatePermutations = function() {
+  if (this.length === 0) {
+    return [];
+  }
+  if (this.length === 1) {
+    return [this];
+  }
+
+  let resultCombinations = [];
+  let originalArray = this;
+  let currentIdx = 0;
+
+  for (; currentIdx < originalArray.length; ++currentIdx) {
+    resultCombinations = resultCombinations.concat(
+      originalArray.slice(0, currentIdx)
+        .concat(originalArray.slice(currentIdx + 1, originalArray.length))
+        .generatePermutations()
+        .map(function(currentPermutation) {
+          return currentPermutation.concat(originalArray[currentIdx]);
+        })
+    );
+  }
+  return resultCombinations;
 };
 
-// Custom method for Array prototype: flattens a nested array by one level.
-array_utilities.unroll = function() {
-    for (let current_idx = 0, flat_output = []; current_idx < this.length; ++current_idx) {
-        flat_output = flat_output.concat(this[current_idx]);
-    }
-    return flat_output;
+// Custom array method to flatten a nested array by one level.
+arrayProto.unroll = function() {
+  let currentResult = [];
+  for (let idx = 0; idx < this.length; ++idx) {
+    currentResult = currentResult.concat(this[idx]);
+  }
+  return currentResult;
 };
 
-// Custom method for Array prototype: returns a new array with unique elements (removes duplicates).
-array_utilities.uniqueElements = function() {
-    const self_ref = this;
-    return this.filter(function(item_value, item_position) {
-        return self_ref.slice(item_position + 1).indexOf(item_value) < 0;
-    });
+// Custom array method to remove duplicate elements (nub).
+arrayProto.removeDuplicates = function() {
+  let selfReference = this;
+  return this.filter(function(elementValue, elementIndex) {
+    return selfReference.slice(elementIndex + 1).indexOf(elementValue) < 0;
+  });
 };
 
-// Global function: Generates a sequence of numbers with a specified count, start value, and step.
-function generateSequence(count_limit, start_value, step_increment) {
-    start_value = start_value || 0;
-    step_increment = step_increment || 1;
-    let sequence_result = [];
-    while (count_limit--) { // Using while loop with decrement.
-        sequence_result.push(start_value);
-        start_value += step_increment;
-    }
-    return sequence_result;
+// Function to create an array of numbers in a sequence.
+function createRange(count, startValue, stepValue) {
+  startValue = startValue || 0;
+  stepValue = stepValue || 1;
+  let generatedArray = [];
+  for (; count--; startValue += stepValue) {
+    generatedArray.push(startValue);
+  }
+  return generatedArray;
 }
 
-// Global function: Converts a string input to a numerical value.
-function parseNumber(input_str) {
-    return Number(input_str); // Explicit Number constructor for conversion.
+// Function to parse a string into an integer.
+function parseInteger(inputString) {
+  return +inputString;
 }
 
-// Global function: Adds two numerical values.
-function sumValues(value_one, value_two) {
-    return value_one + value_two;
+// Function to add two numbers.
+function sumValues(valA, valB) {
+  return valA + valB;
 }
 
-// Global function: Subtracts the second numerical value from the first.
-function subtractValues(value_one, value_two) {
-    return value_one - value_two;
+// Function to subtract two numbers (A - B).
+function subtractValues(valA, valB) {
+  return valA - valB;
 }
 
-// Global function: Subtracts the first numerical value from the second.
-function reverseSubtract(value_one, value_two) {
-    return value_two - value_one;
+// Function to subtract two numbers (B - A).
+function reverseSubtract(valA, valB) {
+  return valB - valA;
 }
 
-// Global function: A simple identity function that returns its input unchanged.
-function identityFn(input_data) {
-    return input_data;
+// Function that returns its input argument unchanged.
+function identityFunction(inputArg) {
+  return inputArg;
 }
 
+// Main execution block for the problem solution.
+(function calculateMinimumDistance() {
+  // Parse input values for grid dimension and coordinates.
+  let gridDimension = +inputLines[0];
+  let firstCoords = inputLines[1].toNumbers();
+  let firstX = firstCoords[0];
+  let firstY = firstCoords[1];
+  let secondCoords = inputLines[2].toNumbers();
+  let secondX = secondCoords[0];
+  let secondY = secondCoords[1];
 
-// Main execution block for the program, encapsulated in an IIFE.
-(function executeProgram() {
-    var main_grid_dimension = Number(input_data_lines[0]), // Parse the first line as the grid size.
-        first_coordinate_pair = input_data_lines[1].toNumArr(), // Parse the second line for first coordinate.
-        first_x = first_coordinate_pair[0],
-        first_y = first_coordinate_pair[1],
-        second_coordinate_pair = input_data_lines[2].toNumArr(), // Parse the third line for second coordinate.
-        second_x = second_coordinate_pair[0],
-        second_y = second_coordinate_pair[1];
+  // Initialize minimum total distance with a large value.
+  let minimumTotalDistance = gridDimension * gridDimension;
 
-    var minimum_total_distance = main_grid_dimension * main_grid_dimension; // Initialize with a large value.
+  // Helper function to compute Manhattan distance on a transformed grid.
+  function computeManhattanDistance(coord1, coord2, divisor) {
+    return Math.abs((coord1 % divisor) - (coord2 % divisor)) + Math.abs(Math.floor(coord1 / divisor) - Math.floor(coord2 / divisor));
+  }
 
-    // Computes Manhattan distance in a grid where movements are constrained by a 'current_divisor'.
-    function calculateManhattanDistance(coordinate_a, coordinate_b, current_divisor) {
-        let remainder_diff = Math.abs((coordinate_a % current_divisor) - (coordinate_b % current_divisor));
-        let quotient_diff = Math.abs(Math.floor(coordinate_a / current_divisor) - Math.floor(coordinate_b / current_divisor)); // Using Math.floor for integer division.
-        return remainder_diff + quotient_diff;
+  // Iterate through possible divisors (grid sizes).
+  for (let currentDivisor = 1; currentDivisor < gridDimension; ++currentDivisor) {
+    // Calculate the combined Manhattan distance for the two pairs of points.
+    let currentCombinedDistance = computeManhattanDistance(firstX, firstY, currentDivisor) + computeManhattanDistance(secondX, secondY, currentDivisor);
+    // output(currentDivisor, currentCombinedDistance); // Debugging line, commented out.
+
+    // Update the minimum total distance if a smaller one is found.
+    if (minimumTotalDistance > currentCombinedDistance) {
+      minimumTotalDistance = currentCombinedDistance;
     }
+  }
 
-    // Iterate through possible divisors (from 1 up to main_grid_dimension - 1)
-    // to find the minimum combined distance between the two coordinate pairs.
-    for (let divisor_iterator = 1; divisor_iterator < main_grid_dimension; ++divisor_iterator) {
-        let current_combined_distance = calculateManhattanDistance(first_x, first_y, divisor_iterator) + calculateManhattanDistance(second_x, second_y, divisor_iterator);
-        // output(divisor_iterator, current_combined_distance); // Optional debug line, commented out.
-        if (minimum_total_distance > current_combined_distance) {
-            minimum_total_distance = current_combined_distance;
-        }
-    }
-
-    output(minimum_total_distance); // Display the final computed minimum distance.
+  // Output the final minimum total distance.
+  output(minimumTotalDistance);
 })();
 
-// End of program. This comment indicates the file's conclusion.
+// Editor configuration hint.
+// vim: set ft=javascript:

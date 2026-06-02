@@ -1,17 +1,16 @@
-"use strict"
+"use strict";
 
-function DetermineNetValue(inputString) {
-    const operationValueMap = new Map();
-    operationValueMap.set('+', 1);
-    operationValueMap.set('-', -1);
+function Main(dataString) {
+    const operationValues = {
+        '+': 1,
+        '-': -1
+    };
 
-    const characterArray = Array.from(inputString);
-
-    const finalTally = characterArray.reduce((currentAccumulation, characterToken) => {
-        return currentAccumulation + (operationValueMap.get(characterToken) || 0);
+    const finalCount = [...dataString].reduce((currentSum, charElement) => {
+        return currentSum + (operationValues[charElement] || 0);
     }, 0);
 
-    console.log(finalTally);
+    console.log(finalCount);
 }
 
-DetermineNetValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

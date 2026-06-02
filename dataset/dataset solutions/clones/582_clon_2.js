@@ -1,60 +1,53 @@
-var dataSource = require('node:fs').readFileSynchronously('/proc/self/fd/0', 'utf-8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-  /* Process the raw input data */
-var lineBuffer=(dataSource.trim()
-  )
-  .split('\x0A');
+// Process the raw input data
+var lineSegments = (rawData.trim()).split("\n");
 
-while ( Boolean(1) ) { // Main processing loop for multiple test cases
+// Main processing loop
+while (true) {
+    // Extract N and M from the first line segment
+    var dimensions = lineSegments.shift().split(" ").map(Number);
+    var numElements = dimensions[0];
+    var targetSum = dimensions[1];
 
-  // Extract dimensions (N and M) from the current line
-  var dimensions = lineBuffer.shift().split(' ').map(parseFloat);
-
-  var countElements = dimensions[0];
-  var targetSumLimit = dimensions[1];
-
-  // If both N and M are zero, terminate the program
-  if (countElements === 0.0 && targetSumLimit === 0.0)
-    break; /* exit processing loop */
-
-  // Array to store the numeric values for the current test case
-  var numericValues = [ ];
-
-  for ( var idx = 0; idx < countElements; idx++ ) {
-    numericValues.push( parseFloat(lineBuffer.shift()) );
-  }
-
-  // Add a zero to the end of the array, as per problem logic
-  numericValues.push( 0x0 );
-
-  // Array to store all possible pairwise sums
-  var sumCombinations = [ ];
-
-  // Generate all possible sums of two elements from numericValues
-  for (var firstIndex = 0; firstIndex < numericValues.length; firstIndex++) {
-    for (var secondIndex = firstIndex; secondIndex < numericValues.length; secondIndex++) {
-      sumCombinations.push( numericValues[firstIndex] + numericValues[secondIndex] );
-    }
-  }
-
-  // Sort the generated sums in ascending order
-  sumCombinations.sort( function(valA, valB) { return (valA - valB); } );
-
-  var greatestValidSum = 0.0; // Initialize the maximum sum found so far
-  var rightPointer = sumCombinations.length - 1; // Pointer for the right end of the sorted sums
-
-  // Iterate through the sorted sums to find the largest sum <= targetSumLimit
-  for (var leftPointer = 0; leftPointer < sumCombinations.length; leftPointer++) {
-
-    // Move the right pointer inwards until the sum is within the limit
-    while (sumCombinations[leftPointer] + sumCombinations[rightPointer] > targetSumLimit) {
-      rightPointer = rightPointer - 1;
+    // Check for termination condition
+    if (numElements === 0 && targetSum === 0) {
+        break;
     }
 
-    // Update the greatest valid sum found
-    greatestValidSum = Math['max'](greatestValidSum, sumCombinations[leftPointer] + sumCombinations[rightPointer]);
-  }
+    // Populate the array with input values
+    var dataValues = [];
+    for (var idx = 0; idx < numElements; idx++) {
+        dataValues.push(lineSegments.shift() - 0); // Convert to number
+    }
+    dataValues.push(0); // Add a zero as per the original algorithm
 
-  // Output the result for the current test case
-  console.log(greatestValidSum);
+    // Generate all possible sums of two elements
+    var sumCombinations = [];
+    for (var firstIdx = 0; firstIdx < dataValues.length; firstIdx++) {
+        for (var secondIdx = firstIdx; secondIdx < dataValues.length; secondIdx++) {
+            sumCombinations.push(dataValues[firstIdx] + dataValues[secondIdx]);
+        }
+    }
+
+    // Sort the combinations in ascending order
+    sumCombinations.sort(function (valA, valB) {
+        return valA - valB;
+    });
+
+    var maximumAchieved = 0;
+    var rightPointer = sumCombinations.length - 1;
+
+    // Find the maximum sum less than or equal to targetSum
+    for (var leftPointer = 0; leftPointer < sumCombinations.length; leftPointer++) {
+        // Move the right pointer inwards if the sum exceeds targetSum
+        while (sumCombinations[leftPointer] + sumCombinations[rightPointer] > targetSum) {
+            rightPointer--;
+        }
+        // Update the maximum sum found so far
+        maximumAchieved = Math.max(maximumAchieved, sumCombinations[leftPointer] + sumCombinations[rightPointer]);
+    }
+
+    // Output the result
+    console.log(maximumAchieved);
 }

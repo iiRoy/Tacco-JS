@@ -1,87 +1,82 @@
-const sourceReader = require('fs').readFileSync;
+const fileSystem = require('fs');
+const MAX_PENALTY_VALUE = 5000;
 
-const processAllGameSessions = (rawInputText) => {
-    const rawLineSegments = rawInputText.trim().split("\n");
+const executeSimulation = (sourcePath) => {
+    const rawContent = fileSystem.readFileSync(sourcePath, 'utf8');
+    const inputLines = rawContent.trim().split("\n");
+    let currentLineIndex = 0;
 
-    const recursivelyHandleBlocks = (remainingSegments, collectedResults = []) => {
-        if (remainingSegments.length === 0) return collectedResults;
-
-        const [headerLine, ...restOfSegments] = remainingSegments;
-        const configurationValues = headerLine.split(" ").map(Number);
-        const [pathChoiceCount, finalLocation, eventCount] = configurationValues;
-
-        if (pathChoiceCount === 0 && finalLocation === 0 && eventCount === 0) {
-            return collectedResults;
+    const retrieveNextLine = () => {
+        if (currentLineIndex < inputLines.length) {
+            return inputLines[currentLineIndex++];
         }
-
-        const [moveOptionsLine, ...remainingAfterMoves] = restOfSegments;
-        const availableMoves = moveOptionsLine.split(" ").map(Number);
-
-        const eventDescriptionLines = remainingAfterMoves.slice(0, eventCount);
-        const locationEvents = new Map(eventDescriptionLines.map(line => {
-            const [positionKey, eventType, eventAmount] = line.split(" ").map(Number);
-            return [positionKey, [eventType, eventAmount]];
-        }));
-
-        const subsequentSegments = remainingAfterMoves.slice(eventCount);
-
-        const terminalWealthDistribution = calculateFinalWealthDistribution(
-            pathChoiceCount,
-            finalLocation,
-            availableMoves,
-            locationEvents
-        );
-
-        const expectedOutcome = Array.from(terminalWealthDistribution.entries())
-                                   .reduce((accumulator, [wealthValue, probabilityValue]) =>
-                                       accumulator + wealthValue * probabilityValue, 0);
-        
-        return recursivelyHandleBlocks(subsequentSegments, [...collectedResults, Math.floor(expectedOutcome)]);
+        return null;
     };
 
-    return recursivelyHandleBlocks(rawLineSegments).join('\n');
-};
+    while (true) {
+        const gameConfiguration = retrieveNextLine().split(" ").map(Number);
+        const [diceCount, finalPositionTarget, eventCount] = gameConfiguration;
 
-const calculateFinalWealthDistribution = (pathChoiceCount, finalLocation, availableMoves, locationEvents) => {
-    const wealthCeiling = 5000;
-
-    const initialProbabilityStates = Array.from({ length: finalLocation + 1 }, () => new Map());
-    initialProbabilityStates[0].set(0, 1.0);
-
-    const finalProbabilityStates = initialProbabilityStates.reduce((currentStates, _, currentPositionIndex) => {
-        if (currentPositionIndex >= finalLocation || currentStates[currentPositionIndex].size === 0) {
-            return currentStates;
+        if (diceCount === 0 && finalPositionTarget === 0 && eventCount === 0) {
+            break;
         }
 
-        for (const [currentWealthLevel, currentProbabilityShare] of currentStates[currentPositionIndex].entries()) {
-            const probabilityPerIndividualMove = currentProbabilityShare / pathChoiceCount;
+        const diceFaceValues = retrieveNextLine().split(" ").map(Number);
 
-            for (const chosenMoveValue of availableMoves) {
-                const tentativeNextLocation = Math.min(finalLocation, currentPositionIndex + chosenMoveValue);
-                let actualWealthAfterEvent = currentWealthLevel;
-                let actualDestinationLocation = tentativeNextLocation;
+        const specialEventRegistry = new Map();
+        for (let eventIndex = 0; eventIndex < eventCount; eventIndex++) {
+            const eventDetails = retrieveNextLine().split(" ").map(Number);
+            const [eventLocation, eventType, eventEffectValue] = eventDetails;
+            specialEventRegistry.set(eventLocation, { type: eventType, value: eventEffectValue });
+        }
 
-                const activeEventDetails = locationEvents.get(tentativeNextLocation);
-                if (activeEventDetails) {
-                    const [eventCategory, eventMagnitude] = activeEventDetails;
-                    if (eventCategory === 1) {
-                        actualDestinationLocation = Math.min(finalLocation, tentativeNextLocation + eventMagnitude);
-                    } else if (eventCategory === 2) {
-                        actualWealthAfterEvent = Math.min(wealthCeiling, currentWealthLevel + eventMagnitude);
-                    } else if (eventCategory === 3) {
-                        actualWealthAfterEvent = Math.max(0, currentWealthLevel - eventMagnitude);
+        // Probability distributions: an array where each element is a Map.
+        // probabilityDistributions[position] = Map<penalty_points, probability_value>
+        const probabilityDistributions = Array.from({ length: finalPositionTarget + 1 }, () => new Map());
+        probabilityDistributions[0].set(0, 1.0); // Initial state: position 0, 0 penalty, 100% probability
+
+        for (let currentBoardPosition = 0; currentBoardPosition < finalPositionTarget; currentBoardPosition++) {
+            // Iterate over all known (penalty, probability) states at the current board position
+            for (let [currentPenaltyPoints, currentProbabilityMass] of probabilityDistributions[currentBoardPosition].entries()) {
+                // Distribute this probability mass across possible next states based on dice rolls
+                for (let rolledDieValue of diceFaceValues) {
+                    let nextBaseBoardPosition = Math.min(finalPositionTarget, currentBoardPosition + rolledDieValue);
+                    const probabilitySlice = currentProbabilityMass / diceCount;
+
+                    let resultingBoardPosition = nextBaseBoardPosition;
+                    let resultingPenaltyPoints = currentPenaltyPoints;
+
+                    // Check for special events at the next base position
+                    if (specialEventRegistry.has(nextBaseBoardPosition)) {
+                        const { type: eventKind, value: eventMagnitude } = specialEventRegistry.get(nextBaseBoardPosition);
+                        switch (eventKind) {
+                            case 1: // Move forward
+                                resultingBoardPosition = Math.min(finalPositionTarget, nextBaseBoardPosition + eventMagnitude);
+                                break;
+                            case 2: // Add penalty points
+                                resultingPenaltyPoints = Math.min(MAX_PENALTY_VALUE, currentPenaltyPoints + eventMagnitude);
+                                break;
+                            case 3: // Subtract penalty points
+                                resultingPenaltyPoints = Math.max(0, currentPenaltyPoints - eventMagnitude);
+                                break;
+                        }
                     }
+                    // Accumulate probability for the new state (resultingBoardPosition, resultingPenaltyPoints)
+                    probabilityDistributions[resultingBoardPosition].set(resultingPenaltyPoints,
+                        (probabilityDistributions[resultingBoardPosition].get(resultingPenaltyPoints) || 0) + probabilitySlice
+                    );
                 }
-
-                const targetLocationDistribution = currentStates[actualDestinationLocation];
-                targetLocationDistribution.set(actualWealthAfterEvent,
-                    (targetLocationDistribution.get(actualWealthAfterEvent) || 0) + probabilityPerIndividualMove);
             }
         }
-        return currentStates;
-    }, initialProbabilityStates);
 
-    return finalProbabilityStates[finalLocation];
+        let totalExpectedPenalty = 0;
+        // Calculate the expected value of penalty points at the final target position
+        for (let [penaltyAmount, probabilityOfState] of probabilityDistributions[finalPositionTarget].entries()) {
+            totalExpectedPenalty += penaltyAmount * probabilityOfState;
+        }
+
+        console.log(Math.floor(totalExpectedPenalty));
+    }
 };
 
-console.log(processAllGameSessions(sourceReader('/dev/stdin', 'utf8')));
+executeSimulation('/dev/stdin');

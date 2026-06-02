@@ -1,27 +1,20 @@
-const incomingData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = incomingData.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = rawData.trim().split('\n');
+const haystack = lines[0];
+const needle = lines[1];
 
-const mainSequence = processedLines[0];
-const targetPattern = processedLines[1];
-
-const detectedIndices = [];
-
-if (targetPattern.length === 0) {
-    for (let currentPos = 0; currentPos < mainSequence.length; currentPos++) {
-        detectedIndices.push(currentPos);
+const foundPositions = Array.from({ length: haystack.length - needle.length + 1 }, (_, currentOffset) => currentOffset)
+  .filter(currentOffset => {
+    // Ensure the potential match doesn't go out of bounds for the haystack
+    if (currentOffset < 0) {
+      return false;
     }
-} else {
-    let searchStartPoint = 0;
-    while (true) {
-        const foundAt = mainSequence.indexOf(targetPattern, searchStartPoint);
-        if (foundAt === -1) {
-            break;
-        }
-        detectedIndices.push(foundAt);
-        searchStartPoint = foundAt + 1;
-    }
-}
+    // Check if the substring of haystack matches the needle
+    return haystack.substring(currentOffset, currentOffset + needle.length) === needle;
+  });
 
-if (detectedIndices.length > 0) {
-    console.log(detectedIndices.join('\n'));
+const outputContent = foundPositions.map(String).join('\n');
+
+if (outputContent.length > 0) {
+  console.log(outputContent);
 }

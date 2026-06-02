@@ -1,7 +1,13 @@
-const   rawData   =   require (   'fs'   ) .   readFileSync (   '/dev/stdin'   ,   'utf8'   ) ; // Obtain content from standard input stream
+const rawData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ; // Read raw input from standard input.
 
-const   processedFigure   =   parseInt (   rawData .   replace (   ' '   ,   ''   )   ,   10   ) ; // Clean the input string and convert to an integer
+// Convert the raw string data into an integer, removing any spaces.
+const parsedValue = parseInt(rawData.replace(' ', ''), 10);
 
-const   calcRoot   =   Math .   sqrt (   processedFigure   ) ; // Compute the square root of the numerical value
+/*
+ * Calculate the square root of the numerical value.
+ * This will be used to determine if the original number was a perfect square.
+ */
+const rootResult = Math.sqrt(parsedValue);
 
-console .   log (   Number .   isInteger (   calcRoot   )   ?   'Yes'   :   'No'   ) ; // Determine if the root is an integer and print the outcome
+// Output 'Yes' if the square root is an integer, otherwise output 'No'.
+console.log(Number.isInteger(rootResult) ? 'Yes' : 'No');

@@ -1,41 +1,63 @@
 function ProcessInput(rawData) {
-    let countVal = parseInt(rawData.split('\n')[0]); // Obtain the initial quantity value
-    let firstArray = rawData.split('\n')[1].split(' '); /* Split the first line of data into an array of strings */
-    let secondArray = rawData.split('\n')[2].split(' '); // Parse the second line of data into string elements
+  // The first line of input typically contains a count, though not directly used in the main loop logic here.
+  var countVal = parseInt(rawData.split("\n")[0]);
 
-    for (let idx = 0; idx < firstArray.length; idx++) { // Iterate through the elements of the primary list
-        firstArray[idx] = parseInt(firstArray[idx]); /* Convert string representation to an integer */
-        if (idx < secondArray.length) { // Ensure we are within bounds of the secondary list
-            secondArray[idx] = parseInt(secondArray[idx]); // Transform string values in the secondary list to numbers
-        }
+  // The second line provides a list of primary numerical values.
+  var primaryValues = rawData.split("\n")[1].split(" ");
+
+  // The third line provides a list of secondary numerical values, used for processing.
+  var secondaryValues = rawData.split("\n")[2].split(" ");
+
+  // Convert string arrays to integer arrays for numerical operations.
+  // This loop processes both primary and secondary value lists.
+  for (var idx = 0; idx < primaryValues.length; idx++) {
+    primaryValues[idx] = parseInt(primaryValues[idx]);
+    // Only convert secondary values if the index is within its bounds.
+    if (idx < secondaryValues.length) {
+      secondaryValues[idx] = parseInt(secondaryValues[idx]);
     }
+  }
 
-    let finalResult = 0; /* Initialize a variable to accumulate the total outcome */
+  // Initialize a variable to accumulate the total collected amount.
+  var totalCollected = 0;
 
-    for (let idx = 0; idx < secondArray.length; idx++) { // Loop through each item in the secondary array for processing
-        let currentA = firstArray[idx]; // Retrieve the current value from the first array
-        let nextA = firstArray[idx + 1]; /* Fetch the subsequent value from the first array */
-        let currentB = secondArray[idx]; // Get the current element from the second array
+  // Iterate through the secondary values to perform the core calculation.
+  for (var idx = 0; idx < secondaryValues.length; idx++) {
+    // Get the current primary value from the primary list.
+    var currentPrimary = primaryValues[idx];
+    // Get the next primary value, which might be affected by the current operation.
+    var nextPrimary = primaryValues[idx + 1];
+    // Get the current secondary value, which dictates the collection logic.
+    var currentSecondary = secondaryValues[idx];
 
-        // Old debug line was here, now omitted.
-        if (currentB <= currentA) { // Condition 1: If the secondary value is less than or equal to the primary
-            finalResult += currentB; // Add the secondary value to the grand total
-            continue; /* Move to the next iteration of the loop */
-        } else if (currentB > currentA && currentB < nextA) { // Condition 2: Secondary value is between primary and next primary
-            finalResult += currentB; // Increment the total with the current secondary value
-            firstArray[idx + 1] = nextA - (currentB - currentA); // Adjust the subsequent primary array element
-            continue; // Proceed to the next cycle
-        } else if (currentB > currentA && currentB > nextA && currentB < currentA + nextA) { // Condition 3: Secondary value exceeds both, but is less than their sum
-            finalResult += currentB; /* Accumulate the current B value to the overall sum */
-            firstArray[idx + 1] = nextA - (currentB - currentA); // Modify the next element in the primary array
-            continue; // Continue processing with the next iteration
-        } else { // Default Condition: Secondary value is greater than or equal to the sum of primary and next primary
-            finalResult += currentA + nextA; // Add the sum of current and next primary values to the total
-            firstArray[idx + 1] = 0; /* Set the subsequent element in the primary array to zero */
-            continue; // Advance to the following iteration
-        }
+    // Apply conditional logic based on the relationship between currentSecondary, currentPrimary, and nextPrimary.
+    if (currentSecondary <= currentPrimary) {
+      // If the secondary value is less than or equal to the current primary, collect it entirely.
+      totalCollected += currentSecondary;
+      continue; // Move to the next iteration.
+    } else if (currentSecondary > currentPrimary && currentSecondary < nextPrimary) {
+      // If secondary is greater than current primary but less than next primary.
+      totalCollected += currentSecondary;
+      // Adjust the next primary value based on the difference.
+      primaryValues[idx + 1] = nextPrimary - (currentSecondary - currentPrimary);
+      continue;
+    } else if (currentSecondary > currentPrimary && currentSecondary > nextPrimary && currentSecondary < currentPrimary + nextPrimary) {
+      // If secondary is greater than both current and next primary, but less than their sum.
+      totalCollected += currentSecondary;
+      // Adjust the next primary value similarly.
+      primaryValues[idx + 1] = nextPrimary - (currentSecondary - currentPrimary);
+      continue;
+    } else {
+      // This covers cases where currentSecondary is greater than or equal to the sum of currentPrimary and nextPrimary.
+      totalCollected += currentPrimary + nextPrimary;
+      // In this scenario, the next primary value is fully utilized, so set it to zero.
+      primaryValues[idx + 1] = 0;
+      continue;
     }
-    console.log(finalResult); // Print the final computed result to the console
+  }
+  // Output the final accumulated total to the console.
+  console.log(totalCollected);
 }
 
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8')); // Invoke the main processing function with data read from standard input
+// Read the entire input from standard input, assuming UTF-8 encoding, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

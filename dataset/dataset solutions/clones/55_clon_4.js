@@ -1,34 +1,47 @@
-const _file_system_module = require('fs');
-const _output_channel = console;
+const fileSystem = require('node:fs');
+const streamDescriptor = process.stdin.fd;
+const dataSize = fileSystem.fstatSync(streamDescriptor).size;
+const dataBuffer = Buffer.alloc(dataSize);
+const readBytes = fileSystem.readSync(streamDescriptor, dataBuffer, 0, dataSize, 0);
+const rawLines = dataBuffer.toString('utf8', 0, readBytes).trim().split('\n');
 
-function DataStructureProcessor() {
-    let _storage_unit = [];
-
-    this.deposit_value = function(item_to_add) {
-        _storage_unit.push(item_to_add);
-    };
-
-    this.extract_value = function() {
-        const retrieved_item = _storage_unit.pop();
-        _output_channel.log(retrieved_item);
-    };
+class StackNode {
+  constructor(val, nextNode = null) {
+    this.content = val;
+    this.nextLink = nextNode;
+  }
 }
 
-const _stream_metadata = _file_system_module.fstatSync(process.stdin.fd);
-const _total_bytes_count = _stream_metadata.size;
-const _byte_payload = Buffer.alloc(_total_bytes_count);
-const _actual_bytes_read = _file_system_module.readSync(process.stdin.fd, _byte_payload, 0, _total_bytes_count, 0);
-const _source_lines = _byte_payload.toString('utf8', 0, _actual_bytes_read).trim().split('\n');
+class OperationalStack {
+  constructor() {
+    this.head = null;
+    this.count = 0;
+  }
 
-const _operation_handler = new DataStructureProcessor();
+  deposit(item) {
+    const freshNode = new StackNode(item, this.head);
+    this.head = freshNode;
+    this.count++;
+  }
 
-_source_lines.reduce((current_handler, line_text) => {
-    const numerical_datum = Number(line_text);
-
-    if (numerical_datum !== 0) {
-        current_handler.deposit_value(numerical_datum);
-    } else {
-        current_handler.extract_value();
+  extract() {
+    if (!this.head) {
+      return undefined;
     }
-    return current_handler;
-}, _operation_handler);
+    const retrievedValue = this.head.content;
+    this.head = this.head.nextLink;
+    this.count--;
+    return retrievedValue;
+  }
+}
+
+const processingStack = new OperationalStack();
+
+rawLines.forEach(lineEntry => {
+  const numericValue = Number(lineEntry);
+  if (numericValue !== 0) {
+    processingStack.deposit(numericValue);
+  } else {
+    console.log(processingStack.extract());
+  }
+});

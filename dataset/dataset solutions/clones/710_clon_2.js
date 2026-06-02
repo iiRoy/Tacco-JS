@@ -1,45 +1,60 @@
-var sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var dataRows = ( sourceContent .trim() ) .split( "\n" );
+// Process the raw input: remove leading/trailing whitespace and split into an array of lines.
+var lineSegments = (rawData.trim()).split("\n");
 
-while ( true ) {
-    var currentRoundParamsStr = dataRows.shift();
+// Main processing loop: continues until a specific termination condition is met.
+while (true) {
+    // Extract the next line from the input array, which contains problem parameters.
+    var currentLine = lineSegments.shift();
 
-    if ( currentRoundParamsStr === "0 0" ) {
-        break;
+    // Check if the current line signifies the end of input ("0 0").
+    if (currentLine === "0 0") {
+        break; // Exit the loop if termination condition is met.
     }
 
-    currentRoundParamsStr = currentRoundParamsStr.split(" ").map(Number);
+    // Parse the parameters from the current line: split by space and convert to numbers.
+    var parsedValues = currentLine.split(" ").map(Number);
+    var playerCount = parsedValues[0]; // The number of players in this round.
+    var currentItems = parsedValues[1]; // The initial number of items.
 
-    var participantCount = currentRoundParamsStr[0];
-    var dealerStones = currentRoundParamsStr[1];
+    // Store the initial number of items for later comparison.
+    var initialItems = currentItems;
+    // Initialize an array to keep track of each player's score/items.
+    var playerScores = [];
 
-    var initialTotalStones = dealerStones;
-    var playerPiles = [];
-
-    for ( var participantIndex = 0; participantIndex < participantCount; participantIndex++ ) {
-        playerPiles.push(0);
+    // Populate the playerScores array with zeros, one for each player.
+    for (var idx = 0; idx < playerCount; idx++) {
+        playerScores.push(0);
     }
 
-    var activeParticipantIdx = 0;
+    // Initialize the index for the current player.
+    var currentPlayerIndex = 0;
 
-    for ( var simulationStep = 0; simulationStep < 1000000; simulationStep++ ) {
-        if ( activeParticipantIdx === playerPiles.length ) {
-            activeParticipantIdx = 0;
+    // Simulation loop: runs for a maximum of 1,000,000 iterations to prevent infinite loops.
+    for (var iterationCounter = 0; iterationCounter < 1000000; iterationCounter++) {
+        // If the current player index exceeds the number of players, wrap it around to 0.
+        if (currentPlayerIndex === playerScores.length) {
+            currentPlayerIndex = 0;
         }
 
-        if ( dealerStones > 0 ) {
-            dealerStones--;
-            playerPiles[activeParticipantIdx]++;
+        // Check if there are items currently available to distribute.
+        if (currentItems > 0) {
+            // Decrement the available items and give one to the current player.
+            currentItems--;
+            playerScores[currentPlayerIndex]++;
 
-            if ( dealerStones === 0 && initialTotalStones === playerPiles[activeParticipantIdx] ) {
-                console.log(activeParticipantIdx);
-                break;
+            // Check for the winning condition: no items left and the current player has all initial items.
+            if (currentItems === 0 && initialItems === playerScores[currentPlayerIndex]) {
+                console.log(currentPlayerIndex); // Output the winning player's index.
+                break; // End the simulation for this round.
             }
         } else {
-            dealerStones = playerPiles[activeParticipantIdx];
-            playerPiles[activeParticipantIdx] = 0;
+            // If no items are available, the current player takes all their accumulated items.
+            currentItems = playerScores[currentPlayerIndex];
+            playerScores[currentPlayerIndex] = 0; // Reset the current player's score.
         }
-        activeParticipantIdx++;
+        // Move to the next player for the next iteration.
+        currentPlayerIndex++;
     }
 }

@@ -1,62 +1,61 @@
-// Module for file system operations is obtained.
-var fileSystemUtility = require('fs');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// All raw data is read from the standard input stream.
-var rawInputData = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
+// Process the raw input data
+let lineBuffer = (rawData.trim()).split("\n");
 
-// The acquired input string is processed: whitespace trimmed, then split into an array of lines.
-var processedDataLines = rawInputData.trim().split("\n");
-
-// An indefinite loop commences to process blocks of data.
+// Main processing loop
 while (true) {
-    // The first line of the current block is extracted and converted to a numerical size indicator.
-    var currentBlockSize = processedDataLines.shift() - 0;
+    // Read the number of test cases for this block
+    const count = parseInt(lineBuffer.shift(), 10);
 
-    // If the block size is zero, it signals the termination of input processing.
-    if (currentBlockSize === 0) break;
+    // If the count is zero, terminate the program
+    if (count === 0) {
+        break;
+    }
 
-    // A loop iterates over each individual data item within the determined block size.
-    for (var currentDataItemIndex = 0; currentDataItemIndex < currentBlockSize; currentDataItemIndex++) {
-        // The next line is retrieved, segmented by spaces, and each segment is mapped to a Number type.
-        var componentValues = processedDataLines.shift().split(" ").map(Number);
+    // Iterate through each test case in the current block
+    for (let idx = 0; idx < count; idx++) {
+        // Parse the current line into an array of numbers
+        const coords = lineBuffer.shift().split(" ").map(Number);
 
-        // Components of the first quaternion are assigned from the parsed values.
-        var quaternionOneReal = componentValues[0];
-        var quaternionOneImagI = componentValues[1];
-        var quaternionOneImagJ = componentValues[2];
-        var quaternionOneImagK = componentValues[3];
+        // Extract the first quaternion components
+        const valX1 = coords[0];
+        const valY1 = coords[1];
+        const valZ1 = coords[2];
+        const valW1 = coords[3];
 
-        // Components of the second quaternion are assigned from the parsed values.
-        var quaternionTwoReal = componentValues[4];
-        var quaternionTwoImagI = componentValues[5];
-        var quaternionTwoImagJ = componentValues[6];
-        var quaternionTwoImagK = componentValues[7];
+        // Extract the second quaternion components
+        const valX2 = coords[4];
+        const valY2 = coords[5];
+        const valZ2 = coords[6];
+        const valW2 = coords[7];
 
-        // Initialization of the product quaternion's components based on the real part of the first quaternion.
-        var productRealComponent = quaternionOneReal * quaternionTwoReal;
-        var productImagIComponent = quaternionOneReal * quaternionTwoImagI;
-        var productImagJComponent = quaternionOneReal * quaternionTwoImagJ;
-        var productImagKComponent = quaternionOneReal * quaternionTwoImagK;
+        // Perform quaternion multiplication (Hamilton product)
+        // Initialize components of the resulting quaternion
+        let resultA = valX1 * valX2;
+        let resultI = valX1 * valY2;
+        let resultJ = valX1 * valZ2;
+        let resultK = valX1 * valW2;
 
-        // Accumulation of terms involving the 'i' imaginary part of the first quaternion.
-        productImagIComponent += quaternionOneImagI * quaternionTwoReal;
-        productRealComponent -= quaternionOneImagI * quaternionTwoImagI;
-        productImagKComponent += quaternionOneImagI * quaternionTwoImagJ;
-        productImagJComponent -= quaternionOneImagI * quaternionTwoImagK;
+        // Add/subtract terms from the second component (y1)
+        resultI += valY1 * valX2;
+        resultA -= valY1 * valY2;
+        resultK += valY1 * valZ2;
+        resultJ -= valY1 * valW2;
 
-        // Accumulation of terms involving the 'j' imaginary part of the first quaternion.
-        productImagJComponent += quaternionOneImagJ * quaternionTwoReal;
-        productImagKComponent -= quaternionOneImagJ * quaternionTwoImagI;
-        productRealComponent -= quaternionOneImagJ * quaternionTwoImagJ;
-        productImagIComponent += quaternionOneImagJ * quaternionTwoImagK;
+        // Add/subtract terms from the third component (z1)
+        resultJ += valZ1 * valX2;
+        resultK -= valZ1 * valY2;
+        resultA -= valZ1 * valZ2;
+        resultI += valZ1 * valW2;
 
-        // Accumulation of terms involving the 'k' imaginary part of the first quaternion.
-        productImagKComponent += quaternionOneImagK * quaternionTwoReal;
-        productImagJComponent += quaternionOneImagK * quaternionTwoImagI;
-        productImagIComponent -= quaternionOneImagK * quaternionTwoImagJ;
-        productRealComponent -= quaternionOneImagK * quaternionTwoImagK;
+        // Add/subtract terms from the fourth component (w1)
+        resultK += valW1 * valX2;
+        resultJ += valW1 * valY2;
+        resultI -= valW1 * valZ2;
+        resultA -= valW1 * valW2;
 
-        // The computed components of the quaternion product are then printed to the console.
-        console.log(productRealComponent + " " + productImagIComponent + " " + productImagJComponent + " " + productImagKComponent);
+        // Output the calculated quaternion components
+        console.log(resultA + " " + resultI + " " + resultJ + " " + resultK);
     }
 }

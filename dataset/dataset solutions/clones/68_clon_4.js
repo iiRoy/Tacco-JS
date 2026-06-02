@@ -1,26 +1,23 @@
-const RADIAN_CONVERSION_FACTOR = Math.PI / 180.0;
-const FILE_SYSTEM_MODULE = require("fs");
-const RAW_INPUT_STRING = FILE_SYSTEM_MODULE.readFileSync("/dev/stdin", "utf8");
+const initialPosition = { xCoord: 0, yCoord: 0, currentRotation: 0 };
 
-const ACCUMULATOR_STATE = {
-    displacementX: 0.0,
-    displacementY: 0.0,
-    currentBearingDegrees: 0.0
+const processSegment = (accumulator, lineData) => {
+    const components = lineData.split(',');
+    const segmentLength = +components[0];
+    const rotationDelta = +components[1];
+
+    if (segmentLength && rotationDelta) {
+        const angleInRadians = accumulator.currentRotation * Math.PI / 180;
+        accumulator.xCoord += segmentLength * Math.sin(angleInRadians);
+        accumulator.yCoord += segmentLength * Math.cos(angleInRadians);
+        accumulator.currentRotation += rotationDelta;
+    }
+    return accumulator;
 };
 
-const RESULTANT_VECTOR = RAW_INPUT_STRING.trim().split('\n').reduce((previousState, currentEntry) => {
-    const entryComponents = currentEntry.split(',');
-    const radialDistance = parseFloat(entryComponents[0]);
-    const angularShift = parseFloat(entryComponents[1]);
+const finalPosition = require("fs").readFileSync("/dev/stdin", "utf8")
+    .trim()
+    .split('\n')
+    .reduce(processSegment, initialPosition);
 
-    if (radialDistance && angularShift) {
-        const currentBearingRadians = previousState.currentBearingDegrees * RADIAN_CONVERSION_FACTOR;
-        previousState.displacementX += radialDistance * Math.sin(currentBearingRadians);
-        previousState.displacementY += radialDistance * Math.cos(currentBearingRadians);
-        previousState.currentBearingDegrees += angularShift;
-    }
-    return previousState;
-}, ACCUMULATOR_STATE);
-
-process.stdout.write(Math.trunc(RESULTANT_VECTOR.displacementX) + '\n');
-process.stdout.write(Math.trunc(RESULTANT_VECTOR.displacementY) + '\n');
+console.log(~~finalPosition.xCoord);
+console.log(~~finalPosition.yCoord);

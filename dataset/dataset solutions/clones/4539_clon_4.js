@@ -1,25 +1,36 @@
-const systemIO = require("fs");
-const sourcePath = "/dev/stdin";
-const rawContent = systemIO.readFileSync(sourcePath, "utf8");
-const stringParts = rawContent.trim().split(/\s+/);
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const firstQuantity = parseInt(stringParts[0], 10);
-const secondQuantity = parseInt(stringParts[1], 10);
+let partsArray = [];
+let currentSegment = "";
 
-const evaluationRules = [
-  {
-    test: (value, limit) => value < limit,
-    result: (value) => value
-  },
-  {
-    test: (value, limit) => value >= limit,
-    result: () => "error"
-  }
-];
+for (let charIndex = 0; charIndex < rawInput.length; charIndex++) {
+    if (rawInput[charIndex] === ' ') {
+        partsArray.push(currentSegment);
+        currentSegment = "";
+    } else {
+        currentSegment += rawInput[charIndex];
+    }
+}
+partsArray.push(currentSegment);
 
-const thresholdValue = 10;
-const aggregateValue = firstQuantity + secondQuantity;
+let operandOne;
+if (partsArray.length > 0) {
+    operandOne = Number(partsArray[0]);
+} else {
+    operandOne = 0;
+}
 
-const finalOutput = evaluationRules.find(rule => rule.test(aggregateValue, thresholdValue)).result(aggregateValue);
+let operandTwo;
+if (partsArray.length > 1) {
+    operandTwo = Number(partsArray[1]);
+} else {
+    operandTwo = 0;
+}
 
-process.stdout.write(String(finalOutput) + '\n');
+const calculatedSum = operandOne + operandTwo;
+
+if (calculatedSum >= 10) {
+    console.log("error");
+} else {
+    console.log(calculatedSum);
+}

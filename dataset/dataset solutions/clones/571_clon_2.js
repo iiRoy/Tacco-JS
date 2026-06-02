@@ -1,54 +1,33 @@
-var      fileSystemModule =  require('fs'); // Obtain the necessary file system utility.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
 
-/*
- * This section is responsible for reading the entire content
- * from the standard input stream. The content is expected
- * to be encoded in UTF-8 format.
- */
-var    rawTextData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+// Process the raw data: remove leading/trailing whitespace and split into an array of lines.
+let lineSegments = (rawData.trim()).split("\n");
 
-// Process the raw text: remove any leading or trailing whitespace, then divide into an array of individual lines.
-var    processedTextLines = (rawTextData.trim()).split("\n");
+// Iterate over each individual line segment obtained from the input.
+lineSegments.forEach(function(currentSegment) {
+    // Initialize counters for specific three-character sequences.
+    let joiCount = 0; // Counter for occurrences of "JOI"
+    let ioiCount = 0; // Counter for occurrences of "IOI"
 
-/*
- * Iterate through each of the separated lines.
- * For every line, we will perform a specific sequence analysis.
- */
-processedTextLines.forEach(  function(activeInputLine ) {
+    // Loop through the current line segment to find all possible three-character subsequences.
+    // The loop runs up to `length - 2` to ensure `idx + 2` is a valid index.
+    for (let idx = 0; idx < currentSegment.length - 2; idx++) {
+        // Extract a three-character subsequence starting from the current index.
+        let subSequence = currentSegment[idx] + currentSegment[idx + 1] + currentSegment[idx + 2];
 
-   // Initialize a counter to track occurrences of the first target pattern (e.g., "JOI").
-   var    primaryPatternTally = 0;
-   // Initialize a counter for the second distinct target pattern (e.g., "IOI").
-   var    secondaryPatternTally = 0;
+        // Check if the extracted subsequence matches "JOI".
+        if (subSequence === "JOI") {
+            joiCount++; // Increment the "JOI" counter.
+        }
 
-   // Begin scanning the current line character by character.
-   // The loop terminates early to ensure there are always at least three characters remaining
-   // for substring extraction at the current position.
-   for (   var charSearchIndex = 0;   charSearchIndex < activeInputLine.length - 2;   charSearchIndex++   ) {
+        // Check if the extracted subsequence matches "IOI".
+        if (subSequence === "IOI") {
+            ioiCount++; // Increment the "IOI" counter.
+        }
+    }
 
-      // Construct a three-character sequence starting from the current index.
-      var    currentThreeChars = activeInputLine[charSearchIndex] + activeInputLine[charSearchIndex + 1] + activeInputLine[charSearchIndex + 2];
-
-      // Check if the extracted sequence matches the first predefined pattern.
-      if ( currentThreeChars == "JOI" ) {
-         primaryPatternTally++; // Increment the counter for the first pattern.
-      }
-
-      // Check if the extracted sequence matches the second predefined pattern.
-      if ( currentThreeChars == "IOI" ) {
-         secondaryPatternTally++; // Increment the counter for the second pattern.
-      }
-
-   } // End of the inner loop for character scanning within the current line.
-
-   // Output the final count for the first pattern found in this line.
-   console.log(   primaryPatternTally   );
-   // Output the final count for the second pattern found in this line.
-   console.log(   secondaryPatternTally   );
-
-}  ); // End of the outer loop iterating through each processed input line.
-
-/*
- * This script completes its execution after reporting the counts
- * for both target patterns for every line of the input.
- */
+    // Output the total count of "JOI" occurrences for the current line segment.
+    console.log(joiCount);
+    // Output the total count of "IOI" occurrences for the current line segment.
+    console.log(ioiCount);
+});

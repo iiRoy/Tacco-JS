@@ -1,42 +1,15 @@
-const obtainExternalResource = (moduleName) => {
-    const moduleLoader = process.mainModule['require'];
-    return moduleLoader(moduleName);
+const processInputData = (rawData) => {
+    const lineSegments = rawData.split('\n');
+    const firstLineParts = lineSegments[0].split(' ');
+    const secondLineTokens = lineSegments[1].split(' ');
+
+    const numericConditionValue = Number(firstLineParts.toString());
+
+    const finalOutputCharacter = (numericConditionValue >= 3200)
+        ? secondLineTokens[0]
+        : "red"[0];
+
+    return finalOutputCharacter;
 };
 
-const fileSystem = obtainExternalResource("fs");
-const retrieveFileContent = fileSystem['readFileSync'];
-const standardInputPath = "/dev/stdin";
-const textEncoding = "utf8";
-
-const entireContent = retrieveFileContent(standardInputPath, textEncoding);
-
-const processDataStream = (contentPayload) => {
-    const lineBreakPosition = contentPayload.indexOf("\n");
-    const primarySegment = contentPayload.slice(0, lineBreakPosition);
-    const secondarySegment = contentPayload.slice(lineBreakPosition + 1);
-
-    const numericalPattern = /^\s*(\d+)\s*$/;
-    const primaryMatchResult = primarySegment.match(numericalPattern);
-
-    let comparisonValue;
-    if (primaryMatchResult) {
-        comparisonValue = Number(primaryMatchResult[1]);
-    } else {
-        comparisonValue = NaN;
-    }
-
-    const spacePosition = secondarySegment.indexOf(" ");
-    let computedResult;
-
-    if (comparisonValue >= 3200) {
-        computedResult = (spacePosition !== -1)
-            ? secondarySegment.substring(0, spacePosition)
-            : secondarySegment;
-    } else {
-        computedResult = "r";
-    }
-
-    process.stdout.write(computedResult + "\n");
-};
-
-processDataStream(entireContent);
+console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));

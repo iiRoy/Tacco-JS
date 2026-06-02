@@ -1,20 +1,24 @@
-function analyzeSequence(sourceText) {
-    const textLines = sourceText.split(/\r?\n/).filter(Boolean);
-    const elementCount = parseInt(textLines[0], 10);
-    const numericElements = textLines.slice(1, elementCount + 1).map(val => parseInt(val, 10));
+function processInputData(sourceText) {
+  const rawLines = sourceText.split("\n");
+  const numericValues = rawLines.map(Number);
 
-    const frequencyMap = new Map();
-    for (const currentVal of numericElements) {
-        frequencyMap.set(currentVal, (frequencyMap.get(currentVal) || 0) + 1);
-    }
+  const initialCountValue = numericValues[0]; // Corresponds to original 'N', unused but extracted for behavioral parity
 
-    let resultSum = 0;
-    for (const count of frequencyMap.values()) {
-        if (count % 2 !== 0) {
-            resultSum++;
-        }
+  const firstSequenceItem = numericValues[1];
+  const subsequentSequenceItems = numericValues.slice(2, numericValues.length - (isNaN(numericValues[numericValues.length - 1]) ? 1 : 0));
+
+  const uniqueElementRegistry = new Set();
+  uniqueElementRegistry.add(firstSequenceItem);
+
+  for (const currentItem of subsequentSequenceItems) {
+    if (uniqueElementRegistry.has(currentItem)) {
+      uniqueElementRegistry.delete(currentItem);
+    } else {
+      uniqueElementRegistry.add(currentItem);
     }
-    console.log(resultSum);
+  }
+
+  console.log(uniqueElementRegistry.size);
 }
 
-analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

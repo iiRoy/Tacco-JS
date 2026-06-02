@@ -1,75 +1,56 @@
-let recordedData = "";
+let rawData = "";
 
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
 process.stdin.on('data', (segment) => {
-  recordedData += segment;
+  rawData += segment;
 });
 
+const evaluateScores = (primaryScore, secondaryScore, makeupScore) => {
+  const aggregateScore = primaryScore + secondaryScore;
+
+  switch (true) {
+    case aggregateScore >= 80:
+      return "A";
+    case aggregateScore >= 65:
+      return "B";
+    case aggregateScore >= 50:
+      return "C";
+    case aggregateScore >= 30:
+      return makeupScore >= 50 ? "C" : "D";
+    default:
+      return "F";
+  }
+};
+
 process.stdin.on('end', () => {
-  const dataSegments = recordedData.split('\n');
+  const allLines = rawData.split("\n");
+  let currentLineIndex = 0;
 
-  // Function to determine the grade based on three components
-  const determineRank = (valOne, valTwo, valThree) => {
-    const modifiedOne = valOne === -1 ? 0 : valOne;
-    const modifiedTwo = valTwo === -1 ? 0 : valTwo;
-    const aggregateSum = modifiedOne + modifiedTwo;
+  while (allLines[currentLineIndex] != 0) {
+    const currentLineContent = allLines[currentLineIndex];
 
-    // Handle potential NaN or undefined from map(Number) on malformed input for valThree
-    // Using -Infinity ensures comparisons like `>= 50` correctly fail for non-numeric values
-    const effectiveValThree = Number.isNaN(valThree) || valThree === undefined ? -Infinity : valThree;
+    const scoreStrings = currentLineContent.split(" ");
 
-    // Grading criteria defined as an ordered list of test functions and their corresponding results
-    const gradingCriteria = [
-      { check: (sumValue, thirdValue) => sumValue >= 80, outcome: "A" },
-      { check: (sumValue, thirdValue) => sumValue >= 65, outcome: "B" },
-      { check: (sumValue, thirdValue) => sumValue >= 50, outcome: "C" },
-      { check: (sumValue, thirdValue) => sumValue >= 30 && thirdValue >= 50, outcome: "C" },
-      { check: (sumValue, thirdValue) => sumValue >= 30, outcome: "D" },
-      { check: (sumValue, thirdValue) => true, outcome: "F" } // Default case
-    ];
-
-    for (const criterion of gradingCriteria) {
-      if (criterion.check(aggregateSum, effectiveValThree)) {
-        return criterion.outcome;
-      }
-    }
-    return "F"; // Fallback, should not be reached if the last rule is `true`
-  };
-
-  // Recursive function to process each line of input
-  const traverseInput = (currentIndex) => {
-    if (currentIndex >= dataSegments.length) {
-      return; // All segments processed or end of array
+    if (scoreStrings[0] === "-1" && scoreStrings[1] === "-1" && scoreStrings[2] === "-1") {
+      break;
     }
 
-    const segmentContent = dataSegments[currentIndex].trim();
+    let firstExam = parseInt(scoreStrings[0], 10);
+    let secondExam = parseInt(scoreStrings[1], 10);
+    let thirdExam = parseInt(scoreStrings[2], 10);
 
-    // Primary termination conditions: if the line is "0" or empty, stop all further processing.
-    // This mirrors the original's `while (input[i] != 0)` condition with loose equality.
-    if (segmentContent === "0" || segmentContent === "") {
-      return;
+    if (firstExam === -1) {
+      firstExam = 0;
+    }
+    if (secondExam === -1) {
+      secondExam = 0;
     }
 
-    const parsedElements = segmentContent.split(' ').map(Number);
+    const finalGrade = evaluateScores(firstExam, secondExam, thirdExam);
+    console.log(finalGrade);
 
-    const primaryComponent = parsedElements[0];
-    const secondaryComponent = parsedElements[1];
-    const tertiaryComponent = parsedElements[2];
-
-    // Secondary termination condition: -1 -1 -1
-    if (primaryComponent === -1 && secondaryComponent === -1 && tertiaryComponent === -1) {
-      return;
-    }
-
-    const finalVerdict = determineRank(primaryComponent, secondaryComponent, tertiaryComponent);
-    console.log(finalVerdict);
-
-    // Proceed to the next segment recursively
-    traverseInput(currentIndex + 1);
-  };
-
-  // Initiate the recursive processing from the first segment
-  traverseInput(0);
+    currentLineIndex++;
+  }
 });

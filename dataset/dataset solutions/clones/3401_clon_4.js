@@ -1,124 +1,106 @@
-const dataAcquisitionSystem = (function() {
-    function coreProcessor(inputString) {
-        const lineBuffer = inputString.trim().split("\n");
-        let currentLinePointer = 0;
-        let activeTokenQueue = [];
+const createInputSource = (sourceText) => {
+    const lineSegments = sourceText.trim().split('\n').map(segment => segment.split(' '));
+    let currentLinePointer = 0;
 
-        const replenishTokens = () => {
-            if (activeTokenQueue.length === 0 && currentLinePointer < lineBuffer.length) {
-                activeTokenQueue = lineBuffer[currentLinePointer].split(" ").reverse();
-                currentLinePointer++;
-            }
-        };
+    const obtainSingleItem = (asStringFlag) => {
+        if (currentLinePointer >= lineSegments.length) throw new Error("Input exhausted for single item.");
+        let activeLine = lineSegments[currentLinePointer];
+        if (activeLine.length === 0) {
+            currentLinePointer++;
+            return obtainSingleItem(asStringFlag);
+        }
+        const extractedValue = activeLine.shift();
+        if (activeLine.length === 0) {
+            currentLinePointer++;
+        }
+        return asStringFlag ? extractedValue : Number(extractedValue);
+    };
 
-        return {
-            retrieveUnit: (isText) => {
-                replenishTokens();
-                if (activeTokenQueue.length > 0) {
-                    const token = activeTokenQueue.shift();
-                    return isText ? token : Number(token);
-                }
-                return null;
-            },
-            scanSequence: (isText) => {
-                if (currentLinePointer < lineBuffer.length) {
-                    activeTokenQueue = [];
-                    const sequence = lineBuffer[currentLinePointer].split(" ");
-                    currentLinePointer++;
-                    return isText ? sequence : sequence.map(Number);
-                }
-                return [];
-            },
-            readBlock: (rowCount, isText) => {
-                const blockData = [];
-                for (let i = 0; i < rowCount; i++) {
-                    if (currentLinePointer < lineBuffer.length) {
-                        activeTokenQueue = [];
-                        const row = lineBuffer[currentLinePointer].split(" ");
-                        blockData.push(isText ? row : row.map(Number));
-                        currentLinePointer++;
-                    }
-                }
-                return blockData;
-            },
-            fetchSegment: (itemCount, isText) => {
-                const segmentData = [];
-                for (let i = 0; i < itemCount; i++) {
-                    if (currentLinePointer < lineBuffer.length) {
-                        activeTokenQueue = [];
-                        const item = lineBuffer[currentLinePointer];
-                        segmentData.push(isText ? item : Number(item));
-                        currentLinePointer++;
-                    }
-                }
-                return segmentData;
-            }
-        };
-    }
-    return coreProcessor;
-})();
+    const obtainLineItems = (asStringFlag) => {
+        if (currentLinePointer >= lineSegments.length) throw new Error("Input exhausted for line items.");
+        const lineContent = lineSegments[currentLinePointer];
+        currentLinePointer++;
+        return asStringFlag ? lineContent : lineContent.map(Number);
+    };
 
-const sourceData = dataAcquisitionSystem(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const obtainMultiLineMatrix = (rowCount, asStringFlag) => {
+        if (currentLinePointer + rowCount > lineSegments.length) throw new Error("Insufficient lines for matrix.");
+        const matrixData = lineSegments.slice(currentLinePointer, currentLinePointer + rowCount);
+        currentLinePointer += rowCount;
+        return asStringFlag ? matrixData : matrixData.map(row => row.map(Number));
+    };
 
-console.log(computeSolution());
+    const obtainMultiLineFlat = (rowCount, asStringFlag) => {
+        if (currentLinePointer + rowCount > lineSegments.length) throw new Error("Insufficient lines for flat array.");
+        const flatData = lineSegments.slice(currentLinePointer, currentLinePointer + rowCount).flat();
+        currentLinePointer += rowCount;
+        return asStringFlag ? flatData : flatData.map(Number);
+    };
 
-function computeSolution() {
-    const verticalExtent = sourceData.retrieveUnit();
-    const horizontalExtent = sourceData.retrieveUnit();
-    const obstructionCount = sourceData.retrieveUnit();
+    return {
+        getAtom: obtainSingleItem,
+        getLine: obtainLineItems,
+        getMatrix: obtainMultiLineMatrix,
+        getFlat: obtainMultiLineFlat
+    };
+};
 
-    const blockedCoordinates = new Set();
+const inputHandler = createInputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    for (let currentObstacleIndex = 0; currentObstacleIndex < obstructionCount; currentObstacleIndex++) {
-        const obstacleEntry = sourceData.scanSequence();
-        const obstacleColumn = obstacleEntry[0];
-        const obstacleRow = obstacleEntry[1];
+console.log(calculateResult());
 
-        if (obstacleColumn >= obstacleRow) {
-            blockedCoordinates.add(`${obstacleRow},${obstacleColumn}`);
+function calculateResult() {
+    const boardHeight = inputHandler.getAtom();
+    const boardWidth = inputHandler.getAtom();
+    const obstacleCount = inputHandler.getAtom();
+
+    const obstacleLocations = new Map();
+
+    const markObstacle = (row, col) => {
+        if (!obstacleLocations.has(row)) {
+            obstacleLocations.set(row, new Set());
+        }
+        obstacleLocations.get(row).add(col);
+    };
+
+    for (let k = 0; k < obstacleCount; k++) {
+        const obstacleCoords = inputHandler.getLine();
+        const obstacleCol = obstacleCoords[0];
+        const obstacleRow = obstacleCoords[1];
+        if (obstacleCol >= obstacleRow) {
+            markObstacle(obstacleRow, obstacleCol);
         }
     }
 
-    for (let rowIdx = 1; rowIdx <= verticalExtent; rowIdx++) {
-        blockedCoordinates.add(`${rowIdx},${horizontalExtent + 1}`);
+    for (let r = 1; r <= boardHeight; r++) {
+        markObstacle(r, boardWidth + 1);
     }
 
-    let pathBoundary = horizontalExtent;
-    for (let checkCol = 1; checkCol <= horizontalExtent + 1; checkCol++) {
-        if (blockedCoordinates.has(`1,${checkCol}`)) {
-            pathBoundary = checkCol - 1;
+    const rowOneObstacles = Array.from(obstacleLocations.get(1) || []).sort((a, b) => a - b);
+    let currentMinimumSafeColumn = rowOneObstacles[0] - 1;
+
+    let currentRowIdentifier = 2;
+    let currentPathRightmostColumn = 2;
+
+    while (currentRowIdentifier <= currentMinimumSafeColumn && currentRowIdentifier <= boardHeight) {
+        const obstaclesInCurrentRow = obstacleLocations.get(currentRowIdentifier) || new Set();
+        while (obstaclesInCurrentRow.has(currentPathRightmostColumn)) {
+            currentPathRightmostColumn++;
+        }
+
+        const sortedObstaclesInCurrentRow = Array.from(obstaclesInCurrentRow).sort((a, b) => a - b);
+        const nextRelevantObstacle = sortedObstaclesInCurrentRow.find(col => col > currentPathRightmostColumn);
+
+        if (nextRelevantObstacle !== undefined) {
+            currentMinimumSafeColumn = Math.min(currentMinimumSafeColumn, nextRelevantObstacle - 1);
+        }
+
+        currentPathRightmostColumn++;
+        if (currentPathRightmostColumn > boardWidth) {
             break;
         }
+        currentRowIdentifier++;
     }
 
-    let currentPathwayRow = 2;
-    let currentTraversalColumn = 2;
-
-    while (currentPathwayRow <= pathBoundary && currentPathwayRow <= verticalExtent) {
-        while (blockedCoordinates.has(`${currentPathwayRow},${currentTraversalColumn}`)) {
-            currentTraversalColumn++;
-        }
-
-        let immediateBlocker = horizontalExtent + 1;
-        for (let testCol = currentTraversalColumn + 1; testCol <= horizontalExtent + 1; testCol++) {
-            if (blockedCoordinates.has(`${currentPathwayRow},${testCol}`)) {
-                immediateBlocker = testCol;
-                break;
-            }
-        }
-
-        if (immediateBlocker - 1 < pathBoundary) {
-            pathBoundary = immediateBlocker - 1;
-        }
-
-        currentTraversalColumn++;
-
-        if (currentTraversalColumn > horizontalExtent) {
-            break;
-        }
-
-        currentPathwayRow++;
-    }
-
-    return pathBoundary;
+    return currentMinimumSafeColumn;
 }

@@ -1,69 +1,58 @@
-const ComputationalUnit = (() => {
-    let globalTotalItems = 0;
-    let memoizationCache = new Map();
+function processInputData(inputString) {
+    const lines = inputString.trim().split('\n');
+    const totalPlates = parseInt(lines[0].split(' ')[0], 10);
+    const plateValues = lines[1].split(' ').map(Number);
 
-    const determineExpectation = (zed, one, due, tre) => {
-        if (one === 0 && due === 0 && tre === 0) {
-            return 0;
+    const initialItemCounts = Array(4).fill(0);
+    for (const val of plateValues) {
+        initialItemCounts[val]++;
+    }
+
+    const expectedValue = calculateExpectedRolls(totalPlates, initialItemCounts);
+    console.log(expectedValue);
+}
+
+function calculateExpectedRolls(totalPlates, currentCounts) {
+    const expectedValuesCache = Array(totalPlates + 1).fill(0).map(() =>
+        Array(totalPlates + 1).fill(0).map(() =>
+            Array(totalPlates + 1).fill(0)
+        )
+    );
+
+    for (let c3 = 0; c3 <= totalPlates; c3++) {
+        for (let c2 = 0; c2 <= totalPlates; c2++) {
+            for (let c1 = 0; c1 <= totalPlates; c1++) {
+                if (c1 + c2 + c3 > totalPlates) {
+                    continue;
+                }
+
+                const countOfZeros = totalPlates - c1 - c2 - c3;
+                const countOfNonZeros = c1 + c2 + c3;
+
+                if (countOfNonZeros === 0) {
+                    expectedValuesCache[c1][c2][c3] = 0;
+                    continue;
+                }
+
+                let sumOfNextStateExpectations = 0;
+
+                if (c1 > 0) {
+                    sumOfNextStateExpectations += expectedValuesCache[c1 - 1][c2][c3] * c1;
+                }
+                if (c2 > 0) {
+                    sumOfNextStateExpectations += expectedValuesCache[c1 + 1][c2 - 1][c3] * c2;
+                }
+                if (c3 > 0) {
+                    sumOfNextStateExpectations += expectedValuesCache[c1][c2 + 1][c3 - 1] * c3;
+                }
+
+                const denominatorTerm = countOfNonZeros - countOfZeros;
+                expectedValuesCache[c1][c2][c3] = (countOfNonZeros + sumOfNextStateExpectations) / denominatorTerm;
+            }
         }
+    }
 
-        const stateIdentifier = `${zed}-${one}-${due}`;
-        if (memoizationCache.has(stateIdentifier)) {
-            return memoizationCache.get(stateIdentifier);
-        }
+    return expectedValuesCache[currentCounts[1]][currentCounts[2]][currentCounts[3]];
+}
 
-        let cumulativeExpectation = 0;
-
-        if (one > 0) {
-            cumulativeExpectation += determineExpectation(zed + 1, one - 1, due, tre) * one;
-        }
-        if (due > 0) {
-            cumulativeExpectation += determineExpectation(zed, one + 1, due - 1, tre) * due;
-        }
-        if (tre > 0) {
-            cumulativeExpectation += determineExpectation(zed, one, due + 1, tre - 1) * tre;
-        }
-
-        const currentActivePopulation = one + due + tre;
-        const calculationDivisor = currentActivePopulation - zed;
-
-        const calculatedResult = (currentActivePopulation + cumulativeExpectation) / calculationDivisor;
-
-        memoizationCache.set(stateIdentifier, calculatedResult);
-        return calculatedResult;
-    };
-
-    const commenceCalculations = (sourceData) => {
-        const dataLines = sourceData.trim().split('\n');
-        globalTotalItems = Number(dataLines[0].split(' ')[0]);
-        const itemStates = dataLines[1].split(' ').map(Number);
-
-        const initialItemBreakdown = {
-            zed: 0,
-            one: 0,
-            due: 0,
-            tre: 0
-        };
-
-        itemStates.forEach(val => {
-            if (val === 1) initialItemBreakdown.one++;
-            else if (val === 2) initialItemBreakdown.due++;
-            else if (val === 3) initialItemBreakdown.tre++;
-        });
-
-        memoizationCache = new Map();
-
-        return determineExpectation(
-            initialItemBreakdown.zed,
-            initialItemBreakdown.one,
-            initialItemBreakdown.due,
-            initialItemBreakdown.tre
-        );
-    };
-
-    return {
-        commenceCalculations: commenceCalculations
-    };
-})();
-
-console.log(ComputationalUnit.commenceCalculations(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

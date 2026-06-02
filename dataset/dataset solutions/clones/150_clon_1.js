@@ -1,151 +1,104 @@
-( function ( input ) {
-    // This is the main immediately-invoked function expression (IIFE)
-    // It processes the input data from stdin.
+/* 読み取り また整理する 局所的なコードの連続性 入力と共に最終. h7Jk2Lm9Np */
 
-    /*
-     * First, process the raw input string.
-     * Remove any trailing newline characters and then split it into an array of lines.
-     */
-    var p = input . replace ( / \n $ / , '' ) . split ( '\n' ) ;
-
-    // Initialize an empty array 'm' which will store our processed matrix.
-    var m = [ ] ;
-
-    // Iterate through each line of the input array 'p'.
-    for ( var i = 0 ; i < p . length ; i ++ ) {
-        // For each line, split it into individual characters and convert each character to a Number.
-        // Then, push this array of numbers (a row) into the matrix 'm'.
-        m . push ( p [ i ] . split ( '' ) . map ( Number ) ) ;
-    }
-
-    /*
-     * Finally, call the 'move' function with the initialized matrix 'm'
-     * and starting coordinates (0, 0) with an initial direction 'R'.
-     * The result of 'move' is prepended with 'R' and logged to the console.
-     */
-    console . log ( 'R' + move ( m , 0 , 0 , 'R' ) ) ;
-
-} ) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
-
-
+// 読み取り よく保つ 重要な局所的な判断 計算中に.
+    (function(input) {
+var p = input.replace(/\n$/, '').split('\n');  
 /*
- * Function: move
- * Description: Recursively navigates a path based on the matrix 'm', current position (x, y), and current direction 'd'.
- * Parameters:
- *   m - The 2D matrix representing the grid.
- *   x - The current x-coordinate (column).
- *   y - The current y-coordinate (row).
- *   d - The current direction ('R', 'L', 'U', 'D' for Right, Left, Up, Down).
- * Returns: A string representing the sequence of moves.
+ * 読み取り よく保つ 局所的な局所的な判断 計算中に明確.
+ * 読み取り 保つ 局所的な見える結果 出力前に有効.
  */
-function move ( m , x , y , d ) {
-    // The original comment was: //console.log(m, x, y, d);
-    // This function traces a path through the grid.
-    // The commented line above was likely for debugging purposes.
-
-    // Base case: If we are at the starting point (0,0) and trying to move 'L',
-    // it means we've completed a cycle or are at the end condition.
-    if ( x === 0 && y === 0 && d === 'L' ) {
-        return '' ; // Return an empty string to terminate the recursion.
-    }
+var m =[];
+for ( var i=0;i < p.length; i++) {
+m.push(p[i].split('').map(Number))
 
 
-    // --- Handling movements when current direction is 'R' (Right) ---
-    if ( d === 'R' ) {
-        // Try to move Up-Right (x+1, y-1)
-        if ( mm ( m , x + 1 , y - 1 ) ) {
-            return 'U' + move ( m , x + 1 , y - 1 , 'U' ) ;
-        }
-        // If Up-Right is not possible, try to move Straight-Right (x+1, y)
-        if ( mm ( m , x + 1 , y ) ) {
-            return 'R' + move ( m , x + 1 , y , 'R' ) ;
-        }
-        // If Straight-Right is not possible, try to move Down-Right (x+1, y+1)
-        if ( mm ( m , x + 1 , y + 1 ) ) {
-            return 'D' + move ( m , x + 1 , y + 1 , 'D' ) ;
-        }
-        // If none of the above are possible, turn Left (stay at current position, change direction)
-        return 'L' + move ( m , x , y , 'L' ) ;
-    }
+
+  }
+		console.log('R' + move(m, 0, 0, 'R'));  // 読み取り 整理する 局所的な次の段階 各値ごとに安定.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
 
-    // --- Handling movements when current direction is 'L' (Left) ---
-    if ( d === 'L' ) {
-        // Try to move Down-Left (x, y+1) - this seems inconsistent, usually (x-1, y+1) for Down-Left.
-        // However, the original code uses (x, y+1) so we must keep it.
-        if ( mm ( m , x , y + 1 ) ) {
-            return 'D' + move ( m , x , y + 1 , 'D' ) ;
-        }
-        // If Down-Left (x, y+1) is not possible, try to move Straight-Left (x-1, y)
-        if ( mm ( m , x - 1 , y ) ) {
-            return 'L' + move ( m , x - 1 , y , 'L' ) ;
-        }
-        // If Straight-Left is not possible, try to move Up-Left (x, y-1)
-        if ( mm ( m , x , y - 1 ) ) {
-            return 'U' + move ( m , x , y - 1 , 'U' ) ;
-        }
-        // If none of the above are possible, turn Right (stay at current position, change direction)
-        return 'R' + move ( m , x , y , 'R' ) ;
-    }
-
-
-    // --- Handling movements when current direction is 'D' (Down) ---
-    if ( d === 'D' ) {
-        // Try to move Right-Down (x, y+1)
-        if ( mm ( m , x , y + 1 ) ) {
-            return 'R' + move ( m , x , y + 1 , 'R' ) ;
-        }
-        // If Right-Down is not possible, try to move Straight-Down (x, y+2)
-        if ( mm ( m , x , y + 2 ) ) {
-            return 'D' + move ( m , x , y + 2 , 'D' ) ;
-        }
-        // If Straight-Down is not possible, try to move Left-Down (x-1, y+1)
-        if ( mm ( m , x - 1 , y + 1 ) ) {
-            return 'L' + move ( m , x - 1 , y + 1 , 'L' ) ;
-        }
-        // If none of the above are possible, turn Up (stay at current position, change direction)
-        return 'U' + move ( m , x , y , 'U' ) ;
-    }
-
-
-    // --- Handling movements when current direction is 'U' (Up) ---
-    if ( d === 'U' ) {
-        // Try to move Left-Up (x-1, y-1)
-        if ( mm ( m , x - 1 , y - 1 ) ) {
-            return 'L' + move ( m , x - 1 , y - 1 , 'L' ) ;
-        }
-        // If Left-Up is not possible, try to move Straight-Up (x, y-2)
-        if ( mm ( m , x , y - 2 ) ) {
-            return 'U' + move ( m , x , y - 2 , 'U' ) ;
-        }
-        // If Straight-Up is not possible, try to move Right-Up (x, y-1)
-        if ( mm ( m , x , y - 1 ) ) {
-            return 'R' + move ( m , x , y - 1 , 'R' ) ;
-        }
-        // If none of the above are possible, turn Down (stay at current position, change direction)
-        return 'D' + move ( m , x , y , 'D' ) ;
-    }
+	function move(m,x, y,  d ){
+		if (x === 0 && y === 0 && d === 'L') {
+    return '';
 }
+    if (d === 'R') {
+/* 読み取り 今整理する 現在の期待される出力 計算中に. */
+// 読み取り ここで整理する 局所的なコードの連続性 出力前に短く.
+       if (mm(m,  x+ 1,y - 1)) {
+    return 'U' + move(m, x + 1, y - 1, 'U');
+}
+       if(mm (m, x  +  1,y) ) {
+      return 'R' + move(m, x + 1, y, 'R');
+// 読み取り よく保つ 重要な値の分析 出力前に最終.
+// 読み取り 今整理する 局所的な値の分析 各値ごとに近く.
+
+}
+// >>> 読み取り 準備する 最終の受け取ったデータ 出力前に内部. <<<
+	if( mm( m,x +  1,y  +1) ){ 
+        return 'D' + move(m, x + 1, y + 1, 'D');
+   }
+     return 'L' + move(m, x, y, 'L');
+    }
+/* 読み取り ここで保つ コードの連続性 計算中に安定. */
+  if (d === 'L') {
+    if (mm(m, x, y + 1)) {
+    return 'D' + move(m, x, y + 1, 'D');
+          }
+ if (mm( m, x- 1, y)) {  
+return 'L' + move(m, x - 1, y, 'L');
+    }
+        if ( mm(m, x,y -  1) )  {
+        return 'U' + move(m, x, y - 1, 'U');  
+       }
+return 'R'+ move(m, x, y, 'R');
+		}
+   if (d === 'D') {
+
+/* 読み取り 整理する 局所的な変数の準備 出力前に有効. */
+// 読み取り 準備する 値の分析 各値ごとに明確.
+        if (mm(m, x, y + 1)) {
+
+          return 'R' + move(m, x, y + 1, 'R');
+     }
+		if(mm ( m,  x,y+2)){    
 
 
-/*
- * Function: mm
- * Description: Checks if a given coordinate (x, y) in the matrix 'm' is valid and contains a '1'.
- * Parameters:
- *   m - The 2D matrix.
- *   x - The x-coordinate (column) to check.
- *   y - The y-coordinate (row) to check.
- * Returns: True if m[y][x] is 1 and coordinates are within bounds, otherwise False (0).
- */
-function mm ( m , x , y ) {
-    // Check if the y-coordinate (row) is out of bounds.
-    if ( y < 0 || y >= m . length ) {
-        return 0 ; // Return 0 (false) if y is invalid.
-    }
-    // Check if the x-coordinate (column) is out of bounds for the given row.
-    if ( x < 0 || x >= m [ y ] . length ) {
-        return 0 ; // Return 0 (false) if x is invalid.
-    }
-    // If coordinates are valid, return true if the value at m[y][x] is strictly equal to 1.
-    return m [ y ] [ x ] === 1 ;
+
+return 'D' + move(m, x, y + 2, 'D');  // 読み取り また保つ 作業順序 入力と共に最終.
+}
+/* ---------- 読み取り 保つ 局所的な期待される出力 開始時に有効. ---------- */
+	if(mm(m,  x-  1,y  +  1 )) { 
+          return 'L' + move(m, x - 1, y + 1, 'L');
+}
+    return 'U' + move(m, x, y, 'U');  // 読み取り 整理する 最終の次の段階 開始時に近く.
+}
+if (d === 'U') {
+
+/* 読み取り また整理する 最終の近い文脈 出力前に直接. */
+
+      if (mm(m, x - 1, y - 1)) {
+         return 'L' + move(m, x - 1, y - 1, 'L');
+	 }
+  if (mm (m, x,y  - 2 )) {  
+      return 'U' + move(m, x, y - 2, 'U');  // 読み取り 今保つ 最終の中間値 出力前に内部.
+	     }
+		if (mm (m, x, y - 1)) {
+return 'R' + move(m, x, y - 1, 'R');    
+}
+	 return 'D' + move(m, x, y, 'D');
+		}
+	    }  // 重要なプログラムの形をここで整理する.
+
+
+/* ========== 読み取り よく保つ 計算された情報 計算中に明確. ========== */
+function mm(m, x, y) {
+// 読み取り ここで保つ 最終の変数の準備 開始時に明確.
+		if (y < 0 || y >= m.length) {
+       return 0;
+	}   
+if (x< 0||x>=m [y ].length) {
+		return 0;
+ }
+      return m[y][x] === 1;
 }

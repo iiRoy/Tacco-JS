@@ -1,113 +1,94 @@
-const lowerA = 97;
-const lowerT = 116;
-const lowerZ = 122;
+const charCodeA = 'a'.charCodeAt(0);
+const charCodeT = 't'.charCodeAt(0);
+const charCodeZ = 'z'.charCodeAt(0);
+const alphabetSize = 26;
 
-const targetWordsSet = new Set(['the', 'this', 'that']);
+const precomputedOffsetMap = (() => {
+  const offsetMapping = new Map();
+  let currentOffsetValue = 0;
 
-const calculateCharacterShift = (inputCharacter) => {
-  let charVal = inputCharacter.codePointAt(0) - lowerT;
-  return charVal < 0 ? (lowerZ - lowerT) - charVal : charVal;
-};
-
-const applyCharacterTransformation = (charToTransform, shiftValue) => {
-  if (charToTransform === ' ' || charToTransform === '.') return charToTransform;
-  let charCodeResult = charToTransform.codePointAt(0);
-  charCodeResult -= shiftValue;
-  return String.fromCodePoint(charCodeResult > lowerZ ? lowerA + charCodeResult - lowerZ : charCodeResult);
-};
-
-const customTrim = (inputString) => {
-  let start = 0;
-  let end = inputString.length - 1;
-  while (start <= end && /\s/.test(inputString[start])) {
-    start++;
-  }
-  while (end >= start && /\s/.test(inputString[end])) {
-    end--;
-  }
-  return inputString.substring(start, end + 1);
-};
-
-const tokenizeString = (sourceString) => {
-  const tokens = [];
-  let currentToken = '';
-  for (let i = 0; i < sourceString.length; i++) {
-    const char = sourceString[i];
-    if (char === ' ' || char === '.') {
-      tokens.push(currentToken);
-      currentToken = '';
+  // Map 't' through 'z'
+  for (let i = 0; i < alphabetSize; i++) {
+    const char = String.fromCharCode(charCodeT + i);
+    if (char.charCodeAt(0) <= charCodeZ) {
+      offsetMapping.set(char, currentOffsetValue++);
     } else {
-      currentToken += char;
+      // Break if we go past 'z' (e.g., if charCodeT + i > charCodeZ)
+      break;
     }
   }
-  tokens.push(currentToken);
-  return tokens;
-};
 
-const transformString = (sourceString, shiftVal) => {
-  let result = '';
-  for (let i = 0; i < sourceString.length; i++) {
-    result += applyCharacterTransformation(sourceString[i], shiftVal);
+  // Map 's' down to 'a'
+  for (let i = charCodeT - 1; i >= charCodeA; i--) {
+    const char = String.fromCharCode(i);
+    offsetMapping.set(char, currentOffsetValue++);
   }
-  return result;
+  return offsetMapping;
+})();
+
+const characterDecrypter = (charToDecrypt, shiftVal) => {
+  if (charToDecrypt === ' ' || charToDecrypt === '.') {
+    return charToDecrypt;
+  }
+
+  const currentCode = charToDecrypt.charCodeAt(0);
+  const shiftedCode = currentCode - shiftVal;
+
+  return String.fromCharCode(shiftedCode > charCodeZ ? charCodeA + (shiftedCode - charCodeZ) : shiftedCode);
 };
 
-const processInputData = (dataLines) => {
-  const processNextLine = (lineIndex) => {
-    if (lineIndex >= dataLines.length) {
+const determineCipherOffsetViaMap = (referenceChar) => {
+  return precomputedOffsetMap.get(referenceChar[0]);
+};
+
+const applyTransformation = (textString, shiftValue) => {
+  return Array.from(textString).reduce((accumulator, char) => {
+    return accumulator + characterDecrypter(char, shiftValue);
+  }, '');
+};
+
+const executeCipherLogic = (inputLines) => {
+  inputLines.forEach(currentLine => {
+    const lineContent = currentLine.trim();
+    if (lineContent.length === 0) {
       return;
     }
 
-    const currentLine = dataLines[lineIndex];
-    if (customTrim(currentLine) === '') {
-      processNextLine(lineIndex + 1);
-      return;
-    }
+    const wordSegments = currentLine.split(/[ \.]/g);
+    const knownDecryptedWords = new Set(['the', 'this', 'that']);
 
-    const wordTokens = tokenizeString(currentLine);
-    let finalShift = 0;
+    let activeShift = 0;
+    let shiftFoundAndSet = false;
 
-    const findShiftRecursive = (tokenIdx) => {
-      if (tokenIdx >= wordTokens.length) {
-        return;
+    wordSegments.some(segment => {
+      if (segment.length === 0) {
+        return false;
       }
 
-      const currentToken = wordTokens[tokenIdx];
-      if (currentToken.length === 0) {
-        findShiftRecursive(tokenIdx + 1);
-        return;
+      const potentialShift = determineCipherOffsetViaMap(segment);
+      const decryptedSegment = applyTransformation(segment, potentialShift);
+
+      if (knownDecryptedWords.has(decryptedSegment)) {
+        activeShift = potentialShift;
+        shiftFoundAndSet = true;
+        return true;
       }
+      activeShift = potentialShift;
+      return false;
+    });
 
-      const potentialShift = calculateCharacterShift(currentToken[0]);
-      const decipheredWord = transformString(currentToken, potentialShift);
-
-      if (targetWordsSet.has(decipheredWord)) {
-        finalShift = potentialShift;
-        return;
-      }
-      findShiftRecursive(tokenIdx + 1);
-    };
-
-    findShiftRecursive(0);
-
-    const outputLine = transformString(currentLine, finalShift);
-    process.stdout.write(outputLine + '\n');
-
-    processNextLine(lineIndex + 1);
-  };
-
-  processNextLine(0);
+    console.log(applyTransformation(currentLine, activeShift));
+  });
 };
 
-let accumulatedData = '';
+let receivedInputData = '';
 
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (chunkPart) => {
-  accumulatedData += chunkPart;
+process.stdin.on('data', (chunk) => {
+  receivedInputData += chunk;
 });
-
 process.stdin.on('end', () => {
-  const separatedLines = accumulatedData.split('\n');
-  processInputData(separatedLines);
+  const linesToProcess = receivedInputData.split('\n');
+  executeCipherLogic(linesToProcess);
 });

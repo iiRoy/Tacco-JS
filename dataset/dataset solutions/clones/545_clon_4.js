@@ -1,47 +1,51 @@
-const originalContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const lineSegments = originalContent.trim().split('\n');
+const fileSystem = require('fs');
 
-const calculateMatchScores = (alphaPoints, betaPoints) => {
-    if (alphaPoints > betaPoints) {
-        return { p1Add: alphaPoints + betaPoints, p2Add: 0 };
-    } else if (alphaPoints < betaPoints) {
-        return { p1Add: 0, p2Add: betaPoints + alphaPoints };
-    } else {
-        return { p1Add: alphaPoints, p2Add: betaPoints };
+const processGameSegments = (allLines, startIndex = 0) => {
+    if (startIndex >= allLines.length) {
+        return []; // Base case: no more lines to process
     }
+
+    const segmentLengthIndicator = allLines[startIndex];
+    const segmentLength = Number(segmentLengthIndicator);
+
+    if (segmentLength === 0) {
+        return []; // Base case: termination signal (0) encountered
+    }
+
+    const gameDataLines = allLines.slice(startIndex + 1, startIndex + 1 + segmentLength);
+
+    const { firstPlayerAccumulatedScore, secondPlayerAccumulatedScore } = gameDataLines.reduce((accumulator, scorePairString) => {
+        const [playerOneValue, playerTwoValue] = scorePairString.split(' ').map(Number);
+
+        let currentRoundPlayerOnePoints = 0;
+        let currentRoundPlayerTwoPoints = 0;
+
+        if (playerOneValue > playerTwoValue) {
+            currentRoundPlayerOnePoints = playerOneValue + playerTwoValue;
+        } else if (playerOneValue < playerTwoValue) {
+            currentRoundPlayerTwoPoints = playerOneValue + playerTwoValue;
+        } else { // playerOneValue === playerTwoValue
+            currentRoundPlayerOnePoints = playerOneValue;
+            currentRoundPlayerTwoPoints = playerTwoValue;
+        }
+
+        return {
+            firstPlayerAccumulatedScore: accumulator.firstPlayerAccumulatedScore + currentRoundPlayerOnePoints,
+            secondPlayerAccumulatedScore: accumulator.secondPlayerAccumulatedScore + currentRoundPlayerTwoPoints
+        };
+    }, { firstPlayerAccumulatedScore: 0, secondPlayerAccumulatedScore: 0 });
+
+    const currentSegmentOutput = `${firstPlayerAccumulatedScore} ${secondPlayerAccumulatedScore}`;
+
+    // Recursively process the next segment of games
+    const remainingSegmentOutputs = processGameSegments(allLines, startIndex + 1 + segmentLength);
+
+    return [currentSegmentOutput, ...remainingSegmentOutputs];
 };
 
-const processGameRounds = (segmentsToProcess, currentOffset = 0) => {
-    if (currentOffset >= segmentsToProcess.length) {
-        return [];
-    }
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputContent.trim().split('\n');
 
-    const roundQuantity = Number(segmentsToProcess[currentOffset]);
-    if (roundQuantity === 0) {
-        return [];
-    }
+const finalOutputs = processGameSegments(allInputLines);
 
-    const currentMatchesData = segmentsToProcess
-        .slice(currentOffset + 1, currentOffset + 1 + roundQuantity)
-        .map(matchLine => matchLine.split(' ').map(Number));
-
-    const initialTally = { playerAlphaScore: 0, playerBetaScore: 0 };
-    const gameResultSummary = currentMatchesData.reduce((accumulator, currentMatchPair) => {
-        const [alphaPoints, betaPoints] = currentMatchPair;
-        const scoreDeltas = calculateMatchScores(alphaPoints, betaPoints);
-        accumulator.playerAlphaScore += scoreDeltas.p1Add;
-        accumulator.playerBetaScore += scoreDeltas.p2Add;
-        return accumulator;
-    }, initialTally);
-
-    const nextOffset = currentOffset + roundQuantity + 1;
-    const subsequentGameSummaries = processGameRounds(segmentsToProcess, nextOffset);
-
-    return [gameResultSummary].concat(subsequentGameSummaries);
-};
-
-const finalGameSummaries = processGameRounds(lineSegments);
-
-finalGameSummaries.forEach(summaryObject => {
-    console.log(`${summaryObject.playerAlphaScore} ${summaryObject.playerBetaScore}`);
-});
+finalOutputs.forEach(outputLine => console.log(outputLine));

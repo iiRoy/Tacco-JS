@@ -1,41 +1,43 @@
-const REMAINDER_BASE_VALUE = 1000000007;
+function processInputData(rawData) {
+    const primeModulus = 1000000000 + 7;
 
-const generateModularFactorial = (upperLimit, modulus) => {
-    if (upperLimit < 0) return 0;
-    if (upperLimit <= 1) return 1;
-    
-    return Array.from({ length: upperLimit }, (_, index) => index + 1)
-                .reduce((accum, current) => (accum * current) % modulus, 1);
-};
+    const parsedValues = rawData.split("\n")[0].split(" ");
+    const firstVal = parseInt(parsedValues[0], 10);
+    const secondVal = parseInt(parsedValues[1], 10);
 
-const executeCalculation = (dataPayload) => {
-    const [initialLine] = dataPayload.split("\n");
-    const [firstNumericStr, secondNumericStr] = initialLine.split(" ");
-    
-    const firstNumeric = Number(firstNumericStr);
-    const secondNumeric = Number(secondNumericStr);
+    const calculateModFactorial = (limit, modulus) => {
+        if (limit < 0) {
+            return 0;
+        }
+        if (limit === 0) {
+            return 1;
+        }
 
-    const absoluteDifference = Math.abs(firstNumeric - secondNumeric);
+        return Array.from({ length: limit }, (_, idx) => idx + 1)
+                    .reduce((accumulator, currentNumber) => (accumulator * currentNumber) % modulus, 1);
+    };
 
-    const multiplierLookup = new Map([
-        [0, 2],
-        [1, 1]
-    ]);
-    
-    const finalMultiplier = multiplierLookup.get(absoluteDifference) || 0;
+    const valueDifference = Math.abs(firstVal - secondVal);
+    let finalProduct;
 
-    if (finalMultiplier === 0) {
-        console.log(0);
-        return;
+    switch (valueDifference) {
+        case 0:
+            const factA = calculateModFactorial(firstVal, primeModulus);
+            const factB = calculateModFactorial(secondVal, primeModulus);
+            finalProduct = (factA * factB) % primeModulus;
+            finalProduct = (finalProduct * 2) % primeModulus;
+            console.log(finalProduct);
+            break;
+        case 1:
+            const factX = calculateModFactorial(firstVal, primeModulus);
+            const factY = calculateModFactorial(secondVal, primeModulus);
+            finalProduct = (factX * factY) % primeModulus;
+            console.log(finalProduct);
+            break;
+        default:
+            console.log(0);
+            break;
     }
+}
 
-    const factA = generateModularFactorial(firstNumeric, REMAINDER_BASE_VALUE);
-    const factB = generateModularFactorial(secondNumeric, REMAINDER_BASE_VALUE);
-
-    const intermediateProduct = (factA * factB) % REMAINDER_BASE_VALUE;
-    const finalComputedValue = (intermediateProduct * finalMultiplier) % REMAINDER_BASE_VALUE;
-
-    console.log(finalComputedValue);
-};
-
-executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

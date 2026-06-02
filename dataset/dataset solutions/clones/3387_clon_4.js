@@ -1,15 +1,17 @@
-const processInputAndDetermineOutcome = (incomingDataStream) => {
-    const numericalElements = incomingDataStream
-        .trim()
+const processInput = (rawDataString) => {
+    const numericValues = rawDataString
         .split('\n')
         .slice(1)
-        .map(val => parseInt(val, 10));
+        .map(Number);
 
-    const aggregatedValue = numericalElements.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+    const aggregateSum = numericValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    const finalDecision = ["second", "first"][aggregatedValue & 1];
+    const parityOutcomes = {
+        1: "first",
+        0: "second"
+    };
 
-    console.log(finalDecision);
+    console.log(parityOutcomes[aggregateSum % 2]);
 };
 
-processInputAndDetermineOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

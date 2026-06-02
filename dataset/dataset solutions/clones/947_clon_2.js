@@ -1,189 +1,187 @@
-// A utility function to fetch Node.js modules.
-const get_module_utility = require;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the raw input content from the system's standard input stream.
-const rawInputContent = get_module_utility('file_system_module')
-  .read_file_synchronously('/system/input', 'utf_8_encoding');
-
-// Helper function to cast values to numbers.
-const CastToNumber = Number;
-
-// Process the raw input: trim whitespace, then split into individual lines.
-const processedLines = rawInputContent.trim()
-  .split('\n');
-
-// Extract the first line, which represents the total count of elements.
-const totalElements = CastToNumber(processedLines.shift());
-
-// Transform the remaining lines into an adjacency list structure.
-// Each line is split by space, and its components are cast to numbers.
-const adjacencyListRaw = processedLines.map((lineString) =>
-  lineString.split(' ').map(CastToNumber)
-);
-
+// Process the raw input data
+const parsedLines = rawData.trim().split('\n');
+const nodeCount = Number(parsedLines.shift()); // Get the total number of nodes
+const adjacencyData = parsedLines.map((s) => s.split(' ').map(Number)); // Parse adjacency list
 
 /**
- * Implements a basic First-In-First-Out (FIFO) queue data structure.
- * Elements are added to the back and removed from the front.
+ * Implements a basic queue data structure.
  */
-class FifoBuffer {
-
-  // Initializes a new empty buffer.
+class ProcessingQueue {
   constructor() {
-    this.dataStore = []; // Internal array to hold queue elements.
-  }
-
-  // Adds an element to the end of the buffer.
-  addLast(elementItem) {
-    this.dataStore.push(elementItem);
-  }
-
-  // Removes and returns the element at the front of the buffer.
-  removeFirst() {
-    return this.dataStore.shift();
-  }
-}
-
-
-/**
- * Represents a vertex within a graph or tree structure.
- * Each vertex has a unique identifier and can store custom properties.
- */
-class GraphVertex {
-
-  // Creates a new vertex with a given identifier.
-  constructor(vertexIdentifier) {
-    this.vertexIdentifier = vertexIdentifier; // Unique ID for this vertex.
-    this.connectedVertices = []; // List of other vertices connected to this one.
-    this.vertexProperties = new Map(); // A map to store arbitrary properties (e.g., depth).
-  }
-
-  // Establishes a connection from this vertex to another target vertex.
-  connectTo(neighborVertex) {
-    this.connectedVertices.push(neighborVertex);
-  }
-
-  // Retrieves a property associated with this vertex by its name.
-  retrieveProperty(propertyName) {
-    return this.vertexProperties.get(propertyName);
-  }
-
-  // Assigns a value to a specific property of this vertex.
-  assignProperty(propertyName, propertyValue) {
-    return this.vertexProperties.set(propertyName, propertyValue);
-  }
-
-  // Checks if this vertex has a particular property defined.
-  hasProperty(propertyName) {
-    return this.vertexProperties.has(propertyName);
-  }
-
-  // Generates a string representation of the vertex, including its identifier and level.
-  formatOutput() {
-    return [this.vertexIdentifier, this.retrieveProperty('levelValue')].join(' ');
-  }
-}
-
-
-/**
- * Represents the overall graph structure, managing vertices and traversal operations.
- * Utilizes a FIFO buffer for graph traversals like Breadth-First Search.
- */
-class GraphStructure {
-
-  // Initializes an empty graph structure.
-  constructor() {
-    this.vertexRegistry = new Map(); // Stores all vertices, indexed by their unique ID.
-    this.processQueue = new FifoBuffer(); // Queue used for traversal algorithms.
-  }
-
-  // Adds a new vertex to the graph's registry.
-  registerVertex(aVertex) {
-    this.vertexRegistry.set(aVertex.vertexIdentifier, aVertex);
-  }
-
-  // Checks if a vertex with the given ID already exists in the graph.
-  containsVertex(vertexId) {
-    return this.vertexRegistry.has(vertexId);
-  }
-
-  // Retrieves a vertex object from the registry using its ID.
-  fetchVertex(vertexId) {
-    return this.vertexRegistry.get(vertexId);
+    this.itemCollection = []; // Internal array to hold queue elements
   }
 
   /**
-   * Executes a Breadth-First Search (BFS) traversal.
-   * Processes vertices level by level, starting from elements in the queue.
+   * Adds an item to the end of the queue.
+   * @param {*} item - The item to add.
+   */
+  addItem(item) {
+    this.itemCollection.push(item);
+  }
+
+  /**
+   * Removes and returns the item from the front of the queue.
+   * @returns {*} The item at the front of the queue.
+   */
+  retrieveItem() {
+    return this.itemCollection.shift();
+  }
+}
+
+/**
+ * Represents a single vertex (node) in the graph.
+ */
+class GraphVertex {
+  constructor(vertexId) {
+    this.vertexId = vertexId; // Unique identifier for this vertex
+    this.connectedVertices = []; // List of other GraphVertex objects connected to this one
+    this.vertexProperties = new Map(); // Stores arbitrary properties for the vertex (e.g., depth)
+  }
+
+  /**
+   * Adds a connection to another vertex.
+   * @param {GraphVertex} otherVertex - The vertex to connect to.
+   */
+  connectTo(otherVertex) {
+    this.connectedVertices.push(otherVertex);
+  }
+
+  /**
+   * Retrieves a property associated with this vertex.
+   * @param {string} key - The key of the property.
+   * @returns {*} The value of the property.
+   */
+  getProperty(key) {
+    return this.vertexProperties.get(key);
+  }
+
+  /**
+   * Sets a property for this vertex.
+   * @param {string} key - The key of the property.
+   * @param {*} value - The value to set.
+   */
+  setProperty(key, value) {
+    return this.vertexProperties.set(key, value);
+  }
+
+  /**
+   * Checks if a property exists for this vertex.
+   * @param {string} key - The key of the property.
+   * @returns {boolean} True if the property exists, false otherwise.
+   */
+  hasProperty(key) {
+    return this.vertexProperties.has(key);
+  }
+
+  /**
+   * Returns a string representation of the vertex, including its ID and 'level' property.
+   * @returns {string} Formatted string.
+   */
+  formatOutput() {
+    return [this.vertexId, this.getProperty('level')].join(' ');
+  }
+}
+
+/**
+ * Manages the overall graph structure and provides traversal methods.
+ */
+class GraphStructure {
+  constructor() {
+    this.vertexMap = new Map(); // Maps vertex IDs to GraphVertex objects
+    this.processingQueue = new ProcessingQueue(); // Queue for BFS traversal
+  }
+
+  /**
+   * Adds or updates a vertex in the graph.
+   * @param {GraphVertex} vertexObject - The vertex to add.
+   */
+  registerVertex(vertexObject) {
+    this.vertexMap.set(vertexObject.vertexId, vertexObject);
+  }
+
+  /**
+   * Checks if a vertex with the given ID exists in the graph.
+   * @param {number} vertexIdentifier - The ID of the vertex to check.
+   * @returns {boolean} True if the vertex exists, false otherwise.
+   */
+  containsVertex(vertexIdentifier) {
+    return this.vertexMap.has(vertexIdentifier);
+  }
+
+  /**
+   * Retrieves a vertex by its ID.
+   * @param {number} vertexIdentifier - The ID of the vertex.
+   * @returns {GraphVertex|undefined} The GraphVertex object, or undefined if not found.
+   */
+  getVertex(vertexIdentifier) {
+    return this.vertexMap.get(vertexIdentifier);
+  }
+
+  /**
+   * Performs a Breadth-First Search (BFS) traversal starting from the current queue contents.
+   * This method is recursive and processes one vertex at a time from the queue.
    */
   traverseBreadthFirst() {
-    // Dequeue the next vertex to be processed.
-    const currentVertex = this.processQueue.removeFirst();
-    // If the queue is empty, the traversal is complete.
+    const currentVertex = this.processingQueue.retrieveItem(); // Get the next vertex to process
+
+    // Base case: if the queue is empty, stop recursion
     if (!currentVertex) {
       return;
     }
 
-    // Iterate over all neighbors (connected vertices) of the current vertex.
-    currentVertex.connectedVertices.forEach((connectedVertex) => {
-      // If the neighbor already has a 'levelValue' property, it means it has been visited.
-      if (connectedVertex.hasProperty('levelValue')) {
-        return; // Skip already visited neighbors.
+    // Iterate over all connected vertices (neighbors)
+    currentVertex.connectedVertices.forEach(neighborVertex => {
+      // If the neighbor hasn't been visited (i.e., its 'level' property is not set)
+      if (neighborVertex.hasProperty('level')) {
+        return; // Skip if already processed
       }
-      // Assign the level value for the neighbor (current vertex's level + 1).
-      connectedVertex.assignProperty('levelValue', currentVertex.retrieveProperty('levelValue') + 1);
-      // Enqueue the neighbor for future processing.
-      this.processQueue.addLast(connectedVertex);
+      // Set the 'level' (depth) for the neighbor
+      neighborVertex.setProperty('level', currentVertex.getProperty('level') + 1);
+      // Add the neighbor to the queue for future processing
+      this.processingQueue.addItem(neighborVertex);
     });
-    // Recursively call BFS to continue the traversal until the queue is empty.
+
+    // Recursively call BFS to process the next item in the queue
     this.traverseBreadthFirst();
   }
 
-  // Displays the formatted results for each vertex in the graph.
+  /**
+   * Prints the ID and 'level' property for each vertex in ascending order of ID.
+   */
   displayResults() {
-    // Loop through vertex IDs from 1 up to the total number of registered vertices.
-    for (let idxCounter = 1; idxCounter <= this.vertexRegistry.size; idxCounter++) {
-      // Fetch the vertex object.
-      const aVertex = this.vertexRegistry.get(idxCounter);
-      // Output its string representation to the console.
-      console.log(aVertex.formatOutput());
+    // Iterate from 1 to the total number of vertices
+    for (let i = 1; i <= this.vertexMap.size; i++) {
+      const vertexToPrint = this.vertexMap.get(i);
+      console.log(vertexToPrint.formatOutput());
     }
   }
 }
 
+// Create an instance of the graph structure
+const graphInstance = new GraphStructure();
 
-// Instantiate the primary graph structure for processing.
-const myGraph = new GraphStructure();
+// Populate the graph with vertices and their connections
+adjacencyData.forEach(([vertexIdentifier, degree, ...childrenIdentifiers]) => {
+  // Ensure the current vertex exists in the graph
+  graphInstance.containsVertex(vertexIdentifier) || graphInstance.registerVertex(new GraphVertex(vertexIdentifier));
+  const currentVertex = graphInstance.getVertex(vertexIdentifier);
 
-// Iterate through the raw adjacency data to construct the graph.
-adjacencyListRaw.forEach(([vertexId, countLinks, ...childIds]) => {
-  // Ensure the current vertex exists; if not, create and register it.
-  myGraph.containsVertex(vertexId) || myGraph.registerVertex(new GraphVertex(vertexId));
-  // Retrieve the current vertex object.
-  const currentVertex = myGraph.fetchVertex(vertexId);
-
-  // For each child ID, ensure it exists and connect it to the current vertex.
-  childIds.forEach((childVertexId) => {
-    // If the child vertex doesn't exist, create and register it.
-    myGraph.containsVertex(childVertexId) || myGraph.registerVertex(new GraphVertex(childVertexId));
-    // Retrieve the child vertex object.
-    const childVertex = myGraph.fetchVertex(childVertexId);
-    // Establish a directed connection from the current vertex to the child vertex.
-    currentVertex.connectTo(childVertex);
+  // Add connections to child vertices
+  childrenIdentifiers.forEach(childId => {
+    // Ensure the child vertex exists in the graph
+    graphInstance.containsVertex(childId) || graphInstance.registerVertex(new GraphVertex(childId));
+    const childVertex = graphInstance.getVertex(childId);
+    currentVertex.connectTo(childVertex); // Establish the connection
   });
 });
 
+// Initialize the BFS traversal
+const startingVertex = graphInstance.getVertex(1); // Start BFS from vertex 1
+startingVertex.setProperty('level', 0); // Set the initial level (depth) of the root
+graphInstance.processingQueue.addItem(startingVertex); // Add the root to the queue
+graphInstance.traverseBreadthFirst(); // Begin the BFS traversal
 
-// Identify the starting point for the graph traversal (vertex with ID 1).
-const startingVertex = myGraph.fetchVertex(1);
-// Define the initial level for the starting vertex.
-const zeroLevel = 0;
-// Assign the initial level to the starting vertex.
-startingVertex.assignProperty('levelValue', zeroLevel);
-// Add the starting vertex to the processing queue to initiate BFS.
-myGraph.processQueue.addLast(startingVertex);
-// Execute the Breadth-First Search traversal.
-myGraph.traverseBreadthFirst();
-
-// Finally, display the calculated results for all vertices in the graph.
-myGraph.displayResults();
+// Output the results
+graphInstance.displayResults();

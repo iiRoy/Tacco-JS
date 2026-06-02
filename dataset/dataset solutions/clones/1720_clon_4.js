@@ -1,29 +1,20 @@
-const interfaceModule = require("readline");
+function Main(input) {
+    const firstLine = input.split("\n").shift();
+    const value = parseInt(firstLine, 10);
 
-const ioHandler = interfaceModule.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-let parsedDatum;
-
-ioHandler.on("line", (incomingText) => {
-  parsedDatum = Number(incomingText);
-  ioHandler.close();
-});
-
-ioHandler.on("close", () => {
-  const exponentIndexes = Array.from({ length: 3 }, (_, idx) => idx + 1);
-
-  const calculatedComponents = exponentIndexes.map(expVal => {
-    let currentMultiplier = 1;
-    for (let iterator = 0; iterator < expVal; iterator++) {
-      currentMultiplier *= parsedDatum;
+    const terms = [];
+    let current = value;
+    for (let degree = 1; degree <= 3; degree++) {
+        terms.push(current);
+        current = current * value;
     }
-    return currentMultiplier;
-  });
 
-  const cumulativeSum = calculatedComponents.reduce((acc, element) => acc + element, 0);
+    let result = 0;
+    for (const term of terms) {
+        result += term;
+    }
 
-  process.stdout.write(String(cumulativeSum) + '\n');
-});
+    console.log(result);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

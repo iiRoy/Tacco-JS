@@ -1,90 +1,88 @@
-/*
- *  Location: /competition/coding/panasonic2020/problem_c.js
- */
-(function(codeChunks) { /* Runtime startup procedure */
-	// Storage for previously loaded code units
-	var loadedUnits = {};
+// This is a Type II clone of the original JavaScript code.
+// The structure and behavior are preserved, but identifiers, whitespace, and comments are altered.
 
-	// Primary function to load a code unit
-	function __runtime_loader__(unitId) {
+// Webpack's module loading and bundling runtime.
+(function(modules) {
+    // A cache for loaded modules.
+    var installedModules = {};
 
-		// Verify if the unit has been loaded before
-		if (loadedUnits[unitId]) {
-			return loadedUnits[unitId].unitExports;
-		}
-		// Construct a new unit and place it into the internal registry
-		var codeUnit = loadedUnits[unitId] = {
-			identifier: unitId,
-			loadStatus: false,
-			unitExports: {}
-		};
+    // The custom require function for modules.
+    function __webpack_require__(moduleId) {
+        // If the module is already in cache, return its exports.
+        if (installedModules[moduleId]) {
+            return installedModules[moduleId].exports;
+        }
+        // Otherwise, create a new module entry and put it in the cache.
+        var module = installedModules[moduleId] = {
+            i: moduleId, // Module ID
+            l: false,    // Loaded flag
+            exports: {}  // Exported values
+        };
 
-		// Execute the unit's main function
-		codeChunks[unitId].call(codeUnit.unitExports, codeUnit, codeUnit.unitExports, __runtime_loader__);
+        // Execute the module function with its context.
+        modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 
-		// Mark this unit as fully loaded
-		codeUnit.loadStatus = true;
+        // Mark the module as loaded.
+        module.l = true;
 
-		// Provide the exported features of the unit
-		return codeUnit.unitExports;
-	}
+        // Return the module's exports.
+        return module.exports;
+    }
 
+    // Expose the modules object.
+    __webpack_require__.m = modules;
 
-	// Expose the collection of code chunks
-	__runtime_loader__.chunks = codeChunks;
+    // Expose the module cache.
+    __webpack_require__.c = installedModules;
 
-	// Expose the internal unit cache
-	__runtime_loader__.cache = loadedUnits;
+    // Define a getter function for harmony exports (ESM compatibility).
+    __webpack_require__.d = function(exports, name, getter) {
+        if (!__webpack_require__.o(exports, name)) {
+            Object.defineProperty(exports, name, { enumerable: true, get: getter });
+        }
+    };
 
-	// Define a custom getter function for module exports
-	__runtime_loader__.defineGetter = function(outputExports, propName, valueGetter) {
-		if (!__runtime_loader__.hasOwnProp(outputExports, propName)) {
-			Object.defineProperty(outputExports, propName, { enumerable: true, get: valueGetter });
-		}
-	};
+    // Define __esModule on exports for ES module compatibility.
+    __webpack_require__.r = function(exports) {
+        if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+            Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+        }
+        Object.defineProperty(exports, '__esModule', { value: true });
+    };
 
-	// Tag exports as an ECMAScript module
-	__runtime_loader__.markAsModule = function(outputExports) {
-		if (typeof GlobalSymbol !== 'undefined' && GlobalSymbol.stringTagDescriptor) {
-			Object.defineProperty(outputExports, GlobalSymbol.stringTagDescriptor, { value: 'Module' });
-		}
-		Object.defineProperty(outputExports, '__isEcmaModule', { value: true });
-	};
+    // Create a fake namespace object for various module modes.
+    __webpack_require__.t = function(value, mode) {
+        if (mode & 1) value = __webpack_require__(value); // If mode 1, require the module.
+        if (mode & 8) return value; // If mode 8, return value directly.
+        if ((mode & 4) && typeof value === 'object' && value && value.__esModule) return value; // If mode 4 and already an ES module.
+        var ns = Object.create(null); // Create a new namespace object.
+        __webpack_require__.r(ns); // Mark as ES module.
+        Object.defineProperty(ns, 'default', { enumerable: true, value: value }); // Set default export.
+        if (mode & 2 && typeof value != 'string') {
+            for (var key in value) {
+                __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+            }
+        }
+        return ns;
+    };
 
-	// Generate a fake namespace object
-	// handlingMode & 1: content is a unit id, load it
-	// handlingMode & 2: merge all properties of content into the namespace
-	// handlingMode & 4: return content if it's already a namespace object
-	// handlingMode & 8|1: behave like a direct loader call
-	__runtime_loader__.createNamespace = function(content, handlingMode) {
-		if (handlingMode & 1) content = __runtime_loader__(content);
-		if (handlingMode & 8) return content;
-		if ((handlingMode & 4) && typeof content === 'object' && content && content.__isEcmaModule) return content;
-		var nameSpaceObj = Object.create(null);
-		__runtime_loader__.markAsModule(nameSpaceObj);
-		Object.defineProperty(nameSpaceObj, 'default', { enumerable: true, value: content });
-		if (handlingMode & 2 && typeof content != 'string') for (var propertyKey in content) __runtime_loader__.defineGetter(nameSpaceObj, propertyKey, function(propertyKey) { return content[propertyKey]; }.bind(null, propertyKey));
-		return nameSpaceObj;
-	};
+    // GetDefaultExport function for compatibility with non-harmony modules.
+    __webpack_require__.n = function(module) {
+        var getter = module && module.__esModule ?
+            function getDefault() { return module['default']; } :
+            function getModuleExports() { return module; };
+        __webpack_require__.d(getter, 'a', getter);
+        return getter;
+    };
 
-	// Obtain default export function for compatibility with non-ESM units
-	__runtime_loader__.getExportDefault = function(unit) {
-		var defaultFetcher = unit && unit.__isEcmaModule ?
-			function fetchDefault() { return unit['default']; } :
-			function retrieveUnitExports() { return unit; };
-		__runtime_loader__.defineGetter(defaultFetcher, 'a', defaultFetcher);
-		return defaultFetcher;
-	};
+    // Object.prototype.hasOwnProperty.call wrapper.
+    __webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
 
-	// Check if an object possesses a specific property
-	__runtime_loader__.hasOwnProp = function(targetObject, checkedProperty) { return Object.prototype.hasOwnProperty.call(targetObject, checkedProperty); };
+    // Public path for assets.
+    __webpack_require__.p = "";
 
-	// Base public path for assets
-	__runtime_loader__.basePath = "";
-
-
-	// Load the entry unit and return its exports
-	return __runtime_loader__(__runtime_loader__.startUnit = "./src/contest/atcoder/panasonic2020/c.ts");
+    // Load the entry module and return its exports.
+    return __webpack_require__(__webpack_require__.s = "./src/contest/atcoder/panasonic2020/c.ts");
 })
 /************************************************************************/
 ({
@@ -94,29 +92,29 @@
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
 /*! no static exports found */
-/***/ (function(polyfilledUnit, unitExports) {
+/***/ (function(module, exports) {
 
-polyfilledUnit.unitExports = function(polyfilledUnit) {
-	if (!polyfilledUnit.runtimeBridge) {
-		polyfilledUnit.deprecateMethod = function() {};
-		polyfilledUnit.pathList = [];
-		// polyfilledUnit.parent = undefined by default
-		if (!polyfilledUnit.childUnits) polyfilledUnit.childUnits = [];
-		Object.defineProperty(polyfilledUnit, "isLoaded", {
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent is undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
 			enumerable: true,
 			get: function() {
-				return polyfilledUnit.loadStatus;
+				return module.l;
 			}
 		});
-		Object.defineProperty(polyfilledUnit, "identifier", {
+		Object.defineProperty(module, "id", {
 			enumerable: true,
 			get: function() {
-				return polyfilledUnit.internalId;
+				return module.i;
 			}
 		});
-		polyfilledUnit.runtimeBridge = 1;
+		module.webpackPolyfill = 1;
 	}
-	return polyfilledUnit;
+	return module;
 };
 
 
@@ -127,46 +125,93 @@ polyfilledUnit.unitExports = function(polyfilledUnit) {
   !*** ./src/contest/atcoder/panasonic2020/c.ts ***!
   \************************************************/
 /*! no static exports found */
-/***/ (function(current_unit, unitExports, __runtime_loader__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(current_unit) {
-var __import_default_export__ = (this && this.__import_default_export__) || function (module_object) {
-    return (module_object && module_object.__isEcmaModule) ? module_object : { "default": module_object };
+/* WEBPACK VAR INJECTION */(function(module) {
+// Helper for default imports in TypeScript/Webpack.
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(unitExports, "__isEcmaModule", { value: true });
-unitExports.runPrimary = void 0;
-const file_system_util = __import_default_export__(__runtime_loader__(/*! fs */ "fs"));
-function generate_sequence(current_length, max_char_index, system_state) {
-    const { target_length, result_list, current_string } = system_state;
-    if (current_length === target_length) {
-        result_list.push(current_string);
+// Define module as an ES module.
+Object.defineProperty(exports, "__esModule", { value: true });
+// Export the main function.
+exports.executeProgram = void 0;
+// Import the file system module.
+const fileSystem = __importDefault(__webpack_require__(/*! fs */ "fs"));
+
+/**
+ * Recursively generates all possible strings based on the given parameters.
+ * This function implements a backtracking algorithm.
+ * @param {number} currentLength - The current length of the string being built.
+ * @param {number} maxCharIndex - The maximum character index (0 for 'a', 1 for 'b', etc.) allowed for the current position.
+ * @param {object} systemState - An object holding shared state: targetLength, resultList, currentString.
+ */
+function processCombinations(currentLength, maxCharIndex, systemState) {
+    const { targetLength, resultList, currentString } = systemState;
+
+    // Base case: if the current string length matches the target length, add it to the results.
+    if (currentLength === targetLength) {
+        resultList.push(currentString);
         return;
     }
-    for (let char_index = 0; char_index <= max_char_index; char_index++) {
-        const current_char = String.fromCharCode('a'.charCodeAt(0) + char_index);
-        generate_sequence(current_length + 1, Math.max(max_char_index, char_index + 1), { target_length, result_list, current_string: current_string + current_char });
+
+    // Recursive step: iterate through possible characters for the current position.
+    for (let charIterator = 0; charIterator <= maxCharIndex; charIterator++) {
+        // Convert the character index to its corresponding letter ('a', 'b', etc.).
+        const character = String.fromCharCode('a'.charCodeAt(0) + charIterator);
+        
+        // Recursively call the function with updated state.
+        processCombinations(
+            currentLength + 1,
+            Math.max(maxCharIndex, charIterator + 1), // Update maxCharIndex for the next level.
+            {
+                targetLength: targetLength,
+                resultList: resultList,
+                currentString: currentString + character
+            }
+        );
     }
-}
-function process_input({ target_length, }) {
-    const result_list = [];
-    generate_sequence(0, 0, { target_length, result_list, current_string: '' });
-    return result_list;
-}
-function runPrimary(input_line) {
-    const target_length = parse_integer_value(input_line);
-    const final_sequences = process_input({ target_length });
-    for (const output_string of final_sequences) {
-        global_console.output(output_string);
-    }
-}
-unitExports.runPrimary = runPrimary;
-if (__runtime_loader__.cache[__runtime_loader__.startUnit] === current_unit) {
-    const data_line = file_system_util.default.readFileSync("/dev/stdin", "utf8");
-    runPrimary(data_line);
 }
 
-/* WEBPACK VAR INJECTION */}.call(this, __runtime_loader__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(current_unit)))
+/**
+ * Generates a list of strings based on a given target length.
+ * @param {object} params - An object containing the target length.
+ * @param {number} params.targetLength - The desired length of the strings to generate.
+ * @returns {string[]} An array of generated strings.
+ */
+function generateStrings({ targetLength }) {
+    const resultList = []; // Initialize an empty array to store the results.
+    // Start the recursive generation process.
+    processCombinations(0, 0, { targetLength: targetLength, resultList: resultList, currentString: '' });
+    return resultList;
+}
+
+/**
+ * Main entry point of the program. Reads input, generates strings, and prints them.
+ * @param {string} inputLine - The input string, expected to be a number.
+ */
+function executeProgram(inputLine) {
+    // Parse the input line to get the target length.
+    const targetLength = parseInt(inputLine);
+    // Generate the strings.
+    const generatedStrings = generateStrings({ targetLength });
+    // Print each generated string to the console.
+    for (const outputString of generatedStrings) {
+        console.log(outputString);
+    }
+}
+exports.executeProgram = executeProgram;
+
+// Check if this module is the main entry point.
+if (__webpack_require__.c[__webpack_require__.s] === module) {
+    // Read input from standard input.
+    const inputData = fileSystem.default.readFileSync("/dev/stdin", "utf8");
+    // Execute the program with the input data.
+    executeProgram(inputData);
+}
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
@@ -175,11 +220,11 @@ if (__runtime_loader__.cache[__runtime_loader__.startUnit] === current_unit) {
   !*** external "fs" ***!
   \*********************/
 /*! no static exports found */
-/***/ (function(polyfilledUnit, unitExports) {
+/***/ (function(module, exports) {
 
-polyfilledUnit.unitExports = require("fs");
+module.exports = require("fs");
 
 /***/ })
 
 /******/ });
-//# sourceMappingURL=submit.js.map
+// End of Type II clone.

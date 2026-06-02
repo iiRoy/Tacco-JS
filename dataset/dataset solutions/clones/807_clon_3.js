@@ -1,157 +1,172 @@
-function launchShell(rowDelta, colDelta, battlefieldGrid, tankPosition) {
-    let travelDistance = 0;
-    const initialTankRow = tankPosition[0];
-    const initialTankCol = tankPosition[1];
+let gameGrid;
+let tankPosition;
+
+const fileSystemModule = require('fs');
+const standardInputPath = '/dev/stdin';
+
+const WALL_BLOCK_CHAR = '#';
+const TARGET_BLOCK_CHAR = '*';
+const EMPTY_SPACE_CHAR = '.';
+
+const TANK_DIR_UP = 'U';
+const TANK_DIR_DOWN = 'D';
+const TANK_DIR_LEFT = 'L';
+const TANK_DIR_RIGHT = 'R';
+
+const COMMAND_SHOOT = 'S';
+
+const FIXED_BORDER_ROW_CONTENT = "####################"; // Preserves original fixed length
+
+function fireProjectile(rowOffset, colOffset) {
+    let currentStep = 0;
+    const currentTankRow = tankPosition[0];
+    const currentTankCol = tankPosition[1];
 
     while (true) {
-        travelDistance++;
-        const targetRow = initialTankRow + (rowDelta * travelDistance);
-        const targetCol = initialTankCol + (colDelta * travelDistance);
+        currentStep++;
+        const targetRow = currentTankRow + (rowOffset * currentStep);
+        const targetCol = currentTankCol + (colOffset * currentStep);
 
-        const cellContent = battlefieldGrid[targetRow][targetCol];
+        const currentTargetCell = gameGrid[targetRow][targetCol];
 
-        if (cellContent === "#") {
+        if (currentTargetCell === WALL_BLOCK_CHAR) {
             break;
-        } else if (cellContent === "*") {
-            battlefieldGrid[targetRow][targetCol] = ".";
+        } else if (currentTargetCell === TARGET_BLOCK_CHAR) {
+            gameGrid[targetRow][targetCol] = EMPTY_SPACE_CHAR;
             break;
         }
     }
 }
 
-function standardizeInputChars(rawInputString) {
-    return rawInputString
-        .replace(/\^/g, "U")
-        .replace(/v/g, "D")
-        .replace(/\</g, "L")
-        .replace(/\>/g, "R");
+function prepareInputData(rawInputString) {
+    let processedInput = rawInputString;
+    processedInput = processedInput.replace(/\^/g, TANK_DIR_UP);
+    processedInput = processedInput.replace(/v/g, TANK_DIR_DOWN);
+    processedInput = processedInput.replace(/\</g, TANK_DIR_LEFT);
+    processedInput = processedInput.replace(/\>/g, TANK_DIR_RIGHT);
+    return processedInput.trim().split("\n");
 }
 
-function setupBattlefield(mapLines, mapHeight, mapWidth) {
-    const currentBattlefield = [];
-    currentBattlefield.push(Array(mapWidth + 2).fill("#"));
+function calculateNewTankPosition(currentRow, currentCol, direction) {
+    let nextRow = currentRow;
+    let nextCol = currentCol;
+    switch (direction) {
+        case TANK_DIR_UP: nextRow--; break;
+        case TANK_DIR_DOWN: nextRow++; break;
+        case TANK_DIR_LEFT: nextCol--; break;
+        case TANK_DIR_RIGHT: nextCol++; break;
+    }
+    return [nextRow, nextCol];
+}
 
-    let tankLocation = [-1, -1];
+function performTankMove(grid, oldPos, newPos, directionChar) {
+    grid[newPos[0]][newPos[1]] = directionChar;
+    grid[oldPos[0]][oldPos[1]] = EMPTY_SPACE_CHAR;
+    return newPos;
+}
 
-    for (let r = 0; r < mapHeight; r++) {
-        const lineData = mapLines[r].split("");
-        const processedRow = ["#", ...lineData, "#"];
+function initializeGameGrid(mapHeight, mapRowsData) {
+    const gridWithBorders = [];
+    gridWithBorders.push(FIXED_BORDER_ROW_CONTENT.split(""));
 
-        let foundTankInRow = false;
-        for (let c = 0; c < lineData.length; c++) {
-            const char = lineData[c];
-            if (char === "U" || char === "D" || char === "L" || char === "R") {
-                tankLocation = [r + 1, c + 1];
-                foundTankInRow = true;
-                break;
+    let initialTankRow = 0;
+    let initialTankCol = 0;
+
+    for (let rIdx = 0; rIdx < mapHeight; rIdx++) {
+        const currentRowChars = mapRowsData[rIdx].split("");
+        let tankColIdx = -1;
+
+        currentRowChars.forEach((cellVal, charIdx) => {
+            if ([TANK_DIR_UP, TANK_DIR_DOWN, TANK_DIR_LEFT, TANK_DIR_RIGHT].includes(cellVal)) {
+                tankColIdx = charIdx;
             }
+        });
+
+        if (tankColIdx !== -1) {
+            initialTankRow = rIdx + 1; // +1 for top border
+            initialTankCol = tankColIdx + 1; // +1 for left border
         }
-        currentBattlefield.push(processedRow);
+        currentRowChars.unshift(WALL_BLOCK_CHAR);
+        currentRowChars.push(WALL_BLOCK_CHAR);
+        gridWithBorders.push(currentRowChars);
     }
-    currentBattlefield.push(Array(mapWidth + 2).fill("#"));
-
-    if (tankLocation[0] === -1) {
-        tankLocation = [1, 1];
-    }
-
-    return { grid: currentBattlefield, position: tankLocation };
+    gridWithBorders.push(FIXED_BORDER_ROW_CONTENT.split(""));
+    return { grid: gridWithBorders, tankPos: [initialTankRow, initialTankCol] };
 }
 
-function executeTankAction(actionCode, gridRef, tankPosRef) {
-    const currentOrientation = gridRef[tankPosRef[0]][tankPosRef[1]];
+function generateOutputString(finalGrid) {
+    const gridWithoutOuterBorders = finalGrid.slice(1, finalGrid.length - 1); // Removes top and bottom borders
 
-    const attemptMove = (deltaR, deltaC, newDirChar) => {
-        const nextRow = tankPosRef[0] + deltaR;
-        const nextCol = tankPosRef[1] + deltaC;
+    const processedRows = gridWithoutOuterBorders.map(row => {
+        const rowWithoutSideBorders = row.slice(1, row.length - 1); // Removes left and right borders
+        return rowWithoutSideBorders.join("");
+    });
 
-        gridRef[tankPosRef[0]][tankPosRef[1]] = newDirChar;
+    let outputString = processedRows.join("\n");
 
-        if (gridRef[nextRow][nextCol] === ".") {
-            gridRef[nextRow][nextCol] = newDirChar;
-            gridRef[tankPosRef[0]][tankPosRef[1]] = ".";
-            tankPosRef[0] = nextRow;
-            tankPosRef[1] = nextCol;
-        }
-    };
+    outputString = outputString.replace(new RegExp(TANK_DIR_UP, 'g'), "^");
+    outputString = outputString.replace(new RegExp(TANK_DIR_DOWN, 'g'), "v");
+    outputString = outputString.replace(new RegExp(TANK_DIR_LEFT, 'g'), "<");
+    outputString = outputString.replace(new RegExp(TANK_DIR_RIGHT, 'g'), ">");
 
-    switch (actionCode) {
-        case "U":
-            attemptMove(-1, 0, "U");
-            break;
-        case "D":
-            attemptMove(1, 0, "D");
-            break;
-        case "L":
-            attemptMove(0, -1, "L");
-            break;
-        case "R":
-            attemptMove(0, 1, "R");
-            break;
-        case "S":
-            if (currentOrientation === "U") launchShell(-1, 0, gridRef, tankPosRef);
-            else if (currentOrientation === "D") launchShell(1, 0, gridRef, tankPosRef);
-            else if (currentOrientation === "L") launchShell(0, -1, gridRef, tankPosRef);
-            else if (currentOrientation === "R") launchShell(0, 1, gridRef, tankPosRef);
-            break;
-    }
+    return outputString;
 }
 
-function prepareOutputGrid(finalGrid) {
-    const innerGrid = finalGrid.slice(1, finalGrid.length - 1);
-
-    return innerGrid.map(row => {
-        const rowWithoutBorders = row.slice(1, row.length - 1);
-        return rowWithoutBorders.join("")
-            .replace(/U/g, "^")
-            .replace(/D/g, "v")
-            .replace(/L/g, "<")
-            .replace(/R/g, ">");
-    }).join("\n");
-}
-
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const processedInputContent = standardizeInputChars(fileContent);
-
-let inputLines = processedInputContent.trim().split("\n");
-
-const scenarioCount = +inputLines.shift();
-
-if (isNaN(scenarioCount) || scenarioCount < 0) {
-    console.error("Invalid number of test scenarios provided.");
-    process.exit(1);
-}
-
-for (let testCaseIdx = 0; testCaseIdx < scenarioCount; testCaseIdx++) {
-    if (testCaseIdx !== 0) {
+function processSingleTestCase(inputLinesRef, currentCaseIndex) {
+    if (currentCaseIndex !== 0) {
         console.log("\n");
     }
 
-    const mapDimensions = inputLines.shift().split(" ").map(Number);
+    const mapDimensions = inputLinesRef.shift().split(" ").map(Number);
     const mapHeight = mapDimensions[0];
-    const mapWidth = mapDimensions[1];
+    // const mapWidth = mapDimensions[1]; // Not directly used for grid creation, but available
 
-    if (isNaN(mapHeight) || isNaN(mapWidth) || mapHeight <= 0 || mapWidth <= 0) {
-        for (let i = 0; i < mapHeight; i++) inputLines.shift();
-        inputLines.shift();
-        inputLines.shift();
-        continue;
-    }
+    const mapRowsData = inputLinesRef.splice(0, mapHeight);
+    const gridAndTankData = initializeGameGrid(mapHeight, mapRowsData);
+    gameGrid = gridAndTankData.grid;
+    tankPosition = gridAndTankData.tankPos;
 
-    const { grid: battlefieldGrid, position: tankCoordinates } = setupBattlefield(
-        inputLines.splice(0, mapHeight),
-        mapHeight,
-        mapWidth
-    );
+    inputLinesRef.shift(); // Consume empty line
+    const commandSequence = inputLinesRef.shift().split("");
 
-    inputLines.shift();
+    commandSequence.forEach(currentCommand => {
+        const currentTankRow = tankPosition[0];
+        const currentTankCol = tankPosition[1];
+        const tankCurrentDirection = gameGrid[currentTankRow][currentTankCol];
 
-    const commandSequence = inputLines.shift().split("");
+        let potentialNewPos;
 
-    for (const actionChar of commandSequence) {
-        executeTankAction(actionChar, battlefieldGrid, tankCoordinates);
-    }
+        switch (currentCommand) {
+            case TANK_DIR_UP:
+            case TANK_DIR_DOWN:
+            case TANK_DIR_LEFT:
+            case TANK_DIR_RIGHT:
+                potentialNewPos = calculateNewTankPosition(currentTankRow, currentTankCol, currentCommand);
+                const nextCellContent = gameGrid[potentialNewPos[0]][potentialNewPos[1]];
 
-    const finalOutput = prepareOutputGrid(battlefieldGrid);
-    console.log(finalOutput);
+                if (nextCellContent === EMPTY_SPACE_CHAR) {
+                    tankPosition = performTankMove(gameGrid, tankPosition, potentialNewPos, currentCommand);
+                } else {
+                    gameGrid[currentTankRow][currentTankCol] = currentCommand; // Update tank direction
+                }
+                break;
+            case COMMAND_SHOOT:
+                if (tankCurrentDirection === TANK_DIR_UP) fireProjectile(-1, 0);
+                else if (tankCurrentDirection === TANK_DIR_DOWN) fireProjectile(1, 0);
+                else if (tankCurrentDirection === TANK_DIR_LEFT) fireProjectile(0, -1);
+                else if (tankCurrentDirection === TANK_DIR_RIGHT) fireProjectile(0, 1);
+                break;
+        }
+    });
+
+    console.log(generateOutputString(gameGrid));
+}
+
+const rawInputContent = fileSystemModule.readFileSync(standardInputPath, 'utf8');
+let inputLines = prepareInputData(rawInputContent);
+
+const numTestCases = parseInt(inputLines.shift(), 10);
+
+for (let caseIndex = 0; caseIndex < numTestCases; caseIndex++) {
+    processSingleTestCase(inputLines, caseIndex);
 }

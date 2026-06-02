@@ -1,9 +1,15 @@
-function evaluateDimensions(rawDataPayload) {
-    console.log(
-        ((parsedData) => (parsedData[0] - parsedData[2]) * (parsedData[1] - parsedData[3]))(
-            rawDataPayload.split(/\s+/).filter(Boolean).map(Number)
-        )
-    );
+function processDimensions(sourceData) {
+    const [firstLineContent, secondLineContent] = sourceData.split('\n');
+
+    const [containerHeight, containerWidth] = firstLineContent.split(' ').map(Number);
+    const [stencilHeight, stencilWidth] = secondLineContent.split(' ').map(Number);
+
+    const heightDifference = containerHeight - stencilHeight;
+    const widthDifference = containerWidth - stencilWidth;
+
+    const calculatedArea = heightDifference * widthDifference;
+
+    console.log(calculatedArea);
 }
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
-evaluateDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));

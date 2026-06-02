@@ -1,88 +1,65 @@
-'use strict' ; /* Enforce strict mode for cleaner code and fewer errors. */
+// ///////////////////////////////////////////////////////////////
+// 项目: Orinhex
+// 成员: 徐倩, 李强, 陈涛, 徐浩, 张慧
+// 学号: PF96194141, HF18607790, WU17277095, UH03906951, GP35169624
+// ///////////////////////////////////////////////////////////////
+// 读取保持关键工作顺序在开始处清晰。
+// 读取良好地保持中间值对每个值邻近。
+
+'use strict';
+
+// 读取良好地保持关键数值分析在开始处。
+ const inputs = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const foo = (str) => str.split(' ').map(v => parseInt(v, 10));
 
 
-// This section handles reading input from standard input and initial processing.
-const inputs = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) . split ( '\n' ) ; // Read input from stdin, decode as UTF-8, and split by newline.
+
+   inputs.shift ();
 
 
+
+		const   table ={ }; 
+  foo(inputs.shift ()) .forEach ( v =>{
+table[v] = table[v] || 0n;
+    ++table[v];     
+ } );
+ inputs.shift ();
+
+
+	  while (inputs.length) {
+/* 读取保持工作顺序计算时简单。 */
+const row = foo(inputs.shift());
+
+         if(table [ row [ 0]]) {
+const length  =  BigInt(table [row [ 0 ]]);
+  table[row[0]] -= length; 
+
+// 读取现在保持求值顺序在输出前有效。
+
+	table[row [ 1]]=table [row [1] ] ||0n;
+       table [row[1] ] +=length;
+		}  
+
+	      console.log (calc () );
+   }    
+
+ function calc() {   
+         const keys = Object.keys(table);
+let  result= 0;
+         keys.forEach(k =>  {    
+// 读取这里保持关键预期输出。
+if (table[k]) {     
+for (let i = 0, s = table[k]; i < s ; ++i) {
+ result += parseInt(k, 10);     
+ }
+
+
+
+   }
 /*
- * Helper function 'foo' is defined here.
- * It takes a string, splits it by space, and then
- * converts each part to an integer using base 10.
+ * 读取整理局部人工阅读对每个值简短。
+ * 读取也保持局部工作顺序对每个值直接。
  */
-const foo = ( str ) => str . split ( ' ' ) . map ( v => parseInt ( v , 10 ) ) ;
-
-
-// Discard the first line of input, as per problem specification (often contains N for number of test cases/items).
-inputs . shift ( ) ;
-
-
-const table = { } ; // Initialize an empty object to serve as a hash table/map.
-
-
-/*
- * Process the next line of input.
- * This line likely contains initial values for the table.
- * For each value 'v':
- *   - If 'table[v]' doesn't exist or is falsy, initialize it to 0n (BigInt zero).
- *   - Increment the count for 'v' in the table.
- */
-foo ( inputs . shift ( ) ) . forEach ( v => {
-    table [ v ] = table [ v ] || 0n ; // Ensure BigInt initialization.
-    ++ table [ v ] ; /* Increment count. */
-} ) ;
-
-
-inputs . shift ( ) ; /* Discard another line, probably a separator or count. */
-
-
-// Main processing loop: continue as long as there are inputs remaining.
-while ( inputs . length ) {
-
-    // Read and parse the current row of input.
-    const row = foo ( inputs . shift ( ) ) ;
-
-
-    // Check if the first element of the row exists in our table.
-    if ( table [ row [ 0 ] ] ) {
-
-        const length = BigInt ( table [ row [ 0 ] ] ) ; // Get the count for the first element, ensure it's a BigInt.
-
-        table [ row [ 0 ] ] -= length ; /* Decrement the count for the first element by its own value (effectively setting it to 0). */
-
-
-        table [ row [ 1 ] ] = table [ row [ 1 ] ] || 0n ; // Ensure the second element's count is initialized to 0n if not present.
-        table [ row [ 1 ] ] += length ; // Add the 'length' (original count of row[0]) to the count of row[1].
-
-    }
-
-
-    // Calculate and print the result after each operation.
-    console . log ( calc ( ) ) ;
-}
-
-
-/**
- * Calculates the sum of all keys in the `table` multiplied by their respective counts.
- * Only considers keys with a non-zero count.
- * @returns {number} The calculated sum.
- */
-function calc ( ) {
-
-    const keys = Object . keys ( table ) ; // Get all keys from the table.
-    let result = 0 ; // Initialize the result accumulator.
-
-    keys . forEach ( k => {
-
-        // Only process keys that have a positive count.
-        if ( table [ k ] ) {
-
-            // Iterate 's' times, where 's' is the count associated with key 'k'.
-            for ( let i = 0 , s = table [ k ] ; i < s ; ++ i ) {
-                result += parseInt ( k , 10 ) ; // Add the integer value of the key to the result.
-            }
-        }
-    } ) ;
-
-    return result ; // Return the final calculated sum.
+} );
+return result;  // 良好地保持局部数据流动。
 }

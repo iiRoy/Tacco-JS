@@ -1,121 +1,119 @@
-function ProcessData(rawContent) {
-  // Utility function for numerical sorting
-  function numericSort(valA, valB) {
-    return valA - valB;
-  }
+function SolutionProcessor(rawInputData) {
+    // Helper function for ascending numerical sort
+    function numericalSortAsc(valA, valB) {
+        return valA - valB;
+    }
 
-  // Parse input: trim, split by new line, then split each line by space
-  let parsedLines = rawContent
-    .trim()
-    .split("\n")
-    .map(function(lineStr) {
-      return lineStr.split(" ");
+    // Process the raw input string: trim, split by newline, then split each line by space.
+    rawInputData = rawInputData.trim().split("\n").map(function(lineItem) {
+        return lineItem.split(" ");
     });
 
-  // Extract initial parameters from the first line and convert to integers
-  let firstLineVals = parsedLines[0].map(e => parseInt(e, 10));
+    // Parse the first line of input into integer parameters.
+    const initialParams = rawInputData[0].map(paramStr => parseInt(paramStr, 10));
 
-  // Define problem constraints and costs
-  // A: Cost of 100g of water component 1 (e.g., pure water)
-  // B: Cost of 100g of water component 2 (e.g., flavored water base)
-  // C: Cost of 1g of solute component 1 (e.g., sugar)
-  // D: Cost of 1g of solute component 2 (e.g., salt)
-  // E: Maximum allowed concentration percentage (e.g., 100 * (solute / water))
-  // F: Maximum total weight of the mixture
-  const waterBaseCost = firstLineVals[0] * 100;
-  const waterAdditiveCost = firstLineVals[1] * 100;
-  const soluteSugarCost = firstLineVals[2];
-  const soluteSaltCost = firstLineVals[3];
-  const maxConcentrationRatio = firstLineVals[4];
-  const maxMixtureWeight = firstLineVals[5];
+    // Assign parameters to descriptive variables, converting water units to grams (x100).
+    const waterGranuleA = initialParams[0] * 100; // Weight of water unit A in grams
+    const waterGranuleB = initialParams[1] * 100; // Weight of water unit B in grams
+    const sugarGranuleC = initialParams[2];       // Weight of sugar unit C in grams
+    const sugarGranuleD = initialParams[3];       // Weight of sugar unit D in grams
+    const maxSolubilityPercentage = initialParams[4]; // Maximum sugar solubility ratio (E)
+    const totalMaxWeight = initialParams[5];      // Maximum total weight of solution (F)
 
-  // Generate all possible water weights (combinations of waterBaseCost and waterAdditiveCost)
-  // The total weight must not exceed maxMixtureWeight
-  let waterWeightOptions = [];
-  let currentWaterWeight;
-  for (let waterIdx = 0; waterIdx < (maxMixtureWeight / waterBaseCost); waterIdx++) {
-    currentWaterWeight = waterBaseCost * waterIdx;
-    for (let additiveIdx = 0; additiveIdx < ((maxMixtureWeight - currentWaterWeight) / waterAdditiveCost); additiveIdx++) {
-      waterWeightOptions.push(currentWaterWeight + waterAdditiveCost * additiveIdx);
-    }
-  }
-
-  // Sort the generated water weights and remove duplicates
-  waterWeightOptions.sort(numericSort);
-  waterWeightOptions = waterWeightOptions.filter(function(currentVal, currentIndex, fullArray) {
-    return fullArray.indexOf(currentVal) === currentIndex;
-  });
-
-  // Calculate the maximum possible solute weight based on maxConcentrationRatio and maxMixtureWeight
-  // This is derived from: solute / (water + solute) <= E / 100  => solute <= E/100 * (water + solute)
-  // => solute * (1 - E/100) <= E/100 * water => solute * (100 - E)/100 <= E/100 * water
-  // => solute <= E/(100 - E) * water.
-  // The original formula `F * E / (100 + E)` seems to be for max solute where total weight is F, and solute/total_weight = E/(100+E)
-  // Let's assume the original formula is correct for the problem's intent: max_solute_weight_limit = floor(F * E / (100 + E))
-  const maxSoluteWeightLimit = Math.floor(maxMixtureWeight * maxConcentrationRatio / (100 + maxConcentrationRatio));
-
-  // Generate all possible solute weights (combinations of soluteSugarCost and soluteSaltCost)
-  // The total solute weight must not exceed maxSoluteWeightLimit
-  let soluteWeightOptions = [];
-  let currentSugarWeight;
-  for (let sugarIdx = 0; sugarIdx < (maxSoluteWeightLimit / soluteSugarCost); sugarIdx++) {
-    currentSugarWeight = soluteSugarCost * sugarIdx;
-    for (let saltIdx = 0; saltIdx < ((maxSoluteWeightLimit - currentSugarWeight) / soluteSaltCost); saltIdx++) {
-      soluteWeightOptions.push(currentSugarWeight + soluteSaltCost * saltIdx);
-    }
-  }
-
-  // Sort the generated solute weights and remove duplicates
-  soluteWeightOptions.sort(numericSort);
-  soluteWeightOptions = soluteWeightOptions.filter(function(currentVal, currentIndex, fullArray) {
-    return fullArray.indexOf(currentVal) === currentIndex;
-  });
-
-  // Create a bitmap (boolean array) for quick lookup of available solute weights
-  // Initialize all entries to 0 (false)
-  let solutePresenceMap = [];
-  for (let mapIdx = 0; mapIdx <= maxSoluteWeightLimit; mapIdx++) {
-    solutePresenceMap.push(0);
-  }
-  // Mark existing solute weights as 1 (true)
-  for (let presentSoluteWeight of soluteWeightOptions) {
-    solutePresenceMap[presentSoluteWeight] = 1;
-  }
-
-  // Initialize variables for tracking the best density found
-  let currentHighestDensity = 0;
-  let bestResultArray = [0, 0]; // [totalWeight, soluteWeight]
-
-  // Iterate through all possible water weights
-  for (let currentWaterWeight of waterWeightOptions) {
-    // Calculate the lower and upper bounds for solute weight for the current water weight
-    // Lower bound: Based on the current highest density achieved
-    // Upper bound: Limited by the max concentration ratio and the remaining total weight capacity
-    let minSoluteForWater = Math.floor(currentWaterWeight * currentHighestDensity);
-    let maxSoluteForWater = Math.min(Math.floor(currentWaterWeight * maxConcentrationRatio / 100), maxMixtureWeight - currentWaterWeight);
-
-    // Iterate through possible solute weights within the calculated range
-    for (let currentSoluteWeight = minSoluteForWater; currentSoluteWeight <= maxSoluteForWater; currentSoluteWeight++) {
-      // Check if this solute weight is valid (i.e., can be formed by C and D)
-      if (solutePresenceMap[currentSoluteWeight] === 1) {
-        // Calculate the density for the current combination
-        const currentDensity = currentSoluteWeight / currentWaterWeight;
-
-        // If this density is higher than the current highest, update the best result
-        if (currentDensity > currentHighestDensity) {
-          bestResultArray[0] = currentWaterWeight + currentSoluteWeight;
-          bestResultArray[1] = currentSoluteWeight;
-          currentHighestDensity = currentDensity;
+    // --- Calculate all possible water amounts ---
+    // Generate combinations of water using waterGranuleA and waterGranuleB,
+    // ensuring total weight does not exceed totalMaxWeight.
+    let possibleWaterAmounts = [];
+    let currentWaterSum; // Temporary variable to hold current water amount
+    for (let idxA = 0; idxA * waterGranuleA <= totalMaxWeight; idxA++) {
+        currentWaterSum = waterGranuleA * idxA;
+        for (let idxB = 0; currentWaterSum + idxB * waterGranuleB <= totalMaxWeight; idxB++) {
+            possibleWaterAmounts.push(currentWaterSum + waterGranuleB * idxB);
         }
-        // Mark this solute weight as used to avoid redundant checks (optimization)
-        solutePresenceMap[currentSoluteWeight] = 0;
-      }
     }
-  }
 
-  // Output the total weight and solute weight of the mixture with the highest density
-  console.log("%d %d", bestResultArray[0], bestResultArray[1]);
+    // Sort the water amounts and remove duplicates.
+    possibleWaterAmounts.sort(numericalSortAsc);
+    possibleWaterAmounts = possibleWaterAmounts.filter(function (uniqueItem, idx, arrayReference) {
+        return arrayReference.indexOf(uniqueItem) === idx;
+    });
+
+    // --- Calculate maximum allowed sugar weight ---
+    // The maximum sugar that can be dissolved is limited by the solubility ratio E
+    // and the total maximum weight F.
+    const maxAllowedSugarWeight = Math.floor(totalMaxWeight * maxSolubilityPercentage / (100 + maxSolubilityPercentage));
+
+    // --- Calculate all possible sugar amounts ---
+    // Generate combinations of sugar using sugarGranuleC and sugarGranuleD,
+    // ensuring total sugar weight does not exceed maxAllowedSugarWeight.
+    let possibleSugarAmounts = [];
+    let currentSugarSum; // Temporary variable to hold current sugar amount
+    for (let idxA = 0; idxA * sugarGranuleC <= maxAllowedSugarWeight; idxA++) {
+        currentSugarSum = sugarGranuleC * idxA;
+        for (let idxB = 0; currentSugarSum + idxB * sugarGranuleD <= maxAllowedSugarWeight; idxB++) {
+            possibleSugarAmounts.push(currentSugarSum + sugarGranuleD * idxB);
+        }
+    }
+
+    // Sort the sugar amounts and remove duplicates.
+    possibleSugarAmounts.sort(numericalSortAsc);
+    possibleSugarAmounts = possibleSugarAmounts.filter(function (uniqueItem, idx, arrayReference) {
+        return arrayReference.indexOf(uniqueItem) === idx;
+    });
+
+    // --- Create a bitmap for quick lookup of possible sugar amounts ---
+    // This optimizes checking if a specific sugar amount is achievable.
+    let sugarAvailabilityMap = [];
+    for (let idxA = 0; idxA <= maxAllowedSugarWeight; idxA++) {
+        sugarAvailabilityMap.push(0); // Initialize all entries to 0 (not available)
+    }
+    for (const sugarVal of possibleSugarAmounts) {
+        sugarAvailabilityMap[sugarVal] = 1; // Mark available sugar amounts with 1
+    }
+
+    // --- Find the optimal solution ---
+    // Iterate through possible water amounts and then possible sugar amounts
+    // to find the highest density solution within constraints.
+    let highestDensityFound = 0; // Stores the maximum sugar density (sugar / water)
+    let optimalSolution = [0, 0]; // Stores [total_weight, sugar_weight] for the optimal solution
+
+    let currentSugarLowerBound; // Lower bound for sugar amount based on current density
+    let currentSugarUpperBound = maxAllowedSugarWeight; // Upper bound for sugar amount
+
+    // Iterate over each possible water amount.
+    for (const waterVal of possibleWaterAmounts) {
+        // Calculate the lower bound for sugar based on the current highest density found.
+        // This prunes the search space.
+        currentSugarLowerBound = Math.floor(waterVal * highestDensityFound);
+        
+        // Calculate the upper bound for sugar, considering solubility and total weight limits.
+        currentSugarUpperBound = Math.min(
+            Math.floor(waterVal * maxSolubilityPercentage / 100), // Solubility limit
+            totalMaxWeight - waterVal                             // Total weight limit
+        );
+
+        // Iterate through possible sugar amounts within the calculated bounds.
+        for (let sugarCheckVal = currentSugarLowerBound; sugarCheckVal <= currentSugarUpperBound; sugarCheckVal++) {
+            // Check if this sugar amount is achievable (present in the bitmap)
+            if (sugarAvailabilityMap[sugarCheckVal] === 1) {
+                // If a higher density is found, update the optimal solution.
+                if ((sugarCheckVal / waterVal) > highestDensityFound) {
+                    optimalSolution[0] = waterVal + sugarCheckVal; // Total weight
+                    optimalSolution[1] = sugarCheckVal;            // Sugar weight
+                    highestDensityFound = sugarCheckVal / waterVal; // Update max density
+                }
+                // Mark this sugar amount as "used" or "checked" to avoid redundant calculations
+                // if multiple water amounts could lead to the same sugar amount.
+                // This is a crucial optimization to prevent re-evaluating the same sugar amount
+                // with different water amounts if it doesn't improve density.
+                sugarAvailabilityMap[sugarCheckVal] = 0; 
+            }
+        }
+    }
+
+    // Output the optimal total weight and sugar weight.
+    console.log("%d %d", optimalSolution[0], optimalSolution[1]);
 }
 
-// Read input from standard input and pass it to the main processing function
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+SolutionProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));

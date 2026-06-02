@@ -1,21 +1,27 @@
-// Initial competitive programming problem reference.
-// Another problem specification from a different contest.
+process.stdin.resume();
 
-process . stdin . resume ( ) ;
-process . stdin . setEncoding ( 'utf8' ) ;
+process.stdin.setEncoding('utf8'); // Set the encoding for incoming data
 
-process.stdin.on('data', function (inputBlock)
-    {
-        let digitSequence = inputBlock.toString() // Convert the received buffer to a string.
-                                        .split("\n") // Split the string by newline characters.
-                                        .map ( item => Number ( item ) )
-                                        .filter ( item => item !== 0 ) ;
-        const initialSet = digitSequence.slice(0, 3);
-        const finalSet = digitSequence.slice(3, 5);
-        const firstMinimum = Math.min.apply(null, initialSet);  // This yields the smallest value from the first array.
-        const secondMinimum = Math.min.apply(null, finalSet);  // This yields the smallest value from the second array.
+// Event listener for data received from standard input
+process.stdin.on('data', function (inputData) {
+    // Process the raw input string
+    let parsedNumbers = inputData
+        .toString() // Convert buffer to string
+        .split("\n") // Split the string by newline characters into an array
+        .map(currentVal => Number(currentVal)) // Convert each array element to a number
+        .filter(currentVal => currentVal !== 0); // Remove any zero values from the array
 
-        const outcome = firstMinimum + secondMinimum - 50;
-        console.log( outcome );
-    }
-);
+    // Extract specific portions of the processed numbers array
+    const firstGroup = parsedNumbers.slice(0, 3); // Get the first three elements
+    const secondGroup = parsedNumbers.slice(3, 5); // Get elements from index 3 up to (but not including) 5
+
+    // Find the minimum value in each extracted group
+    const minOfFirst = Math.min.apply(null, firstGroup);
+    const minOfSecond = Math.min.apply(null, secondGroup);
+
+    // Calculate the final result based on the minimums
+    const finalResult = minOfFirst + minOfSecond - 50;
+
+    // Output the computed result to the console
+    console.log(finalResult);
+});

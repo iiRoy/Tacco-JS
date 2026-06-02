@@ -1,111 +1,125 @@
 /*
- * Module for processing graph data.
- * This script analyzes directed acyclic graphs for specific path properties.
- * Initialized on 2023-10-27.
+ * This file processes graph data to find specific critical edges.
+ * It reads graph structure from standard input.
  */
-// Core utility includes for file operations
-const fileSystemMod = require('node:fs');
+var fileSystemModule = require('fs'),
+    // Determine the size of the standard input stream.
+    fileSize = fileSystemModule.fstatSync(process.stdin.fd).size,
+    // Create a buffer to hold the input data.
+    dataBuffer = new Buffer(fileSize),
+    // Read data from standard input into the buffer.
+    readBytesCount = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0),
+    // Convert buffer to string, then split into lines.
+    inputLines = dataBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-// Acquire input data from standard input stream
-const contentSize = fileSystemMod.fstatSync(process.stdin.fd).size; // Determine input payload byte count
-const dataBuffer = new Buffer(contentSize); // Allocate memory for the incoming data stream
-const octetsReceived = fileSystemMod.readSync(process.stdin.fd, dataBuffer, 0, contentSize, 0); // Read raw bytes into buffer
-const dataLines = dataBuffer.toString('utf8', 0, octetsReceived).split('\n'); // Convert buffer to UTF-8 string and split into lines
+// Execute the primary graph processing routine.
+processGraphData();
 
-executeProcessing(); // Initiate the primary graph analysis routine
+/**
+ * Main function to handle graph operations and find critical edges.
+ */
+function processGraphData() {
+  // Parse the first line for node and edge counts.
+  var temporaryValues = inputLines.shift().split(' '),
+      nodeCount = temporaryValues[0], // Number of nodes in the graph.
+      edgeCount = temporaryValues[1], // Number of edges in the graph.
+      graphEdges = [],                // Stores all edges as [source, target].
+      adjacencyList = [],             // Adjacency list for forward graph traversal.
+      reverseAdjacencyList = [],      // Adjacency list for reverse graph traversal.
+      longestPathLengths = [],        // Stores the length of the longest path ending at each node.
+      nodeIdx,                        // Loop counter for nodes.
+      neighborIdx,                    // Loop counter for neighbors.
+      currentLength,                  // Stores array length in loops.
+      sourceNode,                     // Source node of an edge.
+      targetNode;                     // Target node of an edge.
 
-function executeProcessing() {
-  // Extract initial configuration parameters from the first line of input
-  const temporaryValues = dataLines.shift().split(' ');
-  const nodeCount = temporaryValues[0]; // Represents the total number of vertices in the graph
-  const edgeCount = temporaryValues[1]; // Represents the total number of directed connections between vertices
-
-  // Initialize data structures for graph representation and path calculations
-  const connectionList = []; // Stores the original edge definitions as [source, target] pairs
-  const forwardGraph = []; // Adjacency list for outgoing edges (node -> [neighbors])
-  const backwardGraph = []; // Adjacency list for incoming edges (node -> [predecessors])
-  const pathLengths = []; // Dynamic programming array to store calculated longest path lengths ending at each node
-
-  let idxA, idxB; // General-purpose loop iterators
-  let currentLength; // Variable to cache array lengths within loops for performance
-  let startNode, endNode; // Variables to temporarily hold node identifiers for an edge
-
-  // Prepare graph structures and path tracking for each node
-  for (idxA = 0; idxA < nodeCount; idxA++) {
-    forwardGraph[idxA] = [];
-    backwardGraph[idxA] = [];
-    pathLengths[idxA] = 0; // Initialize all path lengths to zero, assuming no path yet
+  // Initialize graph structures for each node.
+  for (nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    adjacencyList[nodeIdx] = [];
+    reverseAdjacencyList[nodeIdx] = [];
+    longestPathLengths[nodeIdx] = 0; // Initialize longest path to 0 for all nodes.
   }
 
-  // Populate graph structures based on input edges
-  for (idxA = 0; idxA < edgeCount; idxA++) {
-    const currentEdgeData = dataLines[idxA].split(' ');
-    startNode = currentEdgeData[0] - 1; // Convert to 0-indexed node ID
-    endNode = currentEdgeData[1] - 1; // Convert to 0-indexed node ID
+  // Read and process each edge from the input.
+  for (nodeIdx = 0; nodeIdx < edgeCount; nodeIdx++) {
+    temporaryValues = inputLines[nodeIdx].split(' ');
+    sourceNode = temporaryValues[0] - 1; // Adjust to 0-indexed.
+    targetNode = temporaryValues[1] - 1; // Adjust to 0-indexed.
 
-    connectionList[idxA] = [startNode, endNode]; // Store the edge pair in the list
-    forwardGraph[startNode].push(endNode); // Add to forward adjacency list
-    backwardGraph[endNode].push(startNode); // Add to backward adjacency list
+    graphEdges[nodeIdx] = [sourceNode, targetNode]; // Store the edge.
+    adjacencyList[sourceNode].push(targetNode);     // Add to forward adjacency list.
+    reverseAdjacencyList[targetNode].push(sourceNode); // Add to reverse adjacency list.
   }
 
-  // Calculate the longest path length (dynamic programming approach) for each node
-  // This implicitly processes nodes in a topological-like order for DAGs.
-  for (idxA = 0; idxA < nodeCount; idxA++) {
-    for (idxB = 0, currentLength = forwardGraph[idxA].length; idxB < currentLength; idxB++) {
-      const neighborNode = forwardGraph[idxA][idxB];
-      // If a longer path to the neighbor is found through the current node, update it
-      if (pathLengths[neighborNode] < pathLengths[idxA] + 1) {
-        pathLengths[neighborNode] = pathLengths[idxA] + 1;
+  // Calculate the longest path length to each node using dynamic programming.
+  // This assumes a DAG (Directed Acyclic Graph).
+  for (nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    for (neighborIdx = 0, currentLength = adjacencyList[nodeIdx].length; neighborIdx < currentLength; neighborIdx++) {
+      // If a longer path to the neighbor is found through the current node, update it.
+      if (longestPathLengths[adjacencyList[nodeIdx][neighborIdx]] < longestPathLengths[nodeIdx] + 1) {
+        longestPathLengths[adjacencyList[nodeIdx][neighborIdx]] = longestPathLengths[nodeIdx] + 1;
       }
     }
   }
 
-  // Determine the maximum path value across all nodes and identify nodes that are part of such paths
-  const maximumPathValue = Math.max.apply(null, pathLengths); // Find the overall longest path length in the graph
-  const relevantNodes = []; // Boolean array: true if node is on a path with `maximumPathValue`
-  const pathLevelCounts = []; // Counter for how many relevant predecessors contribute to a node's path
-  let isNotFound = true; // Boolean flag to track if the specific critical edge condition is met
+  // Find the maximum path length in the entire graph.
+  var maximumPathLength = Math.max.apply(null, longestPathLengths),
+      criticalNodes = [],       // Boolean array: true if node is part of *any* longest path.
+      nodeLevelCounts = [],     // Counts how many critical nodes are at a specific path length.
+      foundCriticalEdge = true; // Flag to track if a critical edge is found.
 
-  // Initialize node relevance and path level counters
-  for (idxA = 0; idxA < nodeCount; idxA++) {
-    relevantNodes[idxA] = (maximumPathValue === pathLengths[idxA]); // Mark nodes with the max path length
-    pathLevelCounts[idxA] = 0; // Initialize level counts for nodes, used in reverse traversal
+  // Initialize criticalNodes and nodeLevelCounts arrays.
+  for (nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    criticalNodes[nodeIdx] = (maximumPathLength === longestPathLengths[nodeIdx]);
+    nodeLevelCounts[nodeIdx] = 0; // Initialize counts for each level.
   }
 
-  // Back-propagate relevance: identify all nodes that can lead to a relevant node
-  // and are themselves part of a longest path.
-  for (idxA = nodeCount - 1; idxA >= 0; idxA--) {
-    if (relevantNodes[idxA]) {
-      // Iterate through nodes that point to the current relevant node (predecessors)
-      for (idxB = 0, currentLength = backwardGraph[idxA].length; idxB < currentLength; idxB++) {
-        const predecessorNode = backwardGraph[idxA][idxB];
-        // Check if the predecessor node's path length plus one equals the current node's path length,
-        // indicating it's a direct predecessor on a longest path.
-        if (pathLengths[predecessorNode] + 1 === pathLengths[idxA]) {
-          relevantNodes[predecessorNode] = true; // Mark the predecessor as also relevant
-          pathLevelCounts[pathLengths[predecessorNode]]++; // Increment count for this path level
+  // Traverse nodes in reverse order to identify all nodes belonging to *a* longest path.
+  // Also, count critical nodes at each path length level.
+  for (nodeIdx = nodeCount - 1; nodeIdx >= 0; nodeIdx--) {
+    if (criticalNodes[nodeIdx]) { // If the current node is part of a longest path...
+      for (neighborIdx = 0, currentLength = reverseAdjacencyList[nodeIdx].length; neighborIdx < currentLength; neighborIdx++) {
+        // Check if a predecessor node forms a path of length `longestPathLengths[nodeIdx]` ending at `nodeIdx`.
+        if (longestPathLengths[reverseAdjacencyList[nodeIdx][neighborIdx]] + 1 === longestPathLengths[nodeIdx]) {
+          criticalNodes[reverseAdjacencyList[nodeIdx][neighborIdx]] = true; // Mark predecessor as critical.
+          nodeLevelCounts[longestPathLengths[reverseAdjacencyList[nodeIdx][neighborIdx]]]++; // Increment count for its level.
         }
       }
     }
   }
 
-  // Final check for specific edges that meet the problem's criteria
-  for (idxA = 0; idxA < edgeCount; idxA++) {
-    const sourceNode = connectionList[idxA][0];
-    const targetNode = connectionList[idxA][1];
-
-    // An edge is considered "critical" if:
-    // 1. Both its source and target nodes are marked as `relevantNodes` (part of a longest path).
-    // 2. The `pathLevelCounts` for the source node's path length is exactly one.
-    //    This implies the source node is uniquely positioned at its path length to contribute to a longest path.
-    if (relevantNodes[sourceNode] && relevantNodes[targetNode] && pathLevelCounts[pathLengths[sourceNode]] === 1) {
-      console.log(idxA + 1); // Output the 1-indexed edge number
-      isNotFound = false; // Condition met, so set flag to false
+  // Iterate through all original edges to find critical edges.
+  for (nodeIdx = 0; nodeIdx < edgeCount; nodeIdx++) {
+    // An edge is critical if:
+    // 1. Both its source and target nodes are part of *a* longest path.
+    // 2. The source node's path length level has only one critical node (itself).
+    //    This implies it's a unique path segment at that level.
+    if (criticalNodes[graphEdges[nodeIdx][0]] &&
+        criticalNodes[graphEdges[nodeIdx][1]] &&
+        nodeLevelCounts[longestPathLengths[graphEdges[nodeIdx][0]]] === 1) {
+      console.log(nodeIdx + 1); // Output the 1-indexed edge number.
+      foundCriticalEdge = false; // A critical edge was found.
     }
   }
 
-  // If no such critical edge was found during the iteration, output -1
-  if (isNotFound = true) { // Note: this is an assignment `isNotFound = true` which then evaluates to `true`
+  // If no critical edge was found, output -1.
+  // Note: The original code uses an assignment `flag = true` which always evaluates to true.
+  // This behavior is preserved.
+  if (foundCriticalEdge = true) {
     console.log(-1);
   }
-} // End of main processing function
+
+  /*
+   * The following commented-out blocks are from the original code.
+   * They are preserved as comments.
+   */
+  // for (nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+  //   for (neighborIdx = 0, currentLength = adjacencyList[nodeIdx].length; neighborIdx < currentLength; neighborIdx++) {
+  //
+  //   }
+  // }
+  // console.log(longestPathLengths)
+  //
+  // console.log(criticalNodes)
+  // console.log(nodeLevelCounts)
+}

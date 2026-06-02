@@ -1,40 +1,39 @@
-const rawTextualData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawDataInput = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const analyzeSegmentPair = (lineData) => {
-    const numericMeasurements = lineData.split(' ').map(s => Number(s) * 100000);
+const processedLines = rawDataInput.trim().split('\n').slice(1);
 
-    const segmentOne = {
-        origin: { horizon: numericMeasurements[0], vertical: numericMeasurements[1] },
-        terminus: { horizon: numericMeasurements[2], vertical: numericMeasurements[3] }
-    };
-    const segmentTwo = {
-        origin: { horizon: numericMeasurements[4], vertical: numericMeasurements[5] },
-        terminus: { horizon: numericMeasurements[6], vertical: numericMeasurements[7] }
-    };
+for (const currentInputLine of processedLines) {
+    const numericCoordinates = currentInputLine.split(' ').map(val => Number(val) * 100000);
 
-    const deltaOneHorizon = segmentOne.terminus.horizon - segmentOne.origin.horizon;
-    const deltaOneVertical = segmentOne.terminus.vertical - segmentOne.origin.vertical;
-    const deltaTwoHorizon = segmentTwo.terminus.horizon - segmentTwo.origin.horizon;
-    const deltaTwoVertical = segmentTwo.terminus.vertical - segmentTwo.origin.vertical;
+    const firstPointX = numericCoordinates[0];
+    const firstPointY = numericCoordinates[1];
+    const secondPointX = numericCoordinates[2];
+    const secondPointY = numericCoordinates[3];
+    const thirdPointX = numericCoordinates[4];
+    const thirdPointY = numericCoordinates[5];
+    const fourthPointX = numericCoordinates[6];
+    const fourthPointY = numericCoordinates[7];
 
-    const isFirstNonVertical = deltaOneHorizon !== 0;
-    const isSecondNonVertical = deltaTwoHorizon !== 0;
+    let areLinesParallel = "NO";
 
-    let comparisonOutcome = "NO";
+    const lineOneDeltaX = secondPointX - firstPointX;
+    const lineOneDeltaY = secondPointY - firstPointY;
+    const lineTwoDeltaX = fourthPointX - thirdPointX;
+    const lineTwoDeltaY = fourthPointY - thirdPointY;
 
-    if (isFirstNonVertical && isSecondNonVertical) {
-        if (deltaOneVertical * deltaTwoHorizon === deltaTwoVertical * deltaOneHorizon) {
-            comparisonOutcome = "YES";
+    // The original code only checks for parallelism if both lines are non-vertical.
+    // If either line is vertical (deltaX is zero), it implicitly outputs "NO".
+    if (lineOneDeltaX === 0 || lineTwoDeltaX === 0) {
+        areLinesParallel = "NO";
+    } else {
+        // For non-vertical lines, check if their direction vectors are parallel
+        // using the cross-product concept: (v1x * v2y) - (v1y * v2x) === 0
+        if (lineOneDeltaX * lineTwoDeltaY === lineOneDeltaY * lineTwoDeltaX) {
+            areLinesParallel = "YES";
+        } else {
+            areLinesParallel = "NO";
         }
     }
 
-    return comparisonOutcome;
-};
-
-const textualOutputLines = rawTextualData
-    .trim()
-    .split('\n')
-    .slice(1)
-    .map(analyzeSegmentPair);
-
-textualOutputLines.forEach(outcome => console.log(outcome));
+    console.log(areLinesParallel);
+}

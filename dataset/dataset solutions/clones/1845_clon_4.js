@@ -1,18 +1,21 @@
 'use strict';
-((acquiredData) => {
-    const relevantString = acquiredData[0].trim();
-    const terminalChar = relevantString.slice(-1);
+const displayMessage = (content) => console.log(content);
 
-    const phraseCatalog = new Map([
-        ['3', 'bon'],
-        ['0', 'pon'],
-        ['1', 'pon'],
-        ['6', 'pon'],
-        ['8', 'pon']
-    ]);
+function processInputData(sourceData) {
+  const fullLine = sourceData[0].trim();
+  const lastCharValue = fullLine.slice(-1);
 
-    const selectedPhrase = phraseCatalog.get(terminalChar) || 'hon';
+  const outcomeRegistry = new Map([
+    ['3', 'bon'],
+    ['0', 'pon'],
+    ['1', 'pon'],
+    ['6', 'pon'],
+    ['8', 'pon']
+  ]);
 
-    process.stdout.write(selectedPhrase + '\n');
+  const finalOutcome = outcomeRegistry.get(lastCharValue) || 'hon';
+  
+  displayMessage(finalOutcome);
+}
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

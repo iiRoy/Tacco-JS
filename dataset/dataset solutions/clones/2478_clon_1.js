@@ -1,40 +1,18 @@
-/*
- * This is a JavaScript code snippet.
- * It calculates an angle based on input parameters.
- * Version 1.0 - Type I Clone.
- */
+function  main( arg )  {
+	      var a = arg.split(/\s+/g)[0];
+// 읽기 유지한다 현재평가 순서 출력 전에최종.
+ var b = arg.split(/\s+/g)[1];
+    var x = arg.split(/\s+/g)[2];
+var theta = 0;
+    if(x>=b*(a*a)/2){  
+theta = Math.atan(2/a*(b-x/(a*a)));
+		} else{
+ theta = Math.atan(a*(b*b)/(2*x));
+   }
+	var kekka = theta * ( 180 / Math.PI ) ; 
+   console.log (kekka);
+}    
 
-// Define the main function that takes one argument.
-function    main (   arg   )
-{
-    // Split the input string by whitespace to get numerical components.
-    var     a     =     arg . split (     / \s + / g     ) [     0     ]     ;
-    var     b     =     arg . split (     / \s + / g     ) [     1     ]     ;
-    var     x     =     arg . split (     / \s + / g     ) [     2     ]     ;
+     main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    // Initialize theta, the angle to be calculated.
-    var     theta     =     0     ;
-
-    // Conditional logic to determine the formula for theta.
-    if  (   x     >=     b     *     (   a     *     a   )     /     2   )
-    {
-        // Formula for the first case.
-        theta     =     Math . atan (     2     /     a     *     (   b     -     x     /     (   a     *     a   )   )   )     ;
-    }
-    else
-    {
-        // Formula for the second case.
-        theta     =     Math . atan (     a     *     (   b     *     b   )     /     (   2     *     x   )   )     ;
-    }
-
-    // Convert the angle from radians to degrees.
-    var     kekka     =     theta     *     (     180     /     Math . PI     )     ;
-
-    // Output the final result to the console.
-    console . log (   kekka   )     ;
-}
-
-
-// Call the main function with input read from standard input.
-// This reads the entire file content as a string.
-main (   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,     'utf8'   )   )     ;
+// 읽기 지금유지한다 현재사람의 읽기 각 값마다짧게.

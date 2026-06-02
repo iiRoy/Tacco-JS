@@ -1,47 +1,48 @@
-const getFileContent = (filePath, encoding = 'utf-8') => require("fs").readFileSync(filePath, encoding);
-
-function* acquireRawInputTokens() {
-    const rawDataString = getFileContent("/dev/stdin").trim();
-    const tokenCollection = rawDataString.split(/[\n\s]+/).filter(Boolean);
-
-    for (const dataSegment of tokenCollection) {
-        yield dataSegment;
+function* generateInputTokens() {
+    const fileSystem = require("fs");
+    const fileContent = fileSystem.readFileSync("/dev/stdin", "utf-8");
+    const trimmedContent = fileContent.trim();
+    const tokens = trimmedContent.split(/\n|\s/);
+    for (const token of tokens) {
+        yield token;
     }
 }
 
-function retrieveParsedNumbers(quantityToFetch, sourceIterator, itemParser = (val) => val) {
-    const currentDataSource = sourceIterator || (this.inputProvider = acquireRawInputTokens());
-    const collectedValues = [];
-
-    for (let k = 0; k < quantityToFetch; k++) {
-        const nextDataItem = currentDataSource.next().value;
-        collectedValues.push(itemParser(nextDataItem));
+function retrieveInputValues(numToFetch, inputIterator) {
+    const currentIterator = inputIterator || this.inputSource || (this.inputSource = generateInputTokens());
+    const collectedItems = [];
+    let fetchCounter = 0;
+    while (fetchCounter < numToFetch) {
+        const nextItem = currentIterator.next().value;
+        collectedItems.push(nextItem);
+        fetchCounter++;
     }
-
-    return collectedValues;
+    return collectedItems;
 }
 
-(function processInputAndCompute() {
-    const globalInputIterator = acquireRawInputTokens();
+const convertToInteger = (strValue) => {
+    return parseInt(strValue, 10);
+};
 
-    const [ totalElementCount ] = retrieveParsedNumbers(1, globalInputIterator, parseInt);
+(() => {
+    const initialInputStrings = retrieveInputValues(1);
+    const [countString] = initialInputStrings;
+    const numberOfElements = convertToInteger(countString);
 
-    if (isNaN(totalElementCount) || totalElementCount <= 0) {
-        console.error("Invalid input: N must be a positive integer.");
-        return;
+    const elementStrings = retrieveInputValues(numberOfElements);
+    const numericElements = elementStrings.map(convertToInteger);
+
+    let cumulativeXor = 0;
+    for (const element of numericElements) {
+        cumulativeXor ^= element;
     }
 
-    const numericalDataSet = retrieveParsedNumbers(totalElementCount, globalInputIterator, parseInt);
-
-    let cumulativeXORSum = 0;
-    for (let currentNumber of numericalDataSet) {
-        cumulativeXORSum ^= currentNumber;
+    const finalResults = [];
+    for (let index = 0; index < numberOfElements; index += 1) {
+        const currentElement = numericElements[index];
+        const xorResult = cumulativeXor ^ currentElement;
+        finalResults.push(xorResult);
     }
 
-    const finalOutputCollection = numericalDataSet.map(elementValue => {
-        const computedXORValue = cumulativeXORSum ^ elementValue;
-        return computedXORValue;
-    });
-
-    console.log(finalOutputCollection.join(' '));
+    console.log(finalResults.join(' '));
 })();

@@ -1,31 +1,26 @@
-function extractIntegerSequence(textualLine) {
-  return textualLine.match(/\d+/g).map(Number);
+function processInputData(inputLines) {
+  const [totalItems, maxCapacity, thresholdValue] = convertLineToNumbers(inputLines[0]);
+  const itemValues = convertLineToNumbers(inputLines[1]);
+
+  const itemsAboveThreshold = itemValues.reduce((count, currentItem) => {
+    return count + (currentItem > thresholdValue ? 1 : 0);
+  }, 0);
+
+  console.log(Math.min(itemsAboveThreshold, maxCapacity - itemsAboveThreshold));
 }
 
-function performComputation(allLines) {
-  const parametersSet = extractIntegerSequence(allLines[0]);
-  const priceThreshold = parametersSet[2]; 
-  const itemPriceList = extractIntegerSequence(allLines[1]);
-  
-  const counts = itemPriceList.reduce((accumulator, currentPrice) => {
-    if (currentPrice > priceThreshold) {
-      accumulator.aboveThreshold++;
-    } else {
-      accumulator.atOrBelowThreshold++;
-    }
-    return accumulator;
-  }, { aboveThreshold: 0, atOrBelowThreshold: 0 });
-
-  console.log(Math.min(counts.aboveThreshold, counts.atOrBelowThreshold));
+function convertLineToNumbers(textLine) {
+  return textLine.split(' ').map(Number);
 }
 
-var incomingTransmission = '';
+let accumulatedInputString = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataChunk) {
-  incomingTransmission += dataChunk;
+process.stdin.on('data', function(dataSegment) {
+  accumulatedInputString += dataSegment;
 });
 process.stdin.on('end', function() {
-  performComputation(incomingTransmission.split('\n'));
+  const parsedInputLines = accumulatedInputString.split('\n');
+  processInputData(parsedInputLines);
 });

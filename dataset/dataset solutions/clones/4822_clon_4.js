@@ -1,18 +1,14 @@
-const processPayload = (rawSignal) => {
-    const signalComponents = rawSignal.split(/[\r\n]/g);
-    const [verticalExtentStr, horizontalExtentStr] = signalComponents[0].split(' ');
-    const verticalExtent = parseInt(verticalExtentStr, 10);
+function main(sourceText) {
+    const lineCollection = sourceText.split('\n');
 
-    const sourceElements = Array.from({ length: verticalExtent }, (_, idx) => {
-        return signalComponents[idx + 1];
-    });
+    const [heightSpecifier, widthSpecifier] = lineCollection.shift().split(' ');
+    const effectiveHeight = Number(heightSpecifier);
 
-    const finalSequence = sourceElements.flatMap(currentElement => [currentElement, currentElement]);
+    const outputActions = lineCollection
+        .slice(0, effectiveHeight)
+        .flatMap(currentSegment => [() => console.log(currentSegment), () => console.log(currentSegment)]);
 
-    finalSequence.forEach(itemToDisplay => {
-        console.log(itemToDisplay);
-    });
-};
+    outputActions.forEach(performAction => performAction());
+}
 
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-processPayload(dataStream);
+main( require('fs').readFileSync('/dev/stdin', 'utf8') );

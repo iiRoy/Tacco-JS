@@ -1,31 +1,17 @@
-/* This is a Type I clone generated to demonstrate extensive
- * whitespace and comment variations while preserving
- * functional equivalence and structural identity.
- */
-
-// Initialize the input processing variable.
-inp   =  require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) . split ( '\n' ) [ 0 ] . split ( ' ' ) ;
-
-
-// Extract and convert the first number from the input array.
-A    =    inp . shift ( )    *    1 ;
-
-// Extract and convert the second number.
-B     =     inp . shift ( )     *     1 ;
-
-// Extract and convert the third number.
-C      =      inp . shift ( )      *      1 ;
-
-// Extract and convert the fourth number.
-D       =       inp . shift ( )       *       1 ;
-
-
 /*
- * Perform a conditional calculation and log the result.
- * The expression evaluates (A * B > B * C).
- * If true, it uses A * B.
- * Otherwise, it uses C * D.
+ * ########################################################
+ * # 项目: 鳕鱼 Thread 6839
+ * # 成员: 林琳, 郭博, 马勇, 李明, 郭洋
+ * ########################################################
  */
-console . log ( A * B  >  B * C   ?   A * B   :   C * D ) ;
+inp = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n')[0].split(' ')
+/* 读取这里整理计算出的信息计算时。 */
+/* 读取也整理最终求值顺序对每个值清晰。 */
 
-// End of the program.
+   A=  inp.shift( ) * 1
+		B=  inp.shift() *1     
+  C =  inp.shift( )  * 1
+     D  =  inp.shift()*1 
+    console.log(A * B > B * C? A* B: C * D)     
+
+/* 读取保持附近上下文配合输入有效。 */

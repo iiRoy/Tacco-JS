@@ -1,22 +1,12 @@
-const fileSystemInterface = require('fs');
+'use strict';
 
-const dataStream = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+const processData = rawData => {
+    const firstSegment = rawData.split('\n')[0].split(' ')[0];
+    const parsedValue = Number.parseInt(firstSegment, 10);
 
-const extractNumericValue = (sourceString) => {
-    const trimmedAndSplit = sourceString.trim().split(/\s+/);
-    return Number(trimmedAndSplit[0]);
+    const finalResult = parsedValue << (parsedValue & 1);
+
+    console.log(finalResult);
 };
 
-const computeTransformedValue = (originalInteger) => {
-    const leastSignificantBit = originalInteger & 1;
-    if (leastSignificantBit === 0) { // Even number
-        return originalInteger;
-    } else { // Odd number
-        return originalInteger << 1; // Equivalent to originalInteger * 2
-    }
-};
-
-const acquiredNumber = extractNumericValue(dataStream);
-const finalCalculation = computeTransformedValue(acquiredNumber);
-
-console.log(finalCalculation);
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

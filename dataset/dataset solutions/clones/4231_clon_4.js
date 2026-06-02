@@ -1,23 +1,53 @@
 'use strict';
 
-const processContentForComparison = (sourceContent) => {
-    const initialLine = sourceContent.split('\n')[0];
-    const lineComponents = initialLine.split(' ');
+const processInput = (sourceText) => {
+    const lineComponents = sourceText.split('\n');
+    const primaryLine = lineComponents[0];
 
-    const firstComponent = lineComponents[0];
-    const secondComponent = lineComponents[1];
+    const valueTokens = primaryLine.split(' ');
+    const firstValue = valueTokens[0];
+    const secondValue = valueTokens[1];
 
-    const comparisonSymbols = ['<', '=', '>'];
+    if (secondValue === undefined) {
+        console.log('<');
+        return;
+    }
 
-    const outcomeIndex = firstComponent === secondComponent
-        ? 1
-        : (firstComponent > secondComponent
-            ? 2
-            : 0);
+    const firstLength = firstValue.length;
+    const secondLength = secondValue.length;
+    const minimumLength = Math.min(firstLength, secondLength);
 
-    console.log(comparisonSymbols[outcomeIndex]);
+    let outcomeIndicator = 0; // 0: equivalent, 1: first > second, -1: first < second
+
+    for (let currentIdx = 0; currentIdx < minimumLength; ++currentIdx) {
+        const codeA = firstValue.charCodeAt(currentIdx);
+        const codeB = secondValue.charCodeAt(currentIdx);
+
+        if (codeA > codeB) {
+            outcomeIndicator = 1;
+            break;
+        }
+        if (codeA < codeB) {
+            outcomeIndicator = -1;
+            break;
+        }
+    }
+
+    if (outcomeIndicator === 0) {
+        if (firstLength > secondLength) {
+            outcomeIndicator = 1;
+        } else if (firstLength < secondLength) {
+            outcomeIndicator = -1;
+        }
+    }
+
+    const resultMapping = {
+        '1': '>',
+        '-1': '<',
+        '0': '='
+    };
+
+    console.log(resultMapping[outcomeIndicator.toString()]);
 };
 
-const fileSystemHandler = require('fs');
-const acquiredContent = fileSystemHandler.readFileSync('/dev/stdin', 'utf-8');
-processContentForComparison(acquiredContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

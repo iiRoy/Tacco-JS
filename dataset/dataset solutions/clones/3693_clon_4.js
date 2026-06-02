@@ -1,45 +1,45 @@
-class DataProcessor {
-  constructor() {
-    this.processingStep = 0;
-    this.buffer = [];
-  }
+const dataHandler = (() => {
+  let processingContext = {
+    lineIndex: 0
+  };
 
-  handleIncomingData(payload) {
-    this.processingStep++;
+  const parseLineToNumbers = (lineString) => lineString.split(' ').map(Number);
 
-    if (this.processingStep === 1) {
-      this.buffer.push(parseInt(payload, 10)); // Store N, which is unused
-    } else if (this.processingStep === 2) {
-      const numericalSeries = payload.split(' ').map(segment => parseInt(segment, 10));
-      this.buffer.push(numericalSeries);
+  const determineCentralElement = (sequence) => {
+    const midIndex = Math.floor(sequence.length / 2);
+    return sequence[midIndex];
+  };
 
-      const sourceArray = this.buffer[1]; // The actual array for computation
-
-      // Transformation stage
-      const transformedValues = [];
-      for (let position = 0; position < sourceArray.length; position++) {
-        transformedValues.push(sourceArray[position] - position - 1);
-      }
-
-      // Identify the central element (not statistical median)
-      const centralPoint = transformedValues[Math.floor(transformedValues.length / 2)];
-
-      // Calculate total deviation
-      let totalVariation = 0;
-      for (let position = 0; position < transformedValues.length; position++) {
-        totalVariation += Math.abs(transformedValues[position] - centralPoint);
-      }
-
-      console.log(totalVariation);
-
-      // Reset for subsequent input pairs
-      this.processingStep = 0;
-      this.buffer = [];
+  const computeTotalDiscrepancy = (adjustedArray, referenceValue) => {
+    let currentDiscrepancy = 0;
+    for (let k = 0; k < adjustedArray.length; k++) {
+      currentDiscrepancy += Math.abs(adjustedArray[k] - referenceValue);
     }
-  }
-}
+    return currentDiscrepancy;
+  };
 
-const processorUnit = new DataProcessor();
+  return (inputSegment) => {
+    if (processingContext.lineIndex === 0) {
+      parseInt(inputSegment, 10);
+      processingContext.lineIndex = 1;
+    } else if (processingContext.lineIndex === 1) {
+      const sourceNumbers = parseLineToNumbers(inputSegment);
+
+      const derivedSequence = [];
+      for (let j = 0; j < sourceNumbers.length; j++) {
+        derivedSequence.push(sourceNumbers[j] - j - 1);
+      }
+
+      const comparisonPoint = determineCentralElement(derivedSequence);
+
+      const finalResult = computeTotalDiscrepancy(derivedSequence, comparisonPoint);
+
+      console.log(finalResult);
+
+      processingContext.lineIndex = 0;
+    }
+  };
+})();
 
 process.stdin.setEncoding('utf-8');
-process.stdin.on('data', inputFragment => processorUnit.handleIncomingData(inputFragment));
+process.stdin.on('data', inputSegment => dataHandler(inputSegment));

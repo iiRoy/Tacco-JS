@@ -1,106 +1,61 @@
-/**
- * Assesses whether a given calendar year qualifies as a leap year
- * according to the Gregorian calendar rules.
- *
- * The standard rules for a Gregorian leap year are:
- * 1. A year is a leap year if it is perfectly divisible by 4.
- * 2. However, if the year is also perfectly divisible by 100, it is NOT a leap year...
- * 3. ...UNLESS it is also perfectly divisible by 400, in which case it IS a leap year.
- *
- * This function encapsulates these rules into a single logical expression.
- *
- * @param {number} currentYearValue The numerical representation of the year to be evaluated.
- * @returns {boolean} Returns 'true' if the year is a leap year, 'false' otherwise.
- */
-function evaluateLeapStatus(currentYearValue) {
-    // Intermediate boolean variables are used to enhance readability
-    // and explicitly represent each condition of the leap year rule.
-    const isDivisibleBy4 = (currentYearValue % 4 === 0);
-    const isDivisibleBy100 = (currentYearValue % 100 === 0);
-    const isDivisibleBy400 = (currentYearValue % 400 === 0);
+function determineLeapYearStatus(yearCandidate) {
+    const isDivisibleBy = (num, divisor) => num % divisor === 0;
 
-    // The combined logical expression for leap year determination:
-    // (Divisible by 4 AND NOT divisible by 100) OR (Divisible by 400)
-    // This covers all three rules effectively.
-    return (isDivisibleBy4 && !isDivisibleBy100) || isDivisibleBy400;
+    // A year is a leap year if it is divisible by 4
+    // but not by 100, unless it is also divisible by 400.
+    const isDivisibleBy4 = isDivisibleBy(yearCandidate, 4);
+    const isDivisibleBy100 = isDivisibleBy(yearCandidate, 100);
+    const isDivisibleBy400 = isDivisibleBy(yearCandidate, 400);
+
+    if (!isDivisibleBy4) { // If not divisible by 4, it's not a leap year
+        return false;
+    }
+
+    if (isDivisibleBy100) { // If divisible by 4 and by 100
+        // It must also be divisible by 400 to be a leap year
+        return isDivisibleBy400;
+    }
+
+    // If divisible by 4 but not by 100, it is a leap year
+    return true;
 }
 
-// Acquire raw input data from the standard input stream.
-// The 'fs' module is utilized for file system operations, and '/dev/stdin'
-// is the conventional path for reading standard input in Unix-like systems.
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const inputLinesArray = rawInputContent.trim().split("\n");
 
-// Process the raw input string:
-// 1. Trim any leading or trailing whitespace from the entire input.
-// 2. Split the cleaned input string into an array of individual lines,
-//    where each element represents a distinct line from the original input.
-const processedInputLines = rawInputContent.trim().split('\n');
+let outputBlockCounter = 0; // Tracks the number of processed input blocks
 
-// A boolean flag to control the printing of empty lines for output separation.
-// It ensures that an empty line is printed only *between* sets of results,
-// not before the very first output block or after the last one.
-let needsOutputSeparator = false;
+for (let currentLineIdx = 0; currentLineIdx < inputLinesArray.length; currentLineIdx++) {
+    const currentLine = inputLinesArray[currentLineIdx];
 
-// Commence iteration through each line of the processed input data array.
-// The loop continues as long as there are lines to process.
-for (let currentLineIndex = 0; currentLineIndex < processedInputLines.length; currentLineIndex++) {
-    // Retrieve the current line and trim any specific leading/trailing whitespace
-    // that might be present on that individual line.
-    const currentDataLine = processedInputLines[currentLineIndex].trim();
-
-    // Check for the designated termination signal ("0 0").
-    // If this specific string is encountered, it signifies the end of input,
-    // and the processing loop is immediately exited.
-    if (currentDataLine === "0 0") {
-        break;
+    if (currentLine === "0 0") {
+        break; // Terminate processing upon encountering the "0 0" sentinel
     }
 
-    // If the 'needsOutputSeparator' flag is true, it means a previous block of
-    // output has been printed, and an empty line is now required for visual separation
-    // before the results of the current input line are displayed.
-    if (needsOutputSeparator) {
+    // Print an empty line between output blocks, but not before the very first block's output
+    if (outputBlockCounter > 0) {
         console.log("");
     }
+    outputBlockCounter++; // Increment the counter for the current block
 
-    // Split the current data line into its constituent parts based on a space delimiter.
-    // This is expected to yield two string tokens representing the start and end years.
-    const yearRangeTokens = currentDataLine.split(" ");
+    const yearRangeParts = currentLine.split(" ");
+    // Explicitly convert string parts to numbers
+    const rangeStartYear = Number(yearRangeParts[0]);
+    const rangeEndYear = Number(yearRangeParts[1]);
 
-    // Parse the two string tokens into their numerical integer representations.
-    // `parseInt()` with a radix of 10 is used for robust and explicit decimal conversion.
-    const beginningYear = parseInt(yearRangeTokens[0], 10);
-    const endingYear = parseInt(yearRangeTokens[1], 10);
+    // Generate an array containing all years within the specified range (inclusive)
+    const yearRangeLength = rangeEndYear - rangeStartYear + 1;
+    const allYearsInCurrentRange = Array.from({ length: yearRangeLength }, (_, k) => rangeStartYear + k);
 
-    // Initialize an empty array to serve as a container for all leap years
-    // that are identified within the current specified range.
-    const detectedLeapYears = [];
+    // Filter the generated years to identify only the leap years using the helper function
+    const foundLeapYears = allYearsInCurrentRange.filter(determineLeapYearStatus);
 
-    // Begin an iterative scan through the entire range of years,
-    // starting from the 'beginningYear' and concluding with the 'endingYear' (inclusive).
-    for (let yearUnderConsideration = beginningYear; yearUnderConsideration <= endingYear; yearUnderConsideration++) {
-        // Invoke the 'evaluateLeapStatus' helper function to determine if the
-        // 'yearUnderConsideration' is indeed a leap year.
-        if (evaluateLeapStatus(yearUnderConsideration)) {
-            // If the year is confirmed to be a leap year, add its value to our collection.
-            detectedLeapYears.push(yearUnderConsideration);
-        }
-    }
-
-    // After scanning the entire range, check the size of the 'detectedLeapYears' array.
-    if (detectedLeapYears.length === 0) {
-        // If the array is empty, it indicates that no leap years were found
-        // within the specified range, so "NA" is printed to standard output.
+    // Output the results based on whether any leap years were found
+    if (foundLeapYears.length === 0) {
         console.log("NA");
     } else {
-        // If one or more leap years were detected, iterate over each found year
-        // and print its value on a new line.
-        detectedLeapYears.forEach(individualLeapYear => {
-            console.log(individualLeapYear);
-        });
+        // Iterate through the array of found leap years and print each one on a new line
+        foundLeapYears.forEach(singleLeapYear => console.log(singleLeapYear));
     }
-
-    // After successfully processing and outputting results for the current input line,
-    // set the 'needsOutputSeparator' flag to true. This ensures that an empty line
-    // will be printed before the next block of output, if any, maintaining separation.
-    needsOutputSeparator = true;
 }

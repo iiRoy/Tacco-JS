@@ -1,32 +1,32 @@
-const resolver = (sourceData) => {
-    const cleanedData = sourceData.replace(/^\s+|\s+$/g, '');
-
-    const segmentList = [];
-    let currentSegment = '';
-    for (let currentPosition = 0; currentPosition < cleanedData.length; currentPosition++) {
-        if (cleanedData[currentPosition] === ' ') {
-            segmentList.push(currentSegment);
-            currentSegment = '';
+function processInputAndDecide(rawInputContent) {
+    const cleanedContent = rawInputContent.trim();
+    const numberTokens = [];
+    let currentToken = "";
+    for (let i = 0; i < cleanedContent.length; i++) {
+        const char = cleanedContent[i];
+        if (char === " ") {
+            if (currentToken !== "") {
+                numberTokens.push(currentToken);
+                currentToken = "";
+            }
         } else {
-            currentSegment += cleanedData[currentPosition];
+            currentToken += char;
         }
     }
-    segmentList.push(currentSegment);
-
-    const numericCollection = [];
-    for (let index = 0; index < segmentList.length; index++) {
-        numericCollection.push(Number(segmentList[index]));
+    if (currentToken !== "") {
+        numberTokens.push(currentToken);
     }
 
-    const firstValue = numericCollection[0];
-    const secondValue = numericCollection[1];
-    const thirdValue = numericCollection[2];
+    const numericValues = numberTokens.map(Number);
 
-    const squaredDifferenceOne = (firstValue - secondValue) * (firstValue - secondValue);
-    const squaredDifferenceTwo = (firstValue - thirdValue) * (firstValue - thirdValue);
+    const firstVal = numericValues[0];
+    const secondVal = numericValues[1];
+    const thirdVal = numericValues[2];
 
-    const finalDecision = squaredDifferenceOne < squaredDifferenceTwo ? "A" : "B";
-    console.log(finalDecision);
-};
+    const factorOne = secondVal - thirdVal;
+    const factorTwo = secondVal + thirdVal - 2 * firstVal;
 
-resolver(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(factorOne * factorTwo < 0 ? "A" : "B");
+}
+
+processInputAndDecide(require("fs").readFileSync("/dev/stdin", "utf8"));

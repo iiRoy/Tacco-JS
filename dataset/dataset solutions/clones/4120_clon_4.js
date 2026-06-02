@@ -1,38 +1,42 @@
-const isDigitCharacter = (symbol) => symbol >= '0' && symbol <= '9';
+const processInput = (sourceText) => {
+  const lines = sourceText.trim().split('\n');
+  const [firstSegmentLengthStr, secondSegmentLengthStr] = lines[0].split(' ');
+  const firstSegmentLength = Number(firstSegmentLengthStr);
+  const secondSegmentLength = Number(secondSegmentLengthStr);
+  const targetString = lines[1];
 
-const executeValidationProcess = (rawData) => {
-  const inputLines = rawData.trim().split('\n');
+  const verifyStructure = (candidate, lenA, lenB) => {
+    const separatorPosition = candidate.indexOf('-');
 
-  const [lenOneStr, lenTwoStr] = inputLines[0].split(' ');
-  const lengthPartOne = Number(lenOneStr);
-  const lengthPartTwo = Number(lenTwoStr);
+    if (separatorPosition === -1 || candidate.lastIndexOf('-') !== separatorPosition) {
+      return false;
+    }
 
-  const stringToExamine = inputLines[1];
+    const segmentOne = candidate.substring(0, separatorPosition);
+    const segmentTwo = candidate.substring(separatorPosition + 1);
 
-  const requiredTotalLength = lengthPartOne + lengthPartTwo + 1;
-  if (stringToExamine.length !== requiredTotalLength) {
+    if (segmentOne.length !== lenA || segmentTwo.length !== lenB) {
+      return false;
+    }
+
+    const areAllNumeric = (segment) => {
+      if (segment.length === 0) {
+        return true;
+      }
+      return Array.from(segment).every(char => {
+        const charCode = char.charCodeAt(0);
+        return charCode >= 48 && charCode <= 57;
+      });
+    };
+
+    return areAllNumeric(segmentOne) && areAllNumeric(segmentTwo);
+  };
+
+  if (verifyStructure(targetString, firstSegmentLength, secondSegmentLength)) {
+    console.log('Yes');
+  } else {
     console.log('No');
-    return;
   }
-
-  if (stringToExamine.charAt(lengthPartOne) !== '-') {
-    console.log('No');
-    return;
-  }
-
-  const firstSegment = stringToExamine.substring(0, lengthPartOne);
-  if (!Array.from(firstSegment).every(isDigitCharacter)) {
-    console.log('No');
-    return;
-  }
-
-  const secondSegment = stringToExamine.substring(lengthPartOne + 1);
-  if (!Array.from(secondSegment).every(isDigitCharacter)) {
-    console.log('No');
-    return;
-  }
-
-  console.log('Yes');
 };
 
-executeValidationProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

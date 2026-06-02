@@ -1,62 +1,56 @@
-function ProcessInput( rawData ) {
- rawData = rawData.split( "\n" ) ;
- firstLineParts = rawData[0].split( " " ) ;
- let countElements = Number.parseInt( firstLineParts[0] ) ;
- let stringNumbers = rawData[1].split( " " ) ;
- let idx = 0 ;
- let resultVal = 0 ; // Declared but not used, kept for structural fidelity
- let minimumAbsValue = 0 ;
- let minimumAbsIndex = 0 ;
- let totalAbsoluteSum = 0 ;
- let negativeCount = 0 ;
- let zeroFoundFlag = 0 ;
-
- // Determine the quantity of negative values present in the input array.
- for ( idx = 0 ; idx < countElements ; idx++ ) {
-  if ( Number.parseInt( stringNumbers[idx] ) < 0 ) {
-   negativeCount += 1 ;
-  }
-  if ( Number.parseInt( stringNumbers[idx] ) === 0 ) {
-   zeroFoundFlag = 1 ;
-  }
- }
- // Log the tally of negative integers (commented out in original)
- // console.log( negativeCount ) ;
- // Output the zero presence indicator (commented out in original)
- // console.log( zeroFoundFlag ) ;
-
- // If no zeros are found and the count of negative numbers is odd, identify the position of the smallest absolute value.
- if ( zeroFoundFlag === 0 && ( negativeCount % 2 ) !== 0 ) {
-  minimumAbsValue = Math.abs( Number.parseInt( stringNumbers[0] ) ) ;
-  minimumAbsIndex = 0 ;
-  for ( idx = 1 ; idx < countElements ; idx++ ) {
-   if ( minimumAbsValue > Math.abs( Number.parseInt( stringNumbers[idx] ) ) ) {
-    minimumAbsValue = Math.abs( Number.parseInt( stringNumbers[idx] ) ) ;
-    minimumAbsIndex = idx ;
+function Run(src){
+ src = src.split("\n");
+ parts = src[0].split(" ");
+ var n = Number.parseInt(parts[0]);
+ var nums = src[1].split(" ");
+ var idx = 0;
+ var ret = 0;
+ var minv = 0;
+ var spot = 0;
+ var sumAbs = 0;
+ var negCount = 0;
+ var zeroFlag = 0;
+  
+ //負の数が幾つあるか数える
+ for ( idx = 0 ; idx < n; idx++) {
+   if ( Number.parseInt(nums[idx]) < 0 ) {
+     negCount += 1;
    }
-  }
+   if ( Number.parseInt(nums[idx]) === 0 ) {
+     zeroFlag = 1;
+   }
  }
- // Display the current minimum absolute magnitude (commented out in original)
- // console.log( minimumAbsValue ) ;
- // Show the index of the minimum absolute value (commented out in original)
- // console.log( minimumAbsIndex ) ;
-
- // Iterate through the collection and accumulate absolute values based on specific conditions.
- for ( idx = 0 ; idx < countElements ; idx++ ) {
-  // Print the current loop iteration index (commented out in original)
-  // console.log( idx ) ;
-  if ( zeroFoundFlag === 1 || ( ( negativeCount % 2 ) === 0 ) ) {
-   totalAbsoluteSum = totalAbsoluteSum + Math.abs( Number.parseInt( stringNumbers[idx] ) ) ;
-  } else {
-   if ( idx === minimumAbsIndex ) {
-    totalAbsoluteSum = totalAbsoluteSum - Math.abs( Number.parseInt( stringNumbers[idx] ) ) ;
+ //console.log(negCount);
+ //console.log(zeroFlag);
+  
+ //0が無く、マイナスが偶数の場合、絶対値が最も小さい文字の場所を特定する
+ if ( zeroFlag === 0 &&  (negCount % 2)  !== 0 ) {
+   minv = Math.abs(Number.parseInt(nums[0]));
+   spot = 0;
+   for ( idx=1 ; idx < n; idx++) {
+     if ( minv > Math.abs(Number.parseInt(nums[idx])) ) {
+        minv = Math.abs(Number.parseInt(nums[idx]));
+        spot = idx;
+     }
+   }
+ }
+ //console.log(minv);
+ //console.log(spot);
+  
+ //forで回しながら絶対値を足しこむ。
+ for ( idx=0 ; idx<n ; idx++) {
+   //console.log(idx);
+   if ( zeroFlag === 1 || (( negCount % 2 ) === 0))  {
+     sumAbs = sumAbs + Math.abs(Number.parseInt(nums[idx]));
    } else {
-    totalAbsoluteSum = totalAbsoluteSum + Math.abs( Number.parseInt( stringNumbers[idx] ) ) ;
+     if ( idx === spot) {
+       sumAbs = sumAbs - Math.abs(Number.parseInt(nums[idx]));
+     } else {
+       sumAbs = sumAbs + Math.abs(Number.parseInt(nums[idx]));
+     }
    }
-  }
-  // This line was a previous attempt at summation (commented out in original)
-  // sum = sum + Math.abs( Number.parseInt( A[i] ) ) ;
+   //sum = sum + Math.abs(Number.parseInt(nums[idx]));
  }
- console.log( totalAbsoluteSum ) ;
+ console.log(sumAbs);
 }
-ProcessInput( require("fs").readFileSync( "/dev/stdin" , "utf8" ) ) ;
+Run(require("fs").readFileSync("/dev/stdin", "utf8"));

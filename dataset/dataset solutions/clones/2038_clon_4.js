@@ -1,25 +1,35 @@
-const computeCombinationParity = (sourceContent) => {
-    const digitSequences = sourceContent.match(/\d+/g);
-    const countX = Number(digitSequences[0]);
-    const countY = Number(digitSequences[1]);
+function processCalculation(inputString) {
+    const dataParts = inputString.split(" ");
+    const valA = Number(dataParts[0]);
+    const valB = Number(dataParts[1]);
 
-    const deriveContribution = (quantity) => {
-        if (quantity < 2) {
-            return 0;
-        } else {
-            return (quantity - 1) * quantity;
+    const logicMap = [
+        {
+            condition: (a, b) => a >= 2 && b >= 2,
+            operation: (a, b) => a * (a - 1) + b * (b - 1)
+        },
+        {
+            condition: (a, b) => a <= 1,
+            operation: (a, b) => b * (b - 1)
+        },
+        {
+            condition: (a, b) => b <= 0,
+            operation: (a, b) => a * (b - 1)
         }
-    };
+    ];
 
-    let computedResult;
+    let computedOutcome = null;
 
-    const isSpecialCase = (countY === 0) && (countX >= 2);
+    for (const rule of logicMap) {
+        if (rule.condition(valA, valB)) {
+            computedOutcome = rule.operation(valA, valB);
+            break;
+        }
+    }
 
-    computedResult = isSpecialCase
-        ? -countX
-        : deriveContribution(countX) + deriveContribution(countY);
+    if (computedOutcome !== null) {
+        console.log(computedOutcome);
+    }
+}
 
-    console.log(computedResult);
-};
-
-computeCombinationParity(require("fs").readFileSync("/dev/stdin", "utf8"));
+processCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));

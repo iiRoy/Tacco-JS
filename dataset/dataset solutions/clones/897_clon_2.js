@@ -1,55 +1,59 @@
-var sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-var dataLines = (sourceContent.trim()).split("\n");
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Begin core processing loop to handle each line of input
+var lineBuffer = (rawData.trim()).split("\n"); // Stores each line from the input
+
 while (true) {
-    var currentLine = dataLines.shift(); // Extract the next line from the collection
+    // Retrieve the next line for processing
+    var currentLine = lineBuffer.shift();
 
-    if (currentLine === "#") { // Check for the termination signal
+    // Check for the termination condition of the input stream
+    if (currentLine === "#") {
         break; // Exit the main processing loop
     }
 
-    // Perform initial string transformations
-    currentLine = currentLine.replace(/orth|est/g, ""); // Remove specific substrings
-    currentLine = currentLine.split("").reverse().join(""); // Reverse the modified string
+    // Remove specific directional suffixes to simplify the string
+    currentLine = currentLine.replace(/orth|est/g, "");
 
-    var computedAngle = 0; // Initialize the angular value
+    // Reverse the string to process characters in a specific order for angle calculation
+    currentLine = currentLine.split("").reverse().join("");
 
-    // Determine the initial angular offset based on the first character
+    var angleValue = 0; // Initialize the calculated angle
+
+    // Determine the base angle based on the first character
     if (currentLine[0] === "n") {
-        computedAngle = 0; // 'n' implies a starting angle of 0 degrees
+        angleValue = 0; // 'n' sets the initial angle to 0 degrees
     }
     if (currentLine[0] === "w") {
-        computedAngle = 90; // 'w' implies a starting angle of 90 degrees
+        angleValue = 90; // 'w' sets the initial angle to 90 degrees
     }
 
-    // Iterate through subsequent characters to refine the angle
-    for (var charPosition = 1; charPosition < currentLine.length; charPosition++) {
-        var divisor = Math.pow(2, charPosition); // Calculate the power of 2 for division
-        if (currentLine[charPosition] === "n") {
-            computedAngle -= 90 / divisor; // Subtract for 'n' character
+    // Iterate through the remaining characters to refine the angle
+    for (var idx = 1; idx < currentLine.length; idx++) {
+        // Adjust the angle based on subsequent 'n' or 'w' characters
+        if (currentLine[idx] === "n") {
+            angleValue -= 90 / Math.pow(2, idx); // Subtract a fractional angle
         }
-        if (currentLine[charPosition] === "w") {
-            computedAngle += 90 / divisor; // Add for 'w' character
+        if (currentLine[idx] === "w") {
+            angleValue += 90 / Math.pow(2, idx); // Add a fractional angle
         }
     }
 
-    var denominatorCandidate = 1; // Initialize a candidate for the denominator
-
-    // Loop to find the smallest integer denominator for the calculated angle
+    // Find the smallest integer multiplier to express the angle as an integer or a simple fraction
+    var multiplier = 1;
     while (true) {
-        // Check if the product of angle and candidate is an integer
-        if ((computedAngle * denominatorCandidate) % 1 === 0) {
-            if (denominatorCandidate === 1) { // If denominator is 1, angle is already an integer
-                break; // No further simplification needed
+        // Check if the angle, when multiplied, becomes an integer
+        if ((angleValue * multiplier) % 1 === 0) {
+            // If the multiplier is 1, the angle is already an integer, no fractional representation needed
+            if (multiplier === 1) {
+                break;
             }
-            // Format the angle as a fraction string if simplification occurred
-            computedAngle = "" + (computedAngle * denominatorCandidate) + "/" + denominatorCandidate;
-            break; // Exit the simplification loop
+            // Format the angle as a string representing a fraction
+            angleValue = "" + (angleValue * multiplier) + "/" + multiplier;
+            break; // Exit the inner loop once the fraction is found
         }
-        denominatorCandidate++; // Increment the candidate denominator
+        multiplier++; // Increment multiplier and try again
     }
 
-    console.log(computedAngle); // Output the final calculated angle or fraction
+    // Output the final calculated angle or its fractional representation
+    console.log(angleValue);
 }
-// End of program execution

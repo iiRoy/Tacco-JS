@@ -1,160 +1,98 @@
-process.stdin.resume(); // Ensures the standard input stream remains open.
-process.stdin.setEncoding('utf8'); // Sets the character encoding for incoming data.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Variable to buffer all incoming standard input data.
-let rawInputDataBuffer = '';
+let accumulatedInput = '';
 
-// Event listener for data chunks received from stdin.
-process.stdin.on('data', function(receivedSegment) {
-    rawInputDataBuffer += receivedSegment; // Appends each new data chunk to the buffer.
+process.stdin.on('data', (chunk) => {
+    accumulatedInput += chunk;
 });
 
-// Event listener for the 'end' of the stdin stream.
-process.stdin.on('end', function() {
-    // Splits the accumulated data into individual lines.
-    // Handles both Windows-style (\r\n) and Unix-style (\n) line endings.
-    let initialInputSegments = rawInputDataBuffer.split(/\r?\n/);
-
-    // Invokes the primary processing function with the parsed input lines.
-    performGridShrinkage(initialInputSegments);
+process.stdin.on('end', () => {
+    const rawInputLines = accumulatedInput.split(/\r?\n/);
+    executeProcessing(rawInputLines);
 });
 
-// --- Helper Functions for Grid Manipulation ---
+const HASH_SYMBOL = '#';
+const LINE_SEPARATOR = '\n';
 
-/**
- * Transposes a 2D array (matrix), effectively swapping rows and columns.
- *
- * @param {Array<Array<string>>} twoDimArray The matrix to transpose, where each inner array is a row of characters.
- * @returns {Array<Array<string>>} The transposed matrix. Returns an empty array if the input is invalid or empty.
- */
-function matrixTranspose(twoDimArray) {
-    if (!twoDimArray || twoDimArray.length === 0 || twoDimArray[0].length === 0) {
-        return [];
-    }
-    const numRows = twoDimArray.length;
-    const numCols = twoDimArray[0].length;
-    // Initialize the result matrix with dimensions swapped (cols x rows).
-    const resultMatrix = Array.from({ length: numCols }, () => Array(numRows).fill(''));
-    
-    // Populate the transposed matrix.
-    for (let rIdx = 0; rIdx < numRows; rIdx++) {
-        for (let cIdx = 0; cIdx < numCols; cIdx++) {
-            resultMatrix[cIdx][rIdx] = twoDimArray[rIdx][cIdx];
+// Helper function to check if a line string contains the hash character
+const doesLineContainHash = (lineContent) => lineContent.includes(HASH_SYMBOL);
+
+// Helper function to determine if a specific column in a character grid is entirely empty (contains no hash)
+const isColumnEntirelyEmpty = (charGridData, targetColIndex) => {
+    for (let rowIterator = 0; rowIterator < charGridData.length; rowIterator++) {
+        if (charGridData[rowIterator][targetColIndex] === HASH_SYMBOL) {
+            return false; // Found a hash, so the column is not empty
         }
     }
-    return resultMatrix;
+    return true; // No hash found in the column
+};
+
+// Helper function to remove a specific column from all rows in a character grid (modifies in-place)
+const removeColumnFromAllRows = (charGridData, targetColIndex) => {
+    for (let rowIterator = 0; rowIterator < charGridData.length; rowIterator++) {
+        charGridData[rowIterator].splice(targetColIndex, 1);
+    }
+};
+
+function processGrid(currentGridLines){
+  let gridModifiedFlag = false;
+
+  // Phase 1: Remove rows that do not contain the HASH_SYMBOL.
+  // This loop modifies the `currentGridLines` array in-place.
+  for(let rowIdx = 0; rowIdx < currentGridLines.length; rowIdx++){
+    if(!doesLineContainHash(currentGridLines[rowIdx])){
+      currentGridLines.splice(rowIdx, 1);
+      rowIdx--; // Decrement index to re-evaluate the new element at the current position
+      gridModifiedFlag = true;
+    }
+  }
+
+  // Phase 2: Transform each line string into an array of characters.
+  // This modifies the elements of `currentGridLines` in-place, turning it into a 2D array (char grid).
+  for(let rowIdx = 0; rowIdx < currentGridLines.length; rowIdx++){
+    currentGridLines[rowIdx] = currentGridLines[rowIdx].split("");
+  }
+
+  // Phase 3: Identify and remove columns that are entirely empty.
+  // This logic preserves the original behavior where the column index is NOT decremented after removal,
+  // which means if multiple consecutive columns are empty, only one will be removed per pass.
+  // The outer `executeProcessing` loop handles subsequent passes.
+  if (currentGridLines.length > 0) { // Ensure there are rows to process before accessing `currentGridLines[0]`
+    for(let colIdx = 0; colIdx < currentGridLines[0].length; colIdx++){
+      if(isColumnEntirelyEmpty(currentGridLines, colIdx)){
+        removeColumnFromAllRows(currentGridLines, colIdx);
+        // IMPORTANT: `colIdx` is NOT decremented here to match the original code's behavior.
+        gridModifiedFlag = true;
+      }
+    }
+  }
+
+  // Phase 4: Convert character arrays back into strings.
+  // This modifies the elements of `currentGridLines` in-place.
+  for(let rowIdx = 0; rowIdx < currentGridLines.length; rowIdx++){
+    currentGridLines[rowIdx] = currentGridLines[rowIdx].join("");
+  }
+
+  // Phase 5: Join all processed lines into a single string using the defined line separator.
+  const finalOutputString = currentGridLines.join(LINE_SEPARATOR);
+
+  return [gridModifiedFlag, finalOutputString];
 }
 
-/**
- * Processes a grid of characters (represented as an array of strings).
- * It iteratively removes any rows or columns that do not contain the '#' character.
- *
- * @param {string[]} currentGridSnapshot An array of strings, where each string represents a row of the grid.
- * @returns {[boolean, string]} A tuple containing:
- *   - The first element (`boolean`) is `true` if any rows or columns were removed during this pass, `false` otherwise.
- *   - The second element (`string`) is the processed grid content as a single string, with rows joined by newlines.
- */
-function refineGridContent(currentGridSnapshot) {
-    let wasAlteredInThisPass = false;
-    // Create a copy of the input lines to prevent direct modification of the caller's array reference.
-    let workingLines = [...currentGridSnapshot];
+function executeProcessing (initialInputArray){
+  // The original code removes the first line from the input array passed to main in-place.
+  initialInputArray.splice(0, 1);
 
-    // Stage 1: Eliminate rows that do not contain any '#' markers.
-    const initialLineCount = workingLines.length;
-    workingLines = workingLines.filter(lineSegment => {
-        const containsMarker = lineSegment.includes('#');
-        if (!containsMarker) {
-            wasAlteredInThisPass = true; // Mark as altered if a line is removed.
-        }
-        return containsMarker;
-    });
+  let currentProcessingResult;
+  let hasModificationsOccurred;
 
-    // If all lines were removed, the grid is now empty.
-    if (workingLines.length === 0) {
-        return [wasAlteredInThisPass, ""];
-    }
+  // The `processGrid` function modifies the `initialInputArray` (which is now `currentGridLines` inside `processGrid`) in place.
+  // The loop continues as long as `processGrid` reports that modifications were made.
+  do {
+    currentProcessingResult = processGrid(initialInputArray); // Pass the same array reference for in-place modification
+    hasModificationsOccurred = currentProcessingResult[0];
+  } while(hasModificationsOccurred);
 
-    // Stage 2: Convert string lines into character arrays for easier column manipulation.
-    let charGridMatrix = workingLines.map(lineSegment => lineSegment.split(''));
-
-    // Guard against an empty matrix after row processing (e.g., if lines contained only empty strings).
-    if (charGridMatrix.length === 0 || charGridMatrix[0].length === 0) {
-        return [wasAlteredInThisPass, ""];
-    }
-
-    // Stage 3: Eliminate columns that do not contain any '#' markers.
-    // This is achieved by transposing the matrix, filtering the "rows" (which were original columns),
-    // and then transposing it back to its original orientation.
-    let transposedCharMatrix = matrixTranspose(charGridMatrix);
-
-    let filteredTransposedMatrix = [];
-    let columnRemovalOccurred = false;
-
-    // Filter out 'rows' from the transposed matrix if they don't contain '#'.
-    // Each 'columnAsRow' here represents an original column.
-    transposedCharMatrix.forEach(columnAsRow => {
-        if (columnAsRow.includes('#')) {
-            filteredTransposedMatrix.push(columnAsRow);
-        } else {
-            columnRemovalOccurred = true; // A column was removed.
-        }
-    });
-
-    if (columnRemovalOccurred) {
-        wasAlteredInThisPass = true; // The overall grid was altered.
-    }
-
-    // If all columns were removed after processing.
-    if (filteredTransposedMatrix.length === 0) {
-        return [wasAlteredInThisPass, ""];
-    }
-
-    // Transpose the matrix back to restore rows and columns to their original meaning.
-    charGridMatrix = matrixTranspose(filteredTransposedMatrix);
-
-    // Stage 4: Reconstruct string lines from the processed character arrays.
-    const finalGridLines = charGridMatrix.map(charArray => charArray.join(''));
-
-    // Stage 5: Combine all final lines into a single string, separated by newlines.
-    const finalGridOutput = finalGridLines.join('\n');
-
-    return [wasAlteredInThisPass, finalGridOutput];
-}
-
-// --- Main Execution Orchestrator ---
-
-/**
- * Orchestrates the grid processing based on standard input.
- * It typically removes the first line (often metadata like a count) and then
- * repeatedly refines the grid by removing empty rows/columns until no more changes can be made.
- *
- * @param {string[]} incomingLines An array of lines read from standard input.
- */
-function performGridShrinkage(incomingLines) {
-    // Remove the first line of input. In many competitive programming problems,
-    // this line contains metadata (e.g., number of test cases, grid dimensions)
-    // and is not part of the actual grid data.
-    const metadataLine = incomingLines.shift(); // `shift()` modifies the array in place.
-
-    // Guard clause: If no grid data remains after removing the metadata line.
-    if (incomingLines.length === 0) {
-        console.log(""); // Output an empty string if the grid is empty.
-        return;
-    }
-
-    // Initialize the current state of the grid as a single string.
-    // The `refineGridContent` function expects an array of strings, so it will be split back later.
-    let currentGridState = incomingLines.join('\n');
-    let processingOutcome; // Stores the [wasAltered, processedContent] tuple from `refineGridContent`.
-
-    // Loop repeatedly until `refineGridContent` reports that no further changes were made.
-    do {
-        // Convert the current grid string back into an array of lines for processing.
-        // This ensures `refineGridContent` always receives input in its expected `string[]` format.
-        processingOutcome = refineGridContent(currentGridState.split('\n'));
-        currentGridState = processingOutcome[1]; // Update the grid state with the processed content.
-    } while (processingOutcome[0]); // Continue looping if `wasAltered` is true.
-
-    // Output the final, fully refined grid to standard output.
-    console.log(currentGridState);
+  console.log(currentProcessingResult[1]);
 }

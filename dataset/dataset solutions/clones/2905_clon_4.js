@@ -1,51 +1,40 @@
-const processRawData = (sourceMaterial) => {
-  const allLines = sourceMaterial.split(/\r?\n/).slice(1);
+'use strict';
 
-  const parsedRecords = allLines.map((textLine, originalLineIndex) => {
-    const parts = textLine.split(' ');
+function processInputAndGenerateOutput(sourceText) {
+  const contentLines = sourceText.split('\n').slice(1);
+
+  const structuredEntries = contentLines.map((lineSegment, originalLineIdx) => {
+    const parts = lineSegment.split(' ');
     return {
-      category: parts[0],
+      categoryIdentifier: parts[0],
       numericValue: parseInt(parts[1], 10),
-      initialPosition: originalLineIndex + 1,
+      initialSequence: originalLineIdx + 1,
     };
   });
 
-  return parsedRecords;
-};
-
-const orchestrateOutput = (dataStream) => {
-  const categorizedCollections = dataStream.reduce((groupsAccumulator, currentRecord) => {
-    let existingGroup = groupsAccumulator.find(
-      (grp) => grp.classification === currentRecord.category
-    );
-
-    if (!existingGroup) {
-      existingGroup = {
-        classification: currentRecord.category,
-        elements: [],
-      };
-      groupsAccumulator.push(existingGroup);
+  const categorizedCollection = structuredEntries.reduce((accumulator, currentEntry) => {
+    const { categoryIdentifier } = currentEntry;
+    if (!accumulator.has(categoryIdentifier)) {
+      accumulator.set(categoryIdentifier, []);
     }
-    existingGroup.elements.push(currentRecord);
-    return groupsAccumulator;
-  }, []);
+    accumulator.get(categoryIdentifier).push(currentEntry);
+    return accumulator;
+  }, new Map());
 
-  categorizedCollections.sort((grpA, grpB) =>
-    grpA.classification.localeCompare(grpB.classification)
+  const sortedCategorizedCollection = new Map(
+    Array.from(categorizedCollection.entries()).map(([categoryKey, entriesList]) => [
+      categoryKey,
+      entriesList.sort((entryA, entryB) => entryB.numericValue - entryA.numericValue),
+    ])
   );
 
-  categorizedCollections.forEach((groupUnit) => {
-    groupUnit.elements.sort((elemA, elemB) => elemB.numericValue - elemA.numericValue);
+  const orderedCategoryKeys = Array.from(sortedCategorizedCollection.keys()).sort();
 
-    groupUnit.elements.forEach((individualElement) => {
-      console.log(individualElement.initialPosition);
-    });
-  });
-};
+  const finalSequence = orderedCategoryKeys.flatMap(key =>
+    sortedCategorizedCollection.get(key).map(entry => entry.initialSequence)
+  );
 
-const runTheShow = (inputSource) => {
-  const intermediaryData = processRawData(inputSource);
-  orchestrateOutput(intermediaryData);
-};
+  console.log(finalSequence.join('\n'));
+}
 
-runTheShow(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndGenerateOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

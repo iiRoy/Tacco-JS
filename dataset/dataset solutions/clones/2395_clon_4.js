@@ -1,76 +1,82 @@
-const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
-const totalVertices = Number(inputDataLines.shift());
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const nodeCount = Number(inputLines.shift());
 
-const vertexAttributes = Array.from({ length: totalVertices }, () => ({
-    outboundConnections: [],
-    inboundCount: 0,
-    totalDegree: 0,
-    assignedColors: new Set(),
-    lastColorUsed: 0
-}));
-
-for (let currentLineIndex = 0; currentLineIndex < totalVertices - 1; currentLineIndex++) {
-    const edgeComponents = inputDataLines[currentLineIndex].split(' ').map(Number);
-    const firstVertex = edgeComponents[0] - 1;
-    const secondVertex = edgeComponents[1] - 1;
-
-    vertexAttributes[firstVertex].outboundConnections.push({
-        targetVertex: secondVertex,
-        originalEdgeIndex: currentLineIndex
-    });
-    vertexAttributes[secondVertex].inboundCount++;
+const vertexData = new Array(nodeCount);
+for (let vertexIndex = 0; vertexIndex < nodeCount; vertexIndex++) {
+    vertexData[vertexIndex] = {
+        outgoingEdges: [],
+        incomingDegree: 0,
+        assignedColors: new Set(),
+        lastAssignedColor: 0
+    };
 }
 
-let highestDegree = 0;
-for (let vIdx = 0; vIdx < totalVertices; vIdx++) {
-    const currentVertex = vertexAttributes[vIdx];
-    currentVertex.totalDegree = currentVertex.outboundConnections.length + currentVertex.inboundCount;
-    if (currentVertex.totalDegree > highestDegree) {
-        highestDegree = currentVertex.totalDegree;
+let overallMaxDegree = 0;
+const allEdges = [];
+
+for (let edgeInputIndex = 0; edgeInputIndex < nodeCount - 1; edgeInputIndex++) {
+    const edgeComponents = inputLines[edgeInputIndex].split(' ');
+    const sourceVertexIndex = Number(edgeComponents[0]) - 1;
+    const targetVertexIndex = Number(edgeComponents[1]) - 1;
+
+    vertexData[sourceVertexIndex].outgoingEdges.push({
+        destination: targetVertexIndex,
+        originalInputPosition: edgeInputIndex
+    });
+    vertexData[targetVertexIndex].incomingDegree++;
+
+    allEdges.push({
+        source: sourceVertexIndex,
+        target: targetVertexIndex,
+        originalInputPosition: edgeInputIndex
+    });
+
+    const currentSourceDegree = vertexData[sourceVertexIndex].outgoingEdges.length + vertexData[sourceVertexIndex].incomingDegree;
+    const currentTargetDegree = vertexData[targetVertexIndex].outgoingEdges.length + vertexData[targetVertexIndex].incomingDegree;
+    
+    if (overallMaxDegree < currentSourceDegree) {
+        overallMaxDegree = currentSourceDegree;
+    }
+    if (overallMaxDegree < currentTargetDegree) {
+        overallMaxDegree = currentTargetDegree;
     }
 }
 
-const edgeColorOutput = new Array(totalVertices - 1);
+const edgeColorAssignments = new Array(nodeCount - 1);
 
-const retrieveNextAvailableColor = (vertexIdentifier, maximumAllowedColor) => {
-    const nodeInformation = vertexAttributes[vertexIdentifier];
-    let candidateColor = nodeInformation.lastColorUsed + 1;
-    let chosenColor = 0;
+function* colorSearchGenerator(startValue, limitValue, forbiddenColors) {
+    for (let candidateColor = startValue; candidateColor < limitValue; candidateColor++) {
+        if (!forbiddenColors.has(candidateColor)) {
+            yield candidateColor;
+        }
+    }
+}
 
-    for (; candidateColor < maximumAllowedColor; candidateColor++) {
-        if (!nodeInformation.assignedColors.has(candidateColor)) {
-            chosenColor = candidateColor;
-            break;
+for (const currentEdge of allEdges) {
+    const sourceVertex = vertexData[currentEdge.source];
+    const targetVertex = vertexData[currentEdge.target];
+
+    let selectedColor = 0;
+
+    const firstAttemptGenerator = colorSearchGenerator(sourceVertex.lastAssignedColor + 1, overallMaxDegree, sourceVertex.assignedColors);
+    const firstResult = firstAttemptGenerator.next();
+
+    if (!firstResult.done) {
+        selectedColor = firstResult.value;
+    } else {
+        const secondAttemptGenerator = colorSearchGenerator(1, overallMaxDegree, sourceVertex.assignedColors);
+        const secondResult = secondAttemptGenerator.next();
+        if (!secondResult.done) {
+            selectedColor = secondResult.value;
         }
     }
 
-    if (chosenColor === 0) {
-        for (candidateColor = 1; candidateColor < maximumAllowedColor; candidateColor++) {
-            if (!nodeInformation.assignedColors.has(candidateColor)) {
-                chosenColor = candidateColor;
-                break;
-            }
-        }
-    }
-    return chosenColor;
-};
+    edgeColorAssignments[currentEdge.originalInputPosition] = selectedColor;
+    sourceVertex.assignedColors.add(selectedColor);
+    sourceVertex.lastAssignedColor = selectedColor;
+    targetVertex.assignedColors.add(selectedColor);
+    targetVertex.lastAssignedColor = selectedColor;
+}
 
-vertexAttributes.forEach((sourceVertexInfo, sourceVertexIndex) => {
-    sourceVertexInfo.outboundConnections.forEach(edgeDetail => {
-        const targetVertexIndex = edgeDetail.targetVertex;
-        const originalInputOrder = edgeDetail.originalEdgeIndex;
-
-        const allocatedColor = retrieveNextAvailableColor(sourceVertexIndex, highestDegree);
-
-        sourceVertexInfo.assignedColors.add(allocatedColor);
-        sourceVertexInfo.lastColorUsed = allocatedColor;
-
-        vertexAttributes[targetVertexIndex].assignedColors.add(allocatedColor);
-        vertexAttributes[targetVertexIndex].lastColorUsed = allocatedColor;
-
-        edgeColorOutput[originalInputOrder] = allocatedColor;
-    });
-});
-
-console.log(highestDegree);
-console.log(edgeColorOutput.join('\n'));
+console.log(overallMaxDegree);
+console.log(edgeColorAssignments.join('\n'));

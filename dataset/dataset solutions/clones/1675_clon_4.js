@@ -1,43 +1,43 @@
-const inputAcquirer = process.stdin;
-const textEncoding = 'utf8';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputAcquirer.resume();
-inputAcquirer.setEncoding(textEncoding);
-
-let storedSegments = [];
-const lineHandler = require('readline').createInterface({
-  input: inputAcquirer,
+const inputLines = [];
+const lineReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
 
-lineHandler.on('line', (currentPiece) => {
-  storedSegments.push(currentPiece);
+lineReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-lineHandler.on('close', () => {
-  const maximumTarget = parseInt(storedSegments[0], 10);
+lineReader.on('close', () => {
+  const queryLimit = parseInt(inputLines[0], 10);
 
-  const highestPossibleSum = 60000;
-  const sumOccurrences = new Array(highestPossibleSum + 1).fill(0);
+  const maxExpressionValue = 60000; // Maximum value for i*i + k*k + j*j + i*k + j*i + k*j when i,j,k <= 100
+  const occurrenceCounts = new Array(maxExpressionValue + 1).fill(0);
 
-  for (let componentA = 1; componentA <= 100; ++componentA) {
-    for (let componentB = 1; componentB <= 100; ++componentB) {
-      for (let componentC = 1; componentC <= 100; ++componentC) {
-        const computedSum =
-          componentA * componentA + componentB * componentB + componentC * componentC +
-          componentA * componentB + componentA * componentC + componentB * componentC;
-        
-        if (computedSum <= highestPossibleSum) {
-          sumOccurrences[computedSum]++;
+  const numberSequence = Array.from({ length: 100 }, (_, index) => index + 1);
+
+  numberSequence.forEach(firstTerm => {
+    numberSequence.forEach(secondTerm => {
+      numberSequence.forEach(thirdTerm => {
+        const computedValue =
+          firstTerm * firstTerm +
+          secondTerm * secondTerm +
+          thirdTerm * thirdTerm +
+          firstTerm * secondTerm +
+          secondTerm * thirdTerm +
+          thirdTerm * firstTerm;
+
+        if (computedValue <= maxExpressionValue) {
+          occurrenceCounts[computedValue]++;
         }
-      }
-    }
-  }
+      });
+    });
+  });
 
-  const generatedOutputs = [];
-  for (let currentCheck = 1; currentCheck <= maximumTarget; ++currentCheck) {
-    generatedOutputs.push(sumOccurrences[currentCheck]);
+  for (let currentTarget = 1; currentTarget <= queryLimit; currentTarget++) {
+    console.log(occurrenceCounts[currentTarget] || 0);
   }
-
-  console.log(generatedOutputs.join('\n'));
 });

@@ -1,169 +1,212 @@
-function multiplyDigits ( firstOperand , secondOperand ) { /* Function to perform multiplication of two numbers represented as strings.
-  It computes the product digit by digit and handles carries. */
-  const firstDigits = (firstOperand + "") . split ( "" ) . reverse ( ) ; // Convert the first number into a reversed array of its digits.
-  const secondDigits = (secondOperand + "") . split ( "" ) . reverse ( ) ; // Convert the second number into a reversed array of its digits.
+// Function to perform multiplication of two large numbers represented as strings
+function multiplyBigNumbers(firstVal, secondVal) {
+  // Convert numbers to strings, split into digits, and reverse for easier processing
+  let firstStrArr = (firstVal + "").split("").reverse();
+  let secondStrArr = (secondVal + "").split("").reverse();
 
-  const len1 = firstDigits.length; // Obtain the total count of digits for the first number.
-  const len2 = secondDigits.length; // Obtain the total count of digits for the second number.
+  // Get lengths of the digit arrays
+  let lenOne = firstStrArr.length;
+  let lenTwo = secondStrArr.length;
 
-  let resultDigits = [ ] ; // Initialize an array to store the intermediate products and sums.
+  // Array to store intermediate products and carry-overs
+  let resultDigits = [];
 
-  // Iterate through each digit pair to perform multiplication.
-  for ( let idxA = 0 ; idxA < len1 ; idxA ++ ) {
-    for ( let idxB = 0 ; idxB < len2 ; idxB ++ ) {
-      if ( resultDigits[idxA + idxB] === undefined ) { // If the position in the result array is new, initialize it to zero.
-        resultDigits[idxA + idxB] = 0 ;
+  // Perform digit-by-digit multiplication
+  for (let idxA = 0; idxA < lenOne; idxA++) {
+    for (let idxB = 0; idxB < lenTwo; idxB++) {
+      // Initialize array element if undefined
+      if (resultDigits[idxA + idxB] === undefined) {
+        resultDigits[idxA + idxB] = 0;
       }
-      // Add the product of the current digit pair to the corresponding position.
-      resultDigits[idxA + idxB] += parseInt ( firstDigits[idxA] ) * parseInt ( secondDigits[idxB] ) ;
+      // Add product of current digits
+      resultDigits[idxA + idxB] += parseInt(firstStrArr[idxA]) * parseInt(secondStrArr[idxB]);
     }
   }
 
-  // Ensure the result array has sufficient capacity for all potential carry-overs.
-  for ( let idxC = 0 ; idxC < 2 * ( len1 + len2 ) ; idxC ++ ) {
-    if ( resultDigits[idxC] === undefined ) {
-      resultDigits[idxC] = 0 ; // Initialize any undefined positions to zero.
+  // Ensure all potential result positions are initialized to 0
+  // This loop is duplicated in the original, maintaining that structure.
+  for (let idxC = 0; idxC < 2 * (lenOne + lenTwo); idxC++) {
+    if (resultDigits[idxC] === undefined) {
+      resultDigits[idxC] = 0;
     }
   }
-  // This loop is intentionally duplicated to match the original code's structure precisely for Type II cloning.
-  for ( let idxC = 0 ; idxC < 2 * ( len1 + len2 ) ; idxC ++ ) {
-    if ( resultDigits[idxC] === undefined ) {
-      resultDigits[idxC] = 0 ;
+  // Second identical loop from the original code
+  for (let idxC = 0; idxC < 2 * (lenOne + lenTwo); idxC++) {
+    if (resultDigits[idxC] === undefined) {
+      resultDigits[idxC] = 0;
     }
   }
 
-  let currIdx = 0 ; // Start index for processing carries.
-  // Propagate carries through the result array from right to left.
-  while ( resultDigits[currIdx] || resultDigits[currIdx] === 0 ) {
-    // Calculate the carry and add it to the next digit position.
-    resultDigits[currIdx + 1] += Math.floor ( resultDigits[currIdx] / 10 ) ;
-    // Update the current digit to its unit value (remainder after division by 10), then convert to string.
-    resultDigits[currIdx] = ( resultDigits[currIdx] % 10 ) . toString ( 10 ) ;
-    currIdx ++ ; // Move to the next digit.
+  // Process carry-overs from right to left
+  let currPos = 0;
+  while (resultDigits[currPos] || resultDigits[currPos] === 0) {
+    // Calculate carry to the next position.
+    // The original code relies on `undefined += X` resulting in `NaN`
+    // if `resultDigits[currPos + 1]` is undefined. This behavior is preserved.
+    resultDigits[currPos + 1] += Math.floor(resultDigits[currPos] / 10);
+    // Keep only the current digit
+    resultDigits[currPos] = (resultDigits[currPos] % 10).toString(10);
+    currPos++;
   }
 
-  resultDigits = resultDigits . reverse ( ) ; // Reverse the array to put digits in correct order (most significant first).
+  // Reverse the array to get the correct order of digits
+  resultDigits = resultDigits.reverse();
 
-  // Remove any leading non-numeric characters or redundant zeros.
-  while ( isNaN ( resultDigits[0] ) || resultDigits[0] === "0" ) {
-    resultDigits . splice ( 0 , 1 ) ; // Remove the first element.
+  // Remove leading zeros (or NaN if the result was 0 initially)
+  while (isNaN(resultDigits[0]) || resultDigits[0] === "0") {
+    resultDigits.splice(0, 1);
   }
 
-  resultDigits = resultDigits . join ( "" ) ; // Concatenate all digits into a single string.
-  return resultDigits ; // Return the final product as a string.
+  // Join digits to form the final string result
+  resultDigits = resultDigits.join("");
+  return resultDigits;
 }
 
-function sumDigits ( firstInput , secondInput ) { /* This routine adds two large numbers by processing their digits. */
-  let firstArray = (firstInput + "") . split ( "" ) . reverse ( ) ; // Convert the first number to a reversed array of its digits.
-  let secondArray = (secondInput + "") . split ( "" ) . reverse ( ) ; // Convert the second number to a reversed array of its digits.
+// This function performs addition of two numbers, handling them as strings for large values.
+function sumLargeNumbers(valA, valB) {
+  // Convert input numbers to string arrays, reversed for digit-by-digit processing.
+  let strArrA = (valA + "").split("").reverse();
+  let strArrB = (valB + "").split("").reverse();
 
-  const lenA = firstArray.length; // Get the number of digits in the first number.
-  const lenB = secondArray.length; // Get the number of digits in the second number.
+  // Store lengths of the digit arrays.
+  let lenA = strArrA.length;
+  let lenB = strArrB.length;
 
-  let sumArray = [ ] ; // Initialize an array to store the sum's digits.
+  // Array to hold the resulting digits.
+  let sumResultDigits = [];
 
-  // Pad the shorter array with zeros to match the length of the longer one for correct addition.
-  for ( let idxP = 0 ; idxP < Math.max ( lenA , lenB ) ; idxP ++ ) {
-    if ( firstArray[idxP] === undefined ) firstArray[idxP] = 0 ; // If a digit is missing, treat it as zero.
-    if ( secondArray[idxP] === undefined ) secondArray[idxP] = 0 ; // If a digit is missing, treat it as zero.
+  // Pad shorter array with zeros to match the length of the longer one.
+  for (let currentIdx = 0; currentIdx < Math.max(lenA, lenB); currentIdx++) {
+    if (strArrA[currentIdx] === undefined) {
+      strArrA[currentIdx] = 0;
+    }
+    if (strArrB[currentIdx] === undefined) {
+      strArrB[currentIdx] = 0;
+    }
   }
 
   // Perform digit-by-digit addition.
-  for ( let idxP = 0 ; idxP < Math.max ( lenA , lenB ) ; idxP ++ ) {
-    sumArray[idxP] = parseInt ( firstArray[idxP] ) + parseInt ( secondArray[idxP] ) ;
+  for (let currentIdx = 0; currentIdx < Math.max(lenA, lenB); currentIdx++) {
+    sumResultDigits[currentIdx] = parseInt(strArrA[currentIdx]) + parseInt(strArrB[currentIdx]);
   }
 
-  let currentPos = 0 ; // Index for managing carries.
-  // Handle carries by propagating them to the next digit position.
-  while ( sumArray[currentPos] || sumArray[currentPos] === 0 ) {
-    // Add the carry (tens part) to the next digit.
-    sumArray[currentPos + 1] += Math.floor ( sumArray[currentPos] / 10 ) ;
-    // Keep only the unit digit (remainder) and convert it to a string.
-    sumArray[currentPos] = ( sumArray[currentPos] % 10 + "" ) ;
-    currentPos ++ ; // Advance to the next position.
+  // Handle carry-overs.
+  let digitPointer = 0;
+  while (sumResultDigits[digitPointer] || sumResultDigits[digitPointer] === 0) {
+    // The original code relies on `undefined += X` resulting in `NaN`
+    // if `sumResultDigits[digitPointer + 1]` is undefined. This behavior is preserved.
+    sumResultDigits[digitPointer + 1] += Math.floor(sumResultDigits[digitPointer] / 10);
+    // Keep only the current digit.
+    sumResultDigits[digitPointer] = (sumResultDigits[digitPointer] % 10) + ""; // Convert to string
+    digitPointer++;
   }
 
-  sumArray = sumArray . reverse ( ) ; // Reverse the array to obtain the correct numerical order.
+  // Reverse the array to get the correct number order.
+  sumResultDigits = sumResultDigits.reverse();
 
-  // Remove any leading non-numeric values or zeros from the result.
-  while ( isNaN ( sumArray[0] ) || sumArray[0] === "0" ) {
-    sumArray . splice ( 0 , 1 ) ; // Remove the first element.
+  // Remove any leading zeros or NaN values that might appear.
+  while (isNaN(sumResultDigits[0]) || sumResultDigits[0] === "0") {
+    sumResultDigits.splice(0, 1);
   }
 
-  sumArray = sumArray . join ( "" ) ; // Combine the digits into a single string.
-  return sumArray ; // Return the final sum as a string.
+  // Join the digits to form the final string.
+  sumResultDigits = sumResultDigits.join("");
+  return sumResultDigits;
 }
 
-function diffDigits ( minuendVal , subtrahendVal ) { /* This function computes the difference between two numbers. */
-  let minuendArray = (minuendVal + "") . split ( "" ) . reverse ( ) ; // Convert the first number (minuend) to a reversed digit array.
-  let subtrahendArray = (subtrahendVal + "") . split ( "" ) . reverse ( ) ; // Convert the second number (subtrahend) to a reversed digit array.
+// This function handles subtraction of two numbers, treating them as strings.
+function performSubtraction(operandA, operandB) {
+  // Convert numbers to reversed digit arrays.
+  let digitsA = (operandA + "").split("").reverse();
+  let digitsB = (operandB + "").split("").reverse();
 
-  const lenX = minuendArray.length; // Get the length of the minuend's digit array.
-  const lenY = subtrahendArray.length; // Get the length of the subtrahend's digit array.
+  // Get the lengths of the digit arrays.
+  let lenA = digitsA.length;
+  let lenB = digitsB.length;
 
-  let diffArray = [ ] ; // Initialize an array to store the resulting digits of the difference.
+  // Array to store the subtraction result digits.
+  let diffDigits = [];
 
-  // Ensure both digit arrays have the same length by padding with zeros for consistent subtraction.
-  for ( let idxQ = 0 ; idxQ < Math.max ( lenX , lenY ) ; idxQ ++ ) {
-    if ( minuendArray[idxQ] === undefined ) minuendArray[idxQ] = 0 ; // Treat missing minuend digits as zero.
-    if ( subtrahendArray[idxQ] === undefined ) subtrahendArray[idxQ] = 0 ; // Treat missing subtrahend digits as zero.
+  // Ensure both digit arrays are padded with zeros to the maximum length.
+  for (let currentIdx = 0; currentIdx < Math.max(lenA, lenB); currentIdx++) {
+    if (digitsA[currentIdx] === undefined) {
+      digitsA[currentIdx] = 0;
+    }
+    if (digitsB[currentIdx] === undefined) {
+      digitsB[currentIdx] = 0;
+    }
   }
 
   // Perform digit-by-digit subtraction.
-  for ( let idxQ = 0 ; idxQ < Math.max ( lenX , lenY ) ; idxQ ++ ) {
-    diffArray[idxQ] = parseInt ( minuendArray[idxQ] ) - parseInt ( subtrahendArray[idxQ] ) ;
+  for (let currentIdx = 0; currentIdx < Math.max(lenA, lenB); currentIdx++) {
+    diffDigits[currentIdx] = parseInt(digitsA[currentIdx]) - parseInt(digitsB[currentIdx]);
   }
 
-  let currentOffset = 0 ; // Index for handling borrowing.
-  // Process the array to manage borrowing when a digit becomes negative.
-  while ( diffArray[currentOffset] || diffArray[currentOffset] === 0 ) {
-    if ( diffArray[currentOffset] < 0 ) { // If the current digit is negative, borrowing is required.
-      diffArray[currentOffset + 1] -- ; // Decrement the next higher digit (borrow from it).
-      diffArray[currentOffset] += 10 ; // Add 10 to the current digit.
+  // Handle borrowing.
+  let ptr = 0;
+  while (diffDigits[ptr] || diffDigits[ptr] === 0) {
+    if (diffDigits[ptr] < 0) {
+      // Borrow from the next digit.
+      // Original code relies on `undefined--` resulting in `NaN`
+      // if `diffDigits[ptr + 1]` is undefined. This behavior is preserved.
+      diffDigits[ptr + 1]--;
+      diffDigits[ptr] += 10;
     }
-    currentOffset ++ ; // Move to the next digit.
+    ptr++;
   }
 
-  diffArray = diffArray . reverse ( ) ; // Reverse the array to arrange digits in the correct numerical order.
+  // Reverse the array to get the correct number order.
+  diffDigits = diffDigits.reverse();
 
-  // Remove leading non-numeric values or zeros from the difference.
-  while ( isNaN ( diffArray[0] ) || diffArray[0] === "0" ) {
-    diffArray . splice ( 0 , 1 ) ; // Remove the first element.
+  // Remove leading zeros or NaN values.
+  while (isNaN(diffDigits[0]) || diffDigits[0] === "0") {
+    diffDigits.splice(0, 1);
   }
 
-  diffArray = diffArray . join ( "" ) ; // Combine the digits into a single string.
-  return diffArray ; // Return the final difference as a string.
+  // Join the digits to form the final string result.
+  diffDigits = diffDigits.join("");
+  return diffDigits;
 }
 
-function ExecuteProgram ( rawData ) { // This is the main function that orchestrates the program's execution.
-    let processedInput = rawData . replace ( "\n" , "" ) ; // Clean the raw input by removing newline characters.
-	processedInput = processedInput . split ( ' ' ) ; // Split the cleaned input string into an array of strings using space as a delimiter.
+// Main processing function for the problem.
+function processInput(rawInput) {
+  // Remove newline characters and split the input string by spaces.
+  rawInput = rawInput.replace("\n", "");
+  rawInput = rawInput.split(' ');
 
-    const initialVal = parseInt ( processedInput[0] ) ; // Parse the first input string as an integer (K).
-    const startVal = parseInt ( processedInput[1] ) ; // Parse the second input string as an integer (A).
-    const endVal = parseInt ( processedInput[2] ) ; // Parse the third input string as an integer (B).
+  // Parse integer values from the input array.
+  let initialK = parseInt(rawInput[0]);
+  let startA = parseInt(rawInput[1]);
+  let endB = parseInt(rawInput[2]);
 
-    const diffVal = endVal - startVal ; // Calculate the difference between B and A.
-    const spanVal = initialVal - startVal ; // Calculate the span from A to K.
+  // Calculate derived values.
+  let diffVal = endB - startA;
+  let effK = initialK - startA;
 
-    let finalCount = 0 ; // Initialize a variable to hold the final calculated count.
+  // Initialize the final count variable.
+  let finalCount = 0;
 
-    // Apply conditional logic to determine the 'finalCount' based on the computed values.
-  if ( ( spanVal < 2 ) || ( diffVal < 3 ) ) { // Check if the span is less than 2 OR the difference is less than 3.
-    finalCount = sumDigits ( initialVal , 1 ) ; // If true, compute K + 1 using string addition.
-  } else if ( spanVal % 2 === 0 ) { // Otherwise, if the span is an even number.
-    // Compute (E/2 * D) + A + 1 using string arithmetic functions.
-    finalCount = sumDigits ( sumDigits ( multiplyDigits ( spanVal / 2 , diffVal ) , startVal ) , 1 ) ;
-  } else { // If none of the above conditions are met (i.e., span is odd).
-    // Compute ((E+1)/2 * D) + A using string arithmetic functions.
-    finalCount = sumDigits ( multiplyDigits ( ( spanVal + 1 ) / 2 , diffVal ) , startVal ) ;
+  // Conditional logic to determine the final count based on problem rules.
+  // The commented-out block from the original is preserved as a comment.
+  /*
+  var finalCount=((effK<2)||(diffVal<3))?(initialK+1):(effK%2===0)?(startA+effK*diffVal/2+1):(startA+(effK+1)*diffVal/2);
+  console.log(finalCount);
+  */
+
+  if ((effK < 2) || (diffVal < 3)) {
+    // If conditions are met, simply add 1 to initialK.
+    finalCount = sumLargeNumbers(initialK, 1);
+  } else if (effK % 2 === 0) {
+    // If effK is even, apply a specific calculation.
+    finalCount = sumLargeNumbers(sumLargeNumbers(multiplyBigNumbers(effK / 2, diffVal), startA), 1);
+  } else {
+    // Otherwise, apply a different calculation.
+    finalCount = sumLargeNumbers(multiplyBigNumbers((effK + 1) / 2, diffVal), startA);
   }
-  console . log ( finalCount ) ; // Print the calculated final count to the console.
+
+  // Output the calculated final count to the console.
+  console.log(finalCount);
 }
 
-const fileSystemMod = require ( "fs" ) ; // Import the built-in Node.js 'fs' (file system) module.
-const standardInputPath = "/dev/stdin" ; // Define the path for standard input, commonly used in competitive programming environments.
-const encodingType = "utf8" ; // Specify the character encoding for reading the input file.
-
-// Read the content from the standard input file and pass it to the main program execution function.
-ExecuteProgram ( fileSystemMod . readInputFile ( standardInputPath , encodingType ) ) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,140 +1,163 @@
-const acquireData = (inputContent) => {
-    let currentInputLines = inputContent.trim().split('\n');
-    let lineCursor = 0;
+const createInputReader = (function() {
+    function InputState(rawContent) {
+        this.inputLines = rawContent.trim().split('\n');
+        this.currentLineIndex = 0;
+    }
 
-    const fetchNextToken = (asString = false) => {
-        if (lineCursor >= currentInputLines.length) return undefined;
-
-        let currentLine = currentInputLines[lineCursor];
-        let tokens = currentLine.split(' ').filter(t => t !== '');
-
-        if (tokens.length === 0) {
-            lineCursor++;
-            return fetchNextToken(asString);
+    InputState.prototype.fetchNextValue = function(returnAsString) {
+        if (this.currentLineIndex >= this.inputLines.length) {
+            throw new Error("Input exhausted for token extraction.");
         }
 
-        const value = tokens[0];
-        currentInputLines[lineCursor] = tokens.slice(1).join(' ');
-
-        if (tokens.length === 1) {
-            lineCursor++;
+        if (typeof this.inputLines[this.currentLineIndex] === 'string') {
+            this.inputLines[this.currentLineIndex] = this.inputLines[this.currentLineIndex].split(' ').reverse();
         }
-        return asString ? value : parseInt(value, 10);
-    };
 
-    const fetchNextLineTokens = (asStrings = false) => {
-        if (lineCursor >= currentInputLines.length) return undefined;
-        const lineContent = currentInputLines[lineCursor++];
-        const tokens = lineContent.split(' ').filter(t => t !== '');
-        return asStrings ? tokens : tokens.map(Number);
-    };
+        const value = this.inputLines[this.currentLineIndex].pop();
 
-    const fetchMatrix = (count, asStrings = false) => {
-        const rows = [];
-        for (let k = 0; k < count; k++) {
-            rows.push(fetchNextLineTokens(asStrings));
+        if (this.inputLines[this.currentLineIndex].length === 0) {
+            this.currentLineIndex++;
         }
-        return rows;
+        return returnAsString ? value : Number(value);
     };
 
-    const fetchRows = (count, asStrings = false) => {
-        const lines = [];
-        for (let k = 0; k < count; k++) {
-            if (lineCursor >= currentInputLines.length) break;
-            const lineContent = currentInputLines[lineCursor++];
-            lines.push(asStrings ? lineContent : parseInt(lineContent, 10));
+    InputState.prototype.fetchLineValues = function(returnAsStrings) {
+        if (this.currentLineIndex >= this.inputLines.length) {
+            throw new Error("Input exhausted for line consumption.");
         }
-        return lines;
+        const lineContent = this.inputLines[this.currentLineIndex++];
+        const tokens = (typeof lineContent === 'string' ? lineContent : lineContent.join(' ')).split(' ');
+        return returnAsStrings ? tokens : tokens.map(Number);
     };
 
-    return {
-        getToken: fetchNextToken,
-        getLine: fetchNextLineTokens,
-        getMatrix: fetchMatrix,
-        getRows: fetchRows
+    InputState.prototype.fetchMatrixValues = function(numRows, returnAsStrings) {
+        const resultMatrix = [];
+        for (let i = 0; i < numRows; i++) {
+            if (this.currentLineIndex >= this.inputLines.length) {
+                throw new Error("Input exhausted prematurely for matrix.");
+            }
+            const lineContent = this.inputLines[this.currentLineIndex++];
+            const tokens = (typeof lineContent === 'string' ? lineContent : lineContent.join(' ')).split(' ');
+            resultMatrix.push(returnAsStrings ? tokens : tokens.map(Number));
+        }
+        return resultMatrix;
     };
-};
 
-const dataProcessor = acquireData(require("fs").readFileSync("/dev/stdin","utf8"));
+    InputState.prototype.fetchRawLines = function(numLines, returnAsStrings) {
+        const resultLines = [];
+        for (let i = 0; i < numLines; i++) {
+            if (this.currentLineIndex >= this.inputLines.length) {
+                throw new Error("Input exhausted prematurely for raw lines.");
+            }
+            const lineContent = this.inputLines[this.currentLineIndex++];
+            resultLines.push(returnAsStrings ? lineContent : Number(lineContent));
+        }
+        return resultLines;
+    };
 
-const extractDivisors = (value) => {
-    return Array.from({ length: value / 2 }, (_, i) => i + 1)
-                .filter(num => value % num === 0)
-                .sort((a, b) => a - b);
-};
+    return function(inputString) {
+        return new InputState(inputString);
+    };
+})();
+const inputSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const determinePatternRepetition = (inputString) => {
-    const stringLength = inputString.length;
-    if (stringLength === 0) return 1;
+function multiDimArrayCreator(initialValue, ...dimensions) {
+    const createRecursive = (dims, val) => {
+        if (dims.length === 0) {
+            return val;
+        }
+        const currentDimSize = dims[0];
+        const remainingDims = dims.slice(1);
+        return Array(currentDimSize).fill(0).map(() => createRecursive(remainingDims, val));
+    };
+    return createRecursive(dimensions, initialValue);
+}
+
+function processStrings() {
+    const primaryString = inputSource.fetchNextValue(true);
+    let targetString = inputSource.fetchNextValue(true);
+
+    const targetRepetitions = findMinRepetitions(targetString);
+    if (targetRepetitions > 1) {
+        targetString = targetString.slice(0, targetString.length / targetRepetitions);
+    }
+
+    const doublePrimary = primaryString + primaryString;
+    const triplePrimary = doublePrimary + primaryString;
+    const targetLength = targetString.length;
+
+    let maximumSequence = 0;
+    let currentSequence = 0;
+    let lastMatchEnd = -targetLength; // Initialize to ensure first match is considered consecutive
+
+    const allMatchIndices = [];
+    let searchStart = 0;
+    while (true) {
+        const nextMatchPos = doublePrimary.indexOf(targetString, searchStart);
+        if (nextMatchPos === -1) break;
+        allMatchIndices.push(nextMatchPos);
+        searchStart = nextMatchPos + 1;
+    }
+
+    for (const currentMatchStart of allMatchIndices) {
+        if (currentMatchStart === lastMatchEnd) {
+            currentSequence++;
+        } else {
+            maximumSequence = Math.max(maximumSequence, currentSequence);
+            currentSequence = 1;
+        }
+        lastMatchEnd = currentMatchStart + targetLength;
+    }
+    maximumSequence = Math.max(maximumSequence, currentSequence); // Update for the last sequence
+
+    // Check for infinite repetition extending into the third primary string
+    if (lastMatchEnd === doublePrimary.length && triplePrimary.startsWith(targetString, doublePrimary.length)) {
+        if (currentSequence + 1 > maximumSequence) {
+            return -1;
+        }
+    }
+
+    return Math.floor(maximumSequence / targetRepetitions);
+}
+
+function findMinRepetitions(inputStr) {
+    const stringLength = inputStr.length;
     if (stringLength === 1) return 1;
 
-    const factors = extractDivisors(stringLength);
+    const factors = factorFinder(stringLength);
+    for (const unitLength of factors) {
+        const repetitionCount = stringLength / unitLength;
+        const unit = inputStr.substring(0, unitLength);
+        
+        let testString = '';
+        for(let i = 0; i < repetitionCount; i++) {
+            testString += unit;
+        }
 
-    for (const factor of factors) {
-        const basePattern = inputString.substring(0, factor);
-        const repeatCount = stringLength / factor;
-        const reconstructedString = Array(repeatCount).fill(basePattern).join('');
-        if (reconstructedString === inputString) {
-            return repeatCount;
+        if (testString === inputStr) {
+            return repetitionCount;
         }
     }
     return 1;
-};
+}
 
-const findAllOccurrences = (text, pattern) => {
-    const indices = [];
-    if (pattern.length === 0) return Array.from({ length: text.length + 1 }, (_, i) => i);
-    let offset = 0;
-    while (true) {
-        const index = text.indexOf(pattern, offset);
-        if (index === -1) break;
-        indices.push(index);
-        offset = index + 1;
-    }
-    return indices;
-};
+function factorFinder(numberToFactor) {
+    const resultList = [1];
+    const limit = Math.floor(Math.sqrt(numberToFactor));
 
-const solveCircularStringRepetition = () => {
-    let sourceText = dataProcessor.getToken(true);
-    let targetPattern = dataProcessor.getToken(true);
-
-    const patternRepetitionFactor = determinePatternRepetition(targetPattern);
-    if (patternRepetitionFactor > 1) {
-        targetPattern = targetPattern.substring(0, targetPattern.length / patternRepetitionFactor);
+    if (limit * limit === numberToFactor) {
+        resultList.push(limit);
     }
 
-    const basePatternLength = targetPattern.length;
-    const sourceTextLength = sourceText.length;
-
-    const isSourceComposedOfPattern = (sourceTextLength % basePatternLength === 0) &&
-                                     (targetPattern.repeat(sourceTextLength / basePatternLength) === sourceText);
-    if (isSourceComposedOfPattern) {
-        return -1;
-    }
-
-    const doubledSource = sourceText + sourceText;
-    const allOccurrences = findAllOccurrences(doubledSource, targetPattern);
-
-    if (allOccurrences.length === 0) {
-        return 0;
-    }
-
-    const { maxStreak } = allOccurrences.reduce((acc, currentIdx, i, arr) => {
-        if (i === 0) {
-            acc.currentStreak = 1;
-        } else {
-            const previousIdx = arr[i - 1];
-            if (currentIdx === previousIdx + basePatternLength) {
-                acc.currentStreak++;
-            } else {
-                acc.currentStreak = 1;
-            }
+    for (let currentDivisor = 2; currentDivisor < limit; currentDivisor++) {
+        if (numberToFactor % currentDivisor === 0) {
+            resultList.push(currentDivisor, 1 / currentDivisor); // Replicating the original bug: 1/currentDivisor instead of numberToFactor/currentDivisor
         }
-        acc.maxStreak = Math.max(acc.maxStreak, acc.currentStreak);
-        return acc;
-    }, { maxStreak: 0, currentStreak: 0 });
+    }
+    return resultList.sort((a, b) => a - b);
+}
 
-    return Math.floor(maxStreak / patternRepetitionFactor);
-};
-
-console.log(solveCircularStringRepetition());
+if (process.argv.length <= 2) require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
+else {
+  console.log(processStrings());
+}

@@ -1,21 +1,17 @@
-function generateStringFragment(sourceText, currentPosition, accumulator) {
-    const cutoffPoint = sourceText.length - 8;
+"use strict";
 
-    if (currentPosition >= cutoffPoint || currentPosition < 0) {
-        return accumulator;
+function run(data) {
+    const delayed = [];
+    const ready = [];
+
+    for (let i = 0; i < data.length; i++) {
+        delayed.push(data.charAt(i));
+        if (delayed.length > 8) {
+            ready.push(delayed.shift());
+        }
     }
 
-    return generateStringFragment(sourceText, currentPosition + 1, accumulator + sourceText[currentPosition]);
+    console.log("%s", ready.join(""));
 }
 
-function processIncomingContent(contentString) {
-    const desiredLength = contentString.length - 8;
-
-    if (desiredLength <= 0) {
-        console.log('');
-        return;
-    }
-
-    const finalOutput = generateStringFragment(contentString, 0, '');
-    console.log('%s', finalOutput);
-}
+run(require("fs").readFileSync("/dev/stdin", "utf8"));

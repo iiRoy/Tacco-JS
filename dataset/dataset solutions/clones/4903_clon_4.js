@@ -1,23 +1,16 @@
-const processData = (sourceMaterial) => {
-  const lineExtractionPattern = /(\d+)\s+\d+\n([\d\s]+)/;
-  const extractedSegments = sourceMaterial.match(lineExtractionPattern);
+function processInputData(rawData) {
+  const lines = rawData.split('\n');
 
-  const keyParameter = Number(extractedSegments[1]);
+  const [valK, valT] = lines[0].split(' ').map(Number);
 
-  const numericSequence = extractedSegments[2].match(/\d+/g).map(Number);
+  const minimumElement = lines[1].split(' ').reduce((accumulator, currentString) => {
+    const currentNumber = Number(currentString);
+    return Math.min(accumulator, currentNumber);
+  }, Infinity);
 
-  const greatestElement = numericSequence.reduce((accumulator, currentValue) => {
-    return (currentValue > accumulator) ? currentValue : accumulator;
-  }, -Infinity);
+  const finalResult = Math.max(2 * minimumElement - valK - 1, 0);
 
-  const interimCalculation = (greatestElement << 1) - keyParameter - 1;
-  const finalResult = (interimCalculation > 0) ? interimCalculation : 0;
+  console.log(finalResult);
+}
 
-  return finalResult;
-};
-
-((ioHandler) => {
-  const rawDataPayload = ioHandler.readFileSync("/dev/stdin", "utf8");
-  const computedValue = processData(rawDataPayload);
-  process.stdout.write(String(computedValue) + '\n');
-})(require("fs"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

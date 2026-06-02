@@ -1,40 +1,44 @@
 'use strict';
 
-/*
- * This module contains a core function designed to process specific numerical input.
- * It calculates an outcome based on three initial numeric values provided in the input.
+/**
+ * This function serves as the primary entry point for processing input data.
+ * It takes a raw string input, parses it, performs a calculation, and prints the result.
+ * @param {string} rawData - The complete raw input string, typically from standard input.
  */
+const processInput = (rawData) => {
+  // Parse the input string:
+  // 1. Split by newline to get individual lines.
+  // 2. Take the first line (index 0).
+  // 3. Split that line by space to get individual number strings.
+  // 4. Map each number string to its numeric representation.
+  const parsedNumbers = rawData.split('\n')[0].split(' ').map(numStr => Number(numStr));
 
-const computeOutcome = (inputPayload) => {
-  // Parse the raw input string into an array of numbers.
-  // It expects a single line of space-separated numeric tokens.
-  const numericArray = inputPayload
-    .split('\n')[0] // Retrieve the very first line of the input data
-    .split(' ')     // Divide that initial line by spaces into tokens
-    .map(token => Number(token)); // Convert each string token into a proper number
+  // Assign the parsed numeric values to distinct variables for clarity.
+  const valX = parsedNumbers[0]; // Represents the first number from input.
+  const valY = parsedNumbers[1]; // Represents the second number from input.
+  const valZ = parsedNumbers[2]; // Represents the third number from input.
 
-  // Extract the individual numeric components from the freshly parsed array.
-  const alpha = numericArray[0]; // The first numerical component from the input
-  const beta = numericArray[1];  // The second numerical component from the input
-  const gamma = numericArray[2]; // The third numerical component from the input
+  let resultValue; // Declare a variable to hold the final computed answer.
 
-  let finalCalculation; // Declare a variable to hold the ultimate result of the computation
-
-  // Evaluate a specific condition involving the three components.
-  // This conditional logic determines which calculation path to execute.
-  if (gamma <= alpha + beta) {
-    // Path 1: If the condition is satisfied, perform a straightforward summation.
-    finalCalculation = gamma + beta;
+  // Apply conditional logic based on the relationship between valZ, valX, and valY.
+  // This implements the core algorithm for determining the output.
+  if (valZ <= valX + valY) {
+    // If valZ is less than or equal to the sum of valX and valY,
+    // the result is simply the sum of valZ and valY.
+    resultValue = valZ + valY;
   } else {
-    // Path 2: If the condition is not met, execute a more intricate calculation.
-    // This particular formula involves a sequence of subtraction and addition operations.
-    finalCalculation = (gamma + beta) - (gamma - beta - alpha) + 1;
+    // Otherwise (if valZ is greater than valX + valY),
+    // a different calculation is performed.
+    // This expression can be simplified algebraically to valX + 2 * valY + 1.
+    resultValue = (valZ + valY) - (valZ - valY - valX) + 1;
   }
 
-  // Display the computed numerical result to the standard output stream.
-  console.log(finalCalculation);
-}; // End of the primary data processing function definition
+  // Output the final calculated result to the console.
+  // This is the observable behavior of the program.
+  console.log(resultValue);
+};
 
-// Initiate the entire processing sequence by reading data from the standard input stream.
-// The incoming data is anticipated to be encoded using UTF-8.
-computeOutcome( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+// The program execution starts here.
+// It reads the entire content of '/dev/stdin' synchronously using Node.js's 'fs' module,
+// decodes it as UTF-8, and then passes this raw string to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

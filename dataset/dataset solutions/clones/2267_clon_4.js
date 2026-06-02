@@ -1,25 +1,23 @@
-function processInputData(unparsedText) {
-    const lineSegments = unparsedText.split("\n");
-    const totalSongCount = Number(lineSegments[0]);
-    const searchTargetSongName = lineSegments[totalSongCount + 1];
+function processInput(rawContent) {
+    const contentLines = rawContent.split("\n");
+    const trackCount = Number(contentLines[0]);
+    const targetTrackName = contentLines[trackCount + 1];
 
-    const songRecords = lineSegments.slice(1, totalSongCount + 1).map(currentEntry => {
-        const parts = currentEntry.split(' ');
+    const trackDetails = contentLines.slice(1, trackCount + 1).map(lineEntry => {
+        const segmentParts = lineEntry.split(' ');
         return {
-            tuneName: parts[0],
-            durationValue: Number(parts[1])
+            tuneIdentifier: segmentParts[0],
+            durationValue: Number(segmentParts[1])
         };
     });
 
-    const matchingSongIndex = songRecords.findIndex(record => record.tuneName === searchTargetSongName);
+    const matchingTrackIndex = trackDetails.findIndex(trackItem => trackItem.tuneIdentifier === targetTrackName);
 
-    if (matchingSongIndex !== -1) {
-        const subsequentSongs = songRecords.slice(matchingSongIndex + 1);
-        const accumulatedTime = subsequentSongs.reduce((currentSum, songItem) => {
-            return currentSum + songItem.durationValue;
-        }, 0);
-        console.log(accumulatedTime);
+    if (matchingTrackIndex !== -1) {
+        const subsequentTracks = trackDetails.slice(matchingTrackIndex + 1);
+        const totalSubsequentDuration = subsequentTracks.reduce((accumulator, currentItem) => accumulator + currentItem.durationValue, 0);
+        console.log(totalSubsequentDuration);
     }
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

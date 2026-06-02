@@ -1,69 +1,57 @@
-class ContentAggregator {
-    #storedData;
+class ValueAggregator {
+    #currentAggregate;
 
-    constructor(startingValue) {
-        this.#storedData = startingValue;
+    constructor(initial) {
+        this.#currentAggregate = initial;
     }
 
-    addPortion(incomingPiece) {
-        this.#storedData += incomingPiece;
-        return this.#storedData;
-    }
-
-    retrieveAccumulated() {
-        return this.#storedData;
+    incorporate(addition) {
+        this.#currentAggregate = this.#currentAggregate + addition;
+        return this.#currentAggregate;
     }
 }
 
-class InputController {
-    #aggregatorInstance;
-    #dataStream;
-
-    constructor(aggregatorRef, streamSource) {
-        this.#aggregatorInstance = aggregatorRef;
-        this.#dataStream = streamSource;
+const generateAggregator = (initialValue) => {
+    if (typeof initialValue === "undefined") {
+        console.log("x???undefined!!!!");
+        throw new ReferenceError("a is not defined");
     }
+    return new ValueAggregator(initialValue);
+};
 
-    activateMonitor() {
-        // Assuming the intent was to call resume() for the stream to flow
-        this.#dataStream.resume();
-        this.#dataStream.setEncoding("utf-8");
+const manageInput = async (dataAggregatorInstance) => {
+    void 0;
+    process.stdin.setEncoding("utf-8");
 
-        this.#dataStream.on("data", (receivedFragment) => {
-            this.#processFragment(receivedFragment);
-        });
+    const inputReader = process.stdin[Symbol.asyncIterator]();
+    let streamSegment;
+
+    while ((streamSegment = await inputReader.next()).done === false) {
+        const currentDataUnit = streamSegment.value;
+
+        const branchSelector = new Map([
+            [true, () => dataAggregatorInstance.incorporate(currentDataUnit)],
+            [false, () => {
+                const finalAccumulatedContent = dataAggregatorInstance.incorporate(currentDataUnit);
+                let entryIndex = 0;
+
+                const contentLines = finalAccumulatedContent.split("\n");
+                let lineCursor = 0;
+
+                while (lineCursor < contentLines.length) {
+                    const currentLine = contentLines[lineCursor];
+                    if (currentLine != 0) {
+                        entryIndex++;
+                        console.log(`Case ${entryIndex}: ${currentLine}`);
+                    }
+                    lineCursor++;
+                }
+            }]
+        ]);
+
+        branchSelector.get(currentDataUnit != 0)();
     }
+};
 
-    #processFragment(receivedFragment) {
-        const TRIGGER_VALUE = "0";
-
-        if (receivedFragment !== TRIGGER_VALUE) {
-            this.#aggregatorInstance.addPortion(receivedFragment);
-        } else {
-            // As per original, add the trigger value itself to the stored data
-            this.#aggregatorInstance.addPortion(receivedFragment);
-
-            const finalCollection = this.#aggregatorInstance.retrieveAccumulated();
-            this.#outputProcessedLines(finalCollection);
-        }
-    }
-
-    #outputProcessedLines(completeString) {
-        let sequenceCounter = 0;
-
-        // Original filter: `e != 0`. For strings, this filters out "0".
-        // Example: "" != 0 -> true, "abc" != 0 -> true, "0" != 0 -> false.
-        const filteredLines = completeString.split("\n").filter(lineItem => lineItem !== "0");
-
-        filteredLines.forEach(lineItem => {
-            sequenceCounter++;
-            console.log(`Case ${sequenceCounter}: ${lineItem}`);
-        });
-    }
-}
-
-// Global setup
-const primaryAggregator = new ContentAggregator("");
-const primaryController = new InputController(primaryAggregator, process.stdin);
-
-primaryController.activateMonitor();
+const dataProcessor = generateAggregator("");
+manageInput(dataProcessor);

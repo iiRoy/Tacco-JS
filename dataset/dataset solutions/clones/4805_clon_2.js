@@ -1,25 +1,51 @@
-'use strict'
+'use strict'; // Enforce strict mode for cleaner code
 
+/**
+ * Processes input data to calculate modified times based on queries.
+ * @param {string} rawData - The raw input string containing N, T, M, and PX data.
+ */
 function ProcessInput(rawData) {
-    const tempArray = rawData.trim().split('\n');
-    const countItems = Number(tempArray[0]);
-    const durations = tempArray[1].split(' ').map(itemDuration => Number(itemDuration));
-    const numOperations = Number(tempArray[2]);
-    const operationDetails = tempArray.splice(3);
-    // This section prints the parsed input values for debugging purposes.
+    // Split the input string into an array of lines and clean up leading/trailing whitespace.
+    const linesArray = rawData.trim().split('\n');
 
-    let totalInitialTime = 0;
-    for (const itemDuration of durations) {
-        totalInitialTime += itemDuration;
+    // Extract the number of elements for the time array.
+    const numElements = Number(linesArray[0]);
+
+    // Parse the time values from the second line.
+    // Each value is converted to a number.
+    const timeValues = linesArray[1].split(' ').map(valStr => Number(valStr));
+
+    // Get the number of queries from the third line.
+    const numQueries = Number(linesArray[2]);
+
+    // Extract the query data, starting from the fourth line.
+    // The splice method modifies linesArray in place, removing the first 3 elements.
+    const queryData = linesArray.splice(3);
+
+    // Calculate the initial sum of all time values.
+    // This sum will be adjusted for each query.
+    let initialSum = 0;
+    for (const currentVal of timeValues) {
+        initialSum += currentVal;
     }
 
-    for (const drinkDetail of operationDetails) {
-        const tempDetails = drinkDetail.split(' ').map(val => Number(val));
-        const timeDifference = durations[tempDetails[0] - 1] - tempDetails[1];
-        const finalCalculatedTime = totalInitialTime - timeDifference;
-        console.log(finalCalculatedTime);
-    }
+    // Process each query.
+    // Each query modifies one time value and asks for the new total sum.
+    for (const queryLine of queryData) {
+        // Parse the query line into its components: index and new value.
+        const queryParts = queryLine.split(' ').map(partStr => Number(partStr));
 
+        // Calculate the difference caused by the query.
+        // The original time at the specified index minus the new time.
+        const timeDifference = timeValues[queryParts[0] - 1] - queryParts[1];
+
+        // Calculate the final time by subtracting the difference from the initial sum.
+        const finalTime = initialSum - timeDifference;
+
+        // Output the calculated final time for the current query.
+        console.log(finalTime);
+    }
 }
 
-ProcessInput( require ('fs') . readFileSync ('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

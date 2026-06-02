@@ -1,48 +1,76 @@
-const extractNumericValue = (textualData) => Number.parseInt(textualData, 10);
+function getIntegerVal(inputString) {
+  return parseInt(inputString, 10);
+}
 
-const measureValueSpread = (valueCollection) => {
-    const orderedValues = valueCollection.slice().sort((first, second) => second - first);
-    return orderedValues[0] - orderedValues[orderedValues.length - 1];
-};
+function getFloatVal(inputString) {
+  return parseFloat(inputString);
+}
 
-const computeDivisionOutcome = (primaryAxis, secondaryAxis, splitAlongSecondary) => {
-    const firstSegmentLength = Math.round(primaryAxis / 3);
-    const remainingPrimarySegment = primaryAxis - firstSegmentLength;
-    const firstPieceArea = firstSegmentLength * secondaryAxis;
+function isEvenNumber(value) {
+  return (value % 2) === 0;
+}
 
-    let secondPieceArea;
-    let thirdPieceArea;
+function isOddNumber(value) {
+  return (value % 2) !== 0;
+}
 
-    if (splitAlongSecondary) {
-        const secondSegmentLength = Math.round(secondaryAxis / 2);
-        const remainingSecondarySegment = secondaryAxis - secondSegmentLength;
-        secondPieceArea = remainingPrimarySegment * secondSegmentLength;
-        thirdPieceArea = remainingPrimarySegment * remainingSecondarySegment;
-    } else {
-        const secondSegmentLength = Math.round(remainingPrimarySegment / 2);
-        const remainingSecondPrimarySegment = remainingPrimarySegment - secondSegmentLength;
-        secondPieceArea = secondSegmentLength * secondaryAxis;
-        thirdPieceArea = remainingSecondPrimarySegment * secondaryAxis;
-    }
+function sortNumbersAscending(numericArray) {
+  return [...numericArray].sort((firstVal, secondVal) => (firstVal - secondVal));
+}
 
-    return measureValueSpread([firstPieceArea, secondPieceArea, thirdPieceArea]);
-};
+function sortNumbersDescending(numericArray) {
+  return [...numericArray].sort((firstVal, secondVal) => (secondVal - firstVal));
+}
 
-const processGeometryInput = (inputRecords) => {
-    const initialDimensions = inputRecords[0].split(' ').map(extractNumericValue);
-    const initialWidth = initialDimensions[0];
-    const initialHeight = initialDimensions[1];
+function sortStringsAscending(stringArray) {
+  return [...stringArray].sort();
+}
 
-    const allStrategies = [
-        () => computeDivisionOutcome(initialWidth, initialHeight, false),
-        () => computeDivisionOutcome(initialWidth, initialHeight, true),
-        () => computeDivisionOutcome(initialHeight, initialWidth, false),
-        () => computeDivisionOutcome(initialHeight, initialWidth, true),
+function sortStringsDescending(stringArray) {
+  return [...stringArray].sort().reverse();
+}
+
+function filterOutValue(sourceArray, valueToExclude) {
+  return sourceArray.filter(element => element !== valueToExclude);
+}
+
+function processGeometricDivision(inputLines) {
+  const initialDimensions = inputLines[0].split(' ').map(getIntegerVal);
+  const initialH = initialDimensions[0];
+  const initialW = initialDimensions[1];
+
+  const primaryDimensionConfigurations = [
+    [initialW, initialH],
+    [initialH, initialW]
+  ];
+
+  const allCalculatedDifferences = primaryDimensionConfigurations.flatMap(currentPrimaryDims => {
+    const currentPrimaryDim0 = currentPrimaryDims[0];
+    const currentPrimaryDim1 = currentPrimaryDims[1];
+
+    const firstCutDimension = Math.round(currentPrimaryDim0 / 3);
+    const remainingDimension = currentPrimaryDim0 - firstCutDimension;
+    const areaPieceA = firstCutDimension * currentPrimaryDim1;
+
+    const secondaryDimensionConfigurations = [
+      [remainingDimension, currentPrimaryDim1],
+      [currentPrimaryDim1, remainingDimension]
     ];
 
-    const allSpreads = allStrategies.map(strategyExecutor => strategyExecutor());
+    return secondaryDimensionConfigurations.map(currentSecondaryDims => {
+      const currentSecondaryDim0 = currentSecondaryDims[0];
+      const currentSecondaryDim1 = currentSecondaryDims[1];
 
-    return Math.min(...allSpreads);
-};
+      const secondCutDimension = Math.round(currentSecondaryDim0 / 2);
+      const finalRemainingDimension = currentSecondaryDim0 - secondCutDimension;
+      const areaPieceB = secondCutDimension * currentSecondaryDim1;
+      const areaPieceC = finalRemainingDimension * currentSecondaryDim1;
 
-console.log(processGeometryInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim())));
+      return Math.max(areaPieceA, areaPieceB, areaPieceC) - Math.min(areaPieceA, areaPieceB, areaPieceC);
+    });
+  });
+
+  return Math.min(...allCalculatedDifferences);
+}
+
+console.log(processGeometricDivision(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(lineContent => lineContent.trim())));

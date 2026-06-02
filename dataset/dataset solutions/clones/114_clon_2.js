@@ -1,49 +1,43 @@
-for (
-    tallySheet = [], // Initialize an array to store frequency counts of items.
-    reverseIterator = 100; // Set the upper bound for item indices (exclusive).
-    reverseIterator--;     // Decrement the iterator from the upper bound down to zero.
-) {
-    // In each iteration, set the current array element to zero.
-    // Also, update the 'highestFrequency' tracker to zero, ensuring it's initialized.
-    highestFrequency = tallySheet[reverseIterator] = 0;
+let frequencyArray = [];
+let maxFreq;
+
+// Initialize the frequency tracking array and the maximum frequency variable.
+// The loop counter 'loopCounter' goes from 99 down to 0.
+for (let loopCounter = 100; loopCounter--;) {
+    frequencyArray[loopCounter] = 0; // Set each array element to zero.
+    maxFreq = 0; // The maximum frequency is also reset to zero in each iteration.
 }
 
-// Read input data from standard input, process it line by line.
-// Each valid numerical line represents an item whose frequency should be incremented.
-// Simultaneously, track the highest frequency encountered across all items.
-require("fs").readFileSync(
-    "/dev/stdin", // Specify the standard input device path.
-    "utf8"        // Define the character encoding for reading the file.
-)
-.split('\n') // Divide the entire input content into an array of individual lines.
-.some(function(dataPoint) { // Iterate through each line of the input.
-    // Check if the current line can be successfully converted to a valid, non-zero number.
-    if ( Number(dataPoint) ) {
-        // If it's a valid number, increment the frequency count for that item in our tally sheet.
-        tallySheet[Number(dataPoint)]++;
+// Read input from the standard input stream, process it line by line.
+require("fs")
+    .readFileSync("/dev/stdin", "utf8") // Read the entire file content as a string.
+    .split('\n') // Divide the string into an array of lines based on newline characters.
+    .some(function (inputItem) { // Iterate through each line of input.
+        // Convert the current input line (string) into a numerical value.
+        const numericValue = +inputItem;
 
-        // Compare the updated frequency of the current item with the previously recorded highest frequency.
-        // If the current item's frequency is greater, update 'highestFrequency'.
-        highestFrequency = (
-            tallySheet[Number(dataPoint)] > highestFrequency
-        ) ?
-            tallySheet[Number(dataPoint)] : // Assign the new higher frequency.
-            highestFrequency;              // Retain the existing highest frequency.
-    }
-    // The 'some' method continues iterating as long as the callback returns a falsy value.
-    return false; // Ensure iteration continues through all input lines.
-});
+        // Proceed only if the converted numeric value is a valid, non-zero number.
+        if (numericValue) {
+            // Increment the count for this specific number in our frequency array.
+            frequencyArray[numericValue]++;
 
-// After all input has been processed, iterate through the frequency array
-// to identify and print the indices of all items that share the maximum recorded frequency.
-tallySheet.some(
-    function(occurrenceNum, targetIndex) { // Iterate through the frequency array elements and their indices.
-        // Check if the frequency count of the current item matches the overall highest frequency.
-        if (occurrenceNum === highestFrequency) {
-            // If the frequencies match, print the index of this item.
-            console.log(targetIndex);
+            // Update the 'maxFreq' if the current number's frequency is now higher.
+            maxFreq = (frequencyArray[numericValue] > maxFreq)
+                ? frequencyArray[numericValue]
+                : maxFreq;
         }
-        // The 'some' method continues iterating as long as the callback returns a falsy value.
-        return false; // Ensure iteration continues through all elements in the frequency array.
+        // The 'some' method is used here for iteration over all elements,
+        // as the callback consistently returns a falsy value (undefined or explicit false).
+        return false;
+    });
+
+// Iterate through the frequency array to find and output numbers that occurred with the highest frequency.
+frequencyArray.some(function (currentCountValue, indexValue) {
+    // If the frequency of the current number matches the overall maximum frequency,
+    // then this number is one of the most frequent.
+    if (currentCountValue === maxFreq) {
+        console.log(indexValue); // Print the number (which is the array index).
     }
-);
+    // Similar to the previous 'some' call, this is for full iteration.
+    return false;
+});

@@ -1,74 +1,69 @@
-var dataStore = [];
-var dataCursor = 0;
-
-function fetchEntry() {
-  if (dataCursor >= dataStore.length) {
-    throw new Error("Input buffer exhausted.");
-  }
-  return dataStore[dataCursor++];
+var read = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var inputProcessor;
+var receivedLines = [];
+read.on('line', function(inputLine){receivedLines.push(inputLine);});
+read.on('close', function(){
+  inputProcessor = initializeInputHandler(receivedLines);
+  console.error("\n");
+  var startTime = Date.now();
+  executeMainLogic();
+  var endTime = Date.now() - startTime;
+  logError("time : " + (endTime) + "ms");
+  logError("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function createDeepCopy(sourceObj){return JSON.parse(JSON.stringify(sourceObj));}
+function getNextInt(){return convertInput(retrieveNext(),1);}
+function getNextStrArray(){return convertInput(retrieveNext(),2);}
+function getNextIntArray(){return convertInput(retrieveNext(),4);}
+function getNextCharArray(){return convertInput(retrieveNext(),6);}
+function retrieveNext(){return inputProcessor.fetchNext();}
+function hasMoreInput(){return inputProcessor.hasMore();}
+function initializeInputHandler(inputData){
+  var handlerObject = {
+    dataList : inputData, currentIdx : 0, totalCount : inputData.length,
+    hasMore : function(){return (this.currentIdx < this.totalCount);},
+    fetchNext : function(){if(!this.hasMore()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var currentInput = this.dataList[this.currentIdx];this.currentIdx++;return currentInput;}}
+  };
+  return handlerObject;
 }
+function outputResult(content){console.log(content);}
+function logError(message){console.error("debug:" + require("util").inspect(message,false,null));}
+function convertInput(value, conversionType){try{switch(conversionType){case 1:return parseInt(value);case 2:return value.split(" ");case 4:return value.split(" ").map(Number);case 6:return value.split("");case 7:return value.split("").map(Number);case 8:return value.join(" ");case 9:return value.join("\n");case 0:return value.join("");default:return value;}}catch(e){return value;}}
 
-function retrieveNumericalPair() {
-  var rawLine = fetchEntry();
-  return rawLine.split(" ").map(Number);
+function executeMainLogic(){
+	const parameters = getNextIntArray();
+	const currentM = parameters[0];
+	const currentK = parameters[1];
+
+	const maxPossibleValue = 1 << currentM;
+
+	if (currentK < 0 || currentK >= maxPossibleValue) {
+		outputResult(-1);
+		return;
+	}
+
+	if (currentM === 1) {
+		outputResult(currentK === 0 ? "0 0 1 1" : -1);
+		return;
+	}
+
+	if (currentK === 0) {
+		const sequenceLength = maxPossibleValue;
+		const generatedSequence = Array.from({ length: sequenceLength }, (_, indexValue) => [indexValue, indexValue]).flat();
+		outputResult(convertInput(generatedSequence, 8));
+	} else {
+		const upperRangeBound = maxPossibleValue;
+		const intermediateValues = Array.from({ length: upperRangeBound - 1 }, (_, index) => index + 1)
+		                                  .filter(val => val !== currentK);
+
+		const finalOutputSequence = [currentK, 0]
+		                            .concat(intermediateValues)
+		                            .concat(currentK)
+		                            .concat(intermediateValues.slice().reverse())
+		                            .concat(0);
+		outputResult(convertInput(finalOutputSequence, 8));
+	}
 }
-
-function displayOutcome(content) {
-  console.log(content);
-}
-
-function patternProcessor() {
-  var dimensionsAndValue = retrieveNumericalPair();
-  var currentDimension = dimensionsAndValue[0];
-  var targetValue = dimensionsAndValue[1];
-
-  var maximumLimit = 1 << currentDimension; // Equivalent to Math.pow(2, currentDimension)
-
-  if (targetValue < 0 || targetValue >= maximumLimit) {
-    displayOutcome("-1");
-    return;
-  }
-
-  if (currentDimension === 1) {
-    if (targetValue === 0) {
-      displayOutcome("0 0 1 1");
-    } else {
-      displayOutcome("-1");
-    }
-    return;
-  }
-
-  if (targetValue === 0) {
-    let constructedSequence = Array.from({ length: maximumLimit })
-                                   .reduce((accumulator, _, index) => {
-                                       accumulator.push(index, index);
-                                       return accumulator;
-                                   }, []);
-    displayOutcome(constructedSequence.join(" "));
-    return;
-  }
-
-  let initialPart = [targetValue, 0];
-
-  let middleAscending = Array.from({ length: maximumLimit - 1 }, (_, index) => index + 1)
-                             .filter(value => value !== targetValue);
-
-  let middleDescending = Array.from({ length: maximumLimit - 1 }, (_, index) => maximumLimit - 1 - index)
-                              .filter(value => value !== targetValue);
-
-  let finalPart = [0];
-
-  let completeResult = initialPart
-                       .concat(middleAscending)
-                       .concat(targetValue)
-                       .concat(middleDescending)
-                       .concat(finalPart);
-
-  displayOutcome(completeResult.join(" "));
-}
-
-// To run this code, you would populate `dataStore` like this:
-// dataStore = ["2 1"]; // Example: M=2, K=1
-// And then call patternProcessor();
-// For the purpose of the clone generation, only the function definitions and global variables are provided.
-// The execution context (like `read.on('close', ...)`) is assumed to be handled externally.

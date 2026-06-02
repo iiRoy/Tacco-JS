@@ -1,68 +1,55 @@
 const displayResult = console.log;
 
-function* generateEvents(corpus) {
-    const lines = corpus.split('\n');
-    for (const line of lines) {
-        yield line;
+function* createLineReader(sourceText) {
+    const dataLines = sourceText.split("\n");
+    for (const singleLine of dataLines) {
+        yield singleLine;
     }
 }
 
-function runSingleMatch(eventIterator, currentEliminations, currentBaseOccupants, currentTally) {
-    if (currentEliminations >= 3) {
-        return currentTally;
-    }
-
-    const { value: currentAction, done } = eventIterator.next();
-    if (done) {
-        throw new Error("Unexpected end of event stream during match.");
-    }
-
-    const eventHandlers = {
-        'HIT': (elim, bases, score) => {
-            let nextBases = bases + 1;
-            let nextScore = score;
-            if (nextBases === 4) {
-                nextScore++;
-                nextBases--;
+function processSingleGame(lineSource) {
+    const eventProcessors = {
+        'HIT': (currentState) => {
+            const nextRunners = currentState.runners + 1;
+            if (nextRunners === 4) {
+                return { ...currentState, points: currentState.points + 1, runners: nextRunners - 1 };
             }
-            return { elim: elim, bases: nextBases, score: nextScore };
+            return { ...currentState, runners: nextRunners };
         },
-        'HOMERUN': (elim, bases, score) => {
-            return { elim: elim, bases: 0, score: score + bases + 1 };
-        },
-        'OUT': (elim, bases, score) => {
-            return { elim: elim + 1, bases: bases, score: score };
-        }
+        'HOMERUN': (currentState) => ({
+            ...currentState,
+            points: currentState.points + currentState.runners + 1,
+            runners: 0
+        }),
+        'OUT': (currentState) => ({
+            ...currentState,
+            outs: currentState.outs + 1
+        })
     };
 
-    const handler = eventHandlers[currentAction];
-    if (!handler) {
-        throw new Error("Unknown game event: " + currentAction);
-    }
-    const newState = handler(currentEliminations, currentBaseOccupants, currentTally);
-    return runSingleMatch(eventIterator, newState.elim, newState.bases, newState.score);
+    const advanceGameRecursively = (currentState) => {
+        if (currentState.outs >= 3) {
+            return currentState;
+        }
+        const eventValue = lineSource.next().value;
+        const processor = eventProcessors[eventValue];
+        const nextState = processor ? processor(currentState) : currentState;
+        return advanceGameRecursively(nextState);
+    };
+
+    const initialGameState = { outs: 0, runners: 0, points: 0 };
+    const finalGameState = advanceGameRecursively(initialGameState);
+    return finalGameState.points;
 }
 
-function overseeChampionship(eventGenerator, gamesRemaining) {
-    if (gamesRemaining <= 0) {
-        return;
-    }
+function simulateTournament(rawGameData) {
+    const lineIterator = createLineReader(rawGameData);
+    const numberOfGames = Number.parseInt(lineIterator.next().value);
 
-    const finalScore = runSingleMatch(eventGenerator, 0, 0, 0);
-    displayResult(finalScore);
-
-    overseeChampionship(eventGenerator, gamesRemaining - 1);
+    Array.from({ length: numberOfGames }).forEach(() => {
+        const gameScore = processSingleGame(lineIterator);
+        displayResult(gameScore);
+    });
 }
 
-function ProcessChampionship(incomingData) {
-    const eventGeneratorInstance = generateEvents(incomingData);
-    const { value: numContestsStr, done: N_done } = eventGeneratorInstance.next();
-    if (N_done) {
-        throw new Error("Input data empty.");
-    }
-    const numContests = parseInt(numContestsStr);
-
-    overseeChampionship(eventGeneratorInstance, numContests);
-}
-
-ProcessChampionship(require("fs").readFileSync("/dev/stdin", "utf8"));
+simulateTournament(require("fs").readFileSync("/dev/stdin", "utf8"));

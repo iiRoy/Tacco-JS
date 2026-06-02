@@ -1,39 +1,17 @@
-class CalculationUnit {
-  #inputData;
-  #valA;
-  #valB;
+function processData(sourceText) {
+    const [valA, valB] = sourceText.split(' ').map(str => parseInt(str, 10));
 
-  constructor(str) {
-    this.#inputData = str;
-    this.#parseValues();
-  }
+    const components = [valA, valA, valA, valB];
+    const aggregateValue = components.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
 
-  #parseValues() {
-    const parts = this.#inputData.trim().split(/\s+/);
-    this.#valA = parseInt(parts[0], 10);
-    this.#valB = parseInt(parts[1], 10);
-  }
+    const computedResult = (aggregateValue && 1) || Number.NaN;
 
-  #performAggregation() {
-    return this.#valA * 3 + this.#valB;
-  }
-
-  determineOutcome() {
-    const intermediate = this.#performAggregation();
-    const outcomeMap = new Map([
-      [0, NaN],
-      ["default", 1]
-    ]);
-
-    return outcomeMap.has(intermediate) ? outcomeMap.get(intermediate) : outcomeMap.get("default");
-  }
+    return computedResult;
 }
 
-const runProcess = (path) => {
-  const fileContent = require('fs').readFileSync(path, 'utf8');
-  const unit = new CalculationUnit(fileContent);
-  const resultValue = unit.determineOutcome();
-  process.stdout.write(String(resultValue) + '\n');
-};
+function executeProgram(inputContent) {
+    const outputValue = processData(inputContent);
+    console.log(outputValue);
+}
 
-runProcess('/dev/stdin');
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

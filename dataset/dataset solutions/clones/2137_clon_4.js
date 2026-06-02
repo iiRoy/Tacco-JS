@@ -1,24 +1,35 @@
-const executeAnalysis = (sourceData) => {
-    const parsedLines = sourceData.split('\n');
-    const dataQuantity = Number(parsedLines[0].split(' ')[0]);
-    const numericalSequence = parsedLines[1].split(' ').slice(0, dataQuantity).map(Number);
+function calculateSumOfSquaresDifference(pointsCollection, targetPoint) {
+    return pointsCollection.reduce((accumulatedSum, currentPointValue) => {
+        const deviation = currentPointValue - targetPoint;
+        return accumulatedSum + (deviation * deviation);
+    }, 0);
+}
 
-    const calculatePenalty = (pivotValue, dataCollection) =>
-        dataCollection.reduce((accumulatedPenalty, currentDatum) =>
-            accumulatedPenalty + Math.pow(currentDatum - pivotValue, 2), 0);
+function Main(sourceData) {
+    const dataLines = sourceData.split("\n");
 
-    const sumOfAllValues = numericalSequence.reduce((accumulator, value) => accumulator + value, 0);
-    const averagePoint = sumOfAllValues / dataQuantity;
+    const firstLineElements = dataLines[0].split(" ").map(Number);
+    const totalPointsCount = firstLineElements[0];
 
-    const candidateFloor = Math.floor(averagePoint);
-    const candidateCeiling = Math.ceil(averagePoint);
+    const numericPoints = dataLines[1].split(" ").map(Number);
 
-    const penaltyFloor = calculatePenalty(candidateFloor, numericalSequence);
-    const penaltyCeiling = calculatePenalty(candidateCeiling, numericalSequence);
+    const sumOfAllPoints = numericPoints.reduce((currentSum, point) => currentSum + point, 0);
+    const calculatedAverage = sumOfAllPoints / totalPointsCount;
 
-    const minimumPenalty = Math.min(penaltyFloor, penaltyCeiling);
+    const lowerBoundTarget = Math.floor(calculatedAverage);
+    const upperBoundTarget = Math.ceil(calculatedAverage);
 
-    console.log(minimumPenalty);
-};
+    let overallMinimumCost = Infinity;
 
-executeAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const costForLowerBound = calculateSumOfSquaresDifference(numericPoints, lowerBoundTarget);
+    overallMinimumCost = Math.min(overallMinimumCost, costForLowerBound);
+
+    if (lowerBoundTarget !== upperBoundTarget) {
+        const costForUpperBound = calculateSumOfSquaresDifference(numericPoints, upperBoundTarget);
+        overallMinimumCost = Math.min(overallMinimumCost, costForUpperBound);
+    }
+
+    console.log(overallMinimumCost);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

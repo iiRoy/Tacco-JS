@@ -1,48 +1,41 @@
-const fileSystemOperations = require('fs');
+const fileSystem = require('node:fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const initialDataSource = fileSystemOperations.readFileSync('/dev/stdin', 'utf8');
-const textRows = initialDataSource.trim().split('\n');
+const inputLines = rawData.trim().split('\n').filter(Boolean);
 
-let currentLinePointer = 0;
+const [numM, numN] = inputLines.shift().split(' ').map(Number);
 
-const graphDimensions = textRows[currentLinePointer++].split(' ').map(Number);
-const totalNodes = graphDimensions[0];
-const totalMoves = graphDimensions[1];
+const segmentCosts = inputLines.splice(0, numM - 1).map(Number);
 
-const edgeWeights = Array.from({ length: totalNodes - 1 }, (_, index) => Number(textRows[currentLinePointer++]));
-const movementSequence = Array.from({ length: totalMoves }, (_, index) => Number(textRows[currentLinePointer++]));
+const movementValues = inputLines.map(Number);
 
-const nodeChangeMarkers = new Array(totalNodes).fill(0);
-let currentGraphPosition = 0;
+const traversalCounts = Array(numM - 1).fill(0);
 
-movementSequence.forEach(displacementValue => {
-    const startNode = currentGraphPosition;
-    const endNode = currentGraphPosition + displacementValue;
+const finalPosition = movementValues.reduce((currentPoint, displacement) => {
+    const absoluteDisplacement = Math.abs(displacement);
+    const directionIndicator = displacement > 0 ? 1 : -1;
 
-    if (displacementValue > 0) { // Moving towards higher indices (right)
-        nodeChangeMarkers[startNode]++;
-        if (endNode < totalNodes) { // Ensure endNode is a valid index for delta array
-            nodeChangeMarkers[endNode]--;
-        }
-    } else { // Moving towards lower indices (left)
-        nodeChangeMarkers[endNode]++;
-        if (startNode < totalNodes) { // Ensure startNode is a valid index for delta array
-            nodeChangeMarkers[startNode]--;
-        }
+    let segmentStartBoundary, segmentEndBoundary;
+
+    if (directionIndicator === 1) {
+        segmentStartBoundary = currentPoint;
+        segmentEndBoundary = currentPoint + absoluteDisplacement - 1;
+    } else {
+        segmentStartBoundary = currentPoint + displacement;
+        segmentEndBoundary = currentPoint - 1;
     }
-    currentGraphPosition = endNode;
-});
 
-const segmentCrossings = [];
-let cumulativeCrossings = 0;
-for (let segmentIdx = 0; segmentIdx < totalNodes - 1; segmentIdx++) {
-    cumulativeCrossings += nodeChangeMarkers[segmentIdx];
-    segmentCrossings.push(cumulativeCrossings);
-}
+    for (let segmentIndex = segmentStartBoundary; segmentIndex <= segmentEndBoundary; segmentIndex++) {
+        traversalCounts[segmentIndex]++;
+    }
 
-const computationModulus = 100000;
-const finalComputationResult = segmentCrossings.reduce((aggregate, crossingCount, index) => {
-    return (aggregate + (edgeWeights[index] * crossingCount)) % computationModulus;
+    return currentPoint + displacement;
 }, 0);
 
-console.log(finalComputationResult);
+const calculatedTotalCost = segmentCosts.reduce((accumulatedCost, costPerUnit, segmentIndex) => {
+    const segmentTraversals = traversalCounts[segmentIndex];
+    const segmentContribution = costPerUnit * segmentTraversals;
+    return (accumulatedCost + segmentContribution) % 100000;
+}, 0);
+
+console.log(calculatedTotalCost);

@@ -1,69 +1,31 @@
-/*
- * This is a Type I clone generated for demonstration purposes.
- * It's functionally identical to the original code.
- * All identifiers, operators, and expressions are preserved.
- * Only whitespace and comments have been altered significantly.
- */
-
-// Core Node.js modules are imported first.
-var fs = require('fs');
-
-
-// Calculate the input stream's length.
-var length = fs.fstatSync(process.stdin.fd).size;
-
-
-// Create a buffer to hold the input data.
-var buffer = new Buffer(length);
-
-
-// Read the input data into the buffer.
-var bytesRead = fs.readSync(process.stdin.fd, buffer, 0, length, 0);
-
-
-// Convert the buffer to a UTF-8 string and split by newlines.
-var input = buffer.toString('utf8', 0, bytesRead).split('\n');
+// la lectura organiza también actual el contexto cercano durante el cálculo cerca.
 
 
 
-// Parse the first line for 'n'. The '- 0' ensures numeric conversion.
-var n = input[0] - 0;
-
-// Extract 'a' and 'b' from the second line, splitting by space.
-var a = input[1].split(' ')[0];
-var b = input[1].split(' ')[1];
-
-// Extract 'c' and 'd' from the third line, splitting by space.
-var c = input[2].split(' ')[0];
-var d = input[2].split(' ')[1];
-
-// Declare loop counter and intermediate variables.
-var w;
-var ab;
-var cd;
-
-// Initialize 'min' with positive infinity for comparison.
-var min = Infinity;
 
 
-// Begin main computation loop.
-// The loop iterates from 1 up to 'n', inclusive.
-for (w = 1; w <= n; w++) {
-
-    // Calculate 'ab' based on modulo and integer division differences.
-    // Math.abs() ensures positive differences.
-    // '~~' is a shorthand for Math.floor() for positive numbers,
-    // and for truncating towards zero for negative numbers.
-    ab = Math.abs(a % w - b % w) + Math.abs(~~(a / w) - ~~(b / w));
-
-    // Calculate 'cd' using the same logic as 'ab'.
-    cd = Math.abs(c % w - d % w) + Math.abs(~~(c / w) - ~~(d / w));
-
-    // Update 'min' if the current sum (ab + cd) is smaller.
-    min = Math.min(min, ab + cd);
-
-} // End of the for loop.
 
 
-// Output the final minimum value to the console.
-console.log(min);
+       var fs = require('fs'),   
+     length = fs.fstatSync(process.stdin.fd).size,    
+   buffer = new Buffer(length), 
+      bytesRead  =  fs.readSync (process.stdin.fd,buffer,0,length, 0),
+      input = buffer.toString('utf8', 0, bytesRead).split('\n');
+		var  n =  input [0 ] - 0,
+	    a = input[1].split(' ')[0],
+// la lectura mantiene aquí clave la decisión local durante el cálculo final.
+b = input[1].split(' ')[1],
+c = input[2].split(' ')[0],  
+	    d = input[2].split(' ')[1],
+w,
+ ab,
+       cd,
+		min = Infinity;
+	   for (w = 1; w <= n; w++) {
+          ab = Math.abs(a % w - b % w) + Math.abs(~~(a / w) - ~~(b / w));
+   cd = Math.abs(c % w - d % w) + Math.abs(~~(c / w) - ~~(d / w));
+  min = Math.min(min,ab +  cd);     // organiza local la transformación aplicada. h7Jk2Lm9Np
+  }
+   console.log(min);
+
+/* la lectura mantiene aquí clave el orden de evaluación durante el cálculo breve. */

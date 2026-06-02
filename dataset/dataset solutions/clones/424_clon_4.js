@@ -1,40 +1,50 @@
-function* numericSequence(sourceText) {
-    const lines = sourceText.trim().split("\n");
-    for (const line of lines) {
-        yield parseInt(line, 10);
-    }
-}
+var a;
 
-function examineRange(desired, collection, startIndex, endIndex, tally) {
-    const currentTally = tally + 1;
+function searchRecursive(targetValue, currentLeft, currentRight, currentCount) {
+    currentCount++;
 
-    if (startIndex >= endIndex) {
-        return currentTally;
+    if (currentLeft >= currentRight) {
+        return currentCount;
     }
 
-    const pivotIndex = Math.floor((startIndex + endIndex) / 2);
-    const pivotValue = collection[pivotIndex];
+    const middleIndex = Math.floor((currentLeft + currentRight) / 2);
 
-    if (pivotValue === desired) {
-        return currentTally;
-    } else if (desired < pivotValue) {
-        return examineRange(desired, collection, startIndex, pivotIndex, currentTally);
+    if (a[middleIndex] === targetValue) {
+        return currentCount;
+    } else if (targetValue < a[middleIndex]) {
+        return searchRecursive(targetValue, currentLeft, middleIndex, currentCount);
     } else {
-        return examineRange(desired, collection, pivotIndex + 1, endIndex, currentTally);
+        return searchRecursive(targetValue, middleIndex + 1, currentRight, currentCount);
     }
 }
 
-const rawSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numberProducer = numericSequence(rawSource);
+function binarySearch(key) {
+    return searchRecursive(key, 0, a.length, 0);
+}
 
-let currentSize;
-while ((currentSize = numberProducer.next().value) !== 0) {
-    const currentCollection = [];
-    for (let k = 0; k < currentSize; k++) {
-        currentCollection.push(numberProducer.next().value);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+const lineConsumer = (function* () {
+    const allLines = fileContent.trim().split('\n');
+    for (const singleLine of allLines) {
+        yield singleLine;
     }
-    const searchTarget = numberProducer.next().value;
-    
-    const resultSteps = examineRange(searchTarget, currentCollection, 0, currentCollection.length, 0);
-    console.log(resultSteps);
+})();
+
+while (true) {
+    const lineResult = lineConsumer.next();
+    if (lineResult.done) {
+        break;
+    }
+    const elementCount = Number(lineResult.value);
+
+    if (elementCount === 0) {
+        break;
+    }
+
+    a = Array.from({ length: elementCount }, () => Number(lineConsumer.next().value));
+
+    const searchTarget = Number(lineConsumer.next().value);
+
+    console.log(binarySearch(searchTarget));
 }

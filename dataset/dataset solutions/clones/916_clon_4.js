@@ -1,102 +1,84 @@
-const createLineIterator = (initialContent) => {
-    const contentLines = initialContent.split("\n");
-    let currentPosition = 0;
-    return {
-        next: () => {
-            if (currentPosition < contentLines.length) {
-                return { value: contentLines[currentPosition++], done: false };
-            } else {
-                return { value: undefined, done: true };
-            }
+var rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+var lines = rawInput.split("\n");
+
+const transformNameLogic = (originalName) => {
+    return Array.from(originalName).reduce((acc, char) => {
+        let { output, shouldAdd } = acc;
+        let nextShouldAdd = shouldAdd;
+
+        if (nextShouldAdd) {
+            output += char;
+            nextShouldAdd = false;
         }
-    };
+
+        if (/[aiueo]/.test(char)) {
+            nextShouldAdd = true;
+        }
+
+        return { output, shouldAdd: nextShouldAdd };
+    }, { output: '', shouldAdd: true }).output;
 };
 
-const charProcessor = (originalLabel) => {
-    const vowelRecognizer = /[aiueo]/;
-    return Array.from(originalLabel).reduce((accumulator, currentSymbol) => {
-        let currentOutput = accumulator.output;
-        let shouldCaptureNext = accumulator.shouldCapture;
+const calculatePrefixDifference = (strA, strB, blockN) => {
+    const minLength = Math.min(strA.length, strB.length);
+    let diffIndex = -1;
 
-        if (shouldCaptureNext) {
-            currentOutput += currentSymbol;
-            shouldCaptureNext = false;
-        }
-
-        if (vowelRecognizer.test(currentSymbol)) {
-            shouldCaptureNext = true;
-        }
-
-        return { output: currentOutput, shouldCapture: shouldCaptureNext };
-    }, { output: '', shouldCapture: true }).output;
-};
-
-const commonSegmentLocator = (firstString, secondString, blockDimension) => {
-    const shortestLength = Math.min(firstString.length, secondString.length);
-
-    for (let comparisonIndex = 0; comparisonIndex < blockDimension; ++comparisonIndex) {
-        if (firstString[comparisonIndex] !== secondString[comparisonIndex]) {
-            return comparisonIndex;
+    for (let k = 0; k < blockN; k++) {
+        if (strA[k] !== strB[k]) {
+            diffIndex = k;
+            break;
         }
     }
 
-    if (firstString.length === secondString.length) {
-        return -1;
+    if (diffIndex !== -1) {
+        return diffIndex;
+    } else {
+        if (strA.length === strB.length) {
+            return -1;
+        } else {
+            return minLength;
+        }
     }
-    return shortestLength;
 };
 
-const processInputBlocks = (lineIterator) => {
-    const collectedOutputs = [];
+const processInputBlocks = (inputLines) => {
+    let currentLineIndex = 0;
 
-    let currentBlockSize;
+    const getNextLine = () => inputLines[currentLineIndex++];
+
     while (true) {
-        const nextContentLine = lineIterator.next().value;
-        if (nextContentLine === undefined) {
-             break;
-        }
-        currentBlockSize = Number(nextContentLine);
+        const currentBlockSizeStr = getNextLine();
+        const currentBlockSize = +currentBlockSizeStr;
+
         if (currentBlockSize === 0) {
             break;
         }
 
-        const initialLabels = Array.from({ length: currentBlockSize }, () => lineIterator.next().value);
+        const namesForBlock = Array.from({ length: currentBlockSize }, () => getNextLine());
 
-        const transformedAndSortedLabels = initialLabels
-            .map(charProcessor)
+        const processedNames = namesForBlock
+            .map(transformNameLogic)
             .sort();
 
-        const { finalMaxOverlap } = transformedAndSortedLabels.slice(1).reduce((accumulator, currentLabel, index) => {
-            if (accumulator.hasTerminatedEarly) {
-                return accumulator;
+        const finalResultState = processedNames.reduce((acc, currentName, idx, arr) => {
+            if (acc.earlyExit) {
+                return acc;
+            }
+            if (idx === 0) {
+                return acc;
             }
 
-            const currentFullIndex = index + 1;
-            const previousLabelForComparison = transformedAndSortedLabels[currentFullIndex - 1];
-            const currentLabelForComparison = transformedAndSortedLabels[currentFullIndex];
+            const previousName = arr[idx - 1];
+            const comparisonResult = calculatePrefixDifference(previousName, currentName, currentBlockSize);
 
-            const calculatedOverlap = commonSegmentLocator(
-                previousLabelForComparison,
-                currentLabelForComparison,
-                currentBlockSize
-            );
-
-            if (calculatedOverlap === -1) {
-                return { finalMaxOverlap: -2, hasTerminatedEarly: true };
+            if (comparisonResult === -1) {
+                return { maxVal: -2, earlyExit: true };
             }
+            return { maxVal: Math.max(acc.maxVal, comparisonResult), earlyExit: false };
+        }, { maxVal: 0, earlyExit: false });
 
-            return {
-                finalMaxOverlap: Math.max(accumulator.finalMaxOverlap, calculatedOverlap),
-                hasTerminatedEarly: false
-            };
-        }, { finalMaxOverlap: 0, hasTerminatedEarly: false });
-
-        collectedOutputs.push(finalMaxOverlap + 1);
+        console.log(finalResultState.maxVal + 1);
     }
-    return collectedOutputs.join("\n");
 };
 
-const rawTextContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const lineSupply = createLineIterator(rawTextContent);
-const finalResultString = processInputBlocks(lineSupply);
-console.log(finalResultString);
+processInputBlocks(lines);

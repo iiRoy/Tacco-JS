@@ -1,345 +1,310 @@
 "use strict";
 
-/**
- * Executes the main problem-solving logic.
- * This function encapsulates the entire solution to avoid global scope pollution.
- */
-function executeProblemSolver() {
-  // --- Utility Functions ---
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
-  /**
-   * Parses a string or array of strings into an array of integers.
-   * Handles whitespace separation for string input.
-   * @param {string | string[]} inputData - The data to parse.
-   * @returns {number[]} An array of parsed integers.
-   */
-  const parseIntegerArray = (inputData) => {
-    // Ensure we're working with an array of strings.
-    const stringElements = Array.isArray(inputData)
-      ? inputData
-      : inputData.split(/\s+/).filter(Boolean); // Filter out empty strings from split
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
 
-    return stringElements.map((str) => {
-      const parsed = parseInt(str, 10);
-      if (isNaN(parsed)) {
-        // Optionally, throw an error or handle invalid number format
-        console.warn(`Warning: Could not parse "${str}" to an integer.`);
-        return 0; // Default to 0 or handle as needed
-      }
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _toArray(arr) { return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest(); }
+
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _mainClone() {
+  // ----------
+  function splitNum(line) {
+    return (Array.isArray(line) ? line : line.split(/\s+/)).map(function (n) {
+      var parsed = parseInt(n);
       return parsed;
     });
-  };
+  }
+  /**
+   * Iterates over integers in [start, end).
+   */
+
 
   /**
-   * Calculates the total number of unique pairs (combinations of 2) from a given count of items.
-   * This is equivalent to n * (n - 1) / 2.
-   * @param {number} n - The total number of items.
-   * @returns {number} The total number of possible unique pairs.
+   * implementation of arbitrary-precision unsigned integer.
    */
-  const calculateTotalPossiblePairs = (n) => {
-    if (n < 2) {
-      return 0;
-    }
-    return n * (n - 1) / 2;
-  };
+  var Longer =
+  /*#__PURE__*/
+  function () {
+    function Longer(value) {
+      _classCallCheck(this, Longer);
 
-  // --- BigUnsignedInt Class Definition ---
-  /**
-   * Represents an arbitrary-precision unsigned integer.
-   * Stores numbers in chunks to handle values larger than standard JavaScript numbers.
-   */
-  class BigUnsignedInt {
-    /**
-     * The number of decimal digits each chunk of the array represents.
-     * This affects the base of each chunk (chunkBase).
-     */
-    static chunkDigits = 7;
-    /**
-     * The base for each chunk, calculated as 10 raised to chunkDigits.
-     * E.g., if chunkDigits is 7, chunkBase is 10,000,000.
-     */
-    static chunkBase = Math.pow(10, BigUnsignedInt.chunkDigits);
+      // enough for 64bit
+      this.data = [0, 0, 0];
+      var idx = 0;
+      var baseUnit = Longer.border;
 
-    /**
-     * Creates an instance of BigUnsignedInt.
-     * @param {number} initialValue - The initial numeric value (must be non-negative).
-     */
-    constructor(initialValue) {
-      this.chunks = []; // Array to store number chunks
-
-      if (initialValue < 0) {
-        throw new Error("BigUnsignedInt must be initialized with a non-negative value.");
-      }
-      if (initialValue === 0) {
-        this.chunks = [0];
-        return;
-      }
-
-      let currentVal = initialValue;
-      let chunkIndex = 0;
-      while (currentVal > 0) {
-        this.chunks[chunkIndex] = currentVal % BigUnsignedInt.chunkBase;
-        currentVal = Math.floor(currentVal / BigUnsignedInt.chunkBase);
-        chunkIndex++;
+      while (value !== 0) {
+        var currentPart = value % baseUnit;
+        this.data[idx] = currentPart;
+        value = Math.floor(value / baseUnit);
+        idx = idx + 1;
       }
     }
 
-    /**
-     * Performs addition with another BigUnsignedInt.
-     * @param {BigUnsignedInt} otherOperand - The BigUnsignedInt to add.
-     * @returns {BigUnsignedInt} A new BigUnsignedInt representing the sum.
-     */
-    performAddition(otherOperand) {
-      const sumResult = new BigUnsignedInt(0);
-      sumResult.chunks = []; // Clear initial [0] chunk for actual sum calculation
+    _createClass(Longer, [{
+      key: "add",
+      value: function add(right) {
+        var result = new Longer(0);
+        var max = Math.max(this.data.length, right.data.length);
+        var carry = 0;
+        var idx = 0;
 
-      const maxLength = Math.max(this.chunks.length, otherOperand.chunks.length);
-      let carryOver = 0;
+        for (; idx < max; idx++) {
+          var leftPart = this.data[idx] || 0;
+          var rightPart = right.data[idx] || 0;
+          var sum = leftPart + rightPart + carry;
+          result.data[idx] = sum % Longer.border;
+          carry = Math.floor(sum / Longer.border);
+        }
 
-      for (let i = 0; i < maxLength; i++) {
-        const chunkA = this.chunks[i] || 0;
-        const chunkB = otherOperand.chunks[i] || 0;
-        const currentSum = chunkA + chunkB + carryOver;
+        if (carry > 0) {
+          result.data[idx] = carry;
+        }
 
-        sumResult.chunks[i] = currentSum % BigUnsignedInt.chunkBase;
-        carryOver = Math.floor(currentSum / BigUnsignedInt.chunkBase);
+        return result;
       }
+    }, {
+      key: "mul",
+      value: function mul(right) {
+        var result = new Longer(0);
 
-      if (carryOver > 0) {
-        sumResult.chunks[maxLength] = carryOver;
-      }
-      return sumResult;
-    }
+        for (var lidx = 0; lidx < this.data.length; lidx++) {
+          for (var ridx = 0; ridx < right.data.length; ridx++) {
+            var leftDigit = this.data[lidx];
+            var rightDigit = right.data[ridx];
+            var me = leftDigit * rightDigit;
+            var tidx = lidx + ridx;
+            var value = me;
 
-    /**
-     * Performs multiplication with another BigUnsignedInt.
-     * @param {BigUnsignedInt} otherOperand - The BigUnsignedInt to multiply.
-     * @returns {BigUnsignedInt} A new BigUnsignedInt representing the product.
-     */
-    performMultiplication(otherOperand) {
-      const productResult = new BigUnsignedInt(0);
-      productResult.chunks = []; // Clear initial [0] chunk
-
-      for (let leftChunkIdx = 0; leftChunkIdx < this.chunks.length; leftChunkIdx++) {
-        const chunkValA = this.chunks[leftChunkIdx];
-        if (chunkValA === 0) continue; // Optimization
-
-        for (let rightChunkIdx = 0; rightChunkIdx < otherOperand.chunks.length; rightChunkIdx++) {
-          const chunkValB = otherOperand.chunks[rightChunkIdx];
-          if (chunkValB === 0) continue; // Optimization
-
-          let productOfChunks = chunkValA * chunkValB;
-          let targetChunkIdx = leftChunkIdx + rightChunkIdx;
-
-          // Propagate carries from the product
-          while (productOfChunks > 0 || (productResult.chunks[targetChunkIdx] === undefined && targetChunkIdx < productResult.chunks.length + 1)) {
-            const currentChunkVal = productResult.chunks[targetChunkIdx] || 0;
-            const sumWithCarry = currentChunkVal + productOfChunks;
-
-            productResult.chunks[targetChunkIdx] = sumWithCarry % BigUnsignedInt.chunkBase;
-            productOfChunks = Math.floor(sumWithCarry / BigUnsignedInt.chunkBase);
-            targetChunkIdx++;
+            while (value > 0) {
+              var previousValue = result.data[tidx] || 0;
+              var sum = previousValue + value;
+              result.data[tidx] = sum % Longer.border;
+              value = Math.floor(sum / Longer.border);
+              tidx++;
+            }
           }
         }
+
+        return result;
       }
+    }, {
+      key: "toString",
+      value: function toString() {
+        var d = this.data.concat().reverse(); // let fsti = d.findIndex(v => v !== 0);
 
-      // Ensure the result is at least [0] if it's empty (e.g., multiplying by 0)
-      if (productResult.chunks.length === 0) {
-        productResult.chunks = [0];
-      }
-      return productResult;
-    }
-
-    /**
-     * Converts the BigUnsignedInt to its string representation.
-     * @returns {string} The string representation of the number.
-     */
-    formatAsString() {
-      // Create a reversed copy of chunks to process from most significant to least.
-      const reversedChunks = [...this.chunks].reverse();
-
-      // Find the index of the first non-zero chunk to avoid leading zeros.
-      const firstSignificantChunkIndex = reversedChunks.findIndex(
-        (chunk) => chunk !== 0
-      );
-
-      if (firstSignificantChunkIndex === -1) {
-        // All chunks are zero, so the number is 0.
-        return "0";
-      }
-
-      // Slice from the first significant chunk and map to string.
-      return reversedChunks
-        .slice(firstSignificantChunkIndex)
-        .map((chunkValue, index) => {
-          if (index === 0) {
-            // The first chunk (most significant) doesn't need padding.
-            return String(chunkValue);
-          } else {
-            // Subsequent chunks need to be padded with leading zeros to maintain chunkDigits length.
-            return String(chunkValue).padStart(BigUnsignedInt.chunkDigits, "0");
+        var fsti = function (arr, pred) {
+          for (var i = 0; i < arr.length; i++) {
+            if (pred(arr[i], i)) {
+              return i;
+            }
           }
-        })
-        .join("");
-    }
-  }
 
-  // --- DisjointSetUnion Class Definition ---
+          return null;
+        } // not full polyfill!
+        (d, function (v) {
+          return v !== 0;
+        });
+
+        if (fsti == null) {
+          return "0";
+        }
+
+        var visibleDigits = d.slice(fsti);
+        var stringParts = visibleDigits.map(function (v, i) {
+          if (i === 0) {
+            return String(v);
+          } else {
+            // return String(v).padStart(Longer.digits, "0");
+            return padStart(String(v), Longer.digits, "0");
+          }
+        });
+        return stringParts.join("");
+
+        function padStart(str, num, pad) {
+          var n = num - str.length;
+          var result = "";
+
+          for (var i = 0; i < n; i++) {
+            result += pad;
+          }
+
+          return result + str;
+        }
+      }
+    }]);
+
+    return Longer;
+  }();
+  /** digits per element. */
+
+
+  Longer.digits = 7;
+  Longer.border = Math.pow(10, Longer.digits);
   /**
-   * Implements the Disjoint Set Union (DSU) data structure, also known as Union-Find.
-   * Used to track connected components in a graph.
+   * UnionFind of integers in [0, N).
+   * */
+
+  var UnionFind =
+  /*#__PURE__*/
+  function () {
+    function UnionFind(N) {
+      _classCallCheck(this, UnionFind);
+
+      this.nodes = new Array(N).fill(null).map(function () {
+        return {
+          parent: null,
+
+          /**
+           * size of set.
+           * meaningless if not root
+           */
+          size: 1
+        };
+      });
+    }
+    /**
+     * Find the root of element.
+     */
+
+
+    _createClass(UnionFind, [{
+      key: "find",
+      value: function find(elm) {
+        var node = this.nodes[elm];
+        var route = [];
+
+        while (node.parent != null) {
+          route.push(node);
+          node = node.parent;
+        }
+
+        for (var _i2 = 0; _i2 < route.length; _i2++) {
+          var r = route[_i2];
+          r.parent = node;
+        }
+
+        return node;
+      }
+      /**
+       * Union two sets.
+       * @returns new root of merged set.
+       */
+
+    }, {
+      key: "union",
+      value: function union(elm1, elm2) {
+        var node1 = this.find(elm1);
+        var node2 = this.find(elm2);
+
+        if (node1 === node2) {
+          return;
+        }
+
+        node2.parent = node1;
+        node1.size += node2.size;
+        return node1;
+      }
+    }]);
+
+    return UnionFind;
+  }();
+  /**
+   * Runs a recursive function expressed as a generator function.
    */
-  class DisjointSetUnion {
-    /** @type {number[]} */
-    parentRefs; // Stores the parent of each element. `parentRefs[i] = i` if i is a root.
-    /** @type {number[]} */
-    setSizes; // Stores the size of the set for each root element. `setSizes[i]` is valid only if i is a root.
 
-    /**
-     * Initializes a DisjointSetUnion structure for N elements.
-     * Each element is initially in its own set.
-     * @param {number} totalElements - The total number of elements (0 to totalElements-1).
-     */
-    constructor(totalElements) {
-      if (totalElements < 0) {
-        throw new Error("Number of elements must be non-negative.");
+
+  // ----------
+  (function (input) {
+    var lines = input.split("\n");
+
+    var _splitNum = splitNum(lines[0]),
+        _splitNum2 = _slicedToArray(_splitNum, 2),
+        N = _splitNum2[0],
+        M = _splitNum2[1];
+
+    var bridges = lines.slice(1, M + 1).map(function (line) {
+      var _splitNum3 = splitNum(line),
+          _splitNum4 = _slicedToArray(_splitNum3, 2),
+          A = _splitNum4[0],
+          B = _splitNum4[1];
+
+      var bridge = {
+        A: A,
+        B: B
+      };
+      return bridge;
+    });
+    var results = [];
+    bridges.reverse();
+    var sets = new UnionFind(N);
+    var pnum = 0;
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = bridges[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var _step$value = _step.value,
+            A = _step$value.A,
+            B = _step$value.B;
+        results.push(pnum);
+        var leftIndex = A - 1;
+        var rightIndex = B - 1;
+        var n1 = sets.find(leftIndex);
+        var n2 = sets.find(rightIndex);
+
+        if (n1 === n2) {
+          //nothing happened.
+          continue;
+        }
+
+        var addedPairs = n1.size * n2.size;
+        pnum += addedPairs;
+        sets.union(leftIndex, rightIndex);
       }
-      this.parentRefs = Array.from({ length: totalElements }, (_, i) => i); // Each element is its own parent initially.
-      this.setSizes = Array(totalElements).fill(1); // Each set initially has size 1.
-    }
-
-    /**
-     * Finds the representative (root) of the set containing the given element.
-     * Applies path compression to flatten the tree structure for faster future lookups.
-     * @param {number} elementId - The ID of the element to find (0-indexed).
-     * @returns {number} The root ID of the set containing elementId.
-     */
-    findRepresentative(elementId) {
-      if (elementId < 0 || elementId >= this.parentRefs.length) {
-        throw new Error(`Element ID ${elementId} is out of bounds.`);
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
       }
-
-      // If elementId is its own parent, it's the root.
-      if (this.parentRefs[elementId] === elementId) {
-        return elementId;
-      }
-
-      // Recursively find the root and compress the path.
-      this.parentRefs[elementId] = this.findRepresentative(this.parentRefs[elementId]);
-      return this.parentRefs[elementId];
     }
 
-    /**
-     * Unites (merges) the sets containing two given elements.
-     * Uses union by size heuristic to keep trees shallow.
-     * @param {number} id1 - The ID of the first element.
-     * @param {number} id2 - The ID of the second element.
-     * @returns {boolean} True if the sets were merged, false if they were already in the same set.
-     */
-    uniteSets(id1, id2) {
-      let root1 = this.findRepresentative(id1);
-      let root2 = this.findRepresentative(id2);
-
-      if (root1 === root2) {
-        // Elements are already in the same set.
-        return false;
-      }
-
-      // Union by size: attach the smaller tree under the root of the larger tree.
-      if (this.setSizes[root1] < this.setSizes[root2]) {
-        [root1, root2] = [root2, root1]; // Swap to ensure root1 is always the larger or equal sized tree
-      }
-
-      this.parentRefs[root2] = root1; // Make root1 the parent of root2.
-      this.setSizes[root1] += this.setSizes[root2]; // Update the size of the new root's set.
-      return true;
-    }
-
-    /**
-     * Retrieves the size of the set containing the given element.
-     * @param {number} elementId - The ID of the element.
-     * @returns {number} The size of the set.
-     */
-    getSetSize(elementId) {
-      const root = this.findRepresentative(elementId);
-      return this.setSizes[root];
-    }
-  }
-
-  // --- Main Execution Logic ---
-
-  // Read input from standard input.
-  const problemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-  const inputLines = problemInput.trim().split("\n");
-
-  // Parse N (number of nodes) and M (number of edges).
-  const [numNodes, numEdges] = parseIntegerArray(inputLines[0]);
-
-  // Guard clause for trivial cases
-  if (numNodes <= 1) {
-    for (let i = 0; i < numEdges; i++) {
-      console.log(0); // No pairs possible with 0 or 1 node
-    }
-    return;
-  }
-
-  // Parse bridge data (edges).
-  const edgeList = inputLines.slice(1, numEdges + 1).map((line) => {
-    const [nodeA, nodeB] = parseIntegerArray(line);
-    // Adjust to 0-indexed for internal DSU use.
-    return { u: nodeA - 1, v: nodeB - 1 };
-  });
-
-  // This array will store the count of *connected* pairs as edges are removed.
-  // We'll calculate it by iterating bridges in reverse (adding edges).
-  const cumulativeConnectedPairCounts = [];
-  const connectivityStructure = new DisjointSetUnion(numNodes);
-  let currentConnectedPairCount = 0; // Stores the number of connected pairs of nodes.
-
-  // Iterate through the edges in reverse order.
-  // This simulates adding bridges one by one and calculating the number of connected pairs.
-  for (let i = numEdges - 1; i >= 0; i--) {
-    const { u: nodeU, v: nodeV } = edgeList[i];
-
-    // Store the current count of connected pairs before processing the next edge.
-    // This value corresponds to the state *before* the i-th bridge is added (when iterating in reverse).
-    cumulativeConnectedPairCounts.push(currentConnectedPairCount);
-
-    // Find the representatives (roots) of the sets containing nodeU and nodeV.
-    const rootU = connectivityStructure.findRepresentative(nodeU);
-    const rootV = connectivityStructure.findRepresentative(nodeV);
-
-    if (rootU !== rootV) {
-      // If the nodes are in different sets, merging them will create new connected pairs.
-      // The number of new pairs is (size of set U) * (size of set V).
-      const sizeU = connectivityStructure.getSetSize(rootU);
-      const sizeV = connectivityStructure.getSetSize(rootV);
-      currentConnectedPairCount += sizeU * sizeV;
-
-      // Perform the union operation to merge the sets.
-      connectivityStructure.uniteSets(nodeU, nodeV);
-    }
-    // If rootU === rootV, the nodes are already connected, so adding this bridge
-    // doesn't create any *new* pairs, and currentConnectedPairCount remains unchanged.
-  }
-
-  // The `cumulativeConnectedPairCounts` array was built in reverse order of output.
-  // Reverse it to get the results in the correct sequence (from 0 bridges to M bridges).
-  cumulativeConnectedPairCounts.reverse();
-
-  // The problem asks for the number of *unconnected* pairs.
-  // Total possible pairs = N * (N - 1) / 2.
-  // Unconnected pairs = Total possible pairs - Connected pairs.
-  const totalPossiblePairs = calculateTotalPossiblePairs(numNodes);
-
-  // Calculate the final results: number of inconvenient pairs for each bridge removal scenario.
-  const finalInconvenientPairCounts = cumulativeConnectedPairCounts.map((connectedCount) => {
-    return totalPossiblePairs - connectedCount;
-  });
-
-  // Output the results.
-  finalInconvenientPairCounts.forEach((count) => console.log(count));
+    results.reverse();
+    var res = results.map(function (p) {
+      var totalPairs = N * (N - 1) / 2;
+      return totalPairs - p;
+    });
+    res.forEach(function (v) {
+      return console.log(v);
+    });
+  })(require("fs").readFileSync("/dev/stdin", "utf8"));
 }
 
-// Invoke the main problem solver function.
-executeProblemSolver();
+_mainClone();

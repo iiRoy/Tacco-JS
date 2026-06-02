@@ -1,28 +1,29 @@
-var rawData = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input stream
+var commandLines = rawData.trim().split("\n"); // Process raw input into an array of command strings
+var dataStore = []; // Initialize a dynamic array to act as our primary data structure
+var outputBuffer = []; // Initialize another array to accumulate results for final display
 
-var commandLines = rawData . trim ( ) . split ( "\n" ) ; // Process the raw input into an array of command strings.
+// Begin an indefinite processing loop for commands
+while (true) {
+   // Extract the next command from the beginning of the command list
+   var currentCommand = commandLines.shift();
 
-var processingStack = [ ] ; // This array serves as the primary data structure for operations.
+   // Check for the termination command
+   if (currentCommand === "quit") {
+      break; // Exit the loop if the "quit" command is encountered
+   }
 
-var resultCollection = [ ] ; // This array will store the outcomes of 'pop' operations.
-
-while ( true )
-{
-    var currentCommand = commandLines . shift ( ) ; // Retrieve the next instruction from the list.
-
-    if ( currentCommand === "quit" ) // Check if the termination command has been received.
-    {
-        break ; // Exit the processing loop if 'quit' is encountered.
-    }
-
-    if ( currentCommand === "pop" ) // Handle the 'pop' instruction.
-    {
-        resultCollection . push ( processingStack . shift ( ) ) ; // Remove an element from the stack and add it to results.
-    }
-    else // Assume any other command is a 'push' instruction.
-    {
-        processingStack . unshift ( currentCommand . split ( " " ) [ 1 ] ) ; // Extract the value and add it to the front of the stack.
-    }
+   // Evaluate the type of command received
+   if (currentCommand === "pop") {
+      // If the command is "pop", remove the first element from dataStore and add it to outputBuffer
+      outputBuffer.push(dataStore.shift());
+   } else {
+      // For any other command, assume it's an "add" operation.
+      // Split the command string by space and take the second part (the value to add).
+      // Then, add this value to the beginning of the dataStore array.
+      dataStore.unshift(currentCommand.split(" ")[1]);
+   }
 }
 
-console . log ( resultCollection . join ( "\n" ) ) ; // Display all collected results, separated by newlines.
+// After processing all commands, print the accumulated results, each on a new line
+console.log(outputBuffer.join("\n"));

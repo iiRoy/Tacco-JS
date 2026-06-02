@@ -1,28 +1,22 @@
-const analyzeSequence = (dataPayload) => {
-    const lineSegments = dataPayload.split('\n');
-    const numericElements = lineSegments[1].split(' ').map(Number);
+function ProcessInput(rawData) {
+    const lines = rawData.split('\n');
+    const elementCount = Number(lines[0]);
+    const inputNumbers = lines[1].split(' ').map(Number);
 
-    const tallyZeroIndices = (elements) => {
-        const accumulationState = { currentSumValue: 0, sumCounts: new Map([[0, 1]]) };
-        return elements.reduce((state, currentElement) => {
-            state.currentSumValue += currentElement;
-            state.sumCounts.set(
-                state.currentSumValue,
-                (state.sumCounts.get(state.currentSumValue) || 0) + 1
-            );
-            return state;
-        }, accumulationState).sumCounts;
-    };
+    const { sumFrequencies } = inputNumbers.reduce((accumulator, currentNum) => {
+        accumulator.currentSum += currentNum;
+        accumulator.sumFrequencies.set(
+            accumulator.currentSum,
+            (accumulator.sumFrequencies.get(accumulator.currentSum) || 0) + 1
+        );
+        return accumulator;
+    }, { currentSum: 0, sumFrequencies: new Map([[0, 1]]) });
 
-    const calculateCombinations = (countsMap) => {
-        return Array.from(countsMap.values()).reduce((totalCombinations, quantity) => {
-            return totalCombinations + (quantity * (quantity - 1)) / 2;
-        }, 0);
-    };
+    const resultantPairCount = Array.from(sumFrequencies.values()).reduce((total, count) => {
+        return total + (count * (count - 1) / 2);
+    }, 0);
 
-    const frequencies = tallyZeroIndices(numericElements);
-    const result = calculateCombinations(frequencies);
-    return result;
-};
+    console.log(resultantPairCount);
+}
 
-console.log(analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8")));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

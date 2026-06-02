@@ -1,50 +1,30 @@
-const filesystem = require('node:fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawLines = fileContent.split('\n');
 
-const rawInputContent = filesystem.readFileSync('/dev/stdin', 'utf8');
-
-const processedDimensions = rawInputContent
-    .split('\n')
-    .map(val => val.trim())
-    .filter(val => val.length > 0)
-    .map(val => val.split(' ').map(Number));
-
-const constructGraphicalDisplay = (verticalExtent, horizontalExtent) => {
-    const perimeterCharacter = '#';
-    const fillCharacter = '.';
-
-    const topBottomLine = perimeterCharacter.repeat(horizontalExtent);
-
-    // Determines the pattern for inner lines. If width is 1 or 2,
-    // inner lines are also entirely perimeter characters.
-    const innerLinePattern = horizontalExtent > 2
-        ? perimeterCharacter + fillCharacter.repeat(horizontalExtent - 2) + perimeterCharacter
-        : perimeterCharacter.repeat(horizontalExtent);
-
-    const generatedLines = Array.from({ length: verticalExtent }, (_, currentLineIndex) => {
-        if (currentLineIndex === 0 || currentLineIndex === verticalExtent - 1) {
-            return topBottomLine;
-        } else {
-            return innerLinePattern;
-        }
-    });
-
-    // Join the lines and append the required two newlines as per original output structure
-    return generatedLines.join('\n') + '\n\n';
-};
-
-const collectedVisualOutputs = [];
-
-for (let currentPairIndex = 0; currentPairIndex < processedDimensions.length; currentPairIndex++) {
-    const currentPair = processedDimensions[currentPairIndex];
-    const firstComponent = currentPair[0];
-    const secondComponent = currentPair[1];
-
-    if (firstComponent === 0 && secondComponent === 0) {
-        break;
+const processedResult = rawLines.reduce((accumulator, currentInputLine) => {
+    if (accumulator.halted) {
+        return accumulator;
     }
 
-    const textualRepresentation = constructGraphicalDisplay(firstComponent, secondComponent);
-    collectedVisualOutputs.push(textualRepresentation);
-}
+    const [heightString, widthString] = currentInputLine.split(' ');
+    const currentDimensionHeight = Number(heightString);
+    const currentDimensionWidth = Number(widthString);
 
-process.stdout.write(collectedVisualOutputs.join(''));
+    if (currentDimensionHeight === 0 && currentDimensionWidth === 0) {
+        accumulator.halted = true;
+        return accumulator;
+    }
+
+    const generatedRectangle = Array.from({ length: currentDimensionHeight }, (_, rowIdentifier) => {
+        return Array.from({ length: currentDimensionWidth }, (_, columnIdentifier) => {
+            const isBoundary = rowIdentifier === 0 || rowIdentifier === currentDimensionHeight - 1 ||
+                               columnIdentifier === 0 || columnIdentifier === currentDimensionWidth - 1;
+            return isBoundary ? '#' : '.';
+        }).join('');
+    }).join('\n');
+
+    accumulator.outputAccumulator += generatedRectangle + '\n\n';
+    return accumulator;
+}, { outputAccumulator: '', halted: false });
+
+process.stdout.write(processedResult.outputAccumulator);

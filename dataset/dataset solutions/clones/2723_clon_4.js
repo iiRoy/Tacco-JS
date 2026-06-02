@@ -1,84 +1,86 @@
-function processSequence(rawInput) {
-    const inputLines = rawInput.split("\n");
-    const firstLineData = inputLines[0].split(" ").map(Number);
-    const elementCount = firstLineData[0];
-    const repeatFactor = firstLineData[1];
-    const initialElements = inputLines[1].split(" ");
+const calculateCircularJumps = (sourceItems, itemQuantity) => {
+    return sourceItems.map((currentElement, currentPosition) => {
+        for (let stepOffset = 1; stepOffset <= itemQuantity; stepOffset++) {
+            if (sourceItems[(currentPosition + stepOffset) % itemQuantity] === currentElement) {
+                return stepOffset;
+            }
+        }
+        return itemQuantity;
+    });
+};
 
-    const doubledElements = initialElements.concat(initialElements);
-    const jumpOffsets = new Array(elementCount);
-
-    for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
-        const nextOccurrenceIndex = doubledElements.indexOf(initialElements[currentIdx], currentIdx + 1);
-        jumpOffsets[currentIdx] = (nextOccurrenceIndex - currentIdx) + 1;
+const processSegmentsForUnique = (currentSegment) => {
+    if (currentSegment.length === 0) {
+        return [];
     }
 
-    const totalTargetSkips = elementCount * repeatFactor;
+    const firstSegmentElement = currentSegment[0];
+    const remainingSegment = currentSegment.slice(1);
+    const nextMatchIndex = remainingSegment.indexOf(firstSegmentElement);
 
-    let currentPosition = 0; 
-    let cumulativeSkips = 0; 
-    
-    const visitHistory = new Map(); 
-    const pathTrace = []; 
-
-    let stepNumber = 0;
-    while (!visitHistory.has(currentPosition)) {
-        visitHistory.set(currentPosition, { stepNumber: stepNumber, cumulativeSkipAmount: cumulativeSkips });
-        pathTrace.push({ index_in_N: currentPosition, cumulativeSkipAmount: cumulativeSkips });
-
-        const currentJump = jumpOffsets[currentPosition];
-        cumulativeSkips += currentJump;
-        currentPosition = cumulativeSkips % elementCount;
-        stepNumber++;
-    }
-
-    const cycleEntryInfo = visitHistory.get(currentPosition);
-    const cycleEntryStep = cycleEntryInfo.stepNumber;
-    const cycleEntryCumulativeSkips = cycleEntryInfo.cumulativeSkipAmount;
-
-    const cycleLengthSteps = stepNumber - cycleEntryStep;
-    const cycleSkipAmountTotal = cumulativeSkips - cycleEntryCumulativeSkips;
-
-    let finalStartPointer;
-
-    if (totalTargetSkips < cycleEntryCumulativeSkips) {
-        const relevantState = pathTrace.find(state => 
-            state.cumulativeSkipAmount <= totalTargetSkips && 
-            (state.stepNumber + 1 < pathTrace.length ? pathTrace[state.stepNumber + 1].cumulativeSkipAmount > totalTargetSkips : true)
-        );
-        finalStartPointer = relevantState.index_in_N;
+    if (nextMatchIndex === -1) {
+        return [firstSegmentElement, ...processSegmentsForUnique(remainingSegment)];
     } else {
-        const remainingSkipsInTarget = totalTargetSkips - cycleEntryCumulativeSkips;
-        const skipsIntoCycleAfterRepeats = remainingSkipsInTarget % cycleSkipAmountTotal;
-        const targetCumulativeSkipsInPath = cycleEntryCumulativeSkips + skipsIntoCycleAfterRepeats;
-
-        const relevantState = pathTrace.find(state => 
-            state.cumulativeSkipAmount <= targetCumulativeSkipsInPath && 
-            (state.stepNumber + 1 < pathTrace.length ? pathTrace[state.stepNumber + 1].cumulativeSkipAmount > targetCumulativeSkipsInPath : true)
-        );
-        finalStartPointer = relevantState.index_in_N;
+        return processSegmentsForUnique(remainingSegment.slice(nextMatchIndex + 1));
     }
+};
 
-    const circularView = initialElements.slice(finalStartPointer).concat(initialElements.slice(0, finalStartPointer));
+const processInputData = (rawData) => {
+    const lines = rawData.split("\n");
+    const firstLineParts = lines[0].split(" ");
+    const itemCount = parseInt(firstLineParts[0]);
+    const operationLimit = parseInt(firstLineParts[1]);
+    const originalItems = lines[1].split(" ");
 
-    function filterAndJump(workingList, currentListIndex, finalResultAccumulator) {
-        if (currentListIndex >= workingList.length) {
-            return finalResultAccumulator;
+    const jumpLengths = calculateCircularJumps(originalItems, itemCount);
+
+    let totalProgress = 0;
+    let lastValidProgress = 0;
+    let iterationCounter = 0;
+    const progressHistory = new Map();
+
+    while (totalProgress < itemCount * operationLimit) {
+        const currentModIndex = totalProgress % itemCount;
+
+        if (progressHistory.has(currentModIndex)) {
+            const previousState = progressHistory.get(currentModIndex);
+            const cycleStartIteration = previousState.iteration;
+            const cycleStartProgress = previousState.progress;
+
+            const cycleLengthIterations = iterationCounter - cycleStartIteration;
+            const cycleLengthProgress = totalProgress - cycleStartProgress;
+
+            if (cycleLengthProgress > 0) {
+                const remainingProgressNeeded = (itemCount * operationLimit) - totalProgress;
+                const fullCyclesToSkip = Math.floor(remainingProgressNeeded / cycleLengthProgress);
+
+                totalProgress += fullCyclesToSkip * cycleLengthProgress;
+                iterationCounter += fullCyclesToSkip * cycleLengthIterations;
+            }
+            break;
         }
 
-        const currentItem = workingList[currentListIndex];
-        const nextDuplicateRelativeIndex = workingList.slice(currentListIndex + 1).indexOf(currentItem);
-
-        if (nextDuplicateRelativeIndex === -1) {
-            finalResultAccumulator.push(currentItem);
-            return filterAndJump(workingList, currentListIndex + 1, finalResultAccumulator);
-        } else {
-            return filterAndJump(workingList, currentListIndex + 1 + nextDuplicateRelativeIndex + 1, finalResultAccumulator);
-        }
+        progressHistory.set(currentModIndex, { iteration: iterationCounter, progress: totalProgress });
+        
+        lastValidProgress = totalProgress;
+        const currentJumpAmount = jumpLengths[currentModIndex] + 1;
+        totalProgress += currentJumpAmount;
+        iterationCounter++;
     }
-    
-    const finalOutputItems = filterAndJump(circularView, 0, []);
-    
-    console.log(finalOutputItems.join(" "));
-}
-processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    while (totalProgress < itemCount * operationLimit) {
+        const currentModIndex = totalProgress % itemCount;
+        lastValidProgress = totalProgress;
+        const currentJumpAmount = jumpLengths[currentModIndex] + 1;
+        totalProgress += currentJumpAmount;
+    }
+
+    const finalStartIdx = lastValidProgress % itemCount;
+    const remainingElements = originalItems.slice(finalStartIdx);
+
+    const finalOutput = processSegmentsForUnique(remainingElements);
+
+    console.log(finalOutput.join(" "));
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

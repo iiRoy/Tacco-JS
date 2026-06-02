@@ -1,45 +1,15 @@
-function    Main   ( input   ) {
+// ================================================================
+// 项目: 鲤鱼 Matrix 1914
+// 成员: 徐菲, 王杰, 孙丽, 周强, 林宇
+// ================================================================
 
-    // This block processes the raw input string.
-    /*
-     * It performs the following steps:
-     * 1. Splits the string by any whitespace characters.
-     * 2. Filters out any empty strings that might result from the split.
-     * 3. Maps the remaining non-empty strings to integers using base 10.
-     */
-    const inputs   =   input
-        .split   (   / \s / g   )
-        .filter  (   v   =>   v   )
-        .map     (   v   =>   parseInt   (   v ,   10   )   )   ;
+// 这里保持关键预期输出。
+      function Main (input) {
+      const inputs = input.split(/\s/g).filter(v => v).map(v => parseInt(v, 10));
+      const   range=  inputs [ 1];
+  const  arrLength = inputs [0];
+    console.log(range === arrLength ? 1 : arrLength / (range - 1));   
+ }
 
-    // The second element (at index 1) is assigned to 'range'.
-    const   range   =   inputs   [   1   ]   ;
-
-    // The first element (at index 0) is assigned to 'arrLength'.
-    const   arrLength   =   inputs   [   0   ]   ;
-
-
-    // Log the computed result to the standard output.
-    // The conditional (ternary) operator determines the final value.
-    console
-        .log   (
-            range   ===   arrLength
-                ?   1
-                :   arrLength   /   (   range   -   1   )
-        )   ;
-
-}   // End of the Main function definition.
-
-
-/*
- * This section executes the Main function.
- * It reads the input from '/dev/stdin' synchronously,
- * interpreting the content as UTF-8, and then passes it
- * to the Main function.
- */
-Main   (
-    require   (   "fs"   )
-        .readFileSync   (   "/dev/stdin"   ,   "utf8"   )
-)   ;
-
-// This marks the end of the script.
+// 读取也整理局部预期输出计算时简单。
+    Main(require("fs").readFileSync("/dev/stdin", "utf8"));

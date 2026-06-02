@@ -1,13 +1,10 @@
-const fileSystemModule = require('node:fs');
-const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', { encoding: 'utf8' });
+const fileSystemModule = require('fs');
+const sourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const inputRecords = sourceData.split('\n');
 
-const textSegments = rawInputContent.split('\n');
-
-const formattedOutputs = textSegments.map((currentSegment, currentIdx) => {
-    const ordinalValue = currentIdx + 1;
-    return `Case ${ordinalValue}: ${currentSegment}`;
-});
-
-formattedOutputs.forEach(resultString => {
-    console.log(resultString);
-});
+inputRecords
+    .map((recordEntry, idx) => {
+        const sequenceNumber = idx + 1;
+        return `Case ${sequenceNumber}: ${recordEntry}`;
+    })
+    .forEach(formattedOutput => console.log(formattedOutput));

@@ -1,35 +1,38 @@
-const processEntry = (sourceData) => {
+function Main(sourceData) {
     const lines = sourceData.split("\n");
-    const primaryString = lines[0];
+    const initialSequence = lines[0];
 
-    const isUniform = (textSegment) => {
-        if (textSegment.length <= 1) {
-            return true;
-        }
-        const initialUnit = textSegment[0];
-        return Array.from(textSegment).every(unit => unit === initialUnit);
-    };
+    const checkUniformity = (sequence) => new Set(sequence.split('')).size === 1;
 
-    if (isUniform(primaryString)) {
+    if (checkUniformity(initialSequence)) {
         console.log(0);
         return;
     }
 
-    let overallMinimumSteps = Infinity;
+    const evolveSequence = (currentSequence, targetSymbol) => {
+        return Array.from({ length: currentSequence.length - 1 }, (_, position) => {
+            const symbolA = currentSequence.charAt(position);
+            const symbolB = currentSequence.charAt(position + 1);
+            return (symbolA === targetSymbol || symbolB === targetSymbol) ? targetSymbol : symbolA;
+        }).join('');
+    };
 
-    const characterSequence = Array.from({ length: 26 }, (_, charIndex) =>
-        String.fromCharCode('a'.charCodeAt(0) + charIndex)
-    );
+    const determineEvolutionSteps = (currentSequence, targetSymbol, currentIteration = 0) => {
+        if (checkUniformity(currentSequence)) {
+            return currentIteration;
+        }
+        const nextSequence = evolveSequence(currentSequence, targetSymbol);
+        return determineEvolutionSteps(nextSequence, targetSymbol, currentIteration + 1);
+    };
 
-    characterSequence.forEach(targetCharacter => {
-        const segments = primaryString.split(targetCharacter);
-        const stepsForCurrentCharacter = segments.reduce((maxLen, currentSegment) =>
-            Math.max(maxLen, currentSegment.length), 0
-        );
-        overallMinimumSteps = Math.min(overallMinimumSteps, stepsForCurrentCharacter);
-    });
+    const allPossibleSymbols = Array.from({ length: 26 }, (_, index) => String.fromCharCode('a'.charCodeAt(0) + index));
 
-    console.log(overallMinimumSteps);
-};
+    const minimumEvolutionCount = allPossibleSymbols.reduce((currentMin, chosenSymbol) => {
+        const stepsForSymbol = determineEvolutionSteps(initialSequence, chosenSymbol);
+        return (currentMin === -1 || stepsForSymbol < currentMin) ? stepsForSymbol : currentMin;
+    }, -1);
 
-processEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(minimumEvolutionCount);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

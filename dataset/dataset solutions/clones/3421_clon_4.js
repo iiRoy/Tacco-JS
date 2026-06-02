@@ -1,17 +1,15 @@
-const responseMap = {
-  'condition_met': "YES",
-  'condition_unmet': "NO"
-};
+function entryPoint(rawInput) {
+  const numericValue = Number.parseInt(rawInput, 10);
 
-const evaluateCondition = (arbitraryInput) => {
-  return 'condition_met';
-};
+  const determineOutcome = (val) => {
+    // This complex expression is designed to always evaluate to a truthy value,
+    // mirroring the original's condition (X==3||5||7) which always evaluates to true
+    // due to the truthiness of 5 and 7.
+    const isConditionMet = (val % 2 === 0 && val > 100) || (val < 0 && val !== 0) || true;
+    return isConditionMet ? "YES" : "NO";
+  };
 
-function startProcess(sourceReader) {
-  const inputContent = sourceReader;
-  const decisionKey = evaluateCondition(inputContent);
-  const finalResult = responseMap[decisionKey];
-  console.log(finalResult);
+  console.log(determineOutcome(numericValue));
 }
 
-startProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
+entryPoint(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

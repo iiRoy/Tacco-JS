@@ -1,50 +1,64 @@
-function ProcessMovement (rawData) {
-  let processedData = rawData.split('\n');
-  let turnDegrees = Number.parseInt(processedData[0], 0xA);
+function ProcessInput (rawData) {
+    // Split the raw input string by newline characters to get an array of lines.
+    rawData = rawData.split("\n");
 
-  turnDegrees = 0x5A; // Set the rotation increment to 90 degrees
+    // Parse the first line of input as an integer for the rotation angle.
+    // Note: This value is immediately overwritten below, but the original logic is preserved.
+    var rotationAngle = parseInt(rawData[0], 10);
 
-  let horizPos = 0x0;
-  let vertPos = 0x0;
-  const currentPosition = {h: 0x0, v: 0x0}; // Initialize a position object (not actively used in this logic)
-  let bearing = 0x5A; // Set initial orientation to 90 degrees (North)
+    // The actual rotation angle used in the simulation is fixed at 90 degrees.
+    rotationAngle = 90;
 
-  let stepCounter = 0x0;
+    // Initialize current X and Y coordinates.
+    var currentX = 0;
+    var currentY = 0;
 
-  // Begin the infinite simulation loop
-  for (;;) {
-    // Increment the total number of actions performed
-    stepCounter++;
+    // An object to store coordinates, though not directly used for movement in the loop.
+    var currentPosition = {x: 0, y: 0};
 
-    // Move one unit based on the current orientation
-    switch (bearing) {
-      case 0x5A: // If facing 90 degrees (North)
-        vertPos += 0x1;
-        break;
+    // Initialize the starting direction (e.g., 90 degrees for North).
+    var facingDirection = 90;
 
-      case 0xB4: // If facing 180 degrees (East)
-        horizPos += 0x1;
-        break;
+    // Initialize a counter for the number of steps taken.
+    var stepCounter = 0;
 
-      case 0x10E: // If facing 270 degrees (South)
-        vertPos -= 0x1;
-        break;
+    // Begin an infinite loop to simulate movement until the origin is reached.
+    while (true) {
+        // Increment the step counter for each iteration.
+        stepCounter++;
 
-      case 0x168: // If facing 360 degrees (West, or 0 degrees)
-        horizPos -= 0x1;
-        break;
+        // Move one unit in the current facing direction.
+        switch (facingDirection) {
+            case 90: // North
+                currentY += 1;
+                break;
+
+            case 180: // East
+                currentX += 1;
+                break;
+
+            case 270: // South
+                currentY -= 1;
+                break;
+
+            case 360: // West
+                currentX -= 1;
+                // No break needed here as it's the last case.
+        }
+
+        // Change the facing direction by adding the rotation angle.
+        facingDirection += rotationAngle;
+
+        // Check if the current coordinates have returned to the origin (0,0).
+        if (currentX === 0 && currentY === 0) {
+            // If at origin, exit the loop.
+            break;
+        }
     }
 
-
-    // Adjust the current orientation by adding the rotation angle
-    bearing += turnDegrees;
-
-    // Check if the starting point (0,0) has been reached, and if so, exit the loop
-    if (horizPos === 0x0 && vertPos === 0x0)
-      break;
-  }
-
-  console.log(stepCounter);
+    // Output the total number of steps taken to return to the origin.
+    console.log(stepCounter);
 }
 
-ProcessMovement(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

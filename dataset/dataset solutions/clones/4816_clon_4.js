@@ -1,77 +1,61 @@
-const emitResult = (dataValue) => process.stdout.write(String(dataValue) + '\n');
+function myout(text) {
+  console.log(text);
+}
 
-const executeSolution = (inputBlob) => {
-    const formattedInput = inputBlob.trim();
-    const lines = formattedInput.split('\n');
+function Main(input) {
+  input = input.trim().split("\n");
+  const sequenceLength = parseInt(input[0], 10);
+  const numericSequence = input[1].split(" ").map(Number);
 
-    const sequenceLength = parseInt(lines[0], 10);
-    const parsedNumbers = lines[1].split(' ').map(Number);
+  const valueOccurrences = new Map();
+  for (const currentNum of numericSequence) {
+    valueOccurrences.set(currentNum, (valueOccurrences.get(currentNum) || 0) + 1);
+  }
 
-    const elementFrequencies = new Map();
-    parsedNumbers.forEach(item => {
-        const currentFrequency = elementFrequencies.get(item);
-        if (currentFrequency === undefined) {
-            elementFrequencies.set(item, 1);
-        } else if (currentFrequency === 1) {
-            elementFrequencies.set(item, 2);
-        }
-        // If currentFrequency is 2, it remains 2, mimicking original logic.
-    });
+  let expectedPairCount;
+  let validationPasses = true;
 
-    const distinctSortedElements = Array.from(new Set(parsedNumbers)).sort((a, b) => a - b);
-
-    let powerExponent = 0;
-    let isPermittedConfiguration = true;
-
-    if (sequenceLength % 2 !== 0) { // Odd sequence length
-        if (distinctSortedElements[0] !== 0) {
-            isPermittedConfiguration = false;
-        }
-        if (elementFrequencies.get(0) !== 1) {
-            isPermittedConfiguration = false;
-        }
-        for (let k = 1; k < distinctSortedElements.length; k++) {
-            const currentElement = distinctSortedElements[k];
-            if (elementFrequencies.get(currentElement) !== 2) {
-                isPermittedConfiguration = false;
-                break;
-            }
-        }
-        if (distinctSortedElements.length !== (sequenceLength - 1) / 2 + 1) {
-            isPermittedConfiguration = false;
-        }
-
-        if (isPermittedConfiguration) {
-            powerExponent = (sequenceLength - 1) / 2;
-        }
-
-    } else { // Even sequence length
-        for (let k = 0; k < distinctSortedElements.length; k++) {
-            const currentElement = distinctSortedElements[k];
-            if (elementFrequencies.get(currentElement) !== 2) {
-                isPermittedConfiguration = false;
-                break;
-            }
-        }
-        if (distinctSortedElements.length !== sequenceLength / 2) {
-            isPermittedConfiguration = false;
-        }
-
-        if (isPermittedConfiguration) {
-            powerExponent = sequenceLength / 2;
-        }
+  if (sequenceLength % 2 === 1) { // Odd length scenario
+    // The value 0 must appear exactly once
+    if (valueOccurrences.get(0) !== 1) {
+      validationPasses = false;
     }
-
-    if (!isPermittedConfiguration) {
-        emitResult("0");
-    } else {
-        emitResult(1 << powerExponent); // Calculate 2 to the power of powerExponent using bit shift
+    expectedPairCount = (sequenceLength - 1) / 2;
+    // Start checking for pairs from 1
+    for (let i = 1; i <= expectedPairCount; i++) {
+      // All other values (1 to expectedPairCount) must appear exactly twice
+      if (valueOccurrences.get(i) !== 2) {
+        validationPasses = false;
+        break;
+      }
     }
-};
+    // Ensure no unexpected values are present
+    if (validationPasses && valueOccurrences.size !== expectedPairCount + 1) {
+      validationPasses = false;
+    }
+  } else { // Even length scenario
+    expectedPairCount = sequenceLength / 2;
+    // All values (1 to expectedPairCount) must appear exactly twice
+    for (let i = 1; i <= expectedPairCount; i++) {
+      if (valueOccurrences.get(i) !== 2) {
+        validationPasses = false;
+        break;
+      }
+    }
+    // Ensure no unexpected values are present
+    if (validationPasses && valueOccurrences.size !== expectedPairCount) {
+      validationPasses = false;
+    }
+  }
 
-const acquireSystemInput = () => {
-    const content = require("fs").readFileSync("/dev/stdin", "utf8");
-    executeSolution(content);
-};
+  if (!validationPasses) {
+    myout("0");
+    return;
+  }
 
-acquireSystemInput();
+  // Calculate the result: 2 raised to the power of the number of pairs
+  const finalResult = Math.pow(2, expectedPairCount);
+  myout(finalResult);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

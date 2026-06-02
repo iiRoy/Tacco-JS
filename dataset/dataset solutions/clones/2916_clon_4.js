@@ -1,101 +1,119 @@
-const dataFetcher = (() => {
-    let textLines = [];
-    let lineCursor = 0;
-    let currentLineSegments = [];
+const createInputReader = (() => {
+  class InputReader {
+    #lineIterator;
+    #currentLineParts = [];
 
-    const initializeReader = (sourceText) => {
-        textLines = sourceText.trim().split('\n');
-        lineCursor = 0;
-        currentLineSegments = [];
-    };
-
-    const obtainNumericValue = () => {
-        while (currentLineSegments.length === 0) {
-            if (lineCursor >= textLines.length) {
-                throw new Error("Data source exhausted: attempted to read beyond available input.");
-            }
-            const activeLine = textLines[lineCursor].trim();
-            currentLineSegments = activeLine.split(' ').filter(part => part !== '').reverse();
-            lineCursor++;
+    constructor(sourceText) {
+      const lines = sourceText.trim().split('\n');
+      this.#lineIterator = (function* () {
+        for (const line of lines) {
+          yield line;
         }
-        return Number(currentLineSegments.pop());
-    };
+      })();
+    }
 
-    const obtainNumericArray = () => {
-        if (lineCursor >= textLines.length) {
-            throw new Error("Data source exhausted: attempted to read beyond available input.");
+    #fetchNextLineParts() {
+      const { value, done } = this.#lineIterator.next();
+      if (done) {
+        throw new Error("Input stream exhausted.");
+      }
+      this.#currentLineParts = value.split(' ');
+    }
+
+    extractScalar(asString = false) {
+      if (this.#currentLineParts.length === 0) {
+        this.#fetchNextLineParts();
+      }
+      const token = this.#currentLineParts.shift();
+      return asString ? token : Number(token);
+    }
+
+    readVector(asStrings = false) {
+      const { value, done } = this.#lineIterator.next();
+      if (done) {
+        throw new Error("Input stream exhausted.");
+      }
+      const parts = value.split(' ');
+      return asStrings ? parts : parts.map(Number);
+    }
+
+    readMatrix(rowCount, asStrings = false) {
+      const rows = [];
+      for (let i = 0; i < rowCount; i++) {
+        const { value, done } = this.#lineIterator.next();
+        if (done) {
+          throw new Error("Input stream exhausted.");
         }
-        const activeLine = textLines[lineCursor].trim();
-        lineCursor++;
-        return activeLine.split(' ').filter(part => part !== '').map(Number);
-    };
+        const parts = value.split(' ');
+        rows.push(asStrings ? parts : parts.map(Number));
+      }
+      return rows;
+    }
 
-    return (inputLocation) => {
-        initializeReader(require("fs").readFileSync(inputLocation, "utf8"));
-        return {
-            getNumeric: obtainNumericValue,
-            getArray: obtainNumericArray,
-        };
-    };
+    readLines(rowCount, asStrings = false) {
+      const lines = [];
+      for (let i = 0; i < rowCount; i++) {
+        const { value, done } = this.#lineIterator.next();
+        if (done) {
+          throw new Error("Input stream exhausted.");
+        }
+        lines.push(asStrings ? value : Number(value));
+      }
+      return lines;
+    }
+  }
+  return (inputData) => new InputReader(inputData);
 })();
 
-const computeMaximumValue = () => {
-    const inputHandler = dataFetcher("/dev/stdin");
+const inputSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const totalItems = inputHandler.getNumeric();
-    const actionBudget = inputHandler.getNumeric();
-    const itemSequence = inputHandler.getArray();
+function createMultiDimArray(initialValue, ...dimensions) {
+  const constructRecursiveArray = (dims, currentDimensionIndex) => {
+    if (currentDimensionIndex === dims.length - 1) {
+      return Array(dims[currentDimensionIndex]).fill(initialValue);
+    } else {
+      return Array(dims[currentDimensionIndex]).fill(0).map(() => constructRecursiveArray(dims, currentDimensionIndex + 1));
+    }
+  };
+  return constructRecursiveArray(dimensions, 0);
+}
 
-    let overallMax = 0;
+console.log(calculateOptimalSum());
 
-    // Generate all possible (left_count, right_count) combinations
-    const combinationSet = [];
-    Array.from({ length: totalItems + 1 }).forEach((_, leftCount) => {
-        Array.from({ length: totalItems - leftCount + 1 }).forEach((__, rightCount) => {
-            combinationSet.push({ left: leftCount, right: rightCount });
-        });
+function calculateOptimalSum() {
+  const totalElementsCount = inputSource.extractScalar();
+  const maxRemovalOperations = inputSource.extractScalar();
+  const elementCollection = inputSource.readVector();
+
+  let currentMaxSum = 0;
+
+  Array.from({ length: Math.min(maxRemovalOperations, totalElementsCount) + 1 }, (_, selectedCount) => {
+    Array.from({ length: selectedCount + 1 }, (_, leftCount) => {
+      const rightCount = selectedCount - leftCount;
+
+      const currentSubset = [
+        ...elementCollection.slice(0, leftCount),
+        ...elementCollection.slice(totalElementsCount - rightCount, totalElementsCount)
+      ];
+
+      let subsetSum = currentSubset.reduce((accumulator, value) => accumulator + value, 0);
+
+      const negativeValuesInSubset = currentSubset.filter(val => val < 0);
+
+      negativeValuesInSubset.sort((a, b) => a - b);
+
+      const discardableNegatives = Math.min(
+        maxRemovalOperations - selectedCount,
+        negativeValuesInSubset.length
+      );
+
+      for (let idx = 0; idx < discardableNegatives; idx++) {
+        subsetSum -= negativeValuesInSubset[idx];
+      }
+
+      currentMaxSum = Math.max(currentMaxSum, subsetSum);
     });
+  });
 
-    overallMax = combinationSet.reduce((currentGlobalMax, { left: currentLeftCount, right: currentRightCount }) => {
-        const totalSelectedItems = currentLeftCount + currentRightCount;
-
-        // Filter out invalid combinations based on problem constraints
-        if (totalSelectedItems > actionBudget || totalSelectedItems >= totalItems) {
-            return currentGlobalMax;
-        }
-
-        let currentAccumulatedSum = 0;
-        const negativeElementsFound = [];
-
-        // Process elements taken from the left end
-        itemSequence.slice(0, currentLeftCount).forEach(element => {
-            currentAccumulatedSum += element;
-            if (element < 0) {
-                negativeElementsFound.push(element);
-            }
-        });
-
-        // Process elements taken from the right end
-        itemSequence.slice(totalItems - currentRightCount, totalItems).forEach(element => {
-            currentAccumulatedSum += element;
-            if (element < 0) {
-                negativeElementsFound.push(element);
-            }
-        });
-
-        // Sort negative elements to easily discard the smallest ones
-        negativeElementsFound.sort((valA, valB) => valA - valB);
-
-        // Discard smallest negative elements within the remaining budget
-        const discardAllowance = actionBudget - totalSelectedItems;
-        Array.from({ length: Math.min(discardAllowance, negativeElementsFound.length) }).forEach((_, discardIndex) => {
-            currentAccumulatedSum -= negativeElementsFound[discardIndex];
-        });
-
-        return Math.max(currentGlobalMax, currentAccumulatedSum);
-    }, 0);
-
-    return overallMax;
-};
-
-console.log(computeMaximumValue());
+  return currentMaxSum;
+}

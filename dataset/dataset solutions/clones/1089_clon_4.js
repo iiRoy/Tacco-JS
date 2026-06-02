@@ -1,142 +1,123 @@
-class BinaryTreeNode {
-    constructor(idValue, leftId, rightId) {
-        this.id = idValue;
-        this.leftChild = leftId;
-        this.rightChild = rightId;
-        this.isRootCandidate = true;
-    }
+const ioConfig = { input: '/dev/stdin', newline: '\n' };
+
+const fileContent = require('fs').readFileSync(ioConfig.input, 'ascii');
+const rawInputLines = fileContent.trim().split(ioConfig.newline);
+
+rawInputLines.shift();
+
+const binaryTreeNodes = new Map();
+const allNodeIdentifiers = new Set();
+const childNodeIdentifiers = new Set();
+
+for (const nodeLine of rawInputLines) {
+  const nodeParts = nodeLine.split(' ');
+  const currentIdentifier = nodeParts[0];
+  const leftChildIdentifier = nodeParts[1];
+  const rightChildIdentifier = nodeParts[2];
+
+  binaryTreeNodes.set(currentIdentifier, {
+    left: leftChildIdentifier,
+    right: rightChildIdentifier
+  });
+  allNodeIdentifiers.add(currentIdentifier);
+
+  if (leftChildIdentifier !== '-1') {
+    childNodeIdentifiers.add(leftChildIdentifier);
+  }
+  if (rightChildIdentifier !== '-1') {
+    childNodeIdentifiers.add(rightChildIdentifier);
+  }
 }
 
-const sourceSystem = require('fs');
-const inputSettings = {
-    sourcePath: '/dev/stdin',
-    lineBreak: '\n'
-};
-
-let rawData = sourceSystem.readFileSync(inputSettings.sourcePath, 'ascii')
-    .trim()
-    .split(inputSettings.lineBreak);
-
-rawData.shift();
-
-const nodeRegistry = new Map();
-
-rawData.forEach(entry => {
-    const parts = entry.split(' ');
-    const currentId = parts[0];
-    const leftRef = parts[1];
-    const rightRef = parts[2];
-
-    if (!nodeRegistry.has(currentId)) {
-        nodeRegistry.set(currentId, new BinaryTreeNode(currentId, leftRef, rightRef));
-    } else {
-        const existingNode = nodeRegistry.get(currentId);
-        existingNode.leftChild = leftRef;
-        existingNode.rightChild = rightRef;
-    }
-
-    if (leftRef !== '-1') {
-        if (!nodeRegistry.has(leftRef)) {
-            nodeRegistry.set(leftRef, new BinaryTreeNode(leftRef, '-1', '-1'));
-        }
-        nodeRegistry.get(leftRef).isRootCandidate = false;
-    }
-    if (rightRef !== '-1') {
-        if (!nodeRegistry.has(rightRef)) {
-            nodeRegistry.set(rightRef, new BinaryTreeNode(rightRef, '-1', '-1'));
-        }
-        nodeRegistry.get(rightRef).isRootCandidate = false;
-    }
-});
-
-let mainRootIdentifier = null;
-for (const [identifier, nodeObj] of nodeRegistry.entries()) {
-    if (nodeObj.isRootCandidate) {
-        mainRootIdentifier = identifier;
-        break;
-    }
+let treeRootIdentifier;
+for (const identifier of allNodeIdentifiers) {
+  if (!childNodeIdentifiers.has(identifier)) {
+    treeRootIdentifier = identifier;
+    break;
+  }
 }
 
-function retrievePreorder(startNodeId) {
-    const sequence = [];
-    const processingStack = [];
-    if (startNodeId === '-1') return sequence;
+function performPreorderTraversal(startNodeIdentifier) {
+  const traversalOutput = [];
+  if (!startNodeIdentifier || !binaryTreeNodes.has(startNodeIdentifier)) {
+    return traversalOutput;
+  }
 
-    processingStack.push(startNodeId);
+  const processingStack = [startNodeIdentifier];
 
-    while (processingStack.length > 0) {
-        const currentId = processingStack.pop();
-        if (currentId === '-1') continue;
+  while (processingStack.length > 0) {
+    const currentIdentifier = processingStack.pop();
+    traversalOutput.push(currentIdentifier);
 
-        sequence.push(currentId);
-        const currentNode = nodeRegistry.get(currentId);
-
-        if (currentNode.rightChild !== '-1') {
-            processingStack.push(currentNode.rightChild);
-        }
-        if (currentNode.leftChild !== '-1') {
-            processingStack.push(currentNode.leftChild);
-        }
+    const currentNode = binaryTreeNodes.get(currentIdentifier);
+    if (currentNode.right !== '-1') {
+      processingStack.push(currentNode.right);
     }
-    return sequence;
+    if (currentNode.left !== '-1') {
+      processingStack.push(currentNode.left);
+    }
+  }
+  return traversalOutput;
 }
 
-function retrieveInorder(startNodeId) {
-    const sequence = [];
-    const processingStack = [];
-    let currentPointerId = startNodeId;
+function performInorderTraversal(startNodeIdentifier) {
+  const traversalOutput = [];
+  if (!startNodeIdentifier || !binaryTreeNodes.has(startNodeIdentifier)) {
+    return traversalOutput;
+  }
 
-    while (currentPointerId !== '-1' || processingStack.length > 0) {
-        while (currentPointerId !== '-1') {
-            processingStack.push(currentPointerId);
-            const node = nodeRegistry.get(currentPointerId);
-            currentPointerId = node.leftChild;
-        }
+  const processingStack = [];
+  let currentIdentifier = startNodeIdentifier;
 
-        const processedId = processingStack.pop();
-        sequence.push(processedId);
-        const processedNode = nodeRegistry.get(processedId);
-        currentPointerId = processedNode.rightChild;
+  while (currentIdentifier !== '-1' || processingStack.length > 0) {
+    while (currentIdentifier !== '-1') {
+      processingStack.push(currentIdentifier);
+      const currentNode = binaryTreeNodes.get(currentIdentifier);
+      currentIdentifier = currentNode.left;
     }
-    return sequence;
+
+    currentIdentifier = processingStack.pop();
+    traversalOutput.push(currentIdentifier);
+
+    const currentNode = binaryTreeNodes.get(currentIdentifier);
+    currentIdentifier = currentNode.right;
+  }
+  return traversalOutput;
 }
 
-function retrievePostorder(startNodeId) {
-    const sequence = [];
-    const stackOne = [];
-    const stackTwo = [];
-    if (startNodeId === '-1') return sequence;
+function performPostorderTraversal(startNodeIdentifier) {
+  const traversalOutput = [];
+  if (!startNodeIdentifier || !binaryTreeNodes.has(startNodeIdentifier)) {
+    return traversalOutput;
+  }
 
-    stackOne.push(startNodeId);
+  const stackOne = [startNodeIdentifier];
+  const stackTwo = [];
 
-    while (stackOne.length > 0) {
-        const currentId = stackOne.pop();
-        if (currentId === '-1') continue;
+  while (stackOne.length > 0) {
+    const currentIdentifier = stackOne.pop();
+    stackTwo.push(currentIdentifier);
 
-        stackTwo.push(currentId);
-        const currentNode = nodeRegistry.get(currentId);
-
-        if (currentNode.leftChild !== '-1') {
-            stackOne.push(currentNode.leftChild);
-        }
-        if (currentNode.rightChild !== '-1') {
-            stackOne.push(currentNode.rightChild);
-        }
+    const currentNode = binaryTreeNodes.get(currentIdentifier);
+    if (currentNode.left !== '-1') {
+      stackOne.push(currentNode.left);
     }
-
-    while (stackTwo.length > 0) {
-        sequence.push(stackTwo.pop());
+    if (currentNode.right !== '-1') {
+      stackOne.push(currentNode.right);
     }
-    return sequence;
+  }
+
+  while (stackTwo.length > 0) {
+    traversalOutput.push(stackTwo.pop());
+  }
+  return traversalOutput;
 }
 
-const outputChannel = console;
+console.log('Preorder');
+console.log(performPreorderTraversal(treeRootIdentifier).join(' '));
 
-outputChannel.log('Preorder');
-outputChannel.log(retrievePreorder(mainRootIdentifier).join(' '));
+console.log('Inorder');
+console.log(performInorderTraversal(treeRootIdentifier).join(' '));
 
-outputChannel.log('Inorder');
-outputChannel.log(retrieveInorder(mainRootIdentifier).join(' '));
-
-outputChannel.log('Postorder');
-outputChannel.log(retrievePostorder(mainRootIdentifier).join(' '));
+console.log('Postorder');
+console.log(performPostorderTraversal(treeRootIdentifier).join(' '));

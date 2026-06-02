@@ -1,81 +1,148 @@
-const inputBuffer = [];
-const ioHandler = require('readline').createInterface({
+const util = require('util');
+const rli = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-ioHandler.on('line', (dataLine) => {
-  inputBuffer.push(dataLine);
+class InputProcessor {
+  constructor(lines) {
+    this.dataLines = lines;
+    this.currentLineIndex = 0;
+  }
+
+  hasMoreInput() {
+    return this.currentLineIndex < this.dataLines.length;
+  }
+
+  retrieveNextLine() {
+    if (!this.hasMoreInput()) {
+      throw new Error("No more input lines available.");
+    }
+    return this.dataLines[this.currentLineIndex++];
+  }
+
+  static transformString(inputStr, formatCode) {
+    try {
+      switch (formatCode) {
+        case 1: return parseInt(inputStr, 10);
+        case 2: return inputStr.split(" ");
+        case 4: return inputStr.split(" ").map(Number);
+        case 6: return inputStr.split("");
+        case 7: return inputStr.split("").map(Number);
+        case 8: return inputStr.join(" ");
+        case 9: return inputStr.join("\n");
+        case 0: return inputStr.join("");
+        default: return inputStr;
+      }
+    } catch (e) {
+      return inputStr;
+    }
+  }
+
+  getNumericArray() {
+    return InputProcessor.transformString(this.retrieveNextLine(), 4);
+  }
+  getSingleNumber() {
+    return InputProcessor.transformString(this.retrieveNextLine(), 1);
+  }
+  getStringArray() {
+    return InputProcessor.transformString(this.retrieveNextLine(), 2);
+  }
+  getCharacterArray() {
+    return InputProcessor.transformString(this.retrieveNextLine(), 6);
+  }
+}
+
+let allInputLines = [];
+let processorInstance;
+
+rli.on('line', (line) => {
+  allInputLines.push(line);
 });
 
-ioHandler.on('close', () => {
-  executeCalculation(inputBuffer);
+rli.on('close', () => {
+  processorInstance = new InputProcessor(allInputLines);
+  console.error("\n");
+  const startTime = Date.now();
+  executeMainLogic();
+  const endTime = Date.now() - startTime;
+  logDiagnostic(`Execution time: ${endTime}ms`);
+  logDiagnostic(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
 });
 
-const parseNumbersFromLine = (textLine) => textLine.split(" ").map(Number);
+function displayOutput(data, joinType = 8) {
+  if (Array.isArray(data)) {
+    console.log(InputProcessor.transformString(data, joinType));
+  } else {
+    console.log(data);
+  }
+}
 
-const executeCalculation = (collectedLines) => {
-  const params = parseNumbersFromLine(collectedLines[0]);
-  
-  const waterUnitA = params[0] * 100;
-  const waterUnitB = params[1] * 100;
-  const sugarUnitC = params[2];
-  const sugarUnitD = params[3];
-  const maxSolubilityPercentage = params[4];
-  const overallCapacityLimit = params[5];
+function logDiagnostic(message) {
+  console.error("debug:" + util.inspect(message, false, null));
+}
 
-  let bestConcentration = -1.0;
-  let resultTuple = [0, 0];
+function executeMainLogic() {
+  const initialParams = processorInstance.getNumericArray();
 
-  const reachableWaterMasses = new Array(overallCapacityLimit + 1).fill(false);
-  const reachableSugarMasses = new Array(overallCapacityLimit + 1).fill(false);
+  const factorAlpha = initialParams[0] * 100;
+  const factorBeta = initialParams[1] * 100;
+  const factorGamma = initialParams[2];
+  const factorDelta = initialParams[3];
+  const maxSolubilityRatio = initialParams[4];
+  const totalCapacityLimit = initialParams[5];
 
-  const maxUnitsForWaterA = Math.floor(overallCapacityLimit / waterUnitA);
-  const maxUnitsForWaterB = Math.floor(overallCapacityLimit / waterUnitB);
+  const possibleWaterAmounts = new Set();
+  const possibleSaltAmounts = new Set();
 
-  for (let countA = 0; countA <= maxUnitsForWaterA; ++countA) {
-    for (let countB = 0; countB <= maxUnitsForWaterB; ++countB) {
-      const currentWaterSum = countA * waterUnitA + countB * waterUnitB;
-      if (currentWaterSum <= overallCapacityLimit) {
-        reachableWaterMasses[currentWaterSum] = true;
-      }
+  for (let i_val = 0; factorAlpha * i_val <= totalCapacityLimit; i_val++) {
+    for (let j_val = 0; factorAlpha * i_val + factorBeta * j_val <= totalCapacityLimit; j_val++) {
+      possibleWaterAmounts.add(factorAlpha * i_val + factorBeta * j_val);
     }
   }
 
-  const maxUnitsForSugarC = Math.floor(overallCapacityLimit / sugarUnitC);
-  const maxUnitsForSugarD = Math.floor(overallCapacityLimit / sugarUnitD);
-
-  for (let countC = 0; countC <= maxUnitsForSugarC; ++countC) {
-    for (let countD = 0; countD <= maxUnitsForSugarD; ++countD) {
-      const currentSugarSum = countC * sugarUnitC + countD * sugarUnitD;
-      if (currentSugarSum <= overallCapacityLimit) {
-        reachableSugarMasses[currentSugarSum] = true;
-      }
+  for (let i_val = 0; factorGamma * i_val <= totalCapacityLimit; i_val++) {
+    for (let j_val = 0; factorGamma * i_val + factorDelta * j_val <= totalCapacityLimit; j_val++) {
+      possibleSaltAmounts.add(factorGamma * i_val + factorDelta * j_val);
     }
   }
 
-  for (let currentWaterAmount = 0; currentWaterAmount <= overallCapacityLimit; ++currentWaterAmount) {
-    if (!reachableWaterMasses[currentWaterAmount]) continue;
+  const waterOptionsArray = Array.from(possibleWaterAmounts);
+  const saltOptionsArray = Array.from(possibleSaltAmounts);
 
-    for (let currentSugarAmount = 0; currentSugarAmount <= overallCapacityLimit; ++currentSugarAmount) {
-      if (!reachableSugarMasses[currentSugarAmount]) continue;
+  let optimalSolution = {
+    totalWeight: 0,
+    saltWeight: 0,
+    currentMaxConcentration: -1
+  };
 
-      const totalSolutionMass = currentWaterAmount + currentSugarAmount;
+  const checkSolubility = (waterMass, saltMass, solubilityFactor) => {
+    return (waterMass / 100 * solubilityFactor) >= saltMass;
+  };
 
-      if (totalSolutionMass > overallCapacityLimit) continue;
-      
-      if (totalSolutionMass === 0) continue;
+  waterOptionsArray.forEach(wAmount => {
+    saltOptionsArray.forEach(sAmount => {
+      const combinedWeight = wAmount + sAmount;
 
-      if (currentWaterAmount * maxSolubilityPercentage < currentSugarAmount * 100) continue;
-
-      const currentSolutionConcentration = (currentSugarAmount * 100.0) / totalSolutionMass;
-
-      if (currentSolutionConcentration > bestConcentration) {
-        bestConcentration = currentSolutionConcentration;
-        resultTuple = [totalSolutionMass, currentSugarAmount];
+      if (combinedWeight > totalCapacityLimit || combinedWeight === 0) {
+        return;
       }
-    }
-  }
 
-  console.log(resultTuple.join(" "));
-};
+      if (!checkSolubility(wAmount, sAmount, maxSolubilityRatio)) {
+        return;
+      }
+
+      const calculatedConcentration = (sAmount * 100) / combinedWeight;
+
+      if (calculatedConcentration > optimalSolution.currentMaxConcentration) {
+        optimalSolution = {
+          totalWeight: combinedWeight,
+          saltWeight: sAmount,
+          currentMaxConcentration: calculatedConcentration
+        };
+      }
+    });
+  });
+
+  displayOutput([optimalSolution.totalWeight, optimalSolution.saltWeight]);
+}

@@ -1,17 +1,14 @@
-const transformInput = (textChunk) => {
-    const headSymbol = textChunk.length > 0 ? textChunk.charAt(0) : undefined;
-    const tailSymbol = textChunk.length > 0 ? textChunk.slice(-1) : undefined;
+function processText(sourceText) {
+    const textLength = sourceText.length;
 
-    const charEnumerator = (currentStr, currentIdx) => {
-        if (currentIdx >= currentStr.length) return 0;
-        return 1 + charEnumerator(currentStr, currentIdx + 1);
-    };
-    const totalRepresentedChars = charEnumerator(textChunk, 0);
+    const initialCharacter = sourceText[0];
 
-    const numericMiddleValue = totalRepresentedChars - 2;
+    const innerCharacterCount = textLength - 2;
 
-    return headSymbol + numericMiddleValue + tailSymbol;
-};
+    const finalCharacter = sourceText[textLength - 1];
 
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(transformInput(acquiredData));
+    console.log(initialCharacter + innerCharacterCount + finalCharacter);
+}
+
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+processText(fileContent);

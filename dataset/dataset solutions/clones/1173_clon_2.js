@@ -1,48 +1,33 @@
-// This script initializes the standard input stream for processing numerical data.
 process.stdin.resume();
-
-// The input character encoding is defined as UTF-8.
 process.stdin.setEncoding('utf8');
 
-// An event listener is registered to handle incoming data chunks.
-process.stdin.on( 'data',  function ( inputDataSegment )
-{
-  // The received data segment is split into individual parts based on spaces.
-  let parsedComponents  =  inputDataSegment.split(" ");
+// This event listener processes incoming data from standard input.
+process.stdin.on('data', function (dataChunk) {
+  // Split the input string by spaces to get individual numeric components.
+  var inputParts = dataChunk.split(" ");
 
-  // The first component is converted to a floating-point number, representing the first side.
-  let firstSideLength   =  parseFloat(parsedComponents[0]);
+  // Parse the first three components as floating-point numbers.
+  // These variables are implicitly global, mirroring the original's behavior.
+  sideA = parseFloat(inputParts[0]);
+  sideB = parseFloat(inputParts[1]);
+  angleC = parseFloat(inputParts[2]);
 
-  // The second component is converted to a floating-point number, representing the second side.
-  let secondSideLength  =  parseFloat(parsedComponents[1]);
-
-  // The third component is converted to a floating-point number, representing the included angle in degrees.
-  let includedAngleDegrees = parseFloat(parsedComponents[2]);
-
-
-  // Convert the angle from degrees to radians for trigonometric calculations.
-  let includedAngleRadians = includedAngleDegrees / 180 * Math.PI;
+  // Convert the angle from degrees to radians for trigonometric functions.
+  var angleCRadians = angleC / 180 * Math.PI;
 
   // Calculate the area of the triangle using the formula: 0.5 * a * b * sin(C).
-  let calculatedArea = 0.5 * firstSideLength * secondSideLength * Math.sin(includedAngleRadians);
+  var areaTriangle = 0.5 * sideA * sideB * Math.sin(angleCRadians);
 
-  // Calculate the perimeter of the triangle using the law of cosines to find the third side.
-  let calculatedPerimeter = firstSideLength + secondSideLength + Math.sqrt(
-      firstSideLength * firstSideLength +
-      secondSideLength * secondSideLength -
-      2 * firstSideLength * secondSideLength * Math.cos(includedAngleRadians)
-  );
+  // Calculate the perimeter of the triangle.
+  // The third side is found using the Law of Cosines: c^2 = a^2 + b^2 - 2ab cos(C).
+  var perimeterTriangle = sideA + sideB + Math.sqrt(sideA * sideA + sideB * sideB - 2 * sideA * sideB * Math.cos(angleCRadians));
 
-  // Calculate the height of the triangle relative to the first side (base 'a').
-  let calculatedHeight = calculatedArea / firstSideLength * 2;
+  // Calculate the height of the triangle relative to side 'a' as the base.
+  // Area = 0.5 * base * height => height = 2 * Area / base.
+  var heightTriangle = areaTriangle / sideA * 2;
 
-
-  // Output the computed area to the console.
-  console.log(calculatedArea);
-
-  // Output the computed perimeter to the console.
-  console.log(calculatedPerimeter);
-
-  // Output the computed height to the console.
-  console.log(calculatedHeight);
+  // Output the calculated area, perimeter, and height to the console.
+  console.log(areaTriangle);
+  console.log(perimeterTriangle);
+  console.log(heightTriangle);
 });

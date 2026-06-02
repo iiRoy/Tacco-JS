@@ -1,52 +1,48 @@
-let storedInput = '';
+let accumulatedInput = '';
 
-const evaluatePerformance = (initialMark, secondaryMark, tertiaryMark) => {
-    if (initialMark === -1 || secondaryMark === -1) {
-        return 'F';
+function calculateFinalGrade(midtermPoints, finalPoints, retakePoints) {
+    if (midtermPoints === -1 || finalPoints === -1) {
+        return "F";
     }
 
-    const combinedAssessment = initialMark + secondaryMark;
+    const combinedPoints = midtermPoints + finalPoints;
 
-    const gradeCriteria = new Map([
-        [80, 'A'],
-        [65, 'B'],
-        [50, 'C']
-    ]);
-
-    for (let boundary of [...gradeCriteria.keys()].sort((valA, valB) => valB - valA)) {
-        if (combinedAssessment >= boundary) {
-            return gradeCriteria.get(boundary);
+    if (combinedPoints >= 80) {
+        return "A";
+    } else if (combinedPoints >= 65) {
+        return "B";
+    } else if (combinedPoints >= 50) {
+        return "C";
+    } else if (combinedPoints >= 30) {
+        if (retakePoints >= 50) {
+            return "C";
+        } else {
+            return "D";
         }
+    } else {
+        return "F";
     }
+}
 
-    if (combinedAssessment >= 30) {
-        return (tertiaryMark >= 50) ? 'C' : 'D';
-    }
-
-    return 'F';
-};
-
-process.stdin.on("data", (dataChunk) => {
-    storedInput += dataChunk.toString();
+process.stdin.on("data", (inputChunk) => {
+    accumulatedInput += inputChunk.toString();
 });
 
 process.stdin.on("end", () => {
-    const allEntryLines = storedInput.trim().split('\n').filter(lineContent => lineContent.length > 0);
+    const inputLines = accumulatedInput.trim().split('\n');
 
-    for (let currentEntry of allEntryLines) {
-        let firstSeparator = currentEntry.indexOf(' ');
-        let firstValue = Number(currentEntry.substring(0, firstSeparator));
-        let remainingPortion = currentEntry.substring(firstSeparator + 1);
+    for (const lineContent of inputLines) {
+        const scoreComponents = lineContent.split(' ');
+        const firstScore = Number(scoreComponents[0]);
+        const secondScore = Number(scoreComponents[1]);
+        const thirdScore = Number(scoreComponents[2]);
 
-        let secondSeparator = remainingPortion.indexOf(' ');
-        let secondValue = Number(remainingPortion.substring(0, secondSeparator));
-        let thirdValue = Number(remainingPortion.substring(secondSeparator + 1));
-
-        if (firstValue === -1 && secondValue === -1 && thirdValue === -1) {
-            break;
+        if (firstScore === -1 && secondScore === -1 && thirdScore === -1) {
+            break; // Terminate processing
         }
 
-        console.log(evaluatePerformance(firstValue, secondValue, thirdValue));
+        const gradeResult = calculateFinalGrade(firstScore, secondScore, thirdScore);
+        console.log(gradeResult);
     }
 });
 

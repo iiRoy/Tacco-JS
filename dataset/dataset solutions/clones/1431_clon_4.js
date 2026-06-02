@@ -1,27 +1,20 @@
-const analyzeInputData = (fullContent) => {
-    const contentLines = fullContent.split('\n');
+function processInput(sourceData) {
+    const lineSegments = sourceData.split("\n");
 
-    const soughtTerm = contentLines[0].toUpperCase();
+    const keyTerm = lineSegments.shift().toUpperCase();
 
-    let dataPortion = [];
-    for (let i = 1; i < contentLines.length; i++) {
-        if (contentLines[i] === "END_OF_TEXT") {
-            break;
-        }
-        dataPortion.push(contentLines[i]);
-    }
+    const terminatorPosition = lineSegments.findIndex(segment => segment.toUpperCase() === "END_OF_TEXT");
 
-    const processedTextTokens = dataPortion
-        .map(line => line.toUpperCase())
-        .join(' ')
-        .split(/\s+/)
-        .filter(token => token !== '');
+    const contentBlocks = terminatorPosition !== -1
+        ? lineSegments.slice(0, terminatorPosition)
+        : lineSegments;
 
-    const occurrenceCount = processedTextTokens.filter(item => item === soughtTerm).length;
+    const finalCount = contentBlocks
+        .flatMap(block => block.toUpperCase().split(/\s+/))
+        .filter(currentSegment => currentSegment === keyTerm)
+        .length;
 
-    return occurrenceCount;
-};
+    console.log(finalCount);
+}
 
-const rawDataString = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalResult = analyzeInputData(rawDataString);
-console.log(finalResult);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

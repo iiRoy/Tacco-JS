@@ -1,99 +1,96 @@
-function process_coordinates(data_source) {
-    const data_lines = data_source.split("\n");
+function locateFloorIndex(sortedArray, targetValue) {
+    let lowerBound = 0;
+    let upperBound = sortedArray.length - 1;
+    let foundIndex = -1;
 
-    const [type_one_count_str, type_two_count_str, query_iterations_str] = data_lines[0].split(" ");
-    const type_one_count = parseInt(type_one_count_str, 10);
-    const type_two_count = parseInt(type_two_count_str, 10);
-    const query_iterations = parseInt(query_iterations_str, 10);
-
-    let current_line_idx = 1;
-    const all_points_data = [];
-    const alpha_coordinates_raw = [];
-    const beta_coordinates_raw = [];
-
-    for (let i = 0; i < type_one_count; i++) {
-        const position_val = parseInt(data_lines[current_line_idx++], 10);
-        all_points_data.push({ position_value: position_val, category_id: 1, minimum_separation: Number.MAX_SAFE_INTEGER });
-        alpha_coordinates_raw.push(position_val);
+    while (lowerBound <= upperBound) {
+        let midPoint = Math.floor((lowerBound + upperBound) / 2);
+        if (sortedArray[midPoint] <= targetValue) {
+            foundIndex = midPoint;
+            lowerBound = midPoint + 1;
+        } else {
+            upperBound = midPoint - 1;
+        }
     }
-    for (let i = 0; i < type_two_count; i++) {
-        const position_val = parseInt(data_lines[current_line_idx++], 10);
-        all_points_data.push({ position_value: position_val, category_id: 2, minimum_separation: Number.MAX_SAFE_INTEGER });
-        beta_coordinates_raw.push(position_val);
-    }
-
-    const alpha_coordinates_sorted = alpha_coordinates_raw.sort((a, b) => a - b);
-    const beta_coordinates_sorted = beta_coordinates_raw.sort((a, b) => a - b);
-
-    const find_largest_le = (sorted_arr, target_val) => {
-        let low_bound = 0;
-        let high_bound = sorted_arr.length - 1;
-        let result_idx = -1;
-
-        while (low_bound <= high_bound) {
-            const middle_idx = Math.floor((low_bound + high_bound) / 2);
-            if (sorted_arr[middle_idx] <= target_val) {
-                result_idx = middle_idx;
-                low_bound = middle_idx + 1;
-            } else {
-                high_bound = middle_idx - 1;
-            }
-        }
-        return result_idx;
-    };
-
-    all_points_data.forEach(point => {
-        const opponent_coords = (point.category_id === 1) ? beta_coordinates_sorted : alpha_coordinates_sorted;
-        if (opponent_coords.length === 0) {
-            point.minimum_separation = Number.MAX_SAFE_INTEGER;
-            return;
-        }
-
-        const current_pos = point.position_value;
-        const left_idx = find_largest_le(opponent_coords, current_pos);
-        let current_min_diff = Number.MAX_SAFE_INTEGER;
-
-        if (left_idx !== -1) {
-            current_min_diff = Math.min(current_min_diff, Math.abs(current_pos - opponent_coords[left_idx]));
-        }
-
-        const right_idx = left_idx + 1;
-        if (right_idx < opponent_coords.length) {
-            current_min_diff = Math.min(current_min_diff, Math.abs(current_pos - opponent_coords[right_idx]));
-        }
-        
-        point.minimum_separation = current_min_diff;
-    });
-
-    all_points_data.sort((a, b) => a.position_value - b.position_value);
-
-    const output_value = (val) => process.stdout.write(val + "\n");
-
-    for (let q = 0; q < query_iterations; q++) {
-        const query_location = parseInt(data_lines[current_line_idx++], 10);
-        
-        const target_index = find_largest_le(all_points_data, query_location);
-        let calculated_outcome = Number.MAX_SAFE_INTEGER;
-
-        if (target_index === -1) {
-            const first_point = all_points_data[0];
-            calculated_outcome = Math.abs(first_point.position_value - query_location) + first_point.minimum_separation;
-        } 
-        else if (target_index === all_points_data.length - 1) {
-            const last_point = all_points_data[all_points_data.length - 1];
-            calculated_outcome = Math.abs(last_point.position_value - query_location) + last_point.minimum_separation;
-        } 
-        else {
-            const left_point = all_points_data[target_index];
-            const right_point = all_points_data[target_index + 1];
-
-            const option_one = Math.abs(left_point.position_value - query_location) + left_point.minimum_separation;
-            const option_two = Math.abs(right_point.position_value - query_location) + right_point.minimum_separation;
-            calculated_outcome = Math.min(option_one, option_two);
-        }
-        output_value(calculated_outcome);
-    }
-    return query_iterations;
+    return foundIndex;
 }
 
-process_coordinates(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function processInputData(rawInput) {
+    const rawLines = rawInput.split("\n");
+    const firstLineParts = rawLines[0].split(" ").map(Number);
+    const numShrines = firstLineParts[0];
+    const numTemples = firstLineParts[1];
+    const numQueries = firstLineParts[2];
+
+    const shrineLocations = [];
+    const templeLocations = [];
+    let currentLineIndex = 1;
+
+    for (let k = 0; k < numShrines; k++) {
+        shrineLocations.push(Number(rawLines[currentLineIndex++]));
+    }
+    for (let k = 0; k < numTemples; k++) {
+        templeLocations.push(Number(rawLines[currentLineIndex++]));
+    }
+
+    shrineLocations.sort((x, y) => x - y);
+    templeLocations.sort((x, y) => x - y);
+
+    const shrineMinDistances = new Array(numShrines);
+    for (let k = 0; k < numShrines; k++) {
+        const currentShrineLoc = shrineLocations[k];
+        let minTempleDist = Infinity;
+
+        const floorTempleIdx = locateFloorIndex(templeLocations, currentShrineLoc);
+        if (floorTempleIdx !== -1) {
+            minTempleDist = Math.min(minTempleDist, Math.abs(currentShrineLoc - templeLocations[floorTempleIdx]));
+        }
+        if (floorTempleIdx + 1 < templeLocations.length) {
+            minTempleDist = Math.min(minTempleDist, Math.abs(templeLocations[floorTempleIdx + 1] - currentShrineLoc));
+        }
+        shrineMinDistances[k] = minTempleDist;
+    }
+
+    const templeMinDistances = new Array(numTemples);
+    for (let k = 0; k < numTemples; k++) {
+        const currentTempleLoc = templeLocations[k];
+        let minShrineDist = Infinity;
+
+        const floorShrineIdx = locateFloorIndex(shrineLocations, currentTempleLoc);
+        if (floorShrineIdx !== -1) {
+            minShrineDist = Math.min(minShrineDist, Math.abs(currentTempleLoc - shrineLocations[floorShrineIdx]));
+        }
+        if (floorShrineIdx + 1 < shrineLocations.length) {
+            minShrineDist = Math.min(minShrineDist, Math.abs(shrineLocations[floorShrineIdx + 1] - currentTempleLoc));
+        }
+        templeMinDistances[k] = minShrineDist;
+    }
+
+    for (let k = 0; k < numQueries; k++) {
+        const queryPoint = Number(rawLines[currentLineIndex++]);
+        let minimumTotalDistance = Infinity;
+
+        const shrineFloorIdx = locateFloorIndex(shrineLocations, queryPoint);
+        if (shrineFloorIdx !== -1) {
+            const sLoc = shrineLocations[shrineFloorIdx];
+            minimumTotalDistance = Math.min(minimumTotalDistance, Math.abs(queryPoint - sLoc) + shrineMinDistances[shrineFloorIdx]);
+        }
+        if (shrineFloorIdx + 1 < shrineLocations.length) {
+            const sLoc = shrineLocations[shrineFloorIdx + 1];
+            minimumTotalDistance = Math.min(minimumTotalDistance, Math.abs(queryPoint - sLoc) + shrineMinDistances[shrineFloorIdx + 1]);
+        }
+
+        const templeFloorIdx = locateFloorIndex(templeLocations, queryPoint);
+        if (templeFloorIdx !== -1) {
+            const tLoc = templeLocations[templeFloorIdx];
+            minimumTotalDistance = Math.min(minimumTotalDistance, Math.abs(queryPoint - tLoc) + templeMinDistances[templeFloorIdx]);
+        }
+        if (templeFloorIdx + 1 < templeLocations.length) {
+            const tLoc = templeLocations[templeFloorIdx + 1];
+            minimumTotalDistance = Math.min(minimumTotalDistance, Math.abs(queryPoint - tLoc) + templeMinDistances[templeFloorIdx + 1]);
+        }
+        console.log(minimumTotalDistance);
+    }
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

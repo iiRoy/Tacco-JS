@@ -1,17 +1,18 @@
-let operationResolver = new Map();
-operationResolver.set('+', (val1, val2) => val1 + val2);
-operationResolver.set('-', (val1, val2) => val1 - val2);
+const processInputAndDisplayResult = (operationString) => {
+    const firstValue = Number(operationString.charAt(0));
+    const operatorChar = operationString.charAt(2);
+    const secondValue = Number(operationString.charAt(4));
 
-function processInput(fullText) {
-    let firstDigit = Number(fullText.charAt(0));
-    let actionSymbol = fullText.charAt(2);
-    let secondDigit = Number(fullText.charAt(4));
+    const operationDispatch = {
+        '+': (valA, valB) => valA + valB,
+        '-': (valA, valB) => valA - valB,
+    };
 
-    let chosenAction = operationResolver.get(actionSymbol);
-    if (chosenAction) {
-        let computedValue = chosenAction(firstDigit, secondDigit);
-        console.log(computedValue);
+    const chosenOperation = operationDispatch[operatorChar];
+
+    if (chosenOperation) {
+        console.log(chosenOperation(firstValue, secondValue));
     }
-}
+};
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDisplayResult(require("fs").readFileSync("/dev/stdin", "utf8"));

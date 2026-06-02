@@ -1,33 +1,69 @@
 "use strict";
-const obtainInputData = (originPath) => {
-    const fullContent = require("node:fs").readFileSync(originPath, "utf8");
-    const preparedLines = fullContent.trim().split("\n");
-    let currentPosition = 0;
+const createInputHandler = (rawInputString) => {
+    const internalLines = rawInputString.trim().split("\n");
+    let currentLinePointer = 0;
 
-    const retrieveNextNumericLine = () => {
-        if (currentPosition >= preparedLines.length) {
-            throw new Error("No more input lines available.");
+    const extractToken = (asString) => {
+        let currentLineEntry = internalLines[currentLinePointer];
+        if (typeof currentLineEntry === "string") {
+            internalLines[currentLinePointer] = currentLineEntry.split(" ").reverse();
+            currentLineEntry = internalLines[currentLinePointer];
         }
-        const lineFragment = preparedLines[currentPosition];
-        currentPosition++;
-        return lineFragment.split(" ").map(Number);
+        const token = currentLineEntry.pop();
+        if (currentLineEntry.length === 0) {
+            currentLinePointer++;
+        }
+        return asString ? token : Number(token);
+    };
+
+    const fetchLineTokens = (asString) => {
+        const lineContent = internalLines[currentLinePointer++];
+        const parts = lineContent.split(" ");
+        return asString ? parts : parts.map(Number);
+    };
+
+    const fetchMatrix = (rowCount, asString) => {
+        const resultMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            const lineContent = internalLines[currentLinePointer++];
+            const parts = lineContent.split(" ");
+            resultMatrix.push(asString ? parts : parts.map(Number));
+        }
+        return resultMatrix;
+    };
+
+    const fetchRawRows = (rowCount, asString) => {
+        const resultRows = [];
+        for (let i = 0; i < rowCount; i++) {
+            const lineContent = internalLines[currentLinePointer++];
+            resultRows.push(asString ? lineContent : Number(lineContent));
+        }
+        return resultRows;
     };
 
     return {
-        fetchLineNumbers: retrieveNextNumericLine,
+        getToken: extractToken,
+        getLine: fetchLineTokens,
+        getMatrix: fetchMatrix,
+        getRows: fetchRawRows
     };
 };
+const inputReader = createInputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+function multiDimArrayCreator(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () => multiDimArrayCreator(initialValue, ...remainingDimensions));
+}
 
-const performCalculation = () => {
-    const dataStream = obtainInputData("/dev/stdin");
+function executeProgram() {
+  let finalLineContent;
+  for (let iterationCount = 0; iterationCount < 2; iterationCount++) {
+    finalLineContent = inputReader.getLine();
+  }
+  return (finalLineContent[1] === 1) ? 1 : 0;
+}
 
-    dataStream.fetchLineNumbers();
-
-    const targetSequence = dataStream.fetchLineNumbers();
-
-    const elementOfInterest = targetSequence[1];
-
-    return elementOfInterest === 1 ? 1 : 0;
-};
-
-console.log(performCalculation());
+console.log(executeProgram());

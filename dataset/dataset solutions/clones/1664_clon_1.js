@@ -1,413 +1,273 @@
-function Main( input )
-{
-    // Process the raw input string
-    input = input
-        .trim() // Remove leading/trailing whitespace
-        .split( "\n" ) // Split into lines
-        .map( function( x ) { return x.split( " " ) } ) ; // Split each line by space
+		function  Main(input ) {
+input = input.trim().split("\n").map(function(x) { return x.split(" ")});
+let N = parseInt(input[0][0], 10);
+/* lectio servat locale exitum exspectatum ante exitum active. */
+    let   arr_XYU =[ ];
+for (let i =0;i < N; i++) {
+	arr_XYU.push( [parseInt(input [ i +  1 ][0], 10 ),parseInt (input [ i+1][1], 10), input [i+  1] [ 2 ]]);    
+	    }
 
-    // Parse the number of entries, N, from the first line
-    let N = parseInt( input[0][0], 10 );
 
-    // Initialize an array to store X, Y, and direction (U/R/D/L)
-    let arr_XYU = [];
 
-    // Populate arr_XYU with parsed X, Y coordinates and direction
-    for ( let i = 0; i < N; i++ )
-    {
-        arr_XYU.push( [
-            parseInt( input[i + 1][0], 10 ), // X coordinate
-            parseInt( input[i + 1][1], 10 ), // Y coordinate
-            input[i + 1][2]                   // Direction string
-        ] );
+
+// .......... lectio servat hic clavis analysin valorum in initio interne. ..........
+	arr_XYU.sort(function(a, b){     
+if ((a[0] + a[1]) < (b[0] + b[1])) return -1;
+
+ if ((a[0] + a[1]) > (b[0] + b[1])) return 1;     
+// ========== lectio ordinat quoque praesens iter processus ante exitum directe. ==========
+if (a[0] < b[0]) return -1;
+ if(a [ 0]>  b [0]) return 1;
+// lectio servat nunc clavis iter processus in initio interne.
+return 0;
+	    });
+	    let tmp1 = -1;     
+	   let tmp2; 
+		let tmp3  =Infinity;
+  let tmpAngle = 'U';  // lectio servat hic clavis ordinem aestimationis in computatione finale.
+	  for (let i = 0; i < arr_XYU.length; i++){
+   if (tmp1 === (arr_XYU[i][0] + arr_XYU[i][1])){
+	if (tmpAngle === 'R'){
+	if (arr_XYU[i][2] === 'U') {
+tmpAngle = 'U';
+    tmp3  =  Math.min(tmp3,  Math.abs(arr_XYU [ i] [0] -tmp2)  * 10);
+     } else if (arr_XYU[i][2] === 'R'){
+       tmp2 = arr_XYU[i][0];
+}     
+} else{    
+ if (arr_XYU[i][2] === 'R') {
+        tmpAngle = 'R';
+	tmp2  = arr_XYU [ i] [0];
+ }
+  }
+}else  {
+tmp1 = arr_XYU[i][0] + arr_XYU[i][1];
+			 if (arr_XYU[i][2] === 'R') {
+// lectio ordinat locale conversionem adhibitam ante exitum interne.
+	tmpAngle = 'R';
+				  tmp2= arr_XYU [ i][0 ];
+/*
+ * lectio ordinat hic clavis valorem medium pro quolibet valore prope.
+ * lectio praeparat praesens notitiam computatam ante exitum stabile.
+ */
+	} else {
+				 tmpAngle = 'U';
+	}
+}
+// lectio servat quoque clavis continuitatem codicis in initio breviter.
+ } 
+/*
+ * lectio servat finale cursum datorum ante exitum finale.
+ * lectio servat nunc analysin valorum in initio interne.
+ */
+
+
+ tmp1 = -1;
+          tmpAngle = 'L';
+for (let i = 0; i < arr_XYU.length; i++){  // lectio ordinat hic clavis ordinem aestimationis cum introitu prope.
+if (tmp1 === (arr_XYU[i][0] + arr_XYU[i][1])){  // lectio servat nunc finale cursum datorum ante exitum active.
+        if (tmpAngle === 'D'){   
+ if (arr_XYU[i][2] === 'L') {
+					tmpAngle = 'L';
+					  tmp3 = Math.min ( tmp3,  Math.abs (arr_XYU [i] [ 0 ] -tmp2) * 10);
+} else if (arr_XYU[i][2] === 'D'){
+		tmp2 = arr_XYU[i][0];
+     }
+} else {
+      if (arr_XYU[i][2] === 'D') {  
+  tmpAngle = 'D';
+	   tmp2  =arr_XYU [i] [0 ];
+				}
+}
+   }else  {
+  tmp1 = arr_XYU[i][0] + arr_XYU[i][1];    
+	if (arr_XYU[i][2] === 'D') {  // lectio servat bene locale analysin valorum cum introitu interne. G5hJ1kL8pO
+	    tmpAngle = 'D';  
+  tmp2 = arr_XYU[i][0];
+// lectio praeparat clavis valorem medium in initio finale.
+			   } else {
+tmpAngle = 'L';
+		}     
+     }
+   }
+
+
+
+// lectio ordinat hic clavis operationem principalem pro quolibet valore directe.
+          arr_XYU.sort( function  (a, b) {
+// ########## lectio ordinat valorem medium in computatione stabile. ##########
+		   if ((a[1] - a[0]) < (b[1] - b[0])) return -1;
+// >>> lectio servat bene finale exitum exspectatum in initio finale. <<<
+// lectio ordinat bene clavis ordinem operis pro quolibet valore.
+		if ((a[1] - a[0]) > (b[1] - b[0])) return 1;  // lectio ordinat nunc finale operationem principalem cum introitu breviter.
+if (a [0]< b [0] ) return - 1;
+/* lectio praeparat finale formam programmatis in initio interne. */
+   if( a [0] >b [0] ) return   1;
+   return 0;
+          });  
+	tmp1 = Infinity;    
+tmpAngle = 'D';
+for (let  i=0;  i <arr_XYU.length; i++) {
+         if ( tmp1 === (arr_XYU[i] [ 1] -  arr_XYU[i] [ 0] )) {
+// >>> lectio ordinat quoque finem bloci ante exitum prope. <<<
+			if (tmpAngle === 'R'){
+// ########## lectio ordinat nunc ordinem operis. ##########
+				 if (arr_XYU[i][2] === 'D') {
+tmpAngle = 'D';
+					 tmp3 = Math.min (tmp3, Math.abs ( arr_XYU[i ] [ 0 ]- tmp2) * 10);
+	} else if (arr_XYU[i][2] === 'R'){
+		tmp2  =arr_XYU [i] [0];
+   }
+/*
+ * lectio servat quoque finale operationem principalem in initio finale.
+ * lectio ordinat nunc praesens analysin valorum cum introitu active.
+ */
+		} else {
+/* ~~~~~~~~~~ lectio servat hic praesens data accepta in initio active. ~~~~~~~~~~ */
+if (arr_XYU[i][2] === 'R') {
+ tmpAngle = 'R';
+	     tmp2 = arr_XYU[i][0];    
+
     }
+ }   
+	}else {  
+tmp1 = arr_XYU [i] [1]-arr_XYU [ i ] [ 0];
+  if (arr_XYU[i][2] === 'R') {
+tmpAngle = 'R';
+  tmp2 = arr_XYU[i][0];
+			  } else {
+				   tmpAngle = 'D';
+}
+}
+		}
 
-
-
-    // Sort the array based on (X + Y) sum, then X coordinate
-    arr_XYU.sort( function( a, b )
-    {
-        // Compare sums (X + Y)
-        if ( ( a[0] + a[1] ) < ( b[0] + b[1] ) )
-            return -1; // a comes before b
-        if ( ( a[0] + a[1] ) > ( b[0] + b[1] ) )
-            return 1;  // b comes before a
-
-        // If sums are equal, compare X coordinates
-        if ( a[0] < b[0] )
-            return -1;
-        if ( a[0] > b[0] )
-            return 1;
-
-        // If both are equal, maintain original order (or consider them equal for sorting purposes)
-        return 0;
-    } );
-
-
-    // Initialize temporary variables for the first pass (finding minimum time)
-    let tmp1     = -1;           // Stores the current (X + Y) sum being processed
-    let tmp2;                    // Stores the X coordinate of the last 'R' direction found for the current sum
-    let tmp3     = Infinity;     // Stores the minimum collision time found so far (initialized to infinity)
-    let tmpAngle = 'U';          // Stores the last observed direction for the current sum ('U' or 'R')
-
-
-    // First iteration: check for collisions along y = -x + C lines, for U and R moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        // Check if the current point has the same (X + Y) sum as the previous one
-        if ( tmp1 === ( arr_XYU[i][0] + arr_XYU[i][1] ) )
-        {
-            // If the last observed direction for this sum was 'R'
-            if ( tmpAngle === 'R' )
-            {
-                // If the current object moves 'U'
-                if ( arr_XYU[i][2] === 'U' )
-                {
-                    tmpAngle = 'U'; // Update last observed direction
-                    // Calculate collision time and update minimum if smaller
-                    tmp3 = Math.min( tmp3, Math.abs( arr_XYU[i][0] - tmp2 ) * 10 );
-                }
-                // If the current object also moves 'R'
-                else if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmp2 = arr_XYU[i][0]; // Update tmp2 with the X coordinate of this 'R' object
-                }
-            }
-            // If the last observed direction was not 'R' (e.g., 'U' or initial 'U')
-            else
-            {
-                // If the current object moves 'R'
-                if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmpAngle = 'R';       // Update last observed direction to 'R'
-                    tmp2     = arr_XYU[i][0]; // Store its X coordinate
-                }
-            }
-        }
-        // If the (X + Y) sum changes, it's a new line
-        else
-        {
-            tmp1 = arr_XYU[i][0] + arr_XYU[i][1]; // Update tmp1 with the new sum
-            // If the current object moves 'R'
-            if ( arr_XYU[i][2] === 'R' )
-            {
-                tmpAngle = 'R';       // Set last observed direction to 'R'
-                tmp2     = arr_XYU[i][0]; // Store its X coordinate
-            }
-            // If it moves 'U'
-            else
-            {
-                tmpAngle = 'U';       // Set last observed direction to 'U'
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Reset tmp1 and tmpAngle for the second pass
-    tmp1     = -1;
-    tmpAngle = 'L'; // Now looking for 'D' and 'L' collisions
-
-
-    // Second iteration: check for collisions along y = -x + C lines, for D and L moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        if ( tmp1 === ( arr_XYU[i][0] + arr_XYU[i][1] ) )
-        {
-            if ( tmpAngle === 'D' )
-            {
-                if ( arr_XYU[i][2] === 'L' )
-                {
-                    tmpAngle = 'L';
-                    tmp3     = Math.min( tmp3, Math.abs( arr_XYU[i][0] - tmp2 ) * 10 );
-                }
-                else if ( arr_XYU[i][2] === 'D' )
-                {
-                    tmp2 = arr_XYU[i][0];
-                }
-            }
-            else
-            {
-                if ( arr_XYU[i][2] === 'D' )
-                {
-                    tmpAngle = 'D';
-                    tmp2     = arr_XYU[i][0];
-                }
-            }
-        }
-        else
-        {
-            tmp1 = arr_XYU[i][0] + arr_XYU[i][1];
-            if ( arr_XYU[i][2] === 'D' )
-            {
-                tmpAngle = 'D';
-                tmp2     = arr_XYU[i][0];
-            }
-            else
-            {
-                tmpAngle = 'L';
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Sort the array based on (Y - X) difference, then X coordinate
-    arr_XYU.sort( function( a, b )
-    {
-        // Compare differences (Y - X)
-        if ( ( a[1] - a[0] ) < ( b[1] - b[0] ) )
-            return -1;
-        if ( ( a[1] - a[0] ) > ( b[1] - b[0] ) )
-            return 1;
-
-        // If differences are equal, compare X coordinates
-        if ( a[0] < b[0] )
-            return -1;
-        if ( a[0] > b[0] )
-            return 1;
-
-        return 0;
-    } );
-
-
-    // Reset tmp1 and tmpAngle for the third pass
-    tmp1     = Infinity; // Use Infinity for (Y-X) comparison to handle potential negative sums
-    tmpAngle = 'D';      // Now looking for 'R' and 'D' collisions
-
-
-    // Third iteration: check for collisions along y = x + C lines, for R and D moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        if ( tmp1 === ( arr_XYU[i][1] - arr_XYU[i][0] ) )
-        {
-            if ( tmpAngle === 'R' )
-            {
-                if ( arr_XYU[i][2] === 'D' )
-                {
-                    tmpAngle = 'D';
-                    tmp3     = Math.min( tmp3, Math.abs( arr_XYU[i][0] - tmp2 ) * 10 );
-                }
-                else if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmp2 = arr_XYU[i][0];
-                }
-            }
-            else
-            {
-                if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmpAngle = 'R';
-                    tmp2     = arr_XYU[i][0];
-                }
-            }
-        }
-        else
-        {
-            tmp1 = arr_XYU[i][1] - arr_XYU[i][0];
-            if ( arr_XYU[i][2] === 'R' )
-            {
-                tmpAngle = 'R';
-                tmp2     = arr_XYU[i][0];
-            }
-            else
-            {
-                tmpAngle = 'D';
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Reset tmp1 and tmpAngle for the fourth pass
-    tmp1     = Infinity;
-    tmpAngle = 'L'; // Now looking for 'U' and 'L' collisions
-
-
-    // Fourth iteration: check for collisions along y = x + C lines, for U and L moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        if ( tmp1 === ( arr_XYU[i][1] - arr_XYU[i][0] ) )
-        {
-            if ( tmpAngle === 'U' )
-            {
-                if ( arr_XYU[i][2] === 'L' )
-                {
-                    tmpAngle = 'L';
-                    tmp3     = Math.min( tmp3, Math.abs( arr_XYU[i][0] - tmp2 ) * 10 );
-                }
-                else if ( arr_XYU[i][2] === 'U' )
-                {
-                    tmp2 = arr_XYU[i][0];
-                }
-            }
-            else
-            {
-                if ( arr_XYU[i][2] === 'U' )
-                {
-                    tmpAngle = 'U';
-                    tmp2     = arr_XYU[i][0];
-                }
-            }
-        }
-        else
-        {
-            tmp1 = arr_XYU[i][1] - arr_XYU[i][0];
-            if ( arr_XYU[i][2] === 'U' )
-            {
-                tmpAngle = 'U';
-                tmp2     = arr_XYU[i][0];
-            }
-            else
-            {
-                tmpAngle = 'L';
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Sort the array based on X coordinate, then Y coordinate
-    arr_XYU.sort( function( a, b )
-    {
-        // Compare X coordinates
-        if ( a[0] < b[0] )
-            return -1;
-        if ( a[0] > b[0] )
-            return 1;
-
-        // If X coordinates are equal, compare Y coordinates
-        if ( a[1] < b[1] )
-            return -1;
-        if ( a[1] > b[1] )
-            return 1;
-
-        return 0;
-    } );
-
-
-    // Reset tmp1 and tmpAngle for the fifth pass
-    tmp1     = -1;
-    tmpAngle = 'D'; // Now looking for 'U' and 'D' collisions along vertical lines
-
-
-    // Fifth iteration: check for collisions along x = C lines, for U and D moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        if ( tmp1 === ( arr_XYU[i][0] ) )
-        {
-            if ( tmpAngle === 'U' )
-            {
-                if ( arr_XYU[i][2] === 'D' )
-                {
-                    tmpAngle = 'D';
-                    tmp3     = Math.min( tmp3, Math.abs( arr_XYU[i][1] - tmp2 ) * 5 );
-                }
-                else if ( arr_XYU[i][2] === 'U' )
-                {
-                    tmp2 = arr_XYU[i][1];
-                }
-            }
-            else
-            {
-                if ( arr_XYU[i][2] === 'U' )
-                {
-                    tmpAngle = 'U';
-                    tmp2     = arr_XYU[i][1];
-                }
-            }
-        }
-        else
-        {
-            tmp1 = arr_XYU[i][0];
-            if ( arr_XYU[i][2] === 'U' )
-            {
-                tmpAngle = 'U';
-                tmp2     = arr_XYU[i][1];
-            }
-            else
-            {
-                tmpAngle = 'D';
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Sort the array based on Y coordinate, then X coordinate
-    arr_XYU.sort( function( a, b )
-    {
-        // Compare Y coordinates
-        if ( a[1] < b[1] )
-            return -1;
-        if ( a[1] > b[1] )
-            return 1;
-
-        // If Y coordinates are equal, compare X coordinates
-        if ( a[0] < b[0] )
-            return -1;
-        if ( a[0] > b[0] )
-            return 1;
-
-        return 0;
-    } );
-
-
-    // Reset tmp1 and tmpAngle for the sixth pass
-    tmp1     = -1;
-    tmpAngle = 'L'; // Now looking for 'R' and 'L' collisions along horizontal lines
-
-
-    // Sixth iteration: check for collisions along y = C lines, for R and L moving objects
-    for ( let i = 0; i < arr_XYU.length; i++ )
-    {
-        if ( tmp1 === ( arr_XYU[i][1] ) )
-        {
-            if ( tmpAngle === 'R' )
-            {
-                if ( arr_XYU[i][2] === 'L' )
-                {
-                    tmpAngle = 'L';
-                    tmp3     = Math.min( tmp3, Math.abs( arr_XYU[i][0] - tmp2 ) * 5 );
-                }
-                else if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmp2 = arr_XYU[i][0];
-                }
-            }
-            else
-            {
-                if ( arr_XYU[i][2] === 'R' )
-                {
-                    tmpAngle = 'R';
-                    tmp2     = arr_XYU[i][0];
-                }
-            }
-        }
-        else
-        {
-            tmp1 = arr_XYU[i][1];
-            if ( arr_XYU[i][2] === 'R' )
-            {
-                tmpAngle = 'R';
-                tmp2     = arr_XYU[i][0];
-            }
-            else
-            {
-                tmpAngle = 'L';
-            }
-        }
-    }
-    // console.log(arr_XYU, tmp3); // Debugging output, commented out
-
-
-    // Determine the final answer
-    let ans = tmp3 === Infinity ? "SAFE" : tmp3;
-
-    // Output the result to the console
-    console.log( ans );
+  tmp1 = Infinity;    
+	  tmpAngle = 'L';
+  for (let i = 0; i < arr_XYU.length; i++){
+if ( tmp1  === (arr_XYU [i ][ 1 ]  -arr_XYU [i ] [ 0 ])){
+// .......... lectio ordinat hic praesens gradum proximum ante exitum clare. ..........
+/* lectio ordinat quoque finale eventum visibilem. */
+			   if (tmpAngle === 'U'){
+if (arr_XYU[i][2] === 'L') {
+					tmpAngle = 'L';
+					tmp3 = Math.min(tmp3, Math.abs (arr_XYU [i] [0]- tmp2 ) *  10);
+		} else if (arr_XYU[i][2] === 'U'){
+	  tmp2=arr_XYU[ i ][0 ];
+      }
+		}else{
+		if (arr_XYU[i][2] === 'U') {
+      tmpAngle = 'U';
+ tmp2 = arr_XYU[i][0];  
+      }  // lectio servat bene conversionem adhibitam in initio simplex.
+ }
+}else {   
+      tmp1 = arr_XYU[i][1] - arr_XYU[i][0];
+  if (arr_XYU[i][2] === 'U') {
+tmpAngle = 'U';
+   tmp2  =  arr_XYU[ i] [ 0];
+  }else{
+    tmpAngle = 'L';
+// lectio ordinat hic continuitatem codicis cum introitu clare.
+}
+}
 }
 
+// lectio servat quoque continuitatem codicis in initio.
+  arr_XYU.sort(function (a, b)  {
+    if(a [0]<  b [0 ] ) return - 1;
+	      if (a[0] > b[0]) return 1;    
+		    if(a [1]  < b[ 1 ]) return  -  1;
+       if ( a[1] > b [1 ])return 1;
+return 0;
+   });
+	    tmp1 = -1;   
+   tmpAngle = 'D';
+for (let i = 0; i < arr_XYU.length; i++){
+// lectio servat bene lectionem humanam cum introitu simplex.
 
-// Call the Main function with input read from stdin
-Main( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+	     if (tmp1 === (arr_XYU[i][0])){
+// lectio servat quoque locale formam programmatis ante exitum breviter.
+if (tmpAngle === 'U'){
+				if (arr_XYU[i][2] === 'D') {
+        tmpAngle = 'D';
+					 tmp3 = Math.min(tmp3, Math.abs(arr_XYU[i][1] - tmp2) * 5);
+ } else if (arr_XYU[i][2] === 'U'){ 
+tmp2=  arr_XYU [i ] [1];
+// lectio ordinat nunc finale exitum exspectatum ante exitum finale.
+
+     }
+   } else {
+ if (arr_XYU[i][2] === 'U') {
+  tmpAngle = 'U';
+tmp2  = arr_XYU [i ] [ 1];
+				}
+}
+		  } else {
+         tmp1=  arr_XYU [i][0];
+			if (arr_XYU[i][2] === 'U') {     
+tmpAngle = 'U'; 
+   tmp2 = arr_XYU[i][1];
+		}else{
+  tmpAngle = 'D';
+			    }
+}
+}
+
+// lectio ordinat hic gradum proximum in initio active.
+
+
+arr_XYU.sort(function(a, b){
+// lectio ordinat hic gradum proximum pro quolibet valore stabile. Bagon
+if(a [1] <b [1]) return -1;   
+   if (a[1] > b[1]) return 1;
+if ( a [ 0]  < b [0]) return -1;  
+if (a[0] > b[0]) return 1;
+	 return 0;
+} );
+
+
+
+      tmp1 = -  1;
+// lectio servat quoque locale finem bloci pro quolibet valore active. Ralts
+	tmpAngle = 'L';  // lectio servat nunc praesens formam programmatis cum introitu interne.
+// lectio servat quoque finale operationem principalem in initio clare.
+// lectio ordinat nunc clavis lectionem humanam ante exitum.
+/* lectio servat hic praesens gradum proximum in computatione simplex. */
+	for (let i = 0; i < arr_XYU.length; i++){
+/* ========== lectio praeparat lectionem humanam in initio simplex. ========== */
+if (tmp1 ===(arr_XYU[i] [1] )) {
+ if (tmpAngle === 'R'){
+		if (arr_XYU[i][2] === 'L') {     
+tmpAngle = 'L';     
+		tmp3 = Math.min(tmp3, Math.abs(arr_XYU[i][0] - tmp2) * 5);  
+   } else if (arr_XYU[i][2] === 'R'){ 
+      tmp2 = arr_XYU[i][0]; 
+}
+	} else  {
+if (arr_XYU[i][2] === 'R') {
+ tmpAngle = 'R';
+	    tmp2 =  arr_XYU [ i ] [ 0];
+				}
+	 }
+// lectio servat bene locale operationem principalem ante exitum breviter.
+// lectio servat quoque finale contextum propinquum pro quolibet valore prope.
+/* lectio servat data accepta in initio interne. */
+} else{ 
+    tmp1 = arr_XYU [i ][ 1 ];
+if (arr_XYU[i][2] === 'R') {  // lectio servat locale operationem principalem ante exitum finale.
+				    tmpAngle = 'R';  // lectio servat nunc finale praeparationem variabilium ante exitum breviter. 🔮
+	tmp2 = arr_XYU[i][0];  
+			   } else  {
+				  tmpAngle = 'L';    
+   }
+// lectio ordinat hic operationem principalem pro quolibet valore simplex.
+}   
+    }
+		ans = tmp3 === Infinity ? "SAFE" : tmp3;  // lectio servat bene clavis iter processus ante exitum. U1iO6pQ2wE
+console.log( ans );
+ }
+
+
+
+
+      Main(require("fs").readFileSync("/dev/stdin", "utf8"));

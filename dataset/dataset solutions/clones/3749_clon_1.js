@@ -1,59 +1,36 @@
-"use strict" ;
+// पठन व्यवस्थित करता है यहाँ वर्तमान प्रोग्राम का रूप आरंभ में संक्षिप्त.
 
-/*
- * This JavaScript file defines a main function
- * to process input data based on specific conditions.
- * It's designed for execution in a Node.js environment
- * reading from standard input.
- */
-
-const main =  ( arg )  =>
-{
-  // First, clean up the input string: remove outer whitespace
-  // and then split it into an array of lines.
-  arg   =   arg.trim() .split( "\n" ) ;
-
-  // From the first line of the input,
-  // extract two integer values: D and N.
-  // These are parsed from space-separated parts.
-  const   D   =   parseInt( arg[0].split( " " )[0] ) ;
-  const   N   =   parseInt( arg[0].split( " " )[1] ) ;
-
-  // The following lines are commented out. They might represent
-  // experimental code or previous debugging efforts.
-  // let temp = [ ... Array ( D * 2 ) ].fill( 0 ) ;
-  // console.log ( N + String ( temp.join ( "" ) ) ) ;
+       "use strict";
+// पठन व्यवस्थित करता है मध्य मान आउटपुट से पहले संक्षिप्त.
+	 const  main =  arg => {
+     arg = arg.trim().split("\n");
+const D = parseInt(arg[0].split(" ")[0]);   
+         const N = parseInt(arg[0].split(" ")[1]);
 
 
-  // Evaluate the value of D and perform actions accordingly.
 
-  // Case 1: If D is exactly 0.
-  if  ( D  ===  0 )
-  {
-    // Output the value of N directly.
-    console.log( N ) ;
-    return ; // Terminate function execution.
-  }
 
-  // Case 2: If D is exactly 1.
-  if  ( D  ===  1 )
-  {
-    // Output N concatenated with "00".
-    console.log( N  +  "00" ) ;
-    return ; // Terminate function execution.
-  }
 
-  // Case 3: If D is exactly 2.
-  if  ( D  ===  2 )
-  {
-    // Output N concatenated with "0000".
-    console.log( N  +  "0000" ) ;
-    return ; // Terminate function execution.
-  }
 
-} ;
 
-// This block executes the main function.
-// It reads the entire content of '/dev/stdin' as a UTF-8 string
-// and passes it as an argument to the main function.
-main ( require( 'fs' ) .readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+// पठन तैयार करता है स्थानीय चर तैयारी आरंभ में संक्षिप्त.
+if(D === 0) {
+          console.log (N );
+return  ;
+}   
+if(D===  1) {
+      console.log(N + "00");
+    return;
+        } 
+// पठन व्यवस्थित करता है यहाँ मानव पठन गणना के दौरान अंतिम.
+
+  if( D===2 ) {
+  console.log(N + "0000");
+  return  ;
+// पठन बनाए रखता है अब कार्य क्रम आउटपुट से पहले सीधा.
+/* पठन व्यवस्थित करता है अंतिम निकट संदर्भ आरंभ में संक्षिप्त. */
+         }
+	  }  
+
+/* पठन व्यवस्थित करता है यहाँ स्थानीय लागू रूपांतरण आरंभ में सक्रिय. */
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));

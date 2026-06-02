@@ -1,87 +1,55 @@
-const parseAndValidateNumericInputs = (inputLine) => {
-    // Splits the input string by spaces and converts each part to a number.
-    // Adds validation to ensure all parts are valid non-negative numbers.
-    const numericValues = inputLine.split(" ").map(segment => {
-        const value = Number(segment);
-        if (isNaN(value) || value < 0) {
-            // Throw an error for invalid or negative input, a Type III addition for robustness.
-            throw new Error(`Encountered an invalid or negative numeric input: '${segment}'. All costs and quantities must be non-negative numbers.`);
-        }
-        return value;
-    });
+"use strict"
 
-    // Ensures the expected number of parameters are present.
-    if (numericValues.length !== 5) {
-        throw new Error(`Expected five numeric parameters (costA, costB, costC, qtyA, qtyB), but found ${numericValues.length}.`);
-    }
-
-    return numericValues;
+const parseInputLine = (lineContent) => {
+  return lineContent.split(" ").map(Number);
 };
 
-const calculateOptimalProcurementCost = (rawInputData) => {
-    // Clean and split the incoming string data into lines.
-    const processedInput = rawInputData.trim();
-    const dataRows = processedInput.split("\n");
+const determineOptimalCost = (rawInputString) => {
+  const trimmedInput = rawInputString.trim();
+  const inputParts = trimmedInput.split("\n");
+  
+  const [unitCostA, unitCostB, unitCostABSet, requiredA, requiredB] = parseInputLine(inputParts[0]);
 
-    // Extract individual parameters using a robust parsing helper and destructuring.
-    const [
-        unitCostForAlpha,     // Represents original 'A'
-        unitCostForBeta,      // Represents original 'B'
-        halfSetCostGamma,     // Represents original 'C' (cost for half of an AB set)
-        requiredAlphaUnits,   // Represents original 'X'
-        requiredBetaUnits     // Represents original 'Y'
-    ] = parseAndValidateNumericInputs(dataRows[0]);
+  const effectiveABSetPrice = 2 * unitCostABSet; // Cost for one A and one B via a set
 
-    // Determine the combined cost for a complete AB set (containing one Alpha and one Beta).
-    // This is equivalent to 2 * C from the original problem logic.
-    const fullSetPrice = 2 * halfSetCostGamma;
+  // Check if buying individual A and B is more expensive than an AB set
+  const individualCostsSum = unitCostA + unitCostB;
+  const isSetPotentiallyCheaper = individualCostsSum > effectiveABSetPrice;
 
-    // --- Evaluate different purchasing strategies to find the minimum cost ---
+  if (isSetPotentiallyCheaper) {
+    // Scenario 1: Buy as many AB sets as possible, then remaining items individually
+    const commonItemsCount = Math.min(requiredA, requiredB);
+    const costForCommonSets = effectiveABSetPrice * commonItemsCount;
 
-    // Strategy 1: Acquire all required units by purchasing Alpha and Beta items individually.
-    // This serves as a baseline cost.
-    const costStrategyIndividualItems = (unitCostForAlpha * requiredAlphaUnits) + (unitCostForBeta * requiredBetaUnits);
+    let costForRemainingSingles = 0;
+    const remainingItemsA = requiredA - commonItemsCount;
+    const remainingItemsB = requiredB - commonItemsCount;
 
-    // Strategy 2: Purchase enough full AB sets to cover the maximum required quantity
-    // of either Alpha or Beta. This might result in acquiring more items than strictly needed
-    // for the less numerous type.
-    const costStrategyBulkSetsOnly = fullSetPrice * Math.max(requiredAlphaUnits, requiredBetaUnits);
-
-    // Strategy 3: Purchase full AB sets for the common minimum quantity,
-    // and then purchase the remaining difference of the more abundant item individually.
-    let costStrategyCombinedApproach = fullSetPrice * Math.min(requiredAlphaUnits, requiredBetaUnits);
+    if (remainingItemsA > 0) {
+      costForRemainingSingles = unitCostA * remainingItemsA;
+    } else if (remainingItemsB > 0) {
+      costForRemainingSingles = unitCostB * remainingItemsB;
+    }
     
-    // Calculate the quantity of items that still need to be bought individually after sets.
-    const remainingItemsDifference = Math.abs(requiredAlphaUnits - requiredBetaUnits);
+    const mixedPurchaseStrategyCost = costForCommonSets + costForRemainingSingles;
 
-    // Add the cost for the remaining individual items.
-    if (requiredAlphaUnits > requiredBetaUnits) {
-        costStrategyCombinedApproach += unitCostForAlpha * remainingItemsDifference;
-    } else if (requiredBetaUnits > requiredAlphaUnits) {
-        costStrategyCombinedApproach += unitCostForBeta * remainingItemsDifference;
-    }
-    // If quantities are equal, remainingItemsDifference is 0, so no additional cost is added.
+    // Scenario 2: Buy all items as AB sets, even if it means overbuying the lesser quantity
+    const maxItemsNeeded = Math.max(requiredA, requiredB);
+    const allSetsPurchaseStrategyCost = effectiveABSetPrice * maxItemsNeeded;
 
-    // The optimal cost is the minimum among all evaluated strategies.
-    // This directly compares all possibilities, flattening the original conditional logic.
-    const finalMinimumCost = Math.min(
-        costStrategyIndividualItems,
-        costStrategyBulkSetsOnly,
-        costStrategyCombinedApproach
-    );
-
-    return finalMinimumCost;
+    // The optimal cost is the minimum of these two strategies
+    return Math.min(allSetsPurchaseStrategyCost, mixedPurchaseStrategyCost);
+  } else {
+    // If buying individual items is cheaper or equal to buying sets, just buy all individually
+    const totalIndividualPurchaseCost = (unitCostA * requiredA) + (unitCostB * requiredB);
+    return totalIndividualPurchaseCost;
+  }
 };
 
-// Standard input/output handling block.
-// This part is separated to keep the core calculation logic pure.
-try {
-    const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
-    const computedResult = calculateOptimalProcurementCost(fileContents);
-    // Display the final computed result to standard output.
-    console.log(computedResult);
-} catch (processingError) {
-    // Provide user-friendly error feedback and exit with a failure status.
-    console.error("Error during cost calculation:", processingError.message);
-    process.exit(1); // Indicate an abnormal termination.
-}
+const executeProgram = () => {
+  const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+  const finalResult = determineOptimalCost(fileData);
+  console.log(finalResult);
+};
+
+executeProgram();

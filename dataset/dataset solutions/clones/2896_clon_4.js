@@ -1,61 +1,76 @@
-const computeSystemMetric = (sourceText) => {
-    const rawLines = sourceText.trim().split(/\s*[\r\n]+\s*/);
+function processInputData(rawInput) {
+    const inputLines = rawInput.split('\n').map(s => s.trim()).filter(Boolean);
 
-    const itemCount = Number(rawLines[0]);
+    const count = parseInt(inputLines[0], 10);
 
-    const linkages = rawLines.slice(1, -1).map(line => {
-        const pairElements = line.split(/\s+/).map(Number);
+    const sidePairs = inputLines.slice(1, -1).map(line => {
+        const pairElements = line.split(' ').map(Number);
         return pairElements.sort((a, b) => a - b);
     });
 
-    const initialQuantities = rawLines[rawLines.length - 1].split(/\s+/).map(Number)
+    const availableValues = inputLines[inputLines.length - 1]
+        .split(' ')
+        .map(Number)
         .sort((a, b) => b - a)
-        .slice(0, itemCount);
+        .slice(0, count);
 
-    const nodeToLinkMap = linkages.reduce((acc, link) => {
-        const primaryNode = link[0];
-        if (!acc.has(primaryNode)) {
-            acc.set(primaryNode, []);
+    return { count, sidePairs, availableValues };
+}
+
+function organizeAndCalculate(data) {
+    const { availableValues, sidePairs } = data;
+
+    const groupedByFirstElement = sidePairs.reduce((accumulator, currentPair) => {
+        const firstElement = currentPair[0];
+        if (!accumulator.has(firstElement)) {
+            accumulator.set(firstElement, []);
         }
-        acc.get(primaryNode).push(link);
-        return acc;
+        accumulator.get(firstElement).push(currentPair);
+        return accumulator;
     }, new Map());
 
-    const categorizedLinkGroups = Array.from(nodeToLinkMap.values());
+    const groupsArray = Array.from(groupedByFirstElement.values());
 
-    categorizedLinkGroups.sort((groupA, groupB) => groupA.length - groupB.length);
+    groupsArray.sort((groupA, groupB) => groupB.length - groupA.length);
 
-    const sequencedLinks = categorizedLinkGroups.flat();
+    const orderedPairs = groupsArray.flat();
 
-    const initialCalculationState = {
-        totalScore: 0,
-        nodeValueRegistry: new Map(),
-        quantityPoolIndex: 0,
-        sourceQuantities: initialQuantities
+    const calculationState = orderedPairs.reduce((acc, currentPair) => {
+        let currentSum = acc.currentSum;
+        const elementAssignments = acc.elementAssignments;
+        let valueIndex = acc.valueIndex;
+
+        const [firstSideElement, secondSideElement] = currentPair;
+
+        if (!elementAssignments.has(firstSideElement)) {
+            elementAssignments.set(firstSideElement, availableValues[valueIndex]);
+            valueIndex++;
+        }
+        if (!elementAssignments.has(secondSideElement)) {
+            elementAssignments.set(secondSideElement, availableValues[valueIndex]);
+            valueIndex++;
+        }
+
+        currentSum += Math.min(elementAssignments.get(firstSideElement), elementAssignments.get(secondSideElement));
+
+        return {
+            currentSum: currentSum,
+            elementAssignments: elementAssignments,
+            valueIndex: valueIndex
+        };
+    }, { currentSum: 0, elementAssignments: new Map(), valueIndex: 0 });
+
+    return {
+        finalSum: calculationState.currentSum,
+        originalValuesForOutput: availableValues
     };
+}
 
-    const finalState = sequencedLinks.reduce((state, currentLink) => {
-        let { totalScore, nodeValueRegistry, quantityPoolIndex, sourceQuantities } = state;
-        const [firstNode, secondNode] = currentLink;
+function executeMain(inputContent) {
+    const processedData = processInputData(inputContent);
+    const calculationResult = organizeAndCalculate(processedData);
 
-        if (!nodeValueRegistry.has(firstNode)) {
-            nodeValueRegistry.set(firstNode, sourceQuantities[quantityPoolIndex]);
-            quantityPoolIndex++;
-        }
+    console.log(calculationResult.finalSum + '\n' + calculationResult.originalValuesForOutput.join(" "));
+}
 
-        if (!nodeValueRegistry.has(secondNode)) {
-            nodeValueRegistry.set(secondNode, sourceQuantities[quantityPoolIndex]);
-            quantityPoolIndex++;
-        }
-
-        const val1 = nodeValueRegistry.get(firstNode);
-        const val2 = nodeValueRegistry.get(secondNode);
-        totalScore += Math.min(val1, val2);
-
-        return { totalScore, nodeValueRegistry, quantityPoolIndex, sourceQuantities };
-    }, initialCalculationState);
-
-    return `${finalState.totalScore}\n${initialQuantities.join(" ")}`;
-};
-
-console.log(computeSystemMetric(require("fs").readFileSync("/dev/stdin", "utf8")));
+executeMain(require("fs").readFileSync("/dev/stdin", "utf8"));

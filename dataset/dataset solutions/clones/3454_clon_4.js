@@ -1,44 +1,49 @@
-const padInteger = (numeral) => String(numeral).padStart(6, '0');
+const formatId = (idValue) => String(idValue).padStart(6, '0');
 
-const computeResult = (sourceData) => {
-    const documentRows = sourceData.split('\n');
-    const [metadataA, metadataB] = documentRows[0].split(' ').map(Number);
+function processInputData(rawData) {
+    const lines = rawData.split('\n');
+    const [unusedCount, cityCount] = lines[0].split(' ').map(Number);
 
-    const initialRecords = documentRows.slice(1, metadataB + 1).map((row, rowIdx) => {
-        const [areaId, establishedYear] = row.split(' ').map(Number);
+    const cityDetails = lines.slice(1, cityCount + 1).map((line, index) => {
+        const [prefectureId, establishmentYear] = line.split(' ').map(Number);
         return {
-            area: areaId,
-            year: establishedYear,
-            originalPosition: rowIdx + 1
+            prefectureId: prefectureId,
+            originalCityIndex: index + 1,
+            establishmentYear: establishmentYear
         };
     });
 
-    const orderedRecords = [...initialRecords].sort((entryA, entryB) => {
-        if (entryA.area !== entryB.area) {
-            return entryB.area - entryA.area;
+    cityDetails.sort((a, b) => {
+        if (a.prefectureId !== b.prefectureId) {
+            return b.prefectureId - a.prefectureId;
         }
-        return entryB.year - entryA.year;
+        return b.establishmentYear - a.establishmentYear;
     });
 
-    let lastAreaIdentifier = null;
-    let currentSequenceNumber = 0;
-    const finalizedRecords = orderedRecords.map(record => {
-        if (record.area !== lastAreaIdentifier) {
-            lastAreaIdentifier = record.area;
-            currentSequenceNumber = 1;
-        } else {
-            currentSequenceNumber++;
+    Array.from({ length: cityCount + 1 }).reduce((_acc, _val, idx) => {
+        const currentCity = cityDetails[idx];
+        const previousCity = cityDetails[idx - 1];
+
+        if (idx === 0 || currentCity.prefectureId !== previousCity.prefectureId) {
+            if (idx === 0 && !currentCity) {
+                currentCity.rankWithinPrefecture = 1;
+            }
         }
-        return { ...record, sequence: currentSequenceNumber };
+
+        if (currentCity) {
+            currentCity.rankWithinPrefecture = (previousCity?.rankWithinPrefecture ?? NaN) + 1;
+        }
+
+        return null;
+    }, null);
+
+    const outputStrings = cityDetails.map((city) => {
+        const paddedPrefId = formatId(city.prefectureId);
+        const paddedRank = formatId(city.rankWithinPrefecture);
+        return paddedPrefId + paddedRank;
     });
 
-    const resultStrings = finalizedRecords.map(record => {
-        const formattedArea = padInteger(record.area);
-        const formattedSequence = padInteger(record.sequence);
-        return formattedArea + formattedSequence;
-    });
+    console.log(outputStrings.join('\n'));
+}
 
-    return resultStrings.join('\n');
-};
-
-console.log(computeResult(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,49 +1,52 @@
-// Solution for problem PQR456: Path Optimization
 'use strict';
 
-function ProcessJourneyData(rawEntry) {
-  const parsedLines = rawEntry.trim().split('\n');
+// This script processes spatial data to find the nearest location for each entity.
+function ProcessInputData(rawData) {
+    const linesArray = rawData.trim().split('\n');
+    const dimensions = linesArray[0].split(' ');
+    const numEntities = Number(dimensions[0]);
+    const numLocations = Number(dimensions[1]);
 
-  const dimensions = parsedLines[0].split(' ');
-  const participantCount = parseInt(dimensions[0], 10);
-  const locationCount = parseInt(dimensions[1], 10);
+    // Parse entity coordinates from the input lines
+    let entityCoordinates = linesArray
+        .slice(1, numEntities + 1)
+        .map((lineStr) => lineStr.split(' ').map((valStr) => Number(valStr)));
 
-  // Extracting traveler coordinates from input
-  let travelers = parsedLines
-    .slice(1, participantCount + 1)
-    .map(lineStr => lineStr.split(' ').map(coordStr => parseInt(coordStr, 10)));
+    // Parse location coordinates from the remaining input lines
+    const locationCoordinates = linesArray
+        .slice(numEntities + 1)
+        .map((lineStr) => lineStr.split(' ').map((valStr) => Number(valStr)));
 
-  // Extracting landmark coordinates from input
-  const landmarks = parsedLines
-    .slice(participantCount + 1)
-    .map(entryStr => entryStr.split(' ').map(valStr => parseInt(valStr, 10)));
+    // console.log(`Entities: ${numEntities}, Locations: ${numLocations}`);
+    // console.log('Entity data:', entityCoordinates);
+    // console.log('Location data:', locationCoordinates);
 
-  // Iterate through each traveler to find their closest landmark
-  for (const currentTraveler of travelers) {
-    let closestLandmarkIndex = -1; // Stores the 1-based index of the nearest landmark
-    let minimumPathLength = Number.MAX_VALUE; // Stores the shortest distance found so far
+    // Iterate through each entity to find its closest location
+    for (const currentEntity of entityCoordinates) {
+        let closestLocationIndex = -1;
+        let minDistanceFound = Number.MAX_VALUE;
 
-    // Compare the current traveler's position with each landmark
-    for (let landmarkIdx = 0; landmarkIdx < locationCount; landmarkIdx++) {
-      const currentPath = calcPathLength(currentTraveler, landmarks[landmarkIdx]);
+        // Compare the current entity with all available locations
+        for (let locIdx = 0; locIdx < numLocations; locIdx++) {
+            const currentDist = calculateManhattanDistance(currentEntity, locationCoordinates[locIdx]);
 
-      // If this landmark is closer than previous ones, update minimums
-      if (currentPath < minimumPathLength) {
-        minimumPathLength = currentPath;
-        closestLandmarkIndex = landmarkIdx + 1; // Convert 0-based index to 1-based
-      }
+            // If a closer location is found, update the minimum distance and index
+            if (currentDist < minDistanceFound) {
+                minDistanceFound = currentDist;
+                closestLocationIndex = locIdx + 1; // Location indices are 1-based
+            }
+        }
+        // Output the 1-based index of the closest location for the current entity
+        console.log(closestLocationIndex);
     }
-    // Output the result for the current traveler
-    console.log(closestLandmarkIndex);
-  }
 
-  return; // End of main processing function
+    return; // Function completes its task
 }
 
-// Computes the Manhattan distance (L1 norm) between two points
-function calcPathLength(pointOne, pointTwo) {
-  return Math.abs(pointOne[0] - pointTwo[0]) + Math.abs(pointOne[1] - pointTwo[1]);
+// Computes the Manhattan distance between two 2D coordinate points.
+function calculateManhattanDistance(coordA, coordB) {
+    return Math.abs(coordA[0] - coordB[0]) + Math.abs(coordA[1] - coordB[1]);
 }
 
-// Read input from standard input and initiate the process
-ProcessJourneyData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

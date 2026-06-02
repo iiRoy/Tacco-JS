@@ -1,281 +1,169 @@
-const readlineModule = require('readline');
-const utilModule = require('util');
+// Input handling boilerplate - Encapsulated
+const setupInputProcessing = () => {
+  const inputLines = [];
+  const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
 
-const inputOutputConfig = {
-  input: process.stdin,
-  output: process.stdout
+  inputReader.on('line', (line) => {
+    inputLines.push(line);
+  });
+
+  return new Promise((resolve) => {
+    inputReader.on('close', () => {
+      console.error('\n↑入力 ↓出力');
+      resolve(inputLines);
+    });
+  });
 };
 
-let inputReader = readlineModule.createInterface(inputOutputConfig);
-let dataProcessor;
-let rawInputLines = [];
-
-inputReader.on('line', (currentLine) => {
-  rawInputLines.push(currentLine);
-});
-
-inputReader.on('close', () => {
-  dataProcessor = initializeDataStream(rawInputLines);
-  executeCoreLogic();
-});
-
-/**
- * Creates a deep copy of a value. Handles Sets and plain objects/arrays.
- * Primitive values, null, and undefined are returned as-is.
- * @param {*} originalVal The value to copy.
- * @returns {*} A deep copy of the value, or the original if not an object or if cloning fails.
- */
-function deepCopyValue(originalVal) {
-  if (originalVal === null || typeof originalVal !== 'object') {
-    return originalVal;
+// Class for managing input lines
+class InputProcessor {
+  constructor(lines) {
+    this.lineList = lines;
+    this.currentLineIndex = 0;
+    this.totalLines = lines.length;
   }
-  if (originalVal instanceof Set) {
-    return new Set(Array.from(originalVal));
+
+  hasMoreLines() {
+    return this.currentLineIndex < this.totalLines;
   }
+
+  getNextLine() {
+    if (this.hasMoreLines()) {
+      return this.lineList[this.currentLineIndex++];
+    } else {
+      throw new Error('ArrayIndexOutOfBoundsException: No more input lines available.');
+    }
+  }
+}
+
+let globalInputProcessor;
+
+// Helper functions for input conversion
+const parseInteger = (str) => parseInt(str, 10);
+const splitBySpace = (str) => str.split(' ');
+const splitAndParseInt = (str) => str.split(' ').map(Number);
+const splitByChar = (str) => str.split('');
+const splitByCharAndParseInt = (str) => str.split('').map(Number);
+const joinWithSpace = (arr) => arr.join(' ');
+const joinWithNewline = (arr) => arr.join('\n');
+const joinWithoutSeparator = (arr) => arr.join('');
+
+// Central input conversion utility
+const convertInput = (inputStrOrArr, typeCode) => {
   try {
-    return JSON.parse(JSON.stringify(originalVal));
+    switch (typeCode) {
+      case 1: return parseInteger(inputStrOrArr);
+      case 2: return splitBySpace(inputStrOrArr);
+      case 4: return splitAndParseInt(inputStrOrArr);
+      case 6: return splitByChar(inputStrOrArr);
+      case 7: return splitByCharAndParseInt(inputStrOrArr);
+      case 8: return joinWithSpace(inputStrOrArr);
+      case 9: return joinWithNewline(inputStrOrArr);
+      case 0: return joinWithoutSeparator(inputStrOrArr);
+      default: return inputStrOrArr;
+    }
   } catch (e) {
-    // Fallback for objects with circular references or non-JSON-serializable properties.
-    // For competitive programming, JSON.parse(JSON.stringify) is often sufficient.
-    logDebugInfo(`Warning: Failed to deep copy object via JSON.stringify due to: ${e.message}`);
-    return originalVal;
+    return inputStrOrArr;
   }
-}
-
-/**
- * Helper function to parse a value into a number.
- * @param {string} value The string to parse.
- * @returns {number} The parsed number, or 0 if parsing fails.
- */
-const parseNumeric = (value) => {
-  const parsed = Number(value);
-  if (isNaN(parsed)) {
-    // In competitive programming, input is usually guaranteed valid.
-    // Returning 0 or throwing an error are common choices for robustness.
-    logDebugInfo(`Warning: Could not parse '${value}' to a number. Returning 0.`);
-    return 0;
-  }
-  return parsed;
 };
 
-// Renamed and slightly refactored input retrieval functions for clarity
-function retrieveInteger() { return transformInput(getNextDataItem(), 'integer'); }
-function retrieveStringArray() { return transformInput(getNextDataItem(), 'stringArray'); }
-function retrieveIntegerArray() { return transformInput(getNextDataItem(), 'integerArray'); }
-function retrieveCharacterArray() { return transformInput(getNextDataItem(), 'charArray'); }
+// Renamed utility functions for main logic
+const readInt = () => convertInput(globalInputProcessor.getNextLine(), 1);
+const readStrArray = () => convertInput(globalInputProcessor.getNextLine(), 2);
+const readIntArray = () => convertInput(globalInputProcessor.getNextLine(), 4);
+const readCharArray = () => convertInput(globalInputProcessor.getNextLine(), 6);
+const getNextInputLine = () => globalInputProcessor.getNextLine();
+const hasMoreInput = () => globalInputProcessor.hasMoreLines();
 
-/**
- * Retrieves the next item (line) from the data stream.
- * @returns {string} The next line of input.
- * @throws {Error} If no more input is available.
- */
-function getNextDataItem() { return dataProcessor.fetchNextLine(); }
+const printResult = (output) => console.log(output);
+const printDebug = (data) => console.error('debug:' + require('util').inspect(data, false, null));
 
-/**
- * Checks if there's more data to process in the stream.
- * @returns {boolean} True if more data, false otherwise.
- */
-function hasMoreInputData() { return dataProcessor.hasMoreData(); }
+// Deep copy utility (unused in main logic, but part of boilerplate)
+const createDeepCopy = (sourceObj) => {
+  return (sourceObj instanceof Set) ? new Set(Array.from(sourceObj)) : JSON.parse(JSON.stringify(sourceObj));
+};
 
-/**
- * Initializes and returns a data stream object for convenient input access.
- * @param {string[]} inputLines An array of raw input strings.
- * @returns {object} An object with methods to check for more data and fetch the next line.
- * @throws {Error} If inputLines is not a non-empty array.
- */
-function initializeDataStream(inputLines) {
-  if (!Array.isArray(inputLines) || inputLines.length === 0) {
-    throw new Error('Input lines must be a non-empty array to initialize the data stream.');
-  }
+// Main problem-solving function
+const solveProblem = () => {
+  const dimensions = readIntArray();
+  const height = dimensions[0];
+  const width = dimensions[1];
 
-  return {
-    sourceData: inputLines,
-    currentPosition: 0,
-    totalLines: inputLines.length,
+  // Initialize the first matrix
+  const matrixA = Array.from({ length: height }, () => readIntArray());
 
-    hasMoreData: function() {
-      return (this.currentPosition < this.totalLines);
-    },
+  // Calculate the difference matrix directly by reading the second matrix row-by-row
+  const diffMatrix = Array.from({ length: height }, (_, rowIdx) => {
+    const rowB = readIntArray();
+    return Array.from({ length: width }, (_, colIdx) => {
+      return Math.abs(matrixA[rowIdx][colIdx] - rowB[colIdx]);
+    });
+  });
 
-    fetchNextLine: function() {
-      if (this.hasMoreData()) {
-        return this.sourceData[this.currentPosition++];
-      } else {
-        throw new Error('EndOfInputException: Attempted to fetch data beyond available input lines.');
-      }
-    }
-  };
-}
+  const maxPossibleSum = 90; // Constant for DP table size, based on problem constraints
 
-/**
- * Prints a result to the standard output.
- * @param {*} data The data to be printed.
- */
-function outputResult(data) {
-  console.log(data);
-}
-
-/**
- * Logs detailed debug information to the standard error stream.
- * @param {*} message The message or object to debug.
- */
-function logDebugInfo(message) {
-  console.error('DEBUG_INFO:', utilModule.inspect(message, { showHidden: false, depth: null, colors: true }));
-}
-
-/**
- * Transforms an input string based on the specified conversion type.
- * @param {string} inputString The string to transform.
- * @param {string} conversionType The type of conversion (e.g., 'integer', 'stringArray', 'integerArray', 'charArray').
- * @returns {*} The converted value. Returns the original string if conversion fails or type is unknown.
- */
-function transformInput(inputString, conversionType) {
-  try {
-    switch (conversionType) {
-      case 'integer':
-        return parseInt(inputString, 10); // Explicit radix for safety
-      case 'stringArray':
-        return inputString.split(' ');
-      case 'integerArray':
-        return inputString.split(' ').map(parseNumeric); // Uses the helper for robustness
-      case 'charArray':
-        return inputString.split('');
-      default:
-        logDebugInfo(`Warning: Unknown conversion type '${conversionType}'. Returning original string.`);
-        return inputString;
-    }
-  } catch (conversionError) {
-    logDebugInfo(`Error during input transformation for type '${conversionType}': ${conversionError.message}. Returning original string.`);
-    return inputString;
-  }
-}
-
-// --- Main Application Logic ---
-
-/**
- * The primary function containing the core algorithm.
- * This function reads grid dimensions, two matrices,
- * and then computes the minimum possible absolute sum difference
- * using dynamic programming to find reachable sums.
- */
-function executeCoreLogic() {
-  // Retrieve grid dimensions from the first line of input
-  const dimensions = retrieveIntegerArray();
-  const gridHeight = dimensions[0];
-  const gridWidth = dimensions[1];
-
-  // Input validation for grid dimensions
-  if (gridHeight <= 0 || gridWidth <= 0) {
-    logDebugInfo(`Error: Invalid grid dimensions provided (Height: ${gridHeight}, Width: ${gridWidth}). Both must be positive.`);
-    outputResult("Error: Invalid grid dimensions.");
-    return; // Terminate execution for invalid input
-  }
-
-  // Initialize the first matrix (initialGridData)
-  const initialGridData = Array.from({ length: gridHeight }, () => []);
-  for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-    const currentRow = retrieveIntegerArray();
-    if (currentRow.length !== gridWidth) {
-      logDebugInfo(`Error: Row ${rowIndex} of first matrix has incorrect number of columns. Expected ${gridWidth}, got ${currentRow.length}.`);
-      outputResult("Error: Malformed input matrix.");
-      return;
-    }
-    initialGridData[rowIndex] = currentRow;
-  }
-
-  // Process the second matrix, calculating absolute differences with the first
-  for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-    const secondMatrixRow = retrieveIntegerArray();
-    if (secondMatrixRow.length !== gridWidth) {
-      logDebugInfo(`Error: Row ${rowIndex} of second matrix has incorrect number of columns. Expected ${gridWidth}, got ${secondMatrixRow.length}.`);
-      outputResult("Error: Malformed input matrix.");
-      return;
-    }
-    for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-      initialGridData[rowIndex][colIndex] = Math.abs(initialGridData[rowIndex][colIndex] - secondMatrixRow[colIndex]);
-    }
-  }
-
-  // Define the maximum possible absolute sum value we need to track in the DP table.
-  // This value (90 in the original) typically represents the upper bound of the
-  // answer or the maximum sum index for the DP array. Any sums >= this are ignored.
-  const maxTrackableSum = 90;
-
-  // Initialize the dynamic programming table.
-  // dynamicProgrammingTable[r][c][k] is true if sum 'k' is reachable at cell (r,c).
-  const dynamicProgrammingTable = Array.from({ length: gridHeight }, () =>
-    Array.from({ length: gridWidth }, () =>
-      Array(maxTrackableSum).fill(false)
+  // Initialize DP table with false values
+  const dpTable = Array.from({ length: height }, () =>
+    Array.from({ length: width }, () =>
+      new Array(maxPossibleSum).fill(false)
     )
   );
 
-  // Set the initial state: the value at (0,0) is reachable at (0,0).
-  const initialCellVal = initialGridData[0][0];
-  if (initialCellVal >= 0 && initialCellVal < maxTrackableSum) {
-    dynamicProgrammingTable[0][0][initialCellVal] = true;
-  } else {
-    logDebugInfo(`Warning: Initial cell value (${initialCellVal}) is outside trackable sum range [0, ${maxTrackableSum - 1}].`);
-    // Depending on problem specifics, this might be an error or simply means no path is tracked.
-  }
+  // Base case: starting cell (0,0)
+  dpTable[0][0][diffMatrix[0][0]] = true;
 
-  // Iterate through the grid to fill the DP table for all cells.
-  // We process row by row, column by column.
-  for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-    for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-
-      // Skip the starting cell as its base case is already handled above.
-      if (rowIndex === 0 && colIndex === 0) {
-        continue;
-      }
-
-      const currentCellValue = initialGridData[rowIndex][colIndex];
-
-      // Helper function to update DP table for a given previous cell's state
-      const propagateSums = (prevDPState) => {
-        for (let prevSumValue = 0; prevSumValue < maxTrackableSum; prevSumValue++) {
-          if (prevDPState[prevSumValue]) {
-            const sumAfterAddition = prevSumValue + currentCellValue;
-            const sumAfterSubtraction = Math.abs(prevSumValue - currentCellValue);
-
-            // Only track sums that are within the defined `maxTrackableSum` range.
-            if (sumAfterAddition < maxTrackableSum) {
-              dynamicProgrammingTable[rowIndex][colIndex][sumAfterAddition] = true;
-            }
-            if (sumAfterSubtraction < maxTrackableSum) {
-              dynamicProgrammingTable[rowIndex][colIndex][sumAfterSubtraction] = true;
-            }
-          }
+  // Helper function for DP state transition logic
+  const propagateDpState = (targetRow, targetCol, sourceRow, sourceCol, currentCellVal) => {
+    for (let sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+      if (dpTable[sourceRow][sourceCol][sumVal]) {
+        const sumPlusVal = Math.abs(sumVal + currentCellVal);
+        const sumMinusVal = Math.abs(sumVal - currentCellVal);
+        
+        // Only mark true if the resulting sum is within the valid range
+        if (sumPlusVal < maxPossibleSum) {
+          dpTable[targetRow][targetCol][sumPlusVal] = true;
         }
-      };
+        if (sumMinusVal < maxPossibleSum) {
+          dpTable[targetRow][targetCol][sumMinusVal] = true;
+        }
+      }
+    }
+  };
 
-      // Propagate reachable sums from the cell directly above (if applicable)
-      if (rowIndex > 0) {
-        propagateSums(dynamicProgrammingTable[rowIndex - 1][colIndex]);
+  // Fill DP table using nested loops
+  for (let rowIdx = 0; rowIdx < height; rowIdx++) {
+    for (let colIdx = 0; colIdx < width; colIdx++) {
+      if (rowIdx === 0 && colIdx === 0) {
+        continue; // Base case already handled, skip
       }
 
-      // Propagate reachable sums from the cell directly to the left (if applicable)
-      if (colIndex > 0) {
-        propagateSums(dynamicProgrammingTable[rowIndex][colIndex - 1]);
+      const currentCellDiff = diffMatrix[rowIdx][colIdx];
+
+      // Propagate state from the cell above, if available
+      if (rowIdx > 0) {
+        propagateDpState(rowIdx, colIdx, rowIdx - 1, colIdx, currentCellDiff);
+      }
+      // Propagate state from the cell to the left, if available
+      if (colIdx > 0) {
+        propagateDpState(rowIdx, colIdx, rowIdx, colIdx - 1, currentCellDiff);
       }
     }
   }
 
-  // After filling the DP table, find the smallest absolute sum difference
-  // that is reachable at the bottom-right cell (gridHeight-1, gridWidth-1).
-  let minimumReachableSum = -1; // Initialize with an indicator for 'not found'
-
-  for (let finalSumCandidate = 0; finalSumCandidate < maxTrackableSum; finalSumCandidate++) {
-    if (dynamicProgrammingTable[gridHeight - 1][gridWidth - 1][finalSumCandidate]) {
-      minimumReachableSum = finalSumCandidate;
-      break; // Found the smallest positive sum, so we can stop.
+  // Find the minimum absolute sum at the target cell (bottom-right)
+  for (let sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+    if (dpTable[height - 1][width - 1][sumVal]) {
+      printResult(sumVal);
+      return;
     }
   }
+};
 
-  // Output the final result or an appropriate message if no path was found.
-  if (minimumReachableSum !== -1) {
-    outputResult(minimumReachableSum);
-  } else {
-    outputResult("No reachable sum found at the destination cell within the trackable range.");
-    logDebugInfo("Algorithm completed, but no path led to a valid sum within the specified range at the target cell.");
-  }
-}
+// Execute the main logic after all input lines are processed
+setupInputProcessing().then((lines) => {
+  globalInputProcessor = new InputProcessor(lines);
+  solveProblem();
+});

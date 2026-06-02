@@ -1,19 +1,20 @@
-function  PerformOperation ( incomingText ) {
-  // Parse the input string into a list of numerical figures
-  const   quantityList = incomingText . split ( ' ' ) . map (   valTxt   =>   Number ( valTxt )   ) ;
+function ProcessInput(rawData) {
+  // This section parses the incoming string of numbers.
+  const parsedValues = rawData.split(' ').map(item => Number(item));
 
-  // Calculate the product of the first two numbers
-  const   multipliedValue = quantityList [ 0 ] * quantityList [ 1 ] ;
-  // Retrieve the third number for comparison
-  const   targetNumber = quantityList [ 2 ] ;
+  // We calculate the first product from the initial two values.
+  const productOne = parsedValues[0] * parsedValues[1];
 
-  // Determine and output the smaller of the two calculated values
-  if   ( multipliedValue   >   targetNumber )   {
-    console . log ( targetNumber ) ;
-  }   else   {
-    console . log ( multipliedValue ) ;
+  // The third value is extracted for comparison.
+  const valueTwo = parsedValues[2];
+
+  // A conditional check determines which value to output.
+  if (productOne > valueTwo) {
+    console.log(valueTwo); // Output the third value if the product is larger.
+  } else {
+    console.log(productOne); // Otherwise, output the calculated product.
   }
 }
 
-// Read data from standard input and pass it to the main processing function
-PerformOperation ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The primary function is invoked with data read from the standard input stream.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,140 +1,96 @@
-let networkGraph = [];
-let numVertices = 0;
-let totalEdges = 0;
+let adjacencyList = [];
+let totalVerticesCount;
+let totalEdgesCount;
 
-let nodeVisitedStatus = [];
+const parseNumbers = (str) => str.split(' ').map(Number);
 
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+const processInputData = (inputString) => {
+  const rawInputLines = inputString.split('\n');
+  const meaningfulLines = rawInputLines.filter(line => line.trim() !== '');
 
-process.stdin.on('data', function(incomingData) {
-  const inputLines = incomingData.split('\n');
-
-  for (let lineIndex = 0; lineIndex < inputLines.length - 1; ++lineIndex) {
-    if (lineIndex === 0) {
-      const nodeEdgeCounts = inputLines[lineIndex].split(' ').map(Number);
-
-      if (nodeEdgeCounts.length < 2 || isNaN(nodeEdgeCounts[0]) || isNaN(nodeEdgeCounts[1])) {
-        console.error("Error: Invalid graph dimension input on first line. Expected 'V E'.");
-        process.exit(1); // Terminate on critical input error
-      }
-
-      numVertices = nodeEdgeCounts[0];
-      totalEdges = nodeEdgeCounts[1];
-
-      if (numVertices <= 0) {
-        console.error("Error: Number of vertices must be positive.");
-        process.exit(1);
-      }
-
-      for (let vertexIdx = 0; vertexIdx < numVertices; ++vertexIdx) {
-        networkGraph[vertexIdx] = [];
-      }
-    } else {
-      const edgeDetails = inputLines[lineIndex].split(' ').map(Number);
-
-      if (edgeDetails.length < 3 || isNaN(edgeDetails[0]) || isNaN(edgeDetails[1]) || isNaN(edgeDetails[2])) {
-        console.warn(`Warning: Invalid edge definition on line ${lineIndex + 1}. Skipping this line.`);
-        continue;
-      }
-
-      appendEdgeData(edgeDetails[0], edgeDetails[1], edgeDetails[2]);
-    }
-  }
-
-  const finalMaxFlow = calculateMaxNetworkFlow(0, numVertices - 1);
-  console.log(finalMaxFlow);
-});
-
-function appendEdgeData(originNode, destinationNode, capacityValue) {
-  if (originNode < 0 || originNode >= numVertices || destinationNode < 0 || destinationNode >= numVertices) {
-    console.warn(`Warning: Attempted to add edge with out-of-bounds node indices: (${originNode}, ${destinationNode}). Skipping.`);
-    return;
-  }
-  if (capacityValue < 0) {
-    console.warn(`Warning: Attempted to add edge with negative capacity: ${capacityValue}. Skipping.`);
-    return;
-  }
-  if (originNode === destinationNode && capacityValue > 0) {
-    console.warn(`Warning: Self-loop edge detected for node ${originNode} with positive capacity. This might lead to unexpected behavior in flow algorithms. Skipping.`);
+  if (meaningfulLines.length === 0) {
     return;
   }
 
-  networkGraph[originNode].push({
-    target: destinationNode,
-    flowCapacity: capacityValue,
-    reverseEdgeIdx: networkGraph[destinationNode].length
-  });
+  const [vertices, edges] = parseNumbers(meaningfulLines[0]);
+  totalVerticesCount = vertices;
+  totalEdgesCount = edges;
 
-  networkGraph[destinationNode].push({
-    target: originNode,
-    flowCapacity: 0,
-    reverseEdgeIdx: networkGraph[originNode].length - 1
-  });
+  for (let i = 0; i < totalVerticesCount; ++i) {
+    adjacencyList[i] = [];
+  }
+
+  for (let i = 1; i < meaningfulLines.length; ++i) {
+    const [u, v, c] = parseNumbers(meaningfulLines[i]);
+    addFlowEdge(u, v, c);
+  }
+};
+
+class FlowEdge {
+  constructor(target, capacity, reverseIndex) {
+    this.target = target;
+    this.capacity = capacity;
+    this.reverseIndex = reverseIndex;
+  }
 }
 
-function findAugmentingPath(currentNode, targetNode, currentFlowLimit) {
-  if (currentFlowLimit <= 0) { // Early exit if no flow can be pushed
-    return 0;
+function addFlowEdge(sourceNode, targetNode, capacityValue) {
+  const currentSourceAdjLength = adjacencyList[sourceNode].length;
+  const currentTargetAdjLength = adjacencyList[targetNode].length;
+
+  adjacencyList[sourceNode].push(new FlowEdge(targetNode, capacityValue, currentTargetAdjLength));
+  adjacencyList[targetNode].push(new FlowEdge(sourceNode, 0, currentSourceAdjLength));
+}
+
+let visitedStatus;
+
+function findAugmentingPath(currentNode, sinkNodeIdentifier, pathFlowLimit) {
+  if (currentNode === sinkNodeIdentifier) {
+    return pathFlowLimit;
   }
-  if (currentNode === targetNode) {
-    return currentFlowLimit;
-  }
 
-  nodeVisitedStatus[currentNode] = true;
+  visitedStatus[currentNode] = true;
 
-  for (let edgeIndex = 0; edgeIndex < networkGraph[currentNode].length; ++edgeIndex) {
-    const currentEdge = networkGraph[currentNode][edgeIndex];
+  for (const edge of adjacencyList[currentNode]) {
+    if (visitedStatus[edge.target] || edge.capacity <= 0) {
+      continue;
+    }
 
-    if (!nodeVisitedStatus[currentEdge.target] && currentEdge.flowCapacity > 0) {
-      const potentialFlow = Math.min(currentFlowLimit, currentEdge.flowCapacity);
+    const potentialFlow = Math.min(pathFlowLimit, edge.capacity);
+    const flowFoundInPath = findAugmentingPath(edge.target, sinkNodeIdentifier, potentialFlow);
 
-      const foundFlowAmount = findAugmentingPath(currentEdge.target, targetNode, potentialFlow);
-
-      if (foundFlowAmount > 0) {
-        currentEdge.flowCapacity -= foundFlowAmount;
-        networkGraph[currentEdge.target][currentEdge.reverseEdgeIdx].flowCapacity += foundFlowAmount;
-
-        return foundFlowAmount;
-      }
+    if (flowFoundInPath > 0) {
+      edge.capacity -= flowFoundInPath;
+      adjacencyList[edge.target][edge.reverseIndex].capacity += flowFoundInPath;
+      return flowFoundInPath;
     }
   }
 
   return 0;
 }
 
-function calculateMaxNetworkFlow(sourceNode, sinkNode) {
-  if (sourceNode < 0 || sourceNode >= numVertices || sinkNode < 0 || sinkNode >= numVertices) {
-    console.error("Error: Invalid source or sink node specified for max flow calculation. Exiting.");
-    process.exit(1);
-  }
-  if (sourceNode === sinkNode) {
-    console.warn("Warning: Source and sink nodes are the same. Max flow will be 0.");
-    return 0;
-  }
+function computeMaxFlow(sourceIdentifier, sinkIdentifier) {
+  let accumulatedFlow = 0;
+  const MAX_CAPACITY_VALUE = Number.POSITIVE_INFINITY;
 
-  let totalNetworkFlow = 0;
-  let foundFlowAmount = 0;
-  let iterationSafetyCounter = 0;
-  // A heuristic upper bound for Edmonds-Karp iterations is roughly E * V^2, but
-  // for simple graphs, V*E can be a reasonable safety net.
-  const MAX_ITERATIONS_ALLOWED = Math.max(1000, numVertices * totalEdges * 2);
+  while (true) {
+    visitedStatus = new Array(totalVerticesCount).fill(false);
 
-  do {
-    nodeVisitedStatus = new Array(numVertices).fill(false);
+    const flowIncrement = findAugmentingPath(sourceIdentifier, sinkIdentifier, MAX_CAPACITY_VALUE);
 
-    // Initial flow limit for DFS is the maximum safe integer, effectively infinity.
-    foundFlowAmount = findAugmentingPath(sourceNode, sinkNode, Number.MAX_SAFE_INTEGER);
-
-    totalNetworkFlow += foundFlowAmount;
-
-    iterationSafetyCounter++;
-    if (iterationSafetyCounter > MAX_ITERATIONS_ALLOWED) {
-      console.warn("Warning: Max flow calculation exceeded iteration limit. Graph might be too large or contains issues. Returning current flow.");
+    if (flowIncrement === 0) {
       break;
     }
 
-  } while (foundFlowAmount > 0);
+    accumulatedFlow += flowIncrement;
+  }
 
-  return totalNetworkFlow;
+  return accumulatedFlow;
 }
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (inputBuffer) => {
+  processInputData(inputBuffer);
+  console.log(computeMaxFlow(0, totalVerticesCount - 1));
+});

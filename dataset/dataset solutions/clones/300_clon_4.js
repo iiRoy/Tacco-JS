@@ -1,60 +1,56 @@
-(function (dataStream) {
-    const lineSegments = dataStream.replace(/\r/g, '').split("\n");
-    let lineCursor = 0;
+(function (sourceText) {
+    const lineSegments = sourceText.replace(/\r/g, '').split('\n');
+    let currentLinePointer = 0;
 
-    const retrieveNextLine = () => lineSegments[lineCursor++];
-    const retrieveNextNumericValue = () => parseInt(retrieveNextLine(), 10);
+    const retrieveNextGridBlock = () => {
+        const dimensionValue = parseInt(lineSegments[currentLinePointer++], 10);
+        if (dimensionValue === 0) {
+            return null;
+        }
+        const gridContent = Array.from({ length: dimensionValue }, () => lineSegments[currentLinePointer++]);
+        return { dimension: dimensionValue, gridData: gridContent };
+    };
 
-    const checkClearSquareRegion = (matrixGrid, matrixDimension, colPos, rowPos, extent) => {
-        if (rowPos + extent >= matrixDimension || colPos + extent >= matrixDimension) {
+    const checkClearSquare = (columnStart, rowStart, squareSideLength, gridContent, gridDimension) => {
+        if (rowStart + squareSideLength > gridDimension || columnStart + squareSideLength > gridDimension) {
             return false;
         }
-
-        const rowsToCheck = Array.from({ length: extent + 1 }, (_, index) => rowPos + index);
-        const colsToCheck = Array.from({ length: extent + 1 }, (_, index) => colPos + index);
-
-        return rowsToCheck.every(r =>
-            colsToCheck.every(c =>
-                matrixGrid[r][c] === '.'
-            )
-        );
+        return Array.from({ length: squareSideLength }, (_, rowOffset) => rowOffset + rowStart)
+            .every(currentRowIndex =>
+                Array.from({ length: squareSideLength }, (_, colOffset) => colOffset + columnStart)
+                    .every(currentColIndex => gridContent[currentRowIndex][currentColIndex] === '.')
+            );
     };
 
-    const processAllGrids = () => {
-        const currentDimension = retrieveNextNumericValue();
+    let currentProcessingBlock;
+    while ((currentProcessingBlock = retrieveNextGridBlock()) !== null) {
+        const gridDimensionValue = currentProcessingBlock.dimension;
+        const currentGridData = currentProcessingBlock.gridData;
 
-        if (currentDimension === 0) {
-            return;
-        }
-
-        const currentMatrix = [];
-        for (let rIndex = 0; rIndex < currentDimension; ++rIndex) {
-            currentMatrix.push(retrieveNextLine());
-        }
-
-        const calculateMaxExtent = (currentY, currentX, currentExtentValue) => {
-            if (currentY >= currentDimension) {
-                return currentExtentValue;
-            }
-
-            if (checkClearSquareRegion(currentMatrix, currentDimension, currentX, currentY, currentExtentValue)) {
-                return calculateMaxExtent(currentY, currentX, currentExtentValue + 1);
-            } else {
-                const nextXPosition = currentX + currentExtentValue;
-                if (nextXPosition >= currentDimension) {
-                    return calculateMaxExtent(currentY + 1, 0, currentExtentValue);
-                } else {
-                    return calculateMaxExtent(currentY, nextXPosition, currentExtentValue);
-                }
-            }
+        let traversalState = {
+            maximumSquareDimensionMinusOne: 1,
+            currentTraversalRow: 0,
+            currentTraversalColumn: 0
         };
 
-        const finalCalculatedExtent = calculateMaxExtent(0, 0, 1);
-        console.log(finalCalculatedExtent);
-
-        processAllGrids();
-    };
-
-    processAllGrids();
-
+        while (traversalState.currentTraversalRow < gridDimensionValue) {
+            if (traversalState.currentTraversalColumn < gridDimensionValue) {
+                if (checkClearSquare(
+                    traversalState.currentTraversalColumn,
+                    traversalState.currentTraversalRow,
+                    traversalState.maximumSquareDimensionMinusOne + 1,
+                    currentGridData,
+                    gridDimensionValue
+                )) {
+                    traversalState.maximumSquareDimensionMinusOne++;
+                } else {
+                    traversalState.currentTraversalColumn += traversalState.maximumSquareDimensionMinusOne;
+                }
+            } else {
+                traversalState.currentTraversalRow++;
+                traversalState.currentTraversalColumn = 0;
+            }
+        }
+        console.log(traversalState.maximumSquareDimensionMinusOne);
+    }
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

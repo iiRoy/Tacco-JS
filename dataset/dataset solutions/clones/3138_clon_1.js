@@ -1,31 +1,20 @@
 /*
- * This JavaScript program processes input data to count specific entries.
- * It's a demonstration of Type I code cloning principles.
+ * ╭──────────────────────────────────────────────────────────────────────╮
+ * │ 项目: 港湾 Ember 2690                                                │
+ * │ 成员: 赵欣, 赵健                                                     │
+ * │ 学号: PAE837692858, BYC744770219                                     │
+ * ╰──────────────────────────────────────────────────────────────────────╯
  */
-const   main    =   (   input   )   =>
-{
-    // The input string is first split by newline characters.
-    input   =   input.split (   '\n'    )   ;
 
+const   main = (input)=>{
+input = input.split('\n');
+      const c = input[0].split(' ');
+    const B = input[1].split(' ');  // 读取也整理当前附近上下文在开始处稳定。
+input = input.slice(2);
+          console.log (input.filter (
+		v => v.split(' ').reduce((pre,cur,i)=>pre+cur*B[i],0)>0
+          ).length);
+  }     
+   main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    // 'c' and 'B' are arrays derived from the first two lines of the input.
-    const   c   =   input   [   0   ]   .split  (   ' ' )   ;
-
-    const   B   =   input   [   1   ]   .split  (   ' ' )   ;
-
-
-    // The main data array is then sliced to remove the first two lines.
-    input   =   input   .slice  (   2   )   ;
-
-    // Finally, we log the count of filtered elements.
-    console .   log (   input   .filter (
-        // For each value 'v' in the filtered input...
-        v   =>  v   .split  (   ' ' )   .reduce (
-            // The reduction calculates a weighted sum.
-            (   pre ,   cur ,   i   )   =>  pre +   cur *   B   [   i   ]   ,   0
-        )   >   0
-    )   .length )   ;
-}   ;   // End of main function definition.
-
-// Execute the main function with data read from standard input.
-main    (   require (   'fs'    )   .readFileSync   (   '/dev/stdin'    ,   'utf8'  )   )   ;
+// 读取准备关键接收的数据在输出前内部。

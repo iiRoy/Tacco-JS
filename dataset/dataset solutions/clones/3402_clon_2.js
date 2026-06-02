@@ -1,198 +1,214 @@
-var InputProcessor = ( function() {
-
-  /* This self-executing anonymous function creates a private scope
-   * and returns a factory function for an input parsing utility. */
-
+var InputProcessor = (function () {
   /**
-   * Serves as the primary entry point to construct a new DataParser.
-   * @param {string} inputText - The entire raw text content to be processed.
-   * @returns {DataParser} A fresh instance prepared for data extraction.
+   * Initializes a new input parsing utility.
+   * @param {string} sourceString - The complete string of input data.
+   * @returns {InputDataParser} An instance of the input data parser.
    */
-  function createParser( inputText ) {
-    return new DataParser( inputText );
+  function createParser(sourceString) {
+    return new InputDataParser(sourceString);
   }
 
   /**
-   * The core class responsible for managing and parsing lines of input data.
-   * It maintains the state of which line is currently being read.
-   * @param {string} inputText - The full input string provided.
+   * Represents a parser for structured input data.
+   * @class
+   * @param {string} rawInputString - The raw string content to be parsed.
    */
-  function DataParser( inputText ) {
-    // The collection of input lines, split by newline character, after trimming.
-    this._sourceLines = inputText.trim().split( "\n" );
-    // An internal pointer indicating the current line being processed.
-    this._lineIndex = +0;
+  function InputDataParser(rawInputString) {
+    // Internal storage for all input lines, split by newline and trimmed.
+    this._sourceLines = rawInputString.trim().split("\n");
+    // Pointer to the current line being processed.
+    this._currentLineIndex = 0;
   }
 
-  // Extend the DataParser's capabilities by adding methods to its prototype.
-
   /**
-   * Extracts a single value from the current line. It handles splitting
-   * the line if necessary and advances the line pointer if the line becomes empty.
-   * @param {boolean} asString - If true, returns the value as a string; otherwise, converts to a number.
+   * Retrieves a single value from the current input line.
+   * Values are extracted in reverse order from how they appear on the line.
+   * @param {boolean} returnAsString - If true, the value is returned as a string; otherwise, as a number.
    * @returns {string|number} The extracted data item.
    */
-  DataParser.prototype.extractSingleValue = function( asString ) {
-    var currentLines = this._sourceLines,
-      currentIndex = this._lineIndex,
-      extractedValue; // Temporary holder for the value retrieved from the line.
+  InputDataParser.prototype.extractValue = function (returnAsString) {
+    let linesCollection = this._sourceLines;
+    let currentLinePosition = this._currentLineIndex;
+    let resultItem;
 
-    // Check if the current line is still a single string; if so, split it into parts.
-    // Reversing the array allows for efficient 'pop' operations from the end.
-    if ( typeof currentLines[ currentIndex ] === "string" ) {
-      currentLines[ currentIndex ] = currentLines[ currentIndex ].split( " " ).reverse();
+    // If the current line is still a raw string, split it into parts and reverse for easy popping.
+    if (typeof linesCollection[currentLinePosition] === "string") {
+      linesCollection[currentLinePosition] = linesCollection[
+        currentLinePosition
+      ].split(" ").reverse();
     }
 
-    // Retrieve the last element from the current line's array of parts.
-    extractedValue = currentLines[ currentIndex ].pop();
+    // Get the last element from the (reversed) array, which is the next value.
+    resultItem = linesCollection[currentLinePosition].pop();
 
-    // If all elements from the current line have been consumed, move to the next line.
-    if ( !currentLines[ currentIndex ].length ) {
-      this._lineIndex++;
+    // If the current line is now empty after popping, advance to the next line.
+    if (!linesCollection[currentLinePosition].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the value either in its string form or as a parsed number.
-    return asString ? extractedValue : +extractedValue;
+    // Return the item, optionally converted to a number.
+    return returnAsString ? resultItem : Number(resultItem);
   };
 
   /**
-   * Retrieves all values from the current line as an array, then advances to the next line.
-   * @param {boolean} asString - If true, returns an array of strings; otherwise, an array of numbers.
-   * @returns {Array<string|number>} An array containing all items from the line.
+   * Reads an entire line of input and parses its space-separated values.
+   * @param {boolean} returnAsStrings - If true, values are returned as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array containing the parsed values from the line.
    */
-  DataParser.prototype.extractLineValues = function( asString ) {
-    // Fetch the current line, split it into components, and then increment the line index.
-    var lineParts = this._sourceLines[ this._lineIndex++ ].split( " " );
-
-    // Return the array of parts, either as strings or numerically converted.
-    return asString ? lineParts : lineParts.map( item => +item );
+  InputDataParser.prototype.readLineValues = function (returnAsStrings) {
+    // Get the current line, split it by spaces, and then increment the line pointer.
+    let lineSegments = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Return segments as strings or map them to numbers.
+    return returnAsStrings
+      ? lineSegments
+      : lineSegments.map((segment) => Number(segment));
   };
 
   /**
-   * Reads a specified number of lines and processes them into a matrix (array of arrays).
-   * @param {number} count - The number of lines to read for the matrix.
-   * @param {boolean} asString - If true, keeps values as strings; otherwise, converts to numbers.
-   * @returns {Array<Array<string|number>>} A matrix representation of the data.
+   * Reads a specified number of lines and parses them as a 2D matrix of values.
+   * @param {number} numberOfLines - The count of lines to read for the matrix.
+   * @param {boolean} returnAsStrings - If true, values are returned as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
    */
-  DataParser.prototype.extractMatrix = function( count, asString ) {
-    // Extract 'count' lines, then for each line, split it into an array of string components.
-    var resultData = this._sourceLines.slice( this._lineIndex, this._lineIndex += count ).map( lineStr => lineStr.split( " " ) );
-
-    // Depending on the 'asString' flag, return the matrix as strings or numbers.
-    return asString ? resultData : resultData.map( rowArray => rowArray.map( item => +item ) );
+  InputDataParser.prototype.readMatrixValues = function (
+    numberOfLines,
+    returnAsStrings
+  ) {
+    // Extract the specified number of lines and update the line pointer.
+    let matrixRows = this._sourceLines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += numberOfLines)
+    );
+    // Split each row into individual values.
+    let parsedRows = matrixRows.map((rowStr) => rowStr.split(" "));
+    // Return as strings or convert all matrix elements to numbers.
+    return returnAsStrings
+      ? parsedRows
+      : parsedRows.map((row) => row.map((val) => Number(val)));
   };
 
   /**
-   * Fetches a specified number of raw lines without splitting them by spaces.
-   * @param {number} count - The number of raw lines to retrieve.
-   * @param {boolean} asString - If true, returns lines as strings; otherwise, attempts to convert each line to a number.
+   * Reads a specified number of lines without further parsing (as raw lines).
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} returnAsStrings - If true, lines are returned as strings; otherwise, attempts to convert to numbers.
    * @returns {Array<string|number>} An array of raw lines.
    */
-  DataParser.prototype.extractRawLines = function( count, asString ) {
-    // Obtain a segment of 'count' lines from the source, advancing the line index.
-    var resultData = this._sourceLines.slice( this._lineIndex, this._lineIndex += count );
-
-    // Return the raw lines, either as strings or as numbers.
-    return asString ? resultData : resultData.map( item => +item );
+  InputDataParser.prototype.readRawLines = function (
+    numberOfLines,
+    returnAsStrings
+  ) {
+    // Extract the specified number of lines and update the line pointer.
+    let rawLineData = this._sourceLines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += numberOfLines)
+    );
+    // Return lines as strings or attempt to convert them to numbers.
+    return returnAsStrings
+      ? rawLineData
+      : rawLineData.map((line) => Number(line));
   };
 
-  // The factory function 'createParser' is returned, making it publicly accessible.
   return createParser;
+})();
 
-} )();
-
-
-var parserInstance = InputProcessor(
-  require( 'node:fs' )
-  .readFileSync( '/dev/stdin', 'utf8' )
+// Instantiate the input reader by reading from standard input.
+var inputReader = InputProcessor(
+  require("fs").readFileSync("/dev/stdin", "utf8")
 );
 
-// Execute the primary computational task and display its outcome.
-console . log( primaryTask() );
+// Execute the main problem-solving logic and print its result to the console.
+console.log(solveProblem());
 
 /**
- * This function encapsulates the main logic to solve the given problem.
- * It calculates the minimum column index based on a grid of barriers.
- * @returns {number} The final calculated minimum column value.
+ * Solves the main problem, which involves finding the minimum width path
+ * through a grid with obstacles.
+ * @returns {number} The calculated minimum width.
  */
-function primaryTask() {
-  // Read the dimensions of the board and the total number of operations from input.
-  var boardHeight = parserInstance.extractSingleValue();
-  var boardWidth = parserInstance.extractSingleValue();
-  var numOperations = parserInstance.extractSingleValue();
+function solveProblem() {
+  // Read the grid dimensions (height, width) and the total number of obstacles.
+  const heightVal = inputReader.extractValue();
+  const widthVal = inputReader.extractValue();
+  const numObstacles = inputReader.extractValue();
 
-  // Initialize a grid structure to keep track of barriers.
-  // It's an array where each element is an object, allowing for sparse column storage.
-  // Using boardHeight + 1 enables 1-based indexing for rows.
-  var barrierGrid = Array( boardHeight + 0x1 )
-    .fill( 0.0 )
-    .map( currentElement => {
-      return {}; // Each row is an object to efficiently store barrier column positions.
-    } );
+  // Initialize a data structure to represent the grid and store obstacle locations.
+  // It's an array of objects, allowing for sparse column representation.
+  // Array size is heightVal + 1 for 1-based indexing of rows.
+  let obstacleMap = Array(heightVal + 0x1) // Using hex literal for 1
+    .fill(0)
+    .map((element) => {
+      return {};
+    });
 
-  // Iterate through each of the provided operations.
-  for ( var opCount = +0; opCount < numOperations; opCount++ ) {
-    var operationDetails = parserInstance.extractLineValues(); // Format: [column, row]
+  // Populate the obstacle map with the provided obstacle coordinates.
+  for (let obstacleIndex = 0; obstacleIndex < numObstacles; obstacleIndex++) {
+    // Read the column and row for the current obstacle.
+    // obstacleCoords[0] is column, obstacleCoords[1] is row.
+    let obstacleCoords = inputReader.readLineValues();
 
-    // A specific condition to skip certain operations: if the first value
-    // (representing a column) is less than the second value (representing a row).
-    if ( operationDetails[ 0 ] < operationDetails[ 0x1 ] ) {
+    // If the obstacle's column is less than its row, it's considered invalid or irrelevant; skip it.
+    if (obstacleCoords[0] < obstacleCoords[1]) {
       continue;
     }
 
-    // Mark the barrier in the grid. The row is `operationDetails[1]` and
-    // the column is `operationDetails[0]`. Value `1` signifies a barrier.
-    barrierGrid[ operationDetails[ 0b1 ] ][ operationDetails[ 0 ] ] = 0x1;
+    // Mark the obstacle's position in the map.
+    // The row is obstacleCoords[1], and the column is obstacleCoords[0].
+    obstacleMap[obstacleCoords[1]][obstacleCoords[0]] = 0x1; // Mark with 1
   }
 
-  // Populate the rightmost edge of the grid with permanent barriers.
-  // This simplifies boundary checks during the main traversal.
-  for ( opCount = 0x1; opCount <= boardHeight; opCount++ ) {
-    barrierGrid[ opCount ][ boardWidth + 0x1 ] = 0x1;
+  // Add a "boundary wall" obstacle at widthVal + 1 for every row.
+  // This simplifies boundary checks in the pathfinding logic.
+  for (let rowIdx = 0x1; rowIdx <= heightVal; rowIdx++) {
+    obstacleMap[rowIdx][widthVal + 0x1] = 1; // Mark with 1
   }
 
-  // Determine the initial potential result based on the first row's barriers.
-  // It takes the first barrier's column and subtracts one.
-  var finalResult = Object.keys( barrierGrid[ 0x1 ] )[ +0 ] - 0x1;
+  // Determine the initial minimum width based on the first row's obstacles.
+  // Object.keys returns string keys, so convert to number before subtraction.
+  let minWidth = Number(Object.keys(obstacleMap[1])[0]) - 1;
 
-  // Initialize the current column for the traversal algorithm, starting from column 2.
-  var currentColumn = 0b10;
+  // Initialize the current column position for path traversal, starting from column 2.
+  let currentCol = 0x2; // Using hex literal for 2
 
-  // Begin iterating through rows, from the second row up to the current finalResult
-  // and also constrained by the board's height.
-  for ( opCount = 0b10; opCount <= finalResult && opCount <= boardHeight; opCount++ ) {
-
-    // Advance 'currentColumn' past any barriers encountered in the current row.
-    while ( barrierGrid[ opCount ][ currentColumn ] ) {
-      currentColumn++;
+  // Iterate through rows, starting from the second row, to find the narrowest path.
+  // The loop continues as long as the current row is within the calculated minWidth and grid height.
+  for (
+    let rowIdx = 0x2;
+    rowIdx <= minWidth && rowIdx <= heightVal;
+    rowIdx++
+  ) {
+    // Advance currentCol past any obstacles in the current row.
+    while (obstacleMap[rowIdx][currentCol]) {
+      currentCol++;
     }
 
-    // Iterate over the barrier columns specifically defined for the current row.
-    for ( var barrierColumn in barrierGrid[ opCount ] ) {
-      // Convert the string key (column index) to a numeric type.
-      barrierColumn = +barrierColumn;
+    // Iterate through the obstacles present in the current row.
+    for (let colKey in obstacleMap[rowIdx]) {
+      // Convert the column key (which is a string) to a numeric value.
+      let currentObstacleCol = Number(colKey);
 
-      // If the current traversal column has already passed this barrier, skip it.
-      if ( currentColumn > barrierColumn ) {
+      // If the current search column has already passed this obstacle, skip it.
+      if (currentCol > currentObstacleCol) {
         continue;
       }
 
-      // If this barrier defines a new, smaller possible finalResult, update it.
-      // The result is one less than the barrier's column because the barrier itself is an obstruction.
-      if ( barrierColumn - 0x1 < finalResult ) {
-        finalResult = barrierColumn - 0x1;
+      // If the path to this obstacle is narrower than the current minimum width, update minWidth.
+      if (currentObstacleCol - 1 < minWidth) {
+        minWidth = currentObstacleCol - 1;
       }
-      break; // Once the most relevant barrier for this row is found, no need to check others.
+      // Once an obstacle is found that is not behind the current search column,
+      // it defines the effective boundary for this row, so we can stop checking this row.
+      break;
     }
+    // Move the search column one step to the right for the next row.
+    currentCol++;
 
-    // Increment 'currentColumn' for the next row's evaluation.
-    currentColumn++;
-
-    // If 'currentColumn' reaches or surpasses the board's width, the process can terminate.
-    if ( currentColumn >= boardWidth ) {
+    // If the current search column reaches or exceeds the total width,
+    // it implies that the path has been constrained to the maximum possible extent,
+    // so further iterations won't yield a smaller minWidth.
+    if (currentCol >= widthVal) {
       break;
     }
   }
-  // Return the ultimate calculated result.
-  return finalResult;
+
+  // Return the final calculated minimum width.
+  return minWidth;
 }

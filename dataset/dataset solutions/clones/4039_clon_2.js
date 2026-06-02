@@ -1,35 +1,28 @@
-/*
- * Core processing routine for numerical evaluation.
- */
-function EvaluateNumericInput (  incomingData  )
-{
-    // Break down the received string into distinct segments.
-    const
-        dataSegments = incomingData.split(" ")
-    ;
-    // Parse the initial segment into an integer.
-    let  valueOne  =  Number.parseInt (  dataSegments[0] , 10  )
-    ;
-    // Parse the subsequent segment into an integer.
-    let  valueTwo  =  Number.parseInt (  dataSegments[1] , 10  )
-    ;
-    // Conditional check: is the first value perfectly divisible by the second?
-    if (  valueOne % valueTwo  ===  0  )
-    {
-        // If so, output a specific error code.
-        console['log']( -1 )
-        ;
-        return
-        ; // Terminate execution here.
-    }
-    else
-    {
-        // Otherwise, simply output the first value.
-        console['log'](  valueOne  )
-        ;
-    }
+function ProcessInput(rawData) {
+  // This function processes the incoming raw data string.
+  // It expects two space-separated integer values.
+
+  // Split the input string into an array of substrings using a space as delimiter.
+  let partsArray = rawData.split(" ");
+
+  // Parse the first part as an integer, using base 10.
+  let firstNumber = parseInt(partsArray[0], 10);
+
+  // Parse the second part as an integer, also using base 10.
+  let secondNumber = parseInt(partsArray[1], 10);
+
+  // Check if the first number is perfectly divisible by the second number.
+  if (firstNumber % secondNumber === 0) {
+    // If it is perfectly divisible, output -1 to the console.
+    console.log(-1);
+    // Terminate the function execution.
+    return;
+  } else {
+    // Otherwise (if not perfectly divisible), output the first number to the console.
+    console.log(firstNumber);
+  }
 }
 
-// Initiate the entire process by reading content from the standard input stream.
-EvaluateNumericInput (  require("fs").readFileSync ( "/dev/stdin" ,  "utf8"  )  )
-;
+// Read the content from standard input synchronously,
+// using UTF-8 encoding, and then pass it to our processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

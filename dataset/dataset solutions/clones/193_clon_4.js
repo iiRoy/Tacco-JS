@@ -1,25 +1,23 @@
-const fileSystem = require('node:fs');
-const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const processedNumerics = rawInputContent.trim().split('\n').map(val => Number(val));
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericInputs = fileContent.trim().split("\n").map(Number);
 
-const classificationSchema = [
-    { boundary: 48, designation: "light fly" },
-    { boundary: 51, designation: "fly" },
-    { boundary: 54, designation: "bantam" },
-    { boundary: 57, designation: "feather" },
-    { boundary: 60, designation: "light" },
-    { boundary: 64, designation: "light welter" },
-    { boundary: 69, designation: "welter" },
-    { boundary: 75, designation: "light middle" },
-    { boundary: 81, designation: "middle" },
-    { boundary: 91, designation: "light heavy" },
-    { boundary: Infinity, designation: "heavy" }
+const categoryThresholds = [
+    { limit: 91, designation: "heavy" },
+    { limit: 81, designation: "light heavy" },
+    { limit: 75, designation: "middle" },
+    { limit: 69, designation: "light middle" },
+    { limit: 64, designation: "welter" },
+    { limit: 60, designation: "light welter" },
+    { limit: 57, designation: "light" },
+    { limit: 54, designation: "feather" },
+    { limit: 51, designation: "bantam" },
+    { limit: 48, designation: "fly" }
 ];
 
-for (const currentMeasurement of processedNumerics) {
-    const matchedCategory = classificationSchema.find(item => currentMeasurement <= item.boundary);
-    
-    if (matchedCategory) {
-        console.log(matchedCategory.designation);
-    }
-}
+numericInputs.forEach(individualWeight => {
+    const assignedCategory = categoryThresholds.reduce((currentCategory, thresholdDef) => {
+        return individualWeight > thresholdDef.limit ? thresholdDef.designation : currentCategory;
+    }, "light fly");
+
+    console.log(assignedCategory);
+});

@@ -1,82 +1,66 @@
-const inputSource = require('fs');
+const fileSystem = require('fs');
 
-// Function to process the input and perform grid operations
-function analyzeGridActivity(allContent) {
-  // Parse input lines, keeping potential empty lines as they affect array length
-  const rawLines = allContent.split('\n');
+function processGridData() {
+  const rawInputData = fileSystem.readFileSync(process.stdin.fd).toString('utf8');
+  const inputLines = rawInputData.split('\n');
 
-  // Initialize a 10x10 grid with all zeroes
-  // Using an array of arrays for direct 2D representation
-  const activityMatrix = Array.from({ length: 10 }, () => Array(10).fill(0));
+  const gridDimension = 14;
+  const dataGrid = Array.from({ length: gridDimension }, () =>
+    Array.from({ length: gridDimension }, () => 0)
+  );
 
-  // Helper to safely increment a cell, respecting grid boundaries (0-9)
-  const incrementCell = (gridRef, rowIdx, colIdx) => {
-    if (rowIdx >= 0 && rowIdx < 10 && colIdx >= 0 && colIdx < 10) {
-      gridRef[rowIdx][colIdx]++;
+  const patternSet = {
+    '1': [[1,0], [0,-1], [0,0], [0,1], [-1,0]],
+    '2': [[1,-1], [1,1], [-1,-1], [-1,1]],
+    '3': [[2,0], [-2,0], [0,-2], [0,2]]
+  };
+
+  const typeActionMap = {
+    '1': patternSet['1'],
+    '2': [...patternSet['1'], ...patternSet['2']],
+    '3': [...patternSet['1'], ...patternSet['2'], ...patternSet['3']]
+  };
+
+  // The original loop iterates from the second-to-last line down to the first.
+  // `inputLines.slice(0, -1)` removes the last element (often an empty string from trailing newline).
+  // `reverse()` ensures processing order matches the original `for(;len--;)` loop.
+  inputLines.slice(0, -1).reverse().forEach(currentLine => {
+    if (!currentLine) return;
+
+    const xCoordinate = parseInt(currentLine[0]) + 2;
+    const yCoordinate = parseInt(currentLine[2]) + 2;
+    const actionIdentifier = currentLine[4];
+
+    const relevantOffsets = typeActionMap[actionIdentifier];
+    if (relevantOffsets) {
+      relevantOffsets.forEach(([deltaY, deltaX]) => {
+        const targetY = yCoordinate + deltaY;
+        const targetX = xCoordinate + deltaX;
+        if (targetY >= 0 && targetY < gridDimension && targetX >= 0 && targetX < gridDimension) {
+          dataGrid[targetY][targetX]++;
+        }
+      });
     }
-  };
+  });
 
-  // Define operation functions, simulating fall-through by calling preceding types
-  const handleOperationType1 = (grid, xVal, yVal) => {
-    incrementCell(grid, yVal + 1, xVal);
-    incrementCell(grid, yVal, xVal - 1);
-    incrementCell(grid, yVal, xVal);
-    incrementCell(grid, yVal, xVal + 1);
-    incrementCell(grid, yVal - 1, xVal);
-  };
+  let zeroCount = 0;
+  let highestDrop = 0;
 
-  const handleOperationType2 = (grid, xVal, yVal) => {
-    handleOperationType1(grid, xVal, yVal); // Fall-through from type 1
-    incrementCell(grid, yVal + 1, xVal - 1);
-    incrementCell(grid, yVal + 1, xVal + 1);
-    incrementCell(grid, yVal - 1, xVal - 1);
-    incrementCell(grid, yVal - 1, xVal + 1);
-  };
+  // The original code iterates a 10x10 subgrid from f[2][2] to f[11][11].
+  // This is achieved by iterating yOffset and xOffset from 0 to 9,
+  // then accessing dataGrid[yOffset + 2][xOffset + 2].
+  Array.from({ length: 10 }, (_, yOffset) => {
+    Array.from({ length: 10 }, (_, xOffset) => {
+      const cellValue = dataGrid[yOffset + 2][xOffset + 2];
+      if (cellValue === 0) {
+        zeroCount++;
+      }
+      highestDrop = Math.max(highestDrop, cellValue);
+    });
+  });
 
-  const handleOperationType3 = (grid, xVal, yVal) => {
-    handleOperationType2(grid, xVal, yVal); // Fall-through from type 2
-    incrementCell(grid, yVal + 2, xVal);
-    incrementCell(grid, yVal - 2, xVal);
-    incrementCell(grid, yVal, xVal - 2);
-    incrementCell(grid, yVal, xVal + 2);
-  };
-
-  // Map operation characters to their respective functions
-  const operationDispatcher = {
-    '1': handleOperationType1,
-    '2': handleOperationType2,
-    '3': handleOperationType3,
-  };
-
-  // Process input lines in reverse order, skipping the very last line
-  // (Original loop processes indices from length-2 down to 0)
-  for (let idx = rawLines.length - 2; idx >= 0; idx--) {
-    const currentEntry = rawLines[idx];
-    const horizontalCoord = Number(currentEntry[0]);
-    const verticalCoord = Number(currentEntry[2]);
-    const actionType = currentEntry[4];
-
-    if (operationDispatcher[actionType]) {
-      operationDispatcher[actionType](activityMatrix, horizontalCoord, verticalCoord);
-    }
-  }
-
-  // Flatten the 2D grid into a 1D array for easier aggregation
-  const allCellValues = activityMatrix.flatMap(row => row);
-
-  // Calculate the number of cells that remained at zero
-  const untouchedCells = allCellValues.filter(value => value === 0).length;
-
-  // Find the maximum value in the grid
-  const peakActivity = allCellValues.reduce((maximum, current) => Math.max(maximum, current), 0);
-
-  // Output the results
-  console.log(untouchedCells);
-  console.log(peakActivity);
+  console.log(zeroCount);
+  console.log(highestDrop);
 }
 
-// Read all standard input synchronously
-const completeStdin = inputSource.readFileSync('/dev/stdin', 'utf8');
-
-// Initiate the grid analysis process
-analyzeGridActivity(completeStdin);
+processGridData();

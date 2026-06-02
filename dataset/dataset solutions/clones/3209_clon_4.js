@@ -1,69 +1,79 @@
-const processInputData = (sourceText) => {
-    const numericTokens = sourceText.split(/\s+/).filter(Boolean).map(Number);
-    let currentPosition = 0;
-    return {
-        grabNext: () => numericTokens[currentPosition++],
-    };
-};
-
-const computeOptimalPath = (rawData) => {
-    const dataAccess = processInputData(rawData);
-
-    const dataLength = dataAccess.grabNext();
-    const sequenceElements = Array.from({ length: dataLength }, () => dataAccess.grabNext());
-
-    const memoizationCache = new Map();
-
-    const calculateStateCost = (rowId, stateId) => {
-        if (rowId === 0) {
-            return 0;
+"use strict";
+function I(sourceText, parserFunction) {
+    const valueParser = parserFunction || Number;
+    
+    const lineGenerator = (function* () {
+        const lines = sourceText.split("\n");
+        let currentLineIndex = 0;
+        while (currentLineIndex < lines.length) {
+            yield lines[currentLineIndex++];
         }
+    })();
 
-        const cacheKey = `${rowId},${stateId}`;
-        if (memoizationCache.has(cacheKey)) {
-            return memoizationCache.get(cacheKey);
+    let tokenBuffer = [];
+    let bufferPosition = 0;
+    let currentFullLine = null;
+
+    const advanceToNextLine = () => {
+        const nextLineResult = lineGenerator.next();
+        if (nextLineResult.done) {
+            tokenBuffer = [];
+            currentFullLine = null;
+            return false;
         }
-
-        const currentElementValue = sequenceElements[rowId - 1];
-        const costForEvenRule = currentElementValue === 0 ? 2 : currentElementValue % 2;
-        const costForOddRule = (currentElementValue + 1) % 2;
-
-        let calculatedCost;
-
-        switch (stateId) {
-            case 0:
-                calculatedCost = calculateStateCost(rowId - 1, 0) + currentElementValue;
-                break;
-            case 1:
-                calculatedCost = Math.min(calculateStateCost(rowId - 1, 0), calculateStateCost(rowId - 1, 1)) + costForEvenRule;
-                break;
-            case 2:
-                calculatedCost = Math.min(calculateStateCost(rowId - 1, 0), calculateStateCost(rowId - 1, 1), calculateStateCost(rowId - 1, 2)) + costForOddRule;
-                break;
-            case 3:
-                calculatedCost = Math.min(calculateStateCost(rowId - 1, 2), calculateStateCost(rowId - 1, 3)) + costForEvenRule;
-                break;
-            case 4:
-                calculatedCost = Math.min(
-                    calculateStateCost(rowId - 1, 0),
-                    calculateStateCost(rowId - 1, 1),
-                    calculateStateCost(rowId - 1, 2),
-                    calculateStateCost(rowId - 1, 3),
-                    calculateStateCost(rowId - 1, 4)
-                ) + currentElementValue;
-                break;
-            default:
-                calculatedCost = Infinity;
-        }
-        memoizationCache.set(cacheKey, calculatedCost);
-        return calculatedCost;
+        currentFullLine = nextLineResult.value;
+        tokenBuffer = currentFullLine.trim().split(" ");
+        bufferPosition = 0;
+        return true;
     };
 
-    let minimumOverallResult = Infinity;
-    for (let s = 0; s < 5; s++) {
-        minimumOverallResult = Math.min(minimumOverallResult, calculateStateCost(dataLength, s));
-    }
-    return minimumOverallResult;
-};
+    advanceToNextLine();
 
-console.log(computeOptimalPath(require("fs").readFileSync("/dev/stdin", "utf8")));
+    this.a = function() {
+        if (bufferPosition >= tokenBuffer.length) {
+            if (!advanceToNextLine()) {
+                return;
+            }
+        }
+        const tokenValue = tokenBuffer[bufferPosition];
+        bufferPosition++;
+        return valueParser(tokenValue);
+    };
+
+    this.l = function() {
+        if (currentFullLine === null) return;
+
+        const lineToProcess = currentFullLine;
+        advanceToNextLine();
+
+        return lineToProcess.split(" ").map(valueParser);
+    };
+}
+module.exports = I;
+
+function processInputAndCalculate(inputData) {
+  const dataReader = new I(inputData);
+  
+  const sequenceLength = dataReader.a();
+
+  const numberSequence = Array.from({ length: sequenceLength }, () => dataReader.a());
+
+  const finalMinimumCosts = numberSequence.reduce((previousCosts, currentElement) => {
+      const costForEven = currentElement === 0 ? 2 : currentElement % 2;
+      const costForOdd = (currentElement + 1) % 2;
+
+      const currentIterationCosts = Array(5);
+
+      currentIterationCosts[0] = previousCosts[0] + currentElement;
+      currentIterationCosts[1] = Math.min(previousCosts[0], previousCosts[1]) + costForEven;
+      currentIterationCosts[2] = Math.min(previousCosts[0], previousCosts[1], previousCosts[2]) + costForOdd;
+      currentIterationCosts[3] = Math.min(previousCosts[2], previousCosts[3]) + costForEven;
+      currentIterationCosts[4] = Math.min(...previousCosts) + currentElement;
+
+      return currentIterationCosts;
+  }, [0, 0, 0, 0, 0]);
+
+  console.log(Math.min(...finalMinimumCosts));
+}
+
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

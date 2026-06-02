@@ -1,26 +1,24 @@
-'use strict';
+'use strict'
 
-function processGeometricPattern(sourceText) {
-  const allRawLines = sourceText.split('\n');
+function processGridData(rawData) {
+  const allLines = rawData.split('\n');
 
-  const dimensionValues = allRawLines[0].match(/\d+/g).map(Number);
-  const [rowsCount, columnsCount] = dimensionValues;
-
-  const innerContentRows = allRawLines.slice(1, rowsCount + 1);
+  const [dimHStr, dimWStr] = allLines[0].split(' ');
+  const actualHeight = parseInt(dimHStr, 10);
+  const actualWidth = parseInt(dimWStr, 10);
 
   const frameSymbol = '#';
-  const totalWidth = columnsCount + 2;
-  const horizontalBoundary = frameSymbol.repeat(totalWidth);
+  const totalRowLength = actualWidth + 2;
 
-  const framedMiddleSection = innerContentRows.map(line => frameSymbol + line + frameSymbol);
+  const frameLine = frameSymbol.repeat(totalRowLength);
 
-  const finalOutputSegments = [
-    horizontalBoundary,
-    ...framedMiddleSection,
-    horizontalBoundary
-  ];
+  const contentSegments = allLines.slice(1, actualHeight + 1).map(segment => {
+    return frameSymbol + segment + frameSymbol;
+  });
 
-  console.log(finalOutputSegments.join('\n'));
+  const assembledOutput = [frameLine, ...contentSegments, frameLine].join('\n');
+
+  console.log(assembledOutput);
 }
 
-processGeometricPattern(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

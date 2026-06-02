@@ -1,33 +1,35 @@
-const inputOutputUtil = require('fs');
+const fs = require('fs');
 
-const computationEngine = (rawLineData) => {
-    let numericRecords = [];
-    for (let i = 1; i < rawLineData.length; i++) {
-        numericRecords.push(Number(rawLineData[i]));
-    }
-
-    if (numericRecords.length === 0) {
-        console.log(0);
-        return;
-    }
-
-    let highestValue = -Infinity;
-    let currentRecordIndex = 0;
-    while (currentRecordIndex < numericRecords.length) {
-        if (numericRecords[currentRecordIndex] > highestValue) {
-            highestValue = numericRecords[currentRecordIndex];
-        }
-        currentRecordIndex++;
-    }
-
-    let overallTotal = 0;
-    let sumIndex = 0;
-    do {
-        overallTotal += numericRecords[sumIndex];
-        sumIndex++;
-    } while (sumIndex < numericRecords.length);
-
-    console.log(overallTotal - (highestValue / 2));
+const parseInputValues = (rawText) => {
+  const lines = rawText.trim().split('\n');
+  return lines.slice(1).map(Number);
 };
 
-computationEngine(inputOutputUtil.readFileSync('/dev/stdin', 'utf8').trim().split('\n'));
+const computeSpecialSum = (numericSequence) => {
+  if (numericSequence.length === 0) {
+    return 0;
+  }
+
+  const peakValue = Math.max(...numericSequence);
+  const firstPeakIndex = numericSequence.indexOf(peakValue);
+
+  let finalAccumulation = 0;
+  for (let i = 0; i < numericSequence.length; i++) {
+    const currentElement = numericSequence[i];
+    if (i === firstPeakIndex) {
+      finalAccumulation += currentElement / 2;
+    } else {
+      finalAccumulation += currentElement;
+    }
+  }
+  return finalAccumulation;
+};
+
+const runProgram = () => {
+  const fileData = fs.readFileSync('/dev/stdin', 'utf8');
+  const numbersForProcessing = parseInputValues(fileData);
+  const result = computeSpecialSum(numbersForProcessing);
+  console.log(result);
+};
+
+runProgram();

@@ -1,89 +1,119 @@
-'use strict'; // Enforce strict parsing rules
+'use strict' // Enforce strict mode for cleaner code.
 
-executeProgram(); // Initiate the main application flow
+// Main entry point for the application.
+entryPoint()
 
-function executeProgram(programArguments) {
-  // This function orchestrates the data acquisition, parsing, and computation steps.
-  acquireDataStream() // First, retrieve the raw input data.
-    .then(processDataString) // Next, transform the raw data into a structured format.
-    .then(computeShortestPath); // Finally, perform the core path calculation.
+/**
+ * Initiates the program flow by reading input, parsing it, and then performing calculations.
+ * @param {any} rawData - Placeholder for potential direct input, though typically read from stdin.
+ */
+function entryPoint (rawData) {
+  // Asynchronously acquire input from standard input.
+  acquireInput()
+    .then(processRawData) // Parse the raw string input into a structured format.
+    .then(computeResult)  // Perform the core calculation logic.
 }
 
-function computeShortestPath(graphData) {
-  /*
-   * This function implements the Bellman-Ford algorithm to find the shortest
-   * path in a graph, or detect negative cycles.
-   */
-  let numNodes = graphData[0][0]; // Extract the total number of nodes from the input.
-  let numEdges = graphData[0][1]; // Extract the total number of edges from the input.
+/**
+ * Computes the shortest path using a modified Bellman-Ford algorithm,
+ * detecting negative cycles if present.
+ * @param {Array<Array<number>>} processedInput - The parsed input data.
+ */
+function computeResult (processedInput) {
+  // Extract graph dimensions: number of nodes (vertices) and number of edges.
+  let nodeCount = processedInput[0][0]
+  let edgeCount = processedInput[0][1]
 
-  let distances = new Array(numNodes).fill(Number.POSITIVE_INFINITY); // Initialize distances to all nodes as infinite.
-  distances[0] = 0; // The distance from the source node (node 0) to itself is zero.
+  // Initialize distances array. All nodes are initially unreachable (Infinity),
+  // except the starting node (node 0), which has a distance of 0.
+  let distances = new Array(nodeCount).fill(Infinity)
+  distances[0] = 0
 
-  // Prepare the list of edges, negating weights for a longest path variation.
-  let graphConnections = new Array(numEdges).fill(null).map(
-    (_val, currentIndex) => ({
-      originNode: graphData[currentIndex + 1][0] - 1, // Source node index (0-based).
-      targetNode: graphData[currentIndex + 1][1] - 1, // Destination node index (0-based).
-      edgeCost: graphData[currentIndex + 1][2] * -1 // Negate the cost; effectively finding the "longest path".
+  // Prepare the list of edges.
+  // Note: Weights are reversed (multiplied by -1) because the problem
+  // likely asks for the longest path, which can be solved by finding
+  // the shortest path on a graph with negated edge weights.
+  let graphEdges = new Array(edgeCount).fill(0).map(
+    ( _ , idx ) => ({
+      sourceNode: processedInput[idx + 1][0] - 1, // Adjust to 0-indexed.
+      targetNode: processedInput[idx + 1][1] - 1, // Adjust to 0-indexed.
+      edgeWeight: processedInput[idx + 1][2] * -1 // Negate weight for longest path.
     })
-  );
+  )
 
-  let iterationCounter = 0; // Counter for Bellman-Ford iterations.
+  // Bellman-Ford algorithm iteration counter.
+  // We iterate up to N-1 times for shortest paths, and one more time (Nth iteration)
+  // to detect negative cycles.
+  let updateCounter = 0
   while (true) {
-    let wasModified = false; // Flag to check if any distance was updated in this iteration.
-    for (let currentLink of graphConnections) {
-      // Iterate through all edges to relax them.
-      let conditionMet =
-        distances[currentLink.originNode] !== Number.POSITIVE_INFINITY && // Ensure source node is reachable.
-        distances[currentLink.targetNode] > distances[currentLink.originNode] + currentLink.edgeCost; // Check for a shorter path.
+    let hasUpdated = false // Flag to track if any distance was updated in the current pass.
 
-      if (conditionMet) {
-        distances[currentLink.targetNode] = distances[currentLink.originNode] + currentLink.edgeCost; // Update target node's distance.
-        wasModified = true; // Mark that an update occurred.
+    // Iterate over all edges to relax them.
+    for (let currentEdge of graphEdges) {
+      // Check if the source node is reachable and if a shorter path to the target node
+      // can be found through the current edge.
+      let needsUpdate = distances[currentEdge.sourceNode] < Infinity &&
+                        distances[currentEdge.targetNode] > distances[currentEdge.sourceNode] + currentEdge.edgeWeight
+
+      if (needsUpdate) {
+        // Update the distance to the target node.
+        distances[currentEdge.targetNode] = distances[currentEdge.sourceNode] + currentEdge.edgeWeight
+        hasUpdated = true // Mark that an update occurred.
       }
     }
 
-    if (wasModified) {
-      iterationCounter++; // Increment iteration count if updates were made.
+    // If no distances were updated in a full pass, the shortest paths have been found.
+    if (hasUpdated) {
+      updateCounter++ // Increment the pass counter.
     } else {
-      break; // No updates in this iteration, so the algorithm has converged.
+      break // No updates, so we can stop.
     }
 
-    // If an update occurs in the (numNodes + 1)-th iteration, a negative cycle exists.
-    if (iterationCounter === numNodes + 1) {
-      console.log('infinite_path'); // Indicate an infinitely long path due to a negative cycle.
-      return; // Terminate execution.
+    // If updates continue beyond N passes (i.e., N+1 passes), it indicates a negative cycle
+    // reachable from the source node.
+    if (updateCounter === nodeCount + 1) {
+      console.log('inf') // Output 'inf' as per problem specification for negative cycles.
+      return // Terminate execution.
     }
   }
-  // Output the final computed distance to the last node, adjusted back to positive.
-  console.log(distances[numNodes - 1] * -1);
+
+  // Output the shortest path to the last node (nodeCount - 1),
+  // reversing the negation applied to weights to get the original longest path value.
+  console.log(distances[nodeCount - 1] * -1)
 }
 
-function processDataString(rawTextStream) {
-  // This function takes a raw string input and converts it into a structured array of numbers.
-  let parsedNumericalData = rawTextStream
-    .split('\n') // Split the input string by newline characters into an array of lines.
-    .map(lineText =>
-      lineText.split(' ').map(parseFloat) // For each line, split by space and convert parts to numbers.
-    );
-  return parsedNumericalData; // Return the 2D array of parsed numerical values.
+/**
+ * Parses raw string input into a structured array of numbers.
+ * Each line is split by space, and each part is converted to a number.
+ * @param {string} rawText - The raw input string from stdin.
+ * @returns {Array<Array<number>>} - Parsed input as a 2D array of numbers.
+ */
+function processRawData (rawText) {
+  // Split the raw text by newlines, then each line by spaces, and convert to numbers.
+  let processedInput = rawText.split('\n').map(lineStr => lineStr.split(' ').map(Number))
+  return processedInput
 }
 
-function acquireDataStream() {
-  // This asynchronous function reads all incoming data from standard input.
-  return new Promise((completePromise) => {
-    let bufferedChunks = []; // Array to store incoming data chunks.
-    process.stdin.resume(); // Ensure the standard input stream is open.
-    process.stdin.setEncoding('utf8'); // Set encoding for incoming data.
+/**
+ * Asynchronously reads all data from standard input.
+ * @returns {Promise<string>} A promise that resolves with the complete input string.
+ */
+function acquireInput () {
+  return new Promise((resolvePromise) => {
+    let inputChunks = [] // Array to store incoming data chunks.
+    process.stdin.resume() // Ensure stdin is open and emitting data.
+    process.stdin.setEncoding('utf8') // Set encoding to UTF-8.
 
-    process.stdin.on('data', (dataPiece) => {
-      bufferedChunks.push(dataPiece); // Append each data chunk to the buffer.
-    });
+    // Event listener for 'data' chunks from stdin.
+    process.stdin.on('data', (dataChunk) => {
+      inputChunks.push(dataChunk) // Accumulate data chunks.
+    })
 
+    // Event listener for 'end' of stdin stream.
     process.stdin.on('end', () => {
-      let finalInputString = bufferedChunks.join('').trim(); // Join all chunks and remove leading/trailing whitespace.
-      completePromise(finalInputString); // Resolve the promise with the complete input string.
-    });
-  });
+      // Join all chunks, trim whitespace, and resolve the promise.
+      let finalInputString = inputChunks.join('').trim()
+      resolvePromise(finalInputString)
+    })
+  })
 }

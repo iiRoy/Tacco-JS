@@ -1,77 +1,80 @@
-const acquireInput = () => {
-    const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
-    const dataTokens = rawData.split(/ |\n/).filter(Boolean);
-    let tokenPointer = 0;
-    return {
-        grabNum: () => Number(dataTokens[tokenPointer++]),
-        grabSeveralNums: (count) => Array.from({ length: count }, () => Number(dataTokens[tokenPointer++])),
-    };
+"use strict";
+
+const obtainInputData = () => require("fs").readFileSync("/dev/stdin", "utf8");
+
+const createInputParser = (rawTextContent) => {
+    const dataSegments = rawTextContent.split(/ |\n/).filter(Boolean);
+    let currentSegmentPointer = 0;
+
+    const extractNumeric = () => Number(dataSegments[currentSegmentPointer++]);
+    const extractMultipleNumerics = (count) => Array.from({ length: count }, extractNumeric);
+    
+    return { extractNumeric, extractMultipleNumerics };
 };
 
-const parseTools = acquireInput();
-const getNum = parseTools.grabNum;
-const getNums = parseTools.grabSeveralNums;
-
-const computeMaximumValue = () => {
-    const [rows, columns, itemEntries] = getNums(3);
-
-    const itemRegistry = new Map(); // Map<row, Map<col, value>>
-
-    for (let currentEntry = 0; currentEntry < itemEntries; currentEntry++) {
-        const [rowCoord, colCoord, itemValue] = getNums(3);
-        if (!itemRegistry.has(rowCoord)) {
-            itemRegistry.set(rowCoord, new Map());
-        }
-        itemRegistry.get(rowCoord).set(colCoord, itemValue);
+const constructNestedArray = (initialFillValue, ...dimensions) => {
+    if (dimensions.length === 0) {
+        return initialFillValue;
     }
-
-    const createMatrix = (numRows, numCols, initialValue = 0) =>
-        Array.from({ length: numRows }, () => Array.from({ length: numCols }, () => initialValue));
-
-    let previousRowOptimalities = createMatrix(columns + 1, 4);
-
-    const finalOptimalities = Array.from({ length: rows }, (_, rowIdx) => rowIdx + 1)
-        .reduce((accumulatedOptimalities, currRow) => {
-            const currentRowOptimalities = createMatrix(columns + 1, 4);
-
-            Array.from({ length: columns }, (_, colIdx) => colIdx + 1)
-                .forEach(currCol => {
-                    const cellItem = itemRegistry.get(currRow)?.get(currCol) || 0;
-
-                    // Calculate state for 0 items taken in current cell
-                    currentRowOptimalities[currCol][0] = Math.max(
-                        accumulatedOptimalities[currCol][3],
-                        currentRowOptimalities[currCol - 1][0]
-                    );
-
-                    // Calculate states for 1, 2, or 3 items taken in current cell
-                    Array.from({ length: 3 }, (_, itemTakenIdx) => itemTakenIdx + 1)
-                        .forEach(itemsPicked => {
-                            let currentMax = 0;
-
-                            // Option 1: Don't take item from current cell
-                            // This includes carrying over from previous column (current row)
-                            // or resetting from previous row (same column, up to 3 items)
-                            currentMax = Math.max(accumulatedOptimalities[currCol][3], currentRowOptimalities[currCol - 1][itemsPicked]);
-
-                            // Option 2: Take item from current cell (if available)
-                            if (cellItem > 0) {
-                                currentMax = Math.max(
-                                    currentMax,
-                                    accumulatedOptimalities[currCol][3] + cellItem, // Reset from previous row + take current item
-                                    currentRowOptimalities[currCol - 1][itemsPicked - 1] + cellItem // Combine with previous column (current row) + take current item
-                                );
-                            }
-                            currentRowOptimalities[currCol][itemsPicked] = currentMax;
-                        });
-                });
-            return currentRowOptimalities;
-        }, previousRowOptimalities);
-
-    return Math.max(...finalOptimalities[columns]);
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () =>
+        constructNestedArray(initialFillValue, ...remainingDimensions)
+    );
 };
 
-const outcome = computeMaximumValue();
-if (outcome !== undefined) {
-    console.log(String(outcome));
+function processGridForMaxItems() {
+    const dataInterpreter = createInputParser(obtainInputData());
+    const gridRows = dataInterpreter.extractNumeric();
+    const gridCols = dataInterpreter.extractNumeric();
+    const totalItems = dataInterpreter.extractNumeric();
+
+    const itemValueMap = new Map();
+    Array.from({ length: totalItems }).forEach(() => {
+        const [itemRowCoord, itemColCoord, itemWeight] = dataInterpreter.extractMultipleNumerics(3);
+        itemValueMap.set(`${itemRowCoord},${itemColCoord}`, itemWeight);
+    });
+
+    let currentAccumulatedValues = constructNestedArray(0, gridCols + 1, 4);
+
+    const finalAccumulatedValues = Array.from({ length: gridRows }, (_, rowIndex) => rowIndex + 1).reduce((previousRowValues, currentRowIndex) => {
+        const currentRowCalculations = constructNestedArray(0, gridCols + 1, 4);
+
+        Array.from({ length: gridCols }, (_, colIndex) => colIndex + 1).forEach((currentColIndex) => {
+            const itemAtCurrentPosition = itemValueMap.get(`${currentRowIndex},${currentColIndex}`) || 0;
+
+            currentRowCalculations[currentColIndex][0] = Math.max(
+                previousRowValues[currentColIndex][3],
+                currentRowCalculations[currentColIndex - 1][0]
+            );
+
+            Array.from({ length: 3 }, (_, itemPickCount) => itemPickCount + 1).forEach((itemsFromCurrentRow) => {
+                let currentCellMax = 0;
+
+                currentCellMax = Math.max(currentCellMax, currentRowCalculations[currentColIndex - 1][itemsFromCurrentRow]);
+                currentCellMax = Math.max(currentCellMax, previousRowValues[currentColIndex][3]);
+
+                if (itemAtCurrentPosition > 0) {
+                    currentCellMax = Math.max(
+                        currentCellMax,
+                        previousRowValues[currentColIndex][3] + itemAtCurrentPosition
+                    );
+                    
+                    currentCellMax = Math.max(
+                        currentCellMax,
+                        currentRowCalculations[currentColIndex - 1][itemsFromCurrentRow - 1] + itemAtCurrentPosition
+                    );
+                }
+                currentRowCalculations[currentColIndex][itemsFromCurrentRow] = currentCellMax;
+            });
+        });
+        return currentRowCalculations;
+    }, currentAccumulatedValues);
+
+    return Math.max(...finalAccumulatedValues[gridCols]);
+}
+
+const finalOutcome = processGridForMaxItems();
+if (finalOutcome !== undefined) {
+    console.log(String(finalOutcome));
 }

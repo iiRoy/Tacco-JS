@@ -1,65 +1,65 @@
-const inputLines = require('fs').readFileSync(0, 'utf-8').split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
-const totalEntities = Number(inputLines[0]);
-const entityRecords = new Map();
+const nodeCollection = new Map(); // Stores node data: Map<number, { id: number, children: number[], parent: number | null, level: number | null }>
 
-for (let j = 1; j <= totalEntities; ++j) {
-    const parts = inputLines[j].split(' ').map(Number);
-    const currentId = parts[0];
-    const descendantCount = parts[1];
-    const childIds = parts.slice(2, 2 + descendantCount);
+const totalNodes = parseInt(fileContent[0]);
+const inputEntries = fileContent.slice(1, totalNodes + 1)
+                                 .map(entryLine => entryLine.split(' ').map(Number));
 
-    entityRecords.set(currentId, {
-        identifier: currentId,
-        descendants: childIds,
-        ancestry: -1,
-        level: null,
-        classification: null
-    });
-}
+// Populate nodeCollection and establish parent-child relationships
+inputEntries.forEach(entryData => {
+    const primaryId = entryData[0];
+    const childIdentifiers = entryData.slice(2);
 
-for (const [key, value] of entityRecords) {
-    for (const childId of value.descendants) {
-        const childNode = entityRecords.get(childId);
-        if (childNode) {
-            childNode.ancestry = value.identifier;
-        }
+    // Ensure the primary node exists in the collection
+    if (!nodeCollection.has(primaryId)) {
+        nodeCollection.set(primaryId, { id: primaryId, children: [], parent: null, level: null });
     }
-}
+    const currentPrimaryNode = nodeCollection.get(primaryId);
+    currentPrimaryNode.children = childIdentifiers; // Assign children for the current node
 
-let rootEntityIdentifier = -1;
-for (const [key, value] of entityRecords) {
-    if (value.ancestry === -1) {
-        rootEntityIdentifier = key;
+    // For each child, ensure it exists and set its parent
+    childIdentifiers.forEach(childId => {
+        if (!nodeCollection.has(childId)) {
+            nodeCollection.set(childId, { id: childId, children: [], parent: null, level: null });
+        }
+        nodeCollection.get(childId).parent = primaryId;
+    });
+});
+
+// Determine node depths using an iterative Breadth-First Search (BFS)
+let rootNodeId;
+for (const [identifier, nodeData] of nodeCollection.entries()) {
+    if (nodeData.parent === null) {
+        rootNodeId = identifier;
         break;
     }
 }
 
-const visitationQueue = [];
-visitationQueue.push({ entity: entityRecords.get(rootEntityIdentifier), currentLevel: 0 });
+const processingQueue = [];
+processingQueue.push({ nodeId: rootNodeId, currentLevel: 0 });
 
-while (visitationQueue.length > 0) {
-    const { entity, currentLevel } = visitationQueue.shift();
-    entity.level = currentLevel;
+while (processingQueue.length > 0) {
+    const { nodeId: currentIdentifier, currentLevel } = processingQueue.shift();
+    const currentNodeData = nodeCollection.get(currentIdentifier);
+    currentNodeData.level = currentLevel;
 
-    if (entity.ancestry === -1) {
-        entity.classification = 'root';
-    } else if (entity.descendants.length > 0) {
-        entity.classification = 'internal node';
-    } else {
-        entity.classification = 'leaf';
-    }
-
-    for (const childId of entity.descendants) {
-        visitationQueue.push({ entity: entityRecords.get(childId), currentLevel: currentLevel + 1 });
-    }
+    currentNodeData.children.forEach(childIdentifier => {
+        processingQueue.push({ nodeId: childIdentifier, currentLevel: currentLevel + 1 });
+    });
 }
 
-const sortedEntities = Array.from(entityRecords.values()).sort((a, b) => a.identifier - b.identifier);
+// Prepare output
+const allNodeObjects = Array.from(nodeCollection.values());
+allNodeObjects.sort((a, b) => a.id - b.id); // Sort by ID for consistent output order
 
-const outputRows = sortedEntities.map(item => {
-    const childRepresentation = `[${item.descendants.join(', ')}]`;
-    return `node ${item.identifier}: parent = ${item.ancestry}, depth = ${item.level}, ${item.classification}, ${childRepresentation}`;
+const finalOutputLines = allNodeObjects.map(node => {
+    const nodeCategory = node.parent === null ? 'root'
+                       : node.children.length > 0 ? 'internal node'
+                       : 'leaf';
+    const childListRepresentation = `[${node.children.join(', ')}]`;
+    const parentDisplay = node.parent === null ? -1 : node.parent;
+    return `node ${node.id}: parent = ${parentDisplay}, depth = ${node.level}, ${nodeCategory}, ${childListRepresentation}`;
 });
 
-console.log(outputRows.join('\n'));
+console.log(finalOutputLines.join('\n'));

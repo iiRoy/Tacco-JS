@@ -1,31 +1,20 @@
-const filesystemModule = require('fs');
-const standardInputPath = '/dev/stdin';
-
-function extractTokens(sourceData) {
-  return sourceData.split('\n').reduce((accumulator, lineSegment) => {
-    return accumulator.concat(lineSegment.split(' '));
+function extractNumericTokens(sourceData) {
+  return sourceData.split('\n').reduce((accumulator, currentLine) => {
+    return accumulator.concat(currentLine.split(' '));
   }, []);
 }
 
-function acquireData() {
-  const rawContent = filesystemModule.readFileSync(standardInputPath, 'utf8');
-  return extractTokens(rawContent);
+function fetchProgramInput() {
+  const fileSystem = require('fs');
+  const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+  return extractNumericTokens(rawContent);
 }
 
-(() => {
-  const allElements = acquireData();
-  
-  const [initialQuantityString, baseValueString] = allElements;
-  const initialQuantity = Number(initialQuantityString);
-  const baseValue = Number(baseValueString);
+(function executeCalculation() {
+  const programArguments = fetchProgramInput();
+  const firstOperand = Number(programArguments[0]);
+  const secondOperand = Number(programArguments[1]);
 
-  const referenceConstant = 10;
-  const scalarFactor = 100;
-
-  const differenceValue = referenceConstant - initialQuantity;
-  const scaledDifference = differenceValue * scalarFactor;
-  
-  const finalResult = baseValue + scaledDifference;
-
-  console.log(finalResult);
+  const finalOutcome = (1000 - (firstOperand * 100)) + secondOperand;
+  console.log(finalOutcome);
 })();

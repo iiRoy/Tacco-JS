@@ -1,279 +1,260 @@
 'use strict';
+const AppCore = (() => {
+    const environment = {};
 
-const AppKernel = {};
+    const checkBrowserEnv = () => typeof window !== 'undefined';
+    environment.isBrowser = checkBrowserEnv;
 
-((moduleGateway) => {
-    const checkBrowserEnvironment = () => {
-        return typeof window !== 'undefined' && typeof document !== 'undefined';
-    };
-    moduleGateway.isWebContext = checkBrowserEnvironment;
+    const checkNodejsEnv = () => !checkBrowserEnv();
+    environment.isNodejs = checkNodejsEnv;
 
-    const checkNodeEnvironment = () => {
-        return typeof process !== 'undefined' && process.versions && process.versions.node;
-    };
-    moduleGateway.isServerContext = checkNodeEnvironment;
+    const core = {};
 
-    const HTML_ENCODE_MAP = Object.freeze({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    });
+    core.isBrowser = environment.isBrowser;
+    core.isNodejs = environment.isNodejs;
 
-    const escapeHtmlEntities = (inputString) => {
-        const safeString = String(inputString || '');
-        return safeString.replace(/[&<>"']/g, (char) => HTML_ENCODE_MAP[char]);
-    };
-    moduleGateway.htmlEscape = escapeHtmlEntities;
-
-    if (checkBrowserEnvironment()) {
-        const renderCodeBlock = (codeToDisplay) => {
-            const codeContainer = document.getElementById('code-display');
-            if (codeContainer) {
-                codeContainer.innerHTML = `<pre><code>${escapeHtmlEntities(codeToDisplay)}</code></pre>`;
-            } else {
-                console.warn("Code display element not found (id: 'code-display').");
-            }
+    if (core.isBrowser()) {
+        const escapeHtmlEntities = (rawString) => {
+            return String(rawString)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
         };
-        moduleGateway.displayCode = renderCodeBlock;
+        core.escapeHtmlEntities = escapeHtmlEntities;
+
+        const displaySourceCode = (targetFunction) => {
+            document.getElementById('code').innerHTML = `<pre><code>${escapeHtmlEntities(targetFunction)}</code></pre>`;
+        };
+        core.displaySourceCode = displaySourceCode;
     }
 
-    const fetchInputLines = () => {
-        let collectedLines = [];
+    const retrieveInputLines = () => {
+        let inputDataLines = [];
+        if (core.isBrowser()) {
+            const htmlContent = document.getElementById('input').innerHTML;
+            inputDataLines = htmlContent.split('<br>');
+            const trimLine = (line) => line.trim();
+            inputDataLines = inputDataLines.map(trimLine);
+        }
+        if (core.isNodejs()) {
+            const fs = require('fs');
+            inputDataLines = fs.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+        }
+        return inputDataLines;
+    };
+    core.retrieveInputLines = retrieveInputLines;
 
-        if (moduleGateway.isWebContext()) {
-            const inputElement = document.getElementById('input-data');
-            if (inputElement) {
-                collectedLines = inputElement.innerHTML
-                                   .split(/<br\s*\/?>/i)
-                                   .map(line => line.trim())
-                                   .filter(line => line.length > 0);
-            } else {
-                console.error("Input data element not found (id: 'input-data').");
-            }
-        } else if (moduleGateway.isServerContext()) {
-            try {
-                const fs = require('fs');
-                const rawInput = fs.readFileSync(0, 'utf8');
-                collectedLines = rawInput.trim().split('\n');
-            } catch (err) {
-                console.error("Error reading from stdin in Node.js:", err);
-                collectedLines = [];
+    const configureLineProcessor = (callbackFunction) => {
+        if (core.isBrowser()) {
+            const inputDataLines = retrieveInputLines();
+            for (let i = 0; i < inputDataLines.length; i++) {
+                callbackFunction(inputDataLines[i]);
             }
         }
-        return collectedLines;
-    };
-    moduleGateway.obtainInput = fetchInputLines;
-
-    const setupLineIterator = (lineProcessorCallback) => {
-        if (moduleGateway.isWebContext()) {
-            const allLines = fetchInputLines();
-            allLines.forEach(line => lineProcessorCallback(line));
-        } else if (moduleGateway.isServerContext()) {
+        if (core.isNodejs()) {
             const fs = require('fs');
             const readline = require('readline');
-
-            const lineReader = readline.createInterface({
-                input: fs.createReadStream('/dev/stdin'),
-                output: process.stdout,
-                terminal: false
-            });
-
-            lineReader.on('line', (currentLine) => {
-                lineProcessorCallback(currentLine);
+            const readStream = fs.ReadStream('/dev/stdin');
+            const readlineInterface = readline.createInterface({ input: readStream, output: {} });
+            readlineInterface.on('line', (line) => {
+                callbackFunction(line);
             });
         }
     };
-    moduleGateway.processLines = setupLineIterator;
+    core.configureLineProcessor = configureLineProcessor;
 
-    const outputBuffer = [];
-    const outputElementId = 'output-results';
+    let bufferedOutput = [];
 
-    const renderOutputBatch = (linesToOutput) => {
-        if (moduleGateway.isWebContext()) {
-            const outputContainer = document.getElementById(outputElementId);
-            if (outputContainer) {
-                outputContainer.innerHTML = linesToOutput.map(escapeHtmlEntities).join('<br>\n');
-            } else {
-                console.warn("Output results element not found (id: 'output-results').");
+    const renderOutputLines = (linesToOutput) => {
+        if (core.isBrowser()) {
+            document.getElementById('output').innerHTML = linesToOutput.map(core.escapeHtmlEntities).join('<br>\n');
+        }
+        if (core.isNodejs()) {
+            for (let i = 0; i < linesToOutput.length; i++) {
+                console.log(linesToOutput[i]);
             }
-        } else if (moduleGateway.isServerContext()) {
-            linesToOutput.forEach(line => console.log(line));
         }
     };
-    moduleGateway.publishOutput = renderOutputBatch;
+    core.renderOutputLines = renderOutputLines;
 
-    const appendOutputLine = (singleLine) => {
-        if (moduleGateway.isWebContext()) {
-            outputBuffer.push(singleLine);
-            const outputContainer = document.getElementById(outputElementId);
-            if (outputContainer) {
-                outputContainer.innerHTML = outputBuffer.map(escapeHtmlEntities).join('<br>\n');
-            }
-        } else if (moduleGateway.isServerContext()) {
-            console.log(singleLine);
+    const renderSingleOutputLine = (singleOutputEntry) => {
+        if (core.isBrowser()) {
+            bufferedOutput.push(singleOutputEntry);
+            document.getElementById('output').innerHTML = bufferedOutput.map(core.escapeHtmlEntities).join('<br>\n');
+        }
+        if (core.isNodejs()) {
+            console.log(singleOutputEntry);
         }
     };
-    moduleGateway.writeLine = appendOutputLine;
+    core.renderSingleOutputLine = renderSingleOutputLine;
 
-    const initializeApplication = (applicationEntry) => {
-        if (moduleGateway.isWebContext()) {
-            document.addEventListener('DOMContentLoaded', () => {
-                if (typeof applicationEntry === 'function') {
-                    moduleGateway.displayCode(applicationEntry.toString());
-                }
-                applicationEntry();
-            });
-        } else if (moduleGateway.isServerContext()) {
-            applicationEntry();
+    const setupApplicationEntry = (entryPointFunction) => {
+        if (core.isBrowser()) {
+            window.onload = () => {
+                core.displaySourceCode(entryPointFunction);
+                entryPointFunction();
+            };
+        }
+        if (core.isNodejs()) {
+            entryPointFunction();
         }
     };
-    moduleGateway.startApp = initializeApplication;
+    core.setupApplicationEntry = setupApplicationEntry;
 
-})(AppKernel);
+    return core;
+})();
 
-
-const solveProblem = () => {
-    const gameField = Object.freeze({
+const applicationEntry = () => {
+    const gameGrid = {
         minX: 0,
         minY: 0,
-        maxX: 10,
-        maxY: 10
-    });
+        width: 10,
+        height: 10
+    };
 
-    const rabbitMovementPatterns = Object.freeze([
+    const playerMovementVectors = [
         [-1, -2], [0, -2], [1, -2],
         [-2, -1], [2, -1],
         [-2, 0], [2, 0],
         [-2, 1], [2, 1],
         [-1, 2], [0, 2], [1, 2]
-    ]);
+    ];
 
-    const sprinklerEffectZone = Object.freeze([
+    const sprinklerEffectArea = [
         [-1, -1], [0, -1], [1, -1],
         [-1, 0], [0, 0], [1, 0],
         [-1, 1], [0, 1], [1, 1]
-    ]);
+    ];
 
-    const isCoordinateValid = (currentX, currentY) => {
-        return (currentX >= gameField.minX && currentX < gameField.maxX &&
-                currentY >= gameField.minY && currentY < gameField.maxY);
+    const isWithinGridBounds = (xCoord, yCoord) => {
+        return (xCoord >= gameGrid.minX && xCoord < gameGrid.width) &&
+               (yCoord >= gameGrid.minY && yCoord < gameGrid.height);
     };
 
-    const calculateValidMoves = (startingLocation, possibleMoves) => {
-        const [baseX, baseY] = startingLocation;
-        const validDestinations = [];
-
-        for (const [deltaX, deltaY] of possibleMoves) {
-            const nextX = baseX + deltaX;
-            const nextY = baseY + deltaY;
-
-            if (isCoordinateValid(nextX, nextY)) {
-                validDestinations.push([nextX, nextY]);
+    const calculateValidMoves = (currentPosition, movementOffsets) => {
+        const validMoves = [];
+        if (!movementOffsets || movementOffsets.length === 0) {
+            return validMoves;
+        }
+        for (const offsetVector of movementOffsets) {
+            const newX = currentPosition[0] + offsetVector[0];
+            const newY = currentPosition[1] + offsetVector[1];
+            if (isWithinGridBounds(newX, newY)) {
+                validMoves.push([newX, newY]);
             }
         }
-        return validDestinations;
+        return validMoves;
     };
 
-    const getRabbitNextPositions = (rabbitCurrentPosition) => {
-        return calculateValidMoves(rabbitCurrentPosition, rabbitMovementPatterns);
+    const getPlayerNextPositions = (playerCurrentPos) => {
+        return calculateValidMoves(playerCurrentPos, playerMovementVectors);
     };
 
-    const getWetTiles = (sprinklerCenter) => {
-        return calculateValidMoves(sprinklerCenter, sprinklerEffectZone);
+    const getSprinklerAffectedCells = (sprinklerCenter) => {
+        return calculateValidMoves(sprinklerCenter, sprinklerEffectArea);
     };
 
-    let memoizationCache;
-    let pathHistory;
+    let memoizationStore;
+    let pathTrace;
     let recursionCounter;
 
-    const canRabbitEvade = (currentRabbitPos, remainingSprinklers) => {
+    const generateCacheKey = (sprinklerCount, x, y) => `${sprinklerCount},${x},${y}`;
+
+    const canPlayerEvade = (playerCurrentPos, activeSprinklers) => {
         recursionCounter++;
+        const cacheKey = generateCacheKey(activeSprinklers.length, playerCurrentPos[0], playerCurrentPos[1]);
 
-        const cacheKey = `${remainingSprinklers.length}-${currentRabbitPos[0]},${currentRabbitPos[1]}`;
-
-        if (memoizationCache.hasOwnProperty(cacheKey)) {
-            return memoizationCache[cacheKey];
+        if (memoizationStore.hasOwnProperty(cacheKey)) {
+            return memoizationStore[cacheKey];
         }
 
-        if (remainingSprinklers.length === 0) {
-            const survived = true;
-            memoizationCache[cacheKey] = survived;
-            return survived;
+        pathTrace.push(playerCurrentPos);
+        if (activeSprinklers.length <= 0) {
+            // console.log('Path Trace: ' + JSON.stringify(pathTrace));
+            return true;
         }
 
-        pathHistory.push(currentRabbitPos);
+        const currentSprinkler = activeSprinklers[0];
+        const possiblePlayerMoves = getPlayerNextPositions(playerCurrentPos);
+        const sprinklerHazardZones = getSprinklerAffectedCells(currentSprinkler);
 
-        const currentSprinkler = remainingSprinklers[0];
-        const nextSprinklerSequence = remainingSprinklers.slice(1);
+        let foundSurvivalPath = false;
 
-        const rabbitPotentialMoves = getRabbitNextPositions(currentRabbitPos);
-        const tilesAffectedBySprinkler = getWetTiles(currentSprinkler);
-
-        for (const nextRabbitPos of rabbitPotentialMoves) {
-            const isNextPosWet = tilesAffectedBySprinkler.some(wetTile =>
-                wetTile[0] === nextRabbitPos[0] && wetTile[1] === nextRabbitPos[1]
+        for (const nextPlayerPos of possiblePlayerMoves) {
+            const isPlayerInHazard = sprinklerHazardZones.some(hazardCell =>
+                nextPlayerPos[0] === hazardCell[0] && nextPlayerPos[1] === hazardCell[1]
             );
 
-            if (isNextPosWet) {
-                if (canRabbitEvade(nextRabbitPos, nextSprinklerSequence)) {
-                    pathHistory.pop();
-                    memoizationCache[cacheKey] = true;
-                    return true;
+            if (isPlayerInHazard) {
+                const remainingSprinklers = activeSprinklers.slice(1);
+                if (canPlayerEvade(nextPlayerPos, remainingSprinklers)) {
+                    foundSurvivalPath = true;
+                    break;
                 }
             }
         }
 
-        pathHistory.pop();
-        memoizationCache[cacheKey] = false;
-        return false;
+        pathTrace.splice(pathTrace.length - 1, 1);
+        memoizationStore[cacheKey] = foundSurvivalPath;
+        return foundSurvivalPath;
     };
 
-    const InputDataCategories = Object.freeze({
-        RABBIT_START_POS: 0,
-        NUM_SPRINKLERS_COUNT: 1,
-        SPRINKLER_POSITIONS: 2
-    });
+    const inputLineTypeMap = {
+        playerStartLocation: 0,
+        numSprinklersCount: 1,
+        sprinklerPositions: 2
+    };
 
-    let currentInputSession;
-    let inputLineIndex = 0;
+    let currentTestCaseData;
+    let processedLineIndex = 0;
 
-    const parseAndProcessInputLine = (rawLine) => {
-        const parsedArguments = rawLine.split(/\s+/).map(Number).filter(n => !isNaN(n));
+    const parseLineToFloats = (lineString) => lineString.split(' ').map(parseFloat);
 
-        const lineCategory = inputLineIndex % Object.keys(InputDataCategories).length;
+    const processInputLine = (line) => {
+        const parsedValues = parseLineToFloats(line);
 
-        if (lineCategory === InputDataCategories.RABBIT_START_POS) {
-            currentInputSession = {
-                rabbit: { x: parsedArguments[0], y: parsedArguments[1] },
-                numSprinklers: 0,
-                sprinklerLocations: []
-            };
-        } else if (lineCategory === InputDataCategories.NUM_SPRINKLERS_COUNT) {
-            currentInputSession.numSprinklers = parsedArguments[0];
-        } else if (lineCategory === InputDataCategories.SPRINKLER_POSITIONS) {
-            for (let i = 0; i < parsedArguments.length; i += 2) {
-                currentInputSession.sprinklerLocations.push([parsedArguments[i], parsedArguments[i + 1]]);
-            }
+        const numCategories = Object.keys(inputLineTypeMap).length;
+        const currentLineCategory = processedLineIndex % numCategories;
 
-            recursionCounter = 0;
-            memoizationCache = {};
-            pathHistory = [];
-
-            const rabbitInitialPosition = [currentInputSession.rabbit.x, currentInputSession.rabbit.y];
-            const allSprinklerPositions = currentInputSession.sprinklerLocations;
-
-            if (canRabbitEvade(rabbitInitialPosition, allSprinklerPositions)) {
-                AppKernel.writeLine('OK');
-            } else {
-                AppKernel.writeLine('NA');
-            }
+        switch (currentLineCategory) {
+            case inputLineTypeMap.playerStartLocation:
+                currentTestCaseData = {
+                    player: {},
+                    sprinklerLocations: []
+                };
+                currentTestCaseData.player.x = parsedValues[0];
+                currentTestCaseData.player.y = parsedValues[1];
+                if (currentTestCaseData.player.x === 0 && currentTestCaseData.player.y === 0) {
+                    // console.log('end');
+                }
+                break;
+            case inputLineTypeMap.numSprinklersCount:
+                currentTestCaseData.numSprinklers = parsedValues[0];
+                break;
+            case inputLineTypeMap.sprinklerPositions:
+                for (let i = 0; i < parsedValues.length; i += 2) {
+                    currentTestCaseData.sprinklerLocations.push([parsedValues[i], parsedValues[i + 1]]);
+                }
+                // console.log(JSON.stringify(currentTestCaseData));
+                recursionCounter = 0;
+                memoizationStore = {};
+                pathTrace = [];
+                if (canPlayerEvade([currentTestCaseData.player.x, currentTestCaseData.player.y], currentTestCaseData.sprinklerLocations)) {
+                    AppCore.renderSingleOutputLine('OK');
+                } else {
+                    AppCore.renderSingleOutputLine('NA');
+                }
+                // console.log('recursionCounter: ' + recursionCounter);
+                break;
+            default:
+                break;
         }
-        inputLineIndex++;
+        processedLineIndex++;
     };
 
-    AppKernel.processLines(parseAndProcessInputLine);
+    AppCore.configureLineProcessor(processInputLine);
 };
 
-AppKernel.startApp(solveProblem);
+AppCore.setupApplicationEntry(applicationEntry);

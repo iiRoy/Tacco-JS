@@ -1,77 +1,99 @@
-let itemDetails = [
-	// Each inner array represents a product type with its quantity per unit, cost per unit, and maximum available units.
-	[500 * 3, 850 * 3 * 0.88, 4],
-	[300 * 4, 550 * 4 * 0.85, 5],
-	[200 * 5, 380 * 5 * 0.8, 6],
-	[500, 850, 11],
-	[300, 550, 17],
-	[200, 380, 26]
+var productInfo = [
+    // Each inner array represents a product category with:
+    // [total_value_per_unit, total_cost_per_unit, max_quantity_to_consider]
+    [500 * 3, 850 * 3 * 0.88, 4], // Category 0: Group of 3 items
+    [300 * 4, 550 * 4 * 0.85, 5], // Category 1: Group of 4 items
+    [200 * 5, 380 * 5 * 0.8, 6],  // Category 2: Group of 5 items
+    [500, 850, 11],               // Category 3: Single item
+    [300, 550, 17],               // Category 4: Single item
+    [200, 380, 26]                // Category 5: Single item
 ];
 
 /**
- * Calculates the minimum cost to achieve a specific target quantity
- * by combining different product types.
- * @param {number} targetQuantity - The desired total quantity.
- * @returns {number} The lowest possible cost.
+ * Calculates the minimum possible cost to achieve a specific target value
+ * by combining items from different product categories.
+ *
+ * @param {number} targetValue The desired total value to reach.
+ * @returns {number} The lowest price found for the target value, or a very large number if not achievable.
  */
-const calculateMinimumCost = function(targetQuantity) {
-	let lowestValue = 1e8; // Initialize with a very high number to find the minimum
-	let itemCounts = [0, 0, 0, 0, 0, 0]; // Array to store the count for each item type
+var calculateMinCost = function (targetValue) {
+    // Initialize the minimum price found so far to a very high value.
+    var lowestPrice = 100000000;
 
-	// Nested loops to iterate through all possible combinations of item counts
-	for (itemCounts[0] = 0; itemCounts[0] < itemDetails[0][2]; itemCounts[0]++) {
-		for (itemCounts[1] = 0; itemCounts[1] < itemDetails[1][2]; itemCounts[1]++) {
-			for (itemCounts[2] = 0; itemCounts[2] < itemDetails[2][2]; itemCounts[2]++) {
-				for (itemCounts[3] = 0; itemCounts[3] < itemDetails[3][2]; itemCounts[3]++) {
-					for (itemCounts[4] = 0; itemCounts[4] < itemDetails[4][2]; itemCounts[4]++) {
-						for (itemCounts[5] = 0; itemCounts[5] < itemDetails[5][2]; itemCounts[5]++) {
-							let totalQuantity = 0; // Current total quantity for this combination
-							let currentCost = 0; // Current total cost for this combination
+    // Array to store the count of items taken from each product category.
+    // There are 6 categories, so 6 counters.
+    var itemCounts = [0, 0, 0, 0, 0, 0];
 
-							// Calculate total quantity and cost for the current combination
-							for (let itemTypeIndex = 0; itemTypeIndex < 6; itemTypeIndex++) {
-								totalQuantity += itemCounts[itemTypeIndex] * itemDetails[itemTypeIndex][0];
-								currentCost += itemCounts[itemTypeIndex] * itemDetails[itemTypeIndex][1];
-							}
+    // Nested loops to iterate through all possible combinations of item counts
+    // for each product category. The loop bounds are defined by the third element
+    // in each productInfo entry (max_quantity_to_consider).
+    for (itemCounts[0] = 0; itemCounts[0] < productInfo[0][2]; itemCounts[0]++) {
+        for (itemCounts[1] = 0; itemCounts[1] < productInfo[1][2]; itemCounts[1]++) {
+            for (itemCounts[2] = 0; itemCounts[2] < productInfo[2][2]; itemCounts[2]++) {
+                for (itemCounts[3] = 0; itemCounts[3] < productInfo[3][2]; itemCounts[3]++) {
+                    for (itemCounts[4] = 0; itemCounts[4] < productInfo[4][2]; itemCounts[4]++) {
+                        for (itemCounts[5] = 0; itemCounts[5] < productInfo[5][2]; itemCounts[5]++) {
+                            // For each combination, calculate the total value and total price.
+                            var currentSum = 0;
+                            var currentPrice = 0;
 
-							// If the total quantity matches the target, update the minimum cost
-							if (totalQuantity === targetQuantity) {
-								lowestValue = Math.min(currentCost, lowestValue);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return lowestValue; // Return the minimum cost found
+                            // Iterate through all 6 product categories.
+                            for (var idx = 0; idx < 6; idx++) {
+                                // Accumulate total value based on item counts and category value.
+                                currentSum += itemCounts[idx] * productInfo[idx][0];
+                                // Accumulate total price based on item counts and category cost.
+                                currentPrice += itemCounts[idx] * productInfo[idx][1];
+                            }
+
+                            // If the calculated total value matches the target value,
+                            // update the lowest price if the current price is lower.
+                            if (currentSum === targetValue) {
+                                lowestPrice = Math.min(currentPrice, lowestPrice);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Return the minimum price found for the given target value.
+    return lowestPrice;
 };
 
-let inputLines = []; // Array to store input lines from stdin
+// Array to store lines read from standard input.
+var inputLines = [];
 
-// Configure stdin to read data
+// Resume standard input stream to start listening for data.
 process.stdin.resume();
+// Set the encoding for standard input to UTF-8.
 process.stdin.setEncoding('utf8');
 
-// Event listener for incoming data chunks
-process.stdin.on('data', function (dataBlock) {
-	// Split the chunk by newline and add each line to the inputLines array
-	dataBlock.trim().split('\n').forEach(function(singleLine) {
-		inputLines.push(singleLine);
-	});
+// Event listener for incoming data chunks from standard input.
+process.stdin.on('data', function (dataChunk) {
+    // Process each line in the data chunk:
+    // 1. Trim whitespace from the chunk.
+    // 2. Split the chunk into individual lines based on newline characters.
+    // 3. For each resulting line, add it to the inputLines array.
+    dataChunk.trim().split('\n').forEach(function (singleLine) {
+        inputLines.push(singleLine);
+    });
 });
 
-// Event listener for the end of stdin input
-process.stdin.on('end', function() {
-	// Process each collected input line
-	for (let lineIterator = 0; lineIterator < inputLines.length; lineIterator++) {
-		const parsedValue = parseInt(inputLines[lineIterator].trim(), 10); // Parse string to integer
+// Event listener for the 'end' of the standard input stream.
+process.stdin.on('end', function () {
+    // Iterate through each collected input line.
+    for (var lineIndex = 0; lineIndex < inputLines.length; lineIndex++) {
+        // Parse the current line as an integer after trimming whitespace.
+        var parsedInput = parseInt(inputLines[lineIndex].trim());
 
-		// If the parsed value is 0, terminate execution
-		if (parsedValue === 0) {
-			return;
-		}
-		// Otherwise, calculate and print the minimum cost for the current input
-		console.log(calculateMinimumCost(parsedValue));
-	}
+        // If the parsed input is 0, it signifies the end of input processing,
+        // so exit the program.
+        if (parsedInput === 0) {
+            return;
+        }
+
+        // Calculate the minimum cost for the current parsed input value
+        // and print the result to the console.
+        console.log(calculateMinCost(parsedInput));
+    }
 });

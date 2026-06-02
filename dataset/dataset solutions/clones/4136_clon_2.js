@@ -1,45 +1,38 @@
-// This directive enforces strict parsing and error handling in the script.
 'use strict';
 
-// Function to calculate a specific sum based on input criteria.
-let calculateSumOfNumbers = inputString => {
-    // Parse the input string into an array of numeric criteria.
-    // Each segment of the input string, separated by space, is converted to a number.
-    let numericCriteria = inputString.split(' ').map(numberString => Number(numberString));
+// This function processes the raw input string to calculate a specific sum.
+let processInput = (rawData) => {
+  // First, split the input string by spaces and convert each part to a number.
+  let parsedNumbers = rawData.split(' ').map((numStr) => +numStr);
 
-    // Initialize a variable to accumulate the final total.
-    let cumulativeTotal = 0;
+  // Initialize a variable to store the final accumulated result.
+  let finalResult = 0;
 
-    // Loop through numbers starting from 1 up to the first criterion value.
-    for (let currentVal = 1; currentVal <= numericCriteria[0]; currentVal++) {
+  // Iterate from 1 up to the first number provided in the input.
+  for (let idx = 1; idx <= parsedNumbers[0]; idx++) {
+    // Convert the current iteration number to a string, then split it into individual digit characters.
+    // Reduce these characters by converting them back to numbers and summing them up.
+    const digitSum = String(idx)
+      .split('')
+      .reduce((currentSum, digitChar) => currentSum + +digitChar, 0);
 
-        // Convert the current number to a string, then split it into individual character digits.
-        // Reduce these digit characters to their numerical sum.
-        const currentDigitSum = String(currentVal).split('').reduce((digitAccumulator, singleDigitChar) => {
-            return digitAccumulator + Number(singleDigitChar);
-        }, 0); // Start accumulation from zero.
-
-        // Check if the calculated digit sum falls within the specified range
-        // (between the second and third criterion values, inclusive).
-        if (currentDigitSum >= numericCriteria[1] && currentDigitSum <= numericCriteria[2]) {
-            // If it does, add the current number to the cumulative total.
-            cumulativeTotal += currentVal;
-        }
+    // Check if the calculated digit sum falls within the specified range (inclusive).
+    // The range is defined by the second and third numbers from the input.
+    if (digitSum >= parsedNumbers[1] && digitSum <= parsedNumbers[2]) {
+      // If it does, add the current iteration number to our final result.
+      finalResult += idx;
     }
-
-    // Return the final accumulated total.
-    return cumulativeTotal;
+  }
+  // Return the total sum accumulated.
+  return finalResult;
 };
 
-
 // The main entry point function for the application.
-function StartApplication(programInput) {
-    // Log the result of the calculation to the console.
-    console.log(calculateSumOfNumbers(programInput));
+function AppEntry(fileContent) {
+  // Execute the processing logic with the provided file content
+  // and print the returned value to the console.
+  console.log(processInput(fileContent));
 }
 
-// Read input from standard input, decode it as UTF-8, and then
-// pass it to the main application function.
-StartApplication(
-    require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content from standard input synchronously and pass it to the main entry function.
+AppEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,18 +1,17 @@
-( function ( inputDataLine ) {
-    // This block processes a single line of input for arithmetic calculations.
-    const componentStrings = inputDataLine . split ( ' ' ) ;
+(function(inputData) {
+    // Split the incoming string by a space character.
+    var numberStrings = inputData.split(' ');
 
-    const firstOperand = parseFloat ( componentStrings [ 0 ] ) ;
-    const secondOperand = parseFloat ( componentStrings [ 1 ] ) ;
+    // Assign the first parsed number to 'dividend'.
+    var dividend = numberStrings[0];
+    // Assign the second parsed number to 'divisor'.
+    var divisor = numberStrings[1];
 
-    console.log (
-        Math.floor ( firstOperand / secondOperand ) +
-        ' ' +
-        firstOperand % secondOperand +
-        ' ' +
-        ( firstOperand / secondOperand ) . toFixed ( 6 )
-    ) ;
-} (
-    require ( 'fs' )
-        . readFileSync ( '/dev/stdin' , 'utf8' )
-) ) ;
+    // Calculate the floor division, remainder, and fixed-precision division.
+    var floorDivision = Math.floor(dividend / divisor);
+    var remainderValue = dividend % divisor;
+    var preciseDivision = (dividend / divisor).toFixed(6);
+
+    // Print the results to the console, separated by spaces.
+    console.log(floorDivision + ' ' + remainderValue + ' ' + preciseDivision);
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

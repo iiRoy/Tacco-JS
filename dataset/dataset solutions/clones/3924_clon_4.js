@@ -1,35 +1,32 @@
-const processCases = (rawText) => {
-    const lines = rawText.split('\n').filter(Boolean);
-    const totalCases = Number(lines[0]);
-    const outcomes = [];
+const entryPoint = (rawData) => {
+    const lineSegments = rawData.split("\n");
+    const queryQuantity = Number(lineSegments[0]);
 
-    lines.slice(1, totalCases + 1).forEach((caseLine) => {
-        const numeralStrings = caseLine.split(' ');
-        const valA = Number(numeralStrings[0]);
-        const valB = Number(numeralStrings[1]);
+    const processQueryLine = (currentLine) => {
+        const [firstValue, secondValue] = currentLine.split(" ").map(Number);
+        const minimumValue = Math.min(firstValue, secondValue);
+        const maximumValue = Math.max(firstValue, secondValue);
 
-        const smallest = (valA < valB) ? valA : valB;
-        const largest = (valA > valB) ? valA : valB;
+        const intermediateThreshold = Math.ceil(Math.sqrt(minimumValue * maximumValue)) - 1;
 
-        const productOfValues = smallest * largest;
+        const resultComponents = [];
 
-        const squareRootResult = Math.sqrt(productOfValues);
-        const effectiveRootCeiling = (squareRootResult === Math.floor(squareRootResult)) ? squareRootResult : Math.floor(squareRootResult) + 1;
-        const boundaryThreshold = effectiveRootCeiling - 1;
+        resultComponents.push((minimumValue - 1) * 2);
 
-        let finalTally = (smallest - 1) * 2;
+        if (minimumValue < maximumValue - 1) {
+            resultComponents.push(1);
+        }
 
-        finalTally += (smallest < (largest - 1)) ? 1 : 0;
+        resultComponents.push(Math.max(intermediateThreshold - minimumValue, 0) * 2);
 
-        finalTally += ((boundaryThreshold - smallest) > 0 ? (boundaryThreshold - smallest) : 0) * 2;
+        if (Math.floor(minimumValue / intermediateThreshold * maximumValue) === intermediateThreshold) {
+            resultComponents.push(-1);
+        }
 
-        const comparisonValue = Math.floor((smallest * largest) / boundaryThreshold);
-        finalTally -= (comparisonValue === boundaryThreshold) ? 1 : 0;
-        
-        outcomes.push(finalTally);
-    });
+        return resultComponents.reduce((accumulatedSum, currentComponent) => accumulatedSum + currentComponent, 0);
+    };
 
-    console.log(outcomes.join('\n'));
+    lineSegments.slice(1, queryQuantity + 1).map(processQueryLine).forEach(console.log);
 };
 
-processCases(require("fs").readFileSync("/dev/stdin","utf8"));
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

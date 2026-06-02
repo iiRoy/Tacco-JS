@@ -1,324 +1,307 @@
-module.exports = function( programUnits ) {
+module.exports = function (moduleDefinitions) {
+  // A cache for loaded modules.
+  var moduleCache = {};
 
-  // This object serves as a cache for loaded modules, mapping module IDs to their exports.
-  var moduleRegistry = {};
-
-  /**
-   * The primary function responsible for loading modules.
-   * It checks the cache first, and if a module is not found, it loads and caches it.
-   * @param {number} unitId - The unique identifier of the module to load.
-   * @returns {object} The exports object of the requested module.
-   */
-  function importUnit( unitId ) {
-    // If the module is already in our registry, return its exports immediately.
-    if ( moduleRegistry[unitId] ) {
-      return moduleRegistry[unitId].exports;
+  // The core module loading function, similar to a 'require' implementation.
+  function moduleLoader(moduleIdentifier) {
+    // If the module is already in the cache, return its exports immediately.
+    if (moduleCache[moduleIdentifier]) {
+      return moduleCache[moduleIdentifier].exportedContent;
     }
 
-    // If not cached, create a new module entry.
-    var currentUnit = moduleRegistry[unitId] = {
-      // Store the module's numerical identifier.
-      identifier: unitId,
-      // Flag indicating whether the module has completed loading.
-      loaded: false,
-      // The object that will hold the module's exported values.
-      exports: {}
-    };
+    // If not in cache, create a new module entry.
+    // 'i' stores the module's unique identifier.
+    // 'isLoaded' tracks if the module's code has been executed.
+    // 'exportedContent' will hold the module's exports.
+    var moduleEntry = (moduleCache[moduleIdentifier] = {
+      i: moduleIdentifier,
+      isLoaded: false,
+      exportedContent: {},
+    });
 
-    // Execute the module's code, passing in the module object, its exports, and the loader itself.
-    programUnits[unitId].call( currentUnit.exports, currentUnit, currentUnit.exports, importUnit );
+    // Execute the module function.
+    // The module function receives:
+    // 1. The module entry itself (as 'moduleObj' in the module's scope).
+    // 2. The 'exportedContent' object (as 'exportObj').
+    // 3. The 'moduleLoader' function (as 'req' for internal module dependencies).
+    moduleDefinitions[moduleIdentifier].call(
+      moduleEntry.exportedContent,
+      moduleEntry,
+      moduleEntry.exportedContent,
+      moduleLoader
+    );
 
-    // Mark the module as fully loaded after its code has run.
-    currentUnit.loaded = true;
+    // Mark the module as loaded after its execution.
+    moduleEntry.isLoaded = true;
 
-    // Return the exports of the newly loaded module.
-    return currentUnit.exports;
+    // Return the module's exports.
+    return moduleEntry.exportedContent;
   }
 
-  // Attach the complete set of module functions to the loader for internal access.
-  importUnit.modules = programUnits;
+  // Store all module definitions for easy access.
+  moduleLoader.moduleMap = moduleDefinitions;
 
-  // Make the module cache accessible via the loader function.
-  importUnit.cache = moduleRegistry;
+  // Store the module cache for introspection if needed.
+  moduleLoader.cacheMap = moduleCache;
 
-  /**
-   * Defines a property on an object if it doesn't already exist, making it enumerable.
-   * @param {object} targetObject - The object on which to define the property.
-   * @param {string} propertyName - The name of the property to define.
-   * @param {function} propertyGetter - A function that returns the property's value.
-   */
-  importUnit.defineProp = function ( targetObject, propertyName, propertyGetter ) {
-    if ( !importUnit.hasOwn( targetObject, propertyName ) ) {
-      Object.defineProperty( targetObject, propertyName, {
-        enumerable: true, // This property should show up during enumeration.
-        get: propertyGetter // Use the provided function to retrieve the property's value.
-      } );
+  // Utility function to define an enumerable getter property on an object.
+  moduleLoader.defineExport = function (targetObject, propertyName, getterFunction) {
+    // Only define the property if it doesn't already exist on the target.
+    if (!moduleLoader.hasOwn(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true, // Make the property visible during enumeration.
+        get: getterFunction, // The function to call when the property is accessed.
+      });
     }
   };
 
-  /**
-   * Configures a module object to behave like an ES module.
-   * This involves setting Symbol.toStringTag and __esModule properties.
-   * @param {object} moduleObject - The module object to configure.
-   */
-  importUnit.registerEsModule = function ( moduleObject ) {
-    // Set Symbol.toStringTag for better debugging and module identification.
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( moduleObject, Symbol.toStringTag, { value: "Module" } );
+  // Utility function to mark an object as an ECMAScript module.
+  moduleLoader.registerESModule = function (targetModule) {
+    // Set Symbol.toStringTag for better debugging and type identification.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetModule, Symbol.toStringTag, { value: "Module" });
     }
-    // Indicate that this is an ES module.
-    Object.defineProperty( moduleObject, "__esModule", { value: true } );
+    // Explicitly mark the module as an ES module.
+    Object.defineProperty(targetModule, "__esModule", { value: true });
   };
 
-  /**
-   * Handles various module export formats to ensure compatibility.
-   * It can load modules, return existing values, or create a new module object.
-   * @param {*} moduleValue - The module's value or ID.
-   * @param {number} flags - Bitmask flags indicating how to process the module.
-   * @returns {*} The processed module exports.
-   */
-  importUnit.interopRequire = function ( moduleValue, flags ) {
-    // Flag 1: If set, load the module by its ID.
-    if ( 1 & flags ) {
-      moduleValue = importUnit( moduleValue );
+  // Utility function to create a namespace object from a module's exports.
+  moduleLoader.createNamespaceObject = function (value, mode) {
+    // If mode indicates a commonjs module (1 & mode), load it first.
+    if (1 & mode) {
+      value = moduleLoader(value);
     }
-    // Flag 8: If set, return the module value directly.
-    if ( 8 & flags ) {
-      return moduleValue;
-    }
-    // Flag 4: If set and it's an object marked as an ES module, return it directly.
-    if ( 4 & flags && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule ) {
-      return moduleValue;
+    // If mode indicates it's already a namespace object (8 & mode), return as is.
+    if (8 & mode) {
+      return value;
     }
 
-    // Otherwise, create a new module object for interoperability.
-    var newModuleObject = Object.create( null );
-    importUnit.registerEsModule( newModuleObject ); // Mark as ES module.
-    Object.defineProperty( newModuleObject, "default", { enumerable: true, value: moduleValue } ); // Set default export.
+    // If mode indicates it's an ES module (4 & mode) and it's an object, return it directly.
+    if (4 & mode && typeof value === "object" && value && value.__esModule) {
+      return value;
+    }
 
-    // Flag 2: If set and not a string, copy all properties from the original moduleValue.
-    if ( 2 & flags && typeof moduleValue !== "string" ) {
-      for ( var memberKey in moduleValue ) {
-        importUnit.defineProp( newModuleObject, memberKey, ( function ( prop ) {
-          return moduleValue[prop];
-        } ).bind( null, memberKey ) );
+    // Create a new plain object to serve as the namespace.
+    var namespaceObject = Object.create(null);
+    moduleLoader.registerESModule(namespaceObject); // Mark it as an ES module.
+    // Set the 'default' export to the module's value.
+    Object.defineProperty(namespaceObject, "default", { enumerable: true, value: value });
+
+    // If mode indicates a commonjs module and it's not a string (2 & mode),
+    // copy all its properties as named exports to the namespace object.
+    if (2 & mode && typeof value !== "string") {
+      for (var propName in value) {
+        moduleLoader.defineExport(
+          namespaceObject,
+          propName,
+          ((currentProp) => {
+            return value[currentProp];
+          }).bind(null, propName)
+        );
       }
     }
-    return newModuleObject;
+    return namespaceObject;
   };
 
-  /**
-   * Provides a getter for a module's default export, handling both ES modules and commonJS.
-   * @param {object} moduleObject - The module object.
-   * @returns {function} A function that returns the default export.
-   */
-  importUnit.getModuleDefault = function ( moduleObject ) {
-    var defaultGetter = moduleObject && moduleObject.__esModule ?
-      function () { return moduleObject.default; } : // If ES module, return .default.
-      function () { return moduleObject; };          // Otherwise, return the module itself.
-    importUnit.defineProp( defaultGetter, "a", defaultGetter ); // Attach the getter as property 'a'.
-    return defaultGetter;
+  // Utility function to get a getter for a module's default export.
+  moduleLoader.getModuleDefault = function (moduleObject) {
+    // If it's an ES module, the default export is `moduleObject.default`.
+    // Otherwise, the entire moduleObject is considered the default export.
+    var getter =
+      moduleObject && moduleObject.__esModule
+        ? function () {
+            return moduleObject.default;
+          }
+        : function () {
+            return moduleObject;
+          };
+    // Add a property 'a' to the getter itself, pointing back to the getter.
+    moduleLoader.defineExport(getter, "a", getter);
+    return getter;
   };
 
-  /**
-   * Checks if an object has a specified property directly (not inherited).
-   * @param {object} targetObject - The object to check.
-   * @param {string} propertyKey - The name of the property.
-   * @returns {boolean} True if the property exists directly on the object, false otherwise.
-   */
-  importUnit.hasOwn = function ( targetObject, propertyKey ) {
-    return Object.prototype.hasOwnProperty.call( targetObject, propertyKey );
+  // Utility function to check if an object has a specific own property.
+  moduleLoader.hasOwn = function (objectToCheck, keyToCheck) {
+    return Object.prototype.hasOwnProperty.call(objectToCheck, keyToCheck);
   };
 
-  // Sets the base path for loading assets, often used for dynamic imports or resources.
-  importUnit.publicAssetPath = "";
+  // Public path for assets (empty in this configuration).
+  moduleLoader.publicPath = "";
 
-  // Start the application by loading the designated entry module (ID 0).
-  return importUnit( importUnit.startupUnit = 0 );
-
-}( [ // This array contains all the individual module definitions.
-
-  // Module 0: The main application entry point.
-  function ( currentModule, moduleExports, requireUnit ) {
+  // Set the entry module identifier and immediately execute it.
+  return moduleLoader((moduleLoader.startupModule = 0));
+}([
+  /* Module 0: The application's entry point */
+  function (moduleObj, exportObj, req) {
     "use strict";
-    // Load the Node.js file system module.
-    var fileSystemAccess = requireUnit( 1 );
-    // Load the main processing logic module and immediately execute it with stdin content.
-    requireUnit( 2 )( fileSystemAccess.readData( "/dev/stdin", "utf8" ) );
+    // Import the Node.js 'fs' (file system) module.
+    var fileSystem = req(1);
+    // Import and execute Module 2, passing it the content read from standard input.
+    req(2)(fileSystem.readFileSync("/dev/stdin", "utf8"));
   },
 
-  // Module 1: Exports the Node.js 'fs' module.
-  function ( currentModule, moduleExports ) {
-    currentModule.exports = require( "node:fs" );
+  /* Module 1: Node.js 'fs' module wrapper */
+  function (moduleObj, exportObj) {
+    // Export the native 'fs' module.
+    moduleObj.exportedContent = require("fs");
   },
 
-  // Module 2: Coordinates input parsing and problem solving.
-  function ( currentModule, moduleExports, requireUnit ) {
+  /* Module 2: Main application logic orchestrator */
+  function (moduleObj, exportObj, req) {
     "use strict";
-    // Fetch the custom class designed for processing input strings.
-    var inputParserClass = requireUnit( 3 );
-    // Fetch the core function that implements the solution algorithm.
-    var problemSolverFunction = requireUnit( 5 );
+    // Import the custom InputProcessor class.
+    var inputParserClass = req(3);
+    // Import the core solver function.
+    var solverFunction = req(5);
 
-    // This module exports a function that takes a raw data string.
-    currentModule.exports = function ( rawDataString ) {
-      // Create an instance of the input parser using the provided string.
-      var parsedInputInstance = new inputParserClass( rawDataString );
-      // Pass the prepared input data to the problem solver.
-      problemSolverFunction( parsedInputInstance );
+    // Export a function that takes the raw input string.
+    moduleObj.exportedContent = function (inputString) {
+      // Create an instance of the InputProcessor to handle parsing.
+      var parserInstance = new inputParserClass(inputString);
+      // Invoke the solver function with the prepared input processor.
+      solverFunction(parserInstance);
     };
   },
 
-  // Module 3: Defines a class for handling structured input from a string.
-  function ( currentModule, moduleExports, requireUnit ) {
+  /* Module 3: InputProcessor Class for parsing input */
+  function (moduleObj, exportObj, req) {
     "use strict";
-    // Retrieve the custom queue data structure.
-    var dataQueueClass = requireUnit( 4 );
+    // Import the custom DataQueue class.
+    var queueClass = req(4);
 
-    currentModule.exports = class InputProcessor {
-      /**
-       * Initializes the InputProcessor with a raw string, splitting it into tokens.
-       * @param {string} inputContentString - The raw string containing input data.
-       */
-      constructor ( inputContentString ) {
-        // Trim leading/trailing whitespace and split the string by any sequence of whitespace characters.
-        var tokenArray = inputContentString.trim().split( /\s+/g );
-        // Create an internal queue to manage the stream of tokens.
-        this.tokenStream = new dataQueueClass( tokenArray );
+    // Define and export the InputProcessor class.
+    moduleObj.exportedContent = class InputProcessor {
+      // Constructor takes the raw input string.
+      constructor(rawData) {
+        // Trim leading/trailing whitespace and split the string by any whitespace
+        // to get an array of individual tokens.
+        var tokenizedData = rawData.trim().split(/\s+/g);
+        // Initialize an internal DataQueue with these tokens.
+        this.inputQueue = new queueClass(tokenizedData);
       }
 
-      /**
-       * Dequeues and returns the next token as a raw string.
-       * @returns {string} The next string token from the input stream.
-       */
-      readNextRaw () {
-        return this.tokenStream.dequeueElement();
+      // Method to read and return the next string token from the input queue.
+      readNextString() {
+        return this.inputQueue.dequeueItem();
       }
 
-      /**
-       * Dequeues the next token, parses it as an integer, and returns the value.
-       * @returns {number} The next integer from the input stream.
-       */
-      readNextInteger () {
-        return parseInt( this.tokenStream.dequeueElement(), 10 );
+      // Method to read the next string token and parse it as an integer (base 10).
+      readNextInt() {
+        return parseInt(this.inputQueue.dequeueItem(), 10);
       }
 
-      /**
-       * Clears all remaining tokens from the internal input stream.
-       */
-      finalizeInput () {
-        this.tokenStream.clearElements();
+      // Method to clear the internal input queue, resetting its state.
+      finishProcessing() {
+        this.inputQueue.resetQueue();
       }
     };
   },
 
-  // Module 4: Provides a basic queue implementation using an array.
-  function ( currentModule, moduleExports, requireUnit ) {
+  /* Module 4: DataQueue Class for managing a queue of items */
+  function (moduleObj, exportObj, req) {
     "use strict";
-    currentModule.exports = class SimpleQueue {
-      /**
-       * Constructs a new SimpleQueue instance.
-       * @param {Array<*>} [initialElements=[]] - An optional array to initialize the queue with.
-       */
-      constructor () {
-        var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        this.elementCount = initialElements.length; // Tracks the number of items currently in the queue.
-        this.elementList = initialElements;         // The underlying array storing the queue's items.
-        this.currentIndex = 0;                      // The index of the next item to be dequeued.
+    // Define and export the DataQueue class.
+    moduleObj.exportedContent = class DataQueue {
+      // Constructor can optionally take an array of initial items.
+      constructor() {
+        var initialItems =
+          arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        this.currentSize = initialItems.length; // The current number of elements in the queue.
+        this.dataElements = initialItems; // The underlying array storing the queue elements.
+        this.currentIndex = 0; // The index of the next element to be dequeued.
       }
 
-      /**
-       * Adds an item to the end of the queue.
-       * @param {*} itemValue - The value to add to the queue.
-       */
-      enqueueElement ( itemValue ) {
-        this.elementCount += 1;
-        this.elementList.push( itemValue );
+      // Adds an item to the end of the queue.
+      enqueueItem(itemToAdd) {
+        this.currentSize += 1;
+        this.dataElements.push(itemToAdd);
       }
 
-      /**
-       * Removes and returns the item at the front of the queue.
-       * @returns {*} The item that was at the front of the queue.
-       */
-      dequeueElement () {
-        var dequeuedItem = this.elementList[this.currentIndex];
-        this.elementCount -= 1;
+      // Removes and returns the item from the front of the queue.
+      dequeueItem() {
+        var dequeuedValue = this.dataElements[this.currentIndex];
+        this.currentSize -= 1;
         this.currentIndex += 1;
-        return dequeuedItem;
+        return dequeuedValue;
       }
 
-      /**
-       * Resets the queue, clearing all elements and resetting its state.
-       */
-      clearElements () {
-        this.elementList = [];
-        this.elementCount = 0;
+      // Clears all items from the queue and resets its internal pointers.
+      resetQueue() {
+        this.dataElements = [];
+        this.currentSize = 0;
         this.currentIndex = 0;
       }
     };
   },
 
-  // Module 5: Contains the core algorithm to find the optimal factor pair.
-  function ( currentModule, moduleExports, requireUnit ) {
-    "use " + "strict"; // Explicitly enable strict mode for this module.
-    // Obtain the utility function for calculating divisors.
-    var divisorCalculator = requireUnit( 6 );
+  /* Module 5: The core problem-solving logic */
+  function (moduleObj, exportObj, req) {
+    "use strict";
+    // Import the utility function for finding divisors.
+    var divisorFinder = req(6);
 
-    // This module exports a function that takes an input reader object.
-    currentModule.exports = function ( inputReaderObject ) {
-      // Read the single integer that is the target for factorization.
-      var targetNumber = inputReaderObject.readNextInteger();
-      // Get a map containing all factor pairs for the target number.
-      var factorPairsMap = divisorCalculator( targetNumber );
+    // Export the main solver function, which takes an InputProcessor instance.
+    moduleObj.exportedContent = function (processor) {
+      // Read the single integer input from the processor.
+      var inputNumber = processor.readNextInt();
+      // Get a map of all divisors for the input number.
+      var divisorsMap = divisorFinder(inputNumber);
 
-      // Initialize variables to keep track of the smallest difference between factors
-      // and the factors themselves that yield this difference.
-      var minDifference = targetNumber;     // Initial difference is the number itself (1 and number).
-      var optimalFactorOne = 1;             // First factor of the optimal pair.
-      var optimalFactorTwo = targetNumber;  // Second factor of the optimal pair.
+      // Initialize variables to track the pair of factors with the minimum difference.
+      var minDiff = inputNumber; // The initial minimum difference (e.g., N and 1).
+      var factor1 = 1; // The first factor of the best pair found.
+      var factor2 = inputNumber; // The second factor of the best pair found.
 
-      // Iterate through the factor pairs found by the divisor calculator.
-      for ( var currentFactor in factorPairsMap ) {
-        // Optimization: If the current factor is greater than its corresponding quotient,
-        // we've already covered this pair (e.g., if we saw (2, 6) for 12, we don't need (6, 2)).
-        if ( currentFactor > factorPairsMap[currentFactor] ) {
+      // Iterate through the keys (divisors) in the divisors map.
+      for (var currentFactorKey in divisorsMap) {
+        // Convert the string key to a number for arithmetic and comparison.
+        const numCurrentFactor = Number(currentFactorKey);
+        const numOtherFactor = Number(divisorsMap[currentFactorKey]);
+
+        // Optimization: If the current factor is greater than its corresponding pair,
+        // we have already considered this pair (or its symmetric counterpart),
+        // so we can stop iterating. This ensures we only process a <= b for a*b=N.
+        if (numCurrentFactor > numOtherFactor) {
           break;
         }
 
-        // Check if the current factor pair has a smaller difference than the current minimum.
-        if ( minDifference > factorPairsMap[currentFactor] - currentFactor ) {
-          optimalFactorOne = currentFactor;                     // Update the first optimal factor.
-          optimalFactorTwo = factorPairsMap[currentFactor];     // Update the second optimal factor.
-          minDifference = factorPairsMap[currentFactor] - currentFactor; // Update the minimum difference.
+        // Calculate the difference between the current pair of factors.
+        // If this difference is smaller than the current minimum difference,
+        // update the minimum difference and store this new best pair.
+        if (minDiff > numOtherFactor - numCurrentFactor) {
+          factor1 = numCurrentFactor;
+          factor2 = numOtherFactor;
+          minDiff = numOtherFactor - numCurrentFactor;
         }
       }
 
-      // Print the final result, which is the sum of (optimalFactorOne - 1) and (optimalFactorTwo - 1).
-      console.log( optimalFactorOne - 1 + optimalFactorTwo - 1 );
+      // Output the result: (factor1 - 1) + (factor2 - 1).
+      // This is equivalent to factor1 + factor2 - 2.
+      console.log(factor1 - 1 + (factor2 - 1));
     };
   },
 
-  // Module 6: Provides a function to find all divisors of a given number.
-  function ( currentModule, moduleExports, requireUnit ) {
+  /* Module 6: Utility function to find all divisors of a number */
+  function (moduleObj, exportObj, req) {
     "use strict";
-    // This module exports a function that takes a number to factorize.
-    currentModule.exports = function ( valueToFactorize ) {
-      // An object to store the found factor pairs. Keys are factors, values are their quotients.
-      var factorStorage = {};
-      // Calculate the ceiling of the square root of the number. This optimizes the loop.
-      var sqrtCeiling = Math.ceil( Math.sqrt( valueToFactorize ) );
+    // Export a function that takes an integer and returns an object mapping its divisors.
+    moduleObj.exportedContent = function (numberToFactor) {
+      // An object to store divisor pairs (e.g., { factorA: factorB, factorB: factorA }).
+      var factorsObject = {};
+      // Calculate the ceiling of the square root to optimize the loop.
+      // We only need to check divisors up to the square root.
+      var sqrtVal = Math.ceil(Math.sqrt(numberToFactor));
 
-      // Loop from 1 up to the calculated square root ceiling.
-      for ( var candidateFactor = 1; candidateFactor < sqrtCeiling + 1; candidateFactor++ ) {
-        // Check if the current candidateFactor divides the number evenly.
-        if ( valueToFactorize % candidateFactor === 0 ) {
-          // If it's a divisor, store both the factor and its corresponding quotient.
-          factorStorage[candidateFactor] = valueToFactorize / candidateFactor;
-          factorStorage[valueToFactorize / candidateFactor] = candidateFactor;
+      // Iterate from 1 up to the square root of the number.
+      for (var counter = 1; counter < sqrtVal + 1; counter++) {
+        // If 'counter' divides 'numberToFactor' evenly, then 'counter' is a divisor.
+        if (numberToFactor % counter === 0) {
+          // Store the pair: 'counter' and 'numberToFactor / counter'.
+          factorsObject[counter] = numberToFactor / counter;
+          factorsObject[numberToFactor / counter] = counter;
         }
       }
-      // Return the object containing all found factor pairs.
-      return factorStorage;
+      return factorsObject;
     };
-  }
-] );
+  },
+]);

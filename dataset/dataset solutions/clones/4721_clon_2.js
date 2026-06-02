@@ -1,71 +1,70 @@
 'use strict';
 
-const performProcessing = cliArgument => {
-  const rawLines = cliArgument.trim().split("\n");
-  const configParams = rawLines[0].split(" ").map(textVal => parseInt(textVal, 10));
-  const itemCount = configParams[0];
-  const targetProportion = configParams.slice(1);
-  const itemRecords = rawLines.slice(1, itemCount + 1);
-  let optimalSelection = [];
+const processInput = (inputString) => {
+    let linesArray = inputString.trim().split('\n');
+    let setupParams = linesArray[0].split(' ').map(strVal => parseInt(strVal, 0xA));
+    const numEntries = setupParams[0];
+    const targetRatio = setupParams.slice(1);
+    const entryData = linesArray.slice(1, numEntries + 1);
+    let optimalSelection = [];
 
-  function exploreCombinations(currentLine, currentSelection, currentIndex) {
-    if (itemCount <= currentIndex || !currentLine) {
-      return;
+    function evaluateCombination(currentLine, currentCombination, currentIndex) {
+        if (numEntries <= currentIndex || !currentLine) {
+            return;
+        }
+
+        const parsedEntry = currentLine.split(' ').map(strVal => parseInt(strVal, 10));
+        currentCombination.push({
+            valA: parsedEntry[0],
+            valB: parsedEntry[1],
+            itemCost: parsedEntry[2]
+        });
+
+        const currentTotalCost = currentCombination.reduce((acc, item) => acc + item.itemCost, 0x0);
+        const totalValA = currentCombination.reduce((accA, item) => accA + item.valA, 0);
+        const totalValB = currentCombination.reduce((accB, item) => accB + item.valB, 0);
+        let optimalTotalCost;
+
+        if (optimalSelection.length > 0) {
+            optimalTotalCost = optimalSelection.reduce((acc, item) => acc + item.itemCost, 0);
+        }
+
+        if (optimalTotalCost && currentTotalCost > optimalTotalCost) {
+            return;
+        }
+
+        if (findSimplifiedRatio(totalValA, totalValB) === `${targetRatio[0]} ${targetRatio[1]}`) {
+            if (optimalSelection.length === 0 || (optimalTotalCost && (currentTotalCost < optimalTotalCost))) {
+                optimalSelection = currentCombination;
+            }
+        } else {
+            evaluateCombination(entryData[currentIndex + 1], currentCombination, currentIndex + 1);
+        }
     }
-    const parsedRecord = currentLine.split(" ").map(strValue => parseInt(strValue, 10));
-    currentSelection.push({
-      paramA: parsedRecord[0],
-      paramB: parsedRecord[1],
-      value: parsedRecord[2]
+
+    entryData.forEach((lineStr, idx) => {
+        let currentCombination = [];
+        evaluateCombination(lineStr, currentCombination, idx);
     });
-    const currentTotalValue = currentSelection.reduce((accum, currentElement) => accum + currentElement.value, 0);
-    const currentTotalA = currentSelection.reduce((accumulatorA, elementB) => accumulatorA + elementB.paramA, 0);
-    const currentTotalB = currentSelection.reduce((accumulatorA, elementB) => accumulatorA + elementB.paramB, 0);
-    let optimalTotalValue;
-    if (optimalSelection.length > 0) {
-      optimalTotalValue = optimalSelection.reduce((accum, currentElement) => accum + currentElement.value, 0);
-    }
 
-    // Prune branch if a better solution is already known and current path exceeds its value.
-    if (optimalTotalValue && currentTotalValue > optimalTotalValue) {
-      return;
-    }
-
-    // If the current combination's ratio matches the target.
-    if (calculateSimplifiedRatio(currentTotalA, currentTotalB) === `${targetProportion[0]} ${targetProportion[1]}`) {
-      // Update optimal selection if none exists or current is superior.
-      if (optimalSelection.length === 0 || (optimalTotalValue && (currentTotalValue < optimalTotalValue))) {
-        optimalSelection = currentSelection;
-      }
-    } else {
-      // Continue exploring deeper if the ratio does not match yet.
-      exploreCombinations(itemRecords[currentIndex + 1], currentSelection, ++currentIndex);
-    }
-  }
-
-  itemRecords.forEach((lineText, idx) => {
-    let tempSelection = [];
-    exploreCombinations(lineText, tempSelection, idx);
-  });
-
-  console.log(optimalSelection.length === 0 ? -1 : optimalSelection.reduce((accum, currentElement) => accum + currentElement.value, 0));
+    console.log(optimalSelection.length === 0 ? -1 : optimalSelection.reduce((acc, item) => acc + item.itemCost, 0));
 };
 
-function calculateSimplifiedRatio(valX, valY) {
-  let lesserValue = valX > valY ? valY : valX;
-  let reducedA = valX;
-  let reducedB = valY;
+function findSimplifiedRatio(valX, valY) {
+    let smallerValue = valX > valY ? valY : valX;
+    let simplifiedA = valX;
+    let simplifiedB = valY;
 
-  for (let divisorIter = 1; divisorIter <= lesserValue; divisorIter++) {
-    let tempAStr = String(valX / divisorIter);
-    let tempBStr = String(valY / divisorIter);
-    if (tempAStr.split(".").length === 1 && tempBStr.split(".").length === 1) {
-      reducedA = tempAStr;
-      reducedB = tempBStr;
+    for (let divisor = 1; divisor <= smallerValue; divisor++) {
+        let divA = String(valX / divisor);
+        let divB = String(valY / divisor);
+        if (divA.split('.').length === 1 && divB.split('.').length === 1) {
+            simplifiedA = divA;
+            simplifiedB = divB;
+        }
     }
-  }
 
-  return `${reducedA} ${reducedB}`;
+    return `${simplifiedA} ${simplifiedB}`;
 }
 
-performProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,31 +1,13 @@
-const processInput = (textData) => {
-    let currentSegment = '';
-    const dateComponents = [];
-    for (let charIndex = 0; charIndex < textData.length; charIndex++) {
-        const character = textData[charIndex];
-        if (character === '/') {
-            dateComponents.push(parseInt(currentSegment, 10));
-            currentSegment = '';
-        } else {
-            currentSegment += character;
-        }
-    }
-    dateComponents.push(parseInt(currentSegment, 10));
+function processInput(rawString) {
+    const dateComponents = rawString.split('/');
+    const yearValue = Number(dateComponents[0]);
+    const monthValue = Number(dateComponents[1]);
+    const dayValue = Number(dateComponents[2]);
 
-    const [yearVal, monthVal, dayVal] = dateComponents;
+    const currentCombinedDate = yearValue * 10000 + monthValue * 100 + dayValue;
+    const boundaryCombinedDate = 20190501;
 
-    const combinedDateValue = yearVal * 10000 + monthVal * 100 + dayVal;
-
-    const referencePoint = 20190501;
-
-    const isBeforeEraChange = combinedDateValue < referencePoint;
-
-    const eraNames = {
-        true: 'Heisei',
-        false: 'TBD'
-    };
-
-    console.log(eraNames[isBeforeEraChange]);
-};
+    return console.log((currentCombinedDate < boundaryCombinedDate) ? 'Heisei' : 'TBD');
+}
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

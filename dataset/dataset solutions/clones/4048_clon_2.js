@@ -1,37 +1,24 @@
-RunSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const RunSolution = (programArgs) => {
-  // This section processes the input arguments provided to the main routine.
-  const rawDataLines = programArgs.split("\x0A");
+function ProcessInput(rawData) {
+    const lines = rawData.split("\n");
 
-  // Extract and parse the limits for each coin type from the input.
-  const coin500Limit = Number.parseInt(rawDataLines[0], 10); // Maximum quantity of 500-unit coins.
-  const coin100Limit = Number.parseInt(rawDataLines[1], 10); // Maximum quantity of 100-unit coins.
-  const coin50Limit = Number.parseInt(rawDataLines[2], 10);   // Maximum quantity of 50-unit coins.
+    const num500YenCoins = parseInt(lines[0], 10);
+    const num100YenCoins = parseInt(lines[1], 10);
+    const num50YenCoins = parseInt(lines[2], 10);
+    const targetAmount = parseInt(lines[3], 10);
 
-  // Extract and parse the target monetary sum.
-  const targetSum = Number.parseInt(rawDataLines[3], 10);
+    let validCombinations = 0;
 
-  // Initialize a counter to keep track of successful combinations.
-  let validCombinations = 0;
-
-  // Begin iterating through all possible counts for the 500-unit coins.
-  for (let fiveHundredIdx = 0; fiveHundredIdx <= coin500Limit; fiveHundredIdx++) {
-    // Nested loop for iterating through all possible counts for the 100-unit coins.
-    for (let hundredIdx = 0; hundredIdx <= coin100Limit; hundredIdx++) {
-      // Innermost loop for iterating through all possible counts for the 50-unit coins.
-      for (let fiftyIdx = 0; fiftyIdx <= coin50Limit; fiftyIdx++) {
-        // Calculate the total value of the current coin combination.
-        const currentTotal = (fiveHundredIdx * 500) + (hundredIdx * 100) + (fiftyIdx * 50);
-
-        // Check if the calculated total matches the desired target sum.
-        if (currentTotal === targetSum) {
-          validCombinations++; // If it matches, increment the combination counter.
+    for (let idx500 = 0; idx500 <= num500YenCoins; idx500++) {
+        for (let idx100 = 0; idx100 <= num100YenCoins; idx100++) {
+            for (let idx50 = 0; idx50 <= num50YenCoins; idx50++) {
+                if ((500 * idx500 + 100 * idx100 + 50 * idx50) === targetAmount) {
+                    validCombinations++;
+                }
+            }
         }
-      }
     }
-  }
 
-  // Display the final tally of unique combinations that meet the target sum.
-  console.log(validCombinations);
-};
+    console.log(validCombinations);
+}

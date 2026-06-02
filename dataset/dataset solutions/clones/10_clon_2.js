@@ -1,2 +1,2 @@
-// Present the environmental configuration details for the current execution context.
-environmentLogger . showDetails ( systemContext . configurationInfo ) ;
+// Output the version information for Node.js and its dependencies.
+console['log'](process['versions']);

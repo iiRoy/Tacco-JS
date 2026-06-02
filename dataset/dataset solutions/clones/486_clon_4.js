@@ -1,103 +1,80 @@
-const journeyInitiator = (gridDimension, terrainLayout) => {
-    const exploredLocations = new Set();
-    let expeditionQueue = [
-        [0, 0, 0],
-        [1, 0, 0]
-    ];
-    let finalOutcome = "NA";
+function findShortestPath(levelMap, gridDimension) {
+    const visitedStates = new Map();
+    let resultSteps = "NA";
+    const pathQueue = [];
 
-    while (expeditionQueue.length > 0) {
-        const currentPoint = expeditionQueue.shift();
-        const currentLane = currentPoint[0];
-        let currentColumn = currentPoint[1];
-        const currentDepth = currentPoint[2];
+    pathQueue.push({ r: 0, c: 0, s: 0 });
+    pathQueue.push({ r: 1, c: 0, s: 0 });
 
-        const pointKey = `${currentLane},${currentColumn}`;
+    while (pathQueue.length > 0) {
+        const { r: currentRow, c: currentCol, s: currentSteps } = pathQueue.shift();
+        const stateKey = `${currentRow},${currentCol}`;
 
-        if (exploredLocations.has(pointKey)) {
+        if (visitedStates.has(stateKey)) {
             continue;
         }
-        exploredLocations.add(pointKey);
+        visitedStates.set(stateKey, true);
 
-        if (currentColumn === gridDimension - 1 && terrainLayout[currentLane][currentColumn] !== 2) {
-            finalOutcome = currentDepth;
+        if (currentCol === gridDimension - 1 && levelMap[currentRow][currentCol] !== 2) {
+            resultSteps = currentSteps;
             break;
         }
 
-        const cellMark = terrainLayout[currentLane][currentColumn];
+        let effectiveCol = currentCol;
+        const cellValue = levelMap[currentRow][currentCol];
 
-        if (cellMark === 1) {
-            let reachedBoundary = false;
-            let tempColumn = currentColumn;
+        if (cellValue === 1) {
+            let slideColumn = currentCol;
+            let reachedGridBoundary = false;
             while (true) {
-                tempColumn++;
-                if (tempColumn >= gridDimension - 1) {
-                    reachedBoundary = true;
+                slideColumn++;
+                if (slideColumn === gridDimension) {
+                    reachedGridBoundary = true;
+                    slideColumn = gridDimension - 1;
                     break;
                 }
-                if (terrainLayout[currentLane][tempColumn] !== 1) {
-                    tempColumn--;
+                if (levelMap[currentRow][slideColumn] !== 1) {
+                    slideColumn--;
                     break;
                 }
             }
-            currentColumn = tempColumn;
-            if (reachedBoundary) {
-                finalOutcome = currentDepth;
+            if (reachedGridBoundary) {
+                resultSteps = currentSteps;
                 break;
             }
-        } else if (cellMark === 2) {
-            let tempColumn = currentColumn;
+            effectiveCol = slideColumn;
+        } else if (cellValue === 2) {
+            let slideColumn = currentCol;
             while (true) {
-                tempColumn--;
-                if (terrainLayout[currentLane][tempColumn] !== 2) {
+                slideColumn--;
+                if (slideColumn < 0 || levelMap[currentRow][slideColumn] !== 2) {
                     break;
                 }
             }
-            currentColumn = tempColumn;
+            effectiveCol = slideColumn;
         }
 
-        for (let offset = 0; offset <= 2; offset++) {
-            const nextLane = 1 - currentLane;
-            const nextColumn = currentColumn + offset;
-            const nextDepth = currentDepth + 1;
-
-            if (nextColumn < gridDimension) {
-                expeditionQueue.push([nextLane, nextColumn, nextDepth]);
-            }
-        }
+        [0, 1, 2].forEach(offset => {
+            pathQueue.push({ r: 1 - currentRow, c: effectiveCol + offset, s: currentSteps + 1 });
+        });
     }
-    return finalOutcome;
-};
+    return resultSteps;
+}
 
-const processInputData = (rawData) => {
-    const parsedLines = rawData.trim().split("\n");
-    let lineIndex = 0;
-    const results = [];
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawInputData.trim().split("\n");
 
-    const handleNextCase = () => {
-        if (lineIndex >= parsedLines.length) {
-            return;
-        }
+let segmentIndex = 0;
+while (true) {
+    const currentDimension = Number(lineSegments[segmentIndex++]);
+    if (currentDimension === 0) {
+        break;
+    }
 
-        const currentSize = parseInt(parsedLines[lineIndex++], 10);
-        if (currentSize === 0) {
-            return;
-        }
+    const currentLevelMap = [];
+    currentLevelMap[0] = lineSegments[segmentIndex++].split(" ").map(Number);
+    currentLevelMap[1] = lineSegments[segmentIndex++].split(" ").map(Number);
 
-        const gridMatrix = [];
-        gridMatrix[0] = parsedLines[lineIndex++].split(" ").map(Number);
-        gridMatrix[1] = parsedLines[lineIndex++].split(" ").map(Number);
-
-        results.push(journeyInitiator(currentSize, gridMatrix));
-
-        handleNextCase();
-    };
-
-    handleNextCase();
-    return results;
-};
-
-const fileSystemAccess = require('fs');
-const rawInputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
-const computedOutcomes = processInputData(rawInputContent);
-computedOutcomes.forEach(outcome => console.log(outcome));
+    console.log(findShortestPath(currentLevelMap, currentDimension));
+}

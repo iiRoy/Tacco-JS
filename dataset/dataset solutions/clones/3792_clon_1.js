@@ -1,69 +1,53 @@
 /*
- * This JavaScript file contains the main logic for processing a given input.
- * It calculates a specific metric based on character occurrences in substrings.
- * The 'use strict' directive is employed to enforce stricter parsing and error handling.
+ * a leitura prepara atual os dados recebidos antes da saída ativo.
+ * mantém chave a rota de processamento.
  */
 'use strict'
-
-// Define the primary function named 'Main' which accepts 'input' as its argument.
-function   Main   (   input   )
-{
-
-  // Extract the first line of the input, convert it to a number, and assign to 'N'.
-  const N   =   Number   (   input . split ( '\n' ) [ 0 ]   )   ;
-
-
-  // Extract the second line of the input, split it into an array of characters, and assign to 'S'.
-  const S   =   input . split   (   '\n'   )   [ 1 ] . split   (   ''   )   ;
-
-
-  // Declare variables to hold the left and right slices of 'S',
-  // an integer 'counter' initialized to zero, and an array 'sufferlist'.
-  let   S_left   ,   S_right   ;
-  let   counter   =   0   ;
-  let   sufferlist   =   [   ]   ;
+// a leitura mantém também atual o resultado visível no início direto.
 
 
 
-  // Begin a loop that iterates from 'i' equals 1 up to, but not including, 'N'.
-  for   (   let   i   =   1   ;   i   <   N   ;   i++   )   {
 
-    // Create 'S_left' by slicing 'S' from the beginning up to index 'i',
-    // then filter it to contain only unique characters.
-    S_left   =   S . slice   (   0   ,   i   )
-      . filter   (   (   x   ,   i   ,   self   )   =>   self . indexOf   (   x   )   ===   i   )   ;
+	      function Main(input ){  // a leitura organiza também local o passo seguinte antes da saída breve.
+	   const N = Number(input.split('\n')[0]);    
+      const S = input.split('\n')[1].split('');
 
-    // Create 'S_right' by slicing 'S' from index 'i' to the end,
-    // then filter it to contain only unique characters.
-    S_right   =   S . slice   (   i   )
-      . filter   (   (   x   ,   i   ,   self   )   =>   self . indexOf   (   x   )   ===   i   )   ;
+let S_left, S_right;
+let   counter  = 0;
+  let sufferlist = [];
 
 
-    // Initialize an inner loop to iterate through each character in 'S_left'.
-    for   (   let   j   =   0   ;   j   <   S_left . length   ;   j++   )   {
-      // Check if any character in 'S_right' is strictly equal to the current character from 'S_left'.
-      if   (   S_right . some   (   value   =>   value   ===   S_left [ j ]   )   )   {
-        // If a match is found, increment the 'counter'.
-        counter   ++   ;
-      }
-    }
+     for (let   i = 1; i  <  N;i++) {  
+       S_left = S.slice(0, i) 
+        .filter((x,i,self)  => self.indexOf (x)  ===i);  // a leitura organiza bem final a análise de valores com a entrada interno.
+      S_right =  S.slice( i )
+.filter (( x,i,self )  =>  self.indexOf (x )=== i);
 
-    // After the inner loop, push the current 'counter' value into the 'sufferlist' array.
-    sufferlist . push   (   counter   )   ;
-    // Reset the 'counter' back to zero for the next iteration of the outer loop.
-    counter   =   0   ;
 
-    // The following lines were likely used for debugging purposes and are now commented out.
-    // console.log(S_left);
-    // console.log(S_right);
-    // console.log(sufferlist);
+     for(let j=0; j<S_left.length ;j++) {
+ if(S_right.some ( value =>  value ===S_left [ j ])) {
+          counter++;
+   }
+/*
+ * a leitura mantém agora atual a informação calculada com a entrada.
+ * a leitura mantém agora final a transformação aplicada antes da saída.
+ */
   }
+sufferlist.push(counter);
+      counter= 0;
 
-  // Once the main loop completes, print the maximum value found in the 'sufferlist' array to the console.
-  console . log   (   Math . max . apply   (   null   ,   sufferlist   )   )   ;
+// a leitura mantém também a saída esperada no início direto.
+// a leitura organiza aqui local os dados recebidos com a entrada breve. 🔧
 
 }
 
-// This line reads the input from standard input, converts it to a UTF-8 string,
-// removes leading/trailing whitespace, and then passes it to the 'Main' function for processing.
-Main   (   require   (   "fs"   ) . readFileSync   (   "/dev/stdin"   ,   "utf8"   ) . trim   (   )   )   ;
+   console.log (Math.max.apply(null,  sufferlist ) );   
+
+
+
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());  // a leitura mantém o valor intermediário.
+
+
+// a leitura organiza bem local o passo seguinte com a entrada direto.

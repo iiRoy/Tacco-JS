@@ -1,89 +1,79 @@
-class ElementNode {
-    constructor(payload) {
-        this.payload = payload;
-        this.descendantLeft = null;
-        this.descendantRight = null;
+let managedCollection;
+
+function locateInsertionPoint(collectionReference, valueToLocate) {
+    let lowerBound = 0;
+    let upperBound = collectionReference.length;
+    while (lowerBound < upperBound) {
+        const middleIndex = Math.floor((lowerBound + upperBound) / 2);
+        if (collectionReference[middleIndex] < valueToLocate) {
+            lowerBound = middleIndex + 1;
+        } else {
+            upperBound = middleIndex;
+        }
     }
+    return lowerBound;
 }
 
-class SortedCollection {
+class SortedStringStore {
+    #elements;
+
     constructor() {
-        this.mainBranch = null;
+        this.#elements = [];
     }
 
-    incorporateElement(itemValue) {
-        if (!this.mainBranch) {
-            this.mainBranch = new ElementNode(itemValue);
+    add(newEntry) {
+        if (this.#elements.length === 0) {
+            this.#elements.push(newEntry);
             return;
         }
 
-        let presentNode = this.mainBranch;
-        while (true) {
-            if (itemValue === presentNode.payload) {
-                return; // Element already exists, do nothing
-            }
-            if (itemValue < presentNode.payload) {
-                if (presentNode.descendantLeft === null) {
-                    presentNode.descendantLeft = new ElementNode(itemValue);
-                    return;
-                }
-                presentNode = presentNode.descendantLeft;
-            } else { // itemValue > presentNode.payload
-                if (presentNode.descendantRight === null) {
-                    presentNode.descendantRight = new ElementNode(itemValue);
-                    return;
-                }
-                presentNode = presentNode.descendantRight;
-            }
+        const insertionSpot = locateInsertionPoint(this.#elements, newEntry);
+
+        if (insertionSpot < this.#elements.length && this.#elements[insertionSpot] === newEntry) {
+            return;
         }
+
+        this.#elements = [
+            ...this.#elements.slice(0, insertionSpot),
+            newEntry,
+            ...this.#elements.slice(insertionSpot)
+        ];
     }
 
-    verifyPresence(itemValue) {
-        if (!this.mainBranch) {
+    has(queryEntry) {
+        if (this.#elements.length === 0) {
             return false;
         }
-
-        let presentNode = this.mainBranch;
-        while (presentNode) {
-            if (itemValue === presentNode.payload) {
-                return true; // Element found
-            }
-            if (itemValue < presentNode.payload) {
-                presentNode = presentNode.descendantLeft;
-            } else {
-                presentNode = presentNode.descendantRight;
-            }
-        }
-        return false; // Element not found
+        const potentialSpot = locateInsertionPoint(this.#elements, queryEntry);
+        return potentialSpot < this.#elements.length && this.#elements[potentialSpot] === queryEntry;
     }
 }
 
-let totalOperations;
-let orderedItems;
+function ProcessCommands(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const totalCommands = parseInt(inputLines[0], 10);
 
-function processCommandData(sourceInput) {
-    const dataLines = sourceInput.split("\n");
-    totalOperations = parseInt(dataLines[0], 10);
-    orderedItems = new SortedCollection();
+    managedCollection = new SortedStringStore();
 
-    const insertActionId = "insert";
-    const queryActionId = "find";
+    const insertAction = "insert";
+    const findAction = "find";
 
-    for (let currentInstruction = 1; currentInstruction <= totalOperations; currentInstruction++) {
-        const instructionParts = dataLines[currentInstruction].split(" ");
-        const performedAction = instructionParts[0];
-        const targetOperand = instructionParts[1];
+    inputLines.slice(1, totalCommands + 1).reduce((_accumulator, currentCommandLine) => {
+        const commandParts = currentCommandLine.split(" ");
+        const actionType = commandParts[0];
+        const targetString = commandParts[1];
 
-        if (performedAction === insertActionId) {
-            orderedItems.incorporateElement(targetOperand);
-        } else if (performedAction === queryActionId) {
-            if (orderedItems.verifyPresence(targetOperand)) {
+        if (actionType === insertAction) {
+            managedCollection.add(targetString);
+        } else if (actionType === findAction) {
+            if (managedCollection.has(targetString)) {
                 console.log("yes");
             } else {
                 console.log("no");
             }
         }
-    }
+        return null;
+    }, null);
 }
 
-processCommandData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessCommands(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,50 +1,50 @@
 "use strict";
 
-const processInputData = (inputContent) => {
-    const lines = inputContent.trim().split('\n');
-    const numEntries = parseInt(lines[0], 10);
-    const dataSegments = lines.slice(1, numEntries + 1);
+const processInput = (rawData) => {
+    const inputLines = rawData.trim().split("\n");
+    const segmentCount = parseInt(inputLines[0], 10);
+    const textSegments = inputLines.slice(1, segmentCount + 1);
 
-    const createCharacterCountMap = (textSegment) => {
-        const charToCountMap = new Map();
-        for (const charSymbol of textSegment) {
-            charToCountMap.set(charSymbol, (charToCountMap.get(charSymbol) || 0) + 1);
-        }
-        return charToCountMap;
+    const characterSet = "abcdefghijklmnopqrstuvwxyz";
+
+    if (segmentCount === 0) {
+        console.log("");
+        return;
+    }
+
+    const retrieveCharacterFrequencies = (textFragment) => {
+        return Array.from(textFragment).reduce((frequencyMap, currentCharacter) => {
+            frequencyMap[currentCharacter] = (frequencyMap[currentCharacter] || 0) + 1;
+            return frequencyMap;
+        }, {});
     };
 
-    const allSegmentMaps = dataSegments.map(createCharacterCountMap);
+    const initialSegmentFrequencies = retrieveCharacterFrequencies(textSegments[0]);
+    const aggregatedMinimums = {};
 
-    const aggregatedCharacterMinimums = new Map();
-    const fullAlphabet = 'abcdefghijklmnopqrstuvwxyz';
-
-    // Initialize aggregatedCharacterMinimums with frequencies from the first data segment.
-    // If numEntries is 0, allSegmentMaps[0] will be undefined, leading to an error,
-    // which mirrors the original code's undefined behavior (potential crash for Infinity pushes).
-    for (const charKey of fullAlphabet) {
-        aggregatedCharacterMinimums.set(charKey, allSegmentMaps[0].get(charKey) || 0);
+    for (const charKey of characterSet) {
+        aggregatedMinimums[charKey] = initialSegmentFrequencies[charKey] || 0;
     }
 
-    // Iterate through the remaining segment maps (from the second one)
-    for (let segmentIndex = 1; segmentIndex < numEntries; ++segmentIndex) {
-        const currentSegmentFrequencies = allSegmentMaps[segmentIndex];
-        for (const charKey of fullAlphabet) {
-            const currentMinimumValue = aggregatedCharacterMinimums.get(charKey);
-            const countFromCurrentSegment = currentSegmentFrequencies.get(charKey) || 0;
-            aggregatedCharacterMinimums.set(charKey, Math.min(currentMinimumValue, countFromCurrentSegment));
+    textSegments.slice(1).forEach(currentFragment => {
+        const currentFragmentFrequencies = retrieveCharacterFrequencies(currentFragment);
+        for (const charKey of characterSet) {
+            aggregatedMinimums[charKey] = Math.min(
+                aggregatedMinimums[charKey],
+                currentFragmentFrequencies[charKey] || 0
+            );
+        }
+    });
+
+    let finalOutputString = "";
+    for (const charKey of characterSet) {
+        const occurrenceCount = aggregatedMinimums[charKey];
+        if (occurrenceCount > 0) {
+            finalOutputString += charKey.repeat(occurrenceCount);
         }
     }
 
-    // Construct the final output string from the aggregated minimum counts
-    let finalConcatenatedResult = [];
-    for (const charKey of fullAlphabet) {
-        const resultingCount = aggregatedCharacterMinimums.get(charKey);
-        if (resultingCount > 0) {
-            finalConcatenatedResult.push(...Array.from({ length: resultingCount }, () => charKey));
-        }
-    }
-
-    console.log(finalConcatenatedResult.join(''));
+    console.log(finalOutputString);
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

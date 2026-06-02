@@ -1,257 +1,184 @@
-"use strict" ;
+"use strict";
 
-function _chopArrayIntoPieces ( sourceArray , indexLimit ) {
-  return _checkArrayValidity ( sourceArray ) || _iterateAndLimit ( sourceArray , indexLimit ) || _noMoreIterations () ;
-}
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-function _noMoreIterations ( ) {
-  throw new TypeError( "Unable to deconstruct non-iterable instance" ) ;
-}
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-function _iterateAndLimit ( inputArr , limitVal ) {
-  let tempArr = [ ] ;
-  let notDone = true ;
-  let hasError = false ;
-  let thrownError = undefined ;
-  try {
-    for (
-      let iterator = inputArr[ Symbol.iterator ] ( ) , iterStep ;
-      ! ( notDone = ( iterStep = iterator.next ( ) ).done ) ;
-      notDone = true
-    ) {
-      tempArr.push ( iterStep.value ) ;
-      if ( limitVal && tempArr.length === limitVal ) break ;
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+(function () {
+  var FenwickTree =
+  /*#__PURE__*/
+  function () {
+    function FenwickTree(size) {
+      _classCallCheck(this, FenwickTree);
+
+      this.size = size;
+      this.values = new Array(size + 1).fill(0);
     }
-  } catch ( errVal ) {
-    hasError = true ;
-    thrownError = errVal ;
-  } finally {
-    try {
-      if ( ! notDone && iterator[ "return" ] != null ) iterator[ "return" ] ( ) ;
-    } finally {
-      if ( hasError ) throw thrownError ;
-    }
-  }
-  return tempArr ;
-}
 
-function _checkArrayValidity ( candidateArray ) {
-  if ( Array.isArray ( candidateArray ) ) return candidateArray ;
-}
+    _createClass(FenwickTree, [{
+      key: "update",
+      value: function update(idx, val) {
+        for (var i = idx; i <= this.size; i += i & -i) {
+          this.values[i] += val;
+        }
+      }
+    }, {
+      key: "query",
+      value: function (idx) {
+        var total = 0;
 
-function _verifyClassCreation ( instanceObj , ConstructorFn ) {
-  if ( ! ( instanceObj instanceof ConstructorFn ) ) {
-    throw new TypeError ( "Cannot invoke a class without 'new'" ) ;
-  }
-}
+        for (var i = idx; i > 0; i -= i & -i) {
+          total += this.values[i];
+        }
 
-function _setObjectProperties ( targetObj , propertyDefinitions ) {
-  for ( let propIdx = 0 ; propIdx < propertyDefinitions.length ; propIdx++ ) {
-    let propDescriptor = propertyDefinitions[ propIdx ] ;
-    propDescriptor.enumerable = propDescriptor.enumerable || false ;
-    propDescriptor.configurable = true ;
-    if ( "value" in propDescriptor ) propDescriptor.writable = true ;
-    Object.defineProperty ( targetObj , propDescriptor.key , propDescriptor ) ;
-  }
-}
+        return total;
+      }
+    }]);
 
-function _assembleClass ( MainConstructor , instanceMethods , staticMethods ) {
-  if ( instanceMethods ) _setObjectProperties ( MainConstructor.prototype , instanceMethods ) ;
-  if ( staticMethods ) _setObjectProperties ( MainConstructor , staticMethods ) ;
-  return MainConstructor ;
-}
+    return FenwickTree;
+  }();
 
-( function ( ) {
-  // A Binary Indexed Tree (Fenwick Tree) implementation.
-  const FenwickTree =
-    /* PURE_ANNOTATION */
-    ( function ( ) {
-      function FenwickTree ( sizeLimit ) {
-        _verifyClassCreation ( this , FenwickTree ) ;
+  var CoordinateMapper =
+  /*#__PURE__*/
+  function () {
+    function CoordinateMapper(coordinates) {
+      _classCallCheck(this, CoordinateMapper);
 
-        this.maxIndex = sizeLimit ;
-        this.values = new Array ( sizeLimit + 1 ).fill ( 0 ) ;
+      coordinates.sort(function (a, b) {
+        return a - b;
+      });
+      var len = coordinates.length;
+      this.minimumVal = coordinates[0];
+      this.maximumVal = coordinates[len - 1];
+      var mappedToArray = new Array(len);
+      var originalToMapped = new Map();
+      var uniqueCount = 0;
+      var previousCoord = null;
+
+      for (var i = 0; i < len; i++) {
+        var currentCoord = coordinates[i];
+        if (previousCoord !== currentCoord) uniqueCount++;
+        mappedToArray[i] = currentCoord;
+        originalToMapped.set(currentCoord, i);
+        previousCoord = currentCoord;
       }
 
-      _assembleClass ( FenwickTree , [ {
-        key: "updateValue" ,
-        value: function updateValue ( indexPos , deltaValue ) {
-          for ( let currentIdx = indexPos ; currentIdx <= this.maxIndex ; currentIdx += currentIdx & - currentIdx ) {
-            this.values[ currentIdx ] += deltaValue ;
-          }
-        }
-      } , {
-        key: "querySum" ,
-        value: function ( indexPos ) {
-          let totalAmount = 0 ;
+      this.mappedToArray = mappedToArray;
+      this.originalToMapped = originalToMapped;
+      this.uniqueCount = uniqueCount;
+    }
 
-          for ( let currentIdx = indexPos ; currentIdx > 0 ; currentIdx -= currentIdx & - currentIdx ) {
-            totalAmount += this.values[ currentIdx ] ;
-          }
-
-          return totalAmount ;
-        }
-      } ] ) ;
-
-      return FenwickTree ;
-    } ) ( ) ;
-
-  // A utility to compress coordinate values.
-  const CoordinateMapper =
-    /* PURE_ANNOTATION */
-    ( function ( ) {
-      function CoordinateMapper ( inputValues ) {
-        _verifyClassCreation ( this , CoordinateMapper ) ;
-
-        inputValues.sort ( function ( valA , valB ) {
-          return valA - valB ;
-        } ) ;
-        let inputLength = inputValues.length ;
-        this.minimumValue = inputValues[ 0 ] ;
-        this.maximumValue = inputValues[ inputLength - 1 ] ;
-        let mappedToOriginal = new Array ( inputLength ) ;
-        let originalToMapped = new Map ( ) ;
-        let uniqueCount = 0 ;
-        let lastProcessed = null ;
-
-        for ( let idx = 0 ; idx < inputLength ; idx++ ) {
-          let currentVal = inputValues[ idx ] ;
-          if ( lastProcessed !== currentVal ) uniqueCount++ ;
-          mappedToOriginal[ idx ] = currentVal ;
-          originalToMapped.set ( currentVal , idx ) ;
-          lastProcessed = currentVal ;
-        }
-
-        this.mappedToOriginal = mappedToOriginal ;
-        this.originalToMapped = originalToMapped ;
-        this.uniqueCount = uniqueCount ;
+    _createClass(CoordinateMapper, [{
+      key: "getOriginal",
+      value: function getOriginal(mappedIndex) {
+        return this.mappedToArray[mappedIndex];
       }
+    }, {
+      key: "getMappedIndex",
+      value: function getMappedIndex(originalValue) {
+        return this.originalToMapped.get(originalValue);
+      }
+    }]);
 
-      _assembleClass ( CoordinateMapper , [ {
-        key: "getOriginal" ,
-        value: function getOriginal ( mappedIndex ) {
-          return this.mappedToOriginal[ mappedIndex ] ;
-        }
-      } , {
-        key: "getMapped" ,
-        value: function getMapped ( originalValue ) {
-          return this.originalToMapped.get ( originalValue ) ;
-        }
-      } ] ) ;
+    return CoordinateMapper;
+  }();
 
-      return CoordinateMapper ;
-    } ) ( ) ;
-
-  // Parses a line of text into an array of integers.
-  function parseNumbers ( inputLine ) {
-    return ( Array.isArray ( inputLine ) ? inputLine : inputLine.split ( /\s+/ ) ).map ( function ( parsedNum ) {
-      return parseInt ( parsedNum ) ;
-    } ) ;
+  function parseNumbers(inputLine) {
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+      return parseInt(numStr);
+    });
   }
 
-  // Main execution block, processing input from stdin.
-  ( function ( rawData ) {
-    let dataLines = rawData.split ( "\n" ) ;
+  (function (rawInput) {
+    var inputLines = rawInput.split("\n");
 
-    let parsedFirstLine = parseNumbers ( dataLines[ 0 ] ) ,
-        extractedQueryCount = _chopArrayIntoPieces ( parsedFirstLine , 1 ) ,
-        totalQueries = extractedQueryCount[ 0 ] ;
+    var _parseNumbers = parseNumbers(inputLines[0]),
+        _parseNumbers2 = _slicedToArray(_parseNumbers, 1),
+        numQueries = _parseNumbers2[0];
 
-    let parsedQueries = dataLines.slice ( 1 , totalQueries + 1 ).map ( function ( queryLine ) {
-      let parsedQueryValues = parseNumbers ( queryLine ) ,
-          extractedValues = _chopArrayIntoPieces ( parsedQueryValues , 3 ) ,
-          queryType = extractedValues[ 0 ] ,
-          paramA = extractedValues[ 1 ] ,
-          paramB = extractedValues[ 2 ] ;
+    var operations = inputLines.slice(1, numQueries + 1).map(function (inputLine) {
+      var _parseNumbers3 = parseNumbers(inputLine),
+          _parseNumbers4 = _slicedToArray(_parseNumbers3, 3),
+          opType = _parseNumbers4[0],
+          paramA = _parseNumbers4[1],
+          paramB = _parseNumbers4[2];
 
       return {
-        type: queryType ,
-        valA: paramA ,
-        valB: paramB
-      } ;
-    } ) ;
-    
-    // Collect all 'add' operation values for coordinate compression.
-    let initialValuesForCompression = parsedQueries.filter ( function ( queryItem ) {
-      let typeIdentifier = queryItem.type ;
-      return 1 === typeIdentifier ;
-    } ).map ( function ( queryItemParam ) {
-      let paramValueA = queryItemParam.valA ;
-      return paramValueA ;
-    } ) ;
-    
-    let coordMapper = new CoordinateMapper ( initialValuesForCompression ) ;
-    let treeStructure = new FenwickTree ( coordMapper.uniqueCount ) ;
-    
-    let currentMinimumCost = 0 ,
-        currentMinIndex = null ;
-    
-    let loopFinished = true ;
-    let hadError = false ;
-    let caughtError = undefined ;
+        opType: opType,
+        paramA: paramA,
+        paramB: paramB
+      };
+    });
+    var uniqueCoords = operations.filter(function (opRef) {
+      var opType = opRef.opType;
+      return 1 === opType;
+    }).map(function (opRef2) {
+      var paramA = opRef2.paramA;
+      return paramA;
+    });
+    var coordMap = new CoordinateMapper(uniqueCoords);
+    var bitTree = new FenwickTree(coordMap.uniqueCount);
+    var currentMinCost = 0,
+        minCoordIndex = null;
+    var iterComplete = true;
+    var errorOccurred = false;
+    var iteratorError = undefined;
 
     try {
-      for (
-        let queryIterator = parsedQueries[ Symbol.iterator ] ( ) , iterationStep ;
-        ! ( loopFinished = ( iterationStep = queryIterator.next ( ) ).done ) ;
-        loopFinished = true
-      ) {
-        let queryData = iterationStep.value ,
-            actionType = queryData.type ,
-            operandA = queryData.valA ,
-            operandB = queryData.valB ;
+      for (var opIterator = operations[Symbol.iterator](), currentOpStep; !(iterComplete = (currentOpStep = opIterator.next()).done); iterComplete = true) {
+        var opDetails = currentOpStep.value,
+            opType = opDetails.opType,
+            paramA = opDetails.paramA,
+            paramB = opDetails.paramB;
 
-        if ( 1 === actionType ) {
-          // Handle 'add' operation.
-          let previousMinPoint = ( 0 === treeStructure.querySum ( currentMinIndex ) ) ? ( currentMinIndex + 1 ) : currentMinIndex ;
-          let mappedAIndex = coordMapper.getMapped ( operandA ) + 1 ;
-          treeStructure.updateValue ( 1 , - 1 ) ;
-          treeStructure.updateValue ( mappedAIndex , 2 ) ;
-          if ( null == currentMinIndex ) {
-            currentMinimumCost = operandB ;
-          } else {
-            currentMinimumCost += Math.abs ( operandA - coordMapper.getOriginal ( previousMinPoint ) ) + operandB ;
-          }
-          currentMinIndex = locateMinimumPoint ( ) ;
-        } else {
-          // Handle 'query' operation.
-          console.log ( `${ coordMapper.getOriginal ( currentMinIndex ) } ${ currentMinimumCost }` ) ;
-        }
+        if (1 === opType) {
+          var previousMinIndex = 0 === bitTree.query(minCoordIndex) ? minCoordIndex + 1 : minCoordIndex;
+          var mappedAIndex = coordMap.getMappedIndex(paramA) + 1;
+          bitTree.update(1, -1);
+          bitTree.update(mappedAIndex, 2);
+          if (null == minCoordIndex) currentMinCost = paramB;else currentMinCost += Math.abs(paramA - coordMap.getOriginal(previousMinIndex)) + paramB;
+          minCoordIndex = findMinIndex();
+        } else console.log(`${coordMap.getOriginal(minCoordIndex)} ${currentMinCost}`);
       }
-    } catch ( errValue ) {
-      hadError = true ;
-      caughtError = errValue ;
+    } catch (err) {
+      errorOccurred = true;
+      iteratorError = err;
     } finally {
       try {
-        if ( ! loopFinished && queryIterator.return != null ) {
-          queryIterator.return ( ) ;
+        if (!iterComplete && opIterator["return"] != null) {
+          opIterator["return"]();
         }
       } finally {
-        if ( hadError ) {
-          throw caughtError ;
+        if (errorOccurred) {
+          throw iteratorError;
         }
       }
     }
 
-    // Finds the point that minimizes the cost.
-    function locateMinimumPoint ( ) {
-      let lowBound = 1 ,
-          highBound = coordMapper.uniqueCount + 1 ;
+    function findMinIndex() {
+      var lowBound = 1,
+          highBound = coordMap.uniqueCount + 1;
 
-      for ( ; lowBound < highBound ; ) {
-        let midPoint = Math.floor ( ( lowBound + highBound ) / 2 ) ;
-        let currentSum = treeStructure.querySum ( midPoint ) ;
-        if ( currentSum > 0 ) {
-          highBound = midPoint ;
-        } else if ( 0 === currentSum ) {
-          lowBound = midPoint ;
-          break ;
-        } else {
-          lowBound = midPoint + 1 ;
-        }
+      for (; lowBound < highBound;) {
+        var midPoint = Math.floor((lowBound + highBound) / 2);
+        var currentSum = bitTree.query(midPoint);
+        if (currentSum > 0) highBound = midPoint;else if (0 === currentSum) {
+          lowBound = midPoint;
+          break;
+        } else lowBound = midPoint + 1;
       }
 
-      return lowBound - 1 ;
+      return lowBound - 1;
     }
-  } ) ( require ( "fs" ).readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-} ) ( ) ;
+  })(require("fs").readFileSync("/dev/stdin", "utf8"));
+})();

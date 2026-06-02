@@ -1,55 +1,73 @@
-let rawData = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-const lines = rawData . trim ( ) . split ( '\n' ) ;
-let configValues = lines . shift ( ) . split ( ' ' ) . map ( parseFloat ) ;
-let firstParam = configValues [ 0 ] - 1 ;
-let secondParam = configValues [ 1 ] ;
-let targetValue = configValues [ 2 ] ;
-let dataList = [ ] ;
-for ( let idx = 0 ; idx < secondParam ; idx ++ )
-{
-  let currentNum = parseInt ( lines . shift ( ) , 10 ) ;
-  if ( currentNum !== targetValue )
-  {
-    dataList . push ( currentNum ) ;
-  }
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Split the input string into an array of lines and remove leading/trailing whitespace
+var lineArray = rawData.trim().split("\n");
+
+// Extract the first line, split by space, and convert parts to numbers
+var configValues = lineArray.shift().split(" ").map(Number);
+
+// Assign configuration values to descriptive variables
+var adjustedN = configValues[0] - 1; // N value, potentially adjusted for 0-based indexing
+var countM = configValues[1];        // M value, representing a count
+var targetP = configValues[2];       // P value, the target point
+
+// Initialize an array to store relevant numeric data points
+var dataPoints = [];
+
+// Process the next 'countM' lines from the input
+for (var idx = 0; idx < countM; idx++) {
+   // Convert the current line to a number
+   var currentVal = lineArray.shift() - 0.0;
+   // If the value is not equal to the target P, add it to our data points
+   if (currentVal !== targetP) {
+      dataPoints.push(currentVal);
+   }
 }
-dataList = dataList . concat ( targetValue ) ;
-dataList . sort ( function ( itemA , itemB ) { return itemA - itemB ; } ) ;
-let minimumResult = Number . MAX_VALUE ;
-dataList . forEach ( function ( currentElement , currentIndex )
-{
-  if ( currentElement < targetValue )
-  {
-    if ( currentIndex !== 0 )
-    {
-      minimumResult = Math . min ( minimumResult , ( targetValue - currentElement ) * 2 + ( firstParam - targetValue + 1 ) + dataList [ currentIndex - 1 ] ) ;
+
+// Ensure the target P value is included in the data points array
+dataPoints = dataPoints.concat(targetP);
+
+// Sort the data points numerically in ascending order
+dataPoints.sort(function(valA, valB) {
+    return valA - valB;
+});
+
+// Initialize the minimum distance with a very large number
+var minimumDistance = Number.POSITIVE_INFINITY;
+
+// Iterate through each data point to calculate and find the minimum distance
+dataPoints.forEach(function(currentPoint, pointIndex) {
+    // Scenario 1: The current data point is less than the target P
+    if (currentPoint < targetP) {
+        // If it's not the first element, calculate a potential minimum distance
+        if (pointIndex !== 0) {
+            minimumDistance = Math.min(minimumDistance, (targetP - currentPoint) * 2 + (adjustedN - targetP + 1) + dataPoints[pointIndex - 1]);
+        }
     }
-  }
-  if ( targetValue === currentElement )
-  {
-    if ( currentIndex === 0 )
-    {
-      minimumResult = Math . min ( minimumResult , dataList [ dataList . length - 1 ] - currentElement ) ;
+    // Scenario 2: The current data point is exactly equal to the target P
+    if (targetP === currentPoint) {
+        // Calculate various potential minimum distances based on its position
+        if (pointIndex === 0) { // If P is the first element
+            minimumDistance = Math.min(minimumDistance, dataPoints[dataPoints.length - 1] - currentPoint);
+        }
+        if (pointIndex === dataPoints.length - 1) { // If P is the last element
+            minimumDistance = Math.min(minimumDistance, currentPoint - dataPoints[0]);
+        }
+        if (pointIndex !== dataPoints.length - 1) { // If P is not the last element
+            minimumDistance = Math.min(minimumDistance, targetP + adjustedN - dataPoints[pointIndex + 1] + 1);
+        }
+        if (pointIndex !== 0) { // If P is not the first element
+            minimumDistance = Math.min(minimumDistance, adjustedN - targetP + 1 + dataPoints[pointIndex - 1]);
+        }
     }
-    if ( currentIndex === dataList . length - 1 )
-    {
-      minimumResult = Math . min ( minimumResult , currentElement - dataList [ 0 ] ) ;
+    // Scenario 3: The current data point is greater than the target P
+    if (targetP < currentPoint) {
+        // If it's not the last element, calculate a potential minimum distance
+        if (pointIndex !== dataPoints.length - 1) {
+            minimumDistance = Math.min(minimumDistance, (currentPoint - targetP) * 2 + targetP + (adjustedN - dataPoints[pointIndex + 1] + 1));
+        }
     }
-    if ( currentIndex !== dataList . length - 1 )
-    {
-      minimumResult = Math . min ( minimumResult , targetValue + firstParam - dataList [ currentIndex + 1 ] + 1 ) ;
-    }
-    if ( currentIndex !== 0 )
-    {
-      minimumResult = Math . min ( minimumResult , firstParam - targetValue + 1 + dataList [ currentIndex - 1 ] ) ;
-    }
-  }
-  if ( targetValue < currentElement )
-  {
-    if ( currentIndex !== dataList . length - 1 )
-    {
-      minimumResult = Math . min ( minimumResult , ( currentElement - targetValue ) * 2 + targetValue + ( firstParam - dataList [ currentIndex + 1 ] + 1 ) ) ;
-    }
-  }
-} ) ;
-console . log ( minimumResult * 100 ) ;
+});
+
+// Output the final calculated minimum distance, multiplied by 100
+console.log(minimumDistance * 100);

@@ -1,16 +1,11 @@
-const processInput = (textualContent) => {
-  const characterUnits = textualContent.split('');
-  
-  const finalState = characterUnits.slice(1).reduce((accumulator, currentUnit) => {
-    if (currentUnit !== accumulator.lastUnit) {
-      accumulator.groupTransitions++;
-      accumulator.lastUnit = currentUnit;
-    }
-    return accumulator;
-  }, { groupTransitions: 0, lastUnit: characterUnits[0] });
+function processInput(inputString) {
+  const characterSequence = inputString.split('');
 
-  return finalState.groupTransitions;
-};
+  const segmentChangeCount = characterSequence.reduce((accumulator, currentSymbol, position, fullSequence) => {
+    return accumulator + (position > 0 && currentSymbol !== fullSequence[position - 1] ? 1 : 0);
+  }, 0);
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-console.log(processInput(inputSource));
+  console.log(segmentChangeCount);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

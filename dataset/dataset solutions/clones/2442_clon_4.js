@@ -1,11 +1,7 @@
-const processNumericString = (numericText) => {
-  const numericValue = Number(numericText);
-  const bitShifted = numericValue >> 1;
-  const parityBit = numericValue & 1;
-  const calculatedResult = bitShifted - (1 - parityBit);
+const processInput = (rawText) => {
+  const numericValue = parseInt(rawText.trim(), 10);
+  const calculatedResult = Math.round(numericValue / 2) - 1;
   console.log(calculatedResult);
 };
 
-const fileSystemModule = require("fs");
-const inputBuffer = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-processNumericString(inputBuffer.trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

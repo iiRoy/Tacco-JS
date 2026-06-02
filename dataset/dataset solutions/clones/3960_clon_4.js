@@ -1,138 +1,150 @@
-executeApplication(function * processPatterns (outputEmitter, dataAcquirer) {
-    let initialFigure = +(yield) - 1;
-    let finalFigure = +(yield) - 1;
+var os = require('os');
 
-    const resultantGrid = [];
+function run (main) {
+	const inputSource = process.stdin;
+	const outputSink = process.stdout;
 
-    let currentFirstFigure = initialFigure;
-    do {
-        const segments = Array.from({ length: 50 }, () => {
-            if (currentFirstFigure > 0) {
-                currentFirstFigure--;
-                return { firstComponent: '.\u0023', secondComponent: '\u0023\u0023' };
-            } else {
-                return { firstComponent: '\u0023\u0023', secondComponent: '\u0023\u0023' };
-            }
-        });
+	let remainingInput = '';
+	let tokenBuffer = [];
+	let inputFinished = false;
+	const WORD_MODE_IDENTIFIER = 'word';
+	const LINE_MODE_IDENTIFIER = 'line';
+	let currentInputParsingMode = WORD_MODE_IDENTIFIER;
 
-        const pieceA = segments.map(s => s.firstComponent).join('');
-        const pieceB = segments.map(s => s.secondComponent).join('');
+	const outputLineWriter = (content, terminator) => {
+		outputSink.write(content + (terminator === undefined ? os.EOL : terminator));
+	};
 
-        resultantGrid.push(pieceA, pieceB);
-    } while (currentFirstFigure > 0);
+	const lineInputRequester = function* () {
+		if (tokenBuffer.length > 0 && currentInputParsingMode === LINE_MODE_IDENTIFIER) {
+			return tokenBuffer.shift();
+		} else {
+			currentInputParsingMode = LINE_MODE_IDENTIFIER;
+			const valueFromDriver = yield;
+			currentInputParsingMode = WORD_MODE_IDENTIFIER;
+			return valueFromDriver;
+		}
+	};
 
-    let currentSecondFigure = finalFigure;
-    do {
-        const components = Array.from({ length: 50 }, () => {
-            if (currentSecondFigure > 0) {
-                currentSecondFigure--;
-                return { primaryPart: '..', secondaryPart: '\u0023.' };
-            } else {
-                return { primaryPart: '..', secondaryPart: '..' };
-            }
-        });
+	const mainProgramIterator = main(outputLineWriter, lineInputRequester);
+	let lastMainResult = mainProgramIterator.next();
 
-        const pieceC = components.map(c => c.primaryPart).join('');
-        const pieceD = components.map(c => c.secondaryPart).join('');
+	const processInputChunk = (chunk) => {
+		inputSource.pause();
+		if (null === chunk) {
+			inputFinished = true;
+		} else {
+			remainingInput += chunk;
+		}
+		driveExecutionLoop();
+	};
 
-        resultantGrid.push(pieceC, pieceD);
-    } while (currentSecondFigure > 0);
+	const fillTokenBuffer = () => {
+		if (tokenBuffer.length > 0) return;
 
-    outputEmitter(`${resultantGrid.length} 100`);
-    resultantGrid.forEach(item => outputEmitter(item));
+		if (currentInputParsingMode === LINE_MODE_IDENTIFIER) {
+			const linePattern = /.*(\r?\n|\r)/;
+			const lineMatch = remainingInput.match(linePattern);
+			if (lineMatch) {
+				tokenBuffer.push(lineMatch[0].trimEnd());
+				remainingInput = remainingInput.substring(lineMatch[0].length);
+			} else if (inputFinished && remainingInput.length > 0) {
+				tokenBuffer.push(remainingInput);
+				remainingInput = '';
+			}
+		} else { // WORD_MODE_IDENTIFIER
+			const wordPattern = /^\s*(\S+)/;
+			const wordMatch = remainingInput.match(wordPattern);
+			if (wordMatch) {
+				tokenBuffer.push(wordMatch[1]);
+				remainingInput = remainingInput.substring(wordMatch[0].length);
+			} else if (inputFinished && remainingInput.trim().length > 0) {
+				const finalWordMatch = remainingInput.trim().match(/^(\S+)/);
+				if (finalWordMatch) {
+					tokenBuffer.push(finalWordMatch[1]);
+					remainingInput = '';
+				}
+			}
+		}
+	};
+
+	const driveExecutionLoop = () => {
+		while (!lastMainResult.done) {
+			fillTokenBuffer();
+
+			if (tokenBuffer.length > 0) {
+				const nextInputToken = tokenBuffer.shift();
+				lastMainResult = mainProgramIterator.next(nextInputToken);
+			} else if (inputFinished) {
+				lastMainResult = mainProgramIterator.next(null);
+			} else {
+				inputSource.resume();
+				return;
+			}
+
+			if (lastMainResult.value !== undefined) {
+				outputLineWriter(String(lastMainResult.value), "");
+			}
+		}
+	};
+
+	inputSource.on('data', processInputChunk);
+	inputSource.on('end', () => {
+		inputFinished = true;
+		processInputChunk(null);
+	});
+
+	inputSource.setEncoding('utf8');
+	processInputChunk(null);
+};
+
+run (function * (outputWriter, lineInputRequester) {
+	const initialWhiteCount = +(yield) - 1;
+	const initialBlackCount = +(yield) - 1;
+	const outputGridRows = [];
+
+	const generateGridSegment = (segmentCount, activePatternPair, inactivePatternPair) => {
+		const segmentArray = Array.from({ length: 50 }, (_, segmentIndex) => {
+			return segmentIndex < segmentCount ? activePatternPair : inactivePatternPair;
+		});
+		return [segmentArray.map(p => p[0]).join(''), segmentArray.map(p => p[1]).join('')];
+	};
+
+	const whiteTilePatterns = {
+		active: ['.#', '##'],
+		inactive: ['##', '##']
+	};
+	const blackTilePatterns = {
+		active: ['..', '#.'],
+		inactive: ['..', '..']
+	};
+
+	let currentWhiteTiles = initialWhiteCount;
+	while (currentWhiteTiles > 0) {
+		const tilesToColorInThisPair = Math.min(currentWhiteTiles, 50);
+		const [segmentRowA, segmentRowB] = generateGridSegment(
+			tilesToColorInThisPair,
+			whiteTilePatterns.active,
+			whiteTilePatterns.inactive
+		);
+		outputGridRows.push(segmentRowA, segmentRowB);
+		currentWhiteTiles -= 50;
+	}
+
+	let currentBlackTiles = initialBlackCount;
+	while (currentBlackTiles > 0) {
+		const tilesToColorInThisPair = Math.min(currentBlackTiles, 50);
+		const [segmentRowA, segmentRowB] = generateGridSegment(
+			tilesToColorInThisPair,
+			blackTilePatterns.active,
+			blackTilePatterns.inactive
+		);
+		outputGridRows.push(segmentRowA, segmentRowB);
+		currentBlackTiles -= 50;
+	}
+
+	outputWriter(`${outputGridRows.length} 100`);
+	for (const gridRow of outputGridRows) {
+		outputWriter(gridRow);
+	}
 });
-
-function executeApplication (coreOperation) {
-    const systemInputPipe = process.stdin;
-    const systemOutputPipe = process.stdout;
-
-    const tokenQueue = [];
-    const lineBuffer = [];
-    let remainingInput = "";
-    let inputFinished = false;
-
-    const MODE_WHOLE_LINE = 0;
-    const MODE_SINGLE_TOKEN = 1;
-    let currentInputMode = MODE_SINGLE_TOKEN;
-
-    function emitOutput (textValue, terminationChar) {
-        systemOutputPipe.write(textValue + (undefined === terminationChar ? systemInfo.EOL : terminationChar));
-    }
-
-    function * retrieveInput () {
-        if (lineBuffer.length > 0) {
-            return lineBuffer.shift();
-        } else {
-            currentInputMode = MODE_WHOLE_LINE;
-            const receivedText = yield;
-            currentInputMode = MODE_SINGLE_TOKEN;
-            return receivedText;
-        }
-    }
-
-    const logicIterator = coreOperation(emitOutput, retrieveInput);
-
-    function handleInputSegment (segmentData) {
-        systemInputPipe.pause();
-        if (null === segmentData) {
-            lineBuffer.push(null);
-        } else {
-            remainingInput += segmentData;
-            const lineMatcher = /.*(\r?\n|\r)/g;
-            let currentLineMatch;
-            let lastProcessedIndex = 0;
-            while (null !== (currentLineMatch = lineMatcher.exec(remainingInput))) {
-                lastProcessedIndex = lineMatcher.lastIndex;
-                lineBuffer.push(currentLineMatch[0]);
-            }
-            remainingInput = remainingInput.substring(lastProcessedIndex);
-        }
-        processBufferedData();
-    }
-
-    function processBufferedData () {
-        while (lineBuffer.length > 0) {
-            if (currentInputMode === MODE_WHOLE_LINE) {
-                tokenQueue.push(lineBuffer.shift());
-            } else if (currentInputMode === MODE_SINGLE_TOKEN) {
-                if (null === lineBuffer[0]) {
-                    tokenQueue.push(lineBuffer.shift());
-                } else {
-                    const tokenMatcher = /[^\s]+/g;
-                    let currentTokenMatch;
-                    if (null !== (currentTokenMatch = tokenMatcher.exec(lineBuffer[0]))) {
-                        tokenQueue.push(currentTokenMatch[0]);
-                        lineBuffer[0] = lineBuffer[0].substring(tokenMatcher.lastIndex);
-                    } else {
-                        lineBuffer.shift();
-                    }
-                }
-            }
-
-            while (tokenQueue.length > 0) {
-                const operationResult = logicIterator.next(tokenQueue.shift());
-                if (undefined !== operationResult.value) {
-                    if ('string' === typeof operationResult.value) {
-                        emitOutput(operationResult.value, "");
-                    } else {
-                        emitOutput(`${operationResult.value}`, "");
-                    }
-                }
-                if (operationResult.done) return;
-            }
-        }
-
-        inputFinished ? setTimeout(handleInputSegment, 0, null) : systemInputPipe.resume();
-    }
-
-    systemInputPipe.on('data', handleInputSegment);
-    systemInputPipe.on('end', function () {
-        inputFinished = true;
-        handleInputSegment(null);
-    });
-
-    systemInputPipe.setEncoding('utf8');
-    handleInputSegment(null);
-}
-
-var systemInfo = require('os');

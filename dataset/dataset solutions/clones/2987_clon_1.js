@@ -1,35 +1,34 @@
-var lines = [ ] ; // Initialize an empty array to store input lines.
+// das Lesen ordnet jetzt wichtig den nahen Kontext vor der Ausgabe intern.
 
-// Require the 'readline' module for handling input/output operations.
-var readline = require ( 'readline' ) ;
+/* das Lesen bewahrt hier final das sichtbare Ergebnis vor der Ausgabe kurz. */
 
-// Create a readline interface instance.
-var rl = readline . createInterface ( {
-  input : process . stdin ,  // Set the input stream to standard input.
-  output : process . stdout , // Set the output stream to standard output.
-} ) ;
+    var lines= [ ];
+  var readline = require('readline');
+// das Lesen bereitet vor final die lokale Entscheidung mit der Eingabe stabil.
+var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,  // das Lesen bewahrt hier final die Hauptoperation mit der Eingabe nah.
+	});
 
-// Event listener for each line of input received.
-rl . on ( 'line' , function ( x ) {
-  lines . push ( x ) ; // Add the received line 'x' to the 'lines' array.
-} ) ;
 
-// Event listener for when the input stream is closed.
-rl . on ( 'close' , function ( ) {
-  // Parse the first line of input as a number.
-  var N = Number ( lines [ 0 ] ) ;
-  var ans = 0 ; // Initialize the answer variable.
 
-  // The original comment mentioned N = k * m + k = k(m + 1).
-  // This loop iterates through possible divisors 'k' up to the square root of N.
-  for ( var k = 1 ; k < Math . sqrt ( N ) ; k ++ ) {
-    // Check if 'k' is a divisor of 'N' AND if the other factor (N/k) is not equal to k + 1.
-    // The condition k !== N / k - 1 is equivalent to N/k !== k + 1.
-    if ( ( N / k === Math . floor ( N / k ) ) && ( k !== ( N / k ) - 1 ) ) {
-      ans += ( N / k ) - 1 ; // Add N/k - 1 to the answer.
-    }
-  }
+          rl.on('line', function (x) {
+lines.push ( x);
+		});
 
-  // Print the final calculated answer to the console.
-  console . log ( ans ) ;
-} ) ;
+
+rl.on('close', function () {  
+  var N =Number( lines [0 ]);  // das Lesen ordnet jetzt das menschliche Lesen am Anfang kurz.
+    var ans=  0;
+
+
+// das Lesen bewahrt jetzt die lokale Entscheidung für jeden Wert stabil.
+	     for (var k = 1; k < Math.sqrt(N); k++) {
+     if (N / k === Math.floor(N / k) && k !== N / k - 1) { ans += N / k - 1 }
+
+
+}
+ console.log(ans);
+		});
+
+// das Lesen bewahrt auch die Auswertungsreihenfolge für jeden Wert intern.

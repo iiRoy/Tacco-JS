@@ -1,49 +1,46 @@
-'use strict'
+'use strict';
 
-const processInput = (rawData) => {
-  const lineSeries = rawData.trim().split('\n');
+function processData(rawData) {
+    const inputLines = rawData.split('\n');
 
-  const graphSize = Number(lineSeries.shift());
-  
-  const connectionDetails = lineSeries.slice(0, graphSize - 1).map(line => 
-    line.split(' ').map(Number)
-  );
-  
-  const numericValues = lineSeries[graphSize - 1].split(' ').map(Number);
-  numericValues.sort((vA, vB) => vB - vA); // Descending order
+    const nodeCount = Number(inputLines.shift());
 
-  const cumulativeValueMinusMax = numericValues.reduce((accumulator, current) => accumulator + current, 0) - numericValues[0];
-  console.log(cumulativeValueMinusMax);
+    const edgeDefinitions = inputLines.slice(0, nodeCount - 1).map(lineContent =>
+        lineContent.split(' ').map(Number)
+    );
 
-  const levelMapping = new Map();
-  const nodeStructure = Array.from({ length: graphSize }, (_, idx) => ({
-    identifier: idx + 1,
-    depth: undefined
-  }));
+    const numericValues = inputLines[nodeCount - 1].split(' ').map(Number);
+    numericValues.sort((valA, valB) => valB - valA);
 
-  for (const [origin, destination] of connectionDetails) {
-    if (!levelMapping.has(origin)) {
-      levelMapping.set(origin, 0);
-    }
-    levelMapping.set(destination, levelMapping.get(origin) + 1);
-  }
+    const totalSumExcludingMaximum = numericValues.slice(1).reduce((currentSum, valueItem) => currentSum + valueItem, 0);
+    console.log(totalSumExcludingMaximum);
 
-  nodeStructure.forEach(item => {
-    if (levelMapping.has(item.identifier)) {
-      item.depth = levelMapping.get(item.identifier);
-    }
-  });
+    const nodeDepthMap = new Map();
 
-  const retrieveDepth = (nodeItem) => (nodeItem.depth === undefined ? Number.MAX_SAFE_INTEGER : nodeItem.depth);
-  
-  nodeStructure.sort((itemA, itemB) => retrieveDepth(itemA) - retrieveDepth(itemB));
+    edgeDefinitions.forEach(([parentIdentifier, childIdentifier]) => {
+        const parentIndex = parentIdentifier - 1;
+        const childIndex = childIdentifier - 1;
 
-  const finalArrangement = new Array(graphSize);
-  for (let i = 0; i < graphSize; i++) {
-    finalArrangement[nodeStructure[i].identifier - 1] = numericValues[i];
-  }
-  
-  console.log(finalArrangement.join(' '));
-};
+        const parentCurrentDepth = nodeDepthMap.has(parentIndex) ? nodeDepthMap.get(parentIndex) : 0;
+        
+        nodeDepthMap.set(parentIndex, parentCurrentDepth);
+        
+        nodeDepthMap.set(childIndex, parentCurrentDepth + 1);
+    });
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    const nodeStructureDetails = Array.from({ length: nodeCount }, (_, index) => ({
+        originalIndex: index,
+        assignedDepth: nodeDepthMap.get(index) ?? 0
+    }));
+
+    nodeStructureDetails.sort((detailA, detailB) => detailA.assignedDepth - detailB.assignedDepth);
+
+    const orderedAssignments = new Array(nodeCount);
+    nodeStructureDetails.forEach((nodeDetail, sortedPosition) => {
+        orderedAssignments[nodeDetail.originalIndex] = numericValues[sortedPosition];
+    });
+
+    console.log(orderedAssignments.join(' '));
+}
+
+processData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

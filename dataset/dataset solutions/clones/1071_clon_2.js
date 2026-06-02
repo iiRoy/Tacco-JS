@@ -1,60 +1,56 @@
-// This script processes incoming data to arrange elements based on a pivot value.
-function processInput(inputContent) {
-    // Clean up input and split it into individual lines.
-    const linesArray = inputContent.trim()
-                                .split('\n');
+function processInput(rawInputData) {
+    // Process the raw input string: trim whitespace and split into individual lines.
+    const inputLines = rawInputData.trim().split('\n');
 
-    // Extract the total number of elements from the first line.
-    const totalElements = Number(linesArray.shift());
+    // Extract the total number of elements from the first line of input.
+    const elementCount = Number(inputLines.shift());
 
-    // Parse the array of numbers from the second line.
-    const sourceArray = linesArray.shift()
-                                .split(' ')
-                                .map(Number);
+    // Parse the second line of input, splitting by spaces and converting each part to a number.
+    const dataArray = inputLines.shift().split(' ').map(Number);
 
-    // Call the sorting/partitioning routine.
-    const resultArray = arrangeElements(sourceArray, 0, totalElements);
+    // Call the partitioning routine with the array, starting index (0), and exclusive end index.
+    const processedArray = divideAndArrange(dataArray, 0, elementCount);
 
-    // Output the processed array to the console, joined by spaces.
-    console.log(resultArray.join(' '));
+    // Output the resulting array elements, joined by a single space.
+    console.log(processedArray.join(' '));
 }
 
-// Function to partition an array around a pivot element.
-function arrangeElements(dataCollection, startIndex, endIndex) {
-    // Select the last element as the pivot value.
-    let pivotValue = dataCollection[endIndex - 1];
+// This function performs a partitioning operation on a given array segment.
+// It reorders elements such that all elements less than or equal to the pivot
+// are placed before it, and the pivot itself is marked with brackets.
+function divideAndArrange(dataArray, startIndex, endIndex) {
+    // The pivot element is chosen as the last element of the segment.
+    let pivotValue = dataArray[endIndex - 1];
 
-    // Initialize an index for the "lower" part of the array.
-    let boundaryIndex = startIndex;
+    // 'lessThanPivotIndex' keeps track of the boundary for elements found to be
+    // less than or equal to the pivot.
+    let lessThanPivotIndex = startIndex;
 
-    // Iterate through the array from the start index up to (but not including) the pivot.
-    for (let currentPos = startIndex, limitIndex = endIndex - 1;
-         currentPos < limitIndex;
-         currentPos++)
-    {
-        // If the current element is less than or equal to the pivot,
-        // swap it with the element at the boundaryIndex.
-        if (dataCollection[currentPos] <= pivotValue) {
-            let tempElement = dataCollection[currentPos];
-            dataCollection[currentPos] = dataCollection[boundaryIndex];
-            dataCollection[boundaryIndex] = tempElement;
-            boundaryIndex++; // Move the boundary forward.
+    // Iterate through the array segment from the start up to (but not including) the pivot.
+    for (let currentIdx = startIndex, loopLimitIdx = endIndex - 1; currentIdx < loopLimitIdx; currentIdx++) {
+        // If the current element is less than or equal to the pivot, swap it
+        // with the element at 'lessThanPivotIndex' and advance the boundary.
+        if (dataArray[currentIdx] <= pivotValue) {
+            let tempVal = dataArray[currentIdx];
+            dataArray[currentIdx] = dataArray[lessThanPivotIndex];
+            dataArray[lessThanPivotIndex] = tempVal;
+            lessThanPivotIndex++; // Increment the boundary for smaller elements
         }
     }
 
-    // After the loop, place the pivot value in its correct sorted position.
-    let swapPlaceholder = dataCollection[boundaryIndex];
-    dataCollection[endIndex - 1] = swapPlaceholder;
-
-    // Format the pivot value for output.
+    // After the loop, place the original pivot value into its final sorted position.
+    // First, temporarily store the element currently at 'lessThanPivotIndex'.
+    let tempVal = dataArray[lessThanPivotIndex];
+    // Move the element that was originally at the pivot's position to 'lessThanPivotIndex'.
+    dataArray[endIndex - 1] = tempVal;
+    // Format the pivot value by enclosing it in square brackets for output.
     pivotValue = `[${pivotValue}]`;
-
-    // Place the formatted pivot into the array.
-    dataCollection[boundaryIndex] = pivotValue;
+    // Place the formatted pivot value at its correct position.
+    dataArray[lessThanPivotIndex] = pivotValue;
 
     // Return the modified array.
-    return dataCollection;
+    return dataArray;
 }
 
-// Execute the main processing function with data read from standard input.
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Initiate the processing by reading the input from standard input.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

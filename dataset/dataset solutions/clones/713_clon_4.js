@@ -1,65 +1,60 @@
-function analyzeTerrain(widthDim, heightDim, terrainGrid) {
-    let regionCount = 0;
+const neighborDeltas = [
+    [1, 1], [1, 0], [1, -1],
+    [0, 1],         [0, -1],
+    [-1, 1], [-1, 0], [-1, -1]
+];
 
-    const displacementVectors = [
-        { row: -1, col: -1 }, { row: -1, col: 0 }, { row: -1, col: 1 },
-        { row: 0, col: -1 },                      { row: 0, col: 1 },
-        { row: 1, col: -1 },  { row: 1, col: 0 },  { row: 1, col: 1 }
-    ];
+function exploreConnectedLand(startRow, startCol, gridHeight, gridWidth, terrainMap) {
+    const traversalQueue = [[startRow, startCol]];
+    terrainMap[startRow][startCol] = 0;
 
-    for (let currentY = 0; currentY < heightDim; currentY++) {
-        for (let currentX = 0; currentX < widthDim; currentX++) {
-            if (terrainGrid[currentY][currentX] === 1) {
-                regionCount++;
-                
-                const explorationQueue = [{ y: currentY, x: currentX }];
-                terrainGrid[currentY][currentX] = 0; // Mark as visited by changing its value
+    let queuePointer = 0;
+    while (queuePointer < traversalQueue.length) {
+        const [currentRow, currentCol] = traversalQueue[queuePointer++];
 
-                let queueReadPointer = 0; 
-                while (queueReadPointer < explorationQueue.length) {
-                    const { y: processingY, x: processingX } = explorationQueue[queueReadPointer++];
+        for (const [deltaR, deltaC] of neighborDeltas) {
+            const nextRow = currentRow + deltaR;
+            const nextCol = currentCol + deltaC;
 
-                    for (const offset of displacementVectors) {
-                        const nextY = processingY + offset.row;
-                        const nextX = processingX + offset.col;
-
-                        if (
-                            nextY >= 0 && nextY < heightDim &&
-                            nextX >= 0 && nextX < widthDim &&
-                            terrainGrid[nextY][nextX] === 1
-                        ) {
-                            terrainGrid[nextY][nextX] = 0; // Mark as visited
-                            explorationQueue.push({ y: nextY, x: nextX });
-                        }
-                    }
-                }
+            if (nextRow >= 0 && nextRow < gridHeight &&
+                nextCol >= 0 && nextCol < gridWidth &&
+                terrainMap[nextRow][nextCol] === 1) {
+                terrainMap[nextRow][nextCol] = 0;
+                traversalQueue.push([nextRow, nextCol]);
             }
         }
     }
-    return regionCount;
 }
 
-function processGeographicDataAndLog(rawData) {
-    const inputLines = rawData.trim().split("\n");
-    let linePointer = 0;
+function processIslandMaps(inputData) {
+    const inputLines = inputData.split('\n');
+    let currentLineIndex = 0;
 
     while (true) {
-        const dimensionsLine = inputLines[linePointer++].split(" ").map(Number);
-        const currentWidth = dimensionsLine[0];
-        const currentHeight = dimensionsLine[1];
+        const dimensions = inputLines[currentLineIndex].split(' ').map(Number);
+        const gridWidth = dimensions[0];
+        const gridHeight = dimensions[1];
 
-        if (currentWidth === 0 && currentHeight === 0) {
+        if (gridWidth === 0 && gridHeight === 0) {
             break;
         }
 
-        const currentTerrain = [];
-        for (let rowIdx = 0; rowIdx < currentHeight; rowIdx++) {
-            currentTerrain.push(inputLines[linePointer++].split(" ").map(Number));
-        }
+        const currentTerrainMap = Array.from({ length: gridHeight }, (_, rIdx) =>
+            inputLines[currentLineIndex + rIdx + 1].split(' ').map(Number)
+        );
+        currentLineIndex += gridHeight + 1;
 
-        const islandsFound = analyzeTerrain(currentWidth, currentHeight, currentTerrain);
-        console.log(islandsFound);
+        let islandCounter = 0;
+        for (let r = 0; r < gridHeight; r++) {
+            for (let c = 0; c < gridWidth; c++) {
+                if (currentTerrainMap[r][c] === 1) {
+                    islandCounter++;
+                    exploreConnectedLand(r, c, gridHeight, gridWidth, currentTerrainMap);
+                }
+            }
+        }
+        console.log(islandCounter);
     }
 }
 
-processGeographicDataAndLog(require("fs").readFileSync("/dev/stdin","utf8"));
+processIslandMaps(require("fs").readFileSync("/dev/stdin", "utf8"));

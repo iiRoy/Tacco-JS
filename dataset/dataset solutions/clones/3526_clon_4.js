@@ -1,21 +1,18 @@
-function assessTerritoryConflict(historicalRecords) {
-    const numericalObservations = historicalRecords.match(/-?\d+/g).map(Number);
+function Main(input) {
+    const inputLines = input.split("\n");
 
-    const firstDimensionCount = numericalObservations[0];
-    const primaryThreshold = numericalObservations[2];
-    const secondaryThreshold = numericalObservations[3];
+    const [countN, countM, initialXValue, initialYValue] = inputLines[0].split(" ").map(Number);
 
-    if (primaryThreshold >= secondaryThreshold) {
-        return "War";
-    }
+    const xCoordinates = inputLines[1].split(" ").map(Number);
 
-    const primaryInfluencePoints = numericalObservations.slice(4, 4 + firstDimensionCount);
-    const secondaryInfluencePoints = numericalObservations.slice(4 + firstDimensionCount);
+    const yCoordinates = inputLines[2].split(" ").map(Number);
 
-    const highestPrimaryEffect = Math.max(primaryThreshold, ...primaryInfluencePoints);
-    const lowestSecondaryEffect = Math.min(secondaryThreshold, ...secondaryInfluencePoints);
+    const highestXValue = xCoordinates.reduce((currentMax, coordinate) => Math.max(currentMax, coordinate), initialXValue);
 
-    return (lowestSecondaryEffect >= highestPrimaryEffect) ? "War" : "No War";
+    const lowestYValue = yCoordinates.reduce((currentMin, coordinate) => Math.min(currentMin, coordinate), initialYValue);
+
+    const finalResult = (initialXValue >= initialYValue || lowestYValue >= highestXValue) ? 'War' : 'No War';
+
+    console.log(finalResult);
 }
-
-console.log(assessTerritoryConflict(require("fs").readFileSync("/dev/stdin", "utf8")));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,40 +1,11 @@
-function obtainNumericValue(symbol) {
-    if (symbol.trim() === '') {
-        return 0;
-    }
-    return +symbol;
-}
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-process.stdin.setEncoding('utf8');
+const numericStrings = sourceData.split(' ');
 
-let dataAccumulator = '';
+const totalValue = numericStrings.reduce((currentTotal, currentString) => {
+    return currentTotal + Number(currentString);
+}, 0);
 
-process.stdin.on('readable', () => {
-    let piece;
-    while ((piece = process.stdin.read()) !== null) {
-        dataAccumulator += piece;
-    }
-});
+const averageValue = totalValue / numericStrings.length;
 
-process.stdin.on('end', () => {
-    const textualSegments = dataAccumulator.split(' ');
-
-    const calculationResult = textualSegments.reduce((accumulator, currentSegment) => {
-        const numericalValue = obtainNumericValue(currentSegment);
-        if (!isNaN(numericalValue)) {
-            accumulator.total += numericalValue;
-            accumulator.unitCount++;
-        }
-        return accumulator;
-    }, { total: 0, unitCount: 0 });
-
-    let finalComputation;
-    if (calculationResult.unitCount === 0) {
-        finalComputation = 0;
-    } else {
-        const preliminaryAverage = calculationResult.total / calculationResult.unitCount;
-        finalComputation = (preliminaryAverage > (preliminaryAverage | 0)) ? (preliminaryAverage | 0) + 1 : (preliminaryAverage | 0);
-    }
-
-    process.stdout.write(String(finalComputation) + "\n");
-});
+console.log(Math.ceil(averageValue));

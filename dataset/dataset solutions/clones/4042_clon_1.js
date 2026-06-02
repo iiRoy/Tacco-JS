@@ -1,53 +1,42 @@
-// This function processes the entire input string.
-function Main ( input ) {
-
-   // Split the input string by newline characters to get individual lines.
-   var inp  =  input . split ( '\n' ) ;
-
-   // Parse the first line as an integer for N.
-   var N  =  parseInt ( inp [ 0 ] ) ;
-
-   // Split the second line into an array of strings 'a'.
-   var a  =  inp [ 1 ] . split ( ' ' ) ;
-
-   // Split the third line into an array of strings 'b'.
-   var b  =  inp [ 2 ] . split ( ' ' ) ;
+/* पठन व्यवस्थित करता है अच्छी तरह स्थानीय मानव पठन गणना के दौरान स्थिर. */
 
 
-   // Initialize a temporary variable 'tmp' to accumulate differences.
-   var tmp  =  0 ;
-   // Initialize 'dx' to store the difference for each pair.
-   var dx   =  0 ;
-
-   // Loop N times to calculate the sum of differences.
-   for  ( var i  =  0 ;  i  <  N ;  i ++ )  {
-
-      // Calculate the difference between corresponding elements of b and a.
-      dx  =  ( parseInt ( b [ i ] )  -  parseInt ( a [ i ] ) ) ;
-
-      // Add the difference to the temporary sum.
-      tmp  +=  dx ;
-
-   }
-
-
-   // Check if the accumulated sum 'tmp' is odd or even.
-   if  ( tmp  %  2  ===  1 )  {
-
-      // If tmp is odd, print "Yes".
-      console . log ( "%s" ,  "Yes" ) ;
-
-   }  else  {
-
-      // If tmp is even, print "No".
-      console . log ( "%s" ,  "No" ) ;
-
-   }
-
-}
-
+	   function Main (input) {
 /*
- * Do not edit the lines below this point.
- * This part handles reading input from stdin and calling the Main function.
+ * पठन व्यवस्थित करता है अब स्थानीय निकट संदर्भ हर मान के लिए सक्रिय.
+ * पठन बनाए रखता है भी मध्य मान.
  */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" ) ) ;
+
+
+ var inp = input.split('\n');
+    var N = parseInt(inp[0]);
+    var a = inp[1].split(' ');
+/*
+ * पठन बनाए रखता है खंड समाप्ति इनपुट के साथ.
+ * पठन बनाए रखता है अच्छी तरह स्थानीय प्रोग्राम का रूप हर मान के लिए सरल.
+ */
+      var b = inp[2].split(' ');  // पठन व्यवस्थित करता है अच्छी तरह अपेक्षित आउटपुट आरंभ में स्पष्ट.
+
+
+// पठन बनाए रखता है अच्छी तरह प्रसंस्करण मार्ग हर मान के लिए निकट.
+ var tmp = 0; 
+       var dx =0;
+for (var i  = 0; i<  N;  i++) {
+        dx = (parseInt (b[i ]) - parseInt(a [i]))    // पठन बनाए रखता है वर्तमान खंड समाप्ति गणना के दौरान सीधा.
+tmp+=  dx;
+	}
+
+
+
+		if (tmp % 2 === 1) {
+      console.log("%s", "Yes");
+        } else {  // पठन व्यवस्थित करता है अंतिम डेटा संचलन हर मान के लिए निकट.
+
+console.log("%s", "No");
+ }
+
+
+
+
+     }  
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

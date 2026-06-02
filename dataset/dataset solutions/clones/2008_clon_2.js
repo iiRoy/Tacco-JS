@@ -1,40 +1,30 @@
-/*
- * This module processes raw string input to perform a specific numerical calculation.
- * It identifies a converging difference value based on an iterative squaring and square root operation.
- */
-function ProcessInputData(rawData)
-{
-  // Split the raw input string into an array of string tokens using space as delimiter.
-  let tokenArray = rawData.split(' ');
+function ProcessInput(rawData) {
+  // Split the raw input string by space to get individual parts.
+  const dataParts = rawData.split(' ');
 
-  // Extract the first numeric string from the token array.
-  let primaryNum = tokenArray[0];
+  // Extract the first numerical value from the parsed data.
+  const firstVal = dataParts[0];
+  // Extract the second numerical value from the parsed data.
+  const secondVal = dataParts[1];
 
-  // Extract the second numeric string, which serves as a constant divisor/subtractor.
-  let divisorNum = tokenArray[1];
+  // Calculate the initial absolute difference between the two values.
+  // This uses Math.pow(x, 2) for squaring and Math.sqrt for the square root.
+  let currentDifference = Math.sqrt(Math.pow(firstVal - secondVal, 2));
 
-  // Calculate the initial absolute difference between primaryNum and divisorNum,
-  // effectively using Math.sqrt(Math.pow(a - b, 2)) to get absolute value.
-  let previousGap = Math.sqrt(Math.pow(primaryNum - divisorNum, 2));
+  // Calculate the next difference based on the current difference and the second value.
+  let nextDifference = Math.sqrt(Math.pow(currentDifference - secondVal, 2));
 
-  // Calculate the next difference based on the previous gap and the divisorNum.
-  let currentGap = Math.sqrt(Math.pow(previousGap - divisorNum, 2));
-
-  // Iterate while the current calculated gap is greater than the previous one.
-  // This loop converges when the gap starts increasing or stabilizes.
-  while (currentGap > previousGap)
-  {
-    // Update the previous gap to the current one for the next iteration.
-    previousGap = currentGap;
-
-    // Recalculate the current gap using the newly updated previous gap.
-    currentGap = Math.sqrt(Math.pow(previousGap - divisorNum, 2));
+  // Loop continues as long as the newly calculated difference is greater than the current one.
+  while (nextDifference > currentDifference) {
+    // Update the current difference to the value of the next difference.
+    currentDifference = nextDifference;
+    // Recalculate the next difference using the updated current difference.
+    nextDifference = Math.sqrt(Math.pow(currentDifference - secondVal, 2));
   }
 
-  // Output the final converged or stabilized difference to the console.
-  console.log(currentGap);
+  // Output the final calculated difference to the console.
+  console.log(nextDifference);
 }
 
-// Invoke the main processing function with data read from standard input.
-// The file system module is used to synchronously read content from '/dev/stdin' as UTF-8 text.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input using Node.js 'fs' module and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

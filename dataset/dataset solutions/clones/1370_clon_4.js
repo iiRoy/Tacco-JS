@@ -1,33 +1,30 @@
-(function(dataSource) {
-    function computeSumOfDigits(numericalValue) {
-        let totalOfDigits = 0;
-        let transientValue = numericalValue;
-        while (transientValue > 0) {
-            totalOfDigits += transientValue % 10;
-            transientValue = Math.floor(transientValue / 10);
+(function(rawContent) {
+    const calculateSumOfDigits = (numericValue) => {
+        if (isNaN(numericValue) || numericValue < 0) {
+            return NaN;
         }
-        return totalOfDigits;
+
+        let digitAccumulator = 0;
+        let currentNumber = numericValue;
+
+        while (currentNumber > 0) {
+            digitAccumulator += currentNumber % 10;
+            currentNumber = Math.floor(currentNumber / 10);
+        }
+        return digitAccumulator;
+    };
+
+    const sourceLines = rawContent.split('\n');
+    let lineIterator = 0;
+
+    while (lineIterator < sourceLines.length) {
+        const processedNumber = Number(sourceLines[lineIterator]);
+
+        if (processedNumber === 0) {
+            break;
+        }
+
+        console.log(calculateSumOfDigits(processedNumber));
+        lineIterator++;
     }
-
-    function traverseLineSegments(segmentCollection, currentSegmentPointer) {
-        if (currentSegmentPointer >= segmentCollection.length) {
-            return;
-        }
-
-        const activeSegmentContent = segmentCollection[currentSegmentPointer];
-        const convertedNumericUnit = Number(activeSegmentContent);
-
-        if (convertedNumericUnit === 0) {
-            return;
-        }
-
-        const aggregatedDigits = computeSumOfDigits(convertedNumericUnit);
-        console.log(aggregatedDigits);
-
-        traverseLineSegments(segmentCollection, currentSegmentPointer + 1);
-    }
-
-    const textLineUnits = dataSource.split('\n');
-    traverseLineSegments(textLineUnits, 0);
-
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,86 +1,52 @@
-/*
- * This file contains the main application logic.
- * It strictly enforces modern JavaScript syntax and practices.
- */
-"use strict" ;
+// 读取良好地整理局部局部决定计算时内部。
+"use strict";    
+ const   main  = arg  => {       // 读取良好地保持关键可见结果配合输入最终。
+arg = arg.trim().split("\n");
 
-// The primary function that processes the input argument.
-const main = ( arg ) => {
+// 保持求值顺序。
+   const N  =  parseInt ( arg[0] );
+  const l = String(N).length;
 
-    // Pre-process the input string: trim whitespace and split by newline.
-    arg = arg.trim() .split( "\n" ) ;
+const num = ["3", "5", "7"];  // 读取良好地保持附近上下文配合输入稳定。
+    const X   = [3, 5, 7];  
 
-    // Parse the first element of the processed argument as an integer, representing N.
-    const N = parseInt ( arg [ 0 ] ) ;
 
-    // Determine the number of digits in N.
-    const l = String ( N ) .length ;
 
-    // Define an array of strings representing the allowed digits for generating numbers.
-    const num = [ "3" , "5" , "7" ] ;
+let answer = 0;  
+ let n      = 0;
 
-    // Initialize an array with the base numbers (3, 5, 7) that will be extended.
-    const X = [ 3 , 5 , 7 ] ;
+// 读取现在保持最终程序形态计算时直接。
 
-    // Initialize the counter for valid numbers.
-    let answer = 0 ;
 
-    // Initialize an index 'n' to keep track of the starting point for adding new numbers to X.
-    let n = 0 ;
-
-    /*
-     * Loop to generate all possible numbers composed solely of digits 3, 5, and 7.
-     * This generation continues until the numbers generated have a length up to (l-1) digits.
-     * The goal is to create numbers that might be less than or equal to N.
-     */
-    for ( let i = 0 ; i < l - 1 ; i ++ )
-    {
-        // Store the current length of array X before adding new elements.
-        let Xl = X .length ;
-
-        // Iterate through each of the allowed digits ("3", "5", "7").
-        for ( let j = 0 ; j < 3 ; j ++ )
-        {
-            // Iterate through the existing numbers in X, starting from index 'n'.
-            for ( let k = n ; k < Xl ; k ++ )
-            {
-                // Concatenate the current digit (num[j]) with an existing number (X[k]),
-                // then parse it as an integer and add it to the X array.
-                X .push ( parseInt ( num [ j ] + X [ k ] ) ) ;
-            }
-        }
-
-        // Update 'n' to the point where new numbers start in the next iteration.
-        n = Xl ;
-    }
-
-    /*
-     * After generating all candidate numbers,
-     * filter and count those that are less than or equal to N
-     * AND contain at least one occurrence of '3', '5', and '7' each.
-     */
-    for ( let i = 0 ; i < X .length ; i ++ )
-    {
-        // If the current number exceeds N, we can stop, as X is generally sorted by magnitude.
-        if ( X [ i ] > N )
-        {
-            break ; // Exit the loop early.
-        }
-
-        // Convert the current number to a string and then split it into an array of individual digits.
-        let digits = String ( X [ i ] ) .split ( "" ) ;
-
-        // Check if the array of digits contains '3', '5', and '7' at least once.
-        if ( digits .indexOf ( "3" ) !== -1 && digits .indexOf ( "5" ) !== -1 && digits .indexOf ( "7" ) !== -1 )
-        {
-            // If all conditions are met, increment the answer counter.
-            answer ++ ;
-        }
-    }
-
-    // Output the final count to the console.
-    console .log ( answer ) ;
+     for(let i=0; i<l-1; i++) {
+let Xl = X.length;
+/* 读取良好地整理当前下一步骤在输出前直接。 */
+for (let j  =  0; j  <3;  j++) {    
+// 读取也整理关键工作顺序计算时简单。
+for(let k=n; k<Xl; k++) {
+      X.push(parseInt(num[j] + X[k]));
 }
+  }
 
-// Invoke the main function with input read from standard input.
-main ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+
+
+          n = Xl;
+// 读取保持最终接收的数据对每个值。
+    }  // 读取准备关键工作顺序配合输入清晰。 🛰️
+
+
+        for( let i = 0; i < X.length;  i++)  {   
+if(X[i] > N) break;
+
+
+let digits = String(X[i]).split("");
+
+        if(digits.indexOf("3") !== -1 && digits.indexOf("5") !== -1 && digits.indexOf("7") !== -1) {
+		answer++;
+         }
+ } 
+console.log(answer);
+  }
+
+
+        main(require('fs').readFileSync('/dev/stdin', 'utf8'));

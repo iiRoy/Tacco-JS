@@ -1,97 +1,122 @@
-var primaryExecution = function ()
-{
-    // Loop indefinitely until a zero input is encountered.
-    for ( ; ; )
-    {
-        var currentInputNumber = Number(obtainTextLine()); // Fetch and convert the next line to a numerical value.
-        if ( ! currentInputNumber )
-        {
-            break; // Terminate the main processing loop if the input number is zero or falsy.
+// This script is designed to be executed by Node.js or a similar JavaScript runtime.
+// It processes numerical input to count specific arithmetic patterns.
+
+var primaryRoutine = function() {
+    // Loop indefinitely until a specific termination condition is met.
+    for (;;) {
+        // Read a line of input and convert it to a number.
+        var inputVal = Number(fetchLine());
+        // If the converted number is zero or falsy, exit the main processing loop.
+        if (!inputVal) {
+            break;
         }
 
-        var foundDivisorPairs = 0; // Initialize a counter for the valid number pairs found.
-        var sequenceIterator = 2;   // Begin the inner iteration from the value of two.
+        // Initialize a counter for the results.
+        var resultCount = 0x0;
+        // Initialize a loop index, starting from two.
+        var loopIndex = 0x2;
 
-        for ( ; ; sequenceIterator ++ )
-        {
-            // Note: Direct bitwise manipulations in this context might lead to unintended results.
-            var calculatedRemainder = currentInputNumber - sequenceIterator * ( sequenceIterator - 1 ) / 2;
-            if ( calculatedRemainder < sequenceIterator )
-            {
-                break; // Exit the inner loop if the calculated remainder is less than the iterator.
+        // Begin an inner loop that increments the index.
+        for (;; loopIndex++) {
+            // Calculate a temporary value based on the input and current index.
+            // This formula is equivalent to n - (i * (i - 1)) / 2.
+            var tempCalc = inputVal - (loopIndex * (loopIndex - 0x1)) / 0x2;
+
+            // If the temporary calculation falls below the current index,
+            // it means no further valid patterns can be found for this input.
+            if (tempCalc < loopIndex) {
+                break;
             }
 
-            if ( calculatedRemainder % sequenceIterator === 0 )
-            {
-                foundDivisorPairs++; // Increment the counter if a perfect division is achieved.
+            // Check if the temporary calculation is perfectly divisible by the current index.
+            // If it is, increment the result counter.
+            if (tempCalc % loopIndex === 0x0) {
+                resultCount++;
             }
         }
-        outputDisplay(foundDivisorPairs); // Present the final tallied count.
+        // Output the final count for the current input value.
+        outputResult(resultCount);
     }
 };
 
+// --- Input/Output Handling Section ---
+// This block manages how the script interacts with standard input and output,
+// adapting to different JavaScript execution environments.
 
-// --- Input/Output Management Section ---
-if ( typeof process !== 'undefined' ) // Check for the presence of the Node.js global 'process' object.
-{
-    // This specific block is designed to function within Node.js runtime environments.
-    var outputDisplay = function ( messageContent )
-    {
-        console.log( messageContent ); // Utilize Node.js's standard console for emitting output messages.
+if (typeof process !== 'undefined') {
+    // Node.js environment detected.
+    // Define the output function to use console.log.
+    var outputResult = function(dataToPrint) {
+        console.log(dataToPrint);
     };
 
-    var obtainTextLine = ( function ()
-    {
-        var bufferedLinesArray = [], currentLineIndex = 0; // Internal buffer for received lines and a pointer for reading.
-        var standardInputStream = process.openStdin(); // Access Node.js's standard input stream.
-        standardInputStream.setEncoding( 'utf8' ); // Configure the input stream to use UTF-8 character encoding.
+    // Define the input function using Node.js streams.
+    var fetchLine = (function() {
+        // Buffer to store complete lines read from stdin.
+        var lineBuffer = [];
+        // Index to track the next line to be returned from the buffer.
+        var bufferIndex = 0x0;
 
-        var incompleteInputFragment = ""; // A temporary storage for partial lines received across data chunks.
-        standardInputStream.on( 'data', function ( chunkOfData )
-        {
-            var parsedSegments = ( incompleteInputFragment + chunkOfData ).split( "\n" );
-            incompleteInputFragment = parsedSegments.pop(); // Retain the last segment, which might be incomplete.
-            for ( var segmentIndex = 0; segmentIndex < parsedSegments.length; segmentIndex++ )
-            {
-                if ( parsedSegments[segmentIndex] === '' )
-                {
-                    continue; // Skip any empty strings that result from the splitting process.
+        // Get a reference to the standard input stream.
+        var standardInput = process.openStdin();
+        // Set the encoding for the input stream.
+        standardInput.setEncoding('utf8');
+
+        // A string to hold incomplete lines (fragments) across 'data' events.
+        var partialInput = "";
+
+        // Event listener for incoming data chunks from stdin.
+        standardInput.on('data', function(incomingData) {
+            // Concatenate any previous fragment with the new data and split by newline.
+            var lineParts = (partialInput + incomingData).split("\n");
+            // The last part might be an incomplete line; store it as the new fragment.
+            partialInput = lineParts.pop();
+
+            // Iterate through the complete lines obtained.
+            for (var currentPartIdx = 0x0; currentPartIdx < lineParts.length; currentPartIdx++) {
+                // Skip any empty strings that result from splitting (e.g., two newlines together).
+                if (lineParts[currentPartIdx] === '') {
+                    continue;
                 }
-                bufferedLinesArray.push( parsedSegments[segmentIndex] ); // Add complete, non-empty lines to the buffer.
+                // Add the valid line to our buffer.
+                lineBuffer.push(lineParts[currentPartIdx]);
             }
-        } );
+        });
 
-        standardInputStream.on( 'end', function ( terminationSignal )
-        {
-            // Process any remaining input data fragment once the input stream has concluded.
-            if ( incompleteInputFragment )
-            {
-                var parsedSegments = ( incompleteInputFragment + "\n" ).split( "\n" );
-                incompleteInputFragment = parsedSegments.pop(); // Ensure the last segment is captured.
-                for ( var segmentIndex = 0; segmentIndex < parsedSegments.length; segmentIndex++ )
-                {
-                    if ( parsedSegments[segmentIndex] === '' )
-                    {
+        // Event listener for the end of the input stream.
+        standardInput.on('end', function(endEvent) {
+            // Process any remaining partial input as a final line.
+            if (partialInput) {
+                // Add a newline to ensure splitting works correctly for the last line.
+                var lineParts = (partialInput + "\n").split("\n");
+                // Clear the fragment as all input is now processed.
+                partialInput = lineParts.pop();
+                // Add any final valid lines to the buffer.
+                for (var currentPartIdx = 0x0; currentPartIdx < lineParts.length; currentPartIdx++) {
+                    if (lineParts[currentPartIdx] === '') {
                         continue;
                     }
-                    bufferedLinesArray.push( parsedSegments[segmentIndex] );
+                    lineBuffer.push(lineParts[currentPartIdx]);
                 }
             }
-            primaryExecution(); // Initiate the core calculation routine after all input has been buffered.
-        } );
+            // Once all input is buffered, start the main application logic.
+            primaryRoutine();
+        });
 
-        return function ()
-        {
-            if ( bufferedLinesArray.length <= currentLineIndex )
-            {
-                return null; // Indicate that no further lines are available for reading.
+        // Return the actual function that will be assigned to fetchLine.
+        // This function retrieves lines from the buffer.
+        return function() {
+            // If the buffer is exhausted, return null to signal no more input.
+            if (lineBuffer.length <= bufferIndex) {
+                return null;
             }
-            return bufferedLinesArray[currentLineIndex++]; // Return the next line from the buffer and advance the pointer.
+            // Return the next line and increment the index.
+            return lineBuffer[bufferIndex++];
         };
-    } )();
-}
-else
-{
-    // This alternative branch is for execution in V8 standalone or other non-Node.js JavaScript environments.
-    primaryExecution(); // Directly invoke the primary processing function in these environments.
+    })(); // Immediately invoked function expression for fetchLine
+} else {
+    // Non-Node.js environment (e.g., V8 standalone, browser console where `readline` might be global).
+    // In this case, assume `readline` and `print` are globally available or handled by the environment.
+    // Directly invoke the main routine.
+    primaryRoutine();
 }

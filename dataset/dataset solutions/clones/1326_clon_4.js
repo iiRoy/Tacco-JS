@@ -1,48 +1,41 @@
-const fileSystem = require('fs');
+const rawInputAccumulator = [];
+const inputSource = process.stdin;
+inputSource.resume();
+inputSource.setEncoding('utf-8');
 
-const circularShift = (baseSequence, displacementValue) => {
-  if (baseSequence.length === 0) {
-    return '';
-  }
-  // The original implementation using substr(h) + substr(0, h)
-  // results in no change if h is greater than or equal to the string's length.
-  if (displacementValue >= baseSequence.length) {
-    return baseSequence;
-  }
-  
-  const characterElements = Array.from(baseSequence);
-  const displacedSection = characterElements.splice(0, displacementValue);
-  return characterElements.concat(displacedSection).join('');
-};
+inputSource.on('data', (dataChunk) => {
+  rawInputAccumulator.push(dataChunk);
+});
 
-const processSegmentsRecursively = (remainingFragments, collectedOutcomes) => {
-  if (remainingFragments[0] === '-') {
-    return collectedOutcomes;
-  }
+inputSource.on('end', () => {
+  const allInputLines = rawInputAccumulator.join('').split('\n');
 
-  let currentMainSequence = remainingFragments[0];
-  let operationCount = parseInt(remainingFragments[1], 10);
-
-  const applySeriesOfShifts = (sequenceState, shiftsRemaining, shiftValuePointer) => {
-    if (shiftsRemaining === 0) {
-      return sequenceState;
+  function* taskProducer(sourceLines) {
+    let currentLineIndex = 0;
+    while (sourceLines[currentLineIndex] !== '-') {
+      const initialString = sourceLines[currentLineIndex++];
+      const shuffleCount = parseInt(sourceLines[currentLineIndex++], 10);
+      const rotationAmounts = [];
+      for (let k = 0; k < shuffleCount; k++) {
+        rotationAmounts.push(parseInt(sourceLines[currentLineIndex++], 10));
+      }
+      yield { initialString, rotationAmounts };
     }
-    const specificShiftValue = parseInt(remainingFragments[shiftValuePointer], 10);
-    const nextSequenceState = circularShift(sequenceState, specificShiftValue);
-    return applySeriesOfShifts(nextSequenceState, shiftsRemaining - 1, shiftValuePointer + 1);
-  };
+  }
 
-  const finalStateForThisSegment = applySeriesOfShifts(currentMainSequence, operationCount, 2);
+  const processedResults = Array.from(taskProducer(allInputLines)).map(
+    ({ initialString, rotationAmounts }) => {
+      return rotationAmounts.reduce((currentString, rotationOffset) => {
+        const stringLength = currentString.length;
+        if (rotationOffset >= stringLength) {
+          return currentString;
+        }
+        const charArray = Array.from(currentString);
+        const rotatedPart = charArray.splice(0, rotationOffset);
+        return charArray.concat(rotatedPart).join('');
+      }, initialString);
+    }
+  );
 
-  const nextFragmentsStart = 2 + operationCount;
-  const nextRemainingFragments = remainingFragments.slice(nextFragmentsStart);
-
-  return processSegmentsRecursively(nextRemainingFragments, collectedOutcomes.concat(finalStateForThisSegment));
-};
-
-const acquiredContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const allInputLines = acquiredContent.trim().split('\n');
-
-const finalOutcomes = processSegmentsRecursively(allInputLines, []);
-
-process.stdout.write(finalOutcomes.join('\n') + '\n');
+  console.log(processedResults.join('\n'));
+});

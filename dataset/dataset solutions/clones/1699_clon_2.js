@@ -1,46 +1,30 @@
-// This primary function handles the overall execution flow,
-// processing incoming data and performing a specific calculation.
-const performCalculations = (sourceData) => {
+const processInput = (rawData) => {
+  // The initial raw input string is processed.
+  let processedLines = rawData.trim().split('\n');
 
-    // First, sanitize the raw input string:
-    // Remove any leading or trailing whitespace, then divide the string
-    // into an array of individual lines based on newline characters.
-    let contentRows = sourceData.trim().split('\n');
+  // The first line provides the total count of elements.
+  let countElements = parseInt(processedLines[0], 10);
 
-    // Extract the first numerical value from the processed lines.
-    // This value, parsed as a base-10 integer, dictates the loop's upper bound.
-    let totalItemCount = parseInt(contentRows[0], 10);
+  // The second line contains space-separated numbers, which are parsed and then sorted in descending order.
+  const sortedNumbers = processedLines[1].split(' ').map(Number).sort((valA, valB) => valB - valA);
 
-    // Process the second line of input data:
-    // 1. Split the line into substrings using space as a delimiter.
-    // 2. Convert each resulting substring into a numerical type.
-    // 3. Sort the array of numbers in descending order (largest to smallest).
-    const orderedNumericValues = contentRows[1]
-        .split(' ')
-        .map(Number)
-        .sort((firstVal, secondVal) => secondVal - firstVal);
+  // A variable to accumulate the final computed sum.
+  let totalSum = 0;
 
-    // Initialize an accumulator variable to store the final sum.
-    let aggregatedSum = 0;
+  // A loop iterates from the second element up to, but not including, the total count.
+  for (let idx = 1; idx < countElements; idx++) {
+    // For each iteration, a specific element from the sorted array is added to the sum.
+    // The index for the sorted array is determined by halving the current loop index and flooring the result.
+    totalSum += sortedNumbers[Math.floor(idx / 2)];
+  }
 
-    // Iterate from the second element up to (but not including) the total count.
-    // In each iteration, add an element from the sorted numeric values array
-    // to the aggregated sum. The index for the element is determined by
-    // taking the current iteration number, dividing it by two, and rounding down.
-    for (let currentIteration = 1; currentIteration < totalItemCount; currentIteration++) {
-        aggregatedSum += orderedNumericValues[Math.floor(currentIteration / 2)];
-    }
-
-    // Output the final computed sum to the standard console.
-    return console.log(aggregatedSum);
+  // The final calculated sum is printed to the standard output.
+  return console.log(totalSum);
 };
 
-// This conditional statement manages how the program is invoked.
-// If an environment variable named 'MY_TEST_MODE' is detected,
-// it indicates a testing scenario, and a test suite (runTests) is executed.
-// Otherwise, the program proceeds with its standard operation:
-// reading data from standard input ('/dev/stdin') using the 'fs' module,
-// and then passing this data to the main calculation function.
-process.env.MY_TEST_MODE
-    ? runTests()
-    : performCalculations(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// This conditional statement checks for a specific environment variable.
+// If 'MYTEST' is set, a test function (assumed to be defined elsewhere) is executed.
+// Otherwise, the main processing function is called with data read from standard input.
+process.env.MYTEST
+  ? test()
+  : processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

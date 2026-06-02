@@ -1,74 +1,66 @@
 "use strict";
 
-const parseInputBlock = (streamContent) => {
-    const rawBlocks = streamContent.split(/\r?\n/).filter(segment => segment.trim() !== '');
-    const totalItems = Number(rawBlocks[0]);
-    const firstSet = rawBlocks[1].split(/\s+/).filter(Boolean).map(Number);
-    const secondSet = rawBlocks[2].split(/\s+/).filter(Boolean).map(Number);
-    return { totalItems, firstSet, secondSet };
-};
+function main(input) {
+  const lineSegments = input.split('\n');
+  const N_val = Number(lineSegments[0]);
+  const initialA_vals = lineSegments[1].split(/\s+/).map(Number).slice(0, N_val);
+  const initialB_vals = lineSegments[2].split(/\s+/).map(Number).slice(0, N_val);
 
-const executeBalancing = (dataSource) => {
-    const { totalItems, firstSet, secondSet } = parseInputBlock(dataSource);
+  const indexedDifferences = initialA_vals.map((valA, idx) => ({
+    value: valA - initialB_vals[idx],
+    originalPosition: idx
+  }));
 
-    if (totalItems === 0) {
-        console.log(0);
-        return;
-    }
+  const positiveContributions = indexedDifferences
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
 
-    const itemRecords = [];
-    for (let i = 0; i < totalItems; i++) {
-        itemRecords.push({
-            originalIndex: i,
-            discrepancy: firstSet[i] - secondSet[i]
-        });
-    }
+  const negativeDebts = indexedDifferences
+    .filter(item => item.value < 0)
+    .sort((a, b) => a.value - b.value);
 
-    const surplusRecords = itemRecords
-        .filter(rec => rec.discrepancy > 0)
-        .sort((a, b) => b.discrepancy - a.discrepancy);
+  const modifiedPositions = new Set();
 
-    const deficitRecords = itemRecords
-        .filter(rec => rec.discrepancy < 0)
-        .sort((a, b) => a.discrepancy - b.discrepancy);
+  while (positiveContributions.length > 0 && negativeDebts.length > 0) {
+    const currentPositive = positiveContributions[0];
+    const currentNegative = negativeDebts[0];
 
-    const affectedIndices = new Set();
-    let surplusPointer = 0;
-    let deficitPointer = 0;
+    const positiveMagnitude = currentPositive.value;
+    const negativeMagnitude = currentNegative.value;
 
-    while (surplusPointer < surplusRecords.length && deficitPointer < deficitRecords.length) {
-        const currentSurplus = surplusRecords[surplusPointer];
-        const currentDeficit = deficitRecords[deficitPointer];
+    if (positiveMagnitude >= -negativeMagnitude) {
+      modifiedPositions.add(currentPositive.originalPosition);
+      modifiedPositions.add(currentNegative.originalPosition);
 
-        const requiredForDeficit = -currentDeficit.discrepancy;
-        const availableFromSurplus = currentSurplus.discrepancy;
+      currentPositive.value += negativeMagnitude;
 
-        affectedIndices.add(currentSurplus.originalIndex);
-        affectedIndices.add(currentDeficit.originalIndex);
-
-        if (availableFromSurplus >= requiredForDeficit) {
-            currentSurplus.discrepancy -= requiredForDeficit;
-            currentDeficit.discrepancy = 0;
-            deficitPointer++;
-            if (currentSurplus.discrepancy === 0) {
-                surplusPointer++;
-            }
-        } else {
-            currentDeficit.discrepancy += availableFromSurplus;
-            currentSurplus.discrepancy = 0;
-            surplusPointer++;
-        }
-    }
-
-    const remainingNegativeSum = deficitRecords
-        .slice(deficitPointer)
-        .reduce((sum, rec) => sum + rec.discrepancy, 0);
-
-    if (remainingNegativeSum < 0) {
-        console.log(-1);
+      negativeDebts.shift();
     } else {
-        console.log(affectedIndices.size);
-    }
-};
+      if (positiveMagnitude > 0) {
+        modifiedPositions.add(currentPositive.originalPosition);
+        modifiedPositions.add(currentNegative.originalPosition);
+      }
 
-executeBalancing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+      currentNegative.value += positiveMagnitude;
+
+      positiveContributions.shift();
+    }
+  }
+
+  const totalRemainingNegative = negativeDebts.reduce((sum, item) => sum + item.value, 0);
+
+  if (totalRemainingNegative < 0) {
+    console.log(-1);
+  } else {
+    console.log(modifiedPositions.size);
+  }
+}
+
+function gcd(a, b) {
+  if (a < b) return gcd(a, b);
+  if (b === 0) return a;
+  var r = a % b;
+  return gcd(b, r);
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

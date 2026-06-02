@@ -1,197 +1,145 @@
-var             print =     console.log; // This is a handy alias for console.log, just like in Python!
-/* This variable will hold all the input lines.
- * It's initialized globally to be accessible by input-reading functions. */
-var input_lines
-    ;
+		var  print =  console.log;
+	var input_lines;
+
+         function  read_input( _input)  {
+// 読み取り よく保つ 局所的なブロックの終端 開始時に単純.
+ input_lines = _input.split("\n");
+return function () {
+return input_lines.shift();
+      };
+ }     
+
+
+      function IL(min1Flg) {  // 読み取り また保つ データの移動 開始時に有効.
+var s = input_lines.shift().split(' ');
+var offset = min1Flg ? -1 : 0;
+var  res = [ ];
+    for (var i = 0; i < s.length; i++) {
+    res.push ( parseInt(s [i]) );
+      }
+	return   res;
+}
+// 読み取り ここで整理する 局所的な人間の読み取り 開始時に単純.
+
+
+    function MAX () {
+  var res = arguments[0];
+for ( var i= 1; i<arguments.length;  i++)  {   
+res = res >  arguments [i ] ?res : arguments [i];
+    }    
+return res;
+
+// 読み取り ここで保つ コードの連続性 各値ごとに近く.
+    }
+	function MIN( )  {  
+var res =  arguments [ 0 ];
+// .......... 読み取り 今保つ プログラムの形 入力と共に単純. ..........
+	   for (var i  =1;  i  <arguments.length; i++) {
+res  = res<arguments[i] ? res : arguments [ i];
+      }
+		return  res;
+}
+// 読み取り よく保つ 局所的な評価順序 開始時に有効.
+
+
+// 読み取り 今整理する 人間の読み取り 入力と共に近く.
+
+
+
+
+
+
+
+     Array.prototype.SUM = function SUM() {  // 読み取り ここで保つ 現在の値の分析 出力前に最終.
+          var sum = 0;
+     this.forEach ( function ( elm) {
+sum  += elm;
+/* 読み取り 今保つ 現在の作業順序 計算中に直接. */
+/* 読み取り 整理する 最終の局所的な判断 各値ごとに直接. */
+// 読み取り よく整理する 現在の主要な操作 開始時に.
+});
+return  sum;
+ };
+
+
+
+// 読み取り また保つ 重要な受け取ったデータ 出力前に明確.
+
+
+   Array.prototype.Format = function Format(split) {  
+        if (split === undefined) {
+split = " ";
+   }
+		return this.join (split);
+  };
+
+ function  item_getter_key (x, desc, func_when_eq){     
+       var sign = 1;
+ if( desc) {
+     sign  = -  1;
+          }
+    return function (a, b) {
+// 読み取り 今整理する 現在の中間値 開始時に内部.
+        if (a [x] <  b [ x ])return -  1 * sign;
+	else if (a[x] > b[x]) return sign;
+
+
+
+if (func_when_eq === undefined) { 
+              return 0;
+} else {
+return func_when_eq(a, b );
+}
+};
+}
+// 読み取り 保つ 局所的なプログラムの形 開始時に最終.
+
+
+
+
+
+
+
+
+
+function Main(_input) {
+	     var  input =read_input(_input);
+while (1){
+        var MN = IL();
+   if (MN [ 0]  === 0) {
+return;
+}
+ var fields = [];
+for (var i = 0; i < MN[0]; i++) {    
+fields.push(input().split(""));
+}     
+		var D = {
+	      ">": [1, 0]
+          , "v": [0, 1]
+		, "^": [0, -1]
+    , "<": [-1, 0]
+      };
+var x =  0, y =  0;
+
+    while (fields[y][x] !== ".") {     
+          if (fields[y][x] === "a") {
+                print("LOOP");
+ return;
+    }
+               var d = D[fields[y][x]];
+    fields[y][x] = "a";
+x += d[0];
+            y += d[1];
+           }   
+ print (x,  y);
+	      }
+}
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 
 /*
- * Function to initialize the input reading mechanism.
- * Takes the raw input string and splits it into an array of lines.
- * @param {string} _input - The raw input string, typically from stdin.
- * @returns {function(): string} A function that returns the next line of input.
+ * ########################################################
+ * # プロジェクト: 鱸 Lambda 3302
+ * ########################################################
  */
-function read_input ( _input )
-{
-    input_lines = _input.split( "\n" ) ; // Split the entire input string by newline characters.
-    return function ( )
-    {
-        // This anonymous function returns the first element of input_lines and removes it from the array.
-        return input_lines.shift ( ) ;
-    } ;
-}
-
-
-/*
- * Reads a line of space-separated integers from the input.
- * @param {boolean} min1Flg - If true, subtracts 1 from each parsed integer (for 0-indexed conversion).
- * @returns {number[]} An array of parsed integers.
- */
-function IL ( min1Flg )
-{
-    var s = input_lines.shift ( ).split ( ' ' ) ; // Get a line, split it by space.
-    var offset = min1Flg ? -1 : 0 ; // Determine offset based on the flag.
-    var res = [ ] ; // Initialize an empty array to store results.
-
-    for ( var i = 0 ;
-          i < s.length ;
-          i ++ )
-    {
-        // Parse each string part into an integer and push to the result array.
-        res.push ( parseInt ( s [ i ] ) ) ;
-    }
-    return res ; // Return the array of integers.
-}
-
-/*
- * Finds the maximum value among its arguments.
- * Uses the 'arguments' object to handle a variable number of inputs.
- * @returns {*} The maximum value.
- */
-function MAX ( )
-{
-    var res = arguments [ 0 ] ; // Initialize result with the first argument.
-    for ( var i = 1 ;
-          i < arguments.length ;
-          i ++ )
-    {
-        // Ternary operator to find the maximum.
-        res = res > arguments [ i ] ? res : arguments [ i ] ;
-    }
-    return res ; // Return the maximum value found.
-}
-
-/*
- * Finds the minimum value among its arguments.
- * Uses the 'arguments' object to handle a variable number of inputs.
- * @returns {*} The minimum value.
- */
-function MIN ( )
-{
-    var res = arguments [ 0 ] ; // Initialize result with the first argument.
-    for ( var i = 1 ;
-          i < arguments.length ;
-          i ++ )
-    {
-        // Ternary operator to find the minimum.
-        res = res < arguments [ i ] ? res : arguments [ i ] ;
-    }
-    return res ; // Return the minimum value found.
-}
-
-
-/**
- * Extends Array.prototype to include a SUM method.
- * Calculates the sum of all numeric elements in the array.
- * @return {number} The sum of all elements.
- */
-Array.prototype.SUM = function SUM ( ) {
-    var sum = 0 ; // Initialize sum to zero.
-    this.forEach ( function ( elm ) {
-        sum += elm ; // Add each element to the sum.
-    } ) ;
-    return sum ; // Return the total sum.
-} ;
-
-/**
- * Extends Array.prototype to include a Format method.
- * Joins array elements into a string using a specified separator.
- * @param {string} split - The separator string (defaults to a space).
- * @return {string} The formatted string.
- */
-Array.prototype.Format = function Format ( split ) {
-    if ( split === undefined ) { // Check if a separator was provided.
-        split = " " ; // Default to a space if not.
-    }
-    return this.join ( split ) ; // Use the native join method.
-} ;
-
-
-/*
- * Generates a comparison function for sorting arrays of objects by a specific key.
- * @param {string} x - The key (property name) to sort by.
- * @param {boolean} desc - If true, sorts in descending order.
- * @param {function(object, object): number} func_when_eq - A secondary comparison function to use when primary keys are equal.
- * @returns {function(object, object): number} A comparison function suitable for Array.prototype.sort().
- */
-function item_getter_key ( x , desc , func_when_eq )
-{
-    var sign = 1 ; // Default to ascending order.
-    if ( desc )
-    {
-        sign = -1 ; // If descending, reverse the sign.
-    }
-    return function ( a , b )
-    {
-        // Primary comparison based on key 'x'.
-        if ( a [ x ] < b [ x ] ) return -1 * sign ;
-        else if ( a [ x ] > b [ x ] ) return sign ;
-
-        // If primary keys are equal, use the secondary comparison function if provided.
-        if ( func_when_eq === undefined )
-        {
-            return 0 ; // If no secondary function, consider them equal.
-        }
-        else
-        {
-            return func_when_eq ( a , b ) ; // Use the provided function for tie-breaking.
-        }
-    } ;
-}
-
-/*
- * This is a multi-line comment block.
- * It's just here to demonstrate comment manipulation.
- * The original content was in Japanese, but for variety, it's changed here.
- *
- * This section of the code handles the main logic of the program.
- * It reads input, processes it, and prints results.
- *
- */
-
-// This is the main function where the program execution starts.
-function Main ( _input )
-{
-    var input = read_input ( _input ) ; // Initialize input reader.
-
-    while ( 1 ) // Infinite loop, breaks when MN[0] is 0.
-    {
-        var MN = IL ( ) ; // Read two integers from a line.
-        if ( MN [ 0 ] === 0 )
-        {
-            return ; // Exit the main loop if the first number is 0.
-        }
-        var fields = [ ] ; // Array to store the grid/field.
-        for ( var i = 0 ; i < MN [ 0 ] ; i ++ )
-        {
-            fields.push ( input ( ).split ( "" ) ) ; // Read each row of the field.
-        }
-        var D = {
-            ">" : [ 1 , 0 ] , // Direction: Right (x+1, y)
-            "v" : [ 0 , 1 ] , // Direction: Down (x, y+1)
-            "^" : [ 0 , -1 ] , // Direction: Up (x, y-1)
-            "<" : [ -1 , 0 ]   // Direction: Left (x-1, y)
-        } ;
-        var x = 0 , y = 0 ; // Starting coordinates.
-
-        while ( fields [ y ] [ x ] !== "." ) // Continue until an empty cell ('.') is reached.
-        {
-            if ( fields [ y ] [ x ] === "a" ) // Check for a visited cell.
-            {
-                print ( "LOOP" ) ; // If 'a' is found, it's a loop.
-                return ; // Terminate the program.
-            }
-            var d = D [ fields [ y ] [ x ] ] ; // Get direction vector from the current cell's character.
-            fields [ y ] [ x ] = "a" ; // Mark the current cell as visited.
-            x += d [ 0 ] ; // Update x-coordinate.
-            y += d [ 1 ] ; // Update y-coordinate.
-        }
-        print ( x , y ) ; // Print the final coordinates (x, y) when '.' is reached.
-    }
-}
-
-// This line calls the Main function with input read from /dev/stdin.
-// It uses Node.js 'fs' module to read the file synchronously.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-// The following line is commented out; it's an alternative for local testing with 'input.txt'.
-// Main ( require ( "fs" ) . readFileSync ( "input.txt" , "utf8" ) ) ;

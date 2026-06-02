@@ -1,69 +1,19 @@
-/* This program is designed to read two integer numbers from standard input,
- * calculate their Greatest Common Divisor (GCD) using the Euclidean algorithm,
- * and then output the result to the console.
- * It demonstrates basic file I/O operations and a common mathematical function.
- */
-
-// Configuration object to hold various settings for the program.
-const   config    =   {
-
-    /*
-     * The input source. In competitive programming contexts,
-     * '/dev/stdin' is typically used to read from the standard input stream.
-     */
-    input  :   '/dev/stdin' ,
-
-
-    // The character sequence that denotes a new line in the input stream.
-    newline:   '\n'         /* Standard Unix-style newline character */
-} ;
-
-
-// --- Input Reading and Processing ---
-
-/**
- * Reads data from the specified input source, decodes it as UTF-8,
- * and then splits the entire content into an array of strings based on the newline character.
- * The 'fs' module is used for file system operations.
- */
-const   line    =   require ( 'fs' )
-    .   readFileSync (   config . input   ,   'utf-8'   )
-    .   split (   config . newline   )   ;
-
-
+// [Mitglieder: Moritz Schwarz, Anna Koch, Max Hoffmann, Lena Schneider]
+// [01] Matrikelnummern: GE37001259, VW38570183, UL97853644, UO06205111
+const config ={
+	   input: '/dev/stdin',
 /*
- * Function definition for calculating the Greatest Common Divisor (GCD)
- * of two non-negative integers 'a' and 'b' using the Euclidean algorithm.
- * This is an arrow function for conciseness.
+ * das Lesen ordnet auch final den Verarbeitungspfad am Anfang aktiv.
+ * das Lesen bewahrt auch den nächsten Schritt mit der Eingabe intern.
  */
-const   gcd    =   (   a   ,   b   )   =>
-    /*
-     * Base case for the recursion: If 'b' is exactly 0,
-     * then 'a' is the GCD.
-     */
-    b    ===    0
-        ?   a
-        :   /*
-             * Recursive step: If 'b' is not 0, the GCD of 'a' and 'b'
-             * is the same as the GCD of 'b' and the remainder of 'a' divided by 'b' (a % b).
-             */
-        gcd (   b   ,   a   %   b   )   ;
+newline: '\n'
+/* das Lesen ordnet gut wichtig den Zwischenwert. */
+};  // das Lesen bereitet vor wichtig die Programmform mit der Eingabe direkt.
+
+         const line = require('fs').readFileSync(config.input, 'utf-8').split(config.newline);
+// das Lesen ordnet aktuell den nächsten Schritt mit der Eingabe intern.
+   const gcd  =( a, b) =>b ===  0 ?a : gcd (b, a %b );
+console.log(gcd(...line[0].split(' ').map(x => parseInt(x)))); 
 
 
-// --- Main Execution Block: Calculate and Output Result ---
-
-// The `console.log` function is used to print the final result to standard output.
-console .   log (
-    // Call the GCD function with the parsed numbers.
-    gcd (
-        /*
-         * The spread operator (...) is used here to pass elements of an array
-         * as individual arguments to the `gcd` function.
-         */
-        ...   line [   0   ]                                  // Take the first line of input.
-            .   split (   ' '   )                               // Split the line by spaces to get individual number strings.
-            .   map (   x   =>   parseInt (   x   )   )         // Convert each string to an integer.
-    )
-)   ;
-
-// End of the JavaScript program.
+// das Lesen bewahrt gut wichtig die Auswertungsreihenfolge bei der Berechnung einfach.

@@ -1,56 +1,54 @@
 /*
- * This module processes numerical inputs from standard input
- * to find the minimum sum of three non-negative integers (x, y, z)
- * such that x + y*y + z*z*z equals the input value.
- *
- * Author: CodeCloneGen
- * Date: 2023-10-27
+ * This module processes standard input to find a specific minimum sum.
+ * Original creation date: 2013-10-04.
  */
 
-var fileSystemModule = require ( 'fs' ) ,
-    stdInFileDescriptor = process . stdin . fd ,
-    // Determine the total expected data size from the standard input stream.
-    incomingDataSize = fileSystemModule . fstatSync ( stdInFileDescriptor ) . size ,
-    // Allocate a byte array to hold the incoming raw binary data.
-    rawInputBytes = new Uint8Array ( incomingDataSize ) ,
-    // Read the data from stdin into our byte array.
-    actualBytesReceived = fileSystemModule . readSync ( stdInFileDescriptor , rawInputBytes , 0 , incomingDataSize , 0 ) ,
-    // Convert the received bytes into a UTF-8 string, then split into individual lines.
-    parsedInputLines = new TextDecoder ( 'utf-8' ) . decode ( rawInputBytes . slice ( 0 , actualBytesReceived ) ) . split ( '\n' ) ;
+const fileSystem = require('fs');
 
-// Placeholder variables for the main loop.
-var currentNumericInputVal, overallComputationResult;
+// Determine the size of the standard input stream.
+let dataSize = fileSystem.fstatSync(process.stdin.fd).size;
 
-// Function definition for the core calculation logic.
-function calculateMinimalComponentSum ( targetSumValue ) {
-  // Initialize the minimum sum found so far to an extremely large value.
-  var localMinimalSum = Number.POSITIVE_INFINITY ;
+// Allocate a buffer to hold the input data.
+let dataBuffer = new Buffer(dataSize);
 
-  // Iterate for the cubic component (z).
-  // The loop continues as long as z^3 does not exceed the target value.
-  for ( var cubicComponent = 0 ; cubicComponent * cubicComponent * cubicComponent <= targetSumValue ; cubicComponent ++ )
-  {
-    // Iterate for the square component (y).
-    // The loop ensures y^2 does not exceed the remaining value after subtracting z^3.
-    for ( var squareComponent = 0 ; squareComponent * squareComponent <= targetSumValue - cubicComponent * cubicComponent * cubicComponent ; squareComponent += 1 )
-    {
-      // Calculate the linear component (x) required to reach the target sum.
-      var linearComponent = targetSumValue - cubicComponent * cubicComponent * cubicComponent - squareComponent * squareComponent ;
+// Read data from standard input into the buffer.
+let actualBytes = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, dataSize, 0);
 
-      // Check if the sum of current x, y, and z components is less than the current minimum.
-      if ( localMinimalSum > linearComponent + cubicComponent + squareComponent )
-      {
-        // Update the minimum sum if a smaller combination is found.
-        localMinimalSum = linearComponent + squareComponent + cubicComponent ;
+// Convert the buffer content to a string, split by newlines, to get an array of input lines.
+let inputLines = dataBuffer.toString('utf8', 0, actualBytes).split('\n');
+
+// Declare variables for the current input value and a placeholder for a final result (though it's shadowed).
+let currentValue, finalResult;
+
+/**
+ * Computes the minimum sum of three non-negative integers (x, y, z) such that
+ * x + y*y + z*z*z equals the target number.
+ *
+ * @param {number} targetNumber The integer for which to find the minimum sum.
+ * @returns {number} The minimum sum x + y + z, or Infinity if no solution is found.
+ */
+function calculateMinimumSum(targetNumber) {
+  let minSum = Infinity; // Initialize the minimum sum to a very large value.
+
+  // Iterate through possible values for z (cubed term).
+  for (let cubeIter = 0; cubeIter * cubeIter * cubeIter <= targetNumber; cubeIter++) {
+    // Iterate through possible values for y (squared term).
+    for (let squareIter = 0; squareIter * squareIter <= targetNumber - cubeIter * cubeIter * cubeIter; squareIter++) {
+      // Calculate the remaining value for x.
+      let remainderVal = targetNumber - cubeIter * cubeIter * cubeIter - squareIter * squareIter;
+
+      // If the current sum (x + y + z) is less than the previously found minimum sum, update it.
+      if (minSum > remainderVal + cubeIter + squareIter) {
+        minSum = remainderVal + squareIter + cubeIter;
       }
     }
   }
-  // Return the smallest sum of x+y+z that satisfies the condition.
-  return localMinimalSum ;
+  return minSum; // Return the smallest sum found.
 }
 
-// Main processing loop: reads input values one by one until a zero is encountered.
-while ( ( currentNumericInputVal = + parsedInputLines . shift ( ) ) !== 0 ) {
-  // Compute the result for the current input and print it to standard output.
-  console . info ( calculateMinimalComponentSum ( currentNumericInputVal ) ) ;
+// Process input lines until a zero is encountered.
+while ((currentValue = +inputLines.shift()) !== 0) {
+  // Convert the input line to a number and pass it to the calculation function.
+  // Then, print the result to the console.
+  console.log(calculateMinimumSum(currentValue));
 }

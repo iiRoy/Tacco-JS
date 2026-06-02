@@ -1,45 +1,34 @@
-const obtainData = () => {
-    const streamContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const firstSegment = streamContent.split("\n")[0];
-    const numericalComponents = firstSegment.match(/-?\d+/g);
+"use strict";
 
-    if (!numericalComponents || numericalComponents.length < 2) {
-        throw new Error("Insufficient numerical input provided.");
-    }
-    return {
-        itemX: Number(numericalComponents[0]),
-        itemY: Number(numericalComponents[1])
-    };
-};
+(function () {
+  const processInputAndCompute = (rawData) => {
+    const dataLines = rawData.split("\n");
+    const firstLineContent = dataLines[0];
 
-const calculateResult = (inputX, inputY) => {
-    const computationRules = [
-        {
-            condition: (val) => val <= 5,
-            action: () => 0
-        },
-        {
-            condition: (val) => val <= 12,
-            action: (x, y) => y / 2
-        },
-        {
-            condition: (val) => true,
-            action: (x, y) => y
-        }
+    const numericTokens = firstLineContent.match(/\d+/g);
+    const firstVal = Number(numericTokens[0]);
+    const secondVal = Number(numericTokens[1]);
+
+    const outcomeRules = [
+      {
+        check: (valA) => valA <= 5,
+        calculate: (valA, valB) => 0
+      },
+      {
+        check: (valA) => valA <= 12,
+        calculate: (valA, valB) => valB / 2
+      },
+      {
+        check: (valA) => true,
+        calculate: (valA, valB) => valB
+      }
     ];
 
-    const applicableRule = computationRules.find(rule => rule.condition(inputX));
+    const applicableRule = outcomeRules.find(rule => rule.check(firstVal));
+    const finalResult = applicableRule.calculate(firstVal, secondVal);
 
-    if (applicableRule) {
-        return applicableRule.action(inputX, inputY);
-    }
-    return null; // Should not be reached due to the catch-all rule
-};
+    console.log(finalResult);
+  };
 
-const runProcess = () => {
-    const { itemX, itemY } = obtainData();
-    const finalValue = calculateResult(itemX, itemY);
-    console.log(finalValue);
-};
-
-runProcess();
+  processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+})();

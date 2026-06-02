@@ -1,125 +1,64 @@
-process.stdin.setEncoding('utf8');
 process.stdin.resume();
-
-// Listener for incoming data chunks from standard input.
-// Each chunk is processed as a distinct segment of input.
-process.stdin.on('data', (incomingInputSegment) => {
-    // Delegate the processing of this input segment to a dedicated handler.
-    handleInputSegmentData(incomingInputSegment);
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(incomingDataChunk) {
+    handleIncomingData(incomingDataChunk);
 });
 
-// A constant reference to the standard output function.
-// Used for displaying the final computed results.
-const displayComputationResult = console.log;
+var printResult = console.log;
 
-/**
- * Processes a raw segment of input data.
- * This involves splitting the segment into individual lines,
- * filtering out any empty or whitespace-only lines,
- * and then passing the valid lines for core computations.
- * @param {string} rawSegment - The raw string data received from a 'data' event.
- */
-function handleInputSegmentData(rawSegment) {
-    const LINE_DELIMITER = '\n'; // Defines the character for splitting lines.
-
-    // Split the raw input into an array of potential lines.
-    let potentialInputLines = rawSegment.split(LINE_DELIMITER);
-
-    // Filter the lines: keep only those that contain actual content.
-    // Lines consisting solely of whitespace or being completely empty are discarded.
-    let validContentLines = [];
-    for (const individualLine of potentialInputLines) {
-        const trimmedLine = individualLine.trim();
-        if (trimmedLine !== "") {
-            validContentLines.push(trimmedLine);
-        }
-    }
-
-    // If valid lines are found, initiate the primary numerical computation.
-    if (validContentLines.length > 0) {
-        executeMainNumericalProcessing(validContentLines);
-    }
+// Helper function to remove empty strings from an array
+function filterOutEmptyStrings(stringArray) {
+    return stringArray.filter(function(currentStringElement) {
+        return currentStringElement.length > 0;
+    });
 }
 
-/**
- * Executes the primary numerical algorithm.
- * This involves converting string inputs to numbers,
- * then iteratively processing blocks of these numbers.
- * For each block, it removes the minimum and maximum values,
- * and outputs the rounded average of the remaining elements.
- * @param {string[]} stringRepresentationsOfNumbers - An array of strings expected to be numbers.
- */
-function executeMainNumericalProcessing(stringRepresentationsOfNumbers) {
-    // Convert all input strings into a queue of actual numbers.
-    // Non-numeric strings are skipped to ensure data integrity.
-    let numberProcessingQueue = [];
-    for (const stringValue of stringRepresentationsOfNumbers) {
-        const parsedValue = Number(stringValue);
-        if (!isNaN(parsedValue)) { // Ensure the parsed value is a valid number.
-            numberProcessingQueue.push(parsedValue);
-        }
-    }
+function handleIncomingData(rawDataString) {
+    var splitLines = rawDataString.split("\n");
+    var cleanedInputLines = filterOutEmptyStrings(splitLines);
+    processDataBlocks(cleanedInputLines);
+}
 
-    // Continue processing as long as there are sufficient numbers in the queue
-    // to potentially form a block (at least one for the size, and others for the block itself).
-    while (numberProcessingQueue.length > 1) {
-        // Extract the first number, which indicates the size of the current block.
-        const designatedBlockSize = numberProcessingQueue.shift();
+function processDataBlocks(stringNumberLines) {
+    // Convert all input string lines to numbers
+    var numericDataSet = stringNumberLines.map(function(singleStringNum) {
+        return Number(singleStringNum);
+    });
 
-        // Validate the designated block size. It must be a positive integer.
-        // If invalid, log an error and halt further processing of this data set.
-        if (typeof designatedBlockSize !== 'number' || !Number.isInteger(designatedBlockSize) || designatedBlockSize <= 0) {
-            displayComputationResult(`Error: Invalid block size indicator (${designatedBlockSize}) detected. Processing terminated.`);
-            numberProcessingQueue.length = 0; // Clear the queue to prevent further errors.
-            break; // Exit the main loop.
-        }
+    // Continue processing as long as there's at least one block size and one number
+    while (numericDataSet.length > 1) {
+        // The first number in the set indicates the size of the current block
+        var currentBlockSize = numericDataSet.shift();
 
-        // Extract the current block of numbers based on the designated size.
-        // `splice` removes these elements directly from the queue.
-        const currentNumericalBlock = numberProcessingQueue.splice(0, designatedBlockSize);
+        // Extract the numbers for the current block
+        var blockNumbers = numericDataSet.slice(0, currentBlockSize);
 
-        // Guard clause: A block must have at least 3 elements to allow for
-        // removal of both min and max and still have elements for averaging.
-        if (currentNumericalBlock.length < 3) {
-            // Skip this block if it's too small for the required operations.
-            continue;
-        }
+        // Update the main data set by removing the numbers that were just processed
+        numericDataSet = numericDataSet.slice(currentBlockSize);
 
-        // Identify and remove the minimum value from the block.
-        const smallestValue = Math.min(...currentNumericalBlock);
-        const firstMinIndex = currentNumericalBlock.indexOf(smallestValue);
-        if (firstMinIndex !== -1) { // Ensure the value was found before attempting to remove.
-            currentNumericalBlock.splice(firstMinIndex, 1);
-        } else {
-            // Log an internal error if min value couldn't be removed, and skip block.
-            continue;
-        }
+        // --- Remove the minimum value from the block ---
+        var minimumValueInBlock = Math.min.apply(null, blockNumbers);
+        var indexOfMinValue = blockNumbers.indexOf(minimumValueInBlock);
+        blockNumbers.splice(indexOfMinValue, 1);
 
-        // Identify and remove the maximum value from the *modified* block.
-        const largestValue = Math.max(...currentNumericalBlock);
-        const firstMaxIndex = currentNumericalBlock.indexOf(largestValue);
-        if (firstMaxIndex !== -1) { // Ensure the value was found before attempting to remove.
-            currentNumericalBlock.splice(firstMaxIndex, 1);
-        } else {
-            // Log an internal error if max value couldn't be removed, and skip block.
-            continue;
-        }
+        // --- Remove the maximum value from the *modified* block ---
+        var maximumValueInBlock = Math.max.apply(null, blockNumbers);
+        var indexOfMaxValue = blockNumbers.indexOf(maximumValueInBlock);
+        blockNumbers.splice(indexOfMaxValue, 1);
 
-        // Calculate the sum of the remaining numbers in the block.
-        // Rewritten from a `reduce` method to an explicit `for...of` loop.
-        let aggregatedSum = 0;
-        for (const numberValue of currentNumericalBlock) {
-            aggregatedSum += numberValue;
-        }
+        // --- Calculate the sum of the remaining numbers ---
+        var sumOfRemainingNumbers = blockNumbers.reduce(function(accumulator, currentValue) {
+            return accumulator + currentValue;
+        }, 0); // Explicitly starting accumulator at 0
 
-        // Calculate the average of the remaining numbers.
-        // Guard against division by zero if the block somehow became empty.
-        let finalCalculatedAverage = 0;
-        if (currentNumericalBlock.length > 0) {
-            finalCalculatedAverage = aggregatedSum / currentNumericalBlock.length;
-        }
+        // Determine the count of numbers left in the block
+        var countOfRemainingNumbers = blockNumbers.length;
 
-        // Output the rounded average to the console.
-        displayComputationResult(Math.round(finalCalculatedAverage));
+        // Calculate the average and round it to the nearest whole number
+        var calculatedAverage = sumOfRemainingNumbers / countOfRemainingNumbers;
+        var finalRoundedAverage = Math.round(calculatedAverage);
+
+        // Output the result for the current block
+        printResult(finalRoundedAverage);
     }
 }

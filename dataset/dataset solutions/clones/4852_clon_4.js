@@ -1,33 +1,12 @@
-const performArithmeticOperation = (inputStringContent) => {
-    let firstValueAsString = '';
-    let secondValueAsString = '';
-    let spaceEncountered = false;
+function calculateRatio(sourceData) {
+  const spaceMarker = sourceData.indexOf(' ');
+  const valueOneString = sourceData.substring(0, spaceMarker);
+  const valueTwoString = sourceData.substring(spaceMarker + 1);
 
-    for (let characterIndex = 0; characterIndex < inputStringContent.length; characterIndex++) {
-        const currentCharacter = inputStringContent[characterIndex];
-        if (currentCharacter === ' ') {
-            spaceEncountered = true;
-            continue;
-        }
-        if (!spaceEncountered) {
-            firstValueAsString += currentCharacter;
-        } else {
-            secondValueAsString += currentCharacter;
-        }
-    }
+  const termA = parseFloat(valueOneString);
+  const termB = parseFloat(valueTwoString);
 
-    const numericalOne = parseInt(firstValueAsString, 10);
-    const numericalTwo = parseInt(secondValueAsString, 10);
+  console.log(termA * termB / (termA + termB));
+}
 
-    const productOfValues = numericalOne * numericalTwo;
-    const sumOfValues = numericalOne + numericalTwo;
-
-    const calculatedResult = productOfValues / sumOfValues;
-
-    console.log(calculatedResult);
-};
-
-(function(fileSystemDependency, runtimeProcess) {
-    const dataFromStandardIn = fileSystemDependency.readFileSync("/dev/stdin", "utf8");
-    performArithmeticOperation(dataFromStandardIn);
-})(require("fs"), process);
+calculateRatio(require("fs").readFileSync("/dev/stdin", "utf8"));

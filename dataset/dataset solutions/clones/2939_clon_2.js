@@ -1,101 +1,98 @@
-function ExecuteProgram(rawData)
-{
-    rawData = rawData.trim().split("\n");
-    var parsedLines = rawData;
-    var firstLineParts = parsedLines[0].split(" ");
-    var initialCount = parseInt(firstLineParts[0], 0xA);
-    var additionalSets = parseInt(firstLineParts[1], 0xA);
-    var dataItems = [];
+// This function serves as the primary entry point for processing input data.
+function ProcessData(rawData) {
+    // Normalize the incoming string by removing leading/trailing whitespace and splitting it into lines.
+    let processedLines = rawData.trim().split("\n");
 
-    // Populate the primary collection with initial values from the second line of input.
-    for (var loopCounter = 0x0; loopCounter < initialCount; loopCounter++)
-    {
-        dataItems[loopCounter] = parseInt(parsedLines[0x1].split(" ")[loopCounter], 0xA);
+    // Parse the initial configuration parameters from the first line of input.
+    let tempParts = processedLines[0].split(" ");
+    let countElements = parseInt(tempParts[0], 10); // Represents the target number of elements for final summation.
+    let numOperations = parseInt(tempParts[1], 10); // Indicates how many subsequent modification operations will occur.
+
+    // Initialize an array to hold all numerical data.
+    let dataCollection = [];
+    // Populate the initial set of numbers into the array from the second line of input.
+    for (let idx = 0; idx < countElements; idx++) {
+        dataCollection[idx] = parseInt(processedLines[1].split(" ")[idx], 10);
     }
 
-    // Process subsequent input lines to add more elements to the collection.
-    for (var setIndex = 0b10; setIndex <= additionalSets + 0x1; setIndex++)
-    {
-        var quantity = parseInt(parsedLines[setIndex].split(" ")[0x0], 0xA);
-        var valueToAdd = parseInt(parsedLines[setIndex].split(" ")[0x1], 0xA);
+    // Iterate through the remaining input lines, each representing an operation to add values.
+    for (let opIdx = 2; opIdx <= numOperations + 1; opIdx++) {
+        let operationDetails = processedLines[opIdx].split(" ");
+        let insertCount = parseInt(operationDetails[0], 10); // The quantity of values to append.
+        let insertValue = parseInt(operationDetails[1], 10); // The specific value to append.
 
-        // Insert 'valueToAdd' into the collection 'quantity' times.
-        for (var idx = 0x0; idx < quantity; idx++)
-        {
-            dataItems.push(valueToAdd);
+        // Append the 'insertValue' to the 'dataCollection' array 'insertCount' times.
+        for (let loopCounter = 0; loopCounter < insertCount; loopCounter++) {
+            dataCollection.push(insertValue);
         }
     }
 
-    // Initiate the sorting procedure on the gathered data.
-    performFastSort(0x0, dataItems.length);
+    // Execute a custom quicksort routine on the entire data collection.
+    performPartitionSort(0, dataCollection.length);
 
-    // This nested function implements a quicksort algorithm.
-    function performFastSort(startIndex, endIndex)
-    {
-        // Select a midpoint element to serve as the partitioning pivot.
-        var partitionValue = dataItems[Math.floor((startIndex + endIndex) / 0b10)];
-        // Establish pointers for the current left and right boundaries of the segment.
-        var leftPointer = startIndex;
-        var rightPointer = endIndex;
+    // Define the nested quicksort function.
+    function performPartitionSort(startIndex, endIndex) {
+        // Select the pivot element from the middle of the current array segment.
+        let partitionValue = dataCollection[Math.floor((startIndex + endIndex) / 2)];
+        // Initialize pointers for the left and right boundaries of the segment.
+        let leftPointer = startIndex;
+        let rightPointer = endIndex; // Note: This pointer can initially point beyond the array's last element.
 
-        // Continuously reorder elements until the pointers meet or cross.
-        while (true)
-        {
-            // Move the left pointer forward past elements smaller than the pivot.
-            while (dataItems[leftPointer] < partitionValue)
-            {
+        // Begin the partitioning phase.
+        while (true) {
+            // Advance the left pointer until an element greater than or equal to the pivot is found.
+            while (dataCollection[leftPointer] < partitionValue) {
                 leftPointer++;
             }
-            // Move the right pointer backward past elements larger than the pivot.
-            while (partitionValue < dataItems[rightPointer])
-            {
+            // Retreat the right pointer until an element less than or equal to the pivot is found.
+            // This comparison handles 'undefined' values (if rightPointer is out of bounds) by evaluating to false.
+            while (partitionValue < dataCollection[rightPointer]) {
                 rightPointer--;
             }
-            // If pointers have converged or overlapped, the current partitioning phase is complete.
-            if (rightPointer <= leftPointer)
-            {
+            // If the pointers have crossed or met, the partitioning for this segment is complete.
+            if (rightPointer <= leftPointer) {
                 break;
             }
 
-            // Swap the elements at the left and right pointers.
-            // Then, advance both pointers inwards.
-            var temporaryHolder = dataItems[leftPointer];
-            dataItems[leftPointer] = dataItems[rightPointer];
-            dataItems[rightPointer] = temporaryHolder;
+            // If pointers have not crossed, swap the elements at their current positions.
+            let temporaryHolder = dataCollection[leftPointer];
+            dataCollection[leftPointer] = dataCollection[rightPointer];
+            dataCollection[rightPointer] = temporaryHolder;
+            // Move both pointers inwards to continue the partitioning.
             leftPointer++;
             rightPointer--;
         }
 
-        // Recursively apply the sort to the left sub-array if it requires further sorting.
-        if (startIndex < leftPointer - 0x1)
-        {
-            performFastSort(startIndex, leftPointer - 0x1);
+        // Recursively apply quicksort to the left sub-segment if it contains more than one element.
+        if (startIndex < leftPointer - 1) {
+            performPartitionSort(startIndex, leftPointer - 1);
         }
-        // Recursively apply the sort to the right sub-array if it requires further sorting.
-        if (rightPointer + 0x1 < endIndex)
-        {
-            performFastSort(rightPointer + 0x1, endIndex);
+        // Recursively apply quicksort to the right sub-segment if it contains more than one element.
+        if (rightPointer + 1 < endIndex) {
+            performPartitionSort(rightPointer + 1, endIndex);
         }
     }
 
-    // Calculate the sum of the 'initialCount' largest positive values from the sorted collection.
-    var finalSum = 0x0;
-    var positiveCount = 0x0;
-    // Iterate backwards through the sorted collection.
-    for (var loopIdx = dataItems.length; loopIdx >= 0x0; loopIdx--)
-    {
-        // Only consider positive values.
-        if (dataItems[loopIdx] > 0x0)
-        {
-            finalSum += dataItems[loopIdx];
+    // Initialize variables for calculating the final sum.
+    let finalSum = 0;
+    let positiveCount = 0; // Tracks how many positive numbers have been added to the sum.
+
+    // Iterate through the sorted array from the end (largest values) downwards.
+    // The loop includes the index 'dataCollection.length' to account for potential array expansion during sort.
+    for (let loopIdx = dataCollection.length; loopIdx >= 0; loopIdx--) {
+        // Only add positive numbers to the sum. 'undefined' values (if present) will not satisfy this condition.
+        if (dataCollection[loopIdx] > 0) {
+            finalSum += dataCollection[loopIdx];
             positiveCount++;
         }
-        // Stop once 'initialCount' positive values have been summed.
-        if (positiveCount === initialCount)
-        {
+        // Stop summing once 'countElements' positive values have been accumulated.
+        if (positiveCount === countElements) {
             break;
         }
     }
+    // Print the computed sum to the console.
     console.log(finalSum);
 }
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

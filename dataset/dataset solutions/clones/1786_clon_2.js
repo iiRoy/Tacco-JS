@@ -1,14 +1,7 @@
-/*
- * This module defines a primary function to handle textual data.
- */
-function  ProcessData(  incomingString  )
-{
-  // Output the initial three characters from the supplied string.
-  console.log(  incomingString.slice(  0,  3  )  )  ;
+function ProcessInput(rawData) {
+  // Output the initial three characters from the received string.
+  console.log(rawData.substring(0, 3));
 }
 
-
-// --- Automated execution block below ---
-// The subsequent lines manage the acquisition of input from standard I/O
-// and then trigger the main data processing routine.
-ProcessData(  require(  "fs"  )  .  readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ;
+// Do not alter the code below this line; it handles reading from standard input and invoking the main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

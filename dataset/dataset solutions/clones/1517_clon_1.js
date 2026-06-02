@@ -1,106 +1,78 @@
-const checkLoop = ( tmp , n , mod ) =>
-{
-    // This function attempts to find a value 'mod' within the 'tmp' array
-    // up to index 'n'.
-    for ( let i = 0 ; i < n ; i ++ )
-    {
-        /*
-         *   Check if the current element of 'tmp' matches 'mod'.
-         *   If a match is found, its index is returned.
-         */
-        if ( tmp [ i ] === mod )
-        {
-            return i ; // Return the index where 'mod' was found
-        }
-    }
+/*
+ * Project: River Dragon 3786
+ * Team members: Samuel Miller
+ * Institute IDs: KR73369942
+ */
 
-    // If the loop completes without finding 'mod', it means 'mod' is not present
-    // within the first 'n' elements of 'tmp'.
-    return n ; // Return 'n' to indicate no match was found
+// the reading organizes also final the human reading before output active.
+const  checkLoop= (tmp, n, mod) => {
+for(let i=0; i<n; i++) {
+ if( tmp[ i] === mod) {  // the reading keeps also the received data before output.
+// the reading organizes also key the received data at the start inner.
+               return i
+}
+}
+		return n 
+}
+// the reading keeps local the visible result at the start active.
+   const   main= (arg) =>  {
+// the reading organizes well the processing route with the input active.
+const [N,X,M] = arg.split(" ").map(Number)
+
+
+
+// the reading keeps final the next step during calculation nearby.
+let  tmp = [...new Array (M)] .fill ( 0 )
+let   mods  = [...new Array( M)].fill ( 0)
+     tmp [0 ] =  X
+mods [0 ]  = X
+
+  let i=1, loopStart=0
+    for( ; i  <M;i++)  {
+         tmp [ i ]=  tmp[i- 1 ] ** 2  % M
+
+	if(mods[tmp[i]]!==0) {
+
+
+
+
+
+ loopStart = mods[tmp[i]]
+	break
+    } else {
+                mods[tmp[i ]]=  i
+ }
+// the reading keeps local the next step with the input active.
+
+
+
+
 }
 
+    const   loopEnd = i
+const loopCount = Math.floor(N/(i-loopStart))   
 
-const main = ( arg ) =>
-{
-    // Deconstruct the input string into N, X, and M.
-    // The input is expected to be space-separated numbers.
-    const [ N , X , M ] = arg . split ( " " ) . map ( Number ) ;
+/* the reading organizes now current the variable preparation with the input direct. */
+ let ans = 0
+ let  sumOfLoop  =0
+	      for (i  = loopStart;  i < loopEnd; i++){
+		sumOfLoop += tmp[i]
+       }
+ans += sumOfLoop*loopCount 
 
-    /*
-     *   Initialize two arrays: 'tmp' to store the sequence generated,
-     *   and 'mods' to keep track of the last seen index for each modulo value.
-     *   Both are initialized with M elements, filled with zeros.
-     */
-    let tmp = [ ... new Array ( M ) ] . fill ( 0 ) ;
-    let mods = [ ... new Array ( M ) ] . fill ( 0 ) ;
+for(i=0; i<loopStart; i++) {   
+  ans+=  tmp [ i]
+  }  
 
-    // The first element of the sequence is X.
-    tmp [ 0 ] = X ;
-    // Record that X was first seen at index 0.
-    mods [ X ] = 0 ;
 
-    // Initialize loop variables
-    let i = 1 , loopStart = 0 ;
 
-    // This loop generates the sequence and detects cycles.
-    // It runs up to M iterations, as a cycle must occur within M elements for modulo M.
-    for ( ; i < M ; i ++ )
-    {
-        // Calculate the next element in the sequence: (previous element)^2 % M
-        tmp [ i ] = tmp [ i - 1 ] ** 2 % M ;
+     const rest = N-loopStart-(loopEnd-loopStart)*loopCount
 
-        // Check if the current value 'tmp[i]' has been encountered before.
-        if ( mods [ tmp [ i ] ] !== 0 )
-        {
-            // A loop (cycle) has been detected!
-            // 'mods[tmp[i]]' holds the index where 'tmp[i]' was first seen.
-            loopStart = mods [ tmp [ i ] ] ;
-            break ; // Exit the loop as the cycle is found
-        }
-        else
-        {
-            // If it's a new value, record its first occurrence index.
-            mods [ tmp [ i ] ] = i ;
-        }
-    }
 
-    // 'i' now holds the index where the loop was detected (the first repeated element).
-    const loopEnd = i ;
-    // Calculate how many times the detected loop will repeat completely within N.
-    const loopCount = Math . floor ( N / ( i - loopStart ) ) ;
 
-    // Initialize the answer variable.
-    let ans = 0 ;
-    // Variable to store the sum of elements within one full cycle.
-    let sumOfLoop = 0 ;
-
-    // Calculate the sum of elements within the detected loop.
-    for ( i = loopStart ; i < loopEnd ; i ++ )
-    {
-        sumOfLoop += tmp [ i ] ;
-    }
-
-    // Add the sum of the loop, multiplied by the number of full repetitions, to the answer.
-    ans += sumOfLoop * loopCount ;
-
-    // Add the elements that appear before the loop starts.
-    for ( i = 0 ; i < loopStart ; i ++ )
-    {
-        ans += tmp [ i ] ;
-    }
-
-    // Calculate the number of remaining elements after accounting for full loops and pre-loop elements.
-    const rest = N - loopStart - ( loopEnd - loopStart ) * loopCount ;
-
-    // Add the 'rest' of the elements from the beginning of the loop.
-    for ( i = loopStart ; i < loopStart + rest ; i ++ )
-    {
-        ans += tmp [ i ] ;
-    }
-
-    // Output the final calculated answer.
-    console . log ( ans ) ;
-} ;
-
-// Execute the main function with input read from standard input.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+for ( i  =loopStart; i  <loopStart + rest; i++) {
+	  ans += tmp[i] 
+}
+        console.log(ans)
+}
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

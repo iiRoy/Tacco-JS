@@ -1,19 +1,23 @@
-const { readSync: obtainData } = require('node:fs');
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
 
-const dataBuffer = Buffer.alloc(64);
-const bytesReadCount = obtainData(0, dataBuffer, 0, dataBuffer.length, 0);
-const incomingLine = dataBuffer.toString('utf8', 0, bytesReadCount).trim();
+const positions = [0, 2, 4];
+const picked = positions.map(function (place) {
+  return source[place] * 1;
+});
 
-const numericElements = incomingLine.split(/\s+/).map(Number);
+const usable = picked.every(function (part) {
+  return part === part;
+});
 
-const valueB = numericElements[1];
-const valueC = numericElements[2];
+const divisibleEndings = new Set();
+for (let ten = 0; ten < 10; ten++) {
+  for (let one = 0; one < 10; one++) {
+    if ((ten * 10 + one) % 4 === 0) {
+      divisibleEndings.add(ten + ":" + one);
+    }
+  }
+}
 
-const combinedLastTwo = valueB * 10 + valueC;
-
-const determinationMap = new Map([
-    [true, 'YES'],
-    [false, 'NO']
-]);
-
-process.stdout.write(determinationMap.get(combinedLastTwo % 4 === 0));
+const key = picked[1] + ":" + picked[2];
+console.log(usable && divisibleEndings.has(key) ? "YES" : "NO");

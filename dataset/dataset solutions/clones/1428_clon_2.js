@@ -1,31 +1,47 @@
-function ProcessInputData( sourceDataString ) { // Function to analyze character frequencies from input data
-  var textRows = sourceDataString . split( '\n' ) ; // Divide the entire input string into individual lines
-  var letterOccurrences = [ ] ; // Initialize an array to store the frequency of each character
+function ProcessInput(rawData) {
+  // Split the entire input string into individual text segments based on newline characters.
+  const textSegments = rawData.split('\n');
 
-  for ( var lineIterator in textRows ) { // Iterate through each line of the provided text
-    // Check if the current line is empty, indicating the end of relevant input data
-    if ( textRows[ lineIterator ] === "" ) break ; // Stop processing if an empty line is encountered, indicating end of useful input
+  // Initialize an object to store the frequency of each lowercase character.
+  // Using an object as a hash map for character counts.
+  const charOccurrences = {};
 
-    for ( var characterPosition = 0 ; characterPosition < textRows[ lineIterator ].length ; ++characterPosition ) { // Traverse each character within the current line
-      var currentCharacterLowerCase = textRows[ lineIterator ][ characterPosition ].toLowerCase() ; // Get the lowercase version of the current character
+  // Iterate over each segment of text.
+  for (const segmentIndex in textSegments) {
+    // If a segment is empty, it signifies the end of meaningful input, so break the loop.
+    if (textSegments[segmentIndex] === "") {
+      break;
+    }
 
-      // Update the frequency count for the current character
-      if ( !letterOccurrences[ currentCharacterLowerCase ] ) { // Check if this character has been encountered before
-        letterOccurrences[ currentCharacterLowerCase ] = 1 ; // First occurrence: initialize count to one
+    // Iterate through each character within the current text segment.
+    for (let charPosition = 0; charPosition < textSegments[segmentIndex].length; ++charPosition) {
+      // Convert the current character to lowercase to ensure case-insensitive counting.
+      const currentCharacter = textSegments[segmentIndex][charPosition].toLowerCase();
+
+      // Check if the character has been encountered before.
+      if (!charOccurrences[currentCharacter]) {
+        // If it's the first time seeing this character, initialize its count to 1.
+        charOccurrences[currentCharacter] = 1;
       } else {
-        ++letterOccurrences[ currentCharacterLowerCase ] ; // Subsequent occurrence: increment its count
+        // If the character has been seen, increment its existing count.
+        charOccurrences[currentCharacter]++;
       }
-    } // End of inner loop for characters
-  } // End of outer loop for lines
+    }
+  }
 
-  // Now, iterate through all lowercase English alphabet characters and display their frequencies
-  for ( var unicodeValue = 97 ; unicodeValue <= 122 ; ++unicodeValue ) { // Iterate through the ASCII values for lowercase English letters (a-z)
-    var alphabeticalChar = String.fromCharCode( unicodeValue ) ; // Convert the numerical ASCII value back to its character representation
+  // Loop through all lowercase English alphabet characters from 'a' to 'z'.
+  // ASCII values for 'a' (0x61) to 'z' (0x7a).
+  for (let charCode = 0x61; charCode <= 0x7a; ++charCode) {
+    // Convert the ASCII code back to its corresponding character.
+    const currentLetter = String.fromCharCode(charCode);
 
-    // Print the character and its frequency, defaulting to 0 if not found
-    console.log( alphabeticalChar + " : " + ( ( letterOccurrences[ alphabeticalChar ] ) ? letterOccurrences[ alphabeticalChar ] : 0 ) ) ; // Display the character and its total frequency, or 0 if not found
-  } // End of loop for printing frequencies
-} // End of main processing function
+    // Retrieve the count for the current letter, defaulting to 0 if not found.
+    const letterCount = charOccurrences[currentLetter] ? charOccurrences[currentLetter] : 0;
 
-// Invoke the main function with data read from standard input
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+    // Print the character and its total occurrence count to the console.
+    console.log(currentLetter + " : " + letterCount);
+  }
+}
+
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,43 +1,45 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineBuffer = dataStream.trim().split("\n");
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = (input.trim()).split("\n");
 
+let problemSets = [];
 let currentLineIndex = 0;
-const outputCollector = [];
 
-function processGameBlock() {
-    const dimensionsLine = lineBuffer[currentLineIndex++];
-    if (dimensionsLine === "0 0") {
-        console.log(outputCollector.join('\n'));
-        return;
+while (currentLineIndex < Arr.length) {
+    let nmLine = Arr[currentLineIndex];
+    if (nmLine === "0 0") {
+        break;
     }
 
-    const parsedDims = dimensionsLine.split(" ").map(Number);
-    const rowCount = parsedDims[0];
-    const colCount = parsedDims[1];
-
-    const playerScores = [];
-    for (let cIdx = 0; cIdx < colCount; cIdx++) {
-        playerScores.push([0, cIdx + 1]);
+    let [nVal, mVal] = nmLine.split(" ").map(Number);
+    let dataRowsForProblem = [];
+    for (let i = 0; i < nVal; i++) {
+        dataRowsForProblem.push(Arr[currentLineIndex + 1 + i].split(" ").map(Number));
     }
 
-    for (let rIdx = 0; rIdx < rowCount; rIdx++) {
-        const rowData = lineBuffer[currentLineIndex++].split(" ").map(Number);
-        for (let cIdx = 0; cIdx < colCount; cIdx++) {
-            playerScores[cIdx][0] += rowData[cIdx];
-        }
-    }
-
-    playerScores.sort((entityA, entityB) => {
-        const sumA = entityA[0];
-        const sumB = entityB[0];
-        return sumB - sumA; // Descending order of sum
+    problemSets.push({
+        numRows: nVal,
+        numCols: mVal,
+        rowData: dataRowsForProblem
     });
 
-    const resultOrder = playerScores.map(entity => entity[1]);
-
-    outputCollector.push(resultOrder.join(" "));
-
-    processGameBlock();
+    currentLineIndex += 1 + nVal;
 }
 
-processGameBlock();
+problemSets.forEach(problem => {
+    const { numRows: n, numCols: m, rowData: dataRows } = problem;
+
+    let columnAggregates = new Map();
+    Array.from({ length: m }, (_, i) => i + 1).forEach(colIdx => columnAggregates.set(colIdx, 0));
+
+    dataRows.forEach(row => {
+        row.forEach((value, colIndex) => {
+            const currentSum = columnAggregates.get(colIndex + 1);
+            columnAggregates.set(colIndex + 1, currentSum + value);
+        });
+    });
+
+    let sortedColumns = Array.from(columnAggregates.entries()).sort((a, b) => a[1] - b[1]);
+
+    let resultIndices = sortedColumns.map(pair => pair[0]);
+    console.log(resultIndices.join(" "));
+});

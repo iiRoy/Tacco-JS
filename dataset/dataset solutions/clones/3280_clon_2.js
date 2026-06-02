@@ -1,26 +1,25 @@
-function processInput(inputString)
-{
-    // This routine processes incoming textual data.
-    let  parsedLines  =  inputString.split  (  "\n"  )  ;
+function processInput(inputString) {
+  // Split the incoming string by newline characters to get individual lines
+  let linesArray = inputString.split("\n");
 
-    // Extract the primary scalar dimension from the initial entry.
-    const  totalDimension  =  parseInt  (  parsedLines  [  0  ]  ,  10  )  ;
+  // Parse the first line as the overall grid dimension
+  const gridSize = Number(linesArray[0]);
 
-    // Retrieve the vertical restriction from the subsequent entry.
-    let  heightConstraint  =  parseInt  (  parsedLines  [  1  ]  ,  10  )  ;
+  // Parse the second line as the required height
+  const heightConstraint = Number(linesArray[1]);
 
-    // Obtain the horizontal restriction from the third entry.
-    let  widthConstraint  =  parseInt  (  parsedLines  [  2  ]  ,  10  )  ;
+  // Parse the third line as the required width
+  const widthConstraint = Number(linesArray[2]);
 
-    // Calculate the effective horizontal span based on inputs.
-    var  availableWidth  =  totalDimension  -  widthConstraint  +  1  ;
+  // Calculate the number of possible starting positions for the width
+  let possibleWidths = gridSize - widthConstraint + 1;
 
-    // Compute the effective vertical span based on inputs.
-    var  availableHeight  =  totalDimension  -  heightConstraint  +  1  ;
+  // Calculate the number of possible starting positions for the height
+  let possibleHeights = gridSize - heightConstraint + 1;
 
-    // Display the resultant product of the two calculated spans.
-    console . log ( availableWidth  *  availableHeight ) ;
+  // Output the total number of valid placements
+  console.log(possibleWidths * possibleHeights);
 }
 
-// Execute the main processing function using data from standard input.
-processInput(  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ;
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

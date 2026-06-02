@@ -1,182 +1,157 @@
-module.exports = function ( sourceModules ) {
+module.exports = function (moduleDefinitions) {
+  var moduleCache = {};
 
-  var loadedModulesCache = {};
-
-  function moduleLoader ( moduleIdentifier ) {
-    if ( loadedModulesCache[ moduleIdentifier ] ) {
-      return loadedModulesCache[ moduleIdentifier ].exports;
+  function moduleLoader(moduleId) {
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
-
-    var moduleRecord = loadedModulesCache[ moduleIdentifier ] = {
-      id: moduleIdentifier,
-      loaded: false,
+    var moduleObject = moduleCache[moduleId] = {
+      moduleId: moduleId,
+      isLoaded: false,
       exports: {}
     };
-
-    sourceModules[ moduleIdentifier ].call( moduleRecord.exports, moduleRecord, moduleRecord.exports, moduleLoader );
-
-    moduleRecord.loaded = true;
-    return moduleRecord.exports;
+    moduleDefinitions[moduleId].call(moduleObject.exports, moduleObject, moduleObject.exports, moduleLoader);
+    moduleObject.isLoaded = true;
+    return moduleObject.exports;
   }
 
-  moduleLoader.definitions = sourceModules;
+  moduleLoader.moduleDefinitionsMap = moduleDefinitions;
+  moduleLoader.moduleCacheMap = moduleCache;
 
-  moduleLoader.cache = loadedModulesCache;
-
-  moduleLoader.defineProp = function ( targetObject, propertyName, getterFunction ) {
-    if ( !moduleLoader.hasProp( targetObject, propertyName ) ) {
-      Object.defineProperty( targetObject, propertyName, {
-        enumerable: true,
-        get: getterFunction
-      } );
-    }
+  moduleLoader.defineExport = function (target, exportName, getterFunc) {
+    moduleLoader.hasOwn(target, exportName) || Object.defineProperty(target, exportName, {
+      enumerable: true,
+      get: getterFunc
+    });
   };
 
-  moduleLoader.registerNs = function ( targetObject ) {
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( targetObject, Symbol.toStringTag, {
+  moduleLoader.registerExports = function (target) {
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(target, Symbol.toStringTag, {
         value: "Module"
-      } );
+      });
     }
-    Object.defineProperty( targetObject, "__esModule", {
+    Object.defineProperty(target, "__esModule", {
       value: true
-    } );
+    });
   };
 
-  moduleLoader.interopDefault = function ( targetModule, flags ) {
-    if ( flags & 1 ) {
-      targetModule = moduleLoader( targetModule );
+  moduleLoader.interopRequireDefault = function (targetModule, mode) {
+    if (1 & mode) {
+      targetModule = moduleLoader(targetModule);
     }
-    if ( flags & 8 ) {
+    if (8 & mode) {
       return targetModule;
     }
-    if ( flags & 4 && typeof targetModule === "object" && targetModule && targetModule.__esModule ) {
+    if (4 & mode && typeof targetModule === "object" && targetModule && targetModule.__esModule) {
       return targetModule;
     }
-
-    var interopObject = Object.create( null );
-
-    moduleLoader.registerNs( interopObject );
-
-    Object.defineProperty( interopObject, "default", {
+    var newObject = Object.create(null);
+    moduleLoader.registerExports(newObject);
+    Object.defineProperty(newObject, "default", {
       enumerable: true,
       value: targetModule
-    } );
-
-    if ( flags & 2 && typeof targetModule !== "string" ) {
-      for ( var keyName in targetModule ) {
-        moduleLoader.defineProp( interopObject, keyName, ( function ( propKey ) {
-          return function () {
-            return targetModule[ propKey ];
-          };
-        } ).bind( null, keyName ) );
+    });
+    if (2 & mode && typeof targetModule !== "string") {
+      for (var key in targetModule) {
+        moduleLoader.defineExport(newObject, key, function (currentKey) {
+          return targetModule[currentKey];
+        }.bind(null, key));
       }
     }
-    return interopObject;
+    return newObject;
   };
 
-  moduleLoader.getNsObject = function ( moduleExports ) {
-    var defaultExportGetter = moduleExports && moduleExports.__esModule ?
-      function () {
-        return moduleExports.default;
-      } :
-      function () {
-        return moduleExports;
-      };
-    moduleLoader.defineProp( defaultExportGetter, "a", defaultExportGetter );
-    return defaultExportGetter;
+  moduleLoader.getModuleExports = function (targetModule) {
+    var exportGetter = targetModule && targetModule.__esModule ? function () {
+      return targetModule.default;
+    } : function () {
+      return targetModule;
+    };
+    moduleLoader.defineExport(exportGetter, "a", exportGetter);
+    return exportGetter;
   };
 
-  moduleLoader.hasProp = function ( checkObject, checkProperty ) {
-    return Object.prototype.hasOwnProperty.call( checkObject, checkProperty );
+  moduleLoader.hasOwn = function (object, property) {
+    return Object.prototype.hasOwnProperty.call(object, property);
   };
 
-  moduleLoader.basePath = "";
+  moduleLoader.publicPath = "";
 
-  return moduleLoader( moduleLoader.entryPoint = 0 );
-
-}( [
-  function ( currentModule, exportsObject, moduleRequester ) {
+  return moduleLoader(moduleLoader.startupModuleId = 0);
+}([
+  function (module, exports, localRequire) {
     "use strict";
-    var fileSystemModule = moduleRequester( 1 );
-    moduleRequester( 2 )( fileSystemModule.readFileSync( "/dev/stdin", "utf8" ) );
+    var fileSystem = localRequire(1);
+    localRequire(2)(fileSystem.readFileSync("/dev/stdin", "utf8"));
   },
-  function ( currentModule, exportsObject ) {
-    currentModule.exports = require( "fs" );
+  function (module, exports) {
+    module.exports = require("fs");
   },
-  function ( currentModule, exportsObject, moduleRequester ) {
+  function (module, exports, localRequire) {
     "use strict";
-    var dataProcessorClass = moduleRequester( 3 );
-    var solutionLogic = moduleRequester( 5 );
-    currentModule.exports = function ( rawInputData ) {
-      var processorInstance = new dataProcessorClass( rawInputData );
-      solutionLogic( processorInstance );
+    var inputProcessorClass = localRequire(3),
+      solverLogic = localRequire(5);
+    module.exports = function (inputString) {
+      var processorInstance = new inputProcessorClass(inputString);
+      solverLogic(processorInstance);
     };
   },
-  function ( currentModule, exportsObject, moduleRequester ) {
+  function (module, exports, localRequire) {
     "use strict";
-    var queueClass = moduleRequester( 4 );
-    currentModule.exports = class InputHandler {
-      constructor ( rawDataString ) {
-        var tokenizedData = rawDataString.trim().split( /\s+/g );
-        this.inputQueue = new queueClass( tokenizedData );
+    var dataQueueClass = localRequire(4);
+    module.exports = class InputProcessor {
+      constructor(rawInputText) {
+        var tokenArray = rawInputText.trim().split(/\s+/g);
+        this.inputQueue = new dataQueueClass(tokenArray);
       }
-      readStringToken () {
-        return this.inputQueue.dequeueToken();
+      readNextString() {
+        return this.inputQueue.dequeueElement();
       }
-      readIntegerToken () {
-        return parseInt( this.inputQueue.dequeueToken(), 10 );
+      readNextInt() {
+        return parseInt(this.inputQueue.dequeueElement(), 10);
       }
-      finishProcessing () {
-        this.inputQueue.clearQueue();
-      }
-    };
-  },
-  function ( currentModule, exportsObject, moduleRequester ) {
-    "use strict";
-    currentModule.exports = class TokenQueue {
-      constructor () {
-        var initialTokens = arguments.length > 0 && arguments[ 0 ] !== undefined ? arguments[ 0 ] : [];
-        this.queueLength = initialTokens.length;
-        this.tokenArray = initialTokens;
-        this.readIndex = 0;
-      }
-      enqueueToken ( itemValue ) {
-        this.queueLength += 1;
-        this.tokenArray.push( itemValue );
-      }
-      dequeueToken () {
-        var retrievedToken = this.tokenArray[ this.readIndex ];
-        this.queueLength -= 1;
-        this.readIndex += 1;
-        return retrievedToken;
-      }
-      clearQueue () {
-        this.tokenArray = [];
-        this.queueLength = 0;
-        this.readIndex = 0;
+      finishReading() {
+        this.inputQueue.resetQueue();
       }
     };
   },
-  function ( currentModule, exportsObject, moduleRequester ) {
+  function (module, exports, localRequire) {
     "use strict";
-    currentModule.exports = function ( inputReader ) {
-      var totalElements = inputReader.readIntegerToken();
-      var valueArray = new Array( totalElements );
-      for ( var elementIndex = 0; elementIndex < totalElements; elementIndex++ ) {
-        valueArray[ elementIndex ] = inputReader.readIntegerToken();
+    module.exports = class DataQueue {
+      constructor() {
+        var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        this.currentSize = initialElements.length;
+        this.queueElements = initialElements;
+        this.currentIndex = 0;
       }
-
-      var countsTracker = new Array( totalElements + 1 ).fill( 0 );
-      for ( var iteratorVal = 1; iteratorVal <= totalElements; iteratorVal++ ) {
-        countsTracker[ valueArray[ iteratorVal ] ] = countsTracker[ valueArray[ iteratorVal ] - 1 ] + 1;
+      enqueueElement(elementToAdd) {
+        this.currentSize += 1;
+        this.queueElements.push(elementToAdd);
       }
-
-      var maximumFrequency = 0;
-      for ( var iteratorVal = 1; iteratorVal <= totalElements; iteratorVal++ ) {
-        maximumFrequency = Math.max( maximumFrequency, countsTracker[ iteratorVal ] );
+      dequeueElement() {
+        var dequeuedItem = this.queueElements[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedItem;
       }
-      console.log( totalElements - maximumFrequency );
+      resetQueue() {
+        this.queueElements = [];
+        this.currentSize = 0;
+        this.currentIndex = 0;
+      }
     };
+  },
+  function (inputReader) {
+    for (var arrayLength = inputReader.readNextInt(), inputArray = new Array(arrayLength), loopIndex = 0; loopIndex < arrayLength; loopIndex++) {
+      inputArray[loopIndex] = inputReader.readNextInt();
+    }
+    for (var frequencyArray = new Array(arrayLength + 1).fill(0), freqLoopIndex = 1; freqLoopIndex <= arrayLength; freqLoopIndex++) {
+      frequencyArray[inputArray[freqLoopIndex]] = frequencyArray[inputArray[freqLoopIndex] - 1] + 1;
+    }
+    for (var maxFrequency = 0, maxFreqLoopIndex = 1; maxFreqLoopIndex <= arrayLength; maxFreqLoopIndex++) {
+      maxFrequency = Math.max(maxFrequency, frequencyArray[maxFreqLoopIndex]);
+    }
+    console.log(arrayLength - maxFrequency);
   }
-] );
+]);

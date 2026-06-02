@@ -1,49 +1,63 @@
-function ProcessCoordinates(rawData) {
-  'use strict';
+function ProcessInput(rawData) {
+  'use strict'; /* Enforce strict parsing and error handling rules. */
 
-    // This directive enforces stricter parsing and error handling for the script.
+  const linesData = rawData.split('\n'); // Divide the incoming text into individual lines.
+  const numEntries = parseInt(linesData.shift(), 10); // Extract the first line, convert it to an integer, and store it.
+  const diffPairs = []; // Initialize a collection to store calculated difference pairs.
+  const unusedArray = []; // This array is declared but not utilized in the current logic.
 
-  const lineFragments = rawData.split('\n'); // Divide the input string into individual lines based on newline characters.
-  const pointCount = window.parseInt(lineFragments.shift(), 10); // Extract the total number of data points from the first line, converting it to an integer.
-  const diffPairs = []; // Initialize an empty array to store calculated coordinate differences.
-  const auxiliaryContainer = []; // An additional array, currently not utilized in the core logic.
-
-  // Iterate through the initial set of data lines.
-  for ( let idx = 0 ; idx < pointCount ; ++idx ) {
-    lineFragments[idx] = lineFragments[idx].split(' '); // Split each line into its constituent components (e.g., X and Y coordinates).
-    // lineFragments[idx].forEach( elementValue => Number.parseInt(elementValue, 10) ) // Example of potential parsing, currently inactive.
+  // Process each of the subsequent 'numEntries' lines.
+  for (let idx = 0; idx < numEntries; idx++) {
+    linesData[idx] = linesData[idx].split(' '); // Split each line by space into an array of strings.
+    // The original code had a commented-out line here:
+    // linesData[idx].forEach(elementVal => parseInt(elementVal));
+    // This comment is preserved in spirit, but the actual parsing is done later implicitly.
   }
 
-  lineFragments.sort( ( elemA , elemB ) => elemA[0] - elemB[0] ); // Sort the processed lines primarily based on their first numerical component.
+  // Sort the processed lines based on the numerical value of their first element.
+  linesData.sort((itemA, itemB) => itemA[0] - itemB[0]);
 
-  // Calculate all unique pairwise differences between the coordinate sets.
-  for ( let idx = 0 ; idx < pointCount - 1 ; ++idx ) {
-    for ( let jdx = idx + 1 ; jdx < pointCount ; ++jdx ) {
-      // Store the differences for both X and Y coordinates as a new pair.
-      diffPairs.push( [ lineFragments[idx][0] - lineFragments[jdx][0] , lineFragments[idx][1] - lineFragments[jdx][1] ] );
+  // Generate all unique pairs of entries and calculate their coordinate differences.
+  for (let idx = 0; idx < numEntries - 1; idx++) {
+    for (let subIdx = idx + 1; subIdx < numEntries; subIdx++) {
+      // Calculate the difference in x-coordinates and y-coordinates.
+      diffPairs.push([
+        linesData[idx][0] - linesData[subIdx][0],
+        linesData[idx][1] - linesData[subIdx][1]
+      ]);
     }
   }
 
-  diffPairs.sort(); // Arrange the calculated difference pairs in ascending order.
+  // Sort the array of difference pairs.
+  diffPairs.sort();
 
-  let currentSequenceLength = 1; // Tracks the length of the current sequence of identical difference pairs.
-  let maxSequenceLength = 0; // Stores the maximum observed sequence length.
+  let currentCount = 1; // Tracks the count of consecutive identical difference pairs.
+  let maxCount = 0; // Stores the maximum count found so far.
 
-  // Analyze the sorted difference pairs to find the longest sequence of identical pairs.
-  for ( let idx = 0 ; idx < diffPairs.length - 1 ; ++idx ) {
-    if ( JSON.stringify(diffPairs[idx]) === JSON.stringify(diffPairs[idx + 1]) ) {
-      currentSequenceLength++; // Increment if the current pair matches the next one.
-    }
-    else {
-      if ( maxSequenceLength < currentSequenceLength ) {
-        maxSequenceLength = currentSequenceLength; // Update the maximum if the current sequence is longer.
+  // Iterate through the sorted difference pairs to find the longest sequence of identical pairs.
+  for (let idx = 0; idx < diffPairs.length - 1; idx++) {
+    // Compare current pair with the next pair using JSON stringification for deep comparison.
+    if (JSON.stringify(diffPairs[idx]) === JSON.stringify(diffPairs[idx + 1])) {
+      currentCount++; // Increment count if they are identical.
+    } else {
+      // If not identical, check if the current sequence is the longest.
+      if (maxCount < currentCount) {
+        maxCount = currentCount;
       }
-      currentSequenceLength = 1; // Reset for a new sequence.
+      currentCount = 1; // Reset counter for a new sequence.
     }
   }
+  // Note: The original code does not explicitly handle the case where the longest sequence
+  // is at the very end of the array. This behavior is preserved.
+  if (maxCount < currentCount) {
+    maxCount = currentCount;
+  }
 
-  // Output the final result: total points minus the length of the longest identical difference sequence.
-  console.log(pointCount - maxSequenceLength);
+
+  // Output the final result, which is the total number of entries minus the maximum count of identical difference pairs.
+  console.log(numEntries - maxCount);
 }
-// The code below handles standard input/output and should not be modified to ensure proper execution.
-ProcessCoordinates(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+
+// This section handles reading input from standard input and invoking the main processing function.
+// It should not be modified as per the problem statement.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

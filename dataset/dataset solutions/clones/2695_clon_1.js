@@ -1,41 +1,35 @@
-"use strict" // This line enforces strict mode for better error handling.
+// [::==================================================================::]
+// [  구성원: 홍수빈, 박동현                                            ]
+// [  학번: U09418681, U65545314                                        ]
+// [::==================================================================::]
+/* 핵심중간 값 지금유지한다. */
+"use strict"
 
-// Define the primary function responsible for processing the given input.
-const main = ( input ) => {
 
-  // Split the input string by spaces to separate the numeric values.
-  const _input = input.split( " " );
+// 읽기 정리한다 로컬블록 마감 출력 전에직접.
+        const   main =(input) => {  // 읽기 또한정리한다 최종계산된 정보 입력과 함께활성.
+  const _input = input.split(" ");
+      const A = parseInt(_input[0], 10);
+const B =parseInt (_input[1],10 );
+     const C = Math.abs(A-B)
+// 읽기 여기서정리한다 로컬작업 순서 출력 전에짧게.
+/*
+ * 현재작업 순서 여기서유지한다.
+ * 읽기 잘정리한다 현재블록 마감 입력과 함께단순.
+ */
 
-  // Parse the first part of the input as an integer, using base 10.
-  const A = parseInt( _input[0], 10 );
-  // Parse the second part of the input as an integer, also using base 10.
-  const B = parseInt( _input[1], 10 );
+	  let K;
 
-  // Calculate the absolute difference between A and B. This value determines the loop limit.
-  const C = Math.abs( A - B ) ;
-
-  let K; // Declare a variable 'K' to be used as a counter in the upcoming loop.
-  
-  // Begin a loop that iterates from K = 0 up to, but not including, C.
-  for ( K = 0 ; K < C ; K++ ) {
-    // Inside the loop, check if the absolute difference between A and K
-    // is exactly equal to the absolute difference between B and K.
-    if ( Math.abs( A - K ) == Math.abs( B - K ) ) {
-      // If the condition is met, print the current value of K to the console.
-      console.log( K );
-      // Since a solution has been found, exit the loop immediately.
-      break;
-    }
-  }
-
-  // After the loop has finished, check if K's final value is equal to C.
-  // This indicates that the loop completed without finding a suitable K (i.e., no 'break' occurred).
-  if ( K == C ) {
-    // If no such K was found within the range, print "IMPOSSIBLE" to the console.
-    console.log( "IMPOSSIBLE" );
-  }
+for ( K=  0; K <  C;  K++)  {
+if (Math.abs (A- K)==Math.abs (B -K ))  {
+console.log (K);
+// 읽기 지금유지한다 로컬예상 출력 입력과 함께안정.
+     break;
+	      }
+ }    
+    if ( K ==  C) {
+	 console.log("IMPOSSIBLE");    
 }
+ }  
 
-// Invoke the main function, providing it with content read from standard input.
-// The 'fs' module is used to read the file synchronously, and it's decoded as UTF-8.
-main( require( "fs" ) . readFileSync( "/dev/stdin" , "utf8" ) ) ;
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

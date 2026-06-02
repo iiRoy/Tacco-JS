@@ -1,41 +1,32 @@
-const handleInput = (sourceText) => {
-    const linesOfData = sourceText.trim().split('\n');
-    const parameters = linesOfData[0].split(' ').map(Number);
-    const stoneCount = parameters[0];
-    const maxJumpDistance = parameters[1];
-    const elevationLevels = linesOfData[1].split(' ').map(Number);
+function processInputData(rawText) {
+    const textLines = rawText.split("\n");
+    const [stoneCount, maxStep] = textLines[0].split(" ").map(Number);
+    const stoneHeights = textLines[1].split(" ").map(Number);
+    return { stoneCount, maxStep, stoneHeights };
+}
 
-    const memoizedCosts = new Array(stoneCount).fill(null);
+function calculateOptimalPath(sourceText) {
+    const { stoneCount, maxStep, stoneHeights } = processInputData(sourceText);
 
-    const computeJourneyCost = (currentIdx) => {
-        if (currentIdx === 0) {
-            return 0;
-        }
+    const initialPathCosts = [0];
 
-        if (memoizedCosts[currentIdx] !== null) {
-            return memoizedCosts[currentIdx];
-        }
+    const finalPathCosts = Array.from({ length: stoneCount - 1 }, (_, idx) => idx + 1)
+        .reduce((currentCostArray, targetStoneIdx) => {
+            const reachablePredecessors = Array.from({ length: maxStep }, (_, offset) => targetStoneIdx - 1 - offset)
+                .filter(prevIdx => prevIdx >= 0);
 
-        let minAchievableCost = Infinity;
+            const potentialCosts = reachablePredecessors.map(sourceStoneIdx => {
+                const costFromSource = currentCostArray[sourceStoneIdx];
+                const heightDifference = Math.abs(stoneHeights[sourceStoneIdx] - stoneHeights[targetStoneIdx]);
+                return costFromSource + heightDifference;
+            });
 
-        for (let backStep = 1; backStep <= maxJumpDistance; backStep++) {
-            const priorIdx = currentIdx - backStep;
+            const minimumCostToTarget = Math.min(...potentialCosts);
+            currentCostArray.push(minimumCostToTarget);
+            return currentCostArray;
+        }, initialPathCosts);
 
-            if (priorIdx >= 0) {
-                const costFromPrior = computeJourneyCost(priorIdx) +
-                                      Math.abs(elevationLevels[priorIdx] - elevationLevels[currentIdx]);
-                minAchievableCost = Math.min(minAchievableCost, costFromPrior);
-            } else {
-                break;
-            }
-        }
+    console.log(finalPathCosts[finalPathCosts.length - 1]);
+}
 
-        memoizedCosts[currentIdx] = minAchievableCost;
-        return minAchievableCost;
-    };
-
-    const finalResult = computeJourneyCost(stoneCount - 1);
-    console.log(finalResult);
-};
-
-handleInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+calculateOptimalPath(require("fs").readFileSync("/dev/stdin", "utf8"));

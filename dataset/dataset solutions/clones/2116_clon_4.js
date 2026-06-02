@@ -2,46 +2,44 @@
 
 const fileSystem = require("fs");
 
-function processGame(rawData) {
-    const parsedLines = rawData.split("\n");
+function processGame(rawInput) {
+  const inputLines = rawInput.split("\n");
 
-    const gameBoardCells = parsedLines.slice(0, 3).flatMap((line, rowIndex) =>
-        line.split(" ").map((value, colIndex) => ({
-            cellValue: value,
-            row: rowIndex,
-            col: colIndex
-        }))
-    );
+  const gameGrid = inputLines.slice(0, 3).map(lineContent => lineContent.split(" "));
 
-    const calledNumbersSet = new Set(parsedLines.slice(4));
+  const drawnNumbers = new Set(inputLines.slice(4));
 
-    const activeCellPositions = new Set();
-    for (const cellInfo of gameBoardCells) {
-        if (calledNumbersSet.has(cellInfo.cellValue)) {
-            activeCellPositions.add(`${cellInfo.row},${cellInfo.col}`);
-        }
+  const markedCoordinates = new Set();
+
+  for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
+    for (let colIndex = 0; colIndex < 3; colIndex++) {
+      const cellValue = gameGrid[rowIndex][colIndex];
+      if (drawnNumbers.has(cellValue)) {
+        markedCoordinates.add(`${rowIndex},${colIndex}`);
+      }
     }
+  }
 
-    const winningConfigurations = [
-        ["0,0", "0,1", "0,2"],
-        ["1,0", "1,1", "1,2"],
-        ["2,0", "2,1", "2,2"],
-        ["0,0", "1,0", "2,0"],
-        ["0,1", "1,1", "2,1"],
-        ["0,2", "1,2", "2,2"],
-        ["0,0", "1,1", "2,2"],
-        ["0,2", "1,1", "2,0"]
-    ];
+  const winningPatterns = [
+    ["0,0", "0,1", "0,2"],
+    ["1,0", "1,1", "1,2"],
+    ["2,0", "2,1", "2,2"],
+    ["0,0", "1,0", "2,0"],
+    ["0,1", "1,1", "2,1"],
+    ["0,2", "1,2", "2,2"],
+    ["0,0", "1,1", "2,2"],
+    ["0,2", "1,1", "2,0"]
+  ];
 
-    const gameResult = winningConfigurations.some(gameLine =>
-        gameLine.every(coordinateString => activeCellPositions.has(coordinateString))
-    );
+  const hasBingo = winningPatterns.some(pattern =>
+    pattern.every(coord => markedCoordinates.has(coord))
+  );
 
-    if (gameResult) {
-        console.log("yes");
-    } else {
-        console.log("no");
-    }
+  if (hasBingo) {
+    console.log("yes");
+  } else {
+    console.log("no");
+  }
 }
 
 processGame(fileSystem.readFileSync("/dev/stdin", "utf8"));

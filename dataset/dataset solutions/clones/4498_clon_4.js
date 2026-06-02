@@ -1,40 +1,38 @@
-const inputSystem = require('readline');
+process.stdin.setEncoding('utf8');
 
-const streamProcessor = inputSystem.createInterface({
-    input: global.process.stdin,
-    output: global.process.stdout,
-    terminal: false
-});
+process.stdin.on('readable', function() {
+    let inputData = process.stdin.read();
 
-let accumulatedData = [];
+    if (inputData !== null) {
+        let lines = inputData.split('\n');
 
-streamProcessor.on('line', (currentUnit) => {
-    accumulatedData.push(currentUnit);
-});
+        if (lines[lines.length - 1] === '') {
+            lines.pop();
+        }
 
-streamProcessor.on('close', () => {
-    if (accumulatedData.length < 2) {
-        return;
+        const sourceArray = lines[1].split(' ').map(Number);
+        const arrayLength = sourceArray.length;
+
+        const { primaryElements, secondaryElements } = sourceArray.reduceRight((accumulator, currentElement, currentIndex) => {
+            // The original loop iterates `i` from `arrayLength - 1` down to `0` with a step of `2`.
+            // `s1` accumulates `ai[i]`.
+            // `s2` accumulates `ai[i-1]` by prepending.
+
+            // `currentIndex` in `reduceRight` goes from `arrayLength - 1` down to `0`.
+            // If `currentIndex` corresponds to an `i` from the original loop (e.g., `arrayLength - 1`, `arrayLength - 3`, etc.),
+            // then `currentElement` is `ai[i]`, and it goes to `primaryElements`.
+            // This condition is true when `(arrayLength - 1 - currentIndex)` is an even number.
+            if ((arrayLength - 1 - currentIndex) % 2 === 0) {
+                accumulator.primaryElements.push(currentElement);
+            } else {
+                // Otherwise, `currentIndex` corresponds to an `i-1` from the original loop (e.g., `arrayLength - 2`, `arrayLength - 4`, etc.),
+                // then `currentElement` is `ai[i-1]`, and it goes to `secondaryElements` by prepending.
+                accumulator.secondaryElements.unshift(currentElement);
+            }
+            return accumulator;
+        }, { primaryElements: [], secondaryElements: [] });
+
+        const finalOutput = primaryElements.join(' ') + ' ' + secondaryElements.join(' ');
+        process.stdout.write(finalOutput + '\n');
     }
-
-    const designatedSize = Number(accumulatedData[0]);
-    const numberString = accumulatedData[1];
-
-    const numericalComponents = numberString.split(' ').map(Number);
-
-    const firstIndices = Array.from({
-        length: Math.ceil(designatedSize / 2)
-    }, (_, k) => designatedSize - 1 - (k * 2)).filter(idx => idx >= 0);
-
-    const secondIndices = Array.from({
-        length: Math.floor(designatedSize / 2)
-    }, (_, k) => designatedSize - 2 - (k * 2)).filter(idx => idx >= 0);
-
-    const primaryNumericStream = firstIndices.map(idx => numericalComponents[idx]);
-    const secondaryNumericStream = secondIndices.map(idx => numericalComponents[idx]);
-
-    const firstComposite = primaryNumericStream.map(val => `${val} `).join('');
-    const secondComposite = secondaryNumericStream.reverse().map(val => `${val} `).join('');
-
-    global.console.log(`${firstComposite}${secondComposite}`);
 });

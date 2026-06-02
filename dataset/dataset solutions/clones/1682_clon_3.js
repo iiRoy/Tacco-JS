@@ -1,184 +1,122 @@
-let processInputData = (rawDataSet) => {
-    // Process the raw input string: trim whitespace, split into lines,
-    // then split each line by space.
-    // Each line will become an array of strings.
-    let parsedLines = rawDataSet.trim().split("\n").map((lineContent) => lineContent.split(" "));
+function processInputData(rawData) {
+    const parsedLines = rawData.trim().split("\n").map(lineStr => lineStr.split(" "));
+    let currentLineIndex = 1;
 
-    // `currentLineOffset` keeps track of our position in the `parsedLines` array
-    // as we read through different test cases and their associated data.
-    let currentLineOffset = 1; // Start from the second line, as the first line is usually metadata for the first test case or the problem itself
+    // Helper function to parse an array of strings to integers
+    const parseLineElementsToInts = (elements) => elements.map(elementVal => parseInt(elementVal, 10));
 
-    // Main loop to process multiple test cases, if any.
-    // The loop continues as long as there are lines remaining to be processed.
-    while (currentLineOffset < parsedLines.length) {
-        // If the current line is empty or doesn't exist, we've reached the end of input or an invalid state.
-        if (!parsedLines[currentLineOffset] || parsedLines[currentLineOffset].length === 0) {
+    // Helper function to get unique sorted K values
+    const getUniqueSortedKList = (kValues) => {
+        return kValues.sort((a, b) => a - b).filter((val, idx, originalArray) => originalArray.indexOf(val) === idx);
+    };
+
+    // Helper function to initialize slot tracking data structures
+    function initializeSlotTracking(kList) {
+        if (kList.length === 0) {
+            return { slotTracker: [[], []], kIndexMap: [] };
+        }
+        const maxKValue = kList[kList.length - 1];
+        // kIndexMap initialized with 0s, replicating original behavior for non-explicitly mapped K values
+        const kIndexMap = Array.from({ length: maxKValue + 1 }, () => 0);
+        const slotTracker = [[], []]; // [available_slots, used_slots]
+
+        let lastKProcessed = -1;
+        for (let idx = 0; idx < kList.length; idx++) {
+            const currentK = kList[idx];
+            slotTracker[0].push(currentK - lastKProcessed); // available_slots
+            slotTracker[1].push(0); // used_slots
+            kIndexMap[currentK] = idx;
+            lastKProcessed = currentK;
+        }
+        return { slotTracker, kIndexMap };
+    }
+
+    // Helper function to apply increments based on KLR items
+    function applyIncrements(itemsList, kIndexMap, slotTracker, finalResultContainer) {
+        const K_VAL_IDX = 0;
+        const L_VAL_IDX = 1;
+        const R_VAL_IDX = 2;
+
+        for (let idx = 0; idx < itemsList.length; idx++) {
+            const currentItem = itemsList[idx];
+            const potentialGain = currentItem[L_VAL_IDX] - currentItem[R_VAL_IDX];
+            const targetKForSlot = currentItem[K_VAL_IDX] - 1;
+
+            let currentSlotIdx = kIndexMap[targetKForSlot];
+
+            while (currentSlotIdx !== undefined && currentSlotIdx >= 0 && slotTracker[1][currentSlotIdx] === slotTracker[0][currentSlotIdx]) {
+                currentSlotIdx--;
+            }
+
+            if (currentSlotIdx !== undefined && currentSlotIdx >= 0) {
+                slotTracker[1][currentSlotIdx]++;
+                finalResultContainer.value += potentialGain;
+            }
+        }
+    }
+
+    // Constants for KLR array indices
+    const K_IDX = 0;
+    const L_IDX = 1;
+    const R_IDX = 2;
+
+    while (currentLineIndex < parsedLines.length && parsedLines[currentLineIndex] !== undefined) {
+        const numItems = parseInt(parsedLines[currentLineIndex][0], 10);
+        if (isNaN(numItems) || numItems === 0) { // Guard clause for invalid N or end of input
             break;
         }
 
-        // Parse the number of items for the current test case.
-        // It's expected to be the first element of the current line.
-        const itemCount = parseInt(parsedLines[currentLineOffset][0], 10);
+        const itemsTypeA = [];
+        const itemsTypeB = [];
+        const kValuesListA = [];
+        const kValuesListB = [];
+        let baseSum = 0;
+        let remainingItemsCount = numItems;
 
-        // Basic validation for itemCount. If invalid, skip this test case.
-        if (isNaN(itemCount) || itemCount <= 0) {
-            console.error(`Invalid item count ${parsedLines[currentLineOffset][0]} at line ${currentLineOffset}. Skipping.`);
-            currentLineOffset++; // Move past the problematic line
-            continue; // Proceed to the next iteration of the while loop
-        }
+        for (let idx = 0; idx < numItems; idx++) {
+            const currentLineData = parseLineElementsToInts(parsedLines[currentLineIndex + idx + 1]);
 
-        // Arrays to store items categorized into two types based on their properties.
-        // Each item is an array: [key, value1, value2]
-        let categoryOneItems = [];
-        let categoryTwoItems = [];
+            const kValue = currentLineData[K_IDX];
+            const lValue = currentLineData[L_IDX];
+            const rValue = currentLineData[R_IDX];
 
-        // Lists to store unique 'key - 1' values for each category, used for indexing later.
-        let uniqueKeysOne = [];
-        let uniqueKeysTwo = [];
-
-        // `initialAccumulatedSum` stores the sum of values that are fixed or contribute to the base total.
-        let initialAccumulatedSum = 0;
-        // `actualItemsToProcess` tracks the number of items that will undergo further processing (not fixed).
-        let actualItemsToProcess = itemCount;
-
-        // Loop through the 'itemCount' lines of data for the current test case.
-        for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
-            // Calculate the actual line number in the input array.
-            const dataLineIndex = currentLineOffset + itemIndex + 1;
-
-            // Ensure the data line exists before parsing.
-            if (!parsedLines[dataLineIndex]) {
-                console.error(`Missing data line at index ${dataLineIndex}.`);
-                break; // Exit the for loop if data is missing
-            }
-
-            // Parse the current data line into integers.
-            const currentItemData = parsedLines[dataLineIndex].map((strVal) => parseInt(strVal, 10));
-
-            // Destructure the parsed item for clarity.
-            const [itemKey, itemVal1, itemVal2] = currentItemData;
-
-            // Decision logic for categorizing items and updating sums.
-            // Items where itemKey equals itemCount are "fixed" or "special".
-            if (itemKey === itemCount) {
-                initialAccumulatedSum += itemVal1;
-                actualItemsToProcess--; // This item is handled, no further processing needed.
-            }
-            // Items where itemVal1 > itemVal2 are placed in category one.
-            else if (itemVal1 > itemVal2) {
-                categoryOneItems.push(currentItemData);
-                initialAccumulatedSum += itemVal2; // Add the smaller value to the base sum.
-                uniqueKeysOne.push(itemKey - 1); // Store the adjusted key.
-            }
-            // Items where itemVal1 < itemVal2 are transformed and placed in category two.
-            else if (itemVal1 < itemVal2) {
-                // Transform the item: key becomes (itemCount - itemKey), values are swapped.
-                const transformedItem = [itemCount - itemKey, itemVal2, itemVal1];
-                categoryTwoItems.push(transformedItem);
-                initialAccumulatedSum += itemVal1; // Add the smaller original value to the base sum.
-                uniqueKeysTwo.push(itemCount - itemKey - 1); // Store the adjusted transformed key.
-            }
-            // Items where itemVal1 === itemVal2 are also "fixed" like the first case.
-            else {
-                initialAccumulatedSum += itemVal1;
-                actualItemsToProcess--;
+            if (kValue === numItems) {
+                baseSum += lValue;
+                remainingItemsCount--;
+            } else if (lValue > rValue) {
+                itemsTypeA.push(currentLineData);
+                baseSum += rValue;
+                kValuesListA.push(kValue - 1);
+            } else if (lValue < rValue) {
+                // Original transformation: [N - line[0], line[2], line[1]]
+                const transformedItem = [numItems - kValue, rValue, lValue];
+                itemsTypeB.push(transformedItem);
+                baseSum += lValue; // Original adds L_IDX of original line
+                kValuesListB.push(numItems - kValue - 1); // K for transformed line is N - K_orig - 1
+            } else { // lValue === rValue
+                baseSum += lValue;
+                remainingItemsCount--;
             }
         }
 
-        // Sort items within each category by their key for consistent processing.
-        categoryOneItems.sort((a, b) => a[0] - b[0]);
-        categoryTwoItems.sort((a, b) => a[0] - b[0]);
+        itemsTypeA.sort((a, b) => a[K_IDX] - b[K_IDX]);
+        itemsTypeB.sort((a, b) => a[K_IDX] - b[K_IDX]);
 
-        // Sort unique keys and remove duplicates using a Set for efficiency.
-        const processUniqueKeys = (keyList) => Array.from(new Set(keyList.sort((a, b) => a - b)));
-        uniqueKeysOne = processUniqueKeys(uniqueKeysOne);
-        uniqueKeysTwo = processUniqueKeys(uniqueKeysTwo);
+        const uniqueKValuesA = getUniqueSortedKList(kValuesListA);
+        const uniqueKValuesB = getUniqueSortedKList(kValuesListB);
 
-        // Helper function to initialize allocation trackers and index maps.
-        // `allocationTracker` stores [available_slots, used_slots] for each unique key interval.
-        // `keyToIndexMap` maps a key value to its corresponding index in the `allocationTracker`.
-        const initializeAllocationStructures = (keysList) => {
-            let allocationTracker = [[], []]; // [available counts], [used counts]
-            let keyToIndexMap = new Array(0); // Initialize as empty, will resize if keysList is not empty
+        const { slotTracker: slotTrackerA, kIndexMap: kIndexMapA } = initializeSlotTracking(uniqueKValuesA);
+        const { slotTracker: slotTrackerB, kIndexMap: kIndexMapB } = initializeSlotTracking(uniqueKValuesB);
 
-            if (keysList.length > 0) {
-                // Determine the maximum key to size the index map.
-                const maxKeyValue = keysList[keysList.length - 1];
-                keyToIndexMap = new Array(maxKeyValue + 1).fill(-1); // Use -1 to indicate no mapping initially
-            }
+        const finalResultContainer = { value: baseSum }; // Use an object to pass by reference
 
-            let previousKey = -1; // Sentinel value for the start of the first interval.
-            for (let idx = 0; idx < keysList.length; idx++) {
-                const currentKey = keysList[idx];
-                // Calculate the number of available slots in this interval.
-                allocationTracker[0].push(currentKey - previousKey);
-                allocationTracker[1].push(0); // Initialize used slots to zero.
-                keyToIndexMap[currentKey] = idx; // Map the key to its index in the tracker.
-                previousKey = currentKey; // Update previousKey for the next iteration.
-            }
-            return { allocationTracker, keyToIndexMap };
-        };
+        applyIncrements(itemsTypeA, kIndexMapA, slotTrackerA, finalResultContainer);
+        applyIncrements(itemsTypeB, kIndexMapB, slotTrackerB, finalResultContainer);
 
-        const { allocationTracker: allocationSlotsOne, keyToIndexMap: keyMapOne } = initializeAllocationStructures(uniqueKeysOne);
-        const { allocationTracker: allocationSlotsTwo, keyToIndexMap: keyMapTwo } = initializeAllocationStructures(uniqueKeysTwo);
+        console.log(finalResultContainer.value);
 
-        // `totalOptimizedSum` starts with the `initialAccumulatedSum` and will be incremented
-        // by potential gains from category item processing.
-        let totalOptimizedSum = initialAccumulatedSum;
-
-        // Helper function to process items from a category and update the sum.
-        // This abstracts the common logic for categoryOneItems and categoryTwoItems.
-        const processCategoryAndAllocate = (items, keyMapping, allocations, currentTotal) => {
-            let runningTotal = currentTotal;
-            for (const item of items) {
-                const [itemKey, itemVal1, itemVal2] = item;
-                // Calculate the potential gain if this item is selected.
-                const potentialGain = itemVal1 - itemVal2;
-
-                // Optimization: if there's no gain, skip processing this item.
-                if (potentialGain <= 0) {
-                    continue;
-                }
-
-                // Find the allocation slot corresponding to the item's key.
-                let currentSlotPointer = keyMapping[itemKey - 1]; // ItemKey is 1-based, our map is 0-based
-
-                // Guard against invalid key mappings.
-                if (currentSlotPointer === undefined || currentSlotPointer === -1) {
-                    // This means the item's key was not in our uniqueKeys list.
-                    // Depending on problem specifics, this might be an error or simply means no allocation can be made.
-                    // For now, we'll just skip this item's potential gain.
-                    continue;
-                }
-
-                // Traverse backward through allocation slots until an available slot is found.
-                while (currentSlotPointer >= 0 && allocations[1][currentSlotPointer] >= allocations[0][currentSlotPointer]) {
-                    currentSlotPointer--;
-                }
-
-                // If an available slot was found, allocate it and add the potential gain.
-                if (currentSlotPointer >= 0) {
-                    allocations[1][currentSlotPointer]++; // Increment used slots for this interval.
-                    runningTotal += potentialGain; // Add the gain to the running total.
-                }
-            }
-            return runningTotal;
-        };
-
-        // Process items from category one.
-        totalOptimizedSum = processCategoryAndAllocate(categoryOneItems, keyMapOne, allocationSlotsOne, totalOptimizedSum);
-
-        // Process items from category two.
-        totalOptimizedSum = processCategoryAndAllocate(categoryTwoItems, keyMapTwo, allocationSlotsTwo, totalOptimizedSum);
-
-        // Output the final calculated sum for the current test case.
-        console.log(totalOptimizedSum);
-
-        // Update `currentLineOffset` to point to the start of the next test case.
-        // It moves past the 'N' line and the 'N' data lines.
-        currentLineOffset += itemCount + 1;
+        currentLineIndex += numItems + 1;
     }
-};
+}
 
-// Read input from standard input and pass it to the main processing function.
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

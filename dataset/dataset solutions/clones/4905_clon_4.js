@@ -1,22 +1,27 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf-8");
 
-process.stdin.on("data", function(incomingPayload) {
-  const processedPayload = String(incomingPayload).trim();
-  const constituentParts = processedPayload.split(/\s+/);
+process.stdin.on("data", function(inputChunk) {
+  const inputValues = inputChunk.trim().split(" ");
+  const firstValue = inputValues[0];
+  const secondValue = inputValues[1];
+  const thirdValue = inputValues[2];
 
-  const initialComponent = constituentParts[0];
-  const middleComponent = constituentParts[1];
-  const finalComponent = constituentParts[2];
+  const distinctSet = new Set([firstValue, secondValue, thirdValue]);
+  const uniqueCount = distinctSet.size;
 
-  const distinctItemCollector = new Set([initialComponent, middleComponent, finalComponent]);
-  const distinctItemQuantity = distinctItemCollector.size;
+  let outputResult;
+  switch (uniqueCount) {
+    case 1:
+      outputResult = "1";
+      break;
+    case 2:
+      outputResult = "2";
+      break;
+    case 3:
+      outputResult = "3";
+      break;
+  }
 
-  const outcomeMapping = {
-    1: "1",
-    2: "2",
-    3: "3"
-  };
-
-  process.stdout.write(outcomeMapping[distinctItemQuantity]);
+  process.stdout.write(outputResult);
 });

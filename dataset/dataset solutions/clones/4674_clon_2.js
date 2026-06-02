@@ -1,37 +1,31 @@
-"use strict";
+"use strict"; // Enforce strict mode for robust code execution
 
-// This program processes a specific input format to produce a single character output.
-// It acts as the primary entry point for execution.
-const processInputData = (incomingText) => {
+/**
+ * Analyzes an input string to determine and display a specific character based on conditional logic.
+ * This function processes a single line of input containing two space-separated characters.
+ * @param {string} inputString - The raw string provided as input, expected to have at least one line with two characters.
+ */
+const processInput = (inputString) => {
+    // Extract the first line from the entire input string.
+    // Then, split this first line by a space character.
+    // The initial character for evaluation is the first element of this split array.
+    const initialCharacter = inputString.split("\n")[0].split(" ")[0];
 
-  // The first line of the input string is parsed to extract two key components.
-  const firstLineContent = incomingText.split("\n")[0];
+    // The subsequent character for evaluation is the second element of the same split array.
+    const subsequentCharacter = inputString.split("\n")[0].split(" ")[1];
 
-  // The first component is expected to be the first space-separated token.
-  const firstComponent = firstLineContent.split(" ")[0];
-
-  // The second component is the second space-separated token on the same line.
-  const secondComponent = firstLineContent.split(" ")[1];
-
-  // A conditional check is performed based on the value of the first component.
-  if (firstComponent === "D") {
-    // If the first component is 'D', then a further check on the second component determines the output.
-    console.log(
-      secondComponent === "H" ? "D" : "H"
-    );
-  }
-  else {
-    // Otherwise, if the first component is not 'D', the second component is output directly.
-    console.log(secondComponent);
-  }
+    // Based on the value of the initial character, a decision path is chosen.
+    if (initialCharacter === "D") {
+        // If the initial character is 'D', then the subsequent character is checked.
+        // If the subsequent character is 'H', output 'D'; otherwise, output 'H'.
+        console.log(subsequentCharacter === "H" ? "D" : "H");
+    } else {
+        // If the initial character is anything other than 'D',
+        // the subsequent character is directly outputted.
+        console.log(subsequentCharacter);
+    }
 };
 
-// The execution begins by reading the entire content of standard input.
-// The read data is then passed to the main processing function.
-processInputData(
-  require('fs')
-    .readFileSync(
-      '/dev/stdin', // Specifies the standard input file path.
-      'utf8'        // Ensures the input is read as UTF-8 encoded text.
-    )
-);
+// Read the entire content from the standard input stream,
+// assuming UTF-8 encoding, and then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

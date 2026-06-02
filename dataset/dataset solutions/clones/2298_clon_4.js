@@ -1,34 +1,35 @@
 'use strict';
-const commenceOperation = (receivedData) => {
-  const primaryOperand = Number(receivedData[0]);
 
-  const verifyFactorAbsence = (candidateNumber, currentFactor = 2) => {
-    if (candidateNumber < 2) return false;
-    if (candidateNumber === 2) return true;
-    if (candidateNumber % currentFactor === 0) return false;
-    if (currentFactor * currentFactor > candidateNumber) return true;
-    return verifyFactorAbsence(candidateNumber, currentFactor + 1);
+const processInput = (dataLines) => {
+  const initialValue = parseInt(dataLines[0]);
+
+  const isPrimeCandidate = (numeral) => {
+    if (numeral <= 3) {
+      return true;
+    }
+
+    const potentialDivisors = Array.from(
+      { length: numeral - 3 },
+      (_, index) => 2 + index
+    );
+
+    const hasDivisor = potentialDivisors.some(
+      (divisor) => numeral % divisor === 0
+    );
+
+    return !hasDivisor;
   };
 
-  const locateFirstQualifyingValue = (currentEvaluationPoint, upperBoundary) => {
-    if (currentEvaluationPoint >= upperBoundary) {
-      return null;
-    }
+  const numberSequence = Array.from(
+    { length: initialValue },
+    (_, index) => initialValue + index
+  );
 
-    if (currentEvaluationPoint === 1) {
-      return 1;
-    }
+  const firstMatchingNumber = numberSequence.find(isPrimeCandidate);
 
-    if (verifyFactorAbsence(currentEvaluationPoint)) {
-      return currentEvaluationPoint;
-    } else {
-      return locateFirstQualifyingValue(currentEvaluationPoint + 1, upperBoundary);
-    }
-  };
-
-  const finalResult = locateFirstQualifyingValue(primaryOperand, 2 * primaryOperand);
-
-  console.log(finalResult);
+  if (firstMatchingNumber !== undefined) {
+    console.log(firstMatchingNumber);
+  }
 };
 
-commenceOperation(require("node:fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

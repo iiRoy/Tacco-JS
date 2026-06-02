@@ -1,51 +1,46 @@
-function ProcessInputData(rawDataStream) {
-  // Initialize the running total for the first metric.
-  let cumulativeTimeValue = 0;
-  // Initialize the running total for the second metric.
-  let cumulativeAmountValue = 0;
+function ProcessInput(rawData) {
+    // Initialize cumulative scores for Takahashi and Aoki.
+    let totalTakahashi = 0;
+    let totalAoki = 0;
 
-  // Split the entire input string into an array of individual lines.
-  const dataLines = rawDataStream.split("\n");
+    // The raw input string is split into an array of lines.
+    // The first line typically contains the count of subsequent data entries.
+    rawData = rawData.split("\n");
+    let numEntries = rawData[0];
 
-  // The very first line of the input indicates the total count of subsequent data entries.
-  const entryCount = Number(dataLines[0]);
+    // Log the number of entries to the console, as per original behavior.
+    console.log(numEntries);
 
-  // Output the determined number of data entries to the console.
-  console.log(entryCount);
+    // Iterate through each data entry, starting from the second line of input.
+    for (let idx = 1; idx <= numEntries; idx++) {
+        // Split the current line by space to get individual T and A values.
+        let tempValues = rawData[idx].split(" ");
+        let currentT = tempValues[0] * 1; // Convert string to number for T
+        let currentA = tempValues[1] * 1; // Convert string to number for A
 
-  // Loop through each data entry, starting from the second line (index 1).
-  for (let currentLineIdx = 1; currentLineIdx <= entryCount; currentLineIdx++) {
-    // Parse the current line, splitting it by space to get the two numeric components.
-    const splitLineData = dataLines[currentLineIdx].split(" ");
+        // Check if the current T and A values are sufficient for the cumulative totals.
+        if ((totalTakahashi <= currentT) && (totalAoki <= currentA)) {
+            // If current values are greater or equal, update the cumulative totals directly.
+            totalTakahashi = currentT;
+            totalAoki = currentA;
+        } else {
+            // If not, calculate the necessary scaling factor.
+            let tRatio = totalTakahashi / currentT;
+            let aRatio = totalAoki / currentA;
 
-    // Extract the first component and convert it to a number.
-    const currentMetric1 = splitLineData[0] * 1;
-    // Extract the second component and convert it to a number.
-    const currentMetric2 = splitLineData[1] * 1;
+            // Determine the maximum ratio and round it up to find the scaling factor.
+            let scalingFactor = Math.ceil(Math.max(tRatio, aRatio));
 
-    // Check if both current metrics are greater than or equal to their respective cumulative totals.
-    if ((cumulativeTimeValue <= currentMetric1) && (cumulativeAmountValue <= currentMetric2)) {
-      // If they are, simply update the cumulative totals with the current metrics.
-      cumulativeTimeValue = currentMetric1;
-      cumulativeAmountValue = currentMetric2;
-    } else {
-      // If not, calculate the necessary scaling ratios for both metrics.
-      const ratioForMetric1 = cumulativeTimeValue / currentMetric1;
-      const ratioForMetric2 = cumulativeAmountValue / currentMetric2;
-
-      // Determine the largest ceiling ratio to ensure both cumulative values are met or exceeded.
-      const requiredScalingFactor = Math.ceil(Math.max(ratioForMetric1, ratioForMetric2));
-
-      // Apply the calculated scaling factor to the current metrics and update the cumulative totals.
-      cumulativeTimeValue = currentMetric1 * requiredScalingFactor;
-      cumulativeAmountValue = currentMetric2 * requiredScalingFactor;
+            // Apply the scaling factor to the current T and A values to update cumulative totals.
+            totalTakahashi = currentT * scalingFactor;
+            totalAoki = currentA * scalingFactor;
+        }
     }
-  }
 
-  // Print the final summation of the two cumulative values, followed by a newline character.
-  console.log(cumulativeTimeValue + cumulativeAmountValue + "\n");
+    // Output the sum of the final cumulative scores, followed by a newline character.
+    console.log(totalTakahashi + totalAoki + "\n");
 }
 
-// This section is responsible for reading input from standard I/O and invoking the main processing function.
-// Please refrain from altering the code below this line to maintain proper execution in the environment.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line handles reading input from standard input and invoking the main processing function.
+// It should not be modified to preserve the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

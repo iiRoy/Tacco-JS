@@ -1,55 +1,71 @@
-const processInputData = (rawInput) => {
-    const dataLines = rawInput.trim().split('\n');
+'use strict'
 
-    const firstLineValues = dataLines[0].split(' ').map(Number);
-    const totalItems = firstLineValues[0];
-    const requiredSkillCount = firstLineValues[1];
-    const minimumAttainment = firstLineValues[2];
+const processInputData = (rawData) => {
+  const dataLines = rawData.trim().split('\n')
+  const [bookCount, skillCount, requiredSkillLevel] = dataLines[0].split(' ').map(Number)
+  const allBookDetails = []
 
-    const availableItems = [];
-    for (let k = 1; k <= totalItems; k++) {
-        const itemInfo = dataLines[k].split(' ').map(Number);
-        availableItems.push({
-            purchasePrice: itemInfo[0],
-            skillLevels: itemInfo.slice(1)
-        });
+  for (let k = 1; k <= bookCount; k++) {
+    allBookDetails.push(dataLines[k].split(' ').map(Number))
+  }
+  return { bookCount, skillCount, requiredSkillLevel, allBookDetails }
+}
+
+const calculateMinimumCost = (processedData) => {
+  const { bookCount, skillCount, requiredSkillLevel, allBookDetails } = processedData
+
+  let overallMinPrice = Infinity
+
+  const exploreCombinations = (
+    currentBookIndex,
+    accumulatedPrice,
+    accumulatedSkillLevels
+  ) => {
+    if (currentBookIndex === bookCount) {
+      const allRequirementsMet = accumulatedSkillLevels.every(
+        (level) => level >= requiredSkillLevel
+      )
+
+      if (allRequirementsMet) {
+        overallMinPrice = Math.min(overallMinPrice, accumulatedPrice)
+      }
+      return
     }
 
-    let currentMinCost = Infinity;
+    // Option 1: Exclude the current book
+    exploreCombinations(
+      currentBookIndex + 1,
+      accumulatedPrice,
+      accumulatedSkillLevels
+    )
 
-    const analyzeCombinations = (itemIndex, accumulatedCost, currentSkillTotals) => {
-        if (itemIndex === totalItems) {
-            const allSkillsSatisfied = currentSkillTotals.every(skillVal => skillVal >= minimumAttainment);
-            if (allSkillsSatisfied) {
-                currentMinCost = Math.min(currentMinCost, accumulatedCost);
-            }
-            return;
-        }
+    // Option 2: Include the current book
+    const currentBookInfo = allBookDetails[currentBookIndex]
+    const bookCost = currentBookInfo[0]
+    const bookSkillValues = currentBookInfo.slice(1)
 
-        analyzeCombinations(itemIndex + 1, accumulatedCost, currentSkillTotals);
+    const nextAccumulatedSkillLevels = accumulatedSkillLevels.map(
+      (currentSum, skillIdx) => currentSum + bookSkillValues[skillIdx]
+    )
 
-        const item = availableItems[itemIndex];
-        const nextAccumulatedCost = accumulatedCost + item.purchasePrice;
-        
-        if (nextAccumulatedCost < currentMinCost) {
-            const nextSkillTotals = currentSkillTotals.slice();
-            for (let s = 0; s < requiredSkillCount; s++) {
-                nextSkillTotals[s] += item.skillLevels[s];
-            }
-            analyzeCombinations(itemIndex + 1, nextAccumulatedCost, nextSkillTotals);
-        }
-    };
+    exploreCombinations(
+      currentBookIndex + 1,
+      accumulatedPrice + bookCost,
+      nextAccumulatedSkillLevels
+    )
+  }
 
-    const initialSkillTotals = Array.from({ length: requiredSkillCount }, () => 0);
-    analyzeCombinations(0, 0, initialSkillTotals);
+  const initialSkillSums = new Array(skillCount).fill(0)
+  exploreCombinations(0, 0, initialSkillSums)
 
-    const finalOutcome = (currentMinCost === Infinity) ? -1 : currentMinCost;
-    console.info(finalOutcome);
-    return finalOutcome;
-};
+  return overallMinPrice === Infinity ? -1 : overallMinPrice
+}
 
-const getFileContents = (filePath) => {
-    return require('fs').readFileSync(filePath, 'utf8');
-};
+const entryPoint = (inputString) => {
+  const parsedData = processInputData(inputString)
+  const finalResult = calculateMinimumCost(parsedData)
+  console.log(finalResult)
+  return finalResult
+}
 
-processInputData(getFileContents('/dev/stdin'));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'))

@@ -1,141 +1,70 @@
-// This module handles the primary logic for generating a visual pattern based on input parameters.
+function processInput(rawData) {
+  // Define constants for grid dimensions to improve readability and maintainability.
+  const GRID_DIMENSION = 100;
+  const HALF_GRID_DIMENSION = GRID_DIMENSION / 2;
+  const LAST_ROW_INDEX = GRID_DIMENSION - 1;
 
-/**
- * Processes the raw text input to generate a complex character grid.
- * @param {string} incomingText The raw string input, typically from stdin or a textarea.
- */
-function ProcessInputData(incomingText) {
-  // Define constants for grid dimensions and characters.
-  const GRID_SIDE_LENGTH = 100;
-  const HALF_SIDE_LENGTH = GRID_SIDE_LENGTH / 2;
-  const CHAR_DOT = '.';
-  const CHAR_HASH = '#';
-  const LINE_SEPARATOR = '\n';
-  const ELEMENT_SEPARATOR = ' ';
+  // Parse input values. Using an explicit radix for parseInt is good practice.
+  const inputLines = rawData.split("\n");
+  const firstLineData = inputLines[0].split(" ");
+  const valA = parseInt(firstLineData[0], 10);
+  const valB = parseInt(firstLineData[1], 10);
 
-  // --- Input Parsing and Validation ---
-  if (!incomingText || typeof incomingText !== 'string' || incomingText.trim() === '') {
-    console.error('Error: Received empty or invalid input text.');
-    return; // Exit if input is bad
-  }
+  // Helper function to create a new array row filled with a specified character.
+  const createFilledRow = (size, fillChar) => new Array(size).fill(fillChar);
 
-  const lines = incomingText.split(LINE_SEPARATOR);
-  if (lines.length === 0) {
-    console.error('Error: Input text contains no lines.');
-    return;
-  }
-
-  const firstLineTokens = lines[0].split(ELEMENT_SEPARATOR);
-  if (firstLineTokens.length < 2) {
-    console.error('Error: First line does not contain enough parameters.');
-    return;
-  }
-
-  // Use Number() for parsing, which handles whitespace better than parseInt for this context.
-  const userValueA = Number(firstLineTokens[0]);
-  const userValueB = Number(firstLineTokens[1]);
-
-  // Basic validation for parsed numbers.
-  // The problem typically implies positive integers, but this adds robustness.
-  if (isNaN(userValueA) || isNaN(userValueB) || userValueA < 1 || userValueB < 1) {
-    console.error('Error: Invalid numerical parameters received. Must be positive integers.');
-    return;
-  }
-
-  // --- Grid Initialization ---
-  // A 2D array representing our display surface.
-  // Using Array.from for a slightly different initialization style compared to `new Array()`.
-  let displaySurface = Array.from({ length: GRID_SIDE_LENGTH }, (_, rowIndex) => {
-    // Initialize the top half with dots and the bottom half with hashes.
-    const initialCharacter = (rowIndex < HALF_SIDE_LENGTH) ? CHAR_DOT : CHAR_HASH;
-    return Array(GRID_SIDE_LENGTH).fill(initialCharacter);
+  // Initialize the main grid structure.
+  // The first half of the grid is filled with '.', the second half with '#'.
+  // Using Array.from for a more functional approach to grid initialization.
+  const outputGrid = Array.from({ length: GRID_DIMENSION }, (_, rowIndex) => {
+    const charToFill = rowIndex < HALF_GRID_DIMENSION ? "." : "#";
+    return createFilledRow(GRID_DIMENSION, charToFill);
   });
 
-  // --- Modifying the Grid based on userValueB (placing hashes in the dot region) ---
-  // The original logic for `Math.round(i/50)*2` is effectively `Math.floor(i/50)*2` for non-negative `i`.
-  // Using Math.floor makes the intent clearer.
-  const numHashesToPlace = userValueB - 1; // Number of additional hash marks to place.
-  for (let placementIndex = 0; placementIndex < numHashesToPlace; ++placementIndex) {
-    // Calculate target row and column for the current hash placement.
-    const targetRow = Math.floor(placementIndex / HALF_SIDE_LENGTH) * 2;
-    const targetCol = (placementIndex % HALF_SIDE_LENGTH) * 2;
+  // Helper function to calculate the specific row and column for placing characters.
+  // This encapsulates the original coordinate calculation logic.
+  const determinePlacementCoordinates = (index) => {
+    // Replicates the original Math.round(i/50)*2 logic for row calculation.
+    const calculatedRowOffset = Math.round(index / HALF_GRID_DIMENSION) * 2;
+    // Replicates the original (i%50)*2 logic for column calculation.
+    const calculatedColOffset = (index % HALF_GRID_DIMENSION) * 2;
+    return {
+      row: calculatedRowOffset,
+      col: calculatedColOffset
+    };
+  };
 
-    // Safety check: ensure we don't attempt to write outside the designated top-half region.
-    // (rows 0-49 for dots, columns 0-99). The pattern ensures this for typical constraints.
-    if (targetRow < HALF_SIDE_LENGTH && targetCol < GRID_SIDE_LENGTH) {
-      displaySurface[targetRow][targetCol] = CHAR_HASH;
-    } else {
-      // This warning indicates an edge case where userValueB might be too large,
-      // exceeding the available distinct placement spots in the pattern.
-      console.warn(`Warning: Attempted to place hash outside expected region for B at index ${placementIndex}.`);
-    }
+  // Place '#' characters on the grid based on the value of valB.
+  // The loop iterates B-1 times.
+  for (let bCharIndex = 0; bCharIndex < valB - 1; bCharIndex++) {
+    const { row, col } = determinePlacementCoordinates(bCharIndex);
+    outputGrid[row][col] = "#";
   }
 
-  // --- Modifying the Grid based on userValueA (placing dots in the hash region) ---
-  const numDotsToPlace = userValueA - 1; // Number of additional dot marks to place.
-  for (let placementIndex = 0; placementIndex < numDotsToPlace; ++placementIndex) {
-    // Rows are calculated from the bottom up, using an offset from the last row.
-    const baseRowOffset = Math.floor(placementIndex / HALF_SIDE_LENGTH) * 2;
-    const targetRow = (GRID_SIDE_LENGTH - 1) - baseRowOffset;
-    const targetCol = (placementIndex % HALF_SIDE_LENGTH) * 2;
-
-    // Safety check: ensure we don't attempt to write outside the designated bottom-half region.
-    // (rows 50-99 for hashes, columns 0-99).
-    if (targetRow >= HALF_SIDE_LENGTH && targetCol < GRID_SIDE_LENGTH) {
-      displaySurface[targetRow][targetCol] = CHAR_DOT;
-    } else {
-      // Similar warning for userValueA exceeding pattern capacity.
-      console.warn(`Warning: Attempted to place dot outside expected region for A at index ${placementIndex}.`);
-    }
+  // Place '.' characters on the grid based on the value of valA.
+  // The loop iterates A-1 times.
+  for (let aCharIndex = 0; aCharIndex < valA - 1; aCharIndex++) {
+    const { row, col } = determinePlacementCoordinates(aCharIndex);
+    // The row for '.' placement is inverted from the '#' placement.
+    outputGrid[LAST_ROW_INDEX - row][col] = ".";
   }
 
-  // --- Final Output Generation ---
-  // Convert the 2D array of characters into an array of strings, then join them with newlines.
-  const finalRenderedOutput = displaySurface.map(rowArray => rowArray.join(''));
-  const completeOutputString = finalRenderedOutput.join(LINE_SEPARATOR);
+  // Convert the 2D array grid into a single string for output.
+  // Each inner array (row) is joined by an empty string, then all rows are joined by newline characters.
+  const gridRowsAsStrings = outputGrid.map(rowArray => rowArray.join(""));
+  const finalResultString = gridRowsAsStrings.join("\n");
 
-  // Display the generated pattern to standard output.
-  console.log(completeOutputString);
+  // Output the final string to the console.
+  console.log('%s', finalResultString);
 }
 
-// --- Debugging utility for browser environments ---
-/**
- * Initiates the pattern generation process using input from a DOM element.
- * This function is intended for interactive browser-based testing,
- * typically triggered by a button click.
- */
-function initiateBrowserDebug() {
-  // Attempt to retrieve the input element from the document.
-  const browserInputArea = document.getElementById("input");
-  if (browserInputArea && typeof browserInputArea.value === 'string') {
-    ProcessInputData(browserInputArea.value);
-  } else {
-    console.error("Browser debug failed: Could not find element with ID 'input' or it has no value.");
-  }
+// This function is for debugging purposes, as indicated in the original code.
+// It reads input from a DOM element.
+function runDebug() {
+  // Using querySelector for a slightly different but equivalent DOM access method.
+  const debugInputContent = document.querySelector("#input").value;
+  processInput(debugInputContent);
 }
 
-// --- Entry point for Node.js environment (e.g., competitive programming platforms) ---
-// This self-invoking anonymous function handles reading from standard input
-// and executing the main processing logic when run in a Node.js environment.
-(function executeNodeMain() {
-  // Check for Node.js specific globals to determine the environment.
-  // The `process.env.NODE_ENV !== 'test'` condition is a common practice
-  // to prevent automatic execution during testing frameworks.
-  if (typeof require !== 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
-    const fileSystemModule = require("fs");
-    const standardInputPath = "/dev/stdin"; // Standard path for competitive programming platforms.
-
-    try {
-      const nodeInputData = fileSystemModule.readFileSync(standardInputPath, "utf8");
-      ProcessInputData(nodeInputData);
-    } catch (error) {
-      console.error(`Failed to read from stdin: ${error.message}`);
-      // Optionally, exit the process with an error code.
-      // process.exit(1);
-    }
-  } else {
-    // If not in a Node.js environment, this block is typically ignored.
-    // In a browser, `initiateBrowserDebug()` would be called by a user action.
-    // console.log("Not running in a standard Node.js environment. Skipping direct stdin read.");
-  }
-})();
+// Main execution block: reads input from stdin and passes it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

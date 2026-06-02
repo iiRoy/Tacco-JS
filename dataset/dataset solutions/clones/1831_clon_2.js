@@ -1,81 +1,59 @@
-// This module defines a function for processing textual input.
-function ProcessInputData( initialContent ) {
+function ProcessInput(rawData) {
+    // Initialize a variable to hold the raw input data.
+    let initialData = rawData;
 
-  /*
-   * Initialize a mutable string variable with the raw content provided.
-   * This string will undergo several transformations.
-   */
-  var workingString = initialContent;
+    // This variable is declared but not used in the current logic.
+    let unusedResult = '';
 
-  // A placeholder variable for collecting potential output, currently unused.
-  var outputCollector = "";
+    // Extract the first line from the input and then the first word from that line.
+    let textSegment = initialData.split('\n')[0];
+    textSegment = textSegment.split(' ')[0];
 
-  // The 'workingString' is re-declared and assigned the first line of the original input.
-  // This operation effectively discards any content after the first newline character.
-  var workingString = workingString . split( "\n" ) [ 0 ];
+    // Convert the processed string into an array of individual characters.
+    let charSequence = Array.from(textSegment);
 
-  // Further refinement: isolate the first word (or segment) by splitting at the first space.
-  // All subsequent words or segments are discarded.
-  workingString = workingString . split( " " ) [ 0 ] ;
-
-  // Convert the processed string into an array of individual characters.
-  // This allows for character-by-character manipulation.
-  var characterArray = Array . from( workingString );
-
-  // Commence iteration through each element (character) in the 'characterArray'.
-  for ( let currentIdx = 0 ; currentIdx < characterArray . length ; currentIdx++ )
-  {
-    // Check if the current character is the specific placeholder character '?'.
-    if ( characterArray [ currentIdx ] === "?" )
-    {
-      // Special handling logic for the very first character in the array.
-      if ( currentIdx === 0 )
-      {
-        // If the array contains only a single element (which is '?').
-        if ( characterArray . length === 1 )
-        {
-          // In this unique case, the entire array is replaced by the string "D".
-          // This changes the type of 'characterArray' from an array to a string.
-          characterArray = "D" ;
+    // Iterate through each character in the sequence to apply transformation rules.
+    for (let charIndex = 0; charIndex < charSequence.length; charIndex++) {
+        // Check if the current character is a placeholder '?'.
+        if (charSequence[charIndex] === '?') {
+            // Special handling for the very first character in the sequence.
+            if (charIndex === 0) {
+                // If the sequence contains only one character, replace it with 'D'.
+                if (charSequence.length === 1) {
+                    charSequence = 'D'; // Note: This reassigns charSequence to a string, which will cause a TypeError later if not handled.
+                }
+                // If the next character is 'P', replace current '?' with 'D'.
+                else if (charSequence[charIndex + 1] === 'P') {
+                    charSequence[charIndex] = 'D';
+                }
+                // If the next character is 'D', replace current '?' with 'P'.
+                else if (charSequence[charIndex + 1] === 'D') {
+                    charSequence[charIndex] = 'P';
+                }
+                // If the next character is also '?', replace current '?' with 'P'.
+                else if (charSequence[charIndex + 1] === '?') {
+                    charSequence[charIndex] = 'P';
+                }
+            }
+            // Handling for characters that are not the first in the sequence.
+            // If the previous character was 'P', replace current '?' with 'D'.
+            else if (charSequence[charIndex - 1] === 'P') {
+                charSequence[charIndex] = 'D';
+            }
+            // If the previous character was 'D', replace current '?' with 'P'.
+            else if (charSequence[charIndex - 1] === 'D') {
+                charSequence[charIndex] = 'P';
+            }
         }
-        // If the character immediately following the current one is 'P'.
-        else if ( characterArray [ currentIdx + 1 ] === "P" )
-        {
-          characterArray [ currentIdx ] = "D" ;
-        }
-        // If the character immediately following the current one is 'D'.
-        else if ( characterArray [ currentIdx + 1 ] === "D" )
-        {
-          characterArray [ currentIdx ] = "P" ;
-        }
-        // If the character immediately following the current one is also a '?'.
-        else if ( characterArray [ currentIdx + 1 ] === "?" )
-        {
-          characterArray [ currentIdx ] = "P" ;
-        }
-      }
-      // Logic for characters that are not the first element in the array.
-      else if ( characterArray [ currentIdx - 1 ] === "P" ) // If the preceding character is 'P'.
-      {
-        characterArray [ currentIdx ] = "D" ;
-      }
-      else if ( characterArray [ currentIdx - 1 ] === "D" ) // If the preceding character is 'D'.
-      {
-        characterArray [ currentIdx ] = "P" ;
-      }
     }
-  } // End of the character-processing loop.
 
-  // Concatenate all elements of the (potentially modified) character array back into a single string.
-  // Note: If 'characterArray' was set to the string "D" earlier, calling .join() will result in a TypeError.
-  // This behavior precisely mirrors the original code's potential runtime error.
-  characterArray = characterArray . join( "" ) ;
+    // Join the array of characters back into a single string.
+    // This will throw a TypeError if 'charSequence' was reassigned to a string earlier (e.g., 'D').
+    let finalOutput = charSequence.join('');
 
-  // Display the final resulting string to the standard output.
-  console . log( characterArray ) ;
-} // Concludes the definition of the ProcessInputData function.
+    // Output the resulting string to the console.
+    console.log(finalOutput);
+}
 
-
-// Execute the main processing function.
-// It reads content from standard input synchronously, using UTF-8 encoding.
-ProcessInputData( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

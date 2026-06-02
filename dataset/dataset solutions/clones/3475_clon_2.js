@@ -1,106 +1,133 @@
-function parseInteger (valueString) {
-    // Converts a given string value into its integer representation.
-    return parseInt(valueString);
+// A utility function to convert a string representation into an integer value.
+function parseInteger(inputString) {
+  return parseInt(inputString);
 }
 
-
-function calculateAbsoluteDifferenceSum (numberSequence) {
-    let totalDifference = 0; // Accumulates the absolute differences between consecutive numbers.
-
-    for (let idx = 0; idx < numberSequence.length - 1; idx++) {
-        totalDifference += Math.abs(numberSequence[idx] - numberSequence[idx + 1]);
-    }
-
-    return totalDifference;
+/*
+ * This function calculates the cumulative sum of absolute differences
+ * between consecutive elements within a provided array of numbers.
+ */
+function calculateAbsoluteDifferenceSum(numberArray) {
+  let totalDifference = 0; // Initialize a variable to accumulate the differences.
+  // Iterate through the array from the first element up to, but not including, the last.
+  for (let idx = 0; idx < numberArray.length - 1; idx++) {
+    // Add the absolute difference between the current element and the next one.
+    totalDifference += Math.abs(numberArray[idx] - numberArray[idx + 1]);
+  }
+  return totalDifference; // Return the final sum of absolute differences.
 }
 
+/**
+ * Generates a numerical sequence by strategically selecting elements from a source array.
+ * The selection process alternates between two strategies ('min' and 'max') to build
+ * a sequence of a specified target length.
+ *
+ * @param {string} currentStrategy - The initial strategy to use ('min' to take from start, 'max' to take from end).
+ * @param {Array<number>} sourceNumbers - The array from which numbers are drawn. This array will be modified.
+ * @param {number} targetLength - The desired final length of the constructed sequence.
+ * @returns {Array<number>} The newly formed sequence of numbers.
+ */
+function constructSequence(currentStrategy, sourceNumbers, targetLength) {
+  const finalSequence = []; // This array will store the elements of the constructed sequence.
 
-function arrangeCollection (processingMode, sourceCollection, targetSize) {
-    let processedList = []; // This list will store the elements arranged according to the logic.
+  // Continue adding elements until the sequence reaches the desired length.
+  while (finalSequence.length < targetLength) {
+    if (currentStrategy === 'min') {
+      // If the sequence is currently empty, simply add the first available number.
+      if (finalSequence.length === 0) {
+        finalSequence.push(sourceNumbers.shift()); // Take from the beginning of sourceNumbers.
+      } else {
+        // Determine where to place the next number (from the start of sourceNumbers)
+        // to minimize the difference with either end of the finalSequence.
+        const candidateValue = sourceNumbers[0];
+        const diffToFront = Math.abs(finalSequence[0] - candidateValue);
+        const diffToBack = Math.abs(finalSequence[finalSequence.length - 1] - candidateValue);
 
-    while (processedList.length < targetSize) {
-
-        if (processingMode === 'min') {
-            // Logic for 'min' mode processing, typically taking from the start of sourceCollection.
-            if (processedList.length === 0) {
-                // If the target list is empty, simply add the first element from the source.
-                processedList.push(sourceCollection[0]);
-                sourceCollection.shift();
-            } else {
-                // Compare the absolute difference of the first and last elements in the processed list
-                // with the current first element of the source collection.
-                if (Math.abs(processedList[0] - sourceCollection[0]) > Math.abs(processedList[processedList.length - 1] - sourceCollection[0])) {
-                    processedList.unshift(sourceCollection.shift()); // Add to the beginning.
-                    if (processedList.length !== targetSize) {
-                        processedList.push(sourceCollection.shift()); // Fill remaining slot if not yet full.
-                    }
-                } else {
-                    processedList.push(sourceCollection.shift()); // Add to the end.
-                    if (processedList.length !== targetSize) {
-                        processedList.unshift(sourceCollection.shift()); // Fill remaining slot if not yet full.
-                    }
-                }
-            }
-            processingMode = 'max'; // Switch the mode for the next iteration.
+        if (diffToFront > diffToBack) {
+          // If placing at the front creates a larger difference, add to the front.
+          finalSequence.unshift(sourceNumbers.shift());
+          // If the sequence is not yet complete, take another element and add it to the other end.
+          if (finalSequence.length !== targetLength) {
+            finalSequence.push(sourceNumbers.shift());
+          }
+        } else {
+          // Otherwise, add to the back of the sequence.
+          finalSequence.push(sourceNumbers.shift());
+          // If the sequence is not yet complete, take another element and add it to the other end.
+          if (finalSequence.length !== targetLength) {
+            finalSequence.unshift(sourceNumbers.shift());
+          }
         }
-        else { // processingMode === 'max'
-            // Logic for 'max' mode processing, typically taking from the end of sourceCollection.
-            if (processedList.length === 0) {
-                // If the target list is empty, add the last element from the source.
-                processedList.push(sourceCollection.pop());
-            } else {
-                // Compare the absolute difference of the first and last elements in the processed list
-                // with the current last element of the source collection.
-                if (Math.abs(processedList[0] - sourceCollection[sourceCollection.length - 1]) > Math.abs(processedList[processedList.length - 1] - sourceCollection[sourceCollection.length - 1])) {
-                    processedList.unshift(sourceCollection.pop()); // Add to the beginning.
-                    if (processedList.length !== targetSize) {
-                        processedList.push(sourceCollection.pop()); // Fill remaining slot if not yet full.
-                    }
-                } else {
-                    processedList.push(sourceCollection.pop()); // Add to the end.
-                    if (processedList.length !== targetSize) {
-                        processedList.unshift(sourceCollection.pop()); // Fill remaining slot if not yet full.
-                    }
-                }
-            }
-            processingMode = 'min'; // Switch the mode for the next iteration.
+      }
+      // Switch the strategy for the next iteration.
+      currentStrategy = 'max';
+    } else { // The current strategy is 'max'.
+      // If the sequence is currently empty, simply add the last available number.
+      if (finalSequence.length === 0) {
+        finalSequence.push(sourceNumbers.pop()); // Take from the end of sourceNumbers.
+      } else {
+        // Determine where to place the next number (from the end of sourceNumbers)
+        // to minimize the difference with either end of the finalSequence.
+        const candidateValue = sourceNumbers[sourceNumbers.length - 1];
+        const diffToFront = Math.abs(finalSequence[0] - candidateValue);
+        const diffToBack = Math.abs(finalSequence[finalSequence.length - 1] - candidateValue);
+
+        if (diffToFront > diffToBack) {
+          // If placing at the front creates a larger difference, add to the front.
+          finalSequence.unshift(sourceNumbers.pop());
+          // If the sequence is not yet complete, take another element and add it to the other end.
+          if (finalSequence.length !== targetLength) {
+            finalSequence.push(sourceNumbers.pop());
+          }
+        } else {
+          // Otherwise, add to the back of the sequence.
+          finalSequence.push(sourceNumbers.pop());
+          // If the sequence is not yet complete, take another element and add it to the other end.
+          if (finalSequence.length !== targetLength) {
+            finalSequence.unshift(sourceNumbers.pop());
+          }
         }
+      }
+      // Switch the strategy for the next iteration.
+      currentStrategy = 'min';
     }
-    return processedList; // Return the final constructed list.
+  }
+  return finalSequence; // Return the fully constructed sequence.
 }
 
+// The primary function that processes the entire input.
+function ProcessInput(rawData) {
+  // Split the raw input string by newline characters and convert each part to an integer.
+  const parsedValues = rawData.split("\n").map(parseInteger);
+  const countElements = parsedValues[0]; // The first number in the input is the count of elements.
+  const initialNumbers = []; // An array to store the actual numbers for processing.
 
-function ExecuteProgram (rawData) {
-    // Split the input string by newlines and convert each line to an integer.
-    const parsedNumbers = rawData.split("\n").map(parseInteger);
+  // Populate the initialNumbers array, skipping the first element which is the count.
+  for (let loopIndex = 0; loopIndex < countElements; loopIndex++) {
+    initialNumbers.push(parsedValues[loopIndex + 1]);
+  }
+  // Sort the numbers in ascending order, which is crucial for the bucket logic.
+  initialNumbers.sort((a, b) => a - b);
 
-    // The first element of the input determines the number of subsequent elements to process.
-    const countElements = parsedNumbers[0];
+  // Calculate the sum of differences using the 'min' strategy first.
+  // A shallow copy of initialNumbers is passed to prevent modification of the original array.
+  const resultOne = calculateAbsoluteDifferenceSum(
+    constructSequence('min', [].concat(initialNumbers), countElements)
+  );
 
-    // Create a new array containing only the numeric data, excluding the initial count.
-    const numericArray = [];
-    for (let iterator = 0; iterator < countElements; iterator++) {
-        numericArray.push(parsedNumbers[iterator + 1]);
-    }
+  // Calculate the sum of differences using the 'max' strategy.
+  // Another shallow copy is used for the second calculation.
+  const resultTwo = calculateAbsoluteDifferenceSum(
+    constructSequence('max', [].concat(initialNumbers), countElements)
+  );
 
-    // Sort the collected numeric data in ascending order to ensure proper processing.
-    numericArray.sort((a, b) => a - b);
-
-    // Calculate the first result using the 'min' arrangement strategy.
-    // A shallow copy of the numericArray is passed to prevent modification of the original.
-    let firstResult = calculateAbsoluteDifferenceSum(arrangeCollection('min', [].concat(numericArray), countElements));
-
-    // Calculate the second result using the 'max' arrangement strategy.
-    // Another shallow copy is used for this calculation.
-    let secondResult = calculateAbsoluteDifferenceSum(arrangeCollection('max', [].concat(numericArray), countElements));
-
-    // Print the larger of the two calculated results to the console.
-    if (firstResult > secondResult) {
-        console.log(firstResult);
-    } else {
-        console.log(secondResult);
-    }
+  // Output the larger of the two calculated sums of differences.
+  if (resultOne > resultTwo) {
+    console.log(resultOne);
+  } else {
+    console.log(resultTwo);
+  }
 }
 
-// Read input from standard input and initiate the program execution.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

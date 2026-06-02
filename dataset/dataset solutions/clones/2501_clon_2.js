@@ -1,237 +1,291 @@
-module.exports=function(moduleDefinitions){
-  let moduleCache={};
-  /**
-   * Loads a module by its ID from the provided definitions.
-   * If the module is already cached, its exports are returned immediately.
-   * Otherwise, the module is initialized, executed, and then cached.
-   * @param {number} moduleId - The unique identifier for the module to load.
-   * @returns {object} The exports object of the requested module.
-   */
-  function retrieveModule(moduleId){
-    if(moduleCache[moduleId]) return moduleCache[moduleId].exports;
-    const moduleObject = moduleCache[moduleId]={
-      identifier:moduleId,
-      isLoaded:false,
-      exports:{}
-    };
-    moduleDefinitions[moduleId].call(moduleObject.exports,moduleObject,moduleObject.exports,retrieveModule);
-    moduleObject.isLoaded=true;
-    return moduleObject.exports;
-  }
-  retrieveModule.modules=moduleDefinitions;
-  retrieveModule.cache=moduleCache;
-  /**
-   * Defines a property on a target object only if it doesn't already exist.
-   * This function is used to ensure properties are enumerable and have a getter.
-   * @param {object} targetObject - The object on which to define the property.
-   * @param {string} propertyName - The name of the property to define.
-   * @param {function} getterFunction - The getter function for the property.
-   */
-  retrieveModule.defineProperty=function(targetObject,propertyName,getterFunction){
-    retrieveModule.hasOwn(targetObject,propertyName)||Object.defineProperty(targetObject,propertyName,{enumerable:true,get:getterFunction});
-  };
-  /**
-   * Registers a module as an ES Module by adding '__esModule' and 'Symbol.toStringTag' properties.
-   * This helps with compatibility and debugging in environments expecting ES Modules.
-   * @param {object} targetModule - The module exports object to register.
-   */
-  retrieveModule.registerModule=function(targetModule){
-    "undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(targetModule,Symbol.toStringTag,{value:"Module"});
-    Object.defineProperty(targetModule,"__esModule",{value:true});
-  };
-  /**
-   * Transforms and normalizes module content based on provided flags for ES Module compatibility.
-   * This function handles various scenarios like loading dependencies, returning raw content,
-   * or creating a namespace object with a default export.
-   * @param {any} moduleContent - The content of the module, which might be an ID or actual exports.
-   * @param {number} transformationFlags - Bitwise flags indicating how to transform the module.
-   * @returns {any} The transformed module content or a namespace object.
-   */
-  retrieveModule.transformModule=function(moduleContent,transformationFlags){
-    if(1&transformationFlags&&(moduleContent=retrieveModule(moduleContent)));
-    if(8&transformationFlags) return moduleContent;
-    if(4&transformationFlags&&"object"==typeof moduleContent&&moduleContent&&moduleContent.__esModule) return moduleContent;
-    const namespaceObject=Object.create(null);
-    retrieveModule.registerModule(namespaceObject);
-    Object.defineProperty(namespaceObject,"default",{enumerable:true,value:moduleContent});
-    if(2&transformationFlags&&"string"!=typeof moduleContent) for(const propertyKey in moduleContent) retrieveModule.defineProperty(namespaceObject,propertyKey,((key)=>moduleContent[key]).bind(null,propertyKey));
-    return namespaceObject;
-  };
-  /**
-   * Creates a getter function for a module's default export, handling both CommonJS and ES Module formats.
-   * @param {object} inputModule - The module object potentially containing '__esModule' and 'default' properties.
-   * @returns {function} A function that returns the module's default export.
-   */
-  retrieveModule.normalizeModule=function(inputModule){
-    const defaultExportGetter=inputModule&&inputModule.__esModule?function(){return inputModule.default}:function(){return inputModule};
-    retrieveModule.defineProperty(defaultExportGetter,"a",defaultExportGetter);
-    return defaultExportGetter;
-  };
-  /**
-   * Checks if an object has a specified property directly on itself (not inherited).
-   * @param {object} targetObject - The object to check.
-   * @param {string} propertyName - The name of the property.
-   * @returns {boolean} True if the property exists directly on the object, false otherwise.
-   */
-  retrieveModule.hasOwn=function(targetObject,propertyName){
-    return Object.prototype.hasOwnProperty.call(targetObject,propertyName);
-  };
-  retrieveModule.publicPath="";
-  retrieveModule(retrieveModule.startupModuleId=0);
-}(
-  [
-    // Module 0: Primary application startup point
-    function(currentModule,moduleExports,moduleLoader){
-      "use strict";
-      // Load the Node.js file system handler.
-      let fileSystemHandler=moduleLoader(1);
-      // Load the main data processing routine and execute it with input from standard input.
-      moduleLoader(2)(fileSystemHandler.readFileSync("/dev/stdin","utf8"));
-    },
-    // Module 1: Wrapper for Node.js 'fs' module
-    function(currentModule,moduleExports){
-      currentModule.exports=require("node:fs");
-    },
-    // Module 2: Orchestrates input parsing and graph processing
-    function(currentModule,moduleExports,moduleLoader){
-      "use strict";
-      // Fetch the DataStreamReader class and the graph processing function.
-      let inputParserClass=moduleLoader(3), processingRoutine=moduleLoader(5);
-      // Export a function that takes raw input data and initiates processing.
-      currentModule.exports=function(rawData){
-        let streamProcessor=new inputParserClass(rawData);
-        processingRoutine(streamProcessor);
-      };
-    },
-    // Module 3: DataStreamReader class for sequential token extraction
-    function(currentModule,moduleExports,moduleLoader){
-      "use strict";
-      currentModule.exports=class DataStreamReader{
-        /**
-         * Initializes the DataStreamReader with raw string data.
-         * The data is trimmed and split into tokens based on whitespace.
-         * @param {string} sourceData - The raw string input.
-         */
-        constructor(sourceData){
-          const tokenArray=sourceData.trim().split(/\s+/g);
-          this.tokenQueue=new moduleLoader(4)(tokenArray);
-        }
-        /**
-         * Retrieves the next string token from the stream.
-         * @returns {string} The dequeued string token.
-         */
-        readString(){
-          return this.tokenQueue.dequeue();
-        }
-        /**
-         * Retrieves the next integer token from the stream.
-         * @returns {number} The dequeued integer token.
-         */
-        readInteger(){
-          return Number.parseInt(this.tokenQueue.dequeue(),10);
-        }
-        /**
-         * Clears all remaining tokens from the stream.
-         */
-        finishReading(){
-          this.tokenQueue.flush();
-        }
-      };
-    },
-    // Module 4: ElementQueue class for managing a FIFO collection of items
-    function(currentModule,moduleExports){
-      "use strict";
-      currentModule.exports=class ElementQueue{
-        /**
-         * Initializes a new ElementQueue, optionally with initial elements.
-         * @param {Array<any>} [initialElements=[]] - An array of elements to pre-populate the queue.
-         */
-        constructor(initialElements=[]){
-          this.currentSize=initialElements.length;
-          this.queuedElements=initialElements;
-          this.currentIndex=0;
-        }
-        /**
-         * Adds an item to the end of the queue.
-         * @param {any} itemToAdd - The item to be enqueued.
-         */
-        enqueue(itemToAdd){
-          this.currentSize+=1;
-          this.queuedElements.push(itemToAdd);
-        }
-        /**
-         * Removes and returns the item from the front of the queue.
-         * @returns {any} The dequeued item.
-         */
-        dequeue(){
-          const retrievedItem=this.queuedElements[this.currentIndex];
-          this.currentSize-=1;
-          this.currentIndex+=1;
-          return retrievedItem;
-        }
-        /**
-         * Resets the queue, clearing all elements and indices.
-         */
-        flush(){
-          this.queuedElements=[];
-          this.currentSize=0;
-          this.currentIndex=0;
-        }
-      };
-    },
-    // Module 5: Core graph algorithm logic and query processing
-    function(currentModule,moduleExports,moduleLoader){
-      "use strict";
-      // Load the Floyd-Warshall algorithm implementation.
-      const floydWarshallAlgorithm=moduleLoader(6);
-      currentModule.exports=function(inputSource){
-        // Read graph dimensions and parameters from the input stream.
-        const numberOfNodes=inputSource.readInteger(), numberOfEdges=inputSource.readInteger(), maxAllowedDistance=inputSource.readInteger();
-        // Initialize the direct path matrix, representing initial edge weights.
-        const directPathMatrix=new Array(numberOfNodes);
-        for(let nodeIndex=0;nodeIndex<numberOfNodes;nodeIndex++) directPathMatrix[nodeIndex]=new Array(numberOfNodes).fill(Number.MAX_SAFE_INTEGER);
-        // Populate the matrix with edge data from input. Edges are undirected.
-        for(let edgeCount=0;edgeCount<numberOfEdges;edgeCount++){
-          const startNode=inputSource.readInteger(), endNode=inputSource.readInteger(), edgeWeight=inputSource.readInteger();
-          directPathMatrix[startNode-1][endNode-1]=edgeWeight;
-          directPathMatrix[endNode-1][startNode-1]=edgeWeight;
-        }
-        // Calculate all-pairs shortest paths based on original edge weights.
-        const shortestPathMatrix=floydWarshallAlgorithm(directPathMatrix);
-        // Adjust the direct path matrix based on `maxAllowedDistance`.
-        // If an original shortest path is within the limit, its new cost is 1.
-        for(let rowIdx=0;rowIdx<numberOfNodes;rowIdx++) for(let colIdx=0;colIdx<numberOfNodes;colIdx++) shortestPathMatrix[rowIdx][colIdx]<=maxAllowedDistance&&(directPathMatrix[rowIdx][colIdx]=1);
-        // Recalculate all-pairs shortest paths using the adjusted costs (effectively counting "hops").
-        const adjustedShortestPathMatrix=floydWarshallAlgorithm(directPathMatrix);
-        // Process queries for shortest paths in the adjusted graph.
-        const numberOfQueries=inputSource.readInteger();
-        for(let queryIndex=0;queryIndex<numberOfQueries;queryIndex++){
-          const queryStartNode=inputSource.readInteger(), queryEndNode=inputSource.readInteger(), finalDistance=adjustedShortestPathMatrix[queryStartNode-1][queryEndNode-1];
-          // Output -1 if no path, otherwise the distance minus 1.
-          Number.MAX_SAFE_INTEGER===finalDistance?console.log(-1):console.log(finalDistance-1);
-        }
-      };
-    },
-    // Module 6: Floyd-Warshall Algorithm implementation for all-pairs shortest paths
-    function(currentModule,moduleExports){
-      "use strict";
-      currentModule.exports=function(adjacencyMatrix){
-        const vertexCount=adjacencyMatrix.length;
-        // Create a deep copy of the adjacency matrix to store distances.
-        const distanceMatrix=[];
-        for(let vertexIdx=0;vertexIdx<vertexCount;vertexIdx++) distanceMatrix.push(adjacencyMatrix[vertexIdx].concat());
-        // Apply the Floyd-Warshall algorithm.
-        // Iterate through all possible intermediate vertices.
-        for(let intermediateVertex=0;intermediateVertex<vertexCount;intermediateVertex++)
-          // Iterate through all possible starting vertices.
-          for(let startVertex=0;startVertex<vertexCount;startVertex++)
-            // Iterate through all possible ending vertices.
-            for(let endVertex=0;endVertex<vertexCount;endVertex++)
-              // If the path through 'intermediateVertex' is shorter, update the distance.
-              distanceMatrix[startVertex][endVertex]>distanceMatrix[startVertex][intermediateVertex]+distanceMatrix[intermediateVertex][endVertex]&&
-              (distanceMatrix[startVertex][endVertex]=distanceMatrix[startVertex][intermediateVertex]+distanceMatrix[intermediateVertex][endVertex]);
-        return distanceMatrix;
-      };
+module.exports = function (moduleDefinitions) {
+  // Cache for loaded modules
+  var moduleCache = {};
+
+  // Custom require function for modules
+  function requireModule(moduleId) {
+    // If module is already in cache, return its exports
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
-  ]
-);
+
+    // Create a new module object and add it to the cache
+    var currentModule = moduleCache[moduleId] = {
+      id: moduleId, // Module identifier
+      loaded: false, // Flag to indicate if module is loaded
+      exports: {} // The exports object for the module
+    };
+
+    // Execute the module function with its exports, module object, and local require
+    moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, requireModule);
+
+    // Mark the module as loaded
+    currentModule.loaded = true;
+
+    // Return the module's exports
+    return currentModule.exports;
+  }
+
+  // Store module definitions and cache on the require function itself
+  requireModule.moduleDefinitions = moduleDefinitions;
+  requireModule.cache = moduleCache;
+
+  // Define property on exports object
+  requireModule.defineExport = function (exportsObject, propertyName, getterFunction) {
+    if (!requireModule.hasOwn(exportsObject, propertyName)) {
+      Object.defineProperty(exportsObject, propertyName, {
+        enumerable: true,
+        get: getterFunction
+      });
+    }
+  };
+
+  // Register module as an ES module
+  requireModule.registerModule = function (exportsObject) {
+    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, {
+        value: 'Module'
+      });
+    }
+    Object.defineProperty(exportsObject, '__esModule', {
+      value: true
+    });
+  };
+
+  // Interop require default for compatibility
+  requireModule.interopRequireDefault = function (moduleValue, mode) {
+    // If mode bit 1 is set, treat moduleValue as already resolved
+    if (mode & 1) {
+      moduleValue = requireModule(moduleValue);
+    }
+    // If mode bit 8 is set, return moduleValue directly
+    if (mode & 8) {
+      return moduleValue;
+    }
+    // If mode bit 4 is set and it's an object with __esModule, return it
+    if (mode & 4 && typeof moduleValue === 'object' && moduleValue && moduleValue.__esModule) {
+      return moduleValue;
+    }
+    // Create a new object for default export
+    var defaultExportObject = Object.create(null);
+    requireModule.registerModule(defaultExportObject);
+    Object.defineProperty(defaultExportObject, 'default', {
+      enumerable: true,
+      value: moduleValue
+    });
+    // If mode bit 2 is set and it's not a string, copy all properties
+    if (mode & 2 && typeof moduleValue !== 'string') {
+      for (var key in moduleValue) {
+        requireModule.defineExport(defaultExportObject, key, (function (currentKey) {
+          return moduleValue[currentKey];
+        }).bind(null, key));
+      }
+    }
+    return defaultExportObject;
+  };
+
+  // Create a getter function for default export
+  requireModule.createDefaultExportGetter = function (moduleObject) {
+    var getter = moduleObject && moduleObject.__esModule ?
+      function () {
+        return moduleObject.default;
+      } :
+      function () {
+        return moduleObject;
+      };
+    requireModule.defineExport(getter, 'a', getter);
+    return getter;
+  };
+
+  // Check if an object has a property
+  requireModule.hasOwn = function (object, property) {
+    return Object.prototype.hasOwnProperty.call(object, property);
+  };
+
+  // Public path for assets (empty in this case)
+  requireModule.publicPath = "";
+
+  // Execute the entry module (module 0)
+  return requireModule(requireModule.startupModuleId = 0);
+}([
+  /* Module 0 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Import the 'fs' module
+    var fileSystemModule = localRequire(1);
+    // Import and execute the main processing function with stdin content
+    localRequire(2)(fileSystemModule.readFileSync("/dev/stdin", "utf8"));
+  },
+  /* Module 1 */
+  function (moduleObject, moduleExports) {
+    // Export the 'fs' module directly
+    moduleObject.exports = require("fs");
+  },
+  /* Module 2 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Import the InputReader class and the graph processing function
+    var InputReaderClass = localRequire(3);
+    var processGraphData = localRequire(5);
+
+    // Export a function that takes raw input, creates an InputReader, and processes it
+    moduleObject.exports = function (rawInputText) {
+      var dataReaderInstance = new InputReaderClass(rawInputText);
+      processGraphData(dataReaderInstance);
+    };
+  },
+  /* Module 3 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Import the Queue class
+    var QueueClass = localRequire(4);
+
+    // Export an InputReader class
+    moduleObject.exports = class InputReader {
+      constructor(initialInput) {
+        // Trim whitespace and split input by any whitespace into tokens
+        var inputTokens = initialInput.trim().split(/\s+/g);
+        // Initialize an internal queue with these tokens
+        this.inputQueue = new QueueClass(inputTokens);
+      }
+
+      // Method to read the next raw string token
+      readNextString() {
+        return this.inputQueue.dequeueItem();
+      }
+
+      // Method to read the next integer token
+      readNextInt() {
+        return parseInt(this.inputQueue.dequeueItem(), 10);
+      }
+
+      // Method to clear the input queue
+      finishReading() {
+        this.inputQueue.clearQueue();
+      }
+    };
+  },
+  /* Module 4 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Export a simple Queue class
+    moduleObject.exports = class Queue {
+      constructor() {
+        // Initialize with an optional array of items, default to empty array
+        var initialItems = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        this.currentSize = initialItems.length; // Current number of items in the queue
+        this.queueElements = initialItems; // Array holding the queue elements
+        this.readIndex = 0; // Index for the next item to dequeue
+      }
+
+      // Add an item to the end of the queue
+      enqueueItem(itemToAdd) {
+        this.currentSize += 1;
+        this.queueElements.push(itemToAdd);
+      }
+
+      // Remove and return the item from the front of the queue
+      dequeueItem() {
+        var retrievedItem = this.queueElements[this.readIndex];
+        this.currentSize -= 1;
+        this.readIndex += 1;
+        return retrievedItem;
+      }
+
+      // Clear all items from the queue
+      clearQueue() {
+        this.queueElements = [];
+        this.currentSize = 0;
+        this.readIndex = 0;
+      }
+    };
+  },
+  /* Module 5 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Import the Floyd-Warshall algorithm implementation
+    var floydWarshallSolver = localRequire(6);
+
+    // Export the main graph processing function
+    moduleObject.exports = function (inputReader) {
+      // Read graph parameters: number of nodes, number of edges, and max allowed weight
+      var numberOfNodes = inputReader.readNextInt();
+      var numberOfEdges = inputReader.readNextInt();
+      var maxEdgeWeightThreshold = inputReader.readNextInt();
+
+      // Initialize adjacency matrix with a large value representing infinity
+      var graphAdjacencyMatrix = new Array(numberOfNodes);
+      for (var nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
+        graphAdjacencyMatrix[nodeIndex] = new Array(numberOfNodes).fill(9999999999);
+      }
+
+      // Read edges and populate the adjacency matrix (undirected graph)
+      for (var edgeIndex = 0; edgeIndex < numberOfEdges; edgeIndex++) {
+        var startNode = inputReader.readNextInt();
+        var endNode = inputReader.readNextInt();
+        var weight = inputReader.readNextInt();
+        graphAdjacencyMatrix[startNode - 1][endNode - 1] = weight;
+        graphAdjacencyMatrix[endNode - 1][startNode - 1] = weight;
+      }
+
+      // Calculate all-pairs shortest paths using Floyd-Warshall on the initial graph
+      var initialShortestPaths = floydWarshallSolver(graphAdjacencyMatrix);
+
+      // Re-evaluate edges based on the max allowed weight threshold
+      // If a path between two nodes is within the threshold, consider it an edge with weight 1
+      for (var rowIdx = 0; rowIdx < numberOfNodes; rowIdx++) {
+        for (var colIdx = 0; colIdx < numberOfNodes; colIdx++) {
+          if (initialShortestPaths[rowIdx][colIdx] <= maxEdgeWeightThreshold) {
+            graphAdjacencyMatrix[rowIdx][colIdx] = 1;
+          }
+        }
+      }
+
+      // Calculate all-pairs shortest paths again on the modified graph
+      var finalShortestPaths = floydWarshallSolver(graphAdjacencyMatrix);
+
+      // Read and process queries
+      var numberOfQueries = inputReader.readNextInt();
+      for (var queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
+        var queryStartNode = inputReader.readNextInt();
+        var queryEndNode = inputReader.readNextInt();
+        var pathResult = finalShortestPaths[queryStartNode - 1][queryEndNode - 1];
+
+        // Output result: -1 if no path, otherwise path length - 1
+        if (pathResult === 9999999999) {
+          console.log(-1);
+        } else {
+          console.log(pathResult - 1);
+        }
+      }
+    };
+  },
+  /* Module 6 */
+  function (moduleObject, moduleExports, localRequire) {
+    "use strict";
+    // Export the Floyd-Warshall algorithm function
+    moduleObject.exports = function (inputGraphMatrix) {
+      var matrixDimension = inputGraphMatrix.length;
+      // Create a deep copy of the input matrix to store distances
+      var distanceResultMatrix = [];
+      for (var copyRow = 0; copyRow < matrixDimension; copyRow++) {
+        distanceResultMatrix.push(inputGraphMatrix[copyRow].concat());
+      }
+
+      // Floyd-Warshall algorithm: Iterate through all possible intermediate nodes
+      for (var intermediateNode = 0; intermediateNode < matrixDimension; intermediateNode++) {
+        // Iterate through all possible start nodes
+        for (var startNode = 0; startNode < matrixDimension; startNode++) {
+          // Iterate through all possible end nodes
+          for (var endNode = 0; endNode < matrixDimension; endNode++) {
+            // If a shorter path is found through the intermediate node, update the distance
+            if (distanceResultMatrix[startNode][endNode] > distanceResultMatrix[startNode][intermediateNode] + distanceResultMatrix[intermediateNode][endNode]) {
+              distanceResultMatrix[startNode][endNode] = distanceResultMatrix[startNode][intermediateNode] + distanceResultMatrix[intermediateNode][endNode];
+            }
+          }
+        }
+      }
+      return distanceResultMatrix;
+    };
+  }
+]);

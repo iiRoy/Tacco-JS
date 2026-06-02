@@ -1,124 +1,127 @@
-const EMPTY_SLOT = '.';
-const PLAYER_MARKER_ONE = 'x';
-const PLAYER_MARKER_TWO = 'o';
-const GRID_DIMENSION = 8;
-
-const DIRECTION_VECTORS = [
-  { rowDelta: -1, colDelta: -1 }, { rowDelta: -1, colDelta: 0 }, { rowDelta: -1, colDelta: 1 },
-  { rowDelta: 0, colDelta: -1 }, { rowDelta: 0, colDelta: 1 },
-  { rowDelta: 1, colDelta: -1 }, { rowDelta: 1, colDelta: 0 }, { rowDelta: 1, colDelta: 1 }
+const directionVectors = [
+    { y: -1, x: -1 }, { y: -1, x: 0 }, { y: -1, x: 1 },
+    { y: 0, x: -1 },                    { y: 0, x: 1 },
+    { y: 1, x: -1 }, { y: 1, x: 0 }, { y: 1, x: 1 }
 ];
 
-const isValidPosition = (r, c) => r >= 0 && r < GRID_DIMENSION && c >= 0 && c < GRID_DIMENSION;
+function calculateFlips(rowCoord, colCoord, opponentSymbol, playerSymbol, boardState) {
+    return directionVectors.reduce((totalFlips, currentDir) => {
+        let lineFlipCount = 0;
+        let stepDistance = 1;
+        while (true) {
+            const currentY = rowCoord + currentDir.y * stepDistance;
+            const currentX = colCoord + currentDir.x * stepDistance;
+            const cellContent = boardState[currentY]?.[currentX];
 
-const duplicateBoard = (originalBoard) => originalBoard.map(row => [...row]);
+            if (cellContent === "f" || cellContent === "." || cellContent === undefined) {
+                return totalFlips;
+            } else if (cellContent === opponentSymbol) {
+                lineFlipCount++;
+            } else if (cellContent === playerSymbol) {
+                return totalFlips + lineFlipCount;
+            }
+            stepDistance++;
+        }
+    }, 0);
+}
 
-const calculateFlipCandidatesInDirection = (currentBoardState, startR, startC, rowDelta, colDelta, activePlayer, foePlayer) => {
-  const potentialFlips = [];
-  let currentR = startR + rowDelta;
-  let currentC = startC + colDelta;
+function executeMoveAndFlip(rowCoord, colCoord, opponentSymbol, playerSymbol, boardState) {
+    boardState[rowCoord][colCoord] = playerSymbol;
 
-  while (isValidPosition(currentR, currentC)) {
-    const cellValue = currentBoardState[currentR][currentC];
-    if (cellValue === foePlayer) {
-      potentialFlips.push({ r: currentR, c: currentC });
-    } else if (cellValue === activePlayer) {
-      return potentialFlips;
-    } else {
-      break;
+    directionVectors.forEach(currentDir => {
+        const piecesToFlip = [];
+        let stepDistance = 1;
+        while (true) {
+            const currentY = rowCoord + currentDir.y * stepDistance;
+            const currentX = colCoord + currentDir.x * stepDistance;
+            const cellContent = boardState[currentY]?.[currentX];
+
+            if (cellContent === "f" || cellContent === "." || cellContent === undefined) {
+                break;
+            } else if (cellContent === opponentSymbol) {
+                piecesToFlip.push([currentY, currentX]);
+            } else if (cellContent === playerSymbol) {
+                piecesToFlip.forEach(([flipY, flipX]) => {
+                    boardState[flipY][flipX] = playerSymbol;
+                });
+                break;
+            }
+            stepDistance++;
+        }
+    });
+}
+
+function determineOptimalMove(playerSymbol, opponentSymbol, rowIterationOrder, colIterationOrder) {
+    const potentialMoves = [];
+
+    for (const r of rowIterationOrder) {
+        for (const c of colIterationOrder) {
+            if (yx[r][c] === ".") {
+                const currentFlips = calculateFlips(r, c, opponentSymbol, playerSymbol, yx);
+                if (currentFlips > 0) {
+                    potentialMoves.push({ position: [r, c], score: currentFlips });
+                }
+            }
+        }
     }
-    currentR += rowDelta;
-    currentC += colDelta;
-  }
-  return [];
-};
 
-const gatherAllFlipCandidates = (currentBoardState, r, c, activePlayer, foePlayer) => {
-  if (currentBoardState[r][c] !== EMPTY_SLOT) {
-    return null;
-  }
-
-  const allFlips = DIRECTION_VECTORS.flatMap(({ rowDelta, colDelta }) =>
-    calculateFlipCandidatesInDirection(currentBoardState, r, c, rowDelta, colDelta, activePlayer, foePlayer)
-  );
-
-  return allFlips.length > 0 ? allFlips : null;
-};
-
-const generateForwardScanSequence = () => {
-  const sequence = [];
-  for (let r = 0; r < GRID_DIMENSION; r++) {
-    for (let c = 0; c < GRID_DIMENSION; c++) {
-      sequence.push({ r, c });
+    if (potentialMoves.length === 0) {
+        return [];
     }
-  }
-  return sequence;
-};
 
-const generateBackwardScanSequence = () => {
-  const sequence = [];
-  for (let r = GRID_DIMENSION - 1; r >= 0; r--) {
-    for (let c = GRID_DIMENSION - 1; c >= 0; c--) {
-      sequence.push({ r, c });
-    }
-  }
-  return sequence;
-};
+    const maxScoreFound = potentialMoves.reduce((maxVal, move) => Math.max(maxVal, move.score), -1);
 
-const identifyBestPlacement = (currentBoardState, activePlayer, foePlayer, scanSequence) => {
-  let highestFlipScore = 0;
-  let chosenMoveDetails = null;
+    const bestCandidates = potentialMoves.filter(move => move.score === maxScoreFound);
 
-  for (const { r, c } of scanSequence) {
-    const potentialFlips = gatherAllFlipCandidates(currentBoardState, r, c, activePlayer, foePlayer);
+    return bestCandidates[0].position;
+}
 
-    if (potentialFlips && potentialFlips.length > highestFlipScore) {
-      highestFlipScore = potentialFlips.length;
-      chosenMoveDetails = { row: r, col: c, flips: potentialFlips };
-    }
-  }
-  return chosenMoveDetails;
-};
+function findOptimalMoveForO() {
+    const rowsAsc = Array.from({ length: 8 }, (_, i) => i + 1);
+    const colsAsc = Array.from({ length: 8 }, (_, i) => i + 1);
+    return determineOptimalMove("o", "x", rowsAsc, colsAsc);
+}
 
-const applyGameTurn = (currentBoardState, placementR, placementC, activePlayer, flipsToApply) => {
-  const newBoardState = duplicateBoard(currentBoardState);
-  newBoardState[placementR][placementC] = activePlayer;
+function findOptimalMoveForX() {
+    const rowsDesc = Array.from({ length: 8 }, (_, i) => 8 - i);
+    const colsDesc = Array.from({ length: 8 }, (_, i) => 8 - i);
+    return determineOptimalMove("x", "o", rowsDesc, colsDesc);
+}
 
-  flipsToApply.forEach(({ r, c }) => {
-    newBoardState[r][c] = activePlayer;
-  });
-  return newBoardState;
-};
+var boardInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = boardInput.trim().split("\n");
+var yx = [];
 
-const simulateOthelloGame = (initialBoard, currentActivePlayer, currentConsecutivePasses) => {
-  if (currentConsecutivePasses >= 2) {
-    return initialBoard;
-  }
+yx.push("ffffffffff".split(""));
+inputLines.forEach(function(lineContent) {
+   lineContent = "f" + lineContent + "f";
+   yx.push(lineContent.split(""));
+});
+yx.push("ffffffffff".split(""));
 
-  const opponentPlayer = (currentActivePlayer === PLAYER_MARKER_ONE) ? PLAYER_MARKER_TWO : PLAYER_MARKER_ONE;
-  const moveScanSequence = (currentActivePlayer === PLAYER_MARKER_TWO) ? generateForwardScanSequence() : generateBackwardScanSequence();
+var consecutivePasses = 0;
+while (true) {
+   var moveForO = findOptimalMoveForO();
+   if (moveForO.length === 0) {
+       consecutivePasses++;
+   } else {
+       consecutivePasses = 0;
+       executeMoveAndFlip(moveForO[0], moveForO[1], "x", "o", yx);
+   }
 
-  const optimalPlacement = identifyBestPlacement(initialBoard, currentActivePlayer, opponentPlayer, moveScanSequence);
+   var moveForX = findOptimalMoveForX();
+   if (moveForX.length === 0) {
+       consecutivePasses++;
+   } else {
+       consecutivePasses = 0;
+       executeMoveAndFlip(moveForX[0], moveForX[1], "o", "x", yx);
+   }
 
-  let nextBoardState = initialBoard;
-  let nextConsecutivePasses = currentConsecutivePasses;
+   if (consecutivePasses >= 2) {
+       break;
+   }
+}
 
-  if (optimalPlacement) {
-    nextBoardState = applyGameTurn(initialBoard, optimalPlacement.row, optimalPlacement.col, currentActivePlayer, optimalPlacement.flips);
-    nextConsecutivePasses = 0;
-  } else {
-    nextConsecutivePasses++;
-  }
-
-  return simulateOthelloGame(nextBoardState, opponentPlayer, nextConsecutivePasses);
-};
-
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const initialGameGrid = rawInputData.trim().split("\n").map(line => line.split(""));
-
-const finalGameGrid = simulateOthelloGame(initialGameGrid, PLAYER_MARKER_TWO, 0);
-
-const outputString = finalGameGrid.map(row => row.join("")).join("\n");
-
-console.log(outputString);
+yx.shift();
+yx.pop();
+console.log(yx.join("\n").replace(/\,|f/g,""));

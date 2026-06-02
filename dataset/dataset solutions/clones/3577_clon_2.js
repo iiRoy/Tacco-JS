@@ -1,53 +1,44 @@
-let fileSystemModule = require("node:fs");
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var incomingTextualData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const numericSequence = rawInputContent.split("\n").map(item => +item);
 
-incomingTextualData = incomingTextualData.split("\n").map(singleLineString => parseInt(singleLineString, 10));
+console.log(analyzeSequence());
 
-const resultDisplaySystem = {
-  emitMessage: function(messageContent) {
-    console.log(messageContent);
-  }
-};
+function analyzeSequence() {
+  const negativeOutcome = "No";
 
-resultDisplaySystem.emitMessage(executeSequenceVerification());
+  const totalElements = numericSequence[0];
 
-function executeSequenceVerification() {
-  const failureIndicator = "No";
-  let totalSequenceItems = incomingTextualData[0];
-  let observedNumericValues = {};
+  const encounteredNumbers = {};
 
-  for (let currentIterationIndex = 1; currentIterationIndex <= totalSequenceItems; currentIterationIndex++) {
-    if ((incomingTextualData[currentIterationIndex] ^ currentIterationIndex) & 1) {
-      return failureIndicator;
+  for (let currentIdx = 1; currentIdx <= totalElements; currentIdx++) {
+    if ((numericSequence[currentIdx] ^ currentIdx) & 1) {
+      return negativeOutcome;
     }
 
-    let upperBoundaryValue = incomingTextualData[currentIterationIndex];
-    let lowerBoundaryMarker = currentIterationIndex;
-    observedNumericValues[upperBoundaryValue] = 1;
+    let currentUpper = numericSequence[currentIdx];
+    let currentLower = currentIdx;
+    encounteredNumbers[currentUpper] = 1;
 
-    while (currentIterationIndex < upperBoundaryValue) {
-      currentIterationIndex++;
-
-      if (incomingTextualData[currentIterationIndex] !== currentIterationIndex) {
-        return failureIndicator;
+    while (currentIdx < currentUpper) {
+      currentIdx++;
+      if (numericSequence[currentIdx] !== currentIdx) {
+        return negativeOutcome;
+      }
+      currentIdx++;
+      if ((numericSequence[currentIdx] ^ currentIdx) & 1) {
+        return negativeOutcome;
       }
 
-      currentIterationIndex++;
-
-      if ((incomingTextualData[currentIterationIndex] ^ currentIterationIndex) & 1) {
-        return failureIndicator;
-      }
-
-      if (upperBoundaryValue < incomingTextualData[currentIterationIndex]) {
-        upperBoundaryValue = incomingTextualData[currentIterationIndex];
-        observedNumericValues[upperBoundaryValue] = 1;
-      } else if (lowerBoundaryMarker === incomingTextualData[currentIterationIndex]) {
+      if (currentUpper < numericSequence[currentIdx]) {
+        currentUpper = numericSequence[currentIdx];
+        encounteredNumbers[currentUpper] = 1;
+      } else if (currentLower === numericSequence[currentIdx]) {
         do {
-          lowerBoundaryMarker += 2;
-        } while (observedNumericValues[lowerBoundaryMarker]);
+          currentLower += 2;
+        } while (encounteredNumbers[currentLower]);
       } else {
-        return failureIndicator;
+        return negativeOutcome;
       }
     }
   }

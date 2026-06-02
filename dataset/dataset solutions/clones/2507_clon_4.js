@@ -1,48 +1,133 @@
 "use strict";
 
-const acquireInputData = (sourceTxt) => {
-    const rawLines = sourceTxt.trim().split("\n");
-    const firstLineComponents = rawLines[0].split(" ");
-    const valueLimit = Number(firstLineComponents[0]);
-    const numberSequence = rawLines[1].split(" ").map(Number);
-    return { valueLimit, numberSequence };
-};
+const GET = (() => {
+    function createInputProcessor(inputContent) {
+        const sourceLines = inputContent.trim().split('\n');
+        let currentLineIndex = 0;
+        let currentLineTokenBuffer = null;
+        let tokenPosition = 0;
 
-const computeOutcome = (inputParameters) => {
-    const { valueLimit, numberSequence } = inputParameters;
+        const extractSingle = (returnAsString) => {
+            if (currentLineTokenBuffer === null || tokenPosition >= currentLineTokenBuffer.length) {
+                if (currentLineIndex >= sourceLines.length) {
+                    throw new Error("Input exhausted for single item extraction.");
+                }
+                currentLineTokenBuffer = sourceLines[currentLineIndex].split(' ').reverse();
+                tokenPosition = 0;
+            }
+            const extractedValue = currentLineTokenBuffer[tokenPosition++];
+            if (tokenPosition >= currentLineTokenBuffer.length) {
+                currentLineIndex++;
+                currentLineTokenBuffer = null;
+                tokenPosition = 0;
+            }
+            return returnAsString ? extractedValue : Number(extractedValue);
+        };
 
-    const occurrenceRegister = Array(valueLimit).fill(0);
-    numberSequence.forEach(itemVal => {
-        if (itemVal >= 1 && itemVal <= valueLimit) {
-            occurrenceRegister[itemVal - 1]++;
+        const extractFullLine = (returnAsStrings) => {
+            if (currentLineIndex >= sourceLines.length) {
+                throw new Error("Input exhausted for full line extraction.");
+            }
+            const lineContent = sourceLines[currentLineIndex++];
+            currentLineTokenBuffer = null;
+            tokenPosition = 0;
+            const tokens = lineContent.split(' ');
+            return returnAsStrings ? tokens : tokens.map(Number);
+        };
+
+        const extractMatrixData = (rowCount, returnAsStrings) => {
+            const matrixResult = [];
+            for (let i = 0; i < rowCount; i++) {
+                matrixResult.push(extractFullLine(returnAsStrings));
+            }
+            return matrixResult;
+        };
+
+        const extractRawData = (lineCount, returnAsStrings) => {
+            const rawResult = [];
+            for (let i = 0; i < lineCount; i++) {
+                if (currentLineIndex >= sourceLines.length) {
+                    throw new Error("Input exhausted for raw data extraction.");
+                }
+                const lineContent = sourceLines[currentLineIndex++];
+                currentLineTokenBuffer = null;
+                tokenPosition = 0;
+                rawResult.push(returnAsStrings ? lineContent : Number(lineContent));
+            }
+            return rawResult;
+        };
+
+        return {
+            getValue: extractSingle,
+            getLine: extractFullLine,
+            getMatrix: extractMatrixData,
+            getLines: extractRawData
+        };
+    }
+    return createInputProcessor;
+})();
+
+function generateMultiDimensionalArray(initialFillValue, ...dimensions) {
+    const constructRecursive = (dims) => {
+        if (dims.length === 0) {
+            return initialFillValue;
         }
-    });
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => constructRecursive(remainingDimensions));
+    };
+    return constructRecursive(dimensions);
+}
+const xArray = generateMultiDimensionalArray;
 
-    const sortedCounts = occurrenceRegister.filter(count => count > 0).sort((a, b) => b - a);
+const inputReader = GET(require("fs").readFileSync("/dev/stdin", "utf8"));
+const INFINITY_VAL = 1e15;
 
-    const finalOutcome = Array(valueLimit).fill(0);
-    finalOutcome[0] = valueLimit;
+console.log(main());
 
-    for (let currentDistinctCount = 2; currentDistinctCount <= valueLimit; currentDistinctCount++) {
-        const indexInSortedCounts = currentDistinctCount - 1;
-        const countOfMaxFrequency = (indexInSortedCounts < sortedCounts.length) ? sortedCounts[indexInSortedCounts] : 0;
-        
-        const maxOccurrencesPerItem = Math.floor(valueLimit / currentDistinctCount);
+function main() {
+    const totalItems = inputReader.getValue();
+    const itemValues = inputReader.getLine();
 
-        finalOutcome[currentDistinctCount - 1] = Math.min(countOfMaxFrequency, maxOccurrencesPerItem);
+    const frequencyCounter = itemValues.reduce((accumulator, value) => {
+        accumulator.set(value - 1, (accumulator.get(value - 1) || 0) + 1);
+        return accumulator;
+    }, new Map());
+
+    const sortedFrequencies = Array.from(frequencyCounter.values()).sort((a, b) => b - a);
+
+    const resultOutputs = [];
+    resultOutputs.push(totalItems);
+
+    for (let kGroupCount = 2; kGroupCount <= totalItems; kGroupCount++) {
+        if (sortedFrequencies.length < kGroupCount) {
+            resultOutputs.push(0);
+        } else {
+            let lowerBound = 0;
+            let upperBound = Math.floor(totalItems / kGroupCount);
+            let maxAchievableSize = 0;
+
+            while (lowerBound <= upperBound) {
+                const candidateSize = Math.floor((lowerBound + upperBound) / 2);
+                let typesMeetingSize = 0;
+                for (let freq of sortedFrequencies) {
+                    if (freq >= candidateSize) {
+                        typesMeetingSize++;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (typesMeetingSize >= kGroupCount) {
+                    maxAchievableSize = candidateSize;
+                    lowerBound = candidateSize + 1;
+                } else {
+                    upperBound = candidateSize - 1;
+                }
+            }
+            resultOutputs.push(maxAchievableSize);
+        }
     }
 
-    return finalOutcome.join("\n");
-};
-
-const obtainFileContent = (pathReference, encodingFormat) => {
-    const fileSystemModule = require("fs");
-    return fileSystemModule.readFileSync(pathReference, encodingFormat);
-};
-
-const standardInputPath = "/dev/stdin";
-const utf8Encoding = "utf8";
-
-const problemInputContent = obtainFileContent(standardInputPath, utf8Encoding);
-const processedDataStruct = acquireInputData(problemInputContent);
-console.log(computeOutcome(processedDataStruct));
+    return resultOutputs.join("\n");
+}

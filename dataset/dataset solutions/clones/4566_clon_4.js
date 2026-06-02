@@ -1,43 +1,39 @@
-const calculateDelta = (pieceAlpha, pieceBeta, pieceGamma) => {
-    return Math.max(pieceAlpha, pieceBeta, pieceGamma) - Math.min(pieceAlpha, pieceBeta, pieceGamma);
-};
+"use strict";
 
-const evaluateConfiguration = (extentA, extentB) => {
-    const possibleCutPoints = Array.from({ length: extentA - 1 }, (_, index) => index + 1);
+const processDimensions = (dimH, dimW) => {
+    const totalSurface = dimH * dimW;
+    let currentMinDelta = Infinity;
 
-    const allDifferences = possibleCutPoints.flatMap(cutCoordinate => {
-        const totalDimensionProduct = extentA * extentB;
+    const possibleFirstCutHeights = Array.from({ length: dimH - 1 }, (_, idx) => idx + 1);
 
-        // Configuration 1: Main strip cut along extentA, remaining split along extentB
-        const sectionOne_A = cutCoordinate * extentB;
-        const remainingExtentA_A = extentA - cutCoordinate;
-        const sectionTwo_A = remainingExtentA_A * (extentB / 2);
-        const sectionThree_A = totalDimensionProduct - (sectionOne_A + sectionTwo_A);
+    possibleFirstCutHeights.forEach(firstCutHeight => {
+        // Strategy A: One horizontal cut, then vertical split on the remaining part
+        const areaSegmentOneA = firstCutHeight * dimW;
+        const remainingHeightForSplitA = dimH - firstCutHeight;
+        const areaSegmentTwoA = remainingHeightForSplitA * (dimW / 2);
+        const areaSegmentThreeA = totalSurface - areaSegmentOneA - areaSegmentTwoA;
+        const allAreasA = [areaSegmentOneA, areaSegmentTwoA, areaSegmentThreeA];
+        currentMinDelta = Math.min(currentMinDelta, Math.max(...allAreasA) - Math.min(...allAreasA));
 
-        // Configuration 2: Main strip cut along extentA, remaining split along extentA
-        const sectionOne_B = cutCoordinate * extentB;
-        const remainingExtentA_B = extentA - cutCoordinate;
-        const sectionTwo_B = (remainingExtentA_B / 2) * extentB;
-        const sectionThree_B = totalDimensionProduct - (sectionOne_B + sectionTwo_B);
-
-        return [
-            calculateDelta(sectionOne_A, sectionTwo_A, sectionThree_A),
-            calculateDelta(sectionOne_B, sectionTwo_B, sectionThree_B)
-        ];
+        // Strategy B: One horizontal cut, then horizontal split on the remaining part
+        const areaSegmentOneB = firstCutHeight * dimW;
+        const remainingHeightForSplitB = dimH - firstCutHeight;
+        const areaSegmentTwoB = (remainingHeightForSplitB / 2) * dimW;
+        const areaSegmentThreeB = totalSurface - areaSegmentOneB - areaSegmentTwoB;
+        const allAreasB = [areaSegmentOneB, areaSegmentTwoB, areaSegmentThreeB];
+        currentMinDelta = Math.min(currentMinDelta, Math.max(...allAreasB) - Math.min(...allAreasB));
     });
-    
-    return Math.min(...allDifferences);
+
+    return currentMinDelta;
 };
 
-const problemSolver = (sourceText) => {
-    const inputFigures = sourceText.trim().split('\n')[0].split(' ').map(Number);
-    const primaryFigure = inputFigures[0];
-    const secondaryFigure = inputFigures[1];
+const entryPoint = (inputData) => {
+    const [initialH, initialW] = inputData.trim().split(/\s+/).map(Number);
 
-    const outcomeForBaseOrientation = evaluateConfiguration(primaryFigure, secondaryFigure);
-    const outcomeForFlippedOrientation = evaluateConfiguration(secondaryFigure, primaryFigure);
+    const resultForOriginalOrientation = processDimensions(initialH, initialW);
+    const resultForRotatedOrientation = processDimensions(initialW, initialH);
 
-    return Math.min(outcomeForBaseOrientation, outcomeForFlippedOrientation);
+    console.log(Math.min(resultForOriginalOrientation, resultForRotatedOrientation));
 };
 
-console.log(problemSolver(require('fs').readFileSync('/dev/stdin', 'utf8')));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

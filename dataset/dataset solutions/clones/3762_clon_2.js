@@ -1,19 +1,18 @@
-'use strict'; // Enforce strict mode for cleaner code execution.
+'use strict';
 
-function primaryProcess ( incomingData ) { // Main entry point for our application flow.
+// This function encapsulates the primary operational sequence.
+function executeLogic(initialData) {
 
-    // A string representation of a numeric value is initialized here.
-    let initialValue = '250';
+    // A local variable is declared and assigned a string representation of a number.
+    var numericValue = `999`;
+    // The string value is then explicitly converted into its numerical equivalent.
+    numericValue = Number(numericValue);
 
-    // Convert the string representation to an actual numeric type.
-    initialValue = Number (initialValue);
-
-    // Determine a character based on a comparison with a threshold.
-    const decisionOutcome = (initialValue > 500) ? 'alpha' : 'beta';
-
-    // Output a concatenated string to the console.
-    console.log( 'prefix' + decisionOutcome );
+    // A character is conditionally assigned based on a comparison with a threshold.
+    let outcomeChar = (numericValue > 1000) ? 'c' : 'd';
+    // The resulting concatenated string is outputted to the console.
+    console.log('ab' + outcomeChar);
 }
 
-// Invoke the primary process with data read from a system input stream.
-primaryProcess ( require ( "fs" ) . readFileSync ( "/system/input_source", "utf-8" ) );
+// The program's entry point: it reads content from standard input and processes it.
+executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

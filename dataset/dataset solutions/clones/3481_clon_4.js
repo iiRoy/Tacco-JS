@@ -1,30 +1,22 @@
-const fileSystemInterface = require("fs");
-
-function findGreatestCommonDivisor(aNumber, anotherNumber) {
-    if (anotherNumber === 0) {
-        return aNumber;
-    }
-    return findGreatestCommonDivisor(anotherNumber, aNumber % anotherNumber);
+function findCommonDivisor(x, y) {
+  return y === 0 ? x : findCommonDivisor(y, x % y);
 }
 
-function computeResult(rawInputPayload) {
-    const dataChunks = rawInputPayload.trim().split('\n');
-    const [dimensionsLine, stringAlpha, stringBeta] = dataChunks;
+function solveProblem(inputData) {
+  const [firstLine, sourceStringA, sourceStringB] = inputData.split('\n');
+  const [lengthA, lengthB] = firstLine.split(' ').map(Number);
 
-    const [dimensionX, dimensionY] = dimensionsLine.split(' ').map(Number);
+  const commonDivisor = findCommonDivisor(lengthA, lengthB);
+  const leastCommonMultiple = (lengthA * lengthB) / commonDivisor;
 
-    const greatestDivisor = findGreatestCommonDivisor(dimensionX, dimensionY);
-    const leastMultiple = (dimensionX * dimensionY) / greatestDivisor;
+  const strideA = lengthA / commonDivisor;
+  const strideB = lengthB / commonDivisor;
 
-    const firstPattern = Array.from({ length: greatestDivisor }, (_, indexCounter) =>
-        stringAlpha[indexCounter * (dimensionX / greatestDivisor)]
-    ).join('');
+  const allMatch = Array.from({ length: commonDivisor }, (_, index) => index).every(idx => {
+    return sourceStringA[idx * strideA] === sourceStringB[idx * strideB];
+  });
 
-    const secondPattern = Array.from({ length: greatestDivisor }, (_, indexCounter) =>
-        stringBeta[indexCounter * (dimensionY / greatestDivisor)]
-    ).join('');
-
-    return firstPattern === secondPattern ? leastMultiple : -1;
+  return allMatch ? leastCommonMultiple : -1;
 }
 
-console.log(computeResult(fileSystemInterface.readFileSync("/dev/stdin", "utf8")));
+console.log(solveProblem(require("fs").readFileSync("/dev/stdin", "utf8")));

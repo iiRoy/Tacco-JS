@@ -1,15 +1,18 @@
-const nodeFileSystem = require('node:fs');
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = (fileContent.trim()).split("\n");
 
-const rawInputContent = nodeFileSystem.readFileSync('/dev/stdin', 'utf8');
+var upperBound = Number(lineSegments[0]);
+var mainDataSet = lineSegments[1].split(" ").map(Number);
+var querySet = lineSegments[3].split(" ").map(Number);
 
-const processedLines = rawInputContent.trim().split('\n');
+const checkPresenceInSlice = (targetValue, dataCollection, sliceLength) => {
+    const effectiveSearchArea = Array.from({ length: sliceLength }, (_, index) => dataCollection[index]);
+    
+    return effectiveSearchArea.includes(targetValue) ? 1 : 0;
+};
 
-const primeNumericSet = new Set(processedLines[1].split(' ').map(Number));
+const finalTally = querySet.reduce((currentTotal, queryItem) => {
+    return currentTotal + checkPresenceInSlice(queryItem, mainDataSet, upperBound);
+}, 0);
 
-const targetNumericArray = processedLines[3].split(' ').map(Number);
-
-const countOfPresentElements = targetNumericArray.filter(
-  (candidateNumber) => primeNumericSet.has(candidateNumber)
-).length;
-
-console.log(countOfPresentElements);
+console.log(finalTally);

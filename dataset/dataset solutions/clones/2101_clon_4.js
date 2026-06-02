@@ -1,9 +1,13 @@
-(function() {
-  const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const extractedNumbers = rawData.match(/\d+/g);
-  const firstNumeric = +extractedNumbers[0];
-  const secondNumeric = +extractedNumbers[1];
-  const candidateValue = (firstNumeric * 12.5) | 0;
-  const finalOutcome = (((candidateValue / 10) | 0) === secondNumeric) ? candidateValue : -1;
-  process.stdout.write(finalOutcome + '\n');
-})();
+const processInput = (rawText) => {
+  const [firstVal, secondVal] = rawText.trim().split(' ').map(Number);
+
+  const interimResult = Math.trunc(firstVal * 100 / 8);
+  const finalComparison = Math.trunc(interimResult / 10);
+
+  const outcome = finalComparison === secondVal ? interimResult : -1;
+
+  console.log(outcome);
+  return outcome;
+};
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

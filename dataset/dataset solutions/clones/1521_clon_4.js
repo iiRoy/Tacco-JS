@@ -1,9 +1,10 @@
-const acquireSourceData = () => require('node:fs').readFileSync(0, 'utf8');
-
-const evaluateNumericStatus = (incomingText) => {
-  const transformedValue = Number(incomingText);
-  const isZeroOrNotNumeric = (transformedValue === 0 || Number.isNaN(transformedValue));
-  return Number(isZeroOrNotNumeric);
+const processInput = (inputString) => {
+  const numericValue = parseInt(inputString);
+  const outcomeMap = {
+    true: 0,
+    false: 1
+  };
+  console.log(outcomeMap[Boolean(numericValue)]);
 };
 
-console.log(evaluateNumericStatus(acquireSourceData()));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

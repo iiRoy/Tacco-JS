@@ -1,58 +1,50 @@
-// This function processes geometry-related input and calculates a minimal difference.
-function ProcessGeometryData ( rawTextualInput )
-{
-  // Split the entire input string into individual lines based on newline characters.
-  let processedLines = rawTextualInput . split ( "\n" ) ;
+// This program processes input data to determine a specific minimum value based on geometric properties.
+function ProcessInput(rawData) {
+  // Divide the incoming string of data into individual lines.
+  let parsedLines = rawData.split("\n");
 
-  // Extract the first numerical dimension (height) from the first line.
-  // The '- 0.0' operation ensures string-to-number conversion.
-  const primaryDimension = processedLines [ 0 ] . split ( ' ' ) [ 0 ] - 0.0 ;
+  // Extract the numerical height and width values from the first line of input.
+  // The '- 0' idiom converts the string parts to numbers.
+  const heightVal = parsedLines[0].split(' ')[0] - 0;
+  const widthVal = parsedLines[0].split(' ')[1] - 0;
 
-  // Extract the second numerical dimension (width) from the first line.
-  const secondaryDimension = processedLines [ 0 ] . split ( ' ' ) [ 1 ] - 0.0 ;
+  // Initialize a variable to track the smallest difference found, starting with an infinitely large value.
+  var minimumDifference = Infinity;
 
-  // Initialize a variable to hold the smallest calculated difference,
-  // setting it to the largest possible number initially.
-  var minimumPossibleDifference = Number . MAX_VALUE ;
-
-  // Check for specific conditions where one of the dimensions is perfectly divisible by 3.
-  if ( ( primaryDimension % 3.0 === 0.0 ) || ( secondaryDimension % 3.0 === 0.0 ) )
-  {
-    // If either condition is met, the minimal difference is 0.0.
-    console . log ( 0.0 ) ;
-    return ; // Terminate the function's execution early.
+  // Check for a special condition: if either dimension is perfectly divisible by three.
+  // In such a case, the minimum difference is zero, and no further calculations are needed.
+  if (heightVal % 3 === 0 || widthVal % 3 === 0) {
+    console.log(0); // Output the result for this special case.
+    return; // Exit the function immediately.
   }
 
-  // Establish an initial minimum difference based on the smaller of the two dimensions.
-  minimumPossibleDifference = Math . min ( primaryDimension , secondaryDimension ) ;
+  // Set the initial minimum difference to the smaller of the two dimensions.
+  minimumDifference = Math.min(heightVal, widthVal);
 
-  // Evaluate various scenarios contingent on the primary dimension's parity.
-  if ( primaryDimension % 2.0 === 0.0 )
-  {
-    // If the primary dimension is an even number, update minimumPossibleDifference with half its value.
-    minimumPossibleDifference = Math . min ( minimumPossibleDifference , primaryDimension / 2.0 ) ;
-  }
-  else
-  {
-    // If the primary dimension is an odd number, compute a more elaborate value involving both dimensions.
-    minimumPossibleDifference = Math . min ( minimumPossibleDifference , primaryDimension / 2.0 + secondaryDimension / 3.0 - 1.0 / 6.0 ) ;
+  // Evaluate potential minimum differences based on the parity of the height.
+  if (heightVal % 2 === 0) {
+    // If the height is an even number, consider half of the height as a candidate for the minimum.
+    minimumDifference = Math.min(minimumDifference, heightVal / 2);
+  } else {
+    // If the height is an odd number, calculate a specific value involving both dimensions.
+    // This calculation represents a particular division strategy.
+    minimumDifference = Math.min(minimumDifference, heightVal / 2 + widthVal / 3 - 1 / 6);
   }
 
-  // Assess further scenarios based on the secondary dimension's parity.
-  if ( secondaryDimension % 2.0 === 0.0 )
-  {
-    // If the secondary dimension is an even number, update minimumPossibleDifference with half its value.
-    minimumPossibleDifference = Math . min ( minimumPossibleDifference , secondaryDimension / 2.0 ) ;
-  }
-  else
-  {
-    // If the secondary dimension is an odd number, compute a more elaborate value involving both dimensions.
-    minimumPossibleDifference = Math . min ( minimumPossibleDifference , secondaryDimension / 2.0 + primaryDimension / 3.0 - 1.0 / 6.0 ) ;
+  // Evaluate potential minimum differences based on the parity of the width.
+  if (widthVal % 2 === 0) {
+    // If the width is an even number, consider half of the width as a candidate for the minimum.
+    minimumDifference = Math.min(minimumDifference, widthVal / 2);
+  } else {
+    // If the width is an odd number, calculate another specific value involving both dimensions.
+    // This calculation mirrors the logic for odd height, but with dimensions swapped.
+    minimumDifference = Math.min(minimumDifference, widthVal / 2 + heightVal / 3 - 1 / 6);
   }
 
-  // Display the final computed minimum difference, rounded to the nearest integer value.
-  console . log ( Math . round ( minimumPossibleDifference ) ) ;
+  // Output the final calculated minimum difference, rounded to the nearest whole number.
+  console.log(Math.round(minimumDifference));
 }
 
-// The subsequent line of code is for standard input processing and should not be modified.
-ProcessGeometryData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line is responsible for reading input from the standard input stream
+// and passing it to the main processing function. It is part of the execution environment setup.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

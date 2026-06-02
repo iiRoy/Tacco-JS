@@ -1,132 +1,132 @@
-// This script manages input from the system's standard stream to guide a traversal process.
-var sysIO = require('fs'),
-totalBytes = sysIO.fstatSync(process.stdin.fd).size,
-dataContainer = Buffer.alloc(totalBytes), // Allocate a buffer to hold incoming data
-octetsRead = sysIO.readSync(process.stdin.fd, dataContainer, 0, totalBytes, 0),
-gridLayout = dataContainer.toString('utf8', 0, octetsRead).trim().split('\n'); // Convert raw bytes to string lines for grid processing
-executeTraversal(); // Initiate the grid navigation routine
+var fileSystemModule = require('fs');
+var dataSize = fileSystemModule.fstatSync(process.stdin.fd).size;
+var dataBuffer = new Buffer(dataSize);
+var readBytesCount = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, dataSize, 0);
+var gridData = dataBuffer.toString('utf8', 0, readBytesCount).trim().split('\n');
+
+// Initiate the main processing function
+executeTraversal();
 
 function executeTraversal() {
-  // Establish the starting position and initial movement vector
-  var currentXPos = 0,
-    currentYPos = 0;
-  var currentMoveDirection = 'R'; // Begin moving towards the Right
-  var journeyPath = ''; // Accumulate the sequence of directional movements
+  var currentXPosition = 0, currentYPosition = 0; // Current coordinates, starting at origin
+  var currentMovementDirection = 'R'; // Initial movement direction
+  var recordedPath = ''; // String to store the sequence of movements
 
-  // Continuously loop to simulate movement until the origin is revisited
+  // Loop indefinitely until a specific break condition is met
   while (true) {
-    // Determine potential vertical indices for next steps
-    var downCandidateY = currentYPos * 2 + 1;
-    var upCandidateY = currentYPos * 2 - 1;
-    var actualYCoord = currentYPos * 2;
+    // Calculate potential Y-coordinates for movement checks
+    var potentialDownY = currentYPosition * 2 + 1;
+    var potentialUpY = currentYPosition * 2 - 1;
+    var currentGridY = currentYPosition * 2;
 
-    // Determine potential horizontal indices for next steps
-    var leftCandidateX = currentXPos - 1;
-    var rightCandidateX = currentXPos + 1;
-    var actualXCoord = currentXPos;
+    // Calculate potential X-coordinates for movement checks
+    var potentialLeftX = currentXPosition - 1;
+    var potentialRightX = currentXPosition + 1;
+    var currentGridX = currentXPosition;
 
-    // Evaluate possible moves based on the current heading
-    switch (currentMoveDirection) {
-      case 'L': // Currently facing Left
-        // Check if a downward move is viable
-        if (downCandidateY < gridLayout.length && +gridLayout[downCandidateY][actualXCoord]) {
-          currentMoveDirection = 'D';
-          currentYPos++;
+    // Evaluate movement options based on the current direction
+    switch (currentMovementDirection) {
+      case 'L':
+        // Try to move Down
+        if (potentialDownY < gridData.length && +gridData[potentialDownY][currentGridX]) {
+          currentMovementDirection = 'D';
+          currentYPosition++;
         }
-        // Otherwise, check if continuing left is possible
-        else if (+gridLayout[actualYCoord][leftCandidateX]) {
-          currentMoveDirection = 'L';
-          currentXPos--;
+        // Else, try to move Left
+        else if (+gridData[currentGridY][potentialLeftX]) {
+          currentMovementDirection = 'L';
+          currentXPosition--;
         }
-        // Otherwise, check if an upward move is viable
-        else if (upCandidateY >= 0 && +gridLayout[upCandidateY][actualXCoord]) {
-          currentMoveDirection = 'U';
-          currentYPos--;
+        // Else, try to move Up
+        else if (potentialUpY > 0 && +gridData[potentialUpY][currentGridX]) {
+          currentMovementDirection = 'U';
+          currentYPosition--;
         }
-        // If no other path, turn right
+        // Else, move Right as a fallback
         else {
-          currentMoveDirection = 'R';
-          currentXPos++;
+          currentMovementDirection = 'R';
+          currentXPosition++;
         }
         break;
 
-      case 'R': // Currently facing Right
-        // Check if an upward move is viable
-        if (upCandidateY >= 0 && +gridLayout[upCandidateY][actualXCoord]) {
-          currentMoveDirection = 'U';
-          currentYPos--;
+      case 'R':
+        // Try to move Up
+        if (potentialUpY > 0 && +gridData[potentialUpY][currentGridX]) {
+          currentMovementDirection = 'U';
+          currentYPosition--;
         }
-        // Otherwise, check if continuing right is possible
-        else if (+gridLayout[actualYCoord][actualXCoord]) {
-          currentMoveDirection = 'R';
-          currentXPos++;
+        // Else, try to move Right
+        else if (+gridData[currentGridY][currentGridX]) {
+          currentMovementDirection = 'R';
+          currentXPosition++;
         }
-        // Otherwise, check if a downward move is viable
-        else if (downCandidateY < gridLayout.length && +gridLayout[downCandidateY][actualXCoord]) {
-          currentMoveDirection = 'D';
-          currentYPos++;
+        // Else, try to move Down
+        else if (potentialDownY < gridData.length && +gridData[potentialDownY][currentGridX]) {
+          currentMovementDirection = 'D';
+          currentYPosition++;
         }
-        // If no other path, turn left
+        // Else, move Left as a fallback
         else {
-          currentMoveDirection = 'L';
-          currentXPos--;
+          currentMovementDirection = 'L';
+          currentXPosition--;
         }
         break;
 
-      case 'D': // Currently facing Down
-        // Check if a rightward move is viable
-        if (+gridLayout[actualYCoord][actualXCoord]) {
-          currentMoveDirection = 'R';
-          currentXPos++;
+      case 'D':
+        // Try to move Right
+        if (+gridData[currentGridY][currentGridX]) {
+          currentMovementDirection = 'R';
+          currentXPosition++;
         }
-        // Otherwise, check if continuing down is possible
-        else if (downCandidateY < gridLayout.length && +gridLayout[downCandidateY][actualXCoord]) {
-          currentMoveDirection = 'D';
-          currentYPos++;
+        // Else, try to move Down
+        else if (potentialDownY < gridData.length && +gridData[potentialDownY][currentGridX]) {
+          currentMovementDirection = 'D';
+          currentYPosition++;
         }
-        // Otherwise, check if a leftward move is viable
-        else if (+gridLayout[actualYCoord][leftCandidateX]) {
-          currentMoveDirection = 'L';
-          currentXPos--;
+        // Else, try to move Left
+        else if (+gridData[currentGridY][potentialLeftX]) {
+          currentMovementDirection = 'L';
+          currentXPosition--;
         }
-        // If no other path, turn up
+        // Else, move Up as a fallback
         else {
-          currentMoveDirection = 'U';
-          currentYPos--;
+          currentMovementDirection = 'U';
+          currentYPosition--;
         }
         break;
 
-      case 'U': // Currently facing Up
-        // Check if a leftward move is viable
-        if (+gridLayout[actualYCoord][leftCandidateX]) {
-          currentMoveDirection = 'L';
-          currentXPos--;
+      case 'U':
+        // Try to move Left
+        if (+gridData[currentGridY][potentialLeftX]) {
+          currentMovementDirection = 'L';
+          currentXPosition--;
         }
-        // Otherwise, check if continuing up is possible
-        else if (upCandidateY >= 0 && +gridLayout[upCandidateY][actualXCoord]) {
-          currentMoveDirection = 'U';
-          currentYPos--;
+        // Else, try to move Up
+        else if (potentialUpY > 0 && +gridData[potentialUpY][currentGridX]) {
+          currentMovementDirection = 'U';
+          currentYPosition--;
         }
-        // Otherwise, check if a rightward move is viable
-        else if (+gridLayout[actualYCoord][actualXCoord]) {
-          currentMoveDirection = 'R';
-          currentXPos++;
+        // Else, try to move Right
+        else if (+gridData[currentGridY][currentGridX]) {
+          currentMovementDirection = 'R';
+          currentXPosition++;
         }
-        // If no other path, turn down
+        // Else, move Down as a fallback
         else {
-          currentMoveDirection = 'D';
-          currentYPos++;
+          currentMovementDirection = 'D';
+          currentYPosition++;
         }
         break;
 
-      default: // Handle unexpected direction, though unlikely in this logic
-        return; // Exit the function gracefully
+      default:
+        // This case should ideally not be reached with the given logic
+        return;
     }
-    journeyPath += currentMoveDirection; // Append the executed direction to the log
-
-    // Verify if the traversal has returned to the initial coordinates (0,0)
-    if (!currentXPos && !currentYPos)
-      break; // Conclude the loop if origin is reached
+    recordedPath += currentMovementDirection; // Append the chosen direction to the path string
+    // Break the loop if the current position returns to the origin (0,0)
+    if (!currentXPosition && !currentYPosition) {
+      break;
+    }
   }
-  console.log(journeyPath); // Display the complete sequence of movements taken
+  console.log(recordedPath); // Output the final recorded path
 }

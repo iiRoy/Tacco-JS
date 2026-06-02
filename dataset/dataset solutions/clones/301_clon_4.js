@@ -1,33 +1,51 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-const sourceContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const numericSequence = sourceContent.trim().split(/\s+/).map(Number);
-const generatedOutputComponents = [];
-let iterationMarker = 0;
-const evaluateLeapPossibility = (specificYear) => {
-    return (specificYear % 400 === 0) || (specificYear % 4 === 0 && specificYear % 100 !== 0);
-};
-for (let positionIndex = 0; positionIndex < numericSequence.length; positionIndex += 2) {
-    const initialCalendarYear = numericSequence[positionIndex];
-    const finalCalendarYear = numericSequence[positionIndex + 1];
-    if (initialCalendarYear === 0 && finalCalendarYear === 0) {
-        break;
+
+let inputBuffer = '';
+
+process.stdin.on('data', (chunk) => {
+    inputBuffer += chunk;
+});
+
+process.stdin.on('end', () => {
+    const numericValues = inputBuffer.trim().split(/\s+/).map(Number);
+
+    const outputSegments = [];
+    let pairIterator = 0;
+    let blockSequence = 0;
+
+    while (pairIterator < numericValues.length - 1) {
+        const initialYear = numericValues[pairIterator];
+        const finalYear = numericValues[pairIterator + 1];
+
+        if (initialYear === 0 && finalYear === 0) {
+            if (blockSequence > 0) {
+                outputSegments.push('');
+            }
+            break;
+        }
+
+        if (blockSequence > 0) {
+            outputSegments.push('');
+        }
+
+        const rangeLeapYears = Array.from({ length: finalYear - initialYear + 1 }, (_, idx) => initialYear + idx)
+                                    .filter(yr => (yr % 400 === 0 || (yr % 4 === 0 && yr % 100 !== 0)))
+                                    .map(String);
+
+        if (rangeLeapYears.length === 0) {
+            outputSegments.push('NA', '');
+        } else {
+            outputSegments.push(...rangeLeapYears);
+        }
+
+        if (blockSequence > 0) {
+            outputSegments.push('');
+        }
+
+        blockSequence++;
+        pairIterator += 2;
     }
-    const spanOfYears = Array.from({ length: finalCalendarYear - initialCalendarYear + 1 }, (_, idx) => initialCalendarYear + idx);
-    const identifiedLeapYears = spanOfYears.filter(evaluateLeapPossibility);
-    let temporaryBlockString = "";
-    if (iterationMarker > 0) {
-        temporaryBlockString += "\n";
-    }
-    if (identifiedLeapYears.length === 0) {
-        temporaryBlockString += "NA\n";
-    } else {
-        temporaryBlockString += identifiedLeapYears.map(String).join("\n") + "\n";
-    }
-    if (iterationMarker > 0) {
-        temporaryBlockString += "\n";
-    }
-    generatedOutputComponents.push(temporaryBlockString);
-    iterationMarker++;
-}
-process.stdout.write(generatedOutputComponents.join(''));
+
+    console.log(outputSegments.join('\n'));
+});

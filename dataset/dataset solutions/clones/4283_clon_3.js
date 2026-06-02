@@ -1,63 +1,39 @@
-"use strict"; // Enforce strict mode for cleaner code execution
+"use strict";
 
-/**
- * Executes the primary logic of the program.
- * It processes raw input to determine if a specific character sequence exists.
- * @param {string} rawInputContent - The complete input string, potentially multi-line.
- */
-const handleProgramExecution = (rawInputContent) => {
-    // Sanitize and parse the input data
-    const trimmedInput = rawInputContent.trim();
-    
-    // Guard clause for empty input
-    if (trimmedInput.length === 0) {
-        console.log("No"); // No content to process, so no sequence can be found.
-        return;
-    }
+const parseInputToCharacterSequence = (inputContent) => {
+    const trimmedContent = inputContent.trim();
+    const lines = trimmedContent.split("\n");
+    const firstRelevantLine = lines[0];
+    return firstRelevantLine.split("");
+};
 
-    const inputLines = trimmedInput.split('\n');
-    
-    // We are interested only in the first line for sequence checking
-    const targetLine = inputLines[0];
+const executeProcessing = (rawInputContent) => {
+    const charSequence = parseInputToCharacterSequence(rawInputContent);
 
-    // Convert the target line into an array of individual characters for easier iteration
-    const inputCharacterStream = targetLine.split('');
+    const TARGET_CHAR_A = 'A';
+    const TARGET_CHAR_C = 'C';
+    const OUTPUT_SUCCESS = 'Yes';
+    const OUTPUT_FAILURE = 'No';
 
-    // Introduce a flag to track whether the target sequence has been identified
-    let sequenceFoundIndicator = false;
+    let foundSpecificPattern = false;
+    let previousCharacterInSequence = null;
 
-    // A pattern "AC" requires at least two characters.
-    // We can add a guard clause here to optimize for short strings.
-    if (inputCharacterStream.length < 2) {
-        console.log("No");
-        return;
-    }
+    for (let currentIdx = 0; currentIdx < charSequence.length; ++currentIdx) {
+        const currentChar = charSequence[currentIdx];
 
-    // Iterate through the character stream, starting from the second element
-    // This allows us to always check the current element against the one immediately preceding it.
-    for (let currentPositionIndex = 1; currentPositionIndex < inputCharacterStream.length; currentPositionIndex++) {
-        const precedingCharacter = inputCharacterStream[currentPositionIndex - 1];
-        const currentCharacter = inputCharacterStream[currentPositionIndex];
-
-        // Check if the current pair of characters forms the desired "AC" sequence
-        if (precedingCharacter === 'A' && currentCharacter === 'C') {
-            sequenceFoundIndicator = true; // Mark the flag as true
-            break; // Exit the loop early as the pattern has been successfully located
+        if (previousCharacterInSequence === TARGET_CHAR_A && currentChar === TARGET_CHAR_C) {
+            foundSpecificPattern = true;
+            break;
         }
+
+        previousCharacterInSequence = currentChar;
     }
 
-    // Based on the flag, output the final determination
-    if (sequenceFoundIndicator) {
-        console.log("Yes");
+    if (foundSpecificPattern) {
+        console.log(OUTPUT_SUCCESS);
     } else {
-        console.log("No");
+        console.log(OUTPUT_FAILURE);
     }
 };
 
-// Initiate the program by reading input from standard input
-// This assumes the environment provides input via /dev/stdin (common in competitive programming)
-const fileSystemModule = require('fs');
-const standardInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-
-// Execute the main program handler with the received input
-handleProgramExecution(standardInputData);
+executeProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,46 +1,29 @@
-/*
- * This program is designed to analyze an incoming data stream
- * to locate specific numerical sequences that meet a certain criterion.
- */
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input as a UTF-8 string
 
-// Initialize a variable to hold the complete text content
-// retrieved from the standard input via the Node.js file system module.
-let fullInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Convert the input string into an array of characters (though not strictly used as such,
+// its length is used for loop bounds, similar to the original's N.length)
+let charArray = rawData.split('');
 
-// Create a character array by breaking down the full content string.
-// This allows for easier indexing and length checks.
-const charSequenceArray = fullInputContent.split('');
+// Initialize a counter for the number of valid substrings
+let resultCount = 0;
 
-// Declare and initialize a counter for valid matches found.
-// This will store the final result.
-let validMatchCount = 0;
+// Outer loop iterates through possible starting positions of substrings
+for (let outerIndex = 0; outerIndex < charArray.length; outerIndex++) {
+    // Inner loop iterates through possible ending positions of substrings
+    // The condition 'outerIndex + 4' ensures a minimum substring length of 4 characters
+    // 'charArray.length - 1' is the last valid index for substring end
+    for (let innerIndex = outerIndex + 4; innerIndex <= charArray.length; innerIndex++) {
+        // Extract a substring from the original raw data
+        // parseInt converts it to an integer with base 10
+        let currentValue = parseInt(rawData.substring(outerIndex, innerIndex), 10);
 
-// Begin the primary loop: iterate through all possible starting positions
-// for potential numeric substrings within the `fullInputContent`.
-for (let currentStartIndex = 0;
-     currentStartIndex < charSequenceArray.length;
-     currentStartIndex++)
-{
-  // Begin the secondary loop: iterate through all possible ending positions
-  // for potential numeric substrings. The minimum length for a substring
-  // is enforced to be at least 4 characters (currentStartIndex + 4).
-  for (let currentEndIndex = currentStartIndex + 4;
-       currentEndIndex <= charSequenceArray.length - 1;
-       currentEndIndex++)
-  {
-    // Extract a segment of the original string using the current start and end indices.
-    // Then, convert this string segment into an integer, specifying base 10.
-    const extractedNumericValue = Number.parseInt(fullInputContent.slice(currentStartIndex, currentEndIndex), 10);
-
-    // Evaluate if the newly extracted and parsed numeric value
-    // is exactly divisible by the constant 2019.
-    if (extractedNumericValue % 2019 === 0)
-    {
-      // If the divisibility condition is met, increment our total count.
-      validMatchCount++;
+        // Check if the parsed integer is divisible by 2019
+        if (currentValue % 2019 === 0) {
+            // If divisible, increment the result counter
+            resultCount++;
+        }
     }
-  }
 }
 
-// Output the final tally of valid numeric patterns found to the standard output.
-console.log(validMatchCount);
+// Output the final count of substrings divisible by 2019
+console.log(resultCount);

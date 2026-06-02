@@ -1,33 +1,28 @@
-// This JavaScript program is designed to find the largest integer power within a specific numerical range.
+function processInput(rawData) {
+  // Convert the raw input string to an integer, using base 10.
+  const targetValue = Number.parseInt(rawData.trim(), 10);
 
-function processInputData ( rawText ) {
-  // Convert the incoming string data into an integer, removing any leading/trailing whitespace.
-  const upperBound = parseInt( rawText.trim(), 10 );
+  // Initialize a new Set to store unique power values.
+  // Start with the value 1, as per the problem's implicit requirement for powers.
+  let powerSet = new Set([1]);
 
-  // Initialize a new Set to store all unique computed power values.
-  // The value 1 is included by default, as it's a common base case for powers.
-  let computedPowers = new Set( [ 1 ] );
-
-
-  // Begin a nested loop structure to calculate powers.
-  // The outer loop iterates through possible exponents, starting from 2 up to 10.
-  for ( let currentExponent = 2; currentExponent <= 10; currentExponent++ ) {
-
-    // The inner loop iterates through potential base numbers, also starting from 2.
-    // It continues as long as the result of (baseNumber ^ currentExponent) does not exceed the overall upperBound.
-    for ( let baseValue = 2; baseValue ** currentExponent <= upperBound; baseValue++ ) {
-      // Add the calculated power to our collection. Sets automatically handle duplicates,
-      // ensuring only unique power values are stored.
-      computedPowers.add( baseValue ** currentExponent );
+  // Iterate through possible exponents, from 2 up to 10.
+  for (let exponent = 2; exponent <= 10; exponent++) {
+    // For each exponent, iterate through possible base numbers.
+    // Start the base from 2.
+    // Continue as long as the calculated power (base raised to exponent) does not exceed the target value.
+    for (let base = 2; Math.pow(base, exponent) <= targetValue; base++) {
+      // Add the computed power to our set.
+      // The Set automatically handles duplicate values, ensuring only unique powers are stored.
+      powerSet.add(Math.pow(base, exponent));
     }
   }
 
-  // Once all relevant powers have been computed and collected,
-  // find and display the maximum value present in the 'computedPowers' set to the console.
-  console.log( Math.max( ...computedPowers ) );
+  // After populating the set with all relevant powers,
+  // find the largest value within the set and print it to the console.
+  console.log(Math.max(...powerSet));
 }
 
-// Invoke the main processing function.
-// It reads the entire content from standard input ('/dev/stdin') as a UTF-8 string
-// and passes it as the initial raw text for processing.
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of the standard input file as a UTF-8 string,
+// then pass it to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

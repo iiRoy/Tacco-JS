@@ -1,39 +1,77 @@
-console.log((function(rawContent){
-  const lineSegments = rawContent.trim().split('\n');
-  const entityCount = parseInt(lineSegments[0].split(' ')[0], 10);
+const fs = require('fs');
 
-  const entireCollection = lineSegments.slice(1).map(segment => {
-    const [xVal, yVal] = segment.split(' ').map(Number);
-    return { horizontal: xVal, vertical: yVal };
+const text = fs.readFileSync('/dev/stdin', 'utf8');
+
+function toMatrix(src) {
+  return src.trim().split('\n').map(function(row) {
+    return row.split(' ').map(function(piece) {
+      return piece | 0;
+    });
+  });
+}
+
+const table = toMatrix(text);
+const size = table[0][0];
+
+const redList = [];
+const blueList = [];
+
+for (let pos = 0; pos < size; pos++) {
+  redList.push(table[pos + 1]);
+  blueList.push(table[size + pos + 1]);
+}
+
+const redRanks = redList.map(function(point, order) {
+  return { point: point, order: order };
+});
+const blueRanks = blueList.map(function(point, order) {
+  return { point: point, order: order };
+});
+
+redRanks.sort(function(left, right) {
+  const [lx] = left.point;
+  const [rx] = right.point;
+  return rx - lx;
+});
+blueRanks.sort(function(left, right) {
+  const [lx] = left.point;
+  const [rx] = right.point;
+  return rx - lx;
+});
+
+const rankedReds = redRanks.map(function(entry) {
+  return entry.point;
+});
+const rankedBlues = blueRanks.map(function(entry) {
+  return entry.point;
+});
+
+const graph = rankedBlues.map(function(blue) {
+  const [bx, by] = blue;
+  const edges = [];
+
+  rankedReds.forEach(function(red, redRank) {
+    const [rx, ry] = red;
+    if (bx >= rx && by > ry && by > -1) {
+      edges.push(redRank);
+    }
   });
 
-  const primaryElements = entireCollection.slice(0, entityCount);
-  const secondaryElements = entireCollection.slice(entityCount);
+  return edges;
+});
 
-  const orderedPrimary = primaryElements.sort((e1, e2) => e2.horizontal - e1.horizontal);
-  const orderedSecondary = secondaryElements.sort((e1, e2) => e2.horizontal - e1.horizontal);
+const reserved = new Set();
+let total = 0;
 
-  const pairingResult = orderedSecondary.reduce((accumulator, currentSecondary) => {
-    const { totalMatches, availablePrimary } = accumulator;
-    const { horizontal: secondaryX, vertical: secondaryY } = currentSecondary;
+for (const choices of graph) {
+  const picked = choices.find(function(redRank) {
+    return !reserved.has(redRank);
+  });
 
-    const eligiblePrimaryIndex = availablePrimary.findIndex(primaryItem =>
-      primaryItem.horizontal < secondaryX && primaryItem.vertical < secondaryY
-    );
+  if (picked !== undefined) {
+    reserved.add(picked);
+    total++;
+  }
+}
 
-    if (eligiblePrimaryIndex !== -1) {
-      const updatedPrimarySet = availablePrimary.filter((_, idx) => idx !== eligiblePrimaryIndex);
-      return {
-        totalMatches: totalMatches + 1,
-        availablePrimary: updatedPrimarySet
-      };
-    } else {
-      return {
-        totalMatches: totalMatches,
-        availablePrimary: availablePrimary
-      };
-    }
-  }, { totalMatches: 0, availablePrimary: orderedPrimary });
-
-  return `${pairingResult.totalMatches}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(`${total}`);

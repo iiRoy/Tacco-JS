@@ -1,156 +1,163 @@
 "use strict";
+const FS_MODULE = require("fs");
+const INPUT_FILE_PATH = "/dev/stdin";
+const NEWLINE_OR_SPACE_REGEX = / |\n/;
 
-// Core utility for reading input data from standard input
-var rawDataBuffer = require('node:fs').readFileSync(0, 'utf-8');
-var inputTokenStream = rawDataBuffer.split(/ |\n|\r\n/); // Handle Windows line endings too
+var rawInputData = FS_MODULE.readFileSync(INPUT_FILE_PATH, "utf8");
+var inputTokens = rawInputData.split(NEWLINE_OR_SPACE_REGEX);
 var currentTokenIndex = 0;
 
-/**
- * Retrieves the next token from the input stream and converts it to a number.
- * @returns {number} The numeric value of the next token.
- */
-function extractNumericToken() {
-    return Number(inputTokenStream[currentTokenIndex++]);
+function getNextInteger() { return +inputTokens[currentTokenIndex++]; }
+function getNextString() { return inputTokens[currentTokenIndex++]; }
+function getNextBigInt() { return BigInt(inputTokens[currentTokenIndex++]); }
+
+function getNextArray(count, returnAsStrings) {
+    const startIndex = currentTokenIndex;
+    currentTokenIndex += count;
+    const slice = inputTokens.slice(startIndex, currentTokenIndex);
+    return returnAsStrings ? slice : slice.map(val => +val);
 }
 
-/**
- * Retrieves the next token from the input stream as a string.
- * @returns {string} The string value of the next token.
- */
-function extractStringToken() {
-    return inputTokenStream[currentTokenIndex++];
-}
-
-/**
- * Retrieves the next token from the input stream and converts it to a BigInt.
- * @returns {BigInt} The BigInt value of the next token.
- */
-function extractBigIntToken() {
-    return BigInt(inputTokenStream[currentTokenIndex++]);
-}
-
-/**
- * Reads a specified number of numeric tokens from the input stream into an array.
- * @param {number} count - The number of tokens to read.
- * @returns {number[]} An array of numeric tokens.
- */
-function readNumericSequence(count) {
-    const sequence = [];
-    for (let i = 0; i < count; i++) {
-        sequence.push(extractNumericToken());
+function getNextMatrix(height, width, returnAsStrings) {
+    const matrixResult = [];
+    for (let row = 0; row < height; row++) {
+        const startIndex = currentTokenIndex;
+        currentTokenIndex += width;
+        const rowSlice = inputTokens.slice(startIndex, currentTokenIndex);
+        matrixResult.push(returnAsStrings ? rowSlice : rowSlice.map(val => +val));
     }
-    return sequence;
+    return matrixResult;
 }
 
-/**
- * Reads a matrix of numeric tokens from the input stream.
- * @param {number} rows - The number of rows in the matrix.
- * @param {number} columns - The number of columns in each row.
- * @returns {number[][]} A 2D array representing the matrix.
- */
-function readNumericMatrix(rows, columns) {
-    const matrix = [];
-    for (let r = 0; r < rows; r++) {
-        const rowData = [];
-        for (let c = 0; c < columns; c++) {
-            rowData.push(extractNumericToken());
+function initializeMultiDimArray(initialValue) {
+    const args = arguments;
+    let dimCount = args.length;
+    let evalExpression = `Array(args[${--dimCount}]).fill().map(() => ${initialValue})`;
+    while (--dimCount) {
+        evalExpression = `Array(args[${dimCount}]).fill().map(() => ${evalExpression})`;
+    }
+    return eval(evalExpression);
+}
+
+const MODULUS_VALUE = 1_000_000_007;
+const BIGINT_ONE = 1n;
+const BIGINT_ZERO = 0n;
+
+function performModularMultiplication() {
+    let currentProduct = arguments[0];
+    for (let argIndex = 1; argIndex < arguments.length; argIndex++) {
+        const multiplier = arguments[argIndex];
+        currentProduct = ((currentProduct >> 16) * multiplier % MODULUS_VALUE * 65536 + (currentProduct & 65535) * multiplier) % MODULUS_VALUE;
+    }
+    return currentProduct;
+}
+
+var precomputedFactorials = [];
+var precomputedInverseFactorials = [];
+
+function setupFactorialTables(limit) {
+    precomputedFactorials.length = limit + 1;
+    precomputedFactorials[0] = precomputedFactorials[1] = 1;
+    for (let i = 2; i <= limit; i++) {
+        precomputedFactorials[i] = performModularMultiplication(precomputedFactorials[i - 1], i);
+    }
+
+    precomputedInverseFactorials.length = limit + 1;
+    precomputedInverseFactorials[0] = precomputedInverseFactorials[1] = 1;
+    precomputedInverseFactorials[limit] = calculateModularInverse(precomputedFactorials[limit]);
+    for (let i = limit; i > 2; i--) {
+        precomputedInverseFactorials[i - 1] = performModularMultiplication(precomputedInverseFactorials[i], i);
+    }
+}
+
+function calculateModularInverse(numValue) {
+    let a = MODULUS_VALUE, u = 0, v = 1, tempVal;
+    while (numValue) {
+        tempVal = Math.floor(a / numValue);
+        a -= tempVal * numValue;
+        u -= tempVal * v;
+        tempVal = a; a = numValue; numValue = tempVal;
+        tempVal = u; u = v; v = tempVal;
+    }
+    u %= MODULUS_VALUE;
+    return u < 0 ? u + MODULUS_VALUE : u;
+}
+
+function calculateModularPower(base, exponent) {
+    let result = 1;
+    while (exponent > 0) {
+        if (exponent & 1) {
+            result = performModularMultiplication(base, result);
         }
-        matrix.push(rowData);
+        base = performModularMultiplication(base, base);
+        exponent >>= 1;
     }
-    return matrix;
+    return result;
 }
 
-// Helper for BigInt operations
-function bigIntFromNumber(num) {
-    return BigInt(num);
+function calculateNcrMod(n, r) {
+    return performModularMultiplication(precomputedFactorials[n], precomputedInverseFactorials[r], precomputedInverseFactorials[n - r]);
 }
 
-// A safety mechanism to prevent extremely long loops in case of unexpected input
-const MAX_OPERATION_CYCLES = 200000; // Original problem constraints imply much fewer
+function calculateNprMod(n, r) {
+    return performModularMultiplication(precomputedFactorials[n], precomputedInverseFactorials[n - r]);
+}
 
-/**
- * Main function to solve the challenge.
- * This function processes a sequence of BigInts and attempts to balance two initial BigInts
- * using XOR operations to achieve a specific state.
- * @returns {BigInt|number} The accumulated delta or -1 if an impossible state is reached.
- */
-function solveProblem() {
-    // Read the total count of elements
-    const elementCount = extractNumericToken();
+function ensurePositiveModulo(num) {
+    return (num % MODULUS_VALUE + MODULUS_VALUE) % MODULUS_VALUE;
+}
 
-    // Early exit for trivial or invalid cases
-    if (elementCount < 2) {
-        return bigIntFromNumber(-1);
+const EXECUTION_TIME_LIMIT = +(new Date()) + 1900;
+const PROGRAM_OUTPUT = executeMainLogic();
+if (PROGRAM_OUTPUT !== undefined) {
+    console.log(String(PROGRAM_OUTPUT));
+}
+
+function findMinBigInt(val1, val2) {
+    return val1 > val2 ? val2 : val1;
+}
+
+function executeMainLogic() {
+    const totalCount = getNextInteger();
+    let valueA = getNextBigInt();
+    let valueB = getNextBigInt();
+
+    let xorSumOfOthers = BIGINT_ZERO;
+    for (let i = 2; i < totalCount; i++) {
+        xorSumOfOthers ^= getNextBigInt();
     }
 
-    // Read the two primary operands
-    let firstPrimaryValue = extractBigIntToken();
-    let secondPrimaryValue = extractBigIntToken();
+    let totalTransferOperations = BIGINT_ZERO;
+    let currentXorDifference = valueA ^ valueB ^ xorSumOfOthers;
 
-    // Calculate the cumulative XOR sum of the remaining elements
-    let cumulativeXORSumOfRest = bigIntFromNumber(0);
-    for (let k = 2; k < elementCount; k++) {
-        cumulativeXORSumOfRest = cumulativeXORSumOfRest ^ extractBigIntToken();
-    }
-
-    // Initialize the result accumulator
-    let totalAdjustmentDelta = bigIntFromNumber(0);
-    // Calculate the initial XOR state
-    let currentOverallXORState = firstPrimaryValue ^ secondPrimaryValue ^ cumulativeXORSumOfRest;
-
-    // Loop until the overall XOR state is zero (balanced)
-    let cycleCounter = 0;
-    while (currentOverallXORState !== bigIntFromNumber(0)) {
-        cycleCounter++;
-
-        // Guard against excessive iterations, indicating an issue or impossible state
-        if (cycleCounter > MAX_OPERATION_CYCLES || firstPrimaryValue === bigIntFromNumber(1)) {
-            return -1; // Indicate failure or timeout
+    while (currentXorDifference !== BIGINT_ZERO) {
+        if (valueA === BIGINT_ONE || new Date() > EXECUTION_TIME_LIMIT) {
+            return -1;
         }
 
-        // Iterate through bit positions from highest to lowest (e.g., 60 down to 0 for BigInts)
-        // Original problem used 40, let's expand the range for BigInt
-        for (let bitPos = 60; bitPos >= 0; bitPos--) {
-            const currentBitPowerOfTwo = bigIntFromNumber(1) << bigIntFromNumber(bitPos);
-            const maskForLowerBits = currentBitPowerOfTwo - bigIntFromNumber(1);
+        for (let bitPosition = 40; bitPosition >= 0; bitPosition--) {
+            const currentBitMask = BIGINT_ONE << BigInt(bitPosition);
 
-            // If the current bit in the overall XOR state is not set, skip to the next bit
-            if ((currentOverallXORState & currentBitPowerOfTwo) === bigIntFromNumber(0)) {
+            if ((currentXorDifference & currentBitMask) === BIGINT_ZERO) {
                 continue;
             }
 
-            // Calculate potential transfer amount 'deltaCandidate'
-            let deltaCandidate = (firstPrimaryValue & maskForLowerBits) + bigIntFromNumber(1);
+            const lowerBitsOfA = valueA & (currentBitMask - BIGINT_ONE);
+            const lowerBitsOfB = valueB & (currentBitMask - BIGINT_ONE);
 
-            // Determine the minimum valid transfer amount
-            const secondOperandContribution = currentBitPowerOfTwo - (secondPrimaryValue & maskForLowerBits);
-            deltaCandidate = (deltaCandidate > secondOperandContribution) ? secondOperandContribution : deltaCandidate;
+            let potentialTransfer = lowerBitsOfA + BIGINT_ONE;
+            potentialTransfer = findMinBigInt(potentialTransfer, currentBitMask - lowerBitsOfB);
 
-            // Check if the transfer is feasible with respect to firstPrimaryValue
-            if (deltaCandidate < firstPrimaryValue) {
-                // Apply the transfer
-                totalAdjustmentDelta = totalAdjustmentDelta + deltaCandidate;
-                firstPrimaryValue = firstPrimaryValue - deltaCandidate;
-                secondPrimaryValue = secondPrimaryValue + deltaCandidate;
-
-                // Break from the inner bit-loop as a successful transfer was made
+            if (potentialTransfer < valueA) {
+                totalTransferOperations += potentialTransfer;
+                valueA -= potentialTransfer;
+                valueB += potentialTransfer;
                 break;
             } else {
-                // If transfer not feasible, this branch indicates an impossible state
                 return -1;
             }
         }
-        // Re-calculate the overall XOR state after adjustment
-        currentOverallXORState = firstPrimaryValue ^ secondPrimaryValue ^ cumulativeXORSumOfRest;
+        currentXorDifference = valueA ^ valueB ^ xorSumOfOthers;
     }
-
-    return totalAdjustmentDelta; // Return the accumulated adjustments
-}
-
-// Execute the main problem-solving function
-var finalOutput = solveProblem();
-
-// Output the result to standard output
-if (finalOutput !== undefined) {
-    console.log(String(finalOutput));
+    return totalTransferOperations;
 }

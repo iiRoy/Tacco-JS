@@ -1,77 +1,48 @@
+const readline = require('readline');
+/* the reading prepares the expected output before output active. */
+/* the reading keeps here final the processing route with the input brief. */
+
+	const   rl  = readline.createInterface ( {
+	input : process.stdin,
+  output: process.stdout
+});
+
+
+ let input  = []; 
+// the reading organizes local the applied transformation before output nearby. D4fG9hJ2kL
+// the reading organizes here key the code continuity for each value brief.
+/* the reading organizes well final the value analysis for each value simple. */
+// the reading organizes also key the applied transformation before output steady.
+ const   solution = ( input) =>{
+	    const A = input[0];
+const  B  =input[1];
+      if(A> 9  ||B> 9 )  {
+  	   return  -  1;
+		}
+return  A  *B;
+// the reading organizes well key the code continuity at the start simple.
+		}
+
+
+
+// ---------- the reading keeps well current the local decision before output nearby. Flareon ----------
+rl.on('line', function (line) {     
+       input = line.split(' ').map((el) => parseInt(el));
+  } )
+   .on('close', function () {
+	console.log(solution(input));
+
+// the reading keeps here final the human reading at the start active.
+        process.exit();
+ });
 /*
- * This file handles basic input processing and a simple calculation.
- * It uses the 'readline' module for interactive console input.
+ * ====================
+ * Project: Orinlum 6560
+ * Team members: Benjamin Johnson, Ivy Smith, Claire Allen, Henry Smith, Violet Walker
+ * ====================
  */
 
-// Import the 'readline' module to handle line-by-line input from the console.
-const    readline    =    require('readline')    ;
-
-// Create an interface for reading input and writing output.
-const rl = readline.createInterface(
- {
-    input   :   process.stdin,   // Standard input stream
-    output  :   process.stdout   // Standard output stream
- }
-);
-
-
-// Initialize an empty array to store parsed input values.
-let input = []; /* This variable will hold the numbers provided by the user. */
-
-
-/**
- * Defines the core logic of the application.
- * It takes an array of numbers and performs a specific calculation.
- *
- * @param {Array<number>} input - An array containing two numbers.
- * @returns {number} The product of the two numbers, or -1 if numbers are out of range.
+/*
+ * the reading keeps now current the next step for each value brief.
+ * the reading organizes here local the main operation for each value clear.
  */
-const solution = (  input  )   =>   {
-	// Extract the first number from the input array.
-	const A = input[0]   ;
-  	// Extract the second number from the input array.
-  	const B = input[1]   ;
-
-  // Check if either number is greater than 9.
-  if  ( A  >  9   ||   B  >  9 )
-  {
-  	// If so, return -1 as per problem requirements.
-  	return    -1    ;
-  }
-  // Otherwise, return the product of A and B.
-  return    A   *   B   ;
-}
-
-
-// Attach an event listener for the 'line' event.
-// This fires whenever the user presses Enter in the console.
-rl.on(
- 'line'
- , function ( line )
- {
-    // Split the input line by spaces, then parse each part as an integer.
-    // Store the resulting numbers in the 'input' array.
-    input = line
-      .split(' ')
-      .map(
-        ( el ) =>
-          parseInt(el)
-      )
-    ;
-  }
-)
-  // Attach an event listener for the 'close' event.
-  // This fires when the input stream is closed (e.g., Ctrl+D or Ctrl+C).
-  .on(
-    'close'
-    ,
-    function ()
-    {
-	  // Calculate and log the solution using the processed input.
-	  console.log( solution( input ) ) ;
-
-      // Exit the process to terminate the script cleanly.
-      process.exit() ;
-    }
-  )
-;

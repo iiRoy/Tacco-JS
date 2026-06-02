@@ -1,58 +1,62 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const lineFragments = rawData.trim().split('\x0A');
+// Parse the raw input string into an array of lines
+const parsedLines = rawData.trim().split('\n');
 
-let [ targetValueString, coinCountString ] = lineFragments[0].split('   ');
-let targetValue = parseInt(targetValueString, 10);
-let coinCount = parseInt(coinCountString, 10);
+// Extract the primary target value and the count of available items from the first line
+let [ targetValue, numElements ] = parsedLines[0].split(' ');
 
-let coinDenominations = lineFragments[1].trim().split(' ');
-coinDenominations = coinDenominations.map((denomination) => parseInt(denomination, 10));
+// Convert the extracted string values to numerical types
+targetValue = Number(targetValue);
+numElements = Number(numElements);
 
-// Initialize the memoization table for dynamic programming.
-const memoizationTable = new Map();
-memoizationTable.set(0, 0); // Base case: 0 coins are needed to achieve a sum of 0.
+// Retrieve the list of item values from the second line
+let itemValues = parsedLines[1].trim().split(' ');
 
-// A very large integer to represent an uninitialized or unreachable state.
-const initialMaxVal = Number.MAX_SAFE_INTEGER;
+// Transform the item value strings into an array of numbers
+itemValues = itemValues.map(singleValue => Number(singleValue));
 
-// These lines were in the original code, likely for debugging.
-// They display the current state of the memoization table.
-console.log(memoizationTable);
-console.log(memoizationTable.get(targetValue));
+// The following lines will result in a runtime ReferenceError because 'memoizationMap'
+// and 'infinityValue' (implicitly used in the loop via 'max' in original) are not declared
+// in the provided snippet. This behavior is intentionally preserved.
+console.log(memoizationMap);
+console.log(memoizationMap.get(Number(targetValue)));
 
-// Iterate through all possible sums from 0 up to the target value.
+// This main processing loop, intended for dynamic programming, will not execute
+// due to the ReferenceError encountered in the preceding console.log statements.
+// If it were to execute, 'memoizationMap' would typically be a Map and 'infinityValue'
+// would be a large number or Infinity.
 for (let currentSum = 0; currentSum <= targetValue; currentSum++) {
-    // If the minimum coins for the current sum have already been computed, skip.
-    if (memoizationTable.has(currentSum)) {
-        continue;
+  // If the current sum has already been computed and stored, skip further processing
+  if (memoizationMap.has(currentSum)) {
+    continue;
+  }
+
+  // Initialize the minimum count for the current sum to a very high value
+  let minimumCount = infinityValue; // 'infinityValue' is undeclared, mirroring 'max' in original
+
+  // Iterate through each available item value
+  for (let itemIdx = 0; itemIdx < numElements; itemIdx++) {
+    const priorSum = currentSum - itemValues[itemIdx];
+
+    // If the prior sum is invalid (negative) or not yet computed, skip this item
+    if (priorSum < 0 || !memoizationMap.has(priorSum)) {
+      continue;
     }
 
-    let minimumCoins = initialMaxVal; // Start with the largest possible value.
+    // Fetch the count of items needed for the prior sum
+    const countForPriorSum = memoizationMap.get(priorSum);
 
-    // Iterate through each available coin denomination.
-    for (let denominationIndex = 0; denominationIndex < coinCount; denominationIndex++) {
-        // Calculate the sum that would precede the current sum if this coin was used.
-        const previousSum = currentSum - coinDenominations[denominationIndex];
+    // Update the minimum count for the current sum
+    minimumCount = Math.min(countForPriorSum, minimumCount);
+  }
 
-        // If the previous sum is invalid (negative) or not yet computed, skip this coin.
-        if (previousSum < 0 || !memoizationTable.has(previousSum)) {
-            continue;
-        }
-
-        // Retrieve the result for the sub-problem (previous sum).
-        const subProblemResult = memoizationTable.get(previousSum);
-
-        // Update the minimum coins needed for the current sum.
-        minimumCoins = Math.min(subProblemResult, minimumCoins);
-    }
-
-    // If a valid combination was found (i.e., minimumCoins was updated),
-    // store the result in the memoization table (add 1 for the current coin).
-    if (minimumCoins < initialMaxVal) {
-        memoizationTable.set(currentSum, minimumCoins + 1);
-    }
+  // If a valid combination was found (i.e., minimumCount is not still infinityValue)
+  if (minimumCount < infinityValue) {
+    // Store the result: one more item than needed for the prior sum
+    memoizationMap.set(currentSum, minimumCount + 1);
+  }
 }
 
-// Output the final answer: the minimum coins required for the target sum.
-console.log(memoizationTable.get(targetValue));
+// This final output statement will also not be reached due to the initial ReferenceError.
+console.log(memoizationMap.get(targetValue));

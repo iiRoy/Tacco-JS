@@ -1,46 +1,44 @@
-function calculateFactorCombinations(maximumValue, thresholdValue) {
-  // Inner helper to recursively check factors
-  function inspectFactor(currentDivisor) {
+function calculateDivisorCount(firstNumber, secondNumber) {
+  // This nested function recursively checks for divisors based on specific criteria.
+  function recursiveDivisorCheck(currentDivisor) {
+    // If the current divisor exceeds 9, it's out of the valid range.
     if (currentDivisor > 9) {
-      return 0; // Factor too large
+      return 0;
     }
-
-    if (currentDivisor * currentDivisor > maximumValue) {
-      return 0; // Optimization: currentDivisor is too large for its square to be a factor
+    // If the square of the current divisor is greater than the first number,
+    // further divisors will also be too large.
+    if (currentDivisor * currentDivisor > firstNumber) {
+      return 0;
     }
-
-    if (maximumValue % currentDivisor === 0 && maximumValue / currentDivisor < 10 && currentDivisor * 10 + maximumValue / currentDivisor <= thresholdValue) {
-      // Found a valid combination, recursively check next divisor
-      let pairCount = 1;
-      if (maximumValue / currentDivisor * 10 + currentDivisor <= thresholdValue && maximumValue / currentDivisor !== currentDivisor) {
-        pairCount = 2; // Both permutations are valid and distinct
-      }
-      return inspectFactor(currentDivisor + 1) + pairCount;
+    // Check if currentDivisor is a valid divisor and satisfies additional conditions.
+    if (firstNumber % currentDivisor === 0 && firstNumber / currentDivisor < 10 && currentDivisor * 10 + firstNumber / currentDivisor <= secondNumber) {
+      // Recursively call for the next divisor and add a count based on a secondary condition.
+      return recursiveDivisorCheck(currentDivisor + 1) + (firstNumber / currentDivisor * 10 + currentDivisor <= secondNumber && firstNumber / currentDivisor !== currentDivisor ? 2 : 1);
     } else {
-      // No valid combination with currentDivisor, try next
-      return inspectFactor(currentDivisor + 1);
+      // If the conditions are not met for the current divisor, proceed to the next one.
+      return recursiveDivisorCheck(currentDivisor + 1);
     }
   }
-
-  if (maximumValue < 4) {
-    return 0; // Minimum value for calculation
+  // The main logic for the outer function.
+  if (firstNumber < 4) {
+    return 0; // If the first number is less than 4, no valid divisors are considered.
   } else {
-    // Start checking from divisor 2, and recurse for previous maximumValue
-    return inspectFactor(2) + calculateFactorCombinations(maximumValue - 1, thresholdValue);
+    // Start the recursive divisor check from 2 and add the result of calling
+    // this function with a decremented first number.
+    return recursiveDivisorCheck(2) + calculateDivisorCount(firstNumber - 1, secondNumber);
   }
 }
 
-function ProcessInputData(inputString) {
-  // Split the input string into numerical components
-  const parsedParts = inputString.split(" ");
-
-  // Convert string parts to integers for calculation
-  const firstValue = parseInt(parsedParts[0], 10);
-  const secondValue = parseInt(parsedParts[1], 10);
-
-  // Display the computed result
-  console.log('%d', calculateFactorCombinations(firstValue, secondValue));
+function ProcessInput(rawData) {
+  // Split the incoming string data by spaces to separate the two numbers.
+  rawData = rawData.split(" ");
+  // Parse the first part of the input string into an integer.
+  let firstNumber = parseInt(rawData[0], 10);
+  // Parse the second part of the input string into an integer.
+  let secondNumber = parseInt(rawData[1], 10);
+  // Output the calculated result to the console, formatted as a decimal integer.
+  console.log('%d', calculateDivisorCount(firstNumber, secondNumber));
 }
 
-// The following line should not be altered (it handles standard input/output)
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line should not be modified (it handles reading from standard input and invoking the primary processing function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

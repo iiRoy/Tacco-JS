@@ -1,153 +1,156 @@
-const modulusValue = 1000000007;
-const outputResult = console.log;
+const MODULUS = 1000000007;
 
-function computeProductModulo(factorA, factorB) {
-    let currentA = Number(factorA);
-    let currentB = Number(factorB);
-    let resultAccumulator = 0;
-
-    currentA %= modulusValue;
-    currentB %= modulusValue;
-
-    while (currentB > 0) {
-        if (currentB % 2 === 1) {
-            resultAccumulator = (resultAccumulator + currentA) % modulusValue;
+function performModularMultiplication(factorA, factorB) {
+    let currentResult = 0;
+    factorA %= MODULUS;
+    while (factorB > 0) {
+        if (factorB % 2 === 1) {
+            currentResult = (currentResult + factorA) % MODULUS;
         }
-        currentA = (currentA * 2) % modulusValue;
-        currentB = Math.floor(currentB / 2);
+        factorA = (factorA * 2) % MODULUS;
+        factorB = Math.floor(factorB / 2);
     }
-    return resultAccumulator;
+    return currentResult;
 }
 
-function applySquareModulo(valueInput) {
-    return computeProductModulo(valueInput, valueInput);
+function calculateModularSquare(value) {
+    return performModularMultiplication(value, value);
 }
 
-function performRightShift(baseValue, shiftAmount) {
-    let currentVal = baseValue;
-    for (let currentShift = 0; currentShift < shiftAmount; currentShift++) {
-        currentVal = Math.floor(currentVal / 2);
-    }
-    return currentVal;
+function applyRightShift(value, shiftAmount) {
+    return value >> shiftAmount;
 }
 
-function isNumericToken(val) {
-    return !isNaN(Number(val));
-}
+const TOKEN_TYPE = {
+    NUMBER: 'NUMBER',
+    S_OPEN: 'S_OPEN',
+    S_CLOSE: 'S_CLOSE',
+    R_SHIFT: 'R_SHIFT',
+    S_APPLY: 'S_APPLY'
+};
 
-function cleanInputString(initialStatement) {
-    return initialStatement.replace(/S/g, '').replace(/\s/g, '');
-}
+const OPERATOR_INFO = {
+    'S_OPEN': { precedence: 3, associativity: 'none' },
+    'S_CLOSE': { precedence: 3, associativity: 'none' },
+    'R_SHIFT': { precedence: 4, associativity: 'left' }
+};
 
-function segmentInputTokens(processedStatement) {
-    const tokenList = [];
-    const tokenRegex = /(\d+)|([<>])/g;
+function parseExpressionIntoTokens(rawInput) {
+    const cleanedString = rawInput.replace(/\s|S/g, '');
+    if (!cleanedString) return [];
+
+    const regex = /(\d+)|(>>)|[<>]/g;
     let match;
-    while ((match = tokenRegex.exec(processedStatement)) !== null) {
-        if (match[1] !== undefined) {
-            tokenList.push(Number(match[1]));
-        } else if (match[2] !== undefined) {
-            tokenList.push(match[2]);
+    const tokenList = [];
+
+    while ((match = regex.exec(cleanedString)) !== null) {
+        if (match[1]) {
+            tokenList.push({ type: TOKEN_TYPE.NUMBER, value: Number(match[1]) });
+        } else if (match[2] === '>>') {
+            tokenList.push({ type: TOKEN_TYPE.R_SHIFT, value: '>>' });
+        } else if (match[0] === '<') {
+            tokenList.push({ type: TOKEN_TYPE.S_OPEN, value: '<' });
+        } else if (match[0] === '>') {
+            tokenList.push({ type: TOKEN_TYPE.S_CLOSE, value: '>' });
         }
     }
     return tokenList;
 }
 
-const TOKEN_TYPES = {
-    OPEN_SQUARE: 'OPEN_SQUARE_SYMBOL',
-    CLOSE_SQUARE: 'CLOSE_SQUARE_SYMBOL',
-    SHIFT_RIGHT: 'SHIFT_RIGHT_OPERATOR'
-};
+function convertToRPN(infixTokens) {
+    const outputQueue = [];
+    const operatorStack = [];
 
-function classifyTokens(rawTokenSequence) {
-    const semanticTokenStream = [];
-    let position = 0;
-    while (position < rawTokenSequence.length) {
-        const currentItem = rawTokenSequence[position];
-        if (isNumericToken(currentItem)) {
-            semanticTokenStream.push(currentItem);
-        } else if (currentItem === '<') {
-            semanticTokenStream.push(TOKEN_TYPES.OPEN_SQUARE);
-        } else if (currentItem === '>') {
-            if (rawTokenSequence[position + 1] === '>') {
-                const nextNextItem = rawTokenSequence[position + 2];
-                if (isNumericToken(nextNextItem) || nextNextItem === '<') {
-                    semanticTokenStream.push(TOKEN_TYPES.SHIFT_RIGHT);
-                    position++;
-                } else {
-                    semanticTokenStream.push(TOKEN_TYPES.CLOSE_SQUARE);
-                }
-            } else {
-                semanticTokenStream.push(TOKEN_TYPES.CLOSE_SQUARE);
+    for (const token of infixTokens) {
+        if (token.type === TOKEN_TYPE.NUMBER) {
+            outputQueue.push(token);
+        } else if (token.type === TOKEN_TYPE.S_OPEN) {
+            operatorStack.push(token);
+        } else if (token.type === TOKEN_TYPE.S_CLOSE) {
+            while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1].type !== TOKEN_TYPE.S_OPEN) {
+                outputQueue.push(operatorStack.pop());
             }
-        }
-        position++;
-    }
-    return semanticTokenStream;
-}
-
-function evaluateTokenSequence(semanticTokens) {
-    const evaluationStack = [];
-    for (const token of semanticTokens) {
-        if (isNumericToken(token)) {
-            evaluationStack.push(token);
-            if (evaluationStack.length >= 3 && evaluationStack[evaluationStack.length - 2] === TOKEN_TYPES.SHIFT_RIGHT) {
-                const rightOperand = evaluationStack.pop();
-                evaluationStack.pop();
-                const leftOperand = evaluationStack.pop();
-                evaluationStack.push(performRightShift(leftOperand, rightOperand));
+            if (operatorStack.length === 0 || operatorStack[operatorStack.length - 1].type !== TOKEN_TYPE.S_OPEN) {
+                throw new Error("Mismatched S<> operators.");
             }
-        } else if (token === TOKEN_TYPES.OPEN_SQUARE) {
-            evaluationStack.push(token);
-        } else if (token === TOKEN_TYPES.CLOSE_SQUARE) {
-            const valueForSquare = evaluationStack.pop();
-            evaluationStack.pop();
-            evaluationStack.push(applySquareModulo(valueForSquare));
-            if (evaluationStack.length >= 3 && evaluationStack[evaluationStack.length - 2] === TOKEN_TYPES.SHIFT_RIGHT && isNumericToken(evaluationStack[evaluationStack.length - 1])) {
-                const rightOperand = evaluationStack.pop();
-                evaluationStack.pop();
-                const leftOperand = evaluationStack.pop();
-                evaluationStack.push(performRightShift(leftOperand, rightOperand));
+            operatorStack.pop();
+            outputQueue.push({ type: TOKEN_TYPE.S_APPLY, value: 'S_APPLY' });
+        } else if (token.type === TOKEN_TYPE.R_SHIFT) {
+            const currentOpInfo = OPERATOR_INFO[token.type];
+            while (
+                operatorStack.length > 0 &&
+                operatorStack[operatorStack.length - 1].type !== TOKEN_TYPE.S_OPEN &&
+                OPERATOR_INFO[operatorStack[operatorStack.length - 1].type].precedence >= currentOpInfo.precedence
+            ) {
+                outputQueue.push(operatorStack.pop());
             }
-        } else if (token === TOKEN_TYPES.SHIFT_RIGHT) {
-            evaluationStack.push(token);
+            operatorStack.push(token);
         }
     }
-    return evaluationStack[0];
+
+    while (operatorStack.length > 0) {
+        const op = operatorStack.pop();
+        if (op.type === TOKEN_TYPE.S_OPEN) {
+            throw new Error("Mismatched S<> operators.");
+        }
+        outputQueue.push(op);
+    }
+    return outputQueue;
 }
 
-function calculateExpressionValue(currentTextLine) {
-    let processedResult = cleanInputString(currentTextLine);
-    if (!processedResult) { outputResult(''); return; }
+function evaluateRPNExpression(rpnTokens) {
+    const valueStack = [];
 
-    let segmentedResult = segmentInputTokens(processedResult);
-    if (!segmentedResult || segmentedResult.length === 0) { outputResult(''); return; }
-
-    let classifiedResult = classifyTokens(segmentedResult);
-    if (!classifiedResult || classifiedResult.length === 0) { outputResult(''); return; }
-
-    let finalValue = evaluateTokenSequence(classifiedResult);
-    outputResult(finalValue);
-}
-
-function processAllInputs(inputChunks) {
-    for (const chunk of inputChunks) {
-        if (chunk.trim() !== "#") {
-            calculateExpressionValue(chunk.trim());
+    for (const token of rpnTokens) {
+        if (token.type === TOKEN_TYPE.NUMBER) {
+            valueStack.push(token.value);
+        } else if (token.type === TOKEN_TYPE.S_APPLY) {
+            const operand = valueStack.pop();
+            valueStack.push(calculateModularSquare(operand));
+        } else if (token.type === TOKEN_TYPE.R_SHIFT) {
+            const rightOperand = valueStack.pop();
+            const leftOperand = valueStack.pop();
+            valueStack.push(applyRightShift(leftOperand, rightOperand));
         }
     }
-    outputResult('');
+    return valueStack[0];
+}
+
+function processInputLine(currentLine) {
+    const tokens = parseExpressionIntoTokens(currentLine);
+    if (tokens.length === 0) {
+        console.log('');
+        return;
+    }
+
+    const rpnExpression = convertToRPN(tokens);
+    if (rpnExpression.length === 0) {
+        console.log('');
+        return;
+    }
+
+    const finalResult = evaluateRPNExpression(rpnExpression);
+    console.log(finalResult);
 }
 
 if (typeof process !== "undefined") {
-    let receivedData = "";
+    let fullInput = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function(dataBlock) {
-        receivedData += dataBlock;
+    process.stdin.on('data', function(chunk) {
+        fullInput += chunk;
     });
     process.stdin.on('end', function() {
-        const allLines = receivedData.split("\n");
-        processAllInputs(allLines);
+        const allLines = fullInput.split("\n");
+        executeMainLogic(allLines);
     });
+}
+
+function executeMainLogic(inputLines) {
+    inputLines.forEach(function(line) {
+        if (line !== "#") {
+            processInputLine(line);
+        }
+    });
+    console.log('');
 }

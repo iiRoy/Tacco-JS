@@ -1,20 +1,10 @@
-const  inputDateParts =  require("fs").readFileSync(
-  "/dev/stdin"
-  ,
-  "utf8"
-)
+let dateComponents = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
   .split('/')
-  .map(
-    Number
-  )
-;
+  .map(Number);
 
-console
-  .log(
-    inputDateParts[0] >= 2019
-    &&
-    inputDateParts[1] >= 5
-      ? 'TBD'
-      : 'Heisei'
-  )
-;
+console.log(
+  dateComponents[0] >= 2019 && dateComponents[1] >= 5
+    ? 'TBD'
+    : 'Heisei'
+);

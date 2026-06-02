@@ -1,16 +1,14 @@
-'use strict';
-((moduleLoader) => {
-  const fileSystem = moduleLoader('node:fs');
-  const rawDataContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-  const parsedNumericalParts = rawDataContent.trim().split(/\s+/).map(strVal => Number(strVal));
+'use strict';(function(sourceData){
+  const processedNumbers = sourceData.trim().split(/\s+/).map(Number);
+  const firstParameter = processedNumbers[0];
+  const secondParameter = processedNumbers[1];
 
-  const rangeModifier = parsedNumericalParts[0];
-  const centralValue = parsedNumericalParts[1];
+  const rangeStart = secondParameter - firstParameter + 1;
+  const rangeEnd = secondParameter + firstParameter - 1;
 
-  const lowerBound = centralValue - rangeModifier + 1;
-  const totalCount = (2 * rangeModifier) - 1;
+  const sequenceLength = rangeEnd - rangeStart + 1;
 
-  const numericalSpan = Array.from({ length: totalCount }, (_, index) => lowerBound + index);
+  const generatedSequence = Array.from({ length: sequenceLength }, (_, index) => rangeStart + index);
 
-  process.stdout.write(numericalSpan.join(' ') + '\n');
-})(require);
+  console.log(generatedSequence.join(' '));
+})(require('fs').readFileSync('/dev/stdin','utf8'));

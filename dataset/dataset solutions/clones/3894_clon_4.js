@@ -1,15 +1,21 @@
-function examineNumericalSeries(sourceData) {
-    const dataLines = sourceData.split('\n');
+function Main(rawData) {
+    const dataLines = rawData.split('\n');
 
-    const thresholdValue = Number(dataLines[0].split(' ')[2]);
+    const firstLineTokens = dataLines[0].split(' ');
+    const gridSize = Number(firstLineTokens[0]);
+    const feeQuantity = Number(firstLineTokens[1]);
+    const referenceValue = Number(firstLineTokens[2]);
+    
+    const feeTokenList = dataLines[1].split(' ').filter(token => token !== '');
 
-    const numericalSeries = dataLines[1].split(' ').map(Number);
+    const numericFees = feeTokenList.map(token => parseInt(token, 10));
 
-    const exceedingCount = numericalSeries.filter(val => val > thresholdValue).length;
+    const feesExceedingReference = numericFees.filter(currentFee => currentFee > referenceValue);
+    const feesNotExceedingReference = numericFees.filter(currentFee => currentFee <= referenceValue);
 
-    const nonExceedingCount = numericalSeries.length - exceedingCount;
+    const countExceeding = feesExceedingReference.length;
+    const countNotExceeding = feesNotExceedingReference.length;
 
-    console.log(Math.min(exceedingCount, nonExceedingCount));
+    console.log(Math.min(countExceeding, countNotExceeding));
 }
-
-examineNumericalSeries(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,95 +1,52 @@
-function processInputAndDetermineStructure(rawInput) {
-    const parseGraphInput = (textSegment) => {
-        const lines = textSegment.trim().split('\n');
-        const [nodeQuantity, connectionCount] = lines[0].split(' ').map(Number);
+function processGraphData(inputString) {
+    const graphLines = inputString.split('\n');
+    const [vertexCount, edgeCount] = graphLines[0].split(' ').map(Number);
 
-        const linkNetwork = new Map();
-        for (let i = 0; i < nodeQuantity; i++) {
-            linkNetwork.set(i, new Set());
-        }
+    const adjacencies = Array.from({ length: vertexCount }, () => new Set());
 
-        for (let i = 1; i <= connectionCount; i++) {
-            const [pointAlpha, pointBeta] = lines[i].split(' ').map(val => parseInt(val, 10));
-            linkNetwork.get(pointAlpha).add(pointBeta);
-            linkNetwork.get(pointBeta).add(pointAlpha);
+    for (let i = 0; i < edgeCount; i++) {
+        const [firstNode, secondNode] = graphLines[i + 1].split(' ').map(val => Number(val) - 1);
+        adjacencies[firstNode].add(secondNode);
+        adjacencies[secondNode].add(firstNode);
+    }
+
+    let minimumDegreeValue = Infinity;
+    let minimumDegreeVertexIdentifier = -1;
+
+    const vertexDegrees = Array.from({ length: vertexCount }, (_, idx) => adjacencies[idx].size);
+
+    vertexDegrees.forEach((currentDegree, currentIdx) => {
+        if (currentDegree < minimumDegreeValue) {
+            minimumDegreeValue = currentDegree;
+            minimumDegreeVertexIdentifier = currentIdx;
         }
-        return {
-            overallPoints: nodeQuantity,
-            overallConnections: connectionCount,
-            pointLinks: linkNetwork
-        };
+    });
+
+    const neighborsOfMinVertex = Array.from(adjacencies[minimumDegreeVertexIdentifier]);
+    const nonNeighborsOfMinVertex = Array.from({ length: vertexCount }, (_, idx) => idx)
+        .filter(idx => idx !== minimumDegreeVertexIdentifier && !adjacencies[minimumDegreeVertexIdentifier].has(idx));
+
+    const verifyNodeSetIsClique = (nodesToExamine, graphAdjacencyLists) => {
+        if (nodesToExamine.length <= 1) return true;
+        return nodesToExamine.every((nodeA, indexA) =>
+            nodesToExamine.slice(indexA + 1).every(nodeB =>
+                graphAdjacencyLists[nodeA].has(nodeB)
+            )
+        );
     };
 
-    const findOptimalPoint = (graphDetails) => {
-        const { overallPoints, pointLinks } = graphDetails;
-        let minimumDegreeValue = Number.MAX_SAFE_INTEGER;
-        let designatedPoint = -1;
+    const firstPotentialClique = [minimumDegreeVertexIdentifier, ...neighborsOfMinVertex];
+    const secondPotentialClique = nonNeighborsOfMinVertex;
 
-        for (let i = 0; i < overallPoints; i++) {
-            const currentPointDegree = pointLinks.get(i).size;
-            if (currentPointDegree < minimumDegreeValue) {
-                minimumDegreeValue = currentPointDegree;
-                designatedPoint = i;
-            }
-        }
-        return {
-            lowestDegree: minimumDegreeValue,
-            pivotPoint: designatedPoint
-        };
-    };
+    if (!verifyNodeSetIsClique(firstPotentialClique, adjacencies) || !verifyNodeSetIsClique(secondPotentialClique, adjacencies)) {
+        console.log(-1);
+        return;
+    }
 
-    const verifySubgroupConnectivity = (subgroupPoints, allPointLinks) => {
-        if (subgroupPoints.length <= 1) {
-            return true;
-        }
-        for (let i = 0; i < subgroupPoints.length; i++) {
-            const referencePoint = subgroupPoints[i];
-            const referencePointNeighbors = allPointLinks.get(referencePoint);
-            for (let j = i + 1; j < subgroupPoints.length; j++) {
-                const comparisonPoint = subgroupPoints[j];
-                if (!referencePointNeighbors.has(comparisonPoint)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    };
-
-    const analyzeStructureAndCalculate = (graphDetails, optimalPointInfo) => {
-        const { overallPoints, pointLinks } = graphDetails;
-        const { lowestDegree, pivotPoint } = optimalPointInfo;
-
-        const firstPartition = []; // Neighbors of pivotPoint
-        const secondPartition = []; // Non-neighbors of pivotPoint
-
-        const allAvailablePoints = Array.from({ length: overallPoints }, (_, idx) => idx);
-        const neighborsOfDesignated = pointLinks.get(pivotPoint);
-
-        for (const currentPoint of allAvailablePoints) {
-            if (currentPoint === pivotPoint) {
-                continue;
-            }
-            if (neighborsOfDesignated.has(currentPoint)) {
-                firstPartition.push(currentPoint);
-            } else {
-                secondPartition.push(currentPoint);
-            }
-        }
-
-        if (!verifySubgroupConnectivity(firstPartition, pointLinks) || !verifySubgroupConnectivity(secondPartition, pointLinks)) {
-            return -1;
-        }
-
-        const edgesInFirstClique = lowestDegree * (lowestDegree + 1) / 2;
-        const sizeOfSecondClique = overallPoints - lowestDegree - 1;
-        const edgesInSecondClique = sizeOfSecondClique * (sizeOfSecondClique - 1) / 2;
-
-        return edgesInFirstClique + edgesInSecondClique;
-    };
-
-    const graphData = parseGraphInput(rawInput);
-    const minPointDetails = findOptimalPoint(graphData);
-    const finalOutcome = analyzeStructureAndCalculate(graphData, minPointDetails);
-    console.log(finalOutcome);
+    const cliqueOneSize = minimumDegreeValue + 1;
+    const cliqueTwoSize = vertexCount - cliqueOneSize;
+    const totalGraphEdges = (cliqueOneSize * (cliqueOneSize - 1) / 2) + (cliqueTwoSize * (cliqueTwoSize - 1) / 2);
+    console.log(totalGraphEdges);
 }
-processInputAndDetermineStructure(require("fs").readFileSync("/dev/stdin","utf8"));
+
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

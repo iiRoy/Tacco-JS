@@ -1,28 +1,14 @@
-function evaluateStrings(sourceContent) {
-    const firstLineEnd = sourceContent.indexOf('\n');
-    const firstLine = sourceContent.substring(0, firstLineEnd);
+((sourceText) => {
+    const extractedSegments = sourceText.match(/^([^\n]+)\n([^\n]+)/);
 
-    const secondLineStart = firstLineEnd + 1;
-    const secondLineEnd = sourceContent.indexOf('\n', secondLineStart);
+    const primarySegment = extractedSegments[1];
+    const secondarySegment = extractedSegments[2];
 
-    let secondLine;
-    if (secondLineEnd === -1) {
-        secondLine = sourceContent.substring(secondLineStart);
+    let comparisonResult;
+    if (primarySegment === secondarySegment.replace(/.$/, '')) {
+        comparisonResult = "Yes";
     } else {
-        secondLine = sourceContent.substring(secondLineStart, secondLineEnd);
+        comparisonResult = "No";
     }
-
-    const regexPatternString = `^${firstLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.$`;
-    const comparisonObject = new RegExp(regexPatternString);
-
-    let finalDetermination;
-    if (comparisonObject.test(secondLine)) {
-        finalDetermination = "Yes";
-    } else {
-        finalDetermination = "No";
-    }
-
-    console.log(finalDetermination);
-}
-
-evaluateStrings(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(comparisonResult);
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

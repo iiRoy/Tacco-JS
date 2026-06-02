@@ -1,141 +1,107 @@
-let _collectedInput = '';
-
-const _sysInputChannel = process.stdin;
-_sysInputChannel.resume();
-_sysInputChannel.setEncoding('utf8');
-_sysInputChannel.on('data', function(dataChunk) {
-    _collectedInput += dataChunk;
+var rawInput = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+    rawInput += chunk;
 });
-_sysInputChannel.on('end', function() {
-    executeAllScenarios(_collectedInput);
+process.stdin.on('end', function() {
+    processInput(rawInput);
 });
 
-function executeAllScenarios(rawScenarioData) {
-    const scenarioLines = rawScenarioData.trim().split('\n');
+function processInput(fullText){
+    const lines = fullText.trim().split('\n');
+    let lineCursor = 0;
 
-    for (const currentScenario of scenarioParser(scenarioLines)) {
-        const { gridWidth, gridHeight, initialX, initialY, finalX, finalY, obstructionSpecs } = currentScenario;
+    while(true) {
+        const dimensionsStr = lines[lineCursor++];
+        const [gridWidth, gridHeight] = dimensionsStr.split(' ').map(Number);
 
-        const surfaceLayout = constructSurface(gridWidth, gridHeight);
+        if(gridWidth === 0 && gridHeight === 0) break;
 
-        for (const spec of obstructionSpecs) {
-            placeObstruction(surfaceLayout, spec, gridWidth, gridHeight);
+        const blockGrid = new Map(); // Stores "col,row" -> blockID
+        
+        const originStr = lines[lineCursor++];
+        const [startX, startY] = originStr.split(' ').map(Number);
+
+        const destinationStr = lines[lineCursor++];
+        const [goalX, goalY] = destinationStr.split(' ').map(Number);
+
+        const obstacleCount = parseInt(lines[lineCursor++], 10);
+        for(let k = 0; k < obstacleCount; k += 1){
+            const obstacleDetailsStr = lines[lineCursor++];
+            const obstacleDetails = obstacleDetailsStr.split(' ').map(Number);
+            placeObstacle(blockGrid, obstacleDetails);
         }
 
-        const pathOutcome = canTraverse(surfaceLayout, gridWidth, gridHeight, initialX, initialY, finalX, finalY);
-        console.log(pathOutcome ? "OK" : "NO");
+        const pathFound = findPathBFS(blockGrid, startX - 1, startY - 1, goalX - 1, goalY - 1, gridWidth, gridHeight);
+        console.log(pathFound ? "OK" : "NO");
     }
 }
 
-function* scenarioParser(lines) {
-    let currentLineIndex = 0;
-    while (true) {
-        const dimensions = extractNumbers(lines[currentLineIndex++]);
-        if (isTerminationSignal(dimensions)) {
-            break;
-        }
+function placeObstacle(gridMap, details){
+    const [obstacleID, orientationFlag, coordX, coordY] = details;
+    const isWide = (orientationFlag === 0); // 0 for horizontal (4x2), 1 for vertical (2x4)
+    
+    const effectiveWidth = isWide ? 4 : 2;
+    const effectiveHeight = isWide ? 2 : 4;
+    
+    const startCol = coordX - 1;
+    const startRow = coordY - 1;
 
-        const entryCoords = extractNumbers(lines[currentLineIndex++]);
-        const exitCoords = extractNumbers(lines[currentLineIndex++]);
-
-        const obstacleQuantity = parseInt(lines[currentLineIndex++]);
-        const obstacleDetails = [];
-        for (let k = 0; k < obstacleQuantity; k++) {
-            obstacleDetails.push(extractNumbers(lines[currentLineIndex++]));
-        }
-
-        yield {
-            gridWidth: dimensions[0],
-            gridHeight: dimensions[1],
-            initialX: entryCoords[0] - 1,
-            initialY: entryCoords[1] - 1,
-            finalX: exitCoords[0] - 1,
-            finalY: exitCoords[1] - 1,
-            obstructionSpecs: obstacleDetails
-        };
-    }
-}
-
-function constructSurface(widthVal, heightVal) {
-    const layoutMap = new Map();
-    for (let xCoord = 0; xCoord < widthVal; xCoord++) {
-        for (let yCoord = 0; yCoord < heightVal; yCoord++) {
-            layoutMap.set(`${xCoord},${yCoord}`, 0);
-        }
-    }
-    return layoutMap;
-}
-
-function placeObstruction(layoutMap, obstructionSpec, totalWidth, totalHeight) {
-    const isWide = !obstructionSpec[1];
-    const extentWidth = isWide ? 4 : 2;
-    const extentHeight = isWide ? 2 : 4;
-    const startX = obstructionSpec[2] - 1;
-    const startY = obstructionSpec[3] - 1;
-    const blockIdentifier = obstructionSpec[0];
-
-    for (let currentX = startX; currentX < startX + extentWidth; currentX++) {
-        for (let currentY = startY; currentY < startY + extentHeight; currentY++) {
-            if (currentX >= 0 && currentX < totalWidth && currentY >= 0 && currentY < totalHeight) {
-                layoutMap.set(`${currentX},${currentY}`, blockIdentifier);
-            }
+    for(let col = startCol; col < startCol + effectiveWidth; col += 1){
+        for(let row = startRow; row < startRow + effectiveHeight; row += 1){
+            gridMap.set(`${col},${row}`, obstacleID);
         }
     }
 }
 
-function canTraverse(layoutMap, totalWidth, totalHeight, originX, originY, destinationX, destinationY) {
-    if (originX === destinationX && originY === destinationY) {
+function findPathBFS(gridMap, initialX, initialY, targetX, targetY, maxWidth, maxHeight){
+    if (initialX === targetX && initialY === targetY) {
         return true;
     }
 
-    const startKey = `${originX},${originY}`;
-    const initialSegmentId = layoutMap.get(startKey);
+    const startKey = `${initialX},${initialY}`;
+    const segmentID = gridMap.has(startKey) ? gridMap.get(startKey) : 0; // 0 for empty space
 
-    if (initialSegmentId === undefined) {
-        return false;
-    }
+    const traversalQueue = [];
+    traversalQueue.push([initialX, initialY]);
 
-    const explorationQueue = [[originX, originY]];
-    const visitedLocations = new Set();
-    visitedLocations.add(startKey);
+    const visitedCells = new Set();
+    visitedCells.add(startKey);
 
-    const adjacentOffsets = [
-        [-1, -1], [1, -1], [-1, 1], [1, 1]
-    ];
+    const deltaCoords = [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // Diagonal movements
 
-    while (explorationQueue.length > 0) {
-        const [currentX, currentY] = explorationQueue.shift();
+    while(traversalQueue.length > 0){
+        const [currentX, currentY] = traversalQueue.shift();
 
-        if (currentX === destinationX && currentY === destinationY) {
+        if(currentX === targetX && currentY === targetY){
             return true;
         }
 
-        for (const [deltaX, deltaY] of adjacentOffsets) {
-            const nextX = currentX + deltaX;
-            const nextY = currentY + deltaY;
-            const nextLocationKey = `${nextX},${nextY}`;
+        for(const [dx, dy] of deltaCoords){
+            const nextX = currentX + dx;
+            const nextY = currentY + dy;
+            const nextKey = `${nextX},${nextY}`;
 
-            if (nextX >= 0 && nextX < totalWidth &&
-                nextY >= 0 && nextY < totalHeight &&
-                !visitedLocations.has(nextLocationKey)) {
+            // Boundary check
+            if(nextX < 0 || nextX >= maxWidth || nextY < 0 || nextY >= maxHeight){
+                continue;
+            }
 
-                const neighborSegmentId = layoutMap.get(nextLocationKey);
+            // Visited check
+            if(visitedCells.has(nextKey)){
+                continue;
+            }
 
-                if (neighborSegmentId !== undefined && neighborSegmentId === initialSegmentId) {
-                    visitedLocations.add(nextLocationKey);
-                    explorationQueue.push([nextX, nextY]);
-                }
+            const neighborSegmentID = gridMap.has(nextKey) ? gridMap.get(nextKey) : 0;
+
+            // Block ID check (must be same segmentID)
+            if(neighborSegmentID === segmentID){
+                visitedCells.add(nextKey);
+                traversalQueue.push([nextX, nextY]);
             }
         }
     }
 
     return false;
-}
-
-function extractNumbers(textString) {
-    return textString.split(' ').map(Number);
-}
-
-function isTerminationSignal(coordinatesArray) {
-    return coordinatesArray[0] === 0 && coordinatesArray[1] === 0;
 }

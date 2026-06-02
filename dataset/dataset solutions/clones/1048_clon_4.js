@@ -1,64 +1,41 @@
-(function performCalculation() {
-    const fileSystemModule = require('fs');
-    const inputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-    const dataLines = inputContent.trim().split("\n");
+(function executeProgram() {
+    const inputRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
+    const [itemCount, containerLimit] = inputRows.shift().split(' ').map(Number);
+    const itemWeights = inputRows.map(Number);
 
-    const firstLineParts = dataLines.shift().split(' ').map(Number);
-    const totalItems = firstLineParts[0];
-    const maxContainers = firstLineParts[1];
-    const itemLoads = dataLines.map(Number);
-
-    function evaluateLoadLimit(testCapacity, totalItems, maxContainers, itemLoads) {
-        let currentContainerLoad = 0;
-        let requiredContainers = 1;
-        let itemIndex = 0;
-
-        while (itemIndex < totalItems) {
-            const currentItemWeight = itemLoads[itemIndex];
-
-            if (currentItemWeight > testCapacity) {
+    const checkCapacity = (capacityValue, weightsArray, maxContainers) => {
+        let currentContainerCount = 1;
+        let currentContainerWeight = 0;
+        for (const singleWeight of weightsArray) {
+            if (singleWeight > capacityValue) {
                 return false;
             }
-
-            if (currentContainerLoad + currentItemWeight <= testCapacity) {
-                currentContainerLoad += currentItemWeight;
+            if (currentContainerWeight + singleWeight <= capacityValue) {
+                currentContainerWeight += singleWeight;
             } else {
-                requiredContainers++;
-                currentContainerLoad = currentItemWeight;
+                currentContainerCount++;
+                currentContainerWeight = singleWeight;
             }
-
-            if (requiredContainers > maxContainers) {
-                return false;
-            }
-            itemIndex++;
         }
-        return true;
-    }
+        return currentContainerCount <= maxContainers;
+    };
 
-    let maximumSingleLoad = 0;
-    let totalWeightSum = 0;
-    for (const load of itemLoads) {
-        totalWeightSum += load;
-        if (load > maximumSingleLoad) {
-            maximumSingleLoad = load;
-        }
-    }
-    
-    let lowerBound = Math.max(maximumSingleLoad, Math.ceil(totalWeightSum / maxContainers));
-    let upperBound = totalWeightSum;
+    const totalWeightSum = itemWeights.reduce((accumulator, current) => accumulator + current, 0);
+    const maxIndividualWeight = itemWeights.length > 0 ? Math.max(...itemWeights) : 0;
 
-    let finalCapacity = upperBound;
+    let searchLowerBound = Math.max(maxIndividualWeight, Math.ceil(totalWeightSum / containerLimit));
+    let searchUpperBound = totalWeightSum;
+    let minimumRequiredCapacity = searchUpperBound;
 
-    while (lowerBound <= upperBound) {
-        const midPoint = Math.floor((lowerBound + upperBound) / 2);
-
-        if (evaluateLoadLimit(midPoint, totalItems, maxContainers, itemLoads)) {
-            finalCapacity = midPoint;
-            upperBound = midPoint - 1;
+    while (searchLowerBound <= searchUpperBound) {
+        const testCapacity = Math.floor((searchLowerBound + searchUpperBound) / 2);
+        if (checkCapacity(testCapacity, itemWeights, containerLimit)) {
+            minimumRequiredCapacity = testCapacity;
+            searchUpperBound = testCapacity - 1;
         } else {
-            lowerBound = midPoint + 1;
+            searchLowerBound = testCapacity + 1;
         }
     }
 
-    console.log(finalCapacity);
+    console.log(minimumRequiredCapacity);
 })();

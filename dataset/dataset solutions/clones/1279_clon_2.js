@@ -1,45 +1,48 @@
-'use strict' ;
+'use strict'; // Enforce strict mode for cleaner code
 
-// This function processes incoming data to identify missing card combinations.
-const processInput = (sourceData) => {
-  // Normalize the incoming string data and split it into individual lines.
-  const lineSegments = sourceData.trim( ) .split ( String.fromCharCode(10) ) ;
+/**
+ * Processes the input data to identify missing playing cards.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+const processInput = (rawData) => {
+    // Trim leading/trailing whitespace and split into individual lines.
+    const processedLines = rawData.trim().split("\n");
 
-  // Extract the quantity of items expected from the first line, ensuring it's an integer.
-  const itemQuantity = parseInt( lineSegments[0], 0xA );
+    // Parse the first line to get the number of cards provided.
+    const cardCount = parseInt(processedLines[0], 10);
 
-  // Retrieve the actual items provided, based on the specified quantity.
-  const foundCards = lineSegments.slice(1).slice(0, itemQuantity);
+    // Extract the actual card entries from the input, based on the count.
+    const presentCards = processedLines.slice(1, cardCount + 1);
 
-  // Initialize a collection to hold all possible item combinations.
-  const masterList = [ ] ;
+    // Initialize arrays to hold all possible cards and the ones found to be missing.
+    const allPossibleCards = [];
+    const missingCards = [];
 
-  // Initialize a collection for items that are found to be missing.
-  const unseenCards = [ ] ;
+    // Define the four standard suits for playing cards.
+    const cardSuits = ["S", "H", "C", "D"];
 
-  // Define the types of symbols for the items.
-  const symbolTypes = [ "Spade", "Heart", "Club", "Diamond" ] ;
+    // Iterate through each suit to generate all 13 cards for that suit.
+    cardSuits.forEach(cardSuit => {
+        // Create an array of 13 elements to represent card ranks 1 through 13.
+        [...Array(13)].forEach((_, idx) => {
+            // Construct the card string (e.g., "S 1", "H 13") and add it to the full list.
+            allPossibleCards.push(cardSuit + ` ${idx + 1}`);
+        });
+    });
 
-  // Iterate through each symbol type to generate all possible combinations.
-  symbolTypes . forEach ( (symbolType) => {
-    // For each symbol type, generate 13 numbered items.
-    Array.from( { length : 0xD } ) . forEach ( ( _ , indexVal ) => {
-      masterList.push( symbolType + ' ' + ( indexVal + 1 ) ) ;
-    } ) ;
-  } ) ;
+    // Compare the list of all possible cards against the cards that are present.
+    allPossibleCards.forEach(potentialCard => {
+        // If a potential card is not found in the present cards, it's a missing card.
+        if (!presentCards.includes(potentialCard)) {
+            missingCards.push(potentialCard);
+        }
+    });
 
-  // Compare the master list with the found items to identify missing ones.
-  masterList.forEach( (candidateCard) => {
-    if ( ! foundCards.includes(candidateCard) ) {
-      unseenCards.push(candidateCard);
+    // If there are any missing cards, print them to the console, each on a new line.
+    if (missingCards.length > 0) {
+        console.log(missingCards.join("\n"));
     }
-  } ) ;
+};
 
-  // If there are any missing items, print them to the console, each on a new line.
-  if (unseenCards.length > 0) {
-    console.log( unseenCards.join( '\n' ) );
-  }
-} ;
-
-// Execute the main processing function with data read from standard input.
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

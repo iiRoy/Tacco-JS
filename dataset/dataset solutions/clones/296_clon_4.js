@@ -1,68 +1,47 @@
 const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawData.trim().split('\n');
 
-const extractMatrix = (sourcePath) => {
-    const rawContent = fileSystem.readFileSync(sourcePath, 'utf8');
-    const lineStrings = rawContent.trim().split('\n');
-    const numericMatrix = [];
-    for (const line of lineStrings) {
-        const rowNumbers = line.split(',').map(entry => parseInt(entry, 10));
-        numericMatrix.push(rowNumbers);
-    }
-    return numericMatrix;
-};
+const numericGrid = lineSegments.map(segment =>
+    segment.split(',').map(val => Number(val))
+);
 
-const calculateOptimalPath = (dataMatrix) => {
-    const totalRows = dataMatrix.length;
-    if (totalRows === 0) {
-        return 0;
-    }
+const totalRows = numericGrid.length;
+const pathSumsMatrix = Array(totalRows).fill(null).map((_, r) => Array(r + 1).fill(-Infinity));
 
-    const midRowIndex = Math.floor((totalRows - 1) / 2);
+pathSumsMatrix[0][0] = numericGrid[0][0];
 
-    // Initialize a DP table to store maximum sums to reach each cell
-    // dpTable[r][c] represents the max sum to reach dataMatrix[r][c]
-    const dpTable = Array(totalRows).fill(0).map((_, r) =>
-        Array(dataMatrix[r].length).fill(Number.MIN_SAFE_INTEGER)
-    );
+const midpointThreshold = (totalRows - 1) / 2;
 
-    // Base case: starting point
-    dpTable[0][0] = dataMatrix[0][0];
+for (let r = 0; r < totalRows - 1; r++) {
+    for (let c = 0; c <= r; c++) {
+        if (pathSumsMatrix[r][c] === -Infinity) continue;
 
-    // Iterate through the matrix, calculating max path sums for each cell
-    for (let r = 1; r < totalRows; r++) {
-        for (let c = 0; c < dataMatrix[r].length; c++) {
-            const currentCellVal = dataMatrix[r][c];
-            let maxFromPreviousLevel = Number.MIN_SAFE_INTEGER;
+        const currentAccumulatedSum = pathSumsMatrix[r][c];
 
-            // Determine previous cells based on the phase (expanding or contracting)
-            if (r - 1 < midRowIndex) { // Expanding phase
-                // Can arrive from (r-1, c-1) or (r-1, c)
-                const pathFromLeftUp = (c - 1 >= 0) ? dpTable[r - 1][c - 1] : Number.MIN_SAFE_INTEGER;
-                const pathFromRightUp = (c < dataMatrix[r - 1].length) ? dpTable[r - 1][c] : Number.MIN_SAFE_INTEGER;
-                maxFromPreviousLevel = Math.max(pathFromLeftUp, pathFromRightUp);
-            } else { // Contracting phase
-                // Can arrive from (r-1, c) or (r-1, c+1)
-                const pathFromUp = (c >= 0) ? dpTable[r - 1][c] : Number.MIN_SAFE_INTEGER;
-                const pathFromRightUpDiag = (c + 1 < dataMatrix[r - 1].length) ? dpTable[r - 1][c + 1] : Number.MIN_SAFE_INTEGER;
-                maxFromPreviousLevel = Math.max(pathFromUp, pathFromRightUpDiag);
+        if (r < midpointThreshold) { // Upper section of the pyramid
+            // Move to (r+1, c)
+            pathSumsMatrix[r + 1][c] = Math.max(pathSumsMatrix[r + 1][c], currentAccumulatedSum + numericGrid[r + 1][c]);
+            // Move to (r+1, c+1)
+            pathSumsMatrix[r + 1][c + 1] = Math.max(pathSumsMatrix[r + 1][c + 1], currentAccumulatedSum + numericGrid[r + 1][c + 1]);
+        } else { // Lower section of the pyramid (r >= midpointThreshold)
+            // Move to (r+1, c-1)
+            if (c > 0) { // Ensure column index c-1 is valid
+                pathSumsMatrix[r + 1][c - 1] = Math.max(pathSumsMatrix[r + 1][c - 1], currentAccumulatedSum + numericGrid[r + 1][c - 1]);
             }
-
-            // Update the DP table if a valid path was found
-            if (maxFromPreviousLevel !== Number.MIN_SAFE_INTEGER) {
-                dpTable[r][c] = currentCellVal + maxFromPreviousLevel;
+            // Move to (r+1, c)
+            // This path is taken if 'c' is not the rightmost element of the current row 'r'.
+            // The original condition `x < yx[y].length - 1` translates to `c < r` because `yx[y].length` is `y+1`.
+            if (c < r) { 
+                pathSumsMatrix[r + 1][c] = Math.max(pathSumsMatrix[r + 1][c], currentAccumulatedSum + numericGrid[r + 1][c]);
             }
         }
     }
+}
 
-    // The maximum path sum will be the largest value in the last row of the DP table
-    let overallResult = Number.MIN_SAFE_INTEGER;
-    for (const val of dpTable[totalRows - 1]) {
-        overallResult = Math.max(overallResult, val);
-    }
+let ultimateMaxSum = -Infinity;
+for (let c = 0; c < totalRows; c++) {
+    ultimateMaxSum = Math.max(ultimateMaxSum, pathSumsMatrix[totalRows - 1][c]);
+}
 
-    return overallResult;
-};
-
-const processedData = extractMatrix('/dev/stdin');
-const finalSum = calculateOptimalPath(processedData);
-console.log(finalSum);
+console.log(ultimateMaxSum);

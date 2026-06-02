@@ -1,64 +1,78 @@
-const processInput = (rawInput) => {
-    const dataLines = rawInput.split("\n");
-    const [gridRows, numColors] = dataLines.shift().split(" ").map(Number);
+function numberFrom(piece) {
+    return parseInt(piece, 10);
+}
 
-    const colorTransformCosts = [];
-    for (let i = 0; i < numColors; i++) {
-        colorTransformCosts.push(dataLines.shift().split(" ").map(Number));
-    }
+function parseProblem(rawInput) {
+    var pending = rawInput.split("\n");
+    var header = pending.shift().split(" ").map(numberFrom);
+    var size = header[0];
+    var colors = header[1];
 
-    const initialGridState = [];
-    for (let i = 0; i < gridRows; i++) {
-        initialGridState.push(dataLines.shift().split(" ").map(Number));
-    }
+    var costRows = pending.splice(0, colors).map(function (line) {
+        return line.split(" ").map(numberFrom);
+    });
 
-    const colorOccurrencesByModulo = Array.from({ length: 3 }, () => Array(numColors).fill(0));
+    var boardRows = pending.splice(0, size).map(function (line) {
+        return line.split(" ").map(numberFrom);
+    });
 
-    for (let r = 0; r < gridRows; r++) {
-        for (let c = 0; c < gridRows; c++) { // Assuming gridRows is N, and grid is N x N based on example
-            const moduloGroup = (r + c) % 3;
-            const originalColor = initialGridState[r][c];
-            colorOccurrencesByModulo[moduloGroup][originalColor - 1]++;
-        }
-    }
+    return {
+        n: size,
+        c: colors,
+        cost: costRows,
+        board: boardRows
+    };
+}
 
-    const groupTransformationCosts = Array.from({ length: 3 }, () => Array(numColors).fill(0));
+function cellContribution(data, palette) {
+    var total = 0;
 
-    for (let groupIndex = 0; groupIndex < 3; groupIndex++) {
-        for (let targetColorIndex = 0; targetColorIndex < numColors; targetColorIndex++) {
-            let currentGroupTotalCost = 0;
-            for (let sourceColorIndex = 0; sourceColorIndex < numColors; sourceColorIndex++) {
-                if (sourceColorIndex === targetColorIndex) {
-                    continue;
-                }
-                const countOfSourceColor = colorOccurrencesByModulo[groupIndex][sourceColorIndex];
-                const costToChange = colorTransformCosts[sourceColorIndex][targetColorIndex];
-                currentGroupTotalCost += countOfSourceColor * costToChange;
+    data.board.forEach(function (row, r) {
+        row.forEach(function (painted, col) {
+            var originalColor = painted - 1;
+
+            if (!(originalColor >= 0)) {
+                return;
             }
-            groupTransformationCosts[groupIndex][targetColorIndex] = currentGroupTotalCost;
+
+            var targetColor = palette[(r + col) % 3];
+            if (originalColor !== targetColor) {
+                total += data.cost[originalColor][targetColor];
+            }
+        });
+    });
+
+    return total;
+}
+
+function searchPalettes(data) {
+    var best = Infinity;
+
+    function choose(stack, used) {
+        if (stack.length === 3) {
+            best = Math.min(best, cellContribution(data, stack));
+            return;
         }
-    }
 
-    let lowestPossibleCost = Number.MAX_SAFE_INTEGER;
-
-    for (let firstColorIdx = 0; firstColorIdx < numColors; firstColorIdx++) {
-        for (let secondColorIdx = 0; secondColorIdx < numColors; secondColorIdx++) {
-            if (firstColorIdx === secondColorIdx) {
+        for (var color = 0; color < data.c; color++) {
+            if (used[color]) {
                 continue;
             }
-            for (let thirdColorIdx = 0; thirdColorIdx < numColors; thirdColorIdx++) {
-                if (thirdColorIdx === firstColorIdx || thirdColorIdx === secondColorIdx) {
-                    continue;
-                }
-                const currentTotal = groupTransformationCosts[0][firstColorIdx] +
-                                     groupTransformationCosts[1][secondColorIdx] +
-                                     groupTransformationCosts[2][thirdColorIdx];
-                lowestPossibleCost = Math.min(lowestPossibleCost, currentTotal);
-            }
+            used[color] = true;
+            stack.push(color);
+            choose(stack, used);
+            stack.pop();
+            used[color] = false;
         }
     }
 
-    console.log(lowestPossibleCost);
-};
+    choose([], []);
+    return best;
+}
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+function main(input) {
+    var data = parseProblem(input);
+    console.log(searchPalettes(data));
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

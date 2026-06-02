@@ -1,86 +1,53 @@
-let receivedDataBuffer = '';
-process.stdin.setEncoding('utf8');
+const fs = require("fs");
 
-process.stdin.on('readable', () => {
-    let dataChunk;
-    while ((dataChunk = process.stdin.read()) !== null) {
-        receivedDataBuffer += dataChunk;
+const lines = fs.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+const n = Number(lines.shift());
+const originalNumbers = lines.shift().split(" ").map(Number);
+const orderedNumbers = originalNumbers.slice().sort((a, b) => a - b);
+const operationLimit = Number(lines.shift());
+
+const operations = lines.map(line => line.split(" ").map(value => Number(value) - 1));
+operations.unshift([0, 0]);
+
+const activeIndexes = [];
+const currentValues = [];
+const targetValues = [];
+
+for (let index = 0; index < n; index++) {
+    if (originalNumbers[index] !== orderedNumbers[index]) {
+        activeIndexes.push(index);
+        currentValues.push(originalNumbers[index]);
+        targetValues.push(orderedNumbers[index]);
     }
+}
+
+const positionInActiveList = {};
+activeIndexes.forEach((index, place) => {
+    positionInActiveList[index] = place;
 });
 
-process.stdin.on('end', () => {
-    const processedLines = receivedDataBuffer.trim().split("\n");
+const targetSignature = targetValues.join(",");
+let answer = -1;
 
-    const totalElementCount = parseInt(processedLines.shift(), 10); 
-    const initialArray = processedLines.shift().split(" ").map(Number); 
-    const numberOfOperations = parseInt(processedLines.shift(), 10); 
+for (let step = 0; step <= operationLimit; step++) {
+    const [leftIndex, rightIndex] = operations[step];
 
-    const sortedReferenceArray = [...initialArray].sort((valA, valB) => valA - valB); 
+    const leftPlace = positionInActiveList[leftIndex];
+    const rightPlace = positionInActiveList[rightIndex];
 
-    const exchangeInstructions = [[0, 0], ...processedLines.map(instructionLine => instructionLine.split(" ").map(val => parseInt(val, 10) - 1))];
+    if (leftPlace !== undefined || rightPlace !== undefined) {
+        const leftValue = leftPlace !== undefined ? currentValues[leftPlace] : undefined;
+        const rightValue = rightPlace !== undefined ? currentValues[rightPlace] : undefined;
 
-    const currentMismatchedPositions = new Map(); 
-    const targetMismatchedValues = new Map(); 
-
-    for (let elementIndex = 0; elementIndex < initialArray.length; elementIndex++) {
-        if (initialArray[elementIndex] !== sortedReferenceArray[elementIndex]) {
-            currentMismatchedPositions.set(elementIndex, initialArray[elementIndex]);
-            targetMismatchedValues.set(elementIndex, sortedReferenceArray[elementIndex]);
-        }
+        if (leftPlace !== undefined) currentValues[leftPlace] = rightValue;
+        if (rightPlace !== undefined) currentValues[rightPlace] = leftValue;
     }
 
-    const obtainCanonicalValueSequence = (sourceMap) => {
-        return Array.from(sourceMap.keys())
-            .sort((key1, key2) => key1 - key2)
-            .map(key => sourceMap.get(key));
-    };
-
-    const finalDesiredSequence = obtainCanonicalValueSequence(targetMismatchedValues);
-
-    let solutionDiscovered = false; 
-    let stepCountAtSolution = -1; 
-
-    const performMapEntryExchange = (mapToModify, firstKey, secondKey) => {
-        const valueAtFirst = mapToModify.get(firstKey);
-        const valueAtSecond = mapToModify.get(secondKey);
-
-        if (valueAtSecond !== undefined) {
-            mapToModify.set(firstKey, valueAtSecond);
-        } else {
-            mapToModify.delete(firstKey);
-        }
-
-        if (valueAtFirst !== undefined) {
-            mapToModify.set(secondKey, valueAtFirst);
-        } else {
-            mapToModify.delete(secondKey);
-        }
-    };
-
-    const areSequencesEquivalent = (sequence1, sequence2) => {
-        if (sequence1.length !== sequence2.length) return false;
-        for (let k = 0; k < sequence1.length; k++) {
-            if (sequence1[k] !== sequence2[k]) return false;
-        }
-        return true;
-    };
-
-    for (let currentStep = 0; currentStep < exchangeInstructions.length; currentStep++) {
-        const [coordinateOne, coordinateTwo] = exchangeInstructions[currentStep];
-
-        performMapEntryExchange(currentMismatchedPositions, coordinateOne, coordinateTwo);
-
-        const currentCanonicalSequence = obtainCanonicalValueSequence(currentMismatchedPositions);
-        if (areSequencesEquivalent(currentCanonicalSequence, finalDesiredSequence)) {
-            solutionDiscovered = true;
-            stepCountAtSolution = currentStep;
-            break;
-        }
+    if (currentValues.join(",") === targetSignature) {
+        answer = step;
+        break;
     }
+}
 
-    if (solutionDiscovered) {
-        console.log(stepCountAtSolution);
-    } else {
-        console.log(-1);
-    }
-});
+console.log(answer);

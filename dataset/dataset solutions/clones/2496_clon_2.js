@@ -1,41 +1,39 @@
-'use strict'; // Activate strict mode for cleaner code execution
+'use strict';
 
-/*
- * This primary routine is responsible for processing a given textual dataset.
- * Its main objective is to count the number of distinct character sequences.
- */
-const processInput = ( sourceText ) => {
+// This function processes the raw input string to calculate a specific value.
+const processInput = (rawData) => {
+    // First, split the entire input string by newline characters,
+    // then for each resulting line, split it by spaces.
+    const parsedLines = rawData.split('\n').map(lineSegment => lineSegment.split(' '));
 
-  // Parse the incoming string: first, split by newlines, then each resulting line by spaces.
-  const parsedSegments = sourceText.split('\n').map( lineFragment => lineFragment.split(' ') ) ;
+    // Extract the numerical value N from the first element of the first parsed line.
+    // It represents the total number of characters in the sequence.
+    const numChars = parseInt(parsedLines[0][0], 10);
 
-  // Extract the numerical limit (N) from the first part of the first processed segment.
-  const itemCount = parseInt( parsedSegments[0][0], 10 ) ;
+    // Extract the character sequence S from the first element of the second parsed line.
+    const charSequence = parsedLines[1][0];
 
-  // Retrieve the character series (S) from the first part of the second processed segment.
-  const charStream = parsedSegments[1][0] ;
+    // Initialize a variable to store the character encountered in the previous iteration.
+    let lastChar = null;
 
-  // Initialize a variable to keep track of the character observed in the previous iteration.
-  let lastChar = null ;
+    // Initialize a counter for the number of distinct character groups.
+    let distinctCount = 0;
 
-  // Initialize a counter to store the total number of changes or distinct blocks.
-  let differenceTally = 0 ;
-
-
-  // Begin an iteration loop that runs 'itemCount' times.
-  for ( let loopIndex = 0; loopIndex < itemCount; loopIndex++ ) {
-
-    // Compare the current character in the stream with the last recorded character.
-    if ( lastChar !== charStream[loopIndex] ) {
-      differenceTally++; // If they are different, increment the change counter.
+    // Iterate through the character sequence from the beginning to the end.
+    for (let idx = 0; idx < numChars; idx++) {
+        // If the current character is different from the character seen previously,
+        // it means a new group of characters has started.
+        if (lastChar !== charSequence[idx]) {
+            distinctCount++; // Increment the counter for distinct groups.
+        }
+        // Update the 'lastChar' to the current character for the next iteration.
+        lastChar = charSequence[idx];
     }
-    // Update 'lastChar' to the current character for the next comparison.
-    lastChar = charStream[loopIndex] ;
-  }
 
-  // Output the final computed tally of character differences to the console.
-  console.log( differenceTally ) ;
+    // Print the final calculated count of distinct character groups to the console.
+    console.log(distinctCount);
 };
 
-// Execute the main processing function, reading its input from standard input using Node.js 'fs' module.
-processInput( require('fs').readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// Read the entire content from standard input synchronously,
+// using UTF-8 encoding, and then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

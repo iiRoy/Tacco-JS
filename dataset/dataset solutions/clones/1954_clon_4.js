@@ -1,205 +1,170 @@
-let rawInputBuffer = '';
-process.stdin.on('data', chunk => {
-    rawInputBuffer += chunk.toString();
-});
+"use strict";
 
-process.stdin.on('end', () => {
-    const finalResult = processGraphPathfinder();
-    if (finalResult !== undefined) {
-        process.stdout.write(finalResult + '\n');
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const tokenStream = (function* () {
+    const tokens = fileContent.split(/\s+/).filter(t => t.length > 0);
+    let currentIdx = 0;
+    while (currentIdx < tokens.length) {
+        yield tokens[currentIdx++];
     }
-});
+})();
 
-let inputTokenSource;
-let currentTokenPtr = 0;
-
-function* tokenSequenceGenerator() {
-    const parsedTokens = rawInputBuffer.split(/\s+/).filter(Boolean);
-    while (currentTokenPtr < parsedTokens.length) {
-        yield parsedTokens[currentTokenPtr++];
-    }
+function obtainNumericValue() {
+    return Number(tokenStream.next().value);
 }
 
-function retrieveNextInteger() {
-    return parseInt(inputTokenSource.next().value, 10);
+function obtainNumericSequence(count) {
+    return Array.from({ length: count }, obtainNumericValue);
 }
 
-function retrieveMultipleIntegers(count) {
-    const numberCollection = [];
-    for (let i = 0; i < count; i++) {
-        numberCollection.push(retrieveNextInteger());
-    }
-    return numberCollection;
+function obtainNumericGrid(rows, columns) {
+    return Array.from({ length: rows }, () => obtainNumericSequence(columns));
 }
 
-function construct2DArray(rows, columns, initialElement) {
-    const newGrid = new Array(rows);
-    for (let r = 0; r < rows; r++) {
-        newGrid[r] = new Array(columns).fill(initialElement);
+function constructMultiArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
     }
-    return newGrid;
+    const currentDim = dimensions[0];
+    const remainingDims = dimensions.slice(1);
+    return Array.from({ length: currentDim }, () => constructMultiArray(initialValue, ...remainingDims));
 }
 
-class MinPriorityHeap {
-    #elements = [];
+class PriorityQueueAlternative {
+    #priorityBuckets = new Map();
+    #minPriority = Infinity;
+    #size = 0;
 
-    addItem(itemTuple) {
-        this.#elements.push(itemTuple);
-        this.#heapifyUp(this.#elements.length - 1);
+    enqueue(priority, city, silver) {
+        if (priority < this.#minPriority) {
+            this.#minPriority = priority;
+        }
+        const bucket = this.#priorityBuckets.get(priority);
+        if (bucket) {
+            bucket.push([city, silver]);
+        } else {
+            this.#priorityBuckets.set(priority, [[city, silver]]);
+        }
+        this.#size++;
     }
 
-    extractSmallest() {
-        if (this.isEmpty()) {
+    dequeue() {
+        if (this.#size === 0) {
             return undefined;
         }
-        const smallest = this.#elements[0];
-        const lastElement = this.#elements.pop();
-        if (!this.isEmpty()) {
-            this.#elements[0] = lastElement;
-            this.#heapifyDown(0);
+
+        while (!this.#priorityBuckets.has(this.#minPriority) || this.#priorityBuckets.get(this.#minPriority).length === 0) {
+            const currentKeys = Array.from(this.#priorityBuckets.keys());
+            if (currentKeys.length === 0) {
+                this.#minPriority = Infinity;
+                return undefined;
+            }
+            this.#minPriority = Math.min(...currentKeys);
         }
-        return smallest;
+
+        const bucket = this.#priorityBuckets.get(this.#minPriority);
+        const [city, silver] = bucket.shift();
+        this.#size--;
+
+        if (bucket.length === 0) {
+            this.#priorityBuckets.delete(this.#minPriority);
+        }
+        return [this.#minPriority, city, silver];
     }
 
-    isEmpty() {
-        return this.#elements.length === 0;
-    }
-
-    #heapifyUp(index) {
-        const item = this.#elements[index];
-        while (index > 0) {
-            let parentIndex = Math.floor((index - 1) / 2);
-            let parent = this.#elements[parentIndex];
-            if (item[0] >= parent[0]) {
-                break;
-            }
-            this.#elements[index] = parent;
-            index = parentIndex;
-        }
-        this.#elements[index] = item;
-    }
-
-    #heapifyDown(index) {
-        const totalLength = this.#elements.length;
-        const item = this.#elements[index];
-
-        while (true) {
-            let leftChildIdx = 2 * index + 1;
-            let rightChildIdx = 2 * index + 2;
-            let leftChildVal, rightChildVal;
-            let swapCandidateIdx = null;
-
-            if (leftChildIdx < totalLength) {
-                leftChildVal = this.#elements[leftChildIdx];
-                if (leftChildVal[0] < item[0]) {
-                    swapCandidateIdx = leftChildIdx;
-                }
-            }
-            if (rightChildIdx < totalLength) {
-                rightChildVal = this.#elements[rightChildIdx];
-                if (
-                    (swapCandidateIdx === null && rightChildVal[0] < item[0]) ||
-                    (swapCandidateIdx !== null && rightChildVal[0] < leftChildVal[0])
-                ) {
-                    swapCandidateIdx = rightChildIdx;
-                }
-            }
-
-            if (swapCandidateIdx === null) {
-                break;
-            }
-
-            this.#elements[index] = this.#elements[swapCandidateIdx];
-            index = swapCandidateIdx;
-        }
-        this.#elements[index] = item;
+    get isEmpty() {
+        return this.#size === 0;
     }
 }
 
+const result = processMainLogic();
+if (result !== undefined) {
+    console.log(result);
+}
 
-function processGraphPathfinder() {
-    inputTokenSource = tokenSequenceGenerator();
+function processMainLogic() {
+    const [cityCount, roadCount, initialSilver] = obtainNumericSequence(3);
+    const maxSilverCapacity = cityCount * 50 - cityCount;
 
-    const [numNodes, numConnections, initialCoinSupply] = retrieveMultipleIntegers(3);
-    const maximumCoinCapacity = numNodes * 50 - numNodes;
-
-    const nodeAdjacencies = new Map(); // Map: nodeID -> Array of {destination, coinCost, travelTime}
-    for (let i = 0; i < numNodes; i++) {
-        nodeAdjacencies.set(i, []);
+    const cityConnections = new Map();
+    for (let i = 0; i < cityCount; i++) {
+        cityConnections.set(i, []);
     }
 
-    for (let k = 0; k < numConnections; k++) {
-        const [origin, terminus, coinPrice, duration] = retrieveMultipleIntegers(4);
-        const nodeA = origin - 1;
-        const nodeB = terminus - 1;
-        nodeAdjacencies.get(nodeA).push({ destination: nodeB, coinCost: coinPrice, travelTime: duration });
-        nodeAdjacencies.get(nodeB).push({ destination: nodeA, coinCost: coinPrice, travelTime: duration });
+    for (let i = 0; i < roadCount; i++) {
+        const [uRaw, vRaw, silverReq, timeReq] = obtainNumericSequence(4);
+        const uAdjusted = uRaw - 1;
+        const vAdjusted = vRaw - 1;
+        cityConnections.get(uAdjusted).push({ destination: vAdjusted, silverCost: silverReq, timeCost: timeReq });
+        cityConnections.get(vAdjusted).push({ destination: uAdjusted, silverCost: silverReq, timeCost: timeReq });
     }
 
-    const tradeDetails = []; // Array of {coinGain, timeExpense}
-    for (let i = 0; i < numNodes; i++) {
-        const [gainAmt, expenseTime] = retrieveMultipleIntegers(2);
-        tradeDetails.push({ coinGain: gainAmt, timeExpense: expenseTime });
+    const exchangeRates = obtainNumericGrid(cityCount, 2);
+
+    const minTimeState = new Map();
+    for (let i = 0; i < cityCount; i++) {
+        const silverMap = new Map();
+        for (let j = 0; j <= maxSilverCapacity; j++) {
+            silverMap.set(j, 1e18);
+        }
+        minTimeState.set(i, silverMap);
     }
 
-    const infiniteTimeValue = 1e18;
-    const minimumStateTimes = construct2DArray(numNodes, maximumCoinCapacity + 1, infiniteTimeValue);
-
-    const shortestArrivals = new Array(numNodes).fill(infiniteTimeValue);
-    let unvisitedNodeCount = numNodes;
-
-    const eventScheduler = new MinPriorityHeap();
-
-    let currentCoinBalance = initialCoinSupply;
-    if (currentCoinBalance > maximumCoinCapacity) {
-        currentCoinBalance = maximumCoinCapacity;
+    const finalCityTimes = new Map();
+    for (let i = 0; i < cityCount; i++) {
+        finalCityTimes.set(i, 1e18);
     }
 
-    // Item format: [priority_time, node_index, current_coin_balance]
-    eventScheduler.addItem([0, 0, currentCoinBalance]);
-    minimumStateTimes[0][currentCoinBalance] = 0;
+    const explorationQueue = new PriorityQueueAlternative();
+    let citiesRemaining = cityCount;
 
-    while (!eventScheduler.isEmpty() && unvisitedNodeCount > 0) {
-        const [currentTimeElapsed, currentNode, currentCoins] = eventScheduler.extractSmallest();
+    const startingSilver = Math.min(initialSilver, maxSilverCapacity);
+    explorationQueue.enqueue(0, 0, startingSilver);
+    minTimeState.get(0).set(startingSilver, 0);
 
-        if (currentTimeElapsed > minimumStateTimes[currentNode][currentCoins]) {
+    while (!explorationQueue.isEmpty) {
+        const [currentTime, currentCity, currentSilver] = explorationQueue.dequeue();
+
+        if (finalCityTimes.get(currentCity) === 1e18) {
+            citiesRemaining--;
+            finalCityTimes.set(currentCity, currentTime);
+        }
+
+        if (minTimeState.get(currentCity).get(currentSilver) < currentTime) {
             continue;
         }
 
-        if (shortestArrivals[currentNode] === infiniteTimeValue) {
-            shortestArrivals[currentNode] = currentTimeElapsed;
-            unvisitedNodeCount--;
-        }
+        if (currentSilver < maxSilverCapacity) {
+            const silverGain = exchangeRates[currentCity][0];
+            const timeCost = exchangeRates[currentCity][1];
 
-        // Action 1: Convert gold to silver at currentNode
-        if (currentCoins < maximumCoinCapacity) {
-            const { coinGain, timeExpense } = tradeDetails[currentNode];
-            const nextCoinBalance = Math.min(currentCoins + coinGain, maximumCoinCapacity);
-            const nextTimeElapsed = currentTimeElapsed + timeExpense;
+            const nextSilver = Math.min(currentSilver + silverGain, maxSilverCapacity);
+            const nextTime = currentTime + timeCost;
 
-            if (nextTimeElapsed < minimumStateTimes[currentNode][nextCoinBalance]) {
-                minimumStateTimes[currentNode][nextCoinBalance] = nextTimeElapsed;
-                eventScheduler.addItem([nextTimeElapsed, currentNode, nextCoinBalance]);
+            if (minTimeState.get(currentCity).get(nextSilver) > nextTime) {
+                minTimeState.get(currentCity).set(nextSilver, nextTime);
+                explorationQueue.enqueue(nextTime, currentCity, nextSilver);
             }
         }
 
-        // Action 2: Traverse an edge from currentNode
-        for (const adjacentConnection of nodeAdjacencies.get(currentNode)) {
-            const { destination, coinCost, travelTime } = adjacentConnection;
+        for (const connection of cityConnections.get(currentCity)) {
+            const { destination: nextCity, silverCost: travelSilverCost, timeCost: travelTimeCost } = connection;
 
-            const remainingCoins = currentCoins - coinCost;
-            if (remainingCoins < 0) {
-                continue;
-            }
+            if (currentSilver >= travelSilverCost) {
+                const nextSilver = currentSilver - travelSilverCost;
+                const nextTime = currentTime + travelTimeCost;
 
-            const totalTimeForPath = currentTimeElapsed + travelTime;
-
-            if (totalTimeForPath < minimumStateTimes[destination][remainingCoins]) {
-                minimumStateTimes[destination][remainingCoins] = totalTimeForPath;
-                eventScheduler.addItem([totalTimeForPath, destination, remainingCoins]);
+                if (minTimeState.get(nextCity).get(nextSilver) > nextTime) {
+                    minTimeState.get(nextCity).set(nextSilver, nextTime);
+                    explorationQueue.enqueue(nextTime, nextCity, nextSilver);
+                }
             }
         }
     }
 
-    return shortestArrivals.slice(1).join('\n');
+    const outputLines = [];
+    for (let i = 1; i < cityCount; i++) {
+        outputLines.push(finalCityTimes.get(i));
+    }
+    return outputLines.join("\n");
 }

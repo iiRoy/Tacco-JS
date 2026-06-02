@@ -1,43 +1,33 @@
 'use strict';
-function ExecuteProcess(sourceData){
-  const dataLines = sourceData.trim().split(/\r?\n/g);
-  const parameters = dataLines[0].split(' ').map(str => Number(str));
-  const dimensionSize = parameters[0];
-  const cycleCount = parameters[1];
-  let generationValues = dataLines[1].split(' ').map(str => Number(str));
+function processInputAndCompute(sourceText) {
+    const lines = sourceText.trim().split(/\r?\n/g);
+    const [size, rounds] = lines[0].split(' ').map(Number);
+    let currentValues = lines[1].split(' ').map(Number);
 
-  for(let cycleIndex = 0; cycleIndex < cycleCount; cycleIndex++){
-      // Initialize an auxiliary array to track changes at specific points
-      // This array will hold increments at start points and decrements at end points + 1
-      let changeTracker = new Array(dimensionSize + 1).fill(0);
+    const finalValues = Array.from({ length: rounds }).reduce((previousValues, _, roundIndex) => {
+        const diffTracker = new Array(size + 1).fill(0);
 
-      // Iterate through the current generation's values to determine their "spread"
-      // and mark these changes in the changeTracker array.
-      for(let currentIdx = 0; currentIdx < dimensionSize; currentIdx++){
-          const spreadingFactor = generationValues[currentIdx];
-          const spanStart = Math.max(0, currentIdx - spreadingFactor);
-          const spanEnd = Math.min(dimensionSize - 1, currentIdx + spreadingFactor);
+        previousValues.forEach((spreadDistance, cellIndex) => {
+            const startEffect = Math.max(0, cellIndex - spreadDistance);
+            const endEffect = Math.min(size - 1, cellIndex + spreadDistance);
 
-          // Increment at the start of the effective span
-          changeTracker[spanStart]++;
-          // Decrement just after the end of the effective span, if within bounds
-          if(spanEnd + 1 < dimensionSize){
-              changeTracker[spanEnd + 1]--;
-          }
-      }
+            diffTracker[startEffect]++;
+            // The effect ends after endEffect, so we decrement at endEffect + 1.
+            // endEffect can be at most size - 1, so endEffect + 1 can be at most size.
+            // diffTracker has size + 1 elements (indices 0 to size), so diffTracker[endEffect + 1] is always a valid index.
+            diffTracker[endEffect + 1]--;
+        });
 
-      // Compute the next generation's values by performing a prefix sum (cumulative sum)
-      // on the changeTracker array.
-      let nextGenerationValues = new Array(dimensionSize);
-      let runningSum = 0;
-      for(let resultIdx = 0; resultIdx < dimensionSize; resultIdx++){
-          runningSum += changeTracker[resultIdx];
-          nextGenerationValues[resultIdx] = runningSum;
-      }
-      // The newly computed values become the input for the next cycle
-      generationValues = nextGenerationValues;
-  }
-  process.stdout.write(generationValues.join(' ') + '\n');
+        const nextValues = [];
+        let currentCount = 0;
+        for (let i = 0; i < size; i++) {
+            currentCount += diffTracker[i];
+            nextValues.push(currentCount);
+        }
+        return nextValues;
+    }, currentValues);
+
+    console.log(finalValues.join(' '));
 }
 
-ExecuteProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,91 +1,76 @@
-let sourceReader = initializeReader();
+var dataProcessor = initializeInputHandler();
 ExecuteProgram();
-
-function readInteger() {
-  return dataTransformer(readNextLine(), 1);
+function retrieveInteger() {
+  return performConversion(retrieveNextLine(), 1);
 }
-
-function readStringArray() {
-  return dataTransformer(readNextLine(), 2); /* Splits an input line by single space characters */
+function retrieveStringArray() {
+  return performConversion(retrieveNextLine(), 2);
+} // Splits by space
+function retrieveIntegerArray() {
+  return performConversion(retrieveNextLine(), 4);
+} // Splits by space and converts to numbers
+function retrieveCharacterArray() {
+  return performConversion(retrieveNextLine(), 6);
+} // Splits into individual characters
+function retrieveNextLine() {
+  return dataProcessor.retrieveNextLine();
 }
-
-function readIntegerArray() {
-  return dataTransformer(readNextLine(), 4); /* Splits by spaces and converts resulting parts to numbers */
-}
-
-function readCharacterArray() {
-  return dataTransformer(readNextLine(), 6); /* Breaks down an input line into an array of individual characters */
-}
-
-function readNextLine() {
-  return sourceReader.readNextLine();
-}
-
 function hasMoreLines() {
-  return sourceReader.hasMoreLines();
+  return dataProcessor.hasMoreLines();
 }
-
-function fetchInputData() {
-  return require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+function readInputFile() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
-
-function initializeReader() {
-  let inputLines = fetchInputData();
-  let readerInstance = {
-    "lineBuffer" : inputLines,
-    "currentLineIndex" : 0,
-    "totalLines" : inputLines.length,
-    "hasMoreLines" : function() {
-      return (this.currentLineIndex < this.totalLines);
+function initializeInputHandler() {
+  var inputLines = readInputFile();
+  var handlerObject = {
+    lineCollection: inputLines,
+    currentPosition: 0,
+    totalLines: inputLines.length,
+    hasMoreLines: function () {
+      return this.currentPosition < this.totalLines;
     },
-    "readNextLine" : function() {
+    retrieveNextLine: function () {
       if (!this.hasMoreLines()) {
-        throw "EndOfInputReachedException No more data available";
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        let currentLineContent = this.lineBuffer[this.currentLineIndex];
-        this.currentLineIndex++;
-        return currentLineContent;
+        var currentLine = this.lineCollection[this.currentPosition];
+        this.currentPosition++;
+        return currentLine;
       }
-    }
+    },
   };
-  return readerInstance;
+  return handlerObject;
 }
-
 function printOutput(outputValue) {
   console.log(outputValue);
-} /* Writes the given value to the standard output stream */
-
+} // Standard output
 function printError(errorMessage) {
   console.error(errorMessage);
-} /* Emits an error message to the standard error stream */
-
-/*
- * Utility function for transforming input values based on a specified type.
- * The 'transformType' parameter determines the conversion or manipulation to perform.
- *
- * Default/Error case: Returns the 'inputValue' without any changes.
- * Type 1: Converts the 'inputValue' to an integer data type.
- * Type 2: Splits the 'inputValue' string using a single space as the delimiter.
- * Type 4: Splits the 'inputValue' by spaces, then converts each resulting part to a number.
- * Type 6: Splits the 'inputValue' string into an array of its individual characters.
- * Type 7: Splits the 'inputValue' into characters, then converts each character to a number.
- * Type 8: Concatenates elements of an array with a single space character in between.
- * Type 9: Concatenates array elements, using a newline character as the separator.
- * Type 0: Concatenates array elements without any separating character.
- */
-function dataTransformer(inputValue, transformType) {
+} // Standard error output
+// Conversion types:
+// 1: Convert to integer
+// 2: Split by space
+// 4: Split by space and map to numbers
+// 6: Split into characters
+// 7: Split into characters and map to numbers
+// 8: Join with space
+// 9: Join with newline
+// 0: Join without separator
+// Default: Return input as is
+function performConversion(inputValue, conversionType) {
   try {
-    switch (transformType) {
+    switch (conversionType) {
       case 1:
         return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
-        return inputValue.split(" ").map((valA) => Number(valA));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
         return inputValue.split("");
       case 7:
-        return inputValue.split("").map((valA) => Number(valA));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
         return inputValue.join(" ");
       case 9:
@@ -95,45 +80,43 @@ function dataTransformer(inputValue, transformType) {
       default:
         return inputValue;
     }
-  } catch (exceptionObject) {
+  } catch (conversionError) {
     return inputValue;
   }
 }
-
 function ExecuteProgram() {
-  let inputNumber = readInteger();
-  let resultCounter = 0;
+  var inputNumber = retrieveInteger();
+  var resultCount = 0;
   /*
-   * This section is currently commented out, representing alternative program logic.
-   *
-   * for (let iterationIndex = 2; iterationIndex <= inputNumber; iterationIndex++) {
-   *   let temporaryValue = inputNumber;
-   *   while (temporaryValue >= iterationIndex) {
-   *     if (temporaryValue % iterationIndex === 0) {
-   *       temporaryValue /= iterationIndex;
-   *     } else {
-   *       temporaryValue -= iterationIndex;
-   *     }
-   *   }
-   *   if (temporaryValue === 1) {
-   *     printError(iterationIndex);
-   *     resultCounter++;
-   *   }
-   * }
-   */
+  for (var loopCounter = 2; loopCounter <= inputNumber; loopCounter++) {
+    var tempValue = inputNumber;
+    while (tempValue >= loopCounter) {
+      if (tempValue % loopCounter == 0) {
+        tempValue /= loopCounter;
+      } else {
+        tempValue -= loopCounter;
+      }
+    }
+    if (tempValue == 1) {
+      printError(loopCounter);
+      resultCount++;
+    }
+  }
+  */
   printOutput(calculateDivisors(inputNumber - 1).length + 1);
 }
-
 function calculateDivisors(targetValue) {
-  let divisorCollection = [];
-  for (let iterationIndex = 1; iterationIndex * iterationIndex <= targetValue; iterationIndex++) {
-    if (targetValue % iterationIndex === 0) {
-      divisorCollection.push(iterationIndex);
-      if (iterationIndex * iterationIndex !== targetValue) {
-        divisorCollection.push(targetValue / iterationIndex);
+  var divisorCollection = [];
+  for (var iterator = 1; iterator * iterator <= targetValue; iterator++) {
+    if (targetValue % iterator == 0) {
+      divisorCollection.push(iterator);
+      if (iterator * iterator != targetValue) {
+        divisorCollection.push(targetValue / iterator);
       }
     }
   }
-  divisorCollection.sort(function(valA, valB) { return valA - valB; });
+  divisorCollection.sort(function (valA, valB) {
+    return valA - valB;
+  });
   return divisorCollection;
 }

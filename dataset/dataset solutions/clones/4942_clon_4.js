@@ -1,65 +1,55 @@
-const inputAcquirer = () => {
-    const systemOperations = require("fs");
-    return systemOperations.readFileSync("/dev/stdin", "UTF-8");
-};
+const fileSystem = require('fs');
 
-const evaluateProgress = (
-    currentSpot,
-    nonTargetRunningTotal,
-    targetRunningTotal,
-    adjustmentCounter,
-    characterArray,
-    sequenceLength
-) => {
-    if (currentSpot === sequenceLength || targetRunningTotal === sequenceLength / 2) {
-        return adjustmentCounter;
-    }
+const processInputString = (inputLine) => {
+    const charSequence = inputLine.split('');
+    const totalLength = charSequence.length;
+    const targetTally = totalLength / 2;
 
-    const currentSymbol = characterArray[currentSpot];
+    const intermediateStates = charSequence.reduce((accumulator, currentCharacter) => {
+        const previousState = accumulator.length > 0 ? accumulator[accumulator.length - 1] : {
+            tallyOfT: 0,
+            tallyOfOther: 0,
+            matchedUnits: 0,
+            completionFlag: false
+        };
 
-    if (currentSymbol === 'T') {
-        const nextTargetRunningTotal = targetRunningTotal + 1;
-        let nextAdjustmentCounter = adjustmentCounter;
-        if (adjustmentCounter < nonTargetRunningTotal) {
-            nextAdjustmentCounter++;
+        if (previousState.completionFlag) {
+            accumulator.push(previousState);
+            return accumulator;
         }
-        return evaluateProgress(
-            currentSpot + 1,
-            nonTargetRunningTotal,
-            nextTargetRunningTotal,
-            nextAdjustmentCounter,
-            characterArray,
-            sequenceLength
-        );
-    } else {
-        const nextNonTargetRunningTotal = nonTargetRunningTotal + 1;
-        return evaluateProgress(
-            currentSpot + 1,
-            nextNonTargetRunningTotal,
-            targetRunningTotal,
-            adjustmentCounter,
-            characterArray,
-            sequenceLength
-        );
-    }
+
+        let currentTallyOfT = previousState.tallyOfT;
+        let currentTallyOfOther = previousState.tallyOfOther;
+        let currentMatchedUnits = previousState.matchedUnits;
+
+        if (currentCharacter === 'T') {
+            currentTallyOfT++;
+            if (currentMatchedUnits < currentTallyOfOther) {
+                currentMatchedUnits++;
+            }
+        } else {
+            currentTallyOfOther++;
+        }
+
+        const completionFlag = currentTallyOfT === targetTally;
+
+        accumulator.push({
+            tallyOfT: currentTallyOfT,
+            tallyOfOther: currentTallyOfOther,
+            matchedUnits: currentMatchedUnits,
+            completionFlag: completionFlag
+        });
+        return accumulator;
+    }, []);
+
+    const relevantState = intermediateStates.find(state => state.tallyOfT === targetTally) ||
+                          intermediateStates[intermediateStates.length - 1];
+
+    const finalOutcome = totalLength - 2 * relevantState.matchedUnits;
+    console.log(finalOutcome);
 };
 
-const processSequence = (incomingData) => {
-    const firstLine = incomingData.split("\n")[0];
-    const characterList = Array.from(firstLine);
-    const totalLength = characterList.length;
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'UTF-8');
+const firstLine = rawInput.split('\n')[0];
 
-    const finalAdjustment = evaluateProgress(
-        0,
-        0,
-        0,
-        0,
-        characterList,
-        totalLength
-    );
-
-    const calculatedOutcome = totalLength - (2 * finalAdjustment);
-    console.log(calculatedOutcome);
-};
-
-processSequence(inputAcquirer());
+processInputString(firstLine);

@@ -1,49 +1,34 @@
-let incomingStreamData = '';
+let incomingTextBuffer = '';
+
+function processSingleSegment(segmentContent) {
+  const occurrenceTally = { joi: 0, ioi: 0 };
+  const searchPattern = /(JOI|IOI)/g;
+
+  const matchIterator = segmentContent.matchAll(searchPattern);
+
+  for (const matchResult of matchIterator) {
+    const foundSequence = matchResult[0];
+    if (foundSequence === "JOI") {
+      occurrenceTally.joi++;
+    } else if (foundSequence === "IOI") {
+      occurrenceTally.ioi++;
+    }
+  }
+
+  console.log(occurrenceTally.joi);
+  console.log(occurrenceTally.ioi);
+}
+
+function analyzeTextSegments() {
+  const lineCollection = incomingTextBuffer.split('\n');
+  lineCollection.forEach(processSingleSegment);
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (dataChunk) => {
-  incomingStreamData += dataChunk;
+process.stdin.on('data', function(chunk) {
+  incomingTextBuffer += chunk;
 });
-process.stdin.on('end', () => {
-  initiateProcessing();
+process.stdin.on('end', function() {
+  analyzeTextSegments();
 });
-
-function initiateProcessing() {
-  const lineCollection = incomingStreamData.split('\n');
-  lineCollection.forEach(processEachLine);
-}
-
-function processEachLine(lineFragment) {
-  if (lineFragment.length < 3) {
-      console.log(0);
-      console.log(0);
-      return;
-  }
-  const sequenceTally = countSpecificSequences(lineFragment);
-  console.log(sequenceTally.first);
-  console.log(sequenceTally.second);
-}
-
-function countSpecificSequences(textualContent) {
-  let initialPatternOccurrences = 0;
-  let secondaryPatternOccurrences = 0;
-
-  const firstSequenceRegex = new RegExp('JOI', 'g');
-  const secondSequenceRegex = new RegExp('IOI', 'g');
-
-  const firstMatches = textualContent.match(firstSequenceRegex);
-  if (firstMatches) {
-    initialPatternOccurrences = firstMatches.length;
-  }
-
-  const secondMatches = textualContent.match(secondSequenceRegex);
-  if (secondMatches) {
-    secondaryPatternOccurrences = secondMatches.length;
-  }
-
-  return {
-    first: initialPatternOccurrences,
-    second: secondaryPatternOccurrences
-  };
-}

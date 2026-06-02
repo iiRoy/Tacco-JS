@@ -1,85 +1,106 @@
 'use strict';
 
 /**
- * Main entry point for processing the game input.
- * This function simulates movement within a grid based on player actions and restrictions.
- * @param {string} rawData - The raw input string containing grid dimensions,
- *                           start position, number of steps, and move/restriction sequences.
+ * Processes grid movement instructions to determine if a player can avoid obstacles.
+ * This function simulates the movement of a player's possible reachable area
+ * and an obstacle's movement, checking for collisions or out-of-bounds conditions.
+ *
+ * @param {string} rawData - A string containing space-separated input values:
+ *                           H W N sr sc S T
+ *                           H: grid height
+ *                           W: grid width
+ *                           N: number of moves
+ *                           sr: starting row of the player
+ *                           sc: starting column of the player
+ *                           S: string of player's moves (L, R, U, D)
+ *                           T: string of obstacle's moves (L, R, U, D)
  */
-function ProcessInput ( rawData ) {
-  // Split the raw input string into an array of tokens using whitespace as delimiter.
-  const tokenizedData = rawData.split ( /\s+/ );
+function ProcessGridMoves(rawData) {
+  // Split the input string by whitespace to get individual values.
+  let parsedInputs = rawData.split(/\s+/);
 
-  // Parse grid dimensions and game parameters from the tokenized data.
-  // Using `Number()` for explicit type conversion.
-  const gridHeight = Number ( tokenizedData.shift ( ) ); // Represents the height of the playable grid area.
-  const gridWidth = Number ( tokenizedData.shift ( ) );  // Represents the width of the playable grid area.
-  const numSteps = Number ( tokenizedData.shift ( ) );  // Total number of simulation steps to perform.
+  // Extract grid dimensions and initial player position.
+  // The `- 0` converts string to number.
+  const gridHeight = parsedInputs.shift() - 0;
+  const gridWidth = parsedInputs.shift() - 0;
+  const numMoves = parsedInputs.shift() - 0;
+  const startRow = parsedInputs.shift() - 0;
+  const startCol = parsedInputs.shift() - 0;
 
-  const startRow = Number ( tokenizedData.shift ( ) );  // Initial row coordinate (1-indexed).
-  const startCol = Number ( tokenizedData.shift ( ) );  // Initial column coordinate (1-indexed).
+  // Extract player and obstacle movement sequences.
+  const playerMoves = parsedInputs.shift();
+  const obstacleMoves = parsedInputs.shift();
 
-  const moveSequence = tokenizedData.shift ( );   // Sequence of player movement commands (e.g., 'U', 'D', 'L', 'R').
-  const restrictSequence = tokenizedData.shift ( ); // Sequence of restriction commands, applied after player moves.
+  // Initialize an array to store the boundaries of the reachable area at each step.
+  // Each element is [minColumn, maxColumn, minRow, maxRow].
+  // Initially, the reachable area is just the starting point.
+  let reachableAreaBounds = [[startCol, startCol, startRow, startRow]];
 
-  // Initialize a data structure to track the possible boundaries of the player's position.
-  // Each inner array stores [min_col, max_col, min_row, max_row] for a given step.
-  // We start with the initial position as both min and max for all boundaries.
-  const positionBounds = [ [ startCol, startCol, startRow, startRow ] ];
+  // Iterate through each movement step.
+  for (let moveIndex = 0; moveIndex < numMoves; moveIndex++) {
+    // Create a new entry for the next step's boundaries.
+    reachableAreaBounds[moveIndex + 1] = [];
 
-  // Iterate through each step of the simulation.
-  for ( let stepIndex = 0; stepIndex < numSteps; stepIndex++ ) {
-    // Create a new entry for the current step's boundaries.
-    positionBounds[ stepIndex + 1 ] = [ ];
+    // Calculate the potential new boundaries after the player's move.
+    // minColumn: Decreases if player moves Left.
+    reachableAreaBounds[moveIndex + 1][0] = reachableAreaBounds[moveIndex][0] - (playerMoves[moveIndex] === 'L' ? 1 : 0);
+    // maxColumn: Increases if player moves Right.
+    reachableAreaBounds[moveIndex + 1][1] = reachableAreaBounds[moveIndex][1] + (playerMoves[moveIndex] === 'R' ? 1 : 0);
+    // minRow: Decreases if player moves Up.
+    reachableAreaBounds[moveIndex + 1][2] = reachableAreaBounds[moveIndex][2] - (playerMoves[moveIndex] === 'U' ? 1 : 0);
+    // maxRow: Increases if player moves Down.
+    reachableAreaBounds[moveIndex + 1][3] = reachableAreaBounds[moveIndex][3] + (playerMoves[moveIndex] === 'D' ? 1 : 0);
 
-    // Calculate potential new boundaries based on the player's move for the current step.
-    // Index 0: min_col, Index 1: max_col, Index 2: min_row, Index 3: max_row
-    // 'L' decrements column, 'R' increments column.
-    positionBounds[ stepIndex + 1 ][ 0 ] = positionBounds[ stepIndex ][ 0 ] - ( moveSequence[ stepIndex ] === 'L' ? 1 : 0 );
-    positionBounds[ stepIndex + 1 ][ 1 ] = positionBounds[ stepIndex ][ 1 ] + ( moveSequence[ stepIndex ] === 'R' ? 1 : 0 );
-    // 'U' decrements row, 'D' increments row.
-    positionBounds[ stepIndex + 1 ][ 2 ] = positionBounds[ stepIndex ][ 2 ] - ( moveSequence[ stepIndex ] === 'U' ? 1 : 0 );
-    positionBounds[ stepIndex + 1 ][ 3 ] = positionBounds[ stepIndex ][ 3 ] + ( moveSequence[ stepIndex ] === 'D' ? 1 : 0 );
-
-    // Check if any boundary has moved out of the valid grid range (1 to H/W).
-    // If min_col becomes 0, or max_col becomes W+1, or min_row becomes 0, or max_row becomes H+1,
-    // it means the player *must* have gone out of bounds, so no solution.
-    if ( positionBounds[ stepIndex + 1 ][ 0 ] === 0
-      || positionBounds[ stepIndex + 1 ][ 1 ] === gridWidth + 1
-      || positionBounds[ stepIndex + 1 ][ 2 ] === 0
-      || positionBounds[ stepIndex + 1 ][ 3 ] === gridHeight + 1 )
-    {
-      console.log ( 'NO' ); // Output 'NO' if impossible.
-      return;                 // Terminate execution.
+    // Check if the player's reachable area goes out of bounds (1 to W/H).
+    // If minColumn becomes 0 (left of grid), maxColumn becomes W+1 (right of grid),
+    // minRow becomes 0 (above grid), or maxRow becomes H+1 (below grid),
+    // then the player cannot survive.
+    if (
+      reachableAreaBounds[moveIndex + 1][0] === 0 ||
+      reachableAreaBounds[moveIndex + 1][1] === gridWidth + 1 ||
+      reachableAreaBounds[moveIndex + 1][2] === 0 ||
+      reachableAreaBounds[moveIndex + 1][3] === gridHeight + 1
+    ) {
+      console.log('NO'); // Player cannot survive.
+      return;            // Exit the function.
     }
 
-    // Now, apply the restrictions from the 'restrictSequence'.
-    // Restrictions can expand the possible range if the player is pushed back.
-    // For min_col: if 'R' restriction, min_col can increase (pushed right). Cap at gridWidth.
-    positionBounds[ stepIndex + 1 ][ 0 ] = Math.min (
-      positionBounds[ stepIndex + 1 ][ 0 ] + ( restrictSequence[ stepIndex ] === 'R' ? 1 : 0 ),
+    // Now, adjust the boundaries based on the obstacle's movement.
+    // The obstacle restricts the player's movement, effectively shrinking the reachable area.
+
+    // minColumn: If obstacle moves Right, the minimum reachable column increases.
+    // Also, ensure it doesn't exceed the gridWidth.
+    reachableAreaBounds[moveIndex + 1][0] = Math.min(
+      reachableAreaBounds[moveIndex + 1][0] + (obstacleMoves[moveIndex] === 'R' ? 1 : 0),
       gridWidth
     );
-    // For max_col: if 'L' restriction, max_col can decrease (pushed left). Cap at 1.
-    positionBounds[ stepIndex + 1 ][ 1 ] = Math.max (
-      positionBounds[ stepIndex + 1 ][ 1 ] - ( restrictSequence[ stepIndex ] === 'L' ? 1 : 0 ),
+
+    // maxColumn: If obstacle moves Left, the maximum reachable column decreases.
+    // Also, ensure it doesn't go below 1.
+    reachableAreaBounds[moveIndex + 1][1] = Math.max(
+      reachableAreaBounds[moveIndex + 1][1] - (obstacleMoves[moveIndex] === 'L' ? 1 : 0),
       1
     );
-    // For min_row: if 'D' restriction, min_row can increase (pushed down). Cap at gridHeight.
-    positionBounds[ stepIndex + 1 ][ 2 ] = Math.min (
-      positionBounds[ stepIndex + 1 ][ 2 ] + ( restrictSequence[ stepIndex ] === 'D' ? 1 : 0 ),
+
+    // minRow: If obstacle moves Down, the minimum reachable row increases.
+    // Also, ensure it doesn't exceed the gridHeight.
+    reachableAreaBounds[moveIndex + 1][2] = Math.min(
+      reachableAreaBounds[moveIndex + 1][2] + (obstacleMoves[moveIndex] === 'D' ? 1 : 0),
       gridHeight
     );
-    // For max_row: if 'U' restriction, max_row can decrease (pushed up). Cap at 1.
-    positionBounds[ stepIndex + 1 ][ 3 ] = Math.max (
-      positionBounds[ stepIndex + 1 ][ 3 ] - ( restrictSequence[ stepIndex ] === 'U' ? 1 : 0 ),
+
+    // maxRow: If obstacle moves Up, the maximum reachable row decreases.
+    // Also, ensure it doesn't go below 1.
+    reachableAreaBounds[moveIndex + 1][3] = Math.max(
+      reachableAreaBounds[moveIndex + 1][3] - (obstacleMoves[moveIndex] === 'U' ? 1 : 0),
       1
     );
   }
 
-  // If the loop completes without returning, it means a valid path exists.
-  console.log ( 'YES' );
+  // If the loop completes without the player going out of bounds,
+  // it means the player can survive.
+  console.log('YES');
 }
 
-// Call the processing function with input read from standard input.
-ProcessInput ( require ( 'fs' ).readFileSync ( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessGridMoves(require('fs').readFileSync('/dev/stdin', 'utf8'));

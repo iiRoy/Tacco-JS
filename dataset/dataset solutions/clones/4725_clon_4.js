@@ -1,17 +1,14 @@
-const assessNumericPattern = (incomingData) => {
-    const segmentCollection = incomingData.split('\n');
-    const targetSegment = segmentCollection[1];
-    const transformedNumbers = targetSegment.split(' ').map(strVal => parseInt(strVal, 10));
+function processData(sourceText) {
+    const contentLines = sourceText.split('\n');
+    const numericSequence = contentLines[1].split(' ').map(Number);
 
-    const totalOddOccurrences = transformedNumbers.filter(numVal => (numVal & 1) !== 0).length;
+    const oddCountIsEven = numericSequence.reduce((currentParityState, currentElement) => {
+        // If the current element is odd, it flips the parity state of the odd count.
+        // If the current element is even, the parity state remains unchanged.
+        return (currentElement % 2 !== 0) ? !currentParityState : currentParityState;
+    }, true); // Initialize with 'true', representing an even count (0 odd numbers initially).
 
-    const outcomeMessage = (totalOddOccurrences % 2 === 0) ? "YES" : "NO";
+    console.log(oddCountIsEven ? "YES" : "NO");
+}
 
-    console.log(outcomeMessage);
-};
-
-const obtainExternalPayload = () => {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim();
-};
-
-assessNumericPattern(obtainExternalPayload());
+processData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

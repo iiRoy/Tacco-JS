@@ -1,37 +1,48 @@
-function PerformCheck ( sourceText ) {
-  const   segments = sourceText . split ( "\n" ) ;
-  const itemCount = parseInt( segments[ 0 ] ) ;
-  const   threshold = itemCount / 2 ;
-  const dataSeq = segments[ 1 ] ;
-  var outcome = false ;
-  var firstColorCount = 0 ;
-  var secondColorCount = 0 ;
+function ProcessInput(inputData) {
+  // Split the input string into an array of lines
+  const lines = inputData.split("\n");
 
-  for ( var position = 0 ; position < itemCount ; position ++ )
-  {
-    var symbol = dataSeq[ position ] ;
-    if ( symbol === 'R' )
-    {
-      firstColorCount ++ ;
-      if ( firstColorCount > threshold )
-      {
-        outcome = true ;
-        break ;
+  // Parse the first line as an integer, representing the total number of items
+  const totalCount = parseInt(lines[0], 10);
+
+  // Calculate the midpoint for comparison
+  const midpoint = totalCount / 2;
+
+  // Get the second line, which contains the sequence of characters
+  const sequence = lines[1];
+
+  // Initialize a boolean flag to store the final outcome
+  let resultFlag = false;
+
+  // Initialize counters for 'R' and 'B' characters
+  let redCount = 0;
+  let blueCount = 0;
+
+  // Iterate through each character in the sequence
+  for (let idx = 0; idx < totalCount; idx++) {
+    const currentChar = sequence[idx]; // Get the character at the current index
+
+    // Check if the current character is 'R'
+    if (currentChar === 'R') {
+      redCount++; // Increment the 'R' counter
+      // If 'R' count exceeds the midpoint, set result to true and exit
+      if (redCount > midpoint) {
+        resultFlag = true;
+        break;
       }
-    }
-    else
-    {
-      secondColorCount ++ ;
-      if ( secondColorCount >= threshold )
-      {
-        outcome = false ;
-        break ;
+    } else {
+      blueCount++; // Increment the 'B' counter
+      // If 'B' count reaches or exceeds the midpoint, set result to false and exit
+      if (blueCount >= midpoint) {
+        resultFlag = false;
+        break;
       }
     }
   }
 
-  console . log ( outcome ? 'Yes' : 'No' ) ;
+  // Output 'Yes' if resultFlag is true, otherwise 'No'
+  console.log(resultFlag ? 'Yes' : 'No');
 }
 
-
-PerformCheck( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

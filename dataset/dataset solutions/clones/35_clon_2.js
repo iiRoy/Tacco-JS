@@ -1,44 +1,42 @@
-var LOWER_BOUND_VAL = 0,
-    UPPER_BOUND_VAL = 9; // Define the range for digits
+var LOWER_BOUND = 0,
+    UPPER_BOUND = 9;
 
-// Access the Node.js process object and its standard input stream.
-currentProcess.inputSource.beginReceiving();
+// Resume standard input stream to listen for data
+process.stdin.resume();
 
-// Configure the character encoding for the incoming data.
-currentProcess.inputSource.configureEncoding('utf8');
+// Set the encoding for incoming data to UTF-8
+process.stdin.setEncoding('utf8');
 
-// Register a callback function to handle data events from the input stream.
-currentProcess.inputSource.registerHandler("data",
-    function(incomingBlock) {
-        // Parse the incoming data block.
-        // Note: The 'extractFirst' method is not a standard String prototype method.
-        // This will result in a TypeError, preserving the original code's structural behavior.
-        var targetValues = String(incomingBlock).extractFirst().divideBySeparator("\n").processEachElement(parseInt),
-            combinationCount = 0;
+// Attach an event listener for 'data' events on standard input
+process.stdin.on("data", function(dataBuffer) {
+    // Process the incoming data:
+    // 1. Convert buffer to string
+    // 2. Remove the first character (often a BOM or extra newline from some inputs)
+    // 3. Split the string by newline characters to get an array of string numbers
+    // 4. Map each string number to an integer
+    var inputNumbers = String(dataBuffer).shift().split("\n").map(parseInt),
+        validCombinations = 0; // Initialize a counter for valid combinations
 
-        // Iterate through each numerical target value obtained from the input.
-        for (var mainIterator = 0; mainIterator < targetValues.size; mainIterator++) {
-            combinationCount = 0; // Reset the counter for each new target value.
+    // Iterate through each number provided in the input
+    for (var numIndex = 0; numIndex < inputNumbers.length; numIndex++) {
+        validCombinations = 0; // Reset the counter for each new input number
 
-            // Begin a series of four nested loops to generate all possible combinations
-            // of four single-digit numbers (0-9).
-            for (var digitOne = LOWER_BOUND_VAL; digitOne <= UPPER_BOUND_VAL; digitOne++) {
-                for (var digitTwo = LOWER_BOUND_VAL; digitTwo <= UPPER_BOUND_VAL; digitTwo++) {
-                    for (var digitThree = LOWER_BOUND_VAL; digitThree <= UPPER_BOUND_VAL; digitThree++) {
-                        for (var digitFour = LOWER_BOUND_VAL; digitFour <= UPPER_BOUND_VAL; digitFour++) {
-                            // Check if the sum of the four current digits equals the target value.
-                            if (digitOne + digitTwo + digitThree + digitFour == targetValues[mainIterator]) {
-                                combinationCount++; // Increment the counter if a match is found.
-                                // Output the successful combination, its sum, and the target.
-                                console.log([digitOne, digitTwo, digitThree, digitFour], digitOne + digitTwo + digitThree + digitFour, targetValues[mainIterator]);
-                            }
+        // Nested loops to iterate through all possible combinations of four digits (0-9)
+        for (var digitA = LOWER_BOUND; digitA <= UPPER_BOUND; digitA++) {
+            for (var digitB = LOWER_BOUND; digitB <= UPPER_BOUND; digitB++) {
+                for (var digitC = LOWER_BOUND; digitC <= UPPER_BOUND; digitC++) {
+                    for (var digitD = LOWER_BOUND; digitD <= UPPER_BOUND; digitD++) {
+                        // Check if the sum of the four digits equals the current input number
+                        if (digitA + digitB + digitC + digitD === inputNumbers[numIndex]) {
+                            validCombinations++; // Increment the counter if a match is found
+                            // Log the combination, its sum, and the target number
+                            console.log([digitA, digitB, digitC, digitD], digitA + digitB + digitC + digitD, inputNumbers[numIndex]);
                         }
                     }
                 }
             }
-            // After checking all 10,000 combinations for the current target,
-            // display the total number of matches found.
-            console.log(combinationCount);
         }
+        // After checking all combinations for the current input number, log the total count
+        console.log(validCombinations);
     }
-);
+});

@@ -1,38 +1,46 @@
-/* This script handles basic output operations */
-function displayResult ( messageContent ) {
-  console.log( messageContent ) ; // Print provided data to the standard output stream
+function logToConsole(messageContent) {
+  // This function simply outputs the provided message to the console.
+  console.log(messageContent);
 }
 
-/* Main routine to process financial transaction records */
-function ProcessFinancialData ( rawData ) {
-  // Several commented-out input parsing options were removed for brevity.
-  // The active parsing method processes each line as a separate entry.
-  rawData = rawData.trim().split("\n") ;
+function processInputData(rawData) {
+  // The following lines are commented out in the original and are kept as such.
+  // rawData = parseInt(rawData);
+  // rawData = rawData.trim().split(" ");
+  // rawData = rawData.trim().split(" ").map((a)=>Number(a));
+  // rawData = rawData.trim().split("\n").map((a)=>Number(a));
 
-  // Determine the number of transactions from the first line of input
-  const transactionCount = parseInt(rawData[0]) ;
-  let totalValue = 0 ; // Initialize an accumulator for the aggregated financial value
+  // Clean and split the raw input by newlines to get individual lines.
+  rawData = rawData.trim().split("\n");
 
-  // Iterate through each transaction record, starting from the second line
-  for ( let idx = 1 ; idx <= transactionCount ; idx++ ) {
-    // Split the current transaction line into its constituent parts (amount and currency)
-    let transactionDetails = rawData[idx].split(" ") ;
+  // Parse the first line as an integer, representing the count of subsequent entries.
+  var numberOfEntries = parseInt(rawData[0]);
 
-    // Check the currency type to apply the correct conversion
-    if ( transactionDetails[1] === "JPY" ) {
-      // If Japanese Yen, add the integer amount directly to the total
-      totalValue += parseInt(transactionDetails[0]) ;
-    }
-    else {
-      // For other currencies, convert the amount to a floating-point number
-      // and multiply by a predefined conversion rate (e.g., 380,000 units per foreign currency unit)
-      totalValue += parseFloat(transactionDetails[0]) * 380000 ;
+  // Initialize a variable to accumulate the calculated total value.
+  var totalValue = 0;
+
+  // Iterate through the input lines, starting from the second line (index 1)
+  // up to and including the line specified by 'numberOfEntries'.
+  for (var entryIndex = 1; entryIndex <= numberOfEntries; entryIndex++) {
+    // Split the current line by spaces to separate the value and currency type.
+    var currentEntryParts = rawData[entryIndex].split(" ");
+
+    // Check if the second part of the entry indicates "JPY" (Japanese Yen).
+    if (currentEntryParts[1] === "JPY") {
+      // If it's JPY, parse the first part as an integer and add it directly to the total.
+      totalValue += parseInt(currentEntryParts[0]);
+    } else {
+      // If it's not JPY (assumed to be BTC or similar, based on the multiplier),
+      // parse the first part as a float, multiply by the conversion rate,
+      // and then add to the total.
+      totalValue += parseFloat(currentEntryParts[0]) * 380000;
     }
   }
 
-  // Display the final calculated total value
-  displayResult( totalValue ) ;
+  // Output the final calculated total value using our custom logging function.
+  logToConsole(totalValue);
 }
 
-// Execute the primary data processing function by reading input from standard input
-ProcessFinancialData( require("fs").readFileSync("/dev/stdin", "utf8").trim() ) ;
+// Read input from standard input, trim any leading/trailing whitespace,
+// and then pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

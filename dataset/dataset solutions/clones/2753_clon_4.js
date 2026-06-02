@@ -1,22 +1,25 @@
-function processData(rawPayload) {
-    const numberTokens = rawPayload.split('\n')[1].split(' ');
-    const initialNumbers = numberTokens.map(Number);
+function ProcessInput(rawInput) {
+  const sourceSegments = rawInput.split("\n")[1].split(" ");
+  const numericSequence = sourceSegments.map(Number);
 
-    function calculateAggregatedSum(currentNumbers) {
-        if (currentNumbers.length === 2) {
-            return currentNumbers[0] + currentNumbers[1];
-        }
+  const sequenceLength = numericSequence.length;
 
-        const [firstElement, middleElement, thirdElement, ...remainingElements] = currentNumbers;
+  if (sequenceLength < 2) {
+    console.log(Number.NaN);
+    return;
+  }
 
-        const newFirst = firstElement + middleElement;
-        const newSecond = thirdElement + middleElement;
-
-        return calculateAggregatedSum([newFirst, newSecond, ...remainingElements]);
+  const computedResult = numericSequence.reduce((accumulatedValue, currentElement, elementIndex, fullArray) => {
+    let elementWeight;
+    if (elementIndex === 0 || elementIndex === fullArray.length - 1) {
+      elementWeight = 1;
+    } else {
+      elementWeight = fullArray.length - elementIndex;
     }
+    return accumulatedValue + currentElement * elementWeight;
+  }, 0);
 
-    const finalResult = calculateAggregatedSum(initialNumbers);
-    console.log(finalResult);
+  console.log(computedResult);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

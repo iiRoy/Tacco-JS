@@ -1,73 +1,70 @@
 "use strict";
 
-// This module encapsulates a specific computational logic.
-// It processes a single line of numerical input to determine a boolean outcome,
-// represented by '1' for true and '0' for false.
-const processInputData = (rawInputText) => {
-    // Normalize the incoming text: strip leading/trailing whitespace
-    // and split into an array of lines, accommodating various newline characters.
-    const parsedInputLines = rawInputText.trim().split(/\r?\n/);
+const HUNDRED_BASE_VALUE = 100;
 
-    // Initial validation: check if the input is empty or malformed.
-    // An empty input line suggests an unprocessable state.
-    if (parsedInputLines.length === 0 || parsedInputLines[0].length === 0) {
-        console.log(0); // Output '0' for invalid or missing primary input.
+// Helper function to determine the minimum number of operations
+// to reduce a value to zero using greedy decrements of 5, 4, 3, 2, or 1.
+const calculateMinimumGreedyDecrements = (initialValue) => {
+    let operationCounter = 0;
+    let currentValue = initialValue;
+
+    // First, apply as many decrements of 5 as possible
+    operationCounter += Math.floor(currentValue / 5);
+    currentValue %= 5; // The remainder will be 0, 1, 2, 3, or 4
+
+    // For any remaining value (1-4), it requires exactly one more operation
+    // (e.g., 4 by 4, 3 by 3, 2 by 2, 1 by 1).
+    if (currentValue > 0) {
+        operationCounter += 1;
+    }
+
+    return operationCounter;
+};
+
+const processInputData = (rawInputString) => {
+    // Standard input processing: trim whitespace and get the first line.
+    const inputLines = rawInputString.trim().split("\n");
+    const numberAsString = inputLines[0];
+
+    // Convert the input string to an integer for numerical comparisons.
+    const numericValue = parseInt(numberAsString, 10);
+
+    // Guard clause: If the number is less than 100, it's an invalid case for the logic.
+    if (numericValue < HUNDRED_BASE_VALUE) {
+        console.log(0);
         return;
     }
 
-    // Retrieve the primary numerical string from the first line of input.
-    const inputNumericString = parsedInputLines[0];
+    // Extract the last two digits from the string representation of the number.
+    // This is equivalent to getting the tens and units place.
+    const lastTwoDigitsString = numberAsString.slice(-2);
+    const extractedLastTwoDigits = parseInt(lastTwoDigitsString, 10);
 
-    // Convert the string representation of the number into an actual numeric type.
-    const numericalBaseValue = Number(inputNumericString);
-
-    // Implement a preliminary guard clause:
-    // If the input is not a valid number or falls below a predefined minimum threshold,
-    // the process terminates immediately with a 'failure' indication.
-    if (isNaN(numericalBaseValue) || numericalBaseValue < 100) {
-        console.log(0); // Indicate an insufficient or invalid numerical input.
+    // Special case: If the last two digits are 0, it means the number is already
+    // a multiple of 100. In this problem's context, this implies a successful outcome.
+    if (extractedLastTwoDigits === 0) {
+        console.log(1);
         return;
     }
 
-    // Extract the final two characters from the input string.
-    // These characters are crucial for a specific part of the calculation.
-    const lastTwoChars = inputNumericString.slice(-2);
-    // Convert these two characters into an integer, representing the suffix value.
-    const twoDigitSuffixValue = parseInt(lastTwoChars, 10);
+    // Calculate the required number of operations based on the extracted last two digits.
+    // This uses the helper function to abstract the greedy decrement logic.
+    const requiredHundredsOperations = calculateMinimumGreedyDecrements(extractedLastTwoDigits);
 
-    // Preserve the original two-digit suffix for a later stage of computation.
-    // This value acts as a constant in the final formula.
-    const originalSuffixConstant = twoDigitSuffixValue;
+    // Construct a hypothetical value by adding multiples of 100 to the original
+    // last two digits, using the calculated number of operations.
+    // This represents the smallest number that ends with `extractedLastTwoDigits`
+    // and requires `requiredHundredsOperations` of 100-unit additions.
+    const constructedTargetValue = (HUNDRED_BASE_VALUE * requiredHundredsOperations) + extractedLastTwoDigits;
 
-    // Handle a special case: if the extracted two-digit suffix is zero,
-    // a specific outcome is pre-determined, bypassing further complex calculations.
-    if (twoDigitSuffixValue === 0) {
-        console.log(1); // A zero suffix often implies a 'success' condition.
-        return;
-    }
-
-    // Calculate the required number of reduction operations.
-    // This calculation efficiently replaces a series of iterative subtractions
-    // by determining how many 'groups of five' (or partial groups) are needed
-    // to reduce the suffix value to zero. Math.ceil ensures any remainder
-    // triggers an additional operation.
-    const calculatedReductionOperations = Math.ceil(originalSuffixConstant / 5);
-
-    // Compute a derived threshold value based on the reduction operations
-    // and the original suffix constant. This value is then used for the
-    // ultimate comparison against the initial input.
-    const derivedComparisonValue = (100 * calculatedReductionOperations) + originalSuffixConstant;
-
-    // Final decision point: compare the derived value with the base input value.
-    // The result dictates whether the overall condition is met.
-    if (derivedComparisonValue <= numericalBaseValue) {
-        console.log(1); // The condition is satisfied.
+    // Final comparison: Check if the constructed target value is less than or equal to
+    // the original input number. If it is, then the condition is met.
+    if (constructedTargetValue <= numericValue) {
+        console.log(1);
     } else {
-        console.log(0); // The condition is not satisfied.
+        console.log(0);
     }
 };
 
-// Standard boilerplate for reading input from stdin in a Node.js environment.
-// The entire content of '/dev/stdin' is read as a UTF-8 string and
-// then passed to the main processing function.
+// Execute the main processing function with input read from stdin.
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

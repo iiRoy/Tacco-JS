@@ -1,54 +1,60 @@
-const acquireData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const collectionOfLines = acquireData.trim().split("\n");
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawData.trim().split('\n');
 
-function calculateValue(parameterA, parameterB, parameterC, parameterD, parameterE, countX, countY, countZ) {
-  const remainderZ = countZ % parameterD;
-  const neededComplement = parameterD - remainderZ;
-
-  const baseCostZ = (countZ - remainderZ) * parameterE + parameterD * parameterE;
-
-  const totalAuxiliaryAvailable = countX + countY;
-  const utilizedAuxiliaryUnits = Math.min(totalAuxiliaryAvailable, neededComplement);
-
-  const countXUtilized = Math.min(countX, utilizedAuxiliaryUnits);
-  const remainingCountX = countX - countXUtilized;
-  const countYUtilized = Math.min(countY, utilizedAuxiliaryUnits - countXUtilized);
-  const remainingCountY = countY - countYUtilized;
-
-  const extraCostPerUtilizedUnit = (remainderZ * parameterC <= parameterD * parameterE) ? 0 : parameterE;
-
-  const totalExtraCostFromUtilized = utilizedAuxiliaryUnits * extraCostPerUtilizedUnit;
-
-  const costFromRemainingUnits = parameterA * remainingCountX + parameterB * remainingCountY;
-
-  return baseCostZ + totalExtraCostFromUtilized + costFromRemainingUnits;
+function* parameterStream(sourceLines) {
+    let currentIdx = 0;
+    while (true) {
+        const firstSegment = sourceLines[currentIdx];
+        if (firstSegment === "0 0 0 0 0") {
+            return;
+        }
+        const secondSegment = sourceLines[currentIdx + 1];
+        const combinedSegments = `${firstSegment} ${secondSegment}`;
+        const numericalValues = combinedSegments.split(' ').map(val => parseInt(val, 10));
+        yield numericalValues;
+        currentIdx += 2;
+    }
 }
 
-function processLineSegments(remainingSegments) {
-  if (remainingSegments.length < 2) {
-    return;
-  }
+function calculateOptimalValue(
+    paramAlpha, paramBeta, paramGamma, paramDelta, paramEpsilon,
+    quantityAlpha, quantityBeta, totalQuantityGamma
+) {
+    let accumulatedValue = 0;
 
-  const initialSegment = remainingSegments[0];
-  if (initialSegment === "0 0 0 0 0") {
-    return;
-  }
+    if (totalQuantityGamma === 0) {
+        accumulatedValue += paramDelta * paramEpsilon;
+    } else {
+        const fullBatchCount = Math.floor((totalQuantityGamma - 1) / paramDelta) + 1;
+        accumulatedValue += fullBatchCount * paramDelta * paramEpsilon;
+    }
 
-  const dataValues = (initialSegment + " " + remainingSegments[1]).split(" ").map(Number);
+    const remainderUnits = totalQuantityGamma % paramDelta;
+    const unitsToDeplete = paramDelta - remainderUnits;
 
-  const p1 = dataValues[0];
-  const p2 = dataValues[1];
-  const p3 = dataValues[2];
-  const p4 = dataValues[3];
-  const p5 = dataValues[4];
-  const cx = dataValues[5];
-  const cy = dataValues[6];
-  const cz = dataValues[7];
+    let depletedFromAlpha;
+    if (quantityAlpha < unitsToDeplete) {
+        depletedFromAlpha = quantityAlpha;
+    } else {
+        depletedFromAlpha = unitsToDeplete;
+    }
+    quantityAlpha -= depletedFromAlpha;
 
-  const calculatedResult = calculateValue(p1, p2, p3, p4, p5, cx, cy, cz);
-  console.log(calculatedResult);
+    const remainingToDeplete = unitsToDeplete - depletedFromAlpha;
+    let depletedFromBeta;
+    if (quantityBeta < remainingToDeplete) {
+        depletedFromBeta = quantityBeta;
+    } else {
+        depletedFromBeta = remainingToDeplete;
+    }
+    quantityBeta -= depletedFromBeta;
 
-  processLineSegments(remainingSegments.slice(2));
+    accumulatedValue += paramAlpha * quantityAlpha + paramBeta * quantityBeta;
+
+    console.log(accumulatedValue);
 }
 
-processLineSegments(collectionOfLines);
+for (const params of parameterStream(dataLines)) {
+    calculateOptimalValue(...params);
+}

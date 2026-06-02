@@ -1,63 +1,124 @@
-function grabInput() { return require("fs").readFileSync("/dev/stdin", "utf8").trim(); }
+function getInputData(){
+  // Reads the entire content from standard input,
+  // decodes it as UTF-8, and removes leading/trailing whitespace.
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-// 0: Return as is  1: Transform to integer  2: Separate by space  3: Separate by line break
-// 4: Separate by space and convert to number array  5: Separate by line break and convert to number array
-// 6: Divide into individual characters  7: Divide into characters and convert to number array
-function processData(dataString, conversionType) {
-  switch (conversionType) {
-    case 0: return dataString;
-    case 1: return Number(dataString);
-    case 2: return dataString.split(" ");
-    case 3: return dataString.split("\n");
-    case 4: return dataString.split(" ").map((itemVal) => parseFloat(itemVal));
-    case 5: return dataString.split("\n").map((itemVal) => parseFloat(itemVal));
-    case 6: return dataString.split("");
-    case 7: return dataString.split("").map((itemVal) => parseFloat(itemVal));
+/**
+ * Processes an input string based on a specified conversion type.
+ * This utility function handles various common input parsing scenarios.
+ *
+ * @param {string} dataString - The input string to be processed.
+ * @param {number} conversionType - An integer indicating the desired conversion.
+ *   0: Return the string as is.
+ *   1: Convert to an integer.
+ *   2: Split by single space character.
+ *   3: Split by newline character.
+ *   4: Split by single space character and convert each part to a number.
+ *   5: Split by newline character and convert each part to a number.
+ *   6: Split into individual characters.
+ *   7: Split into individual characters and convert each to a number.
+ * @returns {any} The processed data, which could be a string, number, or array.
+ */
+function processInput(dataString, conversionType){
+  switch(conversionType){
+    case 0:
+      // No conversion, return the original string.
+      return dataString;
+    case 1:
+      // Convert to an integer.
+      return parseInt(dataString, 10);
+    case 2:
+      // Split the string by spaces.
+      return dataString.split(" ");
+    case 3:
+      // Split the string by newline characters.
+      return dataString.split("\n");
+    case 4:
+      // Split by spaces, then map each part to a number.
+      return dataString.split(" ").map((element) => Number(element));
+    case 5:
+      // Split by newlines, then map each part to a number.
+      return dataString.split("\n").map((element) => Number(element));
+    case 6:
+      // Split the string into an array of individual characters.
+      return dataString.split("");
+    case 7:
+      // Split into characters, then map each character to a number.
+      return dataString.split("").map((element) => Number(element));
+    default:
+      // Default case, perhaps throw an error or return original.
+      // For this clone, we'll just return the original string for unknown types.
+      return dataString;
   }
 }
 
-function ExecuteProgram(rawData) {
-  // Initial parsing of the input string, splitting by newlines
-  const processedLines = processData(rawData, 3);
+/**
+ * Main program execution function.
+ * It reads input, calculates various price combinations, applies discounts,
+ * and outputs the minimum price found.
+ *
+ * @param {string} rawInputString - The raw input string read from stdin.
+ */
+function ExecuteProgram(rawInputString) {
+  // First, split the entire input string by newlines.
+  let processedLines = processInput(rawInputString, 3);
 
-  // Extracting initial configuration values
-  const [countA, countB, numDiscounts] = processData(processedLines[0], 4);
-  const arrayA = processData(processedLines[1], 4);
-  const arrayB = processData(processedLines[2], 4);
+  // Parse the first line to get A, B, and M values.
+  // A: number of items in category 'a'
+  // B: number of items in category 'b'
+  // M: number of discount offers
+  const numItemsA = processInput(processedLines[0], 4)[0];
+  const numItemsB = processInput(processedLines[0], 4)[1];
+  const numDiscounts = processInput(processedLines[0], 4)[2];
 
-  // Remove the first three lines as they've been processed
-  processedLines.shift();
-  processedLines.shift();
-  processedLines.shift();
+  // Parse the second line for prices of items in category 'a'.
+  const pricesA = processInput(processedLines[1], 4);
+  // Parse the third line for prices of items in category 'b'.
+  const pricesB = processInput(processedLines[2], 4);
 
-  // Initialize a list to store all calculated costs
-  let costList = [];
+  // Remove the first three lines as they have been parsed.
+  processedLines.shift(); // Removes line containing A, B, M
+  processedLines.shift(); // Removes line containing pricesA
+  processedLines.shift(); // Removes line containing pricesB
 
-  // Calculate all possible base combinations of items from arrayA and arrayB
-  for (let idxA = 0; idxA < countA; idxA++) {
-    for (let idxB = 0; idxB < countB; idxB++) {
-      let combinedCost = arrayA[idxA] + arrayB[idxB];
-      costList.push(combinedCost);
+  // Initialize an array to store all possible combined prices.
+  let allCalculatedPrices = [];
+
+  // Calculate all possible combinations of prices from category 'a' and 'b'.
+  // This forms the base set of prices without any discounts.
+  for (let idxA = 0; idxA < numItemsA; idxA++) {
+    for (let idxB = 0; idxB < numItemsB; idxB++) {
+      let currentCombinedPrice = pricesA[idxA] + pricesB[idxB];
+      allCalculatedPrices.push(currentCombinedPrice);
     }
   }
 
-  // Iterate through the remaining lines which contain discount information
+  // Get the number of remaining lines, which represent discount offers.
   const discountCount = processedLines.length;
-  for (let discountIdx = 0; discountIdx < discountCount; discountIdx++) {
-    // Parse discount details: item indices and discount amount
-    let [itemXIndex, itemYIndex, discountAmount] = processData(processedLines[discountIdx], 4);
 
-    // Calculate the original index in the combined cost list
-    let originalIndex = (itemXIndex - 1) * countB + itemYIndex - 1;
-    const basePrice = costList[originalIndex];
+  // Iterate through each discount offer.
+  for (let idxDiscount = 0; idxDiscount < discountCount; idxDiscount++) {
+    // Parse the current discount line to get item indices (x, y) and discount amount (c).
+    let itemXIndex = processInput(processedLines[idxDiscount], 4)[0];
+    let itemYIndex = processInput(processedLines[idxDiscount], 4)[1];
+    let discountAmount = processInput(processedLines[idxDiscount], 4)[2];
 
-    // Apply the discount and add the new discounted price to the list
-    costList.push(basePrice - discountAmount);
+    // Calculate the index in the 'allCalculatedPrices' array
+    // that corresponds to the item combination (x, y).
+    // Note: x and y are 1-indexed in the input, so we convert to 0-indexed.
+    let originalPriceIndex = (itemXIndex - 1) * numItemsB + (itemYIndex - 1);
+
+    // Retrieve the original combined price for this specific item pair.
+    const basePriceBeforeDiscount = allCalculatedPrices[originalPriceIndex];
+
+    // Apply the discount and add the new discounted price to the list.
+    allCalculatedPrices.push(basePriceBeforeDiscount - discountAmount);
   }
 
-  // Output the minimum cost found among all calculated prices
-  console.log(Math.min(...costList));
+  // Find and print the minimum price from all calculated prices (original and discounted).
+  console.log(Math.min.apply(null, allCalculatedPrices));
 }
 
-// Start the program by getting input and passing it to the main execution function
-ExecuteProgram(grabInput());
+// Execute the main program with input obtained from stdin.
+ExecuteProgram(getInputData());

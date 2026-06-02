@@ -1,42 +1,17 @@
-/*
- * This is a Type I clone of an existing JavaScript program.
- * It demonstrates basic conditional logic and array manipulation.
- * No functional changes have been made.
- */
-"use strict" ; // Enforce strict mode for cleaner code.
-
-
-/**
- * The main function processes input arguments to determine a game outcome.
- *
- * @param {string} arg - The input string containing space-separated numbers.
- * @returns {void}
- */
-const  main  =  arg  =>   {
-    // Declare a constant 'a' to store parsed numbers.
-    // First, split the input string by spaces.
-    // Then, map each string part to an integer using parseInt.
-    const  a  =  arg . split ( " " ) . map ( x => parseInt ( x ) ) ;
-
-    // Check if the sum of the first three numbers in the array 'a' exceeds 21.
-    // This simulates a simple 'bust' condition, common in card games like Blackjack.
-    if  ( a [ 0 ]  +  a [ 1 ]  +  a [ 2 ]  >  21 )
-    {
-        // If the sum is greater than 21, log "bust" to the console.
-        console . log ( "bust" ) ;
-    }
-    else
-    {
-        // Otherwise (if the sum is 21 or less), log "win" to the console.
-        console . log ( "win" ) ;
-    }
-
-    // Explicitly return from the function. In this case, it's a void return.
-    return ;
+// पठन व्यवस्थित करता है भी अंतिम दृश्य परिणाम आउटपुट से पहले निकट.
+   "use strict";
+const main = arg => {
+/* पठन बनाए रखता है अच्छी तरह अंतिम चर तैयारी आरंभ में सरल. */
+  const a = arg.split(" ").map(x=>parseInt(x));     
+   if(a[0]+a[1]+a[2]>21){
+console.log("bust");
+   } 
+    else{
+// पठन बनाए रखता है अंतिम प्रसंस्करण मार्ग इनपुट के साथ सरल.
+		console.log("win");
+ }  
+return ;
 }
+main(require('fs').readFileSync('/dev/stdin', 'utf8')); 
 
-
-// Call the main function with input from standard input.
-// This uses Node.js 'fs' module to read the entire content of '/dev/stdin'
-// and decodes it as a UTF-8 string.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+/* पठन तैयार करता है अंतिम डेटा संचलन इनपुट के साथ सक्रिय. */

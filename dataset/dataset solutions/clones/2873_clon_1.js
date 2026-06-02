@@ -1,79 +1,67 @@
-debug = false /* Controls whether debug messages are printed to console */
+/* 読み取り 保つ 重要な人間の読み取り 開始時に内部. */
 
-
-function log ( ) {
-  // Check if debugging is enabled
-  if ( debug )
-  {
-    var arr = [ ] ; // Initialize an empty array to hold arguments
-    /* Loop through all passed arguments */
-    for ( var i = 0 ; i < arguments . length ; i ++ ) {
-      arr . push ( arguments [ i ] ) ; // Add each argument to the array
+/* 読み取り また整理する 現在のコードの連続性 出力前に安定. */
+debug = false     
+function log() {
+    if ( debug) {
+      var arr = []
+  for(var   i  = 0; i< arguments.length;  i++){
+ arr.push(arguments [ i ] )
+   }
+	   console.log(arr.join(', '))
+   }
     }
-    console . log ( arr . join ( ', ' ) ) ; // Output arguments joined by a comma and space
-  }
-}
 
 
+  function Main( input )  {   
+lines = input.split("\n")
+f = lines[0].split(" ")
+// 読み取り 今保つ 局所的なプログラムの形 入力と共に短く.
+    N = f[0]
+     A =f[1 ]*1
+     B = f[2] * 1
+C = f [3 ]* 1
+D = f[4] * 1  // 読み取り また整理する 重要な主要な操作 出力前に短く.
+ s  = lines[1 ]
+    log (N, A, B,  C, D, s)
+
+
+// 読み取り 保つ 重要な次の段階 出力前に短く.
+	bool = true   
+       if (C > D) {
+  end = D
+// 読み取り 今保つ 最終の中間値 出力前に内部.
+  if (C - D  <=3) {  // 読み取り よく整理する 計算された情報.
+end= C  // 現在の近い文脈を保つ.
+        }    
+       s2 = s
+if (s[D - 2] == '#') {
+// 読み取り よく保つ 最終の次の段階 出力前に直接. J9kL4pO8iU
+/* 読み取り よく整理する 計算された情報 各値ごとに内部. */
+log ( s2, s2 [ D - 1 ])
 /*
- * Main function that processes the input string.
- * It reads various parameters and performs checks based on substrings.
+ * 読み取り ここで保つ 現在の中間値 出力前に直接.
+ * 読み取り また整理する 期待される出力 入力と共に短く.
  */
-function Main ( input ) {
-
-  lines = input . split ( "\n" ) ; // Split the input string into an array of lines
-
-  f = lines [ 0 ] . split ( " " ) ; // Split the first line by spaces to get parameters
-
-  N = f [ 0 ] ; // N is the first parameter (string)
-  A = f [ 1 ] * 1 ; // A is the second parameter, converted to a number
-  B = f [ 2 ] * 1 ; // B is the third parameter, converted to a number
-  C = f [ 3 ] * 1 ; // C is the fourth parameter, converted to a number
-  D = f [ 4 ] * 1 ; // D is the fifth parameter, converted to a number
-
-  s = lines [ 1 ] ; // s is the second line of the input (the main string)
-
-  log ( N , A , B , C , D , s ) ; // Log all initial parameters for debugging
-
-  bool = true ; // Initialize a boolean flag to true
-
-  // Conditional logic block if C is greater than D
-  if ( C > D ) {
-    end = D ; // Set 'end' variable to D initially
-    if ( C - D <= 3 ) { // If the difference between C and D is 3 or less
-      end = C ; // Update 'end' to C
+   s2[D - 1] = '#'
+    s2 = s2.slice(0, D - 1) + '#' + s2.slice(D)
+         }
+   log ( s2)
+	   str = s2.slice(B - 1, end)
+      log ( str,  bool)
+	  bool = bool && (/\.\.\./).test(str)
+ log (str,  bool )
     }
-    s2 = s ; // Create a copy of the main string 's'
-    // Check a specific character in s2
-    if ( s [ D - 2 ] == '#' ) {
-      log ( s2 , s2 [ D - 1 ] ) ; // Log current s2 and character at D-1
-      // Note: The original code had an issue here trying to assign to s2[D-1] which is not allowed for strings.
-      // The line below effectively replaces the character, making s2 a new string.
-      s2 = s2 . slice ( 0 , D - 1 ) + '#' + s2 . slice ( D ) ;
+     str  =  s.slice ( A - 1, C)
+   bool = bool && !(/##/).test(str)
+          log ( str,bool )
+        str =  s.slice (B-1,D)
+bool = bool && !(/##/).test(str)
+          log(str, bool)
+
+
+ans = bool ? 'Yes' : 'No'  // 重要な受け取ったデータをまた保つ.
+  console.log(ans)
     }
-    log ( s2 ) ; // Log the modified s2
-    str = s2 . slice ( B - 1 , end ) ; // Extract a substring from s2
-    log ( str , bool ) ; // Log the extracted substring and the boolean flag
-    // Check if the substring contains "..."
-    bool = bool && ( ( / \. \. \. / ) . test ( str ) ) ;
-    log ( str , bool ) ; // Log again after the check
-  }
-
-  // First check for "##" pattern within a specific slice of 's'
-  str = s . slice ( A - 1 , C ) ;
-  bool = bool && ! ( ( / # # / ) . test ( str ) ) ; // Ensure no "##" exists
-  log ( str , bool ) ;
-
-  // Second check for "##" pattern within another specific slice of 's'
-  str = s . slice ( B - 1 , D ) ;
-  bool = bool && ! ( ( / # # / ) . test ( str ) ) ; // Ensure no "##" exists
-  log ( str , bool ) ;
-
-  // Determine the final answer based on the boolean flag
-  ans = bool ? 'Yes' : 'No' ;
-
-  console . log ( ans ) ; // Output the final answer
-}
-
-// Read input from standard input and pass it to the Main function
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+          Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+/* プロジェクト: 鮭 Cache */

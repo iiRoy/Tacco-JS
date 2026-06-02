@@ -1,61 +1,56 @@
-const acquireText = require('node:fs').readFileSync;
+const fs = require('fs');
 
-const processSourceContent = (sourceContent) => {
-    const purgeDelimiter = (text) => text.split(',').join('');
-    const cutWhitespace = (text) => text.replace(/^\s+|\s+$/g, '');
-    const tokenizeContent = (text) => text.match(/\S+/g) || [];
+// Function to process the input, replicating the original logic
+function processInput(inputString) {
+    // Original: x=require('fs').readFileSync('/dev/stdin','utf8').replace(/,/g,"").trim().split(/\s/);
+    // Replicate input processing: remove commas, trim, split by whitespace
+    const words = inputString.replace(/,/g, "").trim().split(/\s/);
 
-    const noCommas = purgeDelimiter(sourceContent);
-    const trimmedText = cutWhitespace(noCommas);
-    return tokenizeContent(trimmedText);
-};
+    // Using a functional approach with reduce to manage state (results array and current string)
+    // The accumulator will hold { outputSegments: [], currentSegment: "" }
+    const finalState = words.reduce((accumulator, currentWord) => {
+        let { outputSegments, currentSegment } = accumulator;
 
-const inputUnits = processSourceContent(acquireText('/dev/stdin', 'utf8'));
+        const wordWithoutPunctuation = currentWord.replace(/\./g, "");
+        const hasPunctuation = wordWithoutPunctuation.length < currentWord.length;
 
-const containsSeparator = (textUnit) => textUnit.includes('.');
-const determineCoreLength = (textUnit) => textUnit.replace(/\./g, '').length;
-const isValidCoreLength = (len) => len >= 3 && len <= 6;
-const terminatesWithSeparator = (textUnit) => textUnit.endsWith('.');
-const stripSeparators = (textUnit) => textUnit.replace(/\./g, '');
-
-const initialProcessingState = {
-    activeFragment: '',
-    completedSections: []
-};
-
-const aggregateProcessor = (state, lexicalUnit) => {
-    let { activeFragment, completedSections } = state;
-
-    const hasDelimiter = containsSeparator(lexicalUnit);
-    const coreLength = determineCoreLength(lexicalUnit);
-    const isCoreLengthValid = isValidCoreLength(coreLength);
-    const isUnitLengthValid = isValidCoreLength(lexicalUnit.length);
-
-    if (hasDelimiter) {
-        if (isCoreLengthValid) {
-            if (terminatesWithSeparator(lexicalUnit)) {
-                activeFragment += stripSeparators(lexicalUnit);
-                completedSections.push(activeFragment);
+        if (hasPunctuation) {
+            // Original: if(x[i].replace(/\./g,"").length>=3&&x[i].replace(/\./g,"").length<=6){
+            if (wordWithoutPunctuation.length >= 3 && wordWithoutPunctuation.length <= 6) {
+                // Original: if(x[i].search(/\./)>=x[i].length-1){
+                if (currentWord.indexOf('.') >= currentWord.length - 1) { // Dot at or near the end
+                    outputSegments.push(currentSegment + wordWithoutPunctuation);
+                }
+                // Original: str=""; (always happens after this inner block)
+                currentSegment = "";
             } else {
-                activeFragment += lexicalUnit;
-                completedSections.push(activeFragment);
+                // Original: else { str2.push(str); str=""; }
+                outputSegments.push(currentSegment);
+                currentSegment = "";
             }
-            activeFragment = '';
         } else {
-            completedSections.push(activeFragment);
-            activeFragment = '';
+            // Original: else if(x[i].length>=3&&x[i].length<=6){
+            if (currentWord.length >= 3 && currentWord.length <= 6) {
+                // Original: str += x[i]+" ";
+                currentSegment += currentWord + " ";
+            }
+            // Original: implicit else (do nothing)
         }
-    } else {
-        if (isUnitLengthValid) {
-            activeFragment += lexicalUnit + ' ';
-        }
-    }
 
-    return { activeFragment, completedSections };
-};
+        return { outputSegments, currentSegment };
+    }, { outputSegments: [], currentSegment: "" }); // Initial accumulator state
 
-const finalStructure = inputUnits.reduce(aggregateProcessor, initialProcessingState);
+    // The original code does not push the final 'str' if the loop ends without a push condition.
+    // So, we just return the accumulated outputSegments.
+    return finalState.outputSegments;
+}
 
-finalStructure.completedSections.forEach(section => {
-    process.stdout.write(section + '\n');
-});
+// Read input from stdin
+const rawInput = fs.readFileSync('/dev/stdin', 'utf8');
+
+// Process the input to get the array of strings to print
+const processedLines = processInput(rawInput);
+
+// Output each processed line
+// Original: for(i=0;i<str2.length;){ console.log(str2[i++]); }
+// Using

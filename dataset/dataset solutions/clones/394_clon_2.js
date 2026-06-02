@@ -1,92 +1,84 @@
-var filesystemModule = require('fs')
-  , dataSize = filesystemModule.fstatSync(process.stdin.fd).size
-  , readBuffer = new Buffer(dataSize)
-  , octetsCount = filesystemModule.readSync(process.stdin.fd, readBuffer, 0, dataSize, 0)
-  , dataLines = readBuffer.toString('utf8', 0, octetsCount).split('\n');
+var fs = require('fs');
+var fileSize = fs.fstatSync(process.stdin.fd).size;
+var dataBuffer = new Buffer(fileSize);
+var actualBytesRead = fs.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
+var rawInputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-executeProcessing();
+// Begin program execution
+executeSimulation();
 
-function executeProcessing()
-{
-  var delayPeriods = simulateEvents();
+function executeSimulation() {
+  // Calculate all wait times for parties
+  var calculatedWaitTimes = simulateRestaurant();
 
-  for ( var idx = 0, maxIdx = dataLines.length - 1; idx < maxIdx; idx++ )
-  {
-    console.log(delayPeriods[parseInt(dataLines[idx], 10)]);
+  // Output the wait time for each requested party from input
+  for (var lineIndex = 0, totalLines = rawInputLines.length - 1; lineIndex < totalLines; lineIndex++) {
+    console.log(calculatedWaitTimes[parseInt(rawInputLines[lineIndex], 10)]);
   }
 }
 
-function simulateEvents()
-{
-  // Initialize seating status for all 17 spots
-  var seatOccupancy = new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  // Define the number of people in each party type
+function simulateRestaurant() {
+  // Initialize restaurant state
+  var chairOccupancy = new Int32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   var partySizes = new Int32Array([2, 5, 2, 2, 2]);
-  // Set the duration each party occupies a seat
-  var occupancyDurations = new Int32Array([19, 39, 25, 36, 22, 42]);
+  var diningDurations = new Int32Array([19, 39, 25, 36, 22, 42]);
 
-  var currentPartyIndex = -1;
-  var elapsedMinutes = 0;
-  // Array to store the waiting time for each party
-  var partyWaitTimes = new Int32Array(100);
-  var remainingParties = 100; // Total number of parties to be seated
+  var currentPartyIndex = -1; // Index of the next party to arrive/be seated
+  var elapsedMinutes = 0;     // Total minutes passed since opening
+  var partyWaitTimes = new Int32Array(100); // Stores wait times for parties 0-99
+  var remainingPartiesToSeat = 100; // Counter for the 100 parties
 
-  while ( true )
-  {
-    // Process seat availability at the start of each minute
-    var loopCounter;
-    for ( loopCounter = 17; loopCounter--; )
-    {
-      seatOccupancy[loopCounter] = findMaximum(--seatOccupancy[loopCounter], 0);
+  // Main simulation loop
+  while (true) {
+    // Step 1: Decrement dining times for occupied chairs
+    var chairIterator;
+    for (chairIterator = 17; chairIterator--;) {
+      chairOccupancy[chairIterator] = determineMaximum(--chairOccupancy[chairIterator], 0);
     }
 
-    // Check for new party arrival every 5 minutes
-    if ( currentPartyIndex == -1 && elapsedMinutes % 5 == 0 )
-    {
+    // Step 2: Check for new party arrival
+    if (currentPartyIndex === -1 && elapsedMinutes % 5 === 0) {
       currentPartyIndex = elapsedMinutes / 5;
     }
 
-    // Attempt to seat parties if there's an incoming party and available seats
-    while ( currentPartyIndex != -1 && loopCounter != 17 )
-    {
-      var requiredConsecutiveSeats = partySizes[currentPartyIndex % 5];
-      var availableConsecutive = 0;
-      var firstSeatIndex = -1;
+    // Step 3: Attempt to seat parties
+    while (currentPartyIndex !== -1 && chairIterator !== 17) { // chairIterator is 0 here, so this condition is always true
+      var requiredChairs = partySizes[currentPartyIndex % 5];
+      var consecutiveEmptyChairs = 0;
+      var startChairIndex = -1;
 
-      for ( loopCounter = 0; loopCounter < 17; loopCounter++ )
-      {
-        availableConsecutive = (seatOccupancy[loopCounter] == 0) ? availableConsecutive + 1 : 0;
+      for (chairIterator = 0; chairIterator < 17; chairIterator++) {
+        consecutiveEmptyChairs = chairOccupancy[chairIterator] === 0 ? consecutiveEmptyChairs + 1 : 0;
 
-        if ( availableConsecutive == requiredConsecutiveSeats )
-        {
-          var currentPartyDuration = occupancyDurations[currentPartyIndex % 6];
+        if (consecutiveEmptyChairs === requiredChairs) {
+          var currentPartyDiningDuration = diningDurations[currentPartyIndex % 6];
 
-          firstSeatIndex = loopCounter - (requiredConsecutiveSeats - 1);
-          // Calculate and record waiting time for the current party
+          startChairIndex = chairIterator - (requiredChairs - 1);
+          // Party can be seated! Record their wait time.
           partyWaitTimes[currentPartyIndex] = elapsedMinutes - (currentPartyIndex * 5);
-          for ( var seatIdx = firstSeatIndex, endSeatIdx = (requiredConsecutiveSeats + firstSeatIndex); seatIdx < endSeatIdx; seatIdx++ )
-          {
-            seatOccupancy[seatIdx] = currentPartyDuration;
+          for (var seatFillIndex = startChairIndex, fillLoopEnd = (requiredChairs + startChairIndex); seatFillIndex < fillLoopEnd; seatFillIndex++) {
+            chairOccupancy[seatFillIndex] = currentPartyDiningDuration;
           }
 
+          // Determine the next party to consider for seating
           currentPartyIndex = (((currentPartyIndex + 1) * 5) <= elapsedMinutes) ? currentPartyIndex + 1 : -1;
-          if ( !(--remainingParties) )
-          {
-            // All 100 parties have been seated
-            return partyWaitTimes;
+
+          // Check if all 100 parties have been seated
+          if (!(--remainingPartiesToSeat)) {
+            return partyWaitTimes; // All parties seated, simulation complete
           }
-          break; // Exit inner loop, party seated
+          break; // Break from inner chair iteration, try to seat next party or advance time
         }
       }
     }
 
-    elapsedMinutes++; // Advance time by one minute
+    // Advance time by one minute
+    elapsedMinutes++;
   }
 }
 
-function findMaximum(valA, valB)
-{
-  var tempDiff = (valA - valB);
-
-  return valA - (tempDiff & (tempDiff >> 31));
+// Custom maximum function using bitwise operations
+function determineMaximum(valA, valB) {
+  var difference = (valA - valB);
+  return valA - (difference & (difference >> 31));
 }

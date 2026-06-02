@@ -1,101 +1,154 @@
 "use strict";
 
-// Acquire input from standard input stream
-var dataSource = require("fs") . readFileSync("/dev/stdin", "utf8");
+// Acquire file system module for input operations
+var dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Initialize token stream and index for parsing
-var tokenStream = dataSource . split(/ |\n/), tokenIndex = 0;
+// Split the input into tokens using spaces or newlines as delimiters
+// Initialize a token index for sequential access
+var tokenStream = dataSource.split(/ |\n/),
+  tokenIndex = 0;
 
-// Function to retrieve the next numeric value from the stream
-function getNextNumericValue ( ) { return +tokenStream[tokenIndex++]; }
-
-// Function to retrieve the next string value from the stream
-function getNextStringValue ( ) { return tokenStream[tokenIndex++]; }
-
-// Function to retrieve the next BigInt value from the stream
-function getNextBigIntValue ( ) { return BigInt(tokenStream[tokenIndex++]); }
-
-// Function to retrieve a sequence of values, optionally as strings
-function getSequence ( count , asStrings ) {
-    return asStrings ? tokenStream . slice ( tokenIndex , tokenIndex += count ) : tokenStream . slice ( tokenIndex , tokenIndex += count ) . map ( val => +val ) ;
+/**
+ * Retrieves the next token from the stream and converts it to a number.
+ * @returns {number} The next numeric token.
+ */
+function readNextInt() {
+  return +tokenStream[tokenIndex++];
 }
 
-// Function to retrieve a matrix of values, optionally as strings
-function getMatrix ( rows , columns , asStrings ) {
-    var matrixRows = [ ] , rowIndex = 0 ;
-    if ( asStrings ) {
-        for ( ; rowIndex < rows ; rowIndex++ ) {
-            matrixRows . push ( tokenStream . slice ( tokenIndex , tokenIndex += columns ) ) ;
-        }
+/**
+ * Retrieves the next token from the stream as a string.
+ * @returns {string} The next string token.
+ */
+function readNextString() {
+  return tokenStream[tokenIndex++];
+}
+
+/**
+ * Retrieves the next token from the stream and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
+function readNextBigInt() {
+  return BigInt(tokenStream[tokenIndex++]);
+}
+
+/**
+ * Reads a sequence of 'count' tokens from the stream.
+ * If a 'mapperFn' is provided, it applies the function to each token.
+ * Otherwise, it converts each token to a number.
+ * @param {number} count - The number of tokens to read.
+ * @param {Function} [mapperFn] - An optional mapping function.
+ * @returns {Array<number|string>} An array of processed tokens.
+ */
+function readSequence(count, mapperFn) {
+  return mapperFn ?
+    tokenStream.slice(tokenIndex, (tokenIndex += count)) :
+    tokenStream.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
+}
+
+/**
+ * Reads a matrix of 'rows' by 'cols' dimensions from the stream.
+ * If a 'mapperFn' is provided, it applies the function to each token.
+ * Otherwise, it converts each token to a number.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in the matrix.
+ * @param {Function} [mapperFn] - An optional mapping function.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function readMatrix(rows, cols, mapperFn) {
+  var resultArr = [],
+    loopCounter = 0;
+  if (mapperFn) {
+    for (; loopCounter < rows; loopCounter++) {
+      resultArr.push(tokenStream.slice(tokenIndex, (tokenIndex += cols)));
+    }
+  } else {
+    for (; loopCounter < rows; loopCounter++) {
+      resultArr.push(
+        tokenStream.slice(tokenIndex, (tokenIndex += cols)).map((val) => +val)
+      );
+    }
+  }
+  return resultArr;
+}
+
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * The dimensions are provided as arguments after the initial value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  var argsList = arguments,
+    argLength = argsList.length,
+    resultStr =
+    "Array(argsList[" +
+    --argLength +
+    "]).fill().map(_=>{return " +
+    initialValue +
+    ";})";
+  while (--argLength) {
+    resultStr =
+      "Array(argsList[" + argLength + "]).fill().map(_=>" + resultStr + ")";
+  }
+  return eval(resultStr);
+}
+
+// Execute the main program logic and store its return value.
+var programResult = executeProgram();
+
+// If the program returned a value, print it to the console.
+if (programResult !== undefined) {
+  console.log(String(programResult));
+}
+
+/**
+ * Main function containing the core algorithm.
+ * Calculates the minimum cost to cover a grid with given horizontal and vertical cuts.
+ * @returns {BigInt} The total minimum cost.
+ */
+function executeProgram() {
+  // Read grid dimensions
+  var widthVal = readNextInt(),
+    heightVal = readNextInt();
+
+  // Initialize an array to store all cut costs and their types (0 for horizontal, 1 for vertical)
+  var pointsArr = [];
+
+  // Populate with horizontal cut costs
+  for (var loopCounter = 0; loopCounter < widthVal; loopCounter++) {
+    pointsArr.push([readNextInt(), 0]); // [cost, type]
+  }
+
+  // Populate with vertical cut costs
+  for (var loopCounter = 0; loopCounter < heightVal; loopCounter++) {
+    pointsArr.push([readNextInt(), 1]); // [cost, type]
+  }
+
+  // Sort all cuts by their cost in ascending order
+  pointsArr.sort((itemA, itemB) => itemA[0] - itemB[0]);
+
+  // Initialize total cost and counts of horizontal/vertical segments
+  var totalCost = 0n;
+  var horizCount = 0,
+    vertCount = 0;
+
+  // Iterate through the sorted cuts
+  for (var loopCounter = 0; loopCounter < heightVal + widthVal; loopCounter++) {
+    // If it's a horizontal cut (type 0)
+    if (pointsArr[loopCounter][1] === 0) {
+      // Add cost: current cut cost * (number of vertical segments + 1)
+      totalCost += BigInt(heightVal - vertCount + 1) * BigInt(pointsArr[loopCounter][0]);
+      horizCount++; // Increment horizontal segment count
     } else {
-        for ( ; rowIndex < rows ; rowIndex++ ) {
-            matrixRows . push ( tokenStream . slice ( tokenIndex , tokenIndex += columns ) . map ( val => +val ) ) ;
-        }
+      // If it's a vertical cut (type 1)
+      // Add cost: current cut cost * (number of horizontal segments + 1)
+      totalCost += BigInt(widthVal - horizCount + 1) * BigInt(pointsArr[loopCounter][0]);
+      vertCount++; // Increment vertical segment count
     }
-    return matrixRows ;
-}
+  }
 
-// Function to create a multi-dimensional array with a specified initial value
-function createMultiDimArray ( initialValue ) {
-    var argsList = arguments, dimCount = argsList.length, arrayCreationString = "Array(argsList["+--dimCount+"]).fill().map(x=>{return "+initialValue+";})";
-    while ( --dimCount ) {
-        arrayCreationString = "Array(argsList["+dimCount+"]).fill().map(x=>"+arrayCreationString+")";
-    }
-    return eval(arrayCreationString);
-}
-
-
-// Execute the primary calculation logic
-var finalResult = calculateMinimumCost ( ) ;
-
-// Output the result to console if it's defined
-if ( finalResult !== undefined ) {
-    console . log ( String ( finalResult ) ) ;
-}
-
-
-// Main function for determining the minimum cost to cut a grid
-function calculateMinimumCost ( ) {
-
-    // Read the grid dimensions (width and height)
-    var boardWidth = getNextNumericValue ( ) , boardHeight = getNextNumericValue ( ) ;
-
-    // Array to store all potential cut segments, along with their type (0 for horizontal, 1 for vertical)
-    var cutSegments = [ ] ;
-
-    // Populate the array with horizontal segments (from width inputs)
-    for ( var segmentIndex = 0 ; segmentIndex < boardWidth ; segmentIndex++ ) {
-        cutSegments . push ( [ getNextNumericValue ( ) , 0 ] ) ; // [length, type]
-    }
-
-    // Populate the array with vertical segments (from height inputs)
-    for ( var segmentIndex = 0 ; segmentIndex < boardHeight ; segmentIndex++ ) {
-        cutSegments . push ( [ getNextNumericValue ( ) , 1 ] ) ; // [length, type]
-    }
-
-    // Sort all segments based on their length in ascending order
-    cutSegments . sort ( ( segmentA , segmentB ) => segmentA [ 0 ] - segmentB [ 0 ] ) ;
-
-    // Initialize the total minimum cost, using BigInt for large sums
-    var totalMinimumCost = 0n ;
-
-    // Counters for the number of horizontal and vertical cuts already performed
-    var horizontalCutsMade = 0 , verticalCutsMade = 0 ;
-
-    // Iterate through the sorted segments to calculate the total cost
-    for ( var segmentIndex = 0 ; segmentIndex < boardHeight + boardWidth ; segmentIndex++ ) {
-        // Check the type of the current segment
-        if ( cutSegments [ segmentIndex ] [ 1 ] === 0 ) { // If it's a horizontal segment
-            // Add the cost for this horizontal cut: (remaining vertical pieces + 1) * segment_length
-            totalMinimumCost += BigInt ( boardHeight - verticalCutsMade + 1 ) * BigInt ( cutSegments [ segmentIndex ] [ 0 ] ) ;
-            horizontalCutsMade ++ ; // Increment the count of horizontal cuts made
-        } else { // If it's a vertical segment
-            // Add the cost for this vertical cut: (remaining horizontal pieces + 1) * segment_length
-            totalMinimumCost += BigInt ( boardWidth - horizontalCutsMade + 1 ) * BigInt ( cutSegments [ segmentIndex ] [ 0 ] ) ;
-            verticalCutsMade ++ ; // Increment the count of vertical cuts made
-        }
-    }
-
-    // Return the final calculated minimum cost
-    return totalMinimumCost ;
+  // Return the calculated total minimum cost
+  return totalCost;
 }

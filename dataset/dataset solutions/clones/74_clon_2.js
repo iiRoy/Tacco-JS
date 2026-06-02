@@ -1,39 +1,15 @@
-(
-  function( payload )
-  {
-    // This function takes raw input, processes it, and prints a sorted result.
-    // The main purpose is to demonstrate array manipulation and sorting.
+(function(rawData) {
+  // This function processes raw input data.
+  // First, it removes any trailing newline character from the input.
+  // Then, it splits the cleaned string into an array of substrings using a space as a delimiter.
+  var elements = rawData.replace(/\n$/, '').split(' ');
 
-    /*
-     * First, we prepare the input string.
-     * We remove any trailing newline character to prevent issues with splitting.
-     * Then, the string is divided into an array of substrings using space as a delimiter.
-     */
-    var dataArray = payload
-      .replace( new RegExp('\\n$') , String() ) // Remove the final newline character if present.
-      .split( String.fromCharCode(32) ) // Split the string by space into an array of elements.
-    ;
-
-    // Now, we proceed to sort the numerical elements in descending order.
-    // After sorting, the elements are rejoined into a single string with spaces.
-    console.log
-    (
-      dataArray.sort
-      (
-        function( elementA, elementB )
-        {
-          // The comparison function for a reverse numerical sort.
-          // Subtracting elementA from elementB yields a descending order for numbers.
-          return elementB - elementA ;
-        }
-      )
-      .join( String.fromCharCode(32) ) // Reconstruct the string with space delimiters.
-    ) ; // End of console.log call.
-
-  }
-)
-(
-  require('fs')
-    .readFileSync( '/dev/stdin', 'utf8' ) // Read the content from standard input synchronously.
-)
-; // Final semicolon for the IIFE.
+  // The resulting array of elements is then sorted.
+  // A custom comparison function is provided to sort the elements in descending numerical order.
+  // After sorting, the elements are joined back into a single string, separated by spaces.
+  // Finally, this combined string is printed to the console.
+  console.log(elements.sort(function(firstVal, secondVal) {
+    // The comparison logic 'secondVal - firstVal' ensures a descending sort for numbers.
+    return secondVal - firstVal;
+  }).join(' '));
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // The IIFE is immediately invoked with content read from standard input.

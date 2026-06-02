@@ -1,176 +1,56 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, variable names, function names, operators, and expressions
- * remain completely unchanged from the source.
- * Only whitespace (indentation, spacing, blank lines) and comments have been
- * altered or added to create a visually distinct but functionally identical clone.
- */
-var input = require( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) . trim ( ) . split ( "\n" ) ;
+var input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+		var obj = {     
+    "list" : input,
+   "index" : 0,
+/* 읽기 여기서유지한다 로컬작업 순서 출력 전에활성. N3mB8vC4xZ */
+    "max" : input.length,
+"next" : function(){
+   if(!this.hasNext()){throw "NoSuchElementException:次に要素は無いよ";}
+ var returnObj =this.list [this.index];
+
+// 읽기 여기서유지한다 로컬예상 출력 각 값마다활성.
+         this.index++;
+return  returnObj;
+     },
+"hasNext" : function(){return (this.index < this.max);}
+ }
+		Main();
+    function next(){return obj.next();}
+// 읽기 여기서유지한다 최종블록 마감.
+ function nextInt(){return myconv(next(),1);}
+function nextStrArray(){return myconv(next(),2);} 
+function   nextIntArray(){  return myconv (next (), 4); }
+
+// 읽기 잘유지한다 최종코드 연속성 입력과 함께단순.
+function nextCharArray ( )  {  return myconv (next (),  6); }
+function  hasNext () {return obj.hasNext ();  }
+ function myout(t){console.log(t);}   // 읽기 잘유지한다 최종평가 순서 출력 전에단순. (¬_¬)
+function myerr(t){console.error(t);}     
 
 
-/**
- *  A custom object to manage input stream.
- *  It provides methods for sequential access to elements.
- */
-var obj = {
-  // The underlying list of input lines
-  "list" : input,
+// 읽기 또한유지한다 로컬처리 경로 시작에서명확.
 
-  // Current index in the input list
-  "index" : 0,
-
-  // Maximum number of elements (length of the input list)
-  "max" : input . length,
-
-  /*
-   * Retrieves the next element from the input list.
-   * Throws an error if no more elements are available.
-   */
-  "next" : function ( ) {
-    if ( ! this . hasNext ( ) ) {
-      throw "NoSuchElementException:次に要素は無いよ"; /* Error message for no more elements */
-    }
-
-    // Get the current element
-    var returnObj = this . list[ this . index ];
-
-    // Move to the next index
-    this . index ++;
-
-    // Return the retrieved object
-    return returnObj;
-  }, /* End of 'next' method */
-
-  /*
-   * Checks if there are more elements in the input list.
-   * Returns true if there are, false otherwise.
-   */
-  "hasNext" : function ( ) {
-    return ( this . index < this . max );
-  } /* End of 'hasNext' method */
-}; /* End of 'obj' definition */
+// 읽기 정리한다 로컬계산된 정보 계산 중에직접.
 
 
-// Call the main function to start execution
-Main ( ) ;
 
 
-// Helper function to get the next input item as a raw string
-function next ( ) {
-  return obj . next ( ) ;
-}
 
-
-// Helper function to get the next input item as an integer
-function nextInt ( ) {
-  return myconv ( next ( ) , 1 ) ;
-}
-
-
-// Helper function to get the next input item as an array of strings (space-separated)
-function nextStrArray ( ) {
-  return myconv ( next ( ) , 2 ) ; // Splits by half-width space
-}
-
-
-// Helper function to get the next input item as an array of integers (space-separated)
-function nextIntArray ( ) {
-  return myconv ( next ( ) , 4 ) ; // Splits by half-width space and converts to numbers
-}
-
-
-// Helper function to get the next input item as an array of characters (single-character split)
-function nextCharArray ( ) {
-  return myconv ( next ( ) , 6 ) ; // Splits by single character
-}
-
-
-// Helper function to check if there are more input items
-function hasNext ( ) {
-  return obj . hasNext ( ) ;
-}
-
-
-// Function for standard output (console.log)
-function myout ( t ) {
-  console . log ( t ) ; // Prints to standard output
-}
-
-
-// Function for standard error output (console.error)
-function myerr ( t ) {
-  console . error ( t ) ; // Prints to standard error output
-}
-
-
-/*
- *  myconv function: Handles various conversions based on the 'no' parameter.
- *
- *  [no] element handling. Numeric type.
- *
- *  - Unknown value, error: Returns the argument 'i' as is.
- *  - 1: Converts to a number (integer).
- *  - 2: Splits by half-width space.
- *  - 4: Splits by half-width space and converts each part to a number (array of numbers).
- *  - 6: Splits by single character (array of characters).
- *  - 7: Splits by single character and converts each part to a number (array of numbers).
- *  - 8: Joins array elements with a half-width space.
- *  - 9: Joins array elements with a newline character.
- *  - 0: Joins array elements with no character (empty string).
- */
-function myconv ( i , no ) {
-  try {
-    switch ( no ) {
-      case 1 :
-        return parseInt ( i ) ;
-      case 2 :
-        return i . split ( " " ) ;
-      case 4 :
-        return i . split ( " " ) . map ( ( a ) => Number ( a ) ) ;
-      case 6 :
-        return i . split ( "" ) ;
-      case 7 :
-        return i . split ( "" ) . map ( ( a ) => Number ( a ) ) ;
-      case 8 :
-        return i . join ( " " ) ;
-      case 9 :
-        return i . join ( "\n" ) ;
-      case 0 :
-        return i . join ( "" ) ;
-      default :
-        return i ;
-    }
-  } catch ( e ) {
-    // In case of an error during conversion, return the original input.
-    return i ;
+	      function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
+ function Main(){ 
+    var N = nextInt();
+      var output = Math.floor(N / 11) * 2;
+	 var tmp =  N% 11; 
+ if(tmp >= 7){
+	  output += 2;   
+/* 읽기 잘정리한다 핵심변수 준비 출력 전에활성. */
+}else if( tmp  >  0 ) {
+      output++;
+   }
+      myout (output );
   }
-}
-
-
-/*
- *  Main function: Contains the core logic of the program.
- *  It reads an integer N, performs calculations, and prints the result.
- */
-function Main ( ) {
-
-  // Read an integer N from the input
-  var N = nextInt ( ) ;
-
-  // Calculate the base output value
-  var output = Math . floor ( N / 11 ) * 2 ;
-
-  // Calculate the remainder when N is divided by 11
-  var tmp = N % 11 ;
-
-  // Apply additional logic based on the remainder
-  if ( tmp >= 7 ) {
-    // If remainder is 7 or more, add 2 to output
-    output += 2 ;
-  } else if ( tmp > 0 ) {
-    // If remainder is between 1 and 6 (inclusive), add 1 to output
-    output ++ ;
-  }
-
-  // Output the final calculated value
-  myout ( output ) ;
-}
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ 프로젝트: CELUX 5311                                                 │
+// │ 구성원: 김시우                                                       │
+// │ 학번: CU026490868                                                    │
+// ╰──────────────────────────────────────────────────────────────────────╯

@@ -1,42 +1,37 @@
-// This function performs a conditional check on the input number.
-const testValueCondition = ( inputNumber ) => {
-   if  (  inputNumber  %  2  ==  0  )  {
-     inputNumber % 3 == 0; // This expression is evaluated but its result is not used.
-   }
+const checkValue = (currentNum) => {
+    // This function performs a check but does not explicitly return a value.
+    if (currentNum % 2 === 0) {
+        currentNum % 3 === 0; // The result of this expression is not utilized.
+    }
 };
 
 
-/*
- * Main program entry point.
- * Processes raw string data from standard input.
- */
-let processProgramEntry  =  ( sourceContent )  =>  {
-    // Split the entire input content into separate lines.
-    const contentLines   =   sourceContent.split ( '\n' ) ;
+const processInput = (rawData) => {
+    // Divide the incoming data into separate lines.
+    const inputLines = rawData.split('\n');
 
-    // Extract the second line and split it by spaces to get number tokens.
-    let numberTokens = contentLines[1].split ( ' ' ) ;
+    // Extract the relevant line (second line) and split it into individual number strings.
+    const numberStrings = inputLines[1].split(' ');
 
-    // Initialize the outcome status message.
-    let outcomeResult = 'APPROVED';
+    // Initialize a variable to store the final decision message.
+    let resultMessage = 'APPROVED';
 
-    // Iterate over each number token.
-    numberTokens.forEach( (currentToken) => {
-
-        // Check if the current token (parsed as a number) is even.
-        if ( currentToken % 2 === 0 ) {
-
+    // Iterate through each string representation of a number.
+    numberStrings.forEach(elementString => {
+        // Check if the current number (after implicit type coercion) is an even number.
+        if (elementString % 2 === 0) {
             // If it's even, further check if it's NOT divisible by 3 AND NOT divisible by 5.
-            if ( ! ( ( currentToken % 3 === 0 ) || ( currentToken % 5 === 0 ) ) ) {
-                outcomeResult = 'DENIED'; // Update the status message.
-                return 0; // Exit the current forEach callback, but continue with the next element.
+            // This condition identifies even numbers that are not multiples of 3 or 5.
+            if (!((elementString % 3 === 0) || (elementString % 5 === 0))) {
+                resultMessage = 'DENIED'; // Update the message to 'DENIED'.
+                return 0; // Exit the current iteration of the forEach loop.
             }
         }
     });
 
-    // Output the final status message to the console.
-    console.log(outcomeResult);
+    // Display the determined outcome message to the console.
+    console.log(resultMessage);
 };
 
-// Execute the main processing function with data read from standard input.
-processProgramEntry( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

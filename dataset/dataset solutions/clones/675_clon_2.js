@@ -1,61 +1,43 @@
-const fileSystemModule = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Function alias for reading file content synchronously
-const acquireFileData = fileSystemModule.readFileSync;
+var lineBuffer = rawData.trim().split("\n"); // Split input into an array of lines
 
-// Retrieve raw data from the standard input path
-let fileContent = acquireFileData('/dev/stdin', 'UTF-8');
+while (true) {
+    var currentLine = lineBuffer.shift(); // Get the next line from the input buffer
 
-// Process the raw content: trim whitespace and split into individual lines
-let inputLines = fileContent
-  .trim() // Remove excess blank characters
-  .split('\n'); // Divide the string by newline characters
+    // Check for the termination condition
+    if (currentLine === "0 0 0 0 0 0") {
+        break; // Exit the loop if the specific termination string is encountered
+    }
 
-// Main processing loop, continues indefinitely until a specific condition is met
-while ( true )
-{
-  // Extract the first line from our collection of input lines
-  let currentRecord = inputLines.shift();
+    // Parse the current line into an array of numerical values
+    var numericValues = currentLine.split(" ").map(Number);
 
-  // Check for the termination sequence, which is six zero digits separated by spaces
-  if (currentRecord === '0 0 0 0 0 0') {
-    break; // Terminate the loop if the sentinel value is encountered
-  }
+    // Calculate initial sums for three distinct categories
+    var firstCategorySum = numericValues[0] + numericValues[3];
+    var secondCategorySum = numericValues[1] + numericValues[4];
+    var thirdCategorySum = numericValues[2] + numericValues[5];
 
-  // Convert the current line string into an array of numeric values
-  let numericValues = currentRecord
-    .split(' ') // Split the string by space delimiters
-    .map(parseInt); // Transform each segment into an integer
+    var totalGroups = 0; // Initialize a counter for the total number of groups
 
-  // Calculate three separate sums based on specific index pairs from the numeric array
-  let firstTotal = numericValues[0] + numericValues[3];
-  let secondTotal = numericValues[1] + numericValues[4];
-  let thirdTotal = numericValues[2] + numericValues[5];
+    // Add groups formed by dividing each category's sum by three
+    totalGroups += Math.floor(firstCategorySum / 3);
+    totalGroups += Math.floor(secondCategorySum / 3);
+    totalGroups += Math.floor(thirdCategorySum / 3);
 
-  let operationCount = 0; // Initialize a counter for the total number of operations
+    // Update category sums to their remainders after division by three
+    firstCategorySum = firstCategorySum % 3;
+    secondCategorySum = secondCategorySum % 3;
+    thirdCategorySum = thirdCategorySum % 3;
 
-  // Add initial operations based on the integer division of each sum by three
-  operationCount += (firstTotal - (firstTotal % 3)) / 3;
-  operationCount += (secondTotal - (secondTotal % 3)) / 3;
-  operationCount += (thirdTotal - (thirdTotal % 3)) / 3;
+    // Form additional groups by combining one item from each category, if available
+    while (firstCategorySum >= 1 && secondCategorySum >= 1 && thirdCategorySum >= 1) {
+        firstCategorySum--;  // Decrement count for the first category
+        secondCategorySum--; // Decrement count for the second category
+        thirdCategorySum--;  // Decrement count for the third category
+        totalGroups++;       // Increment the total groups counter
+    }
 
-  // Update each total to its remainder after division by three
-  firstTotal = firstTotal % 3;
-  secondTotal = secondTotal % 3;
-  thirdTotal = thirdTotal % 3;
-
-  // Perform additional operations as long as all three remainders are at least one
-  while ( (firstTotal % 3 >= 1) && (secondTotal >= 1) && (thirdTotal >= 1) )
-  {
-    firstTotal--;     // Decrement the first total
-    secondTotal--;    // Decrement the second total
-    thirdTotal--;     // Decrement the third total
-    operationCount++; // Increment the overall operation counter
-  }
-
-  // Alias for console.log to change the identifier name
-  const displayResult = console.log;
-
-  // Output the final calculated operation count for the current record
-  displayResult(operationCount);
+    // Output the final calculated total groups for the current line
+    console.log(totalGroups);
 }

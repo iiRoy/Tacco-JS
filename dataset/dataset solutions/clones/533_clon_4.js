@@ -1,24 +1,23 @@
 "use strict";
 
-const performCalculus = (incomingSignal) => {
-  const partsOfSignal = incomingSignal.split(" ");
-  const firstComponent = partsOfSignal[0];
-  const secondComponent = partsOfSignal[1];
+function calculateResult(rawData) {
+  const tokenList = rawData.split(" ");
 
-  const firstNumericalValue = parseFloat(firstComponent);
-  const secondNumericalValue = parseFloat(secondComponent);
+  let firstSegmentValue;
+  let secondSegmentValue;
 
-  const exponentiationBase = 10;
-  const powerFactor = Math.pow(exponentiationBase, secondComponent.length);
+  tokenList.reduce((accumulator, currentElement, currentIndex) => {
+    if (currentIndex === 0) {
+      firstSegmentValue = currentElement;
+    } else if (currentIndex === 1) {
+      secondSegmentValue = currentElement;
+    }
+    return accumulator;
+  }, null);
 
-  const combinedNumericalRepresentation = (firstNumericalValue * powerFactor) + secondNumericalValue;
+  const combinedStringRepresentation = `${firstSegmentValue}${secondSegmentValue}`;
 
-  return combinedNumericalRepresentation / 2;
-};
-
-function InitiateProcessingAndOutput(sourceData) {
-  const finalResult = performCalculus(sourceData);
-  process.stdout.write(String(finalResult) + "\n");
+  console.log(Number(combinedStringRepresentation) / 2);
 }
 
-InitiateProcessingAndOutput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+calculateResult(require("fs").readFileSync("/dev/stdin", "utf8"));

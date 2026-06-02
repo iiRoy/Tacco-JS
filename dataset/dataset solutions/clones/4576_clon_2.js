@@ -1,44 +1,28 @@
-// This function processes an incoming string to determine a range check.
-function ProcessInputValues(incomingString)
-{
-    /*
-     * First, we transform the raw string data.
-     * It's split by spaces and each part is converted to an integer.
-     */
-    const numericElements = incomingString
-                                .split(' ')
-                                .map(
-                                    // Convert each string segment to a base-10 integer
-                                    (strSegment) => parseInt(strSegment, 10)
-                                );
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // The input string is first split by spaces.
+    // Each resulting string segment is then converted into an integer using base 10.
+    let parsedNumbers = rawData.split(' ').map(numStr => parseInt(numStr, 10));
 
-    // Extract the individual numeric components for comparison.
-    let minimumBoundary = numericElements[0]; // The smallest acceptable value.
-    let maximumBoundary = numericElements[1]; // The largest acceptable value.
-    let valueToCheck   = numericElements[2]; // The value whose inclusion is being tested.
+    // The individual numerical values are extracted from the parsed array.
+    // These variables are implicitly declared in the global scope, mirroring the original's behavior.
+    firstVal = parsedNumbers[0];
+    secondVal = parsedNumbers[1];
+    thirdVal = parsedNumbers[2];
 
-
-    // Evaluate if the 'valueToCheck' falls within the specified range.
-    if (
-        (minimumBoundary <= valueToCheck)
-        && (valueToCheck <= maximumBoundary)
-    )
-    {
-        // If the condition holds true, confirm its presence within the range.
+    // A conditional check is performed to determine if the third value
+    // lies inclusively between the first and second values.
+    if (firstVal <= thirdVal && thirdVal <= secondVal) {
+        // If the condition holds true, a positive affirmation is printed.
         console.log('Yes');
-    }
-    else
-    {
-        // Otherwise, indicate that the value is outside the defined bounds.
+    } else {
+        // Otherwise, a negative response is outputted.
         console.log('No');
     }
 }
 
-// Execute the primary processing function using data from standard input.
-ProcessInputValues(
-    require('fs')
-        .readFileSync(
-            '/dev/stdin',  // Path to the standard input stream.
-            'utf8'         // Encoding for reading the file content.
-        )
-);
+// The program initiates by reading data from standard input.
+// The 'fs' module is used to synchronously read the file at '/dev/stdin',
+// and the content is interpreted as a UTF-8 encoded string.
+// This string is then passed to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

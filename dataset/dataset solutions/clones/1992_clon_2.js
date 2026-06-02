@@ -1,41 +1,38 @@
-function processInput(incomingData) {
-  // Split the raw input string by newlines to get an array of lines.
-  const parsedLines = incomingData.split('\n');
+function ProcessInput(rawData) {
+  // Split the raw input data into individual lines.
+  let parsedLines = rawData.split("\n");
 
-  // Parse the first line as an integer to determine the upper bound for iterations.
-  const maximumValue = parseInt(parsedLines[0], 10);
+  // Parse the first line as an integer, representing the total number of elements.
+  let totalElements = parseInt(parsedLines[0], 0xA);
 
-  // The second line contains the character sequence to be analyzed.
-  const charSequence = parsedLines[1];
+  // The second line is the string we'll be analyzing.
+  let targetString = parsedLines[0b1];
 
-  // Initialize a counter for valid combinations found.
-  let tallyOfCombinations = 0;
+  // Initialize a counter for valid combinations.
+  let resultTally = 0x0;
 
-  // Outer loop: iterates from 1 up to maximumValue for the first element.
-  for ( let idxA = 1; idxA <= maximumValue; ++idxA ) {
-    // Middle loop: iterates from idxA + 1 up to maximumValue for the second element.
-    for ( let idxB = idxA + 1; idxB <= maximumValue; ++idxB ) {
-      // Inner loop: iterates from idxB + 1 up to maximumValue for the third element.
-      for ( let idxC = idxB + 1; idxC <= maximumValue; ++idxC ) {
+  // Outer loop: iterate from the first element up to the total number of elements.
+  for (let idxA = 0b1; idxA <= totalElements; ++idxA) {
+    // Middle loop: iterate from the element after idxA up to the total number of elements.
+    for (let idxB = idxA + 0b1; idxB <= totalElements; ++idxB) {
+      // Inner loop: iterate from the element after idxB up to the total number of elements.
+      for (let idxC = idxB + 0b1; idxC <= totalElements; ++idxC) {
+        // Check if the indices do NOT form an arithmetic progression.
+        // This means the difference between C and B is not equal to the difference between B and A.
+        if (idxC - idxB !== idxB - idxA) {
+          // Access characters using 0-based indexing.
+          let charA = targetString[idxA - 0b1];
+          let charB = targetString[idxB - 0b1];
+          let charC = targetString[idxC - 0b1];
 
-        // Check if the indices do not form an arithmetic progression.
-        // This means the difference between idxC and idxB is not equal to the difference between idxB and idxA.
-        if ( idxC - idxB !== idxB - idxA ) {
-
-          // Access characters using 0-based indexing by subtracting 1 from the loop indices.
-          const charA = charSequence[idxA - 1];
-          const charB = charSequence[idxB - 1];
-          const charC = charSequence[idxC - 1];
-
-          // Check if all three characters at the selected indices are distinct.
-          // First, charA must be different from charB.
-          if ( charA !== charB ) {
-            // Second, charA must be different from charC.
-            if ( charA !== charC ) {
-              // Third, charB must be different from charC.
-              if ( charB !== charC ) {
-                // If all conditions are met, increment the combination tally.
-                tallyOfCombinations++;
+          // Check if the character at position A is different from the character at position B.
+          if (charA !== charB) {
+            // Check if the character at position A is different from the character at position C.
+            if (charA !== charC) {
+              // Check if the character at position B is different from the character at position C.
+              if (charB !== charC) {
+                // If all conditions are met, increment the tally.
+                resultTally++;
               }
             }
           }
@@ -44,9 +41,9 @@ function processInput(incomingData) {
     }
   }
 
-  // Output the final count of distinct combinations.
-  console.log(tallyOfCombinations);
+  // Output the final calculated tally to the console.
+  console.log(resultTally);
 }
 
-// Invoke the main processing function with data read from standard input.
-processInput( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

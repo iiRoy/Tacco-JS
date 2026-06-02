@@ -1,20 +1,9 @@
-const tallySpecificDigit = (originText, soughtDigit) => {
-  const recursiveCounter = (remainingText, currentTotal) => {
-    if (remainingText.length === 0) {
-      return currentTotal;
-    }
-    const headChar = remainingText[0];
-    const tailText = remainingText.slice(1);
-    const incrementValue = (headChar === soughtDigit) ? 1 : 0;
-    return recursiveCounter(tailText, currentTotal + incrementValue);
-  };
-  return recursiveCounter(originText, 0);
+"use strict";
+
+var processInput = function processInput(sourceText) {
+  var digitMatches = sourceText.match(/1/g);
+  var tally = digitMatches ? digitMatches.length : 0;
+  console.log(tally);
 };
 
-const orchestrateExecution = () => {
-  const rawContent = require('fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-  const finalCount = tallySpecificDigit(rawContent, '1');
-  console.log(finalCount);
-};
-
-orchestrateExecution();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

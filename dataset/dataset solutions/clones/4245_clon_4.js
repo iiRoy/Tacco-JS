@@ -1,32 +1,44 @@
-const primaryDataSource = String(require("node:fs").readFileSync(0)).trim().split(/\s+/).map(Number);
+"use strict";
 
-const calculateModifiedSum = (elementsCount, initialCollection) => {
-  const internalCollection = [0, ...initialCollection];
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const tokens = rawInput.split(/\s+/).filter(Boolean);
+let tokenPointer = 0;
 
-  const processedCollection = Array.from({length: elementsCount}, (_, k) => k + 1)
-    .reduceRight((currentIterationValues, currentFactor) => {
-      const relevantIndices = Array.from({length: Math.floor(elementsCount / currentFactor)}, (_, k) => (k + 1) * currentFactor);
-      const currentSectionSum = relevantIndices.map(idx => currentIterationValues[idx]).reduce((accumulator, value) => accumulator + value, 0);
+const retrieveNextNumber = () => Number(tokens[tokenPointer++]);
 
-      if (currentSectionSum < 0) {
-        return currentIterationValues.map((value, index) => {
-          if (index > 0 && index <= elementsCount && index % currentFactor === 0) {
-            return 0;
-          } else {
-            return value;
-          }
+function processData() {
+  const count = retrieveNextNumber();
+
+  const valueCollection = Array(count + 1);
+  valueCollection[0] = 0;
+  for (let k = 1; k <= count; k++) {
+    valueCollection[k] = retrieveNextNumber();
+  }
+
+  const finalValueCollection = Array.from({ length: count }, (_, idx) => count - idx)
+    .reduceRight((currentValues, currentDivisor) => {
+      const multipleIndices = Array.from(
+        { length: Math.floor(count / currentDivisor) },
+        (_, k) => (k + 1) * currentDivisor
+      );
+
+      const currentTotal = multipleIndices.reduce((accumulator, index) => accumulator + currentValues[index], 0);
+
+      if (currentTotal < 0) {
+        const nextValues = [...currentValues];
+        multipleIndices.forEach(index => {
+          nextValues[index] = 0;
         });
+        return nextValues;
       } else {
-        return currentIterationValues;
+        return currentValues;
       }
-    }, internalCollection);
+    }, valueCollection);
 
-  return processedCollection.slice(1).reduce((finalAccumulator, itemValue) => finalAccumulator + itemValue, 0);
-};
+  return finalValueCollection.reduce((total, val) => total + val, 0);
+}
 
-const limitValue = primaryDataSource.shift();
-const initialElementsList = Array.from({length: limitValue}, () => primaryDataSource.shift());
-
-const finalOutcome = calculateModifiedSum(limitValue, initialElementsList);
-
-console.log(String(finalOutcome));
+const result = processData();
+if (result !== undefined) {
+  console.log(String(result));
+}

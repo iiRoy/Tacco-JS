@@ -1,39 +1,41 @@
-const fileSystem = require('fs');
-const standardInputPath = '/dev/stdin';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let inputBuffer = '';
 
-const rawContent = fileSystem.readFileSync(standardInputPath, 'utf8');
-
-const contentBlocks = rawContent.trim().split('\n');
-const totalElementsCount = Number(contentBlocks[0].trim());
-const valueSegment = contentBlocks[1].trim().split(' ').map(Number);
-
-const initialCollection = valueSegment.slice(0, totalElementsCount);
-
-const orderedCollection = initialCollection.slice().sort((a, b) => a - b);
-
-const rankAllocationRegister = orderedCollection.reduce((accumulator, currentItem, currentIndex) => {
-    accumulator.has(currentItem)
-        ? accumulator.get(currentItem).push(currentIndex)
-        : accumulator.set(currentItem, [currentIndex]);
-    return accumulator;
-}, new Map());
-
-const occurrenceCounter = new Map();
-
-const effectiveLength = totalElementsCount;
-const midpointOffset = Math.floor((effectiveLength - 1) / 2);
-
-const lowerMidValue = orderedCollection[midpointOffset];
-const upperMidValue = orderedCollection[midpointOffset + 1];
-
-const outcomeSequence = initialCollection.map(currentItem => {
-    const currentOccurrences = occurrenceCounter.get(currentItem) || 0;
-    occurrenceCounter.set(currentItem, currentOccurrences + 1);
-
-    const rankList = rankAllocationRegister.get(currentItem);
-    const assignedPosition = rankList[rankList.length - 1 - currentOccurrences];
-
-    return (assignedPosition <= midpointOffset) ? upperMidValue : lowerMidValue;
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
 
-outcomeSequence.forEach(result => console.log(result.toString()));
+process.stdin.on('end', function() {
+    const inputLines = inputBuffer.split('\n');
+    const dataElementsString = inputLines[1].split(' ');
+
+    const originalNumbers = dataElementsString.map(numericString => parseInt(numericString, 10));
+    const totalElementCount = originalNumbers.length;
+
+    const orderedNumbers = [...originalNumbers].sort((first, second) => first - second);
+
+    const valueToSortedIndices = orderedNumbers.reduce((accumulator, currentVal, currentIndex) => {
+        if (!accumulator.has(currentVal)) {
+            accumulator.set(currentVal, []);
+        }
+        accumulator.get(currentVal).push(currentIndex);
+        return accumulator;
+    }, new Map());
+
+    const adjustedTotalCount = totalElementCount - 1;
+    const medianSplitPoint = Math.floor(adjustedTotalCount / 2);
+
+    const lowerMedianCandidate = orderedNumbers[medianSplitPoint];
+    const upperMedianCandidate = orderedNumbers[medianSplitPoint + 1];
+
+    const computedResults = originalNumbers.map(currentOriginalValue => {
+        const consumedSortedPosition = valueToSortedIndices.get(currentOriginalValue).pop();
+
+        return (consumedSortedPosition <= medianSplitPoint) ? upperMedianCandidate : lowerMedianCandidate;
+    });
+
+    computedResults.forEach(finalResult => {
+        console.log(finalResult.toString());
+    });
+});

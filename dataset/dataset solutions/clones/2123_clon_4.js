@@ -1,91 +1,126 @@
-function* provideInputLines(sourceText) {
-  const lines = sourceText.trim().split("\n");
-  for (const line of lines) {
-    yield line;
-  }
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+
+class InputProcessor {
+    constructor(rawInput) {
+        this.dataLines = rawInput.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.totalLines = this.dataLines.length;
+    }
+
+    retrieveNext() {
+        if (!this.hasMore()) {
+            throw "NoSuchElementException:次に要素は無いよ";
+        }
+        const line = this.dataLines[this.currentLineIndex];
+        this.currentLineIndex++;
+        return line;
+    }
+
+    hasMore() {
+        return this.currentLineIndex < this.totalLines;
+    }
 }
 
-const lineInterpreters = {
-  toNumber: (s) => parseInt(s, 10),
-  splitBySpace: (s) => s.split(" "),
-  splitBySpaceAndToNumbers: (s) => s.split(" ").map(Number),
-  splitByChar: (s) => s.split(""),
-  splitByCharAndToNumbers: (s) => s.split("").map(Number),
+const inputSource = new InputProcessor(input);
+
+function retrieveNextLine() { return inputSource.retrieveNext(); }
+function checkMoreLines() { return inputSource.hasMore(); }
+
+function myout(t){console.log(t);}
+function myerr(t){console.error(t);}
+
+const conversionDispatch = {
+    1: (val) => parseInt(val),
+    2: (val) => val.split(" "),
+    4: (val) => val.split(" ").map(Number),
+    6: (val) => val.split(""),
+    7: (val) => val.split("").map(Number),
+    8: (val) => val.join(" "),
+    9: (val) => val.join("\n"),
+    0: (val) => val.join(""),
 };
 
-function processInputEntry(entry, interpretationKey) {
-  if (interpretationKey === undefined || interpretationKey === null) {
-    return entry;
-  }
-  const interpreter = lineInterpreters[interpretationKey];
-  if (interpreter) {
-    return interpreter(entry);
-  }
-  return entry;
+function myconv(value, type) {
+    try {
+        const converter = conversionDispatch[type];
+        return converter ? converter(value) : value;
+    } catch (e) {
+        return value;
+    }
 }
 
-function displayResults(dataItems) {
-  console.log(dataItems.join(" "));
+let parentRegistry;
+let componentMemberCounts;
+
+function initializeDisjointSet(nodeCount) {
+    parentRegistry = Array.from({ length: nodeCount }, (_, idx) => idx);
+    componentMemberCounts = Array(nodeCount).fill(1);
 }
 
-(function executeSocialAnalysis() {
-  const rawEntryData = require("fs").readFileSync("/dev/stdin", "utf8");
-  const inputSequence = provideInputLines(rawEntryData);
+function findSetRepresentative(nodeIdentifier) {
+    if (parentRegistry[nodeIdentifier] === nodeIdentifier) {
+        return nodeIdentifier;
+    }
+    return parentRegistry[nodeIdentifier] = findSetRepresentative(parentRegistry[nodeIdentifier]);
+}
 
-  const [peopleCount, bondCount, exclusionCount] = processInputEntry(inputSequence.next().value, 'splitBySpaceAndToNumbers');
+function uniteComponents(nodeA, nodeB) {
+    let rootA = findSetRepresentative(nodeA);
+    let rootB = findSetRepresentative(nodeB);
 
-  const socialGraph = Array.from({ length: peopleCount }, () => new Set());
-  const communityIdentifiers = new Array(peopleCount).fill(null);
-  const communityMembers = new Map();
-  let nextCommunityId = 0;
+    if (rootA !== rootB) {
+        if (componentMemberCounts[rootA] < componentMemberCounts[rootB]) {
+            [rootA, rootB] = [rootB, rootA];
+        }
+        parentRegistry[rootB] = rootA;
+        componentMemberCounts[rootA] += componentMemberCounts[rootB];
+        return true;
+    }
+    return false;
+}
 
-  for (let b = 0; b < bondCount; b++) {
-    const [personA, personB] = processInputEntry(inputSequence.next().value, 'splitBySpaceAndToNumbers');
-    socialGraph[personA - 1].add(personB - 1);
-    socialGraph[personB - 1].add(personA - 1);
+function Main(){
+  var problemParams = myconv(retrieveNextLine(), 4);
+  var nodeCount = problemParams[0];
+  var edgeCount = problemParams[1];
+  var exclusionCount = problemParams[2];
+
+  initializeDisjointSet(nodeCount);
+
+  var adjacencyList = Array.from({ length: nodeCount }, () => []);
+  var nodeDegrees = Array(nodeCount).fill(0);
+
+  for(let e = 0; e < edgeCount; e++){
+    var connection = myconv(retrieveNextLine(), 4);
+    var u = connection[0] - 1;
+    var v = connection[1] - 1;
+
+    adjacencyList[u].push(v);
+    adjacencyList[v].push(u);
+    nodeDegrees[u]++;
+    nodeDegrees[v]++;
+
+    uniteComponents(u, v);
   }
 
-  function exploreCommunity(currentPersonIndex, assignedCommunityId) {
-    if (communityIdentifiers[currentPersonIndex] !== null) {
-      return;
-    }
-
-    communityIdentifiers[currentPersonIndex] = assignedCommunityId;
-    if (!communityMembers.has(assignedCommunityId)) {
-      communityMembers.set(assignedCommunityId, new Set());
-    }
-    communityMembers.get(assignedCommunityId).add(currentPersonIndex);
-
-    for (const neighborIndex of socialGraph[currentPersonIndex]) {
-      exploreCommunity(neighborIndex, assignedCommunityId);
-    }
+  var finalResult = Array(nodeCount);
+  for(let n = 0; n < nodeCount; n++){
+    let root = findSetRepresentative(n);
+    let componentSize = componentMemberCounts[root];
+    finalResult[n] = componentSize - 1 - nodeDegrees[n];
   }
 
-  for (let p = 0; p < peopleCount; p++) {
-    if (communityIdentifiers[p] === null) {
-      exploreCommunity(p, nextCommunityId);
-      nextCommunityId++;
+  for(let k = 0; k < exclusionCount; k++){
+    var exclusionPair = myconv(retrieveNextLine(), 4);
+    var x = exclusionPair[0] - 1;
+    var y = exclusionPair[1] - 1;
+
+    if(findSetRepresentative(x) === findSetRepresentative(y)){
+       finalResult[x]--;
+       finalResult[y]--;
     }
   }
+  myout(myconv(finalResult, 8));
+}
 
-  const projectedSocialPotential = new Array(peopleCount);
-  for (let p = 0; p < peopleCount; p++) {
-    const currentCommunityId = communityIdentifiers[p];
-    const communitySize = communityMembers.get(currentCommunityId).size;
-    const existingBonds = socialGraph[p].size;
-    projectedSocialPotential[p] = communitySize - 1 - existingBonds;
-  }
-
-  for (let e = 0; e < exclusionCount; e++) {
-    const [personX, personY] = processInputEntry(inputSequence.next().value, 'splitBySpaceAndToNumbers');
-    const indexX = personX - 1;
-    const indexY = personY - 1;
-
-    if (communityIdentifiers[indexX] === communityIdentifiers[indexY]) {
-      projectedSocialPotential[indexX]--;
-      projectedSocialPotential[indexY]--;
-    }
-  }
-
-  displayResults(projectedSocialPotential);
-})();
+Main();

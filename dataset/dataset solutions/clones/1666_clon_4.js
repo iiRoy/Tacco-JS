@@ -1,17 +1,16 @@
-function calculateDivisibleCount(inputString) {
-    const dataLine = inputString.trim().split('\n')[0];
-    const numericParameters = dataLine.split(' ').map(Number);
+function processInputData(sourceText) {
+    const parsedLines = sourceText.trim().split("\n");
+    const firstSegmentValues = parsedLines[0].split(" ");
+    const lowerBoundary = Number.parseInt(firstSegmentValues[0], 10);
+    const upperBoundary = Number.parseInt(firstSegmentValues[1], 10);
+    const commonDivisor = Number.parseInt(firstSegmentValues[2], 10);
 
-    const rangeStart = numericParameters[0];
-    const rangeEnd = numericParameters[1];
-    const divisorValue = numericParameters[2];
+    const multiplesUpToHigh = Math.floor(upperBoundary / commonDivisor);
+    const multiplesBelowLow = Math.floor((lowerBoundary - 1) / commonDivisor);
 
-    const multiplesUpToEnd = Math.floor(rangeEnd / divisorValue);
-    const multiplesBeforeStart = Math.floor((rangeStart - 1) / divisorValue);
+    const totalOccurrences = multiplesUpToHigh - multiplesBelowLow;
 
-    const finalCount = multiplesUpToEnd - multiplesBeforeStart;
-
-    console.log(finalCount);
+    console.log(totalOccurrences);
 }
 
-calculateDivisibleCount(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

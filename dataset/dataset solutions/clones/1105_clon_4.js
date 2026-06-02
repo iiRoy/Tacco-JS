@@ -1,131 +1,175 @@
-function createVertex(val, branchA = null, branchB = null) {
-  return {
-    label: val,
-    leftBranch: branchA,
-    rightBranch: branchB
+class TreeUnit {
+  constructor(val, parentRef = null) {
+    this.val = val;
+    this.parentRef = parentRef;
+    this.childRefs = [null, null];
+  }
+}
+
+class BinarySearchStructure {
+  constructor() {
+    this.topNode = null;
+  }
+
+  static get Unit() { return TreeUnit; }
+
+  place(value) {
+    const newUnit = new BinarySearchStructure.Unit(value);
+    if (this.topNode === null) {
+      this.topNode = newUnit;
+      return;
+    }
+
+    const _recursivePlace = (currentUnit, unitToPlace) => {
+      if (unitToPlace.val < currentUnit.val) {
+        if (currentUnit.childRefs[0] === null) {
+          currentUnit.childRefs[0] = unitToPlace;
+          unitToPlace.parentRef = currentUnit;
+        } else {
+          _recursivePlace(currentUnit.childRefs[0], unitToPlace);
+        }
+      } else {
+        if (currentUnit.childRefs[1] === null) {
+          currentUnit.childRefs[1] = unitToPlace;
+          unitToPlace.parentRef = currentUnit;
+        } else {
+          _recursivePlace(currentUnit.childRefs[1], unitToPlace);
+        }
+      }
+    };
+    _recursivePlace(this.topNode, newUnit);
+  }
+
+  search(value) {
+    let currentUnit = this.topNode;
+    while (currentUnit !== null && currentUnit.val !== value) {
+      currentUnit = currentUnit.childRefs[value < currentUnit.val ? 0 : 1];
+    }
+    return currentUnit;
+  }
+
+  remove(value) {
+    const targetUnit = this.search(value);
+    if (!targetUnit) return;
+
+    const parentOfTarget = targetUnit.parentRef;
+    const leftChild = targetUnit.childRefs[0];
+    const rightChild = targetUnit.childRefs[1];
+
+    if (!parentOfTarget && (!leftChild || !rightChild)) {
+      parentOfTarget['right'] = null;
+    }
+
+    if (!leftChild && !rightChild) {
+      if (parentOfTarget) {
+        if (parentOfTarget.childRefs[0] === targetUnit) {
+          parentOfTarget.childRefs[0] = null;
+        } else {
+          parentOfTarget.childRefs[1] = null;
+        }
+      }
+    } else if (!leftChild || !rightChild) {
+      const childToPromote = leftChild || rightChild;
+      if (parentOfTarget) {
+        if (parentOfTarget.childRefs[0] === targetUnit) {
+          parentOfTarget.childRefs[0] = childToPromote;
+        } else {
+          parentOfTarget.childRefs[1] = childToPromote;
+        }
+        childToPromote.parentRef = parentOfTarget;
+      }
+    } else {
+      const successor = this._findSuccessor(targetUnit);
+      const successorValue = successor.val;
+      this.remove(successorValue);
+      targetUnit.val = successorValue;
+    }
+  }
+
+  _findSuccessor(unit) {
+    if (unit.childRefs[1]) {
+      let current = unit.childRefs[1];
+      while (current.childRefs[0]) {
+        current = current.childRefs[0];
+      }
+      return current;
+    }
+    let current = unit;
+    let ancestor = current.parentRef;
+    while (ancestor && ancestor.childRefs[1] === current) {
+      current = ancestor;
+      ancestor = current.parentRef;
+    }
+    return ancestor;
+  }
+
+  traverseInOrder() {
+    let outputString = '';
+    const stack = [];
+    let current = this.topNode;
+
+    while (current || stack.length > 0) {
+      while (current) {
+        stack.push(current);
+        current = current.childRefs[0];
+      }
+      current = stack.pop();
+      outputString += ` ${current.val}`;
+      current = current.childRefs[1];
+    }
+    console.log(outputString);
+  }
+
+  traversePreOrder() {
+    let outputString = '';
+    if (!this.topNode) {
+      console.log(outputString);
+      return;
+    }
+
+    const stack = [this.topNode];
+    while (stack.length > 0) {
+      const current = stack.pop();
+      outputString += ` ${current.val}`;
+
+      if (current.childRefs[1]) {
+        stack.push(current.childRefs[1]);
+      }
+      if (current.childRefs[0]) {
+        stack.push(current.childRefs[0]);
+      }
+    }
+    console.log(outputString);
+  }
+
+  display() {
+    this.traverseInOrder();
+    this.traversePreOrder();
+  }
+}
+
+(function executeOperations(){
+  const inputCommands = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const commandCount = Number(inputCommands.shift());
+
+  const bstInstance = new BinarySearchStructure();
+
+  const operationMap = {
+    'insert': (val) => bstInstance.place(val),
+    'find': (val) => console.log(bstInstance.search(val) ? 'yes' : 'no'),
+    'delete': (val) => bstInstance.remove(val),
+    'print': () => bstInstance.display()
   };
-}
 
-let primaryStructure = null; 
+  inputCommands.forEach(function(currentCommand) {
+    const commandParts = currentCommand.split(' ');
+    const firstWord = commandParts[0];
+    const numericValue = Number(commandParts[1]);
 
-function placeElement(val) {
-  function recurseInsert(currentBranch) {
-    if (!currentBranch) {
-      return createVertex(val);
-    }
-    if (val < currentBranch.label) {
-      currentBranch.leftBranch = recurseInsert(currentBranch.leftBranch);
-    } else {
-      currentBranch.rightBranch = recurseInsert(currentBranch.rightBranch);
-    }
-    return currentBranch;
-  }
-  primaryStructure = recurseInsert(primaryStructure);
-}
-
-function locateElement(val) {
-  function recurseSearch(currentBranch) {
-    if (!currentBranch || currentBranch.label === val) {
-      return currentBranch;
-    }
-    if (val < currentBranch.label) {
-      return recurseSearch(currentBranch.leftBranch);
-    } else {
-      return recurseSearch(currentBranch.rightBranch);
-    }
-  }
-  return recurseSearch(primaryStructure);
-}
-
-function findMinVertex(branch) {
-  if (!branch) return null;
-  while (branch.leftBranch) {
-    branch = branch.leftBranch;
-  }
-  return branch;
-}
-
-function removeElement(val) {
-  function recurseDelete(currentBranch, targetVal) {
-    if (!currentBranch) {
-      return null;
-    }
-    if (targetVal < currentBranch.label) {
-      currentBranch.leftBranch = recurseDelete(currentBranch.leftBranch, targetVal);
-    } else if (targetVal > currentBranch.label) {
-      currentBranch.rightBranch = recurseDelete(currentBranch.rightBranch, targetVal);
-    } else { 
-      if (!currentBranch.leftBranch) {
-        return currentBranch.rightBranch;
-      }
-      if (!currentBranch.rightBranch) {
-        return currentBranch.leftBranch;
-      }
-
-      const tempVertex = findMinVertex(currentBranch.rightBranch);
-      currentBranch.label = tempVertex.label;
-      currentBranch.rightBranch = recurseDelete(currentBranch.rightBranch, tempVertex.label);
-    }
-    return currentBranch;
-  }
-  primaryStructure = recurseDelete(primaryStructure, val);
-}
-
-function collectInOrder(branch, list) {
-  if (!branch) return;
-  collectInOrder(branch.leftBranch, list);
-  list.push(branch.label);
-  collectInOrder(branch.rightBranch, list);
-}
-
-function collectPreOrder(branch, list) {
-  if (!branch) return;
-  list.push(branch.label);
-  collectPreOrder(branch.leftBranch, list);
-  collectPreOrder(branch.rightBranch, list);
-}
-
-function outputResult() {
-  const inOrderVals = [];
-  collectInOrder(primaryStructure, inOrderVals);
-  console.log(inOrderVals.join(' '));
-
-  const preOrderVals = [];
-  collectPreOrder(primaryStructure, preOrderVals);
-  console.log(preOrderVals.join(' '));
-}
-
-(function processInput() {
-  const readSource = require('fs').readFileSync;
-  const sourceText = readSource('/dev/stdin', 'utf8');
-  const lineFragments = sourceText.trim().split('\n');
-  const totalOps = Number(lineFragments.shift()); 
-
-  const dataset = []; 
-  lineFragments.forEach(function(instruction) {
-    dataset.push(instruction);
-  });
-
-  dataset.forEach(function(instruction) {
-    const actionChar = instruction.charAt(0);
-    let valuePart;
-    if (instruction.length > 1) { 
-      valuePart = Number(instruction.split(' ')[1]);
-    }
-
-    switch (actionChar) {
-      case 'i':
-        placeElement(valuePart);
-        break;
-      case 'f':
-        console.log(locateElement(valuePart) ? 'yes' : 'no');
-        break;
-      case 'd':
-        removeElement(valuePart);
-        break;
-      default: 
-        outputResult();
-        break;
+    if (firstWord === 'insert' || firstWord === 'find' || firstWord === 'delete') {
+      operationMap[firstWord](numericValue);
+    } else if (firstWord === 'print') {
+      operationMap[firstWord]();
     }
   });
 })();

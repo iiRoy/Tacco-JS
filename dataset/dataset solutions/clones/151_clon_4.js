@@ -1,102 +1,113 @@
-const dataAcquirer = require('fs');
+const fileSystem = require('fs');
+const inputBufferLength = fileSystem.fstatSync(process.stdin.fd).size;
+const dataBuffer = Buffer.alloc(inputBufferLength);
+const bytesReadCount = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, inputBufferLength, 0);
+const gridLines = dataBuffer.toString('utf8', 0, bytesReadCount).trim().split('\n');
 
-const extractGridData = () => {
-    const gridRawLines = dataAcquirer.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    return gridRawLines.map(line => line.split('').map(Number));
+const cellValue = (gridRef, r, c) => +gridRef[r]?.[c];
+
+const moveDecisionTable = {
+    'L': [
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col - 1),
+            nextDir: 'L', colDelta: -1, rowDelta: 0
+        },
+        {
+            condition: (pos, gridRef) => (pos.row * 2 - 1 > 0) && cellValue(gridRef, pos.row * 2 - 1, pos.col),
+            nextDir: 'U', colDelta: 0, rowDelta: -1
+        },
+        {
+            condition: (pos, gridRef) => (pos.row * 2 + 1 < gridRef.length) && cellValue(gridRef, pos.row * 2 + 1, pos.col),
+            nextDir: 'D', colDelta: 0, rowDelta: 1
+        }
+    ],
+    'R': [
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col),
+            nextDir: 'R', colDelta: 1, rowDelta: 0
+        },
+        {
+            condition: (pos, gridRef) => (pos.row * 2 + 1 < gridRef.length) && cellValue(gridRef, pos.row * 2 + 1, pos.col),
+            nextDir: 'D', colDelta: 0, rowDelta: 1
+        },
+        {
+            condition: (pos, gridRef) => (pos.row * 2 - 1 > 0) && cellValue(gridRef, pos.row * 2 - 1, pos.col),
+            nextDir: 'U', colDelta: 0, rowDelta: -1
+        }
+    ],
+    'D': [
+        {
+            condition: (pos, gridRef) => (pos.row * 2 + 1 < gridRef.length) && cellValue(gridRef, pos.row * 2 + 1, pos.col),
+            nextDir: 'D', colDelta: 0, rowDelta: 1
+        },
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col),
+            nextDir: 'R', colDelta: 1, rowDelta: 0
+        },
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col - 1),
+            nextDir: 'L', colDelta: -1, rowDelta: 0
+        }
+    ],
+    'U': [
+        {
+            condition: (pos, gridRef) => (pos.row * 2 - 1 > 0) && cellValue(gridRef, pos.row * 2 - 1, pos.col),
+            nextDir: 'U', colDelta: 0, rowDelta: -1
+        },
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col - 1),
+            nextDir: 'L', colDelta: -1, rowDelta: 0
+        },
+        {
+            condition: (pos, gridRef) => cellValue(gridRef, pos.row * 2, pos.col),
+            nextDir: 'R', colDelta: 1, rowDelta: 0
+        }
+    ]
 };
 
-const passageMatrix = extractGridData();
-
-const pathwayValidator = (horizontalAxis, verticalAxis, targetH, targetV, matrixData) => {
-    if (targetH < 0 || targetV < 0) return false;
-
-    const maxHIndex = matrixData[0].length - 1;
-    const maxVIndex = (matrixData.length - 1) / 2;
-
-    if (targetH > maxHIndex || targetV > maxVIndex) return false;
-
-    let segmentValue;
-
-    if (targetH === horizontalAxis + 1 && targetV === verticalAxis) { // Movement to the right
-        const rowInMatrix = 2 * verticalAxis;
-        if (rowInMatrix >= matrixData.length) return false;
-        segmentValue = matrixData[rowInMatrix][horizontalAxis];
-    } else if (targetH === horizontalAxis - 1 && targetV === verticalAxis) { // Movement to the left
-        const rowInMatrix = 2 * verticalAxis;
-        if (rowInMatrix >= matrixData.length) return false;
-        segmentValue = matrixData[rowInMatrix][horizontalAxis - 1];
-    } else if (targetV === verticalAxis + 1 && targetH === horizontalAxis) { // Movement downwards
-        const rowInMatrix = 2 * verticalAxis + 1;
-        if (rowInMatrix >= matrixData.length) return false;
-        segmentValue = matrixData[rowInMatrix][horizontalAxis];
-    } else if (targetV === verticalAxis - 1 && targetH === horizontalAxis) { // Movement upwards
-        const rowInMatrix = 2 * verticalAxis - 1;
-        if (rowInMatrix < 0) return false;
-        segmentValue = matrixData[rowInMatrix][horizontalAxis];
-    } else {
-        return false;
-    }
-
-    return segmentValue === 1;
-};
-
-const navigationDirectiveSets = new Map([
-    ['WEST', [
-        { dH: -1, dV: 0, newDirection: 'WEST', pathSymbol: 'L' },
-        { dH: 0, dV: -1, newDirection: 'NORTH', pathSymbol: 'U' },
-        { dH: 0, dV: 1, newDirection: 'SOUTH', pathSymbol: 'D' }
-    ]],
-    ['EAST', [
-        { dH: 1, dV: 0, newDirection: 'EAST', pathSymbol: 'R' },
-        { dH: 0, dV: 1, newDirection: 'SOUTH', pathSymbol: 'D' },
-        { dH: 0, dV: -1, newDirection: 'NORTH', pathSymbol: 'U' }
-    ]],
-    ['SOUTH', [
-        { dH: 0, dV: 1, newDirection: 'SOUTH', pathSymbol: 'D' },
-        { dH: 1, dV: 0, newDirection: 'EAST', pathSymbol: 'R' },
-        { dH: -1, dV: 0, newDirection: 'WEST', pathSymbol: 'L' }
-    ]],
-    ['NORTH', [
-        { dH: 0, dV: -1, newDirection: 'NORTH', pathSymbol: 'U' },
-        { dH: -1, dV: 0, newDirection: 'WEST', pathSymbol: 'L' },
-        { dH: 1, dV: 0, newDirection: 'EAST', pathSymbol: 'R' }
-    ]]
-]);
-
-const navigateMaze = (initialH, initialV, initialDirection, gridData) => {
-    let currentHCoord = initialH;
-    let currentVCoord = initialV;
-    let currentHeading = initialDirection;
-    let journeyLog = '';
+function* pathTraversalGenerator(initialCol, initialRow, initialHeading, gridRef) {
+    let currentColumn = initialCol;
+    let currentRow = initialRow;
+    let currentHeading = initialHeading;
+    let stepsTaken = 0;
 
     while (true) {
-        const potentialMoveOptions = navigationDirectiveSets.get(currentHeading);
-        let movementOccurred = false;
+        if (currentColumn === 0 && currentRow === 0 && stepsTaken > 0) {
+            return;
+        }
 
-        for (const option of potentialMoveOptions) {
-            const nextHCoord = currentHCoord + option.dH;
-            const nextVCoord = currentVCoord + option.dV;
+        const possibleMoves = moveDecisionTable[currentHeading];
+        let moveExecuted = false;
 
-            if (pathwayValidator(currentHCoord, currentVCoord, nextHCoord, nextVCoord, gridData)) {
-                currentHCoord = nextHCoord;
-                currentVCoord = nextVCoord;
-                currentHeading = option.newDirection;
-                journeyLog += option.pathSymbol;
-                movementOccurred = true;
+        for (const moveOption of possibleMoves) {
+            if (moveOption.condition({ col: currentColumn, row: currentRow }, gridRef)) {
+                currentColumn += moveOption.colDelta;
+                currentRow += moveOption.rowDelta;
+                currentHeading = moveOption.nextDir;
+                stepsTaken++;
+                yield currentHeading;
+                moveExecuted = true;
                 break;
             }
         }
 
-        if (!movementOccurred) {
-            break; // Should not happen in a solvable maze, implies getting stuck
-        }
-
-        if (currentHCoord === 0 && currentVCoord === 0 && journeyLog.length > 0) {
-            break; // Returned to the origin after at least one step
+        if (!moveExecuted) {
+            return;
         }
     }
-    return journeyLog;
-};
+}
 
-const finalJourneyOutput = navigateMaze(0, 0, 'EAST', passageMatrix);
-console.log(finalJourneyOutput);
+function executePathfinding() {
+    const startColumn = 0;
+    const startRow = 0;
+    const startDirection = 'R';
+
+    const collectedPath = [];
+    for (const directionStep of pathTraversalGenerator(startColumn, startRow, startDirection, gridLines)) {
+        collectedPath.push(directionStep);
+    }
+
+    console.log(collectedPath.join(''));
+}
+
+executePathfinding();

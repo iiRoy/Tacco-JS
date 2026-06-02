@@ -1,35 +1,37 @@
 'use strict';
 
-const boundaryLow = -1000000;
-const boundaryHigh = 1000000;
+function orchestrateExecution(sourceData) {
+  const dataRows = sourceData.split('\n').filter(Boolean);
 
-const createRangeOutput = (firstNum, lastNum) => {
-    if (firstNum > lastNum) {
-        return '';
-    }
-    return Array.from({ length: lastNum - firstNum + 1 }, (_, index) => firstNum + index).join('\n');
-};
+  dataRows.forEach(currentRow => {
+    const numericStrings = currentRow.split(' ');
+    const factorA = Number(numericStrings[0]);
+    const centerValue = Number(numericStrings[1]);
+    
+    generateAndDisplaySequence(factorA, centerValue);
+  });
+}
 
-const processNumericTuple = (firstParameter, secondParameter) => {
-    const rangeModifier = firstParameter - 1;
-    let initialFloor = secondParameter - rangeModifier;
-    let initialCeiling = secondParameter + rangeModifier;
+function generateAndDisplaySequence(factorA, centerValue) {
+  const spanAdjustment = factorA - 1;
+  
+  const ABSOLUTE_MINIMUM = -1000000;
+  const ABSOLUTE_MAXIMUM = 1000000;
 
-    const finalFloor = Math.max(initialFloor, boundaryLow);
-    const finalCeiling = Math.min(initialCeiling, boundaryHigh);
+  const initialLowerBound = centerValue - spanAdjustment;
+  const initialUpperBound = centerValue + spanAdjustment;
 
-    return createRangeOutput(finalFloor, finalCeiling);
-};
+  const finalLowerBound = Math.max(ABSOLUTE_MINIMUM, initialLowerBound);
+  const finalUpperBound = Math.min(ABSOLUTE_MAXIMUM, initialUpperBound);
 
-const initiateSystemOperation = (rawDataStream) => {
-    const extractedDataPoints = [...rawDataStream.matchAll(/(\d+)\s+(\d+)/g)]
-        .map(match => [parseInt(match[1], 10), parseInt(match[2], 10)]);
+  const sequenceLength = finalUpperBound - finalLowerBound + 1;
 
-    const processedSegments = extractedDataPoints.map(dataPoint =>
-        processNumericTuple(dataPoint[0], dataPoint[1])
-    );
+  if (sequenceLength > 0) {
+    Array.from({ length: sequenceLength }, (_, index) => finalLowerBound + index)
+         .forEach(currentNumber => {
+           console.log(currentNumber);
+         });
+  }
+}
 
-    console.log(processedSegments.filter(s => s !== '').join('\n'));
-};
-
-initiateSystemOperation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+orchestrateExecution(require('fs').readFileSync('/dev/stdin', 'utf8'));

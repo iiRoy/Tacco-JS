@@ -1,41 +1,36 @@
-function processor(lengthParam, sequenceString) {
-    const charCollection = sequenceString.split('');
+function main(sequenceLength, inputString) {
+  const charSequence = Array.from(inputString);
 
-    const colorTallies = charCollection.reduce((accum, charSymbol) => {
-        accum[charSymbol] = (accum[charSymbol] || 0) + 1;
-        return accum;
-    }, {});
+  const charCounts = charSequence.reduce((accumulator, char) => {
+    accumulator[char] = (accumulator[char] || 0) + 1;
+    return accumulator;
+  }, {});
 
-    const redTally = colorTallies['R'] || 0;
-    const greenTally = colorTallies['G'] || 0;
-    const blueTally = colorTallies['B'] || 0;
+  const productOfCounts = (charCounts['R'] || 0) * (charCounts['G'] || 0) * (charCounts['B'] || 0);
 
-    const overallProduct = redTally * greenTally * blueTally;
+  let invalidTripletsCount = 0;
 
-    let deductionSum = 0;
-    const seqLength = parseInt(lengthParam, 10);
+  for (let firstIdx = 0; firstIdx < sequenceLength; ++firstIdx) {
+    for (let commonDifference = 1; ; ++commonDifference) {
+      const middleIdx = firstIdx + commonDifference;
+      const lastIdx = firstIdx + 2 * commonDifference;
 
-    for (let firstAnchor = 0; firstAnchor < seqLength; ++firstAnchor) {
-        for (let commonDiff = 1; ; ++commonDiff) {
-            const middleAnchor = firstAnchor + commonDiff;
-            const finalAnchor = firstAnchor + 2 * commonDiff;
+      if (lastIdx >= sequenceLength) {
+        break;
+      }
 
-            if (finalAnchor >= seqLength) {
-                break;
-            }
+      const charA = charSequence[firstIdx];
+      const charB = charSequence[middleIdx];
+      const charC = charSequence[lastIdx];
 
-            const charAtFirst = charCollection[firstAnchor];
-            const charAtMiddle = charCollection[middleAnchor];
-            const charAtFinal = charCollection[finalAnchor];
-
-            if (charAtFirst !== charAtMiddle && charAtMiddle !== charAtFinal && charAtFirst !== charAtFinal) {
-                ++deductionSum;
-            }
-        }
+      if (charA !== charB && charB !== charC && charA !== charC) {
+        ++invalidTripletsCount;
+      }
     }
-
-    console.log(overallProduct - deductionSum);
+  }
+  console.log(productOfCounts - invalidTripletsCount);
 }
 
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
-processor(inputSource[0], inputSource[1]);
+const programInput = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+
+main(Number(programInput[0]), programInput[1]);

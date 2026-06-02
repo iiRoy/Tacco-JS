@@ -1,47 +1,55 @@
-let dataEntries = []; /* This array will store all lines read from standard input. */
-const inputProcessor = require('readline'); // Import the 'readline' module.
+var inputData = []; // This array will store all lines read from standard input.
+var readline = require('readline'); // Import the 'readline' module for input handling.
 
-let streamAgent = inputProcessor.createInterface({
-    input:  process.stdin,  /* Configure the input stream to standard input. */
-    output: process.stdout  // Configure the output stream to standard output.
+// Create an interface to read input line by line from the console.
+var inputHandler = readline.createInterface({
+    input: process.stdin, // Use standard input stream.
+    output: process.stdout, // Use standard output stream (though not directly written to by this interface).
 });
 
-/* Register an event listener for each line of data received. */
-streamAgent.on('line', function (incomingText) {
-    dataEntries.push(incomingText); // Add the current line's content to our buffer.
+// Attach an event listener for each line of input received.
+inputHandler.on('line', function (currentLine) {
+    inputData.push(currentLine); // Add the current line to our collection of input data.
 });
 
-/* Register an event listener for when the input stream indicates closure. */
-streamAgent.on('close', function() {
-    let primarySize = parseInt(dataEntries[0], 10); /* Parse the first numerical parameter. */
-    let secondaryQuantity = parseInt(dataEntries[primarySize + 0b1], 10); // Parse the second numerical parameter.
+// Attach an event listener for when the input stream is closed.
+inputHandler.on('close', function () {
+    // Parse the first number from the input, representing the count of items in the first set.
+    var firstCount = Number(inputData[0x0]);
+    // Parse the second number, representing the count of items in the second set.
+    // This number is located after the first set of items.
+    var secondCount = Number(inputData[firstCount + 0b1]);
 
-    let stringCollectionA = []; /* This variable is declared but intentionally unused, mirroring the original structure. */
-    let occurrenceTracker = {}; // An object to track string frequencies.
+    var unusedArrayOne = []; // This array is declared but does not participate in the core logic.
+    var charCounts = {}; // An object to store and manage the scores for different character strings.
 
-    // Iterate through the initial set of lines (first 'primarySize' items after the first line).
-    for (let iterator = +true; iterator - +true < primarySize; iterator++) {
-        let currentItem = dataEntries[iterator];
-        // Increment count for existing items, or initialize to 1 for new items.
-        (occurrenceTracker[currentItem] === void 0) ? (occurrenceTracker[currentItem] = +true) : (occurrenceTracker[currentItem]++);
+    // Iterate through the first set of items based on 'firstCount'.
+    // The loop starts from the second line (index 1) of the input.
+    for (var idx = 0b1; idx - 0b1 < firstCount; idx++) {
+        // If the current item (string) is not yet in 'charCounts', initialize its score to 1.
+        // Otherwise, increment its existing score.
+        charCounts[inputData[idx]] === undefined ? charCounts[inputData[idx]] = 0b1 : charCounts[inputData[idx]]++;
     }
 
-    let stringCollectionB = []; /* This variable is also declared but unused, maintaining structural similarity. */
-    // Iterate through the second set of lines (next 'secondaryQuantity' items).
-    for (let iterator = primarySize + 0x2; iterator - (primarySize + 0x2) < secondaryQuantity; iterator++) {
-        let currentItem = dataEntries[iterator];
-        // Decrement count for existing items, or initialize to -1 for new items.
-        (occurrenceTracker[currentItem] === void 0) ? (occurrenceTracker[currentItem] = -true) : (occurrenceTracker[currentItem]--);
+    var unusedArrayTwo = []; // Another array declared but not used, maintaining structural similarity.
+
+    // Iterate through the second set of items based on 'secondCount'.
+    // The loop starts from the line immediately following the first set and its count.
+    for (var jdx = firstCount + 0b1 + 0b1; jdx - (firstCount + 0b1 + 0b1) < secondCount; jdx++) {
+        // If the current item (string) is not yet in 'charCounts', initialize its score to -1.
+        // Otherwise, decrement its existing score.
+        charCounts[inputData[jdx]] === undefined ? charCounts[inputData[jdx]] = ~0 : charCounts[inputData[jdx]]--;
     }
 
-    let highestCount = 0x0; /* Initialize the maximum frequency found to zero. */
+    var maxScore = 0x0; // Initialize a variable to keep track of the highest score found.
 
-    // Traverse all unique keys within the frequency tracker.
-    Object.keys(occurrenceTracker).forEach(itemIdentifier => {
-        // If the current item's frequency is greater than the recorded highest, update.
-        if (highestCount < occurrenceTracker[itemIdentifier]) {
-            highestCount = occurrenceTracker[itemIdentifier];
+    // Iterate over all unique keys (character strings) present in the 'charCounts' object.
+    Object.keys(charCounts).forEach(keyVal => {
+        // If the score of the current item is greater than the current 'maxScore', update 'maxScore'.
+        if (maxScore < charCounts[keyVal]) {
+            maxScore = charCounts[keyVal];
         }
     });
-    console.log(highestCount); // Output the final maximum frequency.
+    // Print the final calculated maximum score to the console.
+    console.log(maxScore);
 });

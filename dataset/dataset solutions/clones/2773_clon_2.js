@@ -1,53 +1,62 @@
-var inputReader = require('readline').createInterface({ input: process.stdin, output: process.stdout });
-var dataProcessor;
-var capturedLines = [];
-inputReader.on('line', function(lineContent) {
-  capturedLines.push(lineContent);
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
-inputReader.on('close', function() {
-  dataProcessor = initializeProcessor(capturedLines);
-  console.error('\nInput data parsed. Displaying computation results.');
-  performMainTask();
+
+var dataHandler;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
-function duplicateObject(originalObj) {
-  return (originalObj instanceof Set) ? new Set(Array.from(originalObj)) : JSON.parse(JSON.stringify(originalObj));
+
+inputReader.on('close', function(){
+  dataHandler = initializeInputProcessor(inputLines);
+  console.error('\n↑ Input ↓ Output');
+  executeMainLogic();
+});
+
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
-function retrieveInteger() { return dataConverter(getNextItem(), 1); }
-function retrieveStringArray() { return dataConverter(getNextItem(), 2); }
-function retrieveIntegerArray() { return dataConverter(getNextItem(), 4); }
-function retrieveCharacterArray() { return dataConverter(getNextItem(), 6); }
-function getNextItem() { return dataProcessor.getNext(); }
-function hasMoreItems() { return dataProcessor.hasMore(); }
-function initializeProcessor(rawInputLines) {
+
+function getNextInteger(){ return convertInput(fetchNextItem(), 1); }
+function getNextStringArray(){ return convertInput(fetchNextItem(), 2); }
+function getNextIntegerArray(){ return convertInput(fetchNextItem(), 4); }
+function getNextCharacterArray(){ return convertInput(fetchNextItem(), 6); }
+
+function fetchNextItem(){ return dataHandler.fetchNextItem(); }
+function hasMoreItems(){ return dataHandler.hasMoreItems(); }
+
+function initializeInputProcessor(rawInput){
   return {
-    sourceData: rawInputLines,
-    currentIndex: 0,
-    maximumIndex: rawInputLines.length,
-    hasMore: function() { return (this.currentIndex < this.maximumIndex); },
-    getNext: function() {
-      if (this.hasMore()) {
-        return this.sourceData[this.currentIndex++];
+    sourceList : rawInput,
+    currentIndex : 0,
+    maximumIndex : rawInput.length,
+    hasMoreItems : function(){
+      return (this.currentIndex < this.maximumIndex);
+    },
+    fetchNextItem : function(){
+      if(this.hasMoreItems()){
+        return this.sourceList[this.currentIndex++];
       } else {
-        throw 'InputExhaustedError: No more elements available for reading.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
-function displayOutput(messageContent) { console.log(messageContent); }
-function logError(messageContent) { console.error('Debug Trace: ' + require('util').inspect(messageContent, false, null)); }
-// This function transforms input values based on the specified conversion type.
-// Default: Returns input as is.
-// Type 1: Converts to an integer.
-// Type 2: Splits string by spaces into an array of strings.
-// Type 4: Splits string by spaces and maps to an array of numbers.
-// Type 6: Splits string into an array of individual characters.
-// Type 7: Splits string into an array of characters, then maps to numbers.
-// Type 8: Joins array elements with spaces.
-// Type 9: Joins array elements with newlines.
-// Type 0: Joins array elements without any separator.
-function dataConverter(inputValue, conversionType) {
-  try {
-    switch (conversionType) {
+
+function printResult(outputValue){
+  console.log(outputValue);
+}
+
+function logDebug(debugData){
+  console.error('debug:' + require('util').inspect(debugData, false, null));
+}
+
+function convertInput(inputValue, conversionType){
+  try{
+    switch(conversionType){
       case 1: return parseInt(inputValue);
       case 2: return inputValue.split(' ');
       case 4: return inputValue.split(' ').map(Number);
@@ -58,78 +67,77 @@ function dataConverter(inputValue, conversionType) {
       case 0: return inputValue.join('');
       default: return inputValue;
     }
-  } catch (error) {
-    return inputValue; // Return original value on error
+  } catch(error){
+    return inputValue;
   }
 }
-function performMainTask() {
-  // Read initial graph configuration parameters.
-  var initialParams = retrieveIntegerArray();
-  var nodeQuantity = initialParams[0];
-  var availableColors = initialParams[1];
-  // Initialize an array to represent the nodes of the graph.
-  var graphNodes = new Array(nodeQuantity);
-  for (var loopIndex = 0; loopIndex < nodeQuantity; loopIndex++) {
-    graphNodes[loopIndex] = {
-      connectedNodes: [],
-      nodeIdentifier: loopIndex,
-      colorAssignment: 0,
-      visitedStatus: false
+
+function executeMainLogic(){
+  var firstLineData = getNextIntegerArray();
+  var nodeCount = firstLineData[0];
+  var initialColors = firstLineData[1];
+
+  var graphNodes = new Array(nodeCount);
+  for(var idx = 0; idx < nodeCount; idx++){
+    graphNodes[idx] = {
+      connectedNodes : [],
+      nodeIdentifier : idx,
+      colorCount : 0,
+      isVisited : false
     };
   }
-  // Read and establish connections (edges) between nodes.
-  for (var loopIndex = 0; loopIndex < nodeQuantity - 1; loopIndex++) {
-    var edgeInfo = retrieveIntegerArray();
-    graphNodes[edgeInfo[0] - 1].connectedNodes.push(edgeInfo[1] - 1);
-    graphNodes[edgeInfo[1] - 1].connectedNodes.push(edgeInfo[0] - 1);
+
+  for(var idx = 0; idx < nodeCount - 1; idx++){
+    var edgeData = getNextIntegerArray();
+    graphNodes[edgeData[0] - 1].connectedNodes.push(edgeData[1] - 1);
+    graphNodes[edgeData[1] - 1].connectedNodes.push(edgeData[0] - 1);
   }
+
   var finalResult = 1;
   var moduloValue = 1000000007;
-  // Mark the starting node (node 0) as visited.
-  graphNodes[0].visitedStatus = true;
-  // Initialize a stack for iterative graph traversal and coloring.
-  // Each element: [count_of_parent_and_ancestors, remaining_color_options_for_current_node, current_node_index]
-  var processingStack = [[0, availableColors, 0]];
-  while (processingStack.length > 0) {
-    var currentProcessingInfo = processingStack.pop();
-    var parentColorCount = currentProcessingInfo[0];
-    var currentColorOptions = currentProcessingInfo[1];
-    var currentNodeIndex = currentProcessingInfo[2];
-    graphNodes[currentNodeIndex].colorAssignment = currentColorOptions;
-    // Adjust parent color count for sibling calculations.
-    if (parentColorCount < 2) {
-      parentColorCount++;
+  graphNodes[0].isVisited = true;
+
+  var processingStack = [[0, initialColors, 0]];
+  while(processingStack.length > 0){
+    var currentStackItem = processingStack.pop();
+    var parentVisitedCount = currentStackItem[0];
+    var availableColors = currentStackItem[1];
+    var currentNodeIndex = currentStackItem[2];
+    graphNodes[currentNodeIndex].colorCount = availableColors;
+
+    if(parentVisitedCount < 2){
+      parentVisitedCount++;
     }
-    var currentChildren = graphNodes[currentNodeIndex].connectedNodes;
-    var assignedChildrenCount = 0;
-    for (var childIdx = 0; childIdx < currentChildren.length; childIdx++) {
-      if (!graphNodes[currentChildren[childIdx]].visitedStatus) {
-        graphNodes[currentChildren[childIdx]].visitedStatus = true;
-        // Push unvisited child onto the stack with updated color options.
-        processingStack.push([parentColorCount, availableColors - assignedChildrenCount - parentColorCount, currentChildren[childIdx]]);
-        assignedChildrenCount++;
+
+    var connectedNodes = graphNodes[currentNodeIndex].connectedNodes;
+    var successfulChildrenProcessed = 0;
+    for(var idx = 0; idx < connectedNodes.length; idx++){
+      if(!graphNodes[connectedNodes[idx]].isVisited){
+        graphNodes[connectedNodes[idx]].isVisited = true;
+        processingStack.push([parentVisitedCount, initialColors - successfulChildrenProcessed - parentVisitedCount, connectedNodes[idx]]);
+        successfulChildrenProcessed++;
       }
     }
   }
-  // Calculate the total number of ways to color the graph, applying modulo.
-  for (var loopIndex = 0; loopIndex < nodeQuantity; loopIndex++) {
-    finalResult = (finalResult * graphNodes[loopIndex].colorAssignment) % moduloValue;
+
+  for(var idx = 0; idx < nodeCount; idx++){
+    finalResult = (finalResult * graphNodes[idx].colorCount) % moduloValue;
   }
-  displayOutput(finalResult);
-  // This function implements a Depth-First Search (DFS) coloring algorithm.
-  // It is defined but not invoked in the current execution flow.
-  function depthFirstColoring(parentColorCountDfs, currentColorDfs, currentNodeIndexDfs, initialColorCountDfs) {
-    graphNodes[currentNodeIndexDfs].colorAssignment = currentColorDfs;
-    if (parentColorCountDfs < 2) {
-      parentColorCountDfs++;
+  printResult(finalResult);
+
+
+  function depthFirstSearch(parentVisitedCount, availableColors, currentNodeIndex, initialColorLimit){
+    graphNodes[currentNodeIndex].colorCount = availableColors;
+    if(parentVisitedCount < 2){
+      parentVisitedCount++;
     }
-    var childrenOfNode = graphNodes[currentNodeIndexDfs].connectedNodes;
-    var processedChildren = 0;
-    for (var cIdx = 0; cIdx < childrenOfNode.length; cIdx++) {
-      if (!graphNodes[childrenOfNode[cIdx]].visitedStatus) {
-        graphNodes[childrenOfNode[cIdx]].visitedStatus = true;
-        depthFirstColoring(parentColorCountDfs, initialColorCountDfs - processedChildren - parentColorCountDfs, childrenOfNode[cIdx], initialColorCountDfs);
-        processedChildren++;
+    var connectedNodes = graphNodes[currentNodeIndex].connectedNodes;
+    var successfulChildrenProcessed = 0;
+    for(var idx = 0; idx < connectedNodes.length; idx++){
+      if(!graphNodes[connectedNodes[idx]].isVisited){
+        graphNodes[connectedNodes[idx]].isVisited = true;
+        depthFirstSearch(parentVisitedCount, initialColorLimit - successfulChildrenProcessed - parentVisitedCount, connectedNodes[idx], initialColorLimit);
+        successfulChildrenProcessed++;
       }
     }
   }

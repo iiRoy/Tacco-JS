@@ -1,61 +1,64 @@
-const parseScenarioConfiguration = (rawText) => {
-  const dataLines = rawText.trim().split('\n');
-  const [offeringCountStr, skillCategoryCountStr, minimumCompetenceStr] = dataLines[0].split(' ');
-  const offeringCount = Number(offeringCountStr);
-  const skillCategoryCount = Number(skillCategoryCountStr);
-  const minimumCompetence = Number(minimumCompetenceStr);
+const aggregateBookData = (bookDataList = []) => {
+  if (bookDataList.length === 0) return false;
 
-  const allOfferings = dataLines.slice(1, 1 + offeringCount).map(line => line.split(' ').map(Number));
+  const accumulatedData = [...bookDataList[0]];
 
-  return { offeringCount, skillCategoryCount, minimumCompetence, allOfferings };
+  return bookDataList.slice(1).reduce((acc, currentBook) => {
+    return acc.map((val, index) => val + currentBook[index]);
+  }, accumulatedData);
 };
 
-const compileProgress = (selectedOfferings) => {
-  if (!Array.isArray(selectedOfferings) || selectedOfferings.length === 0) {
-    return null;
+const verifySkillLevels = (skillValues, threshold) => {
+  for (const skill of skillValues) {
+    if (skill < threshold) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const processBookData = (rawInput) => {
+  const inputLines = rawInput.trim().split("\n");
+  const configParams = inputLines[0].split(" ");
+
+  const bookCount = parseInt(configParams[0], 10);
+  const skillCount = parseInt(configParams[1], 10);
+  const minSkillThreshold = parseInt(configParams[2], 10);
+
+  const initialBookRecords = [];
+  for (let idx = 1; idx <= bookCount; idx++) {
+    initialBookRecords.push(inputLines[idx].split(" ").map(Number));
   }
 
-  // Initialize accumulator with an array of zeros matching the structure of an offering
-  const initialAccumulator = selectedOfferings[0].map(() => 0);
+  const allSubsetCosts = Array.from({ length: 1 << bookCount }, (_, subsetIndex) => {
+    const selectedBookRecords = [];
 
-  return selectedOfferings.reduce((totalStats, currentOffering) => {
-    return totalStats.map((currentTotal, index) => currentTotal + currentOffering[index]);
-  }, initialAccumulator);
-};
+    for (let idx = 0; idx < bookCount; idx++) {
+      if ((subsetIndex & (1 << idx))) {
+        selectedBookRecords.push(initialBookRecords[idx]);
+      }
+    }
 
-const evaluateCompetence = (skillValues, requiredLevel) => {
-  return skillValues.every(level => level >= requiredLevel);
-};
+    const aggregatedData = aggregateBookData(selectedBookRecords);
 
-const processLearningScenario = (scenarioData) => {
-  const { offeringCount, skillCategoryCount, minimumCompetence, allOfferings } = parseScenarioConfiguration(scenarioData);
+    if (aggregatedData) {
+      const currentCost = aggregatedData[0];
+      const evaluatedSkills = aggregatedData.slice(1, bookCount + 1);
 
-  // Generate all possible combinations of offering indices (power set)
-  const offeringIndices = Array.from({ length: offeringCount }, (_, i) => i);
-  const allIndexCombinations = offeringIndices.reduce((accumulator, currentIdx) => {
-    return accumulator.concat(accumulator.map(existingCombo => [...existingCombo, currentIdx]));
-  }, [[]]); // Start with an empty combination
+      if (verifySkillLevels(evaluatedSkills, minSkillThreshold)) {
+        return currentCost;
+      }
+    }
+    return Infinity;
+  });
 
-  const potentialCosts = allIndexCombinations
-    .filter(combo => combo.length > 0) // Exclude the empty combination, as it has no cost/skills
-    .map(combo => combo.map(idx => allOfferings[idx])) // Map indices to actual offering data
-    .map(chosenOfferings => compileProgress(chosenOfferings)) // Aggregate costs and skills for the chosen offerings
-    .filter(combinedStats => combinedStats !== null) // Filter out combinations that resulted in null (e.g., empty input to compileProgress)
-    .filter(combinedStats => {
-      const achievedSkillLevels = combinedStats.slice(1, 1 + skillCategoryCount); // Extract skill levels from aggregated stats
-      return evaluateCompetence(achievedSkillLevels, minimumCompetence); // Check if all skills meet the minimum competence
-    })
-    .map(combinedStats => combinedStats[0]); // Extract only the total cost for valid combinations
+  const minimumAchievableCost = Math.min(...allSubsetCosts);
 
-  if (potentialCosts.length === 0) {
-    return -1; // No combination met the requirements
+  if (minimumAchievableCost === Infinity) {
+    console.log("-1");
   } else {
-    return Math.min(...potentialCosts); // Return the minimum cost among valid combinations
+    console.log(minimumAchievableCost);
   }
 };
 
-const executeScenario = (sourceInput) => {
-  console.log(processLearningScenario(sourceInput));
-};
-
-executeScenario(require("fs").readFileSync("/dev/stdin", "utf8"));
+processBookData(require("fs").readFileSync("/dev/stdin", "utf8"));

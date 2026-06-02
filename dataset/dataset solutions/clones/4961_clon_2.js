@@ -1,300 +1,316 @@
 'use strict';
-// This program processes coordinate-value data from standard input
-const sourceDataLines=require('fs').readFileSync('/dev/stdin','utf8').trim().split('\n');
 
-// Parse grid dimensions from the first line
-const dimensionsArray=sourceDataLines[0].split(' ').map(Number);
-const numRows=dimensionsArray[0];
-const numColumns=dimensionsArray[1];
-// Get the total number of data entries
-const entryCount=parseInt(sourceDataLines[1]);
-// Extract data entries starting from the third line
-const rowColValEntries=sourceDataLines.slice(2);
+// Import the file system module for reading input
+const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Initialize slope variables for x and y axes, separating by parity
-let xSlopeOdd=-1,
-	xSlopeEven=-1,
-	ySlopeOdd=-1,
-	ySlopeEven=-1;
+// Parse the grid dimensions (number of rows and columns) from the first line of input
+const gridDims = dataLines[0].split(' ').map(Number);
+const numRows = gridDims[0]; // Store the number of rows
+const numCols = gridDims[1]; // Store the number of columns
 
-// Initialize maps to store previously encountered coordinates and values
-// Maps are used for efficient lookup based on coordinate
-let xOddRegister=new Map(),
-	xEvenRegister=new Map(),
-	yOddRegister=new Map(),
-	yEvenRegister=new Map();
+// Parse the total number of data points from the second line of input
+const numPoints = parseInt(dataLines[1], 10);
 
-// Iterate through each data entry provided
-for(let currentIdx=0;currentIdx<entryCount;++currentIdx){
-	// Parse current entry: row, column, and associated value
-	let currentEntryParts=rowColValEntries[currentIdx].split(' '),
-		firstRowCoord=parseInt(currentEntryParts[0]),
-		firstColCoord=parseInt(currentEntryParts[1]),
-		firstVal=parseInt(currentEntryParts[2]);
+// Extract the array of strings, each representing a data point (row, column, value)
+const pointData = dataLines.slice(2);
 
-	// --- Y-axis processing (vertical analysis) ---
-	// Special handling if the grid has only 2 rows
-	if(numRows===2){
-		// Check if this column has been seen before for even Y-axis analysis
-		if(yEvenRegister.has(firstColCoord)){
-			let prevRowVal=yEvenRegister.get(firstColCoord),
-				secondRowCoord=prevRowVal[0],
-				secondVal=prevRowVal[1];
+// Initialize variables to store the calculated differences (slopes) for x and y axes.
+// These are separated by the parity of the coordinate (odd/even) to handle different patterns.
+let xOddDiff = -1; // Difference for points on odd-indexed columns along the x-axis
+let xEvenDiff = -1; // Difference for points on even-indexed columns along the x-axis
+let yOddDiff = -1; // Difference for points on odd-indexed rows along the y-axis
+let yEvenDiff = -1; // Difference for points on even-indexed rows along the y-axis
 
-			// Calculate the delta (slope) based on the difference in values and rows
-			let calculatedDelta=(secondVal-firstVal)/(secondRowCoord-firstRowCoord);
+// Initialize Maps to store previously encountered points.
+// Keys are the fixed coordinate (e.g., column for y-axis checks), values are [varying_coordinate, value].
+let xOddMap = new Map(); // Stores [col, val] for points on odd-indexed rows
+let xEvenMap = new Map(); // Stores [col, val] for points on even-indexed rows
+let yOddMap = new Map(); // Stores [row, val] for points on odd-indexed columns
+let yEvenMap = new Map(); // Stores [row, val] for points on even-indexed columns
 
-			// If this is the first delta encountered for y-even, initialize it
-			if(ySlopeEven===-1){
-				ySlopeEven=calculatedDelta;
+// Iterate through each data point to check for consistency
+for (let idx = 0; idx < numPoints; idx++) {
+    // Parse the current point's coordinates and value
+    let currentPointStr = pointData[idx].split(' ');
+    let rowCoord = parseInt(currentPointStr[0], 10); // Current row coordinate
+    let colCoord = parseInt(currentPointStr[1], 10); // Current column coordinate
+    let valCoord = parseInt(currentPointStr[2], 10); // Current associated value
 
-				// Validate all previously registered entries with this new delta
-				for(let registeredEntry of yEvenRegister.entries()){
-					let thirdColCoord=registeredEntry[0],
-						thirdRowCoord=registeredEntry[1][0],
-						thirdVal=registeredEntry[1][1];
+    // --- Begin Y-axis (column-wise) consistency checks ---
+    // Special handling if there are only 2 rows
+    if (numRows === 2) {
+        // If a point with the same column has been seen before (for R=2, all rows are treated uniformly)
+        if (yEvenMap.has(colCoord)) {
+            let prevRowVal = yEvenMap.get(colCoord);
+            let prevRow = prevRowVal[0]; // Previous row coordinate for this column
+            let prevVal = prevRowVal[1]; // Previous value for this column
 
-					// Check boundary conditions for the value
-					if(thirdVal-calculatedDelta*(thirdRowCoord-1)<0||
-						thirdVal+calculatedDelta*(numRows-thirdRowCoord)<0){
-						console.log('No');
-						process.exit();
-					}
-				}
-			} else {
-				// If a delta already exists, ensure consistency
-				if(calculatedDelta!==ySlopeEven){
-					console.log('No');
-					process.exit();
-				}
-			}
-			// Validate current entry with the established delta
-			if(firstVal-calculatedDelta*(firstRowCoord-1)<0||
-				firstVal+calculatedDelta*(numRows-firstRowCoord)<0){
-				console.log('No');
-				process.exit();
-			}
+            // Calculate the difference (slope) between the current and previous points
+            let difference = (prevVal - valCoord) / (prevRow - rowCoord);
 
-		} else {
-			// If column not seen, register it
-			yEvenRegister.set(firstColCoord,[firstRowCoord,firstVal]);
-		}
+            // If this is the first difference established for this category
+            if (yEvenDiff === -1) {
+                yEvenDiff = difference; // Set the established difference
 
-	} else {
-		// General case for numRows > 2
-		if(firstRowCoord%2===0){ // For even rows
-			if(yEvenRegister.has(firstColCoord)){
-				let prevRowVal=yEvenRegister.get(firstColCoord),
-					secondRowCoord=prevRowVal[0],
-					secondVal=prevRowVal[1];
+                // Validate all previously stored points in this map against the new difference
+                for (let mapEntry of yEvenMap.entries()) {
+                    let entryCol = mapEntry[0];
+                    let entryRow = mapEntry[1][0];
+                    let entryVal = mapEntry[1][1];
 
-				let calculatedDelta=(secondVal-firstVal)/((secondRowCoord-firstRowCoord)/2);
+                    // Check if the value at the boundaries would be negative
+                    if (entryVal - difference * (entryRow - 1) < 0 ||
+                        entryVal + difference * (numRows - entryRow) < 0) {
+                        console.log('No'); // Output 'No' and terminate if invalid
+                        process.exit();
+                    }
+                }
+            } else {
+                // If a difference was already established, ensure consistency
+                if (difference !== yEvenDiff) {
+                    console.log('No'); // Output 'No' and terminate if inconsistent
+                    process.exit();
+                }
+            }
+            // Validate the current point against the established difference
+            if (valCoord - difference * (rowCoord - 1) < 0 ||
+                valCoord + difference * (numRows - rowCoord) < 0) {
+                console.log('No'); // Output 'No' and terminate if invalid
+                process.exit();
+            }
 
-				if(ySlopeEven===-1){
-					if(Math.round(calculatedDelta)!==calculatedDelta){
-						console.log('No');
-						process.exit();
-					}
-					ySlopeEven=calculatedDelta;
+        } else {
+            // If this is the first point for this column, store it
+            yEvenMap.set(colCoord, [rowCoord, valCoord]);
+        }
 
-					for(let registeredEntry of yEvenRegister.entries()){
-						let thirdColCoord=registeredEntry[0],
-							thirdRowCoord=registeredEntry[1][0],
-							thirdVal=registeredEntry[1][1];
+    } else { // If numRows is not 2, distinguish by row parity
+        if (rowCoord % 2 === 0) { // Current row is even
+            if (yEvenMap.has(colCoord)) {
+                let prevRowVal = yEvenMap.get(colCoord);
+                let prevRow = prevRowVal[0];
+                let prevVal = prevRowVal[1];
 
-						if(thirdVal-calculatedDelta*((thirdRowCoord/2)-1)<0||
-							thirdVal+calculatedDelta*Math.floor((numRows-thirdRowCoord)/2)<0){
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if(calculatedDelta!==ySlopeEven){
-						console.log('No');
-						process.exit();
-					}
-				}
-				if(firstVal-calculatedDelta*((firstRowCoord/2)-1)<0||
-					firstVal+calculatedDelta*Math.floor((numRows-firstRowCoord)/2)<0){
-					console.log('No');
-					process.exit();
-				}
+                let difference = (prevVal - valCoord) / ((prevRow - rowCoord) / 2);
 
-			} else {
-				yEvenRegister.set(firstColCoord,[firstRowCoord,firstVal]);
-			}
+                if (yEvenDiff === -1) {
+                    // Ensure the difference is an integer (no fractional slopes)
+                    if (Math.round(difference) !== difference) {
+                        console.log('No');
+                        process.exit();
+                    }
+                    yEvenDiff = difference;
 
-		} else { // For odd rows
-			if(yOddRegister.has(firstColCoord)){
-				let prevRowVal=yOddRegister.get(firstColCoord),
-					secondRowCoord=prevRowVal[0],
-					secondVal=prevRowVal[1];
+                    // Validate previously stored points. Note: Original code iterates over yOddMap here,
+                    // which might be a logical inconsistency but is preserved for Type II cloning.
+                    for (let mapEntry of yOddMap.entries()) {
+                        let entryCol = mapEntry[0];
+                        let entryRow = mapEntry[1][0];
+                        let entryVal = mapEntry[1][1];
 
-				let calculatedDelta=(secondVal-firstVal)/((secondRowCoord-firstRowCoord)/2);
+                        if (entryVal - difference * ((entryRow / 2) - 1) < 0 ||
+                            entryVal + difference * Math.floor((numRows - entryRow) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (difference !== yEvenDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                if (valCoord - difference * ((rowCoord / 2) - 1) < 0 ||
+                    valCoord + difference * Math.floor((numRows - rowCoord) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
 
-				if(ySlopeOdd===-1){
-					if(Math.round(calculatedDelta)!==calculatedDelta){
-						console.log('No');
-						process.exit();
-					}
+            } else {
+                yEvenMap.set(colCoord, [rowCoord, valCoord]);
+            }
 
-					ySlopeOdd=calculatedDelta;
+        } else { // Current row is odd
+            if (yOddMap.has(colCoord)) {
+                let prevRowVal = yOddMap.get(colCoord);
+                let prevRow = prevRowVal[0];
+                let prevVal = prevRowVal[1];
 
-					for(let registeredEntry of yOddRegister.entries()){
-						let thirdColCoord=registeredEntry[0],
-							thirdRowCoord=registeredEntry[1][0],
-							thirdVal=registeredEntry[1][1];
+                let difference = (prevVal - valCoord) / ((prevRow - rowCoord) / 2);
 
-						if(thirdVal-calculatedDelta*Math.floor(thirdRowCoord/2)<0||
-							thirdVal+calculatedDelta*Math.floor((numRows-thirdRowCoord)/2)<0){
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if(calculatedDelta!==ySlopeOdd){
-						console.log('No');
-						process.exit();
-					}
-				}
-				if(firstVal-calculatedDelta*Math.floor(firstRowCoord/2)<0||
-					firstVal+calculatedDelta*Math.floor((numRows-firstRowCoord)/2)<0){
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				yOddRegister.set(firstColCoord,[firstRowCoord,firstVal]);
-			}
-		}
-	}
+                if (yOddDiff === -1) {
+                    if (Math.round(difference) !== difference) {
+                        console.log('No');
+                        process.exit();
+                    }
 
-	// --- X-axis processing (horizontal analysis) ---
-	// Special handling if the grid has only 2 columns
-	if(numColumns===2){
-		if(xEvenRegister.has(firstRowCoord)){
-			let prevColVal=xEvenRegister.get(firstRowCoord),
-				secondColCoord=prevColVal[0],
-				secondVal=prevColVal[1];
+                    yOddDiff = difference;
 
-			let calculatedDelta=(secondVal-firstVal)/(secondColCoord-firstColCoord);
+                    // Validate all previously stored odd-row points
+                    for (let mapEntry of yOddMap.entries()) {
+                        let entryCol = mapEntry[0];
+                        let entryRow = mapEntry[1][0];
+                        let entryVal = mapEntry[1][1];
 
-			if(xSlopeEven===-1){
-				xSlopeEven=calculatedDelta;
+                        if (entryVal - difference * Math.floor(entryRow / 2) < 0 ||
+                            entryVal + difference * Math.floor((numRows - entryRow) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (difference !== yOddDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                if (valCoord - difference * Math.floor(rowCoord / 2) < 0 ||
+                    valCoord + difference * Math.floor((numRows - rowCoord) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                yOddMap.set(colCoord, [rowCoord, valCoord]);
+            }
+        }
+    }
 
-				for(let storedEntry of xEvenRegister.entries()){
-					let thirdRowCoord=storedEntry[0],
-						thirdColCoord=storedEntry[1][0],
-						thirdVal=storedEntry[1][1];
+    // --- Begin X-axis (row-wise) consistency checks ---
+    // Special handling if there are only 2 columns
+    if (numCols === 2) {
+        // If a point with the same row has been seen before (for C=2, all columns are treated uniformly)
+        if (xEvenMap.has(rowCoord)) {
+            let prevColVal = xEvenMap.get(rowCoord);
+            let prevCol = prevColVal[0]; // Previous column coordinate for this row
+            let prevVal = prevColVal[1]; // Previous value for this row
 
-					if(thirdVal-calculatedDelta*(thirdColCoord-1)<0||
-						thirdVal+calculatedDelta*(numColumns-thirdColCoord)<0){
-						console.log('No');
-						process.exit();
-					}
-				}
-			} else {
-				if(calculatedDelta!==xSlopeEven){
-					console.log('No');
-					process.exit();
-				}
-			}
-			if(firstVal-calculatedDelta*firstColCoord<0||
-				firstVal+calculatedDelta*(numColumns-firstColCoord)<0){
-				console.log('No');
-				process.exit();
-			}
+            // Calculate the difference (slope)
+            let difference = (prevVal - valCoord) / (prevCol - colCoord);
 
-		} else {
-			xEvenRegister.set(firstRowCoord,[firstColCoord,firstVal]);
-		}
-	} else {
-		// General case for numColumns > 2
-		if(firstColCoord%2==0){ // For even columns
-			if(xEvenRegister.has(firstRowCoord)){
-				let prevColVal=xEvenRegister.get(firstRowCoord),
-					secondColCoord=prevColVal[0],
-					secondVal=prevColVal[1];
+            // If this is the first difference established for this category
+            if (xEvenDiff === -1) {
+                xEvenDiff = difference; // Set the established difference
 
-				let calculatedDelta=(secondVal-firstVal)/((secondColCoord-firstColCoord)/2);
+                // Validate all previously stored points in this map
+                for (let mapItem of xEvenMap.entries()) {
+                    let itemRow = mapItem[0];
+                    let itemCol = mapItem[1][0];
+                    let itemVal = mapItem[1][1];
 
-				if(xSlopeEven===-1){
-					if(Math.round(calculatedDelta)!==calculatedDelta){
-						console.log('No');
-						process.exit();
-					}
+                    // Check if the value at the boundaries would be negative
+                    if (itemVal - difference * (itemCol - 1) < 0 ||
+                        itemVal + difference * (numCols - itemCol) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+            } else {
+                // If a difference was already established, ensure consistency
+                if (difference !== xEvenDiff) {
+                    console.log('No');
+                    process.exit();
+                }
+            }
+            // Validate the current point against the established difference
+            if (valCoord - difference * colCoord < 0 ||
+                valCoord + difference * (numCols - colCoord) < 0) {
+                console.log('No');
+                process.exit();
+            }
 
-					xSlopeEven=calculatedDelta;
+        } else {
+            // If this is the first point for this row, store it
+            xEvenMap.set(rowCoord, [colCoord, valCoord]);
+        }
+    } else { // If numCols is not 2, distinguish by column parity
+        if (colCoord % 2 === 0) { // Current column is even
+            if (xEvenMap.has(rowCoord)) {
+                let prevColVal = xEvenMap.get(rowCoord);
+                let prevCol = prevColVal[0];
+                let prevVal = prevColVal[1];
 
-					for(let storedEntry of xEvenRegister.entries()){
-						let thirdRowCoord=storedEntry[0],
-							thirdColCoord=storedEntry[1][0],
-							thirdVal=storedEntry[1][1];
+                let difference = (prevVal - valCoord) / ((prevCol - colCoord) / 2);
 
-						if(thirdVal-calculatedDelta*((thirdColCoord/2)-1)<0||
-							thirdVal+calculatedDelta*Math.floor((numColumns-thirdColCoord)/2)<0){
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if(calculatedDelta!==xSlopeEven){
-						console.log('No');
-						process.exit();
-					}
-				}
-				if(firstVal-calculatedDelta*((firstColCoord/2)-1)<0||
-					firstVal+calculatedDelta*Math.floor((numColumns-firstColCoord)/2)<0){
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				xEvenRegister.set(firstRowCoord,[firstColCoord,firstVal]);
-			}
+                if (xEvenDiff === -1) {
+                    if (Math.round(difference) !== difference) {
+                        console.log('No');
+                        process.exit();
+                    }
 
-		} else { // For odd columns
-			if(xOddRegister.has(firstRowCoord)){
-				let prevColVal=xOddRegister.get(firstRowCoord),
-					secondColCoord=prevColVal[0],
-					secondVal=prevColVal[1];
+                    xEvenDiff = difference;
 
-				let calculatedDelta=(secondVal-firstVal)/((secondColCoord-firstColCoord)/2);
+                    // Validate all previously stored even-column points
+                    for (let mapItem of xEvenMap.entries()) {
+                        let itemRow = mapItem[0];
+                        let itemCol = mapItem[1][0];
+                        let itemVal = mapItem[1][1];
 
-				if(xSlopeOdd===-1){
-					if(Math.round(calculatedDelta)!==calculatedDelta){
-						console.log('No');
-						process.exit();
-					}
+                        if (itemVal - difference * ((itemCol / 2) - 1) < 0 ||
+                            itemVal + difference * Math.floor((numCols - itemCol) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (difference !== xEvenDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                if (valCoord - difference * ((colCoord / 2) - 1) < 0 ||
+                    valCoord + difference * Math.floor((numCols - colCoord) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                xEvenMap.set(rowCoord, [colCoord, valCoord]);
+            }
 
-					xSlopeOdd=calculatedDelta;
+        } else { // Current column is odd
+            if (xOddMap.has(rowCoord)) {
+                let prevColVal = xOddMap.get(rowCoord);
+                let prevCol = prevColVal[0];
+                let prevVal = prevColVal[1];
 
-					for(let storedEntry of xOddRegister.entries()){
-						let thirdRowCoord=storedEntry[0],
-							thirdColCoord=storedEntry[1][0],
-							thirdVal=storedEntry[1][1];
+                let difference = (prevVal - valCoord) / ((prevCol - colCoord) / 2);
 
-						if(thirdVal-calculatedDelta*Math.floor(thirdColCoord/2)<0||
-							thirdVal+calculatedDelta*Math.floor((numColumns-thirdColCoord)/2)<0){
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if(calculatedDelta!==xSlopeOdd){
-						console.log('No');
-						process.exit();
-					}
-				}
-				if(firstVal-calculatedDelta*Math.floor(firstColCoord/2)<0||
-					firstVal+calculatedDelta*Math.floor((numColumns-firstColCoord)/2)<0){
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				xOddRegister.set(firstRowCoord,[firstColCoord,firstVal]);
-			}
-		}
-	}
+                if (xOddDiff === -1) {
+                    if (Math.round(difference) !== difference) {
+                        console.log('No');
+                        process.exit();
+                    }
+
+                    xOddDiff = difference;
+
+                    // Validate all previously stored odd-column points
+                    for (let mapItem of xOddMap.entries()) {
+                        let itemRow = mapItem[0];
+                        let itemCol = mapItem[1][0];
+                        let itemVal = mapItem[1][1];
+
+                        if (itemVal - difference * Math.floor(itemCol / 2) < 0 ||
+                            itemVal + difference * Math.floor((numCols - itemCol) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (difference !== xOddDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                if (valCoord - difference * Math.floor(colCoord / 2) < 0 ||
+                    valCoord + difference * Math.floor((numCols - colCoord) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                xOddMap.set(rowCoord, [colCoord, valCoord]);
+            }
+        }
+    }
 }
 
-// If all entries were processed without exiting, then the conditions are met
+// If the loop completes without any inconsistencies, output 'Yes'
 console.log('Yes');

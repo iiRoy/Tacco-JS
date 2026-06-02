@@ -1,93 +1,83 @@
-const processInputData = (rawDataString) => {
-  const cleanedInputLines = rawDataString.trim().split("\n");
+function processInput(rawData) {
+  const lines = rawData.trim().split("\n");
+  const gridSize = parseInt(lines[0], 10);
+  const seatOrder = lines[1].split(" ").map(Number);
 
-  const gridDimension = parseInt(cleanedInputLines[0], 10);
+  const createInitializedGrid = (rows, cols, initialValue = 0) => {
+    const grid = new Array(rows);
+    for (let k = 0; k < rows; k++) {
+      grid[k] = new Array(cols).fill(initialValue);
+    }
+    return grid;
+  };
 
-  if (isNaN(gridDimension) || gridDimension <= 0) {
-    console.error("Invalid grid dimension provided. Must be a positive integer.");
-    return;
-  }
+  let seatGrid = createInitializedGrid(gridSize, gridSize);
+  let seatCoordinatesMap = {};
 
-  const seatSequence = cleanedInputLines[1].split(" ").map((str) => parseInt(str, 10));
-
-  const seatingGrid = Array.from({ length: gridDimension }, () =>
-    Array.from({ length: gridDimension }, () => 0)
-  );
-
-  const seatCoordinatesMap = {};
-
-  for (let rowOneBased = 1; rowOneBased <= gridDimension; rowOneBased++) {
-    for (let colOneBased = 1; colOneBased <= gridDimension; colOneBased++) {
-      const seatIdentifier = (rowOneBased - 1) * gridDimension + colOneBased;
-      seatingGrid[rowOneBased - 1][colOneBased - 1] = seatIdentifier;
-      seatCoordinatesMap[seatIdentifier] = [rowOneBased, colOneBased];
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      const currentSeatNumber = r * gridSize + c + 1;
+      seatGrid[r][c] = currentSeatNumber;
+      seatCoordinatesMap[currentSeatNumber] = [r + 1, c + 1];
     }
   }
 
-  let unfavorableCount = 0;
+  let dislikedCount = 0;
+  const lastGridIndex = gridSize - 1;
 
-  for (let k = 0; k < seatSequence.length; k++) {
-    const currentSeatNumber = seatSequence[k];
+  const isBorderPosition = (row1Idx, col1Idx, size) => {
+    return row1Idx === 1 || col1Idx === 1 || row1Idx === size || col1Idx === size;
+  };
 
-    const [takenSeatRow, takenSeatCol] = seatCoordinatesMap[currentSeatNumber];
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      const linearSeatIndex = r * gridSize + c;
+      const seatValueToProcess = seatOrder[linearSeatIndex];
 
-    seatingGrid[takenSeatRow - 1][takenSeatCol - 1] = 0; // Mark the seat as taken
+      const [originalRow1Idx, originalCol1Idx] = seatCoordinatesMap[seatValueToProcess];
+      const originalRow0Idx = originalRow1Idx - 1;
+      const originalCol0Idx = originalCol1Idx - 1;
 
-    const isBorderSeat =
-      takenSeatRow === 1 ||
-      takenSeatCol === 1 ||
-      takenSeatRow === gridDimension ||
-      takenSeatCol === gridDimension;
+      seatGrid[originalRow0Idx][originalCol0Idx] = 0;
 
-    if (isBorderSeat) {
-      continue;
-    }
-
-    let countEmptyNorth = 0;
-    let countEmptySouth = 0;
-    let countEmptyWest = 0;
-    let countEmptyEast = 0;
-
-    const zeroIndexedRow = takenSeatRow - 1;
-    const zeroIndexedCol = takenSeatCol - 1;
-
-    // Count empty seats strictly above (decreasing row index)
-    for (let rIter = zeroIndexedRow - 1; rIter >= 0; rIter--) {
-      if (seatingGrid[rIter][zeroIndexedCol] !== 0) {
-        countEmptyNorth++;
+      if (isBorderPosition(originalRow1Idx, originalCol1Idx, gridSize)) {
+        continue;
       }
-    }
 
-    // Count empty seats strictly below (increasing row index)
-    for (let rIter = zeroIndexedRow + 1; rIter < gridDimension; rIter++) {
-      if (seatingGrid[rIter][zeroIndexedCol] !== 0) {
-        countEmptySouth++;
+      let countUpInCol = 0;
+      let countDownInCol = 0;
+      let countLeftInRow = 0;
+      let countRightInRow = 0;
+
+      for (let tempR = originalRow0Idx - 1; tempR >= 0; tempR--) {
+        if (seatGrid[tempR][originalCol0Idx] !== 0) {
+          countUpInCol++;
+        }
       }
-    }
 
-    // Count empty seats strictly to the left (decreasing column index)
-    for (let cIter = zeroIndexedCol - 1; cIter >= 0; cIter--) {
-      if (seatingGrid[zeroIndexedRow][cIter] !== 0) {
-        countEmptyWest++;
+      for (let tempR = originalRow0Idx + 1; tempR <= lastGridIndex; tempR++) {
+        if (seatGrid[tempR][originalCol0Idx] !== 0) {
+          countDownInCol++;
+        }
       }
-    }
 
-    // Count empty seats strictly to the right (increasing column index)
-    for (let cIter = zeroIndexedCol + 1; cIter < gridDimension; cIter++) {
-      if (seatingGrid[zeroIndexedRow][cIter] !== 0) {
-        countEmptyEast++;
+      for (let tempC = originalCol0Idx - 1; tempC >= 0; tempC--) {
+        if (seatGrid[originalRow0Idx][tempC] !== 0) {
+          countLeftInRow++;
+        }
       }
-    }
 
-    unfavorableCount += Math.min(countEmptyNorth, countEmptySouth, countEmptyWest, countEmptyEast);
+      for (let tempC = originalCol0Idx + 1; tempC <= lastGridIndex; tempC++) {
+        if (seatGrid[originalRow0Idx][tempC] !== 0) {
+          countRightInRow++;
+        }
+      }
+
+      dislikedCount += Math.min(countUpInCol, countDownInCol, countLeftInRow, countRightInRow);
+    }
   }
 
-  console.log(unfavorableCount);
-};
-
-try {
-  const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-  processInputData(fileContent);
-} catch (error) {
-  console.error("Error reading input from /dev/stdin:", error.message);
+  console.log(dislikedCount);
 }
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

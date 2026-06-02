@@ -1,25 +1,25 @@
-process.stdin.setEncoding('utf8');
-let capturedData = '';
-
-process.stdin.on('data', (portion) => {
-    capturedData += portion;
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const numericLimit = Number(capturedData.trim().split(' ')[0]);
+inputHandler.on('line', function (currentLine) {
+  const inputParts = currentLine.split(' ');
+  const upperBoundary = Number.parseInt(inputParts[0], 10);
 
-    const isRelevant = (datum) => {
-        if (datum % 3 === 0) {
-            return true;
-        }
-        return String(datum).includes('3');
-    };
+  const includesNumeralThree = (numericValue) => String(numericValue).includes('3');
 
-    const eligibleNumbers = Array.from({ length: Math.max(0, numericLimit - 2) }, (_, pos) => pos + 3)
-                               .filter(isRelevant);
+  const outputSegments = Array.from({ length: Math.max(0, upperBoundary - 2) }, (_, index) => index + 3)
+    .filter(candidateNum => candidateNum % 3 === 0 || includesNumeralThree(candidateNum))
+    .map(selectedNum => ' ' + selectedNum);
 
-    const formattedOutput = eligibleNumbers.join(' ');
+  const finalResultString = outputSegments.join('');
 
-    console.log(eligibleNumbers.length > 0 ? ' ' + formattedOutput : '');
-    process.exit(0);
+  console.log(finalResultString);
+  process.exit();
+});
+
+process.stdin.on('end', function () {
+  // This handler is effectively not reached due to process.exit()
+  // but is retained for structural equivalence to the original.
 });

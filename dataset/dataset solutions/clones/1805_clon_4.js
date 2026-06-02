@@ -1,23 +1,21 @@
-function processStreamContent(dataBlock) {
-    const patternForData = /^(-?\d+)\s+(-?\d+)/;
-    const matchResult = dataBlock.match(patternForData);
+function EntryPoint(sourcePayload) {
+    const numberPattern = /^\s*(-?\d+)\s+(-?\d+)/;
+    const extractionResult = sourcePayload.match(numberPattern);
 
-    let numberOne, numberTwo;
+    let firstOperand, secondOperand;
 
-    if (matchResult && matchResult.length >= 3) {
-        // Successfully extracted two numeric strings
-        numberOne = +matchResult[1]; // Convert using unary plus
-        numberTwo = +matchResult[2]; // Convert using unary plus
+    if (extractionResult && extractionResult.length >= 3) {
+        firstOperand = Number(extractionResult[1]);
+        secondOperand = Number(extractionResult[2]);
     } else {
-        // If the pattern doesn't match (e.g., malformed input like "1" or "abc"),
-        // original's parseInt would yield NaN for one or both numbers.
-        // We mimic this behavior, as NaN * X results in NaN.
-        numberOne = NaN;
-        numberTwo = NaN;
+        // If the pattern doesn't match, or doesn't capture two groups,
+        // Number() on undefined/null will result in NaN,
+        // which matches parseInt's behavior for non-numeric input.
+        firstOperand = NaN;
+        secondOperand = NaN;
     }
 
-    console.log(numberOne * numberTwo);
+    console.log(firstOperand * secondOperand);
 }
 
-// Invoke the processing function with standard input
-processStreamContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

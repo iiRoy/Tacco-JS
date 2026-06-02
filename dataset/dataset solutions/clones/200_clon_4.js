@@ -1,27 +1,33 @@
-const utilityModule = require('node:fs');
-const rawInputContent = utilityModule.readFileSync('/dev/stdin', 'utf8');
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const segments = inputData.split(/\s|,/);
 
-const segmentedData = rawInputContent.split(/\s|,/);
+const counts = {
+  alpha: 0,
+  beta: 0,
+  omega: 0,
+  delta: 0
+};
 
-const outcomeCounters = [0, 0, 0, 0]; // Designates counts for [Category A, Category B, Category Other, Category O]
-
-segmentedData.forEach((elementValue, indexPosition) => {
-    if (indexPosition % 2 !== 0) { // Processes only elements residing at odd positions (1st, 3rd, 5th, etc.)
-        switch (elementValue) {
-            case 'A':
-                outcomeCounters[0]++; // Corresponds to original 'w'
-                break;
-            case 'B':
-                outcomeCounters[1]++; // Corresponds to original 'x'
-                break;
-            case 'O':
-                outcomeCounters[3]++; // Corresponds to original 'z'
-                break;
-            default:
-                outcomeCounters[2]++; // Corresponds to original 'y' (captures 'AB' or any other string, including empty ones)
-                break;
-        }
-    }
+const processedSegments = segments.filter((segmentValue, index) => {
+  return index % 2 !== 0 && !!segmentValue;
 });
 
-console.log(outcomeCounters[0] + '\n' + outcomeCounters[1] + '\n' + outcomeCounters[2] + '\n' + outcomeCounters[3]);
+processedSegments.forEach(segment => {
+  switch (segment) {
+    case 'A':
+      counts.alpha++;
+      break;
+    case 'B':
+      counts.beta++;
+      break;
+    case 'O':
+      counts.omega++;
+      break;
+    default:
+      counts.delta++;
+      break;
+  }
+});
+
+const lineBreakChar = '\n';
+console.log(counts.alpha + lineBreakChar + counts.beta + lineBreakChar + counts.delta + lineBreakChar + counts.omega);

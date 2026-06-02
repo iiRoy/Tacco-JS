@@ -1,36 +1,19 @@
-const processInputValues = (incomingText) => {
-    const extractedNumericParts = incomingText.match(/-?\d+/g);
+function processInputData(rawData) {
+    const spacePosition = rawData.indexOf(' ');
+    const firstSegment = rawData.substring(0, spacePosition);
+    const secondSegment = rawData.substring(spacePosition + 1);
 
-    const firstVal = parseInt(extractedNumericParts[0], 10);
-    const secondVal = parseInt(extractedNumericParts[1], 10);
+    const primaryValue = Number(firstSegment);
+    const secondaryValue = Number(secondSegment);
 
-    const divisionResult = firstVal / secondVal;
+    const fullDivision = primaryValue / secondaryValue;
+    const wholePart = Math.floor(fullDivision);
+    const remainingPart = primaryValue - (wholePart * secondaryValue);
+    const fixedPointOutput = fullDivision.toFixed(6);
 
-    // Custom implementation for integer division equivalent to Math.floor()
-    let integerQuotient;
-    if (divisionResult >= 0) {
-        integerQuotient = Math.trunc(divisionResult);
-    } else {
-        integerQuotient = Math.trunc(divisionResult);
-        if (integerQuotient !== divisionResult) {
-            integerQuotient--;
-        }
-    }
+    console.log("%d %d %d", wholePart, remainingPart, fixedPointOutput);
+}
 
-    // Custom implementation for remainder equivalent to % operator
-    const calculatedRemainder = firstVal - (integerQuotient * secondVal);
-
-    // Formatting for precise result using Intl.NumberFormat instead of toFixed()
-    const decimalPresenter = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 6,
-        maximumFractionDigits: 6,
-        useGrouping: false
-    });
-    const formattedPreciseResult = decimalPresenter.format(divisionResult);
-
-    // Output using template literals instead of printf-style
-    console.log(`${integerQuotient} ${calculatedRemainder} ${formattedPreciseResult}`);
-};
-
-const rawDataPayload = require("node:fs").readFileSync("/dev/stdin", "utf8");
-processInputValues(rawDataPayload);
+const fileSystemModule = require("fs");
+const standardInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+processInputData(standardInputContent);

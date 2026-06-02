@@ -1,70 +1,73 @@
-const evaluateBingoGame = (incomingLines) => {
+const processGame = (inputLines) => {
+  // Initialize three rows of the bingo card from the first three input lines.
+  // Each line contains space-separated numbers.
+  var rowOne = inputLines[0].split(" ");
+  var rowTwo = inputLines[1].split(" ");
+  var rowThree = inputLines[2].split(" ");
 
-  // Parse the initial three lines to form the rows of the bingo grid
-  let firstGridLine = incomingLines[0].split(" ");
-  let secondGridLine = incomingLines[1].split(" ");
-  let thirdGridLine = incomingLines[2].split(" ");
+  // Concatenate the rows into a single flat array representing the 3x3 bingo board.
+  var gameBoard = rowOne.concat(rowTwo).concat(rowThree);
 
-  // Flatten the three rows into a single array representing the 3x3 game board
-  let gameBoardNumbers = firstGridLine.concat(secondGridLine).concat(thirdGridLine);
+  // This variable is declared but not used in the current logic.
+  var winningPatterns = [];
 
-  // This variable is declared but not explicitly used in the current logic flow
-  let markedCells = [];
+  // Initialize the final result status to 'No'.
+  var resultStatus = 'No';
 
-  // Initialize the final outcome message to indicate no bingo by default
-  let outcomeMessage = 'No';
-
-
-  // Iterate through the subsequent input lines, which contain numbers called out
-  for (let currentLineIndex = 3; currentLineIndex < incomingLines.length; currentLineIndex++) {
-
-    // Extract and parse the current number that has been announced
-    // The original logic involved split(" ") on a single number string, which is redundant.
-    // We trim and parse directly for clarity.
-    let calledNumber = parseInt(incomingLines[currentLineIndex].trim(), 10);
-
-    // Update the game board: mark any matching numbers with the 'O' symbol
-    gameBoardNumbers = gameBoardNumbers.map(boardValue => {
-      // Convert the current board cell value to an integer for accurate comparison
-      if (parseInt(boardValue, 10) === calledNumber) {
-        return 'O'; // If the number matches, mark the cell
+  // Iterate through the remaining input lines, which represent called numbers.
+  // Start from index 3, as the first three lines are for the board setup.
+  for (var idx = 3; idx < inputLines.length; idx++) {
+    // For each called number, update the game board.
+    // If a number on the board matches the called number, mark it with 'O'.
+    gameBoard = gameBoard.map(currentValue => {
+      // Convert both the board value and the called number to actual numbers for comparison.
+      // Note: inputLines[idx].split(" ") will result in an array like ["10"],
+      // and Number(["10"]) correctly evaluates to 10.
+      if (Number(currentValue) == Number(inputLines[idx].split(" "))) {
+        return 'O'; // Mark as 'O' if it's a match.
       } else {
-        return boardValue; // Otherwise, retain the original number in the cell
+        return currentValue; // Otherwise, keep the original value.
       }
     });
   }
 
-  // After all numbers are processed, check for all possible winning combinations
-  // Check for horizontal winning lines
-  if (gameBoardNumbers[0] === 'O' && gameBoardNumbers[1] === 'O' && gameBoardNumbers[2] === 'O') {
-    outcomeMessage = 'Yes';
-  } else if (gameBoardNumbers[3] === 'O' && gameBoardNumbers[4] === 'O' && gameBoardNumbers[5] === 'O') {
-    outcomeMessage = 'Yes';
-  } else if (gameBoardNumbers[6] === 'O' && gameBoardNumbers[7] === 'O' && gameBoardNumbers[8] === 'O') {
-    outcomeMessage = 'Yes';
+  // Check for winning conditions (bingo) across rows, columns, and diagonals.
+  // Row 1 check:
+  if (gameBoard[0] === 'O' && gameBoard[1] === 'O' && gameBoard[2] === 'O') {
+    resultStatus = 'Yes';
   }
-  // Check for vertical winning lines
-  else if (gameBoardNumbers[0] === 'O' && gameBoardNumbers[3] === 'O' && gameBoardNumbers[6] === 'O') {
-    outcomeMessage = 'Yes';
-  } else if (gameBoardNumbers[1] === 'O' && gameBoardNumbers[4] === 'O' && gameBoardNumbers[7] === 'O') {
-    outcomeMessage = 'Yes';
-  } else if (gameBoardNumbers[2] === 'O' && gameBoardNumbers[5] === 'O' && gameBoardNumbers[8] === 'O') {
-    outcomeMessage = 'Yes';
+  // Row 2 check:
+  else if (gameBoard[3] === 'O' && gameBoard[4] === 'O' && gameBoard[5] === 'O') {
+    resultStatus = 'Yes';
   }
-  // Check for diagonal winning lines
-  else if (gameBoardNumbers[0] === 'O' && gameBoardNumbers[4] === 'O' && gameBoardNumbers[8] === 'O') {
-    outcomeMessage = 'Yes';
-  } else if (gameBoardNumbers[2] === 'O' && gameBoardNumbers[4] === 'O' && gameBoardNumbers[6] === 'O') {
-    outcomeMessage = 'Yes';
+  // Row 3 check:
+  else if (gameBoard[6] === 'O' && gameBoard[7] === 'O' && gameBoard[8] === 'O') {
+    resultStatus = 'Yes';
+  }
+  // Column 1 check:
+  else if (gameBoard[0] === 'O' && gameBoard[3] === 'O' && gameBoard[6] === 'O') {
+    resultStatus = 'Yes';
+  }
+  // Column 2 check:
+  else if (gameBoard[1] === 'O' && gameBoard[4] === 'O' && gameBoard[7] === 'O') {
+    resultStatus = 'Yes';
+  }
+  // Column 3 check:
+  else if (gameBoard[2] === 'O' && gameBoard[5] === 'O' && gameBoard[8] === 'O') {
+    resultStatus = 'Yes';
+  }
+  // Diagonal (top-left to bottom-right) check:
+  else if (gameBoard[0] === 'O' && gameBoard[4] === 'O' && gameBoard[8] === 'O') {
+    resultStatus = 'Yes';
+  }
+  // Diagonal (top-right to bottom-left) check:
+  else if (gameBoard[2] === 'O' && gameBoard[4] === 'O' && gameBoard[6] === 'O') {
+    resultStatus = 'Yes';
   }
 
-  // Print the final result of the bingo game to the console
-  console.log(outcomeMessage);
+  // Output the final bingo status.
+  console.log(resultStatus);
 };
 
-// This section handles reading input from standard input,
-// common in competitive programming environments.
-evaluateBingoGame(require('fs')
-  .readFileSync('/dev/stdin', 'UTF-8')
-  .trim()
-  .split("\n"));
+// Read input from standard input, process it, and pass it to the main function.
+processGame(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n"));

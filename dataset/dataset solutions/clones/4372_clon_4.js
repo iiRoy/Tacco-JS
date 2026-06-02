@@ -1,28 +1,23 @@
-const textSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const fs = require("fs");
 
-const calculateUniqueOccurrences = (rawText) => {
-    const segments = rawText.split('\n');
-    const dataSize = Number(segments[0]);
+((sourceData) => {
+    const contentLines = sourceData.split('\n');
+    const entryCount = Number(contentLines[0]);
 
-    const exclusiveElements = new Set();
-    const repeatingElements = new Set();
+    const frequencyTracker = new Map();
 
-    for (let currentIdx = 1; currentIdx <= dataSize; currentIdx++) {
-        const currentSegment = segments[currentIdx];
-
-        if (repeatingElements.has(currentSegment)) {
-            // Element has already been seen multiple times, no change needed
-        } else if (exclusiveElements.has(currentSegment)) {
-            // Element was unique, but now it's a repeat
-            exclusiveElements.delete(currentSegment);
-            repeatingElements.add(currentSegment);
-        } else {
-            // First time seeing this element
-            exclusiveElements.add(currentSegment);
-        }
+    for (let index = 1; index <= entryCount; index++) {
+        const currentElement = contentLines[index];
+        frequencyTracker.set(currentElement, (frequencyTracker.get(currentElement) || 0) + 1);
     }
 
-    console.log(exclusiveElements.size);
-};
+    let singleOccurrenceTally = 0;
+    frequencyTracker.forEach(itemCount => {
+        if (itemCount === 1) {
+            singleOccurrenceTally++;
+        }
+    });
 
-calculateUniqueOccurrences(textSource);
+    console.log(singleOccurrenceTally);
+
+})(fs.readFileSync("/dev/stdin", "utf8"));

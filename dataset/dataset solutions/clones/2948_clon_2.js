@@ -1,102 +1,95 @@
-/**
- * This function processes a series of command lines to manage a collection of numeric data.
- * It simulates operations like adding elements to a sorted list and querying a specific statistic.
- * @param {string} rawDataInput - A multi-line string containing all commands.
- */
-function ProcessQueries(rawDataInput) {
-    // Split the entire input string into individual lines based on newline characters.
-    let queryLines = rawDataInput.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines.
+  let processedLines = rawData.split("\n");
 
-    // Check if the last line is empty (common in some input formats) and remove it if so.
-    if (queryLines[queryLines.length - 1.0] === '') {
-        queryLines.pop();
-    }
+  // Remove the last line if it's empty, which often happens with trailing newlines.
+  if (processedLines[processedLines.length - 1] === '') {
+    processedLines.pop();
+  }
 
-    // The first line might contain a total number of queries, though it's not used in this logic.
-    const numberOfInstructions = queryLines[0.0].split(' ')[0.0];
+  // The first line contains parameters, but only the first part is extracted.
+  // This variable is declared but not used in the original logic.
+  const firstLineParam = processedLines[0].split(' ')[0];
 
-    // Initialize a variable to accumulate some kind of total value or cost.
-    let cumulativeValue = 0.0;
+  // Initialize a variable to accumulate the total cost.
+  let totalCost = 0;
 
-    // This array will hold numeric data, maintained in a sorted order.
-    let dataPoints = [];
+  // This array will store numerical values in sorted order.
+  let sortedValues = [];
 
-    // Declare variables that will be used for array manipulation and binary search.
-    let insertionPosition;
-    let searchLowerBoundary;
-    let searchUpperBoundary;
-    let searchMidpoint;
+  // Declare variables used for binary search and array manipulation.
+  let insertionIndex, lowerBound, upperBound, middleIndex;
 
-    // Temporary variable to hold parsed data for the current line.
-    let currentParsedData;
+  // Declare a temporary variable to hold parsed data for each operation.
+  let currentOperationData;
 
-    // Iterate through each instruction line, starting from the second line (index 1).
-    for (let queryIterator = 1.0; queryIterator < queryLines.length; queryIterator++) {
-        // If the current command is '2', it signifies a query for a median-like value.
-        if (queryLines[queryIterator] === '2') {
-            // Output the element at the middle (or lower-middle for even length) of the sorted list
-            // along with the current accumulated cumulative value.
-            console.log(dataPoints[Math.ceil(dataPoints.length / 2.0) - 1.0], cumulativeValue);
-        } else {
-            // Otherwise, it's an insertion command. Parse the current line.
-            currentParsedData = queryLines[queryIterator].split(' ').slice(1.0).map(numericString => {
-                return numericString - 0.0; // Convert string to number.
-            });
+  // Iterate through the input lines, starting from the second line (index 1).
+  for (let lineIterator = 1; lineIterator < processedLines.length; lineIterator++) {
+    // Check if the current operation is a query (represented by "2").
+    if (processedLines[lineIterator] === '2') {
+      // For a query, print the median value and the current total cost.
+      // Math.ceil(sortedValues.length / 2) - 1 correctly identifies the lower median for even length arrays
+      // and the single median for odd length arrays.
+      console.log(sortedValues[Math.ceil(sortedValues.length / 2) - 1], totalCost);
+    } else {
+      // This block handles insertion operations.
+      // Parse the current line: split by space, take elements from the second one, and convert to numbers.
+      currentOperationData = processedLines[lineIterator].split(' ').slice(1).map(elementString => {
+        return elementString - 0; // Convert string to number.
+      });
 
-            // Handle the case where the dataPoints array is currently empty.
-            if (dataPoints.length === 0.0) {
-                dataPoints = [currentParsedData[0.0]]; // Add the first value directly.
-                cumulativeValue += currentParsedData[1.0]; // Add the second value to the total.
-                continue; // Move to the next query.
-            }
+      // Special case: if the sortedValues array is empty, just add the first value.
+      if (sortedValues.length === 0) {
+        sortedValues = [currentOperationData[0]];
+        totalCost += currentOperationData[1]; // Add the second value to the total cost.
+        continue; // Move to the next line.
+      }
 
-            // Determine the correct insertion position to maintain sorted order.
-            // Case 1: New value is greater than the last element.
-            if (dataPoints[dataPoints.length - 1.0] < currentParsedData[0.0]) {
-                insertionPosition = dataPoints.length;
-            }
-            // Case 2: New value is less than or equal to the first element.
-            else if (dataPoints[0.0] >= currentParsedData[0.0]) {
-                insertionPosition = 0.0;
-            }
-            // Case 3: New value falls somewhere in the middle, use binary search.
-            else {
-                searchUpperBoundary = dataPoints.length - 1.0;
-                searchLowerBoundary = 0.0;
-
-                // Perform a binary search to find the insertion point.
-                while (searchUpperBoundary - searchLowerBoundary > 1.0) {
-                    searchMidpoint = Math.floor((searchUpperBoundary + searchLowerBoundary) / 2.0);
-                    if (dataPoints[searchMidpoint] < currentParsedData[0.0]) {
-                        searchLowerBoundary = searchMidpoint;
-                    } else {
-                        searchUpperBoundary = searchMidpoint;
-                    }
-                }
-                insertionPosition = searchLowerBoundary + 1.0;
-            }
-
-            // Adjust the cumulative value based on the insertion and the current state of the list.
-            // This part of the logic seems to be calculating a sum of absolute differences.
-            if (dataPoints.length % 2.0 === 0.0) { // If the list length is even.
-                if (insertionPosition > dataPoints.length / 2.0) {
-                    cumulativeValue += currentParsedData[0.0] - dataPoints[dataPoints.length / 2.0];
-                } else if (insertionPosition < dataPoints.length / 2.0) {
-                    cumulativeValue += dataPoints[dataPoints.length / 2.0 - 1.0] - currentParsedData[0.0];
-                }
-            } else { // If the list length is odd.
-                cumulativeValue += Math.abs(currentParsedData[0.0] - dataPoints[(dataPoints.length - 1.0) / 2.0]);
-            }
-
-            // Insert the new value into the sorted array at the determined position.
-            dataPoints.splice(insertionPosition, 0.0, currentParsedData[0.0]);
-
-            // Add the second component of the current operation's data to the total cumulative value.
-            cumulativeValue += currentParsedData[1.0];
+      // Determine the insertion point for the new value (currentOperationData[0])
+      // If the new value is greater than the last element, insert at the end.
+      if (sortedValues[sortedValues.length - 1] < currentOperationData[0]) {
+        insertionIndex = sortedValues.length;
+      }
+      // If the new value is less than or equal to the first element, insert at the beginning.
+      else if (sortedValues[0] >= currentOperationData[0]) {
+        insertionIndex = 0;
+      }
+      // Otherwise, use binary search to find the correct insertion point to maintain sorted order.
+      else {
+        upperBound = sortedValues.length - 1;
+        lowerBound = 0;
+        while (upperBound - lowerBound > 1) {
+          middleIndex = Math.floor((upperBound + lowerBound) / 2);
+          if (sortedValues[middleIndex] < currentOperationData[0]) {
+            lowerBound = middleIndex;
+          } else {
+            upperBound = middleIndex;
+          }
         }
+        insertionIndex = lowerBound + 1;
+      }
+
+      // Adjust the total cost based on the median and the new value before insertion.
+      // This logic ensures the cost reflects the change in median.
+      if (sortedValues.length % 2 === 0) { // If the array currently has an even number of elements
+        if (insertionIndex > sortedValues.length / 2) {
+          totalCost += currentOperationData[0] - sortedValues[sortedValues.length / 2];
+        } else if (insertionIndex < sortedValues.length / 2) {
+          totalCost += sortedValues[sortedValues.length / 2 - 1] - currentOperationData[0];
+        }
+      } else { // If the array currently has an odd number of elements
+        totalCost += Math.abs(currentOperationData[0] - sortedValues[(sortedValues.length - 1) / 2]);
+      }
+
+      // Insert the new value into the sorted array at the determined index.
+      sortedValues.splice(insertionIndex, 0, currentOperationData[0]);
+
+      // Add the second value from the input line to the total cost.
+      totalCost += currentOperationData[1];
     }
+  }
 }
 
-// This section handles reading from standard input and invoking the main processing function.
-// It should not be altered to maintain compatibility with the execution environment.
-ProcessQueries(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line handles reading input from standard input and calling the main processing function.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

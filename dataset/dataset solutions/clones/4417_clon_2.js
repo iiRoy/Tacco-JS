@@ -1,139 +1,135 @@
-// This section provides foundational utilities and is not part of the primary application logic.
-let inputReader = require('readline') .createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataProcessor;
-let rawInputLines = [];
+var dataHandler;
+var collectedLines = [];
 
-inputReader.on('line', function (currentLine) {
-  rawInputLines.push(currentLine);
+// Event listener for each line of input
+inputReader.on('line', function(rawInputData){
+  collectedLines.push(rawInputData);
 });
 
-inputReader.on('close', function () {
-  dataProcessor = initializeProcessor(rawInputLines);
-  logDebugMessage("----- Program Execution Begins -----");
-  const executionStartTime = new Date();
-  ExecuteApplication(); // Execute the main program logic
-  const elapsedDuration = new Date() - executionStartTime;
-  logDebugMessage("----- Program Execution Concludes -----");
-  logDebugMessage("Time elapsed: " + (elapsedDuration) + " ms");
-  logDebugMessage("Memory utilization: " + Math.round(process.memoryUsage().heapTotal / 1024) + " KB");
+// Event listener when input stream closes
+inputReader.on('close', function(){
+  dataHandler = setupInputProcessor(collectedLines);
+  debugLog("--- Execution Started ---");
+  var operationStartTime = new Date();
+  executeSolution();
+  var operationDuration = new Date() - operationStartTime;
+  debugLog("--- Execution Finished ---");
+  debugLog("Time elapsed: " + (operationDuration) + "ms");
+  debugLog("Memory usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function readInteger() { return convertInput(getNextElement(), 1); }
-function readStringArray() { return convertInput(getNextElement(), 2); }
-function readIntegerArray() { return convertInput(getNextElement(), 4); }
-function readCharacterArray() { return convertInput(getNextElement(), 6); }
+// Utility functions for retrieving different data types
+function retrieveNextInteger(){ return performConversion(fetchNextLine(), 1); }
+function retrieveNextStringArray(){ return performConversion(fetchNextLine(), 2); }
+function retrieveNextIntegerArray(){ return performConversion(fetchNextLine(), 4); }
+function retrieveNextCharacterArray(){ return performConversion(fetchNextLine(), 6); }
 
-function getNextElement() { return dataProcessor.retrieveNext(); }
-function checkNextExistence() { return dataProcessor.hasMoreElements(); }
+// Core functions for input handling
+function fetchNextLine(){ return dataHandler.getNextItem(); }
+function hasMoreInput(){ return dataHandler.checkMoreInput(); }
 
 /**
- * Creates an object responsible for managing input data.
- * @param {Array<string>} initialInput The collection of input strings.
- * @returns {object} An instance with methods for data access.
+ * Initializes an object to handle sequential input line retrieval.
+ * @param {Array<string>} rawInputData - An array of input strings.
+ * @returns {object} An object with methods to check for more input and retrieve the next line.
  */
-function initializeProcessor(initialInput) {
-  const processorInstance = {
-    sourceData: initialInput,
-    currentPosition: 0,
-    totalEntries: initialInput.length,
-
-    hasMoreElements: function () {
-      return (this.currentPosition < this.totalEntries);
+function setupInputProcessor(rawInputData){  
+  var processorInstance = {
+    inputLineList : rawInputData,
+    currentIndex : 0,
+    maximumLines : rawInputData.length,
+    checkMoreInput : function(){
+      return (this.currentIndex < this.maximumLines);
     },
-
-    retrieveNext: function () {
-      if (!this.hasMoreElements()) {
-        throw new Error("Input Boundary Exception: No more entries available.");
+    getNextItem : function(){
+      if(!this.checkMoreInput()){
+        throw "InputOutOfBoundsException: No more lines available for processing.";
       } else {
-        const extractedEntry = this.sourceData[this.currentPosition];
-        this.currentPosition++;
-        return extractedEntry;
+        var currentInputString = this.inputLineList[this.currentIndex];
+        this.currentIndex++;
+        return currentInputString;
       }
     }
   };
   return processorInstance;
 }
 
-function displayResult(messageContent) {
-  console.log(messageContent);
+// Function to output results to standard output
+function outputResult(logMessage){
+  console.log(logMessage);
 }
 
-function logDebugMessage(messageContent) {
-  console.error("DEBUG OUTPUT: " + require("util") .inspect(messageContent, false, null));
+// Function to output debug messages to standard error
+function debugLog(logMessage){
+  console.error("DEBUG_INFO: " + require("util").inspect(logMessage, false, null));
 }
 
-// Input type conversion utility function.
-// The 'conversionType' parameter dictates the transformation:
-// Default / Invalid type: Returns input as is.
-// 1: Converts input to an integer.
-// 2: Splits string by spaces into an array of strings.
-// 4: Splits string by spaces and converts parts to numbers.
-// 6: Splits string into an array of individual characters.
-// 7: Splits string into characters and converts them to numbers.
-// 8: Joins array elements with a space.
-// 9: Joins array elements with a newline.
-// 0: Joins array elements without any separator.
-function convertInput(inputValue, conversionType) {
+/**
+ * Converts input values based on a specified type.
+ * @param {*} inputValue - The value to convert.
+ * @param {number} conversionOption - The type of conversion to perform.
+ *   1: Convert to integer.
+ *   2: Split by space into string array.
+ *   4: Split by space into number array.
+ *   6: Split by character into string array.
+ *   7: Split by character into number array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   Default: Return input as is.
+ * @returns {*} The converted value.
+ */
+function performConversion(inputValue, conversionOption){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue, 10); // Specify radix for safety
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionOption){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (operationError) {
-    return inputValue; // Fallback to original value on conversion failure
+  } catch(error) {
+    return inputValue; // Return original value on error
   }
 }
 
-// End of preliminary utility functions.
-// The main application logic is defined below.
-function ExecuteApplication() {
-  const firstInputSet = readIntegerArray();
-  const intervalStart1 = firstInputSet[0];
-  const intervalEnd1 = firstInputSet[1];
-  const intervalStart2 = firstInputSet[2];
-  const intervalEnd2 = firstInputSet[3];
+// Main logic of the program
+function executeSolution(){
+	var initialParameters = retrieveNextIntegerArray();
+	var firstRangeStart = initialParameters[0];
+	var firstRangeEnd = initialParameters[1];
+	var secondRangeStart = initialParameters[2];
+	var secondRangeEnd = initialParameters[3];
 
-  // Initialize a frequency counter array for values up to 100.
-  const frequencyCounter = new Array(101).fill(0);
+	// Create an array to map coverage, assuming max value is 100
+	var coverageMap = new Array(101).fill(0);
 
-  // Mark elements within the first specified range.
-  for (let idx = intervalStart1; idx <= intervalEnd1; idx++) {
-    frequencyCounter[idx] += 1;
-  }
+	// Mark coverage for the first range
+	for(var currentPoint = firstRangeStart; currentPoint <= firstRangeEnd; currentPoint++){
+		coverageMap[currentPoint] += 1;
+	}
 
-  // Mark elements within the second specified range.
-  for (let idx = intervalStart2; idx <= intervalEnd2; idx++) {
-    frequencyCounter[idx] += 1;
-  }
+	// Mark coverage for the second range
+	for(var currentPoint = secondRangeStart; currentPoint <= secondRangeEnd; currentPoint++){
+		coverageMap[currentPoint] += 1;
+	}
 
-  let overlapCount = 0;
-  // Count how many positions are covered by both ranges (frequency == 2).
-  for (let idx = 0; idx < 101; idx++) {
-    if (frequencyCounter[idx] === 2) {
-      overlapCount++;
-    }
-  }
-
-  // Output the maximum of (overlapCount - 1) or 0.
-  displayResult(Math.max(overlapCount - 1, 0));
+	var overlapCount = 0;
+	// Count points covered by both ranges (value 2)
+	for(var currentPoint = 0; currentPoint < 101; currentPoint++){
+		if(coverageMap[currentPoint] === 2){
+			overlapCount++;
+		}
+	}
+	// Output the result, ensuring it's not negative
+	outputResult(Math.max(overlapCount - 1, 0));
 }

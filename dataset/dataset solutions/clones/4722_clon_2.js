@@ -1,98 +1,128 @@
-process.stdin.flowResume();
-process.stdin.configureEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-let incomingTextBuffer = "";
-let parsedInputLines = [];
-let currentLineIndex = 0;
+let rawInputBuffer = ""; // Accumulates all incoming standard input data
+let inputLinesArray = []; // Stores individual lines after splitting the buffer
+let currentLineIndex = 0; // Tracks the current line being read from inputLinesArray
 
-process.stdin.on('data',  function  (chunk)  {
-    incomingTextBuffer += chunk;
+process.stdin.on('data', function (incomingDataChunk) {
+    rawInputBuffer += incomingDataChunk; // Append new data to the buffer
 });
 
-process.on( 'SIGTERM', function() {
-    parsedInputLines = incomingTextBuffer.split( "\n" );
-    executeCoreLogic();
-    process.exit( 0 ); // Exit with status code zero
+process.on('SIGINT', function() {
+    // On receiving an interrupt signal (e.g., Ctrl+C), process input and run the solution
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeSolution(); // Invoke the main logic function
+    process.exit(); // Terminate the process gracefully
 });
 
-process.stdin.on('end', function()  {
-    parsedInputLines = incomingTextBuffer.split("\n");
-    executeCoreLogic();
+process.stdin.on('end', function () {
+    // When all standard input has been received, split it into lines and execute the solution
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeSolution();
 });
 
-function getNextInputLine() {
-    return parsedInputLines[currentLineIndex++];
+function fetchNextLine() {
+    // Retrieves the next line from the pre-processed input array and advances the index
+    return inputLinesArray[currentLineIndex++];
 }
 
-/* === Application Logic Starts Below === */
+/////////////// ignore above this line ////////////////////
 
-function executeCoreLogic() {
-    const MAX_VALUE_SENTINEL = 1000000007; // A very large number representing infinity
-    /* Dynamic programming approach for a 2D knapsack problem variation */
-    let lineTokens = getNextInputLine().split(" ");
-    const numItems = parseInt(lineTokens[0], 10);
-    const targetA = parseInt(lineTokens[1], 10);
-    const targetB = parseInt(lineTokens[2], 10);
+function executeSolution() {
+    // A large constant representing an unreachable state or infinity in DP
+    const infinityVal = 1000000000;
 
-    let componentAValues = [0], componentBValues = [0], itemCosts = [0]; // Stores properties for each item
+    /* This implements a dynamic programming approach, akin to a 2D knapsack problem,
+       to find the minimum cost to achieve specific sums of 'a' and 'b' values. */
+
+    // Read the first line containing problem parameters: N, Ma, Mb
+    let lineParts = fetchNextLine().split(" ");
+    const numItems = parseInt(lineParts[0]); // Total number of items available
+    const targetA = parseInt(lineParts[1]);  // Target 'a' value for the ratio
+    const targetB = parseInt(lineParts[2]);  // Target 'b' value for the ratio
+
+    // Initialize arrays to store properties of each item.
+    // Using 1-based indexing for convenience, hence the initial dummy '0' element.
+    const itemAValues = [0]; // Stores the 'a' property for each item
+    const itemBValues = [0]; // Stores the 'b' property for each item
+    const itemCosts = [0];   // Stores the 'cost' property for each item
+
+    // Populate the item property arrays by reading subsequent input lines
     for (let itemIdx = 1; itemIdx <= numItems; itemIdx++) {
-        lineTokens = getNextInputLine().split(" ");
-        componentAValues.push(parseInt(lineTokens[0], 10));
-        componentBValues.push(parseInt(lineTokens[1], 10));
-        itemCosts.push(parseInt(lineTokens[2], 10));
+        lineParts = fetchNextLine().split(" ");
+        itemAValues.push(parseInt(lineParts[0]));
+        itemBValues.push(parseInt(lineParts[1]));
+        itemCosts.push(parseInt(lineParts[2]));
     }
-    
-    /* Initialize DP table */
-    const maxDimension = numItems * 12; // Adjusted maximum dimension for DP table indices
-    let minCostTable = [];
 
-    for (let currentSumA = 0; currentSumA <= maxDimension; currentSumA++) {
-        for (let currentSumB = 0; currentSumB <= maxDimension; currentSumB++) {
-            minCostTable.push(MAX_VALUE_SENTINEL);
+    /* Initialize the DP table (memoTable).
+       It's a flattened 2D array where memoTable[sumA * stride + sumB] stores the minimum cost
+       to achieve a total 'a' sum of `sumA` and a total 'b' sum of `sumB`.
+       The maximum possible sum for 'a' or 'b' is constrained to 10 * N.
+       The table dimensions are slightly larger (11 * N + 1) to accommodate sums up to 10 * N. */
+    const memoTable = [];
+    // Fill the entire table with infinityVal initially
+    for (let i = 0; i <= 11 * numItems; i++) {
+        for (let j = 0; j <= 11 * numItems; j++) {
+            memoTable.push(infinityVal);
         }
     }
-    
-    minCostTable[0] = 0; // Base case: zero cost for zero sums (initial state)
+    // Base case: It costs 0 to achieve sums of 0 for both 'a' and 'b'
+    memoTable[0] = 0;
 
-    function calculateTableIndex(idxA, idxB) {
-        return idxA * maxDimension + idxB;
+    // Helper function to map 2D coordinates (sumA, sumB) to a 1D array index
+    function calculateTableIndex(sumA, sumB) {
+        // The stride for the 'a' dimension is 11 * numItems, as per the original logic.
+        return sumA * (11 * numItems) + sumB;
     }
 
-    // Iterate through each item available
+    // Iterate through each item to update the DP table
     for (let itemIdx = 1; itemIdx <= numItems; itemIdx++) {
-        // Iterate through possible sums in reverse order to ensure each item is considered once per DP state
-        for (let currentSumA = numItems * 11; currentSumA >= 0; currentSumA--) {
-            for (let currentSumB = numItems * 11; currentSumB >= 0; currentSumB--) {
-                // Check if current sums allow for placement of the item in at least one dimension
-                if (currentSumA - componentAValues[itemIdx] >= 0 || currentSumB - componentBValues[itemIdx] >= 0) {
-                    let currentCellIndex = calculateTableIndex(currentSumA, currentSumB);
-                    let previousCellIndex = calculateTableIndex(
-                        currentSumA - componentAValues[itemIdx],
-                        currentSumB - componentBValues[itemIdx]
-                    );
-                    
-                    // Update minimum cost if a cheaper path is found
-                    if (minCostTable[currentCellIndex] > minCostTable[previousCellIndex] + itemCosts[itemIdx]) {
-                        minCostTable[currentCellIndex] = minCostTable[previousCellIndex] + itemCosts[itemIdx];
+        // Iterate through possible 'a' sums in reverse order
+        for (let currentSumA = 10 * numItems; currentSumA >= 0; currentSumA--) {
+            // Iterate through possible 'b' sums in reverse order
+            for (let currentSumB = 10 * numItems; currentSumB >= 0; currentSumB--) {
+                // Check if it's possible to consider adding the current item to reach this state.
+                // The condition `currentSumA - itemAValues[itemIdx] >= 0 || currentSumB - itemBValues[itemIdx] >= 0`
+                // effectively ensures that both `currentSumA - itemAValues[itemIdx]` and `currentSumB - itemBValues[itemIdx]`
+                // are non-negative for a valid update to occur, because negative indices would lead to `undefined`
+                // and `undefined + cost` results in `NaN`, which won't satisfy the update condition.
+                if (currentSumA - itemAValues[itemIdx] >= 0 || currentSumB - itemBValues[itemIdx] >= 0) {
+                    const currentTablePosition = calculateTableIndex(currentSumA, currentSumB);
+                    const previousTablePosition = calculateTableIndex(currentSumA - itemAValues[itemIdx], currentSumB - itemBValues[itemIdx]);
+
+                    // If the previous state was reachable and adding the current item offers a lower cost, update.
+                    if (memoTable[currentTablePosition] > memoTable[previousTablePosition] + itemCosts[itemIdx]) {
+                        memoTable[currentTablePosition] = memoTable[previousTablePosition] + itemCosts[itemIdx];
                     }
                 }
             }
         }
     }
-    
-    let finalMinimumCost = MAX_VALUE_SENTINEL; // Initialize with sentinel value for comparison
-    
-    // Search for the optimal solution across various multiples of the target values
-    for (let factor = 1; factor <= 15; factor++) { // Iterate through a wider range of factors
-        let potentialIndex = calculateTableIndex(targetA * factor, targetB * factor);
-        if (finalMinimumCost > minCostTable[potentialIndex]) {
-            finalMinimumCost = minCostTable[potentialIndex];
+
+    // After filling the DP table, find the minimum cost for states that match the target ratio.
+    // We are looking for states (targetA * factor, targetB * factor) for various factors.
+    let finalResult = infinityVal;
+    for (let factor = 1; factor <= 10; factor++) {
+        const currentTargetSumA = targetA * factor;
+        const currentTargetSumB = targetB * factor;
+
+        // Calculate the 1D index for the current target sum combination.
+        // Accessing out-of-bounds indices will result in `undefined`, which correctly
+        // prevents updates as `finalResult > undefined` is false.
+        const currentPosition = calculateTableIndex(currentTargetSumA, currentTargetSumB);
+
+        // Update the minimum result if a lower cost is found for a valid target state.
+        if (finalResult > memoTable[currentPosition]) {
+            finalResult = memoTable[currentPosition];
         }
     }
-    
-    if (finalMinimumCost === MAX_VALUE_SENTINEL) {
-        console.error("-1\n"); // Output -1 if no valid combination is found
+
+    // Output the final result based on whether a valid combination was found
+    if (finalResult === infinityVal) {
+        console.log("-1\n"); // If no combination matching the ratio was found
     } else {
-        console.info(finalMinimumCost.toFixed(0)); // Output the minimum cost as a string
+        console.log(finalResult.toString()); // Output the minimum cost found
     }
 }

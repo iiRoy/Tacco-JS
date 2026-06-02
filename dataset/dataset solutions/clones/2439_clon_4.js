@@ -1,115 +1,85 @@
-const retrieveOptimalValue = (itemIndex, currentCapacity, elements, memoizationCache) => {
-    if (currentCapacity <= 0 || itemIndex >= elements.length) {
-        return 0;
-    }
+function Main(rawInput) {
+    const lines = rawInput.trim().split('\n');
+    const [paramLine, ...itemLines] = lines;
+    const [itemCount, capacityLimit] = paramLine.split(' ').map(Number);
 
-    if (memoizationCache[itemIndex] && memoizationCache[itemIndex][currentCapacity] !== undefined) {
-        return memoizationCache[itemIndex][currentCapacity];
-    }
+    // itemPairs will be modified later, so use 'let'
+    let itemPairs = itemLines.map(line => line.split(' ').map(Number));
+    // Preserve original sort order by item value (B)
+    itemPairs.sort((a, b) => a[1] - b[1]);
 
-    const currentElement = elements[itemIndex];
-    const elementWeight = currentElement.weight;
-    const elementValue = currentElement.value;
+    // Create a copy of itemPairs for DP calculation to avoid side effects during DP table construction.
+    // The original itemPairs will be modified later for the 'lastOrder' logic.
+    const dpItems = itemPairs.map(pair => [...pair]);
 
-    let resultValue;
-    // Option 1: Exclude the current element
-    const valueWithoutCurrent = retrieveOptimalValue(itemIndex + 1, currentCapacity, elements, memoizationCache);
+    // DP table construction using reduce (functional style).
+    // dpGrid[i][j] will store the maximum value using the first 'i' items with capacity 'j'.
+    const initialDpRow = Array(capacityLimit + 1).fill(0);
+    const dpGrid = dpItems.reduce((accumulatorDpGrid, currentItem, itemIndex) => {
+        const [currentWeight, currentValue] = currentItem;
+        const previousDpRow = accumulatorDpGrid[itemIndex]; // Corresponds to dp[i] in original
+        const nextDpRow = Array(capacityLimit + 1).fill(0); // Corresponds to dp[i+1] in original
 
-    // Option 2: Include the current element (if it fits)
-    if (elementWeight <= currentCapacity) {
-        const valueWithCurrent = elementValue + retrieveOptimalValue(itemIndex + 1, currentCapacity - elementWeight, elements, memoizationCache);
-        resultValue = Math.max(valueWithoutCurrent, valueWithCurrent);
-    } else {
-        resultValue = valueWithoutCurrent; // Element doesn't fit, so can only take value without it
-    }
+        for (let capIdx = 0; capIdx <= capacityLimit; capIdx++) {
+            if (currentWeight <= capIdx) {
+                nextDpRow[capIdx] = Math.max(
+                    previousDpRow[capIdx],
+                    previousDpRow[capIdx - currentWeight] + currentValue
+                );
+            } else {
+                nextDpRow[capIdx] = previousDpRow[capIdx];
+            }
+        }
+        accumulatorDpGrid.push(nextDpRow);
+        return accumulatorDpGrid;
+    }, [initialDpRow]); // Start with dp[0]
 
-    if (!memoizationCache[itemIndex]) {
-        memoizationCache[itemIndex] = {};
-    }
-    memoizationCache[itemIndex][currentCapacity] = resultValue;
-    return resultValue;
-};
+    // Backtracking to find items chosen for dpGrid[itemCount][capacityLimit - 1].
+    // Using a generator for a different control flow structure.
+    function* generateChosenIndices(currentIdx, currentCap) {
+        if (currentIdx === 0 || currentCap <= 0) {
+            return;
+        }
 
-const identifyChosenItemIndices = (itemIndex, currentCapacity, elements, memoizationCache) => {
-    if (currentCapacity <= 0 || itemIndex >= elements.length) {
-        return new Set();
-    }
+        const itemWeight = dpItems[currentIdx - 1][0];
 
-    const currentElement = elements[itemIndex];
-    const elementWeight = currentElement.weight;
-    const elementValue = currentElement.value;
-
-    const optimalValueAtCurrentState = memoizationCache[itemIndex][currentCapacity];
-
-    // Value if current element is skipped
-    const valueFromSkipping = (memoizationCache[itemIndex + 1] && memoizationCache[itemIndex + 1][currentCapacity] !== undefined)
-                             ? memoizationCache[itemIndex + 1][currentCapacity]
-                             : 0; // Base case or not computed yet (should be computed)
-
-    // Value if current element is taken
-    let valueFromTaking = -1; // Sentinel value if not possible or not computed
-    if (elementWeight <= currentCapacity) {
-        valueFromTaking = elementValue + (
-            (memoizationCache[itemIndex + 1] && memoizationCache[itemIndex + 1][currentCapacity - elementWeight] !== undefined)
-            ? memoizationCache[itemIndex + 1][currentCapacity - elementWeight]
-            : 0 // Base case or not computed yet
-        );
-    }
-
-    // Reconstruct based on the original's tie-breaking: prefer not taking if values are equal or skipping is better
-    if (optimalValueAtCurrentState === valueFromSkipping) {
-        // This element was skipped
-        return identifyChosenItemIndices(itemIndex + 1, currentCapacity, elements, memoizationCache);
-    } else if (elementWeight <= currentCapacity && optimalValueAtCurrentState === valueFromTaking) {
-        // This element was taken
-        const subsequentChoices = identifyChosenItemIndices(itemIndex + 1, currentCapacity - elementWeight, elements, memoizationCache);
-        subsequentChoices.add(itemIndex);
-        return subsequentChoices;
-    }
-    // This path should ideally not be reached if the memoizationCache is fully consistent.
-    return new Set();
-};
-
-const processInputData = (rawDataString) => {
-    const dataLines = rawDataString.trim().split('\n');
-    const firstLineValues = dataLines[0].split(' ').map(Number);
-    const totalItemCount = firstLineValues[0];
-    const maxCapacity = firstLineValues[1];
-
-    let itemsCollection = [];
-    for (let currentIdx = 0; currentIdx < totalItemCount; currentIdx++) {
-        const [itemW, itemV] = dataLines[currentIdx + 1].split(' ').map(Number);
-        itemsCollection.push({ weight: itemW, value: itemV });
-    }
-
-    // Sort items by value (B) in ascending order, mirroring original logic
-    itemsCollection.sort((elementA, elementB) => elementA.value - elementB.value);
-
-    // Calculate maximum worth for the full capacity
-    const fullCapacityCache = [];
-    const maxWorthFullCapacity = retrieveOptimalValue(0, maxCapacity, itemsCollection, fullCapacityCache);
-
-    // Calculate maximum worth for (capacity - 1)
-    const reducedCapacityCache = [];
-    const maxWorthReducedCapacity = retrieveOptimalValue(0, maxCapacity - 1, itemsCollection, reducedCapacityCache);
-
-    let secondaryWorthCalculation = 0;
-    // The original code's 'lastOrder' logic is applied even if maxCapacity - 1 is negative or zero.
-    // The recursive functions correctly handle currentCapacity <= 0.
-    
-    // Identify items chosen for (capacity - 1)
-    const chosenIndicesForReducedCapacity = identifyChosenItemIndices(0, maxCapacity - 1, itemsCollection, reducedCapacityCache);
-
-    // Find the highest value among items NOT chosen for (capacity - 1)
-    let highestRemainingItemValue = 0;
-    for (let itemIdx = 0; itemIdx < itemsCollection.length; itemIdx++) {
-        if (!chosenIndicesForReducedCapacity.has(itemIdx)) {
-            highestRemainingItemValue = Math.max(highestRemainingItemValue, itemsCollection[itemIdx].value);
+        // If the value at the current state (with item currentIdx-1 considered)
+        // is the same as the value without considering item currentIdx-1,
+        // then item currentIdx-1 was not taken.
+        if (dpGrid[currentIdx][currentCap] === dpGrid[currentIdx - 1][currentCap]) {
+            yield* generateChosenIndices(currentIdx - 1, currentCap);
+        } else {
+            // Otherwise, item currentIdx-1 was taken.
+            yield currentIdx - 1; // Yield the index of the chosen item
+            yield* generateChosenIndices(currentIdx - 1, currentCap - itemWeight);
         }
     }
-    secondaryWorthCalculation = maxWorthReducedCapacity + highestRemainingItemValue;
-    
-    console.log(Math.max(maxWorthFullCapacity, secondaryWorthCalculation));
-};
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const selectedIndicesForTMinus1 = [];
+    for (const idx of generateChosenIndices(itemCount, capacityLimit - 1)) {
+        selectedIndicesForTMinus1.push(idx);
+    }
+
+    // Sort indices in descending order to safely remove elements using splice.
+    // Removing higher indices first prevents index shifts for subsequent removals.
+    selectedIndicesForTMinus1.sort((a, b) => b - a);
+
+    // Modify the original itemPairs array by removing the selected items.
+    for (const indexToRemove of selectedIndicesForTMinus1) {
+        itemPairs.splice(indexToRemove, 1);
+    }
+
+    // Calculate the final result.
+    let finalAdditionalValue = 0;
+    if (itemPairs.length > 0) {
+        // The original code takes the LAST element of the MODIFIED itemPairs array
+        // and adds its value to dp[N][T-1].
+        finalAdditionalValue = dpGrid[itemCount][capacityLimit - 1] + itemPairs[itemPairs.length - 1][1];
+    }
+
+    // Compare the maximum value achievable with capacity T,
+    // and the special 'lastOrder' value.
+    console.log(Math.max(dpGrid[itemCount][capacityLimit], finalAdditionalValue));
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

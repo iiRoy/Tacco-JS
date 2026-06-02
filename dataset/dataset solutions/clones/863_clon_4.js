@@ -1,44 +1,35 @@
-const libIO = require('fs');
+const fileSystem = require('fs');
+const streamStats = fileSystem.fstatSync(process.stdin.fd);
+const dataCapacity = streamStats.size;
+const dataContainer = Buffer.alloc(dataCapacity);
+const actualBytesRead = fileSystem.readSync(process.stdin.fd, dataContainer, 0, dataCapacity, 0);
+const parsedLines = dataContainer.toString('utf8', 0, actualBytesRead).split('\n');
 
-const rawSource = libIO.readFileSync(0, { encoding: 'utf8' });
+const upperLimit = Number(parsedLines[0]);
 
-const lineSegments = rawSource.trim().split('\n');
+const [valA, valB] = parsedLines[1].split(' ').map(Number).map(v => v - 1);
+const [valC, valD] = parsedLines[2].split(' ').map(Number).map(v => v - 1);
 
-const firstLineNumber = parseInt(lineSegments[0], 10);
-const secondLineNumbers = lineSegments[1].split(' ').map(Number);
-const thirdLineNumbers = lineSegments[2].split(' ').map(Number);
+const calculateGridDistance = (p1x, p1y, p2x, p2y) => Math.abs(p1x - p2x) + Math.abs(p1y - p2y);
 
-const derivedInputs = {
-    upperBound: firstLineNumber,
-    pointAlpha: secondLineNumbers[0] - 1,
-    pointBeta: secondLineNumbers[1] - 1,
-    pointGamma: thirdLineNumbers[0] - 1,
-    pointDelta: thirdLineNumbers[1] - 1
-};
+const minimumCombinedDistance = Array.from({ length: upperLimit }, (_, idx) => idx + 1)
+    .reduce((currentMin, divisor) => {
+        const aX = valA % divisor;
+        const aY = Math.floor(valA / divisor);
 
-const determineManhattanDistance = (valA, valB, dimension) => {
-    const rowA = Math.floor(valA / dimension);
-    const colA = valA % dimension;
-    const rowB = Math.floor(valB / dimension);
-    const colB = valB % dimension;
-    return Math.abs(rowA - rowB) + Math.abs(colA - colB);
-};
+        const bX = valB % divisor;
+        const bY = Math.floor(valB / divisor);
 
-const generateSequence = (limit) => Array.from({ length: limit }, (_, index) => index + 1);
+        const cX = valC % divisor;
+        const cY = Math.floor(valC / divisor);
 
-const finalResult = generateSequence(derivedInputs.upperBound).reduce((currentMinSum, currentDimension) => {
-    const distOneTwo = determineManhattanDistance(
-        derivedInputs.pointAlpha,
-        derivedInputs.pointBeta,
-        currentDimension
-    );
-    const distThreeFour = determineManhattanDistance(
-        derivedInputs.pointGamma,
-        derivedInputs.pointDelta,
-        currentDimension
-    );
-    const combinedDistances = distOneTwo + distThreeFour;
-    return Math.min(currentMinSum, combinedDistances);
-}, Number.POSITIVE_INFINITY);
+        const dX = valD % divisor;
+        const dY = Math.floor(valD / divisor);
 
-console.log(finalResult);
+        const distanceAB = calculateGridDistance(aX, aY, bX, bY);
+        const distanceCD = calculateGridDistance(cX, cY, dX, dY);
+
+        return Math.min(currentMin, distanceAB + distanceCD);
+    }, Infinity);
+
+console.log(minimumCombinedDistance);

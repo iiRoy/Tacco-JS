@@ -1,27 +1,31 @@
-const gameSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var gameLines = inputSource.split('\n');
 
-const gameSegments = gameSource.trim().split('\n');
+var totalRounds = +gameLines.shift();
 
-const totalRounds = parseInt(gameSegments[0], 10);
-const battleRounds = gameSegments.slice(1, 1 + totalRounds);
+const calculateRoundPoints = (playerAHand, playerBHand) => {
+    const comparisonResult = playerAHand.localeCompare(playerBHand);
 
-const assessDuelResult = (playerOneChoice, playerTwoChoice) => {
-    if (playerOneChoice > playerTwoChoice) {
-        return [3, 0];
-    } else if (playerOneChoice < playerTwoChoice) {
-        return [0, 3];
-    } else {
-        return [1, 1];
-    }
+    const pointMap = {
+        '-1': [0, 3],
+        '0': [1, 1],
+        '1': [3, 0]
+    };
+
+    return pointMap[Math.sign(comparisonResult)] || [0, 0];
 };
 
-const finalTally = battleRounds.reduce((scoreAccumulator, currentDuel) => {
-    const [p1c, p2c] = currentDuel.split(' ');
-    const [p1Pts, p2Pts] = assessDuelResult(p1c, p2c);
+const finalScores = gameLines
+    .slice(0, totalRounds)
+    .reduce((scoreAccumulator, currentRoundLine) => {
+        const [playerOneHand, playerTwoHand] = currentRoundLine.split(' ');
 
-    scoreAccumulator[0] += p1Pts;
-    scoreAccumulator[1] += p2Pts;
-    return scoreAccumulator;
-}, [0, 0]);
+        const [roundPointsOne, roundPointsTwo] = calculateRoundPoints(playerOneHand, playerTwoHand);
 
-console.log(finalTally[0] + ' ' + finalTally[1]);
+        return [
+            scoreAccumulator[0] + roundPointsOne,
+            scoreAccumulator[1] + roundPointsTwo
+        ];
+    }, [0, 0]);
+
+console.log(finalScores[0] + ' ' + finalScores[1]);

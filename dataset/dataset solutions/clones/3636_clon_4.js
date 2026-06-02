@@ -1,15 +1,17 @@
-function processDatum(sourceText) {
-  const numericValue = Number.parseInt(sourceText, 10);
+function evaluateScore(dataString) {
+  const scoreValue = parseInt(dataString, 10);
 
-  const categorizationRules = [
-    { boundary: 1199, label: 'ABC' },
-    { boundary: 2799, label: 'ARC' },
-    { boundary: Number.MAX_VALUE, label: 'AGC' }
+  const categoryDefinitions = [
+    { upperBoundary: 1200, label: 'ABC' },
+    { upperBoundary: 2800, label: 'ARC' },
+    { upperBoundary: Infinity, label: 'AGC' }
   ];
 
-  const identifiedCategory = categorizationRules.find(item => numericValue <= item.boundary);
+  const finalCategory = categoryDefinitions.find(
+    (def) => scoreValue < def.upperBoundary
+  ).label;
 
-  console.log(identifiedCategory.label);
+  console.log(finalCategory);
 }
-// Don't edit this line!
-processDatum(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+evaluateScore(require("fs").readFileSync("/dev/stdin", "utf8"));

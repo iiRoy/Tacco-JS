@@ -1,13 +1,12 @@
-const characterMapping = new Map([
-  ['A', 'T'],
-  ['T', 'A'],
-  ['C', 'G']
-]);
+function resolveBasePair(inputBase) {
+  const complementMap = new Map([
+    ['A', 'T'],
+    ['T', 'A'],
+    ['C', 'G']
+  ]);
 
-function getComplementaryBase(baseSymbol) {
-  return characterMapping.get(baseSymbol) || 'C';
+  const outputBase = complementMap.get(inputBase);
+  console.log(outputBase !== undefined ? outputBase : 'C');
 }
 
-const acquiredSequence = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-console.log(getComplementaryBase(acquiredSequence));
+resolveBasePair(require('fs').readFileSync('/dev/stdin', 'utf8'));

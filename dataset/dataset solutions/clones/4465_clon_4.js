@@ -1,39 +1,37 @@
-const inputProcessor = require('readline');
+const fileSystem = require('fs');
 
-const terminalInterface = inputProcessor.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+function processInputData(inputContent) {
+    const contentLines = inputContent.split('\n');
 
-let accumulatedLines = [];
+    const initialParameters = contentLines[0].split(' ').map(Number);
+    const [elementCount, comparisonThreshold] = initialParameters;
 
-terminalInterface.on('line', (currentInputLine) => {
-    accumulatedLines.push(currentInputLine);
-});
+    const numericalSequence = contentLines[1].split(' ').map(Number);
 
-terminalInterface.on('close', () => {
-    const parameterLine = accumulatedLines[0].split(' ').map(Number);
-    const totalElements = parameterLine[0]; 
-    const targetValue = parameterLine[1];   
+    numericalSequence.sort((valA, valB) => valA - valB);
 
-    const numericalCollection = accumulatedLines[1].split(' ').map(Number).sort((valA, valB) => valA - valB);
+    const isThresholdPresent = numericalSequence.some(currentValue => currentValue === comparisonThreshold);
 
-    const targetIsPresent = numericalCollection.includes(targetValue);
-
-    if (targetIsPresent) {
-        process.stdout.write("POSSIBLE\n");
+    if (isThresholdPresent) {
+        console.log('POSSIBLE');
         return;
     }
 
-    const primaryElement = numericalCollection[0];
+    const smallestElement = numericalSequence[0];
 
-    const hasAnyNonMultiple = numericalCollection.slice(1).some(element => element % primaryElement !== 0);
+    const hasNonDivisibleAfterFirst = numericalSequence.slice(1).some(
+        (currentValue) => currentValue % smallestElement !== 0
+    );
 
-    const hasAnyExceedingTarget = numericalCollection.some(element => element > targetValue);
+    const hasValueExceedingThreshold = numericalSequence.some(
+        (currentValue) => currentValue > comparisonThreshold
+    );
 
-    if (hasAnyNonMultiple && hasAnyExceedingTarget) {
-        process.stdout.write("POSSIBLE\n");
+    if (hasNonDivisibleAfterFirst && hasValueExceedingThreshold) {
+        console.log('POSSIBLE');
     } else {
-        process.stdout.write("IMPOSSIBLE\n");
+        console.log('IMPOSSIBLE');
     }
-});
+}
+
+processInputData(fileSystem.readFileSync('/dev/stdin', 'UTF-8'));

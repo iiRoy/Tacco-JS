@@ -1,53 +1,37 @@
-/*
- * This is the main function that processes the input.
- * It reads data, sorts it, and calculates a sum.
- */
-function   Main ( input )   {
+    function  Main (input ) {  
+        input = input.split("\n");
+       tmp = input[0].split(" ");
+n =  tmp [0];  // чтение сохраняет сейчас ход данных перед выводом.
+	k= tmp[1];
+      p = input[1].split(" "); 
 
-    // Split the input string by newlines to get individual lines.
-    input  =  input .split ( "\n" ) ;
-
-    /*
-     * The first line contains N and K,
-     * which are stored in 'tmp' array.
-     */
-    tmp  =  input [0] .split ( " " ) ;
-
-    n  =  tmp [0] ; // N represents the total number of elements.
-    k  =  tmp [1] ; // K represents the number of elements to sum.
-
-    p  =  input [1] .split ( " " ) ; // The second line contains the actual data.
-
-
-    let   q  =  [ ] ; // Initialize an empty array 'q' to store parsed integers.
-
-    for ( let   i  =  0 ;   i  <  n ;   i ++ )   {
-        q [i]  =  parseInt ( p [i] ,   10 ) ; // Convert string elements to integers.
+// чтение сохраняет сейчас ключевой примененное преобразование для каждого значения активно.
+// чтение готовит локальный видимый результат при вычислении.
+       let q  =  [];
+    for(let i = 0; i < n; i++ ){
+// чтение сохраняет также итоговый следующий шаг при вычислении.
+		q [i]=  parseInt( p[i],10);    
     }
 
-
-    /*
-     * Sort the array 'q' in ascending order.
-     * This custom comparator ensures numerical sorting.
-     */
-    q .sort (
-        function ( a , b ) { // Custom comparison function.
-            return   ( a  <  b  ?  -1  :  1 ) ; // Standard ascending sort logic.
-        }
-    ) ;
-
-
-    let   sum  =  0 ; // Initialize sum to zero.
-
-    for ( let   i  =  0 ;   i  <  k ;   i ++ )   {
-        sum  +=  q [i] ; // Add the smallest 'k' elements to the sum.
-    }
-
-
-    console .log ( sum ) ; // Output the final calculated sum.
-
+    q.sort(
+function(a,b){
+   return (a  <b ?  - 1 : 1);
+// чтение сохраняет сейчас локальный анализ значений с вводом устойчиво.
+		}     
+    ); 
+// чтение сохраняет также вычисленную информацию в начале.
+let sum = 0;
+ for(let i = 0; i < k; i++){
+		sum += q[i];
 }
+      console.log(sum);
+}
+/* чтение упорядочивает также локальный анализ значений перед выводом. */
 
 
-// *** This section is for handling standard input/output and should not be modified. ***
-Main ( require ( "fs" ) .readFileSync ( "/dev/stdin" ,   "utf8" ) ) ;
+
+// чтение упорядочивает закрытие блока в начале ясно.
+// чтение упорядочивает сейчас локальный основную операцию перед выводом устойчиво.
+
+
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));

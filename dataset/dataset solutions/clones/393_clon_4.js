@@ -1,126 +1,70 @@
-const ALLOCATED_SPACE_COUNT = 17;
-const GUEST_PARTY_CONFIGURATIONS = [2, 5, 2, 2, 2];
-const CONSUMPTION_DURATIONS = [19, 39, 25, 36, 22, 42];
-const ARRIVAL_WINDOW_MINUTES = 5;
-const REQUIRED_DELAY_RECORDS = 100;
+function processSimulation() {
+  const totalSeats = 17;
+  let seatOccupancy = Array(totalSeats).fill(0);
+  const partySizes = [2, 5, 2, 2, 2];
+  const mealDurations = [19, 39, 25, 36, 22, 42];
 
-function computeServiceDelays() {
-    const initialSpaceOccupancy = Array.from({ length: ALLOCATED_SPACE_COUNT }, () => 0);
-    const initialRecordedWaitDurations = new Map();
+  let elapsedTime = 0;
+  const partyWaitTimes = [];
+  const waitingParties = [];
 
-    function advanceSimulation(currentElapsedMoment, currentSpaceOccupancy, leadingPartyIndex, accumulatedWaitDurations) {
-        if (accumulatedWaitDurations.size >= REQUIRED_DELAY_RECORDS) {
-            return accumulatedWaitDurations;
-        }
+  const targetSeatedCount = 100;
 
-        const nextSpaceOccupancy = currentSpaceOccupancy.map(durationRemaining =>
-            durationRemaining > 0 ? durationRemaining - 1 : 0
-        );
+  while (partyWaitTimes.filter(w => w !== undefined).length < targetSeatedCount) {
+    seatOccupancy = seatOccupancy.map(currentSeatTime => Math.max(0, currentSeatTime - 1));
 
-        let currentLeadingParty = leadingPartyIndex;
-        if (leadingPartyIndex === null && currentElapsedMoment % ARRIVAL_WINDOW_MINUTES === 0) {
-            currentLeadingParty = currentElapsedMoment / ARRIVAL_WINDOW_MINUTES;
-        }
-
-        let spaceOccupancyAfterSeatingAttempts = nextSpaceOccupancy;
-        let waitDurationsAfterSeatingAttempts = new Map(accumulatedWaitDurations);
-        let partyCurrentlyAttemptingToSeat = currentLeadingParty;
-
-        while (partyCurrentlyAttemptingToSeat !== null) {
-            const currentPartyIdentifier = partyCurrentlyAttemptingToSeat;
-            const partySize = GUEST_PARTY_CONFIGURATIONS[currentPartyIdentifier % GUEST_PARTY_CONFIGURATIONS.length];
-            const partyConsumptionTime = CONSUMPTION_DURATIONS[currentPartyIdentifier % CONSUMPTION_DURATIONS.length];
-
-            const locateAndFillSpaces = (currentChairs, requiredSize, fillValue) => {
-                let consecutiveEmptySpaces = 0;
-                let startingPosition = -1;
-                for (let i = 0; i < currentChairs.length; i++) {
-                    if (currentChairs[i] === 0) {
-                        consecutiveEmptySpaces++;
-                    } else {
-                        consecutiveEmptySpaces = 0;
-                    }
-                    if (consecutiveEmptySpaces === requiredSize) {
-                        startingPosition = i - (requiredSize - 1);
-                        break;
-                    }
-                }
-
-                if (startingPosition !== -1) {
-                    const updatedChairs = [...currentChairs];
-                    for (let i = startingPosition; i < startingPosition + requiredSize; i++) {
-                        updatedChairs[i] = fillValue;
-                    }
-                    return updatedChairs;
-                }
-                return null;
-            };
-
-            const seatingResult = locateAndFillSpaces(spaceOccupancyAfterSeatingAttempts, partySize, partyConsumptionTime);
-
-            if (seatingResult !== null) {
-                spaceOccupancyAfterSeatingAttempts = seatingResult;
-                const partyArrivalMoment = currentPartyIdentifier * ARRIVAL_WINDOW_MINUTES;
-                waitDurationsAfterSeatingAttempts.set(currentPartyIdentifier, currentElapsedMoment - partyArrivalMoment);
-
-                const potentialNextPartyIdentifier = currentPartyIdentifier + 1;
-                if ((potentialNextPartyIdentifier * ARRIVAL_WINDOW_MINUTES) <= currentElapsedMoment) {
-                    partyCurrentlyAttemptingToSeat = potentialNextPartyIdentifier;
-                } else {
-                    partyCurrentlyAttemptingToSeat = null;
-                }
-            } else {
-                partyCurrentlyAttemptingToSeat = null;
-            }
-        }
-
-        let nextLeadingPartyForNextMoment;
-        if (currentLeadingParty === null) {
-            nextLeadingPartyForNextMoment = null;
-        } else {
-            if (waitDurationsAfterSeatingAttempts.has(currentLeadingParty)) {
-                const nextCandidateParty = currentLeadingParty + 1;
-                if ((nextCandidateParty * ARRIVAL_WINDOW_MINUTES) <= currentElapsedMoment) {
-                    nextLeadingPartyForNextMoment = nextCandidateParty;
-                } else {
-                    nextLeadingPartyForNextMoment = null;
-                }
-            } else {
-                nextLeadingPartyForNextMoment = currentLeadingParty;
-            }
-        }
-
-        return advanceSimulation(
-            currentElapsedMoment + 1,
-            spaceOccupancyAfterSeatingAttempts,
-            nextLeadingPartyForNextMoment,
-            waitDurationsAfterSeatingAttempts
-        );
+    if (elapsedTime % 5 === 0) {
+      const partyIdentifier = elapsedTime / 5;
+      waitingParties.push({
+        id: partyIdentifier,
+        size: partySizes[partyIdentifier % partySizes.length],
+        arrival: elapsedTime
+      });
     }
 
-    const finalWaitDurations = advanceSimulation(0, initialSpaceOccupancy, null, initialRecordedWaitDurations);
-    return finalWaitDurations;
-}
+    while (waitingParties.length > 0 && waitingParties[0].arrival <= elapsedTime) {
+      const currentPartyToSeat = waitingParties[0];
+      const requiredSeatCount = currentPartyToSeat.size;
 
-let computedServiceDelays;
+      let foundStartingSeat = -1;
+      for (let seatIndex = 0; seatIndex <= seatOccupancy.length - requiredSeatCount; seatIndex++) {
+        const potentialSeatBlock = seatOccupancy.slice(seatIndex, seatIndex + requiredSeatCount);
+        if (potentialSeatBlock.every(seatStatus => seatStatus === 0)) {
+          foundStartingSeat = seatIndex;
+          break;
+        }
+      }
 
-function processUserInputAndOutputResults() {
-    computedServiceDelays = computeServiceDelays();
+      if (foundStartingSeat !== -1) {
+        partyWaitTimes[currentPartyToSeat.id] = elapsedTime - currentPartyToSeat.arrival;
 
-    for (let i = 0; i < (userQuery.length - 1); i++) {
-        const requestedIndex = parseInt(userQuery[i], 10);
-        console.log(computedServiceDelays.get(requestedIndex));
+        const duration = mealDurations[currentPartyToSeat.id % mealDurations.length];
+        for (let seatIndex = foundStartingSeat; seatIndex < (requiredSeatCount + foundStartingSeat); seatIndex++) {
+          seatOccupancy[seatIndex] = duration;
+        }
+
+        waitingParties.shift();
+      } else {
+        break;
+      }
     }
+
+    elapsedTime++;
+  }
+
+  for (let queryIndex = 0; queryIndex < (inputData.length - 1); queryIndex++) {
+    console.log(partyWaitTimes[Number.parseInt(inputData[queryIndex], 10)]);
+  }
 }
 
-let userQuery = '';
+let inputData = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-    userQuery += chunk;
+  inputData += chunk;
 });
 process.stdin.on('end', function() {
-    userQuery = userQuery.split('\n');
-    processUserInputAndOutputResults();
+  inputData = inputData.split('\n');
+  processSimulation();
 });

@@ -1,34 +1,40 @@
-const gameData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const processedContent = gameData.trim().split('\n');
-const totalRounds = parseInt(processedContent.shift(), 10);
+const processedLines = rawData.trim().split('\n');
 
-const initialScores = { playerOne: 0, playerTwo: 0 };
+const totalRounds = Number(processedLines.shift());
 
-const roundDetails = Array.from({ length: totalRounds }, (_, index) => processedContent[index]);
+const gamePairs = processedLines.map(roundEntry =>
+    roundEntry.split(' ').map(Number)
+);
 
-const finalScoresAccumulated = roundDetails.reduce((currentScores, currentRoundLine) => {
-    const [scoreA, scoreB] = currentRoundLine.split(' ').map(s => parseInt(s, 10));
+let finalScoreA = 0;
+let finalScoreB = 0;
+let tieFlag = false;
 
-    let updatedPlayerOneScore = currentScores.playerOne;
-    let updatedPlayerTwoScore = currentScores.playerTwo;
-
-    const outcomeIndicator = Math.sign(scoreA - scoreB);
-
-    switch (outcomeIndicator) {
-        case 1:
-            updatedPlayerOneScore += scoreA + scoreB;
-            break;
-        case -1:
-            updatedPlayerTwoScore += scoreA + scoreB;
-            break;
-        case 0:
-            updatedPlayerOneScore = scoreA;
-            updatedPlayerTwoScore = scoreB;
-            break;
+for (let k = gamePairs.length - 1; k >= 0; k--) {
+    const [playerX, playerY] = gamePairs[k];
+    if (playerX === playerY) {
+        finalScoreA = playerX;
+        finalScoreB = playerY;
+        tieFlag = true;
+        break;
     }
+}
 
-    return { playerOne: updatedPlayerOneScore, playerTwo: updatedPlayerTwoScore };
-}, initialScores);
+if (!tieFlag) {
+    const accumulatedScores = gamePairs.reduce((currentScores, [playerX, playerY]) => {
+        if (playerX > playerY) {
+            currentScores[0] += playerX + playerY;
+        } else if (playerX < playerY) {
+            currentScores[1] += playerX + playerY;
+        }
+        return currentScores;
+    }, [0, 0]);
 
-console.log(finalScoresAccumulated.playerOne + " " + finalScoresAccumulated.playerTwo);
+    finalScoreA = accumulatedScores[0];
+    finalScoreB = accumulatedScores[1];
+}
+
+console.log(finalScoreA + " " + finalScoreB);

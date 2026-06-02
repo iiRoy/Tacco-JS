@@ -1,96 +1,84 @@
-function turnPlate(originalGrid) {
-    const gridDimension = originalGrid.length;
-    return Array.from({ length: gridDimension }, (_, currentR) =>
-        Array.from({ length: gridDimension }, (_, currentC) =>
-            originalGrid[gridDimension - 1 - currentC][currentR]
-        )
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputLineSegments = rawInputContent.trim().split("\n");
+
+const transformMatrix = (sourceMatrix) => {
+    const matrixDimension = sourceMatrix.length;
+    return Array.from({ length: matrixDimension }, (_, rowIndex) =>
+        Array.from({ length: matrixDimension }, (_, colIndex) => sourceMatrix[matrixDimension - 1 - colIndex][rowIndex])
     );
-}
+};
 
-function verifyPlacement(sourceMatrix, patternMatrix, rowOffset, colOffset, patternSize) {
-    let firstRelevantCoordinate = null;
+const verifyPatternMatch = (rowOffset, colOffset, mainGrid, patternMatrix, patternDimension) => {
+    let firstNonWildcardLocation = null;
 
-    const patternCells = Array.from({ length: patternSize }, (_, r) =>
-        Array.from({ length: patternSize }, (_, c) => ({
-            pRow: r,
-            pCol: c,
-            val: patternMatrix[r][c]
-        }))
+    const patternElements = Array.from({ length: patternDimension }, (_, r) =>
+        Array.from({ length: patternDimension }, (_, c) => ({ r, c, value: patternMatrix[r][c] }))
     ).flat();
 
-    const significantPatternCells = patternCells.filter(cell => cell.val !== -1);
+    const allElementsMatch = patternElements.every(element => {
+        const { r, c, value } = element;
 
-    if (significantPatternCells.length === 0) {
-        return false;
-    }
+        if (value === -1) {
+            return true;
+        }
 
-    const firstCellInPattern = significantPatternCells[0];
-    firstRelevantCoordinate = [rowOffset + firstCellInPattern.pRow, colOffset + firstCellInPattern.pCol];
+        const currentMainGridValue = mainGrid[rowOffset + r][colOffset + c];
 
-    const allSignificantMatch = significantPatternCells.every(cell => {
-        const currentSourceRow = rowOffset + cell.pRow;
-        const currentSourceCol = colOffset + cell.pCol;
-        return sourceMatrix[currentSourceRow][currentSourceCol] === cell.val;
+        if (firstNonWildcardLocation === null) {
+            firstNonWildcardLocation = [rowOffset + r, colOffset + c];
+        }
+
+        return currentMainGridValue === value;
     });
 
-    return allSignificantMatch ? firstRelevantCoordinate : false;
-}
-
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let inputLines = rawData.trim().split("\n");
-let linePointer = 0;
-
-function readNextValues() {
-    return inputLines[linePointer++].split(" ").map(Number);
-}
+    return allElementsMatch ? firstNonWildcardLocation : false;
+};
 
 while (true) {
-    let dimensions = readNextValues();
-    let gridSize = dimensions[0];
-    let patternSize = dimensions[1];
+    const dimensions = inputLineSegments.shift().split(" ").map(Number);
+    const mainGridSize = dimensions[0];
+    const patternDimension = dimensions[1];
 
-    if (gridSize === 0 && patternSize === 0) break;
-
-    let sourceMatrix = [];
-    for (let r = 0; r < gridSize; ++r) {
-        sourceMatrix.push(readNextValues());
+    if (mainGridSize === 0 && patternDimension === 0) {
+        break;
     }
 
-    let patternMatrix = [];
-    for (let r = 0; r < patternSize; ++r) {
-        patternMatrix.push(readNextValues());
-    }
+    const mainGridData = Array.from({ length: mainGridSize }, () =>
+        inputLineSegments.shift().split(" ").map(Number)
+    );
 
-    let optimalPosition = [101, 101];
+    let currentPatternData = Array.from({ length: patternDimension }, () =>
+        inputLineSegments.shift().split(" ").map(Number)
+    );
 
-    const patternOrientations = [];
-    let currentPattern = patternMatrix;
-    for (let rotationIdx = 0; rotationIdx < 4; ++rotationIdx) {
-        patternOrientations.push(currentPattern);
-        currentPattern = turnPlate(currentPattern);
-    }
+    let bestMatchCoordinates = [101, 101];
 
-    const allPotentialMatches = patternOrientations.flatMap(orientedPattern => {
-        return Array.from({ length: gridSize - patternSize + 1 }, (_, rOffset) => {
-            return Array.from({ length: gridSize - patternSize + 1 }, (_, cOffset) => {
-                const currentMatch = verifyPlacement(sourceMatrix, orientedPattern, rOffset, cOffset, patternSize);
-                return currentMatch;
-            });
-        }).flat();
-    }).filter(match => match !== false);
+    Array.from({ length: 4 }).forEach(() => {
+        const maxRowOffset = mainGridSize - patternDimension;
+        const maxColOffset = mainGridSize - patternDimension;
 
-    allPotentialMatches.forEach(foundCoord => {
-        const foundRow1Indexed = foundCoord[0] + 1;
-        const foundCol1Indexed = foundCoord[1] + 1;
+        const possibleOffsets = Array.from({ length: Math.max(0, maxRowOffset + 1) }, (_, rOffset) =>
+            Array.from({ length: Math.max(0, maxColOffset + 1) }, (_, cOffset) => ({ r: rOffset, c: cOffset }))
+        ).flat();
 
-        if (foundRow1Indexed <= optimalPosition[0] && foundCol1Indexed < optimalPosition[1]) {
-            optimalPosition = [foundRow1Indexed, foundCol1Indexed];
-        }
+        possibleOffsets.forEach(offset => {
+            const matchResult = verifyPatternMatch(offset.r, offset.c, mainGridData, currentPatternData, patternDimension);
+
+            if (matchResult !== false) {
+                const [matchRowZeroIndexed, matchColZeroIndexed] = matchResult;
+                const candidateRowOneIndexed = matchRowZeroIndexed + 1;
+                const candidateColOneIndexed = matchColZeroIndexed + 1;
+
+                if (bestMatchCoordinates[0] >= candidateRowOneIndexed && bestMatchCoordinates[1] > candidateColOneIndexed) {
+                    bestMatchCoordinates = [candidateRowOneIndexed, candidateColOneIndexed];
+                }
+            }
+        });
+
+        currentPatternData = transformMatrix(currentPatternData);
     });
 
-    if (optimalPosition[0] === 101 && optimalPosition[1] === 101) {
-        console.log("NA");
-    } else {
-        console.log(`${optimalPosition[1]} ${optimalPosition[0]}`);
-    }
+    const resultString = bestMatchCoordinates.join("");
+    console.log((resultString === "101101") ? "NA" : `${bestMatchCoordinates[1]} ${bestMatchCoordinates[0]}`);
 }

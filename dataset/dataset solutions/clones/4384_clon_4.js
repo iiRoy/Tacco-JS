@@ -1,25 +1,27 @@
-"use strict"
+"use strict";
 
-function processData(rawInputText) {
-    const rawParts = rawInputText.split(/\s|\n/);
-    const parsedNumbers = rawParts.filter(component => component !== '').map(Number);
+function processData(rawInputString) {
+  const numericStrings = rawInputString.match(/-?\d+/g);
+  const initialNumbers = numericStrings ? numericStrings.map(Number) : [];
+  if (initialNumbers.length > 0) {
+    initialNumbers.shift();
+  }
 
-    const relevantNumbers = parsedNumbers.slice(1);
+  const expandedNumbers = initialNumbers.flatMap(val => [val - 1, val, val + 1]);
 
-    const expandedSet = relevantNumbers.flatMap(value => [value - 1, value, value + 1]);
+  const orderedNumbers = expandedNumbers.sort((a, b) => a - b);
 
-    const frequencyMap = new Map();
-    for (const item of expandedSet) {
-        frequencyMap.set(item, (frequencyMap.get(item) || 0) + 1);
-    }
+  const frequencyCounter = orderedNumbers.reduce((accumulator, currentNumber) => {
+    accumulator.set(currentNumber, (accumulator.get(currentNumber) || 0) + 1);
+    return accumulator;
+  }, new Map());
 
-    let highestFrequency = 1;
-    if (frequencyMap.size > 0) {
-        highestFrequency = Math.max(...frequencyMap.values());
-    }
+  let peakCount = 1;
+  if (frequencyCounter.size > 0) {
+    peakCount = Math.max(...frequencyCounter.values());
+  }
 
-    console.log(highestFrequency);
+  console.log(peakCount);
 }
 
-const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
-processData(fileContents);
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

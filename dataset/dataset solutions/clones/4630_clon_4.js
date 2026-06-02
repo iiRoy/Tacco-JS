@@ -1,30 +1,39 @@
-(function(sourceText){
-  const textLines = sourceText.split("\n");
-  const numElements = parseInt(textLines[0], 10);
-  const valueSeries = textLines[1].split(" ").map(Number);
+(function(sourceText) {
+  const inputLines = sourceText.split("\n");
+  const elementCount = parseInt(inputLines[0], 10);
+  const numericStrings = inputLines[1].split(" ");
 
-  if (valueSeries.length < 2) {
-    console.log("%d", 0);
-    return;
+  let trendChangeCounter = 0;
+  // Represents the current observed trend:
+  //  0: No significant trend established yet (initial or flat segment)
+  //  1: Currently in an increasing sequence
+  // -1: Currently in a decreasing sequence
+  let activeTrendDirection = 0;
+
+  for (let position = 0; position < elementCount - 1; ++position) {
+    const firstValue = parseInt(numericStrings[position], 10);
+    const secondValue = parseInt(numericStrings[position + 1], 10);
+    const valueDifference = secondValue - firstValue;
+
+    if (valueDifference > 0) { // Sequence is increasing
+      if (activeTrendDirection === -1) { // Trend changed from decreasing to increasing
+        trendChangeCounter++;
+        activeTrendDirection = 1;
+      } else if (activeTrendDirection === 0) { // First trend detected is increasing
+        activeTrendDirection = 1;
+      }
+      // If activeTrendDirection is already 1, it continues increasing, no new wave detected.
+    } else if (valueDifference < 0) { // Sequence is decreasing
+      if (activeTrendDirection === 1) { // Trend changed from increasing to decreasing
+        trendChangeCounter++;
+        activeTrendDirection = -1;
+      } else if (activeTrendDirection === 0) { // First trend detected is decreasing
+        activeTrendDirection = -1;
+      }
+      // If activeTrendDirection is already -1, it continues decreasing, no new wave detected.
+    }
+    // If valueDifference === 0 (flat segment), activeTrendDirection remains unchanged.
   }
 
-  const fluctuationAnalysis = valueSeries.reduce((accumulator, currentMeasure, position, fullSeries) => {
-    if (position === 0) {
-      return accumulator;
-    }
-
-    const priorMeasure = fullSeries[position - 1];
-    const delta = currentMeasure - priorMeasure;
-    const currentDirection = Math.sign(delta);
-
-    if (currentDirection !== 0) {
-      if (accumulator.previousDirection !== 0 && accumulator.previousDirection !== currentDirection) {
-        accumulator.reversalCount++;
-      }
-      accumulator.previousDirection = currentDirection;
-    }
-    return accumulator;
-  }, { reversalCount: 0, previousDirection: 0 });
-
-  console.log("%d", fluctuationAnalysis.reversalCount);
+  console.log("%d", trendChangeCounter);
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

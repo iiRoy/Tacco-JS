@@ -1,39 +1,32 @@
-function ProcessInputData(rawData) {
-  // Begin processing the raw input data stream.
-  // First, segment the entire input string into an array of individual lines.
-  var processedLines = rawData.split("\n") ;
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    let parsedLines = rawData.split("\n");
 
-  // Extract the first numerical value from the initial line.
-  // This value typically represents the total count of subsequent data elements.
-  var elementCount = processedLines[0] ;
+    // The first line typically contains the number of elements to process.
+    const countElements = parsedLines[0];
 
-  // The second line contains a sequence of space-separated numbers.
-  // These are parsed into an array of integers for further computation.
-  var numericValues = processedLines[1].split(" ").map(currentVal => parseInt(currentVal)) ;
+    // The second line contains space-separated numeric values; parse them into an array of integers.
+    let dataArray = parsedLines[1].split(" ").map(elementStr => parseInt(elementStr, 10));
 
-  // Initialize a counter to track the occurrence of odd numbers within the dataset.
-  var oddNumberCount = 0 ;
+    // Initialize a variable to keep track of the count of odd numbers.
+    let oddCount = 0;
 
-  // Iterate through each number in the collection of numeric values.
-  for ( var idx = 0 ; idx < elementCount ; idx++ ) {
-    // A bitwise AND operation with 1 efficiently checks if the number is odd.
-    // If the least significant bit is 1, the number is odd.
-    if ( numericValues[idx] & 1 ) {
-      // Increment the dedicated counter for odd numbers.
-      oddNumberCount++ ;
+    // Loop through the array of numbers from the input.
+    for (let idx = 0; idx < countElements; idx++) {
+        // Use a bitwise AND operation to check if the current number is odd.
+        // If the least significant bit is 1, the number is odd.
+        if (dataArray[idx] & 1) {
+            oddCount++; // Increment the counter for odd numbers.
+        }
     }
-  }
 
-  // Determine the final result string based on the parity of the odd number count.
-  // If the count of odd numbers is itself an odd number, the outcome is "NO".
-  // Otherwise, if the count of odd numbers is even, the outcome is "YES".
-  var finalOutcome = ( oddNumberCount & 1 ? "NO" : "YES" ) ;
+    // Determine the final output message based on whether the total count of odd numbers is itself odd or even.
+    // If oddCount is odd, the result is "NO"; otherwise, it's "YES".
+    const resultMessage = (oddCount & 1) ? "NO" : "YES";
 
-  // Display the computed result to the standard output.
-  console.log(finalOutcome) ;
+    // Print the final result to the standard output.
+    console.log(resultMessage);
 }
 
-// Invoke the primary data processing routine.
-// This involves reading content from standard input, decoding it as UTF-8,
-// and then removing any leading or trailing whitespace before passing it.
-ProcessInputData( require("fs") . readFileSync( "/dev/stdin" , "utf8" ) . trim() ) ;
+// Read the entire content from standard input, decode it as UTF-8, and remove leading/trailing whitespace.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

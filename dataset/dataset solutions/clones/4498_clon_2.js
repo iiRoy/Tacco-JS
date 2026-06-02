@@ -1,70 +1,45 @@
-// Configure the standard input stream to interpret incoming bytes as UTF-8 encoded text.
-process.stdin.setEncoding( 'utf8' );
+process.stdin.setEncoding('utf8'); // Set the character encoding for standard input
 
-// Establish an event listener for the 'readable' event on the standard input.
-// This function will execute whenever data is available to be read from the input stream.
-process.stdin.on
-(
-    'readable',
-    function processIncomingData()
-    {
-        // Attempt to retrieve a block of data from the input buffer.
-        let dataBlock = process.stdin.read();
-        // A variable to hold the input data broken down into individual lines.
-        let lineFragments;
+// Attach an event listener for the 'readable' event on standard input
+process.stdin.on('readable', function() {
+    // Attempt to read a chunk of data from the input stream
+    let dataBlock = process.stdin.read();
+    let linesOfInput; // Declare a variable to hold processed input lines
 
-        // Verify that a valid data block was successfully read (i.e., not null).
-        if ( dataBlock !== null )
-        {
-            // Divide the received data block into an array of strings, using the newline character as a delimiter.
-            lineFragments = dataBlock.split( '\n' );
+    // Check if a data chunk was successfully read (i.e., not null)
+    if (dataBlock !== null) {
+        // Split the received data block into an array of lines
+        linesOfInput = dataBlock.split('\n');
 
-            // Inspect if the last element in the array of line fragments is an empty string.
-            // This condition often arises from a trailing newline character in the input.
-            if  ( lineFragments[lineFragments.length - 1] === '' )
-            {
-                // Remove the superfluous empty string from the end of the array.
-                lineFragments.pop();
-            }
-
-            // Extract the first line fragment, which is expected to represent a numerical count or size.
-            let entryCount = lineFragments[0];
-
-            // Process the second line fragment:
-            // 1. Split it by spaces to get an array of string representations of numbers.
-            // 2. Use the 'map' function to convert each string representation into an actual integer.
-            let intSequence = lineFragments[1].split( ' ' ).map(
-                function convertToInteger( currentStringValue )
-                {
-                    // Parse the string into an integer, explicitly specifying base 10.
-                    return parseInt( currentStringValue, 10 );
-                }
-            );
-
-            // Initialize two separate string variables that will accumulate parts of the final output.
-            let firstOutputPart  = '',
-                secondOutputPart = '';
-
-            // Iterate through the 'intSequence' array in reverse order,
-            // decrementing the loop counter by two in each step.
-            // The loop starts from the index corresponding to 'entryCount - 1'.
-            for ( let currentIdx = entryCount - 1; currentIdx >= 0; currentIdx -= 2 )
-            {
-                // Append the integer value at the current index to the 'firstOutputPart', followed by a space.
-                firstOutputPart += intSequence[currentIdx] + ' ';
-
-                // Conditional check: If the current index is not the very first element (index 0),
-                // then process the element immediately preceding it for the second output part.
-                if ( currentIdx !== 0 )
-                {
-                    // Prepend the integer value at 'currentIdx - 1' to the 'secondOutputPart',
-                    // also followed by a space. This ensures elements are added in reverse order for this segment.
-                    secondOutputPart = intSequence[currentIdx - 1] + ' ' + secondOutputPart;
-                }
-            }
-
-            // Concatenate the two accumulated string parts and print the final result to the console.
-            console.log( firstOutputPart + secondOutputPart );
+        // If the last element of the array is an empty string, remove it
+        // This often happens when input ends with a newline character
+        if (linesOfInput[linesOfInput.length - 1] === '') {
+            linesOfInput.pop();
         }
+
+        // The first line contains the count value
+        const countVal = linesOfInput[0];
+        // The second line contains space-separated numbers, parse them into an array of integers
+        const numArray = linesOfInput[1].split(' ').map(function(itemStr) {
+            return parseInt(itemStr, 10); // Convert each string item to an integer
+        });
+
+        // Initialize two empty strings to build the output parts
+        let firstPart = '';
+        let secondPart = '';
+
+        // Iterate through the numArray from right to left, skipping every other element
+        for (let idx = countVal - 1; idx >= 0; idx -= 2) {
+            // Append the current element to the first part string
+            firstPart += numArray[idx] + ' ';
+            // If the current index is not the first element,
+            // prepend the previous element (idx-1) to the second part string
+            if (idx !== 0) {
+                secondPart = numArray[idx - 1] + ' ' + secondPart;
+            }
+        }
+
+        // Output the concatenated first and second parts to the console
+        console.log(firstPart + secondPart);
     }
-);
+});

@@ -1,78 +1,81 @@
-function obtainArrangements(baseList) {
-  let allPossibleOrders = [];
+function obtainArrangements(elementsToOrder) {
+    const allPossibleOrderings = [];
 
-  function generateSequence(currentList, remainingItems) {
-    if (remainingItems.length === 0) {
-      allPossibleOrders.push(currentList.slice());
-      return;
+    function explorePath(depth, currentPath) {
+        if (depth === elementsToOrder.length) {
+            allPossibleOrderings.push([...currentPath]);
+            return;
+        }
+
+        for (let elementCandidate of elementsToOrder) {
+            if (!currentPath.includes(elementCandidate)) {
+                currentPath.push(elementCandidate);
+                explorePath(depth + 1, currentPath);
+                currentPath.pop();
+            }
+        }
     }
 
-    for (let currentItemIndex = 0; currentItemIndex < remainingItems.length; currentItemIndex++) {
-      let nextCandidate = remainingItems[currentItemIndex];
-      let newRemainingList = remainingItems.filter((_, filterIndex) => filterIndex !== currentItemIndex);
-      currentList.push(nextCandidate);
-      generateSequence(currentList, newRemainingList);
-      currentList.pop();
-    }
-  }
-
-  generateSequence([], baseList);
-  return allPossibleOrders;
+    explorePath(0, []);
+    return allPossibleOrderings;
 }
 
-const permutationCache = {};
-for (let numEntities = 0; numEntities <= 10; numEntities++) {
-  const sourceIndices = Array.from({ length: numEntities }, (_, i) => i);
-  permutationCache[numEntities] = obtainArrangements(sourceIndices);
+const precomputedOrderings = [];
+
+precomputedOrderings[0] = 0;
+
+for (let count = 0; count < 10; count++) {
+    const sequenceForPermutation = Array.from({ length: count + 1 }, (_, i) => i);
+    precomputedOrderings[count + 1] = obtainArrangements(sequenceForPermutation);
 }
 
 const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-let contentLines = fileContent.trim().split("\n");
+const inputLines = fileContent.trim().split("\n");
 
 while (true) {
-  let currentEntityCount = parseInt(contentLines.shift(), 10);
-  if (currentEntityCount === 0) break;
+    const itemCount = parseInt(inputLines.shift(), 10);
 
-  let itemsForProcessing = [];
-  for (let entityIdx = 0; entityIdx < currentEntityCount; entityIdx++) {
-    const parts = contentLines.shift().split(" ");
-    itemsForProcessing.push({
-      label: parts[0],
-      weightVal: parseInt(parts[1], 10),
-      capacityLimit: parseInt(parts[2], 10)
+    if (itemCount === 0) break;
+
+    const itemDetails = Array.from({ length: itemCount }, () => {
+        const parts = inputLines.shift().split(" ");
+        return [parts[0], parseInt(parts[1], 10), parseInt(parts[2], 10)];
     });
-  }
 
-  const availableOrders = permutationCache[currentEntityCount];
+    const currentOrderings = precomputedOrderings[itemCount];
 
-  const initialBest = { ratio: 0, sequence: [] };
+    let highestRatio = 0;
+    let chosenOrdering = [];
 
-  const finalResult = availableOrders.reduce((accumulator, currentOrder) => {
-    let currentTotalWeight = 0;
-    let currentWeightedPositionSum = 0;
-    let orderIsValid = true;
+    currentOrderings.forEach(currentOrdering => {
+        const evaluation = currentOrdering.reduce((accumulator, itemIdentifier, positionIndex) => {
+            if (!accumulator.isFeasible) return accumulator;
 
-    for (let position = 0; position < currentOrder.length; position++) {
-      const itemIndexInOriginalData = currentOrder[position];
-      const currentItem = itemsForProcessing[itemIndexInOriginalData];
+            const currentItemData = itemDetails[itemIdentifier];
+            const itemWeight = currentItemData[1];
+            const itemCapacity = currentItemData[2];
 
-      currentTotalWeight += currentItem.weightVal;
-      if (currentTotalWeight > currentItem.capacityLimit) {
-        orderIsValid = false;
-        break;
-      }
-      currentWeightedPositionSum += currentItem.weightVal * (position + 1);
-    }
+            const newTotalWeight = accumulator.totalWeight + itemWeight;
 
-    if (orderIsValid) {
-      const currentRatio = currentWeightedPositionSum / currentTotalWeight;
-      if (currentRatio > accumulator.ratio) {
-        return { ratio: currentRatio, sequence: currentOrder };
-      }
-    }
-    return accumulator;
-  }, initialBest);
+            if (newTotalWeight > itemCapacity) {
+                return { isFeasible: false, totalWeight: 0, cumulativeWeightedSum: 0 };
+            }
 
-  const outputLabels = finalResult.sequence.map(idx => itemsForProcessing[idx].label);
-  console.log(outputLabels.reverse().join("\n"));
+            return {
+                isFeasible: true,
+                totalWeight: newTotalWeight,
+                cumulativeWeightedSum: accumulator.cumulativeWeightedSum + (itemWeight * (positionIndex + 1))
+            };
+        }, { isFeasible: true, totalWeight: 0, cumulativeWeightedSum: 0 });
+
+        if (evaluation.isFeasible) {
+            const currentRatio = evaluation.cumulativeWeightedSum / evaluation.totalWeight;
+            if (currentRatio > highestRatio) {
+                highestRatio = currentRatio;
+                chosenOrdering = currentOrdering;
+            }
+        }
+    });
+
+    console.log(chosenOrdering.map(idx => itemDetails[idx][0]).reverse().join("\n"));
 }

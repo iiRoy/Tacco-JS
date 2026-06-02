@@ -1,19 +1,14 @@
-function ProcessTextStream(incomingBuffer)
-{
-    // The incoming raw buffer is first split into individual lines
-    // based on the newline character.
-    let lineSegments = incomingBuffer.split(  '\n'  );
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of lines.
+    let linesArray = rawData.split("\n");
 
-    // After parsing, specific characters from different lines are extracted
-    // and then printed to the standard output.
-    console.log( '%s%s%s' ,
-                 lineSegments[0][0],
-                 lineSegments[1][1],
-                 lineSegments[2][2]
-               );
+    // Output specific characters from the first three lines.
+    // This concatenates the character at index 0 of the first line,
+    // the character at index 1 of the second line,
+    // and the character at index 2 of the third line.
+    console.log("%s%s%s", linesArray[0][0], linesArray[1][1], linesArray[2][2]);
 }
 
-// The program initiates by reading data from the standard input.
-// It uses the Node.js file system module to synchronously read the content
-// and then passes it to our main processing function.
-ProcessTextStream( require("fs") . readFileSync ('/dev/stdin', 'utf8') );
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

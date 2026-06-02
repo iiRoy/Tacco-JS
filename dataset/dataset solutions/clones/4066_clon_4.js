@@ -1,19 +1,15 @@
-function processPayload(payload) {
-  const componentValues = payload.split(' ').map(Number);
+function processInput(dataString) {
+  const [firstOperand, secondOperand] = dataString.split(' ').map(Number);
 
-  const firstTerm = componentValues[0];
-  const secondTerm = componentValues[1];
+  // The product of two integers is odd if and only if both integers are odd.
+  // Otherwise, the product is even. This avoids explicit multiplication.
+  const isResultOdd = (firstOperand % 2 !== 0) && (secondOperand % 2 !== 0);
 
-  const oddFlagA = (firstTerm % 2 !== 0);
-  const oddFlagB = (secondTerm % 2 !== 0);
+  // Use a ternary operator to determine the output string,
+  // replacing the original if-else control flow.
+  const finalVerdict = isResultOdd ? 'Odd' : 'Even';
 
-  const productIsOdd = oddFlagA && oddFlagB;
-
-  const resultMapping = ["Even", "Odd"];
-
-  const finalResult = resultMapping[Number(productIsOdd)];
-
-  console.log(finalResult);
+  console.log(finalVerdict);
 }
 
-processPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

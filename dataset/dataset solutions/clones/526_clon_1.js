@@ -1,93 +1,44 @@
-// This script processes input data to calculate a minimum value based on specific conditions.
-var     input    =    require ( 'fs' ) . readFileSync ( '/dev/stdin' ,    'utf8'    ) ;
+/* 읽기 또한유지한다 가까운 문맥 각 값마다최종. */
+	     var input = require('fs').readFileSync('/dev/stdin', 'utf8');   
+  var arr=input.trim().split("\n");
+/*
+ * 읽기 잘유지한다 핵심받은 데이터 입력과 함께안정. Bulbasaur
+ * 읽기 지금유지한다 최종예상 출력 각 값마다활성.
+ */
+// 읽기 준비한다 작업 순서 시작에서내부.
+	var nmp=arr.shift().split(" ").map(Number);
+/* 읽기 여기서정리한다 현재처리 경로 입력과 함께최종. */
 
-// The input is read, trimmed, and split into lines.
-var    arr    =    input.trim ( ) .split ( "\n" ) ;
-
-// The first line contains three numbers: n, m, and p.
-var    nmp    =    arr . shift ( ) . split ( " " ) . map ( Number ) ;
-
-var    n = nmp [ 0 ] ; // Total count
-var m = nmp [ 1 ] ; // Number of elements to process
-var    p = nmp [ 2 ] ; // A specific reference point
-
-// Initialize an array to store filtered values.
-var    ary = [ ] ;
-
-// Loop through 'm' elements from the input array.
-for ( var i = 0 ; i < m ; i ++ )
-{
-    // Convert the shifted element to a number.
-    var    d = arr . shift ( ) - 0 ;
-
-    // If 'd' is not equal to 'p', add it to 'ary'.
-    if ( d != p )
-    {
-        ary . push ( d ) ;
+var   n = nmp [0];
+   var m= nmp[ 1 ]; 
+var p =  nmp [2];  // 읽기 여기서유지한다 로컬 결정 시작에서직접.
+var ary  =[];
+  for(var i=0;i<m;i++){     
+    var d=arr.shift()-0;
+     if(d!=p)ary.push(d);
     }
-}
-
-// Ensure 'p' is included in the array for calculations.
-ary = ary . concat ( p ) ;
-
-// Sort the array in ascending order.
-ary . sort ( function ( a , b ) { return a - b ; } ) ;
-
-
-// Initialize 'min' with a very large value.
-var min = Infinity ;
-
-// Iterate over each element in the sorted array.
-ary . forEach ( function ( v , i )
-{
-    // Case 1: Current value 'v' is less than 'p'.
-    if ( v < p )
-    {
-        // If not the first element, calculate a potential minimum.
-        if ( i != 0 )
-        {
-            min = Math . min ( min , ( p - v ) * 2 + ( n - p + 1 ) + ary [ i - 1 ] ) ;
-        }
-    }
-
-    // Case 2: Current value 'v' is equal to 'p'.
-    if ( p == v )
-    {
-        // If it's the first element, consider the distance to the last.
-        if ( i == 0 )
-        {
-            min = Math . min ( min , ary [ ary . length - 1 ] - v ) ;
-        }
-
-        // If it's the last element, consider the distance to the first.
-        if ( i == ary . length - 1 )
-        {
-            min = Math . min ( min , v - ary [ 0 ] ) ;
-        }
-
-        // If not the last element, calculate a potential minimum involving the next element.
-        if ( i != ary . length - 1 )
-        {
-            min = Math . min ( min , p + n - ary [ i + 1 ] + 1 ) ;
-        }
-
-        // If not the first element, calculate a potential minimum involving the previous element.
-        if ( i != 0 )
-        {
-            min = Math . min ( min , n - p + 1 + ary [ i - 1 ] ) ;
-        }
-    }
-
-    // Case 3: Current value 'v' is greater than 'p'.
-    if ( p < v )
-    {
-        // If not the last element, calculate a potential minimum.
-        if ( i != ary . length - 1 )
-        {
-            min = Math . min ( min , ( v - p ) * 2 + p + ( n - ary [ i + 1 ] + 1 ) ) ;
-        }
-    }
-} ) ;
-
-// Output the final calculated minimum, scaled by 100.
-console . log ( min * 100 ) ;
+ ary =  ary.concat( p);
+	ary.sort(function(a,b){return a-b;});
+ var min = Infinity;
+/* ========== 읽기 또한유지한다 로컬예상 출력 시작에서안정. ========== */
+   ary.forEach(function (v, i ){
+		if (v <p){
+if ( i!=0 ) min = Math.min (min, (p - v ) * 2  +  (n -  p + 1)+ary [i - 1]);
+ }
+ if (p  == v ) {
+  if(i==0)min=Math.min(min,ary[ary.length-1]-v);   
+  if(i==ary.length-1)min=Math.min(min,v-ary[0]);
+// 읽기 또한정리한다 작업 순서 시작에서안정.
+if ( i!= ary.length- 1 ) min  = Math.min (min, p + n- ary[ i  + 1]+ 1 );
+if(i!=  0) min  = Math.min(min, n  -  p  +1 + ary[i-  1]);
+	   }
+   if(p < v){
+	  if (i!=ary.length -  1)min=  Math.min ( min,( v -  p)  *2 + p + (n - ary [i + 1 ] +  1 ));
+/* 읽기 잘정리한다 최종중간 값 시작에서최종. */
+   }
+});
+  console.log (min *100);
+// +======================================================================+
+// | 프로젝트: Faronzer                                                   |
+// | 구성원: 송민재                                                       |
+// +======================================================================+

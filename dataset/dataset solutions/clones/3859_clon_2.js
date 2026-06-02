@@ -1,67 +1,38 @@
-// This JavaScript module processes numerical input to find a sequence of specific numbers.
-console.log((
-    // An immediately invoked function expression (IIFE) handles the core logic.
-    // It accepts a string argument, which represents the initial input value.
-    inputStringData =>
-    {
-        // Convert the incoming string data into an integer.
-        // This integer determines how many special numbers to collect.
-        const targetValueCount = inputStringData | 0;
+console.log(( (inputData) => {
+  // Convert the incoming data to an integer for the target count.
+  const targetCount = inputData | 0;
 
-        // Establish an upper boundary for the number search.
-        // A large array is initialized with 'true' to signify potential primality.
-        const primeIndicatorFlags = Array(55555).fill(true);
+  // Initialize a boolean array, acting as a sieve, up to a fixed maximum value.
+  // All elements are initially set to true, indicating potential primality.
+  const primeFlags = Array(55555).fill(true);
 
-        // This dynamic array will accumulate numbers that meet the specified criteria.
-        const gatheredNumericSequence = [];
+  // This array will store the numbers that satisfy our specific conditions.
+  const resultNumbers = [];
 
-        // Begin an iteration from the first prime number (2) up to the defined limit.
-        // This loop is the primary mechanism for a modified sieve process.
-        for (
-            let currentIterationNumber = 2;
-            currentIterationNumber < 55555;
-            currentIterationNumber++
-        )
-        {
-            // If the current number has already been marked as composite (not prime),
-            // bypass further processing for this number and proceed to the next.
-            if ( !primeIndicatorFlags[currentIterationNumber] )
-            {
-                continue;
-            }
-
-            // For numbers identified as prime, iterate through their multiples.
-            // Mark these multiples as composite (false) in the indicator array.
-            for (
-                let currentMultipleIndex = currentIterationNumber + currentIterationNumber;
-                currentMultipleIndex < 55555;
-                currentMultipleIndex += currentIterationNumber
-            )
-            {
-                primeIndicatorFlags[currentMultipleIndex] = false;
-            }
-
-            // After sieve processing, apply an additional conditional check.
-            // Only numbers that yield a remainder of 1 when divided by 5 are considered.
-            if ( currentIterationNumber % 5 === 1 )
-            {
-                // If the condition is met, add this qualifying number to our collection.
-                gatheredNumericSequence.push(currentIterationNumber);
-
-                // Verify if the required quantity of numbers has been collected.
-                if ( gatheredNumericSequence.length === targetValueCount )
-                {
-                    // If the target count is reached, terminate the main search loop.
-                    break;
-                }
-            }
-        }
-
-        // Concatenate all collected numbers into a single string,
-        // with each number separated by a single space character.
-        return gatheredNumericSequence.join` `;
+  // Begin iterating from the first prime number candidate, 2.
+  for ( let idx = 2; idx < 55555; idx++ ) {
+    // If the current number has already been marked as not prime, skip it.
+    if ( !primeFlags[idx] ) {
+      continue;
     }
-)(
-    // Obtain the initial input data by reading the content of standard input.
-    require('fs').readFileSync('/dev/stdin', 'utf8')
-));
+
+    // If 'idx' is considered prime, mark all its multiples as not prime.
+    // This is the sieving step.
+    for ( let multiplier = idx + idx; multiplier < 55555; multiplier += idx ) {
+      primeFlags[multiplier] = false;
+    }
+
+    // After sieving, check if the current prime candidate meets an additional criterion:
+    // its remainder when divided by 5 must be 1.
+    if ( idx % 5 === 1 ) {
+      // If it satisfies the condition, add it to our collection of results.
+      resultNumbers.push(idx);
+      // If we have accumulated the desired number of results, we can stop.
+      if ( resultNumbers.length === targetCount ) {
+        break;
+      }
+    }
+  }
+  // Format the collected numbers into a single string, separated by spaces.
+  return resultNumbers.join` `;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read the input from standard input using Node.js file system module.

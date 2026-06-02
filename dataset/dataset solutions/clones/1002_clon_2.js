@@ -1,40 +1,37 @@
-// Example configuration for Windows environments (currently inactive)
-// appSettings = { sourcePath: 'temp_data.txt', lineBreakChar: '\r\n' };
+let appSettings = {
+  input: '/dev/stdin',
+  newline: '\n'
+};
 
-appSettings = { sourcePath: '/dev/stdin', lineBreakChar: '\n' }; // Active settings for Unix-like systems
+let dataArray = require('fs').readFileSync(appSettings.input, 'ascii')
+  .split(appSettings.newline, 2);
 
-numericDataSet = require('fs')
-  .readFileSync(appSettings.sourcePath, 'ascii')
-  .split(appSettings.lineBreakChar, 2);
+dataArray = dataArray[1].split(' ').map(Number);
 
-numericDataSet = numericDataSet[1].split(' ').map(Number);
+let swapCount = performBubbleSort(dataArray);
+console.log(dataArray.join(' '));
+console.log(swapCount);
 
-exchangeCount = performBubbleSort(numericDataSet);
+function performBubbleSort(inputCollection) {
+  let totalSwaps;
+  let hasSwapped;
+  let currentIndex;
+  let tempValue;
 
-console.log(numericDataSet.join(' '));
-console.log(exchangeCount);
+  totalSwaps = 0;
+  hasSwapped = true;
 
-function performBubbleSort(dataCollection) {
-  let operationCounter = 0; // Counter for element swaps
-  let isSortedFlag = 1;     // Controls the primary loop; 1 means sorting is ongoing
-
-  // Keep looping until no more swaps are made in a full pass
-  while (isSortedFlag) {
-    isSortedFlag = 0; // Optimistically assume the array is sorted for this pass
-
-    // Iterate through the array from the end towards the beginning
-    for (let currentElementIndex = dataCollection.length - 1; currentElementIndex > 0; currentElementIndex--) {
-      // Check if the current element is smaller than its preceding element
-      if (dataCollection[currentElementIndex] < dataCollection[currentElementIndex - 1]) {
-        // If out of order, swap the two elements
-        let temporaryHolder = dataCollection[currentElementIndex];
-        dataCollection[currentElementIndex] = dataCollection[currentElementIndex - 1];
-        dataCollection[currentElementIndex - 1] = temporaryHolder;
-
-        isSortedFlag = 1; // A swap occurred, so we need another pass
-        operationCounter++; // Increment the total swap count
+  while (hasSwapped) {
+    hasSwapped = false;
+    for (currentIndex = inputCollection.length - 1; currentIndex > 0; currentIndex--) {
+      if (inputCollection[currentIndex] < inputCollection[currentIndex - 1]) {
+        tempValue = inputCollection[currentIndex];
+        inputCollection[currentIndex] = inputCollection[currentIndex - 1];
+        inputCollection[currentIndex - 1] = tempValue;
+        hasSwapped = true;
+        totalSwaps++;
       }
     }
   }
-  return operationCounter; // Return the final count of swaps performed
+  return totalSwaps;
 }

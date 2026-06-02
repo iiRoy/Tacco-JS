@@ -1,20 +1,24 @@
-const retrieveSystemData = require('node:fs');
+const fileSystem = require('fs');
 
-const completeDataSource = retrieveSystemData.readFileSync(0, 'utf8');
+const rawInputContent = fileSystem.readFileSync(process.stdin.fd, 'utf8');
+const allInputLines = rawInputContent.trim().split('\n');
 
-const partitionedSegments = completeDataSource.trim().split('\n');
+const [entryCount, searchThreshold] = allInputLines[0].split(' ').map(Number);
 
-const [itemQuantity, comparisonThreshold] = partitionedSegments[0].split(' ').map(Number);
+const defaultIdentifier = 'kogakubu10gokan';
 
-const processedRecords = partitionedSegments
-  .slice(1, 1 + itemQuantity)
-  .map(segment => {
-    const [numericPart, alphaDesignation] = segment.split(' ');
-    return { valueComponent: Number(numericPart), labelDesignator: alphaDesignation };
-  });
+const dataEntries = allInputLines.slice(1, entryCount + 1);
 
-const identifiedRecord = processedRecords.find(record => record.valueComponent >= comparisonThreshold);
+const locatedEntryLine = dataEntries.find(currentEntry => {
+    const [numericValue, textLabel] = currentEntry.split(' ');
+    return Number(numericValue) >= searchThreshold;
+});
 
-const outcomeIdentifier = identifiedRecord ? identifiedRecord.labelDesignator : 'kogakubu10gokan';
+let finalIdentifier;
+if (locatedEntryLine) {
+    finalIdentifier = locatedEntryLine.split(' ')[1];
+} else {
+    finalIdentifier = defaultIdentifier;
+}
 
-console.log(outcomeIdentifier);
+console.log(finalIdentifier);

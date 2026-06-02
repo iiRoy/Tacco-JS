@@ -1,53 +1,44 @@
 "use strict";
-const rawSource = require("fs")
+const sourceData = require("fs")
   .readFileSync("/dev/stdin", "utf8")
   .trim()
   .split("\n");
 
-const configLineIdx = 0;
-const dataLineIdx = 1;
-const firstParamIdx = 0;
-const secondParamIdx = 1;
+const [paramAStr, paramBStr] = sourceData[0].split(" ");
+const paramA = parseInt(paramAStr);
+const paramB = parseInt(paramBStr);
 
-const configTokens = rawSource[configLineIdx].match(/\d+/g);
-const paramA = parseInt(configTokens[firstParamIdx]);
-const paramB = parseInt(configTokens[secondParamIdx]);
+const numericSequence = [];
+const rawNumbers = sourceData[1].split(" ");
+for (const strNum of rawNumbers) {
+    numericSequence.push(parseInt(strNum));
+}
 
-const valueSeries = rawSource[dataLineIdx].match(/\d+/g).map(Number);
+const locateSmallestElementPosition = (dataCollection) => {
+    let currentMinimumValue = Infinity;
+    let currentMinimumIndex = -1;
+    let counter = 0;
 
-const locateSmallestElement = (numericArray) => {
-  let smallestVal = numericArray[0];
-  let originalPos = 0;
-  for (let i = 1; i < numericArray.length; i++) {
-    if (numericArray[i] < smallestVal) {
-      smallestVal = numericArray[i];
-      originalPos = i;
+    for (const elementValue of dataCollection) {
+        if (elementValue < currentMinimumValue) {
+            currentMinimumValue = elementValue;
+            currentMinimumIndex = counter;
+        }
+        counter++;
     }
-  }
-  return { smallestVal: smallestVal, originalPos: originalPos };
+    return currentMinimumIndex;
 };
 
-const performCeilingDivision = (numerator, denominator) => {
-    if (denominator === 0) {
-        if (numerator > 0) return Infinity;
-        if (numerator === 0) return NaN;
-        return -Infinity;
-    }
-    const result = numerator / denominator;
-    return result === (result | 0) ? result : (result > 0 ? (result | 0) + 1 : (result | 0));
+const calculateTraversalSteps = (totalElements, groupSize, elementValues) => {
+    const targetElementPosition = locateSmallestElementPosition(elementValues);
+
+    const firstSegmentDivisor = groupSize - 1;
+    const secondSegmentDivisor = totalElements - groupSize - 1;
+
+    const firstTerm = Math.ceil(targetElementPosition / firstSegmentDivisor);
+    const secondTerm = Math.ceil(targetElementPosition / secondSegmentDivisor);
+
+    return firstTerm + secondTerm;
 };
 
-const calculateCompositeMetric = (valA, valB, seriesInput) => {
-  const discoveryResult = locateSmallestElement(seriesInput);
-  const targetIndex = discoveryResult.originalPos;
-
-  const divisorOne = valB - 1;
-  const divisorTwo = valA - valB - 1;
-
-  const termOne = performCeilingDivision(targetIndex, divisorOne);
-  const termTwo = performCeilingDivision(targetIndex, divisorTwo);
-
-  return termOne + termTwo;
-};
-
-console.log(calculateCompositeMetric(paramA, paramB, valueSeries));
+console.log(calculateTraversalSteps(paramA, paramB, numericSequence));

@@ -1,47 +1,66 @@
-global.process.stdin.resume();
-global.process.stdin.setEncoding("utf8");
-global.process.stdin.on("data", (payloadContent) => {
-    const processedInfo = decodeStreamPayload(payloadContent);
-    const ultimateOutcome = calculateSubsetSum(processedInfo.thresholdParam, processedInfo.numericSequence);
-    console.log(ultimateOutcome);
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (rawData) => {
+    const parsedData = parseInputData(rawData);
+    const finalOutcome = calculateMinimumSum(parsedData[0], parsedData[1]);
+
+    console.log(finalOutcome);
 });
 
-const decodeStreamPayload = (sourceMaterial) => {
-    const extractedNumbers = sourceMaterial.match(/\d+/g).map(Number);
+const parseInputData = (sourceText) => {
+  const numericTokens = sourceText.match(/\d+/g).map(Number);
 
-    const initialValue = extractedNumbers[0];
-    const thresholdParam = extractedNumbers[1];
-    const numericSequence = extractedNumbers.slice(2);
+  // The first number is N (unused), the second is K.
+  // The rest are the Pk values.
+  const kValue = numericTokens[1];
+  const pkValues = numericTokens.slice(2);
 
-    return {
-        initialValue: initialValue,
-        thresholdParam: thresholdParam,
-        numericSequence: numericSequence,
-    };
+  return [kValue, pkValues];
 };
 
-const calculateSubsetSum = (selectionCount, sourceArray) => {
-    let currentSum = 0;
-    const mutableCollection = [...sourceArray];
+const calculateMinimumSum = (limit, sourceValues) => {
+  const topValues = []; // This array will store the 'limit' smallest values found so far
 
-    for (let iterationIndex = 0; iterationIndex < selectionCount; iterationIndex++) {
-        if (mutableCollection.length === 0) {
-            break;
+  for (const currentVal of sourceValues) {
+    if (topValues.length < limit) {
+      // If the topValues array is not yet full, insert the current value
+      // while maintaining sorted order (ascending).
+      let inserted = false;
+      for (let i = 0; i < topValues.length; i++) {
+        if (currentVal < topValues[i]) {
+          topValues.splice(i, 0, currentVal);
+          inserted = true;
+          break;
         }
-
-        let minimumElement = Infinity;
-        let minimumElementPosition = -1;
-
-        for (let searchIndex = 0; searchIndex < mutableCollection.length; searchIndex++) {
-            if (mutableCollection[searchIndex] < minimumElement) {
-                minimumElement = mutableCollection[searchIndex];
-                minimumElementPosition = searchIndex;
-            }
+      }
+      if (!inserted) {
+        topValues.push(currentVal);
+      }
+    } else if (currentVal < topValues[limit - 1]) {
+      // If the topValues array is full and the current value is smaller
+      // than the largest value currently in topValues (which is at index limit-1).
+      // Remove the largest value and insert the current value in its sorted position.
+      topValues.pop(); // Remove the largest element
+      let inserted = false;
+      for (let i = 0; i < topValues.length; i++) {
+        if (currentVal < topValues[i]) {
+          topValues.splice(i, 0, currentVal);
+          inserted = true;
+          break;
         }
-
-        currentSum += minimumElement;
-        mutableCollection.splice(minimumElementPosition, 1);
+      }
+      if (!inserted) {
+        // This case should ideally not be reached if currentVal < topValues[limit - 1]
+        // but as a fallback, push it.
+        topValues.push(currentVal);
+      }
     }
+  }
 
-    return currentSum;
+  // Sum all elements in the topValues array.
+  let finalSum = 0;
+  for (let i = 0; i < topValues.length; i++) {
+    finalSum += topValues[i];
+  }
+  return finalSum;
 };

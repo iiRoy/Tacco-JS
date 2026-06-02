@@ -1,21 +1,18 @@
-// This module processes incoming data.
-function CalculateGrowth(initialValue)
+// Entire input data is passed to the function
+function ProcessInput(rawData) {
+  // The first line is rawData[0], second is rawData[1], etc.
+  let targetValue = rawData;
+  let currentAmount = 100;
+  let elapsedYears = 0;
 
-{
-    // The first line is initialValue[0], second is initialValue[1], and so forth.
-    let targetAmount = initialValue; // Assigning the overall input to our desired target.
-    let currentBalance = 100.0;     // Starting capital for the investment simulation.
-    let elapsedPeriods = 0;         // Counter for the number of periods that have passed.
-  
-    // Loop iterates as long as the current balance is below the specified target amount.
-    while
-(currentBalance < targetAmount)
-    {
-        currentBalance = Math.trunc(currentBalance * 1.01); // Apply 1% growth and remove any fractional part.
-        elapsedPeriods = elapsedPeriods + 1;                  // Increment the counter for each period.
-    }
-    // Display the final computed result to the user.
-    console.info(elapsedPeriods);
+  while (currentAmount < targetValue) {
+    currentAmount = Math.floor(currentAmount * 1.01);
+    elapsedYears = elapsedYears + 1;
+  }
+
+  // Display result
+  console.log(elapsedYears);
 }
-// Please do not alter any code below this point (it handles reading from standard input and invoking the main routine).
-CalculateGrowth(acquireModule("fileSys").readTextSync("/dev/stdinput", "textEncoding"));
+
+// Do not modify below this line (reads from stdin and calls the primary function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

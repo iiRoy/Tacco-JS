@@ -1,10 +1,11 @@
-function executeProgram() {
-  // Retrieve the pre-processed input data for computation.
-  let processedData = rawData;
+function processData() {
+  // Store the processed input lines
+  let rawInputLines = input;
 
-  // Initialize a two-dimensional array, a grid structure, filled with zeroes.
-  // This matrix will track interactions at various points.
-  let gridMatrix = [
+  // Initialize a 2D array (matrix) to store counts.
+  // The original code uses a 14x14 matrix, padded with 2 on each side for easier indexing.
+  // This allows direct use of iy+2, iy-2, ix+2, ix-2 without boundary checks for the core logic.
+  const gridMatrix = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -21,92 +22,86 @@ function executeProgram() {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   ];
 
-  // Calculate the effective length for iterating through the input lines.
-  let dataLength = processedData.length - 1;
+  // Iterate through the input lines in reverse order, excluding the last empty line if present.
+  let lineCount = rawInputLines.length - 1;
+  for (; lineCount--;) {
+    const currentLine = rawInputLines[lineCount];
+    // Parse coordinates and adjust by adding 2 for padding.
+    const colIndex = parseInt(currentLine[0]) + 2;
+    const rowIndex = parseInt(currentLine[2]) + 2;
 
-  // Loop through each line of the processed data in reverse order.
-  for (; dataLength--;) {
-    let currentLine = processedData[dataLength]; // Extract the current line string.
-    // Parse the column and row indices from the line, applying an offset.
-    let colIndex = parseInt(currentLine[0], 10) + 2;
-    let rowIndex = parseInt(currentLine[2], 10) + 2;
-
-    // A switch statement to apply different increment patterns to the grid
-    // based on a specific character in the current line.
+    // Apply increments based on the type specified in currentLine[4].
+    // The switch statement uses fall-through behavior.
     switch (currentLine[4]) {
-      case '3': // This case affects cells at a distance of 2 units.
+      case '3': // Type 3 includes Type 2 and Type 1 increments
         gridMatrix[rowIndex + 2][colIndex]++;
         gridMatrix[rowIndex - 2][colIndex]++;
         gridMatrix[rowIndex][colIndex - 2]++;
         gridMatrix[rowIndex][colIndex + 2]++;
-      // Intentionally falls through to the next case.
-      case '2': // This case affects cells diagonally adjacent (1 unit in both directions).
+      case '2': // Type 2 includes Type 1 increments
         gridMatrix[rowIndex + 1][colIndex - 1]++;
         gridMatrix[rowIndex + 1][colIndex + 1]++;
         gridMatrix[rowIndex - 1][colIndex - 1]++;
         gridMatrix[rowIndex - 1][colIndex + 1]++;
-      // Intentionally falls through to the next case.
-      case '1': // This case affects immediate cardinal neighbors and the center cell.
+      case '1': // Type 1 increments
         gridMatrix[rowIndex + 1][colIndex]++;
         gridMatrix[rowIndex][colIndex - 1]++;
         gridMatrix[rowIndex][colIndex]++;
         gridMatrix[rowIndex][colIndex + 1]++;
         gridMatrix[rowIndex - 1][colIndex]++;
-        break; // Exit the switch statement.
+        break; // Exit switch after Type 1 operations
     }
   }
 
-  // Initialize variables to store the count of empty cells and the maximum value found.
-  let emptyCellsCount = 0; // Counter for grid cells that remain zero.
-  let maxCellValue = 0; // Stores the highest numerical value encountered in the grid.
+  // Calculate the number of cells with zero drops and the maximum drops in any cell.
+  let notDroppedCount = 0; // Counter for cells with 0 drops
+  let maxDroppedCount = 0; // Stores the maximum number of drops in any cell
 
-  // Iterate over a specific 10x10 sub-section of the grid, applying an offset.
-  let rowIterator = 10;
-  for (; rowIterator--;) {
-    let colIterator = 10;
-    for (; colIterator--;) {
-      // Increment the 'emptyCellsCount' if the current grid cell's value is zero.
-      emptyCellsCount += !(gridMatrix[rowIterator + 2][colIterator + 2]);
-      // Update 'maxCellValue' with the larger of its current value or the cell's value.
-      maxCellValue = findMaximum(gridMatrix[rowIterator + 2][colIterator + 2], maxCellValue);
+  // Iterate over the effective 10x10 grid (excluding the padding).
+  let rowIter = 10;
+  for (; rowIter--;) {
+    let colIter = 10;
+    for (; colIter--;) {
+      // Check if the cell has zero drops (value is 0).
+      // The `!` operator converts 0 to true, and any non-zero to false.
+      // `notDroppedCount` increments if the cell value is 0.
+      notDroppedCount += !(gridMatrix[rowIter + 2][colIter + 2]);
+      // Update `maxDroppedCount` with the maximum value found so far.
+      maxDroppedCount = findMaximum(gridMatrix[rowIter + 2][colIter + 2], maxDroppedCount);
     }
   }
 
-  // Use a local alias for console to log the final results.
-  let outputLogger = console;
-  outputLogger.log(emptyCellsCount);
-  outputLogger.log(maxCellValue);
+  // Output the results to the console.
+  console.log(notDroppedCount);
+  console.log(maxDroppedCount);
 }
 
-// A helper function to determine the maximum of two numbers using a bitwise trick.
+// Custom function to find the maximum of two numbers using bitwise operations.
+// This is equivalent to Math.max(valA, valB) for non-negative integers.
 function findMaximum(valA, valB) {
-  let tempDiff = (valA - valB);
-  // This expression cleverly returns the larger of valA and valB.
-  // If valA is less than valB, (tempDiff >> 31) will be -1 (in two's complement),
-  // making the result valA - (tempDiff & -1) = valA - tempDiff = valA - (valA - valB) = valB.
-  // If valA is greater or equal to valB, (tempDiff >> 31) will be 0,
-  // making the result valA - (tempDiff & 0) = valA - 0 = valA.
+  const tempDiff = (valA - valB);
+  // If valA > valB, tempDiff is positive, (tempDiff >> 31) is 0, so valA - 0 = valA.
+  // If valA <= valB, tempDiff is negative or zero, (tempDiff >> 31) is -1 (for negative),
+  // so tempDiff & -1 is tempDiff. Then valA - tempDiff = valA - (valA - valB) = valB.
   return valA - (tempDiff & (tempDiff >> 31));
 }
 
+// Global variable to accumulate input data.
+let fullInputString = '';
 
-// A global variable to accumulate all incoming raw data chunks.
-let rawData = '';
+// Set up standard input processing for Node.js environment.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Create an alias for the global 'process' object to conform to renaming requirements.
-let systemUtility = process;
-
-// Configure the standard input stream.
-systemUtility.stdin.resume(); // Begin reading data from standard input.
-systemUtility.stdin.setEncoding('utf8'); // Specify UTF-8 as the character encoding for input.
-
-// Attach an event handler for when data chunks are received.
-systemUtility.stdin.on('data', function (dataSegment) {
-  rawData += dataSegment; // Append each new data segment to the rawData string.
+// Event listener for incoming data chunks.
+process.stdin.on('data', function(dataChunk) {
+  fullInputString += dataChunk;
 });
 
-// Attach an event handler for when the standard input stream closes.
-systemUtility.stdin.on('end', function () {
-  rawData = rawData.split('\n'); // Split the accumulated raw data into an array of lines.
-  executeProgram(); // Call the main program execution function.
+// Event listener for the end of input stream.
+process.stdin.on('end', function() {
+  // Split the accumulated input string by newline characters.
+  input = fullInputString.split('\n');
+  // Call the main processing function.
+  processData();
 });

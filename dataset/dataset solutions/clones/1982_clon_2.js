@@ -1,44 +1,37 @@
-/*
- * This module defines a function to process a numeric input
- * and calculate a specific sum based on a modified FizzBuzz-like rule.
- */
-const ProcessInputData = (rawData) => {
-  // Parse the raw input string to obtain the upper limit for iteration.
-  // The input is expected to be a single integer.
-  const maximumValue = Number.parseInt(rawData.trim(), 10);
+const ProcessInput = (rawData) => {
+  // Parse the trimmed input string into an integer value.
+  const parsedNumber = parseInt(rawData.trim());
 
-  // Initialize an array to store the sequence of numbers or placeholders.
-  const numericalSequence = [];
+  // Initialize an array to hold processed numerical or string representations.
+  const outputCollection = [];
 
-  // Iterate from 0 up to (but not including) the maximum value.
-  // The loop variable 'idx' represents the current index.
-  for (let idx = 0; idx < maximumValue; idx++) {
-    const currentNumber = idx + 1; // Calculate the 1-based number for FizzBuzz logic.
-
-    // Check if the current number is a multiple of 3 or 5.
-    // If true, a string '0' is pushed; otherwise, the number itself is pushed.
-    if ((currentNumber % 3 === 0) || (currentNumber % 5 === 0)) {
-      numericalSequence.push('0'); // Placeholder for multiples of 3 or 5
+  // Iterate from zero up to, but not including, the parsed number.
+  for (let idx = 0; idx < parsedNumber; idx++) {
+    // Check if the current number (idx + 1) is divisible by 3 or 5.
+    if (((idx + 1) % 3 === 0) || ((idx + 1) % 5 === 0)) {
+      // If divisible, add the string '0' to our collection.
+      outputCollection.push('0');
     } else {
-      numericalSequence.push(currentNumber); // Original number
+      // Otherwise, add the actual incremented number to the collection.
+      outputCollection.push(idx + 1);
     }
   }
 
-  // Initialize a variable to accumulate the final sum.
-  let accumulatedTotal = 0;
+  // Declare a variable to accumulate the final sum of elements.
+  let finalSum = 0;
 
-  // Iterate through the generated sequence to sum up its numerical elements.
-  // String '0's will be parsed back to numbers (0) and added.
-  numericalSequence.forEach((itemEntry) => {
-    accumulatedTotal += Number.parseInt(itemEntry, 10);
+  // Loop through each item in the generated collection.
+  outputCollection.forEach((itemValue) => {
+    // Convert the current item to an integer and add it to the running total.
+    finalSum += parseInt(itemValue);
   });
 
-  // Display the computed total to the console.
-  console.log(accumulatedTotal);
+  // Display the computed sum to the standard output.
+  console.log(finalSum);
 
-  // Return the final calculated sum.
-  return accumulatedTotal;
+  // Return the calculated sum.
+  return finalSum;
 };
 
-// Execute the main processing function by reading input from standard input.
-ProcessInputData( require('fs') .readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,25 +1,30 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code execution.
 
-/*
- * This function serves as the primary entry point
- * for processing incoming data.
+/**
+ * Processes the provided raw input string to determine if a specific condition is met.
+ * This function expects a string that can be converted into a number.
+ *
+ * @param {string} rawDataString - The raw input string, typically read from standard input.
  */
-function processInput( rawData ) {
+function processInputData(rawDataString) {
 
-  // First, sanitize the raw input string by removing all whitespace characters.
-  // Then, convert the cleaned string into a numerical format.
-  let numericValue = Number(rawData.replace(/\s/g, ''));
+    // First, remove all whitespace characters from the input string.
+    // Then, convert the cleaned string into a numerical value.
+    // This ensures that only the digits are considered for the numeric operation.
+    let processedNumericValue = Number(rawDataString.replace(/\s/g, ''));
 
-  // Determine the final verdict based on a divisibility check.
-  // We check if the numerical value is perfectly divisible by four.
-  const outcomeText = ( numericValue % 4 === 0 ) ? 'DIVISIBLE' : 'NOT DIVISIBLE';
+    // Evaluate if the resulting numeric value is perfectly divisible by 4.
+    // The modulo operator (%) returns the remainder of a division.
+    // If the remainder is 0, it means the number is divisible by 4.
+    const outcomeResult = (processedNumericValue % 4 === 0) ? 'YES' : 'NO';
 
-  // Output the calculated result to the standard console.
-  console.log( outcomeText );
+    // Output the determined result string ('YES' or 'NO') to the console.
+    // This is the final observable behavior of the function.
+    console.log(outcomeResult);
 
 }
 
-// Read the content from the standard input stream synchronously.
-// The data is expected to be UTF-8 encoded.
-// After reading, invoke the main processing function with the obtained content.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line reads the entire content of standard input synchronously.
+// It uses Node.js's 'fs' module to read from '/dev/stdin' (common for competitive programming).
+// The content is then decoded as a 'utf8' string and passed to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

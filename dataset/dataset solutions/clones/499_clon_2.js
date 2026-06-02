@@ -1,64 +1,58 @@
-/*
- * This routine computes the product of two 4-component vectors,
- * resembling quaternion multiplication or similar linear algebra.
- */
-function computeQuaternionProduct( realA, iA, jA, kA, realB, iB, jB, kB )
-{
-  // Initialize a dynamic array to hold the four output components.
-  let resultComponents = [ 0.0, 0.0, 0.0, 0.0 ];
+function computeProduct(valA1, valB1, valC1, valD1, valA2, valB2, valC2, valD2) {
+    // Initialize a result vector with four components, all set to zero.
+    let resultVector = [0, 0, 0, 0];
 
-  // Accumulate terms for the real component (index 0)
-  resultComponents[0] += ( realA * realB );
-  resultComponents[1] += ( realA * iB );
-  resultComponents[2] += ( realA * jB );
-  resultComponents[3] += ( realA * kB );
+    // Perform calculations based on the first component of the first input vector.
+    resultVector[0] += (valA1 * valA2);
+    resultVector[1] += (valA1 * valB2);
+    resultVector[2] += (valA1 * valC2);
+    resultVector[3] += (valA1 * valD2);
 
-  // Accumulate terms for the 'i' component (index 1)
-  resultComponents[1] += ( iA * realB );
-  resultComponents[0] -= ( iA * iB );
-  resultComponents[3] += ( iA * jB );
-  resultComponents[2] -= ( iA * kB );
+    // Perform calculations based on the second component of the first input vector.
+    resultVector[1] += (valB1 * valA2);
+    resultVector[0] -= (valB1 * valB2);
+    resultVector[3] += (valB1 * valC2);
+    resultVector[2] -= (valB1 * valD2);
 
-  // Accumulate terms for the 'j' component (index 2)
-  resultComponents[2] += ( jA * realB );
-  resultComponents[3] -= ( jA * iB );
-  resultComponents[0] -= ( jA * jB );
-  resultComponents[1] += ( jA * kB );
+    // Perform calculations based on the third component of the first input vector.
+    resultVector[2] += (valC1 * valA2);
+    resultVector[3] -= (valC1 * valB2);
+    resultVector[0] -= (valC1 * valC2);
+    resultVector[1] += (valC1 * valD2);
 
-  // Accumulate terms for the 'k' component (index 3)
-  resultComponents[3] += ( kA * realB );
-  resultComponents[2] += ( kA * iB );
-  resultComponents[1] -= ( kA * jB );
-  resultComponents[0] -= ( kA * kB );
+    // Perform calculations based on the fourth component of the first input vector.
+    resultVector[3] += (valD1 * valA2);
+    resultVector[2] += (valD1 * valB2);
+    resultVector[1] -= (valD1 * valC2);
+    resultVector[0] -= (valD1 * valD2);
 
-  // Return the final computed array of components.
-  return resultComponents;
+    // Return the final computed vector.
+    return resultVector;
 }
 
-// Obtain the raw input data from standard input.
-let rawDataString = require('fs') .readFileSync ( '/dev/stdin' ,  'utf8' );
+// Read all input data from standard input as a UTF-8 string.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw string: trim whitespace and split into individual lines.
-let lineFragments = ( rawDataString .trim() ) .split( "\n" );
+// Trim any leading/trailing whitespace and split the input into an array of lines.
+let lineData = (rawData.trim()).split("\n");
 
-// The first line indicates the total number of operations to perform.
-let totalOperations = lineFragments .shift() - 0;
+// The first line contains the number of test cases or iterations.
+// Convert it to a number using subtraction by zero.
+const numIterations = lineData.shift() - 0;
 
-// Iterate through each specified operation.
-for ( let operationIdx = 0 ; operationIdx < totalOperations ; operationIdx++ )
-{
-  // If the current line fragment is '0', terminate processing early.
-  if ( lineFragments[operationIdx] == 0 )
-  {
-    break;
-  }
+// Iterate through the remaining lines, processing each test case.
+for (let loopIndex = 0; loopIndex < numIterations; loopIndex++) {
+    // Check for a specific termination condition: if the current line is '0'.
+    if (lineData[loopIndex] == 0) {
+        break; // Exit the loop early if the condition is met.
+    }
 
-  // Parse the current line into an array of numeric arguments.
-  let currentArguments = lineFragments[operationIdx] .split( " " ) .map( Number );
+    // Split the current line by spaces and convert each part to a number.
+    const currentValues = lineData[loopIndex].split(" ").map(Number);
 
-  // Execute the quaternion product function with the parsed arguments.
-  let operationResult = computeQuaternionProduct .apply( null, currentArguments );
+    // Call the computation function, applying the array elements as individual arguments.
+    const finalResult = computeProduct.apply(null, currentValues);
 
-  // Output the computed result, with components separated by spaces.
-  console.log( operationResult .join( " " ) );
+    // Print the elements of the resulting vector, joined by spaces, to standard output.
+    console.log(finalResult.join(" "));
 }

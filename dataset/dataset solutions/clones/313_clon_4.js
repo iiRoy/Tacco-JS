@@ -1,50 +1,26 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawData.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = fileContent.trim().split('\n');
 
-const configLine = processedLines.shift().split(' ').map(Number);
-const entityCount = configLine[0];
-const operationCount = configLine[1];
+const [playerCount, queryCount] = lines.shift().split(' ').map(Number);
 
-const operations = processedLines.map(segment => segment.split(' ').map(Number));
+const playerScores = Array.from({ length: playerCount }, () => 0);
 
-const finalStateResult = operations.reduce((currentStatus, currentOperation) => {
-    let { allEntityScores, currentDominantIndex, currentDominantScore } = currentStatus;
-
-    const affectedEntityIndex = currentOperation[0] - 1;
-    const scoreAdjustmentAmount = currentOperation[1];
-
-    allEntityScores[affectedEntityIndex] += scoreAdjustmentAmount;
-
-    let nextDominantIndex = currentDominantIndex;
-    let nextDominantScore = currentDominantScore;
-
-    if (affectedEntityIndex === currentDominantIndex && scoreAdjustmentAmount >= 0) {
-        nextDominantScore += scoreAdjustmentAmount;
-    } else if (affectedEntityIndex !== currentDominantIndex && scoreAdjustmentAmount < 0) {
-        // No change to dominant entity
-    } else {
-        let temporaryHighestScore = -Infinity;
-        let temporaryHighestIndex = -1;
-
-        for (let idx = 0; idx < allEntityScores.length; ++idx) {
-            if (allEntityScores[idx] > temporaryHighestScore) {
-                temporaryHighestScore = allEntityScores[idx];
-                temporaryHighestIndex = idx;
-            }
+const determineLeader = (scores) => {
+    return scores.reduce((accumulator, currentScore, currentIndex) => {
+        if (currentScore > accumulator.score) {
+            return { score: currentScore, identifier: currentIndex };
         }
-        nextDominantIndex = temporaryHighestIndex;
-        nextDominantScore = temporaryHighestScore;
-    }
+        return accumulator;
+    }, { score: -Infinity, identifier: -1 });
+};
 
-    console.log(`${nextDominantIndex + 1} ${nextDominantScore}`);
+lines.forEach((operationLine) => {
+    const [targetIndex, scoreAdjustment] = operationLine.split(' ').map(Number);
+    const actualPlayerIndex = targetIndex - 1;
 
-    return {
-        allEntityScores: allEntityScores,
-        currentDominantIndex: nextDominantIndex,
-        currentDominantScore: nextDominantScore
-    };
-}, {
-    allEntityScores: Array(entityCount).fill(0),
-    currentDominantIndex: 0,
-    currentDominantScore: 0
+    playerScores[actualPlayerIndex] += scoreAdjustment;
+
+    const { score: currentHighestScore, identifier: currentLeaderIndex } = determineLeader(playerScores);
+
+    console.log(`${currentLeaderIndex + 1} ${currentHighestScore}`);
 });

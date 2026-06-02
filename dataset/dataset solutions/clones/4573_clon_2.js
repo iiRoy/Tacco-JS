@@ -1,23 +1,24 @@
-process.stdin.resume(); // Initiate the input stream for reading.
-process.stdin.setEncoding('utf8'); // Configure the character encoding for incoming data.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// This section defines the primary logic for handling input data.
-process.stdin.on('data', function (incomingBlockOfData) {
-  // Convert the received data chunk to a string and break it into an array of substrings using space as a delimiter.
-  let numericalStringsArray = incomingBlockOfData.toString().split(' ');
+// This section handles incoming data from standard input.
+process.stdin.on('data', function (inputData) {
+    // Split the received data string by spaces to get individual components.
+    let inputParts = inputData.toString().split(' ');
 
-  // Parse the first three elements of the array into integer constants.
-  const minimumValue = parseInt(numericalStringsArray[0], 10);
-  const maximumValue = parseInt(numericalStringsArray[1], 10);
-  const targetValue = parseInt(numericalStringsArray[2], 10);
+    // Parse the first component into an integer.
+    let firstValue = parseInt(inputParts[0]);
+    // Parse the second component into an integer.
+    let secondValue = parseInt(inputParts[1]);
+    // Parse the third component into an integer.
+    let thirdValue = parseInt(inputParts[2]);
 
-  // Evaluate if the third parsed value falls inclusively within the range defined by the first two.
-  if ( minimumValue <= targetValue && targetValue <= maximumValue )
-  {
-    console.log("Yes"); // Output the affirmative response if the condition holds true.
-  }
-  else
-  {
-    console.log("No");  // Output the negative response otherwise.
-  }
+    // Check if the third value falls within the inclusive range defined by the first and second values.
+    if (firstValue <= thirdValue && thirdValue <= secondValue) {
+        // If the condition is met, output "Yes".
+        console.log("Yes");
+    } else {
+        // Otherwise, output "No".
+        console.log("No");
+    }
 });

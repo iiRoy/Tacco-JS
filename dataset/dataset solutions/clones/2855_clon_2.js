@@ -1,42 +1,35 @@
-process.stdin.resume();
+process.stdin.resume(); // Ensure standard input stream remains open
+process.stdin.setEncoding('utf8'); // Set the character encoding for input
 
-process.stdin.setEncoding('utf8');
+// Declare an array to store incoming lines of text
+let inputData = [];
 
-// Array to accumulate incoming data segments
-var receivedStrings = [];
-
-var dataAcquirer = require('readline').createInterface(
-  {
-    input: process.stdin,
-    output: process.stdout
-  }
-);
-
-dataAcquirer.on('line', (incomingString) => {
-  // Store each line as it arrives
-  receivedStrings.push(incomingString);
+// Initialize a readline interface for handling input/output
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,   // Use standard input as the source
+  output: process.stdout  // Use standard output for any prompts (though none are used here)
 });
 
-dataAcquirer.on('close', () => {
+// Attach an event listener for each new line received
+inputHandler.on('line', (currentLine) => {
+  inputData.push(currentLine); // Add the current line to our collection
+});
 
-  // Assuming the first line contains all numerical values, space-separated
-  receivedStrings = receivedStrings[0].split(' ');
+// Attach an event listener for when the input stream closes
+inputHandler.on('close', () => {
+  // Process the collected input data
+  // The problem implies only one line of space-separated numbers
+  inputData = inputData[0].split(' ').map(Number); // Convert the first line into an array of numbers
 
-  // Convert all string elements to actual numbers for calculation
-  const numericValues = receivedStrings.map(Number);
+  // Find the smallest number in the array
+  let smallestValue = Math.min(...inputData);
 
-  // Find the smallest numerical element
-  var initialMinimum = Math.min(...numericValues);
+  // Filter out all occurrences of the smallest number
+  inputData = inputData.filter(element => element !== smallestValue);
 
-  // Filter out all instances of the initial minimum to find the next smallest
-  var filteredValues = numericValues.filter(
-    (item) => item !== initialMinimum
-  );
-
-  // Find the smallest among the remaining elements
-  var secondaryMinimum = Math.min(...filteredValues);
+  // Find the second smallest number from the remaining elements
+  let secondSmallestValue = Math.min(...inputData);
   
-  // Output the aggregate of the two smallest distinct numbers
-  console.log(initialMinimum + secondaryMinimum);
-
+  // Output the sum of the smallest and second smallest values
+  console.log(smallestValue + secondSmallestValue);
 });

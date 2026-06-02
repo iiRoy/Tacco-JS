@@ -1,39 +1,49 @@
-// This program reads input from stdin, processes a string, and calculates a final count.
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const inputLines = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) . trim() . split ( '\n' ) ;
-
-// Extract the primary string and the multiplication factor from the input lines.
+// The primary string for processing
 const inputString = inputLines[0];
-const factor = parseInt ( inputLines[1] ) ;
 
-// Group consecutive identical characters in the input string.
-var charGroups = inputString . match ( / ( . ) \1* / g ) ;
+// The integer repeat count
+const repeatCount = parseInt(inputLines[1], 10);
 
-// Calculate the initial number of operations needed for rewriting within each group.
-var initialOperations = charGroups . reduce ( ( accumulator , element , index ) => {
-  // For each group, calculate (length - length % 2) / 2
-  // This effectively counts how many pairs of characters can be removed.
-  return accumulator + ( element.length - element.length % 2 ) / 2 ;
-} , 0 ) ;
+/*
+  Splits the input string into blocks of consecutive identical characters.
+  For example, "AAABBC" becomes ["AAA", "BB", "C"].
+*/
+const charBlocks = inputString.match(/(.)\1*/g);
 
-// Initialize the final count with the base operations multiplied by the factor.
-let finalCount = initialOperations * factor ;
+// Calculate the initial number of rewrites needed for a single instance of the string
+let initialRewrites = charBlocks.reduce((accumulator, currentBlock, blockIndex) => {
+  // For each block, calculate how many pairs of characters can be removed.
+  // e.g., "AAA" -> 1 rewrite (AA -> A), "BBBB" -> 2 rewrites (BB -> B, BB -> B)
+  return accumulator + Math.floor(currentBlock.length / 2);
+}, 0);
 
-// Get the first and last character groups to check for boundary conditions.
-var firstGroup = charGroups[0] ;
-var lastGroup = charGroups[ charGroups . length - 1 ] ;
+// Initialize the total count based on the initial rewrites and repeat count
+let finalCount = initialRewrites * repeatCount;
 
-// Check for a specific condition where the first and last groups' characters are the same
-// and their second character's length (which is always 1 if it exists) is odd.
-if ( firstGroup[0][0] === lastGroup[0][0] && firstGroup[1].length % 2 === 1 && lastGroup[1].length % 2 === 1 ) {
-  // If the condition is met, adjust the total count.
-  finalCount += factor - 1 ;
+// Check for a special case where the first and last blocks can merge across repetitions
+const firstBlock = charBlocks[0];
+const lastBlock = charBlocks[charBlocks.length - 1];
+
+// If the first character of the first block is the same as the first character of the last block,
+// and both blocks have an odd length (meaning they each have a single character left after pairing),
+// then they can merge across the boundary of repeated strings.
+if (firstBlock[0] === lastBlock[0] && firstBlock.length % 2 === 1 && lastBlock.length % 2 === 1) {
+  // This merge creates an additional rewrite opportunity for each boundary between repetitions.
+  // For 'k' repetitions, there are 'k-1' such boundaries.
+  finalCount += (repeatCount - 1);
 }
 
-// Special handling for strings with a single character.
-if ( inputString.length === 1 ) {
-  finalCount = ( factor - factor % 2 ) / 2 ;
+// Handle the edge case where the input string has only one character.
+// In this scenario, the block merging logic above might not apply correctly,
+// or the initial calculation needs adjustment.
+if (inputString.length === 1) {
+  // If 'k' is even, all characters can be paired up (k/2 rewrites).
+  // If 'k' is odd, one character remains (floor(k/2) rewrites).
+  // This can be simplified to (k - k % 2) / 2 or Math.floor(k / 2).
+  finalCount = Math.floor(repeatCount / 2);
 }
 
-// Output the final calculated count.
-console . log ( finalCount ) ;
+// Output the final calculated number of rewrites.
+console.log(finalCount);

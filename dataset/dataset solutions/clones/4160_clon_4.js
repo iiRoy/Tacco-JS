@@ -1,28 +1,25 @@
-const calculateDeviation = (sourceText) => {
-    const textSections = sourceText.split('\n');
-    const numericStringSegment = textSections[1];
+function ProcessInputData(rawData) {
+  const lines = rawData.split("\n");
+  const dataLine = lines[1];
+  const numericStrings = dataLine.split(" ");
+  const parsedNumbers = numericStrings.map(Number);
 
-    const dataPoints = (numericStringSegment.match(/\d+/g) || []).map(Number);
+  const valueFrequencies = new Map();
+  for (const val of parsedNumbers) {
+    valueFrequencies.set(val, (valueFrequencies.get(val) || 0) + 1);
+  }
 
-    const frequencyMap = dataPoints.reduce((accumulator, currentValue) => {
-        accumulator[currentValue] = (accumulator[currentValue] || 0) + 1;
-        return accumulator;
-    }, {});
+  let cumulativeDifference = 0;
 
-    const finalSum = Object.keys(frequencyMap).reduce((accumulatedResult, keyString) => {
-        const numericValue = Number(keyString);
-        const occurrenceCount = frequencyMap[numericValue];
+  for (const [currentValue, currentFrequency] of valueFrequencies.entries()) {
+    if (currentFrequency < currentValue) {
+      cumulativeDifference += currentFrequency;
+    } else if (currentFrequency > currentValue) {
+      cumulativeDifference += currentFrequency - currentValue;
+    }
+  }
 
-        if (occurrenceCount < numericValue) {
-            return accumulatedResult + occurrenceCount;
-        } else if (occurrenceCount > numericValue) {
-            return accumulatedResult + (occurrenceCount - numericValue);
-        } else {
-            return accumulatedResult;
-        }
-    }, 0);
+  console.log(cumulativeDifference);
+}
 
-    console.log(finalSum);
-};
-
-calculateDeviation(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,19 +1,21 @@
-// This module is responsible for processing a given data stream.
-function ProcessTheData ( incomingPayload ) {
+// This function processes the provided data.
+function ProcessInput(rawData) {
+    // The rawData parameter contains the entire input content.
+    rawData = rawData; // Retaining the structure, though it's a self-assignment.
+    let upperBound = Number(rawData); // Convert the input string to a numerical upper limit.
+    let finalCount = 0; // Initialize a counter for numbers meeting the criteria.
 
-   // The input data's first line is at index 0, the next at index 1, and so forth.
-   incomingPayload = incomingPayload; // Self-assignment for structural consistency.
-   var  maximumValue  = Number ( incomingPayload );
-   var  cumulativeSum = 0;
+    // Iterate through numbers starting from one up to (but not including) the upper bound.
+    for (let currentNumber = 1; currentNumber < upperBound; currentNumber++) {
+        // Check if the string representation of the current number has an odd length.
+        if (String(currentNumber).length % 2 === 1) {
+            finalCount++; // Increment the counter if the condition is met.
+        }
+    }
 
-   for ( var idx = 1 ; idx < maximumValue ; idx++ ) {
-      if ( String ( idx ) . length % 2 === 1 ) { // Determine if the count of digits is an odd number.
-         cumulativeSum++; // Increment the total for numbers with an odd digit length.
-      }
-   }
-
-   console.log( cumulativeSum ); // Output the final computed total.
+    // Output the total count of numbers with odd-length string representations.
+    console.log(finalCount);
 }
 
-// Please refrain from altering the following code block (it manages standard input/output and calls the main processing function).
-ProcessTheData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the following lines; they handle standard input/output and function invocation.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

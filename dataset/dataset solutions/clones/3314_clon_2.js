@@ -1,89 +1,163 @@
-const DATA_PARSER = ( ( ) => {
-  function createInputHandler ( inputString ) {
-    return new InputStreamProcessor( inputString ) ;
+var INPUT_PARSER = (function () {
+  // This function acts as a factory for creating an InputReader instance.
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
   }
 
-  function InputStreamProcessor ( rawData ) {
-    this.linesOfData = rawData.trim().split( '\n' ) ;
-    this.currentLinePointer = 0 ;
+  // The InputReader class handles parsing various types of input from a string.
+  function InputReader(initialString) {
+    // Store the input string, trimmed and split into individual lines.
+    this.processedLines = initialString.trim().split("\n");
+    // Keep track of the current line being processed.
+    this.currentLineIndex = 0;
   }
 
-  InputStreamProcessor.prototype.extractNextValue = function ( returnAsString ) {
-    let allLines = this.linesOfData ,
-        lineIndex = this.currentLinePointer ,
-        extractedValue ;
+  // Method to read a single value from the current line.
+  // If the line is exhausted, it moves to the next line.
+  // 'asString' flag determines if the value should be returned as a string or number.
+  InputReader.prototype.readSingleValue = function (asString) {
+    var lineData = this.processedLines;
+    var lineIdx = this.currentLineIndex;
+    var extractedValue;
 
-    if ( typeof allLines[lineIndex] === 'string' ) {
-      allLines[lineIndex] = allLines[lineIndex].split( ' ' ).reverse() ;
+    // If the current line hasn't been processed into an array of values yet, do so.
+    // Values are reversed to allow efficient popping from the end.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    extractedValue = allLines[lineIndex].pop() ;
+    // Pop the last value from the current line's array.
+    extractedValue = lineData[lineIdx].pop();
 
-    if ( ! allLines[lineIndex].length ) {
-      this.currentLinePointer++ ;
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this.currentLineIndex++;
     }
 
-    return returnAsString ? extractedValue : +extractedValue ;
-  } ;
+    // Return the value, converting to a number if 'asString' is false.
+    return asString ? extractedValue : +extractedValue;
+  };
 
-  InputStreamProcessor.prototype.readEntireLine = function ( getTextualValues ) {
-    let lineSegments = this.linesOfData[this.currentLinePointer++].split( ' ' ) ;
-    return getTextualValues ? lineSegments : lineSegments.map( item => +item ) ;
-  } ;
+  // Method to read an entire line and return its space-separated values.
+  // 'asString' flag determines if values should be returned as strings or numbers.
+  InputReader.prototype.readLineValues = function (asString) {
+    // Get the current line, split it by spaces, and advance the line index.
+    var lineContent = this.processedLines[this.currentLineIndex++].split(" ");
+    // Return values, converting to numbers if 'asString' is false.
+    return asString ? lineContent : lineContent.map((val) => +val);
+  };
 
-  InputStreamProcessor.prototype.getMatrix = function ( numRows, outputAsStrings ) {
-    let collectedRows = this.linesOfData.slice( this.currentLinePointer, this.currentLinePointer += numRows ).map( rowStr => rowStr.split( ' ' ) ) ;
-    return outputAsStrings ? collectedRows : collectedRows.map( rowArray => rowArray.map( cellItem => +cellItem ) ) ;
-  } ;
+  // Method to read 'numRows' lines, where each line contains space-separated values,
+  // forming a 2D array (matrix).
+  // 'asString' flag determines if values should be returned as strings or numbers.
+  InputReader.prototype.readMatrix = function (numRows, asString) {
+    // Extract the specified number of lines.
+    var matrixRows = this.processedLines.slice(
+      this.currentLineIndex,
+      (this.currentLineIndex += numRows)
+    );
+    // Split each line by space.
+    // Convert values to numbers if 'asString' is false.
+    return asString
+      ? matrixRows.map((row) => row.split(" "))
+      : matrixRows.map((row) => row.split(" ").map((val) => +val));
+  };
 
-  InputStreamProcessor.prototype.getVector = function ( elementsCount, asStrings ) {
-    let extractedElements = this.linesOfData.slice( this.currentLinePointer, this.currentLinePointer += elementsCount ) ;
-    return asStrings ? extractedElements : extractedElements.map( element => +element ) ;
-  } ;
+  // Method to read 'numRows' lines as a 1D array of values.
+  // 'asString' flag determines if values should be returned as strings or numbers.
+  InputReader.prototype.readLines = function (numRows, asString) {
+    // Extract the specified number of lines.
+    var rawRows = this.processedLines.slice(
+      this.currentLineIndex,
+      (this.currentLineIndex += numRows)
+    );
+    // Convert values to numbers if 'asString' is false.
+    return asString ? rawRows : rawRows.map((val) => +val);
+  };
 
-  return createInputHandler ;
-} ) ( ) ;
+  return createParser;
+})();
 
-const dataHandler = DATA_PARSER( require( 'node:fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// Initialize the input source by reading from standard input.
+var inputSource = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-process.stdout.write( findMinimumRounds() + '\n' ) ;
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
 
-function findMinimumRounds ( ) {
-  let totalNodes = dataHandler.extractNextValue() ;
-  let totalEdges = dataHandler.extractNextValue() ;
-  let edgeConnections = dataHandler.getMatrix( totalEdges ) ;
+// The primary function containing the problem's logic.
+function solveProblem() {
+  // Read the total number of nodes (N).
+  var nodeCount = inputSource.readSingleValue();
+  // Read the total number of edges (M).
+  var edgeCount = inputSource.readSingleValue();
+  // Read all M edges, where each edge is a pair [source, destination].
+  var edgeList = inputSource.readMatrix(edgeCount);
 
-  let isInitialNode = new Array( totalNodes + 1 ).fill( true ) ;
-  let parentToChildMap = new Array( totalNodes + 1 ).fill( null ).map( ( ) => [ ] ) ;
+  // 'isRootCandidate' array:
+  // Initially, all nodes are considered potential roots (value 1).
+  // If a node is a source of an edge, it's marked 0, meaning it's not a root.
+  var isRootCandidate = Array(nodeCount + 1).fill(1);
 
-  for ( let edgeIdx = 0; edgeIdx < totalEdges; edgeIdx++ ) {
-    isInitialNode[ edgeConnections[edgeIdx][0] ] = false ;
-    parentToChildMap[ edgeConnections[edgeIdx][1] ].push( edgeConnections[edgeIdx][0] ) ;
+  // 'incomingEdgesMap' array:
+  // An adjacency list where incomingEdgesMap[destination] stores a list of sources
+  // that have an edge pointing to 'destination'.
+  var incomingEdgesMap = Array(nodeCount + 1)
+    .fill(0)
+    .map((_) => []);
+
+  // Process each edge to populate 'isRootCandidate' and 'incomingEdgesMap'.
+  for (var idx = 0; idx < edgeCount; idx++) {
+    var sourceNode = edgeList[idx][0];
+    var destinationNode = edgeList[idx][1];
+
+    // Mark the source node as not a root candidate.
+    isRootCandidate[sourceNode] = 0;
+    // Add the source node to the list of nodes pointing to the destination.
+    incomingEdgesMap[destinationNode].push(sourceNode);
   }
 
-  let resultRounds = -1 ;
-  let currentProcessingQueue = [ ] ;
+  // 'resultSteps' will store the final answer, initialized to -1.
+  var resultSteps = -1;
+  // 'currentLayerNodes' will hold nodes being processed in the current step/layer.
+  var currentLayerNodes = [];
 
-  for ( let nodeIdentifier = 1; nodeIdentifier <= totalNodes; nodeIdentifier++ ) {
-    if ( isInitialNode[nodeIdentifier] ) {
-      currentProcessingQueue.push( nodeIdentifier ) ;
+  // Identify initial root nodes (nodes that are not sources of any edge).
+  for (idx = 1; idx <= nodeCount; idx++) {
+    if (isRootCandidate[idx]) {
+      currentLayerNodes.push(idx);
     }
   }
 
-  while ( currentProcessingQueue.length > 0 ) {
-    let nextRoundQueue = [ ] ;
-    let nodesVisitedThisRound = new Array( totalNodes + 1 ).fill( false ) ;
-    resultRounds++ ;
+  // Main loop: continues as long as there are nodes to process in the current layer.
+  while (currentLayerNodes.length) {
+    // 'nextLayerNodes' will collect nodes for the subsequent layer.
+    var nextLayerNodes = [];
+    // 'visitedInLayer' tracks nodes processed within the current layer iteration.
+    // It's reset for each new layer.
+    var visitedInLayer = Array(nodeCount + 1).fill(0);
 
-    for ( let queueIdx = 0; queueIdx < currentProcessingQueue.length; queueIdx++ ) {
-      if ( nodesVisitedThisRound[ currentProcessingQueue[queueIdx] ] ) {
-        continue ;
+    // Increment the step counter for each new layer.
+    resultSteps++;
+
+    // Iterate through all nodes in the current layer.
+    for (idx = 0; idx < currentLayerNodes.length; idx++) {
+      var currentNode = currentLayerNodes[idx];
+
+      // If this node has already been processed in this layer, skip it.
+      if (visitedInLayer[currentNode]) {
+        continue;
       }
-      nodesVisitedThisRound[ currentProcessingQueue[queueIdx] ] = true ;
-      nextRoundQueue.push( ...parentToChildMap[ currentProcessingQueue[queueIdx] ] ) ;
+      // Mark the current node as visited for this layer.
+      visitedInLayer[currentNode] = 1;
+
+      // Add all nodes that point to 'currentNode' into 'nextLayerNodes'.
+      // This effectively traverses the graph in reverse.
+      nextLayerNodes.push(...incomingEdgesMap[currentNode]);
     }
-    currentProcessingQueue = nextRoundQueue ;
+    // Update 'currentLayerNodes' to be the nodes found for the next layer.
+    currentLayerNodes = nextLayerNodes;
   }
 
-  return resultRounds ;
+  // Return the total number of steps/layers.
+  return resultSteps;
 }

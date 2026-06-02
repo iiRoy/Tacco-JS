@@ -1,159 +1,204 @@
-const libIO = require('node:fs');
+const readline = require('readline');
+const process = require('process');
 
-class LineFeedProvider {
-    #segments;
-    #segmentIndex;
+let storedInputLines = [];
+let currentInputLineIndex = 0;
 
-    constructor() {
-        const rawContent = libIO.readFileSync(0, 'utf8');
-        this.#segments = rawContent.split('\n').filter(line => line.trim() !== '');
-        this.#segmentIndex = 0;
-    }
+const inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-    pullNextTokens() {
-        if (this.#segmentIndex >= this.#segments.length) {
-            return null;
-        }
-        const currentSegment = this.#segments[this.#segmentIndex];
-        this.#segmentIndex++;
-        return currentSegment.split(' ');
-    }
-}
+inputReader.on('line', (lineContent) => {
+    storedInputLines.push(lineContent);
+});
+
+inputReader.on('close', () => {
+    executeMainLogic().catch(console.error);
+});
 
 class DisjointSetUnion {
-    #representativeMap;
-    #groupSizes;
+    constructor(elementCount) {
+        this.parentRegistry = new Map();
+        this.setSizes = new Map();
 
-    constructor(initialCapacity) {
-        this.#representativeMap = new Map();
-        this.#groupSizes = new Map();
-        for (let idx = 0; idx < initialCapacity; idx++) {
-            this.#representativeMap.set(idx, idx);
-            this.#groupSizes.set(idx, 1);
+        for (let i = 0; i < elementCount; i++) {
+            this.parentRegistry.set(i, i);
+            this.setSizes.set(i, 1);
         }
     }
 
-    findRepresentative(elementIdentifier) {
-        if (!this.#representativeMap.has(elementIdentifier)) {
-            return elementIdentifier;
+    findRepresentative(element) {
+        if (this.parentRegistry.get(element) === element) {
+            return element;
         }
-        let currentElement = elementIdentifier;
-        const traversalPath = [];
-        while (this.#representativeMap.get(currentElement) !== currentElement) {
-            traversalPath.push(currentElement);
-            currentElement = this.#representativeMap.get(currentElement);
-        }
-        for (const nodeOnPath of traversalPath) {
-            this.#representativeMap.set(nodeOnPath, currentElement);
-        }
-        return currentElement;
+        const root = this.findRepresentative(this.parentRegistry.get(element));
+        this.parentRegistry.set(element, root); // Path compression
+        return root;
     }
 
-    uniteGroups(elementA, elementB) {
+    uniteSets(elementA, elementB) {
         let rootA = this.findRepresentative(elementA);
         let rootB = this.findRepresentative(elementB);
 
         if (rootA !== rootB) {
-            if (this.#groupSizes.get(rootA) < this.#groupSizes.get(rootB)) {
+            // Union by size heuristic
+            if (this.setSizes.get(rootA) < this.setSizes.get(rootB)) {
                 [rootA, rootB] = [rootB, rootA];
             }
-            this.#representativeMap.set(rootB, rootA);
-            this.#groupSizes.set(rootA, this.#groupSizes.get(rootA) + this.#groupSizes.get(rootB));
-            this.#groupSizes.delete(rootB);
+            this.parentRegistry.set(rootB, rootA);
+            this.setSizes.set(rootA, this.setSizes.get(rootA) + this.setSizes.get(rootB));
             return true;
         }
         return false;
     }
 
-    countActiveComponents(activeElementIdentifiers) {
-        const uniqueRepresentatives = new Set();
-        for (const elementIdentifier of activeElementIdentifiers) {
-            if (this.#representativeMap.has(elementIdentifier)) {
-                uniqueRepresentatives.add(this.findRepresentative(elementIdentifier));
-            }
+    countDistinctComponents(activeElementsSet) {
+        const uniqueRoots = new Set();
+        for (const element of activeElementsSet) {
+            uniqueRoots.add(this.findRepresentative(element));
         }
-        return uniqueRepresentatives.size;
+        return uniqueRoots.size;
     }
 }
 
-function processGraphTestCases() {
-    const dataProvider = new LineFeedProvider();
+async function executeMainLogic() {
+    const retrieveLine = () => storedInputLines[currentInputLineIndex++];
 
     while (true) {
-        const initialCounts = dataProvider.pullNextTokens().map(Number);
-        const nodeQuantity = initialCounts[0];
-        const connectionQuantity = initialCounts[1];
+        const dimensions = retrieveLine().split(' ');
+        const numNodes = parseInt(dimensions[0], 10);
+        const numEdges = parseInt(dimensions[1], 10);
 
-        if (nodeQuantity === 0 && connectionQuantity === 0) {
+        if (numNodes === 0 && numEdges === 0) {
             break;
         }
 
-        const nodeAttributes = [];
-        for (let idx = 0; idx < nodeQuantity; idx++) {
-            nodeAttributes.push({
-                identifier: idx,
-                activationValue: Number(dataProvider.pullNextTokens()[0])
-            });
+        const nodeAvailabilityDays = new Map(); // nodeIndex -> days
+        const nodesSortedByDays = []; // { id: nodeIndex, day: daysValue }
+        for (let i = 0; i < numNodes; i++) {
+            const dayValue = parseInt(retrieveLine(), 10);
+            nodeAvailabilityDays.set(i, dayValue);
+            nodesSortedByDays.push({ id: i, day: dayValue });
         }
 
-        const connectionRecords = [];
-        for (let idx = 0; idx < connectionQuantity; idx++) {
-            const parts = dataProvider.pullNextTokens().map(Number);
-            const sourceNode = parts[0] - 1;
-            const targetNode = parts[1] - 1;
-            const edgeWeight = parts[2];
-            connectionRecords.push({ source: sourceNode, target: targetNode, weight: edgeWeight });
+        const allGraphEdges = []; // { source, target, weight }
+        for (let i = 0; i < numEdges; i++) {
+            const edgeData = retrieveLine().split(' ');
+            const u = parseInt(edgeData[0], 10) - 1;
+            const v = parseInt(edgeData[1], 10) - 1;
+            const w = parseInt(edgeData[2], 10);
+            allGraphEdges.push({ source: u, target: v, weight: w });
         }
 
-        const fullGraphPartitions = new DisjointSetUnion(nodeQuantity);
-        connectionRecords.forEach(conn => {
-            fullGraphPartitions.uniteGroups(conn.source, conn.target);
-        });
-        const allNodeIdentifiers = new Set(Array.from({ length: nodeQuantity }, (_, i) => i));
-        if (fullGraphPartitions.countActiveComponents(allNodeIdentifiers) > 1) {
+        nodesSortedByDays.sort((a, b) => a.day - b.day);
+
+        // Initial connectivity check with all nodes present
+        let initialConnectivityDSU = new DisjointSetUnion(numNodes);
+        let allNodesSet = new Set(Array.from({ length: numNodes }, (_, i) => i));
+
+        for (const edge of allGraphEdges) {
+            initialConnectivityDSU.uniteSets(edge.source, edge.target);
+        }
+
+        if (initialConnectivityDSU.countDistinctComponents(allNodesSet) > 1) {
             console.log(0);
             continue;
         }
 
-        let thresholdActivationValue = 0;
-        const sortedNodeAttributes = [...nodeAttributes].sort((attrA, attrB) => attrA.activationValue - attrB.activationValue);
+        // Determine the critical day threshold
+        let criticalDayValue = 0;
+        let currentActiveNodes = new Set(allNodesSet); // All nodes initially considered active for this check
 
-        for (let k = 0; k < sortedNodeAttributes.length; k++) {
-            const currentActiveIdentifiers = new Set(sortedNodeAttributes.slice(0, k + 1).map(attr => attr.identifier));
-            
-            const interimPartitions = new DisjointSetUnion(nodeQuantity);
-            connectionRecords.forEach(conn => {
-                if (currentActiveIdentifiers.has(conn.source) && currentActiveIdentifiers.has(conn.target)) {
-                    interimPartitions.uniteGroups(conn.source, conn.target);
-                }
-            });
+        const nodesGroupedByDay = new Map(); // day -> Set<nodeIndex>
+        for (const { id, day } of nodesSortedByDays) {
+            if (!nodesGroupedByDay.has(day)) {
+                nodesGroupedByDay.set(day, new Set());
+            }
+            nodesGroupedByDay.get(day).add(id);
+        }
+        const orderedUniqueDays = Array.from(nodesGroupedByDay.keys()).sort((a, b) => a - b);
 
-            if (interimPartitions.countActiveComponents(currentActiveIdentifiers) > 1) {
-                thresholdActivationValue = sortedNodeAttributes[k - 1] ? sortedNodeAttributes[k - 1].activationValue : 0;
+        let criticalDayFound = false;
+        for (let i = 0; i < orderedUniqueDays.length; i++) {
+            const dayToConsider = orderedUniqueDays[i];
+            const nodesToDeactivate = nodesGroupedByDay.get(dayToConsider);
+
+            const hypotheticalActiveSet = new Set(currentActiveNodes);
+            for (const node of nodesToDeactivate) {
+                hypotheticalActiveSet.delete(node);
+            }
+
+            if (hypotheticalActiveSet.size === 0) {
+                criticalDayValue = dayToConsider;
+                criticalDayFound = true;
                 break;
             }
-            thresholdActivationValue = sortedNodeAttributes[k].activationValue;
+
+            const dsuForCheck = new DisjointSetUnion(numNodes);
+            const relevantEdgesForConnectivity = allGraphEdges.filter(edge =>
+                hypotheticalActiveSet.has(edge.source) && hypotheticalActiveSet.has(edge.target)
+            );
+            for (const edge of relevantEdgesForConnectivity) {
+                dsuForCheck.uniteSets(edge.source, edge.target);
+            }
+
+            if (dsuForCheck.countDistinctComponents(hypotheticalActiveSet) > 1) {
+                criticalDayValue = dayToConsider;
+                criticalDayFound = true;
+                break;
+            }
+            currentActiveNodes = hypotheticalActiveSet; // If connected, these nodes are permanently removed for next iteration
         }
 
-        let totalMinimumWeight = 0;
-        const finalPartitions = new DisjointSetUnion(nodeQuantity);
+        if (!criticalDayFound && orderedUniqueDays.length > 0) {
+            criticalDayValue = orderedUniqueDays[0]; // All nodes are needed, so the lowest day is the threshold
+        }
 
-        const relevantConnections = connectionRecords.filter(conn => {
-            const sourceAttr = nodeAttributes.find(attr => attr.identifier === conn.source);
-            const targetAttr = nodeAttributes.find(attr => attr.identifier === conn.target);
-            return sourceAttr.activationValue <= thresholdActivationValue &&
-                   targetAttr.activationValue <= thresholdActivationValue;
-        }).sort((connA, connB) => connA.weight - connB.weight);
-
-        relevantConnections.forEach(conn => {
-            if (finalPartitions.findRepresentative(conn.source) !== finalPartitions.findRepresentative(conn.target)) {
-                finalPartitions.uniteGroups(conn.source, conn.target);
-                totalMinimumWeight += conn.weight;
+        // Re-initialize the set of active nodes based on the determined critical day
+        let finalActiveNodesSet = new Set();
+        for (const { id, day } of nodesSortedByDays) {
+            if (day >= criticalDayValue) {
+                finalActiveNodesSet.add(id);
             }
-        });
+        }
 
-        console.log(totalMinimumWeight);
+        // Kruskal's algorithm on the initial set of active nodes
+        let minimumSpanningTreeCost = 0;
+        let currentDSUState = new DisjointSetUnion(numNodes);
+        const sortedAllEdges = [...allGraphEdges].sort((a, b) => a.weight - b.weight);
+
+        // First pass: MST for nodes available on or after the critical day
+        for (const edge of sortedAllEdges) {
+            if (finalActiveNodesSet.has(edge.source) && finalActiveNodesSet.has(edge.target)) {
+                if (currentDSUState.uniteSets(edge.source, edge.target)) {
+                    minimumSpanningTreeCost += edge.weight;
+                }
+            }
+        }
+
+        // Iteratively add back nodes with days less than the critical day, from highest to lowest day
+        const daysToReintroduce = orderedUniqueDays.filter(d => d < criticalDayValue).sort((a, b) => b - a);
+
+        for (const dayGroup of daysToReintroduce) {
+            const nodesToActivate = nodesGroupedByDay.get(dayGroup);
+            for (const node of nodesToActivate) {
+                finalActiveNodesSet.add(node);
+            }
+
+            // Re-calculate MST for the expanded set of active nodes
+            minimumSpanningTreeCost = 0;
+            currentDSUState = new DisjointSetUnion(numNodes); // Reset DSU for full MST calculation
+            for (const edge of sortedAllEdges) {
+                if (finalActiveNodesSet.has(edge.source) && finalActiveNodesSet.has(edge.target)) {
+                    if (currentDSUState.uniteSets(edge.source, edge.target)) {
+                        minimumSpanningTreeCost += edge.weight;
+                    }
+                }
+            }
+        }
+
+        console.log(minimumSpanningTreeCost);
     }
 }
-
-processGraphTestCases();

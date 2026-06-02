@@ -1,18 +1,18 @@
 'use strict';
-const timeUtil = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+process.stdin.on('data', function(dataChunk) {
+  const rawInputText = dataChunk.toString().trim();
+  const totalSecondsValue = Number(rawInputText);
 
-timeUtil.on('line', (dataUnit) => {
-  const totalDurationInSeconds = +dataUnit;
-  
-  const currentMinutesTotal = Math.trunc(totalDurationInSeconds / 60);
-  const resultSeconds = totalDurationInSeconds % 60;
-  
-  const resultHours = Math.trunc(currentMinutesTotal / 60);
-  const resultMinutes = currentMinutesTotal % 60;
-  
-  process.stdout.write(`${resultHours}:${resultMinutes}:${resultSeconds}\n`);
+  const deriveTimeComponents = (inputSeconds) => {
+    const totalMinutesFromSeconds = Math.floor(inputSeconds / 60);
+    const secondsComponent = inputSeconds % 60;
+    const hoursComponent = Math.floor(totalMinutesFromSeconds / 60);
+    const minutesComponent = totalMinutesFromSeconds % 60;
+    return [hoursComponent, minutesComponent, secondsComponent];
+  };
+
+  const timeComponents = deriveTimeComponents(totalSecondsValue);
+  console.log(timeComponents.join(':'));
 });
+process.stdin.resume();
+process.stdin.setEncoding('utf8');

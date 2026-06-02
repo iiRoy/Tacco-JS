@@ -1,39 +1,10 @@
-const categoryThresholds = [
-    { limit: 91, identifier: 'heavy' },
-    { limit: 81, identifier: 'light heavy' },
-    { limit: 75, identifier: 'middle' },
-    { limit: 69, identifier: 'light middle' },
-    { limit: 64, identifier: 'welter' },
-    { limit: 60, identifier: 'light welter' },
-    { limit: 57, identifier: 'light' },
-    { limit: 54, identifier: 'feather' },
-    { limit: 51, identifier: 'bantam' },
-    { limit: 48, identifier: 'fly' }
-];
+const fileSystem = require("fs");
+const inputBuffer = fileSystem.readFileSync("/dev/stdin");
+const inputContent = inputBuffer.toString("utf8");
+const contentUnits = inputContent.split(/\s/);
 
-function classifyValue(inputNumeric) {
-    for (let criterion of categoryThresholds) {
-        if (inputNumeric > criterion.limit) {
-            return criterion.identifier;
-        }
+for (const unitValue of contentUnits) {
+    if (unitValue) {
+        console.log(j > 91 ? 'heavy' : j > 81 ? 'light heavy' : j > 75 ? 'middle' : j > 69 ? 'light middle' : j > 64 ? 'welter' : j > 60 ? 'light welter' : j > 57 ? 'light' : j > 54 ? 'feather' : j > 51 ? 'bantam' : j > 48 ? 'fly' : 'light fly');
     }
-    return 'light fly';
 }
-
-let entireInput = '';
-
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (dataChunk) => {
-    entireInput += dataChunk;
-});
-
-process.stdin.on('end', () => {
-    const processedSegments = entireInput.split(/\s+/).filter(Boolean);
-
-    processedSegments.forEach(segmentText => {
-        const numericalRepresentation = Number(segmentText);
-        const outputCategory = classifyValue(numericalRepresentation);
-        process.stdout.write(outputCategory + '\n');
-    });
-});

@@ -1,274 +1,157 @@
-const InputProcessor = (function() {
-    function createStreamHandler(sourceText) {
-        if (typeof sourceText !== 'string') {
-            throw new Error("Input source must be a string value.");
-        }
-        return new DataStream(sourceText);
+var InputReaderFactory = (function () {
+    function createReader(inputString) {
+        return new InputReader(inputString);
     }
 
-    class DataStream {
-        #inputLines;
-        #linePointer;
-
-        constructor(rawSource) {
-            this.#inputLines = rawSource.trim().split("\n");
-            this.#linePointer = 0;
-            for (let i = 0; i < this.#inputLines.length; i++) {
-                this.#inputLines[i] = this.#inputLines[i].split(" ");
-            }
-        }
-
-        fetchNextToken(asString = false) {
-            if (this.#linePointer >= this.#inputLines.length) {
-                return undefined;
-            }
-
-            let currentLineTokens = this.#inputLines[this.#linePointer];
-
-            while (currentLineTokens.length === 0 && this.#linePointer < this.#inputLines.length - 1) {
-                this.#linePointer++;
-                currentLineTokens = this.#inputLines[this.#linePointer];
-            }
-
-            if (currentLineTokens.length === 0 || this.#linePointer >= this.#inputLines.length) {
-                return undefined;
-            }
-
-            const tokenValue = currentLineTokens.pop();
-
-            if (currentLineTokens.length === 0) {
-                this.#linePointer++;
-            }
-
-            return asString ? tokenValue : Number(tokenValue);
-        }
-
-        readFullLine(returnStrings = false) {
-            if (this.#linePointer >= this.#inputLines.length) {
-                return [];
-            }
-
-            const lineData = this.#inputLines[this.#linePointer++];
-
-            if (lineData.length === 0) {
-                return [];
-            }
-
-            return returnStrings ? lineData : lineData.map(val => Number(val));
-        }
-
-        readDataMatrix(count, asStrings = false) {
-            const matrixLines = this.#inputLines.slice(this.#linePointer, this.#linePointer + count);
-            this.#linePointer += count;
-
-            return matrixLines.map(lineTokens => {
-                return asStrings ? lineTokens : lineTokens.map(val => Number(val));
-            });
-        }
-
-        readLineBlock(count, keepAsStrings = false) {
-            const rawLines = this.#inputLines.slice(this.#linePointer, this.#linePointer + count).map(lineTokens => lineTokens.join(" "));
-            this.#linePointer += count;
-
-            return keepAsStrings ? rawLines : rawLines.map(val => Number(val));
-        }
+    function InputReader(inputString) {
+        this.inputLines = inputString.trim().split("\n");
+        this.currentLineIndex = 0;
     }
 
-    return createStreamHandler;
+    function convertToNumberIfApplicable(valueString, asString) {
+        return asString ? valueString : +valueString;
+    }
+
+    InputReader.prototype.readSingleValue = function (asString) {
+        let currentLineContent = this.inputLines[this.currentLineIndex];
+        if (typeof currentLineContent === "string") {
+            this.inputLines[this.currentLineIndex] = currentLineContent.split(" ").reverse();
+        }
+        let extractedValue = this.inputLines[this.currentLineIndex].pop();
+        if (!this.inputLines[this.currentLineIndex].length) {
+            this.currentLineIndex++;
+        }
+        return convertToNumberIfApplicable(extractedValue, asString);
+    };
+
+    InputReader.prototype.readLineValues = function (asString) {
+        const lineContent = this.inputLines[this.currentLineIndex++];
+        const values = lineContent.split(" ");
+        return asString ? values : values.map(val => +val);
+    };
+
+    InputReader.prototype.readMatrix = function (numRows, asString) {
+        const matrixRows = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += numRows);
+        return asString ? matrixRows.map(row => row.split(" ")) : matrixRows.map(row => row.split(" ").map(val => +val));
+    };
+
+    InputReader.prototype.readLines = function (numLines, asString) {
+        const lines = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += numLines);
+        return asString ? lines : lines.map(val => +val);
+    };
+
+    return createReader;
 })();
 
-/**
- * Dynamically creates a multi-dimensional array with a specified initial value.
- * @param {*} initialVal - The value to initialize all elements with.
- * @param {...number} dimensions - A variable number of arguments representing the size of each dimension.
- * @returns {Array} The initialized multi-dimensional array.
- */
-function initializeNestedArray(initialVal, ...dimensions) {
-    if (!dimensions || dimensions.length === 0 || dimensions.some(d => typeof d !== 'number' || d < 0)) {
-        if (dimensions.length === 0) return initialVal;
-        throw new Error("Invalid dimensions provided for initializeNestedArray.");
-    }
+const inputData = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    function buildArray(dimIndex) {
-        if (dimIndex === dimensions.length - 1) {
-            return Array(dimensions[dimIndex]).fill(initialVal);
-        } else {
-            return Array(dimensions[dimIndex]).fill(0).map(() => buildArray(dimIndex + 1));
-        }
+function createMultiDimArray(initialValue) {
+    const args = arguments;
+    const numDimensions = args.length;
+    let arrayCreationExpression = `Array(args[${numDimensions - 1}]).fill(0).map(x=>{return initialValue;})`;
+    for (let i = numDimensions - 2; i >= 1; i--) {
+        arrayCreationExpression = `Array(args[${i}]).fill(0).map(x=>${arrayCreationExpression})`;
     }
-
-    return buildArray(0);
+    return eval(arrayCreationExpression);
 }
 
-// --- Main Program Execution ---
+console.log(processInput());
 
-let dataStreamHandler;
-try {
-    const fs = require("fs");
-    const rawInputContent = fs.readFileSync("/dev/stdin", "utf8");
-    dataStreamHandler = InputProcessor(rawInputContent);
-} catch (error) {
-    console.error("Failed to read input from /dev/stdin:", error);
-    process.exit(1);
-}
+function processInput() {
+    const initialValue = inputData.readSingleValue();
+    const firstArray = inputData.readLineValues();
+    const secondArray = inputData.readLineValues();
 
-console.log(executeMainLogic());
-
-/**
- * Orchestrates the main problem-solving flow.
- * Reads initial parameters, filters item pairs based on conditions,
- * and calls the core solver function twice to determine the optimal outcome.
- * @returns {number} The final maximized resource value.
- */
-function executeMainLogic() {
-    const initialCapacity = dataStreamHandler.fetchNextToken();
-    const deductionsArr = dataStreamHandler.readFullLine();
-    const additionsArr = dataStreamHandler.readFullLine();
-
-    if (deductionsArr.length !== 3 || additionsArr.length !== 3) {
-        console.error("Input arrays for deductions/additions must have exactly 3 elements.");
-        return initialCapacity;
-    }
-
-    // First Pass: Identify items where the deduction is less than the addition.
-    // These represent items that yield a net positive gain.
-    const positiveImpactDeductions = [];
-    const positiveImpactAdditions = [];
-
-    for (let itemIndex = 0; itemIndex < 3; ++itemIndex) {
-        const currentDeduction = deductionsArr[itemIndex];
-        const currentAddition = additionsArr[itemIndex];
-
-        if (currentDeduction < currentAddition) {
-            positiveImpactDeductions.push(currentDeduction);
-            positiveImpactAdditions.push(currentAddition);
-        }
-    }
-
-    const interimResult = calculateBestOutcome(initialCapacity, positiveImpactDeductions, positiveImpactAdditions);
-
-    // Second Pass: Identify items where the addition is less than the deduction.
-    // In this context, the original addition acts as the new deduction, and original deduction as new addition.
-    const negativeImpactDeductions = [];
-    const negativeImpactAdditions = [];
-
-    for (let itemIndex = 0; itemIndex < 3; ++itemIndex) {
-        const currentDeduction = deductionsArr[itemIndex];
-        const currentAddition = additionsArr[itemIndex];
-
-        if (currentAddition < currentDeduction) {
-            negativeImpactDeductions.push(currentAddition);
-            negativeImpactAdditions.push(currentDeduction);
-        }
-    }
-
-    return calculateBestOutcome(interimResult, negativeImpactDeductions, negativeImpactAdditions);
-}
-
-/**
- * Determines the maximum possible resource value based on a given capacity
- * and a set of item pairs (deductionAmount, gainAmount).
- * The strategy varies based on the number of item pairs available.
- * @param {number} currentCapacity - The initial or current resource capacity.
- * @param {Array<number>} deductionAmounts - Array of costs for items.
- * @param {Array<number>} gainAmounts - Array of profits/gains from items.
- * @returns {number} The maximized resource value.
- */
-function calculateBestOutcome(currentCapacity, deductionAmounts, gainAmounts) {
-    const numberOfPairs = deductionAmounts.length;
-
-    if (currentCapacity < 0) {
-        return 0;
-    }
-
-    if (numberOfPairs === 0) {
-        return currentCapacity;
-    }
-
-    if (numberOfPairs === 1) {
-        const itemCost = deductionAmounts[0];
-        const itemProfit = gainAmounts[0];
-
-        if (itemCost <= 0) {
-            if (itemProfit > itemCost) {
-                return Infinity;
-            } else {
-                return currentCapacity;
+    function filterAndGroupPairs(arrA, arrB, comparisonFn) {
+        const filteredLesser = [];
+        const filteredGreater = [];
+        for (let i = 0; i < 3; i++) {
+            if (comparisonFn(arrA[i], arrB[i])) {
+                filteredLesser.push(arrA[i]);
+                filteredGreater.push(arrB[i]);
             }
         }
-
-        const timesUsable = Math.floor(currentCapacity / itemCost);
-        currentCapacity += timesUsable * (itemProfit - itemCost);
-        return currentCapacity;
+        return { lesser: filteredLesser, greater: filteredGreater };
     }
 
-    if (numberOfPairs === 3) {
-        const maxAchievable = initializeNestedArray(-1, currentCapacity + 1);
-        maxAchievable[0] = currentCapacity;
+    let { lesser: lesserValues, greater: greaterValues } = filterAndGroupPairs(firstArray, secondArray, (a, b) => a < b);
+    let intermediateResult = calculateMaxProfit(initialValue, lesserValues, greaterValues);
 
-        for (let itemIdx = 0; itemIdx < numberOfPairs; ++itemIdx) {
-            const itemDeduction = deductionAmounts[itemIdx];
-            const itemGain = gainAmounts[itemIdx];
+    ({ lesser: lesserValues, greater: greaterValues } = filterAndGroupPairs(secondArray, firstArray, (b, a) => b < a));
+    return calculateMaxProfit(intermediateResult, lesserValues, greaterValues);
+}
 
-            for (let currentCostSum = itemDeduction; currentCostSum <= currentCapacity; ++currentCostSum) {
-                if (maxAchievable[currentCostSum - itemDeduction] === -1) {
-                    continue;
+function calculateMaxProfit(currentN, costs, profits) {
+    const numPairs = costs.length;
+
+    if (numPairs === 0) {
+        return currentN;
+    }
+
+    if (numPairs === 1) {
+        const itemCost = costs[0];
+        const itemProfit = profits[0];
+        const numItems = Math.floor(currentN / itemCost);
+        currentN -= numItems * itemCost;
+        currentN += numItems * itemProfit;
+        return currentN;
+    }
+
+    if (numPairs === 3) {
+        const maxProfitDP = Array.from({ length: currentN + 1 }, () => -1);
+        maxProfitDP[0] = currentN;
+
+        for (let i = 0; i < 3; i++) {
+            const currentItemCost = costs[i];
+            const currentItemProfit = profits[i];
+            for (let currentCapacity = currentItemCost; currentCapacity <= currentN; currentCapacity++) {
+                if (maxProfitDP[currentCapacity - currentItemCost] !== -1) {
+                    maxProfitDP[currentCapacity] = Math.max(maxProfitDP[currentCapacity], maxProfitDP[currentCapacity - currentItemCost] + currentItemProfit);
                 }
-                maxAchievable[currentCostSum] = Math.max(
-                    maxAchievable[currentCostSum],
-                    maxAchievable[currentCostSum - itemDeduction] + itemGain
-                );
             }
         }
-        return Math.max(...maxAchievable);
+        return Math.max(...maxProfitDP);
     }
 
-    // This block handles the case where numberOfPairs === 2
-    const item1Deduction = deductionAmounts[0];
-    const item1Gain = gainAmounts[0];
-    const item2Deduction = deductionAmounts[1];
-    const item2Gain = gainAmounts[1];
+    // Case for numPairs === 2
+    const getProfitRatio = (cost, profit) => (profit - cost) / cost;
 
-    const ratio1 = (item1Deduction > 0) ? (item1Gain - item1Deduction) / item1Deduction : Infinity;
-    const ratio2 = (item2Deduction > 0) ? (item2Gain - item2Deduction) / item2Deduction : Infinity;
+    let item1Cost, item1Profit, item2Cost, item2Profit;
 
-    let primaryItemCost, primaryItemGain, secondaryItemCost, secondaryItemGain;
+    const ratioForPair0 = getProfitRatio(costs[0], profits[0]);
+    const ratioForPair1 = getProfitRatio(costs[1], profits[1]);
 
-    if (ratio1 >= ratio2) {
-        primaryItemCost = item1Deduction;
-        primaryItemGain = item1Gain;
-        secondaryItemCost = item2Deduction;
-        secondaryItemGain = item2Gain;
+    if (ratioForPair0 < ratioForPair1) {
+        item1Cost = costs[1];
+        item1Profit = profits[1];
+        item2Cost = costs[0];
+        item2Profit = profits[0];
     } else {
-        primaryItemCost = item2Deduction;
-        primaryItemGain = item2Gain;
-        secondaryItemCost = item1Deduction;
-        secondaryItemGain = item1Gain;
+        item1Cost = costs[0];
+        item1Profit = profits[0];
+        item2Cost = costs[1];
+        item2Profit = profits[1];
     }
 
-    let maximizedResult = 0;
-    const maxPossiblePrimaryItems = (primaryItemCost > 0) ? Math.floor(currentCapacity / primaryItemCost) : (primaryItemGain > primaryItemCost ? Infinity : currentCapacity);
-    const ITERATION_LIMIT = 5000;
+    const maxPossibleItem1Count = Math.floor(currentN / item1Cost);
+    let maxAchievedProfit = 0;
 
-    for (let numPrimaryUsed = 0; numPrimaryUsed <= maxPossiblePrimaryItems && numPrimaryUsed <= ITERATION_LIMIT; ++numPrimaryUsed) {
-        const remainingCapacityAfterPrimary = currentCapacity - (numPrimaryUsed * primaryItemCost);
+    const calculateProfitForCombination = (numItem1, totalCapacity, costA, profitA, costB, profitB) => {
+        let remainingCapacity = totalCapacity - numItem1 * costA;
+        const numItem2 = Math.floor(remainingCapacity / costB);
+        remainingCapacity -= numItem2 * costB;
+        remainingCapacity += numItem1 * profitA;
+        remainingCapacity += numItem2 * profitB;
+        return remainingCapacity;
+    };
 
-        let numSecondaryUsed = 0;
-        if (secondaryItemCost > 0) {
-            numSecondaryUsed = Math.floor(remainingCapacityAfterPrimary / secondaryItemCost);
-        } else if (secondaryItemCost === 0 && secondaryItemGain > 0) {
-            maximizedResult = Infinity;
-            break;
-        }
-
-        const totalValueFromItems = currentCapacity +
-                                     numPrimaryUsed * (primaryItemGain - primaryItemCost) +
-                                     numSecondaryUsed * (secondaryItemGain - secondaryItemCost);
-
-        if (totalValueFromItems > maximizedResult) {
-            maximizedResult = totalValueFromItems;
+    const loopUpperLimit = Math.min(5000, maxPossibleItem1Count);
+    for (let item1CountDecrement = 0; item1CountDecrement <= loopUpperLimit; item1CountDecrement++) {
+        const currentNumItem1 = maxPossibleItem1Count - item1CountDecrement;
+        const currentProfit = calculateProfitForCombination(currentNumItem1, currentN, item1Cost, item1Profit, item2Cost, item2Profit);
+        if (maxAchievedProfit < currentProfit) {
+            maxAchievedProfit = currentProfit;
         }
     }
-
-    return maximizedResult;
+    return maxAchievedProfit;
 }

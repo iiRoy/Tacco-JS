@@ -1,41 +1,55 @@
-'use strict'; // Enforce strict JavaScript parsing and execution rules
+'use strict'; // Enforce strict parsing and error handling.
 
-function ProcessInputData( rawTextData ) { // Primary function to manage input and calculate the result
-  const totalElements = parseInt( rawTextData.split( '\n' )[ 0 ], 10 ) ; // Extract the first numerical value from input, treating it as base 10
-  const characterSequence = rawTextData.split( '\n' )[ 1 ].split( '' ) ; // Obtain the second line of input and convert it into an array of individual characters
+/**
+ * Processes raw input data to find the maximum number of common unique characters
+ * between two halves of a string, split at various points.
+ * @param {string} rawData - The complete input string, typically from stdin.
+ */
+function ProcessInput(rawData) {
+  // Parse the total character count from the first line of input.
+  const charCount = Number(rawData.split('\n')[0]);
+  // Convert the second line of input into an array of individual characters.
+  const charArray = rawData.split('\n')[1].split('');
 
-  let uniqueLeftSegment, uniqueRightSegment; // Variables to store unique characters from partitioned segments
-  let matchingElementCount = 0; // Accumulator for the number of common unique characters between segments
-  let maxOverlapValues = []; // Collection to hold the common character counts for each partition point
+  let uniqueLeftChars; // Stores unique characters from the left segment.
+  let uniqueRightChars; // Stores unique characters from the right segment.
+  let commonCharCount = 0; // Tracks the count of common unique characters for a given split.
+  let overlapCounts = []; // Accumulates the common character counts for each split point.
 
+  // Iterate through all possible split points for the character array.
+  // The split index 'splitIndex' ranges from 1 to charCount - 1.
+  for (let splitIndex = 1; splitIndex < charCount; splitIndex++) {
+    // Extract the left segment and filter for unique characters.
+    uniqueLeftChars = charArray.slice(0, splitIndex)
+      .filter((currentElement, elementIndex, originalArray) => originalArray.indexOf(currentElement) === elementIndex);
 
-  // Iterate through the character sequence, creating split points from the second element up to the second-to-last
-  for ( let segmentIndex = 1; segmentIndex < totalElements; segmentIndex++ ) {
-    uniqueLeftSegment = characterSequence.slice( 0, segmentIndex ) // Isolate the left portion of the character array
-      .filter( ( charValue, idx, currentArrayRef ) => currentArrayRef.indexOf( charValue ) === idx ); // Filter to keep only unique characters in the left segment
-    
-    uniqueRightSegment = characterSequence.slice( segmentIndex ) // Isolate the right portion of the character array
-      .filter( ( charValue, idx, currentArrayRef ) => currentArrayRef.indexOf( charValue ) === idx ); // Filter to keep only unique characters in the right segment
+    // Extract the right segment and filter for unique characters.
+    uniqueRightChars = charArray.slice(splitIndex)
+      .filter((currentElement, elementIndex, originalArray) => originalArray.indexOf(currentElement) === elementIndex);
 
-    // Compare each unique character from the left segment against the unique characters in the right segment
-    for ( let leftCharIndex = 0; leftCharIndex < uniqueLeftSegment.length; leftCharIndex++ ) {
-      if ( uniqueRightSegment.some( comparedValue => comparedValue === uniqueLeftSegment[ leftCharIndex ] ) ) {
-        matchingElementCount++; // Increment the counter if a character from the left segment is found in the right
+    // Compare each unique character from the left segment with the unique characters from the right segment.
+    for (let leftCharIndex = 0; leftCharIndex < uniqueLeftChars.length; leftCharIndex++) {
+      // If a character from the left segment is found in the right segment, increment the common count.
+      if (uniqueRightChars.some(rightChar => rightChar === uniqueLeftChars[leftCharIndex])) {
+        commonCharCount++;
       }
     }
-    maxOverlapValues.push( matchingElementCount ); // Record the total count of common unique characters for the current split
-    matchingElementCount = 0; // Reset the common character counter for the subsequent iteration
-    
-    // Optional debugging outputs for segment content and accumulated results (currently commented out)
+    // Store the calculated common character count for the current split.
+    overlapCounts.push(commonCharCount);
+    // Reset the counter for the next iteration.
+    commonCharCount = 0;
+
     /*
-    console.log( 'Left part:', uniqueLeftSegment );
-    console.log( 'Right part:', uniqueRightSegment );
-    console.log( 'All overlap counts:', maxOverlapValues );
+    // Debugging outputs (commented out in original, so kept commented or removed)
+    // console.log("Left segment unique:", uniqueLeftChars);
+    // console.log("Right segment unique:", uniqueRightChars);
+    // console.log("All overlap counts:", overlapCounts);
     */
   }
 
-  console.log( Math.max( ...maxOverlapValues ) ); // Print the highest common unique character count found across all splits
+  // Output the maximum common character count found across all split points.
+  console.log(Math.max.apply(null, overlapCounts));
 }
 
-// Execute the main processing function by reading input from standard input stream
-ProcessInputData( require( "node:fs" ).readFileSync( "/dev/stdin", { encoding: "utf8" } ).trim() );
+// Read input from standard input, decode as UTF-8, remove leading/trailing whitespace, and pass to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

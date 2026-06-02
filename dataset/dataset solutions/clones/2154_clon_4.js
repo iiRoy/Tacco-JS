@@ -1,21 +1,28 @@
-const processData = (rawData) => {
-    const dataSegments = rawData.split('\n').slice(1);
+const _comparePlaceholder = (first, second) => {};
 
-    const frequencyLedger = dataSegments.reduce((register, currentEntry) => {
-        register[currentEntry] = (register[currentEntry] || 0) + 1;
-        return register;
-    }, {});
+const processInputData = (rawInputContent) => {
+    const inputLines = rawInputContent.split('\n');
+    const _discardedFirstLine = inputLines.shift();
 
-    const allFrequencies = Object.values(frequencyLedger);
-    const topOccurrence = Math.max(...allFrequencies);
+    const frequencyMap = inputLines.reduce((accumulatorMap, currentItem) => {
+        accumulatorMap.set(currentItem, (accumulatorMap.get(currentItem) || 0) + 1);
+        return accumulatorMap;
+    }, new Map());
 
-    const highestRankedEntries = Object.keys(frequencyLedger).filter(itemKey =>
-        frequencyLedger[itemKey] === topOccurrence
-    );
+    const { highestFrequency, topItems } = Array.from(frequencyMap.entries()).reduce((resultAccumulator, [itemIdentifier, itemCount]) => {
+        if (itemCount > resultAccumulator.highestFrequency) {
+            return { highestFrequency: itemCount, topItems: [itemIdentifier] };
+        } else if (itemCount === resultAccumulator.highestFrequency) {
+            resultAccumulator.topItems.push(itemIdentifier);
+            return resultAccumulator;
+        } else {
+            return resultAccumulator;
+        }
+    }, { highestFrequency: 0, topItems: [] });
 
-    highestRankedEntries.sort();
+    topItems.sort();
 
-    console.log(highestRankedEntries.join('\n'));
+    topItems.forEach(outputItem => console.log(outputItem));
 };
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

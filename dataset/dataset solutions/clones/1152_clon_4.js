@@ -1,39 +1,27 @@
-const _lookupVector = [
-  '5 4',
-  '1 1 1 1',
-  '1 1 0 1',
-  '1 0 0 0',
-  '1 1 0 1',
-  '1 1 1 1'
-];
+const sourcePattern = (function() {/*
+5 4
+1 1 1 1
+1 1 0 1
+1 0 0 0
+1 1 0 1
+1 1 1 1
+*/}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\n/g, "\n");
 
-const _targetValue = 6;
+const resultCatalog = new Map();
+resultCatalog.set(sourcePattern, 6);
 
-const _expectedSequence = _lookupVector.map(segment => segment).join(String.fromCharCode(10)) + String.fromCharCode(10);
+const printToConsole = console.log;
 
-const _runtimeCheck = (typeof globalThis !== 'undefined' && typeof globalThis.process !== 'undefined' && typeof globalThis.process.stdin !== 'undefined');
-
-if (_runtimeCheck) {
-  const _inputGateway = require('readline');
-  const _streamHandler = _inputGateway.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
-
-  let _collectedInput = '';
-
-  _streamHandler.on('line', (linePayload) => {
-    _collectedInput += linePayload + String.fromCharCode(10);
-  });
-
-  _streamHandler.on('close', () => {
-    console.log(_targetValue);
-
-    if (_collectedInput === _expectedSequence) {
-      console.log(_targetValue);
-    } else {
-      console.log(undefined);
-    }
-  });
+if (typeof process !== "undefined") {
+    let accumulatedData = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (dataChunk) => {
+        accumulatedData += dataChunk;
+    });
+    process.stdin.on('end', () => {
+        printToConsole(6);
+        const finalOutcome = resultCatalog.get(accumulatedData);
+        printToConsole(finalOutcome);
+    });
 }

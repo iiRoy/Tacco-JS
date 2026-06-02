@@ -1,34 +1,38 @@
-// This module contains a primary routine for processing input data.
-function processInputData(sourceData) {
-    // Acquire the first numeric descriptor and the initial reference value from the first line.
-    // Explicitly converting string parts to integers using parseInt for clarity.
-    let itemCounter = parseInt(sourceData[0].split(" ")[0], 10);
-    let referenceAmount = parseInt(sourceData[0].split(" ")[1], 10);
+function processInput(rawData) {
+    // The first line of input contains two space-separated numbers:
+    // N (number of items) and X (an initial value).
+    // We parse these into numerical variables.
+    let numItems = rawData[0].split(" ")[0] - 0; // Convert the first part to a number
+    let initialValue = rawData[0].split(" ")[1] - 0; // Convert the second part to a number
 
-    // Prepare a container for numerical elements and an accumulator for their aggregate.
-    let numericalCollection = [];
-    let cumulativeTotal = 0;
+    // Initialize an array to hold subsequent numerical inputs
+    // and a variable to accumulate their sum.
+    const sortedNumbers = [];
+    let totalSum = 0;
 
-    // Iterate through subsequent data lines, processing each as a numerical entry.
-    for (let indexPosition = 1; indexPosition <= itemCounter; indexPosition++) {
-        // Convert the current line to a number and add it to the total.
-        cumulativeTotal += Number(sourceData[indexPosition]);
-        // Also add the numerical value to our collection.
-        numericalCollection.push(Number(sourceData[indexPosition]));
+    // Iterate from the second line of input up to N lines.
+    // Each line contains a single number.
+    for (let idx = 1; idx <= numItems; idx++) {
+        const currentNum = rawData[idx] - 0; // Convert the current line to a number
+        totalSum += currentNum; // Add to the running total
+        sortedNumbers.push(currentNum); // Add to the array
     }
 
-    // Arrange the collected numbers in ascending order for further calculations.
-    numericalCollection.sort((elementA, elementB) => elementA - elementB);
+    // Sort the collected numbers in ascending order.
+    // This is a standard numerical sort using a comparator function.
+    sortedNumbers.sort((valA, valB) => valA - valB);
 
-    // Adjust the reference amount by subtracting the cumulative total of all elements.
-    referenceAmount -= cumulativeTotal;
+    // Adjust the initial value by subtracting the sum of all collected numbers.
+    initialValue -= totalSum;
 
-    // Output the final computed value: the item count plus the integer division
-    // of the adjusted reference amount by the smallest number in the collection.
-    console.log(itemCounter + Math.floor(referenceAmount / numericalCollection[0]));
+    // Calculate the final result:
+    // It's the number of items plus the floor division of the adjusted initial value
+    // by the smallest number in the sorted list (which is the first element).
+    console.log(numItems + Math.floor(initialValue / sortedNumbers[0]));
 }
 
-// Execute the data processing routine by feeding it content
-// read from the standard input stream.
-// The input is read as UTF-8, trimmed, and then segmented into individual lines.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+// This block reads the entire standard input,
+// decodes it as UTF-8, removes leading/trailing whitespace,
+// and splits it into an array of strings by newline characters.
+// This array is then passed to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

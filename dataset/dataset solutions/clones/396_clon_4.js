@@ -1,98 +1,97 @@
-var libIO = require('fs');
-var dataStreamDescriptor = process.stdin.fd;
-var dataExtent = libIO.fstatSync(dataStreamDescriptor).size;
-var dataStorage = Buffer.alloc(dataExtent);
-var actualReadBytes = libIO.readSync(dataStreamDescriptor, dataStorage, 0, dataExtent, 0);
-var queryPayload = dataStorage.toString('utf8', 0, actualReadBytes).split('\n');
+var fs = require('fs');
+var inputData = fs.readFileSync(process.stdin.fd, 'utf8').split('\n');
 
-function manageDiningEstablishment() {
-    const establishmentCapacity = 17;
-    const clientGroupSizes = [2, 5, 2, 2, 2];
-    const diningDurations = [19, 39, 25, 36, 22, 42];
-    const totalClientGroups = 100;
-    const groupArrivalInterval = 5;
+function runRestaurantSimulation() {
+    const partyGroupSizes = Object.freeze([2, 5, 2, 2, 2]);
+    const groupMealDurations = Object.freeze([19, 39, 25, 36, 22, 42]);
 
-    let clockTick = 0;
-    let seatingLayout = Array.from({ length: establishmentCapacity }, () => 0); // 0 means currently free, otherwise holds the clockTick when it becomes free
-    let inboundClientQueue = [];
-    let recordedClientDelays = new Map();
-    let seatedClientCounter = 0;
-    let nextScheduledGroupIndex = 0;
-
-    const allClientGroups = Array.from({ length: totalClientGroups }, (_, idx) => {
-        const clientIdentifier = idx;
-        const groupSize = clientGroupSizes[idx % clientGroupSizes.length];
-        const mealDuration = diningDurations[idx % diningDurations.length];
-        const scheduledArrivalMoment = idx * groupArrivalInterval;
-        return {
-            refId: clientIdentifier,
-            occupancy: groupSize,
-            consumptionPeriod: mealDuration,
-            scheduledArrival: scheduledArrivalMoment
-        };
-    });
-
-    const locateVacantSpan = (requiredSize) => {
-        let currentFreeCount = 0;
-        let potentialStart = -1;
-
-        for (let idx = 0; idx < establishmentCapacity; idx++) {
-            if (seatingLayout[idx] <= clockTick) {
-                if (currentFreeCount === 0) {
-                    potentialStart = idx;
-                }
-                currentFreeCount++;
-                if (currentFreeCount === requiredSize) {
-                    return potentialStart;
-                }
-            } else {
-                currentFreeCount = 0;
-                potentialStart = -1;
-            }
-        }
-        return -1;
+    let simulationState = {
+        seatOccupancyTimes: Array(17).fill(0),
+        currentIncomingPartyId: -1,
+        simulationClock: 0,
+        partyArrivalWaitTimes: Array(100).fill(0),
+        remainingPartiesToSeat: 100
     };
 
-    while (seatedClientCounter < totalClientGroups) {
-        while (nextScheduledGroupIndex < totalClientGroups &&
-               allClientGroups[nextScheduledGroupIndex].scheduledArrival <= clockTick) {
-            inboundClientQueue.push(allClientGroups[nextScheduledGroupIndex]);
-            nextScheduledGroupIndex++;
-        }
+    while (simulationState.remainingPartiesToSeat > 0) {
+        simulationState = processOneMinute(simulationState, partyGroupSizes, groupMealDurations);
+    }
 
-        let groupSeatedThisCycle = true;
-        while (groupSeatedThisCycle && inboundClientQueue.length > 0) {
-            groupSeatedThisCycle = false;
-            let groupToSeatIndex = -1;
+    for (let k = 0; k < (inputData.length - 1); k++) {
+        console.log(simulationState.partyArrivalWaitTimes[parseInt(inputData[k], 10)]);
+    }
+}
 
-            for (let i = 0; i < inboundClientQueue.length; i++) {
-                const currentClientGroup = inboundClientQueue[i];
-                const startPosition = locateVacantSpan(currentClientGroup.occupancy);
+function processOneMinute(currentState, groupSizes, mealDurations) {
+    let { seatOccupancyTimes, currentIncomingPartyId, simulationClock, partyArrivalWaitTimes, remainingPartiesToSeat } = currentState;
 
-                if (startPosition !== -1) {
-                    groupToSeatIndex = i;
-                    recordedClientDelays.set(currentClientGroup.refId, clockTick - currentClientGroup.scheduledArrival);
-                    seatedClientCounter++;
-                    groupSeatedThisCycle = true;
+    const updatedSeatOccupancy = seatOccupancyTimes.map(occupancyTime => Math.max(0, occupancyTime - 1));
 
-                    for (let j = 0; j < currentClientGroup.occupancy; j++) {
-                        seatingLayout[startPosition + j] = clockTick + currentClientGroup.consumptionPeriod;
-                    }
+    let nextPartyCandidateId = currentIncomingPartyId;
+    if (nextPartyCandidateId === -1 && simulationClock % 5 === 0) {
+        nextPartyCandidateId = simulationClock / 5;
+    }
 
-                    inboundClientQueue.splice(groupToSeatIndex, 1);
-                    break;
-                }
+    if (nextPartyCandidateId !== -1) {
+        const requiredSeatCount = groupSizes[nextPartyCandidateId % 5];
+        const seatingResult = findAvailableContiguousSeats(updatedSeatOccupancy, requiredSeatCount);
+
+        if (seatingResult.found) {
+            const startingSeatIndex = seatingResult.startIndex;
+
+            partyArrivalWaitTimes[nextPartyCandidateId] = simulationClock - (nextPartyCandidateId * 5);
+
+            for (let s = 0; s < requiredSeatCount; s++) {
+                updatedSeatOccupancy[startingSeatIndex + s] = mealDurations[nextPartyCandidateId % 6];
+            }
+
+            remainingPartiesToSeat--;
+
+            if (remainingPartiesToSeat === 0) {
+                return {
+                    seatOccupancyTimes: updatedSeatOccupancy,
+                    currentIncomingPartyId: nextPartyCandidateId,
+                    simulationClock: simulationClock + 1,
+                    partyArrivalWaitTimes: partyArrivalWaitTimes,
+                    remainingPartiesToSeat: 0
+                };
+            }
+
+            if (((nextPartyCandidateId + 1) * 5) <= simulationClock) {
+                nextPartyCandidateId++;
+            } else {
+                nextPartyCandidateId = -1;
             }
         }
-
-        clockTick++;
     }
-    return recordedClientDelays;
+
+    return {
+        seatOccupancyTimes: updatedSeatOccupancy,
+        currentIncomingPartyId: nextPartyCandidateId,
+        simulationClock: simulationClock + 1,
+        partyArrivalWaitTimes: partyArrivalWaitTimes,
+        remainingPartiesToSeat: remainingPartiesToSeat
+    };
 }
 
-var simulationResultMap = manageDiningEstablishment();
+function findAvailableContiguousSeats(currentSeatStatus, neededSeats) {
+    let currentEmptyRun = 0;
+    let potentialStartIndex = -1;
 
-for (let k = 0; k < queryPayload.length - 1; k++) {
-    const targetGroupRef = parseInt(queryPayload[k], 10);
-    console.log(simulationResultMap.get(targetGroupRef));
+    const foundBlock = currentSeatStatus.some((seatTime, index) => {
+        if (seatTime === 0) {
+            currentEmptyRun++;
+            if (currentEmptyRun === neededSeats) {
+                potentialStartIndex = index - (neededSeats - 1);
+                return true;
+            }
+        } else {
+            currentEmptyRun = 0;
+        }
+        return false;
+    });
+
+    return { found: foundBlock, startIndex: potentialStartIndex };
 }
+
+runRestaurantSimulation();

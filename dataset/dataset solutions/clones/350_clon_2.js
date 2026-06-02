@@ -1,65 +1,75 @@
-/* This script processes mathematical equations with a placeholder 'X'. */
-function processEquations() {
+function solveEquations() {
+  // Iterate over each line of input, which represents an equation to solve.
   rawData.forEach(function(equationString) {
-    let // Declare several variables for parsing and calculation.
-      firstOperandStr, secondOperandStr, resultStr, matchResult,
-      firstNum, secondNum, calculatedResult,
-      digitAttempt;
+    // Declare variables to hold parts of the equation and intermediate results.
+    var firstOperandStr, secondOperandStr, resultStr, // Strings representing the operands and result
+        matchResult,                                 // Result of the regex match
+        firstNum, secondNum, targetNum,              // Numeric values after 'X' replacement
+        digitCandidate;                              // The digit (0-9) being tested for 'X'
 
-    // Skip empty lines to prevent errors.
+    // If the line is empty or just whitespace, skip it.
     if (equationString.trim() === '') {
       return;
     }
 
-    // Use a regular expression to extract the two operands and the result.
+    // Use a regular expression to parse the equation string into its components.
+    // The regex captures three groups: the first operand, the second operand, and the result.
     matchResult = equationString.match(/([0-9X]+)\+([0-9X]+)\=([0-9X]+)/);
 
-    // Assign captured groups to respective string variables.
-    firstOperandStr  = matchResult[1];
+    // Extract the captured parts from the match result.
+    firstOperandStr = matchResult[1];
     secondOperandStr = matchResult[2];
-    resultStr        = matchResult[3];
+    resultStr = matchResult[3];
 
-    // Iterate through possible digits (0-9) to replace 'X'.
-    for (digitAttempt = 0; digitAttempt <= 9; digitAttempt++) {
-      // Special condition: if the digit is 0, ensure 'X' is not the leading character
-      // unless the entire operand is 'X'.
-      if (digitAttempt === 0 && (
+    // Loop through possible digits (0-9) to substitute for 'X'.
+    for (digitCandidate = 0; digitCandidate <= 9; digitCandidate++) {
+      // Special handling for digit 0:
+      // If the current digit candidate is 0, and any of the operands/result
+      // starts with 'X' but is not just 'X' (e.g., "X1" instead of "X"),
+      // then substituting 0 would create an invalid number with a leading zero (e.g., "01").
+      // In such cases, skip this digit candidate and continue to the next.
+      if (digitCandidate === 0 && (
           (firstOperandStr !== 'X' && firstOperandStr.charAt(0) === 'X') ||
           (secondOperandStr !== 'X' && secondOperandStr.charAt(0) === 'X') ||
           (resultStr !== 'X' && resultStr.charAt(0) === 'X')
       )) {
-        continue; // Skip this attempt if a number would start with 0 (e.g., '05' from 'X5')
+        continue; // Move to the next digit candidate
       }
 
-      // Replace 'X' with the current digit attempt and parse as integers.
-      firstNum = parseInt(firstOperandStr.replace(/X/g, digitAttempt), 10);
-      secondNum = parseInt(secondOperandStr.replace(/X/g, digitAttempt), 10);
-      calculatedResult = parseInt(resultStr.replace(/X/g, digitAttempt), 10);
+      // Replace all occurrences of 'X' in the operand/result strings with the current digit candidate.
+      // Then, convert these modified strings to integers.
+      firstNum = parseInt(firstOperandStr.replace(/X/g, digitCandidate), 10);
+      secondNum = parseInt(secondOperandStr.replace(/X/g, digitCandidate), 10);
+      targetNum = parseInt(resultStr.replace(/X/g, digitCandidate), 10);
 
-      // Check if the current digit attempt makes the equation valid.
-      if (firstNum + secondNum === calculatedResult) {
-        break; // If valid, stop searching.
+      // Check if the equation holds true with the current digit substitution.
+      if (firstNum + secondNum === targetNum) {
+        break; // If a solution is found, exit the loop.
       }
     }
 
-    // Output the found digit or 'NA' if no digit (0-9) satisfies the equation.
-    console.log(digitAttempt === 10 ? 'NA' : digitAttempt);
+    // After the loop, if digitCandidate is 10, it means no solution was found (loop completed without breaking).
+    // Otherwise, digitCandidate holds the digit that made the equation true.
+    console.log(digitCandidate === 10 ? 'NA' : digitCandidate);
   });
 }
 
-let rawData = ''; // Global variable to accumulate incoming data.
+// Global variable to accumulate input from stdin.
+var rawData = '';
 
 // Set up standard input processing.
-process.stdin.resume(); // Ensure stdin is open.
-process.stdin.setEncoding('utf8'); // Specify character encoding.
+process.stdin.resume(); // Keep the process alive while waiting for input.
+process.stdin.setEncoding('utf8'); // Specify the character encoding for input.
 
-// Event handler for 'data' chunks from stdin.
-process.stdin.on('data', function(dataBlock) {
-  rawData += dataBlock; // Append new data to the rawData string.
+// Event listener for incoming data chunks.
+process.stdin.on('data', function(incomingChunk) {
+  rawData += incomingChunk; // Append each chunk of data to the rawData string.
 });
 
-// Event handler for 'end' of stdin stream.
+// Event listener for the end of input stream.
 process.stdin.on('end', function() {
-  rawData = rawData.split('\n'); // Split the accumulated data into an array of lines.
-  processEquations(); // Execute the main logic after all input is received.
+  // Once all input is received, split the rawData into an array of lines.
+  rawData = rawData.split('\n');
+  // Call the main function to process the equations.
+  solveEquations();
 });

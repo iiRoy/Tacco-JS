@@ -1,62 +1,60 @@
-'use strict';
+'use strict'; // Enforce strict parsing and error handling for better code quality.
 
 /**
- * Primary function to orchestrate the processing of raw input data.
- * It reads, parses, calculates, and outputs the result.
- * @param {string} sourceContent - The complete raw text received from the input stream.
+ * Processes the raw input string to calculate the minimum greatest common divisor
+ * among adjacent elements in a sorted list of numbers.
+ *
+ * @param {string} rawData - The complete input string read from a source (e.g., stdin).
  */
-function processInputData(sourceContent) {
-  // Step 1: Clean and transform the raw string input into a structured array of numbers.
-  // This involves removing external whitespace, splitting by line breaks,
-  // and then parsing each line's elements into integers.
-  let parsedRows = sourceContent
-    .trim() // Eliminate any leading or trailing whitespace from the entire input string.
-    .split('\n') // Divide the input string into an array of individual lines.
-    .map(lineString => // Iterate over each line to process its content.
-      lineString.split(' ') // Split the current line into an array of string-represented numbers.
-                .map(Number.parseInt) // Convert each string number into an actual integer.
-    );
+function processInput(rawData) {
+  // First, prepare the input data:
+  // 1. Remove any leading or trailing whitespace from the entire input.
+  // 2. Split the input string into an array of individual lines.
+  // 3. For each line, split it by spaces and convert each resulting part into a number.
+  let processedLines = rawData
+    .trim() // Eliminate unnecessary whitespace around the input block.
+    .split('\n') // Break the input into an array of strings, one for each line.
+    .map(lineString => lineString.split(' ').map(Number)); // Transform each line string into an array of numbers.
 
-  // Step 2: Extract the total count of items from the first element of the first parsed row.
-  const elementCount = parsedRows[0][0];
+  // Extract the total count of entities from the first element of the first processed line.
+  const countOfEntities = processedLines[0][0];
 
-  // Step 3: Retrieve the array of numbers from the second parsed row and sort it numerically.
-  // Sorting is a prerequisite for correctly computing the greatest common divisor of adjacent elements.
-  const numericSequence = parsedRows[1]
-    .sort((valA, valB) => valA - valB); // Arrange numbers in ascending order.
+  // Retrieve the list of creatures (numbers) from the second processed line
+  // and sort them in ascending numerical order.
+  const creaturesList = processedLines[1].sort((valueA, valueB) => valueA - valueB);
 
-  // Step 4: Initialize a variable to store the smallest greatest common divisor found.
-  // We begin with an infinitely large value to ensure any calculated GCD will be smaller.
-  let currentMinimumFactor = Infinity;
+  // Initialize a variable to hold the smallest GCD found so far.
+  // Start with the largest possible safe integer to ensure any valid GCD will be smaller.
+  let minimumGCDValue = Number.MAX_SAFE_INTEGER;
 
   /**
    * Computes the greatest common divisor (GCD) of two non-negative integers
-   * using the recursive Euclidean algorithm.
-   * @param {number} firstNum - The first integer for the GCD computation.
-   * @param {number} secondNum - The second integer for the GCD computation.
-   * @returns {number} The greatest common divisor of the two input numbers.
+   * using the Euclidean algorithm.
+   *
+   * @param {number} valueA - The first integer.
+   * @param {number} valueB - The second integer.
+   * @returns {number} The greatest common divisor of valueA and valueB.
    */
-  const calculateCommonDivisor = (firstNum, secondNum) => {
-    // The base condition for the recursion: if the second number is zero,
-    // the first number is the GCD.
-    return secondNum === 0
-      ? firstNum
-      : calculateCommonDivisor(secondNum, firstNum % secondNum); // Recursive call with remainder.
+  const calculateGreatestCommonDivisor = (valueA, valueB) => {
+    // The base case for the recursion: if the second value is zero, the first value is the GCD.
+    // Otherwise, recursively call with the second value and the remainder of the first divided by the second.
+    return valueB === 0 ? valueA : calculateGreatestCommonDivisor(valueB, valueA % valueB);
   };
 
-  // Step 5: Iterate through the sorted numerical sequence to determine the GCD of all adjacent pairs.
-  // The loop runs for N-1 iterations for N elements to cover all pairs.
-  for (let index = 0; index < elementCount - 1; ++index) {
-    // Compute the greatest common divisor for the current pair of neighboring numbers.
-    const currentPairGcd = calculateCommonDivisor(numericSequence[index], numericSequence[index + 1]);
+  // Iterate through the sorted list of creatures, comparing each adjacent pair.
+  // The loop runs up to `countOfEntities - 1` because we are always looking at `idx` and `idx + 1`.
+  for (let entityIndex = 0; entityIndex < countOfEntities - 1; entityIndex++) {
+    // Calculate the GCD for the current creature and its immediate successor.
+    const currentPairGCD = calculateGreatestCommonDivisor(creaturesList[entityIndex], creaturesList[entityIndex + 1]);
 
-    // Update the `currentMinimumFactor` if the newly calculated GCD is smaller.
-    currentMinimumFactor = Math.min(currentPairGcd, currentMinimumFactor);
+    // Update `minimumGCDValue` if the `currentPairGCD` is smaller than the previously recorded minimum.
+    minimumGCDValue = Math.min(currentPairGCD, minimumGCDValue);
   }
 
-  // Step 6: Display the final smallest greatest common divisor to the standard output.
-  console.log(currentMinimumFactor);
+  // Output the final calculated minimum GCD value to the standard console.
+  console.log(minimumGCDValue);
 }
 
-// Execute the main processing function by reading the input from standard input (stdin).
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+// Execute the main processing function by reading input from standard input.
+// This typically involves reading a file named '/dev/stdin' in competitive programming environments.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

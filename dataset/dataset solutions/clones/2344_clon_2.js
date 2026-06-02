@@ -1,20 +1,15 @@
-const processInput = rawText => {
-    /* This function takes a raw string from standard input,
-     * parses the numerical components, and determines a game outcome. */
-    const allInputLines = rawText . trim() . split('\n');
+const primaryFunction = (inputData) => {
+  // This function processes the provided input string.
+  const processedLines = inputData.trim().split('\n'); // Split input into lines, though not all are used.
+  const [firstValue, secondValue, thirdValue] = inputData.trim().split(' ').map((item) => parseInt(item, 10)); // Parse three numbers from the first line.
 
-    // From the initial part of the input, parse three distinct integer values.
-    const [
-        firstCardValue,
-        secondCardValue,
-        thirdCardValue
-    ] = rawText.trim().split(' ').map(singleStr => parseInt(singleStr, 10));
-
-    // Evaluate the sum of the obtained values against a threshold.
-    ( ( firstCardValue + secondCardValue + thirdCardValue ) >= 22 )
-        ? console.log('bust')
-        : console.log('win');
+  // Determine the outcome based on the sum of the three numbers.
+  if (firstValue + secondValue + thirdValue >= 22) {
+    console.log('bust');
+  } else {
+    console.log('win');
+  }
 };
 
-// Execute the primary routine by fetching data from the standard input stream.
-processInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read standard input and pass it to the main processing function.
+primaryFunction(require("fs").readFileSync("/dev/stdin", "utf8"));

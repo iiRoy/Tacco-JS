@@ -1,39 +1,30 @@
 'use strict';
-(function() {
-    const acquireInputData = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
 
-    const parseNumericComponents = (textualLine) => {
-        const potentialValues = textualLine.match(/\d+/g);
-        if (!potentialValues || potentialValues.length < 3) {
-            throw new Error("Insufficient numeric elements detected in input.");
-        }
-        return potentialValues.slice(0, 3).map(component => parseInt(component, 10));
-    };
+const calculateResourceAllocation = (initialSupply, backupSupply, consumptionAmount) => {
+    const consumedFromInitial = Math.min(initialSupply, consumptionAmount);
+    const remainingInitial = initialSupply - consumedFromInitial;
 
-    const determineAllocations = (primaryResource, secondaryResource, costThreshold) => {
-        let firstAllocationResult;
-        let secondAllocationResult;
+    const remainingConsumption = consumptionAmount - consumedFromInitial;
 
-        if (primaryResource > costThreshold) {
-            firstAllocationResult = primaryResource - costThreshold;
-            secondAllocationResult = secondaryResource;
-        } else {
-            firstAllocationResult = 0;
-            const remainingCost = costThreshold - primaryResource;
-            if (secondaryResource > remainingCost) {
-                secondAllocationResult = secondaryResource - remainingCost;
-            } else {
-                secondAllocationResult = 0;
-            }
-        }
-        return [firstAllocationResult, secondAllocationResult];
-    };
+    const consumedFromBackup = Math.min(backupSupply, remainingConsumption);
+    const remainingBackup = backupSupply - consumedFromBackup;
 
-    const sourceContent = acquireInputData();
-    const initialLine = sourceContent.split('\n')[0];
-    const [valueAlpha, valueBeta, valueGamma] = parseNumericComponents(initialLine);
+    return [remainingInitial, remainingBackup];
+};
 
-    const finalCalculations = determineAllocations(valueAlpha, valueBeta, valueGamma);
+(() => {
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+    
+    const [primaryResource, secondaryResource, depletionFactor] = rawData
+        .trim()
+        .split(' ')
+        .map(Number);
 
-    console.log(finalCalculations[0], finalCalculations[1]);
+    const [finalPrimary, finalSecondary] = calculateResourceAllocation(
+        primaryResource,
+        secondaryResource,
+        depletionFactor
+    );
+
+    console.log(finalPrimary, finalSecondary);
 })();

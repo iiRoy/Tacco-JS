@@ -1,46 +1,22 @@
-function processInputData(sourceMaterial) {
-    const dataLines = sourceMaterial.split("\n");
-    const collectedResults = [];
+function Main(input) {
+    const inputLines = input.split("\n");
+    let currentLineIndex = 0;
 
-    let lineCursor = 0;
-    while (lineCursor < dataLines.length) {
-        const sequenceLength = parseInt(dataLines[lineCursor], 10);
-        lineCursor++;
+    while (currentLineIndex < inputLines.length) {
+        const currentN = parseInt(inputLines[currentLineIndex]);
+        const digitString = inputLines[currentLineIndex + 1];
+        const numberSequence = digitString.split("").map(Number);
 
-        if (isNaN(sequenceLength) || sequenceLength <= 0) {
-            if (lineCursor >= dataLines.length) break;
-            continue;
+        let activeSequence = numberSequence;
+
+        while (activeSequence.length > 1) {
+            activeSequence = activeSequence.slice(0, -1).map((element, index) =>
+                Math.abs(element - activeSequence[index + 1])
+            );
         }
-
-        const digitCharacterString = dataLines[lineCursor];
-        lineCursor++;
-
-        let currentNumericCollection = digitCharacterString.split("").map(Number);
-
-        while (currentNumericCollection.length > 1) {
-            currentNumericCollection = generateReducedCollection(currentNumericCollection);
-        }
-
-        collectedResults.push(currentNumericCollection[0]);
+        console.log(activeSequence[0]);
+        currentLineIndex += 2;
     }
-    console.log(collectedResults.join("\n"));
 }
 
-function generateReducedCollection(incomingCollection) {
-    const collectionSize = incomingCollection.length;
-    if (collectionSize <= 1) {
-        return incomingCollection;
-    }
-
-    const temporaryDifferences = incomingCollection.slice(0, collectionSize - 1).map((valueElement, indexPosition) => {
-        return Math.abs(valueElement - incomingCollection[indexPosition + 1]);
-    });
-
-    temporaryDifferences.push(Math.abs(incomingCollection[collectionSize - 1] - incomingCollection[0]));
-
-    temporaryDifferences.pop();
-
-    return temporaryDifferences;
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

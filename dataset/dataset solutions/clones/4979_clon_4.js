@@ -1,43 +1,41 @@
-function processGridData(sourceContent) {
-  const contentLines = sourceContent.split("\n");
+function processGridData(rawData) {
+    const inputLines = rawData.split("\n");
 
-  const gridDimensions = contentLines[0].split(" ").map(Number);
-  const extentRows = gridDimensions[0]; // Corresponds to original H
-  const extentCols = gridDimensions[1]; // Corresponds to original W
+    const dimensions = inputLines[0].split(" ");
+    const gridHeight = parseInt(dimensions[0], 10);
+    const gridWidth = parseInt(dimensions[1], 10);
 
-  const markedPositions = new Set();
-  contentLines.slice(1).forEach(lineItem => {
-    if (lineItem.trim() === "") return;
-    const [rowIdx, colIdx] = lineItem.split(" ").map(val => Number(val) - 1); // Convert to 0-indexed
-    markedPositions.add(`${rowIdx},${colIdx}`);
-  });
+    const blackCellSet = new Set();
 
-  const tallyBins = Array(10).fill(0); // To store counts for 0 to 9 marked cells in a 3x3 square
+    inputLines.slice(1).forEach(lineContent => {
+        if (lineContent.length === 0) return;
+        const cellCoordinates = lineContent.split(" ");
+        const rowZeroIndexed = parseInt(cellCoordinates[0], 10) - 1;
+        const colZeroIndexed = parseInt(cellCoordinates[1], 10) - 1;
+        blackCellSet.add(`${rowZeroIndexed},${colZeroIndexed}`);
+    });
 
-  // Iterate through every possible center for a 3x3 subgrid
-  // A 3x3 subgrid centered at (r, c) spans from (r-1, c-1) to (r+1, c+1)
-  // For the entire 3x3 subgrid to be within bounds, the center (r, c) must satisfy:
-  // 1 <= r < extentRows - 1  (for 0-indexed, centerRow from 1 to extentRows - 2)
-  // 1 <= c < extentCols - 1 (for 0-indexed, centerCol from 1 to extentCols - 2)
-  for (let centerRowIdentifier = 1; centerRowIdentifier < extentRows - 1; centerRowIdentifier++) {
-    for (let centerColIdentifier = 1; centerColIdentifier < extentCols - 1; centerColIdentifier++) {
-      let currentMarkedCount = 0;
+    const blackCellCounts = Array(10).fill(0);
 
-      // Check all 9 cells within the 3x3 subgrid
-      for (let rOffset = -1; rOffset <= 1; rOffset++) {
-        for (let cOffset = -1; cOffset <= 1; cOffset++) {
-          const checkKey = `${centerRowIdentifier + rOffset},${centerColIdentifier + cOffset}`;
-          if (markedPositions.has(checkKey)) {
-            currentMarkedCount++;
-          }
+    for (let topRow = 0; topRow <= gridHeight - 3; topRow++) {
+        for (let leftCol = 0; leftCol <= gridWidth - 3; leftCol++) {
+            let currentSquareBlackCount = 0;
+
+            Array.from({ length: 3 }, (_, rowOffset) => {
+                Array.from({ length: 3 }, (_, colOffset) => {
+                    const checkRow = topRow + rowOffset;
+                    const checkCol = leftCol + colOffset;
+                    if (blackCellSet.has(`${checkRow},${checkCol}`)) {
+                        currentSquareBlackCount++;
+                    }
+                });
+            });
+            
+            blackCellCounts[currentSquareBlackCount]++;
         }
-      }
-      tallyBins[currentMarkedCount]++;
     }
-  }
 
-  console.log(tallyBins.join("\n"));
+    console.log(blackCellCounts.join("\n"));
 }
 
-// This line handles reading from standard input and invoking the processing function.
-processGridData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

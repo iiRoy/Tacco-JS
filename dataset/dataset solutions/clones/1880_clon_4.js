@@ -1,53 +1,44 @@
-const interpretPayloadLineOne = (payloadString) => {
-    const parts = payloadString.trim().split(" ");
-    return {
-        nodeCount: parseInt(parts[0]),
-        journeyLength: BigInt(parts[1])
-    };
-};
+function solve(lines) {
+  const header = lines[0].trim().split(" ");
+  const n = BigInt(header[0]);
+  const k = BigInt(header[1]);
+  const a = lines[1].trim().split(" ").map(x => parseInt(x));
 
-const interpretPayloadLineTwo = (payloadString) => {
-    return payloadString.trim().split(" ").map(val => parseInt(val) - 1);
-};
+  const available = new Set();
+  for (let i = 0; i < n; i++) {
+    available.add(i);
+    a[i]--;
+  }
 
-const recursiveCycleDetector = (currentPos, stepNum, pathVisited, connections) => {
-    if (pathVisited.has(currentPos)) {
-        const entryStep = pathVisited.get(currentPos);
-        return {
-            preCycleSteps: BigInt(entryStep),
-            cycleDuration: BigInt(stepNum - entryStep),
-            cycleStartNode: currentPos
-        };
-    }
-    pathVisited.set(currentPos, stepNum);
-    return recursiveCycleDetector(connections[currentPos], stepNum + 1, pathVisited, connections);
-};
+  const firstArrival = new Map();
+  const route = [0];
 
-const recursivePathNavigator = (currentLocation, stepsRemaining, passageMapping) => {
-    if (stepsRemaining === 0) {
-        return currentLocation;
-    }
-    return recursivePathNavigator(passageMapping[currentLocation], stepsRemaining - 1, passageMapping);
-};
+  let cursor = 0;
+  let step = 0;
+  let repeated;
 
-const processSequenceOutcome = (payload) => {
-    const { nodeCount, journeyLength } = interpretPayloadLineOne(payload[0]);
-    const linkageArray = interpretPayloadLineTwo(payload[1]);
-
-    const cycleData = recursiveCycleDetector(0, 0, new Map(), linkageArray);
-
-    let ultimateStepCount;
-
-    if (journeyLength < cycleData.preCycleSteps) {
-        ultimateStepCount = journeyLength;
+  for (;;) {
+    const landing = a[cursor];
+    if (available.has(landing) && !firstArrival.has(landing)) {
+      firstArrival.set(landing, step);
+      route.push(landing);
+      cursor = landing;
+      step++;
     } else {
-        const remainingStepsInCycle = (journeyLength - cycleData.preCycleSteps) % cycleData.cycleDuration;
-        ultimateStepCount = cycleData.preCycleSteps + remainingStepsInCycle;
+      repeated = landing;
+      break;
     }
+  }
 
-    const finalNodePosition = recursivePathNavigator(0, Number(ultimateStepCount), linkageArray);
+  const start = BigInt(firstArrival.get(repeated));
+  const period = BigInt(step - firstArrival.get(repeated));
 
-    console.log((finalNodePosition + 1).toString());
-};
+  const compressed = (k - start < 0n)
+    ? k
+    : ((k - start) % period) + start;
 
-processSequenceOutcome(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+  const node = route[Number(compressed)];
+  console.log((node + 1) + "");
+}
+
+solve(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

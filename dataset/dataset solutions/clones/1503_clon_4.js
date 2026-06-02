@@ -1,18 +1,16 @@
-function transformString(rawInputData) {
-    const parsedSegment = rawInputData.split('\n')[0].trim();
+function processInputAndPluralize(rawTextContent) {
+    const firstLine = rawTextContent.split('\n')[0];
+    const cleanedWord = firstLine.trim();
 
-    const suffixMap = {
-        'true': 'es',
-        'false': 's'
-    };
+    const lastCharacter = cleanedWord.slice(-1);
+    
+    const suffixToAppend = (lastCharacter === 's') ? 'es' : 's';
 
-    const keyForSuffix = (parsedSegment.slice(-1) === 's').toString();
-
-    const finalComponent = suffixMap[keyForSuffix];
-
-    const assembledResult = parsedSegment + finalComponent;
-
-    console.log(assembledResult);
+    return cleanedWord + suffixToAppend;
 }
 
-transformString(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function executePluralization(dataSource) {
+    console.log(processInputAndPluralize(dataSource));
+}
+
+executePluralization(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,117 +1,114 @@
-var incomingLines = []; /* Stores all lines read from standard input */
-var inputHandler = require('readline');
+var inputData = [];
+var readline = require('readline');
 
-var lineStream = inputHandler.createInterface({
-  input: process.stdin, // Standard input source
-  output: process.stdout, // Standard output sink
+var inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-lineStream.on(
-  'line',
-  function (currentInputLine) {
-    // Add the received line to our collection
-    incomingLines.push(currentInputLine);
-  }
-);
+// Event listener for each line of input
+inputReader.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
 
-lineStream.on('close', function () {
-  // Processing begins once all input lines are received and the stream closes
-  var firstDataSegment = incomingLines.shift(); // Get the first line of input
+// Event listener for when input stream closes
+inputReader.on('close', function () {
+    // Extract initial parameters from the first line
+    var initialParamsStr = inputData.shift();
 
-  // Parse the initial parameters from the first line
-  var totalElements = firstDataSegment.split(' ')[0];
-  var subsetSizeA = firstDataSegment.split(' ')[1];
-  var subsetSizeB = firstDataSegment.split(' ')[2];
+    var totalElements = initialParamsStr.split(" ")[0];
+    var minSelection = initialParamsStr.split(" ")[1];
+    var maxSelection = initialParamsStr.split(" ")[2];
+    var valueArray = Array(totalElements);
 
-  // Initialize an array to hold parsed numerical data
-  var numericalData = Array(totalElements);
-
-  // Read the second line of input and populate the numerical data array
-  var dataValuesStr = incomingLines.shift().split(' ');
-  for (var index = 0; index < totalElements; index++) {
-    numericalData[index] = Number(dataValuesStr[index]); // Convert string to number
-  }
-
-  // Sort the numerical data in descending order
-  numericalData.sort(function (firstVal, secondVal) {
-    return secondVal - firstVal;
-  });
-
-  var calculatedMean = 0; // Variable to store the maximum average
-  var elementFrequencies = {}; // Map to store counts of each unique element
-
-  // Calculate the sum for the average and count element frequencies
-  for (var dataIdx = 0; dataIdx < totalElements; dataIdx++) {
-    if (dataIdx < subsetSizeA) {
-      calculatedMean += numericalData[dataIdx]; // Sum for the average of the top A elements
+    // Parse the array of numbers from the second line
+    var elementsStrArr = inputData.shift().split(" ");
+    for (var idx = 0; idx < totalElements; idx++) {
+        valueArray[idx] = Number(elementsStrArr[idx]);
     }
 
-    // Initialize frequency if element is seen for the first time
-    if (elementFrequencies[numericalData[dataIdx]] === undefined) {
-      elementFrequencies[numericalData[dataIdx]] = 0;
-    }
-    elementFrequencies[numericalData[dataIdx]]++; // Increment frequency count
-  }
+    // Sort the array in descending order
+    valueArray.sort(function (valA, valB) { return (valB - valA); });
 
-  calculatedMean /= subsetSizeA; // Final average calculation
-  console.log(calculatedMean); // Output the calculated average
+    var maxAverageSum = 0;
+    var frequencyMap = {}; // Stores frequency of each number
 
-  // --- Start of combination calculation logic ---
-  var currentProcessedCount = 0;
-  var temporaryValue = 1; // Unused in original, but keeping for structural similarity.
-
-  var finalCombinations = 0;
-
-  // Check if the A-th element is different from the first element
-  if (numericalData[0] !== numericalData[subsetSizeA]) {
-    finalCombinations = 1; // Initialize combination result
-
-    // Iterate through unique elements (up to the number of unique elements)
-    // using indices of the sorted numericalData array.
-    for (var freqIdx = 0; freqIdx < Object.keys(elementFrequencies).length; freqIdx++) {
-      var currentElementCount = elementFrequencies[numericalData[freqIdx]]; // Count of the current element
-
-      // If the current element has a frequency of 2 or more
-      if (currentElementCount >= 2) {
-        var itemsToChoose; // Number of items to choose for combination
-        // Determine 'itemsToChoose' based on remaining capacity for subsetSizeA
-        if (currentElementCount > (subsetSizeA - currentProcessedCount)) {
-          itemsToChoose = subsetSizeA - currentProcessedCount;
-        } else {
-          itemsToChoose = currentElementCount;
+    // Calculate sum for the maximum average and populate frequency map
+    for (var idx = 0; idx < totalElements; idx++) {
+        if (idx < minSelection) {
+            maxAverageSum += valueArray[idx];
         }
-        finalCombinations *= getCombinations(currentElementCount, itemsToChoose); // Multiply combinations
-        currentProcessedCount += currentElementCount; // Update processed count
-      } else {
-        currentProcessedCount += currentElementCount; // Just update processed count for elements with frequency 1
-      }
+        // Initialize frequency if not present
+        if (frequencyMap[valueArray[idx]] === undefined) {
+            frequencyMap[valueArray[idx]] = 0;
+        }
+        frequencyMap[valueArray[idx]]++;
     }
-  } else {
-    // Special case: if the first and A-th elements are identical (all top A elements are the same value)
-    finalCombinations = 0; // Reset combinations for this path
-    // Sum combinations for values from 1 up to subsetSizeB
-    for (var loopCounter = 1; loopCounter <= subsetSizeB; loopCounter++) {
-      // The '50' here seems like a hardcoded value, which is unusual.
-      finalCombinations += getCombinations(50, loopCounter);
+    maxAverageSum /= minSelection;
+    console.log(maxAverageSum); // Output the maximum average
+
+    var currentCount = 0;
+    var tempVar = 1; // This variable is not used in the original logic after declaration, but kept for structural similarity.
+
+    var totalCombinations = 0; // Initialize combination count
+
+    // Check if the A-th element is different from the first element
+    if (valueArray[0] !== valueArray[minSelection]) {
+        totalCombinations = 1; // Reset for multiplication
+        // Iterate through unique values to calculate combinations
+        for (var idx = 0; idx < Object.keys(frequencyMap).length; idx++) {
+            // This part of the original code seems to have a logical flaw or is incomplete
+            // as it uses `C[v[i]]` which would be `frequencyMap[valueArray[idx]]`
+            // but `idx` here iterates over `Object.keys(frequencyMap).length`
+            // and `valueArray[idx]` would not necessarily correspond to the key.
+            // However, to maintain Type II clone, I must replicate the exact structure.
+            // Assuming `valueArray[idx]` here refers to the sorted array elements,
+            // and `frequencyMap` is used to get counts.
+            // The original code's `C[v[i]]` inside this loop is problematic.
+            // I will interpret `v[i]` as `valueArray[idx]` and `C` as `frequencyMap`.
+            // This part of the original code is likely buggy or relies on specific data.
+            // I will clone it as is, preserving the potential bug.
+
+            // The original code's `v[i]` in `C[v[i]]` inside this loop is problematic.
+            // It should likely be `Object.keys(C)[i]` or a different iteration strategy.
+            // However, to maintain Type II, I will use `valueArray[idx]` as `v[i]`.
+            // This means `valueArray[idx]` is used as a key into `frequencyMap`.
+            // This is a direct structural copy of the original's potential issue.
+
+            if (frequencyMap[valueArray[idx]] >= 2) {
+                let numToChoose;
+                if (frequencyMap[valueArray[idx]] > (minSelection - currentCount)) {
+                    numToChoose = minSelection - currentCount;
+                } else {
+                    numToChoose = frequencyMap[valueArray[idx]];
+                }
+                totalCombinations *= calculateCombination(frequencyMap[valueArray[idx]], numToChoose);
+                currentCount += frequencyMap[valueArray[idx]];
+            } else {
+                currentCount += frequencyMap[valueArray[idx]];
+            }
+        }
+    } else {
+        // If the first A elements are all the same value
+        totalCombinations = 0; // Reset for summation
+        for (var loopIndex = 1; loopIndex <= maxSelection; loopIndex++) {
+            totalCombinations += calculateCombination(50, loopIndex); // Hardcoded 50 from original
+        }
     }
-  }
-  console.log(finalCombinations); // Output the final combination count
+    console.log(totalCombinations); // Output the total combinations
 });
 
-// --- Helper Functions ---
-
-// Calculates the number of permutations P(n, r)
-function sequentialProduct(totalItems, itemsSelected) {
-  var runningProduct = 1; // Initialize product for permutation calculation
-  // Calculate n * (n-1) * ... * (n-r+1)
-  for (var counterVar = 0; counterVar < itemsSelected; counterVar++) {
-    runningProduct *= totalItems - counterVar;
-  }
-  return runningProduct;
+// Function to compute permutations P(n, r)
+function calculatePermutation(totalItems, selectedItems) {
+    var resultProduct = 1;
+    for (var idx = 0; idx < selectedItems; idx++) {
+        resultProduct *= totalItems - idx;
+    }
+    return resultProduct;
 }
 
-// Calculates the number of combinations C(n, r)
-function getCombinations(populationSize, selectionSize) {
-  // Calculate C(n, r) = P(n, r) / P(r, r)
-  return sequentialProduct(populationSize, selectionSize) / sequentialProduct(selectionSize, selectionSize);
+// Function to compute combinations C(n, r)
+function calculateCombination(totalItems, selectedItems) {
+    // C(n, r) = P(n, r) / P(r, r)
+    return calculatePermutation(totalItems, selectedItems) / calculatePermutation(selectedItems, selectedItems);
 }

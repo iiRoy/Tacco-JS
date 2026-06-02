@@ -1,106 +1,109 @@
-'use strict'; // Activate strict mode for cleaner code and fewer silent errors
+'use strict';
+// Import the Node.js file system module for input operations
+const fs = require('fs');
 
-const fileSystem = require('fs'); // Acquire the Node.js file system interface
-
-let prodArr = [];       // Container for precomputed modular factorial values
-let invArr = [];        // Container for precomputed modular multiplicative inverses
-let invProdArr = [];    // Container for precomputed modular inverse factorial values
+// Global arrays to store precomputed factorials, modular inverses, and inverse factorials
+let factArr = [];  // Stores factorials modulo M
+let invArr = [];   // Stores modular multiplicative inverses
+let finvArr = [];  // Stores inverse factorials modulo M
 
 /**
- * Initializes global arrays for efficient modular arithmetic operations.
- * This function populates `prodArr`, `invArr`, and `invProdArr` up to a given limit.
- *
- * @param {number} upperLimit  - The maximum integer for which to precompute values.
- * @param {number} currentModulus - The modulus to be used for all calculations.
+ * Precomputes factorials, modular inverses, and inverse factorials up to a specified limit.
+ * This function is essential for efficient calculation of combinations modulo a prime.
+ * @param {number} limitVal - The maximum value for which to precompute.
+ * @param {number} moduloVal - The prime modulus for all calculations.
  */
-function initializeModularProducts(upperLimit, currentModulus) {
-  // Set base cases for the product and inverse product arrays
-  prodArr[0] = prodArr[1] = 1;
-  invProdArr[0] = invProdArr[1] = 1;
-  invArr[1] = 1;
+function initializeFactorialModulo(limitVal, moduloVal) {
+    // Base cases for factorial and inverse factorial arrays
+    factArr[0] = factArr[1] = 1;
+    finvArr[0] = finvArr[1] = 1;
+    invArr[1] = 1; // The modular inverse of 1 is always 1
 
-  // Iterate from 2 up to the specified upper limit
-  for ( let idx = 2; idx <= upperLimit; idx++ ) {
-    // Compute the modular inverse using the property: inv(i) = mod - (mod / i) * inv(mod % i) % mod
-    // Note: Math.floor is used to ensure integer division behavior
-    invArr[idx] = currentModulus - Math.floor(currentModulus / idx) * invArr[currentModulus % idx] % currentModulus;
-    
-    // Compute the modular factorial: prodArr[idx] = (prodArr[idx - 1] * idx) % currentModulus
-    prodArr[idx] = ( prodArr[idx - 1] * idx ) % currentModulus;
-    
-    // Compute the modular inverse factorial: invProdArr[idx] = (invProdArr[idx - 1] * invArr[idx]) % currentModulus
-    invProdArr[idx] = ( invProdArr[idx - 1] * invArr[idx] ) % currentModulus;
-  }
+    // Iterate from 2 up to the limit to fill the arrays
+    for (let idx = 2; idx <= limitVal; idx++) {
+        // Calculate the modular inverse of 'idx' using the property:
+        // inv[i] = mod - floor(mod / i) * inv[mod % i] % mod
+        // Math.floor is crucial here to ensure integer division behavior in JavaScript.
+        invArr[idx] = moduloVal - Math.floor(moduloVal / idx) * invArr[moduloVal % idx] % moduloVal;
+        // Calculate factorial: factArr[idx] = (idx * factArr[idx-1]) % moduloVal
+        factArr[idx] = factArr[idx - 1] * idx % moduloVal;
+        // Calculate inverse factorial: finvArr[idx] = (finvArr[idx-1] * invArr[idx]) % moduloVal
+        finvArr[idx] = finvArr[idx - 1] * invArr[idx] % moduloVal;
+    }
 }
 
 /**
- * Computes the number of combinations (nCk) modulo a given value.
- * This function relies on the precomputed arrays from `initializeModularProducts`.
- *
- * @param {number} totalCount   - The total number of distinct items available.
- * @param {number} selectCount  - The number of items to select from the total.
- * @param {number} modulusValue - The modulus for the combination calculation.
- * @returns {number} The result of C(totalCount, selectCount) modulo modulusValue, or 0 if input is invalid.
+ * Computes the number of combinations (nCk) modulo a given prime.
+ * This function relies on the `initializeFactorialModulo` function having been called
+ * with `totalElements` as the limit or greater.
+ * @param {number} totalElements - The total number of items (n).
+ * @param {number} selectElements - The number of items to choose (k).
+ * @param {number} moduloValC - The prime modulus.
+ * @returns {number} The value of C(n, k) modulo `moduloValC`. Returns 0 for invalid inputs.
  */
-function calculateCombinations( totalCount, selectCount, modulusValue ) {
-  // Check for invalid conditions: selecting more items than available or negative counts
-  if ( totalCount < selectCount || selectCount < 0 || totalCount < 0 ) {
-    return 0;
-  }
-  
-  // Apply the formula for combinations modulo a prime P: C(n, k) = n! * (k!)^-1 * ((n-k)!)^-1 (mod P)
-  return ( prodArr[totalCount] * ( invProdArr[selectCount] * invProdArr[totalCount - selectCount] % modulusValue ) ) % modulusValue;
+function calculateCombinationModulo(totalElements, selectElements, moduloValC) {
+    // If k is greater than n, or if n or k are negative, the combination is 0.
+    if (totalElements < selectElements) return 0;
+    if (totalElements < 0 || selectElements < 0) return 0;
+
+    // C(n, k) = n! / (k! * (n-k)!) = n! * (k!)^-1 * ((n-k)!)^-1 (mod M)
+    // Using precomputed factorials and inverse factorials:
+    return factArr[totalElements] * (finvArr[selectElements] * finvArr[totalElements - selectElements] % moduloValC) % moduloValC;
 }
 
 /**
- * Determines a solution based on two input coordinates, involving modular combinations.
- *
- * @param {number} coordA - The first input coordinate.
- * @param {number} coordB - The second input coordinate.
- * @returns {number} The calculated result, or 0 if the coordinates do not satisfy the problem's conditions.
+ * Solves a specific combinatorial problem related to reaching a target coordinate (x, y)
+ * using only steps of (1,2) and (2,1).
+ * @param {number} coordX - The target X-coordinate.
+ * @param {number} coordY - The target Y-coordinate.
+ * @returns {number} The number of ways to reach (coordX, coordY) modulo 10^9 + 7.
  */
-function computeSolution( coordA, coordB ) {
-  // First condition check: sum of coordinates must be divisible by 3
-  if ( ( coordA + coordB ) % 3 > 0 ) {
-    return 0;
-  }
+function computeSolution(coordX, coordY) {
+    // A necessary condition for reaching (x,y) is that (x+y) must be divisible by 3.
+    // If not, no valid path exists.
+    if ((coordX + coordY) % 3 > 0) {
+        return 0;
+    }
 
-  // Calculate two derived counts, representing steps in a grid traversal problem
-  let pathCountN = ( 2 * coordB - coordA ) / 3;
-  let pathCountM = ( 2 * coordA - coordB ) / 3;
+    // Derive the number of (1,2) steps (valN) and (2,1) steps (valM) required.
+    // These formulas are derived from solving the system of equations:
+    // valM + 2*valN = coordX
+    // 2*valM + valN = coordY
+    let valN = (2 * coordY - coordX) / 3;
+    let valM = (2 * coordX - coordY) / 3;
 
-  // Second condition check: both derived counts must be non-negative
-  if ( pathCountN < 0 || pathCountM < 0 ) {
-    return 0;
-  }
+    // If either valN or valM is negative, it means the target is unreachable with positive steps.
+    if (valN < 0 || valM < 0) {
+        return 0;
+    }
 
-  // Define a large prime modulus for all arithmetic operations
-  const largePrimeMod = 10000000007; // This is 10e9 + 7 from the original code
+    // Define the large prime modulus, commonly used in competitive programming.
+    const largePrime = 10e9 + 7; // Represents 1,000,000,007
 
-  // Precompute modular values up to the sum of the path counts
-  initializeModularProducts( pathCountN + pathCountM, largePrimeMod );
-  
-  // Return the result of C(pathCountN + pathCountM, pathCountN) modulo largePrimeMod
-  return calculateCombinations( pathCountN + pathCountM, pathCountN, largePrimeMod );
+    // Initialize the factorial arrays up to the sum of valN and valM, which is the total number of steps.
+    initializeFactorialModulo(valN + valM, largePrime);
+
+    // The problem reduces to finding the number of ways to arrange valN steps of one type
+    // and valM steps of another type, which is C(valN + valM, valN).
+    return calculateCombinationModulo(valN + valM, valN, largePrime);
 }
 
 /**
- * The primary execution function of the program.
- * It reads input, processes it, and prints the final result.
- *
- * @param {string} programInputString - The raw string input obtained from the standard input.
+ * The main entry point of the program.
+ * Reads input from stdin, parses it, and prints the computed solution.
+ * @param {string} inputString - The raw string content read from standard input.
  */
-function executeProgram( programInputString ) {
-  // Split the input string into individual numeric tokens
-  const inputTokens = programInputString.split( /\s+/ );
-  
-  // Parse the first two tokens as base-10 integers
-  let firstCoordinate = parseInt( inputTokens[0], 10 );
-  let secondCoordinate = parseInt( inputTokens[1], 10 );
-  
-  // Output the computed solution to the standard console
-  console.log( computeSolution( firstCoordinate, secondCoordinate ) );
+function entryPoint(inputString) {
+    // Split the input string by whitespace to get the coordinate values.
+    const inputParts = inputString.split(/\s/);
+    // Parse the first part as the X-coordinate.
+    let inputX = parseInt(inputParts[0], 10);
+    // Parse the second part as the Y-coordinate.
+    let inputY = parseInt(inputParts[1], 10);
+
+    // Call the solution function with the parsed coordinates and print the result.
+    console.log(computeSolution(inputX, inputY));
 }
 
-// Read the entire content of standard input as a UTF-8 string and pass it to the execution function
-executeProgram( fileSystem.readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input as a UTF-8 string and pass it to the entry point.
+entryPoint(fs.readFileSync('/dev/stdin', 'utf8'));

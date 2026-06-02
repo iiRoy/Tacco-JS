@@ -1,51 +1,64 @@
-function processor(rawData) {
-  const textRows = rawData.split('\n');
-  const dims = textRows.shift().split(' ').map(valStr => parseInt(valStr, 10));
-  const numObjects = dims[0];
-  const maxCapacity = dims[1];
-  const objectData = textRows.map(objectRow => objectRow.split(' ').map(valStr => parseInt(valStr, 10)));
+function processInputData(rawData) {
+  // Split the raw input string into individual lines
+  const inputLines = rawData.split('\n');
 
-  // This section initializes the dynamic programming table for knapsack problem.
-  let memoTable = [];
-  for (let capIterator = 0; capIterator < maxCapacity + 1; capIterator++) {
-    memoTable.push(Array(numObjects + 1).fill(0));
+  // Extract the number of items and maximum weight from the first line
+  const dimensions = inputLines.shift().split(' ').map(valStr => parseInt(valStr, 10));
+  const numItems = dimensions[0]; // N
+  const maxWeight = dimensions[1]; // W
+
+  // Parse the remaining lines to get item details (weight and value)
+  const itemDetails = inputLines.map(lineContent =>
+    lineContent.split(' ').map(numStr => parseInt(numStr, 10))
+  );
+
+  // Initialize a 2D array (dynamic programming table)
+  // The table will store the maximum value that can be obtained for a given weight and number of items
+  const memoTable = [];
+  for (let currentIdx = 0; currentIdx < maxWeight + 1; currentIdx++) {
+    // Each row represents a capacity, each column represents an item count
+    memoTable.push(Array(numItems + 1).fill(0));
   }
 
-  let maxBenefit = 0;
+  let finalMaxVal = 0; // Variable to keep track of the overall maximum value found
 
-  // Iterate through each available item
-  for (let objIdx = 0; objIdx < numObjects; objIdx++) {
-    // Iterate through all possible knapsack capacities
-    for (let currentCap = 0; currentCap <= maxCapacity; currentCap++) {
+  // Iterate through each item
+  for (let itemIndex = 0; itemIndex < numItems; itemIndex++) {
+    // Iterate through each possible weight capacity
+    for (let currentWeight = 0; currentWeight <= maxWeight; currentWeight++) {
+      // Extract the weight and value of the current item
+      const itemWeight = itemDetails[itemIndex][0];
+      const itemValue = itemDetails[itemIndex][1];
 
-      const objectWeight = objectData[objIdx][0];
-      const objectValue = objectData[objIdx][1];
+      // If the current item's weight is less than or equal to the current capacity
+      if (itemWeight <= currentWeight) {
+        // Option 1: Include the current item
+        // Value = current item's value + max value from remaining capacity (currentWeight - itemWeight)
+        // with previous items (itemIndex)
+        const valueIfIncluded = memoTable[currentWeight - itemWeight][itemIndex] + itemValue;
 
-      // Decision point: Can the current item be included?
-      if (objectWeight <= currentCap) {
-        // If the item fits, consider two scenarios:
-        // 1. Don't include the current item (value from previous state without this item)
-        // 2. Include the current item (value of this item plus max value from remaining capacity with previous items)
-        memoTable[currentCap][objIdx + 1] = Math.max(
-          memoTable[currentCap][objIdx],
-          memoTable[currentCap - objectWeight][objIdx] + objectValue
-        );
+        // Option 2: Exclude the current item
+        // Value = max value from the same capacity (currentWeight) with previous items (itemIndex)
+        const valueIfExcluded = memoTable[currentWeight][itemIndex];
+
+        // Take the maximum of including or excluding the current item
+        memoTable[currentWeight][itemIndex + 1] = Math.max(valueIfIncluded, valueIfExcluded);
       } else {
-        // If the item does not fit, its value is simply ignored for this capacity.
-        memoTable[currentCap][objIdx + 1] = memoTable[currentCap][objIdx];
+        // If the current item's weight is greater than the current capacity, it cannot be included
+        // So, the value remains the same as without considering this item
+        memoTable[currentWeight][itemIndex + 1] = memoTable[currentWeight][itemIndex];
       }
 
-      // Track the overall highest value found across all states.
-      if (memoTable[currentCap][objIdx + 1] > maxBenefit) {
-        maxBenefit = memoTable[currentCap][objIdx + 1];
+      // Update the overall maximum value if a new higher value is found in the table
+      if (memoTable[currentWeight][itemIndex + 1] > finalMaxVal) {
+        finalMaxVal = memoTable[currentWeight][itemIndex + 1];
       }
-
     }
   }
 
-  // Output the determined maximum possible total value.
-  console.log(maxBenefit);
+  // Output the computed maximum value
+  console.log(finalMaxVal);
 }
 
-// Execute the knapsack solver with input from the file system.
-processor(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

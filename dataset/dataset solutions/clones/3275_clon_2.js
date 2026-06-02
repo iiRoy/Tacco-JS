@@ -1,86 +1,108 @@
 "use strict";
 
-function processData(rawData) {
-  let textRows = rawData.split('\n');
-  let quantity = parseInt(textRows[0]);
-  let vectorP = parseNumbersFromString(textRows[1]).slice(0, quantity);
-  let vectorQ = parseNumbersFromString(textRows[2]).slice(0, quantity);
+// This function processes the input data to solve a specific problem.
+function processInput(rawData) {
+  // Split the raw input string into individual lines.
+  var inputLines = rawData.split('\n');
 
-  // Determine the difference between paired elements from the two vectors
-  let disparities = vectorP.map(function(valP, idx) {
-    return valP - vectorQ[idx];
+  // Parse the number of elements from the first line.
+  var countElements = parseInt(inputLines[0]);
+
+  // Parse the first array of numbers, taking only 'countElements' items.
+  var firstArray = parseNumbersFromString(inputLines[1]).slice(0, countElements);
+
+  // Parse the second array of numbers, also taking 'countElements' items.
+  var secondArray = parseNumbersFromString(inputLines[2]).slice(0, countElements);
+
+  // Calculate the differences between corresponding elements of the two arrays.
+  var differenceValues = firstArray.map(function (valA, idx) {
+    return valA - secondArray[idx];
   });
 
-  // Arrange the disparity values in descending order for processing
-  disparities.sort(function(elementX, elementY) {
-    return elementY - elementX;
+  // Sort the differences in descending order.
+  differenceValues.sort(function (elemX, elemY) {
+    return elemY - elemX;
   });
 
-  // Create a boolean array to indicate if an element has been touched
-  let modifiedFlags = disparities.map(function(_placeholder) {
+  // Initialize an array to track which elements have been modified.
+  var modifiedIndices = differenceValues.map(function (_unused) {
     return false;
   });
 
-  // Initialize two indices for the two-pointer algorithm
-  let leftPointer = 0;
-  let rightPointer = quantity - 1;
+  // Set up two pointers for the two-pointer approach.
+  var leftPointer = 0;
+  var rightPointer = countElements - 1;
 
-  // Continue iterating as long as the left index is less than the right index
+  // Iterate while the left pointer is less than the right pointer.
   while (leftPointer < rightPointer) {
-    let currentDisparity = disparities[rightPointer]; // Fetch the smallest (most negative) disparity
+    // Get the current difference value from the right end.
+    var currentDiff = differenceValues[rightPointer];
 
-    // If the smallest disparity is no longer negative, no further balancing is needed
-    if (currentDisparity >= 0) {
+    // If the current difference is non-negative, we're done with negative differences.
+    if (currentDiff >= 0) {
+      // All remaining differences are non-negative, so we can stop.
       break;
     }
 
-    // Attempt to balance the smallest negative disparity with the largest positive disparity
-    if (disparities[leftPointer] >= -currentDisparity) {
-      modifiedFlags[leftPointer] = true;   // Mark the positive contributor as utilized
-      modifiedFlags[rightPointer] = true;  // Mark the negative value as adjusted
+    // Check if the positive difference at the left pointer can compensate the negative difference at the right pointer.
+    if (differenceValues[leftPointer] >= -currentDiff) {
+      // Mark both elements as modified.
+      modifiedIndices[leftPointer] = true;
+      modifiedIndices[rightPointer] = true;
 
-      disparities[leftPointer] += currentDisparity; // Apply the negative value to the positive one
-      disparities[rightPointer] = 0;                // The negative value is now fully compensated
-      rightPointer--;                               // Move the right index inward as its element is resolved
+      // Adjust the left pointer's difference.
+      differenceValues[leftPointer] += currentDiff;
+      // The right pointer's difference is now zero.
+      differenceValues[rightPointer] = 0;
+
+      // Move the right pointer inwards.
+      rightPointer--;
     } else {
-      // The positive disparity is insufficient to fully compensate the negative one
-      if (disparities[leftPointer] > 0) {
-        modifiedFlags[leftPointer] = true;   // Mark the positive contributor as utilized
-        modifiedFlags[rightPointer] = true;  // Mark the negative value as partially adjusted
+      // If the left pointer's difference is positive, mark it as modified.
+      if (differenceValues[leftPointer] > 0) {
+        modifiedIndices[leftPointer] = true;
+        modifiedIndices[rightPointer] = true;
       }
 
-      disparities[rightPointer] += disparities[leftPointer]; // Transfer the positive value to the negative one
-      disparities[leftPointer] = 0;                          // The positive value is now fully depleted
-      leftPointer++;                                         // Move the left index inward as its element is resolved
+      // Add the left pointer's difference to the right pointer's difference.
+      differenceValues[rightPointer] += differenceValues[leftPointer];
+      // The left pointer's difference is now zero.
+      differenceValues[leftPointer] = 0;
+
+      // Move the left pointer inwards.
+      leftPointer++;
     }
   }
 
-  // After the balancing loop, check the result
-  if (disparities[rightPointer] < 0) {
-    // If the last remaining disparity is still negative, a solution was not found
+  // After the loop, check if the last remaining difference (or the one at rightPointer) is still negative.
+  if (differenceValues[rightPointer] < 0) {
+    // If it's negative, it's impossible to make all differences non-negative.
     console.log(-1);
   } else {
-    // Otherwise, count the total number of elements that were part of an adjustment
-    console.log(modifiedFlags.reduce(function(accumulator, flagValue) {
-      return accumulator + flagValue; // Summing boolean values (true=1, false=0)
+    // Otherwise, count the number of modified elements.
+    console.log(modifiedIndices.reduce(function (accumulator, isModified) {
+      return accumulator + isModified;
     }, 0));
   }
 
-  return; // Conclude execution
+  return;
 }
 
-
-function greatestCommonDivisor(firstNum, secondNum) {
-  if (firstNum < secondNum) return greatestCommonDivisor(secondNum, firstNum); // Ensure first argument is larger or equal
-  if (secondNum === 0) return firstNum; // Base case for the Euclidean algorithm
-  let remainderVal = firstNum % secondNum; // Compute the remainder
-  return greatestCommonDivisor(secondNum, remainderVal); // Recursive step
+// This function calculates the greatest common divisor of two numbers.
+// Note: This function is defined but not used in the main logic.
+function greatestCommonDivisor(num1, num2) {
+  if (num1 < num2) return greatestCommonDivisor(num1, num2);
+  if (num2 === 0) return num1;
+  var remainder = num1 % num2;
+  return greatestCommonDivisor(num2, remainder);
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function by reading input from stdin.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-function parseNumbersFromString(inputString) {
-  return inputString.split(/\s+/).map(function(numericString) {
-    return parseInt(numericString); // Convert each string segment to its integer representation
+// Helper function to parse a space-separated string of numbers into an array of integers.
+function parseNumbersFromString(inputLineString) {
+  return inputLineString.split(/\s+/).map(function (parsedNumber) {
+    return parseInt(parsedNumber);
   });
 }

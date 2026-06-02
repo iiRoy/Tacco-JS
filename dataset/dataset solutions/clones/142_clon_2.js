@@ -1,579 +1,693 @@
-var ROTATION_LEFT = 1;
-var ROTATION_RIGHT = -1;
-var ALIGN_BEHIND = 2;
-var ALIGN_AHEAD = -2;
-var ON_LINE_PART = 0;
+// renamed constants
+var LEFT_TURN = 1;
+var RIGHT_TURN = - 1;
+var COLLINEAR_BACK = 2;
+var COLLINEAR_FRONT =  -2;
+var POINT_ON_SEGMENT = 0;
 
-var SMALL_FLOAT_VAL = 1e-9; // A small value for float comparisons
+// Vector2d
+var Vec2D = class Vec2D {
+	constructor(x,y){
+		this.x = x;
+		this.y = y;
+	}
+}
 
-/*
- * Represents a 2D vector or point.
- */
-var PointVec = class PointVec {
-  create(coordX, coordY) {
-    this.horiz = coordX;
-    this.vert = coordY;
-  }
-};
-
-PointVec.prototype.initialize = function (horizComp, vertComp) {
-  this.horiz = horizComp;
-  this.vert = vertComp;
-};
-
-/*
- * Rotates a PointVec by 90 degrees counter-clockwise.
- * inputVec: PointVec
- */
-function turnPointVec90(inputVec) {
-  var resultant = new PointVec();
-  resultant.horiz = -inputVec.vert;
-  resultant.vert = inputVec.horiz;
-  return resultant;
+Vec2D.prototype.Init = function(x,y){
+	this.x = x;
+	this.y = y;
 }
 
 /*
- * Converts an angle from degrees to radians.
+ * v: Vec2D
  */
-function convertAngleToRad(angleInDegrees) {
-  var mathPi = 3.14159265358979323846;
-  return angleInDegrees * mathPi / 180.0;
+function rotateVec90(v){
+	var r = new Vec2D();
+	r.x = -v.y;
+	r.y = v.x;
+	return r;
 }
 
 /*
- * Rotates a PointVec by a given angle in degrees.
- * inputVector: PointVec, angleDeg: number
+ * get degree to radian return radian
  */
-function obtainRotatedPointVec(inputVector, angleDeg) {
-  var angleRad = convertAngleToRad(angleDeg);
-
-  var sineVal = Math.sin(angleRad);
-  var cosineVal = Math.cos(angleRad);
-
-  var rotatedVec = new PointVec();
-  rotatedVec.horiz = inputVector.horiz * cosineVal - inputVector.vert * sineVal;
-  rotatedVec.vert = inputVector.horiz * sineVal + inputVector.vert * cosineVal;
-
-  return rotatedVec;
+function toRadiansFromDegrees(degree){
+	var pi = 3.14159265358979323846;
+	return degree * pi / 180;
 }
 
 /*
- * Rotates a PointVec by a given angle in radians.
- * sourceVec: PointVec, angleRad: number
+ * vec:Vec2D return Vec2D
  */
-function deriveRotatedPointVecFromRad(sourceVec, angleRad) {
-  var sineValue = Math.sin(angleRad);
-  var cosineValue = Math.cos(angleRad);
+function rotateVecByDegrees(vec,degree){
+	var radian = toRadiansFromDegrees(degree);
 
-  var finalVec = new PointVec();
-  finalVec.horiz = sourceVec.horiz * cosineValue - sourceVec.vert * sineValue;
-  finalVec.vert = sourceVec.horiz * sineValue + sourceVec.vert * cosineValue;
+	var sin = Math.sin(radian);
+	var cos = Math.cos(radian);
 
-  return finalVec;
+	var r = new Vec2D();
+	r.x = vec.x * cos - vec.y * sin;
+	r.y = vec.x * sin + vec.y * cos;
+
+	return r;
 }
 
 /*
- * Checks if two vectors are approximately equal.
+ * vec:Vec2D return Vec2D
  */
-function areVectorsIdentical(firstVec, secondVec) {
-  return compareFloats(firstVec.horiz - secondVec.horiz, 0.0) && compareFloats(firstVec.vert - secondVec.vert, 0.0);
+function rotateVecByRadians(vec,radian){
+	var sin = Math.sin(radian);
+	var cos = Math.cos(radian);
+
+	var r = new Vec2D();
+	r.x = vec.x * cos - vec.y * sin;
+	r.y = vec.x * sin + vec.y * cos;
+
+	return r;
 }
 
-/*
- * Computes the unit vector for a given PointVec.
- * inputVec: PointVec
- * returns: PointVec (unit vector)
- */
-function calculateUnitVector(inputVec) {
-  var vecMagnitude = getPointVecMagnitude(inputVec);
-  if (vecMagnitude > 0.0) {
-    return scaleDownVector(inputVec, vecMagnitude);
-  }
-  return inputVec;
-}
-
-/*
- * Determines the length (magnitude) of a PointVec.
- * inputVec: PointVec
- * returns: number
- */
-function getPointVecMagnitude(inputVec) {
-  return Math.sqrt((inputVec.horiz * inputVec.horiz) + (inputVec.vert * inputVec.vert));
-}
-
-/*
- * Calculates the squared magnitude (norm) of a vector.
- */
-function getSquaredMagnitude(inputVec) {
-  return inputVec.horiz * inputVec.horiz + inputVec.vert * inputVec.vert;
-}
-
-/*
- * Divides a vector by a scalar value.
- */
-function scaleDownVector(originalVec, scalarVal) {
-  var resVec = new PointVec();
-  resVec.horiz = originalVec.horiz / scalarVal;
-  resVec.vert = originalVec.vert / scalarVal;
-  return resVec;
-}
-
-/*
- * Compares two floating-point numbers for approximate equality.
- */
-function compareFloats(valA, valB) {
-  var epsilonTolerance = 1.0 / 8192.0;
-  return Math.abs(valA - valB) < epsilonTolerance;
-}
-
-/*
- * Checks if two vectors are parallel.
- */
-function areVectorsParallel(firstVector, secondVector) {
-  var normalVec = turnPointVec90(firstVector);
-  return compareFloats(0.0, computeDotProduct(normalVec, secondVector));
-}
-
-/*
- * Checks if two vectors are perpendicular.
- */
-function areVectorsPerpendicular(vecOne, vecTwo) {
-  return compareFloats(0.0, computeDotProduct(vecOne, vecTwo));
-}
-
-/*
- * Subtracts one vector from another.
- */
-function deductVector(vecAlpha, vecBeta) {
-  var diffVec = new PointVec();
-  diffVec.horiz = vecAlpha.horiz - vecBeta.horiz;
-  diffVec.vert = vecAlpha.vert - vecBeta.vert;
-  return diffVec;
-}
-
-/*
- * Computes the 2D dot product of two vectors.
- */
-function computeDotProduct(vecAlpha, vecBeta) {
-  return vecAlpha.horiz * vecBeta.horiz + vecAlpha.vert * vecBeta.vert;
+function areSameVecs(a,b){
+	return almostEqual(a.x - b.x,0) && almostEqual(a.y - b.y,0);
 }
 
 /**
- * Computes the 2D cross product (z-component) of two vectors.
- *
- * vecAlpha: PointVec
- * vecBeta: PointVec
- * returns: number
+ * vec:Vec2D
+ * 
+ * return unitVector
  */
-function calculateCrossProduct(vecAlpha, vecBeta) {
-  return vecAlpha.horiz * vecBeta.vert - vecAlpha.vert * vecBeta.horiz;
+function unitVec(vec){
+	var length = vecLength(vec);
+	if(length > 0){
+		return divideVec(vec,length);
+	}
+	return vec;
 }
 
 /**
- * Represents a 2D line segment.
+ * return vector length
+ * 
+ * vec:Vec2D
  */
-var Segment2D = class Segment2D {
-  create(startPoint, endPoint) {
-    this.initialP = startPoint;
-    this.finalP = endPoint;
-  }
-};
-
-Segment2D.prototype.setup = function (firstP, secondP) {
-  this.initialP = firstP;
-  this.finalP = secondP;
-};
-
-/*
- * Checks if a segment's endpoints are on the same side of a reference line.
- */
-function isSegmentOnOneSide(refLine, targetSegment) {
-  var diff1 = new PointVec();
-  diff1 = deductVector(targetSegment.initialP, refLine.baseP);
-
-  var diff2 = new PointVec();
-  diff2 = deductVector(targetSegment.finalP, refLine.baseP);
-
-  var normalVec = new PointVec();
-  normalVec = turnPointVec90(refLine.directionV);
-
-  // Returns true if both points are on the same side of the axis.
-  return computeDotProduct(normalVec, diff1) * computeDotProduct(normalVec, diff2) > 0.0;
+function vecLength(vec){
+	return Math.sqrt((vec.x * vec.x) + (vec.y * vec.y));
 }
 
-/*
- * Checks if two numerical ranges overlap.
- */
-function checkOverlap(rangeAMin, rangeAMax, rangeBMin, rangeBMax) {
-  return rangeBMin <= rangeAMax && rangeAMin <= rangeBMax;
+function squaredNorm(vec){
+	return vec.x * vec.x + vec.y * vec.y;
 }
 
-/*
- * Determines if two line segments intersect.
- */
-function doSegmentsIntersect(segA, segB) {
-  // Helper lines to check segment orientations
-  var lineA = new GeometryLine();
-  var lineB = new GeometryLine();
-
-  // Check if segment B is entirely on one side of segment A's line
-  lineA.baseP = segA.initialP;
-  lineA.directionV = deductVector(segA.finalP, segA.initialP);
-
-  if (isSegmentOnOneSide(lineA, segB)) {
-    return false;
-  }
-
-  // Likewise for segment A relative to segment B
-  lineB.baseP = segB.initialP;
-  lineB.directionV = deductVector(segB.finalP, segB.initialP);
-
-  if (isSegmentOnOneSide(lineB, segA)) {
-    return false;
-  }
-
-  // Handle parallel segments case
-  if (areVectorsParallel(lineA.directionV, lineB.directionV)) {
-    var projRangeA = projectSegmentOntoVector(segA, lineA.directionV);
-    var projRangeB = projectSegmentOntoVector(segB, lineA.directionV);
-
-    // Check for overlap on the projected axis
-    return areRangesOverlapping(projRangeA, projRangeB);
-  } else {
-    return true;
-  }
+function divideVec(vec2D,length){
+    var vec = new Vec2D();
+	vec.x = vec2D.x / length;
+	vec.y = vec2D.y / length;
+	return vec;
 }
 
-/*
- * Represents a geometric line with a base point and a direction vector.
- */
-function GeometryLine() {
-  this.baseP; // PointVec
-  this.directionV; // PointVec
+function almostEqual(a,b){
+	var threshold = 1 / 8192;
+	return Math.abs(a - b) < threshold;
 }
 
-GeometryLine.prototype.configure = function (basePt, directionVec, visualColor) {
-  this.baseP = basePt;
-  this.directionV = directionVec;
-};
-
-/**
- * Represents a numerical interval.
- */
-var Interval = class Interval {
-  create(minimum, maximum) {
-    this.lower = minimum;
-    this.upper = maximum;
-  }
-};
-
-/*
- * Combines two intervals to form a new interval spanning their union.
- */
-function getCombinedInterval(intervalA, intervalB) {
-  var combined = new Interval();
-  combined.lower = intervalA.lower < intervalB.lower ? intervalA.lower : intervalB.lower;
-  combined.upper = intervalA.upper < intervalB.upper ? intervalB.upper : intervalA.upper;
-  return combined;
+function areParallelVecs(vectorA,vectorB){
+	var na = rotateVec90(vectorA);
+	return almostEqual(0,dot2D(na,vectorB));
 }
 
-/*
- * Ensures an interval's lower bound is less than or equal to its upper bound.
- */
-function normalizeInterval(inputInterval) {
-  var normalized = new Interval(inputInterval.lower, inputInterval.upper);
-  if (inputInterval.lower > inputInterval.upper) {
-    normalized.lower = inputInterval.upper;
-    normalized.upper = inputInterval.lower;
-  }
-  return normalized;
+function arePerpendicularVecs(vectorA,vectorB){
+	return almostEqual(0,dot2D(vectorA,vectorB));
 }
 
-/*
- * Reverses the direction of a vector.
- */
-function reverseVectorDirection(targetVector) {
-  targetVector.horiz = -targetVector.horiz;
-  targetVector.vert = -targetVector.vert;
-  return targetVector;
+function minusVec(vecA,vecB){
+	var vec = new Vec2D();
+	vec.x = vecA.x - vecB.x;
+	vec.y = vecA.y - vecB.y;
+	return vec;
 }
 
-/*
- * Adds two vectors together.
- */
-function sumVectors(firstVec, secondVec) {
-  return new PointVec(firstVec.horiz + secondVec.horiz, firstVec.vert + secondVec.vert);
+function dot2D(vecA,vecB){
+    var dot = vecA.x * vecB.x + vecA.y * vecB.y;
+	return vecA.x * vecB.x + vecA.y * vecB.y;
 }
 
 /**
- * Projects a line segment onto a given vector, returning an Interval.
- * lineSegment: Segment2D, projectionAxis: PointVec
- * returns: Interval
+ * 外積
+ * 
+ * @param vecA
+ * @param vecB
+ * @returns
  */
-function projectSegmentOntoVector(lineSegment, projectionAxis) {
-  var axisUnitVec = calculateUnitVector(projectionAxis);
-
-  var projInterval = new Interval();
-  projInterval.lower = computeDotProduct(axisUnitVec, lineSegment.initialP);
-  projInterval.upper = computeDotProduct(axisUnitVec, lineSegment.finalP);
-
-  projInterval = normalizeInterval(projInterval);
-  return projInterval;
-}
-
-/*
- * Checks if two intervals overlap.
- */
-function areRangesOverlapping(interval1, interval2) {
-  return checkOverlap(interval1.lower, interval1.upper, interval2.lower, interval2.upper);
-}
-
-/*
- * Projects one vector onto another.
- */
-function computeVectorProjection(vectorToProject, targetVector) {
-  var targetVecSquaredMag = computeDotProduct(targetVector, targetVector);
-  if (0.0 < targetVecSquaredMag) {
-    var dotProd = computeDotProduct(vectorToProject, targetVector);
-    return scaleVector(targetVector, dotProd / targetVecSquaredMag);
-  }
-  return targetVector;
+function cross2D(vecA,vecB){
+	return vecA.x * vecB.y - vecA.y * vecB.x;
 }
 
 /**
- * Represents a 2D coordinate point.
+ * line segment
+ * 
+ * point1:Vec2D point2:Vec2D
  */
-var Coord2D = class Coord2D {
-  create(horizCoord, vertCoord) {
-    this.h = horizCoord;
-    this.v = vertCoord;
-  }
-};
+var Segment2DLine = class Segment2DLine {
+	constructor(point1,point2){
+		this.point1 = point1;
+		this.point2 = point2;
+	}
+}
 
-/*
- * Adds the coordinates of two points.
- */
-function sumPoints(ptA, ptB) {
-  return new Coord2D(ptA.h + ptB.h, ptA.v + ptB.v);
+Segment2DLine.prototype.Init = function(point1,point2){
+	this.point1 = point1;
+	this.point2 = point2;
+}
+
+function liesOnOneSide(axis,segment){
+	var d1 = new Vec2D();
+	d1 = minusVec(segment.point1,axis.base);
+
+	var d2 = new Vec2D();
+	d2 = minusVec(segment.point2,axis.base);
+
+	var n = new Vec2D();
+	n = rotateVec90(axis.direction);
+
+	// 同じ方向だということを返す
+	return dot2D(n,d1) * dot2D(n,d2) > 0;
+}
+
+function overlapsRaw(minA,maxA,minB,maxB){
+	return minB <= maxA && minA <= maxB;
+}
+
+function segmentsIntersect(segment1,segment2){
+	// 線分の方向をチェックするためのベクトル
+	var axisA = new Axis2DLine();
+	var axisB = new Axis2DLine();
+
+	// 線分1のベクトルに対して、線分2が片側にあるかチェック
+	axisA.base = segment1.point1;
+	axisA.direction = minusVec(segment1.point2,segment1.point1);
+
+	if(liesOnOneSide(axisA,segment2)){
+		return false;
+	}
+
+	// 同じく
+	axisB.base = segment2.point1;
+	axisB.direction = minusVec(segment2.point2,segment2.point1);
+
+	if(liesOnOneSide(axisB,segment1)){
+		return false;
+	}
+
+	// 同じベクトルをもつケース
+	if(areParallelVecs(axisA.direction,axisB.direction)){
+		var rangeA = projectSegmentOnAxis(segment1,axisA.direction);
+		var rangeB = projectSegmentOnAxis(segment2,axisA.direction);
+
+		// 重なっているか
+		return intervalsOverlap(rangeA,rangeB);
+	}
+	else{
+		return true;
+	}
 }
 
 /*
- * Subtracts the coordinates of one point from another.
+ * Axis2DLine Object
  */
-function deductPoints(ptA, ptB) {
-  return new Coord2D(ptA.h - ptB.h, ptA.v - ptB.v);
+function Axis2DLine(){
+	// vector2D
+	this.base;
+	// vector2D
+	this.direction
 }
 
-/*
- * Scales a point's coordinates by a scalar factor.
- */
-function scalePoint(targetPoint, factor) {
-  return new Coord2D(targetPoint.h * factor, targetPoint.v * factor);
+Axis2DLine.prototype.Init = function(base,direction,color){
+	this.base = base;
+	this.direction = direction;
 }
 
 /**
- * Calculates the projection of a point onto a line segment.
- * lineSegment: Segment2D, targetPoint: Coord2D
+ * IntervalRange
  */
-function determineProjectedPoint(lineSegment, targetPoint) {
-  var segmentVec = new PointVec(lineSegment.finalP.horiz - lineSegment.initialP.horiz, lineSegment.finalP.vert - lineSegment.initialP.vert);
-  var pointToSegmentStartVec = new PointVec(targetPoint.h - lineSegment.initialP.horiz, targetPoint.v - lineSegment.initialP.vert);
-  var projectionRatio = computeDotProduct(pointToSegmentStartVec, segmentVec) / getSquaredMagnitude(segmentVec);
-  var scaledSegmentVec = scaleVector(segmentVec, projectionRatio);
-  var finalProjectedPoint = new Coord2D(lineSegment.initialP.horiz + scaledSegmentVec.horiz, lineSegment.initialP.vert + scaledSegmentVec.vert);
-  return finalProjectedPoint;
+var IntervalRange = class IntervalRange {
+	constructor(min,max){
+		this.min = min;
+		this.max = max;
+	}
 }
 
-/*
- * Finds the reflection of a point across a line segment.
- */
-function findReflectionPoint(lineSegment, inputPoint) {
-  var projectedLoc = determineProjectedPoint(lineSegment, inputPoint);
-  // Vector from original point to its projection
-  var vecToProjected = deductPoints(projectedLoc, inputPoint);
-  // Double this vector to find the offset for reflection
-  var reflectedLocOffset = scalePoint(vecToProjected, 2.0);
-  // Add the original point to the offset to get the reflected point
-  return sumPoints(reflectedLocOffset, inputPoint);
+function combinedRange(range1,range2){
+	var range = new IntervalRange();
+	range.min = range1.min < range2.min ? range1.min : range2.min;
+	range.max = range1.max < range2.max ? range2.max : range1.max;
+	return range;
 }
 
-/**
- * Determines the intersection point of two line segments.
- *
- * segAlpha: Segment2D
- * segBeta: Segment2D
- * returns: Coord2D
- */
-function calculateIntersectionPoint(segAlpha, segBeta) {
-  // Define a base vector from the second segment
-  var baseVec = new PointVec(segBeta.finalP.horiz - segBeta.initialP.horiz, segBeta.finalP.vert - segBeta.initialP.vert);
-  var segAlphaStartToSegBetaStartVec = new PointVec(segAlpha.initialP.horiz - segBeta.initialP.horiz, segAlpha.initialP.vert - segBeta.initialP.vert);
-  var segAlphaEndToSegBetaStartVec = new PointVec(segAlpha.finalP.horiz - segBeta.initialP.horiz, segAlpha.finalP.vert - segBeta.initialP.vert);
-  var crossProductAbs1 = Math.abs(calculateCrossProduct(baseVec, segAlphaStartToSegBetaStartVec));
-  var crossProductAbs2 = Math.abs(calculateCrossProduct(baseVec, segAlphaEndToSegBetaStartVec));
-  var interpolationFactor = crossProductAbs1 / (crossProductAbs1 + crossProductAbs2);
-  var intersectX = segAlpha.initialP.horiz + (segAlpha.finalP.horiz - segAlpha.initialP.horiz) * interpolationFactor;
-  var intersectY = segAlpha.initialP.vert + (segAlpha.finalP.vert - segAlpha.initialP.vert) * interpolationFactor;
-  return new Coord2D(intersectX, intersectY);
+function orderedRange(range){
+	var sorted = new IntervalRange(range.min,range.max);
+	if(range.min > range.max){
+		sorted.min = range.max;
+		sorted.max = range.min;
+	}
+	return sorted;
 }
 
-/*
- * Multiplies a vector by a scalar value.
- */
-function scaleVector(inputVec, multiplier) {
-  var scaledVec = new PointVec();
-  scaledVec.horiz = inputVec.horiz * multiplier;
-  scaledVec.vert = inputVec.vert * multiplier;
-  return scaledVec;
+function negateVec(vector){
+	vector.x = -vector.x;
+	vector.y = -vector.y;
+	return vector;
 }
 
-/*
- * Clamps a numerical value within a specified range.
- */
-function constrainValue(value, lowerBound, upperBound) {
-  if (value < lowerBound) {
-    return lowerBound;
-  } else if (value > upperBound) {
-    return upperBound;
-  } else {
-    return value;
-  }
+function plusVec(vecA,vecB){
+	return new Vec2D(vecA.x + vecB.x,vecA.y + vecB.y);
 }
 
 /**
- * Calculates the distance from a point to an infinite line (defined by a segment).
- * geometryLine: Segment2D, targetPoint: Coord2D
+ * segment:segment onto:Vec2D
+ * cc
+ * return IntervalRange
  */
-function measureLinePointDistance(geometryLine, targetPoint) {
-  var lineDirVec = new PointVec(geometryLine.finalP.horiz - geometryLine.initialP.horiz, geometryLine.finalP.vert - geometryLine.initialP.vert);
-  var pointToLineStartVec = new PointVec(targetPoint.h - geometryLine.initialP.horiz, targetPoint.v - geometryLine.initialP.vert);
-  return Math.abs(calculateCrossProduct(lineDirVec, pointToLineStartVec) / getPointVecMagnitude(lineDirVec));
+function projectSegmentOnAxis(segment,onto){
+	var ontoUnitVec = unitVec(onto);
+
+	var range = new IntervalRange();
+	range.min = dot2D(ontoUnitVec,segment.point1);
+	range.max = dot2D(ontoUnitVec,segment.point2);
+
+	range = orderedRange(range);
+	return range;
+}
+
+function intervalsOverlap(range1,range2){
+	return overlapsRaw(range1.min,range1.max,range2.min,range2.max);
+}
+
+function projectVec(project,onto){
+	var d = dot2D(onto,onto);
+	if(0 < d){
+	    var dp = dot2D(project,onto);
+	    return multiplyVec(onto,dp / d);
+	}
+	return onto;
 }
 
 /**
- * Computes the shortest distance from a point to a line segment.
- * lineSeg: Segment2D, targetPoint: Coord2D
+ * point class
  */
-function measureSegmentPointDistance(lineSeg, targetPoint) {
-  // If the projection falls outside the segment's start boundary, distance is to start point.
-  if (computeDotProduct(deductPoints(lineSeg.finalP, lineSeg.initialP), deductPoints(targetPoint, lineSeg.initialP)) < 0.0) {
-    return getPointVecMagnitude(deductPoints(targetPoint, lineSeg.initialP));
-  }
-  // If the projection falls outside the segment's end boundary, distance is to end point.
-  if (computeDotProduct(deductPoints(lineSeg.initialP, lineSeg.finalP), deductPoints(targetPoint, lineSeg.finalP)) < 0.0) {
-    return getPointVecMagnitude(deductPoints(targetPoint, lineSeg.finalP));
-  }
-  // Otherwise, the distance is to the infinite line containing the segment.
-  return measureLinePointDistance(lineSeg, targetPoint);
+var Point2 = class Point2 {
+	constructor(x,y){
+		this.x = x;
+		this.y = y;
+
+	}
+}
+
+function plusPoint(point1,point2){
+	return new Point2(point1.x + point2.x,point1.y + point2.y);
+}
+
+function minusPoint(point1,point2){
+	return new Point2(point1.x - point2.x,point1.y - point2.y);
+}
+
+function multiplyPointByScalar(point,scalar){
+	return new Point2(point.x * scalar,point.y * scalar);
 }
 
 /**
- * Finds the shortest distance between two line segments.
- * segA: Segment2D, segB: Segment2D
+ * segment : Segment2DLine
+ * point : Point
  */
-function calcSegmentToSegmentDistance(segA, segB) {
-  // If segments intersect, distance is zero.
-  if (doSegmentsIntersect(segA, segB)) {
-    return 0.0;
-  }
-  return Math.min(Math.min(measureSegmentPointDistance(segA, segB.initialP), measureSegmentPointDistance(segA, segB.finalP)),
-    Math.min(measureSegmentPointDistance(segB, segA.initialP), measureSegmentPointDistance(segB, segA.finalP)));
+function projectPoint(segment,point){
+	var vec1 = new Vec2D(segment.point2.x - segment.point1.x,segment.point2.y - segment.point1.y);
+	var vec2 = new Vec2D(point.x - segment.point1.x,point.y - segment.point1.y);
+	var rate = dot2D(vec2,vec1) / squaredNorm(vec1);
+	var vec3 = multiplyVec(vec1,rate);
+	var project = new Point2(segment.point1.x + vec3.x,segment.point1.y + vec3.y);
+	return project; 
 }
 
-/*
- * Determines the orientation of three points (clockwise, counter-clockwise, collinear).
- */
-function checkOrientation(pA, pB, pC) {
-  var vecAB = new PointVec(pB.h - pA.h, pB.v - pA.v);
-  var vecAC = new PointVec(pC.h - pA.h, pC.v - pA.v);
-  var crossProd = calculateCrossProduct(vecAB, vecAC);
-
-  if (crossProd > SMALL_FLOAT_VAL) {
-    return ROTATION_LEFT;
-  }
-  if (crossProd < -SMALL_FLOAT_VAL) {
-    return ROTATION_RIGHT;
-  }
-  if (computeDotProduct(vecAB, vecAC) < -SMALL_FLOAT_VAL) {
-    return ALIGN_BEHIND;
-  }
-  if (getPointVecMagnitude(vecAB) < getPointVecMagnitude(vecAC)) {
-    return ALIGN_AHEAD;
-  }
-  return ON_LINE_PART;
+function reflectPoint(segment,point){
+	var projection = projectPoint(segment,point);
+	// pから射影点までのベクトル
+	var vec = minusPoint(projection,point);
+	// 2倍したものが射影点になる
+	var refrectionPoint = multiplyPointByScalar(vec,2);
+	// 始点を足す
+	return plusPoint(refrectionPoint,point);
 }
 
 /**
- * Implements Andrew's Monotone Chain algorithm to find the convex hull.
- * inputPoints: Array<Coord2D>
+ * 
+ * @param segment1
+ * @param segment2
+ * @returns point
  */
-function computeConvexHull(inputPoints) {
-  if (inputPoints.length < 3) {
-    return inputPoints;
-  }
+function crossingPoint(segment1,segment2){
+	// 基準となる線を決める
+	var baseVector = new Vec2D(segment2.point2.x - segment2.point1.x,segment2.point2.y - segment2.point1.y);
+	var d1Vec = new Vec2D(segment1.point1.x - segment2.point1.x,segment1.point1.y - segment2.point1.y);
+	var d2Vec = new Vec2D(segment1.point2.x - segment2.point1.x,segment1.point2.y - segment2.point1.y);
+	var d1 = Math.abs(cross2D(baseVector,d1Vec));
+	var d2 = Math.abs(cross2D(baseVector,d2Vec));
+	var t = d1 / (d1 + d2);
+	var x = segment1.point1.x + (segment1.point2.x - segment1.point1.x) * t;
+	var y = segment1.point1.y + (segment1.point2.y - segment1.point1.y) * t;
+	return new Point2(x,y);
+}
 
-  // Sort points primarily by x-coordinate, then by y-coordinate for ties.
-  inputPoints.sort((a, b) => (a.h > b.h) ? 1 : (a.h === b.h) ? ((a.v > b.v) ? 1 : -1) : -1);
+function multiplyVec(vec,scalar){
+	var temp = new Vec2D();
+	temp.x = vec.x * scalar;
+	temp.y = vec.y * scalar;
+	return temp;
+}
 
-  // Initialize upper hull with first two sorted points.
-  var upperHull = [];
-  upperHull.push(inputPoints[0]);
-  upperHull.push(inputPoints[1]);
-  // Initialize lower hull with last two sorted points.
-  var lowerHull = [];
-  lowerHull.push(inputPoints[inputPoints.length - 1]);
-  lowerHull.push(inputPoints[inputPoints.length - 2]);
+function clampToRange(x,min,max){
+	if(x < min){
+		return min;
+	}else if(x > max){
+		return max;
+	}else{
+		return x;
+	}
+}
 
-  // Build the upper hull.
-  for (var idx = 2; idx < inputPoints.length; ++idx) {
-    // Remove points that would create a non-left turn.
-    for (var innerIdx = upperHull.length; innerIdx >= 2 && checkOrientation(upperHull[innerIdx - 2], upperHull[innerIdx - 1], inputPoints[idx]) === ROTATION_LEFT; --innerIdx) {
-      upperHull.pop();
+/**
+ * 直線と点との距離
+ */
+function distanceLineToPoint(line,point){
+	var vec1 = new Vec2D(line.point2.x - line.point1.x,line.point2.y - line.point1.y);
+	var vec2 = new Vec2D(point.x - line.point1.x,point.y - line.point1.y);
+	return Math.abs(cross2D(vec1,vec2) / vecLength(vec1)); 
+}
+
+/**
+ * 線分と点との距離を求める
+ */
+function distanceSegmentToPoint(segment,point){    
+	// ベクトルp2 - p1とベクトルp - p1がなす角θが90どより大きい場合(-90より小さい場合)
+	// dは点pと点p1の距離になる
+	if(dot2D(minusPoint(segment.point2,segment.point1),minusPoint(point,segment.point1)) < 0){
+		return vecLength(minusPoint(point,segment.point1));
+	}
+	// ベクトルp1 - p2とベクトルp - p2がなす角θが90どより大きい場合(-90より小さい場合)
+	// dは点pと点p2の距離になる
+	if(dot2D(minusPoint(segment.point1,segment.point2),minusPoint(point,segment.point2)) < 0){
+		return vecLength(minusPoint(point,segment.point2));
+	}
+	// それ以外はdは点pと直線p1p2の距離になる
+	return distanceLineToPoint(segment,point);
+}
+
+/**
+ * 線分と線分との距離を求める
+ */
+function distanceBetweenSegments(segment1,segment2){
+	// 交差していた場合距離は0になる
+	if(segmentsIntersect(segment1,segment2)){
+		return 0;
+	}
+	return Math.min(Math.min(distanceSegmentToPoint(segment1,segment2.point1),distanceSegmentToPoint(segment1,segment2.point2)),
+			Math.min(distanceSegmentToPoint(segment2,segment1.point1),distanceSegmentToPoint(segment2,segment1.point2)));
+}
+
+function turnKind(point1,point2,point3){
+    var vec1 = new Vec2D(point2.x - point1.x,point2.y - point1.y);
+    var vec2 = new Vec2D(point3.x - point1.x,point3.y - point1.y);
+    var cross = cross2D(vec1,vec2);
+
+    if(cross > Number.EPSILON){
+        return LEFT_TURN;
     }
-    upperHull.push(inputPoints[idx]);
-  }
-  // Build the lower hull.
-  for (var idx = inputPoints.length - 3; idx >= 0; --idx) {
-    // Remove points that would create a non-left turn.
-    for (var innerIdx = lowerHull.length; innerIdx >= 2 && checkOrientation(lowerHull[innerIdx - 2], lowerHull[innerIdx - 1], inputPoints[idx]) === ROTATION_LEFT; --innerIdx) {
-      lowerHull.pop();
+    if(cross < -Number.EPSILON){
+        return RIGHT_TURN;
     }
-    lowerHull.push(inputPoints[idx]);
-  }
-  // Combine hulls to form the complete convex hull (clockwise order).
-  lowerHull.reverse();
-  for (var idx = upperHull.length - 2; idx >= 1; --idx) {
-    lowerHull.push(upperHull[idx]);
-  }
-  return lowerHull;
+    if(dot2D(vec1,vec2) < -Number.EPSILON){
+        return COLLINEAR_BACK;
+    }
+    if(vecLength(vec1) < vecLength(vec2)){
+        return COLLINEAR_FRONT;
+    }
+    return POINT_ON_SEGMENT;
+}
+
+/**
+ * アンドリューでconvex hollを返す 
+*/
+function makeConvexHull(quadPoints){
+    if(quadPoints.length < 3){
+        return quadPoints;
+    }
+    
+    // xを基準に昇順にソート、数値が同じものはyが小さいもの基準にソート 
+    quadPoints.sort((a, b) => (a.x > b.x) ? 1 : (a.x == b.x) ? ((a.y > b.y) ? 1 : -1) : -1);
+    // xを小さいほうから2つ
+    var u = [];
+    u.push(quadPoints[0]);
+    u.push(quadPoints[1]);
+    // xを大きい方から2つ
+    var l = [];
+    l.push(quadPoints[quadPoints.length - 1]);
+    l.push(quadPoints[quadPoints.length - 2]);
+    
+    // 上部の生成
+    for(var i = 2;i < quadPoints.length;++i){
+    	// 対象が半時計なら削除する
+        for(var j = u.length;j >= 2 && turnKind(u[j - 2],u[j - 1],quadPoints[i]) == LEFT_TURN;--j){
+            u.pop();
+        }
+        u.push(quadPoints[i]);
+    }
+    // 下部の生成
+    for(var i = quadPoints.length - 3;i >= 0;--i){
+    	// 対象が半時計なら削除する
+        for(var j = l.length;j >= 2 && turnKind(l[j - 2],l[j - 1],quadPoints[i]) == LEFT_TURN;--j){
+            l.pop();;
+        }
+        l.push(quadPoints[i]);
+    }
+    // 時計回りに凸包の点の列を生成
+    l.reverse();
+    for(var i = u.length - 2;i >= 1;--i){
+        l.push(u[i]);
+    }
+    return l;
+}
+
+function convexHullDiameter(quadPoints){
+	// 対心点(p,q)を取る(y軸で最小・最大のもの)
+    var is = 0;
+    var js = 0;
+    for(var i = 1; i < quadPoints.length; i++){
+      if(quadPoints[i].y > quadPoints[is].y) is = i;
+      if(quadPoints[i].y < quadPoints[js].y) js = i;
+    }
+    var distance = squaredNorm(minusVec(quadPoints[is],quadPoints[js]));
+    var maxi = is,i = js,maxj = js,j = js;
+    do {
+        // 対心点の中で最長距離のものを探す
+      if(cross2D(minusVec(quadPoints[(i + 1) % quadPoints.length],quadPoints[i]),minusVec(quadPoints[(j + 1) % quadPoints.length],quadPoints[j])) >= 0){
+        j = (j + 1) % quadPoints.length;
+      } else {
+        i = (i + 1) % quadPoints.length;
+      }
+      if(squaredNorm(minusVec(quadPoints[i],quadPoints[j])) > distance){
+        distance = squaredNorm(minusVec(quadPoints[i],quadPoints[j]));
+        maxi = i;
+        maxj = j;
+      }
+    }  while (i != is || j != js);
+    return distance;
+}
+
+/**
+ * 点で構成される多角形の2d面積を返す
+ * 
+ */
+function areaOfPolygon(quadPoints){
+    var area = 0;
+    for(var i = 0;i < quadPoints.length;++i){
+        area += cross2D(quadPoints[i],quadPoints[(i + 1) % quadPoints.length]);
+    }
+    return area / 2;
+}
+
+function cutConvexPolygon(quadPoints,point1,point2){
+    // 切り取られた多角形
+    var convex = [];
+    
+	for(var i = 0; i < quadPoints.length;++i){
+		var nowPoint = quadPoints[i];
+		var nextPoint = quadPoints[(i + 1) % quadPoints.length];
+		var nowPointCcw = turnKind(point1,point2,nowPoint);
+		if(nowPointCcw != RIGHT_TURN){
+		    convex.push(nowPoint);
+		}
+		if(nowPointCcw * turnKind(point1,point2,nextPoint) == RIGHT_TURN){
+		    // 交点を求める
+		  var crossPoint = getCrossPointFromPoints(point1,point2,nowPoint,nextPoint);
+		  convex.push(crossPoint);
+		}
+	}
+	return convex;
+}
+
+function pointDistance2D(point1,point2){
+	var x = point1.x - point2.x;
+	var y = point1.y - point2.y;
+	return Math.sqrt(x * x + y * y);
+}
+
+function closestPointPair(quadPoints,n){
+	if (n == 1)  return Number.MAX_SAFE_INTEGER;
+	var d = Number.MAX_SAFE_INTEGER;
+	var m = Math.floor(n / 2);
+	d = Math.min(closestPointPair(quadPoints, m),closestPointPair(quadPoints.slice(m),n - m));
+    var mx = quadPoints[m].x;
+	var arr = [];
+    
+	for (var i = m;i >= 0;--i){
+	    var x = Math.abs(quadPoints[i].x - mx);
+		if (x > d){
+		    break;
+		}
+		else{
+		    arr.push(quadPoints[i]);
+		}
+	}
+	for (var i = m + 1; i < n; ++i){
+		if (Math.abs(quadPoints[i].x - mx) > d){
+		    break;
+		}	
+		else{
+            arr.push(quadPoints[i]);  
+		} 
+	}
+	arr.sort((a, b) => (a.y > b.y) ? 1 : -1);
+
+	for(var i = 0;i < arr.length;++i){
+		for (var j = i + 1;j < arr.length && Math.abs(arr[j].y - arr[i].y) < d;++j){
+		    var tmp = pointDistance2D(arr[i],arr[j]);
+			if (tmp < d) d = tmp;
+		}
+	}
+	return d;
+}
+
+/**
+ * 2d円を表すクラス
+ * 
+ */
+var CircleGeom2D = class CircleGeom2D {
+	constructor(x,y,r){
+		this.center = new Point2(x,y);
+		this.r = r;
+	}
+}
+
+/**
+ * 円と直線の交点を返す
+ * 
+ */
+function circleLineCrossPoints(line,circle){
+	var d = distanceLineToPoint(line,circle.center);
+	// 交点がない場合
+	if(d > circle.r){
+	    console.log("return")
+		return;
+	}
+	// 円の中心から直線への射影点
+	var pr = projectPoint(line,circle.center);
+	// 交点が一つ
+	if(almostEqual(d,circle.r)){
+        // 射影点が交点になる
+		return pr;
+	}
+	// 交点が2つ
+	else{
+	    // 直線の単位ベクトルを求める
+	    var unit = unitVec(new Vec2D(line.point1.x - line.point2.x,line.point1.y - line.point2.y));
+	    // 射影点から交点までの長さを求める
+	    var length = Math.sqrt((circle.r * circle.r) - squaredNorm(minusVec(pr,circle.center)));
+	    var crossPoints = [];
+	    crossPoints[0] = plusPoint(pr,multiplyVec(unit,length));
+	    crossPoints[1] = minusVec(pr,multiplyVec(unit,length));
+        return crossPoints;
+	}
+}
+
+/**
+ * 極点を返す
+ * 
+*/
+function polarCoords(a,r){
+    return new Point2(Math.cos(r) * a,Math.sin(r) * a);
 }
 
 /*
- * Calculates the diameter (longest distance between any two points) of a convex hull.
- * hullPoints: Array<Coord2D> (assumed to be a convex hull)
+ * 円と円との交点を求める 
  */
-function calculateConvexDiameter(hullPoints) {
-  // Find initial antipodal points (min/max Y coordinates).
-  var idxMinY = 0;
-  var idxMaxY = 0;
-  for (var i = 1; i < hullPoints.length; i++) {
-    if (hullPoints[i].v > hullPoints[idxMinY].v) idxMinY = i;
-    if (hullPoints[i].v < hullPoints[idxMaxY].v) idxMaxY = i;
-  }
-  var maxDiameterSquared = getSquaredMagnitude(deductVector(hullPoints[idxMinY], hullPoints[idxMaxY]));
-  var maxIdxA = idxMinY, currentIdxA = idxMaxY, maxIdxB = idxMaxY, currentIdxB = idxMaxY;
-  do {
-    // Rotating calipers algorithm to find the maximum distance.
-    if (calculateCrossProduct(deductVector(hullPoints[(currentIdxA + 1) % hullPoints.length], hullPoints[currentIdxA]), deductVector(hullPoints[(currentIdxB + 1) % hullPoints.length], hullPoints[currentIdxB])) >= 0.0) {
-      currentIdxB = (currentIdxB + 1) % hullPoints.length;
-    } else {
-      currentIdxA = (currentIdxA + 1) % hullPoints.length;
+function circleCircleCrossPoints(circle1,circle2){
+    var crossPoints = [];
+    // 円の中心との距離
+    var d = pointDistance2D(circle1.center,circle2.center);
+    var rDis = circle1.r + circle2.r;
+    // 交点がない
+    if(d > rDis){
+        return;
     }
-    if (getSquaredMagnitude(deductVector(hullPoints[currentIdxA], hullPoints[currentIdxB])) > maxDiameterSquared) {
-      maxDiameterSquared = getSquaredMagnitude(deductVector(hullPoints[currentIdxA], hullPoints[currentIdxB]));
-      maxIdxA = currentIdxA;
-      maxIdxB = currentIdxB;
+    // 交点が一つ
+    else if(almostEqual(d == rDis)){
+        // 点と点のベクトルを求める
+        var vec = new Vec2D(circle2.center.x - circle1.center.x,circle2.center.y - circle1.center.y);
+        // 単位ベクトル
+        var unit = unitVec(vec);
+        var point = multiplyVec(unit,d);
+        crossPoints[0] = crossPoints[1] = point;
     }
-  } while (currentIdxA !== idxMinY || currentIdxB !== idxMaxY);
-  return maxDiameterSquared; // Returning squared diameter, as original did for 'getNorm'
+    else{
+        // 中心点1から中心点2の線分と交点との角度aを余弦を使って求める
+        var a = Math.acos((circle1.r * circle1.r + d * d - circle2.r * circle2.r) / (2 * circle1.r * d));
+        // 中心点1を通るy = 0の直線とaとの差分の角度をtとする
+        var vec = minusVec(circle2.center,circle1.center);
+        var t = Math.atan2(vec.y,vec.x);
+        
+        crossPoints[0] = plusPoint(circle1.center,polarCoords(circle1.r,t + a));
+        crossPoints[1] = plusPoint(circle1.center,polarCoords(circle1.r,t - a));
+    }
+    return crossPoints;
 }
+
+/**
+ * 円と点との接戦の交点を求める
+ */
+function tangentPointsFromExternalPoint(circle,point){
+  var base = minusPoint(point,circle.center);
+  var baseLength = vecLength(base);
+  var radian = Math.acos(circle.r / baseLength);
+  var vec1 = divideVec(base,baseLength);
+  vec1 = multiplyVec(vec1,circle.r);
+  var quadPoints = [];
+  quadPoints[0] = plusPoint(circle.center,rotateVecByRadians(vec1,radian));
+  quadPoints[1] = plusPoint(circle.center,rotateVecByRadians(vec1,-radian));
+  return quadPoints;
+}
+
+var stdinText = require('fs').readFileSync('/dev/stdin', 'utf8');
+//var stdinText = require('fs').readFileSync('stdinText.txt', 'utf8');
+var inputRows=(stdinText.trim()).split("\n");	
+var quadPoints = []
+
+inputRows.forEach(function(v){
+    var lineNums = v.split(",").map(Number);
+    quadPoints[0] = new Point2(lineNums[0],lineNums[1]);
+    quadPoints[1] = new Point2(lineNums[2],lineNums[3]);
+    quadPoints[2] = new Point2(lineNums[4],lineNums[5]);
+    quadPoints[3] = new Point2(lineNums[6],lineNums[7]);
+    resultText = "NO"
+    quadPoints = makeConvexHull(quadPoints);
+    if(quadPoints.length > 3){
+        resultText = "YES";
+    }
+    console.log(resultText)
+});
+

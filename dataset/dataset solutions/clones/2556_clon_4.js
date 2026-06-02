@@ -1,13 +1,14 @@
 'use strict';
 
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const processedString = sourceData[0];
 
-const patternForbidEvenL = /^(?:.{2})*L/;
+const isInvalidSequencePresent = processedString.split('').some((charVal, posIdx) => {
+    const isOddIndex = (posIdx % 2 !== 0);
 
-const patternForbidOddR = /^.(?:.{2})*R/;
+    return (isOddIndex && charVal === 'R') || (!isOddIndex && charVal === 'L');
+});
 
-const validationFailureDetected = patternForbidEvenL.test(dataStream) || patternForbidOddR.test(dataStream);
-
-const finalVerdict = validationFailureDetected ? "No" : "Yes";
+const finalVerdict = isInvalidSequencePresent ? "No" : "Yes";
 
 console.log(finalVerdict);

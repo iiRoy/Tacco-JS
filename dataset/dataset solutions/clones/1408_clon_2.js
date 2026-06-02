@@ -1,35 +1,21 @@
-// This program reads input lines from stdin, processes them, and generates rectangular grid patterns based on numerical dimensions provided.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var   fileContent = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+var lineArray = rawData.trim().split("\n");
 
-// The raw file content is trimmed and then split into an array of individual line strings.
-var   processedLines = fileContent . trim ( ) . split ( "\n" ) ;
+var outputBuffer = "";
 
-// A string buffer to accumulate the final graphical output.
-var renderedOutput = "" ;
+while (true) {
+    var currentLine = lineArray.shift();
 
-// Begin an infinite loop to process each line until a specific termination condition is met.
-while ( true )
-{
-    // Extract the next line segment from the beginning of the processed lines array.
-    var   currentSegment   = processedLines . shift ( ) ;
-
-    // If the current segment is "0 0", it signifies the end of input, so break the loop.
-    if ( currentSegment === "0 0" ) {
-        break ;
+    if (currentLine === "0 0") {
+        break;
     }
 
-    // Parse the current segment into two integer dimensions (e.g., width and height).
-    // Using parseInt with radix 10 for explicit base conversion.
-    var gridDimensions = currentSegment . split ( " " ) . map ( val => parseInt ( val , 10 ) ) ;
+    var dimensions = currentLine.split(" ").map(Number);
 
-    // Construct a row of '#' characters based on the second dimension,
-    // then repeat this row based on the first dimension to form a rectangular grid.
-    renderedOutput += Array ( gridDimensions [ 0 ] + 1 ) . join ( ( Array ( gridDimensions [ 1 ] + 1 ) . join ( "#" ) ) + "\n" ) ;
+    outputBuffer += Array(dimensions[0] + 1).join((Array(dimensions[1] + 1).join("#")) + "\n");
 
-    // Add an additional newline character to separate distinct grid patterns.
-    renderedOutput += "\n" ;
+    outputBuffer += "\n";
 }
 
-// Finally, print the entire accumulated graphical output to the standard console.
-console . log ( renderedOutput ) ;
+console.log(outputBuffer);

@@ -1,54 +1,76 @@
-const fs = require('fs');
-const util = require('util');
+const inputSourceManager = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-let storedInputFragments;
-let currentPosition = 0;
+let bufferedInputLines = [];
+let currentLinePointer = 0;
 
-function acquireLine() {
-  if (currentPosition >= storedInputFragments.length) {
-    throw new Error("Input source exhausted.");
+inputSourceManager.on('line', (incomingLine) => {
+  bufferedInputLines.push(incomingLine);
+});
+
+inputSourceManager.on('close', () => {
+  logDiagnostic("-----start-----");
+  const programStartTime = new Date();
+  executeMainProgram();
+  const programEndTime = new Date() - programStartTime;
+  logDiagnostic("----- end -----");
+  logDiagnostic("time : " + (programEndTime) + "ms");
+});
+
+function obtainNextToken() {
+  if (currentLinePointer >= bufferedInputLines.length) {
+    throw new Error("ArrayIndexOutOfBoundsException これ以上ないよ");
   }
-  return storedInputFragments[currentPosition++];
+  return bufferedInputLines[currentLinePointer++];
 }
 
-function retrieveInteger() {
-  return Number.parseInt(acquireLine(), 10);
+function checkMoreTokens() {
+  return currentLinePointer < bufferedInputLines.length;
 }
 
-function displayResult(content) {
-  console.log(content);
+function displayOutput(contentToDisplay) {
+  console.log(contentToDisplay);
 }
 
-function recordEvent(note) {
-  console.error("debug:" + util.inspect(note, false, null));
+function logDiagnostic(diagnosticMessage) {
+  console.error("debug:" + require("util").inspect(diagnosticMessage, false, null));
 }
 
-function orchestrateProcessing() {
-  const dataThreshold = retrieveInteger();
-  const characterSequence = acquireLine();
+const typeConversionDispatch = {
+  1: (val) => parseInt(val, 10),
+  2: (val) => val.split(" "),
+  4: (val) => val.split(" ").map(Number),
+  6: (val) => val.split(""),
+  7: (val) => val.split("").map(Number),
+  8: (val) => val.join(" "),
+  9: (val) => val.join("\n"),
+  0: (val) => val.join(""),
+  default: (val) => val
+};
 
-  if (characterSequence.length <= dataThreshold) {
-    displayResult(characterSequence);
-  } else {
-    displayResult(characterSequence.substring(0, 7) + "...");
+function applyConversion(valueToConvert, conversionCode) {
+  try {
+    const converterFunction = typeConversionDispatch[conversionCode] || typeConversionDispatch.default;
+    return converterFunction(valueToConvert);
+  } catch (e) {
+    return valueToConvert;
   }
 }
 
-function initiateOperation() {
-  const fullInputBuffer = fs.readFileSync(process.stdin.fd, 'utf8');
-  storedInputFragments = fullInputBuffer.split(/\r?\n/).filter(segment => segment.length > 0);
+function retrieveInteger() { return applyConversion(obtainNextToken(), 1); }
+function retrieveStringArray() { return applyConversion(obtainNextToken(), 2); }
+function retrieveIntegerArray() { return applyConversion(obtainNextToken(), 4); }
+function retrieveCharacterArray() { return applyConversion(obtainNextToken(), 6); }
 
-  recordEvent("-----start-----");
-  const initialTimestamp = process.hrtime.bigint();
-  
-  orchestrateProcessing();
-  
-  const finalTimestamp = process.hrtime.bigint();
-  const elapsedNanoseconds = finalTimestamp - initialTimestamp;
-  const elapsedMilliseconds = Number(elapsedNanoseconds) / 1_000_000;
+function executeMainProgram() {
+  const truncationLimit = retrieveInteger();
+  const sourceString = obtainNextToken();
 
-  recordEvent("----- end -----");
-  recordEvent("time : " + elapsedMilliseconds.toFixed(3) + "ms");
+  const finalOutput = sourceString.length <= truncationLimit
+    ? sourceString
+    : sourceString.slice(0, 7) + "...";
+
+  displayOutput(finalOutput);
 }
-
-initiateOperation();

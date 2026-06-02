@@ -1,25 +1,19 @@
-const processNumericalInput = (sourceText) => {
-    const [firstOperand, secondOperand] = sourceText
-        .split('\n')[0]
-        .split(' ')
-        .map(Number);
+function processNumericalInput(sourceData) {
+  const [firstOperand, secondOperand] = sourceData
+    .split('\n')[0]
+    .split(' ')
+    .map(Number.parseInt)
+    .slice(0, 2);
 
-    const calculateOutput = (op1, op2) => {
-        const conditionMet = (op1 <= 9 && op2 <= 9);
-        let finalOutcome;
+  const productResult = firstOperand * secondOperand;
 
-        switch (conditionMet) {
-            case true:
-                finalOutcome = op1 * op2;
-                break;
-            case false:
-                finalOutcome = -1;
-                break;
-        }
-        return finalOutcome;
-    };
+  const withinBounds = (firstOperand <= 9 && secondOperand <= 9);
 
-    console.log(calculateOutput(firstOperand, secondOperand));
-};
+  const decisionFactor = withinBounds ? 1 : 0;
 
-processNumericalInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+  const finalOutcome = (decisionFactor * productResult) + ((1 - decisionFactor) * -1);
+
+  console.log(finalOutcome);
+}
+
+processNumericalInput(require("fs").readFileSync("/dev/stdin", "utf8"));

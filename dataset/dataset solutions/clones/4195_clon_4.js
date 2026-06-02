@@ -1,77 +1,68 @@
-async function obtainSourceData() {
-    return new Promise(resolve => {
-        let fullText = '';
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', chunk => {
-            fullText += chunk;
-        });
-        process.stdin.on('end', () => {
-            resolve(fullText.split(/\r?\n/));
-        });
-    });
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let accumulatedInput = '';
+process.stdin.on('data', (chunk) => {
+    accumulatedInput += chunk;
+});
+
+process.stdin.on('end', () => {
+    processData(accumulatedInput.split(/\r?\n/));
+});
+
+function processData(inputLines) {
+    const businessCount = Number(inputLines[0]);
+
+    const businessAvailability = Array.from({ length: businessCount }, (_, idx) =>
+        inputLines[1 + idx].split(' ').map(Number)
+    );
+
+    const profitTable = Array.from({ length: businessCount }, (_, idx) =>
+        inputLines[1 + businessCount + idx].split(' ').map(Number)
+    );
+
+    const maxProfitResult = determineMaxProfit(businessAvailability, profitTable);
+
+    console.log(maxProfitResult);
 }
 
-function calculateMaximizedOutcome(subjectCount, subjectFeatures, valueTable) {
-    let topScore = Number.MIN_SAFE_INTEGER;
-    const maxConfigurationMask = (1 << 10); // Represents 2^10 possible combinations of 10 items
+function determineMaxProfit(availabilityData, earningsTable) {
+    const totalOperatingDays = 10;
+    const totalBusinesses = availabilityData.length;
+    let overallBestProfit = Number.MIN_SAFE_INTEGER;
 
-    for (let currentMask = 0; currentMask < maxConfigurationMask; currentMask++) {
-        // If the current mask is 0, it means no categories are active.
-        // The original code returns MIN_SAFE_INTEGER if all are closed.
-        // We handle this by skipping this configuration as a valid choice,
-        // ensuring topScore remains MIN_SAFE_INTEGER if no other choice is better.
-        if (currentMask === 0) {
-            continue;
-        }
+    // Iterate through all possible combinations of open/closed days using a bitmask.
+    // Each bit in the mask represents the state of a day (0-9).
+    // A '1' bit means the day is open, '0' means it's closed.
+    // There are 2^10 (1024) possible combinations.
+    // We start from 1 because a mask of 0 (all days closed) is an invalid state
+    // according to the original logic, which returns Number.MIN_SAFE_INTEGER for it.
+    for (let dayConfigurationMask = 1; dayConfigurationMask < (1 << totalOperatingDays); dayConfigurationMask++) {
+        let currentConfigurationProfit = 0;
 
-        let currentConfigurationTotal = 0;
-        const subjectOverlapCounts = Array(subjectCount).fill(0);
+        // For each business, calculate its profit based on the current day configuration.
+        for (let bizIdx = 0; bizIdx < totalBusinesses; bizIdx++) {
+            let commonOpenDays = 0; // Counts days this business operates AND is selected in the mask.
 
-        // For each subject, count how many of its features align with the currently active categories
-        for (let sIdx = 0; sIdx < subjectCount; sIdx++) {
-            for (let categoryIdx = 0; categoryIdx < 10; categoryIdx++) {
-                // Check if the 'categoryIdx' bit is set in 'currentMask'
-                const isCategoryActive = (currentMask >> categoryIdx) & 1;
-                
-                // Check if the subject has a feature in this 'categoryIdx'
-                const hasSubjectFeature = (subjectFeatures[sIdx][categoryIdx] === 1);
+            // Check each day (0 to 9) to see if it's open in the current configuration
+            // and if the current business operates on that day.
+            for (let dayIdx = 0; dayIdx < totalOperatingDays; dayIdx++) {
+                // Check if the 'dayIdx'-th bit is set in the dayConfigurationMask.
+                const isDaySelectedInConfig = (dayConfigurationMask >> dayIdx) & 1;
 
-                if (isCategoryActive && hasSubjectFeature) {
-                    subjectOverlapCounts[sIdx]++;
+                // Check if the business operates on this specific day.
+                const businessOperatesOnDay = availabilityData[bizIdx][dayIdx] === 1;
+
+                if (isDaySelectedInConfig && businessOperatesOnDay) {
+                    commonOpenDays++;
                 }
             }
+            // Add the profit for this business based on the count of common open days.
+            currentConfigurationProfit += earningsTable[bizIdx][commonOpenDays];
         }
-
-        // Aggregate the scores for the current configuration
-        for (let sIdx = 0; sIdx < subjectCount; sIdx++) {
-            const matches = subjectOverlapCounts[sIdx];
-            currentConfigurationTotal += valueTable[sIdx][matches];
-        }
-
-        // Update the highest score found so far
-        if (currentConfigurationTotal > topScore) {
-            topScore = currentConfigurationTotal;
-        }
+        // Update the overall best profit found across all day configurations.
+        overallBestProfit = Math.max(overallBestProfit, currentConfigurationProfit);
     }
 
-    return topScore;
+    return overallBestProfit;
 }
-
-async function launchProcessing() {
-    const rawLines = await obtainSourceData();
-    const subjectQuantity = parseInt(rawLines[0], 10);
-
-    const featureSets = Array.from({ length: subjectQuantity }, (_, lineIndex) => {
-        return rawLines[1 + lineIndex].split(' ').map(Number);
-    });
-
-    const profitMetrics = Array.from({ length: subjectQuantity }, (_, lineIndex) => {
-        return rawLines[1 + subjectQuantity + lineIndex].split(' ').map(Number);
-    });
-
-    const finalResult = calculateMaximizedOutcome(subjectQuantity, featureSets, profitMetrics);
-    console.log(finalResult);
-}
-
-launchProcessing();

@@ -1,16 +1,22 @@
-function ProcessInput( rawData ) { // This function processes the incoming raw string data
+function ProcessInput(rawData) {
+  // Convert the raw input string into an array of individual characters.
+  const characterSequence = [...rawData];
 
-  const digitChars = [ ...rawData ]; // Break down the input string into an array of characters.
+  // Transform each character into its integer representation.
+  const numericValues = characterSequence.map(currentDigitChar => {
+    // Use parseInt to convert the character string to a number.
+    return parseInt(currentDigitChar, 10); // Explicitly specify base 10 for clarity.
+  });
 
-  const numericValues = digitChars . map ( singleChar => {
-    return parseInt( singleChar, 10 ); // Convert each character to its integer representation.
-  } );
+  // Calculate the total sum of all the numeric values.
+  const totalSum = numericValues.reduce((accumulator, currentNumber) => {
+    // Add the current number to the running total.
+    return accumulator + currentNumber;
+  });
 
-  const totalSum = numericValues . reduce ( ( accumulator, currentValue ) => {
-    return accumulator + currentValue; // Calculate the aggregate sum of all numbers.
-  } );
-
-  console . log ( totalSum % 9 === 0 ? "Yes" : "No" ); // Output the result based on divisibility by nine.
+  // Determine if the total sum is divisible by 9 and print the result.
+  console.log(totalSum % 9 === 0 ? "Yes" : "No");
 }
 
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) ); // Initiate processing with data from standard input.
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

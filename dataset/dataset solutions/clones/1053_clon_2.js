@@ -1,86 +1,85 @@
-const inputSource = require('fs').readTextFromFile('/dev/stdin', 'utf-8').breakIntoLines();
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
-let comparisonTally = 0; // Initialize a counter for comparisons made during the merge process.
+// This variable tracks the number of comparisons made during the merge process.
+let comparisonCount = 0x0;
 
 /**
- * Combines two sorted subarrays into a single sorted array.
- * This is a core part of the merge sort algorithm.
- * @param {Array<number>} targetArray - The main array containing the subarrays to be merged.
- * @param {number} startBoundary - The starting index of the first subarray.
- * @param {number} middlePoint - The ending index of the first subarray (exclusive) and starting index of the second subarray.
- * @param {number} endBoundary - The ending index of the second subarray (exclusive).
+ * Merges two sorted subarrays into a single sorted array.
+ * This function is a core part of the merge sort algorithm.
+ * @param {Array<number>} targetArray - The array containing the elements to be sorted.
+ * @param {number} startIndex - The starting index of the first subarray.
+ * @param {number} middleIndex - The index separating the two subarrays.
+ * @param {number} endIndex - The ending index of the second subarray (exclusive).
  */
-const stitchArrays = (targetArray, startBoundary, middlePoint, endBoundary) => {
+const combineSortedParts = (targetArray, startIndex, middleIndex, endIndex) => {
     // Calculate the sizes of the two subarrays.
-    const firstPartitionSize = middlePoint - startBoundary;
-    const secondPartitionSize = endBoundary - middlePoint;
+    const leftPartSize = middleIndex - startIndex;
+    const rightPartSize = endIndex - middleIndex;
 
-    // Create temporary arrays to hold the elements of the subarrays.
-    const leftPartition = [];
-    const rightPartition = [];
+    // Create temporary arrays (buffers) to hold the subarrays.
+    const leftBuffer = [];
+    const rightBuffer = [];
 
-    // Populate the left temporary array.
-    for (let tempIndex = 0; tempIndex < firstPartitionSize; tempIndex++) {
-        leftPartition[tempIndex] = targetArray[startBoundary + tempIndex];
+    // Populate the left buffer.
+    for (let leftBufferIdx = 0; leftBufferIdx < leftPartSize; leftBufferIdx++) {
+        leftBuffer[leftBufferIdx] = targetArray[startIndex + leftBufferIdx];
     }
-    // Populate the right temporary array.
-    for (let tempIndex = 0; tempIndex < secondPartitionSize; tempIndex++) {
-        rightPartition[tempIndex] = targetArray[middlePoint + tempIndex];
+    // Populate the right buffer.
+    for (let rightBufferIdx = 0; rightBufferIdx < rightPartSize; rightBufferIdx++) {
+        rightBuffer[rightBufferIdx] = targetArray[middleIndex + rightBufferIdx];
     }
 
-    // Add sentinels (very large values) to the end of each temporary array.
-    // This simplifies the merging logic by avoiding checks for array bounds.
-    leftPartition[firstPartitionSize] = Infinity;
-    rightPartition[secondPartitionSize] = Infinity;
+    // Add sentinels to the end of each buffer to simplify comparison logic.
+    leftBuffer[leftPartSize] = Number.MAX_VALUE;
+    rightBuffer[rightPartSize] = Number.MAX_VALUE;
 
-    let leftPointer = 0;  // Pointer for the left temporary array.
-    let rightPointer = 0; // Pointer for the right temporary array.
+    // Pointers for iterating through the temporary buffers.
+    let leftBufferPtr = 0;
+    let rightBufferPtr = 0;
 
-    // Merge the temporary arrays back into the main array.
-    for (let currentFillIndex = startBoundary; currentFillIndex < endBoundary; currentFillIndex++) {
-        comparisonTally++; // Increment the comparison counter for each element placed.
-
-        // Compare the elements at the current pointers of the temporary arrays.
-        if (leftPartition[leftPointer] <= rightPartition[rightPointer]) {
-            targetArray[currentFillIndex] = leftPartition[leftPointer]; // Take from left if smaller or equal.
-            leftPointer++; // Advance left pointer.
+    // Merge the temporary buffers back into the main array.
+    for (let mainArrayPtr = startIndex; mainArrayPtr < endIndex; mainArrayPtr++) {
+        // Increment the global comparison counter.
+        comparisonCount++;
+        // Compare elements from the left and right buffers.
+        if (leftBuffer[leftBufferPtr] <= rightBuffer[rightBufferPtr]) {
+            targetArray[mainArrayPtr] = leftBuffer[leftBufferPtr];
+            leftBufferPtr++;
         } else {
-            targetArray[currentFillIndex] = rightPartition[rightPointer]; // Take from right if smaller.
-            rightPointer++; // Advance right pointer.
+            targetArray[mainArrayPtr] = rightBuffer[rightBufferPtr];
+            rightBufferPtr++;
         }
     }
 };
 
 /**
- * Recursively sorts an array using the merge sort algorithm.
+ * Implements the merge sort algorithm recursively.
+ * Divides the array into two halves, sorts them, and then merges them.
  * @param {Array<number>} targetArray - The array to be sorted.
  * @param {number} startIndex - The starting index of the current segment to sort.
  * @param {number} endIndex - The ending index of the current segment to sort (exclusive).
  */
-const divideAndSort = (targetArray, startIndex, endIndex) => {
+const performMergeSort = (targetArray, startIndex, endIndex) => {
     // Base case: if the segment has 0 or 1 element, it's already sorted.
     if (startIndex + 1 < endIndex) {
-        // Find the midpoint to divide the array into two halves.
-        const partitionPoint = Math.floor((startIndex + endIndex) / 2);
-
-        // Recursively sort the first half.
-        divideAndSort(targetArray, startIndex, partitionPoint);
-        // Recursively sort the second half.
-        divideAndSort(targetArray, partitionPoint, endIndex);
-
+        // Calculate the middle point to divide the array.
+        const middleIndex = Math.floor((startIndex + endIndex) / 2);
+        // Recursively sort the left half.
+        performMergeSort(targetArray, startIndex, middleIndex);
+        // Recursively sort the right half.
+        performMergeSort(targetArray, middleIndex, endIndex);
         // Merge the two sorted halves.
-        stitchArrays(targetArray, startIndex, partitionPoint, endIndex);
+        combineSortedParts(targetArray, startIndex, middleIndex, endIndex);
     }
 };
 
-// Process the second line of input data.
-// It assumes the first line might be metadata and the actual numbers are on the second line.
-const numericElements = inputSource[1].separateBySpace().transformToNumbers();
+// Parse the input data: the second line contains space-separated numbers.
+const numericData = inputLines[1].split(' ').map(Number);
 
-// Perform the merge sort on the extracted numeric elements.
-divideAndSort(numericElements, 0, numericElements.length);
+// Execute the merge sort algorithm on the parsed numeric data.
+performMergeSort(numericData, 0, numericData.length);
 
-// Output the sorted array elements joined by spaces.
-console.log(numericElements.concatenateWithSpaces());
-// Output the total number of comparisons performed during the sort.
-console.log(comparisonTally);
+// Output the sorted array elements, joined by spaces.
+console.log(numericData.join(' '));
+// Output the total number of comparisons performed.
+console.log(comparisonCount);

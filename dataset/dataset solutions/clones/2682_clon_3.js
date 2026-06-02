@@ -1,91 +1,56 @@
-// This module contains a core routine for analyzing numeric sequences.
-// Its purpose is to validate if a series of numbers, potentially altered by specific rules,
-// maintains a non-decreasing order. This includes checks for significant drops
-// and conditional adjustments based on exact decrements.
+function processInputData(inputString) {
+  const inputLines = inputString.split("\n");
+  const initialLine = inputLines[0]; // Corresponds to firstRow
+  const dataElements = inputLines[1].split(" ").map(Number); // Corresponds to secondRow, converted to numbers
 
-function processNumericalData(inputStringPayload) {
-  // Type III: Robust input validation and early exit for malformed data.
-  if (!inputStringPayload || typeof inputStringPayload !== 'string' || inputStringPayload.trim().length === 0) {
-    return console.log("No");
-  }
+  const exitWithError = () => {
+    console.log("No");
+    return;
+  };
 
-  // Type III: Declare a mutable variable to store the processing outcome.
-  let validationResult = "Yes";
+  const elementCount = dataElements.length;
 
-  // Type III: Parse the input string into lines once.
-  const dataLines = inputStringPayload.trim().split('\n');
+  // First pass: check for specific decrements and order
+  for (let currentIndex = 0; currentIndex < elementCount - 1; currentIndex++) {
+    const currentElementValue = dataElements[currentIndex];
+    const nextElementValue = dataElements[currentIndex + 1];
 
-  // Type III: Ensure there's at least a second line to process.
-  if (dataLines.length < 2) {
-    return console.log("No");
-  }
-
-  // Type II: Renamed `secondRow` to `numericValuesCollection`.
-  // Type III: Explicitly convert string parts to integers and filter out non-numeric entries.
-  const rawNumberStrings = dataLines[1].split(' ');
-  const numericValuesCollection = rawNumberStrings
-    .map(valStr => Number(valStr.trim()))
-    .filter(numVal => !isNaN(numVal));
-
-  // Type III: Store length in a variable for clarity and potential minor efficiency.
-  const collectionLength = numericValuesCollection.length;
-
-  // First iteration: Apply adjustment rules and perform initial non-decreasing checks.
-  // Type II: Renamed `i` to `currentElementIndex`.
-  for (let currentElementIndex = 0; currentElementIndex < collectionLength - 1; ++currentElementIndex) {
-    // Type III: Introduce intermediate variables for clarity in calculations.
-    const currentNum = numericValuesCollection[currentElementIndex];
-    const nextNum = numericValuesCollection[currentElementIndex + 1];
-    const differenceBetweenElements = nextNum - currentNum;
-
-    // Rule 1: If the numerical drop is severe (more than 1), the sequence is invalid.
-    if (differenceBetweenElements < -1) {
-      validationResult = "No";
-      break; // Type III: Early exit from loop.
+    // Original: if( secondRow[i+1] - secondRow[i] < -1 )
+    // Equivalent: if (nextElementValue < currentElementValue - 1)
+    if (nextElementValue < currentElementValue - 1) {
+      return exitWithError();
     }
 
-    // Rule 2: If there's an exact drop of 1, modify the current element.
-    if (differenceBetweenElements === -1) {
-      // Type II: Use compound assignment for modification.
-      numericValuesCollection[currentElementIndex] -= 1;
+    // Original: if( secondRow[i+1] - secondRow[i] === -1 )
+    // Equivalent: if (nextElementValue === currentElementValue - 1)
+    if (nextElementValue === currentElementValue - 1) {
+      dataElements[currentIndex] = currentElementValue - 1; // Modify the array in place
 
-      // Type III: Add a boundary check for `currentElementIndex - 1` and rephrase the condition.
-      // This check ensures that the modification doesn't create a new violation
-      // with the element immediately preceding the current one.
-      if (currentElementIndex > 0) {
-        const precedingNum = numericValuesCollection[currentElementIndex - 1];
-        const adjustedCurrentNum = numericValuesCollection[currentElementIndex];
-        if (precedingNum > adjustedCurrentNum) {
-          validationResult = "No";
-          break; // Type III: Early exit from loop.
-        }
+      // Original: if( secondRow[i-1] > secondRow[i]){
+      // This check only applies if currentIndex > 0.
+      // If currentIndex is 0, dataElements[currentIndex - 1] is undefined, and undefined > any_number is false.
+      // So, the original behavior is to only check when currentIndex > 0.
+      if (currentIndex > 0 && dataElements[currentIndex - 1] > dataElements[currentIndex]) {
+        return exitWithError();
       }
     }
   }
 
-  // Type III: If a "No" result was already determined, bypass the second validation pass.
-  if (validationResult === "No") {
-    return console.log(validationResult);
-  }
+  // Output the modified array state, as per original behavior
+  console.log(dataElements);
 
-  // Second iteration: Final verification that the entire sequence is non-decreasing
-  // after all potential modifications from the first pass.
-  for (let currentElementIndex = 0; currentElementIndex < collectionLength - 1; ++currentElementIndex) {
-    // Type II: Renamed `secondRow[i+1] < secondRow[i]`
-    if (numericValuesCollection[currentElementIndex + 1] < numericValuesCollection[currentElementIndex]) {
-      validationResult = "No";
-      break; // Type III: Early exit from loop.
+  // Second pass: ensure non-decreasing order after modifications
+  for (let checkIndex = 0; checkIndex < elementCount - 1; checkIndex++) {
+    const currentCheckValue = dataElements[checkIndex];
+    const nextCheckValue = dataElements[checkIndex + 1];
+
+    // Original: if( secondRow[i+1] < secondRow[i] )
+    if (nextCheckValue < currentCheckValue) {
+      return exitWithError();
     }
   }
 
-  // Type III: Output the final determined result.
-  console.log(validationResult);
+  console.log("Yes");
 }
 
-// Type III: Encapsulate the execution logic within an Immediately Invoked Function Expression (IIFE).
-// This keeps the global scope clean and mimics the original execution context.
-(function performSequenceAnalysis() {
-  // Type III: Standard input reading mechanism, identical to original for compatibility.
-  const systemInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-  processNumericalData(systemInputData);
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,23 +1,17 @@
-const outcomeDefinitions = [
-    { testValue: "101", finalResult: "No" }
-    // Specific values "12" and "999999999" evaluate to the default "Yes" in the original,
-    // so they do not require explicit entries here to maintain equivalent functionality.
-];
+function processInputData(incomingText) {
+  const outcomeMap = {
+    "101": "No",
+    "12": "Yes",
+    "999999999": "Yes"
+  };
 
-const standardResult = "Yes";
+  const defaultOutcome = "Yes";
 
-const processExternalInput = (incomingText) => {
-    const matchingDefinition = outcomeDefinitions.find(
-        (definition) => definition.testValue === incomingText
-    );
+  const finalResult = Object.prototype.hasOwnProperty.call(outcomeMap, incomingText)
+    ? outcomeMap[incomingText]
+    : defaultOutcome;
 
-    return matchingDefinition ? matchingDefinition.finalResult : standardResult;
-};
+  console.log(finalResult);
+}
 
-const executeProgramFlow = (inputSourceProvider) => {
-    const dataSource = inputSourceProvider.toString();
-    const computedOutput = processExternalInput(dataSource);
-    console.log(computedOutput);
-};
-
-executeProgramFlow(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

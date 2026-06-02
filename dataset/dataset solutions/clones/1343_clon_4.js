@@ -1,36 +1,27 @@
-function calculateExponentialModulo(baseElement, exponentValue, divisorValue) {
-    if (exponentValue === 0n) {
+function computeModularExponentiation(baseOperand, powerOperand, divisorOperand) {
+    if (powerOperand === 0n) {
         return 1n;
     }
-    if (exponentValue === 1n) {
-        return baseElement % divisorValue;
-    }
 
-    let subProblemResult = calculateExponentialModulo(baseElement, exponentValue / 2n, divisorValue);
-    let intermediateProduct = (subProblemResult * subProblemResult) % divisorValue;
+    const intermediateResult = computeModularExponentiation(baseOperand, powerOperand / 2n, divisorOperand);
+    let finalProduct = (intermediateResult * intermediateResult) % divisorOperand;
 
-    if (exponentValue % 2n === 1n) {
-        return (intermediateProduct * baseElement) % divisorValue;
-    } else {
-        return intermediateProduct;
+    if (powerOperand % 2n !== 0n) {
+        finalProduct = (finalProduct * baseOperand) % divisorOperand;
     }
+    return finalProduct;
 }
 
-function processInputAndGenerateOutput(sourceText) {
-    const numberPattern = /^(\d+)\s(\d+)/;
-    const matches = sourceText.match(numberPattern);
+function executeProgram(sourceData) {
+    const numberExtractor = /(\d+)\s+(\d+)/;
+    const extractedValues = sourceData.match(numberExtractor);
 
-    if (!matches || matches.length < 3) {
-        throw new Error("Input data format is incorrect.");
-    }
-
-    const firstQuantity = BigInt(matches[1]);
-    const secondQuantity = BigInt(matches[2]);
-
+    const baseValue = BigInt(extractedValues[1]);
+    const exponentValue = BigInt(extractedValues[2]);
     const fixedDivisor = 1000000007n;
 
-    const finalComputation = calculateExponentialModulo(firstQuantity, secondQuantity, fixedDivisor);
-    console.log(finalComputation.toString());
+    const calculatedOutcome = computeModularExponentiation(baseValue, exponentValue, fixedDivisor);
+    console.log(calculatedOutcome.toString());
 }
 
-processInputAndGenerateOutput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

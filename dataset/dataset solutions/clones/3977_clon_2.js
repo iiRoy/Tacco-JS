@@ -1,61 +1,64 @@
-/* This module processes an input stream to determine the maximum number of compatible coordinate pairings. */
-console.log((inputContent => {
-  // First, parse the entire input string.
-  // Each line is split into space-separated values, then converted to integers.
-  const parsedEntries = inputContent
+console.log((inputData => {
+  // This section parses the raw input string.
+  // It first trims whitespace, then splits by newlines.
+  // Each line is further split by spaces, and values are converted to integers.
+  // The first element of the first line is extracted as 'pointCount',
+  // and the rest of the lines are stored in 'parsedLines'.
+  const [[pointCount], ...parsedLines] = inputData
     .trim()
-    .split(/\r?\n/)
-    .map(currentLine => currentLine.split(' ').map(stringVal => parseInt(stringVal, 10)));
+    .split('\n')
+    .map(lineStr => lineStr.split(' ').map(coordStr => coordStr | 0));
 
-  // The very first number in the input specifies the total quantity of pairs.
-  const totalQuantity = parsedEntries[0][0];
-  // Subsequent lines contain the actual coordinate points.
-  const coordinateData = parsedEntries.slice(1);
+  // Initialize two arrays to hold the coordinates of red and blue points.
+  const redPoints = [];
+  const bluePoints = [];
 
-  const primarySet = []; // Array to store coordinates of the 'red' points.
-  const secondarySet = []; // Array to store coordinates of the 'blue' points.
-
-  // Populate the two sets from the parsed coordinate data.
-  for (let entryIndex = 0; entryIndex < totalQuantity; ++entryIndex) {
-    primarySet.push(coordinateData[entryIndex]);
-    secondarySet.push(coordinateData[totalQuantity + entryIndex]);
+  // Populate the 'redPoints' and 'bluePoints' arrays.
+  // The first 'pointCount' lines in 'parsedLines' are for red points,
+  // and the next 'pointCount' lines are for blue points.
+  for (let idx = 0; idx < pointCount; idx++) {
+    redPoints.push(parsedLines[idx]);
+    bluePoints.push(parsedLines[pointCount + idx]);
   }
 
-  // Sort the 'blue' points (secondarySet) based on their X-coordinate in ascending order.
-  secondarySet.sort((pointOne, pointTwo) => pointOne[0] - pointTwo[0]);
+  // Sort the 'bluePoints' array based on their X-coordinates in ascending order.
+  // This is a crucial step for the greedy matching algorithm.
+  bluePoints.sort(([firstCoordA], [firstCoordB]) => firstCoordA - firstCoordB);
 
-  let matchedPairsCount = 0; // Initialize a counter for successful pairings.
-  const temporaryBuffer = []; // An auxiliary variable, presently not utilized in the core logic.
+  let matchedPairs = 0; // This variable will count the number of successful matches.
+  const unusedPlaceholder = []; // This array is declared but not used in the logic.
 
-  // Iterate through each 'blue' point to find a matching 'red' point.
-  for (let bluePointIndex = 0; bluePointIndex < totalQuantity; ++bluePointIndex) {
-    const [blueXCoord, blueYCoord] = secondarySet[bluePointIndex]; // Get current blue point's coordinates.
+  // Iterate through each blue point, attempting to find a suitable red point.
+  for (let idx = 0; idx < pointCount; idx++) {
+    const [currentBlueX, currentBlueY] = bluePoints[idx];
+    // 'bestRedCandidate' stores the index and Y-coordinate of the best red point found so far
+    // for the current blue point. Initialized to [-1, -1] to indicate no match yet.
+    let bestRedCandidate = [-1, -1];
 
-    let optimalRedCandidate = [-1, -1]; // Stores [index_in_primarySet, y_coordinate] of the best red match.
+    // Search through the available red points.
+    for (let redIdx = 0; redIdx < redPoints.length; redIdx++) {
+      const [currentRedX, currentRedY] = redPoints[redIdx];
 
-    // Search through the available 'red' points for a suitable partner.
-    for (let redPointScanIndex = 0; redPointScanIndex < primarySet.length; ++redPointScanIndex) {
-      const [redXCoord, redYCoord] = primarySet[redPointScanIndex]; // Get current red point's coordinates.
-
-      // A red point (rx, ry) can be paired with a blue point (bx, by) if rx < bx and ry < by.
-      // We seek the red point with the largest Y-coordinate that satisfies these conditions.
-      if (blueXCoord < redXCoord) {
-        // If the blue point's X is less than the red point's X, this red point is not a valid candidate.
-        continue;
+      // Check the conditions for a valid match:
+      // 1. The red point's X-coordinate must be less than the blue point's X-coordinate.
+      if (currentBlueX < currentRedX) {
+        continue; // This red point is not suitable, move to the next.
       }
-      if (blueYCoord > redYCoord && redYCoord > optimalRedCandidate[1]) {
-        // If the Y-coordinate condition is met, and this red point's Y is superior to the current best.
-        optimalRedCandidate = [redPointScanIndex, redYCoord]; // Update the best matching red point found so far.
+      // 2. The red point's Y-coordinate must be less than the blue point's Y-coordinate.
+      // 3. Among suitable red points, we want the one with the largest Y-coordinate.
+      if (currentBlueY > currentRedY && currentRedY > bestRedCandidate[1]) {
+        bestRedCandidate = [redIdx, currentRedY]; // Update the best candidate.
       }
     }
 
-    // If an optimal red point was found for the current blue point (indicated by a non-sentinel Y-coordinate).
-    if (optimalRedCandidate[1] >= 0) {
-      primarySet.splice(optimalRedCandidate[0], 1); // Remove the matched red point from the pool.
-      matchedPairsCount++; // Increment the total count of successful pairings.
+    // If a valid red point was found (indicated by a Y-coordinate >= 0).
+    if (bestRedCandidate[1] >= 0) {
+      // Remove the matched red point from the array to prevent it from being reused.
+      redPoints.splice(bestRedCandidate[0], 1);
+      matchedPairs++; // Increment the count of successful matches.
     }
   }
 
-  // Return the final tally of matched pairs as a string.
-  return String(matchedPairsCount);
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8')));
+  // The final result is the total number of matched pairs, converted to a string.
+  return `${matchedPairs}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

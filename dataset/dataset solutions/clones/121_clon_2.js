@@ -1,95 +1,74 @@
-(function (rawData) {
-    // This immediately invoked function expression (IIFE) processes input data.
-    // It reads from standard input, parses it, and then solves multiple test cases.
+// This JavaScript module processes input data to find combinations of digits that sum to a target value.
+// It reads multiple lines of input, where each line specifies the number of digits (n) and the target sum (s).
+(function(rawData) {
+  // Prepare the input: remove any trailing newline character and then split the string into an array of lines.
+  var linesOfData = rawData.replace(/\n$/, '').split('\n');
 
-    // First, clean up the raw input string: remove any trailing newline characters
-    // and then split the entire string into an array of individual lines.
-    let processedLines = rawData.trimEnd().split('\n');
+  // Continuously process input lines until a termination condition is met.
+  while (true) {
+    // Extract the first line from the array, split it by space, and convert each part to a number.
+    var currentNumbers = linesOfData.shift().split(' ').map(Number);
 
-    // Enter an infinite loop to process each test case.
-    // The loop will terminate when a specific condition (0 0 input) is met.
-    while ( true ) {
-        // Retrieve the very first line from our processed array,
-        // split it by spaces to get individual string components,
-        // and then convert each component string into an integer.
-        let numericValues = processedLines.shift().split(' ').map(val => parseInt(val, 10));
+    // The first number in the line represents the count of digits to use.
+    var numDigits = currentNumbers.shift();
+    // The second number represents the desired sum.
+    var targetSum = currentNumbers.shift();
 
-        // Extract the first number from the parsed array, representing the quantity of digits.
-        let numDigits = numericValues.shift();
-        // Extract the second number, which is the target sum we aim to achieve.
-        let targetSum = numericValues.shift();
-
-        // This is our crucial termination condition for the processing loop.
-        // If both the number of digits and the target sum are zero, we are done.
-        if (numDigits === 0 && targetSum === 0) {
-            // Exit the entire IIFE, ceasing further input processing.
-            return;
-        }
-
-        // If the termination condition is not met, calculate the combinations
-        // for the current set of 'numDigits' and 'targetSum'.
-        // The result is then printed to the console.
-        console.log(determineWays(numDigits, targetSum));
+    // If both 'numDigits' and 'targetSum' are zero, it signifies the end of input.
+    if (numDigits === 0 && targetSum === 0) {
+      return; // Exit the immediately invoked function expression.
     }
-})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Execute the IIFE by reading the entire content of /dev/stdin as UTF-8.
 
+    // Calculate the total number of valid combinations and print the result to the console.
+    console.log(calculateCombinations(numDigits, targetSum));
+  }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read all input from standard input as a UTF-8 string.
 
 /**
- * Function to initiate the calculation of unique digit combinations.
- * This acts as the public-facing entry point for finding combinations.
+ * Initiates the recursive process to find combinations of unique digits (0-9) that sum up to a specific target.
  *
- * @param {number} count - The exact number of distinct digits (from 0-9) that must be chosen.
- * @param {number} target - The precise sum that these 'count' digits must add up to.
- * @returns {number} The total quantity of valid combinations that satisfy the criteria.
+ * @param {number} numDigits - The total number of digits that must be used in each combination.
+ * @param {number} targetSum - The sum that the chosen digits must equal.
+ * @returns {number} The total count of distinct combinations found.
  */
-function determineWays(count, target) {
-    // Delegate the actual recursive work to a helper function.
-    // We start searching for combinations beginning with the digit 0.
-    return exploreSums(0, count, target);
+function calculateCombinations(numDigits, targetSum) {
+  // Start the recursive search for combinations, beginning with the digit 0.
+  return recursiveSumFinder(0, numDigits, targetSum);
 }
 
 /**
- * Recursive helper function that explores all possible combinations of digits.
- * It systematically tries to build sums using distinct digits in an ascending order.
+ * A recursive helper function that explores combinations of digits.
+ * It uses a backtracking-like approach, but with a specific modification
+ * where the 'targetSum' is cumulatively reduced across iterations within the same loop.
  *
- * @param {number} currentDigitStart - The smallest digit value that can be considered
- *                                     for the current position in the combination.
- *                                     Ensures digits are unique and in increasing order.
- * @param {number} remainingDigits - The number of digits that still need to be selected
- *                                   to form a complete combination.
- * @param {number} currentTargetSum - The remaining sum that needs to be achieved
- *                                    by the 'remainingDigits'.
- * @returns {number} The count of successful combinations found through this particular
- *                   recursive branch.
+ * @param {number} startIndex - The smallest digit allowed to be picked in the current recursive call (inclusive, 0-9).
+ * @param {number} numDigits - The remaining number of digits that still need to be selected.
+ * @param {number} targetSum - The remaining sum that needs to be achieved with the 'numDigits' digits.
+ * @returns {number} The count of valid combinations found from this particular state.
  */
-function exploreSums(currentDigitStart, remainingDigits, currentTargetSum) {
-    let comboCounter = 0; // Initialize a local counter for combinations found in this call.
+function recursiveSumFinder(startIndex, numDigits, targetSum) {
+  var combinationCount = 0; // Initialize a counter for combinations found in this branch.
 
-    // Loop through all possible digit values starting from 'currentDigitStart' up to 9.
-    // This ensures that each digit is considered only once and in an increasing sequence.
-    for (let digitValue = currentDigitStart; digitValue < 10; digitValue++) {
-        // Calculate the new target sum after including the current 'digitValue'.
-        let updatedTargetSum = currentTargetSum - digitValue;
+  // Iterate through possible digits, starting from 'startIndex' up to 9.
+  for (var currentDigit = startIndex; currentDigit < 10; currentDigit++) {
+    // Subtract the current digit from the remaining target sum.
+    // Note: 'targetSum' is modified in place for subsequent loop iterations within this function call.
+    targetSum = targetSum - currentDigit;
 
-        // Base case for the recursion: If only one digit remains to be chosen.
-        if (remainingDigits === 1) {
-            // If the 'updatedTargetSum' is exactly zero, it means we have found
-            // a valid combination using the specified number of digits.
-            if (updatedTargetSum === 0) {
-                comboCounter++; // Increment the counter for this valid combination.
-            }
-        } else {
-            // Recursive case: If more than one digit still needs to be chosen.
-            // Make a recursive call:
-            // - The next digit must be greater than 'digitValue' (i.e., 'digitValue + 1').
-            // - One less digit needs to be chosen ('remainingDigits - 1').
-            // - The target sum is now 'updatedTargetSum'.
-            // Add the results from this recursive call to our total 'comboCounter'.
-            comboCounter += exploreSums(digitValue + 1, remainingDigits - 1, updatedTargetSum);
-        }
+    // Check if this is the last digit to be picked for the current combination.
+    if (numDigits === 1) {
+      // If it's the last digit and the remaining sum is exactly zero, a valid combination is found.
+      if (targetSum === 0) {
+        combinationCount++; // Increment the total count.
+      }
+    } else {
+      // If more digits are required, make a recursive call:
+      // - Start searching for the next digit from 'currentDigit + 1' (to ensure unique, increasing digits).
+      // - Decrement 'numDigits' as one digit has been chosen.
+      // - Pass the updated 'targetSum'.
+      combinationCount += recursiveSumFinder(currentDigit + 1, numDigits - 1, targetSum);
     }
-
-    // After trying all possible digit values for the current position,
-    // return the total count of combinations found by this function call.
-    return comboCounter;
+  }
+  // Return the total count of combinations found in this recursive branch.
+  return combinationCount;
 }

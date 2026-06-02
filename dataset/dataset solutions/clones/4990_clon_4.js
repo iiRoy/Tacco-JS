@@ -1,18 +1,17 @@
-function calculateAggregateValue(sourceText) {
-  const [iterations, boundary, valOne, valTwo] = sourceText
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .map(Number);
+function processInputAndCalculate(rawText) {
+  const parts = rawText.replace(/\n+$/, '').split(/\n/);
 
-  const countForValOne = Math.min(iterations, boundary);
-  const countForValTwo = iterations - countForValOne;
+  const totalIterations = Number(parts[0]);
+  const switchPoint = Number(parts[1]);
+  const firstValue = Number(parts[2]);
+  const secondValue = Number(parts[3]);
 
-  const computedTotal = (countForValOne * valOne) + (countForValTwo * valTwo);
+  const iterationsForFirstValue = Math.min(totalIterations, switchPoint);
+  const iterationsForSecondValue = totalIterations - iterationsForFirstValue;
 
-  return computedTotal;
+  const finalSum = (iterationsForFirstValue * firstValue) + (iterationsForSecondValue * secondValue);
+
+  console.log(finalSum);
 }
 
-const inputContent = require('node:fs').readFileSync(0, 'utf8');
-const finalOutcome = calculateAggregateValue(inputContent);
-console.log(finalOutcome);
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

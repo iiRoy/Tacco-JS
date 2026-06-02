@@ -1,49 +1,36 @@
-var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-var dataLines = inputData.trim().split("\n");
+var lines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
 
 while (true) {
-    var lineSegment = dataLines.shift();
-    if (lineSegment === "0 0 0") break;
+    var currentEntry = lines.shift();
+    if (currentEntry === "0 0 0") break;
 
-    var configValues = lineSegment.split(" ").map(Number);
-    var totalParticipants = configValues[0];
-    var stride = configValues[1];
-    var initialRemoval = configValues[2];
+    var [totalCount, stepSize, initialTarget] = currentEntry.split(" ").map(Number);
 
-    // Create an ordered list of all participants
-    var remainingCandidates = Array.from({ length: totalParticipants }, (_, index) => index + 1);
+    let activeMembers = Array.from({ length: totalCount }, (_, index) => index + 1);
 
-    // Identify and remove the initially excluded participant
-    var removalTargetIndex = remainingCandidates.indexOf(initialRemoval);
-    remainingCandidates.splice(removalTargetIndex, 1);
+    // First, remove the 'initialTarget' member as per the original logic.
+    // The original code sets ary[start] to false and increments cnt.
+    let firstRemovalIndex = activeMembers.indexOf(initialTarget);
+    activeMembers.splice(firstRemovalIndex, 1);
 
-    // Determine the starting point for the circular count in the modified list
-    // The count effectively starts from the person *after* the initially removed one.
-    // If the removed person was the last in the list, the count wraps to the beginning (index 0).
-    var currentPointer = removalTargetIndex; 
-    if (currentPointer === remainingCandidates.length) { 
-        currentPointer = 0;
+    // The next counting starts from the position immediately after the removed member.
+    // If the removed member was the last in the current circle, it wraps to the beginning.
+    let currentPointer = firstRemovalIndex % activeMembers.length;
+
+    // Continue removing members until only one remains.
+    // We've already removed one, so we need to remove (totalCount - 1) - 1 more.
+    for (let removalIteration = 0; removalIteration < totalCount - 2; removalIteration++) {
+        // Calculate the index of the member to be removed.
+        // (stepSize - 1) because 'stepSize' means taking 'stepSize-1' steps from the current position.
+        currentPointer = (currentPointer + stepSize - 1) % activeMembers.length;
+        activeMembers.splice(currentPointer, 1);
+
+        // Adjust the current pointer for the next iteration.
+        // If the removed member was the last one, the pointer wraps to 0.
+        // Otherwise, it stays at the same logical position (which is now the start of the next count).
+        currentPointer = currentPointer % activeMembers.length;
     }
 
-    // Continue eliminating participants until only one remains
-    while (remainingCandidates.length > 1) {
-        // Calculate the index of the participant to be eliminated in the current round.
-        // This uses modulo arithmetic for circular traversal of the `remainingCandidates` array.
-        // `stride - 1` because the count starts from `currentPointer` itself.
-        removalTargetIndex = (currentPointer + stride - 1) % remainingCandidates.length;
-
-        // Remove the identified participant from the list
-        remainingCandidates.splice(removalTargetIndex, 1);
-
-        // Update the `currentPointer` for the next round.
-        // If the removed participant was the last in the list, the next count starts from the new beginning (index 0).
-        // Otherwise, the `currentPointer` stays at the `removalTargetIndex` because elements to its right have shifted left.
-        currentPointer = removalTargetIndex;
-        if (currentPointer === remainingCandidates.length) {
-            currentPointer = 0;
-        }
-    }
-
-    // The last remaining participant is the survivor
-    console.log(remainingCandidates[0]);
+    // The last remaining member is the one left in the array.
+    console.log(activeMembers[0]);
 }

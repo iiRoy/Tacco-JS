@@ -1,43 +1,54 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the script. */
+'use strict'; // Enforce strict mode for cleaner code execution
 
-function orchestrateExecution  (  rawContent  )
-{
-  // Prepare the incoming text payload by cleaning and splitting it into individual lines.
-  let processedLines = rawContent.trim().split('\n');
+/*
+ * This module defines a function to analyze a sequence of numbers
+ * provided as input and count specific patterns.
+ */
+function processInput(rawData) {
+  // First, clean up the raw input string: remove leading/trailing whitespace
+  // and then split it into an array of individual lines.
+  let processedLines = rawData.trim().split('\n');
 
-  // Extract the total number of entries from the first line of the input.
-  const totalEntries = Number(processedLines[0]);
+  // The first line of the input contains the total number of elements (N).
+  // Convert this string representation to a numerical value.
+  const arrayLength = Number(processedLines[0]);
 
-  // Parse the second line into an array of integers.
-  const numericSequence = processedLines[1].split(' ').map(itemValue => parseInt(itemValue, 10));
+  // The second line contains the actual numbers, space-separated.
+  // Split this string by spaces, then use 'map' to convert each string
+  // representation of a number into an integer.
+  const numericValues = processedLines[1].split(' ').map(valStr => parseInt(valStr, 10));
 
-  // Initialize a counter for elements that are neither the minimum nor the maximum among their immediate neighbors.
-  let intermediateCount = 0;
+  // Initialize a variable to keep track of the count of elements
+  // that satisfy our specific condition.
+  let peakCount = 0;
 
-  // Iterate through the numeric sequence, excluding the very first and very last elements.
-  for (let currentIndex = 1; currentIndex < totalEntries - 1; currentIndex++) {
-    // Check if the current element is an "intermediate" value.
-    // An intermediate value is one that is strictly between its left and right neighbors.
-    const currentElement = numericSequence[currentIndex];
-    const leftNeighbor = numericSequence[currentIndex - 1];
-    const rightNeighbor = numericSequence[currentIndex + 1];
-
+  // Iterate through the array of numbers. We start from the second element
+  // (index 1) and go up to, but not including, the last element (arrayLength - 1).
+  // This is because each element needs to be compared with its immediate
+  // predecessor and successor.
+  for (let idx = 1; idx < arrayLength - 1; idx++) {
+    // Check if the current number (numericValues[idx]) is strictly between
+    // its two neighbors (numericValues[idx - 1] and numericValues[idx + 1]).
+    // This means either:
+    // 1. The current number is smaller than its left neighbor AND larger than its right neighbor.
+    //    (e.g., [5, 3, 7] - 3 is between 5 and 7)
+    // OR
+    // 2. The current number is smaller than its right neighbor AND larger than its left neighbor.
+    //    (e.g., [7, 3, 5] - 3 is between 7 and 5)
     if (
-        (currentElement < leftNeighbor && currentElement > rightNeighbor)
-          ||
-        (currentElement < rightNeighbor && currentElement > leftNeighbor)
-    )
-    {
-      // If the condition holds, increment our special counter.
-      intermediateCount++;
+      (numericValues[idx] < numericValues[idx - 1] && numericValues[idx] > numericValues[idx + 1]) ||
+      (numericValues[idx] < numericValues[idx + 1] && numericValues[idx] > numericValues[idx - 1])
+    ) {
+      // If the condition is met, increment our counter.
+      peakCount++;
     }
   }
 
-  // Output the final tally of intermediate elements found.
-  console.log(intermediateCount);
+  // After checking all relevant elements, print the final count to the console.
+  console.log(peakCount);
 }
 
-// Invoke the main processing function, reading input from standard input.
-orchestrateExecution(
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// The program execution starts here.
+// It reads the entire content of standard input ('/dev/stdin') as a UTF-8 string,
+// and then passes this raw string to our 'processInput' function for analysis.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

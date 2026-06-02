@@ -1,78 +1,64 @@
-const systemInput = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-
-const processDataStream = (dataInput) => {
-    let streamElements = dataInput.trim().split(/\s+/g);
-    let streamCursor = 0;
-
-    const streamHandler = {
-        fetchElement: () => {
-            if (streamCursor >= streamElements.length) {
-                throw new Error("Input stream exhausted.");
-            }
-            return streamElements[streamCursor++];
-        },
-        fetchNumber: () => {
-            return parseInt(streamHandler.fetchElement(), 10);
+module.exports = function(inputDataString) {
+    function* tokenStreamProducer(sourceContent) {
+        const dataTokens = sourceContent.split(/\s+/g).filter(Boolean);
+        let currentPosition = 0;
+        while (currentPosition < dataTokens.length) {
+            yield dataTokens[currentPosition++];
         }
-    };
+    }
 
-    const computeSolution = () => {
-        const nodeQuantity = streamHandler.fetchNumber();
-        const graphRepresentation = new Map();
+    const inputIterator = tokenStreamProducer(inputDataString);
 
-        for (let linkIndex = 0; linkIndex < nodeQuantity - 1; ++linkIndex) {
-            const pointAlpha = streamHandler.fetchNumber() - 1;
-            const pointBeta = streamHandler.fetchNumber() - 1;
-            const connectionWeight = streamHandler.fetchNumber();
+    const retrieveNextString = () => inputIterator.next().value;
+    const retrieveNextInteger = () => parseInt(retrieveNextString(), 10);
 
-            if (!graphRepresentation.has(pointAlpha)) {
-                graphRepresentation.set(pointAlpha, []);
-            }
-            if (!graphRepresentation.has(pointBeta)) {
-                graphRepresentation.set(pointBeta, []);
-            }
+    const totalNodes = retrieveNextInteger();
 
-            graphRepresentation.get(pointAlpha).push({ targetIdentifier: pointBeta, pathCost: connectionWeight });
-            graphRepresentation.get(pointBeta).push({ targetIdentifier: pointAlpha, pathCost: connectionWeight });
-        }
+    const graphConnections = new Map();
+    for (let nodeIndex = 0; nodeIndex < totalNodes; nodeIndex++) {
+        graphConnections.set(nodeIndex, []);
+    }
 
-        const queryQuantity = streamHandler.fetchNumber();
-        const initialLocation = streamHandler.fetchNumber() - 1;
+    for (let edgeCounter = 0; edgeCounter < totalNodes - 1; edgeCounter++) {
+        const firstNode = retrieveNextInteger() - 1;
+        const secondNode = retrieveNextInteger() - 1;
+        const connectionWeight = retrieveNextInteger();
 
-        const costToNode = new Map();
-        const explorationQueue = [{ currentPoint: initialLocation, totalJourneyCost: 0 }];
-        costToNode.set(initialLocation, 0);
+        graphConnections.get(firstNode).push({ destination: secondNode, cost: connectionWeight });
+        graphConnections.get(secondNode).push({ destination: firstNode, cost: connectionWeight });
+    }
 
-        let queueHead = 0;
-        while (queueHead < explorationQueue.length) {
-            const currentExploration = explorationQueue[queueHead++];
-            const activePoint = currentExploration.currentPoint;
-            const accumulatedJourneyCost = currentExploration.totalJourneyCost;
+    const numberOfQueries = retrieveNextInteger();
+    const initialNode = retrieveNextInteger() - 1;
 
-            const adjacentConnections = graphRepresentation.get(activePoint) || [];
-            for (const incidentLink of adjacentConnections) {
-                const connectedPoint = incidentLink.targetIdentifier;
-                const segmentCost = incidentLink.pathCost;
+    const pathCosts = new Map();
+    const traversalQueue = [{ nodeIdentifier: initialNode, accumulatedCost: 0 }];
+    pathCosts.set(initialNode, 0);
 
-                if (!costToNode.has(connectedPoint)) {
-                    const newAccumulatedCost = accumulatedJourneyCost + segmentCost;
-                    costToNode.set(connectedPoint, newAccumulatedCost);
-                    explorationQueue.push({ currentPoint: connectedPoint, totalJourneyCost: newAccumulatedCost });
-                }
+    let queuePointer = 0;
+    while (queuePointer < traversalQueue.length) {
+        const { nodeIdentifier: currentNode, accumulatedCost: currentTotalCost } = traversalQueue[queuePointer++];
+
+        const adjacentEdges = graphConnections.get(currentNode) || [];
+        for (const edgeDetails of adjacentEdges) {
+            const connectedNode = edgeDetails.destination;
+            const edgeValue = edgeDetails.cost;
+
+            if (!pathCosts.has(connectedNode)) {
+                const newTotalCost = currentTotalCost + edgeValue;
+                pathCosts.set(connectedNode, newTotalCost);
+                traversalQueue.push({ nodeIdentifier: connectedNode, accumulatedCost: newTotalCost });
             }
         }
+    }
 
-        const finalOutputs = [];
-        for (let q = 0; q < queryQuantity; ++q) {
-            const queryNodeA = streamHandler.fetchNumber() - 1;
-            const queryNodeB = streamHandler.fetchNumber() - 1;
-            const sumOfCosts = costToNode.get(queryNodeA) + costToNode.get(queryNodeB);
-            finalOutputs.push(sumOfCosts);
-        }
-        return finalOutputs.join('\n');
-    };
+    for (let queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
+        const queryNodeX = retrieveNextInteger() - 1;
+        const queryNodeY = retrieveNextInteger() - 1;
 
-    return computeSolution();
+        const costToX = pathCosts.get(queryNodeX);
+        const costToY = pathCosts.get(queryNodeY);
+
+        console.log(costToX + costToY);
+    }
 };
-
-console.log(processDataStream(systemInput));

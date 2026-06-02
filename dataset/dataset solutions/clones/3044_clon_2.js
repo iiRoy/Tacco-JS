@@ -1,86 +1,106 @@
-'use strict'; /* Enforce strict parsing rules */
+'use strict'
 
 function ProcessData(rawData) {
-  var LargeValue = Math.pow(2, 50); // A very large number for calculations
-  const ModuloConstant = 998244353; // The modulus used for operations
+  // A large power of 2, used in calculations later.
+  var LargePower = Math.pow(2, 50);
+  // The modulus value for all arithmetic operations.
+  const ModulusValue = 998244353;
 
-  /* Pre-process the raw input string */
-  rawData = rawData.trim().split(/\s+/).map(currentItem => currentItem - 0);
+  // Pre-process the input string: trim, split by whitespace, and convert to numbers.
+  var parsedNumbers = rawData.trim().split(/\s+/).map(item => item - 0);
 
-  var ItemCount = rawData.shift(); // Get the number of items from the beginning
-  var TotalSum = rawData.reduce((accumulator, currentElement) => accumulator + currentElement); // Calculate the total sum of remaining items
-  var TargetSumHalf = Math.floor(TotalSum / 2); // Determine half of the total sum
+  // The first number is the count of elements, the rest are the elements themselves.
+  var ElementCount = parsedNumbers.shift();
+  // Calculate the total sum of the remaining elements.
+  var TotalSum = parsedNumbers.reduce((accumulator, currentValue) => accumulator + currentValue);
+  // Determine the target half sum for dynamic programming.
+  var HalfSum = Math.floor(TotalSum / 2);
 
-  var CoefficientSeries = [3]; // Initialize a series with a starting coefficient
-  for (let outerIdx = 0; outerIdx < ItemCount - 1; outerIdx++) {
-    CoefficientSeries.push(CoefficientSeries[outerIdx] * 2 % ModuloConstant); // Generate subsequent coefficients
+  // Initialize a sequence of multipliers.
+  var MultiplierSequence = [3];
+  // Populate the multiplier sequence based on the ModulusValue.
+  for (let idx = 0; idx < ElementCount - 1; idx++) {
+    MultiplierSequence.push((MultiplierSequence[idx] * 2) % ModulusValue);
   }
 
-  var DynamicProgTable = []; // Declare the dynamic programming table
-  // DynamicProgTable[first_idx_items][num_items_taken][current_total_value] stores the count of ways
-  for (let outerIdx = 0; outerIdx <= ItemCount; outerIdx++) {
-    DynamicProgTable[outerIdx] = [];
-    for (let midIdx = 0; midIdx <= outerIdx; midIdx++) {
-      DynamicProgTable[outerIdx][midIdx] = [];
-      for (let innerIdx = 0; innerIdx <= TargetSumHalf; innerIdx++) {
-        DynamicProgTable[outerIdx][midIdx][innerIdx] = 0; // Initialize all table entries to zero
-      }
-    }
-  }
-  DynamicProgTable[0][0][0] = 1; // Base case for the DP table
-
-  /* Populate the dynamic programming table */
-  for (let outerIdx = 0; outerIdx < ItemCount; outerIdx++) {
-    for (let midIdx = 0; midIdx <= outerIdx; midIdx++) {
-      for (let innerIdx = 0; innerIdx <= TargetSumHalf; innerIdx++) {
-        DynamicProgTable[outerIdx + 1][midIdx][innerIdx] += DynamicProgTable[outerIdx][midIdx][innerIdx]; // Case: Don't include the current item
-        DynamicProgTable[outerIdx + 1][midIdx][innerIdx] %= ModuloConstant;
-      }
-      for (let innerIdx = rawData[outerIdx]; innerIdx <= TargetSumHalf; innerIdx++) {
-        DynamicProgTable[outerIdx + 1][midIdx + 1][innerIdx] += DynamicProgTable[outerIdx][midIdx][innerIdx - rawData[outerIdx]]; // Case: Include the current item
-        DynamicProgTable[outerIdx + 1][midIdx + 1][innerIdx] %= ModuloConstant;
+  // Initialize a 3D array for dynamic programming.
+  // DynamicProgressionTable[i][j][k] will store the number of ways to form sum 'k'
+  // using 'j' elements from the first 'i' numbers.
+  var DynamicProgressionTable = [];
+  for (let idx = 0; idx <= ElementCount; idx++) {
+    DynamicProgressionTable[idx] = [];
+    for (let subIdx = 0; subIdx <= idx; subIdx++) {
+      DynamicProgressionTable[idx][subIdx] = [];
+      for (let valIdx = 0; valIdx <= HalfSum; valIdx++) {
+        DynamicProgressionTable[idx][subIdx][valIdx] = 0;
       }
     }
   }
 
-  var FinalResult = 1; // Initialize the final answer variable
+  // Base case for DP: 0 elements, 0 sum, 1 way (empty set).
+  DynamicProgressionTable[0][0][0] = 1;
 
-  /* Calculate initial result based on item count */
-  for (let outerIdx = 0; outerIdx < ItemCount; outerIdx++) {
+  // Fill the DP table.
+  for (let idx = 0; idx < ElementCount; idx++) {
+    for (let subIdx = 0; subIdx <= idx; subIdx++) {
+      for (let valIdx = 0; valIdx <= HalfSum; valIdx++) {
+        // Case 1: Do not include the current element parsedNumbers[idx].
+        DynamicProgressionTable[idx + 1][subIdx][valIdx] += DynamicProgressionTable[idx][subIdx][valIdx];
+        DynamicProgressionTable[idx + 1][subIdx][valIdx] %= ModulusValue;
+      }
+      // Case 2: Include the current element parsedNumbers[idx].
+      // Iterate from the current element's value up to HalfSum.
+      for (let valIdx = parsedNumbers[idx]; valIdx <= HalfSum; valIdx++) {
+        DynamicProgressionTable[idx + 1][subIdx + 1][valIdx] += DynamicProgressionTable[idx][subIdx][valIdx - parsedNumbers[idx]];
+        DynamicProgressionTable[idx + 1][subIdx + 1][valIdx] %= ModulusValue;
+      }
+    }
+  }
+
+  // Initialize the final result.
+  var FinalResult = 1;
+  // Calculate 3^N modulo K.
+  for (let idx = 0; idx < ElementCount; idx++) {
     FinalResult *= 3;
-    FinalResult %= ModuloConstant;
+    FinalResult %= ModulusValue;
   }
 
-  /* Adjust the result using coefficients and DP table values */
-  for (let outerIdx = 0; outerIdx < ItemCount; outerIdx++) {
-    let CurrentCoefficient = CoefficientSeries[outerIdx];
-    let SubtotalCount = DynamicProgTable[ItemCount][outerIdx].reduce(function(partialSum, elementValue, elementIndex) {
-      if (elementIndex <= TargetSumHalf) {
-        partialSum += elementValue;
-        partialSum %= ModuloConstant;
+  // Adjust the result based on the DP table and multiplier sequence.
+  for (let idx = 0; idx < ElementCount; idx++) {
+    let currentMultiplier = MultiplierSequence[idx];
+    // Sum up the counts of subsets for the current number of elements (idx).
+    let subsetSumCount = DynamicProgressionTable[ElementCount][idx].reduce(function(subAccumulator, subCurrent, subIndex) {
+      if (subIndex <= HalfSum) {
+        subAccumulator += subCurrent;
+        subAccumulator %= ModulusValue;
       }
-      return partialSum;
-    }, 0) % ModuloConstant;
+      return subAccumulator;
+    }, 0) % ModulusValue;
 
-    let DivisorValue = Math.round(CurrentCoefficient * SubtotalCount / LargeValue) + 1;
-    let QuotientPart = (CurrentCoefficient - CurrentCoefficient % DivisorValue) / DivisorValue;
-    FinalResult -= ((QuotientPart * SubtotalCount % ModuloConstant) * DivisorValue + (CurrentCoefficient % DivisorValue) * SubtotalCount) % ModuloConstant;
+    // Perform a specific calculation involving LargePower.
+    let divisorVal = Math.round((currentMultiplier * subsetSumCount) / LargePower) + 1;
+    let quotientVal = (currentMultiplier - (currentMultiplier % divisorVal)) / divisorVal;
+
+    // Subtract the calculated term from the FinalResult.
+    FinalResult -= ((quotientVal * subsetSumCount % ModulusValue) * divisorVal + (currentMultiplier % divisorVal) * subsetSumCount) % ModulusValue;
   }
 
-  FinalResult %= ModuloConstant;
-  FinalResult += ModuloConstant; // Ensure positive result
-  FinalResult %= ModuloConstant;
+  // Ensure FinalResult stays within the positive range of the modulus.
+  FinalResult %= ModulusValue;
+  FinalResult += ModulusValue;
+  FinalResult %= ModulusValue;
 
-  /* Apply final adjustment if total sum is even */
+  // If the total sum is even, add an additional term.
   if (TotalSum % 2 === 0) {
-    for (let midIdx = 0; midIdx <= ItemCount; midIdx++) {
-      FinalResult += 3 * DynamicProgTable[ItemCount][midIdx][TargetSumHalf];
-      FinalResult %= ModuloConstant;
+    for (let subIdx = 0; subIdx <= ElementCount; subIdx++) {
+      FinalResult += 3 * DynamicProgressionTable[ElementCount][subIdx][HalfSum];
+      FinalResult %= ModulusValue;
     }
   }
 
-  console.log(FinalResult); // Output the computed result
+  // Output the final computed result.
+  console.log(FinalResult);
 }
 
-// Invoke the main processing function with data read from standard input
+// Read input from standard input and pass it to the main processing function.
 ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

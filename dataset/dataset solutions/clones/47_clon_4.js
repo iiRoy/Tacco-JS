@@ -1,32 +1,38 @@
-const obtainSourceData = () => require('fs').readFileSync(0, 'utf8').trim().split('\n');
+var fs = require('fs');
 
-const interpretSpecifications = (linesOfInput) => ({
-    gridDimension: Number(linesOfInput[0]),
-    swapOperationsCount: Number(linesOfInput[1])
-});
+var bufferSize = fs.fstatSync(process.stdin.fd).size;
+var dataBuffer = Buffer.alloc(bufferSize);
+var readBytesCount = fs.readSync(process.stdin.fd, dataBuffer, 0, bufferSize, 0);
+var lineData = dataBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-const formInitialArrangement = (countValue) => Array.from({ length: countValue }, (_, positionId) => positionId);
+processPermutations();
 
-const applySinglePermutation = (currentArrangement, firstPointer, secondPointer) => {
-    const nextArrangement = [...currentArrangement];
-    [nextArrangement[firstPointer], nextArrangement[secondPointer]] = [nextArrangement[secondPointer], nextArrangement[firstPointer]];
-    return nextArrangement;
-};
+function processPermutations() {
+  var arrayWidth = parseInt(lineData[0], 10);
+  var swapCount = parseInt(lineData[1], 10);
 
-const processAllPermutations = (sourceLines) => {
-    const { gridDimension, swapOperationsCount } = interpretSpecifications(sourceLines);
+  var initialArrangement = Array.from({ length: arrayWidth }, (_, index) => index);
+
+  var finalArrangement = lineData.slice(2, swapCount + 2).reduce((currentArrangementState, swapInstructionLine) => {
+    var [sourcePosition, targetPosition] = swapInstructionLine.split(',').map(Number);
     
-    let startingArrangement = formInitialArrangement(gridDimension);
+    var adjustedSource = sourcePosition - 1;
+    var adjustedTarget = targetPosition - 1;
 
-    const finalArrangement = sourceLines.slice(2, swapOperationsCount + 2).reduce((accumulatedArrangement, instructionLine) => {
-        const [pointOne, pointTwo] = instructionLine.split(',').map(Number);
-        const zeroIndexedPointOne = pointOne - 1;
-        const zeroIndexedPointTwo = pointTwo - 1;
-        
-        return applySinglePermutation(accumulatedArrangement, zeroIndexedPointOne, zeroIndexedPointTwo);
-    }, startingArrangement);
+    var nextArrangementState = [...currentArrangementState]; 
+    
+    [nextArrangementState[adjustedSource], nextArrangementState[adjustedTarget]] = 
+    [nextArrangementState[adjustedTarget], nextArrangementState[adjustedSource]];
 
-    finalArrangement.forEach(finalPositionValue => console.log(finalPositionValue + 1));
-};
+    return nextArrangementState;
+  }, initialArrangement);
 
-processAllPermutations(obtainSourceData());
+  var resultPositions = new Array(arrayWidth);
+  finalArrangement.forEach((originalItemIndex, currentFinalPosition) => {
+    resultPositions[originalItemIndex] = currentFinalPosition;
+  });
+
+  resultPositions.forEach(finalPos => {
+    console.log(finalPos + 1);
+  });
+}

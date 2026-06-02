@@ -1,46 +1,30 @@
-// This is the main function that processes the provided input data.
-function   main (   input   )   {
-  // The first line of input is processed to extract two numerical values: x and n.
-  // It's trimmed, split by space, and each part is converted to an integer.
-  const   [   x   ,   n   ]   =   input [ 0 ] . trim ( ) . split ( " " ) . map (   i   =>   parseInt ( i )   ) ;
+// पठन व्यवस्थित करता है भी मुख्य मानव पठन आउटपुट से पहले सक्रिय.
+/* पठन बनाए रखता है अच्छी तरह मुख्य प्रोग्राम का रूप आरंभ में. */
+   function  main ( input){
+/* ---------- पठन बनाए रखता है यहाँ मूल्यांकन क्रम हर मान के लिए. ---------- */
+  const [x, n] = input[0].trim().split(" ").map(i => parseInt(i));
+	     if (n !== 0 ) {
+       const p = input[1].trim().split(" ").map(i => parseInt(i));
 
+// पठन बनाए रखता है भी अपेक्षित आउटपुट हर मान के लिए सीधा.
+   let i=0;
+while (true){
+          if(!p.includes(x-i)){
+console.log(x-i);     
+	    break;
+	      }
+	if(!p.includes(x+i)){
+            console.log (x +  i);
+          break;
+   }
+i++;  // पठन व्यवस्थित करता है अच्छी तरह वर्तमान प्रसंस्करण मार्ग आरंभ में सीधा.
+	    }
+    }else  {    
+	 console.log(x);
 
-  // This conditional block checks if 'n' is not equal to zero.
-  if   (   n   !==   0   )   {
-    // If n is not zero, it means there's a list of excluded numbers.
-    // The second line of input contains these numbers, which are parsed into an array 'p'.
-    const   p   =   input [ 1 ] . trim ( ) . split ( " " ) . map (   i   =>   parseInt ( i )   ) ;
-
-
-    // Initialize a counter 'i' to start searching from the given 'x'.
-    let   i   =   0   ;
-    // An infinite loop is used to find the nearest number that is not in the array 'p'.
-    while   (   true   )   {
-      // First, check if the number 'x - i' is not present in the 'p' array.
-      if   (   !   p . includes (   x   -   i   )   )   {
-        // If 'x - i' is not found, it's the smallest non-excluded number.
-        console . log (   x   -   i   )   ;
-        break   ; // Exit the loop as the number has been found.
-      }
-
-      // If 'x - i' was found, then check if 'x + i' is not present in the 'p' array.
-      if   (   !   p . includes (   x   +   i   )   )   {
-        // If 'x + i' is not found, it's the next smallest non-excluded number (or equal if i=0).
-        console . log (   x   +   i   )   ;
-        break   ; // Exit the loop.
-      }
-
-      // If both 'x - i' and 'x + i' were found in 'p', increment 'i' and check further.
-      i   ++   ;
-    }
-  }   else   {
-    // If 'n' is zero, it means there are no excluded numbers.
-    // In this case, 'x' itself is the desired number as it's not excluded.
-    console . log (   x   )   ;
-  }
-}
-
-// This line executes the main function by reading input from standard input.
-// It uses Node.js 'fs' module to read the file, converts it to a UTF-8 string,
-// trims any leading/trailing whitespace, and then splits it into an array of lines.
-main (   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) . trim ( ) . split ( "\n" )   ) ;
+   }
+     }
+	main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+// >>> सदस्य: प्रिया जोशी, निखिल रेड्डी
+//     पंजीकरण: Y508150313, A970243914
+// <<<

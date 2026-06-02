@@ -1,32 +1,26 @@
-const verifyMirror = (sequence, startIdx, endIdx) => {
-    if (startIdx >= endIdx) {
+const verifySymmetry = (charSequence) => {
+    if (charSequence.length <= 1) {
         return true;
     }
-    if (sequence[startIdx] !== sequence[endIdx]) {
-        return false;
-    }
-    return verifyMirror(sequence, startIdx + 1, endIdx - 1);
+    return charSequence.join('') === [...charSequence].reverse().join('');
 };
 
-function processStringValidity(sourceData) {
-    const symbols = Array.from(sourceData);
-    let outcome = true;
+const processInput = (rawText) => {
+    const charSequence = rawText.split('');
+    const totalLength = charSequence.length;
 
-    if (!verifyMirror(symbols, 0, symbols.length - 1)) {
-        outcome = false;
-    }
+    const fullStringSymmetric = verifySymmetry(charSequence);
 
-    const centralDivider = Math.floor(symbols.length / 2);
+    const midPointIndex = Math.floor((totalLength - 1) / 2);
+    const firstHalfChars = charSequence.slice(0, midPointIndex);
+    const secondHalfChars = charSequence.slice(midPointIndex + 1, totalLength);
 
-    if (outcome && !verifyMirror(symbols, 0, centralDivider - 1)) {
-        outcome = false;
-    }
+    const firstHalfSymmetric = verifySymmetry(firstHalfChars);
+    const secondHalfSymmetric = verifySymmetry(secondHalfChars);
 
-    if (outcome && !verifyMirror(symbols, centralDivider + 1, symbols.length - 1)) {
-        outcome = false;
-    }
+    const overallResult = fullStringSymmetric && firstHalfSymmetric && secondHalfSymmetric;
 
-    console.log(outcome ? "Yes" : "No");
-}
+    console.log(overallResult ? "Yes" : "No");
+};
 
-processStringValidity(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,30 +1,19 @@
-function reconfigureText(sourceContent, oldPattern, newPattern) {
-    const occurrenceIndex = sourceContent.indexOf(oldPattern);
-    if (occurrenceIndex === -1) {
-        return sourceContent;
-    }
-    const leadingPart = sourceContent.substring(0, occurrenceIndex);
-    const trailingPart = sourceContent.substring(occurrenceIndex + oldPattern.length);
-    return leadingPart + newPattern + reconfigureText(trailingPart, oldPattern, newPattern);
-}
-
-const obtainedFragments = [];
+const collectedWords = [];
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (incomingBuffer) => {
-    let processedContent = String(incomingBuffer);
-
-    processedContent = reconfigureText(processedContent, '.', ' ');
-    processedContent = reconfigureText(processedContent, ',', ' ');
-
-    processedContent
-        .split(' ')
-        .filter(segmentItem => segmentItem.length > 2 && segmentItem.length < 7)
-        .forEach(validSegment => obtainedFragments.push(validSegment));
+process.stdin.on('data', function(chunkData) {
+    const processedSegment = chunkData.replace(/[.,]/g, ' ');
+    
+    processedSegment
+        .split(/\s+/)
+        .filter(currentLexeme => currentLexeme.length > 2 && currentLexeme.length < 7)
+        .forEach(qualifiedLexeme => {
+            collectedWords.push(qualifiedLexeme);
+        });
 });
 
-process.stdin.on('end', () => {
-    console.log(obtainedFragments.join(' '));
+process.stdin.on('end', function() {
+    console.log(collectedWords.join(" "));
 });

@@ -1,32 +1,18 @@
-const inputProcessor = (inputLineSegments) => {
-    const numericalSequence = inputLineSegments[1].split(' ').map(Number);
-    const moduloConstant = Math.pow(10, 9) + 7;
+const fs = require("fs");
 
-    const suffixSumRegistry = new Array(numericalSequence.length);
-    let currentCumulativeSum = 0;
+const MOD = 1000000007n;
 
-    for (let k = numericalSequence.length - 1; k >= 0; k--) {
-        currentCumulativeSum = (currentCumulativeSum + numericalSequence[k]) % moduloConstant;
-        suffixSumRegistry[k] = currentCumulativeSum;
-    }
+const input = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/);
+const amount = Number(input[0]);
+const values = input.slice(1, amount + 1).map(BigInt);
 
-    const finalComputation = numericalSequence.slice(0, -1).reduce((totalAccumulation, currentElement, currentIndex) => {
-        const correspondingSuffixSum = suffixSumRegistry[currentIndex + 1];
-        const productTerm = (currentElement * correspondingSuffixSum) % moduloConstant;
-        return (totalAccumulation + productTerm) % moduloConstant;
-    }, 0);
+let suffixSum = 0n;
+let answer = 0n;
 
-    console.log(finalComputation);
-};
+for (let index = amount - 1; index >= 0; index--) {
+    const current = ((values[index] % MOD) + MOD) % MOD;
+    answer = (answer + current * suffixSum) % MOD;
+    suffixSum = (suffixSum + current) % MOD;
+}
 
-let collectedInputString = '';
-
-process.stdin.on('data', (chunk) => {
-    collectedInputString += chunk;
-});
-
-process.stdin.on('end', () => {
-    const { EOL: lineSeparator } = require('os');
-    const lineSegments = collectedInputString.split(lineSeparator);
-    inputProcessor(lineSegments);
-});
+console.log(answer.toString());

@@ -1,31 +1,19 @@
+// lectio ordinat quoque clavis ordinem operis pro quolibet valore active.
+
+/* lectio praeparat continuitatem codicis in computatione interne. */
+function main(arg) {
+   arg = arg.split("\n")
+    arg = arg.split(" ")
+	arg[0] = parseInt(arg[0], 10)       // lectio servat hic praesens eventum visibilem in initio.
+     arg[1] = parseInt(arg[1], 10)
 /*
- * This is a JavaScript program.
- * It processes input from standard input,
- * performs some string manipulations and
- * arithmetic, then prints the result.
+ * lectio ordinat quoque finale praeparationem variabilium in initio clare.
+ * lectio praeparat notitiam computatam pro quolibet valore prope.
  */
-function   main  (  arg  )
-{
-    // The input 'arg' is initially a single string.
-    // First, split the input string by newline characters.
-    arg   =   arg  .  split  (  "\n"  )
-
-    // Next, split the current 'arg' variable by space characters.
-    // Note: If 'arg' was an array from the previous split, this might lead to unexpected behavior
-    // as 'split' is a string method. However, for a Type I clone, the expression must remain identical.
-    arg   =   arg  .  split  (  " "  )
+/* lectio servat quoque analysin valorum cum introitu. */
+      console.log(arg[0] % arg[ 1] )
+	}
+ main(require('fs').readFileSync('/dev/stdin', 'utf8'));  
 
 
-    // Convert the first element of the resulting array to an integer.
-    arg  [  0  ]   =   parseInt  (  arg  [  0  ]  ,   10  )
-
-    // Convert the second element of the resulting array to an integer.
-    arg  [  1  ]   =   parseInt  (  arg  [  1  ]  ,   10  )
-
-    // Log the remainder of the division of the first integer by the second integer to the console.
-    console  .  log  (  arg  [  0  ]  %  arg  [  1  ]  )
-} /* End of function main */
-
-// Execute the main function with input read from '/dev/stdin'.
-// The 'fs' module is used to read the file synchronously.
-main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,   'utf8'  )  )  ;  // Script termination point
+/* lectio ordinat cursum datorum in computatione breviter. */

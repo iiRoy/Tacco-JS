@@ -1,99 +1,88 @@
-// This module contains the primary logic for processing battle scenario data.
-function ProcessBattleData(rawDataString) {
+// This module processes incoming data.
+function ProcessInput(rawData) {
+  // Split the entire input string into individual lines.
+  rawData = rawData.split("\n");
 
-    // First, divide the complete input string into an array of individual lines.
-    let parsedLines = rawDataString.split( "\n" );
+  // Parse the first line to get key parameters.
+  let firstLineParts = rawData[0].split(" ");
 
-    // Extract numerical parameters from the very first line of input.
-    let firstLineParts = parsedLines[0].split( " " );
+  // Initialize variables for the problem.
+  const itemCount = parseInt(firstLineParts[0], 10);
+  const targetValue = parseInt(firstLineParts[1], 10);
 
-    // Parse and store the total count of hostile entities.
-    const numHostileEntities = parseInt( firstLineParts[0], 10 );
-    // Parse and store the initial hit points of the primary target.
-    const initialTargetHP = parseInt( firstLineParts[1], 10 );
+  let attackValues = [];
+  let specialValues = [];
+  let effectiveSpecials = [];
+  let lineSegments = [];
 
-    // Arrays to hold the attack attributes of each hostile entity.
-    let standardAttackValues = [ ];
-    let specialMovePotencies = [ ];
-    let relevantSpecialMoves = [ ]; // Stores special attacks that exceed the max standard attack.
-    let currentInputSegments = [ ]; // Temporary storage for line segments.
+  let actionCounter = 0;
+  let cumulativeDamage = 0;
+  let currentDamage = 0;
 
-    let totalActionCount = 0;        // Accumulator for the total number of actions performed.
-    let sumOfRelevantSpecials = 0;   // Sum of specific powerful special moves.
-    let damageAccumulated = 0;       // Tracks damage inflicted during a specific calculation path.
+  // Populate attack and special values from subsequent input lines.
+  for (let idx = 1; idx <= itemCount; idx++) {
+    lineSegments[idx] = rawData[idx].split(" ");
+    attackValues[idx] = lineSegments[idx][0];
+    specialValues[idx] = lineSegments[idx][1];
+  }
 
-    // Iterate through the input lines to populate attack data for each entity.
-    for ( let entityIndex = 1; entityIndex <= numHostileEntities; entityIndex++ ) {
-        currentInputSegments[entityIndex] = parsedLines[entityIndex].split(" ");
-        standardAttackValues[entityIndex] = currentInputSegments[entityIndex][0];
-        specialMovePotencies[entityIndex] = currentInputSegments[entityIndex][1];
+  // Determine the maximum attack power.
+  let maxAttackPower = 0;
+  for (let idx = 1; idx <= attackValues.length; idx++) {
+    if (maxAttackPower < attackValues[idx]) {
+      maxAttackPower = attackValues[idx];
+    }
+  }
+
+  // Identify and collect special attacks that are more powerful than the max regular attack.
+  for (let idx = 1; idx <= specialValues.length; idx++) {
+    if (maxAttackPower < specialValues[idx]) {
+      effectiveSpecials.push(parseInt(specialValues[idx], 10));
+    }
+  }
+
+  // Calculate the total damage from all effective special attacks.
+  for (let idx = 0; idx < effectiveSpecials.length; idx++) {
+    cumulativeDamage += effectiveSpecials[idx];
+  }
+
+  // Decide the strategy based on whether special attacks alone are sufficient.
+  if (cumulativeDamage < targetValue) {
+    // If special attacks are not enough, calculate remaining target value.
+    let remainingTarget = targetValue - cumulativeDamage;
+    let fullHitsRequired = parseInt(remainingTarget / maxAttackPower, 10);
+
+    // Add an extra hit if there's any remainder.
+    if (remainingTarget % maxAttackPower !== 0) {
+      actionCounter++;
     }
 
-    // Determine the highest standard attack value among all entities.
-    let maximumStandardAttack = 0;
-    for ( let entityIndex = 1; entityIndex <= standardAttackValues.length; entityIndex++ ) {
-        if ( maximumStandardAttack < standardAttackValues[entityIndex] ) {
-            maximumStandardAttack = standardAttackValues[entityIndex];
-        }
+    // Sum up all actions taken.
+    actionCounter += effectiveSpecials.length;
+    actionCounter += fullHitsRequired;
+  } else {
+    // If special attacks are sufficient, sort them in descending order.
+    effectiveSpecials.sort(function (valA, valB) {
+      if (valA > valB) return -1;
+      if (valA < valB) return 1;
+      return 0;
+    });
+
+    // Count the first action.
+    actionCounter++;
+
+    // Iterate through sorted special attacks to reach the target.
+    for (let idx = 0; idx < effectiveSpecials.length; idx++) {
+      currentDamage += effectiveSpecials[idx];
+      if (targetValue > currentDamage) {
+        actionCounter++;
+      }
     }
+  }
 
-    // Filter and collect special moves that are more powerful than the maximum standard attack.
-    for ( let entityIndex = 1; entityIndex <= specialMovePotencies.length; entityIndex++ ) {
-        if ( maximumStandardAttack < specialMovePotencies[entityIndex] ) {
-            relevantSpecialMoves.push( parseInt( specialMovePotencies[entityIndex], 10 ) );
-        }
-    }
-
-    // Calculate the combined potency of all relevant special moves.
-    for ( let moveIndex = 0; moveIndex < relevantSpecialMoves.length; moveIndex++ ) {
-        sumOfRelevantSpecials += relevantSpecialMoves[moveIndex];
-    }
-
-    // Conditional logic branches based on whether special moves alone can defeat the target.
-    if ( sumOfRelevantSpecials < initialTargetHP ) {
-        // Scenario A: Special moves are insufficient; standard attacks will be required.
-        let remainingTargetHP = initialTargetHP - sumOfRelevantSpecials;
-        let standardAttacksNeeded = parseInt( remainingTargetHP / maximumStandardAttack, 10 );
-
-        // If there's any fractional HP remaining, one additional standard attack is needed.
-        if ( remainingTargetHP % maximumStandardAttack !== 0 ) {
-            totalActionCount++;
-        }
-        // Add the number of relevant special moves to the total actions.
-        totalActionCount += relevantSpecialMoves.length;
-        // Add the calculated number of standard attacks.
-        totalActionCount += standardAttacksNeeded;
-    } else {
-        // Scenario B: Special moves might be sufficient; determine the minimum number of them.
-        // Sort the relevant special moves in descending order of potency.
-        relevantSpecialMoves.sort( function ( attackA, attackB ) {
-            if ( attackA > attackB ) {
-                return -1;
-            }
-            if ( attackA < attackB ) {
-                return 1;
-            }
-            return 0;
-        } );
-
-        totalActionCount++; // The first special move is always counted.
-
-        // Iterate through the sorted special moves to accumulate damage and count actions.
-        for ( let moveIndex = 0; moveIndex < relevantSpecialMoves.length; moveIndex++ ) {
-            damageAccumulated += relevantSpecialMoves[moveIndex];
-            // If the target still has HP remaining after this move, another action is counted.
-            if ( initialTargetHP > damageAccumulated ) {
-                totalActionCount++;
-            } else {
-                // Target has been defeated, no need to consider further special moves.
-                break;
-            }
-        }
-    }
-
-    // Output the final computed number of actions to defeat the target.
-    console.log( totalActionCount );
+  // Output the final count of actions.
+  console.log(actionCounter);
 }
 
-// The following code handles standard input/output operations and should not be altered.
-ProcessBattleData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The following line should not be modified (it reads input and calls the main processing function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

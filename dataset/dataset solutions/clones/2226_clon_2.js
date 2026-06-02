@@ -1,149 +1,121 @@
 function ProcessInput(rawData) {
-    // Split the entire input string into individual lines
-    // based on the newline character.
-    let lines = rawData.split("\n");
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split("\n");
 
-    // The first line contains the total number of entries.
-    let countOfNumbers = parseInt(lines[0], 10);
+  // Parse the first line to get the number of elements.
+  let countElements = parseInt(rawData[0], 10);
 
-    // The second line contains space-separated numbers,
-    // which are stored as strings initially.
-    let initialNumbers = lines[1].split(' ');
+  // Split the second line into an array of number strings.
+  let numberStrings = rawData[1].split(' ');
 
-    // This 2D array will store the counts of each prime factor
-    // for every initial number.
-    let primeFactorCounts = new Array(countOfNumbers);
+  // Initialize a 2D array to store prime factor counts for each number.
+  let primeFactorCounts = new Array(countElements);
 
-    // A temporary string to collect all unique prime factors found
-    // across all input numbers. Factors will be comma-separated.
-    let uniqueFactorsString = '';
+  // A string to accumulate unique prime factors found across all numbers.
+  let primeListString = '';
 
-    // This array will store the last prime factor that reduced a number to 1.
-    // Its actual usage later seems limited, but its declaration is maintained.
-    let lastFactorReached = new Array(countOfNumbers);
+  // An array to store the last factor found for each number (might be unused, but preserved).
+  let lastFactor = new Array(countElements);
 
-    // This 2D array stores the "required" power for each prime factor
-    // for each number, derived from comparisons with other numbers.
-    let requiredFactorPowers = new Array(countOfNumbers);
+  // A 2D array to store the required prime factor counts for the final calculation.
+  let requiredFactorCounts = new Array(countElements);
 
-    // This array will hold the final calculated value for each
-    // of the 'countOfNumbers' input entries.
-    let resultValues = new Array(countOfNumbers);
+  // An array to store intermediate results for each number.
+  let individualResults = new Array(countElements);
 
-    // --- Phase 1: Prime Factorization and Unique Factor Collection ---
-    // Iterate through each number provided in the input.
-    for (let numberIndex = 0; numberIndex < countOfNumbers; numberIndex++) {
-        // Convert the current number string to an integer.
-        initialNumbers[numberIndex] = parseInt(initialNumbers[numberIndex], 10);
+  // Loop through each of the 'countElements' numbers.
+  for (let idx = 0; idx < countElements; idx++) {
+    // Convert the current number string to an integer.
+    numberStrings[idx] = parseInt(numberStrings[idx], 10);
 
-        // Initialize the inner arrays for factor counts and required powers.
-        // The size 1000001 suggests handling factors up to 1,000,000.
-        primeFactorCounts[numberIndex] = new Array(1000001);
-        requiredFactorPowers[numberIndex] = new Array(1000001);
+    // Initialize inner arrays for prime factor counts and required factor counts.
+    primeFactorCounts[idx] = new Array(1000001);
+    requiredFactorCounts[idx] = new Array(1000001);
 
-        // Initialize all elements of the newly created inner arrays to zero.
-        // This ensures a clean slate for factor counting.
-        for (let divisorCandidate = 2; divisorCandidate < 1000001; divisorCandidate++) {
-            requiredFactorPowers[numberIndex][divisorCandidate] = 0;
-            primeFactorCounts[numberIndex][divisorCandidate] = 0;
-        }
-
-        // Perform prime factorization for the current number.
-        // We check for divisibility by potential prime factors starting from 2.
-        for (let currentDivisor = 2; currentDivisor < 1000001; currentDivisor++) {
-            // Re-initialization for prime factor counts and required powers for the current divisor.
-            // This is somewhat redundant given the previous loop, but maintains structural integrity.
-            primeFactorCounts[numberIndex][currentDivisor] = 0;
-            requiredFactorPowers[numberIndex][currentDivisor] = 0;
-
-            // Repeatedly divide the number by 'currentDivisor' as long as it's divisible.
-            // This counts how many times 'currentDivisor' is a factor.
-            for (let innerLoopControl = 0; innerLoopControl >= 0; innerLoopControl) { // Acts as a while(true) loop
-                if (initialNumbers[numberIndex] % currentDivisor === 0) {
-                    primeFactorCounts[numberIndex][currentDivisor]++; // Increment the count for this factor.
-                    initialNumbers[numberIndex] /= currentDivisor;     // Reduce the number.
-                    // If this divisor hasn't been added to our unique factors list yet, add it.
-                    if (uniqueFactorsString.indexOf(currentDivisor) === -1) {
-                        uniqueFactorsString += currentDivisor + ',';
-                    }
-                } else {
-                    // If not divisible, break out of this inner loop and try the next 'currentDivisor'.
-                    break;
-                }
-            }
-            // If the number has been completely factorized (reduced to 1),
-            // record the last factor and move to the next initial number.
-            if (initialNumbers[numberIndex] === 1) {
-                lastFactorReached[numberIndex] = currentDivisor;
-                break; // Exit the 'currentDivisor' loop for this 'numberIndex'.
-            }
-        }
+    // Initialize all factor counts to zero for the current number.
+    for (let subIdx = 2; subIdx < 1000001; subIdx++) {
+      requiredFactorCounts[idx][subIdx] = 0;
+      primeFactorCounts[idx][subIdx] = 0;
     }
 
-    // --- Phase 2: Process Unique Factors ---
-    // Remove the trailing comma from the string of unique factors.
-    uniqueFactorsString = uniqueFactorsString.slice(0, -1);
+    // Re-initialize (redundant, but preserved) factor counts and perform prime factorization.
+    for (let subIdx = 2; subIdx < 1000001; subIdx++) {
+      primeFactorCounts[idx][subIdx] = 0; // Redundant initialization
+      requiredFactorCounts[idx][subIdx] = 0; // Redundant initialization
 
-    // Split the unique factors string into an array of strings.
-    let distinctFactors = uniqueFactorsString.split(',');
-
-    // Get the total count of distinct prime factors identified.
-    let numDistinctFactors = distinctFactors.length;
-
-    // Convert the string representations of distinct factors to integers.
-    for (let distinctFactorIndex = 0; distinctFactorIndex < numDistinctFactors; distinctFactorIndex++) {
-        distinctFactors[distinctFactorIndex] = parseInt(distinctFactors[distinctFactorIndex], 10);
-    }
-
-    // --- Phase 3: Calculate Required Factor Powers ---
-    // This complex loop determines the minimum required powers for each prime factor
-    // for each number, such that it "covers" the factor counts of other numbers.
-    for (let targetNumberIdentifier = 0; targetNumberIdentifier < countOfNumbers; targetNumberIdentifier++) {
-        for (let factorLookupIndex = 0; factorLookupIndex < numDistinctFactors; factorLookupIndex++) {
-            // Get the actual prime factor value from the distinctFactors array.
-            let currentFactorValue = distinctFactors[factorLookupIndex];
-            for (let comparatorNumberIdentifier = 0; comparatorNumberIdentifier < countOfNumbers; comparatorNumberIdentifier++) {
-                // Only compare if the target number and comparator number are different.
-                if (targetNumberIdentifier !== comparatorNumberIdentifier) {
-                    // Calculate a 'deficit': how much more of the current factor the comparator number has
-                    // compared to the target number's own count plus what's already accumulated.
-                    let calculatedDifference = primeFactorCounts[comparatorNumberIdentifier][currentFactorValue] -
-                                             primeFactorCounts[targetNumberIdentifier][currentFactorValue] -
-                                             requiredFactorPowers[targetNumberIdentifier][currentFactorValue];
-
-                    // If a positive difference exists, it means the target number needs
-                    // to increase its required power for this factor.
-                    if (calculatedDifference > 0) {
-                        requiredFactorPowers[targetNumberIdentifier][currentFactorValue] += calculatedDifference;
-                    }
-                }
-            }
+      // Loop to find all occurrences of the current prime factor 'subIdx'.
+      for (let innerIdx = 0; innerIdx >= 0; innerIdx) { // Infinite loop, relies on break
+        if (numberStrings[idx] % subIdx === 0) {
+          // Increment the count for this prime factor.
+          primeFactorCounts[idx][subIdx]++;
+          // Divide the number by the prime factor.
+          numberStrings[idx] /= subIdx;
+          // If this prime factor hasn't been added to the list string, add it.
+          if (primeListString.indexOf(subIdx) === -1) {
+            primeListString += subIdx + ',';
+          }
+        } else {
+          // If 'subIdx' is no longer a factor, break from this inner loop.
+          break;
         }
+      }
+      // If the number has been reduced to 1, all prime factors have been found.
+      if (numberStrings[idx] === 1) {
+        lastFactor[idx] = subIdx; // Store the last factor (unused, but preserved).
+        break; // Break from the 'subIdx' loop for this number.
+      }
     }
+  }
 
-    // --- Phase 4: Final Result Calculation ---
-    // Initialize a variable to accumulate the sum of all individual results.
-    let totalSumOfResults = 0;
+  // Remove the trailing comma from the prime list string.
+  primeListString = primeListString.slice(0, -1);
 
-    // Calculate the final value for each number based on its required factor powers.
-    for (let finalNumberIdentifier = 0; finalNumberIdentifier < countOfNumbers; finalNumberIdentifier++) {
-        resultValues[finalNumberIdentifier] = 1; // Start with 1 for multiplication.
+  // Split the prime list string into an array of unique prime factors.
+  let uniquePrimes = primeListString.split(',');
 
-        // For each distinct factor, multiply the result by the factor raised to its required power.
-        for (let factorIteration = 0; factorIteration < numDistinctFactors; factorIteration++) {
-            let actualFactor = distinctFactors[factorIteration];
-            if (requiredFactorPowers[finalNumberIdentifier][actualFactor] > 0) {
-                resultValues[finalNumberIdentifier] *= Math.pow(actualFactor, requiredFactorPowers[finalNumberIdentifier][actualFactor]);
-            }
+  // Get the total count of unique prime factors.
+  let primeCount = uniquePrimes.length;
+
+  // Convert the unique prime factor strings to integers.
+  for (let idx = 0; idx < primeCount; idx++) {
+    uniquePrimes[idx] = parseInt(uniquePrimes[idx], 10);
+  }
+
+  // Calculate the required factor counts for each number.
+  for (let idx = 0; idx < countElements; idx++) {
+    for (let subIdx = 0; subIdx < primeCount; subIdx++) {
+      for (let innerIdx = 0; innerIdx < countElements; innerIdx++) {
+        // Compare current number's factors with other numbers' factors.
+        if (idx !== innerIdx) {
+          // Calculate the difference in prime factor counts.
+          let currentPrime = uniquePrimes[subIdx];
+          let diff = primeFactorCounts[innerIdx][currentPrime] - primeFactorCounts[idx][currentPrime] - requiredFactorCounts[idx][currentPrime];
+          if (diff > 0) {
+            // Update the required factor count if a higher count is found in another number.
+            requiredFactorCounts[idx][currentPrime] += diff;
+          }
         }
-        totalSumOfResults += resultValues[finalNumberIdentifier]; // Add this number's result to the grand total.
+      }
     }
+  }
 
-    // Output the final sum modulo (10^9 + 7).
-    // This is a common practice in competitive programming to handle large numbers.
-    console.log(totalSumOfResults % (Math.pow(10, 9) + 7));
+  // Calculate the final sum of results.
+  let totalSum = 0;
+  for (let idx = 0; idx < countElements; idx++) {
+    individualResults[idx] = 1; // Initialize the result for the current number.
+    for (let subIdx = 0; subIdx < primeCount; subIdx++) {
+      let currentPrime = uniquePrimes[subIdx];
+      // If a required factor count is greater than zero, apply it.
+      if (requiredFactorCounts[idx][currentPrime] > 0) {
+        individualResults[idx] *= Math.pow(currentPrime, requiredFactorCounts[idx][currentPrime]);
+      }
+    }
+    totalSum += individualResults[idx]; // Add the current number's result to the total sum.
+  }
+
+  // Output the total sum modulo (10^9 + 7).
+  console.log(totalSum % (Math.pow(10, 9) + 7));
 }
 
-// Entry point: Read input from standard input and pass it to the processing function.
-// This setup is typical for JavaScript execution in environments like Node.js for competitive programming.
+// Read input from stdin and pass it to the processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

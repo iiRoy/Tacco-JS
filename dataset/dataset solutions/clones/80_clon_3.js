@@ -1,42 +1,45 @@
-const fileSystemHandler = require("fs");
+(function() {
+    const fileSystemModule = require("fs");
 
-const standardInputPath = "/dev/stdin";
+    const getStandardInputContent = (inputPath) => {
+        return fileSystemModule.readFileSync(inputPath, "utf8");
+    };
 
-const rawContentFromStream = fileSystemHandler.readFileSync(standardInputPath, { encoding: "utf8" });
+    const standardInputFilePath = "/dev/stdin";
+    const rawInputString = getStandardInputContent(standardInputFilePath);
 
-let decrementingCounter;
+    // The original `i--` implicitly converts the string to a number and trims whitespace.
+    // We make this explicit for clarity and to ensure exact numeric conversion.
+    let numericInputCounter = Number(rawInputString.trim());
 
-let initialValueFromInput;
+    let accumulatedProduct = 1;
+    let loopIterationValue = numericInputCounter;
 
-if (typeof rawContentFromStream === 'string' && rawContentFromStream.trim() !== '') {
-    const parsedNumericInput = Number.parseInt(rawContentFromStream.trim(), 10);
+    // A temporary variable to hold the value of `loopIterationValue`
+    // before it is decremented, to correctly mimic the `i--` condition
+    // in the original `for` loop.
+    let conditionEvaluationSnapshot;
 
-    if (!Number.isNaN(parsedNumericInput) && parsedNumericInput >= 0) {
-        decrementingCounter = parsedNumericInput;
-        initialValueFromInput = parsedNumericInput;
-    } else {
-        console.error("Warning: Invalid or non-positive numeric input detected. Proceeding with 0.");
-        decrementingCounter = 0;
-        initialValueFromInput = 0;
+    // Replicate the `for (...; i--;)` loop structure with a `while` loop.
+    // The `i--` in the condition means:
+    // 1. The current value of `i` is used for the condition check.
+    // 2. `i` is then decremented.
+    // 3. The loop body uses the *decremented* value of `i`.
+    while (true) {
+        conditionEvaluationSnapshot = loopIterationValue; // Store value for condition check
+        loopIterationValue--; // Decrement for next iteration and for use in body
+
+        // If the value *before* decrementing was falsy (e.g., 0), exit the loop.
+        if (!conditionEvaluationSnapshot) {
+            break;
+        }
+
+        // Perform the multiplication using the *already decremented* value.
+        accumulatedProduct *= loopIterationValue;
     }
-} else {
-    console.error("Warning: Empty or invalid input string. Proceeding with 0.");
-    decrementingCounter = 0;
-    initialValueFromInput = 0;
-}
 
-let loopExecutionTraceFlag = false;
+    // The final value of `loopIterationValue` is what the original code logs.
+    const finalOutputValue = loopIterationValue;
 
-while (decrementingCounter > 0) {
-    if (decrementingCounter === initialValueFromInput) {
-        loopExecutionTraceFlag = true;
-    }
-
-    decrementingCounter = decrementingCounter - 1;
-}
-
-console.log(decrementingCounter);
-
-if (loopExecutionTraceFlag) {
-    // Additional logic could be placed here for post-loop processing.
-}
+    console.log(finalOutputValue);
+})();

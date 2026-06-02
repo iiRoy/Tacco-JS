@@ -1,78 +1,89 @@
-const bitwiseToggle = (val1, val2) => (val1 === val2 ? 0 : 1);
+const xorBits = (firstBit, secondBit) => firstBit === secondBit ? 0 : 1;
 
-const combineBinaryVectors = (vectorA, vectorB) =>
-  vectorA.map((element, index) => bitwiseToggle(element, vectorB[index]));
+const xorRows = (firstRow, secondRow) => firstRow.map((bitValue, index) => xorBits(bitValue, secondRow[index]));
 
-const determineBinaryRank = (currentMatrix, accumulatedRank = 0) => {
-  if (!currentMatrix || currentMatrix.length === 0 || currentMatrix[0].length === 0) {
-    return accumulatedRank;
-  }
+const MOD_CONSTANT = 998244353;
 
-  const currentRows = currentMatrix.length;
-  const currentCols = currentMatrix[0].length;
-
-  let pivotFoundRowIndex = -1;
-  for (let r = 0; r < currentRows; r++) {
-    if (currentMatrix[r][0] === 1) {
-      pivotFoundRowIndex = r;
-      break;
+function computeModularPower(baseValue, exponentValue) {
+    let outcome = 1;
+    baseValue %= MOD_CONSTANT;
+    while (exponentValue > 0) {
+        if (exponentValue % 2 === 1) outcome = (outcome * baseValue) % MOD_CONSTANT;
+        baseValue = (baseValue * baseValue) % MOD_CONSTANT;
+        exponentValue = Math.floor(exponentValue / 2);
     }
-  }
+    return outcome;
+}
 
-  if (pivotFoundRowIndex === -1) {
-    const reducedColumnMatrix = currentMatrix.map(row => row.slice(1));
-    return determineBinaryRank(reducedColumnMatrix, accumulatedRank);
-  } else {
-    const pivotRowData = currentMatrix[pivotFoundRowIndex];
+function deriveBinaryMatrixRank(initialMatrixRows) {
+    let activeMatrixRows = initialMatrixRows;
+    let currentAchievedRank = 0;
+    let currentRemainingColumnCount = initialMatrixRows.length > 0 ? initialMatrixRows[0].length : 0;
 
-    const processedRows = currentMatrix.filter((_, idx) => idx !== pivotFoundRowIndex)
-      .map(row => (row[0] === 1 ? combineBinaryVectors(pivotRowData, row) : row));
+    while (activeMatrixRows.length > 0 && currentRemainingColumnCount > 0) {
+        let pivotRowIndex = activeMatrixRows.findIndex(row => row[0] === 1);
 
-    const nextIterationMatrix = processedRows.map(row => row.slice(1));
+        if (pivotRowIndex === -1) {
+            // No pivot (1) found in the first column. This column is linearly dependent.
+            // Effectively remove this column from all active rows.
+            activeMatrixRows = activeMatrixRows.map(row => row.slice(1));
+            currentRemainingColumnCount--;
+        } else {
+            // A pivot (1) was found. Increment the rank.
+            currentAchievedRank++;
+            let pivotRow = activeMatrixRows[pivotRowIndex];
 
-    return determineBinaryRank(nextIterationMatrix, accumulatedRank + 1);
-  }
-};
+            // Construct the next set of rows by XORing with the pivot row
+            // and excluding the pivot row itself from further consideration.
+            let nextIterationRows = [];
+            for (let i = 0; i < activeMatrixRows.length; i++) {
+                if (i === pivotRowIndex) {
+                    continue; // The pivot row has been used; it's effectively removed.
+                }
+                let currentRow = activeMatrixRows[i];
+                if (currentRow[0] === 1) {
+                    nextIterationRows.push(xorRows(currentRow, pivotRow));
+                } else {
+                    nextIterationRows.push(currentRow);
+                }
+            }
 
-const calculateModularExponent = (baseValue, exponentValue, moduloValue) => {
-  let finalProduct = 1;
-  baseValue %= moduloValue;
-  while (exponentValue > 0) {
-    if (exponentValue % 2 === 1) {
-      finalProduct = (finalProduct * baseValue) % moduloValue;
+            // All rows in `nextIterationRows` now have '0' in their first column.
+            // Effectively remove this column from these rows.
+            activeMatrixRows = nextIterationRows.map(row => row.slice(1));
+            currentRemainingColumnCount--;
+        }
+        // Filter out any rows that became all zeros after XOR operations.
+        activeMatrixRows = activeMatrixRows.filter(row => row.some(bit => bit === 1));
     }
-    baseValue = (baseValue * baseValue) % moduloValue;
-    exponentValue = Math.floor(exponentValue / 2);
-  }
-  return finalProduct;
-};
+    return currentAchievedRank;
+}
 
-const processInputData = (rawData) => {
-  const parsedNumbers = rawData.trim().split(/\s+/).map(Number);
-  const totalRows = parsedNumbers.shift();
-  const totalCols = parsedNumbers.shift();
-  const matrixElements = parsedNumbers;
+function processAndOutputResult(rawInputString) {
+    let numericalData = rawInputString.trim().split(/\s+/).map(Number);
+    let totalRows = numericalData.shift();
+    let totalColumns = numericalData.shift();
 
-  const initialBinaryMatrix = [];
-  for (let r = 0; r < totalRows; r++) {
-    initialBinaryMatrix.push(matrixElements.slice(r * totalCols, (r + 1) * totalCols));
-  }
+    let binaryMatrix = [];
+    for (let i = 0; i < totalRows; i++) {
+        let currentRow = [];
+        for (let j = 0; j < totalColumns; j++) {
+            currentRow.push(numericalData[i * totalColumns + j]);
+        }
+        binaryMatrix.push(currentRow);
+    }
 
-  const finalMatrixRank = determineBinaryRank(initialBinaryMatrix);
+    let calculatedRank = deriveBinaryMatrixRank(binaryMatrix);
 
-  const modulusConstant = 998244353;
+    let powerExponentOne = totalRows + totalColumns - 1;
+    let powerExponentTwo = totalRows + totalColumns - calculatedRank - 1;
 
-  const firstPowerResult = calculateModularExponent(2, totalRows + totalCols - 1, modulusConstant);
+    let firstTerm = computeModularPower(2, powerExponentOne);
+    let secondTerm = computeModularPower(2, powerExponentTwo);
 
-  const secondPowerResult = calculateModularExponent(2, totalRows + totalCols - finalMatrixRank - 1, modulusConstant);
+    let finalAnswer = (firstTerm - secondTerm + MOD_CONSTANT) % MOD_CONSTANT;
 
-  const finalComputedValue = (firstPowerResult - secondPowerResult + modulusConstant) % modulusConstant;
+    console.log(finalAnswer);
+}
 
-  console.log(finalComputedValue);
-};
-
-const executeWithStdInput = () => {
-    processInputData(require('fs').readFileSync('/dev/stdin','utf8'));
-};
-
-executeWithStdInput();
+processAndOutputResult(require('fs').readFileSync('/dev/stdin', 'utf8'));

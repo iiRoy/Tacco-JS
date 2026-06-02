@@ -1,154 +1,147 @@
+const PLAYER_ONE = 1;
+const PLAYER_TWO = -1;
+const EMPTY_CELL = 0;
 const BOARD_DIMENSION = 8;
-const EMPTY_SLOT = 0;
-const PLAYER_A_SYMBOL = 1; // Represents 'o'
-const PLAYER_B_SYMBOL = -1; // Represents 'x'
 
-const NAVIGATIONAL_DELTAS = [
-    [-1, -1], [-1, 0], [-1, 1],
-    [0, -1],           [0, 1],
-    [1, -1],  [1, 0],  [1, 1]
+const MOVE_VECTORS = [
+    { r: 1, c: 1 },
+    { r: 0, c: 1 },
+    { r: -1, c: 1 },
+    { r: 1, c: 0 },
+    { r: -1, c: 0 },
+    { r: 1, c: -1 },
+    { r: 0, c: -1 },
+    { r: -1, c: -1 }
 ];
 
-function initializeGameGrid(inputString) {
-    const gameLayout = Array.from({ length: BOARD_DIMENSION }, () => Array(BOARD_DIMENSION).fill(EMPTY_SLOT));
-    let initialOccupiedCount = 0;
+const isWithinBounds = (r, c) => r >= 0 && r < BOARD_DIMENSION && c >= 0 && c < BOARD_DIMENSION;
 
-    const lines = inputString.split("\n");
-
-    for (let rowIndex = 0; rowIndex < BOARD_DIMENSION; rowIndex++) {
-        for (let colIndex = 0; colIndex < BOARD_DIMENSION; colIndex++) {
-            const character = lines[rowIndex][colIndex];
-            if (character === 'o') {
-                gameLayout[rowIndex][colIndex] = PLAYER_A_SYMBOL;
-                initialOccupiedCount++;
-            } else if (character === 'x') {
-                gameLayout[rowIndex][colIndex] = PLAYER_B_SYMBOL;
-                initialOccupiedCount++;
-            }
-        }
-    }
-    return { layout: gameLayout, count: initialOccupiedCount };
-}
-
-function checkBounds(r, c) {
-    return r >= 0 && r < BOARD_DIMENSION && c >= 0 && c < BOARD_DIMENSION;
-}
-
-function getFlippablePiecesInDirection(currentLayout, activeParticipant, startR, startC, rowChange, colChange) {
+function scanDirectionForFlips(currentBoard, playerToken, startR, startC, dr, dc) {
     const potentialFlips = [];
-    let currentR = startR + rowChange;
-    let currentC = startC + colChange;
+    let r = startR + dr;
+    let c = startC + dc;
 
-    while (checkBounds(currentR, currentC)) {
-        const slotValue = currentLayout[currentR][currentC];
-
-        if (slotValue === EMPTY_SLOT) {
+    while (isWithinBounds(r, c)) {
+        const cellValue = currentBoard[r][c];
+        if (cellValue === EMPTY_CELL) {
             return [];
-        } else if (slotValue === activeParticipant) {
+        } else if (cellValue === playerToken) {
             return potentialFlips;
         } else {
-            potentialFlips.push({ r: currentR, c: currentC });
+            potentialFlips.push({ r, c });
         }
-        currentR += rowChange;
-        currentC += colChange;
+        r += dr;
+        c += dc;
     }
     return [];
 }
 
-function calculateMoveScore(currentLayout, activeParticipant, intendedR, intendedC) {
-    let score = 0;
-    for (const [dr, dc] of NAVIGATIONAL_DELTAS) {
-        const flipsInThisDirection = getFlippablePiecesInDirection(currentLayout, activeParticipant, intendedR, intendedC, dr, dc);
-        score += flipsInThisDirection.length;
+function calculateTotalFlips(currentBoard, playerToken, targetR, targetC) {
+    if (currentBoard[targetR][targetC] !== EMPTY_CELL) {
+        return 0;
     }
-    return score;
+
+    let totalFlips = 0;
+    for (const vector of MOVE_VECTORS) {
+        totalFlips += scanDirectionForFlips(currentBoard, playerToken, targetR, targetC, vector.r, vector.c).length;
+    }
+    return totalFlips;
 }
 
-function executeMove(originalLayout, activeParticipant, placementR, placementC) {
-    const updatedLayout = originalLayout.map(row => [...row]);
+function executeMove(currentBoard, playerToken, targetR, targetC) {
+    currentBoard[targetR][targetC] = playerToken;
 
-    updatedLayout[placementR][placementC] = activeParticipant;
-
-    for (const [dr, dc] of NAVIGATIONAL_DELTAS) {
-        const piecesToFlip = getFlippablePiecesInDirection(originalLayout, activeParticipant, placementR, placementC, dr, dc);
-        for (const { r, c } of piecesToFlip) {
-            updatedLayout[r][c] = activeParticipant;
+    for (const vector of MOVE_VECTORS) {
+        const piecesToFlip = scanDirectionForFlips(currentBoard, playerToken, targetR, targetC, vector.r, vector.c);
+        for (const piece of piecesToFlip) {
+            currentBoard[piece.r][piece.c] = playerToken;
         }
     }
-    return updatedLayout;
 }
 
-function findBestAction(layoutSnapshot, participantIdentity) {
-    const candidateActions = [];
+function runOthelloSimulation(inputData) {
+    const lines = inputData.split("\n");
+    let boardState = Array.from({ length: BOARD_DIMENSION }, () => Array(BOARD_DIMENSION).fill(EMPTY_CELL));
+    let filledCellCount = 0;
 
     for (let r = 0; r < BOARD_DIMENSION; r++) {
         for (let c = 0; c < BOARD_DIMENSION; c++) {
-            if (layoutSnapshot[r][c] === EMPTY_SLOT) {
-                const estimatedCaptures = calculateMoveScore(layoutSnapshot, participantIdentity, r, c);
-                if (estimatedCaptures > 0) {
-                    candidateActions.push({ r: r, c: c, captures: estimatedCaptures });
+            const char = lines[r][c];
+            if (char === 'o') {
+                boardState[r][c] = PLAYER_ONE;
+                filledCellCount++;
+            } else if (char === 'x') {
+                boardState[r][c] = PLAYER_TWO;
+                filledCellCount++;
+            }
+        }
+    }
+
+    let currentPlayer = PLAYER_ONE;
+    let consecutivePasses = false;
+
+    while (filledCellCount < BOARD_DIMENSION * BOARD_DIMENSION) {
+        const allPotentialMoves = [];
+        for (let r = 0; r < BOARD_DIMENSION; r++) {
+            for (let c = 0; c < BOARD_DIMENSION; c++) {
+                if (boardState[r][c] === EMPTY_CELL) {
+                    const flips = calculateTotalFlips(boardState, currentPlayer, r, c);
+                    if (flips > 0) {
+                        allPotentialMoves.push({ r, c, flips });
+                    }
                 }
             }
         }
-    }
 
-    if (candidateActions.length === 0) {
-        return null;
-    }
-
-    const optimalAction = candidateActions.reduce((currentBest, currentPotential) => {
-        if (currentBest === null) return currentPotential;
-
-        if (participantIdentity === PLAYER_A_SYMBOL) {
-            if (currentPotential.captures > currentBest.captures) {
-                return currentPotential;
+        let chosenMove = null;
+        if (allPotentialMoves.length > 0) {
+            if (currentPlayer === PLAYER_ONE) {
+                chosenMove = allPotentialMoves.reduce((best, current) => {
+                    if (current.flips > best.flips) return current;
+                    if (current.flips === best.flips) {
+                        if (current.r < best.r) return current;
+                        if (current.r === best.r && current.c < best.c) return current;
+                    }
+                    return best;
+                }, { flips: -1, r: BOARD_DIMENSION, c: BOARD_DIMENSION });
+            } else {
+                chosenMove = allPotentialMoves.reduce((best, current) => {
+                    if (current.flips > best.flips) return current;
+                    if (current.flips === best.flips) {
+                        if (current.r > best.r) return current;
+                        if (current.r === best.r && current.c > best.c) return current;
+                    }
+                    return best;
+                }, { flips: -1, r: -1, c: -1 });
             }
-            return currentBest;
+        }
+
+        if (chosenMove && chosenMove.flips > 0) {
+            consecutivePasses = false;
+            filledCellCount++;
+            executeMove(boardState, currentPlayer, chosenMove.r, chosenMove.c);
         } else {
-            if (currentPotential.captures >= currentBest.captures) {
-                return currentPotential;
+            if (consecutivePasses) {
+                break;
             }
-            return currentBest;
+            consecutivePasses = true;
         }
-    }, null);
-
-    return optimalAction;
-}
-
-function runReversiGame(inputContent) {
-    let { layout: currentLayoutState, count: totalFilledSlots } = initializeGameGrid(inputContent);
-    let currentPlayer = PLAYER_A_SYMBOL;
-    let successivePasses = 0;
-
-    while (totalFilledSlots < BOARD_DIMENSION * BOARD_DIMENSION && successivePasses < 2) {
-        const chosenAction = findBestAction(currentLayoutState, currentPlayer);
-
-        if (chosenAction === null) {
-            successivePasses++;
-        } else {
-            successivePasses = 0;
-            currentLayoutState = executeMove(currentLayoutState, currentPlayer, chosenAction.r, chosenAction.c);
-            totalFilledSlots++;
-        }
-        currentPlayer *= -1;
+        currentPlayer *= (-1);
     }
 
-    const finalBoardRepresentation = [];
     for (let r = 0; r < BOARD_DIMENSION; r++) {
         let rowOutput = "";
         for (let c = 0; c < BOARD_DIMENSION; c++) {
-            const cellContent = currentLayoutState[r][c];
-            if (cellContent === PLAYER_A_SYMBOL) {
+            if (boardState[r][c] === PLAYER_ONE) {
                 rowOutput += 'o';
-            } else if (cellContent === PLAYER_B_SYMBOL) {
+            } else if (boardState[r][c] === PLAYER_TWO) {
                 rowOutput += 'x';
             } else {
                 rowOutput += '.';
             }
         }
-        finalBoardRepresentation.push(rowOutput);
+        console.log(rowOutput);
     }
-    console.log(finalBoardRepresentation.join("\n"));
 }
 
-runReversiGame(require("fs").readFileSync("/dev/stdin","utf8"));
+runOthelloSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));

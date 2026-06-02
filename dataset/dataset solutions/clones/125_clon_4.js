@@ -1,16 +1,26 @@
-const fileSystemOperations = require("node:fs");
-const completeInputContent = fileSystemOperations.readFileSync("/dev/stdin", "utf8");
-const numericStringSegments = completeInputContent.split(/\s/);
+const processInputValues = () => {
+    const inputSegments = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s/);
 
-const bitwiseMagnitudeIndicators = Array.from({ length: 9 }, (ignored, currentBitIndex) => 1 << currentBitIndex);
+    const deriveBitwiseComponents = (sourceValue) => {
+        const numericalRepresentation = Number(sourceValue);
 
-numericStringSegments.forEach(singleSegment => {
-    const decimalRepresentation = parseInt(singleSegment, 10);
-    if (isNaN(decimalRepresentation)) {
-        console.log('');
-        return;
-    }
+        const bitPositions = Array.from({ length: 9 }, (_, index) => index);
 
-    const identifiedComponents = bitwiseMagnitudeIndicators.filter(componentValue => (decimalRepresentation & componentValue) === componentValue);
-    console.log(identifiedComponents.join(' '));
-});
+        const activePowers = bitPositions.reduce((accumulator, currentBitIndex) => {
+            const currentPowerOfTwo = 1 << currentBitIndex;
+            if ((numericalRepresentation & currentPowerOfTwo) !== 0) {
+                accumulator.push(currentPowerOfTwo);
+            }
+            return accumulator;
+        }, []);
+
+        return activePowers.join(' ');
+    };
+
+    inputSegments.forEach(segment => {
+        const outputString = deriveBitwiseComponents(segment);
+        console.log(outputString);
+    });
+};
+
+processInputValues();

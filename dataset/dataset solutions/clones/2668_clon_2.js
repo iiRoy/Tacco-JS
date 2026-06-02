@@ -1,38 +1,35 @@
-function ProcessData(rawData) {
-  rawData = rawData.split('\n');
+function Solve(data) {
+  data = data.split('\n');
+  var count = Number(data[0].split(' ')[0]);
+  var days = Number(data[0].split(' ')[1]);
+  data.shift();
+  var total = 0;
 
-  var countA = parseInt(rawData[0].split(' ')[0], 10);
-  var countB = parseInt(rawData[0].split(' ')[1], 10);
+  for(var step = 0 ; step < days ; step++){
+    //dataから不要な要素を除いた配列を一時的に保管しておくための配列
+    var list = [];
+    var best = 0;
+    var bestIndex = 0;
 
-  rawData.shift();
-
-  var totalValue = 0;
-
-  for (var iterIdx = 0; iterIdx < countB; iterIdx++) {
-    // Array to temporarily hold lines after filtering based on criteria
-    var filteredEntries = [];
-    var currentMaxVal = 0;
-    var currentMaxIdx = 0;
-
-    rawData.forEach(function(entryLine, entryIndex) {
-      // Construct a new array, excluding elements where lead time exceeds remaining duration
-      if (parseInt(entryLine.split(' ')[0], 10) <= countB - iterIdx) {
-        filteredEntries.push(entryLine);
-      }
+    data.forEach(function(row , rowIndex){
+    //リードタイムが残り日数（days-step）より大きい要素除いた配列を作成
+    if(row.split(' ')[0] <= days-step){
+        list.push(row);
+    }
     });
 
-    filteredEntries.forEach(function(processedEntry, processedIdx) {
-      if (parseInt(processedEntry.split(' ')[1], 10) > currentMaxVal) {
-        currentMaxVal = parseInt(processedEntry.split(' ')[1], 10);
-        currentMaxIdx = processedIdx;
+    list.forEach(function(row2 , index2){
+      if(Number(row2.split(' ')[1]) > best){
+        best = Number(row2.split(' ')[1]);
+        bestIndex = index2;
       }
     });
-
-    filteredEntries.splice(currentMaxIdx, 1);
-    rawData = filteredEntries;
-    totalValue = totalValue + currentMaxVal;
+    list.splice(bestIndex , 1);
+    data = list;
+    total = total + best;
   }
 
-  console.log(totalValue);
+
+  console.log(total);
 }
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+Solve(require('fs').readFileSync('/dev/stdin', 'utf8'));

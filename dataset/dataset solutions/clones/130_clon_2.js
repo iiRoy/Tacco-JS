@@ -1,38 +1,32 @@
-// Retrieve raw content from the standard input stream
-let dataSource = require('fs').readFileSync('/dev/stdin', 'utf-8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
+var dataRows = rawData.trim().split('\n'); // Split the input into an array of lines, removing leading/trailing whitespace
 
-// Normalize and segment the input string into separate entries
-let dataRows = dataSource.trim().split('\n');
+var currentRow; // Declare a variable to hold the current line being processed
+var rightAngleShapes = 0; // Initialize counter for shapes satisfying Pythagorean theorem
+var rhombusShapes = 0; // Initialize counter for shapes with two equal sides (potentially rhombuses)
 
-// Declare variables to hold processing state and counts
-let currentRecord;
-let rightAngleShapes = 0; // Accumulator for figures meeting the Pythagorean condition
-let equalSideShapes = 0;  // Accumulator for figures with two identical side lengths
-
-// Iterate through each available data entry
-while ((currentRecord = dataRows.shift()) !== undefined) {
-    // Parse the current line: split by comma and convert each part to a numeric type
-    const parsedValues = currentRecord.split(',').map((item) => {
-        return Number(item);
+// Loop through each line of input data
+while (currentRow = dataRows.shift()) {
+    // Split the current line by comma, then convert each part to a number
+    var parsedValues = currentRow.split(',').map(function(numStr) {
+        return +numStr; // Convert string to number
     });
 
-    // Extract the three numeric components into distinct variables for clarity
-    const sideA = parsedValues[0];
-    const sideB = parsedValues[1];
-    const sideC = parsedValues[2];
+    // Assign the parsed numeric values to descriptive variables
+    var sideA = parsedValues[0];
+    var sideB = parsedValues[1];
+    var sideC = parsedValues[2];
 
-    // Evaluate if the current set of sides satisfies the Pythagorean theorem (a^2 + b^2 = c^2)
-    if ((sideA * sideA + sideB * sideB) === (sideC * sideC)) {
-        rightAngleShapes++; // Increment the counter for right-angled forms
+    // Check if the sides satisfy the Pythagorean theorem (a^2 + b^2 = c^2)
+    if (sideA * sideA + sideB * sideB === sideC * sideC) {
+        rightAngleShapes++; // Increment the counter for right-angled shapes
     }
-    // Otherwise, check if the first two sides have identical lengths
+    // Otherwise, check if the first two sides are equal
     else if (sideA === sideB) {
-        equalSideShapes++;  // Increment the counter for forms with two equal sides
+        rhombusShapes++; // Increment the counter for rhombus-like shapes
     }
 }
 
-// Output the final tally of right-angled geometric figures
+// Output the final counts to the console
 console.log(rightAngleShapes);
-
-// Output the final tally of geometric figures possessing two equal sides
-console.log(equalSideShapes);
+console.log(rhombusShapes);

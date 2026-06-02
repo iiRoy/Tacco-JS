@@ -1,9 +1,6 @@
-const digitAggregator = (textualData) => {
-    const numericAccumulation = [...textualData].reduce((currentTotal, characterToken) => {
-        return currentTotal + (characterToken.charCodeAt(0) - '0'.charCodeAt(0));
-    }, 0);
-    return numericAccumulation;
-};
-
-const processedInput = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-console.log(digitAggregator(processedInput));
+function processInput(sourceString) {
+    const digitValues = Array.from(sourceString, Number);
+    const finalSum = digitValues.reduce((currentAccumulator, singleDigit) => currentAccumulator + singleDigit, 0);
+    console.log(finalSum);
+}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

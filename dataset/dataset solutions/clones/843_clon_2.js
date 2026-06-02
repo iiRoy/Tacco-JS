@@ -1,62 +1,42 @@
-const loadModule = require;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const fileSystemModule = loadModule('fs');
+// Process the raw input data: trim whitespace and split into an array of lines.
+var inputLines = (rawData.trim()).split("\n");
 
-const fileOperations = {
-  getContentSync: fileSystemModule.readFileSync
-};
+// The first line contains the number of ranges to process. Convert it to a number.
+var numberOfRanges = inputLines.shift() - 0;
 
-var fullInputText = fileOperations.getContentSync('/dev/standard_input_stream', 'utf-8');
-
-const removeBoundarySpaces = (sourceString) => sourceString.trim();
-
-const divideStringByToken = (targetString, separatingToken) => targetString.split(separatingToken);
-
-const popFirstElement = (targetArray) => targetArray.shift();
-
-var inputLineSegments = divideStringByToken(removeBoundarySpaces(fullInputText), "\n");
-
-let totalDataRecords = parseInt(popFirstElement(inputLineSegments), 10);
-
-const valueCountRegistry = new Object();
-
-const STARTING_INDEX_FOR_COUNT = 2;
-const ENDING_INDEX_FOR_COUNT = 100001;
-const ZERO_INITIAL_COUNT = 0;
-
-for (let currentNumericKey = STARTING_INDEX_FOR_COUNT; currentNumericKey <= ENDING_INDEX_FOR_COUNT; currentNumericKey++) {
-  valueCountRegistry[currentNumericKey] = ZERO_INITIAL_COUNT;
+// Initialize an object to store frequency counts for numbers from 2 to 100001.
+// All initial counts are set to zero.
+var valueFrequencies = {};
+for (var currentNumber = 2; currentNumber <= 100001; currentNumber++) {
+    valueFrequencies[currentNumber] = 0;
 }
 
-const segmentBySpace = (textEntry, spaceChar) => textEntry.split(spaceChar);
+// Iterate through each specified range.
+for (var rangeIndex = 0; rangeIndex < numberOfRanges; rangeIndex++) {
+    // Get the current range, split it by space, and convert parts to numbers.
+    var rangeLimits = (inputLines.shift()).split(" ").map(Number);
 
-const mapArrayElements = (originalArray, mappingFunction) => originalArray.map(mappingFunction);
-
-const convertToInteger = (strValue) => parseInt(strValue, 10);
-
-for (let dataRecordIterator = 0; dataRecordIterator < totalDataRecords; dataRecordIterator++) {
-  const currentRangeBoundaries = mapArrayElements(segmentBySpace(popFirstElement(inputLineSegments), ' '), convertToInteger);
-
-  for (let numWithinRange = currentRangeBoundaries[0]; numWithinRange <= currentRangeBoundaries[1]; numWithinRange++) {
-    valueCountRegistry[numWithinRange]++;
-  }
+    // For each number within the current range (inclusive), increment its frequency count.
+    for (var intervalNumber = rangeLimits[0]; intervalNumber <= rangeLimits[1]; intervalNumber++) {
+        valueFrequencies[intervalNumber]++;
+    }
 }
 
-const INITIAL_MAX_OBSERVATION = 1;
-let highestObservedFrequency = INITIAL_MAX_OBSERVATION;
+// Initialize a variable to track the highest frequency found so far.
+var maximumFrequency = 1;
 
-const findMaximumValue = (firstVal, secondVal) => Math.max(firstVal, secondVal);
-
-for (let targetNumber = STARTING_INDEX_FOR_COUNT; targetNumber <= ENDING_INDEX_FOR_COUNT; targetNumber++) {
-  if (valueCountRegistry[targetNumber] < targetNumber) {
-    continue;
-  }
-
-  highestObservedFrequency = findMaximumValue(highestObservedFrequency, valueCountRegistry[targetNumber]);
+// Iterate through the numbers from 2 to 100001 to find the maximum frequency.
+for (var checkedNumber = 2; checkedNumber <= 100001; checkedNumber++) {
+    // If the frequency of the current number is less than the number itself, skip it.
+    // This condition seems to be a specific requirement of the original problem.
+    if (valueFrequencies[checkedNumber] < checkedNumber) {
+        continue;
+    }
+    // Update the maximum frequency if the current number's frequency is higher.
+    maximumFrequency = Math.max(maximumFrequency, valueFrequencies[checkedNumber]);
 }
 
-const DEDUCTION_FACTOR = 1;
-
-const emitResult = (resultValue) => console.log(resultValue);
-
-emitResult(highestObservedFrequency - DEDUCTION_FACTOR);
+// Output the result, which is the maximum frequency minus one.
+console.log(maximumFrequency - 1);

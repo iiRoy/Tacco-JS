@@ -1,101 +1,97 @@
-/*
- *  Module: Geometric Area Calculation Utility
- *  Description: Determines the area of a polygon defined by a sequence of points.
- *  Source: Referenced from a programming challenge portal (e.g., Aizu Online Judge 0079 equivalent).
- *  Current Status: Fully functional, passed initial tests.
- *  Note: This implementation uses the Shoelace formula (or Surveyor's formula)
- *        to compute the area based on the coordinates of the polygon's vertices.
- *        It specifically calculates half of the sum of the cross products of
- *        consecutive vector pairs originating from the first point.
- */
-var printOutput = console.info; // Alias for displaying information to the console.
+// This script calculates the area of a polygon given its vertices.
+// It reads coordinate data from standard input, processes it, and outputs the calculated area.
+// The core algorithm relies on the shoelace formula, which sums the signed areas of triangles formed by a reference point and consecutive polygon edges.
 
-// Check if running in a Node.js-like environment by inspecting the 'process' global object.
+var outputLogger = console.log;
+
+// Check if running in a Node.js-like environment to handle standard input.
 if (typeof process !== "undefined") {
-    // Create an alias for the global process object to avoid using its original name directly in subsequent code.
-    const systemRuntime = process;
-    let incomingDataBuffer = ""; // Accumulator for raw input data.
-    systemRuntime.stdin.resume(); // Begin reading from the standard input stream.
-    systemRuntime.stdin.setEncoding('utf8'); // Configure input character encoding to UTF-8.
+    let rawData = ""; // Accumulator for incoming data chunks.
+    process.stdin.resume(); // Keep the process alive while waiting for input.
+    process.stdin.setEncoding('utf8'); // Specify character encoding for input.
 
-    systemRuntime.stdin.addListener('data', function(dataPiece) {
-        incomingDataBuffer += dataPiece; // Append each received data segment to the buffer.
+    // Event listener for 'data' chunks from stdin.
+    process.stdin.on('data', function(dataChunk) {
+        rawData += dataChunk; // Append each chunk to the rawData string.
     });
 
-    systemRuntime.stdin.addListener('end', () => {
-        let rawInputLines = incomingDataBuffer.split("\n"); // Split the accumulated data into individual lines.
-        processGeometricData(rawInputLines); // Invoke the primary processing function with the parsed lines.
+    // Event listener for 'end' of stdin stream.
+    process.stdin.on('end', function() {
+        const inputLines = rawData.split("\n"); // Split the accumulated data into individual lines.
+        processCoordinates(inputLines); // Call the main processing function with the parsed lines.
     });
 }
 
 
-function processGeometricData(coordinateStrings) {
-    // Transform each input line into an array of numbers, filtering out empty string elements.
-    coordinateStrings = coordinateStrings.map(function(currentString) {
-        return currentString.split(" ")
-            .filter(function(elementValue) {
-                return elementValue !== ""; // Discard any empty string resulting from the split operation.
-            })
-            .map(function(itemToProcess) {
-                const numericValue = parseFloat(itemToProcess); // Convert string to a floating-point number.
-                if (isNaN(numericValue)) { // Check if the conversion resulted in Not-a-Number.
-                    // If not a number, clean up the string by removing newline or carriage return characters.
-                    return itemToProcess.replace(/(\r|\n)/g, "");
-                }
-                return numericValue; // Return the successfully parsed number.
-            });
+// Main function to process the input lines and calculate the polygon area.
+function processCoordinates(inputLines) {
+    // Transform each input line: split by space, filter out empty strings, and convert to numbers.
+    inputLines = inputLines.map(function(currentLine) {
+        return currentLine.split(" ").filter(function(elementStr) {
+            return elementStr !== ""; // Remove any empty string elements resulting from multiple spaces.
+        }).map(function(elementStr) {
+            const numericVal = Number(elementStr); // Attempt to convert string to number.
+            // If conversion results in NaN, it's likely a non-numeric string (e.g., leftover newline chars).
+            if (numericVal.toString() === "NaN") {
+                return elementStr.replace(/(\r)|(\n)/g, ""); // Clean up potential carriage returns or newlines.
+            }
+            return numericVal; // Return the numeric value.
+        });
     });
 
-    coordinateStrings.shift(); // Remove the initial line, which often contains metadata like the number of points.
-    const spatialPoints = coordinateStrings; // Assign the processed lines as our list of polygon vertices.
+    // The first line typically contains the number of vertices, which is not used in this implementation
+    // as the array length implicitly provides this information. So, it's discarded.
+    inputLines.shift();
 
-    // spatialPoints.reverse(); // Optional: uncomment this line if the polygon's winding order needs to be inverted.
+    // The remaining lines now represent the polygon's vertices (x, y coordinates).
+    const coordinateSet = inputLines;
+    // coordinateSet.reverse(); // This line was commented out in the original, indicating it's not used.
 
-    printOutput(spatialPoints); // Display the parsed list of points for verification or debugging purposes.
+    outputLogger(coordinateSet); // Output the parsed coordinate array for verification or debugging.
 
-    const initialPoint = spatialPoints[0]; // The very first vertex, serving as the common origin for vector calculations.
-    let currentPoint, nextPoint; // Variables to hold two successive vertices during the loop iteration.
-    let totalAreaSum = 0.0; // Accumulator for the summation of cross products, initialized as a float.
-    const numberOfVertices = spatialPoints.length; // Determine the total count of vertices in the polygon.
+    const firstPoint = coordinateSet[0]; // The first vertex serves as the common origin for triangles.
+    let startSegmentPoint, endSegmentPoint; // Variables to hold consecutive points forming a segment.
+    let totalSignedArea = 0; // Accumulator for the sum of signed areas of triangles.
+    const numPoints = coordinateSet.length; // Total number of vertices in the polygon.
 
-    // Iterate through the vertices to calculate the sum of signed triangle areas using the Shoelace formula principle.
-    // The loop begins from the second point and continues up to the second-to-last point.
-    for (let vertexIndex = 1; vertexIndex < numberOfVertices - 1; ++vertexIndex) {
-        currentPoint = spatialPoints[vertexIndex]; // Designate this as the 'middle' point of the current triangle.
-        nextPoint = spatialPoints[vertexIndex + 1]; // Designate this as the 'end' point of the current triangle.
-        // Add the signed area component of the triangle formed by initialPoint, currentPoint, and nextPoint.
-        totalAreaSum += calculateOrientationValue(initialPoint, currentPoint, nextPoint);
+    // Iterate through the points to calculate the sum of signed areas of triangles.
+    // Each triangle is formed by the first point (firstPoint) and two consecutive points (startSegmentPoint, endSegmentPoint).
+    // The loop starts from the second point (index 1) and goes up to the second-to-last point (numPoints - 2).
+    for (let idx = 1; idx < numPoints - 1; idx++) {
+        startSegmentPoint = coordinateSet[idx]; // The current point in the iteration.
+        endSegmentPoint = coordinateSet[idx + 1]; // The next point in the sequence.
+        totalSignedArea += calculateSignedTriangleArea(firstPoint, startSegmentPoint, endSegmentPoint);
     }
 
-    // The Shoelace formula yields twice the actual area of the polygon.
-    let formattedResult = String(totalAreaSum / 2.0); // Compute half of the accumulated sum and convert it to a string.
-    const decimalPosition = formattedResult.indexOf("."); // Locate the position of the decimal point within the string.
+    // The total area of the polygon is half of the accumulated signed sum.
+    // The result needs to be formatted to one decimal place, ensuring ".0" for integer results.
+    let resultAreaStr = "" + (totalSignedArea / 2); // Convert the calculated area to a string.
+    const decimalIndex = resultAreaStr.indexOf("."); // Find the position of the decimal point.
 
-    if (decimalPosition === -1) {
-        // If the number is an integer (no decimal point found), append ".0" for consistent formatting.
-        formattedResult += ".0";
+    if (decimalIndex === -1) {
+        // If no decimal point is found, the number is an integer, so append ".0".
+        resultAreaStr += ".0";
     } else {
-        // If a decimal exists, truncate the string to include only one digit after the decimal point.
-        // This is a specific formatting requirement, possibly for a fixed precision output.
-        formattedResult = formattedResult.slice(0, decimalPosition + 2);
+        // If a decimal point exists, truncate the string to include only one digit after the decimal.
+        // This matches the original behavior of slice(0, idx + 2).
+        resultAreaStr = resultAreaStr.slice(0, decimalIndex + 2);
     }
-    printOutput(formattedResult); // Output the final calculated area, formatted as required.
+    outputLogger(resultAreaStr); // Output the final calculated area as a formatted string.
 }
 
-// Helper function to determine the signed area component of a triangle formed by three given coordinates.
-// This is achieved by computing the 2D cross product of two vectors originating from the first coordinate.
-function calculateOrientationValue(coord1, coord2, coord3) {
-    // Construct the first vector, spanning from coord1 to coord2.
-    const vectorOne = [coord2[0] - coord1[0], coord2[1] - coord1[1]];
-    // Construct the second vector, spanning from coord1 to coord3.
-    const vectorTwo = [coord3[0] - coord1[0], coord3[1] - coord1[1]];
-
-    // Delegate the actual computation of the cross product to a specialized function.
-    return computeVectorCrossProduct(vectorOne, vectorTwo);
+// Helper function to calculate the signed area of a triangle given three vertices.
+// This is based on the 2D cross product of two vectors originating from the first vertex.
+function calculateSignedTriangleArea(vertexA, vertexB, vertexC) {
+    // Form vector AB from vertexA to vertexB.
+    const vectorAB = [vertexB[0] - vertexA[0], vertexB[1] - vertexA[1]];
+    // Form vector AC from vertexA to vertexC.
+    const vectorAC = [vertexC[0] - vertexA[0], vertexC[1] - vertexA[1]];
+    // Compute the 2D cross product of these two vectors.
+    return computeCrossProduct(vectorAB, vectorAC);
 }
 
-// Core utility function to compute the scalar 2D cross product of two vectors.
-// For two-dimensional vectors vecA=(x1, y1) and vecB=(x2, y2), their cross product is defined as (x1*y2 - y1*x2).
-function computeVectorCrossProduct(vecA, vecB) {
-    return (vecA[0] * vecB[1] - vecA[1] * vecB[0]);
+// Computes the 2D cross product (or determinant) of two 2D vectors.
+// For vectors (x1, y1) and (x2, y2), the 2D cross product is x1*y2 - y1*x2.
+function computeCrossProduct(vectorOne, vectorTwo) {
+    return (vectorOne[0] * vectorTwo[1] - vectorOne[1] * vectorTwo[0]);
 }

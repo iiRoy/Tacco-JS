@@ -1,79 +1,63 @@
-const lineInterpreter = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const fileSystem = require('node:fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputContent.trim().split('\n');
 
-let collectedDataLines = [];
-lineInterpreter.on('line', (dataLine) => {
-    collectedDataLines.push(dataLine);
-});
+function* inputBlockGenerator(linesCollection) {
+    let currentLineIndex = 0;
+    while (true) {
+        const dimensionsLine = linesCollection[currentLineIndex++];
+        const [nVal, mVal] = dimensionsLine.split(' ').map(Number);
 
-lineInterpreter.on('close', () => {
-    processAllDataSets(collectedDataLines);
-});
-
-function findUpperLimitIndex(sortedCollection, targetValue) {
-    let lowBound = 0;
-    let highBound = sortedCollection.length - 1;
-    let resultIndex = -1;
-
-    while (lowBound <= highBound) {
-        let middleIndex = Math.floor((lowBound + highBound) / 2);
-        if (sortedCollection[middleIndex] <= targetValue) {
-            resultIndex = middleIndex;
-            lowBound = middleIndex + 1;
-        } else {
-            highBound = middleIndex - 1;
+        if (nVal === 0 && mVal === 0) {
+            break;
         }
+
+        const numberList = [];
+        for (let i = 0; i < nVal; i++) {
+            numberList.push(Number(linesCollection[currentLineIndex++]));
+        }
+        yield { nVal, mVal, numberList };
     }
-    return resultIndex;
 }
 
-function processAllDataSets(completeInputLines) {
-    let currentPosition = 0;
+function findLargestElementIndex(sortedArray, targetValue) {
+    let lowBound = 0;
+    let highBound = sortedArray.length - 1;
+    let bestIndex = -1;
 
-    const executeNextCalculation = () => {
-        if (currentPosition >= completeInputLines.length) {
-            return;
+    while (lowBound <= highBound) {
+        const midPoint = Math.floor((lowBound + highBound) / 2);
+        if (sortedArray[midPoint] <= targetValue) {
+            bestIndex = midPoint;
+            lowBound = midPoint + 1;
+        } else {
+            highBound = midPoint - 1;
         }
+    }
+    return bestIndex;
+}
 
-        const currentConfigurationLine = completeInputLines[currentPosition];
-        currentPosition++;
+for (const { nVal: currentN, mVal: currentM, numberList: initialNumbers } of inputBlockGenerator(allInputLines)) {
+    const processedNumbers = [...initialNumbers, 0];
 
-        const [dimensionCountStr, ceilingValueStr] = currentConfigurationLine.split(' ');
-        const dimensionCount = parseInt(dimensionCountStr, 10);
-        const ceilingValue = parseInt(ceilingValueStr, 10);
+    const sumCombinations = processedNumbers.flatMap((firstVal, firstIdx) =>
+        processedNumbers.slice(firstIdx).map(secondVal => firstVal + secondVal)
+    );
 
-        if (dimensionCount === 0 && ceilingValue === 0) {
-            return;
+    sumCombinations.sort((valA, valB) => valA - valB);
+
+    let maximumPossibleSum = 0;
+
+    for (let i = 0; i < sumCombinations.length; i++) {
+        const currentSumPart = sumCombinations[i];
+        const requiredComplement = currentM - currentSumPart;
+
+        const complementIndex = findLargestElementIndex(sumCombinations, requiredComplement);
+
+        if (complementIndex !== -1) {
+            const potentialSum = currentSumPart + sumCombinations[complementIndex];
+            maximumPossibleSum = Math.max(maximumPossibleSum, potentialSum);
         }
-
-        const sourceNumbers = [];
-        for (let i = 0; i < dimensionCount; i++) {
-            sourceNumbers.push(parseInt(completeInputLines[currentPosition], 10));
-            currentPosition++;
-        }
-        sourceNumbers.push(0);
-
-        const allPossiblePairings = sourceNumbers.flatMap((valA, idxA) =>
-            sourceNumbers.slice(idxA).map(valB => valA + valB)
-        );
-        allPossiblePairings.sort((elem1, elem2) => elem1 - elem2);
-
-        let currentMaximumAchieved = 0;
-        for (const sumComponentA of allPossiblePairings) {
-            const requiredRemainder = ceilingValue - sumComponentA;
-            const suitableIndexB = findUpperLimitIndex(allPossiblePairings, requiredRemainder);
-
-            if (suitableIndexB !== -1) {
-                currentMaximumAchieved = Math.max(currentMaximumAchieved, sumComponentA + allPossiblePairings[suitableIndexB]);
-            }
-        }
-        console.log(currentMaximumAchieved);
-
-        executeNextCalculation();
-    };
-
-    executeNextCalculation();
+    }
+    console.log(maximumPossibleSum);
 }

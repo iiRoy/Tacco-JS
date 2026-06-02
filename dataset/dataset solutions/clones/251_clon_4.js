@@ -1,23 +1,9 @@
-const fileOperations = require('node:fs/promises');
-const sourceFilePath = '/dev/stdin';
+var inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-async function processInputData() {
-    try {
-        const rawContentBuffer = await fileOperations.readFile(sourceFilePath, { encoding: 'utf8' });
-        const fullContentString = rawContentBuffer.trim();
+var allNumbersAsStrings = inputSource.match(/\d+/g) || [];
 
-        const numericStrCollection = fullContentString.match(/\d+/g) || [];
+var finalTally = allNumbersAsStrings.reduce((currentTotal, numericString) => {
+    return currentTotal + Number(numericString);
+}, 0);
 
-        const finalCalculatedSum = numericStrCollection.reduce((accumulatorVal, currentNumStr) => {
-            return accumulatorVal + Number(currentNumStr);
-        }, 0);
-
-        console.info(finalCalculatedSum);
-
-    } catch (errorDetail) {
-        console.error("An issue occurred during data processing:", errorDetail);
-        process.exit(1);
-    }
-}
-
-processInputData();
+console.log(finalTally);

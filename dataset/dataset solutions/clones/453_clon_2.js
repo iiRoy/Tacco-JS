@@ -1,38 +1,34 @@
 process.stdin.resume();
+
 process.stdin.setEncoding('utf8');
 
-let accumulatedContent = '';
+let rawData = '';
 
-process.stdin.on('data', (dataSegment) => {
-    accumulatedContent += dataSegment;
+process.stdin.on('data', function (inputChunk) {
+  rawData += inputChunk;
 });
 
-process.stdin.on('end', () => {
-    const contentRows = accumulatedContent.split('\n');
-    let currentRowIndex = 0;
+process.stdin.on('end', function () {
+  const dataRows = rawData.split('\n');
+  let lineIndex = 0;
 
-    while (true) {
-        const principalValue = Number(contentRows[currentRowIndex++]);
+  while (true) {
+    let currentDebt = parseInt(dataRows[lineIndex++], 10);
 
-        if (principalValue === 0) {
-            break;
-        }
-
-        let solutionMonth = 'NA';
-
-        for (let cycleCounter = 0; cycleCounter < 12; cycleCounter++) {
-            const periodFigures = contentRows[currentRowIndex++].split(' ');
-            
-            const initialBalance = Number(periodFigures[0]);
-            const paymentAmount = Number(periodFigures[1]);
-
-            principalValue -= (initialBalance - paymentAmount);
-
-            if (solutionMonth === 'NA' && principalValue <= 0) {
-                solutionMonth = cycleCounter + 1;
-            }
-        }
-
-        console.log(solutionMonth);
+    if (currentDebt === 0) {
+      break;
     }
+
+    let resultMonth = 'NA';
+
+    for (let monthCounter = 0; monthCounter < 12; monthCounter++) {
+      const monthlyValues = dataRows[lineIndex++].split(' ');
+      currentDebt -= (parseInt(monthlyValues[0], 10) - parseInt(monthlyValues[1], 10));
+
+      if (resultMonth === 'NA' && currentDebt <= 0) {
+        resultMonth = monthCounter + 1;
+      }
+    }
+    console.log(resultMonth);
+  }
 });

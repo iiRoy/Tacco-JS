@@ -1,55 +1,36 @@
-const nodeIO = require('fs');
+const configurationObject = { inputSource: '/dev/stdin', lineSeparator: '\n' };
 
-const ioSettings = { fileDescriptor: 0, lineDelimiter: '\n' }; // 0 is stdin file descriptor
+const inputLines = require('fs').readFileSync(configurationObject.inputSource, 'ascii')
+  .split(configurationObject.lineSeparator, 2);
 
-// Read the entire input content from stdin
-const entireInputContent = nodeIO.readFileSync(ioSettings.fileDescriptor, 'utf8');
+const numericArray = inputLines[1].split(' ').map(Number);
 
-// Locate the first line break to find the start of the second line
-const firstLineBreakIndex = entireInputContent.indexOf(ioSettings.lineDelimiter);
+const pivotFinalIndex = performPartition(numericArray, 0, numericArray.length);
+numericArray[pivotFinalIndex] = '[' + numericArray[pivotFinalIndex] + ']';
+console.log(numericArray.join(' '));
 
-// Determine the start and end positions of the second line
-const secondLineBeginning = firstLineBreakIndex + ioSettings.lineDelimiter.length;
-const secondLineEnding = entireInputContent.indexOf(ioSettings.lineDelimiter, secondLineBeginning);
+function performPartition(dataArray, startIdx, endExclusiveIdx) {
+  const pivotElementValue = dataArray[endExclusiveIdx - 1];
+  let currentBoundaryPosition = startIdx;
 
-// Extract the string content of the second line
-const numericValuesString = secondLineEnding === -1
-    ? entireInputContent.substring(secondLineBeginning).trim() // If it's the last line or only one line break
-    : entireInputContent.substring(secondLineBeginning, secondLineEnding).trim();
+  const scanIndices = Array.from(
+    { length: (endExclusiveIdx - 1) - (startIdx + 1) },
+    (_, indexOffset) => startIdx + 1 + indexOffset
+  );
 
-// Parse the space-separated numbers from the second line string
-const parsedNumericCollection = (numericValuesString.match(/\b\d+\b/g) || []).map(val => parseInt(val, 10));
-
-// Function to arrange elements around a pivot, returning the pivot's final index
-const arrangeSegment = (collectionData, startBoundary, endBoundary) => {
-  // The pivot is chosen as the last element of the segment (collectionData[endBoundary - 1])
-  const referenceElement = collectionData[endBoundary - 1];
-  let positionForSmaller = startBoundary; // Index to place elements smaller than or equal to pivot
-
-  // Iterate through elements from (startBoundary + 1) up to (endBoundary - 2)
-  let currentElementExaminer = startBoundary + 1;
-  while (currentElementExaminer < endBoundary - 1) {
-    if (collectionData[currentElementExaminer] <= referenceElement) {
-      // Swap elements using destructuring assignment
-      [collectionData[positionForSmaller], collectionData[currentElementExaminer]] =
-      [collectionData[currentElementExaminer], collectionData[positionForSmaller]];
-      positionForSmaller++;
+  currentBoundaryPosition = scanIndices.reduce((accumulatorBoundary, currentScanIndex) => {
+    if (dataArray[currentScanIndex] <= pivotElementValue) {
+      const transientStorage = dataArray[accumulatorBoundary];
+      dataArray[accumulatorBoundary] = dataArray[currentScanIndex];
+      dataArray[currentScanIndex] = transientStorage;
+      return accumulatorBoundary + 1;
     }
-    currentElementExaminer++;
-  }
+    return accumulatorBoundary;
+  }, startIdx);
 
-  // Place the pivot (which was originally at collectionData[endBoundary - 1]) into its final sorted position
-  [collectionData[positionForSmaller], collectionData[endBoundary - 1]] =
-  [collectionData[endBoundary - 1], collectionData[positionForSmaller]];
+  const transientStorage = dataArray[currentBoundaryPosition];
+  dataArray[currentBoundaryPosition] = dataArray[endExclusiveIdx - 1];
+  dataArray[endExclusiveIdx - 1] = transientStorage;
 
-  return positionForSmaller; // Return the final index of the pivot
-};
-
-// Perform the segment arrangement on the entire collection
-const finalPivotLocation = arrangeSegment(parsedNumericCollection, 0, parsedNumericCollection.length);
-
-// Enclose the pivot element in square brackets
-parsedNumericCollection[finalPivotLocation] = `[${parsedNumericCollection[finalPivotLocation]}]`;
-
-// Output the modified collection with elements joined by spaces, followed by a newline
-process.stdout.write(parsedNumericCollection.join(' ') + '\n');
+  return currentBoundaryPosition;
+}

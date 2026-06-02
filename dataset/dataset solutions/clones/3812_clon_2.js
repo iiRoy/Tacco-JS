@@ -1,47 +1,43 @@
 "use strict";
 
-// Define positions for extracting specific values from the input array.
-const ALPHA_POSITION = 0; // Index for the first numeric operand.
-const BETA_POSITION = 1;  // Index for the second numeric operand.
-const MODIFIER_POSITION = 3; // Index for the string containing the modifier digit.
+// Constant declarations for array indices to improve readability.
+const FIRST_VAL_IDX = 0; // Represents the index for the first numerical component.
+const SECOND_VAL_IDX = 1; // Represents the index for the second numerical component.
+const K_VAL_IDX = 3; // Represents the index for the line containing the 'K' value.
 
-// Define a very large numerical boundary to check against.
-const MAXIMUM_DIFFERENCE_THRESHOLD = Math.pow(10, 18);
+// A large numerical threshold used for comparison.
+const MAX_DIFF_THRESHOLD = Math.pow(10, 18);
 
 /**
- * Orchestrates the primary computational logic based on provided input data.
- * This function processes raw text, performs arithmetic, and outputs a result.
- * @param {string} rawInputString - The complete string received from standard input.
+ * Main function to process the input data.
+ * It calculates a difference, checks against a limit, and applies a conditional sign change.
+ *
+ * @param {string} inputString - The raw string input, typically from standard input.
  */
-const performCalculations = (rawInputString) => {
+const processInputData = (inputString) => {
+    // Trim whitespace from the input and split it into an array of lines.
+    const lineSegments = inputString.trim().split("\n");
 
-    // Split the input string into an array of individual lines after trimming
-    // any leading/trailing whitespace from the whole input.
-    const inputLineSegments = rawInputString.trim().split("\n");
+    // Parse the first two values as integers and compute their difference.
+    const differenceResult = parseInt(lineSegments[FIRST_VAL_IDX], 10) - parseInt(lineSegments[SECOND_VAL_IDX], 10);
 
-    // Calculate the difference between the numbers at the specified alpha and beta positions.
-    const computedDifference = parseInt(inputLineSegments[ALPHA_POSITION]) - parseInt(inputLineSegments[BETA_POSITION]);
+    // Retrieve the string from the K_VAL_IDX position.
+    const kCharString = lineSegments[K_VAL_IDX];
 
-    // Extract the string that contains the final controlling digit.
-    const modifierStringSegment = inputLineSegments[MODIFIER_POSITION];
+    // Extract the last character of the K string and convert it to an integer.
+    const lastKDigit = parseInt(kCharString.charAt(kCharString.length - 1), 10);
 
-    // Parse the last character of the modifier string into an integer.
-    const finalModifierDigit = parseInt(modifierStringSegment.charAt(modifierStringSegment.length - 1));
-
-    // Check if the absolute value of the computed difference exceeds the predefined maximum threshold.
-    if (Math.abs(computedDifference) > MAXIMUM_DIFFERENCE_THRESHOLD) {
-        // If it exceeds, print a specific failure message.
+    // Check if the absolute value of the difference exceeds the defined threshold.
+    if (Math.abs(differenceResult) > MAX_DIFF_THRESHOLD) {
+        // If it exceeds, output "Unfair".
         console.log("Unfair");
-    }
-    else {
-        // Otherwise, determine the final output based on the modifier digit's parity
-        // or if the difference itself is zero.
-        // If modifier is even or difference is zero, output difference as is.
-        // If modifier is odd, output the negative of the difference.
-        console.log(finalModifierDigit % 2 === 0 || computedDifference === 0 ? computedDifference : -computedDifference);
+    } else {
+        // Otherwise, determine the output based on the parity of lastKDigit and the differenceResult.
+        // If lastKDigit is even or differenceResult is zero, output differenceResult.
+        // If lastKDigit is odd and differenceResult is not zero, output the negative of differenceResult.
+        console.log(lastKDigit % 2 === 0 || differenceResult === 0 ? differenceResult : -differenceResult);
     }
 };
 
-// Initiate the entire process by reading input from standard input,
-// trimming it, and then passing it to the main processing function.
-performCalculations( require("fs").readFileSync("/dev/stdin", "utf8").trim() );
+// Read the entire content from standard input, decode as UTF-8, trim whitespace, and pass to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

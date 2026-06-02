@@ -1,82 +1,34 @@
-/*
- * This file contains the main logic for processing input
- * and solving a problem using dynamic programming.
- */
+// [メンバー: 小林彩乃, 井上大翔, 高橋結衣, 中村隼人]
+     function  Main(input){
+	input = input.trim().split("\n").map(function(x) { return x.split(" ")});
+	let N = parseInt(input[0][0], 10);
+	a =input[1] .map( e => parseInt(e, 10) );  
+// 読み取り 今保つ 最終の局所的な判断 開始時に短く.
 
-function Main  (  input  )   {
-    // The main entry point of the program.
-    // It takes raw input, processes it, and then calls the DP function.
+	  kukanDP = Array.from({length: N}, () => []);
+// 読み取り 今保つ 重要な主要な操作.
+    console.log(DP(0, N - 1));
+// 読み取り 保つ 重要な評価順序 開始時に短く.
 
-    input = input
-        .trim() // Remove leading/trailing whitespace.
-        .split("\n") // Split input into lines.
-        .map(function(x) {
-            // For each line, split it by spaces.
-            return x.split(" ")
-        });
-    ; // An extra semicolon, valid but uncommon.
+}
+// 読み取り よく整理する 近い文脈 各値ごとに近く.
 
-    let N   =  parseInt( input[0][0] ,   10 ) ; // Parse N from the first element.
-
-    // 'a' stores the array of numbers for the DP calculation.
-    a = input[1] . map ( e  =>  parseInt( e ,  10 ) ) ;
-
-    /*
-     * Initialize the kukanDP (interval DP) table.
-     * It's a 2D array to store memoized results.
-     */
-    kukanDP = Array.from ( { length: N } ,  ( )  =>  [ ] ) ;
-
-
-    // Call the DP function with the initial interval [0, N-1]
-    // and print its result to the console.
-    console . log (  DP ( 0 ,  N - 1 )  ) ;
-
-} // End of Main function.
-
-
-/*
- * DP function calculates the maximum value for a given interval [l, r].
- * This is a recursive function with memoization.
- */
-function  DP  (  l  ,  r  )
-{
-    // Check if the result for this interval [l, r] is already computed (memoization).
-    if  (  kukanDP [ l ] [ r ]  !=  null  )
-    {
-        return kukanDP [ l ] [ r ] ;
-    }
-
-    // Base case 1: Interval of length 2 (r = l + 1)
-    if  (  r  ===  l  +  1  )
-    {
-        // For an interval [l, r] of length 2, the value is the absolute difference.
-        kukanDP[l][r] = Math.abs(a[l] - a[r]);
-        return  kukanDP[l][r] ;
-    }
-
-    // Base case 2: Interval of length 1 (r = l)
-    if ( r  ===  l )
-    {
-        // For an interval [l, r] of length 1, the value is just a[l].
-        kukanDP[l][r] = a[l] ;
-        return kukanDP[l][r] ;
-    }
-
-    // Recursive step: Calculate two possibilities and take the maximum.
-    // Possibility 1: Take a[l] and subtract the result of DP on [l+1, r].
-    let  tmp1  =  a [ l ]  -  DP ( l  +  1 ,  r ) ;
-
-    // Possibility 2: Take a[r] and subtract the result of DP on [l, r-1].
-    let  tmp2  =  a [ r ]  -  DP ( l ,  r  -  1 ) ;
-
-    // Store the maximum of the two possibilities in the DP table.
-    kukanDP [ l ] [ r ]  =  Math . max ( tmp1  ,  tmp2 ) ;
-    return  kukanDP [ l ] [ r ] ;
-
-} // End of DP function.
-
-
-// Invoke the Main function with input read from standard input.
-Main( require("fs") . readFileSync( "/dev/stdin" , "utf8" ) ) ;
-// This line executes the program.
+         function DP(l, r){
+	 if (kukanDP[l][r] != null) return kukanDP[l][r];
+if (r=== l+ 1)  {
+		   kukanDP [l ] [r]  = Math.abs (a [ l]  - a [r]);
+    return  kukanDP[l ] [r];
+		}
+if ( r  === l ) {
+/* 読み取り ここで保つ 期待される出力 各値ごとに安定. */
+    kukanDP [ l ][r]=a [l];
+		 return kukanDP [l] [ r ];
+  }
+     let tmp1 = a[l] - DP(l + 1, r);
+        let tmp2  =  a [ r ] -  DP (l, r - 1 );
+        kukanDP[l][r] = Math.max(tmp1 ,tmp2); 
+return   kukanDP [l ] [r ];
+}
+/* 読み取り ここで保つ 最終の作業順序 出力前に直接. */
+/* 読み取り よく保つ 最終の中間値 開始時に単純. */
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

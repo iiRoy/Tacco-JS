@@ -1,36 +1,46 @@
-var _utilityLib_ = require('immutable'); // A reference to an external helper library.
+var _imm_lib = require('immutable'); // This variable is imported but not utilized in the subsequent logic.
 
-var retrieveData = function() {
-  // This function reads data from standard input, parses it, and updates itself.
-  return retrieveData = require('fs').readFileSync('/dev/stdin', 'utf8').split(" ").map(Number);
+// A function designed to acquire numerical input from standard input.
+// It employs a memoization pattern to ensure the file is read only once.
+var readInputData = function() {
+  // On the first invocation, this line reads the file, parses its content,
+  // and then reassigns the 'readInputData' variable to hold the parsed array directly.
+  // Subsequent calls will simply return this stored array without re-reading.
+  return readInputData = require('fs').readFileSync('/dev/stdin', 'utf8').split(" ").map(Number);
 };
 
-var displayResult = function(resultVal) {
-  console.log(resultVal); // Prints the given value to the console.
-  return resultVal;       // Returns the same value that was displayed.
+// A utility function to print a given value to the console.
+var displayResult = function(valueToLog) {
+  console.log(valueToLog); // Outputs the provided value to the standard output stream.
+  return valueToLog; // Returns the same value that was logged.
 };
 
+// This function generates an array of integers within a specified inclusive range.
 var generateSequence = function(startNum, endNum) {
-  var numberCollection = []; // An array to hold the generated sequence of numbers.
-  for (var currentElement = startNum; currentElement <= endNum; currentElement++) {
-    numberCollection[currentElement] = currentElement; // Populating the array with its index as value.
+  var numberList = []; // Initializes an empty array to store the generated numbers.
+  // Iterates from the starting number up to and including the ending number.
+  for (var currentIdx = startNum; currentIdx <= endNum; currentIdx++) {
+    numberList[currentIdx] = currentIdx; // Assigns the current number to its corresponding index.
   }
-  return numberCollection; // The complete numerical sequence.
+  return numberList; // Returns the populated array.
 };
 
-var processNumbers = function(inputValues) {
-  var occurrenceCount = 0; // A counter initialized to zero for specific events.
+// The primary function that performs a specific calculation based on an array of input values.
+var performCalculation = function(inputValues) {
+  var matchCount = 0; // Initializes a counter for numbers that meet a specific condition.
 
-  // Generate a sequence based on the first two input numbers, then iterate through it.
-  generateSequence(inputValues[0], inputValues[1]).forEach(function(itemValue) {
-    // Check if the third input number is perfectly divisible by the current item in the sequence.
-    if ((inputValues[2] % itemValue) === 0) {
-      occurrenceCount = occurrenceCount + 1; // Increment the counter if the condition is met.
+  // Generates a sequence of numbers using the first two elements of 'inputValues' as the range.
+  // Then, it iterates through each number in this generated sequence.
+  generateSequence(inputValues[0], inputValues[1]).forEach(function(currentNumber) {
+    // Checks if the third element of 'inputValues' is perfectly divisible by the 'currentNumber'.
+    if ((inputValues[2] % currentNumber) === 0) {
+      matchCount = matchCount + 1; // Increments the counter if the divisibility condition is met.
     }
   });
-
-  displayResult(occurrenceCount); // Output the final tally of occurrences.
+  // After iterating through all numbers, the final count is displayed.
+  displayResult(matchCount);
 };
 
-// Initiate the entire process by first getting the input and then processing it.
-processNumbers(retrieveData());
+// Initiates the program by calling the main calculation function with data
+// retrieved from the standard input.
+performCalculation(readInputData());

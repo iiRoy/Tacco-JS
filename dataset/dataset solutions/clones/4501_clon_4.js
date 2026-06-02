@@ -1,40 +1,27 @@
 "use strict";
-const obtainData = () => require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf-8' });
 
-const processInputLine = (textContents) => {
-    const extractedNumerals = textContents.match(/\d+/g);
-    return extractedNumerals.slice(0, 3).map(Number);
+const fs = require("fs");
+
+const values = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/).map(Number);
+
+const daysLimit = values[0];
+const currentDay = values[1];
+const expireDay = values[2];
+
+const resultByState = {
+    expiredOrToday: "delicious",
+    tooLate: "dangerous",
+    stillFine: "safe",
+    exactBorder: ""
 };
 
-const getConclusion = (firstValue, secondValue, thirdValue) => {
-    const outcomeMapping = {
-        0: 'delicious',
-        1: 'dangerous',
-        2: 'safe',
-        3: ''
-    };
+const getState = () => {
+    if (currentDay >= expireDay) return "expiredOrToday";
 
-    const isFirstConditionMet = (secondValue >= thirdValue);
-    const calculatedDifference = thirdValue - secondValue;
-    const adjustedFirstValue = firstValue + 1;
+    const remainingDays = expireDay - currentDay;
+    const comparison = Math.sign((daysLimit + 1) - remainingDays);
 
-    const isSecondConditionMet = (!isFirstConditionMet && (adjustedFirstValue < calculatedDifference));
-    const isThirdConditionMet = (!isFirstConditionMet && (adjustedFirstValue > calculatedDifference));
-    const isFourthConditionMet = (!isFirstConditionMet && (adjustedFirstValue === calculatedDifference));
-
-    const resultantKey = (isFirstConditionMet * 0) +
-                         (isSecondConditionMet * 1) +
-                         (isThirdConditionMet * 2) +
-                         (isFourthConditionMet * 3);
-
-    return outcomeMapping[resultantKey];
+    return comparison < 0 ? "tooLate" : comparison > 0 ? "stillFine" : "exactBorder";
 };
 
-const executeProgram = () => {
-    const rawInputContent = obtainData();
-    const [alpha, beta, gamma] = processInputLine(rawInputContent);
-    const finalOutputString = getConclusion(alpha, beta, gamma);
-    console.log(finalOutputString);
-};
-
-executeProgram();
+console.log(resultByState[getState()]);

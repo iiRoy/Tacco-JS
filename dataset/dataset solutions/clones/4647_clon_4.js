@@ -1,16 +1,14 @@
-function displayOutcome(messageContent){console.log(messageContent);}
-function orchestrateOperation(rawEntry) {
-  const segments = rawEntry.split("\n");
-  const primarySource = segments[0];
-  const secondarySource = segments[1] || "";
-  const combinedSequence = Array.from({ length: primarySource.length }, (_, currentPosition) => {
-    const charFromPrimary = primarySource[currentPosition];
-    const charFromSecondary = secondarySource[currentPosition] || '';
-    return [charFromPrimary, charFromSecondary];
-  }).flatMap(pair => pair).join('');
-  displayOutcome(combinedSequence);
+function processInputData(sourceText) {
+  const lineSegments = sourceText.split("\n");
+  const primarySegment = lineSegments[0];
+  const secondarySegment = lineSegments[1];
+
+  const finalSequence = Array.from({ length: primarySegment.length }, (_, charIndex) =>
+    primarySegment.charAt(charIndex) + secondarySegment.charAt(charIndex)
+  ).join('');
+
+  console.log(finalSequence);
 }
-const fileSystemInterface = require("fs");
-const dataLocation = "/dev/stdin";
-const textEncoding = "utf8";
-orchestrateOperation(fileSystemInterface.readFileSync(dataLocation, textEncoding).trim());
+
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+processInputData(rawInputContent);

@@ -1,63 +1,38 @@
-(function() {
-    const obtainInputData = (sourceText) => {
-        const rawLines = sourceText.split('\n').filter(lineContent => lineContent.trim().length > 0);
-        const totalVertices = Number(rawLines[0]);
-        const linkRecords = [];
-        for (let lineIndex = 1; lineIndex < rawLines.length; ++lineIndex) {
-            const numericParts = rawLines[lineIndex].split(' ').map(segment => Number(segment));
-            linkRecords.push(numericParts);
-        }
-        return { totalVertices, linkRecords };
-    };
+console.log((function(inputString) {
+    const dataLines = inputString.trim().split('\n');
+    const [vertexCount] = dataLines[0].split(' ').map(Number);
+    const edgeRecords = dataLines.slice(1).map(line => line.split(' ').map(Number));
 
-    const createAdjacencyMap = (nodeCount, connectivityData) => {
-        const graphModel = new Map();
-        for (let nodeIdx = 0; nodeIdx < nodeCount; ++nodeIdx) {
-            graphModel.set(nodeIdx, []);
-        }
-        for (const [firstNode, secondNode, edgeAttribute] of connectivityData) {
-            const adjustedFirst = firstNode - 1;
-            const adjustedSecond = secondNode - 1;
-            const attributeBit = edgeAttribute & 1;
-            graphModel.get(adjustedFirst).push({ neighbor: adjustedSecond, property: attributeBit });
-            graphModel.get(adjustedSecond).push({ neighbor: adjustedFirst, property: attributeBit });
-        }
-        return graphModel;
-    };
+    const graphAdjacency = Array.from({ length: vertexCount }, () => []);
 
-    const propagateVertexValues = (
-        currentVertexIdentifier,
-        currentVertexValue,
-        graphRepresentation,
-        assignedVertexValues
-    ) => {
-        if (assignedVertexValues.has(currentVertexIdentifier)) {
-            return;
-        }
-        assignedVertexValues.set(currentVertexIdentifier, currentVertexValue);
+    for (let edgeIndex = 0; edgeIndex < vertexCount - 1; ++edgeIndex) {
+        const [firstNode, secondNode, edgeWeight] = edgeRecords[edgeIndex];
+        const weightParity = edgeWeight % 2;
+        graphAdjacency[firstNode - 1].push([secondNode - 1, weightParity]);
+        graphAdjacency[secondNode - 1].push([firstNode - 1, weightParity]);
+    }
 
-        const connectedNeighbors = graphRepresentation.get(currentVertexIdentifier) || [];
-        for (const { neighbor, property } of connectedNeighbors) {
-            if (!assignedVertexValues.has(neighbor)) {
-                const nextVertexValue = currentVertexValue ^ property;
-                propagateVertexValues(neighbor, nextVertexValue, graphRepresentation, assignedVertexValues);
+    const vertexColors = Array.from({ length: vertexCount }, () => null);
+    vertexColors[0] = 0;
+
+    const traversalQueue = [0];
+    let queueHead = 0;
+
+    while (queueHead < traversalQueue.length) {
+        const currentVertex = traversalQueue[queueHead++];
+        const currentVertexColor = vertexColors[currentVertex];
+
+        for (const [adjacentVertex, connectionParity] of graphAdjacency[currentVertex]) {
+            if (vertexColors[adjacentVertex] === null) {
+                traversalQueue.push(adjacentVertex);
+                if (connectionParity === 1) {
+                    vertexColors[adjacentVertex] = 1 - currentVertexColor;
+                } else {
+                    vertexColors[adjacentVertex] = currentVertexColor;
+                }
             }
         }
-    };
+    }
 
-    const processGraphColoring = (allInputContent) => {
-        const { totalVertices, linkRecords } = obtainInputData(allInputContent);
-        const structuralMap = createAdjacencyMap(totalVertices, linkRecords);
-        const finalValueRegistry = new Map();
-
-        propagateVertexValues(0, 0, structuralMap, finalValueRegistry);
-
-        const orderedResults = [];
-        for (let i = 0; i < totalVertices; ++i) {
-            orderedResults.push(finalValueRegistry.get(i));
-        }
-        return orderedResults.join('\n');
-    };
-
-    console.log(processGraphColoring(require('fs').readFileSync('/dev/stdin', 'utf8')));
-})();
+    return vertexColors.join('\n');
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

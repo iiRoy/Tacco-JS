@@ -1,22 +1,16 @@
-const processInputData = (incomingText) => {
-    const numericComponents = incomingText.trim().split(' ').map(Number);
-    const spanWidth = numericComponents[0];
-    const focalPoint = numericComponents[1];
+function processInput(dataString) {
+  const paramTokens = dataString.split(' ');
+  const limitCount = parseInt(paramTokens[0], 10);
+  const centerValue = parseInt(paramTokens[1], 10);
 
-    const rangeOffset = spanWidth - 1;
+  const offsetRange = limitCount - 1;
 
-    const startingBoundary = focalPoint - rangeOffset;
-    const finalBoundary = focalPoint + rangeOffset;
-    const sequenceLength = finalBoundary - startingBoundary + 1;
+  const sequenceStart = centerValue - offsetRange;
+  const sequenceEnd = centerValue + offsetRange;
+  const totalElements = sequenceEnd - sequenceStart + 1;
 
-    const valueSequence = Array.from({ length: sequenceLength }, (_, indexPosition) => {
-        return startingBoundary + indexPosition;
-    });
+  const resultSequence = Array.from({ length: totalElements }, (_, index) => sequenceStart + index);
 
-    const outputRepresentation = valueSequence.join(' ');
-
-    process.stdout.write(outputRepresentation + '\n');
-};
-
-const fileSystemHandler = require('node:fs');
-processInputData(fileSystemHandler.readFileSync('/dev/stdin', 'utf8'));
+  console.log(resultSequence.join(' '));
+}
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

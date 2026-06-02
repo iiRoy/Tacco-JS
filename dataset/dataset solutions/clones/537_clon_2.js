@@ -1,83 +1,106 @@
-let rawInputData = require( 'fs' ) . readFileSync( '/dev/stdin' , 'utf8' );
+// This script processes input data to determine if a sequence can be sorted
+// by a series of swaps, considering only elements that are initially out of place.
 
-let lineFragments = rawInputData.trim().split( '\n' );
+// Import the file system module for reading standard input.
+const fileSystem = require('fs');
 
-// The initial line indicates the total element count.
-let totalElements = lineFragments.shift( ) - 0;
+// Read all input from /dev/stdin, assuming UTF-8 encoding.
+let rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-// The subsequent line provides the initial numeric sequence.
-let originalSequence = lineFragments.shift( ).split( ' ' ).map( Number );
+// Split the input into lines and remove any leading/trailing whitespace.
+let inputLines = rawInputData.trim().split('\n');
 
-// Generate an ordered version of the initial sequence for comparison.
-let orderedSequence = originalSequence.slice( ).sort( ( valA , valB ) => valA - valB );
+// The first line contains the total number of elements, converted to a number.
+let totalElementsCount = parseInt(inputLines.shift(), 10);
 
-// The next line specifies the total number of swap operations.
-let totalQueries = lineFragments.shift( ) - 0;
+// The second line contains the initial sequence of numbers.
+// Split by space, then convert each part to a number.
+let initialSequence = inputLines.shift().split(' ').map(Number);
 
-// Process the remaining lines to extract index pairs for swapping.
-let swapOperations = lineFragments.map( ( lineContent ) =>
-    lineContent.split( ' ' ) .map( ( numericValue ) => Number( numericValue ) - 1 )
+// Create a sorted version of the initial sequence for comparison.
+// Use slice() to create a shallow copy before sorting to avoid modifying the original.
+let correctlyOrderedSequence = initialSequence.slice().sort((valueA, valueB) => valueA - valueB);
+
+// The next line contains the number of swap queries.
+let numberOfQueries = parseInt(inputLines.shift(), 10);
+
+// Parse the remaining lines as swap operations.
+// Each line has two indices (0-based), which are then adjusted to be 0-based.
+let swapOperationsList = inputLines.map(lineStr =>
+    lineStr.split(' ').map(Number).map(val => val - 1)
 );
 
-// Prepend a placeholder entry to align with loop indexing.
-swapOperations.unshift( [ 0 , 0 ] );
+// Prepend a dummy operation [0,0] at the beginning.
+// This aligns the loop indexing with the original logic.
+swapOperationsList.unshift([0, 0]);
 
-// Declare objects to track current and target differing elements.
-let currentMismatches = { };
-let expectedMismatches = { };
+// Objects to store elements that are in different positions in the initial and sorted sequences.
+// Keys are indices, values are the numbers at those indices.
+let currentMismatchedElements = {};
+let targetMismatchedElements = {};
 
-// Populate the mismatch objects by comparing original and sorted sequences.
-for ( let idx = 0 ; idx < originalSequence.length ; idx++ ) {
-  if ( originalSequence[ idx ] !== orderedSequence[ idx ] ) {
-    currentMismatches[ idx ] = originalSequence[ idx ];
-    expectedMismatches[ idx ] = orderedSequence[ idx ];
-  }
+// Populate the mismatch objects.
+// Iterate through the initial sequence to find elements that are not in their sorted positions.
+for (let elementIndex = 0; elementIndex < initialSequence.length; elementIndex++) {
+    if (initialSequence[elementIndex] !== correctlyOrderedSequence[elementIndex]) {
+        currentMismatchedElements[elementIndex] = initialSequence[elementIndex];
+        targetMismatchedElements[elementIndex] = correctlyOrderedSequence[elementIndex];
+    }
 }
 
-// Determine the initial count of elements that are out of place.
-let initialMismatchCount = Object.keys( currentMismatches ) .length;
+// Get the count of initial mismatches.
+let initialMismatchCount = Object.keys(currentMismatchedElements).length;
 
-// Create a concatenated string representation of the expected mismatch values.
-let expectedMismatchString = "";
-for ( let mismatchKey in expectedMismatches ) {
-  expectedMismatchString += expectedMismatches[ mismatchKey ];
+// Concatenate the values of the target mismatched elements into a string.
+// This string represents the "sorted" state of only the mismatched elements.
+let targetMismatchString = '';
+for (let key in targetMismatchedElements) {
+    targetMismatchString += targetMismatchedElements[key];
 }
 
-// A boolean flag to indicate if a sorted state is achieved.
-let matchFound = false;
+// Flag to indicate if a match is found after any swap operation.
+let isMatchAchieved = false;
 
-// Iterate through each potential swap operation.
-for ( let queryIteration = 0 ; queryIteration <= totalQueries ; queryIteration++ ) {
-  // Extract the indices for the current swap.
-  let firstIndex = swapOperations[ queryIteration ][ 0 ];
-  let secondIndex = swapOperations[ queryIteration ][ 1 ];
+// Iterate through each swap operation, including the dummy one at index 0.
+for (let operationIdx = 0; operationIdx <= numberOfQueries; operationIdx++) {
+    // Perform the swap on the `currentMismatchedElements` object.
+    // Note: This swaps values at the specified indices, even if the indices
+    // are not currently keys in the object. If a key doesn't exist, its value is undefined.
+    let firstSwapIndex = swapOperationsList[operationIdx][0];
+    let secondSwapIndex = swapOperationsList[operationIdx][1];
 
-  // Perform the value swap within the currentMismatches object.
-  // If a key doesn't exist, its value is implicitly undefined.
-  let temporalValue1 = currentMismatches[ firstIndex ];
-  let temporalValue2 = currentMismatches[ secondIndex ];
+    // Use array destructuring for a concise swap.
+    [
+        currentMismatchedElements[firstSwapIndex],
+        currentMismatchedElements[secondSwapIndex]
+    ] = [
+        currentMismatchedElements[secondSwapIndex],
+        currentMismatchedElements[firstSwapIndex]
+    ];
 
-  currentMismatches[ firstIndex ] = temporalValue2;
-  currentMismatches[ secondIndex ] = temporalValue1;
+    // After the swap, reconstruct the string of current mismatched elements.
+    let currentMismatchString = '';
+    for (let propertyKey in currentMismatchedElements) {
+        currentMismatchString += currentMismatchedElements[propertyKey];
+    }
 
-  // Reconstruct the string representation of the current mismatch values.
-  let currentMismatchString = "";
-  for ( let mismatchKey in currentMismatches ) {
-    currentMismatchString += currentMismatches[ mismatchKey ];
-  }
-
-  // Compare the current state with the target sorted state.
-  if ( currentMismatchString === expectedMismatchString ) {
-    matchFound = true;
-    break; // Terminate loop upon finding a match.
-  }
+    // Check if the current state of mismatched elements matches the target sorted state.
+    if (currentMismatchString === targetMismatchString) {
+        isMatchAchieved = true;
+        // If a match is found, we can stop processing further swaps.
+        break;
+    }
 }
 
-// Output the final result based on the analysis.
-if ( initialMismatchCount === 0 ) {
-  console.log( 0 ); // The sequence was already sorted.
-} else if ( matchFound ) {
-  console.log( queryIteration ); // Output the count of queries performed.
+// Output the result based on the analysis.
+if (initialMismatchCount === 0) {
+    // If there were no initial mismatches, the sequence was already sorted.
+    console.log(0);
+} else if (isMatchAchieved) {
+    // If a match was achieved after some swaps, output the index of the operation
+    // that led to the match.
+    console.log(operationIdx); // 'operationIdx' retains its value from the loop's last iteration.
 } else {
-  console.log( -1 ); // The sequence could not be sorted as required.
+    // If no match was ever achieved.
+    console.log(-1);
 }

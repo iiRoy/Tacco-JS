@@ -1,44 +1,45 @@
-function executeOperations(commandStrings)
-{
-    // This array will hold our items, acting as a LIFO stack.
-    let elementPile = [ ];
+function processInput(inputLines) {
+  // This array will serve as our primary data storage mechanism.
+  var dataStore = [];
 
-    // Loop indefinitely until a 'quit' command is encountered.
-    for ( let commandIndex = 0; ; commandIndex++ )
-    {
-        const currentCommand = commandStrings[ commandIndex ];
+  // Iterate through the input commands indefinitely until a 'quit' command is encountered.
+  for (var idx = 0; ; idx++) {
+    var currentCommand = inputLines[idx];
 
-        // Check if the current command indicates termination.
-        if ( currentCommand.match( /^quit/ ) )
-        {
-            break; // Exit the loop.
-        }
-        // Check if the command is to add an item to the pile.
-        else if ( currentCommand.match( /^push/ ) )
-        {
-            // Extract the item to be pushed from the command string.
-            const payload = currentCommand.split( /\s+/ )[ 1 ];
-            elementPile.push( payload );
-        }
-        // Check if the command is to remove an item from the pile.
-        else if ( currentCommand.match( /^pop/ ) )
-        {
-            // Remove and retrieve the top item.
-            const payload = elementPile.pop( );
-            console.log( payload ); // Display the retrieved item.
-        }
+    // Check if the current command indicates termination.
+    if (currentCommand.match(/^quit/)) {
+      break; // Exit the processing loop.
     }
+    // Check if the command is to add an item to the store.
+    else if (currentCommand.match(/^push/)) {
+      // Extract the item to be stored from the command string.
+      var itemToStore = currentCommand.split(/\s+/)[1];
+      dataStore.push(itemToStore); // Add the item to the end of our data store.
+    }
+    // Check if the command is to retrieve an item from the store.
+    else if (currentCommand.match(/^pop/)) {
+      // Remove and retrieve the last item from the data store.
+      var retrievedItem = dataStore.pop();
+      console.log(retrievedItem); // Display the retrieved item to the console.
+    }
+  }
 }
 
-// Prepare to receive input from standard input.
-const inputSegments = [ ];
-process.stdin.on( 'data', function( segmentPart ) {
-    inputSegments.push( segmentPart ); // Accumulate incoming data fragments.
-} );
+// An array to accumulate incoming data chunks from standard input.
+var inputBuffer = [];
 
-// Once all input has been received, process it.
-process.stdin.on( 'end', function( ) {
-    // Join all segments and split into individual command lines.
-    const commandStrings = inputSegments.join( '' ).split( '\n' );
-    executeOperations( commandStrings ); // Begin processing the commands.
-} );
+// Event listener for 'data' events on standard input.
+// Each time data is received, it's added to our buffer.
+process.stdin.on('data', function(chunk) {
+  inputBuffer.push(chunk);
+});
+
+// Event listener for the 'end' event on standard input.
+// This signifies that all input has been received.
+process.stdin.on('end', function() {
+  // Join all buffered chunks into a single string, then split by newline
+  // to get an array of individual command lines.
+  var inputLines = inputBuffer.join('').split('\n');
+  // Pass the processed lines to our main input processing function.
+  processInput(inputLines);
+});

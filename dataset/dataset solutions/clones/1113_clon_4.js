@@ -1,53 +1,39 @@
-(function applicationLauncher() {
-  const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const inputData = fileContent.trim().split('\n');
-
-  const itemCount = Number(inputData.shift());
-  const collectionElements = inputData.shift().split(' ');
-
-  const totalElementCount = collectionElements.length;
-  const initialParentIndex = Math.floor(totalElementCount / 2) - 1;
-
-  const recursiveParentIterator = (dataList, currentPosition, totalSize, subTreeAdjuster) => {
-    if (currentPosition < 0) {
-      return;
-    }
-    subTreeAdjuster(dataList, currentPosition, totalSize);
-    recursiveParentIterator(dataList, currentPosition - 1, totalSize, subTreeAdjuster);
-  };
-
-  const organizeSubtree = (dataStore, rootIdentifier, dataLength) => {
-    const childOneIdentifier = 2 * rootIdentifier + 1;
-    const childTwoIdentifier = 2 * rootIdentifier + 2;
-    let dominantNodeIdentifier = rootIdentifier;
-
-    const rootNumericValue = Number(dataStore[rootIdentifier]);
-
-    if (childOneIdentifier < dataLength) {
-      const childOneNumericValue = Number(dataStore[childOneIdentifier]);
-      if (childOneNumericValue > rootNumericValue) {
-        dominantNodeIdentifier = childOneIdentifier;
-      }
-    }
-
-    if (childTwoIdentifier < dataLength) {
-      const childTwoNumericValue = Number(dataStore[childTwoIdentifier]);
-      if (childTwoNumericValue > Number(dataStore[dominantNodeIdentifier])) {
-        dominantNodeIdentifier = childTwoIdentifier;
-      }
-    }
-
-    if (dominantNodeIdentifier !== rootIdentifier) {
-      [dataStore[rootIdentifier], dataStore[dominantNodeIdentifier]] = [dataStore[dominantNodeIdentifier], dataStore[rootIdentifier]];
-      organizeSubtree(dataStore, dominantNodeIdentifier, dataLength);
-    }
-  };
-
-  recursiveParentIterator(collectionElements, initialParentIndex, totalElementCount, organizeSubtree);
-
-  let resultAccumulator = '';
-  for (let k = 0; k < collectionElements.length; k++) {
-    resultAccumulator += ' ' + collectionElements[k];
-  }
-  console.log(resultAccumulator);
+(function mainExecution() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCount = Number(inputLines.shift());
+  const dataElements = inputLines.shift().split(' ');
+  constructHeap(dataElements);
+  console.log(dataElements.reduce((accumulator, element) => accumulator += ' ' + element, ''));
 })();
+
+function constructHeap(collection) {
+  const currentHeapSize = collection.length;
+
+  const siftDown = (elementsArray, rootPosition, heapLimit) => {
+    let currentPosition = rootPosition;
+    while (true) {
+      const leftChildPosition = 2 * currentPosition + 1;
+      const rightChildPosition = 2 * currentPosition + 2;
+      let largestElementPosition = currentPosition;
+
+      if (leftChildPosition < heapLimit && Number(elementsArray[leftChildPosition]) > Number(elementsArray[largestElementPosition])) {
+        largestElementPosition = leftChildPosition;
+      }
+
+      if (rightChildPosition < heapLimit && Number(elementsArray[rightChildPosition]) > Number(elementsArray[largestElementPosition])) {
+        largestElementPosition = rightChildPosition;
+      }
+
+      if (largestElementPosition === currentPosition) {
+        break;
+      }
+
+      [elementsArray[currentPosition], elementsArray[largestElementPosition]] = [elementsArray[largestElementPosition], elementsArray[currentPosition]];
+      currentPosition = largestElementPosition;
+    }
+  };
+
+  for (let idx = Math.floor(currentHeapSize / 2 - 1); idx >= 0; idx--) {
+    siftDown(collection, idx, currentHeapSize);
+  }
+}

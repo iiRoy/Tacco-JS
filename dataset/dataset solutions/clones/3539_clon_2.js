@@ -1,49 +1,40 @@
-function processInputData(rawData) {
+function processInput(rawData) {
+  // Initialize a counter for the final result.
+  let resultCount = 0;
 
-	// Variable to store the number of entities whose requests can be fulfilled.
-	let satisfiedCount = 0;
+  // Extract the number of participants and available sweets from the first line of input.
+  const totalParticipants = rawData.split('\n')[0].split(' ')[0];
+  const availableSweets = rawData.split('\n')[0].split(' ')[1];
 
-	// Extract the number of participants from the first line of the input data.
-	const participantCount = rawData.split('\n')[0].split(' ')[0];
+  // Parse the individual sweet requests from the second line of input.
+  const participantRequests = rawData.split('\n')[1].split(' ');
 
-	// Determine the total available quantity of the item from the input.
-	const availableSupply = rawData.split('\n')[0].split(' ')[1];
+  // The strategy is to sort the requests and fulfill them until the total demand exceeds the supply.
 
-	// Parse the individual demand values from the second line of the input string.
-	let individualDemands = rawData.split('\n')[1].split(' ');
+  // Arrange the requests in ascending numerical order.
+  participantRequests.sort(function(valA, valB) {
+    return valA - valB;
+  });
 
-	// The following block sorts the requests to prioritize smaller demands first,
-	// which is a strategy to maximize the number of satisfied participants given a limited supply.
+  let currentSweetSum = 0; // Accumulator for the total sweets distributed.
 
-	// Sort the array of individual demands in ascending numeric order.
-	individualDemands.sort(function(firstVal, secondVal) {
-		return firstVal - secondVal;
-	});
+  // Iterate through the sorted requests.
+  for (let idx = 0; idx < totalParticipants; idx++) {
+    resultCount = idx; // Update the count of fulfilled requests.
+    currentSweetSum += parseInt(participantRequests[idx]); // Add the current request to the sum.
 
+    // Check if the accumulated demand has surpassed the available supply.
+    if (currentSweetSum > availableSweets) {
+      console.log(parseInt(resultCount)); // Output the number of people whose requests could be fully met.
+      return; // Exit the function early.
+    }
+  }
 
-	let currentDemandTotal = 0; // Accumulator for the total demand met so far.
-
-	// Iterate through each participant's demand, starting from the smallest request.
-	for (let idx = 0; idx < participantCount; idx++) {
-		satisfiedCount = idx; // Update the count of successfully processed participants.
-
-		// Add the current participant's demand to the running total of demands.
-		currentDemandTotal += Number.parseInt(individualDemands[idx]);
-
-		// Check if the accumulated demand has exceeded the available supply.
-		if (currentDemandTotal > availableSupply) {
-			console.log(Number.parseInt(satisfiedCount)); // Output the maximum number of satisfied entities.
-			return; // Exit the function as no more participants can be satisfied due to insufficient supply.
-		}
-
-	}
-
-	// If all participants' demands were met without exceeding the available supply,
-	// then the count should be the total number of participants.
-	satisfiedCount += 1;
-	console.log(satisfiedCount); // Display the final count of satisfied entities.
-
+  // If all requests could be met without exceeding the supply,
+  // then the count of people is simply the total number of participants.
+  resultCount += 1;
+  console.log(resultCount);
 }
 
-// Read the standard input from the file system and pass it to the processing function.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

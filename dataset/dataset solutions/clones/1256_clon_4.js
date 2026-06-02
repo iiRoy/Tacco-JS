@@ -1,46 +1,25 @@
-(() => {
+(function() {
     'use strict';
 
-    const ioManager = require('fs');
-    const rawDataStream = ioManager.readFileSync('/dev/stdin', 'utf-8');
+    const fs = require('fs');
+    const inputData = fs.readFileSync('/dev/stdin', 'utf-8');
 
-    const evaluateNumericSequence = (dataPayload) => {
-        const textSegments = dataPayload.trim().split('\n');
-        const firstLineValue = parseInt(textSegments[0].trim(), 10); // Parsed but not utilized, consistent with original
+    const processNumericSequence = (sourceContent) => {
+        const dataLines = sourceContent.trim().split("\n");
+        const elementCount = Number.parseInt(dataLines[0].trim());
 
-        const numberStringTokens = textSegments[1].trim().split(' ');
+        const stringNumbers = dataLines[1].trim().split(" ");
+        const numericValues = stringNumbers.map(Number.parseInt);
 
-        const initialStatistics = {
-            lowest: 1000000,
-            highest: -1000000,
-            aggregate: 0
-        };
-
-        const finalStatistics = numberStringTokens.reduce((accumulator, currentString) => {
-            const parsedNumericalValue = parseInt(currentString, 10);
-
-            if (isNaN(parsedNumericalValue)) {
-                // If any token parses to NaN, the total sum becomes NaN,
-                // matching the original's behavior where `sum += NaN` results in NaN.
-                accumulator.aggregate = NaN;
-            } else {
-                // Only add to aggregate if it hasn't become NaN yet
-                if (!isNaN(accumulator.aggregate)) {
-                    accumulator.aggregate += parsedNumericalValue;
-                }
-
-                if (parsedNumericalValue > accumulator.highest) {
-                    accumulator.highest = parsedNumericalValue;
-                }
-                if (parsedNumericalValue < accumulator.lowest) {
-                    accumulator.lowest = parsedNumericalValue;
-                }
-            }
+        const calculationResult = numericValues.reduce((accumulator, currentNumber) => {
+            accumulator.minVal = Math.min(accumulator.minVal, currentNumber);
+            accumulator.maxVal = Math.max(accumulator.maxVal, currentNumber);
+            accumulator.totalSum += currentNumber;
             return accumulator;
-        }, initialStatistics);
+        }, { minVal: Infinity, maxVal: -Infinity, totalSum: 0 });
 
-        console.log(`${finalStatistics.lowest} ${finalStatistics.highest} ${finalStatistics.aggregate}`);
+        console.log(`${calculationResult.minVal} ${calculationResult.maxVal} ${calculationResult.totalSum}`);
     };
 
-    evaluateNumericSequence(rawDataStream);
+    processNumericSequence(inputData);
 })();

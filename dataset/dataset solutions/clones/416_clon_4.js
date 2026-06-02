@@ -1,78 +1,158 @@
-const retrieveComplementaryShade = (firstShade, secondShade) => {
-  const availableShades = ['r', 'g', 'b'];
-  for (let s of availableShades) {
-    if (s !== firstShade && s !== secondShade) {
-      return s;
+const raw = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = raw.trim().split('\n');
+
+const baseColors = ['r', 'g', 'b'];
+
+function thirdColor(a, b) {
+  for (const color of baseColors) {
+    if (color !== a && color !== b) {
+      return color;
     }
   }
-  return null;
-};
+}
 
-const ascertainSuccessorPatterns = (currentPattern) => {
-  const subsequentPatterns = [];
-  const patternLength = currentPattern.length;
+function complete(state) {
+  for (let i = 1; i < state.length; i++) {
+    if (state[i] !== state[0]) {
+      return false;
+    }
+  }
+  return true;
+}
 
-  for (let i = 0; i < patternLength - 1; i++) {
-    const primary = currentPattern[i];
-    const secondary = currentPattern[i + 1];
+function forwardNeighbors(state) {
+  const out = [];
+  for (let i = 0; i + 1 < state.length; i++) {
+    const a = state[i];
+    const b = state[i + 1];
 
-    if (primary === secondary) {
+    if (a === b) {
       continue;
     }
 
-    const replacementShade = retrieveComplementaryShade(primary, secondary);
-    
-    let newPattern = '';
-    for (let k = 0; k < i; k++) {
-      newPattern += currentPattern[k];
-    }
-    newPattern += replacementShade;
-    newPattern += replacementShade;
-    for (let k = i + 2; k < patternLength; k++) {
-      newPattern += currentPattern[k];
-    }
-    subsequentPatterns.push(newPattern);
+    const c = thirdColor(a, b);
+    out.push(state.slice(0, i) + c + c + state.slice(i + 2));
   }
-  return subsequentPatterns;
-};
+  return out;
+}
 
-const chartTransformationPath = (initialPattern) => {
-  const visitedConfigurations = new Map();
-  const explorationQueue = [];
+function reverseNeighbors(state, alphabet) {
+  const out = [];
 
-  visitedConfigurations.set(initialPattern, 0);
-  explorationQueue.push(initialPattern);
+  for (let i = 0; i + 1 < state.length; i++) {
+    const current = state[i];
 
-  let finalTransformationCount = -1;
-
-  while (explorationQueue.length > 0) {
-    const currentPattern = explorationQueue.shift();
-    const currentLevel = visitedConfigurations.get(currentPattern);
-
-    const nextPatterns = ascertainSuccessorPatterns(currentPattern);
-
-    if (nextPatterns.length === 0) {
-      finalTransformationCount = currentLevel;
-      break;
+    if (current !== state[i + 1]) {
+      continue;
     }
 
-    for (const nextP of nextPatterns) {
-      if (!visitedConfigurations.has(nextP)) {
-        visitedConfigurations.set(nextP, currentLevel + 1);
-        explorationQueue.push(nextP);
+    for (const a of alphabet) {
+      for (const b of alphabet) {
+        if (a === b) {
+          continue;
+        }
+        if (thirdColor(a, b) !== current) {
+          continue;
+        }
+        out.push(state.slice(0, i) + a + b + state.slice(i + 2));
       }
     }
   }
-  return finalTransformationCount;
-};
 
-const rawDataAcquisition = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLineItems = rawDataAcquisition.trim().split('\n');
+  return out;
+}
 
-processedLineItems.forEach(lineEntry => {
-  if (lineEntry === '0') {
-    return;
+function shortestDistance(start) {
+  if (complete(start)) {
+    return 0;
   }
-  const resultLevel = chartTransformationPath(lineEntry);
-  console.log(resultLevel !== -1 ? resultLevel : 'NA');
-});
+
+  const alphabet = [];
+  const seenChar = new Set();
+
+  for (const ch of start) {
+    if (!seenChar.has(ch)) {
+      seenChar.add(ch);
+      alphabet.push(ch);
+    }
+  }
+  for (const ch of baseColors) {
+    if (!seenChar.has(ch)) {
+      seenChar.add(ch);
+      alphabet.push(ch);
+    }
+  }
+
+  const frontDistance = new Map([[start, 0]]);
+  let front = new Set([start]);
+
+  const backDistance = new Map();
+  let back = new Set();
+
+  for (const ch of alphabet) {
+    const terminal = ch.repeat(start.length);
+    if (!backDistance.has(terminal)) {
+      backDistance.set(terminal, 0);
+      back.add(terminal);
+    }
+  }
+
+  while (front.size > 0 && back.size > 0) {
+    if (front.size <= back.size) {
+      const nextFront = new Set();
+
+      for (const state of front) {
+        const baseDepth = frontDistance.get(state);
+
+        for (const next of forwardNeighbors(state)) {
+          if (frontDistance.has(next)) {
+            continue;
+          }
+
+          const depth = baseDepth + 1;
+          if (backDistance.has(next)) {
+            return depth + backDistance.get(next);
+          }
+
+          frontDistance.set(next, depth);
+          nextFront.add(next);
+        }
+      }
+
+      front = nextFront;
+    } else {
+      const nextBack = new Set();
+
+      for (const state of back) {
+        const baseDepth = backDistance.get(state);
+
+        for (const previous of reverseNeighbors(state, alphabet)) {
+          if (backDistance.has(previous)) {
+            continue;
+          }
+
+          const depth = baseDepth + 1;
+          if (frontDistance.has(previous)) {
+            return depth + frontDistance.get(previous);
+          }
+
+          backDistance.set(previous, depth);
+          nextBack.add(previous);
+        }
+      }
+
+      back = nextBack;
+    }
+  }
+
+  return -1;
+}
+
+for (const line of lines) {
+  if (line === '0') {
+    continue;
+  }
+
+  const answer = shortestDistance(line);
+  console.log(answer < 0 ? 'NA' : answer);
+}

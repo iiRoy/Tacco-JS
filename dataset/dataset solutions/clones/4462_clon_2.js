@@ -1,95 +1,82 @@
-const dataStream = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const iterator = {
-  // Collection of input lines to be processed.
-  "collection" : dataStream,
-  // Current position within the input collection.
-  "position"   : 0,
-  // Upper boundary for iteration, representing total lines.
-  "limit"      : dataStream.length,
+var dataStream = {
+  "contentList": rawData,
+  "currentIdx": 0,
+  "maxElements": rawData.length,
 
-  // Method to determine if there are more elements available for retrieval.
-  "canAdvance" : function() {
-    return (this.position < this.limit);
+  // Checks if there are more elements available in the stream.
+  "hasMore": function() {
+    return (this.currentIdx < this.maxElements);
   },
 
-  // Method to retrieve the next element from the collection.
-  "retrieve" : function() {
-    // If no further elements exist, raise an error.
-    if (!this.canAdvance()) {
-      throw "IterationError: No more elements available.";
+  // Retrieves the next element from the stream.
+  "retrieveNext": function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    // Fetch the current element and advance the position.
-    let currentItem = this.collection[this.position];
-    this.position++;
-    return currentItem;
+    var elementValue = this.contentList[this.currentIdx];
+    this.currentIdx++;
+    return elementValue;
   }
 };
 
-// Initiate the primary execution logic of the application.
 ExecuteProgram();
 
-// Retrieves the subsequent item from the input iterator.
-function fetchNext() {
-  return iterator.retrieve();
+// Fetches the next raw string item from the input stream.
+function getNextItem() {
+  return dataStream.retrieveNext();
 }
 
-// Fetches the next input item and processes it into an integer.
-function fetchInteger() {
-  return dataConverter(fetchNext(), 1);
+// Fetches the next item and converts it to an integer.
+function getNextInteger() {
+  return dataConverter(getNextItem(), 1);
 }
 
-// Fetches the next input item and divides it into an array of strings using space as delimiter.
-function fetchStringArray() {
-  return dataConverter(fetchNext(), 2); // Splits by single space
+// Fetches the next item and splits it into a string array by spaces.
+function getNextStringArray() {
+  return dataConverter(getNextItem(), 2);
 }
 
-// Fetches the next input item, divides it by spaces, and converts each segment to a number.
-function fetchIntegerArray() {
-  return dataConverter(fetchNext(), 4); // Splits by space, then converts to numeric values
+// Fetches the next item, splits it by spaces, and converts elements to numbers.
+function getNextIntegerArray() {
+  return dataConverter(getNextItem(), 4);
 }
 
-// Fetches the next input item and separates it into an array of individual characters.
-function fetchCharacterList() {
-  return dataConverter(fetchNext(), 6); // Divides string into characters
+// Fetches the next item and splits it into a character array.
+function getNextCharacterArray() {
+  return dataConverter(getNextItem(), 6);
 }
 
-// Checks if additional elements are present in the input iterator.
-function hasMoreElements() {
-  return iterator.canAdvance();
+// Checks if there are more items in the input stream.
+function checkHasNext() {
+  return dataStream.hasMore();
 }
 
-// Outputs a given value to the standard console information stream.
-function displayOutput(outputValue) {
-  console.log(outputValue);
+// Prints the given text to standard output.
+function printOutput(textToPrint) {
+  console.log(textToPrint);
 }
 
-// Outputs a given value to the standard console error stream for warnings.
-function displayError(errorMessage) {
+// Prints the given error message to standard error output.
+function printError(errorMessage) {
   console.error(errorMessage);
 }
 
-/*
- * Comprehensive utility function for diverse data transformations.
- *
- * This function provides various modes for converting or manipulating data based on a specified type.
- *
- * Parameters:
- *   inputValue (any): The data input requiring conversion or processing.
- *   conversionType (number): A numeric code indicating the desired operation.
- *
- * Conversion Modes:
- *   - Default (any other value): Returns the inputValue without any modification.
- *   - 1: Transforms the inputValue into an integer.
- *   - 2: Splits the inputValue (expected as a string) by single spaces, yielding an array of strings.
- *   - 4: Splits the inputValue (string) by spaces, then applies Number() to each part, returning an array of numbers.
- *   - 6: Divides the inputValue (string) into an array where each character is a separate element.
- *   - 7: Divides the inputValue (string) into individual characters, then converts each character to a number, returning an array of numbers.
- *   - 8: Concatenates an array of strings using a single space as a separator.
- *   - 9: Concatenates an array of strings using a newline character as a separator.
- *   - 0: Concatenates an array of strings without any separator.
- *
- * Returns: The result of the transformation, or the original inputValue if an exception occurs during processing.
+/**
+ * A utility function for various data type conversions.
+ * @param {string|Array} inputValue - The input data to be converted.
+ * @param {number} conversionType - Specifies the type of conversion.
+ *   - 1: Converts input to an integer.
+ *   - 2: Splits input string by half-width spaces into a string array.
+ *   - 4: Splits input string by half-width spaces and maps to an array of numbers.
+ *   - 6: Splits input string into an array of individual characters.
+ *   - 7: Splits input string into characters and maps to an array of numbers.
+ *   - 8: Joins array elements with a single half-width space.
+ *   - 9: Joins array elements with a newline character.
+ *   - 0: Joins array elements without any separator.
+ *   - Default: Returns the input value unchanged.
+ * @returns {any} The converted value or the original input if conversion fails or type is unknown.
  */
 function dataConverter(inputValue, conversionType) {
   try {
@@ -99,11 +86,11 @@ function dataConverter(inputValue, conversionType) {
       case 2:
         return inputValue.split(" ");
       case 4:
-        return inputValue.split(" ").map((element) => Number(element));
+        return inputValue.split(" ").map((item) => Number(item));
       case 6:
         return inputValue.split("");
       case 7:
-        return inputValue.split("").map((singleChar) => Number(singleChar));
+        return inputValue.split("").map((item) => Number(item));
       case 8:
         return inputValue.join(" ");
       case 9:
@@ -113,50 +100,46 @@ function dataConverter(inputValue, conversionType) {
       default:
         return inputValue;
     }
-  } catch (exceptionDetails) {
+  } catch (error) {
+    // In case of any conversion error, return the original input.
     return inputValue;
   }
 }
 
-// The core function encapsulating the main algorithm of the program.
 function ExecuteProgram() {
+  var firstLineData = getNextIntegerArray();
+  var nodeCount = firstLineData[0];
+  var edgeCount = firstLineData[1];
 
-  const initialParameters = fetchIntegerArray();
-  const targetNodeValue = initialParameters[0]; // Represents N
-  const numberOfEdges = initialParameters[1];   // Represents M
+  var pathsFromStart = new Set(); // Stores nodes reachable from node 1
+  var pathsToEnd = new Set();     // Stores nodes that can reach node N
 
-  const pathsStartingFromOne = new Set(); // Collects nodes directly reachable from node 1.
-  const pathsEndingAtN = new Set();       // Collects nodes that directly lead to node N.
-
-  // Process each edge from the input.
-  for (let edgeCounter = 0; edgeCounter < numberOfEdges; edgeCounter++) {
-    const currentEdgeData = fetchIntegerArray();
-    // If an edge originates from node 1, record its destination.
-    if (currentEdgeData[0] === 1) {
-      pathsStartingFromOne.add(currentEdgeData[1]);
+  for (var loopCounter = 0; loopCounter < edgeCount; loopCounter++) {
+    var currentEdge = getNextIntegerArray();
+    // Check if the edge starts from node 1
+    if (currentEdge[0] === 1) {
+      pathsFromStart.add(currentEdge[1]);
     }
-    // If an edge terminates at node N, record its source.
-    if (currentEdgeData[1] === targetNodeValue) {
-      pathsEndingAtN.add(currentEdgeData[0]);
+    // Check if the edge ends at node N
+    if (currentEdge[1] === nodeCount) {
+      pathsToEnd.add(currentEdge[0]);
     }
   }
 
-  // Debugging output for the collected sets.
-  displayError(pathsStartingFromOne);
-  displayError(pathsEndingAtN);
+  printError(pathsFromStart);
+  printError(pathsToEnd);
 
-  // Convert the set of nodes leading to N into an array for sequential checking.
-  const endingPathsList = Array.from(pathsEndingAtN);
+  var endPathNodes = Array.from(pathsToEnd);
 
-  // Iterate through the nodes that lead to N.
-  for (let edgeCounter = 0; edgeCounter < endingPathsList.length; edgeCounter++) {
-    // Check if any node that leads to N is also reachable from node 1.
-    if (pathsStartingFromOne.has(endingPathsList[edgeCounter])) {
-      displayOutput("VERIFIED"); // A connecting path exists.
-      return; // Terminate execution as a path has been found.
+  // Iterate through nodes that can reach N
+  for (var idx = 0; idx < endPathNodes.length; idx++) {
+    // If a node that can reach N is also reachable from 1, then a path exists.
+    if (pathsFromStart.has(endPathNodes[idx])) {
+      printOutput("POSSIBLE");
+      return;
     }
   }
 
-  displayOutput("UNVERIFIED"); // No connecting path found after checking all possibilities.
-
+  // If no such intermediate node is found, a path is impossible.
+  printOutput("IMPOSSIBLE");
 }

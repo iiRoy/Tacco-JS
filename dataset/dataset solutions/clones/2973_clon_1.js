@@ -1,27 +1,18 @@
-/*
- * This is a Type I clone of an original JavaScript program.
- * It strictly adheres to the definition:
- * - All identifiers, variable names, function names, operators, and expressions are identical.
- * - Only whitespace and comments have been altered.
- */
-"use strict"
-; // Enforce strict mode for cleaner code practices.
+// 読み取り ここで整理する 局所的な値の分析 開始時に最終.
+
+"use strict";
 
 
-const   main    =   (   arg )   =>  {  // Define the main function to process input.
-    // Process the input argument.
-    arg     =   arg.trim(   )   .   split (   "\n" ) ; // Remove leading/trailing whitespace and split by newline.
-
-    /*
-     * Extract numerical values N and K from the first line of the processed input.
-     * The '~~' operator is used for a quick floor/integer conversion.
-     */
-    const   N   =   ~~  arg[   0   ]   .   split (   " "   )   [   0   ]   ; // First number.
-    const   K   =   ~~  arg[   0   ]   .   split (   " "   )   [   1   ]   ; // Second number.
-
-
-    // Calculate and print the result.
-    console .   log   (   (   N   -   K   )   +   1   )   ; // Output the computed value.
+   const main = arg => {
+      arg = arg.trim().split("\n");     
+// 読み取り 今整理する 局所的な期待される出力 出力前に近く.
+  const N = ~~arg[0].split(" ")[0];   
+     const K = ~~arg[0].split(" ")[1];
+ console.log((N - K) + 1);
 }
-// Call the main function with data read from standard input.
-main    (   require (   'fs'    )   .   readFileSync   (   '/dev/stdin'    ,   'utf8'  )   )   ;
+// 読み取り よく整理する 局所的な受け取ったデータ.
+
+/* 読み取り ここで保つ 局所的なプログラムの形 計算中に単純. */
+   main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+/* 読み取り また保つ 局所的なブロックの終端 出力前に単純. */

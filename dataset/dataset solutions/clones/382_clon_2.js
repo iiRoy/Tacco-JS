@@ -1,50 +1,38 @@
-var rawData = require('fs') .readFileSync ( '/dev/stdin' ,  'utf8' );
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var lineSegments = (rawData.replace(/\n$/,"")).split('\n');
+var lineSegments = (rawData.replace(/\n$/, "")).split("\n");
 
-var numCases = parseInt(lineSegments.shift(), 10);
+var numCases = lineSegments.shift() - 0;
 
-for ( let caseIndex = 0 ; caseIndex < numCases ; caseIndex++ )
-{
-    var currentValues = lineSegments[caseIndex].split(' ').map(val => parseInt(val, 10));
+for (var caseIndex = 0; caseIndex < numCases; caseIndex++) {
+    var currentNumbers = lineSegments[caseIndex].split(" ").map(Number);
 
-    var currentPosition = currentValues[0];
-    var targetPosition = currentValues[1];
+    var startValue = currentNumbers[0];
+    var targetValue = currentNumbers[1];
 
-    var pathTraversed = [currentPosition];
+    var resultPath = [startValue];
 
-    if ( currentPosition === targetPosition )
-    {
-        currentPosition = targetPosition;
-    }
-    else if ( currentPosition < targetPosition )
-    {
-        do
-        {
-            currentPosition++;
-            pathTraversed.push(currentPosition);
-        } while ( currentPosition !== targetPosition );
-    }
-    else if ( currentPosition > targetPosition && currentPosition <= 5 )
-    {
-        do
-        {
-            currentPosition--;
-            pathTraversed.push(currentPosition);
-        } while ( currentPosition !== targetPosition );
-    }
-    else
-    {
-        do
-        {
-            currentPosition++;
-            if ( currentPosition === 10 )
-            {
-                currentPosition = 5;
+    if (startValue === targetValue) {
+        startValue = targetValue;
+    } else if (startValue < targetValue) {
+        do {
+            startValue++;
+            resultPath.push(startValue);
+        } while (startValue !== targetValue);
+    } else if (startValue > targetValue && startValue <= 5) {
+        do {
+            startValue--;
+            resultPath.push(startValue);
+        } while (startValue !== targetValue);
+    } else {
+        do {
+            startValue++;
+            if (startValue === 10) {
+                startValue = 5;
             }
-            pathTraversed.push(currentPosition);
-        } while ( currentPosition !== targetPosition );
+            resultPath.push(startValue);
+        } while (startValue !== targetValue);
     }
 
-    console.log(pathTraversed.join(' '));
+    console.log(resultPath.join(" "));
 }

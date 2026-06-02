@@ -1,52 +1,40 @@
-const someInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dimensionValues = rawData.trim().split("\n").map(Number);
 
-const numericalInputs = [];
+for (let loopIndex = 0; loopIndex < dimensionValues.length; loopIndex++) {
+    const currentDimension = dimensionValues[loopIndex];
+    const maximumValue = currentDimension * currentDimension + 1;
 
-someInterface.on('line', (lineContent) => {
-    numericalInputs.push(Number(lineContent.trim()));
-});
+    if (currentDimension === 0) break;
 
-someInterface.on('close', () => {
-    numericalInputs.forEach( (gridDimension) => {
-        if (gridDimension === 0) {
-            return;
-        }
+    const gridMatrix = Array.from({ length: currentDimension }, () => Array(currentDimension).fill(-1));
 
-        const gridStructure = Array.from({ length: gridDimension }, () => Array(gridDimension).fill(-1));
+    let valueToPlace = 1;
+    let activeRow = Math.floor(currentDimension / 2) + 1;
+    let activeCol = Math.floor(currentDimension / 2);
 
-        let currentNumericalValue = 1;
-        let lastSuccessfulRow = Math.floor(gridDimension / 2) + 1;
-        let lastSuccessfulCol = Math.floor(gridDimension / 2);
+    activeRow = (activeRow + currentDimension) % currentDimension;
+    activeCol = (activeCol + currentDimension) % currentDimension;
 
-        lastSuccessfulRow = (lastSuccessfulRow % gridDimension + gridDimension) % gridDimension;
-        lastSuccessfulCol = (lastSuccessfulCol % gridDimension + gridDimension) % gridDimension;
-        
-        gridStructure[lastSuccessfulRow][lastSuccessfulCol] = currentNumericalValue;
-        currentNumericalValue++;
+    gridMatrix[activeRow][activeCol] = valueToPlace;
+    valueToPlace++;
 
-        let nextProposedRow = lastSuccessfulRow + 1;
-        let nextProposedCol = lastSuccessfulCol + 1;
+    while (valueToPlace < maximumValue) {
+        const potentialNextRow = (activeRow + 1 + currentDimension) % currentDimension;
+        const potentialNextCol = (activeCol + 1 + currentDimension) % currentDimension;
 
-        while (currentNumericalValue <= gridDimension * gridDimension) {
-            nextProposedRow = (nextProposedRow % gridDimension + gridDimension) % gridDimension;
-            nextProposedCol = (nextProposedCol % gridDimension + gridDimension) % gridDimension;
+        const [nextPositionRow, nextPositionCol] = (
+            gridMatrix[potentialNextRow][potentialNextCol] !== -1
+                ? [(activeRow + 1 + currentDimension) % currentDimension, (activeCol - 1 + currentDimension) % currentDimension]
+                : [potentialNextRow, potentialNextCol]
+        );
 
-            if (gridStructure[nextProposedRow][nextProposedCol] !== -1) {
-                nextProposedRow = nextProposedRow + 1;
-                nextProposedCol = nextProposedCol - 1;
-            } else {
-                gridStructure[nextProposedRow][nextProposedCol] = currentNumericalValue;
-                currentNumericalValue++;
-                nextProposedRow = nextProposedRow + 1;
-                nextProposedCol = nextProposedCol + 1;
-            }
-        }
-        
-        const generatedLines = gridStructure.map(line => line.join(" "));
-        console.log(generatedLines.join("\n"));
-    });
-});
+        activeRow = nextPositionRow;
+        activeCol = nextPositionCol;
+
+        gridMatrix[activeRow][activeCol] = valueToPlace;
+        valueToPlace++;
+    }
+
+    console.log(gridMatrix.map(rowContent => rowContent.join(" ")).join("\n"));
+}

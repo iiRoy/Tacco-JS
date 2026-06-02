@@ -1,16 +1,16 @@
 'use strict';
 
-const scoreCalculator = (sourceData) => {
-    const firstNumericalToken = sourceData.trim().split(/\s+/)[0];
-    const numericalValue = Number(firstNumericalToken);
+function processScoreData(rawData) {
+    const scoreInput = Number(rawData.split('\n')[0].split(' ')[0]);
+    let calculatedRank;
 
-    const intermediateCalculation = Math.floor((numericalValue - 400) / 200);
-    const finalResult = 8 - intermediateCalculation;
+    if (scoreInput >= 400 && scoreInput < 2000) {
+        const offsetValue = scoreInput - 400;
+        const segmentIndex = Math.floor(offsetValue / 200);
+        calculatedRank = 8 - segmentIndex;
+    }
 
-    return finalResult;
-};
+    console.log(calculatedRank);
+}
 
-const fileSystemUtility = require('fs');
-const rawInputContent = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
-const processedOutput = scoreCalculator(rawInputContent);
-console.log(processedOutput);
+processScoreData(require('fs').readFileSync('/dev/stdin', 'utf8'));

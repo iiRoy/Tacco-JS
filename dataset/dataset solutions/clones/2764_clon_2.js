@@ -1,65 +1,69 @@
-"use strict"
+"use strict"; // Enforce strict parsing and error handling in the script.
 
-// This script calculates the number of pairs of vectors
-// whose Euclidean distance is an integer.
+/**
+ * Main function to process input data and calculate the number of pairs of points
+ * with integer Euclidean distances.
+ * @param {string} inputData - The raw input string from stdin.
+ */
+const processInput = (inputData) => {
+    // Clean and split the input string into an array of lines.
+    inputData = inputData.trim().split("\n");
 
-const processCoordinates = inputDataString => {
-  // Normalize the input string by trimming whitespace and splitting into individual lines.
-  let processedLines = inputDataString.trim().split("\n");
+    // Parse the first line to get the number of points (numPoints) and dimensions (dimensions).
+    const firstLineParts = inputData[0].split(" ");
+    const numPoints = parseInt(firstLineParts[0], 10); // Total number of data points.
+    const dimensions = parseInt(firstLineParts[1], 10); // Number of dimensions for each point.
 
-  // Extract the number of vectors (N) and the number of dimensions (D) from the first line.
-  const numberOfVectors = Number(processedLines[0].split(" ")[0]);
-  const dimensions = Number(processedLines[0].split(" ")[1]);
+    // Extract the coordinate strings for each point, skipping the first line.
+    const coordinateStrings = inputData.slice(1, numPoints + 1);
+    let integerDistanceCount = 0; // Counter for pairs with integer distances.
 
-  // Isolate the actual coordinate sets from the input, skipping the first line.
-  const coordinateSets = processedLines.slice(1, numberOfVectors + 1);
-  // Initialize a counter for pairs with integer Euclidean distances.
-  let integerDistanceCount = 0;
+    // Iterate through each point (point A) to compare with subsequent points.
+    for (let idxA in coordinateStrings) {
+        // Convert the current point's coordinate string into an array of integers.
+        const currentPointCoordsStr = coordinateStrings[idxA].split(" ").map(coordStr => parseInt(coordStr, 10));
+        let currentPointCoordinates = []; // Array to hold numeric coordinates for point A.
 
-  // Iterate through each vector to use as the first point in a pair.
-  // The 'for...in' loop is used to iterate over array indices.
-  for (let currentVectorIndex in coordinateSets) {
-    // Parse the string coordinates of the current vector into an array of numbers.
-    let currentVectorStrings = coordinateSets[currentVectorIndex].split(" ").map(coordString => Number(coordString));
-    let currentVectorCoords = []; // Array to store numeric coordinates for the current vector.
+        // Populate the currentPointCoordinates array.
+        for (let coordIndexA in currentPointCoordsStr) {
+            currentPointCoordinates.push(currentPointCoordsStr[coordIndexA]);
+        }
 
-    // Populate the currentVectorCoords array.
-    for (let coordComponentIndex in currentVectorStrings) {
-      currentVectorCoords.push(currentVectorStrings[coordComponentIndex]);
+        // Iterate through subsequent points (point B) to avoid duplicate pairs and self-comparison.
+        // Start from idxA + 1 to ensure each pair is checked only once.
+        for (let idxB = parseInt(idxA, 10) + 1; idxB < numPoints; idxB++) {
+            // Convert the next point's coordinate string into an array of integers.
+            const nextPointCoordsStr = coordinateStrings[idxB].split(" ").map(coordStr => parseInt(coordStr, 10));
+            let nextPointCoordinates = []; // Array to hold numeric coordinates for point B.
+
+            // Populate the nextPointCoordinates array.
+            for (let coordIndexB in nextPointCoordsStr) {
+                nextPointCoordinates.push(nextPointCoordsStr[coordIndexB]);
+            }
+
+            let squaredDistanceSum = 0; // Accumulator for the sum of squared differences.
+
+            // Calculate the squared Euclidean distance between currentPointCoordinates and nextPointCoordinates.
+            // The original code includes Math.abs, which is preserved here for strict Type II cloning.
+            for (let coordIdx = 0; coordIdx < dimensions; coordIdx++) { // Loop through each dimension.
+                const diff = currentPointCoordinates[coordIdx] - nextPointCoordinates[coordIdx];
+                squaredDistanceSum += Math.abs(Math.pow(diff, 2));
+            }
+
+            // Calculate the actual Euclidean distance by taking the square root.
+            const euclideanDistance = Math.sqrt(squaredDistanceSum);
+
+            // Check if the calculated Euclidean distance is an integer.
+            // A number % 1 === 0 is a common way to check for integers in JavaScript.
+            if (euclideanDistance % 1 === 0) {
+                integerDistanceCount++; // Increment the counter if it's an integer distance.
+            }
+        }
     }
 
-    // Iterate through subsequent vectors to form pairs with the current vector.
-    // This avoids duplicate pairs and comparing a vector with itself.
-    for (let comparisonVectorIndex = Number(currentVectorIndex) + 1; comparisonVectorIndex < numberOfVectors; comparisonVectorIndex++) {
-      // Parse the string coordinates of the comparison vector into an array of numbers.
-      let comparisonVectorStrings = coordinateSets[comparisonVectorIndex].split(" ").map(coordString => Number(coordString));
-      let comparisonVectorCoords = []; // Array to store numeric coordinates for the comparison vector.
-
-      // Populate the comparisonVectorCoords array.
-      for (let componentIndex in comparisonVectorStrings) {
-        comparisonVectorCoords.push(comparisonVectorStrings[componentIndex]);
-      }
-
-      let euclideanDistanceSquaredSum = 0; // Accumulator for the sum of squared differences.
-
-      // Calculate the sum of squared differences for each dimension.
-      for (let dimIndex in comparisonVectorCoords) {
-        euclideanDistanceSquaredSum += Math.abs(Math.pow(currentVectorCoords[dimIndex] - comparisonVectorCoords[dimIndex], 2));
-      }
-
-      // Calculate the final Euclidean distance by taking the square root.
-      let finalEuclideanDistance = Math.sqrt(euclideanDistanceSquaredSum);
-
-      // Check if the calculated distance is an integer (i.e., has no fractional part).
-      if (0 === finalEuclideanDistance % 1) {
-        integerDistanceCount++; // Increment the counter if it's an integer.
-      }
-    }
-  }
-
-  // Output the total count of pairs with integer Euclidean distances.
-  console.log(integerDistanceCount);
+    // Output the final count of pairs with integer distances to the console.
+    console.log(integerDistanceCount);
 };
 
-// Read input from standard input, decode as UTF-8, and pass to the main processing function.
-processCoordinates(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

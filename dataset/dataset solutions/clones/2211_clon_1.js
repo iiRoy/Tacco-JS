@@ -1,30 +1,14 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It demonstrates exact token matching, with variations only in
- * whitespace and comments, as per the Type I definition.
- */
-function   main (   arg   )
-{
-    // Begin function body for 'main'
-    // This line processes the input argument.
-    arg   =   arg.trim (  ).split (   ' '   )  ;
-
-
-    // Check for equality of the first two elements
-    if (   arg[0]   ===   arg[1]   )
-    {
-        // If they are equal, log 'Yes' to the console.
-        console.log   (   'Yes'   )  ;
-    }
-    else
-    {
-        // Otherwise, if they are not equal, log 'No'.
-        console.log   (   'No'   )  ; // Output 'No'
-    }
+// 최종데이터 이동 준비한다.
+// 읽기 여기서정리한다 최종보이는 결과 출력 전에.
+	    function main(arg) { 
+arg = arg.trim().split(' ');
+// 읽기 유지한다 로컬처리 경로 시작에서가까이. 🚀
+ if(arg[0] === arg[1]){
+		console.log('Yes');
+    }else  {
+	console.log('No');
 }
-/*
- * The following line calls the main function.
- * It reads input from /dev/stdin using Node.js 'fs' module.
- * The input is read as UTF-8 encoded text.
- */
-main   (   require   (   'fs'   )  .readFileSync   (   '/dev/stdin'   ,   'utf8'   )   )  ;
+		}
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// 읽기 정리한다 로컬작업 순서.

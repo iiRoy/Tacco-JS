@@ -1,36 +1,55 @@
 function ProcessInput(rawData) {
-    rawData = rawData.trim();
-    let arrayLength = parseInt(rawData.split("\n")[0], 10);
-    let numberArray = rawData.split("\n")[1].split(" ").map((elementValue) => Number(elementValue));
-    let resultString = "Yes";
+  // Trim any leading or trailing whitespace from the raw input string
+  rawData = rawData.trim();
 
-    // Counter for numbers perfectly divisible by four.
-    let multiplesOfFourCount = 0;
-    // Counter for numbers divisible by two but not by four.
-    let multiplesOfTwoOnlyCount = 0;
+  // Extract the array length from the first line of the input
+  var arrayLength = parseInt(rawData.split("\n")[0]);
 
-    for (let idx = 0; idx < numberArray.length; idx++) {
-        const currentValue = numberArray[idx];
-        if (currentValue % 2 === 0 && currentValue % 4 !== 0) {
-            multiplesOfTwoOnlyCount++;
-        } else if (currentValue % 4 === 0) {
-            multiplesOfFourCount++;
-        }
+  // Parse the second line into an array of numbers
+  var numberSequence = rawData.split("\n")[1].split(" ").map((item) => Number(item));
+
+  // Initialize the string that will be printed as the final result
+  var resultString = "Yes";
+
+  // Counters for specific types of numbers in the sequence
+  var multiplesOfFour = 0; // Stores the count of numbers divisible by 4
+  var multiplesOfTwoOnly = 0; // Stores the count of numbers divisible by 2 but not by 4
+
+  // Iterate through each element in the number sequence
+  for (var idx = 0; idx < numberSequence.length; idx++) {
+    // Check if the current number is a multiple of 2 but not a multiple of 4
+    if (numberSequence[idx] % 2 == 0 && numberSequence[idx] % 4 != 0) {
+      multiplesOfTwoOnly++; // Increment the counter for '2-only' multiples
     }
-
-    // Logic to determine if the condition holds.
-    // Check if the count of numbers divisible by four is sufficient.
-    const requiredPairs = Math.floor(arrayLength / 2);
-    if (requiredPairs > multiplesOfFourCount) {
-        // If not enough fours, calculate the shortage.
-        let deficitCount = requiredPairs - multiplesOfFourCount;
-        // Two-multiples can substitute for four-multiples at a 2:1 ratio.
-        if (deficitCount * 2 > multiplesOfTwoOnlyCount) {
-            resultString = "No"; // Insufficient numbers to meet the condition.
-        }
+    // Otherwise, check if the current number is a multiple of 4
+    else if (numberSequence[idx] % 4 == 0) {
+      multiplesOfFour++; // Increment the counter for multiples of 4
     }
+  }
 
-    console.log(resultString);
+  // The problem logic involves checking if a certain condition related to
+  // multiples of 2 and 4 is met for the given array length.
+  // We need at least Math.floor(arrayLength / 2) "strong" elements (multiples of 4).
+  if (Math.floor(arrayLength / 2) > multiplesOfFour) {
+    // If there aren't enough multiples of 4, calculate how many more are needed
+    var neededFourMultiples = Math.floor(arrayLength / 2) - multiplesOfFour;
+
+    // Each '2-only' multiple can effectively cover half of a 'strong' element requirement.
+    // So, 'neededFourMultiples' strong elements would require 'neededFourMultiples * 2' '2-only' multiples.
+    if (neededFourMultiples * 2 > multiplesOfTwoOnly) {
+      resultString = "No"; // If not enough '2-only' multiples to compensate, the condition is not met
+    }
+    // else {
+    //   // If there are enough '2-only' multiples to compensate, the result remains "Yes".
+    // }
+  }
+  // else {
+  //   // If there are already enough or more multiples of 4, the condition is met, and the result remains "Yes".
+  // }
+
+  // Print the final determined result to the console
+  console.log(resultString);
 }
 
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

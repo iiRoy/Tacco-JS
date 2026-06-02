@@ -1,34 +1,36 @@
-function ProcessInputData ( dataSource )
-{
-  const   charSequence  =   dataSource . toString ( ) . split ( '' ) ;
-  const   finalChar     =   charSequence [ charSequence . length - 1 ] ;
-  let     outputValue   =   '' ;
-
+function ProcessInput(rawData) {
+  // Convert the raw input data into an array of individual characters.
+  const charArray = rawData.toString().split('');
+  
+  // Determine the last character from the array.
+  const finalDigit = charArray[charArray.length - 1];
+  
+  // Declare a variable to hold the resulting string, initialized as empty.
+  let resultString = '';
+  
+  // Check the value of the last character to assign the appropriate string.
   if (
-    finalChar === "2" ||
-    finalChar === "4" ||
-    finalChar === "5" ||
-    finalChar === "7" ||
-    finalChar === "9"
-  )
-  {
-    outputValue = "firstOutcome" ;
+    finalDigit === "2" ||
+    finalDigit === "4" ||
+    finalDigit === "5" ||
+    finalDigit === "7" ||
+    finalDigit === "9"
+  ) {
+    resultString = "hon"; // Assign "hon" for specific digits.
+  } else if (
+    finalDigit === "0" ||
+    finalDigit === "1" ||
+    finalDigit === "6" ||
+    finalDigit === "8"
+  ) {
+    resultString = "pon"; // Assign "pon" for another set of digits.
+  } else {
+    resultString = "bon"; // Assign "bon" for all other cases.
   }
-  else if (
-    finalChar === "0" ||
-    finalChar === "1" ||
-    finalChar === "6" ||
-    finalChar === "8"
-  )
-  {
-    outputValue = "secondOutcome" ;
-  }
-  else
-  {
-    outputValue = "thirdOutcome" ;
-  }
-
-  console . log ( outputValue ) ;
+  
+  // Output the final determined string to the console.
+  console.log(resultString);
 }
 
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

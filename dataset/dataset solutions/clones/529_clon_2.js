@@ -1,182 +1,188 @@
-/* This main program orchestrates the processing of graph constraints
- * to find a specific path distance. */
 function executeProgram() {
-    // Read the total number of nodes in the graph.
-    var nodeCount = retrieveInput();
-    // Read the total number of constraints or edges.
-    var constraintCount = retrieveInput();
+    // Read the number of nodes (nodeCount) and the number of constraints (edgeCount) from input.
+    let nodeCount = readInput();
+    let edgeCount = readInput();
 
-    // Initialize an array to store fixed directed edges.
-    var fixedConstraints = [];
-    // Initialize an array to store pairs of alternative directed edges.
-    var alternativeConstraints = [];
+    // Initialize arrays to store different types of graph edges (constraints).
+    // simpleConstraints will hold direct edges [source, destination, weight].
+    let simpleConstraints = [];
+    // complexConstraints will hold pairs of potential edges, where one must be chosen.
+    let complexConstraints = [];
 
-    // Process each constraint provided as input.
-    iterateRange(constraintCount, function() {
-        // Read the constraint as a string.
-        var constraintString = retrieveInput('string');
+    // Iterate through each of the 'edgeCount' constraints provided in the input.
+    iterateRange(edgeCount, function() {
+        let constraintString = readInput('string'); // Read the current constraint as a string.
 
-        // Parse the string to extract node indices and weight.
-        // The regex splits by '<=', '>=', '*', '+', or '-'.
-        var parsedParts = constraintString.split(/<=|>=|\*|\+|-/);
-        // Adjust the first node index to be 0-based.
-        parsedParts[0] = +parsedParts[0] - 1;
-        // Adjust the second node index to be 0-based.
-        parsedParts[1] = +parsedParts[1] - 1;
-        // Convert the weight to a number.
-        parsedParts[2] = +parsedParts[2];
+        // Parse the numerical values from the constraint string.
+        // The regex splits the string by any of the operators: <=, >=, *, +, -.
+        let parsedValues = constraintString.split(/<=|>=|\*|\+|-/);
+        parsedValues[0] = +parsedValues[0] - 1; // Convert first number to 0-indexed node ID.
+        parsedValues[1] = +parsedValues[1] - 1; // Convert second number to 0-indexed node ID.
+        parsedValues[2] = +parsedValues[2];     // Convert third number to a numeric weight.
 
-        // Determine the type of relation based on operators.
-        var constraintType;
+        // Determine the comparison operator type (comparisonType).
+        // 2 for '*', 0 for '<=', 1 for '>='.
+        let comparisonType;
         if (constraintString.indexOf('*') !== -1) {
-            // If '*' is present, it's a special type.
-            constraintType = 2;
+            comparisonType = 2; // Operator is '*'.
         } else {
-            // If '<=' is not present, it implies '>=' or similar, map to 1, else 0.
-            constraintType = +(constraintString.indexOf('<=') === -1);
+            // If not '*', check if it's '<=' (results in 0) or '>=' (results in 1).
+            comparisonType = +(constraintString.indexOf('<=') === -1);
         }
 
-        // Determine if a specific operator ('+') is absent.
-        var operatorPresence = +(constraintString.indexOf('+') === -1);
+        // Determine the arithmetic sign type (signType).
+        // 0 for '+', 1 for '-' (if '+' is not found).
+        let signType = +(constraintString.indexOf('+') === -1);
 
-        // Apply rules based on the identified constraint type and operator presence.
-        if (constraintType === 0) { // e.g., representing '<='
-            if (operatorPresence === 0) { // e.g., implies '+' was present
-                // Add an edge: from node 2 to node 1 with negative weight.
-                fixedConstraints[fixedConstraints.length] = [parsedParts[1], parsedParts[0], -parsedParts[2]];
-            } else { // e.g., implies '+' was absent
-                // Add two edges: one with zero weight, another with positive weight.
-                fixedConstraints[fixedConstraints.length] = [parsedParts[1], parsedParts[0], 0];
-                fixedConstraints[fixedConstraints.length] = [parsedParts[0], parsedParts[1], parsedParts[2]];
+        // Based on the determined comparisonType and signType, populate the constraint arrays.
+        if (comparisonType === 0) { // Corresponds to '<=' (e.g., x <= y + k)
+            if (signType === 0) { // Corresponds to '+' (e.g., x <= y + k)
+                // This translates to y - x >= -k, which is a path from x to y with weight -k.
+                simpleConstraints[simpleConstraints.length] = [parsedValues[1], parsedValues[0], -parsedValues[2]];
+            } else { // Corresponds to '-' (e.g., x <= y - k)
+                // This translates to two inequalities: x <= y and x - y <= k.
+                simpleConstraints[simpleConstraints.length] = [parsedValues[1], parsedValues[0], 0];
+                simpleConstraints[simpleConstraints.length] = [parsedValues[0], parsedValues[1], parsedValues[2]];
             }
-        } else if (constraintType === 1) { // e.g., representing '>='
-            if (operatorPresence === 0) { // e.g., implies '+' was present
-                // Add an edge: from node 1 to node 2 with negative weight.
-                fixedConstraints[fixedConstraints.length] = [parsedParts[0], parsedParts[1], -parsedParts[2]];
-            } else { // e.g., implies '+' was absent
-                // Add two edges: one with positive weight, another with zero weight.
-                fixedConstraints[fixedConstraints.length] = [parsedParts[1], parsedParts[0], parsedParts[2]];
-                fixedConstraints[fixedConstraints.length] = [parsedParts[0], parsedParts[1], 0];
+        } else if (comparisonType === 1) { // Corresponds to '>=' (e.g., x >= y + k)
+            if (signType === 0) { // Corresponds to '+' (e.g., x >= y + k)
+                // This translates to x - y >= k, which is a path from y to x with weight -k.
+                simpleConstraints[simpleConstraints.length] = [parsedValues[0], parsedValues[1], -parsedValues[2]];
+            } else { // Corresponds to '-' (e.g., x >= y - k)
+                // This translates to two inequalities: x >= y and x - y >= -k.
+                simpleConstraints[simpleConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                simpleConstraints[simpleConstraints.length] = [parsedValues[0], parsedValues[1], 0];
             }
-        } else { // e.g., representing '*'
-            if (operatorPresence === 0) { // e.g., implies '+' was present
-                // This constraint results in a choice between two alternative edges.
-                alternativeConstraints[alternativeConstraints.length] = [
-                    [parsedParts[0], parsedParts[1], -parsedParts[2]],
-                    [parsedParts[1], parsedParts[0], -parsedParts[2]]
+        } else { // Corresponds to '*' (equality, e.g., x = y + k or x = y - k)
+            if (signType === 0) { // Corresponds to '+' (e.g., x = y + k)
+                // This implies x - y = k, which means x - y <= k AND y - x <= -k.
+                // These are two mutually exclusive options for the Bellman-Ford algorithm.
+                complexConstraints[complexConstraints.length] = [
+                    [parsedValues[0], parsedValues[1], -parsedValues[2]], // x - y <= -k
+                    [parsedValues[1], parsedValues[0], -parsedValues[2]]  // y - x <= -k
                 ];
-            } else { // e.g., implies '+' was absent
-                // Add two fixed edges with positive weights.
-                fixedConstraints[fixedConstraints.length] = [parsedParts[1], parsedParts[0], parsedParts[2]];
-                fixedConstraints[fixedConstraints.length] = [parsedParts[0], parsedParts[1], parsedParts[2]];
+            } else { // Corresponds to '-' (e.g., x = y - k)
+                // This implies x - y = -k, which means x - y <= -k AND y - x <= k.
+                simpleConstraints[simpleConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                simpleConstraints[simpleConstraints.length] = [parsedValues[0], parsedValues[1], parsedValues[2]];
             }
         }
     });
 
-    // Initialize the final outcome to negative infinity for maximization.
-    let finalOutcome = -Infinity;
+    // Initialize the final result to negative infinity, as we are looking for a maximum.
+    let finalResult = -Infinity;
 
-    // Iterate through all possible combinations of alternative constraints.
-    // Each 'alternativeConstraint' can be chosen in one of two ways.
-    iterateRange(1 << alternativeConstraints.length, function(selectionPattern) {
-        // Create a temporary graph by copying the fixed constraints.
-        let currentGraphEdges = [].concat(fixedConstraints);
-        // Add selected alternative edges to the temporary graph.
-        iterateRange(alternativeConstraints.length, function(outerLoopVar) {
-            // Use bitwise operation to select one of the two alternatives.
-            currentGraphEdges[currentGraphEdges.length] = alternativeConstraints[outerLoopVar][(selectionPattern >> outerLoopVar) & 1];
+    // Iterate through all possible combinations for the complex constraints.
+    // There are 2^complexConstraints.length combinations, as each complex constraint has two options.
+    iterateRange(1 << complexConstraints.length, function(combinationIndex) {
+        // Create a new list of edges for the current combination.
+        // Start by including all simple constraints.
+        let currentGraphEdges = [].concat(simpleConstraints);
+
+        // For each complex constraint, select one of its two options based on the current combinationIndex.
+        iterateRange(complexConstraints.length, function(loopIndex) {
+            // The bit at 'loopIndex' in 'combinationIndex' determines which option to pick (0 or 1).
+            currentGraphEdges[currentGraphEdges.length] = complexConstraints[loopIndex][(combinationIndex >> loopIndex) & 1];
         });
 
-        // Initialize distance array for Bellman-Ford algorithm.
-        let distanceArray = [];
-        // Set all distances to infinity, except the source.
-        iterateRange(nodeCount, function(outerLoopVar) {
-            distanceArray[outerLoopVar] = Infinity;
+        // Initialize distances for the Bellman-Ford algorithm.
+        let distances = [];
+        iterateRange(nodeCount, function(loopIndex) {
+            distances[loopIndex] = Infinity; // All distances are initially infinite.
         });
-        // Source node (node 0) has a distance of 0.
-        distanceArray[0] = 0;
+        distances[0] = 0; // The distance from the source node (node 0) to itself is 0.
 
-        // Run Bellman-Ford algorithm to find shortest paths.
-        // It runs 'nodeCount' times to ensure all paths are relaxed,
-        // and to detect negative cycles if an additional iteration changes distances.
-        iterateRange(nodeCount, function(outerLoopVar) {
-            iterateRange(currentGraphEdges.length, function(innerLoopVar) {
-                let graphEdge = currentGraphEdges[innerLoopVar];
-                // Relax the edge: update distance if a shorter path is found.
-                distanceArray[graphEdge[1]] = Math.min(distanceArray[graphEdge[0]] + graphEdge[2], distanceArray[graphEdge[1]]);
+        // Run the Bellman-Ford algorithm for 'nodeCount' iterations.
+        // This ensures all shortest paths are found and can detect negative cycles.
+        iterateRange(nodeCount, function(loopIndex) { // Outer loop for 'nodeCount' relaxation passes.
+            iterateRange(currentGraphEdges.length, function(innerLoopIndex) { // Inner loop to process each edge.
+                let currentEdge = currentGraphEdges[innerLoopIndex];
+                // Relax the edge: if a shorter path to currentEdge[1] is found via currentEdge[0], update it.
+                distances[currentEdge[1]] = Math.min(distances[currentEdge[0]] + currentEdge[2], distances[currentEdge[1]]);
             });
         });
 
-        // Check for negative cycles reachable from the source node 0.
-        // If distance from node 0 to itself is non-negative, it means no negative cycle
-        // affects node 0, or no negative cycle is reachable from node 0 that affects
-        // the path to 0.
-        if (distanceArray[0] >= 0) {
-            // Update the maximum distance to the last node (nodeCount - 1).
-            finalOutcome = Math.max(finalOutcome, distanceArray[nodeCount - 1]);
+        // After 'nodeCount' iterations, check if a negative cycle reachable from node 0 exists.
+        // If distances[0] is less than 0, it indicates a negative cycle, making the solution unbounded or inconsistent.
+        // If distances[0] is non-negative, a valid solution might exist for this combination.
+        if (distances[0] >= 0) {
+            // Update the maximum result found so far for the distance to the last node (nodeCount - 1).
+            finalResult = Math.max(finalResult, distances[nodeCount - 1]);
         }
     });
 
-    // Output the final result.
-    if (finalOutcome === Infinity) {
-        displayResult('inf'); // Indicates that nodeCount-1 is reachable with infinitely large distance.
-    } else if (finalOutcome === -Infinity) {
-        displayResult(-1); // Indicates that nodeCount-1 was never reached with a valid path.
+    // Output the final computed result.
+    if (finalResult === Infinity) {
+        outputValue('inf'); // If the target node is reachable with an infinitely large distance (unbounded).
+    } else if (finalResult === -Infinity) {
+        outputValue(-1); // If no valid path was found for any combination (unreachable or inconsistent).
     } else {
-        displayResult(finalOutcome); // Output the calculated maximum shortest path.
+        outputValue(finalResult); // The calculated maximum shortest path to the target node.
     }
 }
 
-/* This utility function provides a flexible way to iterate over a range.
- * It can be called with (end, callback) or (start, end, callback). */
-function iterateRange(startIndex, endIndex, callbackFunction) {
-    // Check if the first argument is the end index and start is implied 0.
-    if (callbackFunction === null || callbackFunction === undefined) {
-        // If only two arguments, assume start is 0.
-        callbackFunction = endIndex;
-        endIndex = startIndex;
-        startIndex = 0;
+/**
+ * A flexible utility function for iterating a numerical range.
+ * Can be called with (end, callback) or (start, end, callback).
+ * @param {number} startVal - The starting value of the loop (inclusive).
+ * @param {number} endVal - The ending value of the loop (exclusive) if two arguments, or the callback function if three arguments.
+ * @param {Function} [callbackFn] - The function to execute for each iteration, receiving the current loop index.
+ */
+function iterateRange(startVal, endVal, callbackFn) {
+    if (callbackFn == null) {
+        callbackFn = endVal;
+        endVal = startVal;
+        startVal = 0;
     }
-    // Loop from startIndex (inclusive) up to endIndex (exclusive).
-    for (var currentIdx = startIndex; currentIdx < endIndex; ++currentIdx) {
-        callbackFunction(currentIdx); // Execute the callback for each index.
+    for (let loopIndex = startVal; loopIndex < endVal; ++loopIndex) {
+        callbackFn(loopIndex);
     }
 }
 
-// Prepare to read input from standard input.
+// --- Standard Input/Output Handling for Node.js ---
+
+// Resume stdin to begin listening for input.
 process.stdin.resume();
+// Set the encoding for stdin to UTF-8.
 process.stdin.setEncoding('utf8');
 
-// Global buffer to accumulate raw input.
-var rawInputBuffer = '';
-// Pointer to the current position in the parsed input array.
-var bufferPosition = 0;
+let rawData = ''; // Accumulates all incoming input data chunks.
+let dataPointer = 0; // Pointer to the current token in the parsed input array.
 
-/* Reads a piece of input from the pre-parsed buffer. */
-function retrieveInput(dataTypeHint) {
-    // If 'string' type is requested, return the raw string.
-    if (dataTypeHint === 'string') {
-        return rawInputBuffer[bufferPosition++];
+/**
+ * Reads the next token from the accumulated input data.
+ * @param {string} [dataType] - Optional. If 'string', returns the token as a string. Otherwise, attempts to convert to a number.
+ * @returns {string|number} The next input token, parsed according to dataType.
+ */
+function readInput(dataType) {
+    if (dataType === 'string') {
+        return rawData[dataPointer++];
     } else {
-        // Otherwise, convert the string to a number and return.
-        return +rawInputBuffer[bufferPosition++];
+        return +rawData[dataPointer++]; // Convert to number using unary plus operator.
     }
 }
 
-/* Displays a value to the standard output. */
-function displayResult(outputValue) {
-    console.log(outputValue);
+/**
+ * Prints a given value to the console, followed by a newline.
+ * This function wraps console.log for consistent output.
+ * @param {*} outputData - The value to be printed.
+ */
+function outputValue(outputData) {
+    console.log(outputData);
 }
 
-// Event listener for incoming data chunks.
-process.stdin.on('data', function(chunk) {
-    rawInputBuffer += chunk; // Append new data to the buffer.
+// Event listener for 'data' event on stdin.
+// Appends each incoming chunk of data to the 'rawData' string.
+process.stdin.on('data', function(inputChunk) {
+    rawData += inputChunk;
 });
 
-// Event listener for the end of input stream.
+// Event listener for 'end' event on stdin.
+// This signifies that all input has been received.
 process.stdin.on('end', function() {
-    // Split the accumulated input by whitespace to create an array of tokens.
-    rawInputBuffer = rawInputBuffer.split(/\s+/);
-    // Call the main program execution function.
+    // Split the accumulated rawData string by any whitespace characters
+    // to create an array of individual input tokens.
+    rawData = rawData.split(/\s+/);
+    // Once all input is processed, execute the main program logic.
     executeProgram();
 });

@@ -1,49 +1,40 @@
-let storedInput = '';
+const fileSystemModule = require('fs');
+const sourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-process.stdin.on('data', (dataChunk) => {
-    storedInput += dataChunk.toString();
-});
+const processInputToOutput = (rawData) => {
+    const linesOfInput = rawData.split('\n');
 
-process.stdin.on('end', () => {
-    const allLines = storedInput.trim().split('\n');
-
-    let processIndex = 0;
-
-    const processNextBlock = () => {
-        if (processIndex >= allLines.length) {
-            return;
+    const finalOutputState = linesOfInput.reduce((accumulator, currentLine) => {
+        if (accumulator.terminated) {
+            return accumulator;
         }
 
-        const currentLine = allLines[processIndex];
-        const dimensions = currentLine.split(' ').map(Number);
+        const numericDimensions = currentLine.split(' ').map(Number);
+        const heightValue = numericDimensions[0];
+        const widthValue = numericDimensions[1];
 
-        const verticalDim = dimensions[0];
-        const horizontalDim = dimensions[1];
-
-        if (verticalDim === 0 && horizontalDim === 0) {
-            return;
+        if (heightValue === 0 && widthValue === 0) {
+            return { ...accumulator, terminated: true };
         }
 
-        const graphicalOutput = generatePattern(verticalDim, horizontalDim);
-        process.stdout.write(graphicalOutput + '\n');
+        const constructedRectangle = Array.from({ length: heightValue }, (_, rowIdentifier) => {
+            const isBorderRow = (rowIdentifier === 0 || rowIdentifier === heightValue - 1);
 
-        processIndex++;
-        processNextBlock();
-    };
+            return Array.from({ length: widthValue }, (_, colIdentifier) => {
+                if (isBorderRow) {
+                    return '#';
+                } else {
+                    const isBorderColumn = (colIdentifier === 0 || colIdentifier === widthValue - 1);
+                    return isBorderColumn ? '#' : '.';
+                }
+            }).join('');
+        }).join('\n');
 
-    processNextBlock();
-});
+        accumulator.output.push(constructedRectangle);
+        return accumulator;
+    }, { output: [], terminated: false });
 
+    return finalOutputState.output;
+};
 
-function generatePattern(yExtent, xExtent) {
-    const depictionRows = Array.from({ length: yExtent }, (_, rowNum) => {
-        const rowContent = Array.from({ length: xExtent }, (_, colNum) => {
-            const isEdgeRow = (rowNum === 0 || rowNum === yExtent - 1);
-            const isEdgeCol = (colNum === 0 || colNum === xExtent - 1);
-
-            return (isEdgeRow || isEdgeCol) ? '#' : '.';
-        });
-        return rowContent.join('');
-    });
-    return depictionRows.join('\n');
-}
+processInputToOutput(sourceData).forEach(resultBlock => console.log(resultBlock));

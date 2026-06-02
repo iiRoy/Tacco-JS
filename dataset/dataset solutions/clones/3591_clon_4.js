@@ -1,92 +1,70 @@
-const dataAcquirer = () => {
-  return require("fs").readFileSync("/dev/stdin", "utf8");
-};
+function Main(input) {
+  const processInputData = (rawInputString) => {
+    const lines = rawInputString.trim().split('\n');
+    const [firstLine, secondLine] = lines;
 
-const processRawData = (rawText) => {
-  const lineContent = rawText.split("\n");
-  const headerValues = lineContent[0].match(/-?\d+/g).map(Number);
-  const dataPoints = lineContent[1].match(/-?\d+/g).map(Number);
+    let [currentN, currentK] = firstLine.split(' ').map(Number);
+    const initialXValues = secondLine.split(' ').map(Number);
 
-  let initialCardinality = headerValues[0];
-  let chosenQuantity = headerValues[1];
-  const initialDataPoints = [...dataPoints];
+    let originalNegativeCount = 0;
+    initialXValues.forEach(val => {
+      if (val < 0) {
+        originalNegativeCount++;
+      }
+    });
 
-  let negativeValueCount = 0;
-  for (const item of initialDataPoints) {
-    if (item < 0) {
-      negativeValueCount++;
+    let processedXArray = [...initialXValues];
+
+    const zeroElementIndex = processedXArray.indexOf(0);
+    if (zeroElementIndex !== -1) {
+      currentN--;
+      currentK--;
+      processedXArray.splice(zeroElementIndex, 1);
     }
-  }
 
-  const filteredDataPoints = [];
-  let zeroFound = false;
-  for (const item of dataPoints) {
-    if (item !== 0) {
-      filteredDataPoints.push(item);
-    } else {
-      zeroFound = true;
-    }
-  }
-
-  if (zeroFound) {
-    initialCardinality--;
-    chosenQuantity--;
-  }
-
-  return {
-    adjustedCardinality: initialCardinality,
-    adjustedQuantity: chosenQuantity,
-    processedData: filteredDataPoints,
-    initialNegativeCount: negativeValueCount
+    return {
+      effectiveN: currentN,
+      effectiveK: currentK,
+      modifiedX: processedXArray,
+      initialNegativeCount: originalNegativeCount
+    };
   };
-};
 
-const calculateMinimumSpan = (parameters) => {
-  const { adjustedCardinality, adjustedQuantity, processedData, initialNegativeCount } = parameters;
+  const { effectiveN, effectiveK, modifiedX, initialNegativeCount } = processInputData(input);
 
-  const largeConstant = 1_000_000_000 + 7;
+  let finalResult = Math.pow(10, 9) + 7;
 
-  if (processedData.length === 0) {
-    return 0;
+  if (modifiedX.length === 0) {
+    finalResult = 0;
+  } else if (effectiveN === 2) {
+    finalResult = Math.min(Math.abs(modifiedX[0]), modifiedX[1]);
+  } else {
+    const iterationCount = Math.max(0, effectiveN - effectiveK + 1);
+    const indicesToIterate = Array.from({ length: iterationCount }, (_, idx) => idx);
+
+    finalResult = indicesToIterate.reduce((currentMin, i) => {
+      const leftBoundaryValue = modifiedX[i];
+      const rightBoundaryIndex = i + effectiveK - 1;
+      const rightBoundaryValue = modifiedX[rightBoundaryIndex];
+
+      let windowCost = Math.pow(10, 9) + 7;
+
+      if (leftBoundaryValue < 0 && rightBoundaryValue > 0) {
+        windowCost = Math.min(
+          Math.abs(leftBoundaryValue) * 2 + rightBoundaryValue,
+          Math.abs(leftBoundaryValue) + rightBoundaryValue * 2
+        );
+      } else if (i === initialNegativeCount - effectiveK) {
+        windowCost = Math.abs(leftBoundaryValue);
+      } else if (i === initialNegativeCount) {
+        windowCost = rightBoundaryValue;
+      }
+
+      return Math.min(currentMin, windowCost);
+    }, finalResult);
   }
 
-  if (adjustedCardinality === 2) {
-    return Math.min(Math.abs(processedData[0]), processedData[1]);
-  }
+  console.log(finalResult);
+}
 
-  let currentMinSpan = largeConstant;
-
-  let startPointer = 0;
-  const maxStartPointer = adjustedCardinality - adjustedQuantity;
-
-  while (startPointer <= maxStartPointer) {
-    const leftBoundary = processedData[startPointer];
-    const rightBoundary = processedData[startPointer + adjustedQuantity - 1];
-
-    if (leftBoundary < 0 && rightBoundary > 0) {
-      const optionA = Math.abs(leftBoundary) * 2 + rightBoundary;
-      const optionB = Math.abs(leftBoundary) + rightBoundary * 2;
-      currentMinSpan = Math.min(currentMinSpan, optionA, optionB);
-    } else if (startPointer === initialNegativeCount - adjustedQuantity) {
-      currentMinSpan = Math.min(currentMinSpan, Math.abs(leftBoundary));
-    } else if (startPointer === initialNegativeCount) {
-      currentMinSpan = Math.min(currentMinSpan, rightBoundary);
-    }
-    startPointer++;
-  }
-
-  return currentMinSpan;
-};
-
-const outputResult = (finalOutput) => {
-  process.stdout.write(finalOutput.toString() + "\n");
-};
-
-const orchestrateExecution = () => {
-  const acquiredContent = dataAcquirer();
-  const parsedParameters = processRawData(acquiredContent);
-  const computedValue = calculateMinimumSpan(parsedParameters);
-  outputResult(computedValue);
-};
-
-orchestrateExecution();
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

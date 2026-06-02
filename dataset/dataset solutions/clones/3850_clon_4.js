@@ -1,50 +1,27 @@
-'use strict';
+function executeProgram(programInput) {
+  const inputLines = programInput.split('\n');
+  const numberSequenceString = inputLines[0];
+  const iterationCount = Number(inputLines[1]);
 
-function processCollection(collection) {
-    let largestVal = -Infinity;
-    let largestIdx = -1;
+  let currentNumericValues = numberSequenceString.split(' ').map(Number);
 
-    collection.forEach((item, idx) => {
-        if (item > largestVal) {
-            largestVal = item;
-            largestIdx = idx;
-        }
+  const finalNumericValues = Array.from({ length: iterationCount }).reduce((accumulatorArray) => {
+    let highestValue = -Infinity;
+    let highestValueIndex = -1;
+
+    accumulatorArray.forEach((valElement, idxPosition) => {
+      if (valElement > highestValue) {
+        highestValue = valElement;
+        highestValueIndex = idxPosition;
+      }
     });
 
-    return collection.map((item, idx) =>
-        idx === largestIdx ? item * 2 : item
-    );
+    return accumulatorArray.map((valElement, idxPosition) => {
+      return idxPosition === highestValueIndex ? valElement * 2 : valElement;
+    });
+  }, currentNumericValues);
+
+  console.log(finalNumericValues.reduce((totalSum, currentElement) => totalSum + currentElement, 0));
 }
 
-function acquireData(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const numericSequenceString = contentLines[0];
-    const iterationCountString = contentLines[1];
-
-    const initialNumbers = numericSequenceString.match(/\d+/g).map(Number);
-    const operationCount = Number(iterationCountString);
-
-    return { initialNumbers: initialNumbers, operationCount: operationCount };
-}
-
-function sumElements(collection) {
-    let aggregate = 0;
-    for (const element of collection) {
-        aggregate += element;
-    }
-    return aggregate;
-}
-
-function executor(sourceContent) {
-    const dataBundle = acquireData(sourceContent);
-    const initialNumericArray = dataBundle.initialNumbers;
-    const numberOfOperations = dataBundle.operationCount;
-
-    const transformedCollection = Array.from({ length: numberOfOperations }).reduce((currentArrayState, _, __) => {
-        return processCollection(currentArrayState);
-    }, initialNumericArray);
-
-    console.log(sumElements(transformedCollection));
-}
-
-executor(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

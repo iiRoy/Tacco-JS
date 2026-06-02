@@ -1,76 +1,56 @@
-const computeMaximumElement = (dataStream) => {
-    const lines = dataStream.trim().split('\n');
-    const totalEntries = Number(lines[0]);
-    const valueSequence = lines[1].split(' ').map(Number);
+function processSequence(rawData) {
+  const parsedLines = rawData.split("\n");
+  const sequenceSize = parseInt(parsedLines[0]);
+  const numericSequence = parsedLines[1].split(" ").map(Number);
 
-    const initialCounterArray = Array.from({ length: valueSequence[0] }, () => 1);
-    const initialMaxCounterValue = initialCounterArray.length > 0 ? Math.max(...initialCounterArray) : 0;
+  const initialElement = numericSequence[0];
+  const initialCounterCollection = Array(initialElement).fill(1);
 
-    const finalState = valueSequence.slice(1).reduce((accumulator, currentItemValue) => {
-        const priorVal = accumulator.priorVal;
-        let currentElementList = accumulator.currentList;
-        let highestValAchieved = accumulator.highestValAchieved;
+  const initialProcessingState = {
+    currentCounterCollection: initialCounterCollection,
+    lastProcessedValue: initialElement,
+    maximumOfLastCollection: initialCounterCollection.length > 0 ? Math.max(...initialCounterCollection) : 0,
+    wasLastCollectionUniform: initialCounterCollection.length > 0 ? initialCounterCollection.every(val => val === initialCounterCollection[0]) : true
+  };
 
-        const iterationPeak = currentElementList.length > 0 ? Math.max(...currentElementList) : 0;
-        const areAllUniform = currentElementList.every(val => val === currentElementList[0]);
-        const uniformityMarker = areAllUniform ? 0 : 1;
+  const finalProcessingState = numericSequence.slice(1).reduce((accumulator, currentElement) => {
+    const { currentCounterCollection, lastProcessedValue, maximumOfLastCollection, wasLastCollectionUniform } = accumulator;
 
-        if (currentItemValue > priorVal) {
-            const addedElementsCount = currentItemValue - priorVal;
-            const newUnits = Array.from({ length: addedElementsCount }, () => 1);
-            currentElementList = [...currentElementList, ...newUnits];
-        } else {
-            if (uniformityMarker === 0) {
-                let modifiedElementList = currentElementList.slice(0, currentItemValue);
-                if (modifiedElementList.length > 0) {
-                    modifiedElementList[currentItemValue - 1]++;
-                }
-                currentElementList = modifiedElementList;
-            } else {
-                let modifiedElementList = currentElementList.slice(0, currentItemValue);
-                let incrementApplied = false;
-                for (let k = modifiedElementList.length - 1; k >= 0; k--) {
-                    if (modifiedElementList[k] !== iterationPeak) {
-                        modifiedElementList[k]++;
-                        incrementApplied = true;
-                        break;
-                    }
-                }
-                currentElementList = modifiedElementList;
-            }
-        }
+    let nextCounterCollection = [...currentCounterCollection];
 
-        const currentListPeak = currentElementList.length > 0 ? Math.max(...currentElementList) : 0;
-        highestValAchieved = Math.max(highestValAchieved, currentListPeak);
-
-        return {
-            currentList: currentElementList,
-            priorVal: currentItemValue,
-            highestValAchieved: highestValAchieved
-        };
-    }, {
-        currentList: initialCounterArray,
-        priorVal: valueSequence[0],
-        highestValAchieved: initialMaxCounterValue
-    });
-
-    return finalState.highestValAchieved;
-};
-
-const supplyDataAndCompute = (rawData) => {
-    const finalResult = computeMaximumElement(rawData);
-    console.log(String(finalResult));
-};
-
-const handleInput = () => {
-    if (typeof require !== 'undefined' && require.main === module) {
-        supplyDataAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
-    } else if (typeof document !== 'undefined') {
-        const browserInput = document.getElementById("input").value;
-        supplyDataAndCompute(browserInput);
+    if (currentElement > lastProcessedValue) {
+      const valueDifference = currentElement - lastProcessedValue;
+      nextCounterCollection.push(...Array(valueDifference).fill(1));
+    } else if (wasLastCollectionUniform) {
+      nextCounterCollection[currentElement - 1]++;
+      nextCounterCollection = nextCounterCollection.slice(0, currentElement);
     } else {
-        console.error("No input source found.");
+      nextCounterCollection = nextCounterCollection.slice(0, currentElement);
+      const targetIndexForIncrement = nextCounterCollection.findLastIndex(val => val !== maximumOfLastCollection);
+      if (targetIndexForIncrement !== -1) {
+        nextCounterCollection[targetIndexForIncrement]++;
+      }
     }
-};
 
-handleInput();
+    const nextMaximumOfCollection = nextCounterCollection.length > 0 ? Math.max(...nextCounterCollection) : 0;
+    const nextIsCollectionUniform = nextCounterCollection.length > 0 ? nextCounterCollection.every(val => val === nextCounterCollection[0]) : true;
+
+    return {
+      currentCounterCollection: nextCounterCollection,
+      lastProcessedValue: currentElement,
+      maximumOfLastCollection: nextMaximumOfCollection,
+      wasLastCollectionUniform: nextIsCollectionUniform
+    };
+  }, initialProcessingState);
+
+  const ultimateMaximum = finalProcessingState.currentCounterCollection.length > 0 ? Math.max(...finalProcessingState.currentCounterCollection) : 0;
+
+  console.log('%s', ultimateMaximum);
+}
+
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function debug(){
+  var input = document.getElementById("input").value;
+  processSequence(input);
+}
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

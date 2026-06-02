@@ -1,64 +1,57 @@
-var systemReader = require('readline').createInterface({
+//Don't have to see. start------------------------------------------
+var read = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-var inputLinesCollection = [];
-systemReader.on('line', function(singleLineContent){inputLinesCollection.push(singleLineContent);});
-systemReader.on('close', function(){
-  var operationStartTime = Date.now();
-  processInputAndReport(inputLinesCollection);
-  var operationDuration = Date.now() - operationStartTime;
-  recordEvent('processing duration : ' + operationDuration + 'ms');
-  recordEvent('heap memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error('\n');
+  var start = Date.now();
+  Main();
+  var end = Date.now() - start;
+  myerr('time : ' + end + 'ms');
+  myerr('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
-
-function recordEvent(messageItem) {
-  console.error('info:' + require('util').inspect(messageItem, false, null));
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+  };
 }
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+//param "no" is
+//unknown or outlier : return i. 1: parseInt.
+//2: split space. 4: split space and parseInt.
+//6: split 1 character. 7: split 1 character and parseInt.
+//8: join space. 9: join nextline. 0: join no character.
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
-function displayOutput(valueToPrint) {
-    console.log(valueToPrint);
-}
+//Don't have to see. end------------------------------------------
+function Main(){
+  const totalElements = nextInt();
+  
+  const inputValues = Array.from({ length: totalElements }, () => nextInt());
 
-function processInputAndReport(sourceInformation) {
-    // A function that acts as a stream for parsed integer values from the input array
-    function* integerStreamGenerator(linesOfText) {
-        let currentPosition = 0;
-        while (currentPosition < linesOfText.length) {
-            yield parseInt(linesOfText[currentPosition++], 10);
-        }
-    }
+  const sequenceLengthsMap = new Map();
+  
+  let maximumConsecutiveLength = 0;
 
-    const numericalValueProducer = integerStreamGenerator(sourceInformation);
-
-    const totalInputItems = numericalValueProducer.next().value; // This is 'N' from the original code
-
-    // A map to store the maximum length of a sequential increasing chain ending at a particular number.
-    // For example, {1: 1, 2: 2, 3: 3} indicates a sequence of length 3 ending at 3 has been observed.
-    const chainLengthRegistry = new Map();
-
-    // The Array.from({ length: totalInputItems }) creates an array of N undefined items,
-    // allowing us to use reduce to iterate N times, processing each subsequent number.
-    // The accumulator 'currentMaximumChain' keeps track of the longest chain found so far.
-    const ultimateLongestChain = Array.from({ length: totalInputItems })
-        .reduce((currentMaximumChain, _, iterationCount) => {
-            const currentIncomingValue = numericalValueProducer.next().value; // Get the next number 'a'
-
-            // Determine the length of the chain that would have ended at 'currentIncomingValue - 1'.
-            // If 'currentIncomingValue - 1' was not present in our registry, its chain length is 0.
-            const lengthOfPredecessorChain = chainLengthRegistry.get(currentIncomingValue - 1) || 0;
-
-            // The length of the new chain ending at 'currentIncomingValue' is 1 plus the length of its predecessor's chain.
-            const lengthOfCurrentValueChain = lengthOfPredecessorChain + 1;
-
-            // Update our registry with the newly calculated chain length for 'currentIncomingValue'.
-            chainLengthRegistry.set(currentIncomingValue, lengthOfCurrentValueChain);
-
-            // Compare the current maximum chain length with the length of the chain just found,
-            // and return the larger of the two.
-            return Math.max(currentMaximumChain, lengthOfCurrentValueChain);
-        }, 0); // Initialize the maximum chain length to 0
-
-    // The problem asks for the total number of elements minus the length of the longest strictly increasing consecutive subsequence.
-    // This value represents the minimum number of elements that must be removed.
-    displayOutput(totalInputItems - ultimateLongestChain);
+  inputValues.forEach(currentValue => {
+    const previousValueSequenceLength = sequenceLengthsMap.get(currentValue - 1) || 0;
+    
+    const currentSequenceLength = previousValueSequenceLength + 1;
+    
+    sequenceLengthsMap.set(currentValue, currentSequenceLength);
+    
+    maximumConsecutiveLength = Math.max(maximumConsecutiveLength, currentSequenceLength);
+  });
+  
+  myout(totalElements - maximumConsecutiveLength);
 }

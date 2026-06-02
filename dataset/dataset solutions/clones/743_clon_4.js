@@ -1,60 +1,63 @@
-const sourceContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const rawLines = sourceContent.trim().split('\n');
+const rawInputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let linePointer = 0;
-const scenarioOutcomes = [];
+function* inputLineProvider(sourceText) {
+    const lines = sourceText.trim().split("\n");
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
+    }
+}
+
+const lineStream = inputLineProvider(rawInputSource);
 
 while (true) {
-    const entityDefinitionCount = parseInt(rawLines[linePointer++], 10);
+    const currentCountStr = lineStream.next().value;
+    const currentCount = parseInt(currentCountStr, 10);
 
-    if (entityDefinitionCount === 0) {
+    if (currentCount === 0) {
         break;
     }
 
-    const connectionRegistry = new Map();
-    let startingEntityName = '';
+    const nodeConnections = new Map();
+    let startingNodeIdentifier;
 
-    for (let currentDefIndex = 0; currentDefIndex < entityDefinitionCount; currentDefIndex++) {
-        const definitionLine = rawLines[linePointer++].split(':');
-        const primaryEntity = definitionLine[0];
-        const linkedEntities = definitionLine[1].split(',');
+    for (let idx = 0; idx < currentCount; idx++) {
+        const lineContent = lineStream.next().value;
+        const [parentNode, childNodesStr] = lineContent.split(':');
+        const childNodes = childNodesStr.split(',');
+        nodeConnections.set(parentNode, childNodes);
 
-        connectionRegistry.set(primaryEntity, linkedEntities);
-
-        if (currentDefIndex === 0) {
-            startingEntityName = primaryEntity;
+        if (idx === 0) {
+            startingNodeIdentifier = parentNode;
         }
     }
 
-    const normalizeEntityIdentifier = (identifier) => {
-        return identifier.replace(/[.](\r\n|\n|\r)/gm, "");
-    };
+    const leafEntities = new Set();
+    const visitedNodes = new Set();
+    const traversalQueue = [startingNodeIdentifier];
 
-    const discoveredIndividuals = new Set();
-    const traversalStack = [startingEntityName];
-    const visitedGroups = new Set();
-    visitedGroups.add(startingEntityName);
+    while (traversalQueue.length > 0) {
+        const currentNode = traversalQueue.shift();
 
-    while (traversalStack.length > 0) {
-        const currentFocus = traversalStack.pop();
-        const directConnections = connectionRegistry.get(currentFocus) || [];
+        if (visitedNodes.has(currentNode)) {
+            continue;
+        }
+        visitedNodes.add(currentNode);
 
-        for (const connectedItem of directConnections) {
-            const cleanedItem = normalizeEntityIdentifier(connectedItem);
+        const childrenOfNode = nodeConnections.get(currentNode);
 
-            if (connectionRegistry.has(cleanedItem)) {
-                if (!visitedGroups.has(cleanedItem)) {
-                    visitedGroups.add(cleanedItem);
-                    traversalStack.push(cleanedItem);
+        if (childrenOfNode) {
+            for (const childName of childrenOfNode) {
+                const cleanedChildName = childName.replace(/[.](\r\n|\n|\r)/gm, "");
+
+                if (nodeConnections.has(cleanedChildName)) {
+                    traversalQueue.push(cleanedChildName);
+                } else {
+                    leafEntities.add(cleanedChildName);
                 }
-            } else {
-                discoveredIndividuals.add(cleanedItem);
             }
         }
     }
-    scenarioOutcomes.push(discoveredIndividuals.size);
-}
 
-for (const outcome of scenarioOutcomes) {
-    console.log(outcome);
+    console.log(leafEntities.size);
 }

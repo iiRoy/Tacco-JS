@@ -1,83 +1,55 @@
-function transformInputData(sourceData) {
-    const contentLines = sourceData.trim().split("\n");
-    const [elementCountStr, iterationCountStr] = contentLines[0].split(" ");
-    const elementList = contentLines[1].split(" ");
-    return {
-        elementQuantity: Number(elementCountStr),
-        totalIterations: Number(iterationCountStr),
-        sourceElements: elementList
+const processInput = (rawData) => {
+    const lines = rawData.split("\n");
+    const [elementCountStr, iterationLimitStr] = lines[0].split(" ");
+    const elementCount = parseInt(elementCountStr, 10);
+    const iterationLimit = parseInt(iterationLimitStr, 10);
+    const sourceElements = lines[1].split(" ");
+
+    const stateTracker = new Map();
+    const sequenceSnapshots = [];
+
+    let currentSequence = [];
+    let currentIteration = 0;
+    let cycleStartPoint = -1;
+
+    const evolveSequence = (initialSequence, elementsToProcess) => {
+        return elementsToProcess.reduce((accumulator, currentElement) => {
+            const existingIndex = accumulator.indexOf(currentElement);
+            if (existingIndex !== -1) {
+                return accumulator.slice(0, existingIndex);
+            } else {
+                return [...accumulator, currentElement];
+            }
+        }, initialSequence);
     };
-}
 
-class SequenceManager {
-    constructor() {
-        this.currentElements = [];
-    }
+    while (currentIteration <= iterationLimit) {
+        const currentStateString = currentSequence.join(" ");
 
-    incorporateElement(itemValue) {
-        const existingPosition = this.currentElements.indexOf(itemValue);
-        if (existingPosition !== -1) {
-            this.currentElements.splice(existingPosition); // Truncate from the found position
-        } else {
-            this.currentElements.push(itemValue);
-        }
-    }
-
-    retrieveCurrentState() {
-        return this.currentElements.join(" ");
-    }
-}
-
-function determineFinalSequence(processedPayload) {
-    const { elementQuantity: numElements, totalIterations: maxCycles, sourceElements: dataItems } = processedPayload;
-
-    let managerInstance = new SequenceManager();
-    const stateChronicle = new Map(); // Maps state string to the cycle number it was first observed
-    const chronologicalStates = []; // Stores state strings in order of observation
-
-    let currentCycle = 0;
-    let cycleBeginIndex = -1;
-    let cycleEndIndex = -1;
-
-    // Record the initial state (before any processing, "cycle 0")
-    chronologicalStates.push(managerInstance.retrieveCurrentState());
-    stateChronicle.set(managerInstance.retrieveCurrentState(), 0);
-
-    while (currentCycle < maxCycles) {
-        currentCycle++; // Advance to the next cycle
-
-        // Apply all source elements to the manager instance
-        for (const item of dataItems) {
-            managerInstance.incorporateElement(item);
-        }
-
-        const currentStateRepresentation = managerInstance.retrieveCurrentState();
-
-        if (stateChronicle.has(currentStateRepresentation)) {
-            cycleBeginIndex = stateChronicle.get(currentStateRepresentation);
-            cycleEndIndex = currentCycle; // This cycle's state is a repeat
+        if (stateTracker.has(currentStateString)) {
+            cycleStartPoint = stateTracker.get(currentStateString);
             break;
         }
 
-        stateChronicle.set(currentStateRepresentation, currentCycle);
-        chronologicalStates.push(currentStateRepresentation);
+        stateTracker.set(currentStateString, currentIteration);
+        sequenceSnapshots.push(currentStateString);
+
+        if (currentIteration === iterationLimit) {
+            break;
+        }
+
+        currentSequence = evolveSequence(currentSequence, sourceElements);
+        currentIteration++;
     }
 
-    if (cycleBeginIndex === -1) { // No cycle detected, completed all maxCycles
-        return chronologicalStates[maxCycles];
-    } else { // A cycle was found
-        const cycleDuration = cycleEndIndex - cycleBeginIndex;
-        const cyclesRemaining = maxCycles - cycleBeginIndex;
-        const offsetWithinCycle = cyclesRemaining % cycleDuration;
-        const finalStateLookupIndex = cycleBeginIndex + offsetWithinCycle;
-        return chronologicalStates[finalStateLookupIndex];
+    if (cycleStartPoint === -1) {
+        console.log(sequenceSnapshots[iterationLimit]);
+    } else {
+        const cycleLength = sequenceSnapshots.length - cycleStartPoint;
+        const stepsBeyondCycleStart = iterationLimit - cycleStartPoint;
+        const offsetInCycle = stepsBeyondCycleStart % cycleLength;
+        console.log(sequenceSnapshots[cycleStartPoint + offsetInCycle]);
     }
-}
+};
 
-function processExternalInput(rawDataContent) {
-    const transformedInput = transformInputData(rawDataContent);
-    const finalOutcome = determineFinalSequence(transformedInput);
-    console.log(finalOutcome);
-}
-
-processExternalInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

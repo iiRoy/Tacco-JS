@@ -1,41 +1,52 @@
-const calculateCommonSubsequences = (rawInputContent) => {
-    const parsedLines = rawInputContent.trim().split('\n');
-    const [lenA, lenB] = parsedLines[0].split(' ').map(val => Number(val));
-    const arrayA = parsedLines[1].split(' ').map(val => Number(val));
-    const arrayB = parsedLines[2].split(' ').map(val => Number(val));
-    const primeModulo = 1000000007;
+function Main(input) {
+    const inputLines = input.split('\n');
+    const [lenX, lenY] = inputLines[0].split(' ').map(Number);
+    const arrayX = inputLines[1].split(' ').map(Number);
+    const arrayY = inputLines[2].split(' ').map(Number);
 
-    const memoizationStore = new Map();
+    const primeModulus = 1000000007;
 
-    const determineSubsequenceCount = (currentIdxA, currentIdxB) => {
-        const uniqueKey = `${currentIdxA},${currentIdxB}`;
-        if (memoizationStore.has(uniqueKey)) {
-            return memoizationStore.get(uniqueKey);
-        }
+    const cacheMatrix = Array.from({ length: lenX + 1 }, () =>
+        Array.from({ length: lenY + 1 }, () => -1)
+    );
 
-        if (currentIdxA === 0 || currentIdxB === 0) {
-            memoizationStore.set(uniqueKey, 1);
+    const computeSubsequenceCount = (currentX, currentY) => {
+        if (currentX === 0 || currentY === 0) {
             return 1;
         }
 
-        let computedCount;
-        const elementA = arrayA[currentIdxA - 1];
-        const elementB = arrayB[currentIdxB - 1];
-
-        if (elementA === elementB) {
-            computedCount = (determineSubsequenceCount(currentIdxA - 1, currentIdxB) + determineSubsequenceCount(currentIdxA, currentIdxB - 1)) % primeModulo;
-        } else {
-            computedCount = (determineSubsequenceCount(currentIdxA - 1, currentIdxB) + determineSubsequenceCount(currentIdxA, currentIdxB - 1) - determineSubsequenceCount(currentIdxA - 1, currentIdxB - 1)) % primeModulo;
-            computedCount = (computedCount + primeModulo) % primeModulo;
+        if (cacheMatrix[currentX][currentY] !== -1) {
+            return cacheMatrix[currentX][currentY];
         }
 
-        memoizationStore.set(uniqueKey, computedCount);
-        return computedCount;
+        let currentResult;
+        const valFromXMinus1 = computeSubsequenceCount(currentX - 1, currentY);
+        const valFromYMinus1 = computeSubsequenceCount(currentX, currentY - 1);
+        const valFromBothMinus1 = computeSubsequenceCount(currentX - 1, currentY - 1);
+
+        if (arrayX[currentX - 1] === arrayY[currentY - 1]) {
+            currentResult = (valFromXMinus1 + valFromYMinus1) % primeModulus;
+        } else {
+            currentResult = (valFromXMinus1 + valFromYMinus1 - valFromBothMinus1 + primeModulus) % primeModulus;
+        }
+
+        cacheMatrix[currentX][currentY] = currentResult;
+        return currentResult;
     };
 
-    const finalResult = determineSubsequenceCount(lenA, lenB);
-    console.log('%s', finalResult);
-    return finalResult;
-};
+    const finalAnswer = computeSubsequenceCount(lenX, lenY);
 
-calculateCommonSubsequences(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log('%s', finalAnswer);
+    return finalAnswer;
+}
+
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=Main(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

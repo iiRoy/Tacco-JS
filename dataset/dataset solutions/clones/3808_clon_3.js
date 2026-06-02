@@ -1,76 +1,60 @@
-// This script processes numerical data from standard input to find specific subarray properties.
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// An immediately invoked function expression (IIFE) to encapsulate the processing logic.
-(function(rawInputString) {
-    // Basic input validation: ensure the input string is not empty.
-    if (!rawInputString || rawInputString.trim() === '') {
-        console.error("Error: Empty input received.");
-        return; // Exit if no data
-    }
+// Helper function to determine the count of prefix subarrays
+// (starting from a given position) where sum equals XOR sum.
+const findMatchingPrefixCount = (sourceArr, startPos, totalArrayLength) => {
+    let currentSumAccumulator = sourceArr[startPos];
+    let currentXorAccumulator = sourceArr[startPos];
+    let matchingSubarrayCount = 1; // The single element subarray always matches
 
-    // Split the raw input into individual textual rows.
-    const textLines = rawInputString.trim().split('\n');
+    // Iterate to extend the subarray, starting from the second element
+    // 'offset' represents the index relative to 'startPos'
+    for (let offset = 1; offset < totalArrayLength; offset++) {
+        const absoluteIndexForNextElement = startPos + offset;
 
-    // Extract the total number of elements from the first line.
-    // Use parseInt with radix for robust conversion.
-    const totalElements = parseInt(textLines[0], 10);
+        // Retrieve the next element. If absoluteIndexForNextElement is out of bounds,
+        // nextElementValue will be 'undefined'. This behavior is critical to preserve.
+        const nextElementValue = sourceArr[absoluteIndexForNextElement];
 
-    // Validate the parsed number of elements.
-    if (isNaN(totalElements) || totalElements <= 0) {
-        console.error("Error: Invalid or non-positive element count provided.");
-        return;
-    }
+        // Calculate potential new sum and XOR sum
+        const candidateSum = currentSumAccumulator + nextElementValue;
+        const candidateXor = currentXorAccumulator ^ nextElementValue;
 
-    // Parse the second line into an array of numbers.
-    // Ensure sufficient lines exist before attempting to access.
-    if (textLines.length < 2) {
-        console.error("Error: Missing data array in input.");
-        return;
-    }
-    const valueList = textLines[1].split(' ').map(val => parseInt(val, 10));
-
-    // Basic validation for the numeric array.
-    if (valueList.some(isNaN) || valueList.length !== totalElements) {
-        console.error("Error: Data array contains non-numeric values or its length does not match specified count.");
-        return;
-    }
-
-    // Initialize a variable to accumulate the total count of matching subarrays.
-    let cumulativeMatchCount = 0;
-
-    // Iterate through all possible starting positions for subarrays.
-    // This is the outer loop, determining the beginning of each window.
-    for (let startPosition = 0; startPosition < totalElements; startPosition++) {
-        let currentWindowSum = 0;  // Accumulator for the sum of elements in the current window.
-        let currentWindowXor = 0;  // Accumulator for the XOR sum of elements in the current window.
-        let validPrefixLength = 0; // Counts how many prefixes from 'startPosition' satisfy the condition.
-
-        // Inner loop: extend the current window one element at a time from 'startPosition'.
-        // 'windowOffset' represents the position relative to 'startPosition'.
-        for (let windowOffset = 0; startPosition + windowOffset < totalElements; windowOffset++) {
-            // Get the current element from the main array.
-            const currentElementValue = valueList[startPosition + windowOffset];
-
-            // Update the running sum and XOR sum for the current sub-array.
-            currentWindowSum += currentElementValue;
-            currentWindowXor ^= currentElementValue;
-
-            // Check if the accumulated sum equals the accumulated XOR sum for the current prefix.
-            if (currentWindowSum === currentWindowXor) {
-                validPrefixLength++; // If they match, this prefix is valid.
-            } else {
-                // If they don't match, any further extension of *this specific prefix*
-                // starting at 'startPosition' will also not satisfy the condition.
-                // So, we can break out of this inner loop for the current 'startPosition'.
-                break;
-            }
+        // Check if the sum and XOR sum are equal.
+        // If nextElementValue was undefined, candidateSum and candidateXor will be NaN.
+        // NaN === NaN evaluates to false, correctly breaking the loop.
+        if (candidateSum === candidateXor) {
+            currentSumAccumulator = candidateSum;
+            currentXorAccumulator = candidateXor;
+            matchingSubarrayCount++;
+        } else {
+            // If they don't match, or if NaN was produced, stop extending this subarray.
+            break;
         }
-        // Add the count of valid prefixes found for the current 'startPosition' to the total.
-        cumulativeMatchCount += validPrefixLength;
+    }
+    return matchingSubarrayCount;
+};
+
+((inputString) => {
+    const dataLines = inputString.split('\n');
+
+    // Parse the number of elements (N)
+    const numElements = parseInt(dataLines[0], 10);
+
+    // Parse the array of numbers (A)
+    const valArray = dataLines[1].split(' ').map(val => parseInt(val, 10));
+
+    let overallMatchTotal = 0;
+
+    // Iterate through all possible starting positions for subarrays
+    // (equivalent to the original 'sp' loop)
+    for (let currentStartIdx = 0; currentStartIdx < numElements; currentStartIdx++) {
+        // For each starting position, calculate how many consecutive elements
+        // form a sum-equals-xor-sum prefix.
+        const matchesFromCurrentStart = findMatchingPrefixCount(valArray, currentStartIdx, numElements);
+        overallMatchTotal += matchesFromCurrentStart;
     }
 
-    // Output the final computed result.
-    console.log(cumulativeMatchCount);
+    console.log(overallMatchTotal);
 
-})(dataSource); // Pass the raw data string to the IIFE.
+})(rawData);

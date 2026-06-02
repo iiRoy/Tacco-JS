@@ -1,96 +1,102 @@
-let receivedData = ''; // Buffer to accumulate all incoming data from stdin
+let inputBuffer = ''; // Buffer to accumulate incoming data from standard input.
 
-// Resume the standard input stream to listen for data
-process.stdin.resume();
+process.stdin.resume(); // Ensure the standard input stream remains open.
+process.stdin.setEncoding('utf8'); // Set the encoding for the input data.
 
-// Set the character encoding for the input stream
-process.stdin.setEncoding('utf8');
-
-// Attach a listener for 'data' events, appending chunks to the buffer
-process.stdin.on('data', (dataPortion) => {
-  receivedData += dataPortion; // Concatenate the new data chunk
+// Event listener for 'data' chunks received from stdin.
+process.stdin.on('data', (incomingChunk) => {
+  inputBuffer += incomingChunk; // Append the new chunk to our buffer.
 });
 
-// Attach a listener for the 'end' event, indicating all input has been received
+// Event listener for the 'end' of the standard input stream.
 process.stdin.on('end', () => {
-  // An array for potential internal state, initialized with arbitrary values (unused)
-  const initialValues = [1, 1];
+  // This variable is declared but not used in the original logic.
+  const unusedCoordinates = [0, 0];
 
-  // Trim whitespace, then split the accumulated data by newline characters.
-  // Destructure into the primary string, an unused operation count, and command lines.
-  let [targetString, numOperations, ...commandLines] = receivedData.trim().split('\n');
+  // Process the accumulated input: trim whitespace, then split into lines.
+  // The first line is the initial string, the second is an unused operation count,
+  // and the rest are individual operation commands.
+  let [currentString, operationCount, ...operationLines] = inputBuffer.trim().split('\n');
 
-  // Map each raw command line into a structured operation object
-  const actionList = commandLines.map((rawCommand) => {
-    // Split the command line by space to get the action type and its parameters
-    const [actionType, ...parameters] = rawCommand.split(' ');
+  // Map each raw operation line into a structured object.
+  const parsedOperations = operationLines.map((singleOperationLine) => {
+    const [operationType, ...operationArguments] = singleOperationLine.split(' ');
 
-    // For 'print' and 'reverse' actions, all parameters are numeric indices
-    if (actionType === 'print' || actionType === 'reverse') {
+    // Differentiate parsing based on the operation type.
+    if (operationType === 'print' || operationType === 'reverse') {
+      // For 'print' and 'reverse', all arguments are numeric indices.
       return {
-        actionType,
-        parameters: parameters.map((numericString) => parseInt(numericString, 10)),
+        operationType,
+        operationArguments: operationArguments.map((numericValue) =>
+          parseInt(numericValue, 10)
+        ),
       };
     } else {
-      // For 'replace' action, parameters are two numeric indices and a string
-      const [firstPos, secondPos, substituteText] = parameters;
+      // For 'replace', the first two arguments are numeric indices, the third is a string.
+      const [firstArg, secondArg, replacementText] = operationArguments;
       return {
-        actionType,
-        parameters: [parseInt(firstPos, 10), parseInt(secondPos, 10), substituteText],
+        operationType,
+        operationArguments: [
+          parseInt(firstArg, 10),
+          parseInt(secondArg, 10),
+          replacementText,
+        ],
       };
     }
   });
 
-  // Iterate over the parsed operation objects and execute each action
-  actionList.forEach(({actionType, parameters}) => {
-    switch (actionType) {
+  // Execute each parsed operation sequentially.
+  parsedOperations.forEach(({ operationType, operationArguments }) => {
+    switch (operationType) {
       case 'print': {
-        // Log a substring of the target string based on start and end indices
-        const startIdx = parameters[0];
-        const endIdx = parameters[1];
-        return console.log(targetString.slice(startIdx, endIdx + 1));
+        // Print a substring from the current string.
+        // The second argument is inclusive, so we add 1 to the end index for slice.
+        return console.log(
+          currentString.slice(
+            operationArguments[0],
+            operationArguments[1] + 1
+          )
+        );
       }
       case 'reverse': {
-        // Apply the flipSegment function to reverse a part of the target string
-        targetString = flipSegment(targetString, ...parameters);
-        return; // Terminate this case execution
+        // Reverse a segment of the current string.
+        currentString = invertSubstring(currentString, ...operationArguments);
+        return;
       }
       case 'replace': {
-        // Apply the substituteSegment function to replace a part of the target string
-        targetString = substituteSegment(targetString, ...parameters);
-        return; // Terminate this case execution
+        // Replace a segment of the current string with a new one.
+        currentString = substituteSegment(currentString, ...operationArguments);
+        return;
       }
     }
   });
 });
 
 /**
- * Reverses a specified segment within a given string.
- *
- * @param {string} originalStr The string to be modified.
- * @param {number} startIdx The zero-based starting index of the segment to reverse.
- * @param {number} endIdx The zero-based ending index of the segment to reverse.
- * @returns {string} The new string with the specified segment reversed.
+ * Reverses a specified substring within a given string.
+ * @param {string} originalStr The string to modify.
+ * @param {number} startIndex The starting index of the segment to reverse (inclusive).
+ * @param {number} endIndex The ending index of the segment to reverse (inclusive).
+ * @returns {string} The string with the specified segment reversed.
  */
-const flipSegment = (originalStr, startIdx, endIdx) =>
-  originalStr.substring(0, startIdx) + // The part of the string before the segment
+const invertSubstring = (originalStr, startIndex, endIndex) =>
+  originalStr.substring(0, startIndex) + // Part before the segment
   originalStr
-    .substring(startIdx, endIdx + 1) // Extract the segment to be reversed
-    .split('') // Convert the segment to an array of characters
-    .reverse() // Reverse the array of characters
-    .join('') + // Join the characters back into a string
-  originalStr.substring(endIdx + 1); // The part of the string after the segment
+    .substring(startIndex, endIndex + 1) // The segment to reverse
+    .split('') // Convert to array of characters
+    .reverse() // Reverse the array
+    .join('') + // Join back to a string
+  originalStr.substring(endIndex + 1); // Part after the segment
 
 /**
- * Replaces a specified segment within a string with new content.
- *
- * @param {string} originalStr The string to be modified.
- * @param {number} startIdx The zero-based starting index of the segment to replace.
- * @param {number} endIdx The zero-based ending index of the segment to replace.
- * @param {string} newContent The string to insert as a replacement.
- * @returns {string} The new string with the specified segment replaced.
+ * Replaces a specified substring within a given string with a new segment.
+ * @param {string} originalStr The string to modify.
+ * @param {number} startIndex The starting index of the segment to replace (inclusive).
+ * @param {number} endIndex The ending index of the segment to replace (inclusive).
+ * @param {string} newSegment The string to insert as replacement.
+ * @returns {string} The string with the specified segment replaced.
  */
-const substituteSegment = (originalStr, startIdx, endIdx, newContent) =>
-  originalStr.substring(0, startIdx) + // The part of the string before the segment
-  newContent + // The new content to be inserted
-  originalStr.substring(endIdx + 1); // The part of the string after the segment
+const substituteSegment = (originalStr, startIndex, endIndex, newSegment) =>
+  originalStr.substring(0, startIndex) + // Part before the segment
+  newSegment + // The new segment
+  originalStr.substring(endIndex + 1); // Part after the segment

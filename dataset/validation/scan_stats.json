@@ -1,0 +1,13 @@
+{
+  "dataset solutions": {
+    "total_clones": 19996,
+    "missing_original": 0,
+    "bad_filename": 0,
+    "local_sanity_hard_fail": 0,
+    "local_sanity_warning": 1669,
+    "local_type1_pass": 4999,
+    "local_type1_fail": 0,
+    "unsampled": 10237,
+    "llm_requests": 4760
+  }
+}

@@ -1,111 +1,73 @@
-"use strict"; // Enable strict mode for better error handling and cleaner code.
+"use strict";
 
-/**
- * Initializes a data source for reading input.
- * @returns {object} An object providing methods to navigate through input data.
- */
-const buildSource = () => {
-  // Read all lines from standard input, trim whitespace, and split by newline.
-  const dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+// This function initializes an object responsible for reading input lines.
+const makeInputReader = () => {
+    // Reads the entire standard input, decodes it as UTF-8, removes leading/trailing whitespace,
+    // and then splits the content into an array of strings, one for each line.
+    const rawLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-  const dataStream = {
-    segmentList: dataLines, // The array of input lines.
-    currentPosition: 0, // Current index in the segmentList.
-    totalSegments: dataLines.length, // Total number of available segments.
+    // The reader object maintains the state of input consumption.
+    const readerInstance = {
+        "lineData": rawLines,       // Stores all the input lines.
+        "currentIdx": 0,            // Tracks the index of the next line to be read.
+        "maxIdx": rawLines.length,  // Stores the total number of input lines.
 
-    /**
-     * Checks if there are more segments to read.
-     * @returns {boolean} True if more segments exist, false otherwise.
-     */
-    hasRemaining: function() {
-      return this.currentPosition < this.totalSegments;
-    },
+        // Method to check if there are more lines available to read.
+        "hasMore": function () {
+            return this.currentIdx < this.maxIdx;
+        },
 
-    /**
-     * Retrieves the next segment from the input stream.
-     * @returns {string} The next segment.
-     * @throws {string} "EndOfStreamReachedError" if no more segments are available.
-     */
-    retrieveNext: function() {
-      if (!this.hasRemaining()) {
-        throw "EndOfStreamReachedError";
-      } else {
-        return this.segmentList[this.currentPosition++];
-      }
-    }
-  };
-  return dataStream;
+        // Method to retrieve the next line from the input.
+        "getNext": function () {
+            // If no more lines are available, an error is thrown.
+            if (!this.hasMore()) {
+                throw "ArrayIndexOutOfBoundsException";
+            } else {
+                // Returns the current line and increments the index for the next read.
+                return this.lineData[this.currentIdx++];
+            }
+        }
+    };
+    return readerInstance;
 };
 
-// Create a singleton instance of the input source.
-const sourceInstance = buildSource();
+// Global instance of the input reader, created once at the start.
+const inputReader = makeInputReader();
 
-/**
- * Fetches the next raw string segment.
- * @returns {string} The next string.
- */
-const fetchSegment = () => sourceInstance.retrieveNext();
+// Utility functions to simplify reading different data types from the input.
+const readNextLine = () => inputReader.getNext();
+const readNextInt = () => parseInt(inputReader.getNext());
+const readStrArray = () => inputReader.getNext().split(" ");
+const readIntArray = () => inputReader.getNext().split(" ").map(itemStr => parseInt(itemStr));
+const readCharArray = () => inputReader.getNext().split("");
+const hasMoreLines = () => inputReader.hasMore();
 
-/**
- * Fetches the next segment and parses it as an integer.
- * @returns {number} The next integer.
- */
-const fetchInteger = () => parseInt(sourceInstance.retrieveNext());
+// A standardized function for printing output to the console.
+const printResult = (...outputVals) => console.log(...outputVals);
 
-/**
- * Fetches the next segment and splits it into a string array by space.
- * @returns {string[]} An array of strings.
- */
-const fetchStringArray = () => sourceInstance.retrieveNext().split(" ");
+// The core logic of the program.
+const executeSolution = () => {
+    // Reads two integer values from the current input line.
+    const [valA, valB] = readIntArray();
 
-/**
- * Fetches the next segment, splits it by space, and maps elements to integers.
- * @returns {number[]} An array of integers.
- */
-const fetchIntegerArray = () => sourceInstance.retrieveNext().split(" ").map(itemElement => parseInt(itemElement));
+    // Initializes the answer with the absolute difference of the absolute values of valA and valB.
+    let finalAnswer = Math.abs(Math.abs(valA) - Math.abs(valB));
 
-/**
- * Fetches the next segment and splits it into a character array.
- * @returns {string[]} An array of characters.
- */
-const fetchCharacterArray = () => sourceInstance.retrieveNext().split("");
-
-/**
- * Checks if there are more segments available in the source instance.
- * @returns {boolean} True if more segments exist, false otherwise.
- */
-const checkRemaining = () => sourceInstance.hasRemaining();
-
-/**
- * Prints values to the console.
- * @param {...any} outputValues - Values to be printed.
- */
-const displayOutput = (...outputValues) => console.log(...outputValues);
-
-/**
- * Main program execution logic.
- */
-const executeProgram = () => {
-    // Read two integers from the input.
-    const [firstVal, secondVal] = fetchIntegerArray();
-
-    // Calculate initial absolute difference between absolute values.
-    let finalResult = Math.abs(Math.abs(firstVal) - Math.abs(secondVal));
-
-    // Apply conditional adjustments based on the values.
-    if (firstVal * secondVal < 0) {
-        finalResult += 1;
-    }
-    else if ((firstVal > 0 && secondVal === 0) || (firstVal === 0 && secondVal < 0)) {
-        finalResult += 1;
-    }
-    else if (firstVal > secondVal) {
-        finalResult += 2;
+    // Applies conditional adjustments to the final answer based on the relationship between valA and valB.
+    if (valA * valB < 0) {
+        // If valA and valB have opposite signs.
+        finalAnswer += 1;
+    } else if ((valA > 0 && valB === 0) || (valA === 0 && valB < 0)) {
+        // Specific edge cases involving zero and one positive/negative value.
+        finalAnswer += 1;
+    } else if (valA > valB) {
+        // If valA is strictly greater than valB.
+        finalAnswer += 2;
     }
 
-    // Display the computed final result.
-    console.log(finalResult);
+    // Prints the computed final answer to the console.
+    printResult(finalAnswer);
 };
 
-// Initiate the program.
-executeProgram();
+// Invokes the main solution function to start program execution.
+executeSolution();

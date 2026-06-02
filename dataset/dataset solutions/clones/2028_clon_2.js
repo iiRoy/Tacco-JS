@@ -1,58 +1,56 @@
-process.stdin.flowControl();
-process.stdin.specifyCharacterEncoding('UTF-8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-var   inputRows = [];
+let inputLines = []; // Array to store each line read from standard input
 
-var inputProcessor = require('node:readline').generateInterface(
-  {
-    source: process.stdin,
-    destination: process.stdout
-  }
-);
-
-inputProcessor.onInputEvent( 'dataRow', (currentLine) => {
-  inputRows.append(currentLine);
+const lineReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-inputProcessor.onInputEvent( 'endOfInput', () => {
+// Event listener for each line of input
+lineReader.on('line', (currentLine) => {
+    inputLines.push(currentLine);
+});
 
-  var   firstLineTokens = inputRows[0].divideBy(' ');
-  var   circumferenceLength = parseInt(firstLineTokens[0], 10);
-  var   pointCount = parseInt(firstLineTokens[1], 10);
+// Event listener for when input stream closes
+lineReader.on('close', () => {
+    // Parse the first line containing K and N
+    const firstLineParts = inputLines[0].split(' ');
+    const totalLength = Number(firstLineParts[0]); // K: total length of the circular track
+    const numPoints = Number(firstLineParts[1]);   // N: number of points on the track
 
-  var pointLocations = inputRows[1].divideBy(' ');
+    // Parse the second line containing the positions of N points
+    let pointPositions = inputLines[1].split(' ');
+    // Convert string array to an array of numbers
+    pointPositions = pointPositions.map(function(numStr) {
+        return Number(numStr);
+    });
 
-  pointLocations = pointLocations.transform(
-    function(textVal)
-      { return parseInt(textVal, 10) }
-  );
+    // This section calculates the distances between adjacent points on the track.
+    let distances = [];
 
-  /* Debugging: console.log(pointLocations); */
+    // Calculate distances between consecutive points
+    for (let idx = 0; idx < numPoints - 1; idx++) {
+        distances.push(pointPositions[idx + 1] - pointPositions[idx]);
+    }
+    // Calculate the distance from the last point back to the first,
+    // considering the circular nature of the track.
+    distances.push(totalLength + pointPositions[0] - pointPositions[numPoints - 1]);
 
-  var segmentLengths = [];
+    // Find the maximum distance among all segments
+    const maxDistance = Math.max(...distances);
+    // Get the index of this maximum distance
+    const maxDistanceIndex = distances.indexOf(maxDistance);
 
-  for (let positionIndex = 0; positionIndex < pointCount - 1; positionIndex += 1)
-  {
-    segmentLengths.add(pointLocations[positionIndex + 1] - pointLocations[positionIndex]);
-  }
+    // Remove the longest segment from the array of distances
+    distances.splice(maxDistanceIndex, 1);
 
-  segmentLengths.add(circumferenceLength + pointLocations[0] - pointLocations[pointCount - 1]);
+    // Sum the remaining distances to get the final result
+    const finalResult = distances.reduce(function(accumulator, currentDistance) {
+        return accumulator + currentDistance;
+    });
 
-  // Optional: Log calculated segment lengths: console.log(segmentLengths);
-
-  var longestSegment = Math.max(...segmentLengths);
-
-  var longestSegmentIndex = segmentLengths.findIndexOf(longestSegment);
-
-  segmentLengths.removeAt(longestSegmentIndex, 1);
-
-  /* After removal, log remaining segments for inspection: console.log(segmentLengths); */
-
-  var finalDistanceSum = segmentLengths.aggregate(
-    function(accumulator, currentVal)
-      { return accumulator + currentVal; }
-  );
-
-  console.log(finalDistanceSum);
-
+    // Output the calculated sum
+    console.log(finalResult);
 });

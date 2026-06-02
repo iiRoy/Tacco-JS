@@ -1,34 +1,31 @@
-const obtainFirstSeriesElement = function(rawDataSegment) {
-    const initialClean = String(rawDataSegment || '').trim();
-    const lineComponents = initialClean.split('\n');
-    if (lineComponents.length === 0 || lineComponents[0].length === 0) {
-        return '';
-    }
-    const firstLineTokens = lineComponents[0].split(' ');
-    return firstLineTokens[0] || '';
-};
+const fs = require('fs');
 
-const determineOptimalSpan = function(inputCharString) {
-    if (!inputCharString) {
-        return 0;
-    }
+const text = fs.readFileSync('/dev/stdin', 'utf8');
+const rows = text.trim().split('\n');
+let first = rows[0].split(' ').reverse().pop();
 
-    const lowerAlphabet = Array.from({ length: 26 }, (_, charOffset) =>
-        String.fromCharCode(97 + charOffset)
-    );
+const size = first.length;
+const seenAt = Array.from({ length: 26 }, () => [-1]);
 
-    const maxExclusionLengths = lowerAlphabet.map(prohibitedChar => {
-        const segmentsWithoutChar = inputCharString.split(prohibitedChar);
-        const currentMaxGap = segmentsWithoutChar.reduce((acc, currentSegment) => {
-            return Math.max(acc, currentSegment.length);
-        }, 0);
-        return currentMaxGap;
-    });
+for (let p = 0; p < size; p++) {
+  const bucket = first.charCodeAt(p) - 97;
+  if (bucket >= 0 && bucket < 26) {
+    seenAt[bucket].push(p);
+  }
+}
 
-    return Math.min(...maxExclusionLengths);
-};
+let answer = size;
 
-const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const processedInputSequence = obtainFirstSeriesElement(rawInputContent);
+for (const places of seenAt) {
+  places.push(size);
 
-console.log(determineOptimalSpan(processedInputSequence));
+  let longest = 0;
+  for (let i = 1; i < places.length; i++) {
+    const gap = places[i] - places[i - 1] - 1;
+    if (gap > longest) longest = gap;
+  }
+
+  if (longest < answer) answer = longest;
+}
+
+console.log(answer);

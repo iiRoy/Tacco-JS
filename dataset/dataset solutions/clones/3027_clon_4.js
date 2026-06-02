@@ -1,133 +1,96 @@
-"use strict";
-
-// Replacement for I class (input parser)
-function* acquireNumericSequence(sourceString, typeConverter = Number) {
-    const textLines = sourceString.split("\n");
-    let currentLineIndex = 0;
-    let currentTokenPosition = 0;
-    let activeLineTokens = [];
-
-    while (currentLineIndex < textLines.length) {
-        if (currentTokenPosition === 0) { // Time to parse a new line
-            const lineContent = textLines[currentLineIndex];
-            // Mimic original's behavior: trim then split by single space.
-            // This can result in empty string tokens for multiple spaces or empty lines.
-            activeLineTokens = lineContent.trim().split(" ");
-        }
-
-        if (currentTokenPosition < activeLineTokens.length) {
-            yield typeConverter(activeLineTokens[currentTokenPosition]);
-            currentTokenPosition++;
-        } else {
-            // All tokens on the current line have been consumed, move to the next line
-            currentLineIndex++;
-            currentTokenPosition = 0;
+function* tokenGenerator(inputContent, parseFn = Number) {
+    const lines = inputContent.split("\n");
+    for (const line of lines) {
+        const tokens = line.trim().split(" ").filter(Boolean);
+        for (const token of tokens) {
+            yield parseFn(token);
         }
     }
 }
 
-// Replacement for sieveOfEratosthenes
-function derivePrimeNumbers(maximumBoundary) {
-    const compositeStatus = new Array(maximumBoundary + 1).fill(false); // false means prime candidate
-    compositeStatus[0] = true; // 0 is not prime
-    compositeStatus[1] = true; // 1 is not prime
+function primeCollector(upperBound) {
+    const candidates = new Set();
+    for (let k = 2; k <= upperBound; k++) {
+        candidates.add(k);
+    }
 
-    const identifiedPrimesList = [];
-    for (let currentCandidate = 2; currentCandidate <= maximumBoundary; currentCandidate += 1) {
-        if (!compositeStatus[currentCandidate]) { // If currentCandidate is prime
-            identifiedPrimesList.push(currentCandidate);
-            // Mark all multiples of currentCandidate as composite
-            // Start marking from currentCandidate * currentCandidate for efficiency
-            for (let multipleValue = currentCandidate * currentCandidate; multipleValue <= maximumBoundary; multipleValue += currentCandidate) {
-                compositeStatus[multipleValue] = true;
+    for (let p = 2; p * p <= upperBound; p++) {
+        if (candidates.has(p)) {
+            for (let multiple = p * p; multiple <= upperBound; multiple += p) {
+                candidates.delete(multiple);
             }
         }
     }
-    return identifiedPrimesList;
+    return Array.from(candidates).sort((x, y) => x - y);
 }
 
-var knownPrimes = derivePrimeNumbers(100000); // Pre-calculate primes globally
-
-// Replacement for gcd (iterative Euclidean algorithm)
-function findGreatestCommonDivisor(valueA, valueB) {
-    while (valueB !== 0) {
-        const remainder = valueA % valueB;
-        valueA = valueB;
-        valueB = remainder;
+function greatestCommonDivisor(val1, val2) {
+    let currentA = val1;
+    let currentB = val2;
+    while (currentB !== 0) {
+        const temp = currentB;
+        currentB = currentA % currentB;
+        currentA = temp;
     }
-    return valueA;
+    return currentA;
 }
 
-// Replacement for main function
-function processComputationalTask(rawData) {
-    const numericTokenIterator = acquireNumericSequence(rawData);
+const primeList = primeCollector(100000);
 
-    const totalElementsCount = numericTokenIterator.next().value; // Reads the first number 'n'
-    const elementCollection = [];
-
-    // Read 'n+1' additional elements into the collection
-    for (let k = 0; k <= totalElementsCount; k++) {
-        elementCollection.push(numericTokenIterator.next().value);
+function factorizeAndAdd(numberToFactor, primeArray, factorSet, startIndex = 0) {
+    if (numberToFactor <= 1) {
+        return;
     }
-    elementCollection.reverse(); // Reverse the order of elements
+    if (startIndex >= primeArray.length) {
+        factorSet.add(numberToFactor);
+        return;
+    }
 
-    // Compute the greatest common divisor of all elements in the collection
-    const collectiveDivisor = elementCollection.reduce((accumulator, currentVal) => findGreatestCommonDivisor(accumulator, currentVal));
+    const currentP = primeArray[startIndex];
+    if (numberToFactor % currentP === 0) {
+        factorSet.add(currentP);
+        while (numberToFactor % currentP === 0) {
+            numberToFactor /= currentP;
+        }
+    }
+    factorizeAndAdd(numberToFactor, primeArray, factorSet, startIndex + 1);
+}
 
-    // Normalize the collection by dividing each element by the collective divisor
-    const normalizedCollection = elementCollection.map(val => val / collectiveDivisor);
+function processInput(inputContent) {
+    const tokenStream = tokenGenerator(inputContent);
 
-    const resultingFactors = new Set(); // Use a Set to automatically handle unique factors
+    const countN = tokenStream.next().value;
+    const dataArrReversed = [];
+    for (let k = 0; k <= countN; k++) {
+        dataArrReversed.unshift(tokenStream.next().value);
+    }
 
-    // First phase of factor identification: based on properties of the normalized collection
-    knownPrimes.forEach(potentialFactor => {
-        // Condition 1: If the first element of the normalized collection is not divisible by the potential factor, skip.
-        if (normalizedCollection[0] % potentialFactor !== 0) {
-            return; // Equivalent to 'continue' for this iteration of forEach
+    const initialGCD = dataArrReversed.slice(1).reduce(greatestCommonDivisor, dataArrReversed[0]);
+
+    const normalizedArr = dataArrReversed.map(val => val / initialGCD);
+
+    const resultFactors = new Set();
+    const firstElement = normalizedArr[0];
+    const maxIdx = countN;
+
+    primeList.filter(currentPrime => {
+        if (firstElement % currentPrime !== 0) {
+            return false;
         }
 
-        // Condition 2: Check sums for specific sub-sequences
-        // This uses `every` to ensure that all sub-conditions (for loopIndex from 1 to potentialFactor-1) pass.
-        // If any sub-condition fails, `every` returns false, and the potentialFactor is not added.
-        const allSubConditionsSatisfied = Array.from({ length: potentialFactor - 1 }, (_, k) => k + 1)
-            .every(loopIndex => {
-                let currentSum = 0;
-                let subCollectionIndex = loopIndex;
-                while (subCollectionIndex <= totalElementsCount) {
-                    currentSum += normalizedCollection[subCollectionIndex];
-                    subCollectionIndex += potentialFactor - 1;
-                }
-                return currentSum % potentialFactor === 0;
-            });
-
-        if (allSubConditionsSatisfied) {
-            resultingFactors.add(potentialFactor);
-        }
-    });
-
-    // Second phase of factor identification: prime factors of the original collective divisor
-    let mutableCollectiveDivisor = collectiveDivisor; // Work with a mutable copy
-    for (const p of knownPrimes) {
-        if (mutableCollectiveDivisor <= 1) break; // All factors have been found
-        if (mutableCollectiveDivisor % p === 0) {
-            resultingFactors.add(p);
-            // Repeatedly divide out the factor until it's no longer divisible
-            while (mutableCollectiveDivisor % p === 0) {
-                mutableCollectiveDivisor /= p;
+        return Array.from({ length: currentPrime - 1 }, (_, idx) => idx + 1).every(offset => {
+            let currentSum = 0;
+            for (let currentIdx = offset; currentIdx <= maxIdx; currentIdx += (currentPrime - 1)) {
+                currentSum += normalizedArr[currentIdx];
             }
-        }
-    }
-    // If after dividing by all known primes, there's a remainder greater than 1,
-    // that remainder itself must be a prime factor (larger than knownPrimes limit or not yet encountered)
-    if (mutableCollectiveDivisor > 1) {
-        resultingFactors.add(mutableCollectiveDivisor);
-    }
+            return currentSum % currentPrime === 0;
+        });
+    }).forEach(p => resultFactors.add(p));
 
-    // Convert the Set to an Array, sort numerically, and print each unique factor
-    Array.from(resultingFactors)
-        .sort((valA, valB) => valA - valB)
-        .forEach(factor => console.log(factor));
+    factorizeAndAdd(initialGCD, primeList, resultFactors);
+
+    const finalSortedFactors = Array.from(resultFactors).sort((x, y) => x - y);
+    finalSortedFactors.forEach(factor => console.log(factor));
 }
 
-// Read input from standard input and execute the main processing task
-processComputationalTask(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,53 +1,62 @@
-'use strict'; // Enforce strict mode for cleaner code practices
+'use strict'; // Enforce strict mode for cleaner code execution.
 
-function ProcessSubmissions(rawInputData) {
-  // Trim leading/trailing whitespace and split the input into individual lines
-  rawInputData = rawInputData.trim().split('\n');
+/**
+ * Processes contest submission data to calculate the number of accepted problems
+ * and the total penalty points incurred.
+ * @param {string} rawData - The raw input string, typically read from standard input.
+ */
+function ProcessInput(rawData) {
+  // Normalize the input: remove any leading/trailing whitespace and split into an array of lines.
+  const processedData = rawData.trim().split('\n');
 
-  // Parse the first line to get problem counts and submission limits
-  const initialParams = rawInputData[0].split(' ').map(lineStr => Number(lineStr));
-  const problemCount = initialParams[0]; // Total number of problems (N)
-  const submissionLimit = initialParams[1]; // Maximum submissions allowed (M)
+  // The first line contains global parameters: N (total problems) and M (total submissions).
+  // Split this line by space and convert parts to integers, specifying base 10 for safety.
+  const initialParams = processedData[0].split(' ').map(lineSegment => parseInt(lineSegment, 10));
+  const problemCount = initialParams[0]; // Represents the total number of distinct problems.
+  const submissionCount = initialParams[1]; // Represents the total number of submission attempts.
 
-  // Extract all submission records, skipping the first line
-  const remainingLines = rawInputData.slice(1);
+  // Extract all subsequent lines, which detail individual submission events.
+  const remainingSubmissions = processedData.slice(1);
 
-  // Map each raw submission string into an array of its components
-  const parsedSubmissions = remainingLines.map(lineStr => {
-    return lineStr.split(' ');
+  // Transform each submission line into an array, splitting by space to separate problem ID and status.
+  const submissionRecords = remainingSubmissions.map(singleLine => {
+    return singleLine.split(' ');
   });
 
-  // Initialize counters for accepted submissions and total penalties
-  let acceptedCount = 0;
-  let penaltyTotal = 0;
-  let consecutiveWrong = 0; // This variable is declared but not utilized in the final output calculation
-  let lastAcceptedProblem = 0; // Tracks the ID of the last problem that received an AC
-  let wrongAttempts = {}; // Dictionary to store wrong answer counts for each problem ID
+  // Initialize variables to track the contest results.
+  let acceptedProblems = 0; // Counter for problems that have been successfully solved.
+  let penaltyPoints = 0; // Accumulator for the total penalty score.
+  let wrongAttempts = 0; // This variable is declared but its value is always reset and not used in calculations.
+  let lastAcceptedProblemId = 0; // Stores the ID of the problem most recently marked as 'AC' to prevent re-counting.
+  let wrongAttemptTracker = {}; // An object to store the count of 'Wrong Answer' (WA) submissions for each problem ID.
 
-  // Iterate over each parsed submission record
-  parsedSubmissions.forEach(currentAttempt => {
-    // Initialize wrong attempt counter for a problem if it hasn't been seen yet
-    if (!wrongAttempts[currentAttempt[0]]) {
-      wrongAttempts[currentAttempt[0]] = 0;
+  // Iterate through each submission record to update scores and states.
+  submissionRecords.forEach(currentRecord => {
+    // Ensure that an entry exists for the current problem ID in the wrong attempt tracker.
+    // If it doesn't exist, initialize it to zero.
+    if (!wrongAttemptTracker[currentRecord[0]]) {
+      wrongAttemptTracker[currentRecord[0]] = 0;
     }
 
-    // Process an Accepted (AC) submission
-    if (currentAttempt[1] === 'AC' && lastAcceptedProblem !== currentAttempt[0]) {
-      acceptedCount++; // Increment the count of successfully solved problems
+    // Check if the current submission's status is 'AC' (Accepted).
+    // Also, verify that this specific problem ID has not been previously accepted (to avoid double counting).
+    if (currentRecord[1] === 'AC' && lastAcceptedProblemId !== currentRecord[0]) {
+      acceptedProblems++; // Increment the count of successfully solved problems.
 
-      penaltyTotal += wrongAttempts[currentAttempt[0]]; // Add accumulated WAs for this problem to total penalty
-      consecutiveWrong = 0; // Reset consecutive wrong answers (though unused)
-      lastAcceptedProblem = currentAttempt[0]; // Update the last problem that got an AC
-    }
-    // Process a Wrong Answer (WA) submission
-    else if (currentAttempt[1] === 'WA') {
-      wrongAttempts[currentAttempt[0]] += 1; // Increment WA count for the specific problem
+      // Add the accumulated wrong attempts for this problem to the total penalty points.
+      penaltyPoints += wrongAttemptTracker[currentRecord[0]];
+      wrongAttempts = 0; // Reset the unused wrongAttempts counter.
+      lastAcceptedProblemId = currentRecord[0]; // Update the last accepted problem ID to the current one.
+    } else if (currentRecord[1] === 'WA') {
+      // If the submission status is 'WA' (Wrong Answer).
+      wrongAttemptTracker[currentRecord[0]] += 1; // Increment the wrong attempt count for this specific problem.
     }
   });
 
-  // Output the final results: number of accepted problems and total penalty
-  console.log(`${acceptedCount} ${penaltyTotal}`);
+  // Output the final calculated number of accepted problems and total penalty points.
+  console.log(`${acceptedProblems} ${penaltyPoints}`);
 }
 
-// Invoke the main processing function with input read from standard input
-ProcessSubmissions(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input (typically a file in competitive programming environments)
+// using Node.js's file system module, and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

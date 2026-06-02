@@ -1,172 +1,155 @@
-/* This JavaScript code implements a Bellman-Ford-like algorithm
-   to solve a system of difference constraints. */
-function executeProgram(  ) {
-	// Read the number of nodes (vertices) for the graph
-	var nodeCount = retrieveInput();
-	// Read the number of constraints (edges)
-	var edgeCount = retrieveInput();
+function processMainLogic() {
+    // Read the number of nodes and edges from input
+    let nodeCount = readNextValue();
+    let edgeCount = readNextValue();
 
-	// Initialize an array to store direct inequalities (e.g., x - y <= C)
-	var inequalitiesList = [  ];
-	// Initialize an array to store ambiguous constraints (e.g., |x - y| <= C)
-	var ambiguousConstraints = [ ];
+    // Initialize arrays to store different types of constraints
+    // 'directConstraints' stores simple inequality constraints (a - b <= C)
+    let directConstraints = [];
+    // 'conditionalConstraints' stores constraints that depend on a choice (e.g., |a - b| <= C)
+    let conditionalConstraints = [];
 
-	// Process each constraint given in the input
-	iterateRange(edgeCount, function(  ) {
-		// Get the constraint string
-		var constraintString = retrieveInput('string');
+    // Iterate through each edge/constraint provided in the input
+    iterateRange(edgeCount, function() {
+        let inputString = readNextValue('string'); // Read the constraint string
 
-		// Parse the constraint string to extract node indices and constant value
-		// Delimiters are <=, >=, *, +, -
-		var parsedParts = constraintString.split(/<=|>=|\*|\+|-/);
-		// Adjust node indices to be 0-based
-		parsedParts[0] = +parsedParts[0] - 1;
-		parsedParts[1] = +parsedParts[1] - 1;
-		// Convert the constant value to a number
-		parsedParts[2] = +parsedParts[2];
+        // Parse the string to extract node indices and the constant value
+        // The regex splits by operators like <=, >=, *, +, -
+        let parsedValues = inputString.split(/<=|>=|\*|\+|-/);
+        // Adjust node indices to be 0-based
+        parsedValues[0] = +parsedValues[0] - 1;
+        parsedValues[1] = +parsedValues[1] - 1;
+        // Convert the constant value to a number
+        parsedValues[2] = +parsedValues[2];
 
-		// Determine the type of constraint (e.g., <=, >=, *)
-		var constraintType;
-		if (constraintString.indexOf('*') !== -1) {
-			// Absolute difference constraint |x - y| <= C
-			constraintType = 2;
-		}
-		else {
-			// Directional inequality: 0 for <=, 1 for >=
-			constraintType = +(constraintString.indexOf('<=') === -1);
-		}
+        let operatorType; // Represents the type of operator (e.g., *, <=, >=)
+        if (inputString.indexOf('*') !== -1) {
+            operatorType = 2; // Denotes a '*' operator (absolute difference)
+        } else {
+            // 0 for '<=' (less than or equal to), 1 for '>=' (greater than or equal to)
+            operatorType = +(inputString.indexOf('<=') === -1);
+        }
 
-		// Determine the sign direction based on '+' or '-'
-		// 0 for '+', 1 for '-' (implicitly, if '+' is not found)
-		var signDirection = +(constraintString.indexOf('+') === -1);
+        let signType; // Represents the sign of the constant (e.g., +, -)
+        // 0 for '+' (positive), 1 for '-' (negative)
+        signType = +(inputString.indexOf('+') === -1);
 
-		// Based on constraint type, add corresponding edges to the graph
-		if (constraintType == 0) { // x - y <= C (or y - x <= -C)
-			if (signDirection == 0) { // x - y <= C (interpreted as y - x <= -C)
-				inequalitiesList[inequalitiesList.length] = [parsedParts[1], parsedParts[0], -parsedParts[2]];
-			}
-			else { // x - y <= C (interpreted as y - x <= 0 and x - y <= C)
-				inequalitiesList[inequalitiesList.length] = [parsedParts[1], parsedParts[0], 0];
-				inequalitiesList[inequalitiesList.length] = [parsedParts[0], parsedParts[1], parsedParts[2]];
-			}
-		}
-		else if (constraintType == 1) { // x - y >= C (or x - y <= -C)
-			if (signDirection == 0) { // x - y >= C (interpreted as x - y <= -C)
-				inequalitiesList[inequalitiesList.length] = [parsedParts[0], parsedParts[1], -parsedParts[2]];
-			}
-			else { // x - y >= C (interpreted as y - x <= C and x - y <= 0)
-				inequalitiesList[inequalitiesList.length] = [parsedParts[1], parsedParts[0], parsedParts[2]];
-				inequalitiesList[inequalitiesList.length] = [parsedParts[0], parsedParts[1], 0];
-			}
-		}
-		else { // |x - y| <= C (absolute difference)
-			if (signDirection == 0) { // |x - y| <= C (interpreted as x - y <= C and y - x <= C)
-				ambiguousConstraints[ambiguousConstraints.length] = [[parsedParts[0], parsedParts[1], -parsedParts[2]], [parsedParts[1], parsedParts[0], -parsedParts[2]]];
-			}
-			else { // |x - y| <= C (interpreted as x - y <= C and y - x <= C)
-				inequalitiesList[inequalitiesList.length] = [parsedParts[1], parsedParts[0], parsedParts[2]];
-				inequalitiesList[inequalitiesList.length] = [parsedParts[0], parsedParts[1], parsedParts[2]];
-			}
-		}
-	});
+        // Apply Bellman-Ford compatible edge representation based on constraint type
+        if (operatorType === 0) { // Constraint is 'a <= b + C' (or 'a - b <= C')
+            if (signType === 0) { // 'a <= b + C' -> b - a <= C
+                directConstraints[directConstraints.length] = [parsedValues[1], parsedValues[0], -parsedValues[2]];
+            } else { // 'a <= b - C' -> b - a <= -C AND a - b <= 0
+                directConstraints[directConstraints.length] = [parsedValues[1], parsedValues[0], 0];
+                directConstraints[directConstraints.length] = [parsedValues[0], parsedValues[1], parsedValues[2]];
+            }
+        } else if (operatorType === 1) { // Constraint is 'a >= b + C' (or 'a - b >= C')
+            if (signType === 0) { // 'a >= b + C' -> a - b >= C -> b - a <= -C
+                directConstraints[directConstraints.length] = [parsedValues[0], parsedValues[1], -parsedValues[2]];
+            } else { // 'a >= b - C' -> a - b >= -C -> b - a <= C AND a - b <= 0
+                directConstraints[directConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                directConstraints[directConstraints.length] = [parsedValues[0], parsedValues[1], 0];
+            }
+        } else { // Constraint is '|a - b| <= C' (operatorType === 2)
+            if (signType === 0) { // '|a - b| <= C' -> a - b <= C AND b - a <= C
+                conditionalConstraints[conditionalConstraints.length] = [[parsedValues[0], parsedValues[1], -parsedValues[2]], [parsedValues[1], parsedValues[0], -parsedValues[2]]];
+            } else { // '|a - b| <= -C' (impossible for C > 0, implies a=b) -> a - b <= -C AND b - a <= -C
+                directConstraints[directConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                directConstraints[directConstraints.length] = [parsedValues[0], parsedValues[1], parsedValues[2]];
+            }
+        }
+    });
 
-	// Initialize the final result to negative infinity
-	var finalResult = -Infinity;
-	// Iterate through all possible combinations for ambiguous constraints
-	iterateRange(1 << ambiguousConstraints.length, function(combinationIndex) {
-		// Create a new graph edge list by copying the direct inequalities
-		var currentGraphEdges = [ ].concat(inequalitiesList);
-		// For each ambiguous constraint, add one of its two possibilities based on the current combination
-		iterateRange(ambiguousConstraints.length, function(currentIdx) {
-			currentGraphEdges[currentGraphEdges.length] = ambiguousConstraints[currentIdx][(combinationIndex >> currentIdx) & 1];
-		});
+    let finalResult = -Infinity; // Initialize the maximum possible value found
 
-		// Initialize distances for Bellman-Ford algorithm
-		var distanceArray = [ ];
-		iterateRange(nodeCount, function(currentIdx) {
-			distanceArray[currentIdx] = Infinity;
-		});
-		// Set distance to source node (node 0) to 0
-		distanceArray[0] = 0;
+    // Iterate through all possible combinations for conditional constraints
+    // (1 << conditionalConstraints.length) gives 2^N combinations
+    iterateRange(1 << conditionalConstraints.length, function(combinationIndex) {
+        // Create a temporary graph by copying direct constraints
+        let currentGraphEdges = [].concat(directConstraints);
 
-		// Relax edges 'nodeCount' times using Bellman-Ford
-		iterateRange(nodeCount, function(  ) {
-			iterateRange(currentGraphEdges.length, function(currentIdx) {
-				var graphEdge = currentGraphEdges[currentIdx];
-				// Update distance if a shorter path is found
-				distanceArray[graphEdge[1]] = Math.min(distanceArray[graphEdge[0]] + graphEdge[2], distanceArray[graphEdge[1]]);
-			});
-		});
+        // Add edges from conditional constraints based on the current combination
+        iterateRange(conditionalConstraints.length, function(idx) {
+            // (combinationIndex >> idx) & 1 selects one of the two possible edges
+            currentGraphEdges[currentGraphEdges.length] = conditionalConstraints[idx][(combinationIndex >> idx) & 1];
+        });
 
-		// Check for negative cycles reachable from source node 0
-		// If d[0] is still 0, it means no negative cycle affects the source
-		if (distanceArray[0] == 0) {
-			// Update the final result with the maximum distance found in the current combination
-			finalResult = Math.max(finalResult, Math.max.apply(null, distanceArray));
-		}
-	});
+        // Initialize distances for Bellman-Ford algorithm
+        let distances = [];
+        iterateRange(nodeCount, function(nodeIdx) {
+            distances[nodeIdx] = Infinity; // All nodes initially unreachable
+        });
+        distances[0] = 0; // Start node (node 0) has distance 0
 
-	// Output the final result
-	if (finalResult === Infinity) {
-		displayOutput('inf'); // Indicates that distances can be arbitrarily large
-	}
-	else if (finalResult === -Infinity) {
-		displayOutput(-1); // Indicates no valid solution or unreachable nodes
-	}
-	else {
-		displayOutput(finalResult); // The maximum possible distance
-	}
+        // Run Bellman-Ford algorithm for nodeCount - 1 iterations
+        // (or nodeCount iterations to detect negative cycles, but here it's for finding shortest paths)
+        iterateRange(nodeCount, function() {
+            iterateRange(currentGraphEdges.length, function(edgeIdx) {
+                let currentEdge = currentGraphEdges[edgeIdx];
+                // Relax edge: d[v] = min(d[v], d[u] + weight)
+                distances[currentEdge[1]] = Math.min(distances[currentEdge[0]] + currentEdge[2], distances[currentEdge[1]]);
+            });
+        });
+
+        // Check for negative cycles reachable from source (node 0)
+        // If d[0] is still 0, it means no negative cycle affected the source,
+        // and the distances are valid.
+        if (distances[0] === 0) {
+            // Update the overall maximum result found
+            finalResult = Math.max(finalResult, Math.max.apply(null, distances));
+        }
+    });
+
+    // Output the final result based on its value
+    if (finalResult === Infinity) {
+        outputResult('inf'); // If the maximum distance is infinity
+    } else if (finalResult === -Infinity) {
+        outputResult(-1); // If no valid path was found (e.g., all paths lead to negative infinity)
+    } else {
+        outputResult(finalResult); // Print the calculated maximum distance
+    }
 }
 
-/* A utility function for iterating a specified number of times or over a range.
-   Can be called as iterateRange(count, callback) or iterateRange(start, end, callback). */
-function iterateRange(startVal, endVal, loopCallback) {
-	// If only two arguments are provided, assume startVal is count and endVal is callback
-	if (loopCallback == null) {
-		loopCallback = endVal;
-		endVal = startVal;
-		startVal = 0; // Default starting index is 0
-	}
-	// Loop from startVal (inclusive) up to endVal (exclusive)
-	for (var currentIdx = startVal; currentIdx < endVal; ++currentIdx) {
-		loopCallback(currentIdx); // Execute the provided callback for each iteration
-	}
+// Helper function for iterating a range
+function iterateRange(startVal, endVal, callbackFn) {
+    if (callbackFn == null) {
+        callbackFn = endVal;
+        endVal = startVal;
+        startVal = 0;
+    }
+    for (let loopCounter = startVal; loopCounter < endVal; ++loopCounter) {
+        callbackFn(loopCounter);
+    }
 }
 
 // Set up standard input processing
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// Buffer to store incoming input data
-var dataBuffer = '';
-// Index to track the current position in the processed input array
-var bufferPosition = 0;
+let rawDataBuffer = ''; // Buffer to store incoming input data
+let currentInputPointer = 0; // Pointer to the current position in the parsed input array
 
-/* Function to retrieve the next piece of input.
-   If 'string' is specified, returns a string; otherwise, returns a number. */
-function retrieveInput(dataType) {
-	if (dataType === 'string') {
-		return dataBuffer[bufferPosition++];
-	}
-	else {
-		return +dataBuffer[bufferPosition++]; // Convert to number
-	}
+// Function to read the next value from the input
+function readNextValue(dataType) {
+    if (dataType === 'string') {
+        return rawDataBuffer[currentInputPointer++];
+    } else {
+        return +rawDataBuffer[currentInputPointer++]; // Convert to number
+    }
 }
 
-/* Function to display output to the console. */
-function displayOutput(outputValue) {
-	console.log(outputValue);
+// Function to print output to console
+function outputResult(valueToPrint) {
+    console.log(valueToPrint);
 }
 
 // Event listener for incoming data chunks
 process.stdin.on('data', function(dataChunk) {
-	dataBuffer += dataChunk; // Append chunk to the buffer
+    rawDataBuffer += dataChunk;
 });
 
-// Event listener for end of input
+// Event listener for end of input stream
 process.stdin.on('end', function() {
-	// Split the accumulated input by whitespace into an array
-	dataBuffer = dataBuffer.split(/\s+/);
-	// Start the main program execution
-	executeProgram();
+    // Split the entire input by whitespace and store in the buffer
+    rawDataBuffer = rawDataBuffer.split(/\s+/);
+    processMainLogic(); // Start the main program logic
 });

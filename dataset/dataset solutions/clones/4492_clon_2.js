@@ -1,27 +1,32 @@
-inputSource.setCharEncoding( 'UTF-8' ) ; // Configure the character encoding for the standard input stream.
+process.stdin.setEncoding('utf8'); // Configure standard input to use UTF-8 encoding
 
-inputSource.addEventListener( 'dataReady' , function processInputData ( ) { // Set up an event handler for when input data is available.
+process.stdin.on('readable', function() {
+  // This event fires when there is data to read from stdin.
+  let dataBlock = process.stdin.read(); // Attempt to read a chunk of data.
+  let linesOfText; // Declare a variable to hold processed lines.
 
-  let dataBlock = inputSource.fetchData( ) ; // Read a segment of the incoming data.
+  // Proceed only if a data block was successfully read (not null).
+  if (dataBlock !== null) {
+    // Split the incoming data block into an array of strings, using newline as a delimiter.
+    linesOfText = dataBlock.split('\n');
 
-  let lineFragments ; // Declare a variable to store the processed lines.
-
-  if ( dataBlock !== null ) { // Only proceed if a valid data block was retrieved.
-
-    lineFragments = dataBlock.split( '\n' ) ; // Break the data block into an array of strings, using newline as a separator.
-
-    if ( lineFragments[ lineFragments.length - 1 ] === '' ) { // Check if the last element is an empty string, often due to a trailing newline.
-      lineFragments.removeLastEntry( ) ; // Remove the empty string element.
+    // If the last element is an empty string (due to a trailing newline), remove it.
+    if (linesOfText[linesOfText.length - 1] === '') {
+      linesOfText.pop();
     }
 
-    let parsedNumbersArray = lineFragments[0].split( ' ' ).map( function mapToInteger( itemString ) { // Take the first line, split it by spaces, and convert each part to an integer.
-      return parseInt( itemString ) ;
-    } ) ;
+    // Parse the first line of input. It's expected to contain space-separated numbers.
+    // Convert each string element to an integer.
+    const parsedNumbers = linesOfText[0].split(' ').map(function(itemValue) {
+      return parseInt(itemValue, 10); // Use radix 10 for explicit base.
+    });
 
-    let sumOne   = parsedNumbersArray[0] + parsedNumbersArray[1] , // Calculate the first sum.
-        sumTwo   = parsedNumbersArray[1] + parsedNumbersArray[2] , // Calculate the second sum.
-        sumThree = parsedNumbersArray[2] + parsedNumbersArray[0] ; // Calculate the third sum.
+    // Calculate three different sums from the first three parsed numbers.
+    const sumOne = parsedNumbers[0] + parsedNumbers[1];
+    const sumTwo = parsedNumbers[1] + parsedNumbers[2];
+    const sumThree = parsedNumbers[2] + parsedNumbers[0];
 
-    console.log( Math.min( sumOne , sumTwo , sumThree ) ) ; // Display the smallest of the three calculated sums.
+    // Output the smallest of the three calculated sums to the console.
+    console.log(Math.min(sumOne, sumTwo, sumThree));
   }
-} ) ;
+});

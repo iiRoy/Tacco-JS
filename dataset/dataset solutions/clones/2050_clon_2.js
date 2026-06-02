@@ -1,45 +1,43 @@
-// This primary function orchestrates the processing of incoming data
-function ExecuteProgram (rawText)
-{
-    // The initial string input is segmented into an array of string lines
-    rawText = rawText.split('\n');
+function ProcessInput(rawData) {
+  // Split the incoming raw data string into individual lines.
+  rawData = rawData.split('\n');
 
-    // From the second line of input, numerical values are extracted and parsed
-    var numericValues = rawText[1].split(' ').map(Number) ;
+  // Extract the second line, split it by spaces, and convert each part to a number.
+  var dataValues = rawData[1].split(' ').map(Number);
 
-    // An array is initialized to track the frequency of each number, up to a maximum index of 20009
-    var occurrenceMap = new Array(20010).fill(0) ;
+  // Create a frequency map (array) initialized with zeros, assuming values up to 20009.
+  const frequencyCounts = new Array(20010).fill(0);
 
-    // A loop iterates through the collection of numerical values
-    for ( var currentIdx = 0 ; currentIdx < numericValues.length ; currentIdx++ )
-    {
-        // The count for each observed number is incremented within the frequency map
-        occurrenceMap[numericValues[currentIdx]]++ ;
-    }
+  // Declare a loop index variable, scoped to the function.
+  var idx;
 
-    // A variable is set up to accumulate the grand total of possible pairs
-    var totalPairs = 0 ;
+  // Populate the frequency map by counting occurrences of each number in dataValues.
+  for (idx = 0; idx < dataValues.length; idx++) {
+    frequencyCounts[dataValues[idx]]++;
+  }
 
-    // The frequency map is traversed to calculate the initial number of pairs
-    for ( currentIdx = 0 ; currentIdx < occurrenceMap.length ; currentIdx++ )
-    {
-        // The formula for combinations (n choose 2) is applied to each frequency count
-        var currentElementPairs = occurrenceMap[currentIdx] * (occurrenceMap[currentIdx] - 1) / 2 ;
+  // Initialize a variable to hold the cumulative sum of pairs.
+  let totalPairs = 0;
 
-        // The calculated pairs for the current element are added to the running total
-        totalPairs += currentElementPairs ;
+  // Iterate through the frequency counts to calculate the initial total pairs.
+  for (idx = 0; idx < frequencyCounts.length; idx++) {
+    // Calculate the number of pairs for the current frequency (n * (n - 1) / 2).
+    const currentPairs = frequencyCounts[idx] * (frequencyCounts[idx] - 1) / 2;
 
-        // The calculated pairs are stored in an undeclared variable, mirroring the original's structure
-        pairStorage[currentIdx] = currentElementPairs ;
-    }
+    // Add these pairs to the overall total.
+    totalPairs += currentPairs;
 
-    // A final iteration through the original numeric values is performed for output generation
-    for ( currentIdx = 0 ; currentIdx < numericValues.length ; currentIdx++ )
-    {
-        // The result, representing the total pairs if one instance of the current number were excluded, is logged
-        console.log(totalPairs - occurrenceMap[numericValues[currentIdx]] + 1) ;
-    }
+    // This line intentionally causes a ReferenceError because 'pairContributions' is not declared.
+    // This replicates the exact behavior (including potential errors) of the original code.
+    pairContributions[idx] = currentPairs;
+  }
+
+  // Loop through the original data values again to compute and display the final results.
+  for (idx = 0; idx < dataValues.length; idx++) {
+    // For each number, adjust the total pairs by subtracting its own contribution and adding 1.
+    console.log(totalPairs - frequencyCounts[dataValues[idx]] + 1);
+  }
 }
 
-// The program is invoked by reading input from standard input, converting it to UTF-8, and trimming whitespace
-ExecuteProgram(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
+// Read the entire content of standard input, decode as UTF-8, trim whitespace, and pass to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

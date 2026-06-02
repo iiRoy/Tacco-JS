@@ -1,57 +1,82 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const puzzleLines = rawData.trim().split("\n");
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const initialConfigurations = inputData.trim().split("\n");
 
-const rowChanges = [-1, 0, 0, 1];
-const colChanges = [0, -1, 1, 0];
+function findMinimumMoves(startingLayout) {
+    const finalLayoutString = "01234567";
+    const visitedConfigurations = new Set();
+    const processingQueue = [];
 
-const finalBoardState = [0, 1, 2, 3, 4, 5, 6, 7];
-const finalBoardIdentifier = JSON.stringify(finalBoardState);
+    const initialBoardArray = startingLayout.split(" ").map(Number);
+    const initialBoardString = initialBoardArray.join("");
+    const initialEmptyTileIndex = initialBoardArray.indexOf(0);
 
-puzzleLines.forEach((currentLine) => {
-    const initialTiles = currentLine.split(" ").map(Number);
+    processingQueue.push({
+        boardState: initialBoardString,
+        stepsTaken: 0,
+        emptySpotIndex: initialEmptyTileIndex
+    });
+    visitedConfigurations.add(initialBoardString);
 
-    const pendingConfigurations = [{ state: initialTiles, steps: 0 }];
-    const exploredStates = new Set();
+    const gridRows = 2;
+    const gridColumns = 4;
 
-    while (pendingConfigurations.length > 0) {
-        const currentConfiguration = pendingConfigurations.shift();
-        const currentBoard = currentConfiguration.state;
-        const currentMoveCount = currentConfiguration.steps;
+    // Define possible movements for the empty tile (row_delta, col_delta)
+    const movementVectors = [
+        { rowDelta: -1, colDelta: 0 }, // Move Up
+        { rowDelta: 0, colDelta: -1 }, // Move Left
+        { rowDelta: 0, colDelta: 1 },  // Move Right
+        { rowDelta: 1, colDelta: 0 }   // Move Down
+    ];
 
-        const boardIdentifier = JSON.stringify(currentBoard);
+    while (processingQueue.length > 0) {
+        const currentPuzzle = processingQueue.shift();
+        const { boardState, stepsTaken, emptySpotIndex } = currentPuzzle;
 
-        if (boardIdentifier === finalBoardIdentifier) {
-            console.log(currentMoveCount);
-            break;
+        if (boardState === finalLayoutString) {
+            return stepsTaken;
         }
 
-        if (exploredStates.has(boardIdentifier)) {
-            continue;
-        }
-        exploredStates.add(boardIdentifier);
+        const emptyRow = Math.floor(emptySpotIndex / gridColumns);
+        const emptyCol = emptySpotIndex % gridColumns;
 
-        const blankIndex = currentBoard.indexOf(0);
-        const blankRow = Math.floor(blankIndex / 4);
-        const blankCol = blankIndex % 4;
+        const currentBoardArray = boardState.split("").map(Number);
 
-        for (let k = 0; k < 4; ++k) {
-            const nextRow = blankRow + rowChanges[k];
-            const nextCol = blankCol + colChanges[k];
+        for (const vector of movementVectors) {
+            const nextEmptyRow = emptyRow + vector.rowDelta;
+            const nextEmptyCol = emptyCol + vector.colDelta;
 
-            if (nextRow < 0 || nextCol < 0 || nextRow >= 2 || nextCol >= 4) {
+            // Check if the new position is within grid boundaries
+            if (nextEmptyRow < 0 || nextEmptyRow >= gridRows ||
+                nextEmptyCol < 0 || nextEmptyCol >= gridColumns) {
                 continue;
             }
 
-            const newBoard = [...currentBoard];
-            const targetIndex = nextRow * 4 + nextCol;
+            const nextEmptySpotIndex = nextEmptyRow * gridColumns + nextEmptyCol;
 
-            [newBoard[blankIndex], newBoard[targetIndex]] = [newBoard[targetIndex], newBoard[blankIndex]];
+            // Create a new array for the next board state to avoid mutation
+            const nextBoardArray = [...currentBoardArray];
+            
+            // Perform the swap: move the tile at nextEmptySpotIndex to emptySpotIndex
+            const tileToShift = nextBoardArray[nextEmptySpotIndex];
+            nextBoardArray[emptySpotIndex] = tileToShift;
+            nextBoardArray[nextEmptySpotIndex] = 0;
 
-            const newBoardIdentifier = JSON.stringify(newBoard);
+            const nextBoardState = nextBoardArray.join("");
 
-            if (!exploredStates.has(newBoardIdentifier)) {
-                pendingConfigurations.push({ state: newBoard, steps: currentMoveCount + 1 });
+            if (!visitedConfigurations.has(nextBoardState)) {
+                visitedConfigurations.add(nextBoardState);
+                processingQueue.push({
+                    boardState: nextBoardState,
+                    stepsTaken: stepsTaken + 1,
+                    emptySpotIndex: nextEmptySpotIndex
+                });
             }
         }
     }
-});
+    return -1; // Should not be reached for solvable puzzles
+}
+
+for (const lineContent of initialConfigurations) {
+    const solutionMoves = findMinimumMoves(lineContent);
+    console.log(solutionMoves);
+}

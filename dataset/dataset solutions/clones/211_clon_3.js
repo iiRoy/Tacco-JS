@@ -1,40 +1,35 @@
-const rawDataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
 
-const processedInputSegments = rawDataSource.trim().split('\n');
+const ZERO_INPUT_SIGNAL = '0';
 
-function determinePrimeFactorialOccurrences(factorialLimit, primeDivisor) {
-    let cumulativeCount = 0;
-    let currentPowerOfDivisor = primeDivisor;
-
-    while (currentPowerOfDivisor <= factorialLimit) {
-        cumulativeCount += Math.floor(factorialLimit / currentPowerOfDivisor);
-
-        if (currentPowerOfDivisor > factorialLimit / primeDivisor) {
-            break;
-        }
-        currentPowerOfDivisor *= primeDivisor;
+function calculatePrimeFactorOccurrences(value, prime) {
+    let occurrenceCount = 0;
+    let temporaryValue = value;
+    while (temporaryValue > 0 && temporaryValue % prime === 0) {
+        temporaryValue /= prime;
+        occurrenceCount++;
     }
-    return cumulativeCount;
+    return occurrenceCount;
 }
 
-for (let segmentIndex = 0; segmentIndex < processedInputSegments.length; segmentIndex++) {
-    const currentInputString = processedInputSegments[segmentIndex];
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const processedInputLines = rawInputContent.trim().split('\n');
 
-    const numericalValue = parseInt(currentInputString, 10);
-
-    if (isNaN(numericalValue) || numericalValue < 0) {
-        continue;
-    }
-
-    if (numericalValue === 0) {
+let currentProcessedLine;
+while ((currentProcessedLine = processedInputLines.shift()) !== undefined) {
+    if (currentProcessedLine === ZERO_INPUT_SIGNAL) {
         break;
     }
 
-    const countOfFactorTwo = determinePrimeFactorialOccurrences(numericalValue, 2);
+    let totalFactorTwoCount = 0;
+    let totalFactorFiveCount = 0;
+    const upperBoundNumber = Number(currentProcessedLine);
 
-    const countOfFactorFive = determinePrimeFactorialOccurrences(numericalValue, 5);
+    for (let iterationNumber = 1; iterationNumber <= upperBoundNumber; iterationNumber++) {
+        totalFactorTwoCount += calculatePrimeFactorOccurrences(iterationNumber, 2);
+        totalFactorFiveCount += calculatePrimeFactorOccurrences(iterationNumber, 5);
+    }
 
-    const resultTrailingZeros = Math.min(countOfFactorTwo, countOfFactorFive);
-
-    console.log(resultTrailingZeros);
+    const minimumFactorCount = Math.min(totalFactorTwoCount, totalFactorFiveCount);
+    console.log(minimumFactorCount);
 }

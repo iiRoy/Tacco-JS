@@ -1,62 +1,72 @@
-function analyzeGridConnectivity(rawData) {
-    const dataLines = rawData.trim().split("\n");
-    const [gridHeight, gridWidth] = dataLines[0].split(" ").map(Number);
-    const contentRows = dataLines.slice(1);
+function ProcessGridData(rawData) {
+    const inputLines = rawData.trim().split("\n").map(line => line.split(" "));
+    const gridRows = parseInt(inputLines[0][0], 10);
+    const gridCols = parseInt(inputLines[0][1], 10);
 
-    const patternConformanceMap = Array.from({ length: gridHeight }, (_, rIdx) =>
-        Array.from({ length: gridWidth }, (_, cIdx) => {
-            const expectedToken = (rIdx + cIdx) % 2 === 0 ? '#' : '.';
-            return contentRows[rIdx][cIdx] === expectedToken ? 1 : 0;
-        })
+    const characterMap = [];
+    for (let r = 0; r < gridRows; r++) {
+        characterMap.push(inputLines[r + 1][0]);
+    }
+
+    const normalizedGrid = Array.from({ length: gridRows }, () =>
+        Array.from({ length: gridCols }, () => 0)
     );
 
-    const traversedCells = Array.from({ length: gridHeight }, () =>
-        Array.from({ length: gridWidth }, () => false)
-    );
-
-    const componentParitySummaries = [];
-
-    const isWithinBounds = (r, c) =>
-        r >= 0 && r < gridHeight && c >= 0 && c < gridWidth;
-
-    const exploreComponentDepthFirst = (currentRow, currentCol, valueToMatch, currentSummary) => {
-        if (!isWithinBounds(currentRow, currentCol) ||
-            traversedCells[currentRow][currentCol] ||
-            patternConformanceMap[currentRow][currentCol] !== valueToMatch) {
-            return;
-        }
-
-        traversedCells[currentRow][currentCol] = true;
-
-        if ((currentRow + currentCol) % 2 === 0) {
-            currentSummary.evenCount++;
-        } else {
-            currentSummary.oddCount++;
-        }
-
-        const moveDirections = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-
-        for (const [deltaR, deltaC] of moveDirections) {
-            exploreComponentDepthFirst(currentRow + deltaR, currentCol + deltaC, valueToMatch, currentSummary);
-        }
-    };
-
-    for (let r = 0; r < gridHeight; r++) {
-        for (let c = 0; c < gridWidth; c++) {
-            if (!traversedCells[r][c]) {
-                const componentSummary = { evenCount: 0, oddCount: 0 };
-                exploreComponentDepthFirst(r, c, patternConformanceMap[r][c], componentSummary);
-                componentParitySummaries.push(componentSummary);
+    for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+            const expectedSymbol = (r + c) % 2 === 0 ? '#' : '.';
+            if (characterMap[r].charAt(c) === expectedSymbol) {
+                normalizedGrid[r][c] = 1;
+            } else {
+                normalizedGrid[r][c] = 0;
             }
         }
     }
 
-    let totalProductAccumulator = 0;
-    for (const summary of componentParitySummaries) {
-        totalProductAccumulator += summary.evenCount * summary.oddCount;
+    const visitedTracker = Array.from({ length: gridRows }, () =>
+        Array.from({ length: gridCols }, () => false)
+    );
+
+    let totalProductSum = 0;
+
+    const rowOffsets = [-1, 1, 0, 0];
+    const colOffsets = [0, 0, -1, 1];
+
+    for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+            if (!visitedTracker[r][c]) {
+                const cellQueue = [[r, c]];
+                visitedTracker[r][c] = true;
+
+                const componentColorCounts = { 0: 0, 1: 0 };
+                const initialCellColor = normalizedGrid[r][c];
+
+                let queuePointer = 0;
+
+                while (queuePointer < cellQueue.length) {
+                    const [currentRow, currentCol] = cellQueue[queuePointer++];
+
+                    componentColorCounts[normalizedGrid[currentRow][currentCol]]++;
+
+                    for (let i = 0; i < 4; i++) {
+                        const nextRow = currentRow + rowOffsets[i];
+                        const nextCol = currentCol + colOffsets[i];
+
+                        if (nextRow >= 0 && nextRow < gridRows &&
+                            nextCol >= 0 && nextCol < gridCols &&
+                            !visitedTracker[nextRow][nextCol] &&
+                            normalizedGrid[nextRow][nextCol] === initialCellColor) {
+                            visitedTracker[nextRow][nextCol] = true;
+                            cellQueue.push([nextRow, nextCol]);
+                        }
+                    }
+                }
+                totalProductSum += componentColorCounts[0] * componentColorCounts[1];
+            }
+        }
     }
 
-    console.log(totalProductAccumulator);
+    console.log(totalProductSum);
 }
 
-analyzeGridConnectivity(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

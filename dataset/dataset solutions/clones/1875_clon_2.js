@@ -1,124 +1,108 @@
-// This function combines elements of an array of arrays
-// by summing corresponding elements across inner arrays.
-function aggregateVectors( sourceMatrices = [] ) {
+function aggregateArrays(inputArray = []) {
+  // Determine the total count of arrays within the input collection.
+  let arrayLength = inputArray.length;
 
-    // Determine the total count of input matrices.
-    var matrixCount = sourceMatrices.length;
+  // If the provided array is empty, there's nothing to process, so return false.
+  if (!(arrayLength > 0)) {
+    return false;
+  }
 
-    /* If there are no matrices to process, or the first matrix is empty,
-       it's not possible to perform aggregation. */
-    if ( !( matrixCount > 0 ) )
-    {
-        return false ;
+  // Initialize the result array with the values from the very first sub-array.
+  // This array will accumulate the sums of corresponding elements.
+  let resultArray = inputArray[0];
+
+  // Iterate through the remaining sub-arrays, starting from the second one.
+  for (let outerIndex = 1; outerIndex < arrayLength; outerIndex++) {
+    // For each element in the current sub-array, add its value to the
+    // corresponding element in the `resultArray`.
+    for (let innerIndex = 0; innerIndex < resultArray.length; innerIndex++) {
+      resultArray[innerIndex] += inputArray[outerIndex][innerIndex];
     }
-
-    // Initialize the result with the first matrix's values.
-    var accumulatedVector = sourceMatrices[0] ;
-
-    // Iterate through the remaining matrices, starting from the second one.
-    for ( var outerIdx = 1 ; outerIdx < matrixCount ; outerIdx++ ) {
-
-        // For each element in the current accumulated vector, add the corresponding element
-        // from the current source matrix.
-        for ( var innerIdx = 0 ; innerIdx < accumulatedVector.length ; innerIdx++ ) {
-            accumulatedVector[ innerIdx ] += sourceMatrices[ outerIdx ][ innerIdx ] ;
-        }
-    }
-    // Return the vector containing the sums.
-    return accumulatedVector ;
+  }
+  // Return the array containing the aggregated sums.
+  return resultArray;
 }
 
+function ProcessInput(rawData) {
+  // Clean up the input string by trimming whitespace and splitting it into individual lines.
+  rawData = rawData.trim().split("\n");
 
-// Primary function to handle program execution and data processing.
-function orchestrateSolution( programInput ) {
+  // Parse the first line of input to extract configuration values: N, M, and X.
+  const configValues = rawData[0].split(" ");
+  const numItems = parseInt(configValues[0], 10); // N: Represents the total number of available items.
+  const numSkills = parseInt(configValues[1], 10); // M: Represents the total number of distinct skills.
+  const minSkillLevel = parseInt(configValues[2], 10); // X: The minimum required level for each skill.
 
-    // First, clean up the raw input string and split it into lines.
-    programInput = programInput.trim().split("\n") ;
+  // Prepare an array to store the cost and skill contributions for each item.
+  // Each entry will be an array like [itemCost, skill1_val, skill2_val, ..., skillM_val].
+  let itemCostsAndSkills = [];
+  for (let itemIdx = 1; itemIdx <= numItems; itemIdx++) {
+    itemCostsAndSkills.push(
+      rawData[itemIdx].split(" ").map((parsedValue) => parseInt(parsedValue, 10))
+    );
+  }
 
-    // Parse the initial configuration line to extract key parameters.
-    const configurationParams = programInput[0].split(" ") ;
+  // Initialize a variable to keep track of the minimum cost found so far.
+  // Set it to a very high value initially, assuming no valid combination has been found.
+  let minCostFound = 9999999;
 
-    // Extract the number of entries (N), data width (M), and target threshold (X).
-    const numberOfEntries = parseInt( configurationParams[0] , 10 ) ;
-    const dataWidth = parseInt( configurationParams[1] , 10 ) ;
-    const thresholdTarget = parseInt( configurationParams[2] , 10 ) ;
+  // Define a helper function to verify if all skill levels in an array meet the minimum requirement.
+  function VerifySkillLevels(skillLevels) {
+    // The `every` method checks if all elements in the `skillLevels` array satisfy the condition.
+    return skillLevels.every((level) => level >= minSkillLevel);
+  }
 
-    // Prepare an array to store the parsed numerical data rows.
-    var inputDataRows = [] ;
+  // Iterate through all possible combinations of items using a bitmask approach.
+  // There are 2^N possible combinations for N items.
+  for (let combinationMask = 0; combinationMask < 1 << numItems; combinationMask++) {
+    let currentCost = 0; // Variable to store the total cost for the current item combination.
+    let selectedItems = []; // An array to hold the data of items chosen in this combination.
 
-    // Populate the data rows by parsing each subsequent line.
-    for ( var rowParseIdx = 1 ; rowParseIdx <= numberOfEntries ; rowParseIdx++ ) {
-        inputDataRows.push(
-            programInput[ rowParseIdx ].split(" ").map(
-                ( currentVal ) => parseInt( currentVal , 10 )
-            )
-        ) ;
+    // Examine each item to see if it's included in the current combination.
+    for (let itemBit = 0; itemBit < numItems; itemBit++) {
+      // If the 'itemBit'-th bit is set in the `combinationMask`, it means the item is selected.
+      if (combinationMask & (1 << itemBit)) {
+        selectedItems.push(itemCostsAndSkills[itemBit]);
+      }
     }
 
-    // Initialize the variable to track the minimum cost found so far to a very high value.
-    var minCostAchieved = 9999999 ; // A large number representing infinity
+    // Aggregate the costs and skill levels of all selected items.
+    // The `aggregateArrays` function sums up corresponding elements across the selected item arrays.
+    // The first element of the `aggregatedResult` will be the total cost,
+    // and subsequent elements will be the combined skill levels.
+    let aggregatedResult = aggregateArrays(selectedItems);
 
-    // Helper function to check if all elements in a given array meet a certain threshold.
-    function checkAllElementsMeetThreshold( candidateArray , comparisonLimit ) {
-        // A redundant assignment, but maintained for structural cloning.
-        var localCandidateArray = candidateArray;
-        // Check if every element in the array is greater than or equal to the limit.
-        return localCandidateArray.every( ( elementValue ) => elementValue >= comparisonLimit ) ;
+    // Proceed only if `aggregatedResult` is not false (meaning at least one item was selected).
+    if (aggregatedResult) {
+      currentCost = aggregatedResult[0]; // Extract the total cost from the aggregated result.
+      // Extract the combined skill levels, which are all elements after the first one.
+      // The original code uses `numItems + 1` as the end index for slicing.
+      let combinedSkills = aggregatedResult.slice(1, numItems + 1);
+
+      // Check if all combined skill levels meet the `minSkillLevel` requirement
+      // AND if the `currentCost` is lower than the `minCostFound` so far.
+      if (VerifySkillLevels(combinedSkills) && minCostFound > currentCost) {
+        minCostFound = currentCost; // Update `minCostFound` with the new lower cost.
+      }
     }
 
-    // Iterate through all possible subsets using a bitmask approach.
-    // There are 2^N possible subsets for N items.
-    for ( var subsetMask = 0 ; subsetMask < (1 << numberOfEntries) ; subsetMask++ ) {
-
-        // Initialize the total cost for the current subset and an array for selected data.
-        var currentSubsetCost = 0 ;
-        var selectedDataItems = [] ;
-
-        // Determine which items are included in the current subset based on the bitmask.
-        for ( var itemIndex = 0 ; itemIndex < numberOfEntries ; itemIndex++ ) {
-            // If the corresponding bit is set, include the item.
-            if ( subsetMask & (1 << itemIndex) ) {
-                // If the flag is set for this item
-                selectedDataItems.push( inputDataRows[ itemIndex ] ) ;
-            }
-        }
-
-        // Aggregate the selected data items using the helper function.
-        selectedDataItems = aggregateVectors( selectedDataItems ) ;
-
-        // If the aggregation was successful (not false, meaning there were items to aggregate).
-        if ( selectedDataItems ) {
-            // The first element of the aggregated vector is the cost.
-            currentSubsetCost = selectedDataItems[0] ;
-            // The remaining elements are the skill levels or other criteria.
-            var skillLevelScores = selectedDataItems.slice( 1 , numberOfEntries + 1 ) ;
-
-            // Check if skill levels meet the threshold and if the current cost is better than the best found so far.
-            if ( checkAllElementsMeetThreshold( skillLevelScores , thresholdTarget ) && minCostAchieved > currentSubsetCost ) {
-                minCostAchieved = currentSubsetCost ;
-            }
-        }
-
-        // Re-initialize the input data rows. This step seems unusual for typical algorithms
-        // but is preserved exactly as in the original code's control flow.
-        inputDataRows = [] ;
-        for ( var resetRowIdx = 1 ; resetRowIdx <= numberOfEntries ; resetRowIdx++ ) {
-            inputDataRows.push(
-                programInput[ resetRowIdx ].split(" ").map(
-                    ( numericValue ) => parseInt( numericValue , 10 )
-                )
-            ) ;
-        }
+    // This block re-initializes `itemCostsAndSkills` to its original state for each iteration.
+    // This behavior is preserved from the original code, even if it appears redundant.
+    itemCostsAndSkills = [];
+    for (let itemIdx = 1; itemIdx <= numItems; itemIdx++) {
+      itemCostsAndSkills.push(
+        rawData[itemIdx].split(" ").map((parsedValue) => parseInt(parsedValue, 10))
+      );
     }
+  }
 
-    // Output the final result.
-    if ( minCostAchieved == 9999999 ) {
-        console.log( "-1" ) ; // No valid combination found.
-    } else {
-        console.log( minCostAchieved ) ; // Output the minimum cost.
-    }
+  // After evaluating all possible combinations, output the final result.
+  if (minCostFound == 9999999) {
+    console.log("-1"); // If `minCostFound` is still the initial high value, no valid combination was found.
+  } else {
+    console.log(minCostFound); // Otherwise, print the lowest cost found.
+  }
 }
 
-
-// Entry point: Read input from standard input and pass it to the main processing function.
-orchestrateSolution( require("fs").readFileSync("/dev/stdin" , "utf8") ) ;
+// Read the input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

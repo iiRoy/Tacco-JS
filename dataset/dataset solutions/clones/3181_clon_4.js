@@ -1,25 +1,15 @@
-const initialFeed = require("fs").readFileSync("/dev/stdin", "utf8");
+const computeAndOutput = (sourceData) => {
+  const processedLines = sourceData.trim().split('\n');
+  const [valAStr, valBStr] = processedLines[0].split(' ');
 
-const computeResult = (sourceText) => {
-  const adjustedText = sourceText.trim();
+  const valA = +valAStr;
+  const valB = +valBStr;
 
-  const numericSegments = adjustedText.match(/-?\d+/g);
+  const isDivisible = Number(valB % valA === 0);
 
-  const numericQuantities = numericSegments.map(valStr => Number(valStr));
+  const finalResult = isDivisible * (valA + valB) + (1 - isDivisible) * (valB - valA);
 
-  const primaryOperand = numericQuantities[0];
-  const secondaryOperand = numericQuantities[1];
-
-  const conditionMet = (secondaryOperand % primaryOperand === 0);
-
-  const actionDispatcher = {
-    true: (valA, valB) => valA + valB,
-    false: (valA, valB) => valB - valA
-  };
-
-  const finalCalculation = actionDispatcher[conditionMet](primaryOperand, secondaryOperand);
-
-  return finalCalculation;
+  console.log(finalResult);
 };
 
-console.log(computeResult(initialFeed));
+computeAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,14 +1,22 @@
-const textHandler = require('readline');
+const { Transform: Y } = require('stream');
 
-const inputStream = textHandler.createInterface({
-  input: process.stdin
-});
+class Z extends Y {
+  _transform(a, b, c) {
+    const d = a.toString();
+    const e = parseFloat(d);
+    if (isNaN(e)) {
+      this.push(String(NaN));
+    } else {
+      const f = e * e * e;
+      this.push(String(f));
+    }
+    c();
+  }
+}
 
-const productAggregator = (currentTotal, newFactor) => currentTotal * newFactor;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputStream.on('line', (incomingString) => {
-  const numericalValue = Number(incomingString);
-  const elements = [numericalValue, numericalValue, numericalValue];
-  const calculatedResult = elements.reduce(productAggregator);
-  process.stdout.write(String(calculatedResult) + '\n');
-});
+const g = new Z();
+
+process.stdin.pipe(g).pipe(process.stdout);

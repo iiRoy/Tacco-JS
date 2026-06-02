@@ -1,51 +1,52 @@
-let cumulativeText = "";
+let rawData = ''; // Variable to accumulate all incoming data from standard input.
 
-// Configure the standard input stream to handle incoming data efficiently
-process.stdin.resume(); // Ensures the input stream remains active for data reception
-process.stdin.setEncoding("utf8"); // Specifies character encoding for correct data interpretation
+// Resume the standard input stream and set its encoding to UTF-8.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Attaches an event listener for when new data portions arrive from standard input
-process.stdin.on("data", (dataPortion) => {
-  // Appends each received data segment to the overall buffer for later processing
-  cumulativeText += dataPortion;
+// Attach an event listener to handle incoming data chunks.
+process.stdin.on('data', function(dataSegment) {
+  // Append each received data segment to the rawData string.
+  rawData += dataSegment;
 });
 
-// Attaches an event listener for when the standard input stream indicates its completion
-process.stdin.on("end", () => {
-  // Once all input has been fully received, the entire buffer is split into individual lines
-  // Each line is expected to contain parameters for a distinct system of equations
-  cumulativeText = cumulativeText.split("\n");
-  // Initiates the primary processing routine using the collected and segmented input
-  executeCalculations();
+// Attach an event listener to execute when the standard input stream ends.
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of lines, using newline as a delimiter.
+  rawData = rawData.split('\n');
+  // Invoke the primary function to process the equations.
+  processEquations();
 });
 
-// Primary function responsible for iterating through input lines and performing necessary computations
-function executeCalculations() {
-  // Loops through each single line present in the prepared input data array
-  for (let currentLineNum = 0; currentLineNum < cumulativeText.length; currentLineNum++) {
-    // Parses the current line into its constituent string parts, assuming values are space-separated
-    let lineSegments = cumulativeText[currentLineNum].split(" ");
+/**
+ * This function iterates through each line of the input data,
+ * treating each line as coefficients for a system of two linear equations,
+ * and then calculates and prints the solutions for x and y.
+ */
+function processEquations() {
+    // Loop through each entry in the rawData array.
+    for (let idx = 0; idx < rawData.length; idx++) {
+        // Split the current line by spaces to extract individual coefficient strings.
+        const currentLineParts = rawData[idx].split(' ');
 
-    // Extracts numerical coefficients and constants from the segmented line array
-    // Explicitly converts each string part to a floating-point number for accurate arithmetic operations
-    let valA = parseFloat(lineSegments[0]);
-    let valB = parseFloat(lineSegments[1]);
-    let valC = parseFloat(lineSegments[2]);
-    let valD = parseFloat(lineSegments[3]);
-    let valE = parseFloat(lineSegments[4]);
-    let valF = parseFloat(lineSegments[5]);
-
-    // Computes the value of the first unknown variable, designated as solutionX
-    // This calculation directly solves for 'x' within a system of two linear equations:
-    // valA*x + valB*y = valC
-    // valD*x + valE*y = valF
-    let solutionX = (valB * valF - valE * valC) / (valD * valB - valA * valE);
-
-    // Computes the value of the second unknown variable, designated as solutionY
-    // This is derived using back-substitution into the first equation: y = (valC - valA*x) / valB
-    let solutionY = (valC - valA * solutionX) / valB;
-
-    // Prints the calculated solutions, solutionX and solutionY, formatted to three decimal places
-    console.log(solutionX.toFixed(3), solutionY.toFixed(3));
-  }
+        // Assign the string values from the split line to descriptive coefficient variables.
+        // JavaScript's implicit type coercion will convert these strings to numbers during arithmetic operations.
+        let coeffA = currentLineParts[0]; // Coefficient 'a' for the first equation.
+        let coeffB = currentLineParts[1]; // Coefficient 'b' for the first equation.
+        let coeffC = currentLineParts[2]; // Constant 'c' for the first equation.
+        let coeffD = currentLineParts[3]; // Coefficient 'd' for the second equation.
+        let coeffE = currentLineParts[4]; // Coefficient 'e' for the second equation.
+        let coeffF = currentLineParts[5]; // Constant 'f' for the second equation.
+        
+        // Calculate the value of 'x' using a derived formula for solving linear equations.
+        // This formula is typically obtained through substitution or Cramer's rule.
+        let solutionX = (coeffB * coeffF - coeffE * coeffC) / (coeffD * coeffB - coeffA * coeffE);
+        
+        // Calculate the value of 'y' using the previously calculated 'x' value.
+        // This is derived from the first equation: y = (c - a*x) / b.
+        let solutionY = (coeffC - coeffA * solutionX) / coeffB;
+        
+        // Print the calculated 'x' and 'y' solutions, formatted to three decimal places.
+        console.log(solutionX.toFixed(3), solutionY.toFixed(3));
+    }
 }

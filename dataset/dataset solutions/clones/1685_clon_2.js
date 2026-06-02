@@ -1,11 +1,10 @@
-function processData (   sourceText ) {
-  console
-    .log ( parseInt ( sourceText ) % 1000 ) ;
+function ProcessData(incomingString) {
+    // Convert the provided string to an integer and then compute its remainder when divided by one thousand.
+    console.log(parseInt(incomingString) % 1000);
 }
 
 /*
- * This part of the script handles reading from standard input
- * and then invokes the primary processing routine.
- * No modifications should be made below this line.
+ * This part of the code is responsible for reading input from the standard input stream
+ * and passing it to the main processing function. It should remain unchanged.
  */
-processData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8'  ) ) ;
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

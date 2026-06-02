@@ -1,77 +1,51 @@
-const fileSystemModule = require('fs'); // Import the file system module
-const standardInputPath = '/dev/stdin'; // Define a constant for the input file path
+const fileSystem = require('fs');
 
-/**
- * Processes a sequence of commands to manipulate a dynamic collection of numbers.
- * Reads commands from standard input, performs operations, and prints the final state.
- */
-function manageNumericCollection() {
-  // Read all raw data from the specified input path, encoding as UTF-8.
-  const rawInputContent = fileSystemModule.readFileSync(standardInputPath, 'utf8');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-  // Trim leading/trailing whitespace and split the content into individual lines.
-  const commandLines = rawInputContent.trim().split('\n');
+const processedLines = rawInputData.trim().split("\n");
 
-  // The first line often contains the total number of operations, which is not directly used
-  // in this implementation, so we discard it.
-  commandLines.shift();
+processedLines.shift(); // Discard the first line as per original logic
 
-  // Initialize our mutable collection where operations will be performed.
-  let activeCollection = [];
+let managedList = []; // Renamed from 'list', using 'let' as it's modified
 
-  // Iterate over each remaining line, treating it as a command.
-  for (const currentLine of commandLines) {
-    // Skip any empty lines that might result from trimming or malformed input.
-    if (!currentLine.trim()) {
-      continue;
+// Define constants for command types to improve readability (Type III addition)
+const COMMAND_INSERT = "insert";
+const COMMAND_DELETE = "delete";
+const COMMAND_DELETE_FIRST = "deleteFirst";
+const COMMAND_DELETE_LAST = "deleteLast";
+
+// Iterate through each command line using a for...of loop (Type III structural change)
+for (const currentCommandLine of processedLines) {
+    const commandSegments = currentCommandLine.split(" ");
+
+    const operationIdentifier = commandSegments[0];
+
+    let numericOperand;
+    // Parse the numeric operand only if it exists (e.g., for 'insert' or 'delete')
+    // Using parseInt with radix 10 for explicit number conversion, equivalent to '-0'
+    if (commandSegments.length > 1) {
+        numericOperand = parseInt(commandSegments[1], 10);
     }
 
-    // Split the current line into parts based on space.
-    // The first part is the operation type, the second (if present) is the operand.
-    const instructionParts = currentLine.split(' ');
-    const operationVerb = instructionParts[0]; // e.g., "insert", "delete"
-    const numericOperand = parseInt(instructionParts[1], 10); // Convert the second part to an integer
-
-    // Use a switch statement for clear and structured handling of different command types.
-    switch (operationVerb) {
-      case 'insert':
-        // Ensure the operand is a valid number before inserting.
-        if (!isNaN(numericOperand)) {
-          activeCollection.unshift(numericOperand); // Add to the beginning of the collection
-        }
-        break;
-
-      case 'delete':
-        // Ensure the operand is a valid number for deletion.
-        if (!isNaN(numericOperand)) {
-          // Find the first occurrence of the numeric operand in the collection.
-          const elementIndex = activeCollection.indexOf(numericOperand);
-          // If the element is found (index is not -1), remove it.
-          if (elementIndex !== -1) {
-            activeCollection.splice(elementIndex, 1); // Remove one element at the found index
-          }
-        }
-        break;
-
-      case 'deleteFirst':
-        activeCollection.shift(); // Remove the element from the beginning of the collection
-        break;
-
-      case 'deleteLast':
-        activeCollection.pop(); // Remove the element from the end of the collection
-        break;
-
-      default:
-        // Log a warning for any unrecognized commands, but continue processing.
-        // console.warn(`Unrecognized command received: "${operationVerb}" in line: "${currentLine}"`);
-        break;
+    // Use a switch statement for command handling (Type III structural change)
+    switch (operationIdentifier) {
+        case COMMAND_INSERT:
+            managedList.unshift(numericOperand);
+            break;
+        case COMMAND_DELETE:
+            // Preserve original behavior: if element is not found, indexOf returns -1.
+            // splice(-1, 1) removes the last element of the array.
+            managedList.splice(managedList.indexOf(numericOperand), 1);
+            break;
+        case COMMAND_DELETE_FIRST:
+            managedList.shift();
+            break;
+        case COMMAND_DELETE_LAST:
+            managedList.pop();
+            break;
+        // No default case needed as the original code does not handle unknown commands
     }
-  }
-
-  // After processing all commands, join the elements of the final collection with spaces
-  // and print the result to standard output.
-  console.log(activeCollection.join(' '));
 }
 
-// Execute the main function to start processing.
-manageNumericCollection();
+// Output the final state of the list, joined by spaces
+console.log(managedList.join(" "));

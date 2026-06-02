@@ -1,57 +1,59 @@
 'use strict';
 
-let memoizationCache;
-let primaryInputString;
-let secondaryInputString;
+const fs = require('fs');
 
-function computeLongestCommonSequence(currentPrimaryIndex, currentSecondaryIndex) {
-    if (currentPrimaryIndex >= primaryInputString.length || currentSecondaryIndex >= secondaryInputString.length) {
-        return [0, ''];
+function buildLengthTable(leftText, rightText) {
+  const rows = leftText.length + 1;
+  const cols = rightText.length + 1;
+  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let row = 1; row < rows; row++) {
+    for (let col = 1; col < cols; col++) {
+      if (leftText[row - 1] === rightText[col - 1]) {
+        table[row][col] = table[row - 1][col - 1] + 1;
+      } else {
+        const fromLeft = table[row][col - 1];
+        const fromTop = table[row - 1][col];
+        table[row][col] = fromLeft > fromTop ? fromLeft : fromTop;
+      }
     }
+  }
 
-    const lookupKey = `${currentPrimaryIndex},${currentSecondaryIndex}`;
-    if (memoizationCache.has(lookupKey)) {
-        return memoizationCache.get(lookupKey);
-    }
+  return table;
+}
 
-    let currentEvaluationResult;
+function recoverSameSubsequence(leftText, rightText, table) {
+  const answer = [];
+  let row = leftText.length;
+  let col = rightText.length;
 
-    if (primaryInputString[currentPrimaryIndex] === secondaryInputString[currentSecondaryIndex]) {
-        const [lengthOfSub, sequenceText] = computeLongestCommonSequence(currentPrimaryIndex + 1, currentSecondaryIndex + 1);
-        currentEvaluationResult = [1 + lengthOfSub, primaryInputString[currentPrimaryIndex] + sequenceText];
+  while (row > 0 && col > 0) {
+    if (leftText[row - 1] === rightText[col - 1]) {
+      answer.push(leftText[row - 1]);
+      row--;
+      col--;
     } else {
-        const skipPrimaryChar = computeLongestCommonSequence(currentPrimaryIndex + 1, currentSecondaryIndex);
-        const skipSecondaryChar = computeLongestCommonSequence(currentPrimaryIndex, currentSecondaryIndex + 1);
+      const fromLeft = table[row][col - 1];
+      const fromTop = table[row - 1][col];
 
-        // This condition preserves the specific tie-breaking rule from the original code.
-        // If skipping a char from the secondary string yields a strictly longer sequence, pick that.
-        // Otherwise (if skipping primary char is longer or equal), pick the one skipping primary char.
-        if (skipSecondaryChar[0] > skipPrimaryChar[0]) {
-            currentEvaluationResult = skipSecondaryChar;
-        } else {
-            currentEvaluationResult = skipPrimaryChar;
-        }
+      if (fromLeft > fromTop) {
+        col--;
+      } else {
+        row--;
+      }
     }
+  }
 
-    memoizationCache.set(lookupKey, currentEvaluationResult);
-    return currentEvaluationResult;
+  return answer.reverse().join('');
 }
 
-function deriveCommonSubsequence(firstSequence, secondSequence) {
-    primaryInputString = firstSequence;
-    secondaryInputString = secondSequence;
-    memoizationCache = new Map();
+function solve(input) {
+  const lines = input.split('\n');
+  const first = lines[0];
+  const second = lines[1];
 
-    const [finalLength, finalSequence] = computeLongestCommonSequence(0, 0);
-    return finalSequence;
+  const lengths = buildLengthTable(first, second);
+  console.log(recoverSameSubsequence(first, second, lengths));
 }
 
-function processInputAndDisplay(rawInputData) {
-    const dataChunks = rawInputData.split('\n');
-    const firstLineContent = dataChunks[0];
-    const secondLineContent = dataChunks[1];
-    const finalResultSequence = deriveCommonSubsequence(firstLineContent, secondLineContent);
-    console.log(finalResultSequence);
-}
-
-processInputAndDisplay(require('fs').readFileSync('/dev/stdin', 'utf8'));
+solve(fs.readFileSync('/dev/stdin', 'utf8'));

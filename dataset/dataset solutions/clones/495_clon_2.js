@@ -1,105 +1,94 @@
-// This section handles the initial setup for reading input data.
-var dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The input string is processed: leading/trailing whitespace is removed,
-// then it's split into an array of individual lines.
-var lineData = dataSource.trim().split("\n");
+// Split the entire input into an array of lines, removing any trailing newline.
+var lineData = rawData.trim().split("\n");
 
-// The main simulation loop begins here. It continues indefinitely
-// until a specific termination sequence is encountered.
+// Main processing loop: continues until a specific termination condition is met.
 while (true) {
-    // Read the first line of parameters for the current simulation iteration.
-    // These parameters are space-separated numbers.
-    var currentParams = lineData.shift().split(" ").map(Number);
+    // Extract the first line, split by space, and convert to numbers.
+    var params = lineData.shift().split(" ").map(Number);
 
-    // Check if the current parameter set signals the end of input.
-    // The termination condition is "0 0 0".
-    if (currentParams.join(" ") === "0 0 0") {
-        break; // Exit the loop if the termination condition is met.
+    // Check for the termination condition: "0 0 0".
+    if (params.join(" ") === "0 0 0") {
+        break; // Exit the loop if the termination sequence is found.
     }
 
-    // Extract the individual parameters into distinct, semantically named variables.
-    var firstParam = currentParams[0];   // Represents 'x' from the original code.
-    var secondParam = currentParams[1];  // Represents 'y' from the original code.
-    var thirdParam = currentParams[2];   // Represents 'z' from the original code.
+    // Assign parameters from the current line to descriptive variables.
+    var paramX = params[0]; // Represents 'x' in the original problem context.
+    var paramY = params[1]; // Represents 'y' in the original problem context.
+    var paramZ = params[2]; // Represents 'z' in the original problem context.
 
-    // Read the next line, which contains a list of step values or increments.
-    var valueList = lineData.shift().split(" ").map(Number);
+    // Get the next line of values, split by space, and convert to numbers.
+    var valuesV = lineData.shift().split(" ").map(Number);
 
-    // Initialize a data structure to hold special effects or modifiers.
-    // This will be an array acting as a map where indices correspond to states.
-    var effectMap = [];
+    // Initialize an array to store special event configurations.
+    var specialEvents = [];
 
-    // Populate the 'effectMap' based on the 'thirdParam', which dictates
-    // how many effect definitions follow.
-    for (var loopVar1 = 0; loopVar1 < thirdParam; loopVar1++) {
-        // Each effect definition consists of a state index, an effect type, and an effect amount.
-        var effectInfo = lineData.shift().split(" ").map(Number);
-        // Store the effect type and amount at the specified state index.
-        effectMap[effectInfo[0]] = [effectInfo[1], effectInfo[2]];
+    // Populate the specialEvents array based on 'paramZ' lines.
+    for (var idxA = 0; idxA < paramZ; idxA++) {
+        var eventDetails = lineData.shift().split(" ").map(Number);
+        // Store event type and amount at the specified index.
+        specialEvents[eventDetails[0]] = [eventDetails[1], eventDetails[2]];
     }
 
-    // Initialize the dynamic programming table (2D array) for probability calculations.
+    // Initialize a 2D array (dynamic programming matrix) for probabilities.
     var probabilityMatrix = [];
-
-    // Set up the dimensions of the probability matrix.
-    // The first dimension goes up to 'secondParam' (inclusive), and the second up to 5000.
-    for (var loopVar1 = 0; loopVar1 <= secondParam; loopVar1++) {
-        probabilityMatrix[loopVar1] = []; // Initialize inner array for each row.
-        for (var loopVar2 = 0; loopVar2 <= 5000; loopVar2++) {
-            probabilityMatrix[loopVar1][loopVar2] = 0; // All probabilities start at zero.
+    for (var idxA = 0; idxA <= paramY; idxA++) {
+        probabilityMatrix[idxA] = [];
+        for (var idxC = 0; idxC <= 5000; idxC++) {
+            probabilityMatrix[idxA][idxC] = 0; // Initialize all probabilities to zero.
         }
     }
 
-    // Set the initial condition: starting at state (0,0) with 100% probability.
+    // Set the initial state: probability of 1 at (0, 0).
     probabilityMatrix[0][0] = 1;
 
-    // This is the core dynamic programming iteration loop.
-    // It calculates probabilities for each state transition.
-    for (var loopVar1 = 0; loopVar1 < secondParam; loopVar1++) {
-        for (var loopVar2 = 0; loopVar2 < firstParam; loopVar2++) {
-            // Determine the next state based on the current state and a value from 'valueList'.
-            var nextState = loopVar1 + valueList[loopVar2];
-            // Ensure the 'nextState' does not exceed the maximum allowed 'secondParam'.
-            if (nextState > secondParam) {
-                nextState = secondParam;
+    // Iterate through possible states (from 0 to paramY-1).
+    for (var idxA = 0; idxA < paramY; idxA++) {
+        // Iterate through each of the 'paramX' possible moves.
+        for (var idxB = 0; idxB < paramX; idxB++) {
+            // Calculate the next state after applying the current move.
+            var nextState = idxA + valuesV[idxB];
+            // Ensure 'nextState' does not exceed 'paramY'.
+            if (nextState > paramY) {
+                nextState = paramY;
             }
 
-            // Iterate through all possible values of the secondary state dimension ('k').
-            for (var loopVar3 = 0; loopVar3 <= 5000; loopVar3++) {
-                // Check if there is a special effect associated with the 'nextState'.
-                if (effectMap[nextState] !== undefined) {
-                    var effectType = effectMap[nextState][0];    // Extract the type of effect.
-                    var effectAmount = effectMap[nextState][1];  // Extract the magnitude of the effect.
+            // Iterate through all possible 'k' values (up to 5000).
+            for (var idxD = 0; idxD <= 5000; idxD++) {
+                // Check if there's a special event at 'nextState'.
+                if (specialEvents[nextState] !== undefined) {
+                    var eventType = specialEvents[nextState][0];
+                    var eventAmount = specialEvents[nextState][1];
 
-                    // Apply the effect based on its type.
-                    if (effectType === 1) { // Effect type 1: modifies the 'i' dimension of the state.
-                        probabilityMatrix[nextState + effectAmount][loopVar3] += probabilityMatrix[loopVar1][loopVar3] / firstParam;
-                    } else if (effectType === 2) { // Effect type 2: modifies the 'k' dimension of the state.
-                        probabilityMatrix[nextState][loopVar3 + effectAmount] += probabilityMatrix[loopVar1][loopVar3] / firstParam;
-                    } else if (effectType === 3) { // Effect type 3: decreases the 'k' dimension, with a lower bound at 0.
-                        if (loopVar3 - effectAmount < 0) {
-                            effectAmount = loopVar3; // Adjust amount to prevent 'k' from going below zero.
+                    // Apply event-specific logic.
+                    if (eventType === 1) {
+                        // Type 1 event: move forward by 'eventAmount'.
+                        probabilityMatrix[nextState + eventAmount][idxD] += probabilityMatrix[idxA][idxD] / paramX;
+                    } else if (eventType === 2) {
+                        // Type 2 event: increase 'k' by 'eventAmount'.
+                        probabilityMatrix[nextState][idxD + eventAmount] += probabilityMatrix[idxA][idxD] / paramX;
+                    } else if (eventType === 3) {
+                        // Type 3 event: decrease 'k' by 'eventAmount', but not below zero.
+                        if (idxD - eventAmount < 0) {
+                            eventAmount = idxD; // Adjust 'eventAmount' to prevent 'k' from going negative.
                         }
-                        probabilityMatrix[nextState][loopVar3 - effectAmount] += probabilityMatrix[loopVar1][loopVar3] / firstParam;
+                        probabilityMatrix[nextState][idxD - eventAmount] += probabilityMatrix[idxA][idxD] / paramX;
                     }
                 } else {
-                    // If no special effect is present, simply propagate the probability
-                    // to the 'nextState' with the same 'k' value.
-                    probabilityMatrix[nextState][loopVar3] += probabilityMatrix[loopVar1][loopVar3] / firstParam;
+                    // No special event: simply transition to 'nextState' with current 'k'.
+                    probabilityMatrix[nextState][idxD] += probabilityMatrix[idxA][idxD] / paramX;
                 }
             }
         }
     }
 
-    // After all probabilities are calculated, determine the total expected value.
+    // Calculate the total expected value at the final state 'paramY'.
     var totalExpectedValue = 0;
-    // Iterate through the final row of the probability matrix (corresponding to 'secondParam').
-    for (var loopVar1 = 0; loopVar1 <= 5000; loopVar1++) {
-        // Sum up (k * P(final_state, k)) for all possible k values.
-        totalExpectedValue += loopVar1 * probabilityMatrix[secondParam][loopVar1];
+    for (var idxA = 0; idxA <= 5000; idxA++) {
+        totalExpectedValue += idxA * probabilityMatrix[paramY][idxA];
     }
 
-    // Output the final expected value, rounded down to the nearest integer.
+    // Output the floor of the total expected value.
     console.log(Math.floor(totalExpectedValue));
 }

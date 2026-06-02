@@ -1,26 +1,25 @@
-const ioInterface = require('readline');
+let currentIdentifier = 'A';
 
-let statefulRegister = 'A';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const streamProcessor = ioInterface.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+process.stdin.on('data', function(dataSegment) {
+  const parts = dataSegment.split(',');
+
+  const firstPartIsCurrent = (parts[0] === currentIdentifier);
+  const secondPartIsCurrent = (parts[1] === currentIdentifier);
+
+  const decisionMap = {
+    'true_false': parts[1],
+    'false_true': parts[0],
+    'true_true': parts[1],
+    'false_false': currentIdentifier
+  };
+
+  const decisionKey = `${firstPartIsCurrent}_${secondPartIsCurrent}`;
+  currentIdentifier = decisionMap[decisionKey];
 });
 
-streamProcessor.on('line', (dataLine) => {
-  const lineParts = dataLine.split(',');
-  if (lineParts.length === 2) {
-    const [elementOne, elementTwo] = lineParts;
-    const comparisonSet = [elementOne, elementTwo];
-    const foundIndex = comparisonSet.indexOf(statefulRegister);
-
-    if (foundIndex !== -1) {
-      statefulRegister = comparisonSet[1 - foundIndex];
-    }
-  }
-});
-
-streamProcessor.on('close', () => {
-  console.log(statefulRegister);
+process.stdin.on('end', function() {
+  console.log(currentIdentifier);
 });

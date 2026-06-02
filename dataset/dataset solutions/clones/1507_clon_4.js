@@ -1,19 +1,27 @@
-function processInput(textData) {
-    const dataLines = textData.split('\n').slice(1);
+function ProcessInput(rawData) {
+    const lineSegments = rawData.split('\n');
+    const lineCount = Number(lineSegments[0]);
 
-    const equalityFlags = dataLines.map(lineEntry => {
-        const numericComponents = lineEntry.split(' ');
-        const firstElement = Number(numericComponents[0]);
-        const secondElement = Number(numericComponents[1]);
-        return firstElement === secondElement;
+    const comparisonOutcomes = lineSegments.slice(1, lineCount + 1).map(currentLine => {
+        const pairStrings = currentLine.split(' ');
+        return Number(pairStrings[0]) === Number(pairStrings[1]);
     });
 
-    const consecutiveTripletFound = equalityFlags.some((value, index, fullArray) => {
-        return value && fullArray[index + 1] && fullArray[index + 2];
-    });
+    const finalState = comparisonOutcomes.reduce(([foundTriple, currentStreak], isMatchResult) => {
+        if (foundTriple) {
+            return [true, 3];
+        }
+        if (isMatchResult) {
+            const newStreak = currentStreak + 1;
+            return [newStreak >= 3, newStreak];
+        } else {
+            return [false, 0];
+        }
+    }, [false, 0]);
 
-    const finalVerdict = consecutiveTripletFound ? "Yes" : "No";
-    console.log(finalVerdict);
+    const outcomeIndicator = finalState[0] ? "Yes" : "No";
+
+    console.log(outcomeIndicator);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

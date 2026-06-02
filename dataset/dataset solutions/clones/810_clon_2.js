@@ -1,68 +1,98 @@
-// This module handles data processing and calculation.
-var displayResult = console.log;
-if (typeof runtimeEnv != "undefined") {
-  var incomingText = "";
-  runtimeEnv.stdin.resume();
-  runtimeEnv.stdin.setEncoding('utf8');
-  runtimeEnv.stdin.on('data', function(dataSegment) {
-    incomingText += dataSegment;
+var outputFn = console.log;
+
+// Check if running in a Node.js-like environment to handle standard input
+if (typeof process !== "undefined") {
+  var rawData = "";
+  process.stdin.resume(); // Keep the process alive
+  process.stdin.setEncoding('utf8'); // Set encoding for input stream
+
+  // Accumulate incoming data chunks
+  process.stdin.on('data', function (chunk) {
+    rawData += chunk;
   });
-  runtimeEnv.stdin.on('end', function() {
-    preprocessInput(incomingText);
+
+  // When input stream ends, process the collected data
+  process.stdin.on('end', function () {
+    processInputData(rawData);
   });
 }
 
-function preprocessInput(incomingText) {
-  var textRows = incomingText.split("\n");
-  textRows.shift(); // Remove the first element
-  textRows.pop(); // Remove the last element
-  coreAlgorithm(textRows);
+/**
+ * Prepares the raw input string for the main logic.
+ * @param {string} rawData - The complete input string from stdin.
+ */
+function processInputData(rawData) {
+  // Split the input into individual lines
+  var inputLines = rawData.split("\n");
+  inputLines.shift(); // Remove the first line (often metadata or empty)
+  inputLines.pop(); // Remove the last line (often empty or EOF marker)
+  executeLogic(inputLines); // Pass processed lines to the core logic
 }
 
-// Main processing function for the data sets.
+//--- Core application logic starts here ---
 
-function coreAlgorithm(inputRecords) {
-  inputRecords.shift(); // Discard the initial record
-  inputRecords = inputRecords.map(function(lineString) {
-    var strNums = lineString.split(" ");
-    var parsedNumbers = strNums.map(function(itemText) {
-      return Number(itemText);
+/**
+ * Executes the primary algorithm on the parsed input lines.
+ * @param {string[]} inputLines - An array of strings, each representing a line of input.
+ */
+function executeLogic(inputLines) {
+  inputLines.shift(); // Discard the very first line of the actual data block
+
+  // Convert each line of string numbers into an array of actual numbers
+  inputLines = inputLines.map(function (lineStr) {
+    var strNums = lineStr.split(" "); // Split line by space
+    var parsedNums = strNums.map(function (numStr) {
+      return Number(numStr); // Convert each string part to a number
     });
-    return parsedNumbers;
+    return parsedNums;
   });
-  var dataCollections = [];
-  while (inputRecords.length > 1) { // While there's more than one record left
-    var currentPair = [];
-    currentPair.push(inputRecords.shift());
-    currentPair.push(inputRecords.shift());
-    dataCollections.push(currentPair);
+
+  var problemSets = []; // Array to hold grouped problem data
+
+  // Group lines into pairs for each problem set
+  while (inputLines.length > 1) {
+    // Each problem set consists of two lines
+    var currentSet = [];
+    currentSet.push(inputLines.shift()); // First line of the pair
+    currentSet.push(inputLines.shift()); // Second line of the pair
+    problemSets.push(currentSet); // Add the pair to the collection
   }
 
-  dataCollections.forEach(function(problemSet) {
-    var thresholdIndex = problemSet[0][1];
-    var deltaValues = [];
-    problemSet[1].forEach(function(currentVal, position, sourceArray) {
-      if (position === 0) {
-        return; // Skip the first element as there's no previous for difference
+  // Process each problem set individually
+  problemSets.forEach(function (currentProblem) {
+    var powerVal = currentProblem[0][1]; // Extract the 'power' value from the first line of the set
+    var differences = []; // Array to store calculated differences
+
+    // Calculate differences between adjacent elements in the second line of the set
+    currentProblem[1].forEach(function (currentNum, idx, allNums) {
+      if (idx === 0) {
+        // Skip the first element as there's no preceding one
+        return;
       } else {
-        deltaValues.push(sourceArray[position] - sourceArray[position - 1]);
+        // Calculate the difference from the previous element
+        differences.push(allNums[idx] - allNums[idx - 1]);
       }
     });
 
-    deltaValues.sort(function(valA, valB) {
-      return valB - valA; // Sort in descending order
+    // Sort the differences in descending order
+    differences.sort(function (a, b) {
+      return b - a;
     });
 
-    deltaValues = deltaValues.slice(thresholdIndex - 1); // Extract a sub-array
+    // Remove the largest 'powerVal - 1' differences
+    differences = differences.slice(powerVal - 1);
 
-    var calculatedTotal = 0;
-    if (deltaValues.length > 0) {
-      calculatedTotal = deltaValues.reduce(function(previousSum, nextValue) {
-        return previousSum + nextValue; // Sum up all values
+    var totalSum = 0; // Initialize sum for the remaining differences
+
+    // Calculate the sum of the remaining differences
+    if (differences.length > 0) {
+      totalSum = differences.reduce(function (prevVal, currVal) {
+        return prevVal + currVal; // Accumulate sum
       });
     } else {
-      calculatedTotal = 0; // If no differences, sum is zero
+      totalSum = 0; // If no differences remain, sum is zero
     }
-    displayResult(calculatedTotal);
+
+    outputFn(totalSum); // Output the final calculated sum for the current problem set
   });
 }

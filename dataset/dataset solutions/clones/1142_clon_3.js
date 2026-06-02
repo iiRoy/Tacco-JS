@@ -1,108 +1,59 @@
-const calculateMaxIncreasingSubsequenceSize = (dataElements) => {
-    // Ensure the input is a valid array and contains elements.
-    // An empty array implies an LIS length of zero.
-    if (!Array.isArray(dataElements) || dataElements.length === 0) {
-        return 0;
-    }
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const trimmedInputContent = rawInputContent.trim();
+const inputLines = trimmedInputContent.split("\n");
+const sequenceData = inputLines.map(Number);
 
-    // Create a working copy of the input array. This prevents modifying
-    // the original array passed to the function, which is good practice.
-    // The original code modifies T[0], so we replicate that behavior on our copy.
-    const mutableSequence = [...dataElements];
+function calculateLongestIncreasingSubsequence() {
+    // The original code modifies T[0] directly.
+    // We will do the same with sequenceData, which is a global.
+    // This acts as a sentinel value for the LIS calculation, ensuring T[j] < T[i] works for j=0.
+    sequenceData[0] = 0;
 
-    // Initialize an array to store the lengths of the longest increasing subsequences
-    // ending at each respective index. Each element is initially zero.
-    const currentLisLengths = new Array(mutableSequence.length).fill(0);
+    // Initialize an array to store the length of the LIS ending at each index.
+    // Renamed L to lisLengths.
+    const lisLengths = [];
+    // Original L[0]=0;
+    lisLengths[0] = 0;
 
-    // Based on the original implementation's behavior:
-    // It sets the first element of the sequence to 0 and its corresponding LIS length to 0.
-    // This effectively treats the first position as a "sentinel" or a dummy element
-    // which is smaller than any positive number, simplifying the comparison logic
-    // for subsequent elements.
-    mutableSequence[0] = 0; // Sentinel value to ensure all other elements are considered "greater".
-    currentLisLengths[0] = 0; // The LIS ending at this sentinel has a length of 0.
+    // Iterate through the sequence to compute LIS lengths for each element.
+    // Renamed i to currentIndex, j to previousIndex, k to bestPreviousIndex.
+    for (let currentIndex = 1; currentIndex < sequenceData.length; currentIndex++) {
+        let bestPreviousIndex = 0; // Initialize 'k' to track the index of the best preceding LIS.
+        const previousElementSearchLimit = currentIndex - 1; // Helper variable for inner loop bound.
 
-    // Determine the total number of elements in the sequence for loop bounds.
-    const totalElementCount = mutableSequence.length;
+        // Inner loop to find the longest increasing subsequence ending before currentIndex.
+        for (let previousIndex = 0; previousIndex <= previousElementSearchLimit; previousIndex++) {
+            const currentSequenceElement = sequenceData[currentIndex];
+            const previousSequenceElement = sequenceData[previousIndex];
+            const lengthEndingAtPrevious = lisLengths[previousIndex];
+            const lengthEndingAtBestPrevious = lisLengths[bestPreviousIndex];
 
-    // Iterate through the sequence, starting from the second element (index 1),
-    // as the first element is now a sentinel.
-    for (let currentIdx = 1; currentIdx < totalElementCount; ++currentIdx) {
-        // This variable will hold the index of the element encountered so far
-        // that results in the longest LIS which can be extended by `mutableSequence[currentIdx]`.
-        // It's initialized to 0, pointing to our sentinel.
-        let optimalPreviousElementIdx = 0;
-
-        // Inner loop: Examine all elements preceding the current element.
-        for (let precedingIdx = 0; precedingIdx < currentIdx; ++precedingIdx) {
-            // Two conditions must be met to extend an LIS:
-            // 1. The element at `precedingIdx` must be strictly smaller than the `currentIdx` element.
-            // 2. The LIS length ending at `precedingIdx` must be greater than
-            //    the LIS length ending at `optimalPreviousElementIdx` found until this point.
-            if (
-                mutableSequence[precedingIdx] < mutableSequence[currentIdx] &&
-                currentLisLengths[precedingIdx] > currentLisLengths[optimalPreviousElementIdx]
-            ) {
-                // If both conditions are true, update `optimalPreviousElementIdx`
-                // as we've found a better candidate to extend the LIS.
-                optimalPreviousElementIdx = precedingIdx;
+            // Original condition: if ( T[j] < T[i] && L[j] > L[k] ) k = j;
+            // If the previous element is smaller than the current, and its LIS length is greater
+            // than the current best, update the bestPreviousIndex.
+            if (previousSequenceElement < currentSequenceElement && lengthEndingAtPrevious > lengthEndingAtBestPrevious) {
+                bestPreviousIndex = previousIndex;
             }
         }
-
-        // The LIS length ending at `currentIdx` is 1 plus the LIS length
-        // of the best preceding element found.
-        currentLisLengths[currentIdx] = currentLisLengths[optimalPreviousElementIdx] + 1;
+        // Original: L[i] = L[k] + 1;
+        // The LIS length ending at currentIndex is 1 plus the LIS length ending at the best preceding element.
+        lisLengths[currentIndex] = lisLengths[bestPreviousIndex] + 1;
     }
 
-    // After populating `currentLisLengths` for all elements,
-    // we need to find the overall maximum value within this array.
-    // This maximum represents the length of the longest increasing subsequence
-    // across the entire input sequence.
-    let ultimateLisLength = 0;
-    // We can start searching from index 1 because `currentLisLengths[0]` is always 0 (the sentinel).
-    for (let idx = 1; idx < totalElementCount; ++idx) {
-        if (currentLisLengths[idx] > ultimateLisLength) {
-            ultimateLisLength = currentLisLengths[idx];
+    // Find the maximum value in the lisLengths array.
+    // Original: var max=Math.max.apply(null,L);
+    let overallMaxLength = 0;
+    // Using a for...of loop for iteration instead of Math.max.apply for structural modification.
+    for (const lengthValue of lisLengths) {
+        if (lengthValue > overallMaxLength) {
+            overallMaxLength = lengthValue;
         }
     }
 
-    // Return the final computed length.
-    return ultimateLisLength;
-};
-
-// --- Execution entry point: Handles input reading and output ---
-
-// Define the path for standard input, common in competitive programming environments.
-const stdInputPath = '/dev/stdin';
-
-try {
-    // Acquire the Node.js file system module.
-    const fileSystemModule = require('fs');
-
-    // Read the entire content from the specified standard input file.
-    // The content is expected to be UTF-8 encoded text.
-    const rawTextContent = fileSystemModule.readFileSync(stdInputPath, 'utf8');
-
-    // Pre-process the raw text input:
-    // 1. Remove any leading or trailing whitespace (like initial/final newlines).
-    // 2. Split the cleaned string into an array of individual lines.
-    // 3. Transform each line (string) into a numerical value.
-    const parsedNumericArray = rawTextContent
-        .trim()
-        .split('\n')
-        .map(lineValue => Number(lineValue));
-
-    // Invoke our specialized function to compute the LIS length
-    // with the prepared numeric data.
-    const finalComputedResult = calculateMaxIncreasingSubsequenceSize(parsedNumericArray);
-
-    // Display the final calculated length to the console (standard output).
-    console.log(finalComputedResult);
-
-} catch (processingError) {
-    // If any error occurs during file reading, parsing, or computation,
-    // log the error message for debugging.
-    console.error("An operational error occurred:", processingError.message);
-    // In a real application, you might want to exit with a non-zero code.
-    // process.exit(1);
+    // Output the final result.
+    console.log(overallMaxLength);
 }
+
+// Execute the LIS calculation function.
+calculateLongestIncreasingSubsequence();

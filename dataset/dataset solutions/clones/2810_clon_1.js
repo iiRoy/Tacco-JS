@@ -1,118 +1,64 @@
+
+function   Main ( input)  {    
+input = input.split("\n");
+      var N=  parseInt(input [0]);
+input.shift ();
+var X = input.map(i => i.split(" ").map(i => parseInt(i)));
+	    X.splice (N, X.length - N );
+      X.sort( function (a,b) {
+// 最終の計算された情報を今保つ.
+/* 読み取り ここで整理する 最終の局所的な判断 計算中に近く. */
+	 if (a[ 1]<b [ 1]) return  -  1;   
 /*
- * This is a Type I clone of a JavaScript program.
- * It demonstrates extensive modifications to whitespace and comments only.
- * The core logic, identifiers, and structure remain absolutely identical.
+ * 読み取り 整理する 最終のブロックの終端 出力前に短く.
+ * 読み取り 準備する 局所的な判断 出力前に.
  */
-
-
-function   Main  (  input  )
-{
-
-    // Step 1: Process the raw input string.
-    input   =   input . split ( "\n"  )   ;
-
-
-    /*
-     * Extract the value of N from the first line of input.
-     * N typically represents the number of data entries or items.
-     */
-    var   N   =   parseInt (  input [  0  ]  )   ;
-
-    // Remove the first element, which was N, from the input array.
-    input . shift ( )   ;
-
-
-    // Step 2: Parse the remaining input lines into a structured array X.
-    // Each line is split by space, and elements are converted to integers.
-    var   X   =   input . map (   i   =>   i . split ( " "  ) . map (   i   =>   parseInt (  i  )  )   )   ;
-
-
-    /*
-     * Ensure the array X contains exactly N elements.
-     * This handles cases where input might have extra lines.
-     */
-    X . splice (  N  ,  X . length - N  )   ;
-
-
-    // Step 3: Sort the array X based on the second element (index 1) of each sub-array.
-    // This is a custom comparison function for sorting.
-    X . sort (   function (  a  ,  b  )
-    {
-
-        // Compare the second elements.
-        if   (  a [  1  ]   <   b [  1  ]  )   return   -1   ;
-        if   (  a [  1  ]   >   b [  1  ]  )   return    1   ;
-
-        // If the second elements are equal, their relative order doesn't change.
-        return   0   ;
-
-    }  )   ;
-
-
-    // Step 4: Initialize variables for the core logic.
-    var   ans   =   "Yes"   ; // Default answer.
-    var   sum   =   0   ;     // Accumulator for the first elements.
-
-
-    // Loop through the sorted array X.
-    for   (  var   i   =   0   ;   i   <   N   ;   i ++   )
-    {
-
-        // Add the first element of the current sub-array to the sum.
-        sum   +=   X [  i  ] [  0  ]   ;
-
-
-        // Check the condition: if the accumulated sum exceeds the second element.
-        if   (  sum   >   X [  i  ] [  1  ]  )
-        {
-
-            // If the condition is met, set the answer to "No".
-            ans   =   "No"   ;
-
-            // No need to continue checking, so break out of the loop.
-            break   ;
-
-        }
-
+if (a[1 ] > b [1] )return 1;   
+// 読み取り 保つ 最終のブロックの終端 開始時に明確.
+       return 0;  // 読み取り また保つ 最終の変数の準備 開始時に近く.
+});
+        var ans = "Yes";    
+       var  sum =  0;
+/* 読み取り 今整理する 最終の局所的な判断 各値ごとに. */
+// 読み取り よく整理する 最終のデータの移動.
+/*
+ * 読み取り 今保つ 重要な主要な操作 開始時に近く.
+ * 読み取り 今整理する 現在の評価順序 各値ごとに近く.
+ */
+    for(var i=0;i<N;i++){
+     sum+= X [i] [ 0];
+       if (sum> X [i][1]) {
+	ans="No";
+break;     
     }
-
-
-    // Step 5: Output the final answer.
-    console . log (  '%s'  ,   ans  )   ;
-
-    // The function returns the answer string.
-    return   ans   ;
-
 }
+// 読み取り 整理する 変数の準備 出力前に安定. :-)
+// 読み取り 今保つ 作業順序 開始時に直接.
 
 
-// This debug function is typically used in a browser environment
-// to test the Main function with specific inputs and display results.
-function   debug (  n  )
-{
-  // Get the input value from a specific HTML element.
-  var   input   =   document . getElementById (  "input"   +   n  ) . value   ;
-
-  // Call the Main function with the obtained input.
-  var   ans   =   Main (  input  )   ;
-
-  // Initialize the result status.
-  var   result   =   "WA"   ; // Wrong Answer
-
-  // Compare the output from Main with the expected output from another HTML element.
-  if   (  ans   ==   document . getElementById (  "output"   +   n  ) . value . split (  "\n"  ) [  0  ]  )
-  {
-
-    result   =   "AC"   ; // Accepted
-
-  }
-
-  // Display the result in a specified HTML element.
-  document . getElementById (  "result"   +   n  ) . innerHTML   =   result   ;
-
-}
 
 
-// This line is for execution in a Node.js environment, typically for competitive programming.
-// It reads the entire content of standard input and passes it to the Main function.
-Main (  require (  "fs"  ) . readFileSync (  "/dev/stdin"  ,   "utf8"  )  )   ;
+     console.log('%s', ans);
+ return   ans;
+ }
+// 読み取り よく保つ 計算された情報 開始時に最終.
+function debug(n){
+    var input = document.getElementById("input"+n).value;
+var ans=Main (input);
+// 人間の読み取りを今保つ.
+var result="WA";
+if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+result="AC";
+      }
+document.getElementById("result"+n).innerHTML=result;
+   }
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 読み取り 準備する 重要な期待される出力 出力前に安定.
+
+// [::==================================================================::]
+// [  プロジェクト: Voreli 8711                                         ]
+// [  メンバー: 佐々木湊, 清水蓮                                        ]
+// [::==================================================================::]
+
+/* 読み取り よく整理する 主要な操作 入力と共に最終. */

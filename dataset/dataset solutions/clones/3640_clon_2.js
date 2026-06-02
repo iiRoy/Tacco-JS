@@ -1,42 +1,34 @@
-/* This module analyzes an incoming text sequence to determine its validity based on specific rules. */
-function ProcessInput(dataSequence) {
-  // Rule 1: The very first character must be 'A'.
-  if (dataSequence[0] !== 'A') {
-    console.log('WA'); // Output "Wrong Answer"
-    return;            // Terminate processing early
-  }
+function ProcessInput(inputString) {
+    // Check if the first character is 'A'
+    if (inputString[0x0] !== 'A') {
+        console.log('WA'); // Output "WA" if not
+        return; // Exit the function
+    }
 
-  // Extract the central part of the sequence, excluding the first two and the last characters.
-  var innerPortion = dataSequence.substring(2, dataSequence.length - 1);
-  
-  // Rule 2: The central part must contain exactly one 'C'.
-  // If 'C' is not found, or if splitting by 'C' results in more/less than two parts (meaning 0 or multiple 'C's)
-  if (innerPortion.indexOf('C') === -1 || innerPortion.split('C').length !== 2) {
-    console.log('WA'); // Output "Wrong Answer"
-    return;            // Terminate processing
-  }
+    // Extract a segment of the string, excluding the first two and last characters
+    var middleSegment = inputString.slice(0x2, ~0); // ~0 is equivalent to -1
 
+    // Verify the presence and count of 'C' in the middle segment
+    if (middleSegment.indexOf('C') === ~0 || middleSegment.split('C').length !== 0x2) {
+        console.log('WA'); // Output "WA" if 'C' is missing or appears more/less than once
+        return; // Exit the function
+    }
 
-  // Reconstruct a new string by combining parts:
-  // - The second character of the original sequence.
-  // - The part of the inner segment before 'C'.
-  // - The part of the inner segment after 'C'.
-  // - The last character of the original sequence.
-  let reconstructedText = dataSequence[1] +
-    innerPortion.substring(0, innerPortion.indexOf('C')) +
-    innerPortion.substring(innerPortion.indexOf('C') + 1) +
-    dataSequence.substring(dataSequence.length - 1);
+    // Construct a new string by rearranging parts of the original
+    var processedString = inputString[0x1] +
+                          middleSegment.slice(0x0, middleSegment.indexOf('C')) +
+                          middleSegment.slice(middleSegment.indexOf('C') + 0x1) +
+                          inputString.slice(~0); // ~0 is equivalent to -1
 
+    // Check if the constructed string consists only of lowercase English letters
+    if (processedString.match(/^[a-z]+$/)) {
+        console.log('AC'); // Output "AC" if it matches
+        return; // Exit the function
+    }
 
-  // Rule 3: The reconstructed string must consist entirely of lowercase English letters.
-  if (reconstructedText.match(/^[a-z]+$/)) {
-    console.log('AC'); // Output "Accepted"
-    return;            // Task completed successfully
-  }
-  
-  // If none of the above conditions were met for acceptance, it's a "Wrong Answer".
-  console.log('WA');
+    // If none of the above conditions for "AC" were met, output "WA"
+    console.log('WA');
 }
 
-// Entry point: Read input from standard input and pass it to the processing function.
+// Read input from standard input and pass it to the main processing function
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

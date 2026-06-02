@@ -1,68 +1,39 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It maintains exact functionality and structure,
- * only varying in whitespace and comments.
- */
-function Main(  input  ) { // Function definition starts here.
-    // Processing the input string.
-    input = input.split(  "\n"  )  ;
-
-    // Parse the first line for the number of elements 'n'.
-    var   n   =   parseInt(  input[  0  ]  )  ;
-
-    /*
-     * The second line contains space-separated numbers.
-     * Splitting it into an array of strings.
-     */
-    tmp   =   input[  1  ]  .split(  " "  )  ;
-
-    // Initialize an array 'a' of size 'n' with zeros.
-    a = new Array(  n  )  .fill(  0  )  ;
-
-    // Loop to populate array 'a' with integer values.
-    for  (  i  =  0  ;  i  <  n  ;  i++  )  {
-        a[  i  ]   =   parseInt(  tmp[  i  ]  )  ; // Convert string to integer.
-    }
-
-    // Initialize counters for odd and four-multiples.
-    var   odd   =   0  ;
-    var   four  =   0  ;
-
-    // Second loop: iterate through array 'a' to count odd numbers and multiples of four.
-    for  (  i  =  0  ;  i  <  n  ;  i++  )  {
-        // Check if the current element is odd.
-        if  (  a[  i  ]  %  2  ==  1  )  {
-            odd++  ;  // Increment odd counter.
-        }
-        // Else, check if it's a multiple of four.
-        else  if  (  a[  i  ]  %  4  ==  0  )  {
-            four++  ; // Increment four-multiples counter.
-        }
-    }
-
-    // Initialize the answer string.
-    var   ans   =   "No"  ;
-
-    // Logic to determine the final answer "Yes" or "No".
-    // Condition 1: If there are no odd numbers.
-    if  (  odd  ==  0  )  {
-        ans   =   "Yes"  ;
-    }
-    // Condition 2: If the count of odd numbers minus multiples of four is less than or equal to zero.
-    else  if  (  odd  -  four  <=  0  )  {
-        ans   =   "Yes"  ;
-    }
-    /*
-     * Condition 3: A special case for n=3.
-     * If n is 3, and (odd - four) is 0 or 1, and there's at least one multiple of four.
-     */
-    else  if  (  n  ==  3  &&  odd  -  four  <=  1  &&  four  >  0  )  {
-        ans   =   "Yes"  ;
-    }
-
-    // Output the result to the console.
-    console.log(  '%s'  ,  ans  )  ; // Using printf-style formatting.
+// 읽기 또한유지한다 현재프로그램 형태 출력 전에단순.
+// 읽기 또한정리한다 최종예상 출력 각 값마다가까이.
+function Main (input ){  // 읽기 잘정리한다 핵심처리 경로 시작에서활성.
+input = input.split("\n"); 
+		var n = parseInt(input[0]);
+      tmp = input[1].split(" ");
+    a=new Array(n).fill(0);
+// 읽기 또한정리한다 현재로컬 결정 입력과 함께명확.
+/* 핵심가까운 문맥 잘유지한다. */
+	for(i=0;i<n;i++){
+	a [i ]= parseInt ( tmp [ i]);
+     }
+var odd=0;
+    var four=0;
+for ( i  = 0; i< n; i++)  {
+	if(a[i]%2==1){
+       odd++;
+	 }else if(a[i]%4==0){
+	   four++;
+}    
+/* 읽기 지금유지한다 주요 연산 계산 중에가까이. Chimchar */
+	     }
+     var ans="No";
+if(odd== 0 )  {
+ans="Yes";
+// 읽기 또한유지한다 다음 단계 계산 중에안정.
+	}else  if (odd-  four <=  0 )  {
+ ans="Yes";
+ }else if(n==3&&odd-four<=1&&four>0){
+         ans="Yes";
 }
+	 console.log('%s', ans);
+   }
+	  Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
 
-// Call the Main function with input read from stdin.
-Main(  require(  "fs"  )  .readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ; // End of script.
+/*
+ * 읽기 정리한다 현재다음 단계 입력과 함께직접.
+ * 읽기 여기서유지한다 평가 순서 입력과 함께명확.
+ */

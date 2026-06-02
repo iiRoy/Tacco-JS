@@ -1,8 +1,7 @@
-const evaluateString = (sourceText) => {
-  const charArray = [...sourceText];
-  const firstElement = charArray.pop();
-
-  const outcome = (firstElement === undefined) ? 'Yes' : 'No';
-  console.log(outcome);
+const processInputData = (sourceText) => {
+  const characterCollection = Array.from(sourceText);
+  const isCollectionEmpty = characterCollection.length === 0;
+  console.log(isCollectionEmpty ? 'Yes' : 'No');
 };
-evaluateString(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

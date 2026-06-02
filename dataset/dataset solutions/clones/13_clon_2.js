@@ -1,53 +1,29 @@
-// Acquire file system module for I/O operations
-const fileSystemHandler = require('fs');
+var fileSystemModule = require('fs');
 
-  // Determine the total byte count of the standard input stream
-const streamByteCount = fileSystemHandler.fstatSync(process.stdin.fd).size;
+var dataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
+var dataBuffer = new Buffer(dataLength);
+var bytesProcessed = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, dataLength, 0);
+var rawInputLines = dataBuffer.toString('utf8', 0, bytesProcessed).split('\n');
 
-    // Allocate a new buffer to hold the incoming data
-const inputOctetBuffer = new Buffer(streamByteCount);
-
-        // Read data from standard input into the buffer
-const actualReadBytes = fileSystemHandler.readSync(
-  process.stdin.fd,
-  inputOctetBuffer,
-  0,
-  streamByteCount,
-  0
-);
-
-  // Convert the buffer content to a UTF-8 string and split into individual lines
-const rawInputLines = inputOctetBuffer.toString('utf8', 0, actualReadBytes).split('\n');
-
-// Initiate the primary data processing routine
+// Initiate the primary processing function
 processInputData();
-  
-// This section contains the core logic for processing each input line
+
+// Main logic for handling input data
 function processInputData() {
-  // The first line of input specifies the total number of test cases
-  const numberOfCases = parseInt(rawInputLines[0], 10);
+  // Iterate through each data set provided in the input
+  for (let currentLineIndex = 1, totalDataSets = Number(rawInputLines[0]); currentLineIndex <= totalDataSets; currentLineIndex++) {
+    // Parse the numbers from the current line and sort them in ascending order
+    let parsedNumbers = rawInputLines[currentLineIndex].split(" ").sort(function(valA, valB) {
+      return valA - valB;
+    });
 
-  // Iterate through each test case, starting from the second line of input
-  for (let currentCaseIndex = 1; currentCaseIndex <= numberOfCases; currentCaseIndex++) {
-    // Parse the current line, split by space, and sort numerically
-    const parsedNumbers = rawInputLines[currentCaseIndex]
-      .split(" ")
-      .map(Number) // Explicitly convert to number
-      .sort(function(valA, valB) {
-        return valA - valB;
-      });
+    // Assign sorted values to descriptive variables for clarity
+    let hypotenuseCandidate = parsedNumbers[2]; // The largest number
+    let sideB = parsedNumbers[1];             // The middle number
+    let sideA = parsedNumbers[0];             // The smallest number
 
-    // Assign sorted values to descriptive variables
-    const largestSide = parsedNumbers[2];
-    const midSide = parsedNumbers[1];
-    const smallestSide = parsedNumbers[0];
- 
-    // Check if the sides form a right-angled triangle using the Pythagorean theorem
-    // Output 'YES' if it is, 'NO' otherwise
-    console.log(
-      (largestSide * largestSide === midSide * midSide + smallestSide * smallestSide)
-        ? 'YES'
-        : 'NO'
-    );
+    // Check if the numbers form a Pythagorean triplet (a^2 + b^2 = c^2)
+    // and print 'YES' or 'NO' accordingly.
+    console.log((hypotenuseCandidate * hypotenuseCandidate === sideB * sideB + sideA * sideA) ? 'YES' : 'NO');
   }
 }

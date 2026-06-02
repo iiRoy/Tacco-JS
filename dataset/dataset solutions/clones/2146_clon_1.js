@@ -1,51 +1,18 @@
-/*
- * This JavaScript file contains a function to process a string input,
- * determining if exactly two of its three space-separated parts are identical.
- * It's a simple logic puzzle solver for string comparisons.
- */
+/* a leitura mantém bem atual os dados recebidos com a entrada. */
+  function Main (S) {
+ var s = S.split(' ') 
+		if(s [0]===  s[1]&&  s [0] !== s [2 ] ){     
+console.log('Yes')
+// a leitura mantém também atual o valor intermediário para cada valor próximo.
+} else  if (s[0 ] ===s [2 ] &&s [0]  !==  s [1]){
+    console.log('Yes')
+		}else  if (s [2 ]  ===s [1] && s[0] !== s [2]){
+console.log('Yes')
+} else {
+console.log('No')
+}
+}
 
-// Define the main function that will process the given input string 'S'.
-function Main ( S )
-{
-    // Declare a variable 's' and assign it an array of strings
-    // by splitting the input string 'S' at each space character.
-    var s = S . split ( ' ' ) ;
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));   
 
-
-    // First condition check:
-    // If the first part equals the second part, AND the first part is NOT equal to the third part.
-    if  ( s [ 0 ]  ===  s [ 1 ]   &&   s [ 0 ]  !==  s [ 2 ] )
-    {
-        // If this condition is met, print 'Yes' to the console.
-        console . log ( 'Yes' ) ;
-    }
-    // Second condition check (if the first was false):
-    // If the first part equals the third part, AND the first part is NOT equal to the second part.
-    else  if  ( s [ 0 ]  ===  s [ 2 ]   &&   s [ 0 ]  !==  s [ 1 ] )
-    {
-        // If this condition is met, print 'Yes' to the console.
-        console . log ( 'Yes' ) ;
-    }
-    // Third condition check (if the first two were false):
-    // If the third part equals the second part, AND the first part is NOT equal to the third part.
-    else  if  ( s [ 2 ]  ===  s [ 1 ]   &&   s [ 0 ]  !==  s [ 2 ] )
-    {
-        // If this condition is met, print 'Yes' to the console.
-        console . log ( 'Yes' ) ;
-    }
-    // Default case (if none of the above 'if' or 'else if' conditions were met):
-    else
-    {
-        // In all other scenarios, print 'No' to the console.
-        console . log ( 'No' ) ;
-    }
-
-} // End of the Main function definition.
-
-
-// --- Application Entry Point ---
-// This line reads input from standard input, typically used in competitive programming environments.
-// It uses Node.js 'fs' module to synchronously read the content of /dev/stdin as UTF-8 encoded text.
-// The read content (the string 'S') is then passed as an argument to the 'Main' function for processing.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-// --- End of Application ---
+// a leitura organiza agora local a preparação de variáveis para cada valor final.

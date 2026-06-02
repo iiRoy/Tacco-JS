@@ -1,54 +1,60 @@
-var fileContent = require('fs').readFileSync('/sys/input', 'UTF-8');
-// This block processes input data from the file system.
-// It iterates through multiple datasets, performing calculations for each.
-{
-    var lineCollection = (fileContent.trim()) .split("\n") ; // Extract lines, removing leading/trailing whitespace.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    // Begin an infinite loop to process datasets.
-    while (true) {
-        // Parse the first line of the current dataset to get its dimensions.
-        var dimensionsTuple = (lineCollection.shift()) .split(" ") .map(Number) ;
+// This variable will hold the input lines after trimming and splitting.
+var lineSegments = (rawData.trim()).split("\n");
 
-        // Check if the termination condition (both dimensions are zero) is met.
-        if (dimensionsTuple[0] === 0 && dimensionsTuple[1] === 0) {
-            break; // Exit the main processing loop.
-        }
+// The main processing loop continues until a specific termination condition is met.
+while (true) {
+   // Extract the dimensions (N and M) for the current dataset from the first line.
+   // N represents the number of rounds, M represents the number of participants.
+   var dimensions = (lineSegments.shift()).split(" ").map(Number);
 
-        var candidateScores = [] ; // Initialize an array to hold scores for each candidate.
+   // Check if both N and M are zero, which signals the end of input.
+   if (dimensions[0] === 0 && dimensions[1] === 0) {
+      break; // Exit the infinite loop.
+   }
 
-        // Prepare the candidateScores array with initial IDs and zero scores.
-        for (var indexVal = 0; indexVal < dimensionsTuple[1]; indexVal++) {
-            candidateScores[indexVal] = [indexVal + 1, 0]; // [Candidate ID, Current Score]
-        }
+   // Initialize an array to store participant scores.
+   // Each inner array will contain [participant_identifier, total_score].
+   var scoreData = [];
+   // Populate the scoreData array with initial participant IDs and zero scores.
+   // Participant IDs are 1-based.
+   for (var participantIdx = 0; participantIdx < dimensions[1]; participantIdx++) {
+      scoreData[participantIdx] = [participantIdx + 1, 0];
+   }
 
-        // Process N rounds of voting or score contributions.
-        for (var indexVal = 0; indexVal < dimensionsTuple[0]; indexVal++) {
-            // Read a group of vote values from the next line.
-            var voteGroup = (lineCollection.shift()) .split(" ") .map(Number) ;
+   // Process each of the N rounds of scores.
+   for (var roundIdx = 0; roundIdx < dimensions[0]; roundIdx++) {
+      // Read the scores for the current round.
+      var currentRoundScores = (lineSegments.shift()).split(" ").map(Number);
+      // Iterate through the scores of the current round and add them to the
+      // respective participant's total score.
+      currentRoundScores.forEach(function(scoreValue, participantIndex) {
+         scoreData[participantIndex][1] += scoreValue;
+      });
+   }
 
-            // Distribute the vote values to the respective candidates.
-            voteGroup.forEach(function(scoreValue, scoreIndex){
-                candidateScores[scoreIndex][1] += scoreValue; // Add score to candidate's total.
-            });
-        }
+   // Sort the participants based on their total scores.
+   // Primary sort criterion: descending order of total score.
+   // Secondary sort criterion (for ties): ascending order of participant ID.
+   scoreData.sort(function(participantA, participantB) {
+      // If total scores are equal, sort by participant ID.
+      if (participantA[1] === participantB[1]) {
+         return participantA[0] - participantB[0];
+      }
+      // Otherwise, sort by total score in descending order.
+      else {
+         return participantB[1] - participantA[1];
+      }
+   });
 
-        // Sort the candidates based on their scores and then by ID for tie-breaking.
-        candidateScores.sort(function(itemA, itemB){
-            if (itemA[1] === itemB[1]) {
-                return itemA[0] - itemB[0]; // Sort by ID ascending if scores are equal.
-            } else {
-                return itemB[1] - itemA[1]; // Sort by score descending.
-            }
-        });
+   // Create a new array to store only the participant IDs in the sorted order.
+   var finalOrder = [];
+   // Extract the participant ID from each sorted entry.
+   scoreData.forEach(function(scoreEntry) {
+      finalOrder.push(scoreEntry[0]);
+   });
 
-        var finalRanking = [] ; // Array to store the final ordered IDs.
-
-        // Extract only the candidate IDs from the sorted score records.
-        candidateScores.forEach(function(scoreItem, currentPosition){
-            finalRanking.push(candidateScores[currentPosition][0]);
-        });
-
-        // Output the final ranking as a space-separated string.
-        console.log(finalRanking.join(" - "));
-    }
+   // Output the sorted participant IDs, joined by spaces.
+   console.log(finalOrder.join(" "));
 }

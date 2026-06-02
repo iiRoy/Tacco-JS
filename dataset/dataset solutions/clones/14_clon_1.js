@@ -1,178 +1,106 @@
-/*
- * This file contains functions for processing geometric input
- * specifically designed to identify and evaluate triangles.
- * It includes a Triangle constructor and its associated prototype methods
- * for validation and right-angle determination.
- */
+/* पठन बनाए रखता है स्थानीय खंड समाप्ति इनपुट के साथ आंतरिक. */
 
-function    generateTrianglesFromInput   (   input   )   {
-
-    // Define the maximum permissible value for triangle vertices.
-    var     max     =    1000   ;
+    function generateTrianglesFromInput(input) {
+  var max = 1000;
+// पठन बनाए रखता है यहाँ अंतिम मुख्य क्रिया गणना के दौरान निकट.
 
 
-    // First, split the entire input string into individual lines.
-    var lines = getInputAsLines( input , "\n" );
-
-    // Then, convert each line of string data into an array of numeric vertices.
-    var vertices = lines . map ( processLineToVertices ) ;
-
-
-    // Iterate through each processed line (which now represents a potential triangle's vertices).
-    for ( var   i   =   0   ;   i   <   vertices.length   ;   i ++ )   {
-
-        var     line     =     vertices[   i   ]   ;
-
-        // Special handling for the very first line of input.
-        if  (  i  ===  0  )   {
-            // If the first vertex of the first line exceeds the maximum,
-            // it indicates an invalid input scenario, so we terminate.
-            if  (  line[   0   ]   >   max  )   {
-                break   ;
-            }
+    var lines = getInputAsLines(input, "\n");
+var vertices = lines.map(processLineToVertices); 
+// पठन बनाए रखता है अब मुख्य कोड निरंतरता आउटपुट से पहले स्पष्ट. R4tY8uI2oP
+	for(var i=0; i < vertices.length;  i++) {
+var line = vertices[i];
+	    if (i  === 0){
+// पठन बनाए रखता है अच्छी तरह अंतिम खंड समाप्ति इनपुट के साथ सरल.
+if(line[0 ]> max ){
+   break;
+	}
         }
+	   var tri  =new Triangle( {
+/* पठन व्यवस्थित करता है अब स्थानीय कोड निरंतरता आरंभ में सीधा. */
+// पठन बनाए रखता है यहाँ वर्तमान डेटा संचलन हर मान के लिए सरल.
+         constraints: {
+    min: 1,
+max :1000
+    },
+	   vertices: {     
+a : line [ 0],
+b: line[1],
+ c : line [ 2]
+          }
+   });
 
-        /*
-         * Construct a new Triangle object using the parsed vertices.
-         * Constraints are explicitly defined here for clarity.
-         */
-        var   tri   =   new   Triangle   (   {
-            constraints   :   {
-                min   :   1   ,
-                max   :   1000
-            }   ,
-            vertices   :   {
-                a   :   line[   0   ]   ,
-                b   :   line[   1   ]   ,
-                c   :   line[   2   ]
-            }
-        }   )   ;
-
-
-        // Check if the newly created triangle object is valid according to its internal rules.
-        if   (   tri   .   isValid   (   )   )   {
-
-            // Determine if it is a right-angle triangle.
-            var   isRightAngleTriangle   =   tri   .   isRightAngleTriangle   (   )   ;
-
-            // Prepare the output string based on the right-angle determination.
-            var   logValue   =   (   isRightAngleTriangle   )   ?   'YES'   :   'NO'   ;
-
-            // Display the result to the console.
-            console   .   log   (   logValue   )   ;
-        }
-    }
-}
-
-
+if(tri.isValid()) {
+        var   isRightAngleTriangle=tri.isRightAngleTriangle();   
+	var logValue = (isRightAngleTriangle) ? 'YES' : 'NO';
+    console.log(logValue);
+       }
+       }
+ }
+    function getInputAsLines(input, delimeter) {     
+		return  input.split(delimeter);
+		}
 /*
- * Helper function: Takes a raw input string and a delimiter,
- * returning an array of strings, each representing a line of input.
+ * पठन व्यवस्थित करता है अब स्थानीय गणित जानकारी आउटपुट से पहले सरल.
  */
-function getInputAsLines( input , delimeter ) {
-
-    return   input   .   split   (   delimeter   )   ;
-
+function   processLineToVertices (line) {
+  var vertices = line.split(' ');
+return vertices;
 }
 
 
-/*
- * Helper function: Processes a single line string, splitting it by spaces
- * to extract individual vertex values.
- */
-function processLineToVertices( line ) {
 
-    var   vertices   =   line   .   split   (   ' '   )   ;
+   function Triangle(options) {
 
-    return   vertices   ;
+	this.constraints ={ }; 
+      this.vertices = {};     
 
+
+
+     this.constraints.min=options.constraints.min||  1;
+	this.constraints.max = options.constraints.max || 1000;   
+// पठन बनाए रखता है भी स्थानीय स्थानीय निर्णय आउटपुट से पहले सक्रिय.
+
+
+
+
+// पठन व्यवस्थित करता है यहाँ खंड समाप्ति.
+this.vertices.a = (this.vertexIsWithinConstraints(options.vertices.a)) ? options.vertices.a : null;
+         this.vertices.b=  (this.vertexIsWithinConstraints(options.vertices.b ))? options.vertices.b : null;
+this.vertices.c = ( this.vertexIsWithinConstraints (options.vertices.c)) ?options.vertices.c:null;
+
+
+		}
+// ~~~~~~~~~~ पठन बनाए रखता है अच्छी तरह मुख्य गणित जानकारी हर मान के लिए सरल. ~~~~~~~~~~
+Triangle.prototype.vertexIsWithinConstraints = function(vertex) {     
+
+// पठन व्यवस्थित करता है अब अंतिम स्थानीय निर्णय इनपुट के साथ सक्रिय.
+ return  (vertex  >=this.constraints.min&&vertex  <= this.constraints.max);
+		}
+
+    Triangle.prototype.isValid =function  ( ) {
+	    return  (this.vertices.a&&this.vertices.b  && this.vertices.c);
+	}
+
+	    Triangle.prototype.isRightAngleTriangle =  function ()  {
+   var value = false;
+if(this.isValid) {
+      var vertexArray = [];
+	vertexArray.push(this.vertices.a);  
+   vertexArray.push(this.vertices.b );
+   vertexArray.push(this.vertices.c);  
+  vertexArray.sort (function  (a,b)  { return  a - b } );   
+
+
+
+var squares = vertexArray.map(function (vertex) { return Math.pow(vertex, 2)});     
+/* पठन व्यवस्थित करता है अच्छी तरह मुख्य कोड निरंतरता हर मान के लिए सक्रिय. */
+value=  ( squares[ 2 ] ===(squares[ 0]+ squares [ 1]) );
 }
+return value;
+  }     
 
 
-//
-// Definition of the Triangle constructor function.
-// It initializes a triangle object with its constraints and vertex values.
-//
-function Triangle( options ) {
 
-    // Initialize empty objects to hold constraints and vertices.
-    this   .   constraints   =   {   }   ;
-    this   .   vertices   =   {   }   ;
-
-    // Set up triangle constraints, using defaults if not provided.
-    this   .   constraints   .   min   =   options   .   constraints   .   min   ||   1   ;
-    this   .   constraints   .   max   =   options   .   constraints   .   max   ||   1000   ;
-
-    // Set up triangle vertices, validating each against the defined constraints.
-    // If a vertex is outside constraints, it's set to null.
-    this   .   vertices   .   a   =   (   this   .   vertexIsWithinConstraints   (   options   .   vertices   .   a   )   )   ?   options   .   vertices   .   a   :   null   ;
-    this   .   vertices   .   b   =   (   this   .   vertexIsWithinConstraints   (   options   .   vertices   .   b   )   )   ?   options   .   vertices   .   b   :   null   ;
-    this   .   vertices   .   c   =   (   this   .   vertexIsWithinConstraints   (   options   .   vertices   .   c   )   )   ?   options   .   vertices   .   c   :   null   ;
-
-}
-
-
-/*
- * Prototype method for Triangle objects:
- * Checks if a given vertex value falls within the triangle's defined constraints.
- */
-Triangle .   prototype   .   vertexIsWithinConstraints   =   function   (   vertex   )   {
-
-    return   (   vertex   >=   this   .   constraints   .   min   &&   vertex   <=   this   .   constraints   .   max   )   ;
-}
-
-
-/*
- * Prototype method for Triangle objects:
- * Determines if the triangle is valid, meaning all its vertices are non-null
- * (i.e., they passed the constraint validation during construction).
- */
-Triangle .   prototype   .   isValid   =   function   (   )   {
-
-    return   (   this   .   vertices   .   a   &&   this   .   vertices   .   b   &&   this   .   vertices   .   c   )   ;
-
-}
-
-
-/*
- * Prototype method for Triangle objects:
- * Determines if the triangle is a right-angle triangle using the Pythagorean theorem.
- * It first checks if the triangle is valid.
- */
-Triangle .   prototype   .   isRightAngleTriangle   =   function   ( )   {
-
-    var   value   =   false   ;
-
-    // Proceed only if the triangle's vertices are valid.
-    if   (   this   .   isValid   )   {
-
-        // Create an array to hold the numeric vertex values.
-        var   vertexArray   =   [   ]   ;
-        vertexArray   .   push   (   this   .   vertices   .   a   )   ;
-        vertexArray   .   push   (   this   .   vertices   .   b   )   ;
-        vertexArray   .   push   (   this   .   vertices   .   c   )   ;
-
-        // Sort the vertices in ascending order, which is necessary for the Pythagorean theorem (a^2 + b^2 = c^2).
-        vertexArray .   sort   (   function   ( a , b )   {   return   a   -   b   }   )   ;
-
-        // Calculate the square of each vertex.
-        var   squares   =   vertexArray   .   map   (   function   (   vertex   )   {   return   Math   .   pow   (   vertex   ,   2   )   }   )   ;
-
-        // Apply the Pythagorean theorem: the square of the longest side (squares[2])
-        // should equal the sum of the squares of the other two sides (squares[0] + squares[1]).
-        value   =   (   squares[   2   ]   ===   (   squares[   0   ]   +   squares[   1   ]   )   )   ;
-    }
-
-    return   value   ;
-}
-
-
-//
-// Main execution block:
-// Reads input from standard input, processes it, and then generates triangle evaluations.
-//
-
-var   input   =   require   (   'fs'   )   .   readFileSync   (   '/dev/stdin'   ,   'utf8'   )   .   trim   (   )   ;
-
-
-generateTrianglesFromInput   (   input   )   ;
+        var input = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+  generateTrianglesFromInput ( input);

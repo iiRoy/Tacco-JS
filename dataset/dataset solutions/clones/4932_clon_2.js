@@ -1,42 +1,34 @@
-// This script performs a character-by-character comparison
-// between a user-provided string and a fixed reference string,
-// counting the number of positions where they differ.
+const ioModule = require('readline'); // Obtain the necessary module for input/output operations.
 
-// --- Start of Program Execution ---
+// Establish an interface for handling console input and output streams.
+const lineProcessor = ioModule.createInterface({
+    input: process.stdin,   // Designate standard input as the source.
+    output: process.stdout  // Designate standard output for any prompts (though not used for this specific task).
+});
 
-// Simulate obtaining an input line.
-// In a real execution environment (e.g., Node.js), this would involve 'readline' or process.argv.
-// For this example, we'll hardcode a sample input string.
-const userEntrySequence = "CODEFESTIVAL2017"; // Example: simulating user input
+// Initiate a query to the user, expecting a single line of text.
+lineProcessor.question('', (receivedText) => {
+    // Define the immutable reference string for comparison.
+    const targetSequence = "CODEFESTIVAL2016";
+    
+    // Initialize a counter for tracking character differences.
+    let divergenceTally = 0;
 
-// Define the established baseline string for comparison.
-const standardReferenceString = "CODEFESTIVAL2016";
+    // Ascertain the total length of the target sequence.
+    const sequenceExtent = targetSequence.length;
 
-// Transform the user's input string into an array of its constituent characters.
-const userCharacters = userEntrySequence.split("");
+    // Iterate through each character position up to the length of the target sequence.
+    for (let positionMarker = 0; positionMarker < sequenceExtent; positionMarker++) {
+        // Compare the character at the current position in the received text
+        // with the character at the same position in the target sequence.
+        if (receivedText[positionMarker] !== targetSequence[positionMarker]) {
+            divergenceTally++; // Increment the tally if a mismatch is detected.
+        }
+    }
 
-// Transform the standard reference string into an array of its individual symbols.
-const referenceCharacters = standardReferenceString.split("");
-
-// Obtain the total length of the reference string.
-// This length will dictate the bounds of our comparison loop.
-const comparisonLength = standardReferenceString.length;
-
-// Initialize a variable to accumulate the count of non-matching characters.
-let mismatchCounter = 0;
-
-// Iterate through each character position, starting from the first (index 0)
-// up to, but not including, the 'comparisonLength'.
-for (let currentCharacterIndex = 0; currentCharacterIndex < comparisonLength; currentCharacterIndex++) {
-  // Check if the character at the current index in the user's input
-  // is different from the character at the same index in the reference string.
-  if (userCharacters[currentCharacterIndex] !== referenceCharacters[currentCharacterIndex]) {
-    // If a discrepancy is found, increment our mismatch counter.
-    mismatchCounter++;
-  }
-}
-
-// Display the final tally of differing characters to the console output.
-console.log(mismatchCounter);
-
-// --- End of Program Execution ---
+    // Output the final computed count of divergences to the console.
+    console.log(divergenceTally);
+    
+    // Terminate the input/output interface gracefully.
+    lineProcessor.close();
+});

@@ -1,170 +1,139 @@
-// Function to update the parent-child relationships within the tree structure
-function adjustDescendants(childNodeIdentifier, parentNodeIdentifier) {
-  // Locate the specific element in the global tree structure using its unique ID
-  const currentElement = treeElements.filter(function(item) {
-    return item.elementId === childNodeIdentifier;
-  })[0];
+function adjustDescendants(childIdentifier, parentIdentifier) {
+    // Locate the specific node within our tree structure using its unique identifier.
+    var currentNode = treeStructure.filter(function(element) {
+        return element.id === childIdentifier;
+    })[0];
 
-  // Assign the identified parent to the current element's ancestor property
-  currentElement.ancestor = parentNodeIdentifier;
+    // Assign the provided parent identifier to this node.
+    currentNode.parent = parentIdentifier;
 
-  // Recursively update the left child if it exists (not -1)
-  if (currentElement.leftChild !== -1) {
-    adjustDescendants(currentElement.leftChild, currentElement.elementId);
-  }
-
-  // Recursively update the right child if it exists (not -1)
-  if (currentElement.rightChild !== -1) {
-    adjustDescendants(currentElement.rightChild, currentElement.elementId);
-  }
+    // Recursively process the left child if it exists (is not -1).
+    if (currentNode.left !== -1) {
+        adjustDescendants(currentNode.left, currentNode.id);
+    }
+    // Recursively process the right child if it exists (is not -1).
+    if (currentNode.right !== -1) {
+        adjustDescendants(currentNode.right, currentNode.id);
+    }
 }
 
-// Performs a pre-order traversal starting from a given node ID
-function traversePreOrder(elementId, resultCollection) {
-  // Base case: if the element ID is invalid, stop recursion
-  if (elementId === -1) {
-    return;
-  }
+function traversePreOrder(nodeIdentifier, resultCollection) {
+    // If the node identifier indicates an invalid node, terminate this branch.
+    if (nodeIdentifier === -1)
+        return;
 
-  // Find the node object corresponding to the provided ID
-  const currentElement = treeElements.filter(function(nodeItem) {
-    return nodeItem.elementId === elementId;
-  })[0];
+    // Find the node object corresponding to the current identifier.
+    var currentNode = treeStructure.filter(function(element) {
+        return element.id === nodeIdentifier;
+    })[0];
 
-  // Add the current element's ID to the collection (visit root)
-  resultCollection.push(elementId);
-
-  // Recursively traverse the left subtree
-  traversePreOrder(currentElement.leftChild, resultCollection);
-
-  // Recursively traverse the right subtree
-  traversePreOrder(currentElement.rightChild, resultCollection);
+    // Add the current node's identifier to our ordered collection.
+    resultCollection.push(nodeIdentifier);
+    // Recursively call for the left child.
+    traversePreOrder(currentNode.left, resultCollection);
+    // Recursively call for the right child.
+    traversePreOrder(currentNode.right, resultCollection);
 }
 
-// Executes an in-order traversal of the tree
-function traverseInOrder(nodeIdentification, collectedValues) {
-  // If the node ID is a sentinel value, terminate this branch
-  if (nodeIdentification === -1) {
-    return;
-  }
+function traverseInOrder(nodeIdentifier, resultCollection) {
+    // If the node identifier indicates an invalid node, terminate this branch.
+    if (nodeIdentifier === -1)
+        return;
 
-  // Retrieve the full node object from the global collection
-  const currentItem = treeElements.filter(function(dataUnit) {
-    return dataUnit.elementId === nodeIdentification;
-  })[0];
+    // Find the node object corresponding to the current identifier.
+    var currentNode = treeStructure.filter(function(element) {
+        return element.id === nodeIdentifier;
+    })[0];
 
-  // First, visit the left child
-  traverseInOrder(currentItem.leftChild, collectedValues);
-
-  // Then, add the current node's ID to the result list
-  collectedValues.push(nodeIdentification);
-
-  // Finally, visit the right child
-  traverseInOrder(currentItem.rightChild, collectedValues);
+    // Recursively call for the left child.
+    traverseInOrder(currentNode.left, resultCollection);
+    // Add the current node's identifier to our ordered collection.
+    resultCollection.push(nodeIdentifier);
+    // Recursively call for the right child.
+    traverseInOrder(currentNode.right, resultCollection);
 }
 
-// Performs a post-order traversal on the binary tree
-function traversePostOrder(uniqueNodeIdentifier, resultList) {
-  // Check for the termination condition (invalid node ID)
-  if (uniqueNodeIdentifier === -1) {
-    return;
-  }
+function traversePostOrder(nodeIdentifier, resultCollection) {
+    // If the node identifier indicates an invalid node, terminate this branch.
+    if (nodeIdentifier === -1)
+        return;
 
-  // Get the node object from the main tree array
-  const activeNode = treeElements.filter(function(elementUnit) {
-    return elementUnit.elementId === uniqueNodeIdentifier;
-  })[0];
+    // Find the node object corresponding to the current identifier.
+    var currentNode = treeStructure.filter(function(element) {
+        return element.id === nodeIdentifier;
+    })[0];
 
-  // Recursively process the left subtree
-  traversePostOrder(activeNode.leftChild, resultList);
-
-  // Recursively process the right subtree
-  traversePostOrder(activeNode.rightChild, resultList);
-
-  // Add the current node's identifier after visiting children
-  resultList.push(uniqueNodeIdentifier);
+    // Recursively call for the left child.
+    traversePostOrder(currentNode.left, resultCollection);
+    // Recursively call for the right child.
+    traversePostOrder(currentNode.right, resultCollection);
+    // Add the current node's identifier to our ordered collection.
+    resultCollection.push(nodeIdentifier);
 }
 
+// Read all input data from standard input.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into individual lines and remove any leading/trailing whitespace.
+var dataRows = rawData.trim().split('\n');
 
-// Acquire the necessary file system utility module
-const fileSystemUtility = require('fs');
+// The first line contains the total number of nodes. Convert it to a number.
+var totalNodes = +dataRows.shift();
 
-// Read raw input data from the standard input stream
-const rawData = fileSystemUtility.readFileSync('/std/input_stream', 'unicodeEncoding');
+// Initialize an array to store our tree nodes.
+var treeStructure = [];
+// Loop through the remaining lines to parse node information.
+for (var idx = 0; idx < totalNodes; idx++) {
+    // Split each line by space to get node ID, left child, and right child.
+    var parsedLine = dataRows.shift().split(' ');
+    var nodeId = +parsedLine[0];
+    var leftChild = +parsedLine[1];
+    var rightChild = +parsedLine[2];
 
-// Process the raw data: remove leading/trailing whitespace and split into individual lines
-const inputLines = rawData.trim().split('\n');
-
-// Extract the total count of elements from the first line and convert to a number
-const totalElementsCount = +inputLines.shift();
-
-// Initialize an empty array to store the tree's nodes/elements
-let treeElements = [];
-
-// Loop through each line of input to parse and construct tree nodes
-for (let loopIndex = 0; loopIndex < totalElementsCount; loopIndex++) {
-  // Split the current input line by space to get element properties
-  const elementParts = inputLines.shift().split(' ');
-
-  // Parse the element ID, left child ID, and right child ID
-  const currentElementId = +elementParts[0];
-  const leftSubChild = +elementParts[1];
-  const rightSubChild = +elementParts[2];
-
-  // Add the newly created node object to the tree elements array
-  treeElements.push({
-    elementId: currentElementId,
-    leftChild: leftSubChild,
-    rightChild: rightSubChild,
-    ancestor: -1
-  });
+    // Create a node object and add it to our tree structure array.
+    // Initialize the parent to -1, indicating no parent set yet.
+    treeStructure.push({
+        id: nodeId,
+        left: leftChild,
+        right: rightChild,
+        parent: -1
+    });
 }
 
-// Sort the tree elements array based on their unique element IDs
-treeElements.sort(function(firstElem, secondElem) {
-  return firstElem.elementId - secondElem.elementId;
+// Sort the tree structure array by node ID. This is not strictly required for correctness
+// but matches the original's behavior and might simplify debugging.
+treeStructure.sort(function(firstNode, secondNode) {
+    return firstNode.id - secondNode.id;
 });
 
-// Iterate over each node to establish initial parent-child connections
-treeElements.forEach(function(currentNode) {
-  // If a left child exists, update its parent reference
-  if (currentNode.leftChild !== -1) {
-    adjustDescendants(currentNode.leftChild, currentNode.elementId);
-  }
-
-  // If a right child exists, update its parent reference
-  if (currentNode.rightChild !== -1) {
-    adjustDescendants(currentNode.rightChild, currentNode.elementId);
-  }
+// Iterate over all nodes to establish parent pointers using the recursive helper function.
+treeStructure.forEach(function(currentNode) {
+    if (currentNode.left !== -1) {
+        adjustDescendants(currentNode.left, currentNode.id);
+    }
+    if (currentNode.right !== -1) {
+        adjustDescendants(currentNode.right, currentNode.id);
+    }
 });
 
-// Identify the root node of the tree (the one with no parent)
-const treeRootNode = treeElements.filter(function(element) {
-  return element.ancestor === -1;
+// Identify the root of the tree: the node whose parent remains -1.
+var treeRoot = treeStructure.filter(function(element) {
+    return element.parent === -1;
 })[0];
 
-// Alias for console object and its log method for Type II cloning
-const systemOutput = console;
-systemOutput.displayMessage = console.log;
+// Perform and display Preorder traversal.
+var outputSequence = [];
+traversePreOrder(treeRoot.id, outputSequence);
+console.log('Preorder');
+console.log(' ' + outputSequence.join(' '));
 
-// Initialize an array to store the results of tree traversals
-let outputSequence = [];
-
-// Perform pre-order traversal and display the result
-traversePreOrder(treeRootNode.elementId, outputSequence);
-systemOutput.displayMessage('Preorder');
-systemOutput.displayMessage(' ' + outputSequence.join(' '));
-
-// Reset the result array for the next traversal
+// Reset the output sequence and perform Inorder traversal.
 outputSequence = [];
-// Perform in-order traversal and display the result
-traverseInOrder(treeRootNode.elementId, outputSequence);
-systemOutput.displayMessage('Inorder');
-systemOutput.displayMessage(' ' + outputSequence.join(' '));
+traverseInOrder(treeRoot.id, outputSequence);
+console.log('Inorder');
+console.log(' ' + outputSequence.join(' '));
 
-// Reset the result array again
+// Reset the output sequence and perform Postorder traversal.
 outputSequence = [];
-// Perform post-order traversal and display the result
-traversePostOrder(treeRootNode.elementId, outputSequence);
-systemOutput.displayMessage('Postorder');
-systemOutput.displayMessage(' ' + outputSequence.join(' '));
+traversePostOrder(treeRoot.id, outputSequence);
+console.log('Postorder');
+console.log(' ' + outputSequence.join(' '));

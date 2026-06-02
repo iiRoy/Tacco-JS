@@ -1,67 +1,79 @@
-const obtainContent = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
-const presentOutcome = (value) => console.log(value);
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function myout(t){console.log(t);}
+function myerr(t){console.error(t);}
 
-const computeResult = (inputData) => {
-    const contentSegments = inputData.split("\n");
-    const itemQuantity = Number(contentSegments[0]);
-    const numberSequence = contentSegments[1].split(" ").map(Number);
+const inputProcessors = [
+    (val) => val,
+    (val) => Number.parseInt(val, 10),
+    (val) => val.split(" "),
+    (val) => val.split("\n"),
+    (val) => val.split(" ").map(Number),
+    (val) => val.split("\n").map(Number),
+    (val) => val.split(""),
+    (val) => val.split("").map(Number),
+];
 
-    const tallyMap = numberSequence.reduce((accumulator, currentNumber) => {
-        accumulator.set(currentNumber, (accumulator.get(currentNumber) || 0) + 1);
-        return accumulator;
-    }, new Map());
+function transformData(source, processorIndex) {
+    return inputProcessors[processorIndex](source);
+}
 
-    const orderedKeys = Array.from(tallyMap.keys()).sort((a, b) => a - b);
+function calculateUniqueRemaining(rawData) {
+    const lines = transformData(rawData, 3);
+    const elementCount = transformData(lines[0], 1);
+    const inputNumbers = transformData(lines[1], 4);
 
-    let initialSingles = 0;
-    let countsToReduce = [];
+    const frequencyMap = new Map();
+    inputNumbers.forEach(num => {
+        frequencyMap.set(num, (frequencyMap.get(num) || 0) + 1);
+    });
 
-    for (const key of orderedKeys) {
-        const currentTally = tallyMap.get(key);
-        if (currentTally === 1) {
-            initialSingles++;
+    let finalSingleCount = 0;
+    const multipleEntryList = []; // Stores [value, count] for numbers with count > 1
+
+    for (const [value, currentCount] of frequencyMap.entries()) {
+        if (currentCount === 1) {
+            finalSingleCount++;
         } else {
-            countsToReduce.push([key, currentTally]);
+            multipleEntryList.push([value, currentCount]);
         }
     }
 
-    const applyReduction = (leftPtr, rightPtr, currentCounts) => {
-        if (leftPtr > rightPtr) {
-            return currentCounts;
+    multipleEntryList.sort((a, b) => a[0] - b[0]); // Sort by value
+
+    let leftPointer = 0;
+    let rightPointer = multipleEntryList.length - 1;
+
+    while (leftPointer < rightPointer) {
+        multipleEntryList[leftPointer][1]--; // Decrement count of left element
+        multipleEntryList[rightPointer][1]--; // Decrement count of right element
+
+        // Check and update left element's status
+        if (multipleEntryList[leftPointer][1] === 1) {
+            finalSingleCount++;
+            leftPointer++;
+        } else if (multipleEntryList[leftPointer][1] === 0) {
+            leftPointer++;
         }
 
-        const leftEntry = currentCounts[leftPtr];
-        const rightEntry = currentCounts[rightPtr];
-
-        if (leftEntry[1] <= 1) {
-            return applyReduction(leftPtr + 1, rightPtr, currentCounts);
-        }
-
-        if (rightEntry[1] <= 1) {
-            return applyReduction(leftPtr, rightPtr - 1, currentCounts);
-        }
-
-        if (leftPtr === rightPtr) {
-            leftEntry[1] = leftEntry[1] % 2;
-            return currentCounts;
-        }
-
-        leftEntry[1]--;
-        rightEntry[1]--;
-        return applyReduction(leftPtr, rightPtr, currentCounts);
-    };
-
-    const reducedCounts = applyReduction(0, countsToReduce.length - 1, countsToReduce);
-
-    let remainingReduced = 0;
-    for (const entry of reducedCounts) {
-        if (entry[1] === 1) {
-            remainingReduced++;
+        // Check and update right element's status
+        if (multipleEntryList[rightPointer][1] === 1) {
+            finalSingleCount++;
+            rightPointer--;
+        } else if (multipleEntryList[rightPointer][1] === 0) {
+            rightPointer--;
         }
     }
 
-    const finalSum = initialSingles + remainingReduced;
-    presentOutcome(finalSum);
-};
+    // Handle the case where pointers meet on a single element
+    if (leftPointer === rightPointer) {
+        const remainingValueCount = multipleEntryList[leftPointer][1];
+        // If the remaining count for this element is > 1 and odd, one instance remains.
+        if (remainingValueCount > 1 && remainingValueCount % 2 === 1) {
+            finalSingleCount++;
+        }
+    }
 
-computeResult(obtainContent());
+    return finalSingleCount;
+}
+
+myout(calculateUniqueRemaining(myin()));

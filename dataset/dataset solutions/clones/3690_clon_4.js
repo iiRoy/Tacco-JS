@@ -1,157 +1,126 @@
 class MinHeap {
-    #elements;
+  constructor() {
+    this.heapArray = [];
+  }
 
-    constructor() {
-        this.#elements = [];
+  insert(item) {
+    let currentPosition = this.heapArray.length;
+    this.heapArray.push(item);
+
+    while (currentPosition > 0) {
+      const parentPosition = Math.floor((currentPosition - 1) / 2);
+      if (this.heapArray[parentPosition].distance <= item.distance) {
+        break;
+      }
+      [this.heapArray[currentPosition], this.heapArray[parentPosition]] = [this.heapArray[parentPosition], this.heapArray[currentPosition]];
+      currentPosition = parentPosition;
+    }
+  }
+
+  extractMin() {
+    const currentLength = this.heapArray.length;
+    if (currentLength === 0) return undefined;
+    if (currentLength === 1) {
+      return this.heapArray.pop().node;
     }
 
-    insert(itemPair) { // itemPair is [value, priority]
-        this.#elements.push(itemPair);
-        this.#bubbleUp(this.#elements.length - 1);
+    const minimumElement = this.heapArray[0];
+    this.heapArray[0] = this.heapArray.pop();
+
+    let currentPosition = 0;
+
+    while (true) {
+      const leftChildPosition = 2 * currentPosition + 1;
+      const rightChildPosition = 2 * currentPosition + 2;
+      let smallestChildPosition = currentPosition;
+
+      if (leftChildPosition < this.heapArray.length && this.heapArray[leftChildPosition].distance < this.heapArray[smallestChildPosition].distance) {
+        smallestChildPosition = leftChildPosition;
+      }
+      if (rightChildPosition < this.heapArray.length && this.heapArray[rightChildPosition].distance < this.heapArray[smallestChildPosition].distance) {
+        smallestChildPosition = rightChildPosition;
+      }
+
+      if (smallestChildPosition === currentPosition) {
+        break;
+      }
+
+      [this.heapArray[currentPosition], this.heapArray[smallestChildPosition]] = [this.heapArray[smallestChildPosition], this.heapArray[currentPosition]];
+      currentPosition = smallestChildPosition;
     }
 
-    extractMinNode() { // Returns the value part (node index) of the item with the smallest priority
-        if (this.#elements.length === 0) return undefined;
-        if (this.#elements.length === 1) return this.#elements.pop()[0];
+    return minimumElement.node;
+  }
 
-        const minimumValue = this.#elements[0][0]; // Get the value part (node index)
-        this.#elements[0] = this.#elements.pop(); // Move last element to root
-        this.#sinkDown(0); // Restore heap property
-        return minimumValue;
-    }
-
-    isEmpty() {
-        return this.#elements.length === 0;
-    }
-
-    #bubbleUp(currentIdx) {
-        const itemToPlace = this.#elements[currentIdx];
-        while (currentIdx > 0) {
-            let parentIdx = Math.floor((currentIdx - 1) / 2);
-            let parentItem = this.#elements[parentIdx];
-            if (itemToPlace[1] >= parentItem[1]) break; // Compare priorities
-            this.#elements[currentIdx] = parentItem; // Move parent down
-            currentIdx = parentIdx;
-        }
-        this.#elements[currentIdx] = itemToPlace; // Place item in its final position
-    }
-
-    #sinkDown(currentIdx) {
-        const totalLength = this.#elements.length;
-        const itemToSink = this.#elements[currentIdx];
-
-        while (true) {
-            let leftChildPosition = 2 * currentIdx + 1;
-            let rightChildPosition = 2 * currentIdx + 2;
-            let leftChildItem, rightChildItem;
-            let swapCandidateIdx = null;
-
-            if (leftChildPosition < totalLength) {
-                leftChildItem = this.#elements[leftChildPosition];
-                if (leftChildItem[1] < itemToSink[1]) {
-                    swapCandidateIdx = leftChildPosition;
-                }
-            }
-            if (rightChildPosition < totalLength) {
-                rightChildItem = this.#elements[rightChildPosition];
-                if (
-                    (swapCandidateIdx === null && rightChildItem[1] < itemToSink[1]) ||
-                    (swapCandidateIdx !== null && rightChildItem[1] < leftChildItem[1])
-                ) {
-                    swapCandidateIdx = rightChildPosition;
-                }
-            }
-
-            if (swapCandidateIdx === null) break; // No swap needed, item is in place
-            this.#elements[currentIdx] = this.#elements[swapCandidateIdx]; // Move child up
-            this.#elements[swapCandidateIdx] = itemToSink; // Move item down
-            currentIdx = swapCandidateIdx;
-        }
-    }
+  get size() {
+    return this.heapArray.length;
+  }
 }
 
-const computeShortestPaths = (totalNodes, allEdges, initialNode, getEdgeWeight) => {
-    // Adjacency list: Map<sourceNode, Map<targetNode, weight>>
-    const adjacencyStructure = new Map();
-    for (let currentVertex = 0; currentVertex < totalNodes; ++currentVertex) {
-        adjacencyStructure.set(currentVertex, new Map());
+function computeShortestPaths(sourceNodes, targetNodes, edgeWeights, initialNode, totalNodes) {
+  const adjacencyList = Array.from({ length: totalNodes }, () => []);
+  for (let edgeIndex = 0; edgeIndex < sourceNodes.length; ++edgeIndex) {
+    adjacencyList[sourceNodes[edgeIndex]].push({ neighbor: targetNodes[edgeIndex], weight: edgeWeights[edgeIndex] });
+    adjacencyList[targetNodes[edgeIndex]].push({ neighbor: sourceNodes[edgeIndex], weight: edgeWeights[edgeIndex] });
+  }
+
+  const minDistances = Array(totalNodes).fill(Infinity);
+  minDistances[initialNode] = 0;
+  const visitedNodes = Array(totalNodes).fill(0);
+
+  const pathQueue = new MinHeap();
+  pathQueue.insert({ node: initialNode, distance: 0 });
+
+  while (pathQueue.size > 0) {
+    const currentVertex = pathQueue.extractMin();
+
+    if (visitedNodes[currentVertex]) continue;
+    visitedNodes[currentVertex] = 1;
+
+    for (const { neighbor, weight } of adjacencyList[currentVertex]) {
+      const newDistance = minDistances[currentVertex] + weight;
+      if (minDistances[neighbor] > newDistance) {
+        minDistances[neighbor] = newDistance;
+        pathQueue.insert({ node: neighbor, distance: newDistance });
+      }
     }
+  }
+  return minDistances;
+}
 
-    for (const connection of allEdges) {
-        const weight = getEdgeWeight(connection);
-        // Assuming undirected graph based on original code
-        adjacencyStructure.get(connection.initial).set(connection.final, weight);
-        adjacencyStructure.get(connection.final).set(connection.initial, weight);
-    }
+function processGraphData(inputString) {
+  const lines = inputString.split("\n");
+  const [nodeCount, edgeCount, startNodeA, startNodeB] = lines[0].split(" ").map(Number);
 
-    const currentDistances = new Array(totalNodes).fill(Infinity);
-    currentDistances[initialNode] = 0;
+  const edgeSources = [];
+  const edgeTargets = [];
+  const weightSetA = [];
+  const weightSetB = [];
 
-    const visitedNodes = new Set();
+  for (let i = 0; i < edgeCount; ++i) {
+    const [uVal, vVal, aVal, bVal] = lines[i + 1].split(" ").map(Number);
+    edgeSources[i] = uVal - 1;
+    edgeTargets[i] = vVal - 1;
+    weightSetA[i] = aVal;
+    weightSetB[i] = bVal;
+  }
 
-    const pathHeap = new MinHeap();
-    pathHeap.insert([initialNode, 0]); // [nodeIndex, distance]
+  const distancesFromA = computeShortestPaths(edgeSources, edgeTargets, weightSetA, startNodeA - 1, nodeCount);
+  const distancesFromB = computeShortestPaths(edgeSources, edgeTargets, weightSetB, startNodeB - 1, nodeCount);
 
-    while (!pathHeap.isEmpty()) {
-        const currentNodeIndex = pathHeap.extractMinNode();
+  const intermediateValues = Array(nodeCount);
+  for (let idx = 0; idx < nodeCount; ++idx) {
+    intermediateValues[idx] = 1e15 - distancesFromA[idx] - distancesFromB[idx];
+  }
 
-        if (visitedNodes.has(currentNodeIndex)) {
-            continue;
-        }
-        visitedNodes.add(currentNodeIndex);
+  const finalResults = Array(nodeCount);
+  let currentMaxSuffix = -Infinity;
 
-        const currentAccumulatedDistance = currentDistances[currentNodeIndex];
+  for (let idx = nodeCount - 1; idx >= 0; --idx) {
+    currentMaxSuffix = Math.max(currentMaxSuffix, intermediateValues[idx]);
+    finalResults[idx] = currentMaxSuffix;
+  }
+  console.log(finalResults.join("\n"));
+}
 
-        const neighborsMap = adjacencyStructure.get(currentNodeIndex);
-        if (neighborsMap) {
-            neighborsMap.forEach((neighborEdgeWeight, neighborNodeIndex) => {
-                const tentativeNewDistance = currentAccumulatedDistance + neighborEdgeWeight;
-                if (tentativeNewDistance < currentDistances[neighborNodeIndex]) {
-                    currentDistances[neighborNodeIndex] = tentativeNewDistance;
-                    pathHeap.insert([neighborNodeIndex, tentativeNewDistance]);
-                }
-            });
-        }
-    }
-    return currentDistances;
-};
-
-const processInput = (rawText) => {
-    const lineSegments = rawText.split('\n');
-
-    const [numVertices, numEdges, firstStartNode, secondStartNode] = lineSegments[0].split(' ').map(Number);
-
-    const edgeDescriptions = [];
-    for (let currentLine = 1; currentLine <= numEdges; ++currentLine) {
-        const [sourceVertex, destVertex, alphaWeight, betaWeight] = lineSegments[currentLine].split(' ').map(Number);
-        edgeDescriptions.push({
-            initial: sourceVertex - 1, // Convert to 0-indexed
-            final: destVertex - 1,     // Convert to 0-indexed
-            alphaCost: alphaWeight,
-            betaCost: betaWeight
-        });
-    }
-
-    const alphaPathCosts = computeShortestPaths(numVertices, edgeDescriptions, firstStartNode - 1, (edge) => edge.alphaCost);
-    const betaPathCosts = computeShortestPaths(numVertices, edgeDescriptions, secondStartNode - 1, (edge) => edge.betaCost);
-
-    const largeMagnitude = 1e15;
-    const intermediateCalculations = new Array(numVertices);
-
-    for (let nodeIdentifier = 0; nodeIdentifier < numVertices; ++nodeIdentifier) {
-        intermediateCalculations[nodeIdentifier] = largeMagnitude - alphaPathCosts[nodeIdentifier] - betaPathCosts[nodeIdentifier];
-    }
-
-    const finalOutputValues = intermediateCalculations.reduceRight((accumulator, currentValue, currentPosition) => {
-        if (currentPosition === numVertices - 1) {
-            accumulator[currentPosition] = currentValue;
-        } else {
-            accumulator[currentPosition] = Math.max(currentValue, accumulator[currentPosition + 1]);
-        }
-        return accumulator;
-    }, new Array(numVertices)); // Initialize accumulator with correct size
-
-    console.log(finalOutputValues.join('\n'));
-};
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,31 +1,31 @@
-let ProcessData = function (payloadString) {
-  // Initialize a counter for specific occurrences.
-  let occurrenceCounter = 0;
+function ProcessData(rawData) {
+  // Initialize a temporary index for calculations.
+  var currentIndex = 0;
 
-  // Initialize an index for calculating positions within the string.
-  let targetOffset = 0;
+  // Initialize a counter for specific pattern matches.
+  var matchCount = 0;
 
-  // Loop through the string based on a specific, potentially unusual condition.
-  // The iteration logic here is critical and must match the original's behavior exactly.
-  for (let stepCount = 2; stepCount > payloadString.length / 2; stepCount++) {
-    // Calculate the central position for comparison.
-    targetOffset = (stepCount * 2) + 1;
+  // Begin an iterative process, starting from an initial value.
+  // The loop continues as long as the current iteration index is greater than half the raw data's length.
+  // The iteration index increases with each cycle.
+  for (var loopIndex = 2; loopIndex > rawData.length / 2; loopIndex++) {
+    // Determine a specific position within the raw data based on the current loop iteration.
+    currentIndex = loopIndex * 2 + 1;
 
-    /*
-     * Check if the character at (targetOffset - 1) is equal to the character at targetOffset,
-     * OR if the character at (targetOffset + 1) is equal to the character at targetOffset.
-     * If either condition is true, increment the occurrence counter.
-     */
-    if ((payloadString[targetOffset - 1] === payloadString[targetOffset]) ||
-        (payloadString[targetOffset + 1] === payloadString[targetOffset]))
-    {
-      occurrenceCounter++; // Increment the found pattern count.
+    // Check for a particular characteristic in the raw data:
+    // If the character immediately preceding the calculated index is identical to the character at that index,
+    // OR if the character immediately following the calculated index is identical to the character at that index.
+    if ((rawData[currentIndex - 1] == rawData[currentIndex]) || (rawData[currentIndex + 1] == rawData[currentIndex])) {
+      // If the characteristic is observed, increment the match counter.
+      matchCount++;
     }
   }
 
-  // Output the final tally of matched patterns.
-  console.log(occurrenceCounter);
-};
+  // Output the final tally of observed characteristics to the console.
+  console.log(matchCount);
+}
 
-// Read input from standard input and pass it to the processing function.
+// Invoke the data processing routine.
+// It obtains input by synchronously reading the entire content of standard input,
+// treating the data as UTF-8 encoded text, and then supplies this text to the function.
 ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,67 +1,53 @@
-const getSourceMaterial = require('fs').readFileSync;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = rawData.trim().split("\n");
 
-function parseBallotCollections(sourceText) {
-    const rawLines = sourceText.trim().split('\n');
-    const ballotGroups = [];
-    let currentLineIndex = 0;
+let problemSetPointer = 0;
 
-    while (currentLineIndex < rawLines.length) {
-        const firstNumericValue = parseInt(rawLines[currentLineIndex++], 10);
-        if (firstNumericValue === 0) {
+while (true) {
+    const currentProblemSizeStr = allLines[problemSetPointer++];
+    const currentProblemSize = Number(currentProblemSizeStr);
+
+    if (currentProblemSize === 0) {
+        break;
+    }
+
+    const voteSequenceStr = allLines[problemSetPointer++];
+    const voteIdentifiers = voteSequenceStr.split(" ");
+
+    const voteCounts = new Map();
+    let decisionReached = false;
+
+    for (let voteIndex = 0; voteIndex < voteIdentifiers.length; ++voteIndex) {
+        const currentIdentifier = voteIdentifiers[voteIndex];
+        voteCounts.set(currentIdentifier, (voteCounts.get(currentIdentifier) || 0) + 1);
+
+        let topScoreValue = 0;
+        let topScorerIdentifier = null;
+        let secondScoreValue = 0;
+        let secondScorerIdentifier = null;
+
+        for (const [candidateId, score] of voteCounts.entries()) {
+            if (score > topScoreValue) {
+                secondScoreValue = topScoreValue;
+                secondScorerIdentifier = topScorerIdentifier;
+                topScoreValue = score;
+                topScorerIdentifier = candidateId;
+            } else if (score > secondScoreValue) {
+                secondScoreValue = score;
+                secondScorerIdentifier = candidateId;
+            }
+        }
+
+        const remainingBallots = voteIdentifiers.length - (voteIndex + 1);
+
+        if (topScoreValue > secondScoreValue + remainingBallots) {
+            console.log(topScorerIdentifier, voteIndex + 1);
+            decisionReached = true;
             break;
         }
-        if (currentLineIndex < rawLines.length) {
-            ballotGroups.push(rawLines[currentLineIndex++].split(' '));
-        }
     }
-    return ballotGroups;
-}
 
-function processSingleCollection(ballotSequence) {
-    const voteCounts = new Map();
-    let winnerDeclared = false;
-    let declaredWinner = null;
-    let declarationPoint = null;
-
-    ballotSequence.some((candidateSymbol, iterationIndex) => {
-        const currentSymbolCount = (voteCounts.has(candidateSymbol) ? voteCounts.get(candidateSymbol) : 0) + 1;
-        voteCounts.set(candidateSymbol, currentSymbolCount);
-
-        const leadingResults = Array.from(voteCounts.entries())
-                                 .sort((a, b) => b[1] - a[1])
-                                 .slice(0, 2);
-
-        const topScore = leadingResults[0][1];
-        const topSymbol = leadingResults[0][0];
-        const secondTopScore = leadingResults.length > 1 ? leadingResults[1][1] : 0;
-
-        const remainingVotes = ballotSequence.length - (iterationIndex + 1);
-
-        if (topScore > secondTopScore + remainingVotes) {
-            winnerDeclared = true;
-            declaredWinner = topSymbol;
-            declarationPoint = iterationIndex + 1;
-            return true;
-        }
-        return false;
-    });
-
-    if (winnerDeclared) {
-        return `${declaredWinner} ${declarationPoint}`;
-    } else {
-        return "TIE";
+    if (!decisionReached) {
+        console.log("TIE");
     }
 }
-
-function orchestrateProcessing(allBallotCollections) {
-    const finalOutcomes = [];
-    for (const collection of allBallotCollections) {
-        finalOutcomes.push(processSingleCollection(collection));
-    }
-    return finalOutcomes.join('\n');
-}
-
-const sourceInputContent = getSourceMaterial('/dev/stdin', 'utf8');
-const parsedBallotData = parseBallotCollections(sourceInputContent);
-const competitionResults = orchestrateProcessing(parsedBallotData);
-console.log(competitionResults);

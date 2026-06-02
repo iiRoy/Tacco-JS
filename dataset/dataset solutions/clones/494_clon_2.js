@@ -1,91 +1,82 @@
-let dataStream = require('node:fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw data from the standard input source.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input data from standard input
+const lineData = rawData.trim().split('\n'); // Split the input into an array of lines, trimming whitespace
 
-const linesOfData = dataStream.trim().split("\n"); // Process the input into an array of individual lines.
+while (true) { // Main loop to process multiple test cases
+   // Extract the three main dimensions (X, Y, Z) for the current test case
+   const coords = lineData.shift().split(' ').map(Number);
 
-while (true) {
-    // Loop indefinitely until a termination condition is met.
+   // Check for the termination condition: "0 0 0"
+   if (coords.join(' ') === '0 0 0') {
+      break; // Exit the loop if the termination condition is met
+   }
 
-    let currentParams = linesOfData.shift().split(" ").map(Number); // Extract the initial set of parameters for the current scenario.
+   const dimX = coords[0]; // Represents the number of movement options
+   const dimY = coords[1]; // Represents the target position
+   const numEvents = coords[2]; // Represents the count of special events
 
-    if (currentParams.join(" ") === "0 0 0") {
-        // Terminate the processing loop if the sentinel value is encountered.
-        break;
-    }
+   // Extract the movement values for the current test case
+   const moveValues = lineData.shift().split(' ').map(Number);
 
-    let countX = currentParams[0];    // Represents the number of available options or choices.
-    let maxLevel = currentParams[1];  // Denotes the maximum achievable level in the simulation.
-    let eventCount = currentParams[2]; // Specifies the total number of special events or conditions.
+   // Initialize an array to store special event details, indexed by position
+   const eventMap = [];
 
-    const levelIncrements = linesOfData.shift().split(" ").map(Number); // Parse the values representing potential level advancements.
+   // Populate the event map with event type and amount for each special event
+   for (let idx1 = 0; idx1 < numEvents; idx1++) {
+      const eventInfo = lineData.shift().split(' ').map(Number); // Read event position, type, and amount
+      eventMap[eventInfo[0]] = [eventInfo[1], eventInfo[2]]; // Store event data
+   }
 
-    const specialEvents = []; // An array to store details about special occurrences, indexed by their trigger level.
+   // Initialize the dynamic programming table (probability matrix)
+   const probabilityMatrix = [];
+   for (let idx1 = 0; idx1 <= dimY; idx1++) {
+      probabilityMatrix[idx1] = []; // Create a new row for each position
+      for (let idx2 = 0; idx2 <= 5000; idx2++) {
+         probabilityMatrix[idx1][idx2] = 0; // Initialize all probabilities to zero
+      }
+   }
 
-    for (let eventIdx = 0; eventIdx < eventCount; eventIdx++) {
-        // Iterate through each defined special event.
-        const eventDetails = linesOfData.shift().split(" ").map(Number); // Retrieve the specific details for the current event.
-        specialEvents[eventDetails[0]] = [eventDetails[1], eventDetails[2]]; // Store event properties (type, effect) indexed by their trigger level.
-    }
+   // Set the base case: starting at position 0 with an accumulated value of 0 has 100% probability
+   probabilityMatrix[0][0] = 1;
 
-    let dynamicProbabilities = []; // A 2D array for dynamic programming states, representing probabilities.
+   // Iterate through positions from 0 up to dimY-1
+   for (let idx1 = 0; idx1 < dimY; idx1++) {
+      // Iterate through all possible accumulated values
+      for (let idx3 = 0; idx3 <= 5000; idx3++) {
+         // Iterate through each possible movement option
+         for (let idx2 = 0; idx2 < dimX; idx2++) {
+            // Calculate the next position, ensuring it doesn't exceed dimY
+            const nextPos = Math.min(dimY, idx1 + moveValues[idx2]);
 
-    for (let currentLvl = 0; currentLvl <= maxLevel; currentLvl++) {
-        // Initialize the main dimension (levels) of the DP table.
-        dynamicProbabilities[currentLvl] = [];
+            // Check if there's a special event at the calculated next position
+            if (eventMap[nextPos] !== undefined) {
+               const eventType = eventMap[nextPos][0]; // Get the type of the event
+               const eventAmount = eventMap[nextPos][1]; // Get the amount associated with the event
 
-        for (let currentVal = 0; currentVal <= 5000; currentVal++) {
-            // Initialize the secondary dimension (accumulated values) of the DP table with zero probabilities.
-            dynamicProbabilities[currentLvl][currentVal] = 0;
-        }
-    }
-
-    dynamicProbabilities[0][0] = 1; // Set the initial state probability: 100% chance of being at level 0 with value 0.
-
-    // Main dynamic programming loop to calculate probabilities for all states.
-    for (let currentLvl = 0; currentLvl < maxLevel; currentLvl++) {
-        // Iterate through each possible level up to the maximum (exclusive).
-        for (let currentVal = 0; currentVal <= 5000; currentVal++) {
-            // Iterate through each possible accumulated value at the current level.
-
-            if (dynamicProbabilities[currentLvl][currentVal] === 0) continue; // Skip states with zero probability.
-
-            for (let optionIdx = 0; optionIdx < countX; optionIdx++) {
-                // Consider each available advancement option.
-
-                let nextLvl = Math.min(maxLevel, currentLvl + levelIncrements[optionIdx]); // Calculate the potential next level after an advancement, capped at maxLevel.
-                const probabilityContribution = dynamicProbabilities[currentLvl][currentVal] / countX; // The probability distributed to the next state.
-
-                if (specialEvents[nextLvl] !== undefined) {
-                    // Check if a special event is triggered at the calculated next level.
-                    let eventType = specialEvents[nextLvl][0];    // Type of the special event (1: level, 2: value+, 3: value-).
-                    let eventEffect = specialEvents[nextLvl][1]; // Magnitude of the event's effect.
-
-                    if (eventType === 1) {
-                        // Event type 1: Level modification.
-                        let modifiedLvl = Math.min(maxLevel, nextLvl + eventEffect);
-                        dynamicProbabilities[modifiedLvl][currentVal] += probabilityContribution;
-                    } else if (eventType === 2) {
-                        // Event type 2: Value increase.
-                        let modifiedVal = Math.min(5000, currentVal + eventEffect);
-                        dynamicProbabilities[nextLvl][modifiedVal] += probabilityContribution;
-                    } else if (eventType === 3) {
-                        // Event type 3: Value decrease.
-                        let modifiedVal = Math.max(0, currentVal - eventEffect);
-                        dynamicProbabilities[nextLvl][modifiedVal] += probabilityContribution;
-                    }
-                } else {
-                    // If no special event, just update probability for the next level with the same value.
-                    dynamicProbabilities[nextLvl][currentVal] += probabilityContribution;
-                }
+               // Apply event logic based on its type
+               if (eventType === 1) { // Event Type 1: Move forward by eventAmount
+                  probabilityMatrix[Math.min(dimY, nextPos + eventAmount)][idx3] += probabilityMatrix[idx1][idx3] / dimX;
+               } else if (eventType === 2) { // Event Type 2: Increase accumulated value by eventAmount
+                  probabilityMatrix[nextPos][Math.min(5000, idx3 + eventAmount)] += probabilityMatrix[idx1][idx3] / dimX;
+               } else if (eventType === 3) { // Event Type 3: Decrease accumulated value by eventAmount
+                  // Note: Math.min(0, idx3 - eventAmount) can result in negative indices if idx3 - eventAmount is negative.
+                  // This behavior is preserved as per Type II cloning rules.
+                  probabilityMatrix[nextPos][Math.min(0, idx3 - eventAmount)] += probabilityMatrix[idx1][idx3] / dimX;
+               }
+            } else {
+               // If no special event, simply update the probability for the next position and current accumulated value
+               probabilityMatrix[nextPos][idx3] += probabilityMatrix[idx1][idx3] / dimX;
             }
-        }
-    }
+         }
+      }
+   }
 
-    let totalExpectedValue = 0; // Accumulator for the final expected value.
+   let totalExpectedValue = 0; // Variable to store the calculated expected value
 
-    for (let finalVal = 0; finalVal <= 5000; finalVal++) {
-        // Calculate the sum of (value * probability) for the final level (maxLevel).
-        totalExpectedValue += finalVal * dynamicProbabilities[maxLevel][finalVal];
-    }
+   // Calculate the total expected value at the target position (dimY)
+   for (let idx1 = 0; idx1 <= 5000; idx1++) {
+      totalExpectedValue += idx1 * probabilityMatrix[dimY][idx1]; // Sum (value * probability)
+   }
 
-    console.log(Math.floor(totalExpectedValue)); // Output the integer part of the calculated expected value.
+   // Output the floor of the total expected value
+   console.log(Math.floor(totalExpectedValue));
 }

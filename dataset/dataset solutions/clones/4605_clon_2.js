@@ -1,57 +1,58 @@
-// This function handles the primary data processing flow.
-function ProcessInputData(rawText) {
-    // Split the entire input string into individual lines.
-    let processedLines = rawText.split("\n");
+// This function processes the raw input string.
+function ProcessInput(rawData) {
+    // Split the input into individual lines for easier parsing.
+    rawData = rawData.split("\n");
 
-    // Parse the initial configuration from the first line.
-    let firstLineTokens = processedLines[0].split(" ");
-    let totalElements = parseInt(firstLineTokens[0], 10);
-    let intervalLength = parseInt(firstLineTokens[1], 10);
+    // Extract parameters from the first line: item count and time window.
+    var firstLineParts = rawData[0].split(" ");
+    var itemCount = parseInt(firstLineParts[0]);
+    var timeWindow = parseInt(firstLineParts[1]);
 
-    // Retrieve the event timings from the second line.
-    let secondLineTokens = processedLines[1].split(" ");
+    // Retrieve the second line, which contains a sequence of time points.
+    var secondLineParts = rawData[1].split(" ");
 
-    // Initialize arrays to track the start and end of active periods.
-    let startPoints = [];
-    let endPoints = [];
-    let currentSegmentIndex = 0; // Keeps track of the current segment being built.
+    // Initialize arrays to track the start and end times of active segments.
+    var segmentStarts = [];
+    var segmentEnds = [];
+    var segmentIndex = 0; // Keeps track of the current segment's index.
 
-    // Get the very first event's timestamp.
-    let eventMoment = parseInt(secondLineTokens[0], 10);
+    // Parse the first time point from the sequence.
+    var currentTime = parseInt(secondLineParts[0]);
 
-    // Initialize the accumulator for the total covered duration.
-    let totalCoveredSpan = 0;
+    // Initialize the variable to accumulate the total active duration.
+    var totalDuration = 0;
 
-    // Set up the first potential interval based on the initial state.
-    startPoints[0] = 0;
-    endPoints[0] = intervalLength;
+    // Set up the initial active segment.
+    segmentStarts[0] = 0;
+    segmentEnds[0] = timeWindow;
 
-    // Iterate through all event timings to calculate the total covered span.
-    for (let idx = 0; idx < totalElements; idx++) {
-        eventMoment = parseInt(secondLineTokens[idx], 10);
-        // Debugging line, intentionally commented out.
-        // console.log("Current event time:", eventMoment);
+    // Iterate through each time point to calculate the total duration.
+    for (var idx = 0; idx < itemCount; idx++) {
+        currentTime = parseInt(secondLineParts[idx]);
+        // console.log("Processing time point:", currentTime); // A commented-out debug line.
 
-        // Check if the current event falls within the ongoing active period.
-        if (eventMoment <= endPoints[currentSegmentIndex]) {
-            // Extend the current active period if the event overlaps.
-            endPoints[currentSegmentIndex] = eventMoment + intervalLength;
+        // Check if the current time point falls within the active window of the current segment.
+        if (currentTime <= segmentEnds[segmentIndex]) {
+            // If it does, extend the end time of the current segment.
+            segmentEnds[segmentIndex] = currentTime + timeWindow;
         } else {
-            // If there's a gap, finalize the current active period's duration.
-            totalCoveredSpan += endPoints[currentSegmentIndex] - startPoints[currentSegmentIndex];
-            // Start a new active period.
-            currentSegmentIndex++;
-            startPoints[currentSegmentIndex] = eventMoment;
-            endPoints[currentSegmentIndex] = eventMoment + intervalLength;
+            // If the current time point is outside the current segment's window,
+            // finalize the current segment's duration and add it to the total.
+            totalDuration += segmentEnds[segmentIndex] - segmentStarts[segmentIndex];
+            // Then, start a new active segment.
+            segmentIndex++;
+            segmentStarts[segmentIndex] = currentTime;
+            segmentEnds[segmentIndex] = currentTime + timeWindow;
         }
     }
 
-    // Add the duration of the very last active period to the total.
-    totalCoveredSpan += endPoints[currentSegmentIndex] - startPoints[currentSegmentIndex];
+    // After the loop, add the duration of the very last active segment to the total.
+    totalDuration += segmentEnds[segmentIndex] - segmentStarts[segmentIndex];
 
-    // Output the final calculated total covered duration.
-    console.log(totalCoveredSpan);
+    // Output the final calculated total active duration.
+    console.log(totalDuration);
 }
 
-// The following line is for environment setup and should not be modified.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles reading input from standard input and calling the main processing function.
+// It should not be modified as it's part of the external environment interaction.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

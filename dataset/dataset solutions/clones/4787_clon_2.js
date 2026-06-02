@@ -1,89 +1,128 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding('ascii');
 
-var incomingData = '';
-var parsedLines = [];
-var currentLineIndex = 0;
+// Buffer to accumulate input data
+let inputBuffer = "";
+// Array to store input lines after splitting
+let inputLines = [];
+// Current index for reading lines
+let currentLineIndex = 0;
 
-/* Event listener for incoming data chunks */
 process.stdin.on('data', function (chunk) {
-  incomingData += chunk;
+    inputBuffer += chunk; // Append incoming data to the buffer
 });
 
-/* Event listener for end of input stream */
 process.stdin.on('end', function () {
-  parsedLines = incomingData.split('\n');
-  executeProgram();
+    inputLines = inputBuffer.split("\n"); // Split the accumulated buffer into lines
+    executeMainLogic(); // Call the primary function
 });
 
-function getNextLine() {
-  return parsedLines[currentLineIndex++];
+/**
+ * Retrieves the next line from the input array.
+ * @returns {string} The next line of input.
+ */
+function fetchLine() {
+    return inputLines[currentLineIndex++];
 }
 
-function executeProgram() {
-  var dimensions = getNextLine().split(' ');
-  var nodeCount = parseInt(dimensions[0]),
-    edgeCount = parseInt(dimensions[1]);
+/**
+ * Main execution logic for the program.
+ * This function processes input, performs calculations, and outputs the result.
+ */
+function executeMainLogic() {
+    // Read the first line containing graph dimensions
+    let dimensions = fetchLine().split(" ");
+    let nodeCount = parseInt(dimensions[0]); // Number of nodes (N)
+    let edgeCount = parseInt(dimensions[1]); // Number of edges (M)
 
-  var sourceNodes = [],
-    targetNodes = [],
-    edgeWeights = [];
+    // Arrays to store edge details: source, target, and weight
+    let sourceNodes = [];
+    let targetNodes = [];
+    let edgeWeights = [];
 
-  // Loop to read all edge definitions
-  for (var edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-    var edgeParts = getNextLine().split(' ');
-    var startNode = parseInt(edgeParts[0]) - 1;
-    var endNode = parseInt(edgeParts[1]) - 1;
-    var weightVal = parseInt(edgeParts[2]);
-    sourceNodes.push(startNode);
-    targetNodes.push(endNode);
-    edgeWeights.push(weightVal);
-  }
+    // Loop through M edges to populate edge details
+    for (let idx1 = 0; idx1 < edgeCount; idx1++) {
+        let edgeData = fetchLine().split(" ");
+        let srcIdx = parseInt(edgeData[0]) - 1; // Adjust to 0-indexed
+        let tgtIdx = parseInt(edgeData[1]) - 1; // Adjust to 0-indexed
+        let weightVal = parseInt(edgeData[2]);
 
-  var distanceMatrix = [];
-  /* Initialize the adjacency matrix for all-pairs shortest path */
-  for (var rowIdx = 0; rowIdx < nodeCount; rowIdx++) {
-    distanceMatrix[rowIdx] = [];
-    for (var colIdx = 0; colIdx < nodeCount; colIdx++) {
-      if (rowIdx !== colIdx)
-        distanceMatrix[rowIdx].push(1000000000); // Represents infinity
-      else
-        distanceMatrix[rowIdx].push(0); // Distance to self is zero
+        sourceNodes.push(srcIdx);
+        targetNodes.push(tgtIdx);
+        edgeWeights.push(weightVal);
     }
-  }
 
-  // Populate initial distances from given edges
-  for (var currentEdge = 0; currentEdge < edgeCount; currentEdge++) {
-    if (distanceMatrix[sourceNodes[currentEdge]][targetNodes[currentEdge]] > edgeWeights[currentEdge])
-      distanceMatrix[sourceNodes[currentEdge]][targetNodes[currentEdge]] = edgeWeights[currentEdge];
-    if (distanceMatrix[targetNodes[currentEdge]][sourceNodes[currentEdge]] > edgeWeights[currentEdge])
-      distanceMatrix[targetNodes[currentEdge]][sourceNodes[currentEdge]] = edgeWeights[currentEdge];
-  }
-
-  // Floyd-Warshall algorithm to find all-pairs shortest paths
-  for (var intermediateNode = 0; intermediateNode < nodeCount; intermediateNode++) {
-    for (var startNodeIdx = 0; startNodeIdx < nodeCount; startNodeIdx++) {
-      for (var endNodeIdx = 0; endNodeIdx < nodeCount; endNodeIdx++) {
-        if (distanceMatrix[startNodeIdx][endNodeIdx] > distanceMatrix[startNodeIdx][intermediateNode] + distanceMatrix[intermediateNode][endNodeIdx]) {
-          distanceMatrix[startNodeIdx][endNodeIdx] = distanceMatrix[startNodeIdx][intermediateNode] + distanceMatrix[intermediateNode][endNodeIdx];
+    // Initialize the distance matrix for Floyd-Warshall algorithm
+    let distanceMatrix = [];
+    // Initialize matrix with large values for non-self paths and 0 for self-paths
+    for (let idx1 = 0; idx1 < nodeCount; idx1++) {
+        distanceMatrix[idx1] = [];
+        for (let idx2 = 0; idx2 < nodeCount; idx2++) {
+            if (idx1 !== idx2) {
+                distanceMatrix[idx1].push(1000000000); // Represents infinity
+            } else {
+                distanceMatrix[idx1].push(0); // Distance to self is zero
+            }
         }
-      }
     }
-  }
 
-  var redundantEdges = edgeCount;
-  // Check for redundant edges
-  for (var idx = 0; idx < edgeCount; idx++) {
-    var isOptimalPath = false;
-    for (var checkNode = 0; checkNode < nodeCount; checkNode++) {
-      if (distanceMatrix[checkNode][sourceNodes[idx]] + edgeWeights[idx] === distanceMatrix[checkNode][targetNodes[idx]]) {
-        isOptimalPath = true;
-        break; // Found one path, so this edge is not redundant for this checkNode
-      }
+    // Populate initial distances from direct edges
+    for (let idx1 = 0; idx1 < edgeCount; idx1++) {
+        let currentSrc = sourceNodes[idx1];
+        let currentTgt = targetNodes[idx1];
+        let currentWeight = edgeWeights[idx1];
+
+        // Update distance if a shorter direct path is found
+        if (distanceMatrix[currentSrc][currentTgt] > currentWeight) {
+            distanceMatrix[currentSrc][currentTgt] = currentWeight;
+        }
+        // For undirected graph, update reverse path as well
+        if (distanceMatrix[currentTgt][currentSrc] > currentWeight) {
+            distanceMatrix[currentTgt][currentSrc] = currentWeight;
+        }
     }
-    if (isOptimalPath === true) redundantEdges--;
-  }
-  console.log(redundantEdges);
 
-  process.exit();
+    // Apply Floyd-Warshall algorithm to find all-pairs shortest paths
+    for (let idx3 = 0; idx3 < nodeCount; idx3++) { // Intermediate node
+        for (let idx1 = 0; idx1 < nodeCount; idx1++) { // Source node
+            for (let idx2 = 0; idx2 < nodeCount; idx2++) { // Destination node
+                // If path through idx3 is shorter, update distance
+                if (distanceMatrix[idx1][idx2] > distanceMatrix[idx1][idx3] + distanceMatrix[idx3][idx2]) {
+                    distanceMatrix[idx1][idx2] = distanceMatrix[idx1][idx3] + distanceMatrix[idx3][idx2];
+                }
+            }
+        }
+    }
+
+    // Calculate the final result: count of edges that are NOT part of any shortest path
+    let resultCount = edgeCount; // Start with total edges
+    for (let idx1 = 0; idx1 < edgeCount; idx1++) {
+        let currentSrc = sourceNodes[idx1];
+        let currentTgt = targetNodes[idx1];
+        let currentWeight = edgeWeights[idx1];
+
+        let isShortestPath = false;
+        // Check if the current edge (currentSrc, currentTgt) with currentWeight
+        // is part of any shortest path between any two nodes (j, currentTgt)
+        // where the path goes through currentSrc.
+        for (let idx2 = 0; idx2 < nodeCount; idx2++) {
+            // If the path from idx2 to currentSrc plus the edge weight
+            // equals the shortest path from idx2 to currentTgt,
+            // then this edge is part of a shortest path.
+            if (distanceMatrix[idx2][currentSrc] + currentWeight === distanceMatrix[idx2][currentTgt]) {
+                isShortestPath = true;
+                break; // Found one instance, no need to check further for this edge
+            }
+        }
+        // If the edge is part of a shortest path, decrement the counter
+        if (isShortestPath === true) {
+            resultCount--;
+        }
+    }
+
+    // Output the final calculated count
+    console.log(resultCount);
+
+    // Terminate the process
+    process.exit();
 }

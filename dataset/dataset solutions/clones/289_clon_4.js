@@ -1,74 +1,35 @@
-const _moduleAcquirer = require;
-const _fileSystemHandler = _moduleAcquirer('fs');
+const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const expressionLines = inputContent.trim().split('\n');
 
-const _inputSourcePath = '/dev/stdin';
-const _characterEncoding = 'utf8';
+const performRPNCalculation = (expressionText) => {
+    const tokenList = expressionText.split(' ');
+    const operandStack = [];
 
-const _rawDataString = _fileSystemHandler.readFileSync(_inputSourcePath, _characterEncoding);
-
-const _whitespaceRemover = (text) => text.trim();
-const _segmentText = (text, delimiter) => text.split(delimiter);
-
-const _cleanedInput = _whitespaceRemover(_rawDataString);
-const _individualExpressions = _segmentText(_cleanedInput, "\n");
-
-const _displayHandler = console;
-const _emitMessage = (val) => _displayHandler.log(val);
-
-const _evaluatePostfixExpression = (expressionString) => {
-    const _tokenSeparator = " ";
-    const _parts = _segmentText(expressionString, _tokenSeparator);
-
-    const _digitPresenceDetector = (text) => /\d/.test(text);
-
-    const _operandStackReducer = (currentOperands, currentElement) => {
-        if (_digitPresenceDetector(currentElement)) {
-            return [(currentElement - 0), ...currentOperands];
-        } else {
-            if (currentOperands.length < 2) {
-                return [];
-            }
-
-            const _val1 = currentOperands[0];
-            const _val2 = currentOperands[1];
-            const _remainingOperands = currentOperands.slice(2);
-
-            let _computedResult;
-            switch (currentElement) {
-                case "+":
-                    _computedResult = _val2 + _val1;
-                    break;
-                case "-":
-                    _computedResult = _val2 - _val1;
-                    break;
-                case "*":
-                    _computedResult = _val2 * _val1;
-                    break;
-                case "/":
-                    _computedResult = _val2 / _val1;
-                    break;
-                default:
-                    return currentOperands;
-            }
-            return [_computedResult, ..._remainingOperands];
-        }
+    const operatorMap = {
+        '+': (first, second) => first + second,
+        '-': (first, second) => first - second,
+        '*': (first, second) => first * second,
+        '/': (first, second) => first / second,
     };
 
-    const _finalStack = _parts.reduce(_operandStackReducer, []);
-    return _finalStack[0];
-};
+    for (const currentElement of tokenList) {
+        const parsedValue = parseFloat(currentElement);
+        if (Number.isFinite(parsedValue)) {
+            operandStack.push(parsedValue);
+        } else {
+            const secondOperand = operandStack.pop();
+            const firstOperand = operandStack.pop();
+            const operationFunction = operatorMap[currentElement];
 
-const _processAllExpressions = (expressionsList, currentIndex = 0) => {
-    if (currentIndex >= expressionsList.length) {
-        return;
+            if (operationFunction) {
+                operandStack.push(operationFunction(firstOperand, secondOperand));
+            }
+        }
     }
-
-    const _currentLine = expressionsList[currentIndex];
-    const _calculationOutcome = _evaluatePostfixExpression(_currentLine);
-    const _formattedOutcome = _calculationOutcome.toFixed(6);
-    _emitMessage(_formattedOutcome);
-
-    _processAllExpressions(expressionsList, currentIndex + 1);
+    return operandStack.pop();
 };
 
-_processAllExpressions(_individualExpressions);
+for (const currentLine of expressionLines) {
+    const finalResult = performRPNCalculation(currentLine);
+    console.log(finalResult.toFixed(6));
+}

@@ -1,142 +1,111 @@
-const inputProcessor = require('readline').createInterface({
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-
-let collectedInputLines = [];
-let streamController = null;
-
-inputProcessor.on('line', (currentLine) => {
-  collectedInputLines.push(currentLine);
-});
-
-inputProcessor.on('close', () => {
-  streamController = createLineIterator(collectedInputLines);
-  const executionStartTime = Date.now();
-  performCalculation();
-  const executionEndTime = Date.now();
+let inputProcessorData;
+const inputLinesBuffer = [];
+inputReader.on('line', (inputLine) => { inputLinesBuffer.push(inputLine); });
+inputReader.on('close', () => {
+  inputProcessorData = initializeInputProcessor(inputLinesBuffer);
+  console.error("\n");
+  const startTime = new Date();
+  executeMainLogic();
+  const endTime = new Date() - startTime;
   
-  reportDiagnostic(`Runtime: ${executionEndTime - executionStartTime} ms`);
-  reportDiagnostic(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
+  const memoryUsageKB = Math.round(process.memoryUsage().heapTotal / 1024);
+  printDebugError(`time : ${endTime}ms`);
+  printDebugError(`memory : ${memoryUsageKB}KB`);
 });
 
-/**
- * Generates an object to iterate through an array of strings.
- * @param {string[]} sourceArray - The array of input strings to iterate over.
- * @returns {object} An object providing sequential access to the array elements.
- */
-function createLineIterator(sourceArray) {
-  let currentPosition = 0;
-  const totalEntries = sourceArray.length;
+function deepCopyObject(sourceObj) { return JSON.parse(JSON.stringify(sourceObj)); }
+function readInt() { return convertInputType(getNextInputLine(), 1); }
+function readStrArray() { return convertInputType(getNextInputLine(), 2); }
+function readIntArray() { return convertInputType(getNextInputLine(), 4); }
+function readCharArray() { return convertInputType(getNextInputLine(), 6); }
+function getNextInputLine() { return inputProcessorData.getNext(); }
+function hasMoreInput() { return inputProcessorData.hasMore(); }
 
-  return {
-    // Verifies if there are more items to retrieve.
-    hasMore: () => (currentPosition < totalEntries),
-    // Retrieves the subsequent item from the collection.
-    getNext: () => {
-      if (!this.hasMore()) {
-        throw new Error("Input stream exhausted. No further entries can be retrieved.");
+function initializeInputProcessor(inputLines) {  
+  const processor = {
+    linesList : inputLines,
+    currentIndex : 0,
+    maxLines : inputLines.length,
+    hasMore : function(){ return (this.currentIndex < this.maxLines); },
+    getNext : function(){
+      if(!this.hasMore()){
+        throw "ArrayIndexOutOfBoundsException: No more input lines available.";
       }
-      const nextEntry = sourceArray[currentPosition];
-      currentPosition++;
-      return nextEntry;
+      const currentInputLine = this.linesList[this.currentIndex];
+      this.currentIndex++;
+      return currentInputLine;
     }
   };
+  return processor;
 }
 
-/**
- * Retrieves the next available input line and processes it into an array of numbers.
- * @returns {number[]} A numerical array parsed from the input line.
- */
-function getIntegerArrayFromLine() {
-  const lineStr = streamController.getNext();
-  return lineStr.split(" ").map(Number);
-}
+function printOutput(message) { console.log(message); }
+function printDebugError(message) { console.error("debug:" + require("util").inspect(message, false, null)); }
 
-/**
- * Transmits a given message to the standard output channel.
- * @param {*} message - The content to be displayed.
- */
-function outputLine(message) {
-  console.log(message);
-}
-
-/**
- * Logs a diagnostic message to the standard error stream.
- * @param {*} debugInfo - Information pertinent to debugging.
- */
-function reportDiagnostic(debugInfo) {
-  console.error(`DEBUG: ${debugInfo}`);
-}
-
-// ----------------------------------------------------------------------------------
-
-/**
- * Executes the primary problem-solving logic.
- * The goal is to find the minimum expense to achieve a specific height configuration
- * across a selected subset of items.
- */
-function performCalculation() {
-  // Acquire the problem's primary parameters: total number of items and minimum items to select.
-  const configurationParameters = getIntegerArrayFromLine();
-  const totalItems = configurationParameters[0];
-  const minSelected = configurationParameters[1];
-  
-  // Acquire the initial heights for all items.
-  const itemHeights = getIntegerArrayFromLine();
-  
-  // Initialize the lowest calculated expense to an extremely large value.
-  let optimalExpense = 1e16; // Represents a very large initial cost.
-  
-  // Special case: If only one item is required, no expense is incurred as no relative height adjustment is needed.
-  if (minSelected === 1) {
-    outputLine(0);
-    return;
+function convertInputType(inputValue, conversionType) {
+  try {
+    switch(conversionType) {
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
+    }
+  } catch(e) {
+    return inputValue;
   }
+}
 
-  // Edge case: If the minimum number of items to select exceeds the total available items,
-  // it's an impossible scenario given the problem constraints (or default to max cost).
-  if (minSelected > totalItems) {
-      outputLine(optimalExpense); 
-      return;
-  }
+function executeMainLogic() {
+    const firstLineData = readIntArray();
+    const numBuildings = firstLineData[0];
+    const minVisibleCount = firstLineData[1];
+    const buildingHeights = readIntArray();
 
-  // Iterate through all possible subsets of items. Each 'subsetMask' uniquely identifies a combination.
-  const maximumCombinations = (1 << totalItems); // Total number of possible subsets (2^totalItems).
-  for (let subsetMask = 0; subsetMask < maximumCombinations; ++subsetMask) {
-    let currentCost = 0;          // Accumulated cost for the current subset.
-    let highestReached = 0;       // Keeps track of the maximum height seen so far within processed items.
-    let selectedCount = 0;        // Counter for items chosen in this specific subset.
+    const MAX_POSSIBLE_COST = Math.pow(10, 16);
+    let minCost = MAX_POSSIBLE_COST;
 
-    // Examine each individual item to determine if it's part of the current subset.
-    for (let itemIndex = 0; itemIndex < totalItems; ++itemIndex) {
-      // Check if the bit corresponding to 'itemIndex' is set in 'subsetMask'.
-      // This indicates the item is included in the current combination.
-      const isItemSelected = ((subsetMask >>> itemIndex) & 1) !== 0;
-      
-      if (isItemSelected) {
-        selectedCount++; // Increment the count of chosen items.
-        
-        // If the current item's height is less than or equal to the tallest item
-        // encountered among previously processed items, its height must be increased.
-        if (highestReached >= itemHeights[itemIndex]) {
-          currentCost += (highestReached - itemHeights[itemIndex] + 1);
-          highestReached++; // Update highestReached to reflect the new target height.
+    if (minVisibleCount === 1) {
+        printOutput(0);
+        return;
+    }
+
+    for (let combinationMask = 0; combinationMask < (1 << numBuildings); combinationMask++) {
+        const { cost: currentCombinationCost, selectedCount: buildingsSelectedInCombination } =
+            calculateCombinationMetrics(numBuildings, buildingHeights, combinationMask);
+
+        if (buildingsSelectedInCombination >= minVisibleCount) {
+            minCost = Math.min(minCost, currentCombinationCost);
         }
-      }
-      // Update 'highestReached' with the maximum of its current value and the actual height
-      // of the current item. This happens regardless of selection, ensuring 'highestReached'
-      // always tracks the maximum physical height up to the current item's position.
-      highestReached = Math.max(itemHeights[itemIndex], highestReached);
     }
-    
-    // If the number of selected items meets or exceeds the minimum requirement,
-    // update the overall optimal expense if the current cost is lower.
-    if (selectedCount >= minSelected) {
-      optimalExpense = Math.min(optimalExpense, currentCost);
+    printOutput(minCost);
+}
+
+function calculateCombinationMetrics(numBuildings, heights, currentMask) {
+    let combinationCost = 0;
+    let currentMaxHeightInView = 0;
+    let selectedBuildingsCounter = 0;
+
+    for (let buildingIndex = 0; buildingIndex < numBuildings; buildingIndex++) {
+        const originalBuildingHeight = heights[buildingIndex];
+        const isCurrentBuildingSelected = ((currentMask >> buildingIndex) & 1) !== 0;
+
+        if (isCurrentBuildingSelected) {
+            selectedBuildingsCounter++;
+            if (currentMaxHeightInView >= originalBuildingHeight) {
+                combinationCost += currentMaxHeightInView - originalBuildingHeight + 1;
+                currentMaxHeightInView++;
+            }
+        }
+        currentMaxHeightInView = Math.max(originalBuildingHeight, currentMaxHeightInView);
     }
-  }
-  
-  // Present the final minimum expense calculated.
-  outputLine(optimalExpense);
+    return { cost: combinationCost, selectedCount: selectedBuildingsCounter };
 }

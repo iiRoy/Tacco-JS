@@ -1,105 +1,75 @@
-let incomingDataBuffer = "";
+let rawInputData = "";
 let lineIndex = 0;
-let processedInputLines = [];
 
-process.stdin.on("data", (dataChunk) => {
-  incomingDataBuffer += dataChunk;
+process.stdin.on("data", (chunk) => {
+  rawInputData += chunk;
 });
 
 process.stdin.on("end", function () {
-  processedInputLines = incomingDataBuffer
-    .trim()
-    .split("\n")
-    .map((singleLine) => singleLine.trim());
-
-  orchestrateGraphAnalysis();
+  function processRawInputString(inputStr) {
+    return inputStr
+      .trim()
+      .split("\n")
+      .map((lineStr) => lineStr.trim());
+  }
+  rawInputData = processRawInputString(rawInputData);
+  executeMainLogic();
 });
 
-function getLineSegment() {
-  return processedInputLines[lineIndex++];
+function readNextLine() {
+  return rawInputData[lineIndex++];
 }
 
-function orchestrateGraphAnalysis() {
-  const initialParameters = getLineSegment()
-    .split(" ")
-    .map((numStr) => parseInt(numStr.trim(), 10));
+function calculateComponentSize(currentNodeId, adjMap, visitedTracker) {
+  let currentComponentNodeCount = 0;
+  visitedTracker[currentNodeId] = true;
+  currentComponentNodeCount++;
 
-  const numberOfVertices = initialParameters[0];
-  let numberOfEdgesToProcess = initialParameters[1];
-
-  const networkTopology = {};
-
-  const edgeRegistry = new Set();
-
-  while (numberOfEdgesToProcess > 0) {
-    const currentEdgePair = getLineSegment()
-      .split(" ")
-      .map((nodeIdStr) => parseInt(nodeIdStr.trim(), 10));
-
-    const vertexA = currentEdgePair[0];
-    const vertexB = currentEdgePair[1];
-
-    const canonicalEdgeKey =
-      vertexA < vertexB ? `${vertexA}-${vertexB}` : `${vertexB}-${vertexA}`;
-
-    if (!edgeRegistry.has(canonicalEdgeKey)) {
-      edgeRegistry.add(canonicalEdgeKey);
-
-      const establishConnection = (source, target) => {
-        if (!networkTopology[source]) {
-          networkTopology[source] = {};
-        }
-        networkTopology[source][target] = true;
-      };
-
-      establishConnection(vertexA, vertexB);
-      establishConnection(vertexB, vertexA);
+  const connectedNodes = adjMap[currentNodeId];
+  for (let neighborId in connectedNodes) {
+    if (!visitedTracker[neighborId]) {
+      currentComponentNodeCount += calculateComponentSize(neighborId, adjMap, visitedTracker);
     }
-    numberOfEdgesToProcess--;
   }
+  return currentComponentNodeCount;
+}
 
-  let largestComponentDiscovered = 0;
+function executeMainLogic() {
+  const initialParams = readNextLine().split(" ");
+  let numIndividuals = parseInt(initialParams[0], 10);
+  let numRelations = parseInt(initialParams[1], 10);
 
-  const visitedGlobalMap = {};
+  const adjacencyMap = {};
+  const processedPairs = {};
 
-  const allGraphNodes = Object.keys(networkTopology);
+  for (let i = 0; i < numRelations; i++) {
+    const relationParts = readNextLine().split(" ");
+    let personA = parseInt(relationParts[0], 10);
+    let personB = parseInt(relationParts[1], 10);
 
-  if (allGraphNodes.length === 0) {
-    console.log(0);
-    return;
-  }
+    const pairIdentifier = `${personA}-${personB}`;
 
-  for (const vertexIdentifier of allGraphNodes) {
-    const currentVertexId = parseInt(vertexIdentifier, 10);
+    if (!processedPairs[pairIdentifier]) {
+      processedPairs[pairIdentifier] = true;
 
-    if (!visitedGlobalMap[currentVertexId]) {
-      const currentComponentSize = findConnectedComponentSize(currentVertexId);
+      adjacencyMap[personA] = adjacencyMap[personA] || {};
+      adjacencyMap[personA][personB] = true;
 
-      if (currentComponentSize > largestComponentDiscovered) {
-        largestComponentDiscovered = currentComponentSize;
-      }
+      adjacencyMap[personB] = adjacencyMap[personB] || {};
+      adjacencyMap[personB][personA] = true;
     }
   }
 
-  console.log(largestComponentDiscovered);
+  let largestComponentSize = 0;
+  const visitedNodesTracker = {};
 
-  function findConnectedComponentSize(startNode) {
-    let componentMemberCount = 0;
-
-    visitedGlobalMap[startNode] = true;
-    componentMemberCount++;
-
-    const connectedVertices = networkTopology[startNode];
-
-    for (const neighborIdentifier of Object.keys(connectedVertices)) {
-      const neighborIdNum = parseInt(neighborIdentifier, 10);
-
-      if (!visitedGlobalMap[neighborIdNum]) {
-        const subComponentContribution = findConnectedComponentSize(neighborIdNum);
-        componentMemberCount += subComponentContribution;
-      }
+  for (let nodeIdStr in adjacencyMap) {
+    if (!visitedNodesTracker[nodeIdStr]) {
+      largestComponentSize = Math.max(
+        largestComponentSize,
+        calculateComponentSize(nodeIdStr, adjacencyMap, visitedNodesTracker)
+      );
     }
-
-    return componentMemberCount;
   }
+  console.log(largestComponentSize);
 }

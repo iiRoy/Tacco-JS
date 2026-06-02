@@ -1,23 +1,18 @@
-'use strict'
+'use strict';
 
-let sourceData = require("fs") . readFileSync (
-  "/dev/stdin" ,
-  "utf8"
-) ;
+// This script processes input from standard input.
+// It reads the entire content, then removes leading/trailing whitespace.
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Remove any leading or trailing whitespace from the acquired data.
-sourceData = sourceData . trim ( ) ;
+// Trim any extraneous whitespace from the beginning or end of the input.
+rawData = rawData.trim();
 
-/*
- * This regular expression pattern is adapted from successful submissions.
- * The '^' anchor ensures the pattern matches from the beginning of the string.
- * The '?' quantifier makes the preceding character optional for a flexible match.
- */
-let matchOutcome = sourceData.match (
-  /^A?KIHA?BA?RA?/
-)
-  ? "YES"
-  : "NO"
-;
+// The core logic involves checking if the input string matches a specific pattern.
+// The pattern is designed to recognize variations of "AKIHABARA".
+// '?' makes the preceding character optional.
+// '^' anchors the match to the beginning of the string.
+// This regular expression checks for "AKIHABARA", "AKIHBARA", "AKIHABRA", "AKIHABAR", etc.
+let resultString = rawData.match(/^A?KIHA?BA?RA?/) ? "YES" : "NO";
 
-console . log ( matchOutcome ) ;
+// Output the determined result to the console.
+console.log(resultString);

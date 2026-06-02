@@ -1,37 +1,27 @@
-const resourceAccessor = require('node:fs');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedSegments = (sourceData.trim()).split("\n");
 
-const streamContent = resourceAccessor.readFileSync('/dev/stdin', 'utf8');
+const initialOperand = Number(parsedSegments[0]);
 
-const expressionLines = streamContent.trim().split('\n');
-
-const operatorFunctions = {
-    '+': (first, second) => first + second,
-    '-': (first, second) => first - second,
-    '*': (first, second) => first * second,
-    '/': (first, second) => first / second
+const opHandlers = {
+    "+": (a, b) => a + b,
+    "-": (a, b) => a - b,
+    "*": (a, b) => a * b,
+    "/": (a, b) => a / b,
 };
 
-const parsedOperations = [];
-for (let iterator = 1; iterator < expressionLines.length - 1; iterator += 2) {
-    parsedOperations.push({
-        operatorSymbol: expressionLines[iterator],
-        numericOperand: Number(expressionLines[iterator + 1])
+const operationSequence = [];
+for (let k = 1; k < parsedSegments.length - 1; k += 2) {
+    operationSequence.push({
+        symbol: parsedSegments[k],
+        value: Number(parsedSegments[k + 1])
     });
 }
 
-const startingValue = Number(expressionLines[0]);
-
-const processedCalculation = parsedOperations.reduce((currentAccumulator, nextOperation) => {
-    const opFn = operatorFunctions[nextOperation.operatorSymbol];
-    let intermediateResult;
-
-    if (opFn) {
-        intermediateResult = opFn(currentAccumulator, nextOperation.numericOperand);
-    } else {
-        intermediateResult = currentAccumulator;
-    }
-
+const finalOutcome = operationSequence.reduce((currentEvaluation, stepDetails) => {
+    const performOperation = opHandlers[stepDetails.symbol];
+    let intermediateResult = performOperation(currentEvaluation, stepDetails.value);
     return Number(intermediateResult.toFixed(0));
-}, startingValue);
+}, initialOperand);
 
-console.log(String(processedCalculation));
+console.log(finalOutcome);

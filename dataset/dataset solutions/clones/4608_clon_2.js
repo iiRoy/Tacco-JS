@@ -1,104 +1,105 @@
-var inputReader = initializeInputSystem();
-processSolution();
-function readInteger() {
-    return dataTransformer(getNextLine(), 1);
+var dataHandler = initializeInputProcessor();
+
+executePrimaryLogic();
+
+function retrieveNextInteger() {
+  return convertInput(fetchNextLine(), 1);
 }
-function readStringArray() {
-    return dataTransformer(getNextLine(), 2);
+
+function retrieveNextStringArray() {
+  return convertInput(fetchNextLine(), 2);
 }
-function readIntegerArray() {
-    return dataTransformer(getNextLine(), 4);
+
+function retrieveNextIntegerArray() {
+  return convertInput(fetchNextLine(), 4);
 }
-function readCharacterArray() {
-    return dataTransformer(getNextLine(), 6);
+
+function retrieveNextCharacterArray() {
+  return convertInput(fetchNextLine(), 6);
 }
-function getNextLine() {
-    return inputReader.getNextLine();
+
+function fetchNextLine() {
+  return dataHandler.getNext();
 }
+
 function hasMoreLines() {
-    return inputReader.hasMoreLines();
+  return dataHandler.hasRemaining();
 }
-function fetchRawInput() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+function readInputFile() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
-function initializeInputSystem() {
-    var rawLines = fetchRawInput();
-    var inputSystem = {
-        "inputLines" : rawLines,
-        "currentLineIndex" : 0,
-        "totalLines" : rawLines.length,
-        "hasMoreLines" : function() {
-            return (this.currentLineIndex < this.totalLines);
-        },
-        "getNextLine" : function() {
-            if (!this.hasMoreLines()) {
-                return "";
-            } else {
-                var currentLineData = this.inputLines[this.currentLineIndex];
-                this.currentLineIndex++;
-                return currentLineData;
-            }
-        }
-    };
-    return inputSystem;
+
+function initializeInputProcessor() {
+  var rawInputLines = readInputFile();
+  var inputProcessor = {
+    lineCollection: rawInputLines,
+    currentLineIndex: 0,
+    totalLines: rawInputLines.length,
+    hasRemaining: function() {
+      return (this.currentLineIndex < this.totalLines);
+    },
+    getNext: function() {
+      if (!this.hasRemaining()) {
+        return "";
+      } else {
+        var currentLineData = this.lineCollection[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentLineData;
+      }
+    }
+  };
+  return inputProcessor;
 }
-function displayResult(outputContent) {
-    console.log(outputContent);
+
+function displayOutput(messageContent) {
+  console.log(messageContent);
 }
-function logError(errorMessage) {
-    console.error(errorMessage);
+
+function displayError(errorMessage) {
+  console.error(errorMessage);
 }
-// This helper function manages various input transformations.
-// Options for transformation:
-// 1: Convert value to an integer.
-// 2: Split string by spaces into an array of strings.
-// 4: Split string by spaces and convert parts to an array of numbers.
-// 6: Split string into individual characters.
-// 7: Split string into characters and convert each to a number.
-// 8: Join array elements with a space.
-// 9: Join array elements with a newline.
-// 0: Join array elements without any separator.
-// Default: Returns the input value unchanged (e.g., if option is invalid or on error).
-function dataTransformer(inputValue, transformOption) {
-    try {
-        switch (transformOption) {
-            case 1:
-                return parseInt(inputValue, 10);
-            case 2:
-                return inputValue.split(" ");
-            case 4:
-                return inputValue.split(" ").map((item) => Number(item));
-            case 6:
-                return inputValue.split("");
-            case 7:
-                return inputValue.split("").map((item) => Number(item));
-            case 8:
-                return inputValue.join(" ");
-            case 9:
-                return inputValue.join("\n");
-            case 0:
-                return inputValue.join("");
-            default:
-                return inputValue;
-        }
-    } catch (errorObject) {
+
+function convertInput(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map((itemValue) => Number(itemValue));
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map((itemValue) => Number(itemValue));
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
+      default:
         return inputValue;
     }
+  } catch (conversionError) {
+    return inputValue;
+  }
 }
-function processSolution() {
-    var firstLineData = readIntegerArray();
-    var numEntries = firstLineData[0];
-    var thresholdDuration = firstLineData[1];
-    var timePoints = readIntegerArray();
-    var totalAccumulatedTime = 0;
-    for (var idx = 1; idx < numEntries; idx++) {
-        var timeDifference = timePoints[idx] - timePoints[idx - 1];
-        if (timeDifference > thresholdDuration) {
-            totalAccumulatedTime += thresholdDuration;
-        } else {
-            totalAccumulatedTime += timeDifference;
-        }
+
+function executePrimaryLogic() {
+  var firstLineData = retrieveNextIntegerArray();
+  var itemCount = firstLineData[0];
+  var thresholdDuration = firstLineData[1];
+  var timePoints = retrieveNextIntegerArray();
+  var totalActiveTime = 0;
+  for (var idx = 1; idx < itemCount; idx++) {
+    if (timePoints[idx] - timePoints[idx - 1] > thresholdDuration) {
+      totalActiveTime += thresholdDuration;
+    } else {
+      totalActiveTime += timePoints[idx] - timePoints[idx - 1];
     }
-    totalAccumulatedTime += thresholdDuration;
-    displayResult(totalAccumulatedTime);
+  }
+  totalActiveTime += thresholdDuration;
+  displayOutput(totalActiveTime);
 }

@@ -1,25 +1,21 @@
-const processInputString = (entireInput) => {
-  const allLines = entireInput.trim().split('\n');
-  const numericLength = Number(allLines[0]);
-  const targetSequence = allLines[1];
+function processInputData(rawData) {
+  const parsedLines = rawData.trim().split('\n');
+  const stringLength = Number(parsedLines[0]);
+  const charSequence = parsedLines[1].split('');
 
-  if (numericLength === 0) {
-    return -1;
+  if (stringLength === 0) {
+    console.log(-1);
+    return;
   }
 
-  const blockCount = targetSequence.split('').reduce((segmentTally, currentCharacter, charIndex, fullArray) => {
-    const nextCharacter = fullArray[charIndex + 1];
-    if (currentCharacter !== nextCharacter) {
-      return segmentTally + 1;
+  const uniqueBlockStarters = charSequence.slice(1).reduce((accumulator, currentCharacter) => {
+    if (currentCharacter !== accumulator[accumulator.length - 1]) {
+      accumulator.push(currentCharacter);
     }
-    return segmentTally;
-  }, 0);
+    return accumulator;
+  }, [charSequence[0]]);
 
-  return blockCount;
-};
+  console.log(uniqueBlockStarters.length);
+}
 
-const executeProcessor = (sourceData) => {
-  console.log(processInputString(sourceData));
-};
-
-executeProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

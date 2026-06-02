@@ -1,49 +1,29 @@
-"use strict"
+"use strict";
 
-// This module defines a function designed to parse and combine specific parts of textual input.
-const ProcessInput = (sourceText) => {
+const ProcessInput = (rawData) => {
+  console.log(rawData); // Display the original raw input received.
 
-    // Output the complete raw text received as an initial step.
-    console.log(sourceText);
+  // Trim any leading/trailing whitespace from the input string,
+  // then split it into an array of strings based on newline characters.
+  const lineSegments = rawData.trim().split(/\n/);
 
-    // First, clean up the input by removing any leading or trailing whitespace,
-    // then segment it into an array where each element is a distinct line of text.
-    // The splitting occurs at each newline character.
-    const textLines = sourceText
-                        .trim()
-                        .split(/\n/);
+  // For the first line segment, split it by any non-digit characters.
+  const firstLineParts = lineSegments[0].split(/\D/);
+  // For the second line segment, split it by any non-digit characters.
+  const secondLineParts = lineSegments[1].split(/\D/);
+  // For the third line segment, split it by any non-digit characters.
+  const thirdLineParts = lineSegments[2].split(/\D/);
 
-    // Deconstruct the initial line of the input.
-    // It's broken into sub-parts using any non-digit character as a separator.
-    const lineOneParts = textLines[0]
-                                  .split(/\D/);
+  // Construct the final output string by concatenating specific elements
+  // from the parsed parts of each line.
+  // This takes the first element from the first line's parts,
+  // the second element from the second line's parts,
+  // and the third element from the third line's parts.
+  const finalResult = `${firstLineParts[0]}${secondLineParts[1]}${thirdLineParts[2]}`;
 
-    // Similarly, process the second line from the input.
-    // Apply the identical non-digit splitting pattern to segment this line.
-    const lineTwoParts = textLines[1]
-                                  .split(/\D/);
-
-    // Take the third line and apply the same splitting logic.
-    // This yields its own set of sub-parts based on non-digit delimiters.
-    const lineThreeParts = textLines[2]
-                                    .split(/\D/);
-
-    // Assemble the final string result.
-    // This is achieved by concatenating the first element from the first line's segments,
-    // the second element from the second line's segments,
-    // and the third element from the third line's segments.
-    const compositeValue = `${lineOneParts[0]}${lineTwoParts[1]}${lineThreeParts[2]}`;
-
-    // Present the final constructed string to the standard output.
-    console.log(compositeValue);
-
+  console.log(finalResult); // Output the computed final result.
 };
 
-
-// The main execution block: reads content from standard input and passes it to the processor.
-// The 'fs' (file system) module is employed for synchronous file reading,
-// with 'utf8' specified as the character encoding for the input stream.
-ProcessInput(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of '/dev/stdin' synchronously using Node.js 'fs' module,
+// interpreting it as UTF-8 encoded text, and then pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

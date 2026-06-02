@@ -1,29 +1,14 @@
-const analyzeSequence = (sourceData) => {
-    let resultPosition = 0;
-    let segmentCount = 0;
-    let tempSegment = "";
-    const keyString = "0";
-    const dataLength = sourceData.length;
+const processInput = (inputString) => {
+    const tokenList = inputString.split(" ");
+    let foundPosition = 0;
 
-    for (let charPointer = 0; charPointer <= dataLength; charPointer++) {
-        const currentCharacter = charPointer < dataLength ? sourceData[charPointer] : ' ';
-
-        if (currentCharacter === ' ') {
-            segmentCount++;
-            if (tempSegment === keyString && resultPosition === 0) {
-                resultPosition = segmentCount;
-            }
-            tempSegment = "";
-        } else {
-            tempSegment += currentCharacter;
+    for (let currentIdx = 0; currentIdx < tokenList.length; currentIdx++) {
+        if (tokenList[currentIdx] === "0") {
+            foundPosition = currentIdx + 1;
+            break;
         }
     }
-    return resultPosition;
+    console.log(foundPosition);
 };
 
-const dataAcquirer = require("fs");
-const inputSource = '/dev/stdin';
-const encodingType = 'utf8';
-const acquiredText = dataAcquirer.readFileSync(inputSource, encodingType);
-
-console.log(analyzeSequence(acquiredText));
+processInput(require("fs").readFileSync('/dev/stdin', 'utf8'));

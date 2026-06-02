@@ -1,80 +1,105 @@
-const calculatePowerModulo = (baseValue, exponentValue, modulusValue) => {
+function modularPower(base, exponent, modulus) {
     let resultAccumulator = 1;
-    let currentBase = baseValue % modulusValue;
-    let currentExponent = exponentValue;
-
-    while (currentExponent > 0) {
-        if (currentExponent % 2 === 1) {
-            resultAccumulator = (resultAccumulator * currentBase) % modulusValue;
+    base %= modulus;
+    while (exponent > 0) {
+        if (exponent % 2 === 1) {
+            resultAccumulator = (resultAccumulator * base) % modulus;
         }
-        currentBase = (currentBase * currentBase) % modulusValue;
-        currentExponent = Math.floor(currentExponent / 2);
+        base = (base * base) % modulus;
+        exponent = Math.floor(exponent / 2);
     }
     return resultAccumulator;
-};
+}
 
-const decomposeIntoPrimes = (inputNumber) => {
-    const primeExponentMap = new Map();
-    let mutableNumber = inputNumber;
+function ProcessInputData(inputPayload) {
+    const dataLines = inputPayload.split("\n");
+    const elementCount = parseInt(dataLines[0], 10);
+    const originalNumbers = dataLines[1].split(' ').map(Number);
 
-    if (mutableNumber <= 1) {
-        return primeExponentMap;
-    }
+    const distinctPrimeSet = new Set();
+    const factorMapsPerElement = new Array(elementCount);
+    const highestPrimeCounts = new Map();
+    const secondHighestPrimeCounts = new Map();
 
-    while (mutableNumber % 2 === 0) {
-        primeExponentMap.set(2, (primeExponentMap.get(2) || 0) + 1);
-        mutableNumber /= 2;
-    }
+    for (let idx = 0; idx < elementCount; idx++) {
+        let currentVal = originalNumbers[idx];
+        const currentElementFactors = new Map();
+        factorMapsPerElement[idx] = currentElementFactors;
 
-    for (let factorCandidate = 3; factorCandidate * factorCandidate <= mutableNumber; factorCandidate += 2) {
-        while (mutableNumber % factorCandidate === 0) {
-            primeExponentMap.set(factorCandidate, (primeExponentMap.get(factorCandidate) || 0) + 1);
-            mutableNumber /= factorCandidate;
+        for (let divisor = 2; divisor * divisor <= currentVal; divisor++) {
+            if (currentVal % divisor === 0) {
+                distinctPrimeSet.add(divisor);
+                let count = 0;
+                while (currentVal % divisor === 0) {
+                    count++;
+                    currentVal /= divisor;
+                }
+                currentElementFactors.set(divisor, count);
+
+                let currentMax = highestPrimeCounts.get(divisor) || 0;
+                let currentSecondMax = secondHighestPrimeCounts.get(divisor) || 0;
+
+                if (count > currentMax) {
+                    secondHighestPrimeCounts.set(divisor, currentMax);
+                    highestPrimeCounts.set(divisor, count);
+                } else if (count > currentSecondMax) {
+                    secondHighestPrimeCounts.set(divisor, count);
+                }
+            }
+        }
+
+        if (currentVal > 1) { // Remaining currentVal is a prime factor
+            const primeRemainder = currentVal;
+            distinctPrimeSet.add(primeRemainder);
+            const count = 1;
+            currentElementFactors.set(primeRemainder, count);
+
+            let currentMax = highestPrimeCounts.get(primeRemainder) || 0;
+            let currentSecondMax = secondHighestPrimeCounts.get(primeRemainder) || 0;
+
+            if (count > currentMax) {
+                secondHighestPrimeCounts.set(primeRemainder, currentMax);
+                highestPrimeCounts.set(primeRemainder, count);
+            } else if (count > currentSecondMax) {
+                secondHighestPrimeCounts.set(primeRemainder, count);
+            }
         }
     }
 
-    if (mutableNumber > 1) {
-        primeExponentMap.set(mutableNumber, (primeExponentMap.get(mutableNumber) || 0) + 1);
-    }
-    return primeExponentMap;
-};
+    const requiredFactorExponents = new Array(elementCount);
+    const MOD_VAL = 1000000007;
 
-const processNumericData = (rawDataString) => {
-    const moduloConstant = 1000000007;
+    for (let idx = 0; idx < elementCount; idx++) {
+        requiredFactorExponents[idx] = new Map();
+        const currentElementFactorMap = factorMapsPerElement[idx];
 
-    const dataLines = rawDataString.split('\n');
-    const itemCount = parseInt(dataLines[0], 10);
-    const initialValues = dataLines[1].split(' ').map(Number);
+        for (const primeKey of distinctPrimeSet) {
+            const elementPrimeCount = currentElementFactorMap.get(primeKey) || 0;
+            const overallMaxCount = highestPrimeCounts.get(primeKey) || 0;
+            const overallSecondMaxCount = secondHighestPrimeCounts.get(primeKey) || 0;
 
-    const allFactorizations = initialValues.map(decomposeIntoPrimes);
+            const targetCountForOthers = (elementPrimeCount === overallMaxCount)
+                ? overallSecondMaxCount
+                : overallMaxCount;
 
-    const aggregateMaxExponents = new Map();
-    allFactorizations.forEach(individualFactors => {
-        individualFactors.forEach((expVal, primeKey) => {
-            aggregateMaxExponents.set(
-                primeKey,
-                Math.max(aggregateMaxExponents.get(primeKey) || 0, expVal)
-            );
-        });
-    });
+            const additionalExponent = Math.max(0, targetCountForOthers - elementPrimeCount);
 
-    let cumulativeSum = 0;
-
-    allFactorizations.forEach((currentFactors, itemIndex) => {
-        let productTerm = 1;
-
-        aggregateMaxExponents.forEach((overallMaxExp, primeFactor) => {
-            const currentItemExp = currentFactors.get(primeFactor) || 0;
-            const neededExpDifference = overallMaxExp - currentItemExp;
-
-            if (neededExpDifference > 0) {
-                productTerm = (productTerm * calculatePowerModulo(primeFactor, neededExpDifference, moduloConstant)) % moduloConstant;
+            if (additionalExponent > 0) {
+                requiredFactorExponents[idx].set(primeKey, additionalExponent);
             }
-        });
-        cumulativeSum = (cumulativeSum + productTerm) % moduloConstant;
-    });
+        }
+    }
 
-    console.log(cumulativeSum);
-};
+    let finalResultSum = 0;
+    for (let idx = 0; idx < elementCount; idx++) {
+        let productForCurrentElement = 1;
+        for (const [primeKey, exponent] of requiredFactorExponents[idx]) {
+            productForCurrentElement = (productForCurrentElement * modularPower(primeKey, exponent, MOD_VAL)) % MOD_VAL;
+        }
+        finalResultSum = (finalResultSum + productForCurrentElement) % MOD_VAL;
+    }
 
-processNumericData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(finalResultSum);
+}
+
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

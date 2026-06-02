@@ -1,38 +1,35 @@
-const performComputation = (rawSequenceData) => {
-  const textLines = rawSequenceData.split('\n');
-  const sequenceLength = Number(textLines[0]);
+"use strict";
 
-  const transitionMap = new Map();
-  for (let index = 0; index < sequenceLength; index++) {
-    transitionMap.set(index + 1, Number(textLines[index + 1]));
-  }
-
-  const traversePath = (currentLocation, stepsTaken, visitedLocations, connectionRules, maxStepsAllowed) => {
-    if (currentLocation === 2) {
-      return stepsTaken;
+function tracePath(currentValue, maxSteps, dataArray, targetValue, currentSteps = 0, visitedValues = new Set()) {
+    if (currentSteps >= maxSteps) {
+        return -1;
     }
 
-    if (stepsTaken > maxStepsAllowed) {
-      return -1;
+    if (currentValue === targetValue) {
+        return currentSteps + 1;
     }
 
-    if (visitedLocations.has(currentLocation)) {
-      return -1;
+    if (visitedValues.has(currentValue)) {
+        return -1;
     }
 
-    visitedLocations.add(currentLocation);
+    visitedValues.add(currentValue);
 
-    const nextLocation = connectionRules.get(currentLocation);
+    const nextValueInSequence = dataArray[currentValue - 1];
 
-    return traversePath(nextLocation, stepsTaken + 1, visitedLocations, connectionRules, maxStepsAllowed);
-  };
+    return tracePath(nextValueInSequence, maxSteps, dataArray, targetValue, currentSteps + 1, visitedValues);
+}
 
-  const initialLocation = transitionMap.get(1);
+const processInput = (rawData) => {
+    const inputLines = rawData.split('\n');
 
-  const finalOutcome = traversePath(initialLocation, 1, new Set(), transitionMap, sequenceLength);
+    const maxElements = Number(inputLines[0]);
 
-  console.log(finalOutcome);
+    const numericSequence = inputLines.slice(1, maxElements + 1).map(Number);
+
+    const finalStepCount = tracePath(numericSequence[0], maxElements, numericSequence, 2);
+
+    console.log(finalStepCount);
 };
 
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf-8');
-performComputation(inputSource);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

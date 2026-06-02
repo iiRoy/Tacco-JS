@@ -3,56 +3,45 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
-let collectedInput = '';
-let inputLineArray = [];
+let sourceText = '';
+let pointer = 0;
 
-process.stdin.on('data', chunk => {
-    collectedInput += chunk;
+process.stdin.on('data', part => {
+    sourceText += part;
 });
 
 process.stdin.on('end', () => {
-    inputLineArray = collectedInput.trim().split('\n').map(line => line.trim());
-    initiateMainProcessing(inputLineArray);
-});
+    const rows = sourceText.trim().split('\n').map(row => row.trim());
 
-function initiateMainProcessing(rawLines) {
-    let lineCursor = 0;
-    const retrieveNextDatum = () => rawLines[lineCursor++];
-    const decomposeToNumbers = (textualSequence) => textualSequence.split(' ').map(Number);
+    function nextRow() {
+        return rows[pointer++];
+    }
 
-    const initialParameters = decomposeToNumbers(retrieveNextDatum());
-    const totalPoints = initialParameters[0];
-    const maximumJumpSpan = initialParameters[1];
-    const altitudeValues = decomposeToNumbers(retrieveNextDatum());
+    function numbersFromLine(line) {
+        return line.split(' ').map(value => Number(value));
+    }
 
-    const costMemo = new Map(); // For storing computed minimum costs
+    const settings = numbersFromLine(nextRow());
+    const stoneCount = settings[0];
+    const jumpLimit = settings[1];
+    const heights = numbersFromLine(nextRow());
 
-    // Recursive helper function to determine minimum expense to reach a point
-    const calculatePathCost = (currentIdx) => {
-        if (costMemo.has(currentIdx)) {
-            return costMemo.get(currentIdx);
-        }
+    const bestKnown = new Array(stoneCount);
+    bestKnown.fill(100);
+    bestKnown[0] = 0;
+    bestKnown[1] = Math.abs(heights[1] - heights[0]);
 
-        if (currentIdx === 0) {
-            return 0; // No cost to start at the first point
-        }
+    for (let origin = 0; origin < stoneCount; origin++) {
+        const farthest = Math.min(stoneCount - 1, origin + jumpLimit);
+        const firstDestination = Math.max(2, origin + 1);
 
-        let minimalExpense = Infinity; // Initialize with a very large value
-
-        // Explore all possible previous points within maximumJumpSpan
-        for (let stepBackwards = 1; stepBackwards <= maximumJumpSpan; stepBackwards++) {
-            const previousIdx = currentIdx - stepBackwards;
-            if (previousIdx >= 0) {
-                const expenseFromPrevious = calculatePathCost(previousIdx) +
-                                            Math.abs(altitudeValues[currentIdx] - altitudeValues[previousIdx]);
-                minimalExpense = Math.min(minimalExpense, expenseFromPrevious);
+        for (let destination = firstDestination; destination <= farthest; destination++) {
+            const offered = bestKnown[origin] + Math.abs(heights[destination] - heights[origin]);
+            if (offered < bestKnown[destination]) {
+                bestKnown[destination] = offered;
             }
         }
+    }
 
-        costMemo.set(currentIdx, minimalExpense);
-        return minimalExpense;
-    };
-
-    const finalOptimalCost = calculatePathCost(totalPoints - 1);
-    console.log(finalOptimalCost);
-}
+    console.log(bestKnown[stoneCount - 1]);
+});

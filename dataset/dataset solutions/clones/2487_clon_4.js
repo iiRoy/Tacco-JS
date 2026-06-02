@@ -1,28 +1,94 @@
-const acquireData = (rawTextContent) => {
-    const processedNumbers = rawTextContent
-        .split('\n')
-        .flatMap(currentLine => currentLine.split(' '))
-        .filter(tokenUnit => tokenUnit.length > 0)
-        .map(numericalString => Number(numericalString));
+class DataStreamHandler {
+    constructor(sourceText) {
+        this.lineSegments = sourceText.trim().split('\n');
+        this.currentSegmentIndex = 0;
+    }
 
-    let currentPosition = 0;
-
-    return () => {
-        if (currentPosition < processedNumbers.length) {
-            return processedNumbers[currentPosition++];
+    retrieveNumericItem(asStringFlag = false) {
+        if (this.currentSegmentIndex >= this.lineSegments.length) {
+            return undefined;
         }
-        return undefined;
+
+        let activeSegment = this.lineSegments[this.currentSegmentIndex];
+
+        if (typeof activeSegment === 'string') {
+            this.lineSegments[this.currentSegmentIndex] = activeSegment.split(' ').reverse();
+            activeSegment = this.lineSegments[this.currentSegmentIndex];
+        }
+
+        const itemValue = activeSegment.pop();
+
+        if (activeSegment.length === 0) {
+            this.currentSegmentIndex++;
+        }
+
+        return asStringFlag ? itemValue : Number(itemValue);
+    }
+
+    extractLineTokens(asStringFlag = false) {
+        if (this.currentSegmentIndex >= this.lineSegments.length) {
+            return [];
+        }
+        const lineContent = this.lineSegments[this.currentSegmentIndex++];
+        const tokens = String(lineContent).split(' ');
+
+        return asStringFlag ? tokens : tokens.map(val => Number(val));
+    }
+
+    fetchMatrix(rowCount, asStringFlag = false) {
+        const resultMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            if (this.currentSegmentIndex >= this.lineSegments.length) {
+                break;
+            }
+            const lineContent = this.lineSegments[this.currentSegmentIndex++];
+            resultMatrix.push(String(lineContent).split(' '));
+        }
+        return asStringFlag ? resultMatrix : resultMatrix.map(row => row.map(val => Number(val)));
+    }
+
+    retrieveRawLines(rowCount, asStringFlag = false) {
+        const resultLines = [];
+        for (let i = 0; i < rowCount; i++) {
+            if (this.currentSegmentIndex >= this.lineSegments.length) {
+                break;
+            }
+            const lineContent = this.lineSegments[this.currentSegmentIndex++];
+            resultLines.push(String(lineContent));
+        }
+        return asStringFlag ? resultLines : resultLines.map(val => Number(val));
+    }
+}
+
+function createInputHandler(inputString) {
+    const handlerInstance = new DataStreamHandler(inputString);
+    return {
+        a: (flag) => handlerInstance.retrieveNumericItem(flag),
+        l: (flag) => handlerInstance.extractLineTokens(flag),
+        m: (num, flag) => handlerInstance.fetchMatrix(num, flag),
+        r: (num, flag) => handlerInstance.retrieveRawLines(num, flag)
     };
-};
+}
 
-const determineFinalValue = () => {
-    const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-    const obtainNextItem = acquireData(sourceData);
+const dataProcessor = createInputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const valueOne = obtainNextItem();
-    const valueTwo = obtainNextItem();
+function generateMultiArray(initialFillValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialFillValue;
+    }
 
-    return Math.max(0, valueOne - (2 * valueTwo));
-};
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
 
-console.log(determineFinalValue());
+    return Array(currentDimensionSize).fill(null).map(() => {
+        return generateMultiArray(initialFillValue, ...remainingDimensions);
+    });
+}
+
+console.log(calculateResult());
+
+function calculateResult() {
+  const firstValue = dataProcessor.a();
+  const secondValue = dataProcessor.a();
+  return Math.max(0, firstValue - 2 * secondValue);
+}

@@ -1,17 +1,16 @@
-function   processInputData (   sourceContent   )
-{
-  // Divide the initial provided content by line breaks to form an array of distinct lines.
-  sourceContent   =   sourceContent . split ( "\n" ) ;
+function processInputData(incomingText) {
+  // The raw input string is first divided into an array of individual lines.
+  incomingText = incomingText.split("\n");
 
-  // Isolate the very first entry from the array of lines and eliminate any surrounding empty spaces.
-  const   extractedSegment   =   sourceContent [ 0 ] . trim ( ) ;
-  
-  // Present a concatenated string: the character 'A', then the initial letter of the second word
-  // within the isolated segment, followed by the character 'C'.
-  console . log ( 'A' + extractedSegment . split ( " " ) [ 1 ] [ 0 ] + 'C' ) ;
+  // We extract the initial line from the array and remove any leading or trailing whitespace.
+  const firstLineContent = incomingText[0].trim();
+
+  // A specific character is extracted from the processed line.
+  // This character is the first letter of the second word found in the initial line.
+  // The final output string is then constructed by concatenating 'A', this extracted character, and 'C'.
+  console.log('A' + firstLineContent.split(" ")[1][0] + 'C');
 }
 
-// This subsequent block of code is responsible for managing standard input/output operations
-// and should not undergo any modifications. It retrieves all information from the standard
-// input stream and subsequently dispatches it to the primary processing routine.
-processInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This section is responsible for reading data from standard input and initiating the processing.
+// It should not be altered to maintain the program's intended execution flow.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

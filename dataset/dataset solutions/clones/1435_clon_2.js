@@ -1,34 +1,39 @@
-function   ProcessInput  (sourceContent)    {
-    // The incoming raw content is first cleaned of leading/trailing whitespace,
-    // then split into individual segments based on space or newline characters.
-    var   tokenList   =  sourceContent.trim() .split ( /\s|\n/ ) ;
+function ProcessInput (rawData) {
+    // Initialize an array to hold processed tokens from the input string.
+    // The input is trimmed and split by whitespace or newlines.
+    var tokenList = rawData.trim().split(/\s|\n/);
 
-    // Begin an indefinite loop to process the segments sequentially.
-    while(true) {
-        // Extract the next text segment from the front of our list.
-        var   currentText   =   tokenList.shift();
+    // Begin an infinite loop to process string shuffling operations.
+    while (true) {
+        // Extract the next string to be shuffled from the beginning of the token list.
+        var currentString = tokenList.shift();
 
-        // If the extracted segment is our designated termination signal,
-        // we exit this processing loop.
-        if (  currentText   ===   "-"  )   break;
-
-        // Retrieve the numerical value indicating how many rotations to perform.
-        var   numRotations   =   tokenList.shift();
-
-        // Execute the string rotation operation for the specified number of times.
-        for ( var   k   =   0;   k   <   parseInt(numRotations);   k++  ) {
-            // Fetch the index that determines the split point for the current rotation.
-            var   pivotPoint   =   tokenList.shift();
-            // Convert the retrieved pivot point from a string to an integer.
-            pivotPoint   =   parseInt(pivotPoint);
-            // Apply the rotation: take the part of the string from the pivot point onwards
-            // and append it to the part of the string before the pivot point.
-            currentText   =   currentText.substring(pivotPoint)   +   currentText.slice(0, pivotPoint);
+        // If the extracted string is a hyphen, it signifies the end of input, so break the loop.
+        if (currentString === "-") {
+            break;
         }
-        // Display the final, transformed string segment to the standard output.
-        console.log(currentText);
+
+        // Get the number of shuffle operations for the current string.
+        // This value is also taken from the token list.
+        var numShuffles = tokenList.shift();
+
+        // Iterate 'numShuffles' times to perform the shuffling.
+        for (var shuffleIndex = 0; shuffleIndex < parseInt(numShuffles, 10); shuffleIndex++) {
+            // Get the cut point 'h' for the current shuffle operation.
+            var cutPoint = tokenList.shift();
+            // Convert the cut point to an integer.
+            cutPoint = parseInt(cutPoint, 10);
+
+            // Perform the string shuffle:
+            // Take the substring from 'cutPoint' to the end,
+            // and concatenate it with the substring from the beginning up to 'cutPoint'.
+            currentString = currentString.substr(cutPoint) + currentString.slice(0, cutPoint);
+        }
+
+        // Output the final shuffled string to the console.
+        console.log(currentString);
     }
 }
-// Invoke the primary processing function, feeding it content read
-// synchronously from the standard input stream, encoded as UTF-8.
-ProcessInput ( require("fs") .readFileSync ( "/dev/stdin" , "utf8" ) );
+
+// Read the input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

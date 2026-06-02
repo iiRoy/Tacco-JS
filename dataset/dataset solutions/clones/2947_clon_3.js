@@ -1,299 +1,233 @@
 "use strict";
 
-// Utility function to safely extract elements from an array-like structure.
-// This is a re-implementation of a common pattern for destructuring assignments.
-function extractParts(inputArray, expectedCount) {
-  // Check if the input is already an array.
-  if (Array.isArray(inputArray)) return inputArray;
-  // If not an array, attempt to iterate and collect elements.
-  let collectedItems = [];
-  let isDone = false;
-  let iteratorError = undefined;
-  try {
-    // Acquire the iterator for the input.
-    for (let currentIterator = inputArray[Symbol.iterator](), currentItem; !(isDone = (currentItem = currentIterator.next()).done); isDone = true) {
-      collectedItems.push(currentItem.value);
-      // If a specific count is expected and reached, stop early.
-      if (expectedCount && collectedItems.length === expectedCount) break;
-    }
-  } catch (err) {
-    iteratorError = err; // Store any error during iteration.
-  } finally {
-    try {
-      // Ensure the iterator is properly closed if it has a 'return' method.
-      if (!isDone && currentIterator["return"] != null) {
-        currentIterator["return"]();
-      }
-    } finally {
-      // Re-throw any stored iteration error.
-      if (iteratorError) throw iteratorError;
-    }
-  }
-  return collectedItems;
-}
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-// Helper for when an iterable is expected but a non-iterable is provided for destructuring.
-function enforceIterable() {
-  throw new TypeError("Cannot destructure non-iterable instance. Provided value must be iterable.");
-}
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-// Helper to confirm an object is an instance of a constructor.
-function verifyInstance(obj, constructorFunc) {
-  if (!(obj instanceof constructorFunc)) {
-    throw new TypeError("Class constructor cannot be invoked without 'new'");
-  }
-}
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-// Helper to attach properties to an object (used for class methods/getters/setters).
-function defineObjectProps(targetObject, propertyDescriptors) {
-  for (let idx = 0; idx < propertyDescriptors.length; idx++) {
-    const currentDescriptor = propertyDescriptors[idx];
-    currentDescriptor.enumerable = currentDescriptor.enumerable || false;
-    currentDescriptor.configurable = true;
-    if ("value" in currentDescriptor) currentDescriptor.writable = true;
-    Object.defineProperty(targetObject, currentDescriptor.key, currentDescriptor);
-  }
-}
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-// Helper to construct a class with prototype and static properties.
-function constructClass(ConstructorRef, prototypeProps, staticProps) {
-  if (prototypeProps) defineObjectProps(ConstructorRef.prototype, prototypeProps);
-  if (staticProps) defineObjectProps(ConstructorRef, staticProps);
-  return ConstructorRef;
-}
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-// Main application logic encapsulated in an immediately invoked function expression.
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 !function () {
+  var FenwickTree =
+  /*#__PURE__*/
+  function () {
+    function FenwickTree(size) {
+      _classCallCheck(this, FenwickTree);
 
-  // The Fenwick Tree (Binary Indexed Tree) data structure.
-  // This structure efficiently calculates prefix sums and updates individual elements.
-  const FenwickTree = /*#__PURE__*/ (function () {
-    // Constructor initializes the tree with a given maximum size.
-    function FenwickTree(maxSize) {
-      verifyInstance(this, FenwickTree); // Ensure 'new' keyword was used.
-      this.maximumSize = maxSize; // The maximum index this tree can handle.
-      this.treeValues = new Array(maxSize + 1).fill(0); // Internal array storing tree data.
+      this.size = size;
+      this.treeValues = new Array(size + 1).fill(0);
     }
 
-    // Define methods for the FenwickTree class.
-    constructClass(FenwickTree, [{
-      key: "updateValue",
-      // Adds a 'delta' value to the element at 'targetIndex'.
-      // All prefix sums affected by this index are updated.
-      value: function updateValue(targetIndex, delta) {
-        let currentIdx = targetIndex;
-        // Iterate through the tree, updating parent nodes.
-        while (currentIdx <= this.maximumSize) {
-          this.treeValues[currentIdx] += delta;
-          currentIdx += currentIdx & (-currentIdx); // Move to the next parent.
+    var _getLSB = function(idx) {
+        return idx & -idx;
+    };
+
+    _createClass(FenwickTree, [{
+      key: "modifyValue",
+      value: function modifyValue(index, valueDelta) {
+        for (var i = index; i <= this.size; i += _getLSB(i)) {
+          this.treeValues[i] += valueDelta;
         }
       }
     }, {
       key: "queryPrefixSum",
-      // Calculates the sum of elements from index 1 up to 'targetIndex'.
-      value: function queryPrefixSum(targetIndex) {
-        let cumulativeSum = 0;
-        let currentIdx = targetIndex;
-        // Iterate through the tree, summing up relevant nodes.
-        while (currentIdx > 0) {
-          cumulativeSum += this.treeValues[currentIdx];
-          currentIdx -= currentIdx & (-currentIdx); // Move to the next ancestor.
+      value: function (index) {
+        var currentSum = 0;
+        for (var i = index; i > 0; i -= _getLSB(i)) {
+          currentSum += this.treeValues[i];
         }
-        return cumulativeSum;
+        return currentSum;
       }
     }]);
 
     return FenwickTree;
-  }());
+  }();
 
-  // A utility class for coordinate compression.
-  // It maps original values to a smaller, contiguous range of indices.
-  const CoordinateMapper = /*#__PURE__*/ (function () {
-    function CoordinateMapper(rawElements) {
-      verifyInstance(this, CoordinateMapper);
+  var CoordinateMapper =
+  /*#__PURE__*/
+  function () {
+    function CoordinateMapper(sourceNumbers) {
+      _classCallCheck(this, CoordinateMapper);
 
-      // Guard against empty input to avoid errors.
-      if (!rawElements || rawElements.length === 0) {
-        this.originalValues = [];
-        this.valueToIndexMap = new Map();
-        this.distinctElementCount = 0;
-        this.minOriginal = null;
-        this.maxOriginal = null;
-        return;
+      var sortedNumbers = [...sourceNumbers];
+      sortedNumbers.sort(function (a, b) {
+        return a - b;
+      });
+
+      var numLength = sortedNumbers.length;
+      this.minVal = sortedNumbers[0];
+      this.maxVal = sortedNumbers[numLength - 1];
+      
+      var uniqueSortedValues = new Array(numLength);
+      var valueToCompressedIndex = new Map();
+      var currentCompressedIndex = 0;
+      var previousValue = null;
+
+      for (var i = 0; i < numLength; i++) {
+        var currentValue = sortedNumbers[i];
+        if (previousValue !== currentValue) {
+            currentCompressedIndex++;
+        }
+        uniqueSortedValues[i] = currentValue;
+        valueToCompressedIndex.set(currentValue, i);
+        previousValue = currentValue;
       }
 
-      // 1. Collect unique elements using a Set.
-      const uniqueSortedElements = Array.from(new Set(rawElements)).sort((valA, valB) => valA - valB);
-
-      this.minOriginal = uniqueSortedElements[0];
-      this.maxOriginal = uniqueSortedElements[uniqueSortedElements.length - 1];
-
-      this.originalValues = uniqueSortedElements; // Stores sorted unique original values.
-      this.valueToIndexMap = new Map(); // Maps original value to its compressed index.
-      this.distinctElementCount = uniqueSortedElements.length;
-
-      // 2. Populate the mapping from original value to compressed index.
-      for (let k = 0; k < uniqueSortedElements.length; k++) {
-        this.valueToIndexMap.set(uniqueSortedElements[k], k);
-      }
+      this.uniqueSortedValues = uniqueSortedValues;
+      this.valueToCompressedIndex = valueToCompressedIndex;
+      this.compressedRangeSize = currentCompressedIndex;
     }
 
-    // Define methods for the CoordinateMapper class.
-    constructClass(CoordinateMapper, [{
-      key: "getOriginal",
-      // Retrieves the original value given a compressed index.
-      value: function getOriginal(compressedIdx) {
-        // Add a bounds check for robustness.
-        if (compressedIdx < 0 || compressedIdx >= this.originalValues.length) {
-          console.warn(`Attempted to access original value with out-of-bounds index: ${compressedIdx}`);
-          return undefined; // Or throw an error.
-        }
-        return this.originalValues[compressedIdx];
+    _createClass(CoordinateMapper, [{
+      key: "getOriginalValue",
+      value: function getOriginalValue(compressedIndex) {
+        return this.uniqueSortedValues[compressedIndex];
       }
     }, {
-      key: "getMappedIndex",
-      // Retrieves the compressed index given an original value.
-      value: function getMappedIndex(originalVal) {
-        return this.valueToIndexMap.get(originalVal);
-      }
-    }, {
-      key: "getTotalDistinctCount",
-      // Returns the total number of distinct elements after compression.
-      value: function getTotalDistinctCount() {
-        return this.distinctElementCount;
+      key: "getCompressedIndex",
+      value: function getCompressedIndex(originalValue) {
+        return this.valueToCompressedIndex.get(originalValue);
       }
     }]);
 
     return CoordinateMapper;
-  }());
+  }();
 
-  // Parses a line of text, splitting it by whitespace and converting parts to integers.
-  function parseNumericLine(textData) {
-    // If the input is already an array, assume it's pre-parsed numbers.
-    // Otherwise, split the string by one or more whitespace characters.
-    const stringParts = Array.isArray(textData) ? textData : textData.split(/\s+/);
-    // Convert each string part to an integer.
-    return stringParts.map((numericStr) => Number(numericStr));
+  function parseNumericLine(inputLine) {
+    if (!inputLine || typeof inputLine !== 'string') {
+        return [];
+    }
+    var numberStrings = inputLine.split(/\s+/);
+    var parsedNumbers = numberStrings.map(function (str) {
+      return parseInt(str, 10);
+    });
+    return parsedNumbers;
   }
 
-  // Main processing function that takes raw input and performs operations.
-  !function (rawData) {
-    const inputLines = rawData.split("\n").filter(line => line.trim() !== ''); // Filter out empty lines.
+  !function (rawInputString) {
+    var inputLines = rawInputString.split("\n");
 
-    // Parse the first line to get the total number of queries.
-    const [totalQueries] = extractParts(parseNumericLine(inputLines[0]), 1);
+    var firstLineNumbers = parseNumericLine(inputLines[0]);
+    var _firstLineNumbers = _slicedToArray(firstLineNumbers, 1),
+        totalQueriesCount = _firstLineNumbers[0];
 
-    // Validate totalQueries.
-    if (totalQueries <= 0) {
-      // console.error("No queries provided or invalid query count.");
-      return; // Exit if no queries.
-    }
-
-    // Process all query lines into a structured array.
-    const processedQueries = inputLines.slice(1, totalQueries + 1).map((currentLine) => {
-      const [queryKind, firstParam, secondParam] = extractParts(parseNumericLine(currentLine), 3);
+    var parseOperationLine = function(lineContent) {
+      var _parsed = parseNumericLine(lineContent),
+          _parsed2 = _slicedToArray(_parsed, 3),
+          operationType = _parsed2[0],
+          operandA = _parsed2[1],
+          operandB = _parsed2[2];
       return {
-        kind: queryKind,
-        arg1: firstParam,
-        arg2: secondParam
+        type: operationType,
+        valA: operandA,
+        valB: operandB
       };
+    };
+
+    var parsedOperations = inputLines.slice(1, totalQueriesCount + 1).map(parseOperationLine);
+
+    var valuesForCompression = parsedOperations.filter(function (op) {
+      return 1 === op.type;
+    }).map(function (op) {
+      return op.valA;
     });
 
-    // Extract all 'a' parameters from queries of type 1 for coordinate compression.
-    const valuesToCompress = [];
-    for (const q of processedQueries) {
-      if (q.kind === 1) {
-        valuesToCompress.push(q.arg1);
-      }
-    }
-    
-    // Create a CoordinateMapper instance for the relevant values.
-    const valueCompressor = new CoordinateMapper(valuesToCompress);
-    
-    // Initialize the Fenwick Tree with the count of distinct values.
-    const treeStructure = new FenwickTree(valueCompressor.getTotalDistinctCount());
+    var coordinateCompressor = new CoordinateMapper(valuesForCompression);
+    var fenwickTreeInstance = new FenwickTree(coordinateCompressor.compressedRangeSize);
 
-    // Variables to track the state of the minimum point and its associated cost.
-    let currentMinimumCost = 0;
-    // The optimal position (compressed index) in the data structure.
-    // Initialized to null, signifying no elements added yet.
-    let optimalPositionIndex = null; 
+    var currentAccumulatedCost = 0;
+    var currentOptimalPointIndex = null;
 
-    // Iterate through each processed query.
-    for (const currentQuery of processedQueries) {
-      const { kind: queryKind, arg1: paramA, arg2: paramB } = currentQuery;
+    var updateFenwickTreeForOperation = function(compressedIndex) {
+        fenwickTreeInstance.modifyValue(1, -1);
+        fenwickTreeInstance.modifyValue(compressedIndex, 2);
+    };
 
-      if (queryKind === 1) { // Type 1 query: Add an element and update costs.
-        // Get the compressed index for paramA. Add 1 because Fenwick Tree is 1-indexed.
-        const compressedIndexA = valueCompressor.getMappedIndex(paramA) + 1;
+    var calculateAdjustedPreviousMinIndex = function(pointIndex) {
+        var sumAtPoint = fenwickTreeInstance.queryPrefixSum(pointIndex);
+        return (0 === sumAtPoint) ? (pointIndex + 1) : pointIndex;
+    };
 
-        // Perform Fenwick Tree updates:
-        // - Decrement count for index 1 (effectively increasing the range of negative values)
-        // - Increment count by 2 for the compressedIndexA (effectively shifting the zero point)
-        treeStructure.updateValue(1, -1);
-        treeStructure.updateValue(compressedIndexA, 2);
-
-        // Update the current minimum cost.
-        if (optimalPositionIndex === null) {
-          // If this is the first element, the initial cost is just paramB.
-          currentMinimumCost = paramB;
+    var updateAccumulatedCost = function(currentCost, newOperandB, prevOptimalIndex, currentOperandA) {
+        if (null == prevOptimalIndex) {
+            return newOperandB;
         } else {
-          // Calculate the absolute difference between the new element and the previous optimal point.
-          // Add this difference and paramB to the current minimum cost.
-          const prevOptimalOriginalValue = valueCompressor.getOriginal(optimalPositionIndex);
-          const costDelta = Math.abs(paramA - prevOptimalOriginalValue);
-          currentMinimumCost += costDelta + paramB;
+            var originalPrevValue = coordinateCompressor.getOriginalValue(prevOptimalIndex);
+            var costDelta = Math.abs(currentOperandA - originalPrevValue);
+            return currentCost + costDelta + newOperandB;
         }
-        
-        // Recalculate the new optimal position (median-like point).
-        optimalPositionIndex = findOptimalPosition();
+    };
 
-      } else if (queryKind === 2) { // Type 2 query: Output the current state.
-        // Retrieve the original value corresponding to the optimal compressed index.
-        const originalOptimalValue = valueCompressor.getOriginal(optimalPositionIndex);
-        // Output the original value and the current minimum cost.
-        console.log(`${originalOptimalValue} ${currentMinimumCost}`);
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = parsedOperations[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var currentOperation = _step.value;
+        var operationType = currentOperation.type;
+        var operandA = currentOperation.valA;
+        var operandB = currentOperation.valB;
+
+        if (1 === operationType) {
+          var previousOptimalIndexAdjusted = calculateAdjustedPreviousMinIndex(currentOptimalPointIndex);
+          var compressedOperandAIndex = coordinateCompressor.getCompressedIndex(operandA) + 1;
+
+          updateFenwickTreeForOperation(compressedOperandAIndex);
+
+          currentAccumulatedCost = updateAccumulatedCost(
+              currentAccumulatedCost,
+              operandB,
+              currentOptimalPointIndex,
+              coordinateCompressor.getOriginalValue(previousOptimalIndexAdjusted)
+          );
+
+          currentOptimalPointIndex = findOptimalPointIndex();
+        } else {
+          var finalOptimalValue = coordinateCompressor.getOriginalValue(currentOptimalPointIndex);
+          console.log(`${finalOptimalValue} ${currentAccumulatedCost}`);
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
       }
     }
 
-    // Helper function to find the optimal position (compressed index) in the Fenwick Tree.
-    // This uses binary search to find the smallest index 'k' such that the prefix sum up to 'k' is >= 0.
-    function findOptimalPosition() {
-      let searchStart = 1; // Minimum possible compressed index (1-indexed).
-      let searchEnd = valueCompressor.getTotalDistinctCount() + 1; // One past max possible index.
-      let resultIndex = -1; // To store the found optimal index.
+    function findOptimalPointIndex() {
+      var lowBound = 1;
+      var highBound = coordinateCompressor.compressedRangeSize + 1;
 
-      // Binary search loop.
-      while (searchStart < searchEnd) {
-        // Calculate the middle point.
-        const midPoint = searchStart + Math.floor((searchEnd - searchStart) / 2);
-        // Query the prefix sum up to the middle point.
-        const prefixSumAtMid = treeStructure.queryPrefixSum(midPoint);
+      while (lowBound < highBound) {
+        var midIndex = Math.floor((lowBound + highBound) / 2);
+        var currentSumAtMid = fenwickTreeInstance.queryPrefixSum(midIndex);
 
-        if (prefixSumAtMid > 0) {
-          // If sum is positive, the optimal point is at or before midPoint.
-          resultIndex = midPoint; // This could be our answer.
-          searchEnd = midPoint; // Search in the left half.
-        } else if (prefixSumAtMid === 0) {
-          // If sum is zero, midPoint itself is a candidate.
-          // We prefer the smallest such index, so we record it and continue searching left.
-          resultIndex = midPoint;
-          searchEnd = midPoint; // Search in the left half, could find an even smaller one.
-        } else { // prefixSumAtMid < 0
-          // If sum is negative, the optimal point must be after midPoint.
-          searchStart = midPoint + 1; // Search in the right half.
+        if (currentSumAtMid > 0) {
+          highBound = midIndex;
+        } else if (0 === currentSumAtMid) {
+          lowBound = midIndex;
+          break;
+        } else {
+          lowBound = midIndex + 1;
         }
       }
-      
-      // If no suitable index was found (shouldn't happen with valid data), fall back.
-      if (resultIndex === -1) {
-          // Fallback to the smallest possible index if binary search fails to converge.
-          return 0; // Corresponds to the first compressed value.
-      }
-
-      // Convert the 1-indexed Fenwick Tree result back to 0-indexed for the compressor.
-      return resultIndex - 1;
+      return lowBound - 1;
     }
-
-  }(require("node:fs").readFileSync("/dev/stdin", "utf8")); // Read input from standard input.
+  }(require("fs").readFileSync("/dev/stdin", "utf8"));
 }();

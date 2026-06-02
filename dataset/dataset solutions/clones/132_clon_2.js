@@ -1,18 +1,1 @@
-let firstResultCounter = 0, secondResultCounter = 0;
-
-const fileSystemHandler = require("fs");
-
-fileSystemHandler
-    .readFileSync("/dev/stdin", "utf8")
-    .trim()
-    .split('\n')
-    .map(function(currentInputLineItem) {
-        const lineSegments = currentInputLineItem.split(',');
-        let valAlpha = lineSegments[0], valBeta = lineSegments[1], valGamma = lineSegments[2];
-
-        (valGamma * valGamma - valBeta * valBeta - valAlpha * valAlpha)
-            ? (valBeta - valAlpha ? 0 : secondResultCounter++)
-            : firstResultCounter++;
-    });
-
-console.log(firstResultCounter + '\n' + secondResultCounter);
+var firstCount = 0, secondCount = 0; /* Initialize two distinct counters for processing input data. */ require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n').map(function(currentInputLine) { var lineSegments = currentInputLine.split(','); var valueX = lineSegments[0], valueY = lineSegments[1], valueZ = lineSegments[2]; /* Parse components from the input line. */ valueZ * valueZ - valueY * valueY - valueX * valueX ? (valueY - valueX ? 0 : secondCount++) : firstCount++; }); console.log(firstCount + '\n' + secondCount); // Display the final aggregated counts.

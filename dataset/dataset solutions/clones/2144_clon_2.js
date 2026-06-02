@@ -1,36 +1,48 @@
-"use strict"; /* Enforce strict parsing and error handling for robust code execution */
+"use strict";
 
-function processData  (  rawData  )   {  // Core routine to handle and process the provided data
+/**
+ * This function processes an array of input strings to calculate a specific combinatorial sum.
+ * It computes combinations (nCr) and then subtracts two specific combination values from the total sum.
+ * The final result is then taken modulo (10^9 + 7).
+ * @param {string[]} rawData - An array of strings, where the first element contains space-separated numbers.
+ */
+function processInput(rawData) {
+  // Parse the initial line of input containing N, A, and B.
+  let parsedLine = rawData[0].trim().split(" ");
+  let totalElements = parseInt(parsedLine[0]); // Represents 'n'
+  let firstExclusion = parseInt(parsedLine[1]); // Represents 'a'
+  let secondExclusion = parseInt(parsedLine[2]); // Represents 'b'
 
-  // Extract and parse initial configuration parameters from the first line of raw input
-  let   tokenizedLine   =   rawData[0] . trim() . split(" ");
-  let   totalElements   =   parseInt(tokenizedLine[0], 10);  // The upper limit for combinations
-  let   firstIndexToExclude   =   parseInt(tokenizedLine[1], 10); // First value to be excluded from sum
-  let   secondIndexToExclude   =   parseInt(tokenizedLine[2], 10); // Second value to be excluded from sum
+  // Initialize variables for calculating combinations.
+  let denominatorVal = 1; // Corresponds to 'bunbo'
+  let numeratorVal = 1;   // Corresponds to 'bunshi'
 
-  // Initialize variables for calculating combinations (nCr)
-  let   numeratorValue   =   1.0;  // Accumulates the numerator part (n * (n-1) * ...)
-  let   denominatorValue   =   1.0; // Accumulates the denominator part (r! = 1 * 2 * ...)
+  // Array to store combination values (nCr for r from 0 to n-1).
+  let combinationsArr = []; // Corresponds to 'kumi'
+  let totalCombinations = 0; // Corresponds to 'sum'
 
-  let   combinationsList   =   new Array(); // Array to store computed combination values
-  let   totalSum   =   0.0;  // Variable to accumulate the sum of all combinations
-
-  // Iterate to calculate and store each combination C(totalElements, counter) and sum them up
-  for ( let   counter   =   1;   counter   <=   totalElements;   ++counter )   {
-    numeratorValue   *=   (totalElements + 1 - counter); // Update numerator for current combination
-    denominatorValue   *=   counter; // Update denominator (factorial part)
-    combinationsList[counter - 1]   =   numeratorValue   /   denominatorValue; // Store the calculated combination
-    totalSum   +=   combinationsList[counter - 1]; // Add this combination to the running total
+  // Loop to calculate nCr for r from 1 to n.
+  // The loop calculates nC1, nC2, ..., nCn.
+  for (let idx = 1; idx < totalElements + 1; idx++) {
+    // Update numerator for nCr calculation: n * (n-1) * ... * (n-r+1)
+    numeratorVal *= (totalElements + 1 - idx);
+    // Update denominator for nCr calculation: r!
+    denominatorVal *= idx;
+    // Store the current combination value (nCr).
+    combinationsArr[idx - 1] = numeratorVal / denominatorVal;
+    // Add the current combination to the running total.
+    totalCombinations += combinationsArr[idx - 1];
   }
 
-  // Adjust the total sum by subtracting specific combinations as per requirements
-  totalSum   -=   combinationsList[firstIndexToExclude - 1]; // Remove the combination at the first specified index
+  // Subtract the combination corresponding to 'a' from the total.
+  totalCombinations -= combinationsArr[firstExclusion - 1];
 
-  totalSum   -=   combinationsList[secondIndexToExclude - 1]; // Remove the combination at the second specified index
+  // Subtract the combination corresponding to 'b' from the total.
+  totalCombinations -= combinationsArr[secondExclusion - 1];
 
-  // Output the final computed sum after applying a modulo operation (10^9 + 7)
-  console . log (   totalSum % (   Math . pow (   10,   9   )   +   7   )   ) ;
+  // Output the final sum modulo (10^9 + 7).
+  console.log(totalCombinations % (Math.pow(10, 9) + 7));
 }
 
-// Acquire input from the standard input stream, process it, and invoke the main function
-processData (   require ( 'fs' ) . readFileSync ( '/dev/stdin',   'utf8' ) . trim() . split ( "\n" )   ) ;
+// Read input from standard input, process it, and pass to the main function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

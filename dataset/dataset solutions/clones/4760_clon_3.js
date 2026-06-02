@@ -1,98 +1,30 @@
 'use strict';
 
-/**
- * Reads raw input data from stdin.
- * @returns {string} The content read from standard input.
- */
-function retrieveInputData() {
-  try {
-    // Attempt to read from stdin, assuming it's UTF-8 encoded.
-    const fileSystemModule = require('fs');
-    return fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-  } catch (error) {
-    // Handle potential errors during file reading, e.g., file not found or permissions.
-    console.error("Error reading input from /dev/stdin:", error.message);
-    // Return an empty string or throw the error, depending on desired error handling.
-    return '';
-  }
-}
+function processSequence(rawData) {
+  const charArray = rawData.split('');
 
-/**
- * Analyzes a sequence of 'I' (increase) and 'D' (decrease) operations,
- * starting from a base level of zero. The first character of the input
- * string specifies the total number of operations to process.
- * The function then determines and outputs the highest level reached
- * during the sequence.
- *
- * @param {string} rawSequence A string where the first character is
- *                             a digit representing the count of subsequent
- *                             operations, followed by 'I' or 'D' characters.
- *                             Example: "5IDII" means 5 operations, starting
- *                             with I, then D, then I, I, I.
- */
-function analyzeFluctuation(rawSequence) {
-  // Input validation: Ensure the raw sequence is a non-empty string.
-  if (typeof rawSequence !== 'string' || rawSequence.trim().length === 0) {
-    console.error("Invalid or empty input sequence provided.");
-    return;
-  }
+  const sequenceLength = parseInt(charArray[0], 10);
 
-  // Convert the input string into an array of individual characters.
-  const charArray = Array.from(rawSequence);
+  let currentValue = 0;
 
-  // Extract the number of operations from the first character.
-  // Use parseInt with radix 10 for explicit conversion.
-  const totalOperations = Number.parseInt(charArray[0], 10);
+  const resultValues = [];
 
-  // Validate the extracted operation count.
-  if (Number.isNaN(totalOperations) || totalOperations < 0 || totalOperations >= charArray.length) {
-    console.error(`Invalid operation count detected: ${charArray[0]}. Expected a non-negative integer less than string length.`);
-    return;
-  }
+  const INCREMENT_OPERATION_CHAR = 'I';
+  const STEP_AMOUNT = 1;
 
-  // Initialize the current level accumulator.
-  let currentAltitude = 0;
-  // This array will store all intermediate altitude readings.
-  const altitudeReadings = [];
+  for (let currentIndex = 0; currentIndex < sequenceLength; currentIndex++) {
+    const operationChar = charArray[currentIndex + 1];
 
-  // Iterate through the operations, starting from the second character
-  // up to the total number of operations specified.
-  for (let stepIndex = 0; stepIndex < totalOperations; stepIndex++) {
-    // Determine the character representing the current operation.
-    // The operations start from index 1 in the character array.
-    const operationChar = charArray[stepIndex + 1];
-
-    // Apply the operation based on the character.
-    // A switch statement is used here for clarity and extensibility.
-    switch (operationChar) {
-      case 'I': // 'I' indicates an increase in altitude.
-        currentAltitude++;
-        break;
-      case 'D': // 'D' indicates a decrease in altitude.
-        currentAltitude--;
-        break;
-      default: // Handle unexpected characters gracefully.
-        console.warn(`Unrecognized operation character '${operationChar}' at position ${stepIndex + 1}. Skipping.`);
-        // Optionally, one could choose to break or throw an error here.
-        break;
+    if (operationChar === INCREMENT_OPERATION_CHAR) {
+      currentValue += STEP_AMOUNT;
+    } else {
+      currentValue -= STEP_AMOUNT;
     }
 
-    // Record the current altitude after each operation.
-    altitudeReadings.push(currentAltitude);
+    resultValues.push(currentValue);
   }
 
-  // Determine the maximum altitude reached.
-  // If no operations were performed (e.g., totalOperations was 0),
-  // the array might be empty. In such cases, the max is 0.
-  let highestPoint = 0;
-  if (altitudeReadings.length > 0) {
-    // Use apply for a slightly different way to call Math.max with an array.
-    highestPoint = Math.max.apply(null, altitudeReadings);
-  }
-
-  // Display the final result.
-  console.log(highestPoint);
+  console.log(Math.max(...resultValues));
 }
 
-// Execute the analysis process by first retrieving input and then processing it.
-analyzeFluctuation(retrieveInputData());
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

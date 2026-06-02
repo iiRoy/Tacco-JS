@@ -1,51 +1,30 @@
 'use strict';
 
-function analyzeSequence(rawText) {
-  let firstLineEnd = rawText.indexOf('\n');
-  let numericalData = rawText.slice(firstLineEnd + 1);
-  let secondLineEnd = numericalData.indexOf('\n');
-  if (secondLineEnd !== -1) {
-      numericalData = numericalData.slice(0, secondLineEnd);
-  }
+function processInput(rawData) {
+  const inputData = rawData.split('\n');
+  const countElements = parseInt(inputData[0], 10);
+  const numericValues = inputData[1].split(' ').map(Number);
 
-  const valuesCollection = [];
-  let currentNumberString = '';
-  for (let idx = = 0; idx < numericalData.length; ++idx) {
-    const char = numericalData[idx];
-    if (char === ' ') {
-      if (currentNumberString !== '') {
-        valuesCollection.push(Number(currentNumberString));
-        currentNumberString = '';
-      }
-    } else {
-      currentNumberString += char;
-    }
-  }
-  if (currentNumberString !== '') {
-    valuesCollection.push(Number(currentNumberString));
-  }
-
+  let greatestValue = -Infinity;
   let totalSum = 0;
-  let highestValue = -Infinity;
 
-  for (let idx = 0; idx < valuesCollection.length; ++idx) {
-    const item = valuesCollection[idx];
-    totalSum += item;
-    if (item > highestValue) {
-      highestValue = item;
+  for (let idx = 0; idx < countElements; idx++) {
+    const currentNumber = numericValues[idx];
+    if (currentNumber > greatestValue) {
+      greatestValue = currentNumber;
     }
+    totalSum += currentNumber;
   }
 
-  const sumOfOtherItems = totalSum - highestValue;
+  const sumOfOthers = totalSum - greatestValue;
 
-  if (highestValue < sumOfOtherItems) {
-    console.log('Yes');
+  let comparisonResult;
+  if (greatestValue < sumOfOthers) {
+    comparisonResult = 'Yes';
   } else {
-    console.log('No');
+    comparisonResult = 'No';
   }
+  console.log(comparisonResult);
 }
 
-(function() {
-    const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    analyzeSequence(sourceContent);
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

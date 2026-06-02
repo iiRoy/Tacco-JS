@@ -1,48 +1,40 @@
-const processInputData = (textualContent) => {
-    const MODULUS_VALUE_CONST = 2019;
+const processInput = (rawData) => {
+    const lines = rawData.split("\n");
+    const numericStrings = lines[0].split(" ");
+    const leftBound = Number(numericStrings[0]);
+    const rightBound = Number(numericStrings[1]);
 
-    const extractNumericEndpoints = (sourceText) => {
-        const [firstLineContent] = sourceText.split('\n');
-        const [startPoint, endPoint] = firstLineContent.split(' ').map(Number);
-        return { start: startPoint, end: endPoint };
-    };
-
-    const { start: initialNumber, end: finalNumber } = extractNumericEndpoints(textualContent);
-
-    const productOfBounds = initialNumber * finalNumber;
-    if (productOfBounds <= MODULUS_VALUE_CONST) {
-        return (initialNumber * (initialNumber + 1));
+    if (leftBound * rightBound <= 2019) {
+        console.log(leftBound * (leftBound + 1));
+        return;
     }
 
-    const spanOfRange = finalNumber - initialNumber;
-    if (spanOfRange >= MODULUS_VALUE_CONST) {
-        return 0;
+    if (rightBound - leftBound >= 2019) {
+        console.log(0);
+        return;
     }
 
-    const generateAllProductsModulo = (firstLimit, secondLimit, divisor) => {
-        const createNumericSequence = (lower, upper) =>
-            Array.from({ length: upper - lower + 1 }, (_, index) => lower + index);
-
-        return createNumericSequence(firstLimit, secondLimit - 1)
-            .flatMap(factorA =>
-                createNumericSequence(factorA + 1, secondLimit)
-                    .map(factorB => (factorA * factorB) % divisor)
-            );
-    };
-
-    const moduloProductsArray = generateAllProductsModulo(initialNumber, finalNumber, MODULUS_VALUE_CONST);
-
-    const calculateOverallMinimum = (resultsCollection) => {
-        if (resultsCollection.some(val => val === 0)) {
-            return 0;
+    function* remainderSequence(startValue, endValue) {
+        for (let firstFactor = startValue; firstFactor < endValue; firstFactor++) {
+            for (let secondFactor = firstFactor + 1; secondFactor <= endValue; secondFactor++) {
+                yield (firstFactor * secondFactor) % 2019;
+            }
         }
+    }
 
-        return resultsCollection.reduce((currentMinVal, itemVal) => Math.min(currentMinVal, itemVal), MODULUS_VALUE_CONST - 1);
-    };
+    let smallestRemainder = 2019;
 
-    const computedMinimum = calculateOverallMinimum(moduloProductsArray);
+    for (const currentRemainder of remainderSequence(leftBound, rightBound)) {
+        if (currentRemainder === 0) {
+            smallestRemainder = 0;
+            break;
+        }
+        if (currentRemainder < smallestRemainder) {
+            smallestRemainder = currentRemainder;
+        }
+    }
 
-    return computedMinimum;
+    console.log(smallestRemainder);
 };
 
-console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

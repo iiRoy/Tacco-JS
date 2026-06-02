@@ -1,82 +1,32 @@
-// This module defines a specialized function for pluralizing English words by appending a suitable suffix.
-// It aims to provide a robust and flexible way to modify string inputs based on their final character.
-
-/**
- * Augments a given singular term with a standard English plural suffix ('s' or 'es').
- * This function processes the input string and determines the appropriate suffix based on its last character.
- *
- * @param {string} originalWord - The single word string to be pluralized.
- * @returns {string} The pluralized form of the word, or the original word if input is invalid/empty.
- */
-function applyPluralizingSuffix(originalWord) {
-    // Perform initial validation to ensure the input is a string.
-    // Non-string inputs are handled gracefully by returning the input itself with a warning.
-    if (typeof originalWord !== 'string') {
-        console.warn("Input provided to 'applyPluralizingSuffix' was not a string. Returning original value.");
-        return originalWord;
-    }
-
-    // If the input string is empty, there's no character to check, and no suffix is needed.
-    // An empty string remains an empty string after this operation.
-    if (originalWord.length === 0) {
-        return originalWord;
-    }
-
-    // Retrieve the final character of the word to decide the pluralization rule.
-    // Using bracket notation for character access as an alternative to charAt or slice.
-    const lastCharacterOfWord = originalWord[originalWord.length - 1];
-
-    let computedSuffix; // Declare a variable to hold the suffix that will be appended.
-
-    // Apply the pluralization logic: if the word ends with 's', append 'es'; otherwise, append 's'.
-    // This conditional block determines the value of 'computedSuffix'.
-    if (lastCharacterOfWord === 's') {
-        computedSuffix = 'es'; // For words already ending in 's', add 'es'.
+// Helper function to determine the correct plural suffix based on the last character
+function getAppropriateSuffix(lastChar) {
+    // Check if the last character is 's' to decide the pluralization rule
+    if (lastChar === "s") {
+        return "es"; // If it ends with 's', append "es"
     } else {
-        computedSuffix = 's';  // For all other words, simply add 's'.
+        return "s";  // Otherwise, append "s"
     }
-
-    // Combine the original word with the determined suffix using a template literal.
-    // This creates the final pluralized form of the word.
-    const resultantPluralForm = `${originalWord}${computedSuffix}`;
-
-    // Return the newly constructed plural word.
-    return resultantPluralForm;
 }
 
-// --- Execution Entry Point for Standard Input/Output ---
-// This section is responsible for reading data from standard input,
-// processing it using the core logic, and then writing the result to standard output.
-// It is designed to be self-contained and typically should not require modifications.
+// inputに入力データ全体が入る
+function processInputData(dataString) {
+    // Calculate the length of the input string
+    const currentStringLength = dataString.length;
 
-try {
-    // Dynamically import the Node.js 'fs' (file system) module for I/O operations.
-    const fileSystemModule = require("fs");
+    // Safely retrieve the last character of the string.
+    // If the string is empty, finalChar will be an empty string,
+    // which correctly leads to appending "s" (e.g., "" + "s" = "s").
+    const finalChar = currentStringLength > 0 ? dataString[currentStringLength - 1] : '';
 
-    // Define the standard input stream path specific to Unix-like systems.
-    const standardInputPath = "/dev/stdin";
+    // Determine the correct suffix using the helper function
+    const requiredSuffix = getAppropriateSuffix(finalChar);
 
-    // Specify the character encoding for reading the input file.
-    const inputEncoding = "utf8";
+    // Concatenate the original string with the determined suffix
+    const finalOutputValue = dataString + requiredSuffix;
 
-    // Read the entire content from standard input synchronously.
-    // The content is treated as a raw string buffer initially.
-    const rawInputBuffer = fileSystemModule.readFileSync(standardInputPath, inputEncoding);
-
-    // Clean the raw input by removing any leading or trailing whitespace.
-    // This ensures consistent processing, especially for inputs that might include newlines.
-    const processedInputString = rawInputBuffer.trim();
-
-    // Invoke the primary function with the cleaned input to get the pluralized word.
-    const finalResultForDisplay = applyPluralizingSuffix(processedInputString);
-
-    // Print the final, pluralized word to standard output.
-    console.log(finalResultForDisplay);
-
-} catch (executionError) {
-    // Catch and report any errors that occur during file reading or processing.
-    // This provides basic error feedback to the user or system.
-    console.error("An unexpected error occurred during script execution:", executionError.message);
-    // Exit the process with a non-zero status code to indicate failure.
-    process.exit(1);
+    // Output the resulting string to the console
+    console.log(finalOutputValue);
 }
+
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

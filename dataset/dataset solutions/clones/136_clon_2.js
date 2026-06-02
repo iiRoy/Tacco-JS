@@ -1,40 +1,31 @@
-const fileSystemAccess = require("fs");
+const fileSystem = require("fs");
 
-let dataRecords = fileSystemAccess.readFileSync("./test.txt", "utf8")
-                                  .trim()
-                                  .split(/\n/);
+let inputDataRows = fileSystem.readFileSync("./test.txt", "utf8").trim().split(/\n/);
 
-const totalScenarios = dataRecords.length;
+const totalDataEntries = inputDataRows.length;
 
-for (let scenarioIndex = 1; scenarioIndex < totalScenarios; scenarioIndex++) {
+for (let currentEntryIndex = 1; currentEntryIndex < totalDataEntries; currentEntryIndex++) {
+    let numberStrings = inputDataRows[currentEntryIndex].trim().split(/\s/);
 
-    const numericStrings = dataRecords[scenarioIndex]
-                                    .trim()
-                                    .split(/\s/);
+    let trackProgress = [0, 0]; // Represents two distinct paths or tracks
 
-    let pathProgress = [0, 0];
+    for (let numberPosition = 0; numberPosition < numberStrings.length; numberPosition++) {
+        let currentNumericValue = parseInt(numberStrings[numberPosition], 10);
 
-    for (let itemIndex = 0; itemIndex < numericStrings.length; itemIndex++) {
+        let progressDifferences = [currentNumericValue - trackProgress[0], currentNumericValue - trackProgress[1]];
 
-        const currentValue = parseInt(numericStrings[itemIndex], 10);
-
-        const progressDeltas = [
-            currentValue - pathProgress[0],
-            currentValue - pathProgress[1]
-        ];
-
-        if ((progressDeltas[0] < 0) && (progressDeltas[1] < 0)) {
+        if ((progressDifferences[0] < 0) && (progressDifferences[1] < 0)) {
             console.log("NO");
             break;
         }
 
-        if ((progressDeltas[0] <= progressDeltas[1]) && progressDeltas[0] > 0) {
-            pathProgress[0] = currentValue;
+        if ((progressDifferences[0] <= progressDifferences[1]) && progressDifferences[0] > 0) {
+            trackProgress[0] = currentNumericValue;
         } else {
-            pathProgress[1] = currentValue;
+            trackProgress[1] = currentNumericValue;
         }
 
-        if (itemIndex === 9) {
+        if (numberPosition === 9) {
             console.log("YES");
         }
     }

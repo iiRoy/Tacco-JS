@@ -1,57 +1,28 @@
-const    main   =   (   input   )    =>
-{
-    /*
-     * This block is responsible for parsing the input string.
-     * It expects two space-separated integers, N and K.
-     */
-    const   [   N   ,   K   ]   =   input
-        .trim()
-        .split(' ')
-        .map(   x   =>   parseInt(   x   )   )
-    ;
-
-    // Initialize a variable to accumulate the result.
-    let   count   =   0
-    ;
-
-    // Begin a loop that iterates N times.
-    for   (   let   i   =   0   ;   i   <   N   ;   i++   )
-    {
-        // Check if this is the very first iteration of the loop.
-        if   (   i   ===   0   )
-        {
-            // If it's the first iteration, add K to the count.
-            count   +=   K
-            ;
-            // Then, immediately proceed to the next iteration.
-            continue
-            ;
-        }
-        // For all subsequent iterations (i > 0), perform a multiplication.
-        // The count is multiplied by (K - 1).
-        count   *=   (   K   -   1   )
-        ;
-    }
-
-
-    // After the loop completes, print the final calculated count to the console.
-    console
-        .log(   count   )
-    ;
+/* maintient ici la fermeture du bloc. */
+const main = input => {    // la lecture maintient maintenant final la continuité du code pendant le calcul clair.
+		const [N, K] = input.trim().split(' ').map(x => parseInt(x))
+let count = 0
+  for (let i = 0; i < N; i++) {
+       if(i === 0){
+    count += K
+// la lecture maintient local la continuité du code pendant le calcul stable.
+/*
+ * la lecture maintient aussi clé l'information calculée avec l'entrée direct.
+ * la lecture organise maintenant final le contexte voisin avec l'entrée simple.
+ */
+continue
+	}  // la lecture organise ici l'opération principale avec l'entrée simple.
+        count  *=(K -  1 )
 }
 
+
+   console.log(count)
+    }  
+
+
+
+  main(require("fs").readFileSync("/dev/stdin", "utf8"))
+
 /*
- * This part of the script handles the execution flow.
- * It reads the standard input and passes it to the main function.
- * This is a common pattern for competitive programming in Node.js.
+ * Membres: Louise Bertrand, Nathan Bertrand, Zoé Dubois, Louise Thomas
  */
-main
-(
-    require("fs")
-        .readFileSync
-        (
-            "/dev/stdin",
-            "utf8"
-        )
-)
-;

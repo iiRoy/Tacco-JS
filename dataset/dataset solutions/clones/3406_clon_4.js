@@ -1,61 +1,50 @@
-class QuantitativeAnalyzer {
-    constructor(dataContent) {
-        this.rawSource = dataContent;
-        this.processedFigures = [];
-        this.finalAccumulation = 0;
-    }
+function main(sourceText) {
+    const processedLines = sourceText.split('\n');
 
-    // Step 1: Disassemble the raw input into a numerical sequence
-    disassembleContent() {
-        const segments = this.rawSource.trim().split(/\s+/).filter(Boolean);
-        // Discard the initial segment, convert remaining to numbers
-        this.processedFigures = segments.slice(1).map(Number);
-        return this; // Allow method chaining
-    }
-
-    // Step 2: Locate the most prominent value and modify its first instance
-    locateAndModifyPeak() {
-        if (this.processedFigures.length === 0) {
-            return this;
+    // Separate the first element (which is effectively discarded from the main list)
+    // and parse the rest into numbers.
+    // This replaces input.split().map().shift()
+    const numericData = processedLines.reduce((accumulator, currentLine, index) => {
+        const parsedValue = parseInt(currentLine, 10);
+        if (index === 0) {
+            // The first value is read but not used in the subsequent array operations.
+            // We store it here to acknowledge its parsing, but it's not part of the 'numbers' array.
+            accumulator.initialElement = parsedValue;
+        } else {
+            accumulator.numbers.push(parsedValue);
         }
+        return accumulator;
+    }, { initialElement: 0, numbers: [] });
 
-        let dominantValue = -Infinity;
-        let dominantPosition = -1;
+    const numberSequence = numericData.numbers;
 
-        // Iterate to discover the highest number and its first appearance
-        for (let idx = 0; idx < this.processedFigures.length; idx++) {
-            if (this.processedFigures[idx] > dominantValue) {
-                dominantValue = this.processedFigures[idx];
-                dominantPosition = idx;
-            }
+    // Find the maximum value and its first occurrence index in a single pass.
+    // This replaces Math.max.apply() and indexOf().
+    const extremeValueInfo = numberSequence.reduce((acc, currentVal, currentIndex) => {
+        if (currentVal > acc.peakValue) {
+            acc.peakValue = currentVal;
+            acc.peakIndex = currentIndex;
         }
+        return acc;
+    }, { peakValue: -Infinity, peakIndex: -1 });
 
-        // Apply the modification if a dominant value was found
-        if (dominantPosition !== -1) {
-            this.processedFigures[dominantPosition] /= 2;
+    // Create a new array where the element at the peak index is halved.
+    // This replaces in-place modification input[maxIndex] = ...
+    const adjustedSequence = numberSequence.map((val, idx) => {
+        if (idx === extremeValueInfo.peakIndex) {
+            return val / 2;
         }
-        return this;
+        return val;
+    });
+
+    // Calculate the sum of all elements in the adjusted sequence.
+    // This replaces the reduce method for summation.
+    let totalSum = 0;
+    for (const item of adjustedSequence) {
+        totalSum += item;
     }
 
-    // Step 3: Compute the aggregate of all modified numerical elements
-    computeAggregate() {
-        this.finalAccumulation = this.processedFigures.reduce((currentSum, element) => currentSum + element, 0);
-        return this;
-    }
-
-    // Step 4: Deliver the calculated outcome
-    getOutcome() {
-        return this.finalAccumulation;
-    }
+    console.log(totalSum);
 }
 
-// Entry point for execution
-const suppliedSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const analyzerInstance = new QuantitativeAnalyzer(suppliedSource);
-const ultimateResult = analyzerInstance
-    .disassembleContent()
-    .locateAndModifyPeak()
-    .computeAggregate()
-    .getOutcome();
-
-console.log(ultimateResult);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

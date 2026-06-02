@@ -1,17 +1,20 @@
-let sourceData =require ('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-let valueCollection = ( sourceData . trim ( ) ) . split ( "\n" ) . map ( Number ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-for ( let loopIndex = 0 ;   loopIndex < valueCollection . length ;   loopIndex = loopIndex + 2 )
-{
-    let baseMeasurement = valueCollection [ loopIndex ] ;
-    let heightMeasurement = valueCollection [ loopIndex + 1 ] ;
+var numericValues = (rawData.trim()).split("\n").map(Number);
 
-    if ( baseMeasurement === 0  &&  heightMeasurement === 0 )
-    {
-        break ;
+for (
+    var idx = 0;
+    idx < numericValues.length;
+    idx = idx + 2
+) {
+    var baseVal = numericValues[idx];
+    var heightVal = numericValues[idx + 1];
+
+    if (baseVal === 0 && heightVal === 0) {
+        break;
     }
 
-    let computedResult = baseMeasurement * Math . sqrt ( 4 * heightMeasurement * heightMeasurement + baseMeasurement * baseMeasurement ) + baseMeasurement * baseMeasurement ;
+    var surfaceArea = baseVal * Math.sqrt(4 * heightVal * heightVal + baseVal * baseVal) + baseVal * baseVal;
 
-    console . log ( computedResult . toFixed ( 5 ) ) ;
+    console.log(surfaceArea.toFixed(5));
 }

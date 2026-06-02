@@ -1,54 +1,53 @@
-/*
- * This module processes game round data from a provided input source.
- * It calculates scores for two players based on a series of rounds.
- */
-( function ( dataSource )
-  {
-    // Split the entire input string into individual lines.
-    var lineFragments = dataSource . split ( '\n' ) ;
+(function(rawData) {
+    // This script processes game scores from input data.
+    // It expects lines of card values for two players.
 
-    /*
-     * Extract the total number of rounds from the first line.
-     * Although this variable is not used in the scoring logic,
-     * its extraction maintains the original structural flow.
-     */
-    var totalRoundsCount = parseInt ( lineFragments . shift () , 10 ) ;
+    // Split the entire input string by newline characters to get an array of individual lines.
+    var linesArray = rawData.split('\n');
 
-    // Initialize an iteration counter for processing game rounds.
-    let roundIterator = 0 ;
+    // The first line typically indicates the number of rounds, but in this specific logic,
+    // it's read and converted to a number but not actually used for loop control.
+    // We still perform the shift operation to maintain the original data processing flow.
+    var numEntries = Number(linesArray.shift());
 
-    // Declare and initialize score variables for the two participants.
-    let playerOneScore = 0 ,
-        playerTwoScore = 0 ;
+    // Initialize a counter variable for the game rounds.
+    var counter = 0;
 
-    // Loop through a fixed number of rounds (3 in this case).
-    while ( roundIterator ++ < 3 )
-    {
-      // Retrieve the next line, which contains card values for the current round.
-      var currentRoundCards = lineFragments . shift () . split ( ' ' ) ;
+    // Initialize scores for the two players.
+    // 'playerOneScore' corresponds to 't' in the original, 'playerTwoScore' to 'h'.
+    var playerOneScore = 0;
+    var playerTwoScore = 0;
 
-      // Parse the card values for each player into integers for numerical comparison.
-      var firstPlayerCard = parseInt ( currentRoundCards [ 0 ] , 10 ) ;
-      var secondPlayerCard = parseInt ( currentRoundCards [ 1 ] , 10 ) ;
+    // The game consists of exactly three rounds.
+    // The loop iterates three times, processing one round per iteration.
+    while (counter++ < 3) {
+        // Retrieve the next line from the array, which contains card values for the current round.
+        // Then, split this line by space to separate the two players' card values.
+        var currentLineParts = linesArray.shift().split(' ');
 
-      // Determine the winner of the current round and update scores accordingly.
-      if ( firstPlayerCard > secondPlayerCard )
-      {
-        playerOneScore += 3 ; // Player One wins the round.
-      }
-      else if ( firstPlayerCard < secondPlayerCard )
-      {
-        playerTwoScore += 3 ; // Player Two wins the round.
-      }
-      else
-      {
-        playerOneScore ++ ; // It's a draw, both players get one point.
-        playerTwoScore ++ ;
-      }
+        // Extract the card value for player one (first element).
+        var playerOneCard = currentLineParts[0];
+        // Extract the card value for player two (second element).
+        var playerTwoCard = currentLineParts[1];
+
+        // Compare the card values to determine the winner of the current round.
+        if (playerOneCard > playerTwoCard) {
+            // If player one's card is higher, player one gets 3 points.
+            playerOneScore += 3;
+        } else if (playerOneCard < playerTwoCard) {
+            // If player two's card is higher, player two gets 3 points.
+            playerTwoScore += 3;
+        } else {
+            // If the cards are equal, it's a draw, and both players get 1 point.
+            playerOneScore++;
+            playerTwoScore++;
+        }
     }
 
-    // Output the final scores of both players to the console.
-    console . log ( 'Final Scores: %d %d' , playerOneScore , playerTwoScore ) ;
+    // After all rounds are processed, print the final scores of player one and player two.
+    // The output format is two space-separated integers.
+    console.log('%s %s', playerOneScore, playerTwoScore);
 
-  }
-) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// This immediately invoked function expression (IIFE) reads input from standard input.
+// It uses Node.js 'fs' module to synchronously read the entire content of '/dev/stdin' as UTF-8.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

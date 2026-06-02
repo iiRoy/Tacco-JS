@@ -1,50 +1,37 @@
-(function(rawInput){
+'use strict';
+(function(inputSource){
+  let processedInput = inputSource.trim().split(/\n/);
+  const numMen = +processedInput.shift();
+  const maskLimit = 1 << numMen;
+  const modVal = 1000000007;
 
-  let processedLines = rawInput.trim().split('\n');
+  const matchMatrix = processedInput.map(line => line.split(/\s+/).map(val => +val));
 
-  const dimensionSize = Number(processedLines.shift());
-  const totalCombinations = Math.pow(2, dimensionSize);
-  const resultModulus = Math.pow(10, 9) + 7;
+  const dpTable = new Array(maskLimit).fill(0);
 
-  const affinityMatrix = [];
-  for (let rowIdx = 0; rowIdx < dimensionSize; rowIdx++) {
-      affinityMatrix.push(processedLines[rowIdx].split(' ').map(s => Number(s)));
+  dpTable[0] = 1;
+
+  for (let currentMask = 1; currentMask < maskLimit; currentMask++) {
+    let menCount = 0;
+    for (let bitPosition = 0; bitPosition < numMen; bitPosition++) {
+      if ((currentMask >> bitPosition) & 1) {
+        menCount++;
+      }
+    }
+
+    const currentManIndex = menCount - 1;
+
+    if (currentManIndex < 0) continue;
+
+    for (let womanCandidateIndex = 0; womanCandidateIndex < numMen; womanCandidateIndex++) {
+      if ((currentMask & (1 << womanCandidateIndex)) !== 0) {
+        if (matchMatrix[currentManIndex][womanCandidateIndex] === 1) {
+          const previousWomenMask = currentMask ^ (1 << womanCandidateIndex);
+          dpTable[currentMask] = (dpTable[currentMask] + dpTable[previousWomenMask]) % modVal;
+        }
+      }
+    }
   }
 
-  const solutionRegistry = new Map();
-
-  function computeArrangementCount(currentStage, allocatedPositionsVector) {
-      if (currentStage < 0) {
-          return (allocatedPositionsVector === 0) ? 1 : 0;
-      }
-
-      const registrationKey = `${currentStage},${allocatedPositionsVector}`;
-
-      if (solutionRegistry.has(registrationKey)) {
-          return solutionRegistry.get(registrationKey);
-      }
-
-      let cumulativeSum = 0;
-
-      for (let potentialPosition = 0; potentialPosition < dimensionSize; potentialPosition++) {
-          const isPositionAvailable = ((allocatedPositionsVector >>> potentialPosition) & 1) === 1;
-          const hasAffinity = affinityMatrix[currentStage][potentialPosition] === 1;
-
-          if (isPositionAvailable && hasAffinity) {
-              let priorStageCount = computeArrangementCount(
-                  currentStage - 1,
-                  allocatedPositionsVector ^ (1 << potentialPosition)
-              );
-              cumulativeSum = (cumulativeSum + priorStageCount) % resultModulus;
-          }
-      }
-
-      solutionRegistry.set(registrationKey, cumulativeSum);
-      return cumulativeSum;
-  }
-
-  const finalResult = computeArrangementCount(dimensionSize - 1, totalCombinations - 1);
-
-  console.log(finalResult);
-
+  console.log(dpTable[maskLimit - 1] || 0);
 })(require('fs').readFileSync('/dev/stdin','utf8'));

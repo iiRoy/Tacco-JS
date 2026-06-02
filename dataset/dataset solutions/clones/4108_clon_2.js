@@ -1,43 +1,39 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the code. */
+"use strict";
 
-// Function to process the input and find the solution.
-const solveProblem = (  inputContent  ) => {
-    // Trim whitespace and split the input string into lines.
-    inputContent = inputContent.trim() .split("\n");
+// This function processes the input string to find a specific combination of bills.
+const processInput = (inputString) => {
+  // Clean up the input and split it into lines.
+  inputString = inputString.trim().split("\n");
 
-    // Parse the first line of input to extract required values.
-    // The first value represents the total number of bills.
-    const totalBillsExpected = ~~inputContent[0].split(" ")[0] ;
-    // The second value represents the target monetary amount.
-    const targetMonetaryValue = ~~inputContent[0].split(" ")[1] ;
+  // Parse the total number of bills allowed (N) from the first line.
+  const totalBillsCount = ~~inputString[0].split(" ")[0];
+  // Parse the target total amount (Y) from the first line.
+  const targetAmount = ~~inputString[0].split(" ")[1];
 
-    // Iterate through possible counts for the 10,000 yen bills.
-    for ( let countOfTenThousands = 0; countOfTenThousands <= totalBillsExpected; countOfTenThousands++ ) {
-        // Nested loop for possible counts of 5,000 yen bills.
-        for  ( let countOfFiveThousands = 0; countOfFiveThousands <= totalBillsExpected; countOfFiveThousands++ )  {
-            // Innermost loop for possible counts of 1,000 yen bills.
-            for ( let countOfOneThousands = 0; countOfOneThousands <= totalBillsExpected; countOfOneThousands++ ) {
+  // Iterate through all possible counts for 10,000 yen bills.
+  for (let tenThousandYenBills = 0; tenThousandYenBills <= totalBillsCount; tenThousandYenBills++) {
+    // Iterate through all possible counts for 5,000 yen bills.
+    for (let fiveThousandYenBills = 0; fiveThousandYenBills <= totalBillsCount; fiveThousandYenBills++) {
+      // Iterate through all possible counts for 1,000 yen bills.
+      for (let oneThousandYenBills = 0; oneThousandYenBills <= totalBillsCount; oneThousandYenBills++) {
+        // Calculate the current total monetary value for this combination of bills.
+        let currentTotalValue = (10000 * tenThousandYenBills) + (5000 * fiveThousandYenBills) + (1000 * oneThousandYenBills);
+        // Calculate the current total number of bills for this combination.
+        let currentBillsSum = ~~tenThousandYenBills + ~~fiveThousandYenBills + ~~oneThousandYenBills;
 
-                // Calculate the total monetary value for the current combination of bills.
-                let calculatedValue = (10000 * countOfTenThousands) + (5000 * countOfFiveThousands) + (1000 * countOfOneThousands);
-                // Calculate the total number of bills for the current combination.
-                let sumOfBills = ~~countOfTenThousands + ~~countOfFiveThousands + ~~countOfOneThousands;
-
-                // Check if both the monetary value and the total number of bills match the targets.
-                if ( targetMonetaryValue === calculatedValue && totalBillsExpected === sumOfBills ) {
-                    // If a solution is found, print the counts of each bill type.
-                    console.log(`${countOfTenThousands} ${countOfFiveThousands} ${countOfOneThousands}`);
-                    return; // Exit the function as a solution has been found.
-                }
-            }
+        // Check if both the total value and the total bill count match the targets.
+        if (targetAmount === currentTotalValue && totalBillsCount === currentBillsSum) {
+          // If a match is found, print the counts and exit the function.
+          console.log(`${tenThousandYenBills} ${fiveThousandYenBills} ${oneThousandYenBills}`);
+          return;
         }
+      }
     }
+  }
 
-    // If no combination of bills satisfies the conditions after exhaustive search,
-    // print -1 for all bill types to indicate no solution.
-    console.log("-1 -1 -1");
+  // If no combination is found after checking all possibilities, print -1 -1 -1.
+  console.log("-1 -1 -1");
 };
 
-// Read input from the standard input stream (e.g., from a file or console)
-// and pass it to the main problem-solving function.
-solveProblem(  require('fs').readFileSync('/dev/stdin', 'utf8')  );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

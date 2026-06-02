@@ -1,53 +1,65 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the script. */
+"use strict";
 
 /**
- * Computes a specific probability based on input parameters.
- * The core logic involves iterating through a range and applying conditional calculations.
- * @param {string} inputString - The raw string input containing two space-separated numbers.
+ * This function processes the given input string to calculate a specific probability.
+ * It reads two integer values, N and K, from the input.
+ * The calculation involves iterating from 1 to N and applying a conditional probability logic.
+ *
+ * @param {string} inputData - The raw input string, expected to contain N and K on the first line, space-separated.
  */
-const calculateProbability = (inputString) => {
-    // Process the raw input string: remove leading/trailing whitespace and split into lines.
-    inputString = inputString.trim().split("\n");
-    // Parse the first number from the first line of input.
-    const totalItems = parseInt(inputString[0].split(" ")[0]);
-    // Parse the second number from the first line of input.
-    const thresholdValue = parseInt(inputString[0].split(" ")[1]);
+const processInput = (inputData) => {
+    // First, clean up the input string by removing leading/trailing whitespace
+    // and then splitting it into an array of lines.
+    inputData = inputData.trim().split("\n");
 
-    // Initialize a variable to accumulate the computed probability.
-    let cumulativeProbability = 0;
+    // Extract the first line which contains the two required numbers.
+    // Split this line by space to get the individual string representations.
+    const [nString, kString] = inputData[0].split(" ");
 
-    // Loop through each item from 1 up to the total number of items.
-    for (
-        let currentItem = 1;
-        currentItem <= totalItems;
-        currentItem++
-    ) {
-        let exponentValue; // Declare a variable to hold the exponent for probability calculation.
+    // Convert the string representations to integers.
+    // 'upperBound' corresponds to N in the original problem.
+    const upperBound = parseInt(nString, 10);
+    // 'thresholdValue' corresponds to K in the original problem.
+    const thresholdValue = parseInt(kString, 10);
 
-        // Check if the current item has already reached or exceeded the threshold.
-        if (currentItem >= thresholdValue) {
-            // If it has, add a base probability contribution (1/totalItems).
-            cumulativeProbability += (1 / totalItems);
+    // Initialize a variable to accumulate the total probability.
+    // Using a floating-point literal for initial value.
+    let finalProbability = 0.0;
+
+    // Begin the main iteration loop, from 1 up to and including 'upperBound'.
+    for (let currentNumber = 1; currentNumber <= upperBound; currentNumber++) {
+        // Declare a variable to hold an exponent value, which will be determined conditionally.
+        let exponentValue;
+
+        // Check if the 'currentNumber' has already reached or exceeded the 'thresholdValue'.
+        if (currentNumber >= thresholdValue) {
+            // If the condition is met, add a base probability (1.0 / N) to the total.
+            finalProbability += (1.0 / upperBound);
         } else {
-            // If the current item is below the threshold, calculate a further probability.
-            // This inner loop determines how many times 'currentItem' needs to be doubled to exceed 'thresholdValue'.
-            for (let powerIndex = 1; powerIndex < 100000; powerIndex++) {
-                // Calculate the doubled value of the current item.
-                if (currentItem * Math.pow(2, powerIndex) > thresholdValue) {
-                    exponentValue = powerIndex; // Store the exponent once the threshold is crossed.
-                    break;                     // Exit the inner loop as the exponent is found.
+            // If 'currentNumber' is less than 'thresholdValue',
+            // an inner loop is needed to find a specific power.
+            // This loop searches for the smallest 'powerCounter' such that
+            // 'currentNumber' multiplied by 2 to the power of 'powerCounter' exceeds 'thresholdValue'.
+            for (let powerCounter = 1; powerCounter < 100000; powerCounter++) {
+                // Calculate the product of 'currentNumber' and 2 raised to 'powerCounter'.
+                if (currentNumber * Math.pow(2, powerCounter) > thresholdValue) {
+                    // Once the condition is satisfied, store 'powerCounter' as the 'exponentValue'.
+                    exponentValue = powerCounter;
+                    // Exit the inner loop as the required exponent has been found.
+                    break;
                 }
             }
 
-            // Add the calculated probability for this item to the total.
-            // This involves the base probability multiplied by (1/2) raised to the determined exponent.
-            cumulativeProbability += (1 / totalItems) * Math.pow((1 / 2), exponentValue);
+            // Add the calculated probability for this 'currentNumber' to the total.
+            // This probability is (1.0 / N) multiplied by (0.5 raised to the 'exponentValue').
+            finalProbability += (1.0 / upperBound) * Math.pow(0.5, exponentValue);
         }
     }
 
-    // Output the final computed cumulative probability to the console.
-    console.log(cumulativeProbability);
+    // Output the final computed probability to the standard console.
+    console.log(finalProbability);
 };
 
-// Invoke the main calculation function by reading input from standard input.
-calculateProbability(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string.
+// Then, pass this string to the 'processInput' function for calculation.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,20 +1,18 @@
-(function() {
-    const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(sourceContent) {
+    const contentLines = sourceContent.split('\n');
+    const dataLines = contentLines.slice(1);
 
-    const extractedSegments = sourceData.match(/(\d+)\s+(\d+)/g);
+    const accumulatedValue = dataLines.reduce((currentAccumulator, currentLineSegment) => {
+        const numericParts = currentLineSegment.split(' ');
+        const firstBoundary = parseInt(numericParts[0], 10);
+        const secondBoundary = parseInt(numericParts[1], 10);
 
-    if (!extractedSegments) {
-        process.stdout.write('0\n');
-        return;
-    }
-
-    const compiledSpan = extractedSegments.reduce((currentSum, segmentString) => {
-        const numeralComponents = segmentString.split(' ');
-        const initialPoint = Number(numeralComponents[0]);
-        const finalPoint = Number(numeralComponents[1]);
-
-        return currentSum + (finalPoint - initialPoint + 1);
+        return currentAccumulator + (secondBoundary - firstBoundary + 1);
     }, 0);
 
-    process.stdout.write(compiledSpan.toString() + '\n');
-})();
+    return accumulatedValue;
+}
+
+const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+const finalSum = processInputData(fileData);
+console.log('%d', finalSum);

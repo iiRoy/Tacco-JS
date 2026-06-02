@@ -1,48 +1,38 @@
-function ExecuteCombatSimulation(battleData) {
-	const dataLines = battleData.split('\n');
-	const [weaponQuantityStr, targetHealthStr] = dataLines[0].split(' ');
+function Main(input) {
+  const inputLines = input.split("\n");
 
-	const weaponQuantity = Number(weaponQuantityStr);
-	const targetHealth = Number(targetHealthStr);
+  const [itemCountStr, targetHealthStr] = inputLines[0].split(" ");
+  const itemCount = parseInt(itemCountStr, 10);
+  let targetHealth = parseInt(targetHealthStr, 10);
 
-	const weaponDetails = dataLines.slice(1, weaponQuantity + 1).map(lineText => {
-		const [swingPowerStr, throwPowerStr] = lineText.split(' ');
-		return {
-			swing: Number(swingPowerStr),
-			throw: Number(throwPowerStr)
-		};
-	});
+  const attackSpecifications = inputLines
+    .slice(1, itemCount + 1)
+    .map((line) => line.split(" ").map(Number));
 
-	const peakSwingPower = weaponDetails.reduce((maxVal, currentWeapon) => Math.max(maxVal, currentWeapon.swing), 0);
+  const baseAttackValues = attackSpecifications.map((spec) => spec[0]);
+  const specialAttackPowers = attackSpecifications.map((spec) => spec[1]);
 
-	const effectiveProjectiles = weaponDetails
-		.filter(weapon => weapon.throw > peakSwingPower)
-		.map(weapon => weapon.throw);
+  const maxBaseAttack = Math.max(...baseAttackValues);
 
-	const totalProjectileDamage = effectiveProjectiles.reduce((sum, val) => sum + val, 0);
+  const effectiveSpecialStrikes = specialAttackPowers
+    .filter((power) => power > maxBaseAttack)
+    .sort((p1, p2) => p2 - p1); // Sort descending
 
-	let actionCounter = 0;
+  let totalAttacksRequired = 0;
 
-	if (totalProjectileDamage < targetHealth) {
-		actionCounter += effectiveProjectiles.length;
+  for (const strikePower of effectiveSpecialStrikes) {
+    if (targetHealth <= 0) {
+      break;
+    }
+    targetHealth -= strikePower;
+    totalAttacksRequired++;
+  }
 
-		const remainingHealth = targetHealth - totalProjectileDamage;
-		const swingActionsRequired = Math.ceil(remainingHealth / peakSwingPower);
+  if (targetHealth > 0) {
+    totalAttacksRequired += Math.ceil(targetHealth / maxBaseAttack);
+  }
 
-		actionCounter += swingActionsRequired;
-	} else {
-		const sortedEffectiveProjectiles = [...effectiveProjectiles].sort((val1, val2) => val2 - val1);
-
-		let currentDamageAccumulated = 0;
-		for (const projectileStrength of sortedEffectiveProjectiles) {
-			if (currentDamageAccumulated >= targetHealth) {
-				break;
-			}
-			currentDamageAccumulated += projectileStrength;
-			actionCounter++;
-		}
-	}
-	
-	console.log(actionCounter);
+  console.log(totalAttacksRequired);
 }
-ExecuteCombatSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

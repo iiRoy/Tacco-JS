@@ -1,37 +1,47 @@
-function simulatedTradingJourney(dataSource) {
-    const contentLines = dataSource.split('\n');
-    const totalPeriods = Number(contentLines[0]);
-    const periodPrices = contentLines[1].split(' ').map(Number);
+function ProcessFinancialData(rawData) {
+    const dataLines = rawData.split('\n');
+    const totalDayCount = parseInt(dataLines[0], 10);
+    const dailyPriceStrings = dataLines[1].split(' ');
 
-    const resultingPortfolio = periodPrices.reduce((currentStatus, currentPeriodPrice, periodIndex, allPrices) => {
-        let { cashBalance, assetHoldings } = currentStatus;
+    const numericPrices = dailyPriceStrings.map(Number);
 
-        const nextPeriodPriceForDecision = (periodIndex === allPrices.length - 1)
-            ? 0
-            : allPrices[periodIndex + 1];
+    const tradingScenarios = numericPrices.map((currentDayValue, index, priceSeries) => ({
+        currentValue: currentDayValue,
+        subsequentValue: (index === priceSeries.length - 1) ? 0 : priceSeries[index + 1]
+    }));
 
-        if (currentPeriodPrice < nextPeriodPriceForDecision) {
-            const unitsToAcquire = Math.trunc(cashBalance / currentPeriodPrice);
-            assetHoldings += unitsToAcquire;
-            cashBalance %= currentPeriodPrice;
+    const initialFinancialState = {
+        availableFunds: 1000,
+        heldShares: 0
+    };
+
+    const finalFinancialState = tradingScenarios.reduce((portfolioState, marketOpportunity) => {
+        const { availableFunds, heldShares } = portfolioState;
+        const { currentValue, subsequentValue } = marketOpportunity;
+
+        if (currentValue < subsequentValue) {
+            // Price is expected to rise, acquire shares
+            const sharesToPurchase = Math.floor(availableFunds / currentValue);
+            const remainingCash = availableFunds % currentValue;
+            return {
+                availableFunds: remainingCash,
+                heldShares: heldShares + sharesToPurchase
+            };
         } else {
-            cashBalance += assetHoldings * currentPeriodPrice;
-            assetHoldings = 0;
+            // Price is expected to fall or stay same, liquidate shares
+            const newCashTotal = availableFunds + heldShares * currentValue;
+            return {
+                availableFunds: newCashTotal,
+                heldShares: 0
+            };
         }
+    }, initialFinancialState);
 
-        return { cashBalance, assetHoldings };
-    }, { cashBalance: 1000, assetHoldings: 0 });
-
-    console.log('%d', resultingPortfolio.cashBalance);
+    console.log('%d', finalFinancialState.availableFunds);
 }
 
-const fileOperations = require("fs");
-const currentModulePath = __filename;
-const productionInputSource = "/dev/stdin";
-const developmentInputSource = "development_sample.txt";
-
-if (currentModulePath.endsWith("Main.js")) {
-    simulatedTradingJourney(fileOperations.readFileSync(productionInputSource, "utf8"));
+if (__filename.match("Main.js$")) {
+    ProcessFinancialData(require("fs").readFileSync("/dev/stdin", "utf8"));
 } else {
-    simulatedTradingJourney(fileOperations.readFileSync(developmentInputSource, "utf8"));
+    ProcessFinancialData(require("fs").readFileSync("q4.txt", "utf8"));
 }

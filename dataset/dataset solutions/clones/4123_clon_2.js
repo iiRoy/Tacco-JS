@@ -1,70 +1,80 @@
-"use strict"; // Enforce strict parsing and error handling for better code quality.
+"use strict";
 
-// This function computes the travel time for a series of train departures.
-const calculateTravelTimes = (  rawData  ) => {
-    // Trim whitespace and split the input string into individual lines.
-    rawData = rawData.trim().split( '\n' ) ;
+// This function processes the input data to calculate travel times between stations.
+const processInputData = (inputContent) => {
+  // Trim leading/trailing whitespace and split the input into lines.
+  inputContent = inputContent.trim().split("\n");
 
-    // The first line contains the total number of stations.
-    const totalStops = Number(rawData[0]);
+  // The first line contains the total number of stations.
+  const totalStations = parseInt(inputContent[0]);
 
-    // Initialize arrays to store station-specific data:
-    //  - journeyDurations: Duration of travel from current station to next.
-    //  - initialDepartures: Scheduled departure time from current station.
-    //  - scheduleFrequencies: Frequency of departures from current station.
-    let journeyDurations = [];
-    let initialDepartures = [];
-    let scheduleFrequencies = [];
+  // Arrays to store station-specific data:
+  // `connectionDurations`: Time taken to travel from station i to i+1.
+  let connectionDurations = [];
+  // `initialDepartureTimes`: The earliest departure time from station i.
+  let initialDepartureTimes = [];
+  // `departureFrequencies`: The interval at which trains depart from station i.
+  let departureFrequencies = [];
 
-    // Populate the station data arrays by parsing subsequent input lines.
-    for (let stationIndex = 1; stationIndex < totalStops; stationIndex++) {
-        // Parse each line, converting space-separated values to integers.
-        const stationInfo = rawData[stationIndex].split(' ').map(strNum => Number(strNum));
-        journeyDurations[stationIndex - 1] = stationInfo[0]; // Cost (C)
-        initialDepartures[stationIndex - 1] = stationInfo[1]; // Start (S)
-        scheduleFrequencies[stationIndex - 1] = stationInfo[2]; // Frequency (F)
+  // Parse the station data from the input lines.
+  // The loop starts from the second line (index 1) up to N-1 lines.
+  for (let lineIndex = 1; lineIndex < totalStations; lineIndex++) {
+    // Split each line by space and convert parts to integers.
+    let lineSegments = inputContent[lineIndex].split(" ").map((strNum) => parseInt(strNum));
+
+    // Store the parsed values into their respective arrays.
+    connectionDurations[lineIndex - 1] = lineSegments[0];
+    initialDepartureTimes[lineIndex - 1] = lineSegments[1];
+    departureFrequencies[lineIndex - 1] = lineSegments[2];
+  }
+
+  // This array will store the calculated total travel time from each starting station
+  // to the final destination.
+  let finalTravelDurations = [];
+
+  // Iterate through each possible starting station.
+  for (let currentOriginIndex = 0; currentOriginIndex < totalStations; currentOriginIndex++) {
+    // Initialize the current accumulated travel time for this journey.
+    let currentJourneyTime = 0;
+
+    // If this is the last station, the travel time to itself is 0.
+    if (currentOriginIndex === totalStations - 1) {
+      finalTravelDurations.push(0);
+      // No further calculations needed for the last station.
+      break;
     }
 
-    // Array to store the final computed travel times for each starting station.
-    let finalResults = [];
+    // Calculate the time to reach the first subsequent station.
+    // This is the initial departure time from the current station plus the travel duration to the next.
+    currentJourneyTime += initialDepartureTimes[currentOriginIndex] + connectionDurations[currentOriginIndex];
 
-    // Iterate through each station as a starting point.
-    for (let currentStartStation = 0; currentStartStation < totalStops; currentStartStation++) {
-        // Initialize the elapsed time for the current journey.
-        let elapsedTime = 0;
-        // Calculate initial travel time from the current station.
-        // This is the departure time from the current station plus the travel duration to the next.
-        elapsedTime += initialDepartures[currentStartStation] + journeyDurations[currentStartStation];
-
-        // If this is the very last station, the travel time is 0 (it's the destination).
-        if (currentStartStation === totalStops - 1) {
-            finalResults.push(0);
-            break; // Exit the loop as we're done with the last station.
+    // Iterate through the subsequent stations to calculate the total travel time.
+    // The loop goes from the station *after* the current one up to the second-to-last station.
+    for (let nextStopIndex = parseInt(currentOriginIndex) + 1; nextStopIndex < totalStations - 1; nextStopIndex++) {
+      // Check if the current arrival time aligns perfectly with the next station's departure schedule.
+      if (currentJourneyTime === initialDepartureTimes[nextStopIndex]) {
+        // If it aligns, just add the travel duration to the next station.
+        currentJourneyTime += connectionDurations[nextStopIndex];
+      } else {
+        // If not aligned, we need to wait for the next available departure.
+        // Increment time until it's greater than or equal to the next station's start time
+        // and is a multiple of its frequency (relative to the start time).
+        while (initialDepartureTimes[nextStopIndex] + departureFrequencies[nextStopIndex] > currentJourneyTime) {
+          currentJourneyTime++;
         }
 
-        // Iterate through subsequent stations to calculate cumulative travel time.
-        // The loop goes up to totalStops - 1 because the arrays (C,S,F) have N-1 elements.
-        for (let subsequentStop = Number(currentStartStation) + 1; subsequentStop < totalStops - 1; subsequentStop++) {
-            // Check if arrival time at the next station perfectly matches its departure time.
-            if (elapsedTime === initialDepartures[subsequentStop]) {
-                elapsedTime += journeyDurations[subsequentStop]; // Depart immediately.
-            } else {
-                // If arrival is before scheduled departure, or not on a frequency interval, wait.
-                // Increment time until a valid departure slot is found.
-                while (initialDepartures[subsequentStop] + scheduleFrequencies[subsequentStop] > elapsedTime) {
-                    elapsedTime++; // Advance time by one unit.
-                }
-                // Once a valid departure time is reached, add the travel duration to the next station.
-                elapsedTime += journeyDurations[subsequentStop];
-            }
-        }
-        // Store the total elapsed time for the journey starting at currentStartStation.
-        finalResults.push(elapsedTime);
+        // Once a valid departure time is found, add the travel duration to the next station.
+        currentJourneyTime += connectionDurations[nextStopIndex];
+      }
     }
 
-    // Output the calculated cumulative travel times, each on a new line.
-    console.log(finalResults.join('\n'));
+    // Store the total calculated travel time for this starting station.
+    finalTravelDurations.push(currentJourneyTime);
+  }
+
+  // Output the calculated travel times, each on a new line.
+  console.log(finalTravelDurations.join("\n"));
 };
 
-// Read input from standard input and pass it to the main processing function.
-calculateTravelTimes( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

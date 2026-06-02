@@ -1,21 +1,13 @@
-const processInputData = () => {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const sourceLines = rawContent.split(/\r?\n/).filter(Boolean);
-    const numericSource = Number(sourceLines[sourceLines.length - 1]);
+function calculateAndDisplayRatio(dataSource) {
+  const inputLine = dataSource.split('\n').pop();
+  
+  const numericVal = Number(inputLine); 
+  
+  const ceilingDivisionResult = Math.ceil(numericVal / 2);
+  
+  const computedRatio = ceilingDivisionResult / numericVal;
+  
+  console.log(computedRatio.toFixed(11) + '\n');
+}
 
-    const countOfRelevantElements = Math.trunc((numericSource + 1) / 2);
-
-    const proportionResult = countOfRelevantElements / numericSource;
-
-    const decimalFormatter = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 11,
-        maximumFractionDigits: 11,
-        useGrouping: false
-    });
-
-    const formattedString = decimalFormatter.format(proportionResult);
-    
-    console.log(formattedString + '\n');
-};
-
-processInputData();
+calculateAndDisplayRatio(require("fs").readFileSync("/dev/stdin", "utf8"));

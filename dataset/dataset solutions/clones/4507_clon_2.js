@@ -1,31 +1,31 @@
 "use strict";
 
-const processInput = ( inputString ) => {
-  // Begin by parsing the provided raw input string
-  let totalElements = Number( inputString.split( "\n" )[ 0 ] );
-  let sequenceValues = inputString.split( "\n" ) .slice( 1, totalElements + 1 ) .map( valueStr => Number( valueStr ) );
-  
-  // Initialize the step counter
-  let iterationCounter = 0;
-  
-  // Set the starting index for our traversal (current position in the sequence)
+const processInput = (inputData) => {
+  // Parse the initial data
+  let totalEntries = inputData.split("\n")[0];
+  let numberSequence = inputData.split("\n").slice(1, totalEntries + 1).map(val => Number(val));
+
+  // Initialize a step counter
+  let stepCounter = 0;
+  // Set the starting point for traversal
   let currentPosition = 1;
-  
-  // Continue looping until the target position (value 2) is reached
-  while ( currentPosition !== 2 ) {
-    // Determine the next position using the current position as an index into the sequence data
-    currentPosition = sequenceValues[ currentPosition - 1 ];
-    
-    // Increment the step counter for each move
-    iterationCounter++;
-    
-    // If the number of steps exceeds the total number of elements, it indicates an infinite loop; report an error.
-    if ( iterationCounter > totalElements ) {
-      console.log( "-1" );
-      return;
+
+  // Loop until the target value (2) is reached
+  while (currentPosition !== 2) {
+    // Move to the next position in the sequence
+    currentPosition = numberSequence[currentPosition - 1];
+    // Increment the step counter
+    stepCounter++;
+
+    // If the counter exceeds the total number of entries, it indicates an infinite loop or invalid sequence
+    if (stepCounter > totalEntries) {
+      console.log("-1");
+      return; // Exit the function
     }
   }
-  console.log( iterationCounter );
+  // Output the final step count
+  console.log(stepCounter);
 };
 
-processInput( require( 'fs' ) .readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

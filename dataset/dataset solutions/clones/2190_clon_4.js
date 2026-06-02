@@ -1,29 +1,24 @@
-function processNumericalData(inputStringContent) {
-  const lineDetails = inputStringContent.split('\n').filter(Boolean);
+function processInputData(rawData) {
+  const lineSegments = rawData.trim().split("\n");
 
-  const initialValues = lineDetails[0].match(/\d+/g).map(Number);
-  const necessaryLimit = initialValues[0];
-  // The second value (N) from the first line is extracted but not utilized in the original logic,
-  // so it's also not utilized here, maintaining functional equivalence.
-  // const dataSize = initialValues[1]; 
+  const firstLineParts = lineSegments[0].split(' ');
+  const requiredThreshold = Number(firstLineParts[0]);
+  const itemCount = Number(firstLineParts[1]);
 
-  const numericalSequence = lineDetails[1].match(/\d+/g).map(Number);
+  const valueList = lineSegments[1].split(' ').map(Number);
 
-  const sumElementsRecursively = (elements) => {
-    if (elements.length === 0) {
-      return 0;
-    }
-    const [first, ...rest] = elements;
-    return first + sumElementsRecursively(rest);
-  };
-
-  const accumulatedValue = sumElementsRecursively(numericalSequence);
-
-  if (accumulatedValue >= necessaryLimit) {
-    console.log('Yes');
-  } else {
-    console.log('No');
+  let currentSum = 0;
+  for (const singleValue of valueList) {
+    currentSum += singleValue;
   }
+
+  const outcomeMap = {
+    true: 'Yes',
+    false: 'No'
+  };
+  const finalResult = outcomeMap[String(currentSum >= requiredThreshold)];
+
+  console.log(finalResult);
 }
 
-processNumericalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

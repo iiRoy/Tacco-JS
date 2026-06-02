@@ -1,136 +1,108 @@
-const ROWS_COUNT = 12;
-const COLS_COUNT = 6;
-const MOVEMENT_VECTORS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+function detectPopGroups(boardGrid) {
+    const rowCount = boardGrid.length;
+    const colCount = boardGrid[0].length;
+    const visitedCells = Array.from({ length: rowCount }, () => Array(colCount).fill(false));
+    const allPopCoordinates = [];
 
-function isWithinBounds(r, c) {
-    return r >= 0 && r < ROWS_COUNT && c >= 0 && c < COLS_COUNT;
-}
+    const neighborOffsets = [[-1, 0], [0, -1], [0, 1], [1, 0]];
 
-function traverseAndIdentifyRegion(initialR, initialC, targetHue, currentLayout) {
-    const regionMembers = new Set();
-    const explorationQueue = [{ r: initialR, c: initialC }];
-    const alreadyProcessed = new Set([`${initialR},${initialC}`]);
+    for (let r = 0; r < rowCount; r++) {
+        for (let c = 0; c < colCount; c++) {
+            if (boardGrid[r][c] !== '.' && !visitedCells[r][c]) {
+                const initialColor = boardGrid[r][c];
+                const bfsQueue = [[r, c]];
+                const currentGroupCells = [];
+                visitedCells[r][c] = true;
 
-    if (currentLayout[initialR][initialC] !== targetHue) {
-        return regionMembers;
-    }
-    regionMembers.add(`${initialR},${initialC}`);
+                let queuePointer = 0;
+                while (queuePointer < bfsQueue.length) {
+                    const [currentY, currentX] = bfsQueue[queuePointer++];
+                    currentGroupCells.push([currentY, currentX]);
 
-    while (explorationQueue.length > 0) {
-        const { r, c } = explorationQueue.shift();
+                    for (const [dy, dx] of neighborOffsets) {
+                        const nextY = currentY + dy;
+                        const nextX = currentX + dx;
 
-        for (const [dr, dc] of MOVEMENT_VECTORS) {
-            const nextR = r + dr;
-            const nextC = c + dc;
-            const neighborKey = `${nextR},${nextC}`;
+                        if (nextY >= 0 && nextY < rowCount && nextX >= 0 && nextX < colCount &&
+                            !visitedCells[nextY][nextX] && boardGrid[nextY][nextX] === initialColor) {
+                            visitedCells[nextY][nextX] = true;
+                            bfsQueue.push([nextY, nextX]);
+                        }
+                    }
+                }
 
-            if (isWithinBounds(nextR, nextC) &&
-                currentLayout[nextR][nextC] === targetHue &&
-                !alreadyProcessed.has(neighborKey)) {
-                
-                alreadyProcessed.add(neighborKey);
-                regionMembers.add(neighborKey);
-                explorationQueue.push({ r: nextR, c: nextC });
-            }
-        }
-    }
-    return regionMembers;
-}
-
-function findCandidatesForRemoval(currentLayout) {
-    const allRemovableTargets = new Set();
-    const cellsCheckedForGroup = new Set();
-
-    for (let r = 0; r < ROWS_COUNT; r++) {
-        for (let c = 0; c < COLS_COUNT; c++) {
-            const cellIdentifier = `${r},${c}`;
-            const cellContent = currentLayout[r][c];
-
-            if (cellContent !== '.' && cellContent !== 'O' && !cellsCheckedForGroup.has(cellIdentifier)) {
-                const potentialGroup = traverseAndIdentifyRegion(r, c, cellContent, currentLayout);
-                
-                potentialGroup.forEach(coord => cellsCheckedForGroup.add(coord));
-
-                if (potentialGroup.size >= 4) {
-                    potentialGroup.forEach(coord => allRemovableTargets.add(coord));
+                if (currentGroupCells.length >= 4) {
+                    allPopCoordinates.push(...currentGroupCells);
                 }
             }
         }
     }
-    return allRemovableTargets;
+    return allPopCoordinates;
 }
 
-function processRemovalAndAdjacentBlocks(initialLayout, cellsToDissolve) {
-    const updatedLayout = initialLayout.map(row => [...row]);
-    const secondaryClearances = new Set();
+function clearPuyosAndObstacles(boardGrid, coordsToClear) {
+    const rowCount = boardGrid.length;
+    const colCount = boardGrid[0].length;
+    const updatedGrid = boardGrid.map(row => [...row]);
+    const neighborOffsets = [[-1, 0], [0, -1], [0, 1], [1, 0]];
 
-    cellsToDissolve.forEach(coordString => {
-        const [r, c] = coordString.split(',').map(Number);
-        updatedLayout[r][c] = '.';
+    for (const [y, x] of coordsToClear) {
+        updatedGrid[y][x] = '.';
+    }
 
-        for (const [dr, dc] of MOVEMENT_VECTORS) {
-            const nextR = r + dr;
-            const nextC = c + dc;
-            if (isWithinBounds(nextR, nextC) && updatedLayout[nextR][nextC] === 'O') {
-                secondaryClearances.add(`${nextR},${nextC}`);
+    for (const [clearedY, clearedX] of coordsToClear) {
+        for (const [dy, dx] of neighborOffsets) {
+            const adjY = clearedY + dy;
+            const adjX = clearedX + dx;
+
+            if (adjY >= 0 && adjY < rowCount && adjX >= 0 && adjX < colCount && updatedGrid[adjY][adjX] === 'O') {
+                updatedGrid[adjY][adjX] = '.';
             }
-        }
-    });
-
-    secondaryClearances.forEach(coordString => {
-        const [r, c] = coordString.split(',').map(Number);
-        updatedLayout[r][c] = '.';
-    });
-
-    return updatedLayout;
-}
-
-function applyDownwardMotion(initialLayout) {
-    const postMotionLayout = Array.from({ length: ROWS_COUNT }, () => Array(COLS_COUNT).fill('.'));
-
-    for (let c = 0; c < COLS_COUNT; c++) {
-        const columnContents = [];
-        for (let r = ROWS_COUNT - 1; r >= 0; r--) {
-            if (initialLayout[r][c] !== '.') {
-                columnContents.push(initialLayout[r][c]);
-            }
-        }
-        for (let r = 0; r < columnContents.length; r++) {
-            postMotionLayout[ROWS_COUNT - 1 - r][c] = columnContents[r];
         }
     }
-    return postMotionLayout;
+    return updatedGrid;
 }
 
-function executeGameCycle(initialBoard) {
-    let currentBoardState = initialBoard;
-    let cycleTally = 0;
+function applyColumnGravity(boardGrid) {
+    const rowCount = boardGrid.length;
+    const colCount = boardGrid[0].length;
+    const newGravityGrid = Array.from({ length: rowCount }, () => Array(colCount).fill('.'));
 
+    for (let c = 0; c < colCount; c++) {
+        const activePuyosInColumn = [];
+        for (let r = rowCount - 1; r >= 0; r--) {
+            if (boardGrid[r][c] !== '.') {
+                activePuyosInColumn.push(boardGrid[r][c]);
+            }
+        }
+        for (let i = 0; i < activePuyosInColumn.length; i++) {
+            newGravityGrid[rowCount - 1 - i][c] = activePuyosInColumn[i];
+        }
+    }
+    return newGravityGrid;
+}
+
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = inputData.trim().split("\n");
+const numberOfCases = parseInt(lines.shift(), 10);
+
+for (let caseIndex = 0; caseIndex < numberOfCases; caseIndex++) {
+    let currentBoardState = [];
+    for (let r = 0; r < 12; r++) {
+        currentBoardState.push(lines.shift().split(""));
+    }
+
+    let chainCounter = 0;
     while (true) {
-        const targetsForRemoval = findCandidatesForRemoval(currentBoardState);
+        const popCandidates = detectPopGroups(currentBoardState);
 
-        if (targetsForRemoval.size === 0) {
+        if (popCandidates.length === 0) {
             break;
         }
 
-        cycleTally++;
-        
-        let boardAfterRemovals = processRemovalAndAdjacentBlocks(currentBoardState, targetsForRemoval);
-        currentBoardState = applyDownwardMotion(boardAfterRemovals);
+        chainCounter++;
+        currentBoardState = clearPuyosAndObstacles(currentBoardState, popCandidates);
+        currentBoardState = applyColumnGravity(currentBoardState);
     }
-    return cycleTally;
-}
-
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineSegments = rawInputContent.trim().split("\n");
-const totalScenarios = parseInt(lineSegments.shift(), 10);
-
-for (let scenarioNumber = 0; scenarioNumber < totalScenarios; scenarioNumber++) {
-    const initialBoardConfiguration = [];
-    for (let rowIterator = 0; rowIterator < ROWS_COUNT; rowIterator++) {
-        initialBoardConfiguration.push(lineSegments.shift().split(""));
-    }
-    
-    const finalCycleCount = executeGameCycle(initialBoardConfiguration);
-    console.log(finalCycleCount);
+    console.log(chainCounter);
 }

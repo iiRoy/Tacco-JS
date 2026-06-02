@@ -1,94 +1,94 @@
-function processMovement(sourceData) {
-    const inputLines = sourceData.split("\n");
-    const pathString = inputLines[0];
-    const targetCoordsString = inputLines[1].split(" ");
+function Main(input) {
+    const inputLines = input.split("\r\n");
+    const movementSequence = inputLines[0];
+    const [targetCoordinateXString, targetCoordinateYString] = inputLines[1].split(" ");
 
-    const finalXCoordinate = Number(targetCoordsString[0]);
-    const finalYCoordinate = Number(targetCoordsString[1]);
+    const finalTargetX = Number(targetCoordinateXString);
+    const finalTargetY = Number(targetCoordinateYString);
 
-    let initialXDisplacement = 0;
-    const subsequentMoveLengths = [];
-    let currentFBlockLength = 0;
-    let hasEncounteredTurn = false;
+    const pathSegments = movementSequence.split("T");
 
-    // Custom parsing of movement string to extract initial displacement and subsequent segment lengths
-    for (let i = 0; i < pathString.length; i++) {
-        if (pathString[i] === 'F') {
-            currentFBlockLength++;
-        } else { // 'T' character
-            if (!hasEncounteredTurn) {
-                initialXDisplacement = currentFBlockLength;
-                hasEncounteredTurn = true;
-            } else {
-                subsequentMoveLengths.push(currentFBlockLength);
+    // The initial segment of 'F's always moves forward along the X-axis.
+    const initialForwardDistance = pathSegments[0].length;
+
+    // Calculate the absolute remaining distance to the target after the initial unavoidable move.
+    // For X, it's the difference from the initial forward position.
+    // For Y, it's simply the absolute target Y, as initial movement is only X.
+    const effectiveTargetX = Math.abs(finalTargetX - initialForwardDistance);
+    const effectiveTargetY = Math.abs(finalTargetY);
+
+    // Process the segments after the first 'T' to categorize them into X and Y movements.
+    // Segments at even indices (0, 2, 4...) after the first 'T' correspond to X-axis turns.
+    // Segments at odd indices (1, 3, 5...) after the first 'T' correspond to Y-axis turns.
+    const { xDirectionalMoves, yDirectionalMoves } = pathSegments.slice(1).reduce(
+        (accumulator, segmentLength, segmentIndex) => {
+            const currentMoveLength = segmentLength.length;
+            if (segmentIndex % 2 === 0) { // Even index after first 'T' -> X-axis
+                accumulator.x.push(currentMoveLength);
+            } else { // Odd index after first 'T' -> Y-axis
+                accumulator.y.push(currentMoveLength);
             }
-            currentFBlockLength = 0;
+            return accumulator;
+        },
+        { x: [], y: [] }
+    );
+
+    // Calculate the total possible movement distance for each axis.
+    const totalPossibleXMovement = xDirectionalMoves.reduce((sum, len) => sum + len, 0);
+    const totalPossibleYMovement = yDirectionalMoves.reduce((sum, len) => sum + len, 0);
+
+    // A utility function to determine if a specific 'distance' can be achieved
+    // given a collection of 'movements' and their 'totalSum'.
+    // This uses a dynamic programming approach with a Set to track all possible subset sums.
+    const checkFeasibility = (availableMoves, requiredDistance, aggregateSum) => {
+        // If the required distance exceeds the total possible movement, it's impossible.
+        if (requiredDistance > aggregateSum) {
+            return false;
         }
-    }
-    // Handle any trailing 'F's at the end of the path string
-    if (currentFBlockLength > 0) {
-        if (!hasEncounteredTurn) {
-            initialXDisplacement = currentFBlockLength;
-        } else {
-            subsequentMoveLengths.push(currentFBlockLength);
+        // If the required distance exactly matches the total possible movement, it's achievable
+        // by moving all segments in the forward direction.
+        if (requiredDistance === aggregateSum) {
+            return true;
         }
-    }
 
-    const horizontalMovements = [];
-    const verticalMovements = [];
+        // If requiredDistance < aggregateSum, some movements must be "reversed".
+        // The total amount that needs to be effectively "canceled out" by reversing movements is (aggregateSum - requiredDistance).
+        // Each reversed movement cancels out 2 units (1 forward, 1 backward).
+        // Therefore, we need to find a subset of 'availableMoves' that sums to (aggregateSum - requiredDistance) / 2.
+        const targetBacktrackSum = (aggregateSum - requiredDistance) / 2;
 
-    // Distribute subsequent movement lengths to their respective axes
-    // After the initial X-movement, the first turn enables Y-axis movement, then X, then Y, etc.
-    for (let i = 0; i < subsequentMoveLengths.length; i++) {
-        if (i % 2 === 0) { // Index 0 (1st turn) is Y, Index 2 (3rd turn) is Y, etc.
-            verticalMovements.push(subsequentMoveLengths[i]);
-        } else { // Index 1 (2nd turn) is X, Index 3 (4th turn) is X, etc.
-            horizontalMovements.push(subsequentMoveLengths[i]);
+        // If the target backtrack sum is not a non-negative integer, it's impossible.
+        if (targetBacktrackSum < 0 || targetBacktrackSum % 1 !== 0) {
+            return false;
         }
-    }
 
-    const totalHorizontalLength = horizontalMovements.reduce((acc, val) => acc + val, 0);
-    const totalVerticalLength = verticalMovements.reduce((acc, val) => acc + val, 0);
+        // Initialize a Set to store all unique sums that can be formed by subsets of 'availableMoves'.
+        let achievableSums = new Set([0]); // 0 represents the sum achievable by choosing no moves.
 
-    // Calculate the absolute displacement required for each axis after accounting for initial X-movement
-    const requiredDeltaX = Math.abs(finalXCoordinate - initialXDisplacement);
-    const requiredDeltaY = Math.abs(finalYCoordinate);
-
-    // Function to determine if a target distance can be formed using a subset of given segment values
-    // This is a variation of the subset sum problem. We need to find if a subset of 'availableSegments'
-    // sums to (axisTotalLength - targetDistance) / 2.
-    const canAchieveTarget = (availableSegments, axisTotalLength, targetDistance) => {
-        if (targetDistance > axisTotalLength) {
-            return false; // Cannot reach a distance greater than total available movement
-        }
-        const difference = axisTotalLength - targetDistance;
-        if (difference % 2 !== 0) {
-            return false; // The difference must be even for signs to balance
-        }
-        const targetSubsetSum = difference / 2;
-
-        // Use a boolean array for dynamic programming to track reachable sums
-        // `possible[s]` is true if sum `s` can be formed from a subset of `availableSegments`
-        const possible = new Array(targetSubsetSum + 1).fill(false);
-        possible[0] = true; // A sum of 0 is always achievable (by choosing no segments)
-
-        for (const segmentVal of availableSegments) {
-            // Iterate downwards to ensure each segment is used at most once in forming a sum
-            for (let s = targetSubsetSum; s >= segmentVal; s--) {
-                possible[s] = possible[s] || possible[s - segmentVal];
+        // Iterate through each movement length.
+        for (const moveValue of availableMoves) {
+            // Create a temporary array from the current achievable sums to avoid modifying the Set during iteration.
+            const currentAchievableSums = Array.from(achievableSums);
+            // For each sum currently achievable, add a new sum by including the current 'moveValue'.
+            for (const existingSum of currentAchievableSums) {
+                achievableSums.add(existingSum + moveValue);
             }
         }
-        return possible[targetSubsetSum];
+
+        // Check if the calculated 'targetBacktrackSum' is present in the set of all achievable sums.
+        return achievableSums.has(targetBacktrackSum);
     };
 
-    // Check if both X and Y target displacements can be achieved independently
-    if (canAchieveTarget(horizontalMovements, totalHorizontalLength, requiredDeltaX) &&
-        canAchieveTarget(verticalMovements, totalVerticalLength, requiredDeltaY)) {
+    // Determine if the effective target X and Y distances are reachable independently.
+    const xReachable = checkFeasibility(xDirectionalMoves, effectiveTargetX, totalPossibleXMovement);
+    const yReachable = checkFeasibility(yDirectionalMoves, effectiveTargetY, totalPossibleYMovement);
+
+    // Output "Yes" if both X and Y targets are reachable, otherwise "No".
+    if (xReachable && yReachable) {
         console.log("Yes");
     } else {
         console.log("No");
     }
 }
 
-// Standard input/output handling for competitive programming platforms
-processMovement(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

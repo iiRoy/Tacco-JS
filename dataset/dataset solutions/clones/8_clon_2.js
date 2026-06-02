@@ -1,15 +1,11 @@
-var       incomingData     =     require (  "fs"  ) . readFileSync ( "/dev/stdin",  "utf8"  );
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Obtain raw data from standard input stream
+var measurements = this.result.split('\n'); // Divide the content of the 'result' property by newline characters
+measurements.sort(function(valA, valB) {
+    // Sort the array in descending numerical order
+    return valB - valA;
+});
 
-var    altitudeList   =   this.currentEvaluation   .  split ( '\n' ) ;
-
-altitudeList.sort(
-  function(    valA,    valB    ) {
-    return valB   -   valA;
-  }
-); // Arranges items in descending numerical sequence
-
-for (    var idx = 0;    idx < 3;    idx++    ) {
-
-  console.log(    altitudeList[idx]    );
-
+// Display the first three elements of the sorted array
+for (var idx = 0; idx < 3; idx++) {
+    console.log(measurements[idx]);
 }

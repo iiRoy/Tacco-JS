@@ -1,34 +1,40 @@
-const retrieveNearestPermissible = (currentIteration, baseNumber, excludedElements) => {
-    if (currentIteration > 100) {
-        return 'error';
+function processInputData(rawInputText) {
+    const inputLines = rawInputText.trim().split('\n');
+    const firstLineElements = inputLines[0].split(' ');
+
+    const baseNumber = Number(firstLineElements[0]);
+    const exclusionCountString = firstLineElements[1];
+
+    if (exclusionCountString === "0") {
+        console.log(baseNumber);
+        return;
     }
 
-    const lowerCandidate = baseNumber - currentIteration;
-    const upperCandidate = baseNumber + currentIteration;
+    const excludedNumbersRaw = inputLines[1].split(' ');
+    const forbiddenValues = new Set(excludedNumbersRaw.map(Number));
 
-    if (!excludedElements.has(String(lowerCandidate))) {
-        return lowerCandidate;
-    } else if (!excludedElements.has(String(upperCandidate))) {
-        return upperCandidate;
-    } else {
-        return retrieveNearestPermissible(currentIteration + 1, baseNumber, excludedElements);
+    let searchOffset = 1;
+    while (true) {
+        const candidateBelow = baseNumber - searchOffset;
+        const candidateAbove = baseNumber + searchOffset;
+
+        if (!forbiddenValues.has(candidateBelow)) {
+            console.log(candidateBelow);
+            return;
+        }
+
+        if (!forbiddenValues.has(candidateAbove)) {
+            console.log(candidateAbove);
+            return;
+        }
+
+        searchOffset++;
+
+        if (searchOffset > 100) {
+            console.log('error');
+            return;
+        }
     }
-};
+}
 
-const executeSearch = (rawInput) => {
-    const [lineA, ...otherLines] = rawInput.trim().split('\n');
-    const [primeValueStr, conditionMarkerStr] = lineA.split(/\s+/);
-    const prohibitedSet = new Set(otherLines.flatMap(l => l.split(/\s+/)).filter(Boolean));
-
-    const primeValue = Number(primeValueStr);
-
-    if (conditionMarkerStr === '0') {
-        return primeValue;
-    }
-
-    return retrieveNearestPermissible(1, primeValue, prohibitedSet);
-};
-
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalResult = executeSearch(inputSource);
-console.log(finalResult);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

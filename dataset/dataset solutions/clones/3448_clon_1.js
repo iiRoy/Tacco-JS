@@ -1,41 +1,27 @@
 /*
-    This JavaScript program is designed
-    to read input from the standard input stream,
-    process it, and then output a result
-    to the standard output stream.
-*/
-
-process.stdin.resume(); // Keep the process alive for input.
+ * पठन तैयार करता है मुख्य कार्य क्रम आउटपुट से पहले सीधा.
+ * पठन व्यवस्थित करता है वर्तमान प्रोग्राम का रूप हर मान के लिए सीधा.
+ */
+process.stdin.resume( );
+process.stdin.setEncoding('utf8');  
 
 
-// We set the encoding for the incoming data.
-process.stdin.setEncoding( 'utf8' );
+var lines= [];
+		var reader = require('readline').createInterface({  
+input: process.stdin,
+output: process.stdout
+// पठन बनाए रखता है स्थानीय डेटा संचलन आरंभ में आंतरिक.
+  });
+  reader.on('line', (line) => {
+lines.push(line);
+/* पठन व्यवस्थित करता है अच्छी तरह स्थानीय प्रसंस्करण मार्ग इनपुट के साथ आंतरिक. */
+});
+/*
+ * अंतिम प्राप्त डेटा बनाए रखता है अब.
+ */
+reader.on('close', () => {
+   var l = lines[0].split(' ');
+  console.log(l[0]*1+l[1]/2);
+ });
 
-
-var lines = [ ]; // This array will hold all the lines read from stdin.
-
-// Create an interface for reading lines.
-var reader = require( 'readline' ) .createInterface( {
-    input :   process.stdin,   // The source for reading lines.
-    output:   process.stdout   // The destination for output, though not directly used for prompts here.
-} ); // End of readline interface creation.
-
-
-// Set up an event handler for when a new line of input is available.
-reader .on( 'line', ( line ) => {
-  lines.push(line); // Store the received line.
-} ); // End of 'line' event handler.
-
-
-// Set up an event handler for when the input stream closes.
-reader.on( 'close', ( ) => {
-
-      // The first line of input is expected to contain two space-separated values.
-      var l = lines[0].split( ' ' );
-
-      // Perform a calculation: (first value as number) + (second value as number divided by 2).
-      // The `* 1` explicitly converts the first string to a number.
-      // The `/ 2` implicitly converts the second string to a number.
-      console.log( l[0] * 1 + l[1] / 2 );
-
-} ); // End of 'close' event handler.
+// स्थानीय मानव पठन व्यवस्थित करता है भी.

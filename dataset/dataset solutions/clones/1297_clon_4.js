@@ -1,45 +1,49 @@
-let ingressAccumulator = '';
-const sourceStream = process.stdin;
-sourceStream.resume();
-sourceStream.setEncoding('utf8');
+var rawInputBuffer = '';
+var inputStream = process.stdin;
+inputStream.resume();
+inputStream.setEncoding('utf-8');
 
-sourceStream.on('data', (pieceOfData) => {
-  ingressAccumulator += pieceOfData;
+inputStream.on('data', function(chunk) {
+  rawInputBuffer += chunk;
 });
 
-sourceStream.on('end', () => {
-  const completeTextSegments = ingressAccumulator.trim().split('\n');
+inputStream.on('end', function() {
+  var allInputLines = rawInputBuffer.split('\n');
+  
+  var gridDimensions = allInputLines[0].split(' ').map(Number);
+  var columnCount = gridDimensions[1];
 
-  const dimensionParameters = completeTextSegments[0].split(' ').map(Number);
-  const columnCount = dimensionParameters[1];
+  var numericDataRows = allInputLines.slice(1).map(function(line) {
+    return line.split(' ').map(Number);
+  });
 
-  const dataInputSegments = completeTextSegments.slice(1);
+  var processedOutputLines = [];
 
-  const processingContext = {
-    compiledOutputUnits: [],
-    columnTotals: Array(columnCount).fill(0),
-    absoluteGrandTotal: 0,
-  };
+  var rowsWithSums = numericDataRows.map(function(currentRow) {
+    var rowTotal = currentRow.reduce(function(accumulator, currentValue) {
+      return accumulator + currentValue;
+    }, 0);
+    return [...currentRow, rowTotal];
+  });
 
-  const finalSummaryState = dataInputSegments.reduce((currentContext, currentSegmentString) => {
-    const numericEntities = currentSegmentString.split(' ').map(Number);
-    const lineItemSum = numericEntities.reduce((aggregator, value) => aggregator + value, 0);
+  var initialColumnAggregates = Array.from({ length: columnCount }, function() { return 0; });
 
-    numericEntities.forEach((value, index) => {
-      currentContext.columnTotals[index] += value;
+  var finalColumnAggregates = numericDataRows.reduce(function(accumulator, currentRow) {
+    return Array.from({ length: columnCount }, function(_, columnIndex) {
+      return accumulator[columnIndex] + currentRow[columnIndex];
     });
+  }, initialColumnAggregates);
 
-    currentContext.absoluteGrandTotal += lineItemSum;
+  var overallGrandTotal = finalColumnAggregates.reduce(function(accumulator, value) {
+    return accumulator + value;
+  }, 0);
 
-    const currentLineResult = [...numericEntities, lineItemSum].join(' ');
-    currentContext.compiledOutputUnits.push(currentLineResult);
+  rowsWithSums.forEach(function(row) {
+    processedOutputLines.push(row.join(' '));
+  });
 
-    return currentContext;
-  }, processingContext);
+  var summaryLine = [...finalColumnAggregates, overallGrandTotal].join(' ');
+  processedOutputLines.push(summaryLine);
 
-  const finalColumnAndGrandTotalRow = [...finalSummaryState.columnTotals, finalSummaryState.absoluteGrandTotal];
-  const finalSummaryDisplay = finalColumnAndGrandTotalRow.join(' ');
-  finalSummaryState.compiledOutputUnits.push(finalSummaryDisplay);
-
-  console.log(finalSummaryState.compiledOutputUnits.join('\n'));
+  console.log(processedOutputLines.join('\n'));
 });

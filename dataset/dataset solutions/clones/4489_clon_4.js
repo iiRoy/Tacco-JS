@@ -1,34 +1,31 @@
-const acquireSource = require("fs").readFileSync;
-const inputLocation = "/dev/stdin";
-const textEncoding = "utf8";
+function processInputData(sourceText) {
+  const allNumericValues = [];
+  const tokenIterator = sourceText.split(' ');
 
-function deriveValues(dataStream) {
-    let currentNumberString = "";
-    const numericSequence = [];
-    for (let index = 0; index < dataStream.length; ++index) {
-        const charUnit = dataStream[index];
-        if (charUnit >= '0' && charUnit <= '9') {
-            currentNumberString += charUnit;
-        } else if (currentNumberString.length > 0) {
-            numericSequence.push(Number(currentNumberString));
-            currentNumberString = "";
-        }
+  for (let i = 0; i < tokenIterator.length; i++) {
+    allNumericValues.push(Number(tokenIterator[i]));
+  }
+
+  const firstVal = allNumericValues[0];
+  const secondVal = allNumericValues[1];
+  const thirdVal = allNumericValues[2];
+
+  const initialSum = firstVal + secondVal + thirdVal;
+
+  let greatestValueEncountered = -Infinity;
+
+  for (let i = 0; i < allNumericValues.length; i++) {
+    const currentElement = allNumericValues[i];
+    if (isNaN(currentElement)) {
+      greatestValueEncountered = NaN;
+      break;
     }
-    if (currentNumberString.length > 0) {
-        numericSequence.push(Number(currentNumberString));
+    if (currentElement > greatestValueEncountered) {
+      greatestValueEncountered = currentElement;
     }
-    return numericSequence;
+  }
+
+  console.log(initialSum - greatestValueEncountered);
 }
 
-function computeLowestPairSum(inputSet) {
-    const arrangedElements = [...inputSet].sort((first, second) => first - second);
-    return arrangedElements[0] + arrangedElements[1];
-}
-
-function initiateProcessing(dataContent) {
-    const parsedValues = deriveValues(dataContent);
-    const computedResult = computeLowestPairSum(parsedValues);
-    console.log(computedResult);
-}
-
-initiateProcessing(acquireSource(inputLocation, textEncoding));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

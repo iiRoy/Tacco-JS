@@ -1,112 +1,68 @@
-const fileSystemModule = require('fs'); // Import the file system module for I/O operations.
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = fileContent.split('\n');
 
-// Define a small constant for floating-point comparisons to avoid precision issues.
-// This epsilon value helps determine if a floating-point number is effectively zero.
-const FLOAT_COMPARE_EPSILON = 1e-9;
-
-// Attempt to read the entire standard input synchronously.
-// Ensure UTF-8 encoding for proper character interpretation.
-let rawInputData;
-try {
-    rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-} catch (ioError) {
-    // Handle potential errors during file reading, e.g., file not found or permission issues.
-    console.error("Error reading input from /dev/stdin:", ioError.message);
-    // Exit or handle gracefully if input is critical.
-    process.exit(1);
+// Helper function to convert a space-separated string of numbers into an array of floating-point numbers.
+function extractNumericCoordinates(lineOfText) {
+    const stringParts = lineOfText.split(' ');
+    const numericValues = [];
+    let currentPartIndex = 0;
+    while (currentPartIndex < stringParts.length) {
+        numericValues.push(parseFloat(stringParts[currentPartIndex]));
+        currentPartIndex++;
+    }
+    return numericValues;
 }
 
-// Basic validation: Check if input data was actually read.
-if (!rawInputData || rawInputData.trim().length === 0) {
-    console.error("No input data provided or input is empty.");
-    process.exit(1);
+// Helper function to determine if two line segments are parallel.
+// Segment A is defined by (ax1, ay1) and (ax2, ay2).
+// Segment B is defined by (bx1, by1) and (bx2, by2).
+function checkSegmentParallelism(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
+    // Calculate the change in x and y for the first segment (vector A).
+    const deltaX_A = ax2 - ax1;
+    const deltaY_A = ay2 - ay1;
+
+    // Calculate the change in x and y for the second segment (vector B).
+    const deltaX_B = bx2 - bx1;
+    const deltaY_B = by2 - by1;
+
+    // For two vectors (dx1, dy1) and (dx2, dy2) to be parallel, their 2D cross product must be zero:
+    // (dx1 * dy2) - (dx2 * dy1) == 0
+    // This is equivalent to: (dx1 * dy2) == (dx2 * dy1)
+
+    // The original code's comparison: ((x2 - x1) * (y4 - y3)) == ((x4 - x3) * (y2 - y1))
+    // Maps to: (deltaX_A * deltaY_B) == (deltaX_B * deltaY_A)
+
+    const crossProductTerm1 = deltaX_A * deltaY_B;
+    const crossProductTerm2 = deltaX_B * deltaY_A;
+
+    // Floating-point comparisons require careful handling, typically by comparing fixed-precision strings.
+    const fixedPrecisionTerm1 = crossProductTerm1.toFixed(12);
+    const fixedPrecisionTerm2 = crossProductTerm2.toFixed(12);
+
+    return fixedPrecisionTerm1 === fixedPrecisionTerm2;
 }
 
-// Split the raw input string into an array of individual lines.
-// Trim any leading/trailing whitespace from the entire input before splitting.
-const processedInputLines = rawInputData.trim().split('\n');
+var numTestCases = +dataLines.shift(); // The first line indicates the number of test cases.
 
-// Extract the number of test cases from the first line of input.
-// Use parseInt with radix 10 for explicit base conversion.
-const numberOfTestCases = parseInt(processedInputLines.shift(), 10);
+for (let currentCaseIndex = 0; currentCaseIndex < numTestCases; currentCaseIndex++) {
+    const currentLineOfCoordinates = dataLines.shift();
+    const parsedNumericValues = extractNumericCoordinates(currentLineOfCoordinates);
 
-// Validate the number of test cases.
-if (isNaN(numberOfTestCases) || numberOfTestCases < 0) {
-    console.error("Invalid number of test cases received:", numberOfTestCases);
-    process.exit(1);
-}
+    // Destructure the array of 8 numbers into individual coordinate variables for clarity.
+    const [
+        segment1_x1, segment1_y1,
+        segment1_x2, segment1_y2,
+        segment2_x1, segment2_y1,
+        segment2_x2, segment2_y2
+    ] = parsedNumericValues;
 
-// Initialize a counter for the current test case being processed.
-let currentCaseIterator = 0;
-
-// Iterate through each test case using a while loop.
-while (currentCaseIterator < numberOfTestCases) {
-    // Retrieve the line containing coordinate data for the current test case.
-    const currentCoordinateLine = processedInputLines.shift();
-
-    // Guard clause: Ensure a line was available for processing.
-    if (!currentCoordinateLine) {
-        console.error(`Missing coordinate data for test case ${currentCaseIterator + 1}.`);
-        // Optionally, continue to the next iteration or break. For now, we'll break.
-        break;
-    }
-
-    // Split the current line into individual string parts based on spaces.
-    const coordinateStringSegments = currentCoordinateLine.split(' ');
-
-    // Another guard clause: Verify that we have enough coordinate values.
-    const EXPECTED_COORDINATE_COUNT = 8;
-    if (coordinateStringSegments.length < EXPECTED_COORDINATE_COUNT) {
-        console.error(`Insufficient coordinate values for test case ${currentCaseIterator + 1}. Expected ${EXPECTED_COORDINATE_COUNT}, got ${coordinateStringSegments.length}.`);
-        currentCaseIterator++; // Move to next case even if current one is malformed.
-        continue;
-    }
-
-    // Parse the 8 coordinate values from the string segments.
-    // These represent two line segments: (p1X, p1Y)-(p2X, p2Y) and (p3X, p3Y)-(p4X, p4Y).
-    const p1X = parseFloat(coordinateStringSegments[0]);
-    const p1Y = parseFloat(coordinateStringSegments[1]);
-    const p2X = parseFloat(coordinateStringSegments[2]);
-    const p2Y = parseFloat(coordinateStringSegments[3]);
-    const p3X = parseFloat(coordinateStringSegments[4]);
-    const p3Y = parseFloat(coordinateStringSegments[5]);
-    const p4X = parseFloat(coordinateStringSegments[6]);
-    const p4Y = parseFloat(coordinateStringSegments[7]);
-
-    // Validate parsed coordinates to ensure they are valid numbers.
-    if (isNaN(p1X) || isNaN(p1Y) || isNaN(p2X) || isNaN(p2Y) ||
-        isNaN(p3X) || isNaN(p3Y) || isNaN(p4X) || isNaN(p4Y)) {
-        console.error(`Invalid numeric coordinate found for test case ${currentCaseIterator + 1}. Skipping.`);
-        currentCaseIterator++;
-        continue;
-    }
-
-    // Calculate the components of the first vector (representing the first line segment).
-    // Vector A: from (p1X, p1Y) to (p2X, p2Y)
-    const vectorAX = p2X - p1X;
-    const vectorAY = p2Y - p1Y;
-
-    // Calculate the components of the second vector (representing the second line segment).
-    // Vector B: from (p3X, p3Y) to (p4X, p4Y)
-    const vectorBX = p4X - p3X;
-    const vectorBY = p4Y - p3Y;
-
-    // To check if two 2D line segments (or vectors) are parallel, we can use their cross product.
-    // For 2D vectors (Ax, Ay) and (Bx, By), their "cross product" (which is actually the magnitude
-    // of the 3D cross product if they were in the XY plane) is Ax*By - Ay*Bx.
-    // If this value is zero, the vectors are parallel.
-    const crossProductDeterminant = (vectorAX * vectorBY) - (vectorAY * vectorBX);
-
-    // Compare the cross product determinant to zero using the defined epsilon for floating-point safety.
-    // If the absolute value of the determinant is less than epsilon, they are considered parallel.
-    if (Math.abs(crossProductDeterminant) < FLOAT_COMPARE_EPSILON) {
-        // If the segments are parallel (or collinear), output 'YES'.
+    // Use the helper function to check if the two segments are parallel.
+    if (checkSegmentParallelism(
+        segment1_x1, segment1_y1, segment1_x2, segment1_y2,
+        segment2_x1, segment2_y1, segment2_x2, segment2_y2
+    )) {
         console.log('YES');
     } else {
-        // Otherwise, they are not parallel, output 'NO'.
         console.log('NO');
     }
-
-    // Increment the counter to move to the next test case.
-    currentCaseIterator++;
 }

@@ -1,203 +1,133 @@
-const initialDataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContent.trim().split('\n');
 
-class GridProcessor {
-    constructor() {
-        this.currentWorkingGrid = [];
-        this.originalContentSize = 0;
+const transformA = (dataArray) => {
+    const targetIndex = dataArray.slice(1, -1).findIndex(val => val === 0);
+    if (targetIndex !== -1) {
+        dataArray[targetIndex + 1] = 'A';
     }
+    return dataArray;
+};
 
-    applyAlphaMark() {
-        let currentScanPosition = 1;
-        do {
-            if (currentScanPosition >= this.currentWorkingGrid.length - 1) {
-                break;
-            }
-            if (this.currentWorkingGrid[currentScanPosition] === 0) {
-                this.currentWorkingGrid[currentScanPosition] = "A";
-                return;
-            }
-            currentScanPosition++;
-        } while (true);
-    }
-
-    applyBetaMark() {
-        let markerPlaced = false;
-        let reverseIndex = this.originalContentSize;
-        while (reverseIndex >= 1) {
-            const leftValue = this.currentWorkingGrid[reverseIndex - 1];
-            const centralValue = this.currentWorkingGrid[reverseIndex];
-            const rightValue = this.currentWorkingGrid[reverseIndex + 1];
-
-            if (leftValue !== "A" && centralValue === 0 && rightValue !== "A") {
-                this.currentWorkingGrid[reverseIndex] = "B";
-                markerPlaced = true;
-                break;
-            }
-            reverseIndex--;
-        }
-
-        if (!markerPlaced) {
-            let forwardIndex = 1;
-            while (forwardIndex <= this.originalContentSize) {
-                if (this.currentWorkingGrid[forwardIndex] === 0) {
-                    this.currentWorkingGrid[forwardIndex] = "B";
-                    markerPlaced = true;
-                    break;
-                }
-                forwardIndex++;
-            }
-        }
-    }
-
-    applyGammaMark() {
-        let modificationOccurred = false;
-        const recursiveScan = (position) => {
-            if (modificationOccurred || position > this.originalContentSize) {
-                return;
-            }
-
-            const currentCell = this.currentWorkingGrid[position];
-            const nextCell = this.currentWorkingGrid[position + 1];
-            const previousCell = this.currentWorkingGrid[position - 1];
-
-            if (currentCell !== 0 && nextCell === 0) {
-                this.currentWorkingGrid[position + 1] = "C";
-                modificationOccurred = true;
-                return;
-            }
-            if (currentCell !== 0 && previousCell === 0) {
-                this.currentWorkingGrid[position - 1] = "C";
-                modificationOccurred = true;
-                return;
-            }
-            recursiveScan(position + 1);
-        };
-
-        recursiveScan(1);
-
-        if (!modificationOccurred) {
-            const targetPosition = (this.originalContentSize % 2 === 1) ?
-                ((this.originalContentSize - 1) / 2 + 1) :
-                (this.originalContentSize / 2 + 1);
-            this.currentWorkingGrid[targetPosition] = "C";
-        }
-    }
-
-    applyDeltaMark() {
-        let optimalSpot = { position: 0, reach: 0 };
-
-        for (let centralPoint = 1; centralPoint <= this.originalContentSize; centralPoint++) {
-            if (this.currentWorkingGrid[centralPoint] !== 0) {
-                continue;
-            }
-
-            let leftProbe = centralPoint;
-            let rightProbe = centralPoint;
-            let currentReachMetric = 0;
-
-            while (true) {
-                let nextLeftProbe = leftProbe;
-                let nextRightProbe = rightProbe;
-
-                if (this.currentWorkingGrid[nextLeftProbe] !== "X") {
-                    nextLeftProbe--;
-                }
-                if (this.currentWorkingGrid[nextRightProbe] !== "X") {
-                    nextRightProbe++;
-                }
-                
-                const testLeftValue = this.currentWorkingGrid[nextLeftProbe];
-                const testRightValue = this.currentWorkingGrid[nextRightProbe];
-
-                if (testLeftValue === "X" && testRightValue === "X") {
-                    break;
-                }
-                if (testLeftValue !== "X" && testLeftValue !== 0) {
-                    break;
-                }
-                if (testRightValue !== "X" && testRightValue !== 0) {
-                    break;
-                }
-
-                currentReachMetric++;
-                leftProbe = nextLeftProbe;
-                rightProbe = nextRightProbe;
-            }
-
-            if (optimalSpot.reach < currentReachMetric) {
-                optimalSpot = { position: centralPoint, reach: currentReachMetric };
-            }
-        }
-
-        if (optimalSpot.position !== 0 && optimalSpot.reach !== 0) {
-            this.currentWorkingGrid[optimalSpot.position] = "D";
-            return;
-        }
-
-        let scanForFirstZero = 1;
-        while (scanForFirstZero <= this.originalContentSize) {
-            if (this.currentWorkingGrid[scanForFirstZero] === 0) {
-                this.currentWorkingGrid[scanForFirstZero] = "D";
-                return;
-            }
-            scanForFirstZero++;
-        }
-    }
-
-    initializeGrid(sizeVal) {
-        this.originalContentSize = sizeVal;
-        this.currentWorkingGrid = ["X", ...Array.from({ length: sizeVal }, () => 0), "X"];
-    }
-
-    getFormattedResult() {
-        return this.currentWorkingGrid.slice(1, -1).join("").replace(/0/g, "#");
+function* generateReverseIndices(arrLength) {
+    for (let k = arrLength - 2; k >= 1; k--) {
+        yield k;
     }
 }
 
-let inputChunks = initialDataSource.trim().split("\n");
-let queuePointer = 0;
-
-function processProblemSets() {
-    let outputLines = [];
-
-    for (;;) {
-        if (queuePointer >= inputChunks.length) {
+const transformB = (dataArray) => {
+    let modified = false;
+    for (const currentIdx of generateReverseIndices(dataArray.length)) {
+        if (dataArray[currentIdx] === 0 && dataArray[currentIdx - 1] !== 'A' && dataArray[currentIdx + 1] !== 'A') {
+            dataArray[currentIdx] = 'B';
+            modified = true;
             break;
         }
-
-        const currentLine = inputChunks[queuePointer++];
-        const dimensionsData = currentLine.split(" ").map(val => parseInt(val, 10));
-        const gridDimension = dimensionsData[0];
-        const operationCount = dimensionsData[1];
-
-        if (gridDimension === 0 && operationCount === 0) {
-            break;
-        }
-
-        const processorInstance = new GridProcessor();
-        processorInstance.initializeGrid(gridDimension);
-
-        const operationDispatch = {
-            "A": () => processorInstance.applyAlphaMark(),
-            "B": () => processorInstance.applyBetaMark(),
-            "C": () => processorInstance.applyGammaMark(),
-            "D": () => processorInstance.applyDeltaMark(),
-        };
-
-        for (let opIdx = 0; opIdx < operationCount; opIdx++) {
-            if (queuePointer >= inputChunks.length) {
-                break;
-            }
-            const operationInstruction = inputChunks[queuePointer++];
-            const actionFunction = operationDispatch[operationInstruction];
-            if (actionFunction) {
-                actionFunction();
-            }
-        }
-        outputLines.push(processorInstance.getFormattedResult());
     }
 
-    outputLines.forEach(line => console.log(line));
-}
+    if (!modified) {
+        const forwardSearchIndex = dataArray.slice(1, -1).findIndex(val => val === 0);
+        if (forwardSearchIndex !== -1) {
+            dataArray[forwardSearchIndex + 1] = 'B';
+        }
+    }
+    return dataArray;
+};
 
-processProblemSets();
+const transformC = (dataArray, originalLength) => {
+    const foundAndModified = dataArray.slice(1, -1).some((val, idx) => {
+        const actualIdx = idx + 1;
+        if (val !== 0) {
+            if (dataArray[actualIdx + 1] === 0) {
+                dataArray[actualIdx + 1] = 'C';
+                return true;
+            }
+            if (dataArray[actualIdx - 1] === 0) {
+                dataArray[actualIdx - 1] = 'C';
+                return true;
+            }
+        }
+        return false;
+    });
+
+    if (!foundAndModified) {
+        const targetOffset = (originalLength % 2 === 1) ? (originalLength - 1) / 2 : originalLength / 2;
+        dataArray[targetOffset + 1] = 'C';
+    }
+    return dataArray;
+};
+
+const calculateZeroSpan = (dataArray, centerIndex) => {
+    let leftPtr = centerIndex;
+    let rightPtr = centerIndex;
+    let spanCount = 0;
+
+    while (true) {
+        const leftBoundaryHit = dataArray[leftPtr] === 'X' || (dataArray[leftPtr] !== 0 && dataArray[leftPtr] !== 'X');
+        const rightBoundaryHit = dataArray[rightPtr] === 'X' || (dataArray[rightPtr] !== 0 && dataArray[rightPtr] !== 'X');
+
+        if (leftBoundaryHit && rightBoundaryHit) {
+            break;
+        }
+
+        if (!leftBoundaryHit) {
+            leftPtr--;
+        }
+        if (!rightBoundaryHit) {
+            rightPtr++;
+        }
+        spanCount++;
+    }
+    return spanCount;
+};
+
+const transformD = (dataArray) => {
+    let maxSpanInfo = { index: 0, count: 0 };
+
+    dataArray.slice(1, -1).forEach((val, idx) => {
+        const actualIdx = idx + 1;
+        if (val === 0) {
+            const currentSpan = calculateZeroSpan(dataArray, actualIdx);
+            if (currentSpan > maxSpanInfo.count) {
+                maxSpanInfo = { index: actualIdx, count: currentSpan };
+            }
+        }
+    });
+
+    if (maxSpanInfo.index !== 0 && maxSpanInfo.count !== 0) {
+        dataArray[maxSpanInfo.index] = 'D';
+        return dataArray;
+    }
+
+    const firstZeroIndex = dataArray.slice(1, -1).findIndex(val => val === 0);
+    if (firstZeroIndex !== -1) {
+        dataArray[firstZeroIndex + 1] = 'D';
+    }
+    return dataArray;
+};
+
+const commandDispatch = new Map([
+    ['A', transformA],
+    ['B', transformB],
+    ['C', transformC],
+    ['D', transformD]
+]);
+
+while (true) {
+    const [nVal, mVal] = inputLines.shift().split(' ').map(Number);
+
+    if (nVal === 0 && mVal === 0) break;
+
+    let currentArr = ['X', ...Array(nVal).fill(0), 'X'];
+
+    for (let k = 0; k < mVal; k++) {
+        const commandKey = inputLines.shift();
+        const handler = commandDispatch.get(commandKey);
+        if (handler) {
+            currentArr = (commandKey === 'C') ? handler(currentArr, nVal) : handler(currentArr);
+        }
+    }
+
+    const finalOutput = currentArr.slice(1, -1).map(val => (val === 0 ? '#' : val)).join('');
+    console.log(finalOutput);
+}

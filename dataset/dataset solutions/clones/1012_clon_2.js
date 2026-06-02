@@ -1,62 +1,62 @@
-// This script processes input data to demonstrate sorting algorithms and stability.
-let dataSource = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input content
-let dataRows = dataSource.split('\n'); // Divide input into separate lines
-let itemQuantity = dataRows[0]; // The first line specifies the number of items to process
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Split the raw input into individual lines of data
+const dataRows = rawData.split('\n');
+
+// The first line contains the count of elements
+const elementCount = dataRows[0];
 
 // --- Bubble Sort Implementation ---
-// Initialize the first array for sorting with the second line of input
-let firstArray = dataRows[1].split(' ');
-/*
- * Outer loop for the bubble sort.
- * Iterates through each element in the array.
- */
-for (let outerIndex = 0; outerIndex < itemQuantity; outerIndex++) {
-    // Inner loop for comparisons and swaps.
-    // Elements are 'bubbled' up to their correct position.
-    for (let innerIndex = itemQuantity - 1; innerIndex > outerIndex; innerIndex--) {
-        // Compare elements based on their second character.
-        // This is a custom comparison logic for stability check.
-        if (firstArray[innerIndex].split('')[1] < firstArray[innerIndex - 1].split('')[1]) {
-            // Swap elements if they are in the wrong order.
-            let tempValue = firstArray[innerIndex];
-            firstArray[innerIndex] = firstArray[innerIndex - 1];
-            firstArray[innerIndex - 1] = tempValue;
+// Initialize an array for bubble sort from the second line of input
+let bubbleSortedArray = dataRows[1].split(' ');
+
+// Perform bubble sort to sort the array based on the second character of each element
+for (let outerLoopIdx = 0; outerLoopIdx < elementCount; outerLoopIdx++) {
+    for (let innerLoopIdx = elementCount - 1; innerLoopIdx > outerLoopIdx; innerLoopIdx--) {
+        // Compare the second character (value) of adjacent elements
+        if (bubbleSortedArray[innerLoopIdx].split('')[1] < bubbleSortedArray[innerLoopIdx - 1].split('')[1]) {
+            // Swap elements if they are in the wrong order
+            let tempCard = bubbleSortedArray[innerLoopIdx];
+            bubbleSortedArray[innerLoopIdx] = bubbleSortedArray[innerLoopIdx - 1];
+            bubbleSortedArray[innerLoopIdx - 1] = tempCard;
         }
     }
 }
-// Output the sorted array from the bubble sort.
-console.log(firstArray.join(' '));
-// Bubble sort is inherently stable for this comparison method.
+
+// Output the bubble-sorted array
+console.log(bubbleSortedArray.join(' '));
+// Bubble sort is inherently stable
 console.log('Stable');
 
+
 // --- Selection Sort Implementation ---
-// Re-initialize a second array with the original input for selection sort
-let secondArray = dataRows[1].split(' ');
-/*
- * Outer loop of the selection sort.
- * Finds the minimum element and places it at the correct position.
- */
-for (let idx1 = 0; idx1 < itemQuantity; idx1++) {
-    let smallestIdx = idx1; // Assume the current element is the smallest
-    // Inner loop to find the actual smallest element in the unsorted portion
-    for (let idx2 = idx1; idx2 < itemQuantity; idx2++) {
-        // Custom comparison: based on the second character of the string
-        if (secondArray[idx2].split('')[1] < secondArray[smallestIdx].split('')[1])
-            smallestIdx = idx2; // Update index of the smallest element found
+// Initialize another array for selection sort from the same input line
+let selectionSortedArray = dataRows[1].split(' ');
+
+// Perform selection sort
+for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
+    let minIndex = currentIdx; // Assume the current element is the minimum
+
+    // Find the minimum element in the unsorted part of the array
+    for (let scanIdx = currentIdx; scanIdx < elementCount; scanIdx++) {
+        if (selectionSortedArray[scanIdx].split('')[1] < selectionSortedArray[minIndex].split('')[1]) {
+            minIndex = scanIdx; // Update minimum index if a smaller element is found
+        }
     }
 
-    // If the smallest element is already in place, skip the swap
-    if (smallestIdx === idx1)
-        continue;
+    // If the minimum element is not at the current position, swap them
+    if (minIndex === currentIdx) {
+        continue; // No swap needed if already in place
+    }
 
-    // Swap the current element with the smallest element found
-    let swapHold = secondArray[idx1];
-    secondArray[idx1] = secondArray[smallestIdx];
-    secondArray[smallestIdx] = swapHold;
+    let swapItem = selectionSortedArray[currentIdx];
+    selectionSortedArray[currentIdx] = selectionSortedArray[minIndex];
+    selectionSortedArray[minIndex] = swapItem;
 }
 
-// Output the sorted array from the selection sort.
-console.log(secondArray.join(' '));
-// Compare the results of the two sorts to check for stability.
-// If the joined strings are identical, both sorts maintained relative order of equal elements.
-console.log(firstArray.join(' ') === secondArray.join(' ') ? 'Stable' : 'Not stable');
+// Output the selection-sorted array
+console.log(selectionSortedArray.join(' '));
+
+// Compare the stability of the two sorting algorithms
+// If the sorted arrays are identical, selection sort is also considered stable for this input
+console.log(bubbleSortedArray.join(' ') === selectionSortedArray.join(' ') ? 'Stable' : 'Not stable');

@@ -1,27 +1,18 @@
-/*
- * This module handles processing of financial input streams.
- */
-function ProcessFinancialData(rawDataString)
-{
+function ProcessInput(rawData) {
+  // Process the incoming raw data string
+  let parsedData = rawData.split(" ");
 
-    // Split the incoming string by spaces to get individual components.
-    let numericComponents = rawDataString.split(" ");
+  // Extract numerical components from the parsed array
+  let firstValue = parsedData[0];
+  let secondValue = parsedData[1];
 
-    // The first component represents the number of units available.
-    const unitQuantity = parseInt(numericComponents[0], 10);
-    // The second component represents the total funds required.
-    const requiredFunds = parseInt(numericComponents[1], 10);
-
-    // Check if the total value from the units meets or exceeds the required funds.
-    if ( (unitQuantity * 500) >= requiredFunds )
-    {
-        console.log("YES"); // Indicate success
-    }
-    else
-    {
-        console.log("NO"); // Indicate failure
-    }
+  // Evaluate a specific condition based on the extracted values
+  if (firstValue * 500 >= secondValue) {
+    console.log("YES"); // Output for the true branch
+  } else {
+    console.log("NO"); // Output for the false branch
+  }
 }
 
-// Invoke the primary processing function with data read from standard input.
-ProcessFinancialData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

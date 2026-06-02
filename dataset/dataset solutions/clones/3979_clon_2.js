@@ -1,82 +1,60 @@
-// This script processes coordinate data to find matching pairs based on specific rules.
-console.log(( inputData => {
-  // First, we parse the incoming string data from the standard input.
-  // The initial line contains a single integer representing the total count of items.
-  // Subsequent lines contain pairs of coordinates.
-  const [
-    // The total number of entities to process
-    [ totalItems ],
-    // Remaining lines of coordinate data
-    ...parsedLines
-  ] = inputData
-      .trim()                                   // Remove any leading/trailing whitespace.
-      .split('\n')                              // Split the input into individual lines.
-      .map( lineStr =>
-        lineStr.split(' ')                      // Split each line by space to get components.
-        .map( valStr => Number(valStr) )        // Convert each string component to a number.
-      );
+console.log(( ( inputStr ) => {
+  // Parse the input string into numerical data.
+  // The first line contains N, subsequent lines contain coordinates.
+  const [ [ numPoints ], ...tempData ] = inputStr
+    .trim()
+    .split( '\n' )
+    .map( ( lineStr ) => lineStr.split( ' ' ).map( ( valStr ) => valStr | 0 ) );
 
-  // Initialize two distinct collections for coordinate points.
-  // 'crimsonPoints' will store the first set of coordinates.
-  const crimsonPoints = [ ] ;
-  // 'azurePoints' will store the second set of coordinates.
-  const azurePoints = [ ] ;
+  // Initialize arrays to hold red and blue point coordinates.
+  const redPoints = [];
+  const bluePoints = [];
 
-  // Distribute the parsed coordinate data into their respective collections.
-  // The first 'totalItems' lines go to 'crimsonPoints', the next 'totalItems' to 'azurePoints'.
-  for ( let idx = 0 ; idx < totalItems ; idx++ ) {
-    crimsonPoints.push( parsedLines[idx] );
-    azurePoints.push( parsedLines[totalItems + idx] );
+  // Populate the redPoints and bluePoints arrays.
+  // The first N lines after N are red points, the next N are blue points.
+  for ( let idxA = 0x0; idxA < numPoints; idxA++ ) {
+    redPoints.push( tempData[ idxA ] );
+    bluePoints.push( tempData[ numPoints + idxA ] );
   }
 
-  // Sort both collections in descending order based on their first coordinate (x-value).
-  // This helps in optimizing the matching process later.
-  crimsonPoints.sort(( [ firstCoord_A ], [ firstCoord_B ] ) => firstCoord_B - firstCoord_A );
-  azurePoints.sort(( [ firstCoord_A ], [ firstCoord_B ] ) => firstCoord_B - firstCoord_A );
+  // Sort both arrays in descending order based on their first coordinate (x-value).
+  // This helps in efficiently finding matches later.
+  redPoints.sort( ( [ coordA ], [ coordB ] ) => coordB - coordA );
+  bluePoints.sort( ( [ coordA ], [ coordB ] ) => coordB - coordA );
 
-  // Initialize a counter for the number of successfully matched pairs.
-  let successfulPairs = 0 ;
+  let pairCount = 0x0; // Counter for the number of successful pairings.
 
-  // Iterate through each point in the 'azurePoints' collection.
-  for ( let primaryIndex = 0 ; primaryIndex < totalItems ; primaryIndex++ ) {
-    // Extract the x and y coordinates of the current blue point.
-    const [ currentBlueX, currentBlueY ] = azurePoints[primaryIndex];
+  // Iterate through each blue point to find a matching red point.
+  for ( let idxA = 0x0; idxA < numPoints; idxA++ ) {
+    const [ blueX, blueY ] = bluePoints[ idxA ]; // Current blue point's coordinates.
 
-    // Initialize variables to track the optimal red point match for the current blue point.
-    // 'optimalCandidate[0]' stores the index of the best red point in 'crimsonPoints'.
-    // 'optimalCandidate[1]' stores the y-coordinate of the best red point.
-    // Initial values (-1) indicate no suitable match has been found yet.
-    let optimalCandidate = [ -1, -1 ];
+    // `bestMatch` stores the index and y-coordinate of the best red point found so far
+    // for the current blue point. Initialized to an invalid state.
+    let bestMatch = [ -0x1, -0x1 ];
 
-    // Iterate through the available 'crimsonPoints' to find a match.
-    for ( let secondaryIndex = 0 ; secondaryIndex < crimsonPoints.length ; secondaryIndex++ ) {
-      // Extract the x and y coordinates of the current red point.
-      const [ currentRedX, currentRedY ] = crimsonPoints[secondaryIndex];
+    // Iterate through the available red points.
+    for ( let idxB = 0x0; idxB < redPoints.length; idxB++ ) {
+      const [ redX, redY ] = redPoints[ idxB ]; // Current red point's coordinates.
 
-      // Condition 1: The x-coordinate of the blue point must be strictly less than the red point's x-coordinate.
-      if ( currentBlueX < currentRedX ) {
-        continue; // If this condition is not met, move to the next red point.
+      // Condition 1: The blue point's x-coordinate must be greater than the red point's x-coordinate.
+      if ( blueX < redX ) {
+        continue; // Skip this red point if its x is too large.
       }
 
-      // Condition 2: The y-coordinate of the blue point must be strictly greater than the red point's y-coordinate.
-      // Additionally, we want to find the red point with the largest y-coordinate among valid matches.
-      if ( currentBlueY > currentRedY && currentRedY > optimalCandidate[1] ) {
-        // If both conditions are met and this red point's y-coordinate is better than previous best, update 'optimalCandidate'.
-        optimalCandidate = [ secondaryIndex, currentRedY ];
+      // Condition 2: The blue point's y-coordinate must be greater than the red point's y-coordinate.
+      // Also, we want the red point with the largest y-coordinate that satisfies the conditions.
+      if ( blueY > redY && redY > bestMatch[ 0x1 ] ) {
+        bestMatch = [ idxB, redY ]; // Update `bestMatch` if a better red point is found.
       }
     }
 
-    // After checking all available red points, if an optimal candidate was found (y-coordinate >= 0).
-    if ( optimalCandidate[1] >= 0 ) {
-      // Remove the matched red point from the collection to prevent it from being matched again.
-      crimsonPoints.splice( optimalCandidate[0], 1 );
-      // Increment the counter for successful pairings.
-      successfulPairs++;
+    // If a suitable red point was found (i.e., `bestMatch[1]` is no longer -1).
+    if ( bestMatch[ 0x1 ] >= 0x0 ) {
+      redPoints.splice( bestMatch[ 0x0 ], 0x1 ); // Remove the matched red point from the array.
+      pairCount++; // Increment the count of successful pairings.
     }
   }
 
-  // The final count of successful pairings is converted to a string and returned.
-  return `${successfulPairs}`;
-
-// This immediately invoked function expression (IIFE) reads input from stdin.
-})( require('fs').readFileSync('/dev/stdin', 'utf8') ) );
+  // Return the final count as a string.
+  return `${ pairCount }`;
+} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) );

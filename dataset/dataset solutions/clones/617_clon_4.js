@@ -1,36 +1,33 @@
-const sourceMaterial = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const instructionSet = sourceMaterial.trim().split('\n');
+const lineSegments = rawData.trim().split("\n");
 
-let currentAccumulator = Number(instructionSet[0]);
+const initialNumericValue = Number(lineSegments[0]);
 
-const operationSequence = [];
-for (let j = 1; j < instructionSet.length; j += 2) {
-    const operatorSymbol = instructionSet[j];
-    if (operatorSymbol === '=') {
-        break;
-    }
-    const numericOperand = Number(instructionSet[j + 1]);
-    operationSequence.push({
-        symbol: operatorSymbol,
-        value: numericOperand
-    });
-}
-
-const mathActions = {
-    '+': (previousValue, currentValue) => previousValue + currentValue,
-    '-': (previousValue, currentValue) => previousValue - currentValue,
-    '*': (previousValue, currentValue) => previousValue * currentValue,
-    '/': (previousValue, currentValue) => previousValue / currentValue,
+const operationHandlers = {
+    "+": (currentAccumulator, operandValue) => currentAccumulator + operandValue,
+    "-": (currentAccumulator, operandValue) => currentAccumulator - operandValue,
+    "*": (currentAccumulator, operandValue) => currentAccumulator * operandValue,
+    "/": (currentAccumulator, operandValue) => currentAccumulator / operandValue,
 };
 
-const finalOutcome = operationSequence.reduce((processingResult, instructionEntry) => {
-    const operationHandler = mathActions[instructionEntry.symbol];
-    if (operationHandler) {
-        const temporaryCalculation = operationHandler(processingResult, instructionEntry.value);
-        return Math.trunc(temporaryCalculation);
+function processCalculations(currentAccumulator, segmentIndex, segmentsArray, handlersMap) {
+    if (segmentIndex >= segmentsArray.length || segmentsArray[segmentIndex] === "=") {
+        return Math.trunc(currentAccumulator);
     }
-    return processingResult;
-}, currentAccumulator);
 
-console.log(finalOutcome);
+    const currentOperatorSymbol = segmentsArray[segmentIndex];
+    const nextOperandValue = Number(segmentsArray[segmentIndex + 1]);
+
+    const performOperation = handlersMap[currentOperatorSymbol];
+
+    const intermediateResult = performOperation(currentAccumulator, nextOperandValue);
+
+    const truncatedIntermediate = Math.trunc(intermediateResult);
+
+    return processCalculations(truncatedIntermediate, segmentIndex + 2, segmentsArray, handlersMap);
+}
+
+const finalComputedValue = processCalculations(initialNumericValue, 1, lineSegments, operationHandlers);
+
+console.log(finalComputedValue);

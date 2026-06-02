@@ -1,30 +1,24 @@
-const standardInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+let rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lines = rawContent.trim().split('\n');
+let entryCount = Number(lines.shift());
 
-const allLines = standardInput.trim().split('\n');
+let dataMap = new Map();
 
-const numberOfEntries = Number(allLines[0]);
-
-const dataEntries = allLines.slice(1, numberOfEntries + 1);
-
-const aggregatedValues = dataEntries.reduce((accumulatorMap, currentEntry) => {
-    const parts = currentEntry.split(' ');
-    const identifier = parts[0];
-    const value = Number(parts[1]);
-
-    const currentSum = accumulatorMap.get(identifier) || 0;
-    accumulatorMap.set(identifier, currentSum + value);
-    return accumulatorMap;
-}, new Map());
-
-const sortedIdentifiers = Array.from(aggregatedValues.keys()).sort((idA, idB) => {
-    if (idA.length !== idB.length) {
-        return idA.length - idB.length;
-    }
-    return idA.localeCompare(idB);
+lines.slice(0, entryCount).forEach(currentLine => {
+  let parts = currentLine.split(' ');
+  let identifier = parts[0];
+  let numericValue = Number(parts[1]);
+  dataMap.set(identifier, (dataMap.get(identifier) || 0) + numericValue);
 });
 
-const outputLines = sortedIdentifiers.map(keyName => {
-    return `${keyName} ${aggregatedValues.get(keyName)}`;
+let sortedIdentifiers = Array.from(dataMap.keys()).sort((firstKey, secondKey) => {
+  let lengthDifference = firstKey.length - secondKey.length;
+  if (lengthDifference !== 0) {
+    return lengthDifference;
+  }
+  return firstKey.localeCompare(secondKey);
 });
 
-console.log(outputLines.join('\n'));
+sortedIdentifiers.forEach(currentIdentifier => {
+  console.log(`${currentIdentifier} ${dataMap.get(currentIdentifier)}`);
+});

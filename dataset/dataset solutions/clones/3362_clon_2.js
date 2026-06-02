@@ -1,62 +1,65 @@
-var rawInputs = [];
-var unusedPlaceholder;
+var inputData = [];
+var unusedVar; // A placeholder variable, not actively used in the logic
 
-var lineReaderModule = require("readline");
-var inputOutputHandler = lineReaderModule.createInterface(
-    {
-        input: process.stdin,
-        output: process.stdout,
-    }
-);
-
-inputOutputHandler.on("line", function (currentLineText) {
-    rawInputs.push(currentLineText);
+const nodeReadline = require("readline"); // Import the readline module
+const inputReader = nodeReadline.createInterface({
+    input: process.stdin, // Standard input stream
+    output: process.stdout, // Standard output stream (not used for direct output here)
 });
 
-inputOutputHandler.on("close", function () {
-    // Process the initial configuration line from the input stream
-    var initialValues = rawInputs.shift().split(" ");
-    var boundaryVal = Number(initialValues[0]);
-    var numElements = Number(initialValues[1]);
+// Event listener for each line of input received
+inputReader.on("line", function (currentLine) {
+    inputData.push(currentLine); // Store the received line in our array
+});
 
-    // Initialize an array to hold the numeric data points for processing
-    var numericValues = Array(numElements);
-    for (var idx = 0; idx < numElements; idx++) {
-        numericValues[idx] = Number(rawInputs[idx]);
+// Event listener for when the input stream closes
+inputReader.on("close", function () {
+    // Process the first line to get L and N
+    const initialValues = inputData.shift().split(" ");
+    const totalLength = Number(initialValues[0]); // Parse L as a number
+    const numPoints = Number(initialValues[1]); // Parse N as a number
+
+    // Initialize an array to store point coordinates
+    const pointCoordinates = Array(numPoints);
+    // Populate the point coordinates array from subsequent input lines
+    for (let idx = 0; idx < numPoints; idx++) {
+        pointCoordinates[idx] = Number(inputData[idx]);
     }
-    // Sort the collected data points in ascending numerical order
-    numericValues.sort(function (valA, valB) { return (valA - valB); });
+    // Sort the point coordinates in ascending order
+    pointCoordinates.sort(function (valA, valB) {
+        return (valA - valB);
+    });
 
-    var accumulatedDistance = 0;
-    var pivotPoint = 0;
-    var rightIndex = 0;
-    var leftIndex = numElements - 1;
+    let finalScore = 0; // Accumulator for the total score
+    let currentPosition = 0; // Represents the current center point
+    let rightPointer = 0; // Index for the rightmost point considered
+    let leftPointer = numPoints - 1; // Index for the leftmost point considered
 
-    // Calculate initial distances from the extreme points to their respective ends or boundaries
-    var leftSpan = boundaryVal - numericValues[leftIndex];
-    var rightSpan = numericValues[rightIndex];
+    // Calculate initial distances to the ends of the segment
+    let distToLeft = totalLength - pointCoordinates[leftPointer];
+    let distToRight = pointCoordinates[rightPointer];
 
-    for (var iterationCount = 0; iterationCount < numElements; iterationCount++) {
-        // Evaluate which movement (towards right or left) minimizes the path or distance
-        if (rightSpan <= leftSpan) {
-            // Opt to move towards the left-most available point
-            accumulatedDistance += leftSpan;
-            pivotPoint = numericValues[leftIndex];
-            leftIndex--;
-            // Recalculate spans based on the newly established pivot point
-            leftSpan = pivotPoint - numericValues[leftIndex];
-            rightSpan = boundaryVal - (pivotPoint - numericValues[rightIndex]);
+    // Loop through all points to determine the optimal path
+    for (let iterationCount = 0; iterationCount < numPoints; iterationCount++) {
+        // This block handles movement towards the left side
+        // (Original comment: leftに動いた場合)
+        // console.log(pointCoordinates[leftPointer], currentPosition, pointCoordinates[rightPointer], " ", distToLeft, distToRight); // Debugging line, commented out
+        if (distToRight <= distToLeft) {
+            finalScore += distToLeft; // Add the distance to the total score
+            currentPosition = pointCoordinates[leftPointer]; // Update current position
+            leftPointer--; // Move the left pointer inwards
+            distToLeft = currentPosition - pointCoordinates[leftPointer]; // Recalculate distance to new left
+            distToRight = totalLength - (currentPosition - pointCoordinates[rightPointer]); // Recalculate distance to new right
         }
+        // This block handles movement towards the right side
+        // (Original comment: rightに動いた場合)
         else {
-            // Opt to move towards the right-most available point
-            accumulatedDistance += rightSpan;
-            pivotPoint = numericValues[rightIndex];
-            rightIndex++;
-            // Recalculate spans based on the updated pivot point position
-            leftSpan = boundaryVal - (numericValues[leftIndex] - pivotPoint);
-            rightSpan = numericValues[rightIndex] - pivotPoint;
+            finalScore += distToRight; // Add the distance to the total score
+            currentPosition = pointCoordinates[rightPointer]; // Update current position
+            rightPointer++; // Move the right pointer inwards
+            distToLeft = totalLength - (pointCoordinates[leftPointer] - currentPosition); // Recalculate distance to new left
+            distToRight = pointCoordinates[rightPointer] - currentPosition; // Recalculate distance to new right
         }
     }
-    // Output the final computed total accumulated distance
-    console.log(accumulatedDistance);
+    console.log(finalScore); // Output the final calculated score
 });

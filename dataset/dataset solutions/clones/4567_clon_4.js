@@ -1,59 +1,49 @@
-const calculateOptimalDistribution = (rawInputString) => {
-    const extractDimensions = (dataString) => {
-        return dataString.split(" ").map(Number);
-    };
+function Main(input) {
+    const [primaryDimension, secondaryDimension] = input.split(" ").map(Number);
 
-    const processSplitConfiguration = (mainLength, crossLength) => {
-        let trialResults = [];
+    const determineMinimalAreaDifference = (lengthA, lengthB) => {
+        let currentBestDifference = Number.MAX_SAFE_INTEGER;
 
-        // Evaluate a split where the first piece takes floor(1/3) of mainLength
-        const segmentOneLengthA = Math.floor(mainLength / 3);
-        const remainingLengthA = mainLength - segmentOneLengthA;
-        const areasA = [
-            segmentOneLengthA * crossLength,
-            remainingLengthA * Math.ceil(crossLength / 2),
-            remainingLengthA * Math.floor(crossLength / 2)
+        // Scenario 1: Split lengthA into floor(lengthA/3) and remaining, then split remaining lengthB-wise
+        const firstSegmentA = Math.floor(lengthA / 3);
+        const remainingSegmentA = lengthA - firstSegmentA;
+        const configurationOneAreas = [
+            firstSegmentA * lengthB,
+            remainingSegmentA * Math.ceil(lengthB / 2),
+            remainingSegmentA * Math.floor(lengthB / 2)
         ];
-        trialResults.push(Math.max(...areasA) - Math.min(...areasA));
+        currentBestDifference = Math.min(currentBestDifference, Math.max(...configurationOneAreas) - Math.min(...configurationOneAreas));
 
-        // Evaluate a split where the first piece takes ceil(1/3) of mainLength
-        const segmentOneLengthB = Math.ceil(mainLength / 3);
-        const remainingLengthB = mainLength - segmentOneLengthB;
-        const areasB = [
-            segmentOneLengthB * crossLength,
-            remainingLengthB * Math.ceil(crossLength / 2),
-            remainingLengthB * Math.floor(crossLength / 2)
+        // Scenario 2: Split lengthA into ceil(lengthA/3) and remaining, then split remaining lengthB-wise
+        const secondSegmentA = Math.ceil(lengthA / 3);
+        const leftoverSegmentA = lengthA - secondSegmentA;
+        const configurationTwoAreas = [
+            secondSegmentA * lengthB,
+            leftoverSegmentA * Math.ceil(lengthB / 2),
+            leftoverSegmentA * Math.floor(lengthB / 2)
         ];
-        trialResults.push(Math.max(...areasB) - Math.min(...areasB));
-        
-        return Math.min(...trialResults);
-    };
+        currentBestDifference = Math.min(currentBestDifference, Math.max(...configurationTwoAreas) - Math.min(...configurationTwoAreas));
 
-    const evaluateLinearPartition = (dimensionValue, otherDimensionValue) => {
-        if (dimensionValue % 3 === 0) {
-            return 0; // Perfectly divisible into three equal strips
+        // Scenario 3: Direct three-way cut along lengthA
+        if (lengthA % 3 === 0) {
+            currentBestDifference = Math.min(currentBestDifference, 0);
         } else {
-            return otherDimensionValue; // The minimum possible difference for uneven splits
+            // If lengthA is not perfectly divisible by 3, the smallest possible difference
+            // when cutting into three pieces along lengthA is lengthB.
+            currentBestDifference = Math.min(currentBestDifference, lengthB);
         }
+
+        return currentBestDifference;
     };
 
-    const [firstRectDim, secondRectDim] = extractDimensions(rawInputString);
+    let overallSmallestDifference = Number.MAX_SAFE_INTEGER;
 
-    let overallMinimalDifference = Number.MAX_SAFE_INTEGER;
+    // Evaluate cutting strategies with primaryDimension as the one being split into three main sections
+    overallSmallestDifference = Math.min(overallSmallestDifference, determineMinimalAreaDifference(primaryDimension, secondaryDimension));
 
-    // Consider complex cuts along the first dimension, then the remaining part along the second dimension
-    overallMinimalDifference = Math.min(overallMinimalDifference, processSplitConfiguration(firstRectDim, secondRectDim));
+    // Evaluate cutting strategies with secondaryDimension as the one being split into three main sections
+    overallSmallestDifference = Math.min(overallSmallestDifference, determineMinimalAreaDifference(secondaryDimension, primaryDimension));
 
-    // Consider complex cuts along the second dimension, then the remaining part along the first dimension
-    overallMinimalDifference = Math.min(overallMinimalDifference, processSplitConfiguration(secondRectDim, firstRectDim));
-
-    // Consider simple linear cuts dividing the first dimension into three strips
-    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateLinearPartition(firstRectDim, secondRectDim));
-
-    // Consider simple linear cuts dividing the second dimension into three strips
-    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateLinearPartition(secondRectDim, firstRectDim));
-
-    console.log(overallMinimalDifference);
-};
-
-calculateOptimalDistribution(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+    console.log(overallSmallestDifference);
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

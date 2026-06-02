@@ -1,47 +1,39 @@
 'use strict';
 
-/**
- *  This program processes a list of items, each with a cost and a time requirement,
- *  to find the minimum cost among items that satisfy a given time limit.
- *  It expects input from stdin.
- *
- *  @param {string} rawInputContent - The complete input data as a single string.
- */
-function ProcessInputData(rawInputContent) {
-  // Divide the entire input string into an array of separate lines.
-  const inputLinesCollection = rawInputContent.split('\n');
+// This function processes the raw input data to find a minimum value based on a threshold.
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of lines.
+    const linesArray = rawData.split("\n");
 
-  // Extract the maximum allowed time threshold from the first line of the input.
-  // The threshold is assumed to be the second numerical value on this initial line.
-  const maximumAllowedTime = parseInt(inputLinesCollection[0].split(' ')[1], 10);
+    // Extract the threshold value from the first line.
+    // The threshold is the second number on the first line.
+    const thresholdValue = Number(linesArray[0].split(" ")[1]);
 
-  // Remove the header line, as its information has been extracted.
-  inputLinesCollection.shift();
+    // Remove the first line as it's already processed for the threshold.
+    linesArray.shift();
 
-  // Initialize a variable to track the smallest cost encountered so far.
-  // Starting with positive infinity ensures that any valid cost will correctly replace it.
-  let minimumObservedCost = Infinity;
+    // Initialize a variable to store the minimum cost found so far.
+    // Using a large number to ensure any valid cost will be smaller.
+    let minimumCost = 9999;
 
-  // Iterate through each subsequent line in the input collection.
-  for (let currentLineIndex = 0; currentLineIndex < inputLinesCollection.length; currentLineIndex++) {
-    // Parse the current line, converting its space-separated values into an array of numbers.
-    // The first number is typically the cost, and the second is the time.
-    const numericPair = inputLinesCollection[currentLineIndex].split(' ').map(valueString => parseInt(valueString, 10));
+    // Iterate through the remaining lines of input.
+    for (let idx = 0; idx < linesArray.length; idx++) {
+        // Parse the current line into an array of numbers.
+        // Each line contains two numbers separated by a space.
+        let currentEntry = linesArray[idx].split(" ").map(numStr => Number(numStr));
 
-    // Check if the time component of the current pair is within the allowed threshold
-    // AND if its cost component is less than the currently recorded minimum cost.
-    if (numericPair[1] <= maximumAllowedTime && numericPair[0] < minimumObservedCost) {
-      // If both conditions are met, update the minimum observed cost with the current item's cost.
-      minimumObservedCost = numericPair[0];
+        // Check if the second number (cost) is within the threshold
+        // AND if the first number (value) is less than the current minimum cost.
+        if (currentEntry[1] <= thresholdValue && currentEntry[0] < minimumCost) {
+            // If both conditions are met, update the minimum cost.
+            minimumCost = currentEntry[0];
+        }
     }
-  }
 
-  // Output the final result: either the lowest cost found, or a specific message
-  // if no item met the criteria (i.e., the minimum cost remains Infinity).
-  console.log(minimumObservedCost === Infinity ? 'TimeLimitExceeded' : minimumObservedCost);
+    // Output the result: if no valid cost was found (minimumCost is still 9999), print "TLE",
+    // otherwise print the found minimum cost.
+    console.log(minimumCost == 9999 ? "TLE" : minimumCost);
 }
 
-// Execute the main processing function by reading input from the standard input stream.
-// The 'node:fs' module is used for file system operations, and '/dev/stdin' is the conventional
-// path for standard input on Unix-like systems, read as UTF-8 encoded text.
-ProcessInputData(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

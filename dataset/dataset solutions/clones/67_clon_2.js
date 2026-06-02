@@ -1,44 +1,32 @@
-let mathStringPart='+ = + splitValues[ 0 ] * Math . '; /* String fragment for trigonometric calculation */
-let angleStringPart='( totalAngleDegrees * Math . PI / 180 )'; /* String fragment for angle conversion to radians */
+let mathOperationPrefix = '+=+lineSegments[0]*Math.';
+let radianAngleExpression = '(cumulativeDegrees*Math.PI/180)';
 
-let currentXCoord =0.0; /* Stores the horizontal position */
-let currentYCoord =0.0; /* Stores the vertical position */
-let totalAngleDegrees =0.0; /* Accumulates the total angle in degrees */
+// Initialize position coordinates and cumulative angle
+let horizontalPosition = 0;
+let verticalPosition = 0;
+let cumulativeDegrees = 0;
 
-// Begin processing input data from standard input
-require("fs")
-  .readFileSync(
-    "/dev/stdin", // Path to the standard input stream
-    "utf8"       /* Specify UTF-8 encoding for text data */
-  )
-  .trim()          /* Remove any leading or trailing whitespace */
-  .split('\n')     /* Divide the input string into an array of lines */
-  .some(function(lineContent) { // Iterate over each individual line of input
-    /* Split the current line by a comma to get individual values */
-    let splitValues = lineContent.split(',');
+// Read input from stdin, process each line
+require("fs").readFileSync("/dev/stdin", "utf8")
+    .trim()
+    .split('\n')
+    .some(function(inputLine) {
+        // Split the line into segments (value, angle_increment)
+        let lineSegments = inputLine.split(',');
 
-    /*
-     * Dynamically construct and execute a JavaScript string.
-     * This updates currentXCoord and currentYCoord based on
-     * the first value from splitValues, current totalAngleDegrees,
-     * and trigonometric functions (sine for X, cosine for Y).
-     */
-    eval(
-        'currentXCoord' + mathStringPart + 'sin' + angleStringPart +
-        ',currentYCoord' + mathStringPart + 'cos' + angleStringPart
-    );
+        // Dynamically construct and evaluate the coordinate update expressions
+        // This updates horizontalPosition and verticalPosition based on the first segment
+        // and the sine/cosine of the cumulative angle.
+        eval('horizontalPosition' + mathOperationPrefix + 'sin' + radianAngleExpression + ',verticalPosition' + mathOperationPrefix + 'cos' + radianAngleExpression);
 
-    /*
-     * Add the second value from splitValues to the totalAngleDegrees.
-     * The unary plus operator converts the string to a number.
-     */
-    totalAngleDegrees += +splitValues[1];
+        // Add the second segment (angle increment) to the cumulative angle
+        cumulativeDegrees += +lineSegments[1];
 
-    return false; /* Ensures the 'some' method iterates through all lines */
-  });
+        // The 'some' method continues until a truthy value is returned.
+        // Since we don't return anything, it processes all lines.
+        return false;
+    });
 
-/* Output the final horizontal coordinate, truncated to an integer */
-console.log(Math.floor(currentXCoord));
-
-/* Output the final vertical coordinate, truncated to an integer */
-console.log(Math.floor(currentYCoord));
+// Output the final integer coordinates
+console.log(~~horizontalPosition);
+console.log(~~verticalPosition);

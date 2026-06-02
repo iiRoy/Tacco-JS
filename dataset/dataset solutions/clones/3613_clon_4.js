@@ -1,48 +1,47 @@
-const travelRouteManager = () => {
-    const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-    const dataRows = rawInputData.split("\n");
+"use strict";
 
-    const interpretNumericalSequence = (textLine) => (Array.isArray(textLine) ? textLine : textLine.split(/\s+/)).map(Number);
+function mainExecution() {
+  (function (inputContent) {
+    const inputLines = inputContent.split("\n");
 
-    const [stationLimit, totalRoutes, totalRequests] = interpretNumericalSequence(dataRows[0]);
+    const [maxStation, numTrains, numQueries] = inputLines[0].split(' ').map(Number);
 
-    const routeRecords = dataRows.slice(1, totalRoutes + 1).map(line => interpretNumericalSequence(line));
-    const requestSpecifications = dataRows.slice(totalRoutes + 1, totalRoutes + 1 + totalRequests).map(line => interpretNumericalSequence(line));
-
-    const routeOccurrenceRegister = new Map(); // Map<endingPoint, Map<startingPoint, count>>
-    routeRecords.forEach(([startPoint, endPoint]) => {
-        if (!routeOccurrenceRegister.has(endPoint)) {
-            routeOccurrenceRegister.set(endPoint, new Map());
-        }
-        const startPointCounts = routeOccurrenceRegister.get(endPoint);
-        startPointCounts.set(startPoint, (startPointCounts.get(startPoint) || 0) + 1);
+    const trainData = inputLines.slice(1, numTrains + 1).map(line => {
+      const parts = line.split(' ').map(Number);
+      return { left: parts[0], right: parts[1] };
     });
 
-    const cumulativeRouteTallies = new Map(); // Map<endingPoint, number[]> where array index is startingPoint
-    for (let currentEndPoint = 1; currentEndPoint <= stationLimit; currentEndPoint++) {
-        const cumulativeForEndPoint = Array(stationLimit + 1).fill(0);
-        let runningAccumulation = 0;
-        const startPointFrequency = routeOccurrenceRegister.get(currentEndPoint) || new Map();
+    const queryData = inputLines.slice(numTrains + 1, numTrains + 1 + numQueries).map(line => {
+      const parts = line.split(' ').map(Number);
+      return { start: parts[0], end: parts[1] };
+    });
 
-        for (let currentStartPoint = 1; currentStartPoint <= stationLimit; currentStartPoint++) {
-            runningAccumulation += startPointFrequency.get(currentStartPoint) || 0;
-            cumulativeForEndPoint[currentStartPoint] = runningAccumulation;
-        }
-        cumulativeRouteTallies.set(currentEndPoint, cumulativeForEndPoint);
+    const trainFrequencies = Array.from({ length: maxStation + 1 }, () => Array(maxStation + 1).fill(0));
+
+    for (const trn of trainData) {
+      trainFrequencies[trn.right][trn.left]++;
     }
 
-    const requestResults = requestSpecifications.map(([minimumPoint, maximumPoint]) => {
-        let currentRequestTotal = 0;
-        for (let targetEndPoint = minimumPoint; targetEndPoint <= maximumPoint; targetEndPoint++) {
-            const endPointData = cumulativeRouteTallies.get(targetEndPoint);
-            if (endPointData) {
-                currentRequestTotal += endPointData[maximumPoint] - (endPointData[minimumPoint - 1] || 0);
-            }
-        }
-        return currentRequestTotal;
-    });
+    const cumulativeTrainCounts = Array.from({ length: maxStation + 1 }, () => Array(maxStation + 1).fill(0));
 
-    console.log(requestResults.join("\n"));
-};
+    for (let currentR = 1; currentR <= maxStation; currentR++) {
+      for (let currentL = 1; currentL <= maxStation; currentL++) {
+        cumulativeTrainCounts[currentR][currentL] = cumulativeTrainCounts[currentR][currentL - 1] + trainFrequencies[currentR][currentL];
+      }
+    }
 
-travelRouteManager();
+    for (const qry of queryData) {
+      const queryStart = qry.start;
+      const queryEnd = qry.end;
+
+      const currentQueryResult = Array.from({ length: queryEnd - queryStart + 1 }, (_, idx) => queryStart + idx)
+        .reduce((accumulator, currentR) => {
+          return accumulator + (cumulativeTrainCounts[currentR][queryEnd] - cumulativeTrainCounts[currentR][queryStart - 1]);
+        }, 0);
+
+      console.log(currentQueryResult);
+    }
+  })(require("fs").readFileSync("/dev/stdin", "utf8"));
+}
+
+mainExecution();

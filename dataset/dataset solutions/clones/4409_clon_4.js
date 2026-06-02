@@ -1,74 +1,55 @@
-const MODULUS_VALUE = 1000000007;
+function myout(text){console.log(text);}
 
-function determineArrangementChoices(inputDataString) {
-    const parsedLines = inputDataString.trim().split("\n");
-    const dimensionCount = parseInt(parsedLines[0]);
-    const upperCharRow = parsedLines[1].split("");
-    const lowerCharRow = parsedLines[2].split("");
+const stateTransitionRules = {
+    0: { // previousBlockState: 0 (Vertical)
+        0: { factor: 2, nextPrevState: 0 }, // currentBlockType: 0 (Vertical) -> nextPrevState: 0 (Vertical)
+        1: { factor: 2, nextPrevState: 1 }, // currentBlockType: 1 (Horizontal) -> nextPrevState: 1 (Horizontal)
+    },
+    1: { // previousBlockState: 1 (Horizontal)
+        0: { factor: 1, nextPrevState: 0 }, // currentBlockType: 0 (Vertical) -> nextPrevState: 0 (Vertical)
+        1: { factor: 3, nextPrevState: 1 }, // currentBlockType: 1 (Horizontal) -> nextPrevState: 1 (Horizontal)
+    }
+};
 
-    // dynamicProgrammingTable[position][orientationKey]
-    // orientationKey: 0 for horizontal, 1 for vertical.
-    // Initialized with null to signify uncomputed states.
-    const dynamicProgrammingTable = Array.from(
-        { length: dimensionCount + 2 },
-        () => Array(2).fill(null)
-    );
+const initialRules = {
+    0: { factor: 3, nextPrevState: 0 }, // currentBlockType: 0 (Vertical) -> nextPrevState: 0 (Vertical)
+    1: { factor: 6, nextPrevState: 1 }, // currentBlockType: 1 (Horizontal) -> nextPrevState: 1 (Horizontal)
+};
 
-    // Recursive function to compute arrangement counts for subproblems.
-    // currentPosition: The starting column index for the current block.
-    // previousBlockOrientationVertical: True if the block immediately preceding currentPosition was vertical, false if horizontal.
-    const computeSubproblemResults = (currentPosition, previousBlockOrientationVertical) => {
-        // Base cases for recursion:
-        // If currentPosition equals dimensionCount, it means all columns up to N-1 have been successfully covered.
-        // If currentPosition equals dimensionCount + 1, it means the last block was horizontal and ended exactly at column N.
-        // Both are valid completions, representing 1 way to complete the tiling from this point.
-        if (currentPosition === dimensionCount || currentPosition === dimensionCount + 1) {
-            return 1;
-        }
-        // If currentPosition exceeds dimensionCount + 1, it means a horizontal block extended too far, an invalid path.
-        if (currentPosition > dimensionCount + 1) {
-            return 0;
-        }
+function calculateSequence(currentPosition, previousBlockState, currentAccumulator, totalLength, stringOne, stringTwo, moduloValue) {
+    if (currentPosition >= totalLength) {
+        return currentAccumulator;
+    }
 
-        const orientationKey = previousBlockOrientationVertical ? 1 : 0;
-        if (dynamicProgrammingTable[currentPosition][orientationKey] !== null) {
-            return dynamicProgrammingTable[currentPosition][orientationKey];
-        }
+    const isCurrentBlockVertical = (stringOne[currentPosition] === stringTwo[currentPosition]) ? 0 : 1; // 0 for vertical, 1 for horizontal
 
-        let accumulatedChoices = 0;
-        // Check if characters at the current position match (implies a vertical block is possible here).
-        const currentCharsAreIdentical = upperCharRow[currentPosition] === lowerCharRow[currentPosition];
+    let ruleData;
+    let positionAdvance;
 
-        if (currentPosition === 0) { // Special handling for the very first block
-            if (currentCharsAreIdentical) { // First block is vertical (e.g., 'A' over 'A')
-                accumulatedChoices = (3 * computeSubproblemResults(currentPosition + 1, true)) % MODULUS_VALUE;
-            } else { // First block is horizontal (e.g., 'A' over 'B')
-                accumulatedChoices = (6 * computeSubproblemResults(currentPosition + 2, false)) % MODULUS_VALUE;
-            }
-        } else { // Logic for subsequent blocks, dependent on the previous block's orientation
-            if (previousBlockOrientationVertical) { // If the previous block was vertical
-                if (currentCharsAreIdentical) { // Current block is vertical (e.g., 'A' over 'A')
-                    accumulatedChoices = (2 * computeSubproblemResults(currentPosition + 1, true)) % MODULUS_VALUE;
-                } else { // Current block is horizontal (e.g., 'A' over 'B')
-                    accumulatedChoices = (2 * computeSubproblemResults(currentPosition + 2, false)) % MODULUS_VALUE;
-                }
-            } else { // If the previous block was horizontal
-                if (currentCharsAreIdentical) { // Current block is vertical (e.g., 'A' over 'A')
-                    accumulatedChoices = (1 * computeSubproblemResults(currentPosition + 1, true)) % MODULUS_VALUE;
-                } else { // Current block is horizontal (e.g., 'A' over 'B')
-                    accumulatedChoices = (3 * computeSubproblemResults(currentPosition + 2, false)) % MODULUS_VALUE;
-                }
-            }
-        }
+    if (currentPosition === 0) {
+        ruleData = initialRules[isCurrentBlockVertical];
+        positionAdvance = (isCurrentBlockVertical === 0) ? 1 : 2;
+    } else {
+        ruleData = stateTransitionRules[previousBlockState][isCurrentBlockVertical];
+        positionAdvance = (isCurrentBlockVertical === 0) ? 1 : 2;
+    }
 
-        dynamicProgrammingTable[currentPosition][orientationKey] = accumulatedChoices;
-        return accumulatedChoices;
-    };
+    const nextAccumulator = (currentAccumulator * ruleData.factor) % moduloValue;
+    const nextPosition = currentPosition + positionAdvance;
+    const nextPreviousBlockState = ruleData.nextPrevState;
 
-    // Initial call to the recursive solver.
-    // The `previousBlockOrientationVertical` parameter for currentPosition 0 is effectively ignored
-    // by the `currentPosition === 0` branch, as it only dictates the state for subsequent calls.
-    return computeSubproblemResults(0, true);
+    return calculateSequence(nextPosition, nextPreviousBlockState, nextAccumulator, totalLength, stringOne, stringTwo, moduloValue);
 }
 
-console.log(determineArrangementChoices(require("fs").readFileSync("/dev/stdin", "utf8").trim()));
+function Main(inputContent) {
+    const lines = inputContent.trim().split("\n");
+    const totalLength = parseInt(lines[0]);
+    const firstString = lines[1].split("");
+    const secondString = lines[2].split("");
+    const moduloConstant = 1000000007;
+
+    const finalResult = calculateSequence(0, null, 1, totalLength, firstString, secondString, moduloConstant);
+    myout(finalResult);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

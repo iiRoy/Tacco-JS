@@ -1,105 +1,45 @@
-const separateLines = (fullContent) => {
-    let charStorage = Array.from(fullContent);
-    
-    let startPoint = 0;
-    while (startPoint < charStorage.length && /\s/.test(charStorage[startPoint])) {
-        startPoint++;
-    }
-    let endPoint = charStorage.length - 1;
-    while (endPoint >= startPoint && /\s/.test(charStorage[endPoint])) {
-        endPoint--;
-    }
-    
-    if (startPoint > endPoint) return ['', ''];
+"use strict";
+const Main = (rawText) => {
+    const lineSegments = rawText.trim().split('\n');
+    const firstLineContent = lineSegments[0];
+    const secondLineContent = lineSegments[1];
 
-    let processedContentChars = charStorage.slice(startPoint, endPoint + 1);
-    
-    let firstPart = '';
-    let secondPart = '';
-    let separatorEncountered = false;
+    const sortedFirstChars = Array.from(firstLineContent).sort();
 
-    for (let charIdx = 0; charIdx < processedContentChars.length; charIdx++) {
-        let currentSymbol = processedContentChars[charIdx];
-        if (currentSymbol === '\n' && !separatorEncountered) {
-            separatorEncountered = true;
-            continue;
+    const sortedSecondCharsDescending = Array.from(secondLineContent).sort((charOne, charTwo) => {
+        return charTwo.localeCompare(charOne);
+    });
+
+    let isFirstLexicographicallySmaller = false;
+    let comparisonConcluded = false;
+
+    const commonLength = Math.min(sortedFirstChars.length, sortedSecondCharsDescending.length);
+
+    for (let idx = 0; idx < commonLength; idx++) {
+        if (sortedFirstChars[idx] < sortedSecondCharsDescending[idx]) {
+            isFirstLexicographicallySmaller = true;
+            comparisonConcluded = true;
+            break;
         }
-        if (separatorEncountered) {
-            secondPart += currentSymbol;
+        if (sortedFirstChars[idx] > sortedSecondCharsDescending[idx]) {
+            isFirstLexicographicallySmaller = false;
+            comparisonConcluded = true;
+            break;
+        }
+    }
+
+    if (!comparisonConcluded) {
+        if (sortedFirstChars.length < sortedSecondCharsDescending.length) {
+            isFirstLexicographicallySmaller = true;
         } else {
-            firstPart += currentSymbol;
+            isFirstLexicographicallySmaller = false;
         }
     }
-    
-    return [firstPart, secondPart];
-};
 
-const arrangeAscending = (sourceString) => {
-    let numericValues = Array.from(sourceString).map(symbol => symbol.charCodeAt(0));
-    let currentLength = numericValues.length;
-
-    for (let outer = 0; outer < currentLength - 1; outer++) {
-        let minimalIndex = outer;
-        for (let inner = outer + 1; inner < currentLength; inner++) {
-            if (numericValues[inner] < numericValues[minimalIndex]) {
-                minimalIndex = inner;
-            }
-        }
-        if (minimalIndex !== outer) {
-            let temporary = numericValues[outer];
-            numericValues[outer] = numericValues[minimalIndex];
-            numericValues[minimalIndex] = temporary;
-        }
-    }
-    return String.fromCharCode(...numericValues);
-};
-
-const arrangeDescending = (sourceString) => {
-    let numericValues = Array.from(sourceString).map(symbol => symbol.charCodeAt(0));
-    let currentLength = numericValues.length;
-
-    for (let outer = 0; outer < currentLength - 1; outer++) {
-        let maximalIndex = outer;
-        for (let inner = outer + 1; inner < currentLength; inner++) {
-            if (numericValues[inner] > numericValues[maximalIndex]) {
-                maximalIndex = inner;
-            }
-        }
-        if (maximalIndex !== outer) {
-            let temporary = numericValues[outer];
-            numericValues[outer] = numericValues[maximalIndex];
-            numericValues[maximalIndex] = temporary;
-        }
-    }
-    return String.fromCharCode(...numericValues);
-};
-
-const compareSequences = (firstOperand, secondOperand) => {
-    let shorterLength = firstOperand.length < secondOperand.length ? firstOperand.length : secondOperand.length;
-    for (let indexPosition = 0; indexPosition < shorterLength; indexPosition++) {
-        let codeOne = firstOperand.charCodeAt(indexPosition);
-        let codeTwo = secondOperand.charCodeAt(indexPosition);
-        if (codeOne < codeTwo) {
-            return true;
-        }
-        if (codeOne > codeTwo) {
-            return false;
-        }
-    }
-    return firstOperand.length < secondOperand.length;
-};
-
-const executeProgram = (rawData) => {
-    const [initialTextA, initialTextB] = separateLines(rawData);
-
-    const firstArrangement = arrangeAscending(initialTextA);
-    const secondArrangement = arrangeDescending(initialTextB);
-
-    if (compareSequences(firstArrangement, secondArrangement)) {
+    if (isFirstLexicographicallySmaller) {
         console.log('Yes');
     } else {
         console.log('No');
     }
 };
-
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

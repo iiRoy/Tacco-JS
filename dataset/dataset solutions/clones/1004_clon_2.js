@@ -1,61 +1,37 @@
-(  function  (  initialData  )   {
-    // This array will hold the individual lines extracted from the initial data source.
-    var   processedLines  =  initialData.split  (  '\n'  )  ;
+(function (rawData) {
+  // This function processes the input data.
+  var linesArray = rawData.split('\n');
+  var elementCount = linesArray.shift(); // Get the number of elements
+  var numericData = linesArray.shift().split(' ', elementCount).map(Number);
 
-    // The first line often indicates the total count of elements to be processed.
-    var   elementCount  =  processedLines.shift  (  )  ;
-
-    // The subsequent line contains the actual numeric values, space-separated.
-    // These are parsed and converted into a collection of numbers.
-    var   dataCollection  =  processedLines.shift  (  ) .split  (  ' '  ,  elementCount  ) .map  (  Number  )  ;
-
-    // Now, invoke the primary routine to sort this numerical collection.
-    executeBubbleSort  (  dataCollection  )  ;
-}  )  (  require  (  'fs'  ) .readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ; // Read input from standard I/O stream
+  // Call the sorting routine
+  performBubbleSort(numericData);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
 /**
- * Executes a bubble sort algorithm on the provided numerical array.
- * This routine sorts the elements in ascending order and logs the final state
- * of the array along with the total number of swaps performed.
- * @param {Array<number>} dataCollection The array of numbers that needs to be ordered.
+ * Executes a bubble sort algorithm on the provided array.
+ * @param {Array<number>} numericData - The array of numbers to be sorted.
  */
-function   executeBubbleSort  (  dataCollection  )
-{
-    // A counter to keep track of how many times elements are exchanged.
-    var   totalSwaps  =  0  ;
+function performBubbleSort(numericData) {
+  var swapOperations = 0; // Counter for the number of swaps
+  var hasSwapped = true; // Flag to track if any swaps occurred in a pass
 
-    // A flag to determine if any swaps occurred during a pass through the array.
-    // If no swaps occur, the array is sorted, and the process can terminate.
-    var   didSwapOccur  =  true  ;
-
-    // The outer loop continues as long as there's at least one swap in the inner pass.
-    while  (  didSwapOccur  )
-    {
-        didSwapOccur  =  false  ; // Reset the flag for the current iteration.
-
-        // The inner loop traverses the array, comparing adjacent elements.
-        // It starts from the end and moves towards the beginning.
-        for  (  var   currentIndex  =  dataCollection.length  -  1  ;  currentIndex  >=  1  ;  currentIndex--  )
-        {
-            // If an element is found to be smaller than its preceding element, they are out of order.
-            if  (  dataCollection  [  currentIndex  ]  <  dataCollection  [  currentIndex  -  1  ]  )
-            {
-                // Temporarily store the value of the current element.
-                var   temporaryHolder  =  dataCollection  [  currentIndex  ]  ;
-                // Move the larger element to the current position.
-                dataCollection  [  currentIndex  ]  =  dataCollection  [  currentIndex  -  1  ]  ;
-                // Place the smaller element in the preceding position.
-                dataCollection  [  currentIndex  -  1  ]  =  temporaryHolder  ;
-
-                didSwapOccur  =  true  ; // Mark that a swap has taken place.
-                totalSwaps++  ; // Increment the counter for successful exchanges.
-            }
-        }
+  while (hasSwapped) {
+    hasSwapped = false; // Assume no swaps in this pass
+    for (var idx = numericData.length - 1; idx >= 1; idx--) {
+      // Compare adjacent elements
+      if (numericData[idx] < numericData[idx - 1]) {
+        // Swap elements if they are in the wrong order
+        var temporaryValue = numericData[idx];
+        numericData[idx] = numericData[idx - 1];
+        numericData[idx - 1] = temporaryValue;
+        hasSwapped = true; // A swap occurred, so another pass is needed
+        swapOperations++; // Increment swap counter
+      }
     }
+  }
 
-    // Output the fully sorted array to the console, with elements separated by spaces.
-    console.log  (  dataCollection.join  (  ' '  )  )  ;
-
-    // Display the final count of all swaps performed during the sorting operation.
-    console.log  (  totalSwaps  )  ;
+  // Output the sorted array and the total swap count
+  console.log(numericData.join(' '));
+  console.log(swapOperations);
 }

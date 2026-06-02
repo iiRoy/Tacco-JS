@@ -1,24 +1,37 @@
-// This primary routine processes the entirety of the provided data
-function ProcessInput( rawData ) {
-  // Each individual character from the input stream will be handled sequentially.
-  // Note: Line-based splitting is not employed here; character-level parsing is performed.
-  let finalScore = 0; // Initialize our cumulative tally.
-  const charArray = rawData.split( "" ); // Break down the incoming string into an array of its constituent characters.
+/*
+ * This module processes incoming text data.
+ * It counts occurrences of specific characters.
+ */
+function ProcessInput(rawData) {
+  // The 'rawData' parameter holds the entire input string.
+  // The original code had a commented-out line for splitting by newline,
+  // but the active logic splits by individual characters.
 
-  charArray.forEach( function ( currentSymbol ) {
-    // Traverse through each symbol in the character collection.
-    if ( currentSymbol === '-' ) {
-      finalScore--; // If the symbol is a minus sign, decrement the score.
-    }
-    else {
-      finalScore++; // For any other symbol, increment the score.
-    }
-  } ); // Conclude the iteration over the character array.
+  let finalCount = 0; // Initialize a counter for character analysis.
 
-  // Output the computed result to the console, followed by a newline.
-  console.log( finalScore + "" + '\n' );
+  // Convert the input string into an array of individual characters.
+  rawData = rawData.split("");
+
+  // Iterate over each character in the processed array.
+  rawData.forEach(function(charItem) {
+    // Check if the current character is a hyphen.
+    if (charItem === '-') {
+      // If it's a hyphen, decrement the counter.
+      finalCount--;
+    } else {
+      // For any other character, increment the counter.
+      finalCount++;
+    }
+  });
+
+  // Output the final calculated count, followed by a newline.
+  // The empty string "" is used for type coercion, ensuring string concatenation.
+  console.log(finalCount + "" + '\n');
 }
 
-// Invoke the main processing function, supplying it with content read from standard input.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
-// An alternative test source could be: 'ProcessInput( require("fs").readFileSync("./sample.txt", "utf-8") );'
+// Execute the main processing function.
+// It reads the content of '/dev/stdin' synchronously as a UTF-8 string.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Another commented-out line from the original, for local file testing.
+// ProcessInput(require('fs').readFileSync('./input.txt', 'utf-8'));

@@ -1,38 +1,22 @@
-const dataOrigin = require('node:fs').readFileSync(0, 'utf8');
-const processedEntries = dataOrigin.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataRows = rawData.trim().split('\n');
 
-const categorizeDimensions = (valOne, valTwo, valThree) => {
-    const isPythagorean = (valOne * valOne + valTwo * valTwo) === (valThree * valThree);
-    const areFirstTwoEqual = (valOne === valTwo);
+const shapeClassifier = (dimA, dimB, dimC) => ({
+    isPythagorean: (dimA * dimA + dimB * dimB === dimC * dimC),
+    isBaseEqual: (dimA === dimB)
+});
 
-    if (isPythagorean) {
-        return 'rightAngled';
-    } else if (areFirstTwoEqual) {
-        return 'equalSides';
-    }
-    return 'other';
-};
+const initialTally = { rightAngleCount: 0, equalBaseCount: 0 };
 
-const finalSummary = processedEntries.reduce((accumulator, currentLineContent) => {
-    if (currentLineContent.trim() === '') {
-        return accumulator;
-    }
+const finalTally = dataRows.reduce((accumulator, currentEntry) => {
+    const [firstDimension, secondDimension, thirdDimension] = currentEntry.split(',').map(Number);
+    const geometricProperties = shapeClassifier(firstDimension, secondDimension, thirdDimension);
 
-    const numericalValues = currentLineContent.split(',').map(Number);
-    const [dimA, dimB, dimC] = numericalValues;
+    return {
+        rightAngleCount: accumulator.rightAngleCount + (geometricProperties.isPythagorean ? 1 : 0),
+        equalBaseCount: accumulator.equalBaseCount + (!geometricProperties.isPythagorean && geometricProperties.isBaseEqual ? 1 : 0)
+    };
+}, initialTally);
 
-    const classification = categorizeDimensions(dimA, dimB, dimC);
-
-    switch (classification) {
-        case 'rightAngled':
-            accumulator.rightFormations++;
-            break;
-        case 'equalSides':
-            accumulator.symmetricalForms++;
-            break;
-    }
-    return accumulator;
-}, { rightFormations: 0, symmetricalForms: 0 });
-
-console.log(finalSummary.rightFormations);
-console.log(finalSummary.symmetricalForms);
+console.log(finalTally.rightAngleCount);
+console.log(finalTally.equalBaseCount);

@@ -1,30 +1,27 @@
-function processContentTransformation(sourceContent) {
-  const newlineIndex = sourceContent.indexOf('\n');
-  const operativeString = newlineIndex === -1 ? sourceContent : sourceContent.substring(0, newlineIndex);
+function processInputData(rawData) {
+  const sourceLine = rawData.split("\n")[0];
 
-  const tokenCollection = [];
-  let scanIndex = 0;
-  let delimiterPosition;
+  const firstSpacePosition = sourceLine.indexOf(' ');
 
-  while (scanIndex <= operativeString.length) {
-    delimiterPosition = operativeString.indexOf(' ', scanIndex);
-    if (delimiterPosition === -1) {
-      tokenCollection.push(operativeString.substring(scanIndex));
-      break;
+  let primaryToken;
+  let secondaryToken;
+
+  if (firstSpacePosition === -1) {
+    primaryToken = sourceLine;
+    secondaryToken = undefined;
+  } else {
+    primaryToken = sourceLine.substring(0, firstSpacePosition);
+    const remainingContent = sourceLine.substring(firstSpacePosition + 1);
+    const secondSpacePosition = remainingContent.indexOf(' ');
+
+    if (secondSpacePosition === -1) {
+      secondaryToken = remainingContent;
     } else {
-      tokenCollection.push(operativeString.substring(scanIndex, delimiterPosition));
-      scanIndex = delimiterPosition + 1;
+      secondaryToken = remainingContent.substring(0, secondSpacePosition);
     }
   }
 
-  const secondaryToken = tokenCollection[1];
-  const primaryToken = tokenCollection[0];
-
-  const finalOutput = (secondaryToken === undefined ? 'undefined' : secondaryToken) +
-                      (primaryToken === undefined ? 'undefined' : primaryToken);
-
-  return finalOutput;
+  console.log(secondaryToken + primaryToken);
 }
 
-const initialSource = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processContentTransformation(initialSource));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,89 +1,66 @@
-// This function performs a recursive depth-first search to find the maximum path sum
-// through a grid, utilizing memoization to optimize calculations.
-function traverseGrid( currentRow, currentColumn, currentPathSum )
-{
-    // Store the current path sum in the memoization table for the current cell.
-    memoTable[ currentRow ][ currentColumn ] = currentPathSum;
+function explorePath(rowIdx, colIdx, currentTotal) {
+  // Store the current path sum in the memoization grid
+  memoGrid[rowIdx][colIdx] = currentTotal;
 
-    // Check if the current position is in the very last row of the grid.
-    if ( currentRow === valueGrid.length - 1 )
-    {
-        // If it's the last row, update the global maximum result if the current path sum is greater.
-        overallMaxResult = Math.max( overallMaxResult, currentPathSum );
+  // Check if we've reached the last row of the grid
+  if (rowIdx === valueGrid.length - 1) {
+    // If so, update the overall maximum sum found so far
+    overallMax = Math.max(overallMax, currentTotal);
+  } else if ((valueGrid.length - 1) / 2 > rowIdx) {
+    // If we are in the upper half of the grid (excluding the middle row if odd length)
+    // Explore moving straight down
+    if (memoGrid[rowIdx + 1][colIdx] < currentTotal + valueGrid[rowIdx + 1][colIdx]) {
+      explorePath(rowIdx + 1, colIdx, currentTotal + valueGrid[rowIdx + 1][colIdx]);
     }
-    // If the current row is in the upper half of the grid (strictly less than the middle row index).
-    else if ( ( valueGrid.length - 1 ) / 2 > currentRow )
-    {
-        // Consider moving straight down to the next row, same column.
-        // Only proceed if the new potential path sum is greater than the currently memoized value for that cell.
-        if ( memoTable[ currentRow + 1 ][ currentColumn ] < currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn ] )
-            traverseGrid( currentRow + 1, currentColumn, currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn ] );
-
-        // Consider moving diagonally down-right to the next row, next column.
-        // Similar check: only proceed if a better path is found.
-        if ( memoTable[ currentRow + 1 ][ currentColumn + 1 ] < currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn + 1 ] )
-            traverseGrid( currentRow + 1, currentColumn + 1, currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn + 1 ] );
+    // Explore moving diagonally down-right
+    if (memoGrid[rowIdx + 1][colIdx + 1] < currentTotal + valueGrid[rowIdx + 1][colIdx + 1]) {
+      explorePath(rowIdx + 1, colIdx + 1, currentTotal + valueGrid[rowIdx + 1][colIdx + 1]);
     }
-    // If the current row is in the lower half of the grid (including the middle row if the total number of rows is odd).
-    else if ( ( valueGrid.length - 1 ) / 2 <= currentRow )
-    {
-        // Check for a valid move diagonally down-left (ensure column index doesn't go below zero).
-        if ( currentColumn - 1 >= 0 )
-        {
-            // If valid, evaluate and potentially recurse for the down-left path.
-            if ( memoTable[ currentRow + 1 ][ currentColumn - 1 ] < currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn - 1 ] )
-                traverseGrid( currentRow + 1, currentColumn - 1, currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn - 1 ] );
-        }
-
-        // Check for a valid move straight down (ensure column index doesn't exceed row bounds).
-        if ( currentColumn < valueGrid[ currentRow ].length - 1 )
-        {
-            // If valid, evaluate and potentially recurse for the straight-down path.
-            if ( memoTable[ currentRow + 1 ][ currentColumn ] < currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn ] )
-                traverseGrid( currentRow + 1, currentColumn, currentPathSum + valueGrid[ currentRow + 1 ][ currentColumn ] );
-        }
+  } else if ((valueGrid.length - 1) / 2 <= rowIdx) {
+    // If we are in the lower half of the grid (including the middle row if odd length)
+    // Explore moving diagonally down-left, if within bounds
+    if (colIdx - 1 >= 0) {
+      if (memoGrid[rowIdx + 1][colIdx - 1] < currentTotal + valueGrid[rowIdx + 1][colIdx - 1]) {
+        explorePath(rowIdx + 1, colIdx - 1, currentTotal + valueGrid[rowIdx + 1][colIdx - 1]);
+      }
     }
-} // End of the 'traverseGrid' function.
+    // Explore moving straight down, if within bounds
+    if (colIdx < valueGrid[rowIdx].length - 1) {
+      if (memoGrid[rowIdx + 1][colIdx] < currentTotal + valueGrid[rowIdx + 1][colIdx]) {
+        explorePath(rowIdx + 1, colIdx, currentTotal + valueGrid[rowIdx + 1][colIdx]);
+      }
+    }
+  }
+}
 
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// --- Global variable declarations and initial setup for input processing ---
+// Process the input string into an array of lines
+const lineArray = (rawData.trim()).split("\n");
 
-// Read raw data from the standard input stream.
-// This line imports the 'fs' module and synchronously reads the file content as a UTF-8 string.
-var fileInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Initialize grids for values and memoization
+let valueGrid = [];
+let memoGrid = [];
 
-// Process the raw input data:
-// 1. Remove leading/trailing whitespace.
-// 2. Split the string into an array of lines using the newline character as a delimiter.
-var inputLines = (fileInputData.trim()).split("\n");
+// Populate the grids based on input
+lineArray.forEach(function(lineStr) {
+  // Convert each line string to an array of numbers
+  const numArr = lineStr.split(",").map(Number);
+  // Create a corresponding array of zeros for memoization
+  const zeroArr = numArr.map(function(_) {
+    return 0;
+  });
 
-// Initialize two arrays to store the grid values and the memoization table.
-var valueGrid = []; // Will hold the numeric values parsed from input.
-var memoTable = []; // Will store the maximum path sums for memoization.
-
-// Iterate over each line in the processed input array.
-inputLines.forEach(function(currentLineFragment)
-{
-    // For each line fragment:
-    // 1. Split the string by commas to get an array of string representations of numbers.
-    // 2. Convert each string representation to an actual numeric type.
-    var numericRowValues = currentLineFragment.split(",").map(Number);
-
-    // Create a corresponding row for the memoization table, initialized with zeros.
-    var zeroInitializedRow = numericRowValues.map(function(elementPlaceholder){return 0;});
-
-    // Add the parsed numeric row to the value grid.
-    valueGrid.push(numericRowValues);
-    // Add the corresponding zero-initialized row to the memoization table.
-    memoTable.push(zeroInitializedRow);
+  valueGrid.push(numArr);
+  memoGrid.push(zeroArr);
 });
 
-// Initialize the variable that will store the overall maximum path sum found.
-var overallMaxResult = 0;
+// Initialize the maximum sum found
+let overallMax = 0;
 
-// Start the grid traversal from the top-left corner (index 0,0),
-// with the initial path sum being the value at that starting cell.
-traverseGrid(0, 0, valueGrid[0][0]);
+// Start the path exploration from the top-left element
+explorePath(0, 0, valueGrid[0][0]);
 
-// Output the final calculated overall maximum path sum to the console.
-console.log(overallMaxResult);
+// Output the final maximum sum
+console.log(overallMax);

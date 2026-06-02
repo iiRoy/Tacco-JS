@@ -1,31 +1,32 @@
-const calculateDiscrepancyRecursive = (basePoint, sourceSequence, currentIndex = 0, currentSum = 0) => {
-  if (currentIndex >= sourceSequence.length) {
-    return currentSum;
-  }
-  const term = Math.abs(sourceSequence[currentIndex] - (basePoint + currentIndex + 1));
-  return calculateDiscrepancyRecursive(basePoint, sourceSequence, currentIndex + 1, currentSum + term);
-};
+function computeAbsoluteSum(offsetValue, inputNumbers) {
+  const totalDeviation = inputNumbers.reduce((accumulator, currentValue, currentIndex) => {
+    const targetTerm = offsetValue + currentIndex + 1;
+    return accumulator + Math.abs(currentValue - targetTerm);
+  }, 0);
+  return totalDeviation;
+}
 
-const orchestrateComputation = (rawInputText) => {
-  const textRows = rawInputText.split('\n');
-  const elementCount = parseInt(textRows[0]);
-  const originalValues = textRows[1].split(' ').map(val => parseInt(val));
+function processInput(rawData) {
+  const inputLines = rawData.split('\n');
+  const elementCount = parseInt(inputLines[0]);
+  const originalValues = inputLines[1].split(' ').map(valStr => parseInt(valStr));
 
-  const transformedSeries = originalValues.map((val, idx) => val - (idx + 1));
+  const centralIndex = Math.floor(elementCount / 2);
+  
+  const adjustedValues = originalValues.map((val, idx) => val - (idx + 1));
 
-  const centralIndexMarker = Math.floor(elementCount / 2);
+  const primaryOffsetCandidate = adjustedValues[centralIndex];
 
-  const candidateBasePoints = [
-    transformedSeries[centralIndexMarker],
-    transformedSeries[centralIndexMarker + 1],
-    transformedSeries[centralIndexMarker + 2]
+  const candidateOffsets = [
+    primaryOffsetCandidate,
+    adjustedValues[centralIndex + 1], // Will be undefined if out of bounds
+    adjustedValues[centralIndex + 2]  // Will be undefined if out of bounds
   ];
 
-  const minimumDiscrepancy = Math.min(...candidateBasePoints.map(candidate =>
-    calculateDiscrepancyRecursive(candidate, originalValues)
-  ));
+  const deviationResults = candidateOffsets.map(candidate => computeAbsoluteSum(candidate, originalValues));
+  const minimumDeviation = Math.min(...deviationResults);
 
-  console.log(minimumDiscrepancy);
-};
+  console.log(minimumDeviation);
+}
 
-orchestrateComputation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

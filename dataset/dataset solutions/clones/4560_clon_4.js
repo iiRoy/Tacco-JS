@@ -1,31 +1,35 @@
-const processNumericalInput = (rawData) => {
-    const adjustedData = rawData.replace(/\s+/g, ' ').trim();
-    const numericTokens = adjustedData.split(' ').map(Number);
+function processInputData(rawData) {
+  const cleanedData = rawData.trim();
+  const [firstPart, secondPart] = cleanedData.split(' ');
+  const firstValue = Number(firstPart);
+  const secondValue = Number(secondPart);
 
-    const firstQuantity = numericTokens[0];
-    const secondQuantity = numericTokens[1];
+  var obtainCategory = function(numericIdentifier) {
+    switch (numericIdentifier) {
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        return a;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        return b;
+      case 2:
+      default:
+        return c;
+    }
+  };
 
-    const calendarPeriodGroups = [
-        0,
-        10, // Jan (31 days)
-        30, // Feb (28/29 days)
-        10, // Mar (31 days)
-        20, // Apr (30 days)
-        10, // May (31 days)
-        20, // Jun (30 days)
-        10, // Jul (31 days)
-        10, // Aug (31 days)
-        20, // Sep (30 days)
-        10, // Oct (31 days)
-        20, // Nov (30 days)
-        10  // Dec (31 days)
-    ];
+  if (obtainCategory(firstValue) === obtainCategory(secondValue)) {
+    console.log("Yes");
+  } else {
+    console.log("No");
+  }
+}
 
-    const categoryForFirst = calendarPeriodGroups[firstQuantity];
-    const categoryForSecond = calendarPeriodGroups[secondQuantity];
-
-    return (categoryForFirst === categoryForSecond) ? "Yes" : "No";
-};
-
-const acquireSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processNumericalInput(acquireSource));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

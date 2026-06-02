@@ -1,112 +1,108 @@
-var _internalTools = _internalTools || {};
+var compilerTools = compilerTools || {};
+compilerTools.scope = {};
+compilerTools.ASSUME_ES5 = false;
+compilerTools.ASSUME_NO_NATIVE_MAP = false;
+compilerTools.ASSUME_NO_NATIVE_SET = false;
+compilerTools.SIMPLE_FROUND_POLYFILL = false;
 
-// Helper to safely define properties on objects.
-// Simplified from the original's specific `Array.prototype` / `Object.prototype` checks.
-_internalTools._assignProperty = function(targetObjectRef, propertyIdentifier, propertyConfig) {
-  if (typeof Object.defineProperty === "function") {
-    Object.defineProperty(targetObjectRef, propertyIdentifier, propertyConfig);
-  } else {
-    // Basic fallback for environments without Object.defineProperty.
-    targetObjectRef[propertyIdentifier] = propertyConfig.value;
+compilerTools.defineProperty =
+  compilerTools.ASSUME_ES5 || typeof Object.defineProperties == "function"
+    ? Object.defineProperty
+    : function (target, key, descriptor) {
+        if (target != Array.prototype && target != Object.prototype) {
+          target[key] = descriptor.value;
+        }
+      };
+
+compilerTools.getGlobal = function (value) {
+  return typeof window != "undefined" && window === value
+    ? value
+    : typeof global != "undefined" && global != null
+    ? global
+    : value;
+};
+
+compilerTools.global = compilerTools.getGlobal(this);
+
+compilerTools.polyfill = function (path, factory, esVersion, browserVersion) {
+  if (factory) {
+    var root = compilerTools.global;
+    path = path.split(".");
+
+    for (var index = 0; index < path.length - 1; index++) {
+      var part = path[index];
+      if (!(part in root)) {
+        root[part] = {};
+      }
+      root = root[part];
+    }
+
+    path = path[path.length - 1];
+    var oldValue = root[path];
+    factory = factory(oldValue);
+
+    if (factory != oldValue && factory != null) {
+      compilerTools.defineProperty(root, path, {
+        configurable: true,
+        writable: true,
+        value: factory
+      });
+    }
   }
 };
 
-// Utility to determine the global execution context (window for browsers, global for Node.js).
-_internalTools._obtainGlobalObject = function(currentExecutionScope) {
-  if (typeof window !== "undefined" && window === currentExecutionScope) {
-    return currentExecutionScope;
-  }
-  if (typeof global !== "undefined" && global !== null) {
-    return global;
-  }
-  return currentExecutionScope; // Default to current scope if others not found.
-};
+compilerTools.polyfill(
+  "Array.from",
+  function (nativeFrom) {
+    return nativeFrom
+      ? nativeFrom
+      : function (source, mapper, context) {
+          mapper = mapper != null ? mapper : function (item) { return item; };
+          var result = [];
+          var iterator = typeof Symbol != "undefined" && Symbol.iterator && source[Symbol.iterator];
 
-// Store the determined global context within our utility namespace.
-_internalTools._runtimeContext = _internalTools._obtainGlobalObject(this);
+          if (typeof iterator == "function") {
+            source = iterator.call(source);
+            for (var position = 0; !(iterator = source.next()).done;) {
+              result.push(mapper.call(context, iterator.value, position++));
+            }
+          } else {
+            for (iterator = source.length, position = 0; position < iterator; position++) {
+              result.push(mapper.call(context, source[position], position));
+            }
+          }
 
+          return result;
+        };
+  },
+  "es6",
+  "es3"
+);
 
-// Main function encapsulating the problem's logic.
-function processNumericalSequence(rawInputText) {
-  // Guard clause: Ensure input is a non-empty string.
-  if (!rawInputText || typeof rawInputText !== 'string' || rawInputText.trim().length === 0) {
-    console.log("NO_INPUT_PROVIDED");
-    return;
-  }
+function main(inputText) {
+  var rows = inputText.split("\n");
+  var totalNumbers = parseInt(rows[0]);
+  var originalValues = [];
 
-  // Split the input into individual lines and filter out any blank lines.
-  const inputDataLines = rawInputText.split("\n").filter(line => line.trim().length > 0);
+  rows[1] = rows[1].split(" ");
 
-  // Guard clause: Check if we have enough lines (at least two: length and sequence).
-  if (inputDataLines.length < 2) {
-    console.log("INSUFFICIENT_INPUT_LINES");
-    return;
-  }
-
-  // Parse the sequence length from the first line.
-  const sequenceLengthString = inputDataLines[0].trim();
-  const actualSequenceLength = parseInt(sequenceLengthString, 10);
-
-  // Guard clause: Validate the parsed sequence length.
-  if (isNaN(actualSequenceLength) || actualSequenceLength <= 0) {
-    console.log("INVALID_SEQUENCE_LENGTH");
-    return;
+  for (var i = 0; i < totalNumbers; ++i) {
+    originalValues.push(parseInt(rows[1][i]));
   }
 
-  // Split the second line into string representations of numbers.
-  const rawNumbersLine = inputDataLines[1].trim();
-  const stringNumberTokens = rawNumbersLine.split(/\s+/); // Split by one or more whitespace characters.
+  var sortedValues = Array.from(originalValues);
+  sortedValues.sort();
 
-  // Guard clause: Check if the number of provided elements matches the declared length.
-  if (stringNumberTokens.length !== actualSequenceLength) {
-    console.log("ELEMENT_COUNT_MISMATCH");
-    return;
-  }
+  console.log(originalValues, sortedValues);
 
-  const originalValueSequence = [];
-  // Populate the array with parsed integer values.
-  for (let elementIndex = 0; elementIndex < actualSequenceLength; ++elementIndex) {
-    const parsedNumericValue = parseInt(stringNumberTokens[elementIndex], 10);
-    // Guard clause: Ensure all elements are valid numbers.
-    if (isNaN(parsedNumericValue)) {
-      console.log("NON_NUMERIC_ELEMENT_DETECTED");
-      return;
-    }
-    originalValueSequence.push(parsedNumericValue);
-  }
-
-  // Create a sorted duplicate of the original sequence.
-  // Using spread syntax for shallow copy and a custom comparator for numeric sort.
-  const correctlyOrderedSequence = [...originalValueSequence].sort((valOne, valTwo) => valOne - valTwo);
-
-  let differingElementCount = 0;
-  const maximumAllowedDeviations = 2; // Introduce a constant for the comparison threshold.
-
-  // Compare the original sequence with its sorted version to count differences.
-  for (let currentItemPosition = 0; currentItemPosition < actualSequenceLength; ++currentItemPosition) {
-    if (originalValueSequence[currentItemPosition] !== correctlyOrderedSequence[currentItemPosition]) {
-      differingElementCount++;
+  var mismatchCount = 0;
+  for (var j = 0; j < totalNumbers; ++j) {
+    if (originalValues[j] != sortedValues[j]) {
+      mismatchCount += 1;
     }
   }
 
-  // Output the result based on the count of differences.
-  if (differingElementCount <= maximumAllowedDeviations) {
-    console.log("YES");
-  } else {
-    console.log("NO");
-  }
+  console.log(2 >= mismatchCount ? "YES" : "NO");
 }
 
-// --- Input Reading and Execution ---
-const fileSystemUtility = require("fs");
-const standardInputFilePath = "/dev/stdin";
-const defaultEncoding = "utf8";
-
-try {
-  const fileContents = fileSystemUtility.readFileSync(standardInputFilePath, defaultEncoding);
-  processNumericalSequence(fileContents);
-} catch (inputReadError) {
-  console.error("ERROR_ACCESSING_INPUT:", inputReadError.message);
-  // In a real application, you might want to exit or provide a default behavior.
-  // process.exit(1);
-}
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

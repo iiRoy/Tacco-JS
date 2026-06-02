@@ -1,45 +1,33 @@
-/*
- * This JavaScript module is designed to process and manipulate a sequence of numerical inputs.
- * It demonstrates variable assignment and basic output operations.
- */
-function Processor (  incomingText  )
-{
-    // The initial data string is attempted to be divided.
-    // Note: 'breakdown' is assumed to be a global function,
-    // reflecting the original code's structure for 'split'.
-    incomingText = breakdown ( "" ) ;
+// This function serves as the primary entry point for data processing.
+function ProcessInputData(incomingString) {
+  // The input string is first broken down into an array of individual characters.
+  // This step prepares the data for subsequent numerical parsing.
+  incomingString = incomingString.split("");
 
-    // Declare and initialize primary numerical variables.
-    // Each value is parsed as an integer with a base of 10.
-    var  firstVal  =  getIntegerVal (  incomingText [ 0 ]  ,  10  ) ;
-    var  secondVal  =  getIntegerVal (  incomingText [ 1 ]  ,  10  ) ;
-    var  thirdVal  =  getIntegerVal (  incomingText [ 2 ]  ,  10  ) ;
+  // Initialize three distinct numerical variables by parsing characters
+  // from the processed input array. The radix 10 is used for decimal conversion.
+  let valueA = parseInt(incomingString[0], 10);
+  let valueB = parseInt(incomingString[1], 10);
+  let valueC = parseInt(incomingString[2], 10);
 
-    // Perform a series of reassignments to these variables.
-    // The logic involves swapping and re-assigning values from the input array.
-    firstVal  =  getIntegerVal (  incomingText [ 1 ]  ,  10  ) ;
-    secondVal  =  getIntegerVal (  incomingText [ 0 ]  ,  10  ) ;
-    firstVal  =  getIntegerVal (  incomingText [ 2 ]  ,  10  ) ;
-    thirdVal  =  getIntegerVal (  incomingText [ 1 ]  ,  10  ) ;
+  // Reassign 'valueA' using a different element from the input array.
+  valueA = parseInt(incomingString[1], 10);
 
-    // Output the final state of the numerical variables to the standard output.
-    outputDisplay . printMsg (  'IntVal: %d %d %d'  ,  firstVal  ,  secondVal  ,  thirdVal  ) ;
+  // Reassign 'valueB' using another element from the input array.
+  valueB = parseInt(incomingString[0], 10);
+
+  // Perform a further reassignment for 'valueA' with a new input element.
+  valueA = parseInt(incomingString[2], 10);
+
+  // Conclude the reassignments by updating 'valueC'.
+  valueC = parseInt(incomingString[1], 10);
+
+  // Output the final states of the three variables to the console.
+  // The '%d' format specifier ensures integer representation.
+  console.log('%d', valueA, valueB, valueC);
 }
 
-// Global alias for the built-in integer parsing function.
-var getIntegerVal = parseInt ;
-
-// Object encapsulating output functionalities, acting as a substitute for 'console'.
-var outputDisplay = {
-    printMsg : function (  formatString  ,  ...theArgs  ) {
-        console . log . apply (  console  ,  [ formatString , ...theArgs ]  ) ;
-    }
-} ;
-
-// Global alias for the module loading utility.
-var moduleLoader = require ;
-
-// The program's entry point: calling the main processing function.
-// It reads data from a specified system path using a file system module.
-// Note: 'breakdown' will likely cause a ReferenceError, mirroring the original's behavior.
-processor (  moduleLoader ( "fs" ) . accessContentSynchronously ( "/dev/stdin" , "utf8" )  ) ;
+// Execute the main processing function by reading data from standard input.
+// The 'fs' module is utilized to synchronously read the entire content
+// of '/dev/stdin' as a UTF-8 encoded string, which then becomes the input.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

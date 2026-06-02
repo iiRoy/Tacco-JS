@@ -1,33 +1,46 @@
-function ProcessTextData ( sourceLines ) {
-    // This routine processes incoming text to count occurrences of a specific word.
+// This function processes raw text input to count occurrences of a specific word.
+function ProcessTextData(initialInput) {
+    // Split the entire input string into an array of individual lines.
+    let processedLines = initialInput.split('\n');
 
-    sourceLines = sourceLines . split ( "\n" ) ; // Divide the entire input stream into separate line entries.
+    // Extract the first line, which is the word we are looking for.
+    let searchTarget = processedLines.shift();
+    // Convert the target word to uppercase for case-insensitive matching.
+    searchTarget = searchTarget.toUpperCase();
 
-    let targetWord = sourceLines . shift ( ) ; // Extract the very first line, which is our search target.
-    targetWord = targetWord . toUpperCase ( ) ; // Standardize the target word to uppercase for case-insensitive comparison.
+    // Extract the next line to start processing the text body.
+    let currentTextSegment = processedLines.shift();
+    // Convert this line to uppercase as well.
+    currentTextSegment = currentTextSegment.toUpperCase();
 
-    let currentSegment = sourceLines . shift ( ) ; // Pull the next segment of text from the remaining lines.
-    currentSegment = currentSegment . toUpperCase ( ) ; // Convert this segment to uppercase too.
+    // Initialize a counter for the number of times the target word is found.
+    let occurrenceCount = 0;
 
-    let matchCount = 0 ; // Initialize a tally to keep track of how many times the target word is found.
+    // Loop through the text until the "END_OF_TEXT" marker is encountered.
+    while (currentTextSegment !== "END_OF_TEXT") {
+        // Split the current line into individual words/tokens using whitespace or newlines as delimiters.
+        let tokensInLine = currentTextSegment.split(/\s|\n/);
 
-    while ( currentSegment !== "STOP_PROCESSING_MARKER" ) { // Continue iterating as long as we haven't hit the end signal.
-        currentSegment = currentSegment . split ( / \s | \n / ) ; // Break down the current text segment into individual tokens (words/parts) using spaces or newlines as delimiters.
-
-        currentSegment . forEach ( function ( token ) { // Go through each token within the now-split segment.
-            if ( token === targetWord ) { // If the current token exactly matches our standardized target word...
-                matchCount += 1 ; // ...then increment our occurrence counter.
-                return ; // No need to check further for this specific token, move to the next.
+        // Iterate over each token in the current line.
+        tokensInLine.forEach(function(singleToken) {
+            // If the current token matches our target word, increment the counter.
+            if (singleToken === searchTarget) {
+                occurrenceCount++;
+                // The 'return' here exits the current iteration of the forEach callback,
+                // not the outer while loop or the function itself.
+                return;
             }
-        } ) ; // End of the loop for individual tokens.
+        });
 
-        currentSegment = sourceLines . shift ( ) ; // Fetch the subsequent text segment from the input array.
-        currentSegment = currentSegment . toUpperCase ( ) ; // Ensure this new segment is also in uppercase.
+        // Get the next line from the input array for the next iteration.
+        currentTextSegment = processedLines.shift();
+        // Convert the new line to uppercase.
+        currentTextSegment = currentTextSegment.toUpperCase();
     }
-    // The loop concludes when "STOP_PROCESSING_MARKER" is encountered.
 
-    console . log ( matchCount ) ; // Output the final aggregated count of all matched words.
+    // Output the final count of the target word occurrences.
+    console.log(occurrenceCount);
 }
 
-// Initiate the text processing by reading data from standard input.
-ProcessTextData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input and pass it to our processing function.
+ProcessTextData(require('fs').readFileSync('/dev/stdin', 'utf8'));

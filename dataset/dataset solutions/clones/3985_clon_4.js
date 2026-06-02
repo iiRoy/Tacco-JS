@@ -1,27 +1,28 @@
-const makeMirrorNumber = (f, s, t) => {
-    return (f * 10000) + (s * 1000) + (t * 100) + (s * 10) + f;
-};
+function Main(input) {
+  var inputParts = input.split(' ');
 
-const processNumericalRange = (passage) => {
-    const numericalBounds = passage.trim().split(/\s+/).map(Number);
-    const lowerBound = numericalBounds[0];
-    const upperBound = numericalBounds[1];
+  var A = parseInt(inputParts[0], 10);
+  var B = parseInt(inputParts[1], 10);
 
-    const firstDigits = Array.from({ length: 9 }, (_, i) => i + 1);
+  var count = 0;
 
-    const middleDigits = Array.from({ length: 10 }, (_, i) => i);
+  for (var currentNumber = A; currentNumber <= B; currentNumber++) {
+    if (isFiveDigitPalindrome(currentNumber)) {
+      count++;
+    }
+  }
 
-    const allPossibleMirroredNumbers = firstDigits.flatMap(d1 =>
-        middleDigits.flatMap(d2 =>
-            middleDigits.map(d3 => makeMirrorNumber(d1, d2, d3))
-        )
-    );
+  console.log(count);
+}
 
-    const qualifyingNumbers = allPossibleMirroredNumbers.filter(value =>
-        value >= lowerBound && value <= upperBound
-    );
+function isFiveDigitPalindrome(value) {
+  if (value < 10000 || value > 99999) {
+    return false;
+  }
 
-    console.log(qualifyingNumbers.length);
-};
+  var digits = value.toString();
 
-processNumericalRange(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  return digits[0] === digits[4] && digits[1] === digits[3];
+}
+
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

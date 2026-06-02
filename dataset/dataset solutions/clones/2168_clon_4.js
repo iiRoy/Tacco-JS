@@ -1,17 +1,16 @@
-const performComputation = (inputString) => {
-    const [lineOne, lineTwo, lineThree] = inputString.split('\n');
+function processInputData(rawData) {
+    const [firstLineContent, secondLineContent, thirdLineContent] = rawData.split('\n');
+    const [primaryPlayerName] = firstLineContent.split(' ');
+    const currentScores = secondLineContent.split(' ').map(Number);
 
-    const primaryIdentifier = lineOne.split(' ')[0];
+    const adjustedScores = currentScores.map((scoreValue, scoreIndex) => {
+        const isPrimaryPlayerMatch = (primaryPlayerName === thirdLineContent);
+        return (scoreIndex === 0)
+            ? (isPrimaryPlayerMatch ? scoreValue - 1 : scoreValue)
+            : (isPrimaryPlayerMatch ? scoreValue : scoreValue - 1);
+    });
 
-    const [leftCounterInitial, rightCounterInitial] = lineTwo.split(' ').map(Number);
+    console.log(adjustedScores.join(' '));
+}
 
-    const leftChange = (primaryIdentifier === lineThree) ? -1 : 0;
-    const rightChange = (primaryIdentifier === lineThree) ? 0 : -1;
-
-    const leftCounterFinal = leftCounterInitial + leftChange;
-    const rightCounterFinal = rightCounterInitial + rightChange;
-
-    return `${leftCounterFinal} ${rightCounterFinal}`;
-};
-
-process.stdout.write(performComputation(require("node:fs").readFileSync(0, "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,118 +1,124 @@
 "use strict";
 
-// Custom Input Processing Class
-class DataFeeder {
-    constructor(sourceData) {
-        // Split input by any whitespace and filter out empty strings
-        this.inputTokens = sourceData.split(/\s+/).filter(Boolean);
-        this.tokenPointer = 0;
-    }
+const fs = require("fs");
+const input = fs.readFileSync("/dev/stdin", "utf8");
+const tokens = input.split(/ |\n/);
+let pos = 0;
 
-    // Retrieves the next integer from the input stream
-    fetchInteger() {
-        return parseInt(this.inputTokens[this.tokenPointer++], 10);
-    }
-
-    // Retrieves the next string token from the input stream
-    fetchText() {
-        return this.inputTokens[this.tokenPointer++];
-    }
-
-    // Retrieves a specified count of integers
-    retrieveIntegers(count) {
-        const numbers = [];
-        for (let i = 0; i < count; i++) {
-            numbers.push(this.fetchInteger());
-        }
-        return numbers;
-    }
+function takeNumbers(count) {
+  const out = new Array(count);
+  for (let i = 0; i < count; i++) out[i] = +tokens[pos++];
+  return out;
 }
 
-// Function to create a multi-dimensional array filled with a specific value
-function constructGrid(rows, columns, initialValue) {
-    const freshGrid = new Array(rows);
-    for (let r = 0; r < rows; r++) {
-        freshGrid[r] = new Array(columns).fill(initialValue);
-    }
-    return freshGrid;
+function takeString() {
+  return tokens[pos++];
 }
 
-// Main processing logic
-function solutionKernel() {
-    const MAXIMUM_COST = 1e9 + 7; // A large value representing infinity
-    const ROW_OFFSETS = [-1, 0, 1, 0]; // Corresponds to North, East, South, West changes in row index
-    const COL_OFFSETS = [0, 1, 0, -1]; // Corresponds to North, East, South, West changes in column index
-    const DIRECTION_COUNT = 4;
+const answer = solve();
+if (answer !== undefined) console.log(String(answer));
 
-    const dataStream = new DataFeeder(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const [mapHeight, mapWidth, maxJumpDistance] = dataStream.retrieveIntegers(3);
-    const [initialRow, initialCol, finalRow, finalCol] = dataStream.retrieveIntegers(4);
-
-    // Create the map layout with padding for boundaries using '@'
-    const mapLayout = constructGrid(mapHeight + 2, mapWidth + 2, '@');
-    for (let r = 0; r < mapHeight; r++) {
-        const rowString = dataStream.fetchText();
-        for (let c = 0; c < mapWidth; c++) {
-            mapLayout[r + 1][c + 1] = rowString[c]; // Fill inner part of the map
-        }
-    }
-
-    // Initialize minimum costs grid with MAXIMUM_COST
-    const minimumCosts = constructGrid(mapHeight + 2, mapWidth + 2, MAXIMUM_COST);
-    minimumCosts[initialRow][initialCol] = 0; // Starting point has 0 cost
-
-    // BFS Queue: stores objects { r, c, cost }
-    const explorationQueue = [{ row: initialRow, col: initialCol, pathCost: 0 }];
-    let queueHead = 0; // Manual pointer for queue optimization (avoids Array.shift performance overhead)
-
-    while (queueHead < explorationQueue.length) {
-        const { row: currentRow, col: currentCol, pathCost: currentPathCost } = explorationQueue[queueHead++];
-
-        // If a shorter path to this cell has already been found and processed, skip
-        if (currentPathCost > minimumCosts[currentRow][currentCol]) {
-            continue;
-        }
-
-        // Explore all four cardinal directions
-        for (let dirIndex = 0; dirIndex < DIRECTION_COUNT; ++dirIndex) {
-            let tempRow = currentRow;
-            let tempCol = currentCol;
-
-            // Try jumping up to maxJumpDistance steps in the current direction
-            for (let stepIndex = 0; stepIndex < maxJumpDistance; ++stepIndex) {
-                tempRow += ROW_OFFSETS[dirIndex];
-                tempCol += COL_OFFSETS[dirIndex];
-
-                // If obstacle or boundary, stop exploring further in this direction
-                if (mapLayout[tempRow][tempCol] === '@') {
-                    break;
-                }
-
-                // The cost to reach this new cell is one "jump" more than the current cell's path cost
-                const nextPathCost = currentPathCost + 1;
-
-                // Crucial optimization: If this cell has already been reached with a cost
-                // equal to or less than the current cell's path cost, then any path extending
-                // through this cell from the current cell won't be optimal. Break early.
-                if (minimumCosts[tempRow][tempCol] <= currentPathCost) {
-                    break;
-                }
-
-                // If a shorter path to (tempRow, tempCol) is found
-                if (nextPathCost < minimumCosts[tempRow][tempCol]) {
-                    minimumCosts[tempRow][tempCol] = nextPathCost;
-                    explorationQueue.push({ row: tempRow, col: tempCol, pathCost: nextPathCost });
-                }
-            }
-        }
-    }
-
-    const finalCost = minimumCosts[finalRow][finalCol];
-    return finalCost === MAXIMUM_COST ? -1 : finalCost;
+function solidLine(length) {
+  return new Array(length).fill("@").join("");
 }
 
-const outputVal = solutionKernel();
-if (outputVal !== undefined) {
-    console.log(String(outputVal));
+function solve() {
+  const INF = 1e9;
+  const [h, w, k] = takeNumbers(3);
+  const [sy, sx, gy, gx] = takeNumbers(4);
+
+  const field = new Array(h + 2);
+  field[0] = solidLine(w + 2);
+  for (let r = 1; r <= h; r++) {
+    field[r] = "@" + takeString() + "@";
+  }
+  field[h + 1] = solidLine(w + 2);
+
+  const leftWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const rightWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const upWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const downWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+
+  for (let y = 0; y <= h + 1; y++) {
+    let last = -1;
+    for (let x = 0; x <= w + 1; x++) {
+      leftWall[y][x] = last;
+      if (field[y][x] === "@") last = x;
+    }
+    last = w + 2;
+    for (let x = w + 1; x >= 0; x--) {
+      rightWall[y][x] = last;
+      if (field[y][x] === "@") last = x;
+    }
+  }
+
+  for (let x = 0; x <= w + 1; x++) {
+    let last = -1;
+    for (let y = 0; y <= h + 1; y++) {
+      upWall[y][x] = last;
+      if (field[y][x] === "@") last = y;
+    }
+    last = h + 2;
+    for (let y = h + 1; y >= 0; y--) {
+      downWall[y][x] = last;
+      if (field[y][x] === "@") last = y;
+    }
+  }
+
+  const dist = Array.from({ length: h + 2 }, () => Array(w + 2).fill(INF));
+  const rowUnused = Array.from({ length: h + 2 }, () => new Set());
+  const colUnused = Array.from({ length: w + 2 }, () => new Set());
+
+  for (let y = 1; y <= h; y++) {
+    for (let x = 1; x <= w; x++) {
+      if (field[y][x] !== "@") {
+        rowUnused[y].add(x);
+        colUnused[x].add(y);
+      }
+    }
+  }
+
+  dist[sy][sx] = 0;
+  rowUnused[sy]?.delete(sx);
+  colUnused[sx]?.delete(sy);
+
+  const qy = [sy];
+  const qx = [sx];
+  let head = 0;
+
+  while (head < qy.length) {
+    const y = qy[head];
+    const x = qx[head++];
+    const nd = dist[y][x] + 1;
+
+    const xl = Math.max(x - k, leftWall[y][x] + 1);
+    const xr = Math.min(x + k, rightWall[y][x] - 1);
+    const horizontal = [];
+    for (const nx of rowUnused[y] || []) {
+      if (nx >= xl && nx <= xr) horizontal.push(nx);
+    }
+    for (const nx of horizontal) {
+      rowUnused[y].delete(nx);
+      colUnused[nx].delete(y);
+      dist[y][nx] = nd;
+      qy.push(y);
+      qx.push(nx);
+    }
+
+    const yu = Math.max(y - k, upWall[y][x] + 1);
+    const yd = Math.min(y + k, downWall[y][x] - 1);
+    const vertical = [];
+    for (const ny of colUnused[x] || []) {
+      if (ny >= yu && ny <= yd) vertical.push(ny);
+    }
+    for (const ny of vertical) {
+      colUnused[x].delete(ny);
+      rowUnused[ny].delete(x);
+      dist[ny][x] = nd;
+      qy.push(ny);
+      qx.push(x);
+    }
+  }
+
+  return dist[gy][gx] === INF ? -1 : dist[gy][gx];
 }

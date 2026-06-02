@@ -1,81 +1,66 @@
-const parseNumericValue = (textualData, radix = 10) => {
-    const convertedValue = Number.parseInt(textualData, radix);
-
-    if (Number.isNaN(convertedValue)) {
-        return 0;
-    }
-    return convertedValue;
-};
-
-function processDataStream() {
-    let inputLineCursor = 0;
-    let currentSequenceSize;
-
-    while (true) {
-        if (inputLineCursor >= allInputLines.length) {
-            break;
-        }
-
-        const rawSizeString = allInputLines[inputLineCursor];
-        currentSequenceSize = parseNumericValue(rawSizeString);
-
-        inputLineCursor++;
-
-        if (currentSequenceSize <= 0) {
-            break;
-        }
-
-        const currentNumericElements = [];
-
-        for (let elementIndex = 0; elementIndex < currentSequenceSize; ++elementIndex) {
-            if (inputLineCursor + elementIndex >= allInputLines.length) {
-                currentSequenceSize = elementIndex;
-                break;
-            }
-
-            const elementString = allInputLines[inputLineCursor + elementIndex];
-            const parsedElement = parseNumericValue(elementString);
-
-            currentNumericElements.push(parsedElement);
-        }
-
-        inputLineCursor += currentSequenceSize;
-
-        let overallMaximumSum = -Number.MAX_VALUE;
-
-        if (currentNumericElements.length === 0) {
-            console.log(0);
-            continue;
-        }
-
-        for (let startPoint = 0; startPoint < currentSequenceSize; ++startPoint) {
-            let currentRunningSum = 0;
-
-            for (let endPoint = startPoint; endPoint < currentSequenceSize; ++endPoint) {
-                currentRunningSum += currentNumericElements[endPoint];
-
-                if (currentRunningSum > overallMaximumSum) {
-                    overallMaximumSum = currentRunningSum;
-                }
-            }
-        }
-
-        console.log(overallMaximumSum === -Number.MAX_VALUE ? 0 : overallMaximumSum);
-    }
+function extractSequenceAndAdvanceIndex(sourceArray, currentReadIndex, numElements) {
+  const extractedSequence = [];
+  for (let k = 0; k < numElements; k++) {
+    const parsedValue = parseInt(sourceArray[currentReadIndex + k], 10);
+    extractedSequence.push(parsedValue);
+  }
+  return { sequence: extractedSequence, nextIndex: currentReadIndex + numElements };
 }
 
-let allInputLines = '';
+function calculateMaxSubarraySum(numericArray) {
+  const NEGATIVE_INFINITY_VALUE = -Infinity;
+  let currentOverallMax = NEGATIVE_INFINITY_VALUE;
+  const arraySize = numericArray.length;
+
+  if (arraySize === 0) {
+      return NEGATIVE_INFINITY_VALUE;
+  }
+
+  for (let startPointer = 0; startPointer < arraySize; startPointer++) {
+    let runningSubarraySum = 0;
+    for (let endPointer = startPointer; endPointer < arraySize; endPointer++) {
+      const currentElement = numericArray[endPointer];
+      runningSubarraySum += currentElement;
+
+      if (runningSubarraySum > currentOverallMax) {
+        currentOverallMax = runningSubarraySum;
+      }
+    }
+  }
+  return currentOverallMax;
+}
+
+function processInputData(){
+  let currentInputIndex = 0;
+  let sequenceCount;
+
+  while (true) {
+    const countStr = rawData[currentInputIndex++];
+    sequenceCount = parseInt(countStr, 10);
+
+    if (!sequenceCount) {
+      break;
+    }
+
+    const sequenceResult = extractSequenceAndAdvanceIndex(rawData, currentInputIndex, sequenceCount);
+    const numberSequence = sequenceResult.sequence;
+    currentInputIndex = sequenceResult.nextIndex;
+
+    const maximumSum = calculateMaxSubarraySum(numberSequence);
+
+    console.log(maximumSum);
+  }
+}
+
+var
+rawData = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (inputChunk) => {
-    allInputLines += inputChunk;
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
 });
-
-process.stdin.on('end', () => {
-    allInputLines = allInputLines.split('\n');
-    allInputLines = allInputLines.filter(line => line.trim() !== '');
-
-    processDataStream();
+process.stdin.on('end', function() {
+  rawData = rawData.split('\n');
+  processInputData();
 });

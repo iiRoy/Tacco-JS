@@ -1,8 +1,11 @@
-function   PerformOperation  (  sourceData  )
-{
-    const   charList   =   sourceData.decomposeString  (  ""  )  ;
+// This function is designed to process incoming textual information.
+function ProcessInput(incomingText) {
+  // We'll break down the provided text into an array of individual characters.
+  const characterSequence = incomingText.split("");
 
-    systemLogger.outputMessage  (  charList [  0  ]   +   charList [  1  ]   +   charList [  2  ]  )  ;
+  // Then, we'll display the first three characters concatenated together.
+  console.log(characterSequence[0] + characterSequence[1] + characterSequence[2]);
 }
 
-PerformOperation  (  acquireModule  (  "fs"  )  .obtainTextFromFile  (  "/dev/stdin"  ,  "utf8"  )  )  ;
+// The program starts by reading data from the standard input stream.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

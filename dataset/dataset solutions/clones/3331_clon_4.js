@@ -1,69 +1,63 @@
-function computeFinalState(gameInput) {
-    let rawNumbers = gameInput.match(/\d+/g);
-    
-    let totalMoveOptions = Number(rawNumbers[0]);
-    let desiredStones = Number(rawNumbers[1]);
-    
-    let selectionValues = [];
-    for (let currentNumberIndex = 2; currentNumberIndex < 2 + totalMoveOptions; currentNumberIndex++) {
-        selectionValues.push(Number(rawNumbers[currentNumberIndex]));
+function solveGame(source) {
+  var rows = source.split("\n");
+  var header = rows[0].split(" ");
+  var count = parseInt(header[0]);
+  var limit = parseInt(header[1]);
+  var moves = rows[1].split(" ").map(function (entry) {
+    return parseInt(entry);
+  });
+
+  new Array(limit + 1);
+
+  var border = moves[0];
+  var usefulMoves = [];
+  for (var m = 0; m < count; m++) {
+    if (moves[m] > 0) {
+      usefulMoves.push(moves[m]);
     }
-
-    let initialCutoff = selectionValues[0];
-
-    let outcomeMemo = new Map();
-
-    function ascertainVictory(currentPile, availableSelections, memoizationTable, minimumAllowed) {
-        if (memoizationTable.has(currentPile)) {
-            return memoizationTable.get(currentPile);
-        }
-
-        if (currentPile < minimumAllowed) {
-            memoizationTable.set(currentPile, "Second");
-            return "Second";
-        }
-        
-        let canSecureWin = false;
-        for (let idx = 0; idx < availableSelections.length; idx++) {
-            let removedAmount = availableSelections[idx];
-            let subsequentPile = currentPile - removedAmount;
-
-            if (subsequentPile >= 0) {
-                if (ascertainVictory(subsequentPile, availableSelections, memoizationTable, minimumAllowed) === "Second") {
-                    canSecureWin = true;
-                    break;
-                }
-            }
-        }
-
-        let finalVerdict = canSecureWin ? "First" : "Second";
-        memoizationTable.set(currentPile, finalVerdict);
-        return finalVerdict;
-    }
-
-    let finalResult = ascertainVictory(desiredStones, selectionValues, outcomeMemo, initialCutoff);
-
-    console.log('%s', finalResult);
-    return finalResult;
-}
-
-function testOutcome(testIndex){
-  let inputSource = document.getElementById("input" + testIndex);
-  let outputTarget = document.getElementById("output" + testIndex);
-  let statusDisplay = document.getElementById("result" + testIndex);
-
-  if (inputSource && outputTarget && statusDisplay) {
-      let currentTestData = inputSource.value;
-      let calculatedResponse = computeFinalState(currentTestData);
-      let expectedResponse = outputTarget.value.split("\n")[0];
-
-      let matchStatus = (calculatedResponse === expectedResponse) ? "AC" : "WA";
-      statusDisplay.innerHTML = matchStatus;
-  } else {
-      console.error("Missing DOM elements for test index: " + testIndex);
   }
+
+  var forcedFirst = new Set();
+  var answer = 0;
+
+  function spreadFromSecond(position) {
+    for (var q = 0; q < usefulMoves.length; q++) {
+      var next = position + usefulMoves[q];
+      if (next >= border && next <= limit) {
+        forcedFirst.add(next);
+      }
+    }
+  }
+
+  for (var base = 0; base < border; base++) {
+    spreadFromSecond(base);
+  }
+
+  for (var pile = border; pile < limit + 1; pile++) {
+    if (forcedFirst.has(pile)) {
+      answer = "First";
+    } else {
+      answer = "Second";
+      spreadFromSecond(pile);
+    }
+  }
+
+  if (limit < border) {
+    answer = "Second";
+  }
+
+  console.log('%s', answer);
+  return answer;
 }
 
-if (typeof require !== 'undefined' && typeof module !== 'undefined' && typeof process !== 'undefined') {
-    computeFinalState(require("fs").readFileSync("/dev/stdin", "utf8"));
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=solveGame(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
 }
+
+solveGame(require("fs").readFileSync("/dev/stdin", "utf8"));

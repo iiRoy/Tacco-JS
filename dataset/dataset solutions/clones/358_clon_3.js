@@ -1,90 +1,71 @@
-let gameGridDimensions = [0, 0];
-let currentProcessingGrid = [];
+function explode(rowCoord, colCoord, targetVal) {
+    recursionDepthCounter++;
+    const MAX_RECURSION_LIMIT = 50;
+    if (recursionDepthCounter > MAX_RECURSION_LIMIT) {
+        return;
+    }
 
-const isWithinBounds = (rowCoord, colCoord) => {
-    return rowCoord >= 0 && rowCoord < gameGridDimensions[0] &&
-           colCoord >= 0 && colCoord < gameGridDimensions[1];
-};
+    const rowOffsets = [0, 0, -1, 1];
+    const colOffsets = [-1, 1, 0, 0];
+    const directionCount = 4;
 
-function exploreConnectedRegion(startRow, startCol, targetCharValue) {
-    const rowMovementOffsets = [-1, 1, 0, 0]; // Up, Down, Left, Right
-    const colMovementOffsets = [0, 0, -1, 1];
-    const numDirections = rowMovementOffsets.length;
+    for (let directionIndex = 0; directionIndex < directionCount; directionIndex++) {
+        const nextRow = rowCoord + rowOffsets[directionIndex];
+        const nextCol = colCoord + colOffsets[directionIndex];
 
-    for (let directionIdx = 0; directionIdx < numDirections; directionIdx++) {
-        const neighborRow = startRow + rowMovementOffsets[directionIdx];
-        const neighborCol = startCol + colMovementOffsets[directionIdx];
+        const currentGridRows = gridDimensions[0];
+        const currentGridCols = gridDimensions[1];
 
-        if (!isWithinBounds(neighborRow, neighborCol)) {
+        if (nextRow < 0 || nextRow >= currentGridRows || nextCol < 0 || nextCol >= currentGridCols) {
             continue;
         }
 
-        if (currentProcessingGrid[neighborRow][neighborCol] === targetCharValue) {
-            currentProcessingGrid[neighborRow][neighborCol] = '_';
-            exploreConnectedRegion(neighborRow, neighborCol, targetCharValue);
+        const adjacentCellValue = currentGridData[nextRow][nextCol];
+        if (targetVal === adjacentCellValue) {
+            currentGridData[nextRow][nextCol] = 0;
+            explode(nextRow, nextCol, targetVal);
         }
     }
 }
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let inputLines = rawInputData.trim().split("\n");
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLinesArray = fileContent.trim().split("\n");
 
-const parseNextTestCase = () => {
-    if (inputLines.length === 0) {
-        return null;
+let gridDimensions;
+let recursionDepthCounter;
+let currentGridData;
+
+while (true) {
+    const dimensionStrings = inputLinesArray.shift().split(" ");
+    gridDimensions = dimensionStrings.map(Number);
+
+    const numRows = gridDimensions[0];
+    const numCols = gridDimensions[1];
+
+    if (numRows === 0 && numCols === 0) {
+        break;
     }
 
-    const dimensionLine = inputLines.shift();
-    if (!dimensionLine) {
-        return null;
-    }
-    const dimensions = dimensionLine.split(" ").map(Number);
-
-    if (dimensions[0] === 0 && dimensions[1] === 0) {
-        return null;
+    currentGridData = [];
+    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+        const rowCharacters = inputLinesArray.shift().split("");
+        currentGridData.push(rowCharacters);
     }
 
-    gameGridDimensions[0] = dimensions[0];
-    gameGridDimensions[1] = dimensions[1];
+    let foundClusterCount = 0;
+    recursionDepthCounter = 0;
 
-    const gridData = [];
-    if (inputLines.length < gameGridDimensions[0]) {
-        console.error("Error: Not enough grid data lines provided for dimensions:", gameGridDimensions);
-        inputLines = []; // Clear remaining lines to prevent further errors
-        return null;
-    }
+    const searchableSymbols = new Set(["@", "#", "*"]);
 
-    for (let rowIdx = 0; rowIdx < gameGridDimensions[0]; rowIdx++) {
-        const gridRowCharacters = inputLines.shift();
-        if (!gridRowCharacters || gridRowCharacters.length !== gameGridDimensions[1]) {
-            console.error(`Error: Malformed row data at index ${rowIdx}. Expected ${gameGridDimensions[1]} chars, got ${gridRowCharacters ? gridRowCharacters.length : 'none'}.`);
-            inputLines = []; // Clear remaining lines
-            return null;
-        }
-        gridData.push(gridRowCharacters.split(""));
-    }
-    return gridData;
-};
-
-const islandStartMarkers = new Set(['@', '#', '*']);
-const initialProcessMarker = 'P';
-
-let currentGridData = null;
-while ((currentGridData = parseNextTestCase()) !== null) {
-    currentProcessingGrid = currentGridData;
-
-    let detectedIslandCount = 0;
-
-    for (let rIdx = 0; rIdx < gameGridDimensions[0]; rIdx++) {
-        for (let cIdx = 0; cIdx < gameGridDimensions[1]; cIdx++) {
-            const cellContent = currentProcessingGrid[rIdx][cIdx];
-
-            if (islandStartMarkers.has(cellContent)) {
-                detectedIslandCount++;
-                currentProcessingGrid[rIdx][cIdx] = initialProcessMarker;
-                exploreConnectedRegion(rIdx, cIdx, cellContent);
+    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+        for (let colIndex = 0; colIndex < numCols; colIndex++) {
+            const cellContent = currentGridData[rowIndex][colIndex];
+            if (searchableSymbols.has(cellContent)) {
+                foundClusterCount++;
+                currentGridData[rowIndex][colIndex] = "m";
+                explode(rowIndex, colIndex, cellContent);
             }
         }
     }
-    console.log(detectedIslandCount);
+    console.log(foundClusterCount);
 }

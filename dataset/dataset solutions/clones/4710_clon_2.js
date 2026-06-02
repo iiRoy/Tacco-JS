@@ -1,52 +1,45 @@
-'use strict'; // Enforce strict parsing rules for better code quality
+'use strict'; // Enforce strict parsing and error handling
 
 /**
- * Executes the core logic of the program based on the provided input.
- * This function simulates a simple card game comparison.
- * @param {string} rawInputString The raw string input from the source.
+ * Processes an input string to determine a winner based on two numeric values.
+ * This function simulates a simple card game where '1' is treated as a high card (14).
+ *
+ * @param {string} inputString - The raw input string, expected to contain two space-separated numbers on the first line.
  */
-function evaluateGameOutcome( rawInputString )
-{
-    // First, parse the input string to extract numeric values.
-    // We expect a single line with two space-separated integers.
-    let numericValuesArray = rawInputString
-        .split('\n')[0] // Take only the first line of input
-        .split(' ')     // Split by space to get string numbers
-        .map(item => parseInt(item, 10)); // Convert each string to an integer
+function processInput(inputString) {
+  // First, split the input by newline to get the first line,
+  // then split that line by space, and finally convert each part to a number.
+  const numericValues = inputString.split('\n')[0].split(' ').map(currentNumStr => Number(currentNumStr));
 
-    // Assign the two values to distinct player scores.
-    let scorePlayerOne = numericValuesArray[0]; // Score for the first participant
-    let scorePlayerTwo = numericValuesArray[1]; // Score for the second participant
+  // Extract the two primary values for comparison.
+  let firstValue = numericValues[0];
+  let secondValue = numericValues[1];
 
-    // Special rule: If a score is 1, it's treated as 14 (Ace card logic).
-    if (scorePlayerOne === 1) {
-        scorePlayerOne += 13; // Elevate the value of 1 for player one
-    }
-    if (scorePlayerTwo === 1) {
-        scorePlayerTwo += 13; // Elevate the value of 1 for player two
-    }
+  // Special rule: if a value is 1, treat it as 14 for comparison purposes.
+  if (firstValue === 1) {
+    firstValue += 13; // 1 becomes 14
+  }
+  if (secondValue === 1) {
+    secondValue += 13; // 1 becomes 14
+  }
 
-    // Determine the outcome of the game.
-    let gameResultDescription = ''; // Initialize the message for the game's conclusion
+  // Initialize a variable to store the outcome message.
+  let resultMessage = '';
 
-    if (scorePlayerOne > scorePlayerTwo)
-    {
-        gameResultDescription = String('Alice'); // Player one wins
-    }
+  // Determine the winner or if it's a draw based on the adjusted values.
+  if (firstValue > secondValue) {
+    resultMessage = 'Alice'; // Alice wins if her value is greater
+  }
+  if (firstValue < secondValue) {
+    resultMessage = 'Bob';   // Bob wins if his value is greater
+  }
+  if (firstValue === secondValue) {
+    resultMessage = 'Draw';  // It's a draw if values are equal
+  }
 
-    if (scorePlayerOne < scorePlayerTwo)
-    {
-        gameResultDescription = String('Bob'); // Player two wins
-    }
-
-    if (scorePlayerOne === scorePlayerTwo)
-    {
-        gameResultDescription = String('Draw'); // It's a tie
-    }
-
-    // Output the final result to the standard console.
-    console.log(gameResultDescription);
+  // Output the final result to the console.
+  console.log(resultMessage);
 }
 
-// Entry point: Read input from standard input and pass it to the processing function.
-evaluateGameOutcome( require ("fs") . readFileSync ( "/dev/stdin" ,  "utf8" ) );
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

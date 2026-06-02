@@ -1,51 +1,39 @@
-const libIO = require('fs');
+const fileSystemModule = require('fs');
+const standardInputFileDescriptor = process.stdin.fd;
+const totalInputSize = fileSystemModule.fstatSync(standardInputFileDescriptor).size;
+const dataCaptureBuffer = Buffer.alloc(totalInputSize);
+const actualBytesRead = fileSystemModule.readSync(standardInputFileDescriptor, dataCaptureBuffer, 0, totalInputSize, 0);
+const processedInputLines = dataCaptureBuffer.toString('utf8', 0, actualBytesRead).trim().split('\n');
 
-const acquireContent = () => {
-  return libIO.readFileSync('/dev/stdin', 'utf8');
-};
+const analyzeLinePair = (firstString, secondString) => {
+    const firstElementArray = firstString.trim().split(' ');
+    const secondElementArray = secondString.trim().split(' ');
 
-const processContent = (rawContent) => {
-  const allEntries = rawContent.trim().split('\n');
-
-  const pairedEntries = allEntries.reduce((accumulator, currentEntry, entryIndex, allEntriesArray) => {
-    if (entryIndex % 2 === 0) {
-      accumulator.push([currentEntry, allEntriesArray[entryIndex + 1]]);
-    }
-    return accumulator;
-  }, []);
-
-  const computedOutcomes = pairedEntries.map(entryPair => {
-    const [primaryDatum, secondaryDatum] = entryPair;
-    const primaryTokens = primaryDatum.trim().split(' ');
-    const secondaryTokens = secondaryDatum.trim().split(' ');
-
-    let preciseMatches = 0;
-    let lateralMatches = 0;
-
-    primaryTokens.forEach((primaryToken, primaryIndex) => {
-      if (primaryToken === secondaryTokens[primaryIndex]) {
-        preciseMatches++;
-      }
-    });
-
-    primaryTokens.forEach((primaryToken, primaryIndex) => {
-      secondaryTokens.slice(primaryIndex + 1).forEach(secondaryToken => {
-        if (primaryToken === secondaryToken) {
-          lateralMatches++;
+    const comparisonResults = firstElementArray.reduce((currentAccumulator, currentFirstElement, currentFirstIndex) => {
+        if (currentFirstElement === secondElementArray[currentFirstIndex]) {
+            currentAccumulator.exactPositionMatches++;
         }
-      });
-    });
+        
+        const elementsAfterCurrentIndex = secondElementArray.slice(currentFirstIndex + 1);
+        const crossPositionMatches = elementsAfterCurrentIndex.filter(secondElement => currentFirstElement === secondElement).length;
+        currentAccumulator.differentPositionMatches += crossPositionMatches;
+        
+        return currentAccumulator;
+    }, { exactPositionMatches: 0, differentPositionMatches: 0 });
 
-    return `${preciseMatches} ${lateralMatches}`;
-  });
-
-  return computedOutcomes;
+    return [comparisonResults.exactPositionMatches, comparisonResults.differentPositionMatches];
 };
 
-const displayResults = (outcomeCollection) => {
-  outcomeCollection.forEach(resultLine => console.log(resultLine));
-};
+const allCalculatedOutputs = processedInputLines.reduce((outputCollector, currentInputLine, lineIndex, fullInputArray) => {
+    if (lineIndex % 2 === 0) {
+        const subsequentInputLine = fullInputArray[lineIndex + 1];
+        if (subsequentInputLine !== undefined) {
+            outputCollector.push(analyzeLinePair(currentInputLine, subsequentInputLine));
+        }
+    }
+    return outputCollector;
+}, []);
 
-const initialContent = acquireContent();
-const finalOutcomes = processContent(initialContent);
-displayResults(finalOutcomes);
+allCalculatedOutputs.forEach(resultTuple => {
+    console.log(resultTuple[0], resultTuple[1]);
+});

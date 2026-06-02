@@ -1,30 +1,12 @@
-(function(initialData) {
-    const characterArray = initialData.split('');
-    const modifiedCharacterArray = characterArray.map(function(singleChar) {
-        const numericValue = singleChar.charCodeAt(0);
-        const lowerBoundA = 97; // Unicode for 'a'
-        const upperBoundZ = 122; // Unicode for 'z'
-        const lowerBoundCapitalA = 65; // Unicode for 'A'
-        const upperBoundCapitalZ = 90; // Unicode for 'Z'
-        const caseShift = 32;
-
-        if (numericValue >= lowerBoundA && numericValue <= upperBoundZ) {
-            return String.fromCharCode(numericValue - caseShift);
-        } else if (numericValue >= lowerBoundCapitalA && numericValue <= upperBoundCapitalZ) {
-            return String.fromCharCode(numericValue + caseShift);
-        } else {
-            return singleChar;
+(function(sourceText) {
+    const processedChars = Array.from(sourceText).map(charUnit => {
+        const charOrdinal = charUnit.charCodeAt(0);
+        if (charOrdinal >= 65 && charOrdinal <= 90) {
+            return String.fromCharCode(charOrdinal + 32);
+        } else if (charOrdinal >= 97 && charOrdinal <= 122) {
+            return String.fromCharCode(charOrdinal - 32);
         }
+        return charUnit;
     });
-    const finalResult = modifiedCharacterArray.join('');
-    process.stdout.write(finalResult + '\n');
-})(
-    (function() {
-        const obtainModule = require;
-        const fileSystemInterface = obtainModule('fs');
-        const syncFileContent = fileSystemInterface.readFileSync;
-        const standardInputPath = '/dev/stdin';
-        const encodingScheme = 'utf8';
-        return syncFileContent(standardInputPath, encodingScheme);
-    })()
-);
+    console.log(processedChars.join(''));
+})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

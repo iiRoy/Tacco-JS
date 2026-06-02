@@ -1,19 +1,52 @@
-const numeralBase = 10;
-const exponentValue = 8;
-const subtrahend = 1;
+"use strict";
 
-const numericRepresentation = Math.pow(numeralBase, exponentValue) - subtrahend;
+const data = require("fs")
+   .readFileSync("/dev/stdin", "utf8")
+   .trim()
+   .split(/\s+/);
 
-const textualOutput = numericRepresentation.toString();
+const height = Number(data[0]);
+const width = Number(data[1]);
+const original = data.slice(2, 2 + height);
 
-function presentContent(payload) {
-    if (typeof console !== 'undefined' && console.log) {
-        console.log(payload);
-    } else if (typeof document !== 'undefined' && document.write) {
-        document.write(payload);
-    } else if (typeof process !== 'undefined' && process.stdout && process.stdout.write) {
-        process.stdout.write(payload + '\n');
-    }
+const firstPattern = [];
+const secondPattern = [];
+
+for (let row = 0; row < height; row++) {
+   let firstLine = "";
+   let secondLine = "";
+
+   for (let col = 0; col < width; col++) {
+      let firstCell = ".";
+      let secondCell = ".";
+
+      if (col === 0) {
+         firstCell = "#";
+      }
+
+      if (col === width - 1) {
+         secondCell = "#";
+      }
+
+      if (col > 0 && col < width - 1) {
+         if (row % 2 === 1) {
+            firstCell = "#";
+         } else {
+            secondCell = "#";
+         }
+
+         if (original[row][col] !== ".") {
+            firstCell = "#";
+            secondCell = "#";
+         }
+      }
+
+      firstLine += firstCell;
+      secondLine += secondCell;
+   }
+
+   firstPattern.push(firstLine);
+   secondPattern.push(secondLine);
 }
 
-presentContent(textualOutput);
+console.log(firstPattern.join("\n") + "\n\n" + secondPattern.join("\n"));

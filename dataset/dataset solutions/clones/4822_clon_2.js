@@ -1,28 +1,24 @@
-// This function serves as the primary entry point for data processing.
-function     processInput  (  rawData  )
-{
-    // The raw input string is separated into an array of individual lines.
-    const     lines  =  rawData.split('\n')  ;
+function processInputData(rawData) {
+  // Split the entire input string into individual lines
+  const lineSegments = rawData.split('\n');
 
-    // The very first line is parsed to extract dimensions (height and width).
-    const     [  heightValue,  widthValue  ]  =  lines[0].split(' ')  ;
+  // Extract dimensions from the first line: height and width
+  const [numRows, numCols] = lineSegments[0].split(' ');
 
-    // A dynamic array is initialized to store the subsequent data rows.
-    let     rowCollection  =  new  Array(heightValue)  ;
+  // Initialize an array to store the content of each row
+  let rowContent = new Array(parseInt(numRows, 10)); // Explicitly parse to integer for array size
 
-    // Each line, starting from the second one, is assigned to its corresponding index in the collection.
-    for  (  let  rowIndex  =  0  ;  rowIndex  <  heightValue  ;  rowIndex++  )
-    {
-        rowCollection[rowIndex]  =  lines[rowIndex  +  1]  ;
-    }
+  // Populate the row content array from the input lines
+  for (let rowIndex = 0; rowIndex < parseInt(numRows, 10); rowIndex++) {
+    rowContent[rowIndex] = lineSegments[rowIndex + 1];
+  }
 
-    // The stored data rows are then iterated through and displayed on the console.
-    for  (  let  rowIndex  =  0  ;  rowIndex  <  heightValue  ;  rowIndex++  )
-    {
-        console.log(  rowCollection[rowIndex]  )  ;  // Output the current row once.
-        console.log(  rowCollection[rowIndex]  )  ;  /* Display the same row again for validation or logging. */
-    }
+  // Iterate through the stored rows and print each one twice
+  for (let rowIndex = 0; rowIndex < parseInt(numRows, 10); rowIndex++) {
+    console.log(rowContent[rowIndex]); // Output the current row's data
+    console.log(rowContent[rowIndex]); // Output the same row's data again
+  }
 }
 
-// The main processing function is invoked with data read synchronously from standard input.
-processInput(  require('fs').readFileSync('/dev/stdin', 'utf8')  )  ;
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

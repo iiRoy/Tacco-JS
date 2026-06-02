@@ -1,121 +1,92 @@
-class DataStreamParser {
-    constructor(sourceData) {
-        this.source = sourceData;
-        this.pointer = 0;
-    }
+"use strict";
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const tokenBuffer = rawInput.split(/ |\n/);
 
-    _advancePastWhitespace() {
-        while (this.pointer < this.source.length && (this.source[this.pointer] === ' ' || this.source[this.pointer] === '\n' || this.source[this.pointer] === '\r')) {
-            this.pointer++;
-        }
+let tokenCursor = 0;
+const readNumber = () => Number(tokenBuffer[tokenCursor++]);
+const readString = () => tokenBuffer[tokenCursor++];
+const readNumberSequence = (count) => {
+    const sequence = [];
+    for (let i = 0; i < count; i++) {
+        sequence.push(readNumber());
     }
+    return sequence;
+};
 
-    _extractSegment() {
-        this._advancePastWhitespace();
-        const startPoint = this.pointer;
-        while (this.pointer < this.source.length && !(this.source[this.pointer] === ' ' || this.source[this.pointer] === '\n' || this.source[this.pointer] === '\r')) {
-            this.pointer++;
-        }
-        return this.source.substring(startPoint, this.pointer);
+function createMultiDimArray(dimensions, initialValue) {
+    if (dimensions.length === 0) {
+        return initialValue;
     }
-
-    retrieveNumericValue() {
-        return Number(this._extractSegment());
-    }
-
-    retrieveTextValue() {
-        return this._extractSegment();
-    }
-
-    retrieveMultipleNumericValues(quantity) {
-        const numericSet = [];
-        for (let idx = 0; idx < quantity; idx++) {
-            numericSet.push(this.retrieveNumericValue());
-        }
-        return numericSet;
-    }
+    const currentDimSize = dimensions[0];
+    const remainingDims = dimensions.slice(1);
+    return Array.from({ length: currentDimSize }, () =>
+        createMultiDimArray(remainingDims, initialValue)
+    );
 }
 
-function calculateOptimalTraversal() {
-    const dataInputReader = new DataStreamParser(require("fs").readFileSync("/dev/stdin","utf8"));
+const finalResult = solveGridTraversal();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
+}
 
-    const displacementVectors = [[-1, 0], [0, 1], [1, 0], [0, -1]]; // [dy, dx] for Up, Right, Down, Left
-    const totalDirections = displacementVectors.length;
+function solveGridTraversal() {
+    const MAX_PATH_COST = 1e9;
+    const deltaRows = [0, 1, 0, -1];
+    const deltaCols = [-1, 0, 1, 0];
+    const numDirections = 4;
 
-    const [gridHeight, gridWidth, maxStepLength] = dataInputReader.retrieveMultipleNumericValues(3);
-    const [startRow, startCol, endRow, endCol] = dataInputReader.retrieveMultipleNumericValues(4);
+    const [gridHeight, gridWidth, maxJump] = readNumberSequence(3);
+    const [startRow, startCol, goalRow, goalCol] = readNumberSequence(4);
 
-    const blockedCells = new Set();
-    for (let rowIdx = 1; rowIdx <= gridHeight; rowIdx++) {
-        const cellLine = dataInputReader.retrieveTextValue();
-        for (let colIdx = 0; colIdx < gridWidth; colIdx++) { // 0-indexed for string character
-            if (cellLine[colIdx] === '@') {
-                blockedCells.add(`${rowIdx},${colIdx + 1}`); // Store as 1-indexed (row, column)
-            }
+    const obstacleGrid = createMultiDimArray([gridHeight + 2, gridWidth + 2], true); // true for obstacle, false for path
+
+    for (let r = 0; r < gridHeight; r++) {
+        const rowContent = readString();
+        for (let c = 0; c < gridWidth; c++) {
+            obstacleGrid[r + 1][c + 1] = (rowContent[c] === '@');
         }
     }
 
-    const cellMinCosts = new Map(); // Map<string "row,col", number cost>
-    cellMinCosts.set(`${startRow},${startCol}`, 0);
+    const pathCosts = createMultiDimArray([gridHeight + 2, gridWidth + 2], MAX_PATH_COST);
+    pathCosts[startRow][startCol] = 0;
 
-    let currentIterationCells = new Set([`${startRow},${startCol}`]);
-    let nextIterationCells = new Set();
+    let currentLevelNodes = [[startRow, startCol]];
     let currentCost = 0;
 
-    while (currentIterationCells.size > 0) {
-        nextIterationCells.clear();
-        for (const currentCellKey of currentIterationCells) {
-            const [yCurrent, xCurrent] = currentCellKey.split(',').map(Number);
+    while (currentLevelNodes.length > 0) {
+        const nextLevelNodes = [];
+        while (currentLevelNodes.length > 0) {
+            const [currentRow, currentCol] = currentLevelNodes.shift();
 
-            for (let dirIndex = 0; dirIndex < totalDirections; dirIndex++) {
-                const [dY, dX] = displacementVectors[dirIndex];
-                let nextY = yCurrent;
-                let nextX = xCurrent;
+            for (let dirIndex = 0; dirIndex < numDirections; dirIndex++) {
+                let nextRow = currentRow;
+                let nextCol = currentCol;
 
-                for (let stepCount = 0; stepCount < maxStepLength; stepCount++) {
-                    nextY += dY;
-                    nextX += dX;
+                for (let stepCount = 0; stepCount < maxJump; stepCount++) {
+                    nextRow += deltaRows[dirIndex];
+                    nextCol += deltaCols[dirIndex];
 
-                    const nextCellKey = `${nextY},${nextX}`;
-
-                    // Check if cell is outside grid boundaries (1-indexed)
-                    if (nextY < 1 || nextY > gridHeight || nextX < 1 || nextX > gridWidth) {
-                        break; // Out of bounds
-                    }
-                    // Check if cell is an obstacle
-                    if (blockedCells.has(nextCellKey)) {
+                    if (obstacleGrid[nextRow][nextCol]) {
                         break; // Hit an obstacle
                     }
 
-                    const existingPathCost = cellMinCosts.get(nextCellKey);
-
-                    // If a path to this cell already exists with cost <= currentCost,
-                    // it means we've either processed it or it's on the current level.
-                    // In either case, we stop extending this line segment.
-                    if (existingPathCost !== undefined && existingPathCost <= currentCost) {
+                    if (pathCosts[nextRow][nextCol] <= currentCost) {
+                        // Already found a path to this cell with currentCost or less.
+                        // A new path from currentCost would be currentCost + 1, which is not better.
+                        // This condition is crucial for correctness and efficiency in level-by-level BFS.
                         break;
                     }
 
-                    // If cell is unvisited or a longer path was found previously
-                    if (existingPathCost === undefined || existingPathCost > currentCost + 1) {
-                        cellMinCosts.set(nextCellKey, currentCost + 1);
-                        nextIterationCells.add(nextCellKey);
+                    if (pathCosts[nextRow][nextCol] > currentCost + 1) {
+                        pathCosts[nextRow][nextCol] = currentCost + 1;
+                        nextLevelNodes.push([nextRow, nextCol]);
                     }
-                    // If existingPathCost === currentCost + 1, it means it's already in nextIterationCells
-                    // from another path at this level. No need to update cost or re-add, but continue exploring
-                    // along this line segment.
                 }
             }
         }
-        currentIterationCells = new Set(nextIterationCells); // Prepare for next level
+        currentLevelNodes = nextLevelNodes;
         currentCost++;
     }
 
-    const finalPathCost = cellMinCosts.get(`${endRow},${endCol}`);
-    return finalPathCost === undefined ? -1 : finalPathCost;
-}
-
-const outcome = calculateOptimalTraversal();
-if (outcome !== undefined) {
-    console.log(String(outcome));
+    return pathCosts[goalRow][goalCol] === MAX_PATH_COST ? -1 : pathCosts[goalRow][goalCol];
 }

@@ -1,23 +1,43 @@
-function ProcessInputData(rawData) {
-    const allLines = rawData.split('\n');
-    const configTokens = allLines[0].split(' ').map(Number);
-    const totalElements = configTokens[0];
-    const elementsToDiscard = configTokens[1];
-    const dataValues = allLines[1].split(' ').map(Number);
+function processInput(rawData) {
+    const linesOfData = rawData.split('\n');
+    const [firstLineContent, secondLineContent] = linesOfData;
 
-    if (totalElements <= elementsToDiscard) {
-        console.log(0);
-    } else if (elementsToDiscard === 0) {
-        const sumAll = dataValues.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-        console.log(sumAll);
+    const [totalElementsString, skipCountString] = firstLineContent.split(' ');
+    const totalElementsValue = Number(totalElementsString);
+    const skipCountValue = Number(skipCountString);
+
+    let finalAccumulation = 0;
+
+    if (totalElementsValue <= skipCountValue) {
+        console.log("0");
+    } else if (skipCountValue === 0) {
+        const numericStrings = secondLineContent.split(' ');
+        let currentTotal = 0;
+        let iterationPointer; // This variable will be undefined, mimicking the original bug's 'i'
+
+        let loopControlVariable = 0; // Mimics the original bug's 'j'
+        while (loopControlVariable < numericStrings.length) {
+            currentTotal += Number.parseInt(numericStrings[iterationPointer], 10);
+            iterationPointer++; // This will cause iterationPointer to become NaN after the first increment
+            loopControlVariable++;
+        }
+        console.log('%d', currentTotal);
     } else {
-        console.log(elementsToDiscard); 
+        const valueStrings = secondLineContent.split(' ');
+        // Original sort: (a < b ? 1 : -1) -> descending string comparison
+        const orderedValues = valueStrings.sort((valA, valB) => valB.localeCompare(valA));
 
-        const sortedAscending = [...dataValues].sort((valA, valB) => valA - valB);
-        const elementsToSum = sortedAscending.slice(0, totalElements - elementsToDiscard);
-        const partialSum = elementsToSum.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-        console.log(partialSum);
+        console.log('%d', skipCountValue); // Preserve this specific output
+
+        finalAccumulation = orderedValues.slice(skipCountValue, totalElementsValue)
+                                         .reduce((summation, currentString) => summation + Number(currentString), 0);
+
+        console.log('%d', finalAccumulation);
     }
 }
 
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function entryPoint(inputData) {
+    processInput(inputData);
+}
+
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

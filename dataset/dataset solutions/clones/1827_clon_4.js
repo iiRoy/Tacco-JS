@@ -1,28 +1,23 @@
 "use strict";
+const processInput = (inputString) => {
+    const numericTokens = inputString.split('\n')[0].match(/\d+/g).map(Number);
 
-const computationExecutor = (dataSource) => {
+    const [startHour, startMinute, endHour, endMinute, durationOffset] = numericTokens;
 
-    const numericalValues = dataSource
-                              .split(/\s+/)
-                              .filter(Boolean)
-                              .map(Number);
+    const convertToTotalMinutes = (h, m) => h * 60 + m;
 
-    const commencementHour = numericalValues[0];
-    const commencementMinute = numericalValues[1];
-    const terminationHour = numericalValues[2];
-    const terminationMinute = numericalValues[3];
-    const penaltyValue = numericalValues[4];
+    const initialTimeInMinutes = convertToTotalMinutes(startHour, startMinute);
+    const finalTimeInMinutes = convertToTotalMinutes(endHour, endMinute);
 
-    const epochStartMinutes = (commencementHour * 60) + commencementMinute;
-    const epochEndMinutes = (terminationHour * 60) + terminationMinute;
+    const calculationStrategies = new Map();
+    calculationStrategies.set(true, (sT, iT, dO) => sT - iT - dO);
+    calculationStrategies.set(false, (sT, iT, dO) => sT + (3600 - iT) - dO);
 
-    const cycleBoundary = 3600;
+    const selectedStrategy = calculationStrategies.get(initialTimeInMinutes < finalTimeInMinutes);
 
-    const grossDuration = (epochEndMinutes - epochStartMinutes + cycleBoundary) % cycleBoundary;
+    const finalResult = selectedStrategy(finalTimeInMinutes, initialTimeInMinutes, durationOffset);
 
-    const netDuration = grossDuration - penaltyValue;
-
-    process.stdout.write(netDuration.toString() + '\n');
+    console.log(finalResult);
 };
 
-computationExecutor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

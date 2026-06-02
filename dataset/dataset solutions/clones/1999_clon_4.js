@@ -1,28 +1,13 @@
-const processInputString = (incomingDatum) => {
-  const interimValues = {};
-  
-  incomingDatum.substring(0, 3).split('').forEach((char, index) => {
-    if (index === 0) {
-      interimValues.firstDigit = Number(char);
-    } else if (index === 1) {
-      interimValues.secondDigit = Number(char);
-    } else if (index === 2) {
-      interimValues.thirdDigit = Number(char);
-    }
-  });
+function processInput(rawText) {
+  const parsedDigits = Array.from(rawText, (char) => parseInt(char, 10));
 
-  const finalDigits = {
-    alpha: interimValues.thirdDigit,
-    beta: interimValues.firstDigit,
-    gamma: interimValues.secondDigit
-  };
+  const [firstElement, secondElement, thirdElement] = parsedDigits;
 
-  globalThis.process.stdout.write(`${finalDigits.alpha} ${finalDigits.beta} ${finalDigits.gamma}\n`);
-};
+  const resultA = thirdElement;
+  const resultB = firstElement;
+  const resultC = secondElement;
 
-const initiateDataFlow = () => {
-  const sourcePayload = globalThis.require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }).trim();
-  processInputString(sourcePayload);
-};
+  console.log('%d', resultA, resultB, resultC);
+}
 
-initiateDataFlow();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

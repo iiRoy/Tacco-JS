@@ -1,90 +1,67 @@
 let rawDataBuffer = '';
-let tokenCursor = 0;
-let processedTokens = [];
+let currentInputPointer = 0;
 
-function readNextToken(expectedType) {
-    if (tokenCursor >= processedTokens.length) {
-        return null;
-    }
-    const currentToken = processedTokens[tokenCursor];
-    tokenCursor++;
-
-    if (expectedType === 'string') {
-        return currentToken;
+function readNextValue(dataType) {
+    const value = rawDataBuffer[currentInputPointer++];
+    if (dataType === 'string') {
+        return value;
     } else {
-        // Attempt to convert to number. If not a valid number, Number() returns NaN.
-        return Number(currentToken);
+        return Number(value);
     }
 }
 
-function displayResult(outcomeMessage) {
-    console.log(outcomeMessage);
+function outputResult(valueToPrint) {
+    console.log(valueToPrint);
 }
 
-function evaluateSchedulingScenarios() {
-    let currentTaskCount; 
-    
-    while ((currentTaskCount = readNextToken()) !== null && currentTaskCount > 0) {
-        const jobList = []; 
+function checkScheduleFeasibility(tasksArray) {
+    let accumulatedProcessingTime = 0;
+    let overallFeasibility = true;
 
-        for (let taskIndex = 0; taskIndex < currentTaskCount; taskIndex++) {
-            const taskDuration = readNextToken();
-            const taskDeadline = readNextToken();
-            
-            if (isNaN(taskDuration) || isNaN(taskDeadline)) {
-                // If input is invalid, clear the list and break from this scenario's task reading.
-                console.error(`Error: Invalid numeric input for task at index ${taskIndex}. Skipping current scenario.`);
-                jobList.length = 0; 
-                break; 
-            }
+    for (let taskIndex = 0; taskIndex < tasksArray.length; ++taskIndex) {
+        const currentTaskDetails = tasksArray[taskIndex];
+        const taskDuration = currentTaskDetails[0];
+        const taskDeadline = currentTaskDetails[1];
 
-            jobList.push({
-                duration: taskDuration,
-                deadline: taskDeadline
-            });
+        accumulatedProcessingTime += taskDuration;
+
+        overallFeasibility = overallFeasibility && (accumulatedProcessingTime <= taskDeadline);
+    }
+    return overallFeasibility;
+}
+
+function processInputAndSolve() {
+    let numberOfTasks;
+
+    while ((numberOfTasks = readNextValue())) {
+        let taskInformation = new Array(numberOfTasks);
+
+        for (let i = 0; i < numberOfTasks; ++i) {
+            taskInformation[i] = [readNextValue(), readNextValue()];
         }
 
-        if (jobList.length === 0 && currentTaskCount > 0) {
-            // If tasks were expected but none were validly loaded, skip to next scenario.
-            continue; 
-        }
+        const deadlineComparator = (taskA, taskB) => {
+            const deadlineA = taskA[1];
+            const deadlineB = taskB[1];
+            return deadlineA - deadlineB;
+        };
 
-        jobList.sort((taskA, taskB) => {
-            const deadlineDifference = taskA.deadline - taskB.deadline;
-            if (deadlineDifference !== 0) {
-                return deadlineDifference;
-            }
-            // Optional tie-breaking: If deadlines are identical, prioritize tasks with shorter durations.
-            return taskA.duration - taskB.duration;
-        });
+        taskInformation.sort(deadlineComparator);
 
-        let cumulativeDuration = 0; 
-        let isFeasible = true;       
-        
-        for (const currentJob of jobList) {
-            cumulativeDuration += currentJob.duration;
-            
-            if (cumulativeDuration > currentJob.deadline) {
-                isFeasible = false;
-                break; 
-            }
-        }
-        
-        displayResult(isFeasible ? "Yes, all tasks can be completed." : "No, some tasks will miss deadlines.");
+        const finalOutcome = checkScheduleFeasibility(taskInformation);
+
+        outputResult(finalOutcome ? "Yes" : "No");
     }
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (dataChunk) => {
-    rawDataBuffer += dataChunk;
+process.stdin.on('data', function(chunk) {
+    rawDataBuffer += chunk;
 });
 
-process.stdin.on('end', () => {
-    // Process the accumulated raw input: trim whitespace, split by any whitespace,
-    // and filter out any empty strings resulting from multiple spaces.
-    processedTokens = rawDataBuffer.trim().split(/\s+/).filter(token => token.length > 0);
-    
-    evaluateSchedulingScenarios();
+process.stdin.on('end', function() {
+    rawDataBuffer = rawDataBuffer.trim().split(/\s+/);
+    processInputAndSolve();
 });

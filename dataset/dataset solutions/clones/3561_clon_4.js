@@ -1,10 +1,7 @@
-const transformInput = (textData) => {
-    const numericalVal = Math.trunc(Number(textData));
-    const squareVal = numericalVal * numericalVal;
-    const computedOutcome = squareVal >> 2;
-    return computedOutcome;
-};
+function processNumericalInput(rawInputContent) {
+    const numericValue = parseInt(rawInputContent.trim());
+    const calculatedResult = (numericValue * numericValue - (numericValue % 2)) / 4;
+    console.log(calculatedResult);
+}
 
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutput = transformInput(acquiredData);
-console.log(finalOutput);
+processNumericalInput(require("fs").readFileSync("/dev/stdin", "utf8"));

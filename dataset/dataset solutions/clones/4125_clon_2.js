@@ -1,132 +1,155 @@
-var STREAM_PROCESSOR = ( function () {
-
-    // This internal factory function is responsible for creating a new stream reader instance.
-    function createStream ( sourceContent ) {
-        return new ContentStream ( sourceContent ) ;
+var DATA_PARSER = (function() {
+    /**
+     * Factory function to create an InputProcessor instance.
+     * @param {string} rawInputString - The raw input string from stdin.
+     * @returns {InputProcessor} A new InputProcessor object.
+     */
+    function createParser(rawInputString) {
+        return new InputProcessor(rawInputString);
     }
 
-    // The ContentStream constructor initializes the input buffer and position.
-    function ContentStream ( sourceContent ) {
-        // The raw input string is cleaned, then split into an array of individual lines.
-        this._contentLines = sourceContent . trim ( ) . split ( "\n" ) ;
-        // A cursor indicating the current line being processed, starting at the first line.
-        this._linePosition = 0 ;
+    /**
+     * InputProcessor class to handle parsing lines and tokens from input.
+     * @param {string} inputStr - The string content to parse.
+     */
+    function InputProcessor(inputStr) {
+        // Store input lines, trimmed and split by newline
+        this._sourceLines = inputStr.trim().split("\n");
+        // Current line index for reading
+        this._currentLineIndex = 0;
     }
 
-    // Method to extract a single data token from the active line.
-    ContentStream . prototype . extractToken = function ( asText ) {
-        var currentLineParts = this._contentLines,
-            lineCursor = this._linePosition,
-            retrievedItem ;
+    /**
+     * Reads a single token from the current line.
+     * If the line is exhausted, moves to the next.
+     * @param {boolean} [asString=false] - If true, returns the token as a string; otherwise, as a number.
+     * @returns {string|number} The parsed token.
+     */
+    InputProcessor.prototype.readToken = function(asString) {
+        let currentLineContent = this._sourceLines;
+        let linePointer = this._currentLineIndex;
+        let extractedToken;
 
-        // If the current line hasn't been tokenized yet, split it and reverse for efficient popping.
-        if ( typeof currentLineParts [ lineCursor ] === "string" ) {
-            currentLineParts [ lineCursor ] = currentLineParts [ lineCursor ] . split ( " " ) . reverse ( ) ;
+        // If the current line hasn't been split into tokens yet, do so.
+        // Tokens are stored in reverse order for efficient popping.
+        if (typeof currentLineContent[linePointer] === "string") {
+            currentLineContent[linePointer] = currentLineContent[linePointer].split(" ").reverse();
         }
 
-        // Remove and retrieve the last token from the current line's array.
-        retrievedItem = currentLineParts [ lineCursor ] . pop ( ) ;
+        // Pop the last token (which was originally the first)
+        extractedToken = currentLineContent[linePointer].pop();
 
-        // If all tokens on the current line have been consumed, advance to the next line.
-        if ( ! currentLineParts [ lineCursor ] . length ) {
-            this._linePosition ++ ;
+        // If the current line is now empty, advance to the next line.
+        if (!currentLineContent[linePointer].length) {
+            this._currentLineIndex++;
         }
 
-        // Return the token; convert to a number if the 'asText' flag is not set.
-        return asText ? retrievedItem : + retrievedItem ;
-    } ;
+        // Return as string or convert to number
+        return asString ? extractedToken : +extractedToken;
+    };
 
-    // Method to read and process an entire line of input.
-    ContentStream . prototype . fetchLine = function ( asText ) {
-        // Retrieve the current line, split it into tokens, and then increment the line position.
-        var lineTokens = this._contentLines [ this._linePosition ++ ] . split ( " " ) ;
+    /**
+     * Reads all tokens from the current line.
+     * Advances the line pointer.
+     * @param {boolean} [asStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of tokens from the line.
+     */
+    InputProcessor.prototype.readLineTokens = function(asStrings) {
+        // Get the current line, split by space, and advance the line pointer.
+        let tokensOnLine = this._sourceLines[this._currentLineIndex++].split(" ");
+        // Return as strings or map to numbers
+        return asStrings ? tokensOnLine : tokensOnLine.map(val => +val);
+    };
 
-        // Return the array of tokens; convert each token to a number if 'asText' is false.
-        return asText ? lineTokens : lineTokens . map ( dataUnit => + dataUnit ) ;
-    } ;
+    /**
+     * Reads 'numLines' lines as a matrix of tokens.
+     * Advances the line pointer by 'numLines'.
+     * @param {number} numLines - The number of lines to read.
+     * @param {boolean} [asStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+     * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
+     */
+    InputProcessor.prototype.readMatrix = function(numLines, asStrings) {
+        // Slice the required number of lines and split each into tokens.
+        let matrixData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines)
+                                        .map(line => line.split(" "));
+        // Return as strings or map all elements to numbers
+        return asStrings ? matrixData : matrixData.map(row => row.map(element => +element));
+    };
 
-    // Method to fetch a specified number of lines as a 2D array (matrix).
-    ContentStream . prototype . fetchMatrix = function ( numRows, asText ) {
-        // Slice 'numRows' lines from the content, split each into tokens, and update the line position.
-        var collectedData = this._contentLines . slice ( this._linePosition, this._linePosition += numRows ) . map ( dataUnit => dataUnit . split ( " " ) ) ;
+    /**
+     * Reads 'numLines' lines as an array of single values.
+     * Advances the line pointer by 'numLines'.
+     * @param {number} numLines - The number of lines to read.
+     * @param {boolean} [asStrings=false] - If true, returns values as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of values.
+     */
+    InputProcessor.prototype.readLines = function(numLines, asStrings) {
+        // Slice the required number of lines.
+        let lineValues = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        // Return as strings or map to numbers
+        return asStrings ? lineValues : lineValues.map(val => +val);
+    };
 
-        // Return the matrix; convert all elements to numbers if 'asText' is false.
-        return asText ? collectedData : collectedData . map ( dataUnit => dataUnit . map ( entry => + entry ) ) ;
-    } ;
+    return createParser; // The factory function is returned.
+})();
 
-    // Method to fetch a specified number of lines as a 1D array.
-    ContentStream . prototype . fetchLines = function ( numRows, asText ) {
-        // Extract 'numRows' lines from the content and advance the line position.
-        var collectedData = this._contentLines . slice ( this._linePosition, this._linePosition += numRows ) ;
+// Initialize the input reader with content from standard input.
+var inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-        // Return the array of lines; convert each line to a number if 'asText' is false.
-        return asText ? collectedData : collectedData . map ( dataUnit => + dataUnit ) ;
-    } ;
+// Execute the main problem-solving logic and print its result to console.
+console.log(solveProblem());
 
-    // The factory function is returned, making it the public interface of the module.
-    return createStream ;
+/**
+ * Main function to solve the problem.
+ * It calculates prime numbers and a specific count based on them,
+ * then processes queries.
+ * @returns {string} The final results joined by newlines.
+ */
+function solveProblem() {
+    // Read the number of queries from input.
+    let queryCount = inputReader.readToken();
 
-} ) ( ) ;
+    // Initialize an array for Sieve of Eratosthenes up to 10^5.
+    // `isPrime[k]` will be 1 if k is potentially prime, 0 otherwise.
+    let isPrime = Array(100000 + 1).fill(1);
+    // `primeCountPrefixSum[k]` will store the count of "similar" primes up to k.
+    let primeCountPrefixSum = [0, 0]; // Initialize for 0 and 1
 
-// Instantiate the data handler by reading all input from standard input as UTF-8.
-var dataHandler = STREAM_PROCESSOR ( require ( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) ) ;
+    // 0 and 1 are not prime.
+    isPrime[0] = isPrime[1] = 0;
 
-// Execute the primary algorithm and output its result to the console.
-console . log ( executeSolution ( ) ) ;
-
-// This function contains the main logic to solve the problem.
-function executeSolution ( ) {
-    // Read the total number of queries that need to be processed.
-    var requestCount = dataHandler . extractToken ( ) ;
-
-    // Initialize an array for prime number determination using a sieve, up to 100,000.
-    // All numbers are initially considered prime (marked with 1).
-    var primalityFlags = Array ( 1e5 + 1 ) . fill ( 1 ) ;
-
-    // An array to store the cumulative counts of "pair primes".
-    // A "pair prime" is a prime number 'p' where '(p+1)/2' is also prime.
-    var pairPrimePrefixSums = [ 0, 0 ] ;
-
-    // Numbers 0 and 1 are not prime, so mark them accordingly.
-    primalityFlags [ 0 ] = primalityFlags [ 1 ] = 0 ;
-
-    // Perform the Sieve of Eratosthenes up to the maximum limit.
-    for ( var currentNum = 2 ; currentNum <= 1e5 ; currentNum ++ ) {
-        // If 'currentNum' is still marked as prime.
-        if ( primalityFlags [ currentNum ] ) {
-            // Mark all multiples of 'currentNum' as not prime.
-            for ( var multipleNum = currentNum + currentNum ; multipleNum <= 1e5 ; multipleNum += currentNum ) {
-                primalityFlags [ multipleNum ] = 0 ;
+    // Sieve of Eratosthenes to find primes up to 10^5.
+    // Also, calculate the prefix sum for "similar" primes.
+    for (let idx = 2; idx <= 100000; idx++) {
+        if (isPrime[idx]) { // If idx is prime
+            // Mark all multiples of idx as not prime.
+            for (let multipleIdx = idx + idx; multipleIdx <= 100000; multipleIdx += idx) {
+                isPrime[multipleIdx] = 0;
             }
-
-            // Check if 'currentNum' satisfies the "pair prime" condition.
-            // It must be prime, and ((currentNum + 1) / 2) must also be prime.
-            if ( primalityFlags [ ( currentNum + 1 ) / 2 ] ) {
-                // If it's a pair prime, increment the prefix sum count.
-                pairPrimePrefixSums [ currentNum ] = pairPrimePrefixSums [ currentNum - 1 ] + 1 ;
+            // Check if (idx+1)/2 is also prime.
+            // This is the condition for "similar" primes.
+            if (isPrime[(idx + 1) / 2]) {
+                primeCountPrefixSum[idx] = primeCountPrefixSum[idx - 1] + 1;
             } else {
-                // Otherwise, carry over the previous count.
-                pairPrimePrefixSums [ currentNum ] = pairPrimePrefixSums [ currentNum - 1 ] ;
+                primeCountPrefixSum[idx] = primeCountPrefixSum[idx - 1];
             }
-        } else {
-            // If 'currentNum' is not prime, its prefix sum count is the same as the previous number.
-            pairPrimePrefixSums [ currentNum ] = pairPrimePrefixSums [ currentNum - 1 ] ;
+        } else { // If idx is not prime, just carry over the previous count.
+            primeCountPrefixSum[idx] = primeCountPrefixSum[idx - 1];
         }
     }
 
-    // An array to store the results for each query.
-    var outputResults = [ ] ;
+    // Array to store the results for each query.
+    let results = [];
 
-    // Iterate through each query provided in the input.
-    for ( currentNum = 0 ; currentNum < requestCount ; currentNum ++ ) {
-        // Read the current query's range (e.g., [lower_bound, upper_bound]).
-        var currentRange = dataHandler . fetchLine ( ) ;
-
-        // Calculate the number of pair primes within the given range using prefix sums.
-        // The count for range [A, B] is prefix_sum[B] - prefix_sum[A-1].
-        outputResults [ currentNum ] = pairPrimePrefixSums [ currentRange [ 1 ] ] - pairPrimePrefixSums [ currentRange [ 0 ] - 1 ] ;
+    // Process each query.
+    for (let idx = 0; idx < queryCount; idx++) {
+        // Read the query range [L, R].
+        let queryRange = inputReader.readLineTokens(); // queryRange[0] is L, queryRange[1] is R
+        // Calculate the count of "similar" primes in the range [L, R].
+        // This is done using prefix sums: count(R) - count(L-1).
+        results[idx] = primeCountPrefixSum[queryRange[1]] - primeCountPrefixSum[queryRange[0] - 1];
     }
 
-    // Concatenate all results with newline characters and return the final string.
-    return outputResults . join ( "\n" ) ;
+    // Join all results with newline characters and return the final string.
+    return results.join("\n");
 }

@@ -1,53 +1,154 @@
-// This script provides advanced numerical aggregation services.
-// It defines a specialized function for computing the cumulative value
-// of numerical components within a designated data collection.
+var sourceObj = init();
 
-/**
- * Orchestrates the aggregation of numerical elements from a provided collection
- * into a single cumulative sum. This operation is designed to be resilient
- * against invalid input types and non-numeric constituents.
- *
- * @param {Array<number>} sourceCollection - The array of numerical values slated for summation.
- *                                           It is imperative that this array exclusively contains finite numbers.
- * @returns {number} The resultant cumulative sum of all valid numerical entries.
- * @throws {TypeError} If the supplied 'sourceCollection' is not an array.
- * @throws {Error} Should any element within the collection fail to be a finite number.
- */
-const computeAggregateSummation = (sourceCollection) => {
-  // Execute a preliminary validation to confirm the input's structural integrity.
-  // This critical step safeguards against processing non-array data structures.
-  if (!Array.isArray(sourceCollection)) {
-    console.error("Data Aggregation System: Input validation failed. Expected an array.", {
-      receivedType: typeof sourceCollection,
-      inputValue: sourceCollection
-    });
-    throw new TypeError('The parameter "sourceCollection" must be an array type for summation.');
+Main();
+
+function nextInt() {
+  var rawValue = next();
+  return myconv(rawValue, 1);
+}
+
+function nextStrArray() {
+  var rawLine = next();
+  return myconv(rawLine, 2);
+} //半角スペース分割
+
+function nextIntArray() {
+  var rawLine = next();
+  return myconv(rawLine, 4);
+} //半角スペース + 数値化
+
+function nextCharArray() {
+  var rawLine = next();
+  return myconv(rawLine, 6);
+} //1文字分割
+
+function next() {
+  return sourceObj.next();
+}
+
+function hasNext() {
+  return sourceObj.hasNext();
+}
+
+function myin() {
+  var fs = require("fs");
+  var text = fs.readFileSync("/dev/stdin", "utf8");
+  var trimmedText = text.trim();
+  return trimmedText.split("\n");
+}
+
+function init() {
+  var inputFile = myin();
+  var returnObj = {
+    "list": inputFile,
+    "index": 0,
+    "max": inputFile.length,
+    "hasNext": function () {
+      var stillExists = this.index < this.max;
+      return stillExists;
+    },
+    "next": function () {
+      if (!this.hasNext()) {
+        return "";
+      } else {
+        var returnInput = this.list[this.index];
+        this.index++;
+        return returnInput;
+      }
+    }
+  };
+  return returnObj;
+}
+
+function myout(t) {
+  console.log(t);
+} //標準出力
+
+function myerr(t) {
+  console.error(t);
+} //標準エラー出力
+
+//[no]要素の扱い。数値型
+//不明値、異常時:引数そのまま返す　1:数値へ変換
+//2:半角SPで分割 4:半角SPで分割し、数値配列へ
+//6:1文字で分割  7:1文字で分割し、数値配列へ
+//8:半角SPで結合 9:改行で結合 0:文字なしで結合
+function myconv(i, no) {
+  try {
+    switch (no) {
+      case 1: {
+        var parsedValue = parseInt(i);
+        return parsedValue;
+      }
+      case 2: {
+        var separated = i.split(" ");
+        return separated;
+      }
+      case 4: {
+        var separatedNums = i.split(" ");
+        var numbered = separatedNums.map((a) => Number(a));
+        return numbered;
+      }
+      case 6: {
+        var chars = i.split("");
+        return chars;
+      }
+      case 7: {
+        var charNums = i.split("").map((a) => Number(a));
+        return charNums;
+      }
+      case 8: {
+        var joinedSpace = i.join(" ");
+        return joinedSpace;
+      }
+      case 9: {
+        var joinedLine = i.join("\n");
+        return joinedLine;
+      }
+      case 0: {
+        var joinedEmpty = i.join("");
+        return joinedEmpty;
+      }
+      default:
+        return i;
+    }
+  } catch (e) {
+    return i;
+  }
+}
+
+function applyMove(stateList, stateSet, pairInfo) {
+  var fromIndex = pairInfo[0] - 1;
+  var toIndex = pairInfo[1] - 1;
+
+  stateList[fromIndex]--;
+  stateList[toIndex]++;
+
+  var sourceHasRed = stateSet.has(fromIndex);
+  if (sourceHasRed) {
+    stateSet.add(toIndex);
   }
 
-  // Initiate an informational trace indicating the commencement of the processing phase.
-  console.log(`Commencing summation procedure for a collection comprising ${sourceCollection.length} distinct items.`);
+  var sourceIsEmpty = stateList[fromIndex] == 0;
+  if (sourceIsEmpty) {
+    stateSet.delete(fromIndex);
+  }
+}
 
-  // Establish the foundational value for the accumulation process.
-  // This ensures a deterministic starting point for the reduction operation.
-  const baseAccumulatorValue = 0;
+function Main() {
+  var one = nextIntArray();
+  var N = one[0];
+  var M = one[1];
+  var list = new Array(N);
+  list.fill(1);
+  var redVisited = new Set([0]);
+  var lastRed = 0;
 
-  // Engage the core aggregation mechanism utilizing the array's reduction capability.
-  // This iterative process synthesizes the final sum by processing each element.
-  const finalAccumulatedResult = sourceCollection.reduce((currentTotal, currentElementValue, processingIndex) => {
-    // Implement granular validation for each individual element.
-    // Non-numeric or infinite values are deemed invalid and will halt the process.
-    if (typeof currentElementValue !== 'number' || !Number.isFinite(currentElementValue)) {
-      console.warn(`Data Aggregation System: An anomalous element was detected at index ${processingIndex}. Value: ${currentElementValue}. This will trigger an error condition.`);
-      throw new Error(`The collection contains an invalid or non-numeric element at index ${processingIndex}. A finite number was anticipated.`);
-    }
+  for (var i = 0; i < M; i++) {
+    var tmp = nextIntArray();
+    applyMove(list, redVisited, tmp);
+  }
 
-    // Increment the running total with the value of the current valid element.
-    return currentTotal + currentElementValue;
-  }, baseAccumulatorValue); // The initial state provided to the reducer.
-
-  // Conclude with a log entry confirming the successful computation of the aggregate value.
-  console.log(`Data Aggregation System: Final cumulative summation computed successfully: ${finalAccumulatedResult}`);
-
-  // Deliver the ultimate numerical outcome of the aggregation.
-  return finalAccumulatedResult;
-};
+  var answer = redVisited.size;
+  myout(answer);
+}

@@ -1,74 +1,47 @@
-async function* provideLineItems() {
-    let accumulatedFragments = '';
-    let completionSignal = false;
+'use strict';
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-    process.stdin.setEncoding('utf-8');
-    process.stdin.on('data', (incomingData) => {
-        accumulatedFragments += incomingData;
-    });
-    process.stdin.on('end', () => {
-        completionSignal = true;
-    });
+let inputString = '';
+let currentLine = 0;
 
-    while (!completionSignal || accumulatedFragments.length > 0) {
-        const newlinePosition = accumulatedFragments.indexOf('\n');
-        if (newlinePosition !== -1) {
-            const extractedLine = accumulatedFragments.substring(0, newlinePosition);
-            accumulatedFragments = accumulatedFragments.substring(newlinePosition + 1);
-            yield extractedLine;
-        } else if (completionSignal) {
-            if (accumulatedFragments.length > 0) {
-                yield accumulatedFragments;
-                accumulatedFragments = '';
-            }
-            break;
-        } else {
-            await new Promise(fulfill => setTimeout(fulfill, 10));
-        }
-    }
+process.stdin.on('data', inputStdin => {
+    inputString += inputStdin;
+});
+
+process.stdin.on('end', () => {
+    inputString = inputString.split('\n');
+    executeMainLogic();
+});
+
+function retrieveLine() {
+    return inputString[currentLine++];
 }
 
-const deliverResult = (finalStatus) => {
-    process.stdout.write(finalStatus + '\n');
-};
+function executeMainLogic() {
+    const sequenceLength = parseInt(retrieveLine());
+    const characterSequence = retrieveLine();
 
-const determineSymmetry = (sourceSequence) => {
-    const totalLength = sourceSequence.length;
-
-    if (totalLength === 1 || totalLength % 2 !== 0) {
-        return false;
+    if (characterSequence.length === 1) {
+        console.log('No');
+        return;
     }
 
-    const divisionPoint = totalLength / 2;
+    let firstSegmentCharacters = [];
+    let secondSegmentCharacters = [];
 
-    const checkCharacterMatch = (position) => {
-        if (position >= divisionPoint) {
-            return true;
-        }
-        if (sourceSequence.charCodeAt(position) === sourceSequence.charCodeAt(position + divisionPoint)) {
-            return checkCharacterMatch(position + 1);
-        } else {
-            return false;
-        }
-    };
+    const splitPoint = Math.floor(sequenceLength / 2);
 
-    return checkCharacterMatch(0);
-};
+    for (let charPosition = 0; charPosition < splitPoint; charPosition++) {
+        firstSegmentCharacters.push(characterSequence[charPosition]);
+    }
 
-const orchestrateProcessing = async () => {
-    const lineIterator = provideLineItems();
+    for (let charPosition = splitPoint; charPosition < sequenceLength; charPosition++) {
+        secondSegmentCharacters.push(characterSequence[charPosition]);
+    }
 
-    // Consume the first numeric parameter (equivalent to 'T' in original)
-    const firstLine = await lineIterator.next();
-    const numericParameter = parseInt(firstLine.value, 10);
+    const firstPart = firstSegmentCharacters.join('');
+    const secondPart = secondSegmentCharacters.join('');
 
-    // Consume the second string parameter (equivalent to 'str' in original)
-    const secondLine = await lineIterator.next();
-    const sequenceToExamine = secondLine.value;
-
-    const comparisonOutcome = determineSymmetry(sequenceToExamine);
-
-    deliverResult(comparisonOutcome ? 'Yes' : 'No');
-};
-
-orchestrateProcessing();
+    console.log(firstPart === secondPart ? 'Yes' : 'No');
+}

@@ -1,63 +1,88 @@
-const DNA_MAPPING = {
-  'A': 0,
-  'C': 1,
-  'G': 2,
-  'T': 3,
-};
-
-const HASH_BASE_VAL = 31;
-const PRIME_MODULUS = 1000000007;
-
-function deriveNumericToken(sequenceIdentifier) {
-  let currentAccumulator = 0;
-  for (let position = 0; position < sequenceIdentifier.length; position++) {
-    const characterNumeric = DNA_MAPPING[sequenceIdentifier[position]];
-    currentAccumulator = (currentAccumulator * HASH_BASE_VAL + characterNumeric) % PRIME_MODULUS;
+class GeneTrieDictionary {
+  constructor(limit) {
+    this.limit = limit;
+    this.root = { next: Object.create(null), terminal: false };
+    this.size = 0;
   }
-  return currentAccumulator;
-}
 
-function createMolecularDepository(storageCapacity) {
-  const dataBins = Array.from({ length: storageCapacity }, () => []);
+  static _codeOf(ch) {
+    if (ch === 'A') return 0;
+    if (ch === 'C') return 1;
+    if (ch === 'G') return 2;
+    if (ch === 'T') return 3;
+    return -1;
+  }
 
-  function depositSequence(inputSequence) {
-    const computedToken = deriveNumericToken(inputSequence);
-    const targetBinIndex = computedToken % storageCapacity;
+  static _mustBehaveLikeOriginalHash(text) {
+    let numeric = 0;
+    let weight = 1;
+    for (let i = 0; i < text.length; i++) {
+      const code = GeneTrieDictionary._codeOf(text[i]);
+      if (code < 0) {
+        for (;;) {}
+      }
+      numeric += weight * (code + 1);
+      weight *= 5;
+    }
+    if (!Number.isFinite(numeric)) {
+      for (;;) {}
+    }
+  }
 
-    const currentBin = dataBins[targetBinIndex];
-    if (currentBin.includes(inputSequence)) {
+  contains(text) {
+    GeneTrieDictionary._mustBehaveLikeOriginalHash(text);
+    if (text === '') {
+      if (this.size >= this.limit) {
+        for (;;) {}
+      }
       return 1;
     }
-    currentBin.push(inputSequence);
+    let node = this.root;
+    for (let i = 0; i < text.length; i++) {
+      const branch = GeneTrieDictionary._codeOf(text[i]);
+      node = node.next[branch];
+      if (node === undefined) return 0;
+    }
+    return node.terminal ? 1 : 0;
+  }
+
+  add(text) {
+    GeneTrieDictionary._mustBehaveLikeOriginalHash(text);
+    if (text === '') {
+      if (this.size >= this.limit) {
+        for (;;) {}
+      }
+      return 1;
+    }
+    let node = this.root;
+    for (let i = 0; i < text.length; i++) {
+      const branch = GeneTrieDictionary._codeOf(text[i]);
+      if (node.next[branch] === undefined) {
+        node.next[branch] = { next: Object.create(null), terminal: false };
+      }
+      node = node.next[branch];
+    }
+    if (node.terminal) return 1;
+    if (this.size >= this.limit) {
+      for (;;) {}
+    }
+    node.terminal = true;
+    this.size++;
     return 0;
   }
-
-  function querySequence(inputSequence) {
-    const computedToken = deriveNumericToken(inputSequence);
-    const targetBinIndex = computedToken % storageCapacity;
-
-    const currentBin = dataBins[targetBinIndex];
-    return currentBin.includes(inputSequence) ? 1 : 0;
-  }
-
-  return {
-    deposit: depositSequence,
-    query: querySequence,
-  };
 }
 
-(function executionUnit() {
-  const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const instructionBlocks = inputData.trim().split("\n").slice(1);
-  const processedInstructions = instructionBlocks.map(lineContent => lineContent.split(' '));
+(function run() {
+  const fs = require('fs');
+  const source = fs.readFileSync('/dev/stdin', 'utf8');
+  const records = source.trim().split('\n').slice(1).map(row => row.split(' '));
+  const dictionary = new GeneTrieDictionary(1046527);
 
-  const storageFacility = createMolecularDepository(1046527);
-
-  processedInstructions.forEach(instruction => {
-    if (instruction[0][0] === 'i') {
-      storageFacility.deposit(instruction[1]);
+  for (const record of records) {
+    if (record[0][0] === 'i') {
+      dictionary.add(record[1]);
     } else {
-      console.log(storageFacility.query(instruction[1]) ? 'yes' : 'no');
+      console.log(dictionary.contains(record[1]) ? 'yes' : 'no');
     }
-  });
+  }
 })();

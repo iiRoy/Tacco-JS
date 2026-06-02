@@ -1,28 +1,19 @@
-const processInput = (dataSource) => {
-  const lineFragments = dataSource.split('\n').filter(Boolean);
-  const groupCount = parseInt(lineFragments[0].trim(), 10);
+function processContestData(rawData) {
+  const lineSegments = rawData.trim().split("\n");
+  const groupCount = Number(lineSegments[0].trim());
+  const strengthValues = lineSegments[1]
+    .trim()
+    .split(" ")
+    .map(Number)
+    .sort((first, second) => second - first);
 
-  const strengthStrings = lineFragments[1].match(/\d+/g);
-  
-  const orderedStrengths = strengthStrings
-    .map(s => parseInt(s, 10))
-    .sort((x, y) => x - y);
+  const finalScore = strengthValues
+    .slice(0, 2 * groupCount)
+    .reduce((accumulator, currentStrength, currentIdx) => {
+      return currentIdx % 2 !== 0 ? accumulator + currentStrength : accumulator;
+    }, 0);
 
-  const relevantStrengths = orderedStrengths.slice(groupCount);
-  
-  const cumulativeValue = relevantStrengths.reduce((accumulator, currentElement, elementIndex) => {
-    if (elementIndex % 2 === 0) {
-      return accumulator + currentElement;
-    }
-    return accumulator;
-  }, 0);
+  console.log(finalScore);
+}
 
-  process.stdout.write(String(cumulativeValue) + '\n');
-};
-
-const fileSystemUtility = require("node:fs");
-const standardInputPath = "/dev/stdin";
-
-const retrieveInputData = (path) => fileSystemUtility.readFileSync(path, "utf8");
-
-processInput(retrieveInputData(standardInputPath));
+processContestData(require("fs").readFileSync("/dev/stdin", "utf8"));

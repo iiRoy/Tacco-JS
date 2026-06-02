@@ -1,297 +1,462 @@
 /*
- * Utility Library: Core Functions
+ * Utility functions collection for various programming challenges.
  *
- * This collection provides various helper methods for common programming tasks.
- *
- * Function List (renamed for clarity):
- * - convert1Dto2D(Array): Transforms a 1D array into a 2D array.
- * - primeFactorsObject(Number): Returns an object containing prime factors and their counts.
- * - greatestCommonDivisor(Number, Number): Computes the greatest common divisor of two numbers.
- * - leastCommonMultiple(Number, Number): Calculates the least common multiple of two numbers.
- * - differenceCalc(Number, Number): Returns the difference (a - b), useful for sorting.
- * - checkPrimality(Number): Checks if a given number is prime, returning a boolean.
- * - isNumericString(String): Determines if a string represents a number, returning a boolean.
- * - calculateSum(Array): Returns the sum of all elements in a numeric array.
- * - binarySearchClosest(Array, Number): Finds the index of the largest number less than or equal to 'n' in a sorted array.
- * - splitByNewline(String): Divides an input string by newline characters.
+ * This file contains a set of helper functions:
+ * - convertArray1DTo2D(Array): Transforms a 1D array into a 2D array.
+ * - getPrimeFactorsMap(N): Returns an object with prime factors and their counts.
+ * - calculateGCD(a, b): Computes the greatest common divisor of two numbers.
+ * - calculateLCM(a, b): Computes the least common multiple of two numbers.
+ * - compareNumericValues(a, b): Returns a - b, useful for sorting.
+ * - isValuePrime(n): Checks if a number is prime, returns boolean.
+ * - isInputNumeric(n): Checks if a value is a number, returns boolean.
+ * - sumAllArrayElements(arr): Calculates the sum of all elements in an array.
+ * - binarySearchForLargestLessEqual(arr, n): Finds the index of the largest number less than or equal to n.
+ * - splitInputByNewline(input): Splits a string by newline characters.
  */
 
-const traceFlag = !true; // Flag to enable/disable detailed logging
-const upperBound = Number.MAX_SAFE_INTEGER; // Represents the largest safe integer
-const primeModulo = 1_000_000_007; // A common prime modulus for calculations
+const dbgFlag = false; // Flag for debugging messages
+const maxVal = Number.MAX_SAFE_INTEGER; // Represents positive infinity for safe integers
+const primeMod = 1000000007; // A common modulo value used in competitive programming
 
+/**
+ * Main processing function for the problem.
+ * Reads input, performs XOR operations, and prints results.
+ * @param {string} rawData - The raw input string from stdin.
+ */
 function ProcessInput(rawData) {
-  rawData = rawData.split("\n"); // Split the input string into lines
-  let dataSequence = rawData[0x1].split(" ").map(Number); // Parse the second line as an array of numbers
-  let xorAccumulator = 0x0; // Initialize XOR sum variable
+  // Split the entire input string into an array of lines.
+  let inputLines = rawData.split("\n");
 
-  dataSequence.forEach(function (currentValue) {
-    xorAccumulator = xorAccumulator ^ currentValue; // Apply XOR operation
+  // Parse the second line as a space-separated array of numbers.
+  let numArray = inputLines[1].split(" ").map(Number);
+
+  // Initialize a variable to store the XOR sum of all elements.
+  let xorSum = 0;
+
+  // Calculate the XOR sum of all numbers in the array.
+  numArray.forEach(function (currentVal) {
+    xorSum = xorSum ^ currentVal;
   });
 
-  const outputResults = []; // Initialize an empty array for potential output
-  dataSequence.forEach(function (currentValue) {
-    console.log(xorAccumulator ^ currentValue); // Output the XOR result for each element
+  // An array to potentially store results (unused in this specific problem logic).
+  let resultList = [];
+
+  // For each number in the input array, calculate its XOR with the total XOR sum
+  // and print it to the console.
+  numArray.forEach(function (currentVal) {
+    console.log(xorSum ^ currentVal);
   });
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim()); // Read input from stdin and process it
+// Execute the main function with input read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
 
-function calculatePower(baseVal, exponentVal) {
-  let resultant = 0x0n; // Initialize result as BigInt zero
-  for (let counterIdx = 0x0n; counterIdx < exponentVal; counterIdx += 1n) {
-    if (resultant === 0x0n) {
-      resultant = baseVal; // First iteration, set result to base
+/**
+ * Calculates the power of a base number to an exponent.
+ * Note: This function has a bug in the original code; it always returns the base.
+ * It's preserved as-is for Type II cloning.
+ * @param {BigInt} baseNum - The base number.
+ * @param {BigInt} exponentVal - The exponent.
+ * @returns {BigInt} The base number (due to original bug).
+ */
+function calculatePower(baseNum, exponentVal) {
+  let powerResult = 0n; // Initialize result as BigInt
+
+  // Loop 'exponentVal' times to multiply 'baseNum'.
+  for (let loopCounter = 0n; loopCounter < exponentVal; loopCounter += 1n) {
+    if (powerResult === 0n) {
+      powerResult = baseNum; // First iteration, set result to base.
     } else {
-      resultant *= baseVal; // Multiply by base for subsequent iterations
+      powerResult *= baseNum; // Subsequent iterations, multiply by base.
     }
   }
-  return baseVal; // This seems like a potential bug in the original code, should probably return 'resultant'
+  return baseNum; // Original code returns 'a' (baseNum) instead of 'ans' (powerResult).
 }
 
+/**
+ * Calculates the lexicographical rank of a permutation.
+ * Note: This function relies on a global 'input' variable which is not defined in its scope.
+ * It's preserved as-is for Type II cloning.
+ * @param {Array<number>} inputSequence - The permutation sequence.
+ * @returns {number} The lexicographical rank.
+ */
 function lexicographicalRank(inputSequence) {
-  let orderedList = []; // Array to hold ordered elements
-  for (let loopIndex = 0x0; loopIndex < inputSequence[0x0]; loopIndex++) {
-    orderedList.push(loopIndex + 1.0); // Populate list with 1 to N
+  let availableNums = [];
+  // This part assumes 'input[0]' is available and is the length of the sequence.
+  // This is a dependency on a global 'input' variable, which is problematic.
+  for (let i = 0; i < input[0]; i++) {
+    availableNums.push(i + 1);
   }
 
-  let totalRank = 0x0; // Initialize total rank
-  for (let loopIndex = 0x0; loopIndex < inputSequence.length; loopIndex++) {
-    const foundIndex = orderedList.findIndex((itemValue) => itemValue === inputSequence[loopIndex]); // Find element's index
-    totalRank += computeFactorial(inputSequence.length - 1.0 - loopIndex) * foundIndex; // Add to rank
-    orderedList.splice(foundIndex, 1.0); // Remove element from available list
+  let totalRank = 0;
+  for (let i = 0; i < inputSequence.length; i++) {
+    let foundIndex = availableNums.findIndex((val) => val === inputSequence[i]);
+    totalRank += computeFactorial(inputSequence.length - 1 - i) * foundIndex;
+    availableNums.splice(foundIndex, 1); // Remove the used number.
   }
-  return totalRank; // Return the computed lexicographical rank
+  return totalRank;
 }
 
-function sumArrayElements(numericArray) {
-  let totalSum = 0.0; // Initialize sum
-  for (let elementIndex = 0x0, arrayLength = numericArray.length; elementIndex < arrayLength; ++elementIndex) {
-    totalSum += numericArray[elementIndex] - 0x0; // Add element to sum, ensuring numeric conversion
+/**
+ * Calculates the sum of all numeric elements in an array.
+ * This is the first definition of arrsum.
+ * @param {Array<number|string>} dataCollection - The array of numbers or numeric strings.
+ * @returns {number} The total sum.
+ */
+function sumArrayElements(dataCollection) {
+  let totalSum = 0;
+  for (let idx = 0, collectionLength = dataCollection.length; idx < collectionLength; ++idx) {
+    totalSum += dataCollection[idx] - 0; // Ensure conversion to number.
   }
-  return totalSum; // Return the accumulated sum
+  return totalSum;
 }
 
-function logIfEnabled(messageContent) {
-  if (traceFlag === !false) {
-    console.log(messageContent); // Log message if debug mode is active
+/**
+ * Logs a message to the console if debug mode is enabled.
+ * @param {*} messageContent - The content to log.
+ */
+function logDebugMessage(messageContent) {
+  if (dbgFlag === true) {
+    console.log(messageContent);
   }
 }
 
-function findMaximumIndex(dataCollection) {
-  let currentMaximum = Number.MIN_SAFE_INTEGER; // Initialize maximum with smallest possible safe integer
-  let maximumPosition = ~0; // Initialize position to -1
-
-  for (let iterator = 0x0; iterator < dataCollection.length; iterator++) {
-    if (currentMaximum < dataCollection[iterator]) {
-      currentMaximum = dataCollection[iterator]; // Update maximum value
-      maximumPosition = iterator; // Update index of maximum value
+/**
+ * Finds the index of the maximum value in an array.
+ * @param {Array<number>} valueArray - The array to search.
+ * @returns {number} The index of the maximum value, or -1 if array is empty.
+ */
+function findMaxIndex(valueArray) {
+  let maxValue = Number.MIN_SAFE_INTEGER;
+  let maxIdx = -1;
+  for (let k = 0; k < valueArray.length; k++) {
+    if (maxValue < valueArray[k]) {
+      maxValue = valueArray[k];
+      maxIdx = k;
     }
   }
-  return maximumPosition; // Return the index of the maximum element
+  return maxIdx;
 }
 
-function findMinimumIndex(dataCollection) {
-  let currentMinimum = Number.MAX_SAFE_INTEGER; // Initialize minimum with largest possible safe integer
-  let minimumPosition = ~0; // Initialize position to -1
-
-  for (let iterator = 0x0; iterator < dataCollection.length; iterator++) {
-    if (currentMinimum > dataCollection[iterator]) {
-      currentMinimum = dataCollection[iterator]; // Update minimum value
-      minimumPosition = iterator; // Update index of minimum value
+/**
+ * Finds the index of the minimum value in an array.
+ * @param {Array<number>} dataArray - The array to search.
+ * @returns {number} The index of the minimum value, or -1 if array is empty.
+ */
+function findMinIndex(dataArray) {
+  let minValue = Number.MAX_SAFE_INTEGER;
+  let minIdx = -1;
+  for (let j = 0; j < dataArray.length; j++) {
+    if (minValue > dataArray[j]) {
+      minValue = dataArray[j];
+      minIdx = j;
     }
   }
-  return minimumPosition; // Return the index of the minimum element
+  return minIdx;
 }
 
-function checkPrimality(numberToCheck) {
-  if (!Number.isInteger(numberToCheck)) {
-    return !true; // Not an integer, so not prime
+/**
+ * Checks if a given number is prime.
+ * @param {number} testNumber - The number to check.
+ * @returns {boolean} True if the number is prime, false otherwise.
+ */
+function checkIfPrime(testNumber) {
+  if (false === Number.isInteger(testNumber)) {
+    return false;
   }
-  if (numberToCheck <= 1.0) {
-    return !true; // Numbers less than or equal to 1 are not prime
+  if (testNumber <= 1) {
+    return false;
   }
-  if (2.0 === numberToCheck) {
-    return !false; // 2 is the only even prime number
+  if (2 === testNumber) {
+    return true;
   }
-  if (0x0 === numberToCheck % 2.0) {
-    return !true; // Even numbers greater than 2 are not prime
+  if (0 === testNumber % 2) {
+    return false;
   }
-
-  const sqrtValue = Math.floor(Math.sqrt(numberToCheck)); // Calculate integer square root
-  for (let divisorCandidate = 3.0; divisorCandidate <= sqrtValue; divisorCandidate += 2.0) {
-    if (0x0 === numberToCheck % divisorCandidate) {
-      return !true; // Found a divisor, so not prime
+  let sqrtVal = Math.floor(Math.sqrt(testNumber));
+  for (let divisor = 3; divisor <= sqrtVal; divisor += 2) {
+    if (0 === testNumber % divisor) {
+      return false;
     }
   }
-  return !false; // No divisors found, it's prime
+  return true;
 }
 
-function isNumericString(stringCandidate) {
-  const regexPattern = /^([1-9]\d*|0)$/; // Regular expression to match integer numbers
-  return regexPattern.test(stringCandidate); // Test if string matches the pattern
+/**
+ * Checks if a string represents a non-negative integer.
+ * @param {string} inputString - The string to validate.
+ * @returns {boolean} True if the string is a non-negative integer, false otherwise.
+ */
+function isNumericString(inputString) {
+  const numericPattern = /^([1-9]\d*|0)$/;
+  return numericPattern.test(inputString);
 }
 
-function computeFactorial(inputNumber) {
-  if (inputNumber === 0x0) {
-    return 1.0; // Base case: 0! is 1
+/**
+ * Calculates the factorial of a non-negative integer.
+ * @param {number} factorialInput - The number to calculate the factorial for.
+ * @returns {number} The factorial of the input number.
+ */
+function computeFactorial(factorialInput) {
+  if (factorialInput === 0) {
+    return 1;
   }
-  return inputNumber * computeFactorial(inputNumber - 1.0); // Recursive step
+  return factorialInput * computeFactorial(factorialInput - 1);
 }
 
-function convert1Dto2D(sourceArray) {
-  for (let rowIdx = 0x0; rowIdx < sourceArray.length; rowIdx++) {
-    sourceArray[rowIdx] = sourceArray[rowIdx].split(" ").map(Number); // Split and convert each row
+/**
+ * Converts a 1D array of space-separated strings into a 2D array of numbers.
+ * @param {Array<string>} oneDArray - The 1D array where each element is a string of space-separated numbers.
+ * @returns {Array<Array<number>>} The resulting 2D array.
+ */
+function convert1dTo2d(oneDArray) {
+  for (let rowIdx = 0; rowIdx < oneDArray.length; rowIdx++) {
+    oneDArray[rowIdx] = oneDArray[rowIdx].split(" ").map(Number);
   }
-  return sourceArray; // Return the modified 2D array
+  return oneDArray;
 }
 
-function rotateMatrix(originalMatrix) {
-  const rowCount = originalMatrix.length; // Number of rows
-  const colCount = originalMatrix[0x0].length; // Number of columns
-  const lastRowIdx = rowCount - 1.0; // Index of the last row
+/**
+ * Rotates a 2D matrix 90 degrees clockwise.
+ * @param {Array<Array<any>>} inputMatrix - The matrix to rotate.
+ * @returns {Array<Array<any>>} The rotated matrix.
+ */
+function rotateMatrix(inputMatrix) {
+  const numRows = inputMatrix.length;
+  const numCols = inputMatrix[0].length;
+  const lastRowIdx = numRows - 1; // Index of the last row.
 
-  let rotatedMatrix = new Array(colCount); // Create new array for columns
-  for (let currentCol = 0x0; currentCol < colCount; currentCol++) {
-    rotatedMatrix[currentCol] = new Array(rowCount); // Create new array for rows in each column
-    for (let currentRow = 0x0; currentRow < rowCount; currentRow++) {
-      rotatedMatrix[currentCol][currentRow] = originalMatrix[lastRowIdx - currentRow][currentCol]; // Perform rotation logic
+  let rotatedMatrix = new Array(numCols); // New matrix will have numCols rows.
+  for (let colIdx = 0; colIdx < numCols; colIdx++) {
+    rotatedMatrix[colIdx] = new Array(numRows); // Each new row will have numRows columns.
+    for (let currRowIdx = 0; currRowIdx < numRows; currRowIdx++) {
+      // Map original (row, col) to new (col, numRows - 1 - row) for 90-degree clockwise rotation.
+      rotatedMatrix[colIdx][currRowIdx] = inputMatrix[lastRowIdx - currRowIdx][colIdx];
     }
   }
-  return rotatedMatrix; // Return the newly rotated matrix
+  return rotatedMatrix;
 }
 
-function insertPartial(targetArray, sourceFragment, startIndex) {
-  for (let targetIndex = startIndex, sourceIndex = 0x0; sourceIndex < sourceFragment.length; targetIndex++, sourceIndex++) {
-    targetArray[targetIndex] = sourceFragment[sourceIndex]; // Insert elements from fragment into target
+/**
+ * Inserts a segment of an array into a target array starting at a specified index.
+ * Modifies the target array in place.
+ * @param {Array<any>} targetArray - The array to modify.
+ * @param {Array<any>} sourceSegment - The segment to insert.
+ * @param {number} startIndex - The starting index in the target array for insertion.
+ * @returns {Array<any>} The modified target array.
+ */
+function insertPartialArray(targetArray, sourceSegment, startIndex) {
+  for (let targetIdx = startIndex, sourceIdx = 0; sourceIdx < sourceSegment.length; targetIdx++, sourceIdx++) {
+    targetArray[targetIdx] = sourceSegment[sourceIdx];
   }
-  return targetArray; // Return the modified target array
+  return targetArray;
 }
 
-function reversePartial(mutableArray, startPosition, endPosition) {
-  let extractedFragment = mutableArray.slice(startPosition - 1.0, endPosition); // Extract a slice
-  extractedFragment.reverse(); // Reverse the extracted slice
-  mutableArray = insertPartial(mutableArray, extractedFragment, startPosition - 1.0); // Insert it back
-  return mutableArray; // Return the array with the partially reversed section
+/**
+ * Reverses a specified segment of an array.
+ * @param {Array<any>} originalArray - The array to modify.
+ * @param {number} startPos - The 1-based starting position of the segment.
+ * @param {number} endPos - The 1-based ending position of the segment.
+ * @returns {Array<any>} The array with the segment reversed.
+ */
+function reversePartialArray(originalArray, startPos, endPos) {
+  // Extract the segment, reverse it, and then insert it back.
+  let segmentToReverse = originalArray.slice(startPos - 1, endPos);
+  segmentToReverse.reverse();
+  originalArray = insertPartialArray(originalArray, segmentToReverse, startPos - 1);
+  return originalArray;
 }
 
-function padWithZeros(valueToPad, desiredLength) {
-  return (valueToPad + '000000000000000000000000000000000').slice(0x0, desiredLength); // Pad number with zeros to desired length
+/**
+ * Pads a number with leading zeros to reach a desired length.
+ * Note: This function uses a fixed long string of zeros for padding, which is inefficient for very large lengths.
+ * @param {number|string} valueToPad - The number or string to pad.
+ * @param {number} desiredLength - The total desired length of the padded string.
+ * @returns {string} The zero-padded string.
+ */
+function padNumberWithZeros(valueToPad, desiredLength) {
+  // Concatenate the number with a very long string of zeros and then slice it.
+  return (valueToPad + "000000000000000000000000000000000").slice(0, desiredLength);
 }
 
-function calculateSum(inputArray) {
-  let total = 0.0; // Initialize sum
-  for (let idx = 0x0, arrLen = inputArray.length; idx < arrLen; ++idx) {
-    total += inputArray[idx] - 0x0; // Sum elements, ensuring numeric conversion
+/**
+ * Calculates the sum of all numeric elements in an array.
+ * This is the second definition of arrsum, identical to the first.
+ * @param {Array<number|string>} inputCollection - The array of numbers or numeric strings.
+ * @returns {number} The total sum.
+ */
+function calculateArraySum(inputCollection) {
+  let totalValue = 0;
+  for (let indexVar = 0, collectionSize = inputCollection.length; indexVar < collectionSize; ++indexVar) {
+    totalValue += inputCollection[indexVar] - 0; // Ensure conversion to number.
   }
-  return total; // Return the aggregate sum
+  return totalValue;
 }
 
-function primeFactorsObject(inputNumber) {
-  let factorMap = {}; // Object to store prime factors and their powers
+/**
+ * Performs prime factorization of a number and returns the factors as an object.
+ * @param {number} inputNum - The number to factorize.
+ * @returns {Object<string, number>} An object where keys are prime factors and values are their counts.
+ */
+function primeFactorizeObject(inputNum) {
+  let factorMap = {};
 
-  if (inputNumber === 1.0) {
-    return { "1": 1.0 }; // Special case for 1
+  if (inputNum === 1) {
+    return { "1": 1 }; // Special case for 1.
   }
 
-  let initialDivisor = 2.0; // Start checking divisibility from 2
+  let currentDivisor = 2; // Start checking from the smallest prime.
 
-  while (inputNumber !== 1.0) {
-    let currentDivisor = initialDivisor; // Current divisor candidate
-    while (currentDivisor < Number.MAX_SAFE_INTEGER) {
-      if (inputNumber % currentDivisor === 0x0) {
-        inputNumber /= currentDivisor; // Divide number by factor
-        if (!(factorMap[currentDivisor] > 0x0)) {
-          factorMap[currentDivisor] = 0x0; // Initialize count if new factor
+  while (inputNum !== 1) {
+    let tempDivisor = currentDivisor;
+    // Iterate through potential divisors.
+    while (tempDivisor < Number.MAX_SAFE_INTEGER) {
+      if (inputNum % tempDivisor === 0) {
+        inputNum /= tempDivisor; // Divide by the factor.
+        if (!(factorMap[tempDivisor] > 0)) {
+          factorMap[tempDivisor] = 0; // Initialize count if new factor.
         }
-        factorMap[currentDivisor]++; // Increment factor count
-        break; // Move to the next factor check
+        factorMap[tempDivisor]++; // Increment count.
+        break; // Found a factor, restart search for next factor from this one.
       }
-      currentDivisor++; // Increment divisor candidate
+      tempDivisor++; // Try next potential divisor.
     }
-    initialDivisor = currentDivisor; // Update initial divisor for next iteration
+    currentDivisor = tempDivisor; // Update the starting divisor for the next iteration.
   }
-  return factorMap; // Return the map of prime factors
+  return factorMap;
 }
 
-function greatestCommonDivisor(firstVal, secondVal) {
-  if (secondVal === 0x0) {
-    return firstVal; // Base case for GCD
+/**
+ * Computes the greatest common divisor (GCD) of two numbers using the Euclidean algorithm.
+ * @param {number} numA - The first number.
+ * @param {number} numB - The second number.
+ * @returns {number} The GCD of numA and numB.
+ */
+function findGCD(numA, numB) {
+  if (numB === 0) {
+    return numA;
   }
-  return greatestCommonDivisor(secondVal, firstVal % secondVal); // Recursive GCD calculation
+  return findGCD(numB, numA % numB);
 }
 
-function leastCommonMultiple(valOne, valTwo) {
-  const gcdFunction = (numX, numY) => numY ? gcdFunction(numY, numX % numY) : numX; // Lambda for GCD
-  return (valOne * valTwo) / gcdFunction(valOne, valTwo); // LCM formula
+/**
+ * Computes the least common multiple (LCM) of two numbers.
+ * @param {number} valX - The first number.
+ * @param {number} valY - The second number.
+ * @returns {number} The LCM of valX and valY.
+ */
+function findLCM(valX, valY) {
+  // Helper function for GCD, defined inline.
+  const gcdHelper = (paramN, paramM) => (paramM ? gcdHelper(paramM, paramN % paramM) : paramN);
+  return (valX * valY) / gcdHelper(valX, valY);
 }
 
-function differenceCalc(operandA, operandB) {
-  return operandA - operandB; // Simple difference calculation, often used in sorting
+/**
+ * A comparison function for sorting numbers in ascending order.
+ * @param {number} firstNum - The first number for comparison.
+ * @param {number} secondNum - The second number for comparison.
+ * @returns {number} The difference (firstNum - secondNum).
+ */
+function compareNumbers(firstNum, secondNum) {
+  return firstNum - secondNum;
 }
 
-function binarySearchClosest(sortedArray, targetValue) {
-  let resultIndex = ~0; // Initialize result index to -1
+/**
+ * Performs a binary search on a sorted array to find the index of the largest element
+ * that is less than or equal to the target value.
+ * @param {Array<number>} sortedArray - The sorted array to search.
+ * @param {number} targetValue - The value to search for.
+ * @returns {number} The index of the found element, or the insertion point if not found.
+ */
+function binarySearchLargestLessEqual(sortedArray, targetValue) {
+  let foundIndexPos = -1; // Stores the index if an exact match is found.
 
-  let leftBound = 0x0; // Left boundary of search range
-  let rightBound = sortedArray.length - 1.0; // Right boundary of search range
+  let leftBound = 0; // Leftmost index to consider.
+  let rightBound = sortedArray.length - 1; // Rightmost index to consider.
 
+  // Continue searching as long as the bounds are valid.
   while (leftBound <= rightBound) {
-    const midPoint = Math.floor((leftBound + rightBound) / 2.0); // Calculate middle index
+    let midPoint = Math.floor((leftBound + rightBound) / 2); // Calculate middle index.
 
     if (sortedArray[midPoint] === targetValue) {
-      resultIndex = midPoint; // Value found
-      break; // Exit loop
+      foundIndexPos = midPoint; // Exact match found.
+      break; // Exit loop.
     } else if (sortedArray[midPoint] < targetValue) {
-      leftBound = midPoint + 1.0; // Search in the right half
+      // If middle value is less than target, search in the right half.
+      leftBound = midPoint + 1;
     } else {
-      rightBound = midPoint - 1.0; // Search in the left half
+      // If middle value is greater than target, search in the left half.
+      rightBound = midPoint - 1;
     }
   }
-  if (resultIndex !== ~0) return resultIndex; // Return found index
-  else return leftBound; // Return insertion point if not found
+  // If an exact match was found, return its index. Otherwise, 'leftBound'
+  // will be the insertion point for 'targetValue' to maintain sorted order,
+  // which corresponds to the index of the first element greater than 'targetValue'.
+  // This is effectively the index of the largest element less than or equal to 'targetValue'
+  // if 'targetValue' itself is not present but falls within the array's range.
+  if (foundIndexPos !== -1) return foundIndexPos;
+  else return leftBound;
 }
 
-function splitByNewline(textBlock) {
-  return textBlock.split("\n"); // Split string by newline characters
+/**
+ * Splits a given string by newline characters.
+ * @param {string} textInput - The input string.
+ * @returns {Array<string>} An array of strings, each representing a line.
+ */
+function splitByNewline(textInput) {
+  return textInput.split("\n");
 }
 
-function isSortedAscending(checkArray) {
-  let sortedFlag = !false; // Assume sorted initially
-  for (let comparisonIndex = 1.0; comparisonIndex < checkArray.length; comparisonIndex++) {
-    if (checkArray[comparisonIndex - 1.0] > checkArray[comparisonIndex]) {
-      sortedFlag = !true; // Found an out-of-order pair
-      break; // No need to check further
+/**
+ * Checks if an array of numbers is sorted in non-decreasing order.
+ * @param {Array<number>} sequenceToCheck - The array to check.
+ * @returns {boolean} True if the array is sorted, false otherwise.
+ */
+function checkIfSorted(sequenceToCheck) {
+  let isSortedFlag = true;
+  for (let checkIdx = 1; checkIdx < sequenceToCheck.length; checkIdx++) {
+    if (sequenceToCheck[checkIdx - 1] > sequenceToCheck[checkIdx]) {
+      isSortedFlag = false; // Found an unsorted pair.
+      break; // No need to check further.
     }
   }
-  return sortedFlag; // Return true if sorted, false otherwise
+  return isSortedFlag;
 }
 
-function obtainPrimeFactors(numberToFactor) {
-  let sqrtLimit = Math.floor(Math.sqrt(numberToFactor)); // Calculate square root limit
+/**
+ * Performs prime factorization of a number and returns the factors as an object.
+ * This is a different implementation of prime factorization compared to `primeFactorizeObject`.
+ * @param {number} numberToFactor - The number to factorize.
+ * @returns {Object<string, number>} An object where keys are prime factors and values are their counts.
+ */
+function getPrimeFactors(numberToFactor) {
+  // Store the square root of the number for optimization.
+  let sqrtOfN = Math.floor(Math.sqrt(numberToFactor));
 
-  let exponentCount = 0x0; // Counter for exponents
+  let exponentCount = 0; // Counter for the exponent of each prime factor.
 
-  let factorCollection = {}; // Object to store prime factors
+  let primeFactorsMap = {}; // Object to store prime factors and their exponents.
 
-  // Iterate from 2 up to the square root limit
-  for (let primeCandidate = 2.0; primeCandidate <= sqrtLimit; primeCandidate++) {
-    if ((numberToFactor % primeCandidate) === 0x0) {
-      exponentCount = 0x0; // Reset exponent counter
+  // Iterate from 2 up to the square root of the number to find prime factors.
+  for (let currentFactor = 2; currentFactor <= sqrtOfN; currentFactor++) {
+    if (numberToFactor % currentFactor === 0) {
+      exponentCount = 0; // Reset exponent counter for the new prime factor.
 
       do {
-        exponentCount++; // Increment exponent
-        numberToFactor = numberToFactor / primeCandidate; // Divide number by factor
-      } while ((numberToFactor % primeCandidate) === 0x0);
+        exponentCount++; // Increment exponent.
+        numberToFactor = numberToFactor / currentFactor; // Divide the number by the factor.
+      } while (numberToFactor % currentFactor === 0); // Continue as long as it's divisible.
 
-      factorCollection[primeCandidate] = exponentCount; // Store factor and its exponent
+      // Store the prime factor and its exponent.
+      primeFactorsMap[currentFactor] = exponentCount;
     }
   }
 
-  // If there's a remaining number greater than the square root, it's a prime factor itself
-  if (numberToFactor > sqrtLimit) {
-    factorCollection[numberToFactor] = 1.0; // Store the remaining prime factor
+  // If after the loop, 'numberToFactor' is greater than 'sqrtOfN',
+  // it means the remaining 'numberToFactor' is itself a prime number.
+  if (numberToFactor > sqrtOfN) {
+    primeFactorsMap[numberToFactor] = 1; // Add the remaining prime factor with exponent 1.
   }
 
-  return factorCollection; // Return the collection of prime factors
+  return primeFactorsMap;
 }

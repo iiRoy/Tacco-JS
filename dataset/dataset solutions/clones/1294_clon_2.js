@@ -1,55 +1,50 @@
-let receivedContent = ""; // This variable will accumulate all incoming data from standard input.
+var rawData = ""; // Initialize a string to accumulate input data
 
-// Initialize the environment for handling standard input.
-systemRuntime.standardInput.startReception();
-systemRuntime.standardInput.defineCharset('utf8'); // Set the character encoding for the input stream.
+// Resume standard input stream and set its encoding
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-// Register a callback function to handle each chunk of data received.
-systemRuntime.standardInput.subscribeToEvent('data', (dataPiece) => {
-  receivedContent += dataPiece; // Append the new data fragment to the accumulated content.
+// Event listener for incoming data chunks
+process.stdin.on('data', function(dataSegment) {
+  rawData += dataSegment; // Append each chunk to the rawData string
 });
 
-// Register a callback function to execute once the standard input stream ends.
-systemRuntime.standardInput.subscribeToEvent('end', () => {
-  // Split the entire received content into individual lines.
-  const allInputLines = receivedContent.split("\n");
-  let lineIndex = 0; // Initialize an index to iterate through the input lines.
+// Event listener for the end of the input stream
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of lines
+  let inputLines = rawData.split("\n");
+  let lineIndex = 0; // Initialize an index to iterate through input lines
 
-  // Loop through the input lines until a line containing '0' is encountered.
-  // Note: The original code compared `input[i] != 0`. Since `input[i]` is a string,
-  // we'll explicitly check against the string '0' or parse to number for comparison.
-  // For Type II, preserving logic, we'll keep the loose comparison intent but make it explicit
-  // by parsing if needed for numeric operations. Here, `input[i]` being '0' as a string is a common sentinel.
-  while (allInputLines[lineIndex] !== '0') {
-    // Parse the current line into an array of numbers, assuming space-separated values.
-    const tokenArray = allInputLines[lineIndex].split(" ");
+  // Loop through input lines until a line containing '0' is encountered
+  while (inputLines[lineIndex] != 0) {
+    // Split the current line by space to get two numbers
+    let numPair = inputLines[lineIndex].split(" ");
 
-    // Check for the termination condition based on the first two numbers in the line.
-    if (parseInt(tokenArray[0], 10) === 0 && parseInt(tokenArray[1], 10) === 0) {
-      break; // Exit the loop if both numbers are zero.
+    // Check for the termination condition (0 0)
+    if (parseInt(numPair[0]) === 0 && parseInt(numPair[1]) === 0) {
+      break; // Exit the loop if both numbers are zero
     }
 
-    let resultTally = 0; // Initialize a counter for valid combinations.
-    const maxNumber = parseInt(tokenArray[0], 10); // The maximum value for numbers in the combination.
-    const targetSum = parseInt(tokenArray[1], 10); // The target sum for the combination.
+    let solutionCount = 0; // Initialize a counter for valid combinations
 
-    // First nested loop: iterate for the first number.
-    // Starts from 1 and goes up to (maxNumber - 2) to ensure there are at least two more distinct numbers.
-    for (let firstVal = 1; firstVal <= maxNumber - 2; firstVal++) {
-      // Second nested loop: iterate for the second number.
-      // Starts from (firstVal + 1) to ensure distinct numbers and increasing order.
-      for (let secondVal = firstVal + 1; secondVal <= maxNumber - 1; secondVal++) {
-        // Third nested loop: iterate for the third number.
-        // Starts from (secondVal + 1) to ensure distinct numbers and increasing order.
-        for (let thirdVal = secondVal + 1; thirdVal <= maxNumber; thirdVal++) {
-          // Check if the sum of the three distinct numbers equals the target sum.
-          if (firstVal + secondVal + thirdVal === targetSum) {
-            resultTally++; // Increment the counter if a valid combination is found.
+    // Outer loop for the first number (firstNum)
+    // It iterates from 1 up to (first value in numPair - 2)
+    for (let firstNum = 1; firstNum <= parseInt(numPair[0]) - 2; firstNum++) {
+      // Middle loop for the second number (secondNum)
+      // It starts from firstNum + 1 up to (first value in numPair - 1)
+      for (let secondNum = firstNum + 1; secondNum <= parseInt(numPair[0]) - 1; secondNum++) {
+        // Inner loop for the third number (thirdNum)
+        // It starts from secondNum + 1 up to the first value in numPair
+        for (let thirdNum = secondNum + 1; thirdNum <= parseInt(numPair[0]); thirdNum++) {
+          // Check if the sum of the three numbers equals the second value in numPair
+          if (firstNum + secondNum + thirdNum === parseInt(numPair[1])) {
+            solutionCount++; // Increment the counter if the condition is met
           }
         }
       }
     }
-    outputHandler.displayMessage(resultTally); // Output the total count of valid combinations for the current line.
-    lineIndex++; // Move to the next input line.
+    // Output the total count of combinations for the current input line
+    console.log(solutionCount);
+    lineIndex++; // Move to the next input line
   }
 });

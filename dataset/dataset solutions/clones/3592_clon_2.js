@@ -1,36 +1,43 @@
 "use strict";
 
+// This function processes the input string to calculate the minimum travel cost.
+const processInput = inputData => {
+    // Split the entire input string by newline characters to get individual lines.
+    inputData = inputData.split("\n");
 
-const  executeLogic = (    inputString    ) => {
+    // Parse the first line to get the total number of elements (totalElements)
+    // and the length of the segment (segmentLength).
+    const totalElements = parseInt(inputData[0].split(" ")[0]);
+    const segmentLength = parseInt(inputData[0].split(" ")[1]);
 
-    inputString  =  inputString.split(  "\n"  );
-    const  elementCount = parseInt(inputString[0].split(" ")[0]);
-    const  windowSize = parseInt(inputString[0].split(" ")[1]);
+    // Parse the second line to get an array of integer positions.
+    const elementPositions = inputData[1].split(" ").map(strVal => parseInt(strVal));
 
+    // Initialize an array to store the calculated travel distances for each segment.
+    const calculatedDistances = [];
 
-    const  coordinateValues  = inputString[1].split(  " "  ).map(  valStr  =>  parseInt(  valStr  )  );
+    // Iterate through all possible segments of length 'segmentLength'.
+    // The loop runs from the first element up to the point where a full segment can still be formed.
+    for (let currentIdx = 0; currentIdx <= totalElements - segmentLength; currentIdx++) {
+        // Determine the leftmost and rightmost coordinates of the current segment.
+        const currentLeft = elementPositions[currentIdx];
+        const currentRight = elementPositions[~~currentIdx + segmentLength - 1]; // ~~ is a fast Math.floor for positive integers
 
-
-    const  calculatedPaths = [];
-
-
-    for(  let  idx  =  0; idx  <=  elementCount  -  windowSize;  idx++  )  {
-        let  leftmostCoord = coordinateValues[idx];
-        let  rightmostCoord  =  coordinateValues[Math.floor(idx)  +  windowSize  -  1];
-
-        // Scenario: Prioritize movement towards the left or solely move rightwards.
-        if  (  Math.abs(leftmostCoord)  <  Math.abs(rightmostCoord)  )  {
-            calculatedPaths.push(  Math.abs(leftmostCoord)  +  Math.abs(rightmostCoord  -  leftmostCoord)  );
-
-        // Scenario: Prioritize movement towards the right or solely move leftwards.
-        }  else  {
-            calculatedPaths.push(  Math.abs(rightmostCoord)  +  Math.abs(rightmostCoord  -  leftmostCoord)  );
+        // Calculate the travel cost based on which end is closer to zero.
+        // If the absolute value of the left coordinate is smaller, start from left.
+        if (Math.abs(currentLeft) < Math.abs(currentRight)) {
+            // Path: 0 -> currentLeft -> currentRight
+            calculatedDistances.push(Math.abs(currentLeft) + Math.abs(currentRight - currentLeft));
+        } else {
+            // Path: 0 -> currentRight -> currentLeft
+            // If the absolute value of the right coordinate is smaller or equal, start from right.
+            calculatedDistances.push(Math.abs(currentRight) + Math.abs(currentRight - currentLeft));
         }
-
     }
 
-
-    console.log(  Math.min(  ...calculatedPaths  )  );
+    // Output the minimum travel distance found among all segments.
+    console.log(Math.min(...calculatedDistances));
 };
 
-executeLogic(  require('fs').readFileSync(  '/dev/stdin',  'utf8'  )  );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

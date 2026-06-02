@@ -1,176 +1,163 @@
-const isWithinBounds = (row, col, maxRows, maxCols) => {
-    return row >= 0 && row < maxRows && col >= 0 && col < maxCols;
-};
+function findShortestPath(initialX, initialY, targetSequence, gridWidth, gridHeight, gridMapData) {
+    const deltaX = [0, -1, 1, 0];
+    const deltaY = [-1, 0, 0, 1];
 
-const findSequencePath = (initialRow, initialCol, targetSequence, gameGrid, gridDimensions) => {
-    const ROW_OFFSETS = [0, -1, 1, 0]; // Corresponds to dy values in original: -1, 0, 0, 1 (y-axis is row, x-axis is col)
-    const COL_OFFSETS = [-1, 0, 0, 1]; // Corresponds to dx values in original: 0, -1, 1, 0
+    // Helper function to initialize the memoization table
+    const createMemoTable = (rows, cols, initialValue) => {
+        const table = [];
+        for (let r = 0; r < rows; r++) {
+            table[r] = [];
+            for (let c = 0; c < cols; c++) {
+                table[r][c] = initialValue;
+            }
+        }
+        return table;
+    };
 
-    // Extract grid dimensions for clarity
-    const [numCols, numRows] = gridDimensions; // Original wh[0] is width (cols), wh[1] is height (rows)
+    // The original code initializes memo up to index 1000 (i.e., 1001 elements).
+    // This implies a fixed maximum grid size for memoization, regardless of actual grid dimensions.
+    const MEMO_MAX_DIMENSION = 1001;
+    let visitedMinRemainingLength = createMemoTable(MEMO_MAX_DIMENSION, MEMO_MAX_DIMENSION, targetSequence.length);
 
-    // Initialize a 2D array to keep track of the minimum remaining length of the target sequence
-    // needed to reach a specific cell. Initialized with the full length as a 'not visited' marker.
-    const minRemainingLengthGrid = Array.from({ length: numRows }, () =>
-        Array(numCols).fill(targetSequence.length)
-    );
+    let currentPathLength = 0;
+    // Using objects for queue elements for better readability and explicit property names
+    const pathfindingQueue = [{ x: initialX, y: initialY, length: currentPathLength, sequence: targetSequence }];
 
-    // If the target sequence is empty, no steps are required.
-    if (targetSequence.length === 0) {
-        return 0;
-    }
+    // Initialize the starting point in the memoization table
+    // Note: `initialY` typically corresponds to row index, `initialX` to column index.
+    visitedMinRemainingLength[initialY][initialX] = targetSequence.length;
 
-    // The BFS queue, storing path nodes as objects for better readability.
-    // Each node contains: { r: row, c: col, steps: path length, seq: remaining target sequence }
-    const pathTraversalQueue = [{ r: initialRow, c: initialCol, steps: 0, seq: targetSequence }];
+    let shortestOverallPath = Infinity; // This variable will store the final result
 
-    // Mark the starting cell with its initial sequence length.
-    minRemainingLengthGrid[initialRow][initialCol] = targetSequence.length;
+    // Main BFS loop
+    while (pathfindingQueue.length > 0) {
+        const currentNode = pathfindingQueue.shift();
+        const currentX = currentNode.x;
+        const currentY = currentNode.y;
+        const currentLen = currentNode.length;
+        const currentSequence = currentNode.sequence;
 
-    let shortestPathCost = Infinity; // Variable to store the final minimum steps found.
-
-    // Continue BFS as long as there are nodes to process in the queue.
-    while (pathTraversalQueue.length > 0) {
-        // Dequeue the current path node and destructure its properties.
-        const { r: currentRow, c: currentCol, steps: currentTotalSteps, seq: currentRemainingSequence } = pathTraversalQueue.shift();
-
-        // If the remaining sequence is empty, we have successfully matched the entire target.
-        // Since it's BFS, this is the shortest path to this state.
-        if (currentRemainingSequence.length === 0) {
-            shortestPathCost = currentTotalSteps;
-            break; // Exit the loop as the shortest path has been found.
+        // If the target sequence is fully matched, we've found a path.
+        // Since this is BFS, the first time we find it, it's the shortest.
+        if (currentSequence.length === 0) {
+            shortestOverallPath = currentLen;
+            break; // Exit the loop as the shortest path has been found
         }
 
-        // Explore all four neighboring cells (up, down, left, right).
-        for (let i = 0; i < 4; i++) {
-            const nextRow = currentRow + ROW_OFFSETS[i];
-            const nextCol = currentCol + COL_OFFSETS[i];
-            let sequenceAfterPotentialMatch = currentRemainingSequence;
+        // Helper function for boundary checks
+        const isWithinGridBounds = (coordX, coordY, width, height) => {
+            return coordX >= 0 && coordY >= 0 && coordX < width && coordY < height;
+        };
 
-            // Perform boundary checks for the next cell.
-            if (!isWithinBounds(nextRow, nextCol, numRows, numCols)) {
-                continue; // Skip if the cell is outside the grid.
+        // Explore all four possible neighboring cells (up, down, left, right)
+        for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
+            const nextX = currentX + deltaX[directionIndex];
+            const nextY = currentY + deltaY[directionIndex];
+            let nextSequence = currentSequence; // Assume sequence doesn't change initially
+
+            // Check if the next coordinates are within the actual grid boundaries
+            if (!isWithinGridBounds(nextX, nextY, gridWidth, gridHeight)) {
+                continue; // Skip if out of bounds
             }
 
-            // Check if the character at the next grid cell matches the first character
-            // of the currently remaining target sequence.
-            if (gameGrid[nextRow][nextCol] === currentRemainingSequence[0]) {
-                sequenceAfterPotentialMatch = currentRemainingSequence.substring(1); // Consume the character.
+            // Retrieve the character from the grid at the next position
+            const gridChar = gridMapData[nextY][nextX];
+            const requiredChar = currentSequence[0]; // The first character needed in the sequence
+
+            // If the grid character matches the required character, consume it from the sequence
+            if (gridChar === requiredChar) {
+                nextSequence = currentSequence.slice(1);
             }
 
-            // Optimization: If a path to this 'nextRow, nextCol' cell already exists that required
-            // matching a sequence of equal or shorter length, then this current path is not better.
-            if (minRemainingLengthGrid[nextRow][nextCol] <= sequenceAfterPotentialMatch.length) {
-                continue; // Skip this path as it's not an improvement.
+            // Memoization check: If we've already found a path to (nextX, nextY) that results in
+            // an equal or shorter remaining sequence, there's no need to explore this path further.
+            // A smaller `nextSequence.length` indicates a better state (more of the target matched).
+            if (visitedMinRemainingLength[nextY][nextX] <= nextSequence.length) {
+                continue; // Skip if an equally good or better path to this state was already found
             }
 
-            // Update the minimum remaining sequence length for this cell.
-            minRemainingLengthGrid[nextRow][nextCol] = sequenceAfterPotentialMatch.length;
-
-            // Enqueue the next state for further exploration.
-            pathTraversalQueue.push({
-                r: nextRow,
-                c: nextCol,
-                steps: currentTotalSteps + 1,
-                seq: sequenceAfterPotentialMatch
-            });
+            // Update the memoization table and add the new state to the queue
+            visitedMinRemainingLength[nextY][nextX] = nextSequence.length;
+            pathfindingQueue.push({ x: nextX, y: nextY, length: currentLen + 1, sequence: nextSequence });
         }
     }
-    return shortestPathCost; // Return the shortest path cost or Infinity if no path found.
-};
+    return shortestOverallPath;
+}
 
-// --- Main Program Logic ---
+// --- Main program execution logic ---
 
-// Read all input data from standard input.
+// Read the entire input from stdin
 const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Split the raw input string into an array of lines, removing any empty lines or trailing whitespace.
-const inputLines = rawInputData.trim().split("\n").filter(line => line.length > 0);
+// Trim whitespace and split the input into individual lines
+const inputLines = rawInputData.trim().split("\n");
 
-// Predefined sequences to search for, along with their unique identifiers.
-const targetSequencesWithIds = [
-    { pattern: "2345G", id: 1 },
-    { pattern: "3451G", id: 2 },
-    { pattern: "4512G", id: 3 },
-    { pattern: "5123G", id: 4 },
-    { pattern: "1234G", id: 5 }
-];
+// Process multiple test cases in a loop
+while (true) {
+    // Extract and parse grid dimensions from the first line of the current test case
+    const dimensionLine = inputLines.shift();
+    const dimensionStrings = dimensionLine.split(" ");
+    const currentGridDimensions = dimensionStrings.map(Number);
 
-// Helper function to parse a single test case (grid, dimensions, start position).
-const parseSingleTestCase = (linesArray) => {
-    // Read the first line for grid dimensions (width and height).
-    const dimensionLine = linesArray.shift();
-    if (!dimensionLine) return null; // No more input lines available.
+    const gridWidth = currentGridDimensions[0];
+    const gridHeight = currentGridDimensions[1];
 
-    const gridDimensions = dimensionLine.split(" ").map(Number);
-    const [gridWidth, gridHeight] = gridDimensions;
-
-    // Check for the termination condition (0 0).
+    // Check for the termination condition (0 0)
     if (gridWidth === 0 && gridHeight === 0) {
-        return null; // Signal to stop processing.
-    }
-
-    const gameGridData = [];
-    let startingCoordinates = null; // Stores [col, row] for the 'S' character.
-
-    // Read the grid rows and identify the starting position.
-    for (let r = 0; r < gridHeight; r++) {
-        const currentRowChars = linesArray.shift().split("");
-        gameGridData.push(currentRowChars);
-        const startColIndex = currentRowChars.indexOf("S");
-        if (startColIndex !== -1) {
-            startingCoordinates = [startColIndex, r]; // Found 'S'.
-        }
-    }
-
-    // A basic check to ensure the starting position 'S' was found.
-    if (!startingCoordinates) {
-        // In a real application, more robust error handling might be needed.
-        // For competitive programming, this case often implies invalid input.
-        console.error("Error: Starting character 'S' not found in the grid.");
-        return null;
-    }
-
-    return { gridDimensions, gameGridData, startingCoordinates };
-};
-
-// Process test cases one by one until the termination condition is met.
-while (inputLines.length > 0) {
-    const currentTestCase = parseSingleTestCase(inputLines);
-
-    if (currentTestCase === null) {
-        // If parsing returns null, it's either the end-of-input marker (0 0)
-        // or an error during parsing. We break in both cases.
         break;
     }
 
-    const { gridDimensions, gameGridData, startingCoordinates } = currentTestCase;
+    // Initialize structures to store the grid map and the starting coordinates
+    const currentGridMap = [];
+    let startCoordinates = []; // [x, y]
 
-    // Array to store the results (cost and identifier) for each sequence.
-    const calculatedResults = [];
+    // Loop through each row to build the grid map and find the 'S' (start) position
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        const rowString = inputLines.shift();
+        const rowChars = rowString.split(""); // Convert row string to an array of characters
+        
+        const startCharColumnIndex = rowChars.indexOf("S");
+        if (startCharColumnIndex !== -1) {
+            startCoordinates = [startCharColumnIndex, rowIndex]; // Store [column, row]
+        }
+        currentGridMap.push(rowChars);
+    }
 
-    // Iterate through each predefined target sequence and find its path.
-    for (const seqEntry of targetSequencesWithIds) {
-        const pathLength = findSequencePath(
-            startingCoordinates[1], // Pass row first (y-coordinate)
-            startingCoordinates[0], // Pass col second (x-coordinate)
-            seqEntry.pattern,
-            gameGridData,
-            gridDimensions
+    // Define the target sequences and their corresponding IDs
+    // Using an array of objects for better organization and readability
+    const targetSequencesWithIds = [
+        { sequence: "2345G", identifier: 1 },
+        { sequence: "3451G", identifier: 2 },
+        { sequence: "4512G", identifier: 3 },
+        { sequence: "5123G", identifier: 4 },
+        { sequence: "1234G", identifier: 5 }
+    ];
+
+    // Array to store the results of each pathfinding attempt
+    const pathResults = [];
+
+    // Iterate through each target sequence and call the pathfinding function
+    for (const targetInfo of targetSequencesWithIds) {
+        const pathLength = findShortestPath(
+            startCoordinates[0],
+            startCoordinates[1],
+            targetInfo.sequence,
+            gridWidth,
+            gridHeight,
+            currentGridMap
         );
-        calculatedResults.push({ pathCost: pathLength, sequenceId: seqEntry.id });
+        pathResults.push([pathLength, targetInfo.identifier]);
     }
 
-    // Sort the results based on the path cost in ascending order.
-    calculatedResults.sort((a, b) => a.pathCost - b.pathCost);
+    // Sort the results based on the path length (the first element of each inner array)
+    pathResults.sort((resultA, resultB) => resultA[0] - resultB[0]);
 
-    // Retrieve the best result (the one with the minimum path cost).
-    const optimalResult = calculatedResults[0];
+    // Determine the best result and format the output string
+    const bestResult = pathResults[0];
+    const bestPathLength = bestResult[0];
+    const bestPathIdentifier = bestResult[1];
 
-    // Output the result based on whether a path was found.
-    if (optimalResult.pathCost === Infinity) {
-        console.log("NA"); // No path could be found for any sequence.
-    } else {
-        console.log(`${optimalResult.sequenceId} ${optimalResult.pathCost}`);
-    }
+    // Preserve the exact output format: "NA" if no path, otherwise "ID LENGTH"
+    const outputString = (bestPathLength === Infinity) ? "NA" : `${bestPathIdentifier} ${bestPathLength}`;
+    console.log(outputString);
 }

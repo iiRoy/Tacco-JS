@@ -1,79 +1,65 @@
 "use strict";
 
-// This module provides a utility function for calculating factorials
-// and a main routine for processing mathematical input.
-
-function computeProduct(inputVal) {
-    // The 'computeProduct' function determines the product of all positive integers
-    // from unity up to the given 'inputVal'. This is a recursive calculation.
-    if (inputVal === 1) { // Base case: If the value is one, return it directly.
-        return inputVal;
-    } else { // Recursive step: Multiply the current value by the product of (value minus one).
-        return inputVal * computeProduct(inputVal - 1);
-    }
+/*
+ * This function computes the factorial of a given positive integer.
+ * It uses recursion to multiply the number by all positive integers below it.
+ */
+function calculateProduct(inputNumber) {
+  // Base case: factorial of 1 is 1
+  if (inputNumber === 1) {
+    return inputNumber;
+  } else {
+    // Recursive step: n! = n * (n-1)!
+    return inputNumber * calculateProduct(inputNumber - 1);
+  }
 }
 
+// The primary execution block for processing the input data.
+const processInput = rawData => {
+  // Clean up the input string: remove leading/trailing whitespace and split by newlines.
+  rawData = rawData.trim().split("\n");
 
-const evaluateInput = (incomingData) => {
-    // The 'evaluateInput' function serves as the primary entry point,
-    // handling the parsing of input and orchestrating the core logic.
+  // Parse the first line of input to extract two integer values.
+  const targetSum = parseInt(rawData[0].split(" ")[0], 10); // The first number, X
+  const targetValue = parseInt(rawData[0].split(" ")[1], 10); // The second number, Y
 
-    // Step 1: Pre-process the raw input string.
-    // It's first trimmed to remove any incidental whitespace from edges,
-    // then segmented into an array of strings based on newline characters.
-    incomingData = incomingData.trim().split("\n");
+  // Determine the maximum possible count of '2's that can be used to form targetSum.
+  // This is based on the idea that 2 * countOfTwos <= targetSum.
+  const countOfTwos = Math.floor(targetSum / 2);
 
-    // Step 2: Extract and parse numerical parameters from the first line of input.
-    // The initial number represents a primary quantity for calculations.
-    const primaryQuantity = parseInt(incomingData[0].split(" ")[0]);
-    // The second number represents a specific target sum that combinations must achieve.
-    const targetSum = parseInt(incomingData[0].split(" ")[1]);
+  // Initialize an array to store valid combinations' results.
+  const resultCollection = [];
 
-    // Step 3: Calculate the maximum possible count of 'two-unit' components.
-    // This is derived by dividing the primary quantity by two and rounding down.
-    const maxTwoUnits = Math.floor(primaryQuantity / 2);
+  // Iterate downwards from the maximum possible count of '2's.
+  for (let currentTwoCount = countOfTwos; currentTwoCount >= 0; currentTwoCount--) {
+    // Calculate the required count of '1's for the current '2's count to reach targetSum.
+    // targetSum = (2 * currentTwoCount) + (1 * countOfOnes)
+    const countOfOnes = targetSum - (2 * currentTwoCount);
 
-    // Step 4: Initialize a dynamic array to store the outcomes of successful combinations.
-    const calculationOutcomes = [];
+    // Check if this combination of '1's and '2's can also form targetValue.
+    // targetValue = (1 * currentTwoCount) + (2 * countOfOnes)
+    if (currentTwoCount + (2 * countOfOnes) === targetValue) {
+      // If both conditions are met, this is a valid combination.
+      // Calculate the first factorial term.
+      const intermediateResultA = calculateProduct((2 * currentTwoCount) + countOfOnes);
+      // Calculate the second factorial term (sum of two factorials).
+      const intermediateResultB = calculateProduct((2 * currentTwoCount)) + calculateProduct(countOfOnes);
 
-    // Step 5: Begin an iterative process, decrementing the count of 'two-unit' components.
-    // The loop runs from the maximum possible count down to zero, inclusive.
-    for (let currentTwoCount = maxTwoUnits; currentTwoCount >= 0; currentTwoCount--) {
-        // Within each iteration, determine the corresponding count of 'one-unit' components.
-        const currentOneCount = primaryQuantity - (2 * currentTwoCount);
-
-        // Step 6: Validate the current combination against the 'targetSum' condition.
-        // If the sum of 'two-unit' count and twice the 'one-unit' count equals the target sum,
-        // then this combination is considered valid for further processing.
-        if (currentTwoCount + (2 * currentOneCount) === targetSum) {
-            // Note: Prior versions of this code included commented-out debugging messages
-            // for visualizing the formation of primaryQuantity and targetSum. These are now omitted.
-
-            // Step 7: Compute the first term for the ratio.
-            // This term involves a factorial calculation based on a weighted sum of counts.
-            const termOne = computeProduct((2 * currentTwoCount) + currentOneCount);
-            // Step 8: Compute the second term for the ratio.
-            // This term is the sum of two separate factorial calculations,
-            // one for twice the 'two-unit' count and another for the 'one-unit' count.
-            const termTwo = computeProduct((2 * currentTwoCount)) + computeProduct(currentOneCount);
-
-            // Step 9: Store the resulting ratio of 'termOne' to 'termTwo' into the outcomes array.
-            calculationOutcomes.push(termOne / termTwo);
-        }
+      // Store the ratio of the two factorial terms.
+      resultCollection.push(intermediateResultA / intermediateResultB);
     }
+  }
 
-    // Step 10: Final output determination.
-    // If no valid outcomes were generated, print a zero.
-    if (calculationOutcomes.length === 0) {
-        console.log(0);
-        return;
-    }
+  // If no valid combinations were found, output 0.
+  if (resultCollection.length === 0) {
+    console.log(0);
+    return;
+  }
 
-    // Otherwise, sum all the collected outcomes and print the result
-    // modulo 10 billion (10^10).
-    console.log((calculationOutcomes.reduce((aggregate, element) => aggregate + element)) % 10e9);
+  // Sum all the results in the collection and apply a modulo operation.
+  const finalSum = resultCollection.reduce((accumulator, currentValue) => accumulator + currentValue);
+  console.log(finalSum % 10e9);
 };
 
-// Initiate the program by calling the main evaluation function.
-// Input data is sourced from the standard input stream, read as UTF-8 encoded text.
-evaluateInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

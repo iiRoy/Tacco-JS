@@ -1,21 +1,22 @@
-var   fileContent = require ( 'fs' )  .  readFileSync ( '/dev/stdin' ,  'utf8' );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var dataRows = fileContent .  split ( '\n' ) ; /* Split the entire file content into individual lines */
+let dataRows = rawData.split('\n');
 
-var primaryItems  = dataRows[1] .  split ( ' ' ) ; /* Extract the second line (index 1) and parse its elements */
-var queryValues = dataRows[3] .  split ( ' ' ) ; /* Obtain the fourth line (index 3) and split its components */
+const sourceArray = dataRows[1].split(' ');
+const targetArray = dataRows[3].split(' ');
 
-var existenceMap = [] ; // Initialize an empty array to serve as a hash map for quick lookups
+let lookupMap = {};
 
-primaryItems .  forEach (  function(  itemEntry  )   {
-        existenceMap [ itemEntry ] = true ; /* Populate the hash map with elements from the primary set */
-}  ) ;
+sourceArray.forEach(function(itemValue) {
+    lookupMap[itemValue] = true;
+});
 
-var foundInstances = 0  ; /* Initialize a counter for matching elements */
+let matchCount = 0;
 
-queryValues .  forEach (  function(  targetElem  )   {
-	if  (  existenceMap [  targetElem  ]  )
-		foundInstances ++ ; /* Increment counter if the query element exists in our map */
-}  ) ;
+targetArray.forEach(function(targetItem) {
+    if (lookupMap[targetItem]) {
+        matchCount++;
+    }
+});
 
-console .  log (  foundInstances  ) ; // Output the total number of matched items
+console.log(matchCount);

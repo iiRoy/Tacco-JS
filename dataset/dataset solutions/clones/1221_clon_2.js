@@ -1,29 +1,40 @@
-'use strict'; /* Strict mode enabled for cleaner code. */
-( function ( rawInput ) {
+'use strict'; // Enforce strict mode for better code quality and error handling
 
-  // Splits the entire input string into an array of lines.
-  const strFragments = rawInput.split( '\n' ) ;
+// This is an Immediately Invoked Function Expression (IIFE)
+// It encapsulates the script's logic and prevents global variable pollution.
+(function(inputData) {
+  // Split the entire input string by newline characters.
+  // This creates an array where each element is a line from the input.
+  var inputLines = inputData.split('\n');
 
-  /*
-   * Parses the first line of the input into an array of numbers.
-   * This array is stored for potential later use, though it's re-parsed
-   * for the actual sorting operation.
-   */
-  let initialNumbers = strFragments[ 0 ] .split( ' ' ) .map( Number ) ;
+  // Process the first line of input:
+  // 1. Split it by spaces to get an array of string numbers.
+  // 2. Use `map(Number)` to convert each string number into an actual number.
+  // Note: This variable `numericParams` is declared but its value is not directly used
+  // for the final output in the original code's logic, but it's part of the original execution path.
+  var numericParams = inputLines[0].split(' ').map(Number);
 
-  // An immediately invoked function expression (IIFE) to process and sort numbers.
-  const finalSequence = ( function ( numberCollection ) {
+  // Another IIFE is used here to perform the core sorting and formatting.
+  // This ensures that the array passed to the sorting function is a fresh instance.
+  var sortedOutput = (function(inputArray) {
+    // Sort the array of numbers in ascending order.
+    // The comparison function `valA - valB` is standard for numerical sorting.
+    return inputArray.sort(function(valA, valB) {
+        return valA - valB; // Returns a negative value if valA < valB, positive if valA > valB, zero if equal.
+    })
+    // After sorting, join the numbers back into a single string,
+    // with each number separated by a single space.
+    .join(' ');
+  }(
+    // The argument passed to the inner IIFE:
+    // It re-processes the first line of input to create a new array of numbers.
+    inputLines[0].split(' ').map(Number)
+  ));
 
-    // Sorts the numerical elements in ascending order.
-    return numberCollection .sort( function ( val1, val2 ) {
-               return val1 - val2 ; // Standard numerical comparison.
-             } )
-             // Joins the sorted numbers back into a single space-separated string.
-             .join( ' ' ) ;
+  // Print the final sorted string to the standard output.
+  console.log(sortedOutput);
 
-  } ( strFragments[ 0 ] .split( ' ' ) .map( Number ) ) ) ; // The first line is re-parsed for sorting.
-
-  // Outputs the resulting sorted string to the console.
-  console .log( finalSequence ) ;
-
-} ( require( 'fs' ) .readFileSync( '/dev/stdin', 'utf8' ) ) ) ; // Reads content from standard input synchronously.
+// The main IIFE is invoked immediately with the content read from standard input.
+// `require('fs').readFileSync('/dev/stdin', 'utf8')` reads the entire file
+// synchronously and returns its content as a UTF-8 encoded string.
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

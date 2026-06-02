@@ -1,11 +1,11 @@
-function calculateOutcome(sourceString) {
-  const processedPortion = sourceString.trim().slice(0, 3);
-  const characterArray = Array.from(processedPortion);
-  const relevantMarks = characterArray.filter(
-    (unitSymbol) => unitSymbol === 'o'
-  );
-  const totalScore = 700 + (relevantMarks.length * 100);
-  console.log(totalScore);
+function processInput(rawText) {
+  const relevantCharacters = rawText.trim().slice(0, 3);
+
+  const calculatedScore = Array.from(relevantCharacters).reduce((currentTotal, characterUnit) => {
+    return currentTotal + (characterUnit === 'o' ? 100 : 0);
+  }, 0);
+
+  console.log(700 + calculatedScore);
 }
 
-calculateOutcome(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

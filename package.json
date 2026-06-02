@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "acorn": "^8.16.0",
+    "acorn-walk": "^8.3.5",
     "moo": "^0.5.3",
     "tokenizr": "^2.2.1"
   },

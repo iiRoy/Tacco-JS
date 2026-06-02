@@ -1,113 +1,81 @@
-// Function to process the entire input string received from standard input.
 function processInputData(rawData) {
-    // Split the raw input string into an array of lines.
-    const parsedLines = rawData.split('\n');
+  const lines = rawData.split('\n');
+  const arraySize = Number(lines[0]);
+  let elementStrings = lines[1].split(' ');
 
-    // The first line often contains the total count, but it's not used in this specific logic,
-    // so we'll omit parsing it to simplify the code.
-    // const totalElementsCount = Number(parsedLines[0]); // This variable is not utilized in the algorithm.
+  // This line in the original code creates a new array of numbers but does not reassign it.
+  // 'elementStrings' therefore remains an array of strings. This behavior is preserved.
+  elementStrings.map(e => Number(e));
 
-    // Parse the second line, which contains space-separated numbers, into an array of actual numbers.
-    // Using `map(Number)` is a concise way to convert string elements to numbers.
-    let numericSequence = parsedLines[1].split(' ').map(Number);
-
-    // --- Helper function: Determines if an array is homogeneous (all elements are the same as the first) ---
-    // Returns the count of elements identical to the initial element.
-    const checkHomogeneity = (inputList) => {
-        // If the list is empty, it cannot have matching elements.
-        if (inputList.length === 0) {
-            return 0;
-        }
-
-        const referenceValue = inputList[0]; // Store the first element for comparison.
-        let matchingElementCount = 0;
-
-        // Iterate through the list to count elements that are equal to the first one.
-        for (let idx = 0; idx < inputList.length; idx++) {
-            if (inputList[idx] === referenceValue) {
-                matchingElementCount++;
-            }
-        }
-        return matchingElementCount;
-    };
-
-    // Calculate the homogeneity for the primary numeric sequence.
-    const homogeneityResult = checkHomogeneity(numericSequence);
-
-    // --- Early Exit Conditions based on homogeneity analysis ---
-
-    // Scenario 1: If all elements in the sequence are completely identical.
-    // In this specific case, the minimum operations to make it alternating is half its length.
-    if (homogeneityResult === numericSequence.length) {
-        console.log(Math.floor(numericSequence.length / 2));
-        return; // Terminate execution early as the solution is found.
+  // Helper function to determine the count of elements identical to the first element
+  function checkHomogeneity(targetList) {
+    if (targetList.length === 0) {
+      return 0;
     }
-
-    // Scenario 2: If only the first element matches itself (implying subsequent elements differ from the first)
-    // AND the sequence contains at least four elements. This handles a particular edge case.
-    // The solution for this pattern also involves changing half the elements.
-    if (homogeneityResult === 1 && numericSequence.length >= 4) {
-        console.log(Math.floor(numericSequence.length / 2));
-        return; // Terminate execution early.
+    const firstElementValue = targetList[0];
+    let matchCount = 0;
+    for (let i = 0; i < targetList.length; i++) {
+      if (firstElementValue === targetList[i]) {
+        matchCount++;
+      }
     }
+    return matchCount;
+  }
 
-    // --- Main Logic: Count frequencies for elements at even and odd indices ---
+  // Perform initial homogeneity check
+  const homogeneityCount = checkHomogeneity(elementStrings);
+  const halfLength = parseInt(elementStrings.length / 2, 10);
 
-    // Map to store frequency counts for numbers appearing at even array indices.
-    const evenIndexedFrequencies = new Map();
-    // Map to store frequency counts for numbers appearing at odd array indices.
-    const oddIndexedFrequencies = new Map();
+  if (homogeneityCount === elementStrings.length) {
+    console.log("%d", halfLength);
+    return;
+  }
 
-    // Helper function to increment the count of a key in a Map.
-    // If the key doesn't exist, it's initialized to 1.
-    const incrementMapCount = (targetMap, key) => {
-        targetMap.set(key, (targetMap.get(key) || 0) + 1);
-    };
+  // Introduce a boolean flag for the second conditional check
+  const isSingleMatchAndSufficientLength = (homogeneityCount === 1 && elementStrings.length >= 4);
+  if (isSingleMatchAndSufficientLength) {
+    console.log("%d", halfLength);
+    return;
+  }
 
-    // Iterate through the numeric sequence to populate the frequency maps based on index parity.
-    for (let idx = 0; idx < numericSequence.length; idx++) {
-        const currentValue = numericSequence[idx];
-        if (idx % 2 === 0) { // If the current index is even
-            incrementMapCount(evenIndexedFrequencies, currentValue);
-        } else { // If the current index is odd
-            incrementMapCount(oddIndexedFrequencies, currentValue);
-        }
+  // Helper function to increment a count in a Map, creating the entry if it doesn't exist
+  const incrementMapEntry = (targetMap, keyToUpdate) => {
+    targetMap.set(keyToUpdate, (targetMap.get(keyToUpdate) || 0) + 1);
+  };
+
+  let evenIndexCounts = new Map(); // Stores frequencies for elements at even indices
+  let oddIndexCounts = new Map();  // Stores frequencies for elements at odd indices
+
+  for (let currentIndex = 0; currentIndex < elementStrings.length; currentIndex++) {
+    const currentElement = elementStrings[currentIndex];
+    if (currentIndex % 2 === 0) {
+      incrementMapEntry(evenIndexCounts, currentElement);
+    } else {
+      incrementMapEntry(oddIndexCounts, currentElement);
     }
+  }
 
-    // --- Helper function: Calculates the minimum changes needed for a sub-sequence ---
-    // This function determines the number of elements that need to be changed
-    // to make all elements (except the most frequent one) distinct from that most frequent element.
-    // It sums the counts of all elements *except* the one with the highest frequency.
-    const calculateMinimumChanges = (frequencyMap) => {
-        // Extract only the frequency counts (values) from the map into an array.
-        const frequencyCounts = Array.from(frequencyMap.values());
+  // Helper function to calculate the minimum removals needed to make all but one element uniform
+  function calculateRemovalCost(frequencyMap) {
+    const countValues = Array.from(frequencyMap.values());
+    let costAccumulator = 0;
 
-        // If there are no distinct elements or only one distinct element, no changes are required for this group.
-        if (frequencyCounts.length <= 1) {
-            return 0;
-        }
+    if (countValues.length > 1) {
+      countValues.sort((a, b) => b - a); // Sort counts in descending order
+      // Sum all counts except the largest one
+      for (let j = 1; j < countValues.length; j++) {
+        costAccumulator += countValues[j];
+      }
+    }
+    // If countValues.length is 0 or 1, costAccumulator remains 0, which is correct.
+    return costAccumulator;
+  }
 
-        // Sort the counts in descending order to easily access the highest frequency.
-        frequencyCounts.sort((a, b) => b - a);
+  const costForEvenIndices = calculateRemovalCost(evenIndexCounts);
+  let totalRemovalCost = costForEvenIndices;
+  totalRemovalCost += calculateRemovalCost(oddIndexCounts);
 
-        let totalChangesRequired = 0;
-        // Sum all counts except the first (which is the largest/most frequent count).
-        // These represent the elements that would need to be modified.
-        for (let idx = 1; idx < frequencyCounts.length; idx++) {
-            totalChangesRequired += frequencyCounts[idx];
-        }
-
-        return totalChangesRequired;
-    };
-
-    // Calculate the total number of operations by summing changes needed for even and odd indexed groups.
-    let totalOperations = calculateMinimumChanges(evenIndexedFrequencies);
-    totalOperations += calculateMinimumChanges(oddIndexedFrequencies);
-
-    // Output the final computed minimum number of operations.
-    console.log(totalOperations);
+  console.log("%d", totalRemovalCost);
 }
 
-// Do not modify the following line; it handles reading input from standard input
-// and then calls the main processing function with that data.
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

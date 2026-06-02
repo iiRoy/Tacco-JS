@@ -1,41 +1,44 @@
-function ExecuteTransformation ( sourceData )
-{
-  /* This section breaks down the original input string by line breaks. */
-  let dataRows = sourceData . split ( "\n" ) ;
+// This function processes raw input data.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines using the newline character as a delimiter.
+  const dataRows = rawData.split("\n");
 
-  // We are interested in the initial segment of the provided data.
-  let initialLine = dataRows [ 0 ] ;
+  // Retrieve the very first line from the array of input rows.
+  const firstRow = dataRows[0];
 
-  // Convert the textual line into a whole number, using base 10.
-  let numericInput = parseInt ( initialLine , 10 ) ;
-  let transformedOutput = "" ; // A receptacle for the constructed character sequence.
+  // Parse the first line as an integer, specifying base 10 (0xA in hexadecimal).
+  let numVal = parseInt(firstRow, 0xA);
+  // Initialize an empty string to accumulate the result.
+  let outputStr = "";
 
-  // An arbitrary, very large integer value.
-  let largeConstant = 987654321098765 ;
-  // A string containing all lowercase letters of the English alphabet.
-  let alphabetSequence = "abcdefghijklmnopqrstuvwxyz" ;
+  // This constant is present in the original code but is not utilized in the core algorithm.
+  const largeConst = 1000000000000001;
 
-  // Loop continues as long as the processed numeric value is greater than zero.
-  while ( 0 < numericInput )
-  {
-    let currentRemainder = numericInput % 26 ; // Determine the remainder when divided by 26.
+  // Define the string containing all lowercase English alphabet characters.
+  const alphabetChars = "abcdefghijklmnopqrstuvwxyz";
 
-    // If the remainder is zero, we adjust it to 26 for correct mapping to the alphabet.
-    if ( currentRemainder === 0 )
-    {
-      currentRemainder = 26 ;
+  // Begin a loop that continues as long as the numeric value is positive.
+  while (0x0 < numVal) {
+    // Calculate the remainder when numVal is divided by 26.
+    let remainderVal = numVal % 26;
+
+    // If the remainder is zero, it means the character should be 'z' (the 26th letter).
+    if (remainderVal === 0x0) {
+      remainderVal = 26;
     }
 
-    // Extract the character from the alphabet sequence and prepend it to our growing output string.
-    transformedOutput = alphabetSequence . substr ( currentRemainder - 1 , 1 ) + transformedOutput ;
+    // Prepend the character corresponding to the calculated remainder to the output string.
+    // The character is extracted from 'alphabetChars' using substring.
+    outputStr = alphabetChars.substring(remainderVal - 0b1, remainderVal) + outputStr;
 
-    // Modify the numeric value for the subsequent iteration of the loop.
-    numericInput = ( numericInput - currentRemainder ) / 26 ;
+    // Update numVal for the next iteration by performing integer division.
+    numVal = (numVal - remainderVal) / 26;
   }
 
-  // Print the final, assembled string to the console.
-  console . log ( transformedOutput ) ;
+  // Output the final generated string to the standard console.
+  console.log(outputStr);
 }
 
-// To use with file system input: ExecuteTransformation ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-ExecuteTransformation ( "123456789" ) ;
+// The following line is an example invocation of the processing function with a hardcoded string.
+// ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput("123456789");

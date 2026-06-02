@@ -1,44 +1,41 @@
-// Activate the system's standard input stream.
-sysEnv.dataInput.startFlow();
+// This script initializes standard input processing to read data.
+// It then passes the received data to a core function for string manipulation.
 
-// Set the character encoding for the input stream to UTF-8.
-sysEnv.dataInput.defineCodec('utf8');
+process.stdin.resume(); // Ensures the standard input stream remains active.
+process.stdin.setEncoding('utf8'); // Configures the character encoding for incoming data.
 
-// Register a listener for 'data' events on the input stream.
-sysEnv.dataInput.addListener('data', function (payload)
- {
-    // Call the main processing function with the trimmed data payload.
-    processPayload(payload.trim());
- }
-);
-
+// Establishes an event listener for 'data' events on the standard input stream.
+process.stdin.on('data', function(inputSegment) {
+    // Upon receiving a chunk of data, it removes leading/trailing whitespace
+    // and dispatches it to the primary processing routine.
+    processInputString(inputSegment.trim());
+});
 
 /**
- * @function
- * @description This function processes an input string by repeatedly removing a specific substring.
- * @param {string} payload The string to be processed.
+ * Executes a specific string transformation algorithm.
+ * It iteratively removes all occurrences of the substring "ST" from the input string
+ * until no more instances of "ST" can be found, then outputs the final length.
+ *
+ * @param {string} inputString The textual data to be processed.
  */
-function processPayload (payload)
-{
-    // Initialize a variable to hold the string's length before modification.
-    let prevLen = payload.length;
+function processInputString(inputString) {
+    // A variable to store the string's length from the previous iteration.
+    // This is crucial for determining if any replacements occurred in the current pass.
+    let previousLength = inputString.length;
 
-    // Replace all occurrences of "XY" with an empty string.
-    payload = payload.replace("XY", "");
+    // Perform the initial replacement of "ST".
+    inputString = inputString.replace("ST", "");
 
-    // Continuously replace "XY" until the string's length stabilizes.
-    while
-    (
-        prevLen !== payload.length
-    )
-    {
-        // Update the previous length to the current length.
-        prevLen = payload.length;
-
-        // Perform the replacement again.
-        payload = payload.replace("XY", "");
+    // Enter a loop that continues as long as the string's length changes
+    // after an attempted replacement. This signifies that "ST" was found and removed.
+    while (previousLength !== inputString.length) {
+        // Update the stored length to the current string length before the next replacement.
+        previousLength = inputString.length;
+        // Attempt another replacement of "ST".
+        inputString = inputString.replace("ST", "");
     }
 
-    // Output the final length of the processed string to the console.
-    outputLog.displayOutput(payload.length);
+    // Once the loop terminates (meaning no more "ST" substrings were found),
+    // the final length of the modified string is printed to the console.
+    console.log(inputString.length);
 }

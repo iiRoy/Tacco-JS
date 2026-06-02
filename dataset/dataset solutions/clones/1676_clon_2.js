@@ -1,115 +1,169 @@
-const system = {
+var inputReader = require('readline').createInterface({
   input: process.stdin,
-  output: process.stdout,
-  errorOutput: console.error,
-  logOutput: console.log,
-  memoryUsage: process.memoryUsage
-};
-
-const getModule = require;
-
-const lineProcessor = getModule('readline').createInterface({
-  input: system.input,
-  output: system.output
+  output: process.stdout
 });
 
-let inputHandler; // Object responsible for managing input stream
-const capturedLines = []; // Array to store all incoming lines
+// Global variable to hold the processed input handler
+var dataProcessor;
+// Array to store all lines read from stdin
+var inputLines = [];
 
-lineProcessor.on('dataLine', (currentLineContent) => {
-  capturedLines.push(currentLineContent);
+// Event listener for each line of input
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-lineProcessor.on('streamEnded', () => {
-  inputHandler = initializeInput(capturedLines);
-  system.errorOutput("\n"); // Insert a newline for clearer debug output
-  const startTime = new Date();
-  executeCoreLogic(); // Execute the primary application logic
-  const duration = new Date() - startTime;
-  logErrorDetails("execution_time : " + (duration) + "ms");
-  logErrorDetails("memory_usage : " + Math.round(system.memoryUsage().heapTotal / 1024) + "KB");
+// Event listener for when input stream closes
+inputReader.on('close', function() {
+  // Initialize the input handler with all collected lines
+  dataProcessor = initializeInputHandler(inputLines);
+
+  // Output a newline to stderr for formatting
+  console.error("\n");
+
+  // Record start time for performance measurement
+  var startTime = new Date();
+
+  // Execute the main application logic
+  executeMainLogic();
+
+  // Calculate elapsed time
+  var endTime = new Date() - startTime;
+  // Log execution time to stderr
+  logDebugMessage("execution time : " + (endTime) + "ms");
+  // Log memory usage to stderr
+  logDebugMessage("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function deepCopyObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+/**
+ * Creates a deep copy of an object using JSON serialization.
+ * @param {object} originalObject - The object to clone.
+ * @returns {object} A deep copy of the original object.
+ */
+function createDeepCopy(originalObject) {
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveInteger() {
-  return dataTransformer(fetchNextItem(), 1);
+/**
+ * Retrieves the next input item as an integer.
+ * @returns {number} The next input item converted to an integer.
+ */
+function getNextInteger() {
+  return convertInputData(fetchNextItem(), 1);
 }
 
-function retrieveStringArray() {
-  return dataTransformer(fetchNextItem(), 2);
+/**
+ * Retrieves the next input item as an array of strings, split by space.
+ * @returns {string[]} The next input item split into a string array.
+ */
+function getNextStringArray() {
+  return convertInputData(fetchNextItem(), 2);
 }
 
-function retrieveIntegerArray() {
-  return dataTransformer(fetchNextItem(), 4);
+/**
+ * Retrieves the next input item as an array of numbers, split by space.
+ * @returns {number[]} The next input item split into a number array.
+ */
+function getNextIntegerArray() {
+  return convertInputData(fetchNextItem(), 4);
 }
 
-function retrieveCharacterArray() {
-  return dataTransformer(fetchNextItem(), 6);
+/**
+ * Retrieves the next input item as an array of characters.
+ * @returns {string[]} The next input item split into a character array.
+ */
+function getNextCharacterArray() {
+  return convertInputData(fetchNextItem(), 6);
 }
 
+/**
+ * Fetches the next raw input item from the handler.
+ * @returns {string} The next raw input string.
+ */
 function fetchNextItem() {
-  return inputHandler.getNext();
+  return dataProcessor.retrieveNext();
 }
 
+/**
+ * Checks if there are more input items available.
+ * @returns {boolean} True if more items exist, false otherwise.
+ */
 function hasMoreItems() {
-  return inputHandler.hasRemaining();
+  return dataProcessor.checkMoreItems();
 }
 
-// Function to set up the input parsing utility
-function initializeInput(rawInputLines) {
-  const parsingUtility = {
-    sourceData: rawInputLines,
+/**
+ * Initializes an input handler object with methods to navigate input lines.
+ * @param {string[]} inputArray - An array of input strings.
+ * @returns {object} An object with `sourceList`, `currentPosition`, `maximumCount`, `checkMoreItems`, and `retrieveNext` properties.
+ */
+function initializeInputHandler(inputArray) {
+  var handlerObject = {
+    sourceList: inputArray,
     currentPosition: 0,
-    maximumLength: rawInputLines.length,
+    maximumCount: inputArray.length,
 
-    hasRemaining: function() {
-      return (this.currentPosition < this.maximumLength);
+    /**
+     * Checks if there are more items to process in the source list.
+     * @returns {boolean} True if `currentPosition` is less than `maximumCount`, false otherwise.
+     */
+    checkMoreItems: function() {
+      return (this.currentPosition < this.maximumCount);
     },
 
-    getNext: function() {
-      if (!this.hasRemaining()) {
-        throw "EndOfInputException No further elements available";
+    /**
+     * Retrieves the next item from the source list and advances the position.
+     * Throws an error if no more items are available.
+     * @returns {string} The item at the current position.
+     */
+    retrieveNext: function() {
+      if (!this.checkMoreItems()) {
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        const currentElement = this.sourceData[this.currentPosition];
+        var currentItem = this.sourceList[this.currentPosition];
         this.currentPosition++;
-        return currentElement;
+        return currentItem;
       }
     }
   };
-  return parsingUtility;
+  return handlerObject;
 }
 
-// Displays the processed output to the standard output stream
-function outputResult(contentToDisplay) {
-  system.logOutput(contentToDisplay);
-}
-
-// Outputs diagnostic messages to the standard error stream
-function logErrorDetails(debugMessage) {
-  system.errorOutput("diagnostic:" + getModule("util").inspect(debugMessage, false, null));
-}
-
-/*
- * This helper function performs various data type conversions and manipulations.
- * Transformation Codes:
- * 1: Parse the input string into an integer.
- * 2: Split the input string by spaces into an array of strings.
- * 4: Split by spaces and convert each part to a number, returning an array of numbers.
- * 6: Split the input string into individual characters, returning an array of characters.
- * 7: Split into characters and convert each to a number, returning an array of numbers.
- * 8: Join elements of an array with a single space.
- * 9: Join elements of an array with a newline character.
- * 0: Join elements of an array without any separator.
- * Default: Returns the input value without modification.
+/**
+ * Prints a message to standard output.
+ * @param {*} messageContent - The content to print.
  */
-function dataTransformer(inputValue, transformType) {
+function printResult(messageContent) {
+  console.log(messageContent);
+}
+
+/**
+ * Prints a debug message to standard error, inspecting complex objects.
+ * @param {*} messageContent - The content to debug.
+ */
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
+}
+
+/**
+ * Converts an input value based on a specified conversion type.
+ * @param {*} inputValue - The value to convert.
+ * @param {number} conversionType - The type of conversion to perform.
+ *   1: Convert to integer.
+ *   2: Split by space into string array.
+ *   4: Split by space into number array.
+ *   6: Split into character array.
+ *   7: Split into character array and convert to numbers.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ * @returns {*} The converted value or the original value if conversion fails or type is unknown.
+ */
+function convertInputData(inputValue, conversionType) {
   try {
-    switch (transformType) {
+    switch (conversionType) {
       case 1:
-        return Number.parseInt(inputValue, 10);
+        return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
@@ -127,48 +181,55 @@ function dataTransformer(inputValue, transformType) {
       default:
         return inputValue;
     }
-  } catch (errorObject) {
-    return inputValue; // In case of conversion error, return original input
+  } catch (conversionError) {
+    // If an error occurs during conversion, return the original value
+    return inputValue;
   }
 }
 
-// End of supporting functionalities
-// --------------------------------------------------------------------------
+/**
+ * Main function containing the core logic of the program.
+ * Calculates frequencies of a specific mathematical expression.
+ */
+function executeMainLogic() {
+  // Read the number of inputs for the final output array
+  var countOfInputs = getNextInteger();
 
-function executeCoreLogic() {
-  const inputCount = retrieveInteger();
-  const resultContainer = new Array(inputCount);
-  const frequencyMap = {};
+  // Initialize an array to store the final results
+  var resultArray = new Array(countOfInputs);
 
-  // Compute frequencies for sums of squares and products
-  for (let firstDimension = 1; firstDimension <= 200; firstDimension++) {
-    for (let secondDimension = 1; secondDimension <= 200; secondDimension++) {
-      for (let thirdDimension = 1; thirdDimension <= 200; thirdDimension++) {
-        const calculatedSum =
-          firstDimension * firstDimension +
-          secondDimension * secondDimension +
-          thirdDimension * thirdDimension +
-          firstDimension * secondDimension +
-          secondDimension * thirdDimension +
-          thirdDimension * firstDimension;
+  // Create a map to store frequencies of calculated sums
+  var frequencyMap = {};
 
-        if (frequencyMap[calculatedSum] === undefined) {
-          frequencyMap[calculatedSum] = 0;
+  // Iterate through all possible combinations of i, j, k from 1 to 200
+  for (var idxA = 1; idxA <= 200; idxA++) {
+    for (var idxB = 1; idxB <= 200; idxB++) {
+      for (var idxC = 1; idxC <= 200; idxC++) {
+        // Calculate the sum based on the given formula
+        var sumOfSquaresAndProducts = idxA * idxA + idxB * idxB + idxC * idxC + idxA * idxB + idxB * idxC + idxC * idxA;
+
+        // If the sum is not yet in the map, initialize its count to 0
+        if (frequencyMap[sumOfSquaresAndProducts] === undefined) {
+          frequencyMap[sumOfSquaresAndProducts] = 0;
         }
-        frequencyMap[calculatedSum]++;
+        // Increment the count for the calculated sum
+        frequencyMap[sumOfSquaresAndProducts]++;
       }
     }
   }
 
-  // Populate the final result array based on the computed frequencies
-  for (let outputIndex = 0; outputIndex < inputCount; outputIndex++) {
-    if (frequencyMap[outputIndex + 1] === undefined) {
-      resultContainer[outputIndex] = 0;
+  // Populate the result array based on the frequency map
+  // For each index from 0 to N-1, check the frequency of (index + 1)
+  for (var resultIdx = 0; resultIdx < countOfInputs; resultIdx++) {
+    // If the frequency for (resultIdx + 1) is not found, set it to 0
+    if (frequencyMap[resultIdx + 1] === undefined) {
+      resultArray[resultIdx] = 0;
     } else {
-      resultContainer[outputIndex] = frequencyMap[outputIndex + 1];
+      // Otherwise, assign the found frequency
+      resultArray[resultIdx] = frequencyMap[resultIdx + 1];
     }
   }
 
-  // Output the formatted results, with each entry on a new line
-  outputResult(dataTransformer(resultContainer, 9));
+  // Print the final result array, joined by newlines
+  printResult(convertInputData(resultArray, 9));
 }

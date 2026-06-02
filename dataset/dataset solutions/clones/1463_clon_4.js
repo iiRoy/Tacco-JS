@@ -1,21 +1,15 @@
-function processDataStream(streamPayload) {
-    const dataSegments = streamPayload.split('\n');
+(function(rawData) {
+    const lineSegments = rawData.split('\n');
 
-    let currentLineIndex = 0;
+    const sourceCount = Number(lineSegments[0]);
+    const sourceElements = new Set(lineSegments[1].split(' ').slice(0, sourceCount).map(Number));
 
-    const initialCount = Number(dataSegments[currentLineIndex++]);
+    const queryCount = Number(lineSegments[2]);
+    const targetValues = lineSegments[3].split(' ').slice(0, queryCount).map(Number);
 
-    const primaryCollection = dataSegments[currentLineIndex++].split(' ', initialCount).map(val => Number(val));
+    const matchTotal = targetValues.reduce((accumulator, currentValue) => {
+        return accumulator + (sourceElements.has(currentValue) ? 1 : 0);
+    }, 0);
 
-    const queryCount = Number(dataSegments[currentLineIndex++]);
-
-    const queryCollection = dataSegments[currentLineIndex++].split(' ', queryCount).map(val => Number(val));
-
-    const uniqueSourceValues = new Set(primaryCollection);
-
-    const matchedItems = queryCollection.filter(item => uniqueSourceValues.has(item));
-
-    console.log(matchedItems.length);
-}
-
-processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    console.log(matchTotal);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

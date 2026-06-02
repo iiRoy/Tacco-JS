@@ -1,76 +1,127 @@
-function shiftUnit ( rowOffset , colOffset , unitSymbol ) {
-    if ( gameGrid [ playerPos [ 0 ] + rowOffset ] [ playerPos [ 1 ] + colOffset ] === "." )
-    {
-        gameGrid [ playerPos [ 0 ] + rowOffset ] [ playerPos [ 1 ] + colOffset ] = unitSymbol;
-        gameGrid [ playerPos [ 0 ] ] [ playerPos [ 1 ] ] = ".";
-        playerPos [ 0 ] += rowOffset;
-        playerPos [ 1 ] += colOffset;
-    }
-    else
-    {
-        gameGrid [ playerPos [ 0 ] ] [ playerPos [ 1 ] ] = unitSymbol;
-    }
+function shiftPosition(rowOffset, colOffset, charToPlace) {
+  // Check if the target cell is empty ('.')
+  if (gameGrid[vehicleCoords[0] + rowOffset][vehicleCoords[1] + colOffset] === ".") {
+    // Move the vehicle to the new position
+    gameGrid[vehicleCoords[0] + rowOffset][vehicleCoords[1] + colOffset] = charToPlace;
+    // Clear the old vehicle position
+    gameGrid[vehicleCoords[0]][vehicleCoords[1]] = ".";
+    // Update vehicle coordinates
+    vehicleCoords[0] += rowOffset;
+    vehicleCoords[1] += colOffset;
+  } else {
+    // If target cell is not empty, just update the vehicle's orientation
+    gameGrid[vehicleCoords[0]][vehicleCoords[1]] = charToPlace;
+  }
 }
 
-function fireProjectile(rowDirection, columnDirection) {
-    let stepCount = 0;
-    while (true) {
-        stepCount++;
-        if (gameGrid[playerPos[0] + (rowDirection * stepCount)][playerPos[1] + (columnDirection * stepCount)] === "#") break;
-        else if (gameGrid[playerPos[0] + (rowDirection * stepCount)][playerPos[1] + (columnDirection * stepCount)] === "*") {
-            gameGrid[playerPos[0] + (rowDirection * stepCount)][playerPos[1] + (columnDirection * stepCount)] = ".";
-            break;
-        }
+function fireProjectile(rowOffset, colOffset) {
+  // Initialize projectile travel distance
+  let idx = 0;
+  // Loop indefinitely until projectile hits something
+  while (true) {
+    idx++; // Increment distance
+    // Check if projectile hits a wall ('#')
+    if (gameGrid[vehicleCoords[0] + (rowOffset * idx)][vehicleCoords[1] + (colOffset * idx)] === "#") {
+      break; // Stop projectile
     }
+    // Check if projectile hits a destructible obstacle ('*')
+    else if (gameGrid[vehicleCoords[0] + (rowOffset * idx)][vehicleCoords[1] + (colOffset * idx)] === "*") {
+      // Destroy the obstacle
+      gameGrid[vehicleCoords[0] + (rowOffset * idx)][vehicleCoords[1] + (colOffset * idx)] = ".";
+      break; // Stop projectile
+    }
+  }
 }
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let inputLines = rawInputData.trim().split("\n");
-let numScenarios = inputLines.shift() - 0;
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split input into lines and remove leading/trailing whitespace
+let lineData = rawData.trim().split("\n");
 
-for (let scenarioIndex = 0; scenarioIndex < numScenarios; scenarioIndex++) {
-    if (scenarioIndex !== 0) console.log("");
+// Get the number of test cases
+const numTestCases = parseInt(lineData.shift(), 10);
 
-    const dimInfo = inputLines.shift().split(" ").map(Number);
-    let gameGrid = [];
-    gameGrid.push("######################".split(""));
-    let playerPos = [0, 0];
+// Iterate through each test case
+for (let testCaseIndex = 0; testCaseIndex < numTestCases; testCaseIndex++) {
+  // Add an empty line between test case outputs, except for the first one
+  if (testCaseIndex !== 0) {
+    console.log("");
+  }
 
-    for (let rowIndex = 0; rowIndex < dimInfo[0]; rowIndex++) {
-        let currentLineChars = inputLines.shift().split("");
-        let foundIdx = -1;
-        currentLineChars.forEach(function (charVal, charIndex) {
-            if (charVal === "^" || charVal === "v" || charVal === "<" || charVal === ">") foundIdx = charIndex;
-        });
-        if (foundIdx !== -1) playerPos = [rowIndex + 1, foundIdx + 1];
-        currentLineChars.unshift("#");
-        currentLineChars.push("#");
-        gameGrid.push(currentLineChars);
-    }
+  // Read grid dimensions (height and width)
+  const gridDimensions = lineData.shift().split(" ").map(Number);
+  // Initialize the game grid
+  let gameGrid = [];
 
-    gameGrid.push("######################".split(""));
+  // Add a top border of walls
+  gameGrid.push("######################".split(""));
 
-    inputLines.shift();
+  // Initialize vehicle coordinates
+  let vehicleCoords = [0, 0];
 
-    const commandSequence = inputLines.shift().split("");
+  // Populate the game grid with map data
+  for (let rowIndex = 0; rowIndex < gridDimensions[0]; rowIndex++) {
+    let rowChars = lineData.shift().split("");
+    let initialTankCol = -1;
 
-    commandSequence.forEach(function (currentCommand) {
-        if (currentCommand === "U") shiftUnit(-1, 0, "^");
-        else if (currentCommand === "D") shiftUnit(1, 0, "v");
-        else if (currentCommand === "L") shiftUnit(0, -1, "<");
-        else if (currentCommand === "R") shiftUnit(0, 1, ">");
-        else if (currentCommand === "S") {
-            const unitDirection = gameGrid[playerPos[0]][playerPos[1]];
-            if (unitDirection === "^") fireProjectile(-1, 0);
-            else if (unitDirection === "v") fireProjectile(1, 0);
-            else if (unitDirection === "<") fireProjectile(0, -1);
-            else if (unitDirection === ">") fireProjectile(0, 1);
-        }
+    // Find the initial position of the tank
+    rowChars.forEach(function(elementVal, charIndex) {
+      if (elementVal === "^" || elementVal === "v" || elementVal === "<" || elementVal === ">") {
+        initialTankCol = charIndex;
+      }
     });
 
-    gameGrid.shift();
-    gameGrid.pop();
+    // If tank found, update its coordinates (adjusted for border)
+    if (initialTankCol !== -1) {
+      vehicleCoords = [rowIndex + 1, initialTankCol + 1];
+    }
 
-    const finalOutput = gameGrid.join("\n").replace(/,/g, "").replace(/^#|#$/mg, "");
-    console.log(finalOutput);
+    // Add left and right borders to the current row
+    rowChars.unshift("#");
+    rowChars.push("#");
+    gameGrid.push(rowChars);
+  }
+
+  // Add a bottom border of walls
+  gameGrid.push("######################".split(""));
+
+  // Consume the empty line separating map from commands
+  lineData.shift();
+
+  // Read the sequence of commands
+  const commandSequence = lineData.shift().split("");
+
+  // Process each command
+  commandSequence.forEach(function(currentCommand) {
+    if (currentCommand === "U") {
+      shiftPosition(-1, 0, "^"); // Move Up
+    } else if (currentCommand === "D") {
+      shiftPosition(1, 0, "v"); // Move Down
+    } else if (currentCommand === "L") {
+      shiftPosition(0, -1, "<"); // Move Left
+    } else if (currentCommand === "R") {
+      shiftPosition(0, 1, ">"); // Move Right
+    } else if (currentCommand === "S") {
+      // Get current tank orientation
+      const currentTankChar = gameGrid[vehicleCoords[0]][vehicleCoords[1]];
+      // Fire projectile based on orientation
+      if (currentTankChar === "^") {
+        fireProjectile(-1, 0);
+      } else if (currentTankChar === "v") {
+        fireProjectile(1, 0);
+      } else if (currentTankChar === "<") {
+        fireProjectile(0, -1);
+      } else if (currentTankChar === ">") {
+        fireProjectile(0, 1);
+      }
+    }
+  });
+
+  // Remove the top and bottom border rows for output
+  gameGrid.shift();
+  gameGrid.pop();
+
+  // Format the game grid for output: join rows, remove commas, remove side borders
+  const finalOutputGrid = gameGrid.join("\n").replace(/,/g, "").replace(/^#|#$/mg, "");
+  console.log(finalOutputGrid);
 }

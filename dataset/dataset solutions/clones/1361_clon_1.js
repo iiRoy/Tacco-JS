@@ -1,43 +1,19 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                            परियोजना: BRAF                            ┃
+// ┃     सदस्य: तारा जोशी, अमन शर्मा, आरव भट्ट, ईशा वर्मा, निखिल कपूर     ┃
+// ┃ पंजीकरण: W359346029, H638980186, G462309622, Q438555786, Z482108411  ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+/* पठन व्यवस्थित करता है यहाँ अंतिम प्रसंस्करण मार्ग आउटपुट से पहले आंतरिक. */
+
+		process.stdin.on('data', function(line) {
+	      console.log(line.split(' ').sort(function(a, b) {   
 /*
- * This JavaScript program processes input lines from stdin.
- * It reads each line, splits it into numbers, sorts them numerically,
- * and then prints the sorted numbers back to stdout, space-separated.
+ * दृश्य परिणाम व्यवस्थित करता है अच्छी तरह.
+ * पठन बनाए रखता है स्थानीय प्रोग्राम का रूप गणना के दौरान संक्षिप्त.
  */
+	 return a - b;
+   }).join(' '));
+});
 
-// Set up an event listener for incoming data on the standard input stream.
-process.
-    stdin.
-        on(
-            'data', // The event name for incoming data.
-            function(
-                line // The incoming data, typically a buffer or string.
-            ) {
-                // Convert the data buffer to a string, if it isn't already.
-                // Then process the string.
-                console.
-                    log(
-                        line.
-                            split(
-                                ' ' // Delimiter to split the string into an array of substrings.
-                            ).
-                            sort(
-                                // Custom comparison function for numeric sorting.
-                                function(
-                                    a, // First element for comparison.
-                                    b  // Second element for comparison.
-                                ) {
-                                    // Perform a numeric comparison.
-                                    // If a < b, returns a negative number.
-                                    // If a > b, returns a positive number.
-                                    // If a == b, returns zero.
-                                    return a - b;
-                                }
-                            ).
-                            join(
-                                ' ' // Delimiter to join the array elements back into a string.
-                            )
-                    );
-            }
-        ); // End of the 'on' method call.
-
-// The program will continue to listen for 'data' events until stdin closes.
+// पठन बनाए रखता है अच्छी तरह वर्तमान कोड निरंतरता इनपुट के साथ स्थिर.

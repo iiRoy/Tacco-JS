@@ -1,176 +1,189 @@
-// This function orchestrates the primary computation
-function ProcessInputData(inputString) {
-  // Parse the input string into an array of numeric values
-  let numericValues = inputString.split(" ").map(item => Number(item));
+function ProcessInput(inputString) {
+  // Parse the input string into an array of numbers
+  inputString = inputString.split(" ").map(val => Number(val));
 
   // Extract problem parameters
-  const totalElements = numericValues[0];
-  const firstCategorySize = numericValues[1];
-  const secondCategorySize = numericValues[2];
-  const combinedCategorySize = firstCategorySize + secondCategorySize;
-  const targetValue = numericValues[3];
+  let totalItems = inputString[0]; // Represents 'n'
+  let typeA_cost = inputString[1]; // Represents 'a'
+  let typeB_cost = inputString[2]; // Represents 'b'
+  let combined_cost = typeA_cost + typeB_cost; // Represents 'c'
+  let target_sum = inputString[3]; // Represents 'k'
 
-  // Calculate an initial iteration limit for finding combinations
-  let initialLoopCount = Math.floor(targetValue / combinedCategorySize);
-  // Flag to indicate if a valid combination of counts is found
-  let combinationFoundFlag = 0;
-  // Array to store potential pairs of counts that satisfy the target value
-  let candidatePairs = [];
+  // Initialize variables for the first search phase
+  let initial_iterations = Math.floor(target_sum / combined_cost); // Represents 'j'
+  let solution_found_flag = 0; // Represents 'f', indicates if any initial combination is found
+  let current_combinations = []; // Represents 'z', stores (count_A, count_B) pairs
 
-  // Iterate downwards from the initial limit to find the first valid combination
-  for (let currentIterationCount = initialLoopCount; currentIterationCount >= 0; currentIterationCount--) {
-    const remainingValue = targetValue - currentIterationCount * combinedCategorySize;
+  // Iterate downwards to find initial valid combinations
+  // This loop searches for (i * c + x * a) = k or (i * c + y * b) = k
+  for (let current_iter = initial_iterations; current_iter >= 0; current_iter--) {
+    const remaining_sum = target_sum - current_iter * combined_cost;
 
-    // Check if the remaining value is perfectly divisible by the first category size
-    if (remainingValue % firstCategorySize === 0) {
-      combinationFoundFlag = 1;
-      candidatePairs.push(remainingValue / firstCategorySize, 0); // Store (count_first, 0)
-    }
-    // Check if the remaining value is perfectly divisible by the second category size
-    if (remainingValue % secondCategorySize === 0) {
-      combinationFoundFlag = 1;
-      candidatePairs.push(0, remainingValue / secondCategorySize); // Store (0, count_second)
+    // Check if remaining_sum can be formed by only typeA_cost items
+    if (remaining_sum % typeA_cost === 0) {
+      solution_found_flag = 1;
+      current_combinations.push(remaining_sum / typeA_cost, 0); // Store (count_A, count_B)
     }
 
-    // If any combination was found in this iteration, we can break early
-    if (combinationFoundFlag) break;
+    // Check if remaining_sum can be formed by only typeB_cost items
+    if (remaining_sum % typeB_cost === 0) {
+      solution_found_flag = 1;
+      current_combinations.push(0, remaining_sum / typeB_cost); // Store (count_A, count_B)
+    }
+
+    // If any combination is found, break early
+    if (solution_found_flag) break;
   }
 
-  // Store the last valid iteration count from the previous loop
-  let currentProcessingIndex = currentIterationCount;
+  // Update initial_iterations to the value of current_iter where a solution was found
+  initial_iterations = current_iter;
 
-  // If no combination was found after the initial search, output zero and terminate
-  if (!combinationFoundFlag) {
+  // If no initial combination was found, output 0 and exit
+  if (!solution_found_flag) {
     console.log(0);
     return;
   }
 
-  // Initialize the final computed answer, which will accumulate modular combinations
-  let totalComputedResult = 0;
+  // Initialize the final result
+  let final_result = 0; // Represents 'ans'
 
-  // Pre-calculate ratios for potential increments in the combination counts
-  const firstIncrementRatio = (combinedCategorySize % firstCategorySize === 0) ? (combinedCategorySize / firstCategorySize) : 0;
-  const secondIncrementRatio = (combinedCategorySize % secondCategorySize === 0) ? (combinedCategorySize / secondCategorySize) : 0;
+  // Calculate factors for expanding combinations
+  // typeA_factor: how many 'a' items are equivalent to 'c'
+  let typeA_factor = (combined_cost % typeA_cost === 0 ? combined_cost / typeA_cost : 0); // Represents 'aa'
+  // typeB_factor: how many 'b' items are equivalent to 'c'
+  let typeB_factor = (combined_cost % typeB_cost === 0 ? combined_cost / typeB_cost : 0); // Represents 'bb'
 
-  // Main loop to iterate through possible combinations and compute results
-  // Continues as long as there are candidate pairs and the processing index is non-negative
-  while (candidatePairs.length && currentProcessingIndex >= 0) {
-    let nextCandidatePairs = []; // Temporary array to store pairs for the next iteration
-    let processedPairTracker = {}; // Hash map to avoid processing duplicate pairs in the current iteration
+  // Main loop to calculate combinations and sum up results
+  // Continues as long as there are combinations to process and initial_iterations is non-negative
+  while (current_combinations.length > 0 && initial_iterations >= 0) {
+    let next_combinations = []; // Represents 'y', stores combinations for the next iteration
+    let seen_pairs = {}; // Represents 'x', used to track unique (count_A, count_B) pairs
 
-    // Loop through the current list of candidate pairs, taking two elements at a time
-    for (let pairIndex = 0; pairIndex < candidatePairs.length; pairIndex += 2) {
-      const p1 = candidatePairs[pairIndex];       // Count for the first category
-      const p2 = candidatePairs[pairIndex + 1];   // Count for the second category
+    // Iterate through the current set of combinations (count_A, count_B)
+    for (let idx = 0; idx < current_combinations.length; idx += 2) {
+      const count_A = current_combinations[idx];
+      const count_B = current_combinations[idx + 1];
+      const pair_key = count_A + "x" + count_B; // Unique key for the pair
 
-      // Create a unique key for the pair to track if it has already been processed
-      const pairKey = `${p1}_${p2}`;
-      if (processedPairTracker[pairKey]) continue; // Skip if this pair has already been handled
+      // Skip if this pair has already been processed in this iteration
+      if (seen_pairs[pair_key]) continue;
 
-      // Validate the current pair against problem constraints
-      // Counts must be non-negative, and their sum with the processing index must not exceed totalElements
-      if (p1 < 0 || p2 < 0 || currentProcessingIndex + p1 + p2 > totalElements) continue;
+      // Skip if counts are negative or total items exceed 'n'
+      if (count_A < 0 || count_B < 0 || initial_iterations + count_A + count_B > totalItems) continue;
 
-      // Mark this pair as processed for the current iteration
-      processedPairTracker[pairKey] = 1;
+      // Mark this pair as seen
+      seen_pairs[pair_key] = 1;
 
-      // Add to the total result using modular arithmetic for combinations
-      totalComputedResult = (totalComputedResult +
-        multiplyModulo(
-          combinationsModulo(totalElements, currentProcessingIndex),
-          combinationsModulo(totalElements - currentProcessingIndex, p1),
-          combinationsModulo(totalElements - currentProcessingIndex - p1, p2)
-        )
-      ) % primeModulo;
+      // Calculate and add the combinations to the final result
+      // This involves nCr(n, j) * nCr(n-j, count_A) * nCr(n-j-count_A, count_B)
+      final_result += calculateProductModulo(
+        calculateCombinationsModulo(totalItems, initial_iterations),
+        calculateCombinationsModulo(totalItems - initial_iterations, count_A),
+        calculateCombinationsModulo(totalItems - initial_iterations - count_A, count_B)
+      );
+      final_result %= MODULUS_VALUE; // Apply modulo operation
 
-      // Generate next potential pairs based on defined increment ratios
-      nextCandidatePairs.push(p1 + 1, p2 + 1); // Standard increment for both counts
-      if (firstIncrementRatio) nextCandidatePairs.push(p1 + firstIncrementRatio, p2); // Increment first count if ratio is valid
-      if (secondIncrementRatio) nextCandidatePairs.push(p1, p2 + secondIncrementRatio); // Increment second count if ratio is valid
+      // Generate new combinations for the next iteration
+      // 1. Increment both counts by 1 (representing one more 'c' item)
+      next_combinations.push(count_A + 1, count_B + 1);
+      // 2. If typeA_factor is valid, add a combination with increased 'a' count
+      if (typeA_factor) next_combinations.push(count_A + typeA_factor, count_B);
+      // 3. If typeB_factor is valid, add a combination with increased 'b' count
+      if (typeB_factor) next_combinations.push(count_A, count_B + typeB_factor);
     }
-    // Update the candidate pairs for the next iteration
-    candidatePairs = nextCandidatePairs;
-    // Decrement the processing index for the next iteration
-    currentProcessingIndex--;
+
+    // Update current_combinations for the next iteration
+    current_combinations = next_combinations;
+    initial_iterations--; // Decrement 'j' for the next iteration
   }
 
-  // Output the final calculated result to the console
-  console.log(totalComputedResult);
-} // End of ProcessInputData function
+  // Output the final calculated result
+  console.log(final_result);
+}
 
-// Function to perform modular multiplication for an arbitrary number of arguments
-// This function handles potential overflow by breaking down multiplication using bitwise operations
-function multiplyModulo() {
-  // Initialize the running product with the first argument
-  let currentProduct = arguments[0];
-  // Iterate through the remaining arguments to multiply them sequentially
-  for (let argIndex = 1; argIndex < arguments.length; argIndex++) {
-    // Perform multiplication using bitwise operations for optimization and then modulo
-    // This technique helps manage large number multiplication in JavaScript
-    currentProduct = (
-      (currentProduct >>> 16) * arguments[argIndex] % primeModulo * 0x10000 +
-      (currentProduct & 0xFFFF) * arguments[argIndex]
-    );
-    // Ensure the result stays within the modulo range after each multiplication
-    currentProduct %= primeModulo;
+// Modulo value for all calculations
+const MODULUS_VALUE = 998244353; // Represents 'mod'
+
+// Precomputed factorials and inverse factorials
+let factorial_values = [1, 1]; // Represents 'fact'
+let inverse_factorials = [1, 1]; // Represents 'factinv'
+
+/**
+ * Calculates the product of multiple numbers modulo MODULUS_VALUE.
+ * @param {...number} args - Numbers to multiply.
+ * @returns {number} The product modulo MODULUS_VALUE.
+ */
+function calculateProductModulo() {
+  let current_product = arguments[0]; // Represents 'rt'
+  for (let arg_index = 1; arg_index < arguments.length; arg_index++) {
+    // Optimized multiplication for modulo arithmetic
+    current_product = (current_product >>> 16) * arguments[arg_index] % MODULUS_VALUE * 0x10000 + (current_product & 0xFFFF) * arguments[arg_index];
+    current_product %= MODULUS_VALUE;
   }
-  return currentProduct;
+  return current_product;
 }
 
-// Function to compute (baseValue ^ exponentValue) % primeModulo efficiently using binary exponentiation
-function powerModulo(baseValue, exponentValue) {
-  let resultPower = 1; // Initialize the result to 1 (any number to the power of 0 is 1)
-  // Loop while the exponent is greater than zero
-  while (exponentValue) {
-    // If the least significant bit of the exponent is 1, multiply the result by the current baseValue
-    if (exponentValue & 1) resultPower = multiplyModulo(baseValue, resultPower);
-    // Square the baseValue in each iteration (baseValue = baseValue * baseValue)
-    baseValue = multiplyModulo(baseValue, baseValue);
-    // Right shift the exponent by 1 (equivalent to integer division by 2)
-    exponentValue >>>= 1;
+/**
+ * Calculates (base^exponent) % MODULUS_VALUE using modular exponentiation (binary exponentiation).
+ * @param {number} base - The base.
+ * @param {number} exponent - The exponent.
+ * @returns {number} (base^exponent) % MODULUS_VALUE.
+ */
+function powerModulo(base, exponent) {
+  let result_val = 1; // Represents 'rt'
+  while (exponent) {
+    if (exponent & 1) result_val = calculateProductModulo(base, result_val);
+    base = calculateProductModulo(base, base);
+    exponent >>>= 1; // Right shift by 1 (equivalent to exponent = floor(exponent / 2))
   }
-  return resultPower;
+  return result_val;
 }
 
-// Define the large prime modulus used for all modular arithmetic operations
-const primeModulo = 998244353;
-// Cache for pre-calculated factorial values (n!) modulo primeModulo
-let factorialSeries = [1, 1];
-// Cache for pre-calculated modular inverse factorial values (1/n!) modulo primeModulo
-let inverseFactorialSeries = [1, 1];
-
-// Function to calculate factorial (n!) modulo primeModulo, caching results
-function computeFactorial(limitValue) {
-  // Extend the factorial cache up to limitValue if necessary
-  for (let currentNumber = factorialSeries.length; currentNumber <= limitValue; currentNumber++) {
-    factorialSeries[currentNumber] = multiplyModulo(factorialSeries[currentNumber - 1], currentNumber);
+/**
+ * Computes factorial_values[num] modulo MODULUS_VALUE.
+ * Populates factorial_values array up to 'num' if not already computed.
+ * @param {number} num - The number for which to compute factorial.
+ * @returns {number} factorial_values[num] % MODULUS_VALUE.
+ */
+function computeFactorialModulo(num) {
+  for (let index = factorial_values.length; index <= num; index++) {
+    factorial_values[index] = calculateProductModulo(factorial_values[index - 1], index);
   }
-  return factorialSeries[limitValue];
+  return factorial_values[num];
 }
 
-// Function to calculate modular inverse of factorial (1/n!) modulo primeModulo, caching results
-function computeInverseFactorial(valueToInvert) {
-  // Ensure the factorial for valueToInvert is computed and cached
-  if (!factorialSeries[valueToInvert]) computeFactorial(valueToInvert);
-  // Calculate the inverse factorial using Fermat's Little Theorem (a^(p-2) % p)
-  inverseFactorialSeries[valueToInvert] = powerModulo(factorialSeries[valueToInvert], primeModulo - 2);
-  // Backfill inverse factorials for smaller values in descending order
-  let currentVal = valueToInvert;
-  while (!inverseFactorialSeries[currentVal - 1] && currentVal > 0) { // Added currentVal > 0 to prevent infinite loop if currentVal becomes 0
-    inverseFactorialSeries[currentVal - 1] = multiplyModulo(inverseFactorialSeries[currentVal], currentVal);
-    currentVal--;
+/**
+ * Computes inverse_factorials[num] modulo MODULUS_VALUE.
+ * Populates inverse_factorials array up to 'num' if not already computed.
+ * Uses Fermat's Little Theorem for modular inverse: a^(MODULUS_VALUE-2) % MODULUS_VALUE.
+ * @param {number} num - The number for which to compute inverse factorial.
+ */
+function computeInverseFactorialModulo(num) {
+  // Ensure factorial_values[num] is computed
+  if (!factorial_values[num]) computeFactorialModulo(num);
+  // Calculate inverse factorial for 'num'
+  inverse_factorials[num] = powerModulo(factorial_values[num], MODULUS_VALUE - 2);
+  // Backfill inverse factorials for smaller numbers using inverse_factorials[k-1] = inverse_factorials[k] * k
+  while (!inverse_factorials[num - 1] && num > 0) {
+    inverse_factorials[num - 1] = calculateProductModulo(inverse_factorials[num], num--);
   }
 }
 
-// Function to compute combinations (nCr) modulo primeModulo
-function combinationsModulo(setTotal, subsetSize) {
-  // Handle invalid cases for combinations: if subsetSize is out of range, nCr is 0
-  if (subsetSize < 0 || subsetSize > setTotal) return 0;
-  // Ensure inverse factorials are pre-calculated up to setTotal for efficiency
-  if (!inverseFactorialSeries[setTotal]) computeInverseFactorial(setTotal);
-  // Calculate nCr = (n! * (r!)^(-1) * ((n-r)!)^(-1)) % primeModulo
-  return multiplyModulo(factorialSeries[setTotal], inverseFactorialSeries[subsetSize], inverseFactorialSeries[setTotal - subsetSize]);
+/**
+ * Calculates nCr (n choose r) modulo MODULUS_VALUE.
+ * nCr = n! / (r! * (n-r)!) = n! * (r!)^(-1) * ((n-r)!)^(-1) % MODULUS_VALUE.
+ * @param {number} total - The total number of items (n).
+ * @param {number} choose - The number of items to choose (r).
+ * @returns {number} nCr % MODULUS_VALUE.
+ */
+function calculateCombinationsModulo(total, choose) {
+  // Handle invalid inputs for combinations
+  if (choose < 0 || choose > total) return 0;
+  // Ensure inverse factorials are computed up to 'total'
+  if (!inverse_factorials[total]) computeInverseFactorialModulo(total);
+  // Calculate nCr using precomputed factorials and inverse factorials
+  return calculateProductModulo(factorial_values[total], inverse_factorials[choose], inverse_factorials[total - choose]);
 }
 
-// Entry point of the program: Read input from standard input and process it
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

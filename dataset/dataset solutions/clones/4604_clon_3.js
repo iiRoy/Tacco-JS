@@ -1,99 +1,44 @@
 "use strict";
 
-// This module contains functions for processing numeric input and performing
-// a specific modular arithmetic check.
+// Helper function to parse input values from a string
+function parseNumericInputs(inputStringData) {
+  const partsArray = inputStringData.split(" ");
+  // Using map for parsing each part to an integer, then destructuring
+  const [valueOne, valueTwo, valueThree] = partsArray.map(item => parseInt(item, 10));
+  return { valueOne, valueTwo, valueThree };
+}
 
-/**
- * Determines if a linear congruence of the form (coefficientVal * k) % moduloVal === wantedRemainder
- * has a solution for an integer k within the range [0, moduloVal - 1].
- *
- * @param {number} coefficientVal The 'a' value in (a * k) % b = c.
- * @param {number} moduloVal The 'b' value in (a * k) % b = c, representing the modulus.
- * @param {number} wantedRemainder The 'c' value in (a * k) % b = c, the target remainder.
- * @returns {boolean} True if a solution (an integer k) exists, false otherwise.
- */
-function checkModularEquationSolution(coefficientVal, moduloVal, wantedRemainder) {
-  // Guard against invalid or trivial modulus values.
-  // A modulus of 0 is mathematically undefined for this operation.
-  // A modulus of 1 implies any number % 1 is 0, so the wantedRemainder must be 0.
-  if (moduloVal <= 0) {
-    // For competitive programming, this case might not occur with valid test data.
-    // However, for robust code, it's a necessary check.
-    return false;
-  }
-  if (moduloVal === 1) {
-    return wantedRemainder === 0;
-  }
+// Main processing function for the input data
+function processInputData(rawInputContent) {
+  // Extract and rename the input numbers using the helper function and destructuring
+  const { valueOne: firstOperand, valueTwo: modulusValue, valueThree: targetRemainder } = parseNumericInputs(rawInputContent);
 
-  // Normalize the coefficient to its smallest non-negative equivalent modulo `moduloVal`.
-  // This ensures we work with values in the range [0, moduloVal - 1].
-  const effectiveCoefficient = (coefficientVal % moduloVal + moduloVal) % moduloVal;
+  // Pre-calculate the initial modulo for the first number to simplify the loop
+  const adjustedFirstOperand = firstOperand % modulusValue;
 
-  // Normalize the wanted remainder to be within [0, moduloVal - 1].
-  // This handles cases where wantedRemainder might be negative or too large.
-  const normalizedTargetRemainder = (wantedRemainder % moduloVal + moduloVal) % moduloVal;
+  let isConditionMet = false; // Renamed flag variable
+  const iterationCountLimit = modulusValue; // Helper constant for loop boundary
 
-  // Iterate through all possible integer multipliers 'k' from 0 up to (moduloVal - 1).
-  // This range guarantees that all unique remainders (effectiveCoefficient * k) % moduloVal
-  // will be explored due to the properties of modular arithmetic.
-  for (let kIteration = 0; kIteration < moduloVal; kIteration++) {
-    // Calculate the product of the effective coefficient and the current multiplier.
-    const currentProductResult = effectiveCoefficient * kIteration;
+  // Loop through possible multipliers
+  for (let currentMultiplier = 0; currentMultiplier < iterationCountLimit; currentMultiplier++) {
+    // Introduce intermediate computation steps
+    const productBeforeModulo = adjustedFirstOperand * currentMultiplier;
+    const currentCalculatedRemainder = productBeforeModulo % modulusValue;
 
-    // Compute the remainder of this product when divided by the modulus.
-    const actualComputedRemainder = currentProductResult % moduloVal;
-
-    // If the actual computed remainder matches our normalized target remainder,
-    // then a solution exists for this specific kIteration.
-    if (actualComputedRemainder === normalizedTargetRemainder) {
-      return true; // We found a valid 'k', so a solution exists.
+    // Check if the current remainder matches the target
+    if (currentCalculatedRemainder === targetRemainder) {
+      isConditionMet = true;
+      break; // Exit loop early if condition is met
     }
   }
 
-  // If the loop completes without finding any matching 'k',
-  // it means no solution exists for the given equation.
-  return false;
-}
-
-/**
- * Primary function to process input string data.
- * It parses three numbers and then uses a helper to determine
- * if a specific modular congruence holds true.
- *
- * @param {string} rawInputString The entire input as a single string,
- *                                  expected to contain three space-separated integers.
- */
-function processInputPayload(rawInputString) {
-  // Split the incoming string into an array of string numbers based on spaces.
-  const stringTokens = rawInputString.split(" ");
-
-  // A basic validation to ensure we have enough input components.
-  // If not, log an error and terminate the execution gracefully.
-  if (stringTokens.length < 3) {
-    console.error("Error: Insufficient data provided. Expected three numeric values.");
-    return; // Exit function if input is malformed.
+  // Output the result based on whether the condition was met
+  if (isConditionMet) {
+    console.log("YES");
+  } else {
+    console.log("NO");
   }
-
-  // Convert the string tokens into numerical values.
-  // Using the unary plus operator or Number() is an alternative to parseInt().
-  let valAlpha = Number(stringTokens[0]);
-  const valBeta = Number(stringTokens[1]);
-  const valGamma = Number(stringTokens[2]);
-
-  // Invoke the modular equation solver with the parsed values.
-  // The solver will handle internal normalizations and checks.
-  const isCongruenceSatisfied = checkModularEquationSolution(
-    valAlpha,    // The initial 'A' value.
-    valBeta,     // The 'B' value (modulus).
-    valGamma     // The 'C' value (target remainder).
-  );
-
-  // Based on the boolean result from the solver, output "YES" or "NO".
-  // A ternary operator provides a concise way to express this conditional output.
-  console.log(isCongruenceSatisfied ? "YES" : "NO");
 }
 
-// The following line is standard boilerplate for competitive programming environments
-// that read input from standard input and pass it to the main processing function.
-// Do not modify this section.
-processInputPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line should not be edited (standard input/output handling)
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

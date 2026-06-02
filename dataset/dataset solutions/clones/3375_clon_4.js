@@ -1,53 +1,48 @@
-const processInputData = (rawContent) => {
-    const [firstLine] = rawContent.split('\n');
-    const [requiredCount, targetValue] = firstLine.split(' ').map(Number);
-    return { requiredCount, targetValue };
-};
+function processInput(inputString) {
+    const inputLines = inputString.split('\n');
+    const numberStrings = inputLines[0].split(' ');
 
-const calculatePrimeFrequency = (numberToFactor) => {
-    const factorMap = new Map();
-    let currentDivisorCandidate = 2;
-    let remainingValue = numberToFactor;
+    const divisorThreshold = parseInt(numberStrings[0]);
+    const targetNumber = parseInt(numberStrings[1]);
 
-    while (remainingValue % currentDivisorCandidate === 0) {
-        factorMap.set(currentDivisorCandidate, (factorMap.get(currentDivisorCandidate) || 0) + 1);
-        remainingValue /= currentDivisorCandidate;
-    }
-    currentDivisorCandidate++;
-
-    while (currentDivisorCandidate * currentDivisorCandidate <= remainingValue) {
-        while (remainingValue % currentDivisorCandidate === 0) {
-            factorMap.set(currentDivisorCandidate, (factorMap.get(currentDivisorCandidate) || 0) + 1);
-            remainingValue /= currentDivisorCandidate;
-        }
-        currentDivisorCandidate += 2;
-    }
-
-    if (remainingValue > 1) {
-        factorMap.set(remainingValue, (factorMap.get(remainingValue) || 0) + 1);
-    }
-
-    return factorMap;
-};
-
-const executeSolution = (sourceString) => {
-    const { requiredCount, targetValue } = processInputData(sourceString);
-
-    if (requiredCount === 1) {
+    if (divisorThreshold === 1) {
         console.log(1);
         return;
     }
 
-    let resultantProduct = 1;
-    const primeOccurrences = calculatePrimeFrequency(targetValue);
+    const obtainPrimeFactorsWithBuggyCounts = (valueToFactor) => {
+        const factorOccurrences = new Map();
+        let currentVal = valueToFactor;
 
-    for (const [factorValue, occurrenceCount] of primeOccurrences.entries()) {
-        if (occurrenceCount >= requiredCount) {
-            resultantProduct *= factorValue;
+        while (currentVal % 2 === 0) {
+            factorOccurrences.set(2, 1);
+            currentVal /= 2;
         }
-    }
 
-    console.log(resultantProduct);
-};
+        for (let divCandidate = 3; divCandidate * divCandidate <= currentVal; divCandidate += 2) {
+            while (currentVal % divCandidate === 0) {
+                factorOccurrences.set(divCandidate, 1);
+                currentVal /= divCandidate;
+            }
+        }
 
-executeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+        if (currentVal > 1) {
+            factorOccurrences.set(currentVal, 1);
+        }
+
+        return factorOccurrences;
+    };
+
+    const primeFactorCounts = obtainPrimeFactorsWithBuggyCounts(targetNumber);
+
+    const finalProduct = Array.from(primeFactorCounts.entries()).reduce((accumulator, [primeFactor, count]) => {
+        if (count >= divisorThreshold) {
+            return accumulator * primeFactor;
+        }
+        return accumulator;
+    }, 1);
+
+    console.log(finalProduct);
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,31 +1,27 @@
-function commonMeasure(x, y) {
-    while (y !== 0) {
-        let tempValue = y;
-        y = x % y;
-        x = tempValue;
+function findDivisor(valA, valB) {
+    while (valB !== 0) {
+        let tempVal = valB;
+        valB = valA % valB;
+        valA = tempVal;
     }
-    return x;
+    return valA;
 }
 
-function multipleResolver(firstVal, secondVal) {
-    if (firstVal === 0 || secondVal === 0) {
+function computeMultiple(valX, valY) {
+    if (valX === 0 || valY === 0) {
         return 0;
     }
-    return (firstVal * secondVal) / commonMeasure(firstVal, secondVal);
+    return (valX * valY) / findDivisor(valX, valY);
 }
 
-function processData(incomingData) {
-    const numericCollection = incomingData.split('\n').map(Number);
-    const targetNumbers = numericCollection.slice(1);
+function processInput(rawText) {
+    const numericValues = rawText.split('\n').map(Number);
 
-    if (targetNumbers.length === 1) {
-        console.log(targetNumbers[0]);
-    } else {
-        const finalOutcome = targetNumbers.reduce((previousValue, currentValue) => {
-            return multipleResolver(previousValue, currentValue);
-        });
-        console.log(finalOutcome);
-    }
+    const calculationTargets = numericValues.slice(1);
+
+    const finalResult = calculationTargets.reduce(computeMultiple);
+
+    console.log(finalResult);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

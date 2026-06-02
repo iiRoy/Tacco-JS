@@ -1,66 +1,40 @@
-(function() {
-    const acquireSourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+'use strict';
 
-    function parseNumericalSequence(textualInput) {
-        const numericalCollection = [];
-        let temporaryNumberString = '';
-        for (let indexChar = 0; indexChar < textualInput.length; indexChar++) {
-            const currentCharacter = textualInput[indexChar];
-            if (currentCharacter >= '0' && currentCharacter <= '9') {
-                temporaryNumberString += currentCharacter;
-            } else {
-                if (temporaryNumberString.length > 0) {
-                    numericalCollection.push(parseInt(temporaryNumberString, 10));
-                    temporaryNumberString = '';
-                }
-            }
+function processRecipeData(rawData) {
+    let minimumIngredientPrice = Infinity;
+    let totalRecipeCost = 0;
+    let ingredientCount = 0;
+
+    for (let i = 2; i < rawData.length; i++) {
+        const currentIngredientValue = rawData[i];
+        if (currentIngredientValue < minimumIngredientPrice) {
+            minimumIngredientPrice = currentIngredientValue;
         }
-        if (temporaryNumberString.length > 0) {
-            numericalCollection.push(parseInt(temporaryNumberString, 10));
-        }
-        return numericalCollection;
+        totalRecipeCost += currentIngredientValue;
+        ingredientCount++;
+    }
+    return { minimumIngredientPrice, totalRecipeCost, ingredientCount };
+}
+
+function calculateMaxItems(sourceText) {
+    const parsedNumbers = sourceText.match(/\d+/g).map(Number);
+
+    const availableBudget = parsedNumbers[1];
+
+    const { minimumIngredientPrice, totalRecipeCost, ingredientCount } = processRecipeData(parsedNumbers);
+
+    let totalAcquiredItems = 0;
+    let currentFunds = availableBudget;
+
+    totalAcquiredItems += ingredientCount;
+    currentFunds -= totalRecipeCost;
+
+    while (currentFunds >= minimumIngredientPrice) {
+        totalAcquiredItems++;
+        currentFunds -= minimumIngredientPrice;
     }
 
-    const allExtractedNumbers = parseNumericalSequence(acquireSourceData);
+    console.log(totalAcquiredItems);
+}
 
-    const availableCredit = allExtractedNumbers[1];
-    const itemPriceListUnsorted = [];
-    for (let indexValue = 2; indexValue < allExtractedNumbers.length; indexValue++) {
-        itemPriceListUnsorted.push(allExtractedNumbers[indexValue]);
-    }
-
-    function sortElementsAscending(inputArray) {
-        const arrayLength = inputArray.length;
-        for (let outerIndex = 0; outerIndex < arrayLength - 1; outerIndex++) {
-            let minimumElementIndex = outerIndex;
-            for (let innerIndex = outerIndex + 1; innerIndex < arrayLength; innerIndex++) {
-                if (inputArray[innerIndex] < inputArray[minimumElementIndex]) {
-                    minimumElementIndex = innerIndex;
-                }
-            }
-            if (minimumElementIndex !== outerIndex) {
-                const temporaryHolder = inputArray[outerIndex];
-                inputArray[outerIndex] = inputArray[minimumElementIndex];
-                inputArray[minimumElementIndex] = temporaryHolder;
-            }
-        }
-        return inputArray;
-    }
-
-    const itemPriceList = sortElementsAscending(itemPriceListUnsorted);
-
-    let expenditureSum = 0;
-    for (let currentPrice of itemPriceList) {
-        expenditureSum += currentPrice;
-    }
-
-    const initialItemCount = itemPriceList.length;
-    const lowestItemValue = itemPriceList[0];
-    const fundsRemaining = availableCredit - expenditureSum;
-
-    let extraItemsAcquirable = Math.floor(fundsRemaining / lowestItemValue);
-
-    const totalAcquisitions = initialItemCount + extraItemsAcquirable;
-
-    console.log(totalAcquisitions);
-})();
+calculateMaxItems(require("fs").readFileSync("/dev/stdin", "utf8"));

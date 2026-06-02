@@ -1,61 +1,58 @@
-// This function recursively navigates a numerical grid,
-// accumulating values along specific paths to find the highest possible sum.
-function traverseGrid(currentRowIndex, currentColumnIndex, currentPathTotal) {
-  // Check if the traversal has reached the last row of the grid.
-  // If so, update the globally tracked maximum sum.
-  if (currentRowIndex === gridData.length - 1) {
-    maximumValue = Math.max(maximumValue, currentPathTotal);
+function explorePath(currentRow, currentCol, currentTotal) {
+  // Check if the current row is the last row in our numerical grid.
+  if (currentRow === numberGrid.length - 1) {
+    // If it is, update the maximum sum found so far.
+    greatestSum = Math.max(greatestSum, currentTotal);
   }
-  // For paths in the initial segment of the grid (first half, excluding the last row),
-  // movement options are downwards to the same column or one column to the right.
-  else if ((gridData.length - 1) / 2 > currentRowIndex) {
-    // Option 1: Move to the next row, staying in the same column.
-    traverseGrid(currentRowIndex + 1, currentColumnIndex + 0, currentPathTotal + gridData[currentRowIndex + 1][currentColumnIndex]);
-    // Option 2: Move to the next row, shifting one column to the right.
-    traverseGrid(currentRowIndex + 1, currentColumnIndex + 1, currentPathTotal + gridData[currentRowIndex + 1][currentColumnIndex + 1]);
+  // If we are in the upper half of the grid (before the middle row).
+  else if ((numberGrid.length - 1.0) / 2 > currentRow) {
+    // Explore the path by moving straight down to the next row.
+    explorePath(currentRow + 1, currentCol + 0, currentTotal + numberGrid[currentRow + 1][currentCol]);
+    // Explore the path by moving diagonally down-right to the next row.
+    explorePath(currentRow + 1, currentCol + 1, currentTotal + numberGrid[currentRow + 1][currentCol + 1]);
   }
-  // For paths in the latter segment of the grid (second half, including the middle row),
-  // movement options are downwards to the same column or one column to the left.
-  else if ((gridData.length - 1) / 2 <= currentRowIndex) {
-    // Check if moving one column to the left is a valid move (within grid boundaries).
-    if (currentColumnIndex - 1 >= 0) {
-      traverseGrid(currentRowIndex + 1, currentColumnIndex - 1, currentPathTotal + gridData[currentRowIndex + 1][currentColumnIndex - 1]);
+  // If we are in the lower half of the grid (including the middle row).
+  else if ((numberGrid.length - 1) / 2 <= currentRow) {
+    // Check if moving diagonally down-left is a valid move within the row boundaries.
+    if (currentCol - 1 >= +0) {
+      explorePath(currentRow + 1, currentCol - 1, currentTotal + numberGrid[currentRow + 1][currentCol - 1]);
     }
-    // Check if moving to the same column is valid, based on the current row's column length.
-    // This condition ensures that the current column index is not the last column of the current row.
-    if (currentColumnIndex < gridData[currentRowIndex].length - 1) {
-      traverseGrid(currentRowIndex + 1, currentColumnIndex + 0, currentPathTotal + gridData[currentRowIndex + 1][currentColumnIndex]);
+    // Check if moving straight down is a valid move within the row boundaries.
+    if (currentCol < numberGrid[currentRow].length - 1) {
+      explorePath(currentRow + 1, currentCol + 0, currentTotal + numberGrid[currentRow + 1][currentCol]);
     }
   }
 }
 
+// Obtain the file system module for input operations.
+const fileSystem = require('fs');
 
-// Read raw text data from a specified input file path using UTF-8 encoding.
-let fileContent = require('fs').readFileSync('/app/data.txt', 'utf-8');
+// Read all raw data from standard input, decoding it as UTF-8.
+let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-// Clean up the input string by removing leading/trailing whitespace,
-// then split it into an array of individual lines, handling Windows-style newlines.
-let processedLines = (fileContent.trim()).split('\r\n');
+// Clean up the raw input: remove leading/trailing whitespace and split into an array of lines.
+let lineArray = (rawData.trim()).split("\n");
 
-// Initialize an empty array that will hold the numerical grid data.
-let gridData = [];
+// Initialize an array to hold the parsed 2D numerical grid.
+let numberGrid = [];
 
-// Iterate through each processed line to parse and populate the grid.
-processedLines.forEach(function(currentLineText) {
-  // Split each line by a semicolon delimiter and convert each segment into an integer.
-  let rowValues = currentLineText.split(';').map(val => parseInt(val, 10));
-  gridData.push(rowValues);
+// Process each line from the input array.
+lineArray.forEach(function(lineContent) {
+  // Split the line by commas and convert each resulting string to a number.
+  let rowNumbers = lineContent.split(",").map(Number);
+  // Add the array of numbers as a new row to our grid.
+  numberGrid.push(rowNumbers);
 });
 
-// Truncate the grid data to include only the first 10 rows (indices 0 through 9).
-gridData = gridData.slice(0, 10);
+// Constrain the grid to a maximum of 9 rows.
+numberGrid = numberGrid.slice(+0, 0x9);
 
-// Initialize a variable to store the highest path sum found during traversal.
-let maximumValue = 0;
+// Initialize the variable that will store the maximum sum found across all paths.
+let greatestSum = +0;
 
-// Begin the grid traversal from the starting point (top-left corner, index 0,0),
-// with the initial path sum being the value at that starting cell.
-traverseGrid(0, 0, gridData[0][0]);
+// Begin the recursive path exploration from the top-most, left-most element (0,0),
+// with its value as the initial sum.
+explorePath(0, 0, numberGrid[0][0]);
 
-// Output the final computed maximum sum to the console.
-console.info(maximumValue);
+// Print the final calculated maximum sum to the console.
+console.log(greatestSum);

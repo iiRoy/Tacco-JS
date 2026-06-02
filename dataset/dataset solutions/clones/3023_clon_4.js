@@ -1,117 +1,74 @@
-function processInputData(rawData) {
-  const lineValues = rawData.split("\n");
-  const dataLength = parseInt(lineValues[0], 10);
-  const dataElements = [];
+"use strict";
 
-  for (let idx = 0; idx < dataLength; idx++) {
-    dataElements.push(parseInt(lineValues[idx + 1], 10));
-  }
+function ProcessInput(rawInput) {
+    const lines = rawInput.split("\n");
+    const elementCount = Number(lines[0]);
+    const values = lines.slice(1, elementCount + 1).map(Number);
+    const totalSum = values.reduce((acc, current) => acc + current, 0);
 
-  const grandTotal = dataElements.reduce((acc, val) => acc + val, 0);
+    const MODULUS_CONSTANT = 998244353;
 
-  // Memoization tables for recursive DP
-  // cacheA stores results for 2-color combinations (R/G)
-  const cacheA = Array(dataLength);
-  // cacheB stores results for 3-color combinations (R/G/B)
-  const cacheB = Array(dataLength);
+    // `coeffSetA` represents the coefficients of the polynomial P_A(x) = product(1 + x^v) for v in `values`.
+    // The coefficient of x^k in P_A(x) is the number of ways to choose a subset of `values` that sums to k.
+    let coeffSetA = new Array(totalSum + 1).fill(0);
+    coeffSetA[0] = 1; // Base case: sum 0 can be achieved in 1 way (by choosing no elements).
 
-  for (let idx = 0; idx < dataLength; idx++) {
-    cacheA[idx] = Array(grandTotal + 1).fill(null);
-    cacheB[idx] = Array(grandTotal + 1).fill(null);
-  }
+    // `coeffSetB` represents the coefficients of the polynomial P_B(x) = product(2 + x^v) for v in `values`.
+    // The coefficient of x^k in P_B(x) is the number of ways to assign elements to R, G, B such that R sums to k,
+    // and elements not in R can be in G or B (2 choices).
+    let coeffSetB = new Array(totalSum + 1).fill(0);
+    coeffSetB[0] = 1; // Base case: sum 0 can be achieved in 1 way (by choosing no elements for R, and 1 way for G/B).
 
-  const MOD_VAL = 998244353;
+    // Iterate through each value to update the polynomial coefficients.
+    for (const itemValue of values) {
+        // Calculate the next state for coeffSetA (multiplying by (1 + x^itemValue))
+        const nextCoeffSetA = new Array(totalSum + 1).fill(0);
+        for (let k = 0; k <= totalSum; k++) {
+            // Term from 1 * current_coeffSetA[k] (itemValue is not chosen for sum k)
+            nextCoeffSetA[k] += coeffSetA[k];
+            // Term from x^itemValue * current_coeffSetA[k - itemValue] (itemValue is chosen for sum k)
+            if (k >= itemValue) {
+                nextCoeffSetA[k] += coeffSetA[k - itemValue];
+            }
+        }
+        coeffSetA = nextCoeffSetA; // Update coeffSetA to the new state
 
-  // Helper for modular exponentiation to avoid overflow for 3^N
-  function modularExponent(base, exp, mod) {
-    let res = 1;
-    base %= mod;
-    while (exp > 0) {
-      if (exp % 2 === 1) res = (res * base) % mod;
-      base = (base * base) % mod;
-      exp = Math.floor(exp / 2);
-    }
-    return res;
-  }
-
-  // Recursive function to count ways for 2 colors (R and G)
-  // `indexPosition` refers to the current item being considered (from dataElements)
-  // `currentSumValue` is the target sum for items colored 'R'
-  function calculatePairs(indexPosition, currentSumValue) {
-    if (currentSumValue === 0) {
-      return 1; // One way to get sum 0 (by selecting no items)
-    }
-    if (indexPosition < 0) {
-      return 0; // No items left to consider, and sum is not 0
-    }
-
-    if (cacheA[indexPosition][currentSumValue] !== null) {
-      return cacheA[indexPosition][currentSumValue];
+        // Calculate the next state for coeffSetB (multiplying by (2 + x^itemValue))
+        const nextCoeffSetB = new Array(totalSum + 1).fill(0);
+        for (let k = 0; k <= totalSum; k++) {
+            // Term from 2 * current_coeffSetB[k] (itemValue is not chosen for sum k, and has 2 options G/B)
+            nextCoeffSetB[k] += 2 * coeffSetB[k];
+            // Term from x^itemValue * current_coeffSetB[k - itemValue] (itemValue is chosen for sum k)
+            if (k >= itemValue) {
+                nextCoeffSetB[k] += coeffSetB[k - itemValue];
+            }
+        }
+        coeffSetB = nextCoeffSetB; // Update coeffSetB to the new state
     }
 
-    let resultCount = 0;
-    // Option 1: Current item is colored 'G' (not included in R-sum)
-    resultCount = calculatePairs(indexPosition - 1, currentSumValue);
+    const totalPossibleAssignments = Math.pow(3, elementCount);
+    let accumulatedSumB = 0; // Corresponds to the original 'sum' variable
+    let accumulatedSumA = 0; // Corresponds to the original 'sum1' variable
 
-    // Option 2: Current item is colored 'R' (included in R-sum)
-    if (currentSumValue >= dataElements[indexPosition]) {
-      resultCount += calculatePairs(indexPosition - 1, currentSumValue - dataElements[indexPosition]);
+    // Accumulate values for `accumulatedSumB` based on the original logic:
+    // sum of dp1[N][k] for k >= S/2.
+    // The loop starts from Math.ceil(totalSum / 2) because `_i3 >= S/2` implies starting from the smallest integer >= S/2.
+    for (let k = Math.ceil(totalSum / 2); k <= totalSum; k++) {
+        accumulatedSumB += coeffSetB[k];
     }
 
-    cacheA[indexPosition][currentSumValue] = resultCount;
-    return resultCount;
-  }
-
-  // Recursive function to count ways for 3 colors (R, G, and B)
-  // `indexPosition` refers to the current item being considered
-  // `currentSumValue` is the target sum for items colored 'R'
-  function calculateTriples(indexPosition, currentSumValue) {
-    if (currentSumValue === 0) {
-      return 1; // One way to get R-sum 0 (by coloring no item as R)
-    }
-    if (indexPosition < 0) {
-      return 0; // No items left to consider, and R-sum is not 0
+    // Accumulate values for `accumulatedSumA` based on the original logic:
+    // dp[N][S/2] only if S is even.
+    // The original `_i3 === S/2` condition is only true if S is even, as _i3 is an integer.
+    if (totalSum % 2 === 0) {
+        accumulatedSumA += coeffSetA[totalSum / 2];
     }
 
-    if (cacheB[indexPosition][currentSumValue] !== null) {
-      return cacheB[indexPosition][currentSumValue];
-    }
+    // Apply the final inclusion-exclusion formula and modulo operation.
+    let finalResult = totalPossibleAssignments - 3 * accumulatedSumB + 3 * accumulatedSumA;
+    finalResult = (finalResult % MODULUS_CONSTANT + MODULUS_CONSTANT) % MODULUS_CONSTANT;
 
-    let resultCount = 0;
-    // Option 1: Current item is colored 'G' or 'B' (2 ways, not included in R-sum)
-    resultCount = 2 * calculateTriples(indexPosition - 1, currentSumValue);
-
-    // Option 2: Current item is colored 'R' (1 way, included in R-sum)
-    if (currentSumValue >= dataElements[indexPosition]) {
-      resultCount += calculateTriples(indexPosition - 1, currentSumValue - dataElements[indexPosition]);
-    }
-
-    cacheB[indexPosition][currentSumValue] = resultCount;
-    return resultCount;
-  }
-
-  // Calculate total possible colorings (3^N) modulo MOD_VAL
-  const overallPower = modularExponent(3, dataLength, MOD_VAL);
-  let partialSumAlpha = 0; // Corresponds to 'sum' in original
-  let partialSumBeta = 0;  // Corresponds to 'sum1' in original
-
-  // Sum up results for calculateTriples for sums from floor(S/2) to S
-  for (let sVal = Math.floor(grandTotal / 2); sVal <= grandTotal; sVal++) {
-    partialSumAlpha = (partialSumAlpha + calculateTriples(dataLength - 1, sVal));
-  }
-
-  // Get result for calculatePairs if S is even and s=S/2
-  if (grandTotal % 2 === 0) {
-    partialSumBeta = calculatePairs(dataLength - 1, grandTotal / 2);
-  }
-
-  // Apply the final inclusion-exclusion formula
-  let finalOutcome = (overallPower - 3 * partialSumAlpha + 3 * partialSumBeta);
-
-  // Ensure result is positive before applying final modulo
-  finalOutcome = (finalOutcome % MOD_VAL + MOD_VAL) % MOD_VAL;
-
-  console.log(finalOutcome);
+    console.log(finalResult);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

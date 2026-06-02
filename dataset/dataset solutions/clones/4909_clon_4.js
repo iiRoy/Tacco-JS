@@ -1,45 +1,47 @@
-let inputStore = [];
-
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (inputData) => {
-    inputStore.push(inputData);
+let inputLinesStore = [];
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const fullInputContent = inputStore.join('');
-    const firstLineContent = fullInputContent.split('\n')[0];
+inputProcessor.on('line', (currentInputLine) => {
+  inputLinesStore.push(currentInputLine);
+});
 
-    const numberPattern = /(\d+)\s+(\d+)/;
-    const matchElements = firstLineContent.match(numberPattern);
+inputProcessor.on('close', () => {
+    const lineContent = inputLinesStore[0];
+    const parts = lineContent.split(" ");
+    const firstOperand = Number(parts[0]);
+    const secondOperand = Number(parts[1]);
 
-    let firstNumber = 0;
-    let secondNumber = 0;
+    const baseValue = secondOperand - 1;
+    const exponentValue = firstOperand - 1;
 
-    if (matchElements && matchElements.length >= 3) {
-        firstNumber = Number(matchElements[1]);
-        secondNumber = Number(matchElements[2]);
-    }
-
-    const calculateExponent = (baseForPower, exponentForPower) => {
-        if (exponentForPower === 0) {
-            return 1;
+    const calculateExponential = (base, exp) => {
+        if (exp === 0) return 1;
+        if (exp < 0) {
+            return 1 / calculateExponential(base, -exp);
         }
-        if (baseForPower === 0) {
-            return 0;
+        if (exp % 2 === 0) {
+            const halfPower = calculateExponential(base, exp / 2);
+            return halfPower * halfPower;
+        } else {
+            return base * calculateExponential(base, exp - 1);
         }
-        let resultAccumulator = 1;
-        for (let i = 0; i < exponentForPower; i++) {
-            resultAccumulator *= baseForPower;
-        }
-        return resultAccumulator;
     };
 
-    const adjustedFirst = firstNumber - 1;
-    const adjustedSecond = secondNumber - 1;
+    const powerResult = calculateExponential(baseValue, exponentValue);
+    const finalResult = powerResult * secondOperand;
 
-    const interimValue = calculateExponent(adjustedSecond, adjustedFirst);
-    const ultimateResult = interimValue * secondNumber;
-
-    process.stdout.write(ultimateResult.toString() + '\n');
+    console.log(finalResult);
 });
+
+const determineSmallest = (...values) => {
+    if (values.length === 0) {
+        throw new TypeError('Reduce of empty array with no initial value');
+    }
+    return Math.min(...values);
+};

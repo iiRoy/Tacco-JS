@@ -1,30 +1,15 @@
-const streamData = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = sourceData.trim().split("\n");
+const firstCount = Number(lineSegments[0]);
+const targetNumbers = lineSegments[1].split(" ").map(Number);
+const queryValues = lineSegments[3].split(" ").map(Number);
 
-const rawLines = streamData.trim().split('\n');
+const searchSet = new Set(targetNumbers);
 
-const initialCount = parseInt(rawLines[0], 10);
+const checkPresence = (itemToFind) => searchSet.has(itemToFind) ? 1 : 0;
 
-const sourceElementsAsString = rawLines[1].split(' ');
-const collectionOfSources = [];
-for (let i = 0; i < sourceElementsAsString.length; i++) {
-    collectionOfSources.push(parseInt(sourceElementsAsString[i], 10));
-}
+const totalOccurrences = queryValues.reduce((accumulator, currentValue) => {
+  return accumulator + checkPresence(currentValue);
+}, 0);
 
-// rawLines[2] (equivalent to N2) is not used in the original logic either, so we skip it.
-
-const targetElementsAsString = rawLines[3].split(' ');
-const collectionOfTargets = [];
-for (let i = 0; i < targetElementsAsString.length; i++) {
-    collectionOfTargets.push(parseInt(targetElementsAsString[i], 10));
-}
-
-const uniqueSourceSet = new Set(collectionOfSources);
-
-let totalMatches = 0;
-for (const soughtValue of collectionOfTargets) {
-    if (uniqueSourceSet.has(soughtValue)) {
-        totalMatches = totalMatches + 1;
-    }
-}
-
-process.stdout.write(totalMatches.toString() + '\n');
+console.log(totalOccurrences);

@@ -1,59 +1,57 @@
 "use strict";
 
-function ProcessData(programInput) {
-    // Split the entire program input into an array of text rows
-    const textRows = programInput.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string into individual lines
+  const dataRows = rawData.split("\n");
 
-    // Extract the first line, convert it to an integer, and store as the total count
-    let totalCount = parseInt(textRows.shift(), 10);
+  // Extract the first line, convert it to a number, and store it as the item count
+  let itemCount = dataRows.shift() - 0;
 
-    // Declare an array to hold all participant records
-    const participantRecords = new Array(totalCount);
+  // Initialize an array to hold player score objects
+  const playerScores = new Array(itemCount);
 
-    // Loop through each remaining line to populate the participant records
-    for (let currentIdx = 0; currentIdx < totalCount; currentIdx++) {
-        // Split the current line by space to get individual numeric parts
-        let numericParts = textRows[currentIdx].split(' ');
+  // Iterate through each data row to populate the playerScores array
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Split the current row by space to get individual scores
+    const scorePair = dataRows[idx].split(" ");
 
-        // Create an object for the current participant's scores
-        participantRecords[currentIdx] = {
-            // Convert the first number part to a numeric value for player One
-            playerOneScore: Number(numericParts[0]),
-            // Convert the second number part to a numeric value for player Two
-            playerTwoScore: Number(numericParts[1]),
-        };
-        // Calculate the score difference (player Two minus player One)
-        participantRecords[currentIdx].scoreDifference = participantRecords[currentIdx].playerTwoScore - participantRecords[currentIdx].playerOneScore;
+    // Create an object for the current player, converting string scores to numbers
+    playerScores[idx] = {
+      playerOneScore: scorePair[0] - 0, // Score for player 1
+      playerTwoScore: scorePair[1] - 0, // Score for player 2
+    };
+
+    // Calculate and store the difference between player 2's and player 1's scores
+    playerScores[idx].scoreDifference = playerScores[idx].playerTwoScore - playerScores[idx].playerOneScore;
+  }
+
+  // Sort the playerScores array based on the score difference in descending order
+  playerScores.sort(function (firstItem, secondItem) {
+    return secondItem.scoreDifference - firstItem.scoreDifference;
+  });
+
+  // This line was previously commented out and is not part of the active logic.
+  // playerScores.sort(function(firstItem, secondItem) { return secondItem.playerOneScore - firstItem.playerOneScore; });
+
+  // Initialize a variable to accumulate the total score
+  let totalScore = 0;
+
+  // Iterate through the sorted playerScores array
+  for (let idx = 0; idx < itemCount; idx++) {
+    // If the index is even, add player 1's score to the total
+    if (idx % 2 === 0) {
+      totalScore += playerScores[idx].playerOneScore;
+      playerScores[idx].playerOneScore = 0; // Reset player 1's score for this entry
+    } else {
+      // If the index is odd, subtract player 2's score from the total
+      totalScore -= playerScores[idx].playerTwoScore;
+      playerScores[idx].playerTwoScore = 0; // Reset player 2's score for this entry
     }
+  }
 
-    // Sort the participant records array in descending order based on their score difference
-    participantRecords.sort((recB, recA) => {
-        // The comparison function ensures records with higher differences come first
-        return recA.scoreDifference - recB.scoreDifference;
-    });
-
-    // Initialize a variable to accumulate the final computed value
-    let finalComputedValue = 0;
-
-    // Iterate through the sorted participant records to calculate the cumulative result
-    for (let currentIdx = 0; currentIdx < totalCount; currentIdx++) {
-        // Check if the current index is an even number
-        if (currentIdx % 2 === 0) {
-            // If even, add player One's score to the final sum
-            finalComputedValue += participantRecords[currentIdx].playerOneScore;
-            // Reset player One's score for this record to zero (as per problem logic)
-            participantRecords[currentIdx].playerOneScore = 0;
-        } else {
-            // If odd, subtract player Two's score from the final sum
-            finalComputedValue -= participantRecords[currentIdx].playerTwoScore;
-            // Reset player Two's score for this record to zero (as per problem logic)
-            participantRecords[currentIdx].playerTwoScore = 0;
-        }
-    }
-
-    // Print the final calculated value to the console output
-    console.log(finalComputedValue);
+  // Output the final calculated total score to the console
+  console.log(totalScore);
 }
 
-// Call the main processing function with data obtained from standard input
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

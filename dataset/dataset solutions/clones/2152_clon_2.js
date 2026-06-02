@@ -1,42 +1,36 @@
-// Incoming text data is passed to this handler
-function ProcessInput( rawData )
-{
-  // Split the raw input by newline characters to get an array of lines
-  let linesArray = rawData.split( '\n' );
+// This module defines a function to analyze a list of numbers.
+function ProcessInput(rawData) {
+  // The raw input string is first broken down into individual lines.
+  rawData = rawData.split("\n");
 
-  // The first line often contains metadata, like the count of subsequent items.
-  // We extract it but don't use it in this specific logic path.
-  let countOfElements = linesArray.shift();
+  // The initial line is extracted; its content is not utilized in the subsequent logic.
+  const firstLineValue = rawData.shift();
 
-  // Convert remaining lines to an array of integers.
-  let numericValues = linesArray.map(    itemString    =>    Number(itemString)    );
+  // Remaining lines are converted into an array of integer values.
+  const numericValues = rawData.map(item => parseInt(item));
 
-  // Initialize a boolean flag to track the presence of elements violating criteria.
-  let hasProhibitedElement = false;
+  // A boolean indicator, initially set to false, will track specific conditions.
+  hasInvalidEven = false;
 
-  // Filter the full set of numeric values to obtain only the even ones.
-  let evenNumbers = numericValues.filter(   currentNumber   =>   currentNumber % 2 === 0   );
+  // From the collection of numbers, only those that are even are selected.
+  const evenNumbers = numericValues.filter(element => element % 2 == 0);
 
-  // Iterate over the collection of even numbers to check for specific divisibility rules.
-  evenNumbers.forEach(   currentNumber   =>
-  {
-    // An even number is deemed 'prohibited' if it is NOT divisible by 3 AND NOT divisible by 5.
-    if ( (currentNumber % 3 !== 0) && (currentNumber % 5 !== 0) )
-    {
-      hasProhibitedElement = true; // Set flag if such an element is found.
+  // Each even number is then examined against a set of divisibility rules.
+  evenNumbers.forEach(currentNum => {
+    // If an even number is neither perfectly divisible by three nor by five, the indicator is activated.
+    if (currentNum % 3 != 0 && currentNum % 5 != 0) {
+      hasInvalidEven = true;
     }
-  }   );
+  });
 
-  // Based on the flag, print the appropriate status message.
-  if ( hasProhibitedElement )
-  {
-    console.log( "DENIED" );
-  }
-  else
-  {
-    console.log( "APPROVED" );
+  // The final outcome is determined by the state of the indicator.
+  if (hasInvalidEven) {
+    console.log("DENIED");
+  } else {
+    console.log("APPROVED");
   }
 }
 
-// The following line handles system I/O; do not modify it.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The following segment is responsible for reading data from standard input and initiating the processing.
+// It is crucial for the program's execution environment and should remain unaltered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

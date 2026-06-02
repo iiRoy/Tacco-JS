@@ -1,49 +1,35 @@
-const processNumericalSequence = (incomingRawData) => {
-  const parsedDigits = incomingRawData.split('').map(Number);
-  const targetSumValue = 7;
-  const operatorSymbols = ['+', '-']; // 0 maps to '+', 1 maps to '-'
+function Main(input) {
+  const digitCharacters = input.split("");
+  const numericDigits = digitCharacters.map(Number);
 
-  const digitCount = parsedDigits.length; // Assumed to be 4
-  const symbolCount = digitCount - 1;   // Assumed to be 3
+  const operatorPositions = numericDigits.length - 1;
+  const totalPermutations = 1 << operatorPositions;
 
-  // Iterate through all possible combinations of operators
-  // There are 2^(symbolCount) combinations (e.g., 2^3 = 8 for 3 operators)
-  for (let combinationIndex = 0; combinationIndex < Math.pow(2, symbolCount); combinationIndex++) {
-    const currentSymbolSet = [];
-    let tempCombo = combinationIndex;
+  for (let permutationIndex = 0; permutationIndex < totalPermutations; permutationIndex++) {
+    let accumulatedValue = numericDigits[0];
+    const expressionComponents = [digitCharacters[0]];
 
-    // Extract operator choices from the binary representation of combinationIndex
-    // The most significant bit corresponds to the first operator (between parsedDigits[0] and parsedDigits[1])
-    // The least significant bit corresponds to the last operator (between parsedDigits[symbolCount-1] and parsedDigits[symbolCount])
-    for (let symbolPosition = 0; symbolPosition < symbolCount; symbolPosition++) {
-      const symbolBit = (tempCombo >> (symbolCount - 1 - symbolPosition)) & 1;
-      currentSymbolSet.push(operatorSymbols[symbolBit]);
-    }
+    for (let opIndex = 0; opIndex < operatorPositions; opIndex++) {
+      const operationChoice = (permutationIndex >> opIndex) & 1;
+      const subsequentDigit = numericDigits[opIndex + 1];
+      const subsequentDigitChar = digitCharacters[opIndex + 1];
 
-    // Calculate the total for the current combination
-    let evaluatedTotal = parsedDigits[0];
-    for (let loopIterator = 0; loopIterator < symbolCount; loopIterator++) {
-      if (currentSymbolSet[loopIterator] === '+') {
-        evaluatedTotal += parsedDigits[loopIterator + 1];
-      } else { // '-'
-        evaluatedTotal -= parsedDigits[loopIterator + 1];
+      if (operationChoice === 0) {
+        accumulatedValue += subsequentDigit;
+        expressionComponents.push("+", subsequentDigitChar);
+      } else {
+        accumulatedValue -= subsequentDigit;
+        expressionComponents.push("-", subsequentDigitChar);
       }
     }
 
-    // Check if the target sum is achieved
-    if (evaluatedTotal === targetSumValue) {
-      // Construct the output string in the specified format
-      let outputFormat = String(parsedDigits[0]);
-      for (let loopIterator = 0; loopIterator < symbolCount; loopIterator++) {
-        outputFormat += currentSymbolSet[loopIterator] + String(parsedDigits[loopIterator + 1]);
-      }
-      console.log(`${outputFormat}=${targetSumValue}`);
-      return; // Found a solution, exit the function
+    if (accumulatedValue === 7) {
+      console.log(expressionComponents.join("") + "=7");
+      return;
     }
   }
 
-  // If no solution is found after checking all combinations
   console.log("program error");
-};
+}
 
-processNumericalSequence(require('fs').readFileSync('/dev/stdin','utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

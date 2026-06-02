@@ -1,60 +1,52 @@
-'use strict'; // Enforce strict parsing and error handling rules
+'use strict';
 
-// Main function to process the input and perform matrix multiplication
-const processInputData = sourceContent => {
-  // Parse the raw input string into an array of lines
-  var dataLines = sourceContent.trim().split("\n");
+// This function processes the raw input string to perform matrix multiplication.
+const processInput = (rawData) => {
+  // Trim leading/trailing whitespace and split the input into individual lines.
+  let parsedLines = rawData.trim().split('\n');
 
-  // Extract matrix dimensions from the first line
-  // The dimensions are usually in the format "R1 C1 C2" where R1 is rows of matrix A,
-  // C1 is columns of A (and rows of B), and C2 is columns of B.
-  var matrixSpecs = dataLines[0].split(" ").map(valueString => parseInt(valueString, 10));
+  // Parse the first line to get matrix dimensions (rowsA, commonDim, colsB).
+  let dimensions = parsedLines[0].split(' ').map(textVal => parseInt(textVal, 10));
 
-  // Extract the first matrix (operand A) from subsequent lines
-  // It spans from the second line up to (R1 + 1) lines.
-  const firstOperandMatrix = dataLines.slice(1, matrixSpecs[0] + 1).map(matrixRowString =>
-    matrixRowString.split(" ").map(valueString => parseInt(valueString, 10))
+  // Extract and parse the first matrix (matrix A) from the input lines.
+  // It spans from the second line up to (dimensions[0] + 1) lines.
+  const firstMatrix = parsedLines.slice(1, dimensions[0] + 1).map(lineContent =>
+    lineContent.split(' ').map(textVal => parseInt(textVal, 10))
   );
 
-  // Extract the second matrix (operand B)
-  // It spans from (R1 + 1) up to (R1 + 1 + C1) lines.
-  const secondOperandMatrix = dataLines.slice(matrixSpecs[0] + 1, matrixSpecs[0] + 1 + matrixSpecs[1]).map(matrixRowString =>
-    matrixRowString.split(" ").map(valueString => parseInt(valueString, 10))
+  // Extract and parse the second matrix (matrix B) from the input lines.
+  // It starts after matrix A and spans for dimensions[1] lines.
+  const secondMatrix = parsedLines.slice(dimensions[0] + 1, dimensions[0] + 1 + dimensions[1]).map(lineContent =>
+    lineContent.split(' ').map(textVal => parseInt(textVal, 10))
   );
 
-  // Initialize the result matrix with zeros.
-  // Its dimensions will be R1 x C2.
-  const productGrid = [...Array(matrixSpecs[0])].map(_ =>
-    [...Array(matrixSpecs[2])].map(__ => 0)
+  // Initialize the product matrix with zeros.
+  // The product matrix will have dimensions[0] rows and dimensions[2] columns.
+  const productMatrix = [...Array(dimensions[0])].map(_rowPlaceholder =>
+    [...Array(dimensions[2])].map(_colPlaceholder => 0)
   );
 
-  // This variable is declared but immediately shadowed in the inner loop.
-  // It serves no functional purpose here due to the shadowing.
-  var unnecessaryArray = [];
-
-  // Perform matrix multiplication
-  // Iterate through rows of the first matrix (A)
-  for (var rowIndexA = 0; rowIndexA < matrixSpecs[0]; rowIndexA++) {
-    // Iterate through columns of the second matrix (B)
-    for (var colIndexB = 0; colIndexB < matrixSpecs[2]; colIndexB++) {
-      // Array to store intermediate products for the current cell (rowIndexA, colIndexB)
-      var intermediateProducts = [];
-
-      // Iterate through the common dimension (columns of A / rows of B)
-      for (var sharedDimIndex = 0; sharedDimIndex < matrixSpecs[1]; sharedDimIndex++) {
-        // Calculate the product of corresponding elements and add to the temporary array
-        intermediateProducts.push(firstOperandMatrix[rowIndexA][sharedDimIndex] * secondOperandMatrix[sharedDimIndex][colIndexB]);
+  // Perform matrix multiplication.
+  // Iterate through rows of the first matrix (matrix A).
+  for (let rowIndex = 0; rowIndex < dimensions[0]; rowIndex++) {
+    // Iterate through columns of the second matrix (matrix B).
+    for (let colIndex = 0; colIndex < dimensions[2]; colIndex++) {
+      // Temporary array to store products for the current cell.
+      let currentProducts = [];
+      // Iterate through the common dimension (columns of A / rows of B).
+      for (let commonIndex = 0; commonIndex < dimensions[1]; commonIndex++) {
+        // Multiply corresponding elements and add to the temporary array.
+        currentProducts.push(firstMatrix[rowIndex][commonIndex] * secondMatrix[commonIndex][colIndex]);
       }
-      // Sum all intermediate products to get the final value for the current cell
-      productGrid[rowIndexA][colIndexB] = intermediateProducts.reduce((sumAccumulator, nextTermValue) => sumAccumulator + nextTermValue);
+      // Sum the products to get the value for the current cell in the product matrix.
+      productMatrix[rowIndex][colIndex] = currentProducts.reduce((accumulator, currentValue) => accumulator + currentValue);
     }
   }
 
-  // Format the final product matrix for output: rows joined by space, rows by newline
-  console.log(
-    productGrid.map(processedRow => processedRow.join(" ")).join("\n")
-  );
+  // Format the resulting matrix for output:
+  // Each row's elements are joined by a space, and rows are joined by a newline.
+  console.log(productMatrix.map(outputRow => outputRow.join(' ')).join('\n'));
 };
 
-// Read input from standard input and pass it to the processing function
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

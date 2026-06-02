@@ -1,59 +1,28 @@
-// This module facilitates interactions with the file system.
-const fileSystemModule = require('fs');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input stream
 
-// Procure the entire content from the standard input stream.
-// The designated input path is '/dev/stdin', utilizing 'utf8' for character encoding.
-let fileContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const dataRows = rawData.split('\n'); // Divide the complete input into an array of individual lines
 
-// Decompose the retrieved content into an array of distinct string segments,
-// using the newline character as the primary delimiter.
-let inputSegments = fileContent.split('\n');
+let numCases = +dataRows.shift(); // Extract the total number of test cases from the first line
 
+for (let caseIndex = 0; caseIndex < numCases; caseIndex++) { // Iterate through each provided test scenario
+  const coordinateStrings = dataRows.shift().split(' '); // Get the current line of coordinates and split it by spaces
 
-// Extract the inaugural segment, convert it to a numerical representation,
-// and assign it as the total quantity of processing cycles required.
-let testCaseCount = +inputSegments.shift();
+  let firstX = +coordinateStrings[0]; // Parse the X-coordinate of the first point
+  let firstY = +coordinateStrings[1]; // Parse the Y-coordinate of the first point
+  let secondX = +coordinateStrings[2]; // Parse the X-coordinate of the second point
+  let secondY = +coordinateStrings[3]; // Parse the Y-coordinate of the second point
+  let thirdX = +coordinateStrings[4]; // Parse the X-coordinate of the third point
+  let thirdY = +coordinateStrings[5]; // Parse the Y-coordinate of the third point
+  let fourthX = +coordinateStrings[6]; // Parse the X-coordinate of the fourth point
+  let fourthY = +coordinateStrings[7]; // Parse the Y-coordinate of the fourth point
 
-// Initiate an iterative process to handle each individual test case.
-for ( let currentIteration = 0; currentIteration < testCaseCount; currentIteration++ )
-{
-
-    // Obtain the subsequent line from the collection of input segments,
-    // then subdivide it into an array of strings using space characters as separators.
-    let coordinateValues = inputSegments.shift().split(' ');
-
-    // Parse and explicitly assign eight distinct numerical coordinates.
-    // These define two separate line segments.
-    // The first segment extends from (pointOneX, pointOneY) to (pointTwoX, pointTwoY).
-    let pointOneX   = +coordinateValues[0];
-    let pointOneY   = +coordinateValues[1];
-    let pointTwoX   = +coordinateValues[2];
-    let pointTwoY   = +coordinateValues[3];
-
-    // The second segment spans from (pointThreeX, pointThreeY) to (pointFourX, pointFourY).
-    let pointThreeX = +coordinateValues[4];
-    let pointThreeY = +coordinateValues[5];
-    let pointFourX  = +coordinateValues[6];
-    let pointFourY  = +coordinateValues[7];
-
-
-    // Compute the components of the direction vectors for both line segments.
-    let firstVectorXComponent  = pointTwoX - pointOneX;
-    let firstVectorYComponent  = pointTwoY - pointOneY;
-    let secondVectorXComponent = pointFourX - pointThreeX;
-    let secondVectorYComponent = pointFourY - pointThreeY;
-
-    // Evaluate if the two line segments are parallel.
-    // This is determined by comparing the cross product of their direction vectors.
-    // Floating point comparisons necessitate using `toFixed` for consistent results.
-    if ( ( firstVectorXComponent * secondVectorYComponent ).toFixed(12) == ( secondVectorXComponent * firstVectorYComponent ).toFixed(12) )
-    {
-        // If the segments are parallel, emit a confirmation message.
-        console.log('YES');
-    }
-    else
-    {
-        // Otherwise, indicate that they are not parallel.
-        console.log('NO');
-    }
+  // Determine if two line segments are parallel by comparing their slopes using cross-multiplication.
+  // (y2 - y1) / (x2 - x1) == (y4 - y3) / (x4 - x3)
+  // is equivalent to (y2 - y1) * (x4 - x3) == (y4 - y3) * (x2 - x1)
+  // The toFixed(12) is used for precise floating-point comparison.
+  if (((secondY - firstY) * (fourthX - thirdX)).toFixed(12) == ((fourthY - thirdY) * (secondX - firstX)).toFixed(12)) {
+    console.log('YES'); // Output 'YES' if the line segments are parallel
+  } else {
+    console.log('NO'); // Output 'NO' if the line segments are not parallel
+  }
 }

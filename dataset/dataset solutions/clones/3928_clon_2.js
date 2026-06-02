@@ -1,57 +1,49 @@
-// This function processes a multi-line input string to calculate a specific numerical result based on certain conditions.
-function ProcessInputData(inputStringData) {
-    // First, the raw input string is separated into an array of individual lines, using the newline character as a delimiter.
-    let lineArray = inputStringData.split("\n");
+function ProcessInput(inputString) {
+  // Split the entire input string into an array of individual lines.
+  let lineArray = inputString.split("\n");
 
-    // The initial element of the line array is parsed to determine the total quantity of subsequent data entries.
-    const numberOfEntries = Number(lineArray[0]);
+  // The first line contains the number of entries (N). Convert it to a numeric type.
+  const numEntries = +lineArray[0];
 
-    // An accumulator variable is initialized to store the primary sum of values.
-    let finalResultAccumulator = 0;
+  // Initialize a variable to accumulate the sum of the first elements of pairs.
+  let totalSum = 0;
 
-    // A sentinel value is set for tracking the smallest relevant number encountered;
-    // a very large number ensures any valid comparison will result in an update.
-    let minimumValueToSubtract = 10_000_000_000; // Represents 1e10, a very high initial value.
+  // Initialize a variable to track the minimum second element of pairs where the first is greater than the second.
+  // Use a very large number as an initial sentinel value, representing an "infinity" for comparison.
+  let minValToSubtract = 1e10; // A large floating-point number.
 
-    // A loop iterates through each of the specified data entries.
-    for (let currentIterationIndex = 0; currentIterationIndex < numberOfEntries; currentIterationIndex++) {
-        // Each data line (starting from the second line of the input) is processed.
-        // It's split by spaces, and each resulting substring is converted into an integer.
-        let currentPairOfNumbers = lineArray[currentIterationIndex + 1]
-            .split(" ")
-            .map(singleStringNumber => parseInt(singleStringNumber, 10));
+  // Iterate through each of the N entries, starting from the second line of the input.
+  for (let idx = 0; idx < numEntries; idx++) {
+    // Get the current line, split it by space, and convert each resulting part to a number.
+    // The actual data lines start from index 1 in the lineArray.
+    let currentPair = lineArray[idx + 1].split(" ").map(item => +item);
 
-        // A conditional check is performed: if the first number of the pair is greater than the second.
-        if (currentPairOfNumbers[0] > currentPairOfNumbers[1]) {
-            // If the condition is met, the tracking variable is updated to hold the minimum of its current value
-            // and the second number of the current pair.
-            minimumValueToSubtract = Math.min(minimumValueToSubtract, currentPairOfNumbers[1]);
-        }
-
-        // Regardless of the condition, the first number of the current pair is added to the overall sum.
-        finalResultAccumulator += currentPairOfNumbers[0];
+    // Check if the first element of the current pair is strictly greater than its second element.
+    if (currentPair[0] > currentPair[1]) {
+      // If the condition is met, update minValToSubtract with the smaller of its current value
+      // and the second element of the current pair.
+      minValToSubtract = Math.min(minValToSubtract, currentPair[1]);
     }
 
-    // After the iteration, a final check determines if the sentinel value was ever updated.
-    if (minimumValueToSubtract === 10_000_000_000) {
-        // If the sentinel remains unchanged, it implies the condition was never met, so the result is reset to zero.
-        finalResultAccumulator = 0;
-    } else {
-        // Otherwise, the smallest relevant number found is deducted from the accumulated sum.
-        finalResultAccumulator -= minimumValueToSubtract;
-    }
+    // Add the first element of the current pair to the running total sum.
+    totalSum += currentPair[0];
+  }
 
-    // The calculated final result is then printed to the console.
-    console.log(finalResultAccumulator);
+  // After processing all entries, determine the final sum based on whether a valid minimum was found.
+  if (minValToSubtract === 1e10) {
+    // If minValToSubtract is still its initial sentinel value, it means no pair satisfied the condition
+    // (first element > second element). In this specific case, the problem requires the total sum to be 0.
+    totalSum = 0;
+  } else {
+    // Otherwise, a valid minimum second element was found, so subtract it from the total sum.
+    totalSum -= minValToSubtract;
+  }
+
+  // Output the final calculated sum to the standard console.
+  console.log(totalSum);
 }
 
-// A utility constant to encapsulate the file system module for input operations.
-const fileSystemModuleAccessor = require("fs");
-
-// An anonymous function to retrieve all content from the standard input stream.
-const retrieveStandardInputContent = () => {
-    return fileSystemModuleAccessor.readFileSync("/dev/stdin", "utf-8");
-};
-
-// The primary processing function is invoked with the content acquired from standard input.
-ProcessInputData(retrieveStandardInputContent());
+// Read the entire content from standard input synchronously using Node.js file system module.
+// The content is expected to be UTF-8 encoded.
+// Then, invoke the main processing function with the obtained input string.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

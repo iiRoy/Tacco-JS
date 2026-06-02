@@ -1,38 +1,21 @@
-/*
- * This JavaScript module processes a series of numerical inputs.
- * Its purpose is to identify which of two candidate values is closer to a primary target value.
- */
-function EvaluateNumericProximity( sourceContent ) {
-  // First, parse the provided string content into a collection of numerical entities.
-  // The input string is expected to contain space-separated numbers.
-  const numericCollection = sourceContent.split( ' ' ).map( ( currentToken ) => {
-    // Convert each string token into its numerical representation.
-    return Number( currentToken ) ;
-  } ) ;
+function ProcessInput(rawData) {
+  // Parse the input string into an array of numbers
+  const parsedValues = rawData.split(' ').map(valStr => Number(valStr));
 
-  // Assign the initial numerical entity as the main reference.
-  const centralValue = numericCollection[ 0 ] ;
+  // Extract the individual numerical components
+  const targetVal = parsedValues[0]; // The primary value
+  const firstOption = parsedValues[1]; // The first candidate value
+  const secondOption = parsedValues[2]; // The second candidate value
 
-  // Assign the second numerical entity as the first candidate.
-  const candidateAlpha = numericCollection[ 1 ] ;
-
-  // Assign the third numerical entity as the second candidate.
-  const candidateBeta = numericCollection[ 2 ] ;
-
-  // Compare the absolute difference between the central value and candidate alpha
-  // against the absolute difference between the central value and candidate beta.
-  if ( Math.abs( centralValue - candidateAlpha ) > Math.abs( centralValue - candidateBeta ) ) {
-    // If candidate alpha is further away, log the label 'B'.
-    console.log( 'B' ) ;
+  // Compare the absolute differences to determine which candidate is closer
+  // If the distance from targetVal to firstOption is greater than
+  // the distance from targetVal to secondOption, then secondOption is closer.
+  if (Math.abs(targetVal - firstOption) > Math.abs(targetVal - secondOption)) {
+    console.log('B'); // Output 'B' if the second option is closer
+  } else {
+    console.log('A'); // Otherwise, output 'A' (first option is closer or equidistant)
   }
-  else {
-    // Otherwise (if candidate beta is further or distances are equal), log the label 'A'.
-    console.log( 'A' ) ;
-  }
-} // End of function EvaluateNumericProximity.
+}
 
-
-// Execute the core processing routine.
-// The raw input data is asynchronously read from the standard input stream
-// using Node.js's file system module, interpreted as UTF-8 encoding.
-EvaluateNumericProximity( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the entire standard input as a UTF-8 string and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,44 +1,52 @@
-const processRoutes = (inputData) => {
-    const parsedLines = inputData.trim().split('\n');
-    const totalStations = parseInt(parsedLines[0], 10);
+"use strict";
 
-    const stationConnections = parsedLines.slice(1).map(lineText => {
-        const numericParts = lineText.split(' ').map(val => parseInt(val, 10));
-        return { travelDuration: numericParts[0], initialDeparture: numericParts[1], departureFrequency: numericParts[2] };
-    });
+const determineDeparture = (arrivalMoment, initialDeparture, departureInterval) =>
+  (arrivalMoment <= initialDeparture)
+    ? initialDeparture
+    : (arrivalMoment <= initialDeparture + departureInterval)
+      ? initialDeparture + departureInterval
+      : arrivalMoment;
 
-    const calculateActualDeparture = (arrivalAtStation, connectionSchedule) => {
-        if (arrivalAtStation === connectionSchedule.initialDeparture) {
-            return connectionSchedule.initialDeparture;
-        } else {
-            return Math.max(arrivalAtStation, connectionSchedule.initialDeparture + connectionSchedule.departureFrequency);
-        }
-    };
+const computeTravelDuration = (startingPointIndex, totalPointsCount, segmentDetailsList) => {
+  if (startingPointIndex === totalPointsCount - 1) {
+    return 0;
+  }
 
-    const ascertainJourneyDuration = (startingPointIndex) => {
-        if (startingPointIndex === totalStations - 1) {
-            return 0;
-        }
+  const firstLeg = segmentDetailsList[startingPointIndex];
+  let currentAccumulatedTime = firstLeg.start + firstLeg.cost;
 
-        const currentSegment = stationConnections[startingPointIndex];
-        let currentTotalTime = currentSegment.initialDeparture + currentSegment.travelDuration;
+  const remainingLegs = segmentDetailsList.slice(startingPointIndex + 1, totalPointsCount - 1);
 
-        const subsequentSegments = stationConnections.slice(startingPointIndex + 1, totalStations - 1);
-
-        const finalJourneyTime = subsequentSegments.reduce((accumulatedTimeAtStation, nextConnection) => {
-            const departureTime = calculateActualDeparture(accumulatedTimeAtStation, nextConnection);
-            return departureTime + nextConnection.travelDuration;
-        }, currentTotalTime);
-
-        return finalJourneyTime;
-    };
-
-    const allOutcomeDurations = Array.from({ length: totalStations }, (_, index) =>
-        ascertainJourneyDuration(index)
-    );
-
-    return allOutcomeDurations.join('\n');
+  return remainingLegs.reduce((accumulatedTime, currentSegment) => {
+    const nextDepartureMoment = determineDeparture(accumulatedTime, currentSegment.start, currentSegment.freq);
+    return nextDepartureMoment + currentSegment.cost;
+  }, currentAccumulatedTime);
 };
 
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processRoutes(inputSource));
+const parseInputData = (rawInputString) => {
+  const inputLines = rawInputString.trim().split('\n');
+  const totalStations = parseInt(inputLines[0], 10);
+
+  const routeSegments = inputLines.slice(1, totalStations).map(lineContent => {
+    const numericParts = lineContent.split(' ').map(Number);
+    return { cost: numericParts[0], start: numericParts[1], freq: numericParts[2] };
+  });
+
+  return { totalStations, routeSegments };
+};
+
+const executeScheduleCalculation = (inputSource) => {
+  const { totalStations, routeSegments } = parseInputData(inputSource);
+
+  const finalArrivalTimes = Array.from({ length: totalStations }, (_, stationIndex) =>
+    computeTravelDuration(stationIndex, totalStations, routeSegments)
+  );
+
+  return finalArrivalTimes.join('\n');
+};
+
+const programEntry = (inputPayload) => {
+  console.log(executeScheduleCalculation(inputPayload));
+};
+
+programEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

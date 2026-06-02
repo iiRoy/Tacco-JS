@@ -1,43 +1,51 @@
-// This function processes a raw text payload for string comparison.
-function AnalyzeStringSimilarity(incomingData) {
-  // The provided data is broken down into individual text rows.
-  const textRows = incomingData.split('\n');
-  const primarySequence = textRows[0];
-  const secondarySequence = textRows[1];
+// This function processes the provided input string.
+function ProcessInput(rawData) {
+    // Split the raw input into an array of lines.
+    const dataRows = rawData.split("\n");
 
-  // Initialize the minimum difference encountered so far.
-  let minimumDifference = secondarySequence.length;
+    // The first line is the source string.
+    const sourceString = dataRows[0];
+    // The second line is the target string.
+    const targetString = dataRows[1];
 
-  // Handle the edge case where the pattern sequence is empty.
-  if (secondarySequence.length === 0) {
-    return console.info(0);
-  }
+    // Initialize the minimum difference count with the length of the target string.
+    // This assumes the worst case where all characters are different.
+    let minDiffCount = targetString.length;
 
-  // Iterate through all possible starting positions within the primary sequence.
-  for (let currentStartIndex = 0; currentStartIndex < primarySequence.length - secondarySequence.length; currentStartIndex++) {
-    // Initialize the count of differences for the current window.
-    let currentMismatchCount = 0;
-
-    // Compare characters within the current window of the primary sequence against the secondary sequence.
-    for (let charIndex = 0; charIndex < secondarySequence.length; charIndex++) {
-      const mainCharacter = primarySequence.substring(currentStartIndex + charIndex, currentStartIndex + charIndex + 1);
-      const patternCharacter = secondarySequence.substring(charIndex, charIndex + 1);
-
-      // If characters do not match, increment the mismatch counter.
-      if (mainCharacter !== patternCharacter) {
-        currentMismatchCount++;
-      }
+    // If the target string is empty, there are no differences.
+    if (targetString.length === 0) {
+        return console.log(0);
     }
 
-    // Update the overall minimum difference if the current window has fewer mismatches.
-    if (currentMismatchCount < minimumDifference) {
-      minimumDifference = currentMismatchCount;
-    }
-  }
+    // Iterate through all possible starting positions for the target string within the source string.
+    // The loop runs from the beginning of the source string up to the point where the target string
+    // can still fully fit within the remaining part of the source string.
+    for (let outerIdx = 0; outerIdx <= sourceString.length - targetString.length; outerIdx++) {
+        // Initialize a counter for differences in the current window.
+        let currentDiffs = 0;
 
-  // Display the final calculated minimum difference.
-  console.info(minimumDifference);
+        // Compare characters of the target string with the current window of the source string.
+        for (let innerIdx = 0; innerIdx < targetString.length; innerIdx++) {
+            // Get the character from the source string at the current window position.
+            const charFromSource = sourceString.substr(outerIdx + innerIdx, 1);
+            // Get the character from the target string.
+            const charFromTarget = targetString.substr(innerIdx, 1);
+
+            // If the characters do not match, increment the difference counter.
+            if (charFromSource !== charFromTarget) {
+                currentDiffs = currentDiffs + 1;
+            }
+        }
+
+        // If the current window has fewer differences than the previously recorded minimum, update the minimum.
+        if (currentDiffs < minDiffCount) {
+            minDiffCount = currentDiffs;
+        }
+    }
+
+    // Output the final minimum difference count.
+    console.log(minDiffCount);
 }
 
-// The following section handles standard input/output and should not be modified.
-AnalyzeStringSimilarity(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Do not modify the following line. It handles reading input and calling the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,22 @@
-// This module processes some incoming data to determine a status.
+function ProcessInput (rawData) {
+  // Split the raw input string by space to get individual values.
+  // The first part represents the maximum allowed value.
+  let limitValue = rawData.split(" ")[0];
 
-function  ProcessInputData  (   rawData   )
-{
-  // Split the raw input string by space to get two distinct values.
-  var   thresholdValue   =   rawData.split(" ")[0]   ;
-  var   currentReading   =   rawData.split(" ")[1]   ;
+  // The second part represents the current observed value.
+  let currentWeight = rawData.split(" ")[1];
 
-  // Compare the second value against the first.
-  if   (   currentReading   >   thresholdValue   )
-  {
-  	console.log("safe")   ; // Output "safe" if the condition is met.
-  }
-  else
-  {
-  	console.log("unsafe")   ; // Otherwise, output "unsafe".
+  // Compare the two values. JavaScript's '>' operator will perform
+  // an implicit type conversion from string to number for this comparison.
+  if (currentWeight > limitValue) {
+    // If the current weight exceeds the limit, it's considered safe.
+    console.log("safe");
+  } else {
+    // Otherwise, if it's within or equal to the limit, it's unsafe.
+    console.log("unsafe");
   }
 }
 
-// Execute the main processing function with data read from standard input.
-ProcessInputData (   require("fs").readFileSync("/dev/stdin", "utf8")   )   ;
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

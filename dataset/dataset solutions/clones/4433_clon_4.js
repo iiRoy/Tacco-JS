@@ -1,21 +1,11 @@
-const fabricateIdentifier = (sourcePayload) => {
-    const componentElements = Array.from(sourcePayload);
+const processInputText = (sourceInput) => {
+    const charSequence = Array.from(sourceInput);
 
-    const secondElement = componentElements[1] ?? ''; 
-    
-    const finalElement = componentElements[componentElements.length - 1] ?? '';
+    const secondElement = charSequence[1];
+    const lastElement = charSequence[charSequence.length - 1];
+    const innerSegmentSize = charSequence.length - 2;
 
-    let numericRepresentation = 0;
-    if (componentElements.length < 2) {
-        numericRepresentation = componentElements.length - 2;
-    } else {
-        numericRepresentation = componentElements
-            .filter((_, idx) => idx >= 1 && idx < componentElements.length - 1)
-            .length;
-    }
-
-    return `${secondElement}${numericRepresentation}${finalElement}`;
+    console.log(`${secondElement}${innerSegmentSize}${lastElement}`);
 };
 
-const acquiredTextStream = require("node:fs").readFileSync(0, "utf8"); 
-console.log(fabricateIdentifier(acquiredTextStream));
+processInputText(require("fs").readFileSync("/dev/stdin", "utf8"));

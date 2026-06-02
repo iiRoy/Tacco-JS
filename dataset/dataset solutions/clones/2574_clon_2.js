@@ -1,49 +1,45 @@
-// This function computes a specific weighted sum based on input data.
-function CalculateWeightedSum(sourceData) {
+// This function is designed to parse and compute a result from a multi-line string input.
+function ProcessInput(rawData) {
+  // Divide the entire input string into an array of individual lines.
+  let lineSegments = rawData.split("\n");
 
-    // Split the raw input string into an array of lines.
-    const dataLines = sourceData.split("\n");
+  // The first line is processed into an array of its constituent characters.
+  // This array's length will implicitly determine the iteration count in the loop.
+  let lineOneDigits = lineSegments[0].split("");
 
-    // The first line indicates the total number of elements to process.
-    // NOTE: The original code's variable 'n' was assigned `input[0].split("")`,
-    // making it an array of characters. The loop condition `i < n` would then
-    // perform a string comparison after 'n' is coerced to a string (e.g., ["1","0"] -> "1,0").
-    // This behavior is preserved for strict Type II cloning, even if it implies
-    // non-standard numerical iteration for multi-digit numbers.
-    let numItems = dataLines[0].split("");
+  // The second line is parsed into an array of strings, separated by spaces.
+  // This array represents the primary sequence for calculations.
+  let sequenceA = lineSegments[1].split(" ");
 
-    // The second line contains a sequence of primary indices, space-separated.
-    const sequenceA = dataLines[1].split(" ");
+  // The third line is also split by spaces, providing a set of numerical values.
+  let valuesB = lineSegments[2].split(" ");
 
-    // The third line provides a set of values for the first type of sum.
-    const valuesB = dataLines[2].split(" ");
+  // Similarly, the fourth line contains another set of numerical costs, space-separated.
+  let costsC = lineSegments[3].split(" ");
 
-    // The fourth line offers a set of values for conditional additions.
-    const valuesC = dataLines[3].split(" ");
+  // Initialize a variable to accumulate the final computed value.
+  let totalScore = 0;
 
-    // Initialize a variable to accumulate the final result.
-    let finalScore = 0;
+  // Begin an iterative process, looping as many times as there are characters in the first line.
+  // The 'lineOneDigits' array is implicitly converted to its numeric length for the comparison.
+  for (let idx = 0; idx < lineOneDigits; idx++) {
+    // Add a value from 'valuesB' to the total score. The index is derived from 'sequenceA',
+    // adjusting for 0-based indexing (a[idx] is a string, so a[idx]-1 performs numeric conversion).
+    totalScore += Number(valuesB[sequenceA[idx] - 1]);
 
-    // Iterate through the primary indices to calculate the score.
-    // The loop termination depends on string comparison due to 'numItems' type.
-    for (let currentIdx = 0; currentIdx < numItems; currentIdx++) {
-
-        // Add the value from 'valuesB' corresponding to the current primary index.
-        // Note: Indices are 1-based in the input data, so we subtract 1.
-        finalScore += Number(valuesB[Number(sequenceA[currentIdx]) - 1]);
-
-        // Check for a specific condition: if the current index is not the first,
-        // and the current primary index is exactly one greater than the previous one.
-        if (currentIdx > 0 && Number(sequenceA[currentIdx]) === Number(sequenceA[currentIdx - 1]) + 1) {
-
-            // If the condition is met, add a value from 'valuesC' based on the previous primary index.
-            finalScore += Number(valuesC[Number(sequenceA[currentIdx - 1]) - 1]);
-        }
+    // Evaluate a conditional rule: if this is not the very first iteration
+    // AND the current element in 'sequenceA' is exactly one greater than the preceding element.
+    if (idx > 0 && sequenceA[idx] == Number(sequenceA[idx - 1]) + 1) {
+      // If the condition holds true, incorporate an additional cost from 'costsC'.
+      // The index for 'costsC' is based on the previous element of 'sequenceA',
+      // again adjusting for 0-based indexing.
+      totalScore += Number(costsC[sequenceA[idx - 1] - 1]);
     }
+  }
 
-    // Output the computed final score to the console.
-    console.log(finalScore);
+  // Display the final calculated score to the standard output.
+  console.log(totalScore);
 }
 
-// Read the input data from standard input and pass it to the processing function.
-CalculateWeightedSum(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function by reading input from the standard input stream.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

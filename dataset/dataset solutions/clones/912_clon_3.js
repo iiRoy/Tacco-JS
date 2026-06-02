@@ -1,171 +1,92 @@
-const processInputData = function() {
-    let currentInputData; // Renamed 'arg' from original
-    let firstParsedValue; // To hold the value used for the loop condition
-    let fetchedLineContent; // To store the raw line read from input
+//usr/bin/env node $0 $@;exit 
+var executeProgram = function() {
+    var inputLineParts;
+    var firstNum;
+    var secondNum;
 
-    // Main processing loop: continues until a specific termination condition is met.
+    // Helper function to encapsulate the core calculation logic
+    // This replaces the Math.min.apply(null, Array.apply(...).map(...)) structure
+    var calculateMinHypotenuseDifference = function(valA, valB) {
+        let currentMinimumDiff = Infinity;
+        // The original loop limit was 1 + (a / 2 ^ 0), which is equivalent to 1 + Math.floor(a / 2)
+        const iterationLimit = 1 + Math.floor(valA / 2); 
+
+        for (let currentIterationIndex = 0; currentIterationIndex < iterationLimit; currentIterationIndex++) {
+            const hypotenuseValue = Math.hypot(currentIterationIndex, valA - currentIterationIndex);
+            const absoluteDifference = Math.abs(valB - hypotenuseValue);
+            
+            if (absoluteDifference < currentMinimumDiff) {
+                currentMinimumDiff = absoluteDifference;
+            }
+        }
+        return currentMinimumDiff;
+    };
+
     while (true) {
-        fetchedLineContent = retrieveInputLine(); // Renamed 'readline'
-
-        // Check if there are no more lines to read from the input stream.
-        if (fetchedLineContent === null) {
-            // This condition signifies the end of available input.
+        const rawLine = readInputLine();
+        if (rawLine === null) { // Check for end of input stream
             break;
         }
 
-        // Parse the fetched line: split by space and convert parts to numbers.
-        currentInputData = fetchedLineContent.split(' ').map(Number);
+        // Split and parse the input line
+        inputLineParts = rawLine.split(' ').map(Number);
+        firstNum = inputLineParts[0];
 
-        // Extract the first value to check the loop termination condition.
-        firstParsedValue = currentInputData[0];
-
-        // The original logic terminates if the first number on the line is zero.
-        if (firstParsedValue === 0) {
-            break; // Exit the loop as per the original problem's end-of-input signal.
+        // The original loop condition was based on the first number being non-zero
+        if (firstNum === 0) { 
+            break;
         }
-
-        // --- Type III Addition: Input Validation and Guard Clause ---
-        // Ensure that we have at least two numbers and they are valid numerical values.
-        if (currentInputData.length < 2 || isNaN(firstParsedValue) || isNaN(currentInputData[1])) {
-            reportError("Detected an invalid or incomplete input line. Skipping processing for this line.");
-            continue; // Skip to the next line of input.
-        }
-
-        // Rename variables for better clarity, corresponding to 'a' and 'b' in the original.
-        const primarySegmentLength = firstParsedValue;       // Corresponds to 'a'
-        const targetHypotenuseValue = currentInputData[1]; // Corresponds to 'b'
-
-        // Calculate the effective upper bound for our iteration.
-        // Original: 1 + (a/2^0) which is equivalent to 1 + Math.floor(a/2)
-        const iterationMaximum = Math.floor(primarySegmentLength / 2);
-        // The number of values to generate in the array (e.g., for a=5, max=2, values for i=0,1,2 -> count=3)
-        const numberOfValuesToGenerate = 1 + iterationMaximum;
-
-        // --- Type III Structural Change: Explicit Array Construction ---
-        // Instead of a single-line Array.apply().map() expression, build the array step-by-step for clarity.
-        const calculatedAbsoluteDifferences = [];
-        calculatedAbsoluteDifferences.length = numberOfValuesToGenerate; // Pre-allocate array size for efficiency (optional)
-
-        // Iterate from 0 up to the calculated maximum split point.
-        for (let currentSplitPoint = 0; currentSplitPoint <= iterationMaximum; ++currentSplitPoint) {
-            // Calculate the length of the second segment.
-            const complementarySegmentLength = primarySegmentLength - currentSplitPoint;
-
-            // Compute the hypotenuse formed by these two segments using Pythagorean theorem.
-            const resultingHypotenuse = Math.hypot(currentSplitPoint, complementarySegmentLength);
-
-            // Calculate the difference between the target value and the computed hypotenuse.
-            const differenceFromTarget = targetHypotenuseValue - resultingHypotenuse;
-
-            // Store the absolute difference to our collection at the correct index.
-            calculatedAbsoluteDifferences[currentSplitPoint] = Math.abs(differenceFromTarget);
-        }
-
-        // Find the minimum value among all calculated absolute differences.
-        // Using the spread operator for Math.min is a modern and cleaner equivalent to .apply().
-        const minimumCalculatedDifference = Math.min(...calculatedAbsoluteDifferences);
-
-        // Display the final result for the current input set.
-        outputResult(minimumCalculatedDifference);
+        
+        secondNum = inputLineParts[1];
+        
+        // Perform the calculation using the extracted helper function
+        const computedResult = calculateMinHypotenuseDifference(firstNum, secondNum);
+        outputResult(computedResult);
     }
 };
 
-/// --- Input/Output Management Module ---
-// This section handles the environment-specific I/O operations.
-
-// Check if we are running in a Node.js environment using process object availability.
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // --- Output Function for Node.js ---
-    /**
-     * Displays output to the console. Can optionally flag output as an error.
-     * @param {any} messageContent - The content to be displayed.
-     * @param {boolean} [isErrorMessage=false] - True if this message should be treated as an error.
-     */
-    const outputResult = function(messageContent, isErrorMessage = false) { // Renamed 'print'
-        if (isErrorMessage) {
-            console.error("[APPLICATION_ERROR]:", String(messageContent)); // Using console.error for errors
-        } else {
-            console.log(String(messageContent)); // Ensuring output is stringified
-        }
+/// IO Handling ///
+if (1) {
+    // Node.js specific I/O implementation
+    var outputResult = function(valueToPrint) {
+        console.log(valueToPrint);
     };
 
-    /**
-     * Reports an error message to the console. A specialized wrapper for outputResult.
-     * @param {string} errorText - The error message string.
-     */
-    const reportError = function(errorText) {
-        outputResult(errorText, true);
-    };
+    var readInputLine = (function() {
+        var inputBuffer = [];
+        var bufferIndex = 0;
+        var standardInput = process.openStdin();
+        standardInput.setEncoding('utf8');
 
-    // --- Input Reading Mechanism for Node.js ---
-    const retrieveInputLine = (function() { // Renamed 'readline'
-        const storedInputLines = []; // Renamed 'T' for line storage
-        let currentReadIndex = 0; // Renamed 'cnt' for tracking read position
-        let uncompletedInputFragment = ""; // Renamed 'input_fragment' for partial lines
-
-        // Helper function to process raw data chunks from stdin.
-        const processRawInput = (incomingDataChunk) => {
-            const combinedData = uncompletedInputFragment + incomingDataChunk;
-            const currentLineParts = combinedData.split("\n"); // Renamed 'ref'
-
-            uncompletedInputFragment = currentLineParts.pop(); // Store the last potentially incomplete line.
-
-            for (let partIdx = 0; partIdx < currentLineParts.length; ++partIdx) { // Renamed 'i'
-                const lineContent = currentLineParts[partIdx].trim(); // Trim leading/trailing whitespace.
-                if (lineContent.length > 0) { // Only store non-empty lines after trimming.
-                    storedInputLines.push(lineContent);
+        var partialInputBuffer = "";
+        standardInput.on('data', function(incomingData) {
+            var processedLines = (partialInputBuffer + incomingData).split("\n");
+            partialInputBuffer = processedLines.pop(); // Store any incomplete last line
+            for (var i = 0; i < processedLines.length; i++) {
+                if (processedLines[i] === '') continue; // Skip empty lines that might result from split
+                inputBuffer.push(processedLines[i]);
+            }
+        });
+        standardInput.on('end', function(_endEvent) { // _endEvent parameter is not used
+            if (partialInputBuffer) { // Process any remaining data after stream ends
+                var processedLines = (partialInputBuffer + "\n").split("\n"); 
+                partialInputBuffer = processedLines.pop(); 
+                for (var i = 0; i < processedLines.length; i++) {
+                    if (processedLines[i] === '') continue;
+                    inputBuffer.push(processedLines[i]);
                 }
             }
-        };
-
-        const standardInputSource = process.stdin; // Renamed 'stdin'
-        standardInputSource.setEncoding('utf8'); // Ensure proper character encoding for input.
-
-        // Event listener for incoming data chunks.
-        standardInputSource.on('data', processRawInput);
-
-        // Event handler for when the input stream ends.
-        standardInputSource.on('end', () => {
-            // Process any remaining data in the buffer as a final line.
-            if (uncompletedInputFragment.length > 0) {
-                processRawInput(uncompletedInputFragment + "\n"); // Append newline to ensure processing as a full line.
-                uncompletedInputFragment = ""; // Clear the buffer.
-            }
-            // Once all input is received and processed, initiate the main application logic.
-            processInputData();
+            executeProgram(); // Start the main program logic once all input is buffered
         });
 
-        // --- Type III Addition: Input Stream Error Handling ---
-        standardInputSource.on('error', (err) => {
-            reportError(`An unexpected error occurred with the input stream: ${err.message}`);
-            // In a production application, more robust error recovery or process termination might be needed.
-            process.exit(1); // Terminate the process on critical I/O error.
-        });
-
-        // The public API function for reading a single line.
         return function() {
-            if (currentReadIndex >= storedInputLines.length) {
-                return null; // Signal that no more lines are available for reading.
+            if (inputBuffer.length <= bufferIndex) {
+                return null; // Signal that no more lines are available
             }
-            // Return the next available line and advance the read pointer.
-            return storedInputLines[currentReadIndex++];
+            return inputBuffer[bufferIndex++];
         };
     })();
-
 } else {
-    // --- Fallback for Non-Node.js Environments (e.g., V8 shell, browser console) ---
-    // In environments like the V8 shell, 'readline' and 'print' are often globally available.
-    // For a Type III clone, we'll define wrappers to match our chosen function names,
-    // assuming these globals exist or providing a basic fallback.
-
-    const outputResult = typeof print === 'function' ? print : console.log; // Use global print or console.log
-    const retrieveInputLine = typeof readline === 'function' ? readline : () => {
-        outputResult("Warning: readline function not found in this environment. Input will be unavailable.", true);
-        return null; // Indicate no input can be read
-    };
-    const reportError = (msg) => outputResult(msg, true); // Simple error reporter for this branch
-
-    // Directly call the main processing logic as input is assumed to be synchronous or pre-loaded
-    // in such environments. This branch is simplified as the Node.js implementation is the primary focus.
-    processInputData();
+    // V8 shell environment (alternative, not used in this Node.js setup)
+    executeProgram();
 }

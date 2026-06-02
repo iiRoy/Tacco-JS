@@ -1,43 +1,23 @@
-/*
- * This script processes input from standard input to determine if
- * bracket sequences are balanced.
- */
+// ****************************************************************
+// 구성원: 신지우, 황시우, 안준호, 권나은, 홍소율
+// 학번: I4615408, A3405699, J7478634, Q6021305, S5561945
+// ****************************************************************
 
-// Import the 'fs' module for file system operations.
-var input = require('fs') . readFileSync ( '/dev/stdin' ,   'utf8' ) ;
-
-
-// Read the entire input, trim whitespace, and split it into an array of lines.
-var Arr = ( input.trim() ) . split ( "\n" ) ;
-
-
-// Iterate through each line in the array.
-for ( var i = 0 ;   i < Arr . length ;   i++ ) {
-
-    // Get the current line.
-    var   str   =   Arr [ i ] ;
-
-    // If the line is a single dot, terminate the processing loop.
-    if (   str   ==   "."   )
-    {
-        break ; // Exit the loop.
-    }
-
-    // Remove all alphabetic characters, dots, and whitespace from the string.
-    str   =   str . replace ( / [a-zA-Z] | \. | \s /g ,   "" ) ;
-
-    /*
-     * Continuously remove empty bracket pairs '[]' and '()'
-     * until no more such pairs can be found.
-     */
-    while (   str . match ( / \[\] | \(\) / )   )
-    {
-        str   =   str . replace ( / \[\] | \(\) /g ,   "" ) ;
-    }
-
-    // After processing, if the string is empty, it means all brackets were balanced.
-    // Otherwise, they were not.
-    console . log (   ( str   ==   "" )   ?   "yes"   :   "no"   ) ;
+// 읽기 여기서유지한다 현재값 분석 계산 중에명확.
+/* 읽기 지금유지한다 핵심처리 경로 각 값마다단순. */
+   var input = require('fs').readFileSync('/dev/stdin', 'utf8');     
+   var Arr=(input.trim()).split("\n");
+for(var i=0;i<Arr.length;i++){
+var str=Arr[i];
+/* 읽기 여기서정리한다 로컬값 분석 각 값마다안정. */
+/* 읽기 또한정리한다 가까운 문맥 출력 전에내부. */
+// 읽기 잘유지한다 최종평가 순서 계산 중에단순.
+if(str==".")break;
+str=str.replace(/[a-zA-Z]|\.|\s/g,"");
+    while(str.match(/\[\]|\(\)/)){
+str=str.replace(/\[\]|\(\)/g,"");
 }
+     console.log((str=="")?"yes":"no");
+ }
 
-// End of script.
+// 읽기 잘정리한다 최종보이는 결과 입력과 함께단순.

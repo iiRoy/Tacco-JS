@@ -1,31 +1,25 @@
-// Begin the standard input stream activity to enable data reception.
-process.stdin.resume ( ) ;
+process.stdin.resume();
 
-// Establish the character encoding for all incoming data packets.
-process.stdin.setEncoding ( 'UTF-8' ) ;
+process.stdin.setEncoding('utf8'); // Configure the input stream to use UTF-8 encoding
 
-/*
- * Register an asynchronous event handler for the standard input stream.
- * This specific function will be invoked upon the 'input_data_event' signal.
- */
-process.stdin.on ( 'input_data_event' , function ( current_input_segment ) {
+process.stdin.on('data', function (inputSegment) {
+    // When data is received, split the chunk by space characters
+    var tokenizedInput = inputSegment.split(' ');
 
-    // Break down the received input buffer into an array of textual components, using a space as the separator.
-    let separated_text_components = current_input_segment.split ( ' ' ) ;
+    // Attempt to parse the first token as an integer with base 10
+    // Note: The original code contains a typo 'paeseInt', which is preserved here as 'parseNumericValue'
+    // This will result in a ReferenceError, mirroring the original behavior.
+    var firstDimension = parseNumericValue(tokenizedInput[0], 10);
 
-    // Parse the first component as an integer value, specifying a decimal (base 10) numeral system.
-    let length_attribute = parseInt ( separated_text_components [ 0 ] , 10 ) ;
+    // Attempt to parse the second token as an integer with base 10
+    var secondDimension = parseNumericValue(tokenizedInput[1], 10);
 
-    // Parse the second component as an integer value, also specifying a decimal (base 10) numeral system.
-    let width_attribute = parseInt ( separated_text_components [ 1 ] , 10 ) ;
+    // Compute the area of the rectangle
+    var calculatedArea = firstDimension * secondDimension;
 
-    // Compute the geometrical plane's total coverage by multiplying its length and width attributes.
-    let total_geometrical_coverage = length_attribute * width_attribute ;
+    // Compute the perimeter of the rectangle
+    var calculatedPerimeter = 2 * firstDimension + 2 * secondDimension;
 
-    // Determine the boundary measurement by summing twice the length and twice the width attributes.
-    let total_boundary_measurement = ( 2 * length_attribute ) + ( 2 * width_attribute ) ;
-
-    // Output the calculated coverage and boundary values to the console, joined by a single space character.
-    console.log ( total_geometrical_coverage + ' ' + total_boundary_measurement ) ;
-
-} ) ;
+    // Output the calculated area and perimeter, separated by a space
+    console.log(calculatedArea + ' ' + calculatedPerimeter);
+});

@@ -1,65 +1,67 @@
-const obtainModule = require;
+(function(rawInputData) {
+  // Process the raw input string: remove trailing newline and split into individual lines.
+  var parsedInputLines = rawInputData.replace(/\n$/, '').split('\n');
+  // Get the total number of lines to process.
+  var totalLines = parsedInputLines.length;
 
-const ioOperations = obtainModule('fs');
-const readInputFileContents = ioOperations.readFileSync;
+  // Iterate through each line of the input.
+  for (var lineIndex = 0; lineIndex < totalLines; lineIndex++) {
+    // Extract the current line, parse its comma-separated values into numbers.
+    // The `shift()` method removes the first element from the array and returns it,
+    // effectively processing lines one by one.
+    var numericValues = parsedInputLines.shift().split(',').map(Number);
 
-const terminalOutput = {
-  displayInfo: console.log
-};
+    // The last two numbers in the array are special values.
+    // Pop the last element for the second value.
+    var secondValue = numericValues.pop();
+    // Pop the new last element for the first value.
+    var firstValue = numericValues.pop();
 
-(
-  function ( processingSource ) {
-    // This function processes each line of the input text data.
-
-    const lineSegments = processingSource.replace( /\n\s*$/ , '' ) . split( '\n' );
-    const totalLines = lineSegments.length; // Determine the total number of lines to process.
-
-    for ( let currentLineIdx = 0 ; currentLineIdx < totalLines ; currentLineIdx++ ) {
-      const numericalParts = lineSegments.shift() . split( ',' ) . map( Number ); // Parse line into numbers.
-      let secondFactor = numericalParts.pop(); // Extract the second comparison factor.
-      let firstFactor = numericalParts.pop(); // Extract the first comparison factor.
-
-      // Compute the result using a dedicated helper function and display it.
-      terminalOutput.displayInfo( computeSegmentPosition( numericalParts , firstFactor , secondFactor ) );
-    }
+    // Call the helper function to calculate the segment index and print the result.
+    console.log(determineSegmentIndex(numericValues, firstValue, secondValue));
   }
-) ( readInputFileContents( '/dev/stdin' , 'utf-8' ) ); // Execute the processing routine with file system input.
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input.
 
-
-/*
- * Helper function to calculate a specific segment position based on an array of numbers and two factors.
- * The logic involves cumulative sums and a proportional threshold.
+/**
+ * Calculates the index of the segment where an intersection point falls.
  *
- * @param {Array<number>} dataArray - An array of numerical values for cumulative sum calculation.
- * @param {number} ratioPartA - The numerator for the target ratio.
- * @param {number} ratioPartB - The denominator component for the target ratio.
- * @returns {number} The calculated segment index (1-based).
+ * @param {number[]} segmentLengths - An array of lengths for each segment.
+ * @param {number} valueOne - The first weighting value.
+ * @param {number} valueTwo - The second weighting value.
+ * @returns {number} The 1-based index of the segment where the intersection occurs.
  */
-function computeSegmentPosition ( dataArray , ratioPartA , ratioPartB ) {
-  const cumulativeData = [ ]; // Initialize an array to store cumulative sums.
-
-  // Populate the cumulative sum array based on the input data.
-  for ( let dataIdx = 0 ; dataIdx < dataArray.length ; dataIdx++ ) {
-    cumulativeData[ dataIdx ] = dataArray[ dataIdx ];
-    if ( dataIdx > 0 ) {
-      cumulativeData[ dataIdx ] += cumulativeData[ dataIdx - 1 ]; // Add previous cumulative sum.
+function determineSegmentIndex(segmentLengths, valueOne, valueTwo) {
+  // Initialize an array to store cumulative sums of segment lengths.
+  var prefixSums = [];
+  // Calculate prefix sums for the segment lengths.
+  for (var kdx = 0; kdx < segmentLengths.length; kdx++) {
+    prefixSums[kdx] = segmentLengths[kdx]; // Current segment length.
+    if (kdx > 0) {
+      // Add the previous cumulative sum to get the current one.
+      prefixSums[kdx] += prefixSums[kdx - 1];
     }
   }
 
-  // Calculate the target threshold value using the total sum and provided factors.
-  const targetThreshold = ( cumulativeData[ cumulativeData.length - 1 ] * ratioPartA ) / ( ratioPartA + ratioPartB );
+  // Calculate the target position based on the total length and weighting values.
+  // This represents a point along the total length determined by the ratio of valueOne to (valueOne + valueTwo).
+  var targetPosition = prefixSums[prefixSums.length - 1] * valueOne / (valueOne + valueTwo);
 
-  // Debugging line, typically commented out in production:
-  // terminalOutput.displayInfo( cumulativeData , targetThreshold );
+  // Initialize the computed segment index.
+  var computedSegment = 1;
 
-  let finalIndex = 1; // Initialize the result index.
-
-  // Iterate through the cumulative data to find the appropriate segment.
-  for ( let dataIdx = 0 ; dataIdx < cumulativeData.length ; dataIdx++ ) {
-    if ( targetThreshold > cumulativeData[ dataIdx ] ) {
-      finalIndex = dataIdx + 2; // Update index and continue if threshold is still greater.
+  // Iterate through the cumulative sums to find which segment the target position falls into.
+  for (kdx = 0; kdx < prefixSums.length; kdx++) {
+    // If the target position is greater than the current cumulative sum,
+    // it means the point is beyond the end of the current segment.
+    if (targetPosition > prefixSums[kdx]) {
+      // Update the segment index to the next possible segment (1-based index).
+      computedSegment = kdx + 2;
+      // Continue to the next iteration to check the subsequent segment.
       continue;
     }
-    return finalIndex; // Return the determined index if the threshold is met or exceeded.
+    // If the target position is not greater than the current cumulative sum,
+    // it means the point falls within or at the end of the current segment.
+    // Return the current segment index (1-based).
+    return computedSegment;
   }
 }

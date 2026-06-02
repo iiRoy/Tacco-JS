@@ -1,219 +1,187 @@
-const xOffsets = [ 1, 1, 1, 0, 0, -1, -1, -1 ];
-const yOffsets = [ 1, 0, -1, 1, -1, 1, 0, -1 ];
+const deltaX = [1, 1, 1, 0, 0, -1, -1, -1]; // Horizontal movement offsets for 8 directions
+const deltaY = [1, 0, -1, 1, -1, 1, 0, -1]; // Vertical movement offsets for 8 directions
 
 /**
- * Determines the number of opponent tokens that would be captured
- * if a specific move is made by the current player.
- * @param {Array<Array<number>>} boardState The current configuration of the game board.
- * @param {number} activePlayer The player whose turn it is (1 for 'o', -1 for 'x').
+ * Evaluates the number of pieces that would be flipped if a player makes a move at a given position.
+ * @param {Array<Array<number>>} boardState The current state of the game board.
+ * @param {number} currentPlayer The player making the move (1 or -1).
  * @param {number} targetRow The row index of the potential move.
  * @param {number} targetCol The column index of the potential move.
- * @returns {number} The total count of tokens that would be flipped.
+ * @returns {number} The total count of pieces that would be flipped.
  */
-function evaluatePotentialFlips(boardState, activePlayer, targetRow, targetCol)
-{
-    let totalCaptured = 0; // Accumulates flips from all directions
-    // Loop through all 8 possible directional vectors
-    for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
-        let capturedInDirection = 0; // Tracks flips for the current direction
-        let currentScanCol = targetCol + xOffsets[directionIndex];
-        let currentScanRow = targetRow + yOffsets[directionIndex];
+function evaluateMove(boardState, currentPlayer, targetRow, targetCol) {
+    let totalFlips = 0; // Accumulator for total pieces flipped across all directions
 
-        // Traverse along the current direction while within board limits
-        while (currentScanCol > 0 && currentScanCol < 9 && currentScanRow > 0 && currentScanRow < 9) {
-            // If the scanning encounters the active player's own piece, a valid capture line is formed
-            if (boardState[currentScanRow][currentScanCol] === activePlayer) {
-                totalCaptured += capturedInDirection; // Add the captured pieces from this line
-                break; // Stop scanning in this specific direction
+    // Iterate through all 8 possible directions
+    for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
+        let currentDirectionFlips = 0; // Count of opponent pieces encountered in the current direction
+        let currentX = targetCol + deltaX[directionIndex];
+        let currentY = targetRow + deltaY[directionIndex];
+
+        // Traverse in the current direction until an edge, empty cell, or own piece is found
+        while (currentX > 0 && currentX < 9 && currentY > 0 && currentY < 9) {
+            if (boardState[currentY][currentX] === currentPlayer) {
+                totalFlips += currentDirectionFlips; // Found own piece, so all opponent pieces between can be flipped
+                break;
+            } else if (boardState[currentY][currentX] === currentPlayer * (-1)) {
+                currentDirectionFlips++; // Found an opponent's piece, increment count
+            } else {
+                break; // Empty cell or out of bounds, stop scanning this direction
             }
-            // If an opponent's piece is found, increment the counter for this direction
-            else if (boardState[currentScanRow][currentScanCol] === activePlayer * (-1)) {
-                capturedInDirection++;
-            }
-            // If an empty space or an invalid piece is found, no capture can occur in this direction
-            else {
-                break; // Stop scanning in this specific direction
-            }
-            // Advance to the next cell in the current direction
-            currentScanCol += xOffsets[directionIndex];
-            currentScanRow += yOffsets[directionIndex];
+            currentX += deltaX[directionIndex];
+            currentY += deltaY[directionIndex];
         }
     }
-    return totalCaptured; // Return the grand total of all potential flips
+    return totalFlips;
 }
 
 /**
- * Executes a move on the game board, placing the player's piece
- * and flipping all valid opponent pieces.
- * @param {Array<Array<number>>} boardState The game board, which will be modified.
- * @param {number} activePlayer The player making the move.
- * @param {number} placedRow The row index where the piece is placed.
- * @param {number} placedCol The column index where the piece is placed.
+ * Applies a move to the game board, placing the player's piece and flipping opponent pieces.
+ * @param {Array<Array<number>>} boardState The current state of the game board (modified in place).
+ * @param {number} currentPlayer The player making the move (1 or -1).
+ * @param {number} targetRow The row index where the piece is placed.
+ * @param {number} targetCol The column index where the piece is placed.
  */
-function performBoardPlacement(boardState, activePlayer, placedRow, placedCol)
-{
-    // Iterate through all eight directions to identify and flip pieces
+function applyMove(boardState, currentPlayer, targetRow, targetCol) {
+    // Check all 8 directions to identify and flip pieces
     for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
-        let piecesToFlip = 0; // Counter for pieces encountered in this direction
-        let currentScanCol = placedCol + xOffsets[directionIndex];
-        let currentScanRow = placedRow + yOffsets[directionIndex];
-        let isPathValid = false; // Flag to confirm a valid line for flipping
+        let flipsInDirection = 0; // Number of opponent pieces to flip in this specific direction
+        let currentX = targetCol + deltaX[directionIndex];
+        let currentY = targetRow + deltaY[directionIndex];
+        let canFlip = false; // Flag to indicate if a valid line of opponent pieces ending in an own piece is found
 
-        // Scan along the current direction
-        while (currentScanCol > 0 && currentScanCol < 9 && currentScanRow > 0 && currentScanRow < 9) {
-            // If player's own piece is found, it closes a line, making the path valid
-            if (boardState[currentScanRow][currentScanCol] === activePlayer) {
-                isPathValid = true;
+        // Scan along the current direction to determine if flips are possible
+        while (currentX > 0 && currentX < 9 && currentY > 0 && currentY < 9) {
+            if (boardState[currentY][currentX] === currentPlayer) {
+                canFlip = true; // Found own piece, so pieces between can be flipped
                 break;
+            } else if (boardState[currentY][currentX] === currentPlayer * (-1)) {
+                flipsInDirection++; // Found an opponent's piece
+            } else {
+                break; // Empty cell or out of bounds, no flips in this direction
             }
-            // If an opponent's piece is found, count it
-            else if (boardState[currentScanRow][currentScanCol] === activePlayer * (-1)) {
-                piecesToFlip++;
-            }
-            // If an empty cell or an unexpected piece is found, the path is not valid
-            else {
-                break;
-            }
-            // Move to the next cell in the direction
-            currentScanCol += xOffsets[directionIndex];
-            currentScanRow += yOffsets[directionIndex];
+            currentX += deltaX[directionIndex];
+            currentY += deltaY[directionIndex];
         }
 
-        // If a valid path was identified, proceed with flipping the pieces
-        if (isPathValid) {
-            // Re-initialize scan coordinates from the neighbor of the placed piece
-            currentScanCol = placedCol + xOffsets[directionIndex];
-            currentScanRow = placedRow + yOffsets[directionIndex];
-            // Perform the actual flipping for the counted pieces
-            for (let flipCounter = 0; flipCounter < piecesToFlip; flipCounter++) {
-                boardState[currentScanRow][currentScanCol] = activePlayer; // Change ownership
-                currentScanCol += xOffsets[directionIndex];
-                currentScanRow += yOffsets[directionIndex];
+        // If a valid line was found and there are pieces to flip
+        if (canFlip) {
+            // Reset coordinates to start from the target cell again for flipping
+            let flipX = targetCol + deltaX[directionIndex];
+            let flipY = targetRow + deltaY[directionIndex];
+            // Flip the opponent's pieces to the current player's color
+            for (let flipCounter = 0; flipCounter < flipsInDirection; flipCounter++) {
+                boardState[flipY][flipX] = currentPlayer;
+                flipX += deltaX[directionIndex];
+                flipY += deltaY[directionIndex];
             }
         }
     }
-    // Finally, place the current player's piece at the chosen location
-    boardState[placedRow][placedCol] = activePlayer;
+    // Finally, place the current player's piece at the target location
+    boardState[targetRow][targetCol] = currentPlayer;
 }
 
-
-
 /**
- * Orchestrates the entire game simulation from input parsing to final output.
- * @param {string} rawGameInput The raw string input representing the initial game state.
+ * Main function to process the Othello game simulation.
+ * Reads initial board state, simulates turns, and prints the final board.
+ * @param {string} gameInput The input string representing the initial board.
  */
-function runOthelloSimulation(rawGameInput)
-{
-    // Parse the input string into an array of lines
-    const inputLines = rawGameInput.split("\n");
-    let gameBoard = []; // Represents the 8x8 game board
+function ProcessGame(gameInput) {
+    // Split the input string into an array of lines
+    gameInput = gameInput.split("\n");
+    let gameBoard = []; // Represents the 8x8 Othello board, 1-indexed for convenience
 
-    // Initialize the game board with empty arrays for rows (using 1-based indexing)
-    for (let boardRowIndex = 1; boardRowIndex <= 8; boardRowIndex++) {
-        gameBoard[boardRowIndex] = [];
+    // Initialize the board with empty arrays for rows
+    for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
+        gameBoard[rowIndex] = [];
     }
 
-    let totalOccupiedSlots = 0; // Counter for the number of pieces currently on the board
+    let filledCells = 0; // Counter for cells that are not empty, used to detect game end
 
-    // Populate the game board based on the provided input
-    for (let boardRowIndex = 1; boardRowIndex <= 8; boardRowIndex++) {
-        for (let boardColIndex = 1; boardColIndex <= 8; boardColIndex++) {
-            // 'o' character corresponds to player 1
-            if (inputLines[boardRowIndex - 1][boardColIndex - 1] === 'o') {
-                totalOccupiedSlots++;
-                gameBoard[boardRowIndex][boardColIndex] = 1;
-            }
-            // 'x' character corresponds to player -1
-            else if (inputLines[boardRowIndex - 1][boardColIndex - 1] === 'x') {
-                totalOccupiedSlots++;
-                gameBoard[boardRowIndex][boardColIndex] = -1;
-            }
-            // '.' character signifies an empty cell
-            else {
-                gameBoard[boardRowIndex][boardColIndex] = 0;
+    // Populate the game board based on input characters
+    for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
+        for (let colIndex = 1; colIndex <= 8; colIndex++) {
+            const char = gameInput[rowIndex - 1][colIndex - 1]; // Input is 0-indexed
+            if (char === 'o') {
+                filledCells++;
+                gameBoard[rowIndex][colIndex] = 1; // Player 1's piece
+            } else if (char === 'x') {
+                filledCells++;
+                gameBoard[rowIndex][colIndex] = -1; // Player -1's piece
+            } else {
+                gameBoard[rowIndex][colIndex] = 0; // Empty cell
             }
         }
     }
 
-    let activePlayer = 1; // Player 1 starts the game (represented by 1)
-    let consecutivePassesOccurred = false; // Flag to track if both players passed in a row
+    let activePlayer = 1; // Player 1 starts the game
+    let passedTurn = false; // Flag to detect if the previous player passed their turn
 
-    // Main game loop: continues until the board is completely filled (64 cells)
-    while (totalOccupiedSlots < 64) {
-        let bestFlipCount = 0; // Stores the maximum flips found for a valid move in the current turn
-        let bestMoveRow = -1;  // Row of the best move
-        let bestMoveCol = -1;  // Column of the best move
+    // Main game loop: continues until the board is full (64 cells) or two consecutive passes occur
+    while (filledCells < 64) {
+        let maxFlips = 0; // Stores the maximum number of flips for the current player's best move
+        let bestRow = -1; // Row index of the best move found
+        let bestCol = -1; // Column index of the best move found
 
-        // Logic for Player 1: find the move that maximizes flips
+        // Logic for Player 1 (maximizes flips, tie-breaking by first encountered)
         if (activePlayer === 1) {
-            for (let currentRow = 1; currentRow <= 8; currentRow++) {
-                for (let currentCol = 1; currentCol <= 8; currentCol++) {
-                    // Only consider empty cells for potential moves
-                    if (gameBoard[currentRow][currentCol] === 0) {
-                        const currentMoveFlips = evaluatePotentialFlips(gameBoard, activePlayer, currentRow, currentCol);
-                        // Update the best move if more flips are possible
-                        if (currentMoveFlips > bestFlipCount) {
-                            bestFlipCount = currentMoveFlips;
-                            bestMoveRow = currentRow;
-                            bestMoveCol = currentCol;
+            for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
+                for (let colIndex = 1; colIndex <= 8; colIndex++) {
+                    if (gameBoard[rowIndex][colIndex] === 0) { // If the cell is empty
+                        let currentFlips = evaluateMove(gameBoard, activePlayer, rowIndex, colIndex);
+                        if (currentFlips > maxFlips) { // Player 1 takes the move with strictly more flips
+                            maxFlips = currentFlips;
+                            bestRow = rowIndex;
+                            bestCol = colIndex;
                         }
                     }
                 }
             }
-        }
-        // Logic for Player -1: also find the move that maximizes flips (with a slightly different tie-breaking rule)
-        else {
-            for (let currentRow = 1; currentRow <= 8; currentRow++) {
-                for (let currentCol = 1; currentCol <= 8; currentCol++) {
-                    // Only consider empty cells
-                    if (gameBoard[currentRow][currentCol] === 0) {
-                        const currentMoveFlips = evaluatePotentialFlips(gameBoard, activePlayer, currentRow, currentCol);
-                        // Update the best move if an equal or greater number of flips is possible
-                        if (currentMoveFlips >= bestFlipCount) { // Note: original code uses >= here
-                            bestFlipCount = currentMoveFlips;
-                            bestMoveRow = currentRow;
-                            bestMoveCol = currentCol;
+        } else { // Logic for Player -1 (maximizes flips, tie-breaking by last encountered, due to >=)
+            for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
+                for (let colIndex = 1; colIndex <= 8; colIndex++) {
+                    if (gameBoard[rowIndex][colIndex] === 0) { // If the cell is empty
+                        let currentFlips = evaluateMove(gameBoard, activePlayer, rowIndex, colIndex);
+                        if (currentFlips >= maxFlips) { // Player -1 takes the move with greater or equal flips
+                            maxFlips = currentFlips;
+                            bestRow = rowIndex;
+                            bestCol = colIndex;
                         }
                     }
                 }
             }
         }
 
-        // If a valid move with flips was found (bestFlipCount > 0)
-        if (bestFlipCount > 0) {
-            consecutivePassesOccurred = false; // Reset the pass flag
-            totalOccupiedSlots++;             // Increment the count of occupied cells
-            performBoardPlacement(gameBoard, activePlayer, bestMoveRow, bestMoveCol); // Apply the chosen move
-        }
-        // If no valid move was found for the current player
-        else {
-            // If this is the second consecutive pass, the game concludes
-            if (consecutivePassesOccurred) {
-                break;
+        // If a valid move was found (i.e., maxFlips > 0)
+        if (maxFlips > 0) {
+            passedTurn = false; // Reset the pass flag as a move was made
+            filledCells++; // One more cell is now occupied
+            applyMove(gameBoard, activePlayer, bestRow, bestCol); // Execute the best move
+        } else {
+            // No valid moves for the current player
+            if (passedTurn) {
+                break; // If the previous player also passed, the game ends
             }
-            consecutivePassesOccurred = true; // Mark that a pass has occurred
+            passedTurn = true; // Current player passes their turn
         }
-        // Switch players for the next turn
-        activePlayer *= (-1);
+        activePlayer *= (-1); // Switch to the other player for the next turn
     }
 
-    // Output the final state of the game board
-    for (let boardRowIndex = 1; boardRowIndex <= 8; boardRowIndex++) {
-        let rowOutputString = ""; // String builder for the current row
-        for (let boardColIndex = 1; boardColIndex <= 8; boardColIndex++) {
-            if (gameBoard[boardRowIndex][boardColIndex] === 1) {
-                rowOutputString += 'o'; // Player 1's piece
-            }
-            else if (gameBoard[boardRowIndex][boardColIndex] === -1) {
-                rowOutputString += 'x'; // Player -1's piece
-            }
-            else {
-                rowOutputString += '.'; // Empty cell
+    // Output the final state of the board
+    for (let rowIndex = 1; rowIndex <= 8; rowIndex++) {
+        let outputLine = "";
+        for (let colIndex = 1; colIndex <= 8; colIndex++) {
+            if (gameBoard[rowIndex][colIndex] === 1) {
+                outputLine += 'o';
+            } else if (gameBoard[rowIndex][colIndex] === (-1)) {
+                outputLine += 'x';
+            } else {
+                outputLine += '.';
             }
         }
-        console.log(rowOutputString); // Print the row to console
+        console.log(outputLine);
     }
 }
 
-// Read the input from standard input and initiate the game simulation
-runOthelloSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the game processing function
+ProcessGame(require("fs").readFileSync("/dev/stdin", "utf8"));

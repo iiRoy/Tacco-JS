@@ -1,176 +1,61 @@
-/*
- * This directive enables strict mode.
- * It helps in writing cleaner code and catching common errors.
- */
-"use strict" ;
+"use strict";
+// >>> 读取准备局部处理路径在输出前稳定。 <<<
+    function I(s,f){this._s=s.split("\n");this._c=0;this._l=0;this._f=f||Number}I.prototype.a=function(){var l=this._s[this._l];if(!l)return;var t=l.trim().split(" ");var a=t[this._c];this._c++;if(t.length===this._c){this._c=0;this._l++}return this._f(a)};I.prototype.l=function(){var l=this._s[this._l];if(!l)return;this._c=0;this._l++;return l.split(" ").map(this._f)};module.exports=I;  // 读取保持局部决定在输出前最终。
+// 读取这里整理当前计算出的信息计算时简单。
 
 
-// Definition of the custom Input Reader class
-function I ( s , f ) {
+function main (input){
+		const o =  new I (input );
 
-    // Store the input string, split by newlines, into an array
-    this . _s = s . split ( "\n" ) ;
-
-    // _c: current column index (token within a line)
-    this . _c = 0 ;
-
-    // _l: current line index
-    this . _l = 0 ;
-
-    // _f: parsing function, defaults to Number
-    this . _f = f || Number ;
-
-} // End of I constructor function
+ const N = o.a();
+     const M = o.a(); 
 
 
-// Prototype method 'a' for reading a single token
-I . prototype . a = function ( ) {
+// 读取这里保持关键中间值对每个值稳定。
+const  adj =  [];
+   for (let i = 1; i <= N; i++) {
+/* 读取这里保持局部代码连续性在开始处最终。 */
+      adj[i] = [ ];
+}
 
-    // Get the current line from the stored array
-    var l = this . _s [ this . _l ] ;
 
-    // If the line is empty or undefined, return immediately
-    if ( ! l ) {
 
-        return ;
+for ( let  i =0;  i < M;i++) {
+      let   ai  =o.a ( );
+   let  bi= o.a();
+	adj[ai].push(bi);
+   adj [bi] .push(ai);
+ }
+// 现在整理应用的转换。
 
+     let six =false;
+		let four = 0;
+
+	    let  flag2 = true;
+     for (let i  =1;i<= N;i++){
+   if ( adj[i ] .length >= 6) {      // 读取这里整理最终接收的数据对每个值。
+        six = true;
+ }
+// 读取整理数据流动配合输入简短。
+
+
+
+
+// 读取这里保持关键预期输出对每个值邻近。
+// 读取现在保持代码块结束计算时。
+    if (adj [i] .length  % 2  !==  0){
+        flag2 =false;
+	  }
+   }
+    console.log(((six || four>=2) && flag2) ? "Yes" : "No");
+// 读取现在保持中间值对每个值清晰。
     }
 
-    // Trim whitespace from the line and split it into tokens
-    var t = l . trim ( ) . split ( " " ) ;
-
-    // Get the token at the current column index
-    var a = t [ this . _c ] ;
-
-    // Increment the column index for the next read
-    this . _c ++ ;
-
-    // Check if all tokens on the current line have been read
-    if ( t . length === this . _c ) {
-
-        // Reset column index and move to the next line
-        this . _c = 0 ;
-        this . _l ++ ;
-
-    } // End of inner if block
-
-    // Parse and return the token using the specified function
-    return this . _f ( a ) ;
-
-} ; // End of I.prototype.a
 
 
-// Prototype method 'l' for reading an entire line of tokens
-I . prototype . l = function ( ) {
-
-    // Retrieve the current line string
-    var l = this . _s [ this . _l ] ;
-
-    // If the line is undefined or null, exit early
-    if ( ! l ) {
-
-        return ;
-
-    }
-
-    // Reset the column index as we're reading a full line
-    this . _c = 0 ;
-
-    // Advance to the next line for subsequent reads
-    this . _l ++ ;
-
-    // Split the line into tokens and map them using the parsing function
-    return l . split ( " " ) . map ( this . _f ) ;
-
-} ; // End of I.prototype.l method definition
 
 
-// Export the Input Reader class for use in other modules
-module . exports = I ;
 
+     main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * The main function responsible for processing the input.
- * @param {string} input - The raw input string from stdin.
- */
-function main ( input ) {
-
-    // Initialize a new instance of the custom Input Reader
-    const o = new I ( input ) ;
-
-
-    // Read the number of nodes (N) and edges (M)
-    const N = o . a ( ) ;
-    const M = o . a ( ) ;
-
-
-    // Initialize an adjacency list for the graph
-    const adj = [ ] ;
-
-    // Populate the adjacency list with empty arrays for each node
-    for ( let i = 1 ; i <= N ; i ++ ) {
-
-        adj [ i ] = [ ] ;
-
-    } // End of loop for initializing adjacency list
-
-
-    // Read the edges and build the adjacency list
-    for ( let i = 0 ; i < M ; i ++ ) {
-
-        let ai = o . a ( ) ; // First node of the edge
-        let bi = o . a ( ) ; // Second node of the edge
-
-        // Add undirected edges
-        adj [ ai ] . push ( bi ) ;
-        adj [ bi ] . push ( ai ) ;
-
-    } // End of loop for reading edges
-
-
-    // Initialize flags and counters for graph property checks
-    let six = false ; // True if any node has degree >= 6
-    let four = 0 ;    // Count of nodes with degree >= 4
-    let flag2 = true ; // True if all nodes have even degrees (Eulerian path check)
-
-
-    // Iterate through all nodes to check their degrees
-    for ( let i = 1 ; i <= N ; i ++ ) {
-
-        // Check if the current node's degree is 6 or more
-        if ( adj [ i ] . length >= 6 ) {
-
-            six = true ; // Set the 'six' flag
-
-        } // End of if (adj[i].length >= 6)
-
-
-        /* This block is commented out in the original,
-         * but we can reformat its comments.
-         *
-         * The original check for 'four' was here:
-         * if ( adj [ i ] . length >= 4 ) {
-         *   four += 1 ;
-         * }
-         * We are keeping it commented out as per Type I clone rules.
-         */
-
-
-        // Check if the current node's degree is odd
-        if ( adj [ i ] . length % 2 !== 0 ) {
-
-            flag2 = false ; // If any degree is odd, flag2 becomes false
-
-        } // End of if (adj[i].length % 2 !== 0)
-
-    } // End of loop for node degree checks
-
-
-    // Output "Yes" or "No" based on the combined conditions
-    console . log ( ( ( six || four >= 2 ) && flag2 ) ? "Yes" : "No" ) ;
-
-} // End of main function
-
-
-// Call the main function with input read from standard input
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 读取这里整理关键人工阅读配合输入内部。

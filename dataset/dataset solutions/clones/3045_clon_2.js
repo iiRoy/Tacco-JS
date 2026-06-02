@@ -1,38 +1,34 @@
-'use strict' // Apply strict parsing and error handling for cleaner code.
+'use strict';
 
-/**
- * Initiates the core logic to process an incoming data stream.
- * @param {string} inputData - The entire raw string content received from the input source.
+/*
+ * This script processes input data to calculate a specific sum.
+ * It reads two numbers from the first line of input.
  */
-function ProcessData(   inputData ) {
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters.
+  const lines = rawData.split('\n');
 
-  // Split the full input string by newline characters to get an array of individual lines.
-  const inputLines = inputData . split( "\n" );
+  // Parse the first line, splitting by space and converting parts to numbers.
+  let numericValues = lines[0].split(' ').map(Number);
 
-  // Parse the very first line: split it by spaces and convert each resulting part into a numerical value.
-  let valuePair = inputLines[0].split(" ").map( Number );
+  // Initialize a variable to store the calculated total.
+  let totalSum = 0;
 
-  // Initialize a variable that will store the final calculated numerical outcome.
-  let finalOutcome = 0;
-
-  // Evaluate the relationship between the two numbers in the 'valuePair' array.
-  if ( valuePair[0] === valuePair[1] )
-  {
-    finalOutcome = valuePair[0] + valuePair[1]; // If both numbers are identical, their sum is the outcome.
-  }
-  else if ( valuePair[0] < valuePair[1] )
-  {
-    finalOutcome = valuePair[1] + valuePair[1] - 1; // If the second number is greater, apply a specific calculation.
-  }
-  else if ( valuePair[0] > valuePair[1] )
-  {
-    finalOutcome = valuePair[0] + valuePair[0] - 1; // If the first number is greater, apply a different calculation.
+  // Determine the total based on the comparison of the two numbers.
+  if (numericValues[0] === numericValues[1]) {
+    // If both numbers are equal, sum them directly.
+    totalSum = numericValues[0] + numericValues[1];
+  } else if (numericValues[0] < numericValues[1]) {
+    // If the first number is smaller, sum the second number with itself minus one.
+    totalSum = numericValues[1] + numericValues[1] - 1;
+  } else if (numericValues[0] > numericValues[1]) {
+    // If the first number is larger, sum the first number with itself minus one.
+    totalSum = numericValues[0] + numericValues[0] - 1;
   }
 
-  // Output the final computed result to the standard console.
-  console.log( finalOutcome );
+  // Output the final calculated sum to the console.
+  console.log(totalSum);
+}
 
-} // End of ProcessData function definition.
-
-// Execute the main processing function by reading content from standard input synchronously.
-ProcessData( require("fs").readFileSync( "/dev/stdin", "utf8" ) );
+// Execute the main processing function with data read from standard input.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

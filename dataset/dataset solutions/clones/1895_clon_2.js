@@ -1,47 +1,42 @@
-function processInputData ( rawTextContent ) { // Main function to handle the given text
-  // Divide the entire input block into an array, where each element is a line of text.
-  let linesOfText = rawTextContent.split( '\n' );
-  
-  // Extract configuration values from the very first line of the input data.
-  // The first number represents the grand total of possible items.
-  const totalItems = Number(linesOfText[0].split(' ')[0]);
-  // The second number indicates the quantity of data pairs that follow.
-  const numPairs = Number(linesOfText[0].split(' ')[1]);
-  
-  // Create a tracking mechanism: a boolean array to signify the presence or absence of each item.
-  // Its size is `totalItems + 1` to accommodate 1-based item indexing.
-  let itemPresenceFlags = new Array( totalItems + 1 );
-  // Initially, every slot is marked as 'false', indicating no item has been observed yet.
-  itemPresenceFlags.fill( false );
-  
-  // Iterate through the input lines that detail which items are present.
-  // The loop starts from the second line (index 1) and skips every other line,
-  // as item lists are provided on alternating lines.
-  for ( let currentLineIndex = 1; currentLineIndex <= numPairs * 2; currentLineIndex += 2 ) {
-    // Break down the current line into an array of string representations of item IDs.
-    let currentElementStrings = linesOfText[currentLineIndex].split(' ').map( strVal => strVal );
-    
-    // For each identified item, update its status in our tracking array.
-    currentElementStrings.forEach( itemIdentifier => {
-      // Convert the string ID to a numeric one and set its flag to 'true' to mark its existence.
-      itemPresenceFlags[Number(itemIdentifier)] = true;
-    } );
-  }
-  
-  // Now, count how many items were never explicitly marked as present.
-  let unmarkedCount = 0;
-  itemPresenceFlags.forEach( flagValue => {
-    // If a flag remains 'false', it means the corresponding item was not listed.
-    if ( !flagValue ) {
-      unmarkedCount++; // Increment the counter for unobserved items.
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of individual lines.
+    rawData = rawData.split("\n");
+
+    // Parse the first line to get the number of elements (numElements) and the number of pairs (numPairs).
+    // The '- 0' converts the string parts to numbers.
+    const numElements = rawData[0].split(' ')[0] - 0;
+    const numPairs = rawData[0].split(' ')[1] - 0;
+
+    let currentLineParts; // A temporary variable to hold parts of a line.
+
+    // Initialize a boolean array to keep track of seen elements.
+    // Its size is numElements + 1 because element indices typically start from 1.
+    let elementTracker = new Array(numElements + 1);
+    elementTracker.fill(false); // Initially, no elements have been seen.
+
+    // Iterate through the input data to process the element pairs.
+    // The loop starts from index 1 and increments by 2 to skip the first line and process every other line.
+    for (let idx = 1; idx <= numPairs * 2; idx += 2) {
+        // Split the current line by space. The map function here effectively just converts elements to strings (no actual transformation).
+        currentLineParts = rawData[idx].split(' ').map(item => { return item; });
+        // For each element in the current line, mark its corresponding position in the tracker array as true.
+        currentLineParts.forEach(item => { elementTracker[item] = true; });
     }
-  } );
-  
-  // Display the final calculation: the count of unmarked items, adjusted by subtracting one.
-  // This adjustment typically accounts for the 0-th index if it's unused or a problem-specific offset.
-  console.log( unmarkedCount - 1 );
+
+    let resultCount = 0; // Initialize a counter for elements that were NOT marked.
+
+    // Go through the elementTracker array.
+    elementTracker.forEach(item => {
+        // If an element's value is false (meaning it was not marked as seen),
+        if (!item) {
+            resultCount++; // Increment the counter.
+        }
+    });
+
+    // Output the final count, subtracting one as per the problem's specific requirement.
+    console.log(resultCount - 1);
 }
 
-// *** The block below is for standard input/output handling and should remain untouched. ***
-// It reads all data from standard input and then passes it to our main processing function.
-processInputData( require("node:fs").readFileSync("/dev/stdin", "utf8") );
+// This section handles reading input from standard input and invoking the main processing function.
+// It is typically part of the execution environment and should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

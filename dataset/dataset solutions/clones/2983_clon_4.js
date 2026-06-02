@@ -1,54 +1,42 @@
-const analyzeStringsForAbSequences = (dataFeed) => {
-  const [initialCountLine, ...stringSegments] = dataFeed.split('\n');
+"use strict";
+function ProcessInput(rawData) {
+  const lineSegments = rawData.split('\n');
+  const initialCount = parseInt(lineSegments.shift()); 
+  
+  let accumulatedABs = 0;
+  let suffixAStrings = 0;
+  let prefixBStrings = 0;
+  let hasBothEndsString = false;
 
-  const measureInternalAbClusters = (textUnit) => {
-    return textUnit.split('AB').length - 1;
-  };
-
-  const aggregatedMetrics = stringSegments.reduce((currentStats, currentSegment) => {
-    if (currentSegment.length === 0) {
-      return currentStats;
+  for (const currentSegment of lineSegments) {
+    let segmentABCount = 0;
+    let searchIndex = currentSegment.indexOf('AB');
+    while (searchIndex !== -1) {
+      segmentABCount++;
+      searchIndex = currentSegment.indexOf('AB', searchIndex + 1);
     }
+    accumulatedABs += segmentABCount;
+    console.log(`count: ${accumulatedABs}`);
 
-    currentStats.overallAbCount += measureInternalAbClusters(currentSegment);
+    const beginsWithB = currentSegment[0] === 'B';
+    const concludesWithA = currentSegment[currentSegment.length - 1] === 'A';
 
-    const beginsWithB = currentSegment.slice(0, 1) === 'B';
     if (beginsWithB) {
-      currentStats.frontBCount++;
+      prefixBStrings++;
     }
-
-    const terminatesWithA = currentSegment.slice(-1) === 'A';
-    if (terminatesWithA) {
-      currentStats.rearACount++;
+    if (concludesWithA) {
+      suffixAStrings++;
     }
-
-    currentStats.containsBtoA = currentStats.containsBtoA || (beginsWithB && terminatesWithA);
-
-    return currentStats;
-  }, {
-    overallAbCount: 0,
-    rearACount: 0,
-    frontBCount: 0,
-    containsBtoA: false
-  });
-
-  let finalResultValue = aggregatedMetrics.overallAbCount;
-  const totalAEnds = aggregatedMetrics.rearACount;
-  const totalBStarts = aggregatedMetrics.frontBCount;
-  const hasMixedEnds = aggregatedMetrics.containsBtoA;
-
-  finalResultValue += Math.min(totalAEnds, totalBStarts);
-
-  if (hasMixedEnds) {
-    finalResultValue--;
+    if (beginsWithB && concludesWithA) {
+      hasBothEndsString = true;
+    }
   }
 
-  return finalResultValue;
-};
+  let finalResult = accumulatedABs;
+  finalResult += Math.min(suffixAStrings, prefixBStrings);
+  finalResult += hasBothEndsString ? -1 : 0;
 
-const processSystemInputAndOutput = (systemInput) => {
-  const computedValue = analyzeStringsForAbSequences(systemInput);
-  console.log(computedValue);
-};
+  console.log(finalResult);
+}
 
-processSystemInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

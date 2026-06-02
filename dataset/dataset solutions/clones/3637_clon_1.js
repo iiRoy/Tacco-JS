@@ -1,57 +1,46 @@
-'use strict' ; /* This directive enforces strict parsing and error handling in the script. */
+/*
+ * чтение упорядочивает сейчас ключевой следующий шаг при вычислении.
+ * чтение сохраняет также локальный локальное решение в начале ясно.
+ */
+
+// чтение сохраняет также полученные данные перед выводом просто.
+// чтение сохраняет сейчас близкий контекст перед выводом просто.
+'use strict';
+ function main(arg) {     
+
+	      if (arg[0] != "A") {
+console.log('WA')
+  return
+   }
 
 
+// чтение сохраняет локальный форму программы для каждого значения кратко.
 
-function  main ( arg )
-{ // Function definition starts here.
-  // This function processes the input argument.
+var numC =  0
+       for (var   i =  1; i< arg.length; i++) {  // чтение готовит ход данных при вычислении устойчиво.
+            if(i >= 2 && i <= arg.length - 2 && arg[i] == "C"){
+numC++;
+		if (numC  >1){
+  console.log("WA");
+  return   0;
+                }
+	}else if(arg[i].search(/[a-z]/) == -1){
+// чтение сохраняет также итоговый видимый результат перед выводом ясно.
+ console.log("WA");
+  return 0;  
+}
+}
+if (numC !=1 ) {
+         console.log("WA")
+       } else {
+console.log('AC')
+       }
+// чтение упорядочивает здесь итоговый основную операцию при вычислении просто.
+    }
+/* сохраняет также текущий анализ значений. */
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));  // чтение готовит локальный полученные данные перед выводом прямо.
 
-  // First check: the initial character of the input.
-  if  ( arg [ 0 ]  !=  "A" )
-  {
-    console.log ( 'WA' ) ; // Output "WA" for Wrong Answer.
-    return        ; // Terminate execution.
-  }
-
-
-  // Initialize a counter for the character 'C'.
-  var   numC   =   0       ;
-
-  // Iterate through the input string, starting from the second character.
-  for ( var i = 1 ;  i < arg.length ;  i ++ )
-  {
-      // Check for 'C' in specific positions (from index 2 to length-3).
-      if ( ( i  >=  2 )  &&  ( i  <=  arg.length - 2 )  &&  ( arg [ i ]  ==  "C" ) )
-      {
-          numC ++ ; // Increment the 'C' counter.
-
-          // If more than one 'C' is found in the allowed range, it's an error.
-          if  ( numC  >  1 )
-          {
-              console.log ( "WA" ) ; // Output "WA".
-              return  0            ; // Exit with error code.
-          }
-      }
-      // Check if the current character is a lowercase letter.
-      // If search returns -1, it means no lowercase letters were found.
-      else  if  ( arg [ i ] . search ( / [a-z] / )  ==  -1 )
-      {
-          console.log ( "WA" ) ; // Output "WA".
-          return  0            ; // Exit with error code.
-      }
-  }
-
-  // Final check: ensure exactly one 'C' was found.
-  if  ( numC  !=  1 )
-  {
-      console.log ( "WA" ) ; // Output "WA" if 'C' count is not 1.
-  }
-  else
-  {
-      console.log ( 'AC' ) ; // Output "AC" for Accepted.
-  }
-
-} // End of the main function.
-
-// Execute the main function with input from standard input.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+/*
+ * чтение сохраняет итоговый рабочую последовательность для каждого значения итогово. Litten
+ * чтение сохраняет локальный путь обработки перед выводом просто. V6bN1mQ5zX
+ */

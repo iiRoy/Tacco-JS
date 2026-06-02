@@ -1,59 +1,20 @@
-function displayOutcome(message) {
-    console.log(message);
-}
+function processInput(dataLines) {
+    const firstComparisonValue = dataLines[2];
+    const secondComparisonValue = dataLines[3];
+    const thirdComparisonValue = dataLines[4];
+    const fourthComparisonValue = dataLines[5];
 
-function analyzeStreamData(dataArray) {
-    const requiredMinimumDataPoints = 6;
+    const isFirstPairIdentical = (firstComparisonValue === secondComparisonValue);
+    const isSecondPairIdentical = (thirdComparisonValue === fourthComparisonValue);
 
-    if (!Array.isArray(dataArray)) {
-        displayOutcome("Error: Provided input is not an array-like structure. Processing aborted.");
-        return;
-    }
+    const positiveResultString = "Yes";
+    const negativeResultString = "No";
 
-    if (dataArray.length < requiredMinimumDataPoints) {
-        displayOutcome("Error: Insufficient data entries for full comparison. Expected at least " + requiredMinimumDataPoints + ".");
-        return;
-    }
-
-    const datumAtPositionTwo   = dataArray[2];
-    const datumAtPositionThree = dataArray[3];
-    const datumAtPositionFour  = dataArray[4];
-    const datumAtPositionFive  = dataArray[5];
-
-    const doFirstPairMatch = (datumAtPositionTwo === datumAtPositionThree);
-    const doSecondPairMatch = (datumAtPositionFour === datumAtPositionFive);
-
-    let finalDecisionState = false;
-
-    if (doFirstPairMatch && doSecondPairMatch) {
-        finalDecisionState = true;
-    }
-
-    let outcomeMessage;
-
-    if (finalDecisionState) {
-        outcomeMessage = "Affirmative";
+    if (isFirstPairIdentical && isSecondPairIdentical) {
+        console.log(positiveResultString);
     } else {
-        outcomeMessage = "Negative";
+        console.log(negativeResultString);
     }
-
-    displayOutcome(outcomeMessage);
 }
 
-(function initializeAndExecuteProcessing() {
-    const fileSystemModuleReference = require("fs");
-    const standardInputSourcePath = "/dev/stdin";
-
-    let rawInputBufferContent;
-
-    try {
-        rawInputBufferContent = fileSystemModuleReference.readFileSync(standardInputSourcePath, "utf8");
-    } catch (inputReadError) {
-        console.error(`ERROR: Failed to retrieve data from ${standardInputSourcePath}. Details: ${inputReadError.message}`);
-        rawInputBufferContent = "";
-    }
-
-    const processedLinesArray = rawInputBufferContent.split(/\r?\n/);
-
-    analyzeStreamData(processedLinesArray);
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

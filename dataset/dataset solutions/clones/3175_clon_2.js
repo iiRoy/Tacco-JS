@@ -1,68 +1,66 @@
-let calculate_cost_metric = function ( current_level,  max_levels,  target_dimensions,  current_dimensions,  length_segments) {
-    // This recursive function aims to find the minimum cost to transform current_dimensions to target_dimensions
-    // by using available length_segments.
-    if (current_level === max_levels) { // Base case: all segments have been considered.
-        if (Math.min(...current_dimensions) > 0) { // All resulting dimensions must be positive.
-            let metric_value = Math.abs(target_dimensions[0] - current_dimensions[0]) +
-                               Math.abs(target_dimensions[1] - current_dimensions[1]) +
-                               Math.abs(target_dimensions[2] - current_dimensions[2]) - 30; // Calculate the absolute difference cost.
-            return metric_value;
-        } else { // If any dimension is non-positive, this path is invalid, assign a very high penalty.
-            const large_number_factor = 1000 * 1000;
-            return large_number_factor * large_number_factor * large_number_factor;
-        }
+function computeMagicPoints(currentLevel, totalItems, targetValues, currentSums, itemLengths) {
+  // Base case: if we have processed all items
+  if (currentLevel === totalItems) {
+    // Check if all current sums are positive
+    if (Math.min(...currentSums) > 0) {
+      // Calculate magic points based on absolute differences and a penalty
+      const magicPoints = Math.abs(targetValues[0] - currentSums[0]) +
+                          Math.abs(targetValues[1] - currentSums[1]) +
+                          Math.abs(targetValues[2] - currentSums[2]) - 30;
+      return magicPoints;
+    } else {
+      // Return a very large number if any sum is not positive (invalid state)
+      const largeNumber = 1000 * 1000;
+      return largeNumber * largeNumber * largeNumber; // A sufficiently large value
     }
+  }
 
-    // Recursive step: explore four possible actions for the current segment.
+  // Recursive calls for different options at the current level
 
-    // Option A: Skip the current segment and move to the next level.
-    const option_a_result = calculate_cost_metric(current_level + 1, max_levels, target_dimensions, current_dimensions, length_segments);
+  // Option 0: Do not use the current item (itemLengths[currentLevel])
+  const resultOptionA = computeMagicPoints(currentLevel + 1, totalItems, targetValues, currentSums, itemLengths);
 
-    // Option B: Add the current segment's length to the first dimension (index 0).
-    // A penalty of 10 is added for using a segment.
-    let option_b_result = calculate_cost_metric(current_level + 1, max_levels, target_dimensions, [current_dimensions[0] + length_segments[current_level], current_dimensions[1], current_dimensions[2]], length_segments) + 10;
+  // Option 1: Add current item to the first sum (currentSums[0])
+  var resultOptionB = computeMagicPoints(currentLevel + 1, totalItems, targetValues,
+                                         [currentSums[0] + itemLengths[currentLevel], currentSums[1], currentSums[2]],
+                                         itemLengths) + 10; // Cost for using an item
 
-    // Option C: Add the current segment's length to the second dimension (index 1).
-    let option_c_result = calculate_cost_metric(current_level + 1, max_levels, target_dimensions, [current_dimensions[0], current_dimensions[1] + length_segments[current_level], current_dimensions[2]], length_segments) + 10;
+  // Option 2: Add current item to the second sum (currentSums[1])
+  var resultOptionC = computeMagicPoints(currentLevel + 1, totalItems, targetValues,
+                                         [currentSums[0], currentSums[1] + itemLengths[currentLevel], currentSums[2]],
+                                         itemLengths) + 10; // Cost for using an item
 
-    // Option D: Add the current segment's length to the third dimension (index 2).
-    let option_d_result = calculate_cost_metric(current_level + 1, max_levels, target_dimensions, [current_dimensions[0], current_dimensions[1], current_dimensions[2] + length_segments[current_level]], length_segments) + 10;
+  // Option 3: Add current item to the third sum (currentSums[2])
+  var resultOptionD = computeMagicPoints(currentLevel + 1, totalItems, targetValues,
+                                         [currentSums[0], currentSums[1], currentSums[2] + itemLengths[currentLevel]],
+                                         itemLengths) + 10; // Cost for using an item
 
-    // Return the minimum cost found among all four possibilities.
-    return Math.min(option_a_result, option_b_result, option_c_result, option_d_result);
-};
-
-// Main entry point for processing the problem.
-function process_input_data (raw_data_string) {
-  // Split the entire input string into individual rows based on newline characters.
-  const data_rows_array = raw_data_string.split('\n');
-
-  // Parse the first row to extract problem parameters: max segments and target dimensions.
-  const first_line_values = data_rows_array[0].split(' ').map(data_item => parseInt(data_item, 10));
-
-  let max_segment_count = first_line_values[0];
-  let target_a_dimension = first_line_values[1];
-  let target_b_dimension = first_line_values[2];
-  let target_c_dimension = first_line_values[3];
-
-  // Process the remaining lines to get an array of individual segment lengths.
-  var segment_lengths_list = data_rows_array.map(line_str => parseInt(line_str, 10));
-  segment_lengths_list.shift(); // Remove the first line which contained N, A, B, C.
-
-
-  // Initiate the recursive cost calculation with initial state:
-  // starting at level 0, with target dimensions, current dimensions at [0,0,0], and all segments available.
-  const final_outcome_value = calculate_cost_metric(
-    0,
-    max_segment_count,
-    [target_a_dimension, target_b_dimension, target_c_dimension],
-    [0, 0, 0],
-    segment_lengths_list
-  );
-
-  // Output the computed minimum cost to the console.
-  console.log(final_outcome_value);
+  // Return the minimum magic points among all possible options
+  return Math.min(resultOptionA, resultOptionB, resultOptionC, resultOptionD);
 }
 
-// Execute the main processing function by reading input from standard input using Node.js file system module.
-process_input_data( require('node:fs').readFileSync('/proc/self/fd/0', 'utf-8') );
+// Main function to process input and orchestrate the calculation
+function processInput(rawData) {
+  // Split the raw input into individual lines
+  const inputLines = rawData.split('\n');
+
+  // Parse the first line for N, A, B, C
+  const firstLineParts = inputLines[0].split(' ').map(x => parseInt(x));
+  const totalItems = firstLineParts[0];
+  const targetA = firstLineParts[1];
+  const targetB = firstLineParts[2];
+  const targetC = firstLineParts[3];
+
+  // Parse the remaining lines for item lengths
+  var lengthList = inputLines.map(x => parseInt(x));
+  lengthList.shift(); // Remove the first element (which was the N,A,B,C line parsed as NaN)
+
+  // Call the recursive function to find the minimum magic points
+  const finalScore = computeMagicPoints(0, totalItems, [targetA, targetB, targetC], [0, 0, 0], lengthList);
+
+  // Output the final result to the console
+  console.log(finalScore);
+}
+
+// Read input from stdin and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

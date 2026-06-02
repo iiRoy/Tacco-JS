@@ -1,25 +1,25 @@
-const calculateBinaryZeros = (numeral) => {
-  let counter = 0;
-  while ((numeral & 1) === 0 && numeral !== 0) {
-    counter++;
-    numeral >>>= 1;
-  }
-  return counter;
-};
+function processInputData(inputString) {
+    const limitValue = Number(inputString);
 
-const ProcessInput = (inputValue) => {
-  const limitValue = Number(inputValue);
+    const calculateDivisions = (num) => {
+        if (num === 0) return 0;
+        return Math.log2(num & -num);
+    };
 
-  const finalResult = Array.from({ length: limitValue }, (_, idx) => idx + 1)
-    .reduce((accumulator, currentNumber) => {
-      const currentDivisions = calculateBinaryZeros(currentNumber);
-      if (currentDivisions > accumulator.max) {
-        return { num: currentNumber, max: currentDivisions };
-      }
-      return accumulator;
-    }, { num: 1, max: 0 });
+    const resultObject = Array.from({ length: limitValue }, (_, index) => index + 1)
+        .reduce((accumulator, currentNumber) => {
+            const currentDivCount = calculateDivisions(currentNumber);
 
-  console.log(finalResult.num);
-};
+            if (currentDivCount > accumulator.maxCount) {
+                return { value: currentNumber, maxCount: currentDivCount };
+            } else if (currentDivCount === accumulator.maxCount) {
+                return { value: Math.min(accumulator.value, currentNumber), maxCount: accumulator.maxCount };
+            } else {
+                return accumulator;
+            }
+        }, { value: 1, maxCount: 0 });
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(resultObject.value);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

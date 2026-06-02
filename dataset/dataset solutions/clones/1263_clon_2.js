@@ -1,43 +1,52 @@
 'use strict';
-( function ( inputSource ) {
-    // Define the core drawing routine
-    function renderBox ( dimensions ) {
-        var widthVal = dimensions[0];
-        var heightVal = dimensions[1];
-        var topBottomBorder = [];
-        for ( var colIdx = 0; colIdx < widthVal; colIdx++ ) {
-            topBottomBorder.push('#');
-        }
-        topBottomBorder = topBottomBorder.join('');
+( function ( inputData ) {
+  // Define a function for drawing a rectangular pattern
+  function drawRectangle( dimensions ) {
+    var widthVal = dimensions[ 0 ];
+    var heightVal = dimensions[ 1 ];
 
-        var middleRowContent = [];
-        for ( var rowFillIdx = 0; rowFillIdx < widthVal - 2; rowFillIdx++ ) {
-            middleRowContent.push('.');
-        }
-        middleRowContent.push('#');
-        middleRowContent.unshift('#');
-        middleRowContent = middleRowContent.join('');
+    var topBottomBorder = [];
+    // Construct the top/bottom border line
+    for ( var idx1 = 0; idx1 < widthVal; idx1++ ) {
+      topBottomBorder.push( '#' );
+    }
+    topBottomBorder = topBottomBorder.join( '' );
 
-        var drawnShape = [];
-        for ( var lineBuilderIdx = 0; lineBuilderIdx < heightVal - 2; lineBuilderIdx++ ) {
-            drawnShape.push(middleRowContent);
-        }
-        drawnShape.push(topBottomBorder);
-        drawnShape.unshift(topBottomBorder);
+    var middleRowContent = [];
+    // Construct the inner part of a middle line
+    for ( var idx2 = 0; idx2 < widthVal - 2; idx2++ ) {
+      middleRowContent.push( '.' );
+    }
+    // Add border characters to the inner line
+    middleRowContent.push( '#' );
+    middleRowContent.unshift( '#' );
+    middleRowContent = middleRowContent.join( '' );
 
-        return drawnShape.join('\n');
+    var finalOutputLines = [];
+    // Add middle lines to the result
+    for ( var idx3 = 0; idx3 < heightVal - 2; idx3++ ) {
+      finalOutputLines.push( middleRowContent );
     }
 
-    // Obtain and preprocess raw data
-    var sourceDataBlocks = inputSource.toString().trim().split('\n');
-    var geometrySpecs = sourceDataBlocks.slice(0, sourceDataBlocks.indexOf('0 0'));
-    geometrySpecs = geometrySpecs.map(function ( itemString ) {
-        return itemString.split(' ').map(Number);
-    });
+    // Add top and bottom borders
+    finalOutputLines.push( topBottomBorder );
+    finalOutputLines.unshift( topBottomBorder );
 
-    // Process input sets and generate visual representations
-    var entireFigureCollection = geometrySpecs.map(renderBox).join('\n\n');
+    return finalOutputLines.join( '\n' );
+  }
 
-    // Output the complete result
-    console.log(entireFigureCollection);
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') );
+  // Process input data
+  var rawInputLines = inputData.toString().trim().split( '\n' );
+  var processedInputSets = rawInputLines.slice( 0, rawInputLines.indexOf( '0 0' ) );
+
+  processedInputSets = processedInputSets.map( function ( currentLineStr ) {
+    return currentLineStr.split( ' ' ).map( Number );
+  } );
+
+  // Generate all rectangle patterns
+  var finalCombinedOutput = processedInputSets.map( drawRectangle ).join( '\n\n' );
+
+  // Output the result to console
+  console.log( finalCombinedOutput );
+
+} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );

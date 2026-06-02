@@ -1,109 +1,91 @@
-function ProcessInput(dataSource) {
-    // This function acts as the primary orchestrator, handling input parsing
-    // and delegating operations to the DisjointSet data structure.
-    var lineFragments = dataSource.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    var lineSegments = rawData.split("\n");
 
-    // The initial line contains global configuration values, parsed numerically.
-    var numericValues = lineFragments[0].split(" ");
+    // Parse the first line to get the number of nodes and queries
+    var initialValues = lineSegments[0].split(" ");
+    var nodeCount = parseInt(initialValues[0], 10); // Total number of elements
+    var queryCount = parseInt(initialValues[1], 10); // Number of operations to perform
 
-    // The first parameter indicates the total count of distinct elements.
-    var entityCount = parseInt(numericValues[0], 10);
-
-    // The second parameter specifies the number of operations or inquiries.
-    var queryCount = parseInt(numericValues[1], 10);
-
-    // Create a collection to hold individual DisjointSet instances,
-    // where each instance represents a unique element initially.
-    const entityCollection = [];
-
-    // Initialize each element with its own DisjointSet instance.
-    for (let idx = 0; idx < entityCount; idx++) {
-        entityCollection.push(new DisjointSet());
+    // Initialize an array to hold individual DisjointSet instances for each node
+    var nodeGroups = new Array();
+    // Populate the array with new DisjointSet objects
+    for (let idx = 0; idx < nodeCount; idx++) {
+        nodeGroups.push(new DisjointSet());
     }
 
-    // A central DisjointSet object is used to perform the actual union/find operations.
-    const disjointSetManager = new DisjointSet();
+    // Create a single DisjointSet manager instance to handle union/find operations
+    var disjointSetManager = new DisjointSet();
 
-    // Iterate through each subsequent line, which represents an operation.
+    // Process each query
     for (let idx = 0; idx < queryCount; idx++) {
-        // Parse the current operation line into its component parts.
-        const instructionParts = lineFragments[idx + 1].split(" ");
+        // Split the current query line into command parts
+        var operationDetails = lineSegments[idx + 1].split(" ");
+        // Parse the node indices involved in the operation
+        var firstNodeIndex = parseInt(operationDetails[1], 10);
+        var secondNodeIndex = parseInt(operationDetails[2], 10);
 
-        // Extract the two indices involved in the current operation.
-        const firstIndex = parseInt(instructionParts[1], 10);
-        const secondIndex = parseInt(instructionParts[2], 10);
-
-        // Based on the operation code, decide whether to merge sets or check connectivity.
-        if (instructionParts[0] === "0") {
-            // Operation code "0" signifies a union (merge) command.
-            disjointSetManager.mergeSets(entityCollection[firstIndex], entityCollection[secondIndex]);
-        } else {
-            // Any other operation code implies a connectivity check.
-            console.log(disjointSetManager.areConnected(entityCollection[firstIndex], entityCollection[secondIndex]));
+        // Check the type of operation
+        if (operationDetails[0] === "0") { // If it's a union operation
+            // Unite the sets containing the two nodes
+            disjointSetManager.unionSets(nodeGroups[firstNodeIndex], nodeGroups[secondNodeIndex]);
+        } else { // If it's a 'same set' query
+            // Check if the two nodes belong to the same set and print the result
+            console.log(disjointSetManager.areConnected(nodeGroups[firstNodeIndex], nodeGroups[secondNodeIndex]));
         }
     }
 }
 
-
-// The DisjointSet constructor defines the structure and methods
-// for individual elements within the Disjoint Set data structure.
+// Constructor function for a Disjoint Set (Union-Find) element
 function DisjointSet() {
-    // Each element initially points to itself, signifying it's the root of its own set.
-    this.linkNode = this;
+    // Each element initially points to itself as its representative
+    this.representative = this;
+    // Each element initially forms a set of size 1
+    this.groupSize = 1;
 
-    // Each set begins with a single element.
-    this.elementCount = 1;
-
-
-    // Method to recursively find the representative (root) of the set
-    // to which this element belongs.
-    this.locateRoot = function() {
-        // If this element is its own parent, it is the root.
-        if (this.linkNode === this) {
+    // Method to find the representative (root) of the set this element belongs to
+    this.findRepresentative = function() {
+        // If this element is its own representative, it's the root
+        if (this.representative === this) {
             return this;
         } else {
-            // Otherwise, traverse up the parent chain to find the root.
-            return this.linkNode.locateRoot();
+            // Otherwise, recursively find the representative of its parent
+            return this.representative.findRepresentative();
         }
     };
 
+    // Method to unite two sets containing elements 'elementA' and 'elementB'
+    this.unionSets = function(elementA, elementB) {
+        // Find the representatives of the sets containing elementA and elementB
+        var repA = elementA.findRepresentative();
+        var repB = elementB.findRepresentative();
 
-    // Method to combine the sets containing two given elements, 'nodeA' and 'nodeB'.
-    this.mergeSets = function(nodeA, nodeB) {
-        // First, find the roots of the sets for both elements.
-        const rootA = nodeA.locateRoot();
-        const rootB = nodeB.locateRoot();
-
-        // If both elements already share the same root, they are in the same set,
-        // so no merging is necessary.
-        if (rootA === rootB) {
-            return false; // Indicate that no merge occurred.
+        // If they already have the same representative, they are in the same set
+        if (repA === repB) {
+            return false; // No union performed
         } else {
-            // Implement union by size: attach the smaller tree under the root of the larger tree.
-            if (rootA.elementCount < rootB.elementCount) {
-                rootA.linkNode = rootB; // Make rootB the parent of rootA.
-                rootB.elementCount += rootA.elementCount; // Update the size of the combined set.
+            // Otherwise, unite the two sets based on their sizes (union by size heuristic)
+            if (repA.groupSize < repB.groupSize) {
+                repA.representative = repB; // Make repB the parent of repA
+                repB.groupSize += repA.groupSize; // Update the size of the new larger set
             } else {
-                rootB.linkNode = rootA; // Make rootA the parent of rootB.
-                rootA.elementCount += rootB.elementCount; // Update the size of the combined set.
+                repB.representative = repA; // Make repA the parent of repB
+                repA.groupSize += repB.groupSize; // Update the size of the new larger set
             }
-            return true; // Indicate a successful merge.
+            return true; // Union performed successfully
         }
     };
 
-
-    // Method to determine if two elements, 'nodeA' and 'nodeB', are part of the same set.
-    this.areConnected = function(nodeA, nodeB) {
-        // Elements are connected if their respective roots are identical.
-        if (nodeA.locateRoot() === nodeB.locateRoot()) {
-            return true; // True if they belong to the same set.
+    // Method to check if two elements belong to the same set
+    this.areConnected = function(elementA, elementB) {
+        // Compare the representatives of the sets containing elementA and elementB
+        if (elementA.findRepresentative() === elementB.findRepresentative()) {
+            return 1; // They are in the same set
         } else {
-            return false; // False if they are in different sets.
+            return 0; // They are in different sets
         }
     };
 }
 
-
-// Initiate the processing by reading input from standard input and passing it
-// to the main processing function.
+// Execute the main processing function by reading input from standard input
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,135 +1,146 @@
-/*
-This function performs a Breadth-First Search (BFS)
-to find the shortest path to match a given sequence
-on a grid.
-*/
-function PathFinder( initialColumn, initialRow, targetSequence )
-{
-  // Define relative movements for 4 directions (up, left, right, down)
-  const columnOffsets = [ 0, -1, 1, 0 ];
-  const rowOffsets = [ -1, 0, 0, 1 ];
+// Function to perform a Breadth-First Search (BFS) to find the shortest path
+// based on a sequence of characters that must be matched on the grid.
+function ExploreGrid(startX, startY, targetSequence) {
+  // Define movement vectors for 4 cardinal directions: up, left, right, down.
+  const deltaX = [0, -1, 1, 0]; // Changes in the X-coordinate (column)
+  const deltaY = [-1, 0, 0, 1]; // Changes in the Y-coordinate (row)
 
-  // Initialize a 2D array to store minimum path lengths to reach a cell
-  // with a certain remaining sequence length.
-  // Using a large initial value for unknown paths.
-  let minPathLengths = [];
-  for ( let rowIndex = 0; rowIndex <= 1000; rowIndex++ )
-  {
-    minPathLengths[ rowIndex ] = [];
-    for ( let colIndex = 0; colIndex <= 1000; colIndex++ )
-    {
-      minPathLengths[ rowIndex ][ colIndex ] = targetSequence.length;
+  // Initialize a 2D array to store the minimum remaining sequence length
+  // required to reach a particular cell. This acts as a memoization table
+  // to avoid redundant computations and cycles.
+  // The maximum grid size is assumed to be 1000x1000 based on typical problem constraints.
+  const minPathLengths = [];
+  for (let r = 0; r <= 1000; r++) {
+    minPathLengths[r] = [];
+    for (let c = 0; c <= 1000; c++) {
+      // Initialize each cell with the full length of the target sequence.
+      // A smaller value will indicate a more "progressed" path to that cell.
+      minPathLengths[r][c] = targetSequence.length;
     }
   }
 
-  let totalMoves = 0; // Counter for steps taken
-  // Initialize the search queue with starting position, step count, and full target sequence
-  const explorationFrontier = [ [ initialColumn, initialRow, totalMoves, targetSequence ] ];
+  // Initialize the step counter for the current path being explored.
+  let currentSteps = 0;
+  // Initialize the BFS queue with the starting position, initial step count,
+  // and the complete target sequence to be matched.
+  const explorationQueue = [[startX, startY, currentSteps, targetSequence]];
 
-  // Main BFS loop
-  while ( true )
-  {
-    // If the queue is empty, no path was found
-    if ( explorationFrontier.length === 0 )
-    {
-      totalMoves = Infinity;
-      break;
+  // Main loop for the Breadth-First Search.
+  while (true) {
+    // If the queue becomes empty, it means all reachable paths have been explored
+    // and the target sequence was not fully matched.
+    if (explorationQueue.length === 0) {
+      currentSteps = Infinity; // Set to Infinity to indicate no valid path found.
+      break; // Exit the BFS loop.
     }
 
-    // Dequeue the current processing node
-    const currentNode = explorationFrontier.shift();
-    const currentX = currentNode[ 0 ]; // Current column
-    const currentY = currentNode[ 1 ]; // Current row
-    const stepsTaken = currentNode[ 2 ]; // Steps to reach this node
-    const remainingPattern = currentNode[ 3 ]; // Remaining sequence to match
+    // Dequeue the first element from the queue, which represents the current state.
+    const currentNode = explorationQueue.shift();
+    const currX = currentNode[0];             // Current X-coordinate (column)
+    const currY = currentNode[1];             // Current Y-coordinate (row)
+    const currPathLength = currentNode[2];    // Steps taken to reach this state
+    const remainingSequence = currentNode[3]; // Remaining part of the target sequence to match
 
-    // If the sequence is fully matched, we found a path
-    if ( remainingPattern === "" )
-    {
-      totalMoves = stepsTaken;
-      break;
+    // If the remaining sequence is empty, it means we have successfully matched
+    // the entire target sequence. This is the goal state.
+    if (remainingSequence === '') {
+      currentSteps = currPathLength; // The current path length is the shortest path.
+      break; // Exit the BFS loop as the solution is found.
     }
 
-    // Explore neighbors
-    for ( let directionIdx = 0; directionIdx < 4; directionIdx++ )
-    {
-      const nextX = currentX + columnOffsets[ directionIdx ];
-      const nextY = currentY + rowOffsets[ directionIdx ];
-      let updatedPattern = remainingPattern;
+    // Explore all four adjacent cells (neighbors) from the current cell.
+    for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
+      const nextX = currX + deltaX[directionIndex]; // Calculate next X-coordinate
+      const nextY = currY + deltaY[directionIndex]; // Calculate next Y-coordinate
+      let nextRemainingSequence = remainingSequence; // Start with the current remaining sequence
 
-      // Check boundary conditions using globally defined map dimensions (mapBounds)
-      if ( nextX < 0 || nextY < 0 || nextX >= mapBounds[ 0 ] || nextY >= mapBounds[ 1 ] )
-      {
-        continue; // Skip out-of-bounds neighbors
+      // Check if the next cell is within the grid boundaries.
+      // `wh` is a global variable representing the grid's width and height.
+      if (nextX < 0 || nextY < 0 || nextX >= wh[0] || nextY >= wh[1]) {
+        continue; // Skip this cell if it's out of bounds.
       }
 
-      // Check if the cell content matches the first character of the remaining pattern
-      if ( gridData[ nextY ][ nextX ] === remainingPattern[ 0 ] )
-      {
-        updatedPattern = updatedPattern.slice( 1 ); // Consume the matched character
+      // Check if the character at the next grid cell matches the first character
+      // of the `remainingSequence`.
+      // `YX` is a global variable representing the grid map itself.
+      if (YX[nextY][nextX] === remainingSequence[0]) {
+        nextRemainingSequence = nextRemainingSequence.slice(1); // If matched, consume the character.
       }
 
-      // If we found a shorter path to this cell with this remaining pattern length, update and enqueue
-      if ( minPathLengths[ nextY ][ nextX ] <= updatedPattern.length )
-      {
-        continue; // Already found a better or equal path
+      // Pruning condition: If we've already found a path to `(nextY, nextX)`
+      // that resulted in an equal or shorter `nextRemainingSequence.length`,
+      // then this current path is not better, so we can skip it.
+      if (minPathLengths[nextY][nextX] <= nextRemainingSequence.length) {
+        continue;
       }
 
-      minPathLengths[ nextY ][ nextX ] = updatedPattern.length; // Update minimum length
-      explorationFrontier.push( [ nextX, nextY, stepsTaken + 1, updatedPattern ] ); // Enqueue neighbor
+      // Update the memoization table with the new, shorter `nextRemainingSequence.length`.
+      minPathLengths[nextY][nextX] = nextRemainingSequence.length;
+      // Enqueue the new state: next coordinates, incremented path length, and updated sequence.
+      explorationQueue.push([nextX, nextY, currPathLength + 1, nextRemainingSequence]);
     }
   }
-  return totalMoves; // Return the minimum number of moves
+  return currentSteps; // Return the total steps for the shortest path found.
 }
 
+// Read the entire input from standard input as a UTF-8 string.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Trim whitespace from the input and split it into an array of lines.
+const inputLines = (fileContent.trim()).split('\n');
 
-// --- Main Program Execution ---
+// Process multiple test cases. The loop continues until a "0 0" line is encountered.
+while (true) {
+  // Extract grid dimensions (width and height) from the first line of the current test case.
+  // `gridDimensions` will be an array like [width, height].
+  const gridDimensions = (inputLines.shift()).split(' ').map(Number);
 
-// Read input from standard input
-const fileContent = require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' );
-const inputLines = ( fileContent.trim() ).split( "\n" );
-
-let mapBounds; // Global variable for grid dimensions
-let gridData; // Global variable for grid layout
-
-// Process multiple test cases
-while ( true )
-{
-  mapBounds = ( inputLines.shift() ).split( " " ).map( Number );
-
-  // Termination condition: 0 0 for dimensions
-  if ( mapBounds[ 0 ] === 0 && mapBounds[ 1 ] === 0 )
-  {
-    break;
+  // Check for the termination condition: if both width and height are 0.
+  if (gridDimensions[0] === 0 && gridDimensions[1] === 0) {
+    break; // Exit the loop if the termination condition is met.
   }
 
-  gridData = []; // Reset grid for new test case
-  let initialPosition = []; // Reset start position
+  // Initialize arrays to store the grid map and the starting coordinates.
+  const terrainData = [];
+  const initialPosition = []; // Stores [startX, startY]
 
-  // Populate the grid and find the starting point 'S'
-  for ( let r = 0; r < mapBounds[ 1 ]; r++ )
-  {
-    const rowSegments = ( inputLines.shift() ).split( "" );
-    if ( rowSegments.indexOf( "S" ) !== -1 )
-    {
-      initialPosition = [ rowSegments.indexOf( "S" ), r ];
+  // Populate the `terrainData` grid and find the 'S' (start) character's position.
+  for (let r = 0; r < gridDimensions[1]; r++) {
+    const rowContent = (inputLines.shift()).split(''); // Get characters for the current row.
+    // If 'S' is found in this row, record its column and row index.
+    if (rowContent.indexOf('S') !== -1) {
+      initialPosition[0] = rowContent.indexOf('S'); // X-coordinate (column)
+      initialPosition[1] = r;                       // Y-coordinate (row)
     }
-    gridData.push( rowSegments );
+    terrainData.push(rowContent); // Add the row to the grid map.
   }
 
-  const solutionPairs = []; // Store results for different target sequences
+  // Assign `gridDimensions` and `terrainData` to global variables `wh` and `YX`.
+  // This makes them accessible within the `ExploreGrid` function without explicit passing,
+  // mimicking the original code's implicit dependency.
+  var wh = gridDimensions;
+  var YX = terrainData;
 
-  // Calculate paths for various target sequences
-  solutionPairs.push( [ PathFinder( initialPosition[ 0 ], initialPosition[ 1 ], "A1B2C" ), 1 ] );
-  solutionPairs.push( [ PathFinder( initialPosition[ 0 ], initialPosition[ 1 ], "D3E4F" ), 2 ] );
-  solutionPairs.push( [ PathFinder( initialPosition[ 0 ], initialPosition[ 1 ], "G5H6I" ), 3 ] );
-  solutionPairs.push( [ PathFinder( initialPosition[ 0 ], initialPosition[ 1 ], "J7K8L" ), 4 ] );
-  solutionPairs.push( [ PathFinder( initialPosition[ 0 ], initialPosition[ 1 ], "M9N0P" ), 5 ] );
+  // Array to store the results of running BFS for different target sequences.
+  // Each element will be [pathLength, sequenceIndex].
+  const solutionPaths = [];
+  // Run the BFS for each predefined target sequence and store the result.
+  solutionPaths.push([ExploreGrid(initialPosition[0], initialPosition[1], '2345G'), 1]);
+  solutionPaths.push([ExploreGrid(initialPosition[0], initialPosition[1], '3451G'), 2]);
+  solutionPaths.push([ExploreGrid(initialPosition[0], initialPosition[1], '4512G'), 3]);
+  solutionPaths.push([ExploreGrid(initialPosition[0], initialPosition[1], '5123G'), 4]);
+  solutionPaths.push([ExploreGrid(initialPosition[0], initialPosition[1], '1234G'), 5]);
 
+  // Sort the results based on the path length (the first element of each inner array)
+  // in ascending order.
+  solutionPaths.sort(function(pathA, pathB) {
+    return pathA[0] - pathB[0];
+  });
 
-  // Sort the results based on path length (first element of the pair)
-  solutionPairs.sort( function( itemA, itemB ) { return itemA[ 0 ] - itemB[ 0 ]; } );
-
-  // Output the result: "NA" if no path found, otherwise the index and path length
-  console.log( ( solutionPairs[ 0 ][ 0 ] === Infinity ) ? "NA" : solutionPairs[ 0 ][ 1 ] + " " + solutionPairs[ 0 ][ 0 ] );
+  // Output the result. If the shortest path length is Infinity (no path found), print "NA".
+  // Otherwise, print the index of the sequence and its corresponding shortest path length.
+  if (solutionPaths[0][0] === Infinity) {
+    console.log('NA');
+  } else {
+    console.log(solutionPaths[0][1] + ' ' + solutionPaths[0][0]);
+  }
 }

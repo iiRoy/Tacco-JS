@@ -1,114 +1,39 @@
-const inputSource = process.stdin;
-const outputSink = process.stdout;
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-// Configure the input stream to handle UTF-8 data
-inputSource.setEncoding("utf8");
+let inputBuffer = "";
 
-// A buffer to accumulate all incoming data chunks
-let collectedInputContent = "";
+const NUMBER_PAIR_PATTERN = /([\d]+) ([\d]+)/;
 
-// Constant for the newline character, used for consistency
-const NEWLINE_DELIMITER = '\n';
+function processNumberPair(matchArray) {
+    const firstNumString = matchArray[1];
+    const secondNumString = matchArray[2];
 
-// Regular expression to find two integer numbers separated by space,
-// allowing for optional leading/trailing whitespace on the line.
-// The `\d+` ensures at least one digit.
-const PAIR_PARSING_PATTERN = /^\s*(\d+)\s+(\d+)\s*$/;
+    const integerParser = parseInt;
 
-/**
- * Processes a single line of input, attempting to parse two numbers
- * and print their sum.
- * @param {string} inputLine - The line of text to process.
- * @returns {boolean} - True if the line was successfully processed, false otherwise.
- */
-function handleSingleLineAddition(inputLine) {
-    // Attempt to match the pattern against the current line
-    const numericMatch = PAIR_PARSING_PATTERN.exec(inputLine);
+    const parsedFirst = integerParser(firstNumString);
+    const parsedSecond = integerParser(secondNumString);
 
-    if (numericMatch && numericMatch.length === 3) {
-        try {
-            // Extract the string representations of the numbers
-            const firstNumString = numericMatch[1];
-            const secondNumString = numericMatch[2];
+    const calculatedSum = parsedFirst + parsedSecond;
 
-            // Convert string to number using unary plus operator for conciseness
-            const numA = +firstNumString;
-            const numB = +secondNumString;
-
-            // Basic validation to ensure parsed values are indeed numbers
-            if (Number.isNaN(numA) || Number.isNaN(numB)) {
-                // Log a warning for malformed numbers but continue processing
-                console.warn(`Warning: Could not parse valid numbers from parts "${firstNumString}" and "${secondNumString}" in line: "${inputLine}"`);
-                return false;
-            }
-
-            // Calculate the sum
-            const calculatedSum = numA + numB;
-
-            // Output the result, ensuring it's a string followed by a newline
-            outputSink.write(`${calculatedSum}${NEWLINE_DELIMITER}`);
-            return true; // Successfully processed
-        } catch (processingError) {
-            // Catch any unexpected errors during number conversion or calculation
-            console.error(`Error during sum calculation for line "${inputLine}": ${processingError.message}`);
-            return false;
-        }
-    } else {
-        // If the line does not match the expected pattern, log a debug message
-        // This line is optional and could be removed in a production environment
-        // console.debug(`Skipping line as it does not match pattern: "${inputLine}"`);
-        return false; // Line did not match or was not valid
-    }
+    return calculatedSum.toString();
 }
 
-/**
- * Main function to orchestrate the processing of all accumulated input data.
- * This function is called once the entire input stream has ended.
- */
-async function processAllInputData() {
-    // Split the entire collected content into individual lines.
-    // Filter out any empty strings that might result from trailing newlines.
-    const individualInputLines = collectedInputContent.split(NEWLINE_DELIMITER).filter(line => line.trim() !== '');
+process.stdin.on("data", (dataChunk) => {
+    inputBuffer += dataChunk;
+});
 
-    // Early exit if no valid lines were found
-    if (!individualInputLines.length) {
-        console.info("No valid input lines were provided for processing.");
-        return;
-    }
+process.stdin.on("end", () => {
+    const lines = inputBuffer.split("\n");
 
-    let successfullyProcessedLines = 0;
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const currentLine = lines[lineIndex];
+        const matchResult = NUMBER_PAIR_PATTERN.exec(currentLine);
 
-    // Iterate over each line using a for...of loop for modern syntax
-    for (const currentLine of individualInputLines) {
-        if (handleSingleLineAddition(currentLine)) {
-            successfullyProcessedLines++;
+        if (matchResult && matchResult.length === 3) {
+            const sumAsString = processNumberPair(matchResult);
+            process.stdout.write(sumAsString);
+            process.stdout.write("\n");
         }
     }
-
-    // Output a summary of the processing
-    console.log(`\n--- Processing Complete ---`);
-    console.log(`Total lines received: ${individualInputLines.length}`);
-    console.log(`Lines successfully processed: ${successfullyProcessedLines}`);
-    console.log(`---------------------------\n`);
-}
-
-// Attach an event listener for when data chunks are received
-inputSource.on("data", (dataChunk) => {
-    collectedInputContent += dataChunk;
 });
-
-// Attach an event listener for when the input stream ends
-inputSource.on("end", () => {
-    // Once all data has been received, initiate the processing pipeline
-    processAllInputData();
-});
-
-// Optional: Add an error handler for the input stream
-inputSource.on("error", (err) => {
-    console.error(`An error occurred on the input stream: ${err.message}`);
-    process.exit(1); // Exit with an error code
-});
-
-// Note: process.stdin.resume() is often implicitly handled by attaching 'data' listeners
-// but can be explicitly called if needed to ensure the stream starts flowing.
-// For this clone, it has been removed as a deletion example.

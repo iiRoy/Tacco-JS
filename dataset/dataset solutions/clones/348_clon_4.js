@@ -1,148 +1,207 @@
-const fsModule = require("fs");
-const logOutput = console.log;
+"use strict";
 
-const tokenTypes = {
-    NUMBER: 'NUM',
-    OPERATOR: 'OP',
-    L_PAREN: 'LPAREN',
-    R_PAREN: 'RPAREN'
-};
+var utilModule = require("util");
+var outputLog = console.log;
 
-const operatorDetails = {
-    '+': { precedence: 1, associativity: 'L' },
-    '-': { precedence: 1, associativity: 'L' },
-    '*': { precedence: 2, associativity: 'L' },
-    '/': { precedence: 2, associativity: 'L' }
-};
+const TOKEN_NUMBER = 'NUMERIC_VALUE_TOKEN';
+const TOKEN_ADD = 'ADDITION_SYMBOL';
+const TOKEN_SUB = 'SUBTRACTION_SYMBOL';
+const TOKEN_MUL = 'MULTIPLICATION_SYMBOL';
+const TOKEN_DIV = 'DIVISION_SYMBOL';
+const TOKEN_OPEN_PAREN = 'LEFT_PAREN_SYMBOL';
+const TOKEN_CLOSE_PAREN = 'RIGHT_PAREN_SYMBOL';
 
-function readAllEntries() {
-    const rawContent = fsModule.readFileSync("/dev/stdin", "utf8");
-    const contentLines = rawContent.replace(/\r/g, '').split("\n").filter(line => line.trim() !== "");
+const AST_LITERAL = 'LITERAL_NODE';
+const AST_BINARY_OP = 'BINARY_OPERATION_NODE';
 
-    const entryCount = parseInt(contentLines[0], 10);
-    const inputSeries = contentLines.slice(1);
+function createExpressionTokenizer(inputString) {
+    let currentCharacterPosition = 0;
+    const generatedTokenList = [];
 
-    return {
-        entryCount: entryCount,
-        inputSeries: inputSeries
-    };
-}
+    while (currentCharacterPosition < inputString.length) {
+        let char = inputString[currentCharacterPosition];
 
-function generateTokens(formulaText) {
-    const generatedTokens = [];
-    let currentPosition = 0;
-    const formulaLength = formulaText.length;
-
-    while (currentPosition < formulaLength) {
-        let character = formulaText[currentPosition];
-
-        if (character === ' ') {
-            currentPosition++;
+        if (/\s/.test(char)) {
+            currentCharacterPosition++;
             continue;
         }
 
-        if (character === '(') {
-            generatedTokens.push({ type: tokenTypes.L_PAREN, value: character });
-            currentPosition++;
-        } else if (character === ')') {
-            generatedTokens.push({ type: tokenTypes.R_PAREN, value: character });
-            currentPosition++;
-        } else if (operatorDetails[character]) {
-            generatedTokens.push({ type: tokenTypes.OPERATOR, value: character });
-            currentPosition++;
-        } else if (/\d/.test(character)) {
-            let numericString = '';
-            while (currentPosition < formulaLength && /\d/.test(formulaText[currentPosition])) {
-                numericString += formulaText[currentPosition];
-                currentPosition++;
+        if (/\d/.test(char)) {
+            let numberString = '';
+            while (currentCharacterPosition < inputString.length && /\d/.test(inputString[currentCharacterPosition])) {
+                numberString += inputString[currentCharacterPosition];
+                currentCharacterPosition++;
             }
-            generatedTokens.push({ type: tokenTypes.NUMBER, value: parseInt(numericString, 10) });
+            generatedTokenList.push({ kind: TOKEN_NUMBER, val: parseInt(numberString, 10) });
+            continue;
+        }
+
+        switch (char) {
+            case '+': generatedTokenList.push({ kind: TOKEN_ADD }); break;
+            case '-': generatedTokenList.push({ kind: TOKEN_SUB }); break;
+            case '*': generatedTokenList.push({ kind: TOKEN_MUL }); break;
+            case '/': generatedTokenList.push({ kind: TOKEN_DIV }); break;
+            case '(': generatedTokenList.push({ kind: TOKEN_OPEN_PAREN }); break;
+            case ')': generatedTokenList.push({ kind: TOKEN_CLOSE_PAREN }); break;
+            default: throw new Error(`Unexpected character encountered: ${char}`);
+        }
+        currentCharacterPosition++;
+    }
+    return generatedTokenList;
+}
+
+class SyntaxTreeBuilder {
+    constructor(tokenArray) {
+        this.tokenSequence = tokenArray;
+        this.currentSequenceIndex = 0;
+    }
+
+    peekToken() {
+        return this.tokenSequence[this.currentSequenceIndex];
+    }
+
+    consumeToken() {
+        if (this.currentSequenceIndex >= this.tokenSequence.length) {
+            throw new Error("Unexpected end of token stream");
+        }
+        return this.tokenSequence[this.currentSequenceIndex++];
+    }
+
+    constructTree() {
+        return this.parseAdditionSubtraction();
+    }
+
+    parseAdditionSubtraction() {
+        let leftNode = this.parseMultiplicationDivision();
+
+        while (this.peekToken() && (this.peekToken().kind === TOKEN_ADD || this.peekToken().kind === TOKEN_SUB)) {
+            const operatorToken = this.consumeToken();
+            const rightNode = this.parseMultiplicationDivision();
+            leftNode = {
+                nodeType: AST_BINARY_OP,
+                operation: operatorToken.kind,
+                leftOperand: leftNode,
+                rightOperand: rightNode
+            };
+        }
+        return leftNode;
+    }
+
+    parseMultiplicationDivision() {
+        let leftNode = this.parseAtomicExpression();
+
+        while (this.peekToken() && (this.peekToken().kind === TOKEN_MUL || this.peekToken().kind === TOKEN_DIV)) {
+            const operatorToken = this.consumeToken();
+            const rightNode = this.parseAtomicExpression();
+            leftNode = {
+                nodeType: AST_BINARY_OP,
+                operation: operatorToken.kind,
+                leftOperand: leftNode,
+                rightOperand: rightNode
+            };
+        }
+        return leftNode;
+    }
+
+    parseAtomicExpression() {
+        const current = this.peekToken();
+
+        if (current.kind === TOKEN_NUMBER) {
+            return { nodeType: AST_LITERAL, value: this.consumeToken().val };
+        } else if (current.kind === TOKEN_OPEN_PAREN) {
+            this.consumeToken();
+            const innerExpression = this.parseAdditionSubtraction();
+            if (!this.peekToken() || this.peekToken().kind !== TOKEN_CLOSE_PAREN) {
+                throw new Error("Missing closing parenthesis ')'");
+            }
+            this.consumeToken();
+            return innerExpression;
         } else {
-            currentPosition++;
+            throw new Error(`Unexpected token for atomic expression: ${JSON.stringify(current)}`);
         }
     }
-    return generatedTokens;
 }
 
-function convertInfixToRPN(tokenStream) {
-    const outputPile = [];
-    const operatorPile = [];
+function evaluateAbstractSyntaxTree(treeNode) {
+    if (treeNode.nodeType === AST_LITERAL) {
+        return treeNode.value;
+    } else if (treeNode.nodeType === AST_BINARY_OP) {
+        const leftResult = evaluateAbstractSyntaxTree(treeNode.leftOperand);
+        const rightResult = evaluateAbstractSyntaxTree(treeNode.rightOperand);
 
-    for (const currentItem of tokenStream) {
-        if (currentItem.type === tokenTypes.NUMBER) {
-            outputPile.push(currentItem);
-        } else if (currentItem.type === tokenTypes.OPERATOR) {
-            const currentOpInfo = operatorDetails[currentItem.value];
-            let topOpItem = operatorPile[operatorPile.length - 1];
-
-            while (
-                operatorPile.length > 0 &&
-                topOpItem.type === tokenTypes.OPERATOR &&
-                (
-                    operatorDetails[topOpItem.value].precedence > currentOpInfo.precedence ||
-                    (operatorDetails[topOpItem.value].precedence === currentOpInfo.precedence && currentOpInfo.associativity === 'L')
-                )
-            ) {
-                outputPile.push(operatorPile.pop());
-                topOpItem = operatorPile[operatorPile.length - 1];
-            }
-            operatorPile.push(currentItem);
-        } else if (currentItem.type === tokenTypes.L_PAREN) {
-            operatorPile.push(currentItem);
-        } else if (currentItem.type === tokenTypes.R_PAREN) {
-            while (operatorPile.length > 0 && operatorPile[operatorPile.length - 1].type !== tokenTypes.L_PAREN) {
-                outputPile.push(operatorPile.pop());
-            }
-            operatorPile.pop();
+        switch (treeNode.operation) {
+            case TOKEN_ADD: return leftResult + rightResult;
+            case TOKEN_SUB: return leftResult - rightResult;
+            case TOKEN_MUL: return leftResult * rightResult;
+            case TOKEN_DIV: return Math.trunc(leftResult / rightResult);
+            default: throw new Error(`Unknown operation type: ${treeNode.operation}`);
         }
     }
-
-    while (operatorPile.length > 0) {
-        outputPile.push(operatorPile.pop());
-    }
-
-    return outputPile;
+    throw new Error(`Unknown AST node type for evaluation: ${treeNode.nodeType}`);
 }
 
-function computeRPN(rpnTokens) {
-    const operandPile = [];
+class InputDataProcessor {
+    constructor(sourcePath, splitOnSpace = true) {
+        const fileContents = require("fs").readFileSync(sourcePath, "utf8");
+        const contentLines = fileContents.replace(/\r/g, '').split("\n");
 
-    for (const element of rpnTokens) {
-        if (element.type === tokenTypes.NUMBER) {
-            operandPile.push(element.value);
-        } else if (element.type === tokenTypes.OPERATOR) {
-            const val2 = operandPile.pop();
-            const val1 = operandPile.pop();
-
-            let outcome;
-            switch (element.value) {
-                case '+':
-                    outcome = val1 + val2;
-                    break;
-                case '-':
-                    outcome = val1 - val2;
-                    break;
-                case '*':
-                    outcome = val1 * val2;
-                    break;
-                case '/':
-                    outcome = Math.trunc(val1 / val2);
-                    break;
+        this.processedDataElements = contentLines.flatMap(lineItem => {
+            if (splitOnSpace && lineItem !== "") {
+                return lineItem.split(" ").filter(segment => segment !== "");
+            } else {
+                return [lineItem];
             }
-            operandPile.push(outcome);
-        }
+        });
+        this.currentElementIndex = 0;
     }
-    return operandPile.pop();
+
+    hasMoreElements() {
+        return this.currentElementIndex < this.processedDataElements.length;
+    }
+
+    getNextElement() {
+        if (!this.hasMoreElements()) {
+            throw new RangeError(`No more elements available at index ${this.currentElementIndex}`);
+        }
+        return this.processedDataElements[this.currentElementIndex++];
+    }
+
+    getNextNumericElement() {
+        const currentElement = this.peekNextElement();
+        if (!/^\d+$/.test(currentElement)) {
+            throw new TypeError(`'${currentElement}' cannot be converted to a numeric value`);
+        }
+        return +this.getNextElement();
+    }
+
+    getNextIntegerElement() {
+        return parseInt(this.getNextNumericElement(), 10);
+    }
+
+    peekNextElement() {
+        if (!this.hasMoreElements()) {
+            throw new RangeError(`No element to peek at index ${this.currentElementIndex}`);
+        }
+        return this.processedDataElements[this.currentElementIndex];
+    }
+
+    resetElementPosition() {
+        this.currentElementIndex = 0;
+    }
 }
 
-const acquiredData = readAllEntries();
+const inputHandler = new InputDataProcessor("/dev/stdin");
 
-for (let i = 0; i < acquiredData.entryCount; i++) {
-    const currentFormulaString = acquiredData.inputSeries[i];
-    const processedFormulaString = currentFormulaString.slice(0, -1); // Remove last character, typically a semicolon
+let remainingExpressionsCount = inputHandler.getNextIntegerElement();
 
-    const expressionTokens = generateTokens(processedFormulaString);
-    const rpnForm = convertInfixToRPN(expressionTokens);
-    const finalOutcome = computeRPN(rpnForm);
-    logOutput(finalOutcome);
+while (remainingExpressionsCount--) {
+    let currentExpressionText = inputHandler.getNextElement();
+    currentExpressionText = currentExpressionText.slice(0, currentExpressionText.length - 1);
+
+    const tokens = createExpressionTokenizer(currentExpressionText);
+    const parser = new SyntaxTreeBuilder(tokens);
+    const abstractSyntaxTree = parser.constructTree();
+    const computedResult = evaluateAbstractSyntaxTree(abstractSyntaxTree);
+
+    outputLog(computedResult);
 }

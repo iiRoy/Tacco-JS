@@ -1,49 +1,59 @@
-function solveProblem(rawData) {
-    const dataLines = rawData.split("\n");
+const solveProblem = (rawInput) => {
+    const lines = rawInput.split('\n');
 
-    const dimensionsData = dataLines[0].split(" ").map(Number);
-    const firstLength = dimensionsData[0];
-    const secondLength = dimensionsData[1];
+    const [dimA, dimB] = lines[0].split(' ').map(Number);
 
-    const firstSequence = dataLines[1].split(" ").map(Number);
-    const secondSequence = dataLines[2].split(" ").map(Number);
+    const sequenceA = lines[1].split(' ').map(Number);
+    const sequenceB = lines[2].split(' ').map(Number);
 
-    const primeModulo = 1000000007;
+    const primeModulus = 10**9 + 7;
 
-    const memoizationGrid = Array(firstLength + 1).fill(null).map(() => Array(secondLength + 1).fill(undefined));
+    const initialGrid = [Array(dimB + 1).fill(0)];
 
-    function calculateSubsequenceCount(idxA, idxB) {
-        if (idxA === 0 || idxB === 0) {
-            return 0;
-        }
+    const computedGrid = Array.from({ length: dimA }, (_, sIndex) => sIndex).reduce((accumulatorGrid, currentSIndex) => {
+        const priorRow = accumulatorGrid[currentSIndex];
+        const activeRow = Array(dimB + 1).fill(0);
 
-        if (memoizationGrid[idxA][idxB] !== undefined) {
-            return memoizationGrid[idxA][idxB];
-        }
+        Array.from({ length: dimB }, (_, tIndex) => tIndex).forEach((currentTIndex) => {
+            const elementS = sequenceA[currentSIndex];
+            const elementT = sequenceB[currentTIndex];
 
-        let currentCount;
-        if (firstSequence[idxA - 1] === secondSequence[idxB - 1]) {
-            currentCount = (calculateSubsequenceCount(idxA - 1, idxB) +
-                            calculateSubsequenceCount(idxA, idxB - 1) +
-                            1) % primeModulo;
-        } else {
-            currentCount = (calculateSubsequenceCount(idxA - 1, idxB) +
-                            calculateSubsequenceCount(idxA, idxB - 1) -
-                            calculateSubsequenceCount(idxA - 1, idxB - 1) +
-                            primeModulo) % primeModulo;
-        }
+            if (elementS === elementT) {
+                activeRow[currentTIndex + 1] = (priorRow[currentTIndex + 1] + activeRow[currentTIndex] + 1) % primeModulus;
+            } else {
+                activeRow[currentTIndex + 1] = (priorRow[currentTIndex + 1] + activeRow[currentTIndex] + (primeModulus - priorRow[currentTIndex])) % primeModulus;
+            }
+        });
 
-        memoizationGrid[idxA][idxB] = currentCount;
-        return currentCount;
-    }
+        accumulatorGrid.push(activeRow);
+        return accumulatorGrid;
+    }, initialGrid);
 
-    const finalCalculatedCount = calculateSubsequenceCount(firstLength, secondLength);
+    const finalCount = computedGrid[dimA][dimB] + 1;
 
-    const ultimateResult = (finalCalculatedCount + 1) % primeModulo;
+    console.log('%s', finalCount);
+    return finalCount;
+};
 
-    console.log('%s', ultimateResult);
-    return ultimateResult;
-}
+const testSolution = (caseNum) => {
+  const inputElement = document.getElementById("input" + caseNum);
+  const outputElement = document.getElementById("output" + caseNum);
+  const resultElement = document.getElementById("result" + caseNum);
 
-const executionInput = require("node:fs").readFileSync("/dev/stdin", "utf8");
-solveProblem(executionInput);
+  if (!inputElement || !outputElement || !resultElement) {
+      console.error(`Elements for case ${caseNum} not found.`);
+      return;
+  }
+
+  const currentInput = inputElement.value;
+  const computedAnswer = solveProblem(currentInput);
+  const expectedOutput = outputElement.value.split("\n")[0];
+
+  let testResult = "WA";
+  if (String(computedAnswer) === expectedOutput) {
+    testResult = "AC";
+  }
+  resultElement.innerHTML = testResult;
+};
+
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

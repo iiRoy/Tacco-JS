@@ -1,24 +1,30 @@
-const textProcessor = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const inputOutputGate = textProcessor.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const deriveRectangularMetrics = (firstDimension, secondDimension) => {
+    const sumOfDimensions = [firstDimension, secondDimension].reduce((total, current) => total + current, 0);
 
-const calculateDimensions = (strInput) => {
-  const parts = strInput.trim().split(' ');
-  const valA = Number(parts[0]);
-  const valB = Number(parts[1]);
-
-  return {
-    rectArea: valA * valB,
-    rectPerimeter: (valA + valB) * 2
-  };
+    return {
+        surfaceArea: firstDimension * secondDimension,
+        boundaryLength: 2 * sumOfDimensions
+    };
 };
 
-inputOutputGate.on('line', (receivedText) => {
-  const calculations = calculateDimensions(receivedText);
-  const resultString = calculations.rectArea + ' ' + calculations.rectPerimeter;
-  process.stdout.write(resultString + '\n');
-  inputOutputGate.close();
+process.stdin.on('data', (incomingDataChunk) => {
+    const numericSegments = incomingDataChunk.match(/(\d+)\s+(\d+)/);
+
+    let primaryValue, secondaryValue;
+
+    if (numericSegments && numericSegments.length >= 3) {
+        primaryValue = Number.parseInt(numericSegments[1], 10);
+        secondaryValue = Number.parseInt(numericSegments[2], 10);
+    } else {
+        const dataParts = incomingDataChunk.split(' ');
+        primaryValue = Number.parseInt(dataParts[0], 10);
+        secondaryValue = Number.parseInt(dataParts[1], 10);
+    }
+
+    const calculatedProperties = deriveRectangularMetrics(primaryValue, secondaryValue);
+
+    console.log(`${calculatedProperties.surfaceArea} ${calculatedProperties.boundaryLength}`);
 });

@@ -1,96 +1,98 @@
-const parseCoordinatePair = (coordinateString) => {
-  if (!coordinateString || typeof coordinateString !== 'string' || coordinateString.trim() === '') {
-    return [NaN, NaN];
-  }
-  const parts = coordinateString.split(" ");
-  if (parts.length !== 2) {
-    return [NaN, NaN];
-  }
-  const xVal = Number(parts[0]);
-  const yVal = Number(parts[1]);
+const main = (inputString) => {
+  const inputLines = inputString.split("\n");
 
-  if (isNaN(xVal) || isNaN(yVal)) {
-    return [NaN, NaN];
+  // Helper function to parse a single line of coordinates
+  const parseCoordLine = (lineContent) => {
+    return lineContent.split(" ").map(val => Number(val));
+  };
+
+  const totalPointCount = Number(inputLines[0]);
+  let allCoordinates = [];
+
+  // Populate allCoordinates from input lines
+  // The original code's `point.indexOf(value)` check for array objects
+  // will always return -1 because `value` is a new array object in each iteration.
+  // This means it effectively adds all points without content-based duplicate filtering.
+  // This exact behavior is preserved.
+  for (let i = 1; i <= totalPointCount; i++) {
+    let currentCoordPair = parseCoordLine(inputLines[i]);
+    if (allCoordinates.indexOf(currentCoordPair) === -1) {
+      allCoordinates.push(currentCoordPair);
+    }
   }
-  return [xVal, yVal];
+
+  const numStoredCoords = allCoordinates.length;
+
+  // Prepare x and y values for finding overall min/max.
+  // The original code creates arrays of single-element arrays (e.g., [[x1], [x2], ...]).
+  // This structure is maintained for behavioral equivalence during sorting.
+  let xValueWrappers = [];
+  let yValueWrappers = [];
+  for (let i = 0; i < numStoredCoords; i++) {
+    xValueWrappers.push([allCoordinates[i][0]]);
+    yValueWrappers.push([allCoordinates[i][1]]);
+  }
+
+  // Sort x-coordinate wrappers in descending order to find max and min
+  xValueWrappers.sort((a, b) => b[0] - a[0]);
+  const overallMaxX = xValueWrappers[0][0];
+  const overallMinX = xValueWrappers[numStoredCoords - 1][0];
+
+  // Sort y-coordinate wrappers in descending order to find max and min
+  yValueWrappers.sort((a, b) => b[0] - a[0]);
+  const overallMaxY = yValueWrappers[0][0];
+  const overallMinY = yValueWrappers[numStoredCoords - 1][0];
+
+  // Helper function to determine if a coordinate value is an extreme (min or max)
+  const isCoordinateExtreme = (valueToCheck, maxBoundary, minBoundary) => {
+    return valueToCheck === maxBoundary || valueToCheck === minBoundary;
+  };
+
+  let extremePointIndices = [];
+
+  // Identify and collect indices of points that lie on the extreme x or y boundaries
+  for (let i = 0; i < numStoredCoords; i++) {
+    const currentX = allCoordinates[i][0];
+    const currentY = allCoordinates[i][1];
+
+    // Check if the current point's x-coordinate is an extreme
+    if (isCoordinateExtreme(currentX, overallMaxX, overallMinX)) {
+      if (extremePointIndices.indexOf(i) === -1) {
+        extremePointIndices.push(i);
+      }
+    }
+    // Check if the current point's y-coordinate is an extreme
+    if (isCoordinateExtreme(currentY, overallMaxY, overallMinY)) {
+      if (extremePointIndices.indexOf(i) === -1) {
+        extremePointIndices.push(i);
+      }
+    }
+  }
+
+  const numExtremePoints = extremePointIndices.length;
+  let allCalculatedDistances = [];
+
+  // Helper function to compute Manhattan distance between two points
+  const computeManhattanDistance = (pointOne, pointTwo) => {
+    return Math.abs(pointOne[0] - pointTwo[0]) + Math.abs(pointOne[1] - pointTwo[1]);
+  };
+
+  // Calculate Manhattan distances between all unique pairs of identified extreme points
+  for (let i = 0; i < numExtremePoints; i++) {
+    for (let j = i + 1; j < numExtremePoints; j++) {
+      const p1OriginalIndex = extremePointIndices[i];
+      const p2OriginalIndex = extremePointIndices[j];
+      const point1Coords = allCoordinates[p1OriginalIndex];
+      const point2Coords = allCoordinates[p2OriginalIndex];
+      allCalculatedDistances.push(computeManhattanDistance(point1Coords, point2Coords));
+    }
+  }
+
+  // Sort the calculated distances in descending order to find the maximum
+  allCalculatedDistances.sort((a, b) => b - a);
+
+  // Output the largest Manhattan distance found
+  console.log(allCalculatedDistances[0]);
 };
 
-const calculateManhattanDistance = (coord1, coord2) => {
-  const deltaX = Math.abs(coord1[0] - coord2[0]);
-  const deltaY = Math.abs(coord1[1] - coord2[1]);
-  return deltaX + deltaY;
-};
-
-const processGeometricData = (rawDataInput) => {
-  const parsedLines = rawDataInput.split("\n").filter(line => line.trim() !== '');
-
-  let expectedPointCount = Number(parsedLines[0]);
-
-  if (isNaN(expectedPointCount) || expectedPointCount <= 0) {
-    console.log(0);
-    return;
-  }
-
-  const uniqueCoordinatesSet = new Set();
-  const actualCoordinateList = [];
-
-  for (let currentLineIndex = 1; currentLineIndex <= expectedPointCount; ++currentLineIndex) {
-    const currentLine = parsedLines[currentLineIndex];
-    if (!currentLine) continue;
-
-    const currentCoordinatePair = parseCoordinatePair(currentLine);
-
-    if (isNaN(currentCoordinatePair[0]) || isNaN(currentCoordinatePair[1])) {
-      continue;
-    }
-
-    const coordinateKey = JSON.stringify(currentCoordinatePair);
-    if (!uniqueCoordinatesSet.has(coordinateKey)) {
-      uniqueCoordinatesSet.add(coordinateKey);
-      actualCoordinateList.push(currentCoordinatePair);
-    }
-  }
-
-  if (actualCoordinateList.length < 2) {
-    console.log(0);
-    return;
-  }
-
-  const allXCoordinates = actualCoordinateList.map(coord => coord[0]);
-  const allYCoordinates = actualCoordinateList.map(coord => coord[1]);
-
-  const minXValue = Math.min(...allXCoordinates);
-  const maxXValue = Math.max(...allXCoordinates);
-  const minYValue = Math.min(...allYCoordinates);
-  const maxYValue = Math.max(...allYCoordinates);
-
-  const boundaryPointIndices = new Set();
-  for (let coordIdx = 0; coordIdx < actualCoordinateList.length; ++coordIdx) {
-    const [xCoord, yCoord] = actualCoordinateList[coordIdx];
-    if (xCoord === minXValue || xCoord === maxXValue || yCoord === minYValue || yCoord === maxYValue) {
-      boundaryPointIndices.add(coordIdx);
-    }
-  }
-
-  const filteredPointIndices = Array.from(boundaryPointIndices);
-
-  if (filteredPointIndices.length < 2) {
-    console.log(0);
-    return;
-  }
-
-  const calculatedDistances = [];
-  for (let i = 0; i < filteredPointIndices.length; ++i) {
-    for (let j = i + 1; j < filteredPointIndices.length; ++j) {
-      const point1 = actualCoordinateList[filteredPointIndices[i]];
-      const point2 = actualCoordinateList[filteredPointIndices[j]];
-      calculatedDistances.push(calculateManhattanDistance(point1, point2));
-    }
-  }
-
-  calculatedDistances.sort((valA, valB) => valB - valA);
-
-  console.log(calculatedDistances[0]);
-};
-
-processGeometricData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

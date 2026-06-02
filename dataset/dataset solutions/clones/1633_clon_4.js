@@ -1,118 +1,95 @@
-(async () => {
-    let entireStream = '';
-
-    process.stdin.on('data', (fragment) => {
-        entireStream += fragment;
-    });
-
-    process.stdin.on('end', () => {
-        const textBlocks = entireStream.split(/\n/);
-
-        const [limitCount, operationsCount] = textBlocks.shift().split(/\s/).map(raw => parseInt(raw, 10));
-
-        const valueMaximizer = new MaximizationProcessor();
-        textBlocks[0].split(/\s/).slice(0, limitCount).forEach(raw => {
-            const val = parseInt(raw, 10);
-            valueMaximizer.addElement(val, 1);
-        });
-
-        for (let opIdx = 0; opIdx < operationsCount; opIdx++) {
-            const currentPeak = valueMaximizer.extractHighest();
-            if (currentPeak) {
-                currentPeak.divisionCount++;
-                valueMaximizer.addElement(currentPeak.initialValue, currentPeak.divisionCount);
-            } else {
-                break;
-            }
-        }
-
-        const finalPeak = valueMaximizer.peekHighest();
-        if (finalPeak) {
-            const finalComputedValue = finalPeak.initialValue / finalPeak.divisionCount;
-            console.log(Math.ceil(finalComputedValue));
-        } else {
-            console.log(0);
-        }
-    });
-})();
-
-class MaximizationProcessor {
-    constructor() {
-        this.dataStore = [];
+class MaxHeap {
+    constructor(comparator) {
+        this.heap = [];
+        this.compare = comparator;
     }
 
-    _getAncestorIndex(idx) { return Math.floor((idx - 1) / 2); }
-    _getLeftDescendantIndex(idx) { return 2 * idx + 1; }
-    _getRightDescendantIndex(idx) { return 2 * idx + 2; }
+    _getParentIndex(idx) { return Math.floor((idx - 1) / 2); }
+    _getLeftChildIndex(idx) { return 2 * idx + 1; }
+    _getRightChildIndex(idx) { return 2 * idx + 2; }
 
-    _exchangePositions(idx1, idx2) {
-        [this.dataStore[idx1], this.dataStore[idx2]] = [this.dataStore[idx2], this.dataStore[idx1]];
+    _hasParent(idx) { return this._getParentIndex(idx) >= 0; }
+    _hasLeftChild(idx) { return this._getLeftChildIndex(idx) < this.heap.length; }
+    _hasRightChild(idx) { return this._getRightChildIndex(idx) < this.heap.length; }
+
+    _getParent(idx) { return this.heap[this._getParentIndex(idx)]; }
+    _getLeftChild(idx) { return this.heap[this._getLeftChildIndex(idx)]; }
+    _getRightChild(idx) { return this.heap[this._getRightChildIndex(idx)]; }
+
+    _swapElements(idx1, idx2) {
+        [this.heap[idx1], this.heap[idx2]] = [this.heap[idx2], this.heap[idx1]];
     }
 
-    _isDominant(idx1, idx2) {
-        if (idx1 >= this.dataStore.length || idx2 >= this.dataStore.length) return false;
-        const item1 = this.dataStore[idx1];
-        const item2 = this.dataStore[idx2];
-        return (item1.initialValue / item1.divisionCount) > (item2.initialValue / item2.divisionCount);
-    }
-
-    _ascend() {
-        let currentIdx = this.dataStore.length - 1;
-        while (currentIdx > 0) {
-            const parentIdx = this._getAncestorIndex(currentIdx);
-            if (this._isDominant(currentIdx, parentIdx)) {
-                this._exchangePositions(currentIdx, parentIdx);
-                currentIdx = parentIdx;
-            } else {
-                break;
-            }
+    _heapifyUp() {
+        let currentIdx = this.heap.length - 1;
+        while (this._hasParent(currentIdx) && this.compare(this.heap[currentIdx], this._getParent(currentIdx)) > 0) {
+            this._swapElements(currentIdx, this._getParentIndex(currentIdx));
+            currentIdx = this._getParentIndex(currentIdx);
         }
     }
 
-    _descend() {
+    _heapifyDown() {
         let currentIdx = 0;
-        const totalSize = this.dataStore.length;
-        while (true) {
-            const leftChildIdx = this._getLeftDescendantIndex(currentIdx);
-            const rightChildIdx = this._getRightDescendantIndex(currentIdx);
-            let mostDominantIdx = currentIdx;
-
-            if (leftChildIdx < totalSize && this._isDominant(leftChildIdx, mostDominantIdx)) {
-                mostDominantIdx = leftChildIdx;
-            }
-            if (rightChildIdx < totalSize && this._isDominant(rightChildIdx, mostDominantIdx)) {
-                mostDominantIdx = rightChildIdx;
+        while (this._hasLeftChild(currentIdx)) {
+            let largerChildIdx = this._getLeftChildIndex(currentIdx);
+            if (this._hasRightChild(currentIdx) && this.compare(this._getRightChild(currentIdx), this._getLeftChild(currentIdx)) > 0) {
+                largerChildIdx = this._getRightChildIndex(currentIdx);
             }
 
-            if (mostDominantIdx !== currentIdx) {
-                this._exchangePositions(currentIdx, mostDominantIdx);
-                currentIdx = mostDominantIdx;
-            } else {
+            if (this.compare(this.heap[currentIdx], this.heap[largerChildIdx]) >= 0) {
                 break;
             }
+
+            this._swapElements(currentIdx, largerChildIdx);
+            currentIdx = largerChildIdx;
         }
     }
 
-    addElement(initialVal, divisionCount) {
-        this.dataStore.push({ initialValue: initialVal, divisionCount: divisionCount });
-        this._ascend();
+    insertItem(item) {
+        this.heap.push(item);
+        this._heapifyUp();
     }
 
-    extractHighest() {
-        if (this.dataStore.length === 0) return null;
-        if (this.dataStore.length === 1) return this.dataStore.pop();
+    extractTop() {
+        if (this.heap.length === 0) return undefined;
+        if (this.heap.length === 1) return this.heap.pop();
 
-        const highestItem = this.dataStore[0];
-        this.dataStore[0] = this.dataStore.pop();
-        this._descend();
-        return highestItem;
+        const topItem = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this._heapifyDown();
+        return topItem;
     }
 
-    peekHighest() {
-        return this.dataStore.length > 0 ? this.dataStore[0] : null;
+    peekTop() {
+        if (this.heap.length === 0) return undefined;
+        return this.heap[0];
     }
 
     getSize() {
-        return this.dataStore.length;
+        return this.heap.length;
     }
 }
+
+(async () => {
+    let streamData = '';
+    for await (const chunk of process.stdin) streamData += chunk;
+    const dataRows = streamData.split(/\n/);
+
+    const [itemCount, operationCount] = dataRows.shift().split(/\s/).map(val => +val);
+
+    const valueComparator = (itemA, itemB) => (itemA[0] / itemA[1]) - (itemB[0] / itemB[1]);
+    const valueHeap = new MaxHeap(valueComparator);
+
+    dataRows[0].split(/\s/).slice(0, itemCount).map(initialVal => {
+        valueHeap.insertItem([+initialVal, 1]);
+    });
+
+    for (let opIndex = 0; opIndex < operationCount; opIndex++) {
+        let currentMaxItem = valueHeap.extractTop();
+        currentMaxItem[1]++;
+        valueHeap.insertItem(currentMaxItem);
+    }
+
+    const finalMaxItem = valueHeap.peekTop();
+    console.log(Math.ceil(finalMaxItem[0] / finalMaxItem[1]));
+})();

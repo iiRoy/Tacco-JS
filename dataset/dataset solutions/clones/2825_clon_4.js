@@ -1,20 +1,12 @@
-function coordinateAnalyzer(fullInputString) {
-  const lineData = fullInputString.split("\n")[0];
-  const dimensionAndCoordinates = lineData.split(/\s+/).map(Number.parseInt);
+function processDimensionsAndCoordinates(sourceData) {
+    const numericValues = sourceData.trim().split(/\s+/).map(val => +val);
+    const [rectWidth, rectHeight, currentX, currentY] = numericValues;
 
-  const lengthMeasure = dimensionAndCoordinates[0];
-  const breadthMeasure = dimensionAndCoordinates[1];
-  const pointAbscissa = dimensionAndCoordinates[2];
-  const pointOrdinate = dimensionAndCoordinates[3];
+    const quarterRectangleArea = (rectWidth * rectHeight) / 4;
 
-  const quarterArea = (lengthMeasure * breadthMeasure) / 4;
+    const isMidpoint = (currentX === rectWidth / 2 && currentY === rectHeight / 2) ? 1 : 0;
 
-  const abscissaDifference = pointAbscissa - (lengthMeasure / 2);
-  const ordinateDifference = pointOrdinate - (breadthMeasure / 2);
-
-  const centerMatchIndicator = 1 - Math.sign(Math.abs(abscissaDifference) + Math.abs(ordinateDifference));
-
-  console.log(quarterArea, centerMatchIndicator);
+    console.log(quarterRectangleArea, isMidpoint);
 }
 
-coordinateAnalyzer(require("fs").readFileSync("/dev/stdin", "utf8"));
+processDimensionsAndCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));

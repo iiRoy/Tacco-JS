@@ -1,26 +1,21 @@
-function processInputData(sourceMaterial) {
-    const dataLines = sourceMaterial.split('\n');
-    const numericKey = Number(dataLines[0]);
-    const [lowerLimitString, upperLimitString] = dataLines[1].split(' ');
-    const lowerLimit = Number(lowerLimitString);
-    const upperLimit = Number(upperLimitString);
+function processInput(dataPayload) {
+    const [firstLineContent, secondLineContent] = dataPayload.split('\n');
+    const numericalDivisor = Number(firstLineContent);
+    const [rangeStart, rangeEnd] = secondLineContent.split(' ').map(Number);
 
-    if (lowerLimit === upperLimit) {
-        console.log('OK');
-        return;
+    const collectedOutputs = [];
+
+    if (rangeStart === rangeEnd) {
+        collectedOutputs.push('OK');
+    } else {
+        const numberSequence = Array.from({ length: rangeEnd - rangeStart + 1 }, (_, indexOffset) => rangeStart + indexOffset);
+
+        numberSequence
+            .filter(currentValue => currentValue % numericalDivisor === 0)
+            .forEach(() => collectedOutputs.push('OK'));
     }
 
-    // This calculates the smallest multiple of 'numericKey' that is greater than or equal to 'lowerLimit'.
-    // For example, if lowerLimit=7 and numericKey=3, it calculates Math.ceil(7/3)*3 = 3*3 = 9.
-    // If lowerLimit=6 and numericKey=3, it calculates Math.ceil(6/3)*3 = 2*3 = 6.
-    // This value will be the first potential candidate for divisibility within the range [lowerLimit, upperLimit].
-    let firstSuitableValue = Math.ceil(lowerLimit / numericKey) * numericKey;
-
-    // If this first suitable value is within the upper bound, then such a number exists in the range.
-    if (firstSuitableValue <= upperLimit) {
-        console.log('OK');
-    }
-    // The original code does not print 'NG' under any circumstances, so this implementation also omits it.
+    collectedOutputs.forEach(messageItem => console.log(messageItem));
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

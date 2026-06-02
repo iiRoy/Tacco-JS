@@ -1,28 +1,52 @@
-const characterTransformationsMap = new Map([
+let tokenBuffer;
+let tokenIndex;
+
+function out(resultMessage) {
+    console.log(resultMessage);
+}
+
+function inS() {
+    return tokenBuffer[tokenIndex++];
+}
+
+function inI() {
+    return parseInt(inS(), 10);
+}
+
+function inF() {
+    return parseFloat(inS());
+}
+
+const charTransformationRegistry = new Map([
     ['d', 'b'],
     ['b', 'd'],
     ['p', 'q']
 ]);
 
-function obtainMappedSymbol(sourceSymbol) {
-    return characterTransformationsMap.get(sourceSymbol);
+function retrieveMappedCharacter(sourceChar) {
+    return charTransformationRegistry.get(sourceChar);
 }
 
-function analyzeInputSequence(sourceStringData) {
-    const cleanedSequence = String(sourceStringData).trim();
+function Main(fullInputString) {
+    tokenBuffer = fullInputString.replace(/\n/g, " ").split(" ");
+    tokenIndex = 0;
 
-    const [firstElement, secondElement, thirdElement, fourthElement] = cleanedSequence;
+    const currentSequence = inS();
 
-    const conditionSatisfied =
-        (obtainMappedSymbol(firstElement) === fourthElement) &&
-        (obtainMappedMappedSymbol(secondElement) === thirdElement);
+    const validationSet = [
+        { primary: currentSequence[0], secondary: currentSequence[3] },
+        { primary: currentSequence[1], secondary: currentSequence[2] }
+    ];
 
-    return conditionSatisfied ? "Yes" : "No";
+    const allConditionsSatisfied = validationSet.every(pair =>
+        retrieveMappedCharacter(pair.primary) === pair.secondary
+    );
+
+    if (allConditionsSatisfied) {
+        out("Yes");
+    } else {
+        out("No");
+    }
 }
 
-function processExternalData(receivedContent) {
-    const outcomeReport = analyzeInputSequence(receivedContent);
-    console.log(outcomeReport);
-}
-
-processExternalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,15 @@
-function analyzeCharacterChanges(sourceString) {
-    if (sourceString.length === 0) {
+function processInput(textStream) {
+    if (textStream.length <= 1) {
         console.log(0);
         return;
     }
 
-    const initialCharacter = sourceString.charAt(0);
-    const remainingCharacters = sourceString.slice(1).split('');
+    const changedSegments = textStream.split('').slice(1).filter((currentSymbol, position) => {
+        const priorSymbol = textStream[position];
+        return currentSymbol !== priorSymbol;
+    });
 
-    const resultantMetrics = remainingCharacters.reduce((currentMetrics, nextCharacter) => {
-        if (currentMetrics.lastEncountered !== nextCharacter) {
-            currentMetrics.changeCounter++;
-            currentMetrics.lastEncountered = nextCharacter;
-        }
-        return currentMetrics;
-    }, { lastEncountered: initialCharacter, changeCounter: 0 });
-
-    console.log(resultantMetrics.changeCounter);
+    console.log(changedSegments.length);
 }
 
-analyzeCharacterChanges(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

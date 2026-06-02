@@ -1,219 +1,147 @@
-let inputProcessor = initializeInputProcessor();
-
+let inputHandler = initializeInputProcessor();
 processGraphData();
 
-function obtainInteger() {
-    return convertInput(retrieveNextLine(), 1);
+function getNextInteger() {
+    return convertInputData(fetchNextLine(), 1);
 }
 
-function obtainStringTokens() {
-    return convertInput(retrieveNextLine(), 2);
+function getNextStringArray() {
+    return convertInputData(fetchNextLine(), 2);
 }
 
-function obtainIntegerTokens() {
-    return convertInput(retrieveNextLine(), 4);
+function getNextIntegerArray() {
+    return convertInputData(fetchNextLine(), 4);
 }
 
-function obtainCharTokens() {
-    return convertInput(retrieveNextLine(), 6);
+function getNextCharacterArray() {
+    return convertInputData(fetchNextLine(), 6);
 }
 
-function retrieveNextLine() {
-    return inputProcessor.fetchLine();
+function fetchNextLine() {
+    return inputHandler.fetchNextLine();
 }
 
-function checkMoreLines() {
-    return inputProcessor.hasMoreInput();
+function hasMoreInput() {
+    return inputHandler.hasMoreInput();
 }
 
-function acquireRawInput() {
-    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const processedContent = fileContent.trim();
-    return processedContent.split("\n");
+function readInputFile() {
+    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
 function initializeInputProcessor() {
-    const rawInputLines = acquireRawInput();
+    const rawInputLines = readInputFile();
+    const totalLines = rawInputLines.length;
 
-    if (!rawInputLines || rawInputLines.length === 0 || (rawInputLines.length === 1 && rawInputLines[0] === '')) {
-        reportError("Warning: Input stream appears to be empty.");
-        return {
-            inputContent: [],
-            currentIndex: 0,
-            totalContentLength: 0,
-            hasMoreInput: function() { return false; },
-            fetchLine: function() {
-                reportError("Error: Attempted to read from an empty input stream.");
-                return null;
-            }
-        };
-    }
-
-    const inputState = {
-        inputContent: rawInputLines,
-        currentIndex: 0,
-        totalContentLength: rawInputLines.length,
-
+    const inputProcessor = {
+        lines: rawInputLines,
+        linePointer: 0,
+        totalLines: totalLines,
         hasMoreInput: function() {
-            return this.currentIndex < this.totalContentLength;
+            return this.linePointer < this.totalLines;
         },
-
-        fetchLine: function() {
+        fetchNextLine: function() {
             if (!this.hasMoreInput()) {
-                throw new Error("InputOutOfBounds: No more lines to process.");
+                throw new Error("Input exhausted: No more lines to read.");
             }
-            const currentLine = this.inputContent[this.currentIndex];
-            this.currentIndex++;
-            return currentLine;
+            const lineContent = this.lines[this.linePointer];
+            this.linePointer++;
+            return lineContent;
         }
     };
-    return inputState;
+    return inputProcessor;
 }
 
-function displayResult(valueToPrint) {
-    console.log(valueToPrint);
+function printOutput(data) {
+    console.log(data);
 }
 
-function reportError(errorMessage) {
-    console.error("Application Error:", errorMessage);
+function printError(data) {
+    console.error(data);
 }
 
-function convertInput(inputValue, conversionType) {
-    if (inputValue === null || typeof inputValue === 'undefined') {
-        reportError("Attempted to convert null or undefined input.");
-        return inputValue;
-    }
+function convertInputData(inputVal, conversionType) {
+    const converters = {
+        1: (val) => Number.parseInt(val, 10),
+        2: (val) => val.split(' '),
+        4: (val) => val.split(' ').map(v => Number(v)),
+        6: (val) => val.split(''),
+        7: (val) => val.split('').map(v => Number(v)),
+        8: (val) => val.join(' '),
+        9: (val) => val.join('\n'),
+        0: (val) => val.join('')
+    };
 
     try {
-        switch (conversionType) {
-            case 1:
-                const parsedInt = parseInt(inputValue, 10);
-                if (isNaN(parsedInt)) {
-                    reportError(`Failed to parse integer from: '${inputValue}'`);
-                    return inputValue;
-                }
-                return parsedInt;
-            case 2:
-                return String(inputValue).split(" ");
-            case 4:
-                return String(inputValue).split(" ").map(token => {
-                    const num = Number(token);
-                    if (isNaN(num)) {
-                        reportError(`Failed to convert token '${token}' to number.`);
-                        return 0;
-                    }
-                    return num;
-                });
-            case 6:
-                return String(inputValue).split("");
-            case 7:
-                return String(inputValue).split("").map(char => {
-                    const num = Number(char);
-                    if (isNaN(num)) {
-                        reportError(`Failed to convert char '${char}' to number.`);
-                        return 0;
-                    }
-                    return num;
-                });
-            case 8:
-                return Array.isArray(inputValue) ? inputValue.join(" ") : String(inputValue);
-            case 9:
-                return Array.isArray(inputValue) ? inputValue.join("\n") : String(inputValue);
-            case 0:
-                return Array.isArray(inputValue) ? inputValue.join("") : String(inputValue);
-            default:
-                return inputValue;
-        }
-    } catch (conversionError) {
-        reportError(`Error during input conversion (type ${conversionType}): ${conversionError.message}`);
-        return inputValue;
+        const converter = converters[conversionType];
+        return converter ? converter(inputVal) : inputVal;
+    } catch (e) {
+        return inputVal;
     }
 }
 
 function processGraphData() {
-    const initialParameters = obtainIntegerTokens();
+    const firstLineData = getNextIntegerArray();
+    const numNodes = firstLineData[0];
+    const numEdges = firstLineData[1];
 
-    if (!initialParameters || initialParameters.length < 2) {
-        reportError("Invalid initial input format. Expected N and M.");
-        return;
-    }
+    const INF_VAL = 1000000007; // Represents infinity for path calculations
 
-    const nodeCount = initialParameters[0];
-    const edgeCount = initialParameters[1];
+    // Initialize adjacency matrices for shortest paths and original edge weights
+    const shortestPaths = Array.from({ length: numNodes }, (_, i) => {
+        const row = Array(numNodes).fill(INF_VAL);
+        row[i] = 0; // Distance to self is 0
+        return row;
+    });
 
-    if (nodeCount <= 0 || edgeCount < 0) {
-        reportError(`Invalid graph dimensions: N=${nodeCount}, M=${edgeCount}. Node count must be positive.`);
-        return;
-    }
-    if (nodeCount > 500) {
-        reportError(`Warning: Large node count (${nodeCount}). Computation may be slow.`);
-    }
+    const originalEdges = Array.from({ length: numNodes }, (_, i) => {
+        const row = Array(numNodes).fill(INF_VAL);
+        row[i] = 0; // Distance to self is 0
+        return row;
+    });
 
-    const PATH_INFINITY = 1000000007;
-
-    const shortestPathsMatrix = Array.from({ length: nodeCount }, () =>
-        Array.from({ length: nodeCount }, () => PATH_INFINITY)
-    );
-    const initialEdgesMatrix = Array.from({ length: nodeCount }, () =>
-        Array.from({ length: nodeCount }, () => PATH_INFINITY)
-    );
-
-    for (let currentVertex = 0; currentVertex < nodeCount; currentVertex++) {
-        shortestPathsMatrix[currentVertex][currentVertex] = 0;
-        initialEdgesMatrix[currentVertex][currentVertex] = 0;
-    }
-
-    for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
-        const edgeDetails = obtainIntegerTokens();
-        
-        if (!edgeDetails || edgeDetails.length < 3) {
-            reportError(`Malformed edge data at line ${edgeIndex + 2}. Skipping.`);
-            continue;
-        }
-
+    // Populate adjacency matrices with initial edge weights
+    for (let edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
+        const edgeDetails = getNextIntegerArray();
         const startNode = edgeDetails[0] - 1;
         const endNode = edgeDetails[1] - 1;
         const edgeWeight = edgeDetails[2];
 
-        if (startNode < 0 || startNode >= nodeCount || endNode < 0 || endNode >= nodeCount) {
-            reportError(`Invalid node indices for edge (${edgeDetails[0]}, ${edgeDetails[1]}) at line ${edgeIndex + 2}. Skipping.`);
-            continue;
-        }
-
-        shortestPathsMatrix[startNode][endNode] = edgeWeight;
-        shortestPathsMatrix[endNode][startNode] = edgeWeight;
-        initialEdgesMatrix[startNode][endNode] = edgeWeight;
-        initialEdgesMatrix[endNode][startNode] = edgeWeight;
+        // For an undirected graph, update both (u,v) and (v,u)
+        shortestPaths[startNode][endNode] = edgeWeight;
+        shortestPaths[endNode][startNode] = edgeWeight;
+        originalEdges[startNode][endNode] = edgeWeight;
+        originalEdges[endNode][startNode] = edgeWeight;
     }
 
-    for (let intermediateVertex = 0; intermediateVertex < nodeCount; intermediateVertex++) {
-        for (let sourceVertex = 0; sourceVertex < nodeCount; sourceVertex++) {
-            for (let destinationVertex = 0; destinationVertex < nodeCount; destinationVertex++) {
-                const pathThroughIntermediate = shortestPathsMatrix[sourceVertex][intermediateVertex] +
-                                                shortestPathsMatrix[intermediateVertex][destinationVertex];
-
-                if (shortestPathsMatrix[sourceVertex][destinationVertex] > pathThroughIntermediate) {
-                    shortestPathsMatrix[sourceVertex][destinationVertex] = pathThroughIntermediate;
+    // Apply Floyd-Warshall algorithm to find all-pairs shortest paths
+    for (let intermediateNode = 0; intermediateNode < numNodes; intermediateNode++) {
+        for (let sourceNode = 0; sourceNode < numNodes; sourceNode++) {
+            for (let destNode = 0; destNode < numNodes; destNode++) {
+                const pathViaIntermediate = shortestPaths[sourceNode][intermediateNode] + shortestPaths[intermediateNode][destNode];
+                if (shortestPaths[sourceNode][destNode] > pathViaIntermediate) {
+                    shortestPaths[sourceNode][destNode] = pathViaIntermediate;
                 }
             }
         }
     }
 
-    let countOfRedundantDirectEdges = 0;
+    // Count redundant edges
+    let redundantEdgeCount = 0;
+    for (let r = 0; r < numNodes; r++) {
+        for (let c = 0; c < numNodes; c++) {
+            const initialWeight = originalEdges[r][c];
+            const calculatedShortest = shortestPaths[r][c];
 
-    for (let rowIdx = 0; rowIdx < nodeCount; rowIdx++) {
-        for (let colIdx = 0; colIdx < nodeCount; colIdx++) {
-            if (rowIdx !== colIdx &&
-                initialEdgesMatrix[rowIdx][colIdx] !== PATH_INFINITY) {
-
-                if (initialEdgesMatrix[rowIdx][colIdx] > shortestPathsMatrix[rowIdx][colIdx]) {
-                    countOfRedundantDirectEdges++;
-                }
+            // An edge (r,c) is redundant if it existed initially (initialWeight !== INF_VAL)
+            // AND its weight is not equal to the shortest path found between r and c.
+            // This means a shorter path exists, implying this direct edge is not essential for shortest paths.
+            if (initialWeight !== INF_VAL && initialWeight !== calculatedShortest) {
+                redundantEdgeCount++;
             }
         }
     }
 
-    const finalResult = countOfRedundantDirectEdges / 2;
-
-    displayResult(finalResult);
+    // Each redundant edge (u,v) is counted twice (as (u,v) and (v,u)), so divide by 2.
+    printOutput(redundantEdgeCount / 2);
 }

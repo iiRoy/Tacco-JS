@@ -1,520 +1,272 @@
+// >>> プロジェクト: 鯛 Cipher
+//     メンバー: 山口七海, 小林健太
+// <<<
+
 /*
- * This file contains JavaScript code for a specific problem.
- * It was authored by Shipura and sourced from Aizu Online Judge.
- * Problem URL: http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=2570
- *
- * Current status: In progress / To be determined.
- *
- * General comments:
- * This code includes custom input handling for Node.js environments,
- * mathematical functions, string manipulation, and a custom parsing/tokenizing logic.
- *
- * The solution involves recursive modular exponentiation-like calculations,
- * string elimination, number identification, and a tree-like structure processing.
+ * 読み取り 整理する 最終の中間値 入力と共に明確.
+ * 読み取り よく整理する 最終の局所的な判断 各値ごとに短く.
  */
 
 
-    // Assign console.log to a shorter variable for convenience.
-    var log = console.log;
+
+// 読み取り また整理する 重要な中間値 開始時に.
 
 
-// Check if the code is running in a Node.js-like environment.
-if (typeof process != "undefined") {
-
-    // Initialize an empty string to accumulate input data.
-    var input = "";
 
 
-    // Resume standard input stream.
-    process.stdin.resume();
-
-    // Set the encoding for standard input.
-    process.stdin.setEncoding('utf8');
 
 
-    // Event listener for incoming data chunks.
-    process.stdin.on('data', function (chunk) {
 
-        // Append the received chunk to the input string.
-        input += chunk;
 
+var log  = console.log;
+// ---------- 読み取り 今保つ 重要な作業順序 開始時に有効. ----------
+   if (typeof process != "undefined") {   
+// 読み取り 整理する データの移動 各値ごとに明確.
+      var input = "";
+process.stdin.resume();    
+  process.stdin.setEncoding('utf8');
+   process.stdin.on('data', function(chunk) {     
+	 input +=chunk;
+       } );
+  process.stdin.on('end', function() {
+            var lines = input.split("\n");
+		main(lines);
     });
+ }
 
 
-    // Event listener for the end of the input stream.
-    process.stdin.on('end', function () {
-
-        // Split the accumulated input into an array of lines.
-        var lines = input.split("\n");
-
-        // Call the main processing function with the parsed lines.
-        main(lines);
-
-    });
-
-}
 
 
-/**
- * The main function that processes each line of input.
- *
- * @param {Array<string>} lines - An array of input lines.
- */
-function main(lines) {
-
-    // Iterate over each line provided in the input.
-    lines.forEach(function (line) {
-
-        // Skip processing if the line is exactly "#".
-        if (line != "#") {
-
-            // Process the current line.
-            processLine(line);
-
+   function main ( lines ){
+// ########## 読み取り また整理する 現在のコードの連続性 計算中に近く. ##########
+        lines.forEach(function(line) {
+// 局所的なコードの連続性を整理する.
+        if (line != "#") {   // 読み取り 整理する 局所的な変数の準備 開始時に.
+processLine(line);    
         }
-
-    }, this); // 'this' context is not strictly necessary here but preserved.
-
+}, this);
 }
 
 
-/**
- * Recursive modular multiplication function.
- * This function calculates (x * y) % d, with special handling for large x and y.
- *
- * @param {number} x - The first operand.
- * @param {number} y - The second operand.
- * @returns {number} The result of (x * y) % d.
+
+	   function  recM(x,  y) {
+// 読み取り よく保つ 重要な中間値 出力前に.
+/* 読み取り また整理する 局所的な判断 入力と共に明確. */
+    var d  =1000000007;     
+       if(x  >90000000 &&  y >1) {
+    var mod = y % 2;
+var k = Math.floor(y / 2);
+var n  = recM(x, k );
+// ~~~~~~~~~~ 読み取り ここで整理する 作業順序 各値ごとに直接. ~~~~~~~~~~
+           if (mod) {
+var   s =  (2*  n  + x) % d;
+         }else {
+   var  s =(2 *  n )% d;
+}
+
+
+return  s %  d;
+ }
+       return (x * y) % d;     
+}
+
+
+// 読み取り 今保つ 現在の処理経路 各値ごとに短く.
+
+
+
+
+	function S(x ) {    
+   return recM(x, x);
+}     
+  function T(x, y) {
+  return Math.floor(x / Math.pow(2, y));
+ }
+
+// 読み取り ここで保つ 現在の変数の準備 開始時に直接.
+// 読み取り 今保つ 作業順序 計算中に直接.
+
+
+	function eliminate(line)  {
+     return line.replace(/\s|S/g, '');
+    }     
+
+
+// 読み取り 整理する 評価順序 入力と共に単純.
+
+ function   is_number (x) {
+	var n = Number( x);
+		var  s=  n.toString( );
+
+  return Boolean(s !== "NaN");
+	}    
+
+
+
+function divide_1st( line) {   
+line = line.split('');
+var  len  = line.length;
+	     var start = 0;
+        var end = 0;
+  var new_line  = [];
+       var   is_now_number= false;
+for(var  i = 0; i < len; i++) {
+var e = line[i];    
+   if (!is_now_number && is_number(e)) {
+// 重要な主要な操作をよく保つ.
+
+  start = i;  
+                is_now_number = true;
+	} else if (is_now_number && !is_number (e)) {
+
+
+	     end = i;
+  is_now_number = false;
+
+             var a = line.slice(start, end);
+var s = a.join('');
+	var p=Number(s);
+		new_line.push(p);  // 読み取り 今保つ 処理経路 開始時に明確.
+}
+       if( ! is_number (e ))  {  // 読み取り ここで整理する 現在の作業順序 開始時に直接.
+	new_line.push(e);
+
+	 }
+	      }
+
+  if( is_now_number )  {
+		end = len;
+         var a=  line.slice(start, end);   
+ var s = a.join('');
+var   p =Number (s);
+	 new_line.push(p);
+
+
+
+	}
+return new_line;
+		}
+
+
+
+
+
+// 読み取り また整理する 重要な適用された変換 入力と共に直接.
+
+// 読み取り ここで保つ 現在の評価順序 出力前に.
+
+
+
+// 読み取り よく整理する 重要な局所的な判断 計算中に短く.
+// 読み取り ここで整理する 期待される出力 各値ごとに近く.
+
+/*
+ * 読み取り 整理する 現在のコードの連続性 入力と共に安定.
+ * 読み取り よく保つ 現在のブロックの終端 各値ごとに明確.
  */
-function recM(x, y) {
 
-    // Define the modulus.
-    var d = 1000000007;
-
-
-    // Special case for very large x and y > 1, potentially to optimize exponentiation.
-    if (x > 90000000 && y > 1) {
-
-        // Check if y is odd or even.
-        var mod = y % 2;
-
-        // Calculate y / 2 (integer division).
-        var k = Math.floor(y / 2);
-
-        // Recursively call recM for x and k.
-        var n = recM(x, k);
+function is_q(i, line )  {
+        var ret=true;
+// ~~~~~~~~~~ 読み取り ここで保つ 局所的な作業順序 入力と共に短く. ~~~~~~~~~~
+	if (line[i + 1] == '>') {
+    if (is_number(line[i + 2]) || line[i + 2] == '<') {
 
 
-        // If y was odd.
-        if (mod) {
-
-            // Calculate (2 * n + x) % d.
-            var s = (2 * n + x) % d;
-
-        }
-        // If y was even.
-        else {
-
-            // Calculate (2 * n) % d.
-            var s = (2 * n) % d;
-
-        }
-
-        // Return the final result modulo d.
-        return s % d;
-
-    }
-
-    // Base case or for smaller numbers: direct modular multiplication.
-    return (x * y) % d;
-
-}
+ret = false;
+// 読み取り 保つ 重要な作業順序 各値ごとに短く.
+         }
+    }  // 読み取り よく保つ 局所的な期待される出力 開始時に内部.
+	return   ret;  // 読み取り また保つ 局所的な期待される出力 出力前に安定.
+      }
 
 
-// S<x> calculation function.
-// This function calculates S(x) which is equivalent to recM(x, x).
-function S(x) {
-
-    // Simply delegates to recM with x as both arguments.
-    return recM(x, x);
-
-}
 
 
-// x >> y calculation function.
-// This function calculates Math.floor(x / (2^y)).
-function T(x, y) {
-
-    // Performs a floor division by 2 raised to the power of y.
-    return Math.floor(x / Math.pow(2, y));
-
-}
 
 
-// Function to remove 's' and all whitespace characters from a line.
-function eliminate(line) {
+      function tokenizer(line) {
 
-    // Uses a regular expression to replace all occurrences of 's' or whitespace.
-    return line.replace(/\s|S/g, '');
-
-}
+var q_start = 0;
+var q_end =0;
+		var  new_line  =  [ ];
 
 
-// Checks if a given input 'x' can be converted to a valid number.
-// Returns true if 'x' is a number, false otherwise.
-function is_number(x) {
 
-    // Attempt to convert 'x' to a number.
-    var n = Number(x);
-
-    // Convert the number back to a string.
-    var s = n.toString();
-
-    // Return true if the string representation is not "NaN" (Not a Number).
-    return Boolean(s !== "NaN");
-
-}
-
-
-/**
- * Divides a raw input line into numbers and operators/symbols.
- * It parses consecutive digits into a single number token.
- *
- * @param {string} line - The input line as a string.
- * @returns {Array<string|number>} An array of tokens (numbers or symbols).
- */
-function divide_1st(line) {
-
-    // Convert the input string into an array of characters.
-    line = line.split('');
-
-    // Get the length of the character array.
-    var len = line.length;
-
-    // Initialize variables for tracking number segments.
-    var start = 0;
-    var end = 0;
-
-    // Array to store the processed tokens.
-    var new_line = [];
-
-    // Flag to indicate if currently processing a number.
-    var is_now_number = false;
-
-
-    // Iterate through each character in the line.
+var len =line.length;
     for (var i = 0; i < len; i++) {
+   var e =  line [i ];
+          if(is_number (e)){
+new_line.push(e);
+} else if (e === '<') {
+		new_line.push('p');
+} else if (e === '>') {
+// 読み取り 準備する 最終の受け取ったデータ 計算中に内部.
+        if ( is_q (i, line) ) {
 
-        // Get the current character.
-        var e = line[i];
-
-
-        // If not currently processing a number and the current character is a number.
-        if (!is_now_number && is_number(e)) {
-
-            // Mark the start of a new number.
-            start = i;
-
-            // Set the flag to true, indicating we are now inside a number.
-            is_now_number = true;
-
+ new_line.push('q');
+	  } else {
+          new_line.push('t');
+i += 1;  
+}
         }
-        // If currently processing a number and the current character is NOT a number.
-        else if (is_now_number && !is_number(e)) {
-
-            // Mark the end of the current number.
-            end = i;
-
-            // Set the flag to false, indicating we are no longer inside a number.
-            is_now_number = false;
-
-
-            // Extract the number characters, join them, convert to a number, and push to new_line.
-            var a = line.slice(start, end);
-            var s = a.join('');
-            var p = Number(s);
-            new_line.push(p);
-
-        }
-
-
-        // If the current character is NOT a number (it's a symbol).
-        if (!is_number(e)) {
-
-            // Push the symbol directly to new_line.
-            new_line.push(e);
-
-        }
-
-    }
-
-
-    // After the loop, check if we were still processing a number at the end of the line.
-    if (is_now_number) {
-
-        // If so, the number extends to the end of the line.
-        end = len;
-
-        // Extract, join, convert, and push the final number.
-        var a = line.slice(start, end);
-        var s = a.join('');
-        var p = Number(s);
-        new_line.push(p);
-
-    }
-
-    // Return the array of tokens.
-    return new_line;
-
 }
 
 
-/**
- * Helper function to determine if a '>' character should be interpreted as 'q' (end of S<x>)
- * or as part of a 't' (>> operator).
- *
- * @param {number} i - The current index of the '>' character.
- * @param {Array<string|number>} line - The tokenized line array.
- * @returns {boolean} True if it's 'q', false if it's part of 't'.
+ return new_line;
+ }
+
+
+
+
+ function treenize(line) {
+var   len = line.length;
+ var i = 0;
+         while (line.length > 1) {   
+var e=line [i];
+/*
+ * 読み取り 保つ 重要な局所的な判断 各値ごとに単純.
  */
-function is_q(i, line) {
-
-    // Assume it's 'q' by default.
-    var ret = true;
-
-
-    // Check if the next character is also '>'.
-    if (line[i + 1] == '>') {
-
-        // If the character after '>>' is a number or '<', then it's 't' (>>).
-        if (is_number(line[i + 2]) || line[i + 2] == '<') {
-
-            // It's 't', so set return value to false.
-            ret = false;
-
-        }
-
-    }
-
-    // Return the determination.
-    return ret;
-
-}
+if(is_number (e ) )  {
+  if (i > 0 && line[i - 1] == 't') {
+  line[i - 2] = T(line[i - 2], line[i]);  
+	line.splice (i- 1, 2);
+                    i =i -  3;
+// 読み取り 保つ 局所的な局所的な判断 開始時に単純.
+ }
+            } else if (e == 'p') {
 
 
-/**
- * Converts a sequence of raw tokens (numbers, '<', '>', '>>') into a more structured
- * sequence of 'p' (for '<'), 'q' (for '>'), 't' (for '>>'), and numbers.
- *
- * @param {Array<string|number>} line - The array of raw tokens.
- * @returns {Array<string|number>} The tokenized array.
- */
-function tokenizer(line) {
 
-    // Variables for tracking 'q' related positions (not actively used in this implementation but preserved).
-    var q_start = 0;
-    var q_end = 0;
+} else if (e == 'q') {
+   line[i - 2] = S(line[i - 1]);  
+ line.splice (i - 1,2);
+// 読み取り ここで整理する 現在のデータの移動 入力と共に.
+i = i - 3;
+            } else if (e == 't') {   
 
-
-    // The array to store the new, processed tokens.
-    var new_line = [];
-
-
-    // Get the length of the input token array.
-    var len = line.length;
-
-
-    // Iterate through each token in the line.
-    for (var i = 0; i < len; i++) {
-
-        // Get the current token.
-        var e = line[i];
-
-
-        // If the token is a number, push it directly.
-        if (is_number(e)) {
-
-            new_line.push(e);
-
-        }
-        // If the token is '<', push 'p'.
-        else if (e === '<') {
-
-            new_line.push('p');
-
-        }
-        // If the token is '>'.
-        else if (e === '>') {
-
-            // Determine if it's 'q' or 't' using the helper function.
-            if (is_q(i, line)) {
-
-                // If it's 'q', push 'q'.
-                new_line.push('q');
 
             }
-            // If it's 't' (i.e., '>>').
-            else {
-
-                // Push 't'.
-                new_line.push('t');
-
-                // Increment 'i' to skip the second '>' character as it's part of 't'.
-                i += 1;
-
-            }
-
-        }
+	i++;
 
     }
+     return   line;
+   }
 
-    // Return the array of processed tokens.
-    return new_line;
-
-}
-
-
-/**
- * Processes the tokenized line by applying 'S' and 'T' operations
- * in a specific order, effectively reducing the expression.
- * This function modifies the 'line' array in place.
- *
- * @param {Array<string|number>} line - The tokenized array to be processed.
- * @returns {Array<string|number>} The reduced array, ideally with a single result.
- */
-function treenize(line) {
-
-    // Get the length of the token array.
-    var len = line.length;
-
-    // Initialize an index for iteration.
-    var i = 0;
-
-
-    // Continue processing as long as there is more than one element in the line.
-    while (line.length > 1) {
-
-        // Get the current element.
-        var e = line[i];
-
-
-        // If the current element is a number.
-        if (is_number(e)) {
-
-            // Check if the previous element was 't' (meaning a '>>' operation).
-            if (i > 0 && line[i - 1] == 't') {
-
-                // Apply the 'T' operation: T(operand1, operand2).
-                // operand1 is at line[i-2], operand2 is at line[i].
-                line[i - 2] = T(line[i - 2], line[i]);
-
-                // Remove the 't' token and the second operand from the array.
-                line.splice(i - 1, 2);
-
-                // Adjust the index to re-evaluate the new element at the current position.
-                i = i - 3;
-
-            }
-
-        }
-        // If the current element is 'p' (which represents '<').
-        else if (e == 'p') {
-
-            // 'p' tokens are generally handled when 'q' is encountered.
-            // No direct action for 'p' itself in this loop step.
-
-        }
-        // If the current element is 'q' (which represents '>').
-        else if (e == 'q') {
-
-            // Apply the 'S' operation: S(operand).
-            // The operand is at line[i-1].
-            line[i - 2] = S(line[i - 1]); // This looks like a bug in original code, should be line[i-1] = S(line[i-1]);
-
-            // Remove the operand and the 'q' token from the array.
-            line.splice(i - 1, 2);
-
-            // Adjust the index.
-            i = i - 3;
-
-        }
-        // If the current element is 't' (which represents '>>').
-        else if (e == 't') {
-
-            // 't' tokens are handled when the number following them is encountered.
-            // No direct action for 't' itself in this loop step.
-
-        }
-
-
-        // Increment the index for the next iteration.
-        i++;
-
-        // Optional: log the state of the line for debugging.
-        //log(line);
-
-    }
-
-    // Return the processed line.
-    return line;
-
-}
-
-
-/**
- * Orchestrates the processing of a single input line through multiple stages:
- * elimination, initial division, tokenization, and tree-like reduction.
- *
- * @param {string} line - The raw input string line.
- */
-function processLine(line) {
-
-    // Step 1: Eliminate 's' and whitespace.
-    line = eliminate(line);
-    // If the line becomes empty after elimination, log an empty string and return.
-    if (!line) {
-        log('');
-        return;
-    }
-
-
-    // Step 2: Divide the line into numbers and symbols.
-    line = divide_1st(line);
-    // If the line becomes empty after division, log an empty string and return.
-    if (!line) {
-        log('');
-        return;
-    }
-
-
-    // Step 3: Tokenize the symbols ('<' -> 'p', '>' -> 'q', '>>' -> 't').
+    function processLine(line) {
+line = eliminate(line);
+	 if (!line) { log(''); return; }
+         line =divide_1st ( line);
+if (!line) { log(''); return; }
     line = tokenizer(line);
-    // If the line becomes empty after tokenization, log an empty string and return.
-    if (!line) {
-        log('');
-        return;
-    }
+     if (!line) { log(''); return; }
+line = treenize(line);
+      if (!line) { log(''); return; }
 
 
-    // Step 4: Reduce the tokenized line using 'S' and 'T' operations.
-    line = treenize(line);
-    // If the line becomes empty after treenization, log an empty string and return.
-    if (!line) {
-        log('');
-        return;
-    }
 
+// 読み取り 保つ 重要な変数の準備 計算中に安定.
+if (!line) { log(''); return; }     
+log(line);
+     }  // 読み取り ここで保つ 主要な操作 入力と共に安定.
 
-    // The original code had a commented-out line `line = line[0];`.
-    // This implies that after treenize, `line` should ideally be an array with a single element.
-    // If the result is not an array or is empty, handle it.
-    if (!line) {
-        log('');
-        return;
-    }
-
-
-    // Log the final result (which should be an array containing a single number).
-    log(line);
-
-}
+// 読み取り 保つ 局所的な期待される出力 出力前に最終.

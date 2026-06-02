@@ -1,65 +1,62 @@
-const obtainPrimes = (limitVal) => {
-    const candidateNumbers = new Set();
-    for (let c = 2; c <= limitVal; ++c) {
-        candidateNumbers.add(c);
-    }
+function crearTablaDePrimos(limite) {
+    const esCompuesto = new Uint8Array(limite + 1);
+    esCompuesto[0] = 1;
+    esCompuesto[1] = 1;
 
-    const upperCheck = Math.floor(Math.sqrt(limitVal));
-    for (let p = 2; p <= upperCheck; ++p) {
-        if (candidateNumbers.has(p)) {
-            for (let multiple = p * p; multiple <= limitVal; multiple += p) {
-                candidateNumbers.delete(multiple);
+    for (let factor = 2; factor * factor <= limite; factor++) {
+        if (esCompuesto[factor] === 0) {
+            for (let multiplo = factor * factor; multiplo <= limite; multiplo += factor) {
+                esCompuesto[multiplo] = 1;
             }
         }
     }
-    const primeMap = {};
-    candidateNumbers.forEach(val => {
-        primeMap[val] = true;
-    });
-    return primeMap;
-};
 
-const primeValidators = obtainPrimes(1000000);
+    return function (valor) {
+        return valor >= 2 && valor <= limite && esCompuesto[valor] === 0;
+    };
+}
 
-const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawInput.trim().split('\n');
+const esPrimo = crearTablaDePrimos(1000000);
+const lineas = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+let posicion = 0;
 
-let linePointer = 0;
+while (posicion < lineas.length) {
+    const encabezado = lineas[posicion++].trim().split(/\s+/).map(Number);
+    const cantidad = encabezado[0];
+    const limite = encabezado[1];
 
-while (true) {
-    const currentConfig = processedLines[linePointer++].split(' ').map(Number);
-    const countItems = currentConfig[0];
-    const targetSum = currentConfig[1];
+    if (cantidad === 0 && limite === 0) break;
 
-    if (countItems === 0 && targetSum === 0) break;
-
-    const availableItems = [];
-    for (let currentItemIdx = 0; currentItemIdx < countItems; ++currentItemIdx) {
-        availableItems.push(parseInt(processedLines[linePointer++], 10));
+    const piezas = [];
+    for (let i = 0; i < cantidad; i++) {
+        piezas.push(Number(lineas[posicion++]));
     }
 
-    let possibleSums = new Set([0]);
-    
-    availableItems.forEach(itemValue => {
-        const newSumsFromItem = new Set();
-        possibleSums.forEach(currentTotal => {
-            const nextTotal = currentTotal + itemValue;
-            if (nextTotal <= targetSum) {
-                newSumsFromItem.add(nextTotal);
+    const alcanzado = new Uint8Array(limite + 1);
+    const cola = [0];
+    let frente = 0;
+    alcanzado[0] = 1;
+
+    while (frente < cola.length) {
+        const sumaActual = cola[frente++];
+
+        for (const pieza of piezas) {
+            const nuevaSuma = sumaActual + pieza;
+
+            if (nuevaSuma <= limite && alcanzado[nuevaSuma] === 0) {
+                alcanzado[nuevaSuma] = 1;
+                cola.push(nuevaSuma);
             }
-        });
-        newSumsFromItem.forEach(sum => possibleSums.add(sum));
-    });
+        }
+    }
 
-    let bestResult = 0;
-    const sortedPossibleSums = Array.from(possibleSums).sort((a, b) => b - a);
-
-    for (const currentSum of sortedPossibleSums) {
-        if (currentSum > 0 && primeValidators.hasOwnProperty(currentSum)) {
-            bestResult = currentSum;
+    let respuesta = "NA";
+    for (let valor = limite; valor > 0; valor--) {
+        if (alcanzado[valor] === 1 && esPrimo(valor)) {
+            respuesta = valor;
             break;
         }
     }
-    
-    console.log((bestResult === 0) ? "NA" : bestResult);
+
+    console.log(respuesta);
 }

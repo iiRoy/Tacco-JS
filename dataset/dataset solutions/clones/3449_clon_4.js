@@ -1,50 +1,37 @@
-const processSourceData = (sourceText) => {
-    const [firstLineContent, secondLineContent, thirdLineContent] = sourceText.split('\n');
+function processInputData(rawData) {
+    const inputLines = rawData.split("\n");
 
-    const [rawBaseTemp, rawTargetTemp] = secondLineContent.split(' ');
-    const baseAtmosphere = Number(rawBaseTemp);
-    const targetAtmosphere = Number(rawTargetTemp);
+    const [_, temperatureAltitudeLine, heightValuesLine] = inputLines;
+    const [initialTemperatureStr, desiredAltitudeStr] = temperatureAltitudeLine.split(" ");
+    const locationHeightsStrs = heightValuesLine.split(" ");
 
-    const elevationData = thirdLineContent.split(' ').map(Number);
+    const initialTemperature = Number(initialTemperatureStr);
+    const desiredAltitude = Number(desiredAltitudeStr);
 
-    return { baseAtmosphere, targetAtmosphere, elevationData };
-};
+    const locationHeights = locationHeightsStrs.map(Number);
 
-const determineObservationPoint = ({ baseAtmosphere, targetAtmosphere, elevationData }) => {
-    const allDiscrepancies = elevationData.map((currentElevation) => {
-        const calculatedAtmosphere = baseAtmosphere - currentElevation * 0.006;
-        let interimValue;
-        if (targetAtmosphere >= 0) {
-            interimValue = targetAtmosphere - calculatedAtmosphere;
-        } else {
-            interimValue = targetAtmosphere + calculatedAtmosphere;
-        }
-        return Math.abs(interimValue);
-    });
+    const calculationResult = locationHeights.reduce((accumulator, currentHeightValue, currentIndex) => {
+        const currentCalculatedTemperature = initialTemperature - currentHeightValue * 0.006;
 
-    let finalPosition;
+        const altitudeDifferenceComponent = (desiredAltitude >= 0)
+            ? (desiredAltitude - currentCalculatedTemperature)
+            : (desiredAltitude + currentCalculatedTemperature);
 
-    if (allDiscrepancies.length > 1) {
-        allDiscrepancies.reduce((accumulator, currentDifference, currentIdx, fullList) => {
-            if (currentIdx > 0) {
-                const previousDifference = fullList[currentIdx - 1];
-                if (previousDifference > currentDifference) {
-                    finalPosition = currentIdx + 1;
-                } else if (currentDifference >= previousDifference) {
-                    finalPosition = currentIdx;
-                }
+        const currentAbsoluteDifference = Math.abs(altitudeDifferenceComponent);
+        accumulator.absoluteDifferences.push(currentAbsoluteDifference);
+
+        if (currentIndex >= 1) {
+            const previousAbsoluteDifference = accumulator.absoluteDifferences[currentIndex - 1];
+            if (previousAbsoluteDifference > currentAbsoluteDifference) {
+                accumulator.finalResultIndex = currentIndex + 1;
+            } else if (currentAbsoluteDifference >= previousAbsoluteDifference) {
+                accumulator.finalResultIndex = currentIndex;
             }
-            return null;
-        }, null);
-    }
+        }
+        return accumulator;
+    }, { absoluteDifferences: [], finalResultIndex: undefined });
 
-    return finalPosition;
-};
+    console.log(calculationResult.finalResultIndex);
+}
 
-const runExecution = (sourceString) => {
-    const processedData = processSourceData(sourceString);
-    const resultIdentifier = determineObservationPoint(processedData);
-    console.log(resultIdentifier);
-};
-
-runExecution(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

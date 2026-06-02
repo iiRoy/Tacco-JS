@@ -1,18 +1,28 @@
-function processInput(rawText) {
-    const extractedLine = rawText.split('\n')[0];
-    const cleanedLine = extractedLine.replace(/^\s+|\s+$/g, '');
-    const numberComponents = cleanedLine.split(' ');
+function processInputAndCompute(inputStr) {
+    const extractNumbers = (text) => {
+        const numericParts = text.match(/^\s*(\d+)\s+(\d+)/);
+        if (!numericParts || numericParts.length < 3) {
+            throw new Error("Input format error: Expected two numbers separated by space.");
+        }
+        return [parseInt(numericParts[1], 10), parseInt(numericParts[2], 10)];
+    };
 
-    const primaryValue = +numberComponents[0];
-    const secondaryValue = +numberComponents[1];
+    const [valX, valY] = extractNumbers(inputStr);
 
-    const greaterMagnitude = Math.max(primaryValue, secondaryValue);
-    const lesserMagnitude = Math.min(primaryValue, secondaryValue);
+    const iterativeSummation = (firstVal, secondVal, accumulator, remainingSteps) => {
+        if (remainingSteps === 0) {
+            return accumulator;
+        }
 
-    const finalTally = greaterMagnitude + Math.max(greaterMagnitude - 1, lesserMagnitude);
+        const contribution = firstVal > secondVal ? firstVal : secondVal;
+        const nextFirst = firstVal > secondVal ? firstVal - 1 : firstVal;
+        const nextSecond = firstVal > secondVal ? secondVal : secondVal - 1;
 
-    console.log(finalTally);
+        return iterativeSummation(nextFirst, nextSecond, accumulator + contribution, remainingSteps - 1);
+    };
+
+    return iterativeSummation(valX, valY, 0, 2);
 }
 
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-processInput(sourceContent);
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(processInputAndCompute(inputData));

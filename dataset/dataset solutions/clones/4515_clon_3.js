@@ -1,70 +1,41 @@
-// This module processes input data to calculate a specific combinatorial value.
-// It handles numerical inputs based on their difference.
-function computeFinalResult(rawInputString) {
-    // Define constants for modular arithmetic operations.
-    const ARITHMETIC_MODULUS = 1000000007; // A common prime modulus used in competitive programming.
+const moduloVal = 1000000007;
 
-    // Helper function to calculate factorial (n!) modulo ARITHMETIC_MODULUS.
-    // This local function improves code organization and reusability within this scope.
-    const calculateFactorialMod = (upperBound) => {
-        let currentProduct = 1; // Initialize product for this factorial computation.
-        for (let idx = 1; idx <= upperBound; ++idx) {
-            currentProduct = (currentProduct * idx) % ARITHMETIC_MODULUS;
-        }
-        return currentProduct;
-    };
-
-    // Parse the raw string input.
-    // The input is expected to be a single line containing two space-separated integers.
-    const processedLines = rawInputString.trim().split('\n');
-    const numericTokens = processedLines[0].split(' ').map(Number); // Convert string tokens to numbers.
-
-    // Extract the two primary numerical values from the parsed tokens.
-    let primaryValueA = numericTokens[0];
-    let primaryValueB = numericTokens[1];
-
-    // Introduce an early exit condition or guard clause for invalid inputs.
-    // Although problem constraints usually guarantee valid inputs, this demonstrates robustness.
-    if (isNaN(primaryValueA) || isNaN(primaryValueB) || primaryValueA < 0 || primaryValueB < 0) {
-        console.log(0); // Output zero for invalid or non-positive inputs.
-        return; // Terminate execution for invalid data.
+const calculateFactorialModulo = (limitValue, currentModulo) => {
+    let factorialAccumulator = 1;
+    for (let loopCounter = 1; loopCounter <= limitValue; loopCounter++) {
+        factorialAccumulator = (factorialAccumulator * loopCounter) % currentModulo;
     }
+    return factorialAccumulator;
+};
 
-    // Determine the absolute difference between the two primary values.
-    const absoluteDifference = Math.abs(primaryValueA - primaryValueB);
+function processInput(rawData) {
+    const inputLines = rawData.split("\n");
+    const numberTokens = inputLines[0].split(" ");
+    const firstOperand = parseInt(numberTokens[0], 10);
+    const secondOperand = parseInt(numberTokens[1], 10);
 
-    let finalComputedOutcome = 0; // Default result, particularly for large differences.
+    let finalComputedResult = 0;
 
-    // Conditional logic based on the absolute difference of the input values.
-    if (absoluteDifference >= 2) {
-        // If the difference is 2 or more, the result is always 0.
-        // 'finalComputedOutcome' is already initialized to 0, so no action needed here
-        // other than explicit clarity if desired.
+    const absoluteDifference = Math.abs(firstOperand - secondOperand);
+
+    if (absoluteDifference === 0) {
+        const factorialOfFirst = calculateFactorialModulo(firstOperand, moduloVal);
+        const factorialOfSecond = calculateFactorialModulo(secondOperand, moduloVal);
+        
+        let productOfFactorials = (factorialOfFirst * factorialOfSecond) % moduloVal;
+        finalComputedResult = (productOfFactorials * 2) % moduloVal;
+
+    } else if (absoluteDifference === 1) {
+        const factorialOfFirst = calculateFactorialModulo(firstOperand, moduloVal);
+        const factorialOfSecond = calculateFactorialModulo(secondOperand, moduloVal);
+        
+        finalComputedResult = (factorialOfFirst * factorialOfSecond) % moduloVal;
+
     } else {
-        // For differences of 0 or 1, proceed with factorial calculations.
-        const factorialOfA = calculateFactorialMod(primaryValueA);
-        const factorialOfB = calculateFactorialMod(primaryValueB);
-
-        // Calculate the product of the two factorials, applying modulo at each step.
-        // Using BigInt for intermediate multiplication to ensure precision before final modulo,
-        // especially if numbers were larger, though for current constraints `Number` is sufficient.
-        // This is a stylistic change to demonstrate "data type" variation and "intermediate steps".
-        let interimProduct = (BigInt(factorialOfA) * BigInt(factorialOfB)) % BigInt(ARITHMETIC_MODULUS);
-
-        if (absoluteDifference === 0) {
-            // If values are identical (A == B), multiply the product of factorials by 2.
-            finalComputedOutcome = Number((interimProduct * 2n) % BigInt(ARITHMETIC_MODULUS));
-        } else { // absoluteDifference === 1
-            // If values differ by exactly 1, the result is simply the product of factorials.
-            finalComputedOutcome = Number(interimProduct);
-        }
+        // For absoluteDifference >= 2, finalComputedResult remains 0, as initialized.
     }
-
-    // Output the final calculated numerical result to the console.
-    console.log(finalComputedOutcome);
+    
+    console.log(finalComputedResult);
 }
 
-// The following section handles standard input/output.
-// It reads the entire standard input stream and passes it to our processing function.
-// This part should generally not be modified as it's the environment's interaction point.
-computeFinalResult(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

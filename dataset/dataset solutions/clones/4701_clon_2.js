@@ -1,32 +1,27 @@
-// This module processes incoming textual information
-function ProcessData(inputText) {
+function ProcessInput(rawData) {
+  // The incoming raw data string is first split into an array of individual lines.
+  let processedLines = rawData.split("\n");
 
-  // Split the entire text into individual lines for structured handling
-  let parsedLines = inputText.split("\n");
+  // From the very first line, we extract the initial numeric component.
+  // The `- 0` idiom ensures the string is converted into a numerical type.
+  const firstVal = processedLines[0].split(" ")[0] - 0;
 
-  // Extract numerical values from the initial line of input
-  // The first number often represents a primary count or value
-  const quantityX = parsedLines[0].split(" ")[0] - 0;
-  // The second number usually signifies a secondary count or a different metric
-  const quantityY = parsedLines[0].split(" ")[1] - 0;
+  // Subsequently, we extract the second numeric component from the same initial line.
+  const secondVal = processedLines[0].split(" ")[1] - 0;
 
-  // Evaluate a specific condition involving the extracted counts
-  if (quantityX * 2 >= quantityY) {
-    // If the condition holds true, compute and display a direct division result
-    console.log(Math.floor(quantityY / 2));
-    // Immediately exit the function after displaying the result
+  // A conditional check is performed to determine the appropriate calculation path.
+  if (firstVal * 2 >= secondVal) {
+    // If the condition holds true, a specific calculation is executed, and its result is displayed.
+    console.log(Math.floor(secondVal / 2));
+    // The function then terminates its execution.
     return;
   }
 
-  // Otherwise, if the initial condition is not met, proceed with an alternative calculation
-  // This involves an addition and a floored division of a derived difference
-  console.log(quantityX + Math.floor((quantityY - quantityX * 2) / 4));
+  // Should the initial condition not be met, an alternative calculation is performed.
+  // The outcome of this calculation is then outputted to the console.
+  console.log(firstVal + Math.floor((secondVal - firstVal * 2) / 4));
 }
 
-/*
- * The following code snippet is responsible for integrating with the system's standard I/O.
- * It is crucial not to modify this section to ensure the program correctly receives input
- * and invokes the primary data processing function. It reads all data from standard input
- * and supplies it as a single string to the 'ProcessData' function.
- */
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This segment of the code is responsible for handling standard input and invoking the primary processing function.
+// It is crucial that this part remains unaltered to maintain compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

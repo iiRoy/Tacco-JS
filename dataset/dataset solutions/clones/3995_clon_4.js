@@ -1,18 +1,28 @@
-function ExecuteCalculation(dataString) {
-    const [upperLimit, lowerRemainder] = dataString.split('\n')[0].split(' ').map(Number);
+function processInput(dataPayload) {
+    const [firstLine] = dataPayload.split('\n');
+    const [upperBoundStr, minRemainderStr] = firstLine.split(' ');
 
-    const iterationStart = lowerRemainder === 0 ? 1 : lowerRemainder;
+    const upperBound = parseInt(upperBoundStr, 10);
+    const minRemainder = parseInt(minRemainderStr, 10);
 
-    const sequenceElements = Array.from({ length: upperLimit - iterationStart + 1 }, (_, idx) => iterationStart + idx);
+    const effectiveLowerBound = minRemainder || 1;
 
-    const finalTally = sequenceElements.reduce((outerAccumulator, primaryOperand) => {
-        return outerAccumulator + sequenceElements.reduce((innerAccumulator, secondaryOperand) => {
-            const conditionMet = primaryOperand < secondaryOperand || (primaryOperand % secondaryOperand) >= lowerRemainder;
-            return innerAccumulator + (conditionMet ? 1 : 0);
-        }, 0);
+    const generateSequence = (start, end) =>
+        Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+
+    const firstOperandRange = generateSequence(effectiveLowerBound, upperBound);
+    const secondOperandRange = generateSequence(effectiveLowerBound, upperBound);
+
+    const totalCount = firstOperandRange.reduce((currentTotal, currentA) => {
+        const matchingBCount = secondOperandRange.filter(currentB => {
+            const isLessThan = currentA < currentB;
+            const isGreaterOrEqualWithRemainder = currentA >= currentB && (currentA % currentB) >= minRemainder;
+            return isLessThan || isGreaterOrEqualWithRemainder;
+        }).length;
+        return currentTotal + matchingBCount;
     }, 0);
 
-    console.log(finalTally);
+    console.log(totalCount);
 }
 
-ExecuteCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

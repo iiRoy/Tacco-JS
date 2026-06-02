@@ -1,16 +1,16 @@
-(function(sourceData) {
-  const parsedNumericValue = parseInt(sourceData.trim(), 10);
+const fileSystemModule = require('fs');
 
-  function calculateSequentialProduct(upperBound) {
-    let finalResult = 1;
-    let counter = upperBound;
-    while (counter > 1) {
-      finalResult *= counter;
-      counter--;
-    }
-    return finalResult;
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+
+const processedNumericValue = Number(rawInputContent.trim());
+
+function computeSeriesProduct(limitValue) {
+  let accumulatedProduct = 1;
+
+  for (let currentMultiplier = 2; currentMultiplier <= limitValue; currentMultiplier++) {
+    accumulatedProduct *= currentMultiplier;
   }
+  return accumulatedProduct;
+}
 
-  console.log(calculateSequentialProduct(parsedNumericValue));
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+console.log(computeSeriesProduct(processedNumericValue));

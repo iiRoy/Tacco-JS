@@ -1,66 +1,68 @@
-let dataStream = require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Obtain raw input from standard input stream.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let numericSequence = dataStream.trim().split('\n').map(Number); /* Process input:
-                                                                 * 1. Remove leading/trailing whitespace.
-                                                                 * 2. Split by newline characters.
-                                                                 * 3. Convert each resulting string segment to a number.
-                                                                 */
+// Process the raw input: trim whitespace, split by newlines, and convert to numbers.
+var numericData = rawData.trim().split("\n").map(Number);
 
-while (true) // Main processing loop, continues until a specific termination condition is met.
-{
-  let currentBlockSize = numericSequence.shift(); // Extract the size of the next data block from the sequence.
+// Main processing loop. Continues until a specific condition is met.
+while (true) {
+    // Extract the next number from the beginning of the numeric data array.
+    var currentCount = numericData.shift();
 
-  if (currentBlockSize === 0) { // Terminate loop if the block size indicator is zero.
-    break;
-  }
-
-  let processedValues = []; // Initialize an array to store processed values for the current block.
-
-  let flipFlopState = false; // A boolean flag used to alternate logic within the upcoming iteration.
-
-  for (let iterationIndex = 0; iterationIndex < currentBlockSize; ++iterationIndex) // Iterate through each item in the current data block.
-  {
-    const receivedValue = numericSequence.shift(); // Retrieve the next value from the input sequence.
-
-    let currentPosition = iterationIndex; // Initialize a position counter for potential back-tracking operations.
-
-    flipFlopState = !flipFlopState; // Toggle the state of the flip-flop flag for alternating behavior.
-
-    if (flipFlopState) { // If the flip-flop state is currently true, append the value directly.
-      processedValues.push(receivedValue);
+    // If the extracted number is 0, it signifies the end of input, so break the loop.
+    if (currentCount === 0) {
+        break;
     }
-    else { // When the flip-flop state is false, apply more complex logic.
-      if (processedValues.length > 0 && processedValues[processedValues.length - 1] === receivedValue) {
-        // If the last processed value matches the current received value, append it.
-        processedValues.push(receivedValue);
-      }
-      else { // If the last value does not match, or array is empty.
-        processedValues.push(receivedValue); // Add the current value to the end of the array.
 
-        currentPosition--; // Decrement the position to start checking previous elements.
+    // Initialize an empty array to store processed values for the current block.
+    var processedValues = [];
+    // Initialize a boolean flag to alternate behavior.
+    var toggleState = false;
 
-        while (true) // Inner loop for back-tracking and modification of preceding elements.
-        {
-          if (currentPosition < 0 || processedValues[currentPosition] === receivedValue) {
-            // Exit if array boundary is reached or a matching value is found during back-track.
-            break;
-          }
-          else { // If no match is found and not out of bounds, overwrite the element.
-            processedValues[currentPosition] = receivedValue; // Overwrite the element at the current back-tracked position.
-            currentPosition--; // Move to the previous element in the array.
-          }
+    // Iterate 'currentCount' times to process subsequent numbers.
+    for (var idx = 0; idx < currentCount; idx++) {
+        // Get the next value from the input data.
+        var itemValue = numericData.shift();
+        // Flip the boolean flag.
+        toggleState = !toggleState;
+
+        // Based on the toggle state, perform different operations.
+        if (toggleState) {
+            // If toggleState is true, simply add the itemValue to the processedValues array.
+            processedValues.push(itemValue);
+        } else {
+            // If toggleState is false, check the last element of processedValues.
+            if (processedValues[processedValues.length - 1] === itemValue) {
+                // If the last element is the same, add the itemValue.
+                processedValues.push(itemValue);
+            } else {
+                // If different, add the itemValue and then backtrack to update previous elements.
+                processedValues.push(itemValue);
+                // Initialize a backward index.
+                var backIndex = idx - 1;
+
+                // Loop backward through the processedValues array.
+                while (true) {
+                    // Stop if the index goes out of bounds or if an element matching itemValue is found.
+                    if (backIndex < 0 || processedValues[backIndex] === itemValue) {
+                        break;
+                    } else {
+                        // Otherwise, update the element at backIndex with itemValue and move further back.
+                        processedValues[backIndex] = itemValue;
+                        backIndex--;
+                    }
+                }
+            }
         }
-      }
     }
-  }
 
-  let zeroCount = 0; // Initialize a counter for zero values found in the final processed array.
+    // After processing all numbers for the current block, count occurrences of zero.
+    var zeroCounter = 0;
+    processedValues.forEach(function (element) {
+        if (element === 0) {
+            zeroCounter++;
+        }
+    });
 
-  processedValues.forEach(function (valElement) { // Iterate through the final array of processed values.
-    if (valElement === 0) { // Check if the current element is zero.
-      zeroCount++; // Increment the counter if the value is indeed zero.
-    }
-  });
-
-  console.log(zeroCount); // Output the total count of zeros for the current data block.
+    // Output the total count of zeros for the current block.
+    console.log(zeroCounter);
 }

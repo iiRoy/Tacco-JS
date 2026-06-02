@@ -1,34 +1,33 @@
-( function ( sourceData ) {
+(function(rawData) {
+    // This function processes input data to find the maximum difference between elements.
 
-  // Process the raw input string
-  const numericLines = sourceData
-    .split( '\n' ) // Divide into individual lines
-    .map( Number ); // Convert each line to a numerical value
+    // Split the raw input string by newline characters and convert each part to a number.
+    var parsedNumbers = rawData.split('\n').map(Number);
 
-  // Retrieve the total count of numbers to consider
-  let elementCount = numericLines.shift();
+    // The first number in the input indicates the count of elements to consider.
+    var countElements = parsedNumbers.shift();
 
-  // Extract the relevant subset of data based on the count
-  const dataArray = numericLines.slice( 0, elementCount );
+    // Extract the actual numeric array based on the specified count.
+    var numericArray = parsedNumbers.slice(0, countElements);
 
-  // Initialize a variable to track the largest difference found
-  let greatestDiff = Number.NEGATIVE_INFINITY; // Starting with the lowest possible number
+    // Initialize a variable to store the greatest difference found so far.
+    // Start with negative infinity to ensure any valid difference will be greater.
+    var greatestDifference = -Infinity;
 
-  // Perform a nested iteration to compare all possible pairs
-  for ( let idxA = 0; idxA < dataArray.length; idxA++ ) { // Outer loop: selects the first number of a pair
-
-    for ( let idxB = idxA + 1; idxB < dataArray.length; idxB += 1 ) { // Inner loop: selects the second number, ensuring it's after the first
-
-      // Calculate the current difference between the two selected numbers
-      let currentComparison = dataArray[ idxB ] - dataArray[ idxA ];
-
-      // Update the maximum difference if the current one is larger
-      if ( currentComparison > greatestDiff ) {
-        greatestDiff = currentComparison;
-      }
+    // Iterate through the array with an outer loop.
+    for (var outerIndex = 0; outerIndex < numericArray.length; outerIndex++) {
+        // Use an inner loop that starts one position after the outer loop's current index.
+        // This ensures we always compare a later element with an earlier one.
+        for (var innerIndex = outerIndex + 1; innerIndex < numericArray.length; innerIndex++) {
+            // Calculate the difference between the current pair of elements.
+            // If this difference is greater than the currently stored greatest difference, update it.
+            if (numericArray[innerIndex] - numericArray[outerIndex] > greatestDifference) {
+                greatestDifference = numericArray[innerIndex] - numericArray[outerIndex];
+            }
+        }
     }
-  }
-  // Output the final computed maximum difference
-  console.log( greatestDiff );
 
-} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+    // Output the final calculated greatest difference to the console.
+    console.log(greatestDifference);
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input using Node.js file system module.

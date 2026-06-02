@@ -1,28 +1,18 @@
-/*
- * This module processes a single character to determine if it's a vowel or a consonant.
- * Type II clone generated with altered identifiers and whitespace.
- */
-function DetermineVowelOrConsonant( inputString ) {
+function ProcessInput(rawData) {
+  // This function processes the given input data.
 
-  // Convert the raw input into a string for comparison.
-  const currentSymbol = String(inputString);
+  let charValue = String(rawData); // Convert the raw input to a string.
 
-  if (
-       currentSymbol === 'a'
-    || currentSymbol === 'i'
-    || currentSymbol === 'u'
-    || currentSymbol === 'e'
-    || currentSymbol === 'o'
-  )
-  {
-    console.log( 'vowel' );
+  /*
+   * Check if the character is one of the standard English vowels.
+   * The comparison is case-sensitive as per the original logic.
+   */
+  if (charValue === 'a' || charValue === 'i' || charValue === 'u' || charValue === 'e' || charValue === 'o') {
+    console.log('vowel'); // Output 'vowel' if it matches.
+  } else {
+    console.log('consonant'); // Otherwise, output 'consonant'.
   }
-  else
-  {
-    console.log( 'consonant' );
-  }
-
 }
 
-// Execute the main logic by reading from standard input.
-DetermineVowelOrConsonant( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

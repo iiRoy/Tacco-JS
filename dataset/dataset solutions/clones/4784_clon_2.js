@@ -1,76 +1,76 @@
-// This function determines a specific movement sequence based on input coordinates.
-function calculateTraversal (initialStream) {
-  // Parse the raw input stream into an array of numbers.
-  // It expects a single line, space-separated numbers.
-  let numericComponents = initialStream.split("\n")[0] .split(" ").map(Number);
+// This function processes raw input data to generate a specific sequence of directional movements.
+function ProcessInput(rawData) {
+  // The input string is first split by newline, taking only the first line.
+  // Then, that line is split by spaces, and each resulting substring is converted to a number.
+  let numericValues = rawData.split('\n')[0].split(' ').map(Number);
 
-  // Extract the horizontal and vertical target values from the parsed components.
-  // Assuming the coordinates are at indices 2 and 3.
-  const targetPoint = {
-    horizontal: numericComponents[2],
-    vertical:   numericComponents[3]
+  // An object is created to store two key coordinates derived from the numeric input.
+  // The third element of the parsed array is assigned to 'horizontal', and the fourth to 'vertical'.
+  const coordinates = {
+    horizontal: numericValues[2], // Corresponds to the 'x' value in the original code.
+    vertical: numericValues[3]    // Corresponds to the 'y' value in the original code.
   };
 
-  // Initialize an empty string to build the sequence of movements.
-  let movementPattern = "";
+  // An empty string is initialized to accumulate the sequence of movements.
+  let resultString = '';
 
-  // First Quadrant Movement: Move Up (U) 'vertical' times.
-  // This forms the initial vertical path segment.
-  for (let stepIndex = 0; stepIndex < targetPoint.vertical; stepIndex++) {
-    movementPattern += "U";
+  // Phase 1: Generate initial movements.
+
+  // Append 'U' (Up) to the string 'vertical' number of times.
+  for (let idx = 0; idx < coordinates.vertical; idx++) {
+    resultString += 'U';
   }
 
-  // First Quadrant Movement: Move Right (R) 'horizontal' times.
-  // This completes the first rectangular corner.
-  for (let stepIndex = 0; stepIndex < targetPoint.horizontal; stepIndex++) {
-    movementPattern += "R";
+  // Append 'R' (Right) to the string 'horizontal' number of times.
+  for (let idx = 0; idx < coordinates.horizontal; idx++) {
+    resultString += 'R';
   }
 
-  // Second Quadrant Movement: Move Down (D) 'vertical' times.
-  // Tracing downwards from the rightmost point.
-  for (let stepIndex = 0; stepIndex < targetPoint.vertical; stepIndex++) {
-    movementPattern += "D";
+  // Append 'D' (Down) to the string 'vertical' number of times.
+  for (let idx = 0; idx < coordinates.vertical; idx++) {
+    resultString += 'D';
   }
 
-  // Second Quadrant Movement: Move Left (L) 'horizontal' times.
-  // Completing the first full rectangle.
-  for (let stepIndex = 0; stepIndex < targetPoint.horizontal; stepIndex++) {
-    movementPattern += "L";
+  // Append 'L' (Left) to the string 'horizontal' number of times.
+  for (let idx = 0; idx < coordinates.horizontal; idx++) {
+    resultString += 'L';
   }
 
-  // Additional single left movement.
-  movementPattern += "L";
+  // Append an additional 'L' (Left) movement.
+  resultString += 'L';
 
-  // Third Quadrant Movement: Move Up (U) 'vertical + 1' times.
-  // Starting a new, larger rectangular path.
-  for (let stepIndex = 0; stepIndex < targetPoint.vertical + 1; stepIndex++) {
-    movementPattern += "U";
+  // Phase 2: Generate subsequent movements based on incremented coordinates.
+
+  // Append 'U' (Up) to the string 'vertical + 1' number of times.
+  for (let idx = 0; idx < coordinates.vertical + 1; idx++) {
+    resultString += 'U';
   }
 
-  // Third Quadrant Movement: Move Right (R) 'horizontal + 1' times.
-  for (let stepIndex = 0; stepIndex < targetPoint.horizontal + 1; stepIndex++) {
-    movementPattern += "R";
+  // Append 'R' (Right) to the string 'horizontal + 1' number of times.
+  for (let idx = 0; idx < coordinates.horizontal + 1; idx++) {
+    resultString += 'R';
   }
 
-  // Specific diagonal-like movement.
-  movementPattern += "DR";
+  // Append the sequence 'DR' (Down, Right).
+  resultString += 'DR';
 
-  // Fourth Quadrant Movement: Move Down (D) 'vertical + 1' times.
-  for (let stepIndex = 0; stepIndex < targetPoint.vertical + 1; stepIndex++) {
-    movementPattern += "D";
+  // Append 'D' (Down) to the string 'vertical + 1' number of times.
+  for (let idx = 0; idx < coordinates.vertical + 1; idx++) {
+    resultString += 'D';
   }
 
-  // Fourth Quadrant Movement: Move Left (L) 'horizontal + 1' times.
-  for (let stepIndex = 0; stepIndex < targetPoint.horizontal + 1; stepIndex++) {
-    movementPattern += "L";
+  // Append 'L' (Left) to the string 'horizontal + 1' number of times.
+  for (let idx = 0; idx < coordinates.horizontal + 1; idx++) {
+    resultString += 'L';
   }
 
-  // Final upward adjustment.
-  movementPattern += "U";
+  // Append a final 'U' (Up) movement.
+  resultString += 'U';
 
-  // Print the complete generated movement pattern to the console.
-  console.log(movementPattern);
+  // The complete generated movement sequence is printed to the console.
+  console.log(resultString);
 }
 
-// Read input from standard input and pass it to the main processing function.
-calculateTraversal( require("fs").readFileSync("/dev/stdin", "utf8") );
+// The program reads input from standard input using Node.js's file system module,
+// decodes it as UTF-8, and then passes it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

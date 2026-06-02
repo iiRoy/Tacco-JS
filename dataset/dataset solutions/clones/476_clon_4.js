@@ -1,122 +1,152 @@
-function absoluteValue(val) {
-  return Math.abs(val);
+function calculateManhattanDistance(point1, point2) {
+    return Math.abs(point1.x - point2.x) + Math.abs(point1.y - point2.y);
 }
 
-function createCoordinate(xVal, yVal) {
-  return [xVal, yVal];
-}
-
-function measureSeparation(coordA, coordB) {
-  return absoluteValue(coordA[0] - coordB[0]) + absoluteValue(coordA[1] - coordB[1]);
-}
-
-function findLesser(valA, valB) {
-  return Math.min(valA, valB);
-}
-
-function processAllGames(dataLines) {
-  let linePointer = 0;
-  const limitlessReach = Number.MAX_SAFE_INTEGER;
-
-  while (true) {
-    const dimensions = dataLines[linePointer].split(' ').map(Number);
-    const gridWidth = dimensions[0];
-    const gridHeight = dimensions[1];
-
-    if (gridWidth === 0 && gridHeight === 0) {
-      break;
+class InputLineProcessor {
+    constructor(fullInputText) {
+        this.lines = fullInputText.split('\n');
+        this.currentLineIndex = 0;
     }
 
-    let initialPoint;
-    let finalPoint;
-    const itemLocations = [[], [], [], [], []];
+    fetchNextLine() {
+        if (this.currentLineIndex >= this.lines.length) {
+            return null;
+        }
+        return this.lines[this.currentLineIndex++];
+    }
+}
 
-    for (let currentGridRow = gridHeight; currentGridRow > 0; currentGridRow--) {
-      linePointer++;
-      const rowContent = dataLines[linePointer];
+function processGameRounds() {
+    const MAX_PATH_VALUE = 1 << 30;
 
-      for (let currentGridCol = gridWidth; currentGridCol > 0; currentGridCol--) {
-        const cellContent = rowContent[gridWidth - currentGridCol];
+    const inputProcessor = new InputLineProcessor(rawInputText);
 
-        if (cellContent === '.') {
-          // Empty cell, do nothing
-        } else if (cellContent === 'S') {
-          initialPoint = createCoordinate(gridWidth - currentGridCol, gridHeight - currentGridRow);
-        } else if (cellContent === 'G') {
-          finalPoint = createCoordinate(gridWidth - currentGridCol, gridHeight - currentGridRow);
+    while (true) {
+        const dimensionsLine = inputProcessor.fetchNextLine();
+        if (dimensionsLine === null) {
+            break;
+        }
+
+        const dimensionsParts = dimensionsLine.split(' ');
+        const gridWidth = parseInt(dimensionsParts[0], 10);
+        const gridHeight = parseInt(dimensionsParts[1], 10);
+
+        if (gridWidth === 0 && gridHeight === 0) {
+            break;
+        }
+
+        let startPoint = null;
+        let endPoint = null;
+        const elementLocations = Array.from({ length: 5 }, () => []); // elementLocations[0] for '1', [1] for '2', etc.
+
+        for (let rowIdx = 0; rowIdx < gridHeight; ++rowIdx) {
+            const currentRowContent = inputProcessor.fetchNextLine();
+            if (currentRowContent === null) {
+                break;
+            }
+            for (let colIdx = 0; colIdx < gridWidth; ++colIdx) {
+                const cellCharacter = currentRowContent[colIdx];
+                const currentPoint = { x: colIdx, y: rowIdx };
+
+                switch (cellCharacter) {
+                    case 'S':
+                        startPoint = currentPoint;
+                        break;
+                    case 'G':
+                        endPoint = currentPoint;
+                        break;
+                    case '.':
+                        break;
+                    default:
+                        const elementTypeIndex = parseInt(cellCharacter, 10) - 1;
+                        elementLocations[elementTypeIndex].push(currentPoint);
+                        break;
+                }
+            }
+        }
+
+        let minTotalDistance = MAX_PATH_VALUE;
+        let bestSkippedType = -1;
+
+        const allPossibleElementTypes = [1, 2, 3, 4, 5];
+
+        for (let skippedTypeCandidate = 1; skippedTypeCandidate <= 5; ++skippedTypeCandidate) {
+            const currentSequenceOfTypes = allPossibleElementTypes.filter(type => type !== skippedTypeCandidate);
+            // minDistancesToTypeInstance[sequenceStep][instanceIndex]
+            // sequenceStep 0 for first type in sequence, 1 for second, ..., 3 for fourth
+            const minDistancesToTypeInstance = Array.from({ length: 4 }, () => []);
+
+            const firstTypeInSeq = currentSequenceOfTypes[0];
+            const firstTypeInstances = elementLocations[firstTypeInSeq - 1];
+            
+            if (firstTypeInstances.length > 0) {
+                for (let instanceIdx = 0; instanceIdx < firstTypeInstances.length; ++instanceIdx) {
+                    minDistancesToTypeInstance[0][instanceIdx] = calculateManhattanDistance(startPoint, firstTypeInstances[instanceIdx]);
+                }
+            }
+
+            for (let seqStep = 0; seqStep < 3; ++seqStep) {
+                const currentTypeInSeq = currentSequenceOfTypes[seqStep];
+                const nextTypeInSeq = currentSequenceOfTypes[seqStep + 1];
+
+                const currentTypeInstances = elementLocations[currentTypeInSeq - 1];
+                const nextTypeInstances = elementLocations[nextTypeInSeq - 1];
+
+                if (currentTypeInstances.length === 0 || nextTypeInstances.length === 0) {
+                    continue;
+                }
+
+                for (let currentInstIdx = 0; currentInstIdx < currentTypeInstances.length; ++currentInstIdx) {
+                    const distToCurrentInstance = minDistancesToTypeInstance[seqStep][currentInstIdx];
+                    if (distToCurrentInstance === undefined) {
+                        continue;
+                    }
+
+                    for (let nextInstIdx = 0; nextInstIdx < nextTypeInstances.length; ++nextInstIdx) {
+                        const segmentDistance = calculateManhattanDistance(currentTypeInstances[currentInstIdx], nextTypeInstances[nextInstIdx]);
+                        const totalDistanceThroughNext = distToCurrentInstance + segmentDistance;
+
+                        if (minDistancesToTypeInstance[seqStep + 1][nextInstIdx] === undefined || totalDistanceThroughNext < minDistancesToTypeInstance[seqStep + 1][nextInstIdx]) {
+                            minDistancesToTypeInstance[seqStep + 1][nextInstIdx] = totalDistanceThroughNext;
+                        }
+                    }
+                }
+            }
+
+            const lastTypeInSeq = currentSequenceOfTypes[3];
+            const lastTypeInstances = elementLocations[lastTypeInSeq - 1];
+
+            if (lastTypeInstances.length > 0) {
+                for (let instanceIdx = 0; instanceIdx < lastTypeInstances.length; ++instanceIdx) {
+                    const distToLastInstance = minDistancesToTypeInstance[3][instanceIdx];
+                    if (distToLastInstance === undefined) {
+                        continue;
+                    }
+                    const finalPathCandidate = distToLastInstance + calculateManhattanDistance(lastTypeInstances[instanceIdx], endPoint);
+
+                    if (finalPathCandidate < minTotalDistance) {
+                        minTotalDistance = finalPathCandidate;
+                        bestSkippedType = skippedTypeCandidate;
+                    }
+                }
+            }
+        }
+
+        if (minTotalDistance === MAX_PATH_VALUE) {
+            console.log("NA");
         } else {
-          const itemCategory = Number(cellContent) - 1;
-          itemLocations[itemCategory].push(createCoordinate(gridWidth - currentGridCol, gridHeight - currentGridRow));
+            console.log(`${bestSkippedType} ${minTotalDistance}`);
         }
-      }
     }
-
-    let optimalCategory = -1;
-    let minimalJourney = limitlessReach;
-
-    for (let primaryStartingCategory = 0; primaryStartingCategory < 5; primaryStartingCategory++) {
-      const pathCosts = Array(5).fill(null).map(() => []);
-      for (let categoryIdx = 0; categoryIdx < 5; categoryIdx++) {
-        pathCosts[categoryIdx] = Array(itemLocations[categoryIdx].length).fill(limitlessReach);
-      }
-
-      const firstVisitCategory = (primaryStartingCategory + 1) % 5;
-
-      for (let itemIdx = 0; itemIdx < itemLocations[firstVisitCategory].length; itemIdx++) {
-        pathCosts[firstVisitCategory][itemIdx] = measureSeparation(initialPoint, itemLocations[firstVisitCategory][itemIdx]);
-      }
-
-      for (let sequenceStep = 0; sequenceStep < 3; sequenceStep++) {
-        const currentCategory = (firstVisitCategory + sequenceStep) % 5;
-        const subsequentCategory = (currentCategory + 1) % 5;
-
-        for (let currentItemIdx = 0; currentItemIdx < itemLocations[currentCategory].length; currentItemIdx++) {
-          const costThroughCurrent = pathCosts[currentCategory][currentItemIdx];
-          if (costThroughCurrent === limitlessReach) continue;
-
-          for (let subsequentItemIdx = 0; subsequentItemIdx < itemLocations[subsequentCategory].length; subsequentItemIdx++) {
-            const travelCost = measureSeparation(
-              itemLocations[currentCategory][currentItemIdx],
-              itemLocations[subsequentCategory][subsequentItemIdx]
-            );
-
-            pathCosts[subsequentCategory][subsequentItemIdx] = findLesser(
-              pathCosts[subsequentCategory][subsequentItemIdx],
-              costThroughCurrent + travelCost
-            );
-          }
-        }
-      }
-
-      const finalVisitCategory = (firstVisitCategory + 3) % 5;
-      for (let itemIdx = 0; itemIdx < itemLocations[finalVisitCategory].length; itemIdx++) {
-        const candidateJourney = pathCosts[finalVisitCategory][itemIdx] + measureSeparation(itemLocations[finalVisitCategory][itemIdx], finalPoint);
-
-        if (candidateJourney < minimalJourney) {
-          minimalJourney = candidateJourney;
-          optimalCategory = primaryStartingCategory + 1;
-        }
-      }
-    }
-
-    if (minimalJourney === limitlessReach) {
-      console.log("NA");
-    } else {
-      console.log(optimalCategory + " " + minimalJourney);
-    }
-
-    linePointer++;
-  }
 }
 
-let dataAccumulator = '';
+let rawInputText = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-  dataAccumulator += chunk;
+    rawInputText += chunk;
 });
 process.stdin.on('end', function() {
-  const parsedDataLines = dataAccumulator.split('\n');
-  processAllGames(parsedDataLines);
+    processGameRounds();
 });

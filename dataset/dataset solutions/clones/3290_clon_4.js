@@ -1,25 +1,29 @@
-async function entryPoint() {
+const inputPromise = new Promise(resolve => {
+    let inputCollector = '';
+    process.stdin.on('data', segment => {
+        inputCollector += segment;
+    });
+    process.stdin.on('end', () => {
+        resolve(inputCollector);
+    });
+});
+
+(async () => {
+    process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    let payload = [];
 
-    for await (const item of process.stdin) {
-        payload.push(Buffer.from(item));
-    }
+    const inputBuffer = await inputPromise;
 
-    const fullStreamContent = Buffer.concat(payload).toString('utf8');
+    const charSequence = Array.from(inputBuffer);
 
-    const characterTokenSequence = Array.from(fullStreamContent);
+    const processInputData = (dataTokens) => {
+        const firstNumericToken = Number.parseInt(dataTokens[0], 10);
 
-    const performParsingAttempt = (sourceTokens) => {
-        return sourceTokens.split(' ').map(val => parseInt(val, 10));
+        const parsedNumbers = dataTokens.split(' ').map(Number);
+
+        console.log(parsedNumbers[0]);
     };
 
-    const processedNumericalValues = performParsingAttempt(characterTokenSequence);
+    processInputData(charSequence);
 
-    // If the above line didn't error, the original would proceed to log array[0].
-    // console.log(processedNumericalValues[0]);
-}
-
-process.stdin.resume();
-
-entryPoint();
+})();

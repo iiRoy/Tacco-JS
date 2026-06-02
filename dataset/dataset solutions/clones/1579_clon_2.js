@@ -1,55 +1,44 @@
-function ExecuteNumericFlow(incomingText) {
+function ProcessData(rawData) {
+    // Split the raw input string into an array of lines
+    rawData = rawData.split("\n");
 
-    // This section initiates the processing of the raw input text.
-    // The entire input string is first segmented into an array of lines.
-    var textSegments = incomingText.split("\n") ;
+    // Extract the second line, split it by spaces, and store it in 'firstArray'
+    let firstArray = rawData[1].split(" ");
 
-    // The second line of input is processed to extract a series of space-separated values.
-    // These values are initially stored as strings in an array for subsequent parsing.
-    var elementStrings = textSegments[1].split(" ") ;
+    // Parse the first line to get the total number of elements
+    const elementCount = parseInt(rawData[0], 10);
 
-    // The first line of the input specifies the total quantity of elements.
-    // This value is parsed as an integer and stored in a constant variable.
-    const totalItemCount = parseInt(textSegments[0], 10);
-
-    // A loop iterates through the initially string-based elements.
-    // Each element is explicitly converted from a string to an integer type.
-    for (var currentIdx = 0; currentIdx < totalItemCount; currentIdx++) {
-        elementStrings[currentIdx] = parseInt(elementStrings[currentIdx], 10);
+    // Iterate through 'firstArray' to convert its string elements to integers
+    for (let indexVar = 0; indexVar < elementCount; indexVar++) {
+        firstArray[indexVar] = parseInt(firstArray[indexVar], 10);
     }
 
-    // A new array is initialized to store the results of intermediate computations.
-    // The very first position in this array is set to a predefined initial value of zero.
-    var calculatedResults = [];
-    calculatedResults[0] = 0;
+    // Initialize 'derivedArray' and set its first element to zero
+    let derivedArray = [];
+    derivedArray[0] = 0;
 
-    // This loop performs the core calculation, starting from the second element.
-    // It evaluates a specific condition to determine the value for each 'calculatedResults' entry.
-    for (var currentIdx = 1; currentIdx < totalItemCount; currentIdx++) {
-        // The condition checks if a derived value (based on previous and current elements) falls below zero.
-        // The formula is: (previous element from 'elementStrings' + previous element from 'calculatedResults' - current element from 'elementStrings').
-        if (elementStrings[currentIdx - 1] + calculatedResults[currentIdx - 1] - elementStrings[currentIdx] < 0) {
-            // If the calculated value is negative, it is effectively floored to zero.
-            calculatedResults[currentIdx] = 0;
-        }
-        else {
-            // Otherwise, the direct result of the arithmetic expression is assigned.
-            calculatedResults[currentIdx] = elementStrings[currentIdx - 1] + calculatedResults[currentIdx - 1] - elementStrings[currentIdx];
+    // Populate 'derivedArray' based on a calculation involving 'firstArray' and previous elements of 'derivedArray'
+    for (let indexVar = 1; indexVar < elementCount; indexVar++) {
+        // Calculate an intermediate value for clarity
+        const intermediateValue = firstArray[indexVar - 1] + derivedArray[indexVar - 1] - firstArray[indexVar];
+        
+        // Apply a conditional assignment based on the intermediate value
+        if (intermediateValue < 0) {
+            derivedArray[indexVar] = 0;
+        } else {
+            derivedArray[indexVar] = intermediateValue;
         }
     }
 
-    // After populating the 'calculatedResults' array, a final summation is performed.
-    // This loop aggregates all the values in the 'calculatedResults' array.
-    var finalAccumulation = 0;
-    for (var currentIdx = 0; currentIdx < totalItemCount; currentIdx++) {
-        finalAccumulation += calculatedResults[currentIdx];
+    // Calculate the total sum of all elements in 'derivedArray'
+    let finalSum = 0;
+    for (let indexVar = 0; indexVar < elementCount; indexVar++) {
+        finalSum += derivedArray[indexVar];
     }
 
-    // The ultimate accumulated sum is then outputted to the standard console.
-    console.log(finalAccumulation);
+    // Output the computed final sum to the console
+    console.log(finalSum);
 }
 
-// The program's execution begins here. It calls the main processing function,
-// providing it with input read synchronously from the standard input stream,
-// using Node.js's file system module and UTF-8 encoding.
-ExecuteNumericFlow(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input using Node.js 'fs' module and pass it to the processing function
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

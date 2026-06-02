@@ -1,52 +1,50 @@
-const inputStore = [];
-let matrixWidth;
-let valueMatrix;
+var inputLines = [];
+var gridWidth, valueMatrix;
 
-const inputInterface = require('readline').createInterface({
+var standardReadline = require('readline');
+
+var inputHandler = standardReadline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-inputInterface.on('line', (currentLineData) => {
-    inputStore.push(currentLineData);
+inputHandler.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-inputInterface.on('close', () => {
-    matrixWidth = Number(inputStore[0]);
-    
-    valueMatrix = [];
-    for (let currentMatrixRow = 1; currentMatrixRow < inputStore.length; currentMatrixRow++) {
-        const rowValuesAsString = inputStore[currentMatrixRow].split(" ");
-        const numericalRow = [];
-        for (let currentColumnValue = 0; currentColumnValue < rowValuesAsString.length; currentColumnValue++) {
-            numericalRow.push(Number(rowValuesAsString[currentColumnValue]));
+inputHandler.on('close', function () {
+    gridWidth = Number(inputLines[0]); inputLines.shift();
+    valueMatrix = inputLines.map(rowStr => rowStr.split(" ").map(valStr => Number(valStr)));
+
+    console.log(determineOptimalTraversalValue(valueMatrix, gridWidth));
+});
+
+function determineOptimalTraversalValue(dataGrid, widthDimension) {
+    let pathSumsTable = Array(2).fill(null).map(() => Array(widthDimension).fill(0));
+
+    pathSumsTable[0][0] = dataGrid[0][0];
+
+    for (let currentColumnIndex = 1; currentColumnIndex < widthDimension; currentColumnIndex++) {
+        pathSumsTable[0][currentColumnIndex] = pathSumsTable[0][currentColumnIndex - 1] + dataGrid[0][currentColumnIndex];
+    }
+
+    pathSumsTable[1][0] = pathSumsTable[0][0] + dataGrid[1][0];
+
+    for (let currentColumnIndex = 1; currentColumnIndex < widthDimension; currentColumnIndex++) {
+        pathSumsTable[1][currentColumnIndex] = Math.max(
+            pathSumsTable[1][currentColumnIndex - 1],
+            pathSumsTable[0][currentColumnIndex]
+        ) + dataGrid[1][currentColumnIndex];
+    }
+
+    let overallHighestSum = -Infinity;
+    for (let rowIndex = 0; rowIndex < 2; rowIndex++) {
+        for (let colIndex = 0; colIndex < widthDimension; colIndex++) {
+            if (pathSumsTable[rowIndex][colIndex] > overallHighestSum) {
+                overallHighestSum = pathSumsTable[rowIndex][colIndex];
+            }
         }
-        valueMatrix.push(numericalRow);
     }
 
-    console.log(determineHighestPathSum(matrixWidth, valueMatrix));
-});
-
-function determineHighestPathSum(dimensionX, dataGrid) {
-    const cumulativeSums = Array(2).fill(null).map(() => Array(dimensionX).fill(0));
-
-    let overallMaximum = -Infinity;
-
-    cumulativeSums[0][0] = dataGrid[0][0];
-    overallMaximum = Math.max(overallMaximum, cumulativeSums[0][0]);
-
-    for (let xCoord = 1; xCoord < dimensionX; xCoord++) {
-        cumulativeSums[0][xCoord] = dataGrid[0][xCoord] + cumulativeSums[0][xCoord - 1];
-        overallMaximum = Math.max(overallMaximum, cumulativeSums[0][xCoord]);
-    }
-
-    cumulativeSums[1][0] = dataGrid[1][0] + cumulativeSums[0][0];
-    overallMaximum = Math.max(overallMaximum, cumulativeSums[1][0]);
-
-    for (let xCoord = 1; xCoord < dimensionX; xCoord++) {
-        cumulativeSums[1][xCoord] = dataGrid[1][xCoord] + Math.max(cumulativeSums[0][xCoord], cumulativeSums[1][xCoord - 1]);
-        overallMaximum = Math.max(overallMaximum, cumulativeSums[1][xCoord]);
-    }
-
-    return overallMaximum;
+    return overallHighestSum;
 }

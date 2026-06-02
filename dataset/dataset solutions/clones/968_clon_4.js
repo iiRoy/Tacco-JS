@@ -1,101 +1,94 @@
-let systemConfiguration = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
+const appSettings = { input: '/dev/stdin', newline: '\n' };
 
-const fileSystemUtility = require('fs');
+const assertionModule = require('assert');
 
-const totalTileCount = 16;
-const gridDimension = 4;
+const gridDimensionSquared = 16;
+const gridSideLength = Math.sqrt(gridDimensionSquared);
 
-let initialPuzzleState;
-{
-    let allInputLines = fileSystemUtility.readFileSync(systemConfiguration.sourcePath, 'ascii').trim().split(systemConfiguration.lineSeparator);
-    let parsedTileValues = [];
-    for (let currentLineText of allInputLines) {
-        for (let valueString of currentLineText.split(' ')) {
-            parsedTileValues.push(Number(valueString));
+const noPriorMove = 0;
+const N = 1;
+const S = 2;
+const W = 3;
+const E = 4;
+
+const initialPuzzleState = require('fs').readFileSync(appSettings.input, 'ascii')
+    .trim()
+    .split(appSettings.newline)
+    .flatMap(line => line.split(' ').map(Number));
+
+const targetArrangement = Array.from({ length: gridDimensionSquared }, (_, idx) => (idx + 1) % gridDimensionSquared);
+
+function findSolutionDepth(initialBoardConfiguration, initialEmptyTileLocation) {
+
+    const areConfigurationsEquivalent = (configA, configB) => {
+        for (let k = 0; k < gridDimensionSquared; k++) {
+            if (configA[k] !== configB[k]) return false;
         }
-    }
-    initialPuzzleState = parsedTileValues;
-}
+        return true;
+    };
 
-let targetPuzzleState = [];
-for (let k = 1; k < totalTileCount; k++) {
-    targetPuzzleState.push(k);
-}
-targetPuzzleState.push(0);
+    const determineNextEmptyIndex = (currentEmptyIdx, movementDirection) => {
+        const rowCoord = Math.floor(currentEmptyIdx / gridSideLength);
+        const colCoord = currentEmptyIdx % gridSideLength;
 
-let currentPuzzleLayout = [...initialPuzzleState];
-
-const NO_PRIOR_ACTION = -1;
-const MOVE_UPWARD = 0;
-const MOVE_DOWNWARD = 1;
-const MOVE_LEFTWARD = 2;
-const MOVE_RIGHTWARD = 3;
-
-const INVERSE_DIRECTION = {
-    [MOVE_UPWARD]: MOVE_DOWNWARD,
-    [MOVE_DOWNWARD]: MOVE_UPWARD,
-    [MOVE_LEFTWARD]: MOVE_RIGHTWARD,
-    [MOVE_RIGHTWARD]: MOVE_LEFTWARD
-};
-
-function compareArrangements(firstArr, secondArr) {
-    if (firstArr.length !== secondArr.length) return false;
-    for (let k = 0; k < firstArr.length; k++) {
-        if (firstArr[k] !== secondArr[k]) return false;
-    }
-    return true;
-}
-
-function findSolutionRecursive(currentLayout, currentDepth, maximumDepth, emptyTilePosition, lastMoveDirection) {
-    if (currentDepth === maximumDepth) {
-        return compareArrangements(currentLayout, targetPuzzleState);
-    }
-
-    let emptyTileRow = Math.floor(emptyTilePosition / gridDimension);
-    let emptyTileColumn = emptyTilePosition % gridDimension;
-
-    const possibleActionVectors = [
-        [MOVE_UPWARD, -1, 0],
-        [MOVE_DOWNWARD, 1, 0],
-        [MOVE_LEFTWARD, 0, -1],
-        [MOVE_RIGHTWARD, 0, 1]
-    ];
-
-    for (const [actionDirection, rowChange, colChange] of possibleActionVectors) {
-        if (actionDirection === INVERSE_DIRECTION[lastMoveDirection]) {
-            continue;
+        switch (movementDirection) {
+            case N:
+                if (rowCoord > 0) return (rowCoord - 1) * gridSideLength + colCoord;
+                break;
+            case S:
+                if (rowCoord < gridSideLength - 1) return (rowCoord + 1) * gridSideLength + colCoord;
+                break;
+            case W:
+                if (colCoord > 0) return rowCoord * gridSideLength + (colCoord - 1);
+                break;
+            case E:
+                if (colCoord < gridSideLength - 1) return rowCoord * gridSideLength + (colCoord + 1);
+                break;
         }
+        return null;
+    };
 
-        let nextEmptyTileRow = emptyTileRow + rowChange;
-        let nextEmptyTileColumn = emptyTileColumn + colChange;
+    for (let maxSearchDepth = 0; maxSearchDepth <= 45; maxSearchDepth++) {
+        const searchFrontier = [];
+        searchFrontier.push([initialBoardConfiguration.slice(), 0, initialEmptyTileLocation, noPriorMove]);
 
-        if (nextEmptyTileRow >= 0 && nextEmptyTileRow < gridDimension &&
-            nextEmptyTileColumn >= 0 && nextEmptyTileColumn < gridDimension) {
+        while (searchFrontier.length > 0) {
+            const [currentBoard, currentSearchDepth, emptyTileLocation, lastMoveDirection] = searchFrontier.pop();
 
-            let adjacentTileIndex = nextEmptyTileRow * gridDimension + nextEmptyTileColumn;
-            let nextLayoutConfiguration = [...currentLayout];
+            if (currentSearchDepth === maxSearchDepth) {
+                if (areConfigurationsEquivalent(currentBoard, targetArrangement)) {
+                    return maxSearchDepth;
+                }
+                continue;
+            }
 
-            let tileToShiftValue = nextLayoutConfiguration[adjacentTileIndex];
-            nextLayoutConfiguration[emptyTilePosition] = tileToShiftValue;
-            nextLayoutConfiguration[adjacentTileIndex] = 0;
+            const possibleMoveDirections = [
+                { direction: E, opposite: W },
+                { direction: W, opposite: E },
+                { direction: S, opposite: N },
+                { direction: N, opposite: S }
+            ];
 
-            if (findSolutionRecursive(nextLayoutConfiguration, currentDepth + 1, maximumDepth, adjacentTileIndex, actionDirection)) {
-                return true;
+            for (const { direction, opposite } of possibleMoveDirections) {
+                if (lastMoveDirection === opposite) continue;
+
+                const nextEmptyLocation = determineNextEmptyIndex(emptyTileLocation, direction);
+
+                if (nextEmptyLocation !== null) {
+                    const nextBoardConfiguration = currentBoard.slice();
+                    nextBoardConfiguration[emptyTileLocation] = nextBoardConfiguration[nextEmptyLocation];
+                    nextBoardConfiguration[nextEmptyLocation] = 0;
+
+                    searchFrontier.push([nextBoardConfiguration, currentSearchDepth + 1, nextEmptyLocation, direction]);
+                }
             }
         }
     }
-
-    return false;
+    return -1;
 }
 
-let finalMoveCount = 0;
-let initialEmptySpaceIndex = initialPuzzleState.indexOf(0);
+const initialEmptyTilePosition = initialPuzzleState.indexOf(0);
 
-for (let currentMaximumDepth = 0; currentMaximumDepth <= 45; currentMaximumDepth++) {
-    if (findSolutionRecursive(currentPuzzleLayout, 0, currentMaximumDepth, initialEmptySpaceIndex, NO_PRIOR_ACTION)) {
-        finalMoveCount = currentMaximumDepth;
-        break;
-    }
-}
+const solutionDepth = findSolutionDepth(initialPuzzleState, initialEmptyTilePosition);
 
-console.log(finalMoveCount);
+console.log(solutionDepth);

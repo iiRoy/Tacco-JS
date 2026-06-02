@@ -1,51 +1,27 @@
-const fileSystem = require("fs"); // Import the file system module.
+var inputLines = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .split("\n"); // Read input from standard input and split by newline
 
-/*
- * Read data from standard input path,
- * ensure UTF-8 encoding, and then
- * segment the content by newline characters.
- */
-var inputLines = fileSystem.readFileSync( "/dev/stdin" , "utf8" )
-             .split( "\n" ) ;
+// Parse the first line as the number of elements
+var countElements = parseInt(inputLines[0], 10);
 
+// Process the second line: split by space, convert to integers, and sort in descending order
+var sortedNumbers = inputLines[1]
+  .split(" ")
+  .map((elementString) => parseInt(elementString, 10))
+  .sort((valA, valB) => valB - valA);
 
-// Convert the first line's content into an integer, representing a maximum count.
-var maxItems = parseInt( inputLines[0], 10 );
+// Initialize variables for calculation
+var totalValue = 0; // Accumulator for the sum
+var currentIndex = 1; // Starting index for picking elements (second element)
+var iterationCounter = 0; // Counter for how many elements have been processed
 
-
-/*
- * Process the second line of input:
- * 1. Divide the string by spaces.
- * 2. Transform each resulting substring into a numerical value.
- * 3. Arrange these numbers in descending order.
- */
-var sortedElements = inputLines[1] .split ( " " )
-                                 .map ( itemStr => parseInt ( itemStr , 10 ) )
-                                 .sort ( ( valA, valB ) => valB - valA ) ;
-
-
-// Initialize a variable to store the cumulative total of selected numbers.
-var resultSum = 0 ;
-
-// Set the initial index for accessing elements within the 'sortedElements' array.
-var elementIndex = 1 ;
-
-// Initialize a counter to track how many items have been processed in the loop.
-var processedCount = 0 ;
-
-/*
- * Iterate as long as the number of processed items is less than 'maxItems'.
- * In each iteration, add an element from 'sortedElements' to 'resultSum',
- * advancing 'elementIndex' by two steps each time.
- */
-while ( processedCount < maxItems )
-{
-  resultSum += sortedElements[ elementIndex ] ;
-
-  elementIndex += 2 ;
-
-  processedCount++ ;
+// Loop to sum specific elements
+while (iterationCounter < countElements) {
+  totalValue += sortedNumbers[currentIndex]; // Add the element at the current index to the total
+  currentIndex += 2; // Move to the next element to pick (skip one)
+  iterationCounter++; // Increment the counter for processed elements
 }
 
-// Display the final computed sum to the standard output.
-console.log( resultSum ) ;
+// Output the final calculated sum to the console
+console.log(totalValue);

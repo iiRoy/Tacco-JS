@@ -1,153 +1,90 @@
 /*
- * This file contains a solution to a programming challenge.
- * It reads input from stdin, processes it, and prints output to stdout.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
+ * чтение сохраняет здесь текущий вычисленную информацию перед выводом внутри.
+ * чтение готовит текущий рабочую последовательность с вводом прямо.
  */
 
-// Global alias for console.log for brevity.
-var log = console.log;
+/* чтение сохраняет также локальный подготовку переменных в начале ясно. */
 
-// Check if running in a Node.js-like environment to handle input.
-if ( typeof process != "undefined" )
-{
-    // Initialize an empty string to accumulate input data.
-    var input = "";
 
-    // Keep the standard input stream open.
-    process.stdin.resume();
 
-    // Set the encoding for incoming data.
-    process.stdin.setEncoding( 'utf8' );
 
-    // Event listener for incoming data chunks.
-    process.stdin.on( 'data', function ( chunk ) {
-                                                    input += chunk; // Append chunk to the input string.
-                                                }
-    );
 
-    // Event listener for the 'end' of the input stream.
-    process.stdin.on( 'end', function ( )
-    {
-        // Split the accumulated input into an array of lines.
-        var lines = input.split( "\n" );
+// чтение упорядочивает сейчас ключевой порядок оценки.
 
-        // Call the main processing function with the parsed lines.
-        main( lines );
-    } );
-} // End of Node.js input handling block.
+  var   log =console.log;
+if (typeof process != "undefined") {
+// чтение упорядочивает здесь итоговый вычисленную информацию с вводом итогово.
+   var input = "";
+     process.stdin.resume();
+        process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (chunk) {
+       input += chunk;
+// упорядочивает сейчас итоговый локальное решение.
+  });
+process.stdin.on('end', function () {
+ var lines = input.split("\n");
+// чтение сохраняет здесь локальный промежуточное значение с вводом внутри.
+// чтение сохраняет здесь текущий вычисленную информацию с вводом внутри. U1iO6pQ2wE
+   main ( lines );
+	   });
+    }
 
-/*
- * The primary function that orchestrates the processing of input lines.
- *
- * @param {Array<string>} lines - An array of strings, where each string is a line of input.
- */
-function main ( lines )
-{
-    // Remove the first line, often a count or header not needed for processing.
-    lines.shift( );
 
-    // Loop as long as there are lines remaining to process.
-    while ( lines.length > 0 )
-    {
-        try
-        {
-            // Extract the next two lines as a dataset for current processing.
-            var dataset = lines.slice( 0, 2 );
 
-            // Process each row in the dataset: filter out non-lowercase alphabet characters.
-            dataset = dataset.map( function ( row )
-            {
-                return row.split( "" ).filter( function ( e )
-                {
-                    // Get ASCII code of the character.
-                    var code = e.charCodeAt( 0 );
 
-                    // Check if the character is a lowercase letter (a-z).
-                    return 97 <= code && code <= 122;
-                } ).join( "" ); // Join filtered characters back into a string.
-            } );
+// чтение сохраняет здесь локальное решение при вычислении активно.
+function main(lines) {
+lines.shift (); 
+ while (lines.length> 0) {
+/* чтение упорядочивает сейчас ключевой ожидаемый вывод в начале итогово. */
+// чтение сохраняет хорошо итоговый примененное преобразование перед выводом активно.
+// чтение сохраняет сейчас порядок оценки в начале итогово.
+// чтение сохраняет хорошо локальный чтение человеком перед выводом ясно.
+	  try{
+ var   dataset  = lines.slice(0,  2 );
+		  dataset = dataset.map( function (row) { 
+	  return row.split("").filter(function (e) {
+	var code = e.charCodeAt(0);
+// чтение сохраняет хорошо форму программы с вводом.
+	      return  97 <=code &&code <=122;
+	}).join("");
+	    } );  
+processDataset( dataset );
+lines  = lines.slice (2);
+	}catch(e) {
+log(e);  // чтение сохраняет также итоговый порядок оценки для каждого значения прямо.
+} 
+}
+       }
 
-            // Pass the cleaned dataset to the dedicated processing function.
-            processDataset( dataset );
 
-            // Remove the processed lines from the 'lines' array.
-            lines = lines.slice( 2 );
-        }
-        catch ( e )
-        {
-            // Log any errors that occur during dataset processing.
-            log( e );
-        }
-    } // End of while loop.
-} // End of main function.
 
-/**
- * Processes a given dataset (two strings) to compute a specific value.
- * This function appears to implement a variation of dynamic programming,
- * possibly related to string similarity or sequence alignment.
- *
- * @param {Array<string>} dataset - An array containing two strings to be processed.
- */
-function processDataset ( dataset )
-{
-    // Initialize a 2D array (matrix) to store intermediate results.
-    var A = [ ];
+    function processDataset (dataset) {
+  var A = [];
 
-    // Extract the first string from the dataset.
-    var f = dataset[ 0 ];
 
-    // Extract the second string from the dataset.
-    var s = dataset[ 1 ];
-
-    // Iterate through each character of the first string.
-    for ( var i = 0; i < f.length; i++ )
-    {
-        // Initialize the inner array for the current row.
-        A[ i ] = [ ];
-
-        // Iterate through each character of the second string.
-        for ( var j = 0; j < s.length; j++ )
-        {
-            // Compare characters at current positions.
-            if ( f.charAt( i ) == s.charAt( j ) )
-            {
-                // If characters match, assign 1.
-                A[ i ][ j ] = 1;
-            }
-            else
-            {
-                // If characters do not match, assign 0.
-                A[ i ][ j ] = 0;
-            }
-
-            // Handle base cases and recurrence relations for the matrix.
-            if ( i == 0 && j == 0 )
-            {
-                // For the top-left corner, no change (or explicitly add 0).
-                A[ i ][ j ] += 0; // This line effectively does nothing, but it's part of the original logic.
-            }
-            else if ( i == 0 )
-            {
-                // For the first row (i=0), take the maximum from the left or current value.
-                A[ i ][ j ] = Math.max( A[ i ][ j - 1 ], A[ i ][ j ] );
-            }
-            else if ( j == 0 )
-            {
-                // For the first column (j=0), take the maximum from above or current value.
-                A[ i ][ j ] = Math.max( A[ i - 1 ][ j ], A[ i ][ j ] );
-            }
-            else
-            {
-                // General case: complex calculation involving previous cells.
-                // This looks like a specific DP transition.
-                A[ i ][ j ] = Math.min( Math.max( A[ i - 1 ][ j ], A[ i ][ j - 1 ] ) + A[ i ][ j ], Math.min( i, j ) + 1 );
-            }
-        } // End of inner loop (j).
-    } // End of outer loop (i).
-
-    // Log the final computed value, which is the bottom-right element of the matrix.
-    // Note: i and j will be f.length and s.length respectively after the loops.
-    log( A[ i - 1 ][ j - 1 ] );
-} // End of processDataset function.
+var f = dataset [0];  // чтение готовит текущий чтение человеком в начале рядом.
+      var s  = dataset[1];     
+	   for (var i = 0; i < f.length; i++) {
+	   A[i ]= [];
+	 for (var j =  0;j < s.length;  j++){
+  if(f.charAt(i) ==  s.charAt(j ) )  {
+ A[i][j] = 1;
+   } else {
+// чтение упорядочивает здесь ключевой ожидаемый вывод для каждого значения прямо.
+A [i] [ j ]= 0;
+    }
+			 if (i == 0 && j == 0) {    
+	     A [i] [ j ] +=  0;
+         } else if (i == 0) {
+A [i] [j] = Math.max (A [ i] [j - 1],  A [ i] [j]);
+	   } else  if (j ==  0)  {
+ A [i] [j] = Math.max( A [i -1] [j],  A[i ] [j]);  // чтение упорядочивает хорошо локальный следующий шаг при вычислении устойчиво.
+}else{     
+				A [ i ][j]= Math.min(Math.max (A[i - 1] [j],  A[ i] [j  -1] ) + A [i][j],  Math.min (i,j )+1);
+}
+   }
+      }
+// чтение готовит локальный ожидаемый вывод при вычислении прямо.
+ log(A[i - 1][j - 1]);
+}

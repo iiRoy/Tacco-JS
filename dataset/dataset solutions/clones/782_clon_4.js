@@ -1,66 +1,45 @@
-const dataSourceContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const allInputLines = dataSourceContent.trim().split('\n');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-function* lineSourceGenerator(lines) {
-    let currentPointer = 0;
-    while (currentPointer < lines.length) {
-        yield lines[currentPointer++];
-    }
-}
+let processedOutputBuffer = '';
 
-const inputLineIterator = lineSourceGenerator(allInputLines);
-const accumulatedOutputSegments = [];
+const currencyDenominations = [500, 100, 50, 10];
+const coinValueOrder = [10, 50, 100, 500];
 
-const currencyUnits = [
-    { face: 10, arrayPos: 0 },
-    { face: 50, arrayPos: 1 },
-    { face: 100, arrayPos: 2 },
-    { face: 500, arrayPos: 3 }
-];
+for (let dataIndex = 0; dataIndex < rawInputData.length; dataIndex += 2) {
+    const paymentRequired = Number(rawInputData[dataIndex]);
 
-const processTransactionBlock = (price, customerProvidedCoins) => {
-    const totalValueProvided = customerProvidedCoins.reduce((summation, count, idx) => {
-        return summation + count * currencyUnits[idx].face;
-    }, 0);
-
-    let changeToDispense = totalValueProvided - price;
-
-    const dispensedCoinCounts = currencyUnits.slice()
-        .sort((a, b) => b.face - a.face)
-        .reduce((currentDispensed, unitDetail) => {
-            if (changeToDispense >= unitDetail.face) {
-                const numCoins = Math.floor(changeToDispense / unitDetail.face);
-                currentDispensed[unitDetail.arrayPos] = numCoins;
-                changeToDispense -= numCoins * unitDetail.face;
-            }
-            return currentDispensed;
-        }, new Array(4).fill(0));
-
-    const linesForThisCase = [];
-    currencyUnits.forEach(unitDetail => {
-        const suppliedCount = customerProvidedCoins[unitDetail.arrayPos];
-        const returnedCount = dispensedCoinCounts[unitDetail.arrayPos];
-        if (suppliedCount > returnedCount) {
-            linesForThisCase.push(`${unitDetail.face} ${suppliedCount - returnedCount}`);
-        }
-    });
-
-    return linesForThisCase.join('\n');
-};
-
-for (const transactionCostLine of inputLineIterator) {
-    const itemTransactionCost = Number(transactionCostLine);
-
-    if (itemTransactionCost === 0) {
+    if (paymentRequired === 0) {
         break;
     }
 
-    const customerCoinInputLine = inputLineIterator.next().value;
-    const customerCoinQuantities = customerCoinInputLine.split(' ').map(Number);
+    const customerProvidedCoins = rawInputData[dataIndex + 1].split(' ').map(Number);
 
-    const caseResultString = processTransactionBlock(itemTransactionCost, customerCoinQuantities);
-    accumulatedOutputSegments.push(caseResultString);
-    accumulatedOutputSegments.push('');
+    const totalCustomerValue = customerProvidedCoins.reduce((sum, count, idx) => {
+        return sum + count * coinValueOrder[idx];
+    }, 0);
+
+    let changeAmount = totalCustomerValue - paymentRequired;
+
+    const changeCoinDistribution = currencyDenominations.reduce((acc, denom) => {
+        const numCoins = Math.floor(changeAmount / denom);
+        acc[denom] = numCoins;
+        changeAmount -= numCoins * denom;
+        return acc;
+    }, {});
+
+    const linesForCurrentBlock = coinValueOrder.flatMap((denomValue, index) => {
+        const initialCount = customerProvidedCoins[index];
+        const returnedCount = changeCoinDistribution[denomValue] || 0;
+
+        if (initialCount > returnedCount) {
+            return [`${denomValue} ${initialCount - returnedCount}`];
+        }
+        return [];
+    });
+
+    processedOutputBuffer += linesForCurrentBlock.join('\n');
+    processedOutputBuffer += '\n\n';
 }
 
-console.log(accumulatedOutputSegments.join('\n'));
+console.log(processedOutputBuffer);

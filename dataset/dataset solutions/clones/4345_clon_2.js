@@ -1,53 +1,44 @@
-/*
- * This module processes raw input data to calculate a specific sum.
- * It reads from standard input, parses numerical values, and applies a custom reduction logic.
- */
-function ProcessData( rawInputText ) {
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines of data.
+  const linesOfData = rawData.split(/\n/);
 
-    // Split the entire input text into individual lines.
-    // Each line is treated as a separate input row.
-    const inputRows = rawInputText.split( /\n/ ) ;
+  // Parse the first line as the count of items.
+  const countItems = parseInteger(linesOfData[0]);
 
-    // Parse the first line to get an initial count.
-    const initialCount = convertToInt( inputRows[ 0 ] ) ;
+  // Parse the second line as the threshold value.
+  const thresholdValue = parseInteger(linesOfData[1]);
 
-    // Parse the second line to get a target numerical value.
-    const targetValue = convertToInt( inputRows[ 1 ] ) ;
+  // Split the third line by spaces to get an array of item distances.
+  const itemDistances = linesOfData[2].split(' ');
 
-    // The third line contains space-separated numbers, split them into an array of strings.
-    const numberStrings = inputRows[ 2 ].split( ' ' ) ;
+  // Calculate the final result by reducing the item distances.
+  const finalResult = itemDistances.reduce(function(currentTotal, currentItem, currentIndex) {
+    // Determine the distance to K for the current item.
+    const distanceToThreshold = Math.abs(thresholdValue - parseInteger(currentItem));
 
+    // If the distance to the threshold is less than the item's value itself,
+    // add that distance to the running total.
+    if (distanceToThreshold < currentItem) {
+      return currentTotal + distanceToThreshold;
+    } else {
+      // Otherwise, add the item's value to the running total.
+      // Ensure both parts are parsed as integers before addition.
+      return parseInteger(currentTotal) + parseInteger(currentItem);
+    }
+  }, 0); // Start the accumulation with an initial value of zero.
 
-    // Perform a reduction operation on the array of number strings.
-    // The logic for adding to the accumulator depends on a comparison.
-    const calculatedTotal = numberStrings.reduce( function ( accumulator, currentElement, elementIndex ) {
-        // If the absolute difference between the target and the current number is less than the current element's string value (type coerced),
-        // add this difference to the accumulator.
-        if ( Math.abs( targetValue - convertToInt( currentElement ) ) < currentElement ) {
-            return accumulator + Math.abs( targetValue - convertToInt( currentElement ) ) ;
-        }
-        // Otherwise, convert both the accumulator and the current element to integers and add them.
-        else {
-            return convertToInt( accumulator ) + convertToInt( currentElement ) ;
-        }
-    }, 0 ) ; // Start the accumulation from zero.
-
-    // Output the final calculated total to the console.
-    console.log( calculatedTotal ) ;
-
+  // Output the computed final result to the console.
+  console.log(finalResult);
 }
 
-
-/*
- * Helper function to safely convert a string value to an integer.
- * Uses base 10 for parsing.
- * @param {string} strValue - The string to convert.
+/**
+ * Helper function to safely parse a string into an integer.
+ * @param {string} inputString The string to parse.
  * @returns {number} The parsed integer.
  */
-function convertToInt( strValue ) {
-    return parseInt( strValue, 10 ) ;
+function parseInteger(inputString) {
+  return parseInt(inputString, 10);
 }
 
-
-// Entry point: Read data from standard input and pass it to the main processing function.
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

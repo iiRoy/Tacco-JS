@@ -1,35 +1,28 @@
-const ProcessInputData = (rawInputContent) => {
-    // Phase 1: Normalize and parse all numeric values from the input string into a single flat array.
-    // This handles various whitespace patterns (spaces, newlines) as delimiters.
-    const numericalPayload = rawInputContent
-        .split(/\s+/) // Split by one or more whitespace characters
-        .filter(Boolean) // Remove any empty strings that might result from splitting
-        .map(Number); // Convert each string part to a number
+"use strict";
+const ProcessInput = (rawData) => {
+    const lineSegments = rawData.trim().split('\n');
 
-    // Phase 2: Extract the problem parameters and the array of values.
-    // The first element in the payload is the count of values (N),
-    // the next two are the thresholds (A and B),
-    // and the remaining elements constitute the list of values (P).
-    const totalElementCount = numericalPayload[0]; // Corresponds to N in original, though not strictly used in classification logic.
-    const primaryThreshold = numericalPayload[1]; // Corresponds to A
-    const secondaryThreshold = numericalPayload[2]; // Corresponds to B
-    const valueCollection = numericalPayload.slice(3); // Corresponds to P array
+    const totalElements = Number(lineSegments[0]);
+    const limits = lineSegments[1].split(" ");
+    const thresholdOne = Number(limits[0]);
+    const thresholdTwo = Number(limits[1]);
 
-    // Phase 3: Categorize and count the elements using a functional approach with multiple filters.
-    // This avoids an imperative loop with conditional branching (if/else if/else) and direct array pushes.
-    const firstCategoryTally = valueCollection.filter(elementValue => elementValue <= primaryThreshold).length;
-    const secondCategoryTally = valueCollection.filter(elementValue => elementValue > primaryThreshold && elementValue <= secondaryThreshold).length;
-    const thirdCategoryTally = valueCollection.filter(elementValue => elementValue > secondaryThreshold).length;
+    const numericValues = lineSegments[2].split(' ').map(val => parseInt(val, 10));
 
-    // Phase 4: Determine the smallest count among the three categories.
-    // This is achieved by placing the tallies into an array and then sorting it
-    // to easily retrieve the minimum value as the first element.
-    const categoryTallies = [firstCategoryTally, secondCategoryTally, thirdCategoryTally];
-    const finalOutcome = categoryTallies.sort((valA, valB) => valA - valB)[0];
+    const categoryTallies = numericValues.reduce((accumulator, currentNumber) => {
+        if (currentNumber <= thresholdOne) {
+            accumulator.groupAlpha++;
+        } else if (currentNumber <= thresholdTwo) {
+            accumulator.groupBeta++;
+        } else {
+            accumulator.groupGamma++;
+        }
+        return accumulator;
+    }, { groupAlpha: 0, groupBeta: 0, groupGamma: 0 });
 
-    // Phase 5: Output the calculated result to the console.
-    console.log(finalOutcome);
+    const finalResult = Math.min(categoryTallies.groupAlpha, categoryTallies.groupBeta, categoryTallies.groupGamma);
+
+    console.log(finalResult);
 };
 
-// Invoke the data processing function with input read from standard input.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

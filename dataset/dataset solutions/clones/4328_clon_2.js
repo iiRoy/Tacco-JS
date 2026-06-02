@@ -1,65 +1,86 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding('utf8'); // Set the encoding for incoming data
 
-let totalInputBuffer = '';
+// This variable will accumulate all the input data received.
+var accumulatedData = '';
 
-process.stdin.on('data', function (inputSegment) {
-    totalInputBuffer += inputSegment;
+// Event listener for 'data' chunks from standard input.
+process.stdin.on('data', function(dataSegment) {
+    accumulatedData += dataSegment; // Append each chunk to the main data string.
 });
 
-process.stdin.on('end', () => {
-    solveEquation(totalInputBuffer.split(/\r?\n/));
+// Event listener for the 'end' of standard input.
+process.stdin.on('end', function() {
+    // When all input is received, split it by newlines and pass to the main processing function.
+    ProcessInputData(accumulatedData.split(/\r?\n/));
 });
 
-/*
- * This function calculates integer solutions for a specific mathematical problem.
- * It looks for positive integers firstDivisor, secondDivisor, and thirdDivisor
- * that satisfy the equation: 4/N = 1/firstDivisor + 1/secondDivisor + 1/thirdDivisor.
+/**
+ * Main function to process the input lines and find the required denominators.
+ * @param {string[]} linesOfText - An array of strings, where each string is a line of input.
+ * @returns {number} - Returns 0 upon successful completion.
  */
-function solveEquation(linesOfData) {
-    const primaryNumber = parseInt(linesOfData[0], 10);
+function ProcessInputData(linesOfText) {
+    // Parse the first line of input as an integer, representing the target value.
+    var targetValue = parseInt(linesOfText[0], 0xA); // Using hexadecimal for 10
 
-    let firstDivisor = 0;
-    let secondDivisor = 0;
-    let thirdDivisor = 0;
+    // Initialize variables for the three denominators.
+    var firstDenominator = 0;
+    var secondDenominator = 0;
+    var thirdDenominator = 0;
 
-    const targetFraction = 4 / primaryNumber;
-    const constantB = 2 / 3500;
-    const constantC = 1 / 3500;
+    // Calculate constant fractions based on the target value.
+    var targetFraction = 4 / targetValue;
+    var constantB = 2 / 3500;
+    var constantC = 1 / 3500;
 
-    let matchIdentified = false;
+    // Flag to indicate if a solution has been found.
+    var solutionFound = false;
 
-    for (firstDivisor = Math.floor(1 / (targetFraction - constantB)); firstDivisor < 3500; firstDivisor++) {
+    // Outer loop for the first denominator (h).
+    // It starts from a calculated lower bound and goes up to 3499.
+    for (firstDenominator = Math.floor(1 / (targetFraction - constantB)); firstDenominator < 3500; firstDenominator++) {
 
-        if (targetFraction < (1 / firstDivisor) + constantB) {
+        // Optimization: if the current 'h' makes the target fraction too small, skip to the next 'h'.
+        if (targetFraction < 1 / firstDenominator + constantB) {
             continue;
         }
 
-        for (secondDivisor = Math.floor(1 / (targetFraction - (1 / firstDivisor) - constantC)); secondDivisor < 3500; secondDivisor++) {
+        // Middle loop for the second denominator (n).
+        // It starts from a calculated lower bound and goes up to 3499.
+        for (secondDenominator = Math.floor(1 / (targetFraction - 1 / firstDenominator - constantC)); secondDenominator < 3500; secondDenominator++) {
 
-            if (targetFraction < (1 / firstDivisor) + (1 / secondDivisor) + constantC) {
+            // Optimization: if the current 'h' and 'n' make the target fraction too small, skip to the next 'n'.
+            if (targetFraction < 1 / firstDenominator + 1 / secondDenominator + constantC) {
                 continue;
             }
 
-            for (thirdDivisor = secondDivisor; thirdDivisor < 3500; thirdDivisor++) {
+            // Inner loop for the third denominator (w).
+            // It starts from 'n' to avoid duplicate solutions and goes up to 3499.
+            for (thirdDenominator = secondDenominator; thirdDenominator < 3500; thirdDenominator++) {
 
-                if (targetFraction === (1 / firstDivisor) + (1 / secondDivisor) + (1 / thirdDivisor)) {
-                    matchIdentified = true;
-                    break;
+                // Check if the current combination of h, n, w satisfies the equation.
+                if (targetFraction === 1 / firstDenominator + 1 / secondDenominator + 1 / thirdDenominator) {
+                    solutionFound = true; // Mark that a solution has been found.
+                    break; // Exit the innermost loop.
                 }
             }
 
-            if (matchIdentified) {
+            // If a solution was found in the inner loop, exit the middle loop.
+            if (solutionFound) {
                 break;
             }
         }
 
-        if (matchIdentified) {
+        // If a solution was found in the middle loop, exit the outer loop.
+        if (solutionFound) {
             break;
         }
     }
 
-    console.log(firstDivisor + ' ' + secondDivisor + ' ' + thirdDivisor);
+    // Print the found denominators to the console, separated by spaces.
+    console.log(firstDenominator + ' ' + secondDenominator + ' ' + thirdDenominator);
 
+    // Indicate successful execution.
     return 0;
 }

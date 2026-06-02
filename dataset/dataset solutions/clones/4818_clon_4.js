@@ -1,17 +1,22 @@
-function characterClassifier(dataStream) {
-    const processedChar = dataStream.replace(/\s/g, ''); 
-    
-    const vocalicSounds = new Set(['a', 'e', 'i', 'o', 'u']);
+'use strict';
 
-    const outcomeDescriptions = new Map();
-    outcomeDescriptions.set(true, 'vowel');
-    outcomeDescriptions.set(false, 'consonant');
+const processCharacterInput = sourceData => {
+    const singleChar = sourceData.trim();
+    let classificationResult;
 
-    const isVocalic = vocalicSounds.has(processedChar);
-    
-    process.stdout.write(outcomeDescriptions.get(isVocalic) + '\n');
-}
+    switch (singleChar) {
+        case 'a':
+        case 'e':
+        case 'i':
+        case 'o':
+        case 'u':
+            classificationResult = 'vowel';
+            break;
+        default:
+            classificationResult = 'consonant';
+    }
 
-const dataAcquisitionSource = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+    console.log(classificationResult);
+};
 
-characterClassifier(dataAcquisitionSource);
+processCharacterInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

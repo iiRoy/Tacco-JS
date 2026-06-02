@@ -1,104 +1,73 @@
-let collectedInputLines = [];
-let cycleLengthValue;
-let itemQuantityValue;
-let locationCoordinates = [];
-
-process.stdin.on('data', (dataChunk) => {
-    collectedInputLines.push(...dataChunk.toString().split('\n').filter(Boolean));
+const inputBuffer = [];
+const ioInterface = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-process.stdin.on('end', () => {
-    const initialConfiguration = collectedInputLines.shift().split(' ');
-    cycleLengthValue = Number(initialConfiguration[0]);
-    itemQuantityValue = Number(initialConfiguration[1]);
+ioInterface.on("line", (currentInputLine) => {
+    inputBuffer.push(currentInputLine);
+});
 
-    locationCoordinates = collectedInputLines.slice(0, itemQuantityValue).map(Number).sort((coordA, coordB) => coordA - coordB);
+ioInterface.on("close", () => {
+    const firstLineParts = inputBuffer.shift().split(" ");
+    const totalBoundaryLength = Number(firstLineParts[0]);
+    const numberOfPoints = Number(firstLineParts[1]);
 
-    const evaluateTraversal = (
-        remainingElements,
-        currentLeftIndex,
-        currentRightIndex,
-        currentTotalPath,
-        accumulatedLeftwardSegment,
-        accumulatedRightwardSegment,
-        isFirstMoveLeft
-    ) => {
-        if (remainingElements === 0) {
-            return currentTotalPath;
-        }
+    const pointCoordinates = inputBuffer.slice(0, numberOfPoints).map(Number);
 
-        let nextAccumulatedLeftwardSegment;
-        let nextAccumulatedRightwardSegment;
-        let nextLeftIndex;
-        let nextRightIndex;
-        let nextTotalPath;
+    const calculateOptimalPath = (allPoints, boundaryLength, startWithLeftPreference) => {
+        const sortedCoordinates = [...allPoints].sort((c1, c2) => c1 - c2);
+        const coordinateCount = sortedCoordinates.length;
 
-        // Determine next move based on accumulated segment lengths, or forced initial direction
-        if ((isFirstMoveLeft && remainingElements === itemQuantityValue) || accumulatedRightwardSegment <= accumulatedLeftwardSegment) {
-            // Proceed anti-clockwise
-            nextTotalPath = currentTotalPath + accumulatedLeftwardSegment;
-            nextAccumulatedRightwardSegment = accumulatedRightwardSegment + accumulatedLeftwardSegment;
-            nextLeftIndex = currentLeftIndex - 1;
-            nextAccumulatedLeftwardSegment = (nextLeftIndex >= currentRightIndex)
-                                            ? (locationCoordinates[currentLeftIndex] - locationCoordinates[nextLeftIndex])
-                                            : 0;
+        const initialPathState = {
+            accumulatedLength: 0,
+            leftmostIndex: coordinateCount - 1,
+            rightmostIndex: 0,
+            lengthIfLastToLeft: boundaryLength - sortedCoordinates[coordinateCount - 1],
+            lengthIfLastToRight: sortedCoordinates[0],
+            isFirstStep: true,
+            initialDirectionIsLeft: startWithLeftPreference
+        };
 
-            return evaluateTraversal(
-                remainingElements - 1,
-                nextLeftIndex,
-                currentRightIndex,
-                nextTotalPath,
-                nextAccumulatedLeftwardSegment,
-                nextAccumulatedRightwardSegment,
-                false // Initial decision has been made
-            );
-        } else {
-            // Proceed clockwise
-            nextTotalPath = currentTotalPath + accumulatedRightwardSegment;
-            nextAccumulatedLeftwardSegment = accumulatedLeftwardSegment + accumulatedRightwardSegment;
-            nextRightIndex = currentRightIndex + 1;
-            nextAccumulatedRightwardSegment = (nextRightIndex <= currentLeftIndex)
-                                            ? (locationCoordinates[nextRightIndex] - locationCoordinates[currentRightIndex])
-                                            : 0;
+        const finalPathState = Array.from({ length: coordinateCount }).reduce((currentIterationState, _, stepNum) => {
+            let { accumulatedLength, leftmostIndex, rightmostIndex, lengthIfLastToLeft, lengthIfLastToRight, isFirstStep, initialDirectionIsLeft } = currentIterationState;
 
-            return evaluateTraversal(
-                remainingElements - 1,
-                currentLeftIndex,
-                nextRightIndex,
-                nextTotalPath,
-                nextAccumulatedLeftwardSegment,
-                nextAccumulatedRightwardSegment,
-                false // Initial decision has been made
-            );
-        }
+            let decisionToMoveLeft;
+            if (isFirstStep) {
+                decisionToMoveLeft = initialDirectionIsLeft;
+                isFirstStep = false;
+            } else {
+                decisionToMoveLeft = lengthIfLastToRight <= lengthIfLastToLeft;
+            }
+
+            if (decisionToMoveLeft) {
+                accumulatedLength += lengthIfLastToLeft;
+                lengthIfLastToRight += lengthIfLastToLeft;
+                lengthIfLastToLeft = (leftmostIndex > 0) ? (sortedCoordinates[leftmostIndex] - sortedCoordinates[leftmostIndex - 1]) : 0;
+                leftmostIndex--;
+            } else {
+                accumulatedLength += lengthIfLastToRight;
+                lengthIfLastToLeft += lengthIfLastToRight;
+                lengthIfLastToRight = (rightmostIndex < coordinateCount - 1) ? (sortedCoordinates[rightmostIndex + 1] - sortedCoordinates[rightmostIndex]) : 0;
+                rightmostIndex++;
+            }
+
+            return {
+                accumulatedLength,
+                leftmostIndex,
+                rightmostIndex,
+                lengthIfLastToLeft,
+                lengthIfLastToRight,
+                isFirstStep,
+                initialDirectionIsLeft
+            };
+        }, initialPathState);
+
+        return finalPathState.accumulatedLength;
     };
 
-    // Scenario A: First movement is anti-clockwise
-    const initialLeftSpan = cycleLengthValue - locationCoordinates[itemQuantityValue - 1];
-    const initialRightSpan = locationCoordinates[0];
-    const outcomeA = evaluateTraversal(
-        itemQuantityValue,
-        itemQuantityValue - 1,
-        0,
-        0,
-        initialLeftSpan,
-        initialRightSpan,
-        true // Flag to indicate first move must be left
-    );
+    const pathResultFromLeftStart = calculateOptimalPath(pointCoordinates, totalBoundaryLength, true);
+    const pathResultFromRightStart = calculateOptimalPath(pointCoordinates, totalBoundaryLength, false);
 
-    // Scenario B: First movement is clockwise
-    // Re-initialize state for second path calculation
-    const initialLeftSpanB = cycleLengthValue - locationCoordinates[itemQuantityValue - 1];
-    const initialRightSpanB = locationCoordinates[0];
-    const outcomeB = evaluateTraversal(
-        itemQuantityValue,
-        itemQuantityValue - 1,
-        0,
-        0,
-        initialLeftSpanB,
-        initialRightSpanB,
-        false // Flag to indicate first move must be right
-    );
-
-    process.stdout.write(Math.max(outcomeA, outcomeB).toString());
+    console.log(Math.max(pathResultFromLeftStart, pathResultFromRightStart));
 });

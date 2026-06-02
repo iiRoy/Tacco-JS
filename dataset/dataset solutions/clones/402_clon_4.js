@@ -1,69 +1,53 @@
-const fareMatrix = Array(8).fill(null).map(() => Array(8).fill(0));
-
-fareMatrix[1][2] = 300; fareMatrix[1][3] = 500; fareMatrix[1][4] = 600; fareMatrix[1][5] = 700; fareMatrix[1][6] = 1350; fareMatrix[1][7] = 1650;
-fareMatrix[2][1] = 6; fareMatrix[2][3] = 350; fareMatrix[2][4] = 450; fareMatrix[2][5] = 600; fareMatrix[2][6] = 1150; fareMatrix[2][7] = 1500;
-fareMatrix[3][1] = 13; fareMatrix[3][2] = 7; fareMatrix[3][4] = 250; fareMatrix[3][5] = 400; fareMatrix[3][6] = 1000; fareMatrix[3][7] = 1350;
-fareMatrix[4][1] = 18; fareMatrix[4][2] = 12; fareMatrix[4][3] = 5; fareMatrix[4][5] = 250; fareMatrix[4][6] = 850; fareMatrix[4][7] = 1300;
-fareMatrix[5][1] = 23; fareMatrix[5][2] = 17; fareMatrix[5][3] = 10; fareMatrix[5][4] = 5; fareMatrix[5][6] = 600; fareMatrix[5][7] = 1150;
-fareMatrix[6][1] = 43; fareMatrix[6][2] = 37; fareMatrix[6][3] = 30; fareMatrix[6][4] = 25; fareMatrix[6][5] = 20; fareMatrix[6][7] = 500;
-fareMatrix[7][1] = 58; fareMatrix[7][2] = 52; fareMatrix[7][3] = 45; fareMatrix[7][4] = 40; fareMatrix[7][5] = 35; fareMatrix[7][6] = 15;
-
-const parseClockToMinutes = (clockString) => {
-    const [hours, minutes] = clockString.split(" ").map(Number);
-    return hours * 60 + minutes;
+const journeyTariffs = {
+    1: { 2: 300, 3: 500, 4: 600, 5: 700, 6: 1350, 7: 1650 },
+    2: { 1: 6, 3: 350, 4: 450, 5: 600, 6: 1150, 7: 1500 },
+    3: { 1: 13, 2: 7, 4: 250, 5: 400, 6: 1000, 7: 1350 },
+    4: { 1: 18, 2: 12, 3: 5, 5: 250, 6: 850, 7: 1300 },
+    5: { 1: 23, 2: 17, 3: 10, 4: 5, 6: 600, 7: 1150 },
+    6: { 1: 43, 2: 37, 3: 30, 4: 25, 5: 20, 7: 500 },
+    7: { 1: 58, 2: 52, 3: 45, 4: 40, 5: 35, 6: 15 }
 };
 
-const qualifiesForEveningDiscount = (arrivalMinutes) => {
-    const eveningThreshold = 1170; // 19:30
-    return arrivalMinutes <= eveningThreshold;
-};
+function* parseTravelRequests(rawInputString) {
+    const inputLines = rawInputString.replace(/\n$/, "").split("\n");
+    let currentLineIndex = 0;
 
-const qualifiesForShortReverseDiscount = (initialNode, finalNode, matrix) => {
-    const reverseTripValue = matrix[finalNode][initialNode];
-    const shortTripThreshold = 40;
-    return reverseTripValue <= shortTripThreshold;
-};
+    while (true) {
+        const startLocationIdentifier = parseInt(inputLines[currentLineIndex++], 10);
+        if (startLocationIdentifier === 0) {
+            break;
+        }
 
-const adjustToNearestFiftyUp = (value) => {
-    return Math.ceil(value / 50) * 50;
-};
+        const [departureHour, departureMinute] = inputLines[currentLineIndex++].split(" ").map(Number);
+        const endLocationIdentifier = parseInt(inputLines[currentLineIndex++], 10);
+        const [arrivalHour, arrivalMinute] = inputLines[currentLineIndex++].split(" ").map(Number);
 
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataLines = sourceData.trim().split("\n");
-
-let travelSegments = [];
-let currentLineIndex = 0;
-
-while (currentLineIndex < dataLines.length) {
-    const startingPoint = Number(dataLines[currentLineIndex]);
-    if (startingPoint === 0) break;
-
-    travelSegments.push({
-        startingPoint: startingPoint,
-        departureClockString: dataLines[currentLineIndex + 1],
-        endingPoint: Number(dataLines[currentLineIndex + 2]),
-        arrivalClockString: dataLines[currentLineIndex + 3]
-    });
-    currentLineIndex += 4;
+        yield {
+            departurePoint: startLocationIdentifier,
+            departureTimeComponents: { hour: departureHour, minute: departureMinute },
+            arrivalPoint: endLocationIdentifier,
+            arrivalTimeComponents: { hour: arrivalHour, minute: arrivalMinute }
+        };
+    }
 }
 
-const computedFares = travelSegments.map(segment => {
-    const origin = segment.startingPoint;
-    const destination = segment.endingPoint;
-    const arrivalTimeInMins = parseClockToMinutes(segment.arrivalClockString);
+const calculateTotalMinutesFromComponents = ({ hour, minute }) => (hour * 60) + minute;
 
-    const baseCharge = fareMatrix[origin][destination];
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    const isEveningTrip = qualifiesForEveningDiscount(arrivalTimeInMins);
-    const isShortReturn = qualifiesForShortReverseDiscount(origin, destination, fareMatrix);
+for (const travelRequest of parseTravelRequests(rawInputContent)) {
+    const totalArrivalMinutes = calculateTotalMinutesFromComponents(travelRequest.arrivalTimeComponents);
 
-    let finalCharge = baseCharge;
+    let tripCost = journeyTariffs[travelRequest.departurePoint][travelRequest.arrivalPoint];
 
-    if (isEveningTrip && isShortReturn) {
-        finalCharge = Math.floor(baseCharge / 2);
-        finalCharge = adjustToNearestFiftyUp(finalCharge);
+    const isArrivalBeforeCutoff = totalArrivalMinutes <= 1170;
+    const isReverseRouteShort = journeyTariffs[travelRequest.arrivalPoint][travelRequest.departurePoint] <= 40;
+
+    if (isArrivalBeforeCutoff && isReverseRouteShort) {
+        let reducedCost = Math.floor(tripCost / 2);
+        reducedCost = (reducedCost % 50 === 0) ? reducedCost : (Math.floor(reducedCost / 50) + 1) * 50;
+        tripCost = reducedCost;
     }
-    return finalCharge;
-});
 
-computedFares.forEach(charge => console.log(charge));
+    console.log(tripCost);
+}

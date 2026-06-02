@@ -1,145 +1,127 @@
 'use strict';
+const dataAcquisition = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const deriveScaledPosition = (actualCoord, overallDimension, segmentParity) => {
-    if (overallDimension === 2) {
-        return actualCoord;
+const dimensions = dataAcquisition[0].split(' ').map(Number);
+const totalRows = dimensions[0];
+const totalCols = dimensions[1];
+const pointCount = parseInt(dataAcquisition[1]);
+const coordinateValuePairs = dataAcquisition.slice(2);
+
+// Centralized registry for consistency data across different line types
+const lineConsistencyData = {
+    rowEven: { delta: null, observedPoints: new Map() }, // Map: column_coord -> {row_coord, value} for even rows
+    rowOdd: { delta: null, observedPoints: new Map() },  // Map: column_coord -> {row_coord, value} for odd rows
+    colEven: { delta: null, observedPoints: new Map() }, // Map: row_coord -> {column_coord, value} for even columns
+    colOdd: { delta: null, observedPoints: new Map() }   // Map: row_coord -> {column_coord, value} for odd columns
+};
+
+// Determines which specific line data object to use based on coordinates and dimension type
+const retrieveLineData = (rCoord, cCoord, isRowDimensionCheck) => {
+    if (isRowDimensionCheck) {
+        return (rCoord % 2 === 0) ? lineConsistencyData.rowEven : lineConsistencyData.rowOdd;
     } else {
-        return segmentParity === 'even' ? (actualCoord / 2) - 1 : Math.floor(actualCoord / 2);
+        return (cCoord % 2 === 0) ? lineConsistencyData.colEven : lineConsistencyData.colOdd;
     }
 };
 
-class ProgressionSegment {
-    constructor(identificationKey, totalGridDimension, segmentParityType) {
-        this.key = identificationKey;
-        this.dimensionExtent = totalGridDimension;
-        this.typeParity = segmentParityType;
-        this.recordedObservations = [];
-        this.uniformGradient = null;
+// Calculates the factor used in boundary condition checks
+const computeBoundaryFactor = (coordForFactor, totalDimensionLength, coordIsEven, isLowerBound) => {
+    if (totalDimensionLength === 2) {
+        return isLowerBound ? coordForFactor : (totalDimensionLength - coordForFactor);
+    } else {
+        if (coordIsEven) {
+            return isLowerBound ? (coordForFactor / 2 - 1) : Math.floor((totalDimensionLength - coordForFactor) / 2);
+        } else { // Odd parity
+            return isLowerBound ? Math.floor(coordForFactor / 2) : Math.floor((totalDimensionLength - coordForFactor) / 2);
+        }
     }
+};
 
-    assimilateObservation(position, measure) {
-        this.recordedObservations.push({ position, measure });
-        this.recordedObservations.sort((a, b) => a.position - b.position);
+// Verifies if a point's value remains non-negative when extrapolated to dimension boundaries
+const validatePointBounds = (pointValue, coordForFactor, deltaValue, totalDimensionLength, coordIsEven) => {
+    const lowerFactor = computeBoundaryFactor(coordForFactor, totalDimensionLength, coordIsEven, true);
+    const upperFactor = computeBoundaryFactor(coordForFactor, totalDimensionLength, coordIsEven, false);
+    return (pointValue - deltaValue * lowerFactor >= 0) && (pointValue + deltaValue * upperFactor >= 0);
+};
 
-        if (this.recordedObservations.length < 2) {
-            return true;
+// Processes a single data point (r, c, a) for consistency along a specific dimension (row or column)
+const processPointForDimension = (currentR, currentC, currentA, totalDimR, totalDimC, isRowDimensionCheck) => {
+    const targetLineData = retrieveLineData(currentR, currentC, isRowDimensionCheck);
+    const mapKey = isRowDimensionCheck ? currentC : currentR; // Key for the map (c for row-check, r for col-check)
+    const otherCoord = isRowDimensionCheck ? currentR : currentC; // The coordinate whose parity determines the line (r for row-check, c for col-check)
+    const totalLengthForCheck = isRowDimensionCheck ? totalDimR : totalDimC; // R for row-check, C for col-check
+    const otherCoordIsEven = (otherCoord % 2 === 0);
+
+    if (targetLineData.observedPoints.has(mapKey)) {
+        const existingPointData = targetLineData.observedPoints.get(mapKey);
+        const existingOtherCoord = existingPointData.otherCoord;
+        const existingA = existingPointData.value;
+
+        let calculatedDelta;
+        if (totalLengthForCheck === 2) {
+            calculatedDelta = existingA - currentA;
+        } else {
+            const coordDifferenceHalf = (existingOtherCoord - otherCoord) / 2;
+            if (coordDifferenceHalf === 0) {
+                // If otherCoord is the same, values must be identical for consistency.
+                // The original code would calculate NaN/Infinity and fail Number.isInteger.
+                calculatedDelta = (existingA - currentA) / coordDifferenceHalf;
+            } else {
+                calculatedDelta = (existingA - currentA) / coordDifferenceHalf;
+            }
         }
 
-        const referenceObservation = this.recordedObservations[0];
-        const referenceScaledPosition = deriveScaledPosition(referenceObservation.position, this.dimensionExtent, this.typeParity);
-        
-        let candidateGradient = null;
+        if (targetLineData.delta === null) {
+            if (!Number.isInteger(calculatedDelta)) { // Catches NaN, Infinity, and non-integers
+                return false;
+            }
+            targetLineData.delta = calculatedDelta;
 
-        for (let i = 1; i < this.recordedObservations.length; i++) {
-            const currentObservation = this.recordedObservations[i];
-            const currentScaledPosition = deriveScaledPosition(currentObservation.position, this.dimensionExtent, this.typeParity);
-
-            if (currentScaledPosition === referenceScaledPosition) {
-                if (currentObservation.measure !== referenceObservation.measure) {
+            // Apply the newly found delta to all previously observed points in this line
+            for (const [, storedPoint] of targetLineData.observedPoints.entries()) {
+                if (!validatePointBounds(storedPoint.value, storedPoint.otherCoord, targetLineData.delta, totalLengthForCheck, (storedPoint.otherCoord % 2 === 0))) {
                     return false;
                 }
-                continue;
             }
-
-            const calculatedGradient = (currentObservation.measure - referenceObservation.measure) / (currentScaledPosition - referenceScaledPosition);
-
-            if (Math.round(calculatedGradient) !== calculatedGradient) {
-                return false;
-            }
-
-            if (candidateGradient === null) {
-                candidateGradient = calculatedGradient;
-            } else if (candidateGradient !== calculatedGradient) {
-                return false;
-            }
-        }
-
-        if (this.uniformGradient === null) {
-            this.uniformGradient = candidateGradient;
-        } else if (candidateGradient !== null && this.uniformGradient !== candidateGradient) {
-            return false;
-        }
-        
-        return true;
-    }
-
-    checkExtremityValues() {
-        if (this.uniformGradient === null) {
-            return true;
-        }
-
-        const referenceObservation = this.recordedObservations[0];
-        const referenceScaledPosition = deriveScaledPosition(referenceObservation.position, this.dimensionExtent, this.typeParity);
-
-        const valueAtZeroScaledPosition = referenceObservation.measure - this.uniformGradient * referenceScaledPosition;
-        if (valueAtZeroScaledPosition < 0) {
-            return false;
-        }
-
-        const maximumActualPosition = this.dimensionExtent;
-        const maximumScaledPosition = deriveScaledPosition(maximumActualPosition, this.dimensionExtent, this.typeParity);
-        
-        const valueAtMaximumScaledPosition = valueAtZeroScaledPosition + this.uniformGradient * maximumScaledPosition;
-        if (valueAtMaximumScaledPosition < 0) {
-            return false;
-        }
-
-        return true;
-    }
-}
-
-const performGridAnalysis = (payloadLines) => {
-    const gridConfiguration = payloadLines[0].split(' ').map(Number);
-    const totalRows = gridConfiguration[0];
-    const totalColumns = gridConfiguration[1];
-    const totalObservationCount = parseInt(payloadLines[1]);
-    const observationDetails = payloadLines.slice(2);
-
-    const segmentRegistry = new Map();
-
-    const acquireOrCreateSegment = (axisIdentifier, fixedCoordinate, overallDimension, variableCoordParity) => {
-        let segmentParityMode;
-        if (overallDimension === 2) {
-            segmentParityMode = 'even';
         } else {
-            segmentParityMode = variableCoordParity;
+            if (calculatedDelta !== targetLineData.delta) {
+                return false;
+            }
         }
-        const segmentKey = `${axisIdentifier}-${fixedCoordinate}-${segmentParityMode}`;
-        if (!segmentRegistry.has(segmentKey)) {
-            segmentRegistry.set(segmentKey, new ProgressionSegment(segmentKey, overallDimension, segmentParityMode));
+        // Validate the current point with the established delta
+        if (!validatePointBounds(currentA, otherCoord, targetLineData.delta, totalLengthForCheck, otherCoordIsEven)) {
+            return false;
         }
-        return segmentRegistry.get(segmentKey);
-    };
-
-    for (let currentObservationIndex = 0; currentObservationIndex < totalObservationCount; currentObservationIndex++) {
-        const currentObservationData = observationDetails[currentObservationIndex].split(' ').map(Number);
-        const observedRow = currentObservationData[0];
-        const observedCol = currentObservationData[1];
-        const observedValue = currentObservationData[2];
-
-        const columnParity = (observedCol % 2 === 0) ? 'even' : 'odd';
-        const rowProgressionSegment = acquireOrCreateSegment('ROW', observedRow, totalColumns, columnParity);
-        if (!rowProgressionSegment.assimilateObservation(observedCol, observedValue) || !rowProgressionSegment.checkExtremityValues()) {
-            return 'No';
-        }
-
-        const rowParity = (observedRow % 2 === 0) ? 'even' : 'odd';
-        const colProgressionSegment = acquireOrCreateSegment('COLUMN', observedCol, totalRows, rowParity);
-        if (!colProgressionSegment.assimilateObservation(observedRow, observedValue) || !colProgressionSegment.checkExtremityValues()) {
-            return 'No';
-        }
+    } else {
+        // Store the current point for future delta calculations and validations
+        targetLineData.observedPoints.set(mapKey, { otherCoord: otherCoord, value: currentA });
     }
-    
-    for (const segment of segmentRegistry.values()) {
-        if (!segment.checkExtremityValues()) {
-            return 'No';
-        }
-    }
-
-    return 'Yes';
+    return true;
 };
 
-(() => {
-    const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    console.log(performGridAnalysis(inputData));
-})();
+// Orchestrates the consistency checks for all input points
+const executeConsistencyAnalysis = () => {
+    for (let i = 0; i < pointCount; i++) {
+        const [rStr, cStr, aStr] = coordinateValuePairs[i].split(' ');
+        const rVal = parseInt(rStr);
+        const cVal = parseInt(cStr);
+        const aVal = parseInt(aStr);
+
+        // Check consistency along rows (varying C, fixed R parity)
+        if (!processPointForDimension(rVal, cVal, aVal, totalRows, totalCols, true)) {
+            return false;
+        }
+
+        // Check consistency along columns (varying R, fixed C parity)
+        if (!processPointForDimension(rVal, cVal, aVal, totalCols, totalRows, false)) {
+            return false;
+        }
+    }
+    return true;
+};
+
+if (executeConsistencyAnalysis()) {
+    console.log('Yes');
+} else {
+    console.log('No');
+}

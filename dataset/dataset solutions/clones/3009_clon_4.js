@@ -1,84 +1,66 @@
-const determineGCD = (val1, val2) => {
-    while (val2 !== 0) {
-        let temporary = val2;
-        val2 = val1 % val2;
-        val1 = temporary;
-    }
-    return val1;
-};
+"use strict";
+function ProcessInput(rawData) {
+    let dataSrc = new DataFeeder(rawData);
+    let countElements = dataSrc.fetchInteger();
+    let elementValues = dataSrc.fetchIntegerArray(countElements);
 
-let segmentStore;
-let originalElements;
-let treeSize;
-
-const constructTree = (nodePointer, rangeStart, rangeEnd) => {
-    if (rangeStart === rangeEnd) {
-        segmentStore[nodePointer] = originalElements[rangeStart];
-        return;
-    }
-    const midPoint = Math.floor((rangeStart + rangeEnd) / 2);
-    constructTree(2 * nodePointer + 1, rangeStart, midPoint);
-    constructTree(2 * nodePointer + 2, midPoint + 1, rangeEnd);
-    segmentStore[nodePointer] = determineGCD(segmentStore[2 * nodePointer + 1], segmentStore[2 * nodePointer + 2]);
-};
-
-const retrieveGCD = (nodePointer, nodeRangeStart, nodeRangeEnd, queryRangeStart, queryRangeEnd) => {
-    if (queryRangeStart > nodeRangeEnd || queryRangeEnd < nodeRangeStart) {
-        return 0;
-    }
-    if (queryRangeStart <= nodeRangeStart && nodeRangeEnd <= queryRangeEnd) {
-        return segmentStore[nodePointer];
-    }
-    const midPoint = Math.floor((nodeRangeStart + nodeRangeEnd) / 2);
-    const leftGCD = retrieveGCD(2 * nodePointer + 1, nodeRangeStart, midPoint, queryRangeStart, queryRangeEnd);
-    const rightGCD = retrieveGCD(2 * nodePointer + 2, midPoint + 1, nodeRangeEnd, queryRangeStart, queryRangeEnd);
-    
-    if (leftGCD === 0) return rightGCD;
-    if (rightGCD === 0) return leftGCD;
-    
-    return determineGCD(leftGCD, rightGCD);
-};
-
-function processChallenge(inputPayload) {
-    const dataLines = inputPayload.trim().split('\n');
-    const elementCount = parseInt(dataLines[0], 10);
-    originalElements = dataLines[1].split(' ').map(Number);
-
-    treeSize = 4 * elementCount;
-    segmentStore = new Array(treeSize).fill(0);
-
-    constructTree(0, 0, elementCount - 1);
-
-    let highestAchievedGCD = 0;
-
-    for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
-        let leftSegmentGCD = 0;
-        if (currentIdx > 0) {
-            leftSegmentGCD = retrieveGCD(0, 0, elementCount - 1, 0, currentIdx - 1);
+    const computeGCD = (val1, val2) => {
+        while (val2 !== 0) {
+            const temp = val2;
+            val2 = val1 % val2;
+            val1 = temp;
         }
+        return val1;
+    };
 
-        let rightSegmentGCD = 0;
-        if (currentIdx < elementCount - 1) {
-            rightSegmentGCD = retrieveGCD(0, 0, elementCount - 1, currentIdx + 1, elementCount - 1);
-        }
-        
-        let currentCombinedGCD;
-        if (leftSegmentGCD === 0) {
-            currentCombinedGCD = rightSegmentGCD;
-        } else if (rightSegmentGCD === 0) {
-            currentCombinedGCD = leftSegmentGCD;
-        } else {
-            currentCombinedGCD = determineGCD(leftSegmentGCD, rightSegmentGCD);
-        }
+    const leftAccumulations = [0, ...elementValues.map((_, i, arr) =>
+        arr.slice(0, i + 1).reduce((acc, val) => computeGCD(acc, val), 0)
+    )];
+    leftAccumulations.push(leftAccumulations[countElements]);
 
-        if (currentCombinedGCD > highestAchievedGCD) {
-            highestAchievedGCD = currentCombinedGCD;
-        }
-    }
+    const rightAccumulations = [...elementValues.map((_, i, arr) =>
+        arr.slice(i).reduce((acc, val) => computeGCD(acc, val), 0)
+    ), 0];
 
-    console.log(highestAchievedGCD);
+    const exclusionGCDs = Array.from({ length: countElements }, (_, currentIdx) =>
+        computeGCD(leftAccumulations[currentIdx], rightAccumulations[currentIdx + 1])
+    );
+
+    console.log(Math.max(...exclusionGCDs));
 }
 
-if (typeof window === "undefined") {
-    processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+class DataFeeder {
+    constructor(sourceText) {
+        if (typeof sourceText === 'undefined') throw new Error('Argument (stdin) cannot be omitted!');
+        this.idx = 0;
+        this.tokens = sourceText.split(/\n|\s/);
+    }
+
+    fetchInteger() {
+        return this.tokens[this.idx++] - 0;
+    }
+
+    fetchIntegerArray(size) {
+        if (typeof size === 'undefined') throw new Error('Argument (1 or more) cannot be omitted!');
+        let resultArr = new Array(size);
+        for (let k = 0; k < size; k++) {
+            resultArr[k] = this.fetchInteger();
+        }
+        return resultArr;
+    }
+
+    fetchString() {
+        return this.tokens[this.idx++];
+    }
+
+    fetchStringArray(size) {
+        if (typeof size === 'undefined') throw new Error('Argument (1 or more) cannot be omitted!');
+        let resultArr = new Array(size);
+        for (let k = 0; k < size; k++) {
+            resultArr[k] = this.fetchString();
+        }
+        return resultArr;
+    }
 }
+
+if (typeof window === "undefined") ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

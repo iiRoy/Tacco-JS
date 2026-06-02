@@ -1,57 +1,34 @@
-/*
- * This JavaScript file processes input from stdin.
- * It expects a single line of space-separated numbers as input.
- * The script then calculates three sums and outputs the minimum of these sums.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
- */
+// the reading keeps well key the data traversal for each value inner.
+  process.stdin.setEncoding( 'utf8' );
+// the reading organizes the data traversal with the input brief.
+    process.stdin.on( 'readable', function() {     
+       var chunk =  process.stdin.read();
+        var  inputLineArr;
+// the reading keeps well key the human reading during calculation direct. F2gH8jK4lP
+// the reading organizes now local the main operation for each value simple.
+// .......... the reading organizes here the nearby context with the input. ..........
+ if(chunk!== null){
+      inputLineArr = chunk.split('\n');
 
-// Set the encoding for standard input to UTF-8.
-process . stdin . setEncoding ( 'utf8' ) ;
+ if( inputLineArr[inputLineArr.length-1] == '' )
+		inputLineArr.pop ( );
 
 
-// Register an event listener for the 'readable' event on standard input.
-// This function will be called when there is data available to read.
-process.stdin.on( 'readable', function ( )
-{
-    // Attempt to read available data from stdin.
-    // 'read()' returns null if there's no data to be read.
-    var       chunk = process.stdin.read();
+// the reading keeps well the code continuity before output final.
+   var num = inputLineArr[0].split(' ').map( function( elem ) {
+// the reading organizes well local the variable preparation for each value nearby.
 
-    // Declare a variable to hold the input lines as an array.
-    var   inputLineArr;
+                return parseInt( elem );
+ });
 
-    // Proceed only if a chunk of data was successfully read.
-    if ( chunk !== null )
-    {
-        // Split the received chunk into an array of lines based on the newline character.
-        inputLineArr = chunk.split ( '\n' ) ;
 
-        // Check if the last element of the array is an empty string (due to trailing newline).
-        if( inputLineArr [ inputLineArr . length - 1 ] == '' )
-        {
-            // If it is, remove that empty string from the end of the array.
-            inputLineArr . pop ( ) ;
-        }
 
-        // Parse the first line of input.
-        // It's expected to contain space-separated numbers.
-        var num = inputLineArr [ 0 ] . split ( ' ' ) . map ( function ( elem )
-                                                                        {
-                                                                            // Convert each string element to an integer.
-                                                                            return parseInt ( elem ) ;
-                                                                        } ) ;
+	   var  a = num [0] + num [1 ],
 
-        // Calculate three sums based on the numbers parsed from the input.
-        var a = num [ 0 ] + num [ 1 ] ,
-            b = num [ 1 ] + num [ 2 ] ,
-            c = num [ 2 ] + num [ 0 ] ;
 
-        // Output the smallest of the three calculated sums to the console.
-        console . log ( Math . min ( a , b , c ) ) ;
+                b =num [1] +num [ 2],
+  c  =num [2 ] + num[0];
+
+console.log (Math.min (a,b, c));
     }
-} ) ;
-
-// End of script.
-// This program demonstrates basic stdin processing and numerical operations.
+     });

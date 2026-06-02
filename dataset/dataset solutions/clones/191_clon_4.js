@@ -1,47 +1,34 @@
-let accumulatedInputData = '';
+const cupIdentifierToOrdinal = new Map([['A', 0], ['B', 1], ['C', 2]]);
+const ordinalToCupIdentifier = ['A', 'B', 'C'];
+let ballCurrentOrdinal = 0;
 
-const charToDigitConverter = new Map([
-  ['A', 0],
-  ['B', 1],
-  ['C', 2],
-]);
-
-const digitToCharConverter = new Map([
-  [0, 'A'],
-  [1, 'B'],
-  [2, 'C'],
-]);
-
-function performOrbTracking(allReceivedData) {
-  const initialOrbSpot = 0;
-  const instructionLines = allReceivedData
-    .split('\n')
-    .filter(segment => segment.trim().length > 0);
-
-  const finalOrbSpot = instructionLines.reduce((currentOrbPosition, currentInstruction) => {
-    const cupIdentifiers = currentInstruction.split(',');
-    const firstCupNumber = charToDigitConverter.get(cupIdentifiers[0]);
-    const secondCupNumber = charToDigitConverter.get(cupIdentifiers[1]);
-
-    if (currentOrbPosition === firstCupNumber) {
-      return secondCupNumber;
-    } else if (currentOrbPosition === secondCupNumber) {
-      return firstCupNumber;
+function processInputSequence(fullInputText) {
+  const moveInstructions = fullInputText.split('\n').filter(Boolean);
+  
+  ballCurrentOrdinal = moveInstructions.reduce((currentPosition, instructionLine) => {
+    const [firstCupChar, secondCupChar] = instructionLine.split(',');
+    const firstCupOrdinal = cupIdentifierToOrdinal.get(firstCupChar);
+    const secondCupOrdinal = cupIdentifierToOrdinal.get(secondCupChar);
+    
+    if (currentPosition === firstCupOrdinal) {
+      return secondCupOrdinal;
+    } else if (currentPosition === secondCupOrdinal) {
+      return firstCupOrdinal;
     } else {
-      return currentOrbPosition;
+      return currentPosition;
     }
-  }, initialOrbSpot);
+  }, ballCurrentOrdinal);
 
-  console.log(digitToCharConverter.get(finalOrbSpot));
+  console.log(ordinalToCupIdentifier[ballCurrentOrdinal]);
 }
+
+let accumulatedInputData = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (dataPortion) => {
-  accumulatedInputData += dataPortion;
+process.stdin.on('data', (dataChunk) => {
+  accumulatedInputData += dataChunk;
 });
-
 process.stdin.on('end', () => {
-  performOrbTracking(accumulatedInputData);
+  processInputSequence(accumulatedInputData);
 });

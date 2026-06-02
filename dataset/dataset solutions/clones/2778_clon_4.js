@@ -1,22 +1,17 @@
 "use strict";
+const processInput = (sourceData) => {
+    const initialString = sourceData[0];
 
-const processInputData = dataCollection => {
-    const targetSequence = dataCollection[0];
-    const occurrenceTracker = new Map();
+    const charFrequencies = Array.from(initialString).reduce((accumulator, character) => {
+        accumulator[character] = (accumulator[character] || 0) + 1;
+        return accumulator;
+    }, {});
 
-    for (const characterUnit of targetSequence) {
-        occurrenceTracker.set(characterUnit, (occurrenceTracker.get(characterUnit) || 0) + 1);
-    }
+    const distinctCharacters = Object.keys(charFrequencies);
+    const isPatternMatch = distinctCharacters.length === 2 &&
+                           distinctCharacters.every(keyChar => charFrequencies[keyChar] === 2);
 
-    let finalVerdict = false;
-    if (occurrenceTracker.size === 2) {
-        const counts = Array.from(occurrenceTracker.values());
-        if (counts[0] === 2 && counts[1] === 2) {
-            finalVerdict = true;
-        }
-    }
-
-    process.stdout.write((finalVerdict ? 'Yes' : 'No') + '\n');
+    console.log(isPatternMatch ? 'Yes' : 'No');
 };
 
-processInputData(require("node:fs").readFileSync(0, "utf8").trim().split('\n'));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

@@ -1,91 +1,101 @@
-class DataStreamHandler {
-    #inputLines;
-    #currentLineIndex;
+const createInputProcessor = (sourceText) => {
+    const lineSegments = sourceText.trim().split('\n');
+    let currentLineIdx = 0;
 
-    constructor(fullInputText) {
-        this.#inputLines = fullInputText.trim().split('\n');
-        this.#currentLineIndex = 0;
-    }
+    const convertToNum = (val, asString) => asString ? val : Number(val);
 
-    takeLastToken(returnAsText = false) {
-        if (this.#currentLineIndex >= this.#inputLines.length) {
-            return undefined;
+    const readLastToken = (asStringFlag) => {
+        if (currentLineIdx >= lineSegments.length) {
+            throw new Error("Input exhausted for readLastToken.");
         }
-        let currentLineContent = this.#inputLines[this.#currentLineIndex];
+        let currentLineContent = lineSegments[currentLineIdx];
         if (typeof currentLineContent === 'string') {
-            this.#inputLines[this.#currentLineIndex] = currentLineContent.split(' ').reverse();
-            currentLineContent = this.#inputLines[this.#currentLineIndex];
+            lineSegments[currentLineIdx] = currentLineContent.split(' ').reverse();
         }
-        let extractedValue = currentLineContent.pop();
-        if (currentLineContent.length === 0) {
-            this.#currentLineIndex++;
+        const tokens = lineSegments[currentLineIdx];
+        const extractedToken = tokens.pop();
+        if (tokens.length === 0) {
+            currentLineIdx++;
         }
-        return returnAsText ? extractedValue : Number(extractedValue);
-    }
+        return convertToNum(extractedToken, asStringFlag);
+    };
 
-    takeEntireLine(returnAsText = false) {
-        if (this.#currentLineIndex >= this.#inputLines.length) {
-            return [];
+    const readFullLine = (asStringFlag) => {
+        if (currentLineIdx >= lineSegments.length) {
+            throw new Error("Input exhausted for readFullLine.");
         }
-        let lineData = this.#inputLines[this.#currentLineIndex++];
-        let tokens = String(lineData).split(' ');
-        return returnAsText ? tokens : tokens.map(Number);
-    }
+        const line = lineSegments[currentLineIdx].split(' ');
+        currentLineIdx++;
+        return asStringFlag ? line : line.map(Number);
+    };
 
-    takeMatrix(numRows, returnAsText = false) {
-        let collectedRows = [];
-        for (let i = 0; i < numRows; i++) {
-            if (this.#currentLineIndex >= this.#inputLines.length) break;
-            let lineData = this.#inputLines[this.#currentLineIndex++];
-            collectedRows.push(
-                returnAsText ? String(lineData).split(' ') : String(lineData).split(' ').map(Number)
-            );
+    const readMultipleLines = (count, asStringFlag) => {
+        const collected = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIdx >= lineSegments.length) {
+                throw new Error("Input exhausted for readMultipleLines.");
+            }
+            collected.push(lineSegments[currentLineIdx].split(' '));
+            currentLineIdx++;
         }
-        return collectedRows;
-    }
+        return asStringFlag ? collected : collected.map(row => row.map(Number));
+    };
 
-    takeBlock(numRows, returnAsText = false) {
-        let collected = [];
-        for (let i = 0; i < numRows; i++) {
-            if (this.#currentLineIndex >= this.#inputLines.length) break;
-            let lineData = this.#inputLines[this.#currentLineIndex++];
-            collected.push(returnAsText ? String(lineData) : Number(lineData));
+    const readRawLines = (count, asStringFlag) => {
+        const collected = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIdx >= lineSegments.length) {
+                throw new Error("Input exhausted for readRawLines.");
+            }
+            collected.push(lineSegments[currentLineIdx]);
+            currentLineIdx++;
         }
-        return collected;
-    }
-}
+        return asStringFlag ? collected : collected.map(Number);
+    };
 
-var dataSource = new DataStreamHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+    return {
+        getSingle: readLastToken,
+        getLineArray: readFullLine,
+        getMatrix: readMultipleLines,
+        getLineStrings: readRawLines
+    };
+};
 
-console.log(calculateRange());
+const inputHandler = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function calculateRange() {
-    const startOffset = dataSource.takeLastToken() - 1;
-    const numberSequence = dataSource.takeEntireLine();
+function processCalculation() {
+    const initialK = inputHandler.getSingle() - 1;
+    const dataArray = inputHandler.getLineArray();
 
-    if (numberSequence[startOffset] !== 2) {
+    if (dataArray[initialK] !== 2) {
         return -1;
     }
 
-    const recursiveSolver = (currentIdx, minimumVal, maximumVal) => {
-        if (currentIdx < 0) {
-            return `${minimumVal} ${maximumVal}`;
-        }
+    const indicesToProcess = Array.from({ length: initialK }, (_, i) => initialK - 1 - i);
 
-        const currentArrayElement = numberSequence[currentIdx];
+    const initialAccumulator = { lowerBound: 2, upperBound: 3 };
 
-        if (currentArrayElement > maximumVal) {
+    const finalBounds = indicesToProcess.reduce((acc, currentIdx) => {
+        if (acc === -1) return -1;
+
+        const currentA = dataArray[currentIdx];
+        let { lowerBound: d_val, upperBound: u_val } = acc;
+
+        if (currentA > u_val) {
             return -1;
         }
 
-        const updatedMinimum = currentArrayElement * Math.ceil(minimumVal / currentArrayElement);
-        const updatedMaximum = Math.max(
-            (currentArrayElement * Math.ceil(maximumVal / currentArrayElement)),
-            updatedMinimum + currentArrayElement
-        ) - 1;
+        const next_d = currentA * Math.ceil(d_val / currentA);
+        const next_u = Math.max((currentA * Math.ceil(u_val / currentA)), next_d + currentA) - 1;
 
-        return recursiveSolver(currentIdx - 1, updatedMinimum, updatedMaximum);
-    };
+        return { lowerBound: next_d, upperBound: next_u };
+    }, initialAccumulator);
 
-    return recursiveSolver(startOffset - 1, 2, 3);
+    if (finalBounds === -1) {
+        return -1;
+    } else {
+        return `${finalBounds.lowerBound} ${finalBounds.upperBound}`;
+    }
 }
+
+console.log(processCalculation());

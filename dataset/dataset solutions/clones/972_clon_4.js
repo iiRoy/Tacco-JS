@@ -1,47 +1,18 @@
-const sourcePath = '/dev/stdin';
-const lineDelim = '\n';
+function obtainEscapedPattern(inputString) {
+  return inputString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-const fileData = require('node:fs').readFileSync(sourcePath, 'ascii');
-const lineParts = fileData.split(lineDelim);
+const processingParameters = { sourcePath: '/dev/stdin', lineDelimiter: '\n' };
 
-const majorString = lineParts[0];
-const minorString = lineParts[1];
+const rawInputLines = require('fs').readFileSync(processingParameters.sourcePath, 'ascii')
+  .split(processingParameters.lineDelimiter);
 
-const locateSubsequences = (fullText, targetPattern) => {
-  const matchingPoints = [];
-  const targetLength = targetPattern.length;
+const primaryText = rawInputLines[0];
+const targetSequence = rawInputLines[1];
 
-  if (targetLength === 0) {
-    for (let pos = 0; pos <= fullText.length; ++pos) {
-      matchingPoints.push(pos);
-    }
-    return matchingPoints;
-  }
+const literalTargetRegex = new RegExp(obtainEscapedPattern(targetSequence), 'g');
+let currentMatchResult;
 
-  const inspectFromPosition = (currentScanIndex) => {
-    if (currentScanIndex > fullText.length - targetLength) {
-      return; // Base case: no more possible starting positions
-    }
-
-    let potentialMatch = true;
-    for (let charIndex = 0; charIndex < targetLength; ++charIndex) {
-      if (fullText[currentScanIndex + charIndex] !== targetPattern[charIndex]) {
-        potentialMatch = false;
-        break;
-      }
-    }
-
-    if (potentialMatch) {
-      matchingPoints.push(currentScanIndex);
-    }
-
-    inspectFromPosition(currentScanIndex + 1); // Recursive step: check from the next character
-  };
-
-  inspectFromPosition(0); // Initiate the recursive search
-  return matchingPoints;
-};
-
-const foundIndices = locateSubsequences(majorString, minorString);
-
-foundIndices.forEach(val => console.log(val));
+while ((currentMatchResult = literalTargetRegex.exec(primaryText)) !== null) {
+  console.log(currentMatchResult.index);
+}

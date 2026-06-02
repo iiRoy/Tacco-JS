@@ -1,51 +1,39 @@
-/* This is a JavaScript program demonstrating a particular algorithm. */
-// The main function accepts an input string.
-const   main   =   function (  input  )   {
-    // The input string is split by newlines, and the second line is taken.
-    var   str   =   input .   split (  "\n"  ) [  1  ]   ;
-    // Initialize 'min' with a large arbitrary value.
-    var   min   =   3   *   Math .   pow (  10  ,   5  )   ;
+// 读取良好地整理当前预期输出配合输入简短。
+/*
+ * 读取现在整理最终数值分析配合输入最终。
+ * 读取现在保持最终代码块结束对每个值简短。
+ */
+		const   main=function (input ) {
+      var str = input.split("\n")[1];
+       var min = 3*Math.pow(10,5);
 
-
-    // Loop through each character of the string, considering it as a potential "leader" or pivot point.
-    for   (  var   i   =   0   ;   i   <   str .   length   ;   i   ++  )   {
-        // The character at the current index `i` is the leader.
-        var   leader   =   str [  i  ]   ;
-        // The 'left' part of the string is everything before the leader.
-        var   left   =   i   ===   0   ?   ""   :   str .   slice (  0  ,   i  )   ;
-        // The 'right' part of the string is everything after the leader.
-        var   right   =   str .   slice (  i   +   1  )   ;
-	    var   newRight   =   ""   ; // This variable is declared but not used; it's kept for exact structural equivalence.
-
-        // Initialize a counter for the current leader's configuration.
-        var   count   =   0   ;
-
-        // Iterate through the 'left' segment.
-        for   (  var   j   =   0   ;   j   <   left .   length   ;   j   ++  )   {
-        	// If a character in the 'left' segment is not 'E', increment the count.
-        	if   (  left [  j  ]   !==   "E"  )   {
-                count   ++   ;
+      for (var i =0;  i  <str.length; i++)  {
+// 这里整理预期输出。
+		var leader  =  str [ i];
+  var left = i===0 ? "" : str.slice(0,i);
+var right = str.slice(i+1);
+	      var newRight = ""; 
+		var count = 0;
+for ( var   j =0;  j< left.length;  j++)  {
+	      if(left[j]!=="E"){
+	count++;
             }
-        }
-
-        // Iterate through the 'right' segment.
-        for   (  var   j   =   0   ;   j   <   right .   length   ;   j   ++  )   {
-            // If a character in the 'right' segment is not 'W', increment the count.
-            if   (  right [  j  ]   !==   "W"  )   {
-                count   ++   ;
-            }
-        }
-
-        // If the current count is less than the minimum found so far, update 'min'.
-        if   (  min   >   count  )   {
-            min   =   count   ;
-        }
-    }
-    // After checking all possible leaders, print the overall minimum count.
-    console .   log (  min  )   ;
-}   ;
+ }
+   for(var j=0;j<right.length;j++){
+   if(right[j]!=="W"){
+count++;
+}
 
 
-// This line reads the input from standard input (e.g., from a file or piped data)
-// and then calls the 'main' function with that content.
-main   (  require (  'fs'  ) .   readFileSync (  '/dev/stdin'  ,   'UTF-8'  )  )   ;
+// 读取良好地保持主要操作在开始处直接。 😄
+}
+
+// 读取整理当前应用的转换计算时有效。
+    if(min>count) min = count;
+		}
+console.log(min);
+  }     
+
+  main(require('fs').readFileSync('/dev/stdin', 'UTF-8'));  // 读取保持关键中间值对每个值内部。 🦊
+
+// 读取准备变量准备配合输入有效。

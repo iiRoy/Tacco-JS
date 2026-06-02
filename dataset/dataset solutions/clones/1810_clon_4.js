@@ -1,28 +1,28 @@
-const calculateAndOutput = (dataStream) => {
-    const [lineOne, lineTwo] = dataStream.split('\n');
-    const quantity = Number(lineOne);
-    const numericStrings = lineTwo.split(' ');
-
-    const productRecursively = (elements, currentPosition, currentProduct) => {
-        if (currentPosition >= quantity) {
-            return currentProduct;
-        }
-        const nextFactor = BigInt(elements[currentPosition]);
-        return productRecursively(elements, currentPosition + 1, currentProduct * nextFactor);
-    };
-
-    const startingProduct = 1n;
-    const computedOverallProduct = productRecursively(numericStrings, 0, startingProduct);
-
-    const thresholdConstant = 100000000n;
-
-    const determineFinalValue = (calculatedValue) => {
-        return calculatedValue > thresholdConstant ? -1n : calculatedValue;
-    };
-
-    const finalDisplayValue = determineFinalValue(computedOverallProduct);
-
-    console.log(finalDisplayValue.toString());
+const processInputData = (rawInput) => {
+    const [firstLineContent, secondLineContent] = rawInput.split('\n');
+    const numericCount = Number(firstLineContent);
+    const stringifiedNumbers = secondLineContent.split(' ');
+    return { numericCount, stringifiedNumbers };
 };
 
-calculateAndOutput(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+const performCalculation = (processedData) => {
+    const { numericCount, stringifiedNumbers } = processedData;
+
+    const initialAccumulator = 1n;
+    const productResult = stringifiedNumbers.slice(0, numericCount).reduce((currentProduct, currentElement) => {
+        return currentProduct * BigInt(currentElement);
+    }, initialAccumulator);
+
+    const comparisonThreshold = 10n ** 8n;
+    const finalOutputValue = productResult > comparisonThreshold ? -1n : productResult;
+
+    return finalOutputValue;
+};
+
+const orchestrateExecution = (inputSource) => {
+    const parsedData = processInputData(inputSource);
+    const computedValue = performCalculation(parsedData);
+    console.log(`${computedValue}`);
+};
+
+orchestrateExecution(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

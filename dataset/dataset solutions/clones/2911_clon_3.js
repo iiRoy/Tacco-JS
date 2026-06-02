@@ -1,173 +1,138 @@
 "use strict";
 
-const fileSystemModule = require("fs");
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokens = rawInputData.split(/ |\n/);
+let currentTokenIndex = 0;
 
-// Retrieve raw content from the standard input stream.
-// This path is typical for competitive programming environments on Unix-like systems.
-const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const inputUtility = {
+    // Retrieves the next token as a number
+    retrieveNumber: () => +inputTokens[currentTokenIndex++],
 
-// Break down the input string into individual tokens using spaces or newlines as delimiters.
-const inputTokens = rawInputContent.split(/ |\n/);
+    // Retrieves the next token as a string
+    retrieveString: () => inputTokens[currentTokenIndex++],
 
-// A pointer to keep track of the current token being processed from the inputTokens array.
-let tokenPositionIndex = 0;
+    // Retrieves the next token as a BigInt
+    retrieveBigInt: () => BigInt(inputTokens[currentTokenIndex++]),
 
-/**
- * Extracts and parses the next token as a number from the input stream.
- * Includes a basic check for non-numeric input.
- * @returns {number} The parsed numerical value.
- */
-const obtainNextNumericalValue = () => {
-    const valueStr = inputTokens[tokenPositionIndex++];
-    const numValue = Number(valueStr);
-    if (isNaN(numValue)) {
-        console.error(`Error: Expected a number but received "${valueStr}". Returning NaN.`);
-    }
-    return numValue;
+    // Retrieves an array of numbers of a specified length
+    retrieveNumberArray: (count) => {
+        const numericArray = [];
+        for (let i = 0; i < count; i++) {
+            numericArray.push(+inputTokens[currentTokenIndex++]);
+        }
+        return numericArray;
+    },
+
+    // Retrieves an array of strings of a specified length
+    retrieveStringArray: (count) => {
+        const stringArray = [];
+        for (let i = 0; i < count; i++) {
+            stringArray.push(inputTokens[currentTokenIndex++]);
+        }
+        return stringArray;
+    },
+
+    // Retrieves a 2D matrix of numbers (rows x columns)
+    retrieveNumberMatrix: (rows, columns) => {
+        const numberMatrix = [];
+        for (let r = 0; r < rows; r++) {
+            const rowData = [];
+            for (let c = 0; c < columns; c++) {
+                rowData.push(+inputTokens[currentTokenIndex++]);
+            }
+            numberMatrix.push(rowData);
+        }
+        return numberMatrix;
+    },
+
+    // Retrieves a 2D matrix of strings (rows x columns)
+    retrieveStringMatrix: (rows, columns) => {
+        const stringMatrix = [];
+        for (let r = 0; r < rows; r++) {
+            const rowData = [];
+            for (let c = 0; c < columns; c++) {
+                rowData.push(inputTokens[currentTokenIndex++]);
+            }
+            stringMatrix.push(rowData);
+        }
+        return stringMatrix;
+    },
 };
 
-/**
- * Fetches the subsequent token as a string without any parsing.
- * @returns {string} The next string token.
- */
-const retrieveNextTextSegment = () => inputTokens[tokenPositionIndex++];
-
-/**
- * Acquires the next token and converts it into a BigInt.
- * @returns {BigInt} The parsed BigInt value.
- */
-const extractNextBigInteger = () => BigInt(inputTokens[tokenPositionIndex++]);
-
-/**
- * Reads a specified quantity of tokens, optionally converting them to numbers.
- * @param {number} elementCount The total number of elements to read.
- * @param {boolean} keepAsText If true, elements are kept as strings; otherwise, they are converted to numbers.
- * @returns {(number|string)[]} An array containing the read elements.
- */
-const readSequentialElements = (elementCount, keepAsText) => {
-    const collectedElements = [];
-    let currentElementIdx = 0;
-    while (currentElementIdx < elementCount) {
-        const currentToken = inputTokens[tokenPositionIndex++];
-        collectedElements.push(keepAsText ? currentToken : Number(currentToken));
-        currentElementIdx++;
+// Function to create multi-dimensional arrays with an initial value
+const initializeMultiDimensionalArray = (...dimensionsAndValue) => {
+    const dims = dimensionsAndValue;
+    let dimCount = dims.length;
+    // The original implementation uses eval, which is preserved here for Type III cloning.
+    // The last argument is the initial value, others are dimensions.
+    let arrayCreationExpression = "Array(dims[" + --dimCount + "]).fill().map(element => {return " + dims[0] + ";})";
+    while (--dimCount) {
+        arrayCreationExpression = "Array(dims[" + dimCount + "]).fill().map(element => " + arrayCreationExpression + ")";
     }
-    return collectedElements;
+    return eval(arrayCreationExpression);
 };
 
-/**
- * Dynamically generates a multi-dimensional array with a specified default value.
- * This function uses a recursive approach to build arrays of arbitrary dimensions,
- * offering a safer alternative to `eval` for array initialization.
- * @param {*} initialValue The default value to fill the innermost array elements with.
- * @param {...number} arrayDimensions A sequence of numbers representing the size of each dimension.
- * @returns {Array} A new multi-dimensional array structured according to the provided dimensions.
- */
-const constructMultiDimensionalArray = (initialValue, ...arrayDimensions) => {
-    const recursiveArrayBuilder = (remainingDimensions) => {
-        if (remainingDimensions.length === 0) {
-            return initialValue; // Base case: deepest level, fill with initial value.
+// Main problem-solving logic
+const executeSolution = () => {
+    const numberOfSwitches = inputUtility.retrieveNumber(); // N
+    const numberOfBulbs = inputUtility.retrieveNumber();     // M
+
+    // bulbSwitchCounts: Array storing the number of switches connected to each bulb
+    const bulbSwitchCounts = initializeMultiDimensionalArray(0, numberOfBulbs);
+    // bulbConnections: 2D array storing the indices of switches connected to each bulb
+    // Initialized as an array of `numberOfBulbs` zeros, which are then replaced by actual arrays.
+    const bulbConnections = initializeMultiDimensionalArray(0, numberOfBulbs);
+
+    for (let bulbIdx = 0; bulbIdx < numberOfBulbs; bulbIdx++) {
+        bulbSwitchCounts[bulbIdx] = inputUtility.retrieveNumber();
+        bulbConnections[bulbIdx] = inputUtility.retrieveNumberArray(bulbSwitchCounts[bulbIdx]).map((switchVal) => switchVal - 1);
+    }
+
+    const requiredBulbParities = inputUtility.retrieveNumberArray(numberOfBulbs); // P
+
+    let totalSatisfyingConfigurations = 0;
+    const totalPossibleSwitchConfigurations = 1 << numberOfSwitches; // Equivalent to 2 ** numberOfSwitches
+
+    // Array to hold the on/off state (0 or 1) for each switch in the current configuration
+    const currentSwitchStates = Array(numberOfSwitches);
+
+    // Helper function to determine if a specific bulb's parity requirement is met
+    const checkBulbParityMatch = (idxBulb, statesOfSwitches, connectionsData, paritiesData) => {
+        let activeSwitchTally = 0;
+        const switchesLinkedToThisBulb = connectionsData[idxBulb];
+        const countLinkedSwitches = switchesLinkedToThisBulb.length;
+
+        for (let sIdx = 0; sIdx < countLinkedSwitches; sIdx++) {
+            const connectedSwitchIdentifier = switchesLinkedToThisBulb[sIdx];
+            activeSwitchTally += statesOfSwitches[connectedSwitchIdentifier];
         }
-        const currentDimensionSize = remainingDimensions[0];
-        const nextDimensions = remainingDimensions.slice(1);
-        const newArraySegment = new Array(currentDimensionSize);
-        for (let i = 0; i < currentDimensionSize; i++) {
-            newArraySegment[i] = recursiveArrayBuilder(nextDimensions);
-        }
-        return newArraySegment;
+        // Check if the parity (even/odd) of active switches matches the required parity for this bulb
+        return (activeSwitchTally & 1) === paritiesData[idxBulb]; // Using bitwise AND for modulo 2
     };
-    return recursiveArrayBuilder(arrayDimensions);
+
+    // Iterate through all possible combinations of switch states
+    for (let configValue = 0; configValue < totalPossibleSwitchConfigurations; configValue++) {
+        // Populate currentSwitchStates array based on the binary representation of configValue
+        for (let switchIdx = 0; switchIdx < numberOfSwitches; switchIdx++) {
+            // Extract the switchIdx-th bit from configValue
+            currentSwitchStates[switchIdx] = (configValue >> switchIdx) & 1;
+        }
+
+        let isCurrentConfigurationValid = true;
+        // Verify if all bulbs are satisfied by the current switch configuration
+        for (let bulbIdx = 0; bulbIdx < numberOfBulbs; bulbIdx++) {
+            if (!checkBulbParityMatch(bulbIdx, currentSwitchStates, bulbConnections, requiredBulbParities)) {
+                isCurrentConfigurationValid = false;
+                break; // This configuration fails for at least one bulb, move to the next
+            }
+        }
+
+        if (isCurrentConfigurationValid) {
+            totalSatisfyingConfigurations++;
+        }
+    }
+
+    return totalSatisfyingConfigurations;
 };
 
-/**
- * The main logic function that calculates the number of valid switch configurations.
- * This simulates a circuit where N switches control M light bulbs,
- * and each bulb has a required parity (even/odd) for its active connected switches.
- * @returns {number} The total count of switch patterns that illuminate all bulbs correctly.
- */
-function determineValidCircuitConfigurations() {
-    const numberOfSwitches = obtainNextNumericalValue(); // N from original problem
-    const numberOfBulbs = obtainNextNumericalValue();     // M from original problem
-
-    // Early exit / Guard clause for invalid or trivial input scenarios.
-    if (numberOfSwitches <= 0 || numberOfBulbs <= 0) {
-        // If there are no switches or no bulbs, no valid combinations can exist or are necessary.
-        return 0;
-    }
-
-    // Stores the count of switches connected to each specific light bulb.
-    // Equivalent to 'K' array in the original code.
-    const bulbSwitchCounts = new Array(numberOfBulbs);
-
-    // Stores the actual indices of switches connected to each bulb.
-    // 'bulbConnections[i]' will be an array of switch indices for bulb 'i'.
-    // Equivalent to 'S' array in the original code.
-    const bulbConnections = new Array(numberOfBulbs);
-
-    // Read connection data for each bulb.
-    for (let currentBulbIndex = 0; currentBulbIndex < numberOfBulbs; ++currentBulbIndex) {
-        const currentBulbConnectedSwitchCount = obtainNextNumericalValue();
-        bulbSwitchCounts[currentBulbIndex] = currentBulbConnectedSwitchCount;
-
-        // Read the switch identifiers and convert them to 0-based indices.
-        const connectedSwitchIDs = readSequentialElements(currentBulbConnectedSwitchCount, false).map(
-            (idValue) => idValue - 1 // Adjusting from 1-based to 0-based indexing.
-        );
-        bulbConnections[currentBulbIndex] = connectedSwitchIDs;
-    }
-
-    // Read the required parity for each bulb (0 for even, 1 for odd).
-    // Equivalent to 'P' array in the original code.
-    const requiredParitySettings = readSequentialElements(numberOfBulbs, false);
-
-    let successfulPatternCount = 0; // Accumulator for valid switch patterns.
-
-    // An array to store the binary state (0=OFF, 1=ON) of each switch for the current pattern being evaluated.
-    // Equivalent to 'pat_bits' in the original code.
-    const currentSwitchActivationStates = new Array(numberOfSwitches);
-
-    // Calculate the maximum value for iterating through all possible switch combinations (2^N).
-    const maximumPatternValue = 1 << numberOfSwitches; // Bit shift is efficient for powers of 2.
-
-    // Iterate through every possible combination of switch states.
-    // Each 'patternIterator' value represents a unique binary configuration of switches.
-    for (let patternIterator = 0; patternIterator < maximumPatternValue; ++patternIterator) {
-        // Deconstruct the current pattern into individual switch states.
-        for (let switchIndex = 0; switchIndex < numberOfSwitches; ++switchIndex) {
-            // Use bitwise right shift and AND to get the state of the 'switchIndex'-th bit.
-            currentSwitchActivationStates[switchIndex] = (patternIterator >>> switchIndex) & 1;
-        }
-
-        let isThisConfigurationViable = true; // Flag to determine if the current pattern satisfies all bulbs.
-
-        // Evaluate each light bulb based on the current switch activation states.
-        for (let bulbIndex = 0; bulbIndex < numberOfBulbs; ++bulbIndex) {
-            let activeConnectedSwitchSum = 0; // Sum of ON switches connected to the current bulb.
-
-            const switchesLinkedToThisBulb = bulbConnections[bulbIndex];
-            const numLinkedSwitches = bulbSwitchCounts[bulbIndex];
-
-            // Sum the states of all switches connected to the current bulb.
-            for (let linkedSwitchCounter = 0; linkedSwitchCounter < numLinkedSwitches; ++linkedSwitchCounter) {
-                const connectedSwitchIdx = switchesLinkedToThisBulb[linkedSwitchCounter];
-                activeConnectedSwitchSum += currentSwitchActivationStates[connectedSwitchIdx];
-            }
-
-            // Check if the parity of the active switches matches the requirement for this bulb.
-            if ((activeConnectedSwitchSum % 2) !== requiredParitySettings[bulbIndex]) {
-                isThisConfigurationViable = false; // This pattern failed for at least one bulb.
-                break; // No need to check further bulbs for this pattern; it's already invalid.
-            }
-        }
-
-        // If the current switch configuration satisfied all bulbs, increment the counter.
-        if (isThisConfigurationViable) {
-            successfulPatternCount++;
-        }
-    }
-
-    return successfulPatternCount; // Return the final tally of valid configurations.
-}
-
-// Execute the circuit solving function and output the result to the console.
-console.log(determineValidCircuitConfigurations());
+console.log(executeSolution().toString());

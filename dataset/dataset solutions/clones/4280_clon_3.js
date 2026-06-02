@@ -1,78 +1,75 @@
-let inputDataLines = [];
+var inputLines = [];
+var ioHandler = require('readline');
 
-const ioHandler = require('readline');
-
-const interfaceInstance = ioHandler.createInterface({
+var lineReader = ioHandler.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
 });
 
-interfaceInstance.on('line', (currentLineContent) => {
-    inputDataLines.push(currentLineContent);
+lineReader.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-interfaceInstance.on('close', () => {
-    const outputMessage = (messageContent) => {
-        console.log(messageContent);
-    };
+lineReader.on('close', function () {
+    var sourceChars = inputLines[0].split("");
+    var targetChars = inputLines[1].split("");
 
-    if (inputDataLines.length < 2) {
-        outputMessage("INVALID INPUT: Expected at least two lines for source and pattern.");
-        return;
-    }
+    var matchStartIndex = -1;
 
-    const sourceStringChars = inputDataLines[0].split('');
-    const targetPatternChars = inputDataLines[1].split('');
+    const sourceLength = sourceChars.length;
+    const targetLength = targetChars.length;
 
-    const sourceLength = sourceStringChars.length;
-    const patternLength = targetPatternChars.length;
+    // Iterate backwards through the source string to find the rightmost possible match.
+    // The loop condition 'outerIdx >= targetLength - 1' ensures that there's enough
+    // remaining length in sourceChars to accommodate targetChars.
+    for (var outerIdx = sourceLength - 1; outerIdx >= targetLength - 1; outerIdx--) {
+        // Calculate the potential starting position for the current segment in sourceChars.
+        const currentSegmentStart = outerIdx - targetLength + 1;
+        let isCurrentSegmentMatch = true;
 
-    let foundStartIndex = -1;
+        // Compare the segment of sourceChars (starting at currentSegmentStart)
+        // with the targetChars pattern.
+        for (var patternIdx = 0; patternIdx < targetLength; patternIdx++) {
+            const targetChar = targetChars[patternIdx];
+            const segmentChar = sourceChars[currentSegmentStart + patternIdx];
 
-    if (patternLength > sourceLength) {
-        outputMessage("UNRESTORABLE");
-        return;
-    }
-
-    for (let outerLoopIndex = sourceLength - 1; outerLoopIndex >= patternLength - 1; outerLoopIndex--) {
-        const currentMatchStart = outerLoopIndex - patternLength + 1;
-        
-        const currentSubstringCandidate = sourceStringChars.slice(currentMatchStart, outerLoopIndex + 1);
-
-        let isCurrentCandidateAMatch = true;
-
-        for (let innerLoopIndex = 0; innerLoopIndex < patternLength; innerLoopIndex++) {
-            const patternChar = targetPatternChars[innerLoopIndex];
-            const candidateChar = currentSubstringCandidate[innerLoopIndex];
-
-            if (patternChar !== candidateChar && candidateChar !== '?') {
-                isCurrentCandidateAMatch = false;
+            // If characters don't match and the segment character is not a wildcard '?',
+            // then this segment is not a match.
+            if (targetChar !== segmentChar && segmentChar !== "?") {
+                isCurrentSegmentMatch = false;
                 break;
             }
         }
 
-        if (isCurrentCandidateAMatch) {
-            foundStartIndex = currentMatchStart;
-            break;
+        // If the inner loop completed without finding a mismatch, a full match was found.
+        if (isCurrentSegmentMatch) {
+            matchStartIndex = currentSegmentStart;
+            break; // Found the rightmost match, no need to check further.
         }
     }
 
-    if (foundStartIndex === -1) {
-        outputMessage("UNRESTORABLE");
+    // Based on whether a match was found, construct and print the final string.
+    if (matchStartIndex === -1) {
+        console.log("UNRESTORABLE");
     } else {
-        let restoredCharacters = [];
+        // Create a new array to store the characters of the final output string.
+        let finalOutputChars = new Array(sourceLength);
 
-        for (let charIndex = 0; charIndex < sourceLength; charIndex++) {
-            if (charIndex >= foundStartIndex && charIndex < foundStartIndex + patternLength) {
-                restoredCharacters.push(targetPatternChars[charIndex - foundStartIndex]);
+        for (var charIndex = 0; charIndex < sourceLength; charIndex++) {
+            // Determine if the current character index falls within the range of the matched segment.
+            const isWithinMatchedRange = charIndex >= matchStartIndex && charIndex < matchStartIndex + targetLength;
+
+            if (isWithinMatchedRange) {
+                // If inside the matched segment, use the corresponding character from targetChars.
+                finalOutputChars[charIndex] = targetChars[charIndex - matchStartIndex];
+            } else if (sourceChars[charIndex] === "?") {
+                // If '?' outside the matched segment, replace it with 'a'.
+                finalOutputChars[charIndex] = "a";
             } else {
-                if (sourceStringChars[charIndex] === '?') {
-                    restoredCharacters.push('a');
-                } else {
-                    restoredCharacters.push(sourceStringChars[charIndex]);
-                }
+                // Otherwise, keep the original character from sourceChars.
+                finalOutputChars[charIndex] = sourceChars[charIndex];
             }
         }
-        outputMessage(restoredCharacters.join(''));
+        console.log(finalOutputChars.join(""));
     }
 });

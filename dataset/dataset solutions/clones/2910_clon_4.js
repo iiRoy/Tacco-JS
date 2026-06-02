@@ -1,55 +1,58 @@
 "use strict";
 
-(function () {
-  function obtainNumericSequence(sourceValue) {
-    return sourceValue.match(/\d+/g).map(Number);
-  }
+(function() {
+    const parseNumbers = (textLine) => textLine.split(/\s+/).map(Number);
 
-  function processSystemInput(rawText) {
-    const allTextLines = rawText.split('\n');
+    const processInputAndSolve = (rawData) => {
+        const dataLines = rawData.split("\n");
 
-    const initialParameters = obtainNumericSequence(allTextLines[0]);
-    const totalDevices = initialParameters[0];
-    const totalCircuits = initialParameters[1];
+        const [totalSwitches, totalLights] = parseNumbers(dataLines[0]);
 
-    const circuitSpecifications = [];
-    for (let circuitIndex = 0; circuitIndex < totalCircuits; circuitIndex++) {
-      const currentCircuitData = obtainNumericSequence(allTextLines[circuitIndex + 1]);
-      const connectedComponentReferences = currentCircuitData.slice(1);
-      circuitSpecifications.push({
-        componentReferences: connectedComponentReferences,
-        circuitIdentifier: circuitIndex
-      });
-    }
-
-    const requiredOutputParities = obtainNumericSequence(allTextLines[totalCircuits + 1]);
-
-    let successfulConfigurationsFound = 0;
-
-    function exploreDeviceStates(currentDeviceIndex, currentDeviceStates) {
-      if (currentDeviceIndex === totalDevices) {
-        const arrangementIsValid = circuitSpecifications.every(circuit => {
-          const activatedComponentCount = circuit.componentReferences.filter(componentRef =>
-            currentDeviceStates[componentRef - 1] === 1
-          ).length;
-          return (activatedComponentCount % 2) === requiredOutputParities[circuit.circuitIdentifier];
-        });
-
-        if (arrangementIsValid) {
-          successfulConfigurationsFound++;
+        const lightRequirements = [];
+        for (let lightIndex = 0; lightIndex < totalLights; lightIndex++) {
+            const [_, ...connectedSwitchIdentifiers] = parseNumbers(dataLines[lightIndex + 1]);
+            lightRequirements.push({
+                connectedSwitches: connectedSwitchIdentifiers,
+            });
         }
-        return;
-      }
 
-      exploreDeviceStates(currentDeviceIndex + 1, currentDeviceStates.concat(0));
+        const parityExpectations = parseNumbers(dataLines[totalLights + 1]);
 
-      exploreDeviceStates(currentDeviceIndex + 1, currentDeviceStates.concat(1));
-    }
+        const completeLightSpecs = lightRequirements.map((spec, index) => ({
+            ...spec,
+            expectedParity: parityExpectations[index]
+        }));
 
-    exploreDeviceStates(0, []);
+        let successfulConfigurations = 0;
 
-    console.log(successfulConfigurationsFound);
-  }
+        const evaluateSwitchStates = (currentSwitchIndex, currentSwitchSettings) => {
+            if (currentSwitchIndex === totalSwitches) {
+                // All switches have been assigned a state (0 for off, 1 for on)
+                const isConfigurationValid = completeLightSpecs.every(lightSpec => {
+                    const activeConnections = lightSpec.connectedSwitches.filter(switchId =>
+                        currentSwitchSettings[switchId - 1] === 1
+                    );
+                    return activeConnections.length % 2 === lightSpec.expectedParity;
+                });
 
-  processSystemInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+                if (isConfigurationValid) {
+                    successfulConfigurations++;
+                }
+                return;
+            }
+
+            // Recursively explore setting the current switch to 'off' (0)
+            evaluateSwitchStates(currentSwitchIndex + 1, [...currentSwitchSettings, 0]);
+            // Recursively explore setting the current switch to 'on' (1)
+            evaluateSwitchStates(currentSwitchIndex + 1, [...currentSwitchSettings, 1]);
+        };
+
+        // Initiate the recursive exploration starting from the first switch (index 0)
+        // with an empty array of switch settings.
+        evaluateSwitchStates(0, []);
+
+        console.log(successfulConfigurations);
+    };
+
+    processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));
 })();

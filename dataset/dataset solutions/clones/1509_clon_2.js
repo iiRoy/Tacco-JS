@@ -1,24 +1,32 @@
-let calculateSolutions = function (receivedText) {
-    // This function processes the provided text data to find specific numeric combinations.
+function ProcessInput(rawData) {
+    // Split the incoming data by newline characters to get individual lines.
+    let linesOfData = rawData.split("\n");
+    
+    // Parse the first line as an integer, which is our target value.
+    const targetValue = parseInt(linesOfData[0]);
+    
+    // Initialize a counter for occurrences that match our condition.
+    let occurrenceCounter = 0;
 
-    let textLines = receivedText.split('\n'); // Split the incoming text by newline characters.
-
-    const desiredSum = Number.parseInt(textLines[0]); // Parse the first line as the target integer value.
-    let validCombinations = 0; // Initialize a counter for successful combinations that meet the criteria.
-
-    for (let factorX = 1; factorX < 1000; factorX++) { // Iterate through possible values for the first factor, from 1 up to 999.
-        for (let factorY = 1; factorY < 1000; factorY++) { // Iterate through possible values for the second factor, from 1 up to 999.
-            for (let additiveTerm = 1; additiveTerm < 1000; additiveTerm++) { // Iterate through possible values for the additive term, from 1 up to 999.
-                // Check if the current combination of factorX * factorY + additiveTerm equals the desired sum.
-                if (desiredSum === (factorX * factorY + additiveTerm)) {
-                    validCombinations++; // If a match is found, increment the counter.
+    // Iterate through possible values for the first factor.
+    for (let firstFactor = 1; firstFactor < 1000; firstFactor++) {
+        // Iterate through possible values for the second factor.
+        for (let secondFactor = 1; secondFactor < 1000; secondFactor++) {
+            // Iterate through possible values for the summand term.
+            for (let summandTerm = 1; summandTerm < 1000; summandTerm++) {
+                // Check if the current combination matches the target value.
+                if (targetValue === (firstFactor * secondFactor + summandTerm)) {
+                    // If it matches, increment our counter.
+                    occurrenceCounter++;
                 }
             }
         }
     }
 
-    console.log(String(validCombinations)); // Output the total number of valid combinations found.
-};
+    // Output the final count to the console.
+    console.log('%d', occurrenceCounter);
+}
 
-// The following segment is for handling standard I/O; modifications are generally not advised for execution environment compatibility.
-calculateSolutions( require('node:fs').readFileSync('/dev/stdin', 'utf8') );
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be modified as it's part of the execution environment setup.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

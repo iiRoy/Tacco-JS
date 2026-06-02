@@ -1,242 +1,241 @@
-(function utilityKit(voidValue) {
-  // Enforce strict mode for cleaner code practices.
-  'use strict';
-  // Cache prototype references for common built-in objects.
-  var ArrBase = Array.prototype,
-    ObjBase = Object.prototype,
-    FuncBase = Function.prototype;
+(function utilKit(undefVal) {
+	'use strict';
+	// Define prototypes for common built-in objects
+	var arrPrototype = Array.prototype,
+		objPrototype = Object.prototype,
+		funcPrototype = Function.prototype;
 
-  // Extract common methods from prototypes for performance and brevity.
-  var addElem = ArrBase.push,
-    cutPart = ArrBase.slice,
-    joinArr = ArrBase.concat,
-    toText = ObjBase.toString,
-    hasOwnAttr = ObjBase.hasOwnProperty;
+	// Cache native methods for performance and consistency
+	var arrPush = arrPrototype.push,
+		arrSlice = arrPrototype.slice,
+		arrConcat = arrPrototype.concat,
+		objToString = objPrototype.toString,
+		objHasOwnProp = objPrototype.hasOwnProperty;
 
-  // Store native array iteration and object inspection methods.
-  var stdEach = ArrBase.forEach,
-    stdMap = ArrBase.map,
-    stdReduce = ArrBase.reduce,
-    stdReduceBack = ArrBase.reduceRight,
-    stdFilter = ArrBase.filter,
-    stdAll = ArrBase.every,
-    stdAny = ArrBase.some,
-    stdFindIdx = ArrBase.indexOf,
-    stdFindLastIdx = ArrBase.lastIndexOf,
-    stdIsArr = Array.isArray,
-    stdKeys = Object.keys,
-    stdBind = FuncBase.bind;
+	var nativeArrEach = arrPrototype.forEach,
+		nativeArrMap = arrPrototype.map,
+		nativeArrReduce = arrPrototype.reduce,
+		nativeArrReduceRight = arrPrototype.reduceRight,
+		nativeArrFilter = arrPrototype.filter,
+		nativeArrEvery = arrPrototype.every,
+		nativeArrSome = arrPrototype.some,
+		nativeArrIndexOf = arrPrototype.indexOf,
+		nativeArrLastIndexOf = arrPrototype.lastIndexOf,
+		nativeArrIsArray = Array.isArray,
+		nativeObjKeys = Object.keys,
+		nativeFuncBind = funcPrototype.bind;
 
-  // Define a sentinel value to break iterations early.
-  var stopSignal = {};
+	// Initialize a global utility object
+	this._u = {};
+	var loopBreaker; // This variable is used for early exit in iterators, if a specific value is returned.
 
-  // Initialize a global utility object.
-  this.toolkit = {};
-  // Define a general-purpose iteration function.
-  var processItems = this.toolkit.processItems = this.toolkit.iterateItems = function(collection, callbackFn, thisArg) {
-    // Skip processing if the collection is null or undefined.
-    if (collection == null)
-      return;
-    // Use native forEach if available and applicable for arrays.
-    if (stdEach && collection.forEach === stdEach) {
-      collection.forEach(callbackFn, thisArg);
-    }
-    // Handle array-like objects with a numeric length property.
-    else if (collection.length === +collection.length) {
-      for (var idx = 0, limit = collection.length; idx < limit; idx++) {
-        // Execute callback; stop if it returns the breaker signal.
-        if (callbackFn.call(thisArg, collection[idx], idx, collection) === stopSignal)
-          return;
-      }
-    }
-    // Iterate over properties of a plain object.
-    else {
-      for (var propName in collection) {
-        // Ensure the property belongs to the object itself, not its prototype chain.
-        if (this.toolkit.has(collection, propName)) {
-          // Execute callback; stop if it returns the breaker signal.
-          if (callbackFn.call(thisArg, collection[propName], propName, collection) === stopSignal)
-            return;
-        }
-      }
-    }
-  };
-  // Add a utility for checking own properties, often aliased from hasOwnProperty.
-  this.toolkit.has = function(objRef, propRef) {
-    return hasOwnAttr.call(objRef, propRef);
-  };
+	// The core iteration function, aliased for convenience
+	var iterateElements = _u.iterateElements = _u.forEveryElement = function(collection, callbackFn, thisArg) {
+		if (collection == null) {
+			return; // Exit if collection is null or undefined
+		}
 
-  // Function to copy properties from source objects to a target object.
-  this.toolkit.assignProps = function(targetObj) {
-    // Iterate over all arguments after the first (which is the target).
-    processItems(cutPart.call(arguments, 1), function(srcObj) {
-      // Only process valid source objects.
-      if (srcObj) {
-        // Copy all enumerable properties from source to target.
-        for (var propertyKey in srcObj) {
-          targetObj[propertyKey] = srcObj[propertyKey];
-        }
-      }
-    });
-    // Return the modified target object.
-    return targetObj;
-  };
-}).call(global); // Attach utilityKit to the global object.
+		// Use native forEach if available and applicable
+		if (nativeArrEach && collection.forEach === nativeArrEach) {
+			collection.forEach(callbackFn, thisArg);
+		} else if (collection.length === +collection.length) { // Check if it's array-like
+			for (var idx = 0, len = collection.length; idx < len; idx++) {
+				if (callbackFn.call(thisArg, collection[idx], idx, collection) === loopBreaker) {
+					return; // Break early if callback returns the breaker value
+				}
+			}
+		} else { // Iterate over object properties
+			for (var propName in collection) {
+				if (_u.has(collection, propName)) { // Ensure it's an own property
+					if (callbackFn.call(thisArg, collection[propName], propName, collection) === loopBreaker) {
+						return; // Break early
+					}
+				}
+			}
+		}
+	};
 
-(function formatters(voidValue) {
-  'use strict';
-  // This function formats a floating-point number into a string with specified precision.
-  this.formatDec = function formatDec(decVal, radix, padding, precision) {
-    // Calculate the multiplier for rounding based on desired precision.
-    var powerOfTen = Math.pow(10, precision);
-    // Round the value and convert to string.
-    var intString = "" + Math.round(decVal * powerOfTen);
-    // If the rounded integer string is '0', return a default formatted zero.
-    if (intString === '0')
-      return '0.000';
-    // Determine the length of the integer part before the decimal point.
-    var intStrLen = intString.length - precision;
-    // If no integer part, prepend '0.'.
-    if (intStrLen === 0)
-      return "0." + intString.substr(intStrLen, precision);
-    // Otherwise, insert the decimal point at the correct position.
-    return intString.substr(0, intStrLen) + "." + intString.substr(intStrLen, precision);
-  };
-}).call(global); // Add formatters to the global object.
+	// Helper function to check if an object has an own property
+	_u.has = function(obj, key) {
+		return objHasOwnProp.call(obj, key);
+	};
 
-(function numericHelpers(targetNS, voidValue) {
-  // Define a custom Math library within this scope.
-  var MathLib = {
-    // Calculates the greatest common divisor of two numbers using the Euclidean algorithm.
-    greatestCommonDivisor: function greatestCommonDivisor(valA, valB) {
-      return !valB ? valA : greatestCommonDivisor(valB, valA % valB);
-    },
-    // Calculates the least common multiple of two numbers.
-    leastCommonMultiple: function leastCommonMultiple(valA, valB) {
-      return valA / this.greatestCommonDivisor(valA, valB) * valB;
-    },
-    // Squares a given number.
-    squareNum: function squareNum(inputNum) {
-      return inputNum * inputNum;
-    }
-  };
-  // Extend the global 'MathLib' namespace with these custom math functions.
-  this.toolkit.assignProps(this.MathLib, MathLib);
-}).call(global, 'MathLib'); // Apply numericHelpers to the global context, using 'MathLib' as a namespace hint.
+	// Function to extend an object with properties from other objects
+	_u.assignProps = function(targetObj) {
+		iterateElements(arrSlice.call(arguments, 1), function(srcObj) {
+			if (srcObj) {
+				for (var propertyKey in srcObj) {
+					targetObj[propertyKey] = srcObj[propertyKey];
+				}
+			}
+		});
+		return targetObj;
+	};
+}).call(global); // Attach to the global object
 
-(function(voidValue) {
-  'use strict';
+// Utility functions module
+(function helperFuncs(undefVal) {
+	'use strict';
+	// Function to format a floating-point number to a string with specified precision
+	this.formatFloat = function formatFloat(valueToFormat, radixBase, paddingCount, precisionDigits) {
+		var powerOfTen = Math.pow(10, precisionDigits);
+		var intString = "" + Math.round(valueToFormat * powerOfTen);
 
-  // Define the expected input data type.
-  var IN_DATA_KIND = 'decimal';
+		if (intString === '0') {
+			return '0.000'; // Special case for zero
+		}
 
-  // Main problem-solving engine.
-  var SolutionEngine = {
-    // Initiates the solving process, deferring it to allow other events to process.
-    startProcessing: function() {
-      // Schedule the actual solving method to run asynchronously.
-      setTimeout(SolutionEngine.processProblem, 0, this);
-    },
-    // The core logic for solving the geometric problem.
-    processProblem: function processProblem(executionCtx) {
-      // Read the number of test cases.
-      var numCases = executionCtx.readInteger();
+		var intLen = intString.length - precisionDigits;
+		if (intLen === 0) {
+			return "0." + intString.substr(intLen, precisionDigits);
+		}
+		return intString.substr(0, intLen) + "." + intString.substr(intLen, precisionDigits);
+	};
+}).call(global); // Attach to the global object
 
-      // Inner function to process a single test case.
-      function processCase() {
-        // Define names for coordinate variables.
-        var coordNames = ['coordX1', 'coordY1', 'coordX2', 'coordY2', 'coordX3', 'coordY3'];
-        // Read coordinate values from input and assign them to the context.
-        coordNames.forEach(function(coordName) {
-          this[coordName] = executionCtx.readDecimal();
-        }, executionCtx); // Use the provided execution context for 'this'.
+// Mathematical operations module
+(function calcModule(nsName, undefVal) {
+	// Define a local object for mathematical utilities
+	var mathOps = {
+		// Calculates the greatest common divisor using Euclidean algorithm
+		greatestCommonDivisor: function greatestCommonDivisor(numA, numB) {
+			return !numB ? numA : greatestCommonDivisor(numB, numA % numB);
+		},
+		// Calculates the least common multiple
+		leastCommonMultiple: function leastCommonMultiple(numA, numB) {
+			return numA / mathOps.greatestCommonDivisor(numA, numB) * numB;
+		},
+		// Squares a given number
+		squareVal: function squareVal(inputVal) {
+			return inputVal * inputVal;
+		}
+	};
+	// Extend the global Math object with these new functions
+	_u.assignProps(this.Math, mathOps);
+}).call(global, 'Math'); // Pass 'Math' as namespace name, though not used in this specific implementation
 
-        // Calculate intermediate coefficients based on coordinate differences.
-        var coeffA = executionCtx.coordX1 - executionCtx.coordX2;
-        var coeffB = executionCtx.coordY1 - executionCtx.coordY2;
-        var coeffC = -1 * (executionCtx.MathLib.squareNum(executionCtx.coordX1) - executionCtx.MathLib.squareNum(executionCtx.coordX2) + executionCtx.MathLib.squareNum(executionCtx.coordY1) - executionCtx.MathLib.squareNum(executionCtx.coordY2));
-        var coeffD = executionCtx.coordX1 - executionCtx.coordX3;
-        var coeffE = executionCtx.coordY1 - executionCtx.coordY3;
-        var coeffF = -1 * (executionCtx.MathLib.squareNum(executionCtx.coordX1) - executionCtx.MathLib.squareNum(executionCtx.coordX3) + executionCtx.MathLib.squareNum(executionCtx.coordY1) - executionCtx.MathLib.squareNum(executionCtx.coordY3));
+// Main application logic
+(function(undefVal) {
+	'use strict';
 
-        // Solve for parameters L and M using a system of equations.
-        var paramL = (coeffC * coeffE - coeffB * coeffF) / (coeffE * coeffA - coeffB * coeffD);
-        var paramM = (coeffD * coeffC - coeffA * coeffF) / (coeffD * coeffB - coeffE * coeffA);
+	// Configuration for input type
+	var DATA_INPUT_KIND = 'float';
 
-        // Calculate the final X component (this variable name 'x' is confusing given the problem context, but kept for structural fidelity).
-        var finalX = -1 * (executionCtx.MathLib.squareNum(executionCtx.coordX1) + executionCtx.MathLib.squareNum(executionCtx.coordY1) + paramL * executionCtx.coordX1 + paramM * executionCtx.coordY1);
-        // Output the formatted results: L/-2, M/-2, and the radius.
-        executionCtx.writeOutput(
-          executionCtx.formatDec(paramL / -2.0, 10, 3, 3),
-          executionCtx.formatDec(paramM / -2.0, 10, 3, 3),
-          executionCtx.formatDec(Math.sqrt(executionCtx.MathLib.squareNum(paramL) + executionCtx.MathLib.squareNum(paramM) + 4 * numCases) / 2.0, 10, 3, 3)
-        );
-      }
-      // Process all test cases.
-      while (numCases--)
-        processCase();
-      // If more input is available, schedule the solver to run again.
-      if (!executionCtx.hasMoreInput())
-        setTimeout(SolutionEngine.processProblem, 0, executionCtx);
-    }
-  };
+	// The main solver object containing the problem-solving logic
+	var ProblemSolver = {
+		// Initiates the solving process asynchronously
+		initiateSolution: function() {
+			// Schedule the solve method to run after a short delay
+			setTimeout(ProblemSolver.processSolution, 0, this);
+		},
+		// Core logic to solve the geometric problem
+		processSolution: function processSolution(execContext) {
+			var numCases = retrieveInteger(); // Get the number of test cases
 
-  // Self-executing function to initialize the application.
-  (function initializeSystem() {
-    // Extend the current scope (global) with input/output utilities.
-    this.toolkit.assignProps(this, {
-      // Function to write output to the console.
-      writeOutput: function() {
-        console.log.apply(console, arguments);
-      },
-      // Standard input stream.
-      inputReader: process.openStdin(),
-      // Queue to store parsed input data.
-      pendingInputQueue: [],
-      // Reads and parses an integer from the input queue.
-      readInteger: function() {
-        return parseInt(this.pendingInputQueue.splice(0, 1)[0]);
-      },
-      // Reads and parses a floating-point number from the input queue.
-      readDecimal: function() {
-        return parseFloat(this.pendingInputQueue.splice(0, 1)[0]);
-      },
-      // Reads a string from the input queue.
-      readText: function() {
-        return this.pendingInputQueue.splice(0, 1)[0];
-      },
-      // Checks if there is more input available in the queue.
-      hasMoreInput: function() {
-        return !this.pendingInputQueue.length;
-      }
-    });
+			// Inner function to solve a single case
+			function solveCase() {
+				var coordNames = ['x1', 'y1', 'x2', 'y2', 'x3', 'y3'];
+				// Read coordinates for three points from input
+				coordNames.forEach(function(coordName) {
+					this[coordName] = retrieveFloat();
+				}, execContext); // Use execContext for 'this' binding
 
-    // Define regular expressions for different input types.
-    var INPUT_PATTERN_MAP = {};
-    INPUT_PATTERN_MAP['text'] = /\w*/g;
-    INPUT_PATTERN_MAP['integer'] = /[-]?\d+/g;
-    INPUT_PATTERN_MAP['decimal'] = /[-]?\d+(\.\d+)?/g;
-    // Select the appropriate regex based on the defined input kind.
-    var CURRENT_INPUT_PATTERN = INPUT_PATTERN_MAP[IN_DATA_KIND];
+				// Extract coordinates for clarity
+				var coordX1 = execContext.x1;
+				var coordY1 = execContext.y1;
+				var coordX2 = execContext.x2;
+				var coordY2 = execContext.y2;
+				var coordX3 = execContext.x3;
+				var coordY3 = execContext.y3;
 
-    // Store a reference to the current global context.
-    var handlerContext = this;
-    // Set encoding for the standard input stream.
-    handlerContext.inputReader.setEncoding('utf8');
-    // Event listener for incoming data chunks from stdin.
-    handlerContext.inputReader.on('data', function(dataChunk) {
-      // Extract all matches based on the input pattern.
-      var matchResult = dataChunk.match(CURRENT_INPUT_PATTERN);
-      // Filter out empty strings and concatenate with existing input queue.
-      handlerContext.pendingInputQueue = handlerContext.pendingInputQueue.concat(matchResult.filter(function(inputLine) {
-        return inputLine.length;
-      }));
-    });
-    // Event listener for the end of the input stream.
-    handlerContext.inputReader.on('end', function() {
-      // Once input ends, trigger the problem solver.
-      SolutionEngine.startProcessing.call(handlerContext);
-    });
-  }).call(this); // Execute initialization in the global context.
+				// Calculate coefficients for the system of equations
+				var coeffA = coordX1 - coordX2;
+				var coeffB = coordY1 - coordY2;
+				var coeffC = -1 * (Math.squareVal(coordX1) - Math.squareVal(coordX2) + Math.squareVal(coordY1) - Math.squareVal(coordY2));
+				var coeffD = coordX1 - coordX3;
+				var coeffE = coordY1 - coordY3;
+				var coeffF = -1 * (Math.squareVal(coordX1) - Math.squareVal(coordX3) + Math.squareVal(coordY1) - Math.squareVal(coordY3));
 
-}).call(global); // Attach the main solver logic to the global object.
+				// Solve for parameters L and M (related to the center of the circle)
+				var paramL = (coeffC * coeffE - coeffB * coeffF) / (coeffE * coeffA - coeffB * coeffD);
+				var paramM = (coeffD * coeffC - coeffA * coeffF) / (coeffD * coeffB - coeffE * coeffA);
+
+				// Calculate a temporary value (unused in output, but part of original logic)
+				var tempX = -1 * (Math.squareVal(coordX1) + Math.squareVal(coordY1) + paramL * coordX1 + paramM * coordY1);
+
+				// Output the center coordinates and radius of the circumcircle
+				displayResult(
+					formatFloat(paramL / -2.0, 10, 3, 3), // X-coordinate of center
+					formatFloat(paramM / -2.0, 10, 3, 3), // Y-coordinate of center
+					formatFloat(Math.sqrt(Math.squareVal(paramL) + Math.squareVal(paramM) + 4 * numCases) / 2.0, 10, 3, 3) // Radius (note: original used 'n' here, which is numCases)
+				);
+			}
+
+			// Process each test case
+			while (numCases--) {
+				solveCase();
+			}
+
+			// If there are no more inputs, schedule another solve attempt (for continuous input streams)
+			if (!hasMoreInputs()) {
+				setTimeout(ProblemSolver.processSolution, 0, execContext);
+			}
+		}
+	};
+
+	// Initialization function for setting up global utilities and input handling
+	(function initializeApp() {
+		// Extend the global object with input/output utilities
+		_u.assignProps(this, {
+			// Function to display results to the console
+			displayResult: function() {
+				console.log.apply(console, arguments);
+			},
+			// Standard input stream
+			inputSource: process.openStdin(),
+			// Array to store pending input values
+			pendingInputs: [],
+			// Retrieves an integer from the input list
+			retrieveInteger: function() {
+				return parseInt(pendingInputs.splice(0, 1)[0]);
+			},
+			// Retrieves a float from the input list
+			retrieveFloat: function() {
+				return parseFloat(pendingInputs.splice(0, 1)[0]);
+			},
+			// Retrieves a text string from the input list
+			retrieveText: function() {
+				return pendingInputs.splice(0, 1)[0];
+			},
+			// Checks if there are more inputs available
+			hasMoreInputs: function() {
+				return !pendingInputs.length;
+			}
+		});
+
+		// Define regular expressions for different input types
+		var INPUT_PATTERN_MAP = {};
+		INPUT_PATTERN_MAP['string'] = /\w*/g;
+		INPUT_PATTERN_MAP['number'] = /[-]?\d+/g;
+		INPUT_PATTERN_MAP['float'] = /[-]?\d+(\.\d+)?/g;
+		var CURRENT_INPUT_PATTERN = INPUT_PATTERN_MAP[DATA_INPUT_KIND];
+
+		var currentContext = this; // Capture 'this' for event handlers
+		inputSource.setEncoding('utf8'); // Set encoding for stdin
+
+		// Event listener for incoming data chunks
+		inputSource.on('data', function(dataChunk) {
+			var parsedResults = dataChunk.match(CURRENT_INPUT_PATTERN);
+			// Filter out empty matches and concatenate to pendingInputs
+			pendingInputs = pendingInputs.concat(parsedResults.filter(function(inputLine) {
+				return inputLine.length;
+			}));
+		});
+
+		// Event listener for the end of the input stream
+		inputSource.on('end', function() {
+			ProblemSolver.initiateSolution.call(currentContext); // Start the solver
+		});
+	}).call(this); // Call init function with the global context
+
+}).call(global); // Attach to the global object

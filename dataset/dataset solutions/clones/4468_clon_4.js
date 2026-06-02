@@ -1,44 +1,38 @@
 "use strict";
 
-const computeGreatestCommonDivisor = (dividend, divisor) => {
-    while (divisor !== 0) {
-        let remainder = dividend % divisor;
-        dividend = divisor;
-        divisor = remainder;
+const computeDivisor = (num1, num2) => {
+    while (num2) {
+        [num1, num2] = [num2, num1 % num2];
     }
-    return dividend;
+    return num1;
 };
 
-const calculateOverallCommonDivisor = (numberCollection) => {
-    if (numberCollection.length === 0) {
-        return undefined; // Matches original behavior for empty array
+const aggregateDivisor = inputNumbers => {
+    if (inputNumbers.length === 0) {
+        return 0; // Or handle error, but original assumes non-empty array
     }
-    return numberCollection.reduce((accumulator, currentNumber) =>
-        computeGreatestCommonDivisor(accumulator, currentNumber)
+    return inputNumbers.reduce((currentAccumulator, nextValue) =>
+        computeDivisor(currentAccumulator, nextValue)
     );
 };
 
-const processInputAndDetermineOutcome = (sourceText) => {
-    const processedLines = sourceText.trim().split('\n');
-
-    const [firstLineData, numberSequenceData] = processedLines;
-    const [_, targetCriterionString] = firstLineData.split(' ');
-    const targetCriterion = parseInt(targetCriterionString, 10);
-
-    const numericValues = numberSequenceData
-        .split(' ')
-        .map(s => parseInt(s, 10))
-        .sort((valA, valB) => valB - valA);
-
-    const maximumValue = Math.max(...numericValues);
+const processInput = rawInput => {
+    const lines = rawInput.trim().split("\n");
+    const [countElements, targetVal] = lines[0].split(" ").map(Number);
     
-    const collectiveDivisor = calculateOverallCommonDivisor(numericValues);
-
-    const finalVerdict = (maximumValue < targetCriterion)
-        ? "IMPOSSIBLE"
-        : (targetCriterion % collectiveDivisor === 0 ? "POSSIBLE" : "IMPOSSIBLE");
-
-    console.log(finalVerdict);
+    const parsedNumbers = lines[1].split(" ").map(Number);
+    
+    const maxVal = Math.max(...parsedNumbers);
+    const commonDivisor = aggregateDivisor(parsedNumbers);
+    
+    let outcomeMessage;
+    if (maxVal < targetVal) {
+        outcomeMessage = "IMPOSSIBLE";
+    } else {
+        outcomeMessage = (targetVal % commonDivisor === 0) ? "POSSIBLE" : "IMPOSSIBLE";
+    }
+    
+    console.log(outcomeMessage);
 };
 
-processInputAndDetermineOutcome(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

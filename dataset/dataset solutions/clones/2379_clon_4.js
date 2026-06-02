@@ -1,82 +1,119 @@
-const fileSystemModule = require('fs');
-let dataBuffer = '';
-try {
-    dataBuffer = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-} catch (e) {
-    // Fallback for environments where /dev/stdin might not exist or be readable
-    // For example, local testing without piping input, this provides a default
-    // Example: 4 elements, sequence 0, 1, 0, 2
-    dataBuffer = `4\n0 1 0 2`;
+const inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+
+let inputSource;
+const inputLinesBuffer = [];
+
+inputReader.on('line', function(lineContent) { inputLinesBuffer.push(lineContent); });
+inputReader.on('close', function() {
+  inputSource = createInputIterator(inputLinesBuffer);
+  console.error("\n");
+  const startTime = Date.now();
+  MainClone();
+  const elapsedTime = Date.now() - startTime;
+  logDebug("time : " + (elapsedTime) + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function deepCopy(data) { return JSON.parse(JSON.stringify(data)); }
+function acquireNumericInput() { return transformInput(fetchNextLine(), 1); }
+function acquireStringArrayInput() { return transformInput(fetchNextLine(), 2); }
+function acquireNumericArrayInput() { return transformInput(fetchNextLine(), 4); }
+function acquireCharacterArrayInput() { return transformInput(fetchNextLine(), 6); }
+function fetchNextLine() { return inputSource.getLine(); }
+function hasMoreLines() { return inputSource.hasMore(); }
+
+function createInputIterator(lines) {
+  let currentIdx = 0;
+  const totalLines = lines.length;
+  return {
+    getLine: function() {
+      if (currentIdx < totalLines) {
+        return lines[currentIdx++];
+      } else {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      }
+    },
+    hasMore: function() { return currentIdx < totalLines; }
+  };
 }
 
-const incomingTextLines = dataBuffer.trim().split('\n');
-let currentLinePosition = 0;
+function emitResult(content) { console.log(content); }
+function logDebug(message) { console.error("debug:" + require("util").inspect(message, false, null)); }
 
-const accessNextValue = () => {
-    if (currentLinePosition >= incomingTextLines.length) {
-        throw new Error("Source Exhausted: No further input can be retrieved.");
-    }
-    return incomingTextLines[currentLinePosition++];
+const inputTransformers = {
+  1: (val) => parseInt(val, 10),
+  2: (val) => val.split(" "),
+  4: (val) => val.split(" ").map(Number),
+  6: (val) => val.split(""),
+  7: (val) => val.split("").map(Number),
+  8: (val) => val.join(" "),
+  9: (val) => val.join("\n"),
+  0: (val) => val.join(""),
+  default: (val) => val,
 };
 
-const obtainInteger = () => parseInt(accessNextValue(), 10);
-const obtainNumericArray = () => accessNextValue().split(' ').map(Number);
+function transformInput(value, transformationType) {
+  try {
+    const transformer = inputTransformers[transformationType] || inputTransformers.default;
+    return transformer(value);
+  } catch (e) {
+    return value;
+  }
+}
 
-const displayResult = (content) => console.log(content);
+function MainClone() {
+  const dataLength = acquireNumericInput();
+  const valueSequence = acquireNumericArrayInput();
+  const modulus = 1000000007;
 
-const calculateCombinations = () => {
-    const totalCount = obtainInteger();
-    const sequenceOfNumbers = obtainNumericArray();
-    const calculationModulus = 1000000007;
+  if (valueSequence[0] !== 0) {
+    emitResult(0);
+    return;
+  }
 
-    if (sequenceOfNumbers[0] !== 0) {
-        displayResult(0);
-        return;
-    }
+  const initialTrackValues = [1, 0, 0]; // Represents R, B, G expected values
 
-    const initialProcessingState = {
-        redIndicator: 1,
-        blueIndicator: 0,
-        greenIndicator: 0,
-        accumulatedOutcome: 3
-    };
+  const { finalProduct } = valueSequence.slice(1).reduce(
+    (accumulator, currentElement) => {
+      let { currentTrackValues, currentProduct } = accumulator;
 
-    const finalProcessingState = sequenceOfNumbers.slice(1).reduce((currentState, currentElementValue) => {
-        let matchingPointers = 0;
+      if (currentProduct === 0) {
+        return accumulator; // If product is already zero, it remains zero.
+      }
 
-        if (currentElementValue === currentState.redIndicator) {
-            matchingPointers++;
-        }
-        if (currentElementValue === currentState.blueIndicator) {
-            matchingPointers++;
-        }
-        if (currentElementValue === currentState.greenIndicator) {
-            matchingPointers++;
-        }
+      // Identify all tracks that match the current element's value
+      const matchingTrackIndices = currentTrackValues
+        .map((val, idx) => (val === currentElement ? idx : -1))
+        .filter((idx) => idx !== -1);
 
-        let nextRedIndicator = currentState.redIndicator;
-        let nextBlueIndicator = currentState.blueIndicator;
-        let nextGreenIndicator = currentState.greenIndicator;
+      const matchCount = matchingTrackIndices.length;
 
-        if (currentElementValue === currentState.redIndicator) {
-            nextRedIndicator++;
-        } else if (currentElementValue === currentState.blueIndicator) {
-            nextBlueIndicator++;
-        } else if (currentElementValue === currentState.greenIndicator) {
-            nextGreenIndicator++;
-        }
-
-        const nextAccumulatedOutcome = (currentState.accumulatedOutcome * matchingPointers) % calculationModulus;
-
+      if (matchCount === 0) {
         return {
-            redIndicator: nextRedIndicator,
-            blueIndicator: nextBlueIndicator,
-            greenIndicator: nextGreenIndicator,
-            accumulatedOutcome: nextAccumulatedOutcome
+          currentTrackValues: currentTrackValues, // Track states don't matter if product is 0
+          currentProduct: 0,
         };
-    }, initialProcessingState);
+      }
 
-    displayResult(finalProcessingState.accumulatedOutcome);
-};
+      // Create a new array for the next state of track values
+      let nextTrackValues = [...currentTrackValues];
+      
+      // Increment only the first matching track's value, preserving the R > B > G priority
+      const firstMatchingTrackIndex = matchingTrackIndices[0];
+      nextTrackValues[firstMatchingTrackIndex]++;
 
-calculateCombinations();
+      // Update the product, applying modulo
+      currentProduct = (currentProduct * matchCount) % modulus;
+
+      return {
+        currentTrackValues: nextTrackValues,
+        currentProduct: currentProduct,
+      };
+    },
+    { currentTrackValues: initialTrackValues, currentProduct: 3 } // Initial product is 3
+  );
+
+  emitResult(finalProduct);
+}

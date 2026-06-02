@@ -1,35 +1,26 @@
-const processData = (rawData) => {
-    const dataLines = rawData.split('\n');
-    const primarySequence = Array.from(dataLines[1]);
-    const secondarySequence = Array.from(dataLines[2]);
-    const tertiarySequence = Array.from(dataLines[3]);
+function ProcessInput(rawInput) {
+    const lines = rawInput.split("\n");
+    const [numStr, strA, strB, strC] = lines;
+    const iterationLimit = parseInt(numStr, 10);
 
-    const determineMismatchValue = (valA, valB, valC) => {
-        const areABIdentical = valA === valB;
-        const areACIdentical = valA === valC;
-        const areBCIdentical = valB === valC;
+    const charSequenceA = strA.split("");
+    const charSequenceB = strB.split("");
+    const charSequenceC = strC.split("");
 
-        if (areABIdentical && areACIdentical) {
-            // All three are the same (A=B=C)
-            return 0;
-        } else if (areABIdentical || areACIdentical || areBCIdentical) {
-            // Exactly two are the same, one is different
-            return 1;
-        } else {
-            // All three are different (A!=B, A!=C, B!=C)
-            return 2;
-        }
-    };
+    const comparisonResults = Array.from({ length: iterationLimit }, (_, currentPosition) => currentPosition).reduce((tallyObject, idx) => {
+        tallyObject.diffOneTwo += +(charSequenceA[idx] !== charSequenceB[idx]);
+        tallyObject.diffOneThree += +(charSequenceA[idx] !== charSequenceC[idx]);
+        tallyObject.diffTwoThree += +(charSequenceB[idx] !== charSequenceC[idx]);
+        return tallyObject;
+    }, { diffOneTwo: 0, diffOneThree: 0, diffTwoThree: 0 });
 
-    const totalMismatchScore = Array.from({ length: primarySequence.length }, (_, index) => {
-        return determineMismatchValue(
-            primarySequence[index],
-            secondarySequence[index],
-            tertiarySequence[index]
-        );
-    }).reduce((accumulatedScore, currentPositionScore) => accumulatedScore + currentPositionScore, 0);
+    const { diffOneTwo, diffOneThree, diffTwoThree } = comparisonResults;
 
-    console.log(totalMismatchScore);
-};
+    const aggregateOne = diffOneTwo + diffOneThree;
+    const aggregateTwo = diffOneTwo + diffTwoThree;
+    const aggregateThree = diffOneThree + diffTwoThree;
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log('%d', Math.min(aggregateOne, aggregateTwo, aggregateThree));
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

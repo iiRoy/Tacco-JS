@@ -1,36 +1,17 @@
-function coordinateProcessor(rawSource) {
-    const lineBreakPosition = rawSource.indexOf('\n');
-    const relevantPart = rawSource.substring(0, lineBreakPosition !== -1 ? lineBreakPosition : rawSource.length);
+function processInputData(rawData) {
+    const numberExtractor = /^(\d+)\s+(\d+)/;
+    const matchResult = rawData.match(numberExtractor);
 
-    const separationIndex = relevantPart.indexOf(' ');
+    const [, firstValueString, secondValueString] = matchResult;
 
-    const elementCountString = relevantPart.substring(0, separationIndex);
-    const spanParameterString = relevantPart.substring(separationIndex + 1);
+    const firstNumericValue = +firstValueString;
+    const secondNumericValue = +secondValueString;
 
-    const totalElements = Number(elementCountString);
-    const proximityValue = Number(spanParameterString);
+    const calculatedDivisor = (secondNumericValue << 1) + 1;
 
-    const effectiveSpan = (proximityValue << 1) + 1; // proximityValue * 2 + 1 using bitwise left shift
+    const finalComputedResult = Math.ceil(firstNumericValue / calculatedDivisor);
 
-    let requiredContainers = 0;
-    let currentCoveredExtent = 0;
-
-    // Custom implementation for ceiling division (Math.ceil(totalElements / effectiveSpan))
-    // This avoids direct division and Math.ceil, using an iterative summation approach.
-    if (totalElements > 0) {
-        while (currentCoveredExtent < totalElements) {
-            currentCoveredExtent += effectiveSpan;
-            requiredContainers++;
-        }
-    } else {
-        requiredContainers = 0;
-    }
-
-    console.log(requiredContainers);
+    console.log(finalComputedResult);
 }
 
-const inputSourceHandler = () => {
-    return require('node:fs').readFileSync('/dev/stdin', 'utf8');
-};
-
-coordinateProcessor(inputSourceHandler());
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,54 +1,67 @@
-let fullInputAccumulator = '';
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
+let inputAccumulator = '';
 
-global.process.stdin.on('data', (dataChunk) => {
-    fullInputAccumulator += dataChunk;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function(dataChunk) {
+    inputAccumulator += dataChunk;
 });
 
-global.process.stdin.on('end', () => {
-    commenceAnalysis(fullInputAccumulator);
+process.stdin.on('end', function() {
+    processCompleteInput(inputAccumulator);
 });
 
-const renderOutcome = (valueToDisplay) => {
-    global.console.log(valueToDisplay);
-};
+const outputResult = console.log;
 
-const commenceAnalysis = (rawSourceContent) => {
-    const numericalTokens = rawSourceContent
-        .split(/\s+/)
-        .filter(strVal => strVal.length > 0)
-        .map(Number);
+function processCompleteInput(fullInputText) {
+    const rawLines = fullInputText.split("\n");
+    const validLines = rawLines.filter(function(lineEntry) {
+        return (lineEntry !== "");
+    });
+    analyzeNumericBatches(validLines);
+}
 
-    const allComputedResults = performIterativeDecomposition(numericalTokens);
+function analyzeNumericBatches(stringRepresentations) {
+    const numericalSequence = stringRepresentations.map(Number);
 
-    allComputedResults.forEach(renderOutcome);
-};
-
-const performIterativeDecomposition = (inputDataSeries) => {
-    if (inputDataSeries.length <= 1) {
-        return [];
+    function* batchProducer(sourceData) {
+        let currentPosition = 0;
+        while (currentPosition < sourceData.length) {
+            const batchSizeSpecifier = sourceData[currentPosition];
+            if (currentPosition + 1 + batchSizeSpecifier > sourceData.length) {
+                break;
+            }
+            const currentDataBatch = sourceData.slice(currentPosition + 1, currentPosition + 1 + batchSizeSpecifier);
+            yield currentDataBatch;
+            currentPosition += 1 + batchSizeSpecifier;
+        }
     }
 
-    const currentBlockDimension = inputDataSeries[0];
-    const activeSegment = inputDataSeries.slice(1, 1 + currentBlockDimension);
-    const subsequentDataSeries = inputDataSeries.slice(1 + currentBlockDimension);
+    for (const dataBatch of batchProducer(numericalSequence)) {
+        if (dataBatch.length <= 2) {
+            outputResult(NaN);
+            continue;
+        }
 
-    if (currentBlockDimension === 0) {
-        return performIterativeDecomposition(subsequentDataSeries);
+        let lowestValue = Infinity;
+        let highestValue = -Infinity;
+        let aggregateSum = 0;
+
+        for (const item of dataBatch) {
+            if (item < lowestValue) {
+                lowestValue = item;
+            }
+            if (item > highestValue) {
+                highestValue = item;
+            }
+            aggregateSum += item;
+        }
+
+        const adjustedSum = aggregateSum - lowestValue - highestValue;
+        const adjustedCount = dataBatch.length - 2;
+
+        const computedAverage = (adjustedCount === 0) ? NaN : adjustedSum / adjustedCount;
+        
+        outputResult(Math.round(computedAverage));
     }
-
-    let calculatedMean;
-    if (activeSegment.length < 3) {
-        calculatedMean = Number.NaN;
-    } else {
-        const orderedElements = [...activeSegment].sort((valA, valB) => valA - valB);
-        const filteredCore = orderedElements.slice(1, orderedElements.length - 1);
-
-        const cumulativeValue = filteredCore.reduce((aggregate, element) => aggregate + element, 0);
-
-        calculatedMean = Math.round(cumulativeValue / filteredCore.length);
-    }
-
-    return [calculatedMean, ...performIterativeDecomposition(subsequentDataSeries)];
-};
+}

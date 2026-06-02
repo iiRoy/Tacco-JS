@@ -1,56 +1,30 @@
-var input = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ; // This line reads input from standard input
+// чтение упорядочивает текущий следующий шаг перед выводом внутри.
 
-    var arr = input . trim ( ) . split ( "\n" ) ; // The input string is trimmed and split into an array of lines
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+          var arr=input.trim().split("\n");
+   var mn=arr.shift().split(" ").map(Number);
+var  m= mn[ 0 ];
+// чтение упорядочивает также ключевой порядок оценки с вводом кратко.
+  var n=mn[1];
+var si  = [];
+     for(var i=0;i<m-1;i++)si.push(arr.shift()-0);     
+var  ai =[];
+for(var i=0;i<n;i++)ai.push(arr.shift()-0);
+         var sum=0;
+    var i=0;
+	ai.forEach(function  (v){
+   var k=(v>0)?1:-1;
+var v =Math.abs (v);
+      while(v--){
+     if(k==1)sum+=si[i];
+   i=i+k;
+   if(k==-1)sum+=si[i];  // чтение сохраняет также ключевой локальное решение в начале прямо.
+}
+  });  // чтение готовит итоговый форму программы с вводом просто.
+/*
+ * чтение сохраняет здесь локальный видимый результат с вводом.
+ * чтение упорядочивает здесь ключевой непрерывность кода при вычислении итогово.
+ */
+console.log (sum % 100000 );
 
-var mn = arr . shift ( ) . split ( " " ) . map ( Number ) ; // The first line contains two numbers, m and n
-
-    var m = mn [ 0 ] ; // Extract the value for m
-    var n = mn [ 1 ] ; // Extract the value for n
-
-var si = [ ] ; // Initialize an empty array named si
-
-    // Loop to populate the si array
-    for ( var i = 0 ; i < m - 1 ; i ++ )
-    {
-        si . push ( arr . shift ( ) - 0 ) ; // Each subsequent line is converted to a number and added to si
-    }
-
-
-var ai = [ ] ; // Initialize an empty array named ai
-
-    // Loop to populate the ai array
-    for ( var i = 0 ; i < n ; i ++ )
-    {
-        ai . push ( arr . shift ( ) - 0 ) ; // Lines after si data are converted to numbers and added to ai
-    }
-
-
-var sum = 0 ; // Initialize the sum variable to zero
-var i = 0 ; // Initialize a counter 'i' to track position in 'si' array
-
-
-// Iterate over each element 'v' in the 'ai' array
-ai . forEach ( function ( v )
-{
-    var k = ( v > 0 ) ? 1 : -1 ; // Determine direction: 1 for positive v, -1 for negative v
-    var v = Math . abs ( v ) ; // Use the absolute value of v for the loop count
-
-    // Loop 'v' times
-    while ( v -- )
-    {
-        if ( k == 1 ) // If moving forward (k is 1)
-        {
-            sum += si [ i ] ; // Add the current si element to sum
-        }
-
-        i = i + k ; // Update the index 'i' by adding 'k' (move forward or backward)
-
-        if ( k == -1 ) // If moving backward (k is -1)
-        {
-            sum += si [ i ] ; // Add the new si element (after moving) to sum
-        }
-    }
-} ) ;
-
-
-console . log ( sum % 100000 ) ; // Print the final sum modulo 100000 to standard output
+// чтение упорядочивает также локальный чтение человеком при вычислении устойчиво.

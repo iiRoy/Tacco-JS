@@ -1,61 +1,62 @@
-function consumeStream(rawText) {
-    let cursor = 0;
+var input = '';
 
-    function fetchNumeric() {
-        const val = Number(rawText[cursor]);
-        cursor++;
-        return val;
+function* caseGenerator(lines) {
+  let currentLineIndex = 0;
+  while (currentLineIndex < lines.length) {
+    const initialBalanceString = lines[currentLineIndex++];
+    const initialBalanceValue = Number(initialBalanceString);
+
+    if (initialBalanceValue === 0) {
+      return;
     }
 
-    function fetchPair() {
-        const [valA, valB] = rawText[cursor].split(' ').map(Number);
-        cursor++;
-        return { valA, valB };
+    const monthlyFinancialMovements = [];
+    for (let monthCounter = 0; monthCounter < 12; monthCounter++) {
+      const transactionRecord = lines[currentLineIndex++];
+      const [incomingFunds, outgoingFunds] = transactionRecord.split(' ').map(Number);
+      monthlyFinancialMovements.push({ incomingFunds, outgoingFunds });
     }
-
-    const sequenceOfResults = [];
-
-    while (true) {
-        const initialCapacity = fetchNumeric();
-        if (initialCapacity === 0) {
-            break;
-        }
-
-        let currentCapacity = initialCapacity;
-        let monthFound = null;
-
-        const monthSequence = Array.from({ length: 12 }, (_, idx) => idx + 1);
-
-        monthSequence.forEach(function(currentMonthIdx) {
-            if (monthFound === null) {
-                const { valA: expenditure, valB: replenishment } = fetchPair();
-                currentCapacity -= (expenditure - replenishment);
-                if (currentCapacity <= 0) {
-                    monthFound = currentMonthIdx;
-                }
-            } else {
-                fetchPair();
-            }
-        });
-
-        sequenceOfResults.push(monthFound === null ? 'NA' : monthFound);
-    }
-    return sequenceOfResults;
+    yield { initialBalanceValue, monthlyFinancialMovements };
+  }
 }
 
-let receivedText = '';
+function processFinancialCase(caseDetails) {
+  const startingBalance = caseDetails.initialBalanceValue;
+  const monthlyRecords = caseDetails.monthlyFinancialMovements;
+
+  const outcome = monthlyRecords.reduce((accumulator, record, monthOrdinal) => {
+    if (accumulator.firstMonthOfDeficit !== null) {
+      return accumulator;
+    }
+
+    const updatedBalance = accumulator.currentAccountBalance - (record.incomingFunds - record.outgoingFunds);
+    if (updatedBalance <= 0) {
+      return { currentAccountBalance: updatedBalance, firstMonthOfDeficit: monthOrdinal + 1 };
+    } else {
+      return { currentAccountBalance: updatedBalance, firstMonthOfDeficit: null };
+    }
+  }, { currentAccountBalance: startingBalance, firstMonthOfDeficit: null });
+
+  if (outcome.firstMonthOfDeficit !== null) {
+    console.log(outcome.firstMonthOfDeficit);
+  } else {
+    console.log('NA');
+  }
+}
+
+function main() {
+  const caseIterator = caseGenerator(input);
+  for (const currentCaseData of caseIterator) {
+    processFinancialCase(currentCaseData);
+  }
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function(partialData) {
-    receivedText += partialData;
+process.stdin.on('data', function(chunk) {
+  input += chunk;
 });
-
 process.stdin.on('end', function() {
-    const processedLines = receivedText.split('\n');
-    const finalOutcomes = consumeStream(processedLines);
-    finalOutcomes.forEach(function(outcome) {
-        console.log(outcome);
-    });
+  input = input.split('\n');
+  main();
 });

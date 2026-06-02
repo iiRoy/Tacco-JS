@@ -1,39 +1,53 @@
-const processStringForValidity = (inputSource) => {
-    const processedString = inputSource.trim();
-    const characterSequence = Array.from(processedString);
-    const sequenceLength = characterSequence.length;
+function Main(inputString) {
+    if (inputString.charCodeAt(0) !== 65) { // Check if the first character is 'A' (ASCII 65)
+        console.log('WA');
+        return;
+    }
 
-    const isCapitalA = (char, idx) => idx === 0 && char === 'A';
-    const isCapitalCInMiddle = (char, idx) => char === 'C' && idx >= 2 && idx <= sequenceLength - 2;
-    const isLowercaseChar = (char) => {
-        const charCode = char.charCodeAt(0);
-        return charCode >= 97 && charCode <= 122;
-    };
+    // The shortest string that can be 'AC' is "AxCy" (length 4).
+    // 'A' at index 0, 'C' at index 2, and other two characters lowercase.
+    // If the string is shorter than 4, it cannot satisfy the conditions.
+    if (inputString.length < 4) {
+        console.log('WA');
+        return;
+    }
 
-    const firstCharCheck = isCapitalA(characterSequence[0], 0);
+    // Use a functional approach with Array.prototype.reduce to process the string
+    // from the second character (index 1) to the end.
+    // The accumulator will track the necessary conditions.
+    const evaluationResult = Array.from(inputString).slice(1).reduce((accumulator, currentCharacter, relativeIndex) => {
+        // 'relativeIndex' is the index within the sliced array (starting from 0).
+        // 'originalIndex' is the index within the full 'inputString'.
+        const originalIndex = relativeIndex + 1;
 
-    const middleCIndices = characterSequence.map((char, idx) => isCapitalCInMiddle(char, idx) ? idx : -1)
-                                            .filter(idx => idx !== -1);
-    const middleCCountCheck = middleCIndices.length === 1;
-    const cPositionInMiddle = middleCCountCheck ? middleCIndices[0] : -1;
-
-    const remainingCharsCheck = characterSequence.every((char, idx) => {
-        if (idx === 0) return true;
-        if (idx === cPositionInMiddle) return true;
-        return isLowercaseChar(char);
+        if (currentCharacter.charCodeAt(0) === 67) { // Check if the character is 'C' (ASCII 67)
+            accumulator.cCount++;
+            // 'C' must be located at an index from 2 up to (length - 2).
+            // This means 'C' cannot be at index 1 or the last index (length - 1).
+            if (originalIndex < 2 || originalIndex > inputString.length - 2) {
+                accumulator.cPositionValid = false;
+            }
+        } else {
+            // Check if the character is a lowercase English letter (ASCII 97-122)
+            if (currentCharacter.charCodeAt(0) < 97 || currentCharacter.charCodeAt(0) > 122) {
+                accumulator.allOthersLowercase = false;
+            }
+        }
+        return accumulator;
+    }, {
+        cCount: 0,
+        cPositionValid: true,
+        allOthersLowercase: true
     });
 
-    const overallValidity = firstCharCheck && middleCCountCheck && remainingCharsCheck;
-
-    return overallValidity;
-};
-
-const executeCheck = (inputData) => {
-    if (processStringForValidity(inputData)) {
+    // Final evaluation based on the accumulated state
+    if (evaluationResult.cCount === 1 &&
+        evaluationResult.cPositionValid &&
+        evaluationResult.allOthersLowercase) {
         console.log('AC');
     } else {
         console.log('WA');
     }
-};
+}
 
-executeCheck(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,124 +1,109 @@
-var parseNumeric = val => Number.parseInt(val, 10) ;
-var parseNumericArray = sourceArray => sourceArray.map(item => parseNumeric(item)) ;
-var absoluteValue = num => ( num > 0 ? num : -num ) ;
-function findMinimum ( ) {
-  var valueSet = arguments,
-    currentMinimal = valueSet[0];
-  for ( var index = 1 ; index < valueSet.length ; index ++ ) {
-    if ( valueSet[index] < currentMinimal ) {
-      currentMinimal = valueSet[index] ;
-    }
-  }
-  return currentMinimal ;
-}
-function findMaximum ( ) {
-  var valueSet = arguments,
-    currentMaximal = valueSet[0];
-  for ( var index = 1 ; index < valueSet.length ; index ++ ) {
-    if ( valueSet[index] > currentMaximal ) {
-      currentMaximal = valueSet[index] ;
-    }
-  }
-  return currentMaximal ;
-}
-ExecuteProcessing( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+var parseInteger = (inputString) => parseInt(inputString, 0xA);
+var parseIntegerArray = (stringArray) => stringArray.map(element => parseInteger(element));
+var absoluteValue = (numericValue) => numericValue > 0 ? numericValue : -numericValue;
 
-function ExecuteProcessing ( rawData ) {
-  var processedLines = rawData.split('\n') ;
-  processedLines = processedLines.map( entry => parseNumericArray(entry.split(' ')) ) ;
-
-  var totalDays = processedLines[0][0] ;
-  var activityCostCoefficients = processedLines[1] ;
-  var dailySatisfactionScores = processedLines.slice(2) ;
-  // Original comment: //var ts = input.slice(d+2).map(e=>e[0]);
-  // This line is commented out in the original, so we keep it commented or remove it. Let's remove it.
-
-  var cumulativeScore = 0 ;
-  var resultingActions = [] ;
-  let currentActivityKind ;
-  var lastActivityDay = [] ;
-  lastActivityDay.length = 26 ;
-  lastActivityDay.fill(-1) ;
-
-  // Original comment: //let scoreDay = [];
-  // Removed.
-
-  // Calculates the impact on satisfaction for a given day and activity type
-  // based on previous activity occurrences.
-  function calculateDailyImpact ( currentDayIndex, activityKind, previousActivityOccurrences ) {
-    let impactResult = 0 ;
-    impactResult += dailySatisfactionScores[currentDayIndex][activityKind - 1] ;
-    for ( let kindIterator = 0 ; kindIterator < 26 ; kindIterator ++ ) {
-      if ( kindIterator !== activityKind - 1 ) {
-        impactResult -= activityCostCoefficients[kindIterator] * ( currentDayIndex - previousActivityOccurrences[kindIterator] ) ;
-      }
-    }
-    return impactResult ;
-  }
-
-  let thirdsBlockCount = Math.floor(totalDays / 3) ;
-  let remainingDays = totalDays - thirdsBlockCount * 3 ;
-
-  var blockScores ; // Stores [[activity0, activity1, activity2, totalScore], ...]
-  var temporaryLastActivityRegistry ;
-  let blockAccumulatedScore ;
-
-  for ( let blockIndex = 0 ; blockIndex < thirdsBlockCount ; blockIndex ++ ) {
-    blockScores = [] ;
-
-    for ( let activity0 = 0 ; activity0 < 26 ; activity0 ++ ) {
-      temporaryLastActivityRegistry = lastActivityDay.slice() ; // Create a shallow copy
-      blockAccumulatedScore = 0 ;
-
-      temporaryLastActivityRegistry[activity0] = blockIndex * 3 ;
-      blockAccumulatedScore += calculateDailyImpact( blockIndex * 3, activity0 + 1, temporaryLastActivityRegistry ) ;
-
-      for ( let activity1 = 0 ; activity1 < 26 ; activity1 ++ ) {
-        temporaryLastActivityRegistry = lastActivityDay.slice() ; // Reset for each activity1
-        temporaryLastActivityRegistry[activity0] = blockIndex * 3; // Re-set t0
-        temporaryLastActivityRegistry[activity1] = blockIndex * 3 + 1 ;
-        blockAccumulatedScore = calculateDailyImpact( blockIndex * 3, activity0 + 1, temporaryLastActivityRegistry ) +
-                                calculateDailyImpact( blockIndex * 3 + 1, activity1 + 1, temporaryLastActivityRegistry ) ;
-
-        for ( let activity2 = 0 ; activity2 < 26 ; activity2 ++ ) {
-          let innerTempLastActivity = temporaryLastActivityRegistry.slice(); // Copy for final day in block
-          innerTempLastActivity[activity2] = blockIndex * 3 + 2;
-          let currentBlockTotal = calculateDailyImpact( blockIndex * 3, activity0 + 1, innerTempLastActivity ) +
-                                  calculateDailyImpact( blockIndex * 3 + 1, activity1 + 1, innerTempLastActivity ) +
-                                  calculateDailyImpact( blockIndex * 3 + 2, activity2 + 1, innerTempLastActivity ) ;
-          blockScores.push([ activity0, activity1, activity2, currentBlockTotal ]) ;
+function findMinimum() {
+    var argumentList = arguments,
+        currentMin = argumentList[0];
+    for (var k = 1; k < argumentList.length; k++) {
+        if (argumentList[k] < currentMin) {
+            currentMin = argumentList[k];
         }
-      }
     }
-
-    // Original comment: //console.log(tempScore)
-    // Removed.
-
-    let bestBlockOptionIndex = blockScores.map( entry => entry[3] ).indexOf( findMaximum(...blockScores.map( entry => entry[3] )) ) ;
-    let selectedBlockChoice = blockScores[bestBlockOptionIndex] ;
-    // Original comment: //console.log(want,want2)
-    // Removed.
-
-    resultingActions.push( selectedBlockChoice[0] + 1, selectedBlockChoice[1] + 1, selectedBlockChoice[2] + 1 ) ;
-    lastActivityDay[selectedBlockChoice[0]] = blockIndex * 3 ;
-    lastActivityDay[selectedBlockChoice[1]] = blockIndex * 3 + 1 ;
-    lastActivityDay[selectedBlockChoice[2]] = blockIndex * 3 + 2 ;
-  }
-
-  for ( let dayCounter = thirdsBlockCount * 3 ; dayCounter < totalDays ; dayCounter ++ ) {
-    blockScores = [] ; // Re-purpose blockScores for single day options
-
-    for ( let activityOption = 0 ; activityOption < 26 ; activityOption ++ ) {
-      blockScores[activityOption] = calculateDailyImpact( dayCounter, activityOption + 1, lastActivityDay ) ;
-    }
-
-    let optimalChoiceIndex = blockScores.indexOf( findMaximum(...blockScores) ) ;
-    resultingActions.push( optimalChoiceIndex + 1 ) ;
-    lastActivityDay[optimalChoiceIndex] = dayCounter ;
-  }
-
-  console.log( resultingActions.join('\n') ) ;
+    return currentMin;
 }
 
-// Original comment: //a.indexOf(Math.max(...a))
-// Removed.
+function findMaximum() {
+    var argumentList = arguments,
+        currentMax = argumentList[0];
+    for (var k = 1; k < argumentList.length; k++) {
+        if (argumentList[k] > currentMax) {
+            currentMax = argumentList[k];
+        }
+    }
+    return currentMax;
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function ProcessInput(rawData) {
+    let processedLines = rawData.split('\n');
+    processedLines = processedLines.map(lineContent => parseIntegerArray(lineContent.split(' ')));
+
+    const numDays = processedLines[0][0];
+    const costFactors = processedLines[1];
+    const satisfactionScores = processedLines.slice(0x2);
+
+    let totalScore = 0x0;
+    const resultChoices = [];
+    let currentType;
+
+    const lastOccurrenceDay = new Array(0x1A);
+    lastOccurrenceDay.fill(-1);
+
+    function calculateSatisfaction(currentDay, selectedType, previousOccurrences) {
+        let currentSatisfaction = 0x0;
+        currentSatisfaction += satisfactionScores[currentDay][selectedType - 1];
+        for (let typeIndex = 0x0; typeIndex < 0x1A; typeIndex++) {
+            if (typeIndex !== selectedType - 1) {
+                currentSatisfaction -= costFactors[typeIndex] * (currentDay - previousOccurrences[typeIndex]);
+            }
+        }
+        return currentSatisfaction;
+    }
+
+    const numBlocksOfThree = Math.floor(numDays / 0x3);
+    const remainingDays = numDays - numBlocksOfThree * 0x3;
+
+    let blockScores;
+    let temporaryLastOccurrences;
+    let cumulativeBlockScore;
+
+    for (let blockIndex = 0x0; blockIndex < numBlocksOfThree; blockIndex++) {
+        blockScores = [];
+
+        for (let choice0 = 0x0; choice0 < 0x1A; choice0++) {
+            temporaryLastOccurrences = lastOccurrenceDay.concat();
+            cumulativeBlockScore = 0x0;
+
+            temporaryLastOccurrences[choice0] = blockIndex * 0x3;
+            cumulativeBlockScore += calculateSatisfaction(blockIndex * 0x3, choice0 + 1, temporaryLastOccurrences);
+
+            for (let choice1 = 0x0; choice1 < 0x1A; choice1++) {
+                temporaryLastOccurrences[choice1] = blockIndex * 0x3 + 1;
+                cumulativeBlockScore += calculateSatisfaction(blockIndex * 0x3 + 1, choice1 + 1, temporaryLastOccurrences);
+
+                for (let choice2 = 0x0; choice2 < 0x1A; choice2++) {
+                    temporaryLastOccurrences[choice2] = blockIndex * 0x3 + 2;
+                    cumulativeBlockScore += calculateSatisfaction(blockIndex * 0x3 + 2, choice2 + 1, temporaryLastOccurrences);
+                    blockScores.push([choice0, choice1, choice2, cumulativeBlockScore]);
+                }
+            }
+        }
+
+        const scoresOnly = blockScores.map(entry => entry[0x3]);
+        const maxScoreInBlock = Math.max(...scoresOnly);
+        const bestBlockIndex = scoresOnly.indexOf(maxScoreInBlock);
+        const bestBlockCombination = blockScores[bestBlockIndex];
+
+        resultChoices.push(bestBlockCombination[0x0] + 1, bestBlockCombination[0x1] + 1, bestBlockCombination[0x2] + 1);
+        lastOccurrenceDay[bestBlockCombination[0x0]] = blockIndex * 0x3;
+        lastOccurrenceDay[bestBlockCombination[0x1]] = blockIndex * 0x3 + 1;
+        lastOccurrenceDay[bestBlockCombination[0x2]] = blockIndex * 0x3 + 2;
+    }
+
+    for (let singleDayIndex = numBlocksOfThree * 0x3; singleDayIndex < numDays; singleDayIndex++) {
+        blockScores = [];
+
+        for (let optionIndex = 0x0; optionIndex < 0x1A; optionIndex++) {
+            blockScores[optionIndex] = calculateSatisfaction(singleDayIndex, optionIndex + 1, lastOccurrenceDay);
+        }
+
+        const maxScoreForDay = Math.max(...blockScores);
+        const bestOptionIndex = blockScores.indexOf(maxScoreForDay);
+        resultChoices.push(bestOptionIndex + 1);
+        lastOccurrenceDay[bestOptionIndex] = singleDayIndex;
+    }
+
+    console.log(resultChoices.join('\n'));
+}

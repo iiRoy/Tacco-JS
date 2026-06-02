@@ -1,26 +1,31 @@
-const processNumericSequence = (sourceData) => {
-    const allRecords = sourceData.trim().split('\n');
-    const pairCount = parseInt(allRecords[0], 10);
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    const pairCount = Number(lines[0]);
 
-    const parsedEntries = allRecords.slice(1, pairCount + 1).map(line =>
-        line.split(' ').map(element => parseInt(element, 10))
-    );
+    const valuePairs = lines.slice(1, pairCount + 1).map(line => {
+        const parts = line.split(" ");
+        return [Number(parts[0]), Number(parts[1])];
+    });
 
-    const combinePairs = (currentAggregate, incomingItem) => {
-        const [currentLeftVal, currentRightVal] = currentAggregate;
-        const [itemLeftVal, itemRightVal] = incomingItem;
+    const finalValues = valuePairs.reduce((currentAccum, nextPair) => {
+        const [nextT, nextA] = nextPair;
+        let scalingMultiplier;
 
-        const leftRatioTerm = currentLeftVal / itemLeftVal;
-        const rightRatioTerm = currentRightVal / itemRightVal;
+        if (currentAccum.t === 0 && currentAccum.a === 0) {
+            scalingMultiplier = 1;
+        } else {
+            const tRequirement = currentAccum.t / nextT;
+            const aRequirement = currentAccum.a / nextA;
+            scalingMultiplier = Math.ceil(Math.max(tRequirement, aRequirement));
+        }
 
-        const scalingFactor = Math.ceil(Math.max(leftRatioTerm, rightRatioTerm));
+        return {
+            t: nextT * scalingMultiplier,
+            a: nextA * scalingMultiplier
+        };
+    }, { t: 0, a: 0 });
 
-        return [itemLeftVal * scalingFactor, itemRightVal * scalingFactor];
-    };
+    console.log(finalValues.t + finalValues.a);
+}
 
-    const finalValues = parsedEntries.slice(1).reduce(combinePairs, parsedEntries[0]);
-
-    console.log(finalValues[0] + finalValues[1]);
-};
-
-processNumericSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

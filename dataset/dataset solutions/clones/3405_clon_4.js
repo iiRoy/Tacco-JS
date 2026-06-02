@@ -1,16 +1,9 @@
-const fileSystemAccess = require("node:fs");
-const inputData = fileSystemAccess.readFileSync(0, "utf8");
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const processedValue = Number(inputData);
+const eveSuffix = ["24", "23", "22"].some(val => val === sourceData) ? " Eve" : "";
 
-const eveConditions = new Set([22, 23, 24]);
-const printConditions = new Set([22, 23, 24, 25]);
+const relevantDates = new Set(["25", "24", "23", "22"]);
 
-let holidaySuffix = "";
-if (eveConditions.has(processedValue)) {
-    holidaySuffix = " Eve";
-}
-
-if (printConditions.has(processedValue)) {
-    process.stdout.write("Christmas" + holidaySuffix + "\n");
+if (relevantDates.has(sourceData)) {
+    console.log("Christmas" + eveSuffix);
 }

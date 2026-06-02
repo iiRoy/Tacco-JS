@@ -1,42 +1,36 @@
-var sourceData = require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ); // Acquire raw input from standard input stream
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input: trim whitespace and split into an array of lines
-var dataLines = sourceData.trim().split( "\n" );
+// Process the raw input string
+var lineData = rawData.trim().split("\n");
 
-// Parse the second line of input into an array of numbers
-// The first line usually contains the count, the second line contains the actual elements.
-var integerArray = dataLines[1].split(' ').map( ( elementValue ) => parseInt( elementValue, 10 ) );
+// Extract the numbers from the second line of input
+var numArr = lineData[1].split(' ').map((n) => Number(n));
 
-// Initialize a counter for tracking the total number of element swaps
+// Initialize a counter for the number of swaps performed
 var swapCounter = 0;
 
-// Outer loop: Iterate through each element of the array
-// This loop establishes the boundary for the unsorted part of the array
-for ( var mainIterator = 0; mainIterator < integerArray.length; mainIterator++ ) {
-  // Assume the current element is the smallest in the unsorted portion
-  var currentMinIdx = mainIterator;
+// Outer loop for selection sort: iterate through the array
+for (var outerIdx = 0; outerIdx < numArr.length; outerIdx++) {
+  // Assume the current element is the minimum
+  var minValIdx = outerIdx;
 
-  // Inner loop: Search for the actual smallest element in the remaining unsorted part
-  for ( var subIterator = mainIterator; subIterator < integerArray.length; subIterator++ ) {
-    // If a smaller element is found, update the index of the minimum element
-    currentMinIdx = integerArray[subIterator] < integerArray[currentMinIdx] ? subIterator : currentMinIdx;
+  // Inner loop to find the actual minimum element in the unsorted part
+  for (var innerIdx = outerIdx; innerIdx < numArr.length; innerIdx++) {
+    // Update minValIdx if a smaller element is found
+    minValIdx = numArr[innerIdx] < numArr[minValIdx] ? innerIdx : minValIdx;
   }
 
-  // Check if the smallest element found is not at the current position
-  // If it's different, a swap is necessary
-  if ( currentMinIdx !== mainIterator ) {
-    // Perform a three-step swap using a temporary variable
-    var swapBuffer = integerArray[currentMinIdx];
-    integerArray[currentMinIdx] = integerArray[mainIterator];
-    integerArray[mainIterator] = swapBuffer;
-
-    // Increment the swap counter as an exchange occurred
-    swapCounter++;
+  // If the minimum element is not at the current position, swap them
+  if (minValIdx !== outerIdx) {
+    var tempVal = numArr[minValIdx]; // Store the minimum value temporarily
+    numArr[minValIdx] = numArr[outerIdx]; // Move the current element to the minimum's position
+    numArr[outerIdx] = tempVal; // Place the minimum value at the current position
+    swapCounter++; // Increment the swap counter
   }
 }
 
-// Output the sorted array elements, joined by spaces
-console.log( integerArray.join(' ') );
+// Output the sorted array elements joined by a space
+console.log(numArr.join(' '));
 
-// Output the final count of swaps performed during the sorting process
-console.log( swapCounter );
+// Output the total number of swaps performed
+console.log(swapCounter);

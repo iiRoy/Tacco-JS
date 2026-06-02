@@ -1,80 +1,68 @@
-const sourceDataContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawData.trim().split('\n');
 
-// If the input stream is entirely empty or just whitespace, terminate.
-if (!sourceDataContent.trim()) {
-    process.exit(0);
-}
+const MAX_DIFF_LIMIT = 1000000;
+const MIN_VALID_LEN = 2;
+const MAX_VALID_LEN = 1000;
 
-// Split the content into individual data records.
-const dataRecordLines = sourceDataContent.trim().split('\n');
+const getAbsDiff = (valA, valB) => {
+    return Math.abs(valA - valB);
+};
 
-let processedEntryCounter = 0; // Tracks successfully processed data sets.
-let currentRecordIndex = 0;    // Iteration index for the data records.
+while (true) {
+    const currentInputLine = dataLines.shift();
+    if (currentInputLine === undefined || currentInputLine === null) {
+        break;
+    }
 
-// Process each data record line by line.
-while (currentRecordIndex < dataRecordLines.length) {
-    const activeDataLine = dataRecordLines[currentRecordIndex++];
+    const parsedNumericValues = currentInputLine.split(' ').map(Number);
+    let currentArrayLength = parsedNumericValues[0];
 
-    // Skip any blank lines that might occur in the input.
-    if (!activeDataLine.trim()) {
+    const isLengthInvalid = (currentArrayLength === 0 || currentArrayLength < MIN_VALID_LEN || currentArrayLength > MAX_VALID_LEN);
+    if (isLengthInvalid) {
         continue;
     }
 
-    // Parse the numbers from the current line, splitting by any whitespace.
-    const numericTokens = activeDataLine.split(/\s+/).map(Number);
+    const actualDataElements = parsedNumericValues.slice(1, currentArrayLength + 1);
 
-    // Validate that the line contains valid numbers and has at least the expected count.
-    if (numericTokens.length === 0 || isNaN(numericTokens[0])) {
-        continue; // Skip malformed lines.
-    }
+    let minimumCalculatedDifference;
+    let tempDifferenceValue;
 
-    // The first number in the line indicates the quantity of subsequent elements.
-    const declaredElementQuantity = numericTokens[0];
+    let loopExecutionPrevented = false;
 
-    // Define acceptable bounds for the element quantity.
-    const MINIMUM_ELEMENTS_FOR_DIFFERENCE = 2;
-    const MAXIMUM_ELEMENTS_ALLOWED = 1000;
+    for (let primaryIndex = 0; primaryIndex < currentArrayLength; primaryIndex++) {
+        const shouldBreakOuterLoopEarly = (primaryIndex < 1);
+        if (shouldBreakOuterLoopEarly) {
+            loopExecutionPrevented = true;
+            break;
+        }
 
-    // Enforce quantity constraints.
-    if (declaredElementQuantity < MINIMUM_ELEMENTS_FOR_DIFFERENCE || declaredElementQuantity > MAXIMUM_ELEMENTS_ALLOWED) {
-        continue; // Skip if quantity is out of specified range.
-    }
+        const primaryIndexExceedsThreshold = (primaryIndex > MAX_DIFF_LIMIT);
+        if (primaryIndexExceedsThreshold) {
+            loopExecutionPrevented = true;
+            break;
+        }
 
-    // Verify that enough numeric tokens are present for the declared quantity.
-    // (declaredQuantity + 1) because the first token is the quantity itself.
-    if (numericTokens.length < declaredElementQuantity + 1) {
-        continue; // Skip if insufficient data is provided.
-    }
+        for (let secondaryIndex = 0; secondaryIndex < currentArrayLength; secondaryIndex++) {
+            if (secondaryIndex === primaryIndex) {
+                continue;
+            }
 
-    // Extract the actual sequence of numbers to be analyzed.
-    const numberSequenceToAnalyze = numericTokens.slice(1, declaredElementQuantity + 1);
+            tempDifferenceValue = getAbsDiff(actualDataElements[secondaryIndex], actualDataElements[primaryIndex]);
 
-    // Initialize the smallest absolute difference found so far to a very large value.
-    let smallestAbsoluteDifference = Infinity;
+            const isInitialMinAssignmentIteration = (primaryIndex === 0);
+            if (isInitialMinAssignmentIteration) {
+                minimumCalculatedDifference = tempDifferenceValue;
+                continue;
+            }
 
-    // Use nested loops to compare every unique pair of numbers in the sequence.
-    // The outer loop iterates from the first element up to the second-to-last.
-    for (let primaryIndex = 0; primaryIndex < declaredElementQuantity; primaryIndex++) {
-        // The inner loop starts from the element immediately following the primaryIndex
-        // to avoid duplicate comparisons (e.g., (A,B) and (B,A)) and self-comparison.
-        for (let secondaryIndex = primaryIndex + 1; secondaryIndex < declaredElementQuantity; secondaryIndex++) {
-            // Calculate the absolute difference between the two current elements.
-            const currentPairAbsoluteDifference = Math.abs(
-                numberSequenceToAnalyze[primaryIndex] - numberSequenceToAnalyze[secondaryIndex]
-            );
-
-            // Update smallestAbsoluteDifference if the current difference is smaller.
-            if (currentPairAbsoluteDifference < smallestAbsoluteDifference) {
-                smallestAbsoluteDifference = currentPairAbsoluteDifference;
+            if (minimumCalculatedDifference === undefined || tempDifferenceValue < minimumCalculatedDifference) {
+                minimumCalculatedDifference = tempDifferenceValue;
             }
         }
     }
 
-    // If a valid smallest difference was found (i.e., not still Infinity), output it.
-    if (smallestAbsoluteDifference !== Infinity) {
-        console.log(smallestAbsoluteDifference);
-        processedEntryCounter++; // Increment the counter for successfully processed entries.
+    if (minimumCalculatedDifference !== undefined && minimumCalculatedDifference < MAX_DIFF_LIMIT) {
+        console.log(minimumCalculatedDifference);
     }
-    // No explicit else for `Infinity` case, as it implies an issue with data or logic
-    // which should ideally not happen with valid input and elementQuantity >= 2.
 }

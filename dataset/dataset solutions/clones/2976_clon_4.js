@@ -1,24 +1,51 @@
 "use strict";
+function I(sourceTextContent, valueConversionFunction) {
+    this.parsedSegments = sourceTextContent.split("\n").map(line => line.trim().split(" "));
+    this.currentSegmentIndex = 0;
+    this.currentTokenPosition = 0;
+    this.defaultParser = valueConversionFunction || Number;
+}
 
-const convertToNumber = (textPart) => {
-    return Number(textPart);
+I.prototype.a = function(customParser) {
+    const activeLineTokens = this.parsedSegments[this.currentSegmentIndex];
+    
+    if (!activeLineTokens) {
+        return undefined;
+    }
+
+    const currentTokenString = activeLineTokens[this.currentTokenPosition];
+    this.currentTokenPosition++;
+
+    if (this.currentTokenPosition >= activeLineTokens.length) {
+        this.currentTokenPosition = 0; 
+        this.currentSegmentIndex++; 
+    }
+
+    return (customParser || this.defaultParser)(currentTokenString);
 };
 
-const parseAllTokens = (rawTextContent) => {
-    return rawTextContent
-        .split('\n')
-        .flatMap(lineSection => lineSection.trim().split(' '))
-        .filter(wordItem => wordItem !== '')
-        .map(convertToNumber);
+I.prototype.l = function(customParser) {
+    const activeLineTokens = this.parsedSegments[this.currentSegmentIndex];
+    
+    if (!activeLineTokens) {
+        return undefined;
+    }
+
+    this.currentTokenPosition = 0; 
+    this.currentSegmentIndex++; 
+
+    return activeLineTokens.map(customParser || this.defaultParser);
 };
 
-const computeFinalResult = (fullInputStream) => {
-    const orderedNumbers = parseAllTokens(fullInputStream);
+module.exports = I;
 
-    const valueOne = orderedNumbers[0];
-    const valueTwo = orderedNumbers[1];
+function calculateRangeLength(sourceData) {
+    const dataReader = new I(sourceData); 
 
-    return valueOne - valueTwo + 1;
-};
+    const startValue = dataReader.a(); 
+    const endValue = dataReader.a(); 
+    
+    console.log(startValue - endValue + 1);
+}
 
-module.exports = computeFinalResult;
+calculateRangeLength(require("fs").readFileSync("/dev/stdin", "utf8"));

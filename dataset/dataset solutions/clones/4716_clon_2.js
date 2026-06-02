@@ -1,56 +1,68 @@
-'use strict'; // Enforce strict mode for cleaner code and fewer errors
+'use strict';
 
-const displayMessage = (outputString) => { // Utility function to print messages to the console
-    console.log(outputString);
+// Utility function for logging messages to the console
+const outputMessage = (messageContent) => {
+  console.log(messageContent);
 };
 
-// Read all input from standard input, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines
-const sourceDataLines = require("fs").readFileSync("/dev/stdin", "utf8")
-                                    .trim()
-                                    .split('\n');
+// Read input data from standard input, decode as UTF-8,
+// remove leading/trailing whitespace, and split into lines.
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
 
-// Parse the dimensions for the primary matrix and the pattern matrix from the first line of input
-const mainGridSize = Number(sourceDataLines[0].split(' ')[0]), // The 'N' dimension for the larger grid
-      patternSize = Number(sourceDataLines[0].split(' ')[1]),   // The 'M' dimension for the smaller pattern
-      primaryGrid = sourceDataLines.slice(1, 1 + mainGridSize) // Extract lines representing the main matrix
-                                   .map(lineContent => lineContent.split('')), // Convert each line string into an array of characters
-      comparisonPattern = sourceDataLines.slice(1 + mainGridSize, 1 + mainGridSize + patternSize) // Extract lines for the pattern matrix
-                                            .map(lineContent => lineContent.split('')); // Convert each pattern line into a character array
+// Parse the dimensions of the main grid and the search pattern.
+// The first line contains N and M.
+const gridSizeN = Number(rawInputData[0].split(' ')[0]);
+const patternSizeM = Number(rawInputData[0].split(' ')[1]);
 
-// Iterate through all potential top-left coordinates in the primary grid where the pattern could possibly start
-for (let mainRowIdx = 0; mainRowIdx <= mainGridSize - patternSize; mainRowIdx++) {
-    for (let mainColIdx = 0; mainColIdx <= mainGridSize - patternSize; mainColIdx++) {
-        // Optimization: Check if the very first character of the pattern matches the current primary grid character
-        if (primaryGrid[mainRowIdx][mainColIdx] === comparisonPattern[0][0]) {
-            let potentialMatch = true; // Flag to indicate if the current placement is a match
+// Extract the main grid (A) from the input lines.
+// It spans from the second line up to (1 + N) lines.
+const mainGrid = rawInputData.slice(1, 1 + gridSizeN).map(lineContent => lineContent.split(''));
 
-            // Compare the pattern matrix with the corresponding sub-section of the primary grid
-            for (let patternRowOffset = 0; patternRowOffset < patternSize; patternRowOffset++) {
-                for (let patternColOffset = 0; patternColOffset < patternSize; patternColOffset++) {
-                    // Check if the current character in the primary grid matches the corresponding pattern character
-                    if (primaryGrid[mainRowIdx + patternRowOffset][mainColIdx + patternColOffset] === comparisonPattern[patternRowOffset][patternColOffset]) {
-                        // Characters match, continue to the next comparison
-                        continue;
-                    } else {
-                        // Mismatch found: this specific placement of the pattern is not correct
-                        potentialMatch = false;
-                        break; // Exit the inner column loop immediately
-                    }
-                }
-                // If a mismatch was found in the column loop, then this row placement is invalid, no need to check further rows
-                if (!potentialMatch) { /* This conditional break was NOT in the original code,
-                                        * so it is omitted here to preserve identical control flow.
-                                        * The `potentialMatch` flag correctly handles this. */ }
-            }
+// Extract the search pattern (B) from the input lines.
+// It spans from (1 + N) up to (1 + N + M) lines.
+const searchPattern = rawInputData.slice(1 + gridSizeN, 1 + gridSizeN + patternSizeM).map(lineContent => lineContent.split(''));
 
-            // If the `potentialMatch` flag is still true after all comparisons, the pattern has been found
-            if (potentialMatch) {
-                console.log('Yes'); // Output the success message
-                process.exit();     // Terminate the execution of the script
-            }
+// Iterate through all possible top-left positions (rowIdxMain, colIdxMain)
+// in the main grid where the pattern could potentially start.
+for (let rowIdxMain = 0; rowIdxMain <= gridSizeN - patternSizeM; rowIdxMain++) {
+  for (let colIdxMain = 0; colIdxMain <= gridSizeN - patternSizeM; colIdxMain++) {
+
+    // Check if the very first character of the pattern matches
+    // the current character in the main grid. This is an optimization.
+    if (mainGrid[rowIdxMain][colIdxMain] === searchPattern[0][0]) {
+      let matchFound = true; // Assume a match until proven otherwise
+
+      // If the first character matches, proceed to check the entire pattern.
+      // Iterate through each cell of the search pattern.
+      for (let rowIdxPattern = 0; rowIdxPattern < patternSizeM; rowIdxPattern++) {
+        for (let colIdxPattern = 0; colIdxPattern < patternSizeM; colIdxPattern++) {
+
+          // Compare the character in the main grid at the corresponding position
+          // with the character in the search pattern.
+          if (mainGrid[rowIdxMain + rowIdxPattern][colIdxMain + colIdxPattern] === searchPattern[rowIdxPattern][colIdxPattern]) {
+            // Characters match, continue to the next character in the pattern.
+            continue;
+          } else {
+            // A mismatch found, so this starting position is not a match.
+            matchFound = false;
+            break; // Exit the inner loop (colIdxPattern)
+          }
         }
+        if (!matchFound) {
+          break; // If a mismatch was found, exit the outer loop (rowIdxPattern) as well.
+        }
+      }
+
+      // After checking all characters of the pattern for the current starting position:
+      if (matchFound) {
+        // If 'matchFound' is still true, the entire pattern was found.
+        outputMessage('Yes'); // Print "Yes"
+        process.exit();      // Terminate the program immediately.
+      }
     }
+  }
 }
 
-// If the entire search completes without finding the pattern, output 'No'
-console.log('No');
+// If the program reaches this point, it means no pattern was found
+// after checking all possible starting positions.
+outputMessage('No'); // Print "No"

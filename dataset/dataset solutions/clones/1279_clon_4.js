@@ -1,25 +1,24 @@
-'use strict'
+'use strict';
 
-const evaluateCollection = (inputPayload) => {
-    const lineSegments = inputPayload.trim().split('\n');
-    const itemQuantity = Number(lineSegments[0]);
-    
-    const foundItems = new Set(lineSegments.slice(1, itemQuantity + 1));
+const processInput = (sourceText) => {
+    const rawLines = sourceText.trim().split('\n');
+    const cardCount = parseInt(rawLines[0], 10);
+    const presentCards = rawLines.slice(1, cardCount + 1);
 
-    const categories = ['S', 'H', 'C', 'D'];
-    const identifiers = Array.from({ length: 13 }, (_, idx) => idx + 1);
+    const suitIdentifiers = ['S', 'H', 'C', 'D'];
+    const rankValues = Array.from({ length: 13 }, (_, index) => index + 1);
 
-    const universalCollection = categories.flatMap(catKey =>
-        identifiers.map(idVal => `${catKey} ${idVal}`)
+    const completeCardSet = suitIdentifiers.flatMap(currentSuit =>
+        rankValues.map(currentRank => `${currentSuit} ${currentRank}`)
     );
 
-    const missingElements = universalCollection.filter(elementUnit =>
-        !foundItems.has(elementUnit)
-    );
+    const providedCardRegistry = new Set(presentCards);
 
-    if (missingElements.length > 0) {
-        console.log(missingElements.join('\n'));
+    const absentCardList = completeCardSet.filter(deckCard => !providedCardRegistry.has(deckCard));
+
+    if (absentCardList.length > 0) {
+        console.log(absentCardList.join('\n'));
     }
 };
 
-evaluateCollection(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,26 +1,21 @@
-function calculateMaxOperation ( initialString ) {
-    // This function processes a string of numbers to find the maximum of three operations.
+function ProcessInput(rawData) {
+  // Remove any leading or trailing whitespace from the raw input string.
+  let processedData = rawData.trim();
 
-    initialString = initialString . trim ( ) ; // Remove any leading or trailing whitespace from the raw input.
+  // Split the string by spaces and convert each part into a number.
+  processedData = processedData.split(" ").map(Number);
 
-    // Split the string by spaces and convert each part into a floating-point number.
-    let numericArray = initialString . split ( " " ) . map ( parseFloat ) ;
+  // Calculate the maximum value among three arithmetic operations on the first two numbers.
+  let finalOutcome = Math.max(processedData[0] + processedData[1], processedData[0] - processedData[1], processedData[0] * processedData[1]);
 
-    // Calculate the maximum value among addition, subtraction, and multiplication of the first two numbers.
-    const finalResult = Math . max (
-        numericArray [ 0 ] + numericArray [ 1 ] ,
-        numericArray [ 0 ] - numericArray [ 1 ] ,
-        numericArray [ 0 ] * numericArray [ 1 ]
-    ) ;
+  // If the calculated outcome is negative zero, normalize it to positive zero.
+  if (finalOutcome === -0) {
+    finalOutcome = 0;
+  }
 
-    // Check if the calculated result is negative zero and normalize it to positive zero if so.
-    if ( finalResult === - 0 ) {
-        finalResult = 0 ;
-    }
-
-    // Output the final computed maximum value to the console.
-    console . log ( finalResult ) ;
+  // Print the final computed numerical result to the console.
+  console.log(finalOutcome);
 }
 
 // Read input from standard input and pass it to the processing function.
-calculateMaxOperation ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

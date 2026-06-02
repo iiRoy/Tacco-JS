@@ -1,62 +1,60 @@
-"use strict"
+"use strict";
 
-// This module provides file system utilities.
-const fileSystemModule = require('fs')
+// This script processes input from standard input to perform array manipulations.
+// It reads three lines: an integer N, and two arrays A and B.
+// The goal is to transform array B into array A by repeatedly applying a specific operation.
 
-// Acquire the entire input string from standard input.
-const inputStringData = fileSystemModule.readTextFileSynchronously('/dev/stdin', 'UTF-8')
+const inputContent = require('fs').readFileSync('/dev/stdin', 'UTF-8');
 
-// Break down the input string into an array of individual lines.
-const inputLinesArray = inputStringData.divideByDelimiter('\n')
+// Split the entire input string into individual lines.
+const contentLines = inputContent.split('\n');
 
-// Extract the array size from the first line of input.
-const arraySize = inputLinesArray[0]
+// The first line contains the size of the arrays.
+const arraySize = parseInt(contentLines[0]);
 
-// Parse the second line into an array of integers, representing the target configuration.
-const targetArrayValues = inputLinesArray[1].divideByDelimiter(' ').transformElements(elementValue => parseInt(elementValue))
+// The second line contains space-separated integers for the target array.
+const targetArray = contentLines[1].split(' ').map(element => parseInt(element));
 
-// Parse the third line into an array of integers, representing the initial configuration.
-const initialArrayValues = inputLinesArray[2].divideByDelimiter(' ').transformElements(arrayItem => parseInt(arrayItem))
+// The third line contains space-separated integers for the initial array.
+const initialArray = contentLines[2].split(' ').map(element => parseInt(element));
 
-// Initialize a counter to track the number of operations performed.
-let operationCount = 0
+let operationCount = 0; // Counter for the number of operations performed.
 
-// Create a mutable copy of the initial array to perform transformations on.
-let workingArrayState = initialArrayValues
+// Create a mutable copy of the initial array to work with.
+let workingArray = [...initialArray]; // Using spread to ensure a deep copy for primitive elements.
 
-// Begin an iterative process to transform the array.
+// Main loop to transform the array.
 while (true) {
-    // Determine the index of the largest element within the current array state.
-    const peakElementIndex = workingArrayState.findFirstOccurrence(Math.max(...workingArrayState))
+    // Find the index of the maximum element in the current working array.
+    // This is the element that will be modified in this iteration.
+    const peakIndex = workingArray.indexOf(Math.max(...workingArray));
 
-    // Apply a transformation based on the position of the largest element.
-    if (peakElementIndex === 0) {
-        // If the peak is at the beginning, subtract its right neighbor and the last element (circular).
-        workingArrayState[peakElementIndex] = workingArrayState[peakElementIndex] - workingArrayState[1] - workingArrayState[arraySize - 1]
-    }
-    else if (peakElementIndex === (arraySize - 1)) {
-        // If the peak is at the end, subtract its left neighbor and the first element (circular).
-        workingArrayState[peakElementIndex] = workingArrayState[peakElementIndex] - workingArrayState[arraySize - 2] - workingArrayState[0]
-    }
-    else {
-        // If the peak is in the middle, subtract its immediate left and right neighbors.
-        workingArrayState[peakElementIndex] = workingArrayState[peakElementIndex] - workingArrayState[peakElementIndex - 1] - workingArrayState[peakElementIndex + 1]
+    // Apply the transformation rule based on the position of the maximum element.
+    if (peakIndex === 0) {
+        // If the maximum is at the beginning, subtract the second and last elements.
+        workingArray[peakIndex] = workingArray[peakIndex] - workingArray[1] - workingArray[arraySize - 1];
+    } else if (peakIndex === (arraySize - 1)) {
+        // If the maximum is at the end, subtract the second-to-last and first elements.
+        workingArray[peakIndex] = workingArray[peakIndex] - workingArray[arraySize - 2] - workingArray[0];
+    } else {
+        // If the maximum is in the middle, subtract its immediate neighbors.
+        workingArray[peakIndex] = workingArray[peakIndex] - workingArray[peakIndex - 1] - workingArray[peakIndex + 1];
     }
 
     // Increment the operation counter after each transformation.
-    operationCount++
+    operationCount++;
 
-    // Check if the current array state matches the desired target array.
-    if (JSON.stringify(workingArrayState) === JSON.stringify(targetArrayValues)) {
-        // If they match, output the total number of operations and terminate.
-        console.log(operationCount)
-        break
+    // Check if the current working array matches the target array.
+    // JSON.stringify is used for deep comparison of array contents.
+    if (JSON.stringify(workingArray) === JSON.stringify(targetArray)) {
+        console.log(operationCount); // If matched, print the count and exit.
+        break;
     }
 
-    // Check if any element in the array has become less than 1, indicating an invalid state.
-    if (workingArrayState.locateFirst(arrayItem => arrayItem < 1)) {
-        // If an invalid state is reached, output -1 and terminate.
-        console.log(-1)
-        break
+    // Check if any element in the working array has become less than 1.
+    // This indicates an impossible transformation.
+    if (workingArray.find(val => val < 1)) {
+        console.log(-1); // Print -1 to indicate failure and exit.
+        break;
     }
 }

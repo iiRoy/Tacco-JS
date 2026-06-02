@@ -1,78 +1,63 @@
-const systemIO = require('fs');
+function* lineReader(text) {
+    const lines = text.trim().split("\n");
+    for (const line of lines) {
+        yield line;
+    }
+}
 
-const obtainTextContent = (sourcePath, dataEncoding) => systemIO.readFileSync(sourcePath, dataEncoding);
+const processMapping = (currentMappings, operationType, primaryKey, secondaryKey) => {
+    const primaryExists = currentMappings.has(primaryKey);
+    const secondaryExists = currentMappings.has(secondaryKey);
 
-const parseSourceData = (rawDataString) => {
-    const contentLines = rawDataString.trim().split('\n');
+    const primaryValue = primaryExists ? currentMappings.get(primaryKey) : undefined;
+    const secondaryValue = secondaryExists ? currentMappings.get(secondaryKey) : undefined;
 
-    const [
-        firstEntry,
-        secondEntry,
-        thirdEntry,
-        ...restOfEntries
-    ] = contentLines;
-
-    const ignoredQuantity = parseInt(firstEntry, 10);
-    const [ initialSequenceValue, incrementalStep ] = secondEntry.split(' ').map(Number);
-    const operationTotal = parseInt(thirdEntry, 10);
-
-    const operationRecords = restOfEntries.slice(0, operationTotal).map(lineDetail => {
-        const [ actionType, subjectKey, objectKey ] = lineDetail.split(' ');
-        return { actionType, subjectKey, objectKey };
-    });
-    const finalKeyToFind = restOfEntries[operationTotal];
-
-    return {
-        initialSkipValue: ignoredQuantity,
-        sequenceStart: initialSequenceValue,
-        sequenceIncrement: incrementalStep,
-        procedureList: operationRecords,
-        ultimateKey: finalKeyToFind
-    };
+    if (operationType === "1") {
+        const actionDispatch = {
+            "false_false": () => {
+                currentMappings.set(primaryKey, secondaryKey);
+                currentMappings.set(secondaryKey, primaryKey);
+            },
+            "true_false": () => {
+                currentMappings.set(secondaryKey, primaryValue);
+                currentMappings.set(primaryKey, secondaryKey);
+            },
+            "false_true": () => {
+                currentMappings.set(primaryKey, secondaryValue);
+                currentMappings.set(secondaryKey, primaryKey);
+            },
+            "true_true": () => {
+                currentMappings.set(primaryKey, secondaryValue);
+                currentMappings.set(secondaryKey, primaryValue);
+            }
+        };
+        actionDispatch[`${primaryExists}_${secondaryExists}`]();
+    } else {
+        currentMappings.set(primaryKey, secondaryExists ? secondaryValue : secondaryKey);
+    }
 };
 
-const resolveCurrentDesignation = (identifierToQuery, designationRegister) => {
-    return designationRegister.has(identifierToQuery) ? designationRegister.get(identifierToQuery) : identifierToQuery;
-};
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputIterator = lineReader(rawInputContent);
 
-const applySingleDirectionAssignment = (currentRegister, sourceIdentifier, targetIdentifier) => {
-    const effectiveTarget = resolveCurrentDesignation(targetIdentifier, currentRegister);
-    const nextRegisterState = new Map(currentRegister);
-    nextRegisterState.set(sourceIdentifier, effectiveTarget);
-    return nextRegisterState;
-};
+inputIterator.next();
 
-const performBidirectionalSwap = (currentRegister, firstIdentifier, secondIdentifier) => {
-    const currentDesignationFirst = resolveCurrentDesignation(firstIdentifier, currentRegister);
-    const currentDesignationSecond = resolveCurrentDesignation(secondIdentifier, currentRegister);
+const [initialTerm, commonDifference] = inputIterator.next().value.split(" ").map(Number);
+const numberOfOperations = Number(inputIterator.next().value);
 
-    const nextRegisterState = new Map(currentRegister);
-    nextRegisterState.set(firstIdentifier, currentDesignationSecond);
-    nextRegisterState.set(secondIdentifier, currentDesignationFirst);
-    return nextRegisterState;
-};
+const aliasRegistry = new Map();
 
-const determineFinalOutcome = (processedInformation) => {
-    const { sequenceStart, sequenceIncrement, procedureList, ultimateKey } = processedInformation;
+for (let operationIndex = 0; operationIndex < numberOfOperations; operationIndex++) {
+    const [operationKind, firstIdentifier, secondIdentifier] = inputIterator.next().value.split(" ");
+    processMapping(aliasRegistry, operationKind, firstIdentifier, secondIdentifier);
+}
 
-    const finalDesignationRegister = procedureList.reduce((currentRegisterState, currentProcedure) => {
-        const { actionType, subjectKey, objectKey } = currentProcedure;
-        if (actionType === "1") {
-            return performBidirectionalSwap(currentRegisterState, subjectKey, objectKey);
-        } else {
-            return applySingleDirectionAssignment(currentRegisterState, subjectKey, objectKey);
-        }
-    }, new Map());
+let finalIdentifier = inputIterator.next().value;
 
-    const resolvedUltimateKey = resolveCurrentDesignation(ultimateKey, finalDesignationRegister);
+if (aliasRegistry.has(finalIdentifier)) {
+    finalIdentifier = aliasRegistry.get(finalIdentifier);
+}
 
-    const numericUltimateKey = parseInt(resolvedUltimateKey, 10);
+const finalNumericValue = Number(finalIdentifier);
 
-    return sequenceStart + ((numericUltimateKey - 1) * sequenceIncrement);
-};
-
-const rawApplicationData = obtainTextContent('/dev/stdin', 'utf8');
-const structuredApplicationData = parseSourceData(rawApplicationData);
-const finalCalculatedValue = determineFinalOutcome(structuredApplicationData);
-
-console.log(finalCalculatedValue);
+console.log(initialTerm + ((finalNumericValue - 1) * commonDifference));

@@ -1,32 +1,24 @@
-const interpretSourceMaterial = (materialText) => {
-    const sections = materialText.split('\n');
-    const hasQueryMark = sections.includes('?');
+const processInputContent = (sourceText) => {
+    const contentLines = sourceText.split('\n');
 
-    if (!hasQueryMark) {
-        return;
+    const hasSentinel = contentLines.some(lineItem => lineItem === '?');
+
+    if (hasSentinel) {
+        function* lineSupplier(linesArray) {
+            let currentPointer = 0;
+            for (;;) {
+                yield linesArray[currentPointer];
+                currentPointer++;
+            }
+        }
+
+        const lineStream = lineSupplier(contentLines);
+
+        for (;;) {
+            const currentExpression = lineStream.next().value;
+            console.log(eval(currentExpression));
+        }
     }
-
-    const evaluateAndOutput = (currentPosition) => {
-        if (currentPosition > sections.length) {
-            // This case should ideally not be reached if eval(undefined) always throws.
-            // It's a safeguard, but the error from eval(undefined) is what we expect.
-            return;
-        }
-
-        const currentSegment = sections[currentPosition];
-        try {
-            console.log(eval(currentSegment));
-        } catch (e) {
-            // Re-throw to mimic the original program's behavior of crashing on an eval error
-            throw e;
-        }
-
-        evaluateAndOutput(currentPosition + 1);
-    };
-
-    evaluateAndOutput(0);
 };
 
-const acquireExternalContent = (pathReference) => require("fs").readFileSync(pathReference, "utf8");
-
-interpretSourceMaterial(acquireExternalContent("/dev/stdin"));
+processInputContent(require("fs").readFileSync("/dev/stdin", "utf8"));

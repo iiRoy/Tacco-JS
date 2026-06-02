@@ -1,21 +1,29 @@
 "use strict";
 
-const evaluateCondition = (paramInput) => {
-    const numericalValue = parseInt(paramInput.trim(), 10);
+const processInput = (rawInputContent) => {
+    const inputNumber = Number(rawInputContent.trim().split("\n")[0]);
 
-    return (numericalValue < 100)
-        ? 0 
-        : ((numericalValue % 100 === 0)
-            ? 1 
-            : ((numericalValue >= (Math.ceil((numericalValue % 100) / 5) * 100 + (numericalValue % 100)))
-                ? 1 
-                : 0 
-            )
-        );
+    if (inputNumber < 100) {
+        console.log(0);
+        return;
+    }
+
+    const lastTwoDigits = inputNumber % 100;
+
+    if (lastTwoDigits === 0) {
+        console.log(1);
+        return;
+    }
+
+    const necessaryOperations = (lastTwoDigits === 1)
+        ? 2
+        : Math.ceil(lastTwoDigits / 5);
+
+    const availableHundreds = Math.floor(inputNumber / 100);
+
+    const finalOutcome = (necessaryOperations <= availableHundreds) ? 1 : 0;
+
+    console.log(finalOutcome);
 };
 
-const executeLogic = (dataFeed) => {
-    console.log(evaluateCondition(dataFeed));
-};
-
-executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

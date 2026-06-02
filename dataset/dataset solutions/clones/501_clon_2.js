@@ -1,105 +1,118 @@
-let dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The lineCollection holds individual lines from the input, processed sequentially.
-let lineCollection = dataStream.trim().split("\n");
+// Process the input data, splitting it into individual lines.
+var lineData = rawData.trim().split("\n");
 
-// This outer loop processes multiple graph configurations until a sentinel is found.
+// Main loop to process multiple test cases until "0 0" is encountered.
 while (true) {
-  // Read the first line of a configuration, representing the number of nodes and edges.
-  let graphDimensions = lineCollection.shift().split(" ").map(Number);
+    // Read the first line of the current test case, which contains N and M.
+    // N: number of nodes, M: number of edges.
+    var nodeEdgeCounts = lineData.shift().split(" ").map(Number);
 
-  // Check if the current configuration indicates termination (0 nodes, 0 edges).
-  if (graphDimensions.join(" ") === "0 0") {
-    break; // Exit the main processing loop.
-  }
-
-  // Extract the specific node and edge counts.
-  let totalNodes = graphDimensions[0];
-  let totalEdges = graphDimensions[1];
-
-  // Define constants for the DP table's state dimension, start node, and destination node.
-  let stateDimension = 2; // Represents the number of distinct states (e.g., 0, 1, 2).
-  let initialNode = 1;    // The starting point for pathfinding in the graph.
-  let finalNode = totalNodes; // The ultimate target node to reach.
-
-  // Initialize an array to store all edge information (source, destination, weight).
-  let edgeDetails = [];
-
-  // Populate the edgeDetails array by reading subsequent lines from the input.
-  for (let edgeIndex = 0; edgeIndex < totalEdges; edgeIndex++) {
-    edgeDetails.push(lineCollection.shift().split(" ").map(Number));
-  }
-
-  // Initialize the dynamic programming table.
-  // costTable[node][state] stores the minimum cost to reach 'node' in a particular 'state'.
-  let costTable = [];
-  for (let nodeIdx = 0; nodeIdx <= totalNodes; nodeIdx++) {
-    costTable[nodeIdx] = [];
-    for (let stateIdx = 0; stateIdx <= stateDimension; stateIdx++) {
-      costTable[nodeIdx][stateIdx] = Number.POSITIVE_INFINITY; // All costs start as infinite.
-    }
-  }
-
-  // Set the cost to reach the initialNode in its base state (state 0) to zero.
-  costTable[initialNode][0] = 0;
-
-  // Initialize a queue for graph traversal (e.g., a variant of BFS/Dijkstra).
-  let nodeQueue = [initialNode];
-  // A map to keep track of nodes that have already been fully processed.
-  let processedNodes = {};
-
-  // Graph traversal loop. Continues as long as there are nodes to explore.
-  while (true) {
-    if (nodeQueue.length === 0) {
-      break; // No more nodes in the queue, terminate traversal.
+    // Check for the termination condition (N=0, M=0).
+    if (nodeEdgeCounts.join(" ") === "0 0") {
+        break; // Exit the loop if the termination condition is met.
     }
 
-    let currentFocusNode = nodeQueue.shift(); // Dequeue the next node to process.
+    // Extract N and M from the parsed line.
+    var numNodes = nodeEdgeCounts[0];
+    var numEdges = nodeEdgeCounts[1];
 
-    // If this node has already been processed, skip further operations for it.
-    if (processedNodes.hasOwnProperty(currentFocusNode)) {
-      continue;
+    // Define constants for the algorithm.
+    // 'costCategories' represents the number of cost dimensions (e.g., direct, one-stop, two-stop).
+    var costCategories = 2; // This seems to be an index for the DP array, so 0, 1, 2 means 3 categories.
+    var startNode = 1; // The starting node for pathfinding.
+    var destinationNode = numNodes; // The target node.
+
+    // Initialize an array to store edge information.
+    var edgeList = [];
+    // Populate the edgeList with M edges.
+    for (var k = 0; k < numEdges; k++) {
+        edgeList.push(lineData.shift().split(" ").map(Number));
     }
 
-    // Mark the current node as processed to prevent redundant work.
-    processedNodes[currentFocusNode] = true;
+    // Initialize the dynamic programming table (minCosts).
+    // minCosts[node][category] stores the minimum cost to reach 'node' with 'category' stops.
+    var minCosts = [];
+    for (var k = 0; k <= numNodes; k++) {
+        minCosts[k] = [];
+        for (var l = 0; l <= costCategories; l++) {
+            minCosts[k][l] = Infinity; // Initialize all costs to infinity.
+        }
+    }
 
-    // Iterate through all available edges to find connections to/from the current node.
-    edgeDetails.forEach(function(currentPath) {
-      let firstVertex = currentPath[0];
-      let secondVertex = currentPath[1];
-      let pathCost = currentPath[2];
+    // Set the initial cost for the start node (node 1) with 0 stops to 0.
+    minCosts[startNode][0] = 0;
 
-      // Case 1: The current node is the 'firstVertex' of the edge.
-      if (firstVertex === currentFocusNode) {
-        // Update costs for 'secondVertex' based on paths through 'firstVertex'.
-        costTable[secondVertex][0] = Math.min(costTable[secondVertex][0], costTable[firstVertex][0] + pathCost);
-        costTable[secondVertex][1] = Math.min(costTable[secondVertex][1], costTable[firstVertex][0]);
-        costTable[secondVertex][2] = Math.min(costTable[secondVertex][2], costTable[firstVertex][1]);
-        costTable[secondVertex][2] = Math.min(costTable[secondVertex][2], costTable[firstVertex][2] + pathCost);
-        nodeQueue.push(secondVertex); // Enqueue the connected node for future processing.
-      }
-      // Case 2: The current node is the 'secondVertex' of the edge.
-      else if (secondVertex === currentFocusNode) {
-        // Update costs for 'firstVertex' based on paths through 'secondVertex'.
-        costTable[firstVertex][0] = Math.min(costTable[firstVertex][0], costTable[secondVertex][0] + pathCost);
-        costTable[firstVertex][1] = Math.min(costTable[firstVertex][1], costTable[secondVertex][0]);
-        costTable[firstVertex][2] = Math.min(costTable[firstVertex][2], costTable[secondVertex][1]);
-        costTable[firstVertex][2] = Math.min(costTable[firstVertex][2], costTable[secondVertex][2] + pathCost);
-        nodeQueue.push(firstVertex); // Enqueue the connected node.
-      }
-      // This specific line resets a cost state for the final node during each edge iteration.
-      // Its exact purpose here is context-dependent but maintained for structural integrity.
-      costTable[finalNode][1] = Number.POSITIVE_INFINITY;
+    // Initialize a queue for nodes to visit (similar to a BFS/Dijkstra queue).
+    var queueNodes = [startNode];
+    // Initialize an object to keep track of visited nodes to avoid redundant processing.
+    var visitedNodes = {};
+
+    // Main loop for the pathfinding algorithm.
+    while (true) {
+        // If the queue is empty, all reachable nodes have been processed.
+        if (queueNodes.length === 0) {
+            break;
+        }
+
+        // Dequeue a node to process.
+        var currentNode = queueNodes.shift();
+
+        // If this node has already been fully processed, skip it.
+        if (visitedNodes.hasOwnProperty(currentNode)) {
+            continue;
+        }
+        // Mark the current node as visited.
+        visitedNodes[currentNode] = true;
+
+        // Iterate through all edges to find connections from/to the currentNode.
+        edgeList.forEach(function (edgeInfo) {
+            var nodeA = edgeInfo[0]; // First node in the edge.
+            var nodeB = edgeInfo[1]; // Second node in the edge.
+            var edgeWeight = edgeInfo[2]; // Weight/cost of the edge.
+
+            // If nodeA is the currentNode, consider paths from currentNode to nodeB.
+            if (nodeA === currentNode) {
+                // Update costs for nodeB:
+                // Category 0: Direct path (no stops).
+                minCosts[nodeB][0] = Math.min(minCosts[nodeB][0], minCosts[nodeA][0] + edgeWeight);
+                // Category 1: One-stop path (from a direct path to nodeA).
+                minCosts[nodeB][1] = Math.min(minCosts[nodeB][1], minCosts[nodeA][0]);
+                // Category 2: Two-stop path (from a one-stop path to nodeA).
+                minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], minCosts[nodeA][1]);
+                // Category 2: Also consider a two-stop path from a two-stop path to nodeA.
+                minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], minCosts[nodeA][2] + edgeWeight);
+                // Add nodeB to the queue for further processing.
+                queueNodes.push(nodeB);
+            }
+            // If nodeB is the currentNode, consider paths from currentNode to nodeA.
+            else if (nodeB === currentNode) {
+                // Update costs for nodeA:
+                // Category 0: Direct path.
+                minCosts[nodeA][0] = Math.min(minCosts[nodeA][0], minCosts[nodeB][0] + edgeWeight);
+                // Category 1: One-stop path.
+                minCosts[nodeA][1] = Math.min(minCosts[nodeA][1], minCosts[nodeB][0]);
+                // Category 2: Two-stop path.
+                minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], minCosts[nodeB][1]);
+                // Category 2: Also consider a two-stop path from a two-stop path to nodeB.
+                minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], minCosts[nodeB][2] + edgeWeight);
+                // Add nodeA to the queue for further processing.
+                queueNodes.push(nodeA);
+            }
+            // This line seems to be an error in the original logic, as it unconditionally sets
+            // minCosts[destinationNode][1] to Infinity within the edge iteration.
+            // However, Type II clone rules require preserving behavior, so it must be kept.
+            minCosts[destinationNode][1] = Infinity;
+        });
+    }
+
+    // After the pathfinding, find the minimum cost to the destination node across all categories.
+    var finalResult = Infinity;
+    minCosts[destinationNode].forEach(function (costValue, categoryIndex) {
+        finalResult = Math.min(finalResult, costValue);
     });
-  }
 
-  // After traversal, find the minimum cost to reach the finalNode across all its states.
-  let minimumOverallCost = Number.POSITIVE_INFINITY;
-  costTable[finalNode].forEach(function(currentCostValue, stateIdx) {
-    minimumOverallCost = Math.min(minimumOverallCost, currentCostValue);
-  });
-
-  // Output the calculated minimum cost for the current graph configuration.
-  console.log(minimumOverallCost);
+    // Output the final minimum cost for the current test case.
+    console.log(finalResult);
 }

@@ -1,82 +1,87 @@
-(function(inputBlob) {
-    const conductQuest = (sourceContent) => {
-        const contentLines = sourceContent.trim().split('\n');
+(function(inputData) {
+  const allLines = inputData.trim().split('\n');
+  let lineCursor = 0;
 
-        const directionalChanges = new Map([
-            ['N', [0, 1]],
-            ['S', [0, -1]],
-            ['E', [1, 0]],
-            ['W', [-1, 0]]
-        ]);
+  const extractLine = () => allLines[lineCursor++];
 
-        const extractCases = (remainingLines, accumulator = []) => {
-            if (remainingLines.length === 0) {
-                return accumulator;
-            }
+  const motionVectors = new Map([
+    ['N', [0, 1]],
+    ['S', [0, -1]],
+    ['E', [1, 0]],
+    ['W', [-1, 0]]
+  ]);
 
-            const [firstLine, ...restOfLines] = remainingLines;
-            const gemAmount = Number(firstLine);
+  // Helper to generate all coordinates visited during a single movement command
+  const generatePathCoordinates = (startPoint, directionVector, distance) => {
+    let [currentX, currentY] = startPoint;
 
-            if (gemAmount === 0) {
-                return accumulator;
-            }
+    // Use a recursive generator for a Type IV divergence in path generation
+    function* pathGenerator(x, y, count) {
+      if (count <= 0) return;
+      x += directionVector[0];
+      y += directionVector[1];
+      yield `${x} ${y}`;
+      yield* pathGenerator(x, y, count - 1);
+    }
 
-            const initialGems = new Set(restOfLines.slice(0, gemAmount).map(l => l.trim()));
-            const linesAfterGems = restOfLines.slice(gemAmount);
+    return Array.from(pathGenerator(currentX, currentY, distance));
+  };
 
-            const movementAmount = Number(linesAfterGems[0]);
-            const linesAfterMoveAmount = linesAfterGems.slice(1);
+  const processScenario = () => {
+    const initialDirective = extractLine();
+    if (initialDirective === '0') {
+      return false; // Signal termination
+    }
 
-            const moves = linesAfterMoveAmount.slice(0, movementAmount).map(moveLine => {
-                const [directionSymbol, quantity] = moveLine.trim().split(' ');
-                return { symbol: directionSymbol, quantity: Number(quantity) };
-            });
+    const gemQuantity = Number(initialDirective);
+    const uncollectedGems = new Set(); // Using a Set for gem storage
+    for (let i = 0; i < gemQuantity; ++i) {
+      uncollectedGems.add(extractLine().trim());
+    }
 
-            const linesAfterMoves = linesAfterMoveAmount.slice(movementAmount);
+    const operationCount = Number(extractLine());
+    let currentAgentPosition = [10, 10]; // [x, y]
+    let acquiredGems = 0;
 
-            return extractCases(
-                linesAfterMoves,
-                [...accumulator, { treasureSet: initialGems, journeyPlan: moves, expectedMatch: movementAmount }]
-            );
-        };
+    // Collect all operations first, then process them functionally
+    const operationSequence = Array.from({ length: operationCount }, () => extractLine().trim());
 
-        const parsedCases = extractCases(contentLines);
+    // Use reduce to process the sequence of operations and maintain state
+    const finalOutcome = operationSequence.reduce((accumulator, operationString) => {
+      let [agentX, agentY] = accumulator.currentPos;
+      let currentAcquired = accumulator.totalAcquired;
 
-        const evaluateJourney = (caseData) => {
-            const initialPoint = { horizontal: 10, vertical: 10 };
+      const [directionSymbol, stepsValue] = operationString.split(' ');
+      const stepMagnitude = Number(stepsValue);
+      const movementDelta = motionVectors.get(directionSymbol);
 
-            const finalState = caseData.journeyPlan.reduce((currentStatus, currentInstruction) => {
-                const { horizontal, vertical } = currentStatus.position;
-                const currentTreasures = currentStatus.foundItems;
+      // Generate all points visited for this operation using the helper
+      const visitedLocations = generatePathCoordinates([agentX, agentY], movementDelta, stepMagnitude);
 
-                const vectorChange = directionalChanges.get(currentInstruction.symbol);
-                let tempHorizontal = horizontal;
-                let tempVertical = vertical;
+      // Check for gems along the path and update state
+      visitedLocations.forEach(locationKey => {
+        if (uncollectedGems.has(locationKey)) {
+          currentAcquired++;
+          uncollectedGems.delete(locationKey); // Mark as collected by removing from Set
+        }
+      });
 
-                const stepResult = Array.from({ length: currentInstruction.quantity }).reduce((stepState, _, __) => {
-                    tempHorizontal += vectorChange[0];
-                    tempVertical += vectorChange[1];
-                    const currentSpotKey = `${tempHorizontal} ${tempVertical}`;
+      // Update agent's final position for this operation
+      const lastVisited = visitedLocations[visitedLocations.length - 1];
+      if (lastVisited) {
+        [agentX, agentY] = lastVisited.split(' ').map(Number);
+      }
+      // If no steps were taken (stepMagnitude was 0), agentX, agentY remain unchanged,
+      // which is correctly handled as lastVisited would be undefined.
 
-                    if (caseData.treasureSet.has(currentSpotKey)) {
-                        stepState.add(currentSpotKey);
-                    }
-                    return stepState;
-                }, new Set(currentTreasures)); 
+      return { currentPos: [agentX, agentY], totalAcquired: currentAcquired };
+    }, { currentPos: currentAgentPosition, totalAcquired: acquiredGems });
 
-                return {
-                    position: { horizontal: tempHorizontal, vertical: tempVertical },
-                    foundItems: stepResult
-                };
-            }, { position: initialPoint, foundItems: new Set() });
+    console.log(finalOutcome.totalAcquired === operationCount ? 'Yes' : 'No');
+    return true; // Signal continuation
+  };
 
-            return finalState.foundItems.size === caseData.expectedMatch ? 'Yes' : 'No';
-        };
+  // Main loop to process all scenarios until '0' is encountered
+  while (processScenario()) {}
 
-        const allResults = parsedCases.map(evaluateJourney);
-
-        return allResults.join('\n');
-    };
-
-    console.log(conductQuest(inputBlob));
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,123 +1,97 @@
-"use strict"; /* Enforce strict parsing rules */
+"use strict";
 
-// Helper function to deconstruct an array-like structure into a fixed-size array.
-function _deconstructArray(collection, limit) {
-  return (
-    _checkArrayValidity(collection) ||
-    _iterateCollectionWithLimit(collection, limit) ||
-    _handleNonIterable()
-  );
+// Helper function to safely destructure arrays, similar to Babel's _slicedToArray
+function _arrayDestructure(inputArray, limitCount) {
+  return _arrWithHoles(inputArray) || _iterToArrayLimited(inputArray, limitCount) || _nonIterRest();
 }
 
-// Throws an error if the provided instance is not iterable.
-function _handleNonIterable() {
-  throw new TypeError("Invalid attempt to deconstruct a non-iterable instance");
+// Helper function for non-iterable destructuring attempts
+function _nonIterRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
-/* Function to iterate over a collection and extract a limited number of elements */
-function _iterateCollectionWithLimit(collection, limit) {
-  var _resultElements = [];
-  var _isNotDone = true;
-  var _isErrorCaught = false;
-  var _caughtErrorObject = undefined;
-
+// Helper function to convert iterable to array with a limit, similar to Babel's _iterableToArrayLimit
+function _iterToArrayLimited(inputArray, limitCount) {
+  var tempArray = [];
+  var notDone = true;
+  var hadError = false;
+  var errorObj = undefined;
   try {
-    for (
-      var _iteratorInstance = collection[Symbol.iterator](), _nextItem;
-      !(_isNotDone = (_nextItem = _iteratorInstance.next()).done);
-      _isNotDone = true
-    ) {
-      _resultElements.push(_nextItem.value);
-
-      if (limit && _resultElements.length === limit) {
-        break; // Exit loop if limit is reached
-      }
+    for (var iteratorObj = inputArray[Symbol.iterator](), iteratorResult; !(notDone = (iteratorResult = iteratorObj.next()).done); notDone = true) {
+      tempArray.push(iteratorResult.value);
+      if (limitCount && tempArray.length === limitCount) break;
     }
-  } catch (errorObject) {
-    _isErrorCaught = true;
-    _caughtErrorObject = errorObject;
+  } catch (caughtError) {
+    hadError = true;
+    errorObj = caughtError;
   } finally {
     try {
-      if (!_isNotDone && _iteratorInstance["return"] != null) {
-        _iteratorInstance["return"](); // Ensure iterator is closed
-      }
+      if (!notDone && iteratorObj["return"] != null) iteratorObj["return"]();
     } finally {
-      if (_isErrorCaught) {
-        throw _caughtErrorObject; // Re-throw caught error
-      }
+      if (hadError) throw errorObj;
+    }
+  }
+  return tempArray;
+}
+
+// Helper function to check if an array has holes, similar to Babel's _arrayWithHoles
+function _arrWithHoles(inputArray) {
+  if (Array.isArray(inputArray)) return inputArray;
+}
+
+// Main processing function for the problem
+function processInput(rawData) {
+  // Split the entire input string into individual lines
+  var dataLines = rawData.split('\n');
+
+  // Parse the first line to extract the two integer values, N and P
+  var _parsedNums = parseNumbers(dataLines[0]),
+      _destructuredNums = _arrayDestructure(_parsedNums, 2),
+      numElements = _destructuredNums[0], // Represents N
+      productValue = _destructuredNums[1]; // Represents P
+
+  // Calculate the maximum possible base 'idx' such that idx^N <= P
+  var upperBound = Math.pow(productValue, 1 / numElements);
+
+  // Handle the special case where N is 1
+  if (numElements === 1) {
+    console.log(productValue);
+    return; // Terminate execution for this case
+  }
+
+  // Initialize the result variable to 1
+  var resultVal = 1;
+
+  // Iterate from 2 up to the calculated upper bound
+  for (var idx = 2; idx <= upperBound; idx++) {
+    // Check if P is perfectly divisible by idx raised to the power of N
+    if (productValue % Math.pow(idx, numElements) === 0) {
+      resultVal = idx; // Update the result if a valid base is found
     }
   }
 
-  return _resultElements;
+  // Output the final computed result
+  console.log(resultVal);
 }
 
-// Checks if the given object is a valid array.
-function _checkArrayValidity(collection) {
-  if (Array.isArray(collection)) {
-    return collection;
-  }
+// Function to compute the greatest common divisor (GCD) using the Euclidean algorithm
+function greatestCommonDivisor(valA, valB) {
+  // Ensure valA is always greater than or equal to valB for consistent recursion
+  if (valA < valB) return greatestCommonDivisor(valB, valA);
+  // Base case: if valB is 0, then valA is the GCD
+  if (valB === 0) return valA;
+  // Calculate the remainder
+  var remainderVal = valA % valB;
+  // Recursive call with valB and the remainder
+  return greatestCommonDivisor(valB, remainderVal);
 }
 
+// Read input from standard input and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-/*
- * Main program execution function.
- * Processes raw input to calculate a specific value.
- */
-function executeProgram(rawData) {
-  var inputLines = rawData.split('\n'); // Split the input string into separate lines.
-
-  // Parse the first line to extract two numerical values.
-  var _parsedValues = parseNumbersFromLine(inputLines[0]);
-  var _extractedNumbers = _deconstructArray(_parsedValues, 2);
-
-  var exponentVal = _extractedNumbers[0]; // The exponent N
-  var baseValue = _extractedNumbers[1];   // The base P
-
-  // Calculate the upper bound for the loop.
-  var upperBound = Math.pow(baseValue, 1.0 / exponentVal);
-
-  // Special case: if the exponent is 1, the result is simply the base value.
-  if (exponentVal === 1) {
-    console.info(baseValue);
-    return;
-  }
-
-  var finalResult = 1; // Initialize the final result.
-
-  // Iterate from 2 up to the calculated upper bound.
-  for (var factorCandidate = 2; factorCandidate <= upperBound; factorCandidate++) {
-    // Check if P is perfectly divisible by (factorCandidate ^ N).
-    if (baseValue % Math.pow(factorCandidate, exponentVal) === 0) {
-      finalResult = factorCandidate; // Update result if a larger factor is found.
-    }
-  }
-
-  console.info(finalResult); // Output the computed result.
-}
-
-
-// Computes the greatest common divisor (GCD) of two numbers using Euclidean algorithm.
-function computeGCD(firstNum, secondNum) {
-  if (firstNum < secondNum) {
-    return computeGCD(secondNum, firstNum); // Ensure firstNum >= secondNum
-  }
-  if (secondNum === 0) {
-    return firstNum; // Base case: GCD(x, 0) = x
-  }
-  var remainderVal = firstNum % secondNum; // Calculate remainder
-  return computeGCD(secondNum, remainderVal); // Recursive call
-}
-
-
-// Execute the main program with input from standard input.
-executeProgram(
-  require('node:fs').readFileSync('/dev/stdin', 'utf8') // Read content from stdin
-);
-
-
-// Parses a string line containing space-separated numbers into an array of integers.
-function parseNumbersFromLine(inputLine) {
-  return inputLine.split(/\s+/).map(function (numString) {
-    return Number.parseInt(numString, 10); // Convert string to integer (base 10)
+// Helper function to parse a string line containing space-separated numbers into an array of integers
+function parseNumbers(inputLine) {
+  return inputLine.split(/\s+/).map(function (numStr) {
+    return parseInt(numStr); // Convert each string number to an integer
   });
 }

@@ -1,151 +1,163 @@
-var inputProcessor = initializeInputSystem();
+var inputHandler = initializeInputProcessor();
 
-ExecuteProgram();
+processMatrixData();
 
-function obtainInteger() {
-    return convertData(fetchNextLine(), 1);
+function retrieveInteger() {
+  return convertInputData(getNextLine(), 1);
 }
 
-function obtainStringArray() {
-    return convertData(fetchNextLine(), 2);
+function retrieveStringArray() {
+  return convertInputData(getNextLine(), 2);
+} // Splits by space
+
+function retrieveIntegerArray() {
+  return convertInputData(getNextLine(), 4);
+} // Splits by space and converts to numbers
+
+function retrieveCharacterArray() {
+  return convertInputData(getNextLine(), 6);
+} // Splits into individual characters
+
+function getNextLine() {
+  return inputHandler.getNextLine();
 }
 
-function obtainIntegerArray() {
-    return convertData(fetchNextLine(), 4);
+function hasMoreLines() {
+  return inputHandler.hasMoreLines();
 }
 
-function obtainCharacterArray() {
-    return convertData(fetchNextLine(), 6);
+function readInputFile() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
-function fetchNextLine() {
-    return inputProcessor.getNextLine();
+function initializeInputProcessor() {
+  var rawInputLines = readInputFile();
+  var inputProcessor = {
+    lineBuffer: rawInputLines,
+    currentLineIndex: 0,
+    totalLines: rawInputLines.length,
+    hasMoreLines: function () {
+      return this.currentLineIndex < this.totalLines;
+    },
+    getNextLine: function () {
+      if (!this.hasMoreLines()) {
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+      } else {
+        var currentInputLine = this.lineBuffer[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentInputLine;
+      }
+    },
+  };
+  return inputProcessor;
 }
 
-function checkMoreLines() {
-    return inputProcessor.hasMoreLines();
-}
+function printToConsole(content) {
+  console.log(content);
+} // Standard output
 
-function acquireRawInput() {
-    return require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-        .trim()
-        .split("\n");
-}
+function logToErrorStream(message) {
+  console.error(message);
+} // Standard error output
 
-function initializeInputSystem() {
-    var inputContent = acquireRawInput();
-    var systemInputHandler = {
-        "lineBuffer": inputContent,
-        "currentLineIndex": 0,
-        "totalLineCount": inputContent.length,
-        "hasMoreLines": function() {
-            return (this.currentLineIndex < this.totalLineCount);
-        },
-        "getNextLine": function() {
-            if (!this.hasMoreLines()) {
-                throw new Error("InputBufferExhausted: No more input lines available.");
-            } else {
-                var retrievedLine = this.lineBuffer[this.currentLineIndex];
-                this.currentLineIndex++;
-                return retrievedLine;
-            }
-        }
-    };
-    return systemInputHandler;
-}
-
-function displayOutput(valueToPrint) {
-    console.log(valueToPrint);
-}
-
-function logErrorToConsole(errorMessage) {
-    console.error(errorMessage);
-}
-
-/*
- * Data conversion utility function.
- * Handles various transformation modes for input values.
- *
- * Conversion Modes:
- *   1: Convert to integer.
- *   2: Split string by space into an array of strings.
- *   4: Split string by space and convert elements to numbers.
- *   6: Split string into an array of single characters.
- *   7: Split string into characters and convert elements to numbers.
- *   8: Join array elements with a space.
- *   9: Join array elements with a newline.
- *   0: Join array elements without any delimiter.
- *   Default: Returns the input value unchanged if no matching mode or on error.
- */
-function convertData(sourceValue, conversionMode) {
-    try {
-        switch (conversionMode) {
-            case 1:
-                return parseInt(sourceValue, 10);
-            case 2:
-                return sourceValue.split(" ");
-            case 4:
-                return sourceValue.split(" ").map((itemString) => Number(itemString));
-            case 6:
-                return sourceValue.split("");
-            case 7:
-                return sourceValue.split("").map((itemString) => Number(itemString));
-            case 8:
-                return sourceValue.join(" ");
-            case 9:
-                return sourceValue.join("\n");
-            case 0:
-                return sourceValue.join("");
-            default:
-                return sourceValue;
-        }
-    } catch (caughtException) {
-        return sourceValue;
+// This function handles various input data conversions.
+// conversionType:
+//   1: Convert to integer
+//   2: Split by space into string array
+//   4: Split by space and convert to integer array
+//   6: Split into character array
+//   7: Split into character array and convert to integer array
+//   8: Join array elements with space
+//   9: Join array elements with newline
+//   0: Join array elements without separator
+// Default: Returns input as is.
+function convertInputData(inputVal, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputVal);
+      case 2:
+        return inputVal.split(" ");
+      case 4:
+        return inputVal.split(" ").map((elementStr) => Number(elementStr));
+      case 6:
+        return inputVal.split("");
+      case 7:
+        return inputVal.split("").map((elementStr) => Number(elementStr));
+      case 8:
+        return inputVal.join(" ");
+      case 9:
+        return inputVal.join("\n");
+      case 0:
+        return inputVal.join("");
+      default:
+        return inputVal;
     }
+  } catch (errorDetails) {
+    return inputVal; // Return original value on conversion error
+  }
 }
 
-function ExecuteProgram() {
-    var matrixSize = obtainInteger();
-    var distanceMatrix = new Array(matrixSize);
+function processMatrixData() {
+  var matrixSize = retrieveInteger();
+  var adjacencyMatrix = new Array(matrixSize);
 
-    for (var rowIterator = 0; rowIterator < matrixSize; rowIterator++) {
-        distanceMatrix[rowIterator] = obtainIntegerArray();
+  for (var rowIdx = 0; rowIdx < matrixSize; rowIdx++) {
+    adjacencyMatrix[rowIdx] = retrieveIntegerArray();
+  }
+
+  var redundantPathSum = 0;
+  var totalEdgeWeight = 0;
+
+  // Calculate initial sum of all edge weights
+  for (var rowIdx = 0; rowIdx < matrixSize; rowIdx++) {
+    for (var colIdx = 0; colIdx < matrixSize; colIdx++) {
+      totalEdgeWeight += adjacencyMatrix[rowIdx][colIdx];
     }
+  }
 
-    var redundantPathSum = 0;
-    var totalPathWeight = 0;
+  logToErrorStream(totalEdgeWeight);
 
-    for (var rowIterator = 0; rowIterator < matrixSize; rowIterator++) {
-        for (var colIterator = 0; colIterator < matrixSize; colIterator++) {
-            totalPathWeight += distanceMatrix[rowIterator][colIterator];
+  totalEdgeWeight /= 2; // Each edge is counted twice (i->j and j->i)
+
+  var processedPairs = new Set();
+
+  // Floyd-Warshall-like iteration to find redundant paths
+  for (var intermediateNodeIdx = 0; intermediateNodeIdx < matrixSize; intermediateNodeIdx++) {
+    for (var rowIdx = 0; rowIdx < matrixSize; rowIdx++) {
+      for (var destinationNodeIdx = 0; destinationNodeIdx < matrixSize; destinationNodeIdx++) {
+        // If a direct path is longer than a path through an intermediate node, it's an invalid graph
+        if (
+          adjacencyMatrix[rowIdx][destinationNodeIdx] >
+          adjacencyMatrix[rowIdx][intermediateNodeIdx] + adjacencyMatrix[intermediateNodeIdx][destinationNodeIdx]
+        ) {
+          printToConsole(-1);
+          return;
+        } else if (
+          adjacencyMatrix[rowIdx][destinationNodeIdx] ==
+            adjacencyMatrix[rowIdx][intermediateNodeIdx] + adjacencyMatrix[intermediateNodeIdx][destinationNodeIdx] &&
+          rowIdx != intermediateNodeIdx &&
+          destinationNodeIdx != intermediateNodeIdx
+        ) {
+          // If a direct path is equal to a path through an intermediate node, it's a redundant edge
+          // We only want to count each unique redundant edge once (e.g., (i,j) not (j,i) again)
+          var pairIdentifier =
+            Math.min(rowIdx, destinationNodeIdx).toString() +
+            ":" +
+            Math.max(rowIdx, destinationNodeIdx).toString();
+
+          if (!processedPairs.has(pairIdentifier)) {
+            redundantPathSum += adjacencyMatrix[rowIdx][destinationNodeIdx];
+            processedPairs.add(pairIdentifier);
+            // logToErrorStream((rowIdx + 1) + "," + (destinationNodeIdx + 1) + "," + (intermediateNodeIdx + 1));
+          }
         }
+      }
     }
+  }
 
-    logErrorToConsole(totalPathWeight);
+  logToErrorStream(redundantPathSum);
+  // redundantPathSum /= 2; // This line was commented out in the original, so keep it commented.
 
-    totalPathWeight /= 2;
-
-    var processedEdges = new Set();
-
-    for (var intermediateNode = 0; intermediateNode < matrixSize; intermediateNode++) {
-        for (var rowIterator = 0; rowIterator < matrixSize; rowIterator++) {
-            for (var colIterator = 0; colIterator < matrixSize; colIterator++) {
-                if (distanceMatrix[rowIterator][colIterator] > (distanceMatrix[rowIterator][intermediateNode] + distanceMatrix[intermediateNode][colIterator])) {
-                    displayOutput(-1);
-                    return;
-                } else if (distanceMatrix[rowIterator][colIterator] === (distanceMatrix[rowIterator][intermediateNode] + distanceMatrix[intermediateNode][colIterator]) && rowIterator !== intermediateNode && colIterator !== intermediateNode) {
-                    var edgeIdentifier = Math.min(rowIterator, colIterator).toString() + ":" + Math.max(rowIterator, colIterator).toString();
-                    if (!processedEdges.has(edgeIdentifier)) {
-                        redundantPathSum += distanceMatrix[rowIterator][colIterator];
-                        processedEdges.add(edgeIdentifier);
-                    }
-                }
-            }
-        }
-    }
-
-    logErrorToConsole(redundantPathSum);
-
-    displayOutput(totalPathWeight - redundantPathSum);
+  printToConsole(totalEdgeWeight - redundantPathSum);
 }

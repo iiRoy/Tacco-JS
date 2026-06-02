@@ -1,17 +1,12 @@
-const conversionFactor = 1688 / 243;
+const fileSystemModule = require("fs");
 
-const systemFileAccess = require('fs');
+const transformationFactor = 1688 / 243;
 
-const inputLocation = '/dev/stdin';
+const standardInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const inputTokens = standardInputContent.split(/\s/);
 
-const rawTextContent = systemFileAccess.readFileSync(inputLocation, 'utf8');
-
-const numericalEntryPoints = rawTextContent
-    .split(/\s/)
-    .filter(segment => segment.length > 0)
-    .map(val => parseFloat(val));
-
-numericalEntryPoints.forEach(currentDatum => {
-    const finalCalculatedValue = currentDatum * conversionFactor;
-    console.log(finalCalculatedValue.toFixed(8));
+inputTokens.forEach(function(currentInputString) {
+    const numericalValue = Number(currentInputString);
+    const calculatedResult = numericalValue * transformationFactor;
+    console.log(calculatedResult.toFixed(8));
 });

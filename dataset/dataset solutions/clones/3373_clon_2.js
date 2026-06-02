@@ -1,70 +1,107 @@
-function computeProduct(dataSource) {
-  const lines = dataSource.split('\n');
-  const numericalStrings = lines[0].split(' ');
+function processInput(rawData) {
+    // Split the raw input data into individual lines.
+    const lines = rawData.split('\n');
 
-  const thresholdCount = parseInt(numericalStrings[0]);
-  const targetNumber = parseInt(numericalStrings[1]);
+    // Parse the first line to extract the two numeric values.
+    const firstLineParts = lines[0].split(' ');
 
-  if (thresholdCount === 1) {
-    console.log(thresholdCount);
-    return 0;
-  }
+    // Convert the extracted parts to integers.
+    const countVal = parseInt(firstLineParts[0]);
+    const productVal = parseInt(firstLineParts[1]);
 
-  var factorList = [];
-
-  var currentDivisor = 7;
-  var divisorIncrement = 4;
-
-  const determinePrimeFactors = valToFactor => {
-    if (valToFactor < 2)
-      return [];
-    if (valToFactor === 2 || valToFactor === 3 || valToFactor === 5)
-      return [valToFactor];
-    if (valToFactor % 2 === 0)
-      return [2, ...determinePrimeFactors(valToFactor / 2)];
-    if (valToFactor % 3 === 0)
-      return [3, ...determinePrimeFactors(valToFactor / 3)];
-    if (valToFactor % 5 === 0)
-      return [5, ...determinePrimeFactors(valToFactor / 5)];
-
-    const upperBound = Math.sqrt(valToFactor);
-
-    while (currentDivisor <= upperBound) {
-      if (valToFactor % currentDivisor === 0)
-        return [currentDivisor, ...determinePrimeFactors(valToFactor / currentDivisor)];
-      currentDivisor += divisorIncrement;
-      divisorIncrement = 6 - divisorIncrement;
+    // Handle a specific edge case where the count value is 1.
+    if (countVal === 1) {
+        console.log(countVal); // Output the count value.
+        return 0; // Terminate execution.
     }
-    return [valToFactor];
-  };
 
-  foundFactors = determinePrimeFactors(targetNumber);
+    // Initialize variables for prime factorization logic.
+    // These variables are part of the `calculatePrimeFactors` closure.
+    let currentDivisor = 7;
+    let divisorStep = 4;
 
-  var factorFrequencies = {};
+    /**
+     * Recursively calculates the prime factors of a given number.
+     * This function uses a wheel factorization optimization (2, 3, 5, then 6k +/- 1).
+     * @param {number} numberToFactor The number to factorize.
+     * @returns {number[]} An array of prime factors.
+     */
+    const calculatePrimeFactors = (numberToFactor) => {
+        // Base cases for small numbers.
+        if (numberToFactor < 2) {
+            return [];
+        }
+        if (numberToFactor === 2 || numberToFactor === 3 || numberToFactor === 5) {
+            return [numberToFactor];
+        }
 
-  for (var idx = 0; idx < foundFactors.length; idx++) {
-    var individualFactor = foundFactors[idx];
-    factorFrequencies[individualFactor] = (factorFrequencies[individualFactor]) ? factorFrequencies[individualFactor] + 1 : 1;
-  }
+        // Check for divisibility by 2, 3, and 5.
+        if (numberToFactor % 2 === 0) {
+            return [2, ...calculatePrimeFactors(numberToFactor / 2)];
+        }
+        if (numberToFactor % 3 === 0) {
+            return [3, ...calculatePrimeFactors(numberToFactor / 3)];
+        }
+        if (numberToFactor % 5 === 0) {
+            return [5, ...calculatePrimeFactors(numberToFactor / 5)];
+        }
 
-  console.log(factorFrequencies.length);
+        // Calculate the upper bound for checking divisors.
+        const upperBound = Math.sqrt(numberToFactor);
 
-  if (factorFrequencies.length === 0) {
-    console.log(targetNumber);
-    return 0;
-  }
+        // Iterate through potential prime divisors using the 6k +/- 1 pattern.
+        while (currentDivisor <= upperBound) {
+            if (numberToFactor % currentDivisor === 0) {
+                return [currentDivisor, ...calculatePrimeFactors(numberToFactor / currentDivisor)];
+            }
+            // Update the divisor and step for the next iteration.
+            currentDivisor += divisorStep;
+            divisorStep = 6 - divisorStep;
+        }
+        // If no factors found up to the limit, the number itself is prime.
+        return [numberToFactor];
+    };
 
-  var finalProduct = 1;
+    // Obtain the list of prime factors for the product value.
+    const factorResults = calculatePrimeFactors(productVal);
 
-  var uniqueFactors = Object.keys(factorFrequencies);
+    // Create an object to store the frequency of each prime factor.
+    const factorFrequencies = {};
 
-  for (var idx = 0; idx < uniqueFactors.length; idx++) {
-    if (parseInt(factorFrequencies[uniqueFactors[idx]]) >= thresholdCount) {
-      finalProduct = finalProduct * parseInt(uniqueFactors[idx]);
+    // Populate the frequency map.
+    for (let loopIndex = 0; loopIndex < factorResults.length; loopIndex++) {
+        const currentFactor = factorResults[loopIndex];
+        factorFrequencies[currentFactor] = (factorFrequencies[currentFactor]) ? factorFrequencies[currentFactor] + 1 : 1;
     }
-  }
 
-  console.log(finalProduct);
+    // Output the 'length' property of the factorFrequencies object.
+    // Note: For a plain object, 'length' is typically undefined.
+    console.log(factorFrequencies.length);
+
+    // This conditional check will likely evaluate to false as object.length is undefined.
+    if (factorFrequencies.length === 0) {
+        console.log(productVal);
+        return 0;
+    }
+
+    // Initialize the variable to store the final computed result.
+    let finalResult = 1;
+
+    // Get an array of unique prime factors (keys from the frequency map).
+    const factorKeys = Object.keys(factorFrequencies);
+
+    // Iterate through the unique prime factors.
+    for (let loopCounter = 0; loopCounter < factorKeys.length; loopCounter++) {
+        // Check if the frequency of the current factor meets the count requirement.
+        if (parseInt(factorFrequencies[factorKeys[loopCounter]]) >= countVal) {
+            // If it does, multiply the final result by this prime factor.
+            finalResult = finalResult * parseInt(factorKeys[loopCounter]);
+        }
+    }
+
+    // Output the final calculated result.
+    console.log(finalResult);
 }
 
-computeProduct(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

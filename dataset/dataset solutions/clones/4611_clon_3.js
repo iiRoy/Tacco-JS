@@ -1,84 +1,81 @@
-function parseIntegerString(inputString) {
-  if (typeof inputString !== 'string') {
-    return parseInt(inputString, 10);
+const updateMapMaxValue = (targetMap, keyIdentifier, newValue) => {
+  if (targetMap[keyIdentifier] === undefined || newValue > targetMap[keyIdentifier]) {
+    targetMap[keyIdentifier] = newValue;
   }
+};
+
+function parseInteger(inputString) {
   return parseInt(inputString, 10);
 }
 
-function updateWeightValueMap(targetMap, weightKey, potentialValue) {
-  const keyAsString = String(weightKey);
-  if (targetMap[keyAsString] === undefined || potentialValue > targetMap[keyAsString]) {
-    targetMap[keyAsString] = potentialValue;
-  }
-}
+Array.prototype.sortNumbersAscending = function () {
+  return this.sort((valA, valB) => (valA - valB));
+};
+Array.prototype.sortNumbersDescending = function () {
+  return this.sort((valA, valB) => (valB - valA));
+};
+Array.prototype.sortStringsLexicographically = function () {
+  return this.sort();
+};
+Array.prototype.sortStringsLexicographicallyReverse = function () {
+  return this.sort().reverse();
+};
+Array.prototype.filterOutSpecificValue = function (valueToExclude) {
+  return this.filter(element => element !== valueToExclude);
+};
 
-function solveKnapsackProblem(rawInputLines) {
-  if (!rawInputLines || rawInputLines.length === 0) {
-    console.error("Error: No input lines provided.");
-    return;
-  }
+function processInputData(inputLines) {
+  const firstLineParts = inputLines[0].split(' ');
+  const totalItemCount = parseInteger(firstLineParts[0]);
+  const knapsackMaxWeightCapacity = parseInteger(firstLineParts[1]);
 
-  const firstLineParts = rawInputLines[0].split(' ').map(parseIntegerString);
-  const numberOfItems = firstLineParts[0];
-  const maxTotalWeightCapacity = firstLineParts[1];
+  const itemDetails = inputLines.slice(1).map(line => {
+    const parts = line.split(' ');
+    return {
+      weight: parseInteger(parts[0]),
+      value: parseInteger(parts[1])
+    };
+  });
 
-  const itemDetails = rawInputLines.slice(1)
-    .filter(line => line.trim() !== '')
-    .map(line => {
-      const [itemWeight, itemValue] = line.split(' ').map(parseIntegerString);
-      return { weight: itemWeight, value: itemValue };
-    });
+  let currentKnapsackStates = { 0: 0 }; // Maps weight -> maximum value for that weight
 
-  let currentWeightToMaxValueMap = {
-    '0': 0
-  };
+  for (let itemIdx = 0; itemIdx < totalItemCount; itemIdx++) {
+    const currentItem = itemDetails[itemIdx];
+    const itemWeight = currentItem.weight;
+    const itemValue = currentItem.value;
 
-  for (let itemIndex = 0; itemIndex < numberOfItems; itemIndex++) {
-    const currentItem = itemDetails[itemIndex];
-    const currentItemWeight = currentItem.weight;
-    const currentItemValue = currentItem.value;
+    const nextKnapsackStates = {}; // Temporary map to build states for the next iteration
 
-    let nextWeightToMaxValueMap = {};
+    Object.keys(currentKnapsackStates).forEach(weightKeyString => {
+      const existingWeight = parseInteger(weightKeyString);
+      const existingValue = currentKnapsackStates[weightKeyString];
 
-    for (const existingWeightStr in currentWeightToMaxValueMap) {
-      if (currentWeightToMaxValueMap.hasOwnProperty(existingWeightStr)) {
-        const existingWeightNum = parseIntegerString(existingWeightStr);
-        const existingValue = currentWeightToMaxValueMap[existingWeightStr];
+      // Scenario 1: Do not include the current item. Preserve the existing state.
+      updateMapMaxValue(nextKnapsackStates, existingWeight, existingValue);
 
-        updateWeightValueMap(nextWeightToMaxValueMap, existingWeightNum, existingValue);
+      // Scenario 2: Attempt to include the current item.
+      const potentialNewWeight = existingWeight + itemWeight;
+      const potentialNewValue = existingValue + itemValue;
 
-        const newPotentialWeight = existingWeightNum + currentItemWeight;
-        const newPotentialValue = existingValue + currentItemValue;
-
-        if (newPotentialWeight <= maxTotalWeightCapacity) {
-          updateWeightValueMap(nextWeightToMaxValueMap, newPotentialWeight, newPotentialValue);
-        }
+      // Only consider if the new weight does not exceed the knapsack's capacity
+      if (potentialNewWeight <= knapsackMaxWeightCapacity) {
+        updateMapMaxValue(nextKnapsackStates, potentialNewWeight, potentialNewValue);
       }
-    }
-    currentWeightToMaxValueMap = nextWeightToMaxValueMap;
+    });
+    currentKnapsackStates = nextKnapsackStates; // Update states for the next item
   }
 
-  let maximumAchievableValue = 0;
-
-  for (const finalWeightStr in currentWeightToMaxValueMap) {
-    if (currentWeightToMaxValueMap.hasOwnProperty(finalWeightStr)) {
-      const finalValue = currentWeightToMaxValueMap[finalWeightStr];
-      maximumAchievableValue = Math.max(maximumAchievableValue, finalValue);
+  let overallMaxValueAchieved = 0;
+  Object.keys(currentKnapsackStates).forEach(finalWeightKey => {
+    const valueAtThisWeight = currentKnapsackStates[finalWeightKey];
+    if (valueAtThisWeight > overallMaxValueAchieved) {
+      overallMaxValueAchieved = valueAtThisWeight;
     }
-  }
+  });
 
-  console.log(maximumAchievableValue);
+  console.log(overallMaxValueAchieved);
 }
 
-function readInputFromFile() {
-  try {
-    const fileSystem = require("fs");
-    const fileContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-    return fileContent.split('\n').map(line => line.trim());
-  } catch (error) {
-    console.error("Failed to read input from /dev/stdin:", error.message);
-    return [];
-  }
-}
-
-solveKnapsackProblem(readInputFromFile());
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const trimmedLines = fileContent.split('\n').map(line => line.trim());
+processInputData(trimmedLines);

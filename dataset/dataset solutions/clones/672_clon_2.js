@@ -1,117 +1,118 @@
-var totalItems;
-var jobSchedule = [];
+let taskCount; // Global variable to store the number of tasks for a given test case
+let jobData = []; // Global array to hold job details (duration, deadline)
 
-/*
- * This function orchestrates the main job scheduling and feasibility check.
- * It repeatedly reads sets of jobs, sorts them by deadline, and determines
- * if all jobs can be completed by their respective deadlines.
+/**
+ * Orchestrates the entire job scheduling process.
+ * Reads input, performs scheduling checks, and outputs results.
  */
-function processJobs() {
-    // The main execution loop continues until an explicit break condition is met.
+function processScheduling() {
+    // Continuously process test cases until a termination signal is received
     for (;;) {
-        totalItems = fetchInputDatum(); // Obtain the count of jobs for the current batch.
+        taskCount = readNextToken(); // Get the count of jobs for the current scenario
 
-        // A count of zero signifies the end of input, so the loop terminates.
-        if (totalItems === 0) {
+        // A taskCount of 0 indicates the end of input, so we exit the loop
+        if (taskCount === 0) {
             break;
         }
 
-        // Populate the 'jobSchedule' array with job details (duration and deadline).
-        // Each job is represented as an array: [duration, deadline].
-        performIteration(totalItems, function(currentIdx) {
-            jobSchedule[currentIdx] = [fetchInputDatum(), fetchInputDatum()];
+        // Populate the jobData array with duration and deadline for each job
+        iterateRange(0, taskCount, function(currentIdx) {
+            jobData[currentIdx] = [readNextToken(), readNextToken()]; // Each job is [duration, deadline]
         });
 
-        // Sort the jobs based on their deadline. Jobs with earlier deadlines
-        // are processed first, which is a common greedy approach for scheduling.
-        jobSchedule.sort(function(jobA, jobB) {
-            return jobA[1] - jobB[1];
+        // Sort the jobs based on their deadlines in ascending order.
+        // This is a critical step for the Earliest Deadline First (EDF) scheduling algorithm.
+        jobData.sort(function(firstJob, secondJob) {
+            return firstJob[1] - secondJob[1]; // Compare deadlines (second element of each job array)
         });
 
-        var isPossible = true; // Flag to track if the current schedule is feasible.
-        var accumulatedDuration = 0; // Keeps track of the total time spent on jobs up to the current point.
+        let isFeasible = true; // Flag to track if the current schedule is possible
+        let accumulatedTime = 0; // Keeps track of the total time elapsed as jobs are processed
 
-        // Iterate through the sorted jobs to verify if each can meet its deadline.
-        performIteration(totalItems, function(currentIdx) {
-            accumulatedDuration += jobSchedule[currentIdx][0]; // Add the current job's processing time.
-            // If the current job's deadline is earlier than the total time accumulated so far,
-            // then this schedule is not possible.
-            if (jobSchedule[currentIdx][1] < accumulatedDuration) {
-                isPossible = false; // Mark the schedule as infeasible.
-                return false;       // Terminate the iteration early as feasibility is already broken.
+        // Iterate through the sorted jobs to determine if they can all be completed by their deadlines
+        iterateRange(0, taskCount, function(currentIdx) {
+            accumulatedTime += jobData[currentIdx][0]; // Add the current job's duration to the total time
+            // If the current job's deadline is earlier than the accumulated time,
+            // it means this job cannot be completed on time.
+            if (jobData[currentIdx][1] < accumulatedTime) {
+                isFeasible = false; // The schedule is not feasible
+                return false; // Stop iterating, as feasibility is already broken
             }
         });
 
-        // Output the result of the feasibility check.
-        outputResult(isPossible ? "Yes" : "No");
+        // Output the result for the current test case
+        displayResult(isFeasible ? "Yes" : "No");
     }
 }
 
-/*
- * A versatile iteration utility function, similar to a for loop.
- * It can be called with either one or two numeric bounds, and a callback function.
- * If called with (N, callback), it iterates from 0 to N-1.
- * If called with (A, B, callback), it iterates from A to B-1.
+/**
+ * A flexible utility function for iterating over a numeric range.
+ * It can be called with (end, callback) or (start, end, callback).
+ * @param {number} initialValue - The starting value of the iteration (inclusive).
+ * @param {number} limitValue - The upper bound of the iteration (exclusive).
+ * @param {Function} callbackFn - A function to execute for each iteration, receiving the current index.
+ *                                If the callback returns `false`, the loop terminates early.
  */
-function performIteration(startBound, endBound, actionFn) {
-    // Adjust arguments if only an upper bound and a callback are provided.
-    if (actionFn === undefined) {
-        actionFn = endBound;    // The second argument is the callback.
-        endBound = startBound;  // The first argument is the upper bound.
-        startBound = 0;         // Start the iteration from zero.
+function iterateRange(initialValue, limitValue, callbackFn) {
+    // Adjust arguments if only two are provided (meaning start is implicitly 0)
+    if (callbackFn === undefined) {
+        callbackFn = limitValue;
+        limitValue = initialValue;
+        initialValue = 0;
     }
 
-    // Execute the loop from the determined start bound up to (but not including) the end bound.
-    for (var currentIdx = startBound; currentIdx < endBound; ++currentIdx) {
-        // If the provided action function returns `false`, the loop is terminated.
-        if (actionFn(currentIdx) === false) {
-            break;
+    // Standard for loop iteration
+    for (let currentIdx = initialValue; currentIdx < limitValue; ++currentIdx) {
+        // Execute the provided callback function
+        if (callbackFn(currentIdx) === false) {
+            break; // Terminate loop if callback returns false
         }
     }
 }
 
-// Initialize the standard input stream for reading user data.
+// Configure standard input stream for reading data
 process.stdin.resume();
-// Set the encoding for incoming data to UTF-8.
 process.stdin.setEncoding('utf8');
 
-var rawInputBuffer = ''; // A string buffer to accumulate all incoming standard input data.
-var bufferPosition = 0;  // An index pointer to the current element in the parsed input array.
+let rawInputBuffer = ''; // Buffer to accumulate all incoming data from stdin
+let inputTokenPointer = 0; // Index to keep track of the current position in the parsed input array
 
-/*
- * Retrieves the next data item from the processed input buffer.
- * By default, it attempts to convert the item to a number.
- * If 'string' is specified as desiredType, it returns the item as a string.
+/**
+ * Reads and returns the next token from the pre-processed input buffer.
+ * Tokens are typically numbers, but can be strings if specified.
+ * @param {string} [dataType] - Optional. If 'string', the token is returned as a string.
+ *                               Otherwise, it's converted to a number.
+ * @returns {string|number} The next token from the input.
  */
-function fetchInputDatum(desiredType) {
-    // If the caller explicitly requests a string type, return the raw string.
-    if (desiredType === 'string') {
-        return rawInputBuffer[bufferPosition++];
-    }
-    // Otherwise, convert the string item to a number using the unary plus operator.
-    else {
-        return +rawInputBuffer[bufferPosition++];
+function readNextToken(dataType) {
+    if (dataType === 'string') {
+        return rawInputBuffer[inputTokenPointer++];
+    } else {
+        // Use unary plus to convert the string token to a number
+        return +rawInputBuffer[inputTokenPointer++];
     }
 }
 
-/*
- * Prints the given value to the console, followed by a newline.
- * This function wraps `console.log` for consistent output handling.
+/**
+ * Prints a given value to the console, followed by a newline.
+ * This function serves as the primary output mechanism.
+ * @param {*} outputValue - The value to be displayed.
  */
-function outputResult(valueToDisplay) {
-    console.log(valueToDisplay);
+function displayResult(outputValue) {
+    console.log(outputValue);
 }
 
-// Attach an event listener to the standard input stream to handle incoming data.
-process.stdin.on('data', function(dataPiece) {
-    rawInputBuffer += dataPiece; // Append each received data piece to the input buffer.
+// Event listener for when data chunks are received from stdin
+process.stdin.on('data', function(dataSegment) {
+    rawInputBuffer += dataSegment; // Append the new data chunk to the buffer
 });
 
-// Attach an event listener for when the standard input stream signals its end.
+// Event listener for when the entire stdin stream has ended
 process.stdin.on('end', function() {
-    // Once all input has been received, trim leading/trailing whitespace and split the
-    // entire buffer into an array of strings based on any whitespace delimiter.
+    // Once all input is received, clean it up:
+    // 1. Trim leading/trailing whitespace.
+    // 2. Split the string into an array of tokens using whitespace as a delimiter.
     rawInputBuffer = rawInputBuffer.trim().split(/\s+/);
-    // After parsing the input, initiate the main job processing logic.
-    processJobs();
+    // After processing the input, initiate the main scheduling logic
+    processScheduling();
 });

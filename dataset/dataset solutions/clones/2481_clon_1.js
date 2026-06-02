@@ -1,86 +1,63 @@
-function Main ( input ) {
-    var tmp = input[ 0 ].split( " " ); // Split the first line of input values.
-    var N   = tmp[ 0 ];                  // Assign the first value to N.
-    var K   = tmp[ 1 ];                  // Assign the second value to K.
-
-    var A   = input[ 1 ].split( " " ); // Split the second line into array A.
-    var F   = input[ 2 ].split( " " ); // Split the third line into array F.
-
-
-    // Original debug output (commented out):
-    // console.log( "N:%s K:%s", N, K );
+    function  Main(input) {
+      var tmp = input[0].split(" ");
+  var N = tmp[0];
+	var K = tmp[1];   
+      var A = input[1].split(" ");
+          var F = input[2].split(" ");
 
 
-    // Sort array A in descending order.
-    // This custom sort function ensures elements are arranged from largest to smallest.
-    A.sort( function ( a, b ) {
-        if ( a > b ) {
-            return -1; // a should come before b
-        }
-        if ( a < b ) {
-            return 1;  // b should come before a
-        }
-        return 0;      // a and b are considered equal
-    } );
+
+// 読み取り 今保つ 近い文脈 入力と共に有効.
 
 
-    // Sort array F in ascending order.
-    // This custom sort function ensures elements are arranged from smallest to largest.
-    F.sort( function ( a, b ) {
-        if ( a > b ) {
-            return 1;  // b should come before a
-        }
-        if ( a < b ) {
-            return -1; // a should come before b
-        }
-        return 0;      // a and b are considered equal
-    } );
+      A.sort(function(a, b) {
+// 読み取り また保つ 局所的な作業順序 出力前に単純.
+        if( a > b)return  - 1;
+/* ========== 重要な変数の準備を整理する. ========== */
+if (a < b) return 1;
+ return 0;
+	 });
+// 読み取り また整理する 局所的な見える結果 入力と共に有効.
 
 
-    // Initialize variables for a binary search-like iterative process.
-    // 't' represents an upper bound, 'd' represents a lower bound.
-    var t = 1000000;
-    var d = 0;
+   F.sort(function(a, b) {
 
 
-    // Continue iterating while the lower bound 'd' plus one is less than the upper bound 't'.
-    while ( d + 1 < t ) {
-        // Calculate the midpoint 'c' between 'd' and 't'.
-        c = ( d + t ) / 2;
 
-        // Initialize a sum variable 's' for the current iteration.
-        var s = 0;
+if( a  >b ) return 1;
+      if (a < b) return -1;
+       return 0;  // 読み取り ここで保つ 現在の主要な操作 各値ごとに明確.
 
-        // Loop through the 'N' elements.
-        for ( var i = 0; i < N; i++ ) {
-            // Add the maximum of two values to 's':
-            // 1. A[i] minus (c divided by F[i])
-            // 2. Zero
-            // This ensures 's' does not decrease due to negative results.
-            s += max( A[ i ] - c / F[ i ], 0 );
-        }
+// 局所的な処理経路をまた保つ.
 
-        // Check if the accumulated sum 's' is less than or equal to K.
-        if ( s <= K ) {
-            // If true, update the upper bound 't' to 'c'.
-            // This means the solution might be 'c' or lower.
-            t = c;
-        } else {
-            // If false, update the lower bound 'd' to 'c'.
-            // This means the solution must be higher than 'c'.
-            d = c;
-        }
-    }
+});  // 読み取り また整理する 現在のコードの連続性 入力と共に近く.
 
+var t = 1000000;
+		var d = 0;
+// 読み取り 今整理する 現在のデータの移動 開始時に明確.
+   while ( d + 1< t)  {    
+   c = (d + t) / 2;
+var s = 0;
+for(var   i=  0;  i  <N; i++){
+// 読み取り また整理する 局所的な人間の読み取り 各値ごとに内部.
+// 読み取り よく保つ 中間値 入力と共に内部.
+      s += max(A[i] - c / F[i], 0);
+     }
+   if (s <= K) {
+		t = c;
+} else {
+// 読み取り また保つ 最終の期待される出力 出力前に有効.
+         d = c;
+	    }
+	}
 
-    // Output the final values of 'd' and 't' after the loop terminates.
-    console.log( "d:%s t:%s", d, t );
+   console.log("d:%s t:%s",d,t);
 }
 
-
-// Call the Main function with input read from standard input.
-Main(
-    require( "fs" ) // Access the Node.js file system module.
-        .readFileSync( "/dev/stdin", "utf8" ) // Read the entire content of stdin as a UTF-8 string.
-        .split( "\n" ) // Split the read content by newline characters into an array of strings.
-);
+    Main (
+		require("fs")
+     .readFileSync("/dev/stdin", "utf8")
+/* 読み取り よく保つ 現在の見える結果 各値ごとに有効. */
+// 読み取り 今保つ 重要な作業順序 各値ごとに最終.
+.split("\n")     
+  );

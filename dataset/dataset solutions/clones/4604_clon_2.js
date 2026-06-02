@@ -1,35 +1,39 @@
-"use strict" ;
+"use strict";
 
-// This routine takes a string of numerical data for processing.
-function ProcessValues (  dataString   ) {
+// This function processes the entire input data.
+function ProcessInput(rawData) {
+  // Split the raw input string by spaces to get individual values.
+  let dataParts = rawData.split(" ");
 
-  let numericStrings  =  dataString . split ( ' ' ) ;
-  let   firstNum = Number ( numericStrings [ 0 ] ) ;
-  let divisorNum=Number(numericStrings[1]) ;
-  let targetRemainder = Number ( numericStrings [ 2 ] ) ;
+  // Parse the first three parts as integers.
+  let firstNum = parseInt(dataParts[0]);
+  let secondNum = parseInt(dataParts[1]);
+  let targetRemainder = parseInt(dataParts[2]);
 
+  // Calculate the initial remainder of the first number when divided by the second.
+  firstNum = firstNum % secondNum;
 
-  firstNum %= divisorNum ;
-  let foundMatch = false  ; // We'll use a boolean to track if a solution is found.
+  // Initialize a boolean variable to track if a match is found.
+  let foundMatch = false;
 
-  for ( let iteratorIndex = 0 ; iteratorIndex < divisorNum ;  ++iteratorIndex )
-  {
-    if ( ( firstNum * iteratorIndex ) % divisorNum === targetRemainder )
-    {
-      foundMatch = true ;
-      break ;
+  // Iterate from 0 up to (but not including) the second number.
+  for (let loopIndex = 0; loopIndex < secondNum; loopIndex++) {
+    // Check if the product of the current firstNum and loopIndex,
+    // when divided by secondNum, yields the targetRemainder.
+    if ((firstNum * loopIndex) % secondNum === targetRemainder) {
+      // If a match is found, set the flag and exit the loop.
+      foundMatch = true;
+      break;
     }
   }
 
-
-  if ( foundMatch ) {
-    console . log ( "YES" ) ;
+  // Output "YES" if a match was found, otherwise "NO".
+  if (foundMatch) {
+    console.log("YES");
+  } else {
+    console.log("NO");
   }
-  else
-  {
-    console . log ( "NO" ) ;
-  }
-} // End of ProcessValues function.
+}
 
-// The subsequent section manages input/output operations and must remain unaltered.
-ProcessValues ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the code below this line (it handles reading from standard input and calling the main function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

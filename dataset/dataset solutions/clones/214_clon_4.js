@@ -1,41 +1,39 @@
-const discoverPrimeNumbers = (ceiling) => {
-    if (ceiling < 2) return [];
+function generatePrimesUpTo(upperBound) {
+    const isComposite = new Array(upperBound + 1).fill(false);
+    isComposite[0] = true;
+    isComposite[1] = true;
 
-    const compositeRegistry = new Set();
-    const foundPrimes = [];
+    const limitSqrt = Math.floor(Math.sqrt(upperBound));
 
-    for (let currentNum = 2; currentNum <= ceiling; currentNum++) {
-        if (compositeRegistry.has(currentNum)) {
+    for (let numCandidate = 2; numCandidate <= limitSqrt; ++numCandidate) {
+        if (isComposite[numCandidate]) {
             continue;
         }
-
-        foundPrimes.push(currentNum);
-
-        for (let multiple = currentNum * currentNum; multiple <= ceiling; multiple += currentNum) {
-            compositeRegistry.add(multiple);
+        for (let multipleOfCandidate = numCandidate * numCandidate; multipleOfCandidate <= upperBound; multipleOfCandidate += numCandidate) {
+            isComposite[multipleOfCandidate] = true;
         }
     }
-    return foundPrimes;
-};
 
-const premierCollection = discoverPrimeNumbers(999999);
+    const primeNumbers = Array.from({ length: upperBound + 1 }, (_, index) => index)
+                               .reduce((accumulator, currentIdx) => {
+                                   if (!isComposite[currentIdx]) {
+                                       accumulator.push(currentIdx);
+                                   }
+                                   return accumulator;
+                               }, []);
+    return primeNumbers;
+}
 
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const primeSequence = generatePrimesUpTo(999999);
 
-const parsedNumericEntries = sourceData
-    .trim()
-    .split('\n')
-    .map(entry => Number(entry));
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputValues = fileContent.trim().split('\n').map(Number);
 
-const terminationIndex = parsedNumericEntries.indexOf(0);
-const effectiveNumericEntries = terminationIndex !== -1
-    ? parsedNumericEntries.slice(0, terminationIndex)
-    : parsedNumericEntries;
+for (const currentValue of inputValues) {
+    if (currentValue === 0) {
+        break;
+    }
 
-effectiveNumericEntries.forEach(countRequest => {
-    const primesToSum = premierCollection.slice(0, countRequest);
-
-    const cumulativeSum = primesToSum.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-
+    const cumulativeSum = primeSequence.slice(0, currentValue).reduce((acc, val) => acc + val, 0);
     console.log(cumulativeSum);
-});
+}

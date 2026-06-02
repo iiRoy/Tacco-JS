@@ -1,31 +1,38 @@
-(function processData(){
-  const inputData = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const sizeValue = Number(inputData.shift());
-  const initialElements = inputData.shift().split(' ').map(Number);
+(function processInputAndHeapify() {
+  const inputData = require('node:fs').readFileSync(0, 'utf8').trim().split('\n');
+  const elementCount = Number(inputData.shift());
+  const numberSequence = inputData.shift().split(' ').map(val => parseInt(val, 10));
 
-  const topStructure = []; // This will store our maximum-priority collection
+  constructHeap(numberSequence, elementCount);
 
-  for (let idx = 0; idx < sizeValue; ++idx) {
-    let currentElement = initialElements[idx];
-    topStructure.push(currentElement);
-    let currentPosition = topStructure.length - 1;
+  console.log(numberSequence.join(' ').trim());
+})();
 
-    // Adjust element position upwards to maintain max-heap property
-    while (currentPosition > 0) {
-      let parentPosition = Math.floor((currentPosition - 1) / 2);
-      if (topStructure[currentPosition] > topStructure[parentPosition]) {
-        // Exchange positions
-        [topStructure[currentPosition], topStructure[parentPosition]] = [topStructure[parentPosition], topStructure[currentPosition]];
-        currentPosition = parentPosition;
-      } else {
-        break; // Element is in its correct place
-      }
+function constructHeap(dataStore, count) {
+  for (let currIdx = Math.floor(count / 2) - 1; currIdx >= 0; currIdx--) {
+    percolateDown(dataStore, count, currIdx);
+  }
+}
+
+function percolateDown(dataStore, count, currIdx) {
+  let currentPosition = currIdx;
+  while (true) {
+    let childLeft = 2 * currentPosition + 1;
+    let childRight = 2 * currentPosition + 2;
+    let maxIndex = currentPosition;
+
+    if (childLeft < count && dataStore[childLeft] > dataStore[maxIndex]) {
+      maxIndex = childLeft;
+    }
+    if (childRight < count && dataStore[childRight] > dataStore[maxIndex]) {
+      maxIndex = childRight;
+    }
+
+    if (maxIndex !== currentPosition) {
+      [dataStore[currentPosition], dataStore[maxIndex]] = [dataStore[maxIndex], dataStore[currentPosition]];
+      currentPosition = maxIndex;
+    } else {
+      break;
     }
   }
-
-  let outputResult = '';
-  for (let k = 0; k < topStructure.length; ++k) {
-    outputResult += ` ${topStructure[k]}`;
-  }
-  console.log(outputResult);
-})();
+}

@@ -1,40 +1,39 @@
-// This program determines coin combinations for a specific total value
+/*
+ * This script processes input data to find combinations.
+ * It's a Type II clone, maintaining core logic but with altered identifiers and formatting.
+ */
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  const parsedLines = rawData.split("\n");
 
-// Entry point function to handle the entire input processing flow
-function  ProcessInput ( rawData )  {
-  // Divide the complete input string into individual data lines
-  let  processedLines = rawData . split ( "\n" ) ;
+  // Parse integer values from the first four lines of input.
+  const limitA = parseInt(parsedLines[0], 10); // Maximum count for item A
+  const limitB = parseInt(parsedLines[1], 10); // Maximum count for item B
+  const limitC = parseInt(parsedLines[2], 10); // Maximum count for item C
+  const targetSum = parseInt(parsedLines[3], 10); // The desired total value
 
-  // Extract and parse the limits for each coin denomination
-  const  maxFiveHundredCoins  =  Number.parseInt ( processedLines[0], 10 ) ;
-  const  maxOneHundredCoins   =  Number.parseInt ( processedLines[1], 10 ) ;
-  const  maxFiftyCoins        =  Number.parseInt ( processedLines[2], 10 ) ;
-  const  targetAmount         =  Number.parseInt ( processedLines[3], 10 ) ;
+  let validCombinations = 0; // Initialize a counter for successful combinations.
 
-  // Initialize a variable to track the number of successful combinations
-  let  solutionCount = 0 ;
+  // Iterate through all possible counts for item A.
+  for (let idxA = 0; idxA <= limitA; idxA++) {
+    // Iterate through all possible counts for item B.
+    for (let idxB = 0; idxB <= limitB; idxB++) {
+      // Iterate through all possible counts for item C.
+      for (let idxC = 0; idxC <= limitC; idxC++) {
+        // Calculate the current total value for this combination.
+        const currentTotal = (idxA * 500) + (idxB * 100) + (idxC * 50);
 
-  // Outer loop: Iterate through all possible quantities of 500-unit coins
-  for  ( let  currentFiveHundreds = 0 ;  currentFiveHundreds <= maxFiveHundredCoins ;  currentFiveHundreds++ )  {
-    // Middle loop: Iterate through all possible quantities of 100-unit coins
-    for  ( let  currentOneHundreds = 0 ;  currentOneHundreds <= maxOneHundredCoins ;  currentOneHundreds++ )  {
-      // Inner loop: Iterate through all possible quantities of 50-unit coins
-      for  ( let  currentFifties = 0 ;  currentFifties <= maxFiftyCoins ;  currentFifties++ )  {
-        // Calculate the cumulative value of the current coin arrangement
-        let  currentTotalValue = ( currentFiveHundreds * 500 ) + ( currentOneHundreds * 100 ) + ( currentFifties * 50 ) ;
-
-        // Check if the calculated value matches the desired target
-        if  ( currentTotalValue === targetAmount )  {
-          // If a match is found, increment the combination counter
-          solutionCount ++ ;
+        // Check if the current total matches the target sum.
+        if (currentTotal === targetSum) {
+          validCombinations++; // Increment the counter if it matches.
         }
       }
     }
   }
 
-  // Display the final tally of unique combinations that sum up to the target
-  console.log ( solutionCount ) ;
+  // Output the final count of valid combinations to the console.
+  console.log(validCombinations);
 }
 
-// Read the complete contents from standard input and pass it to the processing function
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

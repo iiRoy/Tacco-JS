@@ -1,33 +1,28 @@
-/*
- * This module defines a function for processing textual input
- * and calculating an aggregate sum based on specific rules.
- */
-function ProcessInputAndCalculate(sourceContent) {
-    // The raw input string is separated into individual text lines.
-    sourceContent = sourceContent.split( "\n" );
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of individual lines.
+    let lineData = rawData.split("\n");
 
-    // Extract the first line to determine array size and other initial parameters.
-    const initialValuesRow = sourceContent[0].split( ' ' ).map( ( itemValue ) => parseInt( itemValue, 10 ) );
-    const collectionSize = initialValuesRow[0]; // The first number represents the total count of elements.
-    const dataSequence = sourceContent[1].split( ' ' ).map( ( itemValue ) => parseInt( itemValue, 10 ) ); // The second line contains the primary numerical sequence.
+    // The first line contains space-separated numbers; parse them.
+    const firstLineNumbers = lineData[0].split(' ').map(val => parseInt(val, 10));
+    const countElements = firstLineNumbers[0]; // This corresponds to N in the problem description.
+    // The second line also contains space-separated numbers; parse them into an array.
+    const valueArray = lineData[1].split(' ').map(val => parseInt(val, 10)); // This corresponds to bList.
 
-    // Initialize the sum with the very first element of the numerical sequence.
-    var runningTotal = dataSequence[0];
+    // Initialize the sum with the first element of the value array.
+    let sumResult = valueArray[0];
 
-    // Loop through the sequence to accumulate minimums of adjacent elements.
-    // The iteration stops before the last two elements, which are handled separately.
-    for ( var currentIdx = 0; currentIdx < collectionSize - 2; currentIdx++ ) {
-        runningTotal += Math.min( dataSequence[currentIdx], dataSequence[currentIdx + 1] );
+    // Loop through the array, calculating the sum of minimums of adjacent elements.
+    // The loop runs up to N-2, as per the problem's logic.
+    for (let idx = 0; idx < countElements - 2; idx++) {
+        sumResult += Math.min(valueArray[idx], valueArray[idx + 1]);
     }
 
-    // Add the second-to-last element of the original sequence to the total.
-    runningTotal += dataSequence[collectionSize - 2];
+    // Add the last specific element to the total sum.
+    sumResult += valueArray[countElements - 2];
 
-    // Display the final computed aggregate value.
-    console.log( runningTotal );
+    // Output the final calculated sum to the console.
+    console.log(sumResult);
 }
 
-// Execute the processing function using data acquired from the standard input stream.
-ProcessInputAndCalculate(
-    require( "fs" ).readFileSync( "/dev/stdin", "utf8" )
-);
+// Read the entire content from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

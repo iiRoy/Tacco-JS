@@ -1,76 +1,73 @@
-// This program reads input from standard input, processes it in chunks,
-// and performs a specific validation check based on numerical ranges and sums.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input as a UTF-8 string
 
-var rawText = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw content from the file system.
-var lineFragments = (rawText.trim()).split("\n");               // Split the trimmed raw content into an array of lines.
+// Trim leading/trailing whitespace and split the input into an array of lines
+var lineBuffer = (rawData.trim()).split("\n");
 
-// Enter an infinite loop to process multiple datasets until a termination condition is met.
+// Main processing loop; continues until a specific termination condition is met
 while (true) {
-    // Extract the number of records for the current dataset.
-    // The '- 0' trick converts the string to a number.
-    var recordCount = lineFragments.shift() - 0;
+    // Extract the first line, convert it to a number, and use it as the count for the current set of items
+    var itemCount = lineBuffer.shift() - 0;
 
-    // Check if the record count is zero, which signals the end of input.
-    if (recordCount === 0) {
-        break; // Exit the main processing loop.
+    // If the item count is zero, it signifies the end of input, so break the loop
+    if (itemCount === 0) {
+        break;
     }
 
-    // Initialize a status variable for the current dataset.
-    // It's set to "OK" by default, assuming validity until proven otherwise.
-    var validationOutcome = "OK";
+    // Initialize a status indicator for the current set of items
+    var statusIndicator = "OK";
 
-    // Create an empty array to store the parsed numerical data records.
-    var dataRecords = [];
+    // Array to store the details of each item (weight, range start, range end)
+    var itemDetails = [];
 
-    // Iterate 'recordCount' times to parse and store each record.
-    for (var primaryIdx = 0; primaryIdx < recordCount; primaryIdx++) {
-        // Each line is split by space and its elements are converted to floating-point numbers.
-        var currentRecordData = (lineFragments.shift()).split(" ").map(parseFloat);
-        dataRecords.push(currentRecordData); // Add the processed record to our collection.
+    // Loop to read 'itemCount' lines, each representing an item's details
+    for (var outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+        // Split the current line by space and convert parts to numbers
+        var currentLineParts = (lineBuffer.shift()).split(" ").map(Number);
+        // Add the processed item details to our collection
+        itemDetails.push(currentLineParts);
     }
 
-    // Re-initialize the validation outcome. This structure is preserved from the original.
-    validationOutcome = "OK";
+    // Re-initialize the status indicator for the processing phase
+    statusIndicator = "OK";
 
-    // Begin the core validation logic, iterating through each record as a primary focus.
-    for (var primaryIdx = 0; primaryIdx < recordCount; primaryIdx++) {
-        // If the validation has already failed for this dataset, no further checks are needed.
-        if (validationOutcome === "NG") {
-            break; // Break out of the outer loop.
+    // Outer loop iterates through each item to check for overlaps and total weight
+    for (var outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+        // If the status is already "NG", no need to continue checking this set of items
+        if (statusIndicator === "NG") {
+            break;
         }
 
-        // Extract the three components of the current primary record.
-        // These represent a weight/value and a numerical range.
-        var totalWeight = dataRecords[primaryIdx][0];
-        var rangeStart = dataRecords[primaryIdx][1];
-        var rangeEnd = dataRecords[primaryIdx][2];
+        // Extract properties for the current item being evaluated
+        var currentWeight = itemDetails[outerIndex][0]; // Weight of the current item
+        var startRange = itemDetails[outerIndex][1];    // Start of the current item's range
+        var endRange = itemDetails[outerIndex][2];      // End of the current item's range
 
-        // Compare the current primary record with every other record in the dataset.
-        for (var secondaryIdx = 0; secondaryIdx < recordCount; secondaryIdx++) {
-            // Skip self-comparison; a record should not be compared with itself.
-            if (primaryIdx === secondaryIdx) {
-                continue; // Move to the next secondary record.
+        // Inner loop compares the current item with all other items
+        for (var innerIndex = 0; innerIndex < itemCount; innerIndex++) {
+            // Skip comparison if it's the same item
+            if (outerIndex === innerIndex) {
+                continue;
             }
 
-            // Extract the range components from the secondary record for overlap checking.
-            var otherRangeStart = dataRecords[secondaryIdx][1];
-            var otherRangeEnd = dataRecords[secondaryIdx][2];
+            // Extract range properties for the other item
+            var otherStart = itemDetails[innerIndex][1]; // Start of the other item's range
+            var otherEnd = itemDetails[innerIndex][2];   // End of the other item's range
 
-            // Determine if there is an overlap between the primary and secondary ranges.
-            // An overlap exists if the primary range starts before the secondary ends,
-            // AND the primary range ends after the secondary starts.
-            if (rangeStart < otherRangeEnd && rangeEnd > otherRangeStart) {
-                // If an overlap is detected, accumulate the weight/value from the secondary record.
-                totalWeight += dataRecords[secondaryIdx][0];
+            // Check for overlap: if the current item's range overlaps with the other item's range
+            // An overlap occurs if the current item's start is before the other's end, AND
+            // the current item's end is after the other's start.
+            if (startRange < otherEnd && endRange > otherStart) {
+                // If there's an overlap, add the other item's weight to the current total weight
+                currentWeight += itemDetails[innerIndex][0];
             }
 
-            // After potential accumulation, check if the 'totalWeight' exceeds a critical threshold.
-            if (totalWeight > 150) {
-                validationOutcome = "NG"; // If the threshold is exceeded, mark the dataset as "NG".
+            // If the accumulated weight exceeds 150, set the status to "NG"
+            if (currentWeight > 150) {
+                statusIndicator = "NG";
             }
         }
     }
 
-    // Output the final validation status for the current dataset to the console.
-    console.log(validationOutcome);
+    // Output the final status for the current set of items
+    console.log(statusIndicator);
 }

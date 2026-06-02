@@ -1,122 +1,137 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the code. */
+"use strict";
 
-function EntryProcessor(sourceText) {
-    // Initialize a parser for the input data.
-    let inputHandler = new TextParser(sourceText);
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // Initialize an instance of the custom data parser.
+    let dataReader = new DataParser(rawData);
 
-    // Read the number of elements and the array of integer elements.
-    let elementCount = inputHandler.extractNumericValue();
-    let dataElements = inputHandler.extractNumericArray(elementCount);
+    // Extract the number of elements and the array of integers from the input.
+    let elementCount = dataReader.retrieveInteger();
+    let dataArray = dataReader.getIntArray(elementCount);
 
-    // Define constants for array dimension and modular arithmetic.
-    const MAX_ARRAY_DIM = 305;
-    const MODULO_PRIME = 998244353;
+    // Define key constants used throughout the computation.
+    const MaximumN = 305; // Represents the maximum possible value for 'n'.
+    const moduloPrime = 998244353; // The prime modulus for all arithmetic operations.
 
-    // Initialize an array to store cumulative sums.
-    let cumulativeSums = new Array(MAX_ARRAY_DIM);
-    cumulativeSums[0] = 0;
+    // Initialize an array to store prefix sums of the sorted dataArray.
+    // It's 1-indexed, so the first element (index 0) is set to 0.
+    let prefixSums = new Array(MaximumN);
+    prefixSums[0] = 0;
 
-    // Initialize two dynamic programming tables, filled with zeros.
-    let memoTable1 = new Array(MAX_ARRAY_DIM * MAX_ARRAY_DIM).fill(0);
-    let memoTable2 = new Array(MAX_ARRAY_DIM * MAX_ARRAY_DIM).fill(0);
+    // Initialize two dynamic programming arrays, filled with zeros.
+    // Their size is determined by the maximum possible sum (MaximumN * MaximumN).
+    let dynamicProg = new Array(MaximumN * MaximumN).fill(0);
+    let dynamicProgAlt = new Array(MaximumN * MaximumN).fill(0);
 
-    // Helper function for modular addition.
-    const modAdd = (valA, valB) => (valA % MODULO_PRIME + valB % MODULO_PRIME) % MODULO_PRIME;
+    // Helper function for performing modular addition.
+    const sumModulo = (val1, val2) => (val1 % moduloPrime + val2 % moduloPrime) % moduloPrime;
 
-    // Helper function for integer division by two (floor).
-    const integerHalf = (argX) => Math.floor(argX / 2);
+    // Helper function for integer division by two.
+    const halfValue = (val) => Math.floor(val / 2);
 
-    // Helper function for general integer division (floor).
-    const floorDivision = (dividend, divisor) => Math.floor(dividend / divisor);
+    // Helper function for general integer division (defined but not used in original logic).
+    const integerDivision = (numerator, denominator) => Math.floor(numerator / denominator);
 
+    // Sort the input data array in ascending order.
+    // Prepend a zero to make it 1-indexed for easier prefix sum calculation.
+    dataArray.sort((valA, valB) => valA - valB);
+    dataArray.unshift(0); // Adds 0 at the beginning of the array.
 
-    // Sort the input elements in ascending order.
-    dataElements.sort((itemA, itemB) => itemA - itemB);
-
-    // Prepend a zero to the data elements array for easier prefix sum calculation.
-    dataElements.unshift(0);
-
-    // Calculate prefix sums for the data elements.
-    for ( let outerIdx = 1; outerIdx <= elementCount; outerIdx++ ) {
-        cumulativeSums[outerIdx] = cumulativeSums[outerIdx - 1] + dataElements[outerIdx];
+    // Compute the prefix sums for the 1-indexed dataArray.
+    for (let loopIndex = 1; loopIndex <= elementCount; loopIndex++) {
+        prefixSums[loopIndex] = prefixSums[loopIndex - 1] + dataArray[loopIndex];
     }
 
-    // Initialize base cases for the DP tables.
-    memoTable1[0] = Math.pow(2, elementCount);
-    memoTable2[0] = 1;
+    // Set the base cases for the dynamic programming arrays.
+    // dynamicProg[0] represents 2^n ways (each element can either be included or excluded).
+    // dynamicProgAlt[0] represents 1 way (the empty set).
+    dynamicProg[0] = Math.pow(2, elementCount);
+    dynamicProgAlt[0] = 1;
 
-    // This constant is the modular inverse of 2 modulo MODULO_PRIME (i.e., (MODULO_PRIME + 1) / 2).
-    const INV_TWO_MOD = 499122177;
+    // The modular multiplicative inverse of 2 modulo 998244353.
+    // This is equivalent to 499122177.
+    const modInverseOfTwo = (moduloPrime + 1) / 2;
 
-    // Populate DP tables using nested loops.
-    for ( let outerIdx = 1; outerIdx <= elementCount; outerIdx++ ) {
-        for ( let currentSumIdx = cumulativeSums[outerIdx]; currentSumIdx >= dataElements[outerIdx]; currentSumIdx-- ) {
-            memoTable1[currentSumIdx] = modAdd(memoTable1[currentSumIdx], INV_TWO_MOD * memoTable1[currentSumIdx - dataElements[outerIdx]]);
-            memoTable2[currentSumIdx] = modAdd(memoTable2[currentSumIdx], memoTable2[currentSumIdx - dataElements[outerIdx]]);
+    // Populate the dynamic programming arrays.
+    // Iterate through each element of the sorted data array.
+    for (let loopIndex = 1; loopIndex <= elementCount; loopIndex++) {
+        // Iterate backwards from the current maximum possible sum down to the current element's value.
+        for (let currentSum = prefixSums[loopIndex]; currentSum >= dataArray[loopIndex]; currentSum--) {
+            // Update dynamicProg: add the ways to form (currentSum - dataArray[loopIndex]),
+            // scaled by the modular inverse of 2.
+            dynamicProg[currentSum] = sumModulo(dynamicProg[currentSum], modInverseOfTwo * dynamicProg[currentSum - dataArray[loopIndex]]);
+            // Update dynamicProgAlt: add the ways to form (currentSum - dataArray[loopIndex]).
+            dynamicProgAlt[currentSum] = sumModulo(dynamicProgAlt[currentSum], dynamicProgAlt[currentSum - dataArray[loopIndex]]);
         }
     }
 
-    let finalSolution = 0; // Variable to store the computed final answer.
+    // Initialize the variable to store the final computed result.
+    let finalResult = 0;
 
-    // Check if the total sum of elements is even.
-    if (!(cumulativeSums[elementCount] % 2)) {
-        // If even, adjust finalSolution based on DP tables at half the total sum.
-        finalSolution += memoTable1[integerHalf(cumulativeSums[elementCount])] - memoTable2[integerHalf(cumulativeSums[elementCount])];
+    // If the total sum of all elements is even, adjust finalResult.
+    if (!(prefixSums[elementCount] % 2)) {
+        finalResult += dynamicProg[halfValue(prefixSums[elementCount])] - dynamicProgAlt[halfValue(prefixSums[elementCount])];
     }
 
-    // Sum up values from memoTable1 for sums greater than half the total sum.
-    for (let iterationIdx = integerHalf(cumulativeSums[elementCount]) + 1; iterationIdx <= cumulativeSums[elementCount]; iterationIdx++) {
-        finalSolution = modAdd(finalSolution, memoTable1[iterationIdx]);
+    // Sum up values from dynamicProg for sums greater than half the total sum.
+    for (let loopIndex = halfValue(prefixSums[elementCount]) + 1; loopIndex <= prefixSums[elementCount]; loopIndex++) {
+        finalResult = sumModulo(finalResult, dynamicProg[loopIndex]);
     }
 
-    // Apply a scaling factor.
-    finalSolution *= 3;
+    // Multiply the current result by 3 as per the algorithm.
+    finalResult *= 3;
 
-    // Final calculation with modular arithmetic.
-    finalSolution = ((Math.pow(3, elementCount) - finalSolution) % MODULO_PRIME + MODULO_PRIME) % MODULO_PRIME;
+    // Apply the final formula: (3^n - finalResult) modulo moduloPrime.
+    // The '+ moduloPrime) % moduloPrime' ensures the result is always positive.
+    finalResult = ((Math.pow(3, elementCount) - finalResult) % moduloPrime + moduloPrime) % moduloPrime;
 
-    // Display the computed result.
-    console.log(finalSolution);
+    // Output the final calculated answer to the console.
+    console.log(finalResult);
 }
 
-// Custom class for parsing input strings.
-class TextParser {
-    constructor(rawContent) {
-        this.readPointer = 0; // Current position in the token list.
-        this.tokenList = rawContent.split(/\n|\s/); // Split input by newlines or spaces.
+// Custom class designed to parse input strings into various data types.
+class DataParser {
+    // Constructor takes the raw input string.
+    constructor(sourceText) {
+        // Initialize an index to keep track of the current token being processed.
+        this.tokenIndex = 0;
+        // Split the input string into an array of tokens using newlines or spaces as delimiters.
+        this.tokenList = sourceText.split(/\n|\s/);
     }
 
-    // Extracts and returns the next numeric value from the input.
-    extractNumericValue() {
-        return this.tokenList[this.readPointer++] - 0; // Convert to number using unary minus.
+    // Retrieves the next token from the list and converts it to an integer.
+    retrieveInteger() {
+        // The unary minus operator (`- 0`) is a concise way to convert a string to a number.
+        return this.tokenList[this.tokenIndex++] - 0;
     }
 
-    // Extracts an array of numeric values of a specified size.
-    extractNumericArray(arraySize) {
-        let numericSequence = new Array(arraySize);
-        for (let loopIndex = 0; loopIndex < arraySize; loopIndex++) {
-            numericSequence[loopIndex] = this.extractNumericValue();
+    // Retrieves an array of integers of a specified length.
+    getIntArray(count) {
+        let resultArray = new Array(count);
+        for (let idx = 0; idx < count; idx++) {
+            resultArray[idx] = this.retrieveInteger();
         }
-        return numericSequence;
+        return resultArray;
     }
 
-    // Extracts and returns the next string value.
-    extractStringValue() {
-        return this.tokenList[this.readPointer++];
+    // Retrieves the next token from the list as a string.
+    fetchString() {
+        return this.tokenList[this.tokenIndex++];
     }
 
-    // Extracts an array of string values of a specified size.
-    extractStringArray(arraySize) {
-        let stringSequence = new Array(arraySize);
-        for (let loopIndex = 0; loopIndex < arraySize; loopIndex++) {
-            stringSequence[loopIndex] = this.extractStringValue();
+    // Retrieves an array of strings of a specified length.
+    getStrArray(numStrings) {
+        let stringCollection = new Array(numStrings);
+        for (let k = 0; k < numStrings; k++) {
+            stringCollection[k] = this.fetchString();
         }
-        return stringSequence;
+        return stringCollection;
     }
 }
 
-// Entry point for execution, typically for Node.js environment.
-if ( typeof window === "undefined" ) {
-    // Read input from standard input if running in Node.js.
-    EntryProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This block handles the execution environment.
+// If the code is running in a Node.js environment (i.e., 'window' is undefined),
+// it reads input from standard input and passes it to the main processing function.
+if (typeof window == "undefined") {
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

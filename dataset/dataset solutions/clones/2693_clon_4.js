@@ -1,51 +1,32 @@
-const processData = (rawData) => {
-  const lines = rawData.split('\n').filter(Boolean);
+const processInput = rawInput => {
+  const lines = rawInput.trim().split('\n');
 
-  const numberCount = Number(lines[0]);
-  const numericElements = lines[1].split(' ').map(Number);
+  const elementCount = parseInt(lines[0]);
+  const initialArr = lines[1].split(' ').map(val => parseInt(val));
 
-  const checkAscendingOrder = (dataArray) => {
-    return dataArray.every((current, index, arr) => {
-      return index === arr.length - 1 || current <= arr[index + 1];
-    });
-  };
+  const orderedArr = [...initialArr].sort((a, b) => a - b);
 
-  if (checkAscendingOrder(numericElements)) {
-    console.log('YES');
-    return;
-  }
+  const mismatchPositions = Array.from({ length: elementCount }, (_, k) => k)
+    .filter(idx => initialArr[idx] !== orderedArr[idx]);
 
-  let firstDisplacement = -1;
-  let lastDisplacement = -1;
+  const mismatchCount = mismatchPositions.length;
 
-  for (let idx = 0; idx < numberCount - 1; idx++) {
-    if (numericElements[idx] > numericElements[idx + 1]) {
-      firstDisplacement = idx;
-      break;
+  let outcome;
+  if (mismatchCount === 0) {
+    outcome = 'YES';
+  } else if (mismatchCount === 2) {
+    const [firstMismatchPos, secondMismatchPos] = mismatchPositions;
+    if (initialArr[firstMismatchPos] === orderedArr[secondMismatchPos] &&
+        initialArr[secondMismatchPos] === orderedArr[firstMismatchPos]) {
+      outcome = 'YES';
+    } else {
+      outcome = 'NO';
     }
+  } else {
+    outcome = 'NO';
   }
 
-  for (let idx = numberCount - 1; idx > 0; idx--) {
-    if (numericElements[idx] < numericElements[idx - 1]) {
-      lastDisplacement = idx;
-      break;
-    }
-  }
-
-  if (firstDisplacement !== -1 && lastDisplacement !== -1) {
-    const trialArray = [...numericElements];
-    
-    let tempValue = trialArray[firstDisplacement];
-    trialArray[firstDisplacement] = trialArray[lastDisplacement];
-    trialArray[lastDisplacement] = tempValue;
-
-    if (checkAscendingOrder(trialArray)) {
-      console.log('YES');
-      return;
-    }
-  }
-
-  console.log('NO');
+  console.log(outcome);
 };
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

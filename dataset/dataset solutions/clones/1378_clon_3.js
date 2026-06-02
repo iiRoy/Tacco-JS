@@ -1,76 +1,43 @@
-const fileSystem = require('fs');
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = fileContent.split('\n');
 
-const standardInputPath = '/dev/stdin';
+var shouldProcessNextBlock = true;
 
-const rawTextContent = fileSystem.readFileSync(standardInputPath).toString('utf8').trim();
+while (shouldProcessNextBlock) {
+    var currentLineData = inputLines.shift();
+    var dimStrings = currentLineData.split(' ');
+    var currentHeight = +dimStrings[0];
+    var currentWidth = +dimStrings[1];
 
-let sourceLines = rawTextContent.split('\n');
+    const ZERO_SUM_TERMINATOR = 0;
 
-let lineIndexTracker = 0;
-
-const fetchNextLine = () => {
-    if (lineIndexTracker >= sourceLines.length) {
-        return null;
+    if (currentHeight + currentWidth === ZERO_SUM_TERMINATOR) {
+        shouldProcessNextBlock = false;
+        continue;
     }
-    return sourceLines[lineIndexTracker++];
-};
 
-const displayRectanglePattern = (rectHeight, rectWidth) => {
-    const borderCharacter = '#';
-    const interiorCharacter = '.';
+    const HASH_CHAR = '#';
+    const DOT_CHAR = '.';
 
-    const lastRowIndex = rectHeight - 1;
-    const lastColIndex = rectWidth - 1;
+    const lastRowIndex = currentHeight - 1;
+    const lastColIndex = currentWidth - 1;
 
-    const currentRectangleBuffer = [];
+    for (var rowIndex = 0; rowIndex < currentHeight; rowIndex++) {
+        var rowOutputBuffer = '';
 
-    for (let currentYCoordinate = 0; currentYCoordinate < rectHeight; currentYCoordinate++) {
-        let currentRowString = '';
-        for (let currentXCoordinate = 0; currentXCoordinate < rectWidth; currentXCoordinate++) {
-            const isTopOrBottomEdge = (currentYCoordinate === 0 || currentYCoordinate === lastRowIndex);
-            const isLeftOrRightEdge = (currentXCoordinate === 0 || currentXCoordinate === lastColIndex);
+        for (var colIndex = 0; colIndex < currentWidth; colIndex++) {
+            var isFirstRow = (rowIndex === 0);
+            var isLastRow = (rowIndex === lastRowIndex);
+            var isFirstCol = (colIndex === 0);
+            var isLastCol = (colIndex === lastColIndex);
 
-            if (isTopOrBottomEdge || isLeftOrRightEdge) {
-                currentRowString += borderCharacter;
+            if (isFirstRow || isLastRow || isFirstCol || isLastCol) {
+                rowOutputBuffer += HASH_CHAR;
             } else {
-                currentRowString += interiorCharacter;
+                rowOutputBuffer += DOT_CHAR;
             }
         }
-        currentRectangleBuffer.push(currentRowString);
+        console.log(rowOutputBuffer);
     }
-
-    currentRectangleBuffer.forEach(lineOutput => console.log(lineOutput));
-
     console.log();
-};
-
-let continueProcessingInput = true;
-while (continueProcessingInput) {
-    const activeLine = fetchNextLine();
-
-    if (activeLine === null) {
-        break;
-    }
-
-    const dimensionTokens = activeLine.split(' ');
-
-    if (dimensionTokens.length < 2) {
-        console.error("Warning: Malformed dimension line encountered, skipping:", activeLine);
-        continue;
-    }
-
-    const heightValue = parseInt(dimensionTokens[0], 10);
-    const widthValue = parseInt(dimensionTokens[1], 10);
-
-    if (isNaN(heightValue) || isNaN(widthValue)) {
-        console.error("Warning: Non-numeric dimensions found, skipping:", activeLine);
-        continue;
-    }
-
-    if (heightValue === 0 && widthValue === 0) {
-        continueProcessingInput = false;
-        break;
-    }
-
-    displayRectanglePattern(heightValue, widthValue);
 }

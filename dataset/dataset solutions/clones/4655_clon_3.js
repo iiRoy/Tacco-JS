@@ -1,35 +1,21 @@
 "use strict"
-function retrieveInputData() {
-  return require("fs").readFileSync("/dev/stdin", "utf8");
-}
+function processInputData(rawInputString) {
+  rawInputString = rawInputString.trim();
+  const lines = rawInputString.split('\n');
 
-function processAndCalculateSum(inputStringContent) {
-  let parsedLines = inputStringContent.trim().split('\n');
+  const itemCount = Number(lines[0].trim());
+  
+  const rawNumbersString = lines[1].trim();
+  const parsedNumbers = rawNumbersString.split(' ').map(Number);
+  const descSortedValues = parsedNumbers.sort((valA, valB) => valB - valA);
 
-  const rawGroupCount = parsedLines[0] ? parsedLines[0].trim() : '';
-  const countOfGroups = parseInt(rawGroupCount, 10);
+  let accumulatedSum = 0;
+  const loopUpperLimit = itemCount * 3;
 
-  const rawNumbersLine = parsedLines[1] ? parsedLines[1].trim() : '';
-  const sortedNumberArray = rawNumbersLine.split(' ').filter(Boolean).map(Number);
-
-  sortedNumberArray.sort((firstVal, secondVal) => {
-    if (firstVal < secondVal) return 1;
-    if (firstVal > secondVal) return -1;
-    return 0;
-  });
-
-  let finalAccumulatedValue = 0;
-
-  const maxLoopIndex = countOfGroups * 2;
-  for (let currentPosition = 2; currentPosition <= maxLoopIndex; currentPosition += 2) {
-    const elementValue = sortedNumberArray[currentPosition];
-    finalAccumulatedValue += elementValue;
+  for (let currentIndex = 2; currentIndex < loopUpperLimit; currentIndex += 2) {
+    accumulatedSum += descSortedValues[currentIndex];
   }
 
-  console.log(`Resulting sum: ${finalAccumulatedValue}`);
+  console.log(accumulatedSum);
 }
-
-(function executeProgram() {
-  const sourceData = retrieveInputData();
-  processAndCalculateSum(sourceData);
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

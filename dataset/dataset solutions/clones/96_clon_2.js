@@ -1,58 +1,50 @@
-(function ( rawData ) {
-  // Process the raw input string into an array of individual lines.
-  let lineSegments = rawData
-    .replace( / \n $ / , '' )  // Remove the trailing newline character, if present.
-    .split( ' \n ' ) ;         // Split the string by newline to get an array of lines.
+(function(rawData) {
+  // This function processes input to determine the relationship between two circles.
 
-  // The first line indicates the total number of test cases to process.
-  const totalIterations = Number ( lineSegments . shift( ) ) ;
+  // Split the raw input string into an array of lines, removing any trailing newline.
+  let linesArray = rawData.replace(/\n$/, '').split('\n');
+
+  // The first line contains the total number of test cases.
+  const testCaseCount = Number(linesArray.shift());
 
   // Iterate through each test case.
-  for ( let currentCaseIdx = 0 ; currentCaseIdx < totalIterations ; currentCaseIdx ++ ) {
-    // Parse the current line of space-separated numerical values.
-    let currentCaseValues = lineSegments . shift( ) . split( ' ' ) . map( Number ) ;
+  for (let idx = 0; idx < testCaseCount; idx++) {
+    // Parse the current line of arguments for the two circles.
+    let currentArgs = linesArray.shift().split(' ').map(Number);
 
-    // Extract coordinates and radii for two circles from the parsed values.
-    // Circle 1: (x1, y1) with radius r1
-    const x1 = currentCaseValues . shift( ) ;
-    const y1 = currentCaseValues . shift( ) ;
-    const r1 = currentCaseValues . shift( ) ;
+    // Extract coordinates and radius for the first circle (Circle A).
+    const circleAX = currentArgs.shift();
+    const circleAY = currentArgs.shift();
+    const circleARadius = currentArgs.shift();
 
-    // Circle 2: (x2, y2) with radius r2
-    const x2 = currentCaseValues . shift( ) ;
-    const y2 = currentCaseValues . shift( ) ;
-    const r2 = currentCaseValues . shift( ) ;
+    // Extract coordinates and radius for the second circle (Circle B).
+    const circleBX = currentArgs.shift();
+    const circleBY = currentArgs.shift();
+    const circleBRadius = currentArgs.shift();
 
     // Calculate the Euclidean distance between the centers of the two circles.
-    // This uses the Pythagorean theorem: distance = sqrt((x2-x1)^2 + (y2-y1)^2).
-    let centerDistance = Math . sqrt ( Math . pow ( x2 - x1 , 2 ) + Math . pow ( y2 - y1 , 2 ) ) ;
+    // Formula: d = sqrt((xb - xa)^2 + (yb - ya)^2)
+    const distanceBetweenCenters = Math.sqrt(
+      Math.pow(circleBX - circleAX, 2) +
+      Math.pow(circleBY - circleAY, 2)
+    );
 
-    /*
-     * Determine the relationship between the two circles
-     * based on their radii and the distance between their centers.
-     *
-     * Output meanings:
-     *  2: Circle 2 is entirely inside or tangent to Circle 1 (Circle 1 contains Circle 2).
-     * -2: Circle 1 is entirely inside or tangent to Circle 2 (Circle 2 contains Circle 1).
-     *  1: The circles intersect or are externally tangent.
-     *  0: The circles do not intersect and are separate.
-     */
-    if ( r1 >= centerDistance + r2 ) {
-      // Circle B is completely inside or tangent to Circle A.
-      console . log( 2 ) ;
+    // Determine the relationship between the two circles based on their radii and the distance between their centers.
+    // Case 1: Circle A completely encloses Circle B (or they are concentric and A is larger).
+    if (circleARadius >= distanceBetweenCenters + circleBRadius) {
+      console.log(2);
     }
-    else if ( r2 >= centerDistance + r1 ) {
-      // Circle A is completely inside or tangent to Circle B.
-      console . log( -2 ) ;
+    // Case 2: Circle B completely encloses Circle A (or they are concentric and B is larger).
+    else if (circleBRadius >= distanceBetweenCenters + circleARadius) {
+      console.log(-2);
     }
-    else if ( centerDistance <= r1 + r2 ) {
-      // Circles intersect or are tangent externally.
-      console . log( 1 ) ;
+    // Case 3: The circles intersect or touch externally.
+    else if (distanceBetweenCenters <= circleARadius + circleBRadius) {
+      console.log(1);
     }
+    // Case 4: The circles are separate and do not touch.
     else {
-      // Circles do not intersect and are separate.
-      console . log( 0 ) ;
+      console.log(0);
     }
   }
-
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,169 +1,227 @@
-let inputReader = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
-let dataStore; let collectedLines = []; /* Array to hold all incoming lines */
-inputReader.on('dataLine', function(inputLine){
-  collectedLines.push(inputLine);
+
+var inputProcessor;
+var inputLines = [];
+
+// Event listener for each line of input received
+inputReader.on('line', function(currentInputLine) {
+  inputLines.push(currentInputLine);
 });
-inputReader.on('finishedReading', function(){
-  dataStore = setupDataParser(collectedLines); /* Initialize our custom input handler */
-  console.error("\n"); /* Add a newline for better console output separation */
-  const processingStartTime = Date.now();
-  performCoreCalculation();
-  const elapsedDuration = Date.now() - processingStartTime;
-  outputDebugInfo("total execution time : " + elapsedDuration + "ms");
-  outputDebugInfo("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+
+// Event listener when the input stream closes
+inputReader.on('close', function() {
+  inputProcessor = initializeInputProcessor(inputLines);
+  console.error("\n"); // Output a newline to stderr for formatting
+
+  var startTime = Date.now(); // Record start time
+  executeMainLogic(); // Execute the primary algorithm logic
+  var endTime = Date.now() - startTime; // Calculate elapsed time
+
+  printDebug("time : " + endTime + "ms"); // Output execution time to stderr
+  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB"); // Output memory usage to stderr
 });
-function createDeepCopy(originalObject){
+
+// Function to create a deep copy of an object
+function createDeepCopy(originalObject) {
   return JSON.parse(JSON.stringify(originalObject));
 }
-function retrieveIntegerVal(){
-  return processDataItem(getNextDataItem(), 1);
+
+// Utility functions to read various types of input from the processed lines
+function readInteger() {
+  return convertInput(getNextLine(), 1);
 }
-function retrieveStringArr(){
-  return processDataItem(getNextDataItem(), 2);
+
+function readStringArray() {
+  return convertInput(getNextLine(), 2);
 }
-function retrieveIntegerArr(){
-  return processDataItem(getNextDataItem(), 4);
+
+function readIntegerArray() {
+  return convertInput(getNextLine(), 4);
 }
-function retrieveCharArr(){
-  return processDataItem(getNextDataItem(), 6);
+
+function readCharacterArray() {
+  return convertInput(getNextLine(), 6);
 }
-function getNextDataItem(){
-  return dataStore.fetchNextToken();
+
+// Retrieves the next available line from the input processor
+function getNextLine() {
+  return inputProcessor.getNext();
 }
-function isInputRemaining(){
-  return dataStore.hasMoreTokens();
+
+// Checks if there are more lines remaining to be read
+function hasMoreLines() {
+  return inputProcessor.hasMoreLines();
 }
-function setupDataParser(inputCollection){  /* Function to set up the input parsing object */
-  let dataParserObject = {
-    dataLines : inputCollection,
-    parseIndex : 0,
-    totalLines : inputCollection.length,
-    hasMoreTokens : function(){
-      return (this.parseIndex < this.totalLines);
+
+// Initializes an object responsible for managing input lines
+function initializeInputProcessor(linesData) {
+  var processorInstance = {
+    dataLines: linesData, // Array containing all input lines
+    currentLineIndex: 0, // Current position in the input lines array
+    totalLines: linesData.length, // Total number of input lines
+
+    // Method to determine if more input lines are available
+    hasMoreLines: function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    fetchNextToken : function(){
-      if(!this.hasMoreTokens()){
-        throw new Error("InputExhaustedException: No more input tokens are available.");
+
+    // Method to retrieve the next input line, advancing the index
+    getNext: function() {
+      if (!this.hasMoreLines()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input"; // Error if no more input
       } else {
-        let extractedItem = this.dataLines[this.parseIndex++];
-        return extractedItem;
+        var retrievedLine = this.dataLines[this.currentLineIndex++];
+        return retrievedLine;
       }
     }
   };
-  return dataParserObject;
+  return processorInstance;
 }
-function displayOutput(message){
+
+// Prints a given message to standard output
+function printOutput(message) {
   console.log(message);
 }
-function outputDebugInfo(debugMessage){
-  console.error("debug_output:" + require("util").inspect(debugMessage, false, null));
+
+// Prints a debug message to standard error, including inspection details
+function printDebug(debugMessage) {
+  console.error("debug:" + require("util").inspect(debugMessage, false, null));
 }
-/*
- * This function handles various types of input conversions.
- * 'conversionType' parameter determines the operation:
- *  - 1: Parse to integer.
- *  - 2: Split by space into string array.
- *  - 4: Split by space and convert to integer array.
- *  - 6: Split into character array.
- *  - 7: Split into character array and convert to integer array.
- *  - 8: Join array elements with spaces.
- *  - 9: Join array elements with newlines.
- *  - 0: Join array elements without any separator.
- *  - Default: Return the input as is.
-*/
-function processDataItem(inputVal, conversionType){
-  try{
-    switch(conversionType){
-      case 1: return Number.parseInt(inputVal);
-      case 2: return inputVal.split(" ");
-      case 4: return inputVal.split(" ").map(val => Number(val));
-      case 6: return inputVal.split("");
-      case 7: return inputVal.split("").map(val => Number(val));
-      case 8: return inputVal.join(" ");
-      case 9: return inputVal.join("\n");
-      case 0: return inputVal.join("");
-      default: return inputVal;
+
+// Generic function to convert input based on a specified conversion type
+// Conversion types:
+// 1: Parse as an integer.
+// 2: Split by spaces into an array of strings.
+// 4: Split by spaces and map to an array of numbers.
+// 6: Split into an array of individual characters.
+// 7: Split into characters and map to an array of numbers.
+// 8: Join array elements with a space.
+// 9: Join array elements with a newline.
+// 0: Join array elements without any separator.
+// Default: Return the input value as is.
+function convertInput(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map(Number);
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map(Number);
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
-  } catch(err){
-    return inputVal; /* If conversion fails, return original value */
+  } catch (error) {
+    return inputValue; // In case of conversion error, return original value
   }
 }
-/* End of utility functions, main application logic follows */
-function performCoreCalculation(){
-  let nodeCount = retrieveIntegerVal();
-  let graphNodes = new Array(nodeCount); /* Array to represent graph nodes */
-  for(let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++){
-    graphNodes[nodeIdx] = {
-      connectedNodes : [], /* List of adjacent nodes */
-      isProcessed : false, /* Flag to track if node has been visited */
-      distanceFromRoot : 1 /* Depth from a starting node */
+
+// --------------------------------------------------------------------------
+// End of boilerplate and utility functions.
+
+// Main function containing the core algorithm logic.
+function executeMainLogic() {
+  var nodeCount = readInteger(); // Read the total number of nodes
+
+  // Initialize an array to hold data for each node in the graph
+  var nodeData = Array(nodeCount);
+  for (var idxA = 0; idxA < nodeCount; idxA++) {
+    nodeData[idxA] = {
+      connectedNodes: [], // Stores indices of nodes directly connected to this node
+      visitedStatus: false, // Flag to track if this node has been visited during BFS
+      nodeLevel: 1 // Stores the depth/level of this node from the BFS start point
     };
   }
-  for(let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++){
-    let currentMatrixRow = retrieveCharArr(); /* Read adjacency matrix row */
-    for(let neighborIdx = 0; neighborIdx < nodeCount; neighborIdx++){
-      /* Add connection if it's not self-loop and entry is '1' */
-      if(nodeIdx !== neighborIdx && currentMatrixRow[neighborIdx] === "1"){
-        graphNodes[nodeIdx].connectedNodes.push(neighborIdx);
+
+  // Populate the connectedNodes list for each node based on the adjacency matrix input
+  for (var idxA = 0; idxA < nodeCount; idxA++) {
+    var charMatrixRow = readCharacterArray(); // Read a row representing connections
+    for (var idxB = 0; idxB < nodeCount; idxB++) {
+      // If nodes are distinct and there's a connection indicated by '1'
+      if (idxA !== idxB && charMatrixRow[idxB] === "1") {
+        nodeData[idxA].connectedNodes.push(idxB); // Add the connection
       }
     }
   }
-  
-  let computedValue = -1; /* Initialize the final computed result */
-  let initialMaxDistanceNode = traverseGraph(0, graphNodes, nodeCount); /* First BFS from node 0 */
-  
-  /* Reset node states for the second BFS traversal */
-  for(let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++){
-    graphNodes[nodeIdx].isProcessed = false;
-    graphNodes[nodeIdx].distanceFromRoot = 1;
+
+  var resultValue = -1; // Initialize the variable to store the final output result
+
+  // Perform the first Breadth-First Search starting from node 0
+  // This finds one of the farthest nodes from node 0.
+  var farthestNodeIndex = breadthFirstSearch(0);
+
+  // Reset the visited status and depth for all nodes before the second BFS
+  for (var idxA = 0; idxA < nodeCount; idxA++) {
+    nodeData[idxA].visitedStatus = false;
+    nodeData[idxA].nodeLevel = 1;
   }
-  let diameterEndPoint = traverseGraph(initialMaxDistanceNode, graphNodes, nodeCount); /* Second BFS from the farthest node */
-  
-  /* Check for specific graph properties to determine final output */
-  for(let idxA = 0; idxA < nodeCount - 1; idxA++){
-    for(let idxB = idxA + 1; idxB < nodeCount; idxB++){
-      /* If two nodes are at the same depth and are connected, it's an invalid configuration */
-      if(graphNodes[idxA].distanceFromRoot === graphNodes[idxB].distanceFromRoot && (graphNodes[idxA].connectedNodes.indexOf(idxB) !== -1 || graphNodes[idxB].connectedNodes.indexOf(idxA) !== -1)){
-        displayOutput(-1);
-        return; /* Exit early if invalid */
+
+  // Perform the second BFS, starting from the farthest node found in the first BFS
+  // This helps determine the diameter of the graph (or a related property).
+  var finalFarthestNode = breadthFirstSearch(farthestNodeIndex);
+
+  // Check conditions based on node depths and connections to determine the final result
+  for (var idxA = 0; idxA < nodeCount - 1; idxA++) {
+    for (var idxB = idxA + 1; idxB < nodeCount; idxB++) {
+      // If two distinct nodes have the same depth AND are directly connected
+      if (nodeData[idxA].nodeLevel === nodeData[idxB].nodeLevel &&
+        (nodeData[idxA].connectedNodes.indexOf(idxB) !== -1 || nodeData[idxB].connectedNodes.indexOf(idxA) !== -1)) {
+        printOutput(-1); // Output -1 and terminate if this condition is met
+        return;
       } else {
-        /* Otherwise, update the maximum depth found so far */
-        computedValue = Math.max(computedValue, graphNodes[idxA].distanceFromRoot);
+        // Otherwise, update the maximum depth encountered so far
+        resultValue = Math.max(resultValue, nodeData[idxA].nodeLevel);
       }
     }
   }
-  displayOutput(computedValue); /* Output the final calculated value */
-  
-  /* Breadth-First Search implementation */
-  function traverseGraph(initialVertex, nodeCollection, totalVertices){
-    let nodeQueue = [initialVertex]; /* Queue for BFS */
-    nodeCollection[initialVertex].isProcessed = true; /* Mark starting node as visited */
-    let greatestDistance = 0; /* Tracks the maximum depth encountered in this BFS */
-    
-    while(nodeQueue.length > 0){
-      let currentVertex = nodeQueue.shift(); /* Get the next node from the queue */
-      let adjacentElements = nodeCollection[currentVertex].connectedNodes; /* Get neighbors */
-      
-      for(let loopIdx = 0; loopIdx < adjacentElements.length; loopIdx++){
-        let neighborNodeIdx = adjacentElements[loopIdx];
-        if(!nodeCollection[neighborNodeIdx].isProcessed){
-          nodeCollection[neighborNodeIdx].isProcessed = true; /* Mark neighbor as visited */
-          nodeCollection[neighborNodeIdx].distanceFromRoot = nodeCollection[currentVertex].distanceFromRoot + 1; /* Update neighbor's depth */
-          greatestDistance = Math.max(greatestDistance, nodeCollection[currentVertex].distanceFromRoot + 1); /* Update max depth */
-          nodeQueue.push(neighborNodeIdx); /* Add neighbor to queue */
+  printOutput(resultValue); // Output the calculated final result
+
+  // Breadth-First Search (BFS) algorithm implementation
+  function breadthFirstSearch(startNodeIdx) {
+    var processingQueue = [startNodeIdx]; // Initialize the queue with the starting node
+    nodeData[startNodeIdx].visitedStatus = true; // Mark the starting node as visited
+
+    var maximumLevel = 0; // Variable to keep track of the maximum depth reached during this BFS
+
+    // Continue as long as there are nodes in the queue to process
+    while (processingQueue.length > 0) {
+      var currentNodeIdx = processingQueue.shift(); // Dequeue the next node to process
+      var currentConnectedNodes = nodeData[currentNodeIdx].connectedNodes; // Get its neighbors
+
+      // Iterate through all connected nodes (neighbors) of the current node
+      for (var idxC = 0; idxC < currentConnectedNodes.length; idxC++) {
+        var neighborNodeIdx = currentConnectedNodes[idxC];
+        // If the neighbor has not been visited yet
+        if (!nodeData[neighborNodeIdx].visitedStatus) {
+          nodeData[neighborNodeIdx].visitedStatus = true; // Mark the neighbor as visited
+          nodeData[neighborNodeIdx].nodeLevel = nodeData[currentNodeIdx].nodeLevel + 1; // Set its depth
+          maximumLevel = Math.max(maximumLevel, nodeData[currentNodeIdx].nodeLevel + 1); // Update the overall maximum depth
+          processingQueue.push(neighborNodeIdx); // Enqueue the neighbor for future processing
         }
       }
     }
-    
-    let resultNodeIdentifier = -1; /* Index of a node at the greatest depth */
-    for(let nodeIdx = 0; nodeIdx < totalVertices; nodeIdx++){
-      if(nodeCollection[nodeIdx].distanceFromRoot === greatestDistance){
-        resultNodeIdentifier = nodeIdx; /* Found a node at max depth */
-        break; /* Exit loop, we only need one such node */
+
+    var returnedNodeIdx = -1; // Initialize the index of the node to be returned
+    // Find the first node that has the maximum depth reached during this BFS
+    for (var idxA = 0; idxA < nodeCount; idxA++) {
+      if (nodeData[idxA].nodeLevel === maximumLevel) {
+        returnedNodeIdx = idxA;
+        break; // Found the first node at max depth, no need to search further
       }
     }
-    return resultNodeIdentifier; /* Return the index of one of the farthest nodes */
+    return returnedNodeIdx; // Return the index of the farthest node found
   }
 }

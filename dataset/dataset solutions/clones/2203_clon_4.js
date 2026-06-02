@@ -1,136 +1,84 @@
-class DataStreamProcessor {
-    #bufferedLines;
-    #currentPosition;
-
-    constructor(sourceContent) {
-        this.#bufferedLines = sourceContent.trim().split("\n");
-        this.#currentPosition = 0;
-    }
-
-    hasMoreEntries() {
-        return this.#currentPosition < this.#bufferedLines.length;
-    }
-
-    retrieveNextEntry() {
-        if (!this.hasMoreEntries()) {
-            throw new Error("Input source exhausted: No further entries available.");
-        }
-        return this.#bufferedLines[this.#currentPosition++];
-    }
-
-    static #typeConversionRegistry = new Map([
-        ["integer", (text) => Number.parseInt(text)],
-        ["stringTokens", (text) => text.split(" ")],
-        ["integerTokens", (text) => text.split(" ").map(Number)],
-        ["characterArray", (text) => text.split("")],
-    ]);
-
-    convertEntry(entryText, conversionKey) {
-        const conversionFunction = DataStreamProcessor.#typeConversionRegistry.get(conversionKey);
-        return conversionFunction ? conversionFunction(entryText) : entryText;
-    }
-
-    fetchNumericValue() {
-        return this.convertEntry(this.retrieveNextEntry(), "integer");
-    }
-
-    fetchStringTokens() {
-        return this.convertEntry(this.retrieveNextEntry(), "stringTokens");
-    }
-
-    fetchNumericTokenArray() {
-        return this.convertEntry(this.retrieveNextEntry(), "integerTokens");
-    }
-
-    fetchCharacterArray() {
-        return this.convertEntry(this.retrieveNextEntry(), "characterArray");
-    }
+function* readInputLines() {
+  const rawContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+  const lines = rawContent.split("\n");
+  for (const line of lines) {
+    yield line;
+  }
 }
 
-// Global input/output utilities
-const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const streamHandler = new DataStreamProcessor(rawInputContent);
+const input_line_generator = readInputLines();
 
-const publishResult = (message) => console.log(message);
-const outputDiagnostic = (message) => console.error(message);
-
-// Spell entity definition
-class MagicAttack {
-    constructor(power, essenceCost) {
-        this.power = power;
-        this.essenceCost = essenceCost;
-    }
+function fetchNextLine() {
+  const { value, done } = input_line_generator.next();
+  if (done) {
+    throw new Error("No more input lines available.");
+  }
+  return value;
 }
 
-// Core application logic
-const orchestrateCombatSimulation = () => {
-    const initialConfiguration = streamHandler.fetchNumericTokenArray();
-    const desiredDamageThreshold = initialConfiguration[0];
-    const numberOfAvailableSpells = initialConfiguration[1];
+function extractInteger() {
+  return parseInt(fetchNextLine(), 10);
+}
 
-    const availableMagicAttacks = [];
-    for (let spellIdx = 0; spellIdx < numberOfAvailableSpells; spellIdx++) {
-        const attackDetails = streamHandler.fetchNumericTokenArray();
-        availableMagicAttacks.push(new MagicAttack(attackDetails[0], attackDetails[1]));
+function parseIntegerArrayFromLine() {
+  return fetchNextLine().split(" ").map(Number);
+}
+
+function presentOutput(content) {
+  console.log(content);
+}
+
+function reportError(message) {
+  console.error(message);
+}
+
+function processBattlePlan() {
+  const initial_parameters = parseIntegerArrayFromLine();
+  const target_health = initial_parameters[0];
+  const spell_count = initial_parameters[1];
+
+  const available_spells = [];
+  let max_single_spell_damage = 0;
+
+  for (let s_idx = 0; s_idx < spell_count; s_idx++) {
+    const current_spell_data = parseIntegerArrayFromLine();
+    const spell_damage_output = current_spell_data[0];
+    const spell_mana_cost = current_spell_data[1];
+    available_spells.push({
+      output: spell_damage_output,
+      cost: spell_mana_cost
+    });
+    if (spell_damage_output > max_single_spell_damage) {
+      max_single_spell_damage = spell_damage_output;
     }
+  }
 
-    // Determine the maximum damage index for the dynamic programming table.
-    // The original code uses (H+1)*2 as array size, allowing indices up to 2H+1.
-    const maximumDamageIndex = desiredDamageThreshold * 2 + 1;
+  const max_damage_capacity = target_health + max_single_spell_damage;
+  const minimum_mana_costs = new Array(max_damage_capacity + 1).fill(Infinity);
+  minimum_mana_costs[0] = 0;
 
-    // Memoization table for recursive DP
-    const memoizationCache = new Map();
+  for (let d_val = 1; d_val <= max_damage_capacity; d_val++) {
+    for (const current_spell of available_spells) {
+      const current_spell_output = current_spell.output;
+      const current_spell_cost = current_spell.cost;
 
-    // Recursive function to calculate the minimum essence cost for a given damage level
-    const calculateMinEssenceCost = (currentDamageLevel) => {
-        if (currentDamageLevel < 0) {
-            return Infinity; // Cannot achieve negative damage, or invalid state
+      if (d_val >= current_spell_output) {
+        if (minimum_mana_costs[d_val - current_spell_output] !== Infinity) {
+          minimum_mana_costs[d_val] = Math.min(
+            minimum_mana_costs[d_val],
+            minimum_mana_costs[d_val - current_spell_output] + current_spell_cost
+          );
         }
-        if (currentDamageLevel === 0) {
-            return 0; // 0 damage costs 0 essence
-        }
-        if (memoizationCache.has(currentDamageLevel)) {
-            return memoizationCache.get(currentDamageLevel); // Return memoized result
-        }
-
-        let minimumCostForThisLevel = Infinity;
-
-        for (const attack of availableMagicAttacks) {
-            const previousDamageLevel = currentDamageLevel - attack.power;
-            
-            // Crucial constraint from the original algorithm:
-            // Only previous damage levels strictly less than 'desiredDamageThreshold' (H)
-            // are considered as valid starting points for applying new spells.
-            if (previousDamageLevel >= 0 && previousDamageLevel < desiredDamageThreshold) {
-                const costFromPreviousState = calculateMinEssenceCost(previousDamageLevel);
-                if (costFromPreviousState !== Infinity) {
-                    minimumCostForThisLevel = Math.min(
-                        minimumCostForThisLevel,
-                        costFromPreviousState + attack.essenceCost
-                    );
-                }
-            }
-        }
-        
-        memoizationCache.set(currentDamageLevel, minimumCostForThisLevel);
-        return minimumCostForThisLevel;
-    };
-
-    // Populate the final cost array by computing all necessary states
-    // The array needs to be one element larger than maximumDamageIndex to handle `k+1` in suffix min.
-    const finalEssenceCosts = new Array(maximumDamageIndex + 2).fill(Infinity);
-    for (let d = 0; d <= maximumDamageIndex; d++) {
-        finalEssenceCosts[d] = calculateMinEssenceCost(d);
+      }
     }
+  }
 
-    // Apply suffix minimums to ensure finalEssenceCosts[k] represents
-    // the minimum cost to achieve *at least* k damage.
-    // Loop from maximum index down to 0.
-    for (let k = maximumDamageIndex; k >= 0; k--) {
-        finalEssenceCosts[k] = Math.min(finalEssenceCosts[k], finalEssenceCosts[k + 1]);
-    }
-    
-    publishResult(finalEssenceCosts[desiredDamageThreshold]);
-};
+  let final_minimum_cost = Infinity;
+  for (let d_idx = target_health; d_idx <= max_damage_capacity; d_idx++) {
+    final_minimum_cost = Math.min(final_minimum_cost, minimum_mana_costs[d_idx]);
+  }
 
-orchestrateCombatSimulation();
+  presentOutput(final_minimum_cost);
+}
+
+processBattlePlan();

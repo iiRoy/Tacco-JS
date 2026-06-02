@@ -1,24 +1,18 @@
-const processData = (sourcePayload) => {
-    const inputLines = sourcePayload.split('\n');
+function Main(sourceData) {
+    const dataLines = sourceData.split("\n");
 
-    const numericLimit = Number.parseInt(inputLines[0], 10);
-    const characterSequence = inputLines[1];
+    const numericValue = parseInt(dataLines[0], 10);
+    const characterSequence = dataLines[1];
 
-    let accumulator = 0;
-    for (let currentCharacter of characterSequence) {
-        if (currentCharacter === 'R') {
-            accumulator++;
-        }
-    }
+    const redCharacterTally = Array.from(characterSequence).reduce((currentCount, charElement) => {
+        return currentCount + (charElement === 'R' ? 1 : 0);
+    }, 0);
 
-    let finalVerdict;
-    if ((numericLimit / 2) < accumulator) {
-        finalVerdict = 'Yes';
+    if (numericValue < (redCharacterTally * 2)) {
+        console.log('Yes');
     } else {
-        finalVerdict = 'No';
+        console.log('No');
     }
+}
 
-    console.log(finalVerdict);
-};
-
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

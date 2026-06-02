@@ -1,26 +1,20 @@
-function calculateResult(rawData) {
-    const numberMatches = rawData.matchAll(/\d+/g);
+function computeResult(sourceText) {
+  const lineBreakPosition = sourceText.indexOf('\n');
+  const firstSegment = sourceText.substring(0, lineBreakPosition);
+  const secondSegment = sourceText.substring(lineBreakPosition + 1);
 
-    let firstNumeric = null;
-    let runningTotal = 0;
-    let itemCounter = 0;
+  const quantity = parseInt(firstSegment, 10);
 
-    for (const matchEntry of numberMatches) {
-        const currentNumericalValue = parseInt(matchEntry[0], 10);
-        if (itemCounter === 0) {
-            firstNumeric = currentNumericalValue;
-        } else {
-            runningTotal += currentNumericalValue;
-        }
-        itemCounter++;
+  const numericStrings = secondSegment.match(/\d+/g);
+
+  let totalAccumulation = 0;
+  if (numericStrings) {
+    for (let i = 0; i < numericStrings.length; i++) {
+      totalAccumulation += parseInt(numericStrings[i], 10);
     }
+  }
 
-    if (firstNumeric === null || itemCounter < 2) {
-        return 0; 
-    }
-
-    return runningTotal - firstNumeric;
+  console.log(totalAccumulation - quantity);
 }
 
-const inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(calculateResult(inputContent));
+computeResult(require("fs").readFileSync("/dev/stdin", "utf8"));

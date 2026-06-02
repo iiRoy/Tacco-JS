@@ -1,98 +1,73 @@
-// This module serves to analyze a sequence of numeric entries provided as a raw text stream.
-// Its primary goal is to identify specific patterns related to the distinctness or repetition
-// of consecutive values within the initial four parsed numbers.
-// The analysis will output a status message based on predefined rules.
-function analyzeSequence(rawTextStream) {
-    // Stage 1: Pre-processing the input stream.
-    // The raw text is first segmented into individual tokens based on whitespace.
-    // Empty tokens are filtered out to ensure only meaningful data is considered.
-    const inputTokens = rawTextStream.split(/\s+/).filter(token => token.length > 0);
+function processCharacterSequence(charSequence) {
+    // Helper function to safely convert a character at a given index to a number.
+    // This explicitly handles cases where the character might be undefined (e.g., short input string),
+    // matching the original's implicit Number(undefined) -> NaN behavior during subtraction.
+    const getNumericValue = (sequence, index) => {
+        const char = sequence[index];
+        return Number(char);
+    };
 
-    // Stage 2: Numeric parsing and data normalization.
-    // We aim to extract precisely four numeric values for the core analysis.
-    // If fewer than four tokens are available, the remaining slots will be filled with 'undefined',
-    // mimicking the behavior of accessing out-of-bounds array elements in the original code,
-    // which typically results in `NaN` during arithmetic operations.
-    const parsedNumericEntries = [];
-    const targetEntryCount = 4;
+    let outputDetermined = false; // Flag to ensure only one output, mimicking the 'break' statements.
 
-    for (let currentSlot = 0; currentSlot < targetEntryCount; currentSlot++) {
-        if (currentSlot < inputTokens.length) {
-            const potentialNumber = parseInt(inputTokens[currentSlot], 10);
-            // If parsing results in NaN, we store 'undefined' to maintain consistent behavior
-            // with original code's implicit NaN generation from undefined values.
-            parsedNumericEntries.push(isNaN(potentialNumber) ? undefined : potentialNumber);
-        } else {
-            // Populate with undefined if input stream has fewer than four numbers.
-            parsedNumericEntries.push(undefined);
-        }
+    // Pre-fetch and convert the relevant character values to numbers.
+    // This is an intermediate computation step and helper variables.
+    const valueZero = getNumericValue(charSequence, 0);
+    const valueOne = getNumericValue(charSequence, 1);
+    const valueTwo = getNumericValue(charSequence, 2);
+    const valueThree = getNumericValue(charSequence, 3);
+
+    // Define the condition for all four values being distinct.
+    // This is a rewriting of a local expression for clarity and reuse.
+    const areAllFourValuesDistinct =
+        (valueThree - valueTwo !== 0) &&
+        (valueTwo - valueOne !== 0) &&
+        (valueOne - valueZero !== 0);
+
+    // The original code's loop structure with `input[++i]` and `break`
+    // effectively creates a specific sequence of checks.
+    // We replicate this sequence using explicit conditional blocks.
+
+    // --- Mimic the first logical check (corresponding to i=0 in original loop) ---
+    // Original: if (input[0] - input[1] == 0)
+    if (valueZero - valueOne === 0) {
+        console.log("Bad");
+        outputDetermined = true;
+    }
+    // Original: else if (input[3] - input[2] && input[2] - input[1] && input[1] - input[0])
+    // This check occurs if the first 'if' condition was false.
+    else if (areAllFourValuesDistinct) {
+        console.log("good");
+        outputDetermined = true;
     }
 
-    // Stage 3: Assigning descriptive aliases for clarity in pattern matching.
-    const firstValue = parsedNumericEntries[0];
-    const secondValue = parsedNumericEntries[1];
-    const thirdValue = parsedNumericEntries[2];
-    const fourthValue = parsedNumericEntries[3];
-
-    let analysisConcluded = false; // A control flag to simulate the 'break' statements from the original loop.
-    let finalVerdictMessage = ""; // Stores the message to be displayed if a pattern is found.
-
-    // Stage 4: Pattern evaluation - First comparison block.
-    // This segment replicates the behavior observed during the initial iteration
-    // of the original code's peculiar loop structure (effectively checking elements at indices 0 and 1).
-    if (firstValue === secondValue) {
-        finalVerdictMessage = "Sequence Issue Detected: Immediate repetition found.";
-        analysisConcluded = true;
-    } else if (!analysisConcluded) {
-        // If the first two values are distinct, proceed to check for a "good" pattern.
-        // This involves verifying that all adjacent pairs across the four values are distinct.
-        // The original code used a chained `&&` of non-zero differences (`val - val`).
-        // We explicitly calculate differences and check for non-zero and non-NaN results.
-        const diffD_C = fourthValue - thirdValue;
-        const diffC_B = thirdValue - secondValue;
-        const diffB_A = secondValue - firstValue;
-
-        if (diffD_C !== 0 && !isNaN(diffD_C) &&
-            diffC_B !== 0 && !isNaN(diffC_B) &&
-            diffB_A !== 0 && !isNaN(diffB_A)) {
-            finalVerdictMessage = "Pattern Verified: All consecutive values are unique.";
-            analysisConcluded = true;
-        }
+    // --- Mimic the second logical check (corresponding to i=2 in original loop) ---
+    // This block executes only if no output was determined by the previous checks.
+    // Original: if (input[2] - input[3] == 0)
+    if (!outputDetermined && (valueTwo - valueThree === 0)) {
+        console.log("Bad");
+        outputDetermined = true;
+    }
+    // Original: else if (input[3] - input[2] && input[2] - input[1] && input[1] - input[0])
+    // This check occurs if the second 'if' condition was false and no output yet.
+    else if (!outputDetermined && areAllFourValuesDistinct) {
+        console.log("good");
+        outputDetermined = true;
     }
 
-    // Stage 5: Pattern evaluation - Second comparison block.
-    // This segment mimics the subsequent relevant iteration of the original loop
-    // (effectively checking elements at indices 2 and 3), but only if no conclusion was reached earlier.
-    if (!analysisConcluded) {
-        if (thirdValue === fourthValue) {
-            finalVerdictMessage = "Sequence Issue Detected: Immediate repetition found.";
-            analysisConcluded = true;
-        } else if (!analysisConcluded) {
-            // This is a re-evaluation of the *exact same* "good" condition as above.
-            // This redundancy is preserved to faithfully clone the original code's logical flow,
-            // where the `else if` condition was re-checked in a later loop iteration.
-            const diffD_C = fourthValue - thirdValue;
-            const diffC_B = thirdValue - secondValue;
-            const diffB_A = secondValue - firstValue;
-
-            if (diffD_C !== 0 && !isNaN(diffD_C) &&
-                diffC_B !== 0 && !isNaN(diffC_B) &&
-                diffB_A !== 0 && !isNaN(diffB_A)) {
-                finalVerdictMessage = "Pattern Verified: All consecutive values are unique.";
-                analysisConcluded = true;
-            }
-        }
+    // --- Mimic the third logical check (corresponding to i=4 in original loop) ---
+    // This block executes only if no output was determined by any previous checks.
+    // The original 'if' condition for i=4 (input[4] - input[5] == 0) would always be false
+    // because Number(undefined) - Number(undefined) results in NaN, and NaN === 0 is false.
+    // Therefore, only the 'else if' part of this iteration is relevant.
+    // Original: else if (input[3] - input[2] && input[2] - input[1] && input[1] - input[0])
+    if (!outputDetermined && areAllFourValuesDistinct) {
+        console.log("good");
+        outputDetermined = true;
     }
 
-    // Stage 6: Outputting the determined verdict.
-    // If a pattern was identified and a message set, it is displayed.
-    // If no patterns were matched (analysisConcluded remains false), no output occurs,
-    // mirroring the original code's behavior for such scenarios.
-    if (analysisConcluded) {
-        console.log(finalVerdictMessage);
-    }
+    // If `outputDetermined` is still false after all checks, nothing is printed,
+    // which matches the original code's behavior.
 }
 
-// DO NOT MODIFY THE FOLLOWING SECTION.
-// This part is responsible for reading input from standard input and invoking the main analysis function.
-analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line remains unchanged to preserve the standard input/output mechanism.
+processCharacterSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,10 +1,8 @@
-const fileAccess = require('node:fs');
-
-const acquiredData = fileAccess.readFileSync('/dev/stdin', { encoding: 'utf-8' });
-
-const baseNumber = ~~acquiredData.trim();
-
-const squaredValue = baseNumber * baseNumber;
-const finalProduct = (squaredValue << 1) + squaredValue;
-
-process.stdout.write(String(finalProduct) + '\n');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const fileSystemAccess = require("fs");
+const rawData = fileSystemAccess.readFileSync("/dev/stdin", "utf8");
+const numericValue = Number(rawData);
+const factorsForCalculation = [3, numericValue, numericValue];
+const finalResult = factorsForCalculation.reduce((accumulator, currentElement) => accumulator * currentElement, 1);
+console.log(finalResult);

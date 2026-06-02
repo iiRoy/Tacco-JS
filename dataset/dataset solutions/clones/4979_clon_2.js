@@ -1,121 +1,93 @@
-function ExecuteProcessing( dataStream )
-{
-	// Deconstruct the incoming raw data into an array of individual line segments.
-	const lineFragments = dataStream.split( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  rawData = rawData.split("\n");
 
-	// From the very first line, extract the dimensions of the conceptual grid.
-	const dimensionTokens = lineFragments[0].split( ' ' ) ;
-	const gridHeight = Number.parseInt( dimensionTokens[0], 10 ) ;
-	const gridWidth  = Number.parseInt( dimensionTokens[1], 10 ) ;
+  // Parse the grid dimensions (height and width) from the first line of input.
+  // The `-0` converts the string to a number.
+  const heightDim = rawData[0].split(" ")[0] - 0;
+  const widthDim = rawData[0].split(" ")[1] - 0;
 
-	/*
-	 * Prepare a collection to hold the final tally of neighbor counts.
-	 * The index of this array directly maps to the quantity of active
-	 * neighbors observed within a 3x3 window (ranging from 0 to 9).
-	 * For instance, `resultTally[k]` will store how many 3x3 windows
-	 * possess exactly 'k' activated cells.
-	 */
-	var resultTally = new Array( 10 ) ;
-	resultTally.fill( 0 ) ; // Initialize all count slots to zero.
+  // Initialize an array to store the counts of cells with 0 to 9 active neighbors.
+  // The array size is 10, indexed 0-9.
+  var resultCounts = new Array(10);
+  // Fill the array with initial zero values.
+  resultCounts.fill(0);
 
-	// The initial state: all eligible 3x3 sub-grids have zero active cells.
-	// An eligible sub-grid's center must not be on the outermost perimeter.
-	resultTally[0] = ( gridHeight - 2 ) * ( gridWidth - 2 ) ;
+  // Calculate the initial number of cells that have zero active neighbors.
+  // This is the total number of inner cells (excluding a 1-cell border).
+  resultCounts[0] = (heightDim - 2) * (widthDim - 2);
 
-	// A quick exit condition: if the input contains only the dimension line,
-	// no cells were ever marked active. Output the baseline and complete.
-	if ( lineFragments.length === 1 )
-	{
-		console.log( resultTally.join( '\n' ) ) ;
-		return ;
-	}
+  // If the input contains only the dimension line, print the current counts and exit.
+  if (rawData.length === 1) {
+    console.log(resultCounts.join("\n"));
+    return;
+  }
 
-	// Forge a two-dimensional boolean matrix to represent the grid's state.
-	// Each cell's value indicates whether it is currently 'active' or not.
-	let cellActivationMap = new Array( gridHeight ) ;
-	for ( let currentR = 0 ; currentR < gridHeight ; ++currentR )
-	{
-		cellActivationMap[currentR] = new Array( gridWidth ) ;
-		cellActivationMap[currentR].fill( Boolean(0) ) ; // Initially, every cell is inactive.
-	}
+  // Create a 2D boolean grid to represent the state of each cell (active/inactive).
+  var gridState = new Array(heightDim);
+  for (var rowIdx = 0; rowIdx < heightDim; rowIdx++) {
+    gridState[rowIdx] = new Array(widthDim);
+    // Initialize all cells in the current row as inactive (false).
+    gridState[rowIdx].fill(false);
+  }
 
-	let currentCoordinates ; // Placeholder for the coordinates of the cell being activated.
-	let activeNeighborCount ; // Accumulator for activated cells within a 3x3 window.
+  // Declare variables for temporary storage during processing.
+  var coordsStr;
+  var neighborCount;
 
-	// Process each subsequent line in the input, as each defines a cell to activate.
-	for ( let lineIndex = 1 ; lineIndex < lineFragments.length ; lineIndex++ )
-	{
-		// Parse the coordinate pair for the cell to be marked active.
-		currentCoordinates = lineFragments[lineIndex].split( ' ' ) ;
+  // Iterate through the input lines starting from the second line (index 1),
+  // as these lines specify the coordinates of cells to be activated.
+  for (var rowIdx = 1; rowIdx < rawData.length; rowIdx++) {
+    // Split the current line to get the row and column coordinates.
+    coordsStr = rawData[rowIdx].split(" ");
 
-		// Convert string coordinates to numbers and adjust for zero-based indexing.
-		[ 0, 1 ].forEach( coordPartIndex => {
-			currentCoordinates[coordPartIndex] = Number.parseInt( currentCoordinates[coordPartIndex], 10 ) - 1 ;
-		} ) ;
+    // Adjust the coordinates from 1-indexed (as per problem statement) to 0-indexed.
+    [0, 1].forEach(coordPart => {
+      coordsStr[coordPart] -= 1;
+    });
 
-		// Mark the designated cell as active in our grid map.
-		cellActivationMap[currentCoordinates[0]][currentCoordinates[1]] = Boolean(1) ;
+    // Mark the cell at the specified coordinates as active in the grid.
+    gridState[coordsStr[0]][coordsStr[1]] = true;
 
-		// Now, assess the impact of this newly activated cell on surrounding 3x3 sub-grids.
-		// An activated cell can influence up to nine distinct 3x3 windows.
-		// `rowOffset` and `colOffset` here define the relative position of the
-		// activated cell with respect to the center of a potential 3x3 window.
-		[ -1, 0, 1 ].forEach( rowOffset => {
-			[ -1, 0, 1 ].forEach( colOffset => {
-				const windowCoreRow = currentCoordinates[0] + rowOffset ;
-				const windowCoreCol = currentCoordinates[1] + colOffset ;
+    // Iterate through a 3x3 neighborhood around the newly activated cell.
+    // deltaRow and deltaCol represent offsets from the activated cell's coordinates.
+    [-1, 0, 1].forEach(deltaRow => {
+      [-1, 0, 1].forEach(deltaCol => {
+        // Check if the center of the current 3x3 neighborhood (coordsStr[0]+deltaRow, coordsStr[1]+deltaCol)
+        // is within the valid inner grid boundaries (excluding the outermost 1-cell border).
+        if (
+          1 <= deltaRow + coordsStr[0] &&
+          deltaRow + coordsStr[0] < heightDim - 1 &&
+          1 <= deltaCol + coordsStr[1] &&
+          deltaCol + coordsStr[1] < widthDim - 1
+        ) {
+          // Reset the neighbor count for this specific 3x3 neighborhood center.
+          neighborCount = 0;
 
-				// Validate if the computed 3x3 window's core (center) falls within
-				// the 'inner' bounds of the grid. This means excluding the outermost
-				// single-unit border cells.
-				const isCorePositionValid = (
-					   ( windowCoreRow >= 1 )
-					&& ( windowCoreRow < gridHeight - 1 )
-					&& ( windowCoreCol >= 1 )
-					&& ( windowCoreCol < gridWidth - 1 )
-				) ;
+          // Count the number of active cells within the 3x3 area centered at
+          // (coordsStr[0] + deltaRow, coordsStr[1] + deltaCol).
+          [-1, 0, 1].forEach(subDeltaRow => {
+            [-1, 0, 1].forEach(subDeltaCol => {
+              // If the cell is active, increment the neighbor count.
+              neighborCount += gridState[coordsStr[0] + deltaRow + subDeltaRow][coordsStr[1] + deltaCol + subDeltaCol] ? 1 : 0;
+            });
+          });
 
-				if ( isCorePositionValid )
-				{
-					activeNeighborCount = 0 ; // Reset for the current 3x3 window evaluation.
+          // When a cell becomes active, it changes the neighbor count for its surrounding 3x3 areas.
+          // The cell at (coordsStr[0] + deltaRow, coordsStr[1] + deltaCol) previously had
+          // (neighborCount - 1) active neighbors (before the current cell was activated).
+          // So, decrement the count for (neighborCount - 1) neighbors.
+          resultCounts[neighborCount - 1]--;
+          // Now, this cell has 'neighborCount' active neighbors, so increment that count.
+          resultCounts[neighborCount]++;
+        }
+      });
+    });
+  }
 
-					// Traverse the 3x3 area centered at `windowCoreRow, windowCoreCol`.
-					// `innerRowDelta` and `innerColDelta` are relative to the window's core.
-					[ -1, 0, 1 ].forEach( innerRowDelta => {
-						[ -1, 0, 1 ].forEach( innerColDelta => {
-							const targetRow = windowCoreRow + innerRowDelta ;
-							const targetCol = windowCoreCol + innerColDelta ;
-
-							// If the cell at `(targetRow, targetCol)` is active, increment our counter.
-							// Boundary checks are implicitly handled by `isCorePositionValid`
-							// ensuring the 3x3 window is entirely within the grid.
-							if ( cellActivationMap[targetRow][targetCol] )
-							{
-								activeNeighborCount++ ;
-							}
-						} ) ;
-					} ) ;
-
-					// Update the global result tallies.
-					// Since one cell in this window just became active, its neighbor count
-					// increased by one. We decrement the count for the previous state
-					// (`activeNeighborCount - 1`) and increment for the new state (`activeNeighborCount`).
-					resultTally[activeNeighborCount - 1]-- ;
-					resultTally[activeNeighborCount]++ ;
-				}
-			} ) ;
-		} ) ;
-	}
-
-	// Emit the final computed counts, each isolated on its own line.
-	console.log( resultTally.join( '\n' ) ) ;
+  // After processing all activated cells, print the final counts, each on a new line.
+  console.log(resultCounts.join("\n"));
 }
 
-/*
- * This concluding segment is responsible for orchestrating the standard
- * input and output mechanisms. It fetches all data from the standard
- * input stream in one go and subsequently invokes the primary processing
- * function (`ExecuteProcessing`) with the acquired data.
- * Modifications to this particular block are generally discouraged.
- */
-ExecuteProcessing( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// The following line is for standard input/output handling and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

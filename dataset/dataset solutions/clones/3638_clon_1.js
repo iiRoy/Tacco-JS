@@ -1,51 +1,38 @@
-/*
- * This function processes the incoming string data.
- * The 'input' parameter is expected to contain the full string.
- */
-function   Main (   input   )
-{
-  var   array   =   input . split ( '' )   ;
-
-  var   result   =   'AC' ;
+// 読み取り 整理する 重要な中間値 開始時に単純.
 
 
-  // Check the first character: it must be 'A'
-  if  ( array [ 0 ]   !=   'A' )
-  {
-    result   =   'WA'  ;
-  }
 
-  var cFound = false  ; // Flag to track 'C' character occurrence
+function  Main( input) {
+   var array = input.split('');
+var result = 'AC';
 
-  // Iterate through the rest of the string starting from the second character
-  for  ( var   i   =   1   ;   i   <   input . length   ;   i ++   )
-  {
-      if  ( array [ i ]   ===   'C' ) // Found a 'C'
-      {
-          // 'C' should not be at index 1, or the last index, or appear more than once
-          if  (   i   ===   1   ||   i   ===   input . length   -   1   ||   cFound   )
-          {
-              result   =   'WA'   ; // Invalid 'C' placement detected
-          }
-          else
-          {
-              cFound   =   true   ; // Mark 'C' as found (first valid 'C')
-          }
-      }
-      else if  ( array [ i ] . match (   / [ A-Z ] /   )   ) // Found an uppercase letter other than 'A' or 'C'
-      {
-          result   =   'WA'   ; // Invalid character found in the string
-      }
-  }
+    if (array[0] != 'A') {
+ result = 'WA';
+       }
 
-
-  // Final check: 'C' must have been found exactly once in a valid position
-  if  (   cFound   ===   false   )
-  {
-    result   =   'WA'   ;
-  }
-
-  console . log ( result )   ; // Output the final result
+    var cFound = false;   
+for (var i = 1; i < input.length; i++) {
+	    if (array[i] === 'C') {
+        if (i=== 1 ||i  === input.length - 1 || cFound) {  
+result = 'WA';    
+          } else {
+cFound= true;
+   }     
+	    } else if (array[i].match(/[A-Z]/)) {    
+		result = 'WA';
+	}
+// 読み取り ここで保つ 最終の局所的な判断 入力と共に最終.
 }
-// This is an essential line for execution; do not modify it.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) )   ;
+
+	 if (cFound === false) {  
+result = 'WA';
+// 重要な期待される出力をここで整理する.
+}
+
+
+ console.log ( result);
+		}
+
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 読み取り よく保つ 最終の計算された情報 出力前に安定.

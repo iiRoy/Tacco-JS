@@ -1,80 +1,64 @@
 "use strict";
-const retrieveAllStreamData = () => new Promise(resolve => {
-  let collectedText = '';
-  process.stdin.on('data', fragment => { collectedText += fragment; });
-  process.stdin.on('end', () => resolve(collectedText));
-});
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const tokenBuffer = fileContent.split(/ |\n/);
+let bufferPointer = 0;
 
-const processStreamContent = (fullText) => {
-  let contentUnits = fullText.trim().split(/\s+/);
-  let currentUnitIndex = 0;
-  return {
-    obtainNextValue: () => Number(contentUnits[currentUnitIndex++]),
-  };
-};
+function retrieveNextValue(asString) {
+  return asString ? tokenBuffer[bufferPointer++] : Number(tokenBuffer[bufferPointer++]);
+}
 
-const buildMultiArray = (initialFill, ...dimensions) => {
-  const constructLayer = (remainingDimensions) => {
-    if (remainingDimensions.length === 0) {
-      return initialFill;
-    }
-    const currentDimensionSize = remainingDimensions[0];
-    return Array.from({ length: currentDimensionSize }, () => constructLayer(remainingDimensions.slice(1)));
-  };
-  return constructLayer(dimensions);
-};
+function retrieveValueSequence(count, asString) {
+  const start = bufferPointer;
+  bufferPointer += count;
+  return asString ? tokenBuffer.slice(start, bufferPointer) : tokenBuffer.slice(start, bufferPointer).map(Number);
+}
 
-const orchestrateCalculation = (inputReader) => {
-  const totalElements = inputReader.obtainNextValue();
-  const itemCollection = [];
-  for (let currentIdx = 0; currentIdx < totalElements; ++currentIdx) {
-    itemCollection.push([inputReader.obtainNextValue(), currentIdx]);
+function retrieveMatrix(rows, columns, asString) {
+  const resultMatrix = [];
+  for (let r = 0; r < rows; r++) {
+    const rowStart = bufferPointer;
+    bufferPointer += columns;
+    resultMatrix.push(asString ? tokenBuffer.slice(rowStart, bufferPointer) : tokenBuffer.slice(rowStart, bufferPointer).map(Number));
+  }
+  return resultMatrix;
+}
+
+function createInitializedArray(size, initialValue) {
+  return Array.from({ length: size }, () => initialValue);
+}
+
+const computationResult = executeMainLogic();
+if (computationResult !== undefined) {
+  console.log(computationResult);
+}
+
+function executeMainLogic() {
+  const totalCount = retrieveNextValue();
+  const weightedItems = [];
+  for (let idx = 0; idx < totalCount; idx++) {
+    weightedItems.push([retrieveNextValue(), idx]);
   }
 
-  itemCollection.sort((itemA, itemB) => itemB[0] - itemA[0]);
+  weightedItems.sort((itemA, itemB) => itemB[0] - itemA[0]);
 
-  let dynamicProjection = buildMultiArray(0, totalElements + 1);
+  let previousMaxValues = createInitializedArray(totalCount + 1, 0);
+  let currentMaxValues = createInitializedArray(totalCount + 1, 0);
 
-  const finalProjection = itemCollection.reduce((currentScores, currentElementTuple, currentIteration) => {
-    let futureScores = [...currentScores];
+  for (let currentItemIndex = 0; currentItemIndex < totalCount; currentItemIndex++) {
+    const [itemWeight, originalPosition] = weightedItems[currentItemIndex];
 
-    const elementValue = currentElementTuple[0];
-    const elementOriginalPosition = currentElementTuple[1];
+    currentMaxValues[0] = previousMaxValues[0] + (originalPosition - currentItemIndex) * itemWeight;
 
-    futureScores[currentIteration + 1] = currentScores[currentIteration] + (totalElements - currentIteration - elementOriginalPosition - 1) * elementValue;
+    currentMaxValues[currentItemIndex + 1] = previousMaxValues[currentItemIndex] + (totalCount - currentItemIndex - originalPosition - 1) * itemWeight;
 
-    for (let subIteration = currentIteration; subIteration >= 1; --subIteration) {
-      const termA = (elementOriginalPosition - (currentIteration - subIteration)) * elementValue;
-      const termB = (totalElements - subIteration - elementOriginalPosition) * elementValue;
-
-      const valueOption1 = currentScores[subIteration] + termA;
-      const valueOption2 = currentScores[subIteration - 1] + termB;
-
-      futureScores[subIteration] = Math.max(valueOption1, valueOption2);
+    for (let subsetSize = 1; subsetSize <= currentItemIndex; subsetSize++) {
+      const option1 = previousMaxValues[subsetSize] + (originalPosition - (currentItemIndex - subsetSize)) * itemWeight;
+      const option2 = previousMaxValues[subsetSize - 1] + (totalCount - subsetSize - originalPosition) * itemWeight;
+      currentMaxValues[subsetSize] = Math.max(option1, option2);
     }
-
-    futureScores[0] = currentScores[0] + (elementOriginalPosition - currentIteration) * elementValue;
-
-    return futureScores;
-  }, dynamicProjection);
-
-  const retrieveMaximum = (valueArray) => {
-    let currentMax = -Infinity;
-    for (const val of valueArray) {
-      if (val > currentMax) {
-        currentMax = val;
-      }
-    }
-    return currentMax;
-  };
-
-  return retrieveMaximum(finalProjection);
-};
-
-retrieveAllStreamData().then(dataContent => {
-  const inputHandler = processStreamContent(dataContent);
-  const finalOutcome = orchestrateCalculation(inputHandler);
-  if (finalOutcome !== undefined) {
-    console.log(finalOutcome);
+    
+    previousMaxValues = [...currentMaxValues];
   }
-});
+
+  return Math.max(...previousMaxValues);
+}

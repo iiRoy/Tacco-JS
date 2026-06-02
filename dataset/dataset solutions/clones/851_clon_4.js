@@ -1,180 +1,152 @@
-let currentInputString;
-let currentPosition;
+'use strict';
 
-function advanceBy(quantity) {
-  currentPosition += quantity;
+function matchString(targetStr) {
+  const targetLen = targetStr.length;
+  return (inputSource, currentPosition) => {
+    return inputSource.startsWith(targetStr, currentPosition)
+      ? [true, targetStr, currentPosition + targetLen]
+      : [false, null, currentPosition];
+  };
 }
 
-function examineChar(offset = 0) {
-  if (currentPosition + offset >= currentInputString.length) {
-    return null;
+function select(...parserOptions) {
+  return (inputSource, currentPosition) => {
+    for (const currentParser of parserOptions) {
+      const parseResult = currentParser(inputSource, currentPosition);
+      if (parseResult[0]) {
+        return parseResult;
+      }
+    }
+    return [false, null, currentPosition];
+  };
+}
+
+function sequence(...parserSteps) {
+  return (inputSource, currentPosition) => {
+    const collectedValues = [];
+    let nextPosition = currentPosition;
+
+    const finalState = parserSteps.reduce((accumulator, currentParser) => {
+      if (!accumulator.success) return accumulator;
+
+      const parseResult = currentParser(inputSource, accumulator.nextPosition);
+      if (!parseResult[0]) {
+        return { success: false, nextPosition: currentPosition };
+      }
+      accumulator.values.push(parseResult[1]);
+      accumulator.nextPosition = parseResult[2];
+      return accumulator;
+    }, { success: true, values: collectedValues, nextPosition: currentPosition });
+
+    return finalState.success
+      ? [true, finalState.values, finalState.nextPosition]
+      : [false, null, currentPosition];
+  };
+}
+
+function defer(parserFactory) {
+  let memoizedParser = null;
+  return (inputSource, currentPosition) => {
+    if (!memoizedParser) {
+      memoizedParser = parserFactory();
+    }
+    return memoizedParser(inputSource, currentPosition);
+  };
+}
+
+function transform(baseParser, resultMapper) {
+  return (inputSource, currentPosition) => {
+    const parseResult = baseParser(inputSource, currentPosition);
+    return parseResult[0]
+      ? [parseResult[0], resultMapper(parseResult[1]), parseResult[2]]
+      : parseResult;
+  };
+}
+
+function charFrom(allowedChars) {
+  const charSet = new Set(allowedChars);
+  return (inputSource, currentPosition) => {
+    const char = inputSource[currentPosition];
+    return charSet.has(char)
+      ? [true, char, currentPosition + 1]
+      : [false, null, currentPosition];
+  };
+}
+
+const logicalFormulaParser = defer(() => {
+  const andOperationParser = transform(
+    sequence(matchString('('), logicalFormulaParser, matchString('*'), logicalFormulaParser, matchString(')')),
+    (parts) => ({ kind: 'AND', operands: [parts[1], parts[3]] })
+  );
+  const orOperationParser = transform(
+    sequence(matchString('('), logicalFormulaParser, matchString('+'), logicalFormulaParser, matchString(')')),
+    (parts) => ({ kind: 'OR', operands: [parts[1], parts[3]] })
+  );
+  const impliesOperationParser = transform(
+    sequence(matchString('('), logicalFormulaParser, matchString('->'), logicalFormulaParser, matchString(')')),
+    (parts) => ({ kind: 'IMPLIES', operands: [parts[1], parts[3]] })
+  );
+  const notOperationParser = transform(
+    sequence(matchString('-'), logicalFormulaParser),
+    (parts) => ({ kind: 'NOT', operands: [parts[1]] })
+  );
+  const literalValueParser = transform(
+    charFrom('abcdefghijkTF'),
+    (charVal) => ({ kind: 'LITERAL', value: charVal })
+  );
+  return select(andOperationParser, orOperationParser, impliesOperationParser, notOperationParser, literalValueParser);
+});
+
+const equationStatementParser = transform(
+  sequence(logicalFormulaParser, matchString('='), logicalFormulaParser),
+  (parts) => ({ leftSide: parts[0], rightSide: parts[2] })
+);
+
+const variableIdentifiers = 'abcdefghijk';
+
+function* generateAllTruthAssignments() {
+  const numVariables = variableIdentifiers.length;
+  for (let assignmentIndex = 0; assignmentIndex < (1 << numVariables); assignmentIndex++) {
+    const currentAssignmentMap = new Map();
+    for (let varIdx = 0; varIdx < numVariables; varIdx++) {
+      const variableChar = variableIdentifiers[varIdx];
+      currentAssignmentMap.set(variableChar, !!((assignmentIndex >> varIdx) & 1));
+    }
+    yield currentAssignmentMap;
   }
-  return currentInputString.charAt(currentPosition + offset);
 }
 
-function verifyAndConsume(expectedPattern) {
-  const patternLength = expectedPattern.length;
-  if (currentPosition + patternLength > currentInputString.length) {
-    return false;
-  }
-  if (currentInputString.substring(currentPosition, currentPosition + patternLength) === expectedPattern) {
-    advanceBy(patternLength);
-    return true;
-  }
-  return false;
-}
-
-function isAlphaNumericChar(char) {
-  return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9');
-}
-
-const FormulaNodeType = {
-  EQUALITY_CHECK: 'EQ',
-  BINARY_EXPRESSION: 'BIN',
-  UNARY_EXPRESSION: 'UN',
-  VARIABLE_REFERENCE: 'VAR'
+const logicalOperationEvaluators = {
+  'AND': (operands, assignment) => evaluateLogicalExpression(operands[0], assignment) && evaluateLogicalExpression(operands[1], assignment),
+  'OR': (operands, assignment) => evaluateLogicalExpression(operands[0], assignment) || evaluateLogicalExpression(operands[1], assignment),
+  'IMPLIES': (operands, assignment) => !evaluateLogicalExpression(operands[0], assignment) || evaluateLogicalExpression(operands[1], assignment),
+  'NOT': (operands, assignment) => !evaluateLogicalExpression(operands[0], assignment),
 };
 
-function parseSingleVariable() {
-  let initialChar = examineChar();
-  if (initialChar && (isAlphaNumericChar(initialChar) || initialChar === 'T' || initialChar === 'F')) {
-    advanceBy(1);
-    return { kind: FormulaNodeType.VARIABLE_REFERENCE, identifier: initialChar };
+function evaluateLogicalExpression(astNode, currentAssignment) {
+  if (astNode.kind === 'LITERAL') {
+    const literalValue = astNode.value;
+    if (literalValue === 'T') return true;
+    if (literalValue === 'F') return false;
+    return currentAssignment.get(literalValue);
+  } else {
+    return logicalOperationEvaluators[astNode.kind](astNode.operands, currentAssignment);
   }
-  return null;
 }
 
-function parseLogicFormula() {
-  let initialChar = examineChar();
-
-  if (initialChar === '(') {
-    advanceBy(1);
-    let leftSideNode = parseLogicFormula();
-    if (!leftSideNode) throw new Error("Expected formula after opening parenthesis.");
-
-    let operatorToken = examineChar();
-    let operatorValue = null;
-    let tokenLength = 0;
-
-    if (operatorToken === '*') {
-      operatorValue = '*';
-      tokenLength = 1;
-    } else if (operatorToken === '+') {
-      operatorValue = '+';
-      tokenLength = 1;
-    } else if (operatorToken === '-') {
-      if (examineChar(1) === '>') {
-        operatorValue = '->';
-        tokenLength = 2;
-      }
-    }
-
-    if (operatorValue) {
-      advanceBy(tokenLength);
-      let rightSideNode = parseLogicFormula();
-      if (!rightSideNode) throw new Error("Expected formula after operator.");
-      if (!verifyAndConsume(')')) {
-        throw new Error("Expected ')' after binary operation.");
-      }
-      return { kind: FormulaNodeType.BINARY_EXPRESSION, operator: operatorValue, left: leftSideNode, right: rightSideNode };
-    } else {
-      throw new Error("Expected binary operator or closing parenthesis after formula in parentheses.");
-    }
-  }
-
-  if (initialChar === '-') {
-    advanceBy(1);
-    let operandNode = parseLogicFormula();
-    if (!operandNode) throw new Error("Expected formula after unary operator.");
-    return { kind: FormulaNodeType.UNARY_EXPRESSION, operator: '-', operand: operandNode };
-  }
-
-  let variableNode = parseSingleVariable();
-  if (variableNode) {
-    return variableNode;
-  }
-
-  throw new Error("Unexpected character at " + currentPosition + ": '" + initialChar + "'. Expected '(', '-', or a variable.");
-}
-
-function parseEquationStatement() {
-  currentPosition = 0;
-  let firstFormula = parseLogicFormula();
-  if (!firstFormula) throw new Error("Expected formula for left side of equation.");
-  if (!verifyAndConsume('=')) {
-    throw new Error("Expected '=' token.");
-  }
-  let secondFormula = parseLogicFormula();
-  if (!secondFormula) throw new Error("Expected formula for right side of equation.");
-  if (currentPosition < currentInputString.length) {
-    throw new Error("Unexpected characters after equation: " + currentInputString.substring(currentPosition));
-  }
-  return { kind: FormulaNodeType.EQUALITY_CHECK, first: firstFormula, second: secondFormula };
-}
-
-function processAllInput(inputSource) {
-  inputSource.toString().split('\n').forEach(inputLine => {
+(function (inputContent) {
+  inputContent.toString().split('\n').forEach(function (inputLine) {
     if (inputLine === '#') process.exit(0);
 
-    let parsedSyntaxTree = null;
-    let parsingSuccessful = true;
-    try {
-      currentInputString = inputLine;
-      parsedSyntaxTree = parseEquationStatement();
-    } catch (error) {
-      parsingSuccessful = false;
+    const parsedEquation = equationStatementParser(inputLine, 0);
+
+    let allAssignmentsConsistent = true;
+
+    for (const assignmentMap of generateAllTruthAssignments()) {
+      const leftResult = evaluateLogicalExpression(parsedEquation[1].leftSide, assignmentMap);
+      const rightResult = evaluateLogicalExpression(parsedEquation[1].rightSide, assignmentMap);
     }
 
-    // This replicates the bug in the original code where `isValid` is never updated.
-    // If parsing fails, the original code still prints 'YES'.
-    // If parsing succeeds, `overallCorrectness` is initialized to true and never changed.
-    if (!parsingSuccessful) {
-      console.log('YES');
-      return;
-    }
-
-    let overallCorrectness = true;
-
-    for (let iterationCounter = 0; iterationCounter < (1 << 11); iterationCounter++) {
-      const retrieveVariableValue = (charIdentifier) => {
-        if (charIdentifier === 'T') return true;
-        if (charIdentifier === 'F') return false;
-        const charCodeDifference = charIdentifier.charCodeAt(0) - 'a'.charCodeAt(0);
-        return !!((iterationCounter >> charCodeDifference) & 1);
-      };
-
-      const computeNodeResult = (node) => {
-        switch (node.kind) {
-          case FormulaNodeType.VARIABLE_REFERENCE:
-            return retrieveVariableValue(node.identifier);
-          case FormulaNodeType.UNARY_EXPRESSION:
-            if (node.operator === '-') {
-              return !computeNodeResult(node.operand);
-            }
-            break;
-          case FormulaNodeType.BINARY_EXPRESSION:
-            const leftResult = computeNodeResult(node.left);
-            const rightResult = computeNodeResult(node.right);
-            if (node.operator === '*') return leftResult && rightResult;
-            if (node.operator === '+') return leftResult || rightResult;
-            if (node.operator === '->') return !leftResult || rightResult;
-            break;
-        }
-        return false;
-      };
-
-      // The original code's `isValid &= ...` line is commented out.
-      // Therefore, this check is omitted to exactly match the original's output.
-      // If it were implemented to fix the bug, it would look like this:
-      // const leftFormulaResult = computeNodeResult(parsedSyntaxTree.first);
-      // const rightFormulaResult = computeNodeResult(parsedSyntaxTree.second);
-      // if (leftFormulaResult !== rightFormulaResult) {
-      //   overallCorrectness = false;
-      //   break;
-      // }
-    }
-    console.log(overallCorrectness ? 'YES' : 'NO');
+    console.log(allAssignmentsConsistent ? 'YES' : 'NO');
   });
-}
-
-processAllInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

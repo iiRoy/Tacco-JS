@@ -1,23 +1,23 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numericalParameters = dataStream.trim().split(" ").map(parseFloat);
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var [paramA, paramB, paramC] = sourceData.trim().split(" ").map(Number);
 
-const performCalculation = (parameterAlpha, parameterBeta, parameterGamma) => {
-    const depletionFactor = parameterBeta + (7 * parameterAlpha);
-    const cessationThreshold = 6 * parameterAlpha;
+const rateOfConsumption = paramA;
+const fixedCostPerCycle = paramB;
+let currentQuantity = paramC;
 
-    let operationalIterations;
-    if (parameterGamma <= cessationThreshold) {
-        operationalIterations = 0;
-    } else {
-        operationalIterations = Math.ceil((parameterGamma - cessationThreshold) / depletionFactor);
-    }
+const cycleCost = fixedCostPerCycle + (7 * rateOfConsumption);
+const thresholdForFullCycle = 6 * rateOfConsumption;
 
-    const cumulativeOutcome = operationalIterations * 7;
-    const remainingResource = parameterGamma - (operationalIterations * depletionFactor);
-    const finalComponent = Math.max(0, Math.ceil(remainingResource / parameterAlpha));
+let completedCycles = 0;
+if (currentQuantity >= thresholdForFullCycle + 1) {
+    completedCycles = Math.floor((currentQuantity - (thresholdForFullCycle + 1)) / cycleCost) + 1;
+}
 
-    return cumulativeOutcome + finalComponent;
-};
+const totalCycleTime = completedCycles * 7;
+const remainingQuantity = currentQuantity - (completedCycles * cycleCost);
 
-const [primaryScalar, secondaryScalar, initialQuantity] = numericalParameters;
-console.log(performCalculation(primaryScalar, secondaryScalar, initialQuantity));
+const finalPartialTime = Math.ceil(remainingQuantity / rateOfConsumption);
+
+const totalElapsedDuration = totalCycleTime + Math.max(0, finalPartialTime);
+
+console.log(totalElapsedDuration);

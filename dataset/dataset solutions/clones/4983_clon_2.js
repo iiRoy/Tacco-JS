@@ -1,24 +1,14 @@
-function processEntryData(incomingPayload) {
-  // This function is responsible for the core processing of the provided data payload.
-  // It first validates the integrity of the data before proceeding.
-
-  if (incomingPayload.length !== 10) { // Verify the expected size of the data structure.
-    // If the data's length does not match the required specification,
-    // an error condition is signaled to halt further execution.
-    throw new Error("Incorrect data size detected.");
-  }
-
-  // Upon successful validation, a positive indicator is output to the console.
-  console.log(true);
+function processInput(dataString) {
+    // This function checks the length of the provided string data.
+    if (dataString.length !== 10) {
+        // If the string's length is not exactly ten characters, an error is thrown.
+        throw new Error("");
+    }
+    // If the length check passes, a specific numeric value is printed to the console.
+    console.log(1);
 }
 
-
-// Acquire the necessary module for interacting with the file system.
-const fileSystemUtility = require('fs');
-
-// Read the complete content from the standard input stream.
-// The content is assumed to be text and is decoded using UTF-8.
-const rawInputContent = fileSystemUtility.readTextFile('/proc/self/fd/0', 'utf8');
-
-// Initiate the main data processing sequence with the content that was retrieved.
-processEntryData(rawInputContent);
+// The program starts by reading content from standard input.
+// The 'fs' module is used to synchronously read the file at '/dev/stdin' with UTF-8 encoding.
+// The read content is then passed to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

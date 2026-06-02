@@ -1,86 +1,47 @@
-'use strict'
+'use strict';
 
-const performCalculation = (inputData) => {
-    const rawLines = inputData.trim().split('\n');
-    const pathDimensions = rawLines[0].split(' ').map(Number);
-    const gridHeight = pathDimensions[0];
-    const gridWidth = pathDimensions[1];
+const processGrid = inputContent => {
+    const rawLines = inputContent.trim().split('\n');
+    const gridDimensions = rawLines[0].split(' ').map(Number);
+    const rawGridData = rawLines.slice(1, gridDimensions[0] + 1);
 
-    const terrainLayout = rawLines.slice(1, gridHeight + 1).map(lineSegment =>
-        lineSegment.split('').map(charToken => charToken === '#')
+    const obstacleMap = rawGridData.map(rowString =>
+        rowString.slice(0, gridDimensions[1]).split('').map(cellChar => cellChar === '#')
     );
 
-    const verticalMoveCount = gridHeight - 1;
-    const horizontalMoveCount = gridWidth - 1;
+    const targetRowIndex = gridDimensions[0] - 1;
+    const targetColIndex = gridDimensions[1] - 1;
 
-    const allSequences = [];
+    let minObstacleCount = Infinity;
 
-    const recurseForMoves = (
-        downMovesRemaining,
-        rightMovesRemaining,
-        currentPathString
-    ) => {
-        if (downMovesRemaining === 0 && rightMovesRemaining === 0) {
-            allSequences.push(currentPathString);
+    const pathExplorer = (currentRow, currentCol, currentPathObstacles) => {
+        let obstaclesIncludingCurrent = currentPathObstacles;
+
+        if (obstacleMap[currentRow][currentCol]) {
+            obstaclesIncludingCurrent++;
+        }
+
+        if (obstaclesIncludingCurrent >= minObstacleCount) {
             return;
         }
 
-        if (downMovesRemaining > 0) {
-            recurseForMoves(
-                downMovesRemaining - 1,
-                rightMovesRemaining,
-                currentPathString + '1'
-            );
+        if (currentRow === targetRowIndex && currentCol === targetColIndex) {
+            minObstacleCount = obstaclesIncludingCurrent;
+            return;
         }
 
-        if (rightMovesRemaining > 0) {
-            recurseForMoves(
-                downMovesRemaining,
-                rightMovesRemaining - 1,
-                currentPathString + '0'
-            );
+        if (currentCol < targetColIndex) {
+            pathExplorer(currentRow, currentCol + 1, obstaclesIncludingCurrent);
+        }
+
+        if (currentRow < targetRowIndex) {
+            pathExplorer(currentRow + 1, currentCol, obstaclesIncludingCurrent);
         }
     };
 
-    recurseForMoves(verticalMoveCount, horizontalMoveCount, '');
+    pathExplorer(0, 0, 0);
 
-    let leastObstacles = Infinity;
-
-    for (const pathSequence of allSequences) {
-        let currentObstaclesForPath = 0;
-        let currentPathY = 0;
-        let currentPathX = 0;
-        let pathAbortedDueToHighObstacles = false;
-
-        if (terrainLayout[0][0]) {
-            currentObstaclesForPath = 1;
-        }
-
-        for (const singleMove of pathSequence) {
-            if (singleMove === '1') {
-                currentPathY++;
-            } else {
-                currentPathX++;
-            }
-
-            if (terrainLayout[currentPathY][currentPathX]) {
-                currentObstaclesForPath++;
-                if (currentObstaclesForPath >= leastObstacles) {
-                    pathAbortedDueToHighObstacles = true;
-                    break;
-                }
-            }
-        }
-
-        if (!pathAbortedDueToHighObstacles && currentObstaclesForPath < leastObstacles) {
-            leastObstacles = currentObstaclesForPath;
-            if (leastObstacles === 0) {
-                break;
-            }
-        }
-    }
-
-    console.log(leastObstacles);
+    console.log(minObstacleCount);
 };
 
-performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processGrid(require('fs').readFileSync('/dev/stdin', 'utf8'));

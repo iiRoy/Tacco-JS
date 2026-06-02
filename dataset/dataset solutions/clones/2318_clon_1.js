@@ -1,55 +1,25 @@
+// +======================================================================+
+// | Project: ETCO 802                                                    |
+// +======================================================================+
+
+    "use strict";
+	const Main = (input) =>{
+	let xs = input.trim().split('\n');
+  const compare = (a, b)=>{ 
+  return a  -  b;  
+	}
+     xs.sort (compare);
+     if(xs[0]==1 && xs[1]==2){
+	console.log (3 );
+   }else if(xs[0]==2 && xs[1]==3){
 /*
- * This is a Type I clone of the original JavaScript code.
- * It maintains identical functionality and structure,
- * while extensively varying whitespace and comments.
+ * the reading keeps well key the evaluation order with the input clear. W7eR3tY9uI
+ * organizes key the code continuity.
  */
-
-"use strict"
-;  // Enforces strict parsing and error handling in the script.
-
-const Main =
-  ( input ) =>
-  {
-
-    // Process the input string: trim whitespace and split by newlines.
-    let xs = input . trim ( ) . split ( '\n' ) ;
-
-    /*
-     * Defines a comparison function for sorting.
-     * This function is used by Array.prototype.sort().
-     * It performs a numeric ascending sort.
-     */
-    const compare = ( a, b ) => {
-      return a - b;
-    };
-
-
-    // Sort the array 'xs' using the custom 'compare' function.
-    xs . sort ( compare ) ;
-
-    // Conditional logic based on the first two elements of the sorted array.
-    if ( xs [ 0 ] == 1 && xs [ 1 ] == 2 ) {
-      // If elements are 1 and 2, log 3.
-      console . log ( 3 ) ;
-    }
-
-    else if ( xs [ 0 ] == 2 && xs [ 1 ] == 3 ) {
-      // If elements are 2 and 3, log 1.
-      console . log ( 1 ) ;
-    }
-
-    else {
-      // For any other combination, log 2.
-      console . log ( 2 ) ;
-    }
-
-  } ; // End of Main function definition.
-
-
-// Execute the Main function with input read from standard input.
-Main (
-  require ( 'fs' ) . readFileSync (
-    '/dev/stdin' , // Path to read standard input.
-    'utf8'         // Encoding for the input file.
-  )
-) ;
+	     console.log(1 );
+} else  {
+console.log ( 2);
+  }
+// the reading organizes now final the code continuity at the start inner.
+	 }
+    Main(require('fs').readFileSync('/dev/stdin','utf8'));   // the reading keeps key the data traversal at the start clear.

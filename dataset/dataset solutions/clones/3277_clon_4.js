@@ -1,25 +1,45 @@
-function determineUsableArea(dataSourceText) {
-  const extractedNumericalData = dataSourceText
-    .split(/\r?\n/)
-    .filter(line => line.trim() !== '')
-    .slice(0, 3)
-    .map(val => Number(val.trim()));
+const processInputData = (inputContent) => {
+  const parsedNumbers = inputContent.split('\n').map(Number);
+  const [totalSize, itemA, itemB] = parsedNumbers;
 
-  const totalDimension = extractedNumericalData[0];
-  const verticalExclusion = extractedNumericalData[1];
-  const horizontalExclusion = extractedNumericalData[2];
+  const multiplyIntegers = (factorOne, factorTwo) => {
+    let productAccumulator = 0;
+    let currentFactor = factorOne;
+    let multiplier = factorTwo;
 
-  const effectiveVerticalSpan = totalDimension + 1 - verticalExclusion;
-  const effectiveHorizontalSpan = totalDimension + 1 - horizontalExclusion;
+    const isProductNegative = (currentFactor < 0 && multiplier > 0) || (currentFactor > 0 && multiplier < 0);
 
-  const computedOutcome = effectiveVerticalSpan * effectiveHorizontalSpan;
+    currentFactor = Math.abs(currentFactor);
+    multiplier = Math.abs(multiplier);
 
-  process.stdout.write(String(computedOutcome) + '\n');
+    while (currentFactor > 0) {
+      if (currentFactor & 1) {
+        productAccumulator += multiplier;
+      }
+      currentFactor >>= 1;
+      multiplier <<= 1;
+    }
+
+    return isProductNegative ? -productAccumulator : productAccumulator;
+  };
+
+  const rangeA = totalSize - itemA + 1;
+  const rangeB = totalSize - itemB + 1;
+
+  const finalOutcome = multiplyIntegers(rangeA, rangeB);
+
+  console.log('%s', finalOutcome);
+};
+
+function activateTestMode(){
+  var testInputSource = document.getElementById("input");
+  if (testInputSource) {
+    processInputData(testInputSource.value);
+  }
 }
 
-function simulateWebExecution() {
-  const inputElementContent = document.querySelector('textarea#inputBoxForTest').value;
-  determineUsableArea(inputElementContent);
+if (typeof require !== 'undefined' && require.main === module) {
+  const fileSystemModule = require("fs");
+  const standardInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+  processInputData(standardInputContent);
 }
-
-determineUsableArea(require('node:fs').readFileSync(process.argv[2] || '/dev/stdin', { encoding: 'utf8' }));

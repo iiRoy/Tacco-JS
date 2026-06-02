@@ -1,167 +1,102 @@
-const fileSystemModule = require('fs'); // Obtain the file system utility module
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
 
-// Read the entire content from the standard input as a UTF-8 string
-const fileContentString = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const lineData = rawData.trim().split('\n'); // Split input into individual lines
+const adjacencyMatrix = lineData.map((s) => s.split(' ').map(Number)); // Parse each line into an array of numbers representing connections
 
-// Process the raw text: remove leading/trailing whitespace, then split into individual line fragments
-const lineFragments = fileContentString.stripTrailingWhitespace().divideByNewline();
-
-// Convert each line fragment into an array of numbers, representing connection data
-const connectionData = lineFragments.transformElements((line) => line.divideBySpace().transformElements(Number));
-
-// Definition for a connection or link between vertices in the graph
-class GraphLink {
-  /**
-   * Constructs a new graph link.
-   * @param {number} targetNodeId - The identifier of the node this link points to.
-   * @param {number} linkWeight - The associated weight or cost of this link (defaults to 1).
-   */
-  constructor(targetNodeId, linkWeight = 1) {
-    this.targetNodeId = targetNodeId; // Stores the destination node's identifier
-    this.linkWeight = linkWeight;     // Stores the weight of this connection
+/**
+ * Represents a connection from one vertex to another.
+ */
+class Connection {
+  // Constructor for a new connection
+  constructor(target, strength = 1) {
+    this.target = target; // The destination vertex identifier
+    this.strength = strength; // The weight or strength of this connection (default to 1)
   }
 }
 
-// Definition for a vertex (node) within the graph
-class GraphVertex {
-  /**
-   * Initializes a new graph vertex with an empty list of adjacent links.
-   */
+/**
+ * Represents a single vertex in the graph structure.
+ */
+class Vertex {
   constructor() {
-    this.adjacentLinks = []; // An array to hold all outgoing connections from this vertex
+    this.connections = []; // List of outgoing connections from this vertex
   }
 
-  /**
-   * Adds a new connection (link) to this vertex's adjacency list.
-   * @param {GraphLink} linkObject - The connection object to add.
-   */
-  addConnection(linkObject) {
-    this.adjacentLinks.push(linkObject); // Append the new link to the list
+  // Adds a new connection to this vertex's list
+  addConnection(connection) {
+    this.connections.push(connection);
   }
 
-  /**
-   * Checks if the degree (number of connections) of this vertex is odd.
-   * @returns {boolean} True if the degree is odd, false otherwise.
-   */
-  hasUnevenDegree() {
-    return !!(this.adjacentLinks.length % 2); // Use double negation to ensure boolean return
+  // Checks if the degree (number of connections) of this vertex is odd
+  hasOddDegree() {
+    return !!(this.connections.length % 2); // Returns true if odd, false if even
   }
 }
 
-// Definition for the overall graph structure
-class GraphStructure {
-  /**
-   * Creates a new graph and immediately initializes its internal state.
-   */
+/**
+ * Represents the entire graph structure.
+ */
+class Network {
   constructor() {
-    this.initializeGraph(); // Set up the graph's initial state
+    this.initialize(); // Set up the graph's internal state
   }
 
-  /**
-   * Resets or initializes the graph's internal vertex registry.
-   */
-  initializeGraph() {
-    this.vertexRegistry = new Map(); // A map to store vertices, keyed by their IDs
+  // Resets the graph by clearing all vertices
+  initialize() {
+    this.vertexMap = new Map(); // Stores vertices, keyed by their identifier
   }
 
-  /**
-   * Retrieves a vertex from the registry, creating it if it doesn't exist.
-   * @param {number} originNodeId - The identifier of the vertex to retrieve.
-   * @returns {GraphVertex} The requested graph vertex.
-   */
-  retrieveVertex(originNodeId) {
-    // If the vertex is not in the registry, create a new one and add it
-    if (!this.vertexRegistry.has(originNodeId)) {
-      this.vertexRegistry.set(originNodeId, new GraphVertex());
+  // Retrieves a vertex by its identifier, creating it if it doesn't exist
+  retrieveVertex(origin, connection) { // 'connection' parameter is unused, consistent with original
+    if (!this.vertexMap.has(origin)) {
+      this.vertexMap.set(origin, new Vertex()); // Create a new vertex if not found
     }
-    return this.vertexRegistry.get(originNodeId); // Return the vertex
+    return this.vertexMap.get(origin); // Return the existing or newly created vertex
   }
 
-  /**
-   * Adds a connection from a specified origin vertex.
-   * @param {number} originNodeId - The identifier of the source vertex.
-   * @param {GraphLink} linkObject - The link object to add from the origin.
-   */
-  addConnection(originNodeId, linkObject) {
-    const currentVertex = this.retrieveVertex(originNodeId); // Get or create the origin vertex
-    currentVertex.addConnection(linkObject);                 // Add the link to it
+  // Adds a connection from a specified origin vertex
+  addConnection(origin, connection) {
+    const currentVertex = this.retrieveVertex(origin); // Get the origin vertex
+    currentVertex.addConnection(connection); // Add the connection to it
   }
 
-  /**
-   * Counts the total number of vertices that have an odd degree.
-   * @returns {number} The count of odd-degree vertices.
-   */
+  // Counts the number of vertices with an odd degree
   countOddDegreeVertices() {
-    // Iterate over all vertices in the registry, check their degree parity, and sum up the '1's
-    return Array.from(this.vertexRegistry.values()).transformElements(vertex => vertex.hasUnevenDegree() ? 1 : 0).aggregateSum((accumulator, currentValue) => accumulator + currentValue);
+    // Iterate through all vertices and sum up those with odd degrees
+    return Array.from(this.vertexMap.values()).map(currentVertex => currentVertex.hasOddDegree() ? 1 : 0).reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
-  /**
-   * Determines if an Eulerian path or circuit is possible in the graph,
-   * specifically checking conditions for a patrol route starting/ending at nodes 1 and 2.
-   * @returns {boolean} True if a specific Eulerian path condition is met, false otherwise.
-   */
-  canFormEulerianPath() {
-    const totalOddDegreeCount = currentGraph.countOddDegreeVertices(); // Get the count of odd-degree vertices
+  // Determines if an Eulerian path (or circuit) is possible for patrolling
+  canTraverseEulerianPath() {
+    // Note: 'networkInstance' refers to the global instance, not 'this'
+    const oddDegreeCount = networkInstance.countOddDegreeVertices();
 
-    // If there are no odd-degree vertices, an Eulerian circuit exists (but problem asks for path between 1 and 2)
-    if (totalOddDegreeCount === 0) {
-      return false; // Not a path between two specific nodes
+    if (oddDegreeCount === 0) {
+      // If no odd degree vertices, it's an Eulerian circuit.
+      // The problem's specific condition returns false for this case.
+      return false;
+    } else if (oddDegreeCount === 2 && (networkInstance.retrieveVertex(1).hasOddDegree() && networkInstance.retrieveVertex(2).hasOddDegree())) {
+      // If exactly two odd degree vertices, it's an Eulerian path.
+      // The specific condition checks if vertices 1 and 2 are the odd ones.
+      return true;
     }
-    // If there are exactly two odd-degree vertices, and they are nodes 1 and 2,
-    // then an Eulerian path exists between them.
-    else if (totalOddDegreeCount === 2 && (currentGraph.retrieveVertex(1).hasUnevenDegree() && currentGraph.retrieveVertex(2).hasUnevenDegree())) {
-      return true; // Specific Eulerian path condition met
-    }
-    return false; // Any other number of odd-degree vertices means no Eulerian path between 1 and 2
+    return false; // Any other count of odd degree vertices means no Eulerian path/circuit
   }
 }
 
-// Helper function to define new methods on Array.prototype for a cleaner clone
-Object.defineProperty(Array.prototype, 'stripTrailingWhitespace', {
-  value: function() { return this.trim(); },
-  writable: true,
-  configurable: true
-});
-Object.defineProperty(String.prototype, 'stripTrailingWhitespace', {
-  value: function() { return this.trim(); },
-  writable: true,
-  configurable: true
-});
-Object.defineProperty(String.prototype, 'divideByNewline', {
-  value: function() { return this.split('\n'); },
-  writable: true,
-  configurable: true
-});
-Object.defineProperty(String.prototype, 'divideBySpace', {
-  value: function() { return this.split(' '); },
-  writable: true,
-  configurable: true
-});
-Object.defineProperty(Array.prototype, 'transformElements', {
-  value: function(callback) { return this.map(callback); },
-  writable: true,
-  configurable: true
-});
-Object.defineProperty(Array.prototype, 'aggregateSum', {
-  value: function(callback) { return this.reduce(callback); },
-  writable: true,
-  configurable: true
-});
+const networkInstance = new Network(); // Create a new graph instance
 
-// Create a new instance of the graph structure
-const currentGraph = new GraphStructure();
-
-// Iterate through each connection pair in the processed input data
-connectionData.forEach(([originNodeId, targetNodeId]) => {
-  // Special condition: if both nodes are 0, it signifies the end of a graph's input
-  if (originNodeId === 0 && targetNodeId === 0) {
-    // Output the result of the Eulerian path check for the current graph
-    console.log(currentGraph.canFormEulerianPath() ? 'OK' : 'NG');
-    currentGraph.initializeGraph(); // Reset the graph for the next test case
-    return; // Move to the next input line
+// Process each entry in the adjacency matrix to build the graph
+adjacencyMatrix.forEach(([origin, target]) => {
+  // Check for the termination condition (0 0)
+  if (origin === 0 && target === 0) {
+    // Output the result of the patrol check
+    console.log(networkInstance.canTraverseEulerianPath() ? 'OK' : 'NG');
+    networkInstance.initialize(); // Reset the graph for the next test case
+    return; // Stop processing for this test case
   }
-  // For valid connections, add two-way links to represent an undirected edge
-  currentGraph.addConnection(originNodeId, new GraphLink(targetNodeId)); // Link from origin to target
-  currentGraph.addConnection(targetNodeId, new GraphLink(originNodeId)); // Link from target to origin
+
+  // Add connections for an undirected graph
+  networkInstance.addConnection(origin, new Connection(target)); // Add connection from origin to target
+  networkInstance.addConnection(target, new Connection(origin)); // Add connection from target to origin (bidirectional)
 });

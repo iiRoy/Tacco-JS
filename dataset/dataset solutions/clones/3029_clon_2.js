@@ -1,18 +1,26 @@
-const processInputSequence = rawDataSource => { // Primary function for data handling
-  let numericValues = rawDataSource.split(" "); /* Break the incoming string into segments by space */
-  numericValues = numericValues.map( ( currentString ) => {
-    return parseInt(currentString, 10); // Convert each string segment into an integer
-  } );
+var processInput = (inputString) => {
+  // Split the incoming string by spaces to get an array of string representations of numbers.
+  var numberArray = inputString.split(" ");
 
-  if  ( numericValues[0] < numericValues[2] && numericValues[2] < numericValues[1] )  {
-    console.log("Yes"); // Condition met: values are in strictly ascending order
+  // Iterate over the array and convert each string element into an integer, using base 10.
+  numberArray = numberArray.map((currentValue) => {
+    return parseInt(currentValue, 10);
+  });
+
+  // Evaluate the conditions to determine the output.
+  // The first condition checks if the third number is strictly between the first and second in ascending order.
+  if (numberArray[0] < numberArray[2] && numberArray[2] < numberArray[1]) {
+    console.log("Yes");
   }
-  else if  ( numericValues[0] > numericValues[2] && numericValues[2] > numericValues[1] )  {
-    console.log("Yes"); // Condition met: values are in strictly descending order
+  // The second condition checks if the third number is strictly between the first and second in descending order.
+  else if (numberArray[0] > numberArray[2] && numberArray[2] > numberArray[1]) {
+    console.log("Yes");
   }
+  // If neither of the above conditions is met, output "No".
   else {
-    console.log("No"); // Neither strictly ascending nor strictly descending
+    console.log("No");
   }
-}; // End of the data processing function
+};
 
-processInputSequence( require("fs").readFileSync("/dev/stdin", "UTF-8") ); // Execute the handler with standard input from the system
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "UTF-8"));

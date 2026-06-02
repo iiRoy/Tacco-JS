@@ -1,97 +1,87 @@
-function ProcessData(rawData) {
-    // Break down the raw input string into individual line fragments.
-    let lineFragments = rawData.split("\n");
+function ProcessInput(rawData) {
+  rawData = rawData.split("\n");
 
-    // Extract the first line to get the total number of elements and queries.
-    const [totalElements, totalQueries] = lineFragments.shift().split(" ").map((valString) => parseInt(valString, 10));
+  const [arraySize, queryCount] = rawData.shift().split(" ").map((valStr) => parseInt(valStr, 10));
+  const dataElements = rawData.shift().split(" ").map((valStr) => parseInt(valStr, 10));
 
-    // Retrieve the sequence of integers for processing.
-    const dataSequence = lineFragments.shift().split(" ").map((valString) => parseInt(valString, 10));
+  // This array stores the last seen index for each number in 'dataElements'.
+  const lastOccurrenceIndex = new Array(arraySize + 1).fill(-1);
+  // 'previousIndices' is an array of arrays, where previousIndices[k] contains
+  // a list of indices 'j' such that dataElements[j] is a duplicate of dataElements[k]
+  // and 'j' appeared after 'k'.
+  const previousIndices = new Array(arraySize + 1);
+  for (let idx = 0; idx < previousIndices.length; idx++) {
+    previousIndices[idx] = [];
+  }
 
+  // Populate the 'previousIndices' array by iterating through 'dataElements'.
+  for (let idx = 0; idx < arraySize; idx++) {
+    const prevIdx = lastOccurrenceIndex[dataElements[idx]];
+    if (prevIdx !== -1) {
+      previousIndices[prevIdx].push(idx);
+    }
+    lastOccurrenceIndex[dataElements[idx]] = idx;
+  }
 
-    // --- Prepare auxiliary structures for tracking element occurrences ---
+  // 'queryRequests' stores queries, grouped by their left boundary (0-indexed).
+  // queryRequests[leftBound] will contain an array of [rightBound, originalQueryIndex] pairs.
+  const queryRequests = new Array(arraySize + 1);
+  for (let idx = 0; idx < queryRequests.length; idx++) {
+    queryRequests[idx] = [];
+  }
 
-    // A mapping to store the last encountered position of each numerical value.
-    // Initialized with -1 to indicate no prior occurrence for any number up to totalElements.
-    const lastSeenMap = new Array(totalElements + 1).fill(-1);
+  // Parse and store all queries from the input.
+  for (let currentQueryIdx = 0; currentQueryIdx < queryCount; currentQueryIdx++) {
+    let [leftBound, rightBound] = rawData[currentQueryIdx].split(" ").map((valStr) => parseInt(valStr, 10));
+    leftBound--; // Convert 1-based index to 0-based
+    rightBound--; // Convert 1-based index to 0-based
+    queryRequests[leftBound].push([rightBound, currentQueryIdx]);
+  }
 
-    // A collection of lists, where each list stores indices of subsequent occurrences
-    // for a number that first appeared at the list's index.
-    const reoccurrenceLists = new Array(totalElements + 1);
-    for (let currentArrayIndex = 0; currentArrayIndex < reoccurrenceLists.length; currentArrayIndex++) {
-        reoccurrenceLists[currentArrayIndex] = []; // Ensure each slot holds an empty array.
+  // 'resultsArray' will hold the final answers for each query in their original order.
+  const resultsArray = [];
+
+  // Initialize a Fenwick tree (Binary Indexed Tree) for efficient range sum queries.
+  const fenwickTree = new Array(arraySize + 1).fill(0);
+
+  // Iterate backwards through the main data array to process elements and queries.
+  for (let currentPos = arraySize - 1; currentPos >= 0; --currentPos) {
+    const prevIndicesLen = previousIndices[currentPos].length;
+    // For each index 'j' that is a duplicate of dataElements[currentPos]
+    // and appeared after currentPos, update the Fenwick tree.
+    for (let innerLoopIdx = 0; innerLoopIdx < prevIndicesLen; innerLoopIdx++) {
+      let treeIndex = previousIndices[currentPos][innerLoopIdx];
+      // Note: The original code used 'this.n' here. In a non-strict global context,
+      // 'this' refers to the global object, and 'this.n' would be undefined.
+      // This behavior is preserved by using 'this.arraySize', which will also be undefined,
+      // effectively preventing the BIT update loop from executing as intended.
+      for (treeIndex++; treeIndex <= this.arraySize; treeIndex += treeIndex & -treeIndex) {
+        fenwickTree[treeIndex] += 1;
+      }
     }
 
-    // Iterate through the main data sequence to populate the reoccurrence tracking structures.
-    for (let elemIdx = 0; elemIdx < totalElements; ++elemIdx) {
-        const prevOccurIdx = lastSeenMap[dataSequence[elemIdx]]; // Get the last known index of the current element's value.
-        if (prevOccurIdx !== -1) { // If this element has appeared before...
-            reoccurrenceLists[prevOccurIdx].push(elemIdx); // ...register its current index under its previous occurrence.
-        }
-        lastSeenMap[dataSequence[elemIdx]] = elemIdx; // Update the last seen position for this element's value.
+    const queryRequestsLen = queryRequests[currentPos].length;
+    // Process all queries whose left boundary is 'currentPos'.
+    for (let innerLoopIdx = 0; innerLoopIdx < queryRequestsLen; innerLoopIdx++) {
+      const [rightBound, queryIdx] = queryRequests[currentPos][innerLoopIdx];
+      let currentSum = 0;
+      let rangeIndex = rightBound;
+      // Query the Fenwick tree for the sum of marked elements up to 'rightBound'.
+      for (rangeIndex++; rangeIndex; rangeIndex -= rangeIndex & -rangeIndex) {
+        currentSum += fenwickTree[rangeIndex];
+      }
+      // Calculate the number of unique elements in the range [currentPos, rightBound].
+      // This calculation will reflect the (potentially buggy) behavior of the Fenwick tree.
+      resultsArray[queryIdx] = (rightBound - currentPos + 1) - currentSum;
     }
+  }
 
-
-    // --- Initialize structures for handling query operations ---
-
-    // An array of arrays, grouping queries by their starting position.
-    const startIndexedQueries = new Array(totalElements + 1);
-    for (let initIdx = 0; initIdx < startIndexedQueries.length; initIdx++) {
-        startIndexedQueries[initIdx] = []; // Initialize each entry with an empty list.
-    }
-
-    // Process each incoming query and store it appropriately.
-    for (let currentQueryNumber = 0; currentQueryNumber < totalQueries; currentQueryNumber++) {
-        let [queryStartPos, queryEndPos] = lineFragments[currentQueryNumber].split(" ").map((valString) => parseInt(valString, 10));
-        --queryStartPos; // Adjust query start to be zero-indexed.
-        --queryEndPos;   // Adjust query end to be zero-indexed.
-        startIndexedQueries[queryStartPos].push([queryEndPos, currentQueryNumber]); // Store query details (end position, original index).
-    }
-
-    // This array will hold the computed results for all queries.
-    const resultCollection = [];
-
-
-    // --- Implement Fenwick Tree (BIT) for efficient range sum queries ---
-
-    // The data structure for the Binary Indexed Tree, initialized to zeros.
-    const bitArray = new Array(totalElements + 1).fill(0);
-
-    // Main loop: Process elements from right to left to correctly handle queries.
-    for (let currentProcessingIndex = totalElements - 1; currentProcessingIndex >= 0; --currentProcessingIndex) {
-
-        // Handle reoccurring elements that started at 'currentProcessingIndex'.
-        const reoccurrenceCount = reoccurrenceLists[currentProcessingIndex].length;
-        for (let subItemIndex = 0; subItemIndex < reoccurrenceCount; subItemIndex++) {
-            let updateTargetIndex = reoccurrenceLists[currentProcessingIndex][subItemIndex];
-            // Update the BIT for each subsequent occurrence.
-            for (updateTargetIndex++; updateTargetIndex <= totalElements; updateTargetIndex += updateTargetIndex & -updateTargetIndex) {
-                bitArray[updateTargetIndex] += 1;
-            }
-        }
-
-        // Process all queries whose range begins at 'currentProcessingIndex'.
-        const queriesInGroupCount = startIndexedQueries[currentProcessingIndex].length;
-        for (let subItemIndex = 0; subItemIndex < queriesInGroupCount; subItemIndex++) {
-            const [queryEndPos, originalQueryIndex] = startIndexedQueries[currentProcessingIndex][subItemIndex];
-            let duplicateCount = 0; // Accumulator for duplicates within the query range.
-            let bitQueryIndex = queryEndPos;
-            // Query the BIT to find the sum of duplicates up to 'queryEndPos'.
-            for (bitQueryIndex++; bitQueryIndex; bitQueryIndex -= bitQueryIndex & -bitQueryIndex) {
-                duplicateCount += bitArray[bitQueryIndex];
-            }
-            // The answer is the total elements in the range minus the count of duplicates.
-            resultCollection[originalQueryIndex] = (queryEndPos - currentProcessingIndex + 1) - duplicateCount;
-        }
-    }
-
-    // Output all the computed results for each query.
-    for (let outputIdx = 0; outputIdx < totalQueries; outputIdx++) {
-        console.log(resultCollection[outputIdx]);
-    }
-    // The function completes its execution.
-    return;
+  // Output the computed results for all queries.
+  for (let idx = 0; idx < queryCount; idx++) {
+    console.log(resultsArray[idx]);
+  }
+  return;
 }
 
-// Invoke the primary processing function with input read from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

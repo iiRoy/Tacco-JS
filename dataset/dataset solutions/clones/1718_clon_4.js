@@ -1,10 +1,15 @@
-function calculateAndPresent(dataChunk) {
-  const textContent = dataChunk.toString('utf8').trim();
-  const numericalValue = parseFloat(textContent);
+function processInputAndDisplay(sourceData) {
+  const numericValue = Number(sourceData);
 
-  const finalOutcome = numericalValue * (1 + numericalValue * (1 + numericalValue));
+  let accumulatedSum = 0;
+  let currentBasePower = 1;
 
-  process.stdout.write(finalOutcome.toString() + '\n');
+  for (let exponentIndex = 1; exponentIndex <= 3; exponentIndex++) {
+    currentBasePower *= numericValue;
+    accumulatedSum += currentBasePower;
+  }
+
+  console.log(accumulatedSum);
 }
 
-process.stdin.on('data', calculateAndPresent);
+processInputAndDisplay(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

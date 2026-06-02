@@ -1,183 +1,149 @@
-const processingParameters = { dataOrigin: '/dev/stdin', lineDelimiter: '\n' }; // linux
-// const processingParameters = { dataOrigin: 'tmp', lineDelimiter: '\r\n' }; // win
+const pathSettings = { sourceFile: '/dev/stdin', lineSeparator: '\n' };
 
-const fileContent = require('node:fs').readFileSync(processingParameters.dataOrigin, { encoding: 'ascii' });
+const fileContent = require('fs').readFileSync(pathSettings.sourceFile, 'ascii');
+const inputLines = fileContent.trim().split(pathSettings.lineSeparator);
 
-const contentSegments = fileContent.split(processingParameters.lineDelimiter).filter(segment => segment.length > 0);
+const nodeRegistry = new Map();
+const graphAdjacency = new Map();
 
-const totalVertices = Number(contentSegments.shift());
-
-const graphEntities = new Map(); // Stores all node objects, keyed by their ID
-
-const establishLink = (entityCollection, primaryId, secondaryId, connectionValue) => {
-    let currentPrimary = entityCollection.get(primaryId);
-    if (!currentPrimary) {
-        currentPrimary = {
-            uniqueId: primaryId,
-            shortestPath: Number.MAX_VALUE,
-            priorVertex: null,
-            connectedTo: new Map() // Adjacency list for this node
-        };
-        entityCollection.set(primaryId, currentPrimary);
+function connectNodes(adjMap, source, target, cost) {
+    if (!adjMap.has(source)) {
+        adjMap.set(source, []);
     }
-    currentPrimary.connectedTo.set(secondaryId, connectionValue);
-
-    // Ensure the secondary node also exists in the collection
-    if (!entityCollection.has(secondaryId)) {
-        entityCollection.set(secondaryId, {
-            uniqueId: secondaryId,
-            shortestPath: Number.MAX_VALUE,
-            priorVertex: null,
-            connectedTo: new Map()
-        });
-    }
-};
-
-contentSegments.forEach(currentSegment => {
-    const numericalValues = currentSegment.match(/\d+/g).map(Number);
-    const startVertexId = numericalValues[0];
-
-    // Ensure the starting vertex exists in the graphEntities map
-    if (!graphEntities.has(startVertexId)) {
-        graphEntities.set(startVertexId, {
-            uniqueId: startVertexId,
-            shortestPath: Number.MAX_VALUE,
-            priorVertex: null,
-            connectedTo: new Map()
-        });
-    }
-
-    for (let currentIdx = 1; currentIdx < numericalValues.length; currentIdx += 2) {
-        const endVertexId = numericalValues[currentIdx];
-        const linkWeight = numericalValues[currentIdx + 1];
-        establishLink(graphEntities, startVertexId, endVertexId, linkWeight);
-    }
-});
-
-// Initialize the distance for the source node (node 0)
-const sourceVertex = graphEntities.get(0);
-if (sourceVertex) {
-    sourceVertex.shortestPath = 0;
-} else {
-    // If node 0 wasn't mentioned in the input, create it and set its distance
-    graphEntities.set(0, {
-        uniqueId: 0,
-        shortestPath: 0,
-        priorVertex: null,
-        connectedTo: new Map()
-    });
+    adjMap.get(source).push({ target: target, weight: cost });
 }
 
+for (const currentLine of inputLines) {
+    const parsedLine = currentLine.split(' ').map(Number);
+    const sourceNodeId = parsedLine[0];
 
-class MinimumValuePriorityQueue {
-    constructor() {
-        this.internalHeap = [];
+    if (!nodeRegistry.has(sourceNodeId)) {
+        nodeRegistry.set(sourceNodeId, { id: sourceNodeId, dist: Number.POSITIVE_INFINITY, prev: null });
     }
 
-    // Adds an element to the queue
-    enqueue(item) {
-        this.internalHeap.push(item);
-        this._heapifyUp(this.internalHeap.length - 1);
-    }
+    for (let edgeIdx = 2; edgeIdx < parsedLine.length; edgeIdx += 2) {
+        const targetNodeId = parsedLine[edgeIdx];
+        const edgeCost = parsedLine[edgeIdx + 1];
+        connectNodes(graphAdjacency, sourceNodeId, targetNodeId, edgeCost);
 
-    // Removes and returns the element with the smallest 'shortestPath' value
-    dequeue() {
-        if (this.isEmpty()) return undefined;
-        const minItem = this.internalHeap[0];
-        const lastItem = this.internalHeap.pop();
-        if (!this.isEmpty()) {
-            this.internalHeap[0] = lastItem;
-            this._heapifyDown(0);
+        if (!nodeRegistry.has(targetNodeId)) {
+            nodeRegistry.set(targetNodeId, { id: targetNodeId, dist: Number.POSITIVE_INFINITY, prev: null });
         }
-        return minItem;
+    }
+}
+
+for (const [nodeId, nodeData] of nodeRegistry.entries()) {
+    if (nodeId === 0) {
+        nodeData.dist = 0;
+        break;
+    }
+}
+
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
     }
 
-    // Checks if the queue is empty
     isEmpty() {
-        return this.internalHeap.length === 0;
+        return this.heap.length === 0;
     }
 
-    _heapifyUp(index) {
-        const itemToPlace = this.internalHeap[index];
+    insert(item, priority) {
+        this.heap.push({ item, priority });
+        this._bubbleUp(this.heap.length - 1);
+    }
+
+    extractMin() {
+        if (this.isEmpty()) return null;
+        const min = this.heap[0];
+        const last = this.heap.pop();
+        if (!this.isEmpty()) {
+            this.heap[0] = last;
+            this._sinkDown(0);
+        }
+        return min.item;
+    }
+
+    _bubbleUp(index) {
         while (index > 0) {
             const parentIndex = Math.floor((index - 1) / 2);
-            const parent = this.internalHeap[parentIndex];
-            if (itemToPlace.shortestPath >= parent.shortestPath) break;
-            this.internalHeap[parentIndex] = itemToPlace;
-            this.internalHeap[index] = parent;
-            index = parentIndex;
+            if (this.heap[index].priority < this.heap[parentIndex].priority) {
+                [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+                index = parentIndex;
+            } else {
+                break;
+            }
         }
     }
 
-    _heapifyDown(index) {
-        const heapSize = this.internalHeap.length;
-        const itemToPlace = this.internalHeap[index];
+    _sinkDown(index) {
+        const lastIndex = this.heap.length - 1;
         while (true) {
-            let leftChildPosition = 2 * index + 1;
-            let rightChildPosition = 2 * index + 2;
-            let leftChild, rightChild;
-            let swapPosition = null;
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let smallestIndex = index;
 
-            if (leftChildPosition < heapSize) {
-                leftChild = this.internalHeap[leftChildPosition];
-                if (leftChild.shortestPath < itemToPlace.shortestPath) {
-                    swapPosition = leftChildPosition;
-                }
+            if (leftChildIndex <= lastIndex && this.heap[leftChildIndex].priority < this.heap[smallestIndex].priority) {
+                smallestIndex = leftChildIndex;
             }
-            if (rightChildPosition < heapSize) {
-                rightChild = this.internalHeap[rightChildPosition];
-                if (
-                    (swapPosition === null && rightChild.shortestPath < itemToPlace.shortestPath) ||
-                    (swapPosition !== null && rightChild.shortestPath < leftChild.shortestPath)
-                ) {
-                    swapPosition = rightChildPosition;
-                }
+            if (rightChildIndex <= lastIndex && this.heap[rightChildIndex].priority < this.heap[smallestIndex].priority) {
+                smallestIndex = rightChildIndex;
             }
-            if (swapPosition === null) break;
-            this.internalHeap[index] = this.internalHeap[swapPosition];
-            this.internalHeap[swapPosition] = itemToPlace;
-            index = swapPosition;
+
+            if (smallestIndex !== index) {
+                [this.heap[index], this.heap[smallestIndex]] = [this.heap[smallestIndex], this.heap[index]];
+                index = smallestIndex;
+            } else {
+                break;
+            }
         }
     }
 }
 
-const computeMinimumPathways = (graphStructure, initialIdentifier) => {
-    const processingQueue = new MinimumValuePriorityQueue();
-    const finalizedVertices = new Set(); 
+function computeShortestPaths(nodeDataMap, adjListMap) {
+    const minHeap = new MinPriorityQueue();
 
-    const startingVertex = graphStructure.get(initialIdentifier);
-    if (startingVertex) {
-        processingQueue.enqueue(startingVertex);
+    for (const [nodeId, nodeInfo] of nodeDataMap.entries()) {
+        if (nodeInfo.dist === 0) {
+            minHeap.insert(nodeId, nodeInfo.dist);
+            break;
+        }
     }
 
-    while (!processingQueue.isEmpty()) {
-        const currentVertex = processingQueue.dequeue();
+    const processedNodes = new Set();
 
-        if (finalizedVertices.has(currentVertex.uniqueId)) {
+    while (!minHeap.isEmpty()) {
+        const currentId = minHeap.extractMin();
+
+        if (processedNodes.has(currentId)) {
             continue;
         }
-        finalizedVertices.add(currentVertex.uniqueId);
+        processedNodes.add(currentId);
 
-        currentVertex.connectedTo.forEach((costToNeighbor, neighborIdentifier) => {
-            const neighborVertex = graphStructure.get(neighborIdentifier);
-            if (!neighborVertex) {
-                return; 
+        const currentNode = nodeDataMap.get(currentId);
+        if (!currentNode) continue;
+
+        const neighbors = adjListMap.get(currentId) || [];
+
+        for (const edge of neighbors) {
+            const neighborId = edge.target;
+            const edgeWeight = edge.weight;
+            const neighborNode = nodeDataMap.get(neighborId);
+
+            if (!neighborNode) continue;
+
+            const newDist = currentNode.dist + edgeWeight;
+            if (newDist < neighborNode.dist) {
+                neighborNode.dist = newDist;
+                neighborNode.prev = currentId;
+                minHeap.insert(neighborId, newDist);
             }
-
-            const prospectiveNewDistance = currentVertex.shortestPath + costToNeighbor;
-
-            if (prospectiveNewDistance < neighborVertex.shortestPath) {
-                neighborVertex.shortestPath = prospectiveNewDistance;
-                neighborVertex.priorVertex = currentVertex.uniqueId;
-                processingQueue.enqueue(neighborVertex); 
-            }
-        });
+        }
     }
-};
+}
 
-computeMinimumPathways(graphEntities, 0); 
+computeShortestPaths(nodeRegistry, graphAdjacency);
 
-graphEntities.forEach(vertexInformation => {
-    const finalDistance = vertexInformation.shortestPath === Number.MAX_VALUE ? 'Infinity' : vertexInformation.shortestPath;
-    console.log(`${vertexInformation.uniqueId} ${finalDistance}`);
-});
+for (const [nodeIdentifier, nodeDetails] of nodeRegistry.entries()) {
+    console.log("%s %d", nodeIdentifier, nodeDetails.dist);
+}

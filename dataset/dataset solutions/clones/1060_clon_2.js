@@ -1,92 +1,85 @@
-class CartesianCoord {
-  /*
-   * Initializes a new CartesianCoord instance.
-   * @param {number} horizontal - The horizontal coordinate.
-   * @param {number} vertical - The vertical coordinate.
-   */
-  constructor (horizontal, vertical) {
-    this.horizontal = horizontal;
-    this.vertical = vertical;
+class Vertex {
+  // Constructor for initializing a new point with its coordinates.
+  constructor(coordX, coordY) {
+    this.coordX = coordX;
+    this.coordY = coordY;
   }
 
-  // Outputs the coordinate values to the console.
-  showLocation () {
-    console.log(
-      this.horizontal.toFixed(8) + ' ' + this.vertical.toFixed(8)
-    );
+  // Method to output the point's coordinates to the console.
+  displayCoordinates() {
+    console.log(this.coordX.toFixed(8) + ' ' + this.coordY.toFixed(8));
   }
 }
 
-(function performFractalGeneration () {
-  // Read the iteration count from standard input.
-  const iterationCount = Number(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
-  
-  let initialPoint = new CartesianCoord(0, 0);
-  let finalPoint = new CartesianCoord(100, 0);
+(function executeFractalGeneration() {
+  // Read the recursion depth from standard input.
+  const recursionDepth = Number(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
 
-  initialPoint.showLocation();
-  generateKochCurve(iterationCount, initialPoint, finalPoint);
-  finalPoint.showLocation();
+  // Define the initial segment's start and end points.
+  let startPoint = new Vertex(0, 0);
+  let endPoint = new Vertex(100, 0);
+
+  // Display the initial start point.
+  startPoint.displayCoordinates();
+
+  // Begin the Koch curve generation process.
+  generateKochCurve(recursionDepth, startPoint, endPoint);
+
+  // Display the final end point.
+  endPoint.displayCoordinates();
 })();
 
-/**
- * Recursively generates segments of a Koch curve.
- * @param {number} iterationCount - The current iteration level.
- * @param {CartesianCoord} initialPoint - The starting point of the segment.
- * @param {CartesianCoord} finalPoint - The ending point of the segment.
- */
-function generateKochCurve (iterationCount, initialPoint, finalPoint) {
-  // Pre-calculate trigonometric values for 60 degrees.
-  const sineValue = Math.sin(60 * Math.PI / 180);
-  const cosineValue = Math.cos(60 * Math.PI / 180);
+function generateKochCurve(recursionDepth, startPoint, endPoint) {
+  // Pre-calculate sine and cosine of 60 degrees for rotation.
+  const sineValueSixty = Math.sin(60 * Math.PI / 180);
+  const cosineValueSixty = Math.cos(60 * Math.PI / 180);
 
-  // Define an internal function for the recursive transformations.
-  function recursiveSegmentTransform (iterationCount, initialPoint, finalPoint) {
-    if (!iterationCount) {
+  // This nested function performs the actual recursive steps of the Koch curve.
+  function recursiveKochStep(currentDepth, currentStart, currentEnd) {
+    // Base case: if recursion depth is zero, stop.
+    if (!currentDepth) {
       return;
     }
 
     // Calculate differences in coordinates.
-    deltaX = finalPoint.horizontal - initialPoint.horizontal;
-    deltaY = finalPoint.vertical - initialPoint.vertical;
+    let deltaX = currentEnd.coordX - currentStart.coordX;
+    let deltaY = currentEnd.coordY - currentStart.coordY;
 
-    // Calculate the first point of the middle segment.
-    let segmentOneEnd = new CartesianCoord(
-      initialPoint.horizontal + deltaX / 3,
-      initialPoint.vertical + deltaY / 3
-    );
-    // Calculate the second point of the middle segment.
-    let segmentTwoEnd = new CartesianCoord(
-      segmentOneEnd.horizontal + deltaX / 3,
-      segmentOneEnd.vertical + deltaY / 3
-    );
+    // Calculate the first intermediate point (1/3 of the way).
+    let segmentStart = new Vertex(currentStart.coordX + deltaX / 3, currentStart.coordY + deltaY / 3);
 
-    // Calculate the peak point of the triangular segment after rotation.
-    let rotatedPoint = new CartesianCoord(
-      (segmentTwoEnd.horizontal - segmentOneEnd.horizontal) * cosineValue - (segmentTwoEnd.vertical - segmentOneEnd.vertical) * sineValue + segmentOneEnd.horizontal,
-      (segmentTwoEnd.horizontal - segmentOneEnd.horizontal) * sineValue + (segmentTwoEnd.vertical - segmentOneEnd.vertical) * cosineValue + segmentOneEnd.vertical
+    // Calculate the second intermediate point (2/3 of the way).
+    let segmentEnd = new Vertex(segmentStart.coordX + deltaX / 3, segmentStart.coordY + deltaY / 3);
+
+    // Calculate the rotated point for the peak of the triangle.
+    let rotatedPoint = new Vertex(
+      (segmentEnd.coordX - segmentStart.coordX) * cosineValueSixty - (segmentEnd.coordY - segmentStart.coordY) * sineValueSixty + segmentStart.coordX,
+      (segmentEnd.coordX - segmentStart.coordX) * sineValueSixty + (segmentEnd.coordY - segmentStart.coordY) * cosineValueSixty + segmentStart.coordY
     );
 
-    // Recursively call for the first segment.
-    generateKochCurve(iterationCount - 1, initialPoint, segmentOneEnd);
+    // Recursively generate the first segment.
+    generateKochCurve(currentDepth - 1, currentStart, segmentStart);
     // Display the first intermediate point.
-    segmentOneEnd.showLocation();
+    segmentStart.displayCoordinates();
 
-    // Recursively call for the second segment (rotated).
-    generateKochCurve(iterationCount - 1, segmentOneEnd, rotatedPoint);
-    // Display the peak point.
-    rotatedPoint.showLocation();
+    // Recursively generate the second segment (left side of the triangle).
+    generateKochCurve(currentDepth - 1, segmentStart, rotatedPoint);
+    // Display the rotated point.
+    rotatedPoint.displayCoordinates();
 
-    // Recursively call for the third segment.
-    generateKochCurve(iterationCount - 1, rotatedPoint, segmentTwoEnd);
+    // Recursively generate the third segment (right side of the triangle).
+    generateKochCurve(currentDepth - 1, rotatedPoint, segmentEnd);
     // Display the second intermediate point.
-    segmentTwoEnd.showLocation();
+    segmentEnd.displayCoordinates();
 
-    // Recursively call for the fourth segment.
-    generateKochCurve(iterationCount - 1, segmentTwoEnd, finalPoint);
+    // Recursively generate the fourth segment.
+    generateKochCurve(currentDepth - 1, segmentEnd, currentEnd);
   }
 
-  // Replace the outer function with the inner recursive one for subsequent calls.
-  generateKochCurve = recursiveSegmentTransform;
-  recursiveSegmentTransform(iterationCount, initialPoint, finalPoint);
+  // On the first call, reassign the outer function to the inner recursive one.
+  // This ensures subsequent calls (including recursive ones) use the inner logic.
+  generateKochCurve = recursiveKochStep;
+
+  // Execute the initial recursive step.
+  recursiveKochStep(recursionDepth, startPoint, endPoint);
 }

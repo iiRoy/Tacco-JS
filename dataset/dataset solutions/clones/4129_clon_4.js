@@ -1,29 +1,27 @@
-function performCalculation(incomingTextLines) {
-    const targetLine = incomingTextLines[0];
+function evaluateBalance(inputLines) {
+    const numericComponents = inputLines[0].split(" ").map(Number);
 
-    const numericalValues = targetLine.split(' ').map(parseFloat);
+    const [firstValue, secondValue, thirdValue, fourthValue] = numericComponents;
 
-    const firstOperandSum = numericalValues[0] + numericalValues[1];
-    const secondOperandSum = numericalValues[2] + numericalValues[3];
+    const aggregateLeft = firstValue + secondValue;
+    const aggregateRight = thirdValue + fourthValue;
 
-    const comparisonResult = firstOperandSum - secondOperandSum;
-
-    const outputMapping = new Map([
-        [-1, "Right"],
-        [0, "Balanced"],
-        [1, "Left"]
+    const resultMappings = new Map([
+        ['equal', 'Balanced'],
+        ['greater', 'Left'],
+        ['less', 'Right']
     ]);
 
-    const finalMessage = outputMapping.get(Math.sign(comparisonResult));
+    let comparisonOutcomeIdentifier;
+    if (aggregateLeft === aggregateRight) {
+        comparisonOutcomeIdentifier = 'equal';
+    } else if (aggregateLeft > aggregateRight) {
+        comparisonOutcomeIdentifier = 'greater';
+    } else {
+        comparisonOutcomeIdentifier = 'less';
+    }
 
-    const displayResult = (message) => {
-        console.log(message);
-    };
-
-    displayResult(finalMessage);
+    return resultMappings.get(comparisonOutcomeIdentifier);
 }
 
-const rawFileContent = require('fs').readFileSync('/dev/stdin');
-const preparedInputLines = rawFileContent.toString('utf8').trim().split('\n');
-
-performCalculation(preparedInputLines);
+console.log(evaluateBalance(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n")));

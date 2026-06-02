@@ -1,111 +1,113 @@
 function ProcessInput(rawData) {
-  // Split the raw input string into an array of lines
-  rawData = rawData.split("\n");
+  // Split the raw input string into lines
+  let processedLines = rawData.split("\n");
 
-  // Parse the first line to get the total number of nodes
-  let nodeCount = parseInt(rawData[0]);
+  // Parse the number of nodes from the first line
+  let nodeCount = parseInt(processedLines[0]);
 
-  // Initialize an array to store distances from the starting node (node 0)
-  // Fill with a large number (nodeCount) representing "infinity" or unvisited
-  let distFromStart = Array(nodeCount).fill(nodeCount);
-  // Set the distance of the starting node (0) to itself as 0
-  distFromStart[0] = 0;
+  // Initialize distance array for BFS from the starting node (node 0)
+  // All distances are initially set to nodeCount (effectively infinity)
+  let distanceFromStart = new Array(nodeCount).fill(nodeCount);
+  // The distance from the start node to itself is 0
+  distanceFromStart[0] = 0;
 
-  // Initialize an array to store distances from the ending node (nodeCount - 1)
-  // Fill with a large number (nodeCount)
-  let distFromEnd = Array(nodeCount).fill(nodeCount);
-  // Set the distance of the ending node (nodeCount - 1) to itself as 0
-  distFromEnd[nodeCount - 1] = 0;
+  // Initialize distance array for BFS from the ending node (nodeCount - 1)
+  // All distances are initially set to nodeCount (effectively infinity)
+  let distanceFromEnd = new Array(nodeCount).fill(nodeCount);
+  // The distance from the end node to itself is 0
+  distanceFromEnd[nodeCount - 1] = 0;
 
-  // Create an adjacency list to represent the graph structure
-  // Each element will be an array of connected nodes
-  const graphEdges = Array.from({ length: nodeCount }, () => []);
+  // Create an adjacency list to represent the graph
+  // Each element is an array to store neighbors of a node
+  let adjacencyList = new Array(nodeCount).fill([]);
 
-  // Loop through the input lines to build the graph
-  // Each line (after the first) represents an edge between two nodes
-  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
-    // Parse the current line to get the two connected nodes
-    const edgeParts = rawData[edgeIndex + 1].split(" ");
+  // Populate the adjacency list based on the input edges
+  for (let idx = 0; idx < nodeCount - 1; idx++) {
+    // Parse the two nodes connected by the current edge
+    let edgeParts = processedLines[idx + 1].split(" ");
     let nodeA = parseInt(edgeParts[0]) - 1; // Adjust to 0-indexed
     let nodeB = parseInt(edgeParts[1]) - 1; // Adjust to 0-indexed
 
     // Add nodeB to nodeA's adjacency list
-    if (graphEdges[nodeA].length === 0) {
-      graphEdges[nodeA] = [nodeB];
+    if (adjacencyList[nodeA].length === 0) {
+      // If the list is empty, reassign it to a new array containing nodeB
+      adjacencyList[nodeA] = [nodeB];
     } else {
-      graphEdges[nodeA].push(nodeB);
+      // Otherwise, push nodeB to the existing list
+      adjacencyList[nodeA].push(nodeB);
     }
 
     // Add nodeA to nodeB's adjacency list (undirected graph)
-    if (graphEdges[nodeB].length === 0) {
-      graphEdges[nodeB] = [nodeA];
+    if (adjacencyList[nodeB].length === 0) {
+      // If the list is empty, reassign it to a new array containing nodeA
+      adjacencyList[nodeB] = [nodeA];
     } else {
-      graphEdges[nodeB].push(nodeA);
+      // Otherwise, push nodeA to the existing list
+      adjacencyList[nodeB].push(nodeA);
     }
   }
 
-  // This variable is declared but not used in the original logic.
-  // It's kept for structural similarity.
-  let temporaryQueue = [];
+  // This variable is declared but not used in the original code.
+  // It's kept for structural consistency.
+  let temporaryQueue = new Array();
 
-  // Function to perform a Breadth-First Search (BFS) to calculate distances
-  // from a given start node to all other reachable nodes.
-  function computePathLengths(beginNode, distanceArray) {
-    // Initialize a queue for BFS traversal
-    let bfsQueue = [];
-    bfsQueue[0] = beginNode; // Add the starting node to the queue
+  // Function to perform Breadth-First Search (BFS)
+  // It calculates shortest distances from a given start node
+  function calculateDistances(startNode, distArray) {
+    let bfsQueue = new Array();
+    bfsQueue[0] = startNode; // Enqueue the starting node
 
-    // Continue as long as there are nodes in the queue to process
+    // Process nodes in the queue until it's empty
     while (bfsQueue.length !== 0) {
-      // Get the current node from the front of the queue
-      let currentVertex = bfsQueue.shift();
+      let currentProcessingNode = bfsQueue[0]; // Get the current node from the front of the queue
 
       // Iterate through all neighbors of the current node
-      for (let neighborIdx = 0; neighborIdx < graphEdges[currentVertex].length; neighborIdx++) {
-        const neighborNode = graphEdges[currentVertex][neighborIdx];
+      for (let neighborIdx = 0; neighborIdx < adjacencyList[currentProcessingNode].length; neighborIdx++) {
+        let neighborNode = adjacencyList[currentProcessingNode][neighborIdx];
 
-        // If the current path to the neighbor is shorter than a previously found path
-        // (or if neighbor hasn't been visited yet, indicated by a larger distance)
-        if (distanceArray[neighborNode] > distanceArray[currentVertex]) {
-          // Update the neighbor's distance
-          distanceArray[neighborNode] = distanceArray[currentVertex] + 1;
-          // Add the neighbor to the queue for further exploration
+        // If a shorter path to the neighbor is found
+        if (distArray[neighborNode] > distArray[currentProcessingNode]) {
+          // Update the distance to the neighbor
+          distArray[neighborNode] = distArray[currentProcessingNode] + 1;
+          // Enqueue the neighbor for further processing
           bfsQueue.push(neighborNode);
         }
       }
+      // Dequeue the current node after processing its neighbors
+      bfsQueue.shift();
+      // Set the next node to process (if queue is not empty)
+      currentProcessingNode = bfsQueue[0];
     }
-    // Return the updated distance array
-    return distanceArray;
+    return distArray; // Return the updated distance array
   }
 
   // Calculate distances from node 0 to all other nodes
-  distFromStart = computePathLengths(0, distFromStart);
+  distanceFromStart = calculateDistances(0, distanceFromStart);
   // Calculate distances from node (nodeCount - 1) to all other nodes
-  distFromEnd = computePathLengths(nodeCount - 1, distFromEnd);
+  distanceFromEnd = calculateDistances(nodeCount - 1, distanceFromEnd);
 
-  // Initialize a counter for nodes closer to the start
-  let comparisonCounter = 0;
-  // Iterate through all nodes (excluding the start and end nodes)
-  for (let nodeIterator = 0; nodeIterator < nodeCount; nodeIterator++) {
-    if (nodeIterator !== 0 && nodeIterator !== nodeCount - 1) {
-      // If a node is closer to the start than to the end
-      if (distFromStart[nodeIterator] <= distFromEnd[nodeIterator]) {
-        comparisonCounter++; // Increment the counter
+  // Count nodes where Fennec (starting from node 0) has a shorter or equal path
+  let fennecWinsCount = 0;
+  for (let idx = 0; idx < nodeCount; idx++) {
+    // Exclude the start and end nodes themselves from this comparison
+    if (idx !== 0 && idx !== nodeCount - 1) {
+      if (distanceFromStart[idx] <= distanceFromEnd[idx]) {
+        fennecWinsCount++;
       }
     }
   }
 
-  // Determine the winner based on the comparison counter
-  let finalResult = "Fennec"; // Default winner
-  // If the number of nodes closer to Fennec (start) is less than or equal to
-  // the number of nodes closer to Snuke (end)
-  if (comparisonCounter <= nodeCount - 2 - comparisonCounter) {
-    finalResult = "Snuke"; // Snuke wins
+  // Determine the winner based on the count
+  let resultString = "Fennec";
+  // The total number of intermediate nodes is nodeCount - 2
+  // If Fennec's count is less than or equal to Snuke's count, Snuke wins
+  if (fennecWinsCount <= nodeCount - 2 - fennecWinsCount) {
+    resultString = "Snuke";
   }
 
-  // Output the final result to the console
-  console.log('%s', finalResult);
+  // Output the result
+  console.log('%s', resultString);
 }
 
-// Read input from standard input and pass it to the main processing function
+// Read input from stdin and pass it to the main processing function
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

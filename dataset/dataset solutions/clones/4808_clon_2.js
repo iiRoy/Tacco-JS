@@ -1,56 +1,63 @@
 'use strict';
 
-/*
- *  This script is designed to parse input data
- *  and perform a series of calculations based on
- *  specified modification instructions.
+/**
+ * Processes raw input data to calculate adjusted times based on drink modifications.
+ * This function reads problem durations and drink effects, then outputs the total time
+ * for each drink scenario.
+ * @param {string} rawData - The complete input string read from standard input.
  */
-function ProcessInputData(rawDataStream)
-{
-    // The incoming raw text is first split into an array of lines.
-    const dataLinesArray = rawDataStream.split('\n');
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of individual lines.
+    const lines = rawData.split('\n');
 
-    const numberOfElements = dataLinesArray.shift(); // The first line indicates the total element count.
+    // The first line contains the number of problems (N), which is not directly used in calculations.
+    const numProblems = lines.shift();
 
-    // The next line contains space-separated timings for each element.
-    const elementTimings = dataLinesArray
-        .shift()
-        .split(' ')
-        .map(timeStr => parseInt(timeStr, 10))
-    ;
+    // The second line contains space-separated durations for each problem.
+    // These are parsed into an array of numbers.
+    const problemDurations = lines.shift().split(' ').map(durationString => Number(durationString));
 
-    const modificationCount = dataLinesArray.shift(); // This line specifies the number of modification operations.
+    // The third line contains the number of drink modifications (M), also not directly used.
+    const numDrinks = lines.shift();
 
-    // All subsequent lines represent individual modification instructions.
-    const modificationInstructions = dataLinesArray.map(instructionLine =>
-        instructionLine.split(' ').map(paramValueStr => parseInt(paramValueStr, 10))
-    );
+    // The remaining lines describe each drink modification.
+    // Each line is split into two numbers: problem index (P) and new duration (X).
+    const drinkModifications = lines.map(drinkLine => drinkLine.split(' ').map(valueString => Number(valueString)));
 
+    // A commented-out debug line, mirroring the original's behavior.
+    // console.log(numProblems, problemDurations, numDrinks, drinkModifications);
 
-    let initialTotalDuration = 0; // Accumulator for the base total duration.
-    for (const individualDuration of elementTimings) {
-        initialTotalDuration = initialTotalDuration + individualDuration; // Summing up all base durations.
+    // Calculate the initial total time by summing up all original problem durations.
+    let initialTotalTime = 0;
+    for (const duration of problemDurations) {
+        initialTotalTime += duration; // Add each problem's time to the running total.
     }
 
-    const outputValues = []; // Array to store the results of each adjusted calculation.
+    // An array to store the calculated total times for each drink modification.
+    const finalTimes = [];
 
-    // Process each instruction to calculate an adjusted total duration.
-    for (const currentInstruction of modificationInstructions) {
-        // Calculate the specific adjustment based on the instruction.
-        const durationAdjustment = elementTimings[currentInstruction[0] - 1] - currentInstruction[1];
+    // Iterate through each drink modification entry.
+    for (const drinkInfo of drinkModifications) {
+        // drinkInfo[0] is the 1-based index of the problem to be modified.
+        // drinkInfo[1] is the new duration for that specific problem.
+        const targetProblemIndex = drinkInfo[0] - 1; // Convert to 0-based array index.
+        const newProblemDuration = drinkInfo[1];
 
-        // Apply the adjustment to the initial total duration.
-        const adjustedCalculation = initialTotalDuration - durationAdjustment;
+        // Calculate the difference between the original duration and the new duration for the modified problem.
+        const timeDifference = problemDurations[targetProblemIndex] - newProblemDuration;
 
-        outputValues.push(adjustedCalculation); // Record the adjusted result.
+        // The adjusted total time is the initial total time minus this calculated difference.
+        const adjustedTime = initialTotalTime - timeDifference;
+
+        // Add the computed adjusted time to our collection of results.
+        finalTimes.push(adjustedTime);
     }
 
-
-    // Print each computed result to the standard output.
-    for (const finalOutput of outputValues) {
-        console.log(finalOutput);
+    // Output each calculated adjusted time to the console, one per line.
+    for (const outputTime of finalTimes) {
+        console.log(outputTime);
     }
 }
 
-// Entry point: Read input synchronously from stdin and invoke the processing function.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

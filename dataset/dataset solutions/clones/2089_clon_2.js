@@ -1,234 +1,282 @@
-// This section handles standard input/output and provides utility functions.
-let   inputReader  = require('node:readline').createInterface({
-  input:  process.stdin,
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
-let dataStore;
-let inputLines = [ ];
 
-inputReader.on( 'line', function ( currentLine )
-{
-  inputLines.push( currentLine );
-} );
+var dataProcessor;
+var inputLines = [];
 
-inputReader.on( 'close', function ( ) {
-  dataStore = initializeParser( inputLines );
-  process.stderr.write( '\n' );
-  let startTimeStamp = performance.now();
-  ExecutePrincipalLogic();
-  let durationMillis = performance.now() - startTimeStamp;
-  logDebugMessage( 'elapsed time : ' + durationMillis.toFixed(3) + 'ms' );
-  logDebugMessage( 'memory footprint : ' + Math.round( process.memoryUsage().heapTotal / 1024 ) + 'KB' );
-} );
+// Event listener for each line of input
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
 
-function createDeepCopy( sourceObject )
-{
-  return ( sourceObject instanceof Set )
-         ? new Set( Array.from( sourceObject ) )
-         : JSON.parse( JSON.stringify( sourceObject ) )
-  ;
+// Event listener for when input stream closes
+inputReader.on('close', function() {
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error('\n'); // Preserve original blank line error output
+
+  var startTime = Date.now();
+  ProcessGraph(); // Execute the main logic
+  var endTime = Date.now() - startTime;
+
+  logDebugMessage('time : ' + endTime + 'ms');
+  logDebugMessage('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+});
+
+/**
+ * Creates a deep copy of an object or Set.
+ * @param {any} originalObject The object to clone.
+ * @returns {any} A deep copy of the original object.
+ */
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveNextInteger ( )
-{
-  return convertInput( fetchNextItem(), 1 );
+/**
+ * Retrieves and converts the next input item to an integer.
+ * @returns {number} The next integer from input.
+ */
+function retrieveNextInteger() {
+  return convertInput(fetchNextItem(), 1);
 }
 
-function retrieveNextStringArray ( )
-{
-  return convertInput( fetchNextItem(), 2 );
+/**
+ * Retrieves and converts the next input item to an array of strings.
+ * @returns {string[]} The next string array from input.
+ */
+function retrieveNextStringArray() {
+  return convertInput(fetchNextItem(), 2);
 }
 
-function retrieveNextIntegerArray ( )
-{
-  return convertInput( fetchNextItem(), 4 );
+/**
+ * Retrieves and converts the next input item to an array of integers.
+ * @returns {number[]} The next integer array from input.
+ */
+function retrieveNextIntegerArray() {
+  return convertInput(fetchNextItem(), 4);
 }
 
-function retrieveNextCharacterArray ( )
-{
-  return convertInput( fetchNextItem(), 6 );
+/**
+ * Retrieves and converts the next input item to an array of characters.
+ * @returns {string[]} The next character array from input.
+ */
+function retrieveNextCharacterArray() {
+  return convertInput(fetchNextItem(), 6);
 }
 
-function fetchNextItem ( )
-{
-  return dataStore.fetchItem();
+/**
+ * Fetches the next item from the input handler.
+ * @returns {string} The next raw input string.
+ */
+function fetchNextItem() {
+  return dataProcessor.fetchNextItem();
 }
 
-function hasMoreItems ( )
-{
-  return dataStore.hasAvailableItems();
+/**
+ * Checks if there are more items in the input handler.
+ * @returns {boolean} True if more input is available, false otherwise.
+ */
+function hasMoreItems() {
+  return dataProcessor.hasMoreItems();
 }
 
-function initializeParser ( inputSegments )
-{
+/**
+ * Initializes an input handler object.
+ * @param {string[]} inputData An array of input strings.
+ * @returns {object} An object with methods to manage input.
+ */
+function initializeInputHandler(inputData) {
   return {
-    segmentList : inputSegments,
-    currentPosition : 0,
-    maximumItems : inputSegments.length,
-    hasAvailableItems : function ( ) {
-      return ( this.currentPosition < this.maximumItems );
+    sourceData: inputData,
+    currentPosition: 0,
+    maximumLength: inputData.length,
+    hasMoreItems: function() {
+      return (this.currentPosition < this.maximumLength);
     },
-    fetchItem : function ( ) {
-      if ( this.hasAvailableItems() )
-      {
-        return this.segmentList[ this.currentPosition++ ];
-      }
-      else
-      {
-        throw new Error( 'InputBufferEmptyException: No further input available' );
+    fetchNextItem: function() {
+      if (this.hasMoreItems()) {
+        return this.sourceData[this.currentPosition++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-function printOutput ( content )
-{
-  process.stdout.write( content + '\n' );
+/**
+ * Prints a message to standard output.
+ * @param {any} message The message to print.
+ */
+function printOutput(message) {
+  console.log(message);
 }
 
-function logDebugMessage ( message )
-{
-  process.stderr.write( 'DEBUG: ' + require('node:util').inspect( message, { showHidden: false, depth: null, colors: true } ) + '\n' );
+/**
+ * Logs a debug message to standard error.
+ * @param {any} debugInfo The information to log.
+ */
+function logDebugMessage(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
 }
 
-// The 'conversionType' parameter dictates the transformation:
-// 1: Parses to integer.
-// 2: Splits by spaces into strings.
-// 4: Splits by spaces and maps to numbers.
-// 6: Splits into individual characters.
-// 7: Splits into characters and maps to numbers.
-// 8: Joins array elements with spaces.
-// 9: Joins array elements with newlines.
-// 0: Joins array elements without delimiters.
-// Otherwise: Returns input unchanged.
-function convertInput ( inputData, conversionType )
-{
-  try
-  {
-    switch ( conversionType )
-    {
+/**
+ * Converts input based on a specified format code.
+ * @param {string|string[]} inputItem The item to convert.
+ * @param {number} conversionType The type of conversion to apply.
+ *   1: parseInt
+ *   2: split by space
+ *   4: split by space and map to Number
+ *   6: split by character
+ *   7: split by character and map to Number
+ *   8: join by space
+ *   9: join by newline
+ *   0: join with no character
+ *   default: return as is
+ * @returns {any} The converted item.
+ */
+function convertInput(inputItem, conversionType) {
+  try {
+    switch (conversionType) {
       case 1:
-        return Number.parseInt( inputData );
+        return parseInt(inputItem);
       case 2:
-        return inputData.split( ' ' );
+        return inputItem.split(' ');
       case 4:
-        return inputData.split( ' ' ).map( Number );
+        return inputItem.split(' ').map(Number);
       case 6:
-        return inputData.split( '' );
+        return inputItem.split('');
       case 7:
-        return inputData.split( '' ).map( Number );
+        return inputItem.split('').map(Number);
       case 8:
-        return inputData.join( ' ' );
+        return inputItem.join(' ');
       case 9:
-        return inputData.join( '\n' );
+        return inputItem.join('\n');
       case 0:
-        return inputData.join( '' );
+        return inputItem.join('');
       default:
-        return inputData;
+        return inputItem;
     }
-  }
-  catch ( error )
-  {
-    return inputData;
+  } catch (error) {
+    return inputItem; // Return original on error
   }
 }
 
-// End of common utility functions.
-function ExecutePrincipalLogic() {
-  let nodeCount = retrieveNextInteger();
-  let nodeInformation = new Array(nodeCount);
-  let resultSequence = new Array(nodeCount);
+/**
+ * Main function to process the graph and assign values.
+ */
+function ProcessGraph() {
+  var nodeCount = retrieveNextInteger(); // Read the number of nodes
+  var nodeDetails = new Array(nodeCount); // Array to store node properties
+  var finalResult = new Array(nodeCount); // Array to store the final assigned values
 
-  for (let k = 0; k < nodeCount; k++) {
-    nodeInformation[k] = {
-      nodeDepth: null,
-      isVisited: false,
-      connectedNodes: [],
-      assignedValue: -1
+  // Initialize each node's properties
+  for (var idx = 0; idx < nodeCount; idx++) {
+    nodeDetails[idx] = {
+      nodeLevel: null, // Depth/level in the BFS tree
+      isVisited: false, // Flag for BFS traversal
+      neighbors: [], // List of connected nodes
+      assignedValue: -1 // Final assigned value, -1 initially
     };
   }
 
-  let firstCounter = 1;
-  let secondCounter = 2;
-  let thirdCounter = 3;
+  // Counters for assigning values (1, 2, 3, 4, 5, 6, ...)
+  var firstValue = 1;
+  var secondValue = 2;
+  var thirdValue = 3;
 
-  for (let linkIdx = 0; linkIdx < nodeCount - 1; linkIdx++) {
-    let edgeData = retrieveNextIntegerArray();
-    nodeInformation[edgeData[0] - 1].connectedNodes.push(edgeData[1] - 1);
-    nodeInformation[edgeData[1] - 1].connectedNodes.push(edgeData[0] - 1);
+  // Read edges and build adjacency list
+  for (var idx = 0; idx < nodeCount - 1; idx++) {
+    var tempEdge = retrieveNextIntegerArray(); // Read an edge (u, v)
+    // Adjust to 0-indexed and add to neighbors list
+    nodeDetails[tempEdge[0] - 1].neighbors.push(tempEdge[1] - 1);
+    nodeDetails[tempEdge[1] - 1].neighbors.push(tempEdge[0] - 1);
   }
 
-  let processingQueue = [0];
-  nodeInformation[0].isVisited = true;
-  nodeInformation[0].nodeDepth = 1;
+  // Perform Breadth-First Search (BFS) starting from node 0
+  var processingQueue = [0];
+  nodeDetails[0].isVisited = true;
+  nodeDetails[0].nodeLevel = 1; // Root is at level 1
 
-  let oddLevelCount = 0;
-  let evenLevelCount = 0;
+  var oddLevelCount = 0; // Count of nodes at odd levels
+  var evenLevelCount = 0; // Count of nodes at even levels
 
   while (processingQueue.length > 0) {
-    let currentNodeIndex = processingQueue.shift();
+    var currentNodeIndex = processingQueue.shift(); // Dequeue a node
 
-    if (nodeInformation[currentNodeIndex].nodeDepth % 2 === 1) {
+    // Increment count based on node's level parity
+    if (nodeDetails[currentNodeIndex].nodeLevel % 2 === 1) {
       oddLevelCount++;
     } else {
       evenLevelCount++;
     }
 
-    let childrenIndices = nodeInformation[currentNodeIndex].connectedNodes;
-    for (let cIdx = 0; cIdx < childrenIndices.length; cIdx++) {
-      if (!nodeInformation[childrenIndices[cIdx]].isVisited) {
-        nodeInformation[childrenIndices[cIdx]].isVisited = true;
-        nodeInformation[childrenIndices[cIdx]].nodeDepth = nodeInformation[currentNodeIndex].nodeDepth + 1;
-        processingQueue.push(childrenIndices[cIdx]);
+    var connectedNodes = nodeDetails[currentNodeIndex].neighbors;
+    // Explore neighbors
+    for (var idx = 0; idx < connectedNodes.length; idx++) {
+      var neighborIndex = connectedNodes[idx];
+      if (!nodeDetails[neighborIndex].isVisited) {
+        nodeDetails[neighborIndex].isVisited = true;
+        nodeDetails[neighborIndex].nodeLevel = nodeDetails[currentNodeIndex].nodeLevel + 1;
+        processingQueue.push(neighborIndex);
       }
     }
   }
 
+  // Assign values based on the counts of odd/even level nodes
   if (oddLevelCount > (nodeCount / 3) && evenLevelCount > (nodeCount / 3)) {
-    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
-      if (nodeInformation[nodeIdx].nodeDepth % 2 === 1) {
-        if (firstCounter <= nodeCount) {
-          nodeInformation[nodeIdx].assignedValue = firstCounter;
-          firstCounter += 3;
+    // If both odd and even levels have a significant number of nodes
+    for (var idx = 0; idx < nodeCount; idx++) {
+      if (nodeDetails[idx].nodeLevel % 2 === 1) {
+        // Assign values 1, 4, 7... to odd level nodes
+        if (firstValue <= nodeCount) {
+          nodeDetails[idx].assignedValue = firstValue;
+          firstValue += 3;
         }
       } else {
-        if (secondCounter <= nodeCount) {
-          nodeInformation[nodeIdx].assignedValue = secondCounter;
-          secondCounter += 3;
+        // Assign values 2, 5, 8... to even level nodes
+        if (secondValue <= nodeCount) {
+          nodeDetails[idx].assignedValue = secondValue;
+          secondValue += 3;
         }
       }
     }
   } else {
-    for (let currNode = 0; currNode < nodeCount; currNode++) {
+    // If one of the level counts is not significant (less than N/3)
+    for (var idx = 0; idx < nodeCount; idx++) {
       if (oddLevelCount < evenLevelCount) {
-        if (nodeInformation[currNode].nodeDepth % 2 === 1) {
-          nodeInformation[currNode].assignedValue = thirdCounter;
-          thirdCounter += 3;
+        // If odd levels are fewer, assign 3, 6, 9... to odd level nodes
+        if (nodeDetails[idx].nodeLevel % 2 === 1) {
+          nodeDetails[idx].assignedValue = thirdValue;
+          thirdValue += 3;
         }
       } else {
-        if (nodeInformation[currNode].nodeDepth % 2 === 0) {
-          nodeInformation[currNode].assignedValue = thirdCounter;
-          thirdCounter += 3;
+        // If even levels are fewer or equal, assign 3, 6, 9... to even level nodes
+        if (nodeDetails[idx].nodeLevel % 2 === 0) {
+          nodeDetails[idx].assignedValue = thirdValue;
+          thirdValue += 3;
         }
       }
     }
   }
 
-  for (let finalIdx = 0; finalIdx < nodeCount; finalIdx++) {
-    if (nodeInformation[finalIdx].assignedValue === -1) {
-      if (firstCounter <= nodeCount) {
-        nodeInformation[finalIdx].assignedValue = firstCounter;
-        firstCounter += 3;
-      } else if (secondCounter <= nodeCount) {
-        nodeInformation[finalIdx].assignedValue = secondCounter;
-        secondCounter += 3;
-      } else if (thirdCounter <= nodeCount) {
-        nodeInformation[finalIdx].assignedValue = thirdCounter;
-        thirdCounter += 3;
+  // Fill in any remaining unassigned nodes (-1)
+  for (var idx = 0; idx < nodeCount; idx++) {
+    if (nodeDetails[idx].assignedValue === -1) {
+      if (firstValue <= nodeCount) {
+        nodeDetails[idx].assignedValue = firstValue;
+        firstValue += 3;
+      } else if (secondValue <= nodeCount) {
+        nodeDetails[idx].assignedValue = secondValue;
+        secondValue += 3;
+      } else if (thirdValue <= nodeCount) {
+        nodeDetails[idx].assignedValue = thirdValue;
+        thirdValue += 3;
       }
     }
-    resultSequence[finalIdx] = nodeInformation[finalIdx].assignedValue;
+    finalResult[idx] = nodeDetails[idx].assignedValue;
   }
 
-  printOutput(convertInput(resultSequence, 8));
+  // Print the final assigned values, joined by spaces
+  printOutput(convertInput(finalResult, 8));
 }

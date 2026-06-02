@@ -1,199 +1,159 @@
-var inputHandler = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+// This section handles input and output operations.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
-var dataSource;
-var lineAccumulator = [];
+var inputProcessor;
+var inputLines = [];
 
-inputHandler.on('line', function(receivedText) {
-    lineAccumulator.push(receivedText);
-});
-
-inputHandler.on('close', function() {
-    dataSource = initializeDataProcessor(lineAccumulator);
-    console.error('\n--- Input above, Program Output below ---');
-    executeMainRoutine();
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-/**
- * Creates a duplicate of an object or a Set.
- * For objects, it performs a deep copy via JSON serialization.
- * @param {any} originalItem The element to be duplicated.
- * @returns {any} A fresh copy of the element.
- */
-function createDeepDuplicate(originalItem) {
-    return (originalItem instanceof Set) ? new Set(Array.from(originalItem)) : JSON.parse(JSON.stringify(originalItem));
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑ Input ↓ Output'); // Debug message for user
+  solveProblem();
+});
+
+// Creates a deep copy of an object or Set.
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-/**
- * Fetches the next input token and interprets it as an integer.
- * @returns {number} The parsed integer value.
- */
-function fetchNextInteger() {
-    return processInputToken(obtainNextToken(), 1);
+// Reads the next input as an integer.
+function readInteger(){
+  return convertInput(fetchNext(), 0x1);
 }
 
-/**
- * Fetches the next input token and splits it into a string array.
- * @returns {string[]} An array of strings.
- */
-function fetchNextStringList() {
-    return processInputToken(obtainNextToken(), 2);
+// Reads the next input as an array of strings (space-separated).
+function readStringArray(){
+  return convertInput(fetchNext(), 0x2);
 }
 
-/**
- * Fetches the next input token, splits it, and parses parts as integers.
- * @returns {number[]} An array of integers.
- */
-function fetchNextIntegerList() {
-    return processInputToken(obtainNextToken(), 4);
+// Reads the next input as an array of integers (space-separated).
+function readIntegerArray(){
+  return convertInput(fetchNext(), 0x4);
 }
 
-/**
- * Fetches the next input token and divides it into individual characters.
- * @returns {string[]} An array of characters.
- */
-function fetchNextCharacterList() {
-    return processInputToken(obtainNextToken(), 6);
+// Reads the next input as an array of characters.
+function readCharacterArray(){
+  return convertInput(fetchNext(), 0x6);
 }
 
-/**
- * Retrieves the subsequent input item from the data source.
- * @returns {string} The next available input item.
- */
-function obtainNextToken() {
-    return dataSource.getNextItem();
+// Fetches the next raw input line.
+function fetchNext(){
+  return inputProcessor.getNextLine();
 }
 
-/**
- * Determines if there are more items to consume from the input.
- * @returns {boolean} True if more input exists, false otherwise.
- */
-function moreItemsAvailable() {
-    return dataSource.hasMore();
+// Checks if there's more input available.
+function checkHasNext(){
+  return inputProcessor.hasMoreInput();
 }
 
-/**
- * Configures the input parsing mechanism.
- * @param {string[]} rawInputLines An array of raw text lines received.
- * @returns {object} An object with sequential access methods for input.
- */
-function initializeDataProcessor(rawInputLines) {
-    return {
-        inputSequence: rawInputLines,
-        currentAccessIndex: 0,
-        maximumIndex: rawInputLines.length,
-        hasMore: function() {
-            return (this.currentAccessIndex < this.maximumIndex);
-        },
-        getNextItem: function() {
-            if (this.hasMore()) {
-                return this.inputSequence[this.currentAccessIndex++];
-            } else {
-                throw 'InputDepletionError :: No more input lines are available.';
-            }
-        }
-    };
-}
-
-/**
- * Prints a value to the standard output console.
- * @param {any} content The data to be outputted.
- */
-function printOutput(content) {
-    console.log(content);
-}
-
-/**
- * Outputs a detailed debug message to the error console.
- * @param {any} debugObject The object to inspect and log.
- */
-function logDebugInfo(debugObject) {
-    console.error('DEBUG_LOG: ' + require('util').inspect(debugObject, false, null));
-}
-
-// The 'conversionSpecifier' parameter dictates the transformation:
-//  1: Parse the string as a base-10 integer.
-//  2: Divide the string by spaces into an array of strings.
-//  4: Divide by spaces, then convert each segment to a number.
-//  6: Break the string into an array of single characters.
-//  7: Break into characters, then convert each to a number.
-//  8: Combine array elements using a space as a delimiter.
-//  9: Combine array elements using a newline as a delimiter.
-//  0: Combine array elements without any delimiter.
-//  Any other value: Return the input unchanged.
-function processInputToken(inputContent, conversionSpecifier) {
-    try {
-        switch (conversionSpecifier) {
-            case 1:
-                return parseInt(inputContent);
-            case 2:
-                return inputContent.split(' ');
-            case 4:
-                return inputContent.split(' ').map(Number);
-            case 6:
-                return inputContent.split('');
-            case 7:
-                return inputContent.split('').map(Number);
-            case 8:
-                return inputContent.join(' ');
-            case 9:
-                return inputContent.join('\n');
-            case 0:
-                return inputContent.join('');
-            default:
-                return inputContent;
-        }
-    } catch (e) {
-        return inputContent; // Return original if conversion fails
+// Initializes the input handler object.
+function initializeInputHandler(linesArray){
+  return {
+    dataLines : linesArray,
+    currentLineIndex : 0x0,
+    totalLines : linesArray.length,
+    hasMoreInput : function(){
+      return (this.currentLineIndex < this.totalLines);
+    },
+    getNextLine : function(){
+      if(this.hasMoreInput()){
+        return this.dataLines[this.currentLineIndex++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
+  };
 }
-// Auxiliary processing utilities end here --
 
-/**
- * This is the primary function where the core algorithm resides.
- * It determines a sequence based on initial conditions and a character string.
- */
-function executeMainRoutine() {
-    var sequenceSize = fetchNextInteger();
-    var characterSeries = fetchNextCharacterList();
-    var startingConfigurations = [
-        ["S", "S"],
-        ["S", "W"],
-        ["W", "S"],
-        ["W", "W"]
-    ];
+// Prints the final result to standard output.
+function printResult(outputValue){
+  console.log(outputValue);
+}
 
-    for (var configIdx = 0; configIdx < startingConfigurations.length; configIdx++) {
-        var generatedSequence = new Array(sequenceSize + 2);
-        generatedSequence[0] = startingConfigurations[configIdx][0];
-        generatedSequence[1] = startingConfigurations[configIdx][1];
+// Logs debug information to standard error.
+function logDebug(debugInfo){
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
+}
 
-        for (var currentPos = 0; currentPos < sequenceSize; currentPos++) {
-            if (characterSeries[currentPos] == "o") {
-                if (generatedSequence[currentPos] == generatedSequence[currentPos + 1]) {
-                    generatedSequence[currentPos + 2] = "S";
-                } else {
-                    generatedSequence[currentPos + 2] = "W";
-                }
-            } else { // Assuming 'x' if not 'o'
-                if (generatedSequence[currentPos] != generatedSequence[currentPos + 1]) {
-                    generatedSequence[currentPos + 2] = "S";
-                } else {
-                    generatedSequence[currentPos + 2] = "W";
-                }
-            }
+// Utility function for various input conversions.
+// conversionType:
+//   0x1: parseInt
+//   0x2: split by space
+//   0x4: split by space and map to Number
+//   0x6: split by character
+//   0x7: split by character and map to Number
+//   0x8: join by space
+//   0x9: join by newline
+//   0x0: join with no character
+//   default: return as is
+function convertInput(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case 0x1: return parseInt(inputValue);
+      case 0x2: return inputValue.split(' ');
+      case 0x4: return inputValue.split(' ').map(Number);
+      case 0x6: return inputValue.split('');
+      case 0x7: return inputValue.split('').map(Number);
+      case 0x8: return inputValue.join(' ');
+      case 0x9: return inputValue.join('\n');
+      case 0x0: return inputValue.join('');
+      default: return inputValue;
+    }
+  } catch(error) {
+    return inputValue;
+  }
+}
+
+// Main problem-solving logic.
+function solveProblem(){
+  var numAnimals = readInteger();
+  var animalStates = readCharacterArray();
+
+  // Define initial configurations for the first two animals.
+  var initialConfigurations = [
+    ["S", "S"],
+    ["S", "W"],
+    ["W", "S"],
+    ["W", "W"]
+  ];
+
+  // Iterate through each possible initial configuration.
+  for(var configIndex = 0x0; configIndex < initialConfigurations.length; configIndex++){
+    var animalArrangement = new Array(numAnimals + 0x2); // Array to store animal types (S/W)
+    animalArrangement[0x0] = initialConfigurations[configIndex][0x0];
+    animalArrangement[0x1] = initialConfigurations[configIndex][0x1];
+
+    // Determine the type of each subsequent animal based on the current and previous two.
+    for(var currentAnimalIndex = 0x0; currentAnimalIndex < numAnimals; currentAnimalIndex++){
+      if(animalStates[currentAnimalIndex] === "o"){ // If the current animal is an 'o' (sheep)
+        if(animalArrangement[currentAnimalIndex] === animalArrangement[currentAnimalIndex + 0x1]){
+          animalArrangement[currentAnimalIndex + 0x2] = "S"; // Next animal is S if current and next are same
+        } else {
+          animalArrangement[currentAnimalIndex + 0x2] = "W"; // Next animal is W if current and next are different
         }
-
-        // Validate the generated sequence against boundary conditions
-        if (generatedSequence[0] == generatedSequence[sequenceSize] && generatedSequence[1] == generatedSequence[sequenceSize + 1]) {
-            generatedSequence.pop(); // Remove the trailing placeholder element
-            generatedSequence.pop(); // Remove another trailing placeholder element
-            printOutput(generatedSequence.join(""));
-            return; // Found a valid sequence, terminate
+      } else { // If the current animal is an 'x' (wolf)
+        if(animalArrangement[currentAnimalIndex] !== animalArrangement[currentAnimalIndex + 0x1]){
+          animalArrangement[currentAnimalIndex + 0x2] = "S"; // Next animal is S if current and next are different
+        } else {
+          animalArrangement[currentAnimalIndex + 0x2] = "W"; // Next animal is W if current and next are same
         }
+      }
     }
 
-    // If no valid sequence could be constructed after all attempts
-    printOutput(-1);
+    // Check if the arrangement forms a valid cycle.
+    if(animalArrangement[0x0] === animalArrangement[numAnimals] && animalArrangement[0x1] === animalArrangement[numAnimals + 0x1]){
+      animalArrangement.pop(); // Remove the last two elements (which are duplicates for cycle check)
+      animalArrangement.pop();
+      printResult(animalArrangement.join("")); // Output the valid arrangement
+      return; // Exit after finding the first valid solution
+    }
+  }
+
+  // If no valid arrangement is found after checking all initial configurations.
+  printResult(-0x1);
 }

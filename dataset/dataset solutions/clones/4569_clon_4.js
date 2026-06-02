@@ -1,70 +1,65 @@
-function ProcessRectangleData(incomingStream) {
-    const parsedLine = incomingStream.trim().split('\n')[0];
-    const dimensions = parsedLine.split(' ').reduce((accumulator, currentValue, index) => {
-        if (index === 0) accumulator.hVal = Number(currentValue);
-        else if (index === 1) accumulator.wVal = Number(currentValue);
-        return accumulator;
-    }, { hVal: 0, wVal: 0 });
+const processAndOutput = (rawData) => {
+    const [heightDimension, widthDimension] = rawData
+        .trim()
+        .split('\n')[0]
+        .split(' ')
+        .map(Number);
 
-    let initialHeight = dimensions.hVal;
-    let initialWidth = dimensions.wVal;
+    const finalResult = calculateAreaDifference(heightDimension, widthDimension);
+    console.log(finalResult);
+};
 
-    const finalDifference = CalculateOptimalSplit(initialHeight, initialWidth);
-
-    console.log(finalDifference);
-}
-
-function CalculateOptimalSplit(dimensionOne, dimensionTwo) {
-    if (!(dimensionOne % 3) || !(dimensionTwo % 3)) {
+const calculateAreaDifference = (primaryHeight, primaryWidth) => {
+    if (primaryHeight % 3 === 0 || primaryWidth % 3 === 0) {
         return 0;
     }
 
-    const computeFragmentDifference = (baseDimension, splitDimension, partitionPoint) => {
-        const primaryArea = partitionPoint * baseDimension;
-        const secondaryAreaUpper = (splitDimension - partitionPoint) * Math.ceil(baseDimension / 2);
-        const secondaryAreaLower = (splitDimension - partitionPoint) * Math.floor(baseDimension / 2);
+    let overallMinimalDifference = primaryHeight * primaryWidth;
 
-        const diffA_B = Math.abs(primaryArea - secondaryAreaUpper);
-        const diffA_C = Math.abs(primaryArea - secondaryAreaLower);
-        const diffB_C = Math.abs(secondaryAreaUpper - secondaryAreaLower);
+    const evaluateCuttingScheme = (hDimension, wDimension) => {
+        let currentSchemeMin = hDimension * wDimension;
+        let lastObservedDifference = Infinity;
 
-        return Math.max(diffA_B, diffA_C, diffB_C);
+        function* cutPositionGenerator(maxCutValue) {
+            for (let currentCut = 0; currentCut <= maxCutValue; currentCut++) {
+                const feedbackDifference = yield currentCut;
+                if (feedbackDifference !== undefined && feedbackDifference > lastObservedDifference) {
+                    return;
+                }
+                lastObservedDifference = feedbackDifference;
+            }
+        }
+
+        const cutIterator = cutPositionGenerator(wDimension);
+        let iterationState = cutIterator.next();
+
+        while (!iterationState.done) {
+            const currentCutPoint = iterationState.value;
+
+            const pieceOneArea = currentCutPoint * hDimension;
+            const remainingSegmentWidth = wDimension - currentCutPoint;
+            const pieceTwoArea = remainingSegmentWidth * Math.ceil(hDimension / 2);
+            const pieceThreeArea = remainingSegmentWidth * Math.floor(hDimension / 2);
+
+            const currentSchemeDifference = Math.max(
+                Math.abs(pieceOneArea - pieceTwoArea),
+                Math.abs(pieceOneArea - pieceThreeArea),
+                Math.abs(pieceTwoArea - pieceThreeArea)
+            );
+
+            currentSchemeMin = Math.min(currentSchemeMin, currentSchemeDifference);
+
+            iterationState = cutIterator.next(currentSchemeDifference);
+        }
+        return currentSchemeMin;
     };
 
-    let currentMinimumDelta = dimensionOne * dimensionTwo;
-    let previousIterationDelta = currentMinimumDelta + 1;
-    let currentIterationPosition = 0;
+    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateCuttingScheme(primaryHeight, primaryWidth));
+    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateCuttingScheme(primaryWidth, primaryHeight));
 
-    while (currentIterationPosition <= dimensionTwo) {
-        let calculatedDelta = computeFragmentDifference(dimensionOne, dimensionTwo, currentIterationPosition);
-        currentMinimumDelta = Math.min(currentMinimumDelta, calculatedDelta);
+    overallMinimalDifference = Math.min(overallMinimalDifference, primaryHeight, primaryWidth);
 
-        if (calculatedDelta > previousIterationDelta) {
-            break;
-        }
-        previousIterationDelta = calculatedDelta;
-        currentIterationPosition++;
-    }
+    return overallMinimalDifference;
+};
 
-    let temporaryHolder = dimensionOne;
-    dimensionOne = dimensionTwo;
-    dimensionTwo = temporaryHolder;
-
-    previousIterationDelta = dimensionOne * dimensionTwo + 1;
-    currentIterationPosition = 0;
-    
-    while (currentIterationPosition <= dimensionTwo) {
-        let calculatedDelta = computeFragmentDifference(dimensionOne, dimensionTwo, currentIterationPosition);
-        currentMinimumDelta = Math.min(currentMinimumDelta, calculatedDelta);
-
-        if (calculatedDelta > previousIterationDelta) {
-            break;
-        }
-        previousIterationDelta = calculatedDelta;
-        currentIterationPosition++;
-    }
-
-    return Math.min(currentMinimumDelta, dimensionOne, dimensionTwo);
-}
-
-ProcessRectangleData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

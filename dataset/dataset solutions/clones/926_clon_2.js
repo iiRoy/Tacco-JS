@@ -1,43 +1,19 @@
-/* This immediately invoked function expression (IIFE) serves as the primary entry point for the application. */
-(
-    function    executeProgram ( /* No arguments are passed to this initial function. */ )
-    {
-        // Obtain a reference to the Node.js built-in module loader.
-        const getModuleReference    =   require ;
+( function executeProgram ( ) {
+  // Obtain the numerical input from standard input.
+  const inputVal = Number(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-        // Acquire the 'fs' (file system) module for input operations.
-        const fileSystem    =   getModuleReference ( 'node:fs' ) ;
+  // Initialize a memoization array with pre-calculated Fibonacci numbers.
+  const memoStorage = [
+    1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144
+  ];
 
-        // Create an alias for the synchronous file reading function.
-        const readContentSync  =   fileSystem . readFileSync ;
+  // Define a function to compute Fibonacci numbers using memoization.
+  const calculateFibonacci = function calculateFibonacci (index) {
+    // If the value is already in memoStorage, return it.
+    // Otherwise, compute it recursively and store it before returning.
+    return memoStorage[index] || (memoStorage[index] = calculateFibonacci(index - 1) + calculateFibonacci(index - 2));
+  };
 
-        // Read the input value from a specified file path, converting it to an integer.
-        // The file path and text encoding are modified for extensive changes.
-        const inputVal    =    parseInt (
-            readContentSync ( '/app/entry_data.txt' ,   'ascii' )
-        ) ;
-
-        /*
-         *   A pre-populated array to store and retrieve computed Fibonacci numbers,
-         *   serving as a memoization table.
-         */
-        const memoizationArray  =   [ 1 , 1 , 2 , 3 , 5 , 8 , 13 , 21 , 34 , 55 , 89 , 144 ] ;
-
-
-        // Define the recursive Fibonacci calculation function.
-        const calcFibonacci =   function  recursiveFib ( indexValue )
-        {
-            // Check if the Fibonacci number for the current index is already memoized.
-            // If not, compute it by summing the previous two Fibonacci numbers,
-            // store it in the memoization array, and then return the result.
-            return  memoizationArray [ indexValue ]   ||
-                    ( memoizationArray [ indexValue ]   =   calcFibonacci ( indexValue - 1 )   +   calcFibonacci ( indexValue - 2 ) ) ;
-        } ;
-
-        // Use the global console object to display the final computed Fibonacci result.
-        // An alias is created for the console and its method for full identifier change.
-        const outputConsole    =    console ;
-        outputConsole . info ( calcFibonacci ( inputVal ) ) ;
-
-    }
-) ( ) ;
+  // Output the result of the Fibonacci calculation for the given input.
+  console.log(calculateFibonacci(inputVal));
+} ) ( );

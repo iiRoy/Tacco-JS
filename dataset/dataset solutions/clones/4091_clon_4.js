@@ -1,31 +1,35 @@
-const obtainInputData = new Promise(resolveInput => {
-    let collectedInput = '';
-    process.stdin.on('readable', () => {
-        let chunkPiece;
-        while ((chunkPiece = process.stdin.read()) !== null) {
-            collectedInput += chunkPiece.toString();
-        }
-    });
-    process.stdin.on('end', () => {
-        resolveInput(collectedInput);
-    });
+const inputProcessor = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-obtainInputData.then(fullText => {
-    const allTokens = fullText.trim().split(/\s+/);
+const collectedData = [];
 
-    const firstOperand = parseInt(allTokens[1], 10);
-    const secondOperand = parseInt(allTokens[2], 10);
+inputProcessor.on('line', (currentLine) => {
+    collectedData.push(currentLine);
+});
 
-    const calculatedValue = secondOperand - firstOperand - 1;
+const resolveOutcome = (operandOne, operandTwo) => {
+    const calculationResult = operandTwo - operandOne - 1;
+    const remainder = calculationResult % 2;
 
-    const outcomeSelector = new Map([
-        [1, () => process.stdout.write('Alice\n')],
-        [0, () => process.stdout.write('borys\n')]
-    ]);
+    const playerDispatch = {
+        '1': 'Alice',
+        '0': 'borys'
+    };
+    return playerDispatch[remainder];
+};
 
-    const handler = outcomeSelector.get(calculatedValue % 2);
-    if (handler) {
-        handler();
+inputProcessor.on('close', () => {
+    const primaryInputLine = collectedData[0];
+    const parts = primaryInputLine.split(' ');
+
+    const firstOperand = parseInt(parts[1], 10);
+    const secondOperand = parseInt(parts[2], 10);
+
+    const finalPlayerChoice = resolveOutcome(firstOperand, secondOperand);
+
+    if (finalPlayerChoice !== undefined) {
+        console.log(finalPlayerChoice);
     }
 });

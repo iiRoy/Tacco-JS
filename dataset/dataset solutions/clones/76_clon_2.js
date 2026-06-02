@@ -1,36 +1,31 @@
-let ioUtil = require ( 'fs' ) ;
+let fileSystemModule = require('fs');
 
+const processInputData = (inputString) => {
+  let numericArray = (inputString.trim()).split(" ").map(Number);
 
-const processInputContent = receivedContent => {
-  let numericalSequence = ( receivedContent . trim ( ) ) . split ( " " ) . map ( Number ) ;
-  numericalSequence . sort ( function ( elemA , elemB ) { return elemB - elemA ; } ) ;
-  console . log ( numericalSequence . join ( " " ) ) ;
+  numericArray.sort(function(valA, valB) {
+    return valB - valA;
+  });
+
+  console.log(numericArray.join(" "));
 };
 
+const processFileContent = (filePath) => {
+  fileSystemModule.readFile(filePath, 'utf8', (errorObject, fileContent) => {
+    processInputData(fileContent);
+  });
+};
 
-const loadInputFile = sourceLocation => {
-  ioUtil . readFile (
-    sourceLocation ,
-    'utf8' ,
-    ( operationError , fileData ) => {
-      processInputContent ( fileData ) ;
-    }
-  ) ;
-} ;
+const readStdinContent = () => {
+  const stdinContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  processInputData(stdinContent);
+};
 
+let inputSourcePath = "";
 
-const readStandardEntry = ( ) => {
-  const directInput = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-  processInputContent ( directInput ) ;
-} ;
-
-
-let entryPointSpecifier = "" ;
-
-if ( process . argv . length > 2 ) {
-  entryPointSpecifier = process . argv [ 2 ] ;
-  loadInputFile ( entryPointSpecifier ) ;
-}
-else {
-  readStandardEntry ( ) ;
+if (process.argv.length > 2) {
+  inputSourcePath = process.argv[2];
+  processFileContent(inputSourcePath);
+} else {
+  readStdinContent();
 }

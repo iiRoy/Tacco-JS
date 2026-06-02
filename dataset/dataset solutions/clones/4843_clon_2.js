@@ -1,84 +1,77 @@
-/*
- * This module handles the processing of incoming data.
- */
-function ProcessInput( rawData )
-{
-    // Split the raw input into individual lines for easier parsing.
-    let parsedLines = rawData.split( '\n' );
-    let resultValue; // This variable could hold a final outcome, though not used for direct assignment here.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  const parsedLines = rawData.split('\n');
+  let resultHolder; // This variable is declared but not used in the original logic.
 
-    // Extract numerical configuration from the first line.
-    const containerCount = parseInt( parsedLines[0].split(' ')[0] );
-    const maximumAllowed = parseInt( parsedLines[0].split(' ')[1] );
+  // Parse the first line to get container count and maximum allowed sweets per pair
+  const firstLineParts = parsedLines[0].split(' ');
+  const numContainers = parseInt(firstLineParts[0], 10); // Number of containers (not directly used in logic)
+  const maxAllowedSweets = parseInt(firstLineParts[1], 10); // Maximum sweets allowed for two adjacent containers
 
-    // Parse the list of sweet items from the second line.
-    let sweetItems = parsedLines[1].split(' ');
+  // Parse the second line to get the initial sweet counts in each container
+  let sweetItems = parsedLines[1].split(' ');
+  let consumedTotal = 0; // Accumulator for the total number of sweets eaten
 
-    let removedQuantity = 0; // Initialize a counter for items removed.
+  // Convert sweet counts from strings to integers
+  sweetItems = sweetItems.map((itemStr) => parseInt(itemStr, 10));
 
-    // Convert all sweet item strings to integers.
-    sweetItems = sweetItems.map( ( itemString ) => parseInt( itemString ) );
-
-
-    /*
-     * This function reduces the quantity of sweet items in adjacent containers
-     * based on a calculated excess amount.
-     * @param {Array<number>} adjacentIndices - An array containing two indices [idx1, idx2]
-     * @param {number} excessAmount - The amount of items to be removed.
-     */
-    function reduceExcess( adjacentIndices , excessAmount ) {
-        // If the excess can be entirely removed from the second container...
-        if ( excessAmount <= sweetItems[adjacentIndices[1]] )
-        {
-            removedQuantity += excessAmount;
-            sweetItems[adjacentIndices[1]] -= excessAmount;
-        }
-        else
-        {
-            // Otherwise, remove all from the second, then the remainder from the first.
-            removedQuantity += excessAmount;
-            excessAmount -= sweetItems[adjacentIndices[1]];
-            sweetItems[adjacentIndices[1]] = 0;
-            sweetItems[adjacentIndices[0]] -= excessAmount;
-        }
+  /**
+   * Function to simulate eating sweets from containers based on an excess amount.
+   * @param {number[]} containerIndices - An array containing the indices of the two adjacent containers.
+   * @param {number} excessAmount - The amount of sweets to be removed.
+   */
+  function consumeSweets(containerIndices, excessAmount) {
+    // If the excess can be fully removed from the second container
+    if (excessAmount <= sweetItems[containerIndices[1]]) {
+      consumedTotal += excessAmount;
+      sweetItems[containerIndices[1]] -= excessAmount;
+    } else {
+      // If the excess is more than what's in the second container
+      consumedTotal += excessAmount; // Add the full excess to the total consumed
+      excessAmount -= sweetItems[containerIndices[1]]; // Reduce excess by what was in the second container
+      sweetItems[containerIndices[1]] = 0; // Second container is now empty
+      sweetItems[containerIndices[0]] -= excessAmount; // Remove remaining excess from the first container
     }
+  }
 
-    /*
-     * Computes the sum of sweet items in two specified containers.
-     * @param {Array<number>} pairOfPositions - An array with two indices.
-     * @returns {number} The total count of items in the specified pair.
-     */
-    function calculateCombinedValue( pairOfPositions ) {
-        return sweetItems[pairOfPositions[0]] + sweetItems[pairOfPositions[1]];
+  /**
+   * Calculates the sum of sweets in two specified containers.
+   * @param {number[]} containerIndices - An array containing the indices of the two adjacent containers.
+   * @returns {number} The total number of sweets in the two containers.
+   */
+  function calculateCombinedSweets(containerIndices) {
+    return sweetItems[containerIndices[0]] + sweetItems[containerIndices[1]];
+  }
+
+  /**
+   * Iterates through adjacent pairs of containers and adjusts sweet counts if they exceed the maximum.
+   * @param {number[]} currentSweetsArray - The array representing sweet counts in containers.
+   */
+  function evaluateContainers(currentSweetsArray) {
+    let containerIndices; // Holds the indices of the current pair of containers
+
+    // Loop through all adjacent pairs of containers
+    for (let idx = 0; idx < (currentSweetsArray.length - 1); idx++) {
+      let excessAmount; // The amount of sweets exceeding the maximum allowed
+      containerIndices = [idx, idx + 1]; // Define the current pair of indices
+
+      // Calculate the excess amount for the current pair
+      excessAmount = calculateCombinedSweets(containerIndices) - maxAllowedSweets;
+
+      // If there's an excess, call the consumeSweets function
+      if (excessAmount > 0) {
+        consumeSweets(containerIndices, excessAmount);
+      }
     }
+  }
 
-    /*
-     * Iterates through adjacent pairs of containers to identify and
-     * remove any items exceeding the maximum allowed limit.
-     * @param {Array<number>} itemCollection - The array of sweet item counts.
-     */
-    function examineContainers( itemCollection ) {
-        let currentPair; // Stores the indices of the currently examined pair.
+  // Execute the main logic to evaluate and adjust sweets in containers
+  evaluateContainers(sweetItems);
 
-        for ( let counter = 0; counter < ( itemCollection.length - 1 ); counter++ ) {
-            let currentExcess; // The amount of items to remove for the current pair.
-            currentPair = [ counter, counter + 1 ];
-            currentExcess = calculateCombinedValue( currentPair ) - maximumAllowed;
-
-            // If an excess is found, proceed to remove it.
-            if ( currentExcess > 0 )
-            {
-                reduceExcess( currentPair, currentExcess );
-            }
-        }
-    }
-
-    // Begin the process of checking and adjusting container contents.
-    examineContainers( sweetItems );
-
-
-    // Output the final tally of removed items.
-    console.log(removedQuantity);
+  // Output the total number of sweets consumed
+  console.log(consumedTotal);
 }
-// This line below is for standard input/output handling and should not be modified.
+
+// This part handles reading input from standard input and calling the main processing function.
+// It should not be modified as it's part of the execution environment.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

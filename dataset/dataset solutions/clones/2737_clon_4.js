@@ -1,38 +1,33 @@
-const transformProcessor = (linesOfInput) => {
-    const elementCount = Number.parseInt(linesOfInput[0]);
-    const baseValues = linesOfInput[1].split(' ').map(Number.parseInt);
+"use strict";
 
-    const finalValueArray = Array(elementCount);
+const inputString = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+const inputLines = inputString.split('\n');
+const dataSize = parseInt(inputLines[0]);
+const initialValues = inputLines[1].split(' ').map(Number);
 
-    const computeCurrentItem = (indexPosition) => {
-        if (indexPosition < 0) {
-            return;
-        }
+const processedElementStates = new Map(initialValues.map((val, idx) => [idx, val]));
 
-        let currentDataItem = baseValues[indexPosition];
-        const currentDivisorCheck = indexPosition + 1;
+Array.from({ length: dataSize }, (_, k) => dataSize - k).forEach(currentOneBasedIndex => {
+    const xorSumOfMultiples = Array.from(
+        { length: Math.floor(dataSize / currentOneBasedIndex) - 1 },
+        (_, k) => (k + 2) * currentOneBasedIndex
+    ).reduce((accumulator, multipleOneBasedIndex) => {
+        return accumulator ^ processedElementStates.get(multipleOneBasedIndex - 1);
+    }, 0);
 
-        const xorContributions = Array.from({ length: elementCount - (indexPosition + 1) }, (_, offset) => offset + indexPosition + 1)
-            .filter(subsequentPosition => (subsequentPosition + 1) % currentDivisorCheck === 0)
-            .reduce((accumulator, subsequentPosition) => accumulator ^ finalValueArray[subsequentPosition], 0);
+    const currentZeroBasedIndex = currentOneBasedIndex - 1;
+    processedElementStates.set(
+        currentZeroBasedIndex,
+        processedElementStates.get(currentZeroBasedIndex) ^ xorSumOfMultiples
+    );
+});
 
-        finalValueArray[indexPosition] = currentDataItem ^ xorContributions;
+const finalValuesArray = Array.from(processedElementStates.values());
 
-        computeCurrentItem(indexPosition - 1);
-    };
+const onesCollection = finalValuesArray.filter(val => val === 1);
 
-    computeCurrentItem(elementCount - 1);
+console.log(onesCollection.length);
 
-    return finalValueArray;
-};
-
-const inputSource = require('fs').readFileSync('/dev/stdin', 'UTF-8').split('\n');
-const processedResults = transformProcessor(inputSource);
-
-const activeOnes = processedResults.filter(val => val === 1);
-const countActive = activeOnes.length;
-
-console.log(countActive);
-if (countActive > 0) {
-    console.log(activeOnes.join(' '));
+if (onesCollection.length > 0) {
+    console.log(onesCollection.join(' '));
 }

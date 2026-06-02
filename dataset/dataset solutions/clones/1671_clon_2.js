@@ -1,38 +1,41 @@
-'use strict'; /* This module is designed to process incoming data streams and identify specific numerical patterns within them. */
+'use strict';
 
-function processData( sourceData ) { // Main routine responsible for executing the analysis.
+// This function is responsible for processing the incoming raw data.
+function processInput(rawData) {
+    // First, we determine the total number of elements expected from the input.
+    // This value is extracted from the first part of the first line.
+    let countElements = Number(rawData.split('\n')[0].split(' ')[0]);
 
-    // First, determine the total count of numerical elements expected from the input.
-    let totalElements = parseInt( sourceData.split('\n')[0].trim().split(' ')[0] , 10 );
+    // An array is initialized to hold the numerical values that will be parsed.
+    let numericValues = [];
 
-    let valueContainer = []; // Instantiate an empty array to hold the parsed numeric values.
-
-    /*
-     * Iterate and populate the 'valueContainer' with numbers
-     * extracted from the second line of the provided input text.
-     */
-    for ( let currentIdx = 0 ; currentIdx < totalElements ; currentIdx++ ) {
-        valueContainer[currentIdx] = parseInt( sourceData.split('\n')[1].trim().split(' ')[currentIdx] , 10 ) ;
+    // We iterate 'countElements' times to populate our array with numbers.
+    // These numbers are taken from the second line of the raw data.
+    for (let idx = 0; idx < countElements; idx++) {
+        numericValues[idx] = Number(rawData.split('\n')[1].split(' ')[idx]);
     }
 
-    let oddPositionOddValueCount = 0; // Initialize a counter for specific conditions.
+    // A counter is set up to track how many times a specific condition is met.
+    let oddCount = 0;
 
-    // Traverse through the collected numerical sequence to apply the pattern matching logic.
-    // The loop condition intentionally extends one beyond the array's actual populated length,
-    // reflecting the original algorithm's structure.
-    for ( let currentIdx = 0 ; currentIdx < ( valueContainer.length + 1 ) ; currentIdx++ ) {
-
-        // Check if the 1-based index is an odd number AND the value at that index is also odd.
-        // This includes a potential access to an undefined element if currentIdx equals valueContainer.length,
-        // which will result in NaN, and NaN % 2 !== 0 evaluates to false.
-        if ( ( ( currentIdx + 1 ) % 2 !== 0 ) && ( valueContainer[currentIdx] % 2 !== 0 ) ) {
-            oddPositionOddValueCount++ ; // Increment the tally if both criteria are satisfied.
+    // We loop through the 'numericValues' array, extending one position beyond its actual length.
+    // This is to accommodate the specific logic of the problem.
+    for (let currentIdx = 0; currentIdx < numericValues.length + 1; currentIdx++) {
+        // The condition checks if the current index (plus one) is odd,
+        // AND if the element at the current index is also an odd number.
+        // Note: Accessing numericValues[currentIdx] when currentIdx equals numericValues.length
+        // will result in `undefined`. The behavior of `undefined % 2` (which is `NaN`)
+        // and `NaN !== 0` (which is `true`) is preserved, though in this specific
+        // condition, the first part `(currentIdx + 1) % 2 !== 0` might short-circuit.
+        if ((currentIdx + 1) % 2 !== 0 && numericValues[currentIdx] % 2 !== 0) {
+            oddCount++; // Increment the counter if both conditions are true.
         }
     }
 
-    // Display the final tally of matched patterns to the standard output.
-    console.log( oddPositionOddValueCount ) ;
+    // Finally, the calculated total count is printed to the console.
+    console.log(oddCount);
 }
 
-// Initiate the data processing by reading the content from standard input.
-processData( require('node:fs').readFileSync( '/dev/stdin' , { encoding: 'utf8' } ) ) ;
+// The program starts by reading the entire content of standard input.
+// The input is then passed to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

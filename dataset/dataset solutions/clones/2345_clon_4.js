@@ -1,19 +1,14 @@
-const computeDifference = (subjectText) => {
-  const characters = Array.from(subjectText);
-  const halfPoint = Math.floor(characters.length / 2);
+function processInput(sourceData) {
+  const primaryString = sourceData[0];
+  const stringLength = primaryString.length;
 
-  const totalDivergence = Array.from({ length: halfPoint }).reduce((accumulator, _, currentIdx) => {
-    const frontChar = characters[currentIdx];
-    const backChar = characters[characters.length - 1 - currentIdx];
-    return accumulator + (frontChar !== backChar ? 1 : 0);
+  const differenceCount = Array.from({ length: Math.floor(stringLength / 2) }).reduce((currentTally, _, charIndex) => {
+    const frontChar = primaryString[charIndex];
+    const backChar = primaryString[stringLength - 1 - charIndex];
+    return currentTally + (frontChar !== backChar ? 1 : 0);
   }, 0);
 
-  return totalDivergence;
-};
+  console.log(differenceCount);
+}
 
-const initiateOperation = (rawInputLines) => {
-  const primaryString = rawInputLines[0];
-  console.log(computeDifference(primaryString));
-};
-
-initiateOperation(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

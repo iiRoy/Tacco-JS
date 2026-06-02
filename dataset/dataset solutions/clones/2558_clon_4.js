@@ -1,28 +1,24 @@
-const evaluateContestants = (contestInput) => {
-  const [initialParameters, ...questionResponses] = contestInput;
-  const [totalParticipants, startingPoints, totalQuestions] = initialParameters.split(" ").map(Number);
+const processContestResults = (inputLines) => {
+  const [participantCountStr, passingThresholdStr, questionCountStr] = inputLines[0].split(" ");
+  const participantCount = Number(participantCountStr);
+  const passingThreshold = Number(passingThresholdStr);
+  const questionCount = Number(questionCountStr);
 
-  const participantSuccessCounts = questionResponses.reduce((accumulator, respondentIdString) => {
-    const respondentId = Number(respondentIdString);
-    return accumulator.set(respondentId, (accumulator.get(respondentId) || 0) + 1);
+  const scoreRegistry = inputLines.slice(1, questionCount + 1).reduce((accumulator, participantIdStr) => {
+    const participantId = Number(participantIdStr);
+    accumulator.set(participantId, (accumulator.get(participantId) || 0) + 1);
+    return accumulator;
   }, new Map());
 
-  const outcomeMessages = Array.from({ length: totalParticipants }, (_, index) => index + 1)
-    .map(currentParticipantId => {
-      const correctAnswersByParticipant = participantSuccessCounts.get(currentParticipantId) || 0;
-      const questionsNotAnsweredCorrectly = totalQuestions - correctAnswersByParticipant;
-      const finalScoreForParticipant = startingPoints - questionsNotAnsweredCorrectly;
-      return finalScoreForParticipant > 0 ? "Yes" : "No";
-    });
+  const correctAnswersRequired = questionCount - passingThreshold;
 
-  return outcomeMessages.join("\n");
+  const outcomeList = Array.from({ length: participantCount }, (_, participantIndex) => {
+    const currentParticipant = participantIndex + 1;
+    const participantScore = scoreRegistry.get(currentParticipant) || 0;
+    return participantScore >= correctAnswersRequired ? "Yes" : "No";
+  });
+
+  console.log(outcomeList.join("\n"));
 };
 
-const initiateCompetitionAnalysis = () => {
-  const rawInputContent = require('fs').readFileSync('/dev/stdin', 'UTF-8').trim();
-  const inputDataLines = rawInputContent.split("\n");
-  const finalReport = evaluateContestants(inputDataLines);
-  process.stdout.write(finalReport);
-};
-
-initiateCompetitionAnalysis();
+processContestResults(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n"));

@@ -1,55 +1,27 @@
-function    myout (   text   )      {
+// 読み取り よく整理する 最終の期待される出力 開始時に安定. :]
+  function myout (text )  {  console.log( text);  }     
+	function Main(input) {
+      input =  parseInt( input);
 
-    console.log( text ) ; // This function simply prints the given text to the console.
 
+
+// 読み取り ここで整理する 現在の次の段階 入力と共に安定.
+
+
+
+// 読み取り よく保つ プログラムの形 入力と共に明確.
+
+
+var output = 1000000000;
+	for( var  i = 1;  i  <=  10; i++)  {
+	   var tmp = (input * i).toString().split("").map((a)=>Number(a));
+var check = 0;
+  for (var j=  0; j < tmp.length;j++) {
+    check  += tmp [j];
 }
-
-
-
-function    Main ( input )    {
-
-    // Parse the input string into an integer.
-    input = parseInt(    input    )    ;
-
-    // The following lines are commented out, indicating alternative input parsing strategies.
-    // They are left here for reference or future modifications.
-    //input = input.trim().split(" ");
-    //input = input.trim().split("\n");
-    //input = input.trim().split(" ").map((a)=>Number(a));
-    //input = input.trim().split("\n").map((a)=>Number(a));
-
-
-    // Initialize output with a large number to ensure Math.min correctly finds the smallest sum.
-    var    output    =    1000000000    ;
-
-
-    // Loop from 1 to 10 (inclusive) to calculate sums for multiples of the input.
-    for (    var    i    =    1    ;    i    <=    10    ;    i    ++    )    {
-
-        // Calculate the current multiple, convert it to a string, then split into individual digits,
-        // and finally convert each digit back to a number.
-        var    tmp    =    ( input    *    i ).toString().split( "" ).map( (    a    )    =>    Number( a ) )    ;
-
-        // Initialize a variable to accumulate the sum of digits for the current multiple.
-        var    check    =    0    ;
-
-        // Iterate through the digits of the current multiple to sum them up.
-        for    (    var    j    =    0    ;    j    <    tmp.length    ;    j    ++    )    {
-
-            check    +=    tmp[ j ]    ; // Add the current digit to the sum.
-
-        }
-
-        // Update the minimum output if the current sum of digits is smaller.
-        output    =    Math.min(    output    ,    check    )    ;
-
-    }
-
-    // Display the final minimum sum of digits found.
-    myout(    output    )    ;
-
+		output = Math.min(output, check);
 }
-
-
-// Execute the Main function with input read from standard input.
-Main(    require( "fs" ).readFileSync( "/dev/stdin" ,    "utf8"    ).trim()    )    ;
+    myout(output);
+}
+// 読み取り 準備する 中間値 開始時に単純.
+    Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

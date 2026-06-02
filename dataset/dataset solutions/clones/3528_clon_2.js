@@ -1,29 +1,41 @@
-function BattleSimulation(inputContent) {
+function ProcessInput(inputData) {
+  // This function processes the raw input string to determine a conflict outcome.
 
- inputContent = inputContent
-  .split('\n')
-  .map( lineStr => lineStr
-   .split(' ')
-   .map( numStr => parseInt(numStr, 10) )
-  );
+  // First, split the input by newlines, then each line by spaces,
+  // and finally parse all resulting string segments into integers.
+  let parsedLines = inputData
+    .split('\n')
+    .map( (lineSegment) => lineSegment.split(' ').map( (numericString) => parseInt(numericString, 10) ) );
 
- let [ , , worldX, worldY ] = inputContent[0];
- let armyXPositions = inputContent[1] , armyYPositions = inputContent[2];
+  // Extract specific coordinate values from the first processed line.
+  // The first two elements are ignored as per the original logic.
+  let [ , , capitalXCoord, capitalYCoord] = parsedLines[0];
 
- armyXPositions.push(worldX);
- armyYPositions.push(worldY);
+  // Assign the arrays of x and y coordinates from the second and third lines.
+  let xCoordinates = parsedLines[1];
+  let yCoordinates = parsedLines[2];
 
- if ( armyXPositions
-  .reduce( (currentMax, nextVal) => Math.max(currentMax, nextVal) )
-  < armyYPositions
-  .reduce( (currentMin, nextVal) => Math.min(currentMin, nextVal) )
- )
-  console.log('No War');
- else
-  console.log('War');
+  // Append the extracted capital coordinates to their respective arrays.
+  xCoordinates.push(capitalXCoord);
+  yCoordinates.push(capitalYCoord);
+
+  // Calculate the maximum value within the xCoordinates array.
+  // The 'reduce' method iterates through the array to find the highest number.
+  let maximumX = xCoordinates.reduce((currentMax, elementValue) => Math.max(currentMax, elementValue));
+
+  // Calculate the minimum value within the yCoordinates array.
+  // The 'reduce' method iterates through the array to find the lowest number.
+  let minimumY = yCoordinates.reduce((currentMin, elementValue) => Math.min(currentMin, elementValue));
+
+  // Compare the maximum x-coordinate with the minimum y-coordinate
+  // to decide the outcome.
+  if (maximumX < minimumY) {
+    console.log('No War'); // Output for a peaceful resolution.
+  } else {
+    console.log('War'); // Output for a conflict scenario.
+  }
 }
 
-BattleSimulation(
- require('fs')
-  .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of the standard input file synchronously
+// and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

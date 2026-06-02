@@ -1,60 +1,75 @@
+// This function processes the raw input data to determine a specific value.
 function ProcessInput(rawData) {
-  // Split the entire input into individual lines
-  const lines = rawData.split("\n");
+  // Split the entire input string into an array of individual lines.
+  let lines = rawData.split("\n");
 
-  // Parse the first line to extract numerical parameters
-  const firstLineParts = lines[0].split(" ");
-  let val1 = parseInt(firstLineParts[0], 10);
-  let val2 = parseInt(firstLineParts[1], 10);
+  // The first line contains two space-separated numbers.
+  let firstLineParts = lines[0].split(" ");
 
-  // Retrieve the two main strings from the input
-  const stringOne = lines[1];
-  const stringTwo = lines[2];
+  // Convert the string parts to numeric values.
+  let num1 = Number(firstLineParts[0]);
+  let num2 = Number(firstLineParts[1]);
 
-  // Calculate the Least Common Multiple (LCM) using the GCD function
-  const leastCommonMultiple = (val1 * val2) / CalculateCommonDivisor(val2, val1);
+  // The second line is the first string.
+  let strA = lines[1];
+  // The third line is the second string.
+  let strB = lines[2];
 
-  // Initialize accumulators for characters extracted from the strings
-  let accumulatorA = "";
-  let accumulatorB = "";
+  // Calculate the least common multiple (LCM) of num1 and num2.
+  // LCM(a, b) = (a * b) / GCD(a, b)
+  let leastCommonMultiple = (num1 * num2) / calculateGCD(num2, num1);
 
-  // This variable holds some auxiliary data, maintaining statement count
-  const diagnosticMessage = `Computed LCM value: ${leastCommonMultiple}\n`;
+  // Initialize two empty strings to store extracted characters.
+  let extractedA = String();
+  let extractedB = "";
 
-  // Extract characters from the first string based on a calculated step
-  for (let loopIndex = 0; loopIndex < val1; loopIndex += (leastCommonMultiple / val2)) {
-    accumulatorA += stringOne[loopIndex];
+  // This variable appears to be unused but is kept for structural consistency.
+  let tempString = "" + leastCommonMultiple + "\n\n";
+
+  // Iterate through the first string, extracting characters at specific intervals.
+  // The interval is LCM / num2.
+  for (let idx = 0; idx < num1; idx += (leastCommonMultiple / num2)) {
+    extractedA += strA[idx];
   }
 
-  // Extract characters from the second string based on another calculated step
-  for (let loopIndex = 0; loopIndex < val2; loopIndex += (leastCommonMultiple / val1)) {
-    accumulatorB += stringTwo[loopIndex];
+  // Iterate through the second string, extracting characters at specific intervals.
+  // The interval is LCM / num1.
+  for (let idx = 0; idx < num2; idx += (leastCommonMultiple / num1)) {
+    extractedB += strB[idx];
   }
 
-  // Compare the accumulated strings and return the LCM or -1
-  return accumulatorA === accumulatorB ? leastCommonMultiple : -1;
+  // Compare the two extracted strings.
+  // If they are identical, return the calculated LCM. Otherwise, return -1.
+  return extractedA === extractedB ? leastCommonMultiple : -0x1;
 }
 
-function CalculateCommonDivisor(firstNum, secondNum) {
-  // Variable to hold the remainder in the Euclidean algorithm
-  let remainder;
+/**
+ * Computes the greatest common divisor (GCD) of two non-negative integers
+ * using the Euclidean algorithm.
+ * @param {number} val1 - The first integer.
+ * @param {number} val2 - The second integer.
+ * @returns {number} The greatest common divisor.
+ */
+function calculateGCD(val1, val2) {
+  let remainder; // Variable to hold the remainder in division.
 
-  // Ensure firstNum is greater than or equal to secondNum for consistent calculation
-  if (firstNum < secondNum) {
-    let tempHolder = firstNum; // Temporary storage for swapping
-    firstNum = secondNum;
-    secondNum = tempHolder;
+  // Ensure that val1 is greater than or equal to val2 for the algorithm.
+  if (val1 < val2) {
+    remainder = val1; // Temporarily store val1.
+    val1 = val2;
+    val2 = remainder;
   }
 
-  // Apply the Euclidean algorithm to find the greatest common divisor
-  while ((remainder = firstNum % secondNum) !== 0) {
-    firstNum = secondNum;
-    secondNum = remainder;
+  // Apply the Euclidean algorithm.
+  // The GCD is the last non-zero remainder.
+  while ((remainder = val1 % val2) !== 0x0) {
+    val1 = val2;
+    val2 = remainder;
   }
 
-  // The GCD is the last non-zero remainder (or the value of secondNum at loop exit)
-  return secondNum;
+  // When the loop terminates, val2 holds the GCD.
+  return val2;
 }
 
-// Read input from standard input and pass it to the main processing function
+// Read input from standard input, process it, and print the result to standard output.
 console.log(ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8")));

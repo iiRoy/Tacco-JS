@@ -1,67 +1,51 @@
-/* This JavaScript segment processes multiple numerical inputs, applying
- * a specific calculation involving denominations or change from a total. */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var  sourceContent = require('fs')
-    . readFileSync(
-        '/dev/stdin',  /* Specifies the standard input file path */
-        'utf8'         /* Sets the character encoding for file reading */
-    ) ;
+// Process the raw input: trim whitespace, split by newlines, and convert each part to a number.
+var numericValues = (rawData.trim()).split("\n").map(Number);
 
+// Iterate through each numerical entry in the processed array.
+for (var idx = 0; idx < numericValues.length; idx++) {
+    // Get the current amount from the array for processing.
+    var currentAmount = numericValues[idx];
 
-// Transform the raw input string into an array of numeric values.
-// First, whitespace is trimmed, then the string is split by newlines,
-// and finally, each resulting string element is converted to a number.
-var  numericDataset = (sourceContent.trim())
-    . split("\n")
-    . map(Number) ;
+    // Initialize a counter for the total number of coins/bills.
+    var totalCoins = 0;
 
-
-/* Initiate a loop to process each individual numerical entry within the dataset. */
-for (
-    var  entryIndex = 0 ;
-    entryIndex < numericDataset.length ;
-    entryIndex++
-) {
-    // Fetch the current numerical entry to be processed in this iteration.
-    var  currentNumericValue = numericDataset[entryIndex] ;
-    var  tallyCounter = 0 ;  // Initialize a counter for the computed items.
-
-    // If the current value is zero, it signifies an end condition,
-    // so the processing loop is exited prematurely.
-    if (currentNumericValue == 0) {
-        break ;
+    // If the current amount is zero, it signifies the end of input, so break the loop.
+    if (currentAmount === 0) {
+        break;
     }
 
-    // Adjust the current numeric value by subtracting it from a fixed base (1000).
-    currentNumericValue = 1000 - currentNumericValue ;
+    // Calculate the change needed from 1000.
+    currentAmount = 1000 - currentAmount;
 
-    // Check if the adjusted value is large enough to include a 500-unit item.
-    if (currentNumericValue >= 500) {
-        tallyCounter++ ;         // Increment the counter.
-        currentNumericValue -= 500 ; // Reduce the value by 500.
+    // Check for 500-unit denominations.
+    if (currentAmount >= 500) {
+        totalCoins++;
+        currentAmount = currentAmount - 500;
     }
 
-    // Add the count of 100-unit items that can be extracted from the remaining value.
-    tallyCounter += Math.floor(currentNumericValue / 100) ;
-    currentNumericValue %= 100 ; // Update the value to its remainder after 100s.
+    // Add the count of 100-unit denominations.
+    totalCoins += Math.floor(currentAmount / 100);
+    currentAmount = currentAmount % 100; // Update remaining amount.
 
-    // Check if the remaining value is large enough to include a 50-unit item.
-    if (currentNumericValue >= 50) {
-        tallyCounter++ ;         // Increment the counter.
-        currentNumericValue -= 50 ;  // Reduce the value by 50.
+    // Check for 50-unit denominations.
+    if (currentAmount >= 50) {
+        totalCoins++;
+        currentAmount = currentAmount - 50;
     }
 
-    // Add the count of 10-unit items from the current remainder.
-    tallyCounter += Math.floor(currentNumericValue / 10) ;
-    currentNumericValue %= 10 ; // Update the value to its remainder after 10s.
+    // Add the count of 10-unit denominations.
+    totalCoins += Math.floor(currentAmount / 10);
+    currentAmount = currentAmount % 10; // Update remaining amount.
 
-    // Check if the remaining value is large enough to include a 5-unit item.
-    if (currentNumericValue >= 5) {
-        tallyCounter++ ;         // Increment the counter.
-        currentNumericValue -= 5 ;   // Reduce the value by 5.
+    // Check for 5-unit denominations.
+    if (currentAmount >= 5) {
+        totalCoins++;
+        currentAmount = currentAmount - 5;
     }
 
-    // Output the final result, which is the sum of the tallied items
-    // and any remaining fractional value.
-    console.log(tallyCounter + currentNumericValue) ;
+    // The remaining 'currentAmount' represents 1-unit denominations.
+    // Add these to the total count and print the final sum for the current input.
+    console.log(totalCoins + currentAmount);
 }

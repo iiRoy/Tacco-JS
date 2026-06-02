@@ -1,44 +1,46 @@
 'use strict';
 
-function processEventLog(rawData) {
-    const inputLines = rawData.trim().split('\n');
-    const eventCount = Number(inputLines[0]);
-    const penaltyFactors = inputLines[1].split(' ').map(Number);
-    const performanceScores = inputLines.slice(2, 2 + eventCount).map(line => line.split(' ').map(Number));
-    const scheduledEvents = inputLines.slice(-1 * eventCount).map(Number);
+function ProcessContestData(rawData) {
+    const parsedLines = rawData.trim().split('\n');
+    const totalDays = Number(parsedLines[0]);
+    const penaltyCoefficients = parsedLines[1].split(' ').map(Number);
+    const satisfactionMatrix = parsedLines
+        .slice(2, 2 + totalDays)
+        .map((line) => line.split(' ').map(Number));
+    const dailySchedule = parsedLines.slice(-1 * totalDays).map(Number);
 
-    const initialStatus = {
-        totalAccumulatedValue: 0,
-        lastKnownOccurrences: Array(penaltyFactors.length).fill(0)
+    const initialProcessingState = {
+        overallSatisfaction: 0,
+        lastOccurrenceDates: Array(26).fill(0),
     };
 
-    const finalReport = Array.from({ length: eventCount }, (_, dayOffset) => dayOffset + 1)
-        .reduce((currentAggregate, currentDayNumber) => {
-            const designatedEventCategory = scheduledEvents[currentDayNumber - 1] - 1;
+    Array.from({ length: totalDays }, (_, dayIndex) => dayIndex + 1)
+        .reduce((currentProcessingState, currentDayNumber) => {
+            const { overallSatisfaction: previousOverallSatisfaction, lastOccurrenceDates: previousLastOccurrenceDates } = currentProcessingState;
 
-            const updatedLastKnownOccurrences = [...currentAggregate.lastKnownOccurrences];
-            updatedLastKnownOccurrences[designatedEventCategory] = currentDayNumber;
+            const scheduledContestType = dailySchedule[currentDayNumber - 1] - 1;
 
-            const dailyValuations = Array.from({ length: penaltyFactors.length }, (_, categoryIndex) => {
-                const lastAppearanceDay = updatedLastKnownOccurrences[categoryIndex];
-                if (lastAppearanceDay === currentDayNumber) {
-                    return performanceScores[currentDayNumber - 1][categoryIndex];
-                } else {
-                    return penaltyFactors[categoryIndex] * (currentDayNumber - lastAppearanceDay) * -1;
-                }
+            const updatedLastOccurrenceDates = [...previousLastOccurrenceDates];
+            updatedLastOccurrenceDates[scheduledContestType] = currentDayNumber;
+
+            const dailyContributionsPerContest = Array.from({ length: 26 }, (_, contestTypeIndex) => {
+                const lastHeldDayForType = updatedLastOccurrenceDates[contestTypeIndex];
+                return (lastHeldDayForType === currentDayNumber)
+                    ? satisfactionMatrix[currentDayNumber - 1][contestTypeIndex]
+                    : penaltyCoefficients[contestTypeIndex] * (currentDayNumber - lastHeldDayForType) * -1;
             });
 
-            const sumForThisDay = dailyValuations.reduce((sum, value) => sum + value, 0);
+            const currentDayTotalContribution = dailyContributionsPerContest.reduce((sum, contribution) => sum + contribution, 0);
 
-            const newTotalAccumulatedValue = currentAggregate.totalAccumulatedValue + sumForThisDay;
+            const newOverallSatisfaction = previousOverallSatisfaction + currentDayTotalContribution;
 
-            console.log(String(newTotalAccumulatedValue));
+            console.log(String(newOverallSatisfaction));
 
             return {
-                totalAccumulatedValue: newTotalAccumulatedValue,
-                lastKnownOccurrences: updatedLastKnownOccurrences
+                overallSatisfaction: newOverallSatisfaction,
+                lastOccurrenceDates: updatedLastOccurrenceDates,
             };
-        }, initialStatus);
+        }, initialProcessingState);
 }
 
-processEventLog(require('fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessContestData(require('fs').readFileSync('/dev/stdin', 'utf8'));

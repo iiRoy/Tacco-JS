@@ -1,73 +1,82 @@
-const createInputProcessor = (rawData) => {
-    let currentPosition = 0;
-    const processedTokens = rawData
-        .replace(/[\r\n\t]+/g, ' ')
-        .replace(/ +/g, ' ')
-        .trim()
-        .split(' ');
+function createInputProcessor(sourceText) {
+    const tokenList = sourceText.match(/\S+/g) || [];
+    let currentTokenIndex = 0;
 
     const retrieveNextToken = () => {
-        if (currentPosition < processedTokens.length) {
-            return processedTokens[currentPosition++];
+        if (currentTokenIndex < tokenList.length) {
+            return tokenList[currentTokenIndex++];
         }
         return null;
     };
 
-    return {
-        obtainNextString: () => retrieveNextToken(),
-        obtainNextInteger: () => {
-            const token = retrieveNextToken();
-            return token !== null ? parseInt(token, 10) : null;
-        },
-        obtainNextDecimal: () => {
-            const token = retrieveNextToken();
-            return token !== null ? parseFloat(token) : null;
-        },
-        obtainNextBytes: () => {
-            const token = retrieveNextToken();
-            if (token === null) return null;
-            const charCodes = Array.from(token).map(char => char.charCodeAt(0));
-            return new Int8Array(charCodes);
-        }
+    const retrieveNextInteger = () => {
+        const tokenValue = retrieveNextToken();
+        return tokenValue !== null ? parseInt(tokenValue, 10) : null;
     };
-};
 
-const mainExecution = (sourceData) => {
-    const inputParser = createInputProcessor(sourceData);
+    const retrieveNextDecimal = () => {
+        const tokenValue = retrieveNextToken();
+        return tokenValue !== null ? parseFloat(tokenValue) : null;
+    };
+    
+    const retrieveNextByte = () => {
+        const tokenValue = retrieveNextToken();
+        return tokenValue !== null ? new Int8Array(tokenValue.length) : null;
+    };
 
-    const limitN = inputParser.obtainNextInteger();
-    const limitM = inputParser.obtainNextInteger();
-    const countQ = inputParser.obtainNextInteger();
+    return {
+        getNextToken: retrieveNextToken,
+        getNextInt: retrieveNextInteger,
+        getNextDecimal: retrieveNextDecimal,
+        getNextByte: retrieveNextByte,
+    };
+}
 
-    const scoringConditions = Array.from({ length: countQ }, () => ({
-        startIdx: inputParser.obtainNextInteger(),
-        endIdx: inputParser.obtainNextInteger(),
-        diffVal: inputParser.obtainNextInteger(),
-        gainScore: inputParser.obtainNextInteger(),
-    }));
+function* sequenceGenerator(currentSequence, lastElementValue, elementsRemaining, maximumValue) {
+    if (elementsRemaining === 0) {
+        yield currentSequence;
+        return;
+    }
 
-    let maxAttainedScore = 0;
+    for (let nextElementValue = lastElementValue; nextElementValue <= maximumValue; nextElementValue++) {
+        yield* sequenceGenerator([...currentSequence, nextElementValue], nextElementValue, elementsRemaining - 1, maximumValue);
+    }
+}
 
-    const buildAndAssess = (currentArr, lastNum) => {
-        if (currentArr.length === limitN) {
-            let currentIterationScore = 0;
-            for (const condition of scoringConditions) {
-                if (currentArr[condition.endIdx - 1] - currentArr[condition.startIdx - 1] === condition.diffVal) {
-                    currentIterationScore += condition.gainScore;
+function processChallenge(inputReader) {
+    const seqLength = inputReader.getNextInt();
+    const maxValue = inputReader.getNextInt();
+    const queryCount = inputReader.getNextInt();
+    
+    const scoreRules = [];
+    for (let i = 0; i < queryCount; i++) {
+        scoreRules.push({
+            startIdx: inputReader.getNextInt(),
+            endIdx: inputReader.getNextInt(),
+            diffVal: inputReader.getNextInt(),
+            scoreVal: inputReader.getNextInt(),
+        });
+    }
+    
+    let overallMaxScore = 0;
+    
+    for (let firstElement = 1; firstElement <= maxValue; firstElement++) {
+        for (const currentSequence of sequenceGenerator([firstElement], firstElement, seqLength - 1, maxValue)) {
+            let currentSequenceScore = 0;
+            for (const rule of scoreRules) {
+                const valA = currentSequence[rule.startIdx - 1];
+                const valB = currentSequence[rule.endIdx - 1];
+                if (rule.diffVal === (valB - valA)) {
+                    currentSequenceScore += rule.scoreVal;
                 }
             }
-            maxAttainedScore = Math.max(maxAttainedScore, currentIterationScore);
-            return;
+            if (currentSequenceScore > overallMaxScore) {
+                overallMaxScore = currentSequenceScore;
+            }
         }
+    }
+    
+    console.log(overallMaxScore);
+}
 
-        for (let num = lastNum; num <= limitM; num++) {
-            buildAndAssess([...currentArr, num], num);
-        }
-    };
-
-    buildAndAssess([], 1);
-
-    return maxAttainedScore;
-};
-
-console.log(mainExecution(require("fs").readFileSync("/dev/stdin", "utf8")));
+processChallenge(createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8")));

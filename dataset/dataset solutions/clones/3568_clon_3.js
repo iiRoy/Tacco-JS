@@ -1,34 +1,51 @@
-function findRemainingSquarePoints(rawCoordinateData) {
-    const processedValues = rawCoordinateData
-        .split(/\s+/)
-        .map(coordinateString => parseInt(coordinateString.trim(), 10));
+function computeRotatedSquareVertices(coordinateInputString) {
+    const stringParts = coordinateInputString.split(" ");
+    const numericCoordinates = stringParts.map(val => parseInt(val, 10));
 
-    if (processedValues.length !== 4 || processedValues.some(isNaN)) {
-        return "";
-    }
+    const [x1Coord, y1Coord, x2Coord, y2Coord] = numericCoordinates;
 
-    const [p1x, p1y, p2x, p2y] = processedValues;
+    const deltaX = x2Coord - x1Coord;
+    const deltaY = y2Coord - y1Coord;
 
-    const initialPointA = { x: p1x, y: p1y };
-    const initialPointB = { x: p2x, y: p2y };
+    const x3Coord = x2Coord - deltaY;
+    const y3Coord = y2Coord + deltaX;
 
-    const vectorComponentX = initialPointB.x - initialPointA.x;
-    const vectorComponentY = initialPointB.y - initialPointA.y;
+    const x4Coord = x3Coord - deltaX;
+    const y4Coord = y3Coord - deltaY;
 
-    const rotatedVectorX = -vectorComponentY;
-    const rotatedVectorY = vectorComponentX;
-
-    const thirdPointC = {
-        x: initialPointB.x + rotatedVectorX,
-        y: initialPointB.y + rotatedVectorY
-    };
-
-    const fourthPointD = {
-        x: thirdPointC.x - vectorComponentX,
-        y: thirdPointC.y - vectorComponentY
-    };
-
-    const outputString = `${thirdPointC.x} ${thirdPointC.y} ${fourthPointD.x} ${fourthPointD.y}`;
-
-    return outputString;
+    return [x3Coord, y3Coord, x4Coord, y4Coord].join(" ");
 }
+
+((initialInputString, processedOutput, outputType) => {
+    if (typeof require !== "undefined") {
+        console.log(computeRotatedSquareVertices(require("fs").readFileSync("/dev/stdin", "utf8")));
+    } else {
+        initialInputString = initialInputString.split("\n").slice(1, -1).join("\n");
+        processedOutput = (() => {
+            try {
+                return computeRotatedSquareVertices(initialInputString);
+            } catch (error) {
+                return error.stack || error.message;
+            }
+        })();
+        outputType = typeof processedOutput;
+
+        if (outputType !== "string") {
+            processedOutput = JSON.stringify(processedOutput);
+        }
+
+        $("<form>")
+            .append(
+                [
+                    [10, initialInputString], 0,
+                    [1, outputType], 0,
+                    [10, processedOutput]
+                ].map(item =>
+                    $(item ? "<textarea>" : "<br>", item && { rows: item[0], cols: 40, text: item[1] })
+                )
+            )
+            .appendTo("body");
+    }
+})(`
+31 -41 -59 26
+`);

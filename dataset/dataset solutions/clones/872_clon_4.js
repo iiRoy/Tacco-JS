@@ -1,64 +1,53 @@
-const filesystem = require('fs');
-const rawInput = filesystem.readFileSync('/dev/stdin', 'utf8');
-const lineData = rawInput.trim().split('\n');
+const fileSystem = require('fs');
+const fileSize = fileSystem.fstatSync(process.stdin.fd).size;
+const dataBuffer = Buffer.alloc(fileSize);
+const actualBytesRead = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
+const rawInputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-function executeProgram() {
-  const segment = lineData.shift().split(' ');
-  const vertexCount = +segment[0];
-  const edgeCount = +segment[1];
+processGraphData();
 
-  const adjacencies = new Map();
-  const incomingDegrees = new Map();
-  const pathLengths = new Map();
+function processGraphData() {
+    const firstLineParts = rawInputLines.shift().split(' ');
+    const nodeCount = +firstLineParts[0];
+    const edgeCount = +firstLineParts[1];
 
-  for (let idx = 0; idx < vertexCount; idx++) {
-    adjacencies.set(idx, []);
-    incomingDegrees.set(idx, 0);
-    pathLengths.set(idx, 0);
-  }
+    const adjacencyList = Array.from({ length: nodeCount }, () => []);
+    const incomingEdgeCounts = Array(nodeCount).fill(0);
+    const longestPathLengths = Array(nodeCount).fill(0);
 
-  for (let idx = 0; idx < edgeCount; idx++) {
-    const edgeSegment = lineData[idx].split(' ');
-    const sourceNode = +edgeSegment[0];
-    const targetNode = +edgeSegment[1];
-    const edgeWeight = +edgeSegment[2];
+    for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+        const currentEdgeParts = rawInputLines[edgeIdx].split(' ');
+        const sourceNode = +currentEdgeParts[0];
+        const targetNode = +currentEdgeParts[1];
+        const edgeWeight = +currentEdgeParts[2];
 
-    adjacencies.get(sourceNode).push({ destination: targetNode, value: edgeWeight });
-    incomingDegrees.set(targetNode, incomingDegrees.get(targetNode) + 1);
-  }
-
-  const taskQueue = [];
-
-  for (let idx = 0; idx < vertexCount; idx++) {
-    if (incomingDegrees.get(idx) === 0) {
-      taskQueue.push(idx);
+        adjacencyList[sourceNode].push([targetNode, edgeWeight]);
+        incomingEdgeCounts[targetNode]++;
     }
-  }
 
-  let currentVertex;
-  while (taskQueue.length > 0) {
-    currentVertex = taskQueue.shift();
-
-    for (const connection of adjacencies.get(currentVertex)) {
-      const neighborVertex = connection.destination;
-      const weightValue = connection.value;
-
-      const currentPathToNeighbor = pathLengths.get(neighborVertex);
-      const newPathFromCurrent = pathLengths.get(currentVertex) + weightValue;
-
-      if (newPathFromCurrent > currentPathToNeighbor) {
-        pathLengths.set(neighborVertex, newPathFromCurrent);
-      }
-
-      incomingDegrees.set(neighborVertex, incomingDegrees.get(neighborVertex) - 1);
-
-      if (incomingDegrees.get(neighborVertex) === 0) {
-        taskQueue.push(neighborVertex);
-      }
+    const topologicalQueue = [];
+    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+        if (incomingEdgeCounts[nodeIdx] === 0) {
+            topologicalQueue.push(nodeIdx);
+        }
     }
-  }
 
-  console.log(pathLengths.get(vertexCount - 1));
+    let queueHead = 0;
+    while (queueHead < topologicalQueue.length) {
+        const currentNode = topologicalQueue[queueHead++];
+
+        for (const [neighborNode, weight] of adjacencyList[currentNode]) {
+            longestPathLengths[neighborNode] = Math.max(
+                longestPathLengths[neighborNode],
+                longestPathLengths[currentNode] + weight
+            );
+
+            incomingEdgeCounts[neighborNode]--;
+            if (incomingEdgeCounts[neighborNode] === 0) {
+                topologicalQueue.push(neighborNode);
+            }
+        }
+    }
+
+    console.log(longestPathLengths[nodeCount - 1]);
 }
-
-executeProgram();

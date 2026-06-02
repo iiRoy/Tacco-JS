@@ -1,25 +1,21 @@
 'use strict'
 
-function AnotherProcessor(dataString) {
-  const [firstVal, secondVal] = dataString.split(' ').map(Number);
+function processInput(inputData) {
+  const [limitVal, targetVal] = inputData.split(" ").map(Number);
 
-  const determineSuccessLikelihood = (initialMagnitude, targetMagnitude) => {
-    if (initialMagnitude >= targetMagnitude) {
-      return 1.0;
-    }
-    const necessaryDoublingSteps = Math.ceil(Math.log2(targetMagnitude / initialMagnitude));
-    return Math.pow(0.5, necessaryDoublingSteps);
-  };
+  const totalProbabilitySum = Array.from({ length: limitVal }, (_, index) => index + 1)
+    .reduce((currentSum, currentIterationValue) => {
+      let iterationProbability;
+      if (currentIterationValue >= targetVal) {
+        iterationProbability = 1;
+      } else {
+        const requiredDoublingSteps = Math.ceil(Math.log2(targetVal / currentIterationValue));
+        iterationProbability = Math.pow(0.5, requiredDoublingSteps);
+      }
+      return currentSum + iterationProbability;
+    }, 0);
 
-  const integerSequence = Array.from({ length: firstVal }, (_, index) => index + 1);
-
-  const totalLikelihoodSum = integerSequence.reduce((cumulativeSum, currentMagnitude) => {
-    return cumulativeSum + determineSuccessLikelihood(currentMagnitude, secondVal);
-  }, 0.0);
-
-  const finalAverageLikelihood = totalLikelihoodSum / firstVal;
-
-  console.log(finalAverageLikelihood);
+  console.log(totalProbabilitySum / limitVal);
 }
 
-AnotherProcessor(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

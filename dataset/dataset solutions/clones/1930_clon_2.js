@@ -1,40 +1,37 @@
-function ProcessInput( rawData )
-{
+function ProcessInput(rawData) {
+  // Parse the raw input string into an array of integers
+  let parsedValues = rawData.split(' ').map(itemStr => parseInt(itemStr, 10));
 
-  let numericalValues = rawData . split ( ' ' ) . map ( itemString => Number . parseInt ( itemString , 10 ) ) ;
+  // Destructure the array into two distinct numerical variables
+  const [firstNum, secondNum] = parsedValues;
 
-  const [ upperBound , outputCount ] = numericalValues ;
+  // Initialize an array to store the generated pairs
+  let resultPairs = [];
 
-  let resultPairs = [ ] ;
-
-  if ( upperBound % 2 !== 0 )
-  {
-    for ( let lowIndex = 1 , highIndex = upperBound - 1 ; lowIndex < highIndex ; lowIndex ++ , highIndex -- )
-    {
-      resultPairs . push ( lowIndex + ' ' + highIndex ) ;
+  // Check if the first number is odd
+  if (firstNum % 2 !== 0) {
+    // If N is odd, generate pairs (l, r) such that l + r = N and l < r
+    for (let leftPtr = 1, rightPtr = firstNum - 1; leftPtr < rightPtr; leftPtr++, rightPtr--) {
+      resultPairs.push(leftPtr + ' ' + rightPtr);
     }
-  }
-  else
-  {
-    let adjustedFlag = false ;
-    for ( let lowIndex = 1 , highIndex = upperBound - 1 ; lowIndex < highIndex ; lowIndex ++ , highIndex -- )
-    {
-      if ( ! adjustedFlag && highIndex - lowIndex <= upperBound / 2 )
-      {
-        highIndex -- ;
-        adjustedFlag = true ;
+  } else {
+    // If N is even, generate pairs with a special adjustment
+    let adjustmentMade = false; // Flag to track if the adjustment has been applied
+    for (let leftPtr = 1, rightPtr = firstNum - 1; leftPtr < rightPtr; leftPtr++, rightPtr--) {
+      // Apply adjustment if not already made and the difference is within a certain range
+      if (!adjustmentMade && (rightPtr - leftPtr) <= (firstNum / 2)) {
+        rightPtr--; // Decrement the right pointer
+        adjustmentMade = true; // Mark adjustment as made
       }
-      resultPairs . push ( lowIndex + ' ' + highIndex ) ;
+      resultPairs.push(leftPtr + ' ' + rightPtr);
     }
   }
 
-  for ( let printIndex = 1 ; printIndex <= outputCount ; printIndex ++ )
-  {
-    console . log ( resultPairs [ printIndex - 1 ] ) ;
+  // Output the first 'M' generated pairs
+  for (let idx = 1; idx <= secondNum; idx++) {
+    console.log(resultPairs[idx - 1]);
   }
 }
 
-// This is an example comment, completely different from the original.
-// Another line of comment here, just for good measure.
-
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This part reads input from standard input. Do not modify this line.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

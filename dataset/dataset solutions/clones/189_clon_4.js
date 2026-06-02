@@ -1,35 +1,27 @@
-const fileSystem = require('fs');
-const inputSource = '/dev/stdin';
-const outputDestination = process.stdout;
+let initialSymbol = 'A';
 
-const identifierContext = {
-    initialSymbol: 'A'
-};
+let receivedSegments = [];
 
-const processSymbolPair = (currentSymbol, firstComponent, secondComponent) => {
-    const symbolMap = {
-        [firstComponent]: secondComponent,
-        [secondComponent]: firstComponent
-    };
-    return symbolMap[currentSymbol] !== undefined ? symbolMap[currentSymbol] : currentSymbol;
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const executeSymbolTransformation = () => {
-    const fullInputData = fileSystem.readFileSync(inputSource, 'utf8');
+process.stdin.on('data', function(dataSegment) {
+  receivedSegments.push(dataSegment.trim());
+});
 
-    const processedSegments = fullInputData.split('\n')
-                                 .map(segment => segment.trim())
-                                 .filter(segment => segment.length > 0)
-                                 .map(trimmedSegment => trimmedSegment.split(','));
+process.stdin.on('end', function() {
+  let finalSymbol = receivedSegments.reduce((accumulatorSymbol, currentSegment) => {
+    let parsedElements = currentSegment.split(',');
+    let firstElement = parsedElements[0];
+    let secondElement = parsedElements[1];
 
-    const resultantSymbol = processedSegments.reduce((accumulatorSymbol, pairContent) => {
-        if (pairContent.length === 2) {
-            return processSymbolPair(accumulatorSymbol, pairContent[0], pairContent[1]);
-        }
-        return accumulatorSymbol;
-    }, identifierContext.initialSymbol);
+    return (firstElement === accumulatorSymbol)
+             ? secondElement
+             : (secondElement === accumulatorSymbol)
+               ? firstElement
+               : accumulatorSymbol;
 
-    outputDestination.write(resultantSymbol + '\n');
-};
+  }, initialSymbol);
 
-executeSymbolTransformation();
+  console.log(finalSymbol);
+});

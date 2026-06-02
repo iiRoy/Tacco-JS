@@ -1,25 +1,19 @@
-process . stdin . setEncoding ( 'utf-8' ) ;
+process.stdin.setEncoding('utf-8'); // Configure standard input for UTF-8 character encoding.
 
-/*
- * Establishes an event handler for data coming from the standard input.
- * The provided callback function will be executed when new data is available.
- */
-process.stdin.on('data', (receivedData) => {
-  // Divides the incoming data string into an array of substrings using space as a delimiter.
-  const tokenizedInputs = receivedData.split(' ');
+process.stdin.on('data', (incomingData) => {
+  // This callback executes when data is received from standard input.
+  var dataParts = incomingData.split(' '); // Split the input string by spaces into an array of strings.
 
-  // Converts the first element of the tokenized array into an integer, representing the radius.
-  let circleRadius = parseInt(tokenizedInputs[0]);
+  var radiusValue = parseInt(dataParts[0]); // Parse the first part of the input as an integer to get the radius.
 
-  // Calculates the total area of the circle using the formula: radius * radius * PI.
-  let surfaceArea = circleRadius * circleRadius * Math.PI;
+  // Calculate the area of the circle using the formula A = π * r^2.
+  var areaResult = radiusValue * radiusValue * Math.PI;
 
-  // Determines the perimeter (circumference) of the circle using the formula: 2 * radius * PI.
-  let perimeterLength = 2 * circleRadius * Math.PI;
+  // Calculate the circumference of the circle using the formula C = 2 * π * r.
+  var circumferenceResult = 2 * radiusValue * Math.PI;
 
-  // Formats both the area and perimeter to five decimal places and combines them into a single string.
-  let finalDisplay = surfaceArea.toFixed(5) + ' ' + perimeterLength.toFixed(5);
+  // Format the results to 5 decimal places and concatenate them into a single string.
+  var finalOutputString = areaResult.toFixed(5) + ' ' + circumferenceResult.toFixed(5);
 
-  // Prints the resulting formatted string to the standard output.
-  console.log(finalDisplay);
+  console.log(finalOutputString); // Print the formatted output string to the console.
 });

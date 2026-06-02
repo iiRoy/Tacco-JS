@@ -1,47 +1,37 @@
-const processInputData = (rawInputContent) => {
-    const contentLines = rawInputContent.split('\n').filter(Boolean);
-    let currentLineIndex = 0;
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
 
-    const initialSequenceLength = Number(contentLines[currentLineIndex++]);
-    const originalCharacterSequence = contentLines[currentLineIndex++];
-    const totalOperations = Number(contentLines[currentLineIndex++]);
+    const sequenceLength = parseInt(inputLines[0], 10);
+    const initialCharacterString = inputLines[1];
+    const queryCount = parseInt(inputLines[2], 10);
 
-    const characterStore = new Map();
-    Array.from(originalCharacterSequence).forEach((charElement, charIndex) => {
-        characterStore.set(charIndex, charElement);
-    });
+    const characterCollection = Array.from(initialCharacterString);
 
-    const collectedResults = [];
+    const queryInstructions = inputLines.slice(3, 3 + queryCount);
 
-    for (let operationIndex = 0; operationIndex < totalOperations; operationIndex++) {
-        const currentOperationDetails = contentLines[currentLineIndex++].split(' ');
-        const operationKindIdentifier = Number(currentOperationDetails[0]);
+    const operationDispatch = {
+        1: (parameters) => {
+            const targetPosition = parseInt(parameters[0], 10);
+            const newCharacter = parameters[1];
+            characterCollection[targetPosition - 1] = newCharacter;
+        },
+        2: (parameters) => {
+            const rangeStart = parseInt(parameters[0], 10);
+            const rangeEnd = parseInt(parameters[1], 10);
 
-        if (operationKindIdentifier === 1) {
-            const targetZeroBasedPosition = Number(currentOperationDetails[1]) - 1;
-            const newCharacterValue = currentOperationDetails[2];
-
-            if (characterStore.get(targetZeroBasedPosition) !== newCharacterValue) {
-                characterStore.set(targetZeroBasedPosition, newCharacterValue);
-            }
-        } else if (operationKindIdentifier === 2) {
-            const rangeStartZeroBased = Number(currentOperationDetails[1]) - 1;
-            const rangeEndZeroBased = Number(currentOperationDetails[2]) - 1;
-
-            const distinctCharactersFound = new Set();
-            for (let segmentIndex = rangeStartZeroBased; segmentIndex <= rangeEndZeroBased; segmentIndex++) {
-                distinctCharactersFound.add(characterStore.get(segmentIndex));
-            }
-            collectedResults.push(distinctCharactersFound.size);
+            const subArray = characterCollection.slice(rangeStart - 1, rangeEnd);
+            const distinctCharacters = new Set(subArray);
+            console.log(distinctCharacters.size + '\n');
         }
-    }
+    };
 
-    console.log(collectedResults.map(entry => entry.toString()).join('\n') + (collectedResults.length > 0 ? '\n' : ''));
-};
+    queryInstructions.forEach(instructionLine => {
+        const instructionParts = instructionLine.split(' ');
+        const operationTypeIdentifier = parseInt(instructionParts[0], 10);
+        const operationParameters = instructionParts.slice(1);
 
-const triggerProgramExecution = (sourcePath) => {
-    const fileContents = require("node:fs").readFileSync(sourcePath, "utf8");
-    processInputData(fileContents);
-};
+        operationDispatch[operationTypeIdentifier](operationParameters);
+    });
+}
 
-triggerProgramExecution("/dev/stdin");
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

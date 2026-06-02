@@ -1,34 +1,17 @@
-function ProcessStringData( rawInputText )
-{
-    // The initial input string is first prepared by removing any leading or trailing whitespace.
-    const cleanedContent = rawInputText.trim();
+function ProcessInput(rawData) {
+  // Trim leading/trailing whitespace from the raw input string
+  const processedString = rawData.trim();
 
-    // We then proceed to evaluate the cleaned string for specific repeating character sequences.
-    // The evaluation is prioritized from the longest sequence to the shortest.
-
-    if (cleanedContent.includes("RRR")) // Check for the presence of three consecutive 'R's.
-    {
-        console.log(3); // If found, output the maximum count.
-    }
-    else if (cleanedContent.includes("RR")) // Otherwise, check for two consecutive 'R's.
-    {
-        console.log(2); // If found, output the medium count.
-    }
-    else if ( cleanedContent.includes("R") ) // If neither of the above, check for a single 'R'.
-    {
-        console.log(1); // If found, output the minimum count.
-    }
-    else // If no 'R' sequence of any length is detected.
-    {
-        console.log(0); // Output zero, indicating no matching patterns.
-    }
+  if (processedString.includes("RRR")) {
+    console.log(3); // Output 3 if "RRR" is found
+  } else if (processedString.includes("RR")) {
+    console.log(2); // Output 2 if "RR" is found (but not "RRR")
+  } else if (processedString.includes("R")) {
+    console.log(1); // Output 1 if "R" is found (but not "RR" or "RRR")
+  } else {
+    console.log(0); // Output 0 if no "R" is found
+  }
 }
 
-
-// Initiate the text processing by reading data from the standard input stream.
-ProcessStringData(
-    require('fs').readFileSync(
-        "/dev/stdin",
-        "utf8"
-    )
-);
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

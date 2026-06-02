@@ -1,79 +1,62 @@
 process.stdin.resume();
 
-// Ensure standard input is set to UTF-8 encoding for proper character handling.
-process.stdin.setEncoding( "utf8" );
+process.stdin.setEncoding("utf8"); // Set character encoding for input
 
-/*
- * Create an interface for reading input line by line
- * from the standard input and writing to standard output.
- */
-const inputHandler = require( "readline" ) . createInterface(
-  {
-    input: process.stdin ,
-    output: process.stdout
-  }
-);
+const inputHandler = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-// An array to accumulate all the lines received from standard input.
-const storedInputLines = [ ];
+const inputData = []; // Array to store all incoming lines
 
-// Event listener for each incoming line of text.
-inputHandler . on( "line" , ( currentLineText ) => {
-  storedInputLines . push( currentLineText );
-} );
+inputHandler.on("line", (currentLine) => {
+  inputData.push(currentLine); // Add each line to our collection
+});
 
-// Event listener triggered when the input stream closes.
-inputHandler . on( "close" , () => {
-  // Parse the initial state of the faces from the first line of input.
-  // The numbers represent the values on the faces: top, back, right, left, front, bottom.
-  let [ upperFaceValue,
-        rearFaceValue,
-        rightFaceValue,
-        leftFaceValue,
-        frontFaceValue,
-        lowerFaceValue ] = storedInputLines[0]
-                                            .split( " " )
-                                            .map( Number );
+inputHandler.on("close", () => {
+  // When input stream closes, process the collected data
+  let [upperFace, rearFace, rightFace, leftFace, frontFace, lowerFace] =
+    inputData[0].split(" ").map(Number);
 
-  // The second line of input contains the sequence of rotations.
-  const rotationSequenceString = storedInputLines[1];
+  const rotationSequence = inputData[1]; // Get the sequence of rotations
 
-  // Iterate through each character in the rotation sequence.
-  for ( let sequenceIndex = 0 ; sequenceIndex < rotationSequenceString.length ; sequenceIndex++ )
-  {
-    // Determine the type of rotation based on the current character.
-    switch ( rotationSequenceString[ sequenceIndex ] )
-    {
-      // Case for 'N' (North) rotation:
-      // top becomes back, front becomes top, bottom becomes front, back becomes bottom.
-      case "N":
-        [ upperFaceValue, frontFaceValue, lowerFaceValue, rearFaceValue ] =
-        [ rearFaceValue, upperFaceValue, frontFaceValue, lowerFaceValue ];
+  for (let idx = 0; idx < rotationSequence.length; idx++) {
+    // Iterate through each rotation command
+    switch (rotationSequence[idx]) {
+      case "N": // Rotate North
+        [upperFace, frontFace, lowerFace, rearFace] = [
+          rearFace,
+          upperFace,
+          frontFace,
+          lowerFace,
+        ];
         break;
-
-      // Case for 'S' (South) rotation:
-      // top becomes front, front becomes bottom, bottom becomes back, back becomes top.
-      case "S":
-        [ upperFaceValue, frontFaceValue, lowerFaceValue, rearFaceValue ] =
-        [ frontFaceValue, lowerFaceValue, rearFaceValue, upperFaceValue ];
+      case "S": // Rotate South
+        [upperFace, frontFace, lowerFace, rearFace] = [
+          frontFace,
+          lowerFace,
+          rearFace,
+          upperFace,
+        ];
         break;
-
-      // Case for 'W' (West) rotation:
-      // top becomes right, left becomes top, bottom becomes left, right becomes bottom.
-      case "W":
-        [ upperFaceValue, leftFaceValue, lowerFaceValue, rightFaceValue ] =
-        [ rightFaceValue, upperFaceValue, leftFaceValue, lowerFaceValue ];
+      case "W": // Rotate West
+        [upperFace, leftFace, lowerFace, rightFace] = [
+          rightFace,
+          upperFace,
+          leftFace,
+          lowerFace,
+        ];
         break;
-
-      // Case for 'E' (East) rotation:
-      // top becomes left, left becomes bottom, bottom becomes right, right becomes top.
-      case "E":
-        [ upperFaceValue, leftFaceValue, lowerFaceValue, rightFaceValue ] =
-        [ leftFaceValue, lowerFaceValue, rightFaceValue, upperFaceValue ];
+      case "E": // Rotate East
+        [upperFace, leftFace, lowerFace, rightFace] = [
+          leftFace,
+          lowerFace,
+          rightFace,
+          upperFace,
+        ];
         break;
     }
   }
 
-  // After all rotations, output the final value on the top face.
-  console.log( upperFaceValue );
-} );
+  console.log(upperFace); // Output the value of the top face
+});

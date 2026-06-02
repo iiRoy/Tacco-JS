@@ -1,32 +1,33 @@
-const inputLines = ("" + require("fs").readFileSync(0)).split`
-`;
+let inputLinesArray = String(require("fs").readFileSync(0)).split('\n');
 
-let parsedDimension = inputLines[accumulator = 0];
+let paramN = Number(inputLinesArray[0]);
+let finalResult = 0;
 
-const sequenceString = inputLines[1];
+let charSequence = inputLinesArray[1];
 
-for (let bitmask = 1 << parsedDimension; bitmask--;) {
-  let currentCombination = "";
-
-  for (let bitPosition = parsedDimension; bitPosition--;) {
-    currentCombination = (bitmask & (1 << bitPosition))
-      ? sequenceString[bitPosition] + currentCombination
-      : currentCombination + sequenceString[bitPosition];
-  }
-
-  inputLines[currentCombination] = (Number(inputLines[currentCombination]) || 0) + 1;
+for (let maskValue = (1 << paramN) - 1; maskValue >= 0; --maskValue) {
+    let constructedString = "";
+    for (let bitPosition = paramN - 1; bitPosition >= 0; --bitPosition) {
+        if ((maskValue & (1 << bitPosition)) !== 0) {
+            constructedString = charSequence[bitPosition] + constructedString;
+        } else {
+            constructedString = constructedString + charSequence[bitPosition];
+        }
+    }
+    inputLinesArray[constructedString] = -~inputLinesArray[constructedString];
 }
 
-for (let bitmask = 1 << parsedDimension; bitmask--;) {
-  let currentCombination = "";
-
-  for (let bitPosition = parsedDimension; bitPosition--;) {
-    currentCombination = (bitmask & (1 << bitPosition))
-      ? sequenceString[2 * parsedDimension + (~bitPosition)] + currentCombination
-      : currentCombination + sequenceString[2 * parsedDimension + (~bitPosition)];
-  }
-
-  accumulator += (Number(inputLines[currentCombination]) || 0);
+for (let maskValue = (1 << paramN) - 1; maskValue >= 0; --maskValue) {
+    let constructedString = "";
+    for (let bitPosition = paramN - 1; bitPosition >= 0; --bitPosition) {
+        let effectiveCharIndex = (2 * paramN) + (~bitPosition);
+        if ((maskValue & (1 << bitPosition)) !== 0) {
+            constructedString = charSequence[effectiveCharIndex] + constructedString;
+        } else {
+            constructedString = constructedString + charSequence[effectiveCharIndex];
+        }
+    }
+    finalResult += ~~inputLinesArray[constructedString];
 }
 
-console.log(accumulator);
+console.log(finalResult);

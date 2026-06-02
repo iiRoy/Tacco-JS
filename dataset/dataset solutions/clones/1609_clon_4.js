@@ -1,60 +1,70 @@
-function processGridData(rawData) {
-  const dataLines = rawData.match(/[^\n]+/g);
-  const [gridRows, gridCols, entryCounter] = dataLines[0].split(" ").map(Number);
-
-  const itemLocations = new Map();
-  for (let idx = 1; idx <= entryCounter; idx++) {
-    const [rowCoord, colCoord, entryValue] = dataLines[idx].split(" ").map(Number);
-    itemLocations.set(`${rowCoord - 1}_${colCoord - 1}`, entryValue);
+class GridStateContainer {
+  constructor(rows, columns) {
+    this.totalRows = rows;
+    this.totalColumns = columns;
+    this.stateMap = new Map();
   }
 
-  const scoreMatrix = new Map();
-
-  const obtainScores = (r, c) => {
-    if (r < 0 || c < 0) return [0, 0, 0, 0];
-    const cellKey = `${r}_${c}`;
-    if (!scoreMatrix.has(cellKey)) {
+  retrieveStates(row, column) {
+    if (row < 0 || row >= this.totalRows || column < 0 || column >= this.totalColumns) {
       return [0, 0, 0, 0];
     }
-    return scoreMatrix.get(cellKey);
-  };
+    const key = `${row}_${column}`;
+    return this.stateMap.get(key) || [0, 0, 0, 0];
+  }
 
-  for (let rowIter = 0; rowIter < gridRows; rowIter++) {
-    for (let colIter = 0; colIter < gridCols; colIter++) {
-      const currentCellIdentifier = `${rowIter}_${colIter}`;
-      const valueAtThisCoordinate = itemLocations.get(currentCellIdentifier) || 0;
-
-      const currentCellScores = [0, 0, 0, 0];
-
-      // Contribution from the cell directly above (rowIter-1, colIter)
-      const scoresFromAbove = obtainScores(rowIter - 1, colIter);
-      let maxScoreFromAbove = 0;
-      for (let scoreComponent = 0; scoreComponent < 4; scoreComponent++) {
-        maxScoreFromAbove = Math.max(maxScoreFromAbove, scoresFromAbove[scoreComponent]);
-      }
-      currentCellScores[0] = Math.max(currentCellScores[0], maxScoreFromAbove);
-
-      // Contribution from the cell to the left (rowIter, colIter-1)
-      const scoresFromLeft = obtainScores(rowIter, colIter - 1);
-      for (let scoreComponent = 0; scoreComponent < 4; scoreComponent++) {
-        currentCellScores[scoreComponent] = Math.max(currentCellScores[scoreComponent], scoresFromLeft[scoreComponent]);
-      }
-
-      // Apply the item value of the current cell, up to 3 times
-      for (let pickCount = 2; pickCount >= 0; pickCount--) {
-        currentCellScores[pickCount + 1] = Math.max(currentCellScores[pickCount + 1], currentCellScores[pickCount] + valueAtThisCoordinate);
-      }
-
-      scoreMatrix.set(currentCellIdentifier, currentCellScores);
+  modifyState(row, column, stateIndex, newValue) {
+    if (row < 0 || row >= this.totalRows || column < 0 || column >= this.totalColumns) {
+      return;
     }
+    const key = `${row}_${column}`;
+    let currentStates = this.stateMap.get(key) || [0, 0, 0, 0];
+    currentStates[stateIndex] = Math.max(currentStates[stateIndex], newValue);
+    this.stateMap.set(key, currentStates);
   }
+}
 
-  let overallMaxScore = 0;
-  const finalCellScores = obtainScores(gridRows - 1, gridCols - 1);
-  for (let scoreComponent = 0; scoreComponent < 4; scoreComponent++) {
-    overallMaxScore = Math.max(overallMaxScore, finalCellScores[scoreComponent]);
+function processGridData(inputContent) {
+  const dataLines = inputContent.trim().split("\n");
+  const [gridDimR, gridDimC, itemQuantity] = dataLines.shift().split(" ").map(Number);
+
+  const itemPositions = new Map();
+  dataLines.map(line => line.split(" ").map(Number))
+           .forEach(([itemRow, itemCol, itemVal]) => {
+               itemPositions.set(`${itemRow - 1}_${itemCol - 1}`, itemVal);
+           });
+
+  const dynamicProgGrid = new GridStateContainer(gridDimR, gridDimC);
+
+  const allCellCoords = Array.from({ length: gridDimR }, (_, rIndex) =>
+    Array.from({ length: gridDimC }, (_, cIndex) => ({ r: rIndex, c: cIndex }))
+  ).flat();
+
+  allCellCoords.forEach(({ r, c }) => {
+    const currentCellItemValue = itemPositions.get(`${r}_${c}`) || 0;
+
+    const statesFromUpperCell = dynamicProgGrid.retrieveStates(r - 1, c);
+    for (let kIndex = 0; kIndex < 4; kIndex++) {
+      dynamicProgGrid.modifyState(r, c, 0, statesFromUpperCell[kIndex]);
+    }
+
+    const statesFromLeftCell = dynamicProgGrid.retrieveStates(r, c - 1);
+    for (let kIndex = 0; kIndex < 4; kIndex++) {
+      dynamicProgGrid.modifyState(r, c, kIndex, statesFromLeftCell[kIndex]);
+    }
+
+    const currentCellAccumulatedStates = dynamicProgGrid.retrieveStates(r, c);
+    for (let kIndex = 2; kIndex >= 0; kIndex--) {
+      dynamicProgGrid.modifyState(r, c, kIndex + 1, currentCellAccumulatedStates[kIndex] + currentCellItemValue);
+    }
+  });
+
+  let finalResult = 0;
+  const lastCellFinalStates = dynamicProgGrid.retrieveStates(gridDimR - 1, gridDimC - 1);
+  for (let kIndex = 0; kIndex < 4; kIndex++) {
+    finalResult = Math.max(finalResult, lastCellFinalStates[kIndex]);
   }
-  console.log(overallMaxScore);
+  console.log(finalResult);
 }
 
 processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

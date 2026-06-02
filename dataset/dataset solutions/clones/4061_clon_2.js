@@ -1,120 +1,114 @@
-function ProcessInputData(rawDataString) {
-  // Split the entire input string into an array of individual lines.
-  const linesArray = rawDataString.split("\n");
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  rawData = rawData.split('\n');
 
-  // Parse the first line to get the number of nodes and constraints.
-  // The first line contains two space-separated integers.
-  const dimensionsArray = linesArray[0].split(" ").map(currentElement => Number.parseInt(currentElement, 10));
+  // Parse the first line to get the number of points (N) and constraints (M).
+  // The map function converts string parts to integers.
+  const params = rawData[0].split(' ').map(val => parseInt(val, 10));
+  const numPoints = params[0]; // N: Number of points
+  const numConstraints = params[1]; // M: Number of constraints
 
-  // Extract the total number of nodes (N) in the graph.
-  const nodeCount = dimensionsArray[0];
-
-  // Extract the total number of constraints (M) or edges.
-  const constraintCount = dimensionsArray[1];
-
-  // Initialize arrays to store details for each constraint.
-  // leftIndices will hold the starting node for a constraint.
+  // Initialize arrays to store constraint details:
+  // leftIndices: Stores the starting point index for each constraint.
+  // rightIndices: Stores the ending point index for each constraint.
+  // diffValues: Stores the required difference between pointValues[right] and pointValues[left].
   const leftIndices = [];
-  // rightIndices will hold the ending node for a constraint.
   const rightIndices = [];
-  // differenceValues will store the required difference between right and left nodes.
-  const differenceValues = [];
+  const diffValues = [];
 
-  // An array to store the calculated value for each node.
-  // Initialized to zero, as this is a relative value problem.
-  const nodeValues = new Array(nodeCount).fill(0);
+  // Initialize an array to hold the calculated values for each point.
+  // All points are initially set to 0.
+  const pointValues = new Array(numPoints).fill(0);
 
-  // An adjacency list to represent the graph, storing connections
-  // and the associated differences. Each element is an array of [neighbor, diff].
-  const adjacencyList = new Array(nodeCount);
-
-  // Initialize the result string, assuming "Yes" until a contradiction is found.
-  let resultStatus = "Yes";
-
-  // Prepare each element of the adjacency list as an empty array.
-  for (let idx = 0; idx < nodeCount; idx++) {
-    adjacencyList[idx] = [];
+  // Initialize an adjacency list-like structure for graph traversal.
+  // Each element adjList[i] will store pairs [neighbor_index, difference_to_neighbor].
+  const adjList = new Array(numPoints);
+  for (let idx = 0; idx < numPoints; idx++) {
+    adjList[idx] = []; // Ensure each entry is an empty array.
   }
 
-  // Iterate through each constraint line to populate graph data.
-  // Constraints start from the second line of input (index 1).
-  for (let idx = 0; idx < constraintCount; idx++) {
-    // Parse the current constraint line into its components.
-    const currentConstraintDetails = linesArray[idx + 1].split(" ").map(elementStr => Number.parseInt(elementStr, 10));
+  // The final result string, defaults to "Yes".
+  let resultString = "Yes";
 
-    // Store the right node index (0-based).
-    rightIndices[idx] = currentConstraintDetails[1] - 1;
-    // Store the required difference value.
-    differenceValues[idx] = currentConstraintDetails[2];
-    // Store the left node index (0-based).
-    leftIndices[idx] = currentConstraintDetails[0] - 1;
+  // Process each constraint from the input.
+  for (let idx = 0; idx < numConstraints; idx++) {
+    // Parse the current constraint line.
+    const currentConstraintLine = rawData[idx + 1].split(' ').map(val => parseInt(val, 10));
 
-    // Add connections to the adjacency list for both directions.
-    // For L -> R, store [R, D].
-    adjacencyList[leftIndices[idx]].push(rightIndices[idx], differenceValues[idx]);
-    // For R -> L, store [L, -D] (reverse difference).
-    adjacencyList[rightIndices[idx]].push(leftIndices[idx], -differenceValues[idx]);
+    // Store the original parsed values temporarily.
+    // Note: The original code reuses L[i] for both the array and the final index.
+    // We'll follow that pattern for Type II.
+    leftIndices[idx] = currentConstraintLine; // Temporarily stores [L, R, D]
+    rightIndices[idx] = leftIndices[idx][1] - 1; // R_i - 1
+    diffValues[idx] = leftIndices[idx][2]; // D_i
+    leftIndices[idx] = leftIndices[idx][0] - 1; // L_i - 1
+
+    // Add edges to the adjacency list for both directions:
+    // From L to R with difference D.
+    adjList[leftIndices[idx]].push(rightIndices[idx], diffValues[idx]);
+    // From R to L with difference -D (for reverse traversal).
+    adjList[rightIndices[idx]].push(leftIndices[idx], -diffValues[idx]);
   }
 
-  // First pass: Propagate values from connected components.
-  // Iterate over each node to start value propagation if it has connections.
-  for (let idx = 0; idx < nodeCount; idx++) {
-    // The adjacency list stores pairs [neighbor_idx, difference_value].
-    // We need to process from the end, two elements at a time.
-    let currentOffset = adjacencyList[idx].length - 2;
-
-    // If there are connections for this node, initiate propagation.
+  // Iterate through each point to initiate value calculations if it has neighbors.
+  for (let idx = 0; idx < numPoints; idx++) {
+    // The 'currentOffset' variable points to the last pair of [neighbor, diff] in the list.
+    // We subtract 2 because each pair consists of two elements.
+    let currentOffset = adjList[idx].length - 2;
     if (currentOffset >= 0) {
-      propagateValues(adjacencyList[idx], idx, currentOffset);
+      // If there are neighbors, start calculating values recursively.
+      calculatePointValue(adjList[idx], idx, currentOffset);
     }
   }
 
-  // Second pass: Verify all initial constraints against calculated node values.
-  for (let idx = 0; idx < constraintCount; idx++) {
-    // Check if the calculated difference between right and left nodes
-    // matches the required difference for the current constraint.
-    if (nodeValues[rightIndices[idx]] - nodeValues[leftIndices[idx]] !== differenceValues[idx]) {
-      // If a mismatch is found, the constraints are inconsistent.
-      resultStatus = "No";
+  // After calculating all possible point values, verify all constraints.
+  for (let idx = 0; idx < numConstraints; idx++) {
+    // Check if the difference between the calculated values of R and L matches the required D.
+    if (pointValues[rightIndices[idx]] - pointValues[leftIndices[idx]] !== diffValues[idx]) {
+      resultString = "No"; // If any constraint is violated, set result to "No".
       break; // No need to check further constraints.
     }
   }
 
-  // Output the final consistency status.
-  console.info(resultStatus);
+  // Output the final result.
+  console.log(resultString);
 
-  // Recursive helper function to propagate node values through connected components.
-  // neighborData: The adjacency list for a specific source node, modified in place.
-  // sourceNodeIdx: The index of the node whose value is already known or being set.
-  // currentOffset: The current position in neighborData to process (points to a neighbor index).
-  function propagateValues(neighborData, sourceNodeIdx, currentOffset) {
-    // Get the index of the connected node.
-    const connectedNodeIdx = neighborData[currentOffset];
+  /**
+   * Recursively calculates point values based on known differences.
+   * This function performs a depth-first traversal from a source point.
+   *
+   * @param {Array<number>} currentList - The adjacency list of the current source point.
+   * @param {number} sourceIdx - The index of the current source point.
+   * @param {number} currentOffset - The current position in `currentList` (points to a neighbor index).
+   */
+  function calculatePointValue(currentList, sourceIdx, currentOffset) {
+    // Get the neighbor's index from the current position in the list.
+    const neighborIdx = currentList[currentOffset];
 
-    // Calculate the value for the connected node based on the source node's value
-    // and the known difference.
-    nodeValues[connectedNodeIdx] = nodeValues[sourceNodeIdx] + neighborData[currentOffset + 1];
+    // Calculate the neighbor's value based on the source's value and the difference.
+    pointValues[neighborIdx] = pointValues[sourceIdx] + currentList[currentOffset + 1];
 
-    // Mark these two processed elements as "removed" by shortening the array.
-    // This prevents reprocessing them in the same traversal.
-    neighborData.length = currentOffset;
+    // "Remove" the processed pair from the current list by truncating its length.
+    // This prevents reprocessing the same edge in the current path.
+    currentList.length = currentOffset;
 
-    // Move to the next pair of elements (previous in the original array).
+    // Move to the previous pair in the current list.
     currentOffset -= 2;
 
-    // Continue propagation within the current neighborData list if more elements exist.
+    // If there are more neighbors in the current list, continue processing them.
     if (currentOffset >= 0) {
-      propagateValues(neighborData, sourceNodeIdx, currentOffset);
+      calculatePointValue(currentList, sourceIdx, currentOffset);
     }
 
-    // After processing direct neighbors, recursively propagate from the newly
-    // valued connected node to its own neighbors.
-    let nextPropagateOffset = adjacencyList[connectedNodeIdx].length - 2;
-    if (nextPropagateOffset >= 0) {
-      propagateValues(adjacencyList[connectedNodeIdx], connectedNodeIdx, nextPropagateOffset);
+    // Now, explore neighbors of the newly calculated point (neighborIdx).
+    // Get the last pair in the neighbor's adjacency list.
+    let nextOffset = adjList[neighborIdx].length - 2;
+    if (nextOffset >= 0) {
+      // If the neighbor has its own neighbors, recursively calculate their values.
+      calculatePointValue(adjList[neighborIdx], neighborIdx, nextOffset);
     }
   }
 }
 
 // Read input from standard input and pass it to the main processing function.
-ProcessInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

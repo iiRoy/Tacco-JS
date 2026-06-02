@@ -1,64 +1,46 @@
-const computeUnitDistribution = (amountValue, unitSpecifications) => {
-    const unitCounts = new Array(unitSpecifications.length).fill(0);
-    let remainingAmount = amountValue;
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-    const orderedUnits = [...unitSpecifications].sort((a, b) => b.faceValue - a.faceValue);
+const processTransactionData = (deductionValue, initialCoinHoldings) => {
+    const coinDenominationValues = [10, 50, 100, 500];
+    const changeAlgorithmDenominations = [500, 100, 50, 10]; // Ordered for greedy calculation
+    const denominationToIndexMap = { 10: 0, 50: 1, 100: 2, 500: 3 }; // Maps value to array index
 
-    for (const { faceValue, positionInPurse } of orderedUnits) {
-        if (remainingAmount >= faceValue) {
-            const countForUnit = Math.floor(remainingAmount / faceValue);
-            unitCounts[positionInPurse] += countForUnit;
-            remainingAmount -= countForUnit * faceValue;
+    const totalInitialValue = initialCoinHoldings.reduce((accumulatedSum, count, index) => accumulatedSum + count * coinDenominationValues[index], 0);
+    let remainingAmountForChange = totalInitialValue - deductionValue;
+
+    const dispensedCoinCounts = [0, 0, 0, 0]; // Corresponds to the 'M' array in the original
+
+    for (const currentDenom of changeAlgorithmDenominations) {
+        if (remainingAmountForChange >= currentDenom) {
+            const countToDispense = Math.floor(remainingAmountForChange / currentDenom);
+            dispensedCoinCounts[denominationToIndexMap[currentDenom]] = countToDispense;
+            remainingAmountForChange -= countToDispense * currentDenom;
         }
     }
-    return unitCounts;
+
+    const resultLines = initialCoinHoldings.map((initialCount, index) => {
+        const currentCoinValue = coinDenominationValues[index];
+        const dispensedCount = dispensedCoinCounts[index];
+        return (initialCount > dispensedCount) ? `${currentCoinValue} ${initialCount - dispensedCount}` : null;
+    }).filter(Boolean); // Filters out nulls (coins that were fully used or not present)
+
+    return resultLines.join('\n');
 };
 
-const handleExchangeScenario = (transactionPrice, clientHoldings) => {
-    const currencyDenominations = [
-        { faceValue: 10, positionInPurse: 0 },
-        { faceValue: 50, positionInPurse: 1 },
-        { faceValue: 100, positionInPurse: 2 },
-        { faceValue: 500, positionInPurse: 3 }
-    ];
+const allInputLines = rawInputContent.trim().split('\n');
 
-    const totalClientValue = clientHoldings.reduce((total, count, idx) => total + count * currencyDenominations[idx].faceValue, 0);
-
-    const changeAmount = totalClientValue - transactionPrice;
-
-    const returnedUnitQuantities = computeUnitDistribution(Math.max(0, changeAmount), currencyDenominations);
-
-    const unusedUnitStatements = [];
-    clientHoldings.forEach((initialUnitCount, idx) => {
-        const dispensedUnitCount = returnedUnitQuantities[idx];
-        if (initialUnitCount > dispensedUnitCount) {
-            unusedUnitStatements.push(`${currencyDenominations[idx].faceValue} ${initialUnitCount - dispensedUnitCount}`);
+const collectedTransactionOutputs = allInputLines.reduce((outputAccumulator, currentLineSegment, lineIndex, sourceArray) => {
+    if (lineIndex % 2 === 0) { // This line contains the deduction value
+        const currentDeduction = Number(currentLineSegment);
+        if (currentDeduction === 0) {
+            sourceArray.splice(lineIndex); // Stop further processing by truncating the array
+            return outputAccumulator;
         }
-    });
-    return unusedUnitStatements;
-};
-
-const acquireInputData = require('node:fs').readFileSync;
-const rawInputString = acquireInputData('/dev/stdin', 'utf8');
-const inputLineSegments = rawInputString.trim().split('\n');
-
-let segmentPointer = 0;
-const accumulatedReports = [];
-
-while (true) {
-    const costString = inputLineSegments[segmentPointer++];
-    const costValue = Number(costString);
-
-    if (costValue === 0) {
-        break;
+        const currentCoinCounts = sourceArray[lineIndex + 1].split(' ').map(Number);
+        outputAccumulator.push(processTransactionData(currentDeduction, currentCoinCounts));
     }
+    return outputAccumulator;
+}, []);
 
-    const holdingsString = inputLineSegments[segmentPointer++];
-    const holdingsArray = holdingsString.split(' ').map(Number);
-
-    const reportLinesForScenario = handleExchangeScenario(costValue, holdingsArray);
-    accumulatedReports.push(reportLinesForScenario);
-}
-
-const formattedOutput = accumulatedReports.map(report => report.join('\n')).join('\n');
-console.log(formattedOutput);
+console.log(collectedTransactionOutputs.join('\n'));

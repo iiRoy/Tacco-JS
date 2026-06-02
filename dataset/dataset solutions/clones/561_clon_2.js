@@ -1,112 +1,95 @@
-function executeProgram()
-{
-    while (true)
-    {
-        // Obtain the number of elements for the current dataset
-        var numElements = fetchValue();
-        if (numElements === 0)
-        {
-            // If the count is zero, terminate the processing loop
-            break;
+function primaryRoutine() {
+    // This is the main execution routine for processing multiple test cases.
+    while (true) { // An infinite loop that continues until a specific break condition is met.
+        let countVal = readInput(); // Read the total number of elements for the current test case.
+
+        // If the input count is zero, it signifies the end of input, so we terminate.
+        if (countVal === 0) {
+            break; // Exit the processing loop.
         }
 
-        // Get the desired segment length
-        var segmentLength = fetchValue();
+        let windowSize = readInput(); // Read the size of the sliding window.
+        let dataArray = []; // Initialize an empty array to store the input numbers.
 
-        // Initialize an array to store the input values
-        var valueList = [];
-
-        // Populate the array with 'numElements' values
-        iterateRange(numElements, function(loopIndex)
-        {
-            valueList[loopIndex] = fetchValue();
+        // Populate the 'dataArray' with 'countVal' numbers read from the input.
+        iterateRange(countVal, function(idx) {
+            dataArray[idx] = readInput(); // Assign each read number to its position in the array.
         });
 
-        // Calculate the initial sum for the first segment
-        var currentSum = 0;
-        iterateRange(segmentLength, function(loopIndex)
-        {
-            currentSum += valueList[loopIndex];
+        let currentSum = 0; // Variable to hold the sum of elements within the current window.
+
+        // Calculate the initial sum for the very first window of 'windowSize' elements.
+        iterateRange(windowSize, function(idx) {
+            currentSum += dataArray[idx]; // Add each element in the initial window to 'currentSum'.
         });
 
-        // Store the initial sum as the maximum found so far
-        var peakValue = currentSum;
+        let maxSum = currentSum; // Initialize 'maxSum' with the sum of the first window.
 
-        // Iterate through the remaining segments to find the maximum sum
-        iterateRange(numElements - segmentLength, function(loopIndex)
-        {
-            // Remove the element exiting the window
-            currentSum -= valueList[loopIndex];
-            // Add the element entering the window
-            currentSum += valueList[segmentLength + loopIndex];
-            // Update the maximum sum if the current sum is greater
-            peakValue = Math.max(currentSum, peakValue);
+        // Iterate through the remaining elements, sliding the window one position at a time.
+        // This loop runs 'countVal - windowSize' times.
+        iterateRange(countVal - windowSize, function(idx) {
+            currentSum -= dataArray[idx]; // Subtract the element that is leaving the window from the left.
+            currentSum += dataArray[windowSize + idx]; // Add the new element entering the window from the right.
+            maxSum = Math.max(currentSum, maxSum); // Update 'maxSum' if the 'currentSum' is greater.
         });
 
-        // Output the highest segment sum found
-        displayOutput(peakValue);
+        outputValue(maxSum); // Print the maximum sum found for the current test case.
     }
 }
 
-
-function iterateRange(startPoint, endPoint, actionFunc)
-{
-    // Handle overloaded function signature: iterateRange(count, callback)
-    if (actionFunc === null || actionFunc === undefined)
-    {
-        actionFunc = endPoint;
-        endPoint = startPoint;
-        startPoint = 0;
+// A utility function for iterating over a range, similar to a 'for' loop.
+// It supports two call signatures: (end, callback) or (start, end, callback).
+function iterateRange(startVal, endVal, callbackFn) {
+    // Check if the 'callbackFn' argument is missing, implying the (end, callback) signature.
+    if (callbackFn == null) {
+        callbackFn = endVal; // The second argument is actually the callback.
+        endVal = startVal; // The first argument is the end value.
+        startVal = 0; // Default the starting value to zero.
     }
 
-    // Loop from startPoint up to (but not including) endPoint
-    for (var loopCounter = startPoint; loopCounter < endPoint; ++loopCounter)
-    {
-        // Execute the callback function; break if it returns false
-        if (actionFunc(loopCounter) === false)
-        {
+    // Loop from 'startVal' up to (but not including) 'endVal'.
+    for (let idx = startVal; idx < endVal; ++idx) {
+        // Execute the provided callback function with the current index.
+        // If the callback explicitly returns 'false', break out of the loop early.
+        if (callbackFn(idx) === false) {
             break;
         }
     }
 }
 
+// Standard input stream setup.
+process.stdin.resume(); // Ensures the standard input stream remains open.
+process.stdin.setEncoding('utf8'); // Sets the character encoding for incoming data.
 
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+let rawData = ''; // A string buffer to accumulate all incoming data from stdin.
+let dataPointer = 0; // An index to keep track of the current position in the processed input array.
 
-var incomingText = '';
-var textPointer = 0;
-
-
-function fetchValue(valueKind)
-{
-    if (valueKind === 'string')
-    {
-        return incomingText[textPointer++];
+// Function to read a single token from the pre-processed input array.
+function readInput(dataType) {
+    // If 'string' type is specified, return the token as a string.
+    if (dataType === 'string') {
+        return rawData[dataPointer++]; // Return the string and advance the pointer.
     }
-    else
-    {
-        // Default to number parsing
-        return +incomingText[textPointer++];
+    // Otherwise, assume numeric type and convert the token to a number.
+    else {
+        return +rawData[dataPointer++]; // Convert to number and advance the pointer.
     }
 }
 
-
-function displayOutput(outputItem)
-{
-    console.log(outputItem);
+// Function to output a value to the console.
+function outputValue(resultVal) {
+    console.log(resultVal); // Prints the given value followed by a newline.
 }
 
-
-process.stdin.on('data', function(dataPiece)
-{
-    incomingText += dataPiece;
+// Event listener for when data chunks are received from stdin.
+process.stdin.on('data', function(dataChunk) {
+    rawData += dataChunk; // Append each incoming data chunk to the 'rawData' buffer.
 });
 
-process.stdin.on('end', function()
-{
-    // Split the received data into an array of strings by whitespace
-    incomingText = incomingText.split(/\s+/);
-    // Begin the main program execution
-    executeProgram();
+// Event listener for when the entire input stream has ended.
+process.stdin.on('end', function() {
+    // Once all data is received, split the 'rawData' string by any whitespace
+    // characters into an array of individual tokens (numbers or strings).
+    rawData = rawData.split(/\s+/);
+    primaryRoutine(); // Initiate the main program logic.
 });

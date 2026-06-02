@@ -1,40 +1,38 @@
-const fileSystemModule = require('fs');
-const sourcePath = '/dev/stdin';
-const fullContent = fileSystemModule.readFileSync(sourcePath, 'utf8');
+const dataReader = require('fs');
 
-const lineSegments = [];
-let segmentStart = 0;
-for (let k = 0; k < fullContent.length; k++) {
-    if (fullContent[k] === '\n') {
-        let currentSegment = fullContent.substring(segmentStart, k);
-        lineSegments.push(currentSegment.trim());
-        segmentStart = k + 1;
+const checkPrimality = (candidateNumber) => {
+    if (candidateNumber < 2) {
+        return false;
+    }
+    if (candidateNumber === 2 || candidateNumber === 3) {
+        return true;
+    }
+    if (candidateNumber % 2 === 0 || candidateNumber % 3 === 0) {
+        return false;
+    }
+
+    let currentDivisor = 5;
+    while (currentDivisor * currentDivisor <= candidateNumber) {
+        if (candidateNumber % currentDivisor === 0 || candidateNumber % (currentDivisor + 2) === 0) {
+            return false;
+        }
+        currentDivisor += 6;
+    }
+    return true;
+};
+
+let primeTally = 0;
+const rawInputLines = dataReader.readFileSync('/dev/stdin', 'utf-8').split('\n');
+
+for (let lineIndex = 1; lineIndex < rawInputLines.length; lineIndex++) {
+    const currentLineText = rawInputLines[lineIndex];
+    if (currentLineText.trim() === '') {
+        continue;
+    }
+    const numericValue = Number.parseInt(currentLineText, 10);
+    if (checkPrimality(numericValue)) {
+        primeTally++;
     }
 }
-if (segmentStart < fullContent.length) {
-    lineSegments.push(fullContent.substring(segmentStart, fullContent.length).trim());
-}
 
-function testForPrimal(numberToCheck, currentDivisor = 3) {
-    if (numberToCheck < 2) return false;
-    if (numberToCheck === 2) return true;
-    if (numberToCheck % 2 === 0) return false;
-
-    if (currentDivisor * currentDivisor > numberToCheck) return true;
-    if (numberToCheck % currentDivisor === 0) return false;
-
-    return testForPrimal(numberToCheck, currentDivisor + 2);
-}
-
-let totalPrimeCount = 0;
-let dataPointer = 1;
-
-while (dataPointer < lineSegments.length) {
-    const valueToEvaluate = parseInt(lineSegments[dataPointer], 10);
-    if (!isNaN(valueToEvaluate) && testForPrimal(valueToEvaluate)) {
-        totalPrimeCount++;
-    }
-    dataPointer++;
-}
-
-console.log(totalPrimeCount);
+console.log(primeTally);

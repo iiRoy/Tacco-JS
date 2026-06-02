@@ -1,42 +1,54 @@
-const readSource = require('node:fs').readFileSync;
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericStrings = fileContent.match(/\d+/g);
+const parsedNumbers = numericStrings.map(Number);
 
-const rawData = readSource('/dev/stdin', 'utf8')
-    .trim()
-    .split(/\s+/)
-    .map(Number);
+const [boardHeight, boardWidth, ...rawCoordinates] = parsedNumbers;
 
-const numRows = rawData[0];
-const numCols = rawData[1];
-
-const coordinateTuples = Array.from({ length: (rawData.length - 2) / 2 }, (_, index) => [
-    rawData[2 + index * 2],
-    rawData[3 + index * 2]
-]);
-
-const rowTallies = new Map();
-const colTallies = new Map();
-
-coordinateTuples.forEach(tuple => {
-    rowTallies.set(tuple[0], (rowTallies.get(tuple[0]) || 0) + 1);
-    colTallies.set(tuple[1], (colTallies.get(tuple[1]) || 0) + 1);
-});
-
-const peakRowCount = Math.max(0, ...Array.from(rowTallies.values()));
-const peakColCount = Math.max(0, ...Array.from(colTallies.values()));
-
-const optimalRows = Array.from(rowTallies.keys()).filter(rIdx => rowTallies.get(rIdx) === peakRowCount);
-const optimalCols = Array.from(colTallies.keys()).filter(cIdx => colTallies.get(cIdx) === peakColCount);
-
-const presentCoordinates = new Set(coordinateTuples.map(tuple => tuple.join(',')));
-
-const allIntersectionsPopulated = optimalRows.every(rVal =>
-    optimalCols.every(cVal =>
-        presentCoordinates.has(`${rVal},${cVal}`)
-    )
+const { coordinatePairs, coordinatePresence } = rawCoordinates.reduce(
+    (accumulator, value, index, array) => {
+        if (index % 2 === 0) {
+            const rowValue = value;
+            const columnValue = array[index + 1];
+            accumulator.coordinatePairs.push([rowValue, columnValue]);
+            accumulator.coordinatePresence.add(`${rowValue}-${columnValue}`);
+        }
+        return accumulator;
+    },
+    { coordinatePairs: [], coordinatePresence: new Set() }
 );
 
-if (!allIntersectionsPopulated) {
-    process.stdout.write((peakRowCount + peakColCount).toString());
+const rowFrequencies = new Map();
+const colFrequencies = new Map();
+
+for (let i = 1; i <= boardHeight; i++) {
+    rowFrequencies.set(i, 0);
+}
+for (let i = 1; i <= boardWidth; i++) {
+    colFrequencies.set(i, 0);
+}
+
+coordinatePairs.forEach(([rCoord, cCoord]) => {
+    rowFrequencies.set(rCoord, rowFrequencies.get(rCoord) + 1);
+    colFrequencies.set(cCoord, colFrequencies.get(cCoord) + 1);
+});
+
+const maxRowCount = Math.max(...rowFrequencies.values());
+const maxColCount = Math.max(...colFrequencies.values());
+
+const maxRowIndices = Array.from(rowFrequencies.entries())
+    .filter(([, count]) => count === maxRowCount)
+    .map(([index,]) => index);
+
+const maxColIndices = Array.from(colFrequencies.entries())
+    .filter(([, count]) => count === maxColCount)
+    .map(([index,]) => index);
+
+const hasUnoccupiedIntersection = maxRowIndices.some(rIndex =>
+    maxColIndices.some(cIndex => !coordinatePresence.has(`${rIndex}-${cIndex}`))
+);
+
+if (hasUnoccupiedIntersection) {
+    console.log(maxRowCount + maxColCount);
 } else {
-    process.stdout.write((peakRowCount + peakColCount - 1).toString());
+    console.log(maxRowCount + maxColCount - 1);
 }

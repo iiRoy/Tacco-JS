@@ -1,26 +1,17 @@
-(function () {
-  const acquireRawInput = require('node:fs').readFileSync(0, 'utf8');
+'use strict'
 
-  const computeNumericResult = (sourceStringContent) => {
-    const numericDataPoints = sourceStringContent
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map(parseFloat);
+function processInputAndDecide(rawTextContent) {
+  const processedNumbers = rawTextContent
+    .trim()
+    .split(' ')
+    .reduce((accumulator, currentString) => {
+      accumulator.push(Number(currentString));
+      return accumulator;
+    }, []);
 
-    const firstValueInSequence = numericDataPoints[0];
-    const secondValueInSequence = numericDataPoints[1];
+  const outcomeValue = [10, 0][Number(processedNumbers[0] < processedNumbers[1])];
 
-    // Original logic: first < second ? 0 : 10
-    // This translates to:
-    // If first < second is TRUE (1), result is 0
-    // If first < second is FALSE (0), result is 10
-    // So, (1 - Number(first < second)) * 10 achieves this.
-    const finalCalculatedValue = (1 - Number(firstValueInSequence < secondValueInSequence)) * 10;
+  console.log(outcomeValue);
+}
 
-    return finalCalculatedValue;
-  };
-
-  const outcomeDisplay = computeNumericResult(acquireRawInput);
-  process.stdout.write(outcomeDisplay.toString() + '\n');
-})();
+processInputAndDecide(require('fs').readFileSync('/dev/stdin', 'utf8'));

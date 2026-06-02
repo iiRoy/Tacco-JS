@@ -1,53 +1,47 @@
-const INITIAL_CAPITAL = 100.0;
-const COMPOUND_GROWTH_FACTOR = 1.01;
+'use strict';
 
-/**
- * Extracts a numeric value from the first non-empty line of a given string.
- * Handles trimming and basic numeric conversion.
- * @param {string} rawInputContent - The multi-line string input.
- * @returns {number} The parsed numeric target, or NaN if parsing fails.
- */
-function extractNumericTarget(rawInputContent) {
-    const contentLines = String(rawInputContent || '').trim().split('\n');
+function determineGrowthPeriods(initialValue, targetValue, growthFactor) {
+  let currentAccumulation = initialValue;
+  let periodCounter = 0;
 
-    if (contentLines.length === 0 || contentLines[0].trim() === '') {
-        return NaN; // No meaningful input line
-    }
+  const MINIMUM_TARGET_FOR_GROWTH = initialValue;
 
-    const firstLineValue = parseFloat(contentLines[0].trim());
-    return isNaN(firstLineValue) ? NaN : firstLineValue;
+  // If the target is already met or less than the initial value, no growth periods are needed.
+  // This handles cases where targetValue <= initialValue, ensuring 0 periods.
+  if (targetValue <= MINIMUM_TARGET_FOR_GROWTH) {
+    return 0;
+  }
+
+  // Loop until the target value is reached or surpassed
+  while (currentAccumulation < targetValue) {
+    currentAccumulation *= growthFactor;
+    periodCounter++;
+  }
+  return periodCounter;
 }
 
-/**
- * Simulates a financial growth process to determine the number of periods
- * required for an initial capital to reach a specified target amount
- * under a constant compound growth factor.
- *
- * @param {string} sourceDataString - The raw input data, expected to contain
- *                                    the target amount on the first line.
- */
-function simulateFinancialGrowth(sourceDataString) {
-    const targetInvestmentGoal = extractNumericTarget(sourceDataString);
+function processFinancialData(rawData) {
+  // Define constants for clarity and potential reuse
+  const INITIAL_INVESTMENT_AMOUNT = 100;
+  const ANNUAL_GROWTH_MULTIPLIER = 1.01;
 
-    // Validate the parsed target goal. It must be a non-negative number.
-    if (isNaN(targetInvestmentGoal) || targetInvestmentGoal < 0) {
-        console.error("Error: The desired investment goal must be a valid non-negative number.");
-        return; // Terminate execution due to invalid input
-    }
+  // Process raw input data by trimming whitespace and splitting into lines
+  const trimmedInputContent = rawData.trim();
+  const inputLinesArray = trimmedInputContent.split('\n');
 
-    let currentPortfolioValue = INITIAL_CAPITAL;
-    let elapsedGrowthPeriods = 0;
+  // Extract the desired target amount from the first line of input
+  const desiredTargetAmount = Number(inputLinesArray[0]);
 
-    // Continue compounding until the portfolio value meets or exceeds the target.
-    while (currentPortfolioValue < targetInvestmentGoal) {
-        currentPortfolioValue = currentPortfolioValue * COMPOUND_GROWTH_FACTOR; // Apply the compound growth
-        elapsedGrowthPeriods += 1;                                            // Increment the period counter
-    }
+  // Calculate the number of years required using the dedicated helper function
+  const requiredYears = determineGrowthPeriods(
+    INITIAL_INVESTMENT_AMOUNT,
+    desiredTargetAmount,
+    ANNUAL_GROWTH_MULTIPLIER
+  );
 
-    // Output the total number of growth periods calculated.
-    console.log(elapsedGrowthPeriods);
+  // Output the final calculated result
+  console.log(requiredYears);
 }
 
-// Entry point for executing the simulation with data from standard input.
-// Reads the entire content of /dev/stdin as a UTF-8 string.
-simulateFinancialGrowth(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+processFinancialData(require('fs').readFileSync('/dev/stdin', 'utf8'));

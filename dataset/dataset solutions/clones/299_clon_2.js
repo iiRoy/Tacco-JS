@@ -1,53 +1,76 @@
-const calculatePathValue = (rowIndex, colIndex) => { // Determines path value for a cell
-    if (gridMatrix[rowIndex][colIndex] === '*') {
-        gridMatrix[rowIndex][colIndex] = 0;
-        return;
+function computeCellVal(rowIdx, colIdx) {
+  // If the current cell contains an obstacle, mark it as 0 and return.
+  if (gridData[rowIdx][colIdx] === "*") {
+    gridData[rowIdx][colIdx] = 0;
+    return;
+  }
+
+  // Define relative offsets for checking previous cells (top-left, top, left).
+  const rowOffsets = [-1, -1, 0];
+  const colOffsets = [-1, 0, -1];
+
+  // Initialize minimum value with the grid dimension (a large enough value).
+  let minimumNeighborVal = gridDimension;
+
+  // Iterate through the three relevant neighboring cells.
+  for (let idx = 0; idx < 3; idx++) {
+    const prevRow = rowIdx + rowOffsets[idx];
+    const prevCol = colIdx + colOffsets[idx];
+
+    // Check if the neighbor is out of bounds.
+    // If any neighbor is out of bounds, this cell is considered to have a value of 1.
+    if (prevRow < 0 || prevRow >= gridDimension || prevCol < 0 || prevCol >= gridDimension) {
+      gridData[rowIdx][colIdx] = 1;
+      return;
     }
 
-    const rowOffsetArray = [ -1, -1, 0 ];
-    const colOffsetArray = [ -1, 0, -1 ];
+    // Update the minimum value found among valid neighbors.
+    minimumNeighborVal = Math.min(minimumNeighborVal, gridData[prevRow][prevCol]);
+  }
 
-    let minimumNeighborValue = currentDimension;
+  // The current cell's value is one more than the minimum of its valid neighbors.
+  gridData[rowIdx][colIdx] = minimumNeighborVal + 1;
+}
 
-    for (let iterationCount = 0; iterationCount < 3; iterationCount++) { // Iterate through neighboring cells
-        let adjacentRow = rowIndex + rowOffsetArray[iterationCount];
-        let adjacentCol = colIndex + colOffsetArray[iterationCount];
+// Read all input from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-        if (adjacentRow < 0 || adjacentRow >= currentDimension || adjacentCol < 0 || adjacentCol >= currentDimension) {
-            gridMatrix[rowIndex][colIndex] = 1; // Mark as boundary-adjacent
-            return;
-        }
-        minimumNeighborValue = Math.min(minimumNeighborValue, gridMatrix[adjacentRow][adjacentCol]);
-    }
+// Split the input into an array of lines, removing any leading/trailing whitespace.
+const lineSegments = rawData.trim().split("\n");
 
-    gridMatrix[rowIndex][colIndex] = minimumNeighborValue + 1;
-};
-
-const rawInputData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
-let processedLines = rawInputData.trim().split('\n');
-
+// Main processing loop.
 while (true) {
-    let currentDimension = parseInt(processedLines.shift(), 10);
-    if (currentDimension === 0) {
-        break; // Exit loop if dimension is zero
+  // Read the grid dimension from the first line of the current test case.
+  // Convert it to a number.
+  let gridDimension = lineSegments.shift() - 0;
+
+  // If the dimension is 0, it signifies the end of input.
+  if (gridDimension === 0) {
+    break;
+  }
+
+  // Initialize the maximum value found in the current grid.
+  let overallMaximum = 0;
+
+  // Initialize the 2D array to store grid data.
+  const gridData = [];
+
+  // Populate the gridData array from input lines.
+  for (let idx = 0; idx < gridDimension; idx++) {
+    const currentLine = lineSegments.shift();
+    gridData.push(currentLine.split(""));
+  }
+
+  // Iterate through each cell of the grid to compute its value.
+  for (let rowIdx = 0; rowIdx < gridDimension; rowIdx++) {
+    for (let colIdx = 0; colIdx < gridDimension; colIdx++) {
+      // Calculate the value for the current cell.
+      computeCellVal(rowIdx, colIdx);
+      // Update the overall maximum value encountered so far.
+      overallMaximum = Math.max(overallMaximum, gridData[rowIdx][colIdx]);
     }
+  }
 
-    let overallMaximum = 0;
-    const gridMatrix = [];
-
-    // Populate the grid from input lines
-    for (let rIdx = 0; rIdx < currentDimension; rIdx++) {
-        const lineContent = processedLines.shift();
-        gridMatrix.push(lineContent.split(''));
-    }
-
-    // Process each cell in the grid
-    for (let rIdx = 0; rIdx < currentDimension; rIdx++) {
-        for (let cIdx = 0; cIdx < currentDimension; cIdx++) {
-            calculatePathValue(rIdx, cIdx);
-            overallMaximum = Math.max(overallMaximum, gridMatrix[rIdx][cIdx]);
-        }
-    }
-
-    console.log(overallMaximum);
+  // Output the maximum value for the current grid.
+  console.log(overallMaximum);
 }

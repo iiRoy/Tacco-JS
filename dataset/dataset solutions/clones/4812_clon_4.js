@@ -1,48 +1,92 @@
-const fileSystemInterface = require('fs');
-const rawTextualData = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
-const parsedTextLines = rawTextualData.split('\n');
-let currentTextPointer = 0;
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-const acquireNextLine = () => parsedTextLines[currentTextPointer++];
+var input_stdin = "";
+var input_stdin_array = "";
+var input_currentline = 0;
 
-const executeComputation = () => {
-    const totalCount = Number(acquireNextLine());
-    const numericSequence = acquireNextLine().split(' ').map(Number);
+process.stdin.on('data', function (data) {
+    input_stdin += data;
+});
 
-    const countTracker = new Map();
-    countTracker.set(0, 1);
-    for (let currentKey = 1; currentKey < totalCount; ++currentKey) {
-        countTracker.set(currentKey, 2);
-    }
+process.on('SIGINT', function(){
+    input_stdin_array = input_stdin.split("\n");
+    mainEntry();
+    process.exit();
+});
 
-    for (const itemElement of numericSequence) {
-        if (!countTracker.has(itemElement)) {
-            console.log("0");
-            return;
+process.stdin.on('end', function () {
+    input_stdin_array = input_stdin.split("\n");
+    mainEntry();    
+});
+
+function obtainLine() {
+    return input_stdin_array[input_currentline++];
+}
+
+/////////////// ignore above this line ////////////////////
+
+function mainEntry() {
+    const elementCount = parseInt(obtainLine());
+    const numericSequence = obtainLine().split(" ").map(s => parseInt(s));
+
+    const valueOccurrences = new Map();
+    for (let idx = 0; idx < elementCount; idx++) {
+        const currentVal = numericSequence[idx];
+
+        if (isNaN(currentVal) || currentVal < 0 || currentVal >= elementCount) {
+            throw new TypeError("Cannot decrement property of undefined or invalid index.");
         }
-        countTracker.set(itemElement, countTracker.get(itemElement) - 1);
+        valueOccurrences.set(currentVal, (valueOccurrences.get(currentVal) || 0) + 1);
     }
 
-    let validationStatus = true;
-    const startingParityCheck = (totalCount % 2 === 1) ? 0 : 1;
+    let sequenceIsCorrect = true;
 
-    for (let checkPosition = startingParityCheck; checkPosition < totalCount; checkPosition += 2) {
-        if (countTracker.get(checkPosition) !== 0) {
-            validationStatus = false;
-            break;
+    if (elementCount % 2 === 1) { // elementCount is odd
+        for (let k = 0; k < elementCount; k++) {
+            const currentObservedCount = valueOccurrences.get(k) || 0;
+            if (k % 2 === 0) { // Even index
+                if (k === 0) {
+                    if (currentObservedCount !== 1) { 
+                        sequenceIsCorrect = false; 
+                        break; 
+                    }
+                } else { // k is an even number > 0
+                    if (currentObservedCount !== 2) { 
+                        sequenceIsCorrect = false; 
+                        break; 
+                    }
+                }
+            } else { // Odd index
+                if (currentObservedCount !== 0) { // Should not appear
+                    sequenceIsCorrect = false;
+                    break;
+                }
+            }
+        }
+    } else { // elementCount is even
+        for (let k = 0; k < elementCount; k++) {
+            const currentObservedCount = valueOccurrences.get(k) || 0;
+            if (k % 2 === 1) { // Odd index
+                if (currentObservedCount !== 2) { 
+                    sequenceIsCorrect = false; 
+                    break; 
+                }
+            } else { // Even index (including 0)
+                if (currentObservedCount !== 0) { // Should not appear
+                    sequenceIsCorrect = false;
+                    break;
+                }
+            }
         }
     }
 
-    if (!validationStatus) {
+    if (!sequenceIsCorrect) {
         console.log("0");
         return;
     }
 
-    const powerBase = 2;
-    const exponentValue = Math.floor(totalCount / 2);
-    const finalOutcome = Math.pow(powerBase, exponentValue);
-
+    const powerExponent = Math.floor(elementCount / 2);
+    const finalOutcome = Math.pow(2, powerExponent);
     console.log(finalOutcome.toString());
-};
-
-executeComputation();
+}

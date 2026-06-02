@@ -1,93 +1,130 @@
-const dataSource = require('fs').readFileSync('/standard/input', 'encodingUtf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawData.trim().split('\n');
 
-const inputLines = dataSource.trim().split('\n');
-
-const COLOR_PALETTE = ['red', 'green', 'blue'];
-
-const TERMINATION_CODE = '0';
-const NOT_APPLICABLE_VALUE = 'NA';
+// Define the set of allowed segment colors.
+const COLOR_SET = ['r','g','b'];
 
 /**
- * Represents a single organism within the simulation, characterized by its unique identifier
- * and hierarchical level.
+ * Represents a chain of segments, each having a specific color.
+ * This class helps in tracking the chain's state and its "depth" in a transformation process.
  */
-class Organism {
+class SegmentChain {
   /**
-   * Initializes a new organism instance.
-   * @param {string} uniqueId - A unique string sequence identifying the organism.
-   * @param {number} level - The organism's depth or level in the evolutionary chain.
+   * Constructs a new SegmentChain instance.
+   * @param {string} identifier - A string representing the sequence of colors (e.g., "rgb").
+   * @param {number} level - The transformation level or depth at which this chain was created.
    */
-  constructor(uniqueId, level) {
-    this.uniqueId = uniqueId;
-    this.level = level;
-    this.colorSequence = uniqueId.split('');
+  constructor(identifier, level) {
+    this.identifier = identifier; // Unique string ID for the chain
+    this.level = level;           // Transformation depth
+    this.segmentColors = identifier.split(''); // Array of individual segment colors
   }
 
   /**
-   * Computes and returns a list of identifiers for the next generation of organisms
-   * based on specific transformation rules.
-   * @returns {string[]} An array of strings, each representing a potential next organism identifier.
+   * Generates a list of possible next chain identifiers by applying a specific transformation rule.
+   * The rule involves finding two adjacent segments of different colors and replacing them
+   * with two segments of the third color.
+   * @returns {string[]} An array of string identifiers for the next possible SegmentChains.
    */
-  generateSuccessorIds() {
-    const successorIds = [];
-    for (let idx = 0; idx < this.colorSequence.length - 1; idx++) {
-      const [currentHue, nextHue] = this.colorSequence.slice(idx, idx + 2);
-      if (currentHue === nextHue) {
+  generateNextChainIdentifiers() {
+    const subsequentChainIdentifiers = []; // Stores the IDs of newly generated chains
+
+    // Iterate through adjacent pairs of segments
+    for (let idx = 0; idx < this.segmentColors.length - 1; idx++) {
+      const [ firstColor, secondColor ] = this.segmentColors.slice(idx, idx + 2);
+
+      // If adjacent segments are the same color, no transformation is possible for this pair.
+      if (firstColor === secondColor) {
         continue;
       }
-      const modifiedHue = COLOR_PALETTE.filter(singleHue => singleHue !== currentHue && singleHue !== nextHue)[0];
-      const alteredSequence = this.colorSequence.slice();
-      alteredSequence.splice(idx, 2, modifiedHue, modifiedHue);
-      successorIds.push(alteredSequence.join(''));
+
+      // Determine the third color that is different from the current pair.
+      const replacementColor = COLOR_SET.filter(clr => clr !== firstColor && clr !== secondColor)[0];
+
+      // Create a mutable copy of the current segment colors array.
+      const modifiedColorsArray = this.segmentColors.slice();
+
+      // Replace the two adjacent segments with two segments of the 'replacementColor'.
+      modifiedColorsArray.splice(idx, 2, replacementColor, replacementColor);
+
+      // Add the new chain identifier to the list.
+      subsequentChainIdentifiers.push(modifiedColorsArray.join(''));
     }
-    return successorIds;
+    return subsequentChainIdentifiers;
   }
 }
 
 /**
- * Manages the exploration of organism relationships using a breadth-first search algorithm.
+ * Implements a Breadth-First Search (BFS) algorithm to find the shortest path
+ * (minimum transformation level) to a state where no further transformations are possible.
  */
-class EvolutionTree {
+class PathFinder {
   /**
-   * Constructs a new evolution tree instance, initializing its internal registry.
+   * Initializes a new PathFinder.
    */
   constructor() {
-    this.nodeRegister = new Map();
+    // Stores visited SegmentChain identifiers and their corresponding SegmentChain objects.
+    this.visitedChains = new Map();
   }
 
   /**
-   * Executes a breadth-first search starting from a given organism identifier
-   * to find the "deepest" reachable organism that has no further transformations.
-   * @param {string} initialOrganismId - The starting organism identifier for the search.
-   * @returns {Organism|undefined} The final organism found with no subsequent transformations, or undefined if none.
+   * Executes a BFS starting from a given chain identifier to find the terminal chain.
+   * A terminal chain is one from which no further transformations can be made.
+   * @param {string} initialChainId - The starting identifier for the BFS.
+   * @returns {SegmentChain | undefined} The terminal SegmentChain object if found, otherwise undefined.
    */
-  exploreTree(initialOrganismId) {
-    this.processQueue = [];
-    this.nodeRegister.set(initialOrganismId, new Organism(initialOrganismId, 0));
-    this.processQueue.push(initialOrganismId);
-    while (this.processQueue.length) {
-      const currentOrganismId = this.processQueue.shift();
-      const currentOrganism = this.nodeRegister.get(currentOrganismId);
-      const organismSuccessors = currentOrganism.generateSuccessorIds();
-      if (!organismSuccessors.length) {
-        return currentOrganism;
+  explorePaths(initialChainId) {
+    // Initialize the queue for BFS.
+    this.explorationQueue = [];
+
+    // Add the initial chain to the visited map and the queue.
+    this.visitedChains.set(initialChainId, new SegmentChain(initialChainId, 0));
+    this.explorationQueue.push(initialChainId);
+
+    // Continue BFS as long as there are chains to explore.
+    while(this.explorationQueue.length > 0) {
+      // Dequeue the next chain identifier.
+      const currentChainId = this.explorationQueue.shift();
+      // Retrieve the corresponding SegmentChain object.
+      const currentChain = this.visitedChains.get(currentChainId);
+
+      // Generate all possible next chain identifiers from the current chain.
+      const generatedChainIds = currentChain.generateNextChainIdentifiers();
+
+      // If no new chains can be generated, this is a terminal chain.
+      if (!generatedChainIds.length) {
+        return currentChain; // Return the terminal chain.
       }
-      organismSuccessors.forEach(nextId => {
-        if (this.nodeRegister.has(nextId)) {
+
+      // Process each newly generated chain identifier.
+      generatedChainIds.forEach(nextChainId => {
+        // If this chain has already been visited, skip it.
+        if (this.visitedChains.has(nextChainId)) {
           return;
         }
-        this.nodeRegister.set(nextId, new Organism(nextId, currentOrganism.level + 1));
-        this.processQueue.push(nextId);
+        // Mark the new chain as visited and calculate its level.
+        this.visitedChains.set(nextChainId, new SegmentChain(nextChainId, currentChain.level + 1));
+        // Enqueue the new chain for further exploration.
+        this.explorationQueue.push(nextChainId);
       });
     }
+    // Should not be reached if a terminal chain is always found.
+    return undefined;
   }
 }
 
-inputLines.forEach(inputIdentifier => {
-  if (inputIdentifier === TERMINATION_CODE) {
+// Process each input line (representing a starting worm ID).
+processedLines.forEach(initialChainId => {
+  // Skip processing if the input is the termination signal '0'.
+  if (initialChainId === '0') {
     return;
   }
-  const treeInstance = new EvolutionTree();
-  const finalOrganism = treeInstance.exploreTree(inputIdentifier);
-  console.log(finalOrganism ? finalOrganism.level : NOT_APPLICABLE_VALUE);
+
+  // Create a new pathfinder for each input chain.
+  const pathSearcher = new PathFinder();
+  // Execute BFS to find the terminal chain.
+  const terminalChain = pathSearcher.explorePaths(initialChainId);
+
+  // Output the depth of the terminal chain, or 'NA' if not found (though it should always be found).
+  console.log(terminalChain ? terminalChain.level : 'NA');
 });

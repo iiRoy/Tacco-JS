@@ -1,47 +1,50 @@
-'use strict'
+'use strict';
 
-// This module provides a utility for sequentially fetching input data.
-const obtainInputSupplier = ( ) => {
+// This function creates and returns a closure that provides input tokens one by one.
+const obtainInputReader = () => {
+  /**
+   * A generator function that reads standard input,
+   * splits it into tokens, and yields each token.
+   * @yields {string} An individual token from the input.
+   */
+  function* inputTokenGenerator() {
+    // Read the entire standard input synchronously as a UTF-8 string.
+    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-  // A generator function designed to break down standard input into individual segments.
-  function* generateTokens ( ) {
-    // Acquire all raw textual content from the standard input stream.
-    const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8') ;
-
-    // Iterate through each distinct segment after cleaning and splitting the raw data.
-    for ( const segment of rawData.trim().split(/\s+/) ) {
-      yield segment ; // Emit the current segment.
+    // Trim whitespace and split the input string by one or more whitespace characters.
+    for (const lexeme of rawData.trim().split(/\s+/)) {
+      yield lexeme; // Yield each resulting token.
     }
   }
 
-  // Create an instance of the token generator to manage input progression.
-  const tokenProducer = generateTokens( ) ;
+  // Create an instance of the input token generator.
+  const iteratorInstance = inputTokenGenerator();
 
-  // Deliver a function that, when invoked, yields the next available input token.
-  return ( ) => {
-    return tokenProducer.next( ).value ;
-  } ;
-} ;
+  // Return a function that, when called, gets the next value from the generator.
+  return () => {
+    return iteratorInstance.next().value;
+  };
+};
 
-// The primary routine for processing the gathered numeric entries.
-const processData = ( fetchNextValue ) => {
-  // Construct an array composed of three numerical entries obtained from the input supplier.
-  const numericalValues = Array
-    .from( {
-      length: 3
-    } )
-    .map(
-      ( ) => +fetchNextValue( )
-    ) ;
+/**
+ * The primary execution function of the program.
+ * It processes three numeric inputs and prints a calculated result.
+ * @param {Function} getNextValue - A function that returns the next input value as a string.
+ */
+const processData = (getNextValue) => {
+  // Create an array of three numbers by calling the input function three times
+  // and converting each string result to a number using unary plus.
+  const numericValues = Array.from({ length: 3 }).map(() => +getNextValue());
 
-  // Arrange the collected numerical entries in ascending order.
-  numericalValues.sort( ) ;
+  // Sort the array of numbers in ascending order.
+  numericValues.sort();
 
-  // Compute and output a specific sum derived from the sorted numerical entries.
-  console.log(
-    numericalValues[2] * 10 + numericalValues[0] + numericalValues[1]
-  ) ;
-} ;
+  // Calculate the final result: (largest * 10) + smallest + middle.
+  // Then, print this result to the console.
+  console.log(numericValues[2] * 10 + numericValues[0] + numericValues[1]);
+};
 
-// Initiate the data processing pipeline by first establishing the input acquisition mechanism.
-processData( obtainInputSupplier( ) ) ;
+
+// Execute the main processing function,
+// passing it the input reader closure obtained from obtainInputReader.
+processData(obtainInputReader());

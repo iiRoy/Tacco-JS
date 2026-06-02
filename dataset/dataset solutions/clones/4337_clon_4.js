@@ -1,101 +1,128 @@
-const obtainSourceContent = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
-const processRawLines = (contentBlock) => contentBlock.split("\n");
+class InputHandler {
+  #inputLines;
+  #currentLinePosition;
 
-let processedInputLines = [];
-let currentPosition = 0;
+  constructor() {
+    this.#inputLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    this.#currentLinePosition = 0;
+  }
 
-const prepareInputHandler = () => {
-    processedInputLines = processRawLines(obtainSourceContent());
-    currentPosition = 0;
-};
-
-const fetchNextEntry = () => {
-    if (currentPosition >= processedInputLines.length) {
-        return "";
+  fetchNextLine() {
+    if (this.#currentLinePosition >= this.#inputLines.length) {
+      return "";
     }
-    return processedInputLines[currentPosition++];
-};
+    return this.#inputLines[this.#currentLinePosition++];
+  }
 
-const transformToNumericSequence = (textSegment) => textSegment.split(" ").map(Number);
-const extractIndividualCharacters = (textSegment) => textSegment.split("");
-
-const initiateProcess = () => {
-    prepareInputHandler();
-
-    const dimensionsData = transformToNumericSequence(fetchNextEntry());
-    const gridHeight = dimensionsData[0];
-    const gridWidth = dimensionsData[1];
-
-    const symbolTallies = new Map();
-    for (let rowIdx = 0; rowIdx < gridHeight; ++rowIdx) {
-        const rowSymbols = extractIndividualCharacters(fetchNextEntry());
-        rowSymbols.forEach(sym => {
-            symbolTallies.set(sym, (symbolTallies.get(sym) || 0) + 1);
-        });
+  static transformContent(contentValue, transformationType) {
+    try {
+      switch (transformationType) {
+        case 1: return parseInt(contentValue, 10);
+        case 2: return contentValue.split(" ");
+        case 4: return contentValue.split(" ").map(Number);
+        case 6: return contentValue.split("");
+        case 7: return contentValue.split("").map(Number);
+        case 8: return contentValue.join(" ");
+        case 9: return contentValue.join("\n");
+        case 0: return contentValue.join("");
+        default: return contentValue;
+      }
+    } catch (e) {
+      return contentValue;
     }
+  }
+}
 
-    const halfHeightRoundedUp = Math.ceil(gridHeight / 2);
-    const halfWidthRoundedUp = Math.ceil(gridWidth / 2);
+const inputSource = new InputHandler();
 
-    let neededFourBlocks = 0;
-    let neededTwoBlocks = 0;
-    let neededSingleBlocks = 0;
+function retrieveNextInteger() {
+  return InputHandler.transformContent(inputSource.fetchNextLine(), 1);
+}
 
-    if (gridHeight % 2 === 1 && gridWidth % 2 === 1) {
-        neededFourBlocks = (halfHeightRoundedUp - 1) * (halfWidthRoundedUp - 1);
-        neededTwoBlocks = (halfHeightRoundedUp - 1) + (halfWidthRoundedUp - 1);
-        neededSingleBlocks = 1;
-    } else if (gridHeight % 2 === 1 && gridWidth % 2 === 0) {
-        neededFourBlocks = halfWidthRoundedUp * (halfHeightRoundedUp - 1);
-        neededTwoBlocks = halfWidthRoundedUp;
-    } else if (gridHeight % 2 === 0 && gridWidth % 2 === 1) {
-        neededFourBlocks = halfHeightRoundedUp * (halfWidthRoundedUp - 1);
-        neededTwoBlocks = halfHeightRoundedUp;
-    } else { // Both even
-        neededFourBlocks = halfHeightRoundedUp * halfWidthRoundedUp;
-    }
+function retrieveNextCharacterArray() {
+  return InputHandler.transformContent(inputSource.fetchNextLine(), 6);
+}
 
-    const evaluatePossibility = (initialSymbolTallies, targetFours, targetTwos, targetSingles) => {
-        let mutableSymbolTallies = new Map(initialSymbolTallies);
-        let remainingFours = targetFours;
-        let remainingTwos = targetTwos;
-        let remainingSingles = targetSingles;
+function retrieveNextIntegerArray() {
+  return InputHandler.transformContent(inputSource.fetchNextLine(), 4);
+}
 
-        for (const [symbol, tally] of mutableSymbolTallies.entries()) {
-            const availableFours = Math.floor(tally / 4);
-            const foursToConsume = Math.min(availableFours, remainingFours);
-            remainingFours -= foursToConsume;
-            mutableSymbolTallies.set(symbol, tally - (foursToConsume * 4));
-            if (remainingFours === 0) break;
+function outputResult(message) {
+  console.log(message);
+}
+
+function outputDebug(message) {
+  console.error(message);
+}
+
+function solveSymmetryPuzzle() {
+  const gridDimensions = retrieveNextIntegerArray();
+  const gridHeight = gridDimensions[0];
+  const gridWidth = gridDimensions[1];
+
+  const characterCounts = new Map();
+  Array.from({ length: gridHeight }).forEach(() => {
+    const rowCharacters = retrieveNextCharacterArray();
+    rowCharacters.forEach(charKey => {
+      characterCounts.set(charKey, (characterCounts.get(charKey) || 0) + 1);
+    });
+  });
+
+  let requiredQuads = 0;
+  let requiredPairs = 0;
+  let requiredSingles = 0;
+
+  const halfGridHeight = Math.ceil(gridHeight / 2);
+  const halfGridWidth = Math.ceil(gridWidth / 2);
+
+  outputDebug("halfHeight : " + halfGridHeight);
+  outputDebug("halfWidth : " + halfGridWidth);
+
+  const isHeightOdd = gridHeight % 2 === 1;
+  const isWidthOdd = gridWidth % 2 === 1;
+
+  if (isHeightOdd && isWidthOdd) {
+    requiredQuads = (halfGridHeight - 1) * (halfGridWidth - 1);
+    requiredPairs = (halfGridHeight - 1) + (halfGridWidth - 1);
+    requiredSingles = 1;
+  } else if (isHeightOdd && !isWidthOdd) {
+    requiredQuads = halfGridWidth * (halfGridHeight - 1);
+    requiredPairs = halfGridWidth;
+  } else if (!isHeightOdd && isWidthOdd) {
+    requiredQuads = halfGridHeight * (halfGridWidth - 1);
+    requiredPairs = halfGridHeight;
+  } else {
+    requiredQuads = halfGridHeight * halfGridWidth;
+  }
+
+  const consumptionOrder = [
+    { unitSize: 4, quantity: requiredQuads },
+    { unitSize: 2, quantity: requiredPairs },
+    { unitSize: 1, quantity: requiredSingles }
+  ];
+
+  const canConstruct = consumptionOrder.every(requirement => {
+    let currentQuantity = requirement.quantity;
+    const currentUnitSize = requirement.unitSize;
+
+    while (currentQuantity > 0) {
+      let foundConsumableChar = false;
+      for (const [charIdentifier, charFrequency] of characterCounts.entries()) {
+        if (charFrequency >= currentUnitSize) {
+          characterCounts.set(charIdentifier, charFrequency - currentUnitSize);
+          currentQuantity--;
+          foundConsumableChar = true;
+          break;
         }
-        if (remainingFours > 0) return false;
-
-        for (const [symbol, tally] of mutableSymbolTallies.entries()) {
-            const availableTwos = Math.floor(tally / 2);
-            const twosToConsume = Math.min(availableTwos, remainingTwos);
-            remainingTwos -= twosToConsume;
-            mutableSymbolTallies.set(symbol, tally - (twosToConsume * 2));
-            if (remainingTwos === 0) break;
-        }
-        if (remainingTwos > 0) return false;
-
-        for (const [symbol, tally] of mutableSymbolTallies.entries()) {
-            const availableSingles = Math.floor(tally / 1);
-            const singlesToConsume = Math.min(availableSingles, remainingSingles);
-            remainingSingles -= singlesToConsume;
-            mutableSymbolTallies.set(symbol, tally - (singlesToConsume * 1));
-            if (remainingSingles === 0) break;
-        }
-        if (remainingSingles > 0) return false;
-
-        return true;
-    };
-
-    if (evaluatePossibility(symbolTallies, neededFourBlocks, neededTwoBlocks, neededSingleBlocks)) {
-        console.log("Yes");
-    } else {
-        console.log("No");
+      }
+      if (!foundConsumableChar) {
+        return false;
+      }
     }
-};
+    return true;
+  });
 
-initiateProcess();
+  outputResult(canConstruct ? "Yes" : "No");
+}
+
+solveSymmetryPuzzle();

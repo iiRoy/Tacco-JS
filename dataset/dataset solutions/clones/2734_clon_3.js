@@ -1,31 +1,23 @@
-const processInputData = (rawDataString) => {
-    let parsedLines = rawDataString.split('\n');
+function processInput(rawData) {
+    const lines = rawData.split("\n");
+    const iterationCount = parseInt(lines[0], 10);
+    const dataElements = lines.slice(1);
 
-    const operationCount = parseInt(parsedLines[0], 10);
+    const findLexicographicalMax = (valuesArray) => {
+        return valuesArray.reduce((accumulator, currentValue) => accumulator > currentValue ? accumulator : currentValue);
+    };
 
-    parsedLines.shift();
+    const createModifiedArray = (sourceArray, indexToExclude) => {
+        const temporaryCopy = sourceArray.slice();
+        temporaryCopy.splice(indexToExclude, 1);
+        return temporaryCopy;
+    };
 
-    const numericalDataSet = parsedLines.map(Number);
-
-    if (isNaN(operationCount) || operationCount <= 0) {
-        console.error("Invalid or non-positive operation count provided. Exiting.");
-        return;
+    for (let currentIdx = 0; currentIdx < iterationCount; currentIdx++) {
+        const subsetForProcessing = createModifiedArray(dataElements, currentIdx);
+        const maxElementInSubset = findLexicographicalMax(subsetForProcessing);
+        console.log(maxElementInSubset);
     }
+}
 
-    for (let currentProcessingIndex = 0; currentProcessingIndex < operationCount; currentProcessingIndex++) {
-        let temporarySubset = [...numericalDataSet];
-
-        temporarySubset.splice(currentProcessingIndex, 1);
-
-        if (temporarySubset.length === 0) {
-            console.log("No elements remaining after exclusion.");
-            continue;
-        }
-
-        const highestValueInSubset = Math.max(...temporarySubset);
-
-        console.log(highestValueInSubset);
-    }
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

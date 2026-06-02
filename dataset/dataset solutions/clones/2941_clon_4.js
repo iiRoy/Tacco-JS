@@ -1,166 +1,147 @@
-class InputDataFlow {
-  constructor(rawInputContent) {
-    this.sourceLines = rawInputContent.trim().split('\n');
-    this.currentLineCursor = 0;
-    this.tokenQueue = [];
-  }
+const createInputParser = (rawInputContent) => {
+    let allInputLines = rawInputContent.trim().split('\n');
+    let currentLineIndex = 0;
+    let currentLineTokens = [];
+    let currentTokenIndex = 0;
 
-  // Extracts a single numeric value from the current line's token stream.
-  // Mimics the original's behavior of splitting a line, reversing it, and then popping.
-  // This means it consumes tokens from left to right as they appeared in the original line.
-  acquireNextScalar() {
-    while (this.tokenQueue.length === 0) {
-      if (this.currentLineCursor >= this.sourceLines.length) {
-        throw new Error("End of input stream reached.");
-      }
-      // Splits the current line by space, reverses the resulting array,
-      // then assigns it to tokenQueue. The original code then pops, which
-      // effectively retrieves elements in their original order.
-      this.tokenQueue = this.sourceLines[this.currentLineCursor++].split(' ').reverse();
+    const ensureTokensAvailable = () => {
+        if (currentTokenIndex >= currentLineTokens.length) {
+            if (currentLineIndex >= allInputLines.length) {
+                throw new Error("Input exhausted.");
+            }
+            currentLineTokens = allInputLines[currentLineIndex].split(' ');
+            currentTokenIndex = 0;
+            currentLineIndex++;
+        }
+    };
+
+    const retrieveSingleValue = (asStringFlag) => {
+        ensureTokensAvailable();
+        const extractedToken = currentLineTokens[currentTokenIndex];
+        currentTokenIndex++;
+        return asStringFlag ? extractedToken : Number(extractedToken);
+    };
+
+    const retrieveLineValues = (asStringsFlag) => {
+        if (currentLineIndex >= allInputLines.length) {
+            throw new Error("Input exhausted.");
+        }
+        const lineContent = allInputLines[currentLineIndex];
+        currentLineIndex++;
+        currentLineTokens = [];
+        currentTokenIndex = 0;
+        return asStringsFlag ? lineContent.split(' ') : lineContent.split(' ').map(Number);
+    };
+
+    const retrieveMatrix = (rowCount, asStringsFlag) => {
+        const collectedRows = [];
+        for (let i = 0; i < rowCount; i++) {
+            collectedRows.push(retrieveLineValues(asStringsFlag));
+        }
+        return collectedRows;
+    };
+
+    const retrieveRawLines = (count, asStringsFlag) => {
+        const collectedLines = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIndex >= allInputLines.length) {
+                throw new Error("Input exhausted.");
+            }
+            const line = allInputLines[currentLineIndex];
+            currentLineIndex++;
+            collectedLines.push(asStringsFlag ? line : Number(line));
+        }
+        return collectedLines;
+    };
+
+    return {
+        getValue: retrieveSingleValue,
+        getLine: retrieveLineValues,
+        getMatrix: retrieveMatrix,
+        getRows: retrieveRawLines
+    };
+};
+const inputProcessor = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+const createMultiDimArray = (initialFillValue, ...dimensions) => {
+    const recursiveArrayBuilder = (depth) => {
+        if (depth === dimensions.length) {
+            return initialFillValue;
+        }
+        const currentDimensionSize = dimensions[depth];
+        return Array.from({ length: currentDimensionSize }, () => recursiveArrayBuilder(depth + 1));
+    };
+    return recursiveArrayBuilder(0);
+};
+
+const MOD_VAL = 1000000007n;
+
+const calculateModularProduct = (...factors) => {
+    return factors.reduce((accumulator, currentFactor) => (accumulator * BigInt(currentFactor)) % MOD_VAL, 1n);
+};
+
+const factorialCache = [1n, 1n];
+const getFactorialMod = (limit) => {
+    for (let i = factorialCache.length; i <= limit; i++) {
+        factorialCache[i] = (factorialCache[i - 1] * BigInt(i)) % MOD_VAL;
     }
-    return Number(this.tokenQueue.pop());
-  }
+    return factorialCache[limit];
+};
 
-  // Extracts all numeric values from the current line as an array.
-  acquireLineElements() {
-    if (this.currentLineCursor >= this.sourceLines.length) {
-      throw new Error("End of input stream reached.");
+const findModularInverse = (value) => {
+    let a = BigInt(value);
+    let b = MOD_VAL;
+    let x0 = 0n, x1 = 1n;
+    while (a > 1n) {
+        let quotient = a / b;
+        [a, b] = [b, a % b];
+        [x0, x1] = [x1 - quotient * x0, x0];
     }
-    const elements = this.sourceLines[this.currentLineCursor++].split(' ');
-    return elements.map(Number);
-  }
+    return x1 < 0n ? x1 + MOD_VAL : x1;
+};
 
-  // Extracts a specified number of lines as a 2D array of numbers.
-  acquireMatrixData(rowCount) {
-    const matrixResult = [];
-    for (let i = 0; i < rowCount; i++) {
-      matrixResult.push(this.acquireLineElements());
+const calculateCombinationsMod = (totalItems, chosenItems) => {
+    if (chosenItems < 0n || chosenItems > totalItems) return 0n;
+    if (chosenItems === 0n || chosenItems === totalItems) return 1n;
+    if (chosenItems > totalItems / 2n) chosenItems = totalItems - chosenItems;
+    
+    return calculateModularProduct(
+        getFactorialMod(totalItems),
+        findModularInverse(getFactorialMod(chosenItems)),
+        findModularInverse(getFactorialMod(totalItems - chosenItems))
+    );
+};
+
+const computeQuadraticSum = (val) => {
+    return val * (val - 1) / 2;
+};
+
+const sumQuadraticTermsUpTo = (limit) => {
+    let currentTotal = 0n;
+    for (let i = 1; i <= limit; i++) {
+        currentTotal = (currentTotal + BigInt(computeQuadraticSum(i))) % MOD_VAL;
     }
-    return matrixResult;
-  }
-
-  // Extracts a specified number of lines as a 1D array of numbers.
-  acquireVectorData(elementCount) {
-    const vectorResult = [];
-    for (let i = 0; i < elementCount; i++) {
-      if (this.currentLineCursor >= this.sourceLines.length) {
-        throw new Error("End of input stream reached.");
-      }
-      vectorResult.push(Number(this.sourceLines[this.currentLineCursor++]));
-    }
-    return vectorResult;
-  }
-}
-
-// Constant for modular arithmetic operations
-const MODULO_CONSTANT = 1000000007;
-
-// Recursively constructs a multi-dimensional array filled with an initial value.
-// Provides a functional alternative to the original's eval-based `xArray`.
-const constructNdArray = (initialFillValue, ...dimensions) => {
-  const recursiveBuilder = (dims) => {
-    if (dims.length === 0) {
-      return initialFillValue;
-    }
-    const currentDimSize = dims[0];
-    const remainingDims = dims.slice(1);
-    return Array.from({ length: currentDimSize }, () => recursiveBuilder(remainingDims));
-  };
-  return recursiveBuilder(dimensions);
+    return currentTotal;
 };
 
-// Computes the product of multiple numbers modulo MODULO_CONSTANT.
-// Uses `reduce` for a functional approach, replacing the original's imperative loop with bitwise optimization.
-const computeProductMod = (...factors) => {
-  return factors.reduce((accumulator, currentFactor) => {
-    return (accumulator * currentFactor) % MODULO_CONSTANT;
-  }, 1);
+const processCalculation = () => {
+    const N_val = inputProcessor.getValue();
+    const M_val = inputProcessor.getValue();
+    const K_val = inputProcessor.getValue();
+
+    const sumF_M = sumQuadraticTermsUpTo(M_val);
+    const sumF_N = sumQuadraticTermsUpTo(N_val);
+
+    let intermediateResult = (
+        calculateModularProduct(2n, BigInt(N_val) * BigInt(N_val), sumF_M) +
+        calculateModularProduct(2n, BigInt(M_val) * BigInt(M_val), sumF_N)
+    ) % MOD_VAL;
+
+    return calculateModularProduct(
+        intermediateResult,
+        calculateCombinationsMod(BigInt(N_val) * BigInt(M_val) - 2n, BigInt(K_val) - 2n),
+        findModularInverse(2n)
+    );
 };
 
-// Memoization cache for factorial results
-const factorialCache = new Map([[0, 1], [1, 1]]);
-
-// Recursively calculates factorial modulo MODULO_CONSTANT with memoization.
-// Replaces the original's iterative memoized factorial calculation.
-const deriveFactorialMod = (numValue) => {
-  if (factorialCache.has(numValue)) {
-    return factorialCache.get(numValue);
-  }
-  if (numValue < 0) throw new Error("Factorial of negative numbers is undefined.");
-  
-  const prevFactorial = deriveFactorialMod(numValue - 1);
-  const currentFactorial = (prevFactorial * numValue) % MODULO_CONSTANT;
-  factorialCache.set(numValue, currentFactorial);
-  return currentFactorial;
-};
-
-// Calculates the modular multiplicative inverse using the extended Euclidean algorithm.
-// Renames variables and uses array destructuring for clarity and different syntax.
-const calculateModularInverse = (inputVal) => {
-  let a_val = inputVal;
-  let b_val = MODULO_CONSTANT;
-  let x_coeff0 = 1;
-  let x_coeff1 = 0;
-
-  while (b_val !== 0) {
-    const quotient = Math.floor(a_val / b_val);
-    [a_val, b_val] = [b_val, a_val % b_val]; // Swap and update
-    [x_coeff0, x_coeff1] = [x_coeff1, x_coeff0 - quotient * x_coeff1]; // Update coefficients
-  }
-
-  return (x_coeff0 % MODULO_CONSTANT + MODULO_CONSTANT) % MODULO_CONSTANT;
-};
-
-// Computes "n choose k" modulo MODULO_CONSTANT using factorials and modular inverse.
-// Renames the function and its internal calls.
-const evaluateCombinationsMod = (totalElements, selectElements) => {
-  if (selectElements < 0 || selectElements > totalElements) return 0;
-  if (selectElements === 0 || selectElements === totalElements) return 1;
-  if (selectElements > totalElements / 2) selectElements = totalElements - selectElements; // Symmetry optimization
-
-  const numeratorFactor = deriveFactorialMod(totalElements);
-  const denominatorInverse = computeProductMod(
-    calculateModularInverse(deriveFactorialMod(selectElements)),
-    calculateModularInverse(deriveFactorialMod(totalElements - selectElements))
-  );
-  return computeProductMod(numeratorFactor, denominatorInverse);
-};
-
-// Helper function to calculate n*(n-1)/2, equivalent to original 'f'.
-const computePairCount = (value) => {
-  return (value * (value - 1)) / 2;
-};
-
-// The primary computation logic, replacing the original `main` function.
-// Uses functional array methods (`Array.from`, `map`, `flat`, `reduce`)
-// instead of imperative for loops for grid creation and summation.
-const orchestrateSolution = () => {
-  const inputStreamProcessor = new InputDataFlow(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-  const gridRows = inputStreamProcessor.acquireNextScalar();
-  const gridColumns = inputStreamProcessor.acquireNextScalar();
-  const selectionCount = inputStreamProcessor.acquireNextScalar();
-
-  // Create and populate the grid using functional array methods
-  const computedGrid = Array.from({ length: gridRows }, (_, yIdx) =>
-    Array.from({ length: gridColumns }, (_, xIdx) => {
-      const xContribution = (computePairCount(xIdx + 1) + computePairCount(gridColumns - xIdx)) * gridRows;
-      const yContribution = (computePairCount(yIdx + 1) + computePairCount(gridRows - yIdx)) * gridColumns;
-      return xContribution + yContribution;
-    })
-  );
-
-  // Sum all elements in the computed grid, applying modulo at each step
-  const finalAccumulatedSum = computedGrid.flat().reduce((currentAccum, elementValue) => {
-    return (currentAccum + elementValue) % MODULO_CONSTANT;
-  }, 0);
-
-  // Perform the final calculation using the redefined helper functions
-  const combinationFactor = evaluateCombinationsMod(gridRows * gridColumns - 2, selectionCount - 2);
-  const inverseOfTwo = calculateModularInverse(2);
-
-  return computeProductMod(finalAccumulatedSum, combinationFactor, inverseOfTwo);
-};
-
-// Execute the main computation and print the result
-console.log(orchestrateSolution());
+console.log(processCalculation().toString());

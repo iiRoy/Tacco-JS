@@ -1,9 +1,18 @@
-function checkSequence(textualData) {
-    const patternMatch = textualData.match(/C.*F/);
-    if (patternMatch) {
+function processInputSequence(sourceText) {
+    const firstCharPosition = sourceText.indexOf('C');
+    let outcomeIndicator = false;
+
+    if (firstCharPosition !== -1) {
+        const secondCharPosition = sourceText.indexOf('F', firstCharPosition + 1);
+        if (secondCharPosition !== -1) {
+            outcomeIndicator = true;
+        }
+    }
+
+    if (outcomeIndicator) {
         console.log("Yes");
     } else {
         console.log("No");
     }
 }
-checkSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInputSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());

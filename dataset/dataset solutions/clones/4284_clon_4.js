@@ -1,24 +1,11 @@
-const evaluateTextContent = (textPayload) => {
-    const searchSequence = "AC";
-    const possibleOutcomes = ["No", "Yes"];
+function evaluateContent(sourceData) {
+    const outcomeMap = {
+        true: "Yes",
+        false: "No"
+    };
+    const searchPattern = /AC/;
+    const found = searchPattern.test(sourceData);
+    console.log(outcomeMap[found]);
+}
 
-    let isSequencePresent = false;
-    for (let charIdx = 0; charIdx <= textPayload.length - searchSequence.length; charIdx++) {
-        let matchFound = true;
-        for (let seqIdx = 0; seqIdx < searchSequence.length; seqIdx++) {
-            if (textPayload[charIdx + seqIdx] !== searchSequence[seqIdx]) {
-                matchFound = false;
-                break;
-            }
-        }
-        if (matchFound) {
-            isSequencePresent = true;
-            break;
-        }
-    }
-
-    process.stdout.write(possibleOutcomes[Number(isSequencePresent)] + "\n");
-};
-
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-evaluateTextContent(acquiredData);
+evaluateContent(require("fs").readFileSync("/dev/stdin", "utf8"));

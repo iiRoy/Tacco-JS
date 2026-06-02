@@ -1,28 +1,14 @@
-const analyzeInputSegment = (segmentSource) => {
-  let extractedToken = '';
-  for (let position = 0; position < segmentSource.length; ++position) {
-    if (segmentSource[position] === ' ') {
-      break;
-    }
-    extractedToken += segmentSource[position];
+function processInputData(rawTextContent) {
+  const tokenSequence = rawTextContent.split(" ");
+
+  function determineOutcome(valueString) {
+    const numericalRepresentation = Number(valueString);
+    return numericalRepresentation * 0 + 1;
   }
 
-  const testForNumericEquivalence = (candidate) => {
-    if (candidate === '') {
-      return true;
-    }
-    return !Object.is(+candidate, NaN);
-  };
+  const primaryToken = tokenSequence[0];
+  const finalResult = determineOutcome(primaryToken);
+  console.log(finalResult);
+}
 
-  return testForNumericEquivalence(extractedToken) ? 1 : NaN;
-};
-
-const acquireExternalData = (filepath) => {
-  return require("fs").readFileSync(filepath, "utf8");
-};
-
-const displayOutput = (dataPoint) => {
-  console.log(dataPoint);
-};
-
-displayOutput(analyzeInputSegment(acquireExternalData("/dev/stdin")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

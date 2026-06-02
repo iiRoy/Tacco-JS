@@ -1,124 +1,72 @@
-/* This program determines the minimum cost to transform a grid of characters into a flag-like pattern.
-   The input consists of 'W', 'B', 'R' characters representing White, Blue, and Red.
-   The goal is to divide the grid into three horizontal sections (White, Blue, Red)
-   and calculate the minimum number of character changes required. */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Define constants for character mapping and other fixed values
-var WHITE_SYMBOL_CODE = 'w'; // Character code for white rows
-var BLUE_SYMBOL_CODE = 'b';  // Character code for blue rows
-var RED_SYMBOL_CODE = 'r';   // Character code for red rows
+// Process the raw input string: trim, replace color characters with numeric codes, and split into lines.
+var lineData = rawData.trim().replace(/W/g, "0").replace(/B/g, "1").replace(/R/g, "2").split("\n");
 
-var INITIAL_ARRAY_INDEX = 0;
-var OFFSET_BY_ONE = 1;
-var MINIMUM_ROW_COUNT_FOR_DIRECT_CALC = 3; // Special case for exactly N=3 rows
-var HIGH_INITIAL_COST_VALUE = 9999999; // A large number to ensure any valid cost is lower
+// Extract dimensions (number of rows and columns) from the first line.
+var dimensions = lineData.shift().split(" ").map(Number);
+var rows = dimensions[0]; // N
+var cols = dimensions[1]; // M
 
-var SPACE_CHARACTER_DELIMITER = ' ';
-var LINE_FEED_SEPARATOR = '\n';
-
-
-// 1. Acquire raw input string from the standard input stream
-var rawInputString = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-// 2. Perform initial parsing and transformation of the input
-//    - Remove any leading or trailing whitespace from the entire input.
-//    - Replace 'W', 'B', 'R' characters with internal symbol codes ('w', 'b', 'r').
-//    - Split the processed string into an array of individual lines.
-var gridLinesProcessed = rawInputString
-  .trim()
-  .replace(/W/g, WHITE_SYMBOL_CODE)
-  .replace(/B/g, BLUE_SYMBOL_CODE)
-  .replace(/R/g, RED_SYMBOL_CODE)
-  .split(LINE_FEED_SEPARATOR);
-
-// 3. Extract the grid dimensions (number of rows and columns)
-//    The first line of input contains these two numbers.
-var gridDimensionsArray = gridLinesProcessed.shift().split(SPACE_CHARACTER_DELIMITER).map(Number);
-var totalGridRows = gridDimensionsArray[0]; // N (number of rows)
-var totalGridColumns = gridDimensionsArray[1]; // M (number of columns)
-
-// 4. Compute the cost for each row to be entirely of a specific color.
-//    For each row, this creates an object storing the cost to make that row all 'w', all 'b', or all 'r'.
-//    The cost is the number of characters in that row that are *not* the target color.
-var rowColorChangeCosts = gridLinesProcessed.map(function(currentGridLine) {
-  var rowCostObject = {};
-  rowCostObject[WHITE_SYMBOL_CODE] = totalGridColumns; // Start with cost = total columns
-  rowCostObject[BLUE_SYMBOL_CODE] = totalGridColumns;
-  rowCostObject[RED_SYMBOL_CODE] = totalGridColumns;
-
-  // Iterate through characters in the current row to decrement costs
-  for (var characterIndex = INITIAL_ARRAY_INDEX; characterIndex < totalGridColumns; characterIndex++) {
-    rowCostObject[currentGridLine[characterIndex]]--; // Decrement cost for the character's actual color
-  }
-  return rowCostObject;
+// Calculate the cost to change each row to a solid color (white, blue, or red).
+// rowCosts[k][0] = cost to make row k all white
+// rowCosts[k][1] = cost to make row k all blue
+// rowCosts[k][2] = cost to make row k all red
+var rowCosts = lineData.map(function(currentLine) {
+   // Initialize costs for current row assuming it's all white, all blue, all red.
+   // Each element starts with 'cols' (total characters), then we subtract for matching colors.
+   var lineColorCosts = [cols, cols, cols];
+   for (var idx = 0; idx < cols; idx++) {
+      // Decrement the cost for the actual color found at this position.
+      // e.g., if currentLine[idx] is '0' (white), decrement lineColorCosts[0].
+      lineColorCosts[currentLine[idx]]--;
+   }
+   return lineColorCosts;
 });
 
-// 5. Initialize the variable to store the overall minimum cost found
-var lowestTotalCost = HIGH_INITIAL_COST_VALUE;
+// Initialize the minimum cost to a large value.
+// The maximum possible cost for N=50, M=50 is 50*50 = 2500.
+var minimumCost = 2500;
 
-// 6. Special handling for a grid with exactly 3 rows
-//    In this specific case, the only possible pattern is WBR (White top, Blue middle, Red bottom).
-if (totalGridRows === MINIMUM_ROW_COUNT_FOR_DIRECT_CALC) {
-  lowestTotalCost = rowColorChangeCosts[INITIAL_ARRAY_INDEX][WHITE_SYMBOL_CODE] +
-                    rowColorChangeCosts[OFFSET_BY_ONE][BLUE_SYMBOL_CODE] +
-                    rowColorChangeCosts[MINIMUM_ROW_COUNT_FOR_DIRECT_CALC - OFFSET_BY_ONE][RED_SYMBOL_CODE];
+// Handle the special case where there are exactly 3 rows.
+// In this scenario, the only possible split is row 0 white, row 1 blue, row 2 red.
+if (rows == 3) {
+   minimumCost = rowCosts[0][0] + rowCosts[1][1] + rowCosts[2][2];
 }
 
-/* 7. Iterate through all possible partition points for the three sections (White, Blue, Red).
-   The original code's logic for partitioning has specific characteristics, including
-   potential overlaps in row cost calculation and exclusion of the very last row
-   from the red section's cost. This clone strictly adheres to that original logic.
+// Iterate through all possible split points for the three color sections.
+// The first split point (white-blue boundary) can be from row 1 up to row N-3.
+for (var firstSplitRow = 1; firstSplitRow < rows - 2; firstSplitRow++) {
+   // The second split point (blue-red boundary) can be from firstSplitRow + 1 up to row N-2.
+   for (var secondSplitRow = firstSplitRow + 1; secondSplitRow < rows - 1; secondSplitRow++) {
+      var currentTotalCost = 0;
 
-   - `firstBlueSectionStart`: Corresponds to `i` in original. It's the index of the first row
-     intended for the blue section. The white section's cost accumulates up to and including this row.
-   - `firstRedSectionStart`: Corresponds to `j` in original. It's the index of the first row
-     intended for the red section. The blue section's cost accumulates up to (but not including) this row.
-*/
+      // Calculate cost for the white section (rows 0 to firstSplitRow - 1).
+      // All these rows must be converted to white (color 0).
+      var whiteRowIndex = firstSplitRow - 1;
+      while (whiteRowIndex >= 0) {
+         currentTotalCost += rowCosts[whiteRowIndex][0];
+         whiteRowIndex--;
+      }
 
-// Outer loop: Determines the starting row index for the blue section.
-// The white section will be considered from row 0 up to `firstBlueSectionStart` (inclusive).
-// `firstBlueSectionStart` must be at least 1, and at most `totalGridRows - 3`.
-for (var firstBlueSectionStart = OFFSET_BY_ONE;
-     firstBlueSectionStart < totalGridRows - (OFFSET_BY_ONE + OFFSET_BY_ONE);
-     firstBlueSectionStart++) {
+      // Calculate cost for the blue section (rows firstSplitRow to secondSplitRow - 1).
+      // All these rows must be converted to blue (color 1).
+      for (var blueSectionRow = firstSplitRow; blueSectionRow < secondSplitRow; blueSectionRow++) {
+         currentTotalCost += rowCosts[blueSectionRow][1];
+      }
 
-  // Inner loop: Determines the starting row index for the red section.
-  // The blue section will be considered from `firstBlueSectionStart` up to `firstRedSectionStart - 1`.
-  // `firstRedSectionStart` must be at least `firstBlueSectionStart + 1`, and at most `totalGridRows - 2`.
-  for (var firstRedSectionStart = firstBlueSectionStart + OFFSET_BY_ONE;
-       firstRedSectionStart < totalGridRows - OFFSET_BY_ONE;
-       firstRedSectionStart++) {
+      // Calculate cost for the red section (rows secondSplitRow to N - 1).
+      // All these rows must be converted to red (color 2).
+      var redRowIndex = secondSplitRow;
+      while (redRowIndex != rows - 1) {
+         currentTotalCost += rowCosts[redRowIndex][2];
+         redRowIndex++;
+      }
 
-    var currentIterationCost = INITIAL_ARRAY_INDEX; // Reset cost for this specific partition combination
-
-    // Calculate cost for the "White" section: rows from 0 to `firstBlueSectionStart` (inclusive).
-    // This loop directly mirrors the `while (a >= 0)` construct from the original code.
-    var whiteSectionRowCounter = firstBlueSectionStart;
-    while (whiteSectionRowCounter >= INITIAL_ARRAY_INDEX) {
-      currentIterationCost += rowColorChangeCosts[whiteSectionRowCounter][WHITE_SYMBOL_CODE];
-      whiteSectionRowCounter--;
-    }
-
-    // Calculate cost for the "Blue" section: rows from `firstBlueSectionStart` to `firstRedSectionStart - 1`.
-    // This loop directly mirrors the `for (var y = i; y < j; y++)` construct from the original code.
-    for (var blueSectionRowCounter = firstBlueSectionStart;
-         blueSectionRowCounter < firstRedSectionStart;
-         blueSectionRowCounter++) {
-      currentIterationCost += rowColorChangeCosts[blueSectionRowCounter][BLUE_SYMBOL_CODE];
-    }
-
-    // Calculate cost for the "Red" section: rows from `firstRedSectionStart` to `totalGridRows - 2`.
-    // This loop directly mirrors the `while (b != n - 1)` construct from the original code.
-    var redSectionRowCounter = firstRedSectionStart;
-    while (redSectionRowCounter !== totalGridRows - OFFSET_BY_ONE) {
-      currentIterationCost += rowColorChangeCosts[redSectionRowCounter][RED_SYMBOL_CODE];
-      redSectionRowCounter++;
-    }
-
-    // Update the overall minimum cost if the current partition yields a lower cost.
-    lowestTotalCost = Math.min(lowestTotalCost, currentIterationCost);
-  }
+      // Update the overall minimum cost found so far.
+      minimumCost = Math.min(minimumCost, currentTotalCost);
+   }
 }
 
-// 8. Output the final calculated minimum transformation cost to the console.
-console.log(lowestTotalCost);
+// Output the final calculated minimum cost.
+console.log(minimumCost);

@@ -1,22 +1,19 @@
-function processInputData(dataSource) {
-  const contentSection = dataSource.slice(0, 4);
-  const symbolCollection = Array.from(contentSection);
+function processInput(dataString) {
+  const characterCounts = dataString.split('').reduce((tally, currentCharacter) => {
+    tally.set(currentCharacter, (tally.get(currentCharacter) || 0) + 1);
+    return tally;
+  }, new Map());
 
-  const tallyMap = new Map();
-  for (const item of symbolCollection) {
-    tallyMap.set(item, (tallyMap.get(item) || 0) + 1);
+  let resultIndicator = 'NO';
+
+  if (characterCounts.size === 2) {
+    const frequencyValues = Array.from(characterCounts.values());
+    if (frequencyValues[0] === 2 && frequencyValues[1] === 2) {
+      resultIndicator = 'Yes';
+    }
   }
 
-  const distinctSymbolCount = tallyMap.size;
-  const occurrenceValues = Array.from(tallyMap.values());
-
-  const conditionMet = distinctSymbolCount === 2 && occurrenceValues.every(count => count === 2);
-
-  if (conditionMet) {
-    console.log('Yes');
-  } else {
-    console.log('NO');
-  }
+  console.log(resultIndicator);
 }
 
-processInputData(require('fs').readFileSync("/dev/stdin", "utf8"));
+processInput(require('fs').readFileSync("/dev/stdin", "utf8"));

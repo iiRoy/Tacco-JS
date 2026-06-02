@@ -1,103 +1,93 @@
-function calculateShortestRoute(sourceDataText) {
-    const dataLines = sourceDataText.split("\n");
-    const totalNodes = parseInt(dataLines[0], 10);
-
-    const adjacencyList = new Map();
-    for (let currentLineIndex = 0; currentLineIndex < totalNodes; currentLineIndex++) {
-        const lineParts = dataLines[currentLineIndex + 1].split(" ").map(Number);
-        const sourceNode = lineParts[0];
-        const edgeCount = lineParts[1];
-        const outgoingEdges = [];
-        for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-            outgoingEdges.push({
-                destination: lineParts[edgeIdx * 2 + 2],
-                value: lineParts[edgeIdx * 2 + 3]
-            });
-        }
-        adjacencyList.set(sourceNode, outgoingEdges);
+class PriorityQueue {
+    constructor() {
+        this.entries = [];
     }
 
-    const pathCosts = new Map();
-    for (let nodeIndex = 0; nodeIndex < totalNodes; nodeIndex++) {
-        pathCosts.set(nodeIndex, Number.MAX_SAFE_INTEGER);
-    }
-    pathCosts.set(0, 0);
+    addEntry(item) {
+        const [newDistance, newNodeIdentifier] = item;
+        let insertionPoint = this.entries.length;
 
-    const pendingPaths = [];
-
-    const registerPath = (nodeIdentifier, costValue) => {
-        let isUpdated = false;
-        for (let i = 0; i < pendingPaths.length; i++) {
-            if (pendingPaths[i].node === nodeIdentifier) {
-                if (costValue < pendingPaths[i].currentCost) {
-                    pendingPaths[i].currentCost = costValue;
-                }
-                isUpdated = true;
+        for (let i = 0; i < this.entries.length; i++) {
+            if (newDistance < this.entries[i][0]) {
+                insertionPoint = i;
                 break;
             }
         }
-        if (!isUpdated) {
-            pendingPaths.push({ node: nodeIdentifier, currentCost: costValue });
+        this.entries.splice(insertionPoint, 0, item);
+    }
+
+    retrieveMin() {
+        if (this.isEmpty()) {
+            return undefined;
         }
-    };
+        return this.entries.shift();
+    }
 
-    const retrieveMinimumPath = () => {
-        if (pendingPaths.length === 0) {
-            return null;
+    isEmpty() {
+        return this.entries.length === 0;
+    }
+}
+
+function processGraphTraversal(inputData) {
+    const dataLines = inputData.split("\n");
+    const totalNodes = parseInt(dataLines[0], 10);
+
+    const adjacencyLists = Array.from({ length: totalNodes }, () => new Map());
+
+    for (let i = 0; i < totalNodes; i++) {
+        const currentLineParts = dataLines[i + 1].split(" ");
+        const originNode = parseInt(currentLineParts[0], 10);
+        const connectedEdges = parseInt(currentLineParts[1], 10);
+
+        for (let j = 0; j < connectedEdges; j++) {
+            const destinationNode = parseInt(currentLineParts[j * 2 + 2], 10);
+            const edgeCost = parseInt(currentLineParts[j * 2 + 3], 10);
+            adjacencyLists[originNode].set(destinationNode, edgeCost);
         }
+    }
 
-        let lowestCost = Number.MAX_SAFE_INTEGER;
-        let minElementIndex = -1;
-        let selectedPath = null;
+    const shortestPaths = new Map();
+    const visitedNodes = new Set();
+    const pathQueue = new PriorityQueue();
 
-        for (let i = 0; i < pendingPaths.length; i++) {
-            if (pendingPaths[i].currentCost < lowestCost) {
-                lowestCost = pendingPaths[i].currentCost;
-                minElementIndex = i;
-                selectedPath = pendingPaths[i];
-            }
-        }
+    shortestPaths.set(0, 0);
+    pathQueue.addEntry([0, 0]);
 
-        if (minElementIndex !== -1) {
-            pendingPaths.splice(minElementIndex, 1);
-        }
-        return selectedPath;
-    };
-
-    registerPath(0, 0);
-
-    let finalizedNodeCount = 0;
-    while (finalizedNodeCount < totalNodes) {
-        const currentBestPath = retrieveMinimumPath();
-
-        if (!currentBestPath) {
+    while (!pathQueue.isEmpty() && visitedNodes.size < totalNodes) {
+        const currentPathDetails = pathQueue.retrieveMin();
+        if (!currentPathDetails) {
             break;
         }
+        const [currentDistance, currentNode] = currentPathDetails;
 
-        const activeNode = currentBestPath.node;
-        const currentAccumulatedCost = currentBestPath.currentCost;
-
-        if (currentAccumulatedCost > pathCosts.get(activeNode)) {
+        if (visitedNodes.has(currentNode)) {
             continue;
         }
 
-        finalizedNodeCount++;
+        if (currentDistance > (shortestPaths.get(currentNode) || Infinity)) {
+            continue;
+        }
 
-        const connectedEdges = adjacencyList.get(activeNode) || [];
-        for (const connectedEdge of connectedEdges) {
-            const candidateCost = currentAccumulatedCost + connectedEdge.value;
-            if (candidateCost < pathCosts.get(connectedEdge.destination)) {
-                pathCosts.set(connectedEdge.destination, candidateCost);
-                registerPath(connectedEdge.destination, candidateCost);
+        visitedNodes.add(currentNode);
+
+        const neighbors = adjacencyLists[currentNode];
+        if (neighbors) {
+            for (const [neighborNode, edgeWeight] of neighbors.entries()) {
+                const newCalculatedDistance = currentDistance + edgeWeight;
+                const existingShortestDistance = shortestPaths.get(neighborNode) || Infinity;
+
+                if (newCalculatedDistance < existingShortestDistance) {
+                    shortestPaths.set(neighborNode, newCalculatedDistance);
+                    pathQueue.addEntry([newCalculatedDistance, neighborNode]);
+                }
             }
         }
     }
 
-    let results = [];
     for (let i = 0; i < totalNodes; i++) {
-        results.push(`${i} ${pathCosts.get(i)}`);
+        const finalDistance = shortestPaths.get(i);
+        console.log(`${i} ${finalDistance !== undefined ? finalDistance : 1000000000}`);
     }
-    console.log(results.join("\n"));
 }
 
-calculateShortestRoute(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphTraversal(require("fs").readFileSync("/dev/stdin", "utf8"));

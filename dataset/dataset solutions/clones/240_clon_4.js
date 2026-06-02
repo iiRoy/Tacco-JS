@@ -1,32 +1,36 @@
-const filesystemAccess = require('fs');
-const acquiredData = filesystemAccess.readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const processInputData = (incomingText) => {
-    const textLines = incomingText.trim().split('\n');
+const processLineData = (currentLine) => {
+    // Parse the numeric values from the line.
+    // Using split(" ") matches the original's behavior, where Number("") evaluates to 0.
+    const coordinateValues = currentLine.split(" ").map(Number);
 
-    const evaluateSpatialRelation = (shapeOne, shapeTwo) => {
-        // shapeOne: { xMin, yMin, xMax, yMax }
-        // shapeTwo: { xMin, yMin, xMax, yMax }
+    // Destructure the array into named variables for clarity,
+    // replacing the original's .apply(null, arr) pattern.
+    const [
+        rectA_x1, rectA_y1, rectA_x2, rectA_y2,
+        rectB_x1, rectB_y1, rectB_x2, rectB_y2
+    ] = coordinateValues;
 
-        const checkHorizontalContact = (s1, s2) => s2.xMax >= s1.xMin && s2.xMin <= s1.xMax;
-        const checkVerticalContact = (s1, s2) => s2.yMax >= s1.yMin && s2.yMin <= s1.yMax;
+    // Determine if there is an overlap along the X-axis.
+    // An overlap exists if the maximum of the starting points is less than or equal to
+    // the minimum of the ending points for that axis.
+    const hasXAxisOverlap = Math.max(rectA_x1, rectB_x1) <= Math.min(rectA_x2, rectB_x2);
 
-        return checkHorizontalContact(shapeOne, shapeTwo) && checkVerticalContact(shapeOne, shapeTwo);
-    };
+    // Determine if there is an overlap along the Y-axis using the same logic.
+    const hasYAxisOverlap = Math.max(rectA_y1, rectB_y1) <= Math.min(rectA_y2, rectB_y2);
 
-    const parseLineIntoShapes = (currentLine) => {
-        const numericalComponents = currentLine.split(' ').map(val => parseInt(val, 10));
-        return {
-            firstShape: { xMin: numericalComponents[0], yMin: numericalComponents[1], xMax: numericalComponents[2], yMax: numericalComponents[3] },
-            secondShape: { xMin: numericalComponents[4], yMin: numericalComponents[5], xMax: numericalComponents[6], yMax: numericalComponents[7] }
-        };
-    };
-
-    textLines.map(parseLineIntoShapes)
-             .map(shapePair => evaluateSpatialRelation(shapePair.firstShape, shapePair.secondShape))
-             .forEach(hasOverlap => {
-                 console.log(hasOverlap ? "YES" : "NO");
-             });
+    // A full 2D overlap occurs only if both X and Y axes overlap.
+    // This replaces the original's 'cnt' variable and two separate if statements.
+    return (hasXAxisOverlap && hasYAxisOverlap) ? "YES" : "NO";
 };
 
-processInputData(acquiredData);
+// Process each line of the input file.
+// trim() removes leading/trailing whitespace, including a final newline if present.
+// split('\n') creates an array of lines.
+// map() transforms each line using the processLineData function.
+const outputResults = fileContent.trim().split('\n').map(processLineData);
+
+// Join all processed results with newlines and print to console.
+// This replaces the original's line-by-line console.log within the forEach loop.
+console.log(outputResults.join('\n'));

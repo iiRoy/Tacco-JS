@@ -1,55 +1,62 @@
-// This main procedure handles all incoming text content.
-function ProcessInput(sourceData) {
-  sourceData = sourceData.split("\n"); // Decompose the raw text into individual lines.
-  
-  // Extract initial configuration parameters from the first line.
-  let initialParamsString = sourceData.shift(); 
-  let paramA = parseInt(initialParamsString.split(" ")[0]);
-  let paramB = parseInt(initialParamsString.split(" ")[1]);
-  let paramM = parseInt(initialParamsString.split(" ")[2]);
+function ProcessInput(rawData) {
+  // Split the entire input string into an array of lines.
+  let lineArray = rawData.split("\n");
 
-  // Parse the list of prices for the first category of items.
-  const itemPrices = sourceData
+  // Extract the first line which contains the counts for items and offers.
+  let initialConfigLine = lineArray.shift();
+
+  // Parse the counts from the first line.
+  let fridgeCount = parseInt(initialConfigLine.split(" ")[0]);
+  let microwaveCount = parseInt(initialConfigLine.split(" ")[1]);
+  let discountOfferCount = parseInt(initialConfigLine.split(" ")[2]);
+
+  // Extract and parse the prices for all available fridges.
+  let fridgePrices = lineArray
     .shift()
     .split(" ")
-    .map(itemStr => parseInt(itemStr));
+    .map(val => parseInt(val));
 
-  // Parse the list of prices for the second category of items.
-  const addonPrices = sourceData
+  // Extract and parse the prices for all available microwaves.
+  let microwavePrices = lineArray
     .shift()
     .split(" ")
-    .map(itemStr => parseInt(itemStr));
+    .map(val => parseInt(val));
 
-  // The remaining lines represent the discount rules.
-  const discountRules = sourceData;
+  // The remaining lines in the array represent the discount offers.
+  let offerDetails = lineArray;
 
-  // Determine the lowest price in each category.
-  let lowestFirstPrice = Math.min.apply(null, itemPrices);
-  let lowestSecondPrice = Math.min.apply(null, addonPrices);
+  // Calculate the minimum individual price for a fridge.
+  let minFridgePrice = Math.min.apply(null, fridgePrices);
+  // Calculate the minimum individual price for a microwave.
+  let minMicrowavePrice = Math.min.apply(null, microwavePrices);
 
-  // Calculate the base minimum cost without any specific discounts.
-  let initialLowestSum = lowestFirstPrice + lowestSecondPrice;
-  let overallMinimum = initialLowestSum; // Initialize the overall minimum with the base sum.
+  // Determine the initial minimum total cost by summing the cheapest fridge and microwave.
+  let initialMinCost = minFridgePrice + minMicrowavePrice;
 
-  // Iterate through each discount rule to potentially find a lower total cost.
-  discountRules.forEach(discountEntry => {
-    let parsedRule = discountEntry.split(" ").map(valStr => parseInt(valStr));
-    let itemIndex = parsedRule[0];
-    let addonIndex = parsedRule[1];
-    let reductionValue = parsedRule[2];
+  // This variable will store the lowest total cost found so far, initialized with the non-discounted minimum.
+  let currentMinTotal = initialMinCost;
 
-    // Calculate the cost for this specific item and addon combination with its discount.
-    let potentialMinimum = itemPrices[itemIndex - 1] + addonPrices[addonIndex - 1] - reductionValue;
+  // Iterate through each discount offer to check if it results in a lower total cost.
+  offerDetails.forEach(offerString => {
+    // Parse the components of the current discount offer: fridge index, microwave index, and discount amount.
+    let offerParts = offerString.split(" ").map(val => parseInt(val));
+    let fridgeIndex = offerParts[0]; // 1-based index for the fridge involved in the offer
+    let microwaveIndex = offerParts[1]; // 1-based index for the microwave involved in the offer
+    let discountAmount = offerParts[2]; // The monetary value of the discount
 
-    // Update the overall minimum if this combination yields a lower cost.
-    if (overallMinimum > potentialMinimum) {
-      overallMinimum = potentialMinimum;
+    // Calculate the total cost for this specific offer.
+    // Adjust indices from 1-based to 0-based for array access.
+    let calculatedCost = fridgePrices[fridgeIndex - 1] + microwavePrices[microwaveIndex - 1] - discountAmount;
+
+    // If the calculated cost with this discount is lower than the current minimum total, update the minimum.
+    if (currentMinTotal > calculatedCost) {
+      currentMinTotal = calculatedCost;
     }
   });
 
-  // Output the final lowest calculated cost.
-  console.log(overallMinimum);
+  // Output the final minimum total cost found.
+  console.log(currentMinTotal);
 }
 
-// Do not modify the following section (it handles reading input and invoking the primary function).
+// This section handles reading input from standard input and invoking the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,34 +1,36 @@
 'use strict';
 
-const inputSegments = require("fs") .readFileSync( "/dev/stdin", "utf8" ) .trim() .split(" "); // Acquire array of string elements from standard input
+// This script processes three input values from standard input.
+const inputSegments = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .trim()
+  .split(" ");
 
-const itemOne   = inputSegments[0]; // First parsed input element
-const itemTwo   = inputSegments[1]; // Second parsed input element
-const itemThree = inputSegments[2]; // Third parsed input element
+const firstVal = inputSegments[0]; // Retrieve the initial value.
+const secondVal = inputSegments[1]; // Obtain the middle value.
+const thirdVal = inputSegments[2]; // Get the final value.
 
-// Evaluate conditions based on equality of the three input items
+// Check for equality conditions among the three values.
 
-// Case 1: All three items are identical
-if ( itemOne === itemTwo && itemTwo === itemThree ) {
-  console.log(1); // Output '1' if all match
+// Case 1: All three values are strictly identical.
+if (firstVal === secondVal && secondVal === thirdVal) {
+  console.log(1);
 }
 
-// Case 2a: First two items match, but the third is different
-if ( itemOne === itemTwo && itemTwo !== itemThree ) {
-  console.log(2); // Output '2' if exactly two match
+// Case 2: Exactly two values are strictly identical.
+if (firstVal === secondVal && secondVal !== thirdVal) {
+  console.log(2);
 }
 
-// Case 2b: First and third items match, but the second is different
-if ( itemOne === itemThree && itemOne !== itemTwo ) {
-  console.log(2); // Output '2' if exactly two match
+if (firstVal === thirdVal && firstVal !== secondVal) {
+  console.log(2);
 }
 
-// Case 2c: Second and third items match, but the first is different
-if ( itemTwo === itemThree && itemOne !== itemTwo ) {
-  console.log(2); // Output '2' if exactly two match
+if (secondVal === thirdVal && firstVal !== secondVal) {
+  console.log(2);
 }
 
-// Case 3: All three items are distinct from each other
-if ( itemOne !== itemTwo && itemTwo !== itemThree && itemThree !== itemOne ) {
-  console.log(3); // Output '3' if all are unique
+// Case 3: All three values are strictly different from each other.
+if (firstVal !== secondVal && secondVal !== thirdVal && thirdVal !== firstVal) {
+  console.log(3);
 }

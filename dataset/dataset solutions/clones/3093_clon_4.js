@@ -1,20 +1,14 @@
 "use strict";
 
-const complementaryPairs = {
-    'A': 'T',
-    'T': 'A',
-    'G': 'C',
-    'C': 'G'
-};
+function Main(input) {
+    const nucleotideComplementMap = Object.freeze({
+        "A": "T",
+        "T": "A",
+        "G": "C",
+        "C": "G"
+    });
 
-const findCorrespondingBase = (incomingSequenceUnit) => {
-    return complementaryPairs[incomingSequenceUnit];
-};
+    console.log(nucleotideComplementMap[input]);
+}
 
-const processAndDisplayResult = () => {
-    const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-    const processedOutcome = findCorrespondingBase(sourceData.trim());
-    console.log(processedOutcome);
-};
-
-processAndDisplayResult();
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

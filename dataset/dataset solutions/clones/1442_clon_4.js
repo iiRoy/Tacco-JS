@@ -1,65 +1,38 @@
-const rawTextualData = require("fs").readFileSync("/dev/stdin", "utf8");
+const convertDegreesToRadians = (degreesMeasure) => degreesMeasure * Math.PI / 180;
 
-const numericalComponents = rawTextualData.match(/-?\d+(\.\d+)?/g).map(Number);
+const calculateSine = (radianAngle) => Math.sin(radianAngle);
 
-const firstDimension = numericalComponents[0];
-const secondDimension = numericalComponents[1];
-const angularMeasureDegrees = numericalComponents[2];
+const calculateCosine = (radianAngle) => Math.cos(radianAngle);
 
-class GeometricFigure {
-    #firstSide;
-    #secondSide;
-    #includedAngle;
+const deriveTriangleCharacteristics = (firstEdgeLength, secondEdgeLength, includedAngleDegrees) => {
+    const includedAngleRadians = convertDegreesToRadians(includedAngleDegrees);
 
-    constructor(s1, s2, angDeg) {
-        this.#firstSide = s1;
-        this.#secondSide = s2;
-        this.#includedAngle = angDeg;
-    }
+    const thirdEdgeSquared = Math.pow(firstEdgeLength, 2) + Math.pow(secondEdgeLength, 2) - (2 * firstEdgeLength * secondEdgeLength * calculateCosine(includedAngleRadians));
+    const thirdEdgeLength = Math.sqrt(thirdEdgeSquared);
 
-    #convertDegreesToRadians(degrees) {
-        const tauFactor = 2 * Math.acos(0);
-        return degrees * tauFactor / 180;
-    }
+    const calculatedArea = 0.5 * firstEdgeLength * secondEdgeLength * calculateSine(includedAngleRadians);
 
-    #calculateThirdBoundaryLength() {
-        const angleInRadians = this.#convertDegreesToRadians(this.#includedAngle);
-        const termOne = this.#firstSide * this.#firstSide;
-        const termTwo = this.#secondSide * this.#secondSide;
-        const termThree = 2 * this.#firstSide * this.#secondSide * Math.cos(angleInRadians);
-        return Math.sqrt(termOne + termTwo - termThree);
-    }
+    const calculatedPerimeter = firstEdgeLength + secondEdgeLength + thirdEdgeLength;
 
-    computePlanarExtent() {
-        const thirdBoundary = this.#calculateThirdBoundaryLength();
-        const semiPerimeter = (this.#firstSide + this.#secondSide + thirdBoundary) / 2;
-        
-        return Math.sqrt(
-            semiPerimeter *
-            (semiPerimeter - this.#firstSide) *
-            (semiPerimeter - this.#secondSide) *
-            (semiPerimeter - thirdBoundary)
-        );
-    }
+    const calculatedHeight = secondEdgeLength * calculateSine(includedAngleRadians);
 
-    determineTotalBoundaryLength() {
-        return this.#firstSide + this.#secondSide + this.#calculateThirdBoundaryLength();
-    }
+    return {
+        surfaceArea: calculatedArea,
+        boundaryLength: calculatedPerimeter,
+        altitude: calculatedHeight
+    };
+};
 
-    ascertainPerpendicularElevation() {
-        const currentPlanarExtent = this.computePlanarExtent();
-        return (2 * currentPlanarExtent) / this.#firstSide;
-    }
-}
+(function (rawInputContent) {
+    const cleanedInputLine = rawInputContent.trim();
+    const [valueA, valueB, valueC] = cleanedInputLine.split(" ").map(Number);
 
-const shapeInstance = new GeometricFigure(firstDimension, secondDimension, angularMeasureDegrees);
+    const triangleProperties = deriveTriangleCharacteristics(valueA, valueB, valueC);
 
-const calculatedPlanarExtent = shapeInstance.computePlanarExtent();
-const calculatedTotalBoundaryLength = shapeInstance.determineTotalBoundaryLength();
-const calculatedPerpendicularElevation = shapeInstance.ascertainPerpendicularElevation();
+    console.log(
+        `${triangleProperties.surfaceArea.toFixed(8)}\n` +
+        `${triangleProperties.boundaryLength.toFixed(8)}\n` +
+        `${triangleProperties.altitude.toFixed(8)}`
+    );
 
-console.log(
-    calculatedPlanarExtent.toFixed(8) + "\n" +
-    calculatedTotalBoundaryLength.toFixed(8) + "\n" +
-    calculatedPerpendicularElevation.toFixed(8)
-);
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

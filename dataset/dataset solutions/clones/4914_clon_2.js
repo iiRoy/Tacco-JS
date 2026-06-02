@@ -1,73 +1,59 @@
-/*
- * This module defines a function to process a series of numerical entries
- * and perform specific calculations based on their values.
- */
-let performCalculations = function(inputLines) {
-    // Determine the total number of entries to process from the first line.
-    let numEntries = Number(inputLines[0]);
+function processInput(dataLines) {
+    // The initial line of input specifies the total number of data entries to process.
+    let numEntries = Number(dataLines[0]);
 
-    // Initialize two primary values that will be updated throughout the process.
-    let valA = 1,
-        valB = 1;
+    // Initialize two primary variables, 'currentA' and 'currentB', both starting at one.
+    let currentA = 1;
+    let currentB = 1;
 
-    // Iterate through each subsequent entry line, starting from the second line.
-    for (let entryIndex = 1; entryIndex <= numEntries; entryIndex++) {
-        /*
-         * Parse the current line to extract two numerical components.
-         * The values are converted to numbers explicitly.
-         */
-        let currentA = Number(inputLines[entryIndex].split(" ")[0]);
-        let currentB = Number(inputLines[entryIndex].split(" ")[1]);
+    // Iterate through each subsequent data entry, starting from the second line.
+    for (let idx = 1; idx <= numEntries; idx++) {
+        // Parse the current line, splitting it by space to get two temporary values.
+        const lineParts = dataLines[idx].split(" ");
+        let tempA = Number(lineParts[0]); // Convert the first part to a number.
+        let tempB = Number(lineParts[1]); // Convert the second part to a number.
 
-        /*
-         * Apply a series of conditional logic to update valA and valB
-         * based on their relationship with currentA and currentB.
-         * This ensures valA and valB maintain a certain scaling property.
-         */
-        if (currentA >= valA && currentB >= valB) {
-            // Case 1: Both current values are greater than or equal to primary values.
-            // Update primary values directly with the new, larger values.
-            valA = currentA;
-            valB = currentB;
-        } else if (valA >= currentA && valB >= currentB) {
-            // Case 2: Both primary values are greater than or equal to current values.
-            // Calculate scaling factors to bring primary values up proportionally.
-            let scaleA = Math.ceil(valA / currentA);
-            let scaleB = Math.ceil(valB / currentB);
+        // Scenario 1: If both temporary values are greater than or equal to the current values.
+        if (tempA >= currentA && tempB >= currentB) {
+            currentA = tempA; // Update 'currentA' to the new temporary 'tempA'.
+            currentB = tempB; // Update 'currentB' to the new temporary 'tempB'.
+        }
+        // Scenario 2: If both current values are greater than or equal to their respective temporary values.
+        else if (currentA >= tempA && currentB >= tempB) {
+            // Calculate the minimum scaling factor needed for 'tempA' to reach 'currentA'.
+            let factorA = Math.ceil(currentA / tempA);
+            // Calculate the minimum scaling factor needed for 'tempB' to reach 'currentB'.
+            let factorB = Math.ceil(currentB / tempB);
 
-            if (scaleA > scaleB) {
-                // If the scaling factor for 'A' is larger, apply it to both components.
-                valA = scaleA * currentA;
-                valB = scaleA * currentB;
+            // Apply the larger of the two factors to both temporary values to ensure both conditions are met.
+            if (factorA > factorB) {
+                currentA = factorA * tempA;
+                currentB = factorA * tempB;
             } else {
-                // Otherwise, apply the scaling factor for 'B' to both components.
-                valA = scaleB * currentA;
-                valB = scaleB * currentB;
+                currentA = factorB * tempA;
+                currentB = factorB * tempB;
             }
-        } else if (valA >= currentA) {
-            // Case 3: Only primary value 'A' is greater than or equal to current 'A'.
-            // Calculate scaling factor for 'A' and apply it to both primary values.
-            let scaleA = Math.ceil(valA / currentA);
-            valA = scaleA * currentA;
-            valB = scaleA * currentB;
-        } else {
-            // Case 4: Only primary value 'B' is greater than or equal to current 'B'.
-            // Calculate scaling factor for 'B' and apply it to both primary values.
-            let scaleB = Math.ceil(valB / currentB);
-            valA = scaleB * currentA;
-            valB = scaleB * currentB;
+        }
+        // Scenario 3: Only 'currentA' is greater than or equal to 'tempA'.
+        else if (currentA >= tempA) {
+            // Calculate the scaling factor for 'tempA'.
+            let factorA = Math.ceil(currentA / tempA);
+            currentA = factorA * tempA; // Scale 'tempA' up.
+            currentB = factorA * tempB; // Apply the same factor to 'tempB'.
+        }
+        // Scenario 4: Only 'currentB' is greater than or equal to 'tempB' (the remaining case).
+        else {
+            // Calculate the scaling factor for 'tempB'.
+            let factorB = Math.ceil(currentB / tempB);
+            currentA = factorB * tempA; // Apply the factor to 'tempA'.
+            currentB = factorB * tempB; // Scale 'tempB' up.
         }
     }
 
-    // After processing all entries, log the sum of the final primary values to the console.
-    console.log(valA + valB);
-};
+    // After processing all entries, print the sum of the final 'currentA' and 'currentB' values.
+    console.log(currentA + currentB);
+}
 
-// This section handles the execution environment setup.
-// It reads input from standard input, processes it, and then calls the main calculation function.
-performCalculations(
-    require('fs') // Import the Node.js 'fs' (file system) module.
-    .readFileSync('/dev/stdin', 'utf8') // Synchronously read the content of '/dev/stdin' as a UTF-8 string.
-    .trim() // Remove any leading or trailing whitespace (like a final newline).
-    .split("\n") // Split the cleaned string into an array of strings, where each element is a line.
-);
+// Read the entire input from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and split it into an array of lines.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n'));

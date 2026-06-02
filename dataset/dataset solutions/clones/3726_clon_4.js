@@ -1,16 +1,18 @@
-((sourceData) => {
-    let newlinePosition = sourceData.indexOf('\n');
-    let numericSequence = sourceData.substring(0, newlinePosition);
+((sourceText) => {
+    const [firstLineContent, ...remainingLines] = sourceText.split('\n');
 
-    let collectedNumbers = numericSequence.match(/\d+/g).map(Number);
+    let currentOffset = 0;
+    let delimiterIndex = firstLineContent.indexOf(' ', currentOffset);
+    const firstNumericParam = Number(firstLineContent.substring(currentOffset, delimiterIndex));
+    currentOffset = delimiterIndex + 1;
+    const secondNumericParam = Number(firstLineContent.substring(currentOffset));
 
-    let firstOperand = collectedNumbers[0];
-    let secondOperand = collectedNumbers[1];
+    const sequenceData = remainingLines[0].split(' ').reduce((accumulator, currentElement) => {
+        accumulator.push(Number(currentElement));
+        return accumulator;
+    }, []);
 
-    let numeratorComponent = firstOperand - secondOperand;
-    let denominatorComponent = secondOperand - 1;
+    const finalCalculation = Math.ceil((firstNumericParam - secondNumericParam) / (secondNumericParam - 1)) + 1;
 
-    let calculatedValue = Math.trunc((numeratorComponent + denominatorComponent - 1) / denominatorComponent) + 1;
-
-    process.stdout.write(String(calculatedValue) + '\n');
-})(require('fs').readFileSync(0, 'utf8'));
+    console.log(finalCalculation);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,45 +1,51 @@
-const processData = (dataSource) => {
-    const characterArray = Array.from(dataSource.split('\n')[1]);
+function processInputData(rawData) {
+  const lines = rawData.split("\n");
+  const charSequence = lines[1].split("");
+  const sequenceLength = charSequence.length;
 
-    const generateIndexCombinations = (totalLength, comboSize) => {
-        const results = [];
-        const recurse = (currentCombo, start) => {
-            if (currentCombo.length === comboSize) {
-                results.push([...currentCombo]);
-                return;
-            }
-            if (start >= totalLength) {
-                return;
-            }
+  function* generateIndexTriplets(currentIndices = [], startPosition = 0, requiredCount = 3) {
+    if (currentIndices.length === requiredCount) {
+      yield currentIndices;
+      return;
+    }
+    for (let currentPosition = startPosition; currentPosition < sequenceLength; currentPosition++) {
+      yield* generateIndexTriplets([...currentIndices, currentPosition], currentPosition + 1, requiredCount);
+    }
+  }
 
-            currentCombo.push(start);
-            recurse(currentCombo, start + 1);
-            currentCombo.pop();
+  const evaluateTripletConditions = (firstElement, secondElement, thirdElement) => {
+    const combinedFirst = secondElement + thirdElement;
+    const combinedSecond = firstElement + thirdElement;
+    const combinedThird = firstElement + secondElement;
 
-            recurse(currentCombo, start + 1);
-        };
-        recurse([], 0);
-        return results;
-    };
-
-    const allIndexTriplets = generateIndexCombinations(characterArray.length, 3);
-
-    const validTriplets = allIndexTriplets.filter(
-        (indices) => {
-            const [alpha, beta, gamma] = indices.map(idx => characterArray[idx]);
-
-            const areUnique = alpha !== beta && beta !== gamma && alpha !== gamma;
-
-            const satisfyConditions =
-                alpha < (beta + gamma) &&
-                beta < (alpha + gamma) &&
-                gamma < (alpha + beta);
-
-            return areUnique && satisfyConditions;
-        }
+    const satisfiesInequalities = (
+      firstElement < combinedFirst &&
+      secondElement < combinedSecond &&
+      thirdElement < combinedThird
     );
 
-    console.log(validTriplets.length);
-};
+    const areAllUnique = (
+      firstElement !== secondElement &&
+      secondElement !== thirdElement &&
+      firstElement !== thirdElement
+    );
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    return satisfiesInequalities && areAllUnique;
+  };
+
+  let validCount = 0;
+  for (const indices of generateIndexTriplets()) {
+    const [indexOne, indexTwo, indexThree] = indices;
+    const elementOne = charSequence[indexOne];
+    const elementTwo = charSequence[indexTwo];
+    const elementThree = charSequence[indexThree];
+
+    if (evaluateTripletConditions(elementOne, elementTwo, elementThree)) {
+      validCount++;
+    }
+  }
+
+  console.log(validCount);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

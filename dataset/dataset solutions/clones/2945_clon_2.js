@@ -1,81 +1,78 @@
-// This function processes all incoming raw data
-function ProcessInput( rawData ) {
-    // The raw data string is split into an array of individual lines
-    parsedLines = rawData.split( '\n' );
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  // The first line is at index 0, the second at index 1, and so on.
+  const linesOfData = rawData.split("\n");
 
-    // Determine the total number of operations or queries to execute
-    var numQueries = parseInt( parsedLines[0], 10 );
+  // Parse the first line to get the number of queries.
+  const queryCount = parseInt(linesOfData[0], 10);
 
-    // Initialize accumulators for two distinct sets of values
-    var totalX = 0;
-    var totalY = 0;
-    // Create a dynamic collection to store primary data points
-    var dataPoints = new Array();
+  // Initialize accumulators for values 'A' and 'B'.
+  let totalValA = 0;
+  let totalValB = 0;
+  // Create an array to store all 'A' values encountered.
+  const valuesACollection = [];
 
-    // Iterate through each operation specified by the input
-    for ( var queryIndex = 1; queryIndex <= numQueries; queryIndex++ ) {
+  // Iterate through each query, starting from the second line of input.
+  for (let idx = 1; idx <= queryCount; idx++) {
+    // Split the current line into parts based on spaces.
+    const currentLineParts = linesOfData[idx].split(" ");
 
-        // Parse the current line to extract the operation type and its associated numeric values
-        currentOperation = parsedLines[queryIndex].split( ' ' );
+    // Check the type of query based on the first part of the line.
+    if (currentLineParts[0] == 1) {
+      // If the query type is '1', it's an insertion operation.
+      // Parse the 'A' and 'B' values from the current line.
+      const valA = parseInt(currentLineParts[1], 10);
+      const valB = parseInt(currentLineParts[2], 10);
 
-        // Check if the current operation is an insertion (type 1)
-        if ( currentOperation[0] == 1 ) {
-            // Extract and convert the first value to an integer
-            var valX = parseInt( currentOperation[1], 10 );
-            // Extract and convert the second value to an integer
-            var valY = parseInt( currentOperation[2], 10 );
+      // Add the parsed values to their respective totals.
+      totalValA += valA;
+      totalValB += valB;
+      // Store the 'A' value in the collection.
+      valuesACollection.push(valA);
+    } else {
+      // If the query type is not '1', it's a calculation and output operation.
 
-            // Accumulate the extracted values
-            totalX += valX;
-            totalY += valY;
-            // Add the primary value to the collection of data points
-            dataPoints.push( valX );
+      // Calculate the average of all 'A' values currently in the collection.
+      const averageA = totalValA / valuesACollection.length;
+      // Initialize the minimum squared distance and the corresponding 'A' value.
+      // Start with the first element in the collection.
+      let minimumDistance = (valuesACollection[0] - averageA) * (valuesACollection[0] - averageA);
+      let bestValA = valuesACollection[0];
+
+      // Iterate through the collection to find the 'A' value closest to the average.
+      for (let k = 0; k < valuesACollection.length; k++) {
+        // Calculate the squared distance for the current 'A' value.
+        const currentDistance = (valuesACollection[k] - averageA) * (valuesACollection[k] - averageA);
+
+        // If the current distance is smaller, update the minimum distance and best 'A' value.
+        if (currentDistance < minimumDistance) {
+          minimumDistance = currentDistance;
+          bestValA = valuesACollection[k];
+        } else if (currentDistance === minimumDistance) {
+          // If distances are equal, choose the smaller 'A' value.
+          bestValA = valuesACollection[k] < bestValA ? valuesACollection[k] : bestValA;
         }
-        // Otherwise, it's a query operation (type 2)
-        else {
-            // Calculate the arithmetic mean of all stored data points
-            var averageX = totalX / dataPoints.length;
-            // Initialize the minimum squared difference with the first data point
-            var minSquaredDiff = ( dataPoints[0] - averageX ) * ( dataPoints[0] - averageX );
-            // Initialize the value closest to the average with the first data point
-            var closestValX = dataPoints[0];
+      }
 
-            // Loop through the data points to find the one closest to the average
-            for ( var dataIndex = 0; dataIndex < dataPoints.length; dataIndex++ ) {
-                // Compute the squared difference for the current data point
-                var currentSquaredDiff = ( dataPoints[dataIndex] - averageX ) * ( dataPoints[dataIndex] - averageX );
-
-                // If a smaller squared difference is found, update the minimum and the closest value
-                if ( currentSquaredDiff < minSquaredDiff ) {
-                    closestValX = dataPoints[dataIndex];
-                    minSquaredDiff = currentSquaredDiff;
-                }
-                // If the squared differences are equal, pick the smaller actual value
-                else if ( currentSquaredDiff == minSquaredDiff ) {
-                    closestValX = dataPoints[dataIndex] < closestValX ? dataPoints[dataIndex] : closestValX;
-                }
-            }
-
-            // Initialize a variable to accumulate total deviation
-            var totalDeviation = 0;
-            // Iterate through the data points again to calculate the sum of deviations from the closest value
-            for ( var dataIndex = 0; dataIndex < dataPoints.length; dataIndex++ ) {
-                // If the current data point is less than or equal to the closest value
-                if ( dataPoints[dataIndex] <= closestValX ) {
-                    totalDeviation += dataPoints[dataIndex] - closestValX;
-                }
-                // If the current data point is greater than the closest value
-                else {
-                    totalDeviation += ( -dataPoints[dataIndex] + closestValX );
-                }
-            }
-
-            // Output the identified closest value and its calculated total deviation
-            console.log( '%d %d', closestValX, totalDeviation );
+      // Initialize a variable to accumulate the final calculated sum.
+      let calculatedSum = 0;
+      // Iterate through the collection again to compute the sum based on the best 'A' value.
+      for (let k = 0; k < valuesACollection.length; k++) {
+        if (valuesACollection[k] <= bestValA) {
+          // If the current 'A' value is less than or equal to the best 'A' value,
+          // add the difference (current - best) to the sum.
+          calculatedSum += valuesACollection[k] - bestValA;
+        } else {
+          // Otherwise, add the difference (best - current) to the sum.
+          calculatedSum += -valuesACollection[k] + bestValA;
         }
+      }
+
+      // Output the best 'A' value and the calculated sum in the specified format.
+      console.log('%d %d', bestValA, calculatedSum);
     }
+  }
 }
 
-// This line is responsible for reading input from standard input and invoking the main processing function.
-// It should not be modified.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// This line should not be modified. It handles reading input and calling the main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

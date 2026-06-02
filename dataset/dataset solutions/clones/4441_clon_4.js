@@ -1,28 +1,28 @@
-function TransformInputToOutput(rawText) {
-    const textSegments = rawText.trim().split('\n');
+const processInput = (rawInput) => {
+    const lines = rawInput.split('\n');
 
-    const [rowsDimension, colsDimension] = textSegments[0].split(' ').map(Number);
-    const itemMultiplicity = textSegments[2].split(' ').map(Number);
+    const [gridHeight, gridWidth] = lines[0].split(' ').map(Number);
+    const colorCount = Number(lines[1]);
+    const segmentLengths = lines[2].split(' ').map(Number);
 
-    const flatItemSequence = itemMultiplicity.flatMap((repetitionCount, itemKindIndex) =>
-        Array.from({ length: repetitionCount }, () => itemKindIndex + 1)
+    const colorSequence = segmentLengths.flatMap((lengthValue, colorIndex) =>
+        Array.from({ length: lengthValue }, () => colorIndex + 1)
     );
 
-    const generatedLines = Array.from({ length: rowsDimension }, (_, currentLineIndex) => {
-        const lineStartOffset = currentLineIndex * colsDimension;
-        const lineEndOffset = lineStartOffset + colsDimension;
-        
-        let currentLineItems = flatItemSequence.slice(lineStartOffset, lineEndOffset);
+    const rowStrings = Array.from({ length: gridHeight }, (_, rowIndex) => {
+        const rowStartOffset = rowIndex * gridWidth;
+        const currentRowSegment = colorSequence.slice(rowStartOffset, rowStartOffset + gridWidth);
 
-        if (currentLineIndex % 2 !== 0) {
-            currentLineItems.reverse();
-        }
-        return currentLineItems.join(' ');
+        const processedRow = (rowIndex % 2 === 0)
+            ? currentRowSegment
+            : currentRowSegment.reverse();
+
+        return processedRow.join(' ');
     });
 
-    const finalRenderedText = generatedLines.join('\n');
+    const finalGridOutput = rowStrings.join('\n');
 
-    console.log(finalRenderedText);
-}
+    console.log(finalGridOutput);
+};
 
-TransformInputToOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

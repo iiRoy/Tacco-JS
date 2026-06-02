@@ -1,82 +1,66 @@
-const displayOutput = (message) => {
-    if (typeof console !== 'undefined' && typeof console.log === 'function') {
-        console.log(message);
+const outputFn = console.log;
+
+// Self-executing function to encapsulate input handling logic
+(function initializeInputProcessing() {
+    if (typeof process !== "undefined" && process.stdin) {
+        let dataBuffer = "";
+        const LINE_DELIMITER = "\n";
+
+        process.stdin.resume();
+        process.stdin.setEncoding('utf8');
+
+        process.stdin.on('data', (inputChunk) => {
+            dataBuffer += inputChunk;
+        });
+
+        process.stdin.on('end', () => {
+            const receivedLines = dataBuffer.split(LINE_DELIMITER);
+            processInput(receivedLines);
+        });
     }
-};
+})();
 
-const PRIME_MODULUS = 1000000007;
+const MODULUS_VALUE = 1000000007;
 
-if (typeof process !== "undefined" && process.stdin && typeof process.stdin.resume === 'function') {
-    let receivedDataSegments = [];
+// Helper function to convert string to number
+const convertToNumber = (strValue) => Number(strValue);
 
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', function (dataChunk) {
-        receivedDataSegments.push(dataChunk);
-    });
-
-    process.stdin.on('end', function () {
-        const fullInputContent = receivedDataSegments.join('');
-        const inputLines = fullInputContent.split('\n');
-        executePrimaryLogic(inputLines);
-    });
-}
-
-function calculateModularPower(baseValue, exponent) {
-    if (exponent < 0) {
-        displayOutput("Warning: Negative exponent provided. Returning 0 as an invalid state.");
-        return 0;
-    }
-
-    if (exponent === 0) {
-        return 1;
-    }
-
-    if (exponent === 1) {
-        return baseValue % PRIME_MODULUS;
+function calculatePowerMod(baseVal, exponentVal){
+    // Base cases for small exponents
+    if (exponentVal <= 3) {
+        // Direct calculation for small powers
+        return Math.pow(baseVal, exponentVal) % MODULUS_VALUE;
     }
 
-    const halfExponentResult = calculateModularPower(baseValue, Math.floor(exponent / 2));
-    const squaredHalfResult = (halfExponentResult * halfExponentResult) % PRIME_MODULUS;
-
-    if (exponent % 2 === 0) {
+    // Recursive step for even exponent
+    if (exponentVal % 2 === 0) {
+        const halfExponentResult = calculatePowerMod(baseVal, exponentVal / 2);
+        // Square the result and apply modulo
+        const squaredHalfResult = (halfExponentResult * halfExponentResult) % MODULUS_VALUE;
         return squaredHalfResult;
-    } else {
-        const finalResult = (squaredHalfResult * (baseValue % PRIME_MODULUS)) % PRIME_MODULUS;
-        return finalResult;
+    }
+    // Recursive step for odd exponent
+    else {
+        const halfExponentResult = calculatePowerMod(baseVal, (exponentVal - 1) / 2);
+        // Square the result, multiply by base, and apply modulo
+        const squaredHalfResult = (halfExponentResult * halfExponentResult) % MODULUS_VALUE;
+        const finalPowerResult = (squaredHalfResult * baseVal) % MODULUS_VALUE;
+        return finalPowerResult;
     }
 }
 
-function executePrimaryLogic(inputRows) {
-    if (!inputRows || inputRows.length === 0) {
-        displayOutput("Error: No input lines provided to the main logic.");
-        return;
-    }
+function processInput(receivedLines){
+  const firstDataLine = receivedLines[0];
+  const VALUE_SEPARATOR = " ";
 
-    const firstDataRow = inputRows[0];
+  // Split the line into string parts
+  const stringComponents = firstDataLine.split(VALUE_SEPARATOR);
 
-    if (!firstDataRow) {
-        displayOutput("Error: First input line is empty or invalid.");
-        return;
-    }
+  // Convert string parts to numbers using the helper function
+  const numericValues = stringComponents.map(convertToNumber);
 
-    const stringComponents = firstDataRow.trim().split(" ");
+  // Destructure the array for clearer variable names
+  const [baseNumber, exponentNumber] = numericValues;
 
-    if (stringComponents.length < 2) {
-        displayOutput("Error: Insufficient numerical components in the first input line. Expected 2, got " + stringComponents.length);
-        return;
-    }
-
-    const baseNumber = Number(stringComponents[0]);
-    const exponentNumber = Number(stringComponents[1]);
-
-    if (isNaN(baseNumber) || isNaN(exponentNumber)) {
-        displayOutput("Error: One or both input components are not valid numbers.");
-        return;
-    }
-
-    const finalCalculationResult = calculateModularPower(baseNumber, exponentNumber);
-
-    displayOutput(finalCalculationResult);
+  outputFn(calculatePowerMod(baseNumber, exponentNumber));
 }

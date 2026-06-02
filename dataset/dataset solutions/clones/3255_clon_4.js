@@ -1,35 +1,33 @@
 'use strict';
-const nextTerm = (numeral) => {
-  if ((numeral & 1) === 0) {
-    return numeral >>> 1;
+
+const transformValue = (numericInput) => {
+  if (!(numericInput & 1)) {
+    return numericInput >> 1;
   } else {
-    return (numeral * 3) + 1;
+    return (numericInput << 1) + numericInput + 1;
   }
 };
 
-const findRecurrencePoint = (initialValue) => {
-  const pathIndices = new Map();
-  let iterationIndex = 1;
-
-  const tracePath = (currentNumeral) => {
-    if (pathIndices.has(currentNumeral)) {
-      return iterationIndex;
-    }
-
-    pathIndices.set(currentNumeral, iterationIndex);
-
-    const subsequentNumeral = nextTerm(currentNumeral);
-
-    iterationIndex++;
-
-    return tracePath(subsequentNumeral);
-  };
-
-  return tracePath(+initialValue);
+const traverseSequence = (currentValue, visitedElements, iterationCount) => {
+  if (visitedElements.has(currentValue)) {
+    return iterationCount;
+  }
+  visitedElements.add(currentValue);
+  const nextCalculatedValue = transformValue(currentValue);
+  return traverseSequence(nextCalculatedValue, visitedElements, iterationCount + 1);
 };
 
-const ProgramEntry = (inputString) => {
-  console.log(findRecurrencePoint(inputString));
+const processNumericChain = (rawInputString) => {
+  const startingPoint = +rawInputString;
+  const historySet = new Set();
+  historySet.add(startingPoint);
+
+  const firstStepResult = transformValue(startingPoint);
+  return traverseSequence(firstStepResult, historySet, 2);
 };
 
-ProgramEntry(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+function ApplicationEntry(dataSource) {
+  console.log(processNumericChain(dataSource));
+}
+
+ApplicationEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

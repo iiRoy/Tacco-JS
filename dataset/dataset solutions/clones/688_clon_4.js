@@ -1,90 +1,92 @@
-const fileSystemInterface = require('node:fs');
-const allInputContent = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
-const instructionLines = allInputContent.trim().split('\n');
+const retrieveInput = require('fs').readFileSync;
 
-let currentLineIndex = 0;
-const outputCollection = [];
-
-const motionVectors = [[0, 1], [1, 0], [0, -1], [-1, 0]]; // North, East, South, West
-const restrictCoord = (value, limit) => Math.max(1, Math.min(value, limit));
-
-const commandDispatch = new Map();
-
-commandDispatch.set('RIGHT', (currentState) => ({
-    ...currentState,
-    heading: (currentState.heading + 1) % 4
-}));
-
-commandDispatch.set('LEFT', (currentState) => ({
-    ...currentState,
-    heading: (currentState.heading + 3) % 4
-}));
-
-commandDispatch.set('FORWARD', (currentState, distance, dimensions) => {
-    const [deltaX, deltaY] = motionVectors[currentState.heading];
-    const newX = currentState.location.alpha + deltaX * distance;
-    const newY = currentState.location.beta + deltaY * distance;
-
-    return {
-        ...currentState,
-        location: {
-            alpha: restrictCoord(newX, dimensions.width),
-            beta: restrictCoord(newY, dimensions.height)
-        }
-    };
-});
-
-commandDispatch.set('BACKWARD', (currentState, distance, dimensions) => {
-    const [deltaX, deltaY] = motionVectors[currentState.heading];
-    const newX = currentState.location.alpha - deltaX * distance;
-    const newY = currentState.location.beta - deltaY * distance;
-
-    return {
-        ...currentState,
-        location: {
-            alpha: restrictCoord(newX, dimensions.width),
-            beta: restrictCoord(newY, dimensions.height)
-        }
-    };
-});
-
-function processCommandBlock() {
-    const dimLine = instructionLines[currentLineIndex++];
-    if (dimLine === "0 0") {
-        return;
-    }
-
-    const [boundaryWidthStr, boundaryHeightStr] = dimLine.split(' ');
-    const boundaries = {
-        width: Number(boundaryWidthStr),
-        height: Number(boundaryHeightStr)
-    };
-
-    let currentRobotStatus = {
-        location: { alpha: 1, beta: 1 },
-        heading: 0
-    };
-
+function* parseProblemSets(sourceLines) {
+    let currentLineIndex = 0;
     while (true) {
-        const currentCommandLine = instructionLines[currentLineIndex++];
-        const commandParts = currentCommandLine.split(' ');
-        const operationKey = commandParts[0];
+        const dimensionLine = sourceLines[currentLineIndex++];
+        const [boardWidth, boardHeight] = dimensionLine.split(' ').map(Number);
 
-        if (operationKey === "STOP") {
+        if (boardWidth === 0 && boardHeight === 0) {
             break;
         }
 
-        const distanceValue = commandParts.length === 2 ? Number(commandParts[1]) : undefined;
-        const executor = commandDispatch.get(operationKey);
+        const commandSequence = [];
+        while (true) {
+            const commandLine = sourceLines[currentLineIndex++];
+            const commandParts = commandLine.split(' ');
+            const instructionType = commandParts[0];
 
-        if (executor) {
-            currentRobotStatus = executor(currentRobotStatus, distanceValue, boundaries);
+            if (instructionType === 'STOP') {
+                break;
+            }
+
+            commandSequence.push({
+                type: instructionType,
+                magnitude: commandParts.length > 1 ? Number(commandParts[1]) : undefined
+            });
+        }
+        yield {
+            bounds: { width: boardWidth, height: boardHeight },
+            instructions: commandSequence
+        };
+    }
+}
+
+const directionalVectors = [
+    { deltaX: 0, deltaY: 1 },
+    { deltaX: 1, deltaY: 0 },
+    { deltaX: 0, deltaY: -1 },
+    { deltaX: -1, deltaY: 0 }
+];
+
+const restrictPosition = (currentPos, boardLimits) => ({
+    x: Math.max(1, Math.min(boardLimits.width, currentPos.x)),
+    y: Math.max(1, Math.min(boardLimits.height, currentPos.y))
+});
+
+const executeCommand = (initialState, command, boardLimits) => {
+    let nextState = { ...initialState };
+
+    switch (command.type) {
+        case 'RIGHT':
+            nextState.orientation = (initialState.orientation + 1) % 4;
+            break;
+        case 'LEFT':
+            nextState.orientation = (initialState.orientation + 3) % 4;
+            break;
+        case 'FORWARD': {
+            const vector = directionalVectors[initialState.orientation];
+            nextState.x += vector.deltaX * command.magnitude;
+            nextState.y += vector.deltaY * command.magnitude;
+            break;
+        }
+        case 'BACKWARD': {
+            const vector = directionalVectors[initialState.orientation];
+            nextState.x -= vector.deltaX * command.magnitude;
+            nextState.y -= vector.deltaY * command.magnitude;
+            break;
         }
     }
 
-    outputCollection.push(`${currentRobotStatus.location.alpha} ${currentRobotStatus.location.beta}`);
-    processCommandBlock();
-}
+    const clampedCoords = restrictPosition(nextState, boardLimits);
+    return { ...nextState, x: clampedCoords.x, y: clampedCoords.y };
+};
 
-processCommandBlock();
-outputCollection.forEach(res => console.log(res));
+const simulateRobotPath = (startingState, commandList, boardLimits) => {
+    return commandList.reduce((currentRobotState, currentCommand) => {
+        return executeCommand(currentRobotState, currentCommand, boardLimits);
+    }, startingState);
+};
+
+const rawInputContent = retrieveInput('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
+
+for (const problemConfiguration of parseProblemSets(inputLines)) {
+    const initialRobotPosition = { x: 1, y: 1, orientation: 0 };
+    const finalRobotPosition = simulateRobotPath(
+        initialRobotPosition,
+        problemConfiguration.instructions,
+        problemConfiguration.bounds
+    );
+    console.log(`${finalRobotPosition.x} ${finalRobotPosition.y}`);
+}

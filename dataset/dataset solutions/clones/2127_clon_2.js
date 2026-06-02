@@ -1,72 +1,71 @@
-function ProcessInputData(rawData) {
-  // Split the raw input string into an array of individual lines.
-  let linesOfText = rawData.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split("\n");
 
-  // Parse the first line to get the total character count for the initial string.
-  let charCount = parseInt(linesOfText[0], 10);
-  // The second line contains the initial character sequence.
-  let initialString = linesOfText[1];
-  // Parse the third line to determine the number of operations to perform.
-  let operationCount = parseInt(linesOfText[2], 10);
+  // Parse the number of characters in the initial string.
+  var charCount = parseInt(rawData[0], 10);
+  // Get the initial string itself.
+  var initialString = rawData[1];
+  // Parse the total number of queries to process.
+  var queryCount = parseInt(rawData[2], 10);
 
-  // The index in the input array where the first query begins.
-  let firstQueryLineIndex = 3;
+  // Determine the starting index for query lines in the input array.
+  var queryStartIndex = 3;
 
-  // An array to store all the parsed command strings.
-  let commandList = [];
-  // An array to hold the characters of the initial string, allowing modification.
-  let characterArray = [];
+  // Initialize an array to store all query strings.
+  var operationList = [];
+  // Initialize an array to hold individual characters of the string, allowing modification.
+  var characterArray = [];
 
-  // Populate the characterArray with individual characters from the initialString.
-  for (let idx = 0; idx < charCount; idx++) characterArray.push(initialString[idx]);
-
-  // Read all the command lines from the input and store them in commandList.
-  for (let opIdx = 0; opIdx < operationCount; opIdx++) {
-    commandList[opIdx] = linesOfText[(firstQueryLineIndex + opIdx)];
+  // Populate the character array from the initial string.
+  for (var idx = 0; idx < charCount; idx++) {
+    characterArray.push(initialString[idx]);
   }
 
+  // Read all query strings from the input.
+  for (var idx = 0; idx < queryCount; idx++) {
+    operationList[idx] = rawData[queryStartIndex + idx];
+  }
 
-  // Iterate through each command in the list and execute it.
-  for (let currentCommand of commandList) {
-    // Split the current command string into its constituent parts.
-    let commandParts = currentCommand.split(" ");
-    // Determine the type of operation based on the first part of the command.
-    let commandType = parseInt(commandParts[0], 10);
+  // Process each query in the list.
+  for (var currentOperation of operationList) {
+    // Split the current query string into its components.
+    currentOperation = currentOperation.split(" ");
+    // Determine the type of operation.
+    var operationType = parseInt(currentOperation[0], 10);
 
-    // Use a switch statement to handle different command types.
-    switch (commandType) {
-      case 1: // Type 1 command: Update a character at a specific position.
-        // Parse the target index (1-based) for the character update.
-        let targetIndex = parseInt(commandParts[1], 10);
-        // Get the new character to replace the existing one.
-        let replacementChar = commandParts[2];
-        // If the character at the specified index is different, update it.
-        if (characterArray[targetIndex - 1] !== replacementChar) {
-          characterArray[targetIndex - 1] = replacementChar;
+    // Use a switch statement to handle different operation types.
+    switch (operationType) {
+      case 1: // Type 1: Character update operation.
+        // Parse the 1-based index of the character to update.
+        var targetIndex = parseInt(currentOperation[1], 10);
+        // Get the new character value.
+        var newCharacter = currentOperation[2];
+        // Update the character in the array if it's different.
+        if (characterArray[targetIndex - 1] !== newCharacter) {
+          characterArray[targetIndex - 1] = newCharacter;
         }
-        break; // Exit the switch statement for case 1.
+        break;
 
-      case 2: // Type 2 command: Count unique characters within a range.
-        // Parse the left boundary of the range (1-based).
-        let leftBound = parseInt(commandParts[1], 10);
-        // Parse the right boundary of the range (1-based).
-        let rightBound = parseInt(commandParts[2], 10);
+      case 2: // Type 2: Count unique characters in a range operation.
+        // Parse the 1-based left boundary of the range.
+        var leftBound = parseInt(currentOperation[1], 10);
+        // Parse the 1-based right boundary of the range.
+        var rightBound = parseInt(currentOperation[2], 10);
 
-        // An object to store unique characters encountered in the range.
-        // Using an object's keys ensures uniqueness.
-        let uniqueChars = {};
-
+        // Use an object to store unique characters encountered in the range.
+        var uniqueChars = {};
         // Iterate through the specified range.
-        for (let currentPos = leftBound; currentPos <= rightBound; currentPos++) {
-          // Add the character to the uniqueChars object. Value doesn't matter.
-          uniqueChars[characterArray[(currentPos - 1)]] = null;
+        for (leftBound; leftBound <= rightBound; leftBound++) {
+          // Add each character as a key to the object; value doesn't matter.
+          uniqueChars[characterArray[leftBound - 1]] = null;
         }
-        // Print the total number of unique characters found in the range.
+        // Print the count of unique characters (number of keys in the object).
         console.log("%d\n", Object.keys(uniqueChars).length);
-        break; // Exit the switch statement for case 2.
+        break;
     }
   }
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function with input read from stdin.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

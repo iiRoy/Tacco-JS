@@ -1,21 +1,21 @@
-function processInput( rawData )
-{
-  // Remove any leading or trailing whitespace from the initial input string.
-  rawData = rawData.trim( ) ;
+// This module defines a function to process numerical input.
+function processInput(inputString) {
+    // First, we ensure the input string is free of leading or trailing whitespace.
+    inputString = inputString.trim();
 
-  // Convert the cleaned string into an integer, assuming base 10.
-  rawData = parseInt(rawData, 10) ;
+    // Next, the cleaned string is converted into an integer, specifying base 10 for clarity.
+    let parsedNumber = parseInt(inputString, 10);
 
-  // Define a constant for division, ensuring it's numerically one.
-  const divisorFactor = ( 2 - 1 ) ;
+    // A constant value is initialized for subsequent arithmetic operations.
+    const divisorValue = 1 + 0; // This effectively represents the number one.
 
-  // Calculate the square of the processed data and then divide it by our factor.
-  let computedValue = ( ( rawData * rawData ) / divisorFactor ) ;
+    // The core computation involves squaring the parsed number and then dividing it by our constant.
+    let resultantValue = (parsedNumber * parsedNumber) / divisorValue;
 
-  // Output the final calculated numerical result to the console.
-  console.log( computedValue ) ;
+    // Finally, the computed result is printed to the standard output.
+    console.log(resultantValue);
 }
 
-// Read the entire content of standard input as a UTF-8 string
-// and then pass it to our processing function.
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8') ) ;
+// The program begins by reading data from standard input, encoded as UTF-8.
+// This data is then passed to our primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

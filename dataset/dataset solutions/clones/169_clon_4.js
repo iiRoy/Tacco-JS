@@ -1,50 +1,53 @@
-const fileSystem = require('node:fs');
-const sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const inputLines = sourceData.split('\n');
+const fileSystem = require('fs');
+const standardInputFD = process.stdin.fd;
+const inputBufferLength = fileSystem.fstatSync(standardInputFD).size;
+const dataBuffer = Buffer.alloc(inputBufferLength);
+const bytesReadCount = fileSystem.readSync(standardInputFD, dataBuffer, 0, inputBufferLength, 0);
+const sourceLines = dataBuffer.toString('utf8', 0, bytesReadCount).split('\n');
 
 let linePointer = 0;
 
-function executeProcessing() {
-    let scenarioNumber = 1;
+function processKnapsackCases() {
+    let currentCaseIdentifier = 1;
 
-    while (true) {
-        const maximumCapacity = Number(inputLines[linePointer++]);
-        if (isNaN(maximumCapacity) || maximumCapacity === 0) {
+    do {
+        const currentCapacity = parseInt(sourceLines[linePointer++], 10);
+        if (currentCapacity === 0) {
             break;
         }
 
-        const itemCount = Number(inputLines[linePointer++]);
-        const itemCollection = [];
-        for (let k = 0; k < itemCount; ++k) {
-            const valueWeightParts = inputLines[linePointer++].split(',');
-            itemCollection.push({
-                worth: Number(valueWeightParts[0]),
-                mass: Number(valueWeightParts[1])
-            });
-        }
+        const numberOfItems = parseInt(sourceLines[linePointer++], 10);
 
-        const profitTable = new Array(maximumCapacity + 1).fill(0);
+        const valueTable = Array(currentCapacity + 1).fill(0);
 
-        for (const currentGood of itemCollection) {
-            for (let capacityIterator = maximumCapacity; capacityIterator >= currentGood.mass; --capacityIterator) {
-                const option1 = profitTable[capacityIterator];
-                const option2 = currentGood.worth + profitTable[capacityIterator - currentGood.mass];
-                profitTable[capacityIterator] = Math.max(option1, option2);
+        for (let itemIndex = 0; itemIndex < numberOfItems; itemIndex++) {
+            const itemDetails = sourceLines[linePointer++].split(',');
+            const itemValue = parseInt(itemDetails[0], 10);
+            const itemWeight = parseInt(itemDetails[1], 10);
+
+            for (let currentWeight = currentCapacity; currentWeight >= itemWeight; currentWeight--) {
+                valueTable[currentWeight] = Math.max(
+                    valueTable[currentWeight],
+                    valueTable[currentWeight - itemWeight] + itemValue
+                );
             }
         }
 
-        let optimalValue = 0;
-        let achievedWeight = 0;
+        const finalResult = valueTable.reduce(
+            (accumulator, currentValue, currentIndex) => {
+                if (currentValue > accumulator.highestValue) {
+                    return { highestValue: currentValue, optimalWeight: currentIndex };
+                }
+                return accumulator;
+            },
+            { highestValue: 0, optimalWeight: 0 }
+        );
 
-        for (let w = 0; w <= maximumCapacity; ++w) {
-            if (profitTable[w] > optimalValue) {
-                optimalValue = profitTable[w];
-                achievedWeight = w;
-            }
-        }
+        console.log(
+            `Case ${currentCaseIdentifier++}:\n${finalResult.highestValue}\n${finalResult.optimalWeight}`
+        );
 
-        console.log("Situation " + scenarioNumber++ + ":\n" + optimalValue + "\n" + achievedWeight);
-    }
+    } while (true);
 }
 
-executeProcessing();
+processKnapsackCases();

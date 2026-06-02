@@ -1,108 +1,103 @@
 class InputProcessor {
-    #lineSource;
-    #currentLineBuffer = [];
-    #lineCursor = 0;
-
-    constructor(initialText) {
-        this.#lineSource = initialText.split(/\r?\n/).filter(segment => segment.trim() !== '');
+    constructor(sourceText) {
+        this.sourceLines = sourceText.split("\n");
+        this.currentLinePosition = 0;
+        this.activeLineTokens = null;
     }
 
-    // Mimics the 'a' method: reads a single value, advancing to next line if current is exhausted.
-    // Original 'a' reads from right-to-left after reverse. My 'pullSingle' reads left-to-right via shift.
-    pullSingle(asStringValue = false) {
-        while (this.#currentLineBuffer.length === 0) {
-            if (this.#lineCursor >= this.#lineSource.length) {
-                throw new Error("No more data segments available.");
+    // Corresponds to original gets.a
+    extractAtom(asString) {
+        if (this.activeLineTokens === null || this.activeLineTokens.length === 0) {
+            if (this.currentLinePosition >= this.sourceLines.length) {
+                throw new Error("Input exhausted during atom extraction.");
             }
-            this.#currentLineBuffer = this.#lineSource[this.#lineCursor].split(' ').filter(part => part !== '');
-            this.#lineCursor++;
+            this.activeLineTokens = this.sourceLines[this.currentLinePosition].split(" ").reverse();
         }
-        const extracted = this.#currentLineBuffer.shift();
-        return asStringValue ? extracted : Number(extracted);
+
+        const extractedToken = this.activeLineTokens.pop();
+        if (this.activeLineTokens.length === 0) {
+            this.currentLinePosition++;
+        }
+        return asString ? extractedToken : Number(extractedToken);
     }
 
-    // Mimics the 'l' method: reads an entire line, advancing to the next line.
-    pullLine(asStringArray = false) {
-        if (this.#lineCursor >= this.#lineSource.length) {
-            throw new Error("No more full lines available.");
+    // Corresponds to original gets.l
+    readFullLine(asStrings) {
+        if (this.currentLinePosition >= this.sourceLines.length) {
+            throw new Error("Input exhausted during full line read.");
         }
-        // Clear any remaining tokens from a partially consumed line by 'pullSingle'
-        this.#currentLineBuffer = [];
-        const lineContent = this.#lineSource[this.#lineCursor++];
-        const parts = lineContent.split(' ').filter(part => part !== '');
-        return asStringArray ? parts : parts.map(Number);
+        this.activeLineTokens = null; // Discard any partial line state
+        const lineContent = this.sourceLines[this.currentLinePosition].split(" ");
+        this.currentLinePosition++;
+        return asStrings ? lineContent : lineContent.map(Number);
     }
 
-    // Mimics the 'm' method: reads N lines.
-    pullManyLines(count, asStringArrays = false) {
-        const collectedLines = [];
-        for (let k = 0; k < count; k++) {
-            collectedLines.push(this.pullLine(asStringArrays));
-        }
+    // Corresponds to original gets.m
+    readBlockOfLines(count, asStrings) {
+        const collectedLines = Array.from({ length: count }, () => {
+            if (this.currentLinePosition >= this.sourceLines.length) {
+                throw new Error("Input exhausted during multi-line read.");
+            }
+            this.activeLineTokens = null; // Discard any partial line state
+            const lineContent = this.sourceLines[this.currentLinePosition].split(" ");
+            this.currentLinePosition++;
+            return asStrings ? lineContent : lineContent.map(Number);
+        });
         return collectedLines;
     }
 }
 
-class GroupManager {
-    #parentLinks = new Map();
-
-    initializeNode(nodeId) {
-        if (!this.#parentLinks.has(nodeId)) {
-            this.#parentLinks.set(nodeId, nodeId);
-        }
+class DisjointSetStructure {
+    constructor(initialSize) {
+        this.parentRegistry = Array.from({ length: initialSize + 1 }, (_, idx) => idx);
     }
 
-    locateRoot(nodeId) {
-        if (this.#parentLinks.get(nodeId) === nodeId) {
-            return nodeId;
+    // Corresponds to original root
+    findRepresentative(element) {
+        if (this.parentRegistry[element] === element) {
+            return element;
         }
-        // Path compression
-        const ultimateParent = this.locateRoot(this.#parentLinks.get(nodeId));
-        this.#parentLinks.set(nodeId, ultimateParent);
-        return ultimateParent;
+        return this.parentRegistry[element] = this.findRepresentative(this.parentRegistry[element]);
     }
 
-    uniteGroups(nodeX, nodeY) {
-        const rootX = this.locateRoot(nodeX);
-        const rootY = this.locateRoot(nodeY);
-
-        if (rootX !== rootY) {
-            this.#parentLinks.set(rootX, rootY); // Simple union
-            return true; // Groups were merged
-        }
-        return false; // Already in the same group
+    // Corresponds to original same
+    areInSameSet(elemA, elemB) {
+        return this.findRepresentative(elemA) === this.findRepresentative(elemB);
     }
 
-    checkConnection(nodeX, nodeY) {
-        return this.locateRoot(nodeX) === this.locateRoot(nodeY);
+    // Corresponds to original unite
+    mergeSets(elemA, elemB) {
+        const rootA = this.findRepresentative(elemA);
+        const rootB = this.findRepresentative(elemB);
+        if (rootA !== rootB) {
+            this.parentRegistry[rootA] = rootB;
+        }
     }
 }
 
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataProvider = new InputProcessor(sourceData);
+const dataReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const calculateOutcome = () => {
-    const totalNodes = dataProvider.pullSingle();
-    const connectionCount = dataProvider.pullSingle();
+console.log(executeSolution());
 
-    const targetAssignments = dataProvider.pullLine();
+function executeSolution() {
+    const nodeCount = dataReader.extractAtom(false);
+    const mergeCount = dataReader.extractAtom(false);
+    const targetPermutation = dataReader.readFullLine(false);
 
-    const connectivityStructure = new GroupManager();
+    const setManager = new DisjointSetStructure(nodeCount);
 
-    // Initialize all nodes for DSU
-    Array.from({ length: totalNodes + 1 }, (_, index) => index)
-         .forEach(nodeId => connectivityStructure.initializeNode(nodeId));
+    Array.from({ length: mergeCount }).forEach(() => {
+        const [firstNode, secondNode] = dataReader.readFullLine(false);
+        setManager.mergeSets(firstNode, secondNode);
+    });
 
-    // Establish connections
-    Array.from({ length: connectionCount }, () => dataProvider.pullLine())
-         .forEach(connectionPair => connectivityStructure.uniteGroups(connectionPair[0], connectionPair[1]));
+    const matchingElements = Array.from({ length: nodeCount }, (_, index) => index + 1)
+        .reduce((accumulator, currentElement) => {
+            if (setManager.areInSameSet(targetPermutation[currentElement - 1], currentElement)) {
+                return accumulator + 1;
+            }
+            return accumulator;
+        }, 0);
 
-    // Determine the final result
-    const matchingCount = Array.from({ length: totalNodes }, (_, index) => index + 1) // Nodes from 1 to totalNodes
-        .filter(nodeIdentifier => connectivityStructure.checkConnection(targetAssignments[nodeIdentifier - 1], nodeIdentifier))
-        .length;
-
-    return matchingCount;
-};
-
-console.log(calculateOutcome());
+    return matchingElements;
+}

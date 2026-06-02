@@ -1,65 +1,40 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const textRows = dataStream.split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = fileContent.split('\n');
 
-function processDataSet(rowIdentifier, allTextualLines) {
-    if (rowIdentifier >= allTextualLines.length) {
-        return; // Reached the end of the input lines
+let lineIndex = 0;
+
+while (true) {
+    const currentNumberString = allLines[lineIndex++];
+    const parsedNumber = Number(currentNumberString);
+
+    if (parsedNumber === 0) {
+        break;
     }
 
-    const rawInputLine = allTextualLines[rowIdentifier];
-    if (rawInputLine === undefined) {
-        return; // Defensive check for unexpected end of array
+    const dataString = allLines[lineIndex++];
+    const stringValues = dataString.split(' ');
+    const numericalEntries = [];
+
+    for (let i = 0; i < stringValues.length; i++) {
+        numericalEntries.push(parseFloat(stringValues[i]));
     }
 
-    // Convert the line to a number, mimicking the original's `+lines.shift()` behavior
-    // which converts empty strings (from empty lines) to 0.
-    const valueCount = +rawInputLine;
-
-    // Termination condition for the problem's logic
-    if (valueCount === 0) {
-        return;
+    let totalAccumulator = 0;
+    for (let i = 0; i < numericalEntries.length; i++) {
+        totalAccumulator += numericalEntries[i];
     }
 
-    // Ensure there's a subsequent line for the data points
-    const numberSequenceLine = allTextualLines[rowIdentifier + 1];
-    if (numberSequenceLine === undefined) {
-        // This indicates malformed input if valueCount > 0 but no data line follows
-        return;
+    const entryCount = numericalEntries.length;
+    const arithmeticMean = totalAccumulator / entryCount;
+
+    let squaredDifferencesSum = 0;
+    for (let i = 0; i < numericalEntries.length; i++) {
+        const differenceFromMean = numericalEntries[i] - arithmeticMean;
+        squaredDifferencesSum += (differenceFromMean * differenceFromMean);
     }
 
-    // Parse the numbers using the Number constructor for type conversion
-    const numericalCollection = numberSequenceLine.split(' ').map(Number);
+    const populationVariance = squaredDifferencesSum / entryCount;
+    const finalStandardDeviation = Math.sqrt(populationVariance);
 
-    let summationOfValues = 0;
-    let summationOfSquaredValues = 0;
-
-    // Compute both the sum and sum of squares in a single pass
-    for (let i = 0; i < numericalCollection.length; i++) {
-        const individualValue = numericalCollection[i];
-        summationOfValues += individualValue;
-        summationOfSquaredValues += (individualValue * individualValue);
-    }
-
-    const elementsQuantity = numericalCollection.length;
-    // Calculate the arithmetic mean (average)
-    const arithmeticMean = summationOfValues / elementsQuantity;
-
-    // Use the alternative formula for variance: E[X^2] - (E[X])^2
-    // where E[X^2] is the mean of the squared values
-    const expectedValueSquared = summationOfSquaredValues / elementsQuantity;
-    // And (E[X])^2 is the square of the mean
-    const meanSquared = arithmeticMean * arithmeticMean;
-    const varianceResult = expectedValueSquared - meanSquared;
-
-    // The standard deviation is the square root of the variance
-    const finalDeviation = Math.sqrt(varianceResult);
-
-    // Output the result formatted to 5 decimal places
-    process.stdout.write(finalDeviation.toFixed(5) + '\n');
-
-    // Recursively call for the next data block. Each block consumes two lines.
-    processDataSet(rowIdentifier + 2, allTextualLines);
+    console.log(finalStandardDeviation.toFixed(5));
 }
-
-// Begin processing from the very first line of the input
-processDataSet(0, textRows);

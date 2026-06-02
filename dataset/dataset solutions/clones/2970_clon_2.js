@@ -1,114 +1,117 @@
-const dataStream = require('readline').createInterface({
-  input:  process.stdin,
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
-let parserInstance;
-const receivedData = [];
-dataStream.on('newLine', (currentLine) => { receivedData.push(currentLine); });
-dataStream.on('finishedReading', () => {
-  parserInstance = setupInputHandler(receivedData);
-  console.warn("\n");
-  const beginTime = Date.now();
-  executeLogic();
-  const duration = Date.now() - beginTime;
-  logDebug(`execTime : ${duration} millis`);
-  logDebug(`memUsage : ${Math.round(process.memoryUsage().heapTotal / 1024)} kilobytes`);
+
+var dataIterator;
+var inputLines = [];
+
+inputReader.on('line', function(rawInput){
+  inputLines.push(rawInput);
 });
 
-function cloneObject(sourceObj) {
+inputReader.on('close', function(){
+  dataIterator = initializeInputProcessor(inputLines);
+  console.error("\n");
+
+  var startTime = Date.now();
+  executeMainLogic();
+  var elapsedTime = Date.now() - startTime;
+
+  logDebugMessage("time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function duplicateObject(sourceObj){
   return JSON.parse(JSON.stringify(sourceObj));
 }
 
-function readInteger()   { return dataConverter(fetchNext(), 1); }
-function readStringArray() { return dataConverter(fetchNext(), 2); }
-function readIntArray()  { return dataConverter(fetchNext(), 4); }
-function readCharArray() { return dataConverter(fetchNext(), 6); }
-function fetchNext()     { return parserInstance.fetchNext(); }
-function hasMore()       { return parserInstance.hasMore(); }
+function getNextInteger(){
+  return convertInputData(fetchNextLine(), 1);
+}
 
-function setupInputHandler(lineBuffer) {
-  const handlerObject = {
-    lineCollection: lineBuffer,
-    position: 0,
-    totalLines: lineBuffer.length,
+function getNextStringArray(){
+  return convertInputData(fetchNextLine(), 2);
+}
 
-    hasMore: function() {
-      return (this.position < this.totalLines);
+function getNextIntegerArray(){
+  return convertInputData(fetchNextLine(), 4);
+}
+
+function getNextCharacterArray(){
+  return convertInputData(fetchNextLine(), 6);
+}
+
+function fetchNextLine(){
+  return dataIterator.fetchNextLine();
+}
+
+function hasMoreLines(){
+  return dataIterator.hasMoreLines();
+}
+
+function initializeInputProcessor(rawInputList){
+  var processorInstance = {
+    sourceList : rawInputList,
+    currentIdx : 0,
+    maxCount : rawInputList.length,
+
+    hasMoreLines : function(){
+      return (this.currentIdx < this.maxCount);
     },
 
-    fetchNext: function() {
-      if (!this.hasMore()) {
-        throw "NoMoreInputAvailable: End of data stream reached.";
+    fetchNextLine : function(){
+      if(!this.hasMoreLines()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        const fetchedDatum = this.lineCollection[this.position];
-        this.position++;
-        return fetchedDatum;
+        var currentInputLine = this.sourceList[this.currentIdx];
+        this.currentIdx++;
+        return currentInputLine;
       }
     }
   };
-  return handlerObject;
+  return processorInstance;
 }
 
-function printResult(dataToOutput) {
-  console.log(dataToOutput);
+function printOutput(messageContent){
+  console.log(messageContent);
 }
 
-function logDebug(message) {
-  console.warn("debug_output: " + require("util").inspect(message, false, null));
+function logDebugMessage(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-// Convert various input types based on 'mode' parameter.
-// Mode 1: To integer.
-// Mode 2: Split by space into string array.
-// Mode 4: Split by space into number array.
-// Mode 6: Split by character into string array.
-// Mode 7: Split by character into number array.
-// Mode 8: Join array with space.
-// Mode 9: Join array with newline.
-// Mode 0: Join array without separator.
-// Default: Return as is. Handle errors by returning original value.
-function dataConverter(inputValue, mode) {
-  try {
-    switch (mode) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+function convertInputData(valueToConvert, conversionType){
+  try{
+    switch(conversionType){
+      case 1: return parseInt(valueToConvert);
+      case 2: return valueToConvert.split(" ");
+      case 4: return valueToConvert.split(" ").map(Number);
+      case 6: return valueToConvert.split("");
+      case 7: return valueToConvert.split("").map(Number);
+      case 8: return valueToConvert.join(" ");
+      case 9: return valueToConvert.join("\n");
+      case 0: return valueToConvert.join("");
+      default: return valueToConvert;
     }
-  } catch (err) {
-    return inputValue; // In case of conversion error, return original.
+  } catch(conversionError){
+    return valueToConvert;
   }
 }
 
-// Main program logic starts here.
-// This is the core part of the application.
-function executeLogic() {
-  const initialData = readIntArray();
-  const paramM = initialData[0];
-  const paramK = initialData[1];
+function executeMainLogic(){
+	var firstLineData = getNextIntegerArray();
+	var paramM = firstLineData[0];
+	var paramK = firstLineData[1];
 
-  if (paramK === 0) {
-    const outputBuffer = new Array(Math.pow(2, paramM + 1));
-    for (let idx = 0; idx < Math.pow(2, paramM); idx++) {
-      outputBuffer[idx * 2]     = idx;
-      outputBuffer[idx * 2 + 1] = idx;
-    }
-    printResult(dataConverter(outputBuffer, 8));
-  } else {
-    printResult(-1);
-  }
+	if(paramK === 0){
+		var resultSequence = new Array(Math.pow(2, paramM + 1));
+		for(var idx = 0; idx < Math.pow(2, paramM); idx++){
+			resultSequence[idx * 2] = idx;
+			resultSequence[idx * 2 + 1] = idx;
+		}
+		printOutput(convertInputData(resultSequence, 8));
+	} else {
+		printOutput(-1);
+	}
 }

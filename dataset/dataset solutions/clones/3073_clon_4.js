@@ -1,41 +1,46 @@
-function ProcessGiftChoices(incomingRawData) {
-    const processedLines = incomingRawData.trim().split("\n");
+const Main = (sourceData) => {
+  const parsedLines = sourceData.trim().split('\n').map((line) => line.split(/\s/).map(Number));
 
-    const [alphaSize, betaSize, gammaSize, desiredCount] = processedLines[0].split(/\s/).map(Number);
+  const configParams = parsedLines[0];
+  const xCount = configParams[0];
+  const yCount = configParams[1];
+  const zCount = configParams[2];
+  const topK = configParams[3];
 
-    const alphaElements = processedLines[1].split(/\s/).map(Number);
-    const betaElements = processedLines[2].split(/\s/).map(Number);
-    const gammaElements = processedLines[3].split(/\s/).map(Number);
+  const setA = parsedLines[1];
+  const setB = parsedLines[2];
+  const setC = parsedLines[3];
 
-    const sortedAlpha = Array.from(alphaElements).sort((valA, valB) => valB - valA);
-    const sortedBeta = Array.from(betaElements).sort((valA, valB) => valB - valA);
-    const sortedGamma = Array.from(gammaElements).sort((valA, valB) => valB - valA);
+  setA.sort((val1, val2) => val2 - val1);
+  setB.sort((val1, val2) => val2 - val1);
+  setC.sort((val1, val2) => val2 - val1);
 
-    const pairwiseSumsAB = sortedAlpha.slice(0, alphaSize).flatMap(
-        (elementAlpha) => sortedBeta.slice(0, betaSize).map(
-            (elementBeta) => elementAlpha + elementBeta
-        )
-    );
+  const intermediateSums = setA.slice(0, xCount).flatMap((valA) =>
+    setB.slice(0, yCount).map((valB) => valA + valB)
+  );
 
-    pairwiseSumsAB.sort((sumOne, sumTwo) => sumTwo - sumOne);
+  intermediateSums.sort((val1, val2) => val2 - val1);
 
-    const effectiveIntermediateLimit = Math.min(desiredCount, pairwiseSumsAB.length);
+  function* generateFinalSums(abSums, cVals, kLimit, zLimit) {
+    const effectiveABCount = Math.min(kLimit, abSums.length);
 
-    const ultimateSums = pairwiseSumsAB.slice(0, effectiveIntermediateLimit).flatMap(
-        (sumABValue, sumABIndex) => {
-            return sortedGamma.slice(0, gammaSize)
-                .filter((_, elementGammaIndex) => {
-                    return (sumABIndex * elementGammaIndex <= effectiveIntermediateLimit);
-                })
-                .map(elementGamma => sumABValue + elementGamma);
+    for (let abIdx = 0; abIdx < effectiveABCount; abIdx++) {
+      const currentABSum = abSums[abIdx];
+
+      for (let cIdx = 0; cIdx < zLimit; cIdx++) {
+        if (effectiveABCount < abIdx * cIdx) {
+          continue;
         }
-    );
+        yield currentABSum + cVals[cIdx];
+      }
+    }
+  }
 
-    ultimateSums.sort((sumOne, sumTwo) => sumTwo - sumOne);
+  const finalSums = Array.from(generateFinalSums(intermediateSums, setC, topK, zCount));
 
-    ultimateSums.slice(0, desiredCount).forEach(
-        (finalSum) => console.log(finalSum)
-    );
-}
+  finalSums.sort((val1, val2) => val2 - val1);
 
-ProcessGiftChoices(require("fs").readFileSync("/dev/stdin", "utf8"));
+  console.log(finalSums.slice(0, topK).join('\n'));
+};
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

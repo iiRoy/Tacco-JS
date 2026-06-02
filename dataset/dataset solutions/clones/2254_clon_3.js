@@ -1,134 +1,115 @@
-const largeDistance = 1000000007; // A large prime number used to represent infinity for path lengths
+function ProcessGridData(rawInputStr) {
+  const inputLines = rawInputStr.split("\n");
 
-/**
- * Processes grid data to find the maximum shortest path between any two traversable cells.
- * This function implements the Floyd-Warshall algorithm.
- * @param {string} inputStringContent - The raw input string containing grid dimensions and layout.
- * @returns {number} The maximum shortest path found, or 0 if no paths exist or input is invalid.
- */
-function CalculateMaxPath(inputStringContent) {
-  // Split the entire input content into individual lines.
-  const rawInputLines = inputStringContent.split('\n');
+  const dimensionParts = inputLines[0].split(" ");
+  const gridRows = parseInt(dimensionParts[0], 10);
+  const gridCols = parseInt(dimensionParts[1], 10);
 
-  // Parse grid dimensions from the first line of input.
-  const dimensionParts = rawInputLines[0].split(' ');
-  const gridHeight = parseInt(dimensionParts[0], 10);
-  const gridWidth = parseInt(dimensionParts[1], 10);
+  const infinityValue = Math.pow(10, 9) + 7;
 
-  // Basic validation for grid dimensions to prevent errors with malformed input.
-  if (isNaN(gridHeight) || isNaN(gridWidth) || gridHeight <= 0 || gridWidth <= 0) {
-    // console.error("Error: Invalid grid dimensions detected. Height or Width is non-positive or not a number.");
-    return 0; // Return 0 or throw an error for invalid input, depending on requirements.
+  const gridLayoutData = inputLines.slice(1, gridRows + 1);
+  const gridLayout = gridLayoutData.map(line => line.split(""));
+
+  const directConnections = [];
+  let currentCellId = 0;
+
+  const getCellIdentifier = (row, col, width) => row * width + col;
+
+  for (let r = 0; r < gridRows; r++) {
+    for (let c = 0; c < gridCols; c++) {
+      const currentCellType = gridLayout[r][c];
+      if (currentCellType === ".") {
+        const currentId = getCellIdentifier(r, c, gridCols);
+
+        // Check for connection to the cell below
+        const hasVerticalNeighbor = (r + 1 < gridRows);
+        if (hasVerticalNeighbor) {
+          const neighborCellType = gridLayout[r + 1][c];
+          if (neighborCellType === ".") {
+            const neighborId = getCellIdentifier(r + 1, c, gridCols);
+            directConnections.push([currentId, neighborId]);
+          }
+        }
+
+        // Check for connection to the cell to the right
+        const hasHorizontalNeighbor = (c + 1 < gridCols);
+        if (hasHorizontalNeighbor) {
+          const neighborCellType = gridLayout[r][c + 1];
+          if (neighborCellType === ".") {
+            const neighborId = getCellIdentifier(r, c + 1, gridCols);
+            directConnections.push([currentId, neighborId]);
+          }
+        }
+      }
+    }
   }
 
-  // Calculate the total number of cells in the grid, which is also the number of nodes in our graph.
-  const totalGridCells = gridHeight * gridWidth;
-
-  // Extract the grid layout lines, skipping the first line which contains dimensions.
-  // We take exactly 'gridHeight' lines following the dimension line.
-  const gridLayoutSegments = rawInputLines.slice(1, gridHeight + 1);
-  const cellTypeMatrix = gridLayoutSegments.map(line => line.split(''));
-
-  // Initialize the all-pairs shortest path matrix (distance matrix).
-  // Each cell (node) is connected to itself with distance 0. All other paths are initially 'infinity'.
-  const shortestDistanceMatrix = Array.from({ length: totalGridCells }, (_, nodeIdxA) =>
-    Array.from({ length: totalGridCells }, (_, nodeIdxB) => (nodeIdxA === nodeIdxB ? 0 : largeDistance))
+  const totalCells = gridRows * gridCols;
+  const shortestPaths = Array.from({ length: totalCells }, () =>
+    Array(totalCells).fill(infinityValue)
   );
 
-  // Populate direct adjacency connections (edges) in the shortestDistanceMatrix.
-  // We iterate through each cell in the grid to find immediate traversable neighbors.
-  for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
-    for (let currentCol = 0; currentCol < gridWidth; currentCol++) {
-      const currentCellLinearIndex = currentRow * gridWidth + currentCol;
+  for (let i = 0; i < totalCells; i++) {
+    shortestPaths[i][i] = 0;
+  }
 
-      // Only consider traversable cells (represented by '.').
-      if (cellTypeMatrix[currentRow][currentCol] === '.') {
-        // Check for a traversable cell to the immediate right.
-        if (currentCol + 1 < gridWidth && cellTypeMatrix[currentRow][currentCol + 1] === '.') {
-          const rightNeighborLinearIndex = currentRow * gridWidth + (currentCol + 1);
-          shortestDistanceMatrix[currentCellLinearIndex][rightNeighborLinearIndex] = 1;
-          shortestDistanceMatrix[rightNeighborLinearIndex][currentCellLinearIndex] = 1; // Bidirectional connection
-        }
+  for (const connection of directConnections) {
+    const [nodeA, nodeB] = connection;
+    shortestPaths[nodeA][nodeB] = 1;
+    shortestPaths[nodeB][nodeA] = 1;
+  }
 
-        // Check for a traversable cell immediately below.
-        if (currentRow + 1 < gridHeight && cellTypeMatrix[currentRow + 1][currentCol] === '.') {
-          const bottomNeighborLinearIndex = (currentRow + 1) * gridWidth + currentCol;
-          shortestDistanceMatrix[currentCellLinearIndex][bottomNeighborLinearIndex] = 1;
-          shortestDistanceMatrix[bottomNeighborLinearIndex][currentCellLinearIndex] = 1; // Bidirectional connection
-        }
+  // Floyd-Warshall algorithm for all-pairs shortest path
+  for (let intermediateNode = 0; intermediateNode < totalCells; intermediateNode++) {
+    for (let sourceNode = 0; sourceNode < totalCells; sourceNode++) {
+      for (let destinationNode = 0; destinationNode < totalCells; destinationNode++) {
+        const pathThroughIntermediate = shortestPaths[sourceNode][intermediateNode] + shortestPaths[intermediateNode][destinationNode];
+        shortestPaths[sourceNode][destinationNode] = Math.min(
+          shortestPaths[sourceNode][destinationNode],
+          pathThroughIntermediate
+        );
       }
     }
   }
 
-  // Execute the Floyd-Warshall algorithm to compute all-pairs shortest paths.
-  // The algorithm iterates through all possible intermediate nodes.
-  for (let intermediateNode = 0; intermediateNode < totalGridCells; intermediateNode++) {
-    // Then, for each possible intermediate node, it checks all possible start nodes.
-    for (let startNode = 0; startNode < totalGridCells; startNode++) {
-      // And for each start node, it checks all possible end nodes.
-      for (let endNode = 0; endNode < totalGridCells; endNode++) {
-        // If paths exist from start to intermediate and intermediate to end,
-        // update the shortest path from start to end if a shorter one is found via 'intermediateNode'.
-        // This check prevents potential overflow if largeDistance + largeDistance exceeds max integer,
-        // and ensures we only consider reachable paths.
-        if (shortestDistanceMatrix[startNode][intermediateNode] !== largeDistance &&
-            shortestDistanceMatrix[intermediateNode][endNode] !== largeDistance) {
-          shortestDistanceMatrix[startNode][endNode] = Math.min(
-            shortestDistanceMatrix[startNode][endNode],
-            shortestDistanceMatrix[startNode][intermediateNode] + shortestDistanceMatrix[intermediateNode][endNode]
-          );
-        }
+  let maximumPathLength = 0;
+  for (let sourceNode = 0; sourceNode < totalCells; sourceNode++) {
+    for (let destinationNode = 0; destinationNode < totalCells; destinationNode++) {
+      const currentDistance = shortestPaths[sourceNode][destinationNode];
+      if (currentDistance < infinityValue) {
+        maximumPathLength = Math.max(maximumPathLength, currentDistance);
       }
     }
   }
 
-  // After computing all shortest paths, find the single maximum shortest path among all reachable pairs.
-  let overallMaximumShortestPath = 0;
-  for (let i = 0; i < totalGridCells; i++) {
-    for (let j = 0; j < totalGridCells; j++) {
-      // Only consider paths that are actually reachable (i.e., their distance is not 'infinity').
-      // We also skip paths from a node to itself, as their distance is 0.
-      if (i !== j && shortestDistanceMatrix[i][j] < largeDistance) {
-        overallMaximumShortestPath = Math.max(overallMaximumShortestPath, shortestDistanceMatrix[i][j]);
-      }
-    }
-  }
-
-  // Output the final result to the console.
-  console.log(overallMaximumShortestPath.toString());
-  return overallMaximumShortestPath;
+  console.log('%s', maximumPathLength);
+  return maximumPathLength;
 }
 
-/**
- * Auxiliary function for testing the solution in a browser-like environment.
- * It retrieves input/output from DOM elements and displays the test result.
- * @param {number} testCaseIdentifier - A unique identifier for the test case (e.g., 1, 2, 3).
- */
-function performTestRun(testCaseIdentifier) {
-  // Reference to the global document object, assuming a browser context.
-  const documentReference = document;
+function testGridSolver(testCaseIndex) {
+  const inputElement = document.getElementById("input" + testCaseIndex);
+  const outputElement = document.getElementById("output" + testCaseIndex);
 
-  // Retrieve the test input string from a specific DOM element.
-  const testInputString = documentReference.getElementById("input" + testCaseIdentifier).value;
-
-  // Execute the main path calculation logic with the retrieved test input.
-  const calculatedResult = CalculateMaxPath(testInputString);
-
-  // Retrieve the expected output string from another DOM element.
-  // It's trimmed and only the first line is considered for comparison.
-  const expectedOutputRaw = documentReference.getElementById("output" + testCaseIdentifier).value.trim();
-  const expectedResultValue = parseInt(expectedOutputRaw.split("\n")[0], 10);
-
-  // Determine if the calculated result matches the expected result.
-  let testEvaluationStatus = "WA"; // Default status: Wrong Answer
-  if (calculatedResult === expectedResultValue) {
-    testEvaluationStatus = "AC"; // Accepted if results match
+  if (!inputElement || !outputElement) {
+    console.error(`Elements for test case ${testCaseIndex} not found.`);
+    return;
   }
 
-  // Update the inner HTML of a result element to display the test status.
-  documentReference.getElementById("result" + testCaseIdentifier).innerHTML = testEvaluationStatus;
+  const testInput = inputElement.value;
+  const actualAnswer = ProcessGridData(testInput);
+  const expectedAnswer = parseInt(outputElement.value.split("\n")[0], 10);
+
+  let testResultStatus = "WA"; // Wrong Answer
+  if (actualAnswer === expectedAnswer) {
+    testResultStatus = "AC"; // Accepted
+  }
+
+  const resultElement = document.getElementById("result" + testCaseIndex);
+  if (resultElement) {
+    resultElement.innerHTML = testResultStatus;
+  } else {
+    console.warn(`Result element for test case ${testCaseIndex} not found.`);
+  }
 }
 
-// Entry point for execution in a Node.js environment, typically used in competitive programming.
-// Reads input from standard input and passes it to the main processing function.
-CalculateMaxPath(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,73 +1,57 @@
-/*
- * This module contains a function to evaluate the feasibility of a planned travel route.
- * It reads trip data and determines if each segment is physically possible
- * given time constraints and movement rules.
- */
-function evaluateRoute(  rawDataString  ) {
-  // Break down the raw input into individual textual segments.
-  // The first line is typically metadata, so we discard it.
-  var inputSegments = rawDataString.split( '\n' ) .splice(1);
+function processInput(rawData) {
+  // Split the input string into individual lines, skipping the first line.
+  const dataRows = rawData.split('\n').splice(1);
 
-  // Convert each textual segment into an array of numeric coordinates [time, x, y].
-  let journeyPoints = inputSegments.map( ( segmentText ) => {
-    return segmentText.split( ' ' ).map( ( numericPart ) => {
-      return Number( numericPart );
-    } );
-  } );
+  // Parse each line into an array of numbers, representing journey segments.
+  const journeySegments = dataRows.map(rowStr =>
+    rowStr.split(' ').map(numStr => Number(numStr))
+  );
 
-  // Initialize navigational state variables.
-  // 'pointIndex' tracks the current destination being evaluated.
-  // 'lastKnownTime' stores the timestamp of the previously confirmed location.
-  // 'initialX' and 'initialY' represent the starting coordinates,
-  // which, based on the original code's logic, remain fixed at (0,0) throughout.
-  let pointIndex  =  0;
-  var lastKnownTime = 0;
-  var initialX = 0; // X-coordinate always remains 0 as per source logic.
-  var initialY = 0; // Y-coordinate always remains 0 as per source logic.
+  // Initialize variables for the current state: segment index, time, and coordinates.
+  let segmentIndex = 0;
+  let currentTime = 0;
+  let currentX = 0;
+  let currentY = 0;
 
-  // Loop through every planned journey point to verify its reachability.
-  while ( pointIndex < journeyPoints.length ) {
-    // Extract details for the current target destination.
-    const currentPoint = journeyPoints[ pointIndex ];
+  // Iterate through each defined journey segment.
+  while (segmentIndex < journeySegments.length) {
+    const currentSegment = journeySegments[segmentIndex];
 
-    // Calculate the time duration allocated for reaching this 'currentPoint'.
-    let timeDifference = currentPoint[0] - lastKnownTime;
+    // Calculate the time elapsed for this segment.
+    const timeDiff = currentSegment[0] - currentTime;
 
-    // Determine the absolute change required in the X-coordinate.
-    // Note: 'initialX' is always 0, reflecting the original code's behavior.
-    let xDifference = Math.abs( currentPoint[1] - initialX );
+    // Determine the absolute change in X and Y coordinates from the origin (0,0).
+    // Note: currentX and currentY are not updated within the loop,
+    // so these differences are always relative to the initial (0,0) position.
+    const xDiffAbs = Math.abs(currentSegment[1] - currentX);
+    const yDiffAbs = Math.abs(currentSegment[2] - currentY);
 
-    // Determine the absolute change required in the Y-coordinate.
-    // Note: 'initialY' is always 0, reflecting the original code's behavior.
-    let yDifference = Math.abs( currentPoint[2] - initialY );
-
-    // Feasibility Check 1: Is there sufficient time to cover the Manhattan distance?
-    // If the time available is less than the sum of absolute coordinate changes, it's impossible.
-    if ( timeDifference < xDifference + yDifference ) {
-      return process.stdout.write( 'Not Feasible\n' ); // Output failure message.
+    // Check if the available time is insufficient to cover the Manhattan distance.
+    if (timeDiff < xDiffAbs + yDiffAbs) {
+      return console.log('No');
     }
 
-    // Feasibility Check 2: Parity check.
-    // This condition, as written in the original code, effectively never triggers a 'No' output
-    // due to JavaScript's type coercion rules (`boolean % 2` results in `NaN`, and `if (NaN)` is false).
-    // We replicate this exact (effectively inert) logic.
-    if ( ( timeDifference % 2 == ( xDifference + yDifference ) ) % 2 ) {
-      return process.stdout.write( 'Not Feasible\n' ); // This line will not be reached due to the inherent bug.
+    // Evaluate a specific parity condition.
+    // This checks if (timeDiff % 2) is equal to (xDiffAbs + yDiffAbs).
+    // The outer modulo 2 then converts the boolean result (true=1, false=0) to 1 or 0.
+    // If the condition (timeDiff % 2 == (xDiffAbs + yDiffAbs)) is true, this entire expression evaluates to 1 (true).
+    // If it's false, the expression evaluates to 0 (false).
+    if ((timeDiff % 2 == (xDiffAbs + yDiffAbs)) % 2) {
+      return console.log('No');
     }
 
-    // Update the 'lastKnownTime' to the timestamp of the current successfully evaluated point.
-    lastKnownTime = currentPoint[0];
+    // Update the current time to the end time of the processed segment.
+    // Important: currentX and currentY are intentionally not updated here,
+    // maintaining their initial value of 0 for subsequent calculations.
+    currentTime = currentSegment[0];
 
-    // Increment the counter to proceed to the next journey point.
-    pointIndex++;
+    // Advance to the next segment.
+    segmentIndex++;
   }
 
-  // If all journey points were successfully evaluated without returning 'Not Feasible',
-  // then the entire route is considered feasible.
-  return process.stdout.write( 'Feasible\n' );
+  // If all segments are traversable according to the rules, output 'Yes'.
+  return console.log('Yes');
 }
 
-// Initiate the route evaluation process by reading input from standard input.
-evaluateRoute(
-  require( 'node:fs' ) .readFileSync( '/proc/self/fd/0', 'utf8' )
-);
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

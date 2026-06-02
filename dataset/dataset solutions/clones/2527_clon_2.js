@@ -1,40 +1,41 @@
 process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin.setEncoding('UTF-8');
+// Storage for all incoming lines
+let inputData = [];
 
-let inputBuffer = [];
-
-const interfaceHandler = require('node:readline').createInterface({
+// Set up the interface for reading input
+const inputProcessor = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-interfaceHandler.on('line', (receivedLine) => {
-    // This handler processes each incoming line of text.
-    inputBuffer.push(receivedLine);
+// Event listener for each line received
+inputProcessor.on('line', (currentLine) => {
+    // Add the current line to our collection
+    inputData.push(currentLine);
 });
 
-interfaceHandler.on('close', () => {
-    /*
-     * Upon the completion of input stream, this block executes.
-     * It performs the necessary computations and generates the final result.
-     */
+// Event listener for when input stream closes
+inputProcessor.on('close', () => {
+    // The first line contains a number, but it's not directly used in the final output logic
+    const countVal = Number(inputData[0]);
 
-    let itemCount = parseInt(inputBuffer[0], 10);
+    // Process the second line to sort elements based on their numeric value
+    // and then output their original 1-based index.
+    const finalOutput = inputData[1]
+        .split(" ") // Split the string into an array of string numbers
+        .map((itemStr, originalIndex) => {
+            // Convert each string number to a number and store it with its original 1-based index
+            return { sortKey: Number(itemStr), originalPos: originalIndex + 1 };
+        })
+        .sort((elementA, elementB) => {
+            // Sort the objects based on their 'sortKey' property in ascending order
+            return elementA.sortKey - elementB.sortKey;
+        })
+        .map(obj => obj.originalPos) // Extract only the 'originalPos' from the sorted objects
+        .join(" "); // Join the resulting indices with spaces
 
-    let finalSequence =
-        inputBuffer[1].split(' ').map((valueString, originalPosition) => {
-                return { rankingValue: parseInt(valueString, 10), uniqueIdentifier: originalPosition + 1 };
-            })
-            .sort((firstElement, secondElement) => {
-                return firstElement.rankingValue - secondElement.rankingValue;
-            })
-            .map(elem => elem.uniqueIdentifier).join(' ');
-
-    console.info(finalSequence);
-
-    // This section is currently inactive, but could be used for debugging or additional logging.
-    // for (let k = 0; k < inputBuffer.length; k++) {
-    //     console.debug(`Processed entry ${k}: ${inputBuffer[k]}`);
-    // }
+    // Display the final sorted sequence of original positions
+    console.log(finalOutput);
 });

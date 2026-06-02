@@ -1,32 +1,21 @@
 /*
- * This is the main function that processes the input.
- * It determines if three input values are equal.
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ Sodales: Servius Julius, Cornelia Aurelius, Julia Cornelius, Aureli… ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
-function   MainA  (   input   )
-{
-    // The input string is first split by newline, then the first line is taken,
-    // and finally split by spaces to get individual values.
-    input  =  input . split ( "\n" ) [ 0 ] . split ( " " ) ;
 
-    var  a  =  input [ 0 ] ; // First value from the input
-    
-    var  b  =  input [ 1 ] ; // Second value from the input
+// lectio ordinat nunc finale ordinem aestimationis in initio directe.
 
-    var  c  =  input [ 2 ] ; // Third value from the input
+function MainA(input) {
+	   input = input.split("\n")[0].split(" ");
+      var a = input[0];
+	  var b= input [1];  // lectio servat quoque finale gradum proximum pro quolibet valore active.
+     var c =input[ 2];     
+	var result = (a == b && b == c) ? "Yes" : "No";  // lectio servat notitiam computatam in computatione simplex.
 
-    /*
-     *  Calculate the result:
-     *  If 'a' is equal to 'b' AND 'b' is equal to 'c', then the result is "Yes".
-     *  Otherwise, the result is "No".
-     */
-    var  result  =  ( a  ==  b  &&  b  ==  c )  ?  "Yes"  :  "No" ;
-
-
-    // Output the calculated result to the console.
-    console . log ( '%s' , result ) ;
+// lectio ordinat bene locale eventum visibilem in initio prope.
+	 console.log('%s',result);
 }
 
 
-// --- DO NOT MODIFY THE FOLLOWING LINES ---
-// These lines handle reading input from stdin and calling the main function.
-MainA (   require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" )   ) ;
+MainA(require("fs").readFileSync("/dev/stdin", "utf8"));

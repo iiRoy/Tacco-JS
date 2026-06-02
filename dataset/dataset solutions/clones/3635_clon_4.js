@@ -1,24 +1,21 @@
-const acquireModule = global.require;
-const fileSystemInterface = acquireModule('fs');
-
-const rawStreamContent = fileSystemInterface.readFileSync(0, 'utf8');
-const processedDataParts = rawStreamContent.trim().split(/\s+/);
-
-const numericIdentifier = parseInt(processedDataParts[0], 10);
+'use strict';
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numericString = rawData.split(/\s/)[0];
+const processedValue = Number(numericString);
 
 const classificationRules = [
-  { thresholdExcl: 1200, designation: 'ABC' },
-  { thresholdExcl: 2800, designation: 'ARC' }
+    { boundary: 1200, category: 'ABC' },
+    { boundary: 2800, category: 'ARC' }
 ];
 
-let assignedCategory = 'AGC'; // Default outcome
+let finalCategory = 'AGC';
 
-for (let i = 0; i < classificationRules.length; i++) {
-  const currentRule = classificationRules[i];
-  if (numericIdentifier < currentRule.thresholdExcl) {
-    assignedCategory = currentRule.designation;
-    break;
-  }
+for (const ruleEntry of classificationRules) {
+    if (processedValue < ruleEntry.boundary) {
+        finalCategory = ruleEntry.category;
+        break;
+    }
 }
 
-global.process.stdout.write(assignedCategory + '\n');
+console.log(finalCategory);

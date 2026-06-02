@@ -1,85 +1,115 @@
-let allSourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-let currentLineIndex = 0;
+const getRawInput = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
 
-function retrieveNextLine() {
-  if (currentLineIndex >= allSourceLines.length) {
-    throw new Error("Input buffer exhausted.");
+function* createLineIterator(rawText) {
+  const lines = rawText.split("\n");
+  for (const line of lines) {
+    yield line;
   }
-  return allSourceLines[currentLineIndex++];
 }
 
-function extractNumericSequence() {
-  return retrieveNextLine().split(" ").map(Number);
-}
+const inputLineGenerator = createLineIterator(getRawInput());
 
-function outputResult(val) {
-  console.log(val);
-}
+const parseOperations = new Map([
+  [1, (val) => parseInt(val, 10)],
+  [2, (val) => val.split(" ")],
+  [4, (val) => val.split(" ").map(Number)],
+  [6, (val) => val.split("")],
+  [7, (val) => val.split("").map(Number)],
+  [8, (arr) => arr.join(" ")],
+  [9, (arr) => arr.join("\n")],
+  [0, (arr) => arr.join("")],
+]);
 
-class DisjointSetStructure {
-  constructor(totalElements) {
-    this.parentPointers = new Array(totalElements);
-    this.setSizes = new Array(totalElements);
+const applyConversion = (value, typeCode) => {
+  const handler = parseOperations.get(typeCode);
+  return handler ? handler(value) : value;
+};
 
-    for (let j = 0; j < totalElements; j++) {
-      this.parentPointers[j] = j;
-      this.setSizes[j] = 1;
+const obtainNextLine = () => {
+  const { value, done } = inputLineGenerator.next();
+  if (done) {
+    throw new Error("NoMoreInputException: No further elements available.");
+  }
+  return value;
+};
+
+const obtainInt = () => applyConversion(obtainNextLine(), 1);
+const obtainStringArray = () => applyConversion(obtainNextLine(), 2);
+const obtainIntArray = () => applyConversion(obtainNextLine(), 4);
+const obtainCharList = () => applyConversion(obtainNextLine(), 6);
+
+const outputResult = (data) => console.log(data);
+const outputError = (data) => console.error(data);
+
+function DisjointSetStructure(elementCount) {
+  const parentRegistry = new Map();
+  const groupSizes = new Map();
+
+  Array.from({ length: elementCount }).forEach((_, idx) => {
+    parentRegistry.set(idx, idx);
+    groupSizes.set(idx, 1);
+  });
+
+  const findRepresentative = (element) => {
+    let current = element;
+    const path = [];
+    while (parentRegistry.get(current) !== current) {
+      path.push(current);
+      current = parentRegistry.get(current);
     }
-  }
+    path.forEach(node => parentRegistry.set(node, current));
+    return current;
+  };
 
-  findRepresentative(elementIndex) {
-    if (this.parentPointers[elementIndex] === elementIndex) {
-      return elementIndex;
-    }
-    this.parentPointers[elementIndex] = this.findRepresentative(this.parentPointers[elementIndex]);
-    return this.parentPointers[elementIndex];
-  }
-
-  mergeSets(firstElement, secondElement) {
-    let rootA = this.findRepresentative(firstElement);
-    let rootB = this.findRepresentative(secondElement);
+  const uniteComponents = (elemA, elemB) => {
+    let rootA = findRepresentative(elemA);
+    let rootB = findRepresentative(elemB);
 
     if (rootA !== rootB) {
-      if (this.setSizes[rootA] < this.setSizes[rootB]) {
+      let sizeA = groupSizes.get(rootA);
+      let sizeB = groupSizes.get(rootB);
+
+      if (sizeA < sizeB) {
         [rootA, rootB] = [rootB, rootA];
+        [sizeA, sizeB] = [sizeB, sizeA];
       }
-      this.parentPointers[rootB] = rootA;
-      this.setSizes[rootA] += this.setSizes[rootB];
-      return true;
-    }
-    return false;
-  }
 
-  areElementsLinked(firstElement, secondElement) {
-    return this.findRepresentative(firstElement) === this.findRepresentative(secondElement);
-  }
+      parentRegistry.set(rootB, rootA);
+      groupSizes.set(rootA, sizeA + sizeB);
+      groupSizes.delete(rootB);
+    }
+  };
+
+  const areConnected = (elemA, elemB) => findRepresentative(elemA) === findRepresentative(elemB);
+
+  const getComponentSize = (element) => groupSizes.get(findRepresentative(element));
+
+  return {
+    areConnected,
+    uniteComponents,
+    getComponentSize
+  };
 }
 
-function commenceProcessing() {
-  const initialParameters = extractNumericSequence();
-  const totalNodes = initialParameters[0];
-  const unionOperations = initialParameters[1];
+const executeSolution = () => {
+  const initialParams = obtainIntArray();
+  const nodeCount = initialParams[0];
+  const edgeCount = initialParams[1];
+  const targetPermutation = obtainIntArray();
 
-  const desiredMappings = extractNumericSequence();
+  const disjointSets = DisjointSetStructure(nodeCount);
 
-  const dsuInstance = new DisjointSetStructure(totalNodes);
+  Array.from({ length: edgeCount }).forEach(() => {
+    const connectionPair = obtainIntArray();
+    disjointSets.uniteComponents(connectionPair[0] - 1, connectionPair[1] - 1);
+  });
 
-  for (let k = 0; k < unionOperations; k++) {
-    const connectionPair = extractNumericSequence();
-    dsuInstance.mergeSets(connectionPair[0] - 1, connectionPair[1] - 1);
-  }
+  const finalCount = targetPermutation.reduce((accumulator, currentTarget, index) => {
+    const actualTarget = currentTarget - 1;
+    return disjointSets.areConnected(actualTarget, index) ? accumulator + 1 : accumulator;
+  }, 0);
 
-  let matchingElements = 0;
-  for (let k = 0; k < totalNodes; k++) {
-    const currentPosition = k;
-    const targetPosition = desiredMappings[k] - 1;
+  outputResult(finalCount);
+};
 
-    if (dsuInstance.areElementsLinked(currentPosition, targetPosition)) {
-      matchingElements++;
-    }
-  }
-
-  outputResult(matchingElements);
-}
-
-commenceProcessing();
+executeSolution();

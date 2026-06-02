@@ -1,119 +1,105 @@
 function findLowerBoundIndex(searchArray, startIndex, endIndex, targetValue) {
-  if (startIndex > endIndex) {
-    return startIndex;
-  }
-
   let low = startIndex;
   let high = endIndex;
-  let resultIndex = endIndex + 1;
+  let midPoint;
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;
-
-    if (searchArray[mid] >= targetValue) {
-      resultIndex = mid;
-      high = mid - 1;
+  // The loop condition and final return are carefully crafted to match the original's specific lower_bound behavior.
+  // It finds the index of the first element not less than targetValue within the inclusive range [startIndex, endIndex].
+  // If all elements are less than targetValue, it returns endIndex.
+  while (1 < high - low) {
+    midPoint = Math.floor((low + high) / 2);
+    if (searchArray[midPoint] < targetValue) {
+      low = midPoint;
     } else {
-      low = mid + 1;
+      high = midPoint;
     }
   }
-  return resultIndex;
+  return searchArray[low] < targetValue ? high : low;
 }
 
-function calculatePartitionRange(cumulativeSums, middleCut, firstBoundary, secondBoundary, totalElementsIndex) {
-  if (firstBoundary < 0 || firstBoundary >= middleCut ||
-      secondBoundary <= middleCut || secondBoundary >= totalElementsIndex) {
-    return Number.POSITIVE_INFINITY;
+function processInputData(rawData) {
+  const lines = rawData.split("\n");
+  const segmentCount = parseInt(lines[0], 10) - 1; // Corresponds to original 'n'
+  const originalNumbers = lines[1].split(" ").map(Number); // Corresponds to original 'a'
+
+  // Calculate prefix sums. prefixSums[k] stores the sum of originalNumbers[0]...originalNumbers[k].
+  // This explicitly replaces the original's compact but tricky reduce-based prefix sum calculation.
+  const totalElements = originalNumbers.length;
+  let prefixSums = new Array(totalElements); // Corresponds to original 'b'
+
+  if (totalElements > 0) {
+    prefixSums[0] = originalNumbers[0];
+    for (let k = 1; k < totalElements; k++) {
+      prefixSums[k] = prefixSums[k - 1] + originalNumbers[k];
+    }
   }
 
-  const segmentA = cumulativeSums[firstBoundary];
-  const segmentB = cumulativeSums[middleCut] - cumulativeSums[firstBoundary];
-  const segmentC = cumulativeSums[secondBoundary] - cumulativeSums[middleCut];
-  const segmentD = cumulativeSums[totalElementsIndex] - cumulativeSums[secondBoundary];
+  const lastIndex = segmentCount; // The index of the last element, which also holds the total sum in prefixSums
+  const totalSum = prefixSums[lastIndex];
 
-  const currentSegments = [segmentA, segmentB, segmentC, segmentD];
+  let minDifference = 9e15; // Corresponds to original 'ans', initialized to a large value
 
-  currentSegments.sort((val1, val2) => val1 - val2);
+  // Helper function to calculate the four partition sums and update the minimum difference found.
+  // This abstracts away repetitive logic from the main loop.
+  const updateMinDifference = (p1EndIdx, p2EndIdx, p3EndIdx, totalEndIdx) => {
+    // p1EndIdx: index for the end of the first partition (corresponds to original 'l' or 'l-1')
+    // p2EndIdx: index for the end of the second partition (corresponds to original 'i')
+    // p3EndIdx: index for the end of the third partition (corresponds to original 'r' or 'r-1')
+    // totalEndIdx: index for the total sum (corresponds to original 'n')
 
-  return currentSegments[3] - currentSegments[0];
+    // The original code's `b[i-1]=a` in reduce effectively sets b[-1] to 0.
+    // This handles cases where the first partition starts at index 0, and we might check `l-1` which becomes -1.
+    const sumP1 = (p1EndIdx >= 0) ? prefixSums[p1EndIdx] : 0;
+    const sumP2 = prefixSums[p2EndIdx] - sumP1;
+    const sumP3 = prefixSums[p3EndIdx] - prefixSums[p2EndIdx];
+    const sumP4 = prefixSums[totalEndIdx] - prefixSums[p3EndIdx];
+
+    const currentPartitionSums = [sumP1, sumP2, sumP3, sumP4].sort((a, b) => a - b);
+    minDifference = Math.min(minDifference, currentPartitionSums[3] - currentPartitionSums[0]);
+  };
+
+  // Main loop iterates through possible positions for the second split point.
+  // Original: for(var i = 1; i < n - 1; i++)
+  // My: for (let splitPointIndex = 1; splitPointIndex < lastIndex - 1; splitPointIndex++)
+  for (let splitPointIndex = 1; splitPointIndex < lastIndex - 1; splitPointIndex++) {
+    const targetLeftSum = prefixSums[splitPointIndex] / 2;
+    const targetRightSum = (totalSum + prefixSums[splitPointIndex]) / 2;
+
+    // Find the optimal index for the first partition's end (leftPartitionIndex, corresponds to original 'l')
+    // Search range for leftPartitionIndex: [0, splitPointIndex - 1]
+    let leftPartitionIndex = findLowerBoundIndex(prefixSums, 0, splitPointIndex - 1, targetLeftSum);
+
+    // Find the optimal index for the third partition's end (rightPartitionIndex, corresponds to original 'r')
+    // Search range for rightPartitionIndex: [splitPointIndex + 1, lastIndex - 1]
+    let rightPartitionIndex = findLowerBoundIndex(prefixSums, splitPointIndex + 1, lastIndex - 1, targetRightSum);
+
+    // Evaluate the partition using the found optimal indices
+    updateMinDifference(leftPartitionIndex, splitPointIndex, rightPartitionIndex, lastIndex);
+
+    // Explore alternative partition configurations by shifting indices by one,
+    // as the optimal split might be at an adjacent index.
+
+    // Check if leftPartitionIndex can be shifted one to the left (i.e., if it's not already the first element)
+    // Original: if(l)
+    if (leftPartitionIndex > 0) {
+      updateMinDifference(leftPartitionIndex - 1, splitPointIndex, rightPartitionIndex, lastIndex);
+
+      // If rightPartitionIndex is not immediately adjacent to splitPointIndex,
+      // also check shifting rightPartitionIndex one to the left.
+      // Original: if(r - i > 1)
+      if (rightPartitionIndex - splitPointIndex > 1) {
+        updateMinDifference(leftPartitionIndex - 1, splitPointIndex, rightPartitionIndex - 1, lastIndex);
+      }
+    }
+
+    // Check if rightPartitionIndex can be shifted one to the left (if not immediately adjacent to splitPointIndex)
+    // Original: if(r - i > 1)
+    if (rightPartitionIndex - splitPointIndex > 1) {
+      updateMinDifference(leftPartitionIndex, splitPointIndex, rightPartitionIndex - 1, lastIndex);
+    }
+  }
+
+  console.log(minDifference);
 }
 
-function ProcessInputData(inputRawText) {
-  const LARGE_INITIAL_DIFFERENCE = Number.MAX_SAFE_INTEGER;
-
-  if (typeof inputRawText !== 'string' || inputRawText.trim() === '') {
-    console.error("Error: Input must be a non-empty string.");
-    return;
-  }
-
-  const inputLines = inputRawText.split("\n");
-
-  if (inputLines.length < 2) {
-    console.error("Error: Insufficient input lines. Expected at least 2.");
-    return;
-  }
-
-  const effectiveElementCount = parseInt(inputLines[0].trim(), 10) - 1;
-
-  const numericalDataPoints = inputLines[1].trim().split(" ").filter(Boolean).map(val => Number(val));
-
-  const cumulativeSums = [];
-  let currentRunningTotal = 0;
-  for (let idx = 0; idx < numericalDataPoints.length; ++idx) {
-    currentRunningTotal += numericalDataPoints[idx];
-    cumulativeSums[idx] = currentRunningTotal;
-  }
-  cumulativeSums[effectiveElementCount] = currentRunningTotal;
-
-  let optimalSplitDelta = LARGE_INITIAL_DIFFERENCE;
-
-  for (let midPointIndex = 1; midPointIndex <= effectiveElementCount - 2; ++midPointIndex) {
-    const idealLeftTarget = cumulativeSums[midPointIndex] / 2;
-    const idealRightTarget = (cumulativeSums[effectiveElementCount] + cumulativeSums[midPointIndex]) / 2;
-
-    let firstBoundaryCandidate = findLowerBoundIndex(cumulativeSums, 0, midPointIndex - 1, idealLeftTarget);
-    let secondBoundaryCandidate = findLowerBoundIndex(cumulativeSums, midPointIndex + 1, effectiveElementCount - 1, idealRightTarget);
-
-    let currentMidPointMinDiff = LARGE_INITIAL_DIFFERENCE;
-
-    currentMidPointMinDiff = Math.min(
-      currentMidPointMinDiff,
-      calculatePartitionRange(cumulativeSums, midPointIndex, firstBoundaryCandidate, secondBoundaryCandidate, effectiveElementCount)
-    );
-
-    if (firstBoundaryCandidate > 0) {
-      currentMidPointMinDiff = Math.min(
-        currentMidPointMinDiff,
-        calculatePartitionRange(cumulativeSums, midPointIndex, firstBoundaryCandidate - 1, secondBoundaryCandidate, effectiveElementCount)
-      );
-    }
-
-    if (secondBoundaryCandidate > midPointIndex + 1) {
-      currentMidPointMinDiff = Math.min(
-        currentMidPointMinDiff,
-        calculatePartitionRange(cumulativeSums, midPointIndex, firstBoundaryCandidate, secondBoundaryCandidate - 1, effectiveElementCount)
-      );
-    }
-
-    if (firstBoundaryCandidate > 0 && secondBoundaryCandidate > midPointIndex + 1) {
-      currentMidPointMinDiff = Math.min(
-        currentMidPointMinDiff,
-        calculatePartitionRange(cumulativeSums, midPointIndex, firstBoundaryCandidate - 1, secondBoundaryCandidate - 1, effectiveElementCount)
-      );
-    }
-
-    optimalSplitDelta = Math.min(optimalSplitDelta, currentMidPointMinDiff);
-  }
-
-  console.log(optimalSplitDelta);
-}
-
-(function() {
-  try {
-    const fileSystem = require("fs");
-    const inputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-    ProcessInputData(inputContent);
-  } catch (error) {
-    console.error("Failed to read input or process data:", error.message);
-  }
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

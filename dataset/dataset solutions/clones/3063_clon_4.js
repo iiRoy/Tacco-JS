@@ -1,27 +1,23 @@
-const processInputData = (sourceText) => {
-    const parsedNumbers = sourceText.split('\n').filter(Boolean).map(Number);
+"use strict";
 
-    const { keyParameter, dataSequence } = parsedNumbers.reduceRight((collector, currentValue, currentIndex, fullArray) => {
-        if (currentIndex === fullArray.length - 1) {
-            collector.keyParameter = currentValue;
-        } else {
-            collector.dataSequence.unshift(currentValue);
-        }
-        return collector;
-    }, { keyParameter: undefined, dataSequence: [] });
-
-    const relevantObservations = dataSequence.filter((_, position) => position === 0 || position === 4);
-
-    const firstObservation = relevantObservations[0];
-    const fifthObservation = relevantObservations[1];
-
-    const resultCondition = (fifthObservation - firstObservation > keyParameter);
-
-    return resultCondition ? ":(" : "Yay!";
+const evaluateCondition = (seriesData, comparisonLimit) => {
+    const firstMeasurement = seriesData[0];
+    const fifthMeasurement = seriesData[4];
+    return fifthMeasurement > comparisonLimit + firstMeasurement;
 };
 
-const retrieveExternalContent = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInput = inputData => {
+    const allLines = inputData.split('\n');
+    const finalValue = Number(allLines.pop());
+    const numericSeries = allLines.map(Number);
+    
+    const resultFlag = evaluateCondition(numericSeries, finalValue);
+    
+    const messageRegistry = new Map();
+    messageRegistry.set(true, ":(");
+    messageRegistry.set(false, "Yay!");
+    
+    console.log(messageRegistry.get(resultFlag));
 };
 
-console.log(processInputData(retrieveExternalContent()));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,90 +1,83 @@
-const interpretDataStream = (rawData) => {
-    const lines = rawData.trim().split('\n');
-    const totalCount = Number(lines[0]);
-    const numberSeries = lines[1].split(' ').map(Number);
-    return { totalCount, numberSeries };
-};
+const primeGenerator = (limit) => {
+    const compositeTracker = new Map();
+    const primeList = [];
 
-const obtainLowerPrimes = (upperBoundary) => {
-    const potentialPrimes = new Array(upperBoundary + 1).fill(true);
-    potentialPrimes[0] = potentialPrimes[1] = false;
-    const collectedPrimes = [];
-
-    for (let candidate = 2; candidate * candidate <= upperBoundary; candidate++) {
-        if (potentialPrimes[candidate]) {
-            collectedPrimes.push(candidate);
-            for (let multiple = candidate * candidate; multiple <= upperBoundary; multiple += candidate) {
-                potentialPrimes[multiple] = false;
+    for (let currentNum = 2; currentNum <= limit; currentNum++) {
+        if (!compositeTracker.has(currentNum)) {
+            primeList.push(currentNum);
+            for (let multiple = currentNum * currentNum; multiple <= limit; multiple += currentNum) {
+                compositeTracker.set(multiple, true);
             }
         }
     }
-    return collectedPrimes;
+    return primeList;
 };
 
-const collectUniquePrimeDivisors = (targetValue, smallFactorList) => {
-    const identifiedDivisors = new Set();
-    let currentRemainder = targetValue;
-
-    if (currentRemainder === 1) {
-        return [];
-    }
-
-    for (const factorCandidate of smallFactorList) {
-        if (currentRemainder < factorCandidate) break;
-        if (currentRemainder % factorCandidate === 0) {
-            identifiedDivisors.add(factorCandidate);
-            while (currentRemainder % factorCandidate === 0) {
-                currentRemainder /= factorCandidate;
-            }
+const decomposeIntoPrimes = (targetNum, availablePrimes) => {
+    let remainingValue = targetNum;
+    const primeExponents = availablePrimes.reduce((accumulator, currentPrime) => {
+        if (remainingValue < currentPrime) {
+            return accumulator;
         }
-    }
+        let count = 0;
+        while (remainingValue % currentPrime === 0) {
+            count++;
+            remainingValue /= currentPrime;
+        }
+        if (count > 0) {
+            accumulator.set(currentPrime, count);
+        }
+        return accumulator;
+    }, new Map());
 
-    if (currentRemainder > 1) {
-        identifiedDivisors.add(currentRemainder);
+    if (remainingValue > 1) {
+        primeExponents.set(remainingValue, (primeExponents.get(remainingValue) || 0) + 1);
     }
-    return Array.from(identifiedDivisors);
+    return Object.fromEntries(primeExponents);
 };
 
-const findCommonDivisor = (valueA, valueB) => {
-    while (valueB !== 0) {
-        const temporary = valueB;
-        valueB = valueA % valueB;
-        valueA = temporary;
+const computeGreatestCommonDivisor = (valA, valB) => {
+    while (valB !== 0) {
+        const temporary = valB;
+        valB = valA % valB;
+        valA = temporary;
     }
-    return valueA;
+    return valA;
 };
 
-const processNumberProperties = (inputContent) => {
-    const { totalCount, numberSeries } = interpretDataStream(inputContent);
+const processNumbers = (inputString) => {
+    const lines = inputString.split("\n");
+    const inputSize = Number(lines[0]);
+    const numbers = lines[1].split(" ").map(Number);
 
-    const maximumValue = Math.max(...numberSeries);
-    const primaryDivisorList = obtainLowerPrimes(maximumValue);
+    const maximumValue = Math.max(...numbers);
+    const generatedPrimes = primeGenerator(maximumValue);
 
-    const encounteredOverallDivisors = new Set();
-    let areItemsMutuallyExclusive = true;
+    const uniqueFactorsEncountered = new Set();
+    let isPairwise = true;
 
-    for (const item of numberSeries) {
-        const itemDivisors = collectUniquePrimeDivisors(item, primaryDivisorList);
-        for (const singleDivisor of itemDivisors) {
-            if (encounteredOverallDivisors.has(singleDivisor)) {
-                areItemsMutuallyExclusive = false;
+    for (const num of numbers) {
+        const currentNumFactors = Object.keys(decomposeIntoPrimes(num, generatedPrimes)).map(Number);
+        for (const factor of currentNumFactors) {
+            if (uniqueFactorsEncountered.has(factor)) {
+                isPairwise = false;
                 break;
             }
+            uniqueFactorsEncountered.add(factor);
         }
-        if (!areItemsMutuallyExclusive) break;
-        itemDivisors.forEach(singleDivisor => encounteredOverallDivisors.add(singleDivisor));
+        if (!isPairwise) {
+            break;
+        }
     }
 
-    if (areItemsMutuallyExclusive) {
+    if (isPairwise) {
         console.log("pairwise coprime");
         return;
     }
 
-    const overallDivisorResult = numberSeries.reduce((accumulatedDivisor, currentNumber) => {
-        return findCommonDivisor(accumulatedDivisor, currentNumber);
-    });
+    const overallGCD = numbers.reduce((accumulator, current) => computeGreatestCommonDivisor(accumulator, current));
 
-    if (overallDivisorResult === 1) {
+    if (overallGCD === 1) {
         console.log("setwise coprime");
         return;
     }
@@ -92,4 +85,4 @@ const processNumberProperties = (inputContent) => {
     console.log("not coprime");
 };
 
-processNumberProperties(require("fs").readFileSync("/dev/stdin", "utf8"));
+processNumbers(require("fs").readFileSync("/dev/stdin", "utf8"));

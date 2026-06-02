@@ -1,84 +1,86 @@
-// This function serves as the primary entry point for processing the input data.
-function processInput(rawData) {
-  // Split the raw input string into an array of lines.
-  var linesArray = rawData.split("\n");
+function ProcessInput(data) {
+  // Split the input string into an array of lines
+  let lines = data.split('\n');
 
-  // Iterate through possible X coordinates from 0 to 100.
-  for (var coordX = 0; coordX <= 100; coordX++) {
-    // For each X, iterate through possible Y coordinates from 0 to 100.
-    for (var coordY = 0; coordY <= 100; coordY++) {
-      // Check if the current (coordX, coordY) pair is a feasible center point.
-      var isFeasible = checkFeasibility(linesArray, coordX, coordY);
+  // Iterate through possible X coordinates from 0 to 100
+  for (let coordX = 0; coordX <= 100; coordX++) {
+    // Iterate through possible Y coordinates from 0 to 100
+    for (let coordY = 0; coordY <= 100; coordY++) {
+      // Check if the current (coordX, coordY) pair is valid
+      let resultValue = checkValidity(lines, coordX, coordY);
 
-      // If a feasible center is found, return its coordinates along with the derived height.
-      if (isFeasible) {
-        return "" + coordX + " " + coordY + " " + isFeasible;
+      // If a valid height is found, return the coordinates and the height
+      if (resultValue) {
+        return '' + coordX + ' ' + coordY + ' ' + resultValue;
       }
     }
   }
 }
 
-// This helper function determines if a given (currentX, currentY) coordinate pair
-// is a valid center for all observed points.
-function checkFeasibility(lineData, currentX, currentY) {
-  // The first line contains the total number of observation points.
-  var entryCount = Number(lineData[0]); // Parse the count of data points.
+/**
+ * Checks if a given (currentX, currentY) coordinate pair is valid
+ * based on the input data, and returns the calculated height if valid.
+ * @param {string[]} inputLines - Array of input data lines.
+ * @param {number} currentX - The X coordinate to check.
+ * @param {number} currentY - The Y coordinate to check.
+ * @returns {number|boolean} The calculated height if valid, otherwise false.
+ */
+function checkValidity(inputLines, currentX, currentY) {
+  // The first line contains the number of data entries
+  const numEntries = inputLines[0];
+  // This variable is declared but not used in the original logic,
+  // so it's kept for structural equivalence.
+  let initialHeight = 0;
 
-  // A variable that was potentially meant for an initial height, but currently unused in logic.
-  var referenceHeight = 0;
+  // Initialize maximum and minimum possible heights
+  let maximumPossibleHeight = 1_000_000_000; // A very large number
+  let minimumPossibleHeight = 1; // Minimum possible height is 1
 
-  // Initialize the upper and lower bounds for the central height.
-  var upperBoundHeight = 1000000000;
-  var lowerBoundHeight = 1;
+  // Loop through each data entry starting from the second line
+  for (let entryIndex = 1; entryIndex <= numEntries; entryIndex++) {
+    // Split the current entry line into components
+    const entryData = inputLines[entryIndex].split(' ');
+    const pointX = entryData[0] * 1; // Convert string to number
+    const pointY = entryData[1] * 1; // Convert string to number
+    const observedHeight = entryData[2] * 1; // Convert string to number
 
-  // Loop through each observation point, starting from the second line (index 1).
-  for (var pointIndex = 1; pointIndex <= entryCount; pointIndex++) {
-    // Split the current line into its constituent parts (x, y, h).
-    var coordinateParts = lineData[pointIndex].split(" ");
+    // Calculate the potential height for the current entry based on (currentX, currentY)
+    let calculatedHeight = observedHeight + Math.abs(currentX - pointX) + Math.abs(currentY - pointY);
 
-    // Extract and convert coordinate values and the observed height to numbers.
-    var pointX = Number(coordinateParts[0]);
-    var pointY = Number(coordinateParts[1]);
-    var pointHeight = Number(coordinateParts[2]);
-
-    // Calculate the expected height at the potential center (currentX, currentY)
-    // based on the current observation point (pointX, pointY, pointHeight).
-    var calculatedHeight =
-      pointHeight + Math.abs(currentX - pointX) + Math.abs(currentY - pointY);
-
-    // If the observed height (pointHeight) is 0, it means this point is a "base"
-    // and only provides an upper bound for the central height.
-    if (pointHeight === 0) {
-      if (upperBoundHeight > calculatedHeight) {
-        upperBoundHeight = calculatedHeight; // Update the upper bound if this point suggests a lower max.
+    // Update maximumPossibleHeight and minimumPossibleHeight based on the observed height
+    if (observedHeight === 0) {
+      // If observed height is 0, it means the actual height must be less than or equal to calculatedHeight
+      if (maximumPossibleHeight > calculatedHeight) {
+        maximumPossibleHeight = calculatedHeight;
       }
     } else {
-      // If pointHeight is not 0, this point provides both upper and lower bounds.
-      if (upperBoundHeight > calculatedHeight) {
-        upperBoundHeight = calculatedHeight; // Update upper bound.
+      // If observed height is not 0, the actual height must be exactly calculatedHeight
+      // So, it must be less than or equal to calculatedHeight
+      if (maximumPossibleHeight > calculatedHeight) {
+        maximumPossibleHeight = calculatedHeight;
       }
-      if (lowerBoundHeight < calculatedHeight) {
-        lowerBoundHeight = calculatedHeight; // Update lower bound.
+      // And it must be greater than or equal to calculatedHeight
+      if (minimumPossibleHeight < calculatedHeight) {
+        minimumPossibleHeight = calculatedHeight;
       }
     }
 
-    // If at any point the lower bound exceeds the upper bound,
-    // this (currentX, currentY) is not a feasible center.
-    if (lowerBoundHeight > upperBoundHeight) {
-      return false; // Inconsistent bounds, return false.
+    // If at any point the minimum possible height exceeds the maximum possible height,
+    // this (currentX, currentY) pair is invalid.
+    if (minimumPossibleHeight > maximumPossibleHeight) {
+      return false;
     }
   }
 
-  // After checking all points, if the lower and upper bounds for the central height
-  // are not identical, it implies no single central height satisfies all conditions.
-  if (lowerBoundHeight !== upperBoundHeight) {
-    return false; // Bounds do not converge to a single value.
+  // After checking all entries, if minimumPossibleHeight is not equal to maximumPossibleHeight,
+  // it means there's no single consistent height, so the pair is invalid.
+  if (minimumPossibleHeight !== maximumPossibleHeight) {
+    return false;
   }
 
-  // If all conditions are met, return the determined central height.
-  return lowerBoundHeight;
+  // If all checks pass, return the consistent height.
+  return minimumPossibleHeight;
 }
 
-// Execute the main processing function with input read from standard input
-// and output the result to the console.
-console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));
+// Read input from stdin and pass it to the main processing function
+console.log(ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8')));

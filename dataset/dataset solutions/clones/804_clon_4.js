@@ -1,41 +1,57 @@
-function processInputData(inputRawString) {
-    const allLines = inputRawString.split('\n').filter(Boolean);
+function processInputData(rawData) {
+    const dataLines = rawData.split("\n");
+    let lineCursor = 0;
 
-    function analyzeDataBlocks(currentDataSet) {
-        if (currentDataSet.length === 0) {
-            return [];
+    // Generator function to provide lines sequentially
+    function* lineStream() {
+        while (lineCursor < dataLines.length) {
+            yield dataLines[lineCursor++];
         }
-
-        const blockParameters = currentDataSet[0].split(' ').map(Number);
-        const [numEntries, targetIdx, percentReduction] = blockParameters;
-
-        if (numEntries === 0 && targetIdx === 0 && percentReduction === 0) {
-            return [];
-        }
-
-        const entryValueStrings = currentDataSet.slice(1, 1 + numEntries);
-        const entryNumericValues = entryValueStrings.map(Number);
-
-        const overallPoints = entryNumericValues.reduce((accumulator, currentValue) => accumulator + currentValue * 100, 0);
-        const focalItemValue = entryNumericValues[targetIdx - 1];
-
-        const adjustedOverallPoints = overallPoints * (100 - percentReduction) / 100;
-
-        let finalOutcome;
-        if (focalItemValue > 0) {
-            finalOutcome = Math.floor(adjustedOverallPoints / focalItemValue);
-        } else {
-            finalOutcome = 0;
-        }
-
-        const remainingData = currentDataSet.slice(1 + numEntries);
-        return [finalOutcome, ...analyzeDataBlocks(remainingData)];
     }
 
-    const allOutcomes = analyzeDataBlocks(allLines);
+    const inputIterator = lineStream();
 
-    allOutcomes.forEach(result => console.log(result.toString()));
+    while (true) {
+        const currentCaseHeader = inputIterator.next().value;
+        if (currentCaseHeader === undefined) {
+            break; // End of input
+        }
+
+        const headerValues = currentCaseHeader.split(' ').map(Number);
+        const participantCount = headerValues[0];
+        const targetParticipantIndex = headerValues[1];
+        const deductionPercentage = headerValues[2];
+
+        if (participantCount === 0 && targetParticipantIndex === 0 && deductionPercentage === 0) {
+            break; // Termination condition for the problem set
+        }
+
+        let accumulatedPoints = 0;
+        let specificParticipantPoints = 0;
+
+        // Collect all individual scores for the current case
+        const participantScores = Array.from({ length: participantCount }, () => {
+            const scoreLine = inputIterator.next().value;
+            return Number(scoreLine);
+        });
+
+        // Process scores using a functional approach
+        participantScores.reduce((_, currentScore, idx) => {
+            accumulatedPoints += currentScore * 100;
+            if (idx === targetParticipantIndex - 1) {
+                specificParticipantPoints = currentScore;
+            }
+            return null; // Accumulator not used for return value, only for iteration side-effects
+        }, null);
+
+        const finalAdjustedPoints = accumulatedPoints * (100 - deductionPercentage) / 100;
+
+        if (specificParticipantPoints > 0) {
+            console.log(Math.floor(finalAdjustedPoints / specificParticipantPoints));
+        } else {
+            console.log("0");
+        }
+    }
 }
 
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputData(systemInput);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

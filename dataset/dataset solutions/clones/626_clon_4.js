@@ -1,57 +1,107 @@
-const dataSource = process.stdin.readFileSync(0, 'utf8');
-const rawLines = dataSource.trim().split('\n');
+const fs = require('fs');
+const input = fs.readFileSync('/dev/stdin', 'utf8');
 
-const totalElements = parseInt(rawLines[0], 10);
-const initialNumbers = rawLines.slice(1, 1 + totalElements).map(Number);
+const rows = input.split('\n');
+const n = rows[0] - 0;
+const tape = [];
 
-// Create a sequence that wraps around for easy segment calculation
-const circularSequence = [...initialNumbers, ...initialNumbers];
-
-// Precompute cumulative sums for O(1) segment sum retrieval
-const cumulativeSums = new Array(circularSequence.length + 1).fill(0);
-for (let k = 0; k < circularSequence.length; k++) {
-    cumulativeSums[k + 1] = cumulativeSums[k] + circularSequence[k];
+for (let pos = 0; pos < n; pos++) {
+  const value = rows[pos + 1] - 0;
+  tape[pos] = value;
+  tape[pos + n] = value;
+  tape[pos + n + n] = value;
 }
 
-// Helper function to get sum of a segment using cumulative sums
-const obtainSegmentSum = (startPoint, segmentLength) => {
-    if (segmentLength <= 0) return 0;
-    return cumulativeSums[startPoint + segmentLength] - cumulativeSums[startPoint];
-};
+const own = Object.prototype.hasOwnProperty;
+const cache = new Map();
 
-let peakValue = 0; // Stores the maximum sum found that meets the criteria
+function indexOfSliceBound(x) {
+  let v = Number(x);
+  if (Number.isNaN(v)) {
+    v = 0;
+  } else if (v === Infinity) {
+    v = tape.length;
+  } else if (v === -Infinity) {
+    v = 0;
+  } else {
+    v = v < 0 ? Math.ceil(v) : Math.floor(v);
+  }
 
-// Iterate through all possible starting positions for the first partition (S1)
-for (let currentStart = 0; currentStart < totalElements; ++currentStart) {
-    // Iterate through all possible lengths for the first partition (S1)
-    // S1 must have at least length 1.
-    // The total of three partitions must be 'totalElements'.
-    // S2 and S3 must also have at least length 1 each.
-    // So, lengthOne can be at most totalElements - 2 (leaving 1 for S2, 1 for S3).
-    // Original code loop `i < n-2` means `i` goes up to `n-3`.
-    for (let lengthOne = 1; lengthOne <= totalElements - 3; ++lengthOne) {
-        const sumOne = obtainSegmentSum(currentStart, lengthOne);
+  if (v < 0) {
+    v = Math.max(tape.length + v, 0);
+  } else if (v > tape.length) {
+    v = tape.length;
+  }
+  return v;
+}
 
-        // The remaining `totalElements - lengthOne` elements are to be split into S2 and S3.
-        // Each of S2 and S3 must have a length of at least 1.
-        // So, lengthTwo can be from 1 up to (totalElements - lengthOne - 1).
-        for (let lengthTwo = 1; lengthTwo <= totalElements - lengthOne - 1; ++lengthTwo) {
-            const lengthThree = totalElements - lengthOne - lengthTwo; // Length of S3 is determined
+function blockSum(from, to) {
+  const left = indexOfSliceBound(from);
+  const right = indexOfSliceBound(to);
+  if (right <= left) return 0;
 
-            // Calculate the starting points for S2 and S3 in the circular sequence
-            const startPointTwo = currentStart + lengthOne;
-            const startPointThree = currentStart + lengthOne + lengthTwo;
+  const key = left + ':' + right;
+  if (cache.has(key)) return cache.get(key);
 
-            const sumTwo = obtainSegmentSum(startPointTwo, lengthTwo);
-            const sumThree = obtainSegmentSum(startPointThree, lengthThree);
-
-            const minimumOfOthers = Math.min(sumTwo, sumThree);
-
-            if (sumOne <= minimumOfOthers) {
-                peakValue = Math.max(peakValue, sumOne);
-            }
-        }
+  let total = 0;
+  for (let cursor = left; cursor < right; cursor++) {
+    if (own.call(tape, cursor)) {
+      total += tape[cursor];
     }
+  }
+  cache.set(key, total);
+  return total;
 }
 
-console.log(peakValue);
+function strongestTwoWayCut(from, to) {
+  const left = indexOfSliceBound(from);
+  const right = indexOfSliceBound(to);
+  const width = right - left;
+  if (width <= 1) return undefined;
+
+  let best;
+  for (let offset = 1; offset < width; offset++) {
+    const score = Math.min(blockSum(left, left + offset), blockSum(left + offset, right));
+    if (!Number.isNaN(score) && (best === undefined || score > best)) {
+      best = score;
+    }
+  }
+  return best;
+}
+
+const pieces = [];
+const remainders = new Map();
+
+for (let length = 1; length < n - 2; length++) {
+  for (let start = 0; start < n; start++) {
+    const restStart = start + length;
+    const restEnd = start + n;
+    const normalizedKey = indexOfSliceBound(restStart) + ':' + indexOfSliceBound(restEnd);
+
+    pieces.push({
+      amount: blockSum(start, start + length),
+      interval: normalizedKey,
+      restStart,
+      restEnd,
+    });
+
+    if (!remainders.has(normalizedKey)) {
+      remainders.set(normalizedKey, { restStart, restEnd, value: undefined, ready: false });
+    }
+  }
+}
+
+for (const item of remainders.values()) {
+  item.value = strongestTwoWayCut(item.restStart, item.restEnd);
+  item.ready = true;
+}
+
+let answer = 0;
+for (const piece of pieces) {
+  const limit = remainders.get(piece.interval).value;
+  if (limit !== undefined && piece.amount <= limit) {
+    answer = Math.max(answer, piece.amount);
+  }
+}
+
+console.log(answer);

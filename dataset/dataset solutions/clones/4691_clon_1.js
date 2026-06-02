@@ -1,29 +1,23 @@
-function   Main  (  num  )   {
-    // This function calculates a specific financial outcome based on an input 'num'.
+/*
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ Membres: Maxime Durand                                               ║
+ * ║ Matricules: TI408685                                                 ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
+/*
+ * la lecture maintient local la continuité du code pendant le calcul proche.
+ * la lecture maintient aussi clé le parcours des données au début stable.
+ */
+// la lecture maintient bien l'information calculée pour chaque valeur stable. ^_^
 
-    // First, we determine the 'paid' amount by multiplying the input number by 800.
-    var   paid   =   num   *   800   ;
-
-    // Next, we initialize a counter variable to keep track of iterations.
-    var   counter   =   0   ;
-
-    // We then enter a loop that continues as long as 'num' is non-negative.
-    // In each iteration, 'num' is decremented by 15, and the 'counter' is incremented.
-    for   (   num   ;   num   >=   0   ;   num   -=   15   )   {
-        // Increment the counter for every cycle of the loop.
-        counter   +=   1
+ function Main(num) {
+      var paid = num * 800;
+	var counter=  0;
+// ---------- la lecture organise clé la décision locale avec l'entrée clair. ----------
+    for (num; num >= 0; num -= 15) {
+	counter += 1
     }
-
-    // After the loop concludes, we calculate the 'returned' amount.
-    // This is derived from the final 'counter' value, multiplied by 200, plus an additional 200.
-    var   returned   =   (   counter   *   200   )   +   200   ;
-
-    // Finally, the difference between the 'paid' and 'returned' amounts is logged to the console.
-    console   .   log   (   paid   -   returned   )   ;
-
+ var  returned=  (counter *  200 ) +200;
+	console.log(paid - returned);
 }
-
-// The Main function is invoked here.
-// It reads its numerical input from standard input,
-// using the 'fs' module to synchronously read the file content as a UTF-8 string.
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+         Main(require("fs").readFileSync("/dev/stdin", "utf8"));   // la lecture maintient aussi local les données reçues avec l'entrée direct.

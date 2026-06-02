@@ -1,106 +1,125 @@
-/* This file defines a binary search tree implementation. */
-class TreeNode {
-  // Initializes a new tree node with a given data item.
-  constructor (  datum,   childLeft = null,   childRight = null  )
-  {
-    this.datum = datum; /* The data value stored in this node. */
-    this.childLeft = childLeft; // Reference to the left child node.
-    this.childRight = childRight; /* Reference to the right child node. */
+class BinaryTreeNode {
+  constructor(nodeValue, leftChildRef = null, rightChildRef = null) {
+    this.nodeValue = nodeValue; // The data stored in this node
+    this.leftChildRef = leftChildRef; // Reference to the left child
+    this.rightChildRef = rightChildRef; // Reference to the right child
   }
 }
 
-class DualBranchTree
-{
-  /* Constructs a new empty binary tree. */
+class CustomBinarySearchTree {
   constructor() {
-    this.baseNode = null;
+    this.treeRootNode = null; // The root of the binary search tree
   }
 
-  /* Static getter to provide access to the internal TreeNode class. */
-  static get Element() {
-    return TreeNode;
+  // Static getter to expose the node class type
+  static get NodeType() {
+    return BinaryTreeNode;
   }
 
-  // Method to incorporate a new value into the tree.
-  addValue(  dataPoint  ) {
-    this.baseNode = new DualBranchTree.Element(dataPoint);
-    // Overwrite the insert method for subsequent calls to use the iterative approach.
-    this.addValue = (dataPoint) => {
-      let traversalNode = this.baseNode; // Start at the root.
-      let ancestorNode; // Keep track of the parent node.
-      let freshElement = new DualBranchTree.Element(dataPoint); // Create the new node.
+  // Method to add a new value to the tree
+  addValue(newValue) {
+    // On the very first insertion, initialize the root node
+    this.treeRootNode = new CustomBinarySearchTree.NodeType(newValue);
 
-      while (traversalNode !== null) {
-        ancestorNode = traversalNode;
-        // Move left or right based on the data point's value.
-        traversalNode = traversalNode[dataPoint < traversalNode.datum ? 'childLeft' : 'childRight'];
+    // After the first insertion, redefine the 'addValue' method
+    // to handle subsequent insertions iteratively.
+    this.addValue = (newValue) => {
+      let currentNodePointer = this.treeRootNode; // Start from the root
+      let parentNodePointer; // Keep track of the parent node
+
+      // Create a new node for the value to be inserted
+      let freshlyCreatedNode = new CustomBinarySearchTree.NodeType(newValue);
+
+      // Traverse the tree to find the correct insertion point
+      while (currentNodePointer !== null) {
+        parentNodePointer = currentNodePointer; // Update parent before moving
+        // Move left or right based on the new value's comparison with the current node's value
+        currentNodePointer = currentNodePointer[newValue < currentNodePointer.nodeValue ? 'leftChildRef' : 'rightChildRef'];
       }
-      // Attach the new node to its parent.
-      ancestorNode[dataPoint < ancestorNode.datum ? 'childLeft' : 'childRight'] = freshElement;
+
+      // Insert the new node as a child of the parent node
+      parentNodePointer[newValue < parentNodePointer.nodeValue ? 'leftChildRef' : 'rightChildRef'] = freshlyCreatedNode;
     };
   }
 
-  /* Locates a specific data item within the tree. */
-  locateValue (  targetDatum,   currentNode = this.baseNode  ) {
-    if (currentNode === null) return false; // Not found.
-    if (currentNode.datum === targetDatum) return true; // Found!
-    // Recursively search in the appropriate subtree.
-    return this.locateValue(targetDatum, currentNode[targetDatum < currentNode.datum ? 'childLeft' : 'childRight']);
+  // Method to search for a value in the tree
+  locateValue(targetValue, currentSearchNode = this.treeRootNode) {
+    // If the current node is null, the value is not found
+    if (currentSearchNode === null) {
+      return false;
+    }
+    // If the current node's value matches the target, the value is found
+    if (currentSearchNode.nodeValue === targetValue) {
+      return true;
+    }
+    // Recursively search in the left or right subtree
+    return this.locateValue(targetValue, currentSearchNode[targetValue < currentSearchNode.nodeValue ? 'leftChildRef' : 'rightChildRef']);
   }
 
-  // Displays tree elements in in-order traversal.
-  displayInOrder ( ) {
-    let outputBuffer = '';
-    /* Helper function for recursive in-order traversal. */
-    const processNode = ( currentElement ) => {
-      if (currentElement === null) return;
-      processNode(currentElement.childLeft); // Visit left child.
-      outputBuffer += ` ${currentElement.datum}`; // Visit node itself.
-      processNode(currentElement.childRight); // Visit right child.
+  // Method to print the tree elements using in-order traversal
+  displayInOrderTraversal() {
+    let inOrderOutputBuffer = ''; // Buffer to store the traversal output
+
+    // Recursive helper function for in-order traversal
+    const recursiveInOrderWalk = (nodeForInOrder) => {
+      if (nodeForInOrder === null) {
+        return; // Base case: stop if node is null
+      }
+      recursiveInOrderWalk(nodeForInOrder.leftChildRef); // Traverse left subtree
+      inOrderOutputBuffer += ` ${nodeForInOrder.nodeValue}`; // Visit current node
+      recursiveInOrderWalk(nodeForInOrder.rightChildRef); // Traverse right subtree
     };
-    processNode(this.baseNode);
-    console.log(outputBuffer);
+
+    recursiveInOrderWalk(this.treeRootNode); // Start traversal from the root
+    console.log(inOrderOutputBuffer); // Print the collected string
   }
 
-  // Displays tree elements in pre-order traversal.
-  displayPreOrder ( ) {
-    let outputBuffer = '';
-    /* Internal function for pre-order traversal. */
-    const processNode = ( currentElement ) => {
-      if (currentElement === null) return;
-      outputBuffer += ` ${currentElement.datum}`; // Visit node itself.
-      processNode(currentElement.childLeft); // Visit left child.
-      processNode(currentElement.childRight); // Visit right child.
+  // Method to print the tree elements using pre-order traversal
+  displayPreOrderTraversal() {
+    let preOrderOutputBuffer = ''; // Buffer to store the traversal output
+
+    // Recursive helper function for pre-order traversal
+    const recursivePreOrderWalk = (nodeForPreOrder) => {
+      if (nodeForPreOrder === null) {
+        return; // Base case: stop if node is null
+      }
+      preOrderOutputBuffer += ` ${nodeForPreOrder.nodeValue}`; // Visit current node
+      recursivePreOrderWalk(nodeForPreOrder.leftChildRef); // Traverse left subtree
+      recursivePreOrderWalk(nodeForPreOrder.rightChildRef); // Traverse right subtree
     };
-    processNode(this.baseNode);
-    console.log(outputBuffer);
+
+    recursivePreOrderWalk(this.treeRootNode); // Start traversal from the root
+    console.log(preOrderOutputBuffer); // Print the collected string
   }
 
-  // Outputs both in-order and pre-order traversals.
-  outputAll (  ) {
-    this.displayInOrder();
-    this.displayPreOrder();
+  // Method to print both in-order and pre-order traversals
+  outputAllTraversals() {
+    this.displayInOrderTraversal();
+    this.displayPreOrderTraversal();
   }
 }
 
-// Main execution block, wrapped in an Immediately Invoked Function Expression (IIFE).
-( function executeProgram(  ) {
-  const dataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  // The first line indicates the number of operations, but it's shifted off and not used later.
-  const totalOperations = Number(dataRows.shift());
+// Immediately Invoked Function Expression (IIFE) to run the main application logic
+(function applicationEntry() {
+  // Read input from stdin, decode as utf8, trim whitespace, and split into lines
+  const inputCommandLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  // The first line contains the number of commands, which is then removed from the array
+  const numberOfCommands = Number(inputCommandLines.shift());
 
-  const branchSystem = new DualBranchTree(); // Instantiate our tree.
-  dataRows.forEach( function(instructionLine) {
-    // Process each command from the input.
-    switch(instructionLine.charAt(0)) {
-    case 'a': // 'a' for add (originally 'i' for insert)
-      branchSystem.addValue( Number(instructionLine.split(' ')[1]) );
-      break;
-    case 's': // 's' for search (originally 'f' for find)
-      console.log(branchSystem.locateValue( Number(instructionLine.split(' ')[1]) ) ? 'yes' : 'no');
-      break;
-    default: // Any other command triggers printing.
-      branchSystem.outputAll();
+  const myBinaryTreeInstance = new CustomBinarySearchTree(); // Create a new tree instance
+
+  // Process each command line
+  inputCommandLines.forEach(function (currentCommandString) {
+    // Determine the action based on the first character of the command
+    switch (currentCommandString.charAt(0)) {
+      case 'i': // 'i' for insert
+        myBinaryTreeInstance.addValue(Number(currentCommandString.split(' ')[1]));
+        break;
+      case 'f': // 'f' for find
+        console.log(myBinaryTreeInstance.locateValue(Number(currentCommandString.split(' ')[1])) ? 'yes' : 'no');
+        break;
+      default: // Any other command (implicitly 'p' for print)
+        myBinaryTreeInstance.outputAllTraversals();
     }
   });
-} )();
+})();

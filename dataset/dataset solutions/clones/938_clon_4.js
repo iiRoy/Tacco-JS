@@ -1,32 +1,26 @@
-const fileSystemAccess = require('fs');
-const entryPoint = '/dev/stdin';
-const lineSeparator = '\n';
+const sourceConfig = { input: '/dev/stdin', newline: '\n' };
 
-const entireContent = fileSystemAccess.readFileSync(entryPoint, 'utf8').trim();
-const contentLines = entireContent.split(lineSeparator);
+const fileContent = require('fs').readFileSync(sourceConfig.input, 'ascii').trim();
+const inputLines = fileContent.split(sourceConfig.newline);
 
-const dimensionString = contentLines.shift();
-const graphDimension = parseInt(dimensionString, 10);
+const nodeCount = Number(inputLines.shift());
 
-const graphStructure = new Map();
+const connectionRegistry = inputLines.reduce((accumulator, currentLine) => {
+    const [sourceIdentifier, , ...neighborIdentifiers] = currentLine.split(' ');
+    const sourceNode = Number(sourceIdentifier);
+    const neighborSet = new Set(neighborIdentifiers.map(Number));
+    accumulator.set(sourceNode, neighborSet);
+    return accumulator;
+}, new Map());
 
-contentLines.forEach(function(currentDescription) {
-    const segmentArray = currentDescription.split(' ');
-    const sourceNodeIdentifier = segmentArray[0];
-    const destinationNodeIdentifiers = segmentArray.slice(2);
-    graphStructure.set(sourceNodeIdentifier, new Set(destinationNodeIdentifiers));
+const adjacencyMatrixRows = Array.from({ length: nodeCount }, (_, rowIndex) => {
+    const currentSourceNode = rowIndex + 1;
+    const currentNeighbors = connectionRegistry.get(currentSourceNode);
+
+    return Array.from({ length: nodeCount }, (_, colIndex) => {
+        const currentTargetNode = colIndex + 1;
+        return currentNeighbors.has(currentTargetNode) ? 1 : 0;
+    }).join(' ');
 });
 
-const adjacencySchema = Array.from({ length: graphDimension }, function(_, verticalIndex) {
-    const currentSourceId = String(verticalIndex + 1);
-    const outgoingConnections = graphStructure.get(currentSourceId) || new Set();
-
-    return Array.from({ length: graphDimension }, function(_, horizontalIndex) {
-        const targetId = String(horizontalIndex + 1);
-        return outgoingConnections.has(targetId) ? 1 : 0;
-    });
-});
-
-adjacencySchema.forEach(function(matrixRow) {
-    process.stdout.write(matrixRow.join(' ') + lineSeparator);
-});
+adjacencyMatrixRows.forEach(rowOutput => console.log(rowOutput));

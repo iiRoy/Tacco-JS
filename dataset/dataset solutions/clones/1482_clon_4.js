@@ -1,46 +1,56 @@
-function parseRawText(inputContent) {
-    const inputLines = inputContent.trim().split('\n').map(line => line.split(' ').map(Number));
-    const totalVertices = inputLines[0][0];
-    const totalEdges = inputLines[0][1];
-    const edgeDescriptions = inputLines.slice(1).map(pair => [pair[0] - 1, pair[1] - 1]);
-    return { totalVertices, totalEdges, edgeDescriptions };
-}
-
-function discoverComponents(numVertices, edgesInfo) {
-    const connectionScheme = Array(numVertices).fill(null).map(() => []);
-    for (const [nodeA, nodeB] of edgesInfo) {
-        connectionScheme[nodeA].push(nodeB);
-        connectionScheme[nodeB].push(nodeA);
+class NodeSet {
+    constructor(count) {
+        this.representatives = Array.from({ length: count }, (_, idx) => idx);
+        this.sizes = Array.from({ length: count }, () => 1);
+        this.componentCount = count;
     }
 
-    const discoveredVertices = new Array(numVertices).fill(false);
-    let componentTally = 0;
+    locate(idx) {
+        if (this.representatives[idx] === idx) {
+            return idx;
+        }
+        this.representatives[idx] = this.locate(this.representatives[idx]);
+        return this.representatives[idx];
+    }
 
-    function depthFirstSearch(currentVertex) {
-        discoveredVertices[currentVertex] = true;
-        for (const neighborVertex of connectionScheme[currentVertex]) {
-            if (!discoveredVertices[neighborVertex]) {
-                depthFirstSearch(neighborVertex);
+    unite(first, second) {
+        let rootA = this.locate(first);
+        let rootB = this.locate(second);
+
+        if (rootA !== rootB) {
+            if (this.sizes[rootA] < this.sizes[rootB]) {
+                [rootA, rootB] = [rootB, rootA];
             }
+            this.representatives[rootB] = rootA;
+            this.sizes[rootA] += this.sizes[rootB];
+            this.componentCount--;
+            return true;
         }
+        return false;
     }
 
-    for (let vertexIndex = 0; vertexIndex < numVertices; vertexIndex++) {
-        if (!discoveredVertices[vertexIndex]) {
-            componentTally++;
-            depthFirstSearch(vertexIndex);
-        }
+    getComponentCount() {
+        return this.componentCount;
     }
-    return componentTally;
 }
 
-function computeNetworkMetric(sourceData) {
-    const { totalVertices, totalEdges, edgeDescriptions } = parseRawText(sourceData);
+function ProcessGraphData(rawData) {
+    const parsedData = rawData.split(/\n/).map(line => line.split(' ').map(Number));
+    const nodeCount = parsedData[0][0];
+    const edgeCount = parsedData[0][1];
 
-    const numberOfComponents = discoverComponents(totalVertices, edgeDescriptions);
+    const dsu = new NodeSet(nodeCount);
 
-    const finalOutcome = numberOfComponents - 1;
-    console.log(finalOutcome);
+    for (let i = 1; i <= edgeCount; i++) {
+        const sourceNode = parsedData[i][0];
+        const targetNode = parsedData[i][1];
+        dsu.unite(sourceNode - 1, targetNode - 1);
+    }
+
+    const distinctComponents = dsu.getComponentCount();
+
+    const finalResult = distinctComponents - 1;
+    console.log(finalResult);
 }
 
-computeNetworkMetric(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

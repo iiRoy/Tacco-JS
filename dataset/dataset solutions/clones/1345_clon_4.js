@@ -1,22 +1,21 @@
-const nodeIO = require("node:fs");
-const entryPointFD = 0;
-const dataCapacity = 64;
-const dataStore = Buffer.alloc(dataCapacity);
-let octetsRead = 0;
-try {
-    octetsRead = nodeIO.readSync(entryPointFD, dataStore, 0, dataCapacity, null);
-} catch (issue) {
-    // Error handling omitted for brevity as per common competitive programming style
-}
+'use strict';
 
-const receivedPayload = dataStore.toString('utf8', 0, octetsRead).trim();
-const numericDatum = parseFloat(receivedPayload);
+const fs = require('fs');
+const raw = fs.readFileSync('/dev/stdin', 'utf8');
 
-const mathematicalConstant = 2 * Math.asin(1);
-const inputScalar = numericDatum;
+const radius = raw - 0;
 
-const surfaceExtent = inputScalar * inputScalar * mathematicalConstant;
-const boundaryDistance = 2 * mathematicalConstant * inputScalar;
+const measurePlans = [
+  [radius, radius, Math.PI],
+  [Math.PI, radius, 2],
+];
 
-const finalResult = surfaceExtent.toString() + " " + boundaryDistance.toString();
-process.stdout.write(finalResult + '\n');
+const results = measurePlans.map((factors) => {
+  let current = 1;
+  for (const factor of factors) {
+    current *= factor;
+  }
+  return current;
+});
+
+console.log(results.join(' '));

@@ -1,43 +1,58 @@
-const parseAndAnalyze = (sourceData) => {
-  const inputLines = sourceData.trim().split("\n");
-  const entityCount = parseInt(inputLines[0], 10);
+const processInput = (rawInput) => {
+    const inputLines = rawInput.split('\n');
+    const pointCount = Number.parseInt(inputLines.shift(), 10);
 
-  const pointRepresentations = inputLines.slice(1, entityCount + 1).map((coordinateString) => {
-    const numericParts = coordinateString.split(" ").map(Number);
-    return { horizontalComponent: numericParts[0], verticalComponent: numericParts[1] };
-  });
-
-  const allPairings = Array.from({ length: entityCount }, (_, i) => i)
-    .flatMap((idxA) => 
-      Array.from({ length: entityCount - (idxA + 1) }, (_, j) => j + idxA + 1)
-        .map((idxB) => [pointRepresentations[idxA], pointRepresentations[idxB]])
+    const coordinatePairs = inputLines.slice(0, pointCount).map(line =>
+        line.split(' ').map(Number.parseFloat)
     );
 
-  const calculateCanonicalVectors = (pairOfPoints) => {
-    const pointOne = pairOfPoints[0];
-    const pointTwo = pairOfPoints[1];
+    const forwardDisplacementVectors = coordinatePairs.flatMap((pA, idxA) =>
+        coordinatePairs.slice(idxA + 1).map(pB => [pA[0] - pB[0], pA[1] - pB[1]])
+    );
 
-    const dX = pointTwo.horizontalComponent - pointOne.horizontalComponent;
-    const dY = pointTwo.verticalComponent - pointOne.verticalComponent;
+    const backwardDisplacementVectors = coordinatePairs.flatMap((pA, idxA) =>
+        coordinatePairs.slice(idxA + 1).map(pB => [pB[0] - pA[0], pB[1] - pA[1]])
+    );
 
-    if (dX < 0 || (dX === 0 && dY < 0)) {
-      return `${-dX},${-dY}`;
+    forwardDisplacementVectors.sort((vA, vB) => {
+        if (vA[0] !== vB[0]) return vA[0] - vB[0];
+        return vA[1] - vB[1];
+    });
+
+    backwardDisplacementVectors.sort((vA, vB) => {
+        if (vA[0] !== vB[0]) return vA[0] - vB[0];
+        return vA[1] - vB[1];
+    });
+
+    let maximumConsecutiveCount = 0;
+    let currentConsecutiveCount = 1;
+
+    const evaluateVectorSequences = (vectorIndex) => {
+        if (vectorIndex >= forwardDisplacementVectors.length - 1) {
+            return;
+        }
+
+        const currentVectorString = JSON.stringify(forwardDisplacementVectors[vectorIndex]);
+        const nextVectorString = JSON.stringify(forwardDisplacementVectors[vectorIndex + 1]);
+        const nextBackwardVectorString = JSON.stringify(backwardDisplacementVectors[vectorIndex + 1]);
+
+        if (currentVectorString === nextVectorString || currentVectorString === nextBackwardVectorString) {
+            currentConsecutiveCount++;
+        } else {
+            if (maximumConsecutiveCount < currentConsecutiveCount) {
+                maximumConsecutiveCount = currentConsecutiveCount;
+            }
+            currentConsecutiveCount = 1;
+        }
+        evaluateVectorSequences(vectorIndex + 1);
+    };
+
+    if (forwardDisplacementVectors.length > 0) {
+        evaluateVectorSequences(0);
     }
-    return `${dX},${dY}`;
-  };
 
-  const vectorOccurrences = allPairings
-    .map(calculateCanonicalVectors)
-    .reduce((counts, vectorKey) => {
-      counts.set(vectorKey, (counts.get(vectorKey) || 0) + 1);
-      return counts;
-    }, new Map());
-
-  const maximumFrequency = vectorOccurrences.size > 0
-    ? Math.max(...Array.from(vectorOccurrences.values()))
-    : 0;
-
-  console.log(entityCount - maximumFrequency);
+    const finalResult = pointCount - maximumConsecutiveCount;
+    console.log(finalResult);
 };
 
-parseAndAnalyze(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

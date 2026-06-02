@@ -1,70 +1,61 @@
-const PRIME_MODULUS = 1000000007;
+const processStaircase = (rawInput) => {
+    const primeModulus = 1000000007;
 
-const fibonacciCache = new Map();
+    const inputLines = rawInput.trim().split('\n');
+    const [maxStair, forbiddenCount] = inputLines[0].split(' ').map(Number);
 
-function calculateWays(stepCount) {
-    if (Number.isNaN(stepCount)) return NaN; // Replicate NaN propagation for invalid inputs
-    if (stepCount < 0) return 0;
-    if (stepCount === 0 || stepCount === 1) return 1;
-    if (stepCount === 2) return 2;
+    const forbiddenSteps = inputLines.slice(1, forbiddenCount + 1).map(Number);
 
-    if (fibonacciCache.has(stepCount)) {
-        return fibonacciCache.get(stepCount);
+    const hasAdjacentForbidden = forbiddenSteps.slice(0, forbiddenCount - 1)
+        .some((currentStep, index) => forbiddenSteps[index + 1] - currentStep === 1);
+
+    if (hasAdjacentForbidden) {
+        return 0;
     }
 
-    const result = (calculateWays(stepCount - 1) + calculateWays(stepCount - 2)) % PRIME_MODULUS;
-    fibonacciCache.set(stepCount, result);
-    return result;
-}
+    function* generateGapSizes(stairLimit, forbiddenPoints) {
+        const numForbidden = forbiddenPoints.length;
 
-function determineStaircasePaths(sourceInput) {
-    const lines = sourceInput.trim().split('\n');
-    const [totalStairs, brokenStairsCount] = lines[0].split(' ').map(Number);
-    const brokenPositions = lines.slice(1, brokenStairsCount + 1).map(Number);
+        yield forbiddenPoints[0] - 1;
 
-    const hasConsecutiveFaults = brokenPositions.some((pos, index, arr) => arr[index + 1] === pos + 1);
-    if (hasConsecutiveFaults) {
-        console.log(0);
-        return;
+        for (let index = 1; index < numForbidden; index++) {
+            yield forbiddenPoints[index] - forbiddenPoints[index - 1] - 2;
+        }
+
+        yield stairLimit - forbiddenPoints[numForbidden - 1] - 1;
     }
 
-    // This section replicates the original 'dansa' array creation,
-    // including its behavior for edge cases like brokenStairsCount = 0.
-    // The original code would attempt to access elements of an empty array,
-    // resulting in `undefined` and subsequent `NaN` values or runtime errors.
-    const firstSegmentValue = brokenPositions[0] - 1;
-    const middleSegmentsValues = Array.from({ length: Math.max(0, brokenStairsCount - 1) }, (_, idx) => {
-        const currentPositionIndex = idx + 1;
-        return brokenPositions[currentPositionIndex] - brokenPositions[currentPositionIndex - 1] - 2;
-    });
-    const lastSegmentValue = totalStairs - brokenPositions[brokenStairsCount - 1] - 1;
+    const gapSizes = Array.from(generateGapSizes(maxStair, forbiddenSteps));
 
-    // Handle the specific case where brokenStairsCount is 0,
-    // which the original code would likely crash on.
-    // However, if brokenStairsCount is 0, the problem implies the entire staircase is available.
-    // To match the original's *likely intended* behavior (if it were robust),
-    // or its crash behavior:
-    let availableSegmentLengths;
-    if (brokenStairsCount === 0) {
-        availableSegmentLengths = [totalStairs]; // If no broken steps, the whole length N is available
-    } else {
-        availableSegmentLengths = [firstSegmentValue, ...middleSegmentsValues, lastSegmentValue];
-    }
-    
-    // If the original problem strictly implies M >= 1, then the 'else' block for M=0
-    // would not be reached, and the NaN propagation would be correct.
-    // Given the typical context, M=0 implies the N stairs are fully traversable.
-    // This is a subtle point for Type IV if original code crashes.
-    // Assuming the intent is for M=0 to yield F(N+1) ways.
+    const fibCache = new Map();
+    fibCache.set(0, 1);
+    fibCache.set(1, 1);
+    fibCache.set(2, 2);
 
-    const segmentPathCombinations = availableSegmentLengths.map(calculateWays);
+    const getFibLikeCombinations = (gapLength) => {
+        if (gapLength < 0) {
+            return 0;
+        }
+        if (fibCache.has(gapLength)) {
+            return fibCache.get(gapLength);
+        }
+        const calculatedResult = (getFibLikeCombinations(gapLength - 1) + getFibLikeCombinations(gapLength - 2)) % primeModulus;
+        fibCache.set(gapLength, calculatedResult);
+        return calculatedResult;
+    };
 
-    const finalPathways = segmentPathCombinations.reduce((accumulator, current) => {
-        if (Number.isNaN(accumulator) || Number.isNaN(current)) return NaN; // Propagate NaN
-        return (accumulator * current) % PRIME_MODULUS;
-    }, 1);
+    const gapCombinations = gapSizes.map(getFibLikeCombinations);
 
-    console.log(finalPathways);
-}
+    const totalCombinations = gapCombinations.reduce((accumulator, currentVal) =>
+        (accumulator * currentVal) % primeModulus, 1);
 
-determineStaircasePaths(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    return totalCombinations;
+};
+
+const executeStaircaseCalculation = (inputPath) => {
+    const fileContent = require('fs').readFileSync(inputPath, 'utf8');
+    const finalResult = processStaircase(fileContent);
+    console.log(finalResult);
+};
+
+executeStaircaseCalculation('/dev/stdin');

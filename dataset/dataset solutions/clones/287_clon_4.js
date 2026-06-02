@@ -1,59 +1,55 @@
-const fileSystem = require('node:fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const lineSegments = rawData.trim().split('\n');
+const lineData = fileContent.trim().split('\n');
+const parsedEdges = lineData.map((s) => s.split(' ').map(Number));
 
-const linkDescriptions = lineSegments.map(segment => {
-    const parts = segment.split(' ');
-    return [Number(parts[0]), Number(parts[1])];
-});
+function createDegreeTracker() {
+  let nodeDegrees = new Map();
 
-let currentNetwork = {};
+  const resetTracker = () => {
+    nodeDegrees = new Map();
+  };
 
-const ensurePointExists = (net, idAsString) => {
-    if (!(idAsString in net)) {
-        net[idAsString] = [];
-    }
-};
+  const adjustDegree = (nodeIdentifier) => {
+    nodeDegrees.set(nodeIdentifier, (nodeDegrees.get(nodeIdentifier) || 0) + 1);
+  };
 
-const establishLink = (net, originAsString, terminusAsNumber) => {
-    ensurePointExists(net, originAsString);
-    net[originAsString].push(terminusAsNumber);
-};
-
-const checkPointParity = (net, pointIdentifierAsString) => {
-    return (pointIdentifierAsString in net) ? (net[pointIdentifierAsString].length % 2 !== 0) : false;
-};
-
-const countOddDegreePoints = (net) => {
+  const evaluatePatrolEligibility = () => {
     let oddDegreeCount = 0;
-    for (const pointIdentifierString in net) {
-        if (checkPointParity(net, pointIdentifierString)) {
-            oddDegreeCount++;
-        }
+    for (const degree of nodeDegrees.values()) {
+      if (degree % 2 !== 0) {
+        oddDegreeCount++;
+      }
     }
-    return oddDegreeCount;
-};
 
-const evaluatePatrolPotential = (net) => {
-    const oddCount = countOddDegreePoints(net);
-    if (oddCount !== 2) {
-        return false;
+    if (oddDegreeCount !== 2) {
+      return false;
     }
-    return checkPointParity(net, '1') && checkPointParity(net, '2');
-};
 
-const clearNetworkStructure = () => {
-    currentNetwork = {};
-};
+    const nodeOneDegree = nodeDegrees.get(1);
+    const nodeTwoDegree = nodeDegrees.get(2);
 
-linkDescriptions.forEach(([initialPoint, finalPoint]) => {
-    if (initialPoint === 0 && finalPoint === 0) {
-        const outcome = evaluatePatrolPotential(currentNetwork) ? 'OK' : 'NG';
-        console.log(outcome);
-        clearNetworkStructure();
-        return;
-    }
-    establishLink(currentNetwork, String(initialPoint), finalPoint);
-    establishLink(currentNetwork, String(finalPoint), initialPoint);
+    return (nodeOneDegree !== undefined && nodeOneDegree % 2 !== 0) &&
+           (nodeTwoDegree !== undefined && nodeTwoDegree % 2 !== 0);
+  };
+
+  return {
+    reset: resetTracker,
+    addConnection: (u, v) => {
+      adjustDegree(u);
+      adjustDegree(v);
+    },
+    checkEligibility: evaluatePatrolEligibility,
+  };
+}
+
+const graphProcessor = createDegreeTracker();
+
+parsedEdges.forEach(([firstNode, secondNode]) => {
+  if (firstNode === 0 && secondNode === 0) {
+    console.log(graphProcessor.checkEligibility() ? 'OK' : 'NG');
+    graphProcessor.reset();
+    return;
+  }
+  graphProcessor.addConnection(firstNode, secondNode);
 });

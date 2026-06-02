@@ -1,75 +1,61 @@
-// Establish the standard input stream's operational state
 process.stdin.resume();
-// Set the character encoding for data received from standard input
 process.stdin.setEncoding('utf8');
 
-// Declare a variable to accumulate all incoming data chunks from the stream
-let entireStreamData = '';
+// This variable will accumulate all incoming data from standard input.
+let collectedInput = '';
 
-// Attach an event handler for the 'data' event on the standard input stream
 process.stdin.on('data', function(dataSegment) {
-    // Append each new data segment to the accumulated string
-    entireStreamData += dataSegment;
+    // Append each received chunk of data to our buffer.
+    collectedInput += dataSegment;
 });
 
-// Attach an event handler for the 'end' event on the standard input stream
 process.stdin.on('end', function() {
-    // Once all input has been received, split the entire content into lines
-    // and pass this array of lines to the primary processing function
-    solvePalindromeProblem(entireStreamData.split(/\r?\n/));
+    // When all input has been received, split it into lines and pass to the main processing function.
+    processInputData(collectedInput.split(/\r?\n/));
 });
 
 /**
- * Executes the core logic to determine the minimum insertions of 'x'
- * required to make the first input string a palindrome.
- * @param {string[]} processedLines - An array where the first element is the string for analysis.
- * @returns {number} A status code indicating completion (always 0).
+ * Processes the array of input lines to solve the problem.
+ * @param {string[]} linesOfText - An array where each element is a line from the standard input.
  */
-function solvePalindromeProblem(processedLines) {
+function processInputData(linesOfText) {
+    // The first line of input contains the string we need to analyze.
+    const targetString = linesOfText[0];
 
-    // Retrieve the specific character sequence to be evaluated, which is the first line of input
-    const targetString = processedLines[0];
+    // Initialize two pointers, one at the beginning and one at the end of the string.
+    let leftPointer = 0;
+    let rightPointer = targetString.length - 1;
 
-    // Initialize a pointer for the start of the string
-    let leftPtr = 0;
-    // Initialize a pointer for the end of the string
-    let rightPtr = targetString.length - 1;
-
-    // Initialize a counter to track the necessary modifications or operations
+    // This variable will store the minimum number of operations, or -1 if impossible.
     let operationCount = 0;
 
-    // Continue iterating as long as the left pointer has not crossed the right pointer
-    while (leftPtr < rightPtr) {
-        // Check if the characters at both pointer positions are identical
-        if (targetString.charAt(leftPtr) === targetString.charAt(rightPtr)) {
-            // If they match, move both pointers towards the center
-            leftPtr++;
-            rightPtr--;
+    // Loop as long as the left pointer is to the left of the right pointer.
+    while (leftPointer < rightPointer) {
+        // If characters at both pointers match, move both pointers inwards.
+        if (targetString.charAt(leftPointer) === targetString.charAt(rightPointer)) {
+            leftPointer++;
+            rightPointer--;
         }
-        // Otherwise, if the character at the left pointer is an 'x'
-        else if (targetString.charAt(leftPtr) === 'x') {
-            // Treat 'x' as a removable character, increment the operation count, and advance the left pointer
-            leftPtr++;
+        // If the left character is 'x', increment the left pointer and count an operation.
+        else if (targetString.charAt(leftPointer) === 'x') {
+            leftPointer++;
             operationCount++;
         }
-        // Otherwise, if the character at the right pointer is an 'x'
-        else if (targetString.charAt(rightPtr) === 'x') {
-            // Treat 'x' as a removable character, increment the operation count, and retract the right pointer
-            rightPtr--;
+        // If the right character is 'x', decrement the right pointer and count an operation.
+        else if (targetString.charAt(rightPointer) === 'x') {
+            rightPointer--;
             operationCount++;
         }
-        // If characters do not match and neither is an 'x', it's impossible to form a palindrome
+        // If characters don't match and neither is 'x', it's impossible to make them match.
         else {
-            // Set the operation count to -1 to signify an impossible scenario
-            operationCount = -1;
-            // Terminate the loop immediately as a solution cannot be found
-            break;
+            operationCount = -1; // Indicate impossibility.
+            break; // Exit the loop.
         }
     }
 
-    // Display the final calculated number of operations or the impossibility indicator
+    // Output the final result to the console.
     console.log(operationCount);
 
-    // Return a value indicating the function's completion
+    // The function returns 0, though its return value is not used externally.
     return 0;
 }

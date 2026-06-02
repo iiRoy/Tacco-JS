@@ -1,58 +1,32 @@
-const safelyParseInteger = (strValue, radix = 10, fallback = 0) => {
-    const numericResult = parseInt(strValue, radix);
-    return isNaN(numericResult) ? fallback : numericResult;
-};
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    const firstLineContent = lines[0];
+    const firstLineParts = firstLineContent.split(" ");
 
-function processInputData(fullInputString) {
-    // Perform an initial validation on the raw input string.
-    // If the input is null, undefined, or just whitespace, we cannot proceed.
-    if (!fullInputString || fullInputString.trim().length === 0) {
-        console.error("Input processing terminated: Provided data is empty or invalid.");
-        return;
-    }
+    const parseDecimalInteger = (strValue) => {
+        return parseInt(strValue, 10);
+    };
 
-    // Divide the comprehensive input string into an array of individual lines.
-    const allInputLines = fullInputString.split('\n');
+    const redComponent = parseDecimalInteger(firstLineParts[0]);
+    const greenComponent = parseDecimalInteger(firstLineParts[1]);
+    const blueComponent = parseDecimalInteger(firstLineParts[2]);
 
-    // Ensure there's at least one line to process, as our logic depends on the first line.
-    if (allInputLines.length === 0) {
-        console.error("Input processing terminated: No distinct lines found in the input.");
-        return;
-    }
+    const HUNDRED_FACTOR = 100;
+    const TEN_FACTOR = 10;
+    const DIVISIBILITY_CHECK_VALUE = 4;
 
-    // Extract the very first line which contains our primary data.
-    const primaryDataLine = allInputLines[0];
+    const calculatedCombinedValue = (redComponent * HUNDRED_FACTOR) + (greenComponent * TEN_FACTOR) + blueComponent;
 
-    // Split the primary data line by spaces to obtain individual numeric tokens.
-    const numericTokens = primaryDataLine.split(' ');
+    const isResultDivisible = (calculatedCombinedValue % DIVISIBILITY_CHECK_VALUE) === 0;
 
-    // Define constants for the weighting factors used in the calculation.
-    const WEIGHT_FACTOR_HUNDREDS = 100;
-    const WEIGHT_FACTOR_TENS = 10;
-    const DIVISOR_FOR_CHECK = 4;
-
-    // Parse the individual color components using our robust helper function.
-    // This ensures that even if a token is not a valid number, we get a default of 0.
-    const firstComponent = safelyParseInteger(numericTokens[0]);
-    const secondComponent = safelyParseInteger(numericTokens[1]);
-    const thirdComponent = safelyParseInteger(numericTokens[2]);
-
-    // Calculate the final composite numeric value by applying the defined weights.
-    const compositeNumericValue = (firstComponent * WEIGHT_FACTOR_HUNDREDS) +
-                                  (secondComponent * WEIGHT_FACTOR_TENS) +
-                                  thirdComponent;
-
-    // Evaluate if the calculated composite value is perfectly divisible by the specified divisor.
-    const isPerfectlyDivisible = (compositeNumericValue % DIVISOR_FOR_CHECK === 0);
-
-    // Based on the divisibility check, print the appropriate categorical result.
-    if (isPerfectlyDivisible) {
-        console.log('YES');
+    let finalOutputString;
+    if (isResultDivisible) {
+        finalOutputString = 'YES';
     } else {
-        console.log('NO');
+        finalOutputString = 'NO';
     }
+    
+    console.log('%s', finalOutputString);
 }
 
-// This boilerplate code facilitates reading from standard input in a Node.js environment.
-// It ensures the entire content of stdin is read and passed to our processing function.
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

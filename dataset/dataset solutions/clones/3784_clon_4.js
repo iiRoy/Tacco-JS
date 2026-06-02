@@ -1,72 +1,68 @@
-const extractParameters = (sourceText) => {
-    const numericParts = sourceText.trim().split(" ").map(Number);
-    return {
-        overallCapacity: numericParts[0],
-        itemValueX: numericParts[1],
-        itemValueY: numericParts[2],
-        targetTotal: numericParts[3]
-    };
-};
+'use strict';
 
-const memoizationStore = new Map();
-const calculateProductSeries = (limit) => {
-    if (limit < 0) return 0;
-    if (limit === 0 || limit === 1) return 1;
-    if (memoizationStore.has(limit)) return memoizationStore.get(limit);
-    const outcome = limit * calculateProductSeries(limit - 1);
-    memoizationStore.set(limit, outcome);
-    return outcome;
-};
+function processInputAndCalculate(inputData) {
+    const numericInputs = inputData.split(' ').map(Number);
+    const totalItemsLimit = numericInputs[0];
+    const firstColorVal = numericInputs[1];
+    const secondColorVal = numericInputs[2];
+    const targetSum = numericInputs[3];
 
-const deriveCombinations = (upperBound, lowerBound) => {
-    if (lowerBound < 0 || lowerBound > upperBound) return 0;
-    if (lowerBound === 0 || lowerBound === upperBound) return 1;
-    if (upperBound - lowerBound < lowerBound) lowerBound = upperBound - lowerBound;
-    return calculateProductSeries(upperBound) / (calculateProductSeries(lowerBound) * calculateProductSeries(upperBound - lowerBound));
-};
+    const combinedColorVal = firstColorVal + secondColorVal;
+    const maxOfColorsVal = Math.max(firstColorVal, secondColorVal);
+    const minOfColorsVal = Math.min(firstColorVal, secondColorVal); // This variable is not directly used in the value calculation, as the third item type implicitly has a value of 1.
 
-function* enumerateItemCounts(goalValue, comboVal, highVal) {
-    const maxComboCount = Math.floor(goalValue / comboVal);
-    for (let currentComboCount = 0; currentComboCount <= maxComboCount; currentComboCount++) {
-        const remainingForHighLow = goalValue - (currentComboCount * comboVal);
-        if (remainingForHighLow < 0) continue;
+    let totalAccumulatedPatterns = 0;
 
-        const maxHighCount = Math.floor(remainingForHighLow / highVal);
-        for (let currentHighCount = 0; currentHighCount <= maxHighCount; currentHighCount++) {
-            const remainingForLow = remainingForHighLow - (currentHighCount * highVal);
-            const currentLowCount = remainingForLow;
+    const factorialMemo = new Map();
 
-            if (currentLowCount >= 0) {
-                yield { comboCnt: currentComboCount, highCnt: currentHighCount, lowCnt: currentLowCount };
+    function computeFactorial(num) {
+        if (num < 0) return 0;
+        if (num === 0 || num === 1) return 1;
+        if (factorialMemo.has(num)) return factorialMemo.get(num);
+
+        let currentResult = 1;
+        for (let currentVal = 2; currentVal <= num; currentVal++) {
+            currentResult *= currentVal;
+        }
+        factorialMemo.set(num, currentResult);
+        return currentResult;
+    }
+
+    function computeBinomialCoefficient(nVal, kVal) {
+        if (kVal < 0 || kVal > nVal) return 0;
+        if (kVal === 0 || kVal === nVal) return 1;
+        if (kVal > nVal / 2) kVal = nVal - kVal;
+
+        return computeFactorial(nVal) / (computeFactorial(kVal) * computeFactorial(nVal - kVal));
+    }
+
+    // Iterate over all possible total number of items (T) that can be selected, from 0 up to N.
+    for (let totalItemsCount = 0; totalItemsCount <= totalItemsLimit; totalItemsCount++) {
+        // Iterate over possible counts for items with value 'combinedColorVal' (i)
+        for (let combinedItemsCount = 0; combinedItemsCount <= totalItemsCount; combinedItemsCount++) {
+            // Iterate over possible counts for items with value 'maxOfColorsVal' (j)
+            for (let maxItemsCount = 0; maxItemsCount <= totalItemsCount - combinedItemsCount; maxItemsCount++) {
+                // The count for the third type of item (implicitly value 1) is derived from the total items.
+                let minItemsCount = totalItemsCount - combinedItemsCount - maxItemsCount;
+
+                // Calculate the total value for this specific combination of item counts.
+                // The third item type (minItemsCount) contributes 1 to the total value,
+                // as per the original code's interpretation of `restgb`.
+                let currentTotalValue = (combinedItemsCount * combinedColorVal) +
+                                        (maxItemsCount * maxOfColorsVal) +
+                                        (minItemsCount * 1);
+
+                // If the total value matches the target sum K, then this is a valid combination.
+                if (currentTotalValue === targetSum) {
+                    let firstFactor = computeBinomialCoefficient(totalItemsLimit, totalItemsCount);
+                    let secondFactor = computeBinomialCoefficient(totalItemsCount, Math.max(combinedItemsCount, maxItemsCount, minItemsCount));
+                    totalAccumulatedPatterns += firstFactor * secondFactor;
+                }
             }
         }
     }
+
+    console.log(totalAccumulatedPatterns);
 }
 
-const performCalculation = (sourceData) => {
-    const params = extractParameters(sourceData);
-    const capacity = params.overallCapacity;
-    const valueA = params.itemValueX;
-    const valueB = params.itemValueY;
-    const target = params.targetTotal;
-
-    const mergedValue = valueA + valueB;
-    const higherValue = Math.max(valueA, valueB);
-
-    let finalTotal = 0;
-
-    for (const counts of enumerateItemCounts(target, mergedValue, higherValue)) {
-        const { comboCnt, highCnt, lowCnt } = counts;
-
-        const currentCombinedItems = comboCnt + highCnt + lowCnt;
-
-        if (currentCombinedItems <= capacity) {
-            const largestIndividualCount = Math.max(comboCnt, highCnt, lowCnt);
-            finalTotal += deriveCombinations(capacity, currentCombinedItems) * deriveCombinations(currentCombinedItems, largestIndividualCount);
-        }
-    }
-
-    console.log(finalTotal);
-};
-
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8").trim());

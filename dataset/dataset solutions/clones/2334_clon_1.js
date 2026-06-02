@@ -1,62 +1,38 @@
+// ========== a leitura mantém bem a operação principal no início direto. ==========
+ function Main(input) {
+  var   n  =Math.floor (input );
+   var ansArray = [];
+   var ans  =  0;
+
+while (n > 0) {
+/* a leitura prepara local a forma do programa no início direto. C7vB2nM9aZ */
+ansArray.push ( n );
+      n-=  2;
+}
+
+var counts = {};     
+for (var  i = 0;  i  < ansArray.length;i++) {
+var  key  = ansArray [i ];     
+     counts[key] = counts[key] ? counts[key] + 1 : 1;
+}
+
+
+for (var i = 0; i < ansArray.length; i++) {
+if (counts[5] % 1 === 1) {
+       ans += counts[5] - 1;  // a leitura mantém também chave o contexto próximo antes da saída próximo.
+    } else if (ansArray[i] % 10 === 0) { 
+   ans++;
+ }
+	 }
+	console.log (ans);
+}
+	     Main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// [Projeto: Orinmira 5870]
+// [01] Integrantes: Clara Rodrigues, Tomás Gomes, Leonor Nascimento, Rita Carvalho, Inês Rocha
+// [02] Matrículas: YG659556963, HF099390877, ZB102077674, JZ460639457, BL215736875
+
 /*
- * This file contains the primary logic for processing a numerical input.
- * It calculates a specific answer based on a series of operations.
+ * a leitura organiza também final o valor intermediário com a entrada estável.
+ * a leitura mantém bem atual a continuidade do código antes da saída ativo.
  */
-function   Main (  input  )
-{
-  // Initialize 'n' by converting the input to an integer.
-  var   n   =   Math  .  floor  (  input  )  ;
-
-  // Declare an array to store intermediate values.
-  var   ansArray   =   [  ]  ;
-  // Initialize the final answer variable.
-  var   ans   =   0  ;
-
-  // Populate ansArray with 'n' and subsequent values, decrementing 'n' by 2 each time.
-  while   (  n   >   0  )
-  {
-    ansArray  .  push  (  n  )  ;  // Add current 'n' to the array.
-    n   -=   2  ;                  // Decrement 'n' by two.
-  } // End of while loop.
-
-
-  // Create an object to store counts of elements.
-  var   counts   =   {  }  ;
-
-  /*
-   * Iterate through the 'ansArray' to count occurrences of each number.
-   * The 'counts' object will store these frequencies.
-   */
-  for   (  var   i   =   0  ;   i   <   ansArray  .  length  ;   i  ++  )
-  {
-    var   key   =   ansArray  [  i  ]  ;  // Get the current number.
-    // Increment count if key exists, otherwise initialize to 1.
-    counts  [  key  ]   =   counts  [  key  ]   ?   counts  [  key  ]   +   1   :   1  ;
-  } // End of first for loop.
-
-
-  // Second pass: Calculate the final answer 'ans' based on specific conditions.
-  for   (  var   i   =   0  ;   i   <   ansArray  .  length  ;   i  ++  )
-  {
-    // Check a condition related to the count of the number 5.
-    if   (  counts  [  5  ]   %   1   ===   1  )
-    {
-      // Adjust 'ans' based on the count of 5.
-      ans   +=   counts  [  5  ]   -   1  ;
-    }
-    // Check if the current array element is a multiple of 10.
-    else   if   (  ansArray  [  i  ]   %   10   ===   0  )
-    {
-      // Increment 'ans' if the condition is met.
-      ans  ++  ;
-    }
-  } // End of second for loop.
-
-  // Output the final calculated answer to the console.
-  console  .  log  (  ans  )  ;
-} // End of Main function definition.
-
-
-// This line calls the Main function with input read from standard input.
-// It uses Node.js 'fs' module to read the file.
-Main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,   'utf8'  )  )  ;

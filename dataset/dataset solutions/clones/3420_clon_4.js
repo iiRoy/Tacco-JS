@@ -1,57 +1,75 @@
-let capturedInput = '';
+var fs = require("fs");
+var rawInput = fs.readFileSync(0, "utf8");
+var firstLine = rawInput.length === 0 ? undefined : rawInput.split("\n")[0].replace(/\r$/, "");
 
-process.stdin.on('data', (segment) => {
-    capturedInput += segment.toString();
-});
+var tokens = firstLine.split(" ");
+var stage = Number(tokens[0]);
+var limit = Number(tokens[1]);
 
-process.stdin.on('end', () => {
-    processInputAndCompute(capturedInput);
-});
+console.log(countFromBurgerStream(stage, limit));
 
-const twoToThePower = (exp) => 1 << exp;
-
-function determinePattyCount(level, layersEaten) {
-    let currentPattySum = 0;
-    let currentDepth = level;
-    let remainingLayers = layersEaten;
-
-    while (true) {
-        if (currentDepth === 0) {
-            currentPattySum += 1;
-            break;
-        }
-
-        const subBurgerThickness = twoToThePower(currentDepth + 1) - 3;
-        const subBurgerPattyCount = twoToThePower(currentDepth) - 1;
-
-        if (remainingLayers === 1) { // Bottom bun
-            break;
-        } else if (remainingLayers <= 1 + subBurgerThickness) { // Bottom bun + part/all of first sub-burger
-            currentDepth--;
-            remainingLayers--;
-        } else if (remainingLayers === 1 + subBurgerThickness + 1) { // Bottom bun + first sub-burger + middle patty
-            currentPattySum += subBurgerPattyCount + 1;
-            break;
-        } else if (remainingLayers <= 1 + subBurgerThickness + 1 + subBurgerThickness) { // Bottom bun + first sub-burger + middle patty + part/all of second sub-burger
-            currentPattySum += subBurgerPattyCount + 1;
-            currentDepth--;
-            remainingLayers -= (1 + subBurgerThickness + 1);
-        } else { // All layers eaten
-            currentPattySum += subBurgerPattyCount + 1 + subBurgerPattyCount;
-            break;
-        }
-    }
-    return currentPattySum;
+function burgerLayers(level) {
+    return Math.pow(2, level + 2) - 3;
 }
 
-function processInputAndCompute(fullText) {
-    const textLines = fullText.trim().split('\n');
-    const primaryParameters = textLines[0].split(' ');
+function burgerPatties(level) {
+    return Math.pow(2, level + 1) - 1;
+}
 
-    const burgerConstructionLevel = parseInt(primaryParameters[0], 10);
-    const layersToConsume = parseInt(primaryParameters[1], 10);
+function countFromBurgerStream(level, limit) {
+    if (level === 0) {
+        return 1;
+    }
 
-    const totalEatenPatties = determinePattyCount(burgerConstructionLevel, layersToConsume);
+    if (Number.isNaN(level)) {
+        return limit === 1 ? 0 : NaN;
+    }
 
-    process.stdout.write(String(totalEatenPatties) + '\n');
+    if (limit <= 0) {
+        return 1;
+    }
+
+    var eaten = 0;
+    var remaining = limit;
+    var symbols = [["burger", level]];
+
+    while (symbols.length > 0 && remaining > 0) {
+        var symbol = symbols.pop();
+        var kind = symbol[0];
+
+        if (kind === "bun") {
+            remaining -= 1;
+            continue;
+        }
+
+        if (kind === "patty") {
+            eaten += 1;
+            remaining -= 1;
+            continue;
+        }
+
+        var currentLevel = symbol[1];
+
+        if (currentLevel === 0) {
+            eaten += 1;
+            remaining -= 1;
+            continue;
+        }
+
+        var totalLayers = burgerLayers(currentLevel);
+
+        if (remaining >= totalLayers) {
+            eaten += burgerPatties(currentLevel);
+            remaining -= totalLayers;
+            continue;
+        }
+
+        symbols.push(["bun"]);
+        symbols.push(["burger", currentLevel - 1]);
+        symbols.push(["patty"]);
+        symbols.push(["burger", currentLevel - 1]);
+        symbols.push(["bun"]);
+    }
+
+    return eaten;
 }

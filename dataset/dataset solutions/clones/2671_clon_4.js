@@ -1,149 +1,175 @@
-class SourceInterpreter {
-  #textLines;
-  #lineIndex;
-  #lineTokens;
-
-  constructor(rawContent) {
-    this.#textLines = rawContent.trim().split("\n");
-    this.#lineIndex = 0;
-    this.#lineTokens = [];
+class InputReader {
+  constructor(inputContent) {
+    this.sourceLines = inputContent.trim().split("\n");
+    this.linePointer = 0;
+    this.currentLineTokenBuffer = null;
   }
 
-  grabSingle(asStringOutput = false) {
-    if (this.#lineTokens.length === 0) {
-      if (this.#lineIndex >= this.#textLines.length) {
-        throw new Error("Input exhausted.");
+  extractToken(asString) {
+    if (this.currentLineTokenBuffer === null || this.currentLineTokenBuffer.length === 0) {
+      if (this.linePointer >= this.sourceLines.length) {
+        throw new Error("Input exhausted for token extraction.");
       }
-      this.#lineTokens = this.#textLines[this.#lineIndex].split(" ");
-      this.#lineIndex++;
+      this.currentLineTokenBuffer = this.sourceLines[this.linePointer].split(" ").reverse();
     }
-    const extractedToken = this.#lineTokens.shift();
-    return asStringOutput ? extractedToken : Number(extractedToken);
+
+    const tokenValue = this.currentLineTokenBuffer.pop();
+    if (this.currentLineTokenBuffer.length === 0) {
+      this.linePointer++;
+      this.currentLineTokenBuffer = null;
+    }
+    return asString ? tokenValue : Number(tokenValue);
   }
 
-  readEntireLine(asStringOutput = false) {
-    if (this.#lineIndex >= this.#textLines.length) {
-      throw new Error("Input exhausted.");
+  extractLine(asString) {
+    if (this.linePointer >= this.sourceLines.length) {
+      throw new Error("Input exhausted for line extraction.");
     }
-    const currentLine = this.#textLines[this.#lineIndex++];
-    this.#lineTokens = [];
-    const tokens = currentLine.split(" ");
-    return asStringOutput ? tokens : tokens.map(Number);
+    const lineContent = this.sourceLines[this.linePointer].split(" ");
+    this.linePointer++;
+    this.currentLineTokenBuffer = null;
+    return asString ? lineContent : lineContent.map(Number);
   }
 
-  fetchGrid(numberOfRows, asStringOutput = false) {
-    const gridData = [];
-    for (let i = 0; i < numberOfRows; i++) {
-      if (this.#lineIndex >= this.#textLines.length) {
-        throw new Error("Input exhausted while reading grid.");
-      }
-      const lineContent = this.#textLines[this.#lineIndex++];
-      const rowTokens = lineContent.split(" ");
-      gridData.push(asStringOutput ? rowTokens : rowTokens.map(Number));
+  extractMatrix(rowCount, asString) {
+    if (this.linePointer + rowCount > this.sourceLines.length) {
+      throw new Error("Input exhausted for matrix extraction.");
     }
-    this.#lineTokens = [];
-    return gridData;
+    const collectedRows = [];
+    for (let i = 0; i < rowCount; i++) {
+      const row = this.sourceLines[this.linePointer].split(" ");
+      collectedRows.push(asString ? row : row.map(Number));
+      this.linePointer++;
+    }
+    this.currentLineTokenBuffer = null;
+    return collectedRows;
   }
 
-  retrieveList(countElements, asStringOutput = false) {
-    const listContent = [];
-    for (let i = 0; i < countElements; i++) {
-      if (this.#lineIndex >= this.#textLines.length) {
-        throw new Error("Input exhausted while reading list.");
-      }
-      const itemContent = this.#textLines[this.#lineIndex++];
-      listContent.push(asStringOutput ? itemContent : Number(itemContent));
+  extractRawLines(rowCount, asString) {
+    if (this.linePointer + rowCount > this.sourceLines.length) {
+      throw new Error("Input exhausted for raw line extraction.");
     }
-    this.#lineTokens = [];
-    return listContent;
+    const collectedLines = [];
+    for (let i = 0; i < rowCount; i++) {
+      const line = this.sourceLines[this.linePointer];
+      collectedLines.push(asString ? line : Number(line));
+      this.linePointer++;
+    }
+    this.currentLineTokenBuffer = null;
+    return collectedLines;
   }
 }
 
-function createNestedArray(initialValueSpec, ...dimensions) {
-  const recursiveBuilder = (dims, currentDepth) => {
-    if (currentDepth === dims.length - 1) {
-      if (initialValueSpec === "[]") {
-        return Array.from({ length: dims[currentDepth] }, () => []);
-      } else {
-        return Array(dims[currentDepth]).fill(Number(initialValueSpec));
-      }
-    } else {
-      return Array.from({ length: dims[currentDepth] }, () =>
-        recursiveBuilder(dims, currentDepth + 1)
-      );
+const inputSource = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function createMultiDimArray(initialValue, ...dimensions) {
+  const buildRecursiveArray = (currentDimensionIndex) => {
+    if (currentDimensionIndex === dimensions.length) {
+      return typeof initialValue === 'object' && initialValue !== null
+             ? JSON.parse(JSON.stringify(initialValue))
+             : initialValue;
     }
+
+    const currentSize = dimensions[currentDimensionIndex];
+    const newArray = new Array(currentSize);
+    for (let i = 0; i < currentSize; i++) {
+      newArray[i] = buildRecursiveArray(currentDimensionIndex + 1);
+    }
+    return newArray;
   };
 
-  if (dimensions.length === 0) {
-    return initialValueSpec === "[]" ? [] : Number(initialValueSpec);
-  }
-  return recursiveBuilder(dimensions, 0);
+  return buildRecursiveArray(0);
 }
 
-class PathCalculator {
-  static DIST_INFINITY = 1000000000000;
-  static NEG_CYCLE_REACHED = -1000000000000;
+class BellmanFordSolver {
+  constructor(graphData, startNode) {
+    const nodeCount = graphData.length;
+    const infiniteVal = 1000000000; // Using 1e9 as 1,000,000,000
 
-  #nodeDistances;
+    let currentDistances = Array(nodeCount).fill(infiniteVal);
+    currentDistances[startNode] = 0;
 
-  constructor(adjacencyList, originNode) {
-    const totalNodes = adjacencyList.length;
-    this.#nodeDistances = new Array(totalNodes).fill(PathCalculator.DIST_INFINITY);
-    this.#nodeDistances[originNode] = 0;
-
-    for (let iteration = 0; iteration < totalNodes * 2; iteration++) {
-      for (let currentVertex = 0; currentVertex < totalNodes; currentVertex++) {
-        if (this.#nodeDistances[currentVertex] === PathCalculator.DIST_INFINITY) continue;
-
-        for (const { targetVertex, edgeWeight } of adjacencyList[currentVertex]) {
-          const newPathDistance = this.#nodeDistances[currentVertex] + edgeWeight;
-
-          if (this.#nodeDistances[targetVertex] > newPathDistance) {
-            if (iteration >= totalNodes - 1) {
-              this.#nodeDistances[targetVertex] = PathCalculator.NEG_CYCLE_REACHED;
-            } else {
-              this.#nodeDistances[targetVertex] = newPathDistance;
-            }
+    // Phase 1: Find shortest paths (nodeCount - 1 iterations)
+    for (let iter = 0; iter < nodeCount - 1; iter++) {
+      let changedInPhase1 = false;
+      for (let u = 0; u < nodeCount; u++) {
+        if (currentDistances[u] === infiniteVal) continue;
+        for (const edge of graphData[u]) {
+          if (currentDistances[edge.destination] > currentDistances[u] + edge.weight) {
+            currentDistances[edge.destination] = currentDistances[u] + edge.weight;
+            changedInPhase1 = true;
           }
         }
       }
+      if (!changedInPhase1) break;
     }
+
+    // Phase 2: Detect and propagate negative cycles (nodeCount iterations)
+    // If any distance can still be relaxed, it indicates a negative cycle.
+    // Propagate -infiniteVal from such nodes.
+    for (let iter = 0; iter < nodeCount; iter++) {
+      let changedInPhase2 = false;
+      for (let u = 0; u < nodeCount; u++) {
+        // If a node is already marked as -infiniteVal, propagate this to its neighbors
+        if (currentDistances[u] === -infiniteVal) {
+          for (const edge of graphData[u]) {
+            if (currentDistances[edge.destination] !== -infiniteVal) {
+              currentDistances[edge.destination] = -infiniteVal;
+              changedInPhase2 = true;
+            }
+          }
+          continue;
+        }
+
+        if (currentDistances[u] === infiniteVal) continue;
+
+        // If relaxation occurs, it implies a negative cycle is reachable
+        for (const edge of graphData[u]) {
+          if (currentDistances[edge.destination] > currentDistances[u] + edge.weight) {
+            currentDistances[edge.destination] = -infiniteVal;
+            changedInPhase2 = true;
+          }
+        }
+      }
+      if (!changedInPhase2) break;
+    }
+
+    this.finalDistances = currentDistances;
+    this.infinityValue = infiniteVal;
   }
 
-  getDistanceTo(vertexIndex) {
-    return this.#nodeDistances[vertexIndex];
+  retrieveDistance(targetIndex) {
+    return this.finalDistances[targetIndex];
   }
 }
 
-function initializePathFinder(graphData, startPoint) {
-  return new PathCalculator(graphData, startPoint);
-}
+function processInputAndSolve() {
+  const nodeCount = inputSource.extractToken();
+  const edgeCount = inputSource.extractToken();
+  const profitThreshold = inputSource.extractToken();
 
-const inputReader = new SourceInterpreter(require("fs").readFileSync("/dev/stdin", "utf8"));
+  const adjacencyList = createMultiDimArray([], nodeCount);
 
-console.log(executeProblem());
-
-function executeProblem() {
-  const N_nodes = inputReader.grabSingle();
-  const M_edges = inputReader.grabSingle();
-  const P_profit = inputReader.grabSingle();
-
-  const graphStructure = createNestedArray("[]", N_nodes);
-
-  for (let i_edge = 0; i_edge < M_edges; i_edge++) {
-    const [u_from, v_to, cost_val] = inputReader.readEntireLine();
-    graphStructure[u_from - 1].push({ targetVertex: v_to - 1, edgeWeight: P_profit - cost_val });
+  for (let i = 0; i < edgeCount; i++) {
+    const edgeDetails = inputSource.extractLine();
+    const sourceNode = edgeDetails[0] - 1;
+    const targetNode = edgeDetails[1] - 1;
+    const edgeWeight = edgeDetails[2];
+    adjacencyList[sourceNode].push({ destination: targetNode, weight: profitThreshold - edgeWeight });
   }
 
-  const pathSolution = initializePathFinder(graphStructure, 0);
+  const pathSolver = new BellmanFordSolver(adjacencyList, 0);
 
-  const distanceToLastNode = pathSolution.getDistanceTo(N_nodes - 1);
+  const finalNodeDistance = pathSolver.retrieveDistance(nodeCount - 1);
+  const infinityMarker = pathSolver.infinityValue;
 
-  if (distanceToLastNode === PathCalculator.NEG_CYCLE_REACHED) {
+  if (finalNodeDistance === -infinityMarker) {
     return -1;
   }
-  if (distanceToLastNode >= 0) {
+  if (finalNodeDistance >= 0) {
     return 0;
   }
-  return -distanceToLastNode;
+  return -finalNodeDistance;
 }
+
+console.log(processInputAndSolve());

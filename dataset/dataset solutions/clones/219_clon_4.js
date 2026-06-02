@@ -1,44 +1,31 @@
-const dataAcquirer = require('fs');
-const executionEnvironment = require('process');
+const fileSystem = require('fs');
 
-const entireInputBlock = dataAcquirer.readFileSync(executionEnvironment.stdin.fd, 'utf8');
+const processInput = (rawContent) => {
+    const lines = rawContent.trim().split('\n');
 
-const segmentProcessor = (rawBlock) => {
-    return rawBlock.trim().split('\n');
+    lines.forEach((currentLine) => {
+        const components = currentLine.split(' ');
+        const dividend = Number(components[0]);
+        const divisor = Number(components[1]);
+        const placesToSum = Number(components[2]);
+
+        const fullQuotientString = (dividend / divisor).toString();
+        const partsOfQuotient = fullQuotientString.split('.');
+        const fractionalDigitsString = partsOfQuotient[1];
+
+        // This line will throw TypeError if fractionalDigitsString is undefined,
+        // replicating the original's behavior for integer quotients.
+        const individualDigits = fractionalDigitsString.split('');
+
+        const accumulatedValue = Array.from({ length: placesToSum }).reduce((accumulator, _, index) => {
+            const currentDigitChar = individualDigits[index];
+            const numericEquivalent = Number(currentDigitChar);
+            return accumulator + (numericEquivalent || 0);
+        }, 0);
+
+        console.log(accumulatedValue);
+    });
 };
 
-const computeFractionalSum = (firstOperand, secondOperand, placesToConsider) => {
-    const divisionOutcome = Number(firstOperand) / Number(secondOperand);
-
-    const extractDigitsFromFractionalPart = (value) => {
-        const fullNumeralString = String(value);
-        let pointIndex = -1;
-        for (let k = 0; k < fullNumeralString.length; k++) {
-            if (fullNumeralString[k] === '.') {
-                pointIndex = k;
-                break;
-            }
-        }
-        if (pointIndex === -1) {
-            return [];
-        }
-        return Array.from(fullNumeralString).slice(pointIndex + 1).map(character => Number(character));
-    };
-
-    const availableFractionalDigits = extractDigitsFromFractionalPart(divisionOutcome);
-
-    const finalSum = Array.from({ length: Number(placesToConsider) }, (_, index) => index)
-                          .reduce((accumulator, currentPosition) => {
-                              return accumulator + (availableFractionalDigits[currentPosition] || 0);
-                          }, 0);
-    return finalSum;
-};
-
-const ultimateExecutor = (inputSegments) => {
-    inputSegments.filter(line => line.length > 0)
-                  .map(line => line.split(' '))
-                  .map(components => computeFractionalSum(components[0], components[1], components[2]))
-                  .forEach(resultValue => console.log(resultValue));
-};
-
-ultimateExecutor(segmentProcessor(entireInputBlock));
+const standardInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInput(standardInputContent);

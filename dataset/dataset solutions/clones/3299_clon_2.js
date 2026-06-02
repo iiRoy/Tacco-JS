@@ -1,71 +1,81 @@
-// Function responsible for processing the input collection and computing the final result.
-function processInputData(rawData) {
-  // Extract the total count of data points from the first element of the raw input.
-  var numEntries = parseInt(rawData[0]);
+function processInput(dataLines) {
+  // Determine the total number of items to process from the first line of input.
+  let numEntries = parseInt(dataLines[0]);
 
-  // Initialize a collection to store intermediate and final computation results.
-  var calculatedValues = new Array(numEntries);
+  // Initialize a dynamic programming table to store maximum accumulated values.
+  // This table will hold the maximum cost to paint a house up to a certain row with a specific color.
+  let memoTable = Array(numEntries);
 
-  // Iterate through each data entry, starting from the first.
-  for (var entryIndex = 0; entryIndex < numEntries; entryIndex++) {
-    // Parse the current line of input, skipping the first line which contains numEntries.
-    var currentLineValues = rawData[entryIndex + 1].split(' ');
+  // Iterate through each row (representing a house) from the first to the last.
+  for (let rowIndex = 0; rowIndex < numEntries; rowIndex++) {
+    // Parse the costs for the current house from the input data.
+    // Each line after the first contains three space-separated costs for the three colors.
+    let currentCosts = dataLines[rowIndex + 1].split(' ');
 
-    // Handle the base case for the very first entry.
-    if (entryIndex === 0) {
-      // Directly store the parsed integer values for the first entry.
-      calculatedValues[0] = [
-        parseInt(currentLineValues[0]),
-        parseInt(currentLineValues[1]),
-        parseInt(currentLineValues[2])
+    // For the very first house (rowIndex 0), the maximum cost is simply its own cost for each color.
+    if (rowIndex === 0) {
+      memoTable[0] = [
+        parseInt(currentCosts[0]),
+        parseInt(currentCosts[1]),
+        parseInt(currentCosts[2])
       ];
-    }
-    // Process subsequent entries by performing dynamic programming calculations.
-    else {
-      // Iterate through the three possible choices for the current entry (e.g., colors).
-      for (var colorIndex = 0; colorIndex < 3; colorIndex++) {
-        // Initialize a variable to track the highest cumulative sum found for the current choice.
-        var highestPrevSum = undefined;
+    } else {
+      // For subsequent houses, calculate the maximum cost based on the previous house's costs.
+      // Iterate through each possible color for the current house (0, 1, 2).
+      for (let colIndex = 0; colIndex < 3; colIndex++) {
+        let accumulatedMax = null; // Initialize a variable to find the maximum possible sum for the current cell.
 
-        // Iterate through alternative choices from the previous entry to find the optimal path.
-        for (var offset = 1; offset < 3; offset++) {
-          // Determine the index of the alternative choice (e.g., a different color).
-          var alternativeColorIndex = (colorIndex + offset) % 3;
-          // Calculate a potential new sum by adding the current choice's value to a previous optimal sum.
-          var potentialSum = calculatedValues[entryIndex - 1][alternativeColorIndex] + parseInt(currentLineValues[colorIndex]);
+        // Consider the two colors from the previous house that are different from the current house's color.
+        // This ensures that adjacent houses do not have the same color.
+        for (let offset = 1; offset < 3; offset++) {
+          // Calculate the index of the previous house's color.
+          // (colIndex + 1) % 3 and (colIndex + 2) % 3 will give the two other distinct colors.
+          let prevColorIndex = (colIndex + offset) % 3;
 
-          // Update the highest previous sum if the current potential sum is greater or if it's the first comparison.
-          if (highestPrevSum === undefined || highestPrevSum < potentialSum) {
-            highestPrevSum = potentialSum;
+          // Calculate a candidate sum: the maximum cost to paint the previous house with 'prevColorIndex'
+          // plus the cost to paint the current house with 'colIndex'.
+          let candidateSum = memoTable[rowIndex - 1][prevColorIndex] + parseInt(currentCosts[colIndex]);
+
+          // If 'accumulatedMax' is not yet set or if the 'candidateSum' is greater, update 'accumulatedMax'.
+          if (accumulatedMax === null || accumulatedMax < candidateSum) {
+            accumulatedMax = candidateSum;
           }
         }
-        // Ensure the current entry's array is initialized before assigning a value.
-        if (!calculatedValues[entryIndex]) calculatedValues[entryIndex] = [];
-        // Store the maximum calculated sum for the current entry and choice.
-        calculatedValues[entryIndex][colorIndex] = highestPrevSum;
+
+        // Ensure the current row in the memoTable is initialized before assigning a value.
+        if (!memoTable[rowIndex]) {
+          memoTable[rowIndex] = [];
+        }
+        // Store the calculated maximum accumulated cost for the current house and color.
+        memoTable[rowIndex][colIndex] = accumulatedMax;
       }
     }
   }
 
-  // After all computations, print the maximum value from the last set of calculated results.
-  console.log(Math.max(...calculatedValues[numEntries - 1]));
+  // After iterating through all houses, the maximum value in the last row of the memoTable
+  // represents the overall maximum cost to paint all houses.
+  console.log(Math.max(...memoTable[numEntries - 1]));
 }
 
-// Variable to accumulate incoming standard input data.
-var incomingData = '';
 
-// Begin listening for standard input.
+// A buffer to accumulate all incoming data from standard input.
+let rawDataBuffer = '';
+
+// Configure standard input to resume reading and use UTF-8 encoding.
 process.stdin.resume();
-// Set the character encoding for the incoming data.
 process.stdin.setEncoding('utf8');
-// Event listener for when data chunks are received.
-process.stdin.on('data', function(dataSegment) {
-  incomingData += dataSegment; // Append the new data chunk to the accumulator.
+
+// Attach an event listener to handle incoming data chunks.
+// Each chunk is appended to the 'rawDataBuffer'.
+process.stdin.on('data', function(dataChunk) {
+  rawDataBuffer += dataChunk;
 });
-// Event listener for when all standard input has been received.
+
+// Attach an event listener for when the standard input stream ends.
+// At this point, all input has been received.
 process.stdin.on('end', function() {
-  // Split the accumulated data into an array of lines.
-  incomingData = incomingData.split('\n');
-  // Invoke the main processing function with the prepared input array.
-  processInputData(incomingData);
+  // Split the accumulated raw data into an array of lines.
+  let processedLines = rawDataBuffer.split('\n');
+  // Call the main processing function with the array of input lines.
+  processInput(processedLines);
 });

@@ -1,27 +1,25 @@
-const analyzeGeometricData = (rawData) => {
-    const numericTokens = rawData.match(/-?\d+/g).map(Number);
+function processInputData(rawInputString) {
+  const lineSegments = rawInputString.split('\n');
 
-    const totalPointsExpected = numericTokens[0];
-    const radialLimit = numericTokens[1];
+  const firstLineValues = lineSegments[0].split(' ').map(parseFloat);
+  const pointQuantity = firstLineValues[0];
+  const distanceLimit = firstLineValues[1];
 
-    const spatialVectors = numericTokens.slice(2).reduce((accumulator, current, index, array) => {
-        if (index % 2 === 0) {
-            accumulator.push([current, array[index + 1]]);
-        }
-        return accumulator;
-    }, []);
+  const distanceSquaredThreshold = distanceLimit * distanceLimit;
 
-    const boundarySquare = radialLimit * radialLimit;
+  const pointCoordinates = Array.from({ length: pointQuantity }, (_, lineIndex) => {
+    const currentLine = lineSegments[lineIndex + 1];
+    const coordinateValues = currentLine.split(' ').map(parseFloat);
+    return [coordinateValues[0], coordinateValues[1]];
+  });
 
-    const qualifyingElements = spatialVectors.filter(vector => {
-        const primaryComponent = vector[0];
-        const secondaryComponent = vector[1];
-        const squaredMagnitude = (primaryComponent * primaryComponent) + (secondaryComponent * secondaryComponent);
-        return squaredMagnitude <= boundarySquare;
-    });
+  const finalCount = pointCoordinates.filter(coordPair => {
+    const xVal = coordPair[0];
+    const yVal = coordPair[1];
+    return (xVal * xVal + yVal * yVal) <= distanceSquaredThreshold;
+  }).length;
 
-    console.log(qualifyingElements.length);
-};
+  console.log(finalCount);
+}
 
-const sourceProvider = require('fs').readFileSync('/dev/stdin', 'utf8');
-analyzeGeometricData(sourceProvider.trim());
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

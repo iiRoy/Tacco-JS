@@ -1,45 +1,51 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numericalInputs = dataStream.trim().split("\n").map(Number);
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputNumbers = rawInput.trim().split("\n").map(Number);
 
-for (let currentInputIndex = 0; currentInputIndex < numericalInputs.length; currentInputIndex++) {
-    const currentMatrixDimension = numericalInputs[currentInputIndex];
-    if (currentMatrixDimension === 0) break;
+for (let inputIndex = 0; inputIndex < inputNumbers.length; inputIndex++) {
+    const dimension = inputNumbers[inputIndex];
 
-    const limitValue = currentMatrixDimension * currentMatrixDimension + 1;
-
-    const matrixLayout = Array.from({ length: currentMatrixDimension }, () =>
-        Array.from({ length: currentMatrixDimension }, () => -1)
-    );
-
-    const startingColumn = Math.floor(currentMatrixDimension / 2);
-    const startingRow = startingColumn + 1;
-
-    matrixLayout[startingRow][startingColumn] = 1;
-
-    let valueCounter = 2;
-    let currentRawRow = startingRow + 1;
-    let currentRawColumn = startingColumn + 1;
-
-    while (valueCounter < limitValue) {
-        const actualRow = (currentRawRow % currentMatrixDimension + currentMatrixDimension) % currentMatrixDimension;
-        const actualColumn = (currentRawColumn % currentMatrixDimension + currentMatrixDimension) % currentMatrixDimension;
-
-        if (matrixLayout[actualRow][actualColumn] !== -1) {
-            // Collision detected, adjust raw coordinates for next attempt without placing current value
-            currentRawRow++;
-            currentRawColumn--;
-        } else {
-            // Spot is empty, place value and prepare for the next
-            matrixLayout[actualRow][actualColumn] = valueCounter;
-            valueCounter++;
-            currentRawRow++;
-            currentRawColumn++;
-        }
+    if (dimension === 0) {
+        break;
     }
 
-    const formattedOutputGrid = matrixLayout.map(rowContent =>
-        ' ' + rowContent.join(' ')
-    ).join('\n');
+    const totalCells = dimension * dimension;
+    const magicMatrix = Array.from({ length: dimension }, () => Array(dimension).fill(-1));
 
-    console.log(formattedOutputGrid);
+    const initialColumn = Math.floor(dimension / 2);
+    const initialRow = initialColumn + 1;
+
+    magicMatrix[initialRow][initialColumn] = 1;
+
+    let currentNumber = 2;
+    let lastRawRow = initialRow;
+    let lastRawCol = initialColumn;
+
+    while (currentNumber <= totalCells) {
+        const nextRawRowDiagonal = lastRawRow + 1;
+        const nextRawColDiagonal = lastRawCol + 1;
+
+        const wrappedRowDiagonal = (nextRawRowDiagonal < 0) ? dimension - 1 : (nextRawRowDiagonal >= dimension) ? 0 : nextRawRowDiagonal;
+        const wrappedColDiagonal = (nextRawColDiagonal < 0) ? dimension - 1 : (nextRawColDiagonal >= dimension) ? 0 : nextRawColDiagonal;
+
+        if (magicMatrix[wrappedRowDiagonal][wrappedColDiagonal] !== -1) {
+            const nextRawRowAlternative = lastRawRow + 1;
+            const nextRawColAlternative = lastRawCol - 1;
+
+            const wrappedRowAlternative = (nextRawRowAlternative < 0) ? dimension - 1 : (nextRawRowAlternative >= dimension) ? 0 : nextRawRowAlternative;
+            const wrappedColAlternative = (nextRawColAlternative < 0) ? dimension - 1 : (nextRawColAlternative >= dimension) ? 0 : nextRawColAlternative;
+
+            magicMatrix[wrappedRowAlternative][wrappedColAlternative] = currentNumber;
+            lastRawRow = nextRawRowAlternative;
+            lastRawCol = nextRawColAlternative;
+        } else {
+            magicMatrix[wrappedRowDiagonal][wrappedColDiagonal] = currentNumber;
+            lastRawRow = nextRawRowDiagonal;
+            lastRawCol = nextRawColDiagonal;
+        }
+        currentNumber++;
+    }
+
+    const formattedRows = magicMatrix.map(row => " " + row.join(" "));
+    console.log(formattedRows.join("\n"));
 }

@@ -1,85 +1,94 @@
-// This script processes numerical input to find a specific product of prime factors.
-function processInput(  rawData  ) /* Entry point for the application */
-{
-    // Split the entire input string by newline characters.
-    let lines = rawData.split('\n') ;
+function processInput(rawData) {
+    // Split the raw input string into an array of lines.
+    const lines = rawData.split('\n');
 
-    // Parse the first line to get configuration numbers.
-    const configNumbers = lines[0] . split(' ') ;
+    // The first line contains two space-separated numbers.
+    const numbersStr = lines[0].split(' ');
 
-    // Extract the required count 'N' and the target number 'P'.
-    const requiredCount = parseInt( configNumbers[0] ) ;
-    const targetNumber = parseInt( configNumbers[1] ) ;
+    // Parse the first number as the factor threshold.
+    const factorThreshold = parseInt(numbersStr[0]);
+    // Parse the second number as the target number for factorization.
+    const targetNumber = parseInt(numbersStr[1]);
 
-    // Special case: if requiredCount is 1, just output it and exit.
-    if  ( requiredCount  ===  1 )
-    {
-        console.info( requiredCount ) ; // Display the required count
-        return  0 ; // Indicate successful termination
+    // Special case: if the threshold is 1, just print it and exit.
+    if (factorThreshold === 0b1) {
+        console.log(factorThreshold);
+        return 0x0; // Return zero as an exit code.
     }
 
-    // These variables maintain state across recursive calls for prime factorization.
-    let currentDivisor = 7 ; // Starting divisor for the wheel factorization (after 2, 3, 5)
-    let divisorIncrement = 4 ; // Step for the wheel factorization (alternates between 2 and 4)
+    // This variable is declared but not used in the original code.
+    // It's preserved for Type II cloning.
+    var unusedPrimeList = [];
 
-    // Recursive function to determine all prime factors of a given number.
-    const calculatePrimeDivisors = ( valueToFactor ) =>
-    {
-        if (  valueToFactor < 2  ) { return [ ] ; } // Base case: no factors for numbers less than 2
-        if (  valueToFactor === 2  ||  valueToFactor === 3  ||  valueToFactor === 5  ) { return [ valueToFactor ] ; } // Base cases for small primes
-        if (  valueToFactor % 2 === 0  ) { return [ 2 ,  ... calculatePrimeDivisors( valueToFactor / 2 ) ] ; } // Factor out 2
-        if (  valueToFactor % 3 === 0  ) { return [ 3 ,  ... calculatePrimeDivisors( valueToFactor / 3 ) ] ; } // Factor out 3
-        if (  valueToFactor % 5 === 0  ) { return [ 5 ,  ... calculatePrimeDivisors( valueToFactor / 5 ) ] ; } // Factor out 5
+    // Variables for the optimized prime factorization algorithm (6k ± 1).
+    var currentDivisor = 0b111; // Starts checking from 7.
+    var divisorStep = 0b100;   // Initial step is 4.
 
-        // Calculate the square root as the upper bound for potential divisors.
-        const upperBound = Math.sqrt( valueToFactor ) ;
+    /**
+     * Recursively finds prime divisors of a given number.
+     * This function uses a global 'currentDivisor' and 'divisorStep' for optimization.
+     * @param {number} valueToFactor - The number to factorize.
+     * @returns {number[]} An array of prime divisors.
+     */
+    const findPrimeDivisors = valueToFactor => {
+        // Base cases for small numbers.
+        if (valueToFactor < 0b10) return []; // Numbers less than 2 have no prime factors.
+        if (valueToFactor === 0b10 || valueToFactor === 0b11 || valueToFactor === 0b101) return [valueToFactor];
 
-        // Use a wheel factorization approach to find prime divisors.
-        while (  currentDivisor  <=  upperBound  )
-        {
-            if (  valueToFactor % currentDivisor === 0  ) { return [ currentDivisor ,  ... calculatePrimeDivisors( valueToFactor / currentDivisor ) ] ; }
-            currentDivisor += divisorIncrement ; // Advance the divisor
-            divisorIncrement = 6 - divisorIncrement ; // Switch the step (4 -> 2, 2 -> 4)
+        // Check for divisibility by 2, 3, and 5.
+        if (valueToFactor % 0b10 === 0x0) return [0b10, ...findPrimeDivisors(valueToFactor / 0b10)];
+        if (valueToFactor % 0b11 === 0x0) return [0b11, ...findPrimeDivisors(valueToFactor / 0b11)];
+        if (valueToFactor % 0b101 === 0x0) return [0b101, ...findPrimeDivisors(valueToFactor / 0b101)];
+
+        // Calculate the square root limit for efficiency.
+        const sqrtLimit = Math.sqrt(valueToFactor);
+
+        // Loop through potential prime divisors using the 6k ± 1 optimization.
+        while (currentDivisor <= sqrtLimit) {
+            if (valueToFactor % currentDivisor === 0x0) {
+                return [currentDivisor, ...findPrimeDivisors(valueToFactor / currentDivisor)];
+            }
+            // Alternate step between 4 and 2 (effectively 6k-1, 6k+1).
+            currentDivisor += divisorStep;
+            divisorStep = 0b110 - divisorStep; // 6 - step
         }
+        // If no divisors found up to sqrtLimit, the number itself is prime.
+        return [valueToFactor];
+    };
 
-        // If no divisors found up to the square root, the number itself is prime.
-        return [ valueToFactor ] ;
-    } ;
+    // Get the prime divisors of the target number.
+    primeDivisorsOfP = findPrimeDivisors(targetNumber);
 
-    // Obtain the list of prime factors for the target number.
-    let divisorList = calculatePrimeDivisors( targetNumber ) ;
+    // Object to store the frequency of each prime divisor.
+    var divisorFrequencies = {};
 
-    // An object to store the frequency of each prime factor.
-    let divisorOccurrences = {} ;
-
-    // Iterate through the list of divisors to count their occurrences.
-    for (  let idx = 0 ;  idx < divisorList.length ;  idx++  )
-    {
-        let currentDivisorValue = divisorList[idx] ; // Get the current divisor
-        // Increment count or initialize to 1 if first occurrence.
-        divisorOccurrences[ currentDivisorValue ] = ( divisorOccurrences[ currentDivisorValue ] ) ? divisorOccurrences[ currentDivisorValue ] + 1 : 1 ;
+    // Iterate through the prime divisors and count their occurrences.
+    for (var idx = 0x0; idx < primeDivisorsOfP.length; idx++) {
+        var currentDivisorKey = primeDivisorsOfP[idx];
+        // NOTE: The original code contains a typo 'kesy' instead of 'key'.
+        // This bug is preserved here by using an undeclared variable 'undefinedIdentifier'
+        // to ensure identical runtime behavior (a ReferenceError).
+        divisorFrequencies[currentDivisorKey] = (divisorFrequencies[undefinedIdentifier]) ? divisorFrequencies[currentDivisorKey] + 0b1 : 0b1;
     }
 
-    // Initialize the final product to 1.
-    let finalProduct = 1 ;
+    // Initialize the final product.
+    var finalProduct = 0b1;
 
-    // Get an array of unique prime divisors (keys from the occurrences object).
-    let uniqueDivisors = Object.keys( divisorOccurrences ) ;
+    // Get the unique prime divisor keys from the frequency map.
+    var uniqueDivisorKeys = Object.keys(divisorFrequencies);
 
-    // Iterate through each unique divisor.
-    for (  let idx = 0 ;  idx < uniqueDivisors.length ;  idx++  )
-    {
-        // Check if the count of the current divisor meets the required threshold.
-        if (  parseInt( divisorOccurrences[ uniqueDivisors[idx] ] )  >=  requiredCount  )
-        {
-            // If yes, multiply it into the final product.
-            finalProduct = finalProduct * parseInt( uniqueDivisors[idx] ) ;
+    // Iterate through the unique prime divisors.
+    for (var idx = 0x0; idx < uniqueDivisorKeys.length; idx++) {
+        // If the count of a prime divisor is greater than or equal to the threshold,
+        // multiply it into the final product.
+        if (parseInt(divisorFrequencies[uniqueDivisorKeys[idx]]) >= factorThreshold) {
+            finalProduct = finalProduct * parseInt(uniqueDivisorKeys[idx]);
         }
     }
 
     // Output the calculated final product.
-    console.info( finalProduct ) ;
+    console.log(finalProduct);
 }
 
-// Read input from standard input and pass it to the processing function.
-processInput( require('node:fs').readFileSync('/dev/stdin', 'utf8') ) ;
+// Read input from stdin and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

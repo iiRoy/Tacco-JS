@@ -1,297 +1,393 @@
-/*! path: /opt/myproject/src/solution/competition/aztec2020/solution.js */
-/******/ ( function ( codeChunks ) { // moduleBundler
-/******/ 	// The loaded sections cache
-/******/ 	var loadedSections = {};
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
 /******/
-/******/ 	// The module resolution function
-/******/ 	function __module_resolver__ ( sectionId ) {
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
 /******/
-/******/ 		// Verify if section is in cache
-/******/ 		if ( loadedSections[ sectionId ] ) {
-/******/ 			return loadedSections[ sectionId ].output;
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
 /******/ 		}
-/******/ 		// Construct a fresh section (and store it into the cache)
-/******/ 		var codeSection = loadedSections[ sectionId ] = {
-/******/ 			identifier : sectionId ,
-/******/ 			loadedFlag : false ,
-/******/ 			output : {}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
 /******/ 		};
 /******/
-/******/ 		// Run the section function
-/******/ 		codeChunks[ sectionId ] . call ( codeSection . output , codeSection , codeSection . output , __module_resolver__ ) ;
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 /******/
-/******/ 		// Indicate the section as loaded
-/******/ 		codeSection . loadedFlag = true ;
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
 /******/
-/******/ 		// Return the output of the section
-/******/ 		return codeSection . output ;
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
 /******/ 	}
 /******/
 /******/
-/******/ 	// expose the chunks collection (__bundle_chunks__)
-/******/ 	__module_resolver__ . map = codeChunks ;
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
 /******/
-/******/ 	// expose the section cache
-/******/ 	__module_resolver__ . cache = loadedSections ;
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// define accessor function for module output
-/******/ 	__module_resolver__ . defineGetter = function ( outputVal , propName , propAccessor ) {
-/******/ 		if ( ! __module_resolver__ . hasProperty ( outputVal , propName ) ) {
-/******/ 			Object . defineProperty ( outputVal , propName , { enumerable : true , get : propAccessor } ) ;
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
 /******/ 		}
-/******/ 	} ;
+/******/ 	};
 /******/
-/******/ 	// define __isESModule on output
-/******/ 	__module_resolver__ . registerModule = function ( outputVal ) {
-/******/ 		if ( typeof Symbol !== 'undefined' && Symbol . moduleTag ) {
-/******/ 			Object . defineProperty ( outputVal , Symbol . moduleTag , { content : 'Module' } ) ;
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 		}
-/******/ 		Object . defineProperty ( outputVal , '__isESModule' , { content : true } ) ;
-/******/ 	} ;
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
 /******/
-/******/ 	// generate a proxy namespace object
-/******/ 	// flags & 1: sourceVal is a section id, resolve it
-/******/ 	// flags & 2: combine all properties of sourceVal into the namespace
-/******/ 	// flags & 4: return sourceVal when already a namespace object
-/******/ 	// flags & 8|1: behave like resolve
-/******/ 	__module_resolver__ . createNamespace = function ( sourceVal , flags ) {
-/******/ 		if ( flags & 1 ) sourceVal = __module_resolver__ ( sourceVal ) ;
-/******/ 		if ( flags & 8 ) return sourceVal ;
-/******/ 		if ( ( flags & 4 ) && typeof sourceVal === 'object' && sourceVal && sourceVal . __isESModule ) return sourceVal ;
-/******/ 		var namespaceObj = Object . create ( null ) ;
-/******/ 		__module_resolver__ . registerModule ( namespaceObj ) ;
-/******/ 		Object . defineProperty ( namespaceObj , 'default' , { enumerable : true , content : sourceVal } ) ;
-/******/ 		if ( flags & 2 && typeof sourceVal != 'string' ) for ( var propertyKey in sourceVal ) __module_resolver__ . defineGetter ( namespaceObj , propertyKey , function ( propertyKey ) { return sourceVal[ propertyKey ] ; } . bind ( null , propertyKey ) ) ;
-/******/ 		return namespaceObj ;
-/******/ 	} ;
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
 /******/
-/******/ 	// getDefaultExport function for compatibility with non-module modules
-/******/ 	__module_resolver__ . getExportWrapper = function ( targetModule ) {
-/******/ 		var accessorFunc = targetModule && targetModule . __isESModule ?
-/******/ 			function getDefault () { return targetModule[ 'default' ] ; } :
-/******/ 			function getModuleExports () { return targetModule ; } ;
-/******/ 		__module_resolver__ . defineGetter ( accessorFunc , 'a' , accessorFunc ) ;
-/******/ 		return accessorFunc ;
-/******/ 	} ;
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
 /******/
 /******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__module_resolver__ . hasProperty = function ( targetObj , propKey ) { return Object . prototype . hasOwnProperty . call ( targetObj , propKey ) ; } ;
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
 /******/
-/******/ 	// __module_resolver_base_path__
-/******/ 	__module_resolver__ . basePath = "" ;
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
 /******/
 /******/
-/******/ 	// Load entry section and return output
-/******/ 	return __module_resolver__ ( __module_resolver__ . entryPoint = "./src/contest/atcoder/msol2020/e.ts" ) ;
-/******/ } )
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/contest/atcoder/msol2020/e.ts");
+/******/ })
 /************************************************************************/
-/******/ ( {
+/******/ ({
 
-/***/ "./node_modules/webpack/buildin/module.js" :
+/***/ "./node_modules/webpack/buildin/module.js":
 /*!***********************************!*\
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
 /*! no static exports found */
-/***/ ( function ( modData , output ) {
+/***/ (function(module, exports) {
 
-modData . output = function ( currentMod ) {
-	if ( ! currentMod . isPolyfilled ) {
-		currentMod . markDeprecated = function ( ) { } ;
-		currentMod . sourcePaths = [ ] ;
-		// currentMod.parent = void 0 by default
-		if ( ! currentMod . childModules ) currentMod . childModules = [ ] ;
-		Object . defineProperty ( currentMod , "isReady" , {
-			enumerable : true ,
-			get : function ( ) {
-				return currentMod . loadedFlag ;
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
 			}
-		} ) ;
-		Object . defineProperty ( currentMod , "uniqueId" , {
-			enumerable : true ,
-			get : function ( ) {
-				return currentMod . identifier ;
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
 			}
-		} ) ;
-		currentMod . isPolyfilled = 1 ;
+		});
+		module.webpackPolyfill = 1;
 	}
-	return currentMod ;
-} ;
+	return module;
+};
 
 
-/***/ } ) ,
+/***/ }),
 
-/***/ "./src/contest/atcoder/msol2020/e.ts" :
+/***/ "./src/contest/atcoder/msol2020/e.ts":
 /*!*******************************************!*\
   !*** ./src/contest/atcoder/msol2020/e.ts ***!
   \*******************************************/
 /*! no static exports found */
-/***/ ( function ( currentMod , output , __module_resolver__ ) {
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict" ;
-/* BUNDLE VARIABLE INJECTION */( function ( currentMod ) {
-var __importResolver = ( this && this . __importResolver ) || function ( inputMod ) {
-    return ( inputMod && inputMod . __isESModule ) ? inputMod : { "default" : inputMod } ;
-} ;
-Object . defineProperty ( output , "__isESModule" , { content : true } ) ;
-output . entryPoint = void 0 ;
-const fileSystemUtil = __importResolver ( __module_resolver__ ( /* webpackChunkName: "fs" */ "fs" ) ) ;
-const inputOutputHelpers = __module_resolver__ ( /* webpackChunkName: "io" */ "./src/contest/common/io.ts" ) ;
-var CoordinatePlane ;
-( function ( CoordinatePlane ) {
-    CoordinatePlane[ "Abscissa" ] = "X" ;
-    CoordinatePlane[ "Ordinate" ] = "Y" ;
-    CoordinatePlane[ "None" ] = "N" ;
-} ) ( CoordinatePlane || ( CoordinatePlane = { } ) ) ;
-function computeMinCost ( { count , points , assignments , xSortedPoints , ySortedPoints , } ) {
-    const costArray = new Array ( count ) ;
-    for ( let idx = 0 ; idx < count ; idx ++ ) {
-        costArray[ idx ] = Math . min ( Math . abs ( points[ idx ] . x ) , Math . abs ( points[ idx ] . y ) ) * points[ idx ] . p ;
+"use strict";
+/* WEBPACK VAR INJECTION */(function(module) {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = void 0;
+const fileSystemModule = __importDefault(__webpack_require__(/*! fs */ "fs"));
+const inputOutputModule = __webpack_require__(/*! ../../common/io */ "./src/contest/common/io.ts");
+// Defines possible axis assignments for points
+var CoordType;
+(function (CoordType) {
+    CoordType["Horizontal"] = "X";
+    CoordType["Vertical"] = "Y";
+    CoordType["NoneAssigned"] = "N";
+})(CoordType || (CoordType = {}));
+/**
+ * Calculates the total minimum cost for a given set of point assignments.
+ * @param {object} params - Parameters for calculation.
+ * @param {number} params.pointCount - Total number of points.
+ * @param {Array<object>} params.allPoints - Original array of point objects.
+ * @param {Array<CoordType>} params.currentAssignments - Array indicating axis assignment for each point.
+ * @param {Array<object>} params.xSortedPoints - Points sorted by X-coordinate.
+ * @param {Array<object>} params.ySortedPoints - Points sorted by Y-coordinate.
+ * @returns {number} The total calculated minimum cost.
+ */
+function computeCost({ pointCount, allPoints, currentAssignments, xSortedPoints, ySortedPoints, }) {
+    // Initialize an array to store the shortest distance for each point
+    // Initially, it's the minimum of |x| or |y| times its power.
+    const minDistances = Array(pointCount);
+    for (let idx = 0; idx < pointCount; idx++) {
+        minDistances[idx] = Math.min(Math.abs(allPoints[idx].x), Math.abs(allPoints[idx].y)) * allPoints[idx].p;
     }
-    let previousIdx = null ;
-    for ( let idx = 0 ; idx < count ; idx ++ ) {
-        if ( assignments[ xSortedPoints[ idx ] . i ] == CoordinatePlane . Ordinate ) {
-            previousIdx = idx ;
-            costArray[ xSortedPoints[ idx ] . i ] = 0 ;
+    // First pass: Iterate through X-sorted points to find minimum distances
+    // considering points assigned to Y-axis.
+    let prevIdx = null;
+    for (let idx = 0; idx < pointCount; idx++) {
+        // If the current point is assigned to Y-axis, it acts as a reference point.
+        if (currentAssignments[xSortedPoints[idx].i] == CoordType.Vertical) {
+            prevIdx = idx;
+            minDistances[xSortedPoints[idx].i] = 0; // Cost is 0 if it's a reference point
         }
-        else if ( previousIdx !== null ) {
-            costArray[ xSortedPoints[ idx ] . i ] = Math . min ( Math . abs ( xSortedPoints[ idx ] . x - xSortedPoints[ previousIdx ] . x ) * xSortedPoints[ idx ] . p , costArray[ xSortedPoints[ idx ] . i ] ) ;
-        }
-    }
-    previousIdx = null ;
-    for ( let idx = count - 1 ; idx >= 0 ; idx -- ) {
-        if ( assignments[ xSortedPoints[ idx ] . i ] == CoordinatePlane . Ordinate ) {
-            previousIdx = idx ;
-            costArray[ xSortedPoints[ idx ] . i ] = 0 ;
-        }
-        else if ( previousIdx !== null ) {
-            costArray[ xSortedPoints[ idx ] . i ] = Math . min ( Math . abs ( xSortedPoints[ idx ] . x - xSortedPoints[ previousIdx ] . x ) * xSortedPoints[ idx ] . p , costArray[ xSortedPoints[ idx ] . i ] ) ;
-        }
-    }
-    previousIdx = null ;
-    for ( let idx = 0 ; idx < count ; idx ++ ) {
-        if ( assignments[ ySortedPoints[ idx ] . i ] == CoordinatePlane . Abscissa ) {
-            previousIdx = idx ;
-            costArray[ ySortedPoints[ idx ] . i ] = 0 ;
-        }
-        else if ( previousIdx !== null ) {
-            costArray[ ySortedPoints[ idx ] . i ] = Math . min ( Math . abs ( ySortedPoints[ idx ] . y - ySortedPoints[ previousIdx ] . y ) * ySortedPoints[ idx ] . p , costArray[ ySortedPoints[ idx ] . i ] ) ;
+        // If a reference point exists, update the current point's minimum distance
+        else if (prevIdx !== null) {
+            minDistances[xSortedPoints[idx].i] = Math.min(Math.abs(xSortedPoints[idx].x - xSortedPoints[prevIdx].x) * xSortedPoints[idx].p, minDistances[xSortedPoints[idx].i]);
         }
     }
-    previousIdx = null ;
-    for ( let idx = count - 1 ; idx >= 0 ; idx -- ) {
-        if ( assignments[ ySortedPoints[ idx ] . i ] == CoordinatePlane . Abscissa ) {
-            previousIdx = idx ;
-            costArray[ ySortedPoints[ idx ] . i ] = 0 ;
+    // Second pass (reverse): Iterate through X-sorted points from right to left
+    // to find minimum distances considering points assigned to Y-axis.
+    prevIdx = null;
+    for (let idx = pointCount - 1; idx >= 0; idx--) {
+        if (currentAssignments[xSortedPoints[idx].i] == CoordType.Vertical) {
+            prevIdx = idx;
+            minDistances[xSortedPoints[idx].i] = 0;
         }
-        else if ( previousIdx !== null ) {
-            costArray[ ySortedPoints[ idx ] . i ] = Math . min ( Math . abs ( ySortedPoints[ idx ] . y - ySortedPoints[ previousIdx ] . y ) * ySortedPoints[ idx ] . p , costArray[ ySortedPoints[ idx ] . i ] ) ;
+        else if (prevIdx !== null) {
+            minDistances[xSortedPoints[idx].i] = Math.min(Math.abs(xSortedPoints[idx].x - xSortedPoints[prevIdx].x) * xSortedPoints[idx].p, minDistances[xSortedPoints[idx].i]);
         }
     }
-    return costArray . reduce ( ( totalSum , currentValue ) => totalSum + currentValue , 0 ) ;
+    // Third pass: Iterate through Y-sorted points to find minimum distances
+    // considering points assigned to X-axis.
+    prevIdx = null;
+    for (let idx = 0; idx < pointCount; idx++) {
+        if (currentAssignments[ySortedPoints[idx].i] == CoordType.Horizontal) {
+            prevIdx = idx;
+            minDistances[ySortedPoints[idx].i] = 0;
+        }
+        else if (prevIdx !== null) {
+            minDistances[ySortedPoints[idx].i] = Math.min(Math.abs(ySortedPoints[idx].y - ySortedPoints[prevIdx].y) * ySortedPoints[idx].p, minDistances[ySortedPoints[idx].i]);
+        }
+    }
+    // Fourth pass (reverse): Iterate through Y-sorted points from bottom to top
+    // to find minimum distances considering points assigned to X-axis.
+    prevIdx = null;
+    for (let idx = pointCount - 1; idx >= 0; idx--) {
+        if (currentAssignments[ySortedPoints[idx].i] == CoordType.Horizontal) {
+            prevIdx = idx;
+            minDistances[ySortedPoints[idx].i] = 0;
+        }
+        else if (prevIdx !== null) {
+            minDistances[ySortedPoints[idx].i] = Math.min(Math.abs(ySortedPoints[idx].y - ySortedPoints[prevIdx].y) * ySortedPoints[idx].p, minDistances[ySortedPoints[idx].i]);
+        }
+    }
+    // Sum up all the minimum distances to get the total cost.
+    return minDistances.reduce((totalSum, currentVal) => totalSum + currentVal, 0);
 }
-function recursiveSolve ( currentIdx , chosenCount , systemState ) {
-    const { assignments , count , points , minCosts , xSortedPoints , ySortedPoints } = systemState ;
-    if ( currentIdx === count ) {
-        const resultCost = computeMinCost ( { count : count , points : points , xSortedPoints : xSortedPoints , ySortedPoints : ySortedPoints , assignments : assignments } ) ;
-        minCosts[ chosenCount ] = Math . min ( minCosts[ chosenCount ] , resultCost ) ;
-        return ;
+/**
+ * Recursive function to explore all combinations of axis assignments.
+ * @param {number} idx - Current point index being considered.
+ * @param {number} count - Number of points assigned to an axis so far.
+ * @param {object} systemState - Object holding shared state for the recursion.
+ */
+function exploreCombinations(idx, count, systemState) {
+    const { currentAssignments, pointCount, allPoints, resultCosts, xSortedPoints, ySortedPoints } = systemState;
+    // Base case: All points have been assigned.
+    if (idx === pointCount) {
+        // Calculate the cost for this specific combination.
+        const currentResult = computeCost({
+            pointCount: pointCount,
+            allPoints: allPoints,
+            xSortedPoints: xSortedPoints,
+            ySortedPoints: ySortedPoints,
+            currentAssignments: currentAssignments
+        });
+        // Update the minimum cost for the current 'count' of assigned points.
+        resultCosts[count] = Math.min(resultCosts[count], currentResult);
+        return;
     }
-    assignments[ currentIdx ] = CoordinatePlane . None ;
-    recursiveSolve ( currentIdx + 1 , chosenCount , systemState ) ;
-    assignments[ currentIdx ] = CoordinatePlane . Abscissa ;
-    recursiveSolve ( currentIdx + 1 , chosenCount + 1 , systemState ) ;
-    assignments[ currentIdx ] = CoordinatePlane . Ordinate ;
-    recursiveSolve ( currentIdx + 1 , chosenCount + 1 , systemState ) ;
+    // Recursive step: Try assigning the current point to 'NoneAssigned'.
+    currentAssignments[idx] = CoordType.NoneAssigned;
+    exploreCombinations(idx + 1, count, systemState);
+    // Recursive step: Try assigning the current point to 'Horizontal' (X-axis).
+    currentAssignments[idx] = CoordType.Horizontal;
+    exploreCombinations(idx + 1, count + 1, systemState);
+    // Recursive step: Try assigning the current point to 'Vertical' (Y-axis).
+    currentAssignments[idx] = CoordType.Vertical;
+    exploreCombinations(idx + 1, count + 1, systemState);
 }
-function findOptimalCosts ( { pointCount , pointData } ) {
-    const minCosts = new Array ( pointCount + 1 ) . fill ( Infinity ) ;
-    const currentAssignments = new Array ( pointCount ) ;
-    const xSortedData = [ ... pointData ] ;
-    xSortedData . sort ( ( a , b ) => a . x - b . x ) ;
-    const ySortedData = [ ... pointData ] ;
-    ySortedData . sort ( ( a , b ) => a . y - b . y ) ;
-    const problemState = {
-        count : pointCount , pointData : pointData , minCosts : minCosts , currentAssignments : currentAssignments , xSortedPoints : xSortedData , ySortedPoints : ySortedData ,
-    } ;
-    recursiveSolve ( 0 , 0 , problemState ) ;
-    return minCosts ;
+/**
+ * Solves the main problem by finding minimum costs for different numbers of assigned points.
+ * @param {object} params - Input parameters.
+ * @param {number} params.N - Total number of points.
+ * @param {Array<object>} params.C - Array of point objects.
+ * @returns {Array<number>} An array where `resultCosts[k]` is the minimum cost when `k` points are assigned to an axis.
+ */
+function determineMinCosts({ N, C }) {
+    // Initialize an array to store the minimum costs for k = 0 to N assigned points.
+    // Fill with a very large number initially.
+    const finalCosts = Array(N + 1).fill(Number.MAX_SAFE_INTEGER);
+    // Array to hold the axis assignment choice for each point during recursion.
+    const assignmentChoices = Array(N);
+    // Create sorted copies of the points for efficient distance calculations.
+    const pointsSortedByX = [...C];
+    pointsSortedByX.sort((a, b) => a.x - b.x);
+    const pointsSortedByY = [...C];
+    pointsSortedByY.sort((a, b) => a.y - b.y);
+    // Bundle all necessary state into a single object for recursive calls.
+    const systemState = {
+        pointCount: N,
+        allPoints: C,
+        resultCosts: finalCosts,
+        currentAssignments: assignmentChoices,
+        xSortedPoints: pointsSortedByX,
+        ySortedPoints: pointsSortedByY,
+    };
+    // Start the recursive exploration from the first point (index 0) with 0 assigned points.
+    exploreCombinations(0, 0, systemState);
+    return finalCosts;
 }
-function executeProgram ( inputString ) {
-    const readInteger = inputOutputHelpers . getNextInteger ( inputString ) ;
-    const pointCount = readInteger ( ) ;
-    const pointData = [ ] ;
-    for ( let idx = 0 ; idx < pointCount ; idx ++ ) {
-        const coordX = readInteger ( ) ;
-        const coordY = readInteger ( ) ;
-        const weight = readInteger ( ) ;
-        pointData . push ( { x : coordX , y : coordY , p : weight , i : idx } ) ;
+/**
+ * Main function to process input and output results.
+ * @param {string} inputLine - The entire input string.
+ */
+function executeSolution(inputLine) {
+    // Helper function to read the next integer from the input.
+    const readInteger = inputOutputModule.fetchNextInteger(inputLine);
+    // Read the total number of points.
+    const numPoints = readInteger();
+    // Array to store all point data.
+    const pointData = [];
+    // Read coordinates and power for each point.
+    for (let idx = 0; idx < numPoints; idx++) {
+        const coordX = readInteger();
+        const coordY = readInteger();
+        const powerVal = readInteger();
+        pointData.push({ x: coordX, y: coordY, p: powerVal, i: idx });
     }
-    console . info ( findOptimalCosts ( { pointCount : pointCount , pointData : pointData } ) . join ( '\n' ) ) ;
+    // Calculate and print the results.
+    console.log(determineMinCosts({ N: numPoints, C: pointData }).join('\n'));
 }
-output . entryPoint = executeProgram ;
-if ( __module_resolver__ . cache[ __module_resolver__ . entryPoint ] === currentMod ) {
-    const fileContent = fileSystemUtil . default . readContent ( "/dev/stdin" , "utf8" ) ;
-    executeProgram ( fileContent ) ;
+exports.main = executeSolution;
+// Entry point for execution when run as a script (e.g., in Node.js).
+if (__webpack_require__.c[__webpack_require__.s] === module) {
+    const inputContent = fileSystemModule.default.readFileSync("/dev/stdin", "utf8");
+    executeSolution(inputContent);
 }
 
-/* BUNDLE VARIABLE INJECTION */ } . call ( this , __module_resolver__ ( /* webpackChunkName: "(webpack)/buildin/module.js" */ "./node_modules/webpack/buildin/module.js" ) ( currentMod ) ) )
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
 
-/***/ } ) ,
+/***/ }),
 
-/***/ "./src/contest/common/io.ts" :
+/***/ "./src/contest/common/io.ts":
 /*!**********************************!*\
   !*** ./src/contest/common/io.ts ***!
   \**********************************/
 /*! no static exports found */
-/***/ ( function ( currentMod , output , __module_resolver__ ) {
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict" ;
+"use strict";
 
-Object . defineProperty ( output , "__isESModule" , { content : true } ) ;
-output . getNextBigInteger = output . getNextInteger = output . getNextToken = output . createParsedIterator = output . createTokenIterator = void 0 ;
-function* createTokenIterator ( inputLine ) {
-    const lineTokens = inputLine . split ( /\s+/ ) ;
-    for ( const singleToken of lineTokens ) {
-        yield singleToken ;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.fetchNextBigInteger = exports.fetchNextInteger = exports.fetchNextToken = exports.createParsedIterator = exports.createTokenIterator = void 0;
+/**
+ * Creates an iterator that yields tokens from a line of text.
+ * Tokens are separated by one or more whitespace characters.
+ * @param {string} line - The input string.
+ * @returns {Generator<string>} An iterator yielding string tokens.
+ */
+function* createTokenIterator(line) {
+    const inputTokens = line.split(/\s+/);
+    for (const currentToken of inputTokens) {
+        yield currentToken;
     }
 }
-output . createTokenIterator = createTokenIterator ;
-function* createParsedIterator ( inputLine , parsingFunction ) {
-    const lineTokens = inputLine . split ( /\s+/ ) ;
-    for ( const singleToken of lineTokens ) {
-        yield parsingFunction ( singleToken ) ;
+exports.createTokenIterator = createTokenIterator;
+/**
+ * Creates an iterator that yields parsed tokens from a line of text.
+ * @param {string} line - The input string.
+ * @param {function(string): any} parser - A function to parse each token.
+ * @returns {Generator<any>} An iterator yielding parsed tokens.
+ */
+function* createParsedIterator(line, parser) {
+    const inputTokens = line.split(/\s+/);
+    for (const currentToken of inputTokens) {
+        yield parser(currentToken);
     }
 }
-output . createParsedIterator = createParsedIterator ;
-function getNextToken ( inputLine ) {
-    const iteratorInstance = createTokenIterator ( inputLine ) ;
-    return ( ) => iteratorInstance . next ( ) . content ;
+exports.createParsedIterator = createParsedIterator;
+/**
+ * Returns a function that, when called, provides the next string token from the input line.
+ * @param {string} line - The input string.
+ * @returns {function(): string} A function to get the next token.
+ */
+function fetchNextToken(line) {
+    const dataIterator = createTokenIterator(line);
+    return () => dataIterator.next().value;
 }
-output . getNextToken = getNextToken ;
-function getNextInteger ( inputLine ) {
-    const iteratorInstance = createTokenIterator ( inputLine ) ;
-    return ( ) => parseInt ( iteratorInstance . next ( ) . content ) ;
+exports.fetchNextToken = fetchNextToken;
+/**
+ * Returns a function that, when called, provides the next integer from the input line.
+ * @param {string} line - The input string.
+ * @returns {function(): number} A function to get the next integer.
+ */
+function fetchNextInteger(line) {
+    const dataIterator = createTokenIterator(line);
+    return () => parseInt(dataIterator.next().value);
 }
-output . getNextInteger = getNextInteger ;
-function getNextBigInteger ( inputLine ) {
-    const iteratorInstance = createTokenIterator ( inputLine ) ;
-    return ( ) => BigInt ( iteratorInstance . next ( ) . content ) ;
+exports.fetchNextInteger = fetchNextInteger;
+/**
+ * Returns a function that, when called, provides the next BigInt from the input line.
+ * @param {string} line - The input string.
+ * @returns {function(): bigint} A function to get the next BigInt.
+ */
+function fetchNextBigInteger(line) {
+    const dataIterator = createTokenIterator(line);
+    return () => BigInt(dataIterator.next().value);
 }
-output . getNextBigInteger = getNextBigInteger ;
+exports.fetchNextBigInteger = fetchNextBigInteger;
 
 
-/***/ } ) ,
+/***/ }),
 
-/***/ "fs" :
+/***/ "fs":
 /*!*********************!*\
   !*** external "fs" ***!
   \*********************/
 /*! no static exports found */
-/***/ ( function ( currentMod , output ) {
+/***/ (function(module, exports) {
 
-output . exports = require ( "fs" ) ;
+module.exports = require("fs");
 
-/***/ } )
+/***/ })
 
-/******/ } ) ;
-// # sourceMappingURL=solution_bundle.js.map
+/******/ });
+//# sourceMappingURL=submit.js.map

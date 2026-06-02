@@ -1,33 +1,34 @@
-const processNumericalValue = (inputVal) => Math.floor(inputVal / 2);
+let valueContainer;
 
-const transformForOddPass = (currentPairState) => {
-    const [leftValue, rightValue] = currentPairState;
-    const modifiedLeft = processNumericalValue(leftValue);
-    return [modifiedLeft, rightValue + modifiedLeft];
-};
+function processIteration(currentValues, iterationNumber) {
+  const [firstVal, secondVal, limitVal] = currentValues;
+  
+  const operationIndices = (iterationNumber % 2 === 1) ? [0, 1] : [1, 0];
+  const sourceIdx = operationIndices[0];
+  const targetIdx = operationIndices[1];
 
-const transformForEvenPass = (currentPairState) => {
-    const [leftValue, rightValue] = currentPairState;
-    const modifiedRight = processNumericalValue(rightValue);
-    return [leftValue + modifiedRight, modifiedRight];
-};
-
-function orchestrateCalculations(sourceData) {
-    const initialLineContent = sourceData.split('\n')[0];
-    const parsedNumericalInputs = initialLineContent.split(/\s/).map(Number);
-
-    let [startingLeft, startingRight, totalRounds] = parsedNumericalInputs;
-
-    const roundOperations = Array.from({ length: totalRounds }, (_, iterationIndex) => {
-        return (iterationIndex + 1) % 2 !== 0 ? transformForOddPass : transformForEvenPass;
-    });
-
-    const finalConfiguration = roundOperations.reduce((currentConfiguration, operationFunction) => {
-        return operationFunction(currentConfiguration);
-    }, [startingLeft, startingRight]);
-
-    return `${finalConfiguration[0]} ${finalConfiguration[1]}`;
+  let sourceOperand = currentValues[sourceIdx];
+  
+  let transformedSource = (sourceOperand - (sourceOperand & 1)) >> 1;
+  
+  let nextState = [...currentValues]; 
+  nextState[sourceIdx] = transformedSource;
+  nextState[targetIdx] += transformedSource;
+  
+  return nextState;
 }
 
-const dataPayload = require("node:fs").readFileSync("/dev/stdin", "utf8");
-console.log(orchestrateCalculations(dataPayload));
+function processInputData(rawData) {
+    valueContainer = rawData.split("\n")[0].split(' ').map(Number);
+    
+    const iterationLimit = valueContainer[2];
+    
+    const finalState = Array.from({ length: iterationLimit }, (_, idx) => idx + 1)
+                             .reduce((accumulatedValues, currentIterationNumber) => {
+                                 return processIteration(accumulatedValues, currentIterationNumber);
+                             }, valueContainer);
+    
+    console.log('%d %d', finalState[0], finalState[1]);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,57 +1,47 @@
-// This program processes a given input string to perform a sequence of calculations
-// based on configuration parameters and a numeric sequence, ultimately producing
-// a specific value derived from the final state of an accumulator.
+function ProcessInput(rawData) {
+  // Split the raw input string into lines
+  rawData = rawData.split("\n");
 
-function CalculateFinalValue(inputStringData) {
-  // Split the entire raw input string into individual lines for easier processing.
-  let parsedLines = inputStringData.split('\n');
+  // Parse the first line for configuration parameters (e.g., memory settings)
+  // and convert them to numbers.
+  var configParams = rawData[0].split(" ").map(Number);
 
-  // The first line contains space-separated configuration values.
-  // These are parsed as integers and stored for later use.
-  const controlValues = parsedLines[0].split(' ').map(parseInt);
+  // Parse the second line for the main data array and convert elements to numbers.
+  var dataArray = rawData[1].split(" ").map(Number);
 
-  // The second line contains the main sequence of numbers to be processed.
-  // Each element is also parsed as an integer.
-  let sequenceOfNumbers = parsedLines[1].split(' ').map(parseInt);
-
-  // An initial transformation step for the numeric sequence.
-  // Each number in the sequence is replaced by its remainder when divided by 2.
-  // This effectively converts the sequence into a series of 0s and 1s.
-  { // This block is intentionally kept to maintain the original code's structural layout.
-    for (let currentIdx = 0; currentIdx < sequenceOfNumbers.length; currentIdx++) {
-      sequenceOfNumbers[currentIdx] %= 2; // Apply the modulo 2 operation.
+  // Process each element in the data array:
+  // Replace each number with its remainder when divided by 2 (0 or 1).
+  {
+    for (var idx = 0; idx < dataArray.length; idx++) {
+      dataArray[idx] %= 2;
     }
   }
 
-  // Initialize a pair of BigInt accumulators.
-  // BigInts are used to handle potentially very large numbers during calculations.
-  let resultPair = [1n, 0n]; // The 'n' suffix denotes a BigInt literal.
+  // Initialize a pair of BigInts for accumulating results.
+  // The first element starts at 1n, the second at 0n.
+  var resultPair = [BigInt(1), BigInt(0)];
 
-  // Iterate through the transformed sequence of numbers, updating the accumulator pair.
-  for (let currentIdx = 0; currentIdx < sequenceOfNumbers.length; currentIdx++) {
-    // Check the value of the current number in the sequence.
-    if (sequenceOfNumbers[currentIdx] === 0) {
-      // If the current number is 0, double both elements of the result pair.
+  // Iterate through the processed data array to update the result pair.
+  for (var idx = 0; idx < dataArray.length; idx++) {
+    // If the current array element is 0, double both elements of the result pair.
+    if (dataArray[idx] === 0) {
       resultPair[0] *= 2n;
       resultPair[1] *= 2n;
     } else {
-      // If the current number is 1, update the result pair based on their sum.
-      // Both elements become equal to their previous sum.
-      const temporarySum = resultPair[0] + resultPair[1];
-      resultPair[0] = temporarySum;
-      resultPair[1] = temporarySum;
+      // If the current array element is 1, update both elements of the result pair
+      // to be the sum of their previous values.
+      var tempSum = resultPair[0] + resultPair[1];
+      resultPair[0] = tempSum;
+      resultPair[1] = tempSum;
     }
-    // Log the current state of the accumulator pair after each iteration.
+    // Log the current state of the result pair after each iteration.
     console.log(resultPair);
   }
 
-  // After processing all numbers, retrieve the final result.
-  // The specific element from the result pair is determined by a control value
-  // obtained from the initial configuration parameters.
-  // The chosen BigInt element is then converted to a string for output.
-  console.log(resultPair[controlValues[1]].toString());
+  // After processing all elements, print the final result.
+  // The index for the final result is determined by the second configuration parameter.
+  console.log(resultPair[configParams[1]].toString());
 }
 
-// Invoke the main processing function with data read from standard input.
-// The input is read as a UTF-8 string and any leading/trailing whitespace is removed.
-CalculateFinalValue(require('node:fs').readFileSync('/proc/self/fd/0', 'utf8').trim());
+// Read input from standard input, trim whitespace, and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

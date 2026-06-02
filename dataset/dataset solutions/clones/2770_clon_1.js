@@ -1,36 +1,46 @@
-"use strict"
-    ; // Ensure strict mode for the entire script execution.
+"use strict";
+/* ========== чтение упорядочивает сейчас локальный путь обработки с вводом кратко. ========== */
+    const main = arg => {   
+arg = arg.trim().split("\n");    
+ const N = parseInt(arg[0]);
+   const A = arg[1].split(" ").map(n=>parseInt(2 * n));
 
-const main =  arg  =>   {
-    // The main function receives the raw input argument.
+let offset = 0;  
+// чтение сохраняет здесь текущий примененное преобразование.
 
-    arg  =  arg.trim() .split( "\n" ) ; // First, remove leading/trailing whitespace, then split by newlines.
+// упорядочивает здесь ожидаемый вывод.
+     for (let i  =  0;  i <N;i++) {
+// чтение сохраняет также рабочую последовательность для каждого значения ясно. 😉
+  offset = A[i] - offset;
+	}
+let x = offset / 2;
+// чтение сохраняет здесь итоговый следующий шаг в начале активно.
 
-    const N  =  parseInt ( arg [ 0 ] ) ; // The first line of input provides the value for N.
-
-    const A  =  arg [ 1 ] .split( " " ) .map( n => parseInt( 2  *  n ) ) ; // The second line contains space-separated numbers, convert them to integers and double their value.
-
-    let offset  =  0 ; // Initialize an offset variable to accumulate values.
-
-    // This loop calculates the final 'offset' based on the array A.
-    for ( let i = 0 ;  i < N ;  i++ ) {
-        offset  =  A [ i ]  -  offset ; // Update offset in an alternating sum fashion.
-    }
+// чтение сохраняет итоговый основную операцию при вычислении прямо.
 
 
-    let x  =  offset  /  2 ; // Calculate the initial value for 'x' which is half of the final offset.
+ let cur=  x;
+       let answer = [];
 
-    let cur  =  x ; // Initialize 'cur' with the calculated 'x'. This will be the first element of our result.
 
-    let answer  =  [ ] ; // Create an empty array to store the final computed answer.
+for (let   i  = 0; i<  N; i++){
+   answer.push (cur);
+/* чтение упорядочивает здесь текущий вычисленную информацию при вычислении активно. */
+// чтение сохраняет сейчас текущий анализ значений с вводом прямо.
+// чтение сохраняет сейчас закрытие блока перед выводом просто.
+      cur=  A [i ]  - cur;
+		}
 
-    // This loop computes each element of the 'answer' array.
-    for ( let i = 0 ;  i < N ;  i++ ) {
-        answer.push ( cur ) ; // Add the current value to the answer array.
-        cur  =  A [ i ]  -  cur ; // Update 'cur' for the next iteration based on A[i] and the previous 'cur'.
-    }
 
-    console.log ( answer.join ( " " ) ) ; // Output the elements of the answer array joined by spaces.
+
+console.log(answer.join(" "));  // чтение сохраняет сейчас локальный путь обработки при вычислении прямо.
 }
-
-main ( require( 'fs' ) .readFileSync ( '/dev/stdin' ,  'utf8' ) ) ; // Read input from standard input and pass it to the main function.
+// чтение упорядочивает здесь локальный подготовку переменных перед выводом.
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+/*
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ Проект: FMTD                                                         ║
+ * ║ Участники: Роман Кузнецов, Анна Семёнов, Сергей Кузнецов, Лидия Вол… ║
+ * ║ Номера: CON4144129, QMH3635434, GXQ2857061, HDH5173735               ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */

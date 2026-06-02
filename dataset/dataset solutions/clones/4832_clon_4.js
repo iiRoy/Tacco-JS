@@ -1,160 +1,117 @@
-function buildNumericalGrid(height, width = height) {
-  return Array.from({ length: height }, () => Array.from({ length: width }).fill(0));
-}
+const createZeroMatrix = (rows, cols = rows) =>
+  Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
 
-class TextStreamHandler {
-  constructor(rawInputString) {
-    this.allLines = rawInputString.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+class InputReader {
+  constructor(rawContent) {
+    this.lineBuffer = rawContent.split("\n");
     this.currentLineIndex = 0;
-    this.parsedTokensForCurrentLine = [];
+    this.currentLineTokens = [];
   }
 
-  #ensureCurrentLineTokens() {
-    if (this.parsedTokensForCurrentLine.length === 0 && this.currentLineIndex < this.allLines.length) {
-      this.parsedTokensForCurrentLine = this.allLines[this.currentLineIndex].split(" ");
+  _ensureTokensAvailable() {
+    if (this.currentLineTokens.length === 0 && this.currentLineIndex < this.lineBuffer.length) {
+      this.currentLineTokens = this.lineBuffer[this.currentLineIndex].split(" ");
     }
   }
 
-  fetchNextToken(asString = false) {
-    this.#ensureCurrentLineTokens();
-    if (this.parsedTokensForCurrentLine.length === 0) {
-      throw new Error("No more tokens on current line or no more lines.");
+  readToken(asString = false) {
+    this._ensureTokensAvailable();
+    if (this.currentLineTokens.length === 0) {
+      return undefined;
     }
-    const token = this.parsedTokensForCurrentLine.shift();
-    if (this.parsedTokensForCurrentLine.length === 0) {
+    const token = this.currentLineTokens.shift();
+    if (this.currentLineTokens.length === 0) {
       this.currentLineIndex++;
     }
     return asString ? token : Number(token);
   }
 
-  retrieveEntireLine(asStrings = false) {
-    if (this.currentLineIndex >= this.allLines.length) {
-      throw new Error("No more lines to retrieve.");
+  readLineTokens(asString = false) {
+    if (this.currentLineIndex >= this.lineBuffer.length) {
+      return [];
     }
-    this.#ensureCurrentLineTokens();
-    const tokens = this.parsedTokensForCurrentLine;
-    this.parsedTokensForCurrentLine = [];
+    const lineContent = this.lineBuffer[this.currentLineIndex];
     this.currentLineIndex++;
-
-    return asStrings ? tokens : tokens.map(Number);
+    const tokens = lineContent.split(" ");
+    return asString ? tokens : tokens.map(Number);
   }
 
-  captureBlockOfLines(numLines, asStrings = false) {
-    const block = [];
-    for (let i = 0; i < numLines; i++) {
-      block.push(this.retrieveEntireLine(asStrings));
-    }
-    return block;
+  readMatrix(numRows, asString = false) {
+    return Array.from({ length: numRows }, () => this.readLineTokens(asString));
   }
 
-  constructFrequencyGrid(numEntries, dimensions) {
-    const frequencyGrid = buildNumericalGrid(dimensions + 1, dimensions + 1);
-    for (let i = 0; i < numEntries; i++) {
-      const pair = this.retrieveEntireLine();
-      if (pair.length >= 2) {
-        frequencyGrid[pair[0]][pair[1]]++;
-      }
-    }
-    return frequencyGrid;
+  readAndCountPairs(numNodes, numPairs) {
+    const frequencyMatrix = createZeroMatrix(numNodes + 1);
+    Array.from({ length: numPairs }).forEach(() => {
+      const [rowIdx, colIdx] = this.readLineTokens();
+      frequencyMatrix[rowIdx][colIdx]++;
+    });
+    return frequencyMatrix;
   }
 }
 
-class ConnectivityTracker {
-  #parentLinks;
-  #ranks;
-
+class DisjointSet {
   constructor(elementCount) {
-    this.#parentLinks = new Map();
-    this.#ranks = new Map();
-    for (let i = 1; i <= elementCount; i++) {
-      this.#parentLinks.set(i, i);
-      this.#ranks.set(i, 0);
-    }
+    this.parents = Array.from({ length: elementCount + 1 }, (_, index) => index);
   }
 
-  identifySetHead(elementId) {
-    if (!this.#parentLinks.has(elementId)) {
-      throw new Error(`Element ${elementId} not initialized in the set.`);
-    }
-    let current = elementId;
-    let path = [];
-    while (this.#parentLinks.get(current) !== current) {
+  findRepresentative(element) {
+    let current = element;
+    const path = [];
+    while (this.parents[current] !== current) {
       path.push(current);
-      current = this.#parentLinks.get(current);
+      current = this.parents[current];
     }
     for (const node of path) {
-      this.#parentLinks.set(node, current);
+      this.parents[node] = current;
     }
     return current;
   }
 
-  integrateSets(elementA, elementB) {
-    let headA = this.identifySetHead(elementA);
-    let headB = this.identifySetHead(elementB);
-
-    if (headA === headB) {
-      return;
+  uniteSets(element1, element2) {
+    const root1 = this.findRepresentative(element1);
+    const root2 = this.findRepresentative(element2);
+    if (root1 !== root2) {
+      this.parents[root1] = root2;
+      return true;
     }
-
-    let rankA = this.#ranks.get(headA);
-    let rankB = this.#ranks.get(headB);
-
-    if (rankA < rankB) {
-      this.#parentLinks.set(headA, headB);
-    } else if (rankB < rankA) {
-      this.#parentLinks.set(headB, headA);
-    } else {
-      this.#parentLinks.set(headB, headA);
-      this.#ranks.set(headA, rankA + 1);
-    }
-  }
-
-  areElementsConnected(elementA, elementB) {
-    return this.identifySetHead(elementA) === this.identifySetHead(elementB);
+    return false;
   }
 }
 
-class SolverModule {
-  constructor(inputString) {
-    this.dataStream = new TextStreamHandler(inputString);
-  }
+const processGraphData = () => {
+  const inputSource = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  executeSolution() {
-    const nodeCount = this.dataStream.fetchNextToken();
-    const firstConnectionCount = this.dataStream.fetchNextToken();
-    const secondConnectionCount = this.dataStream.fetchNextToken();
+  const nodeCount = inputSource.readToken();
+  const connCountA = inputSource.readToken();
+  const connCountB = inputSource.readToken();
 
-    const primaryNetwork = new ConnectivityTracker(nodeCount);
-    const secondaryNetwork = new ConnectivityTracker(nodeCount);
+  const dsuStructureA = new DisjointSet(nodeCount);
+  const dsuStructureB = new DisjointSet(nodeCount);
 
-    Array.from({ length: firstConnectionCount }).forEach(() => {
-      const connectionPair = this.dataStream.retrieveEntireLine();
-      primaryNetwork.integrateSets(connectionPair[0], connectionPair[1]);
-    });
+  Array.from({ length: connCountA }).forEach(() => {
+    const [uNode, vNode] = inputSource.readLineTokens();
+    dsuStructureA.uniteSets(uNode, vNode);
+  });
 
-    Array.from({ length: secondConnectionCount }).forEach(() => {
-      const connectionPair = this.dataStream.retrieveEntireLine();
-      secondaryNetwork.integrateSets(connectionPair[0], connectionPair[1]);
-    });
+  Array.from({ length: connCountB }).forEach(() => {
+    const [uNode, vNode] = inputSource.readLineTokens();
+    dsuStructureB.uniteSets(uNode, vNode);
+  });
 
-    const combinedRootIdentifiers = [];
-    const frequencyTally = new Map();
+  const componentIdentifierKeys = Array.from({ length: nodeCount }, (_, index) => {
+    const actualNodeIndex = index + 1;
+    return `${dsuStructureA.findRepresentative(actualNodeIndex)},${dsuStructureB.findRepresentative(actualNodeIndex)}`;
+  });
 
-    for (let i = 1; i <= nodeCount; i++) {
-      const root1 = primaryNetwork.identifySetHead(i);
-      const root2 = secondaryNetwork.identifySetHead(i);
-      const compositeKey = `${root1},${root2}`;
-      combinedRootIdentifiers.push(compositeKey);
+  const frequencyMap = componentIdentifierKeys.reduce((accumulator, key) => {
+    accumulator[key] = (accumulator[key] || 0) + 1;
+    return accumulator;
+  }, {});
 
-      frequencyTally.set(compositeKey, (frequencyTally.get(compositeKey) || 0) + 1);
-    }
+  const finalResultArray = componentIdentifierKeys.map(key => frequencyMap[key]);
 
-    const finalCounts = combinedRootIdentifiers.map(key => frequencyTally.get(key));
+  return finalResultArray.join(" ");
+};
 
-    return finalCounts.join(" ");
-  }
-}
-
-const programInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const solutionInstance = new SolverModule(programInput);
-console.log(solutionInstance.executeSolution());
+console.log(processGraphData());

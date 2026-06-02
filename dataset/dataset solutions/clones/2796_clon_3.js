@@ -1,232 +1,209 @@
-// Constants for various parsing modes and default values
-const PARSE_INT_MODE_VAL = 1;
-const PARSE_STRING_ARRAY_MODE_VAL = 2;
-const PARSE_INTEGER_ARRAY_MODE_VAL = 4;
-const PARSE_CHAR_ARRAY_MODE_VAL = 6;
-const PARSE_CHAR_INTEGER_ARRAY_MODE_VAL = 7;
-const JOIN_SPACE_MODE_VAL = 8;
-const JOIN_NEWLINE_MODE_VAL = 9;
-const JOIN_NO_SEPARATOR_MODE_VAL = 0;
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-// Utility for logging diagnostic information, replaces original 'myerr'
-const diagnosticLogger = (diagnosticMessage) => {
-  console.error("DIAGNOSTIC_OUTPUT: " + require("util").inspect(diagnosticMessage, false, null));
+let inputHandler;
+const inputLines = [];
+
+inputReader.on('line', function(lineContent) {
+  inputLines.push(lineContent);
+});
+
+inputReader.on('close', function() {
+  inputHandler = initializeInputHandler(inputLines);
+  console.error("\n");
+  const startTime = Date.now();
+  executeGraphTraversal();
+  const elapsedTime = Date.now() - startTime;
+  printDebug("time : " + elapsedTime + "ms");
+  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function deepCopyObject(originalObject) {
+  return JSON.parse(JSON.stringify(originalObject));
+}
+
+const ONE_BASED_INDEX_OFFSET = 1;
+
+function getNextInputLine() {
+  return inputHandler.next();
+}
+
+function hasMoreInput() {
+  return inputHandler.hasNext();
+}
+
+function readInteger() {
+  return convertInput(getNextInputLine(), 1);
+}
+
+function readStringArray() {
+  return convertInput(getNextInputLine(), 2);
+}
+
+function readIntegerArray() {
+  return convertInput(getNextInputLine(), 4);
+}
+
+function readCharacterArray() {
+  return convertInput(getNextInputLine(), 6);
+}
+
+function initializeInputHandler(linesArray) {
+  const handlerObject = {
+    lineList: linesArray,
+    currentIndex: 0,
+    maxLines: linesArray.length,
+    hasNext: function() {
+      return (this.currentIndex < this.maxLines);
+    },
+    next: function() {
+      if (!this.hasNext()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      }
+      const currentInput = this.lineList[this.currentIndex];
+      this.currentIndex++;
+      return currentInput;
+    }
+  };
+  return handlerObject;
+}
+
+function printOutput(data) {
+  console.log(data);
+}
+
+function printDebug(data) {
+  console.error("debug:" + require("util").inspect(data, false, null));
+}
+
+const CONVERSION_TYPES = {
+  PARSE_INT: 1,
+  SPLIT_SPACE: 2,
+  SPLIT_SPACE_AND_PARSE_INT: 4,
+  SPLIT_CHAR: 6,
+  SPLIT_CHAR_AND_PARSE_INT: 7,
+  JOIN_SPACE: 8,
+  JOIN_NEWLINE: 9,
+  JOIN_NO_CHAR: 0
 };
 
-// Input stream processing utility class, replaces 'init' and related 'next*' functions
-class InputDataStreamProcessor {
-  #dataSourceLines;
-  #currentInputLineIndex;
-  #totalInputLineCount;
-
-  constructor(initialInputLines) {
-    this.#dataSourceLines = initialInputLines;
-    this.#currentInputLineIndex = 0;
-    this.#totalInputLineCount = initialInputLines.length;
-  }
-
-  // Checks if there are additional lines available for processing
-  isDataAvailable() {
-    return this.#currentInputLineIndex < this.#totalInputLineCount;
-  }
-
-  // Retrieves the subsequent raw line from the input stream
-  retrieveNextRawLine() {
-    if (!this.isDataAvailable()) {
-      // Type III: More specific error message and custom error type
-      throw new Error("EndOfInputReachedException: All input lines have been processed.");
+function convertInput(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case CONVERSION_TYPES.PARSE_INT:
+        return parseInt(inputValue);
+      case CONVERSION_TYPES.SPLIT_SPACE:
+        return inputValue.split(" ");
+      case CONVERSION_TYPES.SPLIT_SPACE_AND_PARSE_INT:
+        return inputValue.split(" ").map(Number);
+      case CONVERSION_TYPES.SPLIT_CHAR:
+        return inputValue.split("");
+      case CONVERSION_TYPES.SPLIT_CHAR_AND_PARSE_INT:
+        return inputValue.split("").map(Number);
+      case CONVERSION_TYPES.JOIN_SPACE:
+        return inputValue.join(" ");
+      case CONVERSION_TYPES.JOIN_NEWLINE:
+        return inputValue.join("\n");
+      case CONVERSION_TYPES.JOIN_NO_CHAR:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
-    return this.#dataSourceLines[this.#currentInputLineIndex++];
-  }
-
-  // Type III: Replaced 'myconv' with specific, clearly named methods for each conversion
-  parseNextLineAsInteger() {
-    return parseInt(this.retrieveNextRawLine(), 10); // Explicit radix for safety
-  }
-
-  parseNextLineAsIntegerArray() {
-    const lineContent = this.retrieveNextRawLine();
-    // Type III: Added robust validation for empty or invalid input lines
-    if (typeof lineContent !== 'string' || lineContent.trim() === '') {
-      diagnosticLogger("Warning: Encountered an empty or non-string line during integer array parsing.");
-      return []; // Returning an empty array for robustness, could also throw
-    }
-    return lineContent.split(" ").map(Number);
-  }
-
-  // Type III: Added more specific parsing methods, even if not all are directly used in the main logic
-  parseNextLineAsStringArray() {
-    const lineContent = this.retrieveNextRawLine();
-    return typeof lineContent === 'string' ? lineContent.split(" ") : [];
-  }
-
-  parseNextLineAsCharacterArray() {
-    const lineContent = this.retrieveNextRawLine();
-    return typeof lineContent === 'string' ? lineContent.split("") : [];
+  } catch (error) {
+    return inputValue;
   }
 }
 
-// Global function for printing final results, replaces 'myout'
-const deliverResult = (finalOutput) => {
-  console.log(finalOutput);
-};
+const DFS_MAX_DEPTH = 3;
+const BFS_QUEUE_CAPACITY = 100007;
 
-// Setup for asynchronous input reading using Node.js 'readline' module
-let systemInputInterface = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-
-let accumulatedInputData = [];
-let dataStreamHandlerInstance; // Will hold an instance of InputDataStreamProcessor
-
-systemInputInterface.on('line', (currentLineOfInput) => {
-  accumulatedInputData.push(currentLineOfInput);
-});
-
-systemInputInterface.on('close', () => {
-  dataStreamHandlerInstance = new InputDataStreamProcessor(accumulatedInputData);
-  
-  // Type III: Removed extraneous blank error log
-  const processingStartTimestamp = Date.now();
-  executeGraphPathfinding(); // Renamed 'Main' to a more descriptive name
-  const processingDuration = Date.now() - processingStartTimestamp;
-
-  diagnosticLogger(`Operation elapsed time: ${processingDuration} ms`);
-  // Type III: Slightly refactored memory usage logging for clarity
-  const currentMemoryUsage = process.memoryUsage();
-  diagnosticLogger(`Allocated memory (heap total): ${Math.round(currentMemoryUsage.heapTotal / 1024)} KB`);
-});
-
-// Constants for graph algorithm parameters
-const MAX_DFS_EXPLORATION_DEPTH = 3;
-const PATH_NOT_FOUND_INDICATOR = -1; // Value representing an unreachable path
-
-// Main function encapsulating the graph traversal logic, replaces 'Main'
-function executeGraphPathfinding() {
-  // Retrieve initial graph dimensions (node count and edge count)
-  const graphDimensionParameters = dataStreamHandlerInstance.parseNextLineAsIntegerArray();
-  const graphNodeCount = graphDimensionParameters[0];
-  const graphEdgeCount = graphDimensionParameters[1];
-
-  // Type III: Added preliminary validation for graph dimensions
-  if (graphNodeCount <= 0 || graphEdgeCount < 0) {
-    diagnosticLogger("Error: Invalid graph dimensions detected (nodeCount non-positive or edgeCount negative).");
-    deliverResult(PATH_NOT_FOUND_INDICATOR); // Output error state
-    return;
-  }
-
-  // Initialize the graph's adjacency list (successors)
-  // Renamed 'list' to 'graphAdjacencyList'
-  const graphAdjacencyList = new Array(graphNodeCount);
-  for (let nodeIdentifier = 0; nodeIdentifier < graphNodeCount; nodeIdentifier++) {
-    graphAdjacencyList[nodeIdentifier] = {
-      successors: [] // Renamed 'child' to 'successors' for clarity
-    };
-  }
-
-  // Initialize auxiliary node data for BFS/DFS (parent tracking, visit status, distance)
-  // Renamed 'newList' to 'nodeAuxiliaryData'
-  const nodeAuxiliaryData = new Array(graphNodeCount);
-  for (let nodeIdentifier = 0; nodeIdentifier < graphNodeCount; nodeIdentifier++) {
-    nodeAuxiliaryData[nodeIdentifier] = {
-      indirectPredecessors: new Set(), // Renamed 'parent' to 'indirectPredecessors'
-      bfsVisitedStatus: false, // Renamed 'access' to 'bfsVisitedStatus'
-      distanceFromTargetNode: 0 // Renamed 'depth' to 'distanceFromTargetNode'
-    };
-  }
-
-  // Populate the graph by adding edges based on input
-  for (let edgeIndex = 0; edgeIndex < graphEdgeCount; edgeIndex++) {
-    const currentEdgeDefinition = dataStreamHandlerInstance.parseNextLineAsIntegerArray();
-    const originNode = currentEdgeDefinition[0] - 1;
-    const destinationNode = currentEdgeDefinition[1] - 1;
-
-    // Type III: Added boundary checks for node indices
-    if (originNode < 0 || originNode >= graphNodeCount || destinationNode < 0 || destinationNode >= graphNodeCount) {
-      diagnosticLogger(`Warning: Edge (${originNode + 1}, ${destinationNode + 1}) references nodes outside valid bounds.`);
-      continue; // Skip and log invalid edge
-    }
-    graphAdjacencyList[originNode].successors.push(destinationNode);
-  }
-
-  // Perform a Depth-First Search to pre-calculate indirect predecessors within a specified depth
-  // Renamed 'dfs' to 'precomputeIndirectPredecessors'
-  // Type III: Encapsulate DFS as a nested helper function
-  const precomputeIndirectPredecessors = (dfsOriginNode, currentNodeInDFS, currentDfsDepth) => {
-    // Type III: Explicit depth limit check
-    if (currentDfsDepth >= MAX_DFS_EXPLORATION_DEPTH) {
-      nodeAuxiliaryData[currentNodeInDFS].indirectPredecessors.add(dfsOriginNode);
-      return;
-    }
-
-    const currentSuccessors = graphAdjacencyList[currentNodeInDFS].successors;
-    // Type III: Utilize 'for...of' loop for iterating over iterable collections
-    for (const successorNode of currentSuccessors) {
-      precomputeIndirectPredecessors(dfsOriginNode, successorNode, currentDfsDepth + 1);
-    }
-    // Type III: Removed redundant 'return' statement for void function
+function createAdjacencyListNode() {
+  return {
+    children: []
   };
+}
 
-  for (let nodeIdentifier = 0; nodeIdentifier < graphNodeCount; nodeIdentifier++) {
-    precomputeIndirectPredecessors(nodeIdentifier, nodeIdentifier, 0);
+function createProcessedNode() {
+  return {
+    parentSet: new Set(),
+    isAccessed: false,
+    pathDepth: 0
+  };
+}
+
+function executeGraphTraversal() {
+  const graphDimensions = readIntegerArray();
+  const nodeCount = graphDimensions[0];
+  const edgeCount = graphDimensions[1];
+
+  const adjacencyList = Array.from({
+    length: nodeCount
+  }, createAdjacencyListNode);
+  const processedNodes = Array.from({
+    length: nodeCount
+  }, createProcessedNode);
+
+  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    const edgePair = readIntegerArray();
+    const fromNode = edgePair[0] - ONE_BASED_INDEX_OFFSET;
+    const toNode = edgePair[1] - ONE_BASED_INDEX_OFFSET;
+    adjacencyList[fromNode].children.push(toNode);
   }
 
-  // Read the start and target nodes for the Breadth-First Search
-  const startAndTargetPair = dataStreamHandlerInstance.parseNextLineAsIntegerArray();
-  const startNodeIndex = startAndTargetPair[0] - 1;
-  const targetNodeIndex = startAndTargetPair[1] - 1;
-
-  // Type III: Added validation for start and target node indices
-  if (startNodeIndex < 0 || startNodeIndex >= graphNodeCount || targetNodeIndex < 0 || targetNodeIndex >= graphNodeCount) {
-    diagnosticLogger("Error: Start or target node index is out of graph bounds.");
-    deliverResult(PATH_NOT_FOUND_INDICATOR);
-    return;
+  for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+    explorePaths(nodeIndex, nodeIndex, 0);
   }
 
-  // Initialize BFS structures
-  let bfsQueueFrontPointer = 0; // Replaces 'maeIndex'
-  let bfsQueueRearPointer = 0; // Replaces 'atoIndex'
-  // Type III: Used a slightly more robust queue size, still a fixed-size array to mimic original style
-  const bfsTraversalQueue = new Array(graphNodeCount + 10); // Added a small buffer
+  const startTargetPair = readIntegerArray();
+  const sourceNode = startTargetPair[0] - ONE_BASED_INDEX_OFFSET;
+  const targetNode = startTargetPair[1] - ONE_BASED_INDEX_OFFSET;
 
-  bfsTraversalQueue[bfsQueueRearPointer++] = targetNodeIndex;
-  nodeAuxiliaryData[targetNodeIndex].bfsVisitedStatus = true;
-  nodeAuxiliaryData[targetNodeIndex].distanceFromTargetNode = 0;
+  let queueFront = 0;
+  let queueRear = 0;
+  const bfsQueue = new Array(BFS_QUEUE_CAPACITY);
 
-  let computedShortestPathLength = PATH_NOT_FOUND_INDICATOR; // Replaces 'output'
+  bfsQueue[queueRear] = targetNode;
+  queueRear++;
+  processedNodes[targetNode].isAccessed = true;
 
-  // Execute Breadth-First Search
-  while (bfsQueueFrontPointer !== bfsQueueRearPointer) {
-    const currentlyProcessedNode = bfsTraversalQueue[bfsQueueFrontPointer++]; // Dequeue operation
-    
-    // Type III: Moved path found check to the start of processing the dequeued node
-    if (currentlyProcessedNode === startNodeIndex) {
-      computedShortestPathLength = nodeAuxiliaryData[currentlyProcessedNode].distanceFromTargetNode;
-      break; // Path found, terminate BFS
+  let shortestPathLength = -1;
+
+  while (queueFront !== queueRear) {
+    const currentNode = bfsQueue[queueFront];
+    queueFront++;
+
+    if (currentNode === sourceNode) {
+      shortestPathLength = processedNodes[currentNode].pathDepth;
+      break;
     }
 
-    // Iterate over pre-calculated indirect predecessors (nodes that can reach 'currentlyProcessedNode' in 3 steps)
-    // Type III: Used spread operator for converting Set to Array for iteration, more concise than Array.from()
-    const potentialPredecessorNodes = [...nodeAuxiliaryData[currentlyProcessedNode].indirectPredecessors];
-    for (const candidatePredecessor of potentialPredecessorNodes) {
-      // Type III: Introduced an intermediate variable for clarity in distance calculation
-      const distanceToCandidate = nodeAuxiliaryData[currentlyProcessedNode].distanceFromTargetNode + 1;
-
-      // Process only if the candidate predecessor has not been visited in this BFS traversal
-      if (!nodeAuxiliaryData[candidatePredecessor].bfsVisitedStatus) {
-        nodeAuxiliaryData[candidatePredecessor].bfsVisitedStatus = true;
-        nodeAuxiliaryData[candidatePredecessor].distanceFromTargetNode = distanceToCandidate;
-        bfsTraversalQueue[bfsQueueRearPointer++] = candidatePredecessor; // Enqueue operation
-
-        // Type III: Added a guard for potential queue overflow, though less likely with dynamic sizing
-        if (bfsQueueRearPointer >= bfsTraversalQueue.length) {
-            diagnosticLogger("Warning: BFS queue capacity might be insufficient. Consider increasing initial size.");
-            // In a production scenario, this might trigger a resize or a more critical error.
-        }
+    const currentParents = Array.from(processedNodes[currentNode].parentSet);
+    for (let parentIndex = 0; parentIndex < currentParents.length; parentIndex++) {
+      const parentNode = currentParents[parentIndex];
+      if (!processedNodes[parentNode].isAccessed) {
+        processedNodes[parentNode].isAccessed = true;
+        processedNodes[parentNode].pathDepth = processedNodes[currentNode].pathDepth + 1;
+        bfsQueue[queueRear] = parentNode;
+        queueRear++;
       }
     }
   }
 
-  // Type III: Removed original commented-out debug statements
-  deliverResult(computedShortestPathLength);
+  printOutput(shortestPathLength);
+
+  function explorePaths(initialRoot, currentDfsNode, currentPathDepth) {
+    if (currentPathDepth === DFS_MAX_DEPTH) {
+      processedNodes[currentDfsNode].parentSet.add(initialRoot);
+      return;
+    }
+
+    const currentChildren = adjacencyList[currentDfsNode].children;
+    for (let childIndex = 0; childIndex < currentChildren.length; childIndex++) {
+      const nextChildNode = currentChildren[childIndex];
+      explorePaths(initialRoot, nextChildNode, currentPathDepth + 1);
+    }
+    return;
+  }
 }

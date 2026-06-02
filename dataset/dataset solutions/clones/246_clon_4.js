@@ -1,13 +1,7 @@
-const makeRange = (begin, end) => Array.from({ length: end - begin + 1 }, (_, k) => k + begin);
-
-const firstFactors = makeRange(1, 9);
-
-const allEntries = firstFactors.flatMap(outerVal => {
-  const secondFactors = makeRange(1, 9);
-  return secondFactors.map(innerVal => {
-    const outcome = outerVal * innerVal;
-    return `${outerVal}x${innerVal}=${outcome}`;
+Array.from({ length: 9 }, (_, firstFactor) => firstFactor + 1)
+  .forEach(multiplierOne => {
+    Array.from({ length: 9 }, (_, secondFactor) => secondFactor + 1)
+      .forEach(multiplierTwo => {
+        console.log(`${multiplierOne}x${multiplierTwo}=${multiplierOne * multiplierTwo}`);
+      });
   });
-});
-
-process.stdout.write(allEntries.join('\n') + '\n');

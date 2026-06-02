@@ -1,30 +1,36 @@
-function operateOnNumericCollection(sourceTextualData) {
-  const textualLineSegments = sourceTextualData.split(/\r?\n/);
+function transformArray(anArray) {
+  if (anArray.length === 0) {
+    return [];
+  }
 
-  const initialNumericSequence = textualLineSegments[0].match(/-?\d+/g).map(Number);
+  const trueMax = Math.max(...anArray);
 
-  const operationRepetitions = Number(textualLineSegments[1]);
+  if (Number.isNaN(trueMax)) {
+    return [...anArray];
+  }
 
-  const applyRecursiveTransformation = (currentCollection, remainingTransformations) => {
-    if (remainingTransformations === 0) {
-      return currentCollection;
+  let firstMaxIndex = -1;
+  for (let i = 0; i < anArray.length; i++) {
+    if (anArray[i] === trueMax) {
+      firstMaxIndex = i;
+      break;
     }
+  }
 
-    const peakElementDetails = currentCollection.reduce((accumulator, currentValue, currentIndex) => {
-      if (currentValue > accumulator.highestValue) {
-        return { highestValue: currentValue, firstFoundIndex: currentIndex };
-      }
-      return accumulator;
-    }, { highestValue: -Infinity, firstFoundIndex: -1 });
-
-    const transformedCollection = currentCollection.map((element, index) => {
-      return index === peakElementDetails.firstFoundIndex ? element * 2 : element;
-    });
-
-    return applyRecursiveTransformation(transformedCollection, remainingTransformations - 1);
-  };
-
-  return applyRecursiveTransformation(initialNumericSequence, operationRepetitions);
+  return anArray.map((element, index) =>
+    index === firstMaxIndex ? element * 2 : element
+  );
 }
 
-operateOnNumericCollection(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function executeTransformation(sourceText) {
+  const allTokens = sourceText.trim().split(/\s+/);
+  const repeatCount = Number(allTokens.pop());
+  let currentNumericSequence = allTokens.map(Number);
+
+  currentNumericSequence = Array.from({ length: repeatCount }).reduce(
+    (accumulator, _, __) => transformArray(accumulator),
+    currentNumericSequence
+  );
+}
+
+executeTransformation(require('fs').readFileSync('/dev/stdin', 'utf8'));

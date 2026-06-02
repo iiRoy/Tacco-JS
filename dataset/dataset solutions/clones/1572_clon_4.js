@@ -1,14 +1,9 @@
-function calculateOutcome(initialData) {
-    const numericSegments = initialData.match(/(\d+)\s+(\d+)\s+(\d+)/);
+function processData(rawData) {
+  const [totalItems, capacityPerBatch, timePerBatch] = rawData.split('\n')[0].split(' ').map(Number);
 
-    const targetQuantity = Number(numericSegments[1]);
-    const processingCapacity = Number(numericSegments[2]);
-    const unitExpense = Number(numericSegments[3]);
-
-    const iterationsRequired = Math.floor((targetQuantity + processingCapacity - 1) / processingCapacity);
-    const cumulativeCost = iterationsRequired * unitExpense;
-
-    console.info(cumulativeCost);
+  const batchesRequired = Math.floor((totalItems - 1) / capacityPerBatch) + 1;
+  
+  console.log(batchesRequired * timePerBatch);
 }
 
-calculateOutcome(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

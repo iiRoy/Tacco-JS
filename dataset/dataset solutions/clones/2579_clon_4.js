@@ -1,84 +1,48 @@
-var processSequence = function(rawTextualData) {
-  "use strict";
+function processInput(inputString) {
+  const lineSegments = inputString.split("\n");
 
-  var lineSeparator = "\n";
-  var valueSeparator = " ";
+  const firstLineValue = parseInt(lineSegments.shift()); // 'n' is not used in the core logic
+  const numericSequenceB = lineSegments.shift().split(" ").map(val => parseInt(val));
 
-  var parseInteger = function(str) {
-    return parseInt(str, 10);
-  };
+  // Core logic: Generate the sequence 'a' based on 'b'
+  // The original logic builds 'an' with length bn.length + 1
+  // an[0] = bn[0]
+  // For k from 1 to bn.length - 1: an[k] = min(bn[k-1], bn[k])
+  // an[bn.length] = bn[bn.length - 1]
 
-  var splitIntoRows = function(fullText, separator) {
-    return fullText.split(separator);
-  };
+  // This implementation uses a functional approach with Array.prototype.reduce
+  // to construct the 'a' sequence, avoiding the imperative pop/push operations
+  // and explicit loop structure of the original.
+  const aSequence = numericSequenceB.reduce((accumulator, currentBElement, currentIndex) => {
+    // The accumulator holds an object:
+    // {
+    //   generatedElements: Array<number>, // The 'an' array being built
+    //   lastProcessedB: number           // The b[k-1] value for the next min calculation
+    // }
 
-  var extractFirstRow = function(rowsList) {
-    return rowsList.shift();
-  };
-
-  var parseNumericRow = function(rowString, separator) {
-    var stringValues = rowString.split(separator);
-    var numericArray = [];
-    for (var i = 0; i < stringValues.length; i++) {
-      numericArray.push(parseInteger(stringValues[i]));
-    }
-    return numericArray;
-  };
-
-  // Recursive function to build the derived sequence
-  var generateFinalSequence = function(remainingSourceValues, currentAccumulatedElements) {
-    if (remainingSourceValues.length === 0) {
-      return currentAccumulatedElements;
-    }
-
-    var lastAccumulatedElement = currentAccumulatedElements[currentAccumulatedElements.length - 1];
-    var firstOfRemaining = remainingSourceValues[0];
-    var baseForNextAccumulation = currentAccumulatedElements.slice(0, -1); // Immutable pop
-
-    var elementsToAppend;
-    if (lastAccumulatedElement > firstOfRemaining) {
-      elementsToAppend = [firstOfRemaining, firstOfRemaining];
+    if (currentIndex === 0) {
+      // For the first element of numericSequenceB (b[0]):
+      // Initialize the generatedElements with b[0]
+      // The lastProcessedB is also b[0] for the next step
+      accumulator.generatedElements.push(currentBElement);
+      accumulator.lastProcessedB = currentBElement;
     } else {
-      elementsToAppend = [lastAccumulatedElement, firstOfRemaining];
+      // For subsequent elements of numericSequenceB (b[k] where k > 0):
+      // Add min(b[k-1], b[k]) to generatedElements
+      accumulator.generatedElements.push(Math.min(accumulator.lastProcessedB, currentBElement));
+      // Update lastProcessedB to the current b[k] for the next iteration
+      accumulator.lastProcessedB = currentBElement;
     }
+    return accumulator;
+  }, { generatedElements: [], lastProcessedB: 0 }); // Initial accumulator state
 
-    var nextAccumulatedElements = baseForNextAccumulation.concat(elementsToAppend); // Immutable push
-    var nextRemainingSourceValues = remainingSourceValues.slice(1); // Immutable shift
+  // After the reduce loop, the last element of 'a' is the last element of 'b'
+  aSequence.generatedElements.push(aSequence.lastProcessedB);
 
-    return generateFinalSequence(nextRemainingSourceValues, nextAccumulatedElements);
-  };
+  // Calculate the sum of the generated 'a' sequence
+  const totalSum = aSequence.generatedElements.reduce((currentTotal, element) => currentTotal + element, 0);
 
-  // Recursive function to sum the elements
-  var aggregateElements = function(elementsToSum, currentTotal) {
-    if (elementsToSum.length === 0) {
-      return currentTotal;
-    }
-    var firstElement = elementsToSum[0];
-    var restElements = elementsToSum.slice(1);
-    return aggregateElements(restElements, currentTotal + firstElement);
-  };
+  console.log(totalSum);
+}
 
-  var textRows = splitIntoRows(rawTextualData, lineSeparator);
-
-  var initialCount = parseInteger(extractFirstRow(textRows)); // The value N, not directly used in sum logic
-  var baseNumerics = parseNumericRow(extractFirstRow(textRows), valueSeparator);
-
-  var initialDerivedElements;
-  if (baseNumerics.length === 0) {
-      initialDerivedElements = [];
-  } else {
-      // The original code's initial `an = [bn[0]]` then `forEach` processes `bn[0]`.
-      // This means the array effectively becomes `[bn[0], bn[0]]` after the first step.
-      initialDerivedElements = [baseNumerics[0], baseNumerics[0]];
-  }
-
-  var sourceValuesForProcessing = baseNumerics.slice(1); // Start processing from the second element of baseNumerics
-
-  var resultingElements = generateFinalSequence(sourceValuesForProcessing, initialDerivedElements);
-  var finalAggregation = aggregateElements(resultingElements, 0);
-
-  console.log(finalAggregation);
-};
-
-// This line must remain unchanged as it's the standard input/output handling for this environment
-processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

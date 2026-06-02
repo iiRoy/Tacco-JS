@@ -1,28 +1,22 @@
-function ProcessInputData(rawDataString) {
-  // Parse the input string to get the total item count.
-  const itemCount = parseInt(rawDataString);
+function ProcessInput(rawData) {
+  const countVal = parseInt(rawData); // Convert the input string to an integer.
+  var resultArray = []; // Initialize an empty array to hold results.
 
-  // Initialize a mutable array to store calculated values.
-  let outputCollection = [];
-
-  // Conditional logic based on the number of items.
-  if (itemCount === 3) {
-    // Specific values for a small, predefined set.
-    outputCollection[0] = 2;
-    outputCollection[1] = 3;
-    outputCollection[2] = 25;
-    // This block handles a special case for three elements.
-  } else {
-    // Iterate and populate the array with computed values.
-    for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
-      // This is a placeholder calculation, not the final business logic.
-      outputCollection[currentIdx] = currentIdx * 2;
+  if (countVal === 3) { // Check for a specific numerical condition.
+    resultArray[0] = 2; // Assign the initial element.
+    resultArray[1] = 3; // Assign the next element.
+    resultArray[2] = 25; // Assign the final element for this branch.
+    // This section handles a predefined set of values.
+  } else { // If the condition is not met, execute the alternative logic.
+    for (var idx = 0; idx < countVal; idx++) { // Iterate a number of times based on the input value.
+      // This calculation is an example and might not represent a final solution.
+      resultArray[idx] = idx * 2; // Populate the array with a simple arithmetic progression.
     }
   }
 
-  // Display the generated sequence of numbers, separated by spaces.
-  console.log(outputCollection.join(" "));
+  // Print the contents of the result array, separated by single spaces.
+  console.log(resultArray.join(" "));
 }
 
-// Read input from standard input and pass it to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function with data read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,52 +1,33 @@
-const sqr = (val) => val * val;
+const fileSystemModule = require('fs');
 
-const rt = (val) => Math.sqrt(val);
+(function() {
+  const inputPath = '/dev/stdin';
+  const rawInputData = fileSystemModule.readFileSync(inputPath).toString();
+  
+  const numericalComponents = rawInputData.split(' ').map(val => Number(val));
 
-const degToRad = (degrees) => degrees * (Math.PI / 180);
+  const firstSide = numericalComponents[0];
+  const secondSide = numericalComponents[1];
+  const includedAngleDegrees = numericalComponents[2];
 
-const geometricConstants = {
-    HALF_FACTOR: 0.5
-};
+  const radiansConversionFactor = Math.PI / 180;
+  const includedAngleRadians = includedAngleDegrees * radiansConversionFactor;
 
-const processTriangleMetrics = (inputNumbers) => {
-    const primarySide = inputNumbers[0];
-    const secondarySide = inputNumbers[1];
-    const includedAngleDegrees = inputNumbers[2];
+  const cosineOfAngle = Math.cos(includedAngleRadians);
+  const sineOfAngle = Math.sin(includedAngleRadians);
 
-    const includedAngleRadians = degToRad(includedAngleDegrees);
+  // Calculate the third side using the Law of Cosines
+  const thirdSideSquared = firstSide * firstSide + secondSide * secondSide - 2 * firstSide * secondSide * cosineOfAngle;
+  const thirdSide = Math.sqrt(thirdSideSquared);
 
-    const thirdSideSquared = sqr(primarySide) + sqr(secondarySide) - (2 * primarySide * secondarySide * Math.cos(includedAngleRadians));
-    const thirdSide = rt(thirdSideSquared);
+  // Calculate the area using the formula 0.5 * a * b * sin(C)
+  const calculatedArea = 0.5 * firstSide * secondSide * sineOfAngle;
 
-    const calculatedArea = geometricConstants.HALF_FACTOR * primarySide * secondarySide * Math.sin(includedAngleRadians);
+  // Calculate the perimeter
+  const calculatedPerimeter = firstSide + secondSide + thirdSide;
 
-    const calculatedAltitude = secondarySide * Math.sin(includedAngleRadians);
+  // Calculate the height relative to the firstSide as base, derived from area
+  const calculatedHeight = (2 * calculatedArea) / firstSide;
 
-    const calculatedPerimeter = primarySide + secondarySide + thirdSide;
-
-    return {
-        areaResult: calculatedArea,
-        perimeterResult: calculatedPerimeter,
-        altitudeResult: calculatedAltitude
-    };
-};
-
-let accumulatedInput = '';
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (chunk) => {
-    accumulatedInput += chunk;
-});
-
-process.stdin.on('end', () => {
-    const rawNumericalStrings = accumulatedInput.trim().split(/\s+/);
-    const numericalValues = rawNumericalStrings.map(Number);
-
-    if (numericalValues.length < 3 || numericalValues.some(isNaN)) {
-        return;
-    }
-
-    const finalResults = processTriangleMetrics(numericalValues);
-
-    console.log(finalResults.areaResult + '\n' + finalResults.perimeterResult + '\n' + finalResults.altitudeResult);
-});
+  console.log(calculatedArea + '\n' + calculatedPerimeter + '\n' + calculatedHeight);
+})();

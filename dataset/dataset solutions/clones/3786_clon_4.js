@@ -1,32 +1,22 @@
-const fileAccessor = require("node:fs");
+function processInput(rawText) {
+  const parsedValues = rawText.trim().split(" ").map(Number);
+  const [firstOperand, secondOperand] = parsedValues;
 
-const acquiredContent = fileAccessor.readFileSync("/dev/stdin", "utf8");
+  const calculationMethods = [
+    (x, y) => x + y,
+    (x, y) => x - y,
+    (x, y) => x * y
+  ];
 
-const numericMatches = acquiredContent.trim().match(/-?\d+/g);
+  const derivedValues = calculationMethods.map(method => method(firstOperand, secondOperand));
 
-const valueOne = parseInt(numericMatches[0], 10);
-const valueTwo = parseInt(numericMatches[1], 10);
+  const greatestValue = derivedValues.reduce((currentMaximum, currentValue) => {
+    return currentValue > currentMaximum ? currentValue : currentMaximum;
+  }, -Infinity);
 
-const generateVariations = (leftOp, rightOp) => {
-    return [
-        leftOp + rightOp,
-        leftOp - rightOp,
-        leftOp * rightOp
-    ];
-};
+  const normalizedResult = greatestValue + 0;
 
-const processedVariations = generateVariations(valueOne, valueTwo);
-
-const identifyMaximum = (dataCollection) => {
-    return dataCollection.reduce((currentHighest, itemValue) => {
-        return currentHighest > itemValue ? currentHighest : itemValue;
-    });
-};
-
-let finalOutcome = identifyMaximum(processedVariations);
-
-if (Object.is(finalOutcome, -0)) {
-    finalOutcome = 0;
+  console.log(normalizedResult);
 }
 
-console.log(finalOutcome);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

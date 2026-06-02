@@ -1,164 +1,140 @@
-var SOURCE_PROCESSOR = ( function () {
-  /**
-   * Factory function to create an input data processor.
-   * @param {string} sourceInput - The raw input string containing multiple lines.
-   * @returns {ContentBuffer} An instance of the ContentBuffer for data extraction.
-   */
-  function initializeProcessor (sourceInput) {
-    return new ContentBuffer(sourceInput);
+var INPUT_PARSER = (function () {
+  // This function serves as the entry point to create a new data reader instance.
+  function createReader(sourceText) {
+    return new DataReader(sourceText);
   }
 
-  /**
-   * Represents a buffer for processing line-oriented input data.
-   * Provides methods to extract various data types from the buffered lines.
-   * @param {string} initialString - The full content string to be processed.
-   */
-  function ContentBuffer (initialString) {
-    // Stores individual lines from the input string.
-    this._textLines = initialString.trim().split("\n");
-    // Pointer to the current line being read.
-    this._lineIndex = 0;
+  // The DataReader class is responsible for parsing and extracting values from the input string.
+  function DataReader(sourceText) {
+    this._sourceLines = sourceText.trim().split("\n"); // Stores the input as an array of lines.
+    this._linePointer = 0; // Keeps track of the current line being processed.
   }
 
-  /**
-   * Extracts a single value from the current line.
-   * If the line is exhausted, it moves to the next.
-   * @param {boolean} [returnRaw=false] - If true, returns the value as a string; otherwise, as a number.
-   * @returns {string|number} The extracted value.
-   */
-  ContentBuffer.prototype.getValue = function (returnRaw) {
-    var lineCollection = this._textLines,
-      currentPointer = this._lineIndex,
-      extractedItem;
+  // Extracts a single token (either a number or a string) from the current line.
+  DataReader.prototype.extractNextValue = function (returnAsString) {
+    var allLines = this._sourceLines;
+    var currentLineIdx = this._linePointer;
+    var extractedToken;
 
-    // If the current line hasn't been processed into an array of tokens yet, do so.
-    // It's reversed so `pop()` can simulate reading from the beginning.
-    if ( typeof lineCollection[currentPointer] === 'string' ) {
-      lineCollection[currentPointer] = lineCollection[currentPointer].split(' ').reverse();
-    }
-    extractedItem = lineCollection[currentPointer].pop();
-
-    // If the current line is now empty, advance to the next line.
-    if ( !lineCollection[currentPointer].length ) {
-      this._lineIndex++;
-    }
-    // Return the item, optionally parsed as a number.
-    return returnRaw ? extractedItem : +extractedItem;
-  };
-
-  /**
-   * Reads the entire current line, splits it by spaces, and returns the tokens.
-   * Automatically advances the line pointer.
-   * @param {boolean} [keepStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
-   * @returns {Array<string|number>} An array of tokens from the line.
-   */
-  ContentBuffer.prototype.getTokens = function (keepStrings) {
-    var lineParts = this._textLines[this._lineIndex++].split(' ');
-    // Map to numbers if not keeping as strings.
-    return keepStrings ? lineParts : lineParts.map( item => +item );
-  };
-
-  /**
-   * Reads a specified number of lines and processes them into a 2D array (matrix).
-   * Each line is split by spaces.
-   * @param {number} numRows - The number of lines to read for the matrix.
-   * @param {boolean} [preserveTypes=false] - If true, keeps matrix elements as strings; otherwise, converts to numbers.
-   * @returns {Array<Array<string|number>>} The extracted matrix data.
-   */
-  ContentBuffer.prototype.getMatrix = function (numRows, preserveTypes) {
-    var matrixData = this._textLines.slice(this._lineIndex, this._lineIndex += numRows)
-                     .map( rowStr => rowStr.split(' ') );
-    // Convert all elements to numbers if not preserving types.
-    return preserveTypes ? matrixData : matrixData.map( row => row.map( val => +val ) );
-  };
-
-  /**
-   * Reads a specified number of lines without further processing.
-   * @param {number} blockLength - The number of raw lines to retrieve.
-   * @param {boolean} [asStrings=false] - If true, returns lines as strings; otherwise, attempts to convert each line to a number.
-   * @returns {Array<string|number>} An array of raw line contents.
-   */
-  ContentBuffer.prototype.getRawBlock = function (blockLength, asStrings) {
-    var rawLines = this._textLines.slice(this._lineIndex, this._lineIndex += blockLength);
-    // Convert to numbers if not keeping as strings.
-    return asStrings ? rawLines : rawLines.map( lineContent => +lineContent );
-  };
-
-  // Return the factory function to create processor instances.
-  return initializeProcessor;
-} )();
-
-// Create an instance of the input data reader by parsing standard input.
-var dataStreamReader = SOURCE_PROCESSOR(require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
-
-// Output the result of the main computation.
-console.log(computePath());
-
-/**
- * Main function to solve the pathfinding problem.
- * Calculates the minimum clearance required.
- * @returns {number} The calculated minimum clearance.
- */
-function computePath() {
-  // Read board dimensions and number of obstacles.
-  var boardHeight = dataStreamReader.getValue();
-  var boardWidth = dataStreamReader.getValue();
-  var totalBlocks = dataStreamReader.getValue();
-
-  // Initialize the obstacle map (grid).
-  // Using an array of objects to simulate sparse 2D grid with object keys as column indices.
-  var obstacleMap = Array(boardHeight + 1);
-  for (var rowIterator = 0; rowIterator <= boardHeight; rowIterator++) {
-    obstacleMap[rowIterator] = {};
-    // Place a sentinel value at boardWidth + 1 to simplify boundary checks.
-    obstacleMap[rowIterator][boardWidth + 1] = 1;
-  }
-
-  // Populate the obstacle map with block positions.
-  for (rowIterator = 0; rowIterator < totalBlocks; rowIterator++) {
-    var blockPosition = dataStreamReader.getTokens(); // [col, row]
-    obstacleMap[blockPosition[1]][blockPosition[0]] = 1; // Mark obstacle at (col, row)
-  }
-
-  // Initialize minimum clearance with the first obstacle in row 1.
-  // Object.keys returns string keys, so convert to number.
-  var minimumClearance = (Object.keys(obstacleMap[1])[0] - 1);
-  var currentScanCol = 2; // Start scanning from column 2 (as 1 is typically the start).
-
-  // Iterate through rows from the second row onwards.
-  for (rowIterator = 2; rowIterator <= boardHeight; rowIterator++) {
-    // Find the first clear column in the current row.
-    while (obstacleMap[rowIterator][currentScanCol]) {
-      currentScanCol++;
+    // If the current line has not yet been tokenized, split it by spaces and reverse for efficient popping.
+    if (typeof allLines[currentLineIdx] === "string") {
+      allLines[currentLineIdx] = allLines[currentLineIdx].split(" ").reverse();
     }
 
-    // Optimization: If the current clear column is already beyond the best found clearance,
-    // further search in this path won't yield a better result.
-    if (currentScanCol > minimumClearance) {
+    // Retrieve the next token from the end of the reversed array.
+    extractedToken = allLines[currentLineIdx].pop();
+
+    // If the current line is now empty, advance the line pointer to the next line.
+    if (!allLines[currentLineIdx].length) {
+      this._linePointer++;
+    }
+
+    // Return the token as a string or convert it to a number based on the 'returnAsString' flag.
+    return returnAsString ? extractedToken : +extractedToken;
+  };
+
+  // Reads all tokens from the current line and advances the line pointer.
+  DataReader.prototype.fetchLineTokens = function (returnStrings) {
+    var lineContent = this._sourceLines[this._linePointer++].split(" ");
+    // Returns tokens as strings or converts them to numbers.
+    return returnStrings ? lineContent : lineContent.map((strItem) => +strItem);
+  };
+
+  // Reads a specified number of rows and processes them as a matrix.
+  DataReader.prototype.getMatrixData = function (numRows, returnStringMatrix) {
+    var matrixRows = this._sourceLines
+      .slice(this._linePointer, (this._linePointer += numRows)) // Extract 'numRows' lines.
+      .map((rowString) => rowString.split(" ")); // Split each line into cells.
+    // Returns the matrix with string values or converts all cell values to numbers.
+    return returnStringMatrix
+      ? matrixRows
+      : matrixRows.map((row) => row.map((cellStr) => +cellStr));
+  };
+
+  // Reads a specified number of raw lines without further tokenization.
+  DataReader.prototype.getRawLinesArray = function (numLines, returnStringArray) {
+    var linesCollection = this._sourceLines.slice(
+      this._linePointer,
+      (this._linePointer += numLines)
+    );
+    // Returns lines as strings or attempts to convert each line to a number.
+    return returnStringArray
+      ? linesCollection
+      : linesCollection.map((lineText) => +lineText);
+  };
+
+  return createReader;
+})();
+
+// Initialize the input processor by reading data from standard input.
+var inputProcessor = INPUT_PARSER(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);
+
+// Output the result of the main problem-solving function.
+console.log(processGridProblem());
+
+// The primary function that implements the grid pathfinding logic.
+function processGridProblem() {
+  // Read the grid dimensions (height, width) and the number of obstacles.
+  var gridHeight = inputProcessor.extractNextValue();
+  var gridWidth = inputProcessor.extractNextValue();
+  var obstacleCount = inputProcessor.extractNextValue();
+
+  // Create a map to store blocked cells. 'blockedCellsMap[row]' will be an object
+  // where keys are blocked column indices.
+  var blockedCellsMap = Array(gridHeight + 1);
+  for (var rowIdx = 0; rowIdx <= gridHeight; rowIdx++) {
+    blockedCellsMap[rowIdx] = {};
+    // Mark the column just outside the grid boundary as blocked. This simplifies boundary checks.
+    blockedCellsMap[rowIdx][gridWidth + 1] = 1;
+  }
+
+  // Populate the blocked cells map with obstacle coordinates from the input.
+  for (var obsIdx = 0; obsIdx < obstacleCount; obsIdx++) {
+    var currentObstacleCoords = inputProcessor.fetchLineTokens();
+    // The input format seems to be (column, row), so currentObstacleCoords[1] is row, currentObstacleCoords[0] is column.
+    blockedCellsMap[currentObstacleCoords[1]][currentObstacleCoords[0]] = 1;
+  }
+
+  // Initialize the minimum path length.
+  // For the first row (row 1), find the first available column (not blocked).
+  // Object.keys returns string keys, so convert to number and subtract 1.
+  var minPathResult = Object.keys(blockedCellsMap[1])[0] - 1;
+  var currentSearchColumn = 2; // Start searching for paths from column 2 for subsequent rows.
+
+  // Iterate through the grid rows, starting from the second row.
+  for (var r = 2; r <= gridHeight; r++) {
+    // Find the first unblocked column in the current row, starting from 'currentSearchColumn'.
+    while (blockedCellsMap[r][currentSearchColumn]) {
+      currentSearchColumn++;
+    }
+
+    // If the current search column has already exceeded the best path found so far,
+    // it means no shorter path can be found, so we can terminate early.
+    if (currentSearchColumn > minPathResult) {
       break;
     }
 
-    // Iterate through obstacles in the current row to potentially update minimumClearance.
-    for (const obstacleKey in obstacleMap[rowIterator]) {
-      const obstacleCol = +obstacleKey; // Convert the column key to a number.
+    // Iterate through the blocked cells in the current row to potentially update 'minPathResult'.
+    // Object.keys returns string keys, so explicit conversion to number is needed.
+    for (var colKeyStr in blockedCellsMap[r]) {
+      var columnNumber = +colKeyStr; // Convert the string key to a numeric column index.
 
-      // If the obstacle is to the left of the current scanning column, it's irrelevant for this path.
-      if (currentScanCol > obstacleCol) {
+      // If the blocked column is before our current search column, it's not relevant for this path.
+      if (currentSearchColumn > columnNumber) {
         continue;
       }
 
-      // If this obstacle provides a tighter clearance than the current minimum, update it.
-      // (obstacleCol - 1) represents the clearance just before the obstacle.
-      if ((obstacleCol - 1) < minimumClearance) {
-        minimumClearance = (obstacleCol - 1);
+      // If a path ending at (columnNumber - 1) is shorter than the current 'minPathResult', update it.
+      if (columnNumber - 1 < minPathResult) {
+        minPathResult = columnNumber - 1;
       }
-      // Once the first relevant obstacle is found for this row (from left to right),
-      // we can stop checking further obstacles in this row for this column path.
+      // Once a relevant blocked cell is found and processed, we can break,
+      // as we are interested in the minimum path, which would be limited by the first such cell.
       break;
     }
-    // Advance the scanning column for the next row.
-    currentScanCol++;
+    currentSearchColumn++; // Increment the search column for the next row.
   }
-  // Return the final calculated minimum clearance.
-  return minimumClearance;
+  return minPathResult; // Return the final calculated minimum path length.
 }

@@ -1,57 +1,70 @@
-'use strict'
+'use strict';
 
-; (function (rawData) {
-  // Process raw input data: trim whitespace, split into tokens, convert to numbers.
-  let processedData = rawData
-    .trim()
-    .split(/\s+/)
-    .map(item => parseInt(item))
+(function(initialInputData) {
+  // Parse the incoming raw string data into an array of numerical values.
+  // First, remove leading/trailing whitespace, then split by any whitespace,
+  // and finally convert each resulting string part to a number.
+  let processedNumbers = initialInputData.trim().split(/\s+/).map(valStr => Number(valStr));
 
-  const numChildren = processedData.shift() // First element is the count of children
-  const totalCandies = processedData.shift() // Second element is the total number of candies
-  const moduloConstant = 1_000_000_007 // A large prime number for modulo operations
+  // Extract the primary problem parameters from the beginning of the processed array.
+  // 'childCount' corresponds to 'N' in the original problem.
+  const childCount = processedNumbers.shift();
+  // 'candyLimit' corresponds to 'K' in the original problem.
+  const candyLimit = processedNumbers.shift();
 
-  const childLimits = processedData // Remaining elements are maximum candies each child can take
+  // Define the modulus value for calculations, often used in combinatorics problems.
+  // This is 'M' from the original code.
+  const modulusValue = Math.pow(10, 9) + 7;
 
-  // Initialize a 2D array (dynamic programming table)
-  // waysToDistribute[c][t] will store the sum of ways to distribute 0 to 't' candies
-  // among the first 'c' children.
-  const waysToDistribute = new Array(numChildren)
-    .fill(0)
-    .map(_ => new Array(totalCandies + 1).fill(0))
+  // The remaining numbers in 'processedNumbers' represent the individual candy capacities.
+  // This is 'a' from the original code.
+  const individualCandyCaps = processedNumbers;
 
-  // Set up base cases for the DP table.
-  // This represents a virtual "child -1" where 1 way exists to distribute any number of candies.
-  waysToDistribute[-1] = new Array(totalCandies + 1).fill(1)
-  for (let childIndex = 0; childIndex < numChildren; childIndex++) {
-    waysToDistribute[childIndex][-1] = 0 // No ways to distribute negative candies
+  // Initialize a two-dimensional array for dynamic programming.
+  // 'dynamicProgTable[i][k]' will store the number of ways to distribute
+  // up to 'k' candies among the first 'i+1' children.
+  const dynamicProgTable = new Array(childCount).fill(0).map(
+    () => new Array(candyLimit + 1).fill(0)
+  );
+
+  // Establish a crucial base case for the DP table, handling the "state before any children".
+  // In JavaScript, negative indices are treated as property names, which is leveraged here.
+  // 'dynamicProgTable[-1][k]' is initialized to 1, signifying one way to distribute 0 candies
+  // when no children have been considered yet.
+  dynamicProgTable[-1] = new Array(candyLimit + 1).fill(1);
+
+  // Initialize another set of base cases for the DP table.
+  // For each child, if the candy amount is effectively -1 (a conceptual boundary),
+  // the number of ways is 0.
+  for (let childIndex = 0; childIndex < childCount; childIndex++) {
+    dynamicProgTable[childIndex][-1] = 0;
   }
 
-  // Iterate through each child
-  for (let childIndex = 0; childIndex < numChildren; childIndex++) {
-    // Iterate through each possible candy count
-    for (let currentCandyCount = 0; currentCandyCount <= totalCandies; currentCandyCount++) {
-      // Calculate the lower bound for subtraction in the DP recurrence.
-      // This accounts for the maximum candies the current child can receive.
-      let subtractIndex = Math.max(-1, currentCandyCount - childLimits[childIndex])
+  // Populate the dynamic programming table using the defined recurrence relation.
+  // The outer loop iterates through each child.
+  for (let currentChildIndex = 0; currentChildIndex < childCount; currentChildIndex++) {
+    // The inner loop iterates through each possible candy amount up to the limit.
+    for (let currentCandyAmount = 0; currentCandyAmount <= candyLimit; currentCandyAmount++) {
+      // Determine the lower bound for the previous state calculation.
+      // This corresponds to 'k - a[i]' in the original formula, ensuring it doesn't go below -1.
+      let previousStateLowerBound = Math.max(-1, currentCandyAmount - individualCandyCaps[currentChildIndex]);
 
-      // Apply the DP recurrence relation:
-      // waysToDistribute[c][t] = waysToDistribute[c][t-1] + waysToDistribute[c-1][t] - waysToDistribute[c-1][t-maxCandies]
-      // This formula calculates cumulative sums correctly.
-      waysToDistribute[childIndex][currentCandyCount] =
-        waysToDistribute[childIndex][currentCandyCount - 1] +
-        waysToDistribute[childIndex - 1][currentCandyCount] -
-        waysToDistribute[childIndex - 1][subtractIndex]
+      // Apply the core DP recurrence relation.
+      // This formula is a common pattern for problems involving "at most K" items,
+      // often derived from prefix sums or inclusion-exclusion principles.
+      let calculatedValue = dynamicProgTable[currentChildIndex][currentCandyAmount - 1] +
+                            dynamicProgTable[currentChildIndex - 1][currentCandyAmount] -
+                            dynamicProgTable[currentChildIndex - 1][previousStateLowerBound];
 
-      // Ensure the result remains positive and within the modulo range.
-      waysToDistribute[childIndex][currentCandyCount] %= moduloConstant
-      if (waysToDistribute[childIndex][currentCandyCount] < 0) {
-        waysToDistribute[childIndex][currentCandyCount] += moduloConstant
-      }
+      // Apply the modulo operation to keep the result within the specified range.
+      // Note: JavaScript's '%' operator can return negative results for negative operands.
+      // The original code's `%=` would preserve this.
+      dynamicProgTable[currentChildIndex][currentCandyAmount] = calculatedValue % modulusValue;
     }
   }
 
-  // Log the final result: the number of ways to distribute 0 candies among all children.
-  // This value is typically 1 (one way: give no candies to anyone).
-  console.log(waysToDistribute[numChildren - 1][0])
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'))
+  // The final answer is the number of ways to distribute exactly 0 candies
+  // among all 'childCount' children, which is found at dynamicProgTable[childCount-1][0].
+  console.log(dynamicProgTable[childCount - 1][0]);
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

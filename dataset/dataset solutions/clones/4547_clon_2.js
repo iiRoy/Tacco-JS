@@ -1,92 +1,98 @@
-function categorizeNumbers ( rawValues ) {
-  // Initialize storage for classified numerical entries
-  var multiplesOfTen = [ ] ;
-  var nonMultiples = [ ] ;
-  // Accumulator for values divisible by ten
-  var sumOfMultiples = 0 ;
+function categorizeData(incomingValues) {
+  // This array will store numbers that are multiples of ten.
+  const multiplesOfTen = [];
+  // This array will hold all other numbers.
+  const remainingValues = [];
+  // This variable accumulates the sum of numbers that are multiples of ten.
+  let sumOfMultiples = 0;
 
-  rawValues.forEach( function( valString ) {
-    // Convert string input to a numerical value
-    const numVal = Number( valString ) ;
+  incomingValues.forEach(function (valueString) {
+    // Convert the string representation to a numeric value.
+    const numericValue = Number(valueString);
 
-    // Check if the current value is a multiple of 10
-    if ( numVal % 10 === 0 ) {
-      multiplesOfTen.push( numVal ) ;
-      sumOfMultiples += numVal ;
-      return ; // Move to the next item
+    // Check if the numeric value is a multiple of ten.
+    if (numericValue % 10 === 0) {
+      multiplesOfTen.push(numericValue);
+      sumOfMultiples += numericValue;
+      return; // Move to the next item in the iteration.
     }
-    // If not a multiple of 10, add to the other category
-    nonMultiples.push( numVal ) ;
-  } ) ;
+    // If not a multiple of ten, add it to the 'remainingValues' array.
+    remainingValues.push(numericValue);
+  });
 
-  // Return a structured object containing the results
+  // Return an object containing the classified data and their sum.
   return {
-    multiplesOfTen: multiplesOfTen ,
-    sumOfMultiples: sumOfMultiples ,
-    nonMultiples: nonMultiples ,
-  } ;
+    multiplesOfTen: multiplesOfTen,
+    sumOfMultiples: sumOfMultiples,
+    remainingValues: remainingValues,
+  };
 }
 
-// Computes the maximum possible pattern for a given starting value
-function determineBestPath ( initialValue , exclusionIndex , categorizationData ) {
-  // Start the recursive calculation with the initial value plus the sum of all multiples of ten
-  // Filter out one specific non-multiple based on its index
-  return calculateCombinations(
-    initialValue + categorizationData.sumOfMultiples ,
-    categorizationData.nonMultiples.filter( function( item , idx ) {
-      return idx !== exclusionIndex ; // Exclude the item at the specified index
-    } ) ,
-    0 // Start processing from the beginning of the filtered array
-  ) ;
+function determineOptimalPath(currentElement, exclusionIndex, categorizationOutcome) {
+  // This function calculates a maximum pattern by recursively summing elements.
+  // It filters out one element from 'remainingValues' based on 'exclusionIndex'.
+  return computeRecursiveSum(
+    currentElement + categorizationOutcome.sumOfMultiples,
+    categorizationOutcome.remainingValues.filter(function (item, idx) {
+      return idx !== exclusionIndex; // Exclude the element at the specified index.
+    }),
+    0
+  );
 }
 
-// Recursive function to explore combinations and find a suitable sum
-function calculateCombinations ( currentSum , remainingNumbers , position ) {
-  // Base case: if there are no more numbers to process
-  if ( typeof remainingNumbers[ position + 1 ] === 'undefined' ) {
-    return currentSum ;
+function computeRecursiveSum(accumulatorValue, dataElements, currentPosition) {
+  // Base case: if there's no next element, return the current accumulated value.
+  if (typeof dataElements[currentPosition + 1] === 'undefined') {
+    return accumulatorValue;
   }
 
-  // Recursive call 1: Include the current number in the sum
-  var optionA = calculateCombinations( currentSum + remainingNumbers[ position ] , remainingNumbers , position + 1 ) ;
-  // Recursive call 2: Exclude the current number from the sum
-  var optionB = calculateCombinations( currentSum , remainingNumbers , position + 1 ) ;
+  // Recursive call 1: include the current element in the sum.
+  const resultA = computeRecursiveSum(
+    accumulatorValue + dataElements[currentPosition],
+    dataElements,
+    currentPosition + 1
+  );
+  // Recursive call 2: exclude the current element from the sum.
+  const resultB = computeRecursiveSum(accumulatorValue, dataElements, currentPosition + 1);
 
-  // Decision logic: prefer optionA if it's greater and not a multiple of 10
-  if ( optionA >= optionB && optionA % 10 !== 0 ) {
-    return optionA ;
+  // Prioritize resultA if it's greater than or equal to resultB and not a multiple of ten.
+  if (resultA >= resultB && resultA % 10 !== 0) {
+    return resultA;
   }
-  // Decision logic: prefer optionB if it's greater and not a multiple of 10
-  if ( optionA <= optionB && optionB % 10 !== 0 ) {
-    return optionB ;
+  // Prioritize resultB if it's greater than or equal to resultA and not a multiple of ten.
+  if (resultA <= resultB && resultB % 10 !== 0) {
+    return resultB;
   }
-  // If both options result in a multiple of 10 or are equal and not preferred, return 0
-  // This implies neither path yielded a desirable non-multiple-of-10 maximum
-  return 0 ;
+
+  // If both results are multiples of ten, or if one is a multiple of ten and the other is not
+  // (and the non-multiple-of-ten one wasn't chosen by the above conditions), return 0.
+  // This implies that if both are multiples of ten, or if the non-multiple-of-ten option
+  // was smaller, we default to 0.
+  return 0;
 }
 
 /**
- * Main processing function to handle raw text input.
- * @param {string} rawData - The entire input string from stdin.
+ * Processes the raw input string to find a maximum value based on specific rules.
+ * @param {String} rawData The input string, typically from stdin.
  */
-function ProcessInput ( rawData ) {
-  // Split the input string into individual lines
-  var lines = rawData.split( "\n" ) ;
-  // Classify the numerical values, excluding the first line (assumed to be count)
-  const parsedData = categorizeNumbers( lines.slice( 1 ) ) ;
+function ProcessInputData(rawData) {
+  // Split the input string into an array of lines.
+  const linesOfData = rawData.split('\n');
+  // Classify the input data, excluding the first line (which might be a count or header).
+  const categorizationOutcome = categorizeData(linesOfData.slice(1));
+  let finalMaximum = 0; // Initialize the maximum result found.
 
-  // Initialize the highest value found
-  var finalOutcome = 0 ;
+  // Iterate over the 'remainingValues' to calculate potential maximum patterns.
+  categorizationOutcome.remainingValues.forEach(function (elementValue, idx) {
+    // Update 'finalMaximum' with the greater of its current value or the result of 'determineOptimalPath'.
+    finalMaximum = Math.max(
+      finalMaximum,
+      determineOptimalPath(elementValue, idx, categorizationOutcome)
+    );
+  });
 
-  // Iterate over each non-multiple point to find the maximum possible result
-  parsedData.nonMultiples.forEach( function( itemValue , itemIndex ) {
-    // Update the final outcome with the maximum value returned by determineBestPath
-    finalOutcome = Math.max( finalOutcome , determineBestPath( itemValue , itemIndex , parsedData ) ) ;
-  } ) ;
-  // Return the overall maximum value
-  return finalOutcome ;
+  return finalMaximum; // Return the overall maximum value.
 }
 
-// Read input from standard input and pass it to the main processing function
-// Then, print the final calculated result to the console.
-console.log( ProcessInput( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ) ;
+// Read input from standard input, process it, and print the result to the console.
+console.log(ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8')));

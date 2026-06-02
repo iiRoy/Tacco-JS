@@ -1,90 +1,69 @@
-/* This function recursively counts numbers up to a given limit 'upperBoundary'
- * that contain the digits 3, 5, and 7, and are formed by specific rules. */
-function calculateSpecialNumbers( digitPosition, currentNumber, upperLimit, totalCount )
-{
-  // If the current number exceeds the specified upper limit,
-  // we've gone too far, so return the accumulated count.
-  if ( currentNumber > upperLimit )
-  {
+function calculateSpecialNumbers(depthLevel, currentNumber, limitValue, totalCount) {
+  // Check if the current number has exceeded the specified limit.
+  // If it has, this branch of recursion terminates, returning the accumulated count.
+  if (currentNumber > limitValue) {
     return totalCount;
   }
 
-  // A boolean array to track the presence of digits 3, 5, and 7
-  // within the 'tempNumber'.
-  let digitPresenceFlags = new Array(10);
+  // Declare an array to keep track of whether digits 3, 5, and 7 are present in the current number.
+  // The array is indexed by digit value for easy access.
+  var digitFlags = new Array(10);
+  var temporaryNumber = currentNumber; // A temporary variable to extract digits without altering currentNumber.
 
-  // A temporary variable to process 'currentNumber' digit by digit.
-  let tempNumber = currentNumber;
-
-  // Iterate through the digits of 'tempNumber' from right to left.
-  while ( tempNumber > 0 )
-  {
-    /* Check the last digit of 'tempNumber' using the modulo operator. */
-    switch ( tempNumber % 10 )
-    {
-      // If the digit is 3, mark its presence.
-      case 3:
-      {
-        digitPresenceFlags[3] = true;
+  // Iterate through the digits of temporaryNumber from right to left.
+  while (temporaryNumber > 0) {
+    // Get the last digit of temporaryNumber.
+    switch (temporaryNumber % 10) {
+      case 3: {
+        digitFlags[3] = true; // Mark that digit 3 has been found.
         break;
       }
-      // If the digit is 5, mark its presence.
-      case 5:
-      {
-        digitPresenceFlags[5] = true;
+      case 5: {
+        digitFlags[5] = true; // Mark that digit 5 has been found.
         break;
       }
-      // If the digit is 7, mark its presence.
-      case 7:
-      {
-        digitPresenceFlags[7] = true;
+      case 7: {
+        digitFlags[7] = true; // Mark that digit 7 has been found.
         break;
       }
-      // For any other digit, do nothing specific.
-      default:
-      {
+      default: {
+        // Ignore other digits.
         break;
       }
     }
-    // Remove the last digit from 'tempNumber' for the next iteration.
-    tempNumber = Math.floor( tempNumber / 10 );
+    // Remove the last digit from temporaryNumber.
+    temporaryNumber = Math.floor(temporaryNumber / 10);
   }
 
-  // If the current number contains all three required digits (3, 5, 7),
-  // increment the total count.
-  totalCount += ( digitPresenceFlags[3] === true && digitPresenceFlags[5] === true && digitPresenceFlags[7] === true ) ? 1 : 0;
+  // If the current number contains all three digits (3, 5, and 7), increment the total count.
+  totalCount += (digitFlags[3] === true && digitFlags[5] === true && digitFlags[7] === true) ? 1 : 0;
 
-  // Recursive calls to explore numbers formed by appending 3, 5, or 7
-  // at the current digit position.
-  totalCount += calculateSpecialNumbers( ( digitPosition + 1 ), ( Math.pow(10, digitPosition) * 3 + currentNumber ), upperLimit, 0 );
-  totalCount += calculateSpecialNumbers( ( digitPosition + 1 ), ( Math.pow(10, digitPosition) * 5 + currentNumber ), upperLimit, 0 );
-  totalCount += calculateSpecialNumbers( ( digitPosition + 1 ), ( Math.pow(10, digitPosition) * 7 + currentNumber ), upperLimit, 0 );
+  // Recursively call this function to generate new numbers by appending 3, 5, or 7.
+  // The new number is formed by adding (10^depthLevel * digit) to the current number.
+  // Each recursive call starts with a fresh count of 0 for its own branch.
+  totalCount += calculateSpecialNumbers(depthLevel + 1, Math.pow(10, depthLevel) * 3 + currentNumber, limitValue, 0);
+  totalCount += calculateSpecialNumbers(depthLevel + 1, Math.pow(10, depthLevel) * 5 + currentNumber, limitValue, 0);
+  totalCount += calculateSpecialNumbers(depthLevel + 1, Math.pow(10, depthLevel) * 7 + currentNumber, limitValue, 0);
 
-  // Return the accumulated count for this branch of recursion.
+  // Return the final accumulated count for this particular recursive path.
   return totalCount;
 }
 
-/**
- * Main entry point for the program.
- * Processes the raw input and orchestrates the counting process.
- * @param {string} rawData - The raw input string, expected to be a number.
- */
-function ExecuteProgram ( rawData )
-{
-  // Parse the input string into an integer, which serves as the upper boundary.
-  let parsedLimit = parseInt( rawData );
+// The primary function to handle input and orchestrate the counting process.
+function ProcessInput(rawData) {
+  // Convert the raw input string into an integer, which serves as the upper limit.
+  var limitValue = parseInt(rawData);
+  var finalCount = 0; // Initialize the overall counter for numbers meeting the criteria.
 
-  // Initialize the final result accumulator.
-  let finalResult = 0;
+  // Initiate the recursive generation process by starting with the base digits 3, 5, and 7.
+  // Each call explores a branch of numbers starting with that digit.
+  finalCount += calculateSpecialNumbers(1, 3, limitValue, 0);
+  finalCount += calculateSpecialNumbers(1, 5, limitValue, 0);
+  finalCount += calculateSpecialNumbers(1, 7, limitValue, 0);
 
-  // Initiate the recursive counting for numbers starting with 3, 5, and 7.
-  finalResult += calculateSpecialNumbers( 1, 3, parsedLimit, 0 );
-  finalResult += calculateSpecialNumbers( 1, 5, parsedLimit, 0 );
-  finalResult += calculateSpecialNumbers( 1, 7, parsedLimit, 0 );
-
-  // Output the computed total count to the console.
-  console.log( finalResult );
+  // Output the final computed count to the console.
+  console.log(finalCount);
 }
 
-// Do not modify the following line; it handles input reading and function invocation.
-ExecuteProgram( require("fs").readFileSync("/dev/stdin", "utf8") );
+// This line should not be edited (reads from standard input and calls ProcessInput)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

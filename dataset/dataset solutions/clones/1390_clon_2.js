@@ -1,68 +1,35 @@
-/* This module processes pairs of numerical values provided as text input. */
-(   function   (   inputText   )      {
-    // The initial input string is parsed by newline characters,
-    // creating an array where each element represents a single line of data.
-    var   inputLines   =   inputText.split('\n');
+(function(inputStr) {
+    // This self-executing function processes a given input string.
 
-    // A processing loop is initiated to iterate through each line of the collected input.
-    // 'lineCounter' serves as the index for the current line being processed.
-    // 'totalLineCount' stores the total number of lines available in the input.
-    for
-        (
-            var lineCounter = 0, totalLineCount = inputLines.length;
-            lineCounter < totalLineCount;
-            lineCounter++
-        )
-    {
-        // Each individual line is further segmented by space characters,
-        // expecting to yield two distinct parts, typically representing numbers.
-        var currentLineParts = inputLines[lineCounter].split(' ');
+    // Split the entire input into an array of lines, using the newline character as a delimiter.
+    var linesArr = inputStr.split('\n');
 
-        // The first segment of the current line is converted into a numeric type.
-        // The idiom '- 0' is employed for explicit type coercion from string to number.
-        var numOne = currentLineParts[0] - 0;
+    // Iterate through each line in the array.
+    // 'lineIndex' is the current index, 'totalLines' is the total number of lines.
+    for (var lineIndex = 0, totalLines = linesArr.length; lineIndex < totalLines; lineIndex++) {
+        // For the current line, split it by spaces to get an array of string parts.
+        // The original code had a syntax error 'var bar[i] = ...', which is interpreted
+        // as declaring a temporary variable for the split result in each iteration.
+        var currentParts = linesArr[lineIndex].split(' ');
 
-        // Similarly, the second segment of the current line is converted into a numeric type.
-        var numTwo = currentLineParts[1] - 0;
+        // Convert the first part of the line to a number using the unary plus operator.
+        var valA = +currentParts[0];
+        // Convert the second part of the line to a number.
+        var valB = +currentParts[1];
 
-        // A specific condition is checked to determine if the processing should terminate.
-        // If both numerical values extracted from the line are zero, it signals an end.
-        if
-        (
-            numOne === 0
-            &&
-            numTwo === 0
-        )
-        {
-            // Upon detecting the termination condition, the loop is exited prematurely.
+        // Check for the termination condition: if both numbers are zero, stop processing.
+        if (valA === 0 && valB === 0) {
             break;
         }
 
-        // The two numerical values are compared to establish their relative order.
-        if
-        (
-            numOne <= numTwo
-        )
-        {
-            // If the first number is less than or equal to the second,
-            // they are outputted to the console in their current order, separated by a space.
-            console.log(numOne + ' ' + numTwo);
-        }
-        else
-        {
-            // Otherwise, if the first number is greater,
-            // the numbers are outputted in reverse order to ensure ascending presentation.
-            console.log(numTwo + ' ' + numOne);
+        // Compare the two numbers and print them to the console in non-decreasing order,
+        // separated by a space.
+        if (valA <= valB) {
+            console.log(valA + ' ' + valB);
+        } else {
+            console.log(valB + ' ' + valA);
         }
     }
-}
-)
-(
-    require("fs")
-        .readFileSync
-            (
-                "/dev/stdin",
-                "utf8"
-            )
-)
-; /* End of the primary script execution block. */
+// The function is immediately invoked with content read from standard input.
+// It uses Node.js 'fs' module to read the file '/dev/stdin' as a UTF-8 string.
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

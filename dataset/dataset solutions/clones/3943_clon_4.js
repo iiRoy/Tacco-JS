@@ -1,22 +1,24 @@
-const acquireInputData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+function obtainRawInput() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-const computeOutcome = (fullRawData) => {
-    const dataLines = fullRawData.split('\n');
+function solveChocolateProblem(rawInputString) {
+  const inputLines = rawInputString.split("\n");
 
-    const amount = parseInt(dataLines[0], 10);
+  const totalPeopleCount = parseInt(inputLines[0], 10);
 
-    const [periodLength, baseCount] = dataLines[1].split(' ').map(val => Number(val));
+  const dayLimitAndInitialCount = inputLines[1].split(" ").map(Number);
+  const maximumDays = dayLimitAndInitialCount[0];
+  const initialChocolatesCount = dayLimitAndInitialCount[1];
 
-    const dailyUnits = dataLines.slice(2).map(value => +value);
+  const personIntervals = inputLines.slice(2).map(Number);
 
-    let cumulativeSum = 0;
+  const chocolatesEatenByOthers = personIntervals.reduce((currentTotal, currentInterval) => {
+    const daysToEat = Math.floor((maximumDays - 1) / currentInterval) + 1;
+    return currentTotal + daysToEat;
+  }, 0);
 
-    cumulativeSum = dailyUnits.reduce((runningTotal, currentUnit) => {
-        const hits = Math.floor((periodLength - 1) / currentUnit) + 1;
-        return runningTotal + hits;
-    }, 0);
+  console.log(chocolatesEatenByOthers + initialChocolatesCount);
+}
 
-    console.log(cumulativeSum + baseCount);
-};
-
-computeOutcome(acquireInputData());
+solveChocolateProblem(obtainRawInput());

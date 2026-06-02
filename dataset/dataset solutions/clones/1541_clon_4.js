@@ -1,88 +1,107 @@
-const acquireInputData = (rawTextLines) => {
-    let currentLinePointer = 0;
-    const processLineToNumbers = (lineString) => lineString.split(' ').map(Number);
+//Don't have to see. start------------------------------------------
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error('\n↑入力 ↓出力');
+  Main();
+});
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+  };
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+//param "no" is
+//unknown or outlier : return i. 1: parseInt.
+//2: split space. 4: split space and parseInt.
+//6: split 1 character. 7: split 1 character and parseInt.
+//8: join space. 9: join nextline. 0: join no character.
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
-    return {
-        fetchNextNumericRow: () => {
-            if (currentLinePointer >= rawTextLines.length) {
-                throw new Error("Input exhausted.");
-            }
-            return processLineToNumbers(rawTextLines[currentLinePointer++]);
-        }
-    };
-};
-
-class ElementGroupManager {
-    constructor(capacity) {
-        this.parentReferences = new Array(capacity);
-        this.groupSizes = new Array(capacity);
-        for (let i = 0; i < capacity; i++) {
-            this.parentReferences[i] = i;
-            this.groupSizes[i] = 1;
-        }
+//Don't have to see. end------------------------------------------
+function Main(){
+  var initialParams = nextIntArray();
+  var nodeCount = initialParams[0];
+  var queryCount = initialParams[1];
+  var disjointSet = createDisjointSet(nodeCount);
+  for(var qIdx = 0; qIdx < queryCount; qIdx++){
+    var queryData = nextIntArray();
+    var queryType = queryData[0];
+    var firstNode = queryData[1];
+    var secondNode = queryData[2];
+    if(queryType === 0){
+      disjointSet.uniteSets(firstNode, secondNode);
+    }else{
+      myout((disjointSet.checkConnection(firstNode, secondNode)) ? 1 : 0);
     }
-
-    identifyLeader(member) {
-        let currentMember = member;
-        while (this.parentReferences[currentMember] !== currentMember) {
-            this.parentReferences[currentMember] = this.parentReferences[this.parentReferences[currentMember]];
-            currentMember = this.parentReferences[currentMember];
-        }
-        return currentMember;
-    }
-
-    combineGroups(memberA, memberB) {
-        let leaderA = this.identifyLeader(memberA);
-        let leaderB = this.identifyLeader(memberB);
-
-        if (leaderA === leaderB) {
-            return;
-        }
-
-        if (this.groupSizes[leaderA] < this.groupSizes[leaderB]) {
-            [leaderA, leaderB] = [leaderB, leaderA];
-        }
-
-        this.parentReferences[leaderB] = leaderA;
-        this.groupSizes[leaderA] += this.groupSizes[leaderB];
-    }
-
-    areMembersConnected(memberX, memberY) {
-        return this.identifyLeader(memberX) === this.identifyLeader(memberY);
-    }
+  }
 }
 
-const performCalculations = (inputLines) => {
-    const dataReader = acquireInputData(inputLines);
-    const outputBuffer = [];
+function createDisjointSet(elementCount){
+  var parentArray = Array.from({length: elementCount}, (_, i) => i);
+  var rankArray = new Array(elementCount).fill(0);
+  var sizeArray = new Array(elementCount).fill(1);
 
-    const initialParameters = dataReader.fetchNextNumericRow();
-    const totalEntities = initialParameters[0];
-    const totalOperations = initialParameters[1];
-
-    const manager = new ElementGroupManager(totalEntities);
-
-    for (let operationIndex = 0; operationIndex < totalOperations; operationIndex++) {
-        const operationDetails = dataReader.fetchNextNumericRow();
-        const operationTypeIndicator = operationDetails[0];
-        const firstOperand = operationDetails[1];
-        const secondOperand = operationDetails[2];
-
-        if (operationTypeIndicator === 0) {
-            manager.combineGroups(firstOperand, secondOperand);
-        } else {
-            outputBuffer.push(manager.areMembersConnected(firstOperand, secondOperand) ? 1 : 0);
-        }
+  function findRepresentative(idx){
+    let currentRoot = idx;
+    while(parentArray[currentRoot] !== currentRoot){
+      currentRoot = parentArray[currentRoot];
     }
+    // Path compression: make every node on the path point directly to the root
+    let nodeToCompress = idx;
+    while(parentArray[nodeToCompress] !== currentRoot){
+      let nextParent = parentArray[nodeToCompress];
+      parentArray[nodeToCompress] = currentRoot;
+      nodeToCompress = nextParent;
+    }
+    return currentRoot;
+  }
 
-    console.log(outputBuffer.join('\n'));
-};
+  function uniteSets(idxA, idxB){
+    let rootA = findRepresentative(idxA);
+    let rootB = findRepresentative(idxB);
 
-// Example usage if this were the main script entry:
-// const sampleInput = [
-//     "5 3",
-//     "0 0 1",
-//     "0 1 2",
-//     "1 0 2"
-// ];
-// performCalculations(sampleInput);
+    if(rootA !== rootB){ // If they are not already in the same set
+      // Union by rank heuristic
+      if(rankArray[rootA] < rankArray[rootB]){
+        parentArray[rootA] = rootB;
+        sizeArray[rootB] += sizeArray[rootA]; // Update size of the new root
+      } else if (rankArray[rootA] > rankArray[rootB]){
+        parentArray[rootB] = rootA;
+        sizeArray[rootA] += sizeArray[rootB]; // Update size of the new root
+      } else { // Ranks are equal, pick one as root and increment its rank
+        parentArray[rootB] = rootA;
+        rankArray[rootA]++;
+        sizeArray[rootA] += sizeArray[rootB]; // Update size of the new root
+      }
+      return true; // Indicates a successful union
+    }
+    return false; // Indicates they were already in the same set
+  }
+
+  function checkConnection(idxA, idxB){
+    return findRepresentative(idxA) === findRepresentative(idxB);
+  }
+
+  function retrieveSetSize(idx){
+    return sizeArray[findRepresentative(idx)];
+  }
+
+  return {
+    findRepresentative: findRepresentative,
+    uniteSets: uniteSets,
+    checkConnection: checkConnection,
+    retrieveSetSize: retrieveSetSize
+  };
+}

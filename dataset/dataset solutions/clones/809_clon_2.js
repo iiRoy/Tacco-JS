@@ -1,125 +1,70 @@
-var writeOutput = console.log;
+var outputFn = console.log;
 
-// Check if running in a Node.js-like environment
 if (typeof process !== "undefined") {
-    // Variable to hold all incoming raw data
-    var receivedText = "";
-
-    // Ensure standard input stream is active
+    let rawData = "";
     process.stdin.resume();
-
-    // Set encoding for incoming data chunks
     process.stdin.setEncoding('utf8');
-
-    // Event listener for data reception
-    process.stdin.on('data', function (dataSegment) {
-        receivedText += dataSegment;
+    process.stdin.on('data', function (chunk) {
+        rawData += chunk;
     });
-
-    // Event listener for end of input stream
     process.stdin.on('end', function () {
-        // Once all data is received, pass it to the preprocessing function
-        prepareData(receivedText);
+        processInputData(rawData);
     });
 }
 
-/**
- * Prepares the raw input string for main processing.
- * @param {string} rawInputString - The complete raw input received.
- */
-function prepareData(rawInputString) {
-    // Split the input into individual lines
-    var textRows = rawInputString.split("\n");
-
-    // Remove the first line (often headers or counts)
-    textRows.shift();
-
-    // Remove the last line (often empty or EOF marker)
-    textRows.pop();
-
-    // Pass the cleaned lines to the core logic function
-    performAnalysis(textRows);
-}
-
-/*
- * This section contains the primary logic for data analysis.
- * It processes a collection of data rows to derive specific results.
- */
-function performAnalysis(dataRows) {
-    // Discard the very first row of the processed data array.
+function processInputData(rawText) {
+    let dataRows = rawText.split("\n");
     dataRows.shift();
+    dataRows.pop();
+    analyzeData(dataRows);
+}
 
-    // Transform each remaining string row into an array of numbers.
-    dataRows = dataRows.map(function (dataRowString) {
-        // Split the string by space to get individual string components.
-        var stringParts = dataRowString.split(" ");
-        // Convert each string component into a number.
-        var convertedNumbers = stringParts.map(function (strValue) {
-            return Number(strValue);
+//----- Core data processing logic -----
+
+function analyzeData(dataRows) {
+    dataRows.shift();
+    dataRows = dataRows.map(function (rowStr) {
+        let strNums = rowStr.split(" ");
+        let numArr = strNums.map(function (strNumItem) {
+            return Number(strNumItem);
         });
-        return convertedNumbers;
+        return numArr;
     });
 
-    // This array will hold groups of two data sets.
-    var collectionOfSets = [];
-
-    // Loop while there are at least two rows left to form a data set pair.
+    let dataCollections = [];
     while (dataRows.length > 1) {
-        // Create a temporary array for the current pair of data sets.
-        var temporaryArray = [];
-        // Add the first data set (row) to the temporary array.
-        temporaryArray.push(dataRows.shift());
-        // Add the second data set (row) to the temporary array.
-        temporaryArray.push(dataRows.shift());
-        // Store the completed pair in the main collection.
-        collectionOfSets.push(temporaryArray);
+        // Grouping two lines into a single collection
+        let currentCollection = [];
+        currentCollection.push(dataRows.shift());
+        currentCollection.push(dataRows.shift());
+        dataCollections.push(currentCollection);
     }
 
-    // Iterate through each collected pair of data sets.
-    collectionOfSets.forEach(function (currentDataSet) {
-        // Extract the 'power' or 'threshold' value from the first part of the current data set.
-        var thresholdIndex = currentDataSet[0][1];
-
-        // An array to store calculated differences.
-        var deltaValues = [];
-
-        // Iterate through the second array of the current data set to calculate differences.
-        currentDataSet[1].forEach(function (currentElement, currentIndex, fullNumericArray) {
-            // Skip the very first element as there's no preceding element to compare.
-            if (currentIndex === 0) {
+    dataCollections.forEach(function (collectionItem) {
+        let powerVal = collectionItem[0][1];
+        let differences = [];
+        collectionItem[1].forEach(function (currentNum, idx, fullArray) {
+            if (idx === 0) {
                 return;
             } else {
-                // Calculate the difference between the current and the previous element.
-                deltaValues.push(fullNumericArray[currentIndex] - fullNumericArray[currentIndex - 1]);
+                differences.push(fullArray[idx] - fullArray[idx - 1]);
             }
         });
-
-        // Sort the calculated differences in descending order.
-        deltaValues.sort(function (firstVal, secondVal) {
-            return secondVal - firstVal;
+        differences.sort(function (valA, valB) {
+            return valB - valA;
         });
-
-        // Slice the array, keeping only elements from 'thresholdIndex - 1' onwards.
-        // This effectively removes the largest differences.
-        deltaValues = deltaValues.slice(thresholdIndex - 1);
-
-        // Check if there are any differences remaining after slicing.
-        if (deltaValues.length > 0) {
-            // Calculate the sum of the remaining differences.
-            var aggregateResult = deltaValues.reduce(function (accumulator, currentValue) {
-                // Ensure the current value is defined before adding.
-                if (currentValue !== undefined) {
-                    return accumulator + currentValue;
+        differences = differences.slice(powerVal - 1);
+        if (differences.length > 0) {
+            let totalSum = differences.reduce(function (previousVal, currentVal) {
+                if (currentVal !== undefined) {
+                    return previousVal + currentVal;
                 } else {
-                    // If current value is undefined, handle initial accumulator or just return accumulator.
-                    return accumulator === undefined ? 0 : accumulator;
+                    return previousVal === undefined ? 0 : previousVal;
                 }
             });
-            // Output the calculated sum.
-            writeOutput(aggregateResult);
+            outputFn(totalSum);
         } else {
-            // If no differences remain, output zero.
-            writeOutput(0);
+            outputFn(0);
         }
     });
 }

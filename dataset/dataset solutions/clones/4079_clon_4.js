@@ -1,71 +1,96 @@
-function processInputData(rawData) {
-    const sourceLines = rawData.split('\n');
+function processInput(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const [totalPoints, gridBlockSize] = inputLines[0].split(" ").map(Number);
 
-    const [totalItemCount, tileDimensionFactor] = sourceLines[0].split(' ').map(Number);
+    const pointConfigurations = [];
+    for (let pointIndex = 0; pointIndex < totalPoints; pointIndex++) {
+        const currentPointData = inputLines[pointIndex + 1].split(" ");
+        const xCoordinate = parseInt(currentPointData[0]) % (2 * gridBlockSize);
+        const yCoordinate = parseInt(currentPointData[1]) % (2 * gridBlockSize);
+        const pointType = (currentPointData[2] === "W" ? 0 : 1); // 0 for 'W', 1 for 'B'
+        pointConfigurations.push({ x: xCoordinate, y: yCoordinate, type: pointType });
+    }
 
-    const fullGridDimension = tileDimensionFactor * 2;
+    // Helper function to apply a value to a rectangular region in a 2D difference array.
+    // r1, c1 are inclusive start coordinates. r2, c2 are inclusive end coordinates.
+    const applyRegionDelta = (deltaMatrix, rStart, cStart, rEnd, cEnd, deltaValue) => {
+        if (rStart > rEnd || cStart > cEnd) return; // Skip invalid or empty regions
 
-    const gamePieces = sourceLines.slice(1, 1 + totalItemCount).map(lineSegment => {
-        const dataSegments = lineSegment.split(' ');
-        const initialXPosition = Number(dataSegments[0]);
-        const initialYPosition = Number(dataSegments[1]);
-        const targetShade = (dataSegments[2] === 'W' ? 0 : 1); // 0 for 'W', 1 for 'B'
+        deltaMatrix[rStart][cStart] += deltaValue;
+        if (cEnd + 1 < gridBlockSize + 1) {
+            deltaMatrix[rStart][cEnd + 1] -= deltaValue;
+        }
+        if (rEnd + 1 < gridBlockSize + 1) {
+            deltaMatrix[rEnd + 1][cStart] -= deltaValue;
+        }
+        if (rEnd + 1 < gridBlockSize + 1 && cEnd + 1 < gridBlockSize + 1) {
+            deltaMatrix[rEnd + 1][cEnd + 1] += deltaValue;
+        }
+    };
 
-        return {
-            adjustedX: initialXPosition % fullGridDimension,
-            adjustedY: initialYPosition % fullGridDimension,
-            preferredShade: targetShade
-        };
-    });
+    // Initialize a 2D difference array. Its dimensions are (gridBlockSize + 1) x (gridBlockSize + 1)
+    // to handle boundary conditions when applying deltas up to index gridBlockSize - 1.
+    const shiftDeltaMatrix = Array.from({ length: gridBlockSize + 1 }, () => Array(gridBlockSize + 1).fill(0));
 
-    let topScoreFound = 0;
+    for (const currentPoint of pointConfigurations) {
+        const currentX = currentPoint.x;
+        const currentY = currentPoint.y;
+        const currentType = currentPoint.type;
 
-    // Iterate through potential horizontal shifts for the grid pattern
-    for (let horizontalPatternShift = 0; horizontalPatternShift < tileDimensionFactor; ++horizontalPatternShift) {
-        let currentPatternMatches = 0;
-        const rowMatchTallies = new Map();    // Counts pieces matching for a given row (adjustedY)
-        const rowMismatchTallies = new Map(); // Counts pieces NOT matching for a given row (adjustedY)
+        const xBaseBlock = Math.floor(currentX / gridBlockSize);
+        const yBaseBlock = Math.floor(currentY / gridBlockSize);
 
-        // Function to determine the shade of a square at a given coordinate
-        // based on the tile dimension and the current horizontal pattern shift.
-        // Conceptually: (block_x_coordinate + block_y_coordinate) % 2
-        const calculateGridSquareShade = (xPosition, yPosition, currentXOffset) => {
-            const xBlockIndex = Math.floor((xPosition + currentXOffset) / tileDimensionFactor);
-            const yBlockIndex = Math.floor(yPosition / tileDimensionFactor);
-            return (xBlockIndex + yBlockIndex) % 2;
-        };
+        // xShiftBoundary: The smallest 'i' in [0, K] where (currentX + i) / K changes its integer part.
+        // If currentX is a multiple of K, it means (currentX + i) / K will be xBaseBlock for all i in [0, K-1].
+        // In this case, the boundary effectively occurs at i = K.
+        const xShiftBoundary = (currentX % gridBlockSize === 0) ? gridBlockSize : (gridBlockSize - (currentX % gridBlockSize));
+        // yShiftBoundary: Similar logic for 'j' and currentY.
+        const yShiftBoundary = (currentY % gridBlockSize === 0) ? gridBlockSize : (gridBlockSize - (currentY % gridBlockSize));
 
-        // First pass: Calculate initial matches for the current horizontal shift and no vertical shift
-        for (const piece of gamePieces) {
-            const actualSquareShade = calculateGridSquareShade(piece.adjustedX, piece.adjustedY, horizontalPatternShift);
+        // The (i, j) shift space [0, K-1] x [0, K-1] is divided into up to four regions
+        // based on when (currentX + i) / K and (currentY + j) / K change their block values.
 
-            if (actualSquareShade === piece.preferredShade) {
-                currentPatternMatches++;
-                rowMatchTallies.set(piece.adjustedY, (rowMatchTallies.get(piece.adjustedY) || 0) + 1);
-            } else {
-                rowMismatchTallies.set(piece.adjustedY, (rowMismatchTallies.get(piece.adjustedY) || 0) + 1);
-            }
+        // Region 1: i in [0, xShiftBoundary - 1], j in [0, yShiftBoundary - 1]
+        // Here, x_block = xBaseBlock, y_block = yBaseBlock
+        if (((xBaseBlock ^ yBaseBlock) & 1) === currentType) {
+            applyRegionDelta(shiftDeltaMatrix, 0, 0, xShiftBoundary - 1, yShiftBoundary - 1, 1);
         }
 
-        // Update the maximum score found, considering both direct matches and their complement
-        // (complement represents the score if the entire board's color pattern was inverted)
-        topScoreFound = Math.max(topScoreFound, currentPatternMatches, totalItemCount - currentPatternMatches);
+        // Region 2: i in [xShiftBoundary, K - 1], j in [0, yShiftBoundary - 1]
+        // Here, x_block = xBaseBlock + 1, y_block = yBaseBlock
+        if ((( (xBaseBlock + 1) ^ yBaseBlock) & 1) === currentType) {
+            applyRegionDelta(shiftDeltaMatrix, xShiftBoundary, 0, gridBlockSize - 1, yShiftBoundary - 1, 1);
+        }
 
-        // Second pass: Efficiently update match count for various vertical shifts
-        // This leverages the precomputed row tallies
-        for (let verticalSliceIndex = 0; verticalSliceIndex < tileDimensionFactor - 1; ++verticalSliceIndex) {
-            // When the vertical pattern shifts, pieces in rows `verticalSliceIndex` and
-            // `verticalSliceIndex + tileDimensionFactor` effectively flip their match status.
-            const changeInMatches =
-                (rowMismatchTallies.get(verticalSliceIndex) || 0) - (rowMatchTallies.get(verticalSliceIndex) || 0) +
-                (rowMismatchTallies.get(verticalSliceIndex + tileDimensionFactor) || 0) - (rowMatchTallies.get(verticalSliceIndex + tileDimensionFactor) || 0);
+        // Region 3: i in [0, xShiftBoundary - 1], j in [yShiftBoundary, K - 1]
+        // Here, x_block = xBaseBlock, y_block = yBaseBlock + 1
+        if (((xBaseBlock ^ (yBaseBlock + 1)) & 1) === currentType) {
+            applyRegionDelta(shiftDeltaMatrix, 0, yShiftBoundary, xShiftBoundary - 1, gridBlockSize - 1, 1);
+        }
 
-            currentPatternMatches += changeInMatches;
-            topScoreFound = Math.max(topScoreFound, currentPatternMatches, totalItemCount - currentPatternMatches);
+        // Region 4: i in [xShiftBoundary, K - 1], j in [yShiftBoundary, K - 1]
+        // Here, x_block = xBaseBlock + 1, y_block = yBaseBlock + 1
+        if ((( (xBaseBlock + 1) ^ (yBaseBlock + 1)) & 1) === currentType) {
+            applyRegionDelta(shiftDeltaMatrix, xShiftBoundary, yShiftBoundary, gridBlockSize - 1, gridBlockSize - 1, 1);
         }
     }
 
-    console.log(topScoreFound);
+    let maximumAchievedMatches = 0;
+    // Compute 2D prefix sums from the difference array to get actual match counts for each shift (rowShift, colShift).
+    for (let rowShift = 0; rowShift < gridBlockSize; rowShift++) {
+        for (let colShift = 0; colShift < gridBlockSize; colShift++) {
+            // Apply the 2D prefix sum formula
+            if (rowShift > 0) shiftDeltaMatrix[rowShift][colShift] += shiftDeltaMatrix[rowShift - 1][colShift];
+            if (colShift > 0) shiftDeltaMatrix[rowShift][colShift] += shiftDeltaMatrix[rowShift][colShift - 1];
+            if (rowShift > 0 && colShift > 0) shiftDeltaMatrix[rowShift][colShift] -= shiftDeltaMatrix[rowShift - 1][colShift - 1];
+            
+            const currentShiftMatchCount = shiftDeltaMatrix[rowShift][colShift];
+            // Update the maximum, considering both the current pattern and its inverted version.
+            maximumAchievedMatches = Math.max(maximumAchievedMatches, currentShiftMatchCount, totalPoints - currentShiftMatchCount);
+        }
+    }
+
+    console.log(maximumAchievedMatches);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

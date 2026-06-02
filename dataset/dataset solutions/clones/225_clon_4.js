@@ -1,54 +1,49 @@
-function isNumberPrime(numeral) {
-    if (numeral <= 1) return false;
-    if (numeral <= 3) return true;
-    if (numeral % 2 === 0 || numeral % 3 === 0) return false;
+function obtainPrimes(limit) {
+  const nonPrimes = new Set([0, 1]);
 
-    for (let currentDivisor = 5; currentDivisor * currentDivisor <= numeral; currentDivisor += 6) {
-        if (numeral % currentDivisor === 0 || numeral % (currentDivisor + 2) === 0) {
-            return false;
-        }
+  for (let factor = 2; factor * factor <= limit; factor++) {
+    if (!nonPrimes.has(factor)) {
+      for (let multiple = factor * factor; multiple <= limit; multiple += factor) {
+        nonPrimes.add(multiple);
+      }
     }
-    return true;
+  }
+
+  const primeList = [];
+  for (let num = 2; num <= limit; num++) {
+    if (!nonPrimes.has(num)) {
+      primeList.push(num);
+    }
+  }
+  return primeList;
 }
 
-function retrievePrimes(ceilingValue) {
-    const collectedPrimes = [];
-    for (let k = 2; k <= ceilingValue; k++) {
-        if (isNumberPrime(k)) {
-            collectedPrimes.push(k);
-        }
-    }
-    return collectedPrimes;
-}
+const primeNumbers = obtainPrimes(50000);
+const primeLookup = new Set(primeNumbers);
 
-const calculatedPrimes = retrievePrimes(50000);
-const primeLookup = new Set(calculatedPrimes);
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericQueries = rawInput.trim().split('\n').filter(Boolean).map(Number);
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numericQueries = rawData.trim().split('\n').map(Number);
+for (const targetSum of numericQueries) {
+  if (targetSum === 0) {
+    break;
+  }
 
-let queryIndex = 0;
-while (true) {
-    const currentQuery = numericQueries[queryIndex++];
-    if (currentQuery === 0) {
-        break;
+  const uniqueCombinations = new Set();
+  for (const pA of primeNumbers) {
+    if (pA >= targetSum) {
+      break;
     }
 
-    let pairCounter = 0;
-    for (const firstTerm of calculatedPrimes) {
-        if (firstTerm >= currentQuery) {
-            break;
-        }
+    const pB = targetSum - pA;
 
-        const secondTerm = currentQuery - firstTerm;
-
-        if (secondTerm < firstTerm) {
-            continue;
-        }
-
-        if (primeLookup.has(secondTerm)) {
-            pairCounter++;
-        }
+    if (pB < pA) {
+      continue;
     }
-    console.log(pairCounter);
+
+    if (primeLookup.has(pB)) {
+      uniqueCombinations.add(`${Math.min(pA, pB)},${Math.max(pA, pB)}`);
+    }
+  }
+  console.log(uniqueCombinations.size);
 }

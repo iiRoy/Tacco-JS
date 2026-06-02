@@ -1,39 +1,37 @@
-const rawStream = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const lineSegments = rawStream.toString().split('\n');
+const sourceText = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineEntries = sourceText.split("\n");
 
-const computationMethods = {
+const operatorMap = {
     '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
     '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
     '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
     '/': (firstOperand, secondOperand) => Math.floor(firstOperand / secondOperand)
 };
 
-const queryIdentifier = '?';
-
-const terminationPoint = lineSegments.findIndex(segment => segment.includes(queryIdentifier));
-
-const calculableExpressions = terminationPoint !== -1 ? lineSegments.slice(0, terminationPoint) : lineSegments;
-
-const finalOutcome = calculableExpressions.reduce((accumulator, currentEntry) => {
-    const trimmedEntry = currentEntry.trim();
-    if (!trimmedEntry) {
-        return accumulator;
+const processedOutput = lineEntries.reduce((accumulatorState, currentEntry) => {
+    if (accumulatorState.completionFlag) {
+        return accumulatorState;
     }
 
-    const expressionParts = trimmedEntry.split(' ');
-    const leftValue = Number(expressionParts[0]);
-    const operatorSymbol = expressionParts[1];
-    const rightValue = Number(expressionParts[2]);
+    const entryComponents = currentEntry.split(" ");
+    const valueOne = Number(entryComponents[0]);
+    const operationSymbol = entryComponents[1];
+    const valueTwo = Number(entryComponents[2]);
 
-    const performOperation = computationMethods[operatorSymbol];
-
-    if (performOperation) {
-        return accumulator + performOperation(leftValue, rightValue) + '\n';
-    } else {
-        // This case should ideally not be reached if terminationPoint logic is correct
-        return accumulator;
+    if (operationSymbol === "?") {
+        return { resultCollection: accumulatorState.resultCollection, completionFlag: true };
     }
-}, '');
 
-console.log(finalOutcome.trim());
+    const operationFunction = operatorMap[operationSymbol];
+    if (operationFunction) {
+        accumulatorState.resultCollection.push(operationFunction(valueOne, valueTwo));
+    }
+
+    return accumulatorState;
+}, { resultCollection: [], completionFlag: false });
+
+const finalResultString = processedOutput.resultCollection.join("\n");
+
+console.log(finalResultString.trim());

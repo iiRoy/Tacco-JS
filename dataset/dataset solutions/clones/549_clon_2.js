@@ -1,36 +1,47 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input stream
 
-let textLines = dataStream.trim().split("\n");
+let inputLines = rawData.trim().split('\n'); // Split the raw data into an array of lines, removing any leading or trailing whitespace
 
-while (textLines.length > 1) {
-    const dictionarySize = textLines.shift();
+// Main loop to process multiple sets of data
+while (inputLines.length > 1) {
+  // The first line of each set indicates the number of key-value pairs for the translation map
+  const mapEntryCount = parseInt(inputLines.shift(), 10);
 
-    const symbolStore = {};
+  // Initialize an empty object to store the key-value translations
+  const translationMap = {};
 
-    for (let currentIdx = 0; currentIdx < dictionarySize; currentIdx++) {
-        const pairComponents = textLines[currentIdx].trim().split(" ");
-        symbolStore[pairComponents[0]] = pairComponents[1];
-    }
+  // Populate the translation map with entries from the input lines
+  for (let idx = 0; idx < mapEntryCount; idx++) {
+    // Each line contains a key and its corresponding value, separated by a space
+    const pairParts = inputLines[idx].trim().split(' ');
+    translationMap[pairParts[0]] = pairParts[1]; // Store the key-value pair
+  }
 
-    textLines = textLines.slice(dictionarySize, textLines.length + 1);
+  // Remove the processed map entries from the input lines array
+  inputLines = inputLines.slice(mapEntryCount);
 
-    const outputTokenCount = textLines.shift();
+  // The next line indicates the number of keys to query for translation
+  const queryCount = parseInt(inputLines.shift(), 10);
 
-    let composedText = "";
+  // Initialize an empty string to build the translated output
+  let resultString = '';
 
-    for (let outputIndex = 0; outputIndex < outputTokenCount; outputIndex++) {
-        const searchToken = textLines[outputIndex].trim();
+  // Iterate through the query keys and build the result string
+  for (let idx = 0; idx < queryCount; idx++) {
+    const currentKey = inputLines[idx].trim(); // Get the current key to look up
 
-        composedText += (symbolStore.hasOwnProperty(searchToken))
-            ? symbolStore[searchToken]
-            : searchToken;
-    }
+    // If the key exists in the translation map, append its translated value; otherwise, append the original key
+    resultString += (translationMap.hasOwnProperty(currentKey)) ? translationMap[currentKey] : currentKey;
+  }
 
-    textLines = textLines.slice(outputTokenCount, textLines.length + 1);
+  // Remove the processed query keys from the input lines array
+  inputLines = inputLines.slice(queryCount);
 
-    console.log(composedText);
+  // Output the final translated string for the current data set
+  console.log(resultString);
 
-    if (textLines[0] === "0") {
-        break;
-    }
+  // Check if the next line is "0", which signals the end of all input batches
+  if (inputLines[0] === '0') {
+    break; // Exit the main processing loop
+  }
 }

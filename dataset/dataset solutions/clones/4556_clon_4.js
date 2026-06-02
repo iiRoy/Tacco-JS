@@ -3,48 +3,40 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
-const acquireDataStream = () => {
-    return new Promise((resolveSource) => {
-        let cumulativePayload = '';
-        process.stdin.on('readable', () => {
-            let chunk;
-            while (null !== (chunk = process.stdin.read())) {
-                cumulativePayload += chunk;
-            }
-        });
-        process.stdin.on('end', () => {
-            resolveSource(cumulativePayload);
-        });
-    });
-};
+let dataBuffer = '';
+let lineIndex = 0;
 
-function calculateProcessedValue(firstElement, secondElement, thirdElement) {
-    const difference = thirdElement - secondElement;
-    const adjustedFirst = firstElement - 2;
-    const intermediateProduct = adjustedFirst * difference;
-    const finalIntermediate = intermediateProduct + 1;
+process.stdin.on('data', function(chunk) {
+    dataBuffer += chunk;
+});
 
-    if (finalIntermediate < 0) {
-        return 0;
-    } else {
-        return finalIntermediate;
-    }
+process.stdin.on('end', function() {
+    dataBuffer = dataBuffer.split('\n');
+    executeProgram();
+});
+
+function fetchLine() {
+    return dataBuffer[lineIndex++];
 }
 
-(async () => {
-    const rawInputContent = await acquireDataStream();
-    const processedLines = rawInputContent.split('\n').filter(line => line.trim() !== '');
+function executeProgram() {
+    let rawInputLine = fetchLine();
+    let components = rawInputLine.split(' ');
 
-    let lineIterator = 0;
-    const retrieveNextLine = () => processedLines[lineIterator++];
+    let numericComponents = [];
+    for (let i = 0; i < components.length; i++) {
+        numericComponents.push(Number(components[i]));
+    }
 
-    const numericElements = retrieveNextLine().split(' ').map(str => parseInt(str, 10));
+    let [count, startVal, endVal] = numericComponents;
 
-    const paramA = numericElements[0];
-    const paramB = numericElements[1];
-    const paramC = numericElements[2];
+    let firstFactor = count - 2;
+    let secondFactor = endVal - startVal;
+    let productTerm = firstFactor * secondFactor;
+    let intermediateSum = productTerm + 1;
 
-    const finalOutput = calculateProcessedValue(paramA, paramB, paramC);
+    // Equivalent to Math.max(intermediateSum, 0)
+    let finalOutcome = (intermediateSum + Math.abs(intermediateSum)) / 2;
 
-    process.stdout.write(finalOutput.toString() + '\n');
-})();
+    console.log(finalOutcome);
+}

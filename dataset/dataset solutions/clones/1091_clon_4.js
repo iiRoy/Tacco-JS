@@ -1,125 +1,101 @@
-class TreeUnit {
-    constructor(val, leftRef, rightRef) {
-        this.value = val;
-        this.leftIdentifier = leftRef;
-        this.rightIdentifier = rightRef;
-        this.leftSub = null;
-        this.rightSub = null;
-    }
-}
-
-function gatherPreorder(rootUnit, collector) {
-    if (!rootUnit) return;
-    const traversalStack = [];
-    traversalStack.push(rootUnit);
-
-    while (traversalStack.length > 0) {
-        const currentUnit = traversalStack.pop();
-        collector.push(currentUnit.value);
-
-        if (currentUnit.rightSub) {
-            traversalStack.push(currentUnit.rightSub);
+function* obtainPreorderSequence(startIdentifier, nodeMap) {
+    if (startIdentifier === -1) return;
+    const processingStack = [startIdentifier];
+    while (processingStack.length > 0) {
+        const currentIdentifier = processingStack.pop();
+        yield currentIdentifier;
+        const currentObject = nodeMap.get(currentIdentifier);
+        if (currentObject.rightChildIdentifier !== -1) {
+            processingStack.push(currentObject.rightChildIdentifier);
         }
-        if (currentUnit.leftSub) {
-            traversalStack.push(currentUnit.leftSub);
+        if (currentObject.leftChildIdentifier !== -1) {
+            processingStack.push(currentObject.leftChildIdentifier);
         }
     }
 }
 
-function gatherInorder(rootUnit, collector) {
-    if (!rootUnit) return;
-    const traversalStack = [];
-    let presentElement = rootUnit;
-
-    while (presentElement || traversalStack.length > 0) {
-        while (presentElement) {
-            traversalStack.push(presentElement);
-            presentElement = presentElement.leftSub;
+function* obtainInorderSequence(startIdentifier, nodeMap) {
+    const processingStack = [];
+    let currentIdentifier = startIdentifier;
+    while (currentIdentifier !== -1 || processingStack.length > 0) {
+        while (currentIdentifier !== -1) {
+            processingStack.push(currentIdentifier);
+            currentIdentifier = nodeMap.get(currentIdentifier).leftChildIdentifier;
         }
-
-        presentElement = traversalStack.pop();
-        collector.push(presentElement.value);
-        presentElement = presentElement.rightSub;
+        currentIdentifier = processingStack.pop();
+        yield currentIdentifier;
+        currentIdentifier = nodeMap.get(currentIdentifier).rightChildIdentifier;
     }
 }
 
-function gatherPostorder(rootUnit, collector) {
-    if (!rootUnit) return;
-    const temporaryStack = [];
-    const outputSegment = [];
-    temporaryStack.push(rootUnit);
-
-    while (temporaryStack.length > 0) {
-        const presentElement = temporaryStack.pop();
-        outputSegment.push(presentElement.value);
-
-        if (presentElement.leftSub) {
-            temporaryStack.push(presentElement.leftSub);
+function* obtainPostorderSequence(startIdentifier, nodeMap) {
+    if (startIdentifier === -1) return;
+    const stackOne = [startIdentifier];
+    const stackTwo = [];
+    while (stackOne.length > 0) {
+        const currentIdentifier = stackOne.pop();
+        stackTwo.push(currentIdentifier);
+        const currentObject = nodeMap.get(currentIdentifier);
+        if (currentObject.leftChildIdentifier !== -1) {
+            stackOne.push(currentObject.leftChildIdentifier);
         }
-        if (presentElement.rightSub) {
-            temporaryStack.push(presentElement.rightSub);
+        if (currentObject.rightChildIdentifier !== -1) {
+            stackOne.push(currentObject.rightChildIdentifier);
         }
     }
-    while (outputSegment.length > 0) {
-        collector.push(outputSegment.pop());
+    while (stackTwo.length > 0) {
+        yield stackTwo.pop();
     }
 }
 
-const entryData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataLines = entryData.trim().split('\n');
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = inputData.trim().split('\n');
 
-const countNodes = +dataLines.shift();
+var nodeCount = +dataLines.shift();
 
-const structureMap = new Map();
-const kidIdentifiers = new Set();
+var nodeRegistry = new Map();
 
-for (let i = 0; i < countNodes; i++) {
-    const parts = dataLines.shift().split(' ');
-    const idVal = +parts[0];
-    const leftVal = +parts[1];
-    const rightVal = +parts[2];
+for (var i = 0; i < nodeCount; i++) {
+    var parts = dataLines.shift().split(' ');
+    var identifier = +parts[0];
+    var leftId = +parts[1];
+    var rightId = +parts[2];
 
-    structureMap.set(idVal, new TreeUnit(idVal, leftVal, rightVal));
+    nodeRegistry.set(identifier, {
+        nodeIdentifier: identifier,
+        leftChildIdentifier: leftId,
+        rightChildIdentifier: rightId,
+        parentIdentifier: -1
+    });
+}
 
-    if (leftVal !== -1) {
-        kidIdentifiers.add(leftVal);
+for (const nodeObject of nodeRegistry.values()) {
+    if (nodeObject.leftChildIdentifier !== -1) {
+        nodeRegistry.get(nodeObject.leftChildIdentifier).parentIdentifier = nodeObject.nodeIdentifier;
     }
-    if (rightVal !== -1) {
-        kidIdentifiers.add(rightVal);
+    if (nodeObject.rightChildIdentifier !== -1) {
+        nodeRegistry.get(nodeObject.rightChildIdentifier).parentIdentifier = nodeObject.nodeIdentifier;
     }
 }
 
-let initialElement = null;
-let initialElementId = -1;
-
-for (const [id, unit] of structureMap.entries()) {
-    if (!kidIdentifiers.has(id)) {
-        initialElementId = id;
-    }
-    if (unit.leftIdentifier !== -1) {
-        unit.leftSub = structureMap.get(unit.leftIdentifier);
-    }
-    if (unit.rightIdentifier !== -1) {
-        unit.rightSub = structureMap.get(unit.rightIdentifier);
+var treeRootNode = null;
+for (const nodeObject of nodeRegistry.values()) {
+    if (nodeObject.parentIdentifier === -1) {
+        treeRootNode = nodeObject;
+        break;
     }
 }
 
-initialElement = structureMap.get(initialElementId);
+var traversalResult;
 
-const resultCollection = [];
-
-gatherPreorder(initialElement, resultCollection);
+traversalResult = [...obtainPreorderSequence(treeRootNode.nodeIdentifier, nodeRegistry)];
 console.log('Preorder');
-console.log(' ' + resultCollection.join(' '));
+console.log(' ' + traversalResult.join(' '));
 
-resultCollection.length = 0;
-
-gatherInorder(initialElement, resultCollection);
+traversalResult = [...obtainInorderSequence(treeRootNode.nodeIdentifier, nodeRegistry)];
 console.log('Inorder');
-console.log(' ' + resultCollection.join(' '));
+console.log(' ' + traversalResult.join(' '));
 
-resultCollection.length = 0;
-
-gatherPostorder(initialElement, resultCollection);
+traversalResult = [...obtainPostorderSequence(treeRootNode.nodeIdentifier, nodeRegistry)];
 console.log('Postorder');
-console.log(' ' + resultCollection.join(' '));
+console.log(' ' + traversalResult.join(' '));

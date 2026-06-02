@@ -1,109 +1,110 @@
-let inputLinesForProcessing;
-let currentLinePointer = 0;
-let currentLineTokensBuffer = [];
+const getParser = (function() {
+    function createParser(inputString) {
+        const lines = inputString.trim().split("\n");
+        let currentLineIndex = 0;
+        let currentLineTokens = null;
+        let currentTokenIndex = 0;
 
-const setupInputProcessor = (rawContent) => {
-    inputLinesForProcessing = rawContent.trim().split("\n");
-    currentLinePointer = 0;
-    currentLineTokensBuffer = [];
-};
+        return {
+            readToken: function(asString) {
+                if (currentLineTokens === null || currentTokenIndex >= currentLineTokens.length) {
+                    if (currentLineIndex >= lines.length) {
+                        return asString ? "" : NaN;
+                    }
+                    currentLineTokens = lines[currentLineIndex].split(" ");
+                    currentTokenIndex = 0;
+                }
 
-const extractNextValue = (asString = false) => {
-    if (currentLineTokensBuffer.length === 0) {
-        if (currentLinePointer >= inputLinesForProcessing.length) {
-            throw new Error("Input exhausted.");
-        }
-        currentLineTokensBuffer = inputLinesForProcessing[currentLinePointer].split(" ");
-        currentLinePointer++;
-    }
-    const extractedToken = currentLineTokensBuffer.shift();
-    return asString ? extractedToken : Number(extractedToken);
-};
+                const token = currentLineTokens[currentTokenIndex];
+                currentTokenIndex++;
 
-const findOverallMax = (...values) => {
-    let resultCandidate = values[0];
-    for (let j = 1; j < values.length; j++) {
-        if (Number.isFinite(values[j])) {
-            if (!Number.isFinite(resultCandidate) || values[j] > resultCandidate) {
-                resultCandidate = values[j];
+                if (currentTokenIndex >= currentLineTokens.length) {
+                    currentLineIndex++;
+                    currentLineTokens = null;
+                }
+
+                return asString ? token : +token;
             }
-        }
+        };
     }
-    return resultCandidate;
-};
+    return createParser;
+})();
 
-const findOverallMin = (...values) => {
-    let resultCandidate = values[0];
-    for (let j = 1; j < values.length; j++) {
-        if (Number.isFinite(values[j])) {
-            if (!Number.isFinite(resultCandidate) || values[j] < resultCandidate) {
-                resultCandidate = values[j];
-            }
-        }
+function createNestedArray(dimensions, initialValueFactory) {
+    if (dimensions.length === 0) {
+        return initialValueFactory();
     }
-    return resultCandidate;
-};
+    const currentDimSize = dimensions[0];
+    const remainingDims = dimensions.slice(1);
+    return Array.from({ length: currentDimSize }, () => createNestedArray(remainingDims, initialValueFactory));
+}
 
-let boundaryDimensions = Array.from({ length: 6 }, () => []);
-let distinctThresholds = new Set([0]);
+const boundaryRanges = createNestedArray([6], () => ({ min: Infinity, max: -Infinity }));
+const uniqueValues = new Set([0]);
 
-const adjustBoundary = (indexIdentifier, coordinateValue) => {
-    if (boundaryDimensions[indexIdentifier].length === 0) {
-        boundaryDimensions[indexIdentifier][0] = coordinateValue;
-        boundaryDimensions[indexIdentifier][1] = coordinateValue;
-    } else {
-        boundaryDimensions[indexIdentifier][0] = Math.min(boundaryDimensions[indexIdentifier][0], coordinateValue);
-        boundaryDimensions[indexIdentifier][1] = Math.max(boundaryDimensions[indexIdentifier][1], coordinateValue);
+function updateBoundary(index, value) {
+    boundaryRanges[index].min = Math.min(boundaryRanges[index].min, value);
+    boundaryRanges[index].max = Math.max(boundaryRanges[index].max, value);
+}
+
+function findMaximum(...values) {
+    const validValues = values.filter(v => !isNaN(v));
+    if (validValues.length === 0) {
+        return values.length > 0 ? values[0] : undefined;
     }
-};
+    return Math.max(...validValues);
+}
 
-const sanitizeForMax = val => {
-    const num = Number(val);
-    return Number.isFinite(num) ? Math.max(0, num) : 0;
-};
+function findMinimum(...values) {
+    const validValues = values.filter(v => !isNaN(v));
+    if (validValues.length === 0) {
+        return values.length > 0 ? values[0] : undefined;
+    }
+    return Math.min(...validValues);
+}
 
-const deriveAndStoreThresholds = (valOne, valTwo, valThree) => {
-    distinctThresholds.add(Math.max(0, sanitizeForMax(valThree - valTwo), sanitizeForMax((valThree - valOne) / 2)));
-    distinctThresholds.add(Math.max(0, sanitizeForMax(valTwo - valOne), sanitizeForMax((valThree - valOne) / 2)));
-};
+function populateUniqueValues(valA, valB, valC) {
+    const term1 = findMaximum(0, (valC - valB) || 0, (valC - valA) / 2 || 0);
+    const term2 = findMaximum(0, (valB - valA) || 0, (valC - valA) / 2 || 0);
+    uniqueValues.add(term1);
+    uniqueValues.add(term2);
+}
 
-const executeProblemSolution = () => {
-    const totalOperations = extractNextValue();
+const inputReader = getParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const directionDispatch = {
-        "U": (yCoord, xCoord) => { adjustBoundary(0, yCoord); adjustBoundary(5, xCoord); },
-        "R": (yCoord, xCoord) => { adjustBoundary(1, xCoord); adjustBoundary(4, yCoord); },
-        "D": (yCoord, xCoord) => { adjustBoundary(2, yCoord); adjustBoundary(5, xCoord); },
-        "L": (yCoord, xCoord) => { adjustBoundary(3, xCoord); adjustBoundary(4, yCoord); }
+function processMainLogic() {
+    const numOperations = inputReader.readToken();
+
+    const directionHandlers = {
+        "U": (xCoord, yCoord) => { updateBoundary(0, yCoord); updateBoundary(5, xCoord); },
+        "R": (xCoord, yCoord) => { updateBoundary(1, xCoord); updateBoundary(4, yCoord); },
+        "D": (xCoord, yCoord) => { updateBoundary(2, yCoord); updateBoundary(5, xCoord); },
+        "L": (xCoord, yCoord) => { updateBoundary(3, xCoord); updateBoundary(4, yCoord); }
     };
 
-    Array.from({ length: totalOperations }).forEach(() => {
-        const xInput = extractNextValue();
-        const yInput = extractNextValue();
-        const directionInput = extractNextValue(true);
-        directionDispatch[directionInput](yInput, xInput);
-    });
-
-    deriveAndStoreThresholds(boundaryDimensions[0][1], boundaryDimensions[4][1], boundaryDimensions[2][1]);
-    deriveAndStoreThresholds(-boundaryDimensions[2][0], -boundaryDimensions[4][0], -boundaryDimensions[0][0]);
-    deriveAndStoreThresholds(boundaryDimensions[1][1], boundaryDimensions[5][1], boundaryDimensions[3][1]);
-    deriveAndStoreThresholds(-boundaryDimensions[3][0], -boundaryDimensions[5][0], -boundaryDimensions[1][0]);
-
-    let minimumArea = Infinity;
-
-    for (const currentThreshold of distinctThresholds) {
-        const topEdge = findOverallMax(boundaryDimensions[0][1] + currentThreshold, boundaryDimensions[2][1] - currentThreshold, boundaryDimensions[4][1]);
-        const bottomEdge = findOverallMin(boundaryDimensions[0][0] + currentThreshold, boundaryDimensions[2][0] - currentThreshold, boundaryDimensions[4][0]);
-        const rightEdge = findOverallMax(boundaryDimensions[1][1] + currentThreshold, boundaryDimensions[3][1] - currentThreshold, boundaryDimensions[5][1]);
-        const leftEdge = findOverallMin(boundaryDimensions[1][0] + currentThreshold, boundaryDimensions[3][0] - currentThreshold, boundaryDimensions[5][0]);
-
-        const calculatedArea = (topEdge - bottomEdge) * (rightEdge - leftEdge);
-        if (calculatedArea < minimumArea) {
-            minimumArea = calculatedArea;
-        }
+    for (let opIdx = 0; opIdx < numOperations; opIdx++) {
+        const currentX = inputReader.readToken();
+        const currentY = inputReader.readToken();
+        const directionChar = inputReader.readToken(true);
+        directionHandlers[directionChar](currentX, currentY);
     }
-    return minimumArea;
-};
 
-setupInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-console.log(executeProblemSolution());
+    populateUniqueValues(boundaryRanges[0].max, boundaryRanges[4].max, boundaryRanges[2].max);
+    populateUniqueValues(-boundaryRanges[2].min, -boundaryRanges[4].min, -boundaryRanges[0].min);
+    populateUniqueValues(boundaryRanges[1].max, boundaryRanges[5].max, boundaryRanges[3].max);
+    populateUniqueValues(-boundaryRanges[3].min, -boundaryRanges[5].min, -boundaryRanges[1].min);
+
+    const minimumArea = Array.from(uniqueValues).reduce((currentMinArea, currentI) => {
+        const upper = findMaximum(boundaryRanges[0].max + currentI, boundaryRanges[2].max - currentI, boundaryRanges[4].max);
+        const lower = findMinimum(boundaryRanges[0].min + currentI, boundaryRanges[2].min - currentI, boundaryRanges[4].min);
+        const right = findMaximum(boundaryRanges[1].max + currentI, boundaryRanges[3].max - currentI, boundaryRanges[5].max);
+        const left = findMinimum(boundaryRanges[1].min + currentI, boundaryRanges[3].min - currentI, boundaryRanges[5].min);
+        
+        const currentArea = (upper - lower) * (right - left);
+        return findMinimum(currentMinArea, currentArea);
+    }, 1e18);
+
+    return minimumArea;
+}
+
+console.log(processMainLogic());

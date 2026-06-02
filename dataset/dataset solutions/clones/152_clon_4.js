@@ -1,148 +1,93 @@
-const inputBuffer = require('fs').readFileSync(0);
-const rawInputLines = inputBuffer.toString().trim().split('\n');
+const fileSys = require('fs');
+const dataSize = fileSys.fstatSync(process.stdin.fd).size;
+const inputBuffer = Buffer.alloc(dataSize);
+const readBytesCount = fileSys.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
+const gridData = inputBuffer.toString('utf8', 0, readBytesCount).trim().split('\n');
 
-const totalGridRows = rawInputLines.length;
-const totalGridCols = rawInputLines[0].length;
+function checkPathSegment(cellX, cellY, segmentType, mazeGrid) {
+    let gridRow, gridCol;
+    let explicitRowBoundaryCheck = true;
 
-let hPosition = 0;
-let vPosition = 0;
+    switch (segmentType) {
+        case 'D':
+            gridRow = cellY * 2 + 1;
+            gridCol = cellX * 2;
+            explicitRowBoundaryCheck = (gridRow < mazeGrid.length);
+            break;
+        case 'U':
+            gridRow = cellY * 2 - 1;
+            gridCol = cellX * 2;
+            explicitRowBoundaryCheck = (gridRow > 0);
+            break;
+        case 'L':
+            gridRow = cellY * 2;
+            gridCol = cellX * 2 - 1;
+            break;
+        case 'R':
+            gridRow = cellY * 2;
+            gridCol = cellX * 2;
+            break;
+        default:
+            return false;
+    }
 
-const MovementDesignations = {
-    NORTHBOUND: 'U',
-    EASTBOUND: 'R',
-    SOUTHBOUND: 'D',
-    WESTBOUND: 'L'
+    if (!explicitRowBoundaryCheck) {
+        return false;
+    }
+
+    const maxCol = mazeGrid[0] ? mazeGrid[0].length : 0;
+    return gridRow >= 0 && gridRow < mazeGrid.length &&
+           gridCol >= 0 && gridCol < maxCol &&
+           +mazeGrid[gridRow][gridCol];
+}
+
+const movementStrategies = {
+    'L': [
+        { segment: 'D', nextDirection: 'D', deltaX: 0, deltaY: 1 },
+        { segment: 'L', nextDirection: 'L', deltaX: -1, deltaY: 0 },
+        { segment: 'U', nextDirection: 'U', deltaX: 0, deltaY: -1 },
+        { segment: 'R', nextDirection: 'R', deltaX: 1, deltaY: 0 }
+    ],
+    'R': [
+        { segment: 'U', nextDirection: 'U', deltaX: 0, deltaY: -1 },
+        { segment: 'R', nextDirection: 'R', deltaX: 1, deltaY: 0 },
+        { segment: 'D', nextDirection: 'D', deltaX: 0, deltaY: 1 },
+        { segment: 'L', nextDirection: 'L', deltaX: -1, deltaY: 0 }
+    ],
+    'D': [
+        { segment: 'R', nextDirection: 'R', deltaX: 1, deltaY: 0 },
+        { segment: 'D', nextDirection: 'D', deltaX: 0, deltaY: 1 },
+        { segment: 'L', nextDirection: 'L', deltaX: -1, deltaY: 0 },
+        { segment: 'U', nextDirection: 'U', deltaX: 0, deltaY: -1 }
+    ],
+    'U': [
+        { segment: 'L', nextDirection: 'L', deltaX: -1, deltaY: 0 },
+        { segment: 'U', nextDirection: 'U', deltaX: 0, deltaY: -1 },
+        { segment: 'R', nextDirection: 'R', deltaX: 1, deltaY: 0 },
+        { segment: 'D', nextDirection: 'D', deltaX: 0, deltaY: 1 }
+    ]
 };
 
-let currentOrientation = MovementDesignations.EASTBOUND;
+function processMaze() {
+    let currentPosition = { x: 0, y: 0, direction: 'R' };
+    const pathTrace = [];
 
-const traversalPath = [];
+    do {
+        const currentDirectionRules = movementStrategies[currentPosition.direction];
+        
+        const chosenMove = currentDirectionRules.find(rule => 
+            checkPathSegment(currentPosition.x, currentPosition.y, rule.segment, gridData)
+        );
 
-function checkCellAvailability(rowIdx, colIdx) {
-    return rowIdx >= 0 && rowIdx < totalGridRows &&
-           colIdx >= 0 && colIdx < totalGridCols &&
-           rawInputLines[rowIdx][colIdx] === '1';
+        currentPosition.direction = chosenMove.nextDirection;
+        currentPosition.x += chosenMove.deltaX;
+        currentPosition.y += chosenMove.deltaY;
+        
+        pathTrace.push(currentPosition.direction);
+
+    } while (currentPosition.x !== 0 || currentPosition.y !== 0);
+
+    console.log(pathTrace.join(''));
 }
 
-const actionPlans = new Map();
-
-actionPlans.set(MovementDesignations.EASTBOUND, [
-    { // Try NORTH
-        validate: (v, h) => checkCellAvailability(v * 2 - 1, h),
-        execute: (v, h) => [v - 1, h],
-        newOrientation: MovementDesignations.NORTHBOUND
-    },
-    { // Try EAST
-        validate: (v, h) => checkCellAvailability(v * 2, h),
-        execute: (v, h) => [v, h + 1],
-        newOrientation: MovementDesignations.EASTBOUND
-    },
-    { // Try SOUTH
-        validate: (v, h) => checkCellAvailability(v * 2 + 1, h),
-        execute: (v, h) => [v + 1, h],
-        newOrientation: MovementDesignations.SOUTHBOUND
-    },
-    { // Try WEST
-        validate: (v, h) => checkCellAvailability(v * 2, h - 1),
-        execute: (v, h) => [v, h - 1],
-        newOrientation: MovementDesignations.WESTBOUND
-    }
-]);
-
-actionPlans.set(MovementDesignations.SOUTHBOUND, [
-    { // Try EAST
-        validate: (v, h) => checkCellAvailability(v * 2, h),
-        execute: (v, h) => [v, h + 1],
-        newOrientation: MovementDesignations.EASTBOUND
-    },
-    { // Try SOUTH
-        validate: (v, h) => checkCellAvailability(v * 2 + 1, h),
-        execute: (v, h) => [v + 1, h],
-        newOrientation: MovementDesignations.SOUTHBOUND
-    },
-    { // Try WEST
-        validate: (v, h) => checkCellAvailability(v * 2, h - 1),
-        execute: (v, h) => [v, h - 1],
-        newOrientation: MovementDesignations.WESTBOUND
-    },
-    { // Try NORTH
-        validate: (v, h) => checkCellAvailability(v * 2 - 1, h),
-        execute: (v, h) => [v - 1, h],
-        newOrientation: MovementDesignations.NORTHBOUND
-    }
-]);
-
-actionPlans.set(MovementDesignations.WESTBOUND, [
-    { // Try SOUTH
-        validate: (v, h) => checkCellAvailability(v * 2 + 1, h),
-        execute: (v, h) => [v + 1, h],
-        newOrientation: MovementDesignations.SOUTHBOUND
-    },
-    { // Try WEST
-        validate: (v, h) => checkCellAvailability(v * 2, h - 1),
-        execute: (v, h) => [v, h - 1],
-        newOrientation: MovementDesignations.WESTBOUND
-    },
-    { // Try NORTH
-        validate: (v, h) => checkCellAvailability(v * 2 - 1, h),
-        execute: (v, h) => [v - 1, h],
-        newOrientation: MovementDesignations.NORTHBOUND
-    },
-    { // Try EAST
-        validate: (v, h) => checkCellAvailability(v * 2, h),
-        execute: (v, h) => [v, h + 1],
-        newOrientation: MovementDesignations.EASTBOUND
-    }
-]);
-
-actionPlans.set(MovementDesignations.NORTHBOUND, [
-    { // Try WEST
-        validate: (v, h) => checkCellAvailability(v * 2, h - 1),
-        execute: (v, h) => [v, h - 1],
-        newOrientation: MovementDesignations.WESTBOUND
-    },
-    { // Try NORTH
-        validate: (v, h) => checkCellAvailability(v * 2 - 1, h),
-        execute: (v, h) => [v - 1, h],
-        newOrientation: MovementDesignations.NORTHBOUND
-    },
-    { // Try EAST
-        validate: (v, h) => checkCellAvailability(v * 2, h),
-        execute: (v, h) => [v, h + 1],
-        newOrientation: MovementDesignations.EASTBOUND
-    },
-    { // Try SOUTH
-        validate: (v, h) => checkCellAvailability(v * 2 + 1, h),
-        execute: (v, h) => [v + 1, h],
-        newOrientation: MovementDesignations.SOUTHBOUND
-    }
-]);
-
-for (let stepCount = 0; stepCount < 1000000; stepCount++) {
-    const currentActionSequence = actionPlans.get(currentOrientation);
-    let actionExecuted = false;
-
-    for (const plan of currentActionSequence) {
-        if (plan.validate(vPosition, hPosition)) {
-            const [nextV, nextH] = plan.execute(vPosition, hPosition);
-            vPosition = nextV;
-            hPosition = nextH;
-            currentOrientation = plan.newOrientation;
-            traversalPath.push(currentOrientation);
-            actionExecuted = true;
-            break;
-        }
-    }
-
-    if (!actionExecuted) {
-        // This indicates a logical flaw if the problem guarantees a solvable path.
-        // The original code always finds a path by its 'else' branches.
-        break;
-    }
-
-    if (hPosition === 0 && vPosition === 0) {
-        break;
-    }
-}
-
-console.log(traversalPath.join(''));
+processMaze();

@@ -1,58 +1,53 @@
-var ParameterSet = function(sourceText) {
-    var lines = sourceText.trim().split('\n');
-    var firstLineParts = lines[0].split(' ').map(Number);
-    this.arrayDimension = firstLineParts[0];
-    this.iterationCount = firstLineParts[1];
-    this.initialConfiguration = lines[1].split(' ').map(Number);
-};
+"use strict";
 
-var advanceConfiguration = function(currentConfiguration, currentDimension) {
-    var impactRegister = new Map();
+const fs = require("fs");
 
-    currentConfiguration.forEach(function(magnitude, position) {
-        var reachStart = Math.max(0, position - magnitude);
-        var reachEnd = Math.min(position + magnitude + 1, currentDimension);
-        
-        impactRegister.set(reachStart, (impactRegister.get(reachStart) || 0) + 1);
-        impactRegister.set(reachEnd, (impactRegister.get(reachEnd) || 0) - 1);
-    });
+const run = source => {
+  const rows = source.trim().split("\n");
+  const [N, K] = rows[0].split(" ").map(value => parseInt(value));
+  let state = rows[1].split(" ").map(value => parseInt(value));
 
-    var resultantConfiguration = [];
-    var runningTotal = 0;
-    
-    for (var k = 0; k < currentDimension; k++) {
-        runningTotal += (impactRegister.get(k) || 0);
-        resultantConfiguration.push(runningTotal);
+  for (let step = 0; step < K; step++) {
+    const boundaries = [];
+
+    for (let center = 0; center < N; center++) {
+      const power = state[center];
+      const left = Math.max(0, center - power);
+      const right = Math.min(center + power + 1, N);
+
+      boundaries.push([left, 1]);
+      boundaries.push([right, -1]);
     }
-    return resultantConfiguration;
-};
 
-var checkUniformity = function(dataSeries, uniformValue) {
-    var allMatch = true;
-    var index = 0;
-    while (index < dataSeries.length) {
-        if (dataSeries[index] !== uniformValue) {
-            allMatch = false;
-            break;
-        }
-        index++;
+    boundaries.sort((a, b) => a[0] - b[0]);
+
+    const next = new Array(N);
+    let active = 0;
+    let cursor = 0;
+
+    for (let position = 0; position < N; position++) {
+      while (cursor < boundaries.length && boundaries[cursor][0] <= position) {
+        active += boundaries[cursor][1];
+        cursor++;
+      }
+      next[position] = active;
     }
-    return allMatch;
-};
 
-var simulateEvolution = function(remainingSteps, currentData, dataSize) {
-    if (remainingSteps <= 0 || checkUniformity(currentData, dataSize)) {
-        return currentData;
-    } else {
-        var nextData = advanceConfiguration(currentData, dataSize);
-        return simulateEvolution(remainingSteps - 1, nextData, dataSize);
+    let completed = true;
+    for (let position = 0; position < N; position++) {
+      if (next[position] !== N) {
+        completed = false;
+        break;
+      }
     }
+
+    state = next;
+    if (completed) {
+      break;
+    }
+  }
+
+  console.log(state.join(" "));
 };
 
-var orchestrateSimulation = function(sourceContent) {
-    var params = new ParameterSet(sourceContent);
-    var finalResult = simulateEvolution(params.iterationCount, params.initialConfiguration, params.arrayDimension);
-    console.log(finalResult.join(' '));
-};
-
-orchestrateSimulation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+run(fs.readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,53 @@
-(function(scriptSource){
-    const collectionOfPiles = new Map();
+(function(inputSource) {
+    const rawLines = inputSource.split('\n');
+    const operationSequence = [];
+    let currentLineIndex = 1;
 
-    const commandProcessors = {
-        deposit: function(pileIdentifier, itemValue) {
-            if (!collectionOfPiles.has(pileIdentifier)) {
-                collectionOfPiles.set(pileIdentifier, []);
-            }
-            collectionOfPiles.get(pileIdentifier).push(itemValue);
+    while (currentLineIndex < rawLines.length) {
+        const lineSegments = rawLines[currentLineIndex].split(' ');
+        const primaryCommand = lineSegments[0];
+
+        if (primaryCommand === 'quit') {
+            break;
+        }
+
+        operationSequence.push({
+            action: primaryCommand,
+            operandA: lineSegments[1],
+            operandB: lineSegments[2]
+        });
+        currentLineIndex++;
+    }
+
+    const stackCollection = new Map();
+
+    const ensureStackExists = (stackKey) => {
+        if (!stackCollection.has(stackKey)) {
+            stackCollection.set(stackKey, []);
+        }
+        return stackCollection.get(stackKey);
+    };
+
+    const commandDispatch = {
+        push: (targetKey, valueToPush) => {
+            ensureStackExists(targetKey).push(valueToPush);
         },
-
-        extract: function(pileIdentifier) {
-            const currentPile = collectionOfPiles.get(pileIdentifier);
-            if (currentPile && currentPile.length > 0) {
-                const retrievedItem = currentPile.pop();
-                console.log(retrievedItem);
-            }
+        pop: (targetKey) => {
+            const extractedValue = ensureStackExists(targetKey).pop();
+            console.log(extractedValue);
         },
-
-        relocate: function(sourceIdentifier, targetIdentifier) {
-            const sourcePile = collectionOfPiles.get(sourceIdentifier);
-            if (sourcePile && sourcePile.length > 0) {
-                const transferredItem = sourcePile.pop();
-                if (!collectionOfPiles.has(targetIdentifier)) {
-                    collectionOfPiles.set(targetIdentifier, []);
-                }
-                collectionOfPiles.get(targetIdentifier).push(transferredItem);
-            }
+        move: (sourceKey, destinationKey) => {
+            const itemToTransfer = ensureStackExists(sourceKey).pop();
+            ensureStackExists(destinationKey).push(itemToTransfer);
         }
     };
 
-    const parseInstructionLine = (lineContent) => {
-        const parts = lineContent.trim().split(" ");
-        const directive = parts[0];
-        const parameters = parts.slice(1);
-        return { directive, parameters };
-    };
-
-    const processInstructionStream = (instructionSet, currentPoint) => {
-        if (currentPoint >= instructionSet.length) {
-            return;
+    for (const currentOperation of operationSequence) {
+        const { action, operandA, operandB } = currentOperation;
+        const executor = commandDispatch[action];
+        if (executor) {
+            executor(operandA, operandB);
         }
-
-        const currentLineText = instructionSet[currentPoint];
-        const { directive, parameters } = parseInstructionLine(currentLineText);
-
-        if (directive === "cease") {
-            return;
-        }
-
-        const handlerFunction = commandProcessors[directive];
-        if (handlerFunction) {
-            handlerFunction(...parameters);
-        }
-
-        processInstructionStream(instructionSet, currentPoint + 1);
-    };
-
-    const entireInstructionSet = scriptSource.split("\n");
-    processInstructionStream(entireInstructionSet, 1);
+    }
 
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

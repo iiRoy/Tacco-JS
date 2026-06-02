@@ -1,70 +1,45 @@
-const inputSource = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function processInputSequence(instructionList) {
+  let internalDataStack = [];
 
-function createLifoContainer() {
-  let peakElement = null;
-  let elementCount = 0;
-
-  return {
-    placeItem: (item) => {
-      peakElement = { content: item, previous: peakElement };
-      elementCount++;
+  const commandExecutors = {
+    'push': (fullInstruction) => {
+      const valueToStore = fullInstruction.split(/\s+/)[1];
+      internalDataStack.push(valueToStore);
     },
-    removeItem: () => {
-      if (peakElement === null) {
-        return undefined;
-      }
-      const extractedContent = peakElement.content;
-      peakElement = peakElement.previous;
-      elementCount--;
-      return extractedContent;
-    },
-    checkEmpty: () => elementCount === 0,
-    currentSize: () => elementCount
-  };
-}
-
-function orchestrateOperations() {
-  const dataDepository = createLifoContainer();
-
-  const operationDispatch = new Map();
-
-  operationDispatch.set('push', (components) => {
-    const valueToStore = components[1];
-    if (valueToStore) {
-      dataDepository.placeItem(valueToStore);
-    }
-  });
-
-  operationDispatch.set('pop', () => {
-    const retrievedValue = dataDepository.removeItem();
-    if (retrievedValue !== undefined) {
+    'pop': () => {
+      const retrievedValue = internalDataStack.pop();
       console.log(retrievedValue);
+    },
+  };
+
+  function processInstructionAtIndex(currentIndex) {
+    if (currentIndex >= instructionList.length) {
+      return;
     }
-  });
 
-  operationDispatch.set('quit', () => {
-    inputSource.close();
-  });
+    const currentInstruction = instructionList[currentIndex];
+    const commandIdentifier = currentInstruction.split(/\s+/)[0];
 
-  inputSource.on('line', (currentCommandString) => {
-    const commandParts = currentCommandString.trim().split(/\s+/);
-    const primaryCommand = commandParts[0];
-
-    const handlerFunction = operationDispatch.get(primaryCommand);
-
-    if (handlerFunction) {
-      handlerFunction(commandParts);
+    if (commandIdentifier === 'quit') {
+      return;
     }
-  });
 
-  inputSource.on('close', () => {
-    // All input lines processed or 'quit' command received.
-    // No specific exit logic needed for this problem beyond closing readline.
-  });
+    const executorFunction = commandExecutors[commandIdentifier];
+    if (executorFunction) {
+      executorFunction(currentInstruction);
+    }
+
+    processInstructionAtIndex(currentIndex + 1);
+  }
+
+  processInstructionAtIndex(0);
 }
 
-orchestrateOperations();
+let dataSegments = [];
+process.stdin.on('data', function(segment) {
+  dataSegments.push(segment);
+});
+process.stdin.on('end', function() {
+  const inputInstructions = dataSegments.join('').split('\n');
+  processInputSequence(inputInstructions);
+});

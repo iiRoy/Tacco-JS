@@ -1,106 +1,132 @@
-class StreamProcessor {
-    #inputLines;
-    #linePointer;
-    #tokenBuffer;
-
-    constructor(sourceData) {
-        this.#inputLines = sourceData.trim().split('\n');
-        this.#linePointer = 0;
-        this.#tokenBuffer = [];
+class DataStreamProcessor {
+    constructor(rawInputContent) {
+        this.inputLines = rawInputContent.trim().split('\n');
+        this.currentLineIndex = 0;
+        this.currentLineTokens = [];
     }
 
-    // Retrieves a single scalar value from the input stream.
-    // It consumes tokens from the current line. If the current line is exhausted,
-    // it moves to the next line.
-    retrieveScalar(asText = false) {
-        if (this.#tokenBuffer.length === 0) {
-            if (this.#linePointer >= this.#inputLines.length) {
-                // No more lines to read
-                return undefined;
+    // Corresponds to original GET.a()
+    retrieveNextInteger() {
+        if (this.currentLineTokens.length === 0) {
+            if (this.currentLineIndex >= this.inputLines.length) {
+                throw new Error("Input stream exhausted.");
             }
-            // Populate the buffer with tokens from the current line
-            this.#tokenBuffer = this.#inputLines[this.#linePointer].split(' ');
+            // Original reverses the line and pops. We replicate this.
+            this.currentLineTokens = this.inputLines[this.currentLineIndex].split(' ').reverse();
+            // Original increments line index only when a line is fully consumed.
+            // Our `currentLineIndex` will be advanced by other methods or when `currentLineTokens` is empty.
+            // For `retrieveNextInteger`, we only advance `currentLineIndex` if the line becomes empty.
         }
-
-        const nextToken = this.#tokenBuffer.shift();
-        if (this.#tokenBuffer.length === 0) {
-            // Current line is now empty, advance to the next line
-            this.#linePointer++;
+        const token = this.currentLineTokens.pop();
+        if (this.currentLineTokens.length === 0) {
+            this.currentLineIndex++; // Advance to next line if current one is empty
         }
-        return asText ? nextToken : Number(nextToken);
+        return parseInt(token, 10);
     }
 
-    // Reads an entire line of space-separated values.
-    // It consumes the current line and moves to the next.
-    fetchLine(asTextArray = false) {
-        if (this.#linePointer >= this.#inputLines.length) {
-            return undefined; // No more lines to read
+    // Corresponds to original GET.l()
+    retrieveLineOfIntegers() {
+        if (this.currentLineIndex >= this.inputLines.length) {
+            throw new Error("Input stream exhausted.");
         }
-        const lineTokens = this.#inputLines[this.#linePointer].split(' ');
-        this.#linePointer++;
-        this.#tokenBuffer = []; // Clear buffer as the line is fully consumed
-        return asTextArray ? lineTokens : lineTokens.map(Number);
+        // Clear any pending tokens from previous `retrieveNextInteger` calls
+        this.currentLineTokens = [];
+        const line = this.inputLines[this.currentLineIndex++];
+        return line.split(' ').map(Number);
+    }
+
+    // Corresponds to original GET.m()
+    retrieveIntegerMatrix(rowCount) {
+        const matrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            matrix.push(this.retrieveLineOfIntegers());
+        }
+        return matrix;
+    }
+
+    // Corresponds to original GET.r()
+    retrieveListOfNumbers(count) {
+        const list = [];
+        for (let i = 0; i < count; i++) {
+            if (this.currentLineIndex >= this.inputLines.length) {
+                throw new Error("Input stream exhausted.");
+            }
+            list.push(Number(this.inputLines[this.currentLineIndex++]));
+        }
+        return list;
     }
 }
 
-function initializeInputProcessor(dataString) {
-    return new StreamProcessor(dataString);
+function initializeInput(inputString) {
+    return new DataStreamProcessor(inputString);
 }
 
-const MODULO_CONSTANT = 1000000007;
-
-// Performs modular multiplication (A * B) % M, designed to prevent overflow
-// for intermediate products when A and B are standard JavaScript Numbers
-// and M is up to 10^9 + 7.
-function performModularMultiplication(operandA, operandB) {
-    const highPartA = operandA >> 16;
-    const lowPartA = operandA & 0xFFFF; // 65535
-
-    const termHigh = (highPartA * operandB) % MODULO_CONSTANT;
-    const termLow = (lowPartA * operandB) % MODULO_CONSTANT;
-
-    // (termHigh * 65536 + termLow) % MODULO_CONSTANT
-    // termHigh * 65536 is safe from overflow as MODULO_CONSTANT * 65536 fits in MAX_SAFE_INTEGER
-    let finalProduct = (termHigh * 65536 + termLow) % MODULO_CONSTANT;
-    return finalProduct;
+// Clone of xArray, using recursion instead of eval
+function constructMultiDimensionalArray(fillValue, ...dimensions) {
+    const createDimension = (depth) => {
+        if (depth === dimensions.length) {
+            return fillValue;
+        }
+        const size = dimensions[depth];
+        return Array.from({ length: size }).map(() => {
+            // Intermediate dimensions are filled with 0, as per original's `fill(0)`
+            return createDimension(depth + 1);
+        });
+    };
+    return createDimension(0);
 }
 
-function calculateOutcome() {
-    const dataReader = initializeInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-    const totalElements = dataReader.retrieveScalar();
-    const startingValue = dataReader.retrieveScalar();
-    const divisorCollection = dataReader.fetchLine().sort((valX, valY) => valY - valX);
+const MODULUS_VALUE = 1000000007n; // Using BigInt for modular arithmetic
 
-    let stateAccumulator = new Map();
-    stateAccumulator.set(startingValue, 1);
+// Clone of abmod, using BigInt for intermediate products
+function calculateModularProduct(...factors) {
+    let currentProduct = 1n;
+    for (const factor of factors) {
+        currentProduct = (currentProduct * BigInt(factor)) % MODULUS_VALUE;
+    }
+    return Number(currentProduct);
+}
 
-    for (let currentStep = 0; currentStep < totalElements; ++currentStep) {
-        let nextAccumulator = new Map();
-        const currentDivisor = divisorCollection[currentStep];
-        const remainingStepsCount = totalElements - currentStep - 1;
+function executeMainLogic() {
+    const inputHandler = initializeInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-        for (const [currentKey, currentCount] of stateAccumulator.entries()) {
-            // Scenario 1: The current divisor is NOT used in this step.
-            // The value remains currentKey. The count is multiplied by the number of
-            // remaining elements that could have been used instead of the current one.
-            if (remainingStepsCount > 0) {
-                const countForSkipping = performModularMultiplication(currentCount, remainingStepsCount);
-                nextAccumulator.set(currentKey, ((nextAccumulator.get(currentKey) || 0) + countForSkipping) % MODULO_CONSTANT);
+    const totalIterations = inputHandler.retrieveNextInteger();
+    const initialValueX = inputHandler.retrieveNextInteger();
+    const divisorList = inputHandler.retrieveLineOfIntegers().sort((valA, valB) => valB - valA);
+
+    let currentProbabilityMap = new Map();
+    currentProbabilityMap.set(initialValueX, 1);
+
+    // Transform the main loop using Array.prototype.reduce
+    const finalProbabilityMap = Array.from({ length: totalIterations }).reduce((accumulatorMap, _, currentIteration) => {
+        const nextProbabilityMap = new Map();
+
+        // Transform the inner loop using Map.prototype.forEach
+        accumulatorMap.forEach((countValue, currentKey) => {
+            // Case 1: The value remains unchanged for future iterations
+            // Original: dp2[j] += dp[j] * (n-i-1)
+            const remainingSteps = totalIterations - currentIteration - 1;
+            if (remainingSteps > 0) { // Only contribute if there are actual remaining steps
+                const existingCount = nextProbabilityMap.get(currentKey) || 0;
+                const incrementAmount = calculateModularProduct(countValue, remainingSteps);
+                nextProbabilityMap.set(currentKey, (existingCount + incrementAmount) % Number(MODULUS_VALUE));
             }
 
-            // Scenario 2: The current divisor IS used in this step.
-            // The value becomes currentKey % currentDivisor. The count is currentCount.
-            const nextKey = currentKey % currentDivisor;
-            nextAccumulator.set(nextKey, ((nextAccumulator.get(nextKey) || 0) + currentCount) % MODULO_CONSTANT);
-        }
-        stateAccumulator = nextAccumulator;
-    }
+            // Case 2: The value is transformed by modulo operation
+            // Original: dp2[m] += dp[j]
+            const moduloResult = currentKey % divisorList[currentIteration];
+            const existingModCount = nextProbabilityMap.get(moduloResult) || 0;
+            nextProbabilityMap.set(moduloResult, (existingModCount + countValue) % Number(MODULUS_VALUE));
+        });
+        return nextProbabilityMap;
+    }, currentProbabilityMap); // Initial state for the reduce operation
 
-    let overallResultSum = 0;
-    for (const [finalKey, finalCount] of stateAccumulator.entries()) {
-        overallResultSum = (overallResultSum + performModularMultiplication(finalKey, finalCount)) % MODULO_CONSTANT;
-    }
-    return overallResultSum;
+    let finalAnswer = 0;
+    finalProbabilityMap.forEach((countValue, keyVal) => {
+        finalAnswer = (finalAnswer + calculateModularProduct(keyVal, countValue)) % Number(MODULUS_VALUE);
+    });
+
+    return finalAnswer;
 }
 
-console.log(calculateOutcome());
+console.log(executeMainLogic());

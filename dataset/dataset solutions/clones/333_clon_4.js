@@ -1,67 +1,60 @@
-const streamData = require('fs').readFileSync('/dev/stdin', 'utf8');
+function navigateGrid(initialY, initialX, gridData) {
+    let currentY = initialY;
+    let currentX = initialX;
+    const pathHistory = new Set();
 
-function* parseInputGrids(sourceText) {
-    const dataLines = sourceText.trim().split('\n');
-    let linePtr = 0;
+    const movementVectors = {
+        ">": [0, 1],
+        "<": [0, -1],
+        "^": [-1, 0],
+        "v": [1, 0]
+    };
 
     while (true) {
-        const gridDimensions = dataLines[linePtr++].split(' ').map(Number);
-        const [numRows, numCols] = gridDimensions;
+        const currentPositionKey = `${currentY},${currentX}`;
 
-        if (numRows === 0 && numCols === 0) {
-            break;
+        if (pathHistory.has(currentPositionKey)) {
+            return "LOOP";
         }
 
-        const cellLayout = new Map();
-        for (let rIdx = 0; rIdx < numRows; rIdx++) {
-            const rowSymbols = dataLines[linePtr++].split('');
-            for (let cIdx = 0; cIdx < numCols; cIdx++) {
-                cellLayout.set(`${rIdx},${cIdx}`, rowSymbols[cIdx]);
-            }
+        const cellSymbol = gridData[currentY][currentX];
+
+        if (cellSymbol === ".") {
+            return `${currentX} ${currentY}`;
         }
-        yield { rowCount: numRows, colCount: numCols, gridData: cellLayout };
+
+        pathHistory.add(currentPositionKey);
+
+        const vector = movementVectors[cellSymbol];
+        const deltaY = vector ? vector[0] : 0;
+        const deltaX = vector ? vector[1] : 0;
+
+        currentY += deltaY;
+        currentX += deltaX;
     }
 }
 
-const directionalChanges = {
-    '>': { rowOffset: 0, colOffset: 1 },
-    '<': { rowOffset: 0, colOffset: -1 },
-    '^': { rowOffset: -1, colOffset: 0 },
-    'v': { rowOffset: 1, colOffset: 0 }
-};
+const rawInputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
 
-for (const gridDescription of parseInputGrids(streamData)) {
-    const { gridData } = gridDescription; 
+let problemSets = [];
+let linePointer = 0;
 
-    const encounteredCells = new Set();
-    let currentR = 0;
-    let currentC = 0;
+while (true) {
+    const dimensionsLine = rawInputLines[linePointer++];
+    const [heightValue, widthValue] = dimensionsLine.split(" ").map(Number);
 
-    let finalOutcome = "";
-
-    while (true) {
-        const currentCellIdentifier = `${currentR},${currentC}`;
-        const cellContent = gridData.get(currentCellIdentifier); // Undefined if out of bounds
-
-        if (cellContent === '.') {
-            finalOutcome = `${currentC} ${currentR}`;
-            break;
-        }
-
-        if (encounteredCells.has(currentCellIdentifier)) {
-            finalOutcome = "LOOP";
-            break;
-        }
-
-        encounteredCells.add(currentCellIdentifier);
-
-        const movementVector = directionalChanges[cellContent]; 
-        // If cellContent is undefined (out of bounds), movementVector will be undefined,
-        // and accessing .rowOffset or .colOffset will throw a TypeError, replicating
-        // the original code's out-of-bounds crash behavior.
-
-        currentR += movementVector.rowOffset;
-        currentC += movementVector.colOffset;
+    if (heightValue === 0 && widthValue === 0) {
+        break;
     }
+
+    const currentGridRepresentation = [];
+    for (let rowIdx = 0; rowIdx < heightValue; rowIdx++) {
+        currentGridRepresentation.push(rawInputLines[linePointer++].split(""));
+    }
+    problemSets.push({ gridHeight: heightValue, gridWidth: widthValue, gridContent: currentGridRepresentation });
+}
+
+problemSets.forEach(problemEntry => {
+    const finalOutcome = navigateGrid(0, 0, problemEntry.gridContent);
     console.log(finalOutcome);
-}
+});

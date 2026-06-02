@@ -1,331 +1,555 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code practices.
 
-// Main application entry point class
-class PrimaryTask {
-    // Executes the primary computation logic
-    execute() {
-        const count = dataSource.fetchNextInteger(); // Read total count
-        const dataStream = dataSource.fetchIntegerArray(); // Obtain sequence of numbers
-        const partialSums = []; // Initialize array for partial sums
+/**
+ * The primary class responsible for solving the problem.
+ * It reads input, processes it, and determines the final result.
+ */
+class Processor {
+  /**
+   * Executes the main algorithm to find the solution.
+   * This method orchestrates the data processing steps.
+   * @returns {number} The calculated result based on the input sequence.
+   */
+  processData() {
+    // Read the total count of elements from the input.
+    const count = dataInput.getNextInt();
+    // Read the sequence of integers.
+    const sequence = dataInput.getNextIntArray();
 
-        // Populate partialSums with zeros
-        for (let currPos = 0; currPos < dataStream.length >> 1; ++currPos) {
-            partialSums[currPos] = 0;
-        }
-
-        // Calculate symmetric sums
-        for (let currPos = 0; currPos < count; ++currPos) {
-            partialSums[Math.min(currPos, dataStream.length - 1 - currPos)] += dataStream[currPos];
-        }
-
-        // Adjust for odd total count
-        if (count % 2) {
-            partialSums.pop();
-        }
-
-        const totalPartialSum = CollectionUtils.calculateSumOfElements(partialSums); // Sum of partials
-
-        let finalResult = 0; // Initialize result variable
-
-        // Nested loops for complex calculation
-        for (let outerLoopIdx = 0; outerLoopIdx < count / 2; ++outerLoopIdx) {
-            for (let innerLoopStep = 1; innerLoopStep < outerLoopIdx; ++innerLoopStep) {
-                let maxCurrentSum = 0; // Max sum for current step
-                let currentAccumulation = 0; // Current running sum
-
-                // Iterate through partial sums with a step
-                for (let stepIdx = 0; stepIdx < partialSums.length; stepIdx += innerLoopStep) {
-                    currentAccumulation += partialSums[stepIdx];
-                    maxCurrentSum = Math.max(maxCurrentSum, currentAccumulation);
-                }
-                finalResult = Math.max(finalResult, maxCurrentSum); // Update overall max result
-            }
-        }
-        return finalResult; // Return the computed value
+    // Initialize an array to store the "folded" sums of the sequence.
+    // The size is half the sequence length, rounded down.
+    const foldedSequence = [];
+    for (let idx = 0; idx < sequence.length >> 1; ++idx) {
+      foldedSequence[idx] = 0;
     }
+
+    // Populate the folded sequence by summing elements from symmetric positions.
+    // For an element at index 'idx', it's added to the position
+    // min(idx, sequence.length - 1 - idx) in the folded sequence.
+    for (let idx = 0; idx < count; ++idx) {
+      foldedSequence[Math.min(idx, sequence.length - 1 - idx)] += sequence[idx];
+    }
+
+    // If the original sequence has an odd number of elements,
+    // the middle element was added to itself in the last position of foldedSequence.
+    // This problem's logic implies we should remove this middle element's contribution
+    // if the sequence length is odd, as it's not part of a pair.
+    // The original code `halfSeq.pop()` effectively removes the last element
+    // which corresponds to the middle element's sum if `n` is odd.
+    if (count % 2) {
+      foldedSequence.pop();
+    }
+
+    // Calculate the total sum of the elements in the folded sequence.
+    // This variable is declared but not used in the final return,
+    // indicating it might have been part of an earlier iteration or debugging.
+    const totalFoldedSum = _util.getCumulativeSums(foldedSequence); // This actually returns cumulative sums, not a single sum.
+                                                                    // The original code uses `_.sumArray` which is `getCumulativeSums`.
+                                                                    // The variable name `halfSum` suggests a single sum, but the method returns an array.
+                                                                    // This is a subtle point, but the behavior must be preserved.
+                                                                    // The variable `halfSum` is not used later, so its exact value/type doesn't affect the final result.
+
+    let resultValue = 0; // Initialize the maximum sub-sum found.
+
+    // Outer loop iterates up to half the original sequence length.
+    // This loop explores different starting points for the sub-sequences.
+    for (let outerLoopVar = 0; outerLoopVar < count / 2; ++outerLoopVar) {
+      // Inner loop iterates for possible step sizes.
+      // `stepSize` must be less than `outerLoopVar`.
+      // This condition `j < a` means the inner loop might not run if `a` is 0 or 1.
+      for (let stepSize = 1; stepSize < outerLoopVar; ++stepSize) {
+        let maxSubSum = 0; // Maximum sum for the current stepSize.
+        let currentSubSum = 0; // Current running sum for the sub-sequence.
+
+        // Innermost loop iterates through the folded sequence with the current stepSize.
+        // It calculates the sum of elements at `k`, `k+stepSize`, `k+2*stepSize`, etc.
+        for (let subIdx = 0; subIdx < foldedSequence.length; subIdx += stepSize) {
+          currentSubSum += foldedSequence[subIdx];
+          // Update the maximum sub-sum found for this stepSize.
+          maxSubSum = Math.max(maxSubSum, currentSubSum);
+        }
+        // Update the overall maximum result.
+        resultValue = Math.max(resultValue, maxSubSum);
+      }
+    }
+    // Return the final maximum sub-sum found.
+    return resultValue;
+  }
 }
 
-// Class for modular arithmetic operations
-class ModuloOperations {
-    // Initializes the modulo value
-    initialize(divisorValue) {
-        if (divisorValue == null) {
-            divisorValue = NumberTheory.StandardModulo; // Use default if none provided
+/**
+ * Provides modular arithmetic operations.
+ * Useful for problems involving large numbers where results need to be kept within a specific modulus.
+ */
+class ModularArithmetic {
+  /**
+   * Constructs a new ModularArithmetic instance.
+   * @param {number} [moduloVal] - The modulus to use for operations. Defaults to Combinatorics.DefaultMod if not provided.
+   */
+  constructor(moduloVal) {
+    // If no modulus is provided, use a default from a (presumably external) Combinatorics class.
+    // Since Combinatorics is not defined here, this implies an external dependency or a placeholder.
+    // We preserve the original behavior.
+    if (moduloVal == null) {
+      moduloVal = Combinatorics.DefaultMod;
+    }
+    this.moduloVal = moduloVal;
+  }
+
+  /**
+   * Performs modular multiplication (a * b) % moduloVal.
+   * Uses a binary multiplication method to prevent overflow with large numbers.
+   * @param {number} a - The first operand.
+   * @param {number} b - The second operand.
+   * @returns {number} The result of (a * b) % moduloVal.
+   */
+  multiplyMod(a, b) {
+    let result = 0;
+    a %= this.moduloVal;
+    b %= this.moduloVal;
+    while (b) {
+      if (b & 1) { // If b is odd
+        result += a;
+        if (result >= this.moduloVal) {
+          result -= this.moduloVal;
         }
-        this.divisorValue = divisorValue;
+      }
+      a <<= 1; // Multiply a by 2
+      if (a >= this.moduloVal) {
+        a -= this.moduloVal;
+      }
+      b >>= 1; // Divide b by 2
     }
+    return result;
+  }
 
-    // Performs modular multiplication
-    modularMultiply(operandA, operandB) {
-        let productResult = 0;
-        operandA %= this.divisorValue;
-        operandB %= this.divisorValue;
-
-        while (operandB) {
-            if (operandB & 1) {
-                productResult += operandA;
-                if (productResult > this.divisorValue) {
-                    productResult -= this.divisorValue;
-                }
-            }
-            operandA <<= 1;
-            if (operandA > this.divisorValue) {
-                operandA -= this.divisorValue;
-            }
-            operandB >>= 1;
-        }
-        return productResult;
+  /**
+   * Performs modular exponentiation (a^b) % moduloVal.
+   * Uses the method of exponentiation by squaring.
+   * @param {number} base - The base.
+   * @param {number} exponent - The exponent.
+   * @returns {number} The result of (base^exponent) % moduloVal.
+   */
+  powerMod(base, exponent) {
+    let result = 1;
+    while (exponent) {
+      if (exponent & 1) { // If exponent is odd
+        result = this.multiplyMod(result, base);
+      }
+      base = this.multiplyMod(base, base); // Square the base
+      exponent >>= 1; // Halve the exponent
     }
+    return result;
+  }
 
-    // Computes modular exponentiation (a^b mod M)
-    modularExponentiation(baseVal, exponentVal) {
-        let productResult = 1;
-        while (exponentVal) {
-            if (exponentVal & 1) {
-                productResult = this.modularMultiply(productResult, baseVal);
-            }
-            baseVal = this.modularMultiply(baseVal, baseVal);
-            exponentVal >>= 1;
-        }
-        return productResult;
-    }
+  /**
+   * Performs modular division (a / b) % moduloVal.
+   * This is equivalent to (a * b^(moduloVal-2)) % moduloVal,
+   * using Fermat's Little Theorem for modular inverse.
+   * @param {number} numerator - The numerator.
+   * @param {number} denominator - The denominator.
+   * @returns {number} The result of (numerator / denominator) % moduloVal.
+   */
+  divideMod(numerator, denominator) {
+    // Calculate modular inverse of denominator using powerMod.
+    // Note: MOD_CALCULATOR is used here, implying this method might be called statically or from another instance.
+    // The original code uses `MOD.mult` and `this.pow`. This is a slight inconsistency in the original.
+    // To preserve behavior, I will use `this.multiplyMod` and `this.powerMod`.
+    return this.multiplyMod(numerator, this.powerMod(denominator, this.moduloVal - 2));
+  }
 
-    // Performs modular division using Fermat's Little Theorem
-    modularDivide(numerator, denominator) {
-        return this.modularMultiply(numerator, this.modularExponentiation(denominator, this.divisorValue - 2));
-    }
-
-    // Calculates modular combinations (nCk mod M)
-    modularCombinations(nVal, kVal) {
-        return MOD_CALCULATOR.modularMultiply(factorialValues[nVal], MOD_CALCULATOR.modularMultiply(inverseFactorialValues[kVal], inverseFactorialValues[nVal - kVal]));
-    }
+  /**
+   * Calculates combinations (n choose k) modulo moduloVal.
+   * Requires precomputed factorial and inverse factorial tables.
+   * @param {number} n - Total number of items.
+   * @param {number} k - Number of items to choose.
+   * @returns {number} The result of (n choose k) % moduloVal.
+   */
+  combinationsMod(n, k) {
+    // `factTable` and `invFactTable` are assumed to be globally available or pre-initialized.
+    // They are not defined within this class or file, so they are treated as external.
+    return MOD_CALCULATOR.multiplyMod(factTable[n], MOD_CALCULATOR.multiplyMod(invFactTable[k], invFactTable[n - k]));
+  }
 }
-const MOD_CALCULATOR = new ModuloOperations(1e9 + 7); // Global instance for modular arithmetic
+// Instantiate the modular arithmetic calculator with a common prime modulus.
+const MOD_CALCULATOR = new ModularArithmetic(1e9 + 7);
 
-// Utility functions for collection manipulation
-class CollectionUtils {
-    // Sums all elements in a collection
-    sumAll(collection) {
-        return collection.fold((accumulator, current) => accumulator + current);
-    }
+/**
+ * A collection of utility functions, similar to a simplified Underscore.js or Lodash.
+ */
+class UtilityFunctions {
+  /**
+   * Calculates the sum of all elements in an array.
+   * @param {Array<number>} inputArray - The array of numbers.
+   * @returns {number} The sum of the array elements.
+   */
+  calculateSum(inputArray) {
+    return inputArray.reduce((accumulator, currentValue) => accumulator + currentValue);
+  }
 
-    // Sums elements modulo a given value
-    sumModulo(collection, moduloVal) {
-        if (moduloVal == null) {
-            moduloVal = MOD_CALCULATOR.divisorValue;
-        }
-        return collection.fold((accumulator, current) => (accumulator + current) % moduloVal);
+  /**
+   * Calculates the sum of array elements modulo a given value.
+   * @param {Array<number>} inputArray - The array of numbers.
+   * @param {number} [moduloVal] - The modulus. Defaults to MOD_CALCULATOR.moduloVal.
+   * @returns {number} The modular sum of the array elements.
+   */
+  calculateModSum(inputArray, moduloVal) {
+    if (moduloVal == null) {
+      moduloVal = MOD_CALCULATOR.moduloVal;
     }
+    return inputArray.reduce((accumulator, currentValue) => (accumulator + currentValue) % moduloVal);
+  }
 
-    // Finds the minimum element in a collection
-    findMinimum(collection, comparatorFn) {
-        if (comparatorFn == null) {
-            comparatorFn = (valA, valB) => valA - valB;
-        }
-        return collection.fold((minVal, currentVal) => comparatorFn(minVal, currentVal) < 0 ? minVal : currentVal);
+  /**
+   * Finds the minimum element in an array.
+   * @param {Array<any>} inputArray - The array to search.
+   * @param {Function} [comparisonFunction] - An optional comparison function (like Array.prototype.sort).
+   * @returns {any} The minimum element.
+   */
+  findMinimum(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (a, b) => a - b;
     }
+    return inputArray.reduce((a, b) => comparisonFunction(a, b) < 0 ? a : b);
+  }
 
-    // Finds the maximum element in a collection
-    findMaximum(collection, comparatorFn) {
-        if (comparatorFn == null) {
-            comparatorFn = (valA, valB) => valA - valB;
-        }
-        return collection.fold((maxVal, currentVal) => comparatorFn(maxVal, currentVal) > 0 ? maxVal : currentVal);
+  /**
+   * Finds the maximum element in an array.
+   * @param {Array<any>} inputArray - The array to search.
+   * @param {Function} [comparisonFunction] - An optional comparison function (like Array.prototype.sort).
+   * @returns {any} The maximum element.
+   */
+  findMaximum(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (a, b) => a - b;
     }
+    return inputArray.reduce((a, b) => comparisonFunction(a, b) > 0 ? a : b);
+  }
 
-    // Sorts a collection
-    sortCollection(collection, comparatorFn) {
-        if (comparatorFn == null) {
-            comparatorFn = (valA, valB) => valA - valB;
-        }
-        return collection.sort(comparatorFn);
+  /**
+   * Sorts an array in place.
+   * @param {Array<any>} inputArray - The array to sort.
+   * @param {Function} [comparisonFunction] - An optional comparison function.
+   * @returns {Array<any>} The sorted array.
+   */
+  sortArray(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (a, b) => a - b;
     }
+    return inputArray.sort(comparisonFunction);
+  }
 
-    // Returns a new collection with unique elements
-    getUniqueElements(collection) {
-        collection.sort();
-        for (let currentIdx = 0; currentIdx < collection.length - 1; ++currentIdx) {
-            collection[currentIdx] = collection[currentIdx + 1] == collection[currentIdx] ? null : collection[currentIdx];
-        }
-        return collection.selectValid(element => element != null);
+  /**
+   * Returns a new array containing only the unique elements from the input array.
+   * The input array is modified during the process (sorted and nullified).
+   * @param {Array<any>} inputArray - The array to process.
+   * @returns {Array<any>} An array with unique elements.
+   */
+  getUniqueElements(inputArray) {
+    inputArray.sort(); // Sort to bring duplicates together.
+    for (let indexCounter = 0; indexCounter < inputArray.length - 1; ++indexCounter) {
+      // Mark duplicates as null.
+      inputArray[indexCounter] = inputArray[indexCounter + 1] === inputArray[indexCounter] ? null : inputArray[indexCounter];
     }
+    // Filter out the nulls.
+    return inputArray.filter(element => element != null);
+  }
 
-    // Generates a sequence of numbers
-    generateRange(rangeStart, rangeEnd, rangeStep) {
-        if (rangeEnd == null) {
-            rangeEnd = rangeStart || 0;
-            rangeStart = 0;
-        }
-        if (!rangeStep) {
-            rangeStep = rangeEnd < rangeStart ? -1 : 1;
-        }
-        const sequenceSize = Math.max(Math.ceil((rangeEnd - rangeStart) / rangeStep), 0);
-        const generatedSequence = Array(sequenceSize);
-        for (var currentIdx = 0; currentIdx < sequenceSize; currentIdx++, rangeStart += rangeStep) {
-            generatedSequence[currentIdx] = rangeStart;
-        }
-        return generatedSequence;
+  /**
+   * Generates an array of numbers within a specified range.
+   * @param {number} rangeStart - The starting value of the range.
+   * @param {number} [rangeStop] - The ending value of the range (exclusive). If null, `rangeStart` becomes `rangeStop` and `rangeStart` becomes 0.
+   * @param {number} [rangeStep] - The increment/decrement step. Defaults to 1 or -1 based on `rangeStart` and `rangeStop`.
+   * @returns {Array<number>} An array of numbers in the specified range.
+   */
+  generateRange(rangeStart, rangeStop, rangeStep) {
+    if (rangeStop == null) {
+      rangeStop = rangeStart || 0;
+      rangeStart = 0;
     }
+    if (!rangeStep) {
+      rangeStep = rangeStop < rangeStart ? -1 : 1;
+    }
+    const arrayLength = Math.max(Math.ceil((rangeStop - rangeStart) / rangeStep), 0);
+    const rangeArray = Array(arrayLength);
+    for (var indexCounter = 0; indexCounter < arrayLength; indexCounter++, rangeStart += rangeStep) {
+      rangeArray[indexCounter] = rangeStart;
+    }
+    return rangeArray;
+  }
 
-    // Retrieves the first N elements from an array
-    getFirstElements(dataArray, numElements) {
-        if (dataArray == null || dataArray.length < 1) return numElements == null ? void 0 : [];
-        if (numElements == null) return dataArray[0];
-        return this.getInitialElements(dataArray, dataArray.length - numElements);
-    }
+  /**
+   * Retrieves the first N elements of an array, or just the first element if N is not specified.
+   * @param {Array<any>} targetArray - The array to extract from.
+   * @param {number} [numElements] - The number of elements to retrieve from the beginning.
+   * @returns {any|Array<any>} The first element or an array of the first N elements.
+   */
+  getFirstElements(targetArray, numElements) {
+    if (targetArray == null || targetArray.length < 1) return numElements == null ? void 0 : [];
+    if (numElements == null) return targetArray[0];
+    return this.getInitialElements(targetArray, targetArray.length - numElements);
+  }
 
-    // Gets elements from the beginning of an array, excluding the last N
-    getInitialElements(dataArray, numElements) {
-        return dataArray.extractSubset.invokeMethod(dataArray, 0, Math.max(0, dataArray.length - (numElements == null ? 1 : numElements)));
-    }
+  /**
+   * Retrieves all but the last N elements of an array, or all but the last element if N is not specified.
+   * @param {Array<any>} targetArray - The array to extract from.
+   * @param {number} [numElements] - The number of elements to exclude from the end.
+   * @returns {Array<any>} A new array containing the initial elements.
+   */
+  getInitialElements(targetArray, numElements) {
+    return targetArray.slice.call(targetArray, 0, Math.max(0, targetArray.length - (numElements == null ? 1 : numElements)));
+  }
 
-    // Gets elements from a specified index to the end
-    getTailElements(dataArray, numElements) {
-        return dataArray.extractSubset.invokeMethod(dataArray, numElements == null ? 1 : numElements);
-    }
+  /**
+   * Retrieves all but the first N elements of an array, or all but the first element if N is not specified.
+   * @param {Array<any>} targetArray - The array to extract from.
+   * @param {number} [numElements] - The number of elements to exclude from the beginning.
+   * @returns {Array<any>} A new array containing the tail elements.
+   */
+  getTailElements(targetArray, numElements) {
+    return targetArray.slice.call(targetArray, numElements == null ? 1 : numElements);
+  }
 
-    // Retrieves the last N elements from an array
-    getLastElements(dataArray, numElements) {
-        if (numElements == null) return dataArray[dataArray.length - 1];
-        return this.getTailElements(dataArray, Math.max(0, dataArray.length - numElements));
-    }
+  /**
+   * Retrieves the last N elements of an array, or just the last element if N is not specified.
+   * @param {Array<any>} targetArray - The array to extract from.
+   * @param {number} [numElements] - The number of elements to retrieve from the end.
+   * @returns {any|Array<any>} The last element or an array of the last N elements.
+   */
+  getLastElements(targetArray, numElements) {
+    if (numElements == null) return targetArray[targetArray.length - 1];
+    return this.getTailElements(targetArray, Math.max(0, targetArray.length - numElements));
+  }
 
-    // Calculates prefix sums (cumulative sum array)
-    calculateSumOfElements(collection) {
-        return this.getTailElements(collection.fold(((accumulator, currentVal, currentIndex) => {
-            accumulator.push(currentVal + accumulator[currentIndex]);
-            return accumulator;
-        }), [0]));
-    }
+  /**
+   * Calculates the cumulative sums (prefix sums) of an array.
+   * The returned array will have the same length as the input, where each element
+   * is the sum of all preceding elements in the input array up to that index.
+   * @param {Array<number>} inputArray - The array of numbers.
+   * @returns {Array<number>} An array of cumulative sums.
+   */
+  getCumulativeSums(inputArray) {
+    // The original `sumArray` implementation returns `this.tail(...)` of the reduce result.
+    // The `reduce` starts with `[0]` and pushes `b + a[i]`.
+    // So, `[0, arr[0], arr[0]+arr[1], ...]`.
+    // `this.tail` then removes the first element (the initial 0).
+    // This effectively computes prefix sums where the first element is `arr[0]`,
+    // the second is `arr[0]+arr[1]`, etc.
+    return this.getTailElements(inputArray.reduce(((accumulator, currentValue, index) => {
+      accumulator.push(currentValue + accumulator[index]);
+      return accumulator;
+    }), [0]));
+  }
 
-    // Computes differences between adjacent elements
-    calculateDifferences(collection) {
-        const differenceList = [];
-        for (let currentIdx = 1; currentIdx < collection.length; ++currentIdx) {
-            differenceList.push(collection[currentIdx] - collection[currentIdx - 1]);
-        }
-        return differenceList;
+  /**
+   * Calculates the differences between adjacent elements in an array.
+   * @param {Array<number>} inputArray - The array of numbers.
+   * @returns {Array<number>} An array of differences (inputArray[i] - inputArray[i-1]).
+   */
+  getDifferences(inputArray) {
+    const differences = [];
+    for (let indexCounter = 1; indexCounter < inputArray.length; ++indexCounter) {
+      differences.push(inputArray[indexCounter] - inputArray[indexCounter - 1]);
     }
+    return differences;
+  }
 
-    // Performs binary search on a sorted array
-    performBinarySearch(dataArray, searchKey, propertyAccessor) {
-        const accessFunction = (currentObject) => (typeof currentObject === 'object') ? currentObject[propertyAccessor] : currentObject;
-        const targetValue = accessFunction(searchKey);
-        let lowerBound = 0,
-            upperBound = dataArray.length;
-        while (lowerBound < upperBound) {
-            let middleIndex = Math.floor((lowerBound + upperBound) / 2);
-            if (accessFunction(dataArray[middleIndex]) < targetValue) lowerBound = middleIndex + 1;
-            else upperBound = middleIndex;
-        }
-        return lowerBound;
+  /**
+   * Performs a binary search on a sorted array to find the index where `key` would be inserted
+   * to maintain sorted order, or the index of the first element greater than or equal to `key`.
+   * @param {Array<any>} targetArray - The sorted array to search within.
+   * @param {any} searchKey - The value to search for.
+   * @param {string} [iteratorProperty] - If `targetArray` contains objects, the property name to compare.
+   * @returns {number} The insertion index (or index of first element >= key).
+   */
+  performBinarySearch(targetArray, searchKey, iteratorProperty) {
+    // Helper function to get the comparable value from an object or primitive.
+    const iteratorFunction = (objectItem) => (typeof objectItem === 'object') ? objectItem[iteratorProperty] : objectItem;
+    const searchValue = iteratorFunction(searchKey); // Get the value to compare against.
+
+    let lowIndex = 0;
+    let highIndex = targetArray.length; // `highIndex` is exclusive.
+
+    // Standard binary search loop.
+    while (lowIndex < highIndex) {
+      let middleIndex = Math.floor((lowIndex + highIndex) / 2);
+      if (iteratorFunction(targetArray[middleIndex]) < searchValue) {
+        lowIndex = middleIndex + 1; // Search in the right half.
+      } else {
+        highIndex = middleIndex; // Search in the left half (or `middleIndex` is the answer).
+      }
     }
+    return lowIndex; // `lowIndex` is the first index where element >= searchValue.
+  }
 }
-const CollectionUtils = new CollectionUtils(); // Global instance for array utilities
+// Instantiate the utility functions object.
+const _util = new UtilityFunctions();
 
-// Handles input data acquisition
-class DataAcquisition {
-    // Constructor initializes the read pointer and loads all data
-    initialize() {
-        this.readPointer = 0;
-        this.loadAllData();
-    }
+/**
+ * Handles reading input from stdin.
+ * Provides various methods to parse different input formats.
+ */
+class InputHandler {
+  /**
+   * Initializes the InputHandler by reading all input from stdin.
+   */
+  constructor() {
+    this.readCursor = 0; // Pointer to the current line being read.
+    this.readAllInput(); // Load all input data.
+  }
 
-    // Reads all lines from standard input
-    loadAllData() {
-        this.rawDataLines = (obtainModule("filesystemModule").readSynchronously("/devicePath/standardInput", "utf8")).divideString('\n');
-        return this.rawDataLines;
-    }
+  /**
+   * Reads all data from standard input and splits it into an array of lines.
+   * @returns {Array<string>} An array where each element is a line from stdin.
+   */
+  readAllInput() {
+    // Use Node.js 'fs' module to read from /dev/stdin.
+    this.inputLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+    return this.inputLines;
+  }
 
-    // Fetches one or multiple lines
-    fetchNextLine(numLines) {
-        if (numLines) {
-            const extractedLines = this.rawDataLines.extractSubset(this.readPointer, this.readPointer + numLines);
-            this.readPointer += numLines;
-            return extractedLines;
-        }
-        return this.rawDataLines[this.readPointer++];
+  /**
+   * Retrieves one or more lines from the input data.
+   * @param {number} [numLines] - The number of lines to retrieve. If not provided, retrieves one line.
+   * @returns {string|Array<string>} A single line string or an array of line strings.
+   */
+  getNextLine(numLines) {
+    if (numLines) {
+      const retrievedLines = this.inputLines.slice(this.readCursor, this.readCursor + numLines);
+      this.readCursor += numLines;
+      return retrievedLines;
     }
+    return this.inputLines[this.readCursor++];
+  }
 
-    // Fetches the next integer from input
-    fetchNextInteger() {
-        return parseInteger(this.fetchNextLine());
-    }
+  /**
+   * Retrieves the next line and parses it as an integer.
+   * @returns {number} The parsed integer.
+   */
+  getNextInt() {
+    return parseInt(this.getNextLine());
+  }
 
-    // Fetches a line as an array of strings
-    fetchStringArray() {
-        return this.fetchNextLine().divideString(' ');
-    }
+  /**
+   * Retrieves the next line, splits it by spaces, and returns an array of strings.
+   * @returns {Array<string>} An array of strings from the next line.
+   */
+  getNextStringArray() {
+    return this.getNextLine().split(' ');
+  }
 
-    // Fetches a line as an array of integers
-    fetchIntegerArray() {
-        return this.fetchStringArray().transformElements((element) => parseInteger(element));
-    }
+  /**
+   * Retrieves the next line, splits it by spaces, and parses each part as an integer.
+   * @returns {Array<number>} An array of integers from the next line.
+   */
+  getNextIntArray() {
+    return this.getNextStringArray().map((element) => parseInt(element));
+  }
 
-    // Fetches a line as an array of floats
-    fetchFloatArray() {
-        return this.fetchStringArray().transformElements((element) => parseFloatValue(element));
-    }
+  /**
+   * Retrieves the next line, splits it by spaces, and parses each part as a float.
+   * @returns {Array<number>} An array of floating-point numbers from the next line.
+   */
+  getNextFloatArray() {
+    return this.getNextStringArray().map((element) => parseFloat(element));
+  }
 
-    // Fetches multiple lines as an array of integers
-    fetchIntegerLines(numLines) {
-        return this.fetchNextLine(numLines).transformElements((element) => parseInteger(element));
-    }
+  /**
+   * Retrieves N lines and parses each as an integer.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<number>} An array of integers, one for each line.
+   */
+  getNextIntLines(numLines) {
+    return this.getNextLine(numLines).map((element) => parseInt(element));
+  }
 
-    // Fetches multiple lines as an array of floats
-    fetchFloatLines(numLines) {
-        return this.fetchNextLine(numLines).transformElements((element) => parseFloatValue(element));
-    }
+  /**
+   * Retrieves N lines and parses each as a float.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<number>} An array of floating-point numbers, one for each line.
+   */
+  getNextFloatLines(numLines) {
+    return this.getNextLine(numLines).map((element) => parseFloat(element));
+  }
 
-    // Fetches multiple lines as a 2D array of strings
-    fetchStringMatrix(numLines) {
-        return this.fetchNextLine(numLines).transformElements((inputLine) => inputLine.divideString(' '));
-    }
+  /**
+   * Retrieves N lines, splits each by spaces, and returns a 2D array of strings.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<string>>} A 2D array of strings.
+   */
+  getNextStringMatrix(numLines) {
+    return this.getNextLine(numLines).map((currentLine) => currentLine.split(' '));
+  }
 
-    // Fetches multiple lines as a 2D array of integers
-    fetchIntegerMatrix(numLines) {
-        return this.fetchNextLine(numLines).transformElements((inputLine) => inputLine.divideString(' ').transformElements((element) => parseInteger(element)));
-    }
+  /**
+   * Retrieves N lines, splits each by spaces, and parses each part as an integer, returning a 2D array.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<number>>} A 2D array of integers.
+   */
+  getNextIntMatrix(numLines) {
+    return this.getNextLine(numLines).map((currentLine) => currentLine.split(' ').map((element) => parseInt(element)));
+  }
 
-    // Fetches multiple lines as a 2D array of floats
-    fetchFloatMatrix(numLines) {
-        return this.fetchNextLine(numLines).transformElements((inputLine) => inputLine.divideString(' ').transformElements((element) => parseFloatValue(element)));
-    }
+  /**
+   * Retrieves N lines, splits each by spaces, and parses each part as a float, returning a 2D array.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<number>>} A 2D array of floating-point numbers.
+   */
+  getNextFloatMatrix(numLines) {
+    return this.getNextLine(numLines).map((currentLine) => currentLine.split(' ').map((element) => parseFloat(element)));
+  }
 }
-const dataSource = new DataAcquisition(); // Global input reader instance
+// Instantiate the input handler to make it globally accessible.
+const dataInput = new InputHandler();
 
-// Handles program output
-class OutputHandler {
-    // Constructor sets up boolean display options
-    initialize() {
-        this.displayOptions = {
-            'true': 'Yep',
-            'false': 'Nope',
-        };
-    }
+/**
+ * Handles writing output to stdout.
+ * Provides options for custom boolean string representations.
+ */
+class OutputWriter {
+  /**
+   * Initializes the OutputWriter with default boolean string options.
+   */
+  constructor() {
+    this.booleanOptions = {
+      'true': 'Yes',
+      'false': 'No',
+    };
+  }
 
-    // Prints data to the console
-    emitOutput(dataToDisplay) {
-        let resultString;
-        if (dataToDisplay == null) return; // Do nothing for null/undefined
-        if (dataToDisplay === true) {
-            resultString = this.displayOptions['true'];
-        } else if (dataToDisplay === false) {
-            resultString = this.displayOptions['false'];
-        } else {
-            resultString = dataToDisplay;
-        }
-        systemConsole.printLine(resultString); // Use system console for output
-    }
+  /**
+   * Writes a value to the console. Handles special formatting for booleans.
+   * @param {any} valueToPrint - The value to be printed.
+   */
+  printOutput(valueToPrint) {
+    let formattedOutput;
+    if (valueToPrint == null) return; // Do nothing if the value is null or undefined.
 
-    // Configures custom strings for boolean output
-    configureBooleanDisplay(optionSettings) {
-        this.displayOptions['false'] = optionSettings[0];
-        this.displayOptions['true'] = optionSettings[1];
-        return this; // Allow chaining
+    if (valueToPrint === true) {
+      formattedOutput = this.booleanOptions['true'];
+    } else if (valueToPrint === false) {
+      formattedOutput = this.booleanOptions['false'];
+    } else {
+      formattedOutput = valueToPrint; // For other types, print as is.
     }
+    console.log(formattedOutput); // Use console.log for standard output.
+  }
+
+  /**
+   * Sets custom string representations for boolean true/false values.
+   * @param {Array<string>} options - An array where options[0] is for false, options[1] for true.
+   * @returns {OutputWriter} Returns `this` for method chaining.
+   */
+  setBooleanOptions(options) {
+    this.booleanOptions['false'] = options[0];
+    this.booleanOptions['true'] = options[1];
+    return this;
+  }
 }
-const outputChannel = new OutputHandler(); // Global output writer instance
+// Instantiate the output writer.
+const outputStream = new OutputWriter();
 
-// Execute the main program logic and display the result
-outputChannel.emitOutput(new PrimaryTask().execute());
+// Execute the main program logic.
+// Create a new instance of the Processor class and call its processData method.
+// The result is then passed to the outputStream to be printed.
+outputStream.printOutput(new Processor().processData());

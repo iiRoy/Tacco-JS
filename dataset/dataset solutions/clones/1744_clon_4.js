@@ -1,18 +1,18 @@
-function performCalculation(dataPayload) {
-    const contentLines = dataPayload.split('\n');
+const calculateTopKScores = (sourceText) => {
+    const lineSegments = sourceText.split("\n");
+    const [_, limitQuantity] = lineSegments[0].split(" ").map(Number);
     
-    const [sizeMarker, quantityStr] = contentLines[0].split(' ');
-    const desiredQuantity = Number(quantityStr);
+    const numericalElements = lineSegments[1]
+        .split(" ")
+        .map(Number);
 
-    const numericValues = contentLines[1].match(/\d+/g).map(parseFloat);
+    const orderedSubset = numericalElements
+        .sort((elementA, elementB) => elementB - elementA)
+        .slice(0, limitQuantity);
 
-    numericValues.sort((firstVal, secondVal) => firstVal - secondVal);
+    const accumulatedResult = orderedSubset.reduce((currentTotal, valueItem) => currentTotal + valueItem, 0);
 
-    const resultingSum = numericValues.slice(0, desiredQuantity).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+    console.log(accumulatedResult);
+};
 
-    return resultingSum;
-}
-
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const computedResult = performCalculation(sourceData);
-console.log(computedResult);
+calculateTopKScores(require("fs").readFileSync("/dev/stdin", "utf8"));

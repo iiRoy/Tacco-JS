@@ -1,106 +1,101 @@
-"use strict"; /* This directive enforces strict mode in JavaScript, ensuring cleaner code and catching common errors. */
+"use strict";
 
-function ExecuteProgram(dataSource) {
-    // Instantiate a utility object to handle input parsing.
-    let reader = new ValueReader(dataSource);
+// Main function to process the input data and solve the problem.
+function ProcessInput(rawData) {
+    // Initialize a utility for parsing numerical and string tokens from the input.
+    let dataParser = new DataExtractor(rawData);
 
-    // Retrieve the three main numerical parameters from the input stream.
-    let numPoints = reader.readInteger(),
-        numConnections = reader.readInteger(),
-        numQueries = reader.readInteger();
+    // Read the primary dimensions and counts from the input.
+    let matrixSize = dataParser.fetchInteger();     // Represents N in the original problem.
+    let numOperations = dataParser.fetchInteger();  // Represents M.
+    let numQueries = dataParser.fetchInteger();     // Represents Q.
 
-    // Initialize a two-dimensional array (matrix) for storing aggregated data.
-    // Its dimensions are slightly larger than 'numPoints' to accommodate 1-based indexing.
-    let dataMatrix = (new Array(numPoints + 1)).fill(0).map(
-        () => (new Array(numPoints + 1)).fill(0)
-    );
+    // Create a 2D array (grid) to store cumulative sums.
+    // It's initialized with dimensions (matrixSize + 1) x (matrixSize + 1) for 1-based indexing.
+    // All elements are initially set to zero.
+    let prefixSumGrid = Array(matrixSize + 1).fill(0).map(() => Array(matrixSize + 1).fill(0));
 
-    // Process each connection entry to update the data matrix.
-    // Each connection represents a pair (left, right) which increments a specific cell.
-    for (let connIdx = 0; connIdx < numConnections; connIdx++) {
-        let leftBound = reader.readInteger();
-        let rightBound = reader.readInteger();
-        dataMatrix[leftBound][rightBound] = dataMatrix[leftBound][rightBound] + 1; // Increment the count.
+    // Iterate through each operation to populate the initial grid.
+    // Each operation specifies a coordinate (leftBound, rightBound) where a value is incremented.
+    for (let opIdx = 0; opIdx < numOperations; opIdx++) {
+        let leftBound = dataParser.fetchInteger();
+        let rightBound = dataParser.fetchInteger();
+        // Increment the count at the specified grid cell.
+        prefixSumGrid[leftBound][rightBound] += 1;
     }
 
-    // Compute the 2D prefix sums across the data matrix.
-    // This pre-computation allows for constant-time range sum queries later.
-    for (let rowIdx = 1; rowIdx <= numPoints; rowIdx++) {
-        for (let colIdx = 1; colIdx <= numPoints; colIdx++) {
-            dataMatrix[rowIdx][colIdx] += (
-                dataMatrix[rowIdx - 1][colIdx] +
-                dataMatrix[rowIdx][colIdx - 1] -
-                dataMatrix[rowIdx - 1][colIdx - 1]
+    // Compute the 2D prefix sums across the grid.
+    // This transformation allows for constant-time range sum queries later.
+    for (let rowIdx = 1; rowIdx <= matrixSize; rowIdx++) {
+        for (let colIdx = 1; colIdx <= matrixSize; colIdx++) {
+            // The value at (rowIdx, colIdx) becomes the sum of:
+            // - Its current value (from initial operations)
+            // - The prefix sum from the cell directly above (rowIdx-1, colIdx)
+            // - The prefix sum from the cell directly to its left (rowIdx, colIdx-1)
+            // - Minus the prefix sum from the top-left diagonal cell (rowIdx-1, colIdx-1) to avoid double-counting.
+            prefixSumGrid[rowIdx][colIdx] += (
+                prefixSumGrid[rowIdx - 1][colIdx] +
+                prefixSumGrid[rowIdx][colIdx - 1] -
+                prefixSumGrid[rowIdx - 1][colIdx - 1]
             );
         }
     }
 
-    // Iterate through each query and output its calculated result.
+    // Process each query.
+    // Each query asks for a specific sum based on two coordinates (queryStart, queryEnd).
     for (let queryIdx = 0; queryIdx < numQueries; queryIdx++) {
-        let startVal = reader.readInteger();
-        let endVal = reader.readInteger();
-        // Calculate the sum for the query range using the prefix sums.
-        // The formula applies the principle of inclusion-exclusion.
-        console.log(dataMatrix[endVal][endVal] - dataMatrix[startVal - 1][endVal]);
+        let queryStart = dataParser.fetchInteger(); // The 'p' value in the original problem.
+        let queryEnd = dataParser.fetchInteger();   // The 'q' value in the original problem.
+
+        // Calculate the sum for the specified range using the precomputed prefix sums.
+        // The formula `prefixSumGrid[queryEnd][queryEnd] - prefixSumGrid[queryStart - 1][queryEnd]`
+        // effectively queries the sum of values in the rectangle from (queryStart, 1) to (queryEnd, queryEnd).
+        console.log(prefixSumGrid[queryEnd][queryEnd] - prefixSumGrid[queryStart - 1][queryEnd]);
     }
 }
 
-
-// A utility class designed to parse and extract various data types from a provided string input.
-class ValueReader {
-    // The constructor initializes the reader with the raw input string.
-    constructor (sourceData) {
-        this.currentIndex = 0; // Keeps track of the current token's index.
-        // Tokenize the input string by splitting on newline or space characters.
-        this.parsedTokens = sourceData.split(/\n|\s/);
+// A helper class designed to extract various data types from a raw input string.
+class DataExtractor {
+    // The constructor takes the entire raw input string.
+    constructor(sourceText) {
+        this.currentIndex = 0; // Keeps track of the next token to be read.
+        // Splits the input string into an array of tokens using newlines or spaces as delimiters.
+        this.parsedTokens = sourceText.split(/\n|\s/);
     }
 
-    // Extracts and returns the next integer from the tokenized input.
-    readInteger() {
-        return parseInt(this.parsedTokens[this.currentIndex++], 10); // Explicitly parse as base-10 integer.
+    // Fetches the next token and converts it to an integer.
+    fetchInteger() {
+        // The unary minus operator (`- 0`) is used for type coercion to number.
+        return this.parsedTokens[this.currentIndex++] - 0;
     }
 
-    // Retrieves an array of 'arrayLength' integer values.
-    // Note: This method calls a globally scoped 'readInteger()' function,
-    // mirroring the original code's behavior which might imply a global definition
-    // or a potential ReferenceError if not defined.
-    readIntegerArray(arrayLength) {
-        let temporaryStorage = new Array(arrayLength);
-        for (let arrayIndex = 0; arrayIndex < arrayLength; arrayIndex++) {
-            temporaryStorage[arrayIndex] = readInteger(); // Call to global function.
+    // Fetches an array of 'count' integer tokens.
+    fetchIntegerArray(count) {
+        let tempArr = new Array(count);
+        for (let arrIdx = 0; arrIdx < count; arrIdx++) {
+            tempArr[arrIdx] = this.fetchInteger(); // Correctly calls the instance method.
         }
-        return temporaryStorage;
+        return tempArr;
     }
 
-    // Extracts and returns the next string token from the input.
-    readString() {
+    // Fetches the next token as a string.
+    fetchString() {
         return this.parsedTokens[this.currentIndex++];
     }
 
-    // Retrieves an array of 'arrayLength' string values.
-    // Note: Similar to 'readIntegerArray', this method calls a globally scoped
-    // 'readString()' function to maintain identical logic with the source.
-    readStringArray(arrayLength) {
-        let temporaryStorage = new Array(arrayLength);
-        for (let arrayIndex = 0; arrayIndex < arrayLength; arrayIndex++) {
-            temporaryStorage[arrayIndex] = readString(); // Call to global function.
+    // Fetches an array of 'count' string tokens.
+    fetchStringArray(count) {
+        let tempArr = new Array(count);
+        for (let arrIdx = 0; arrIdx < count; arrIdx++) {
+            tempArr[arrIdx] = this.fetchString(); // Correctly calls the instance method.
         }
-        return temporaryStorage;
+        return tempArr;
     }
 }
 
-// Determine the execution environment (Node.js vs. browser).
-// If 'globalScope' (equivalent to 'window' in browsers) is undefined,
-// it indicates a Node.js environment.
-if (typeof globalScope === "undefined") {
-    // In Node.js, the 'require' function is used to load modules.
-    const retrieveModule = require;
-    // Load the 'fs' (file system) module.
-    const fileSystemModule = retrieveModule("fs");
-    const standardInputPath = "/dev/stdin"; // Standard path for input in Unix-like systems.
-    const textEncoding = "utf8"; // Specifies the character encoding for file reading.
-
-    // Read the entire content of the standard input file synchronously
-    // and pass it to the main program execution function.
-    ExecuteProgram(fileSystemModule.readFileSync(standardInputPath, textEncoding));
+// Standard entry point for competitive programming environments.
+// If the code is not running in a browser environment (i.e., likely Node.js),
+// it reads input from standard input and passes it to the main processing function.
+if (typeof window === "undefined") {
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

@@ -1,33 +1,38 @@
-(async () => {
-  const ioManager = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
+"use strict";
 
-  let parsedData = [];
+(function () {
+  const processInputData = (sourceContent) => {
+    const contentLines = sourceContent.split("\n");
+    const initialLine = contentLines[0];
 
-  for await (const dataStream of ioManager) {
-    parsedData = dataStream.trim().split(/\s+/).map(Number);
-    ioManager.close();
-    break;
-  }
+    // Divergent parsing strategy: using regex match instead of split and map
+    const numericTokens = initialLine.match(/(\d+)\s+(\d+)/);
 
-  const [firstParameter, secondParameter] = parsedData;
+    // Assuming valid input format as per problem constraints
+    const primaryValue = Number(numericTokens[1]);
+    const secondaryValue = Number(numericTokens[2]);
 
-  const outcomeRules = [
-    { ruleCheck: (valX) => valX <= 5, resultFunction: (valX, valY) => 0 },
-    { ruleCheck: (valX) => valX <= 16, resultFunction: (valX, valY) => valY / 2 },
-    { ruleCheck: (valX) => true, resultFunction: (valX, valY) => valY }
-  ];
+    // Divergent control flow: using a dispatch array with predicates and actions
+    const decisionPath = [
+      {
+        conditionCheck: (inputVal) => inputVal <= 5,
+        calculation: (operandVal) => 0
+      },
+      {
+        conditionCheck: (inputVal) => inputVal <= 16,
+        calculation: (operandVal) => operandVal / 2
+      },
+      { // Default path for values > 16
+        conditionCheck: (inputVal) => true,
+        calculation: (operandVal) => operandVal
+      }
+    ];
 
-  let finalResult;
-  for (const ruleEntry of outcomeRules) {
-    if (ruleEntry.ruleCheck(firstParameter)) {
-      finalResult = ruleEntry.resultFunction(firstParameter, secondParameter);
-      break;
-    }
-  }
+    // Find the first matching rule and execute its associated calculation
+    const finalResult = decisionPath.find(rule => rule.conditionCheck(primaryValue)).calculation(secondaryValue);
 
-  console.log(finalResult);
+    console.log(finalResult);
+  };
+
+  processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
 })();

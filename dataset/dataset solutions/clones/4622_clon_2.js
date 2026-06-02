@@ -1,23 +1,20 @@
-// This function is designed to handle an incoming string, parse it into numerical data, and then compare the first two resulting numbers.
-function  ProcessInput (  textBlock  )  {
+function ProcessInputData(rawData) {
+    // This section transforms the raw input string into an array of numerical values.
+    // It splits the string by newline characters and then converts each segment to a number.
+    let numericValues = rawData.split("\n").map(Number);
 
-    // We first divide the entire input string by newline characters.
-    // Subsequently, each resulting substring is converted into its numerical equivalent.
-    const  dataPoints  =  textBlock.split(  "\n"  ) . map(  Number  );
-
-    // A conditional check is performed to ascertain if the initial two data points are identical.
-    if  (  dataPoints[0]  ===  dataPoints[1]  )  {
-        // Should they be found equal, a corresponding message is displayed.
+    // We now proceed to compare the first two elements of our processed numerical array.
+    if (numericValues[0] === numericValues[1]) {
+        // If the initial two numbers are found to be identical, we output a specific message.
         console.log("EQUAL");
-    }  else  {
-        // In the event of inequality, a ternary operation determines which value is larger,
-        // and an appropriate comparative message is then outputted.
-        console.log(  dataPoints[0]  >  dataPoints[1]  ?  "GREATER"  :  "LESS"  );
+    } else {
+        // Otherwise, if they are not equal, we determine their relative magnitude.
+        // A ternary operator is used for concise conditional output.
+        console.log(numericValues[0] > numericValues[1] ? "GREATER" : "LESS");
     }
 }
 
-// The following statement initiates the entire process.
-// It reads the content from the standard input file, decodes it using UTF-8,
-// removes any leading or trailing whitespace, and finally passes this prepared string
-// to our primary processing function for evaluation.
-ProcessInput(  require("fs").readFileSync("/dev/stdin"  ,  "utf8"  ).trim()  );
+// The primary execution point of the script.
+// It reads content from standard input, ensures it's a string, removes leading/trailing whitespace,
+// and then passes this prepared data to our main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

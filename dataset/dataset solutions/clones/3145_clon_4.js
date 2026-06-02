@@ -1,24 +1,28 @@
-(function initiateProcess() {
-    const dataRetriever = () => {
-        const systemIO = require("fs");
-        const rawBytes = systemIO.readFileSync("/dev/stdin");
-        const decodedText = rawBytes.toString("latin1");
-        const numericTokens = decodedText.match(/\d+/g);
-        return [Number(numericTokens[0]), Number(numericTokens[1])];
+"use strict";
+
+const processInputAndCalculate = (rawData) => {
+    const dataLines = rawData.split("\n");
+    const numericParts = dataLines[0].split(/\s/).map(Number);
+    
+    const firstOperand = numericParts[0];
+    const secondOperand = numericParts[1];
+
+    const computeFinalValue = (valX, valY) => {
+        if (valX === valY) {
+            return valX;
+        }
+
+        const xorResult = valX ^ valY;
+        const haveSameParity = (valX % 2) === (valY % 2);
+
+        return xorResult - (haveSameParity ? 1 : 0);
     };
 
-    const [valueX, valueY] = dataRetriever();
+    return computeFinalValue(firstOperand, secondOperand);
+};
 
-    const calculator = (operandOne, operandTwo) => {
-        const bitwiseExclusive = operandOne ^ operandTwo;
-        const parityCorrection = ((bitwiseExclusive & 1) ^ 1); // Yields 1 if even, 0 if odd
-        return bitwiseExclusive - parityCorrection;
-    };
+const scriptEntry = (inputContent) => {
+    console.log(processInputAndCalculate(inputContent));
+};
 
-    const provisionalOutcome = calculator(valueX, valueY);
-
-    const ultimateOutcome = provisionalOutcome + (valueX === valueY ? (valueX + 1) : 0);
-
-    const outputStream = console.log;
-    outputStream(ultimateOutcome);
-})();
+scriptEntry(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,34 +1,36 @@
 'use strict';
 
-const calculateOptimalProcurement = (inputStringValue) => {
-    const parsedNumericData = inputStringValue.match(/-?\d+(\.\d+)?/g).map(Number);
+function calculateOptimalPurchase(inputData) {
+  const numericValues = inputData
+    .split('\n')[0]
+    .split(' ')
+    .map(val => parseInt(val, 10));
 
-    const itemAlphaCost = parsedNumericData[0];
-    const itemBetaCost = parsedNumericData[1];
-    const comboPackCost = parsedNumericData[2];
-    const countAlphaNeeded = parsedNumericData[3];
-    const countBetaNeeded = parsedNumericData[4];
+  const priceOfA = numericValues[0];
+  const priceOfB = numericValues[1];
+  const priceOfCombo = numericValues[2];
+  const quantityA = numericValues[3];
+  const quantityB = numericValues[4];
 
-    const costScenarioOne = itemAlphaCost * countAlphaNeeded + itemBetaCost * countBetaNeeded;
+  let minimumTotalCost = Infinity;
 
-    const minimumUnits = Math.min(countAlphaNeeded, countBetaNeeded);
-    const quantityDifference = Math.abs(countAlphaNeeded - countBetaNeeded);
-    const maximumUnits = Math.max(countAlphaNeeded, countBetaNeeded);
+  const maxComboCount = Math.max(quantityA, quantityB);
 
-    const unitPriceForDifference = countAlphaNeeded > countBetaNeeded ? itemAlphaCost : itemBetaCost;
+  for (let comboUnits = 0; comboUnits <= maxComboCount; comboUnits++) {
+    const costFromCombos = comboUnits * priceOfCombo * 2;
 
-    const costScenarioTwo = (comboPackCost * minimumUnits * 2) + (unitPriceForDifference * quantityDifference);
+    const remainingA = Math.max(0, quantityA - comboUnits);
+    const costFromRemainingA = remainingA * priceOfA;
 
-    const costScenarioThree = comboPackCost * maximumUnits * 2;
+    const remainingB = Math.max(0, quantityB - comboUnits);
+    const costFromRemainingB = remainingB * priceOfB;
 
-    const finalOptimalValue = Math.min(costScenarioOne, costScenarioTwo, costScenarioThree);
+    const currentScenarioCost = costFromCombos + costFromRemainingA + costFromRemainingB;
 
-    return finalOptimalValue;
-};
+    minimumTotalCost = Math.min(minimumTotalCost, currentScenarioCost);
+  }
 
-const performComputation = (dataSource) => {
-    const computedResult = calculateOptimalProcurement(dataSource);
-    console.log(computedResult);
-};
+  console.log(minimumTotalCost);
+}
 
-performComputation(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+calculateOptimalPurchase(require("fs").readFileSync("/dev/stdin", "utf8"));

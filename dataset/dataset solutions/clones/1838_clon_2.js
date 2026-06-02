@@ -1,190 +1,286 @@
-"use strict" ;
+"use strict";
 
-const   dataStream = require ( "fs" ) . readFileSync ( "/proc/self/fd/0" , "utf_8" ) ;
-let     tokenArray = dataStream.split ( / |\n/ ) ;
-let     tokenIndex = 0 ;
+// Obtain raw input data from the standard input stream.
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function getNextNumber ( ) {
-  return +tokenArray [ tokenIndex++ ] ;
+// Process the input string into an array of tokens, splitting by spaces or newlines.
+let tokenStream = rawInput.split(/ |\n/);
+let tokenIndex = 0; // Tracks the current position within the token stream.
+
+/**
+ * Retrieves the next token from the stream and parses it as a numerical value.
+ * @returns {number} The parsed number.
+ */
+function readNum() {
+  return +tokenStream[tokenIndex++];
 }
 
-function getNextString ( ) {
-  return tokenArray [ tokenIndex++ ] ;
+/**
+ * Retrieves the next token from the stream as a string.
+ * @returns {string} The string token.
+ */
+function readStr() {
+  return tokenStream[tokenIndex++];
 }
 
-function getNextBigInt ( ) {
-  return BigInt ( tokenArray [ tokenIndex++ ] ) ;
+/**
+ * Retrieves the next token from the stream and converts it into a BigInt.
+ * @returns {BigInt} The parsed BigInt.
+ */
+function readBigInt() {
+  return BigInt(tokenStream[tokenIndex++]);
 }
 
-function getNumbersSlice ( count , doMap ) {
-  if ( doMap ) {
-    return tokenArray.slice ( tokenIndex , tokenIndex += count ) ;
+/**
+ * Reads a specified number of tokens from the stream.
+ * Optionally converts them to numbers if 'parseNumbers' is true.
+ * @param {number} count - The quantity of tokens to read.
+ * @param {boolean} parseNumbers - Flag to indicate if tokens should be converted to numbers.
+ * @returns {Array<number|string>} An array containing the read tokens.
+ */
+function readNums(count, parseNumbers) {
+  if (parseNumbers) {
+    return tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
+  } else {
+    return tokenStream.slice(tokenIndex, tokenIndex += count);
   }
-  else {
-    return tokenArray.slice ( tokenIndex , tokenIndex += count ) . map ( val => +val ) ;
-  }
 }
 
-function getMatrix ( height , width , isStringMatrix ) {
-  let resultMatrix = [ ] ;
-  let currentRow = 0 ;
-  if ( isStringMatrix ) {
-    for ( ; currentRow < height ; currentRow++ ) {
-      resultMatrix.push ( tokenArray.slice ( tokenIndex , tokenIndex += width ) ) ;
+/**
+ * Reads a matrix of specified dimensions from the token stream.
+ * Elements are converted to numbers if 'parseNumbers' is true.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in the matrix.
+ * @param {boolean} parseNumbers - Flag to indicate if matrix elements should be numbers.
+ * @returns {Array<Array<number|string>>} The constructed matrix.
+ */
+function readMatrix(rows, cols, parseNumbers) {
+  let resultMatrix = [];
+  let currentRow = 0;
+  if (parseNumbers) {
+    for (; currentRow < rows; currentRow++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols).map(val => +val));
+    }
+  } else {
+    for (; currentRow < rows; currentRow++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
     }
   }
-  else {
-    for ( ; currentRow < height ; currentRow++ ) {
-      resultMatrix.push ( tokenArray.slice ( tokenIndex , tokenIndex += width ) . map ( item => +item ) ) ;
-    }
-  }
-  return resultMatrix ;
+  return resultMatrix;
 }
 
-function createMultiDimArray ( initialValue ) {
-  const   argsList = arguments ;
-  let     argsLength = argsList.length ;
-  let     arrayCreationString = "Array(argsList[" + --argsLength + "]).fill().map(elem => { return " + initialValue + "; })" ;
-  while ( --argsLength ) {
-    arrayCreationString = "Array(argsList[" + argsLength + "]).fill().map(elem => " + arrayCreationString + ")" ;
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to fill array elements with.
+ * @param {...number} dimensions - The sizes for each dimension of the array.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  const args = arguments;
+  let argCount = args.length;
+  let arrayCreationString = "Array(args[" + --argCount + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--argCount) {
+    arrayCreationString = "Array(args[" + argCount + "]).fill().map(x=>" + arrayCreationString + ")";
   }
-  return eval ( arrayCreationString ) ;
+  return eval(arrayCreationString);
 }
 
-
+// Implements a min-priority queue using a binary heap data structure.
 class MinHeap {
-
-  constructor ( ) {
-    this.heapElements = [ ] ;
+  constructor() {
+    this.heapElements = []; // Stores elements as [priority_value, associated_identifier] tuples.
   }
 
-  insertElement ( itemValue , itemPayload ) {
-    const   heapArr = this.heapElements ;
-    let     currentIndex = heapArr.length ;
-    let     parentIndex ;
+  /**
+   * Inserts a new element into the heap, maintaining the min-heap property.
+   * @param {BigInt} value - The priority value of the element.
+   * @param {BigInt} identifier - The data associated with the priority.
+   */
+  insertElement(value, identifier) {
+    const elements = this.heapElements;
+    let currentIdx = elements.length;
+    let parentIdx;
 
-    while ( currentIndex > 0 ) {
-      parentIndex = ( currentIndex - 1 ) >> 1 ;
-      if ( heapArr [ parentIndex ] [ 0 ] <= itemValue ) {
-        break ;
+    // Bubble up the new element to its correct position.
+    for (; currentIdx > 0; currentIdx = parentIdx) {
+      parentIdx = (currentIdx - 1) >> 1; // Calculate parent index.
+      if (elements[parentIdx][0] <= value) {
+        break; // Found the correct spot if parent is smaller or equal.
       }
-      heapArr [ currentIndex ] = heapArr [ parentIndex ] ;
-      currentIndex = parentIndex ;
+      elements[currentIdx] = elements[parentIdx]; // Move parent down.
     }
-    heapArr [ currentIndex ] = [ itemValue , itemPayload ] ;
+    elements[currentIdx] = [value, identifier]; // Place the new element.
   }
 
-  extractMin ( ) {
-    const   heapArr = this.heapElements ;
-    const   minElement = heapArr [ 0 ] ;
-    const   lastElement = heapArr.pop ( ) ;
-    const   halfLength = heapArr.length >> 1 ;
+  /**
+   * Removes and returns the element with the smallest priority from the heap.
+   * @returns {Array<BigInt>} The [priority_value, associated_identifier] of the minimum element.
+   */
+  extractMin() {
+    const elements = this.heapElements;
+    const minElement = elements[0]; // The smallest element is always at the root.
+    const lastElement = elements.pop(); // Remove the last element to replace the root.
+    const halfHeapLength = elements.length >> 1; // Optimization for loop bounds.
 
-    let     parentIdx = 0 ;
-    let     leftChildIdx ;
+    let currentIdx = 0;
+    let childIdx;
 
-    while ( parentIdx < halfLength ) {
-      leftChildIdx = ( parentIdx << 1 ) + 1 ;
-      if ( heapArr [ leftChildIdx + 1 ] && heapArr [ leftChildIdx + 1 ] [ 0 ] < heapArr [ leftChildIdx ] [ 0 ] ) {
-        leftChildIdx++ ;
+    // Bubble down the last element to its correct position.
+    for (; currentIdx < halfHeapLength; currentIdx = childIdx) {
+      childIdx = (currentIdx << 1) + 1; // Index of the left child.
+
+      // Determine the smaller of the two children.
+      if (elements[childIdx + 1] && elements[childIdx + 1][0] < elements[childIdx][0]) {
+        childIdx++; // Use the right child if it's smaller.
       }
-      if ( lastElement [ 0 ] <= heapArr [ leftChildIdx ] [ 0 ] ) {
-        break ;
+
+      // If the element to be placed is smaller than or equal to its smallest child, break.
+      if (lastElement[0] <= elements[childIdx][0]) {
+        break;
       }
-      heapArr [ parentIdx ] = heapArr [ leftChildIdx ] ;
-      parentIdx = leftChildIdx ;
+      elements[currentIdx] = elements[childIdx]; // Move child up.
     }
-    if ( heapArr.length > 0 ) {
-      heapArr [ parentIdx ] = lastElement ;
+
+    // If the heap is not empty, place the last element in its final sorted position.
+    if (elements.length > 0) {
+      elements[currentIdx] = lastElement;
     }
-    return minElement ;
+    return minElement;
   }
 
-  get getSize ( ) {
-    return this.heapElements.length ;
+  /**
+   * Gets the current number of elements stored in the heap.
+   * @returns {number} The size of the heap.
+   */
+  get size() {
+    return this.heapElements.length;
   }
 
-  get peekMin ( ) {
-    return this.heapElements [ 0 ] ;
+  /**
+   * Retrieves the element with the smallest priority without removing it.
+   * @returns {Array<BigInt>} The [priority_value, associated_identifier] of the minimum element.
+   */
+  get top() {
+    return this.heapElements[0];
   }
 }
 
-const programResult = executeProgram ( ) ;
-if ( programResult !== undefined ) {
-  console.info ( programResult ) ;
+// Execute the primary problem-solving routine.
+const problemResult = solveProblem();
+
+// If the routine returns a value, print it to the console.
+if (problemResult !== undefined) {
+  console.log(problemResult);
 }
 
-function executeProgram ( ) {
-  const numIterations = getNextNumber ( ) ;
-  const primeFactors = [ BigInt ( 2 ) , BigInt ( 3 ) , BigInt ( 5 ) ] ;
+/**
+ * The main function encapsulating the problem's logic.
+ * It uses a Dijkstra-like algorithm to find the minimum cost to transform a number to 0.
+ */
+function solveProblem() {
+  const testCasesCount = readNum(); // Read the total number of test scenarios.
 
-  for ( let loopCounter = 0 ; loopCounter < numIterations ; loopCounter++ ) {
-    let targetValue = getNextBigInt ( ) ;
-    const costArray = [ getNextBigInt ( ) , getNextBigInt ( ) , getNextBigInt ( ) ] ;
-    const distanceLookup = [ BigInt ( 0 ) , getNextBigInt ( ) ] ;
+  // Constant array of prime factors used in operations.
+  const primeFactors = [2n, 3n, 5n];
 
-    distanceLookup [ 2 ] = distanceLookup [ 1 ] < costArray [ 0 ] ? distanceLookup [ 1 ] + distanceLookup [ 1 ] : distanceLookup [ 1 ] + costArray [ 0 ] ;
-    distanceLookup [ 3 ] = distanceLookup [ 2 ] < costArray [ 1 ] ? distanceLookup [ 2 ] + distanceLookup [ 1 ] : distanceLookup [ 1 ] + costArray [ 1 ] ;
+  // Process each test case sequentially.
+  for (let caseIdx = 0; caseIdx < testCasesCount; caseIdx++) {
+    const targetNumber = readBigInt(); // The starting number for the current test case.
+    const costsForOps = [readBigInt(), readBigInt(), readBigInt()]; // Costs for dividing by 2, 3, and 5 respectively.
 
-    let distOption1 = distanceLookup [ 3 ] + distanceLookup [ 1 ] ;
-    let distOption2 = distanceLookup [ 2 ] + costArray [ 0 ] ;
-    let distOption3 = distanceLookup [ 1 ] + costArray [ 2 ] ;
+    // Precompute base costs for small numbers (0 to 4) to reach 0.
+    const baseCosts = [0n, readBigInt()]; // baseCosts[0] is 0, baseCosts[1] is cost to reach 0 from 1.
+    
+    // Calculate baseCosts[2]: min(cost(1->0) + cost(1->0), cost(2->0 via op2))
+    baseCosts[2] = baseCosts[1] < costsForOps[0] ? baseCosts[1] + baseCosts[1] : baseCosts[1] + costsForOps[0];
+    
+    // Calculate baseCosts[3]: min(cost(2->0) + cost(1->0), cost(3->0 via op3))
+    baseCosts[3] = baseCosts[2] < costsForOps[1] ? baseCosts[2] + baseCosts[1] : baseCosts[1] + costsForOps[1];
+    
+    // Calculate baseCosts[4]: min(cost(3->0) + cost(1->0), cost(2->0) + cost(2->0 via op2), cost(1->0) + cost(5->0 via op5))
+    let tempCostA = baseCosts[3] + baseCosts[1]; // Path: 4 -> 3 -> 0
+    let tempCostB = baseCosts[2] + costsForOps[0]; // Path: 4 -> 2 (via op2) -> 0
+    let tempCostC = baseCosts[1] + costsForOps[2]; // Path: 4 -> 5 (via op5) -> 0 (this is actually 4->1 + 1->0, not 4->5)
+    
+    if (tempCostC < tempCostB) {
+      tempCostB = tempCostC;
+    }
+    if (tempCostB < tempCostA) {
+      tempCostA = tempCostB;
+    }
+    baseCosts[4] = tempCostA;
 
-    if ( distOption3 < distOption2 )
-      distOption2 = distOption3 ;
-    if ( distOption2 < distOption1 )
-      distOption1 = distOption2 ;
-    distanceLookup [ 4 ] = distOption1 ;
+    // Initialize the priority queue for Dijkstra's algorithm.
+    const minPriorityQueue = new MinHeap();
+    minPriorityQueue.insertElement(0n, targetNumber); // Start with cost 0 to reach the target number.
 
-    const valueHeap = new MinHeap ( ) ;
-    valueHeap.insertElement ( BigInt ( 0 ) , targetValue ) ;
+    // A map to store the minimum cost found so far to reach any given number.
+    const minCostMap = new Map();
+    minCostMap.set(targetNumber, 0n);
 
-    const visitedCosts = new Map ( ) ;
-    visitedCosts.set ( targetValue , BigInt ( 0 ) ) ;
+    // Main loop for Dijkstra's algorithm.
+    while (true) {
+      const [currentCost, currentNum] = minPriorityQueue.extractMin(); // Get the number with the smallest known cost.
 
-    while ( true ) {
-      const [ currentCost , currentNum ] = valueHeap.extractMin ( ) ;
-      if ( visitedCosts.has ( currentNum ) && visitedCosts.get ( currentNum ) < currentCost ) {
-        continue ;
+      // If a shorter path to 'currentNum' has already been found, skip this entry.
+      if (minCostMap.has(currentNum) && minCostMap.get(currentNum) < currentCost) {
+        continue;
       }
-      if ( currentNum === BigInt ( 0 ) ) {
-        console.info ( currentCost.toString ( ) ) ;
-        break ;
+
+      // If we have reached 0, we found the minimum cost. Print it and exit.
+      if (currentNum === 0n) {
+        console.log(currentCost.toString());
+        break;
       }
-      if ( currentNum < BigInt ( 5 ) ) {
-        const totalCostForSmallNum = currentCost + distanceLookup [ Number ( currentNum ) ] ;
-        if ( ! visitedCosts.has ( BigInt ( 0 ) ) || visitedCosts.get ( BigInt ( 0 ) ) > totalCostForSmallNum ) {
-          visitedCosts.set ( BigInt ( 0 ) , totalCostForSmallNum ) ;
-          valueHeap.insertElement ( totalCostForSmallNum , BigInt ( 0 ) ) ;
+
+      // For small numbers (0 to 4), use precomputed base costs to reach 0.
+      if (currentNum < 5n) {
+        const finalCostForZero = currentCost + baseCosts[Number(currentNum)];
+        if (!minCostMap.has(0n) || minCostMap.get(0n) > finalCostForZero) {
+          minCostMap.set(0n, finalCostForZero);
+          minPriorityQueue.insertElement(finalCostForZero, 0n);
         }
-        continue ;
+        continue; // Proceed to the next iteration for small numbers.
       }
 
-      for ( let idx = 0 ; idx < 3 ; idx++ ) {
-        const divisorFactor = primeFactors [ idx ] ;
-        const operationCost = costArray [ idx ] ;
+      // Explore possible operations (division by 2, 3, or 5) for larger numbers.
+      for (let factorIndex = 0; factorIndex < 3; factorIndex++) {
+        const divisor = primeFactors[factorIndex]; // The current prime factor (2n, 3n, or 5n).
+        const opCost = costsForOps[factorIndex]; // The cost associated with this division operation.
 
-        let nextNum = currentNum / divisorFactor ;
-        let calcCost1 = operationCost + distanceLookup [ 1 ] * ( currentNum % divisorFactor ) ;
-        let calcCost2 = ( currentNum - nextNum ) * distanceLookup [ 1 ] ;
-
-        if ( calcCost2 < calcCost1 )
-          calcCost1 = calcCost2 ;
-
-        if ( ! visitedCosts.has ( nextNum ) || visitedCosts.get ( nextNum ) > calcCost1 + currentCost ) {
-          visitedCosts.set ( nextNum , calcCost1 + currentCost ) ;
-          valueHeap.insertElement ( calcCost1 + currentCost , nextNum ) ;
+        // Scenario 1: Divide 'currentNum' by 'divisor' using floor division.
+        let nextNumFloor = currentNum / divisor;
+        // Cost includes division cost plus cost for remainder (by subtracting 1s).
+        let costToReachFloor = opCost + baseCosts[1] * (currentNum % divisor);
+        // Alternative cost: repeatedly subtracting 1 until 'nextNumFloor' is reached.
+        let costToReachFloorAlt = (currentNum - nextNumFloor) * baseCosts[1];
+        
+        if (costToReachFloorAlt < costToReachFloor) {
+          costToReachFloor = costToReachFloorAlt;
         }
 
-        if ( currentNum % divisorFactor !== BigInt ( 0 ) ) {
-          nextNum++ ;
-          calcCost1 = operationCost + distanceLookup [ 1 ] * ( divisorFactor - currentNum % divisorFactor ) ;
-          calcCost2 = ( currentNum - nextNum ) * distanceLookup [ 1 ] ;
-          if ( calcCost2 < calcCost1 )
-            calcCost2 = calcCost2 ;
-          if ( ! visitedCosts.has ( nextNum ) || visitedCosts.get ( nextNum ) > calcCost1 + currentCost ) {
-            visitedCosts.set ( nextNum , calcCost1 + currentCost ) ;
-            valueHeap.insertElement ( calcCost1 + currentCost , nextNum ) ;
+        // If a new minimum cost to 'nextNumFloor' is found, update and add to queue.
+        if (!minCostMap.has(nextNumFloor) || minCostMap.get(nextNumFloor) > costToReachFloor + currentCost) {
+          minCostMap.set(nextNumFloor, costToReachFloor + currentCost);
+          minPriorityQueue.insertElement(costToReachFloor + currentCost, nextNumFloor);
+        }
+
+        // Scenario 2: If 'currentNum' is not perfectly divisible, consider dividing by 'divisor' using ceiling division.
+        if (currentNum % divisor !== 0n) {
+          let nextNumCeil = nextNumFloor + 1n;
+          // Cost includes division cost plus cost to reach the next multiple (by adding 1s).
+          let costToReachCeil = opCost + baseCosts[1] * (divisor - (currentNum % divisor));
+          // Alternative cost: repeatedly subtracting 1 until 'nextNumCeil' is reached.
+          let costToReachCeilAlt = (currentNum - nextNumCeil) * baseCosts[1];
+          
+          if (costToReachCeilAlt < costToReachCeil) {
+            costToReachCeil = costToReachCeilAlt;
+          }
+
+          // If a new minimum cost to 'nextNumCeil' is found, update and add to queue.
+          if (!minCostMap.has(nextNumCeil) || minCostMap.get(nextNumCeil) > costToReachCeil + currentCost) {
+            minCostMap.set(nextNumCeil, costToReachCeil + currentCost);
+            minPriorityQueue.insertElement(costToReachCeil + currentCost, nextNumCeil);
           }
         }
       }

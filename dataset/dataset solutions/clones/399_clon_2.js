@@ -1,103 +1,76 @@
-/**
- * Function to compute the maximum length of a continuous sequence of '1's
- * starting from a specified cell and extending in any of the four primary
- * (horizontal/vertical) or diagonal directions.
- *
- * @param {number} startRow  - The initial row index for path exploration.
- * @param {number} startCol  - The initial column index for path exploration.
- * @returns {number} The maximum detected path length from the given starting point.
- */
-function determineMaxSequence(startRow, startCol) {
-  // Define changes in row index for various directions (e.g., right, down-left, down, down-right)
+function measureLine(rowCoord, colCoord) {
+  // Define directional offsets for rows
   const rowOffsets = [0, 1, 1, 1];
-
-  // Define changes in column index for corresponding directions
+  // Define directional offsets for columns
   const colOffsets = [1, -1, 0, 1];
 
-  let longestFound = 1; // Initialize the maximum sequence length with 1 (the starting cell itself).
+  let longestSegment = 1; // Initialize with a minimum length of 1 (the starting cell itself)
 
-  // Iterate through each of the four predefined directional vectors.
-  for (let directionIndex = 0; directionIndex < 4; ++directionIndex) {
-    let currentSequenceLength = 1; // Reset the length for the current direction's path.
+  // Iterate through the four possible directions
+  for (let dirIdx = 0; dirIdx < 4; dirIdx++) {
+    let currentLength = 1; // Reset current segment length for each direction
 
-    // Extend the path step-by-step in the current direction.
-    // The loop continues as long as the steps are within the grid dimension.
-    for (let stepCount = 1; stepCount <= globalGridDimension; ++stepCount) {
-      // Calculate the coordinates of the next cell in the current path.
-      let nextRowCoord = startRow + (rowOffsets[directionIndex] * stepCount);
-      let nextColCoord = startCol + (colOffsets[directionIndex] * stepCount);
+    // Extend the line in the current direction
+    for (let stepNum = 1; stepNum <= gridSize; stepNum++) {
+      const nextRow = rowCoord + (rowOffsets[dirIdx] * stepNum);
+      const nextCol = colCoord + (colOffsets[dirIdx] * stepNum);
 
-      // Check for boundary conditions: if the next cell is outside the grid,
-      // the path in this direction terminates.
-      if (nextRowCoord < 0 || nextColCoord < 0 || nextRowCoord >= globalGridDimension || nextColCoord >= globalGridDimension) {
-        break;
+      // Check for boundary conditions
+      if (nextRow < 0 || nextCol < 0 || nextRow >= gridSize || nextCol >= gridSize) {
+        break; // Stop if out of bounds
       }
 
-      // Check the value of the next cell: if it's not '1', the path is broken.
-      if (mainMatrix[nextRowCoord][nextColCoord] !== 1) {
-        break;
+      // Check if the cell value is not 1
+      if (binaryGrid[nextRow][nextCol] !== 1) {
+        break; // Stop if the segment is broken
       }
 
-      // If the cell is within bounds and contains '1', increment the sequence length.
-      currentSequenceLength++;
+      currentLength++; // Increment length if the cell is part of the segment
     }
 
-    // Update the overall longest sequence found from this starting cell.
-    longestFound = Math.max(longestFound, currentSequenceLength);
-
-    // This reset is technically redundant as currentSequenceLength is re-initialized
-    // at the start of the outer loop, but it maintains the original code's flow.
-    currentSequenceLength = 1;
+    // Update the maximum segment length found so far
+    longestSegment = Math.max(longestSegment, currentLength);
+    currentLength = 1; // This line is redundant as currentLength is reset at the start of the outer loop, but preserving original structure.
   }
 
-  return longestFound; // Return the maximum sequence length found from this starting point.
+  return longestSegment; // Return the maximum length found from the starting point
 }
 
+// Read all input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process input: trim whitespace and split into an array of lines
+const inputLines = (rawData.trim()).split("\n");
 
-// --- Main Program Execution ---
-
-// Load the 'fs' module for file system operations.
-// Read all input from standard input synchronously and decode it as UTF-8.
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-// Pre-process the raw input: remove leading/trailing whitespace and split into an array of lines.
-let inputLines = rawInputContent.trim().split('\n');
-
-// The primary loop for processing multiple grid configurations.
+// Loop indefinitely until a termination condition is met
 while (true) {
-  // Extract the grid dimension from the first line of the remaining input.
-  // The '- 0' implicitly converts the string to a number.
-  var globalGridDimension = inputLines.shift() - 0;
+  // Read the grid size for the current test case and convert to a number
+  var gridSize = inputLines.shift() - 0;
 
-  // Termination condition: a grid dimension of 0 signifies the end of input.
-  if (globalGridDimension === 0) {
+  // If the grid size is 0, terminate the program
+  if (gridSize === 0) {
     break;
   }
 
-  // Initialize an empty array to construct the grid matrix.
-  let mainMatrix = [];
-
-  // Populate the grid matrix based on the subsequent input lines.
-  for (let rowIndex = 0; rowIndex < globalGridDimension; ++rowIndex) {
-    // For each row, take the next line, split it into individual characters,
-    // and then map each character to its numerical value.
-    mainMatrix[rowIndex] = inputLines.shift().split('').map(Number);
+  // Initialize a 2D array (matrix) to store the binary grid
+  var binaryGrid = [];
+  // Populate the grid based on the input lines
+  for (let rowIndex = 0; rowIndex < gridSize; rowIndex++) {
+    binaryGrid[rowIndex] = (inputLines.shift()).split("").map(Number);
   }
 
-  // Variable to store the overall maximum path length encountered across the entire grid.
-  let overallLongestPath = 0;
+  let overallMaxLine = 0; // Initialize the maximum line length for the current grid
 
-  // Iterate through every cell in the grid.
-  for (let rowIndex = 0; rowIndex < globalGridDimension; ++rowIndex) {
-    for (let colIndex = 0; colIndex < globalGridDimension; ++colIndex) {
-      // If the current cell contains a '1', it's a potential starting point for a path.
-      if (mainMatrix[rowIndex][colIndex] === 1) {
-        // Calculate the longest path from this cell and update the overall maximum.
-        overallLongestPath = Math.max(overallLongestPath, determineMaxSequence(rowIndex, colIndex));
+  // Iterate through each cell of the grid
+  for (let rowIndex = 0; rowIndex < gridSize; rowIndex++) {
+    for (let colIndex = 0; colIndex < gridSize; colIndex++) {
+      // If the current cell contains a '1', check for lines starting from it
+      if (binaryGrid[rowIndex][colIndex] === 1) {
+        // Update the overall maximum line length
+        overallMaxLine = Math.max(overallMaxLine, measureLine(rowIndex, colIndex));
       }
     }
   }
 
-  // Print the calculated maximum path length for the current grid to the console.
-  console.log(overallLongestPath);
+  // Print the maximum line length found for the current test case
+  console.log(overallMaxLine);
 }

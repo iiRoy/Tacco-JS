@@ -1,35 +1,35 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = sourceData.trim().split('\n');
-const numericalData = processedLines[1].split(' ').map(Number);
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var contentLines = fileContent.trim().split("\n");
+var numericData = contentLines[1].split(' ').map(val => Number(val));
 
-let totalOperations = 0;
-
-function locateSmallest(arrRef, currentMinIdx, checkPoint) {
-  if (checkPoint >= arrRef.length) {
-    return currentMinIdx;
-  }
-  const nextMinIdx = arrRef[checkPoint] < arrRef[currentMinIdx] ? checkPoint : currentMinIdx;
-  return locateSmallest(arrRef, nextMinIdx, checkPoint + 1);
+function locateMinimumIndexFunctional(collection, startPoint) {
+    return collection.slice(startPoint).reduce((accumulatorIndex, currentValue, relativeIndex) => {
+        const absoluteIndex = startPoint + relativeIndex;
+        if (currentValue < collection[accumulatorIndex]) {
+            return absoluteIndex;
+        }
+        return accumulatorIndex;
+    }, startPoint);
 }
 
-function arrangeSequence(sequence, currentBoundary) {
-  if (currentBoundary >= sequence.length - 1) {
-    return;
-  }
+function performRecursiveSort(dataSequence, currentIterationIndex, totalSwapCount) {
+    if (currentIterationIndex >= dataSequence.length - 1) {
+        return { sortedSequence: dataSequence, finalSwapCount: totalSwapCount };
+    }
 
-  const identifiedSmallestIdx = locateSmallest(sequence, currentBoundary, currentBoundary + 1);
+    const minimumElementPosition = locateMinimumIndexFunctional(dataSequence, currentIterationIndex);
 
-  if (identifiedSmallestIdx !== currentBoundary) {
-    const temporaryValue = sequence[identifiedSmallestIdx];
-    sequence[identifiedSmallestIdx] = sequence[currentBoundary];
-    sequence[currentBoundary] = temporaryValue;
-    totalOperations++;
-  }
+    let updatedSwapCount = totalSwapCount;
+    if (minimumElementPosition !== currentIterationIndex) {
+        [dataSequence[currentIterationIndex], dataSequence[minimumElementPosition]] =
+        [dataSequence[minimumElementPosition], dataSequence[currentIterationIndex]];
+        updatedSwapCount++;
+    }
 
-  arrangeSequence(sequence, currentBoundary + 1);
+    return performRecursiveSort(dataSequence, currentIterationIndex + 1, updatedSwapCount);
 }
 
-arrangeSequence(numericalData, 0);
+var sortResult = performRecursiveSort(numericData, 0, 0);
 
-console.log(numericalData.join(' '));
-console.log(totalOperations);
+console.log(sortResult.sortedSequence.join(' '));
+console.log(sortResult.finalSwapCount);

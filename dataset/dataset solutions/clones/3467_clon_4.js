@@ -1,17 +1,16 @@
-const retrievePrimarySegment = (entireInput) =>
-  (entireInput.match(/^([^\n]*)/) || ['', ''])[1];
+function processInputData(rawData) {
+    const initialSegment = rawData.split("\n")[0];
+    const segmentLength = initialSegment.length;
 
-const transformationRegistry = {
-  '2': (sequence) => sequence,
-  '3': (sequence) => Array.from(sequence).reverse().join(''),
-  'default': () => undefined
-};
+    switch (segmentLength) {
+        case 2:
+            console.log(initialSegment);
+            break;
+        case 3:
+            const reversedSegment = initialSegment.split('').reduce((accumulator, character) => character + accumulator, '');
+            console.log(reversedSegment);
+            break;
+    }
+}
 
-((rawData) => {
-  const pertinentText = retrievePrimarySegment(rawData);
-  const processingRoutine = transformationRegistry[pertinentText.length] || transformationRegistry['default'];
-  
-  const outcome = processingRoutine(pertinentText);
-
-  outcome !== undefined && console.log(outcome);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

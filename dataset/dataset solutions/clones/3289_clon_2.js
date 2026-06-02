@@ -1,50 +1,56 @@
 "use strict";
 
+// Initialize standard input processing
 process.stdin.resume();
-process.stdin.setEncoding('utf8'); // Set the character encoding for the input stream
+process.stdin.setEncoding('utf8');
 
-let receivedInputData = ''; // Buffer to accumulate all incoming data
-let processedInputSegments = ''; // Array to hold lines after splitting
+// Buffer for accumulating raw input data
+let rawInputBuffer = '';
+// Array to store input lines after splitting
+let lineSegments = '';
 
-process.stdin.on('data', function (incomingChunk) { // Event listener for 'data' chunks
-    receivedInputData += incomingChunk; // Append current data chunk to the buffer
+// Event listener for incoming data chunks
+process.stdin.on('data', function (incomingDataChunk) {
+    rawInputBuffer += incomingDataChunk; // Append new data to the buffer
 });
 
-process.stdin.on('end', function () { // Event listener for 'end' of input
-    processedInputSegments = receivedInputData.split('\n'); // Split buffer into individual lines
-    performComputation(); // Initiate the main calculation logic
+// Event listener for the end of input stream
+process.stdin.on('end', function () {
+    lineSegments = rawInputBuffer.split('\n'); // Split the accumulated data into lines
+    initiateCalculation(); // Begin the main processing logic
 });
 
-function performComputation() {
-    // Extract the total count of items from the first line of input
-    const totalItemsCount = Number.parseInt(processedInputSegments.shift());
+/**
+ * Main function to perform the calculation based on processed input.
+ */
+function initiateCalculation() {
+    // Parse the first line as the number of elements
+    const elementCount = parseInt(lineSegments.shift(), 10);
 
-    // Parse the sequence of numerical values from the second line
-    let valueSequence = processedInputSegments[0].split(' ').map(Number);
+    // Parse the second line into an array of numbers
+    let valueSequence = lineSegments[0].split(' ').map(Number);
 
-    // Initialize a dynamic programming array to store minimum costs
-    // Fill it with a very large number representing 'infinity' for unreached states
-    const minimumCosts = Array(totalItemsCount).fill(Number.MAX_VALUE);
+    // Initialize a dynamic programming table with a large value (Infinity)
+    const dynamicProgrammingTable = Array(elementCount).fill(Infinity);
 
-    // The cost to reach the very first element is always zero
-    minimumCosts[0] = 0;
+    // The cost to reach the first element is 0
+    dynamicProgrammingTable[0] = 0;
 
-    // Iterate through each element to determine the optimal path costs
-    for (let currentPosition = 0; currentPosition < totalItemsCount; currentPosition++) {
-        // Evaluate possible jumps: one or two steps forward from the current position
+    // Iterate through each element in the sequence
+    for (let currentPosition = 0; currentPosition < elementCount; currentPosition++) {
+        // Consider jumps to the next one or two elements
         for (let nextPosition = currentPosition + 1;
-             nextPosition < currentPosition + 3 && nextPosition < totalItemsCount;
+             nextPosition < currentPosition + 3 && nextPosition < elementCount;
              nextPosition++) {
-            // Update the minimum cost to reach 'nextPosition'
-            // Compare the currently stored cost with the cost from 'currentPosition'
-            // plus the absolute difference (jump cost) between element values
-            minimumCosts[nextPosition] = Math.min(
-                minimumCosts[nextPosition],
-                minimumCosts[currentPosition] + Math.abs(valueSequence[currentPosition] - valueSequence[nextPosition])
+            // Calculate the cost to jump from currentPosition to nextPosition
+            // and update the minimum cost if a shorter path is found
+            dynamicProgrammingTable[nextPosition] = Math.min(
+                dynamicProgrammingTable[nextPosition],
+                dynamicProgrammingTable[currentPosition] + Math.abs(valueSequence[currentPosition] - valueSequence[nextPosition])
             );
         }
     }
 
-    // Output the final calculated minimum cost to reach the last element of the sequence
-    console.log(minimumCosts[totalItemsCount - 1]);
+    // Output the minimum cost to reach the last element
+    console.log(dynamicProgrammingTable[elementCount - 1]);
 }

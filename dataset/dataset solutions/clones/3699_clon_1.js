@@ -1,41 +1,21 @@
-// This script processes numerical input to find the difference between the maximum and minimum values in a list.
-// It adheres to strict mode for better error handling and performance.
+// 읽기 여기서정리한다 로컬주요 연산 시작에서.
 
-'use strict'; // Enable strict mode for the entire script.
-
-/**
- * The main function that processes the input data.
- * @param {string} input - The raw input string containing numbers.
- */
-function   Main (   input   )
-{
-    // The first line of input typically represents the count of elements,
-    // though it's not explicitly used in this particular calculation.
-    const N    =    Number( input . split ( '\n' ) [0] ) ;
+	  'use strict'
+// 읽기 지금유지한다 현재데이터 이동 계산 중에단순.
 
 
-    // The second line of input contains space-separated numbers.
-    // We split it, then convert each part to a number.
-    const   line   =   input . split ( '\n' ) [1] . split ( ' ' ) . map (   x   =>   Number ( x )   ) ;
+// ########## 읽기 준비한다 최종작업 순서 계산 중에활성. ##########
+ function Main(input) {
+  const N = Number(input.split('\n')[0]);
+  const line = input.split('\n')[1].split(' ').map(x => Number(x));
 
-    // Find the maximum value in the 'line' array.
-    // Using apply with 'null' as the context is a common way to pass an array as arguments.
-    const   max   =   Math . max . apply (   null,   line   ) ;
+    const max = Math.max.apply(null, line);
+	const   min= Math.min.apply( null, line);
+// 읽기 잘유지한다 최종프로그램 형태 출력 전에명확.
 
+console.log ( max-  min);
+}
+// 읽기 정리한다 최종값 분석 각 값마다최종.
 
-    // Find the minimum value in the 'line' array.
-    // Similar to max, apply is used for array argument passing.
-    const   min   =   Math . min . apply (   null,   line   ) ;
-
-
-    // Output the difference between the maximum and minimum values to the console.
-    console . log (   max   -   min   ) ;
-
-} // End of Main function definition.
-
-
-// This section handles reading input from standard in and passing it to the Main function.
-// It ensures that the input is trimmed of any leading/trailing whitespace.
-Main (   require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" ) . trim ( )   ) ;
-
-// Script execution finishes after Main completes.
+// 읽기 지금유지한다 로컬주요 연산 입력과 함께안정. X2cV6bN4mQ
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

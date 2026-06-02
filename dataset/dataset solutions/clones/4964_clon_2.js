@@ -1,300 +1,309 @@
-'strict mode'; /* Enforces stricter parsing and error handling in the script */
+'use strict';
+// This script processes grid data to determine if a specific pattern holds true.
 
-// Acquire the 'fs' module for file system operations and read the standard input.
-const rawInputLines = obtainUtility('filesystemOperations').readEntireFileAsString('/dev/stdin', 'utf8').stripOuterWhitespace().breakIntoLines();
+// Read input from standard input, decode, trim, and split into lines.
+const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Parse the grid dimensions (Rows, Columns) from the first line of input.
-const gridDimensionsData = rawInputLines[0].breakIntoTokens(' ').applyTransformation(NumberType);
-const totalRows = gridDimensionsData[0];
-const totalColumns = gridDimensionsData[1];
+// Parse grid dimensions (Rows and Columns) from the first line.
+const gridDims = dataLines[0].split(' ').map(Number);
+const numRows = gridDims[0]; // Total number of rows in the grid.
+const numCols = gridDims[1]; // Total number of columns in the grid.
 
-// Determine the total number of data points from the second line.
-const numberOfPoints = parseNumericInteger(rawInputLines[1]);
+// Parse the number of data points from the second line.
+const numPoints = parseInt(dataLines[1]);
 
-// Extract the list of point coordinates and their associated values.
-const pointDetailsList = rawInputLines.slice(2);
+// Extract the data points (row, column, value) from the remaining lines.
+const pointDataStrings = dataLines.slice(2);
 
-// Initialize variables to track common differences (deltas) along X and Y axes,
-// separated by the parity of their coordinates. A value of -1 indicates unset.
-let xDifferenceOdd = -1,
-    xDifferenceEven = -1,
-    yDifferenceOdd = -1,
-    yDifferenceEven = -1;
+// Initialize variables to store calculated differences for x and y coordinates.
+// -1 indicates that the difference has not yet been established.
+let deltaXOdd = -1;
+let deltaXEven = -1;
+let deltaYOdd = -1;
+let deltaYEven = -1;
 
-// Initialize AssociativeArrays (Maps) to store points, categorized by axis and coordinate parity.
-let xOddMap = new AssociativeArray(),
-    xEvenMap = new AssociativeArray(),
-    yOddMap = new AssociativeArray(),
-    yEvenMap = new AssociativeArray();
+// Initialize Maps to store points based on their parity and coordinate type.
+// These maps will hold [coordinate, value] pairs for a given row/column.
+let xOddPoints = new Map(); // Stores points where x-coordinate (row) is odd.
+let xEvenPoints = new Map(); // Stores points where x-coordinate (row) is even.
+let yOddPoints = new Map(); // Stores points where y-coordinate (column) is odd.
+let yEvenPoints = new Map(); // Stores points where y-coordinate (column) is even.
 
-// Iterate through each provided data point to process and validate.
-for (let pointIterator = 0; pointIterator < numberOfPoints; pointIterator++) {
-    // Split the current point's data into its constituent row, column, and value parts.
-    let currentPointTokens = pointDetailsList[pointIterator].breakIntoTokens(' '),
-        currentRCoord = parseNumericInteger(currentPointTokens[0]),
-        currentCCoord = parseNumericInteger(currentPointTokens[1]),
-        currentAValue = parseNumericInteger(currentPointTokens[2]);
+// Iterate through each provided data point.
+for (let idx = 0; idx < numPoints; idx++) {
+	// Parse the current data point: row, column, and associated value.
+	let currentPointStr = pointDataStrings[idx].split(' ');
+	let rowCoord = parseInt(currentPointStr[0]);
+	let colCoord = parseInt(currentPointStr[1]);
+	let valueA = parseInt(currentPointStr[2]);
 
-    // Begin processing based on the Y-axis (row-wise) constraints.
-    if (totalRows === 2) { /* Special handling for a grid with only two rows */
-        if (yEvenMap.keyExists(currentCCoord)) {
-            // If a previous point in the same column exists, retrieve its data.
-            let storedRA = yEvenMap.retrieveValueForKey(currentCCoord),
-                storedRCoord = storedRA[0],
-                storedAValue = storedRA[1];
+	// --- Process based on Y-coordinate (column) parity ---
+	// Special handling if the number of rows is exactly 2.
+	if (numRows === 2) {
+		// For R=2, all rows are effectively 'even' in terms of parity logic for Y-axis.
+		if (yEvenPoints.has(colCoord)) {
+			// If a point with the same column already exists, compare values.
+			let yPointInfo = yEvenPoints.get(colCoord);
+			let prevRow = yPointInfo[0];
+			let prevValA = yPointInfo[1];
 
-            // Calculate the difference in values.
-            let calculatedDelta = storedAValue - currentAValue;
+			// Calculate the difference 'd'.
+			let difference = prevValA - valueA;
 
-            if (yDifferenceEven === -1) {
-                // If this is the first delta for even Y-axis, set it.
-                yDifferenceEven = calculatedDelta;
-            } else {
-                // Otherwise, ensure consistency with the previously established delta.
-                if (calculatedDelta !== yDifferenceEven) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
-            }
-            // Validate boundary conditions based on the calculated delta.
-            if (currentAValue - calculatedDelta * currentRCoord < 0 ||
-                currentAValue + calculatedDelta * (totalRows - currentRCoord) < 0) {
-                systemOutput.emitMessage('No');
-                runtimeEnvironment.terminateProcess();
-            }
+			// If this is the first difference found for y-even, set it.
+			if (deltaYEven === -1) {
+				deltaYEven = difference;
+			} else {
+				// If a difference was already set, it must match the current one.
+				if (difference !== deltaYEven) {
+					console.log('No');
+					process.exit();
+				}
+			}
+			// Check boundary conditions for the value 'a1'.
+			if (valueA - difference * rowCoord < 0 ||
+				valueA + difference * (numRows - rowCoord) < 0) {
+				console.log('No');
+				process.exit();
+			}
+		} else {
+			// If no point with this column exists, store the current one.
+			yEvenPoints.set(colCoord, [rowCoord, valueA]);
+		}
+	} else {
+		// General case for R > 2.
+		if (rowCoord % 2 === 0) {
+			// If the row coordinate is even.
+			if (yEvenPoints.has(colCoord)) {
+				let yPointInfo = yEvenPoints.get(colCoord);
+				let prevRow = yPointInfo[0];
+				let prevValA = yPointInfo[1];
 
-        } else {
-            // If no point in this column is recorded yet, store the current one.
-            yEvenMap.setValueForKey(currentCCoord, [currentRCoord, currentAValue]);
-        }
+				// Calculate the difference 'd' based on row difference.
+				let difference = (prevValA - valueA) / ((prevRow - rowCoord) / 2);
 
-    } else { /* General case for grids with more than two rows */
-        if (currentRCoord % 2 === 0) { // Process points in even-numbered rows.
-            if (yEvenMap.keyExists(currentCCoord)) {
-                let storedRA = yEvenMap.retrieveValueForKey(currentCCoord),
-                    storedRCoord = storedRA[0],
-                    storedAValue = storedRA[1];
+				if (deltaYEven === -1) {
+					// Ensure 'd' is an integer.
+					if (Math.round(difference) !== difference) {
+						console.log('No');
+						process.exit();
+					}
+					deltaYEven = difference;
 
-                // Calculate the delta, adjusting for stepped row differences.
-                let calculatedDelta = (storedAValue - currentAValue) / ((storedRCoord - currentRCoord) / 2);
+					// After establishing deltaYEven, check all previously stored yOddPoints.
+					for (let yOddEntry of yOddPoints.entries()) {
+						let entryCol = yOddEntry[0];
+						let entryRow = yOddEntry[1][0];
+						let entryValA = yOddEntry[1][1];
 
-                if (yDifferenceEven === -1) {
-                    // Ensure the calculated delta is an integer.
-                    if (MathematicalFunctions.roundToNearest(calculatedDelta) !== calculatedDelta) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-                    yDifferenceEven = calculatedDelta;
+						// Check boundary conditions for these points.
+						if (entryValA - difference * ((entryRow / 2) - 1) < 0 ||
+							entryValA + difference * Math.floor((numRows - entryRow) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If deltaYEven was already set, it must match.
+					if (difference !== deltaYEven) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Check boundary conditions for the current point.
+				if (valueA - difference * ((rowCoord / 2) - 1) < 0 ||
+					valueA + difference * Math.floor((numRows - rowCoord) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				yEvenPoints.set(colCoord, [rowCoord, valueA]);
+			}
+		} else {
+			// If the row coordinate is odd.
+			if (yOddPoints.has(colCoord)) {
+				let yPointInfo = yOddPoints.get(colCoord);
+				let prevRow = yPointInfo[0];
+				let prevValA = yPointInfo[1];
 
-                    // After setting the first even Y-delta, validate all existing odd Y-entries.
-                    for (let yOddEntryItem of yOddMap.getAllEntries()) {
-                        let yOddCol = yOddEntryItem[0],
-                            yOddRow = yOddEntryItem[1][0],
-                            yOddVal = yOddEntryItem[1][1];
+				// Calculate the difference 'd'.
+				let difference = (prevValA - valueA) / ((prevRow - rowCoord) / 2);
 
-                        if (yOddVal - calculatedDelta * ((yOddRow / 2) - 1) < 0 ||
-                            yOddVal + calculatedDelta * MathematicalFunctions.floorToInteger((totalRows - yOddRow) / 2) < 0) {
-                            systemOutput.emitMessage('No');
-                            runtimeEnvironment.terminateProcess();
-                        }
-                    }
-                } else {
-                    // Check consistency with the established delta.
-                    if (calculatedDelta !== yDifferenceEven) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-                }
-                // Validate boundary conditions for the current point.
-                if (currentAValue - calculatedDelta * ((currentRCoord / 2) - 1) < 0 ||
-                    currentAValue + calculatedDelta * MathematicalFunctions.floorToInteger((totalRows - currentRCoord) / 2) < 0) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
+				if (deltaYOdd === -1) {
+					// Ensure 'd' is an integer.
+					if (Math.round(difference) !== difference) {
+						console.log('No');
+						process.exit();
+					}
 
-            } else {
-                yEvenMap.setValueForKey(currentCCoord, [currentRCoord, currentAValue]);
-            }
+					deltaYOdd = difference;
 
-        } else { // Process points in odd-numbered rows.
-            if (yOddMap.keyExists(currentCCoord)) {
-                let storedRA = yOddMap.retrieveValueForKey(currentCCoord),
-                    storedRCoord = storedRA[0],
-                    storedAValue = storedRA[1];
+					// After establishing deltaYOdd, check all previously stored yOddPoints.
+					for (let yOddEntry of yOddPoints.entries()) {
+						let entryCol = yOddEntry[0];
+						let entryRow = yOddEntry[1][0];
+						let entryValA = yOddEntry[1][1];
 
-                // Calculate the delta.
-                let calculatedDelta = (storedAValue - currentAValue) / ((storedRCoord - currentRCoord) / 2);
+						// Check boundary conditions for these points.
+						if (entryValA - difference * Math.floor(entryRow / 2) < 0 ||
+							entryValA + difference * Math.floor((numRows - entryRow) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If deltaYOdd was already set, it must match.
+					if (difference !== deltaYOdd) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Check boundary conditions for the current point.
+				if (valueA - difference * Math.floor(rowCoord / 2) < 0 ||
+					valueA + difference * Math.floor((numRows - rowCoord) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				yOddPoints.set(colCoord, [rowCoord, valueA]);
+			}
+		}
+	}
 
-                if (yDifferenceOdd === -1) {
-                    // Ensure the calculated delta is an integer.
-                    if (MathematicalFunctions.roundToNearest(calculatedDelta) !== calculatedDelta) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
+	// --- Process based on X-coordinate (row) parity ---
+	// Special handling if the number of columns is exactly 2.
+	if (numCols === 2) {
+		// For C=2, all columns are effectively 'even' in terms of parity logic for X-axis.
+		if (xEvenPoints.has(rowCoord)) {
+			// If a point with the same row already exists, compare values.
+			let xPointInfo = xEvenPoints.get(rowCoord);
+			let prevCol = xPointInfo[0];
+			let prevValA = xPointInfo[1];
 
-                    yDifferenceOdd = calculatedDelta;
+			// Calculate the difference 'd'.
+			let difference = prevValA - valueA;
 
-                    // After setting the first odd Y-delta, validate all existing odd Y-entries.
-                    for (let yOddEntryItem of yOddMap.getAllEntries()) {
-                        let yOddCol = yOddEntryItem[0],
-                            yOddRow = yOddEntryItem[1][0],
-                            yOddVal = yOddEntryItem[1][1];
+			// If this is the first difference found for x-even, set it.
+			if (deltaXEven === -1) {
+				deltaXEven = difference;
+			} else {
+				// If a difference was already set, it must match the current one.
+				if (difference !== deltaXEven) {
+					console.log('No');
+					process.exit();
+				}
+			}
+			// Check boundary conditions for the value 'a1'.
+			if (valueA - difference * colCoord < 0 ||
+				valueA + difference * (numCols - colCoord) < 0) {
+				console.log('No');
+				process.exit();
+			}
+		} else {
+			// If no point with this row exists, store the current one.
+			xEvenPoints.set(rowCoord, [colCoord, valueA]);
+		}
+	} else {
+		// General case for C > 2.
+		if (colCoord % 2 === 0) {
+			// If the column coordinate is even.
+			if (xEvenPoints.has(rowCoord)) {
+				let xPointInfo = xEvenPoints.get(rowCoord);
+				let prevCol = xPointInfo[0];
+				let prevValA = xPointInfo[1];
 
-                        if (yOddVal - calculatedDelta * MathematicalFunctions.floorToInteger(yOddRow / 2) < 0 ||
-                            yOddVal + calculatedDelta * MathematicalFunctions.floorToInteger((totalRows - yOddRow) / 2) < 0) {
-                            systemOutput.emitMessage('No');
-                            runtimeEnvironment.terminateProcess();
-                        }
-                    }
-                } else {
-                    // Check consistency with the established delta.
-                    if (calculatedDelta !== yDifferenceOdd) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-                }
-                // Validate boundary conditions for the current point.
-                if (currentAValue - calculatedDelta * MathematicalFunctions.floorToInteger(currentRCoord / 2) < 0 ||
-                    currentAValue + calculatedDelta * MathematicalFunctions.floorToInteger((totalRows - currentRCoord) / 2) < 0) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
-            } else {
-                yOddMap.setValueForKey(currentCCoord, [currentRCoord, currentAValue]);
-            }
-        }
-    }
+				// Calculate the difference 'd' based on column difference.
+				let difference = (prevValA - valueA) / ((prevCol - colCoord) / 2);
 
-    // Now, begin processing based on the X-axis (column-wise) constraints.
-    if (totalColumns === 2) { /* Special handling for a grid with only two columns */
-        if (xEvenMap.keyExists(currentRCoord)) {
-            // If a previous point in the same row exists, retrieve its data.
-            let storedCA = xEvenMap.retrieveValueForKey(currentRCoord),
-                storedCCoord = storedCA[0],
-                storedAValue = storedCA[1];
+				if (deltaXEven === -1) {
+					// Ensure 'd' is an integer.
+					if (Math.round(difference) !== difference) {
+						console.log('No');
+						process.exit();
+					}
 
-            // Calculate the difference in values.
-            let calculatedDelta = storedAValue - currentAValue;
+					deltaXEven = difference;
 
-            if (xDifferenceEven === -1) {
-                // If this is the first delta for even X-axis, set it.
-                xDifferenceEven = calculatedDelta;
+					// After establishing deltaXEven, check all previously stored xEvenPoints.
+					for (let xEvenEntry of xEvenPoints.entries()) {
+						let entryRow = xEvenEntry[0];
+						let entryCol = xEvenEntry[1][0];
+						let entryValA = xEvenEntry[1][1];
 
-            } else {
-                // Otherwise, ensure consistency with the previously established delta.
-                if (calculatedDelta !== xDifferenceEven) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
-            }
-            // Validate boundary conditions based on the calculated delta.
-            if (currentAValue - calculatedDelta * currentCCoord < 0 ||
-                currentAValue + calculatedDelta * (totalColumns - currentCCoord) < 0) {
-                systemOutput.emitMessage('No');
-                runtimeEnvironment.terminateProcess();
-            }
+						// Check boundary conditions for these points.
+						if (entryValA - difference * ((entryCol / 2) - 1) < 0 ||
+							entryValA + difference * Math.floor((numCols - entryCol) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If deltaXEven was already set, it must match.
+					if (difference !== deltaXEven) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Check boundary conditions for the current point.
+				if (valueA - difference * ((colCoord / 2) - 1) < 0 ||
+					valueA + difference * Math.floor((numCols - colCoord) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				xEvenPoints.set(rowCoord, [colCoord, valueA]);
+			}
+		} else {
+			// If the column coordinate is odd.
+			if (xOddPoints.has(rowCoord)) {
+				let xPointInfo = xOddPoints.get(rowCoord);
+				let prevCol = xPointInfo[0];
+				let prevValA = xPointInfo[1];
 
-        } else {
-            // If no point in this row is recorded yet, store the current one.
-            xEvenMap.setValueForKey(currentRCoord, [currentCCoord, currentAValue]);
-        }
-    } else { /* General case for grids with more than two columns */
-        if (currentCCoord % 2 == 0) { // Process points in even-numbered columns.
-            if (xEvenMap.keyExists(currentRCoord)) {
-                let storedCA = xEvenMap.retrieveValueForKey(currentRCoord),
-                    storedCCoord = storedCA[0],
-                    storedAValue = storedCA[1];
+				// Calculate the difference 'd'.
+				let difference = (prevValA - valueA) / ((prevCol - colCoord) / 2);
 
-                // Calculate the delta, adjusting for stepped column differences.
-                let calculatedDelta = (storedAValue - currentAValue) / ((storedCCoord - currentCCoord) / 2);
+				if (deltaXOdd === -1) {
+					// Ensure 'd' is an integer.
+					if (Math.round(difference) !== difference) {
+						console.log('No');
+						process.exit();
+					}
 
-                if (xDifferenceEven === -1) {
-                    // Ensure the calculated delta is an integer.
-                    if (MathematicalFunctions.roundToNearest(calculatedDelta) !== calculatedDelta) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
+					deltaXOdd = difference;
 
-                    xDifferenceEven = calculatedDelta;
+					// After establishing deltaXOdd, check all previously stored xOddPoints.
+					for (let xOddEntry of xOddPoints.entries()) {
+						let entryRow = xOddEntry[0];
+						let entryCol = xOddEntry[1][0];
+						let entryValA = xOddEntry[1][1];
 
-                    // After setting the first even X-delta, validate all existing even X-entries.
-                    for (let xEvenEntryItem of xEvenMap.getAllEntries()) {
-                        let xEvenRow = xEvenEntryItem[0],
-                            xEvenCol = xEvenEntryItem[1][0],
-                            xEvenVal = xEvenEntryItem[1][1];
-
-                        if (xEvenVal - calculatedDelta * ((xEvenCol / 2) - 1) < 0 ||
-                            xEvenVal + calculatedDelta * MathematicalFunctions.floorToInteger((totalColumns - xEvenCol) / 2) < 0) {
-                            systemOutput.emitMessage('No');
-                            runtimeEnvironment.terminateProcess();
-                        }
-                    }
-                } else {
-                    // Check consistency with the established delta.
-                    if (calculatedDelta !== xDifferenceEven) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-                }
-                // Validate boundary conditions for the current point.
-                if (currentAValue - calculatedDelta * ((currentCCoord / 2) - 1) < 0 ||
-                    currentAValue + calculatedDelta * MathematicalFunctions.floorToInteger((totalColumns - currentCCoord) / 2) < 0) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
-            } else {
-                xEvenMap.setValueForKey(currentRCoord, [currentCCoord, currentAValue]);
-            }
-
-        } else { // Process points in odd-numbered columns.
-            if (xOddMap.keyExists(currentRCoord)) {
-                let storedCA = xOddMap.retrieveValueForKey(currentRCoord),
-                    storedCCoord = storedCA[0],
-                    storedAValue = storedCA[1];
-
-                // Calculate the delta.
-                let calculatedDelta = (storedAValue - currentAValue) / ((storedCCoord - currentCCoord) / 2);
-
-                if (xDifferenceOdd === -1) {
-                    // Ensure the calculated delta is an integer.
-                    if (MathematicalFunctions.roundToNearest(calculatedDelta) !== calculatedDelta) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-
-                    xDifferenceOdd = calculatedDelta;
-
-                    // After setting the first odd X-delta, validate all existing odd X-entries.
-                    for (let xOddEntryItem of xOddMap.getAllEntries()) {
-                        let xOddRow = xOddEntryItem[0],
-                            xOddCol = xOddEntryItem[1][0],
-                            xOddVal = xOddEntryItem[1][1];
-
-                        if (xOddVal - calculatedDelta * MathematicalFunctions.floorToInteger(xOddCol / 2) < 0 ||
-                            xOddVal + calculatedDelta * MathematicalFunctions.floorToInteger((totalColumns - xOddCol) / 2) < 0) {
-                            systemOutput.emitMessage('No');
-                            runtimeEnvironment.terminateProcess();
-                        }
-                    }
-                } else {
-                    // Check consistency with the established delta.
-                    if (calculatedDelta !== xDifferenceOdd) {
-                        systemOutput.emitMessage('No');
-                        runtimeEnvironment.terminateProcess();
-                    }
-                }
-                // Validate boundary conditions for the current point.
-                if (currentAValue - calculatedDelta * MathematicalFunctions.floorToInteger(currentCCoord / 2) < 0 ||
-                    currentAValue + calculatedDelta * MathematicalFunctions.floorToInteger((totalColumns - currentCCoord) / 2) < 0) {
-                    systemOutput.emitMessage('No');
-                    runtimeEnvironment.terminateProcess();
-                }
-            } else {
-                xOddMap.setValueForKey(currentRCoord, [currentCCoord, currentAValue]);
-            }
-        }
-    }
+						// Check boundary conditions for these points.
+						if (entryValA - difference * Math.floor(entryCol / 2) < 0 ||
+							entryValA + difference * Math.floor((numCols - entryCol) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If deltaXOdd was already set, it must match.
+					if (difference !== deltaXOdd) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Check boundary conditions for the current point.
+				if (valueA - difference * Math.floor(colCoord / 2) < 0 ||
+					valueA + difference * Math.floor((numCols - colCoord) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				xOddPoints.set(rowCoord, [colCoord, valueA]);
+			}
+		}
+	}
 }
 
-// If the program reaches this point, all checks have passed for all data points.
-systemOutput.emitMessage('Yes');
+// If all checks pass for all points, print 'Yes'.
+console.log('Yes');

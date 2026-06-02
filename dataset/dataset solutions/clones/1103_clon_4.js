@@ -1,116 +1,116 @@
-process.stdin.resume();
-process.stdin.setEncoding("utf8");
-
-let completeInput = "";
-process.stdin.on("data", (fragment) => { completeInput += fragment; });
-process.stdin.on("end", () => { executeOperations(completeInput.split("\n")); });
-
-class Element {
-    constructor(value) {
-        this.value = value;
-        this.leftBranch = null;
-        this.rightBranch = null;
-    }
+function NodeUnit(val) {
+    this.val = val;
+    this.left = null;
+    this.right = null;
 }
 
-class Structure {
+class BinarySearchTree {
     constructor() {
-        this.treeRoot = null;
+        this.root = null;
     }
 
-    addEntry(numVal) {
-        const newElement = new Element(numVal);
-        if (!this.treeRoot) {
-            this.treeRoot = newElement;
+    addNode(val) {
+        const freshNode = new NodeUnit(val);
+        if (this.root === null) {
+            this.root = freshNode;
             return;
         }
-        let currentElement = this.treeRoot;
+
+        let current = this.root;
         while (true) {
-            if (numVal < currentElement.value) {
-                if (!currentElement.leftBranch) {
-                    currentElement.leftBranch = newElement;
+            if (val < current.val) {
+                if (current.left === null) {
+                    current.left = freshNode;
                     return;
                 }
-                currentElement = currentElement.leftBranch;
-            } else { // numVal >= currentElement.value
-                if (!currentElement.rightBranch) {
-                    currentElement.rightBranch = newElement;
+                current = current.left;
+            } else {
+                if (current.right === null) {
+                    current.right = freshNode;
                     return;
                 }
-                currentElement = currentElement.rightBranch;
+                current = current.right;
             }
         }
     }
 
-    locateEntry(numVal) {
-        let currentElement = this.treeRoot;
-        while (currentElement) {
-            if (numVal === currentElement.value) {
-                return currentElement;
-            }
-            if (numVal < currentElement.value) {
-                currentElement = currentElement.leftBranch;
+    locateNode(val) {
+        let current = this.root;
+        while (current !== null) {
+            if (val === current.val) {
+                return current;
+            } else if (val < current.val) {
+                current = current.left;
             } else {
-                currentElement = currentElement.rightBranch;
+                current = current.right;
             }
         }
         return null;
     }
 
-    retrieveOrdered() { // Iterative In-order Traversal
+    traverseInOrder() {
         const collectedValues = [];
-        const elementStack = [];
-        let currentElement = this.treeRoot;
+        const traversalStack = [];
+        let current = this.root;
 
-        while (currentElement || elementStack.length > 0) {
-            while (currentElement) {
-                elementStack.push(currentElement);
-                currentElement = currentElement.leftBranch;
+        while (current !== null || traversalStack.length > 0) {
+            while (current !== null) {
+                traversalStack.push(current);
+                current = current.left;
             }
-            currentElement = elementStack.pop();
-            collectedValues.push(currentElement.value);
-            currentElement = currentElement.rightBranch;
+            current = traversalStack.pop();
+            collectedValues.push(current.val);
+            current = current.right;
         }
         return collectedValues;
     }
 
-    retrievePreOrdered() { // Iterative Pre-order Traversal
+    traversePreOrder() {
         const collectedValues = [];
-        if (!this.treeRoot) return collectedValues;
+        if (this.root === null) {
+            return collectedValues;
+        }
 
-        const elementStack = [this.treeRoot];
-        while (elementStack.length > 0) {
-            const currentElement = elementStack.pop();
-            collectedValues.push(currentElement.value);
+        const traversalStack = [this.root];
+        while (traversalStack.length > 0) {
+            const current = traversalStack.pop();
+            collectedValues.push(current.val);
 
-            // Push right child first so left child is processed first (LIFO)
-            if (currentElement.rightBranch) {
-                elementStack.push(currentElement.rightBranch);
+            if (current.right !== null) {
+                traversalStack.push(current.right);
             }
-            if (currentElement.leftBranch) {
-                elementStack.push(currentElement.leftBranch);
+            if (current.left !== null) {
+                traversalStack.push(current.left);
             }
         }
         return collectedValues;
     }
 }
 
-function displaySequence(valList) {
-    console.log(valList.map(item => ` ${item}`).join(""));
-}
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
+let inputBuffer = "";
+process.stdin.on("data", function(chunk) {inputBuffer += chunk;});
+process.stdin.on("end", function() {main(inputBuffer.split("\n"));});
 
-function executeOperations(instructionSet) {
-    const instructionCount = Number(instructionSet[0]);
-    const dataStructure = new Structure();
+function main(inputLines) {
+    const totalOps = Number(inputLines[0]);
+    const treeStructure = new BinarySearchTree();
 
-    const commandDispatch = {
-        'i': (op) => dataStructure.addEntry(op),
-        'p': () => {
-            displaySequence(dataStructure.retrieveOrdered());
-            displaySequence(dataStructure.retrievePreOrdered());
+    const commandHandlers = {
+        'i': (params) => {
+            const numericValue = Number(params[1]);
+            treeStructure.addNode(numericValue);
         },
-        'f': (op) => {
-            if (dataStructure.locateEntry(op) !== null) {
+        'p': () => {
+            const inOrderValues = treeStructure.traverseInOrder();
+            console.log(inOrderValues.map(v => ` ${v}`).join(""));
+            const preOrderValues = treeStructure.traversePreOrder();
+            console.log(preOrderValues.map(v => ` ${v}`).join(""));
+        },
+        'f': (params) => {
+            const numericValue = Number(params[1]);
+            if (treeStructure.locateNode(numericValue) !== null) {
                 console.log("yes");
             } else {
                 console.log("no");
@@ -118,15 +118,12 @@ function executeOperations(instructionSet) {
         }
     };
 
-    instructionSet.slice(1, instructionCount + 1).forEach((lineText) => {
-        const parts = lineText.split(" ");
-        const actionCode = parts[0][0];
-        const numericValue = Number(parts[1]);
-
-        if (actionCode === 'p') {
-            commandDispatch[actionCode]();
-        } else {
-            commandDispatch[actionCode](numericValue);
+    for (let k = 0; k < totalOps; k++) {
+        const currentLine = inputLines[k + 1].split(" ");
+        const operationKey = currentLine[0][0];
+        const handler = commandHandlers[operationKey];
+        if (handler) {
+            handler(currentLine);
         }
-    });
+    }
 }

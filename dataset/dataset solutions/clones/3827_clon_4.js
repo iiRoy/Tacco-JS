@@ -1,45 +1,35 @@
-const createNumericalSequence = (startPoint, endPoint) =>
-    Array.from({ length: endPoint - startPoint + 1 }, (_, index) => startPoint + index);
+function main(input) {
+  const xValue = parseInt(input.trim(), 10);
 
-const determineHighestPower = (inputBoundary) => {
-    const initialCollection = [1];
-
-    const exponentSet = createNumericalSequence(2, 10);
-
-    const allCandidatePowers = exponentSet.reduce((accumulator, currentExponent) => {
-        const maxBaseValue = Math.floor(Math.pow(inputBoundary, 1 / currentExponent));
-        if (maxBaseValue < 2) {
-            return accumulator;
-        }
-
-        const baseValues = createNumericalSequence(2, maxBaseValue);
-
-        const powersForCurrentExponent = baseValues.map(base => Math.pow(base, currentExponent));
-
-        return accumulator.concat(powersForCurrentExponent);
-    }, initialCollection);
-
-    allCandidatePowers.sort((valA, valB) => valA - valB);
-
-    let currentMaximum = 1;
-    for (let val of allCandidatePowers) {
-        if (val > currentMaximum) {
-            currentMaximum = val;
-        }
+  const checkPowerStatus = (candidateNumber) => {
+    if (candidateNumber < 2) {
+      return false;
     }
-    return currentMaximum;
-};
 
-const acquireNumericInput = (ioModule) => {
-    const rawContent = ioModule.readFileSync('/dev/stdin', 'utf8');
-    return Number(rawContent.trim());
-};
+    for (let currentExponent = 2; currentExponent <= 10; currentExponent++) {
+      const potentialBase = Math.pow(candidateNumber, 1 / currentExponent);
+      const nearestIntegerBase = Math.round(potentialBase);
+      const floatComparisonTolerance = 1e-9; 
 
-const transmitResult = (finalOutput) => {
-    process.stdout.write(String(finalOutput) + '\n');
-};
+      if (
+        nearestIntegerBase >= 2 &&
+        Math.abs(potentialBase - nearestIntegerBase) < floatComparisonTolerance &&
+        Math.pow(nearestIntegerBase, currentExponent) === candidateNumber
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
 
-const systemIO = require('node:fs');
-const numericThreshold = acquireNumericInput(systemIO);
-const finalOutcome = determineHighestPower(numericThreshold);
-transmitResult(finalOutcome);
+  for (let currentSearchValue = xValue; currentSearchValue >= 2; currentSearchValue--) {
+    if (checkPowerStatus(currentSearchValue)) {
+      console.log(currentSearchValue);
+      return;
+    }
+  }
+
+  console.log(1);
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

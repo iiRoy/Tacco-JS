@@ -1,64 +1,72 @@
-/*
-*   Module for handling input operations.
-*   Reads all data from the standard input stream.
-*/
+// Read input from standard input, decode as UTF-8, and split by newline characters.
 const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-// Parse the very first line to extract essential configuration values.
-let firstLineTokens = inputLines.shift().split(' ');
+// Extract the first line, split it by space to get N and K.
+const firstLineParts = inputLines.shift().split(' ');
 
-// The total count of data items that will follow.
-let totalElements = firstLineTokens[0];
+// Assign the first part to totalElements (N) and the second to targetUniqueCount (K).
+const totalElements = firstLineParts[0];
+const targetUniqueCount = firstLineParts[1];
 
-// The maximum allowed number of distinct items.
-let maxUnique = firstLineTokens[1];
+// Extract the second line, split it by space to get the array of element values.
+const elementValues = inputLines.shift().split(' ');
 
-// The actual sequence of data items, parsed from the second line.
-let dataSequence = inputLines.shift().split(' ');
-
-// An object to efficiently track which data values have been encountered.
+// Initialize an object to track unique elements encountered.
 const uniqueTracker = {};
 
-// A sparse array used as a frequency map: index is the value, value is its count.
-const occurrenceCounts = [];
+// Initialize a sparse array to store the frequency of each element.
+const frequencyMap = [];
 
-// Iterate through the entire data sequence to build frequency data.
-for (let elementIndex = 0; elementIndex < totalElements; elementIndex++) {
-    let currentDataValue = dataSequence[elementIndex];
-    // Increment the count for the current value. Initialize to 0 if not seen before.
-    occurrenceCounts[currentDataValue] = (occurrenceCounts[currentDataValue] || 0) + 1;
-    // Mark this value as seen in the unique tracker.
-    uniqueTracker[currentDataValue] = 1;
+// Iterate through the elementValues array to populate frequencyMap and uniqueTracker.
+for (let idx = 0; idx < totalElements; idx++) {
+    // Increment the count for the current element in frequencyMap.
+    // If the element hasn't been seen before, its count starts at 0.
+    frequencyMap[elementValues[idx]] = (frequencyMap[elementValues[idx]] || 0) + 1;
+    // Mark the current element as seen in uniqueTracker.
+    uniqueTracker[elementValues[idx]] = 1;
 }
 
-// Obtain an array containing all the distinct data values that were found.
-const distinctValues = Object.keys(uniqueTracker);
+// Get an array of distinct keys (elements) from the uniqueTracker object.
+const distinctKeys = Object.keys(uniqueTracker);
 
-// Calculate how many distinct values exceed the allowed maximum.
-let toRemove = distinctValues.length - maxUnique;
+// Calculate the number of unique elements that need to be removed.
+// This is the difference between the current number of unique elements and the target.
+let excessUniqueCount = distinctKeys.length - targetUniqueCount;
 
-// Proceed only if there are more unique items than permitted.
-if (toRemove > 0) {
-    // Sort the frequency counts in ascending order.
-    // This operates on the numeric values stored within the sparse array.
-    occurrenceCounts.sort();
+// Check if there are more unique elements than allowed.
+if (excessUniqueCount > 0) {
+    // If so, sort the frequencyMap. This will sort the non-empty frequency values in ascending order.
+    // Empty slots will be treated as undefined and moved to the end.
+    frequencyMap.sort((valA, valB) => {
+        // Handle undefined values which come from sparse array slots.
+        if (valA === undefined && valB === undefined) return 0;
+        if (valA === undefined) return 1; // Undefined goes to the end
+        if (valB === undefined) return -1; // Undefined goes to the end
+        return valA - valB; // Sort numbers ascending
+    });
 
-    // Variable to accumulate the sum of the smallest counts.
-    let sumOfSmallest = 0;
+    // Initialize a variable to accumulate the sum of frequencies of elements to be removed.
+    let sumOfFrequencies = 0;
 
-    // Iterate through the sorted frequency counts.
-    for (const itemCount of occurrenceCounts) {
-        sumOfSmallest += itemCount; // Add the current frequency to the running total.
-        toRemove--; // Decrement the counter for items still needing removal.
-
-        // If the required number of items have been accounted for, exit.
-        if (toRemove === 0) {
+    // Iterate through the sorted frequencies.
+    // We want to remove elements with the lowest frequencies first.
+    for (const currentFrequency of frequencyMap) {
+        // Skip undefined values which are empty slots from the sparse array.
+        if (currentFrequency === undefined) {
+            continue;
+        }
+        // Add the current frequency to the sum.
+        sumOfFrequencies += currentFrequency;
+        // Decrement the count of unique elements we still need to remove.
+        excessUniqueCount--;
+        // If we have removed enough unique elements, break the loop.
+        if (excessUniqueCount === 0) {
             break;
         }
     }
-    // Output the final accumulated sum.
-    console.log(sumOfSmallest);
+    // Output the total count of elements that need to be removed.
+    console.log(sumOfFrequencies);
 } else {
-    // If no unique items need to be removed (i.e., within limits), output zero.
+    // If the number of unique elements is already K or less, no elements need to be removed.
     console.log(0);
 }

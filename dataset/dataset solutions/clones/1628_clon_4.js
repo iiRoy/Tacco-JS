@@ -1,35 +1,30 @@
-const dataStream = require("fs").readFileSync(0, "utf8");
-const parsedRecords = dataStream.split('\n');
-const designatedDivisor = BigInt(parsedRecords[0]);
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataLines = rawData.split('\n');
+const targetDivisor = Number(dataLines[0]);
 
-const calculationBaseModulus = 1000000007n;
+const primeModulus = 1000000007;
 
-function determineRepeatingDigitSequenceLength(targetVal) {
-    const prohibitedMultiples = [2n, 5n];
-    if (prohibitedMultiples.some(factor => targetVal % factor === 0n)) {
-        return -1;
-    }
-
-    let iterationCounter = 0n;
-    let runningTotalModuloBase = 0n;
-
-    while (iterationCounter <= targetVal) {
-        iterationCounter++;
-
-        let powerOfTenTerm = 1n;
-        for (let exponentIndex = 0n; exponentIndex < iterationCounter - 1n; exponentIndex++) {
-            powerOfTenTerm = (powerOfTenTerm * 10n) % calculationBaseModulus;
-        }
-
-        runningTotalModuloBase = (runningTotalModuloBase + (powerOfTenTerm * 7n)) % calculationBaseModulus;
-
-        if (runningTotalModuloBase % targetVal === 0n) {
-            return Number(iterationCounter);
-        }
-    }
-
-    return -1; // Should not be reached under problem constraints for valid inputs
+function modularProduct(factorA, factorB) {
+    return Number((BigInt(factorA) * BigInt(factorB)) % BigInt(primeModulus));
 }
 
-const finalOutput = determineRepeatingDigitSequenceLength(designatedDivisor);
-console.log(finalOutput);
+if (targetDivisor % 2 === 0 || targetDivisor % 5 === 0) {
+    console.log(-1);
+} else {
+    let currentSumOfSevens = 0;
+    let currentPowerOfTen = 1;
+    let sequenceLength = 0;
+
+    while (sequenceLength <= targetDivisor) {
+        let term = modularProduct(currentPowerOfTen, 7);
+        currentSumOfSevens = (currentSumOfSevens + term) % primeModulus;
+
+        if (currentSumOfSevens % targetDivisor === 0) {
+            console.log(sequenceLength + 1);
+            break;
+        }
+
+        currentPowerOfTen = modularProduct(currentPowerOfTen, 10);
+        sequenceLength++;
+    }
+}

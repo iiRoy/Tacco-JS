@@ -1,65 +1,39 @@
 "use strict";
 
-const fetcher = require;
-const fileOps = fetcher('fs');
-
-const sourcePath = '/dev/stdin';
-const textEncoding = 'utf8';
-
-const charCounter = (inputStringSegment) => {
-    const counts = new Uint32Array(65536); // Covers basic multilingual plane chars
-    let idx = 0;
-    const len = inputStringSegment.length;
-    while (idx < len) {
-        counts[inputStringSegment.charCodeAt(idx)]++;
-        idx++;
+const generateCharFrequencyMap = (textSource) => {
+    const frequencyRegister = new Map();
+    for (const characterUnit of textSource) {
+        frequencyRegister.set(characterUnit, (frequencyRegister.get(characterUnit) || 0) + 1);
     }
-    return counts;
+    return frequencyRegister;
 };
 
-const charAssemblerAsc = (characterCounts) => {
-    const parts = [];
-    let code = 0;
-    const maxCode = characterCounts.length;
-    while (code < maxCode) {
-        const count = characterCounts[code];
-        if (count > 0) {
-            parts.push(String.fromCharCode(code).repeat(count));
+const assembleOrderedString = (frequencyRegister, orderAscending) => {
+    const distinctCharacters = Array.from(frequencyRegister.keys());
+    distinctCharacters.sort((charA, charB) => orderAscending ? charA.localeCompare(charB) : charB.localeCompare(a));
+
+    let assembledResult = [];
+    for (const charKey of distinctCharacters) {
+        const occurrenceCount = frequencyRegister.get(charKey);
+        for (let i = 0; i < occurrenceCount; i++) {
+            assembledResult.push(charKey);
         }
-        code++;
     }
-    return parts.join('');
+    return assembledResult.join('');
 };
 
-const charAssemblerDesc = (characterCounts) => {
-    const parts = [];
-    let code = characterCounts.length - 1;
-    while (code >= 0) {
-        const count = characterCounts[code];
-        if (count > 0) {
-            parts.push(String.fromCharCode(code).repeat(count));
-        }
-        code--;
-    }
-    return parts.join('');
+const processInputData = (inputPayload) => {
+    const inputLines = inputPayload.split("\n");
+    const primaryString = inputLines[0];
+    const secondaryString = inputLines[1];
+
+    const primaryFrequencies = generateCharFrequencyMap(primaryString);
+    const secondaryFrequencies = generateCharFrequencyMap(secondaryString);
+
+    const orderedPrimary = assembleOrderedString(primaryFrequencies, true);
+    const orderedSecondary = assembleOrderedString(secondaryFrequencies, false);
+
+    console.log(orderedPrimary < orderedSecondary ? "Yes" : "No");
 };
 
-const processInputAndCompare = (entireInput) => {
-    const lineSeparatorPos = entireInput.indexOf('\n');
-    const firstSource = entireInput.substring(0, lineSeparatorPos);
-    const secondSource = entireInput.substring(lineSeparatorPos + 1);
-
-    const firstCounts = charCounter(firstSource);
-    const secondCounts = charCounter(secondSource);
-
-    const firstTransformed = charAssemblerAsc(firstCounts);
-    const secondTransformed = charAssemblerDesc(secondCounts);
-
-    if (firstTransformed < secondTransformed) {
-        console.log("Yes");
-    } else {
-        console.log("No");
-    }
-};
-
-processInputAndCompare(fileOps.readFileSync(sourcePath, textEncoding));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

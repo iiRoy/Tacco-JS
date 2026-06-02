@@ -1,16 +1,14 @@
-function processInputData(rawData) {
-    const extractedValues = rawData.match(/\d+/g);
-    const firstOperand = Number(extractedValues[0]);
-    const secondOperand = Number(extractedValues[1]);
+function processInput(rawData) {
+    const valueStrings = rawData.split(' ');
+    const firstOperand = Number(valueStrings[0]);
+    const secondOperand = Number(valueStrings[1]);
 
-    const isFirstOdd = (firstOperand & 1) === 1;
-    const isSecondOdd = (secondOperand & 1) === 1;
+    // The product of two integers is odd if and only if both integers are odd.
+    // An integer is odd if its least significant bit is 1 (i.e., (number & 1) === 1).
+    // Otherwise, the product is even.
+    const isProductOdd = ((firstOperand & 1) === 1) && ((secondOperand & 1) === 1);
 
-    const finalParityFlag = isFirstOdd && isSecondOdd;
-
-    const resultDisplay = ['Even', 'Odd'];
-
-    console.log(resultDisplay[+finalParityFlag]);
+    console.log(isProductOdd ? 'Odd' : 'Even');
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

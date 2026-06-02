@@ -1,80 +1,77 @@
-const CONVERSION_FACTOR_DEG_TO_RAD = Math.PI / 180.0;
-const OUTPUT_PRECISION_DIGITS = 6;
+const processTriangleData = (inputLines) => {
+  const [valA, valB, valDeg] = inputLines[0].split(/\s+/).map(Number);
 
-class GeometricShapeEvaluator {
-    constructor(sideOne, sideTwo, angleInDegrees) {
-        this.edgeA = sideOne;
-        this.edgeB = sideTwo;
-        this.vertexAngleDegrees = angleInDegrees;
-        this.vertexAngleRadians = this.vertexAngleDegrees * CONVERSION_FACTOR_DEG_TO_RAD;
-    }
+  const calculateGeometricProperties = (initialSideA, initialSideB, initialAngleDegrees) => {
+    const initialParameters = {
+      primarySide: initialSideA,
+      secondarySide: initialSideB,
+      angleInDegrees: initialAngleDegrees
+    };
 
-    // Computes the length of the third edge using the law of cosines
-    determineOppositeEdgeLength() {
-        const termX = this.edgeA * this.edgeA;
-        const termY = this.edgeB * this.edgeB;
-        const termZ = 2 * this.edgeA * this.edgeB * Math.cos(this.vertexAngleRadians);
-        const thirdEdgeSquared = termX + termY - termZ;
-        return Math.sqrt(thirdEdgeSquared);
-    }
+    const transformToRadians = (currentParams) => ({
+      ...currentParams,
+      angleInRadians: currentParams.angleInDegrees * Math.PI / 180
+    });
 
-    // Calculates the total enclosed area
-    calculateEnclosedSurface() {
-        return 0.5 * this.edgeA * this.edgeB * Math.sin(this.vertexAngleRadians);
-    }
+    const deriveThirdSideSquared = (currentParams) => ({
+      ...currentParams,
+      thirdSideSquared: (currentParams.primarySide * currentParams.primarySide) +
+                        (currentParams.secondarySide * currentParams.secondarySide) -
+                        (2 * currentParams.primarySide * currentParams.secondarySide * Math.cos(currentParams.angleInRadians))
+    });
 
-    // Calculates the total length of the boundary
-    calculateTotalBoundary(thirdEdgeLength) {
-        return this.edgeA + this.edgeB + thirdEdgeLength;
-    }
+    const deriveThirdSide = (currentParams) => ({
+      ...currentParams,
+      thirdSide: Math.sqrt(currentParams.thirdSideSquared)
+    });
 
-    // Calculates the altitude (height) relative to edgeA
-    calculateVerticalExtent(enclosedSurface) {
-        // Derived from Area = 0.5 * base * height
-        return (2 * enclosedSurface) / this.edgeA;
-    }
+    const deriveSurfaceArea = (currentParams) => ({
+      ...currentParams,
+      computedArea: (currentParams.primarySide * currentParams.secondarySide * Math.sin(currentParams.angleInRadians)) / 2
+    });
 
-    // Orchestrates all calculations and formats the output
-    retrieveFormattedMetrics() {
-        const edgeC = this.determineOppositeEdgeLength();
-        const surfaceAreaResult = this.calculateEnclosedSurface();
-        const boundaryLengthResult = this.calculateTotalBoundary(edgeC);
-        const verticalExtentResult = this.calculateVerticalExtent(surfaceAreaResult);
+    const deriveTotalPerimeter = (currentParams) => ({
+      ...currentParams,
+      totalPerimeter: currentParams.primarySide + currentParams.secondarySide + currentParams.thirdSide
+    });
 
-        return [
-            surfaceAreaResult.toFixed(OUTPUT_PRECISION_DIGITS),
-            boundaryLengthResult.toFixed(OUTPUT_PRECISION_DIGITS),
-            verticalExtentResult.toFixed(OUTPUT_PRECISION_DIGITS),
-        ].join(' ');
-    }
-}
+    const deriveAltitude = (currentParams) => ({
+      ...currentParams,
+      heightToPrimarySide: (2 * currentParams.computedArea) / currentParams.primarySide
+    });
 
-// Function to handle and process a single line of input
-function processSingleInputLine(inputLineSegment) {
-    const numericTokens = inputLineSegment.split(/\s+/).map(Number);
-    const [val1, val2, valAngle] = numericTokens;
+    const finalProperties = [
+      transformToRadians,
+      deriveThirdSideSquared,
+      deriveThirdSide,
+      deriveSurfaceArea,
+      deriveTotalPerimeter,
+      deriveAltitude
+    ].reduce((accumulator, transformationFn) => transformationFn(accumulator), initialParameters);
 
-    // Assuming valid input as per original problem constraints
-    const shapeEvaluator = new GeometricShapeEvaluator(val1, val2, valAngle);
-    return shapeEvaluator.retrieveFormattedMetrics();
-}
+    return {
+      finalArea: finalProperties.computedArea,
+      finalPerimeter: finalProperties.totalPerimeter,
+      finalHeight: finalProperties.heightToPrimarySide
+    };
+  };
 
-// Node.js standard input handling using the 'readline' module
-const inputInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+  const computedResults = calculateGeometricProperties(valA, valB, valDeg);
+
+  console.log([
+    computedResults.finalArea.toFixed(6),
+    computedResults.finalPerimeter.toFixed(6),
+    computedResults.finalHeight.toFixed(6),
+  ].join(' '));
+};
+
+const inputAccumulator = [];
+process.stdin.on('data', (dataSegment) => {
+  inputAccumulator.push(dataSegment);
 });
 
-let collectedInputSegments = [];
-
-inputInterface.on('line', (currentLine) => {
-    collectedInputSegments.push(currentLine);
-});
-
-inputInterface.on('close', () => {
-    // Process only the first line based on typical problem structure
-    if (collectedInputSegments.length > 0) {
-        const finalOutput = processSingleInputLine(collectedInputSegments[0]);
-        console.log(finalOutput);
-    }
+process.stdin.on('end', () => {
+  const fullInputString = inputAccumulator.join('');
+  const parsedInputLines = fullInputString.split('\n');
+  processTriangleData(parsedInputLines);
 });

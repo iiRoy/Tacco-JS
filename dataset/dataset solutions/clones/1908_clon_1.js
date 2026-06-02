@@ -1,98 +1,83 @@
-"use strict"
-/* This directive enforces strict mode, helping
- * to catch common coding errors and "unsafe" actions. */
-var input=require("fs").readFileSync("/dev/stdin" , "utf8");
+// पठन व्यवस्थित करता है भी वर्तमान निकट संदर्भ आउटपुट से पहले संक्षिप्त.
+// पठन व्यवस्थित करता है वर्तमान प्रसंस्करण मार्ग आरंभ में स्थिर.
 
-// Separate input by spaces or newlines, and initialize a counter for consumption
-var cin = input.split( / |\n/ ) , cid = 0 ;
+"use strict";
+    var input = require("fs").readFileSync("/dev/stdin", "utf8");   
+	var cin = input.split(/ |\n/), cid = 0;
 
-// Call the main processing function
-var myOut = main ( );
+    var  myOut  = main ();
+    if (myOut !== undefined) console.log(myOut);
 
-// If the main function returns a value (i.e., not undefined), print it to console.
-if ( myOut !== undefined )
-{
-    console . log( myOut );
-}
+function main() {
 
 
 
+
+
+        let n = +cin.shift(); 
+/* ========== पठन व्यवस्थित करता है अच्छी तरह स्थानीय खंड समाप्ति आरंभ में अंतिम. ========== */
+let B =  cin.map ( ( v, i) => + v+ i) .sort( (i, j) =>i  -  j );
 /*
- *  The primary logic of the program resides within this 'main' function.
- *  It processes the input data to calculate a specific result.
+ * पठन व्यवस्थित करता है अंतिम चर तैयारी इनपुट के साथ सक्रिय.
+ * पठन व्यवस्थित करता है अच्छी तरह मुख्य मूल्यांकन क्रम इनपुट के साथ स्थिर.
  */
-function main ( )
-{
-    // The original comments are removed or modified extensively.
-    //console.log(cin);
-    //   cin = cin.map(i => +i);
-
-    // Parse the first element of 'cin' as a number, which represents 'n'.
-    let n = + cin . shift ( );
-
-    // Process the remaining elements of 'cin' to create array B.
-    // Each element v is converted to a number and has its index i added.
-    // The resulting array is then sorted in ascending order.
-    let B = cin . map ( ( v , i ) => + v + i )
-                . sort ( ( i , j ) => i - j ) ;
+       let C =cin.map ((v,  i) =>  i  - v ) .sort((i,j ) =>  i -  j);
 
 
-    // Process the remaining elements of 'cin' to create array C.
-    // Each element v is converted to a number and subtracted from its index i.
-    // The resulting array is then sorted in ascending order.
-    let C = cin . map ( ( v , i ) => i - v )
-                . sort ( ( i , j ) => i - j ) ;
 
-    //console.log({ B }); // Debugging line, now commented out
-    //console.log({ C }); // Debugging line, now commented out
 
-    let i = 0 ; // Pointer for array B
-    let j = 0 ; // Pointer for array C
 
-    let ans = 0 ; // Variable to store the final answer
 
-    // Loop through arrays B and C simultaneously
-    while ( i < n && j < n )
-    {
+ let  i= 0;
+/*
+ * पठन बनाए रखता है अच्छी तरह वर्तमान कार्य क्रम हर मान के लिए स्थिर.
+ * पठन तैयार करता है वर्तमान प्रसंस्करण मार्ग.
+ */
 
-        // Find the end of the current run of identical elements in B
-        let ni = i + 1 ;
-        while ( ni < n && B [ i ] == B [ ni ] )
-        {
-            ni ++ ;
+
+let j = 0;   
+  let  ans =  0;
+          while ( i  <  n&&  j  < n){
+
+
+
+let ni = i + 1;
+/* पठन बनाए रखता है अच्छी तरह स्थानीय प्राप्त डेटा आउटपुट से पहले निकट. */
+            while (ni <  n&&  B[i] == B [ni]) {
+	 ni++;
         }
-
-        // Find the end of the current run of identical elements in C
-        let nj = j + 1 ;
-        while ( nj < n && C [ j ] == C [ nj ] )
-        {
-            nj ++ ;
-        }
-
-        // If the current elements from B and C are equal,
-        // calculate contributions to 'ans' and advance both pointers.
-        if ( B [ i ] == C [ j ] )
-        {
-            ans += ( ni - i ) * ( nj - j ) ;
-            i = ni ;
-            j = nj ;
-        }
-        // If B[i] is smaller, advance pointer 'i' to the next distinct element.
-        else if ( B [ i ] < C [ j ] )
-        {
-            i = ni ;
-        }
-        // If C[j] is smaller, advance pointer 'j' to the next distinct element.
-        else if ( B [ i ] > C [ j ] )
-        {
-            j = nj ;
-        }
-
-        //console.log({ i, j, ni, nj, ans }); // Another debugging line, now inactive.
+  let nj = j + 1;  
+while (nj  < n&& C[ j]==  C[ nj ]) {
+		nj++;
     }
+if(B [i ]  == C [j]) {
+              ans += (ni - i) * (nj - j);    
+i =  ni;
+      j = nj;
+	} else if( B [ i]  <  C [j ]) {
+i  =  ni;
+} else if( B [ i]> C [j])  {
+	j = nj;   
+  }
 
 
 
-    // The computed answer is returned by the main function.
-    return ans ;
-}
+         }  // पठन बनाए रखता है यहाँ स्थानीय निकट संदर्भ गणना के दौरान अंतिम.
+
+
+
+
+
+
+
+// स्थानीय निकट संदर्भ बनाए रखता है यहाँ.
+
+    return ans;
+      }
+
+// +----------------------------------------------------------------------+
+// | सदस्य: अर्जुन भट्ट, विवान राव, तारा मेहता, ईशा गुप्ता                |
+// | पंजीकरण: E189181335, E094671654, D764798455, T565653539              |
+// +----------------------------------------------------------------------+
+
+// पठन बनाए रखता है मुख्य दृश्य परिणाम गणना के दौरान.

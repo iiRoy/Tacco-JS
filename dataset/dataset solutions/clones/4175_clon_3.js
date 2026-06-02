@@ -1,143 +1,108 @@
-function performSequenceTransformation(inputContent) {
-  // Defensive check for input validity, a new fragment for robustness.
-  if (!inputContent || typeof inputContent !== 'string' || inputContent.trim() === '') {
-    return "0"; // Return an empty operation count for invalid input.
-  }
+function processInput(rawData) {
+  const LINES = rawData.split("\n");
+  const LARGE_NUMBER_MAGNITUDE = 1_000_000; // Constant for 10^6, replacing Math.pow(10,6)
 
-  // Split the raw input string into individual lines.
-  const inputLines = inputContent.split('\n');
+  const arrayLength = parseInt(LINES[0].split(" ")[0]);
+  const initialValuesStr = LINES[1].split(" ");
 
-  // Extract the number of elements from the first line.
-  // Using Number() for parsing, which is a modern alternative to parseInt().
-  const totalElements = Number(inputLines[0].split(' ')[0]);
+  let numericArray = []; // Initialize as empty, then populate
+  let operationsList = [];
 
-  // Validate the extracted element count. Another new fragment.
-  if (isNaN(totalElements) || totalElements <= 0) {
-    return "0"; // Invalid or non-positive element count.
-  }
+  let maxValue = -LARGE_NUMBER_MAGNITUDE;
+  let minValue = LARGE_NUMBER_MAGNITUDE;
+  let maxIdx = -1; // Stores 0-based index of the maximum value
+  let minIdx = -1; // Stores 0-based index of the minimum value
 
-  // Parse the second line, which contains the sequence of numbers.
-  const stringNumericElements = inputLines[1].split(' ');
-  // Initialize the mutable array for numeric data.
-  let dataCollection = new Array(totalElements);
+  for (let idx = 0; idx < arrayLength; idx++) {
+    const currentValue = parseInt(initialValuesStr[idx]);
+    numericArray.push(currentValue); // Add element to the array
 
-  // Initialize variables to track the maximum and minimum values encountered,
-  // and their respective 0-based indices.
-  let currentMaximumValue = -1000001; // Slightly more negative than -10^6
-  let currentMinimumValue = 1000001;   // Slightly more positive than 10^6
-  let indexOfMaximum = -1;
-  let indexOfMinimum = -1;
-
-  // Populate the data array and simultaneously find the initial min/max and their positions.
-  for (let elementPos = 0; elementPos < totalElements; elementPos++) {
-    const parsedNumericValue = Number(stringNumericElements[elementPos]);
-
-    // Validate each parsed number. Another new fragment.
-    if (isNaN(parsedNumericValue)) {
-      return "0"; // Encountered a non-numeric value.
+    if (currentValue > maxValue) {
+      maxValue = currentValue;
+      maxIdx = idx;
     }
-    dataCollection[elementPos] = parsedNumericValue;
-
-    // Update maximum value and its index if a larger value is found.
-    if (dataCollection[elementPos] > currentMaximumValue) {
-      currentMaximumValue = dataCollection[elementPos];
-      indexOfMaximum = elementPos;
-    }
-    // Update minimum value and its index if a smaller value is found.
-    if (dataCollection[elementPos] < currentMinimumValue) {
-      currentMinimumValue = dataCollection[elementPos];
-      indexOfMinimum = elementPos;
+    if (currentValue < minValue) {
+      minValue = currentValue;
+      minIdx = idx;
     }
   }
 
-  // An array to store the sequence of transformation steps (operations).
-  const transformationSteps = [];
-
-  // Helper function to record an operation, converting 0-based indices to 1-based.
-  // This is a new helper fragment.
-  const recordTransformation = (sourceIndex0Based, targetIndex0Based) => {
-    transformationSteps.push([sourceIndex0Based + 1, targetIndex0Based + 1]);
-  };
-
-  // --- Conditional Logic based on initial minimum and maximum values ---
-
-  // Pre-calculate the absolute value of the minimum for cleaner comparisons.
-  const absoluteMinimumMagnitude = Math.abs(currentMinimumValue);
-
-  // Scenario 1: All numbers in the array are non-negative.
-  if (currentMinimumValue >= 0) {
-    // Iterate from the second element to the end.
-    // If an element is smaller than its predecessor, add the predecessor to it.
-    for (let j = 1; j < totalElements; j++) {
-      if (dataCollection[j] < dataCollection[j - 1]) {
-        recordTransformation(j - 1, j); // Source: previous element, Target: current element
-        dataCollection[j] += dataCollection[j - 1]; // Perform the addition
+  // Conditional logic based on min/max values to determine transformation strategy
+  if (minValue >= 0) {
+    // All elements are non-negative, ensure non-decreasing order
+    for (let idx = 0; idx < arrayLength; idx++) {
+      if (idx > 0 && numericArray[idx] < numericArray[idx - 1]) {
+        const previousElementValue = numericArray[idx - 1]; // Helper variable for clarity
+        const operationPair = [idx + 1, idx + 2]; // Replicating original bsub logic
+        operationsList.push(operationPair);
+        numericArray[idx] = previousElementValue + numericArray[idx];
       }
     }
-  }
-  // Scenario 2: All numbers in the array are negative.
-  else if (currentMaximumValue < 0) {
-    // Iterate from the second-to-last element down to the beginning.
-    // If an element is larger than its successor, add the successor to it.
-    for (let j = totalElements - 2; j >= 0; j--) {
-      if (dataCollection[j] > dataCollection[j + 1]) {
-        recordTransformation(j + 1, j); // Source: next element, Target: current element
-        dataCollection[j] += dataCollection[j + 1]; // Perform the addition
+  } else if (maxValue < 0) {
+    // All elements are negative, ensure non-increasing order (iterate backwards)
+    for (let idx = arrayLength - 1; idx >= 0; idx--) {
+      if (idx < arrayLength - 1 && numericArray[idx] > numericArray[idx + 1]) {
+        const nextElementValue = numericArray[idx + 1]; // Helper variable for clarity
+        const operationPair = [idx + 2, idx + 1]; // Replicating original bsub logic
+        operationsList.push(operationPair);
+        numericArray[idx] = nextElementValue + numericArray[idx];
       }
     }
-  }
-  // Scenario 3: Mixed signs, and the positive maximum value has a greater magnitude than the negative minimum.
-  else if (currentMaximumValue > absoluteMinimumMagnitude) {
-    // Phase 1: Propagate the maximum positive value throughout the array.
-    // This aims to make all elements positive, setting up for a left-to-right sort.
-    for (let j = 0; j < totalElements; j++) {
-      if (j !== indexOfMaximum) { // Skip if current element is already the max.
-        recordTransformation(indexOfMaximum, j); // Source: max element, Target: current element
-        dataCollection[j] += currentMaximumValue; // Add the max value
+  } else if (maxValue > Math.abs(minValue)) {
+    // Maximum value has a larger absolute magnitude, make all elements positive then sort
+    // First pass: Add the maximum value to all other elements
+    for (let idx = 0; idx < arrayLength; idx++) {
+      if (maxIdx !== idx) { // Use stored index to avoid re-scanning
+        const sourceIndexForMax = maxIdx + 1; // 1-based index of the max element
+        const targetIndex = idx + 1; // 1-based index of the current element
+        const operationPair = [sourceIndexForMax, targetIndex];
+        operationsList.push(operationPair);
+        numericArray[idx] = numericArray[idx] + maxValue;
       }
     }
-    // Phase 2: Now that elements are likely positive (or at least less negative),
-    // ensure non-decreasing order by iterating left to right.
-    for (let j = 1; j < totalElements; j++) {
-      if (dataCollection[j] < dataCollection[j - 1]) {
-        recordTransformation(j - 1, j); // Source: previous element, Target: current element
-        dataCollection[j] += dataCollection[j - 1]; // Perform the addition
+    // Second pass: Ensure non-decreasing order after the first transformation
+    for (let idx = 0; idx < arrayLength; idx++) {
+      if (idx > 0 && numericArray[idx] < numericArray[idx - 1]) {
+        const previousElementValue = numericArray[idx - 1];
+        const operationPair = [idx, idx + 1]; // Replicating original bsub logic
+        operationsList.push(operationPair);
+        numericArray[idx] = previousElementValue + numericArray[idx];
       }
     }
-  }
-  // Scenario 4: Mixed signs, and the negative minimum value has a greater or equal magnitude than the positive maximum.
-  else { // This covers the case where absoluteMinimumMagnitude >= currentMaximumValue
-    // Phase 1: Propagate the minimum negative value throughout the array.
-    // This aims to make all elements negative, setting up for a right-to-left sort.
-    for (let j = 0; j < totalElements; j++) {
-      if (j !== indexOfMinimum) { // Skip if current element is already the min.
-        recordTransformation(indexOfMinimum, j); // Source: min element, Target: current element
-        dataCollection[j] += currentMinimumValue; // Add the min value
+  } else if (Math.abs(minValue) > maxValue) {
+    // Minimum value has a larger absolute magnitude, make all elements negative then sort
+    // First pass: Add the minimum value to all other elements
+    for (let idx = 0; idx < arrayLength; idx++) {
+      if (minIdx !== idx) { // Use stored index to avoid re-scanning
+        const sourceIndexForMin = minIdx + 1; // 1-based index of the min element
+        const targetIndex = idx + 1; // 1-based index of the current element
+        const operationPair = [sourceIndexForMin, targetIndex];
+        operationsList.push(operationPair);
+        numericArray[idx] = numericArray[idx] + minValue;
       }
     }
-    // Phase 2: Now that elements are likely negative,
-    // ensure non-decreasing order by iterating right to left.
-    for (let j = totalElements - 2; j >= 0; j--) {
-      if (dataCollection[j] > dataCollection[j + 1]) {
-        recordTransformation(j + 1, j); // Source: next element, Target: current element
-        dataCollection[j] += dataCollection[j + 1]; // Perform the addition
+    // Second pass: Ensure non-increasing order (reversed loop) after the first transformation
+    for (let idx = arrayLength - 1; idx >= 0; idx--) {
+      if (idx < arrayLength - 1 && numericArray[idx] > numericArray[idx + 1]) {
+        const nextElementValue = numericArray[idx + 1];
+        const operationPair = [idx + 2, idx + 1]; // Replicating original bsub logic
+        operationsList.push(operationPair);
+        numericArray[idx] = nextElementValue + numericArray[idx];
       }
     }
   }
 
-  // Construct the final output string.
-  // The first line is the total number of recorded operations.
-  let finalResultOutput = String(transformationSteps.length);
-  // Append each operation on a new line.
-  for (const operationPair of transformationSteps) {
-    finalResultOutput += `\n${operationPair[0]} ${operationPair[1]}`;
+  let resultOutput = operationsList.length.toString(); // Start with the count of operations
+
+  // Construct the output string for operations using map and join
+  const operationStrings = operationsList.map(op => `${op[0]} ${op[1]}`);
+  if (operationStrings.length > 0) {
+    resultOutput += "\n" + operationStrings.join("\n");
   }
 
-  return finalResultOutput;
+  console.log(resultOutput);
 }
 
-// Standard entry point for competitive programming in JavaScript.
-// Reads input from stdin, processes it, and prints the result to stdout.
-const fileInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const generatedOutput = performSequenceTransformation(fileInputContent);
-console.log(generatedOutput);
+// Read input from stdin and pass to the main processing function
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+processInput(fileContent);

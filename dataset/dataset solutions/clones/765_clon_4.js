@@ -1,43 +1,37 @@
-const streamReader = require('fs').readFileSync;
-const sourceData = streamReader('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSource = rawData.trim().split('\n');
 
-const determineBestPair = (valueCollection, capValue) => {
-    let candidateSums = [];
+let currentLine;
+while ((currentLine = lineSource.shift()) !== undefined) {
+    const parts = currentLine.split(' ').map(Number);
+    const countVal = parts[0];
+    const limitVal = parts[1];
 
-    valueCollection.forEach((firstElement, firstIdx) => {
-        valueCollection.forEach((secondElement, secondIdx) => {
-            if (firstIdx !== secondIdx) {
-                const currentCombination = firstElement + secondElement;
-                if (currentCombination <= capValue) {
-                    candidateSums.push(currentCombination);
-                }
-            }
-        });
-    });
-
-    if (candidateSums.length === 0) {
-        return 'NONE';
-    } else {
-        return candidateSums.reduce((highestAccumulator, currentSum) => Math.max(highestAccumulator, currentSum), -Infinity);
-    }
-};
-
-const inputSegments = sourceData.trim().split('\n');
-let segmentPointer = 0;
-const outputBuffer = [];
-
-while (true) {
-    const caseSpecification = inputSegments[segmentPointer++].split(' ').map(Number);
-    const [countItems, limitValue] = caseSpecification;
-
-    if (countItems === 0 && limitValue === 0) {
+    if (countVal === 0 && limitVal === 0) {
         break;
     }
 
-    const itemCollection = inputSegments[segmentPointer++].split(' ').map(Number);
+    const itemCosts = lineSource.shift().split(' ').map(Number);
 
-    const highestPossibleSum = determineBestPair(itemCollection, limitValue);
-    outputBuffer.push(highestPossibleSum);
+    const validSums = itemCosts.reduce((accumulator, currentCost, currentIndex, sourceArray) => {
+        for (let j = currentIndex + 1; j < sourceArray.length; j++) {
+            const otherCost = sourceArray[j];
+            const currentPairSum = currentCost + otherCost;
+
+            if (currentPairSum <= limitVal) {
+                accumulator.push(currentPairSum);
+            }
+        }
+        return accumulator;
+    }, []);
+
+    const highestSum = validSums.reduce((maxFound, currentSum) => {
+        return Math.max(maxFound, currentSum);
+    }, -1);
+
+    if (highestSum !== -1) {
+        console.log(highestSum);
+    } else {
+        console.log('NONE');
+    }
 }
-
-outputBuffer.forEach(resultEntry => console.log(resultEntry));

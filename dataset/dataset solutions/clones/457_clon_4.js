@@ -1,117 +1,160 @@
-let collectedInput = '';
+var source = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (segment) => {
-    collectedInput += segment;
+process.stdin.on('data', function(part) {
+    source += part;
 });
-process.stdin.on('end', () => {
-    initiateProcessing(collectedInput);
+process.stdin.on('end', function() {
+    solve(source);
 });
 
-const extractNumbers = (textLine) => textLine.split(' ').map(Number);
+function solve(source) {
+    var rows = source.trim().split('\n');
+    var cursor = 0;
 
-const isSignalToHalt = (values) => values[0] === 0 && values[1] === 0;
+    while (true) {
+        var size = toNumbers(rows[cursor++]);
+        if (finished(size)) {
+            break;
+        }
 
-const establishZone = (width, height) => Array.from({ length: width }, () => Array.from({ length: height }, () => 0));
+        var field = makeField(size[0], size[1]);
+        var start = toNumbers(rows[cursor++]);
+        var goal = toNumbers(rows[cursor++]);
+        var blocks = parseInt(rows[cursor++]);
 
-const fillSection = (gridRef, sectionInfo) => {
-    const sectionIdentifier = sectionInfo[0];
-    const isHorizontalLayout = sectionInfo[1] === 0;
-    const regionWidth = isHorizontalLayout ? 4 : 2;
-    const regionHeight = isHorizontalLayout ? 2 : 4;
-    const startX = sectionInfo[2] - 1;
-    const startY = sectionInfo[3] - 1;
+        for (var n = 0; n < blocks; n += 1) {
+            paint(field, toNumbers(rows[cursor++]));
+        }
 
-    for (let currentX = startX; currentX < startX + regionWidth; currentX++) {
-        for (let currentY = startY; currentY < startY + regionHeight; currentY++) {
-            // Ensure coordinates are within grid boundaries before assignment
-            if (currentX >= 0 && currentX < gridRef.length &&
-                currentY >= 0 && currentY < gridRef[0].length) {
-                gridRef[currentX][currentY] = sectionIdentifier;
-            }
+        var ok = sameRegion(field, start[0] - 1, start[1] - 1, goal[0] - 1, goal[1] - 1);
+        console.log(ok ? 'OK' : 'NO');
+    }
+}
+
+function makeField(width, height) {
+    var field = [];
+    for (var x = 0; x < width; x += 1) {
+        var line = [];
+        for (var y = 0; y < height; y += 1) {
+            line.push(0);
+        }
+        field.push(line);
+    }
+    return field;
+}
+
+function paint(field, spec) {
+    var horizontal = !spec[1];
+    var spanX = horizontal ? 4 : 2;
+    var spanY = horizontal ? 2 : 4;
+    var left = spec[2] - 1;
+    var top = spec[3] - 1;
+
+    for (var x = left; x < left + spanX; x += 1) {
+        for (var y = top; y < top + spanY; y += 1) {
+            field[x][y] = spec[0];
         }
     }
-};
+}
 
-const seekConnection = (zoneMatrix, startCoordX, startCoordY, endCoordX, endCoordY) => {
-    if (startCoordX === endCoordX && startCoordY === endCoordY) {
+function sameRegion(field, sx, sy, gx, gy) {
+    if (sx === gx && sy === gy) {
         return true;
     }
 
-    // Check initial coordinates are within bounds and accessible
-    if (startCoordX < 0 || startCoordX >= zoneMatrix.length ||
-        startCoordY < 0 || startCoordY >= zoneMatrix[0].length) {
+    var initial = field[sx][sy];
+    var target = field[gx][gy];
+    if (initial !== target) {
         return false;
     }
 
-    const initialColor = zoneMatrix[startCoordX][startCoordY];
-    const explorationQueue = [[startCoordX, startCoordY]];
-    const visitedLocations = new Set();
-    visitedLocations.add(`${startCoordX},${startCoordY}`);
+    var cells = collectCells(field);
+    var parent = Object.create(null);
+    var rank = Object.create(null);
 
-    const neighborDisplacements = [
+    for (var i = 0; i < cells.length; i += 1) {
+        var key = cells[i][0] + ':' + cells[i][1];
+        parent[key] = key;
+        rank[key] = 0;
+    }
+
+    var around = [
         [-1, -1], [-1, 0], [-1, 1],
         [0, -1],           [0, 1],
-        [1, -1], [1, 0], [1, 1]
+        [1, -1],  [1, 0],  [1, 1]
     ];
 
-    const maxGridX = zoneMatrix.length;
-    const maxGridY = zoneMatrix[0].length;
+    for (var c = 0; c < cells.length; c += 1) {
+        var x = cells[c][0];
+        var y = cells[c][1];
+        var value = field[x][y];
+        var here = x + ':' + y;
 
-    while (explorationQueue.length > 0) {
-        const [currentX, currentY] = explorationQueue.shift();
-
-        for (const [dx, dy] of neighborDisplacements) {
-            const nextX = currentX + dx;
-            const nextY = currentY + dy;
-
-            if (nextX < 0 || nextX >= maxGridX || nextY < 0 || nextY >= maxGridY) {
-                continue;
-            }
-
-            const nextCoordKey = `${nextX},${nextY}`;
-            if (visitedLocations.has(nextCoordKey)) {
-                continue;
-            }
-
-            if (zoneMatrix[nextX][nextY] === initialColor) {
-                if (nextX === endCoordX && nextY === endCoordY) {
-                    return true;
-                }
-                visitedLocations.add(nextCoordKey);
-                explorationQueue.push([nextX, nextY]);
+        for (var d = 0; d < around.length; d += 1) {
+            var nx = x + around[d][0];
+            var ny = y + around[d][1];
+            var there = nx + ':' + ny;
+            if (parent[there] !== undefined && field[nx] && field[nx][ny] === value) {
+                join(parent, rank, here, there);
             }
         }
     }
-    return false;
-};
 
-const initiateProcessing = (completeText) => {
-    const rawLines = completeText.trim().split('\n');
-    let currentLineIndex = 0;
+    var a = sx + ':' + sy;
+    var b = gx + ':' + gy;
+    return parent[a] !== undefined && parent[b] !== undefined && root(parent, a) === root(parent, b);
+}
 
-    while (true) {
-        const dimensions = extractNumbers(rawLines[currentLineIndex++]);
-        if (isSignalToHalt(dimensions)) break;
-
-        const gridWidth = dimensions[0];
-        const gridHeight = dimensions[1];
-        const currentZone = establishZone(gridWidth, gridHeight);
-
-        const entryPoint = extractNumbers(rawLines[currentLineIndex++]);
-        const exitPoint = extractNumbers(rawLines[currentLineIndex++]);
-
-        const totalObstructions = parseInt(rawLines[currentLineIndex++], 10);
-        for (let k = 0; k < totalObstructions; k++) {
-            const obstructionData = extractNumbers(rawLines[currentLineIndex++]);
-            fillSection(currentZone, obstructionData);
+function collectCells(field) {
+    var list = [];
+    for (var x = 0; x < field.length; x += 1) {
+        var seen = Object.create(null);
+        for (var y = 0; y < field[x].length; y += 1) {
+            seen[y] = true;
+            list.push([x, y]);
         }
-
-        const pathFound = seekConnection(
-            currentZone,
-            entryPoint[0] - 1, entryPoint[1] - 1,
-            exitPoint[0] - 1, exitPoint[1] - 1
-        );
-        console.log(pathFound ? "OK" : "NO");
+        Object.keys(field[x]).forEach(function(name) {
+            if (/^-?\d+$/.test(name) && !seen[name]) {
+                list.push([x, Number(name)]);
+            }
+        });
     }
-};
+    return list;
+}
+
+function root(parent, node) {
+    var trail = [];
+    while (parent[node] !== node) {
+        trail.push(node);
+        node = parent[node];
+    }
+    for (var i = 0; i < trail.length; i += 1) {
+        parent[trail[i]] = node;
+    }
+    return node;
+}
+
+function join(parent, rank, left, right) {
+    var a = root(parent, left);
+    var b = root(parent, right);
+    if (a === b) {
+        return;
+    }
+    if (rank[a] < rank[b]) {
+        parent[a] = b;
+    } else if (rank[a] > rank[b]) {
+        parent[b] = a;
+    } else {
+        parent[b] = a;
+        rank[a] += 1;
+    }
+}
+
+function toNumbers(line) {
+    return line.split(' ').map(Number);
+}
+
+function finished(pair) {
+    return pair[0] === 0 && pair[1] === 0;
+}

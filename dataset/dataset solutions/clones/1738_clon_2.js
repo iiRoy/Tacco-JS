@@ -1,23 +1,25 @@
-const testCapital = (characterInput) => {
-  // Verifies if the provided character string consists solely of uppercase letters.
-  return /^[A-Z]+$/g .test(characterInput) ; // Applies a regex test for capital characters
+const checkUpperChar = (charToCheck) => {
+  // This function verifies if the provided string consists solely of uppercase letters.
+  return /^[A-Z]+$/g.test(charToCheck);
 };
 
-
-function ProcessInput(entryData) {
-    // Splits the incoming data string into an array of lines based on newline delimiters.
-    entryData = entryData .split("\n") ;
+/*
+ * This is the primary function responsible for processing the incoming data.
+ * It takes a raw string input and performs a case check on its first line.
+ */
+function ProcessInputData(rawData) {
+    // First, the raw input string is broken down into an array of individual lines.
+    rawData = rawData.split("\n");
     
-    // Retrieves the first element (first line) from the array.
-    const primarySegment = entryData[0] ;
+    // We then extract the very first line from the array for further examination.
+    const firstLineContent = rawData[0];
     
-    // Conditional check: if the primary segment is entirely uppercase.
-    if (testCapital(primarySegment)) {
-        // If true, prints 'A' to the standard output.
-        console.log('A') ;
-    }
-    else {
-        // Otherwise (if false), prints 'a' to the standard output.
-        console.log('a') ;
+    // A conditional check is performed to determine if the extracted line is entirely uppercase.
+    if (checkUpperChar(firstLineContent)) {
+        // If the condition is met (it's uppercase), the program outputs 'A'.
+        console.log('A');
+    } else {
+        // Otherwise (if it's not entirely uppercase), the program outputs 'a'.
+        console.log('a');
     }
 }

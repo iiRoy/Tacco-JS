@@ -1,20 +1,27 @@
 'use strict';
 
-const   sourceData   =   require('fs').readFileSync('/dev/stdin',    'utf8' )
-                                     .trim(  )
-                                     .split('\n');
-// Obtain the numerical value present on the first provided line
-let     upperBoundary = sourceData * 1   ;
-let currentResult = 1;
-let divisorValue = Math.pow(10, 9) + 7;
+// Acquire raw data from the standard input stream
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-for    ( let loopIndex = 1 ; loopIndex <= upperBoundary ; loopIndex++ )
-{
-    currentResult *= loopIndex;
-    if  ( currentResult > divisorValue )
-    {
-        currentResult = currentResult % divisorValue;
+// Parse the initial line of input into a numerical upper limit
+let upperBound = +rawData[0];
+
+// Initialize the computed factorial value
+let resultValue = 1;
+
+// Define the modulus for calculations to prevent excessively large numbers
+let moduloDivisor = Math.pow(10, 9) + 7;
+
+// Iterate from one up to the specified upper limit
+for (let counter = 1; counter <= upperBound; ++counter) {
+    // Multiply the current result by the iteration counter
+    resultValue *= counter;
+
+    // If the result exceeds the modulus, apply the modulo operation
+    if (resultValue > moduloDivisor) {
+        resultValue %= moduloDivisor;
     }
 }
 
-console.log(currentResult);
+// Display the final calculated result to the console
+console.log(resultValue);

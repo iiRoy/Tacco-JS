@@ -1,28 +1,20 @@
-'use strict'; // Enforce strict parsing and error handling for better code quality
+'use strict'; // Enforce strict mode for cleaner code execution
 
-/*
- * This function orchestrates the primary data processing workflow.
- * It takes raw input, parses it, and then performs a specific calculation.
+/**
+ * Processes the provided raw input string to calculate a specific value.
+ * This function takes a string, parses it into numbers, and performs a calculation.
+ * @param {string} rawData - The raw input string, typically from standard input.
  */
-function PerformCalculation ( sourceData )
-{
-  // The original string data is processed here.
-  // First, split by newline and take the initial line.
-  // Then, split that line by spaces to get individual string components.
-  // Finally, map each string component to its numerical equivalent.
-  const numericValues = sourceData
-    .split( "\n" )
-    [ 0 ]
-    .split( " " )
-    .map( strVal => Number( strVal ) ); // Convert string value to a number
+function ProcessInput(rawData) {
+    // Split the raw data by newline, take the first line, then split by space.
+    // Finally, convert each resulting string part into a number.
+    const parsedNumbers = rawData.split("\n")[0].split(" ").map(currentValue => Number(currentValue));
 
-  // The final result is computed by multiplying (first_value - 1) with (second_value - 1).
-  // This result is then outputted to the standard console.
-  console.log( ( numericValues[ 0 ] - 1 ) * ( numericValues[ 1 ] - 1 ) );
+    // Perform the calculation: (first number - 1) * (second number - 1)
+    // And output the result to the console.
+    console.log((parsedNumbers[0] - 1) * (parsedNumbers[1] - 1));
 }
 
-
-// Initiate the main processing routine.
-// It reads content from standard input synchronously using Node.js's 'fs' module.
-// The data is expected to be UTF-8 encoded.
-PerformCalculation( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read the entire content from standard input synchronously using Node.js 'fs' module.
+// Then, pass the read content to our processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

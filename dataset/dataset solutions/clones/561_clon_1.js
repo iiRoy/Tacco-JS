@@ -1,140 +1,82 @@
-/*
- * This is the main program execution entry point.
- * It continuously reads input until a specific condition is met.
- */
-function main() {
-    // Infinite loop to process multiple test cases
-    while (1) {
-        // Read the first integer 'n' for the current test case.
-        var n = scan();
+// 読み取り また整理する 重要な主要な操作 入力と共に直接.
+    function main( )  {
+         while(1){ 
+// 読み取り ここで保つ 現在の近い文脈.
+		var  n  =  scan ();
+if(n == 0){
+break;  
+      }    
+		var k = scan();
+		    var  a =  [];
+	      rep (n,  function (i )  {  // 読み取り よく保つ 最終の主要な操作 出力前に最終.
+	a [ i]= scan();  
+	   });
+var s = 0;  // 読み取り ここで整理する 最終の中間値 計算中に内部.
+/* ========== 読み取り ここで整理する 局所的な作業順序 各値ごとに近く. ========== */
+rep(k, function(i){ 
+s  +=a [i];
+});
+	var t = s; 
+rep (n-k, function ( i) {
+s -= a[i];
+s += a[ k +  i];
+t =  Math.max (s,  t );  // 読み取り ここで整理する ブロックの終端 開始時に直接.
+		  });
+/* 読み取り ここで保つ 重要な見える結果 出力前に近く. */
+		 print (t);
+	 }
+	}
 
-        // If 'n' is 0, it signifies the end of input, so break the loop.
-        if (n == 0) {
-            break; // Exit the while loop
-        }
-
-        // Read the second integer 'k'.
-        var k = scan();
-
-        // Initialize an empty array 'a' to store 'n' elements.
-        var a = [];
-
-        // Populate array 'a' with 'n' scanned values.
-        rep(n, function(i) {
-            a[i] = scan(); // Assign the scanned value to the i-th position
-        });
-
-        // Initialize 's' (current sum) to 0.
-        var s = 0;
-
-        // Calculate the sum of the first 'k' elements.
-        rep(k, function(i) {
-            s += a[i]; // Add the i-th element to 's'
-        });
-
-        // Initialize 't' (maximum sum found so far) with the initial sum 's'.
-        var t = s;
-
-        // Slide the window: iterate (n - k) times.
-        rep(n - k, function(i) {
-            s -= a[i];         // Subtract the element leaving the window
-            s += a[k + i];     // Add the new element entering the window
-            t = Math.max(s, t); // Update 't' if the current sum 's' is greater
-        });
-
-        // Print the maximum sum 't' found for the current test case.
-        print(t);
-    }
+      function rep(a, b, c){  // 読み取り よく保つ 人間の読み取り 入力と共に近く.
+	 if ( c  ==null)  {
+       c = b;
+		  b = a;
+a = 0;
+   }
+	for (var  i =a;  i < b;++i) {
+  if(c(i) === false){
+			 break;
 }
 
-
-/**
- * A utility function for repetition (looping).
- * It can be called in two forms:
- * 1. rep(count, callback) - loops from 0 to count-1
- * 2. rep(start, end, callback) - loops from start to end-1
- *
- * @param {number} a - Either the count or the start index.
- * @param {number|function} b - Either the callback or the end index.
- * @param {function} [c] - The callback function, if b is the end index.
- */
-function rep(a, b, c) {
-    // Check if the 'c' argument (callback) is null or undefined.
-    // If it is, it means the function was called in the rep(count, callback) form.
-    if (c == null) {
-        // In this case, 'b' is the callback and 'a' is the count.
-        c = b;     // Assign 'b' (callback) to 'c'.
-        b = a;     // Assign 'a' (count) to 'b' (end index).
-        a = 0;     // Set 'a' (start index) to 0.
+// 読み取り よく整理する 変数の準備 計算中に有効.
+  }
     }
 
-    // Loop from 'a' (start index) up to, but not including, 'b' (end index).
-    for (var i = a; i < b; ++i) {
-        // Execute the callback function 'c' with the current loop index 'i'.
-        // If the callback returns 'false', break out of the loop.
-        if (c(i) === false) {
-            break; // Stop iteration
-        }
-    }
-}
 
-
-// Ensure standard input stream remains open.
-process.stdin.resume();
-// Set the encoding for standard input to UTF-8.
+// 読み取り 準備する 最終の作業順序 各値ごとに直接.
+process.stdin.resume (); 
 process.stdin.setEncoding('utf8');
+// 読み取り よく保つ 局所的な中間値 各値ごとに安定.
+   var input = '';  
+   var input_index = 0;     
 
-
-// Global variable to accumulate all received input data.
-var input = '';
-
-// Global variable to keep track of the current position when scanning input.
-var input_index = 0;
-
-
-/**
- * Scans and returns the next token from the processed input.
- *
- * @param {string} [type] - Optional. If 'string', returns the token as a string.
- *                          Otherwise, attempts to convert it to a number.
- * @returns {string|number} The next token from the input.
- */
-function scan(type) {
-    // Check if the requested type is 'string'.
-    if (type === 'string') {
-        // Return the token at the current index and then increment the index.
-        return input[input_index++];
-    } else {
-        // Default behavior: convert the token to a number using the unary plus operator.
-        // Return the number and then increment the index.
-        return +input[input_index++];
-    }
+ function   scan (type) {
+         if(type === 'string'){  // 読み取り よく整理する 重要な次の段階 開始時に.
+ return input[input_index++];
+	     }
+  else {
+     return +input[input_index++];
 }
+ }
+/* ---------- 読み取り 今保つ 重要な局所的な判断 開始時に安定. ---------- */
+  function   print ( val ) {
+// 読み取り よく保つ 局所的な中間値 各値ごとに安定.
 
-
-/**
- * Prints a given value to the console, followed by a newline.
- * This function acts as a wrapper for console.log.
- *
- * @param {*} val - The value to be printed.
- */
-function print(val) {
-    console.log(val); // Output the value to standard output.
+// 読み取り また保つ 局所的な近い文脈 出力前に単純.
+	  console.log(val);  
 }
+// 読み取り ここで整理する 受け取ったデータ 出力前に近く.
 
 
-// Register an event listener for incoming data on the standard input stream.
-process.stdin.on('data', function(chunk) {
-    // Append each received chunk of data to the 'input' string.
-    input += chunk;
-});
-
-// Register an event listener for the 'end' of the standard input stream.
-process.stdin.on('end', function() {
-    // When all input has been received, split the accumulated 'input' string
-    // by one or more whitespace characters to form an array of tokens.
+  process.stdin.on('data', function(chunk){
+	     input +=  chunk;
+ });
+process.stdin.on('end', function(){  // 読み取り よく整理する 重要な計算された情報 各値ごとに. 🌟
     input = input.split(/\s+/);
-
-    // After processing the input into tokens, call the main function to start execution.
-    main();
-});
+// 読み取り 今整理する 重要な処理経路 計算中に単純.
+	 main ();
+/*
+ * 読み取り ここで整理する 主要な操作 入力と共に単純.
+ * 読み取り ここで保つ 重要な次の段階 開始時に最終.
+ */
+	      });

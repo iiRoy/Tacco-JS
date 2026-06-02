@@ -1,68 +1,76 @@
 'use strict'
-const readline = require('readline')
 
-;(async () => {
-  const lineReader = readline.createInterface({
+const { createInterface } = require('readline')
+
+async function orchestrateExecution () {
+  const rawInput = await acquireInputData()
+  const processedInput = processRawData(rawInput)
+  computeLongestPath(processedInput)
+}
+
+function computeLongestPath (problemData) {
+  const nodeCount = problemData[0][0]
+  const edgeCount = problemData[0][1]
+
+  const graphEdges = []
+  for (let k = 1; k <= edgeCount; k++) {
+    const [src, dest, wt] = problemData[k]
+    graphEdges.push({
+      source: src - 1,
+      target: dest - 1,
+      cost: wt * -1
+    })
+  }
+
+  const pathDistances = new Array(nodeCount).fill(Infinity)
+  pathDistances[0] = 0
+
+  let hasNegativeCycle = false
+
+  for (let passIteration = 0; passIteration < nodeCount; passIteration++) {
+    let anyDistanceUpdatedInThisPass = false
+    for (const { source, target, cost } of graphEdges) {
+      if (pathDistances[source] !== Infinity && pathDistances[source] + cost < pathDistances[target]) {
+        pathDistances[target] = pathDistances[source] + cost
+        anyDistanceUpdatedInThisPass = true
+        if (passIteration === nodeCount - 1) {
+          hasNegativeCycle = true
+        }
+      }
+    }
+  }
+
+  if (hasNegativeCycle) {
+    console.log('inf')
+  } else {
+    console.log(pathDistances[nodeCount - 1] * -1)
+  }
+}
+
+function processRawData (rawDataString) {
+  const lineSegments = rawDataString.split('\n')
+  const numericDataRows = []
+  for (let k = 0; k < lineSegments.length; k++) {
+    const currentLine = lineSegments[k]
+    if (currentLine.trim() === '') continue
+    const values = currentLine.split(' ').map(val => Number(val))
+    numericDataRows.push(values)
+  }
+  return numericDataRows
+}
+
+async function acquireInputData () {
+  let collectedInputLines = []
+  const inputReader = createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false
   })
 
-  let allLines = []
-  for await (const lineContent of lineReader) {
-    allLines.push(lineContent)
+  for await (const lineContent of inputReader) {
+    collectedInputLines.push(lineContent)
   }
+  return collectedInputLines.join('\n').trim()
+}
 
-  const numericData = allLines.map(rowText =>
-    rowText.split(' ').map(Number)
-  )
-
-  const nodeCount = numericData[0][0]
-  const edgeCount = numericData[0][1]
-
-  const pathwayList = []
-  for (let idx = 0; idx < edgeCount; ++idx) {
-    const segmentInfo = numericData[idx + 1]
-    pathwayList.push({
-      origin: segmentInfo[0] - 1,
-      destination: segmentInfo[1] - 1,
-      cost: segmentInfo[2] * -1
-    })
-  }
-
-  const vertexValues = new Array(nodeCount).fill(Number.MAX_SAFE_INTEGER)
-  vertexValues[0] = 0
-
-  for (let iteration = 0; iteration < nodeCount; ++iteration) {
-    let roundModified = false
-    const previousRoundValues = [...vertexValues]
-
-    for (const link of pathwayList) {
-      const startPoint = link.origin
-      const endPoint = link.destination
-      const travelCost = link.cost
-
-      if (previousRoundValues[startPoint] !== Number.MAX_SAFE_INTEGER) {
-        if (vertexValues[endPoint] > previousRoundValues[startPoint] + travelCost) {
-          vertexValues[endPoint] = previousRoundValues[startPoint] + travelCost
-          roundModified = true
-        }
-      }
-    }
-
-    if (!roundModified && iteration < nodeCount - 1) {
-      break
-    }
-    
-    if (iteration === nodeCount - 1 && roundModified) {
-      console.log('inf')
-      return
-    }
-  }
-
-  let finalValue = vertexValues[nodeCount - 1]
-  if (finalValue === Number.MAX_SAFE_INTEGER) {
-    finalValue = Infinity
-  }
-  console.log(finalValue * -1)
-})()
+orchestrateExecution()

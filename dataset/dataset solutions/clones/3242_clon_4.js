@@ -1,64 +1,82 @@
-function processData(inputString) {
-    const allLines = inputString.trim().split('\n');
-    const totalQuantity = parseInt(allLines[0], 10);
-    const dataSegments = allLines.slice(1);
+function Main(rawData) {
+    const lineSegments = rawData.split("\n");
+    const totalItems = parseInt(lineSegments[0], 10);
 
-    const transformedSegments = dataSegments.map((segmentLine, originalPosition) => {
-        const parts = segmentLine.split(' ');
-        const componentA = parseInt(parts[0], 10);
-        const componentB = parseInt(parts[1], 10);
+    const itemRecords = lineSegments.slice(1).map((segment, idx) => {
+        const parts = segment.split(" ");
+        const valA = parseInt(parts[0], 10);
+        const valB = parseInt(parts[1], 10);
         return {
-            elementA: componentA,
-            elementB: componentB,
-            elementSum: componentA + componentB,
-            initialIndex: originalPosition
+            originalOrder: idx,
+            valA: valA,
+            valB: valB,
+            combinedSum: valA + valB
         };
+    }).sort((recX, recY) => {
+        if (recX.combinedSum < recY.combinedSum) return -1;
+        if (recX.combinedSum > recY.combinedSum) return 1;
+        return 0;
     });
 
-    const orderedSegments = transformedSegments.sort((itemAlpha, itemBeta) => {
-        if (itemAlpha.elementSum !== itemBeta.elementSum) {
-            return itemAlpha.elementSum - itemBeta.elementSum;
-        }
-        return itemAlpha.initialIndex - itemBeta.initialIndex; // Preserve initial order for stable sort behavior
-    });
+    function* generateOptimalSelections(sortedRecords) {
+        let currentPosition = 0;
+        const recordCount = sortedRecords.length;
 
-    const finalAccumulation = Array.from({ length: totalQuantity }).reduce((currentStatus, _, roundCounter) => {
-        const { currentAvailableElements, playerAlphaScore, playerBetaScore } = currentStatus;
-
-        if (currentAvailableElements.length === 0) {
-            return currentStatus;
-        }
-
-        const primaryValue = currentAvailableElements[0].elementSum;
-        const candidatesForSelection = currentAvailableElements.filter(el => el.elementSum === primaryValue);
-
-        const isAlphaTurn = (roundCounter % 2 === 0);
-        const selectionCriterion = isAlphaTurn ? 'elementA' : 'elementB';
-
-        let selectedElement = candidatesForSelection.reduce((bestFound, currentEl) => {
-            if (currentEl[selectionCriterion] > bestFound[selectionCriterion]) {
-                return currentEl;
+        while (currentPosition < recordCount) {
+            const currentBlockSum = sortedRecords[currentPosition].combinedSum;
+            let blockEndPosition = currentPosition;
+            while (blockEndPosition < recordCount && sortedRecords[blockEndPosition].combinedSum === currentBlockSum) {
+                blockEndPosition++;
             }
-            return bestFound;
-        }, candidatesForSelection[0]);
 
-        const nextAlphaScore = isAlphaTurn ? playerAlphaScore + selectedElement.elementA : playerAlphaScore;
-        const nextBetaScore = !isAlphaTurn ? playerBetaScore + selectedElement.elementB : playerBetaScore;
+            const currentProcessingBlock = sortedRecords.slice(currentPosition, blockEndPosition);
+            const availableBlockIndices = new Set(Array.from({ length: currentProcessingBlock.length }, (_, k) => k));
+            const blockSelections = new Array(currentProcessingBlock.length);
 
-        const indexOfChosen = currentAvailableElements.indexOf(selectedElement);
-        const nextAvailableElements = [
-            ...currentAvailableElements.slice(0, indexOfChosen),
-            ...currentAvailableElements.slice(indexOfChosen + 1)
-        ];
+            for (let k = 0; k < currentProcessingBlock.length; k++) {
+                const globalTurnIndex = currentPosition + k;
+                const playerChoiceIndex = globalTurnIndex % 2;
 
-        return {
-            currentAvailableElements: nextAvailableElements,
-            playerAlphaScore: nextAlphaScore,
-            playerBetaScore: nextBetaScore
-        };
-    }, { currentAvailableElements: orderedSegments, playerAlphaScore: 0, playerBetaScore: 0 });
+                let bestCandidateRelativeIndex = -1;
+                let maximumValue = -Infinity;
 
-    console.log(finalAccumulation.playerAlphaScore - finalAccumulation.playerBetaScore);
+                for (const relativeIdx of availableBlockIndices) {
+                    const candidateItem = currentProcessingBlock[relativeIdx];
+                    const currentValue = (playerChoiceIndex === 0) ? candidateItem.valA : candidateItem.valB;
+                    if (currentValue > maximumValue) {
+                        maximumValue = currentValue;
+                        bestCandidateRelativeIndex = relativeIdx;
+                    }
+                }
+
+                if (bestCandidateRelativeIndex !== -1) {
+                    blockSelections[k] = currentProcessingBlock[bestCandidateRelativeIndex];
+                    availableBlockIndices.delete(bestCandidateRelativeIndex);
+                }
+            }
+
+            for (const selectedItem of blockSelections) {
+                yield selectedItem;
+            }
+
+            currentPosition = blockEndPosition;
+        }
+    }
+
+    let playerOneScore = 0;
+    let playerTwoScore = 0;
+    let turnCounter = 0;
+
+    for (const selectedItem of generateOptimalSelections(itemRecords)) {
+        if (turnCounter % 2 === 0) {
+            playerOneScore += selectedItem.valA;
+        } else {
+            playerTwoScore += selectedItem.valB;
+        }
+        turnCounter++;
+    }
+
+    console.log('%d', playerOneScore - playerTwoScore);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

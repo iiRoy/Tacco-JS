@@ -1,82 +1,80 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const linesBuffer = sourceData.split('\n').filter(Boolean);
+#!/usr/bin/node
+(() => {
+  let inputLines = [];
+  let partialInputBuffer = "";
+  const inputSource = process.openStdin();
+  inputSource.setEncoding('utf8');
 
-let cursor = 0;
+  const traverseRegion = (colIndex, rowIndex, activeGrid) => {
+    // Accessing activeGrid[0].length here will crash if activeGrid is empty,
+    // replicating a potential crash point from the original code's grid processing.
+    const gridWidth = activeGrid[0].length;
+    const gridHeight = activeGrid.length;
 
-const extractNextSection = () => {
-    if (cursor >= linesBuffer.length) {
-        return null;
-    }
-    return linesBuffer[cursor++];
-};
-
-const processedOutput = [];
-
-while (true) {
-    const dimensionDesignation = extractNextSection();
-    if (!dimensionDesignation) {
-        break;
+    // Changed conditional logic from chained comma operator to explicit if/return
+    if (colIndex < 0 || colIndex >= gridWidth || rowIndex < 0 || rowIndex >= gridHeight || !activeGrid[rowIndex][colIndex]) {
+      return;
     }
 
-    const indicatorChar = dimensionDesignation[1];
-    if (indicatorChar === undefined) {
-        break;
-    }
+    // This line must remain a no-op for strings to preserve the stack overflow bug
+    activeGrid[rowIndex][colIndex] = '0';
 
-    const gridRowsCount = parseInt(indicatorChar);
-
-    let currentMatrix = [];
-    if (!isNaN(gridRowsCount) && gridRowsCount > 0) {
-        for (let rowIter = 0; rowIter < gridRowsCount; rowIter++) {
-            const mapRow = extractNextSection();
-            if (!mapRow) {
-                break;
-            }
-            currentMatrix.push(mapRow.split('').map(Number));
-        }
-    }
-
-    const mapHeight = currentMatrix.length;
-    const mapWidth = currentMatrix[0].length;
-
-    let componentAccumulator = 0;
-
-    const directions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1],  [1, 0],  [1, 1]
+    // Different representation for neighbor offsets
+    const neighborDisplacements = [
+      { dc: -1, dr: 0 }, { dc: 1, dr: 0 }, { dc: 0, dr: -1 }, { dc: 0, dr: 1 }, // Cardinal
+      { dc: -1, dr: -1 }, { dc: 1, dr: -1 }, { dc: -1, dr: 1 }, { dc: 1, dr: 1 }  // Diagonal
     ];
 
-    const exploreComponent = (initialY, initialX, workingMap) => {
-        const explorationQueue = [[initialY, initialX]];
-        workingMap[initialY][initialX] = 0;
+    // Different iteration method for neighbors (forEach with object destructuring)
+    neighborDisplacements.forEach(({ dc, dr }) => {
+      traverseRegion(colIndex + dc, rowIndex + dr, activeGrid);
+    });
+  };
 
-        while (explorationQueue.length > 0) {
-            const [currentY, currentX] = explorationQueue.shift();
-
-            for (const [dy, dx] of directions) {
-                const nextY = currentY + dy;
-                const nextX = currentX + dx;
-
-                if (nextY >= 0 && nextY < mapHeight &&
-                    nextX >= 0 && nextX < mapWidth &&
-                    workingMap[nextY][nextX] === 1) {
-                    workingMap[nextY][nextX] = 0;
-                    explorationQueue.push([nextY, nextX]);
-                }
-            }
-        }
-    };
-
-    for (let yCoord = 0; yCoord < mapHeight; yCoord++) {
-        for (let xCoord = 0; xCoord < mapWidth; xCoord++) {
-            if (currentMatrix[yCoord][xCoord] === 1) {
-                componentAccumulator++;
-                exploreComponent(yCoord, xCoord, currentMatrix);
-            }
-        }
+  inputSource.on('data', (incomingData) => {
+    const processedLines = (partialInputBuffer + incomingData).split("\n");
+    partialInputBuffer = processedLines.pop();
+    for (const lineContent of processedLines) {
+      if (lineContent === '') continue;
+      inputLines.push(lineContent);
     }
-    processedOutput.push(componentAccumulator);
-}
+  });
 
-processedOutput.forEach(value => console.log(value));
+  inputSource.on('end', (endEventArg) => {
+    let componentCounter = 0;
+    let currentLinePointer = 0;
+
+    while (true) {
+      componentCounter = 0;
+
+      const heightSpecifierLine = inputLines[currentLinePointer];
+      if (!heightSpecifierLine) break;
+
+      // This replicates the original bug: takes the second character as height
+      const gridHeightChar = heightSpecifierLine[1];
+      if (!gridHeightChar) break; // If the line is too short or empty, break
+
+      // slice uses the string directly, which Number() converts implicitly.
+      // This preserves the original behavior where '0' would result in an empty array for currentGridData.
+      const currentGridData = inputLines.slice(currentLinePointer + 1, currentLinePointer + 1 + gridHeightChar);
+
+      // Iterate through the grid to find components
+      // Changed iteration order (row-major instead of col-major)
+      for (let rowIndex = 0; rowIndex < currentGridData.length; rowIndex++) {
+        // Accessing currentGridData[0].length in the loop condition will crash if currentGridData is empty
+        // or if currentGridData[0] is undefined (e.g., if gridHeightChar was '0').
+        // This preserves the original crash behavior.
+        for (let colIndex = 0; colIndex < currentGridData[0].length; colIndex++) {
+          if (currentGridData[rowIndex][colIndex] === '1') {
+            componentCounter++;
+            traverseRegion(colIndex, rowIndex, currentGridData);
+          }
+        }
+      }
+
+      console.log(componentCounter);
+      // Advance the pointer past the height line and the grid lines
+      currentLinePointer += (Number(gridHeightChar) + 1);
+    }
+  });
+})();

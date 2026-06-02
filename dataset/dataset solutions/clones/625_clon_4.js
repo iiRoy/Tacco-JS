@@ -1,21 +1,61 @@
-const sourceModule = require('fs');
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const dataCache = Buffer.alloc(1024 * 1024);
-const bytesObtained = sourceModule.readSync(process.stdin.fd, dataCache, 0, dataCache.length, null);
-const rawContent = dataCache.toString('utf8', 0, bytesObtained);
+var dataRows = sourceData.split('\n');
+var baseLength = Number(dataRows[0]);
+var baseNumbers = dataRows.slice(1, baseLength + 1).map(Number);
 
-const contentFragments = rawContent.trim().split('\n');
+const retrieveCircularElement = (idx) => baseNumbers[idx % baseLength];
 
-const initialCount = Number(contentFragments[0]);
+const calculateSegmentTotal = (start, end) => {
+    if (start >= end) return 0;
+    return Array.from({ length: end - start }, (_, offset) =>
+        retrieveCircularElement(start + offset)
+    ).reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+};
 
-const numericCollection = [];
-for (let indexValue = 1; indexValue <= initialCount; ++indexValue) {
-    numericCollection.push(Number(contentFragments[indexValue]));
-}
+const getComparisonArray = (start, end) => {
+    const segment = [];
+    for (let current = start; current < end; current++) {
+        segment.push(retrieveCircularElement(current));
+    }
+    return segment;
+};
 
-// The original code's complex calculation path, due to a logical flaw (comparing an array to a number),
-// leads to the main conditional 'if(arr <= min)' always evaluating to false for non-empty arrays.
-// Since the 'arr' in question is always non-empty within the loops where 'max' could be updated,
-// the 'max' variable is never changed from its initial value of 0.
-// Therefore, the equivalent functionality of the original code is to always output 0.
-console.log(0);
+let initialMax = 0;
+
+const allPotentialMaxValues = Array.from({ length: Math.max(0, baseLength - 3) }, (_, segmentLengthOffset) => {
+    const currentSegmentLength = segmentLengthOffset + 1;
+
+    return Array.from({ length: baseLength }, (_, startPosition) => {
+        const firstSegmentSum = calculateSegmentTotal(startPosition, startPosition + currentSegmentLength);
+
+        const comparisonArray = getComparisonArray(startPosition + currentSegmentLength, startPosition + baseLength);
+
+        const remainingSegmentLength = baseLength - currentSegmentLength;
+        if (remainingSegmentLength < 2) {
+            return [];
+        }
+
+        return Array.from({ length: remainingSegmentLength - 1 }, (_, splitOffset) => {
+            const splitPoint = splitOffset + 1;
+
+            const segmentTwoStart = startPosition + currentSegmentLength;
+            const segmentTwoSplit = segmentTwoStart + splitPoint;
+            const segmentTwoEnd = startPosition + baseLength;
+
+            const firstSubSegmentSum = calculateSegmentTotal(segmentTwoStart, segmentTwoSplit);
+            const secondSubSegmentSum = calculateSegmentTotal(segmentTwoSplit, segmentTwoEnd);
+
+            const currentMin = Math.min(firstSubSegmentSum, secondSubSegmentSum);
+
+            if (comparisonArray <= currentMin) {
+                return firstSegmentSum;
+            }
+            return 0;
+        });
+    });
+}).flat(2);
+
+initialMax = allPotentialMaxValues.reduce((currentMax, val) => Math.max(currentMax, val), 0);
+
+console.log(initialMax);

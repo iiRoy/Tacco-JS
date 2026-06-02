@@ -1,74 +1,55 @@
 "use strict";
-(function(rawInputString){
-  let processedNumbers = [];
-  let currentNumeral = "";
-  for (let charIndex = 0; charIndex < rawInputString.length; ++charIndex) {
-    let charValue = rawInputString[charIndex];
-    if (charValue === ' ' || charValue === '\n' || charValue === '\t' || charValue === '\r') {
-      if (currentNumeral.length > 0) {
-        processedNumbers.push(Number(currentNumeral));
-        currentNumeral = "";
-      }
-    } else {
-      currentNumeral += charValue;
-    }
-  }
-  if (currentNumeral.length > 0) {
-    processedNumbers.push(Number(currentNumeral));
-  }
+(function(dataStream){
+  let parsedNumbers = dataStream.trim().split(/\s+/).map(val => Number(val));
+  const nodeCount = parsedNumbers.shift();
+  const factorBase = parsedNumbers.shift();
+  const moduloVal = 1000000007;
 
-  let nodesQuantity = processedNumbers.shift();
-  let paletteSize = processedNumbers.shift();
-  const moduloPrime = 1000000007;
+  const adjacencyList = Array.from({ length: nodeCount + 1 }, () => []);
+  const heights = Array(nodeCount + 1).fill(-1);
 
-  let graphTopology = new Array(nodesQuantity + 1);
-  for (let k = 0; k <= nodesQuantity; ++k) {
-    graphTopology[k] = { adjacent: new Set(), depthLevel: 0 };
+  adjacencyList[0].push(1);
+  adjacencyList[1].push(0);
+
+  while (parsedNumbers.length > 0) {
+    const edgeB = parsedNumbers.pop();
+    const edgeA = parsedNumbers.pop();
+    adjacencyList[edgeA].push(edgeB);
+    adjacencyList[edgeB].push(edgeA);
   }
 
-  graphTopology[0].adjacent.add(1);
-  graphTopology[1].adjacent.add(0);
-
-  while (processedNumbers.length > 0) {
-    let vertexA = processedNumbers.pop();
-    let vertexB = processedNumbers.pop();
-    graphTopology[vertexA].adjacent.add(vertexB);
-    graphTopology[vertexB].adjacent.add(vertexA);
-  }
-
-  const establishDepths = (currentIdx, parentIdx, currentLevel) => {
-    graphTopology[currentIdx].depthLevel = currentLevel;
-    for (let neighborIdx of graphTopology[currentIdx].adjacent) {
-      if (neighborIdx !== parentIdx) {
-        establishDepths(neighborIdx, currentIdx, currentLevel + 1);
+  function computeNodeHeights(currentId, parentId, currentDepth) {
+    heights[currentId] = currentDepth;
+    for (const neighborId of adjacencyList[currentId]) {
+      if (neighborId !== parentId) {
+        computeNodeHeights(neighborId, currentId, currentDepth + 1);
       }
     }
-  };
+  }
+  computeNodeHeights(0, -1, 0);
 
-  establishDepths(0, -1, 0);
+  function calculateSubtreeProduct(currentId, parentId) {
+    let currentProduct = 1;
+    const currentHeight = heights[currentId];
 
-  const computeCombinations = (currentIdx, parentIdx) => {
-    let currentVertexFactor = 1;
-    let actualChildrenCount = 0;
+    const baseValue = (currentHeight < 2) ? (factorBase - currentHeight) : (factorBase - 2);
 
-    for (let neighborIdx of graphTopology[currentIdx].adjacent) {
-      if (neighborIdx !== parentIdx) {
-        actualChildrenCount++;
-        currentVertexFactor = (currentVertexFactor * computeCombinations(neighborIdx, currentIdx)) % moduloPrime;
-      }
+    const childrenNodes = adjacencyList[currentId].filter(neighborId => neighborId !== parentId);
+    const childCount = childrenNodes.length;
+
+    for (let i = 0; i < childCount; i++) {
+      currentProduct = (currentProduct * (baseValue - i)) % moduloVal;
     }
 
-    let baseColorChoices = paletteSize - (graphTopology[currentIdx].depthLevel < 2 ? graphTopology[currentIdx].depthLevel : 2);
-    
-    for (let j = 0; j < actualChildrenCount; ++j) {
-      currentVertexFactor = (currentVertexFactor * (baseColorChoices - j)) % moduloPrime;
+    for (const childId of childrenNodes) {
+      currentProduct = (currentProduct * calculateSubtreeProduct(childId, currentId)) % moduloVal;
     }
 
-    return currentVertexFactor;
-  };
+    return currentProduct;
+  }
 
-  let finalOutcome = computeCombinations(0, -1);
+  const finalProduct = calculateSubtreeProduct(0, -1);
 
-  console.log(finalOutcome);
+  console.log(finalProduct);
 
 })(require("fs").readFileSync("/dev/stdin","utf8"));

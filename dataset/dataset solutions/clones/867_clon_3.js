@@ -1,187 +1,105 @@
-// This module provides file system utilities.
-const fileSystem = require('fs');
+var fileSys = require('fs');
 
-// Attempt to read standard input synchronously.
-// Determine the size of the standard input stream.
-const inputDescriptor = process.stdin.fd;
-const streamStats = fileSystem.fstatSync(inputDescriptor);
-const dataLength = streamStats.size;
-
-// Allocate a buffer to hold the input data.
-const inputBuffer = Buffer.alloc(dataLength);
-
-// Read data from standard input into the buffer.
-const actualBytesRead = fileSystem.readSync(inputDescriptor, inputBuffer, 0, dataLength, 0);
-
-// Convert the buffer content to a UTF-8 string and split by newline.
-// Filter out any empty lines that might result from extra newlines.
-const rawInputLines = inputBuffer.toString('utf8', 0, actualBytesRead)
-                                 .split('\n')
-                                 .filter(line => line.trim().length > 0);
-
-// Function to initialize a 2D array (grid) with a specific value.
-function createInitializedGrid(rows, columns, initialValue) {
-  // Input validation for dimensions
-  if (rows <= 0 || columns <= 0) {
-    console.warn("Warning: Grid dimensions should be positive. Returning empty grid.");
-    return [];
-  }
-
-  const twoDArray = [];
-  // Use a modern loop structure for iteration
-  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
-    const currentRow = new Array(columns).fill(initialValue); // More concise row creation
-    twoDArray.push(currentRow);
-  }
-  return twoDArray;
+function readRawInputLines() {
+  var inputDescriptor = process.stdin.fd;
+  var dataLen = fileSys.fstatSync(inputDescriptor).size;
+  var inputBuf = Buffer.alloc(dataLen);
+  var readBytesCount = fileSys.readSync(inputDescriptor, inputBuf, 0, dataLen, 0);
+  return inputBuf.toString('utf8', 0, readBytesCount).split('\n');
 }
 
-// Core logic to determine the maximum achievable score based on available segments.
-// This implements a dynamic programming approach.
-function calculateMaxSegmentScore(totalLengthRequirement, availableSegments) {
-  // Early exit for invalid inputs
-  if (totalLengthRequirement <= 0 || !Array.isArray(availableSegments) || availableSegments.length === 0) {
-    return 0; // No score achievable
+var rawInputLines = readRawInputLines();
+
+orchestrateSolution();
+
+function create2DArray(rows, cols, initialVal) {
+  var grid = [];
+  for (var rowIndex = 0; rowIndex < rows; rowIndex++) {
+    grid[rowIndex] = [];
+    for (var colIndex = 0; colIndex < cols; colIndex++) {
+      grid[rowIndex][colIndex] = initialVal;
+    }
   }
+  return grid;
+}
 
-  const segmentCount = availableSegments.length;
+function findMaxInSubarray(sourceArray, startIndex, endIndex) {
+  if (startIndex >= endIndex) {
+    return 0; // Or -Infinity, depending on context. Original uses Math.max.apply on potentially empty array, which is -Infinity.
+              // But if range is empty, it means no previous score, so 0 is safer for DP.
+              // Math.max.apply(null, []) is -Infinity. Let's replicate that behavior.
+  }
+  var subArray = sourceArray.slice(startIndex, endIndex);
+  return Math.max.apply(null, subArray);
+}
 
-  // dpGrid[i][j] stores the maximum score using the first 'i' segments
-  // to achieve a total length 'j'.
-  // Dimensions: (segmentCount + 1) x (totalLengthRequirement + 1)
-  const dpGrid = createInitializedGrid(segmentCount + 1, totalLengthRequirement + 1, 0);
+function calculateMaxScore(targetMelodyLength, availablePhrases) {
+  var phraseCount = availablePhrases.length;
+  var memoTable = create2DArray(phraseCount + 1, targetMelodyLength + 1, 0);
 
-  // Iterate through each available segment.
-  for (let currentSegmentIdx = 0; currentSegmentIdx < segmentCount; currentSegmentIdx++) {
-    const currentSegment = availableSegments[currentSegmentIdx];
-    // Destructure segment properties for clarity
-    const [segmentStart, segmentDuration, segmentValue] = currentSegment; 
+  for (var phraseIdx = 0; phraseIdx < phraseCount; phraseIdx++) {
+    for (var currentLen = 0; currentLen <= targetMelodyLength; currentLen++) {
+      var startPos = availablePhrases[phraseIdx][0];
+      var phraseLen = availablePhrases[phraseIdx][1];
+      var phrasePoints = availablePhrases[phraseIdx][2];
 
-    // Iterate through all possible total lengths up to the requirement.
-    for (let currentTotalLen = 0; currentTotalLen <= totalLengthRequirement; currentTotalLen++) {
-      // Option 1: Don't use the current segment.
-      // The max score is simply the max score without this segment for the same total length.
-      let scoreWithoutCurrent = dpGrid[currentSegmentIdx][currentTotalLen];
-      
-      // Option 2: Consider using the current segment.
-      let scoreWithCurrent = scoreWithoutCurrent; // Default to not using it.
+      // Default: don't use the current phrase
+      memoTable[phraseIdx + 1][currentLen] = memoTable[phraseIdx][currentLen];
 
-      // Check if the current segment's start point is within the current total length.
-      if (segmentStart <= currentTotalLen) {
-        // Calculate the range of previous lengths that could lead to currentTotalLen
-        // by adding the current segment (segmentStart to segmentStart + segmentDuration).
-        // The previous length `prevLen` must satisfy:
-        // prevLen + segmentStart <= currentTotalLen (to fit the start)
-        // prevLen + segmentStart + segmentDuration >= currentTotalLen (to cover up to currentTotalLen)
-        // The slice captures lengths from (currentTotalLen - segmentDuration) to (currentTotalLen - segmentStart).
+      if (startPos <= currentLen) {
+        var sliceStartIdx = Math.max(0, currentLen - phraseLen);
+        var sliceEndIdx = currentLen - startPos + 1;
+
+        var maxPreviousScore = findMaxInSubarray(memoTable[phraseIdx + 1], sliceStartIdx, sliceEndIdx);
         
-        const possiblePreviousLenMin = Math.max(0, currentTotalLen - segmentDuration); // Ensure index is not negative
-        const possiblePreviousLenMaxExclusive = currentTotalLen - segmentStart + 1; // Slice end is exclusive
+        // If maxPreviousScore is -Infinity (from empty range), treat it as 0 for addition
+        var potentialNewScore = (maxPreviousScore === -Infinity ? 0 : maxPreviousScore) + phrasePoints;
 
-        // Extract relevant previous DP values
-        const potentialPreviousScores = dpGrid[currentSegmentIdx].slice(possiblePreviousLenMin, possiblePreviousLenMaxExclusive);
-
-        // Find the maximum score from the potential previous states.
-        // Handle the case where potentialPreviousScores might be empty.
-        const maxPreviousScore = potentialPreviousScores.length > 0
-                                 ? Math.max(...potentialPreviousScores)
-                                 : -Infinity; // If no valid previous state, cannot use this segment effectively.
-
-        // If a valid previous score was found, add the current segment's value.
-        if (maxPreviousScore !== -Infinity) {
-          scoreWithCurrent = Math.max(scoreWithoutCurrent, maxPreviousScore + segmentValue);
-        }
+        memoTable[phraseIdx + 1][currentLen] = Math.max(memoTable[phraseIdx + 1][currentLen], potentialNewScore);
       }
-      // Update the DP table for the current segment and total length.
-      dpGrid[currentSegmentIdx + 1][currentTotalLen] = scoreWithCurrent;
     }
   }
-  // The final answer is in the bottom-right corner of the DP table.
-  return dpGrid[segmentCount][totalLengthRequirement];
+  return memoTable[phraseCount][targetMelodyLength];
 }
 
-// Main execution orchestrator function.
-function processProgramLogic() {
-  let currentLinePointer = 0; // Use an index to consume input lines
+function orchestrateSolution() {
+  var numPhrasesToRead = rawInputLines.shift() - 0;
+  var allPhrases = [];
 
-  // Read the number of available segments (phrases).
-  const numSegments = parseInt(rawInputLines[currentLinePointer++], 10);
-  if (isNaN(numSegments) || numSegments < 0) {
-    console.error("Invalid number of segments provided. Exiting.");
-    return; // Exit if input is bad
+  for (var i = 0; i < numPhrasesToRead; i++) {
+    allPhrases.push(rawInputLines.shift().split(' ').map(Number));
   }
 
-  const segmentDefinitionList = [];
-  // Populate the list of segments from input.
-  for (let i = 0; i < numSegments; i++) {
-    if (currentLinePointer >= rawInputLines.length) {
-      console.error("Insufficient input lines for segments. Exiting.");
-      return;
-    }
-    const segmentData = rawInputLines[currentLinePointer++].split(' ').map(Number);
-    // Basic validation for segment data format
-    if (segmentData.length !== 3 || segmentData.some(isNaN)) {
-      console.error(`Invalid segment data format on line ${currentLinePointer - 1}: "${rawInputLines[currentLinePointer - 2]}". Expected 3 numbers. Exiting.`);
-      return;
-    }
-    segmentDefinitionList.push(segmentData);
+  allPhrases.sort(function (phraseA, phraseB) {
+    return phraseA[2] - phraseB[2]; // Sort by points
+  });
+
+  var numMelodiesToProcess = rawInputLines.shift() - 0;
+  var targetMelodyLengths = [];
+
+  for (var j = 0; j < numMelodiesToProcess; j++) {
+    targetMelodyLengths.push(rawInputLines.shift() - 0);
   }
 
-  // Sort segments based on their 'value' (p) in ascending order.
-  // This can sometimes improve performance or ensure consistency in specific DP implementations,
-  // though for this particular problem, the order of segments doesn't affect the final maximum.
-  segmentDefinitionList.sort((segA, segB) => segA[2] - segB[2]);
+  var resultScores = [];
+  var hasZeroScore = false;
 
-  // Read the number of target lengths (melodies).
-  const numTargetLengths = parseInt(rawInputLines[currentLinePointer++], 10);
-  if (isNaN(numTargetLengths) || numTargetLengths < 0) {
-    console.error("Invalid number of target lengths provided. Exiting.");
-    return;
-  }
+  for (var k = 0; k < numMelodiesToProcess; k++) {
+    var currentMelodyTarget = targetMelodyLengths[k];
+    var currentMaxScore = calculateMaxScore(currentMelodyTarget, allPhrases);
 
-  const targetLengthValues = [];
-  // Populate the list of target lengths.
-  for (let i = 0; i < numTargetLengths; i++) {
-    if (currentLinePointer >= rawInputLines.length) {
-      console.error("Insufficient input lines for target lengths. Exiting.");
-      return;
-    }
-    const currentTargetLen = parseInt(rawInputLines[currentLinePointer++], 10);
-    if (isNaN(currentTargetLen) || currentTargetLen < 0) {
-      console.error(`Invalid target length on line ${currentLinePointer - 1}: "${rawInputLines[currentLinePointer - 2]}". Expected a non-negative number. Exiting.`);
-      return;
-    }
-    targetLengthValues.push(currentTargetLen);
-  }
-
-  const computedResults = [];
-  let zeroScoreDetected = false; // Flag to track if any calculation yielded a zero score.
-
-  // Process each target length.
-  for (const currentTargetLength of targetLengthValues) {
-    const maxAchievedScore = calculateMaxSegmentScore(currentTargetLength, segmentDefinitionList);
-
-    if (maxAchievedScore === 0) {
-      zeroScoreDetected = true; // Set flag if a zero score is found.
+    if (currentMaxScore === 0) {
+      hasZeroScore = true;
     } else {
-      computedResults.push(maxAchievedScore);
+      resultScores.push(currentMaxScore);
     }
   }
 
-  // Final output based on the 'zeroScoreDetected' flag.
-  // If any target length resulted in a score of 0, output -1 for all results.
-  if (zeroScoreDetected) {
-    console.log(-1); 
+  if (hasZeroScore) {
+    console.log(-1);
   } else {
-    // Otherwise, output all computed non-zero scores.
-    computedResults.forEach(score => console.log(score));
+    for (var l = 0; l < resultScores.length; l++) {
+      console.log(resultScores[l]);
+    }
   }
-}
-
-// Execute the main program logic, wrapped in a try-catch for robustness.
-try {
-  processProgramLogic();
-} catch (executionError) {
-  console.error("An unexpected error occurred during program execution:", executionError.message);
-  // In a production environment, more detailed error logging might be appropriate.
 }

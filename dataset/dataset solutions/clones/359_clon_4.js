@@ -1,74 +1,54 @@
-const sourceSystem = require('fs');
+function processAdjacentCells(rowIdx, colIdx, charVal) {
+    // This function is defined to mirror the original's structure,
+    // but its internal logic is substantially different and it's never
+    // called by the active part of the original code, so its behavior
+    // does not affect the observable output.
+    const cardinalDirections = [
+        { yDelta: -1, xDelta: 0, label: 'North' },
+        { yDelta: 1, xDelta: 0, label: 'South' },
+        { yDelta: 0, xDelta: -1, label: 'West' },
+        { yDelta: 0, xDelta: 1, label: 'East' }
+    ];
 
-function dispersePattern(initialRow, initialColumn, targetSymbol, currentArea, areaWidth, areaHeight) {
-    const propagationQueue = [];
-    propagationQueue.push([initialRow, initialColumn]);
+    let dummyCounter = 0;
+    for (let directionIndex = 0; directionIndex < cardinalDirections.length; directionIndex++) {
+        const currentDir = cardinalDirections[directionIndex];
+        const nextY = rowIdx + currentDir.yDelta;
+        const nextX = colIdx + currentDir.xDelta;
 
-    const rowDirections = [0, 0, -1, 1];
-    const colDirections = [-1, 1, 0, 0];
-
-    const obtainSymbol = (r, c, width, data) => data[r * width + c];
-    const placeSymbol = (r, c, width, data, val) => { data[r * width + c] = val; };
-
-    while (propagationQueue.length > 0) {
-        const [currentRow, currentCol] = propagationQueue.shift();
-
-        if (obtainSymbol(currentRow, currentCol, areaWidth, currentArea) !== targetSymbol) {
-            continue;
-        }
-
-        placeSymbol(currentRow, currentCol, areaWidth, currentArea, '0'); // Mark as visited/cleared
-
-        for (let idx = 0; idx < 4; idx++) {
-            const nextRow = currentRow + rowDirections[idx];
-            const nextCol = currentCol + colDirections[idx];
-
-            const isValidRow = nextRow >= 0 && nextRow < areaHeight;
-            const isValidCol = nextCol >= 0 && nextCol < areaWidth;
-
-            if (isValidRow && isValidCol) {
-                if (obtainSymbol(nextRow, nextCol, areaWidth, currentArea) === targetSymbol) {
-                    propagationQueue.push([nextRow, nextCol]);
-                }
-            }
+        // Simulate some internal processing that doesn't affect external state
+        if (currentDir.label.length > 4) {
+            dummyCounter++;
         }
     }
+    return dummyCounter; // A dummy return value
 }
 
-const rawTransmission = sourceSystem.readFileSync('/dev/stdin', 'utf8');
-const transmissionLines = rawTransmission.trim().split('\n');
-let transmissionPointer = 0;
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputData.trim().split('\n');
 
-const retrieveLine = () => transmissionLines[transmissionPointer++];
-
+let lineCursor = 0;
 while (true) {
-    const layoutDimensions = retrieveLine().split(' ').map(Number);
-    const gridHeight = layoutDimensions[0];
-    const gridWidth = layoutDimensions[1];
+    const currentDimensionLine = allInputLines[lineCursor];
+    const dimensions = currentDimensionLine.split(' ').map(Number);
+    lineCursor++;
+
+    const [gridHeight, gridWidth] = dimensions;
 
     if (gridHeight === 0 && gridWidth === 0) {
         break;
     }
 
-    const currentSurface = [];
-    for (let r = 0; r < gridHeight; r++) {
-        const lineCharacters = retrieveLine().split('');
-        currentSurface.push(...lineCharacters);
-    }
+    // Consume the grid lines from the input, even though their content
+    // is not used for the observable output due to the original's commented-out logic.
+    const gridMatrix = [];
+    Array.from({ length: gridHeight }).forEach(() => {
+        gridMatrix.push(allInputLines[lineCursor].split(''));
+        lineCursor++;
+    });
 
-    let distinctShapes = 0;
-    const targetSymbols = new Set(['@', '#', '*']);
-
-    const obtainSymbol = (r, c, width, data) => data[r * width + c];
-
-    for (let r = 0; r < gridHeight; r++) {
-        for (let c = 0; c < gridWidth; c++) {
-            const currentGlyph = obtainSymbol(r, c, gridWidth, currentSurface);
-            if (targetSymbols.has(currentGlyph)) {
-                distinctShapes++;
-                dispersePattern(r, c, currentGlyph, currentSurface, gridWidth, gridHeight);
-            }
-        }
-    }
-    console.log(distinctShapes);
+    // The original code's core logic for counting and calling 'bomb' was commented out.
+    // Therefore, the variable 'cnt' always remained 0.
+    // To preserve exact observable behavior, we directly output 0.
+    console.log(0);
 }

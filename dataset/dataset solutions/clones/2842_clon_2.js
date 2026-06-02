@@ -1,139 +1,112 @@
-/*
- *  This JavaScript program analyzes a set of 2D coordinate points.
- *  It identifies the most common displacement vector between pairs of points,
- *  then iteratively groups points based on this dominant displacement.
- */
-function ProcessCoordinates(inputRawData) {
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines
+  let dataRows = rawData.split("\n");
 
-  // Split the entire input string into an array of individual text segments (lines).
-  const inputSegments = inputRawData.split("\n");
+  // Remove the last (potentially empty) line
+  dataRows.pop();
 
-  // Remove the last element from the array, which is often an empty string
-  // due to the trailing newline character in input files.
-  inputSegments.pop();
+  // Extract the number of points from the first line and convert to a number
+  const pointCount = Number(dataRows.shift());
 
-  // The very first line of the input contains the total number of points.
-  // Parse this string into an integer value for subsequent processing.
-  let totalPointsCount = parseInt(inputSegments.shift(), 10);
+  // Initialize an array to store coordinate objects
+  let coordinates = [];
 
-  // Initialize an empty array that will store our parsed point objects.
-  let coordinateList = [];
-
-  // Iterate through the remaining input segments to extract and process each point.
-  for (let segmentIndex = 0; segmentIndex < totalPointsCount; segmentIndex++) {
-    // Split the current line by space to separate the X and Y coordinate strings.
-    const currentLineParts = inputSegments[segmentIndex].split(' ');
-
-    // Create a new point object and push it into our coordinate list.
-    // The unary plus operator (+) converts the string coordinates to numbers.
-    coordinateList.push({ pointX: +currentLineParts[0], pointY: +currentLineParts[1] });
+  // Populate the coordinates array from the remaining data rows
+  for (let idxA = 0; idxA < pointCount; idxA++) {
+    // Split each line by space to get x and y values
+    const currentCoords = dataRows[idxA].split(' ');
+    // Add a new point object to the array
+    coordinates.push({ x: currentCoords[0], y: currentCoords[1] });
   }
 
-
-  // Sort the list of coordinate points.
-  // The primary sorting criterion is the X coordinate,
-  // and the secondary criterion is the Y coordinate if X values are equal.
-  coordinateList.sort(function(firstPoint, secondPoint) {
-    if (firstPoint.pointX === secondPoint.pointX) {
-      return firstPoint.pointY - secondPoint.pointY;
+  // Sort the points: first by x-coordinate, then by y-coordinate
+  coordinates.sort(function(pointA, pointB) {
+    // If x-coordinates are the same, sort by y
+    if (pointA.x === pointB.x) {
+      return pointA.y - pointB.y;
     }
-    return firstPoint.pointX - secondPoint.pointX;
+    // Otherwise, sort by x
+    return pointA.x - pointB.x;
   });
 
+  // Initialize an object to store frequencies of displacement vectors
+  let vectorFrequencies = {};
 
-  // An object to store the frequency of each unique displacement vector.
-  // Keys will be strings like "deltaX,deltaY", values will be their counts.
-  const displacementTally = {};
+  // Calculate all possible displacement vectors between pairs of points
+  for (let idxA = 0; idxA < pointCount; idxA++) {
+    for (let idxB = 0; idxB < pointCount; idxB++) {
+      // Skip if comparing a point to itself
+      if (idxA === idxB) continue;
 
-  // Iterate over every possible ordered pair of distinct points in the list.
-  for (let outerPointIndex = 0; outerPointIndex < totalPointsCount; outerPointIndex++) {
-    for (let innerPointIndex = 0; innerPointIndex < totalPointsCount; innerPointIndex++) {
-      // A point cannot be displaced from itself, so skip if indices are identical.
-      if (outerPointIndex === innerPointIndex) continue;
+      // Calculate the x and y components of the displacement vector
+      const deltaX = coordinates[idxA].x - coordinates[idxB].x;
+      const deltaY = coordinates[idxA].y - coordinates[idxB].y;
 
-      // Calculate the X and Y components of the displacement vector.
-      const deltaXValue = coordinateList[outerPointIndex].pointX - coordinateList[innerPointIndex].pointX;
-      const deltaYValue = coordinateList[outerPointIndex].pointY - coordinateList[innerPointIndex].pointY;
+      // Create a unique string key for the vector (e.g., "3,-5")
+      const vectorKey = deltaX + ',' + deltaY;
 
-      // Construct a unique string key for this displacement vector.
-      const displacementKeyString = `${deltaXValue},${deltaYValue}`;
-
-      // Increment the count for this displacement vector, or initialize it to 1 if new.
-      if (displacementTally[displacementKeyString]) {
-        displacementTally[displacementKeyString] = displacementTally[displacementKeyString] + 1;
+      // Increment the count for this vector, or initialize to 1 if new
+      if (vectorFrequencies[vectorKey]) {
+        vectorFrequencies[vectorKey]++;
       } else {
-        displacementTally[displacementKeyString] = 1;
+        vectorFrequencies[vectorKey] = 1;
       }
     }
   }
 
-  // Retrieve all unique displacement keys found.
-  const uniqueDisplacementKeys = Object.keys(displacementTally);
+  // Get an array of all unique vector keys
+  const uniqueVectors = Object.keys(vectorFrequencies);
 
-  // Variables to track the highest frequency and its corresponding key.
-  let highestFrequency = 0;
-  let mostFrequentOffsetKey = '';
+  // Initialize variables to find the vector with the maximum frequency
+  let maxFrequency = 0;
+  let maxFreqVectorKey = '';
 
-  // This variable simulates the state of the loop counter 'i' in the original
-  // code after its execution, preserving structural consistency for Type II clone.
-  let finalOffsetScanIndex = 0;
-
-  // Find the displacement vector that occurs most frequently.
-  for (let keyScanIndex = 0; keyScanIndex < uniqueDisplacementKeys.length; keyScanIndex++) {
-    const currentDisplacementKey = uniqueDisplacementKeys[keyScanIndex];
-    if (highestFrequency < displacementTally[currentDisplacementKey]) {
-      highestFrequency = displacementTally[currentDisplacementKey];
-      mostFrequentOffsetKey = currentDisplacementKey;
+  // Iterate through the unique vectors to find the one with the highest count
+  for (let loopCounter = 0; loopCounter < uniqueVectors.length; loopCounter++) {
+    const currentVectorKey = uniqueVectors[loopCounter];
+    // If the current vector's frequency is greater than the current maximum
+    if (maxFrequency < vectorFrequencies[currentVectorKey]) {
+      // Update the maximum frequency and the corresponding vector key
+      maxFrequency = vectorFrequencies[currentVectorKey];
+      maxFreqVectorKey = currentVectorKey;
     }
   }
-  // After the loop, ensure finalOffsetScanIndex holds the value 'uniqueDisplacementKeys.length'
-  // to match the original loop variable's final state.
-  finalOffsetScanIndex = uniqueDisplacementKeys.length;
 
+  // Split the most frequent vector key back into its x and y components
+  const dominantVecX = maxFreqVectorKey.split(',')[0];
+  const dominantVecY = maxFreqVectorKey.split(',')[1];
 
-  // Parse the X and Y components of the most frequent displacement vector.
-  const dominantDeltaX = +mostFrequentOffsetKey.split(',')[0];
-  const dominantDeltaY = +mostFrequentOffsetKey.split(',')[1];
+  // Initialize a counter for the number of independent sets of points
+  let resultCount = 0;
 
-  // Counter for the number of distinct groups identified.
-  let numberOfGroups = 0;
+  // Process points until the coordinates array is empty
+  while (coordinates.length > 0) {
+    // Take the first point from the array as the current reference point
+    const currentPoint = coordinates.shift();
 
-  // Continue processing as long as there are points remaining in the list.
-  while (coordinateList.length > 0) {
-    // Take the first available point as the reference for forming a new group.
-    const referencePointItem = coordinateList.shift();
+    // Iterate through the remaining points to remove those collinear with currentPoint
+    for (let loopCounter = 0; loopCounter < coordinates.length; loopCounter++) {
+      const otherPoint = coordinates[loopCounter];
 
-    // This assignment replicates a potentially dead code statement from the original,
-    // ensuring the exact number and type of statements is preserved.
-    const unusedPointReference = coordinateList[finalOffsetScanIndex];
+      // Check if otherPoint is collinear with currentPoint along the dominant vector
+      // This involves checking if the displacement (otherPoint - currentPoint) is a multiple of (dominantVecX, dominantVecY)
+      const isCollinearX = (dominantVecX == 0 && otherPoint.x - currentPoint.x == 0) || ((otherPoint.x - currentPoint.x) % dominantVecX == 0);
+      const isCollinearY = (dominantVecY == 0 && otherPoint.y - currentPoint.y == 0) || ((otherPoint.y - currentPoint.y) % dominantVecY == 0);
 
-    // Iterate through the rest of the points in the list to find members for the current group.
-    for (let currentScanIndex = 0; currentScanIndex < coordinateList.length; currentScanIndex++) {
-      const candidatePoint = coordinateList[currentScanIndex]; // The point currently being evaluated.
-
-      // Determine if the candidate point aligns with the reference point based on the dominant displacement.
-      // This checks for both zero displacement (points must be identical on that axis)
-      // and non-zero displacement (difference must be a multiple of the dominant delta).
-      const isXDimensionAligned = (dominantDeltaX === 0 && candidatePoint.pointX - referencePointItem.pointX === 0) ||
-                                  (dominantDeltaX !== 0 && (candidatePoint.pointX - referencePointItem.pointX) % dominantDeltaX === 0);
-      const isYDimensionAligned = (dominantDeltaY === 0 && candidatePoint.pointY - referencePointItem.pointY === 0) ||
-                                  (dominantDeltaY !== 0 && (candidatePoint.pointY - referencePointItem.pointY) % dominantDeltaY === 0);
-
-      // If both X and Y dimensions are aligned, the candidate point belongs to this group.
-      if (isXDimensionAligned && isYDimensionAligned) {
-        // Remove the aligned point from the list to prevent re-processing.
-        coordinateList.splice(currentScanIndex, 1);
-        // Decrement the loop index to correctly account for the removed element.
-        currentScanIndex--;
+      if (isCollinearX && isCollinearY) {
+        // If collinear, remove the point from the array
+        coordinates.splice(loopCounter, 1);
+        // Decrement the loop counter to account for the removed element
+        loopCounter--;
       }
     }
-    // After processing all potential matches for the current reference point, increment the group counter.
-    numberOfGroups++;
+    // Increment the count of independent sets
+    resultCount++;
   }
 
-  // Output the final count of distinct groups found.
-  console.log(numberOfGroups);
+  // Output the final count to the console
+  console.log(resultCount);
 }
 
-// Read input from standard input and invoke the primary processing function.
-ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the Main function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

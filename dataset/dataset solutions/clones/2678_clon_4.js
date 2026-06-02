@@ -1,31 +1,26 @@
-function computeOddDigitCount(originalInput) {
-  let numericalValue = Number(originalInput);
-  let finalTally = 0;
-  let maximumExtent = numericalValue - 1;
+function processInputData(rawData) {
+    const numericalLimit = Number(rawData);
+    let totalOddDigitCount = 0;
+    let powerOfTenBase = 1;
+    let digitLength = 1;
 
-  if (maximumExtent <= 0) {
-    console.log(0);
-    return;
-  }
+    while (powerOfTenBase < numericalLimit) {
+        const nextPowerOfTenBase = powerOfTenBase * 10;
+        const currentRangeUpperLimit = nextPowerOfTenBase - 1;
 
-  let currentMagnitude = 1;
-  let currentCeiling = 9;
-  let digitPlace = 1;
+        const effectiveUpperLimit = Math.min(currentRangeUpperLimit, numericalLimit - 1);
 
-  while (currentMagnitude <= maximumExtent) {
-    if (digitPlace % 2 === 1) {
-      let upperLimitForThisRange = Math.min(currentCeiling, maximumExtent);
-      finalTally += (upperLimitForThisRange - currentMagnitude + 1);
+        if (digitLength % 2 === 1) {
+            if (effectiveUpperLimit >= powerOfTenBase) {
+                totalOddDigitCount += (effectiveUpperLimit - powerOfTenBase + 1);
+            }
+        }
+
+        powerOfTenBase = nextPowerOfTenBase;
+        digitLength++;
     }
 
-    if (currentCeiling >= maximumExtent) {
-        break;
-    }
-
-    currentMagnitude *= 10;
-    currentCeiling = currentCeiling * 10 + 9;
-    digitPlace++;
-  }
-  console.log(finalTally);
+    console.log(totalOddDigitCount);
 }
-computeOddDigitCount(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

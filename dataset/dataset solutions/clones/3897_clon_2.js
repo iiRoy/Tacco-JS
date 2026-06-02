@@ -1,178 +1,140 @@
-/*
- * This section handles input setup. It initializes a line-by-line reader
- * and sets up event listeners for incoming data and stream closure.
- */
-var dataStream = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var parserInstance;
 
-var rawLines = []; // Stores all received input lines
-dataStream.on('line', function (currentLine) {
-  rawLines.push(currentLine);
+var dataProcessor;
+var receivedLines = [];
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine){
+  receivedLines.push(currentLine);
 });
 
-dataStream.on('close', function () {
-  parserInstance = setupInput(rawLines);
-
-  console.error(" \n "); // Print a newline for better console separation
-  var executionStart = new Date();
-
-  primaryFunction(); // Execute the main logic of the program
-
-  var elapsedTime = new Date() - executionStart;
-
-  printDiagnostic("Execution duration: " + (elapsedTime) + "ms");
-  printDiagnostic("Memory usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+// Event listener when input stream closes
+inputReader.on('close', function(){
+  dataProcessor = initializeParser(receivedLines);
+  console.error("\n"); // Output a newline to stderr for formatting
+  var startTime = new Date();
+  
+  executeCoreLogic(); // Invoke the main program logic
+  
+  var elapsedTime = new Date() - startTime;
+  
+  logDebug("execution time : " + (elapsedTime) + "ms");
+  logDebug("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-// Utility function to retrieve the next integer from input
-function readInteger() {
-  return processInput(readNextElement(), 1);
-}
+// Helper functions for parsing input
+function getNextInteger(){ return transformValue(retrieveNext(), 1); }
+function getNextStringArray(){ return transformValue(retrieveNext(), 2); }
+function getNextIntegerArray(){ return transformValue(retrieveNext(), 4); }
+function getNextCharacterArray(){ return transformValue(retrieveNext(), 6); }
 
-// Utility function to retrieve the next string array from input
-function readStringArray() {
-  return processInput(readNextElement(), 2);
-}
+function retrieveNext(){ return dataProcessor.retrieveNext(); }
+function hasMoreElements(){ return dataProcessor.hasMoreElements(); }
 
-// Utility function to retrieve the next integer array from input
-function readIntegerArray() {
-  return processInput(readNextElement(), 4);
-}
-
-// Utility function to retrieve the next character array from input
-function readCharacterArray() {
-  return processInput(readNextElement(), 6);
-}
-
-// Fetches the next available input item
-function readNextElement() {
-  return parserInstance.readNextElement();
-}
-
-// Checks if there are more input items to process
-function isNextAvailable() {
-  return parserInstance.isNextAvailable();
-}
-
-/**
- * Initializes the input parsing mechanism.
- * @param {Array<string>} sourceLines - An array of raw input lines.
- * @returns {object} An object with methods to access input.
- */
-function setupInput(sourceLines) {
-  const dataAccessor = {
-    storedLines: sourceLines,
-    lineIndex: 0,
-    totalLines: sourceLines.length,
-
-    // Checks if there are more lines to read
-    isNextAvailable: function () {
-      return (this.lineIndex < this.totalLines);
+// Initializes an object for sequential input processing
+function initializeParser(inputData){  
+  var parserInstance = {
+    sourceData : inputData,
+    currentPosition : 0,
+    totalEntries : inputData.length,
+    
+    hasMoreElements : function(){
+      return (this.currentPosition < this.totalEntries);
     },
-
-    // Retrieves the next line from the stored input
-    readNextElement: function () {
-      if (!this.isNextAvailable()) {
-        throw new Error("InputOutOfBounds: No more elements to retrieve.");
+    
+    retrieveNext : function(){
+      if(!this.hasMoreElements()){
+        throw "InputBoundaryViolation: No more elements available.";
       } else {
-        const extractedLine = this.storedLines[this.lineIndex];
-        this.lineIndex++;
-        return extractedLine;
+        var currentEntry = this.sourceData[this.currentPosition];
+        this.currentPosition++;
+        return currentEntry;
       }
     }
   };
-  return dataAccessor;
+  return parserInstance;
 }
 
-// Displays a message to standard output
-function writeToConsole(textToLog) {
-  console.log(textToLog);
+// Function to print output to stdout
+function displayOutput(content){
+  console.log(content);
 }
 
-// Outputs diagnostic messages to standard error
-function printDiagnostic(textToLog) {
-  console.error("debug output: " + require("util").inspect(textToLog, false, null));
+// Function to print debug information to stderr
+function logDebug(message){
+  console.error("debug_info:" + require("util").inspect(message, false, null));
 }
 
-/*
- * This function handles various data transformations based on an operation code.
- * It supports converting to integers, splitting strings, joining arrays, etc.
- *
- * Operation codes:
- * 1: Convert to integer
- * 2: Split string by space into string array
- * 4: Split string by space into number array
- * 6: Split string by character into character array
- * 7: Split string by character into number array
- * 8: Join array elements with space
- * 9: Join array elements with newline
- * 0: Join array elements without separator
- * Default: Return item as is
- */
-function processInput(itemToProcess, operationCode) {
+// Utility function for type conversions and array manipulations
+// conversionType:
+//   1: Convert to integer
+//   2: Split by space into string array
+//   4: Split by space into integer array
+//   6: Split by character into string array
+//   7: Split by character into integer array
+//   8: Join array with space
+//   9: Join array with newline
+//   0: Join array without separator
+//   default: Return input as is
+function transformValue(inputValue, conversionType){
   try {
-    switch (operationCode) {
-      case 1:
-        return parseInt(itemToProcess);
-      case 2:
-        return itemToProcess.split(" ");
-      case 4:
-        return itemToProcess.split(" ").map(Number);
-      case 6:
-        return itemToProcess.split("");
-      case 7:
-        return itemToProcess.split("").map(Number);
-      case 8:
-        return itemToProcess.join(" ");
-      case 9:
-        return itemToProcess.join("\n");
-      case 0:
-        return itemToProcess.join("");
-      default:
-        return itemToProcess;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (conversionError) {
-    return itemToProcess; // In case of error, return original item
+  } catch(error) {
+    return inputValue; // Return original value on error
   }
 }
 
-/*
- * This is the primary function containing the main program logic.
- * It reads a sequence of numbers, determines a median-based value,
- * and outputs a new sequence based on comparisons.
- */
-function primaryFunction() {
-  var itemQuantity = readInteger();
-  var inputArray = readIntegerArray();
-  var orderedElements = JSON.parse(JSON.stringify(inputArray)); // Deep copy the input array
-  orderedElements.sort(function (valA, valB) {
-    return valA - valB;
-  });
-
-  printDiagnostic(orderedElements); // Log the sorted array for debugging
-
-  var processedNumbers = new Array(itemQuantity);
-  var upperHalfValue = orderedElements[(itemQuantity / 2)];
-  var lowerHalfValue = orderedElements[(itemQuantity / 2) - 1];
-
-  printDiagnostic({
-    upperHalfValue,
-    lowerHalfValue
-  }); // Log median values
-
-  for (var iterator = 0; iterator < itemQuantity; iterator++) {
-    if (lowerHalfValue === upperHalfValue) {
-      processedNumbers[iterator] = upperHalfValue;
-    } else {
-      if (lowerHalfValue >= inputArray[iterator]) {
-        processedNumbers[iterator] = upperHalfValue;
-      } else {
-        processedNumbers[iterator] = lowerHalfValue;
-      }
-    }
-  }
-  writeToConsole(processInput(processedNumbers, 9)); // Output the result, joined by newlines
+// Main program logic
+function executeCoreLogic(){
+	var elementCount = getNextInteger();
+	var originalNumbers = getNextIntegerArray();
+	
+	// Create a deep copy of the array for sorting
+	var sortedCopy = JSON.parse(JSON.stringify(originalNumbers));
+	
+	// Sort the copied array numerically
+	sortedCopy.sort(function(valA, valB){
+		return valA - valB;
+	});
+	
+	logDebug(sortedCopy); // Log the sorted array
+	
+	var resultArray = new Array(elementCount);
+	
+	// Determine the two medians based on array size
+	var upperMedian = sortedCopy[(elementCount / 2)];
+	var lowerMedian = sortedCopy[(elementCount / 2) - 1];
+	
+	logDebug({upperMedian, lowerMedian}); // Log the calculated medians
+	
+	// Iterate through the original numbers to populate the result array
+	for(var loopIndex = 0; loopIndex < elementCount; loopIndex++){
+		if(lowerMedian === upperMedian){
+			// If medians are identical, all elements get the same median
+			resultArray[loopIndex] = upperMedian;
+		} else {
+			// If medians differ, compare with the current original number
+			if(lowerMedian >= originalNumbers[loopIndex]){
+				resultArray[loopIndex] = upperMedian;
+			} else {
+				resultArray[loopIndex] = lowerMedian;
+			}
+		}
+	}
+	
+	// Output the result array, joined by newlines
+	displayOutput(transformValue(resultArray, 9));
 }

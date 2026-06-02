@@ -1,71 +1,61 @@
-const collectedInput = [];
-const inputReaderModule = require('readline');
+let entireInput = '';
 
-const ioInterface = inputReaderModule.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+process.stdin.on('data', (segment) => {
+    entireInput += segment.toString();
 });
 
-ioInterface.on('line', (currentLineData) => {
-    collectedInput.push(currentLineData);
-});
+process.stdin.on('end', () => {
+    const inputRows = entireInput.trim().split('\n');
 
-ioInterface.on('close', () => {
-    const gridDimensions = collectedInput.splice(0, 1)[0].split(' ').map(s => parseInt(s, 10));
-    const gridHeight = gridDimensions[0];
-    const gridWidth = gridDimensions[1];
+    const dimensions = inputRows[0].split(' ').map(Number);
+    const gridHeight = dimensions[0];
+    const gridWidth = dimensions[1];
 
-    const gridContent = collectedInput.map(rowStr => rowStr.split(''));
+    const characterMatrix = inputRows.slice(1).map(line => line.split(''));
 
-    const initialSources = [];
-    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
-            if (gridContent[rowIdx][colIdx] === '#') {
-                initialSources.push([rowIdx, colIdx]);
+    const distanceMatrix = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(Infinity));
+    const initialFrontier = [];
+
+    for (let r = 0; r < gridHeight; r++) {
+        for (let c = 0; c < gridWidth; c++) {
+            if (characterMatrix[r][c] === '#') {
+                distanceMatrix[r][c] = 0;
+                initialFrontier.push([r, c]);
             }
         }
     }
 
-    console.log(calculateMaxPropagation(initialSources, gridHeight, gridWidth));
+    console.log(computeMaxDistance(gridHeight, gridWidth, initialFrontier, distanceMatrix));
 });
 
-function calculateMaxPropagation(initialSources, height, width) {
-    const propagationMap = Array.from({ length: height }, () => Array(width).fill(Infinity));
-    let currentLevelCells = [];
-    let peakDistance = 0;
+function computeMaxDistance(hDim, wDim, startingPoints, distMap) {
+    let currentLevelQueue = startingPoints;
+    let currentLevelDepth = 0;
+    let overallMaxDistance = 0;
 
-    for (const source of initialSources) {
-        const [r, c] = source;
-        if (propagationMap[r][c] === Infinity) {
-            propagationMap[r][c] = 0;
-            currentLevelCells.push([r, c]);
-        }
-    }
+    const cardinalDirections = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // East, West, South, North
 
-    let currentDistance = 0;
-    const neighborDirections = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    while (currentLevelQueue.length > 0) {
+        let nextLevelQueue = [];
+        overallMaxDistance = Math.max(overallMaxDistance, currentLevelDepth);
 
-    while (currentLevelCells.length > 0) {
-        let nextLevelCells = [];
-        peakDistance = Math.max(peakDistance, currentDistance);
+        for (const currentCoords of currentLevelQueue) {
+            const [yCoord, xCoord] = currentCoords;
 
-        for (const [cellRow, cellCol] of currentLevelCells) {
-            for (const [dr, dc] of neighborDirections) {
-                const neighborRow = cellRow + dr;
-                const neighborCol = cellCol + dc;
+            for (const [deltaY, deltaX] of cardinalDirections) {
+                const nextY = yCoord + deltaY;
+                const nextX = xCoord + deltaX;
 
-                if (neighborRow >= 0 && neighborRow < height &&
-                    neighborCol >= 0 && neighborCol < width) {
-                    
-                    if (propagationMap[neighborRow][neighborCol] === Infinity) {
-                        propagationMap[neighborRow][neighborCol] = currentDistance + 1;
-                        nextLevelCells.push([neighborRow, neighborCol]);
+                if (nextY >= 0 && nextY < hDim && nextX >= 0 && nextX < wDim) {
+                    if (distMap[nextY][nextX] === Infinity) { // If not yet visited
+                        distMap[nextY][nextX] = currentLevelDepth + 1;
+                        nextLevelQueue.push([nextY, nextX]);
                     }
                 }
             }
         }
-        currentLevelCells = nextLevelCells;
-        currentDistance++;
+        currentLevelQueue = nextLevelQueue;
+        currentLevelDepth++;
     }
-    return peakDistance;
+    return overallMaxDistance;
 }

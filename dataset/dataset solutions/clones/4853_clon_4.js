@@ -1,34 +1,47 @@
-let segmentPointer = 0;
-let sourceDataSegments;
+let sourceData, dataPointer;
 
-const characterTransformationMap = new Map([
-    ['d', 'b'],
-    ['b', 'd'],
-    ['p', 'q']
-]);
-
-function obtainNextSegment() {
-    if (!sourceDataSegments) {
-        sourceDataSegments = rawInputContent.trim().split(/\s+/);
-    }
-    return sourceDataSegments[segmentPointer++];
+function displayResult(outcome) {
+    console.log(outcome);
 }
 
-function applySymbolTransformation(incomingSymbol) {
-    return characterTransformationMap.get(incomingSymbol);
+function retrieveInteger() {
+    return parseInt(fetchNextToken(), 10);
 }
 
-function executeCoreLogic() {
-    const sequenceToEvaluate = obtainNextSegment();
-
-    const checkSymmetricPair = (charA, charB) => applySymbolTransformation(charA) === charB;
-
-    const firstPairMatch = checkSymmetricPair(sequenceToEvaluate[0], sequenceToEvaluate[3]);
-    const secondPairMatch = checkSymmetricPair(sequenceToEvaluate[1], sequenceToEvaluate[2]);
-
-    const finalOutcome = (firstPairMatch && secondPairMatch) ? "Yes" : "No";
-    console.log(finalOutcome);
+function retrieveFloat() {
+    return parseFloat(fetchNextToken());
 }
 
-let rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-executeCoreLogic();
+function fetchNextToken() {
+    return sourceData[dataPointer++];
+}
+
+function charMapper(charVal) {
+    const charTransformations = new Map([
+        ['d', 'b'],
+        ['b', 'd'],
+        ['p', 'q']
+    ]);
+    return charTransformations.get(charVal);
+}
+
+function executeLogic() {
+    const inputSequence = fetchNextToken();
+    
+    const firstConditionMet = charMapper(inputSequence[0]) === inputSequence[3];
+    const secondConditionMet = charMapper(inputSequence[1]) === inputSequence[2];
+
+    displayResult(firstConditionMet && secondConditionMet ? "Yes" : "No");
+}
+
+function runDebug() {
+    sourceData = document.getElementById("input").value;
+    sourceData = sourceData.replace(/\n/g, " ");
+    sourceData = sourceData.split(" ");
+    dataPointer = 0;
+    executeLogic();
+}
+
+sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+dataPointer = 0;
+executeLogic();

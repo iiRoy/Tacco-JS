@@ -1,38 +1,23 @@
-"use strict"
+"use strict";
 
-let  sourceContent = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf-8" ) ;
-// This line retrieves the entire content from the standard input stream, interpreting it as UTF-8 text.
+let rawData = require("fs").readFileSync("/dev/stdin", "utf-8");
+rawData = rawData.split("\n");
 
-sourceContent = sourceContent . split ( "\n" ) ;
-// The fetched content is then divided into an array of strings, with each element representing a line from the input.
+let directionSequence = rawData[1];
 
-let  rowConfig = sourceContent [ 1 ] ;
-// We extract the second line from the processed input array; this line contains the participant configurations.
-
-let  reorientations = 0 ;
-// A counter is initialized to keep track of the total number of individuals who might need to adjust their facing direction.
-
-// The following loop calculates the initial count of required direction changes, assuming the leftmost person is the reference point.
-for ( let  pos = 1 ; pos < rowConfig . length ; pos ++ ) {
-  reorientations += rowConfig [ pos ] === "E" ? 1 : 0 ;
+let rotationCount = 0; // This variable tracks the current number of people who need to change direction.
+// Calculate the initial count of rotations assuming the first person is the leader.
+for (let idx = 1; idx < directionSequence.length; idx++) {
+  rotationCount += directionSequence[idx] === "E" ? 1 : 0;
 }
+let minimumRotations = rotationCount;
 
-let  optimalReorientations = reorientations ;
-// The initial calculated number of reorientations is stored as the current best (minimum) count.
-
-// This loop iterates through the configuration, simulating each participant as the potential pivot,
-// and continually updates the count of necessary direction adjustments.
-for ( let  pos = 1 ; pos < rowConfig . length ; pos ++ ) {
-
-  reorientations += rowConfig [ pos - 1 ] === "W" ? 1 : 0 ;
-  reorientations -= rowConfig [ pos ] === "E" ? 1 : 0 ;
-  // The reorientation count is adjusted based on the shift in perspective:
-  // - If the participant just passed (at 'pos - 1') was facing West, they now require a flip.
-  // - If the participant at the new pivot point ('pos') was facing East, they no longer need a flip from this perspective.
-
-  optimalReorientations = Math . min ( optimalReorientations , reorientations ) ;
-  // The overall minimum number of required reorientations is updated if the current iteration yields a better result.
+// Iterate through each possible person becoming the leader, updating the rotation count.
+for (let pos = 1; pos < directionSequence.length; pos++) {
+  // If the person who just moved to the left was facing West, they now need to turn East.
+  rotationCount += directionSequence[pos - 1] === "W" ? 1 : 0;
+  // If the person who just moved to the right was facing East, they no longer need to turn.
+  rotationCount -= directionSequence[pos] === "E" ? 1 : 0;
+  minimumRotations = Math.min(minimumRotations, rotationCount);
 }
-
-console . log ( optimalReorientations ) ;
-// Finally, the program outputs the smallest number of direction changes identified across all possible configurations.
+console.log(minimumRotations);

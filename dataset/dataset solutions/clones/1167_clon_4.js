@@ -1,112 +1,113 @@
-let networkConduits = [];
-let vertexCount = 0;
-let initialEdgeCount = 0;
+let flowNetwork = [];
+let nodeCount, edgeCount;
 
-const establishConnection = (originIndex, targetIndex, capacityValue) => {
-    const forwardLink = { destination: targetIndex, currentCapacity: capacityValue, backReference: networkConduits[targetIndex].length };
-    const backwardLink = { destination: originIndex, currentCapacity: 0, backReference: networkConduits[originIndex].length };
-
-    networkConduits[originIndex].push(forwardLink);
-    networkConduits[targetIndex].push(backwardLink);
-};
-
-const findAugmentingPath = (sourceNode, sinkNode, totalNodes) => {
-    const pathParent = new Array(totalNodes).fill(null); // Stores { previousNode: number, edgeIndex: number } for BFS path reconstruction
-    const pathFlowLimit = new Array(totalNodes).fill(0); // Stores bottleneck capacity to reach this node
-    const bfsQueue = [];
-
-    bfsQueue.push(sourceNode);
-    pathFlowLimit[sourceNode] = Number.MAX_SAFE_INTEGER; // Effectively infinity for path capacity
-
-    while (bfsQueue.length > 0) {
-        const currentVertex = bfsQueue.shift();
-
-        if (currentVertex === sinkNode) {
-            break; // Path found to the sink
-        }
-
-        for (let idx = 0; idx < networkConduits[currentVertex].length; ++idx) {
-            const edgeObject = networkConduits[currentVertex][idx];
-            const nextVertex = edgeObject.destination;
-
-            // If not visited yet (pathParent[nextVertex] is null) and capacity available
-            if (pathParent[nextVertex] === null && edgeObject.currentCapacity > 0) {
-                pathParent[nextVertex] = { previousNode: currentVertex, edgeIdx: idx };
-                pathFlowLimit[nextVertex] = Math.min(pathFlowLimit[currentVertex], edgeObject.currentCapacity);
-                bfsQueue.push(nextVertex);
-            }
-        }
-    }
-
-    // If sinkNode was not reached, no augmenting path exists
-    if (pathParent[sinkNode] === null) {
-        return 0;
-    }
-
-    // Reconstruct path and update capacities
-    const pathValue = pathFlowLimit[sinkNode];
-    let current = sinkNode;
-    while (current !== sourceNode) {
-        const { previousNode, edgeIdx } = pathParent[current];
-        const forwardEdge = networkConduits[previousNode][edgeIdx];
-        const backwardEdge = networkConduits[current][forwardEdge.backReference];
-
-        forwardEdge.currentCapacity -= pathValue;
-        backwardEdge.currentCapacity += pathValue;
-
-        current = previousNode;
-    }
-
-    return pathValue;
-};
-
-const calculateMaxThroughput = (sourceNode, sinkNode, totalNodes) => {
-    let totalThroughput = 0;
-    while (true) {
-        const pathValue = findAugmentingPath(sourceNode, sinkNode, totalNodes);
-        if (pathValue === 0) {
-            break; // No more augmenting paths
-        }
-        totalThroughput += pathValue;
-    }
-    return totalThroughput;
-};
-
-// Input processing
-let accumulatedInput = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', chunk => {
-    accumulatedInput += chunk;
+let inputBuffer = '';
+
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
 
-process.stdin.on('end', () => {
-    const inputLines = accumulatedInput.split('\n').filter(line => line.trim() !== ''); // Filter out empty lines
+process.stdin.on('end', function() {
+    const inputLines = inputBuffer.split('\n');
+    let currentLineIndex = 0;
 
-    if (inputLines.length === 0) {
-        console.log(0);
-        return;
-    }
+    const dimensionsLine = inputLines[currentLineIndex++].split(' ').map(Number);
+    nodeCount = dimensionsLine[0];
+    edgeCount = dimensionsLine[1];
 
-    const [firstLine, ...edgeSpecificationLines] = inputLines;
-
-    const [vCount, eCount] = firstLine.split(' ').map(Number);
-    vertexCount = vCount;
-    initialEdgeCount = eCount;
-
-    // Initialize graph structure for all vertices
-    for (let i = 0; i < vertexCount; ++i) {
-        networkConduits[i] = [];
-    }
-
-    edgeSpecificationLines.forEach(line => {
-        const [u, v, c] = line.split(' ').map(Number);
-        // Only add if it's a valid edge line (3 numbers)
-        if (!isNaN(u) && !isNaN(v) && !isNaN(c)) {
-            establishConnection(u, v, c);
-        }
+    Array.from({ length: nodeCount }).forEach((_, idx) => {
+        flowNetwork[idx] = [];
     });
 
-    console.log(calculateMaxThroughput(0, vertexCount - 1, vertexCount));
+    while (currentLineIndex < inputLines.length && inputLines[currentLineIndex].trim() !== '') {
+        const edgeData = inputLines[currentLineIndex++].split(' ').map(Number);
+        if (edgeData.length === 3) {
+            establishConnection(edgeData[0], edgeData[1], edgeData[2]);
+        }
+    }
+
+    console.log(determineMaxFlow(0, nodeCount - 1));
 });
+
+function establishConnection(originNode, destinationNode, capacityValue) {
+    flowNetwork[originNode].push({ targetNode: destinationNode, currentCapacity: capacityValue, reverseEdgeIndex: flowNetwork[destinationNode].length });
+    flowNetwork[destinationNode].push({ targetNode: originNode, currentCapacity: 0, reverseEdgeIndex: flowNetwork[originNode].length - 1 });
+}
+
+function determineMaxFlow(sourceNode, sinkNode) {
+    let totalNetworkFlow = 0;
+
+    while (true) {
+        const pathDetails = findAugmentingPathBFS(sourceNode, sinkNode);
+        const pathBottleneckCapacity = pathDetails.bottleneckCapacity;
+
+        if (pathBottleneckCapacity === 0) {
+            break;
+        }
+
+        totalNetworkFlow += pathBottleneckCapacity;
+
+        let currentNode = sinkNode;
+        while (currentNode !== sourceNode) {
+            const predecessorInfo = pathDetails.pathPredecessors.get(currentNode);
+            const predecessorNode = predecessorInfo.vertex;
+            const edgeIndexInPredecessor = predecessorInfo.edgeIdx;
+
+            const forwardEdge = flowNetwork[predecessorNode][edgeIndexInPredecessor];
+            forwardEdge.currentCapacity -= pathBottleneckCapacity;
+
+            const reverseEdge = flowNetwork[forwardEdge.targetNode][forwardEdge.reverseEdgeIndex];
+            reverseEdge.currentCapacity += pathBottleneckCapacity;
+
+            currentNode = predecessorNode;
+        }
+    }
+
+    return totalNetworkFlow;
+}
+
+function findAugmentingPathBFS(source, sink) {
+    const traversalQueue = [];
+    const pathPredecessors = new Map();
+    const flowToCurrentNode = new Array(nodeCount).fill(0);
+
+    traversalQueue.push(source);
+    flowToCurrentNode[source] = Number.POSITIVE_INFINITY;
+
+    let pathFound = false;
+
+    while (traversalQueue.length > 0) {
+        const currentVertex = traversalQueue.shift();
+
+        if (currentVertex === sink) {
+            pathFound = true;
+            break;
+        }
+
+        flowNetwork[currentVertex].forEach((edge, edgeIndex) => {
+            const neighborVertex = edge.targetNode;
+            const remainingCapacity = edge.currentCapacity;
+
+            if (remainingCapacity > 0 && flowToCurrentNode[neighborVertex] === 0) {
+                flowToCurrentNode[neighborVertex] = Math.min(flowToCurrentNode[currentVertex], remainingCapacity);
+                pathPredecessors.set(neighborVertex, { vertex: currentVertex, edgeIdx: edgeIndex });
+                traversalQueue.push(neighborVertex);
+            }
+        });
+    }
+
+    if (pathFound) {
+        return {
+            bottleneckCapacity: flowToCurrentNode[sink],
+            pathPredecessors: pathPredecessors
+        };
+    } else {
+        return {
+            bottleneckCapacity: 0,
+            pathPredecessors: new Map()
+        };
+    }
+}

@@ -1,119 +1,60 @@
-const processInput = (dataString) => {
-    const dataLines = dataString.trim().split('\n');
-    const firstLineValues = dataLines[0].split(' ').map(val => parseInt(val, 10));
-    const numberCount = firstLineValues[0];
-    const numberArray = dataLines[1].split(' ').map(val => parseInt(val, 10));
-    return { numberCount, numberArray };
-};
+console.log((inputData => {
+    const [[countOfNumbers], sourceNumbers] = inputData.trim().split('\n').map(line => line.split(' ').map(value => 0 | value));
 
-const ARITHMETIC_MODULUS = 1000000007;
+    const MOD = 1e9 + 7;
+    const MAX = Math.max(...sourceNumbers); // Derived constant, value preserved.
 
-const performModExp = (baseNum, exponentNum) => {
-    let outcome = 1n;
-    let currentBaseBig = BigInt(baseNum);
-    let currentExpBig = BigInt(exponentNum);
-    const modulusBig = BigInt(ARITHMETIC_MODULUS);
+    // Custom modular multiplication using BigInt for intermediate products to ensure precision.
+    const modMultiply = (operandA, operandB) => Number((BigInt(operandA) * BigInt(operandB)) % BigInt(MOD));
 
-    while (currentExpBig > 0n) {
-        if (currentExpBig % 2n === 1n) {
-            outcome = (outcome * currentBaseBig) % modulusBig;
-        }
-        currentBaseBig = (currentBaseBig * currentBaseBig) % modulusBig;
-        currentExpBig /= 2n;
-    }
-    return Number(outcome);
-};
+    const primeFactorExponents = []; // Stores prime factorizations for each number in sourceNumbers
+    const overallMaxExponents = new Map(); // Stores the maximum exponent for each prime across all numbers
 
-const performModMult = (operandA, operandB) => {
-    return Number((BigInt(operandA) * BigInt(operandB)) % BigInt(ARITHMETIC_MODULUS));
-};
+    // Step 1: Factorize each number and collect overall maximum exponents
+    for (let i = 0; i < countOfNumbers; i++) {
+        let currentNumber = sourceNumbers[i];
+        const currentNumberFactors = new Map();
 
-const generatePrimesUpToLimit = (upperBound) => {
-    if (upperBound < 2) return [];
-    const knownComposites = new Set();
-    const primeSequence = [];
-    for (let currentNum = 2; currentNum <= upperBound; currentNum++) {
-        if (!knownComposites.has(currentNum)) {
-            primeSequence.push(currentNum);
-            // Optimization: start marking multiples from currentNum * currentNum
-            // as smaller multiples would have already been marked by smaller primes.
-            for (let mult = currentNum * currentNum; mult <= upperBound; mult += currentNum) {
-                knownComposites.add(mult);
+        // Perform trial division to find prime factors and their exponents
+        for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= currentNumber; divisorCandidate++) {
+            if (currentNumber % divisorCandidate === 0) {
+                let exponentCount = 0;
+                while (currentNumber % divisorCandidate === 0) {
+                    currentNumber /= divisorCandidate;
+                    exponentCount++;
+                }
+                currentNumberFactors.set(divisorCandidate, exponentCount);
+                // Update the overall maximum exponent for this prime
+                overallMaxExponents.set(divisorCandidate, Math.max(overallMaxExponents.get(divisorCandidate) || 0, exponentCount));
             }
         }
-    }
-    return primeSequence;
-};
 
-const obtainPrimeFactors = (targetValue, availablePrimeList) => {
-    const factorTallies = new Map();
-    let remainingValue = targetValue;
-    if (remainingValue === 1) return factorTallies; // Handle 1 explicitly
-
-    for (const currentPrime of availablePrimeList) {
-        if (currentPrime * currentPrime > remainingValue) { // Optimization: if currentPrime squared exceeds remainingValue,
-                                                            // then remainingValue must be prime itself (or 1)
-            if (remainingValue > 1) {
-                factorTallies.set(remainingValue, (factorTallies.get(remainingValue) || 0) + 1);
-            }
-            remainingValue = 1;
-            break;
+        // If currentNumber is still greater than 1, it means it's a prime factor itself
+        if (currentNumber > 1) {
+            currentNumberFactors.set(currentNumber, (currentNumberFactors.get(currentNumber) || 0) + 1);
+            overallMaxExponents.set(currentNumber, Math.max(overallMaxExponents.get(currentNumber) || 0, (currentNumberFactors.get(currentNumber) || 0)));
         }
-        if (remainingValue === 1) break;
-
-        while (remainingValue % currentPrime === 0) {
-            factorTallies.set(currentPrime, (factorTallies.get(currentPrime) || 0) + 1);
-            remainingValue /= currentPrime;
-        }
+        primeFactorExponents.push(currentNumberFactors);
     }
-    // If after checking all available primes, remainingValue is still > 1,
-    // it means remainingValue is a prime factor larger than any in availablePrimeList.
-    // This should not happen if availablePrimeList covers primes up to Math.max(...A).
-    if (remainingValue > 1) {
-        factorTallies.set(remainingValue, (factorTallies.get(remainingValue) || 0) + 1);
-    }
-    return factorTallies;
-};
 
-const computeMaxExponentsAcrossAll = (listOfFactorMaps) => {
-    const globalMaximumExponents = new Map();
-    for (const factorMapEntry of listOfFactorMaps) {
-        for (const [primeKey, exponentValue] of factorMapEntry) {
-            globalMaximumExponents.set(primeKey, Math.max(globalMaximumExponents.get(primeKey) || 0, exponentValue));
+    let finalSum = 0;
+
+    // Step 2: Calculate the sum based on the collected factorizations and maximum exponents
+    for (let i = 0; i < countOfNumbers; i++) {
+        let currentTermProduct = 1;
+        // Iterate through all primes that were factors of at least one number in sourceNumbers
+        for (const [primeBase, globalMaxExp] of overallMaxExponents) {
+            const individualExp = primeFactorExponents[i].get(primeBase) || 0;
+            const exponentDifference = globalMaxExp - individualExp;
+
+            // Calculate primeBase raised to the power of exponentDifference
+            // Math.pow is used directly as intermediate values fit within JavaScript's Number type for these exponents.
+            const powerResult = Math.pow(primeBase, exponentDifference);
+
+            currentTermProduct = modMultiply(currentTermProduct, powerResult);
         }
+        finalSum = (finalSum + currentTermProduct) % MOD;
     }
-    return globalMaximumExponents;
-};
 
-const calculateSumOfTerms = (individualFactorizations, overallMaxExps) => {
-    return individualFactorizations.reduce((totalAccumulator, currentNumberFactorMap) => {
-        let currentProductTerm = 1;
-        for (const [primeFactor, highestExponent] of overallMaxExps) {
-            const currentNumExponent = currentNumberFactorMap.get(primeFactor) || 0;
-            const exponentDifference = highestExponent - currentNumExponent;
-            if (exponentDifference > 0) {
-                currentProductTerm = performModMult(currentProductTerm, performModExp(primeFactor, exponentDifference));
-            }
-        }
-        return (totalAccumulator + currentProductTerm) % ARITHMETIC_MODULUS;
-    }, 0);
-};
-
-(function(inputStr) {
-    const processedInput = processInput(inputStr);
-    const allNumbers = processedInput.numberArray;
-    
-    // Handle empty or zero arrays if necessary, though problem constraints usually imply positive integers.
-    // For an empty array, Math.max would result in -Infinity.
-    const maximumValue = allNumbers.length > 0 ? Math.max(...allNumbers) : 1; // Max value can be 1 for [1,1]
-
-    const allPrimesGenerated = generatePrimesUpToLimit(maximumValue);
-
-    const allNumbersFactorized = allNumbers.map(num => obtainPrimeFactors(num, allPrimesGenerated));
-
-    const aggregatedMaxExponents = computeMaxExponentsAcrossAll(allNumbersFactorized);
-
-    const finalCalculatedSum = calculateSumOfTerms(allNumbersFactorized, aggregatedMaxExponents);
-
-    console.log(finalCalculatedSum);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    return finalSum;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

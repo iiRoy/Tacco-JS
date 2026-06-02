@@ -1,253 +1,158 @@
 'use strict';
-
-var ApplicationEnvironment = {};
-
-(function(runtime) {
-
-    var isWebContext = function() {
-        return typeof window !== 'undefined' && typeof document !== 'undefined';
-    };
-    runtime.isWebContext = isWebContext;
-
-    var isServerContext = function() {
-        return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-    };
-    runtime.isServerContext = isServerContext;
-
-    var escapeForDisplay = function(textValue) {
-        if (isWebContext()) {
-            var containerDiv = document.createElement('div');
-            containerDiv.appendChild(document.createTextNode(String(textValue)));
-            return containerDiv.innerHTML;
-        } else {
-            return String(textValue)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#x27;');
-        }
-    };
-    runtime.escapeForDisplay = escapeForDisplay;
-
-    if (isWebContext()) {
-        var renderCodeSnippet = function(programFunction) {
-            var targetElement = document.getElementById('sourceCodeDisplay');
-            if (targetElement) {
-                targetElement.innerHTML = '<pre><code>' + escapeForDisplay(programFunction.toString()) + '</code></pre>';
-            }
-        };
-        runtime.renderCodeSnippet = renderCodeSnippet;
+class RuntimeContext {
+    constructor() {
+        this.isBrowserEnv = typeof window !== 'undefined' && typeof document !== 'undefined';
+        this.isNodeEnv = !this.isBrowserEnv;
+        this.outputAccumulator = [];
     }
-
-    var obtainRawInputLines = function() {
-        var collectedLines = [];
-        if (isWebContext()) {
-            var inputElement = document.getElementById('userInputStream');
+    static escapeHtml(rawString) {
+        return String(rawString)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    displaySourceCode(codeFunction) {
+        if (this.isBrowserEnv) {
+            const codeElement = document.getElementById('code');
+            if (codeElement) {
+                codeElement.innerHTML = '<pre><code>' + RuntimeContext.escapeHtml(codeFunction) + '</code></pre>';
+            }
+        }
+    }
+    async fetchAllInputLines() {
+        if (this.isBrowserEnv) {
+            const inputElement = document.getElementById('input');
             if (inputElement) {
-                collectedLines = inputElement.textContent.split(/\r?\n/).map(line => line.trim());
+                return inputElement.innerHTML.split('<br>').map(line => line.trim());
             }
+            return [];
+        } else if (this.isNodeEnv) {
+            const fs = require('fs').promises;
+            const data = await fs.readFile('/dev/stdin', 'utf8');
+            return data.trim().split('\n');
         }
-        if (isServerContext()) {
-            var fs = require('fs');
-            collectedLines = fs.readFileSync(0, 'utf8').split(/\r?\n/).map(line => line.trim());
-        }
-        return collectedLines.filter(line => line.length > 0);
-    };
-    runtime.obtainRawInputLines = obtainRawInputLines;
-
-    var processInputLines = function(lineHandlerCallback) {
-        if (isWebContext()) {
-            var allLines = obtainRawInputLines();
-            allLines.forEach(function(currentLine) {
-                lineHandlerCallback(currentLine);
-            });
-        }
-        if (isServerContext()) {
-            var readline = require('readline');
-            var inputReader = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout,
-                terminal: false
-            });
-
-            inputReader.on('line', function(singleLine) {
-                lineHandlerCallback(singleLine.trim());
-            });
-        }
-    };
-    runtime.processInputLines = processInputLines;
-
-    var collectedOutputForDisplay = [];
-
-    var displayOutputLines = function(linesToDisplay) {
-        if (isWebContext()) {
-            var outputElement = document.getElementById('resultOutputArea');
+        return [];
+    }
+    emitOutputLine(lineContent) {
+        if (this.isBrowserEnv) {
+            this.outputAccumulator.push(lineContent);
+            const outputElement = document.getElementById('output');
             if (outputElement) {
-                outputElement.innerHTML = linesToDisplay.map(escapeForDisplay).join('<br>\n');
+                outputElement.innerHTML = this.outputAccumulator.map(RuntimeContext.escapeHtml).join('<br>\n');
+            }
+        } else if (this.isNodeEnv) {
+            console.log(lineContent);
+        }
+    }
+    executeMainLogic(applicationLogic) {
+        if (this.isBrowserEnv) {
+            window.onload = () => {
+                this.displaySourceCode(applicationLogic);
+                applicationLogic();
+            };
+        } else if (this.isNodeEnv) {
+            applicationLogic();
+        }
+    }
+}
+class SurvivalGame {
+    constructor() {
+        this.gridDimensions = { minX: 0, minY: 0, maxX: 10, maxY: 10 };
+        this.phyonkichiDisplacements = [
+            [-1, -2], [0, -2], [1, -2],
+            [-2, -1], [2, -1],
+            [-2, 0], [2, 0],
+            [-2, 1], [2, 1],
+            [-1, 2], [0, 2], [1, 2]
+        ];
+        this.sprinklerCoverageOffsets = [
+            [-1, -1], [0, -1], [1, -1],
+            [-1, 0], [0, 0], [1, 0],
+            [-1, 1], [0, 1], [1, 1]
+        ];
+    }
+    isCoordinateValid(xCoord, yCoord) {
+        return xCoord >= this.gridDimensions.minX && xCoord < this.gridDimensions.maxX &&
+               yCoord >= this.gridDimensions.minY && yCoord < this.gridDimensions.maxY;
+    }
+    computeReachableCoordinates(startLocation, moveVectors) {
+        return moveVectors.reduce((accumulatedLocations, currentMove) => {
+            const nextX = startLocation[0] + currentMove[0];
+            const nextY = startLocation[1] + currentMove[1];
+            if (this.isCoordinateValid(nextX, nextY)) {
+                accumulatedLocations.push([nextX, nextY]);
+            }
+            return accumulatedLocations;
+        }, []);
+    }
+    determinePhyonkichiOptions(currentPhyonkichiPosition) {
+        return this.computeReachableCoordinates(currentPhyonkichiPosition, this.phyonkichiDisplacements);
+    }
+    identifySprinklerEffect(sprinklerPosition) {
+        return this.computeReachableCoordinates(sprinklerPosition, this.sprinklerCoverageOffsets);
+    }
+    findSurvivalPath(initialPhyonkichiPos, allSprinklerPositions) {
+        const totalSprinklers = allSprinklerPositions.length;
+        const explorationQueue = [[initialPhyonkichiPos[0], initialPhyonkichiPos[1], 0]];
+        const visitedStates = new Set();
+        visitedStates.add(`${initialPhyonkichiPos[0]},${initialPhyonkichiPos[1]},0`);
+        while (explorationQueue.length > 0) {
+            const [currentPX, currentPY, currentSIdx] = explorationQueue.shift();
+            if (currentSIdx === totalSprinklers) {
+                return true;
+            }
+            const currentSprinklerLocation = allSprinklerPositions[currentSIdx];
+            const nextPhyonkichiPossiblePositions = this.determinePhyonkichiOptions([currentPX, currentPY]);
+            const wetSpotsFromCurrentSprinkler = this.identifySprinklerEffect(currentSprinklerLocation);
+            const wetSpotSet = new Set(wetSpotsFromCurrentSprinkler.map(loc => `${loc[0]},${loc[1]}`));
+            for (const [nextPX, nextPY] of nextPhyonkichiPossiblePositions) {
+                if (wetSpotSet.has(`${nextPX},${nextPY}`)) {
+                    const nextSprinklerIndex = currentSIdx + 1;
+                    const newStateKey = `${nextPX},${nextPY},${nextSprinklerIndex}`;
+                    if (!visitedStates.has(newStateKey)) {
+                        visitedStates.add(newStateKey);
+                        explorationQueue.push([nextPX, nextPY, nextSprinklerIndex]);
+                    }
+                }
             }
         }
-        if (isServerContext()) {
-            linesToDisplay.forEach(line => console.log(line));
+        return false;
+    }
+}
+const runtime = new RuntimeContext();
+const game = new SurvivalGame();
+const gameEntryPoint = async () => {
+    const allInputLines = await runtime.fetchAllInputLines();
+    const scenarios = [];
+    let lineCursor = 0;
+    while (lineCursor < allInputLines.length) {
+        const phyonkichiCoords = allInputLines[lineCursor].split(' ').map(Number);
+        if (phyonkichiCoords[0] === 0 && phyonkichiCoords[1] === 0) {
+            break;
         }
-    };
-    runtime.displayOutputLines = displayOutputLines;
-
-    var displaySingleOutputLine = function(textLine) {
-        if (isWebContext()) {
-            collectedOutputForDisplay.push(textLine);
-            displayOutputLines(collectedOutputForDisplay);
-        }
-        if (isServerContext()) {
-            console.log(textLine);
-        }
-    };
-    runtime.displaySingleOutputLine = displaySingleOutputLine;
-
-    var executeEntryPoint = function(entryPointFunction) {
-        if (isWebContext()) {
-            window.addEventListener('load', function() {
-                runtime.renderCodeSnippet(entryPointFunction);
-                entryPointFunction();
-            });
-        }
-        if (isServerContext()) {
-            entryPointFunction();
-        }
-    };
-    runtime.executeEntryPoint = executeEntryPoint;
-
-})(ApplicationEnvironment);
-
-var applicationCore = function() {
-    var gridBoundaries = {
-        minX: 0,
-        minY: 0,
-        maxX: 9,
-        maxY: 9
-    };
-
-    var creatureMovementPatterns = [
-        { dx: -1, dy: -2 }, { dx: 0, dy: -2 }, { dx: 1, dy: -2 },
-        { dx: -2, dy: -1 }, { dx: 2, dy: -1 },
-        { dx: -2, dy: 0 }, { dx: 2, dy: 0 },
-        { dx: -2, dy: 1 }, { dx: 2, dy: 1 },
-        { dx: -1, dy: 2 }, { dx: 0, dy: 2 }, { dx: 1, dy: 2 }
-    ];
-
-    var hazardSpreadPatterns = [
-        { dx: -1, dy: -1 }, { dx: 0, dy: -1 }, { dx: 1, dy: -1 },
-        { dx: -1, dy: 0 }, { dx: 0, dy: 0 }, { dx: 1, dy: 0 },
-        { dx: -1, dy: 1 }, { dx: 0, dy: 1 }, { dx: 1, dy: 1 }
-    ];
-
-    var isCoordinateWithinGrid = function(coordObj) {
-        return (coordObj.x >= gridBoundaries.minX && coordObj.x <= gridBoundaries.maxX) &&
-               (coordObj.y >= gridBoundaries.minY && coordObj.y <= gridBoundaries.maxY);
-    };
-
-    var calculatePotentialLocations = function(currentLocation, motionSet) {
-        return motionSet.map(function(motion) {
-            return { x: currentLocation.x + motion.dx, y: currentLocation.y + motion.dy };
-        }).filter(isCoordinateWithinGrid);
-    };
-
-    var getCreatureNextOptions = function(creatureLocation) {
-        return calculatePotentialLocations(creatureLocation, creatureMovementPatterns);
-    };
-
-    var getHazardousAreaCoverage = function(hazardCenterLocation) {
-        return calculatePotentialLocations(hazardCenterLocation, hazardSpreadPatterns);
-    };
-
-    var memoizationStore;
-
-    var determineSurvivalOutcome = function(creaturePosition, hazardIndex, allHazards) {
-        var stateKey = `${creaturePosition.x},${creaturePosition.y},${hazardIndex}`;
-
-        if (memoizationStore.has(stateKey)) {
-            return memoizationStore.get(stateKey);
-        }
-
-        if (hazardIndex === allHazards.length) {
-            memoizationStore.set(stateKey, true);
-            return true;
-        }
-
-        var currentHazard = allHazards[hazardIndex];
-        var nextCreatureOptions = getCreatureNextOptions(creaturePosition);
-        var activeWetSpots = getHazardousAreaCoverage(currentHazard);
-
-        var canEscapeThisHazard = nextCreatureOptions.some(function(nextCreaturePos) {
-            var isNextPosWet = activeWetSpots.some(function(wetSpot) {
-                return nextCreaturePos.x === wetSpot.x && nextCreaturePos.y === wetSpot.y;
-            });
-
-            if (isNextPosWet) {
-                return determineSurvivalOutcome(nextCreaturePos, hazardIndex + 1, allHazards);
+        lineCursor++;
+        const numSprinklers = Number(allInputLines[lineCursor]);
+        lineCursor++;
+        const sprinklerCoords = [];
+        let remainingSprinklerLines = Math.ceil(numSprinklers / 2);
+        while (remainingSprinklerLines > 0) {
+            const currentLine = allInputLines[lineCursor].split(' ').map(Number);
+            for (let i = 0; i < currentLine.length; i += 2) {
+                sprinklerCoords.push([currentLine[i], currentLine[i + 1]]);
             }
-            return false;
+            lineCursor++;
+            remainingSprinklerLines--;
+        }
+        scenarios.push({
+            initialPhyonkichi: phyonkichiCoords,
+            sprinklers: sprinklerCoords.slice(0, numSprinklers)
         });
-
-        memoizationStore.set(stateKey, canEscapeThisHazard);
-        return canEscapeThisHazard;
-    };
-
-    var inputProcessingState = {
-        segment: 'CREATURE_START',
-        currentProblem: null
-    };
-
-    var processInputSegment = function(inputLine) {
-        var numericArgs = inputLine.split(/\s+/).map(Number);
-
-        switch (inputProcessingState.segment) {
-            case 'CREATURE_START':
-                if (numericArgs[0] === 0 && numericArgs[1] === 0) {
-                    return;
-                }
-                inputProcessingState.currentProblem = {
-                    creature: { x: numericArgs[0], y: numericArgs[1] },
-                    hazardCount: 0,
-                    hazards: []
-                };
-                inputProcessingState.segment = 'HAZARD_COUNT';
-                break;
-
-            case 'HAZARD_COUNT':
-                inputProcessingState.currentProblem.hazardCount = numericArgs[0];
-                inputProcessingState.segment = 'HAZARD_LOCATIONS';
-                break;
-
-            case 'HAZARD_LOCATIONS':
-                for (var i = 0; i < numericArgs.length; i += 2) {
-                    inputProcessingState.currentProblem.hazards.push({
-                        x: numericArgs[i],
-                        y: numericArgs[i + 1]
-                    });
-                }
-
-                if (inputProcessingState.currentProblem.hazards.length === inputProcessingState.currentProblem.hazardCount) {
-                    memoizationStore = new Map();
-
-                    var outcome = determineSurvivalOutcome(
-                        inputProcessingState.currentProblem.creature,
-                        0,
-                        inputProcessingState.currentProblem.hazards
-                    );
-
-                    ApplicationEnvironment.displaySingleOutputLine(outcome ? 'OK' : 'NA');
-
-                    inputProcessingState.segment = 'CREATURE_START';
-                    inputProcessingState.currentProblem = null;
-                }
-                break;
-            default:
-                break;
-        }
-    };
-
-    ApplicationEnvironment.processInputLines(processInputSegment);
+    }
+    for (const scenario of scenarios) {
+        const canSurviveResult = game.findSurvivalPath(scenario.initialPhyonkichi, scenario.sprinklers);
+        runtime.emitOutputLine(canSurviveResult ? 'OK' : 'NA');
+    }
 };
-
-ApplicationEnvironment.executeEntryPoint(applicationCore);
+runtime.executeMainLogic(gameEntryPoint);

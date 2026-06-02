@@ -1,46 +1,38 @@
-function processInput(rawLines) {
-    const parameters = rawLines[0].split(" ").map(Number);
-    const numEntities = parameters[0];
-    const radiusReach = parameters[1];
-    const powerUnit = parameters[2];
+function main(inputLines) {
+    const [initialParameters, ...monsterDataLines] = inputLines;
+    const [numMonsters, bombRange, bombDamage] = initialParameters.split(" ").map(Number);
 
-    const entityData = [];
-    for (let entityIdx = 1; entityIdx <= numEntities; entityIdx++) {
-        const parts = rawLines[entityIdx].split(" ").map(Number);
-        entityData.push({ coord: parts[0], health: parts[1] });
-    }
+    const targets = monsterDataLines.slice(0, numMonsters).map(line => line.split(" ").map(Number));
 
-    entityData.sort((a, b) => a.coord - b.coord);
+    targets.sort((a, b) => a[0] - b[0]);
 
-    let totalStrikes = 0;
-    let cumulativeDamage = 0;
-    
-    const activeBlastEffects = []; 
+    let totalBombsDeployed = 0;
+    const activeBombEffects = []; // Stores [effect_end_x_coordinate, damage_amount_from_this_bomb_wave]
+    let currentCumulativeDamage = 0;
 
-    for (let entityIdx = 0; entityIdx < numEntities; entityIdx++) {
-        const currentEntity = entityData[entityIdx];
+    for (let i = 0; i < numMonsters; i++) {
+        let [targetX, targetHealth] = targets[i];
 
-        while (activeBlastEffects.length > 0 && activeBlastEffects[0].terminationCoord <= currentEntity.coord) {
-            const expiredEffect = activeBlastEffects.shift();
-            cumulativeDamage -= expiredEffect.appliedPower;
+        while (activeBombEffects.length > 0 && activeBombEffects[0][0] < targetX) {
+            const [_, expiredDamage] = activeBombEffects.shift();
+            currentCumulativeDamage -= expiredDamage;
         }
 
-        const effectiveHealth = currentEntity.health - cumulativeDamage;
+        targetHealth -= currentCumulativeDamage;
 
-        if (effectiveHealth > 0) {
-            const necessaryStrikes = Math.ceil(effectiveHealth / powerUnit);
-            totalStrikes += necessaryStrikes;
+        if (targetHealth > 0) {
+            const bombsToDrop = Math.ceil(targetHealth / bombDamage);
+            totalBombsDeployed += bombsToDrop;
 
-            const damageFromThisStrike = necessaryStrikes * powerUnit;
-            cumulativeDamage += damageFromThisStrike;
+            const newBombWaveDamage = bombsToDrop * bombDamage;
+            const bombEffectEndCoordinate = targetX + 2 * bombRange + 1;
 
-            const terminationCoord = currentEntity.coord + (radiusReach * 2) + 2;
-            
-            activeBlastEffects.push({ terminationCoord: terminationCoord, appliedPower: damageFromThisStrike });
+            activeBombEffects.push([bombEffectEndCoordinate, newBombWaveDamage]);
+            currentCumulativeDamage += newBombWaveDamage;
         }
     }
 
-    process.stdout.write(String(totalStrikes) + "\n");
+    console.log(totalBombsDeployed);
 }
 
-processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8').split("\n"));
+main(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));

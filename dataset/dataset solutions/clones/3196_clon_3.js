@@ -1,124 +1,110 @@
-const parseNumericValue = (stringValue) => parseInt(stringValue, 10);
+var parseInteger = val => parseInt(val, 10);
+var parseIntegerArray = arr => arr.map(val => parseInteger(val));
+var absoluteValue = val => val > 0 ? val : -val;
 
-const convertStringArrayToNumbers = (stringArray) => stringArray.map(parseNumericValue);
-
-try {
-  const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-  processInputData(rawInputData);
-} catch (error) {
-  console.error("An error occurred during program execution:", error.message);
-  process.exit(1); 
+function findMinimum() {
+    var values = arguments,
+        currentMin = values[0];
+    for (var i = 1; i < values.length; i++)
+        if (values[i] < currentMin) currentMin = values[i];
+    return currentMin
 }
 
-function processInputData(rawInputContent) {
-  const allInputLines = rawInputContent.split('\n');
-  
-  const firstLineParts = allInputLines[0].split(' ');
-  const processedFirstLine = convertStringArrayToNumbers(firstLineParts);
+function findMaximum() {
+    var values = arguments,
+        currentMax = values[0];
+    for (var i = 1; i < values.length; i++)
+        if (values[i] > currentMax) currentMax = values[i];
+    return currentMax
+}
 
-  let targetSum = processedFirstLine[0];
-  const availableDigitCount = processedFirstLine[1];
+function greatestCommonDivisor() {
+    var values = arguments,
+        result = values[0],
+        calculateGCD = (a, b) => b ? calculateGCD(b, a % b) : a;
+    for (var i = 1; i < values.length; i++) result = calculateGCD(result, values[i]);
+    return result
+}
 
-  let sortedAllowedDigits = [];
-  if (allInputLines.length > 1 && allInputLines[1].trim() !== '') {
-    const secondLineParts = allInputLines[1].split(' ');
-    sortedAllowedDigits = convertStringArrayToNumbers(secondLineParts);
-  }
-  
-  sortedAllowedDigits.sort((digitB, digitA) => digitA - digitB);
+const parseLineToIntegerArray = (lineContent) => parseIntegerArray(lineContent.split(' '));
 
-  const segmentCosts = [
-    0, // Cost for digit 0 (not typically used in this problem)
-    2, // Cost for digit 1
-    5, // Cost for digit 2
-    5, // Cost for digit 3
-    4, // Cost for digit 4
-    5, // Cost for digit 5
-    6, // Cost for digit 6
-    3, // Cost for digit 7
-    7, // Cost for digit 8
-    6  // Cost for digit 9
-  ];
+function findBestReplacementDigit(currentRemainingValue, candidates) {
+    let bestReplacementIndex = -1;
+    let smallestRemainder = Infinity;
 
-  const feasibleDigitOptions = [];
-  const costsAlreadyAdded = new Set(); 
-
-  for (let currentDigitValue of sortedAllowedDigits) {
-    const currentDigitCost = segmentCosts[currentDigitValue];
-    if (!costsAlreadyAdded.has(currentDigitCost)) {
-      feasibleDigitOptions.push([currentDigitValue, currentDigitCost]);
-      costsAlreadyAdded.add(currentDigitCost);
+    for (let i = 1; i < candidates.length; i++) {
+        const currentCandidateCost = candidates[i][1];
+        const currentRemainder = currentRemainingValue % currentCandidateCost;
+        if (currentRemainder < smallestRemainder) {
+            smallestRemainder = currentRemainder;
+            bestReplacementIndex = i;
+        }
     }
-  }
-  
-  feasibleDigitOptions.sort((optionA, optionB) => optionA[1] - optionB[1]);
+    return {
+        bestIndex: bestReplacementIndex,
+        minRemainder: smallestRemainder
+    };
+}
 
-  if (feasibleDigitOptions.length === 0) {
-    console.log("");
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processInput(rawData) {
+    const rawLines = rawData.split('\n');
+    const parsedData = rawLines.map(parseLineToIntegerArray);
+
+    let remainingValue = parsedData[0][0];
+    const countAvailableDigits = parsedData[0][1];
+    const availableDigitsSorted = parsedData[1].sort((a, b) => b - a);
+
+    const digitCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
+    const possibleDigitCostPairs = [];
+    const digitCostsSeen = new Set();
+
+    for (const currentDigit of availableDigitsSorted) {
+        const costOfDigit = digitCosts[currentDigit];
+        if (!digitCostsSeen.has(costOfDigit)) {
+            possibleDigitCostPairs.push([currentDigit, costOfDigit]);
+            digitCostsSeen.add(costOfDigit);
+        }
+    }
+    possibleDigitCostPairs.sort((pairA, pairB) => pairA[1] - pairB[1]);
+
+    const intermediateResult = [];
+
+    const firstCandidate = possibleDigitCostPairs[0];
+    const firstDigit = firstCandidate[0];
+    const firstCost = firstCandidate[1];
+
+    intermediateResult[0] = [firstDigit, Math.floor(remainingValue / firstCost)];
+    remainingValue %= firstCost;
+
+    while (remainingValue !== 0) {
+        remainingValue += firstCost;
+        intermediateResult[0][1]--;
+
+        const {
+            bestIndex,
+            minRemainder
+        } = findBestReplacementDigit(remainingValue, possibleDigitCostPairs);
+
+        if (minRemainder < Infinity) {
+            const bestPair = possibleDigitCostPairs[bestIndex];
+            const bestDigit = bestPair[0];
+            const bestCost = bestPair[1];
+            intermediateResult.push([bestDigit, Math.floor(remainingValue / bestCost)]);
+            remainingValue = minRemainder;
+        }
+    }
+
+    intermediateResult.sort((pairA, pairB) => pairB[0] - pairA[0]);
+
+    let finalOutputString = '';
+    for (const pair of intermediateResult) {
+        const digitChar = String(pair[0]);
+        const repeatCount = pair[1];
+        finalOutputString += digitChar.repeat(repeatCount);
+    }
+
+    console.log(finalOutputString);
     return 0;
-  }
-
-  const intermediateResultList = [];
-
-  const cheapestDigitInfo = feasibleDigitOptions[0];
-  const cheapestDigit = cheapestDigitInfo[0];
-  const cheapestCost = cheapestDigitInfo[1];
-
-  let initialCountOfCheapest = Math.floor(targetSum / cheapestCost);
-  targetSum %= cheapestCost;
-
-  intermediateResultList.push([cheapestDigit, initialCountOfCheapest]);
-
-  const numberOfFeasibleOptions = feasibleDigitOptions.length;
-
-  while (targetSum > 0) {
-    targetSum += cheapestCost;
-    intermediateResultList[0][1]--;
-
-    if (intermediateResultList[0][1] < 0) {
-        break; 
-    }
-
-    let bestReplacementDigitIndex = -1;
-    let minimumRemainder = Infinity;
-
-    for (let optionIndex = 1; optionIndex < numberOfFeasibleOptions; optionIndex++) {
-      const currentOption = feasibleDigitOptions[optionIndex];
-      const currentOptionCost = currentOption[1];
-      
-      const potentialRemainder = targetSum % currentOptionCost;
-
-      if (potentialRemainder < minimumRemainder) {
-        bestReplacementDigitIndex = optionIndex;
-        minimumRemainder = potentialRemainder;
-      }
-    }
-
-    if (bestReplacementDigitIndex !== -1 && minimumRemainder !== Infinity) {
-      const chosenDigitInfo = feasibleDigitOptions[bestReplacementDigitIndex];
-      const chosenDigit = chosenDigitInfo[0];
-      const chosenCost = chosenDigitInfo[1];
-
-      intermediateResultList.push([chosenDigit, Math.floor(targetSum / chosenCost)]);
-      targetSum = minimumRemainder;
-    } else {
-        break; 
-    }
-  }
-
-  intermediateResultList.sort((itemA, itemB) => itemB[0] - itemA[0]);
-
-  let finalOutputString = '';
-
-  const currentResultListLength = intermediateResultList.length;
-  for (let processingIndex = 0; processingIndex < currentResultListLength; processingIndex++) {
-    const [digitToRepeat, repeatCount] = intermediateResultList[processingIndex];
-    if (repeatCount > 0) {
-      finalOutputString += Array.from({ length: repeatCount }, () => String(digitToRepeat)).join('');
-    }
-  }
-
-  console.log(finalOutputString);
-
-  return 0;
 }

@@ -1,28 +1,24 @@
-function evaluateCharacterSequences(sourceMaterial) {
-    const textSegments = sourceMaterial.split('\n');
-    const sequenceExtent = Number(textSegments[0]);
+function processInput(sourceText) {
+    const dataLines = sourceText.split('\n');
+    
+    const primarySequence = dataLines[1];
+    const secondarySequence = dataLines[2];
+    const tertiarySequence = dataLines[3];
 
-    const firstSequence = [...textSegments[1]];
-    const secondSequence = [...textSegments[2]];
-    const thirdSequence = [...textSegments[3]];
+    const currentLength = primarySequence.length; 
 
-    const cumulativeValue = Array.from({ length: sequenceExtent }, (_, positionIndex) => {
-        const charOne = firstSequence[positionIndex];
-        const charTwo = secondSequence[positionIndex];
-        const charThree = thirdSequence[positionIndex];
+    const totalDiscrepancy = Array.from({ length: currentLength }, (_, positionIndex) => positionIndex)
+        .reduce((accumulatedValue, currentPosition) => {
+            const charA = primarySequence[currentPosition];
+            const charB = secondarySequence[currentPosition];
+            const charC = tertiarySequence[currentPosition];
 
-        const distinctElements = new Set([charOne, charTwo, charThree]);
-        const elementVariety = distinctElements.size;
+            const distinctCharacters = new Set([charA, charB, charC]);
+            
+            return accumulatedValue + (distinctCharacters.size - 1);
+        }, 0);
 
-        if (elementVariety === 1) {
-            return 0;
-        } else if (elementVariety === 2) {
-            return 1;
-        } else { // elementVariety === 3
-            return 2;
-        }
-    }).reduce((runningTotal, segmentValue) => runningTotal + segmentValue, 0);
-
-    console.log(cumulativeValue);
+    console.log(totalDiscrepancy);
 }
-evaluateCharacterSequences(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

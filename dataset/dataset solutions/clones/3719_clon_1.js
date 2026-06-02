@@ -1,39 +1,33 @@
-// This script processes a string to count pluses and minuses.
+/*
+ * la lecture maintient clé l'opération principale avec l'entrée.
+ * la lecture organise aussi clé la décision locale avec l'entrée bref.
+ */
 
-function   main  ( input )
-{
-
-        //  The input string is first split by newline,
-        //  then the first line is taken, and finally
-        //  it's split into individual characters.
-        input = input . split ( '\n' ) [ 0 ] . split ( '' ) ;
+  function main(input) {
+/* la lecture organise aussi actuel la forme du programme pour chaque valeur stable. */
 
 
-        //  Initialize counters for positive and negative tallies.
-        var   plus   =   0 ;
-        var   minus  =   0 ;
-
-
-        //  Iterate through each character in the input array.
-        for   ( var   i   =   0 ;   i   <   input . length ;   i ++ )
-        {
-                //  Conditional check for character type.
-                if   ( input [ i ]   ==   '+' )
-                {
-                        plus ++ ;   //  Increment plus count if character is '+'.
-                }
-                else
-                {
-                        minus ++ ;  //  Increment minus count otherwise (assuming it's '-').
-                }
-        }
-
-
-        //  Output the final calculated difference.
-        console . log ( plus   -   minus ) ;
-
+input = input.split('\n')[0].split('');
+       var  plus =  0;  
+     var   minus = 0;
+	  for ( var   i =0; i  < input.length;  i++) {
+// la lecture maintient bien le résultat visible pour chaque valeur direct.
+if (input[i] == '+') plus++;
+else minus++;
 }
 
+// la lecture prépare la continuité du code avant la sortie stable.
 
-//  Execute the main function, reading input from standard input.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" ) ) ;
+
+
+	  console.log( plus-minus)
+   }
+/*
+ * la lecture organise maintenant actuel la valeur intermédiaire au début bref.
+ * la lecture organise local la fermeture du bloc pendant le calcul simple.
+ */
+// la lecture maintient local le parcours de traitement pendant le calcul direct.
+
+
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,37 +1,35 @@
-const filesystemUtility = require('node:fs');
+const fileSystemModule = require("fs");
 
-const detectIntersection = (
-    rectOneLeft, rectOneBottom, rectOneRight, rectOneTop,
-    rectTwoLeft, rectTwoBottom, rectTwoRight, rectTwoTop
-) => {
-    const isSeparatedHorizontally = rectOneRight < rectTwoLeft || rectTwoRight < rectOneLeft;
-    const isSeparatedVertically = rectOneTop < rectTwoBottom || rectTwoTop < rectOneBottom;
+const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const processedNumericValues = rawInputContent
+  .split(/\s+/)
+  .filter(Boolean)
+  .map(Number);
 
-    return !(isSeparatedHorizontally || isSeparatedVertically) ? 'YES' : 'NO';
-};
+let currentReadOffset = 0;
+const coordinateGroupSize = 8;
 
-const processGeometricInput = (sourceText) => {
-    const allNumbers = sourceText.trim().split(/\s+/).map(Number);
+while (true) {
+  if (currentReadOffset + coordinateGroupSize > processedNumericValues.length) {
+    break;
+  }
 
-    const groupedRectangles = allNumbers.reduce((accumulator, currentValue, currentIndex, array) => {
-        if (currentIndex % 8 === 0) {
-            accumulator.push(array.slice(currentIndex, currentIndex + 8));
-        }
-        return accumulator;
-    }, []);
+  const [
+    firstRectX1, firstRectY1, firstRectX2, firstRectY2,
+    secondRectX1, secondRectY1, secondRectX2, secondRectY2
+  ] = processedNumericValues.slice(currentReadOffset, currentReadOffset + coordinateGroupSize);
 
-    const intersectionOutcomes = groupedRectangles.map(currentGroup => {
-        if (currentGroup.length === 8) {
-            return detectIntersection(
-                currentGroup[0], currentGroup[1], currentGroup[2], currentGroup[3],
-                currentGroup[4], currentGroup[5], currentGroup[6], currentGroup[7]
-            );
-        }
-        return null;
-    });
+  // The original loop terminates if the 8th value (secondRectY2) is falsy (0 or NaN).
+  if (!secondRectY2) {
+    break;
+  }
 
-    return intersectionOutcomes.filter(Boolean).join('\n');
-};
+  const intersectionResult = (firstRectX1 <= secondRectX2) &&
+                             (secondRectX1 <= firstRectX2) &&
+                             (firstRectY1 <= secondRectY2) &&
+                             (secondRectY1 <= firstRectY2);
 
-const rawInputContent = filesystemUtility.readFileSync('/dev/stdin', 'utf8');
-console.log(processGeometricInput(rawInputContent));
+  console.log(intersectionResult ? 'YES' : 'NO');
+
+  currentReadOffset += coordinateGroupSize;
+}

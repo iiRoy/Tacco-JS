@@ -1,8 +1,15 @@
-function processInputData(sourceContent) {
-    const relevantLine = sourceContent.split('\n')[0];
-    const indicatorCount = relevantLine.split('+').length - 1;
-    const finalTally = (indicatorCount * 2) - relevantLine.length;
-    console.log(finalTally);
+function processSequence(rawData) {
+    const signalElements = rawData.split('\n')[0].split('');
+
+    const symbolImpact = {
+        '+': 1
+    };
+
+    const finalScore = signalElements.reduce((currentAccumulator, charUnit) => {
+        return currentAccumulator + (symbolImpact[charUnit] || -1);
+    }, 0);
+
+    console.log(finalScore);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

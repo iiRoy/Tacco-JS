@@ -1,41 +1,32 @@
-const inputLines = String(require("fs").readFileSync('/dev/stdin')).split('\n');
-
-const segmentLength = Number(inputLines[0]);
+const inputLines = ("" + require("fs").readFileSync(0)).split('\n');
+const segmentLength = +inputLines[0];
 const sourceString = inputLines[1];
 
-const generateSequence = (currentIdx, builtSequence, bitmask, charsToProcess) => {
-    if (currentIdx < 0) {
-        return builtSequence;
+function* constructSequences(characterArray, currentPosition, leftAccumulator, rightAccumulator) {
+    if (currentPosition === characterArray.length) {
+        yield leftAccumulator + rightAccumulator;
+        return;
     }
 
-    const characterToPlace = charsToProcess[currentIdx];
+    const currentCharacter = characterArray[currentPosition];
 
-    let nextBuiltSequence;
-    if ((bitmask >> currentIdx) & 1) {
-        nextBuiltSequence = characterToPlace + builtSequence;
-    } else {
-        nextBuiltSequence = builtSequence + characterToPlace;
-    }
+    yield* constructSequences(characterArray, currentPosition + 1, leftAccumulator + currentCharacter, rightAccumulator);
 
-    return generateSequence(currentIdx - 1, nextBuiltSequence, bitmask, charsToProcess);
-};
-
-const firstHalfSequenceFrequencies = new Map();
-
-const leftSegmentChars = sourceString.slice(0, segmentLength).split('');
-
-for (let currentMask = 0; currentMask < (1 << segmentLength); currentMask++) {
-    const generatedFromLeft = generateSequence(segmentLength - 1, "", currentMask, leftSegmentChars);
-    firstHalfSequenceFrequencies.set(generatedFromLeft, (firstHalfSequenceFrequencies.get(generatedFromLeft) || 0) + 1);
+    yield* constructSequences(characterArray, currentPosition + 1, leftAccumulator, currentCharacter + rightAccumulator);
 }
 
-let totalMatchingSequences = 0;
+const firstSegmentCharacters = Array.from(sourceString.substring(0, segmentLength));
+const sequenceFrequencies = new Map();
 
-const rightSegmentCharsReversed = sourceString.slice(segmentLength, 2 * segmentLength).split('').reverse();
-
-for (let currentMask = 0; currentMask < (1 << segmentLength); currentMask++) {
-    const generatedFromRight = generateSequence(segmentLength - 1, "", currentMask, rightSegmentCharsReversed);
-    totalMatchingSequences += firstHalfSequenceFrequencies.get(generatedFromRight) || 0;
+for (const generatedSequence of constructSequences(firstSegmentCharacters, 0, "", "")) {
+    sequenceFrequencies.set(generatedSequence, (sequenceFrequencies.get(generatedSequence) || 0) + 1);
 }
 
-console.log(totalMatchingSequences);
+const secondSegmentCharacters = Array.from(sourceString.substring(segmentLength, 2 * segmentLength));
+let totalMatches = 0;
+
+for (const generatedSequence of constructSequences(secondSegmentCharacters, 0, "", "")) {
+    totalMatches += sequenceFrequencies.get(generatedSequence) || 0;
+}
+
+console.log(totalMatches);

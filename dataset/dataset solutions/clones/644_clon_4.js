@@ -1,99 +1,123 @@
 const fileSystem = require('fs');
 
-const retrieveAllInputData = () => fileSystem.readFileSync('/dev/stdin', 'utf-8').split('\n');
+const createInputReader = () => {
+    const fullInputContent = fileSystem.readFileSync('/dev/stdin', 'utf-8');
+    const inputLines = fullInputContent.split('\n');
+    let currentLineIndex = 0;
 
-let currentInputBuffer = retrieveAllInputData();
-let bufferPosition = 0;
+    const retrieveNextLine = () => {
+        if (currentLineIndex >= inputLines.length) {
+            return undefined;
+        }
+        return inputLines[currentLineIndex++];
+    };
 
-const obtainNextInputLine = () => {
-  if (bufferPosition >= currentInputBuffer.length) {
-    currentInputBuffer = retrieveAllInputData();
-    bufferPosition = 0;
-  }
-  return currentInputBuffer[bufferPosition++];
+    const retrieveRemainingLines = () => {
+        const remaining = inputLines.slice(currentLineIndex);
+        currentLineIndex = inputLines.length;
+        return remaining;
+    };
+
+    return {
+        fetchLine: retrieveNextLine,
+        fetchRemaining: retrieveRemainingLines
+    };
 };
 
-const obtainRemainingInputLines = () => {
-  if (bufferPosition >= currentInputBuffer.length) {
-    currentInputBuffer = retrieveAllInputData();
-    bufferPosition = 0;
-  }
-  const leftover = currentInputBuffer.slice(bufferPosition);
-  bufferPosition = currentInputBuffer.length;
-  return leftover;
+const inputSource = createInputReader();
+
+const parseNumericArray = (arr) => arr.map(Number);
+const convertToStringArray = (arr) => arr.map(String);
+
+const generateNumericSequence = (count, generatorCallback = (idx) => idx) => {
+    return Array.from({ length: count }, (_, idx) => generatorCallback(idx));
 };
 
-const transformToIntegers = (collection) => collection.map(Number.parseInt);
-const transformToFloats = (collection) => collection.map(Number.parseFloat);
-const transformToStrings = (collection) => collection.map(String);
-
-const constructArrayWithGenerator = (length, generatorFunction) => Array.from({ length: length }, (unused, index) => generatorFunction(index));
-
-const computeSumOfElements = (collection, valueExtractor = (val) => val) => {
-  if (collection.length === 0) return undefined;
-  return collection.reduce((accumulator, currentElement, index) => accumulator + valueExtractor(currentElement, index), 0);
+const calculateArraySum = (dataArray, valueExtractor = (val) => val) => {
+    if (dataArray.length === 0) return undefined;
+    return dataArray.reduce((accumulator, currentElement, index) => accumulator + valueExtractor(currentElement, index), 0);
 };
 
-const sequenceGenerator = (count, callbackFunction = (index) => index) => Array.from({ length: count }, (unused, index) => callbackFunction(index));
+const findArrayMaximum = (dataArray, valueExtractor = (val) => val) => {
+    if (dataArray.length === 0) return undefined;
+    let maximumValue = valueExtractor(dataArray[0], 0);
+    for (let i = 1; i < dataArray.length; ++i) {
+        const currentTransformed = valueExtractor(dataArray[i], i);
+        if (currentTransformed > maximumValue) {
+            maximumValue = currentTransformed;
+        }
+    }
+    return maximumValue;
+};
 
-const initialLineParts = transformToIntegers(obtainNextInputLine().split(' '));
-const numRows = initialLineParts[0];
-const numCols = initialLineParts[1];
+const findArrayMinimum = (dataArray, valueExtractor = (val) => val) => {
+    if (dataArray.length === 0) return undefined;
+    let minimumValue = valueExtractor(dataArray[0], 0);
+    for (let i = 1; i < dataArray.length; ++i) {
+        const currentTransformed = valueExtractor(dataArray[i], i);
+        if (currentTransformed < minimumValue) {
+            minimumValue = currentTransformed;
+        }
+    }
+    return minimumValue;
+};
 
-const gridData = sequenceGenerator(numRows, (rowId) => obtainNextInputLine());
+
+const firstLineParts = inputSource.fetchLine().split(' ');
+const [rowsCount, columnsCount] = parseNumericArray(firstLineParts);
+
+const stringMatrix = generateNumericSequence(rowsCount, () => inputSource.fetchLine());
 
 const costCache = new Map();
 
-const calculateRowConversionCost = (targetRowIndex, desiredColor, fullGridContents, totalColumns) => {
-  const uniqueKey = `${targetRowIndex},${desiredColor}`;
-  if (costCache.has(uniqueKey)) {
-    return costCache.get(uniqueKey);
-  }
-
-  let characterMismatches = 0;
-  const currentGridRow = fullGridContents[targetRowIndex];
-  for (let charPosition = 0; charPosition < totalColumns; ++charPosition) {
-    if (currentGridRow[charPosition] !== desiredColor) {
-      characterMismatches++;
+const determineLineCost = (lineIndex, targetColor) => {
+    if (!costCache.has(lineIndex)) {
+        costCache.set(lineIndex, new Map());
     }
-  }
-  costCache.set(uniqueKey, characterMismatches);
-  return characterMismatches;
+    const lineCache = costCache.get(lineIndex);
+
+    if (lineCache.has(targetColor)) {
+        return lineCache.get(targetColor);
+    }
+
+    const occurrences = stringMatrix[lineIndex].split(targetColor).length - 1;
+    const calculatedCost = columnsCount - occurrences;
+
+    lineCache.set(targetColor, calculatedCost);
+    return calculatedCost;
 };
 
-const perRowColorCosts = constructArrayWithGenerator(numRows, (rIdx) => ({
-  W: calculateRowConversionCost(rIdx, 'W', gridData, numCols),
-  B: calculateRowConversionCost(rIdx, 'B', gridData, numCols),
-  R: calculateRowConversionCost(rIdx, 'R', gridData, numCols),
-}));
+const allCostsW = generateNumericSequence(rowsCount, (idx) => determineLineCost(idx, 'W'));
+const allCostsB = generateNumericSequence(rowsCount, (idx) => determineLineCost(idx, 'B'));
+const allCostsR = generateNumericSequence(rowsCount, (idx) => determineLineCost(idx, 'R'));
 
-const prefixSumCostsW = constructArrayWithGenerator(numRows + 1, () => 0);
-const prefixSumCostsB = constructArrayWithGenerator(numRows + 1, () => 0);
-const prefixSumCostsR = constructArrayWithGenerator(numRows + 1, () => 0);
-
-for (let r = 0; r < numRows; ++r) {
-  prefixSumCostsW[r + 1] = prefixSumCostsW[r] + perRowColorCosts[r].W;
-  prefixSumCostsB[r + 1] = prefixSumCostsB[r] + perRowColorCosts[r].B;
-  prefixSumCostsR[r + 1] = prefixSumCostsR[r] + perRowColorCosts[r].R;
-}
-
-const getCostForRange = (sumArray, startIdx, endIdx) => {
-  if (startIdx > endIdx) return 0;
-  return sumArray[endIdx + 1] - sumArray[startIdx];
+const computePrefixSums = (costsArray) => {
+    const sums = new Array(costsArray.length + 1).fill(0);
+    for (let i = 0; i < costsArray.length; ++i) {
+        sums[i + 1] = sums[i] + costsArray[i];
+    }
+    return sums;
 };
 
-let overallMinimumCost = numRows * numCols;
+const prefixSumsW = computePrefixSums(allCostsW);
+const prefixSumsB = computePrefixSums(allCostsB);
+const prefixSumsR = computePrefixSums(allCostsR);
 
-for (let firstSplitPoint = 0; firstSplitPoint <= numRows - 3; ++firstSplitPoint) {
-  const currentWSectionCost = getCostForRange(prefixSumCostsW, 0, firstSplitPoint);
+let minimumTotalCost = rowsCount * columnsCount;
 
-  for (let secondSplitPoint = firstSplitPoint + 1; secondSplitPoint <= numRows - 2; ++secondSplitPoint) {
-    const currentBSectionCost = getCostForRange(prefixSumCostsB, firstSplitPoint + 1, secondSplitPoint);
-    const currentRSectionCost = getCostForRange(prefixSumCostsR, secondSplitPoint + 1, numRows - 1);
+for (let i = 0; i < rowsCount - 2; ++i) {
+    const currentCostW = prefixSumsW[i + 1];
 
-    const totalCurrentConfigurationCost = currentWSectionCost + currentBSectionCost + currentRSectionCost;
-    overallMinimumCost = Math.min(overallMinimumCost, totalCurrentConfigurationCost);
-  }
+    for (let j = i + 1; j < rowsCount - 1; ++j) {
+        const currentCostB = prefixSumsB[j + 1] - prefixSumsB[i + 1];
+
+        const currentCostR = prefixSumsR[rowsCount] - prefixSumsR[j + 1];
+
+        const combinedCost = currentCostW + currentCostB + currentCostR;
+        if (combinedCost < minimumTotalCost) {
+            minimumTotalCost = combinedCost;
+        }
+    }
 }
 
-console.log(overallMinimumCost);
+console.log(minimumTotalCost);

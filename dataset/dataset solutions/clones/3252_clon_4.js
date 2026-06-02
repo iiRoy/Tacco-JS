@@ -1,46 +1,21 @@
-let totalBuffer = '';
-process.stdin.on('data', (piece) => {
-    totalBuffer += piece;
-});
+const fs = require("fs");
 
-const calculateProduct = (valA, valB) => {
-    let finalProduct = 0;
-    let absValA = Math.abs(valA);
-    let absValB = Math.abs(valB);
+const rawInputString = fs.readFileSync("/dev/stdin", "utf8");
 
-    for (let counter = 0; counter < absValB; counter++) {
-        finalProduct += absValA;
+const processedNumbers = rawInputString.split(' ').reduce((accumulator, currentStringPart, indexPosition) => {
+    if (indexPosition === 0) {
+        accumulator.firstOperand = parseInt(currentStringPart, 10);
+    } else if (indexPosition === 1) {
+        accumulator.secondOperand = parseInt(currentStringPart, 10);
     }
+    return accumulator;
+}, {});
 
-    if ((valA < 0 && valB > 0) || (valA > 0 && valB < 0)) {
-        return -finalProduct;
-    }
-    return finalProduct;
+const computeProductHalf = (operandsContainer) => {
+    const { firstOperand, secondOperand } = operandsContainer;
+    return (firstOperand * secondOperand) / 2;
 };
 
-const divideByTwo = (numericValue) => {
-    return numericValue * 0.5;
-};
+const calculatedValue = computeProductHalf(processedNumbers);
 
-process.stdin.on('end', () => {
-    let currentSegment = '';
-    let numericCollection = [];
-    for (let symbol of totalBuffer) {
-        if (symbol === ' ' || symbol === '\n' || symbol === '\r') {
-            if (currentSegment.length > 0) {
-                numericCollection.push(Number(currentSegment));
-                currentSegment = '';
-            }
-        } else {
-            currentSegment += symbol;
-        }
-    }
-    if (currentSegment.length > 0) {
-        numericCollection.push(Number(currentSegment));
-    }
-
-    let calculatedProduct = calculateProduct(numericCollection[0], numericCollection[1]);
-    let finalResult = divideByTwo(calculatedProduct);
-
-    console.log(finalResult);
-});
+console.log(calculatedValue);

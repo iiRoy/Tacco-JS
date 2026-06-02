@@ -1,45 +1,41 @@
-'use strict'; // Enforce strict parsing and error handling for the script
+'use strict';
 
-const displayResult = ( textData ) => console.log(textData);
+// A simple helper function to output data to the console.
+const logOutput = (messageContent) => console.log(messageContent);
 
-// This function processes the entire incoming data block
-function ExecuteTask ( rawData )
-{
-  // First, split the raw input string into individual lines
-  // Each line will be an element in the resulting array.
-  let lineArray = rawData.split("\n");
+/**
+ * Processes the entire input string to determine and display element frequencies.
+ * @param {string} rawInputString - The complete input data provided as a single string.
+ */
+function ProcessInputData(rawInputString) {
+  // Divide the raw input string into individual lines.
+  let dataLines = rawInputString.split("\n");
 
-  // Retrieve the total number of elements from the first line.
-  // We take the first part if the line contains spaces.
-  let  itemCount  =  lineArray[0].split(" ")[0];
+  // Extract the total count of expected elements from the first line.
+  let totalElementCount = dataLines[0].split(" ")[0];
 
-  // Extract the list of values from the second line.
-  // These are space-separated values.
-  let valueList = lineArray[1].split(" ");
+  // Retrieve the list of element values from the second line.
+  let elementValuesList = dataLines[1].split(" ");
 
-  // Prepare an object to store the frequency of each item.
-  // Using a plain object for key-value pairs as in the original logic.
-  let occurrenceCounts = {};
+  // Initialize an empty object to keep track of element occurrences.
+  let occurrenceTracker = {};
 
-  // Initialize all possible item counts to zero.
-  // Items are numbered from 1 up to 'itemCount'.
-  for ( let  idx = 0;  idx < itemCount;  idx++ )
-  {
-    occurrenceCounts[idx + 1] = 0;
+  // Set initial counts for all possible elements (from 1 up to totalElementCount) to zero.
+  for (let currentIdx = 0; currentIdx < totalElementCount; currentIdx++) {
+    occurrenceTracker[currentIdx + 1] = 0;
   }
 
-  // Iterate through the collected values and tally their occurrences.
-  for ( let  idx = 0;  idx < valueList.length;  idx++ )
-  {
-    occurrenceCounts[valueList[idx]]++;
+  // Iterate through the provided element values and increment their respective counts.
+  for (let valueIndex = 0; valueIndex < elementValuesList.length; valueIndex++) {
+    occurrenceTracker[elementValuesList[valueIndex]]++;
   }
 
-  // Finally, output the tallied counts for each item from 1 to 'itemCount'.
-  for ( let  idx = 0;  idx < itemCount;  idx++ )
-  {
-    displayResult(occurrenceCounts[idx + 1]);
+  // Output the final frequency count for each element, from 1 to totalElementCount.
+  for (let displayIndex = 0; displayIndex < totalElementCount; displayIndex++) {
+    logOutput(occurrenceTracker[displayIndex + 1]);
   }
 }
 
-// Do not modify the following section. It handles standard input/output.
-ExecuteTask(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following section handles reading input from standard input and executing the main processing function.
+// This part should remain unaltered.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

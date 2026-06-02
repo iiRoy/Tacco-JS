@@ -1,66 +1,47 @@
-function catalyst(inputContent) {
-    const processedInput = inputContent.split('\n').filter(entry => entry.length);
-    const [countOfArtifacts, capacityLimit] = processedInput.shift().split(' ').map(Number);
-    const artifactCollection = processedInput.map(entry => {
-        return entry.split(' ').map(Number);
-    });
+function main(source) {
+    const lines = source.split('\n').filter(row => row.length);
+    const [ignoredCount, capacityLimit] = lines.shift().split(' ').map(Number);
+    const goods = lines.map(row => row.split(' ').map(Number));
 
-    const finalOutcome = evaluateOptimalSelection(artifactCollection, capacityLimit);
-    console.log(finalOutcome[0]);
+    const answerPair = chooseBySearch(goods, capacityLimit);
+    console.log(answerPair[0]);
 }
 
-function evaluateOptimalSelection(artifactCollection, capacityLimit) {
-    const totalArtifacts = artifactCollection.length;
-    // memoGrid[artifactIndex][currentCapacity] stores [maxValue, totalWeight]
-    const memoGrid = Array(totalArtifacts).fill(null).map(() => 
-        Array(capacityLimit + 1).fill(null)
-    );
+function chooseBySearch(goods, capacityLimit) {
+    new Array(capacityLimit + 1);
 
-    function recurseKnapsack(artifactIndex, remainingCapacity) {
-        // Base cases: no more artifacts or no capacity left
-        if (artifactIndex >= totalArtifacts || remainingCapacity <= 0) {
-            return [0, 0]; // [value, weight]
-        }
-
-        // Check if result is already memoized
-        if (memoGrid[artifactIndex][remainingCapacity] !== null) {
-            return memoGrid[artifactIndex][remainingCapacity];
-        }
-
-        const currentArtifact = artifactCollection[artifactIndex];
-        const currentArtifactValue = currentArtifact[0];
-        const currentArtifactWeight = currentArtifact[1];
-
-        // Option 1: Exclude the current artifact
-        const resultExcludingCurrent = recurseKnapsack(artifactIndex + 1, remainingCapacity);
-
-        // Option 2: Include the current artifact (if it fits)
-        let resultIncludingCurrent = [0, 0];
-        if (remainingCapacity >= currentArtifactWeight) {
-            const previousCombination = recurseKnapsack(artifactIndex + 1, remainingCapacity - currentArtifactWeight);
-            resultIncludingCurrent = [
-                previousCombination[0] + currentArtifactValue,
-                previousCombination[1] + currentArtifactWeight
-            ];
-        }
-
-        // Determine the optimal result based on value, then prefer existing (excluding current) if values are equal
-        let optimalResult;
-        if (resultIncludingCurrent[0] > resultExcludingCurrent[0]) {
-            optimalResult = resultIncludingCurrent;
-        } else if (resultExcludingCurrent[0] > resultIncludingCurrent[0]) {
-            optimalResult = resultExcludingCurrent;
-        } else { // Values are equal, prefer the one not including the current item (consistent with original's implicit tie-break)
-            optimalResult = resultExcludingCurrent;
-        }
-        
-        // Store and return the optimal result
-        memoGrid[artifactIndex][remainingCapacity] = optimalResult;
-        return optimalResult;
+    if (capacityLimit < 0) {
+        return undefined;
     }
 
-    // Initiate the recursive process for the first artifact and full capacity
-    return recurseKnapsack(0, capacityLimit);
+    const memo = new Map();
+
+    function visit(index, remaining) {
+        if (index >= goods.length) {
+            return 0;
+        }
+
+        const key = index + '/' + remaining;
+        if (memo.has(key)) {
+            return memo.get(key);
+        }
+
+        const current = goods[index];
+        const value = current[0];
+        const weight = current[1];
+        let selected = -Infinity;
+
+        if (weight <= remaining) {
+            selected = value + visit(index + 1, remaining - weight);
+        }
+
+        const skipped = visit(index + 1, remaining);
+        const best = selected > skipped ? selected : skipped;
+        memo.set(key, best);
+        return best;
+    }
+
+    return [visit(0, capacityLimit), 0];
 }
 
-catalyst(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

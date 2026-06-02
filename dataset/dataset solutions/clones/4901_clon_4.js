@@ -1,62 +1,24 @@
-function processInputDataAlternative(rawInputString) {
-    let charIndex = 0;
+function Main(inputString) {
+  const allNumbers = inputString.match(/\d+/g).map(Number);
 
-    function fetchNextNumber() {
-        let currentNumberValue = 0;
-        let digitEncountered = false;
+  const countK = allNumbers[0];
+  const thresholdT = allNumbers[1];
+  const dataElements = allNumbers.slice(2);
 
-        while (charIndex < rawInputString.length) {
-            const charCode = rawInputString.charCodeAt(charIndex);
-            if (charCode >= 48 && charCode <= 57) {
-                digitEncountered = true;
-                break;
-            }
-            charIndex++;
-        }
+  let maximumValue = -Infinity;
+  let totalSummation = 0;
 
-        if (!digitEncountered) {
-            return null;
-        }
-
-        while (charIndex < rawInputString.length) {
-            const charCode = rawInputString.charCodeAt(charIndex);
-            if (charCode >= 48 && charCode <= 57) {
-                currentNumberValue = currentNumberValue * 10 + (charCode - 48);
-            } else {
-                break;
-            }
-            charIndex++;
-        }
-        return currentNumberValue;
+  for (const currentElement of dataElements) {
+    if (currentElement > maximumValue) {
+      maximumValue = currentElement;
     }
+    totalSummation += currentElement;
+  }
 
-    fetchNextNumber();
-    fetchNextNumber();
+  const intermediateResult = (2 * maximumValue) - 1 - totalSummation;
+  const finalOutput = Math.max(intermediateResult, 0);
 
-    let numericalSequence = [];
-    let currentFetchedValue;
-    while ((currentFetchedValue = fetchNextNumber()) !== null) {
-        numericalSequence.push(currentFetchedValue);
-    }
-
-    let highestElementSeen = 0;
-    let cumulativeSum = 0;
-
-    let iterator = 0;
-    while (iterator < numericalSequence.length) {
-        const itemInSequence = numericalSequence[iterator];
-        if (itemInSequence > highestElementSeen) {
-            highestElementSeen = itemInSequence;
-        }
-        cumulativeSum += itemInSequence;
-        iterator++;
-    }
-
-    let preFinalResult = (2 * highestElementSeen) - 1 - cumulativeSum;
-    let finalCalculatedOutcome = (preFinalResult > 0) ? preFinalResult : 0;
-
-    console.log(finalCalculatedOutcome);
+  console.log(finalOutput);
 }
 
-const dataBlob = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputDataAlternative(dataBlob);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

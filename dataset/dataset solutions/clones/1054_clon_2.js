@@ -1,79 +1,77 @@
-let comparisonTally = 0; // Global counter for element comparisons during sorting.
+var operationCount = 0; // Global counter for merge operations
 
-(async function programEntry() {
-  // Read all input data from standard input, process it, and split into individual lines.
-  const incomingTextRows = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+/**
+ * Main execution block for the sorting process.
+ * Reads input, performs merge sort, and prints results.
+ */
+(function executeSortingProcess() {
+  // Read input from stdin, trim whitespace, and split into lines
+  const inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  // The first row contains the total number of elements to be sorted.
-  const totalQuantity = parseInt(incomingTextRows.shift(), 10);
+  // The first line contains the size of the array
+  const arraySize = Number(inputDataRows.shift());
 
-  // The second row contains the space-separated numbers, convert them to an array of numbers.
-  let processedNumbers = incomingTextRows.shift().split(' ').map(val => Number(val));
+  // The second line contains the array elements, parsed as numbers
+  let dataCollection = inputDataRows.shift().split(' ').map(Number);
 
-  // Execute the divide and conquer sorting algorithm on the number array.
-  divideAndConquerSort(processedNumbers, 0, totalQuantity);
+  // Perform the merge sort on the data collection
+  recursiveMergeSort(dataCollection, 0, arraySize);
 
-  // Output the sorted array elements, joined by spaces.
-  console.info(processedNumbers.join(' '));
+  // Output the sorted array elements joined by a space
+  console.log(dataCollection.join(' '));
 
-  // Output the total number of comparisons performed.
-  console.info(comparisonTally);
+  // Output the total count of merge operations
+  console.log(operationCount);
 })();
 
 /**
- * Merges two sorted sub-arrays back into a single sorted array.
- * This function is a core component of the merge sort algorithm.
- * @param {Array<number>} targetArray - The main array containing the segments to be merged.
- * @param {number} startIndex - The starting index of the first segment.
- * @param {number} middlePosition - The dividing point between the two segments.
- * @param {number} endIndex - The ending index of the second segment (exclusive).
+ * Merges two sorted subarrays back into the main array.
+ * @param {Array<number>} dataCollection The main array being sorted.
+ * @param {number} startIdx The starting index of the first subarray.
+ * @param {number} middleIdx The ending index of the first subarray (exclusive) and starting of the second.
+ * @param {number} endIdx The ending index of the second subarray (exclusive).
  */
-function combineSortedSegments(targetArray, startIndex, middlePosition, endIndex) {
-  // Create temporary arrays for the left and right partitions.
-  const leftPartition = targetArray.slice(startIndex, middlePosition);
-  const rightPartition = targetArray.slice(middlePosition, endIndex);
+function combineSubarrays(dataCollection, startIdx, middleIdx, endIdx) {
+  // Create left and right temporary subarrays
+  let leftPartition = dataCollection.slice(startIdx, middleIdx);
+  let rightPartition = dataCollection.slice(middleIdx, endIdx);
 
-  // Add a sentinel value to the end of each partition to simplify comparison logic.
-  leftPartition.push(Number.POSITIVE_INFINITY);
-  rightPartition.push(Number.POSITIVE_INFINITY);
+  // Add sentinels to simplify comparison logic
+  leftPartition.push(Infinity);
+  rightPartition.push(Infinity);
 
-  let leftSegmentPointer = 0; // Pointer for the left temporary array.
-  let rightSegmentPointer = 0; // Pointer for the right temporary array.
+  let leftPtr = 0;  // Pointer for the left partition
+  let rightPtr = 0; // Pointer for the right partition
 
-  // Iterate through the original array's segment, filling it with sorted elements.
-  for (let currentItemPosition = startIndex; currentItemPosition < endIndex; ++currentItemPosition) {
-    if (leftPartition[leftSegmentPointer] <= rightPartition[rightSegmentPointer]) {
-      // If the element from the left partition is smaller or equal, take it.
-      targetArray[currentItemPosition] = leftPartition[leftSegmentPointer++];
+  // Iterate through the original array segment and place elements in sorted order
+  for (let currentIdx = startIdx; currentIdx < endIdx; currentIdx++) {
+    if (leftPartition[leftPtr] <= rightPartition[rightPtr]) {
+      dataCollection[currentIdx] = leftPartition[leftPtr++];
     } else {
-      // Otherwise, take the element from the right partition.
-      targetArray[currentItemPosition] = rightPartition[rightSegmentPointer++];
+      dataCollection[currentIdx] = rightPartition[rightPtr++];
     }
-    // Increment the global comparison counter.
-    comparisonTally++;
+    operationCount++; // Increment the global operation counter for each comparison/placement
   }
 }
 
 /**
- * Implements the merge sort algorithm recursively.
- * Divides the array into two halves, sorts them independently, and then merges them.
- * @param {Array<number>} dataCollection - The array to be sorted.
- * @param {number} beginIndex - The starting index of the current sub-array.
- * @param {number} finishIndex - The ending index of the current sub-array (exclusive).
+ * Recursively sorts an array segment using the merge sort algorithm.
+ * @param {Array<number>} dataCollection The array to be sorted.
+ * @param {number} startIdx The starting index of the segment to sort.
+ * @param {number} endIdx The ending index of the segment to sort (exclusive).
  */
-function divideAndConquerSort(dataCollection, beginIndex, finishIndex) {
-  // Base case: if the sub-array has 0 or 1 element, it's already sorted.
-  if (beginIndex + 1 < finishIndex) {
-    // Calculate the midpoint to divide the array.
-    const middlePoint = Math.floor((beginIndex + finishIndex) / 2);
+function recursiveMergeSort(dataCollection, startIdx, endIdx) {
+  // Base case: if the segment has 0 or 1 element, it's already sorted
+  if (startIdx + 1 < endIdx) {
+    // Calculate the middle point to divide the array
+    let middleIdx = Math.floor((startIdx + endIdx) / 2);
 
-    // Recursively sort the left half.
-    divideAndConquerSort(dataCollection, beginIndex, middlePoint);
+    // Recursively sort the left half
+    recursiveMergeSort(dataCollection, startIdx, middleIdx);
+    // Recursively sort the right half
+    recursiveMergeSort(dataCollection, middleIdx, endIdx);
 
-    // Recursively sort the right half.
-    divideAndConquerSort(dataCollection, middlePoint, finishIndex);
-
-    // Merge the two sorted halves back together.
-    combineSortedSegments(dataCollection, beginIndex, middlePoint, finishIndex);
+    // Merge the two sorted halves
+    combineSubarrays(dataCollection, startIdx, middleIdx, endIdx);
   }
 }

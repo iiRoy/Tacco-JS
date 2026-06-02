@@ -1,47 +1,34 @@
-function evaluateInput(sourceString) {
-    const numericalItems = sourceString.split(/\s+/).filter(Boolean).map(x => Number(x));
-
-    const tally = numericalItems.reduce((acc, value) => {
-        if (value < 1 || value > 4 || !Number.isInteger(value)) {
-            acc.invalid = true;
+function processInputData(inputString) {
+    const numericValues = inputString.trim().split(/[\n\s]/).map(valStr => {
+        const currentVal = Number(valStr);
+        if (currentVal < 1 || currentVal > 4) {
+            throw new TypeError("Cannot set properties of undefined (setting '0')");
         }
-        acc[value] = (acc[value] || 0) + 1;
-        return acc;
-    }, {});
+        return currentVal;
+    });
 
-    if (tally.invalid) {
-        return 'NO';
+    const frequencyMap = numericValues.reduce((accumulator, currentNumber) => {
+        accumulator.set(currentNumber, (accumulator.get(currentNumber) || 0) + 1);
+        return accumulator;
+    }, new Map());
+
+    const sortedFrequencies = Array.from(frequencyMap.values()).sort((a, b) => a - b);
+
+    let finalDecision = false;
+    if (sortedFrequencies.length === 4) {
+        const frequencyAnalysis = sortedFrequencies.reduce((acc, freq) => {
+            if (freq === 1) acc.ones++;
+            else if (freq === 2) acc.twos++;
+            else acc.others++;
+            return acc;
+        }, { ones: 0, twos: 0, others: 0 });
+
+        finalDecision = (frequencyAnalysis.ones === 2 &&
+                         frequencyAnalysis.twos === 2 &&
+                         frequencyAnalysis.others === 0);
     }
 
-    const expectedKeys = new Set([1, 2, 3, 4]);
-    const actualKeys = new Set(Object.keys(tally).map(Number));
-
-    if (actualKeys.size !== expectedKeys.size || !Array.from(expectedKeys).every(k => actualKeys.has(k))) {
-        return 'NO';
-    }
-
-    let singleCounts = 0;
-    let doubleCounts = 0;
-
-    for (let k = 1; k <= 4; k++) {
-        const count = tally[k];
-        if (count === 1) {
-            singleCounts++;
-        } else if (count === 2) {
-            doubleCounts++;
-        } else {
-            return 'NO';
-        }
-    }
-
-    if (singleCounts === 2 && doubleCounts === 2) {
-        return 'YES';
-    } else {
-        return 'NO';
-    }
+    console.log(finalDecision ? 'YES' : 'NO');
 }
 
-(function runExecution() {
-    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    console.log(evaluateInput(fileContent));
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

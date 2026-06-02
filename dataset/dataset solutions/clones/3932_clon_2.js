@@ -1,118 +1,133 @@
-const initialLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const dataManager = {
-  "storedContent": initialLines,
-  "currentIndex": 0,
-  "totalCount": initialLines.length,
+var dataStream = {
+  contentArray: sourceLines,
+  currentPosition: 0,
+  totalElements: sourceLines.length,
 
-  "getNextItem": function() {
-    if (!this.checkMoreItems()) {
-      throw "SequenceTraversalError: No further elements are present.";
+  retrieveNext: function() {
+    if (!this.checkAvailability()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    let retrievedPiece = this.storedContent[this.currentIndex];
-    this.currentIndex++;
-    return retrievedPiece;
+    var extractedItem = this.contentArray[this.currentPosition];
+    this.currentPosition++;
+    return extractedItem;
   },
 
-  "checkMoreItems": function() {
-    return (this.currentIndex < this.totalCount);
+  checkAvailability: function() {
+    return (this.currentPosition < this.totalElements);
   }
 };
 
-// Begin the main application logic.
-ExecutePrimaryLogic();
+// Initiate the main processing routine
+executePrimaryLogic();
 
-function fetchNextElement() {
-  return dataManager.getNextItem();
+// Global utility to get the next line from the input stream
+function fetchNextInput() {
+  return dataStream.retrieveNext();
 }
 
-function checkAvailability() {
-  return dataManager.checkMoreItems();
+// Global utility to check if more input lines are available
+function hasMoreInput() {
+  return dataStream.checkAvailability();
 }
 
-// Function to print standard informational messages.
-function showOutput(content) {
-  console.info(content);
+// Function for standard console output
+function displayOutput(outputContent) {
+  console.log(outputContent);
 }
 
-// Function to print warning messages.
-function issueWarning(message) {
-  console.warn(message);
+// Function for standard error output
+function reportError(errorContent) {
+  console.error(errorContent);
 }
 
-// This utility function handles various data transformations based on a mode.
-// Input parameter 'inputVal' is the data to be processed.
-// 'processingMode' determines the type of transformation:
-//  - 1: Converts to an integer.
-//  - 2: Splits a string by spaces.
-//  - 4: Splits by spaces and maps each part to a Number.
-//  - 6: Splits a string into individual characters.
-//  - 7: Splits into characters and maps each to a Number.
-//  - 8: Joins array elements with spaces.
-//  - 9: Joins array elements with newlines.
-//  - 0: Joins array elements without any separator.
-//  - Default: Returns the input value unchanged.
-function processInputVariant(inputVal, processingMode) {
+/*
+ * This function handles various input transformations.
+ *
+ * Parameters:
+ *   inputValue: The input value to be transformed.
+ *   conversionType: An integer indicating the desired transformation.
+ *
+ * Conversion Types:
+ *   1: Convert to integer.
+ *   2: Split by space.
+ *   4: Split by space and convert elements to numbers.
+ *   6: Split into individual characters.
+ *   7: Split into individual characters and convert to numbers.
+ *   8: Join array elements with a space.
+ *   9: Join array elements with a newline.
+ *   0: Join array elements without any separator.
+ *   Default: Return inputValue as is.
+ *
+ * Error Handling:
+ *   If an error occurs during conversion, the original inputValue is returned.
+ */
+function transformInput(inputValue, conversionType) {
   try {
-    switch (processingMode) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputVal);
+        return parseInt(inputValue);
       case 2:
-        return inputVal.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputVal.split(" ").map((item) => Number(item));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
-        return inputVal.split("");
+        return inputValue.split("");
       case 7:
-        return inputVal.split("").map((character) => Number(character));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
-        return inputVal.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputVal.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputVal.join("");
+        return inputValue.join("");
       default:
-        return inputVal;
+        return inputValue;
     }
-  } catch (conversionError) {
-    // In case of any error during conversion, return the original input.
-    return inputVal;
+  } catch (errorDetails) {
+    return inputValue;
   }
 }
 
-function ExecutePrimaryLogic() {
-  let currentSequence = fetchNextElement(); // Obtain the initial string from input.
+function executePrimaryLogic() {
+  var currentString = fetchNextInput();
 
-  // The primary logic involves string manipulation based on its length.
-  // If the string is less than 26 characters, it appends the lexicographically
-  // smallest unused character from the English alphabet.
-  // If it's exactly 26 characters, it checks for a specific reverse-alphabetical
-  // pattern or implies a different transformation (not fully detailed in original).
+  // Logic for strings shorter than 26 characters:
+  // Append the lexicographically smallest unused character.
+  // Logic for strings exactly 26 characters:
+  // Check if it's "zyxwvutsrqponmlkjihgfedcba". If so, output -1.
+  // Otherwise, find the first position from the right where a character
+  // can be replaced by a lexicographically larger one, and truncate the rest.
 
-  const fullAlphabet = processInputVariant("abcdefghijklmnopqrstuvwxyz", 6);
+  var alphabetChars = transformInput("abcdefghijklmnopqrstuvwxyz", 6);
 
-  if (currentSequence.length < 26) {
-    // Iterate through the input sequence to mark characters as "used" in the alphabet list.
-    for (let charIterator = 0; charIterator < currentSequence.length; charIterator++) {
-      fullAlphabet[fullAlphabet.indexOf(currentSequence[charIterator])] = "";
+  if (currentString.length < 26) {
+    // Mark characters used in currentString as empty in alphabetChars
+    for (var idx = 0; idx < currentString.length; idx++) {
+      alphabetChars[alphabetChars.indexOf(currentString[idx])] = "";
     }
-    issueWarning(fullAlphabet); // Output the modified alphabet array for debugging.
 
-    // Find and append the first available (non-empty) character from the alphabet.
-    for (let charPosition = 0; charPosition < 26; charPosition++) {
-      if (fullAlphabet[charPosition] !== "") {
-        currentSequence += fullAlphabet[charPosition];
+    // For debugging: show remaining alphabet characters
+    reportError(alphabetChars);
+
+    // Find the first non-empty (unused) character and append it
+    for (var idx = 0; idx < 26; idx++) {
+      if (alphabetChars[idx] !== "") {
+        currentString += alphabetChars[idx];
         break;
       }
     }
-    showOutput(currentSequence); // Display the resulting string.
+    displayOutput(currentString);
   } else {
-    // Handle cases where the sequence length is 26 characters.
-    if (currentSequence === "zyxwvutsrqponmlkjihgfedcba") {
-      showOutput(-1); // Specific output for the full reverse alphabet string.
+    // String length is 26
+    if (currentString === "zyxwvutsrqponmlkjihgfedcba") {
+      displayOutput(-1);
     } else {
-      // This branch is left empty, matching the original code's structure.
-      // Additional logic for other 26-character strings would go here.
+      // This block is intentionally left empty as per original logic.
+      // The problem statement implies a more complex lexicographical
+      // next string logic for 26-char strings not equal to the max,
+      // but the original code does not implement it.
     }
   }
 }

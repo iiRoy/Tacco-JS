@@ -1,61 +1,75 @@
-const processInputData = (rawData) => {
-  // The initial raw data is passed into this function.
-  let primaryString;
-  const processedLines = rawData.split("\n");
-  primaryString = processedLines[0];
-  let minimumTransformations = -1;
+function ProcessInput(rawData) {
+  // Declare a variable to hold the initial string
+  let initialString;
+  // Split the raw input data into an array of lines
+  const lineData = rawData.split("\n");
+  // The first line of input is our target string
+  initialString = lineData[0];
+  // Initialize the minimum number of attempts required to -1 (indicating not yet found)
+  let minimumAttempts = -1;
 
-
-  // Iterate through all possible lowercase characters from 'a' to 'z'
-  for (let charCode = "a".charCodeAt(0); charCode <= "z".charCodeAt(0); charCode++) {
-
-    // If the primary string is already uniform with a single character, no transformations needed.
-    if ( /^(?:[a-z])\1*$/.test(primaryString) ) {
-      minimumTransformations = 0;
-      break;
+  // Iterate through all lowercase English alphabet characters
+  // This loop tries each character ('a' through 'z') as the potential final character
+  for (let charIndex = "a".charCodeAt(0); charIndex < "z".charCodeAt(0) + 1; charIndex++) {
+    // Check if the initial string already consists of a single repeated character
+    // If it does, no operations are needed, so the attempt count is 0
+    if (/^([a-z])\1*$/.test(initialString)) {
+      minimumAttempts = 0;
+      break; // Exit the outer loop as the minimum is 0
     }
 
-    let currentStringState = primaryString;
-    let subsequentString = "";
-    const characterToFocus = String.fromCharCode(charCode);
-    let transformationsCount = 0;
+    // Create a temporary string for the current propagation process
+    let currentString = initialString;
+    // Initialize an empty string to build the result of each propagation step
+    let nextString = "";
+    // Convert the current character code back to a character
+    const targetChar = String.fromCharCode(charIndex);
+    // Initialize the attempt counter for the current target character
+    let currentAttempts = 0;
 
-    // Continue evolving the string until it becomes monochromatic.
+    // This loop simulates the propagation process until the string becomes uniform
     while (true) {
-
-      // Iterate through the current string state to construct the next generation.
-      // Each character in the subsequent string is determined by looking at the current and next character of the current string state.
-      // If either matches the characterToFocus, then characterToFocus is used. Otherwise, the current character is used.
-      for (let charPosition = 0; charPosition < currentStringState.length - 1; charPosition++) {
-        if (characterToFocus === currentStringState.charAt(charPosition)) {
-          subsequentString += characterToFocus;
-        } else if (characterToFocus === currentStringState.charAt(charPosition + 1)) {
-          subsequentString += characterToFocus;
-        } else {
-          subsequentString += currentStringState.charAt(charPosition);
+      // Iterate through the current string, excluding the last character
+      // This loop builds the 'nextString' based on 'currentString' and 'targetChar'
+      for (let position = 0; position < currentString.length - 1; position++) {
+        // If the character at the current position matches the target character
+        if (targetChar === currentString.charAt(position)) {
+          nextString += targetChar; // Append the target character
+        }
+        // Else, if the character at the next position matches the target character
+        else if (targetChar === currentString.charAt(position + 1)) {
+          nextString += targetChar; // Append the target character
+        }
+        // Otherwise, no propagation occurs from adjacent characters, so keep the original character
+        else {
+          nextString += currentString.charAt(position); // Append the original character
         }
       }
 
-      transformationsCount++;
+      // Increment the attempt counter after one full propagation step
+      currentAttempts++;
 
-      // Check if the newly formed string is uniform.
-      if ( /^(?:[a-z])\1*$/.test(subsequentString) ) {
-        break; // Exit the inner loop if it's uniform.
+      // Check if the 'nextString' now consists of a single repeated character
+      if (/^([a-z])\1*$/.test(nextString)) {
+        break; // Exit the inner while loop if the string is uniform
       }
-      currentStringState = subsequentString;
-      subsequentString = ""; // Reset for the next iteration.
 
+      // Prepare for the next iteration: the 'nextString' becomes the 'currentString'
+      currentString = nextString;
+      // Reset 'nextString' for the next propagation step
+      nextString = "";
     }
 
-    // Update the overall minimum transformations if the current count is lower or if it's the first valid count.
-    if (minimumTransformations === -1 || minimumTransformations > transformationsCount) {
-      minimumTransformations = transformationsCount;
+    // After the propagation for a 'targetChar' is complete,
+    // update the overall minimum attempts if the current character's attempts are fewer
+    if (minimumAttempts === -1 || minimumAttempts > currentAttempts) {
+      minimumAttempts = currentAttempts;
     }
-
   }
-  console.log(minimumTransformations);
 
-};
+  // Output the final calculated minimum number of attempts
+  console.log(minimumAttempts);
+}
 
-// This section handles standard input/output and should not be altered.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the following line; it handles standard input/output
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

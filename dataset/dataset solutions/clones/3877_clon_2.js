@@ -1,42 +1,52 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code.
+"use strict";
 
-const calculateMinimumCost = (inputStrings) => { // Main entry point for processing input and determining the optimal expense.
-  // Pre-process the raw input data: remove leading/trailing whitespace and split into lines.
-  inputStrings = inputStrings.trim().split("\n");
+const processInput = (inputData) => {
+  // Trim leading/trailing whitespace and split the input into lines.
+  inputData = inputData.trim().split("\n");
 
-  // Extract numerical parameters from the first line of input.
-  const dataElements = inputStrings[0].split(" ");
+  // Parse the individual cost and quantity values from the first line of input.
+  const firstLineParts = inputData[0].split(" ");
+  const costA = parseInt(firstLineParts[0]); // Cost of pizza A
+  const costB = parseInt(firstLineParts[1]); // Cost of pizza B
+  const costC = parseInt(firstLineParts[2]); // Cost of an AB-set (half)
+  const countX = parseInt(firstLineParts[3]); // Desired quantity of pizza A
+  const countY = parseInt(firstLineParts[4]); // Desired quantity of pizza B
 
-  const costOfItemA = parseInt(dataElements[0]); // Unit price for the first type of item (e.g., 'A' pizza).
-  const costOfItemB = parseInt(dataElements[1]); // Unit price for the second type of item (e.g., 'B' pizza).
-  const costOfHalfCombo = parseInt(dataElements[2]); // Price of a special half-combo (e.g., half 'A' + half 'B').
-  const requiredCountA = parseInt(dataElements[3]); // Total quantity needed for the first item type.
-  const requiredCountB = parseInt(dataElements[4]); // Total quantity needed for the second item type.
+  // Calculate the total cost of one complete AB set (two C pizzas).
+  const costABSet = 2 * costC;
 
-  const fullComboPrice = 2 * costOfHalfCombo; // Calculate the cost of a complete combo (two half-combos).
+  // Evaluate if buying an AB set is more economical than purchasing A and B separately.
+  if (costA + costB > costABSet) {
+    // If the AB set offers a better price, calculate the total cost using different strategies.
 
-  // Determine if buying items via the combo offer is more economical than individual purchases.
-  if (costOfItemA + costOfItemB > fullComboPrice) {
-    let commonComboPurchase = fullComboPrice * Math.min(requiredCountA, requiredCountB); // Cost for the maximum number of full combos that can be formed.
-    let remainingIndividualCost = 0; // Variable to store the cost of items not covered by full combos.
+    // Determine the price for the maximum number of full AB sets that can be purchased.
+    let commonSetPrice = costABSet * Math.min(countX, countY);
+    let remainingIndividualPrice = 0; // Initialize cost for any remaining individual pizzas.
 
-    // Calculate the cost for any leftover items that must be bought individually.
-    if (requiredCountA > requiredCountB) {
-      remainingIndividualCost = costOfItemA * (requiredCountA - requiredCountB);
-    } else if (requiredCountB > requiredCountA) {
-      remainingIndividualCost = costOfItemB * (requiredCountB - requiredCountA);
+    // Calculate the cost for any pizzas that cannot be covered by full AB sets.
+    if (countX > countY) {
+      remainingIndividualPrice = costA * (countX - countY); // Remaining A pizzas
+    } else if (countY > countX) {
+      remainingIndividualPrice = costB * (countY - countX); // Remaining B pizzas
     }
 
-    let mixedPurchaseTotal = commonComboPurchase + remainingIndividualCost; // Total cost using a strategy of some combos and some individual items.
-    let bulkComboPurchaseTotal = fullComboPrice * Math.max(requiredCountA, requiredCountB); // Cost if all items are purchased as combos, potentially overbuying.
+    // Calculate the total cost by combining full AB sets with individual remaining pizzas.
+    let combinedPurchasePrice = commonSetPrice + remainingIndividualPrice;
 
-    // Output the minimum cost between the mixed strategy and the all-combo strategy.
-    console.log(Math.min(bulkComboPurchaseTotal, mixedPurchaseTotal));
+    // Calculate the total cost if all pizzas were bought as AB sets,
+    // even if it means buying more than needed for one type.
+    let allSetPurchasePrice = costABSet * Math.max(countX, countY);
+
+    // Output the minimum cost between the two strategies:
+    // 1. Buying all as AB sets (potentially overbuying one type).
+    // 2. Buying common parts as AB sets and remaining individually.
+    console.log(Math.min(allSetPurchasePrice, combinedPurchasePrice));
   } else {
-    // If the combo offer provides no savings, calculate the straightforward cost of buying all items separately.
-    console.log((costOfItemA * requiredCountA) + (costOfItemB * requiredCountB));
+    // If buying A and B individually is cheaper or equal to an AB set,
+    // then the most cost-effective approach is to buy all pizzas individually.
+    console.log((costA * countX) + (costB * countY));
   }
 };
 
-// Initiate the cost calculation process by reading input from the standard input stream.
-calculateMinimumCost(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

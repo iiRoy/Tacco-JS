@@ -1,29 +1,21 @@
-function CalculationModule(rawTextContent) {
-  const valueParts = rawTextContent.split(" ");
-  const primaryVal = BigInt(valueParts[0]);
-  const secondaryVal = BigInt(valueParts[1]);
+const logicHandlers = [
+  (firstDim, secondDim) => (firstDim - 2n) * (secondDim - 2n),
+  (firstDim, secondDim) => firstDim - 2n,
+  (firstDim, secondDim) => secondDim - 2n,
+  (firstDim, secondDim) => 0n
+];
 
-  const pMinusTwo = primaryVal - 2n;
-  const sMinusTwo = secondaryVal - 2n;
+function processInput(dataString) {
+  const [firstDim, secondDim] = dataString.split(" ").map(BigInt);
 
-  const isPrimaryOne = BigInt(primaryVal === 1n);
-  const isSecondaryOne = BigInt(secondaryVal === 1n);
+  const isFirstDimOne = firstDim === 1n ? 1 : 0;
+  const isSecondDimOne = secondDim === 1n ? 1 : 0;
 
-  const notPrimaryOne = BigInt(primaryVal !== 1n);
-  const notSecondaryOne = BigInt(secondaryVal !== 1n);
+  const dispatchKey = (isFirstDimOne << 1) | isSecondDimOne;
 
-  const finalOutcome =
-    (isPrimaryOne * isSecondaryOne * 0n) +
-    (isPrimaryOne * notSecondaryOne * sMinusTwo) +
-    (notPrimaryOne * isSecondaryOne * pMinusTwo) +
-    (notPrimaryOne * notSecondaryOne * pMinusTwo * sMinusTwo);
+  const finalResult = logicHandlers[dispatchKey](firstDim, secondDim);
 
-  console.log(finalOutcome.toString());
+  console.log(finalResult.toString());
 }
 
-const fileSystemAccess = require("fs");
-const standardInputPath = "/dev/stdin";
-const textEncodingFormat = "utf8";
-const processedInput = fileSystemAccess.readFileSync(standardInputPath, textEncodingFormat).trim();
-
-CalculationModule(processedInput);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,28 +1,30 @@
-const processDataSet = (sourceData) => {
-  const dataSegments = sourceData.split('\n');
+function ProcessInput(rawData) {
+    const dataRows = rawData.split("\n");
 
-  const [countItems, constraintValue] = dataSegments[0].split(' ').map(parseFloat);
-  const numericSeries = dataSegments[1].split(' ').map(parseFloat);
+    const [elementCount, thresholdValue] = dataRows[0].trim().split(" ").map(Number);
+    const numericSequence = dataRows[1].trim().split(" ").map(Number);
 
-  const analysisResult = numericSeries.reduce((accumulator, currentObservation) => {
-    const potentialBenefit = currentObservation - accumulator.lowestPoint;
+    const initialAccumulator = {
+        lowestPointEncountered: numericSequence[0],
+        maximumProfit: 0,
+        profitOccurrences: 1
+    };
 
-    if (potentialBenefit > accumulator.peakProfit) {
-      accumulator.peakProfit = potentialBenefit;
-      accumulator.profitOccurrences = 1;
-    } else if (potentialBenefit === accumulator.peakProfit) {
-      accumulator.profitOccurrences++;
-    }
+    const finalResult = numericSequence.slice(1).reduce((accumulator, currentObservation) => {
+        const calculatedProfit = currentObservation - accumulator.lowestPointEncountered;
 
-    accumulator.lowestPoint = Math.min(accumulator.lowestPoint, currentObservation);
+        if (calculatedProfit > accumulator.maximumProfit) {
+            accumulator.maximumProfit = calculatedProfit;
+            accumulator.profitOccurrences = 1;
+        } else if (calculatedProfit === accumulator.maximumProfit) {
+            accumulator.profitOccurrences++;
+        }
 
-    return accumulator;
-  }, { lowestPoint: Infinity, peakProfit: 0, profitOccurrences: 0 });
+        accumulator.lowestPointEncountered = Math.min(accumulator.lowestPointEncountered, currentObservation);
+        return accumulator;
+    }, initialAccumulator);
 
-  const finalTally = Math.floor(constraintValue / 2);
-  const outcome = Math.min(analysisResult.profitOccurrences, finalTally);
+    console.log(Math.min(finalResult.profitOccurrences, Math.floor(thresholdValue / 2)));
+}
 
-  return outcome;
-};
-
-console.log(processDataSet(require("fs").readFileSync("/dev/stdin", "utf8")));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

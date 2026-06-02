@@ -1,35 +1,44 @@
 "use strict";
 
-function processData(entryData) {
-    let dataSegments = entryData.split("\n");
-    let firstLineContent = dataSegments[0];
-    let initialValueToken = firstLineContent.split(/\s/)[0];
-    let numericalValue = Number(initialValueToken);
+const negabaseOperationMap = new Map();
 
-    function generateBaseNegativeTwoRepresentation(currentNum) {
-        if (currentNum === 0) {
-            return [];
-        }
+negabaseOperationMap.set(0, (currentValue) => ({
+    digitRepresentation: "0",
+    nextIterationValue: currentValue / -2
+}));
 
-        let digitForCurrentPosition = (currentNum % 2 === 0) ? 0 : 1;
-        let nextNumberForRecursion = (currentNum - digitForCurrentPosition) / -2;
+negabaseOperationMap.set(1, (currentValue) => ({
+    digitRepresentation: "1",
+    nextIterationValue: (currentValue - 1) / -2
+}));
 
-        return [...generateBaseNegativeTwoRepresentation(nextNumberForRecursion), digitForCurrentPosition];
+function computeNegabaseDigits(currentNumericalValue, digitCollector = []) {
+    if (currentNumericalValue === 0) {
+        return digitCollector;
     }
 
-    let representationDigits = generateBaseNegativeTwoRepresentation(numericalValue);
-    let finalStringOutput = representationDigits.join('');
+    const parityKey = Math.abs(currentNumericalValue % 2);
 
-    if (finalStringOutput === "") {
-        finalStringOutput = "0";
+    const { digitRepresentation, nextIterationValue } = negabaseOperationMap.get(parityKey)(currentNumericalValue);
+
+    digitCollector.push(digitRepresentation);
+    return computeNegabaseDigits(nextIterationValue, digitCollector);
+}
+
+function ProcessInputData(inputContent) {
+    let contentLines = inputContent.split("\n");
+    let firstLineSegment = contentLines.shift().split(/\s/)[0];
+    let initialNumericalInput = Number(firstLineSegment);
+
+    let finalOutputString;
+    if (initialNumericalInput === 0) {
+        finalOutputString = "0";
+    } else {
+        const collectedDigits = computeNegabaseDigits(initialNumericalInput);
+        finalOutputString = collectedDigits.reverse().join('');
     }
 
-    emitResult(finalStringOutput);
+    console.log(finalOutputString);
 }
 
-function emitResult(outputValue) {
-    console.log(outputValue);
-}
-
-const acquiredInput = require("fs").readFileSync("/dev/stdin", "utf8");
-processData(acquiredInput);
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

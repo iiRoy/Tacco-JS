@@ -1,60 +1,67 @@
-const factorialCache = new Map();
-const computeFactorial = (val) => {
-    if (val === 1) return 1;
-    if (factorialCache.has(val)) return factorialCache.get(val);
-    const res = val * computeFactorial(val - 1);
-    factorialCache.set(val, res);
-    return res;
-};
+const MODULUS = 998244353;
 
-const MODULUS_CONSTANT = 998244353;
+function modularExponentiation(baseValue, exponentValue, modulusValue) {
+  if (baseValue === undefined || exponentValue === undefined) {
+    return NaN;
+  }
 
-const computePowerMod = (base, exponent) => {
-    let productAccumulator = 1;
-    let currentBase = Number(base) || 0;
-    let currentExponent = Number(exponent) || 0;
+  if (exponentValue === 0) {
+    return 1;
+  }
+  if (baseValue === 0) {
+    return 0;
+  }
+  if (baseValue === 1) {
+    return 1;
+  }
 
-    if (currentBase === 0) {
-        return currentExponent === 0 ? 1 : 0;
+  let resultAccumulator = 1;
+  let currentBase = baseValue % modulusValue;
+
+  while (exponentValue > 0) {
+    if (exponentValue % 2 === 1) {
+      resultAccumulator = (resultAccumulator * currentBase) % modulusValue;
     }
+    currentBase = (currentBase * currentBase) % modulusValue;
+    exponentValue = Math.floor(exponentValue / 2);
+  }
+  return resultAccumulator;
+}
 
-    currentBase %= MODULUS_CONSTANT;
-    while (currentExponent > 0) {
-        if (currentExponent % 2 === 1) {
-            productAccumulator = (productAccumulator * currentBase) % MODULUS_CONSTANT;
-        }
-        currentBase = (currentBase * currentBase) % MODULUS_CONSTANT;
-        currentExponent = Math.floor(currentExponent / 2);
-    }
-    return productAccumulator;
-};
+function processInput(rawInputLines) {
+  const inputCount = Number(rawInputLines[0]);
+  const numericValues = rawInputLines[1].split(" ").map(Number);
 
+  const { frequencyStore, maxVal } = numericValues.reduce(
+    (accumulator, currentNumber) => {
+      accumulator.frequencyStore.set(
+        currentNumber,
+        (accumulator.frequencyStore.get(currentNumber) || 0) + 1
+      );
+      accumulator.maxVal = Math.max(accumulator.maxVal, currentNumber);
+      return accumulator;
+    },
+    { frequencyStore: new Map(), maxVal: 0 }
+  );
 
-const computeOutcome = (rawText) => {
-    const lines = rawText.split('\n');
-    const initialValue = Number(lines[0]);
+  const finalResult = Array.from({ length: maxVal }, (_, index) => index + 1).reduce(
+    (accumulator, currentIteration) => {
+      const baseForTerm = frequencyStore.get(currentIteration - 1);
+      const exponentForTerm = frequencyStore.get(currentIteration);
+      const currentTerm = modularExponentiation(
+        baseForTerm,
+        exponentForTerm,
+        MODULUS
+      );
 
-    const numbersString = lines[1];
-    const parsedNumbers = numbersString.split(' ').map(Number);
+      return Number.isNaN(currentTerm)
+        ? NaN
+        : (accumulator * currentTerm) % MODULUS;
+    },
+    1
+  );
 
-    const { frequencyStore, upperBound } = parsedNumbers.reduce((acc, num) => {
-        acc.frequencyStore.set(num, (acc.frequencyStore.get(num) || 0) + 1);
-        acc.upperBound = Math.max(acc.upperBound, num);
-        return acc;
-    }, { frequencyStore: new Map(), upperBound: 0 });
+  console.log(finalResult);
+}
 
-    const auxiliaryMap = new Map();
-    auxiliaryMap.set(-1, 1);
-
-    const finalResult = Array.from({ length: upperBound }, (_, index) => index + 1)
-        .reduce((currentProduct, currentElement) => {
-            const baseValue = frequencyStore.get(currentElement - 1) || 0;
-            const exponentValue = frequencyStore.get(currentElement) || 0;
-            const term = computePowerMod(baseValue, exponentValue);
-            return (currentProduct * term) % MODULUS_CONSTANT;
-        }, 1);
-
-    console.log(finalResult);
-};
-
-computeOutcome(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

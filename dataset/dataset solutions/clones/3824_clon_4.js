@@ -1,17 +1,26 @@
-const assessProximity = (alpha, beta, gamma, delta) => {
-    const outcome = (0 >= (alpha - beta) - delta);
-    return outcome ? 'Yes' : 'No';
+const processInputData = (rawData) => {
+    const stringComponents = rawData.trim().split(' ');
+    return stringComponents.map(component => Number(component));
 };
 
-const interpretDirective = (rawTransmission) => {
-    const processedScalars = Array.from(rawTransmission.trim().split(' '), Number);
+const evaluateCondition = (numericElements) => {
+    const [firstOperand, secondOperand, thirdOperand, fourthOperand] = numericElements;
     
-    const initial = processedScalars[0];
-    const successive = processedScalars[1];
-    const auxiliary = processedScalars[2];
-    const threshold = processedScalars[3];
+    // The original condition: (Math.abs(a-b <=d)) || (Math.abs(a-b <=d) && Math.abs(b-c <=d))
+    // In JavaScript, Math.abs(true) is 1, Math.abs(false) is 0.
+    // So, Math.abs(X <= Y) acts as a boolean check for (X <= Y).
+    // The expression simplifies to: (firstOperand - secondOperand <= fourthOperand)
+    // We must replicate the exact observable behavior, not a corrected interpretation.
+    const outcomeFlag = firstOperand - secondOperand <= fourthOperand;
     
-    console.log(assessProximity(initial, successive, auxiliary, threshold));
+    return outcomeFlag ? 'Yes' : 'No';
 };
 
-interpretDirective(require("fs").readFileSync("/dev/stdin","utf8"));
+const runApplication = (fileSystemModule) => {
+    const fileContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+    const processedNumbers = processInputData(fileContent);
+    const finalDecision = evaluateCondition(processedNumbers);
+    console.log(finalDecision);
+};
+
+runApplication(require("fs"));

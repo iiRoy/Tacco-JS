@@ -1,21 +1,16 @@
-// This function is designed to process an incoming string of raw information.
 function processInput(inputString) {
-  // First, the input text is segmented into individual lines,
-  // then each line is further broken down by spaces.
-  // Each resulting string piece is converted into an integer value.
-  const structuredNumericData = inputString
-    .split(/\r?\n|\r/) // Differentiates newline splitting
-    .map(currentLine =>
-      currentLine.split(' ').map(val => parseInt(val.trim(), 10))
-    );
+  // Parse the incoming string data into a 2D array of numbers.
+  // First, split the entire input by various newline characters to get individual lines.
+  // Then, for each line, split it by spaces and convert each resulting part into a numerical value.
+  const parsedData = inputString.split(/\r\n|\r|\n/).map(lineSegment => lineSegment.split(' ').map(Number));
 
-  // A specific data point within the structured set is evaluated.
-  if (structuredNumericData[1][1] === 1) {
-    // If the evaluated data point matches the target value,
-    // a confirmation signal is emitted.
+  // Check a specific element within the parsed data structure.
+  // The condition evaluates if the element at index [1][1] of the parsedData array is strictly equal to the number 1.
+  if (parsedData[1][1] === 1) {
+    // If the condition is met, output the integer 1 to the console.
     console.log(1);
   } else {
-    // Should the data point not match, an alternative signal is emitted.
+    // Otherwise (if the condition is not met), output the integer 0 to the console.
     console.log(0);
   }
 }

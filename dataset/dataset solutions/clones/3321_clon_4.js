@@ -1,39 +1,33 @@
-console.log((function (inputData) {
-    const linesOfInput = inputData.split('\n').filter(Boolean);
-    const totalFlips = Number(linesOfInput[0]);
-    const flipProbabilities = linesOfInput[1].split(' ').map(Number);
+const processInputAndCalculate = (rawInput) => {
+    const lines = rawInput.trim().split('\n');
 
-    const recurseAndCombine = (idx, priorDistribution) => {
-        if (idx === totalFlips) {
-            return priorDistribution;
+    const totalCoins = parseInt(lines[0].split(' ')[0], 10);
+    const coinSuccessProbabilities = lines[1].split(' ').map(parseFloat);
+
+    let currentDistribution = new Array(totalCoins + 1).fill(0.0);
+    currentDistribution[0] = 1.0 - coinSuccessProbabilities[0];
+    currentDistribution[1] = coinSuccessProbabilities[0];
+
+    const finalDistribution = coinSuccessProbabilities.slice(1).reduce((previousDist, currentCoinProb, idx) => {
+        const processedCoinIndex = idx + 1;
+        let nextDist = new Array(totalCoins + 1).fill(0.0);
+
+        for (let headsCount = processedCoinIndex + 1; headsCount >= 0; --headsCount) {
+            if (headsCount <= processedCoinIndex) {
+                nextDist[headsCount] += previousDist[headsCount] * (1.0 - currentCoinProb);
+            }
+
+            if (headsCount > 0) {
+                nextDist[headsCount] += previousDist[headsCount - 1] * currentCoinProb;
+            }
         }
+        return nextDist;
+    }, currentDistribution);
 
-        const currentCoinChance = flipProbabilities[idx];
-        const currentCoinInverseChance = 1.0 - currentCoinChance;
-        const nextDistribution = new Map();
+    const minimumHeadsForSum = Math.floor((totalCoins + 1) / 2);
+    const totalWinningProbability = finalDistribution.slice(minimumHeadsForSum).reduce((sumAccumulator, probValue) => sumAccumulator + probValue, 0.0);
 
-        for (const [headsCount, probValue] of priorDistribution.entries()) {
-            const probTails = nextDistribution.get(headsCount) || 0.0;
-            nextDistribution.set(headsCount, probTails + probValue * currentCoinInverseChance);
+    return totalWinningProbability.toString();
+};
 
-            const probHeads = nextDistribution.get(headsCount + 1) || 0.0;
-            nextDistribution.set(headsCount + 1, probHeads + probValue * currentCoinChance);
-        }
-
-        return recurseAndCombine(idx + 1, nextDistribution);
-    };
-
-    const initialDistributionForRecursion = new Map();
-    initialDistributionForRecursion.set(0, 1.0);
-
-    const finalOutcomeDistribution = recurseAndCombine(0, initialDistributionForRecursion);
-
-    const minimumRequiredSuccesses = Math.ceil(totalFlips / 2);
-    let aggregatedProbability = 0.0;
-
-    for (let s = minimumRequiredSuccesses; s <= totalFlips; ++s) {
-        aggregatedProbability += finalOutcomeDistribution.get(s) || 0.0;
-    }
-
-    return aggregatedProbability.toString();
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8')));

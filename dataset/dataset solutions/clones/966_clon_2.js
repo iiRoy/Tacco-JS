@@ -1,146 +1,126 @@
-// Application configuration parameters.
-appSettings = { dataSource: '/dev/stdin', lineSeparator: '\n' }; // Input from standard input
+let cfg = { input: '/dev/stdin', newline: '\n' }; // Configuration for input source and line ending.
 
-const validationModule = require('assert'); // Required for potential assertions, though not used in this specific script.
+const assert = require('assert'); // The 'assert' module is included but not actively used in this script.
 
-const GRID_TOTAL_CELLS = 0x10; // Total number of cells in the puzzle grid (16 for a 4x4 board).
-const GRID_SIDE_LENGTH = Math.sqrt(GRID_TOTAL_CELLS); // The length of one side of the square grid.
+const GRID_DIM = 0x10; // Represents the total number of cells in the puzzle grid (e.g., 16 for a 4x4 puzzle).
 
-// Prepare an array where each number is wrapped in its own single-element array.
-// This acts as a unique object reference for each tile value.
-tileRepresentations = [];
-for (let loopCounter = 0; loopCounter < GRID_TOTAL_CELLS; loopCounter++) {
-    tileRepresentations.push([loopCounter]);
+let wrappedNums = []; // An array to store numbers, each wrapped in its own single-element array.
+for (let idx = 0; idx < GRID_DIM; ++idx) {
+  wrappedNums.push([idx]); // Each number is boxed to ensure unique object references for comparison.
 }
 
 // Read the initial puzzle state from the configured input source.
-// The input is expected to be a few lines of space-separated numbers.
-startingConfiguration = require('fs').readFileSync(appSettings.dataSource, 'utf8')
-    .trim() // Remove leading/trailing whitespace.
-    .split(appSettings.lineSeparator) // Split into individual lines.
-    .map(function(inputLine) {
-        return inputLine.split(' ').map(Number); // Convert each line of space-separated strings to an array of numbers.
-    });
+let initialState = require('fs').readFileSync(cfg.input, 'ascii')
+  .trim() // Remove any leading or trailing whitespace from the input.
+  .split(cfg.newline) // Split the input string into an array of lines.
+  .map(function (inputLine) { return inputLine.split(' ').map(Number); }); // Parse each line into an array of numbers.
 
-// Flatten the 2D array representing the initial grid into a single 1D array.
-startingConfiguration = [].concat(
-    startingConfiguration[0],
-    startingConfiguration[1],
-    startingConfiguration[2],
-    startingConfiguration[3]
-);
+// Flatten the 2D array of numbers into a single 1D array, then map to wrapped number objects.
+initialState = [].concat(initialState[0], initialState[1], initialState[2], initialState[3]);
+initialState = initialState.map(function (val) { return wrappedNums[val]; });
 
-// Map the raw numbers from the input to their unique object representations.
-startingConfiguration = startingConfiguration.map(function(parsedNumber) {
-    return tileRepresentations[parsedNumber];
-});
-
-// Define the target final arrangement of the puzzle tiles.
-// This is typically sorted 1 to 15, with 0 (empty) at the end.
-finalArrangement = [];
-for (let k = 1; k < GRID_TOTAL_CELLS; k++) {
-    finalArrangement.push(tileRepresentations[k]);
+let targetState = []; // Defines the desired final configuration of the puzzle.
+for (let idx = 1; idx < GRID_DIM; ++idx) {
+  targetState.push(wrappedNums[idx]); // Tiles 1 through 15 are placed in order.
 }
-finalArrangement.push(tileRepresentations[0]); // The empty tile goes last in the goal state.
+targetState.push(wrappedNums[0]); // The empty tile (0) is placed at the very end.
 
-// Initialize the current puzzle board state with the starting configuration.
-currentPuzzleBoard = [].concat(startingConfiguration);
+let currentPuzzle = [].concat(initialState); // The mutable state of the puzzle board during search.
 
-// Define the adjacency list for each cell on the 4x4 grid.
-// This array indicates which cells are direct neighbors (up, down, left, right).
-neighboringIndices = [
-    [1, 4], [0, 2, 5], [1, 3, 6], [2, 7],
-    [0, 5, 8], [1, 4, 6, 9], [2, 5, 7, 10], [3, 6, 11],
-    [4, 9, 12], [5, 8, 10, 13], [6, 9, 11, 14], [7, 10, 15],
-    [8, 13], [9, 12, 14], [10, 13, 15], [11, 14]
+// A lookup table defining which tile positions are directly adjacent to each other.
+const adjacentTiles = [
+  [1,4], [0,2,5], [1,3,6], [2,7],
+  [0,5,8], [1,4,6,9], [2,5,7,10], [3,6,11],
+  [4,9,12], [5,8,10,13], [6,9,11,14], [7,10,15],
+  [8,13], [9,12,14], [10,13,15], [11,14]
 ];
 
-// Pre-calculate Manhattan distances between all possible cell pairs on the grid.
-// This is used for the heuristic function in the search algorithm.
-heuristicDistances = [];
-for (let indexA = 0; indexA < GRID_TOTAL_CELLS; indexA++) {
-    heuristicDistances.push(new Array(GRID_TOTAL_CELLS));
+// Pre-calculate Manhattan distances between all possible pairs of tile positions.
+let manhattanDistances = [];
+const sideLength = Math.sqrt(GRID_DIM); // For a 4x4 grid, this value is 4.
+
+for (let idx = 0; idx < GRID_DIM; ++idx) {
+  manhattanDistances.push(new Array(sideLength)); // Initialize inner arrays with length 'sideLength'.
 }
 
-// Populate the distance matrix.
-for (let rowA = 0; rowA < GRID_SIDE_LENGTH; rowA++) {
-    for (let colA = 0; colA < GRID_SIDE_LENGTH; colA++) {
-        for (let rowB = 0; rowB < GRID_SIDE_LENGTH; rowB++) {
-            for (let colB = 0; colB < GRID_SIDE_LENGTH; colB++) {
-                const sourcePosition = (GRID_SIDE_LENGTH * rowA) + colA;
-                const targetPosition = (GRID_SIDE_LENGTH * rowB) + colB;
-                heuristicDistances[sourcePosition][targetPosition] = Math.abs(rowA - rowB) + Math.abs(colA - colB);
-            }
-        }
+// Populate the manhattanDistances matrix.
+for (let row1 = 0; row1 < sideLength; ++row1) {
+  for (let col1 = 0; col1 < sideLength; ++col1) {
+    for (let row2 = 0; row2 < sideLength; ++row2) {
+      for (let col2 = 0; col2 < sideLength; ++col2) {
+        const pos1 = sideLength * row1 + col1; // Calculate 1D index for (row1, col1).
+        const pos2 = sideLength * row2 + col2; // Calculate 1D index for (row2, col2).
+        // JavaScript arrays will automatically expand if an index beyond current length is accessed.
+        manhattanDistances[pos1][pos2] = Math.abs(row1 - row2) + Math.abs(col1 - col2);
+      }
     }
+  }
 }
 
 /**
- * Performs a depth-limited search (DLS) as part of an Iterative Deepening Depth-First Search (IDDFS).
- * It checks if the current board state can reach the goal within a given depth limit.
- *
- * @param {Array<Array<number>>} currentPuzzleBoard The current state of the puzzle board.
- * @param {number} currentPathLength The number of moves made so far to reach this state.
- * @param {number} maximumAllowedLength The maximum depth to search in this iteration.
- * @param {number} emptyCellPosition The index of the empty cell (tile 0) on the current board.
- * @returns {boolean} True if the goal state is found within the depth limit, false otherwise.
+ * Implements an Iterative Deepening Depth-First Search (IDDFS) algorithm
+ * to find the shortest path to solve the 15-puzzle.
+ * @param {Array<Array<number>>} puzzleBoard The current state of the puzzle board.
+ * @param {number} currentDepth The number of moves made so far.
+ * @param {number} maxDepth The maximum depth to explore in the current IDDFS iteration.
+ * @param {number} emptyTilePos The current 1D index of the empty tile (0).
+ * @returns {boolean} True if a solution is found within `maxDepth`, false otherwise.
  */
-function depthLimitedSearch(currentPuzzleBoard, currentPathLength, maximumAllowedLength, emptyCellPosition) {
-    var loopVar, estimatedCost, nextEmptyCell;
+function iterativeDeepeningDFS(puzzleBoard, currentDepth, maxDepth, emptyTilePos) {
+  let tileIndex, heuristicEstimate, nextEmptyPos; // Declare local variables.
 
-    // Base case: If the current path length equals the maximum allowed depth.
-    if (currentPathLength === maximumAllowedLength) {
-        // Check if the current board configuration matches the final arrangement.
-        for (loopVar in currentPuzzleBoard) {
-            if (currentPuzzleBoard[loopVar] !== finalArrangement[loopVar]) {
-                return false; // Not the goal state.
-            }
-        }
-        return true; // Goal state reached at max depth.
+  // Check if the current depth has reached the maximum allowed depth for this iteration.
+  if (currentDepth === maxDepth) {
+    // If at max depth, verify if the current board state matches the target state.
+    for (tileIndex in puzzleBoard) { // Iterate through the puzzle board's indices.
+      if (puzzleBoard[tileIndex] !== targetState[tileIndex]) {
+        return false; // Mismatch found, not the goal state.
+      }
+    }
+    return true; // All tiles match, goal state reached.
+  }
+  
+  // Calculate the Manhattan distance heuristic for the current board state.
+  heuristicEstimate = 0;
+  for (tileIndex in wrappedNums) { // Iterate through all possible tile values (0 to 15).
+    // Sum the Manhattan distances for each tile from its current position to its target position.
+    heuristicEstimate += manhattanDistances[puzzleBoard.indexOf(wrappedNums[tileIndex])][targetState.indexOf(wrappedNums[tileIndex])];
+  }
+  // Divide by 2 because each move changes the positions of two tiles, contributing to the sum.
+  heuristicEstimate = Math.floor(heuristicEstimate / 2.0);
+
+  // Pruning step: If current depth plus heuristic estimate exceeds max depth,
+  // this path cannot lead to a solution within the current maxDepth.
+  if (currentDepth + heuristicEstimate > maxDepth) {
+    return false;
+  }
+  
+  // Explore possible moves by swapping the empty tile with an adjacent tile.
+  for (tileIndex in adjacentTiles[emptyTilePos]) { // Iterate through indices of adjacent positions.
+    nextEmptyPos = adjacentTiles[emptyTilePos][tileIndex]; // Get the actual adjacent position.
+
+    // Perform the swap: move the tile from `nextEmptyPos` into `emptyTilePos`.
+    puzzleBoard[emptyTilePos] = puzzleBoard[nextEmptyPos];
+    puzzleBoard[nextEmptyPos] = wrappedNums[0]; // The empty tile (0) now occupies `nextEmptyPos`.
+
+    // Recursively call IDDFS for the new board state.
+    if (iterativeDeepeningDFS(puzzleBoard, currentDepth + 1, maxDepth, nextEmptyPos)) {
+      return true; // A solution was found in a deeper call.
     }
 
-    // Calculate the Manhattan distance heuristic for the current board state.
-    estimatedCost = 0;
-    for (loopVar in tileRepresentations) {
-        estimatedCost += heuristicDistances[currentPuzzleBoard.indexOf(tileRepresentations[loopVar])][finalArrangement.indexOf(tileRepresentations[loopVar])];
-    }
-    estimatedCost = Math.floor(estimatedCost / 2); // Divide by 2 for linear conflict adjustments in 15-puzzle.
-
-    // Pruning: If current path length plus heuristic estimate exceeds max allowed depth,
-    // this path cannot reach the goal within the limit.
-    if (currentPathLength + estimatedCost > maximumAllowedLength) {
-        return false;
-    }
-
-    // Explore possible moves from the current empty cell position.
-    for (loopVar in neighboringIndices[emptyCellPosition]) {
-        nextEmptyCell = neighboringIndices[emptyCellPosition][loopVar];
-
-        // Simulate a tile swap: move the tile from 'nextEmptyCell' into 'emptyCellPosition'.
-        currentPuzzleBoard[emptyCellPosition] = currentPuzzleBoard[nextEmptyCell];
-        currentPuzzleBoard[nextEmptyCell] = tileRepresentations[0]; // Mark the old 'nextEmptyCell' as the new empty spot.
-
-        // Recursively call DLS for the new state.
-        if (depthLimitedSearch(currentPuzzleBoard, currentPathLength + 1, maximumAllowedLength, nextEmptyCell)) {
-            return true; // Goal found!
-        }
-
-        // Backtrack: Undo the move to explore other paths.
-        currentPuzzleBoard[nextEmptyCell] = currentPuzzleBoard[emptyCellPosition]; // Restore the tile.
-        currentPuzzleBoard[emptyCellPosition] = tileRepresentations[0]; // Restore the empty cell.
-    }
-
-    return false; // No solution found from this state within the current depth limit.
+    // Backtrack: Undo the swap to restore the board for exploring other moves.
+    puzzleBoard[nextEmptyPos] = puzzleBoard[emptyTilePos]; // Move the tile back.
+    puzzleBoard[emptyTilePos] = wrappedNums[0]; // The empty tile returns to its original position.
+  }
+  return false; // No solution found from this branch within the current maxDepth.
 }
 
-// Main loop for Iterative Deepening: progressively increase the depth limit.
-let depthIterator;
-for (depthIterator = 0; depthIterator <= 45; depthIterator++) { // Max depth typically around 45 for 15-puzzle.
-    const initialEmptySlotIndex = startingConfiguration.indexOf(tileRepresentations[0]);
-    if (depthLimitedSearch(currentPuzzleBoard, 0, depthIterator, initialEmptySlotIndex)) {
-        break; // Solution found at this depth.
-    }
+// Main loop for the iterative deepening search.
+let finalDepth;
+for (finalDepth = 0; finalDepth <= 0x2D; ++finalDepth) { // Iterate through increasing depth limits (up to 45).
+  // Find the initial position of the empty tile (0) to start the search.
+  if (iterativeDeepeningDFS(currentPuzzle, 0, finalDepth, initialState.indexOf(wrappedNums[0]))) {
+    break; // A solution was found at this `finalDepth`, so stop searching.
+  }
 }
-
-// Output the minimum number of moves required to solve the puzzle.
-console.log(depthIterator);
+console.log(finalDepth); // Output the minimum number of moves (depth) required to solve the puzzle.

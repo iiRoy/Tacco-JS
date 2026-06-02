@@ -1,57 +1,51 @@
-const externalData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const parsedLines = externalData.trim().split('\n');
+const sourceDataContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedLines = sourceDataContent.trim().split('\n');
 
-let linePointer = 0;
-const processedCases = [];
-
-while (true) {
-    const currentCharge = parseInt(parsedLines[linePointer++], 10);
-    if (currentCharge === 0) {
-        break;
+function* transactionBlockGenerator(linesCollection) {
+    let currentLineIndex = 0;
+    while (currentLineIndex < linesCollection.length) {
+        const requiredPayment = Number(linesCollection[currentLineIndex++]);
+        if (requiredPayment === 0) {
+            return;
+        }
+        const availableCoinCounts = linesCollection[currentLineIndex++].split(' ').map(Number);
+        yield { requiredPayment, availableCoinCounts };
     }
-
-    const providedCurrencyCountsArr = parsedLines[linePointer++].split(' ').map(Number);
-    const providedCurrencyCounts = {
-        '10': providedCurrencyCountsArr[0],
-        '50': providedCurrencyCountsArr[1],
-        '100': providedCurrencyCountsArr[2],
-        '500': providedCurrencyCountsArr[3]
-    };
-
-    processedCases.push({
-        itemCost: currentCharge,
-        initialCoins: providedCurrencyCounts
-    });
 }
 
-const currencyUnitsDescending = [500, 100, 50, 10]; // For greedy change calculation
-const currencyUnitsAscending = [10, 50, 100, 500]; // For total calculation and final output order
+const currencyDenominations = [10, 50, 100, 500];
+const descendingDenominations = [...currencyDenominations].reverse();
 
-const caseResults = processedCases.map(individualCase => {
-    // Calculate total value of coins the customer has
-    const totalFunds = currencyUnitsAscending.reduce((accumulator, unitValue) => 
-        accumulator + individualCase.initialCoins[unitValue] * unitValue, 0);
+const outputAccumulator = [];
 
-    // Calculate the amount of change to be given back
-    let refundAmount = totalFunds - individualCase.itemCost;
+for (const currentTransaction of transactionBlockGenerator(processedLines)) {
+    const { requiredPayment, availableCoinCounts } = currentTransaction;
 
-    // Determine the breakdown of coins to return using a greedy approach
-    const returnedCurrencyBreakdown = {};
-    currencyUnitsDescending.forEach(unitValue => {
-        returnedCurrencyBreakdown[unitValue] = Math.floor(refundAmount / unitValue);
-        refundAmount %= unitValue;
+    let totalValueHeldByCustomer = availableCoinCounts.reduce((sum, count, index) => sum + count * currencyDenominations[index], 0);
+    let changeAmount = totalValueHeldByCustomer - requiredPayment;
+
+    const dispensedCoinQuantities = Array(currencyDenominations.length).fill(0);
+
+    descendingDenominations.forEach(denominationValue => {
+        if (changeAmount >= denominationValue) {
+            const countToDispense = Math.floor(changeAmount / denominationValue);
+            const originalDenomIndex = currencyDenominations.indexOf(denominationValue);
+            dispensedCoinQuantities[originalDenomIndex] = countToDispense;
+            changeAmount -= countToDispense * denominationValue;
+        }
     });
 
-    // Identify which coins were NOT used by the transaction
-    const unusedCurrencyLines = currencyUnitsAscending.flatMap(unitValue => {
-        const availableCount = individualCase.initialCoins[unitValue];
-        const dispensedCount = returnedCurrencyBreakdown[unitValue] || 0; // If no coins of this type were returned
-        const remainingCount = availableCount - dispensedCount;
-        
-        return remainingCount > 0 ? [`${unitValue} ${remainingCount}`] : [];
-    });
+    const transactionResultLines = currencyDenominations.map((denominationValue, index) => {
+        const initialQuantity = availableCoinCounts[index];
+        const dispensedQuantity = dispensedCoinQuantities[index];
+        const remainingUnusedQuantity = initialQuantity - dispensedQuantity;
+        return remainingUnusedQuantity > 0 ? `${denominationValue} ${remainingUnusedQuantity}` : null;
+    }).filter(Boolean);
 
-    return unusedCurrencyLines.join('\n');
-});
+    if (transactionResultLines.length > 0) {
+        outputAccumulator.push(...transactionResultLines);
+    }
+    outputAccumulator.push('');
+}
 
-console.log(caseResults.join('\n\n').trim());
+console.log(outputAccumulator.join('\n').trim());

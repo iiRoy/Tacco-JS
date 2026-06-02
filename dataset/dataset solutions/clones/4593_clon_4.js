@@ -1,132 +1,148 @@
-class InputProcessor {
-    constructor(sourceData) {
-        this.dataSegments = sourceData.split(/ |\n/).filter(segment => segment !== '');
-        this.currentPosition = 0;
-    }
-
-    fetchNextNumericValue() {
-        return Number(this.dataSegments[this.currentPosition++]);
-    }
-
-    fetchNextTextSegment() {
-        return this.dataSegments[this.currentPosition++];
-    }
-
-    constructLayout(heightDimension, widthDimension) {
-        const layoutGrid = [];
-        for (let r = 0; r < heightDimension; r++) {
-            const rowString = this.fetchNextTextSegment();
-            layoutGrid.push(Array.from(rowString));
-        }
-        return layoutGrid;
+"use strict";
+// Input parsing using a generator for a different approach
+function* tokenProvider(sourceText) {
+    // Split by any sequence of whitespace characters and filter out empty strings
+    const tokens = sourceText.split(/\s+/).filter(Boolean);
+    let currentIdx = 0;
+    while (currentIdx < tokens.length) {
+        yield tokens[currentIdx++];
     }
 }
 
-const computeCeilingDivision = (dividend, divisor) => Math.ceil(dividend / divisor);
+let globalTokenStream; // Will be initialized once
 
-const calculateShortestPaths = (environmentMap, initialColumn, initialRow) => {
-    const totalRows = environmentMap.length;
-    const totalCols = environmentMap[0].length;
-    const obstacleSymbol = '#';
-    const infiniteMetric = Number.MAX_SAFE_INTEGER;
+// Helper to extract the next numeric value from the stream
+function fetchNumericValue() {
+    return Number(globalTokenStream.next().value);
+}
 
-    const pathDistanceGrid = Array.from({ length: totalRows }, () =>
-        Array.from({ length: totalCols }, () => infiniteMetric)
+// Helper to extract the next string value from the stream
+function fetchStringValue() {
+    return globalTokenStream.next().value;
+}
+
+// BFS implementation with a single queue and explicit head pointer
+function calculateGridDistances(mapData, initialPointX, initialPointY) {
+    const obstacleSymbol = "#";
+    const unreachableDistance = 1e9; // Consistent with original's INF
+
+    const mapHeight = mapData.length;
+    const mapWidth = mapData[0].length;
+
+    // Initialize distance grid with unreachableDistance
+    const distanceMatrix = Array.from({ length: mapHeight }, () =>
+        Array(mapWidth).fill(unreachableDistance)
     );
 
-    const movementQueue = [[initialColumn, initialRow, 0]]; // [col, row, distance]
-    pathDistanceGrid[initialRow][initialColumn] = 0;
-
-    let queueHead = 0;
-
-    const cardinalDirections = [
-        { colDelta: 0, rowDelta: -1 }, // Up
-        { colDelta: 1, rowDelta: 0 },  // Right
-        { colDelta: 0, rowDelta: 1 },  // Down
-        { colDelta: -1, rowDelta: 0 }  // Left
+    // Define movement vectors as an array of objects
+    const movementVectors = [
+        { deltaX: 0, deltaY: -1 }, // North
+        { deltaX: 1, deltaY: 0 },  // East
+        { deltaX: 0, deltaY: 1 },  // South
+        { deltaX: -1, deltaY: 0 }  // West
     ];
 
-    while (queueHead < movementQueue.length) {
-        const [currentC, currentR, currentD] = movementQueue[queueHead++];
+    // Queue for BFS, storing objects with coordinates and current path cost
+    const bfsQueue = [];
 
-        cardinalDirections.forEach(direction => {
-            const adjacentC = currentC + direction.colDelta;
-            const adjacentR = currentR + direction.rowDelta;
-            const nextHopDistance = currentD + 1;
+    // Set starting point distance and add to queue
+    distanceMatrix[initialPointY][initialPointX] = 0;
+    bfsQueue.push({ x: initialPointX, y: initialPointY, cost: 0 });
 
-            if (adjacentR < 0 || adjacentR >= totalRows || adjacentC < 0 || adjacentC >= totalCols) {
-                return; // Out of bounds
-            }
+    let queueHead = 0; // Manual head pointer for efficient queue processing
+    while (queueHead < bfsQueue.length) {
+        const { x: currentX, y: currentY, cost: currentPathCost } = bfsQueue[queueHead++];
 
-            if (environmentMap[adjacentR][adjacentC] === obstacleSymbol || pathDistanceGrid[adjacentR][adjacentC] <= nextHopDistance) {
-                return; // Obstacle or already found a shorter/equal path
-            }
+        for (const vector of movementVectors) {
+            const nextX = currentX + vector.deltaX;
+            const nextY = currentY + vector.deltaY;
+            const newPathCost = currentPathCost + 1;
 
-            pathDistanceGrid[adjacentR][adjacentC] = nextHopDistance;
-            movementQueue.push([adjacentC, adjacentR, nextHopDistance]);
-        });
-    }
-
-    return pathDistanceGrid;
-};
-
-const processGridTraversalChallenge = (rawSystemInput) => {
-    const dataParser = new InputProcessor(rawSystemInput);
-
-    const arenaRows = dataParser.fetchNextNumericValue();
-    const arenaColumns = dataParser.fetchNextNumericValue();
-    const jumpAllowance = dataParser.fetchNextNumericValue();
-    const terrainLayout = dataParser.constructLayout(arenaRows, arenaColumns);
-
-    let entryXCoord, entryYCoord;
-
-    terrainLayout.some((rowContent, rowIndex) => {
-        const startCharPosition = rowContent.indexOf('S');
-        if (startCharPosition !== -1) {
-            entryXCoord = startCharPosition;
-            entryYCoord = rowIndex;
-            return true;
-        }
-        return false;
-    });
-
-    const shortestPathMetrics = calculateShortestPaths(terrainLayout, entryXCoord, entryYCoord);
-
-    let minimalBoundaryPassages = Number.MAX_SAFE_INTEGER;
-
-    for (let rIndex = 0; rIndex < arenaRows; rIndex++) {
-        for (let cIndex = 0; cIndex < arenaColumns; cIndex++) {
-            const currentCellPathLength = shortestPathMetrics[rIndex][cIndex];
-
-            if (currentCellPathLength > jumpAllowance) {
+            // Check boundary conditions
+            if (nextX < 0 || nextX >= mapWidth || nextY < 0 || nextY >= mapHeight) {
                 continue;
             }
 
-            const passagesToTopEdge = computeCeilingDivision(rIndex, jumpAllowance);
-            const passagesToLeftEdge = computeCeilingDivision(cIndex, jumpAllowance);
-            const passagesToBottomEdge = computeCeilingDivision(arenaRows - rIndex - 1, jumpAllowance);
-            const passagesToRightEdge = computeCeilingDivision(arenaColumns - cIndex - 1, jumpAllowance);
+            // Check if it's an obstacle or if a shorter path has already been found
+            if (mapData[nextY][nextX] === obstacleSymbol || distanceMatrix[nextY][nextX] <= newPathCost) {
+                continue;
+            }
 
-            const directBoundaryPassages = Math.min(
-                passagesToTopEdge,
-                passagesToLeftEdge,
-                passagesToBottomEdge,
-                passagesToRightEdge
-            ) + 1; // +1 for the current jump
-
-            minimalBoundaryPassages = Math.min(minimalBoundaryPassages, directBoundaryPassages);
+            // Update distance and add to queue
+            distanceMatrix[nextY][nextX] = newPathCost;
+            bfsQueue.push({ x: nextX, y: nextY, cost: newPathCost });
         }
     }
+    return distanceMatrix;
+}
 
-    return minimalBoundaryPassages;
-};
+// Main application logic encapsulated
+function processChallenge() {
+    const gridRows = fetchNumericValue();
+    const gridCols = fetchNumericValue();
+    const maxAllowedSteps = fetchNumericValue();
 
-const initiateChallengeExecution = () => {
-    const systemInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const finalOutcome = processGridTraversalChallenge(systemInputContent);
-    if (finalOutcome !== undefined) {
-        console.log(finalOutcome);
+    // Read the grid as an array of strings
+    const gridContent = Array.from({ length: gridRows }, () => fetchStringValue());
+
+    let startCoordX, startCoordY;
+
+    // Locate the 'S' character using functional iteration
+    gridContent.forEach((rowString, rowIndex) => {
+        const charPosition = rowString.indexOf("S");
+        if (charPosition !== -1) {
+            startCoordX = charPosition;
+            startCoordY = rowIndex;
+        }
+    });
+
+    const pathCosts = calculateGridDistances(gridContent, startCoordX, startCoordY);
+
+    let minimumBoundaryReach = Infinity; // Using Infinity for initial minimum
+
+    // Iterate through all cells to find the minimum steps to reach a boundary
+    // using nested functional iteration
+    Array.from({ length: gridRows }).forEach((_, yPos) => {
+        Array.from({ length: gridCols }).forEach((__, xPos) => {
+            const currentCellPathCost = pathCosts[yPos][xPos];
+
+            // Skip if the path cost exceeds the maximum allowed steps
+            if (currentCellPathCost > maxAllowedSteps) {
+                return; // Acts like 'continue' for forEach
+            }
+
+            // Calculate steps required to reach each of the four boundaries
+            // The +1 is for the step from the current cell to the boundary region
+            const stepsToNorthEdge = Math.ceil(yPos / maxAllowedSteps);
+            const stepsToWestEdge = Math.ceil(xPos / maxAllowedSteps);
+            const stepsToSouthEdge = Math.ceil((gridRows - 1 - yPos) / maxAllowedSteps);
+            const stepsToEastEdge = Math.ceil((gridCols - 1 - xPos) / maxAllowedSteps);
+
+            // Determine the minimum steps to any boundary from the current cell
+            const currentCellMinBoundarySteps = Math.min(
+                stepsToNorthEdge,
+                stepsToWestEdge,
+                stepsToSouthEdge,
+                stepsToEastEdge
+            ) + 1;
+
+            // Update the overall minimum if a smaller value is found
+            if (currentCellMinBoundarySteps < minimumBoundaryReach) {
+                minimumBoundaryReach = currentCellMinBoundarySteps;
+            }
+        });
+    });
+
+    return minimumBoundaryReach;
+}
+
+// Immediately-invoked function expression to manage execution flow
+(function() {
+    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+    globalTokenStream = tokenProvider(fileContent);
+
+    const finalResult = processChallenge();
+    if (finalResult !== undefined) {
+        console.log(finalResult);
     }
-};
-
-initiateChallengeExecution();
+})();

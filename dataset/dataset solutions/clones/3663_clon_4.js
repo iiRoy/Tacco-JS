@@ -1,42 +1,38 @@
-function processInputData(rawData) {
-    const initialSegments = rawData
-        .split('\n')
-        .slice(1)
-        .filter(line => line.trim() !== '')
-        .map(segmentSpec => segmentSpec.split(' ').map(Number))
-        .map(([beginValue, endValue]) =>
-            Array.from({ length: endValue - beginValue }, (_, index) => beginValue + index)
-        );
+const processInputData = (rawData) => {
+    const inputLines = rawData.split('\n').slice(1);
 
-    const finalSeparations = evaluateSegments(initialSegments, 1);
+    const initialRangeSets = inputLines.map(line => {
+        const startChar = line[0];
+        const endChar = line[2];
+        const startValue = parseInt(startChar, 10);
+        const endValue = parseInt(endChar, 10);
+        return Array.from({ length: endValue - startValue }, (_, index) => startValue + index);
+    });
 
-    console.log(finalSeparations);
-}
+    const calculateIntersection = (firstRange, secondRange) => {
+        const setForFirst = new Set(firstRange);
+        return secondRange.filter(element => setForFirst.has(element));
+    };
 
-function determineOverlap(collectionA, collectionB) {
-    if (!collectionA || !collectionB) {
-        return [];
-    }
-    const setReference = new Set(collectionA);
-    return collectionB.filter(item => setReference.has(item));
-}
+    const determineSegmentCount = (currentRangeList, accumulatedSegments) => {
+        console.log(currentRangeList);
 
-function evaluateSegments(currentSegments, currentSeparations) {
-    if (currentSegments.length <= 1) {
-        return currentSeparations;
-    }
+        if (currentRangeList.length <= 1) {
+            return accumulatedSegments;
+        }
 
-    const firstComponent = currentSegments[0];
-    const secondComponent = currentSegments[1];
-    const subsequentComponents = currentSegments.slice(2);
+        const [firstRange, secondRange, ...remainingRanges] = currentRangeList;
+        const commonElements = calculateIntersection(firstRange, secondRange);
 
-    const sharedElements = determineOverlap(firstComponent, secondComponent);
+        if (commonElements.length !== 0) {
+            return determineSegmentCount([commonElements, ...remainingRanges], accumulatedSegments);
+        } else {
+            return determineSegmentCount([secondRange, ...remainingRanges], accumulatedSegments + 1);
+        }
+    };
 
-    if (sharedElements.length > 0) {
-        return evaluateSegments([sharedElements, ...subsequentComponents], currentSeparations);
-    } else {
-        return evaluateSegments([secondComponent, ...subsequentComponents], currentSeparations + 1);
-    }
-}
+    const finalSegmentCount = determineSegmentCount(initialRangeSets, 1);
+    console.log(parseInt(finalSegmentCount));
+};
 
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

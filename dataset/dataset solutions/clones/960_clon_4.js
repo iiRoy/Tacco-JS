@@ -1,118 +1,111 @@
-function createPriorityQueue() {
-    let store = [];
-
-    function supply(entry) {
-        store.push(entry);
-        ascend(store.length - 1);
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
     }
 
-    function extractSmallest() {
-        if (store.length === 0) return undefined;
-        if (store.length === 1) return store.pop();
-
-        const minimum = store[0];
-        store[0] = store.pop();
-        descend(0);
-        return minimum;
+    push(item) {
+        this.heap.push(item);
+        this._bubbleUp(this.heap.length - 1);
     }
 
-    function ascend(idx) {
-        while (idx > 0) {
-            let parentIdx = Math.floor((idx - 1) / 2);
-            if (store[idx][0] < store[parentIdx][0]) {
-                [store[idx], store[parentIdx]] = [store[parentIdx], store[idx]];
-                idx = parentIdx;
+    pop() {
+        if (this.isEmpty()) {
+            return undefined;
+        }
+        const minElement = this.heap[0];
+        const lastElement = this.heap.pop();
+        if (!this.isEmpty()) {
+            this.heap[0] = lastElement;
+            this._bubbleDown(0);
+        }
+        return minElement;
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    _bubbleUp(childIndex) {
+        while (childIndex > 0) {
+            const parentIndex = Math.floor((childIndex - 1) / 2);
+            if (this.heap[parentIndex][0] > this.heap[childIndex][0]) {
+                [this.heap[parentIndex], this.heap[childIndex]] = [this.heap[childIndex], this.heap[parentIndex]];
+                childIndex = parentIndex;
             } else {
                 break;
             }
         }
     }
 
-    function descend(idx) {
-        let leftChild, rightChild, minimalChild;
+    _bubbleDown(parentIndex) {
+        const lastIndex = this.heap.length - 1;
         while (true) {
-            leftChild = 2 * idx + 1;
-            rightChild = 2 * idx + 2;
-            minimalChild = idx;
+            const leftChildIndex = 2 * parentIndex + 1;
+            const rightChildIndex = 2 * parentIndex + 2;
+            let smallestElementIndex = parentIndex;
 
-            if (leftChild < store.length && store[leftChild][0] < store[minimalChild][0]) {
-                minimalChild = leftChild;
-            }
-            if (rightChild < store.length && store[rightChild][0] < store[minimalChild][0]) {
-                minimalChild = rightChild;
+            if (leftChildIndex <= lastIndex && this.heap[leftChildIndex][0] < this.heap[smallestElementIndex][0]) {
+                smallestElementIndex = leftChildIndex;
             }
 
-            if (minimalChild !== idx) {
-                [store[idx], store[minimalChild]] = [store[minimalChild], store[idx]];
-                idx = minimalChild;
+            if (rightChildIndex <= lastIndex && this.heap[rightChildIndex][0] < this.heap[smallestElementIndex][0]) {
+                smallestElementIndex = rightChildIndex;
+            }
+
+            if (smallestElementIndex !== parentIndex) {
+                [this.heap[parentIndex], this.heap[smallestElementIndex]] = [this.heap[smallestElementIndex], this.heap[parentIndex]];
+                parentIndex = smallestElementIndex;
             } else {
                 break;
             }
         }
     }
-
-    function isVacant() {
-        return store.length === 0;
-    }
-
-    return { supply, extractSmallest, isVacant };
 }
 
-let dataSource = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-let inputRows = dataSource.split('\n');
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const inputLines = rawInputContent.split('\n');
 
-let vertexCount = Number(inputRows.shift());
-let routeMap = new Map();
+const totalGraphNodes = +inputLines.shift();
 
-for (let node = 0; node < vertexCount; node++) {
-    routeMap.set(node, []);
-}
+const graphAdjacencyList = Array(totalGraphNodes).fill(null).map(() => []);
 
-for (let rowIdx = 0; rowIdx < vertexCount; rowIdx++) {
-    let rowData = inputRows.shift().trim().split(' ').map(Number);
-    let sourceNodeId = rowData[0];
-    let edgeCount = rowData[1];
+for (let nodeCounter = 0; nodeCounter < totalGraphNodes; nodeCounter++) {
+    const currentLineSegments = inputLines.shift().trim().split(' ').map(Number);
+    const sourceNodeId = currentLineSegments[0];
+    const numberOfConnectedEdges = currentLineSegments[1];
 
-    for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-        let connectedNode = rowData[2 + edgeIdx * 2];
-        let edgeWeight = rowData[2 + edgeIdx * 2 + 1];
-        routeMap.get(sourceNodeId).push({ destination: connectedNode, weight: edgeWeight });
+    for (let edgeIndex = 0; edgeIndex < numberOfConnectedEdges; edgeIndex++) {
+        const destinationNodeId = currentLineSegments[2 + edgeIndex * 2];
+        const edgeCostValue = currentLineSegments[2 + edgeIndex * 2 + 1];
+        graphAdjacencyList[sourceNodeId].push({ target: destinationNodeId, weight: edgeCostValue });
     }
 }
 
-let pathValues = new Map();
-for (let node = 0; node < vertexCount; node++) {
-    pathValues.set(node, Number.MAX_SAFE_INTEGER);
-}
-pathValues.set(0, 0);
+const minimumDistances = Array(totalGraphNodes).fill(Number.POSITIVE_INFINITY);
+minimumDistances[0] = 0;
 
-let finalizedSet = new Set();
-let priorityHeap = createPriorityQueue();
-priorityHeap.supply([0, 0]);
+const priorityQueue = new MinPriorityQueue();
+priorityQueue.push([0, 0]); // [distance, node_index]
 
-while (!priorityHeap.isVacant()) {
-    let [currentDist, currentVertex] = priorityHeap.extractSmallest();
+while (!priorityQueue.isEmpty()) {
+    const [currentDistance, currentNodeIndex] = priorityQueue.pop();
 
-    if (finalizedSet.has(currentVertex)) {
+    if (currentDistance > minimumDistances[currentNodeIndex]) {
         continue;
     }
-    finalizedSet.add(currentVertex);
 
-    let neighbors = routeMap.get(currentVertex) || [];
+    for (const connectedEdge of graphAdjacencyList[currentNodeIndex]) {
+        const neighborNode = connectedEdge.target;
+        const connectionWeight = connectedEdge.weight;
+        const candidateDistance = currentDistance + connectionWeight;
 
-    for (let edge of neighbors) {
-        let neighborNode = edge.destination;
-        let edgeWeight = edge.weight;
-
-        let potentialNewDist = currentDist + edgeWeight;
-
-        if (potentialNewDist < pathValues.get(neighborNode)) {
-            pathValues.set(neighborNode, potentialNewDist);
-            priorityHeap.supply([potentialNewDist, neighborNode]);
+        if (candidateDistance < minimumDistances[neighborNode]) {
+            minimumDistances[neighborNode] = candidateDistance;
+            priorityQueue.push([candidateDistance, neighborNode]);
         }
     }
 }
 
-for (let outputIdx = 0; outputIdx < vertexCount; outputIdx++) {
-    console.log(outputIdx, pathValues.get(outputIdx));
+for (let outputIndex = 0; outputIndex < totalGraphNodes; outputIndex++) {
+    console.log(outputIndex, minimumDistances[outputIndex]);
 }

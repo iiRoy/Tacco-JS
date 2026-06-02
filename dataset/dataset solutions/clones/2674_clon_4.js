@@ -1,8 +1,11 @@
 "use strict";
 
-const finalOutcome = ((sourceContent) => {
-    const [firstMeasure, secondMeasure, thirdMeasure] = sourceContent.match(/(\d+)/g).map(Number);
-    return Math.max(0, secondMeasure + thirdMeasure - firstMeasure);
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+const processInputAndCalculate = (sourceData) => {
+    const [firstVal, secondVal, thirdVal] = sourceData.split(' ').map(Number);
 
-console.log(finalOutcome);
+    const outcome = Math.max(0, secondVal + thirdVal - firstVal);
+    
+    console.log(outcome);
+};
+
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

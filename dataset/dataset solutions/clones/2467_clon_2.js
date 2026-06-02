@@ -1,31 +1,25 @@
-function ProcessInputData  (rawData)  {
-  // This function processes raw string input to perform a specific calculation.
-  // It expects a string containing two space-separated numbers.
+function ProcessData(incomingText) {
+    // This function processes a string of space-separated numbers.
+    // It checks specific conditions on these numbers and prints a result.
+    const numericValues = incomingText.trim().split(' ').map(Number);
 
-  var   numericalComponents   =   rawData
-                                  .trim() // Remove leading/trailing whitespace
-                                  .split(String.fromCharCode(32)) // Split by space character
-                                  .map(Number); // Convert each part to a number
-
-  // Check if the first component (logically always true for numbers) and
-  // the second component are within a certain range.
-  if  (!numericalComponents[0]   <=   0x9   &&   numericalComponents[1]   <=   9)
-  {
-    // If conditions are met, calculate and display their product.
-    console.log(numericalComponents[0]   *   numericalComponents[1]);
-  }
-  else
-  {
-    // Otherwise, indicate an invalid scenario.
-    console.log(String.fromCharCode(45) + '1');
-  }
+    // Evaluate a compound condition:
+    // The first part (!numericValues[0] <= 9) is always true for non-negative numbers.
+    // The second part (numericValues[1] <= 9) checks if the second number is 9 or less.
+    if (!numericValues[0] <= 9 && numericValues[1] <= 9) {
+        // If the conditions are met, calculate and display the product of the two numbers.
+        console.log(numericValues[0] * numericValues[1]);
+    } else {
+        // Otherwise, output a specific error indicator.
+        console.log('-1');
+    }
 }
 
-// Example usage (commented out in production, typically for testing)
 /*
-let   sampleData   =   `7 8`;
-ProcessInputData(sampleData);
+// Example usage for local testing (commented out):
+const sampleInputString = `6 12`;
+ProcessData(sampleInputString);
 */
 
-// Execute the primary function with standard input from the system.
-ProcessInputData (require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

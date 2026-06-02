@@ -1,19 +1,31 @@
-function processInput(rawData) { // Primary function to handle incoming data
-    const tokens = rawData.split(' '); // Divide the raw input into distinct parts
-    const valOne = Number.parseInt(tokens[0], 10); // Convert the first segment to an integer base 10
-    const valTwo = Number.parseInt(tokens[1], 10); // Convert the second segment to an integer base 10
+function processInput(rawData) {
+  // Split the incoming string by spaces to get individual components.
+  const parts = rawData.split(' ');
 
-    let greatestValue = valOne + valTwo; // Start by assuming the sum is the largest
-    
-    if (greatestValue < valOne - valTwo) { // Compare with the difference
-        greatestValue = valOne - valTwo; // Update if the difference is greater
-    }
-    
-    if (greatestValue < valOne * valTwo) { // Compare with the product
-        greatestValue = valOne * valTwo; // Update if the product is greater
-    }
-    
-    console.log(greatestValue); // Output the ultimate maximum found
+  // Parse the first component into an integer, using base 10.
+  const val1 = parseInt(parts[0], 10);
+  // Parse the second component into an integer, using base 10.
+  const val2 = parseInt(parts[1], 10);
+
+  // Initialize a variable to hold the maximum value found so far.
+  // Start with the sum of the two numbers.
+  let greatestResult = val1 + val2;
+
+  // Check if the difference (val1 - val2) is greater than the current maximum.
+  if (greatestResult < val1 - val2) {
+    // If it is, update the maximum.
+    greatestResult = val1 - val2;
+  }
+
+  // Check if the product (val1 * val2) is greater than the current maximum.
+  if (greatestResult < val1 * val2) {
+    // If it is, update the maximum.
+    greatestResult = val1 * val2;
+  }
+
+  // Output the final greatest result to the console.
+  console.log(greatestResult);
 }
 
-processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8')); // Invoke the processing function with data from standard input
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

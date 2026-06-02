@@ -1,30 +1,24 @@
-function calculatePoints(inputLine) {
-    const parts = inputLine.trim().split(/\s+/);
-    const valA = Number(parts[0]);
-    const valB = Number(parts[1]);
+function processInputData(rawData) {
+  const tokenArray = rawData.trim().split(' ');
 
-    const ruleSet = [
-        { test: (a, b) => a === 1 && b === 1, bonus: 400000 },
-        { test: (a, b) => a === 1, bonus: 300000 },
-        { test: (a, b) => b === 1, bonus: 300000 },
-        { test: (a, b) => a === 2, bonus: 200000 },
-        { test: (a, b) => b === 2, bonus: 200000 },
-        { test: (a, b) => a === 3, bonus: 100000 },
-        { test: (a, b) => b === 3, bonus: 100000 },
-    ];
+  const firstNum = parseInt(tokenArray[0], 10);
+  const secondNum = parseInt(tokenArray[1], 10);
 
-    const accumulatedValue = ruleSet.reduce((currentSum, ruleItem) => {
-        if (ruleItem.test(valA, valB)) {
-            return currentSum + ruleItem.bonus;
-        }
-        return currentSum;
-    }, 0);
+  const scoreRegistry = new Map([
+    [1, 300000],
+    [2, 200000],
+    [3, 100000]
+  ]);
 
-    return accumulatedValue;
+  const fetchComponentScore = (val) => scoreRegistry.get(val) || 0;
+
+  const baseSum = fetchComponentScore(firstNum) + fetchComponentScore(secondNum);
+
+  const specialBonus = (firstNum === 1 && secondNum === 1) ? 400000 : 0;
+
+  const totalResult = baseSum + specialBonus;
+
+  console.log(totalResult);
 }
 
-const fileModule = require('node:fs');
-const acquiredData = fileModule.readFileSync('/dev/stdin', 'utf8');
-
-const finalScore = calculatePoints(acquiredData);
-console.log(finalScore);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

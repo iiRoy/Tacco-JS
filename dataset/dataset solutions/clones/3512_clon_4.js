@@ -1,50 +1,59 @@
-const processInput = (sourceString) => {
-    const inputSegments = sourceString.split('\n');
-    const totalCount = parseInt(inputSegments[0], 10);
-    const digitTokens = inputSegments[1].split(' ');
+function main(source) {
+    var lines = source.split("\n");
+    var rawSize = lines[0];
+    var values = lines[1].split(" ");
 
-    const groupSize = totalCount / 2;
-
-    const aggregateFrequencies = (collection) =>
-        Object.entries(collection).reduce(
-            (accumulator, [valueToken, quantity]) => {
-                if (quantity > accumulator.primaryQuantity) {
-                    return { primaryValue: valueToken, primaryQuantity: quantity };
-                }
-                return accumulator;
-            },
-            { primaryValue: null, primaryQuantity: 0 }
-        );
-
-    const { firstGroupTallies, secondGroupTallies, allAdjacentMatch } = digitTokens.reduce(
-        (state, element, position) => {
-            const currentElement = element;
-            if (position % 2 === 0) { // Even index
-                state.firstGroupTallies[currentElement] = (state.firstGroupTallies[currentElement] || 0) + 1;
-                if (state.allAdjacentMatch && (position + 1 < digitTokens.length)) {
-                    if (currentElement !== digitTokens[position + 1]) {
-                        state.allAdjacentMatch = false;
-                    }
-                }
-            } else { // Odd index
-                state.secondGroupTallies[currentElement] = (state.secondGroupTallies[currentElement] || 0) + 1;
-            }
-            return state;
-        },
-        { firstGroupTallies: {}, secondGroupTallies: {}, allAdjacentMatch: true }
-    );
-
-    if (allAdjacentMatch) {
-        return groupSize;
+    var limit = rawSize / 2;
+    var pairTotal = 0;
+    while (pairTotal < limit) {
+        pairTotal++;
     }
 
-    const firstGroupStats = aggregateFrequencies(firstGroupTallies);
-    const secondGroupStats = aggregateFrequencies(secondGroupTallies);
+    var pairList = Array.from({ length: pairTotal }, function (_, index) {
+        var leftIndex = index + index;
+        return [values[leftIndex], values[leftIndex + 1]];
+    });
 
-    const neededModifications = (groupSize - firstGroupStats.primaryQuantity) +
-                                 (groupSize - secondGroupStats.primaryQuantity);
+    if (pairList.every(function (pair) { return !(pair[0] != pair[1]); })) {
+        return rawSize / 2;
+    }
 
-    return neededModifications;
-};
+    var separated = pairList.reduce(function (groups, pair) {
+        groups[0].push(pair[0]);
+        groups[1].push(pair[1]);
+        return groups;
+    }, [[], []]);
 
-console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));
+    return replacementCost(separated[0]) + replacementCost(separated[1]);
+}
+
+function replacementCost(list) {
+    if (list.length === 0) {
+        return 0;
+    }
+
+    var ordered = list.map(function (item) {
+        return String(item);
+    }).sort();
+
+    var bestRun = 0;
+    var currentRun = 0;
+    var previous = null;
+
+    ordered.forEach(function (item) {
+        if (item === previous) {
+            currentRun++;
+        } else {
+            previous = item;
+            currentRun = 1;
+        }
+
+        if (currentRun > bestRun) {
+            bestRun = currentRun;
+        }
+    });
+
+    return ordered.length - bestRun;
+}
+
+console.log(main(require("fs").readFileSync("/dev/stdin", "utf8")));

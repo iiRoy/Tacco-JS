@@ -1,152 +1,140 @@
-class InputHandler {
-    #documentLines;
-    #currentLinePosition;
-    #currentLineFragments;
+const fs = require("fs");
 
-    constructor(textData) {
-        this.#documentLines = textData.trim().split('\n');
-        this.#currentLinePosition = 0;
-        this.#currentLineFragments = [];
+const rawInput = fs.readFileSync("/dev/stdin", "utf8").trim();
+const parts = rawInput.split(/\s+/).map(Number);
+let ptr = 0;
+
+const totalItems = parts[ptr++];
+const repetitionCount = parts[ptr++];
+const sourceValues = parts.slice(ptr, ptr + totalItems);
+
+const positionsByValue = new Map();
+
+for (let index = 0; index < totalItems; index++) {
+    const value = sourceValues[index];
+
+    if (!positionsByValue.has(value)) {
+        positionsByValue.set(value, []);
     }
 
-    // Retrieves a single numerical value
-    extractScalar(asLiteral = false) {
-        if (this.#currentLineFragments.length === 0) {
-            if (this.#currentLinePosition >= this.#documentLines.length) {
-                return undefined;
-            }
-            this.#currentLineFragments = this.#documentLines[this.#currentLinePosition++].split(' ');
+    positionsByValue.get(value).push(index);
+}
+
+function lowerBound(list, target) {
+    let left = 0;
+    let right = list.length;
+
+    while (left < right) {
+        const middle = (left + right) >> 1;
+
+        if (list[middle] < target) {
+            left = middle + 1;
+        } else {
+            right = middle;
         }
-        const fragment = this.#currentLineFragments.shift();
-        return asLiteral ? fragment : Number(fragment);
     }
 
-    // Retrieves an array of numerical values from a single line
-    extractRow(asLiterals = false) {
-        if (this.#currentLinePosition >= this.#documentLines.length) {
-            return undefined;
+    return left;
+}
+
+function reduceFrom(startIndex) {
+    const reduced = [];
+
+    for (let scan = startIndex; scan < totalItems; scan++) {
+        const value = sourceValues[scan];
+        const positions = positionsByValue.get(value);
+        const nextPosition = lowerBound(positions, scan + 1);
+
+        if (nextPosition < positions.length) {
+            scan = positions[nextPosition];
+        } else {
+            reduced.push(value);
         }
-        this.#currentLineFragments = []; // Clear buffer as a new line is fully consumed
-        const rowData = this.#documentLines[this.#currentLinePosition++].split(' ');
-        return asLiterals ? rowData : rowData.map(Number);
+    }
+
+    return reduced;
+}
+
+function printSequence(sequence) {
+    if (sequence.length > 0) {
+        console.log(sequence.join(" "));
     }
 }
 
-const findInsertionPoint = (orderedList, startIdx, endIdx, queryValue) => {
-    let lowBoundary = startIdx;
-    let highBoundary = endIdx;
-    let midPoint;
+let currentSequence = reduceFrom(0);
 
-    while (lowBoundary < highBoundary) {
-        midPoint = Math.floor((lowBoundary + highBoundary) / 2);
-        if (orderedList[midPoint] < queryValue) {
-            lowBoundary = midPoint + 1;
+if (repetitionCount === 1 || currentSequence.length === 0) {
+    printSequence(currentSequence);
+    process.exit(0);
+}
+
+const discoveredStarts = new Set([currentSequence[0]]);
+const firstValues = [undefined, currentSequence[0]];
+
+let cycleIndex = 1;
+
+while (cycleIndex < repetitionCount) {
+    const starter = firstValues[cycleIndex];
+    const starterPositions = positionsByValue.get(starter);
+    const starterPosition = starterPositions[lowerBound(starterPositions, 0)];
+
+    const nextSequence = [];
+    let trackingNewStarts = false;
+
+    for (let scan = starterPosition + 1; scan < totalItems; scan++) {
+        const value = sourceValues[scan];
+        const positions = positionsByValue.get(value);
+        const nextPosition = lowerBound(positions, scan + 1);
+
+        if (nextPosition < positions.length) {
+            scan = positions[nextPosition];
+            trackingNewStarts = false;
         } else {
-            highBoundary = midPoint;
-        }
-    }
-    return lowBoundary;
-};
+            nextSequence.push(value);
 
-const processSegment = (sourceElements, elementIndexMap, startingOffset) => {
-    let currentOffset = startingOffset;
-    const collectedOutput = [];
+            if (trackingNewStarts) {
+                if (!discoveredStarts.has(value)) {
+                    cycleIndex++;
+                    firstValues.push(value);
+                } else {
+                    trackingNewStarts = false;
+                }
+            }
 
-    while (currentOffset < sourceElements.length) {
-        const currentElement = sourceElements[currentOffset];
-        const elementOccurrences = elementIndexMap.get(currentElement);
-        const nextOccurrenceOffset = findInsertionPoint(elementOccurrences, 0, elementOccurrences.length, currentOffset + 1);
-
-        if (nextOccurrenceOffset !== elementOccurrences.length) {
-            currentOffset = elementOccurrences[nextOccurrenceOffset];
-        } else {
-            collectedOutput.push(currentElement);
-        }
-        currentOffset++;
-    }
-    return collectedOutput;
-};
-
-const executeLogic = () => {
-    const inputSource = new InputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const elementCount = inputSource.extractScalar();
-    const iterationCount = inputSource.extractScalar();
-    const dataSequence = inputSource.extractRow();
-
-    const elementLocations = new Map();
-    for (let idx = 0; idx < elementCount; idx++) {
-        const value = dataSequence[idx];
-        if (!elementLocations.has(value)) {
-            elementLocations.set(value, []);
-        }
-        elementLocations.get(value).push(idx);
-    }
-
-    let initialResult = processSegment(dataSequence, elementLocations, 0);
-
-    if (iterationCount === 1 || initialResult.length === 0) {
-        if (initialResult.length > 0) {
-            console.log(initialResult.join(" "));
-        }
-        return;
-    }
-
-    const uniqueStartValues = [initialResult[0]];
-    const seenStartValues = new Set(uniqueStartValues);
-    let latestProducedResult = initialResult;
-    let uniqueStartValueCounter = 1;
-
-    while (uniqueStartValueCounter < iterationCount) {
-        const currentStartItem = uniqueStartValues[uniqueStartValueCounter - 1];
-        
-        const currentItemOccurrences = elementLocations.get(currentStartItem);
-        const initialPointForSegment = findInsertionPoint(currentItemOccurrences, 0, currentItemOccurrences.length, 0);
-        const segmentStartOffset = currentItemOccurrences[initialPointForSegment] + 1;
-
-        let currentSegmentResult = processSegment(dataSequence, elementLocations, segmentStartOffset);
-        
-        if (currentSegmentResult.length === 0) {
-            uniqueStartValueCounter++;
-            latestProducedResult = [];
-            break;
-        }
-
-        const nextStartCandidate = currentSegmentResult[0];
-
-        if (seenStartValues.has(nextStartCandidate)) {
-            uniqueStartValueCounter++;
-            latestProducedResult = currentSegmentResult;
-            break;
-        } else {
-            uniqueStartValues.push(nextStartCandidate);
-            seenStartValues.add(nextStartCandidate);
-            uniqueStartValueCounter++;
-            latestProducedResult = currentSegmentResult;
+            if (nextSequence.length === 1) {
+                discoveredStarts.add(value);
+                firstValues.push(value);
+                trackingNewStarts = true;
+            }
         }
     }
 
-    let finalOutput;
-    const finalModuloIndex = iterationCount % uniqueStartValueCounter;
+    currentSequence = nextSequence;
 
-    if (finalModuloIndex === 0) {
-        finalOutput = latestProducedResult;
-    } else {
-        let finalSegmentStartingOffset;
-        if (finalModuloIndex === 1) {
-            finalSegmentStartingOffset = 0;
-        } else {
-            const desiredStartValue = uniqueStartValues[finalModuloIndex - 1];
-            const desiredValueOccurrences = elementLocations.get(desiredStartValue);
-            const initialIdx = findInsertionPoint(desiredValueOccurrences, 0, desiredValueOccurrences.length, 0);
-            finalSegmentStartingOffset = desiredValueOccurrences[initialIdx] + 1;
-        }
-        finalOutput = processSegment(dataSequence, elementLocations, finalSegmentStartingOffset);
+    if (currentSequence.length === 0) {
+        break;
     }
 
-    if (finalOutput.length > 0) {
-        console.log(finalOutput.join(" "));
-    }
-};
+    cycleIndex++;
+}
 
-executeLogic();
+if (currentSequence.length === 0) {
+    cycleIndex++;
+}
+
+const remainder = repetitionCount % cycleIndex;
+
+if (remainder === 0) {
+    printSequence(currentSequence);
+    process.exit(0);
+}
+
+let restartPosition = 0;
+
+if (remainder !== 1) {
+    const starter = firstValues[remainder - 1];
+    const starterPositions = positionsByValue.get(starter);
+    restartPosition = starterPositions[lowerBound(starterPositions, 0)] + 1;
+}
+
+printSequence(reduceFrom(restartPosition));

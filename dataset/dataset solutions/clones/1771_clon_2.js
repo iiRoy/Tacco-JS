@@ -1,32 +1,20 @@
-function DataProcessor(sourceContent) {
-  // This section extracts and parses the numerical components from the input string.
-  const firstComponent = Number(sourceContent
-                                  .split(" ")[0]);
+function processInput(rawData) {
+  // Parse the incoming string to extract two numerical components.
+  let firstVal = rawData.split(" ")[0]; // The initial numerical component.
+  let secondVal = rawData.split(" ")[1]; // The subsequent numerical component.
 
-  // The second component is parsed as an integer.
-  const secondComponent = parseInt(sourceContent
-                                     .split(" ")[1],
-                                   10);
+  // Compute an auxiliary value based on the parsed numbers.
+  // This calculation is integral to the decision-making process.
+  let intermediateResult = 2.0 * firstVal - secondVal / 2.0;
 
-  // A derived metric is calculated based on the two components.
-  let computedValue = (2 * firstComponent) - (secondComponent / 2);
-
-  // A conditional evaluation determines the final output.
-  if ( (secondComponent % 2 === 0) && (computedValue >= 0) )
-  {
-    console.log('Yes'); // Output for a successful condition.
-  }
-  else
-  {
-    console.log("No");  // Output for an unsuccessful condition.
+  // Evaluate specific conditions to determine the appropriate response.
+  // The second number must be an even integer, and the calculated intermediate result must be non-negative.
+  if (secondVal % 2 === 0 && intermediateResult >= 0.0) {
+    console.log('Yes'); // Display 'Yes' if all criteria are satisfied.
+  } else {
+    console.log("No"); // Otherwise, display 'No'.
   }
 }
 
-// Execution starts here: reading from standard input and invoking the main processing function.
-DataProcessor(
-    require("fs")
-        .readFileSync(
-            "/dev/stdin",
-            "utf8"
-        )
-);
+// Acquire input from the standard input stream and pass it to the primary processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

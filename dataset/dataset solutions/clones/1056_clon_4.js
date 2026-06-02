@@ -1,63 +1,73 @@
-const sourceTextLines = require('node:fs').readFileSync(process.stdin.fd, 'utf-8').split(/\r?\n/);
+const source = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
+const values = source[1].split(' ').map(Number);
 
-const { sortedValues, finalOperationCount } = (() => {
-    let mergeComparisons = 0;
+const scheduledMergeCost = (length) => {
+  let total = 0;
+  const pending = [length];
 
-    const stitchArrays = (firstArr, secondArr) => {
-        const mergedResult = [];
-        let ptr1 = 0;
-        let ptr2 = 0;
+  for (let cursor = 0; cursor < pending.length; cursor++) {
+    const size = pending[cursor];
+    if (size > 1) {
+      const firstHalf = Math.floor(size / 2);
+      total += size;
+      pending.push(firstHalf, size - firstHalf);
+    }
+  }
 
-        while (ptr1 < firstArr.length && ptr2 < secondArr.length) {
-            mergeComparisons++;
-            if (firstArr[ptr1] <= secondArr[ptr2]) {
-                mergedResult.push(firstArr[ptr1]);
-                ptr1++;
-            } else {
-                mergedResult.push(secondArr[ptr2]);
-                ptr2++;
-            }
-        }
+  return total;
+};
 
-        while (ptr1 < firstArr.length) {
-            mergeComparisons++;
-            mergedResult.push(firstArr[ptr1]);
-            ptr1++;
-        }
+const reproduceSentinelOrder = (items) => {
+  const completed = new Map();
+  const jobs = [{ left: 0, right: items.length, expanded: false }];
 
-        while (ptr2 < secondArr.length) {
-            mergeComparisons++;
-            mergedResult.push(secondArr[ptr2]);
-            ptr2++;
-        }
+  while (jobs.length > 0) {
+    const job = jobs.pop();
+    const width = job.right - job.left;
+    const tag = job.left + ':' + job.right;
 
-        return mergedResult;
-    };
+    if (width <= 1) {
+      completed.set(tag, width === 1 ? [items[job.left]] : []);
+      continue;
+    }
 
-    const orchestrateSort = (currentArray) => {
-        if (currentArray.length <= 1) {
-            return currentArray;
-        }
+    const middle = Math.floor((job.left + job.right) / 2);
 
-        const divisionPoint = ~~ (currentArray.length / 2);
-        const segmentOne = currentArray.slice(0, divisionPoint);
-        const segmentTwo = currentArray.slice(divisionPoint);
+    if (!job.expanded) {
+      jobs.push({ left: job.left, right: job.right, expanded: true });
+      jobs.push({ left: middle, right: job.right, expanded: false });
+      jobs.push({ left: job.left, right: middle, expanded: false });
+      continue;
+    }
 
-        const sortedSegmentOne = orchestrateSort(segmentOne);
-        const sortedSegmentTwo = orchestrateSort(segmentTwo);
+    const a = completed.get(job.left + ':' + middle);
+    const b = completed.get(middle + ':' + job.right);
+    const leftTape = a.concat(Infinity);
+    const rightTape = b.concat(Infinity);
+    const merged = [];
+    let li = 0;
+    let ri = 0;
 
-        return stitchArrays(sortedSegmentOne, sortedSegmentTwo);
-    };
+    while (merged.length < width) {
+      if (leftTape[li] <= rightTape[ri]) {
+        merged.push(leftTape[li]);
+        li++;
+      } else {
+        merged.push(rightTape[ri]);
+        ri++;
+      }
+    }
 
-    const numericalSequence = sourceTextLines[1].split(' ').map(val => parseFloat(val));
+    completed.set(tag, merged);
+  }
 
-    const finalSequence = orchestrateSort(numericalSequence);
+  return completed.get('0:' + items.length);
+};
 
-    return {
-        sortedValues: finalSequence,
-        finalOperationCount: mergeComparisons
-    };
-})();
+const count = scheduledMergeCost(values.length);
+const ordered = values.every(Number.isFinite)
+  ? values.slice().sort((a, b) => a - b)
+  : reproduceSentinelOrder(values);
 
-process.stdout.write(sortedValues.join(' ') + '\n');
-process.stdout.write(finalOperationCount + '\n');
+console.log(ordered.join(' '));
+console.log(count);

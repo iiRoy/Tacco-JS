@@ -1,47 +1,18 @@
-const obtainBinarySummands = (inputNumber) => {
-    if (inputNumber === 0) return [];
+require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .split('\n')
+  .map(inputLine => {
+    const numericValue = Number(inputLine);
 
-    const reversedBinaryDigits = inputNumber.toString(2).split('').reverse();
-
-    const identifiedElements = reversedBinaryDigits
-        .map((digitChar, positionIndex) => {
-            if (positionIndex <= 9 && digitChar === '1') {
-                return Math.pow(2, positionIndex);
-            }
-            return 0;
-        })
-        .filter(element => element > 0)
-        .reverse();
-
-    return identifiedElements;
-};
-
-let collectedData = '';
-
-const dataStream = process.stdin;
-const resultWriter = process.stdout;
-
-dataStream.setEncoding('utf8');
-
-dataStream.on('readable', () => {
-    let dataSegment;
-    while ((dataSegment = dataStream.read()) !== null) {
-        collectedData += dataSegment;
+    if (Number.isNaN(numericValue)) {
+      return null;
     }
-});
 
-dataStream.on('end', () => {
-    const processedLines = collectedData.split('\n');
+    const powersOfTwoDescending = Array.from({ length: 10 }, (_, index) => 1 << (9 - index));
 
-    processedLines
-        .filter(currentLine => currentLine.trim().length > 0)
-        .forEach(currentLine => {
-            const parsedInteger = parseInt(currentLine.trim(), 10);
-            if (!isNaN(parsedInteger)) {
-                const binaryElements = obtainBinarySummands(parsedInteger);
-                if (binaryElements.length > 0) {
-                    resultWriter.write(binaryElements.join(' ') + '\n');
-                }
-            }
-        });
-});
+    const matchingPowers = powersOfTwoDescending.filter(power => (power & numericValue) !== 0);
+
+    return matchingPowers.length > 0 ? matchingPowers.join(' ') : null;
+  })
+  .filter(Boolean)
+  .forEach(resultString => console.log(resultString));

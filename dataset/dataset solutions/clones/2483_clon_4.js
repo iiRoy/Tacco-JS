@@ -1,42 +1,46 @@
-function processChallenge(dataString) {
-    const parsedLines = dataString.trim().split('\n');
+const processInputData = (rawData) => {
+  const lines = rawData.trim().split("\n");
 
-    const firstLineData = parsedLines[0].match(/\d+/g).map(Number);
-    const elementCount = firstLineData[0];
-    const maxAllowedReductions = firstLineData[1];
+  const [itemCountStr, maxOperationsStr] = lines[0].split(" ");
+  const itemCount = Number(itemCountStr);
+  const maxOperations = Number(maxOperationsStr);
 
-    const valuesPrimary = parsedLines[1].match(/\d+/g).map(Number).sort((a, b) => a - b);
-    const valuesSecondary = parsedLines[2].match(/\d+/g).map(Number).sort((a, b) => b - a);
+  const itemCosts = lines[1].split(" ").map(Number).sort((a, b) => a - b);
+  const factorValues = lines[2].split(" ").map(Number).sort((a, b) => b - a);
 
-    const initialUpperBound = valuesPrimary.reduce((currentMax, primaryItem, idx) => {
-        return Math.max(currentMax, primaryItem * valuesSecondary[idx]);
-    }, 0);
+  const determineInitialUpperBound = (costs, factors, count) =>
+    Array.from({ length: count }, (_, idx) => costs[idx] * factors[idx]).reduce(
+      (maxVal, currentVal) => Math.max(maxVal, currentVal),
+      0
+    );
 
-    const isAchievable = (testValue) => {
-        const totalReductionCost = valuesPrimary.reduce((acc, primaryItem, idx) => {
-            const requiredReduction = primaryItem - Math.floor(testValue / valuesSecondary[idx]);
-            return acc + Math.max(0, requiredReduction);
-        }, 0);
-        return totalReductionCost <= maxAllowedReductions;
-    };
+  const calculateRequiredAdjustments = (currentThreshold, costs, factors, count) =>
+    costs.reduce(
+      (accumulator, currentCost, index) =>
+        accumulator + Math.max(0, currentCost - Math.floor(currentThreshold / factors[index])),
+      0
+    );
 
-    const findOptimalMaximumValue = (low, high) => {
-        if (high - low <= 1) {
-            return high;
-        }
+  let upperBound = determineInitialUpperBound(itemCosts, factorValues, itemCount);
+  let lowerBound = -1;
 
-        const trialValue = Math.ceil((low + high) / 2);
+  while (upperBound - lowerBound > 1) {
+    const midpointCandidate = Math.ceil((lowerBound + upperBound) / 2);
+    const totalAdjustments = calculateRequiredAdjustments(
+      midpointCandidate,
+      itemCosts,
+      factorValues,
+      itemCount
+    );
 
-        if (isAchievable(trialValue)) {
-            return findOptimalMaximumValue(low, trialValue);
-        } else {
-            return findOptimalMaximumValue(trialValue, high);
-        }
-    };
+    if (totalAdjustments <= maxOperations) {
+      upperBound = midpointCandidate;
+    } else {
+      lowerBound = midpointCandidate;
+    }
+  }
 
-    const finalResult = findOptimalMaximumValue(-1, initialUpperBound);
+  console.log(upperBound);
+};
 
-    console.log(finalResult);
-}
-
-processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

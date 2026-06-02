@@ -1,77 +1,86 @@
 "use strict";
 
-let finalOutcomeTally = 0;
+const replayOriginalCorner = (pairs, n, hp) => {
+    pairs.sort((a, b) => b[0] - a[0]);
 
-const analyzeInputData = (inputSource) => {
-    const allLines = inputSource.trim().split('\n');
-    const [headerLine] = allLines;
-    const [elementCount, initialEnergyLevel] = headerLine.split(' ').map(Number);
+    let throwSum = 0;
+    const strongest = pairs[0][0];
 
-    const capabilityDescriptors = allLines.slice(1, elementCount + 1).map(entryText => {
-        const [mainEffect, auxiliaryEffect] = entryText.split(' ').map(Number);
-        return { main: mainEffect, auxiliary: auxiliaryEffect };
-    });
-
-    return { totalElements: elementCount, startingEnergy: initialEnergyLevel, capabilities: capabilityDescriptors };
-};
-
-const identifyPeakMainEffect = (descriptorCollection) => {
-    return descriptorCollection.capabilities.reduce((maxVal, desc) => Math.max(maxVal, desc.main), 0);
-};
-
-const calculateAuxiliaryDamageCredit = (descriptorCollection, peakMainEffectValue) => {
-    return descriptorCollection.capabilities.reduce((currentSum, desc) => {
-        return desc.auxiliary > peakMainEffectValue ? currentSum + desc.auxiliary : currentSum;
-    }, 0);
-};
-
-const computeInitialMainActions = (currentEnergy, auxiliaryCreditValue, peakMainEffectValue) => {
-    let requiredActions = 0;
-    if (currentEnergy > auxiliaryCreditValue) {
-        requiredActions = Math.ceil((currentEnergy - auxiliaryCreditValue) / peakMainEffectValue);
-    }
-    return Math.max(0, requiredActions);
-};
-
-const executeFirstCombatPhase = (structuredData) => {
-    const peakMain = identifyPeakMainEffect(structuredData);
-    const auxiliaryCredit = calculateAuxiliaryDamageCredit(structuredData, peakMain);
-    let initialActionCount = computeInitialMainActions(structuredData.startingEnergy, auxiliaryCredit, peakMain);
-    let remainingEnergy = structuredData.startingEnergy - (initialActionCount * peakMain);
-
-    return {
-        remainingEnergyLevel: remainingEnergy,
-        cumulativeActions: initialActionCount,
-        allAuxiliaryPowers: structuredData.capabilities.map(desc => desc.auxiliary)
-    };
-};
-
-const completeCombatEngagement = (phaseOneResult) => {
-    let totalActions = phaseOneResult.cumulativeActions;
-    let finalEnergy = phaseOneResult.remainingEnergyLevel;
-
-    if (finalEnergy <= 0) {
-        return totalActions;
-    }
-
-    const orderedAuxiliaryPowers = phaseOneResult.allAuxiliaryPowers.sort((valA, valB) => valB - valA);
-
-    const applyRemainingPowersRecursively = (currentIndex, currentEnergyState, currentActionCount) => {
-        if (currentEnergyState <= 0 || currentIndex >= orderedAuxiliaryPowers.length) {
-            return currentActionCount;
+    for (let i = 0; i < n; i++) {
+        if (pairs[i][1] > strongest) {
+            throwSum += pairs[i][1];
         }
-        const powerToApply = orderedAuxiliaryPowers[currentIndex];
-        return applyRemainingPowersRecursively(currentIndex + 1, currentEnergyState - powerToApply, currentActionCount + 1);
-    };
+    }
 
-    return applyRemainingPowersRecursively(0, finalEnergy, totalActions);
+    let count = 0;
+    count += Math.ceil((hp - throwSum) / strongest);
+    count = Math.max(0, count);
+
+    hp -= count * strongest;
+
+    if (hp <= 0) {
+        return count;
+    }
+
+    pairs.sort((a, b) => b[1] - a[1]);
+
+    for (let i = 0; i < n; i++) {
+        hp -= pairs[i][1];
+        count++;
+        if (hp <= 0) break;
+    }
+
+    return count;
 };
 
-const orchestrateFullProcess = (rawInputPayload) => {
-    const structuredInformation = analyzeInputData(rawInputPayload);
-    const phaseOneOutcome = executeFirstCombatPhase(structuredInformation);
-    finalOutcomeTally = completeCombatEngagement(phaseOneOutcome);
+const main = input => {
+    const rows = input.trim().split("\n");
+    const n = parseInt(rows[0].split(" ")[0]);
+    const hp0 = parseInt(rows[0].split(" ")[1]);
+
+    const pairs = rows.slice(1, n + 1).map(row => row.split(" ").map(x => parseInt(x)));
+
+    let strongest = pairs[0][0];
+    let cornerCase = !Number.isFinite(hp0);
+    const disposable = [];
+
+    for (let i = 0; i < n; i++) {
+        const attack = pairs[i][0];
+        const singleUse = pairs[i][1];
+
+        if (!Number.isFinite(attack) || !Number.isFinite(singleUse) || !(attack > 0)) {
+            cornerCase = true;
+        }
+
+        if (attack > strongest) strongest = attack;
+        disposable.push(singleUse);
+    }
+
+    if (cornerCase || !(strongest > 0) || !Number.isFinite(strongest)) {
+        console.log(replayOriginalCorner(pairs, n, hp0));
+        return;
+    }
+
+    const usefulThrows = disposable
+        .filter(value => value > strongest)
+        .sort((a, b) => b - a);
+
+    let usedThrowDamage = 0;
+    let bestPlan = Infinity;
+
+    for (let usedThrows = 0; usedThrows <= usefulThrows.length; usedThrows++) {
+        let neededSwings = Math.ceil((hp0 - usedThrowDamage) / strongest);
+        if (neededSwings < 0) neededSwings = 0;
+
+        const totalActions = usedThrows + neededSwings;
+        if (totalActions < bestPlan) bestPlan = totalActions;
+
+        if (usedThrows < usefulThrows.length) {
+            usedThrowDamage += usefulThrows[usedThrows];
+        }
+    }
+
+    console.log(bestPlan);
 };
 
-orchestrateFullProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
-console.log(finalOutcomeTally);
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

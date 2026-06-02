@@ -1,31 +1,24 @@
-const fileSystemModule = require('fs');
-const standardInputHandle = 0; // file descriptor for stdin
-
-let inputBuffer = Buffer.alloc(1024 * 1024); // Allocate a large buffer for input
-let bytesRead = fileSystemModule.readSync(standardInputHandle, inputBuffer, 0, inputBuffer.length, null);
-let rawContent = inputBuffer.toString('utf8', 0, bytesRead);
-
+const inputPath = '/dev/stdin';
 const lineSeparator = '\n';
-const parsedLines = rawContent.split(lineSeparator);
 
-const primaryNumericalSequence = parsedLines[1].split(' ').map(token => parseInt(token, 10));
-const secondaryNumericalSequence = parsedLines[3].split(' ').map(token => parseInt(token, 10));
+const fileContent = require('fs').readFileSync(inputPath, 'utf-8');
+const inputLines = fileContent.split(lineSeparator);
 
-function determineSharedCount(firstSeries, secondSeries) {
-    const comparableElementsFromFirst = new Set();
-    for (let elementOfFirst of firstSeries) {
-        if (!Number.isNaN(elementOfFirst)) {
-            comparableElementsFromFirst.add(elementOfFirst);
+const tallyIntersections = (sourceValues, targetValues) => {
+    const valueSet = new Set(sourceValues);
+    let intersectionCounter = 0;
+    for (const val of targetValues) {
+        if (valueSet.has(val)) {
+            intersectionCounter++;
         }
     }
+    return intersectionCounter;
+};
 
-    let commonOccurrences = 0;
-    for (let elementOfSecond of secondSeries) {
-        if (!Number.isNaN(elementOfSecond) && comparableElementsFromFirst.has(elementOfSecond)) {
-            commonOccurrences++;
-        }
-    }
-    return commonOccurrences;
-}
+const firstNumericSequence = inputLines[1].split(' ').map(Number);
+const secondNumericSequence = inputLines[3].split(' ').reduce((accumulator, currentString) => {
+    accumulator.push(Number(currentString));
+    return accumulator;
+}, []);
 
-process.stdout.write(determineSharedCount(primaryNumericalSequence, secondaryNumericalSequence).toString() + '\n');
+console.log(tallyIntersections(firstNumericSequence, secondNumericSequence));

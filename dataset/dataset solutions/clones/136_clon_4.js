@@ -1,60 +1,64 @@
-const filesystemModule = require("fs");
+const fileSystem = require("fs");
 
-const inputDataFile = "./test.txt";
-const rawContent = filesystemModule.readDataSynchronously(inputDataFile, "utf8");
-const inputLinesContainer = rawContent.trim().split(/\n/);
+const inputContent = fileSystem.readFileSync("./test.txt", "utf8").trim();
 
-const deliverOutput = (message) => console.log(message);
+const analyzeBallSequence = (lineOfBalls) => {
+    const numericBallValues = lineOfBalls.trim().split(/\s/).map(Number);
 
-const computeElementTransition = (currentElementValue, existingPileValues) => {
-    const firstPileDifference = currentElementValue - existingPileValues[0];
-    const secondPileDifference = currentElementValue - existingPileValues[1];
+    const requiredBallCountForYes = 10;
 
-    if (firstPileDifference < 0 && secondPileDifference < 0) {
-        return { evaluationStatus: "FAILURE_CONDITION" };
-    } else if (firstPileDifference <= secondPileDifference && firstPileDifference > 0) {
-        return { evaluationStatus: "PROCEED", updatedPileValues: [currentElementValue, existingPileValues[1]] };
-    } else {
-        return { evaluationStatus: "PROCEED", updatedPileValues: [existingPileValues[0], currentElementValue] };
-    }
-};
+    const initialProcessingState = {
+        pathValues: [0, 0],
+        outcomeStatus: 'CONTINUE',
+        processedItems: 0
+    };
 
-const processElementSequence = (allIncomingNumbers, currentPosition, currentAccumulatedPiles) => {
-    if (currentPosition >= allIncomingNumbers.length) {
-        return undefined;
-    }
-
-    const valueToConsider = allIncomingNumbers[currentPosition];
-    const singleElementResult = computeElementTransition(valueToConsider, currentAccumulatedPiles);
-
-    if (singleElementResult.evaluationStatus === "FAILURE_CONDITION") {
-        return "NO";
-    } else {
-        const subsequentOutcome = processElementSequence(
-            allIncomingNumbers,
-            currentPosition + 1,
-            singleElementResult.updatedPileValues
-        );
-
-        if (subsequentOutcome === "NO") {
-            return "NO";
-        } else if (currentPosition === 9) {
-            return "YES";
-        } else {
-            return subsequentOutcome;
+    const finalProcessingState = numericBallValues.reduce((accumulator, currentBallValue) => {
+        if (accumulator.outcomeStatus === 'FAIL') {
+            return accumulator;
         }
+
+        const [pathA_lastValue, pathB_lastValue] = accumulator.pathValues;
+
+        const pathValueDifferences = [
+            currentBallValue - pathA_lastValue,
+            currentBallValue - pathB_lastValue
+        ];
+
+        if (pathValueDifferences[0] < 0 && pathValueDifferences[1] < 0) {
+            return { ...accumulator, outcomeStatus: 'FAIL' };
+        }
+
+        const shouldAssignToPathA = (pathValueDifferences[0] <= pathValueDifferences[1]) && (pathValueDifferences[0] > 0);
+
+        if (shouldAssignToPathA) {
+            return {
+                pathValues: [currentBallValue, pathB_lastValue],
+                outcomeStatus: 'CONTINUE',
+                processedItems: accumulator.processedItems + 1
+            };
+        } else {
+            return {
+                pathValues: [pathA_lastValue, currentBallValue],
+                outcomeStatus: 'CONTINUE',
+                processedItems: accumulator.processedItems + 1
+            };
+        }
+    }, initialProcessingState);
+
+    if (finalProcessingState.outcomeStatus === 'FAIL') {
+        return "NO";
+    } else if (finalProcessingState.processedItems >= requiredBallCountForYes) {
+        return "YES";
+    } else {
+        return null;
     }
 };
 
-const manageLineContent = (textEntry) => {
-    const rawNumberStrings = textEntry.trim().split(/\s/);
-    const parsedNumericValues = rawNumberStrings.filter(str => str !== '').map(Number);
+const allContentLines = inputContent.split(/\n/);
 
-    const finalProcessingOutcome = processElementSequence(parsedNumericValues, 0, [0, 0]);
-
-    if (finalProcessingOutcome === "YES" || finalProcessingOutcome === "NO") {
-        deliverOutput(finalProcessingOutcome);
+allContentLines.slice(1).map(analyzeBallSequence).forEach(processingResult => {
+    if (processingResult !== null) {
+        console.log(processingResult);
     }
-};
-
-inputLinesContainer.slice(1).forEach(manageLineContent);
+});

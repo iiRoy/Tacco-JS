@@ -1,65 +1,32 @@
-function processRawText(textPayload) {
-  const allNumericValues = textPayload.match(/\d+/g).map(Number);
+function solveBookProblem(rawData) {
+    const lines = rawData.trim().split('\n');
 
-  const budgetConstraint = allNumericValues[2];
-  const countSetA = allNumericValues[0];
-  const countSetB = allNumericValues[1];
+    const [bookCountA, bookCountB, totalTimeLimit] = lines[0].match(/\d+/g).map(Number);
 
-  let currentPosition = 3;
+    let currentSumA = 0;
+    const cumulativeTimesA = lines[1].match(/\d+/g).map(Number).map(val => (currentSumA += val));
 
-  const elementsA = [];
-  for (let i = 0; i < countSetA; ++i) {
-    elementsA.push(allNumericValues[currentPosition++]);
-  }
+    let currentSumB = 0;
+    const cumulativeTimesB = lines[2].match(/\d+/g).map(Number).map(val => (currentSumB += val));
 
-  const elementsB = [];
-  for (let i = 0; i < countSetB; ++i) {
-    elementsB.push(allNumericValues[currentPosition++]);
-  }
+    let maxTotalBooks = 0;
+    let jPointer = bookCountB;
 
-  return { limitValue: budgetConstraint, collectionA: elementsA, collectionB: elementsB };
-}
+    for (let iPointer = 0; iPointer <= bookCountA; iPointer++) {
+        const currentATime = (iPointer === 0) ? 0 : cumulativeTimesA[iPointer - 1];
 
-function calculateCumulativeTotals(individualValues) {
-  let runningSum = 0;
-  const cumulativeSeries = [];
-  for (const value of individualValues) {
-    runningSum += value;
-    cumulativeSeries.push(runningSum);
-  }
-  return cumulativeSeries;
-}
+        if (currentATime > totalTimeLimit) {
+            break;
+        }
 
-function findMaximumCombinations(parameters) {
-  const { limitValue, collectionA, collectionB } = parameters;
+        while (jPointer > 0 && currentATime + cumulativeTimesB[jPointer - 1] > totalTimeLimit) {
+            jPointer--;
+        }
 
-  const accumulatedA = calculateCumulativeTotals(collectionA);
-  const accumulatedB = calculateCumulativeTotals(collectionB);
-
-  let highestCount = 0;
-  let pointerB = accumulatedB.length;
-
-  for (let pointerA = 0; pointerA <= collectionA.length; ++pointerA) {
-    const currentCostA = (pointerA === 0) ? 0 : accumulatedA[pointerA - 1];
-
-    if (currentCostA > limitValue) {
-      break;
+        maxTotalBooks = Math.max(maxTotalBooks, iPointer + jPointer);
     }
 
-    while (pointerB > 0 && currentCostA + accumulatedB[pointerB - 1] > limitValue) {
-      pointerB--;
-    }
-
-    highestCount = Math.max(highestCount, pointerA + pointerB);
-  }
-
-  return highestCount;
+    console.log(maxTotalBooks);
 }
 
-function executeSystem(inputString) {
-  const processedData = processRawText(inputString);
-  const finalResult = findMaximumCombinations(processedData);
-  console.log(finalResult);
-}
-
-executeSystem(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
+solveBookProblem(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

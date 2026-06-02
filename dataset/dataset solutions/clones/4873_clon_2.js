@@ -1,82 +1,98 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the code. */
+'use strict';
 
 /**
- * Orchestrates the processing of supplied raw input data to calculate a specific geometric area.
- * @param {string} incomingData - The unprocessed string received, typically from standard input.
+ * Processes the raw input data to calculate the area of a rectangle
+ * after a series of cutting operations.
+ * @param {string} rawData - The complete input string, typically from standard input.
  */
-const processGeomData = incomingData => {
-  // First, segment the input string into individual lines, discarding any leading or trailing whitespace.
-  const dataLines = incomingData.trim().split('\n');
+const processInput = (rawData) => {
+    // Split the input string into an array of lines, removing any leading/trailing whitespace.
+    const parsedLines = rawData.trim().split('\n');
 
-  // Extract the initial dimensions (width, height) and the total number of operations from the very first line.
-  // Each numerical component is parsed and assigned to its respective variable.
-  let initialRectWidth = dataLines[0].split(' ').map(numStr => Number(numStr))[0];
-  let initialRectHeight = dataLines[0].split(' ').map(numStr => Number(numStr))[1];
-  let totalOperations = dataLines[0].split(' ').map(numStr => Number(numStr))[2];
+    // The first line contains the initial width (W), height (H), and number of operations (N).
+    // Parse these values into numerical variables.
+    const initialConfig = parsedLines[0].split(' ').map(numericVal => Number(numericVal));
+    let initialWidth = initialConfig[0]; // Original width of the canvas
+    let initialHeight = initialConfig[1]; // Original height of the canvas
+    let numOperations = initialConfig[2]; // Total number of cutting operations
 
-  // Prepare separate arrays for X coordinates, Y coordinates, and the type of geometric operation.
-  // These are derived from all subsequent lines of the input.
-  let xCoordsList = dataLines.slice(1, dataLines.length).map(lineTxt => Number(lineTxt.split(' ')[0]));
-  let yCoordsList = dataLines.slice(1, dataLines.length).map(lineTxt => Number(lineTxt.split(' ')[1]));
-  let operationCodeList = dataLines.slice(1, dataLines.length).map(lineTxt => Number(lineTxt.split(' ')[2]));
+    // Extract the X coordinates, Y coordinates, and operation types from the subsequent lines.
+    // Each line from the second onwards represents one operation.
+    const operationDetails = parsedLines.slice(1, parsedLines.length);
 
-  // Initialize the four corner points of the working rectangular region.
-  // These points define the current boundaries: bottom-left, top-left, top-right, bottom-right.
-  let boundaryPointsArray = [
-    { xVal: 0, yVal: 0 },                                  // Point A: Represents the origin or bottom-left.
-    { xVal: 0, yVal: initialRectHeight },                  // Point B: Represents the top-left.
-    { xVal: initialRectWidth, yVal: initialRectHeight },  // Point C: Represents the top-right.
-    { xVal: initialRectWidth, yVal: 0 }                   // Point D: Represents the bottom-right.
-  ];
+    let xCoordinates = operationDetails.map(elementLine => Number(elementLine.split(' ')[0]));
+    let yCoordinates = operationDetails.map(elementLine => Number(elementLine.split(' ')[1]));
+    let operationTypes = operationDetails.map(elementLine => Number(elementLine.split(' ')[2]));
 
-  // Iterate through each specified operation to dynamically adjust the rectangle's boundaries.
-  // Each operation effectively "cuts" a portion of the current rectangular area.
-  for (let currentOpIdx = 0; currentOpIdx < operationCodeList.length; currentOpIdx++) {
-    let currentActionType = operationCodeList[currentOpIdx]; // Retrieve the specific type of the current operation.
+    // Initialize the four boundary points of the rectangle.
+    // The order is: [bottom-left, top-left, top-right, bottom-right].
+    // These points will be adjusted based on the cutting operations.
+    let boundaryPoints = [
+        { coordX: 0, coordY: 0 },
+        { coordX: 0, coordY: initialHeight },
+        { coordX: initialWidth, coordY: initialHeight },
+        { coordX: initialWidth, coordY: 0 }
+    ];
 
-    // Apply the necessary boundary modification based on the determined operation type.
-    switch (currentActionType) {
-      case 1: // Action 1: Restrict from the left (x < X_i), effectively moving the left boundary rightward.
-        boundaryPointsArray[0].xVal = xCoordsList[currentOpIdx] > boundaryPointsArray[0].xVal ? xCoordsList[currentOpIdx] : boundaryPointsArray[0].xVal;
-        boundaryPointsArray[1].xVal = xCoordsList[currentOpIdx] > boundaryPointsArray[1].xVal ? xCoordsList[currentOpIdx] : boundaryPointsArray[1].xVal;
-        break;
-      case 2: // Action 2: Restrict from the right (x > X_i), effectively moving the right boundary leftward.
-        boundaryPointsArray[2].xVal = xCoordsList[currentOpIdx] < boundaryPointsArray[2].xVal ? xCoordsList[currentOpIdx] : boundaryPointsArray[2].xVal;
-        boundaryPointsArray[3].xVal = xCoordsList[currentOpIdx] < boundaryPointsArray[3].xVal ? xCoordsList[currentOpIdx] : boundaryPointsArray[3].xVal;
-        break;
-      case 3: // Action 3: Restrict from the bottom (y < Y_i), effectively moving the bottom boundary upward.
-        boundaryPointsArray[0].yVal = yCoordsList[currentOpIdx] > boundaryPointsArray[0].yVal ? yCoordsList[currentOpIdx] : boundaryPointsArray[0].yVal;
-        boundaryPointsArray[3].yVal = yCoordsList[currentOpIdx] > boundaryPointsArray[3].yVal ? yCoordsList[currentOpIdx] : boundaryPointsArray[3].yVal;
-        break;
-      case 4: // Action 4: Restrict from the top (y > Y_i), effectively moving the top boundary downward.
-        boundaryPointsArray[1].yVal = yCoordsList[currentOpIdx] < boundaryPointsArray[1].yVal ? yCoordsList[currentOpIdx] : boundaryPointsArray[1].yVal;
-        boundaryPointsArray[2].yVal = yCoordsList[currentOpIdx] < boundaryPointsArray[2].yVal ? yCoordsList[currentOpIdx] : boundaryPointsArray[2].yVal;
-        break;
+    // Iterate through each cutting operation.
+    for (let idx = 0; idx < operationTypes.length; idx++) {
+        let currentOperation = operationTypes[idx]; // Get the type of the current operation.
+
+        // Apply the cutting logic based on the operation type.
+        // Each case effectively shrinks the rectangle from one side.
+        switch (currentOperation) {
+            case 1: // Cut from the left side (x < X_i)
+                // The new minimum X for the bottom-left and top-left corners is Xs[idx].
+                // We take the maximum to ensure the boundary moves rightwards.
+                boundaryPoints[0].coordX = xCoordinates[idx] > boundaryPoints[0].coordX ? xCoordinates[idx] : boundaryPoints[0].coordX;
+                boundaryPoints[1].coordX = xCoordinates[idx] > boundaryPoints[1].coordX ? xCoordinates[idx] : boundaryPoints[1].coordX;
+                break;
+            case 2: // Cut from the right side (x > X_i)
+                // The new maximum X for the top-right and bottom-right corners is Xs[idx].
+                // We take the minimum to ensure the boundary moves leftwards.
+                boundaryPoints[2].coordX = xCoordinates[idx] < boundaryPoints[2].coordX ? xCoordinates[idx] : boundaryPoints[2].coordX;
+                boundaryPoints[3].coordX = xCoordinates[idx] < boundaryPoints[3].coordX ? xCoordinates[idx] : boundaryPoints[3].coordX;
+                break;
+            case 3: // Cut from the bottom side (y < Y_i)
+                // The new minimum Y for the bottom-left and bottom-right corners is Ys[idx].
+                // We take the maximum to ensure the boundary moves upwards.
+                boundaryPoints[0].coordY = yCoordinates[idx] > boundaryPoints[0].coordY ? yCoordinates[idx] : boundaryPoints[0].coordY;
+                boundaryPoints[3].coordY = yCoordinates[idx] > boundaryPoints[3].coordY ? yCoordinates[idx] : boundaryPoints[3].coordY;
+                break;
+            case 4: // Cut from the top side (y > Y_i)
+                // The new maximum Y for the top-left and top-right corners is Ys[idx].
+                // We take the minimum to ensure the boundary moves downwards.
+                boundaryPoints[1].coordY = yCoordinates[idx] < boundaryPoints[1].coordY ? yCoordinates[idx] : boundaryPoints[1].coordY;
+                boundaryPoints[2].coordY = yCoordinates[idx] < boundaryPoints[2].coordY ? yCoordinates[idx] : boundaryPoints[2].coordY;
+                break;
+        }
     }
-  }
 
-  // Calculate the final dimensions of the rectangle.
-  // IMPORTANT: The original implementation defines 'width' as (minX - maxX) and 'height' as (minY - maxY).
-  // This means a 'normal' rectangle will yield negative values for these variables.
-  const finalCalculatedWidth = boundaryPointsArray[0].xVal - boundaryPointsArray[2].xVal; // Resulting (min X - max X)
-  const finalCalculatedHeigth = boundaryPointsArray[0].yVal - boundaryPointsArray[1].yVal; // Resulting (min Y - max Y)
+    // Calculate the final dimensions of the remaining rectangle.
+    // Note: The original calculation `corners[0].x - corners[2].x` and `corners[0].y - corners[1].y`
+    // implies that `corners[0]` holds the effective right/top boundary and `corners[2]` / `corners[1]`
+    // hold the effective left/bottom boundary respectively, which results in potentially negative values
+    // for `finalWidth` and `finalHeight` if the rectangle is valid.
+    // This behavior is preserved, and the final output handles the absolute value or zero.
+    const finalWidth = boundaryPoints[0].coordX - boundaryPoints[2].coordX;
+    const finalHeight = boundaryPoints[0].coordY - boundaryPoints[1].coordY;
 
-  // Compute the raw area using these potentially negative dimensions.
-  const currentAreaValue = finalCalculatedHeigth * finalCalculatedWidth;
+    // Compute the area. This value might be negative if `finalWidth` or `finalHeight` are negative.
+    const areaResult = finalHeight * finalWidth;
 
-  // Evaluate the conditions based on the original problem's specific output requirements.
-  // If either calculated dimension (min-max) is negative (implying a valid, non-collapsed extent),
-  // then the problem's logic dictates an output of zero.
-  if (finalCalculatedWidth < 0 || finalCalculatedHeigth < 0) {
-    console.log(0); // Output zero as per the problem's interpretation for a "normal" rectangle.
-    return;         // Immediately exit the function.
-  }
+    // If either dimension is negative, it means the cutting operations have
+    // resulted in an invalid or collapsed rectangle (e.g., left boundary crossed right boundary).
+    // In such cases, the area is considered 0.
+    if (finalWidth < 0 || finalHeight < 0) {
+        console.log(0);
+        return; // Terminate execution if no valid area remains.
+    }
 
-  // If both calculated dimensions (min-max) are non-negative, it signifies a collapsed
-  // or inverted rectangle (minX >= maxX AND minY >= maxY). In this scenario,
-  // the computed area (which will be >= 0) is the intended output.
-  console.log(currentAreaValue >= 0 ? currentAreaValue : 0); // Output the calculated area, ensuring it's non-negative.
+    // Output the calculated area. If `areaResult` is negative (due to the inverted dimension calculation),
+    // it should be treated as 0, otherwise output the positive area.
+    console.log(areaResult >= 0 ? areaResult : 0);
 };
 
-// Initiate the data processing by reading the entire content from standard input.
-processGeomData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input (typically a file or piped data)
+// and then invoke the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

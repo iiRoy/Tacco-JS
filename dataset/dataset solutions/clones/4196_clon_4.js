@@ -1,56 +1,71 @@
-(async function() {
+(function() {
     'use strict';
 
-    const stream_handler = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
+    let capturedInputLines = [];
+    require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    }).on('line', function(currentLineContent) {
+      capturedInputLines.push(currentLineContent);
     });
 
-    const collected_segments = [];
-    for await (const current_segment of stream_handler) {
-        collected_segments.push(current_segment);
-    }
+    process.stdin.on('end', function() {
+      const totalBusinesses = parseInt(capturedInputLines[0]);
 
-    const tally_active_bits = (value_payload) => {
-        let tally_result = 0;
-        let processing_value = value_payload;
-        while (processing_value > 0) {
-            processing_value &= (processing_value - 1);
-            tally_result++;
+      // Transform raw input strings into structured data for efficient processing.
+      // Business operating hours (originally F) will be stored as integer bitmasks.
+      // Business profit tables (originally P) will be stored as arrays of numbers.
+      const businessScheduleBitmasks = new Array(totalBusinesses);
+      const businessRevenueMatrices = new Array(totalBusinesses);
+
+      for (let businessIdx = 0; businessIdx < totalBusinesses; businessIdx++) {
+        // Convert the 10-character binary string for operating hours into an integer bitmask.
+        // Original F[i] corresponds to capturedInputLines[businessIdx + 1]
+        businessScheduleBitmasks[businessIdx] = parseInt(capturedInputLines[businessIdx + 1], 2);
+
+        // Parse the profit values for each business into an array of numbers.
+        // Original P[i] corresponds to capturedInputLines[businessIdx + 1 + totalBusinesses]
+        businessRevenueMatrices[businessIdx] = capturedInputLines[businessIdx + 1 + totalBusinesses]
+                                                .split(" ")
+                                                .map(Number);
+      }
+
+      let highestAchievableProfit = -Infinity; // Initialize with the lowest possible value
+
+      // Iterate through all possible 10-bit combinations for a "plan".
+      // A 10-bit integer directly represents the plan (e.g., 0b0000000001 to 0b1111111111).
+      // (1 << 10) is 2^10 = 1024. We iterate from 1 up to (but not including) 1024.
+      for (let currentPlanMask = 1; currentPlanMask < (1 << 10); currentPlanMask++) {
+        let accumulatedProfitForPlan = 0;
+
+        // Calculate the total profit for the current plan across all businesses.
+        for (let bIdx = 0; bIdx < totalBusinesses; bIdx++) {
+          const individualBusinessMask = businessScheduleBitmasks[bIdx];
+          
+          // Find the common operating hours/days by performing a bitwise AND operation.
+          const overlappingHoursMask = currentPlanMask & individualBusinessMask;
+
+          // Count the number of set bits (1s) in the overlappingHoursMask.
+          // This count determines which profit value to use from the business's matrix.
+          let commonHourCount = 0;
+          let tempBitChecker = overlappingHoursMask;
+          while (tempBitChecker > 0) {
+              if (tempBitChecker & 1) { // Check if the least significant bit is 1
+                  commonHourCount++;
+              }
+              tempBitChecker >>= 1; // Shift right to check the next bit
+          }
+
+          // Add the profit for this business based on the number of shared hours.
+          accumulatedProfitForPlan += businessRevenueMatrices[bIdx][commonHourCount];
         }
-        return tally_result;
-    };
 
-    const establishment_count = Number(collected_segments[0]);
-    const establishment_records = [];
+        // Update the highest profit found so far.
+        if (accumulatedProfitForPlan > highestAchievableProfit) {
+          highestAchievableProfit = accumulatedProfitForPlan;
+        }
+      }
 
-    for (let record_index = 0; record_index < establishment_count; ++record_index) {
-        const attribute_line = collected_segments[record_index + 1].split(' ');
-        
-        const attribute_bitmask = attribute_line.reduce((aggregate_mask, bit_character, bit_position) => {
-            return aggregate_mask | (Number(bit_character) << (9 - bit_position));
-        }, 0);
-
-        const income_line = collected_segments[record_index + 1 + establishment_count].split(' ').map(Number);
-        
-        establishment_records.push({
-            feature_set: attribute_bitmask,
-            income_array: income_line
-        });
-    }
-
-    const all_possible_configurations = Array.from({ length: (1 << 10) - 1 }, (_, index_offset) => index_offset + 1);
-
-    const maximal_income = all_possible_configurations.map(configuration_value => {
-        let current_period_income = 0;
-        establishment_records.forEach(unit_data => {
-            const common_features_mask = configuration_value & unit_data.feature_set;
-            const common_feature_tally = tally_active_bits(common_features_mask);
-            current_period_income += unit_data.income_array[common_feature_tally];
-        });
-        return current_period_income;
-    }).reduce((highest_so_far, current_computed_income) => Math.max(highest_so_far, current_computed_income), -Infinity);
-
-    process.stdout.write(maximal_income.toString() + '\n');
-
+      console.log(highestAchievableProfit);
+    });
 })();

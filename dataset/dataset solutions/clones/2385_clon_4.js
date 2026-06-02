@@ -1,13 +1,19 @@
-function calculateDayOffset(incomingString) {
-    const currentDayAbbreviation = incomingString.split('\n')[0];
+function Main(input) {
+    const dayValueMappings = new Map([
+        ["SUN", 7],
+        ["MON", 6],
+        ["TUE", 5],
+        ["WED", 4],
+        ["THU", 3],
+        ["FRI", 2],
+        ["SAT", 1]
+    ]);
 
-    const orderedWeekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const currentDayToken = input.split('\n').shift();
 
-    const positionInWeek = orderedWeekdays.indexOf(currentDayAbbreviation);
+    const daysUntilNextSunday = dayValueMappings.get('S');
 
-    const daysRemaining = (7 - positionInWeek);
-
-    process.stdout.write(daysRemaining.toString() + '\n');
+    console.log(daysUntilNextSunday);
 }
 
-calculateDayOffset(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,91 +1,74 @@
-'use strict'
+'use strict';
 
-function extractNumbers(lineString) {
-    return lineString.match(/-?\d+/g).map(Number);
+// Constants
+const HUGE_NUMBER = 900719925474099; // Equivalent to INF
+
+// Helper to parse a space-separated string of numbers into an array of integers
+const parseNumbers = (lineString) => lineString.split(' ').map(Number);
+
+// Recursive binary search for lower bound
+// array: the array to search in
+// startIdx: starting index of the search range (inclusive)
+// endIdx: ending index of the search range (exclusive)
+// targetVal: the value to find the lower bound for
+function findBoundaryIndex(array, startIdx, endIdx, targetVal) {
+    if (startIdx >= endIdx) {
+        return startIdx;
+    }
+
+    const midIdx = Math.floor((startIdx + endIdx) / 2);
+
+    if (array[midIdx] < targetVal) {
+        return findBoundaryIndex(array, midIdx + 1, endIdx, targetVal);
+    } else {
+        return findBoundaryIndex(array, startIdx, midIdx, targetVal);
+    }
 }
 
-// Recursive binary search (equivalent to lower_bound)
-function seekBoundary(collection, targetValue, initialLow, initialHigh) {
-    let currentLow = initialLow;
-    let currentHigh = initialHigh;
-    while (currentLow < currentHigh) {
-        const mid = Math.floor((currentLow + currentHigh) / 2);
-        if (collection[mid].moment < targetValue) {
-            currentLow = mid + 1;
-        } else {
-            currentHigh = mid;
+// Main processing function
+function processInput(rawInput) {
+    const inputLines = rawInput.trim().split('\n');
+
+    const [numEntries, numQueries] = parseNumbers(inputLines[0]);
+
+    // Collect entry data using Array.from for different array population
+    const entryData = Array.from({ length: numEntries }, (_, index) =>
+        parseNumbers(inputLines[index + 1])
+    );
+
+    // Collect query values using Array.from for different array population
+    const queryValues = Array.from({ length: numQueries }, (_, index) =>
+        Number(inputLines[numEntries + index + 1])
+    );
+
+    // Sort entryData by the third element (z) in descending order
+    entryData.sort((firstItem, secondItem) => secondItem[2] - firstItem[2]);
+
+    const finalResults = new Array(numQueries).fill(-1);
+
+    // Process each entry
+    entryData.forEach(currentEntry => {
+        const [xCoordinate, yCoordinate, zValue] = currentEntry;
+
+        // Calculate bounds for queryValues based on current entry
+        const lowerBoundCriterion = xCoordinate - zValue;
+        const upperBoundCriterion = yCoordinate - zValue;
+
+        // Find indices in queryValues using the custom recursive binary search
+        const leftBoundary = findBoundaryIndex(queryValues, 0, numQueries, lowerBoundCriterion);
+        const rightBoundary = findBoundaryIndex(queryValues, leftBoundary, numQueries, upperBoundCriterion);
+
+        // If a valid range is found, update finalResults using a functional approach
+        if (leftBoundary < rightBoundary) {
+            Array.from({ length: rightBoundary - leftBoundary }, (_, offset) => leftBoundary + offset)
+                 .forEach(resultIndex => {
+                     finalResults[resultIndex] = zValue;
+                 });
         }
-    }
-    return currentLow;
+    });
+
+    console.log(finalResults.join('\n'));
 }
 
-let nextUnassigned; // Disjoint Set Union (DSU) parent array for skipping assigned queries
-
-function findUnassigned(idx) {
-    if (nextUnassigned[idx] === idx) {
-        return idx;
-    }
-    return nextUnassigned[idx] = findUnassigned(nextUnassigned[idx]); // Path compression
-}
-
-function processInputAndCompute(sourceContent) {
-    const rawLines = sourceContent.trim().split('\n');
-    let lineCursor = 0;
-
-    const [segmentCount, queryCount] = extractNumbers(rawLines[lineCursor++]);
-
-    const journeySegments = [];
-    for (let i = 0; i < segmentCount; i++) {
-        const [startPoint, endPoint, tollValue] = extractNumbers(rawLines[lineCursor++]);
-        journeySegments.push({ begin: startPoint, finish: endPoint, levy: tollValue });
-    }
-
-    const dayQueries = [];
-    for (let i = 0; i < queryCount; i++) {
-        const dayValue = Number(rawLines[lineCursor++]);
-        dayQueries.push({ moment: dayValue, originalPos: i });
-    }
-
-    // Sort journey segments by toll in ascending order.
-    // This ensures that the first toll assigned to a query day will be the minimum.
-    journeySegments.sort((a, b) => a.levy - b.levy);
-
-    // Sort day queries by day value. This is crucial for binary search and efficient range processing.
-    dayQueries.sort((a, b) => a.moment - b.moment);
-
-    const finalTolls = new Array(queryCount).fill(-1);
-    
-    // Initialize DSU: nextUnassigned[i] stores the next available index >= i.
-    // An index is 'available' if its query hasn't been assigned a toll yet.
-    // We use queryCount + 1 to simplify boundary conditions (nextUnassigned[queryCount] points to queryCount).
-    nextUnassigned = Array.from({ length: queryCount + 1 }, (_, i) => i);
-
-    for (const segment of journeySegments) {
-        const effectiveStartDay = segment.begin - segment.levy;
-        const effectiveEndDay = segment.finish - segment.levy;
-
-        // Find the range of sorted query indices that this segment covers
-        let currentSortedQIdx = seekBoundary(dayQueries, effectiveStartDay, 0, queryCount);
-        const endSortedQIdx = seekBoundary(dayQueries, effectiveEndDay + 1, currentSortedQIdx, queryCount); // +1 to make it an exclusive upper bound
-
-        // Iterate through the relevant query indices using the DSU.
-        // `findUnassigned(currentSortedQIdx)` efficiently skips over queries that have already been assigned a toll.
-        for (let k = findUnassigned(currentSortedQIdx); k < endSortedQIdx; k = findUnassigned(k + 1)) {
-            const queryObj = dayQueries[k];
-            
-            // Assign the toll. Since segments are sorted by levy ascending, this will be the minimum levy.
-            finalTolls[queryObj.originalPos] = segment.levy;
-            
-            // Mark this index as 'processed' in the DSU by pointing it to the next available index.
-            nextUnassigned[k] = findUnassigned(k + 1);
-        }
-    }
-
-    return finalTolls.join('\n');
-}
-
-function ProcessTripData(sourceData) {
-    return processInputAndCompute(sourceData);
-}
-
-ProcessTripData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute with stdin
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,68 +1,41 @@
-/*
- * This module contains utilities for string manipulation and palindrome verification.
- * It's designed to process an input string from standard input.
- */
+function flipString(inputString) {
+  // This function generates a reversed version of the provided string.
+  let reversedResult = ""; // Initialize an empty string to build the reversed output.
+  const strLen = inputString.length; // Get the total length of the input string once.
 
-/**
- * Produces a reversed version of the given character sequence.
- * @param {string} inputString The sequence of characters to be flipped.
- * @returns {string} The input string in reverse order.
- */
-function flipString( inputString ) {
-
-  let reversedResult = ''; // Accumulates the characters in reverse.
-
-  // Iterate through the input string from beginning to end
-  // and append characters from the original string in reverse order.
-  for ( let charIndex = 0, totalLength = inputString.length;
-        charIndex < totalLength;
-        charIndex++ )
-  {
-    reversedResult += inputString[totalLength - charIndex - 1];
+  // Iterate through the input string from the beginning.
+  for (let idx = 0; idx < strLen; idx++) {
+    // Append characters from the original string in reverse order.
+    // The character at index `strLen - idx - 1` corresponds to the character
+    // that should be at position `idx` in the reversed string.
+    reversedResult += inputString[strLen - idx - 1];
   }
-
-  return reversedResult;
+  return reversedResult; // Return the fully reversed string.
 }
 
-/**
- * Determines if a given text is a palindrome.
- * A palindrome reads the same forwards and backwards.
- * @param {string} textToCheck The string to be evaluated.
- * @returns {boolean} True if the string is a palindrome, false otherwise.
- */
-function verifyPalindrome( textToCheck ) {
-  // Compare the original string with its reversed counterpart.
-  return textToCheck === flipString(textToCheck);
+function isPalindrome(testString) {
+  // This function determines if a given string is a palindrome.
+  // It compares the original string with its reversed counterpart.
+  return testString === flipString(testString);
 }
 
-/**
- * The primary execution function that processes the incoming data.
- * It checks if the input string and its first half are palindromes.
- * @param {string} rawInput The unprocessed string received from the environment.
- */
-function processInputData( rawInput ) {
+function processInput(rawData) {
+  // The main entry point for processing the input data.
+  // First, remove any leading or trailing whitespace from the raw input.
+  const processedString = rawData.trim();
 
-  // Remove leading/trailing whitespace from the raw input.
-  const processedText = rawInput.trim();
-
-  // Determine the length of the processed text.
-  const currentLength = processedText.length;
-
-  // Calculate the midpoint for slicing the first half.
-  // The bitwise OR with 0 effectively floors the division result.
-  const midPoint = currentLength / 2 | 0;
-
-  // Extract the first half of the string.
-  const firstHalf = processedText.slice(0, midPoint);
-
-  // Check if both the full string and its first half are palindromes.
-  // Output "Affirmative" if both conditions are met, otherwise "Negative".
+  // Perform a complex check and log "Yes" or "No" based on the result.
+  // The condition checks two things:
+  // 1. If the entire processed string is a palindrome.
+  // 2. If the first half of the processed string (rounded down) is also a palindrome.
+  // Both conditions must be true for the final output to be "Yes".
   console.log(
-    verifyPalindrome(processedText) && verifyPalindrome(firstHalf)
-      ? "Affirmative"
-      : "Negative"
+    isPalindrome(processedString) &&
+    isPalindrome(processedString.slice(0, processedString.length / 2 | 0))
+      ? "Yes"
+      : "No"
   );
 }
 
-// Initiate the main processing flow by reading from standard input.
-processInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input, decode it as UTF-8, and then pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

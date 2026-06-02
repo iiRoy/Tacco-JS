@@ -1,22 +1,18 @@
-const processData = (inputString) => {
-    const numericalComponents = inputString.split(' ').map(segment => parseInt(segment, 10));
-    const primaryValue = numericalComponents[0];
-    const secondaryValue = numericalComponents[1];
+const processInput = (rawData) => {
+    const valueParts = rawData.split(" ");
 
-    const calculationMatrix = [
-        { conditionCheck: (x) => x >= 13, outputTransform: (y) => y },
-        { conditionCheck: (x) => x <= 6, outputTransform: (y) => y / 2 },
-        { conditionCheck: (x) => x <= 5, outputTransform: () => 0 }
-    ];
+    const firstNumericValue = parseInt(valueParts[0], 10);
+    const secondNumericValue = parseInt(valueParts[1], 10);
 
-    const finalOutcome = calculationMatrix.reduce((currentResult, ruleEntry) => {
-        if (ruleEntry.conditionCheck(primaryValue)) {
-            return ruleEntry.outputTransform(secondaryValue);
-        }
-        return currentResult;
-    }, undefined);
+    const finalCalculatedOutcome = firstNumericValue <= 5
+        ? 0
+        : firstNumericValue === 6
+            ? secondNumericValue / 2
+            : firstNumericValue >= 13
+                ? secondNumericValue
+                : undefined; // Explicitly handles the range 7-12 where no condition matches in the original
 
-    console.log(finalOutcome);
+    console.log(finalCalculatedOutcome);
 };
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

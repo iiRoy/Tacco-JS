@@ -1,115 +1,115 @@
-function calculateCost(inventory, productName, pathTrace) {
-    try {
-        // Declare local variables for the recursive cost calculation process.
-        let
-            componentsList,
-            baseCost = inventory[productName].initialPrice,
-            totalComponentCost,
-            isValidCombination = false,
-            componentIndex;
-
-        // Initialize the tracking array for visited products to prevent circular dependencies.
-        pathTrace = pathTrace || [];
-
-        // Check if the current product has a defined list of components (a recipe).
-        if (componentsList = inventory[productName].components) {
-            // Add the current product to the path to mark it as visited in this branch.
-            pathTrace.push(productName);
-            totalComponentCost = 0;
-            isValidCombination = true;
-
-            // Iterate through each required component in the product's assembly.
-            for (componentIndex = 0; componentIndex < componentsList.length; componentIndex++) {
-                // Determine if a component creates a cycle or is not found in the inventory.
-                if (pathTrace.indexOf(componentsList[componentIndex]) !== -1 || !(componentsList[componentIndex] in inventory)) {
-                    isValidCombination = false; // Mark the combination as invalid.
-                    break; // Exit the component loop early due to an issue.
-                }
-                // Recursively determine the cost of each sub-component.
-                totalComponentCost += calculateCost(inventory, componentsList[componentIndex], pathTrace);
-            }
-
-            // If all components were successfully processed and no cycles were found.
-            if (isValidCombination) {
-                // Update the product's cost with the minimum of its base price or the sum of its components' costs.
-                baseCost = getLowerValue(baseCost, totalComponentCost);
-            }
-            // Remove the current product from the visited path as its subtree calculation is complete.
-            pathTrace.pop();
-        }
-    }
-    catch (errorDetails) {
-        // Capture and re-throw any exceptions that occur during the cost calculation, along with context.
-        throw [errorDetails, inventory, productName];
-    }
-    // Return the final computed cost for the specified product.
-    return baseCost;
-}
-
-function getLowerValue(firstOperand, secondOperand) {
-    // This utility function returns the numerically smaller of two provided values.
-    return firstOperand < secondOperand ? firstOperand : secondOperand;
-}
-
-function processInputData() {
-    // Declare variables essential for parsing and processing the raw input lines.
+function calculateCost(productCatalog, productName, visitedProducts) {
+  // This function determines the minimum cost to acquire a product,
+  // considering its direct purchase price or the cost of its components.
+  try {
     let
-        lineCursor,
-        quantityOfProducts,
-        quantityOfRecipes,
-        parsedLineContent,
-        totalLinesAvailable = rawInputData.length,
-        productRegistry; // An object to hold all product definitions and their attributes.
+      componentList, // Holds the list of components if the product has a recipe
+      currentPrice = productCatalog[productName].price, // Initial price is the direct purchase price
+      totalComponentCost, // Accumulates the cost of all components
+      isValidRecipe = false, // Flag to check if all recipe components are valid and not circular
+      componentIndex; // Loop counter for iterating through recipe components
 
-    // Begin iterating through the input data, handling multiple test cases sequentially.
-    for (lineCursor = 0; lineCursor < totalLinesAvailable;) {
-        productRegistry = {}; // Initialize a fresh product registry for each new test case.
+    // Initialize the visited products array if not provided (for the initial call)
+    visitedProducts = visitedProducts || [];
 
-        // Read the number of product declaration lines for the current test case.
-        quantityOfProducts = Number.parseInt(rawInputData[lineCursor++], 10) + lineCursor;
+    // Check if the current product has a recipe defined
+    if (componentList = productCatalog[productName].recipe) {
+      // Add the current product to the visited list to detect circular dependencies
+      visitedProducts.push(productName);
+      totalComponentCost = 0; // Reset component cost for this product
+      isValidRecipe = true; // Assume recipe is valid until proven otherwise
 
-        // If the product count is zero, it signifies the end of all input.
-        if (quantityOfProducts === lineCursor) {
-            break;
+      // Iterate through each component required for the product's recipe
+      for (componentIndex = 0; componentIndex < componentList.length; componentIndex++) {
+        const currentComponent = componentList[componentIndex];
+        // Check for circular dependency or if a component is not defined in the catalog
+        if (visitedProducts.indexOf(currentComponent) !== -1 || !(currentComponent in productCatalog)) {
+          isValidRecipe = false; // Mark recipe as invalid
+          break; // Stop processing this recipe
         }
+        // Recursively calculate the cost of the current component and add to total
+        totalComponentCost += calculateCost(productCatalog, currentComponent, visitedProducts);
+      }
 
-        // Process each line that defines a product and its direct price.
-        for (; lineCursor < quantityOfProducts; lineCursor++) {
-            parsedLineContent = rawInputData[lineCursor].split(' ');
-            productRegistry[parsedLineContent[0]] = { initialPrice: Number.parseInt(parsedLineContent[1], 10) };
-        }
-
-        // Read the number of recipe definition lines for the current test case.
-        quantityOfRecipes = Number.parseInt(rawInputData[lineCursor++], 10) + lineCursor;
-
-        // Process each line that defines a product's recipe (its constituent components).
-        for (; lineCursor < quantityOfRecipes; lineCursor++) {
-            parsedLineContent = rawInputData[lineCursor].split(' ');
-            productRegistry[parsedLineContent[0]].components = parsedLineContent.slice(2);
-        }
-
-        // Calculate and output the final, optimized cost for the specific product queried at the end of the current test case.
-        console.output(calculateCost(productRegistry, rawInputData[lineCursor++]));
+      // If the recipe was valid (no circular dependencies or missing components)
+      if (isValidRecipe) {
+        // Update the product's price if the component cost is lower
+        currentPrice = findMinimum(currentPrice, totalComponentCost);
+      }
+      // Remove the current product from the visited list as its subtree has been processed
+      visitedProducts.pop();
     }
+  } catch (err) {
+    // Catch any errors during processing and re-throw with context
+    throw [err, productCatalog, productName];
+  }
+
+  // Return the determined minimum price for the product
+  return currentPrice;
 }
 
+// Helper function to find the minimum of two numbers
+function findMinimum(valA, valB) {
+  return valA < valB ? valA : valB;
+}
+
+// Main execution logic for processing input data
+function executeProcessing() {
+  let
+    lineIterator, // Iterator for input lines
+    productCountEnd, // Marks the end index for product definitions
+    recipeCountEnd, // Marks the end index for recipe definitions
+    inputLineParts, // Array to hold parts of a split input line
+    totalInputLines = rawData.length, // Total number of lines in the input
+    productCatalog; // Object to store product details (price, recipe)
+
+  // Loop through the input data, processing sets of products and recipes
+  for (lineIterator = 0; lineIterator < totalInputLines;) {
+    productCatalog = {}; // Initialize a new product catalog for each test case
+
+    // Read the number of products for the current test case
+    productCountEnd = parseInt(rawData[lineIterator++], 10) + lineIterator;
+    // If productCountEnd equals lineIterator, it means the count was 0, so break
+    if (productCountEnd === lineIterator) break;
+
+    // Process product definitions (name and direct price)
+    for (; lineIterator < productCountEnd; lineIterator++) {
+      inputLineParts = rawData[lineIterator].split(' ');
+      productCatalog[inputLineParts[0]] = {
+        price: parseInt(inputLineParts[1], 10)
+      };
+    }
+
+    // Read the number of recipes for the current test case
+    recipeCountEnd = parseInt(rawData[lineIterator++], 10) + lineIterator;
+    // Process recipe definitions (product name and its components)
+    for (; lineIterator < recipeCountEnd; lineIterator++) {
+      inputLineParts = rawData[lineIterator].split(' ');
+      // Assign the slice of the array (components) as the recipe
+      productCatalog[inputLineParts[0]].recipe = inputLineParts.slice(2);
+    }
+
+    // After processing all products and recipes for a test case,
+    // calculate and print the cost of the target product.
+    console.log(calculateCost(productCatalog, rawData[lineIterator++]));
+  }
+}
+
+// Global variable to accumulate raw input data
 let
-    rawInputData = ''; // This global buffer will accumulate all data from standard input.
+  rawData = '';
 
-// Instruct the standard input stream to begin emitting data events.
-process.stdin.flowContinue();
-// Configure the encoding format for incoming data to UTF-8.
-process.stdin.defineEncoding('utf8');
+// Set up standard input stream handlers
+process.stdin.resume(); // Keep the process alive while waiting for input
+process.stdin.setEncoding('utf8'); // Specify input encoding
 
-// Attach an event handler to process each segment of data as it arrives.
-process.stdin.on('dataReceived', function (incomingSegment) {
-    rawInputData += incomingSegment; // Concatenate the new data segment to the global buffer.
+// Event listener for incoming data chunks
+process.stdin.on('data', function(chunk) {
+  rawData += chunk; // Append each chunk to the rawData string
 });
 
-// Attach an event handler for when the standard input stream signals its end.
-process.stdin.on('streamEnded', function () {
-    // Once all data is received, split the entire buffer into an array of lines.
-    rawInputData = rawInputData.split('\n');
-    // Initiate the primary logic to parse and process the accumulated input data.
-    processInputData();
+// Event listener for the end of the input stream
+process.stdin.on('end', function() {
+  rawData = rawData.split('\n'); // Split the accumulated data into an array of lines
+  executeProcessing(); // Start the main processing logic
 });

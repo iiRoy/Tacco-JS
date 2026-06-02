@@ -1,242 +1,115 @@
-const fileSystem = require('fs'); // Renamed 'fs' import for clarity
+(function executeProgram() {
+  const fileSystemModule = require('fs');
+  const standardInputFilePath = '/dev/stdin';
 
-// --- Configuration Constants ---
-const INPUT_SOURCE_PATH = '/dev/stdin'; // Path to read graph data and queries from
+  const rawInputContent = fileSystemModule.readFileSync(standardInputFilePath, 'utf8');
+  const inputDataLines = rawInputContent.trim().split('\n');
 
-// --- Node Visit State Constants for BFS ---
-// UNVISITED: Node has not been encountered yet.
-// IN_PROGRESS: Node has been added to the queue for processing, but its neighbors haven't all been explored.
-// VISITED: Node has been fully processed (all its neighbors have been checked/added to queue).
-const UNVISITED = 0;
-const IN_PROGRESS = 1;
-const VISITED = 2;
+  // Helper function to parse space-separated numbers from a string
+  const parseNumericLine = (lineString) => lineString.split(' ').map(Number);
 
-// --- Helper Functions for Input Processing ---
+  // Extract graph dimensions (N, M)
+  const graphDimensions = parseNumericLine(inputDataLines.shift());
+  const nodeCount = graphDimensions[0];
+  const edgeCount = graphDimensions[1];
 
-/**
- * Reads all lines from a specified file path, cleans them, and splits them into an array.
- * Includes basic error handling for file operations.
- * @param {string} filePath - The path to the input file.
- * @returns {string[]} An array of strings, where each string is a line from the input file.
- */
-function retrieveAllInputLines(filePath) {
-    try {
-        // Read file content as a buffer, convert to UTF-8 string, remove leading/trailing whitespace.
-        const contentBuffer = fileSystem.readFileSync(filePath);
-        const contentString = contentBuffer.toString('utf8').trim();
+  // Initialize adjacency list structure for the graph
+  const adjacencyStructure = new Array(nodeCount);
+  for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    adjacencyStructure[nodeIdx] = [];
+  }
 
-        // If the file is empty after trimming, return an empty array and log an error.
-        if (!contentString) {
-            console.error("Input processing error: The provided input file appears to be empty.");
-            return [];
+  // Populate adjacency lists with edges
+  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    const edgeEndpoints = parseNumericLine(inputDataLines.shift());
+    const sourceNode = edgeEndpoints[0];
+    const targetNode = edgeEndpoints[1];
+    adjacencyStructure[sourceNode].push(targetNode);
+    adjacencyStructure[targetNode].push(sourceNode); // Undirected graph
+  }
+
+  // Function to check if a path exists between two nodes using Breadth-First Search (BFS)
+  function checkPathExistence(startNode, endNode) {
+    const UNVISITED_STATE = 0;
+    const VISITING_STATE = 1;
+
+    // Initialize node states (colors)
+    const nodeStates = new Array(adjacencyStructure.length);
+    for (let stateIdx = 0; stateIdx < adjacencyStructure.length; stateIdx++) {
+      nodeStates[stateIdx] = UNVISITED_STATE;
+    }
+
+    const bfsTraversalQueue = [startNode];
+    nodeStates[startNode] = VISITING_STATE; // Mark start node as visiting
+
+    let currentNode;
+    while (bfsTraversalQueue.length > 0) {
+      currentNode = bfsTraversalQueue.shift();
+
+      const currentNeighbors = adjacencyStructure[currentNode];
+      if (currentNeighbors === undefined) { // Handle cases where currentNode might be invalid (e.g., string 'y')
+        // This branch is crucial for replicating the original bug's TypeError
+        // if currentNode is not a valid numeric index.
+        // The original code would throw TypeError on `adjLists[u].length` if `u` is not a number.
+        // `for...of` on `undefined` also throws TypeError.
+        // So this explicit check is not strictly needed for bug replication, but it's a Type III addition.
+        // The `for...of` loop below will handle it.
+      }
+
+      for (const neighborNode of currentNeighbors) { // This will throw TypeError if currentNeighbors is undefined
+        if (neighborNode === endNode) {
+          return true;
         }
-
-        // Split the cleaned string into an array of lines.
-        return contentString.split('\n');
-    } catch (error) {
-        // Catch and log any errors during file reading.
-        console.error(`Input processing error: Failed to read data from ${filePath}. Details: ${error.message}`);
-        return []; // Return an empty array to indicate failure.
-    }
-}
-
-/**
- * Parses a string expected to contain two space-separated numbers into a numeric array.
- * Throws an error if parsing fails or the format is incorrect.
- * @param {string} lineContent - The string line to parse (e.g., "5 3").
- * @param {string} [separator=' '] - The delimiter character for splitting the numbers.
- * @returns {number[]} An array containing two numbers.
- */
-function parseTwoNumericValues(lineContent, separator = ' ') {
-    const numericParts = lineContent.split(separator).map(Number);
-
-    // Validate that exactly two numbers were parsed and both are valid numbers.
-    if (numericParts.length !== 2 || numericParts.some(isNaN)) {
-        throw new Error(`Malformed input line. Expected two numbers, but received: "${lineContent}"`);
-    }
-    return numericParts;
-}
-
-// --- Graph Data Structure Class ---
-
-/**
- * Represents an undirected graph using an adjacency list.
- * Provides methods for adding edges and checking path existence using BFS.
- */
-class GraphStructure {
-    /**
-     * Constructs a new GraphStructure instance.
-     * @param {number} totalVertexCount - The total number of vertices (nodes) in the graph.
-     */
-    constructor(totalVertexCount) {
-        // Ensure a valid number of vertices.
-        if (totalVertexCount <= 0) {
-            throw new Error("Graph creation error: The graph must contain a positive number of vertices.");
+        if (nodeStates[neighborNode] === UNVISITED_STATE) {
+          nodeStates[neighborNode] = VISITING_STATE;
+          bfsTraversalQueue.push(neighborNode);
         }
-        this.vertexCount = totalVertexCount;
-        // Initialize an array of empty arrays to represent adjacency lists for each vertex.
-        // Each index corresponds to a vertex, and its value is an array of connected neighbors.
-        this.vertexAdjacencyLists = Array.from({ length: totalVertexCount }, () => []);
-        // Comment: Array.from with an object {length: N} is a concise way to create an array of a specific size.
+      }
     }
+    return false;
+  }
 
-    /**
-     * Registers an undirected edge between two specified vertices.
-     * @param {number} vertexA - The index of the first vertex.
-     * @param {number} vertexB - The index of the second vertex.
-     */
-    registerUndirectedEdge(vertexA, vertexB) {
-        // Perform bounds checking for vertex indices to prevent out-of-bounds access.
-        if (vertexA < 0 || vertexA >= this.vertexCount || vertexB < 0 || vertexB >= this.vertexCount) {
-            throw new Error(`Edge registration error: Invalid vertex index provided for edge (${vertexA}, ${vertexB}). Max index is ${this.vertexCount - 1}.`);
-        }
-        // For an undirected graph, add the connection in both directions.
-        this.vertexAdjacencyLists[vertexA].push(vertexB);
-        this.vertexAdjacencyLists[vertexB].push(vertexA);
-        // Comment: This implementation allows for parallel edges (multiple edges between the same two vertices).
-        // If unique edges were required, a Set could be used for adjacency lists.
-    }
+  // Process connectivity queries
+  inputDataLines.shift(); // This line replicates the original's behavior of discarding one line before queries.
 
-    /**
-     * Determines if a path exists between a starting vertex and an ending vertex using Breadth-First Search (BFS).
-     * @param {number} startVertex - The index of the starting vertex.
-     * @param {number} endVertex - The index of the ending vertex.
-     * @returns {boolean} True if a path exists, false otherwise.
-     */
-    checkPathExistence(startVertex, endVertex) {
-        // Optimization: If start and end are the same, a path of zero length exists.
-        if (startVertex === endVertex) {
-            return true;
-        }
+  const queryResults = inputDataLines.map(queryLine => {
+    // The original code had a bug in this line:
+    // `canReach(...l.split(' ').map(Number) ? 'yes' : 'no')`
+    // `l.split(' ').map(Number)` results in an array (e.g., `[1, 2]`).
+    // An array is a truthy value in JavaScript.
+    // So, `[1, 2] ? 'yes' : 'no'` always evaluates to the string `'yes'`.
+    // The spread operator `...` on the string `'yes'` expands it to `'y', 'e', 's'`.
+    // Thus, `checkPathExistence('y', 'e', 's')` is called.
+    // This will cause a TypeError inside `checkPathExistence` when trying to access `adjacencyStructure['y']`.
+    // This exact buggy behavior is preserved.
 
-        // Validate vertex indices for the query.
-        if (startVertex < 0 || startVertex >= this.vertexCount || endVertex < 0 || endVertex >= this.vertexCount) {
-            console.warn(`Path query warning: Invalid vertex indices (${startVertex}, ${endVertex}). Returning false.`);
-            return false;
-        }
+    const parsedQueryValues = parseNumericLine(queryLine); // e.g., [1, 2]
+    const conditionalResult = parsedQueryValues ? 'yes' : 'no'; // Always 'yes' due to truthiness of array
+    const pathExists = checkPathExistence(...conditionalResult); // Calls checkPathExistence('y', 'e', 's')
 
-        // Initialize an array to keep track of the visit state of each vertex during BFS.
-        const vertexVisitStates = new Array(this.vertexCount).fill(UNVISITED);
-        // Initialize the BFS queue with the starting vertex.
-        const bfsProcessingQueue = [startVertex];
-        // Mark the starting vertex as "in progress" (added to queue).
-        vertexVisitStates[startVertex] = IN_PROGRESS;
+    // The original code's `? 'yes' : 'no'` was applied to the `map(Number)` result, not `canReach`.
+    // The `canReach` call itself was then passed the result of that ternary.
+    // The original code was `canReach(...l.split(' ').map(Number) ? 'yes' : 'no')`
+    // This means the result of `canReach` was not used for the 'yes'/'no' string.
+    // The original code is syntactically incorrect and would not run as intended.
+    // The provided original code snippet:
+    // `console.log(lines.map(l => canReach(...l.split(' ').map(Number) ? 'yes' : 'no')).join('\n'));`
+    // This means the `map` callback returns the result of `canReach(...)`.
+    // The `? 'yes' : 'no'` is applied to `l.split(' ').map(Number)`, which is an array, always truthy.
+    // So it becomes `canReach(...'yes')`.
+    // The result of `canReach` (which will be a TypeError) is then put into the array.
+    // The `join('\n')` will then be called on an array that will likely contain `undefined` or throw before that.
 
-        // Continue BFS as long as there are vertices in the queue to process.
-        while (bfsProcessingQueue.length > 0) {
-            // Dequeue the next vertex to process.
-            const currentVertex = bfsProcessingQueue.shift();
+    // Given the strict requirement to preserve exact observable behavior,
+    // the original code would throw a TypeError during the `map` operation.
+    // My clone will also throw a TypeError during the `map` operation,
+    // specifically within `checkPathExistence` when `currentNode` is 'y'.
+    // The `queryResults` array will not be fully populated before the error.
+    // The `console.log` will not be reached.
+    return pathExists; // This will be the result of the buggy call, leading to the TypeError.
+  });
 
-            // Mark the current vertex as fully visited (all its neighbors are being considered).
-            vertexVisitStates[currentVertex] = VISITED;
-
-            // Iterate over all neighbors of the current vertex.
-            // Comment: Using a for...of loop for more readable iteration over array elements.
-            for (const neighborVertex of this.vertexAdjacencyLists[currentVertex]) {
-                // If the neighbor is the target vertex, a path has been found.
-                if (neighborVertex === endVertex) {
-                    return true;
-                }
-                // If the neighbor has not been visited yet, add it to the queue for future processing.
-                if (vertexVisitStates[neighborVertex] === UNVISITED) {
-                    vertexVisitStates[neighborVertex] = IN_PROGRESS; // Mark as in-progress
-                    bfsProcessingQueue.push(neighborVertex); // Enqueue the neighbor
-                }
-            }
-        }
-        // If the queue becomes empty and the endVertex was not reached, no path exists.
-        return false;
-    }
-}
-
-// --- Main Program Execution ---
-
-/**
- * The primary function that orchestrates reading graph data, building the graph,
- * processing queries, and outputting results.
- * Wrapped in an immediately invoked async function for modern JavaScript practices,
- * though `readFileSync` is synchronous here.
- */
-(async function graphPathAnalyzer() {
-    // Retrieve all lines from the input source.
-    let allInputDataLines = retrieveAllInputLines(INPUT_SOURCE_PATH);
-    if (allInputDataLines.length === 0) {
-        // Error message already printed by retrieveAllInputLines if empty.
-        return; // Exit if no input data.
-    }
-
-    // Parse the first line to get the total number of vertices and edges.
-    const [totalVertexCount, totalEdgeCount] = parseTwoNumericValues(allInputDataLines.shift());
-    
-    // Perform initial validation on graph dimensions.
-    if (totalVertexCount <= 0 || totalEdgeCount < 0) {
-        console.error("Initialization error: Graph must have a positive number of vertices and a non-negative number of edges.");
-        return;
-    }
-
-    let graphInstance;
-    try {
-        // Attempt to create a new graph instance.
-        graphInstance = new GraphStructure(totalVertexCount);
-    } catch (e) {
-        console.error(`Graph construction failed: ${e.message}`);
-        return; // Exit if graph construction fails.
-    }
-
-    // Process all edge definitions from the input.
-    for (let currentEdgeIndex = 0; currentEdgeIndex < totalEdgeCount; currentEdgeIndex++) {
-        if (allInputDataLines.length === 0) {
-            console.error(`Input error: Expected ${totalEdgeCount} edge definitions, but input ended prematurely at edge ${currentEdgeIndex}.`);
-            return; // Exit if input lines run out unexpectedly.
-        }
-        try {
-            // Parse two vertex indices for the current edge.
-            const [sourceVertex, destinationVertex] = parseTwoNumericValues(allInputDataLines.shift());
-            // Register the undirected edge in the graph.
-            graphInstance.registerUndirectedEdge(sourceVertex, destinationVertex);
-        } catch (e) {
-            console.error(`Edge processing error for edge ${currentEdgeIndex + 1}: ${e.message}`);
-            return; // Exit on any error during edge processing.
-        }
-    }
-
-    // The next line in the input is expected to be the number of queries.
-    if (allInputDataLines.length === 0) {
-        console.error("Input error: Expected query count line after edge definitions, but input stream is exhausted.");
-        return;
-    }
-    const queryCountLine = allInputDataLines.shift();
-    const expectedQueryCount = Number(queryCountLine);
-
-    // Validate the parsed query count.
-    if (isNaN(expectedQueryCount) || expectedQueryCount < 0) {
-        console.error(`Input error: Invalid query count specified. Expected a non-negative number, got: "${queryCountLine}"`);
-        return;
-    }
-
-    const pathCheckResults = []; // Array to store results of each query.
-
-    // Process all reachability queries.
-    for (let currentQueryIndex = 0; currentQueryIndex < expectedQueryCount; currentQueryIndex++) {
-        if (allInputDataLines.length === 0) {
-            console.error(`Input error: Expected ${expectedQueryCount} queries, but ran out of input lines at query ${currentQueryIndex + 1}.`);
-            pathCheckResults.push('query_input_missing'); // Indicate an error for this specific query.
-            continue; // Attempt to process remaining queries if any, or just move on.
-        }
-        try {
-            // Parse the start and end vertices for the current query.
-            const [queryStartNode, queryEndNode] = parseTwoNumericValues(allInputDataLines.shift());
-            // Use the graph instance to check for a path.
-            const isPathFound = graphInstance.checkPathExistence(queryStartNode, queryEndNode);
-            // Store 'yes' or 'no' based on the path existence.
-            pathCheckResults.push(isPathFound ? 'yes' : 'no');
-        } catch (e) {
-            console.error(`Query processing error for query ${currentQueryIndex + 1}: ${e.message}`);
-            pathCheckResults.push('query_parse_error'); // Indicate an error in the output for this query.
-        }
-    }
-
-    // Output all collected results, each on a new line.
-    console.log(pathCheckResults.join('\n'));
-
-})(); // End of graphPathAnalyzer IIFE
+  // This line will likely not be reached due to the TypeError in the map above.
+  // If it were reached, it would attempt to join the results.
+  console.log(queryResults.join('\n'));
+})();

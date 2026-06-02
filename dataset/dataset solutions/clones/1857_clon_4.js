@@ -1,63 +1,54 @@
-const parseGraphInput = (initialData) => {
-    const parsedSegments = initialData.trim().split('\n');
-    const [vertexCountStr, connectionCountStr] = parsedSegments[0].split(' ');
-    const vertexCount = Number(vertexCountStr);
-    const connectionCount = Number(connectionCountStr);
+function main(inputContent) {
+  const rawInputLines = inputContent.trim().split('\n');
+  const [nodeCountStr, edgeCountStr] = rawInputLines[0].split(' ');
+  const nodeCount = Number(nodeCountStr);
+  const edgeCount = Number(edgeCountStr);
 
-    const adjacencyGraph = new Map();
-    for (let idx = 0; idx < vertexCount; idx++) {
-        adjacencyGraph.set(idx, new Set());
+  const adjacencyMap = new Map();
+  for (let nodeIdentifier = 0; nodeIdentifier < nodeCount; nodeIdentifier++) {
+    adjacencyMap.set(nodeIdentifier, []);
+  }
+
+  for (let edgeIndex = 1; edgeIndex <= edgeCount; edgeIndex++) {
+    const [firstNodeStr, secondNodeStr] = rawInputLines[edgeIndex].split(' ');
+    const firstNode = Number(firstNodeStr) - 1;
+    const secondNode = Number(secondNodeStr) - 1;
+
+    adjacencyMap.get(firstNode).push(secondNode);
+    adjacencyMap.get(secondNode).push(firstNode);
+  }
+
+  const pathLengths = new Map();
+  const traversalQueue = [];
+  const discoveredNodes = new Set();
+
+  traversalQueue.push(0);
+  discoveredNodes.add(0);
+  pathLengths.set(0, 0);
+
+  let queuePointer = 0;
+  while (queuePointer < traversalQueue.length) {
+    const currentNode = traversalQueue[queuePointer++];
+    const currentPathLength = pathLengths.get(currentNode);
+
+    const connectedNodes = adjacencyMap.get(currentNode);
+    for (const neighborNode of connectedNodes) {
+      if (!discoveredNodes.has(neighborNode)) {
+        discoveredNodes.add(neighborNode);
+        pathLengths.set(neighborNode, currentPathLength + 1);
+        traversalQueue.push(neighborNode);
+      }
     }
+  }
 
-    for (let idx = 1; idx <= connectionCount; idx++) {
-        const [endpointAStr, endpointBStr] = parsedSegments[idx].split(' ');
-        const endpointA = Number(endpointAStr) - 1; // 0-indexed
-        const endpointB = Number(endpointBStr) - 1; // 0-indexed
-
-        adjacencyGraph.get(endpointA).add(endpointB);
-        adjacencyGraph.get(endpointB).add(endpointA);
+  if (discoveredNodes.size !== nodeCount) {
+    console.log('No');
+  } else {
+    console.log('Yes');
+    for (let nodeIdentifier = 1; nodeIdentifier < nodeCount; nodeIdentifier++) {
+      console.log(pathLengths.get(nodeIdentifier));
     }
-    return { vertexCount, adjacencyGraph };
-};
+  }
+}
 
-const traverseNetwork = (vertexCount, adjacencyGraph, startingNode = 0) => {
-    const levelDepths = new Map();
-    const visitedRegistry = new Set();
-
-    const pathfinderQueue = [{ node: startingNode, depth: 0 }];
-    visitedRegistry.add(startingNode);
-    levelDepths.set(startingNode, 0);
-
-    let head = 0;
-    while (head < pathfinderQueue.length) {
-        const { node: currentVertex, depth: currentDepth } = pathfinderQueue[head++];
-
-        const neighbors = adjacencyGraph.get(currentVertex);
-        if (neighbors) {
-            for (const connectedNode of neighbors) {
-                if (!visitedRegistry.has(connectedNode)) {
-                    visitedRegistry.add(connectedNode);
-                    levelDepths.set(connectedNode, currentDepth + 1);
-                    pathfinderQueue.push({ node: connectedNode, depth: currentDepth + 1 });
-                }
-            }
-        }
-    }
-    return { levelDepths, totalVisited: visitedRegistry.size };
-};
-
-const analyzePathways = (initialData) => {
-    const { vertexCount, adjacencyGraph } = parseGraphInput(initialData);
-    const { levelDepths, totalVisited } = traverseNetwork(vertexCount, adjacencyGraph);
-
-    if (totalVisited !== vertexCount) {
-        console.log('No');
-    } else {
-        console.log('Yes');
-        for (let idx = 1; idx < vertexCount; idx++) {
-            console.log(levelDepths.get(idx) + 1);
-        }
-    }
-};
-
-analyzePathways(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

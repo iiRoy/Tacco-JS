@@ -1,43 +1,46 @@
-// Sample input data structure hint.
-// Each evaluation outcome can be Accepted, Wrong Answer, Time Limit Exceeded, or Runtime Error.
+/*
+ * This script processes a list of status codes from standard input.
+ * It counts occurrences of "AC", "WA", "TLE", and "RE" statuses.
+ * Finally, it prints the count for each status category.
+ */
 
-function processInputData(rawData)
-{
-  const cleanData = rawData.trim();
-  const submissionRecords = cleanData.split("\n");
+function processInputData(rawData) {
+  // Remove any leading/trailing whitespace from the raw input string.
+  let cleanedInput = rawData.trim();
 
-  const outcomeCategories = ["AC", "WA", "TLE", "RE"];
-  let resultCounters = [0, 0, 0, 0];
+  // Split the cleaned input into individual lines.
+  // The first line is typically a count, subsequent lines are status codes.
+  let linesOfText = cleanedInput.split("\n");
 
-  for (let entryIndex = 1; entryIndex < submissionRecords.length; entryIndex++)
-  {
-    const currentEntry = submissionRecords[entryIndex];
+  // Define the expected status categories. These are fixed.
+  const statusCategories = ["AC", "WA", "TLE", "RE"];
 
-    if (currentEntry === outcomeCategories[0])
-    {
-      resultCounters[0]++;
-    }
-    else if (currentEntry === outcomeCategories[1])
-    {
-      resultCounters[1]++;
-    }
-    else if (currentEntry === outcomeCategories[2])
-    {
-      resultCounters[2]++;
-    }
-    else if (currentEntry === outcomeCategories[3])
-    {
-      resultCounters[3]++;
+  // Initialize an array to store the counts for each category.
+  // The order corresponds to the 'statusCategories' array.
+  let categoryCounts = [0, 0, 0, 0];
+
+  // Iterate through the lines of text, starting from the second line (index 1),
+  // as the first line is usually a total count and not a status itself.
+  for (let idx = 1; idx < linesOfText.length; idx++) {
+    // Check the current line against each defined status category.
+    if (linesOfText[idx] === statusCategories[0]) {
+      categoryCounts[0]++; // Increment count for "AC"
+    } else if (linesOfText[idx] === statusCategories[1]) {
+      categoryCounts[1]++; // Increment count for "WA"
+    } else if (linesOfText[idx] === statusCategories[2]) {
+      categoryCounts[2]++; // Increment count for "TLE"
+    } else if (linesOfText[idx] === statusCategories[3]) {
+      categoryCounts[3]++; // Increment count for "RE"
     }
   }
 
-  // Iterate and print the final tallies.
-  for (let categoryIdx = 0; categoryIdx < outcomeCategories.length; categoryIdx++)
-  {
-    console.log(outcomeCategories[categoryIdx] + " - " + resultCounters[categoryIdx]);
+  // Output the final counts for each status category.
+  // The format will be "CATEGORY x COUNT".
+  for (let counter = 0; counter < statusCategories.length; counter++) {
+    console.log(statusCategories[counter] + " x " + categoryCounts[counter]);
   }
-} // Concludes the primary data processing routine.
+}
 
-processInputData(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// Read the entire content from standard input, assuming UTF-8 encoding,
+// and then pass it to our processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

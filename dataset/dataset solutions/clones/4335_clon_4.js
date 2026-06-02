@@ -1,3 +1,12 @@
-let auxiliaryContainer = ["2", " ", "2", " ", "2"].join("");
-const messageParts = [121, 101, 115].map(characterCode => String.fromCharCode(characterCode));
-console.log(messageParts.reduce((accumulator, current) => accumulator + current, ""));
+const messageLookup = new Map([
+  ['confirmationMessage', 'yes']
+]);
+
+Object.defineProperty(globalThis, 'valueContainer', {
+  value: '2 2 2',
+  writable: true,
+  configurable: true,
+  enumerable: true
+});
+
+console.log(messageLookup.get('confirmationMessage'));

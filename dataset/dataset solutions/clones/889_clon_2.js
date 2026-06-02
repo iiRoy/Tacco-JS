@@ -1,221 +1,263 @@
-/*
- *  Module: Algebraic Expression Evaluator
- *  Author: CodeSynth
- *  Date: 2023-10-27
- *  Purpose: Process a custom algebraic notation.
- *  Status: Operational
- *  Notes: This script parses and computes expressions involving S<x>, x>>y, and basic numbers.
- */
-var outputPrinter = console.log;
+let outputFn = console.log; // Function for logging output to the console
 
-// Check if running in a Node.js-like environment for input handling
-if ( typeof process != "undefined" )
-{
-    var receivedData = "";
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function ( dataPortion ) {
-        receivedData += dataPortion;
+// Check if running in a Node.js-like environment to handle standard input
+if (typeof process !== "undefined") {
+    let rawInputData = ""; // Accumulator for incoming data chunks
+    process.stdin.resume(); // Ensure stdin is open
+    process.stdin.setEncoding('utf8'); // Set encoding for input
+    process.stdin.on('data', function(dataSegment) {
+        rawInputData += dataSegment; // Append new data to the buffer
     });
-    process.stdin.on('end', function () {
-        var inputSegments = receivedData.split("\n");
-        executeProcessing(inputSegments);
+    process.stdin.on('end', function() {
+        const inputLines = rawInputData.split("\n"); // Split accumulated data into individual lines
+        processAllInput(inputLines); // Process all received lines
     });
 }
 
-
-function executeProcessing( inputSegments ) {
-    inputSegments.forEach( function ( textRow ) {
-        if ( textRow !== "#" ) {
-            handleSegment(textRow);
-        }
-    }, this ); // 'this' context is explicitly passed but not used by anonymous function
-}
-
-// Recursively calculates (baseVal * exponentVal) % moduloConst
-// Handles large baseVal by optimizing for even/odd exponentVal
-function recursiveModCalc( baseVal, exponentVal )
-{
-    var moduloConst = 1000000007; // A large prime number for modular arithmetic
-    if ( baseVal > 90000000 && exponentVal > 1 ) {
-        var remainder = exponentVal % 2;
-        var halfExponent = Math.floor(exponentVal / 2);
-        var subResult = recursiveModCalc(baseVal, halfExponent);
-        if ( remainder ) { // If exponentVal is odd
-            var finalTerm = ( 2 * subResult + baseVal ) % moduloConst;
-        }
-        else { // If exponentVal is even
-            var finalTerm = ( 2 * subResult ) % moduloConst;
-        }
-        return finalTerm % moduloConst;
-    }
-    return ( baseVal * exponentVal ) % moduloConst;
-}
-
-
-// Evaluates the S<x> operation, which is equivalent to recursiveModCalc(x, x)
-function evalSymmetricOp( opValue ) {
-    return recursiveModCalc(opValue, opValue);
-}
-
-// Performs a right-shift operation: x >> y (integer division by 2^y)
-function performRightShift( shiftTarget, shiftAmount ) {
-    return Math.floor(shiftTarget / Math.pow(2, shiftAmount));
-}
-
-// Removes all whitespace characters and 'S' literals from a string
-function cleanInputString( originalString ) {
-    return originalString.replace( /\s|S/g, '' );
-}
-
-// Checks if a given string can be parsed as a valid number
-function isNumericLiteral( candidateString ) {
-    var numericForm = Number(candidateString);
-    var stringForm = numericForm.toString();
-    // Returns true if the conversion was successful (not NaN)
-    return Boolean( stringForm !== "NaN" );
-}
-
-// Divides the input string into initial components: numbers and operators (<, >)
-function parseInitialStructure( sourceString ) {
-    sourceString = sourceString.split('');
-    var sourceLength = sourceString.length;
-    var segmentStart = 0;
-    var segmentEnd = 0;
-    var parsedComponents = [];
-    var inNumericBlock = false;
-
-    for ( var idx = 0; idx < sourceLength; idx++ )
-    {
-        var currentElement = sourceString[idx];
-        if ( !inNumericBlock && isNumericLiteral(currentElement) ) {
-            // Found the start of a number after a non-number
-            segmentStart = idx;
-            inNumericBlock = true;
-        }
-        else if ( inNumericBlock && !isNumericLiteral(currentElement) ) {
-            // Found the end of a number after a numeric block
-            segmentEnd = idx;
-            inNumericBlock = false;
-            // Extract and push the number
-            var extractedChars = sourceString.slice(segmentStart, segmentEnd);
-            var numString = extractedChars.join('');
-            var parsedNumValue = Number(numString);
-            parsedComponents.push(parsedNumValue);
-        }
-        if ( !isNumericLiteral(currentElement) ) {
-            // Push non-numeric characters directly
-            parsedComponents.push(currentElement);
-        }
-    }
-    // Handle case where the string ends with a number
-    if ( inNumericBlock ) {
-        segmentEnd = sourceLength;
-        var extractedChars = sourceString.slice(segmentStart, segmentEnd);
-        var numString = extractedChars.join('');
-        var parsedNumValue = Number(numString);
-        parsedComponents.push(parsedNumValue);
-    }
-    return parsedComponents;
-}
-
-// Determines if a '>' character signifies a closing 'q' (for S<x>)
-// or part of a 't' (for x>>y) operator.
-/*
- *  Contextual analysis of '>' operator:
- *  - 'p' represents '<' (opening S-expression)
- *  - 'q' represents '>' (closing S-expression)
- *  - 'L' represents a numeric literal (e.g., 19, 331)
- *  - 't' represents '>>' (right shift operator)
- *  The 't' operator takes precedence; if '>>' is found, it's 't'.
- *  Otherwise, a single '>' is considered 'q'
+/**
+ * Main entry point for processing all input lines.
+ * @param {string[]} inputLines - An array of strings, each representing a line of input.
  */
-function isClosingBracket( currentIndex, componentList ) {
-    var resultFlag = true;
-    if ( componentList[currentIndex + 1] === '>' ) {
-        if ( isNumericLiteral(componentList[currentIndex + 2]) || componentList[currentIndex + 2] === '<' ) {
-            // It's a 't' operator (>> followed by number or <)
-            resultFlag = false;
+function processAllInput(inputLines) {
+    // Iterate over each line provided in the input
+    inputLines.forEach(function(currentLine) {
+        // Only process lines that are not the termination character '#'
+        if (currentLine !== "#") {
+            handleSingleLine(currentLine);
         }
-    }
-    return resultFlag;
+    }, this); // 'this' context is not strictly necessary here but preserved for Type II
 }
 
-// Converts the parsed components into a stream of tokens (p, q, t, numbers)
-// 'bracketStartIdx' and 'bracketEndIdx' variables are present but unused, mimicking original structure.
-function tokenizeComponents( componentList ) {
-    var bracketStartIdx = 0; // Unused, mirroring original
-    var bracketEndIdx = 0;   // Unused, mirroring original
-    var tokenStream = [];
+/**
+ * Recursively calculates (baseVal * exponentVal) % MODULUS_VALUE,
+ * optimized for large baseVal and exponentVal using modular exponentiation principles.
+ * @param {number} baseVal - The base number.
+ * @param {number} exponentVal - The exponent.
+ * @returns {number} The result of the modular multiplication.
+ */
+function recursiveModuloPower(baseVal, exponentVal) {
+    const MODULUS_VALUE = 1_000_000_007; // Define the modulus constant
 
-    var listLength = componentList.length;
-    for ( var idx = 0; idx < listLength; idx++ ) {
-        var currentItem = componentList[idx];
-        if ( isNumericLiteral(currentItem) ) {
-            tokenStream.push(currentItem);
+    // Apply optimization for large base and exponent
+    if (baseVal > 90_000_000 && exponentVal > 1) {
+        const remainder = exponentVal % 2; // Check if exponent is odd or even
+        const halfExp = Math.floor(exponentVal / 2); // Halve the exponent
+        const resultHalf = recursiveModuloPower(baseVal, halfExp); // Recursive call for half exponent
+
+        let currentSum;
+        if (remainder) {
+            // If exponent was odd: (2 * resultHalf + baseVal) % MODULUS_VALUE
+            currentSum = (2 * resultHalf + baseVal) % MODULUS_VALUE;
+        } else {
+            // If exponent was even: (2 * resultHalf) % MODULUS_VALUE
+            currentSum = (2 * resultHalf) % MODULUS_VALUE;
         }
-        else if ( currentItem === '<' ) {
-            tokenStream.push('p'); // 'p' for open bracket
+        return currentSum % MODULUS_VALUE; // Ensure final result is within modulus
+    }
+    // Base case: direct multiplication for smaller values or exponent 1
+    return (baseVal * exponentVal) % MODULUS_VALUE;
+}
+
+/**
+ * Calculates the S(x) operation, which is equivalent to recM(x, x).
+ * @param {number} inputVal - The input value for the S operation.
+ * @returns {number} The result of S(x).
+ */
+function calculateS(inputVal) {
+    return recursiveModuloPower(inputVal, inputVal);
+}
+
+/**
+ * Calculates the T(x, y) operation, which is floor(x / (2^y)).
+ * @param {number} dividendVal - The dividend.
+ * @param {number} divisorPower - The exponent for the power of 2.
+ * @returns {number} The result of T(x, y).
+ */
+function calculateT(dividendVal, divisorPower) {
+    return Math.floor(dividendVal / Math.pow(2, divisorPower));
+}
+
+/**
+ * Removes all whitespace characters and 'S' characters from a given string.
+ * @param {string} rawString - The input string to clean.
+ * @returns {string} The cleaned string.
+ */
+function cleanInputString(rawString) {
+    return rawString.replace(/\s|S/g, ''); // Use regex to remove spaces and 'S'
+}
+
+/**
+ * Checks if a given token can be converted to a valid number.
+ * @param {*} tokenValue - The value to check.
+ * @returns {boolean} True if the value is a number, false otherwise.
+ */
+function isNumericToken(tokenValue) {
+    const numericConversion = Number(tokenValue); // Attempt conversion to number
+    const stringRepresentation = numericConversion.toString(); // Convert back to string
+    // A value is considered a number if its string representation is not "NaN"
+    return Boolean(stringRepresentation !== "NaN");
+}
+
+/**
+ * Segments the input string into a list of numbers and operators.
+ * It identifies contiguous sequences of digits as numbers and treats other characters as individual tokens.
+ * @param {string} processedString - The string after initial cleaning.
+ * @returns {Array<number|string>} An array containing numbers and operator characters.
+ */
+function segmentInputTokens(processedString) {
+    processedString = processedString.split(''); // Convert string to an array of characters
+    const stringLength = processedString.length;
+    let segmentStartIdx = 0;
+    let segmentEndIdx = 0;
+    const tokenList = []; // List to store the segmented tokens
+    let currentlyParsingNumber = false; // Flag to track if we are currently inside a number sequence
+
+    for (let charIndex = 0; charIndex < stringLength; charIndex++) {
+        const currentCharacter = processedString[charIndex];
+
+        // If not currently parsing a number and the current char is a digit, start a new number segment
+        if (!currentlyParsingNumber && isNumericToken(currentCharacter)) {
+            segmentStartIdx = charIndex;
+            currentlyParsingNumber = true;
         }
-        else if ( currentItem === '>' ) {
-            // Check if it's a 'q' or 't'
-            if ( isClosingBracket(idx, componentList) ) {
-                tokenStream.push('q'); // 'q' for close bracket
-            }
-            else {
-                tokenStream.push('t'); // 't' for right shift
-                idx += 1; // Advance index to skip the second '>'
-            }
+        // If currently parsing a number and the current char is not a digit, end the number segment
+        else if (currentlyParsingNumber && !isNumericToken(currentCharacter)) {
+            segmentEndIdx = charIndex;
+            currentlyParsingNumber = false;
+            // Extract and parse the number, then add it to the token list
+            const numberChars = processedString.slice(segmentStartIdx, segmentEndIdx);
+            const numberString = numberChars.join('');
+            const parsedNumber = Number(numberString);
+            tokenList.push(parsedNumber);
+        }
+
+        // If the current character is not a digit, add it directly to the token list
+        if (!isNumericToken(currentCharacter)) {
+            tokenList.push(currentCharacter);
         }
     }
 
-    return tokenStream;
+    // After the loop, if we were still parsing a number, add the final number segment
+    if (currentlyParsingNumber) {
+        segmentEndIdx = stringLength;
+        const remainingNumberChars = processedString.slice(segmentStartIdx, segmentEndIdx);
+        const finalNumberString = remainingNumberChars.join('');
+        const finalParsedNumber = Number(finalNumberString);
+        tokenList.push(finalParsedNumber);
+    }
+    return tokenList;
 }
 
-// Builds the abstract syntax tree (or evaluates it directly) based on tokens
-function buildSyntaxTree( expressionList ) {
-    var listLength = expressionList.length;
-    var currentPosition = 0;
-    while ( expressionList.length > 1 ) {
-        var currentToken = expressionList[currentPosition];
-        if ( isNumericLiteral(currentToken) ) {
-            if ( currentPosition > 0 && expressionList[currentPosition - 1] === 't' ) {
-                // Apply right shift: (value_before_t) >> (current_number)
-                expressionList[currentPosition - 2] = performRightShift(expressionList[currentPosition - 2], expressionList[currentPosition]);
-                expressionList.splice(currentPosition - 1, 2); // Remove 't' and the shift amount
-                currentPosition = currentPosition - 3; // Adjust position after splice
+/**
+ * Determines if a '>' character represents a simple closing bracket 'q' or a '>>' operator 't'.
+ * @param {number} currentIndex - The current index of the '>' character in the token array.
+ * @param {Array<number|string>} tokenArray - The array of segmented tokens.
+ * @returns {boolean} True if it's a simple closing bracket 'q', false if it's a '>>' operator 't'.
+ */
+function isClosingBracket(currentIndex, tokenArray) {
+    let isSimpleClosing = true;
+    // Check if the next character is also '>'
+    if (tokenArray[currentIndex + 1] === '>') {
+        // If it's '>>', check the character after that to distinguish '>>L' from '>>S<x>'
+        if (isNumericToken(tokenArray[currentIndex + 2]) || tokenArray[currentIndex + 2] === '<') {
+            isSimpleClosing = false; // It's a '>>' operator
+        }
+    }
+    return isSimpleClosing;
+}
+
+/**
+ * Converts the segmented token list into a standardized token sequence for evaluation.
+ * 'S<x>' becomes 'p', 'x>>y' becomes 't', and 'S<x>' closing '>' becomes 'q'.
+ * @param {Array<number|string>} segmentedList - The list of segmented numbers and characters.
+ * @returns {Array<number|string>} The tokenized sequence.
+ */
+function convertToTokens(segmentedList) {
+    const processedTokens = []; // Array to store the standardized tokens
+    const listLength = segmentedList.length;
+
+    for (let tokenIndex = 0; tokenIndex < listLength; tokenIndex++) {
+        const currentElement = segmentedList[tokenIndex];
+
+        if (isNumericToken(currentElement)) {
+            processedTokens.push(currentElement); // Numbers are pushed as is
+        } else if (currentElement === '<') {
+            processedTokens.push('p'); // '<' represents the start of S(x)
+        } else if (currentElement === '>') {
+            // Determine if '>' is a simple closing 'q' or part of '>>' operator 't'
+            if (isClosingBracket(tokenIndex, segmentedList)) {
+                processedTokens.push('q'); // Simple closing bracket
+            } else {
+                processedTokens.push('t'); // '>>' operator
+                tokenIndex += 1; // Skip the next '>' as it's part of '>>'
             }
         }
-        else if ( currentToken === 'p' ) {
-            // 'p' (opener) usually handled by 'q' when matching
-        }
-        else if ( currentToken === 'q' ) {
-            // Apply symmetric operation: S<x> where x is value_before_q
-            expressionList[currentPosition - 2] = evalSymmetricOp(expressionList[currentPosition - 1]);
-            expressionList.splice(currentPosition - 1, 2); // Remove the value and 'q'
-            currentPosition = currentPosition - 3; // Adjust position after splice
-        }
-        else if ( currentToken === 't' ) {
-            // 't' (right shift operator) is handled when its operand (number) is encountered
-        }
-        currentPosition++;
-        // debug logging: outputPrinter(expressionList);
     }
-    return expressionList;
+    return processedTokens;
 }
 
-// Main function to process a single input textRow through all stages
-function handleSegment( textRow ) {
-    textRow = cleanInputString(textRow);
-    if ( !textRow ) { outputPrinter(''); return; }
-    textRow = parseInitialStructure(textRow);
-    if ( !textRow ) { outputPrinter(''); return; }
-    textRow = tokenizeComponents(textRow);
-    if ( !textRow ) { outputPrinter(''); return; }
-    textRow = buildSyntaxTree(textRow);
-    if ( !textRow ) { outputPrinter(''); return; }
-    // The final result should be a single-element array containing the computed value
-    // textRow = textRow[0]; // This line was commented out in the original
-    if ( !textRow ) { outputPrinter(''); return; } // Redundant check, but kept for structural similarity
-    outputPrinter(textRow);
+/**
+ * Evaluates the token sequence by applying S and T operations in the correct order.
+ * This function modifies the tokenSequence in place, reducing it to a single result.
+ * @param {Array<number|string>} tokenSequence - The tokenized sequence to evaluate.
+ * @returns {Array<number>} An array containing the final single result.
+ */
+function evaluateExpressionTree(tokenSequence) {
+    let currentPosition = 0; // Current index for iterating through the sequence
+
+    // Continue processing until only one element (the final result) remains
+    while (tokenSequence.length > 1) {
+        const currentSymbol = tokenSequence[currentPosition];
+
+        if (isNumericToken(currentSymbol)) {
+            // If current symbol is a number and preceded by 't' (T operator)
+            if (currentPosition > 0 && tokenSequence[currentPosition - 1] === 't') {
+                // Apply T operation: tokenSequence[i-2] = T(tokenSequence[i-2], tokenSequence[i])
+                tokenSequence[currentPosition - 2] = calculateT(tokenSequence[currentPosition - 2], tokenSequence[currentPosition]);
+                // Remove the 't' operator and the second operand
+                tokenSequence.splice(currentPosition - 1, 2);
+                // Adjust position to re-evaluate the modified part
+                currentPosition = currentPosition - 3;
+            }
+        } else if (currentSymbol === 'p') {
+            // 'p' (opening S bracket) does not trigger an immediate operation
+        } else if (currentSymbol === 'q') {
+            // If current symbol is 'q' (closing S bracket)
+            // Apply S operation: tokenSequence[i-2] = S(tokenSequence[i-1])
+            tokenSequence[currentPosition - 2] = calculateS(tokenSequence[currentPosition - 1]);
+            // Remove the 'p' operator and its operand, and the 'q' itself
+            tokenSequence.splice(currentPosition - 1, 2);
+            // Adjust position to re-evaluate the modified part
+            currentPosition = currentPosition - 3;
+        } else if (currentSymbol === 't') {
+            // 't' (T operator) waits for its second operand (a number)
+        }
+        currentPosition++; // Move to the next symbol
+    }
+    return tokenSequence; // The array now contains a single element, the final result
+}
+
+/**
+ * Processes a single line of input through all stages: cleaning, segmentation, tokenization, and evaluation.
+ * @param {string} inputString - The raw input string for this line.
+ */
+function handleSingleLine(inputString) {
+    // Step 1: Eliminate 'S' and whitespace
+    let processedString = cleanInputString(inputString);
+    if (!processedString) { outputFn(''); return; } // Output empty line if string becomes empty
+
+    // Step 2: Divide into initial tokens (numbers and single characters)
+    processedString = segmentInputTokens(processedString);
+    if (!processedString) { outputFn(''); return; }
+
+    // Step 3: Tokenize into 'p', 'q', 't', and numbers
+    processedString = convertToTokens(processedString);
+    if (!processedString) { outputFn(''); return; }
+
+    // Step 4: Evaluate the expression tree
+    processedString = evaluateExpressionTree(processedString);
+    if (!processedString) { outputFn(''); return; }
+
+    // Output the final result (which is the single element in the processedString array)
+    outputFn(processedString);
 }

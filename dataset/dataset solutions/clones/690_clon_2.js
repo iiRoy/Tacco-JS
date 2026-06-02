@@ -1,44 +1,37 @@
-// This script processes numerical data from standard input.
-// It calculates specific differences based on cubic values.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineData = rawData.trim().split("\n"); // Split the input into an array of lines, removing leading/trailing whitespace
 
-let rawData = acquireModule('fileSystem').readTextContent('/dev/stdin', 'utf8');
+// Main processing loop
+while (true) {
+    // Extract the current number from the beginning of the lineData array
+    // The '-0' converts the string to a number
+    var currentNum = lineData.shift() - 0;
 
-// Prepare the input: remove leading/trailing whitespace and split into individual lines.
-const lines = rawData.stripWhitespace().segmentByNewline("\n");
-
-// Main processing loop continues indefinitely until a specific termination condition is met.
-while ( true )
-{
-  // Extract the first line, convert it to a numerical value, and remove it from the array.
-  let currentValue = lines.shift() - 0;
-
-  // Check if the extracted value is zero, which signals the end of input.
-  if ( currentValue === 0 ) {
-    break; // Terminate the processing loop.
-  }
-
-  // Calculate the cube of the current numerical value.
-  const cubedValue = currentValue * currentValue * currentValue;
-
-  // Initialize an array to store the computed differences.
-  const resultSet = [ ];
-
-  // Begin the outer nested loop, iterating downwards from 'currentValue - 1'.
-  for ( let outerLoopVar = currentValue - 1 ; outerLoopVar > 0 ; outerLoopVar-- ) {
-    // Begin the inner nested loop, iterating downwards from 'outerLoopVar'.
-    for ( let innerLoopVar = outerLoopVar ; innerLoopVar > 0 ; innerLoopVar-- ) {
-      // Calculate a specific difference: the cubed main value minus the cubes of loop variables.
-      const difference = cubedValue - outerLoopVar * outerLoopVar * outerLoopVar - innerLoopVar * innerLoopVar * innerLoopVar;
-
-      // If the calculated difference is positive, add it to our result set.
-      if ( difference > 0 ) {
-        resultSet.push( difference );
-      }
+    // If the number is 0, terminate the loop
+    if (currentNum === 0) {
+        break;
     }
-  }
 
-  // Output the minimum value found within the resultSet to the console.
-  outputStream.printLine( NumericOperations.findMinimum.invokeFunction( null, resultSet ) );
+    // Calculate the cube of the current number
+    var cubeOfNum = currentNum * currentNum * currentNum;
+
+    // Initialize an empty array to store calculated differences
+    var resultsList = [];
+
+    // Outer loop: iterates from (currentNum - 1) down to 1
+    for (var outerIdx = currentNum - 1; outerIdx > 0; outerIdx--) {
+        // Inner loop: iterates from outerIdx down to 1
+        for (var innerIdx = outerIdx; innerIdx > 0; innerIdx--) {
+            // Calculate the difference: cubeOfNum - outerIdx^3 - innerIdx^3
+            var diffVal = cubeOfNum - outerIdx * outerIdx * outerIdx - innerIdx * innerIdx * innerIdx;
+
+            // If the difference is positive, add it to the results list
+            if (diffVal > 0) {
+                resultsList.push(diffVal);
+            }
+        }
+    }
+
+    // Print the minimum value found in the resultsList
+    console.log(Math.min.apply(null, resultsList));
 }
-
-// End of data processing.

@@ -1,59 +1,72 @@
-function  processListElements (  inputItems  ) { // This function computes unique items and their respective counts.
- const     distinctElements = [ ] ,  frequencyArray = [ ] ;
- let       previousItem  ;
+function processFrequency(dataCollection) {
+  // Initialize two arrays: one for unique elements and one for their frequencies.
+  let uniqueElements = [];
+  let elementCounts = [];
+  let lastProcessedItem; // Stores the previously encountered item for comparison.
 
-    // Arrange the input collection in ascending order for sequential processing.
-    inputItems . sort ( ) ;
+  // Sort the input collection to group identical elements together.
+  dataCollection.sort();
 
-    for    (  let  counter = 0 ; counter < inputItems . length ; counter++  ) {
-        if   (  inputItems[ counter ]  !==  previousItem  ) {
-             distinctElements . push (  inputItems[ counter ]  ) ;  // Record a newly encountered distinct element.
-             frequencyArray . push (   1   ) ;  // Initialize its occurrence count to one.
-        }  else  {
-             frequencyArray [  frequencyArray . length - 1  ] ++ ;  // Increment the count for the last distinct element.
-        }
-        previousItem  =  inputItems[ counter ] ;  // Store the current element as the previous one for the next iteration.
+  // Iterate through the sorted collection.
+  for (let idx = 0; idx < dataCollection.length; idx++) {
+    // If the current element is different from the last one, it's a new unique element.
+    if (dataCollection[idx] !== lastProcessedItem) {
+      uniqueElements.push(dataCollection[idx]); // Add the new unique element.
+      elementCounts.push(1); // Start its count at 1.
+    } else {
+      // If it's the same as the last, increment the count of the last unique element.
+      elementCounts[elementCounts.length - 1]++;
     }
+    lastProcessedItem = dataCollection[idx]; // Update the last processed item.
+  }
 
-    return  [  distinctElements , frequencyArray  ] ; // Deliver the pair of arrays: unique elements and their frequencies.
+  // Return a tuple containing the unique elements and their respective counts.
+  return [uniqueElements, elementCounts];
 }
 
+function executeProgram(rawInputData) {
+  // Split the raw input string into lines.
+  rawInputData = rawInputData.split("\n");
 
-function  StartApplication (  sourceContent  ) {
-    // Break down the entire input string into individual lines.
-    sourceContent = sourceContent . split ( "\n" ) ;
+  // Parse the first line as the total number of items (though not directly used in the core logic).
+  const totalItems = parseInt(rawInputData[0], 10);
 
-    const  itemCount = parseInt (  sourceContent[ 0 ] ,  10  ) ; // Extract the first line as the expected number of items.
-    let    itemNumbers = sourceContent[ 1 ] . split (  " "  ) ; // Parse the second line into a collection of string representations of numbers.
+  // Split the second line by spaces to get string representations of numbers.
+  let numericValues = rawInputData[1].split(" ");
+  // Convert each string representation to an integer in place.
+  numericValues.forEach((currentValue, currentIndex, targetArray) => {
+    targetArray[currentIndex] = parseInt(currentValue, 10);
+  });
 
-    // Convert each string number within the collection to its integer equivalent.
-    itemNumbers . forEach ( ( currentVal , idxPos ) => itemNumbers[ idxPos ] = parseInt ( currentVal , 10 ) ) ;
+  // Call the frequency processing function with the prepared array.
+  const frequencyResult = processFrequency(numericValues);
 
-    // Invoke the frequency calculation utility with the prepared numeric data.
-    const  processedData = processListElements ( itemNumbers ) ;
+  let adjustmentCounter = 0; // Initialize a counter for necessary adjustments.
 
-    let    cumulativeDiff = 0 ; // Initialize a variable to accumulate the final adjustment value.
+  // Iterate through the unique numbers and their counts obtained from the frequency analysis.
+  for (let loopIndex = 0; loopIndex < frequencyResult[0].length; loopIndex++) {
+    const currentNumber = frequencyResult[0][loopIndex]; // The unique number itself.
+    const occurrenceCount = frequencyResult[1][loopIndex]; // How many times it appeared.
 
-    // Iterate through the results to determine the overall required adjustments.
-    for (  let  idx = 0 ; idx < processedData[ 0 ] . length ; idx++  ) {
-        const  elementValue = processedData[ 0 ] [ idx ] ; // Retrieve the actual value from the unique elements array.
-        const  occurrenceVal = processedData[ 1 ] [ idx ] ; // Retrieve its corresponding frequency count.
-
-        if (  elementValue !== occurrenceVal  ) { // Compare the element's value with its frequency.
-            if (  elementValue < occurrenceVal  ) {
-                // Scenario: Value is less than its frequency. We need to reduce occurrences.
-                cumulativeDiff += occurrenceVal - elementValue ;
-            }
-            if (  elementValue > occurrenceVal  ) {
-                // Scenario: Value is greater than its frequency. All occurrences must be 'removed'.
-                cumulativeDiff += occurrenceVal ;
-            }
-        }
+    // Check if the number value is different from its occurrence count.
+    if (currentNumber !== occurrenceCount) {
+      if (currentNumber < occurrenceCount) {
+        // If the count is greater than the number, we need to reduce the count.
+        // The difference represents how many items need to be removed or adjusted.
+        adjustmentCounter += occurrenceCount - currentNumber;
+      }
+      if (currentNumber > occurrenceCount) {
+        // If the number is greater than its count, we can only remove all occurrences.
+        // The count itself represents the number of items to be removed.
+        adjustmentCounter += occurrenceCount;
+      }
     }
+  }
 
-    console . log ( cumulativeDiff ) ; // Display the final computed adjustment sum.
+  // Output the final calculated adjustment count to the console.
+  console.log(adjustmentCounter);
 }
 
-
-// The following section is for standard input/output handling and should not be altered.
-StartApplication ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line handles standard input/output and invokes the main program logic.
+// It should not be modified as per instructions.
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

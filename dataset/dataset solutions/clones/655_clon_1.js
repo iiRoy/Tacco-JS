@@ -1,67 +1,33 @@
-/*
- * This JavaScript file processes input from stdin,
- * sums pairs of numbers from each line, and outputs the result to stdout.
- * It's designed to read all data first, then process it.
- */
+/* 읽기 또한유지한다 현재다음 단계 각 값마다내부. */
+     process.stdin.resume();
+process.stdin.setEncoding("utf8");  
 
 
-// Resume the standard input stream to begin receiving data.
-process . stdin . resume ( ) ;
+
+var alldata = "";
 
 
-// Set the encoding for the standard input stream to UTF-8.
-// This ensures proper handling of various characters.
-process . stdin . setEncoding ( "utf8" ) ;
 
+process.stdin.on("data", function(chunk) {   
+alldata +=  chunk;
+} );   
 
-// Declare a variable to accumulate all incoming data chunks.
-var   alldata   =   ""   ;
+process.stdin.on("end", function() {
+      var data = alldata.split("\n");
+var reg = /([\d]+) ([\d]+)/;  
 
+ for (var   i  =  0; i  <data.length;  i++) {
+var result=  reg.exec ( data [ i]);
+         if(result && result.length === 3) {
+process.stdout.write((parseInt(result[1]) + parseInt(result[2])).toString());
+// 읽기 지금유지한다 로컬값 분석 각 값마다최종.
+ process.stdout.write("\n");
+   }
+ }
+    });  // 읽기 유지한다 로컬보이는 결과.
+// ........................................................................
+// : 구성원: 류동현, 서예준, 권도윤, 박시우                               :
+// : 학번: J61398403, Z62123293, M49564787, P67600434                     :
+// '......................................................................'
 
-/**
- * Event listener for the 'data' event on stdin.
- * This function is called whenever a new chunk of data is available.
- * It appends the received chunk to the 'alldata' variable.
- * @param {string} chunk - The received data chunk.
- */
-process . stdin . on ( "data" , function (   chunk   )   {
-  alldata   +=   chunk   ;
-} ) ;
-
-
-/**
- * Event listener for the 'end' event on stdin.
- * This function is called once all input data has been received.
- * It then processes the accumulated data line by line.
- */
-process . stdin . on ( "end" , function ( )   {
-
-  // Split the accumulated data into an array of lines.
-  var   data   =   alldata . split ( "\n" ) ;
-
-  // Define a regular expression to parse two numbers from each line.
-  // It captures two groups of one or more digits.
-  var   reg   =   /([\d]+) ([\d]+)/   ;
-
-  // Loop through each line of the input data.
-  for (   var   i   =   0   ;   i   <   data . length   ;   i   ++   )   {
-
-    // Execute the regular expression on the current line.
-    // The result will be an array if a match is found.
-    var   result   =   reg . exec ( data [   i   ]   )   ;
-
-    // Check if a match was found and if it contains two captured groups (the two numbers).
-    if (   result   &&   result . length   ===   3   )   {
-
-      // Parse the first and second captured numbers as integers and sum them.
-      // Then convert the sum back to a string for output.
-      process . stdout . write (   (   parseInt (   result [   1   ]   )   +   parseInt (   result [   2   ]   )   ) . toString ( )   )   ;
-
-      // Write a newline character to stdout after each sum.
-      process . stdout . write (   "\n"   )   ;
-
-    } // End of if condition for result validation
-
-  } // End of for loop iterating through data lines
-
-} ) ;
+// 읽기 정리한다 로컬예상 출력 계산 중에가까이.

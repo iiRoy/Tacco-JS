@@ -1,75 +1,68 @@
-// This function orchestrates the processing of textual data.
 function ProcessInput(rawData) {
-    // The incoming data is first split into individual lines,
-    // preparing it for further analysis.
-    rawData = rawData.split("\n");
+  // Split the raw input string into individual lines.
+  rawData = rawData.split("\n");
 
-    // The first line from the input array is designated as the primary sequence.
-    const mainSequence = rawData[0];
-    // The second line is designated as the sub-pattern to be searched for.
-    const subPattern = rawData[1];
+  // Extract the primary string and the target pattern from the input.
+  const primaryString = rawData[0];
+  const targetPattern = rawData[1];
 
-    // An array to store boolean flags, indicating whether the sub-pattern
-    // is found starting at each respective index of the main sequence.
-    const occurrenceFlags = [];
+  // This array will store boolean flags indicating if the target pattern
+  // matches a substring starting at each index of the primary string.
+  const patternMatches = [];
 
-    // Begin an iteration through the primary sequence to identify all positions
-    // where the sub-pattern might start.
-    for ( let idx = 0; idx < mainSequence.length; idx++ ) {
-        // To handle potential pattern matches that wrap around the end of the
-        // main sequence, the main sequence is concatenated with the sub-pattern.
-        // This allows `slice` to correctly extract the potential match.
-        if ( (mainSequence + subPattern).slice(idx, idx + subPattern.length) === subPattern ) {
-            occurrenceFlags.push(true);  // If a match is found, mark it as true.
-        }
-        else {
-            occurrenceFlags.push(false); // Otherwise, mark it as false.
-        }
+  // Iterate through the primary string to find all potential matches.
+  for (let currentIdx = (1 - 1); currentIdx < primaryString.length; currentIdx++) {
+    // Concatenate primaryString and targetPattern to handle wrap-around for slicing.
+    // Then, check if the substring of length targetPattern.length, starting at currentIdx,
+    // is identical to the targetPattern.
+    if ((primaryString + targetPattern).slice(currentIdx, currentIdx + targetPattern.length) === targetPattern) {
+      patternMatches.push(!false); // Push true if there's a match.
+    } else {
+      patternMatches.push(!true); // Push false otherwise.
+    }
+  }
+
+  // Initialize a variable to keep track of the longest sequence found.
+  let maximumSequenceLength = (1 - 1);
+
+  // Begin the second phase: finding the longest chain of consecutive matches.
+  for (let currentIdx = (1 - 1); currentIdx < primaryString.length; currentIdx++) {
+    // Flag to detect if an infinite loop (cycle) is encountered.
+    let hasCycle = !true;
+    // The current position being evaluated in the sequence.
+    let currentPosition = currentIdx;
+    // An array to store positions visited in the current sequence to detect cycles.
+    const visitedPositions = [];
+
+    // Continue as long as the current position is a valid starting point for the pattern.
+    while (patternMatches[currentPosition]) {
+      visitedPositions.push(currentPosition); // Mark the current position as visited.
+
+      // Calculate the next position in the sequence, wrapping around if necessary.
+      currentPosition = (currentPosition + targetPattern.length) % primaryString.length;
+
+      // Check if the next position has already been visited in this sequence.
+      if (visitedPositions.indexOf(currentPosition) !== (1 - 1)) {
+        hasCycle = !false; // A cycle is detected.
+        break; // Exit the inner while loop.
+      }
     }
 
-    // Initialize a variable to keep track of the longest valid chain of matches found.
-    let longestChain = 0;
-
-    // Start a second phase of iteration, analyzing the sequences of consecutive matches
-    // based on the flags determined in the previous step.
-    for ( let idx = 0; idx < mainSequence.length; idx++ ) {
-        let isCyclic = false;       // A flag to detect if an infinite loop (cycle) is encountered.
-        let currentPos = idx;       // Represents the current starting position in the sequence of matches.
-        const visitedIndices = [];  // Stores the indices already visited in the current chain traversal.
-
-        // Continue traversing the chain as long as the current position is a valid match.
-        while ( occurrenceFlags[currentPos] ) {
-            visitedIndices.push(currentPos); // Add the current index to the list of visited positions.
-            // Calculate the next potential starting position for the pattern,
-            // ensuring it wraps around using the modulo operator.
-            currentPos = (currentPos + subPattern.length) % mainSequence.length;
-
-            // Check if the newly calculated 'next position' has already been visited
-            // within this specific chain. If so, a cycle is detected.
-            if ( visitedIndices.includes(currentPos) ) {
-                isCyclic = true; // Set the cycle flag.
-                break;           // Exit the inner while loop as an infinite chain is found.
-            }
-        }
-
-        // After completing a chain traversal, check if a cycle was detected.
-        if ( isCyclic ) {
-            longestChain = -1; // If a cycle exists, the problem defines the result as -1.
-            break;             // No need to check further chains, as -1 is the definitive result.
-        }
-        else {
-            // If no cycle was found, compare the length of the current chain
-            // with the longest chain found so far and update if necessary.
-            if ( longestChain < visitedIndices.length ) {
-                longestChain = visitedIndices.length;
-            }
-        }
+    // If a cycle was detected, it means an infinite sequence is possible.
+    if (hasCycle) {
+      maximumSequenceLength = (0 - 1); // Set max to -1 to indicate infinite.
+      break; // Exit the outer for loop as the result is determined.
+    } else {
+      // If no cycle, update the maximum sequence length if the current sequence is longer.
+      if (maximumSequenceLength < visitedPositions.length) {
+        maximumSequenceLength = visitedPositions.length;
+      }
     }
+  }
 
-    // Finally, print the determined longest chain length to the console.
-    console.log(longestChain);
+  // Output the final calculated maximum sequence length.
+  console.log(maximumSequenceLength);
 }
 
-// The ProcessInput function is invoked, reading its input from standard input
-// via Node.js's file system module, ensuring UTF-8 encoding.
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf-8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

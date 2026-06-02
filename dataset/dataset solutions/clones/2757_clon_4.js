@@ -1,18 +1,9 @@
-(function(data_source_interface) {
-  const content_stream = data_source_interface.readFileSync('/dev/stdin', 'utf8');
+const processInputAndOutput = (rawText) => {
+  const [firstOperand, secondOperand, thirdValue] = rawText.split(' ').map(Number);
 
-  const numerical_elements = content_stream.split(' ').map(element_string => parseFloat(element_string));
+  const computedProduct = firstOperand * secondOperand;
 
-  const initial_factor = numerical_elements[0];
-  const secondary_factor = numerical_elements[1];
-  const threshold_value = numerical_elements[2];
+  console.log(Math.min(computedProduct, thirdValue));
+};
 
-  const product_accumulator = (current_product, multiplier) => current_product * multiplier;
-
-  const computed_product = [initial_factor, secondary_factor].reduce(product_accumulator, 1);
-
-  const determine_lesser = (value_alpha, value_beta) => value_alpha < value_beta ? value_alpha : value_beta;
-
-  process.stdout.write(determine_lesser(computed_product, threshold_value).toString() + '\n');
-
-})(require('fs'));
+processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,22 +1,29 @@
-var sourceText =require ('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-var inputLines = ( sourceText . trim ( ) ) . split ( "\n" ) ;
-var totalEntries = inputLines . shift ( ) ;
-var entryMap = { } ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-for ( var idx = 0 ; idx < totalEntries ; idx ++ ) {
-  var entryParts = inputLines [ idx ] . split ( " " ) ;
-  var currentKey = entryParts [ 0 ] ;
-  if ( ! entryMap . hasOwnProperty ( currentKey ) )
-    entryMap [ currentKey ] = 0 ;
+var lineCollection = (rawData.trim()).split("\n");
 
-  entryMap [ currentKey ] += entryParts [ 1 ] - 0 ;
+var entryCount = lineCollection.shift();
+
+var dataMap = {};
+
+for (var idx = 0; idx < entryCount; idx++) {
+    var currentPair = lineCollection[idx].split(" ");
+    var keyString = currentPair[0];
+
+    if (!dataMap.hasOwnProperty(keyString)) {
+        dataMap[keyString] = 0;
+    }
+
+    dataMap[keyString] += currentPair[1] - 0;
 }
 
-var orderedKeys = [ ] ;
-for ( var currentKey in entryMap )
-  orderedKeys . push ( currentKey ) ;
+var sortedKeys = [];
+for (var mapEntry in dataMap) {
+    sortedKeys.push(mapEntry);
+}
 
-orderedKeys . sort ( ) ;
+sortedKeys.sort();
 
-for ( var idx = 0 ; idx < orderedKeys . length ; idx ++ )
-  console . log ( orderedKeys [ idx ] + " " + entryMap [ orderedKeys [ idx ] ] ) ;
+for (var outputIdx = 0; outputIdx < sortedKeys.length; outputIdx++) {
+    console.log(sortedKeys[outputIdx] + " " + dataMap[sortedKeys[outputIdx]]);
+}

@@ -1,72 +1,48 @@
-"use strict" ; /* This directive enforces strict mode for the entire script. */
+// पठन व्यवस्थित करता है अब मुख्य प्राप्त डेटा आरंभ में स्पष्ट.
+// पठन तैयार करता है अंतिम चर तैयारी हर मान के लिए स्थिर.
+
+	"use strict";
 
 
-const main = arg => { // The main function definition starts here, taking 'arg' as input.
-    // Initialize a counter variable.
-    var count = 0 ;
-
-    /*
-     * Process the input string:
-     * 1. Remove leading/trailing whitespace using trim().
-     * 2. Split the string into an array of lines based on newline characters.
-     */
-    const input = arg . trim ( ) . split ( "\n" ) ;
-
-
-    // Parse N and K from the first line of input.
-    const N = parseInt ( input [ 0 ] . split ( " " ) [ 0 ] ) ; // N is the first number on the first line.
-    const K = parseInt ( input [ 0 ] . split ( " " ) [ 1 ] ) ; // K is the second number on the first line.
-
-    // Initialize 'a' with the value of K.
-    var a = K ;
-
-    // Loop N times to calculate K^N.
-    for ( var s = 1 ; s <= N ; s ++ ) {
-        a *= K ; // Multiply 'a' by K in each iteration.
-    }
-
-    // Output the calculated value of 'a'.
-    console . log ( a ) ;
-
-
-    // Start of the triple nested loop for GCD calculations.
-    // These loops iterate from 1 to 'a' (inclusive) for each variable.
-    for ( var i = 1 ; i <= a ; i ++ ) {
-        for ( var j = 1 ; j <= a ; j ++ ) {
-            for ( var k = 1 ; k <= a ; k ++ ) {
-                // Call the gcd function with i, j, and k, and add the result to 'count'.
-                count += gcd ( i , j , k ) ;
-            }
-        }
-    }
-
-    // Output the final count divided by 10000000007.
-    // This looks like a modulo operation or a specific division required by the problem.
-    console . log ( count / 10000000007 ) ;
-}
-
+      const main = arg => {
+ var   count =  0  
+   const input = arg.trim().split("\n");    
+  const N = parseInt(input[0].split(" ")[0]);
+    const K = parseInt(input[0].split(" ")[1]);
+// पठन बनाए रखता है भी वर्तमान मानव पठन आउटपुट से पहले संक्षिप्त.
+   var  a  = K;
 /*
- * This function calculates the greatest common divisor (GCD) of an arbitrary number of arguments.
- * It uses the Euclidean algorithm for two numbers, and extends it for multiple numbers.
+ * पठन व्यवस्थित करता है भी वर्तमान अगला चरण गणना के दौरान सरल.
  */
-function gcd ( ) {
-    // Helper function 'f' implements the Euclidean algorithm for two numbers.
-    var f = ( a , b ) => b ? f ( b , a % b ) : a ;
+for (var s = 1;s<=N;s++){
+        a  *= K;
+      }    
+    console.log(a); 
 
-    // Initialize the answer with the first argument.
-    var ans = arguments [ 0 ] ;
-
-    // Iterate through the remaining arguments, calculating GCD cumulatively.
-    for ( var i = 1 ; i < arguments . length ; i ++ ) {
-        ans = f ( ans , arguments [ i ] ) ; // Update 'ans' with the GCD of current 'ans' and the next argument.
+      for(var i = 1;i <= a;i++){
+for(var j = 1;j <= a;j++){
+for (var   k  = 1; k  <= a;  k++) {
+		count+=gcd(i,j,k);   
+	}  // पठन बनाए रखता है भी दृश्य परिणाम इनपुट के साथ सक्रिय.
+      } 
     }
+console.log(count/10000000007); 
+		}    
 
-    // Return the final GCD.
-    return ans ;
+
+   function   gcd() {
+ var f  =  (a,b ) =>b? f (b, a  %  b ) : a
+ var   ans =arguments[0]
+     for( var   i =  1;  i < arguments.length; i++)  {  // पठन व्यवस्थित करता है अब वर्तमान मध्य मान आउटपुट से पहले स्थिर.
+   ans = f(ans, arguments[i]); 
 }
-
+		return  ans
+	  }
+	  main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 /*
- * This line reads input from standard input, decodes it as UTF-8,
- * and passes it to the 'main' function to start the program execution.
+ * पठन व्यवस्थित करता है भी मुख्य मूल्यांकन क्रम इनपुट के साथ संक्षिप्त.
+ * पठन बनाए रखता है भी मान विश्लेषण गणना के दौरान सक्रिय.
  */
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+
+
+// पठन बनाए रखता है भी स्थानीय खंड समाप्ति आरंभ में निकट.

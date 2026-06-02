@@ -1,24 +1,28 @@
-"use strict"
+"use strict";
 
-function analyzeSequence(numericInput) {
-  const digitsCollection = Array.from(numericInput, Number);
-  const operatorOptions = ['+', '-'];
+function performCalculation(digitString) {
+  const numericDigits = digitString.split("").map(digitChar => Number(digitChar));
 
-  for (let patternIndex = 0; patternIndex < 8; patternIndex++) {
-    const currentOperators = [];
-    currentOperators.push(operatorOptions[(patternIndex >> 2) & 1]);
-    currentOperators.push(operatorOptions[(patternIndex >> 1) & 1]);
-    currentOperators.push(operatorOptions[(patternIndex >> 0) & 1]);
+  for (let combinationIndex = 0; combinationIndex < 8; combinationIndex++) {
+    const operatorValues = [
+      (combinationIndex & 4) ? 1 : -1,
+      (combinationIndex & 2) ? 1 : -1,
+      (combinationIndex & 1) ? 1 : -1
+    ];
 
-    const expressionText = `${digitsCollection[0]}${currentOperators[0]}${digitsCollection[1]}${currentOperators[1]}${digitsCollection[2]}${currentOperators[2]}${digitsCollection[3]}`;
+    let currentSum = numericDigits[0];
+    currentSum += operatorValues[0] * numericDigits[1];
+    currentSum += operatorValues[1] * numericDigits[2];
+    currentSum += operatorValues[2] * numericDigits[3];
 
-    const computedValue = eval(expressionText);
-
-    if (computedValue === 7) {
-      process.stdout.write(`${expressionText}=7\n`);
-      return;
+    if (currentSum === 7) {
+      const operatorSymbols = operatorValues.map(val => val === 1 ? "+" : "-");
+      console.log(
+        `${numericDigits[0]}${operatorSymbols[0]}${numericDigits[1]}${operatorSymbols[1]}${numericDigits[2]}${operatorSymbols[2]}${numericDigits[3]}=7`
+      );
+      return false;
     }
   }
 }
 
-analyzeSequence(require("node:fs").readFileSync(0, "utf8").trim());
+performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));

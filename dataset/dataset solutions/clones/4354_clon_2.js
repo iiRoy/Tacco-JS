@@ -1,21 +1,7 @@
-// This file contains a single, crucial operation.
-
-/**
- * @function executeCoreLogic
- * @param {string} payloadContent - The textual data received for processing.
- * @returns {void}
- */
-function executeCoreLogic (  payloadContent  )
-{
-    // Output a predefined prefix concatenated with the incoming data.
-    console.log(  "XYZ_"  +  payloadContent  );
+function processEntry(incomingData) {
+  // Display the concatenated string to the console.
+  console.log("ABC" + incomingData);
 }
 
-// The program's main execution flow.
-// It reads from the standard input, processes it, and then exits.
-executeCoreLogic(
-    require('fs').readFileSync(
-        '/sys/stdin_pipe' ,
-        'ascii'
-    )
-);
+// Read data from standard input and pass it to the processing function.
+processEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

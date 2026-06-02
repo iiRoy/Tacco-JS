@@ -1,25 +1,28 @@
-// This routine receives the complete textual data for processing.
-function calculateGridCells(initialText) {
-  initialText = initialText . split ( "\n" ) [ 0 ] ;
+// This module handles processing of input data.
+function ProcessInput(incomingData) {
+  // The first line of the input string is relevant.
+  let currentLine = incomingData.split('\n')[0];
 
-  const dimensionStrings = initialText . split ( ' ' ) . map ( ( currentSegment ) => {
-    return parseInt ( currentSegment , 10 ) ;
-  } ) ;
+  // Split the line by space and convert parts to numbers.
+  const numericParts = currentLine.split(' ').map(strPart => parseInt(strPart, 10));
 
-  const firstDimension = dimensionStrings [ 0 ] ;
-  const secondDimension = dimensionStrings [ 1 ] ;
+  // Extract dimensions.
+  let dimensionA = numericParts[0];
+  let dimensionB = numericParts[1];
 
-  let finalCount ;
+  let finalResult; // Variable to store the computed outcome.
 
-  if ( ( firstDimension === 1 ) || ( secondDimension === 1 ) ) {
-    finalCount = 1 ;
+  // Conditional logic based on dimensions.
+  if (dimensionA === 1 || dimensionB === 1) {
+    finalResult = 1; // Special case: if either dimension is one.
+  } else {
+    // General calculation for other cases.
+    finalResult = (dimensionA * dimensionB + 1) / 2;
   }
-  else {
-    finalCount = ( ( firstDimension * secondDimension ) + 1 ) / 2 ;
-  }
 
-  console . log ( finalCount ) ;
+  // Display the calculated result.
+  console.log(finalResult);
 }
 
-/* Please refrain from altering the following section of code. It is responsible for reading data from standard input and executing the primary function. */
-calculateGridCells ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Standard boilerplate for reading from stdin and invoking the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

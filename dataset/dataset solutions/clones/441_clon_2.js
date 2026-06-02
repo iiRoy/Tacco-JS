@@ -1,124 +1,103 @@
-// Function to identify prime numbers up to a specified upper bound
-// using an optimized variant of the Sieve of Eratosthenes algorithm.
-function findPrimesUpTo(upperBound) {
-    // This array will store flags: 'false' for composite numbers,
-    // and the number itself for prime numbers (initially).
-    var primeCandidateFlags = [];
-
-    // Initialize the array with numbers from 0 to upperBound.
-    // This allows us to easily mark non-primes later.
-    for (var currentIdx = 0; currentIdx <= upperBound; currentIdx++) {
-        primeCandidateFlags[currentIdx] = currentIdx;
+function findPrimes(upperBound) {
+    // Initialize an array to represent numbers up to upperBound.
+    // We'll use this for the Sieve of Eratosthenes.
+    let sieveArray = [];
+    for (let idx = 0; idx <= upperBound; idx++) {
+        sieveArray[idx] = idx;
     }
 
-    // Explicitly mark 0 and 1 as non-prime.
-    primeCandidateFlags[0] = false;
-    primeCandidateFlags[1] = false;
+    // 0 and 1 are not prime numbers.
+    sieveArray[0] = false;
+    sieveArray[1] = false;
 
-    // Calculate the integer part of the square root of the upper bound.
-    // We only need to check for prime factors up to this limit.
-    var sRootLimit = Math.floor(Math.sqrt(upperBound));
+    // Calculate the square root of the upper bound for optimization.
+    const limit = Math.floor(Math.sqrt(upperBound));
 
-    // Iterate from 2 up to the square root limit.
-    for (var currentFactor = 2; currentFactor <= sRootLimit; currentFactor++) {
-        // If the current number is already marked as composite (false),
-        // it means all its multiples have already been handled by a smaller prime factor.
-        if (primeCandidateFlags[currentFactor] === false) {
-            continue; // Skip to the next number.
+    // Apply the Sieve of Eratosthenes algorithm.
+    for (let idx = 2; idx <= limit; idx++) {
+        // If the current number is marked as false, it's not prime, so skip it.
+        if (sieveArray[idx] === false) {
+            continue;
         }
-
-        // If 'currentFactor' is prime, mark all its multiples as composite.
-        // Start marking from 'currentFactor * 2' as multiples smaller than this
-        // would have been handled by other factors.
-        for (var multipleIdx = currentFactor + currentFactor; multipleIdx <= upperBound; multipleIdx += currentFactor) {
-            primeCandidateFlags[multipleIdx] = false; // Mark as composite.
+        // Mark all multiples of the current prime number as not prime.
+        for (let multipleIdx = idx + idx; multipleIdx <= upperBound; multipleIdx += idx) {
+            sieveArray[multipleIdx] = false;
         }
     }
 
-    // Create an object (hash map) to store the identified prime numbers
-    // for efficient lookup (O(1) average time complexity).
-    var primeLookupSet = {};
-
-    // Iterate through the flags array to collect all prime numbers.
-    for (var checkIdx = 0; checkIdx <= upperBound; checkIdx++) {
-        // If the flag for 'checkIdx' is not 'false', it means 'checkIdx' is a prime number.
-        if (primeCandidateFlags[checkIdx] !== false) {
-            primeLookupSet[primeCandidateFlags[checkIdx]] = true; // Add to the set.
+    // Create an object (hash map) to store prime numbers for quick lookup.
+    const primeMap = {};
+    for (let idx = 0; idx <= upperBound; idx++) {
+        // If a number is not marked as false, it's prime.
+        if (sieveArray[idx] !== false) {
+            primeMap[sieveArray[idx]] = true;
         }
     }
-
-    return primeLookupSet; // Return the object containing primes.
+    return primeMap;
 }
 
-// Generate a global set of prime numbers up to 1,000,000.
-// This set will be used repeatedly for each test case.
-var cachedPrimeNumbers = findPrimesUpTo(1000000);
+// Pre-calculate prime numbers up to 1,000,000.
+const primeNumbers = findPrimes(1000000);
 
-// Utilize Node.js 'fs' module to read all data from standard input.
-var rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read all input from stdin.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input: remove leading/trailing whitespace and split into an array of lines.
-var inputLineSegments = (rawInputContent.trim()).split("\n");
+// Split the input into an array of lines and trim whitespace.
+const lineData = (rawData.trim()).split("\n");
 
-// Main processing loop: continues as long as there are valid test cases.
+// Process input lines until a "0 0" sentinel is encountered.
 while (true) {
-    // Extract N and X values from the current line segment.
-    // Shift removes the first element from inputLineSegments.
-    var currentNAndX = inputLineSegments.shift().split(" ").map(Number);
-    var numElementsCount = currentNAndX[0]; // The 'N' value
-    var sumTargetValue = currentNAndX[1]; // The 'X' value
+    // Get the current line, split by space, and convert to numbers.
+    const currentLineNums = lineData.shift().split(" ").map(Number);
+    const countItems = currentLineNums[0]; // Number of items in the current set.
+    const targetSum = currentLineNums[1]; // The target sum to reach.
 
-    // Check for the termination condition: N=0 and X=0.
-    if (numElementsCount === 0 && sumTargetValue === 0) {
-        break; // Exit the loop if termination condition is met.
+    // Check for the termination condition.
+    if (countItems === 0 && targetSum === 0) {
+        break;
     }
 
     // Initialize a dynamic programming array to track reachable sums.
-    // 'true' means a sum is reachable, 'false' means it's not.
-    var possibleSumsStatus = [];
-    // Set all possible sums up to 1,000,000 as initially unreachable.
-    for (var sumIndex = 0; sumIndex <= 1000000; sumIndex++) {
-        possibleSumsStatus[sumIndex] = false;
+    // `reachableSums[k]` will be true if sum `k` can be formed.
+    const reachableSums = [];
+    for (let idx = 0; idx <= 1000000; idx++) {
+        reachableSums[idx] = false;
     }
 
-    // Array to store the 'n' input numbers for the current test case.
-    var currentInputValues = [];
-
-    // Read 'n' numbers from the input and populate the array.
-    // Also, mark these individual numbers as reachable sums in the DP array.
-    for (var elementIndex = 0; elementIndex < numElementsCount; elementIndex++) {
-        var valueFromInput = inputLineSegments.shift() - 0; // Convert string to number.
-        currentInputValues.push(valueFromInput); // Add to the list of values.
-        possibleSumsStatus[valueFromInput] = true; // Mark this value as a reachable sum.
+    // Read the item values for the current test case.
+    const itemValues = [];
+    for (let idx = 0; idx < countItems; idx++) {
+        const currentValue = lineData.shift() - 0; // Convert string to number.
+        itemValues.push(currentValue);
+        reachableSums[currentValue] = true; // A single item can form its own sum.
     }
 
-    // The sum of 0 is always reachable (by choosing no elements).
-    possibleSumsStatus[0] = true;
+    // A sum of 0 is always reachable (by choosing no items).
+    reachableSums[0] = true;
 
-    // Perform dynamic programming to find all reachable sums up to 'sumTargetValue'.
-    // This uses a "knapsack-like" approach where each input number can be used once
-    // to extend a previously reachable sum.
-    for (var currentSum = 0; currentSum <= sumTargetValue; currentSum++) {
-        for (var valIdx = 0; valIdx < currentInputValues.length; valIdx++) {
-            // If 'currentSum' is reachable, then 'currentSum + currentInputValues[valIdx]'
-            // is also reachable, provided it doesn't exceed the max possible sum.
-            if (possibleSumsStatus[currentSum]) {
-                possibleSumsStatus[currentSum + currentInputValues[valIdx]] = true;
+    // Populate the `reachableSums` array using dynamic programming.
+    // For each possible sum `idx` up to `targetSum`:
+    // If `idx` is reachable, then `idx + itemValues[j]` is also reachable.
+    for (let idx = 0; idx <= targetSum; idx++) {
+        for (let j = 0; j < itemValues.length; j++) {
+            // Ensure we don't go out of bounds for `reachableSums`.
+            if (reachableSums[idx] && (idx + itemValues[j] <= targetSum)) {
+                reachableSums[idx + itemValues[j]] = true;
             }
         }
     }
 
-    // Search for the largest reachable prime sum, starting from 'sumTargetValue' downwards.
-    var resultSum = 0; // Initialize result to 0 (will indicate 'NA' if no prime sum found).
-    for (var potentialPrimeSum = sumTargetValue; potentialPrimeSum > 0; potentialPrimeSum--) {
-        // Check if the 'potentialPrimeSum' is reachable AND is a prime number.
-        if (possibleSumsStatus[potentialPrimeSum] && cachedPrimeNumbers.hasOwnProperty(potentialPrimeSum)) {
-            resultSum = potentialPrimeSum; // Found the largest such sum.
-            break; // Exit the loop.
+    // Find the largest reachable sum `idx` (starting from `targetSum` down to 1)
+    // that is also a prime number.
+    let resultSum = 0;
+    for (let idx = targetSum; idx > 0; idx--) {
+        // If `idx` is reachable and `idx` is a prime number.
+        if (reachableSums[idx] && primeNumbers.hasOwnProperty(idx)) {
+            resultSum = idx;
+            break; // Found the largest prime sum.
         }
     }
 
-    // Output the result. If 'resultSum' is 0, it means no prime sum was found, so print "NA".
-    // Otherwise, print the largest prime sum found.
+    // Output the result. If no such prime sum was found, output "NA".
     console.log((resultSum === 0) ? "NA" : resultSum);
 }

@@ -1,218 +1,215 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the code. */
+"use strict"; // Enforce strict mode for cleaner code practices
 
-// Module for file system operations.
-const rawDataSource = require('node:fs');
+// Load the file system module and read all content from standard input
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Read raw input data from standard input using UTF-8 encoding.
-let rawData = rawDataSource.readFileSync("/dev/stdin", 'utf-8');
+// Split the entire input string by spaces or newlines into an array of tokens
+var parsedInput = sourceData.split(/ |\n/);
 
-// Split the input data into a stream of tokens using any whitespace as a delimiter.
-let tokenStream = rawData.split(/\s+/);
-
-// Initialize a pointer to the current token in the stream.
-let currentIndex = 0;
+// Initialize an index to track the current position in the parsed input array
+var currentIndex = 0;
 
 /**
- * Retrieves the next token from the stream and converts it to a numeric value.
- * @returns {number} The next number parsed from the input stream.
+ * Retrieves the next token from the parsed input and converts it to a numeric type.
+ * @returns {number} The next numerical value from the input stream.
  */
-function getNextNumber ( ) {
-    return Number(tokenStream[currentIndex++]);
+function getNextNumber() {
+  return +parsedInput[currentIndex++];
 }
 
 /**
- * Retrieves the subsequent token from the stream as a string.
- * @returns {string} The next string token from the input.
+ * Retrieves the next token from the parsed input as a string.
+ * @returns {string} The next string value from the input stream.
  */
-function getNextString ( ) {
-    return tokenStream[currentIndex++];
+function getNextString() {
+  return parsedInput[currentIndex++];
 }
 
 /**
- * Fetches the next token and parses it into a BigInt data type.
- * @returns {BigInt} The next BigInt value from the input.
+ * Retrieves the next token from the parsed input and converts it to a BigInt type.
+ * @returns {BigInt} The next BigInt value from the input stream.
  */
-function getNextBigInt ( ) {
-    return BigInt(tokenStream[currentIndex++]);
+function getNextBigInt() {
+  return BigInt(parsedInput[currentIndex++]);
 }
 
 /**
- * Extracts a specified number of elements from the token stream.
- * @param {number} count - The quantity of elements to retrieve.
- * @param {boolean} asStrings - If set to true, elements are returned as strings; otherwise, they are converted to numbers.
- * @returns {Array<string|number>} An array containing the retrieved elements.
+ * Fetches a specified number of tokens from the input, converting them to numbers by default,
+ * or keeping them as strings if specified.
+ * @param {number} count - The quantity of tokens to retrieve.
+ * @param {boolean} [asStrings=false] - If true, tokens are returned as strings; otherwise, as numbers.
+ * @returns {Array<number|string>} An array containing the retrieved tokens.
  */
-function getMultipleElements ( count, asStrings ) {
-    const elements = tokenStream.slice(currentIndex, currentIndex + count);
-    currentIndex += count;
-    return asStrings ? elements : elements.map(val => Number(val));
+function getNumbersArray(count, asStrings) {
+  // If 'asStrings' is truthy, return the slice directly; otherwise, map to numbers.
+  return asStrings ? parsedInput.slice(currentIndex, currentIndex += count) : parsedInput.slice(currentIndex, currentIndex += count).map(val => +val);
 }
 
 /**
- * Retrieves a specified quantity of numerical elements from the stream, then sorts them.
- * @param {number} numElements - The total number of numerical elements to extract.
- * @param {boolean} descending - If true, the numbers are sorted in descending order; otherwise, in ascending order.
- * @returns {Array<number>} An array of the sorted numerical elements.
+ * Retrieves a specified number of tokens, converts them to numbers, and then sorts them.
+ * Sorting can be in ascending (default) or descending order.
+ * @param {number} count - The number of elements to fetch and sort.
+ * @param {boolean} [descending=false] - If true, sorts in descending order; otherwise, ascending.
+ * @returns {Array<number>} An array of sorted numerical values.
  */
-function getSortedNumbers ( numElements, descending ) {
-    const elements = tokenStream.slice( currentIndex, currentIndex + numElements ).map( val => Number(val) );
-    currentIndex += numElements;
-    return descending ? elements.sort( (val1, val2) => val2 - val1 ) : elements.sort( (val1, val2) => val1 - val2 );
+function getSortedNumbersArray(count, descending) {
+  // Retrieve the numbers and apply sorting based on the 'descending' flag.
+  return descending ? parsedInput.slice(currentIndex, currentIndex += count).map(val => +val).sort((valA, valB) => valB - valA) : parsedInput.slice(currentIndex, currentIndex += count).map(val => +val).sort((valA, valB) => valA - valB);
 }
 
 /**
- * Constructs a 2D array (matrix) by reading values from the token stream.
- * @param {number} height - The desired number of rows for the matrix.
- * @param {number} width - The desired number of columns for each row.
- * @param {boolean} stringMatrix - If true, matrix cells remain as strings; otherwise, they are converted to numbers.
- * @returns {Array<Array<string|number>>} The generated matrix.
+ * Constructs a 2D array (matrix) from the input stream.
+ * Elements can be numbers (default) or strings.
+ * @param {number} height - The number of rows for the matrix.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} [asStrings=false] - If true, matrix elements are strings; otherwise, numbers.
+ * @returns {Array<Array<number|string>>} The generated 2D array.
  */
-function getMatrix ( height, width, stringMatrix ) {
-    let resultRows = [];
-    let rowIndex = 0;
-    if ( stringMatrix ) {
-        for ( ; rowIndex < height; rowIndex++ ) {
-            resultRows.push(tokenStream.slice(currentIndex, currentIndex += width));
-        }
-    } else {
-        for ( ; rowIndex < height; rowIndex++ ) {
-            resultRows.push(tokenStream.slice(currentIndex, currentIndex += width).map( cell => Number(cell) ));
-        }
+function getMatrix(height, width, asStrings) {
+  var resultMatrix = []; // Array to hold the rows of the matrix
+  var rowIdx = 0; // Loop counter for rows
+
+  // Populate the matrix, converting to numbers or keeping as strings as requested.
+  if (asStrings) {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(parsedInput.slice(currentIndex, currentIndex += width));
     }
-    return resultRows;
+  } else {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(parsedInput.slice(currentIndex, currentIndex += width).map(val => +val));
+    }
+  }
+  return resultMatrix;
 }
 
 /**
- * Generates a multi-dimensional array dynamically based on provided dimensions and an initial value.
- * @param {*} initialValue - The value to populate the innermost arrays.
- * @param {number[]} dimensions - A list of integer dimensions for the array structure.
+ * Dynamically creates a multi-dimensional array with specified dimensions,
+ * initialized with a given value. Uses `eval` for construction.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension of the array.
  * @returns {Array} The newly created multi-dimensional array.
  */
-function createMultiDimArray ( initialValue ) {
-    let dimensions = arguments;
-    let dimIndex = dimensions.length;
-    let arrayCreationString = `Array(dimensions[${--dimIndex}]).fill().map(_ => { return ${initialValue}; })`;
-    while ( --dimIndex ) {
-        arrayCreationString = `Array(dimensions[${dimIndex}]).fill().map(_ => ${arrayCreationString})`;
-    }
-    return eval(arrayCreationString);
-}
+function createMultiDimArray(initialValue) {
+  var args = arguments; // Access all arguments passed to this function
+  var argCount = args.length; // Total number of arguments
+  // Start building the string for the innermost array creation
+  var evalString = "Array(args[" + --argCount + "]).fill().map(element => {return " + initialValue + ";})";
 
-
-/*
- * This class implements a Disjoint Set Union (DSU) data structure,
- * commonly referred to as a Union-Find algorithm. It efficiently manages
- * a collection of disjoint sets, allowing for quick union and find operations.
- */
-class DisjointSetUnion {
-    /**
-     * Initializes the DSU structure for a given number of elements.
-     * Each element is initially considered to be in its own distinct set.
-     * @param {number} elementCount - The total number of elements to manage within the DSU.
-     */
-    constructor (elementCount) {
-        // The parentOrSize array stores the parent index for each element,
-        // or a negative value representing the size of the set if the element is a root.
-        this.parentOrSize = Array.from({ length: elementCount + 1 }, () => -1);
-    }
-
-    /**
-     * Determines the representative (root) of the set to which a given element belongs.
-     * This method incorporates path compression for optimized performance.
-     * @param {number} index - The index of the element for which to find the representative.
-     * @returns {number} The index of the representative (root) of the element's set.
-     */
-    findRepresentative (index) {
-        if (this.parentOrSize[index] < 0) {
-            return index; // If value is negative, it's a root.
-        }
-        // Recursively find the root and perform path compression:
-        // Set the element's parent directly to the discovered root.
-        return this.parentOrSize[index] = this.findRepresentative(this.parentOrSize[index]);
-    }
-
-    /**
-     * Checks whether two specified elements are part of the same disjoint set.
-     * @param {number} nodeA - The index of the first element.
-     * @param {number} nodeB - The index of the second element.
-     * @returns {boolean} True if both elements belong to the identical set, false otherwise.
-     */
-    areConnected (nodeA, nodeB) {
-        return this.findRepresentative(nodeA) === this.findRepresentative(nodeB);
-    }
-
-    /**
-     * Merges the sets containing two given elements into a single set.
-     * This operation uses the union by size heuristic to maintain a balanced tree structure.
-     * @param {number} nodeX - The index of the first element.
-     * @param {number} nodeY - The index of the second element.
-     * @returns {boolean} True if the union operation successfully merged two distinct sets,
-     *                    false if the elements were already in the same set.
-     */
-    unionSets (nodeX, nodeY) {
-        const dsArray = this.parentOrSize; // Reference to the internal array for convenience.
-        nodeX = this.findRepresentative(nodeX);
-        nodeY = this.findRepresentative(nodeY);
-
-        // If the representatives are the same, the elements are already in the same set.
-        if (nodeX === nodeY) {
-            return false;
-        }
-
-        // Apply union by size heuristic: attach the smaller tree under the root of the larger tree.
-        if (dsArray[nodeY] < dsArray[nodeX]) { // If nodeY's set is larger (more negative size).
-            dsArray[nodeY] += dsArray[nodeX]; // Aggregate sizes.
-            dsArray[nodeX] = nodeY;            // Make nodeY the parent of nodeX.
-        } else { // If nodeX's set is larger or equal in size.
-            dsArray[nodeX] += dsArray[nodeY]; // Aggregate sizes.
-            dsArray[nodeY] = nodeX;            // Make nodeX the parent of nodeY.
-        }
-        return true; // The sets were successfully merged.
-    }
-
-    /**
-     * Calculates and returns the total number of elements within the set that contains the specified element.
-     * @param {number} elementIdx - The index of the element whose set size is to be determined.
-     * @returns {number} The count of elements in the set containing 'elementIdx'.
-     */
-    getSetSize (elementIdx) {
-        return -this.parentOrSize[this.findRepresentative(elementIdx)];
-    }
-}
-
-// Invoke the main logic of the program and store its output.
-var programResult = executeMainLogic();
-
-// If the execution of the main logic yielded a defined result, print it to standard output.
-if (programResult !== undefined) {
-    console.log(String(programResult));
+  // Loop to construct the string for nested array creation based on dimensions
+  while (--argCount) {
+    evalString = "Array(args[" + argCount + "]).fill().map(element =>" + evalString + ")";
+  }
+  return eval(evalString); // Execute the constructed string to create the array
 }
 
 /**
- * This function serves as the primary entry point for the application's core logic.
- * It reads graph data, processes connections using a Disjoint Set Union structure,
- * and determines the size of the largest connected component.
- * @returns {number} The negative value of the size of the largest connected component within the graph.
+ * Implements the Disjoint Set Union (DSU) data structure, also known as Union-Find.
+ * This structure efficiently tracks a collection of disjoint sets.
  */
-function executeMainLogic() {
-    // Read the total number of vertices (nodes) and the number of edges from the input.
-    let vertexCount = getNextNumber();
-    let edgeCount = getNextNumber();
+class DisjointSet {
+  /**
+   * Initializes a new DisjointSet instance with a specified number of elements.
+   * Each element initially belongs to its own set.
+   * @param {number} elementCount - The total number of elements (1-indexed).
+   */
+  constructor(elementCount) {
+    // 'parentOrSize' array: stores the parent index for an element,
+    // or a negative value representing the size of the set if it's a root.
+    this.parentOrSize = Array(elementCount + 1).fill(-1);
+  }
 
-    // Instantiate a Disjoint Set Union data structure to manage connectivity among vertices.
-    let dsuStructure = new DisjointSetUnion(vertexCount);
+  /**
+   * Finds the representative (root) of the set to which 'idx' belongs.
+   * Applies path compression optimization during traversal.
+   * @param {number} idx - The element whose set representative is to be found.
+   * @returns {number} The root element of the set containing 'idx'.
+   */
+  findRoot(idx) {
+    // If 'idx' is a root (its value is negative), return it.
+    // Otherwise, recursively find the root and update 'idx's parent for path compression.
+    return this.parentOrSize[idx] < 0 ? idx : (this.parentOrSize[idx] = this.findRoot(this.parentOrSize[idx]));
+  }
 
-    // Iterate through each edge provided in the input.
-    for (let loopCounter = 0; loopCounter < edgeCount; loopCounter++) {
-        // For each iteration, read the two nodes that form the current edge.
-        let [node1, node2] = getMultipleElements(2);
-        // Connect these two nodes within the DSU structure, effectively merging their sets.
-        dsuStructure.unionSets(node1, node2);
+  /**
+   * Checks if two elements, 'elemX' and 'elemY', belong to the same set.
+   * @param {number} elemX - The first element.
+   * @param {number} elemY - The second element.
+   * @returns {boolean} True if both elements are in the same set, false otherwise.
+   */
+  areConnected(elemX, elemY) {
+    return this.findRoot(elemX) === this.findRoot(elemY);
+  }
+
+  /**
+   * Merges the sets containing 'elemX' and 'elemY'.
+   * Uses the union-by-size heuristic to maintain tree balance.
+   * @param {number} elemX - The first element.
+   * @param {number} elemY - The second element.
+   * @returns {boolean} True if the sets were successfully merged, false if they were already in the same set.
+   */
+  unionSets(elemX, elemY) {
+    const internalArray = this.parentOrSize; // Shorthand for the internal array
+    elemX = this.findRoot(elemX); // Find the root of elemX's set
+    elemY = this.findRoot(elemY); // Find the root of elemY's set
+
+    // If both elements already share the same root, no union is needed.
+    if (elemX === elemY) {
+      return false;
     }
 
-    // After processing all edges, the `parentOrSize` array at root indices
-    // will contain negative values representing the sizes of the connected components.
-    // To find the largest component, we find the minimum (most negative) value.
-    // The result is then negated to return the positive size of this largest component.
-    return -Math.min(...dsuStructure.parentOrSize);
+    // Union by size: attach the smaller tree under the root of the larger tree.
+    // The negative value at a root indicates the size of its set.
+    if (internalArray[elemY] < internalArray[elemX]) {
+      internalArray[elemY] += internalArray[elemX]; // Add size of elemX's set to elemY's set
+      internalArray[elemX] = elemY; // Make elemY the new parent of elemX
+    } else {
+      internalArray[elemX] += internalArray[elemY]; // Add size of elemY's set to elemX's set
+      internalArray[elemY] = elemX; // Make elemX the new parent of elemY
+    }
+    return true; // Indicates a successful merge operation
+  }
+
+  /**
+   * Retrieves the size of the set that contains the specified element 'idx'.
+   * @param {number} idx - The element whose set size is to be queried.
+   * @returns {number} The total number of elements in the set.
+   */
+  getSetSize(idx) {
+    return -this.parentOrSize[this.findRoot(idx)];
+  }
+}
+
+// Execute the primary logic of the program.
+var programResult = executeProgram();
+
+// If the program's execution yields a defined result, print it to the console.
+if (programResult !== undefined) {
+  console.log(String(programResult));
+}
+
+/**
+ * The core function encapsulating the problem's specific algorithm.
+ * It reads graph data, processes connections, and determines the largest connected component.
+ * @returns {number} The size of the largest connected component in the graph.
+ */
+function executeProgram() {
+  // Read the total number of nodes (N) and the number of edges (M) from input.
+  var nodeCount = getNextNumber();
+  var edgeCount = getNextNumber();
+
+  // Instantiate the DisjointSet structure to manage 'nodeCount' elements.
+  var disjointSetInstance = new DisjointSet(nodeCount);
+
+  // Iterate through each edge to establish connections.
+  for (var loopCounter = 0; loopCounter < edgeCount; loopCounter++) {
+    // Read the two nodes that an edge connects.
+    var [firstNode, secondNode] = getNumbersArray(2);
+    // Perform a union operation on the sets containing these two nodes.
+    disjointSetInstance.unionSets(firstNode, secondNode);
+  }
+
+  // To find the largest connected component, we look for the root with the most negative value
+  // in the 'parentOrSize' array (as negative values store set sizes).
+  // Math.min will find the smallest (most negative) value, and negating it gives the largest positive size.
+  return -Math.min(...disjointSetInstance.parentOrSize);
 }

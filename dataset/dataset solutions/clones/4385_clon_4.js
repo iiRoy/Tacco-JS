@@ -1,36 +1,35 @@
-'use strict';
+'use strict'
 
-function ProcessSequence(rawText) {
-    const dataLines = rawText.split('\n');
-    const numericContentLine = dataLines[1];
-    const stringRepresentations = numericContentLine.split(' ');
-    const numberCollection = stringRepresentations.map(val => parseInt(val, 10));
+function ProcessInput(rawData) {
+    const numericSequence = rawData.split('\n')[1].split(' ').map(Number);
 
-    const finalResult = numberCollection.reduce((memo, currentItem, currentPosition) => {
-        // If the current position has been "skipped" by a previous operation,
-        // due to the nature of the allowed swaps, just return the accumulator.
-        if (currentPosition < memo.nextValidPosition) {
-            return memo;
-        }
+    const finalAccumulation = numericSequence.reduce((stateContainer, _, currentPosition) => {
+        const currentArraySnapshot = stateContainer.currentArray;
+        let currentExchangeTally = stateContainer.exchangeTally;
 
-        // Check if the current item matches its 1-indexed position.
-        // (e.g., value 1 at index 0, value 2 at index 1, etc.)
-        if (currentItem === currentPosition + 1) {
-            memo.operationCount += 1; // Increment the count of possible operations.
-            // When an operation occurs at `currentPosition`, it involves `currentPosition`
-            // and `currentPosition + 1` (or `currentPosition - 1` if it's the last element).
-            // This means the element at `currentPosition + 1` is also affected and
-            // cannot be used for an operation in the immediate next iteration.
-            // Therefore, we effectively advance the "next position to check" by two.
-            memo.nextValidPosition = currentPosition + 2;
+        if (currentArraySnapshot[currentPosition] === currentPosition + 1) {
+            const nextArrayState = [...currentArraySnapshot];
+            currentExchangeTally++;
+
+            // The original code's 'if(tmp)' where 'tmp = nums[i+1]' evaluates
+            // if the value at nums[i+1] is truthy. This means if nums[i+1] is 0
+            // or undefined (out of bounds), it falls into the 'else' branch.
+            if (Boolean(nextArrayState[currentPosition + 1])) {
+                const interimValue = nextArrayState[currentPosition + 1];
+                nextArrayState[currentPosition + 1] = nextArrayState[currentPosition];
+                nextArrayState[currentPosition] = interimValue;
+            } else {
+                const interimValue = nextArrayState[currentPosition];
+                nextArrayState[currentPosition] = nextArrayState[currentPosition - 1];
+                nextArrayState[currentPosition - 1] = interimValue;
+            }
+            return { currentArray: nextArrayState, exchangeTally: currentExchangeTally };
         } else {
-            // If no operation occurs, simply move to the next position.
-            memo.nextValidPosition = currentPosition + 1;
+            return stateContainer;
         }
-        return memo;
-    }, { operationCount: 0, nextValidPosition: 0 }); // Initial state for the accumulator
+    }, { currentArray: [...numericSequence], exchangeTally: 0 });
 
-    console.log(finalResult.operationCount);
+    console.log(finalAccumulation.exchangeTally);
 }
 
-ProcessSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

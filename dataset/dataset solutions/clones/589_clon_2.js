@@ -1,21 +1,26 @@
-const rawData=require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Acquire data from standard input stream.
-const dataLines = (rawData.trim()).split('\n'); // Process the incoming text, splitting it into an array of distinct lines.
-while
-(
-true
-)
-{ // Initiate an indefinite processing cycle.
-    let initialValue = Number(dataLines.shift()); // Extract the primary numerical indicator for the current block.
-    if
-(
-initialValue === 0
-)
-break; // If the primary indicator is zero, terminate the entire operation.
-    let accumulatedTotal = 0; // Prepare a variable to accumulate subsequent numerical elements.
-    for
-(
-let loopIndex = 0; loopIndex < 10; loopIndex++
-)
-accumulatedTotal += (Number(dataLines.shift())); // Iterate precisely ten times, adding each sequential numerical entry to the running total.
-    console.log(initialValue - accumulatedTotal); // Display the result of subtracting the accumulated sum from the initial indicator.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input
+// Process the raw input: remove leading/trailing whitespace and split into an array of lines
+var dataLines = (rawData.trim()).split("\n");
+
+// Main processing loop
+while (true) {
+    // Extract the first number from the data lines, converting it to a numeric type
+    let totalValue = dataLines.shift() - 0;
+
+    // If the extracted value is zero, terminate the loop
+    if (totalValue === 0) {
+        break;
+    }
+
+    // Initialize a variable to accumulate a sum of subsequent values
+    let currentSum = 0;
+
+    // Loop ten times to read and sum the next ten values
+    for (let idx = 0; idx < 10; idx++) {
+        // Extract the next number from the data lines and add it to the current sum
+        currentSum += (dataLines.shift() - 0);
+    }
+
+    // Output the difference between the initial total value and the accumulated sum
+    console.log(totalValue - currentSum);
 }

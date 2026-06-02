@@ -1,32 +1,39 @@
-const char_mirror_map = { 'b': 'd', 'd': 'b', 'p': 'q', 'q': 'p' };
+function processInput(rawText) {
+  const charSequence = rawText.split('');
+  const totalLength = charSequence.length;
 
-function analyzeString(sourceData) {
-    const data_length = sourceData.length;
+  if (totalLength % 2 !== 0) {
+    console.log("No");
+    return;
+  }
 
-    if ((data_length & 1) !== 0) { // Check for odd length using bitwise AND
-        process.stdout.write("No\n");
-        return;
+  const halfLength = totalLength / 2;
+
+  let firstSegment = '';
+  for (let i = 0; i < halfLength; i++) {
+    firstSegment += charSequence[i];
+  }
+
+  let secondSegmentTransformed = '';
+  const charReflect = new Map([
+    ['b', 'd'],
+    ['d', 'b'],
+    ['p', 'q'],
+    ['q', 'p']
+  ]);
+
+  for (let i = totalLength - 1; i >= halfLength; i--) {
+    const originalChar = charSequence[i];
+    const mirroredChar = charReflect.get(originalChar);
+    if (mirroredChar !== undefined) {
+      secondSegmentTransformed += mirroredChar;
     }
+  }
 
-    const processSegment = (current_pos) => {
-        if (current_pos >= data_length / 2) {
-            return true; // Successfully matched all pairs
-        }
-
-        const first_char = sourceData.charAt(current_pos);
-        const second_char = sourceData.charAt(data_length - 1 - current_pos);
-
-        const expected_first_char = char_mirror_map[second_char];
-
-        if (expected_first_char === undefined || first_char !== expected_first_char) {
-            return false; // Mismatch found or non-mirrorable character
-        }
-
-        return processSegment(current_pos + 1);
-    };
-
-    const final_outcome = processSegment(0) ? "Yes" : "No";
-    process.stdout.write(final_outcome + "\n");
+  if (firstSegment === secondSegmentTransformed) {
+    console.log("Yes");
+  } else {
+    console.log("No");
+  }
 }
-
-analyzeString(require("node:fs").readFileSync(0, "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

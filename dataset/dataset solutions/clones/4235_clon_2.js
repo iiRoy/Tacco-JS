@@ -1,38 +1,35 @@
-'use strict';
+'use strict'; // Enforce strict mode for better error handling and cleaner code.
 
 /**
- * Main application logic handler. This function processes a given string input
- * to perform a specific mathematical computation.
+ * Processes the raw input string to calculate and display a specific value.
+ * This function parses numerical arguments from the input and applies a conditional formula.
  *
- * @param {string} incomingData The complete textual input for processing.
+ * @param {string} rawData - The complete input string, expected to contain space-separated numbers on the first line.
  */
-const performComputation = incomingData => {
-  // Extract the first meaningful line from the input.
-  // Then, segment this line into individual string tokens using space as a delimiter.
-  const stringTokens = incomingData.split('\n')[0] .split(' ');
+const processInput = (rawData) => {
+    // Extract the first line of the input and split it into individual string arguments.
+    const parsedArguments = rawData.split('\n')[0].split(' ');
 
-  // Convert the extracted string tokens into integer numbers.
-  // The base 10 is explicitly specified for accurate numerical conversion.
-  const firstOperand = parseInt(stringTokens[0], 10);
-  const secondOperand = parseInt(stringTokens[1], 10);
-  const thirdOperand = parseInt(stringTokens[2], 10);
+    // Convert the string arguments to integers using base 10.
+    // These represent the primary numerical values for the calculation.
+    const valA = parseInt(parsedArguments[0], 10); // The first numerical parameter.
+    const valB = parseInt(parsedArguments[1], 10); // The second numerical parameter.
+    const valC = parseInt(parsedArguments[2], 10); // The third numerical parameter.
 
-  // Evaluate a primary conditional expression.
-  // This checks if the sum of the second operand and twice the third operand
-  // is less than the value of the first operand.
-  if (secondOperand + thirdOperand * 2 < firstOperand) {
-    // If the condition is met, execute a complex arithmetic calculation.
-    // The result is always rounded down to the nearest whole number (integer)
-    // and then incremented by one before being logged to the console.
-    console.log(Math.floor((firstOperand - (secondOperand + thirdOperand * 2)) / (secondOperand + thirdOperand) + 1));
-  }
-  // Should the initial condition not be satisfied, output a default zero value.
-  else {
-    console.log(0);
-  }
+    // Evaluate a specific condition based on the relationship between the parsed values.
+    // The condition checks if 'valB plus valC times two' is less than 'valA'.
+    if (valB + valC * 2 < valA) {
+        // If the condition is met, perform a complex calculation and output its floor value.
+        // The calculation involves subtracting a derived value from valA,
+        // then dividing by another derived value, and finally adding one before flooring.
+        console.log(Math.floor((valA - (valB + valC * 2)) / (valB + valC) + 1));
+    } else {
+        // If the condition is not met, simply output the integer zero.
+        console.log(0);
+    }
 };
 
-// Initiate the application by calling the main computation function.
-// The input data is sourced directly from the standard input stream,
-// reading the file synchronously with 'UTF-8' character encoding.
-performComputation(require('fs').readFileSync('/proc/self/fd/0', 'UTF-8'));
+// Read the entire content of standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded text.
+// Then, pass this content to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

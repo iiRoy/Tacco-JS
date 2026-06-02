@@ -1,79 +1,62 @@
-let    // This function computes the occurrence count for each lowercase English letter within a given string.
-    // It returns an array where each index (0-25) corresponds to a letter (a-z) and its value is the count.
-    /*
-     *  @param {string} sourceText - The input string to analyze.
-     *  @returns {Array<number>} An array of 26 integers representing character frequencies.
-     */
-function    tallyCharacterOccurrences(sourceText)    {
-    const      alphaCounts = new Array(26).fill(0); // Initialize an array to store counts for 'a' through 'z'.
-    const      charA_Code = "a".charCodeAt(0);   // Get the ASCII/Unicode value for 'a' once.
-    let        charIterator;                     // Loop variable for iterating through the input string.
+function charCount(inputStr) {
+    // Initialize an array to hold the frequency of each lowercase English letter.
+    let charOccurrences = new Array(26).fill(0);
 
-    for (charIterator = 0; charIterator < sourceText.length; charIterator++) {
-            // Calculate the 0-based index for the current character (e.g., 'a' -> 0, 'b' -> 1).
-        const  computedIndex = sourceText[charIterator].charCodeAt(0) - charA_Code;
-            // Increment the count for the corresponding character.
-        alphaCounts[computedIndex]++;
+    // Iterate over every character in the provided string.
+    for (let idx = 0; idx < inputStr.length; idx++) {
+        // Determine the 0-based index for the current character (e.g., 'a' is 0, 'b' is 1).
+        let charPos = inputStr[idx].charCodeAt() - "a".charCodeAt();
+        // Increment the counter for this specific character.
+        charOccurrences[charPos]++;
     }
-    return alphaCounts;
+    // Return the completed frequency array.
+    return charOccurrences;
 }
 
-    // This routine finds the minimum frequency for each character between two frequency arrays.
-    // It effectively computes the intersection of characters available in both sets, by count.
-    /*
-     *  @param {Array<number>} firstCountsArray - The primary frequency array, which will be modified.
-     *  @param {Array<number>} secondCountsArray - The secondary frequency array for comparison.
-     *  @returns {Array<number>} The modified firstCountsArray with minimum frequencies.
-     */
-function    determineCommonCharacterCounts(firstCountsArray, secondCountsArray) {
-    let        positionIndex; // Loop counter for iterating through the 26 character positions.
-
-    for (positionIndex = 0; positionIndex < 26; positionIndex++) {
-            // Update the count in the first array to be the minimum of the two corresponding counts.
-        firstCountsArray[positionIndex] = Math.min(firstCountsArray[positionIndex], secondCountsArray[positionIndex]);
+function intersectCounts(firstCounts, secondCounts) {
+    // Loop through all 26 possible character positions (for 'a' through 'z').
+    for (let k = 0; k < 26; k++) {
+        // Update the count in the first array to be the minimum of the two corresponding counts.
+        firstCounts[k] = Math.min(firstCounts[k], secondCounts[k]);
     }
-    return firstCountsArray;
+    // Return the modified array containing the intersected frequencies.
+    return firstCounts;
 }
 
-    // The main entry point for processing the program's input.
-    // It reads multiple lines of text, calculates common character frequencies across them,
-    // and then prints a string composed of those common characters.
-    /*
-     *  @param {string} programInputText - The entire input provided to the program, typically from stdin.
-     */
-function    executeMainProgramLogic(programInputText) {
-    const      inputLineSegments = programInputText.split("\n"); // Split the raw input into individual lines.
-    const      numberOfStrings = Number.parseInt(inputLineSegments[0], 10); // Parse the first line for the count of strings.
-        // Extract the actual strings from the input, skipping the first line.
-    const      sourceStringCollection = inputLineSegments.slice(1, numberOfStrings + 1);
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters into an array of lines.
+    rawData = rawData.split("\n");
 
-        // Calculate initial character frequencies for the very first string.
-    let        cumulativeLetterFrequencies = tallyCharacterOccurrences(sourceStringCollection[0]);
+    // Parse the first line to get the total number of strings that follow.
+    const numLines = parseInt(rawData[0], 10);
 
-    let        stringIterationIndex; // Loop variable for iterating through the collection of strings.
-    // Loop through the remaining strings (starting from the second one).
-    for (stringIterationIndex = 1; stringIterationIndex < sourceStringCollection.length; stringIterationIndex++) {
-            // Get character frequencies for the current string being processed.
-        const  currentStringLetterFrequencies = tallyCharacterOccurrences(sourceStringCollection[stringIterationIndex]);
-            // Merge the current frequencies with the cumulative ones, keeping only the minimums.
-        cumulativeLetterFrequencies = determineCommonCharacterCounts(cumulativeLetterFrequencies, currentStringLetterFrequencies);
+    // Extract the actual data strings, starting from the second line up to 'numLines'.
+    const textLines = rawData.slice(1, numLines + 1);
+
+    // Compute the character frequencies for the very first string.
+    let commonCounts = charCount(textLines[0]);
+
+    // Iterate through the rest of the strings to find the common frequencies across all of them.
+    for (let lineIdx = 1; lineIdx < textLines.length; lineIdx++) {
+        // Calculate the frequencies for the current string.
+        const currentCounts = charCount(textLines[lineIdx]);
+        // Update 'commonCounts' by finding the minimum frequencies between the current common set and the new string's frequencies.
+        commonCounts = intersectCounts(commonCounts, currentCounts);
     }
 
-    let        outputConstruct = ""; // Initialize an empty string to build the final result.
-    let        charSlotIndex;        // Loop variable for iterating through character positions (0-25).
-
-    // Iterate through each character slot (a-z).
-    for (charSlotIndex = 0; charSlotIndex < 26; charSlotIndex++) {
-        let    occurrenceRepetitionIndex; // Loop variable for repeating a character based on its frequency.
-            // For each character, append it to the output string as many times as its final frequency dictates.
-        for (occurrenceRepetitionIndex = 0; occurrenceRepetitionIndex < cumulativeLetterFrequencies[charSlotIndex]; occurrenceRepetitionIndex++) {
-                // Convert the 0-based index back to a character (e.g., 0 -> 'a', 1 -> 'b').
-            outputConstruct += String.fromCharCode(charSlotIndex + "a".charCodeAt(0));
+    // Initialize an empty string to build the final output.
+    let finalOutput = "";
+    // Loop through each character index from 0 to 25 (representing 'a' to 'z').
+    for (let charVal = 0; charVal < 26; charVal++) {
+        // For each character, append it to the 'finalOutput' string as many times as its common frequency dictates.
+        for (let repeatCount = 0; repeatCount < commonCounts[charVal]; repeatCount++) {
+            // Convert the 0-based character index back to its corresponding character.
+            finalOutput += String.fromCharCode(charVal + "a".charCodeAt());
         }
     }
-        // Print the final constructed string to the console.
-    console.log(outputConstruct);
+    // Output the final constructed string to the console.
+    console.log(finalOutput);
 }
 
-// Invoke the main program logic with input read from standard input.
-executeMainProgramLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

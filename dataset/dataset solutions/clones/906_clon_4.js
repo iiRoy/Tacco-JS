@@ -1,103 +1,97 @@
-var dataSource = '';
-var dataIndex = 0;
-
-function acquireNumericToken() {
-    return +dataSource[dataIndex++];
+function outputResult(value) {
+    console.log(value);
 }
 
-function acquireTextToken() {
-    return dataSource[dataIndex++];
+let rawInputTokens = '';
+let tokenCursor = 0;
+
+function getNextNumber() {
+    return Number(rawInputTokens[tokenCursor++]);
 }
 
-function outputResult(data) {
-    console.log(data);
+function getNextString() {
+    return rawInputTokens[tokenCursor++];
 }
 
-function analyzeStringBalance(textSequence) {
-    const initialAccumulation = { neededForPrefix: 0, currentAccumulatedOpen: 0 };
-
-    const finalAccumulation = Array.from(textSequence).reduce((accumulator, character) => {
-        if (character === '(') {
-            return { ...accumulator, currentAccumulatedOpen: accumulator.currentAccumulatedOpen + 1 };
-        } else { // character === ')'
-            if (accumulator.currentAccumulatedOpen > 0) {
-                return { ...accumulator, currentAccumulatedOpen: accumulator.currentAccumulatedOpen - 1 };
+function analyzeParentheses(expression) {
+    return expression.split('').reduce((accumulator, char) => {
+        let [unmatchedClosing, unmatchedOpening] = accumulator;
+        if (char === '(') {
+            unmatchedOpening++;
+        } else { // char === ')'
+            if (unmatchedOpening > 0) {
+                unmatchedOpening--;
             } else {
-                return { ...accumulator, neededForPrefix: accumulator.neededForPrefix + 1 };
+                unmatchedClosing++;
             }
         }
-    }, initialAccumulation);
-
-    return finalAccumulation;
+        return [unmatchedClosing, unmatchedOpening];
+    }, [0, 0]);
 }
 
-function compareBalanceRecords(recordA, recordB) {
-    const netDeltaA = recordA.currentAccumulatedOpen - recordA.neededForPrefix;
-    const netDeltaB = recordB.currentAccumulatedOpen - recordB.neededForPrefix;
+function executeProcessing() {
+    const itemCount = getNextNumber();
+    const rawStrings = Array.from({ length: itemCount }, getNextString);
 
-    if (netDeltaA < 0 && netDeltaB < 0) {
-        if (recordA.neededForPrefix === recordB.neededForPrefix) {
-            return netDeltaB - netDeltaA;
-        } else {
-            return recordB.neededForPrefix - recordA.neededForPrefix;
+    const parsedParenthesesData = rawStrings.map(analyzeParentheses);
+
+    parsedParenthesesData.sort((itemA, itemB) => {
+        const [unmatchedCloseA, unmatchedOpenA] = itemA;
+        const [unmatchedCloseB, unmatchedOpenB] = itemB;
+
+        const balanceDiffA = unmatchedOpenA - unmatchedCloseA;
+        const balanceDiffB = unmatchedOpenB - unmatchedCloseB;
+
+        if (balanceDiffA < 0 && balanceDiffB < 0) {
+            if (unmatchedCloseA === unmatchedCloseB) {
+                return balanceDiffB - balanceDiffA;
+            } else {
+                return unmatchedCloseB - unmatchedCloseA;
+            }
+        }
+        return balanceDiffB - balanceDiffA;
+    });
+
+    outputResult(parsedParenthesesData);
+
+    let currentBalance = 0;
+    let availableItems = [...parsedParenthesesData];
+    let matchedItemsCount = 0;
+
+    let progressMadeInIteration = true;
+    while (matchedItemsCount < itemCount && progressMadeInIteration) {
+        progressMadeInIteration = false;
+
+        let candidateIndex = -1;
+        for (let i = 0; i < availableItems.length; i++) {
+            const [unmatchedClosing, unmatchedOpening] = availableItems[i];
+            if (currentBalance >= unmatchedClosing) {
+                candidateIndex = i;
+                break;
+            }
+        }
+
+        if (candidateIndex !== -1) {
+            const [unmatchedClosing, unmatchedOpening] = availableItems[candidateIndex];
+            currentBalance += (unmatchedOpening - unmatchedClosing);
+            availableItems.splice(candidateIndex, 1);
+            matchedItemsCount++;
+            progressMadeInIteration = true;
         }
     }
-    return netDeltaB - netDeltaA;
-}
 
-function findAndExtractFirstViable(recordsCollection, currentBalanceValue) {
-    for (let i = 0; i < recordsCollection.length; i++) {
-        const recordEntry = recordsCollection[i];
-        if (recordEntry && currentBalanceValue >= recordEntry.neededForPrefix) {
-            const newRecordsCollection = [...recordsCollection];
-            newRecordsCollection.splice(i, 1);
-            return { matchedRecordEntry: recordEntry, remainingCollection: newRecordsCollection };
-        }
-    }
-    return { matchedRecordEntry: null, remainingCollection: recordsCollection };
-}
-
-function recursiveBalanceEvaluation(currentBalanceValue, recordsLeft, stepsTaken, totalSteps) {
-    if (stepsTaken === totalSteps) {
-        return currentBalanceValue === 0;
-    }
-
-    const { matchedRecordEntry, remainingCollection } = findAndExtractFirstViable(recordsLeft, currentBalanceValue);
-
-    if (matchedRecordEntry) {
-        const nextBalanceValue = currentBalanceValue + (matchedRecordEntry.currentAccumulatedOpen - matchedRecordEntry.neededForPrefix);
-        return recursiveBalanceEvaluation(nextBalanceValue, remainingCollection, stepsTaken + 1, totalSteps);
-    } else {
-        return false;
-    }
-}
-
-function executeSolution() {
-    const sequenceCount = acquireNumericToken();
-    const textSequences = [];
-    for (let i = 0; i < sequenceCount; ++i) {
-        textSequences.push(acquireTextToken());
-    }
-
-    const balanceRecords = textSequences.map(analyzeStringBalance);
-
-    balanceRecords.sort(compareBalanceRecords);
-
-    outputResult(balanceRecords);
-
-    const finalOutcome = recursiveBalanceEvaluation(0, balanceRecords, 0, sequenceCount);
-
-    outputResult(finalOutcome ? 'Yes' : 'No');
+    const finalVerdict = (matchedItemsCount === itemCount && currentBalance === 0) ? 'Yes' : 'No';
+    outputResult(finalVerdict);
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
 process.stdin.on('data', function(chunk) {
-    dataSource += chunk;
+    rawInputTokens += chunk;
 });
 
 process.stdin.on('end', function() {
-    dataSource = dataSource.trim().split(/\s+/);
-    executeSolution();
+    rawInputTokens = rawInputTokens.trim().split(/\s+/);
+    executeProcessing();
 });

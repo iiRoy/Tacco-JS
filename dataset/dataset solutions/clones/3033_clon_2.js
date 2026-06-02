@@ -1,39 +1,35 @@
-const processInput = (rawData) => {
-    // Deconstruct the incoming text data into separate lines.
-    const inputLines = rawData.split('\n');
+function processInput(inputData) {
+    // Split the entire input string into an array of individual lines.
+    let inputLines = inputData.split('\n');
 
-    // Parse the total character count from the first line of input.
-    const charCount = parseInt(inputLines[0]);
+    // Parse the first line as the total count of elements.
+    const countElements = parseInt(inputLines[0], 10);
+    // The second line is the main string to be processed.
+    const inputString = inputLines[1];
+    // Parse the third line as the index for the reference character.
+    const targetIndex = Number(inputLines[2]);
 
-    // Retrieve the string that needs to be analyzed from the second line.
-    const targetString = inputLines[1];
+    // Retrieve the character at the specified target index from the input string.
+    const referenceChar = inputString[targetIndex];
 
-    // Obtain the zero-based index for the specific character from the third line.
-    const charIndex = parseInt(inputLines[2]);
- 
-    // Extract the designated character that will serve as the comparison target.
-    const specialChar = targetString[charIndex];
- 
-    // Initialize a dynamic array to store the characters after transformation.
-    const transformedChars = [];
+    // Initialize an empty array to store the modified characters.
+    let resultArray = [];
 
-    // Iterate over each character in the target string from beginning to end.
-    for (let currentIndex = 0; currentIndex < charCount; ++currentIndex) {
-        // If the character at the current position does not match our special character...
-        if (targetString[currentIndex] !== specialChar) {
-            // ...then append an asterisk to the result array.
-            transformedChars.push('*');
+    // Iterate through the input string from the beginning up to the total count.
+    for (let idx = 0; idx < countElements; ++idx) {
+        // Compare the current character with the determined reference character.
+        if (inputString[idx] !== referenceChar) {
+            // If they do not match, append an asterisk to the result array.
+            resultArray.push('*');
+        } else {
+            // If they match, append the original character to the result array.
+            resultArray.push(inputString[idx]);
         }
-        // Otherwise, if the characters are identical...
-        else {
-            // ...append the original character itself to the result array.
-            transformedChars.push(targetString[currentIndex]);
-        } 
     }
 
-    // Combine all characters in the result array into a single string and output it.
-    console.log(transformedChars.join(''));
-};
+    // Join all characters in the result array into a single string and print it to the console.
+    console.log(resultArray.join(''));
+}
 
-// Initiate the processing by reading the content from standard input.
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content from standard input synchronously and pass it to the processing function.
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

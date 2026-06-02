@@ -1,20 +1,22 @@
-function ProcessInput ( rawData ) {
-  // This function computes a special sum based on the provided input value.
-  let limitValue = parseInt(rawData, 10); // Convert raw input string to an integer limit.
+function ProcessInput(rawData) {
+  // Convert the raw input string to a numerical upper bound.
+  let upperBound = Number(rawData);
 
-  let totalResult = 0x0; // Initialize the accumulator for the final sum.
+  // Initialize a variable to accumulate the sum of qualifying numbers.
+  let totalValue = 0;
 
-  // Iterate through numbers from 1 up to and including the limit value.
-  for ( let counter = 0x1; counter < ( limitValue + 0b1 ); counter++ ) {
-    // Check if the current counter is not divisible by 3 AND not divisible by 5.
-    if ( ( counter % 3 != 0 ) && ( counter % 5 != 0 ) ) {
-      totalResult = totalResult + counter; // Add the counter to the total if it meets the criteria.
+  // Iterate through numbers starting from 1 up to and including the upper bound.
+  for (let currentNumber = 1; currentNumber < (upperBound + 1); currentNumber++) {
+    // Check if the current number is not divisible by 3 AND not divisible by 5.
+    if ((currentNumber % 3 !== 0) && (currentNumber % 5 !== 0)) {
+      // If both conditions are met, add the current number to the running total.
+      totalValue += currentNumber;
     }
   }
 
-  // Output the computed total result to the standard output stream.
-  process.stdout.write( String(totalResult) + "\n" );
+  // Output the final calculated sum to the console.
+  console.log(totalValue);
 }
 
-// Read the entire content from standard input synchronously using Node.js filesystem module.
-ProcessInput( require ('node:fs') . readFileSync ('/dev/stdin', 'utf8') );
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

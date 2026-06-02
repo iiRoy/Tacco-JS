@@ -1,76 +1,58 @@
-const PRIMARY_MODULUS = 1000000007;
-const MOD_SPLITTER = 100000;
+function modulusOperation(value, divisor) {
+    return (value % divisor + divisor) % divisor;
+}
 
-const adjustToPositiveModulo = (numberValue, divisorValue) => {
-    return (numberValue % divisorValue + divisorValue) % divisorValue;
-};
+function productModulus(factorA, factorB, MOD_VAL) {
+    return Number((BigInt(factorA) * BigInt(factorB)) % BigInt(MOD_VAL));
+}
 
-const performSplitModularMultiplication = (operandA, operandB, modulus, splitter) => {
-    const bQuotient = Math.floor(operandB / splitter);
-    const bRemainder = operandB - (bQuotient * splitter);
-
-    let productTerm1 = adjustToPositiveModulo(operandA * bQuotient, modulus);
-    productTerm1 = adjustToPositiveModulo(productTerm1 * splitter, modulus);
-    
-    let productTerm2 = adjustToPositiveModulo(operandA * bRemainder, modulus);
-    
-    return adjustToPositiveModulo(productTerm1 + productTerm2, modulus);
-};
-
-const computeRecursiveModularPower = (baseVal, exponentVal, modulus, splitter) => {
-    if (exponentVal === 0) return 1;
-    if (exponentVal === 1) return adjustToPositiveModulo(baseVal, modulus);
-    
-    const halfExponent = Math.floor(exponentVal / 2);
-    const resultForHalf = computeRecursiveModularPower(baseVal, halfExponent, modulus, splitter);
-    
-    let squaredResult = performSplitModularMultiplication(resultForHalf, resultForHalf, modulus, splitter);
-    
-    if (exponentVal % 2 === 1) {
-        squaredResult = performSplitModularMultiplication(squaredResult, baseVal, modulus, splitter);
-    }
-    return squaredResult;
-};
-
-const executeComputation = (inputString) => {
-    const cleanedInput = inputString.trim();
-    const [headerLine] = cleanedInput.split('\n');
-    const [valueN, valueK] = headerLine.split(' ').map(Number);
-    
-    const powerLookupTable = new Map();
-    let currentIterationValue = 1;
-    while (currentIterationValue <= valueK) {
-        const currentLimitValue = Math.floor(valueK / currentIterationValue);
-        powerLookupTable.set(currentLimitValue, computeRecursiveModularPower(currentLimitValue, valueN, PRIMARY_MODULUS, MOD_SPLITTER));
-        currentIterationValue = Math.floor(valueK / currentLimitValue) + 1;
-    }
-    
-    const patternComponentValues = Array(valueK + 1).fill(0);
-    let cumulativeResult = 0;
-
-    for (let currentDivisor = valueK; currentDivisor >= 1; currentDivisor--) {
-        const relatedLimit = Math.floor(valueK / currentDivisor);
-        
-        let currentPatternValue = powerLookupTable.get(relatedLimit);
-        
-        for (let multipleFactor = 2; currentDivisor * multipleFactor <= valueK; multipleFactor++) {
-            currentPatternValue = adjustToPositiveModulo(currentPatternValue - patternComponentValues[currentDivisor * multipleFactor], PRIMARY_MODULUS);
+function powerModulus(baseVal, exponentVal, MOD_VAL) {
+    let powerResult = 1;
+    let currentBasePower = baseVal;
+    while (exponentVal > 0) {
+        if (exponentVal % 2 === 1) {
+            powerResult = productModulus(powerResult, currentBasePower, MOD_VAL);
         }
-        
-        patternComponentValues[currentDivisor] = currentPatternValue;
-        
-        cumulativeResult = adjustToPositiveModulo(
-            cumulativeResult + performSplitModularMultiplication(currentDivisor, currentPatternValue, PRIMARY_MODULUS, MOD_SPLITTER),
-            PRIMARY_MODULUS
-        );
+        currentBasePower = productModulus(currentBasePower, currentBasePower, MOD_VAL);
+        exponentVal = Math.floor(exponentVal / 2);
     }
-    
-    console.log(cumulativeResult);
-};
+    return powerResult;
+}
 
-const activateProcess = (inputReaderFunction) => {
-    const fileContent = inputReaderFunction('/dev/stdin', 'utf8');
-    executeComputation(fileContent);
-};
+function processInput(rawInput) {
+    const MOD_VAL = 1e9 + 7;
+    const SPLIT_FACTOR = 1e5;
 
-activateProcess(require('fs').readFileSync);
+    const parsedLines = rawInput.trim().split('\n').map(line => line.split(' '));
+    const N_val = Number(parsedLines[0][0]);
+    const K_val = Number(parsedLines[0][1]);
+
+    const distinctLimits = new Set();
+    for (let current_x_for_limit = 1; current_x_for_limit <= K_val; current_x_for_limit++) {
+        distinctLimits.add(Math.floor(K_val / current_x_for_limit));
+    }
+
+    const basePowersCache = new Map();
+    for (const limitVal of distinctLimits) {
+        basePowersCache.set(limitVal, powerModulus(limitVal, N_val, MOD_VAL));
+    }
+
+    const patternCounts = Array(K_val).fill(0);
+    let finalResult = 0;
+    const xValuesDescending = Array.from({ length: K_val }, (_, idx) => K_val - idx);
+
+    xValuesDescending.forEach(current_x => {
+        const currentLimit = Math.floor(K_val / current_x);
+        let tempValue = basePowersCache.get(currentLimit);
+
+        for (let j_factor = 2; j_factor <= currentLimit; j_factor++) {
+            tempValue = modulusOperation(tempValue - patternCounts[current_x * j_factor - 1], MOD_VAL);
+        }
+        finalResult = modulusOperation(finalResult + productModulus(current_x, tempValue, MOD_VAL), MOD_VAL);
+        patternCounts[current_x - 1] = tempValue;
+    });
+
+    console.log(finalResult);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

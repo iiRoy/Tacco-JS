@@ -1,29 +1,19 @@
-// This program is designed to extract and sum numerical values from a standard input stream.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim(); // Obtain raw input from standard input and remove any leading/trailing whitespace.
+const dataRows = rawData.split('\n'); // Divide the raw input string into an array of individual lines.
 
-var  rawData  =  require('fs') . readFileSync ( '/dev/stdin',  'utf8'  ) . trim ( ) ;
+let totalValue = 0; // Initialize a variable to store the cumulative sum of numbers found.
+let currentRow; // Declare a variable to temporarily hold each line during processing.
 
-// The complete input string is broken down into separate lines.
-var  textSegments  =  rawData . split ( '\n' ) ;
-
-
-var  totalValue  =  0 ; // A variable to store the cumulative result.
-var  currentSegment ;  // A placeholder for the line being processed in each iteration.
-
-// Loop through each segment (line) obtained from the input.
-while  (  currentSegment  =  textSegments . shift ( )  )
-{
-    /*
-     * Within the current text segment, extract all sequences of digits.
-     * Non-digit characters are used as separators.
-     */
-    var  numericParts  =  currentSegment . split ( /[^0-9]+/ ) ;
-
-    // Add the sum of numbers found in the current segment to the overall total.
-    totalValue  +=  numericParts . reduce ( ( previousAccumulator, currentNumberString )  =>  {
-        // Convert the string representation of a number to an actual number before adding.
-        return  previousAccumulator  +  Number(currentNumberString) ;
-    },  0  ) ;
+// Iterate through each line in the dataRows array, removing lines from the front.
+while (currentRow = dataRows.shift()) {
+    // Split the current line by any non-digit characters to extract potential number strings.
+    const numStrings = currentRow.split(/\D+/);
+    
+    // Use the reduce method to sum up the numbers within the current line.
+    // The unary plus operator (+currentNumStr) converts each string to a number.
+    totalValue += numStrings.reduce(function(accumulator, currentNumStr) {
+        return accumulator + +currentNumStr;
+    }, 0); // Start the reduction with an initial sum of 0.
 }
 
-// Output the final accumulated sum to the console.
-console . log ( totalValue ) ;
+console.log(totalValue); // Display the final calculated total sum to the console.

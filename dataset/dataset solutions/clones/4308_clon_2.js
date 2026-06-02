@@ -1,43 +1,27 @@
-'use strict'; // Enforce strict parsing and error handling for cleaner code execution.
+'use strict'; // Enforce strict parsing and error handling in the script.
 
 /**
- * Primary function to handle and process incoming data.
- * It expects a string containing multiple lines of space-separated values.
- *
- * @param {string} rawData - The raw input string to be processed.
- * @returns {void} This function prints its result directly to the console.
+ * Processes the given raw input to extract a specific string pattern.
+ * @param {string} rawData - The complete input string, typically from stdin.
  */
-const processInputData = ( rawData ) => {
+const processInput = (rawData) => {
+  // Split the input into lines, then each line into segments by space.
+  // This creates a 2D array of string segments.
+  const parsedLines = rawData.split('\n').map(lineSegment => lineSegment.split(' '));
 
-    // First, split the entire raw input into individual lines.
-    // Then, for each line, split it further by spaces to get an array of tokens.
-    const parsedLines = rawData
-        .split('\n')
-        .map(
-            currentLine => currentLine.split(' ')
-        );
+  // Extract the first segment from the first line.
+  // This is assumed to be the string we need to analyze.
+  const targetString = parsedLines[0][0];
 
-    // Extract the very first element from the first parsed line.
-    // This is assumed to be the string of interest for pattern matching.
-    const targetString = parsedLines[0][0]
-    ;
+  // Use a regular expression to find a pattern:
+  // any characters (captured in group 1) followed by "FESTIVAL" at the end of the string.
+  const matchResult = targetString.match(/^(.+)FESTIVAL$/);
 
-    // Attempt to match the target string against a regular expression.
-    // The regex looks for any characters at the beginning, followed by "FESTIVAL" at the end.
-    // It captures the leading characters.
-    const matchResult = targetString.match( /^(.+)FESTIVAL$/ )
-    ;
+  // Log the captured group (the part before "FESTIVAL") to the console.
+  // This is the desired output.
+  console.log(matchResult[1]);
+};
 
-    // Print the captured group (the part before "FESTIVAL").
-    // The problem statement implies a valid match will always occur,
-    // so `matchResult[1]` is expected to be accessible.
-    console.log( matchResult[1] );
-}; // End of processInputData function definition
-
-
-// Execute the main processing function.
-// It reads content from standard input synchronously as a UTF-8 string.
-processInputData(
-    require('fs')
-        .readFileSync( '/dev/stdin', 'utf8' )
-);
+// Read the entire content of standard input synchronously as a UTF-8 string,
+// then pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

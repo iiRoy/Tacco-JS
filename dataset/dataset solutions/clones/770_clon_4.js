@@ -1,75 +1,65 @@
-let allRawData = '';
-
+var source = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (piece) => {
-  allRawData += piece;
+process.stdin.on('data', function (chunk) {
+  source += chunk;
+});
+process.stdin.on('end', function () {
+  solve(source.split('\n'));
 });
 
-process.stdin.on('end', () => {
-  const lineSegments = allRawData.split('\n');
-  processGameRounds(lineSegments, 0);
-});
+function solve(lines) {
+  var visited = new Set();
+  var cursor = 10 + 10 * 21;
+  var lastStride;
 
-const displacementVectors = {
-  'N': [0, 1],
-  'E': [1, 0],
-  'S': [0, -1],
-  'W': [-1, 0]
-};
-
-const evaluateOutcome = (initialTreasures, movementInstructions) => {
-  const visitedCoordinates = new Set();
-  
-  let currentXCoordinate = 10;
-  let currentYCoordinate = 10;
-
-  movementInstructions.forEach(instruction => {
-    const [deltaX, deltaY] = displacementVectors[instruction.motion];
-
-    for (let currentStep = 0; currentStep < instruction.amount; currentStep++) {
-      currentXCoordinate += deltaX;
-      currentYCoordinate += deltaY;
-      visitedCoordinates.add(`${currentXCoordinate}_${currentYCoordinate}`);
+  while (true) {
+    var count = +lines.shift();
+    if (count === 0) {
+      break;
     }
-  });
 
-  const allCollected = [...initialTreasures].every(treasureCoord => 
-    visitedCoordinates.has(treasureCoord)
-  );
+    var targets = new Set();
+    for (var g = 0; g < count; g++) {
+      var gem = lines.shift().split(' ');
+      var cell = (+gem[0]) + 21 * (+gem[1]);
+      if (cell >= 0 && cell < 21 * 21 && cell === Math.floor(cell)) {
+        targets.add(cell);
+      }
+    }
 
-  return allCollected;
-};
+    var moveCount = +lines.shift();
+    for (var m = 0; m < moveCount; m++) {
+      var item = lines.shift().split(' ');
+      switch (item[0]) {
+        case 'N':
+          lastStride = 21;
+          break;
+        case 'W':
+          lastStride = -1;
+          break;
+        case 'E':
+          lastStride = 1;
+          break;
+        case 'S':
+          lastStride = -21;
+          break;
+      }
 
-const processGameRounds = (lineSegments, currentLinePointer) => {
-  const gemCounter = Number(lineSegments[currentLinePointer++]);
+      for (var step = 0; step < +item[1]; step++) {
+        cursor += lastStride;
+        if (cursor >= 0 && cursor < 21 * 21 && cursor === Math.floor(cursor)) {
+          visited.add(cursor);
+        }
+      }
+    }
 
-  if (gemCounter === 0) {
-    return;
-  }
-
-  const gemPositions = new Set();
-  for (let idx = 0; idx < gemCounter; idx++) {
-    const coords = lineSegments[currentLinePointer++].split(' ').map(Number);
-    gemPositions.add(`${coords[0]}_${coords[1]}`);
-  }
-
-  const commandCount = Number(lineSegments[currentLinePointer++]);
-  const gameCommands = [];
-  for (let idx = 0; idx < commandCount; idx++) {
-    const commandParts = lineSegments[currentLinePointer++].split(' ');
-    gameCommands.push({
-      motion: commandParts[0],
-      amount: Number(commandParts[1])
+    var ok = true;
+    targets.forEach(function (cell) {
+      if (!visited.has(cell)) {
+        ok = false;
+      }
     });
+    console.log(ok ? 'Yes' : 'No');
   }
-
-  if (evaluateOutcome(gemPositions, gameCommands)) {
-    console.log('Yes');
-  } else {
-    console.log('No');
-  }
-
-  processGameRounds(lineSegments, currentLinePointer);
-};
+}

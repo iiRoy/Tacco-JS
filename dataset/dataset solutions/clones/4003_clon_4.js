@@ -1,83 +1,88 @@
-let collectedStringData = '';
+const os = require('os');
+const readline = require('readline');
 
-const lineSeparator = global.process.platform === 'win32' ? '\r\n' : '\n';
+/**
+ * Orchestrates input/output for a given asynchronous main logic function.
+ * This function replaces the original's generator-based `run` function
+ * with an async/await and readline-based approach for input processing.
+ *
+ * @param {(outputWriter: (line: string, end?: string) => void, inputFetcher: () => Promise<string|null>) => Promise<any>} mainLogic
+ */
+async function processInputOutput(mainLogic) {
+    const inputReader = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout, // Required by readline, but not used for actual output here
+        crlfDelay: Infinity // Ensures correct line ending handling
+    });
 
-function displayResult(valueToPresent) {
-    global.process.stdout.cork();
-    global.process.stdout.write(String(valueToPresent) + lineSeparator);
-    global.process.stdout.uncork();
-}
+    let currentLineTokens = [];
+    const lineAsyncIterator = inputReader[Symbol.asyncIterator]();
 
-function determineQuotient(dividendValue, divisorValue) {
-    if (divisorValue === 0) {
-        throw new Error("Cannot divide by zero.");
-    }
-
-    if (dividendValue >= 0) {
-        if (dividendValue < divisorValue) {
-            return 0;
-        } else {
-            return 1 + determineQuotient(dividendValue - divisorValue, divisorValue);
+    /**
+     * Asynchronously fetches the next input token (word).
+     * This replaces the original's `gets` generator.
+     * It handles buffering words from lines and skipping empty lines.
+     * @returns {Promise<string|null>} The next word, or null if end of input.
+     */
+    async function fetchNextInputToken() {
+        if (currentLineTokens.length > 0) {
+            return currentLineTokens.shift();
         }
-    } else {
-        if (dividendValue > -divisorValue) {
-            return -1;
-        } else if (dividendValue === -divisorValue) {
-            return -1;
-        } else {
-            return -1 + determineQuotient(dividendValue + divisorValue, divisorValue);
+
+        const nextLineResult = await lineAsyncIterator.next();
+
+        if (nextLineResult.done) {
+            return null; // End of input stream
         }
-    }
-}
 
-function obtainNumericalValue(textInterpretation) {
-    let currentCharacterIndex = 0;
-    let signDirection = 1;
-    let accumulatedNumber = 0;
-    let hasFoundDigits = false;
+        const lineContent = nextLineResult.value;
+        // Extract all non-whitespace sequences from the line.
+        // This mimics the original's word extraction logic.
+        const extractedTokens = lineContent.match(/[^\s]+/g);
 
-    while (currentCharacterIndex < textInterpretation.length && /\s/.test(textInterpretation[currentCharacterIndex])) {
-        currentCharacterIndex++;
-    }
-
-    if (textInterpretation[currentCharacterIndex] === '-') {
-        signDirection = -1;
-        currentCharacterIndex++;
-    } else if (textInterpretation[currentCharacterIndex] === '+') {
-        currentCharacterIndex++;
-    }
-
-    while (currentCharacterIndex < textInterpretation.length) {
-        const characterRepresentation = textInterpretation[currentCharacterIndex];
-        if (characterRepresentation >= '0' && characterRepresentation <= '9') {
-            accumulatedNumber = accumulatedNumber * 10 + (characterRepresentation.charCodeAt(0) - '0'.charCodeAt(0));
-            hasFoundDigits = true;
-            currentCharacterIndex++;
+        if (extractedTokens && extractedTokens.length > 0) {
+            currentLineTokens = extractedTokens;
+            return currentLineTokens.shift();
         } else {
-            break;
+            // If the line was empty or only contained whitespace,
+            // recursively try to fetch from the next line immediately.
+            return await fetchNextInputToken();
         }
     }
 
-    if (!hasFoundDigits) {
-        return Number.NaN;
+    /**
+     * Writes a line to standard output.
+     * This function is equivalent to the original's `write` function.
+     * @param {string} text The string to write.
+     * @param {string} [terminator] The string to append after `text`. Defaults to `os.EOL`.
+     */
+    function outputLine(text, terminator) {
+        process.stdout.cork();
+        process.stdout.write(text + (terminator === undefined ? os.EOL : terminator));
+        process.stdout.uncork();
     }
 
-    return accumulatedNumber * signDirection;
+    try {
+        // Execute the user's main logic, passing the new I/O functions.
+        await mainLogic(outputLine, fetchNextInputToken);
+    } finally {
+        // Ensure the readline interface is closed to release resources.
+        inputReader.close();
+    }
 }
 
-global.process.stdin.setEncoding('utf8');
+// The user's main logic, adapted to be an async function
+// and use `await` for input fetching.
+processInputOutput(async function (outputWriter, inputFetcher) {
+    // Fetch the first input token (expected to be a number string).
+    let inputString = await inputFetcher();
 
-global.process.stdin.on('data', (incomingDataChunk) => {
-    collectedStringData += incomingDataChunk;
+    // Parse the string to an integer.
+    let numericValue = Number.parseInt(inputString, 10);
+
+    // Calculate the floor of the number divided by 3.
+    let result = Math.floor(numericValue / 3);
+
+    // Write the result to output.
+    outputWriter(result);
 });
-
-global.process.stdin.on('end', () => {
-    const linesOfInformation = collectedStringData.split(lineSeparator);
-    const initialInputLine = linesOfInformation[0];
-
-    const numericalInput = obtainNumericalValue(initialInputLine === undefined ? '' : initialInputLine);
-    const finalCalculatedValue = determineQuotient(numericalInput, 3);
-    displayResult(finalCalculatedValue);
-});
-
-global.process.stdin.resume();

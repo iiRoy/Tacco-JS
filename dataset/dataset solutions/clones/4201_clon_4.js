@@ -1,66 +1,36 @@
-const fetchSourceText = () => require("node:fs").readFileSync(0, "utf8").trim();
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function myout(t){console.log(t);}//standard output
+function myerr(t){console.error(t);}//standard error
 
-const deliverVerdict = (messageText) => console.log(messageText);
+const conversionMap = new Map([
+    [0, (val) => val],
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [3, (val) => val.split("\n")],
+    [4, (val) => val.split(" ").map(Number)],
+    [5, (val) => val.split("\n").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+]);
 
-const validateSequenceIntegrity = (sequencePayload) => {
-    const characterArray = [...sequencePayload];
-
-    if (characterArray.length > 9) {
-        return false;
+function myconv(inputVal, typeNum) {
+    const converter = conversionMap.get(typeNum);
+    if (converter) {
+        return converter(inputVal);
     }
+}
 
-    const keyMarkers = ['K', 'I', 'H', 'B', 'R'];
-    const markerPositions = new Map();
+function Main(sourceData) {
+    const characterSequence = myconv(sourceData, 6);
+    const combinedString = characterSequence.join('');
 
-    characterArray.forEach((charElement, charIndex) => {
-        if (keyMarkers.includes(charElement)) {
-            markerPositions.set(charElement, charIndex);
-        }
-    });
+    const requiredPattern = /^A?KI(A?)H(A?)B(A?)R(A?)$/;
 
-    const allMarkersPresent = keyMarkers.every(marker => markerPositions.has(marker));
-    if (!allMarkersPresent) {
-        return false;
+    if (combinedString.length > 9 || !requiredPattern.test(combinedString)) {
+        myout("NO");
+    } else {
+        myout("YES");
     }
+}
 
-    const positionK = markerPositions.get('K');
-    const positionI = markerPositions.get('I');
-    const positionH = markerPositions.get('H');
-    const positionB = markerPositions.get('B');
-    const positionR = markerPositions.get('R');
-
-    const conditionK_I_H = (positionK === positionI - 1) && (positionH > positionI);
-    if (!conditionK_I_H) {
-        return false;
-    }
-
-    const conditionH_B = (positionH < positionB) && ((positionB - positionH) <= 2);
-    if (!conditionH_B) {
-        return false;
-    }
-
-    const conditionB_R = (positionB < positionR) && ((positionR - positionB) <= 2);
-    if (!conditionB_R) {
-        return false;
-    }
-
-    const leadingAcount = sequencePayload.match(/^A*/)[0].length;
-    if (leadingAcount > 1) {
-        return false;
-    }
-
-    const trailingAcount = sequencePayload.match(/A*$/)[0].length;
-    if (trailingAcount > 1) {
-        return false;
-    }
-
-    return true;
-};
-
-const initiateProcess = () => {
-    const rawInputContent = fetchSourceText();
-    const validationResult = validateSequenceIntegrity(rawInputContent);
-    deliverVerdict(validationResult ? "YES" : "NO");
-};
-
-initiateProcess();
+Main(myin());

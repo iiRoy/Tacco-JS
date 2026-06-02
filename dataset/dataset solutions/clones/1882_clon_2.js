@@ -1,124 +1,176 @@
-/*
- * This file contains a solution to a combinatorial problem
- * involving modular arithmetic.
+/**
+ * Processes the input string to calculate a specific value based on N, M, and K.
+ * This function implements a modular arithmetic calculation involving combinations.
+ * @param {string} rawData - The input string containing N, M, and K on the first line.
+ * @returns {bigint} The calculated final result modulo primeModulus.
  */
-function ProcessInputData(incomingData) {
-  // Split the raw input string by newlines to get individual lines.
-  incomingData = incomingData.split("\n");
+function ProcessInput(rawData) {
+  // Split the input string by newlines to handle multiple lines, though only the first is used.
+  rawData = rawData.split("\n");
 
-  // Define the large prime modulus for all calculations.
-  const modulusConst = 998244353n;
+  // Define the prime modulus for all calculations.
+  const primeModulus = 998244353n;
 
-  // Parse problem parameters from the first line of input.
-  // The parameters are N, M, and K, converted to BigInt.
-  const firstLineParts = incomingData[0].split(" ");
-  const countItems = BigInt(parseInt(firstLineParts[0]));
-  const numChoices = BigInt(parseInt(firstLineParts[1]));
-  const maxSelections = BigInt(parseInt(firstLineParts[2]));
+  // Parse N, M, and K from the first line of input.
+  // The values are converted to BigInts for arbitrary precision arithmetic.
+  const inputParts = rawData[0].split(" ");
+  const countN = BigInt(parseInt(inputParts[0]));
+  const valueM = BigInt(parseInt(inputParts[1]));
+  const limitK = BigInt(parseInt(inputParts[2]));
 
-  // Initialize a dynamic programming cache (though not fully utilized in this specific logic).
-  let dynamicCache = new Array(maxSelections + 1n).fill(0n);
-  dynamicCache[0] = numChoices; // Set the initial value for the base case.
+  // Initialize a dynamic programming cache (though it remains unused in this specific algorithm path).
+  const dynamicCache = new Array(limitK + 1n).fill(0n);
+  dynamicCache[0] = valueM; // Set the first element, as per original structure.
 
-  // Initialize the variable to store the final accumulated sum.
-  let cumulativeSum = 0n;
+  // Initialize the accumulator for the final result.
+  let finalResult = 0n;
 
-  // Initialize an intermediate multiplier value.
-  let currentMultiplier = numChoices - 1n;
+  // Initialize a factor 'currentFactor' which will be updated in loops.
+  let currentFactor = valueM - 1n;
 
-  // Perform a pre-calculation loop if certain conditions are met.
-  // This loop adjusts the intermediate multiplier.
-  if (countItems - 2n - maxSelections >= 1n) {
-    for (let loopVar = 0; loopVar < countItems - 2n - maxSelections; loopVar++) {
-      currentMultiplier = (currentMultiplier * (numChoices - 1n)) % modulusConst;
+  // First conditional loop to update 'currentFactor'.
+  // This loop runs if N - 2 - K is at least 1.
+  if (countN - 2n - limitK >= 1n) {
+    // Iterate a specific number of times.
+    for (let loopVar = 0; loopVar < countN - 2n - limitK; loopVar++) {
+      // Multiply currentFactor by (M-1) modulo primeModulus.
+      currentFactor = (currentFactor * (valueM - 1n)) % primeModulus;
     }
   }
 
-  // Ensure the intermediate multiplier is at least 1 if it somehow became 0.
-  if (currentMultiplier === 0n) {
-    currentMultiplier = 1n;
+  // If currentFactor becomes zero after the first loop, reset it to 1.
+  // This handles cases where (M-1) might be 0, preventing zero multiplication issues.
+  if (currentFactor === 0n) {
+    currentFactor = 1n;
   }
 
-  // Main loop to calculate the final sum based on combinations.
-  // Iterates from K down to 0.
-  for (let idx = maxSelections; idx >= 0n; idx--) {
-    // Accumulate the result using modular arithmetic for each term.
-    cumulativeSum = (cumulativeSum + (((computeCombinations(countItems - 1n, idx)) % modulusConst * numChoices) % modulusConst * currentMultiplier) % modulusConst) % modulusConst;
-    // Update the multiplier for the next iteration.
-    currentMultiplier = (currentMultiplier * (numChoices - 1n)) % modulusConst;
+  // Main loop to calculate the final result.
+  // Iterates from limitK down to 0.
+  for (let loopVar = limitK; loopVar >= 0n; loopVar--) {
+    // Calculate a term for the sum: (combinations(N-1, loopVar) * M * currentFactor) % primeModulus.
+    const termPart1 = computeCombinations(countN - 1n, loopVar);
+    const termPart2 = (termPart1 * valueM) % primeModulus;
+    const termPart3 = (termPart2 * currentFactor) % primeModulus;
+
+    // Add the calculated term to the final result, modulo primeModulus.
+    finalResult = (finalResult + termPart3) % primeModulus;
+
+    // Update currentFactor for the next iteration.
+    currentFactor = (currentFactor * (valueM - 1n)) % primeModulus;
   }
 
+  /**
+   * Calculates the product of a range of numbers (startVal * (startVal+1) * ... * endVal) modulo primeModulus.
+   * @param {bigint} startVal - The starting value of the range (inclusive).
+   * @param {bigint} endVal - The ending value of the range (inclusive).
+   * @returns {bigint} The product modulo primeModulus.
+   */
+  function calculateProductRange(startVal, endVal) {
+    let productAccumulator = startVal;
+    let currentIter = startVal; // Initialize iterator for the loop.
 
-  // Helper function to calculate the product of a range of numbers modulo a constant.
-  function calculateProductModulo(startVal, endVal) {
-    let currentProduct = startVal;
-    let counter = startVal;
-
-    while (counter++ < endVal) {
-      currentProduct = (currentProduct * counter) % modulusConst;
+    // Loop while the current iterator (before increment) is less than endVal.
+    while (currentIter++ < endVal) {
+      // Multiply the accumulator by the incremented iterator, modulo primeModulus.
+      productAccumulator = (productAccumulator * currentIter) % primeModulus;
     }
-    return currentProduct;
+    return productAccumulator;
   }
 
-
-  // Function to compute combinations (nCr) modulo a prime.
-  function computeCombinations(totalElements, numToChoose) {
-    // Base cases for combinations.
-    if (totalElements === numToChoose || numToChoose === 0n) {
+  /**
+   * Computes the number of combinations (nCr) modulo primeModulus.
+   * Uses the formula nCr = n! / (r! * (n-r)!) and modular inverse for division.
+   * @param {bigint} totalItems - The total number of items (n).
+   * @param {bigint} chosenItems - The number of items to choose (r).
+   * @returns {bigint} The number of combinations modulo primeModulus.
+   */
+  function computeCombinations(totalItems, chosenItems) {
+    // Base cases for combinations: nCn = 1 and nC0 = 1.
+    if (totalItems === chosenItems || chosenItems === 0n) {
       return 1n;
     } else {
-      // Optimization: C(n, r) = C(n, n-r)
-      numToChoose = (numToChoose < totalElements - numToChoose) ? totalElements - numToChoose : numToChoose;
-      // Calculate modular inverse for the denominator.
-      let inverseTerm = modularInverse(calculateProductModulo(1n, totalElements - numToChoose), modulusConst);
-      // Return the result (numerator * inverse of denominator) mod modulusConst.
-      return (calculateProductModulo(numToChoose + 1n, totalElements) * inverseTerm) % modulusConst;
+      // Optimization: nCr = nC(n-r). Choose the larger of r and n-r to minimize multiplications.
+      // This ensures that 'chosenItems' is always the larger value for the product_Range(chosenItems+1, totalItems) part.
+      chosenItems = (chosenItems < totalItems - chosenItems) ? totalItems - chosenItems : chosenItems;
+
+      // Calculate the modular inverse of (totalItems - chosenItems)!
+      // This corresponds to 1 / ((n-r)!) in the nCr formula.
+      const modularInverse = getModularInverse(calculateProductRange(1n, totalItems - chosenItems), primeModulus);
+
+      // Calculate (totalItems * (totalItems-1) * ... * (chosenItems+1)) modulo primeModulus.
+      // Then multiply by the modular inverse.
+      return (calculateProductRange(chosenItems + 1n, totalItems) * modularInverse) % primeModulus;
     }
   }
 
-  // Utility function for modular exponentiation (a^n % mod).
-  function powerMod(baseValue, exponentValue, currentModulus) {
-    let calculatedResult = 1n; // Initialize result
-    // Loop while exponent is greater than zero
-    while (exponentValue > 0) {
-      // If exponent is odd, multiply base with result
-      if (exponentValue & 1n) calculatedResult = calculatedResult * baseValue % currentModulus;
-      // Square the base
-      baseValue = baseValue * baseValue % currentModulus;
-      // Right shift exponent by 1 (divide by 2)
-      exponentValue >>= 1n;
+  /**
+   * Calculates (base^exponent) % modulus using modular exponentiation (binary exponentiation).
+   * @param {bigint} base - The base number.
+   * @param {bigint} exponent - The exponent.
+   * @param {bigint} modulus - The modulus.
+   * @returns {bigint} The result of (base^exponent) % modulus.
+   */
+  function powerModulo(base, exponent, modulus) {
+    let resultPower = 1n; // Initialize result to 1.
+    // Loop while exponent is greater than 0.
+    while (exponent > 0) {
+      // If the current bit of the exponent is 1 (exponent is odd).
+      if (exponent & 1n) {
+        resultPower = (resultPower * base) % modulus;
+      }
+      // Square the base and take modulo.
+      base = (base * base) % modulus;
+      // Right shift the exponent by 1 (equivalent to dividing by 2).
+      exponent >>= 1n;
     }
-    return calculatedResult;
+    return resultPower;
   }
 
-  // Function to compute modular multiplicative inverse using Fermat's Little Theorem.
-  // Requires modulus to be prime. inv(a) = a^(mod-2) % mod.
-  function modularInverse(numberToInvert, modulusForInverse) {
-    return powerMod(numberToInvert, modulusForInverse - 2n, modulusForInverse);
+  /**
+   * Calculates the modular multiplicative inverse of 'num' modulo 'modulus'.
+   * Uses Fermat's Little Theorem: a^(p-2) % p is the inverse of a % p for prime p.
+   * @param {bigint} num - The number for which to find the inverse.
+   * @param {bigint} modulus - The prime modulus.
+   * @returns {bigint} The modular inverse of 'num'.
+   */
+  function getModularInverse(num, modulus) {
+    return powerModulo(num, modulus - 2n, modulus);
   }
 
-  // Output the final computed answer to the console.
-  console.log('%s', cumulativeSum.toString());
-  // Return the calculated answer.
-  return cumulativeSum;
+  // Output the final result to the console.
+  console.log('%s', finalResult.toString());
+
+  // Return the final calculated BigInt value.
+  return finalResult;
 }
 
-/*
- * Helper function for debugging and testing purposes.
- * It fetches input from a specific HTML element, runs the main logic,
- * and displays "AC" or "WA" based on the comparison with an expected output.
+/**
+ * A testing utility function, likely for a web-based environment.
+ * It reads input from a DOM element, calls the main processing function,
+ * and displays the result (AC/WA) in another DOM element.
+ * @param {number} testCaseNumber - The identifier for the input/output elements.
  */
-function validateTest(testIndex) {
-  let testInputString = document.getElementById("input" + testIndex).value;
-  let calculatedAnswer = ProcessInputData(testInputString);
-  let testVerdict = "WA"; // Assume Wrong Answer initially.
-  // Compare the calculated answer with the expected output.
-  if (calculatedAnswer === BigInt(document.getElementById("output" + testIndex).value.split("\n")[0])) {
-    testVerdict = "AC"; // Set to Accepted if they match.
+function testFunction(testCaseNumber) {
+  // Retrieve input from a specific DOM element.
+  const testInput = document.getElementById("input" + testCaseNumber).value;
+  // Call the main processing function with the retrieved input.
+  const calculatedAnswer = ProcessInput(testInput);
+
+  let testOutcome = "WA"; // Default outcome is "Wrong Answer".
+
+  // Retrieve the expected output from another DOM element.
+  const expectedOutput = document.getElementById("output" + testCaseNumber).value.split("\n")[0];
+
+  // Compare the calculated answer (BigInt) with the expected output (string, converted to BigInt).
+  // Note: The original code used '==', which performs type coercion. Explicit BigInt conversion ensures clarity.
+  if (calculatedAnswer === BigInt(expectedOutput)) {
+    testOutcome = "AC"; // If they match, set outcome to "Accepted".
   }
-  // Update the result display in the HTML.
-  document.getElementById("result" + testIndex).innerHTML = testVerdict;
+
+  // Update the inner HTML of a result element with the test outcome.
+  document.getElementById("result" + testCaseNumber).innerHTML = testOutcome;
 }
 
-// Execute the main function with input read from stdin when running in a Node.js environment.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function by reading input from standard input.
+// This line is typical for competitive programming environments.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

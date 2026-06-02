@@ -1,85 +1,109 @@
-class DataStreamProcessor {
-    constructor(rawContent) {
-        this.lineSegments = rawContent.split("\n");
-        this.segmentIndex = 0;
+const outputLog = console.log;
+
+class InputSource {
+    #lineBuffer;
+    #currentLineIndex;
+
+    constructor(rawInputString) {
+        this.#lineBuffer = rawInputString.split("\n");
+        this.#currentLineIndex = 0;
     }
 
-    obtainSegment() {
-        if (this.segmentIndex < this.lineSegments.length) {
-            return this.lineSegments[this.segmentIndex++];
+    // Retrieves the next raw line from the input buffer.
+    fetchNextLine() {
+        if (this.#currentLineIndex >= this.#lineBuffer.length) {
+            return null;
         }
-        return null;
+        return this.#lineBuffer[this.#currentLineIndex++];
     }
 
-    extractNumericValues(adjustmentRequested = false) {
-        const currentSegment = this.obtainSegment();
-        if (currentSegment === null || currentSegment.trim() === '') return [];
-        
-        const stringValues = currentSegment.split(' ');
-        const numericalValues = stringValues.map(Number);
-        
-        return numericalValues;
+    // Parses the next line into an array of integers.
+    parseIntegerArray() {
+        const lineContent = this.fetchNextLine();
+        if (lineContent === null) {
+            return [];
+        }
+        return lineContent.split(' ').map(Number);
     }
 }
 
-const reportOutcome = console.log;
+// Standalone utility functions, replacing Array.prototype extensions and variadic functions.
+const determineMaximum = (...values) => Math.max(...values);
+const determineMinimum = (...values) => Math.min(...values);
+const computeArraySum = (numericArray) => numericArray.reduce((accum, val) => accum + val, 0);
+const renderArrayAsString = (elements, delimiter = " ") => elements.join(delimiter);
 
-function executeGridTraversal(sourceMaterial) {
-    const dataSource = new DataStreamProcessor(sourceMaterial);
+// Core logic for processing grid traversals.
+function executeGridPathfinding(rawInputData) {
+    const inputReader = new InputSource(rawInputData);
 
-    const movementSchema = new Map([
-        ['>', [1, 0]],
-        ['v', [0, 1]],
-        ['^', [0, -1]],
-        ['<', [-1, 0]]
+    // Direction vectors stored in a Map for efficient lookup.
+    const pathDirections = new Map([
+        [">", [1, 0]], // Right (dx, dy)
+        ["v", [0, 1]], // Down
+        ["^", [0, -1]], // Up
+        ["<", [-1, 0]]  // Left
     ]);
 
-    let spatialExtent;
-    while ( (spatialExtent = dataSource.extractNumericValues()).length > 0 && spatialExtent[0] !== 0) {
-        const rowCount = spatialExtent[0];
+    // Loop to handle multiple test cases from the input.
+    while (true) {
+        const dimensions = inputReader.parseIntegerArray();
+        const [gridRows, gridCols] = dimensions;
 
-        const cartographicMatrix = Array.from({ length: rowCount }, () => 
-            dataSource.obtainSegment().split('')
-        );
+        // Termination condition for the entire program.
+        if (gridRows === 0) {
+            break;
+        }
 
-        let horizontalPos = 0;
-        let verticalPos = 0;
-        const visitedCoordinates = new Set();
-
-        while (true) {
-            // Check for valid position within the grid boundaries
-            if (verticalPos < 0 || verticalPos >= rowCount || horizontalPos < 0 || horizontalPos >= cartographicMatrix[0].length) {
-                 // This condition should ideally not be met if the problem guarantees a path to '.' or 'a' within bounds
-                 // For robustness, an error could be reported, but original code relies on valid paths.
-                 break; 
+        // Grid representation: A Map where keys are "y,x" strings and values are characters.
+        const gridLayout = new Map();
+        for (let rIdx = 0; rIdx < gridRows; rIdx++) {
+            const rowCharacters = inputReader.fetchNextLine().split("");
+            for (let cIdx = 0; cIdx < gridCols; cIdx++) {
+                gridLayout.set(`${rIdx},${cIdx}`, rowCharacters[cIdx]);
             }
+        }
 
-            const currentCellSymbol = cartographicMatrix[verticalPos][horizontalPos];
-            const currentCoordinateKey = `${horizontalPos},${verticalPos}`;
+        let currentXCoord = 0;
+        let currentYCoord = 0;
+        // Set to track visited coordinates, preventing infinite loops by detecting revisits.
+        const visitedPathCoordinates = new Set();
 
-            if (currentCellSymbol === '.') {
-                reportOutcome(horizontalPos, verticalPos);
+        let traversalOutcomeStatus = null; // Will store "LOOP" or [finalX, finalY]
+
+        // Inner loop for simulating movement within the current grid.
+        while (traversalOutcomeStatus === null) {
+            const currentCoordinateKey = `${currentYCoord},${currentXCoord}`;
+
+            // Check if the current cell has been visited before (loop detection).
+            if (visitedPathCoordinates.has(currentCoordinateKey)) {
+                traversalOutcomeStatus = "LOOP";
+                break;
+            }
+            visitedPathCoordinates.add(currentCoordinateKey);
+
+            const cellSymbol = gridLayout.get(currentCoordinateKey);
+
+            // Check if the current cell is the termination point ('.').
+            if (cellSymbol === ".") {
+                traversalOutcomeStatus = [currentXCoord, currentYCoord];
                 break;
             }
 
-            if (visitedCoordinates.has(currentCoordinateKey)) {
-                reportOutcome("LOOP");
-                break;
-            }
+            // Retrieve movement deltas based on the cell symbol.
+            const [deltaX, deltaY] = pathDirections.get(cellSymbol);
+            currentXCoord += deltaX;
+            currentYCoord += deltaY;
+        }
 
-            visitedCoordinates.add(currentCoordinateKey);
-
-            const deltaCoordinates = movementSchema.get(currentCellSymbol);
-            if (!deltaCoordinates) {
-                // Should not occur with valid input
-                reportOutcome("ERROR: Invalid grid symbol encountered.");
-                break;
-            }
-
-            horizontalPos += deltaCoordinates[0];
-            verticalPos += deltaCoordinates[1];
+        // Output the result for the current test case.
+        if (traversalOutcomeStatus === "LOOP") {
+            outputLog("LOOP");
+        } else {
+            outputLog(traversalOutcomeStatus[0], traversalOutcomeStatus[1]);
         }
     }
 }
 
-executeGridTraversal(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function with input read from standard input.
+executeGridPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,82 +1,60 @@
 "use strict";
 
-function isPerfectSquareRoot(val) {
-    if (val < 0) return false;
-    const root = Math.sqrt(val);
-    return Number.isInteger(root);
+// Helper function to parse the raw input string into structured data
+function parseInputData(rawInputString) {
+    const trimmedLines = rawInputString.trim().split("\n");
+
+    const firstLineParts = trimmedLines.shift().split(' ').map(Number);
+    const numPoints = firstLineParts[0];
+    const numDimensions = firstLineParts[1];
+
+    const pointCoordinates = trimmedLines.map(line => line.split(' ').map(Number));
+
+    return {
+        numPoints: numPoints,
+        numDimensions: numDimensions,
+        pointCoordinates: pointCoordinates
+    };
 }
 
-function processInputData(rawInputContent) {
-    if (!rawInputContent || rawInputContent.trim() === "") {
-        return;
+// Helper function to calculate the Euclidean distance between two points
+function calculateEuclideanDistance(point1, point2, dimensions) {
+    let sumOfSquaredDifferences = 0;
+    for (let dimensionIndex = 0; dimensionIndex < dimensions; dimensionIndex++) {
+        const coordinateDifference = point1[dimensionIndex] - point2[dimensionIndex];
+        sumOfSquaredDifferences += coordinateDifference * coordinateDifference;
     }
+    return Math.sqrt(sumOfSquaredDifferences);
+}
 
-    const trimmedInput = rawInputContent.trim();
-    let processedLines = trimmedInput.split("\n");
+function processInput(rawInputString) {
+    const parsedData = parseInputData(rawInputString);
+    const numPoints = parsedData.numPoints;
+    const numDimensions = parsedData.numDimensions;
+    const allPoints = parsedData.pointCoordinates;
 
-    if (processedLines.length < 2) {
-        return;
-    }
+    let integerDistancePairs = 0;
 
-    const configDimensionsStr = processedLines.shift();
-    const configDimensionsArr = configDimensionsStr.split(' ');
-
-    const numPoints = parseInt(configDimensionsArr[0], 10);
-    const numDimensions = parseInt(configDimensionsArr[1], 10);
-
-    if (isNaN(numPoints) || isNaN(numDimensions) || numPoints < 0 || numDimensions < 0) {
-        return;
-    }
-
-    const coordinateSets = processedLines.map(lineStr =>
-        lineStr.split(' ').map(valStr => parseInt(valStr, 10))
-    );
-
-    let integerDistanceCounter = 0;
-
-    const MIN_PAIRS_REQUIRED = 2;
-
-    if (numPoints < MIN_PAIRS_REQUIRED) {
-        console.log(integerDistanceCounter);
-        return;
-    }
-
+    // Iterate through all unique pairs of points
     for (let pointIndexA = 0; pointIndexA < numPoints; pointIndexA++) {
-        const currentPointA = coordinateSets[pointIndexA];
-
-        for (let pointIndexB = pointIndexA + 1; pointIndexB < numPoints; pointIndexB++) {
-            const pointCoordsB = coordinateSets[pointIndexB];
-
-            let sumOfSquaredDifferences = 0;
-
-            for (let dimensionIterator = 0; dimensionIterator < numDimensions; dimensionIterator++) {
-                const coordA_dim = currentPointA[dimensionIterator];
-                const coordB_dim = pointCoordsB[dimensionIterator];
-
-                const dimensionDifference = Math.abs(coordA_dim - coordB_dim);
-
-                sumOfSquaredDifferences += dimensionDifference * dimensionDifference;
+        for (let pointIndexB = pointIndexA; pointIndexB < numPoints; pointIndexB++) {
+            // Skip comparing a point with itself
+            if (pointIndexA === pointIndexB) {
+                continue;
             }
 
-            const euclideanDistance = Math.sqrt(sumOfSquaredDifferences);
+            const currentPointA = allPoints[pointIndexA];
+            const currentPointB = allPoints[pointIndexB];
 
-            if (isPerfectSquareRoot(sumOfSquaredDifferences)) {
-                integerDistanceCounter++;
+            const euclideanDistance = calculateEuclideanDistance(currentPointA, currentPointB, numDimensions);
+
+            // Check if the calculated distance is an integer
+            if (Number.isInteger(euclideanDistance)) {
+                integerDistancePairs++;
             }
         }
     }
-
-    console.log(integerDistanceCounter);
+    console.log(integerDistancePairs);
 }
 
-(function initializeAndRun() {
-    const INPUT_FILE_PATH = '/dev/stdin';
-    let fileContent;
-    try {
-        fileContent = require('fs').readFileSync(INPUT_FILE_PATH, 'utf8');
-    } catch (error) {
-        return;
-    }
-
-    processInputData(fileContent);
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

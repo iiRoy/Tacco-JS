@@ -1,54 +1,77 @@
-function primeDecomposition ( inputNumber ) {
-  const primeFactorsList = [ ] ;
+function primeFactorDecomposition(inputNum) {
+    // This array will store objects, each representing a prime factor and its exponent.
+    let factorList = [];
 
-  for ( let divisorCandidate = 2 ; divisorCandidate * divisorCandidate <= inputNumber ; divisorCandidate++ ) {
-    let powerCount = 0 ;
+    // Iterate from 2 up to the square root of the current number.
+    // This efficiently finds prime factors.
+    for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= inputNum; divisorCandidate++) {
+        let occurrenceCount = 0; // Initialize count for the current prime candidate.
 
-    while ( inputNumber % divisorCandidate === 0 ) {
-      inputNumber /= divisorCandidate ;
-      powerCount++ ;
+        // While the current number is divisible by the candidate, keep dividing.
+        while (inputNum % divisorCandidate === 0) {
+            inputNum /= divisorCandidate; // Reduce the number.
+            occurrenceCount++;           // Increment the exponent.
+        }
+
+        // If the candidate was a factor (i.e., its exponent is greater than 0).
+        if (occurrenceCount) {
+            // Add the prime factor and its exponent to our list.
+            factorList.push({ primeVal: divisorCandidate, expCount: occurrenceCount });
+        }
     }
 
-    if ( powerCount > 0 ) {
-      primeFactorsList.push( { factor : divisorCandidate , count : powerCount } ) ;
+    // If after all divisions, the number is still not 1,
+    // it means the remaining 'inputNum' is a prime factor itself.
+    if (inputNum !== 1) {
+        factorList.push({ primeVal: inputNum, expCount: 1 });
     }
-  }
 
-  if ( inputNumber !== 1 ) {
-    primeFactorsList.push( { factor : inputNumber , count : 1 } ) ;
-  }
-
-  return primeFactorsList ;
+    return factorList; // Return the complete list of prime factors.
 }
 
 
-function executeCalculation ( inputArgument ) {
-  const upperLimit = Number( inputArgument ) ;
-  const moduloValue = 1000000007 ;
+function executeCalculation(inputString) {
+    // Convert the input string to a number, which represents the upper bound N.
+    let upperBound = Number(inputString);
+    // Define the modulo value for calculations.
+    const moduloValue = 10 ** 9 + 7;
 
-  const aggregatedFactors = { } ;
+    // An object to accumulate the total exponents for each unique prime factor
+    // across all numbers from 1 to N.
+    let totalExponents = {};
 
-  for ( let currentNumber = 1 ; currentNumber <= upperLimit ; currentNumber++ ) {
-    const temporaryFactors = primeDecomposition( currentNumber ) ;
+    // Loop through each number from 1 to N.
+    for (let currentNumber = 1; currentNumber <= upperBound; currentNumber++) {
+        // Get the prime factorization for the current number.
+        let currentNumFactors = primeFactorDecomposition(currentNumber);
 
-    temporaryFactors.forEach( factorEntry => {
-      if ( aggregatedFactors[ factorEntry.factor ] ) {
-        aggregatedFactors[ factorEntry.factor ] += factorEntry.count ;
-      }
-      else {
-        aggregatedFactors[ factorEntry.factor ] = factorEntry.count ;
-      }
-    } ) ;
-  }
+        // Iterate over each factor found for the current number.
+        currentNumFactors.forEach(singleFactor => {
+            // If this prime factor is already in our totalExponents object,
+            // add its current exponent to the existing total.
+            if (totalExponents[singleFactor.primeVal]) {
+                totalExponents[singleFactor.primeVal] += singleFactor.expCount;
+            } else {
+                // Otherwise, initialize its exponent in the totalExponents object.
+                totalExponents[singleFactor.primeVal] = singleFactor.expCount;
+            }
+        });
+    }
 
-  let finalResult = 1 ;
+    // Initialize the final result.
+    let finalResult = 1;
 
-  Object.keys( aggregatedFactors ).forEach( primeBase => {
-    finalResult *= ( aggregatedFactors[ primeBase ] + 1 ) ;
-    finalResult %= moduloValue ;
-  } ) ;
+    // Iterate over the unique prime factors (keys) accumulated in totalExponents.
+    Object.keys(totalExponents).forEach(factorKey => {
+        // Apply the formula: (exponent + 1) for each prime factor.
+        finalResult *= (totalExponents[factorKey] + 1);
+        // Apply modulo to keep the result within bounds.
+        finalResult %= moduloValue;
+    });
 
-  console.log( finalResult ) ;
+    // Output the final computed result to the console.
+    console.log(finalResult);
 }
 
-executeCalculation( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main calculation function.
+executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));

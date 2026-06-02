@@ -1,72 +1,50 @@
-let storageUnit = '';
-process.stdin.on('data', part => {
-    storageUnit += part;
+var inputLines = [];
+var inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-process.stdin.on('end', () => {
-    const dataLines = storageUnit.split('\n');
+inputReader.on('line', function (currentLine) {
+    inputLines.push(currentLine);
+});
 
-    const firstNumericalSequence = dataLines[0].split(' ').map(Number);
-    const pathTotalLength = firstNumericalSequence[0];
-    const firstRunnerStart = firstNumericalSequence[1];
-    const secondRunnerStart = firstNumericalSequence[2];
-    const firstRunnerTarget = firstNumericalSequence[3];
-    const secondRunnerTarget = firstNumericalSequence[4];
+inputReader.on('close', function () {
+    const [pathLen, startIdxA, startIdxB, endIdxC, endIdxD] = inputLines[0].split(" ").map(Number);
+    const pathSequence = inputLines[1];
 
-    const pathCharacters = dataLines[1];
+    let outcomeMessage = "Yes";
+    let bypassPathFound = false;
 
-    const getPathSegment = (zeroIndex) => {
-        if (zeroIndex < 0 || zeroIndex >= pathCharacters.length) {
-            return null;
-        }
-        return pathCharacters[zeroIndex];
-    };
+    const maxRelevantPosition = Math.max(endIdxC, endIdxD);
 
-    const determineCollisionRisk = (runner1Origin, runner1Goal, runner2Goal, layoutString) => {
-        const maximumRelevantPoint = Math.max(runner1Goal, runner2Goal); // 1-indexed
-        for (let currentZeroIndex = 0; currentZeroIndex < layoutString.length - 1; ++currentZeroIndex) {
-            if (layoutString[currentZeroIndex] === '#' && layoutString[currentZeroIndex + 1] === '#') {
-                if ((runner1Origin <= (currentZeroIndex + 1)) && ((currentZeroIndex + 2) <= maximumRelevantPoint)) {
-                    return true;
-                }
+    const hasBlockingSegment = Array.from({ length: pathSequence.length - 1 }, (_, currentPos) => currentPos)
+        .some(currentPos =>
+            pathSequence.substring(currentPos, currentPos + 2) === "##" &&
+            startIdxA <= currentPos &&
+            currentPos + 1 <= maxRelevantPosition
+        );
+
+    if (hasBlockingSegment) {
+        outcomeMessage = "No";
+    } else {
+        bypassPathFound = Array.from({ length: pathSequence.length - 2 }, (_, currentPos) => currentPos)
+            .some(currentPos =>
+                pathSequence.substring(currentPos, currentPos + 3) === "..." &&
+                startIdxB <= currentPos &&
+                (currentPos + 3 <= endIdxD || currentPos + 1 === endIdxD)
+            );
+
+        if (endIdxD < endIdxC && !bypassPathFound) {
+            const checkCriticalObstacles = (pathStr, dPos, bPos) => {
+                return (pathStr[dPos - 2] === "#" || pathStr[dPos] === "#") &&
+                       (pathStr[bPos - 2] === "#" || pathStr[bPos] === "#");
+            };
+
+            if (checkCriticalObstacles(pathSequence, endIdxD, startIdxB)) {
+                outcomeMessage = "No";
             }
-        }
-        return false;
-    };
-
-    const assessManeuverability = (runner2Origin, runner2Goal, layoutString) => {
-        for (let currentZeroIndex = 0; currentZeroIndex < layoutString.length - 2; ++currentZeroIndex) {
-            if (layoutString[currentZeroIndex] === '.' && layoutString[currentZeroIndex + 1] === '.' && layoutString[currentZeroIndex + 2] === '.') {
-                if ((runner2Origin <= (currentZeroIndex + 1)) && (((currentZeroIndex + 3) <= runner2Goal) || ((currentZeroIndex + 2) === runner2Goal))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    const isZoneObstructed = (oneBasedPoint, layoutString) => {
-        const charBeforePoint = getPathSegment(oneBasedPoint - 2);
-        const charAfterPoint = getPathSegment(oneBasedPoint);
-
-        return (charBeforePoint === '#') || (charAfterPoint === '#');
-    };
-
-    if (determineCollisionRisk(firstRunnerStart, firstRunnerTarget, secondRunnerTarget, pathCharacters)) {
-        console.log("No");
-        return;
-    }
-
-    const secondRunnerCanBypass = assessManeuverability(secondRunnerStart, secondRunnerTarget, pathCharacters);
-
-    if (secondRunnerTarget < firstRunnerTarget) {
-        if (!secondRunnerCanBypass &&
-            isZoneObstructed(secondRunnerTarget, pathCharacters) &&
-            isZoneObstructed(secondRunnerStart, pathCharacters)) {
-            console.log("No");
-            return;
         }
     }
 
-    console.log("Yes");
+    console.log(outcomeMessage);
 });

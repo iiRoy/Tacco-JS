@@ -1,35 +1,12 @@
-function performValidation(sourceMaterial) {
-    const patternIdentifier = /^([^\n]*)\n(.*)$/s;
-    const parsedSegments = sourceMaterial.match(patternIdentifier);
+function processInput(rawData) {
+    const [initialSegment, targetSequence] = rawData.split("\n");
+    const segmentLength = initialSegment.length;
 
-    const primaryString = parsedSegments[1];
-    const secondaryString = parsedSegments[2];
-
-    const primaryLength = primaryString.length;
-
-    if (primaryLength > secondaryString.length) {
-        return "No";
-    }
-
-    const primaryCharList = Array.from(primaryString);
-    const secondaryCharList = Array.from(secondaryString);
-
-    const comparisonOutcome = primaryCharList.every((charUnit, positionIndex) => {
-        return charUnit === secondaryCharList[positionIndex];
+    const isPrefixMatch = Array.from(initialSegment).every((char, index) => {
+        return char === targetSequence[index];
     });
 
-    const resultDictionary = new Map([
-        [true, "Yes"],
-        [false, "No"]
-    ]);
-
-    return resultDictionary.get(comparisonOutcome);
+    console.log(isPrefixMatch ? "Yes" : "No");
 }
 
-function orchestrateProcess(dataFetcher) {
-    const acquiredContent = dataFetcher();
-    const finalAssessment = performValidation(acquiredContent);
-    console.log(finalAssessment);
-}
-
-orchestrateProcess(() => require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

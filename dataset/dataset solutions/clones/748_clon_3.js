@@ -1,122 +1,90 @@
-const transformValueForChecksum = (numericInput) => {
-    if (typeof numericInput !== 'number' || isNaN(numericInput)) {
-        console.error("Invalid non-numeric input detected. Defaulting to zero.");
-        return 0;
-    }
-
-    if (numericInput < 10) {
-        return numericInput;
-    } else {
-        // This effectively sums the digits of a two-digit number (e.g., 12 -> 1+2=3).
-        // It's equivalent to numericInput - 9 for numbers >= 10.
-        return (numericInput % 10) + Math.floor(numericInput / 10);
-    }
+const normalizeDigit = (digitValue) => {
+   // Original: if(x>=10)x=x-10+1; return x;
+   // This function calculates the sum of digits for two-digit numbers (e.g., 10 -> 1, 12 -> 3)
+   // and returns the number itself for single-digit numbers.
+   if (digitValue < 10) {
+      return digitValue;
+   }
+   // For numbers 10 or greater, sum its digits.
+   // For example, 10 becomes (10 % 10) + floor(10 / 10) = 0 + 1 = 1
+   // 12 becomes (12 % 10) + floor(12 / 10) = 2 + 1 = 3
+   return (digitValue % 10) + Math.floor(digitValue / 10);
 };
 
-const acquireRawInputData = () => {
-    try {
-        return require('fs').readFileSync('/dev/stdin', 'utf8');
-    } catch (fileReadError) {
-        console.error("Error encountered while attempting to read from standard input:", fileReadError.message);
-        // Depending on context, might exit or return a default string for testing.
-        return "";
-    }
-};
+const fileSystem = require('fs');
+const rawInputString = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputLines = rawInputString.trim().split("\n");
 
-// Anonymous self-executing function to encapsulate the main program logic.
-(() => {
-    // Define program-wide constants for clarity and easy modification.
-    const MAXIMUM_DP_SUM_STATES = 100; // The upper bound for sum values in the DP table (0 to 99).
-    const FINAL_CHECKSUM_MODULO = 10; // The divisor for validating the total checksum.
+// Parse initial values from input. Some are consumed but not used later.
+const unusedCount = Number(inputLines.shift());
+const idDigitsChars = inputLines.shift().split("");
+const anotherUnusedVal = Number(inputLines.shift());
+const allowedDigits = inputLines.shift().split(" ").map(Number);
 
-    // Read and preprocess the entire input stream.
-    const rawInputContent = acquireRawInputData();
-    const processedInputLines = rawInputContent.trim().split("\n");
+const multipliersList = [];
+let currentInitialSum = 0;
 
-    // Extract specific data points from the parsed input lines.
-    // The original variables 'n' and 'a' were unused and have been removed.
-    const identificationCodePattern = processedInputLines.shift(); // The string containing digits and '*' wildcards.
-    const availableDigitOptions = processedInputLines.shift().split(" ").map(Number); // An array of possible digits for wildcards.
+// Process the ID digits to build multipliersList and calculate currentInitialSum
+for (let charIndex = 0; charIndex < idDigitsChars.length; charIndex++) {
+   const digitChar = idDigitsChars[charIndex];
+   const isEvenPosition = (charIndex % 2 === 0); // Helper boolean for position check
 
-    let wildcardWeightFactors = []; // Stores the multiplier (1 or 2) for each '*' found.
-    let accumulatedFixedDigitSum = 0; // Gathers the sum of all non-wildcard digits.
+   if (digitChar === "*") {
+      // If the character is an asterisk, add 1 or 2 to multipliersList based on position
+      multipliersList.push(isEvenPosition ? 1 : 2);
+   } else {
+      // If it's a digit, convert to number and add to currentInitialSum
+      const numericValue = Number(digitChar);
+      if (isEvenPosition) {
+         currentInitialSum += numericValue;
+      } else {
+         // For odd positions, multiply by 2 and normalize the digit
+         currentInitialSum += normalizeDigit(numericValue * 2);
+      }
+   }
+}
 
-    // Iterate through the identification code pattern to distinguish fixed digits from wildcards.
-    // This loop populates `wildcardWeightFactors` and `accumulatedFixedDigitSum`.
-    for (let positionIndex = 0; positionIndex < identificationCodePattern.length; ++positionIndex) {
-        const currentCharacter = identificationCodePattern[positionIndex];
-        const isPositionEven = (positionIndex % 2 === 0); // Determine position parity.
+// Initialize the Dynamic Programming table.
+// dpTable[i][s] will store the count of ways to achieve sum 's' using 'i' multipliers.
+// The table size is (multipliersList.length + 1) rows and 100 columns (for sums 0-99).
+const dpTable = Array.from({ length: multipliersList.length + 1 }, () => new Array(100).fill(0));
 
-        if (currentCharacter === "*") {
-            // If the character is a wildcard, assign a weighting factor based on its position.
-            wildcardWeightFactors.push(isPositionEven ? 1 : 2);
-        } else {
-            // If it's a fixed digit, convert it and add to the running sum.
-            const digitValue = Number(currentCharacter); // Explicitly convert character to number.
+// Base case: There is one way to achieve a sum of 0 with zero multipliers.
+dpTable[0][0] = 1;
 
-            if (isPositionEven) {
-                accumulatedFixedDigitSum += digitValue;
-            } else {
-                // For odd positions, double the digit and then apply the checksum transformation.
-                accumulatedFixedDigitSum += transformValueForChecksum(digitValue * 2);
-            }
-        }
-    }
+// Fill the DP table
+for (let multiplierIndex = 0; multiplierIndex < multipliersList.length; multiplierIndex++) {
+   const currentMultiplier = multipliersList[multiplierIndex];
 
-    // Initialize the dynamic programming table.
-    // `dpTable[i][s]` will store the count of ways to achieve a sum 's'
-    // using the first 'i' wildcard positions.
-    let dpTable = Array.from({ length: wildcardWeightFactors.length + 1 }, () =>
-        Array(MAXIMUM_DP_SUM_STATES).fill(0)
-    );
+   for (let allowedDigitIndex = 0; allowedDigitIndex < allowedDigits.length; allowedDigitIndex++) {
+      const currentAllowedDigit = allowedDigits[allowedDigitIndex];
 
-    // Establish the base case for the DP: there is one way to achieve a sum of zero
-    // when no wildcards have been processed.
-    dpTable[0][0] = 1;
+      // Calculate the product and then normalize the digit
+      const productBeforeNormalization = currentAllowedDigit * currentMultiplier;
+      const normalizedProduct = normalizeDigit(productBeforeNormalization);
 
-    // Proceed with filling the DP table using nested loops.
-    // The outer loop iterates through each wildcard position.
-    for (let currentWildcardIdx = 0; currentWildcardIdx < wildcardWeightFactors.length; ++currentWildcardIdx) {
-        const currentMultiplier = wildcardWeightFactors[currentWildcardIdx];
+      for (let currentAccumulatedSum = 0; currentAccumulatedSum < 100; currentAccumulatedSum++) {
+         // If there's a way to reach currentAccumulatedSum at the previous step
+         if (dpTable[multiplierIndex][currentAccumulatedSum] > 0) {
+            const nextSum = currentAccumulatedSum + normalizedProduct;
+            // Add the count to the next state. JavaScript arrays automatically extend if index is out of bounds.
+            dpTable[multiplierIndex + 1][nextSum] += dpTable[multiplierIndex][currentAccumulatedSum];
+         }
+      }
+   }
+}
 
-        // The middle loop iterates through each possible digit that a wildcard can represent.
-        for (let digitOptionIdx = 0; digitOptionIdx < availableDigitOptions.length; ++digitOptionIdx) {
-            const selectedDigit = availableDigitOptions[digitOptionIdx];
-            // Calculate the transformed contribution of this digit and its multiplier.
-            const transformedContribution = transformValueForChecksum(selectedDigit * currentMultiplier);
+let finalCount = 0;
 
-            // The inner loop iterates through all previously accumulated partial sums.
-            for (let prevPartialSum = 0; prevPartialSum < MAXIMUM_DP_SUM_STATES; ++prevPartialSum) {
-                // Optimization: If no paths lead to `prevPartialSum` at the current `currentWildcardIdx` stage, skip.
-                if (dpTable[currentWildcardIdx][prevPartialSum] === 0) {
-                    continue;
-                }
+// Calculate the final answer by summing up counts where (currentInitialSum + finalSumCandidate) is a multiple of 10.
+// The loop iterates only for sums up to 99, as per the original code's bounds.
+for (let finalSumCandidate = 0; finalSumCandidate < 100; finalSumCandidate++) {
+   if ((currentInitialSum + finalSumCandidate) % 10 === 0) {
+      // Add the count from the DP table for this specific sum.
+      // If dpTable[multipliersList.length][finalSumCandidate] is undefined (meaning no ways to reach this sum),
+      // it will be treated as 0 in the addition, which is correct.
+      finalCount += dpTable[multipliersList.length][finalSumCandidate];
+   }
+}
 
-                // Determine the new total partial sum after adding the current wildcard's contribution.
-                const newPartialSum = prevPartialSum + transformedContribution;
-
-                // Only update if the new sum is within the defined bounds of our DP table.
-                if (newPartialSum < MAXIMUM_DP_SUM_STATES) {
-                    // Add the number of ways from the previous state to the new state.
-                    dpTable[currentWildcardIdx + 1][newPartialSum] += dpTable[currentWildcardIdx][prevPartialSum];
-                }
-            }
-        }
-    }
-
-    // Compute the final count of valid combinations that satisfy the checksum rule.
-    let totalValidChecksumCombinations = 0;
-
-    // Iterate through all possible final partial sums stored in the DP table.
-    for (let finalDpSum = 0; finalDpSum < MAXIMUM_DP_SUM_STATES; ++finalDpSum) {
-        // Check if the sum of fixed digits plus the current DP-derived partial sum
-        // is perfectly divisible by the checksum modulus.
-        if ((accumulatedFixedDigitSum + finalDpSum) % FINAL_CHECKSUM_MODULO === 0) {
-            // If valid, add the number of ways to achieve this `finalDpSum` using all wildcards.
-            totalValidChecksumCombinations += dpTable[wildcardWeightFactors.length][finalDpSum];
-        }
-    }
-
-    // Output the final computed count of valid combinations.
-    console.log(totalValidChecksumCombinations);
-})();
+console.log(finalCount);

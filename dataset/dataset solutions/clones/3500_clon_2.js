@@ -1,229 +1,203 @@
-/* This module serves as a custom JavaScript module loader, similar to Webpack's runtime. */
 module.exports = function(moduleDefinitions) {
-    /* Cache for already loaded modules. */
-    var loadedModuleCache = {};
+  // This object serves as a cache for loaded modules.
+  var moduleCache = {};
 
-    /**
-     * The core module loading function.
-     * It checks the cache, creates a new module object if not found,
-     * executes the module's definition, and stores it in the cache.
-     * @param {number} moduleId - The ID of the module to load.
-     * @returns {object} The exports of the loaded module.
-     */
-    function moduleLoader(moduleId) {
-        // If module is already in cache, return its exports
-        if (loadedModuleCache[moduleId]) {
-            return loadedModuleCache[moduleId].exports;
-        }
-
-        // Create a new module object and store it in the cache
-        var currentModuleObject = loadedModuleCache[moduleId] = {
-            id: moduleId,
-            loaded: false,
-            exports: {}
-        };
-
-        // Execute the module definition function
-        // (this is where the module's actual code runs)
-        moduleDefinitions[moduleId].call(currentModuleObject.exports, currentModuleObject, currentModuleObject.exports, moduleLoader);
-
-        // Mark the module as loaded
-        currentModuleObject.loaded = true;
-
-        // Return the module's exports
-        return currentModuleObject.exports;
+  // The primary function for loading and executing modules.
+  function executeModule(moduleId) {
+    // If the module is already in the cache, return its exported values.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
 
-    /* Store the array of module definitions. */
-    moduleLoader.moduleMap = moduleDefinitions;
-
-    /* Store a reference to the module cache. */
-    moduleLoader.cache = loadedModuleCache;
-
-    /**
-     * Defines a non-enumerable property on an object if it doesn't already exist.
-     * Used for defining getters for module exports.
-     * @param {object} targetObject - The object to define the property on.
-     * @param {string} propertyName - The name of the property.
-     * @param {function} getterFunction - The getter function for the property.
-     */
-    moduleLoader.defineProp = function(targetObject, propertyName, getterFunction) {
-        if (!moduleLoader.hasOwn(targetObject, propertyName)) {
-            Object.defineProperty(targetObject, propertyName, {
-                enumerable: true,
-                get: getterFunction
-            });
-        }
+    // If not cached, create a new module entry and store it.
+    var currentModule = moduleCache[moduleId] = {
+      identifier: moduleId, // Unique ID for the module.
+      isLoaded: false,      // Flag indicating if the module has finished loading.
+      exports: {}           // The object where the module's exports will be placed.
     };
 
-    /**
-     * Marks a module's exports object as an ES Module.
-     * This adds '__esModule: true' and potentially 'Symbol.toStringTag: "Module"'.
-     * @param {object} moduleExports - The exports object to mark.
-     */
-    moduleLoader.markAsESM = function(moduleExports) {
-        if ("undefined" !== typeof Symbol && Symbol.toStringTag) {
-            Object.defineProperty(moduleExports, Symbol.toStringTag, { value: "Module" });
+    // Execute the module's definition function.
+    // It receives the module object, its exports, and the module loader itself.
+    moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, executeModule);
+
+    // Mark the module as fully loaded.
+    currentModule.isLoaded = true;
+    return currentModule.exports;
+  }
+
+  // Attach the collection of module definitions to the loader for internal access.
+  executeModule.modules = moduleDefinitions;
+  // Attach the module cache to the loader.
+  executeModule.cache = moduleCache;
+
+  // Helper to define a getter for a property on an object, ensuring it's enumerable.
+  executeModule.defineExport = function(targetObject, propertyName, getterFunction) {
+    if (!executeModule.hasOwn(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true,
+        get: getterFunction
+      });
+    }
+  };
+
+  // Helper to mark an object as an ES module, adding Symbol.toStringTag and __esModule.
+  executeModule.registerESModule = function(targetObject) {
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetObject, Symbol.toStringTag, {
+        value: "Module"
+      });
+    }
+    Object.defineProperty(targetObject, "__esModule", {
+      value: true
+    });
+  };
+
+  // Helper for interoperability with CommonJS modules when importing as ES modules (e.g., `import * as name from 'mod'`).
+  executeModule.interopRequireWildcard = function(moduleReference, flags) {
+    // If flag 1 is set, the reference is a module ID, so load it.
+    if (1 & flags) {
+      moduleReference = executeModule(moduleReference);
+    }
+    // If flag 8 is set, the reference is already the exports object.
+    if (8 & flags) {
+      return moduleReference;
+    }
+    // If flag 4 is set and it's an object marked as an ES module, return it directly.
+    if (4 & flags && typeof moduleReference === "object" && moduleReference && moduleReference.__esModule) {
+      return moduleReference;
+    }
+
+    // Create a new namespace object for the module.
+    var namespaceObject = Object.create(null);
+    executeModule.registerESModule(namespaceObject);
+    Object.defineProperty(namespaceObject, "default", {
+      enumerable: true,
+      value: moduleReference
+    });
+
+    // If flag 2 is set and it's not a string, copy all properties from the original module.
+    if (2 & flags && typeof moduleReference !== "string") {
+      for (var propKey in moduleReference) {
+        executeModule.defineExport(namespaceObject, propKey, (function(key) {
+          return moduleReference[key];
+        }).bind(null, propKey));
+      }
+    }
+    return namespaceObject;
+  };
+
+  // Helper for interoperability with CommonJS modules when importing a default export (e.g., `import name from 'mod'`).
+  executeModule.interopRequireDefault = function(moduleReference) {
+    var defaultExportGetter = moduleReference && moduleReference.__esModule ?
+      function() {
+        return moduleReference.default;
+      } :
+      function() {
+        return moduleReference;
+      };
+    executeModule.defineExport(defaultExportGetter, "a", defaultExportGetter);
+    return defaultExportGetter;
+  };
+
+  // Utility to check if an object has a specific property directly (not inherited).
+  executeModule.hasOwn = function(targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
+  };
+
+  // Base path for loading assets (empty in this configuration).
+  executeModule.publicPath = "";
+
+  // Set the startup module ID and immediately execute it to begin the application.
+  return executeModule(executeModule.startupModule = 0);
+}([
+  // Module 0: The application's entry point.
+  function(entryModule, entryExports, moduleLoader) {
+    // Load module 1 (the GCD logic) and pass it the processed input.
+    // The input is read from /dev/stdin using module 2 (fs) and split by newlines.
+    moduleLoader(1)(
+      moduleLoader(2)
+      .readFileSync("/dev/stdin", "UTF-8")
+      .split("\n")
+    );
+  },
+
+  // Module 1: Contains the Greatest Common Divisor (GCD) calculation.
+  function(gcdModule, gcdExports) {
+    // A utility function to safely extract elements from an array-like or iterable object.
+    // This mimics Babel's `_slicedToArray` helper.
+    function extractArrayElements(inputArray, elementLimit) {
+      // If the input is already an array, return it directly.
+      if (Array.isArray(inputArray)) {
+        return inputArray;
+      }
+
+      // Attempt to iterate over the input and collect elements.
+      var extractedElements = [];
+      var isIterationDone = true;
+      var encounteredError = false;
+      var errorDuringIteration = undefined;
+
+      try {
+        // Obtain an iterator for the input.
+        for (
+          var arrayIterator = inputArray[Symbol.iterator]();
+          !(isIterationDone = (currentIteration = arrayIterator.next()).done) &&
+          (extractedElements.push(currentIteration.value), !elementLimit || extractedElements.length !== elementLimit);
+          isIterationDone = true
+        ) {}
+      } catch (err) {
+        // Catch any errors during iteration.
+        encounteredError = true;
+        errorDuringIteration = err;
+      } finally {
+        // Ensure the iterator is closed if it wasn't fully consumed.
+        try {
+          if (!isIterationDone && arrayIterator.return != null) {
+            arrayIterator.return();
+          }
+        } finally {
+          // Re-throw any error encountered during iteration.
+          if (encounteredError) {
+            throw errorDuringIteration;
+          }
         }
-        Object.defineProperty(moduleExports, "__esModule", { value: true });
+      }
+      return extractedElements;
+    }
+
+    // The main export of this module: a function that calculates GCD.
+    gcdModule.exports = function(inputLines) {
+      // Parse the first line of input: split by space, convert to numbers, and destructure.
+      var parsedNumbers = extractArrayElements(
+        inputLines[0].split(" ").map(function(strValue) {
+          return Number(strValue);
+        }),
+        2
+      );
+
+      // Assign the two numbers for GCD calculation.
+      var firstNum = parsedNumbers[0];
+      var secondNum = parsedNumbers[1];
+
+      // Implement the Euclidean algorithm to find the GCD.
+      // `currentX` will hold the current dividend, `currentY` the current divisor/remainder.
+      var currentX = Math.floor(secondNum / firstNum);
+      var currentY = secondNum % firstNum;
+
+      // Continue as long as the remainder (`currentY`) is not zero.
+      while (currentY > 0) {
+        var tempVal = currentY; // Store the current remainder.
+        currentY = currentX % currentY; // Calculate the new remainder.
+        currentX = tempVal; // The old remainder becomes the new dividend.
+      }
+
+      // The GCD is the last non-zero remainder, which is now stored in `currentX`.
+      console.log(currentX);
     };
+  },
 
-    /**
-     * Compatibility function for interoperability between CommonJS and ES Modules.
-     * Handles various scenarios for default exports.
-     * @param {*} inputValue - The module's value or exports.
-     * @param {number} modeFlags - Flags indicating how to interpret the input.
-     * @returns {*} The processed module value.
-     */
-    moduleLoader.interopDefault = function(inputValue, modeFlags) {
-        // If modeFlags indicates a direct module, load it
-        if (1 & modeFlags) {
-            inputValue = moduleLoader(inputValue);
-        }
-        // If modeFlags indicates an object and it's an ES Module, return it directly
-        if (8 & modeFlags) {
-            return inputValue;
-        }
-        if (4 & modeFlags && "object" === typeof inputValue && inputValue && inputValue.__esModule) {
-            return inputValue;
-        }
-
-        // Otherwise, create a new object and set the default export
-        var newObject = Object.create(null);
-        moduleLoader.markAsESM(newObject);
-        Object.defineProperty(newObject, "default", { enumerable: true, value: inputValue });
-
-        // If modeFlags indicates string and not a string, copy all properties
-        if (2 & modeFlags && "string" !== typeof inputValue) {
-            for (var propName in inputValue) {
-                moduleLoader.defineProp(newObject, propName, function(currentProp) {
-                    return inputValue[currentProp];
-                }.bind(null, propName));
-            }
-        }
-        return newObject;
-    };
-
-    /**
-     * Creates a getter function for module exports, handling default exports.
-     * @param {object} exportsObject - The module's exports object.
-     * @returns {function} A getter that returns the default export or the entire module.
-     */
-    moduleLoader.createDefaultGetter = function(exportsObject) {
-        var defaultGetter = exportsObject && exportsObject.__esModule ?
-            function() { return exportsObject.default; } :
-            function() { return exportsObject; };
-        moduleLoader.defineProp(defaultGetter, "a", defaultGetter);
-        return defaultGetter;
-    };
-
-    /**
-     * Checks if an object has a specific property as its own property.
-     * @param {object} checkObject - The object to check.
-     * @param {string} checkProperty - The property name to check for.
-     * @returns {boolean} True if the property exists as an own property, false otherwise.
-     */
-    moduleLoader.hasOwn = function(checkObject, checkProperty) {
-        return Object.prototype.hasOwnProperty.call(checkObject, checkProperty);
-    };
-
-    /* The public path for loading assets, currently empty. */
-    moduleLoader.publicPath = "";
-
-    // Load the entry module (module with ID 0) to start the application
-    return moduleLoader(moduleLoader.startupModuleId = 0);
-}(
-    [
-        /* Module 0: Main application logic. */
-        function(moduleRef, moduleExports, loaderFunc) {
-            // Load module 1, then execute it with the result of module 2's readFileSync
-            loaderFunc(1)(
-                loaderFunc(2)
-                .readFileSync("/dev/stdin", "UTF-8")
-                .split("\n")
-            );
-        },
-
-        /* Module 1: Implements the Greatest Common Divisor (GCD) algorithm. */
-        function(modRef, modExports) {
-            /**
-             * Helper function to safely destructure an iterable.
-             * Provides fallbacks for non-array/non-iterable inputs.
-             * @param {Iterable} inputIterable - The iterable to destructure.
-             * @param {number} [limitCount] - Optional limit to the number of items to extract.
-             * @returns {Array} An array containing the extracted elements.
-             * @throws {TypeError} If the input is not iterable and cannot be destructured.
-             */
-            function extractParts(inputIterable, limitCount) {
-                if (Array.isArray(inputIterable)) {
-                    return inputIterable;
-                }
-
-                // Fallback for non-array iterables
-                var resultArray = [];
-                var isDone = true;
-                var hasError = false;
-                var errorInstance = undefined;
-                try {
-                    for (
-                        var currentItem, dataIterator = inputIterable[Symbol.iterator]();
-                        !(isDone = (currentItem = dataIterator.next()).done) &&
-                        (resultArray.push(currentItem.value), !limitCount || resultArray.length !== limitCount);
-                        isDone = true
-                    ) {}
-                } catch (err) {
-                    hasError = true;
-                    errorInstance = err;
-                } finally {
-                    try {
-                        if (!isDone && null != dataIterator.return) {
-                            dataIterator.return();
-                        }
-                    } finally {
-                        if (hasError) {
-                            throw errorInstance;
-                        }
-                    }
-                }
-                return resultArray;
-            }
-
-            // Export the main logic for processing input and calculating GCD
-            modRef.exports = function(inputLines) {
-                // Parse the first line of input into two numbers
-                var parsedNumbers = extractParts(
-                    inputLines[0]
-                    .split(" ")
-                    .map(function(numString) {
-                        return Number(numString);
-                    }),
-                    2
-                );
-
-                var firstNum = parsedNumbers[0];
-                var secondNum = parsedNumbers[1];
-
-                // Implement the Euclidean algorithm to find GCD
-                // `currentQuotient` initially holds the quotient, then becomes the GCD
-                // `currentRemainder` initially holds the remainder, then becomes the divisor
-                var currentQuotient = Math.floor(secondNum / firstNum);
-                var currentRemainder = secondNum % firstNum;
-
-                // Loop until the remainder is zero
-                while (currentRemainder > 0) {
-                    var tempRemainder = currentRemainder; // Store current remainder
-                    currentRemainder = currentQuotient % currentRemainder; // New remainder is quotient % old_remainder
-                    currentQuotient = tempRemainder; // New quotient is old remainder
-                }
-
-                // Log the final GCD to the console
-                console.log(currentQuotient);
-            };
-        },
-
-        /* Module 2: Provides access to the Node.js 'fs' (file system) module. */
-        function(modHandle, modOutput) {
-            modHandle.exports = require("fs");
-        }
-    ]
-);
+  // Module 2: Provides access to Node.js's 'fs' (file system) module.
+  function(fsModule, fsExports) {
+    fsModule.exports = require("fs");
+  }
+]);

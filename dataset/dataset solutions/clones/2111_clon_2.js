@@ -1,18 +1,15 @@
 "use strict";
 
-const calculateResult = rawData => {
-    // Process incoming text: remove leading/trailing spaces, then split by single space characters.
-    const dataSegments = rawData.trim().split(" ");
-    const parsedNumber = parseInt(dataSegments[0], 10);
+const processInput = (rawData) => {
+    // 入力文字列を整形し、数値の配列として準備する
+    const parsedValues = rawData.trim().split(" ");
+    const numVal = parseInt(parsedValues[0], 10);
 
-    if  ( parsedNumber % 2  ===  0 )
-    {
-        console.log( parsedNumber / 2 );
-    }
-    else
-    {
-        console.log( Math.floor(( parsedNumber / 2 ), 10 ) + 1 );
+    if (numVal % 2 === 0) {
+        console.log(numVal / 2);
+    } else {
+        console.log(Math.floor((numVal / 2), 10) + 1);
     }
 };
 
-calculateResult(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

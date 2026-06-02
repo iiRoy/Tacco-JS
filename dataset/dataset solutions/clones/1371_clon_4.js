@@ -1,44 +1,29 @@
-const textBlob = require('fs').readFileSync('/dev/stdin', 'utf8');
+(function(inputData) {
+    const lineSegments = inputData.split('\n');
 
-const lineExtractor = /(.*)(?:\r?\n|$)/g;
-let regexMatch;
-const extractedRows = [];
+    function processLinesRecursively(remainingLines, currentLineIndex = 0) {
+        if (currentLineIndex >= remainingLines.length) {
+            return;
+        }
 
-while ((regexMatch = lineExtractor.exec(textBlob)) !== null) {
-    if (regexMatch[1] === '') {
-        continue;
-    }
-    extractedRows.push(regexMatch[1]);
-}
+        const currentSegment = remainingLines[currentLineIndex];
 
-function sumIndividualDigits(numericalPhrase) {
-    let accumulatedSum = 0;
-    let position = 0;
-    const phraseLength = numericalPhrase.length;
+        if (currentSegment === '0') {
+            return;
+        }
 
-    while (position < phraseLength) {
-        const characterCodePoint = numericalPhrase.charCodeAt(position);
-        accumulatedSum += (characterCodePoint - 48);
-        position++;
-    }
-    return accumulatedSum;
-}
+        let digitAccumulator = 0;
+        let charPosition = 0;
+        while (charPosition < currentSegment.length) {
+            digitAccumulator += Number(currentSegment[charPosition]);
+            charPosition++;
+        }
 
-function traverseAndCompute(entryCollection, currentPosition) {
-    if (currentPosition >= entryCollection.length) {
-        return;
+        console.log(digitAccumulator);
+
+        processLinesRecursively(remainingLines, currentLineIndex + 1);
     }
 
-    const currentEntry = entryCollection[currentPosition];
+    processLinesRecursively(lineSegments);
 
-    if (currentEntry === '0') {
-        return;
-    }
-
-    const computedValue = sumIndividualDigits(currentEntry);
-    process.stdout.write(computedValue + '\n');
-
-    traverseAndCompute(entryCollection, currentPosition + 1);
-}
-
-traverseAndCompute(extractedRows, 0);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

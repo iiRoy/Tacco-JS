@@ -1,15 +1,21 @@
-function processData(rawText) {
-  const contentParts = rawText.split('\n');
-  const exclusionCount = parseInt(contentParts[0].split(' ')[1], 10);
-  const dataPoints = contentParts[1].split(' ').map(Number);
-  
-  const ascendingOrder = dataPoints.sort((valA, valB) => valA - valB);
-  
-  const elementsToSum = ascendingOrder.slice(0, ascendingOrder.length - exclusionCount);
-  
-  const finalTally = elementsToSum.reduce((accumulator, item) => accumulator + item, 0);
-  
-  console.log(finalTally);
+function processInputData(sourceData) {
+  const lineSegments = sourceData.trim().split('\n');
+  const exclusionCount = Number(lineSegments[0].split(' ')[1]);
+  const numericElements = lineSegments[1].split(' ').map(element => parseInt(element, 10));
+
+  let aggregateValue = 0;
+  for (const item of numericElements) {
+    aggregateValue += item;
+  }
+
+  numericElements.sort((firstItem, secondItem) => secondItem - firstItem);
+
+  let largestElementsSum = 0;
+  for (let currentIdx = 0; currentIdx < exclusionCount && currentIdx < numericElements.length; currentIdx++) {
+    largestElementsSum += numericElements[currentIdx];
+  }
+
+  console.log(aggregateValue - largestElementsSum);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

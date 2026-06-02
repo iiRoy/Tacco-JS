@@ -1,24 +1,28 @@
-((inputString) => {
-  const contentRows = inputString.split('\n');
-  const countOfItems = Number.parseInt(contentRows[0], 10);
-  const resourceQuantities = contentRows[1].split(' ').map(Number);
-  const requirementVolumes = contentRows[2].split(' ').map(Number);
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const itemCount = parseInt(lineSegments[0], 10);
+  const capacityValues = lineSegments[1].split(' ').map(Number);
+  const demandValues = lineSegments[2].split(' ').map(Number);
 
-  const iterativeOutcome = Array.from({ length: countOfItems + 1 }, (_, indexPosition) => indexPosition)
-    .reduce((currentStatus, currentPosition) => {
-      const currentResource = resourceQuantities[currentPosition];
-      const currentRequirement = requirementVolumes[currentPosition];
-      const outstandingNeedFromPrevious = currentStatus.priorUnsatisfied;
+  const [accumulatedTotal] = Array.from({ length: itemCount + 1 }, (_, currentIndex) => currentIndex).reduce(
+    ([currentSum, priorDeficit], index) => {
+      const currentSupply = capacityValues[index];
+      const currentNeed = demandValues[index];
 
-      const aggregatedDemand = currentRequirement + outstandingNeedFromPrevious;
-      const fulfilledAmountThisStep = Math.min(currentResource, aggregatedDemand);
-      const newUnsatisfiedAmount = aggregatedDemand - fulfilledAmountThisStep;
+      const satisfiedPrior = Math.min(currentSupply, priorDeficit);
+      const availableSupply = currentSupply - satisfiedPrior;
 
-      return {
-        totalCollected: currentStatus.totalCollected + fulfilledAmountThisStep,
-        priorUnsatisfied: newUnsatisfiedAmount,
-      };
-    }, { totalCollected: 0, priorUnsatisfied: 0 });
+      const satisfiedCurrent = Math.min(availableSupply, currentNeed);
 
-  console.log(iterativeOutcome.totalCollected);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+      const currentContribution = satisfiedPrior + satisfiedCurrent;
+      const subsequentDeficit = currentNeed - satisfiedCurrent;
+
+      return [currentSum + currentContribution, subsequentDeficit];
+    },
+    [0, 0]
+  );
+
+  console.log(accumulatedTotal);
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

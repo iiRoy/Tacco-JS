@@ -1,70 +1,61 @@
-function programEntry(incomingData) {
-  const initialSequence = incomingData;
-  const processedParts = [];
+function Main(input) {
+  const sourceString = input;
+  const finalCounts = new Array(sourceString.length).fill(0);
 
-  let lastIndex = 0;
-  let currentSplitIndex;
-  while ((currentSplitIndex = initialSequence.indexOf("LR", lastIndex)) !== -1) {
-    processedParts.push(initialSequence.substring(lastIndex, currentSplitIndex));
-    lastIndex = currentSplitIndex + 2;
-  }
-  processedParts.push(initialSequence.substring(lastIndex));
+  const segmentExtractor = (textualData) => {
+    const intermediateParts = [];
+    let lastDelimiterEnd = 0;
+    let currentScanPosition = 0;
 
-  const transformedParts = processedParts.map(part => "R" + part + "L");
-
-  const totalPartsCount = transformedParts.length;
-  if (totalPartsCount > 0) {
-    transformedParts[0] = transformedParts[0].substring(1);
-    transformedParts[totalPartsCount - 1] = transformedParts[totalPartsCount - 1].substring(0, transformedParts[totalPartsCount - 1].length - 1);
-  }
-
-  const calculateDistribution = (rightCount, leftCount, totalLength) => {
-    if (totalLength % 2 === 0) {
-      return [totalLength / 2, totalLength / 2];
-    } else {
-      const factorA = (rightCount > leftCount) ? 0 : 1;
-      const factorB = (Math.min(rightCount, leftCount) % 2 === 0) ? 0 : 1;
-      const factorC = factorA ^ factorB;
-      if (factorC === 0) {
-        return [(totalLength + 1) / 2, (totalLength - 1) / 2];
-      } else {
-        return [(totalLength - 1) / 2, (totalLength + 1) / 2];
-      }
-    }
-  };
-
-  const resultsCollection = transformedParts.reduce((accumulator, currentPart) => {
-    const partLength = currentPart.length;
-    let rlBoundaryRIndex = -1;
-
-    for (let idx = 1; idx < partLength; idx++) {
-      if (currentPart[idx - 1] === 'R' && currentPart[idx] === 'L') {
-        rlBoundaryRIndex = idx - 1;
+    while (true) {
+      const delimiterStart = textualData.indexOf("LR", currentScanPosition);
+      if (delimiterStart === -1) {
+        intermediateParts.push(textualData.substring(lastDelimiterEnd));
         break;
       }
+      intermediateParts.push(textualData.substring(lastDelimiterEnd, delimiterStart));
+      lastDelimiterEnd = delimiterStart + 2;
+      currentScanPosition = delimiterStart + 2;
     }
 
-    if (rlBoundaryRIndex !== -1) {
-      for (let idx = 0; idx < rlBoundaryRIndex; idx++) {
-        accumulator.push(0);
-      }
-      const rightwardCount = rlBoundaryRIndex + 1;
-      const leftwardCount = partLength - (rlBoundaryRIndex + 1);
-      const [valForR, valForL] = calculateDistribution(rightwardCount, leftwardCount, partLength);
-      accumulator.push(valForR);
-      accumulator.push(valForL);
-      for (let idx = rlBoundaryRIndex + 2; idx < partLength; idx++) {
-        accumulator.push(0);
-      }
-    } else {
-      for (let idx = 0; idx < partLength; idx++) {
-        accumulator.push(0);
-      }
-    }
-    return accumulator;
-  }, []);
+    const transformedSegments = intermediateParts.map(part => "R" + part + "L");
 
-  console.log(resultsCollection.join(" "));
+    if (transformedSegments.length > 0) {
+      transformedSegments[0] = transformedSegments[0].substring(1);
+      const lastSegmentIndex = transformedSegments.length - 1;
+      transformedSegments[lastSegmentIndex] = transformedSegments[lastSegmentIndex].substring(0, transformedSegments[lastSegmentIndex].length - 1);
+    }
+    return transformedSegments;
+  };
+
+  const processedBlocks = segmentExtractor(sourceString);
+
+  let globalOffset = 0;
+
+  processedBlocks.forEach(blockUnit => {
+    const blockLength = blockUnit.length;
+    const rlBoundaryIndex = blockUnit.indexOf("RL");
+
+    if (rlBoundaryIndex !== -1) {
+      // The 'R' is at rlBoundaryIndex, 'L' is at rlBoundaryIndex + 1
+      const rAttractorPositionInBlock = rlBoundaryIndex;
+      const lAttractorPositionInBlock = rlBoundaryIndex + 1;
+
+      const rightwardMovingCount = lAttractorPositionInBlock; // Number of characters to the left of 'L'
+      const leftwardMovingCount = blockLength - lAttractorPositionInBlock; // Number of characters from 'L' to the end
+
+      const countForR = Math.ceil(rightwardMovingCount / 2) + Math.floor(leftwardMovingCount / 2);
+      const countForL = Math.floor(rightwardMovingCount / 2) + Math.ceil(leftwardMovingCount / 2);
+
+      finalCounts[globalOffset + rAttractorPositionInBlock] = countForR;
+      finalCounts[globalOffset + lAttractorPositionInBlock] = countForL;
+    }
+    // If rlBoundaryIndex is -1, all counts for this block remain 0, which is the default.
+
+    globalOffset += blockLength;
+  });
+
+  console.log(finalCounts.join(" "));
 }
 
-programEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

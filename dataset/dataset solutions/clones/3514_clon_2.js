@@ -1,80 +1,58 @@
-/*
- * This script processes input data to determine a specific count
- * based on element frequencies in two interleaved sequences.
- */
-const fileContentSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Separate the entire content into individual textual rows
-const dataRows = fileContentSource.split('\n');
+// Split the raw input into individual lines
+const dataRows = rawData.split('\n');
 
-// Extract the total number of items from the first row, converting it to a numeric type
-let totalItemCount = Number(dataRows[0].trim());
+// Parse the total number of elements from the first line
+let totalElements = dataRows[0].trim() - 0;
 
-// Process the second row: remove whitespace, split by spaces, and convert each part to a number
-let numericSequence = dataRows[1].trim().split(' ').map(val => Number(val));
+// Parse the array of element values from the second line
+let elementValues = dataRows[1].trim().split(' ').map(Number);
 
-// Initialize objects to store frequencies for elements at odd and even positions
-const oddPositionValueFrequencies = {}; // Frequencies for elements at indices 0, 2, 4...
-const evenPositionValueFrequencies = {}; // Frequencies for elements at indices 1, 3, 5...
+// Initialize objects to store frequency counts for even and odd indexed elements
+const evenCounts = {};
+const oddCounts = {};
 
-/*
- * Iterate through the numeric sequence, incrementing by two
- * to populate the frequency maps for odd and even positions.
- */
-for ( let currentIdx = 0; currentIdx < totalItemCount; currentIdx += 2 )
-{
-  // For odd positions (0, 2, 4...), update frequency in the first map
-  oddPositionValueFrequencies[numericSequence[currentIdx]] = (oddPositionValueFrequencies[numericSequence[currentIdx]] || 0) + 1;
-
-  // For even positions (1, 3, 5...), update frequency in the second map
-  evenPositionValueFrequencies[numericSequence[currentIdx + 1]] = (evenPositionValueFrequencies[numericSequence[currentIdx + 1]] || 0) + 1;
+// Iterate through the element values, processing even and odd indices separately
+for (let idx = 0; idx < totalElements; idx += 2) {
+    // Increment count for the element at the even index
+    evenCounts[elementValues[idx]] = evenCounts[elementValues[idx]] ? evenCounts[elementValues[idx]] + 1 : 1;
+    // Increment count for the element at the odd index
+    oddCounts[elementValues[idx + 1]] = oddCounts[elementValues[idx + 1]] ? oddCounts[elementValues[idx + 1]] + 1 : 1;
 }
 
-// Create a list of [value, frequency] pairs for odd-positioned elements
-const firstFrequencyPairList = [];
-for ( let keyIdentifier in oddPositionValueFrequencies )
-{
-  firstFrequencyPairList.push( [keyIdentifier, oddPositionValueFrequencies[keyIdentifier]] );
+// Convert the even counts object into an array of [value, frequency] pairs
+const evenFreqList = [];
+for (let itemKey in evenCounts) {
+    evenFreqList.push([itemKey, evenCounts[itemKey]]);
 }
 
-// Create a list of [value, frequency] pairs for even-positioned elements
-const secondFrequencyPairList = [];
-for ( let keyIdentifier2 in evenPositionValueFrequencies )
-{
-  secondFrequencyPairList.push( [keyIdentifier2, evenPositionValueFrequencies[keyIdentifier2]] );
+// Convert the odd counts object into an array of [value, frequency] pairs
+const oddFreqList = [];
+for (let entryKey in oddCounts) {
+    oddFreqList.push([entryKey, oddCounts[entryKey]]);
 }
 
-// Sort the first frequency list in descending order based on frequency
-firstFrequencyPairList.sort( (pairA, pairB) => pairB[1] - pairA[1] );
+// Sort both frequency lists in descending order based on frequency
+evenFreqList.sort((firstPair, secondPair) => secondPair[1] - firstPair[1]);
+oddFreqList.sort((firstPair, secondPair) => secondPair[1] - firstPair[1]);
 
-// Sort the second frequency list in descending order based on frequency
-secondFrequencyPairList.sort( (pairX, pairY) => pairY[1] - pairX[1] );
+// Initialize a variable to store the maximum possible sum of frequencies
+let maxCommonFreq = 0;
 
-// Variable to store the maximum achievable sum of frequencies
-let optimalSum = 0;
-
-/*
- * Determine the optimal sum of frequencies based on the most frequent elements.
- * If the most frequent elements from both lists are different, sum their frequencies.
- * If they are the same, consider the second most frequent element from one list
- * to avoid using the same value twice.
- */
-if ( firstFrequencyPairList[0][0] !== secondFrequencyPairList[0][0] )
-{
-  // The most frequent elements are distinct, so we can simply sum their frequencies
-  optimalSum = firstFrequencyPairList[0][1] + secondFrequencyPairList[0][1];
-}
-else
-{
-  // The most frequent elements are identical, we must choose carefully.
-  // We compare two scenarios:
-  // 1. Most frequent from first list + second most frequent from second list (if available)
-  // 2. Second most frequent from first list (if available) + most frequent from second list
-  optimalSum = Math.max(
-    firstFrequencyPairList[0][1] + (secondFrequencyPairList[1] ? secondFrequencyPairList[1][1] : 0),
-    (firstFrequencyPairList[1] ? firstFrequencyPairList[1][1] : 0) + secondFrequencyPairList[0][1]
-  );
+// Check if the most frequent elements from even and odd positions are different
+if (evenFreqList[0][0] !== oddFreqList[0][0]) {
+    // If they are different, simply sum their frequencies
+    maxCommonFreq = evenFreqList[0][1] + oddFreqList[0][1];
+} else {
+    // If they are the same, we need to consider the second most frequent element from one of the lists
+    maxCommonFreq = Math.max(
+        // Option 1: Use the most frequent even element and the second most frequent odd element (if available)
+        evenFreqList[0][1] + (oddFreqList[1] ? oddFreqList[1][1] : 0),
+        // Option 2: Use the second most frequent even element (if available) and the most frequent odd element
+        (evenFreqList[1] ? evenFreqList[1][1] : 0) + oddFreqList[0][1]
+    );
 }
 
-// Output the result: total items minus the optimal sum of frequencies
-console.log(totalItemCount - optimalSum);
+// Output the result: total elements minus the maximum common frequency
+console.log(totalElements - maxCommonFreq);

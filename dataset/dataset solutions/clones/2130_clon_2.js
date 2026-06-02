@@ -1,41 +1,31 @@
-/*
- * This routine processes a given string input containing two numeric values.
- * Its purpose is to perform a base conversion on the first number using the second as the base,
- * and then log the total count of digits in the resulting converted string.
- */
-function ProcessInput( dataString ) {
-  // Break down the input string into an array of its constituent parts,
-  // typically separated by a space character.
-  const partsArray = dataString.split( ' ' );
+function ProcessInput(rawData) {
+  // Split the raw input string by space to get individual components.
+  const parts = rawData.split(' ');
 
-  // Parse the first element of the array into an integer. This will be the number
-  // that we intend to convert to a different base.
-  let currentNumber = parseInt( partsArray[0], 10 );
+  // Convert the first part to a numeric value, representing the number to be processed.
+  const currentNumber = +parts[0];
 
-  // Parse the second element into an integer. This represents the target base
-  // for our number conversion operation.
-  const baseValue = parseInt( partsArray[1], 10 );
+  // Convert the second part to a numeric value, representing the base or divisor.
+  const baseValue = +parts[1];
 
-  // Initialize an empty string which will accumulate the digits of the
-  // converted number in the new base.
-  let conversionOutput = '';
+  // Initialize an empty string to accumulate the digits in the new base.
+  let outputString = '';
 
-  // Continue the conversion process as long as the number to be converted
-  // remains greater than zero.
-  while ( currentNumber > 0 ) {
-    // Calculate the remainder when the current number is divided by the base.
-    // This remainder is the next digit in the new base (from right to left).
-    conversionOutput += currentNumber % baseValue;
+  // Loop as long as the current number is greater than zero.
+  while (currentNumber > 0) {
+    // Append the remainder of the current number divided by the base value to the output string.
+    // This effectively gets the next digit in the new base.
+    outputString += currentNumber % baseValue;
 
-    // Update the current number by performing integer division (floor division)
-    // with the base. This prepares the number for the next iteration.
-    currentNumber = Math.floor( currentNumber / baseValue );
+    // Update the current number by performing integer division (floor) by the base value.
+    // This prepares the number for extracting the next digit.
+    currentNumber = Math.floor(currentNumber / baseValue);
   }
 
-  // Finally, output the total character length of the generated conversion string
-  // to the console.
-  console.log( conversionOutput.length );
+  // Output the length of the resulting string, which represents the count of digits in the new base.
+  console.log(outputString.length);
 }
 
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、ProcessInputを呼び出します）
+// The following line handles reading from standard input and invoking the main processing function.
+// This part should not be modified as per the problem's instructions.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

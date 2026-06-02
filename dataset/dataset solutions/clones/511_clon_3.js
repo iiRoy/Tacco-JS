@@ -1,146 +1,78 @@
-globalThis.process.stdin.resume();
-globalThis.process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-/**
- * Safely parses a string into an integer.
- * @param {string} strRepresentation - The string to parse.
- * @returns {number} The parsed integer value.
- */
-const obtainNumericValue = (strRepresentation) => {
-    const numericResult = parseInt(strRepresentation, 10);
-    // In a real-world scenario, one might add error handling for NaN.
-    // For this context, we assume valid numerical inputs as per problem constraints.
-    return numericResult;
-};
+process.stdin.on('data', function(rawData){
+    var loopIdx;
+    var inputLines = rawData.trim().split("\n");
 
-/**
- * Event listener for incoming data from standard input.
- * Processes numerical sequences to find outliers based on specific difference patterns.
- */
-globalThis.process.stdin.on('data', function(rawDataSegment){
-    // Normalize and segment the raw input into distinct lines.
-    const inputPayloads = rawDataSegment.trim().split("\n");
-    let lineIterator = 0; // Tracks the current line being processed from inputPayloads.
+    for(var lineIterator = 0; lineIterator < inputLines.length; ++lineIterator){
+        var numElements;
+        var dataPointsStrArray;
+        var prevVal, currVal;
+        var diffMap;
 
-    // Loop through the input lines, processing each data set.
-    while(lineIterator < inputPayloads.length){
-        // The first value on a line indicates the size of the subsequent numerical sequence.
-        const sequenceSize = obtainNumericValue(inputPayloads[lineIterator++]);
-        
-        // A sequence size of zero acts as a termination signal for input processing.
-        if (sequenceSize === 0) {
-            break; 
+        numElements = parseInt(inputLines[lineIterator++], 10);
+        if( numElements === 0 ) break;
+
+        diffMap = new Array(numElements + 1);
+        dataPointsStrArray = inputLines[lineIterator].trim().split(" ");
+
+        // Type III: Pre-parse all data points into a numeric array to avoid repeated parseInt calls
+        const numericDataPoints = dataPointsStrArray.map(val => parseInt(val, 10));
+
+        // Calculate the first difference
+        prevVal = numericDataPoints[0];
+        currVal = numericDataPoints[1];
+        diffMap[1] = currVal - prevVal;
+
+        // Update prevVal for the subsequent loop
+        prevVal = currVal;
+
+        // Loop to calculate remaining differences
+        for(loopIdx = 2; loopIdx < numericDataPoints.length; ++loopIdx){
+            currVal = numericDataPoints[loopIdx];
+            diffMap[loopIdx] = currVal - prevVal;
+            prevVal = currVal;
         }
 
-        // Basic validation: A sequence needs at least two elements for difference calculation.
-        // The problem's patterns also typically require more.
-        if (sequenceSize < 2) {
-            // If the sequence size is invalid, we might need to consume the next line
-            // if it was supposed to contain the actual data, then skip to the next dataset.
-            if (lineIterator < inputPayloads.length) {
-                 lineIterator++; // Consume the (potentially empty/invalid) data line.
+        // Type III: Introduce helper variables for frequently accessed differences
+        const diff1 = diffMap[1];
+        const diff2 = diffMap[2];
+        const diff3 = diffMap[3];
+        const diff4 = diffMap[4];
+
+        // Type III: Introduce helper variables for frequently accessed numeric data points
+        const val0 = numericDataPoints[0];
+        const val1 = numericDataPoints[1];
+        const val2 = numericDataPoints[2];
+        const val3 = numericDataPoints[3];
+        const val4 = numericDataPoints[4];
+
+        // Type III: Break down complex conditions into intermediate boolean variables for clarity
+        const areFirstFourDiffsEqual = (diff1 === diff2 && diff2 === diff3 && diff3 === diff4);
+        const areLastThreeDiffsEqual = (diff2 === diff3 && diff3 === diff4);
+        const areFirstThreeDiffsEqual = (diff1 === diff2 && diff2 === diff3);
+
+        if(areFirstFourDiffsEqual){
+            for(loopIdx = 5; loopIdx <= numElements; ++loopIdx){
+                if(diffMap[loopIdx] !== diff1) break;
             }
-            continue; // Move to the next sequence.
+            console.log(dataPointsStrArray[loopIdx]);
         }
-
-        // Extract and split the numerical sequence string from the next line.
-        const numericSequenceTokens = inputPayloads[lineIterator++].trim().split(" ");
-        
-        // Data integrity check: Ensure the number of provided tokens matches the declared sequence size.
-        if (numericSequenceTokens.length !== sequenceSize) {
-            // If there's a mismatch, this dataset is malformed; skip it.
-            continue; 
+        else if(areLastThreeDiffsEqual){
+            console.log(dataPointsStrArray[0]);
         }
-
-        // Convert all string tokens into actual numbers.
-        const parsedValues = numericSequenceTokens.map(obtainNumericValue);
-
-        // This array will store the differences between consecutive elements.
-        // It's 0-indexed: differenceArray[k] holds parsedValues[k+1] - parsedValues[k].
-        const differenceArray = []; 
-        let previousNumericElement = parsedValues[0];
-
-        // Populate the differenceArray.
-        for(let loopIndex = 1; loopIndex < sequenceSize; ++loopIndex){
-            const currentNumericElement = parsedValues[loopIndex];
-            differenceArray.push(currentNumericElement - previousNumericElement);
-            previousNumericElement = currentNumericElement; // Set up for the next iteration.
+        else if(areFirstThreeDiffsEqual){
+            console.log(dataPointsStrArray[4]);
         }
-
-        // --- Outlier Detection Logic: Analyzing difference patterns ---
-        // Many patterns require at least 4 differences (i.e., 5 elements in the original sequence).
-        // If we don't have enough differences, complex patterns won't apply.
-        if (differenceArray.length < 4) {
-            // The original code implicitly handles this by conditions failing.
-            // For a Type III clone, we can choose to explicitly handle or let it fall through.
-            // We'll let it fall through, as the `if-else if` structure will naturally skip.
-            // If no condition matches, `identifiedOutlier` remains null.
+        else if(diff2 - val0 === diff3 && diff3 === diff4){
+            console.log(dataPointsStrArray[1]);
         }
-
-        // Assign the first few differences to named variables for enhanced readability.
-        const firstDifference = differenceArray[0];  // Corresponds to original map[1]
-        const secondDifference = differenceArray[1]; // Corresponds to original map[2]
-        const thirdDifference = differenceArray[2];  // Corresponds to original map[3]
-        const fourthDifference = differenceArray[3]; // Corresponds to original map[4]
-
-        let identifiedOutlier = null; // This variable will store the value of the detected outlier.
-
-        // Pattern 1: Initial differences are consistent, but a later element breaks the trend.
-        if (firstDifference === secondDifference && secondDifference === thirdDifference && thirdDifference === fourthDifference) {
-            const commonPatternDiff = firstDifference;
-            let potentialOutlierIndex = -1; // Index in `parsedValues` array.
-            
-            // Iterate through subsequent differences starting from the 5th element's difference (index 4 in differenceArray).
-            // The loop checks up to the last possible difference, which is `differenceArray[sequenceSize - 1]`.
-            for (let diffArrayIndex = 4; diffArrayIndex < sequenceSize; ++diffArrayIndex) {
-                if (differenceArray[diffArrayIndex] !== commonPatternDiff) {
-                    // If a deviation is found, the outlier is the element *after* the current difference.
-                    potentialOutlierIndex = diffArrayIndex + 1; 
-                    break; // Stop at the first identified outlier.
-                }
-            }
-            // If an outlier was successfully found within this pattern, assign its value.
-            if (potentialOutlierIndex !== -1) {
-                identifiedOutlier = parsedValues[potentialOutlierIndex];
-            }
-            // Note: If all differences are consistent, `identifiedOutlier` remains null for this branch,
-            // allowing subsequent `else if` conditions to be evaluated (as per original logic).
-        } 
-        // Pattern 2: Differences 2, 3, and 4 are identical. The first element is the outlier.
-        else if (secondDifference === thirdDifference && thirdDifference === fourthDifference) {
-            identifiedOutlier = parsedValues[0];
-        } 
-        // Pattern 3: Differences 1, 2, and 3 are identical. The fifth element is the outlier.
-        else if (firstDifference === secondDifference && secondDifference === thirdDifference) {
-            identifiedOutlier = parsedValues[4];
-        } 
-        // Pattern 4: A more complex pattern involving an original value and differences.
-        // Original: map[2] - parseInt(dataset[0]) === map[3] && map[3] === map[4]
-        //           (parsedValues[2] - parsedValues[1]) - parsedValues[0] === (parsedValues[3] - parsedValues[2]) && ...
-        else if (secondDifference - parsedValues[0] === thirdDifference && thirdDifference === fourthDifference) {
-            identifiedOutlier = parsedValues[1];
-        } 
-        // Pattern 5: Another complex pattern.
-        // Original: map[1] === map[2] && map[2] === parseInt(dataset[4]) - parseInt(dataset[2])
-        //           (parsedValues[1] - parsedValues[0]) === (parsedValues[2] - parsedValues[1]) && ...
-        else if (firstDifference === secondDifference && secondDifference === (parsedValues[4] - parsedValues[2])) {
-            identifiedOutlier = parsedValues[3];
-        } 
-        // Pattern 6: Final complex pattern.
-        // Original: map[1] === parseInt(dataset[3]) - parseInt(dataset[1]) && map[1] === map[4]
-        //           (parsedValues[1] - parsedValues[0]) === (parsedValues[3] - parsedValues[1]) && ...
-        else if (firstDifference === (parsedValues[3] - parsedValues[1]) && firstDifference === fourthDifference) {
-            identifiedOutlier = parsedValues[2];
+        else if(diff1 === diff2 && diff2 === val4 - val2){
+            console.log(dataPointsStrArray[3]);
         }
-
-        // Output the identified outlier. If no pattern was matched, nothing is printed for this sequence.
-        if (identifiedOutlier !== null) {
-            console.log(identifiedOutlier);
-        } else {
-            // This block handles cases where none of the predefined patterns are detected.
-            // The original code implicitly handles this by not printing anything.
-            // We maintain that behavior for this clone.
-            // For debugging, one might add: console.error("No specific outlier pattern found for this sequence.");
+        else if(diff1 === val3 - val1 && diff1 === diff4){
+            console.log(dataPointsStrArray[2]);
         }
-    }       
+    }
 });

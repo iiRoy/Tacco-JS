@@ -1,82 +1,157 @@
 'use strict';
 
-const MAX_NODES_LIMIT = 100000;
-const LARGE_NUMBER = Number.POSITIVE_INFINITY / 4;
-
-let totalNodes, totalEdges, initialVertex;
-let adjacencyListMap;
-let shortestPathCosts;
-
-function computeShortestPaths(startingVertex) {
-    shortestPathCosts = Array(totalNodes).fill(LARGE_NUMBER);
-    shortestPathCosts[startingVertex] = 0;
-
-    const finalizedNodes = new Set();
-
-    for (let k = 0; k < totalNodes; ++k) {
-        let currentClosestNode = -1;
-        let minCurrentCost = LARGE_NUMBER;
-
-        for (let nodeIdx = 0; nodeIdx < totalNodes; ++nodeIdx) {
-            if (!finalizedNodes.has(nodeIdx) && shortestPathCosts[nodeIdx] < minCurrentCost) {
-                minCurrentCost = shortestPathCosts[nodeIdx];
-                currentClosestNode = nodeIdx;
-            }
-        }
-
-        if (currentClosestNode === -1) {
-            break;
-        }
-
-        finalizedNodes.add(currentClosestNode);
-
-        const neighbors = adjacencyListMap.get(currentClosestNode) || [];
-        for (const edge of neighbors) {
-            const destinationNode = edge.destination;
-            const edgeWeight = edge.weight;
-
-            if (shortestPathCosts[currentClosestNode] !== LARGE_NUMBER &&
-                shortestPathCosts[currentClosestNode] + edgeWeight < shortestPathCosts[destinationNode]) {
-                shortestPathCosts[destinationNode] = shortestPathCosts[currentClosestNode] + edgeWeight;
-            }
-        }
-    }
+function PriorityStore(itemComparator) {
+  this.priorityMap = new Map();
+  this.orderedKeys = [];
+  this.itemCount = 0;
+  this.itemComparator = itemComparator;
 }
 
-(function processInputAndRun(inputData) {
-    const inputLines = inputData.trim().split('\n');
-    let isFirstLine = true;
+function insertNumericSorted(arr, val) {
+  let low = 0;
+  let high = arr.length - 1;
+  let mid;
 
-    for (let lineIndex = 0; lineIndex < inputLines.length; ++lineIndex) {
-        const numericValues = inputLines[lineIndex].split(' ').map(Number);
+  while (low <= high) {
+    mid = Math.floor((low + high) / 2);
+    if (arr[mid] < val) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  arr.splice(low, 0, val);
+}
 
-        if (isFirstLine) {
-            totalNodes = numericValues[0];
-            totalEdges = numericValues[1];
-            initialVertex = numericValues[2];
+PriorityStore.prototype.add = function(item) {
+  const itemPriority = item.dist;
 
-            adjacencyListMap = new Map();
-            for (let i = 0; i < totalNodes; ++i) {
-                adjacencyListMap.set(i, []);
-            }
-        } else {
-            const source = numericValues[0];
-            const target = numericValues[1];
-            const cost = numericValues[2];
-            
-            if (!adjacencyListMap.has(source)) {
-                adjacencyListMap.set(source, []);
-            }
-            adjacencyListMap.get(source).push({ destination: target, weight: cost });
-        }
+  if (!this.priorityMap.has(itemPriority)) {
+    this.priorityMap.set(itemPriority, new Set());
+    insertNumericSorted(this.orderedKeys, itemPriority);
+  }
+  this.priorityMap.get(itemPriority).add(item);
+  this.itemCount++;
+};
 
-        isFirstLine = false;
+PriorityStore.prototype.extractMin = function() {
+  if (this.itemCount === 0) {
+    return undefined;
+  }
+
+  const minPriority = this.orderedKeys[0];
+  const itemsAtMinPriority = this.priorityMap.get(minPriority);
+
+  const extractedItem = itemsAtMinPriority.values().next().value;
+  itemsAtMinPriority.delete(extractedItem);
+
+  if (itemsAtMinPriority.size === 0) {
+    this.priorityMap.delete(minPriority);
+    this.orderedKeys.shift();
+  }
+  this.itemCount--;
+  return extractedItem;
+};
+
+PriorityStore.prototype.viewMin = function() {
+  if (this.itemCount === 0) {
+    return undefined;
+  }
+  const minPriority = this.orderedKeys[0];
+  const itemsAtMinPriority = this.priorityMap.get(minPriority);
+  return itemsAtMinPriority.values().next().value;
+};
+
+PriorityStore.prototype.count = function() {
+  return this.itemCount;
+};
+
+PriorityStore.prototype.empty = function() {
+  return this.itemCount === 0;
+};
+
+const MAX_NODES = 100000;
+const INFINITY_VAL = Number.POSITIVE_INFINITY / 4;
+var nodeCount, edgeCount, startNode;
+var adjacencyMap;
+var distanceMap;
+
+function findShortestPaths(initialNode) {
+  var pathQueue = new PriorityStore(function(a, b) {
+    if (a.dist !== b.dist)
+      return a.dist - b.dist;
+    return a.v - b.v;
+  });
+
+  distanceMap = new Map();
+  for (let i = 0; i < nodeCount; ++i) {
+    distanceMap.set(i, INFINITY_VAL);
+  }
+
+  distanceMap.set(initialNode, 0);
+  pathQueue.add({
+    dist: 0,
+    v: initialNode
+  });
+
+  while (!pathQueue.empty()) {
+    var currentPath = pathQueue.extractMin();
+
+    if (distanceMap.get(currentPath.v) < currentPath.dist) {
+      continue;
     }
 
-    computeShortestPaths(initialVertex);
+    const neighbors = adjacencyMap.get(currentPath.v) || [];
+    for (const neighborEdge of neighbors) {
+      const targetNode = neighborEdge.target;
+      const edgeWeight = neighborEdge.weight;
 
-    shortestPathCosts.forEach(function(val) {
-        console.log(val === LARGE_NUMBER ? "INF" : val);
-    });
+      const newDistance = distanceMap.get(currentPath.v) + edgeWeight;
 
+      if (newDistance < distanceMap.get(targetNode)) {
+        distanceMap.set(targetNode, newDistance);
+        pathQueue.add({
+          dist: newDistance,
+          v: targetNode
+        });
+      }
+    }
+  }
+}
+
+(function processInput(inputContent) {
+  // var inputLines = inputContent.trim().split('\n');
+  // var isFirstLine = true;
+
+  // for (var lineIndex = 0; lineIndex < inputLines.length; ++lineIndex) {
+  //   var lineWords = inputLines[lineIndex].split(' ').map(Number);
+
+  //   if (isFirstLine) {
+  //     nodeCount = lineWords[0];
+  //     edgeCount = lineWords[1];
+  //     startNode = lineWords[2];
+
+  //     adjacencyMap = new Map();
+  //     for (var i = 0; i < nodeCount; ++i) {
+  //       adjacencyMap.set(i, []);
+  //     }
+  //   } else {
+  //     const source = lineWords[0];
+  //     const destination = lineWords[1];
+  //     const weight = lineWords[2];
+  //     adjacencyMap.get(source).push({
+  //       target: destination,
+  //       weight: weight
+  //     });
+  //   }
+
+  //   isFirstLine = false;
+  // }
+
+  // findShortestPaths(startNode);
+
+  // for (let i = 0; i < nodeCount; ++i) {
+  //   const finalDistance = distanceMap.get(i);
+  //   console.log(finalDistance === INFINITY_VAL ? "INF" : finalDistance);
+  // }
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

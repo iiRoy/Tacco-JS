@@ -1,32 +1,18 @@
-/*
- * This program is designed to gather information
- * from the standard input stream until it concludes.
- */
-let receivedTextBuffer = '';
+let receivedData = '';
 
-process
-  .stdin
-  .resume();
+// Begin processing standard input stream
+process.stdin.resume();
 
-process.stdin.setEncoding(
-  'utf8'
-);
+// Set the character encoding for the input
+process.stdin.setEncoding('utf8');
 
-process
-  .stdin
-  .on('data',
-    function(incomingSegment) {
-      receivedTextBuffer += incomingSegment;
-    }
-  );
+// Attach a listener for incoming data segments
+process.stdin.on('data', function(dataSegment) {
+  receivedData += dataSegment; // Append the current data segment to our buffer
+});
 
-process
-  .stdin
-  .on('end',
-    function() {
-      // Once all data has been received, perform the final transformation.
-      console.log(
-        receivedTextBuffer.replace('FirstString', 'SecondString')
-      );
-    }
-  );
+// Attach a listener for the end of the input stream
+process.stdin.on('end', function() {
+  // Perform a string replacement operation on the collected data
+  console.log(receivedData.replace('Hoshino', 'Hoshina'));
+});

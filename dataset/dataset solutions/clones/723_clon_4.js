@@ -1,44 +1,30 @@
-const inputOutputSystem = require('readline').createInterface({
+const readline = require('readline');
+
+const inputProcessor = readline.createInterface({
     input: process.stdin,
-    output: process.stdout,
-    terminal: false
+    output: process.stdout
 });
 
-const ignoredSymbols = new Set([
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    '/', 'd', ' ', '.'
-]);
+const exclusionSet = new Set(
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/d .'.split('')
+);
 
-const refineText = (sourceText) => {
-    return Array.from(sourceText).filter(symbol => !ignoredSymbols.has(symbol)).join('');
+const evaluateBalance = (sourceString) => {
+    const intermediateString = Array.from(sourceString)
+        .filter(char => !exclusionSet.has(char))
+        .join('');
+
+    const finalString = (intermediateString.includes('[]') || intermediateString.includes('()'))
+        ? ''
+        : intermediateString;
+
+    return finalString.length === 0 ? "yes" : "no";
 };
 
-const evaluateSequence = (analyzedText) => {
-    const isDepleted = (sequence) => sequence === '';
-    const hasBracketPair = (sequence) => /\\[\\]/.test(sequence);
-    const hasParenthesisPair = (sequence) => /\(\)/.test(sequence);
-
-    const formulateVerdict = (currentSequence) => {
-        if (isDepleted(currentSequence)) {
-            return "yes";
-        }
-        if (hasBracketPair(currentSequence) || hasParenthesisPair(currentSequence)) {
-            return "yes";
-        }
-        return "no";
-    };
-    
-    return formulateVerdict(analyzedText);
-};
-
-inputOutputSystem.on('line', (incomingLine) => {
-    if (incomingLine === '.') {
-        inputOutputSystem.close();
+inputProcessor.on('line', (currentInput) => {
+    if (currentInput === ".") {
+        inputProcessor.close();
         return;
     }
-
-    const processedSegment = refineText(incomingLine);
-    const finalJudgment = evaluateSequence(processedSegment);
-    console.log(finalJudgment);
+    console.log(evaluateBalance(currentInput));
 });

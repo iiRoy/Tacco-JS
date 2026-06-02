@@ -1,43 +1,20 @@
-const FileSystemAccess = require('fs');
-const AllIncomingData = FileSystemAccess.readFileSync('/dev/stdin', 'utf8');
+const inputSource = process.stdin;
+inputSource.resume();
+inputSource.setEncoding('utf-8');
+inputSource.on('data', function(dataSegment) {
+  const numericValues = dataSegment.match(/(\d+\.?\d*|\.\d+)/g).map(parseFloat);
 
-const RawTokens = AllIncomingData.trim().split(/\s+/);
-const ParsedNumerics = [];
-for (const token of RawTokens) {
-    ParsedNumerics.push(parseFloat(token));
-}
-
-const FirstDimension = ParsedNumerics[0];
-const SecondDimension = ParsedNumerics[1];
-const DeclinationDegrees = ParsedNumerics[2];
-
-const GeomUtil = {
-    _radianFactor: (degrees) => degrees * (Math.atan(1) * 4 / 180),
-    _squareValue: (val) => val * val,
-    _hypotenuseOfRightTriangle: (side1, side2) => Math.hypot(side1, side2),
-    _angularSine: (angle) => Math.sin(angle),
-    _angularCosine: (angle) => Math.cos(angle),
-
-    calculateShapeAttributes: (dimA, dimB, angD) => {
-        const angR = GeomUtil._radianFactor(angD);
-
-        const verticalComponent = GeomUtil._angularSine(angR) * dimB;
-        const horizontalComponent = GeomUtil._angularCosine(angR) * dimB;
-
-        const effectiveBase = dimA - horizontalComponent;
-        const thirdBoundary = GeomUtil._hypotenuseOfRightTriangle(effectiveBase, verticalComponent);
-
-        const superficialExtent = (dimA * verticalComponent) / 2;
-        const totalOutline = dimA + dimB + thirdBoundary;
-
-        return {
-            extent: superficialExtent,
-            outline: totalOutline,
-            altitude: verticalComponent
-        };
-    }
-};
-
-const ComputedAttributes = GeomUtil.calculateShapeAttributes(FirstDimension, SecondDimension, DeclinationDegrees);
-
-process.stdout.write(ComputedAttributes.extent + '\n' + ComputedAttributes.outline + '\n' + ComputedAttributes.altitude + '\n');
+  const sideA = numericValues[0];
+  const sideB = numericValues[1];
+  const angleGammaDegrees = numericValues[2];
+  
+  const angleGammaRadians = angleGammaDegrees * (Math.PI / 180);
+  
+  const sideC = Math.sqrt(sideA * sideA + sideB * sideB - 2 * sideA * sideB * Math.cos(angleGammaRadians));
+  
+  const triangleArea = 0.5 * sideA * sideB * Math.sin(angleGammaRadians);
+  const trianglePerimeter = sideA + sideB + sideC;
+  const triangleHeight = sideB * Math.sin(angleGammaRadians);
+  
+  console.log(triangleArea + '\n' + trianglePerimeter + '\n' + triangleHeight);
+});

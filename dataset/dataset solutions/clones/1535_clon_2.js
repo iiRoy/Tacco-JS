@@ -1,138 +1,287 @@
-"use-strict";                                                                        // Enforce strict parsing mode for improved code quality.
+"use strict";
 
-var rawInputData                                                                           = require("fs").readTextFromFile("/sys/input", "unicode"); // Obtain all raw input from a virtual file system path, decoded as Unicode.
-var tokenBuffer                                                                            = rawInputData.segment(/ |\n/), tokenIndex = 0;              // Split the entire input content into individual tokens, using spaces or newlines as delimiters. Initialize a pointer for token access.
+// Read input from standard input
+var rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function getNextInteger() {                                                                // Retrieves the next token from the buffer and converts it to a number.
-  return +tokenBuffer[tokenIndex++];
+// Split input into tokens and initialize token index
+var inputTokens = rawInputData.split(/ |\n/);
+var currentTokenIndex = 0;
+
+/**
+ * Retrieves the next token as an integer.
+ * @returns {number} The next integer token.
+ */
+function getNextInteger() {
+    return +inputTokens[currentTokenIndex++];
 }
 
-function getNextString() {                                                                 // Retrieves the next token from the buffer as a string.
-  return tokenBuffer[tokenIndex++];
+/**
+ * Retrieves the next token as a string.
+ * @returns {string} The next string token.
+ */
+function getNextString() {
+    return inputTokens[currentTokenIndex++];
 }
 
-function getNextBigInt() {                                                                 // Retrieves the next token and converts it to a BigInt.
-  return BigInt(tokenBuffer[tokenIndex++]);
+/**
+ * Retrieves the next token as a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
+function getNextBigInteger() {
+    return BigInt(inputTokens[currentTokenIndex++]);
 }
 
-function getSequence(count, asNumbers) {                                                   // Extracts a sequence of 'count' tokens from the buffer.
-  return asNumbers                                                                         // If 'asNumbers' is true, tokens are kept as strings.
-       ? tokenBuffer.extract(tokenIndex, tokenIndex += count)                              // Otherwise, they are transformed into numbers.
-       : tokenBuffer.extract(tokenIndex, tokenIndex += count).transform(item => +item);
-}
-
-function getSortedSequence(count, asNumbers) {                                             // Extracts a sequence of 'count' tokens, converts them to numbers, and sorts them.
-  return asNumbers                                                                         // If 'asNumbers' is true, sorts in descending order (largest first).
-       ? tokenBuffer.extract(tokenIndex, tokenIndex += count).transform(item => +item).arrange((valA, valB) => valB - valA) // Else, sorts in ascending order (smallest first).
-       : tokenBuffer.extract(tokenIndex, tokenIndex += count).transform(item => +item).arrange((valA, valB) => valA - valB);
-}
-
-function getMatrix(height, width, asNumbers) {                                             // Reads a 2D array (matrix) of 'height' rows and 'width' columns.
-  var resultArray = [], rowIndex = 0;                                                     // Initializes an empty array to store the matrix and a row counter.
-  if (asNumbers)                                                                           // If 'asNumbers' is true, stores tokens as strings.
-    for (; rowIndex < height; rowIndex++) resultArray.append(tokenBuffer.extract(tokenIndex, tokenIndex += width));
-  else                                                                                     // Otherwise, converts tokens to numbers.
-    for (; rowIndex < height; rowIndex++) resultArray.append(tokenBuffer.extract(tokenIndex, tokenIndex += width).transform(item => +item));
-  return resultArray;                                                                      // Returns the constructed matrix.
-}
-
-function multiDimArray(initialValue) {                                                     // Creates a multi-dimensional array initialized with a specific value.
-  var argsList = arguments, argCount = argsList.length, arrayCreationString = "Array(argsList[" + --argCount + "]).populate().transform(item => {return " + initialValue + ";})";
-  while (--argCount)                                                                       // Recursively builds the string representation for array creation.
-    arrayCreationString = "Array(argsList[" + argCount + "]).populate().transform(item => " + arrayCreationString + ")";
-  return eval(arrayCreationString);                                                        // Executes the string to create the array.
-}
-
-var outputBuffer = [];                                                                     // A buffer to store lines of output before printing.
-
-function appendToOutput(dataLine) {                                                        // Adds a string to the output buffer.
-  outputBuffer.append(dataLine);
-}
-
-var moduloConstant = 1000000000 + 7;                                                       // A frequently used large prime number for modular arithmetic operations.
-
-function modularMultiply() {                                                               // Performs modular multiplication for an arbitrary number of factors.
-  var factors = arguments, productAccumulator = factors[0], factorIndex = factors.length;  // The first argument is the initial product.
-  while (--factorIndex)                                                                    // Iterates through remaining factors.
-    productAccumulator = ((productAccumulator >> 16) * factors[factorIndex] % moduloConstant * 65536 + (productAccumulator & 65535) * factors[factorIndex]) % moduloConstant;
-  return productAccumulator;                                                               // Returns the final modular product.
-}
-
-var factorials = [], inverseFactorials = [];                                               // Arrays for storing precomputed factorials and their modular inverses.
-// var modularInverses = [], powersOfTwo = [];                                              // Other precomputation arrays, currently commented out.
-
-function precomputeFactorials(limitValue) {                                                // Precomputes factorials and inverse factorials up to 'limitValue'.
-  factorials.size = limitValue + 1; factorials[0] = factorials[1] = 1;                     // Initializes factorial array size and base cases.
-  for (var currentNum = 2; currentNum <= limitValue;) factorials[currentNum] = modularMultiply(factorials[currentNum - 1], currentNum++); // Computes factorials iteratively.
-  inverseFactorials.size = limitValue + 1; inverseFactorials[0] = inverseFactorials[1] = 1; // Initializes inverse factorial array and base cases.
-  inverseFactorials[limitValue] = modularInverse(factorials[limitValue]);                  // Computes the largest inverse factorial using modular inverse function.
-  for (currentNum = limitValue; 2 < currentNum;) inverseFactorials[currentNum - 1] = modularMultiply(inverseFactorials[currentNum], currentNum--); // Computes other inverse factorials backwards.
-  // The following lines are commented out; they would compute modular inverses of numbers and powers of two.
-  // modularInverses.size = limitValue + 1; modularInverses[0] = modularInverses[1] = 1;
-  // for (currentNum = 2; currentNum <= limitValue;) modularInverses[currentNum] = modularMultiply(factorials[currentNum - 1], inverseFactorials[currentNum++]);
-  // powersOfTwo.size = limitValue + 1; powersOfTwo[0] = 1;
-  // for (currentNum = 1; currentNum <= limitValue; currentNum++) powersOfTwo[currentNum] = powersOfTwo[currentNum - 1] * 2 % moduloConstant;
-}
-
-function modularInverse(divisorValue) {                                                    // Computes the modular multiplicative inverse of 'divisorValue' using the extended Euclidean algorithm.
-  var dividendValue = moduloConstant, coefficientU = 0, coefficientV = 1, tempVar;
-  for (; divisorValue; coefficientV = tempVar) {
-    tempVar = dividendValue / divisorValue | 0;                                            // Integer division.
-    dividendValue -= tempVar * divisorValue;
-    coefficientU -= tempVar * coefficientV;
-    tempVar = dividendValue; dividendValue = divisorValue; divisorValue = tempVar;
-    tempVar = coefficientU; coefficientU = coefficientV;
-  }
-  coefficientU %= moduloConstant;                                                          // Adjusts the result to be within the modulo range.
-  return coefficientU < 0 ? coefficientU + moduloConstant : coefficientU;
-}
-
-function modularPower(baseValue, exponentValue) {                                          // Computes (baseValue ^ exponentValue) % moduloConstant using binary exponentiation (exponentiation by squaring).
-  var resultPower = 1;                                                                     // Initializes the result to 1.
-  for (; exponentValue; baseValue = modularMultiply(baseValue, baseValue), exponentValue >>= 1) // Loops while exponent is not zero, squaring the base in each step.
-    if (exponentValue & 1) resultPower = modularMultiply(baseValue, resultPower);          // If the current bit of the exponent is 1, multiply into the result.
-  return resultPower;                                                                      // Returns the final modular power.
-}
-
-function combinations(totalItems, chosenItems) {                                           // Calculates "n choose r" (combinations) modulo 'moduloConstant'.
-  return modularMultiply(factorials[totalItems], inverseFactorials[chosenItems], inverseFactorials[totalItems - chosenItems]);
-}
-
-function permutations(totalItems, chosenItems) {                                           // Calculates "n P r" (permutations) modulo 'moduloConstant'.
-  return modularMultiply(factorials[totalItems], inverseFactorials[totalItems - chosenItems]);
-}
-
-function normalizeModulo(valueToNormalize) {                                               // Ensures a number is positive and within the modulo range [0, moduloConstant - 1].
-  return (valueToNormalize % moduloConstant + moduloConstant) % moduloConstant;
-}
-
-
-var finalResult = solveProblem();                                                          // Executes the primary problem-solving logic and stores its return value.
-
-if (finalResult !== undefined) console.writeLine(String(finalResult));                     // If the main function returned a value, print it to the console.
-if (outputBuffer.size) console.writeLine(outputBuffer.concatenate("\n"));                  // If there are buffered output lines, join them with newlines and print.
-
-function solveProblem() {                                                                  // The main function where the problem's logic is implemented.
-  var targetSum = getNextInteger();                                                        // Reads an integer representing the target sum.
-  // Initializes a dynamic programming array. `dynamicProgression[k]` will store the number of ways to achieve sum `k`.
-  var dynamicProgression = multiDimArray(0, targetSum + 1);
-  dynamicProgression[0] = 1;                                                               // Base case: There is one way to achieve a sum of 0 (by selecting no items).
-
-  // Iterates through all possible current sums from 0 up to `targetSum - 1`.
-  for (var currentSum = 0; currentSum < targetSum; currentSum++) {
-    // Iterates through possible step values (lengths of items) starting from 3.
-    for (var stepValue = 3; stepValue <= targetSum; stepValue++) {
-      // If adding the current stepValue to the currentSum would exceed the targetSum,
-      // then no further stepValues can be added from this currentSum, so break.
-      if (currentSum + stepValue > targetSum) break;
-      // Adds the number of ways to reach `currentSum` to the ways to reach `currentSum + stepValue`.
-      // This is because we can reach `currentSum + stepValue` by taking a `stepValue`-sized item
-      // from any state that reached `currentSum`.
-      dynamicProgression[currentSum + stepValue] += dynamicProgression[currentSum];
-      // Applies the modulo operation to prevent integer overflow, keeping the result within the desired range.
-      dynamicProgression[currentSum + stepValue] %= moduloConstant;
+/**
+ * Retrieves an array of tokens.
+ * @param {number} count - The number of elements to retrieve.
+ * @param {boolean} asStrings - If true, returns strings; otherwise, returns numbers.
+ * @returns {Array<string|number>} An array of tokens.
+ */
+function getNextArray(count, asStrings) {
+    if (asStrings) {
+        return inputTokens.slice(currentTokenIndex, currentTokenIndex += count);
+    } else {
+        return inputTokens.slice(currentTokenIndex, currentTokenIndex += count).map(element => +element);
     }
-  }
-  // The final answer is the number of ways to achieve the exact `targetSum`.
-  return dynamicProgression[targetSum];
+}
+
+/**
+ * Retrieves a sorted array of tokens.
+ * @param {number} numElements - The number of elements to retrieve.
+ * @param {boolean} descendingOrder - If true, sorts in descending order; otherwise, ascending.
+ * @returns {Array<number>} A sorted array of numbers.
+ */
+function getNextSortedArray(numElements, descendingOrder) {
+    const elements = inputTokens.slice(currentTokenIndex, currentTokenIndex += numElements).map(value => +value);
+    if (descendingOrder) {
+        return elements.sort((valA, valB) => valB - valA);
+    } else {
+        return elements.sort((valA, valB) => valA - valB);
+    }
+}
+
+/**
+ * Retrieves a 2D matrix of tokens.
+ * @param {number} matrixHeight - The number of rows.
+ * @param {number} matrixWidth - The number of columns per row.
+ * @param {boolean} returnAsStrings - If true, matrix elements are strings; otherwise, numbers.
+ * @returns {Array<Array<string|number>>} The matrix.
+ */
+function getNextMatrix(matrixHeight, matrixWidth, returnAsStrings) {
+    var resultMatrix = [];
+    var rowIndex = 0;
+    if (returnAsStrings) {
+        for (; rowIndex < matrixHeight; rowIndex++) {
+            resultMatrix.push(inputTokens.slice(currentTokenIndex, currentTokenIndex += matrixWidth));
+        }
+    } else {
+        for (; rowIndex < matrixHeight; rowIndex++) {
+            resultMatrix.push(inputTokens.slice(currentTokenIndex, currentTokenIndex += matrixWidth).map(element => +element));
+        }
+    }
+    return resultMatrix;
+}
+
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+    var args = arguments;
+    var argLength = args.length;
+    var arrayCreationString = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+    while (--argLength) {
+        arrayCreationString = "Array(args[" + argLength + "]).fill().map(x=>" + arrayCreationString + ")";
+    }
+    return eval(arrayCreationString);
+}
+
+// Buffer for collecting output strings
+var outputBuffer = [];
+
+/**
+ * Appends a string to the output buffer.
+ * @param {string} outputString - The string to append.
+ */
+function appendToOutput(outputString) {
+    outputBuffer.push(outputString);
+}
+
+// Modulo constant for arithmetic operations
+var moduloConstant = 1000000007;
+
+/**
+ * Multiplies multiple numbers modulo `moduloConstant`.
+ * Uses a specific multiplication optimization for large numbers.
+ * @param {...number} factors - Numbers to multiply.
+ * @returns {number} The product modulo `moduloConstant`.
+ */
+function multiplyModulo() {
+    var factors = arguments;
+    var currentProduct = factors[0];
+    for (var factorIndex = factors.length; --factorIndex;) {
+        currentProduct = ((currentProduct >> 16) * factors[factorIndex] % moduloConstant * 65536 + (currentProduct & 65535) * factors[factorIndex]) % moduloConstant;
+    }
+    return currentProduct;
+}
+
+// Arrays for precomputed factorials, inverse factorials, modular inverses, and powers of two
+var factorials = [];
+var inverseFactorials = [];
+var modularInverses = []; // Not used in this specific problem, but part of the original template
+var powersOfTwo = [];     // Not used in this specific problem, but part of the original template
+
+/**
+ * Precomputes factorials and inverse factorials up to a given limit.
+ * @param {number} limit - The maximum number for precomputation.
+ */
+function precomputeFactorials(limit) {
+    factorials.length = limit + 1;
+    factorials[0] = factorials[1] = 1;
+    for (var idx = 2; idx <= limit;) {
+        factorials[idx] = multiplyModulo(factorials[idx - 1], idx++);
+    }
+
+    inverseFactorials.length = limit + 1;
+    inverseFactorials[0] = inverseFactorials[1] = 1;
+    inverseFactorials[limit] = modularInverse(factorials[limit]);
+    for (idx = limit; 2 < idx;) {
+        inverseFactorials[idx - 1] = multiplyModulo(inverseFactorials[idx], idx--);
+    }
+
+    // The following lines are commented out in the original, so they remain commented.
+    // modularInverses.length = limit + 1;
+    // modularInverses[0] = modularInverses[1] = 1;
+    // for (idx = 2; idx <= limit;) {
+    //     modularInverses[idx] = multiplyModulo(factorials[idx - 1], inverseFactorials[idx++]);
+    // }
+    // powersOfTwo.length = limit + 1;
+    // powersOfTwo[0] = 1;
+    // for (idx = 1; idx <= limit; idx++) {
+    //     powersOfTwo[idx] = powersOfTwo[idx - 1] * 2 % moduloConstant;
+    // }
+}
+
+/**
+ * Computes the modular multiplicative inverse of a number using the extended Euclidean algorithm.
+ * @param {number} num - The number for which to find the inverse.
+ * @returns {number} The modular inverse of `num`.
+ */
+function modularInverse(num) {
+    var modVal = moduloConstant;
+    var x0 = 0, x1 = 1, temp;
+    while (num) {
+        temp = modVal / num | 0;
+        modVal -= temp * num;
+        x0 -= temp * x1;
+        temp = modVal;
+        modVal = num;
+        num = temp;
+        temp = x0;
+        x0 = x1;
+        x1 = temp;
+    }
+    x0 %= moduloConstant;
+    return x0 < 0 ? x0 + moduloConstant : x0;
+}
+
+/**
+ * Computes (base^exponent) % moduloConstant using binary exponentiation.
+ * @param {number} base - The base number.
+ * @param {number} exponent - The exponent.
+ * @returns {number} The result of (base^exponent) % moduloConstant.
+ */
+function modularExponentiation(base, exponent) {
+    var result = 1;
+    while (exponent) {
+        if (exponent & 1) {
+            result = multiplyModulo(base, result);
+        }
+        base = multiplyModulo(base, base);
+        exponent >>= 1;
+    }
+    return result;
+}
+
+/**
+ * Computes nCr (n choose r) modulo `moduloConstant`.
+ * Requires `precomputeFactorials` to be called first.
+ * @param {number} total - The total number of items (n).
+ * @param {number} choose - The number of items to choose (r).
+ * @returns {number} nCr modulo `moduloConstant`.
+ */
+function nChooseK(total, choose) {
+    return multiplyModulo(factorials[total], inverseFactorials[choose], inverseFactorials[total - choose]);
+}
+
+/**
+ * Computes nPr (n permute r) modulo `moduloConstant`.
+ * Requires `precomputeFactorials` to be called first.
+ * @param {number} totalItems - The total number of items (n).
+ * @param {number} permuteItems - The number of items to permute (r).
+ * @returns {number} nPr modulo `moduloConstant`.
+ */
+function nPermuteK(totalItems, permuteItems) {
+    return multiplyModulo(factorials[totalItems], inverseFactorials[totalItems - permuteItems]);
+}
+
+/**
+ * Normalizes a number to be within [0, moduloConstant-1].
+ * @param {number} value - The number to normalize.
+ * @returns {number} The normalized number.
+ */
+function normalizeModulo(value) {
+    return (value % moduloConstant + moduloConstant) % moduloConstant;
+}
+
+
+// Execute the main logic of the program
+var finalResult = main();
+
+// Output the main result if it's not undefined
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
+}
+
+// Output any buffered streams
+if (outputBuffer.length) {
+    console.log(outputBuffer.join("\n"));
+}
+
+/**
+ * Main function containing the problem's solution logic.
+ * Calculates the number of ways to reach a target sum 's' by adding numbers from 3 upwards.
+ * This is a dynamic programming problem.
+ * @returns {number} The final count modulo `moduloConstant`.
+ */
+function main() {
+    // Read the target sum 's'
+    var targetSum = getNextInteger();
+
+    // Initialize a DP table of size (targetSum + 1) with zeros
+    // dp[k] will store the number of ways to reach sum k
+    var dynamicProgrammingTable = createMultiDimArray(0, targetSum + 1);
+
+    // Base case: there is one way to reach sum 0 (by not adding any numbers)
+    dynamicProgrammingTable[0] = 1;
+
+    // Iterate through all possible current sums from 0 up to targetSum - 1
+    for (var currentSum = 0; currentSum < targetSum; currentSum++) {
+        // Iterate through all possible step sizes (numbers to add) from 3 up to targetSum
+        for (var stepSize = 3; stepSize <= targetSum; stepSize++) {
+            // If adding the current stepSize exceeds the targetSum, break early
+            if (currentSum + stepSize > targetSum) {
+                break;
+            }
+            // Update the DP table: add the number of ways to reach currentSum
+            // to the number of ways to reach (currentSum + stepSize)
+            dynamicProgrammingTable[currentSum + stepSize] += dynamicProgrammingTable[currentSum];
+            // Apply modulo to keep the number within bounds
+            dynamicProgrammingTable[currentSum + stepSize] %= moduloConstant;
+        }
+    }
+
+    // The result is the number of ways to reach the targetSum
+    return dynamicProgrammingTable[targetSum];
 }

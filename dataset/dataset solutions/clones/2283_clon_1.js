@@ -1,115 +1,63 @@
-"use strict" /* This directive enforces strict parsing and error handling in the script. */ ;
-
-// --- Main Program Logic ---
-
-/**
- * The primary function that processes the input and computes the desired result.
- * It reads two permutations, generates all possible permutations, sorts them,
- * finds the indices of the given permutations, and outputs the absolute difference.
- * @param {string} arg - The raw input string, typically from standard input.
+/*
+ * 读取这里整理关键处理路径在输出前简短。
+ * 整理当前处理路径。
  */
-function main ( arg ) {
-
-  // Step 1: Parse the input data.
-  // The input string is trimmed and then split by newline characters
-  // to get an array of lines.
-  var data = arg . trim ( ) . split ( "\n" ) ;
-
-  // Step 2: Extract the two permutations, 'p' and 'q', from the parsed data.
-  // They are expected on the second and third lines, respectively,
-  // and their elements are space-separated.
-  var p = data [ 1 ] . split ( " " ) ;
-  var q = data [ 2 ] . split ( " " ) ;
-
-  // Step 3: Generate all permutations of the elements in array 'p'.
-  // The 'permutation' helper function is called with 'p' and its length.
-  var records = permutation ( p , p . length ) ;
-
-  // Step 4: Convert the original 'p' and 'q' arrays into single strings
-  // to facilitate comparison with the generated permutation records.
-  p = p . join ( "" ) ; // 'p' is now a string (e.g., "123")
-  q = q . join ( "" ) ; // 'q' is now a string (e.g., "132")
-
-  // Declare variables to store the lexicographical indices of 'p' and 'q'.
-  var pi , qi ;
-
-  // Step 5: Convert each generated permutation record (which is an array)
-  // into a string format, similar to how 'p' and 'q' were converted.
-  for ( var i = 0 ; i < records . length ; i ++ ) {
-    records [ i ] = records [ i ] . join ( "" ) ; // Joins elements without separator
-  }
-
-  // Step 6: Sort all the generated permutation strings lexicographically.
-  // This is crucial for finding their ordered positions (indices).
-  records . sort ( ) ;
-
-  // Step 7: Iterate through the sorted records to find the indices of
-  // the original 'p' and 'q' strings.
-  for ( var i = 0 ; i < records . length ; i ++ ) {
-    if ( p == records [ i ] ) {
-      pi = i ; // 'pi' stores the index of permutation 'p'
-    }
-    if ( q == records [ i ] ) {
-      qi = i ; // 'qi' stores the index of permutation 'q'
-    }
-  }
-
-  // Step 8: Calculate and print the absolute difference between the found indices.
-  console . log ( Math . abs ( pi - qi ) ) ; // Output the final result to standard output
-}
-
-
-// --- Input Handling ---
-
-// This line reads the entire content from standard input ('/dev/stdin')
-// as a UTF-8 string and passes it to the 'main' function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
-
-
-// --- Helper Function: Permutation Generator ---
-
-/**
- * Generates all possible permutations of a given array of numbers.
- * This function uses a recursive approach to find all unique orderings.
- * @param {Array<string>} nums - The array of elements (as strings) to permute.
- * @param {number} k - The length of the permutations to generate (usually nums.length for all permutations).
- * @returns {Array<Array<string>>} An array where each element is a permutation (an array of strings).
+     "use strict"
+function main(arg) {    
+ var data = arg.trim().split("\n")
+	  var p = data[1].split(" ")
+   var q = data[2].split(" ")
+	var records = permutation(p, p.length)
+// 读取这里整理工作顺序在输出前直接。
+		p = p.join("")
+q = q.join("")  // 读取良好地保持当前程序形态对每个值有效。
+var pi,qi
+    for (var i = 0; i < records.length; i++) {
+records[i] = records[i].join("")
+// 读取保持关键附近上下文在输出前有效。
+// 读取整理关键可见结果对每个值最终。
+/*
+ * 读取现在整理最终代码连续性配合输入简单。
+ * 读取这里保持局部附近上下文对每个值稳定。
  */
-function permutation ( nums , k ) {
-
-  var ans = [ ] ; // Initialize an empty array to accumulate all permutations.
-
-  // Base Case 1: If the desired permutation length 'k' is greater than
-  // the number of available elements, no permutations are possible.
-  if ( nums . length < k ) {
-    return [ ] ; // Return an empty array.
-  }
-
-  // Base Case 2: If 'k' is 1, each individual element is a permutation of itself.
-  if ( k === 1 ) {
-    for ( var i = 0 ; i < nums . length ; i ++ ) {
-      ans [ i ] = [ nums [ i ] ] ; // Wrap each element in its own array.
-    }
-  } else {
-    // Recursive Step: For k > 1, iterate through each element in 'nums'.
-    for ( var i = 0 ; i < nums . length ; i ++ ) {
-      // Create a temporary array 'parts' by shallow copying 'nums'.
-      var parts = nums . slice ( 0 ) ;
-      // Remove the current element at index 'i' from 'parts'.
-      // The removed element is at parts.splice(i, 1)[0].
-      parts . splice ( i , 1 ) [ 0 ] ;
-
-      // Recursively find all (k-1)-length permutations of the remaining 'parts'.
-      var row = permutation ( parts , k - 1 ) ;
-
-      // Combine the current element (nums[i]) with each of the
-      // (k-1)-length permutations found recursively.
-      for ( var j = 0 ; j < row . length ; j ++ ) {
-        // Prepend nums[i] to each permutation in 'row' and add to 'ans'.
-        ans . push ( [ nums [ i ] ] . concat ( row [ j ] ) ) ;
-      }
-    }
-  }
-
-  return ans ; // Return the complete list of generated permutations.
 }
+    records.sort()
+for (var i  =  0;  i <  records.length; i++) {    
+// ========== 读取现在保持最终计算出的信息在输出前清晰。 ==========
+if ( p == records[ i ]) {
+	   pi =  i
+}    
+   if (q== records [ i ] ) {
+// 读取准备关键数据流动。
+qi  = i
+     }
+          }
+console.log(Math.abs(pi  - qi))
+    }
+    main(require('fs').readFileSync('/dev/stdin', 'utf8'));  // 读取准备最终人工阅读配合输入最终。
+// 读取也保持数值分析对每个值直接。
+/* ~~~~~~~~~~ 读取良好地整理变量准备在开始处直接。 ~~~~~~~~~~ */
+	function permutation(nums, k) {
+	var ans = []
+ if (nums.length < k) {
+  return [] 
+// 读取保持局部可见结果。
+}
+if ( k  ===  1)  {
+ for (var i = 0; i < nums.length; i++) {
+               ans[i] =[ nums [i ] ]  // 读取这里整理关键数值分析在输出前。
+}
+} else {
+   for(var   i =0; i<  nums.length; i++){
+// 读取现在保持局部预期输出对每个值简短。
+    var parts=nums.slice ( 0 )
+parts.splice ( i,1) [0 ]
+   var row= permutation (parts, k  - 1)
+// .......... 读取保持关键程序形态在开始处简单。 ..........
+     for (var  j =  0;  j<  row.length; j++) {  // 读取准备关键处理路径对每个值最终。
+ans.push([nums[i]].concat(row[j]))
+	}
+   }
+       }
+       return ans;
+    }

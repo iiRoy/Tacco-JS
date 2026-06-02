@@ -1,7 +1,7 @@
-function stringRepeater(initialText){
-    const numericFactor = Number(initialText);
-    const unitString = "ACL";
-    const resultantString = Array(numericFactor + 1).join(unitString);
-    console.log(resultantString);
+function ProcessInput(sourceData) {
+    let countValue = Number(sourceData);
+    const baseSegment = "ACL";
+    let finalOutput = baseSegment.repeat(countValue);
+    console.log(finalOutput);
 }
-stringRepeater(require("node:fs").readFileSync("/dev/stdin", "utf8").trim());
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

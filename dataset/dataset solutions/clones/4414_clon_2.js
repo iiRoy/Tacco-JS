@@ -1,11 +1,14 @@
 "use strict";
-// Incoming text holds all the raw data for processing
-const  processInputData  =  (  rawDataString  )  =>
-{
-  const  [  firstChar  ,  middleChar  ,  lastChar  ]  =  rawDataString  .  trim  (  )  .  split  (  ""  )  ;
 
-  return  firstChar  ===  lastChar  ?  "Yes"  :  "No"  ;
-}  ;
+// This function processes the incoming text data.
+const processInputData = (rawData) => {
+  // Extract individual characters from the trimmed input string.
+  const [firstChar, middleChar, lastChar] = rawData.trim().split("");
 
-// Do not modify the following section (it handles reading from standard input and invoking the primary routine)
-console.log  (  processInputData  (  require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )  )  )  ;
+  // Compare the first and last characters to determine the output.
+  return firstChar === lastChar ? "Yes" : "No";
+};
+
+// The following lines handle reading from standard input and invoking the primary processing function.
+// Do not modify this section as it manages the program's interaction with the environment.
+console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));

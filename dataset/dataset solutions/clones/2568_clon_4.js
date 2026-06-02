@@ -1,57 +1,43 @@
-const filesystem = require('fs');
+const fileSystemInterface = require('fs');
 
-const applyHalvingRecursively = (currentVal, opsAvailable, lowerBound) => {
-    if (opsAvailable <= 0 || currentVal < lowerBound) {
-        return { resultantValue: currentVal, opsExpended: 0 };
+const calculateReducedValue = (currentMagnitude, floorConstraint, remainingBudgetAllowance) => {
+    let reductionIterations = 0;
+    let processedMagnitude = currentMagnitude;
+    while (remainingBudgetAllowance > 0 && processedMagnitude >= floorConstraint) {
+        processedMagnitude = Math.floor(processedMagnitude / 2);
+        remainingBudgetAllowance--;
+        reductionIterations++;
     }
-    const nextVal = Math.floor(currentVal / 2);
-    const subsequentResult = applyHalvingRecursively(nextVal, opsAvailable - 1, lowerBound);
-    return {
-        resultantValue: subsequentResult.resultantValue,
-        opsExpended: subsequentResult.opsExpended + 1
-    };
+    return { finalMagnitude: processedMagnitude, budgetConsumed: reductionIterations };
 };
 
-const processInputData = (inputLines) => {
-    const rawParameters = inputLines[0].split(' ').map(Number);
-    const totalItemCount = rawParameters[0];
-    const initialOperationBudget = rawParameters[1];
-    const itemValueCollection = inputLines[1].split(' ').map(Number);
+module.exports = () => {
+    const rawInputContent = fileSystemInterface.readFileSync("/dev/stdin", "UTF-8");
+    const inputLinesArray = rawInputContent.split("\n");
 
-    const orderedValueCollection = [...itemValueCollection].sort((valA, valB) => valB - valA);
+    const [initialElementCount, totalHalvingBudget] = inputLinesArray[0].split(" ").map(Number);
+    const numericalSequence = inputLinesArray[1].split(" ").map(Number);
 
-    const finalAccumulationState = orderedValueCollection.reduce(
-        (currentAccumulator, currentItemEntry, currentIndex, fullArray) => {
-            let [overallRunningSum, remainingOperationBudget] = currentAccumulator;
+    numericalSequence.sort((valA, valB) => valB - valA); // Sort in descending order
 
-            const nextItemInSequence = fullArray[currentIndex + 1];
-            const effectiveComparisonLimit =
-                (currentIndex < totalItemCount - 1)
-                    ? Math.min(nextItemInSequence, 4)
-                    : 0;
+    let currentAvailableHalvings = totalHalvingBudget;
 
-            const reductionResult = applyHalvingRecursively(
-                currentItemEntry,
-                remainingOperationBudget,
-                effectiveComparisonLimit
-            );
+    const finalAccumulatedSum = numericalSequence.reduce((currentSummation, currentElement, elementIndex, fullSequence) => {
+        const nextElementInSequence = fullSequence[elementIndex + 1];
+        const effectiveFloorThreshold = (elementIndex === initialElementCount - 1)
+            ? 0
+            : Math.min(nextElementInSequence, 4);
 
-            overallRunningSum += reductionResult.resultantValue;
-            remainingOperationBudget -= reductionResult.opsExpended;
+        const reductionOutcome = calculateReducedValue(currentElement, effectiveFloorThreshold, currentAvailableHalvings);
+        currentAvailableHalvings -= reductionOutcome.budgetConsumed; // Update the shared budget
 
-            return [overallRunningSum, remainingOperationBudget];
-        },
-        [0, initialOperationBudget]
-    );
+        return currentSummation + reductionOutcome.finalMagnitude;
+    }, 0);
 
-    return finalAccumulationState[0];
+    console.log(finalAccumulatedSum);
 };
 
-const acquireAndProcess = () => {
-    const stdinContent = filesystem.readFileSync("/dev/stdin", "UTF-8");
-    const linesOfInput = stdinContent.split("\n");
-    const finalCalculatedSum = processInputData(linesOfInput);
-    console.log(finalCalculatedSum);
-};
-
-acquireAndProcess();
+// Execute the main logic if this file is run directly
+if (require.main === module) {
+    module.exports();
+}

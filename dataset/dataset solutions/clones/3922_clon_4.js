@@ -1,40 +1,83 @@
-const processInput = (sourceString) => {
-    const tokenPile = sourceString.split(/\s+/).filter(Boolean).map(Number);
-    const totalQueries = tokenPile.shift();
+"use strict";
 
-    const computedResults = [];
+function ExecuteProgram(sourceText) {
+    const dataParser = createDataStream(sourceText);
+    const queryCount = dataParser.fetchInt();
 
-    const handleNextQuery = (remainingCount) => {
-        if (remainingCount === 0) {
-            return;
+    const results = Array.from({ length: queryCount }, () => {
+        const valA = dataParser.fetchInt();
+        const valB = dataParser.fetchInt();
+        return determineValue(valA, valB);
+    });
+
+    console.log(results.join('\n'));
+}
+
+function createDataStream(sourceContent) {
+    if (typeof sourceContent === 'undefined') {
+        throw new Error('引数（stdin）を省略できません！');
+    }
+
+    const tokenSequence = sourceContent.split(/\n|\s/);
+    let currentPosition = 0;
+
+    const retrieveInteger = () => {
+        if (currentPosition >= tokenSequence.length) {
+            throw new Error("Data stream exhausted.");
         }
-        const operandA = tokenPile.shift();
-        const operandB = tokenPile.shift();
-        computedResults.push(resolvePair(operandA, operandB));
-        handleNextQuery(remainingCount - 1);
+        return tokenSequence[currentPosition++] - 0;
     };
 
-    handleNextQuery(totalQueries);
+    const retrieveIntegerArray = (count) => {
+        if (typeof count === 'undefined' || count < 1) {
+            throw new Error('Count must be a positive integer!');
+        }
+        const resultArr = new Array(count);
+        for (let k = 0; k < count; k++) {
+            resultArr[k] = retrieveInteger();
+        }
+        return resultArr;
+    };
 
-    return computedResults.join('\n');
-};
+    const retrieveString = () => {
+        if (currentPosition >= tokenSequence.length) {
+            throw new Error("Data stream exhausted.");
+        }
+        return tokenSequence[currentPosition++];
+    };
 
-const resolvePair = (operandA, operandB) => {
-    const evaluators = [
-        [ (x, y) => x === y, (x, y) => (2 * x) - 2 ],
-        [ (x, y) => Math.abs(x - y) === 1, (x, y) => (2 * ((x < y) ? x : y)) - 2 ],
-        [ (x, y) => true, (x, y) => {
-            const productVal = x * y;
-            const rootKey = Math.floor(Math.sqrt(productVal - 1));
-            const comparisonTerm = rootKey * (rootKey + 1);
-            return (2 * rootKey) - ( (comparisonTerm >= productVal) ? 2 : 1 );
-        }]
-    ];
+    const retrieveStringArray = (count) => {
+        if (typeof count === 'undefined' || count < 1) {
+            throw new Error('Count must be a positive integer!');
+        }
+        const resultArr = new Array(count);
+        for (let k = 0; k < count; k++) {
+            resultArr[k] = retrieveString();
+        }
+        return resultArr;
+    };
 
-    const matchedEvaluator = evaluators.find(([predicate, _]) => predicate(operandA, operandB));
-    return matchedEvaluator[1](operandA, operandB);
-};
+    return {
+        fetchInt: retrieveInteger,
+        fetchInts: retrieveIntegerArray,
+        fetchStr: retrieveString,
+        fetchStrs: retrieveStringArray
+    };
+}
+
+function determineValue(valA, valB) {
+    const absoluteDifference = Math.abs(valA - valB);
+
+    if (absoluteDifference <= 1) {
+        return 2 * Math.min(valA, valB) - 2;
+    } else {
+        const productOfValues = valA * valB;
+        const calculatedK = Math.floor(Math.sqrt(productOfValues - 1));
+        
+        return 2 * calculatedK - (calculatedK * (calculatedK + 1) >= productOfValues ? 2 : 1);
+    }
+}
 
 if (typeof window === "undefined") {
-    console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));
+    ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

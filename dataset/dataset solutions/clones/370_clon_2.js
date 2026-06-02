@@ -1,133 +1,115 @@
-// Function to identify positions of values that appear more than once within a given list
-function FindRepeatedIndices( dataList )
-{
-   // Initialize an array to count occurrences of numbers 0-9.
-   // Assuming values are single digits for Sudoku context.
-   let occurrenceCounts = new Array( 10 ).fill( 0 ) ;
+function IdentifyRepeats(dataCollection) {
+    // Initialize an array to count occurrences of digits 0-9.
+    // This assumes input values are single digits (0-9) as per the original logic.
+    let valueCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-   // Iterate through the input list to populate occurrence counts for each number.
-   dataList.forEach( function( currentElement ) {
-      // Ensure element is treated as a number before using as an index.
-      occurrenceCounts[ Number( currentElement ) ]++ ;
-   } ) ;
+    // Iterate through the input array to populate the count of each digit.
+    dataCollection.forEach(function(currentValue) {
+        valueCounts[currentValue - 0]++; // Convert to number and increment count.
+    });
 
-   // Collect indices of numbers that occurred two or more times,
-   // indicating a violation of the "one per" rule.
-   const problematicValues = [] ;
-   occurrenceCounts.forEach( function( countVal, valueIndex ) {
-      if ( countVal >= 2 ) {
-         problematicValues.push( valueIndex ) ;
-      }
-   } ) ;
+    // Identify which specific digit values are repeated (appear 2 or more times).
+    let repeatedNumbers = [];
+    valueCounts.forEach(function(frequency, digit) {
+        if (frequency >= 2) { // If a digit's frequency is two or more.
+            repeatedNumbers.push(digit);
+        }
+    });
 
-   // Find the original positions (indices) in the input list where these problematic values are located.
-   const errorLocations = [] ;
-   dataList.forEach( function( currentElement, elementPosition ) {
-      // Check if the current element's value is one of the problematic values.
-      if ( problematicValues.includes( Number( currentElement ) ) ) {
-         errorLocations.push( elementPosition ) ;
-      }
-   } ) ;
+    // Collect the indices from the original array where these repeated values are located.
+    let problematicPositions = [];
+    dataCollection.forEach(function(item, position) {
+        if (repeatedNumbers.indexOf(item) !== -1) { // If the current item is one of the identified repeated values.
+            problematicPositions.push(position);
+        }
+    });
 
-   // Return the list of indices where duplicate values were found.
-   return errorLocations ;
+    return problematicPositions; // Return an array of indices where duplicates exist.
 }
 
+// Read the entire input from standard input as a UTF-8 string.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Load raw input data from standard input using Node.js 'fs' module.
-const rawInputContent = require( 'fs' ) . readFileSync( '/dev/stdin', 'utf8' ) ;
+// Process the raw input: trim leading/trailing whitespace and split into an array of lines.
+let inputLines = fileContent.trim().split("\n");
 
-// Process the raw input into an array of lines, removing leading/trailing whitespace.
-let parsedLines = rawInputContent . trim() . split( '\n' ) ;
+// Initialize a string buffer to accumulate the formatted output for all test cases.
+let finalOutputString = "";
 
-// Buffer to accumulate the final output string for all test cases.
-let finalOutputBuffer = "" ;
+// Extract the total number of test cases from the first line of input.
+const totalCases = inputLines.shift() - 0; // Convert the string to a number.
 
-// Determine the number of test cases from the first line of input.
-const totalTestCases = parseInt( parsedLines.shift(), 10 ) ;
+// Loop through each test case.
+for (let caseIterator = 0; caseIterator < totalCases; caseIterator++) {
+    // `currentGrid` will store the actual Sudoku numbers for the current puzzle.
+    let currentGrid = [];
+    // `errorMarkers` will be a parallel grid to mark cells that contain duplicate values.
+    let errorMarkers = [];
 
+    // Read the 9 rows of the Sudoku grid for the current test case.
+    for (let rowIndex = 0; rowIndex < 9; rowIndex++) {
+        // Parse each line: split by space and convert elements to numbers.
+        const rowString = inputLines.shift().split(" ").map(Number);
+        currentGrid.push(rowString);
+        // Initialize a corresponding row in the error marker grid with zeros.
+        errorMarkers.push([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
 
-// Loop through each individual test case (Sudoku board).
-for ( let currentCaseIndex = 0 ; currentCaseIndex < totalTestCases ; currentCaseIndex++ )
-{
-   // Initialize two 9x9 grids for the current Sudoku board:
-   // 1. `boardValues`: Stores the actual number values.
-   // 2. `violationMarkers`: Marks positions that have rule violations (duplicates).
-   let boardValues = [] ; // Stores the actual number values for the Sudoku grid.
-   let violationMarkers = [] ; // Marks positions with rule violations (e.g., duplicates).
+    // Perform checks for duplicate numbers across rows, columns, and 3x3 subgrids.
+    for (let checkIndex = 0; checkIndex < 9; checkIndex++) {
+        // 1. Check for duplicates in the current row (`checkIndex`).
+        const horizontalIssues = IdentifyRepeats(currentGrid[checkIndex]);
+        horizontalIssues.forEach(function(colPos) {
+            errorMarkers[checkIndex][colPos]++; // Increment marker for each problematic cell in the row.
+        });
 
-   // Populate the `boardValues` grid with 9 rows and initialize `violationMarkers` for each row.
-   for ( let rowIdx = 0 ; rowIdx < 9 ; rowIdx++ )
-   {
-      // Read a line, split by space, and convert each part to a number.
-      const currentRowData = parsedLines.shift().split( " " ).map( Number ) ;
-      boardValues.push( currentRowData ) ;
-      // Initialize a 9-element array with zeros for tracking violations in this row.
-      violationMarkers.push( new Array( 9 ).fill( 0 ) ) ;
-   }
+        // 2. Construct a temporary array for the current column (`checkIndex`).
+        let verticalSlice = [];
+        for (let colNum = 0; colNum < 9; colNum++) {
+            verticalSlice.push(currentGrid[colNum][checkIndex]);
+        }
+        // Check for duplicates in the current column.
+        const verticalIssues = IdentifyRepeats(verticalSlice);
+        verticalIssues.forEach(function(rowPos) {
+            errorMarkers[rowPos][checkIndex]++; // Increment marker for each problematic cell in the column.
+        });
 
-   // Perform checks for duplicate numbers across rows, columns, and 3x3 subgrids.
-   for ( let checkIndex = 0 ; checkIndex < 9 ; checkIndex++ )
-   {
-      // --- Check Current Row for Duplicates ---
-      const badRowPositions = FindRepeatedIndices( boardValues[ checkIndex ] ) ;
-      badRowPositions.forEach( function( elementPosition ) {
-         violationMarkers[ checkIndex ][ elementPosition ]++ ;
-      } ) ;
+        // 3. Determine the top-left coordinates of the current 3x3 subgrid.
+        const blockY = ~~(checkIndex / 3); // Integer division for the block's row index (0, 1, or 2).
+        const blockX = checkIndex % 3;     // Modulo for the block's column index (0, 1, or 2).
 
-      // --- Construct and Check Current Column for Duplicates ---
-      const columnData = [] ;
-      for ( let colIdx = 0 ; colIdx < 9 ; colIdx++ ) {
-         columnData.push( boardValues[ colIdx ][ checkIndex ] ) ;
-      }
-      const badColPositions = FindRepeatedIndices( columnData ) ;
-      badColPositions.forEach( function( elementPosition ) {
-         violationMarkers[ elementPosition ][ checkIndex ]++ ;
-      } ) ;
+        // Define the 9 (row, col) coordinates within this 3x3 subgrid.
+        const subgridCoords = [
+            [0 + blockY * 3, 0 + blockX * 3], [0 + blockY * 3, 1 + blockX * 3], [0 + blockY * 3, 2 + blockX * 3],
+            [1 + blockY * 3, 0 + blockX * 3], [1 + blockY * 3, 1 + blockX * 3], [1 + blockY * 3, 2 + blockX * 3],
+            [2 + blockY * 3, 0 + blockX * 3], [2 + blockY * 3, 1 + blockX * 3], [2 + blockY * 3, 2 + blockX * 3]
+        ];
 
-      // --- Determine and Check Current 3x3 Subgrid for Duplicates ---
-      // Calculate the major row and column offset for the 3x3 block.
-      const blockRowOffset = Math.floor( checkIndex / 3 ) ;
-      const blockColOffset = checkIndex % 3 ;
+        // Extract the values from the current 3x3 subgrid.
+        let subgridElements = [];
+        subgridCoords.forEach(function(cellCoord) {
+            subgridElements.push(currentGrid[cellCoord[0]][cellCoord[1]]);
+        });
+        // Check for duplicates within the current 3x3 subgrid.
+        const subgridIssues = IdentifyRepeats(subgridElements);
+        subgridIssues.forEach(function(elementIdxInBlock) {
+            // Use the stored coordinates to mark the actual cell in the error marker grid.
+            errorMarkers[subgridCoords[elementIdxInBlock][0]][subgridCoords[elementIdxInBlock][1]]++;
+        });
+    }
 
-      // Define the absolute coordinates for all cells within the current 3x3 block.
-      const subgridAbsoluteCoords =
-      [
-         [ 0 + blockRowOffset * 3, 0 + blockColOffset * 3 ], [ 0 + blockRowOffset * 3, 1 + blockColOffset * 3 ], [ 0 + blockRowOffset * 3, 2 + blockColOffset * 3 ],
-         [ 1 + blockRowOffset * 3, 0 + blockColOffset * 3 ], [ 1 + blockRowOffset * 3, 1 + blockColOffset * 3 ], [ 1 + blockRowOffset * 3, 2 + blockColOffset * 3 ],
-         [ 2 + blockRowOffset * 3, 0 + blockColOffset * 3 ], [ 2 + blockRowOffset * 3, 1 + blockColOffset * 3 ], [ 2 + blockRowOffset * 3, 2 + blockColOffset * 3 ]
-      ] ;
+    // Format the `currentGrid` for output based on the `errorMarkers`.
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            // If a cell has been marked as problematic (marker value >= 1), prepend an asterisk.
+            // Otherwise, prepend a space for consistent formatting.
+            currentGrid[r][c] = (errorMarkers[r][c] >= 1) ? "*" + currentGrid[r][c] : " " + currentGrid[r][c];
+        }
+    }
 
-      // Extract the actual values from the cells of the current 3x3 subgrid.
-      const subgridElements = [] ;
-      subgridAbsoluteCoords.forEach( function( coordPair ) {
-         subgridElements.push( boardValues[ coordPair[0] ][ coordPair[1] ] ) ;
-      } ) ;
-
-      // Check the extracted subgrid elements for duplicates.
-      const badBlockPositions = FindRepeatedIndices( subgridElements ) ;
-      badBlockPositions.forEach( function( relativePosition ) {
-         // Map the relative position within the 3x3 block back to absolute grid coordinates.
-         const absoluteRow = subgridAbsoluteCoords[ relativePosition ][ 0 ] ;
-         const absoluteCol = subgridAbsoluteCoords[ relativePosition ][ 1 ] ;
-         violationMarkers[ absoluteRow ][ absoluteCol ]++ ;
-      } ) ;
-   }
-
-   // --- Format the Board Values Based on Violation Markers ---
-   // Iterate through the grid to apply formatting (add '*' or ' ') based on violations.
-   for ( let r = 0 ; r < 9 ; r++ )
-   {
-      for ( let c = 0 ; c < 9 ; c++ )
-      {
-         boardValues[ r ][ c ] = ( violationMarkers[ r ][ c ] >= 1 ) ? "*" + boardValues[ r ][ c ] : " " + boardValues[ r ][ c ] ;
-      }
-   }
-
-   // Append the formatted board to the output buffer.
-   // Each row is joined without commas, then rows are joined by newlines, followed by two newlines for separation.
-   finalOutputBuffer += boardValues.map( row => row.join("") ).join( "\n" ) + "\n\n" ;
+    // Join the rows of the formatted grid with newlines, remove commas, and append to the output buffer.
+    finalOutputString += currentGrid.join("\n").replace(/,/g, "") + "\n\n";
 }
 
-// Print the final accumulated output to the console, removing any trailing whitespace.
-console.log( finalOutputBuffer.trim() ) ;
+// Print the final accumulated output string, trimming any trailing newlines.
+console.log(finalOutputString.trim());

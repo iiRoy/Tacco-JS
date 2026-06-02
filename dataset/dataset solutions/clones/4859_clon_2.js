@@ -1,127 +1,150 @@
-var dataStream = require("node:fs")
-  .readFileSync("/dev/stdin", "utf8")
-  .trim()
-  .split("\n");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-var dataFeeder =
-  {
-    "contentLines": dataStream,
-    "currentPosition": 0,
-    "totalElements": dataStream.length,
+// This object manages the input stream, providing methods to access lines sequentially.
+var dataStream = {
+  "sourceLines": rawData,
+  "currentIdx": 0,
+  "totalLines": rawData.length,
 
-    "hasMoreEntries": function() {
-      return (this.currentPosition < this.totalElements);
-    },
+  // Checks if there are more lines available in the input stream.
+  "hasMoreData": function() {
+    return (this.currentIdx < this.totalLines);
+  },
 
-    "fetchNextEntry": function() {
-      if (!this.hasMoreEntries()) {
-        return "";
-      }
-      var retrievedItem = this.contentLines[this.currentPosition];
-      this.currentPosition++;
-      return retrievedItem;
+  // Retrieves the next line from the input stream and advances the internal pointer.
+  "fetchNextLine": function() {
+    if (!this.hasMoreData()) {
+      return ""; // Return an empty string if no more data is present.
     }
-  };
+    var lineContent = this.sourceLines[this.currentIdx];
+    this.currentIdx++; // Increment the index to point to the next line.
+    return lineContent;
+  }
+};
 
-RunCoreLogic();
+// Initiate the primary processing function.
+ProcessInput();
 
-function getDatum() {
-  return dataFeeder.fetchNextEntry();
+// Helper function to get the next available line from the input stream.
+function getNextItem() {
+  return dataStream.fetchNextLine();
 }
 
+// Helper function to parse the next line as an integer.
 function getInteger() {
-  return transformValue(getDatum(), 1);
+  return convertValue(getNextItem(), 1);
 }
 
+// Helper function to split the next line by spaces into an array of strings.
 function getStringArray() {
-  return transformValue(getDatum(), 2);
+  return convertValue(getNextItem(), 2);
 }
 
-function getNumericArray() {
-  return transformValue(getDatum(), 4);
+// Helper function to split the next line by spaces and convert elements to an array of integers.
+function getIntegerArray() {
+  return convertValue(getNextItem(), 4);
 }
 
+// Helper function to split the next line into an array of individual characters.
 function getCharacterArray() {
-  return transformValue(getDatum(), 6);
+  return convertValue(getNextItem(), 6);
 }
 
-function moreAvailable() {
-  return dataFeeder.hasMoreEntries();
+// Helper function to check if there's more data to read from the stream.
+function checkMoreData() {
+  return dataStream.hasMoreData();
 }
 
-function printResult(outputVal) {
-  console.log(outputVal);
+// Function for standard output, printing a value to the console.
+function printResult(outputValue) {
+  console.log(outputValue);
 }
 
-function logError(errorMsg) {
-  console.error(errorMsg);
+// Function for standard error output, logging an error message to the console.
+function logError(errorMessage) {
+  console.error(errorMessage);
 }
 
-/*
- * This utility function handles various data transformations.
- * It takes an input value and an operation code to determine the conversion.
- *
- * Operation Codes:
+/**
+ * A versatile conversion utility for various input types and formats.
+ * @param {string|Array} inputValue - The data to be converted.
+ * @param {number} conversionType - An integer code specifying the conversion logic.
  *   1: Converts the input string to an integer.
  *   2: Splits the input string by spaces into an array of strings.
- *   4: Splits the input string by spaces and converts each part to a floating-point number.
+ *   4: Splits the input string by spaces and maps each part to a number.
  *   6: Splits the input string into an array of individual characters.
- *   7: Splits the input string into individual characters and converts each to a floating-point number.
- *   8: Joins array elements into a string, separated by spaces.
- *   9: Joins array elements into a string, separated by newlines.
- *   0: Joins array elements into a string without any separator.
- *
- * If the operationCode is not recognized or an error occurs, the original input value is returned.
+ *   7: Splits the input string into characters and maps each to a number.
+ *   8: Joins array elements with a space.
+ *   9: Joins array elements with a newline character.
+ *   0: Joins array elements without any separator.
+ *   Default: Returns the input value unchanged.
+ * @returns {*} The converted value, or the original input if conversion fails or type is unknown.
  */
-function transformValue(inputVal, operationCode) {
+function convertValue(inputValue, conversionType) {
   try {
-    switch (operationCode) {
+    switch (conversionType) {
       case 1:
-        return Number.parseInt(inputVal);
+        return parseInt(inputValue);
       case 2:
-        return inputVal.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputVal.split(" ").map((item) => parseFloat(item));
+        return inputValue.split(" ").map((itemVal) => Number(itemVal));
       case 6:
-        return inputVal.split("");
+        return inputValue.split("");
       case 7:
-        return inputVal.split("").map((item) => parseFloat(item));
+        return inputValue.split("").map((itemVal) => Number(itemVal));
       case 8:
-        return inputVal.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputVal.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputVal.join("");
+        return inputValue.join("");
       default:
-        return inputVal;
+        return inputValue;
     }
-  } catch (exceptionObject) {
-    return inputVal;
+  } catch (e) {
+    // If an error occurs during conversion, return the original input value.
+    return inputValue;
   }
 }
 
-function RunCoreLogic() {
-  var depthLevel = getInteger();
-  var currentSet = new Array(Math.pow(2, depthLevel));
+// The main function where the core logic of the program resides.
+function ProcessInput() {
+  // Read the initial integer 'N' which determines the size and number of rounds.
+  var inputSize = getInteger();
 
-  for (var outerLoopIdx = 0; outerLoopIdx < currentSet.length; outerLoopIdx++) {
-    currentSet[outerLoopIdx] = getInteger();
+  // Initialize an array with a size of 2 raised to the power of 'inputSize'.
+  var currentValues = new Array(Math.pow(2, inputSize));
+
+  // Populate the 'currentValues' array by reading '2^N' integers from the input.
+  for (var outerLoopIdx = 0; outerLoopIdx < currentValues.length; outerLoopIdx++) {
+    currentValues[outerLoopIdx] = getInteger();
   }
 
-  var nextSet;
-  for (var outerLoopIdx = 0; outerLoopIdx < depthLevel; outerLoopIdx++) {
-    nextSet = new Array(Math.pow(2, depthLevel - outerLoopIdx - 1));
-    for (var innerLoopIdx = 0; innerLoopIdx < currentSet.length; innerLoopIdx = innerLoopIdx + 2) {
-      if (currentSet[innerLoopIdx] > currentSet[innerLoopIdx + 1]) {
-        nextSet[innerLoopIdx / 2] = currentSet[innerLoopIdx] - currentSet[innerLoopIdx + 1];
-      } else if (currentSet[innerLoopIdx] < currentSet[innerLoopIdx + 1]) {
-        nextSet[innerLoopIdx / 2] = currentSet[innerLoopIdx + 1] - currentSet[innerLoopIdx];
+  var nextRoundValues; // This array will hold the results of each processing round.
+
+  // Loop 'inputSize' times, performing a reduction operation in each iteration.
+  for (var outerLoopIdx = 0; outerLoopIdx < inputSize; outerLoopIdx++) {
+    // Calculate the size for the 'nextRoundValues' array, which is half the current effective size.
+    nextRoundValues = new Array(Math.pow(2, inputSize - outerLoopIdx - 1));
+
+    // Iterate through the 'currentValues' array, processing elements in pairs.
+    for (var innerLoopIdx = 0; innerLoopIdx < currentValues.length; innerLoopIdx = innerLoopIdx + 2) {
+      // Compare two adjacent values and store their difference or one of them.
+      if (currentValues[innerLoopIdx] > currentValues[innerLoopIdx + 1]) {
+        nextRoundValues[innerLoopIdx / 2] = currentValues[innerLoopIdx] - currentValues[innerLoopIdx + 1];
+      } else if (currentValues[innerLoopIdx] < currentValues[innerLoopIdx + 1]) {
+        nextRoundValues[innerLoopIdx / 2] = currentValues[innerLoopIdx + 1] - currentValues[innerLoopIdx];
       } else {
-        nextSet[innerLoopIdx / 2] = currentSet[innerLoopIdx];
+        // If the values are equal, store one of them (difference would be 0).
+        nextRoundValues[innerLoopIdx / 2] = currentValues[innerLoopIdx];
       }
     }
-    currentSet = nextSet;
-    // logError(currentSet); // Debugging output, intentionally commented out.
+    // The results of the current round become the input for the next round.
+    currentValues = nextRoundValues;
+    // Optional: Uncomment the line below to log the array state after each round for debugging.
+    // logError(currentValues);
   }
-  printResult(currentSet[0]);
+  // After all rounds, 'currentValues' will contain a single element. Print this final result.
+  printResult(currentValues[0]);
 }

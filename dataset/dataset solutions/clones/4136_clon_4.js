@@ -1,34 +1,31 @@
 'use strict';
+const processInput = (rawText) => {
+  const [upperBound, lowerSumThreshold, upperSumThreshold] = rawText.split(' ').map(Number);
 
-const dissectInputString = (incomingPayload) => incomingPayload.split(' ').map(Number);
-
-const tallyDigitsNumerically = (numericalSubject) => {
-    let cumulativeTally = 0;
-    let workingSubject = numericalSubject;
-    while (workingSubject > 0) {
-        cumulativeTally += workingSubject % 10;
-        workingSubject = Math.floor(workingSubject / 10);
+  const obtainDigitSum = (value) => {
+    let currentVal = value;
+    let totalSum = 0;
+    while (currentVal > 0) {
+      totalSum += currentVal % 10;
+      currentVal = Math.floor(currentVal / 10);
     }
-    return cumulativeTally;
+    return totalSum;
+  };
+
+  const finalResult = Array.from({
+    length: upperBound
+  }, (_, index) => index + 1)
+    .filter(currentNumber => {
+      const currentDigitSum = obtainDigitSum(currentNumber);
+      return currentDigitSum >= lowerSumThreshold && currentDigitSum <= upperSumThreshold;
+    })
+    .reduce((accumulator, matchingNumber) => accumulator + matchingNumber, 0);
+
+  return finalResult;
 };
 
-const aggregateEligibleQuantities = (primaryDataSource) => {
-    const extractedParameters = dissectInputString(primaryDataSource);
-    const upperLimitIndex = extractedParameters[0];
-    const minimumThreshold = extractedParameters[1];
-    const maximumThreshold = extractedParameters[2];
-
-    const sequentialRange = Array.from({ length: upperLimitIndex }, (_, index) => index + 1);
-
-    const filteredSet = sequentialRange.filter(candidateNumber => {
-        const digitOccurrenceSum = tallyDigitsNumerically(candidateNumber);
-        return digitOccurrenceSum >= minimumThreshold && digitOccurrenceSum <= maximumThreshold;
-    });
-
-    return filteredSet.reduce((accumulatedResult, itemValue) => accumulatedResult + itemValue, 0);
+const mainExecution = (inputContent) => {
+  console.log(processInput(inputContent));
 };
 
-function InitiateProcessing(systemInputData) {
-  console.log(aggregateEligibleQuantities(systemInputData));
-}
-InitiateProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+mainExecution(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

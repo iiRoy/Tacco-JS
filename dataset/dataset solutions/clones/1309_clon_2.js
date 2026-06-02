@@ -1,33 +1,27 @@
-const fileSystemUtility = require(  'fs'  )  ;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const rawTextualInput =  fileSystemUtility  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  ;
+const lineArray = rawData.split('\n'); // Split the input string into an array of lines
 
-const lineFragments =  rawTextualInput  .  split  (  '\n'  )  ;
+let resultString = ""; // Initialize an empty string to build the output
 
-let outputAccumulator =  ""  ;
-
-// Loop through each line fragment provided in the input.
-for ( let fragmentIterator = 0 ; fragmentIterator < lineFragments.length ; fragmentIterator++ )
-{
-  // Check for a specific termination condition: if the current fragment is "0".
-  if ( lineFragments[ fragmentIterator ] === '0' )
-  {
-    // Exit the processing loop immediately.
-    break  ;
+// Iterate over each line in the array
+for (let idx = 0; idx < lineArray.length; idx++) {
+  // Check for the termination condition: if the line content is '0'
+  if (lineArray[idx] === '0') {
+    break; // Exit the loop if '0' is encountered
   }
 
-  // Convert the string representation of numbers in the current fragment into an array of actual numeric digits.
-  const digitCollection = Array.from( lineFragments[ fragmentIterator ] ).map( singleCharacter => parseInt( singleCharacter , 10 ) ) ;
+  // Convert the current line (which is a string representing a number)
+  // into an array of its individual digits as numbers.
+  const digitArray = [...lineArray[idx]].map(Number);
 
-  // Compute the total sum of all individual digits within the current collection.
-  const currentSum = digitCollection.reduce( ( partialSum , currentElement ) => partialSum + currentElement ) ;
+  // Calculate the sum of all digits in the current number
+  const totalValue = digitArray.reduce((accumulator, currentDigit) => accumulator + currentDigit);
 
-  // Append the calculated sum, followed by a newline character, to the output buffer.
-  outputAccumulator += currentSum + '\n'  ;
+  // Append the calculated sum and a newline character to the result string
+  resultString += totalValue + '\n';
 }
 
-// Use the global console object for output.
-const systemLogger = console;
-
-// Display the final accumulated string, ensuring any leading or trailing whitespace is removed.
-systemLogger.log( outputAccumulator.trim() ) ;
+// Print the final accumulated string to the console,
+// removing any trailing whitespace (like the last newline if present).
+console.log(resultString.trim());

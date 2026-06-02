@@ -1,72 +1,51 @@
-/**
- * Determines if a given sequence of movement commands adheres to specific rules.
- * The rules depend on the 1-based position of the command in the sequence.
- *
- * This function performs a validity check on a series of character-based moves.
- *
- * @param {string} sequenceOfMoves - A string representing the series of movements (e.g., "RULDR").
- * @returns {string} "Yes" if the sequence is valid according to the rules, "No" otherwise.
- */
-function checkMovementPattern(sequenceOfMoves) {
-  // A Type III addition: Guard clause for empty or undefined input.
-  // An empty sequence is considered valid as no rules can be violated.
-  if (!sequenceOfMoves || sequenceOfMoves.length === 0) {
-    return 'Yes';
-  }
+function processDanceSequence(inputSequence) {
+  const oddPositionAllowedMoves = ['R', 'U', 'D'];
+  const evenPositionAllowedMoves = ['L', 'U', 'D'];
 
-  // Type II change: Renamed variables and used `Set` for efficient lookups (Type III data type change).
-  // These sets define the permissible characters for moves based on their 1-based position.
-  const oddPositionPermittedMoves = new Set(['R', 'U', 'D']);
-  const evenPositionPermittedMoves = new Set(['L', 'U', 'D']);
+  const RESULT_NO = 'No';
+  const RESULT_YES = 'Yes';
 
-  // Type III addition: A small helper function to encapsulate the check for allowed moves.
-  // This improves readability and modularity.
-  const isMovePermitted = (moveCharacter, allowedSet) => {
-    return allowedSet.has(moveCharacter);
+  // Helper function to determine if a given character is present in an allowed set
+  const isCharacterPermitted = (charToCheck, permittedSet) => {
+    return permittedSet.includes(charToCheck);
   };
 
-  // Type II change: Changed loop variable declaration from `var` to `let`.
-  // Type III change: The loop now iterates using a 0-based index, which is standard in JavaScript.
-  // The original code used a 1-based loop counter and adjusted for array access.
-  for (let currentMoveIndex = 0; currentMoveIndex < sequenceOfMoves.length; currentMoveIndex++) {
-    // Type III addition: Introduce an intermediate variable for clarity.
-    const currentMovementCharacter = sequenceOfMoves[currentMoveIndex];
-    // Type III addition: Explicitly calculate the 1-based position for rule application.
-    const oneBasedPosition = currentMoveIndex + 1;
-
-    // Type II change: Rewritten comments to explain the logic.
-    // Check if the current position (1-based) is odd or even.
-    if (oneBasedPosition % 2 !== 0) { // If the position is odd (e.g., 1st, 3rd, 5th, ...)
-      // Type III change: Utilized the helper function `isMovePermitted`.
-      // If the current character is not found in the set of allowed moves for odd positions,
-      // the sequence is invalid.
-      if (!isMovePermitted(currentMovementCharacter, oddPositionPermittedMoves)) {
-        return 'No'; // Type II: Early exit with 'No' upon first violation.
-      }
-    } else { // If the position is even (e.g., 2nd, 4th, 6th, ...)
-      // Type III change: Utilized the helper function `isMovePermitted`.
-      // If the current character is not found in the set of allowed moves for even positions,
-      // the sequence is invalid.
-      if (!isMovePermitted(currentMovementCharacter, evenPositionPermittedMoves)) {
-        return 'No'; // Type II: Early exit.
-      }
-    }
-    // Type III deletion: The `continue` statements from the original code are redundant
-    // as the loop naturally proceeds if no violation is found.
+  // Handle the special case for sequences containing only a single character
+  if (inputSequence.length === 1) {
+    // If the sole character is 'L', it's invalid. Otherwise, it's considered valid.
+    // This matches the original behavior where 'L' for length 1 returns 'No',
+    // and other characters ('R', 'U', 'D') cause the loop to be skipped, leading to 'Yes'.
+    return inputSequence[0] === 'L' ? RESULT_NO : RESULT_YES;
   }
 
-  // Type II change: Rewritten comment.
-  // If the loop completes without any rule violations, the entire sequence is valid.
-  return 'Yes';
+  // Iterate through the sequence, checking characters based on their effective position parity.
+  // The original loop structure checks characters from index 0 up to (length - 2).
+  // The character at the very last index (length - 1) is not explicitly checked by the loop.
+  for (let charIndex = 0; charIndex < inputSequence.length - 1; charIndex++) {
+    const currentCharacter = inputSequence[charIndex];
+    let isValidForPosition = false;
+
+    // Determine which set of allowed moves to use based on the character's index.
+    // Original logic:
+    // - If `i` (loop counter, 1-based) is odd, it checks `tapDance[i-1]` (even index) against `odd` set.
+    // - If `i` (loop counter, 1-based) is even, it checks `tapDance[i-1]` (odd index) against `even` set.
+    // So, for a 0-based `charIndex`:
+    // - If `charIndex` is even (0, 2, ...), it corresponds to an odd `i`, so check against `oddPositionAllowedMoves`.
+    // - If `charIndex` is odd (1, 3, ...), it corresponds to an even `i`, so check against `evenPositionAllowedMoves`.
+    if (charIndex % 2 === 0) {
+      isValidForPosition = isCharacterPermitted(currentCharacter, oddPositionAllowedMoves);
+    } else {
+      isValidForPosition = isCharacterPermitted(currentCharacter, evenPositionAllowedMoves);
+    }
+
+    // If any character fails its validation, the entire sequence is invalid.
+    if (!isValidForPosition) {
+      return RESULT_NO;
+    }
+  }
+
+  // If the loop completes without returning 'No', the sequence is valid.
+  return RESULT_YES;
 }
 
-// Type II change: Renamed the function call in the output.
-// Type III addition: Introduced intermediate variables for input processing for better readability.
-// Reads the input from standard input, processes it, and then calls the validation function.
-const fileSystem = require("fs");
-const rawInputBuffer = fileSystem.readFileSync("/dev/stdin", "utf8");
-// Extracts the first line of input and removes leading/trailing whitespace.
-const cleanedInputSequence = rawInputBuffer.split('\n')[0].trim();
-
-// Outputs the result of the pattern validation to the console.
-console.log(checkMovementPattern(cleanedInputSequence));
+console.log(processDanceSequence(require("fs").readFileSync("/dev/stdin", "utf8").split('\n')[0].trim()));

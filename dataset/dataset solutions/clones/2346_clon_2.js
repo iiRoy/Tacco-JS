@@ -1,54 +1,52 @@
-/*
- * This script processes a single character from standard input
- * to compute a specific numerical value.
- */
+function processInput(inputArgs) {
+  // This function processes a given string to determine
+  // the number of character mismatches between its
+  // reversed first half and its second half.
 
-function analyzeTextDifferences( sourceData )
-{
-    // The original logic expects `sourceData` to be an array,
-    // and `targetChar` to be the first element.
-    // However, the invocation passes a string, so `sourceData[0]`
-    // will be the first character of that string.
-    let targetChar = sourceData[ 0 ] ;
+  // The primary string data is expected as the first element
+  // of the input arguments array.
+  let dataString = inputArgs[0];
 
-    let firstSegment ;
-    let secondSegment ;
+  // Variables to hold the two segments of the string after processing.
+  let firstHalfReversed;
+  let secondHalf;
 
-    // Check the length of the *single character* 'targetChar'.
-    // This length will always be 1 (for a non-empty string).
-    // Thus, `targetChar.length % 2 === 0` will always be false.
-    if ( targetChar.length % 2 === 0 )
-    {
-        // This block will practically never be executed under typical conditions.
-        firstSegment = targetChar.substring( 0 , targetChar.length / 2 ) .split( '' ) .reverse() .join( '' ) ;
-        secondSegment = targetChar.substring( targetChar.length / 2 , targetChar.length + 1 ) ;
+  // Check if the total length of the string is an even number.
+  if (dataString.length % 2 === 0) {
+    // If the length is even, split the string exactly in half.
+    // The first segment is taken, reversed, and then joined back.
+    firstHalfReversed = dataString.substring(0, dataString.length / 2).split("").reverse().join("");
+    // The second segment starts from the middle point to the end.
+    secondHalf = dataString.substring(dataString.length / 2, dataString.length + 1);
+  } else {
+    // If the length is odd, the middle character is ignored for comparison.
+    // The first segment is taken up to the character before the middle one,
+    // then reversed and joined.
+    firstHalfReversed = dataString.substring(0, Math.floor(dataString.length / 2)).split("").reverse().join("");
+    // The second segment starts from the character after the middle one,
+    // extending to the end of the string.
+    secondHalf = dataString.substring(Math.floor(dataString.length / 2) + 1, dataString.length + 1);
+  }
+
+  // Initialize a counter for character differences.
+  let mismatchCount = 0;
+
+  // Iterate through the characters of the two prepared string segments.
+  // The loop runs for half the length of the original string,
+  // effectively comparing corresponding characters from the "outer" parts.
+  for (let idx = 0; idx < Math.floor(dataString.length / 2); idx++) {
+    // Compare the character at the current index in both segments.
+    if (firstHalfReversed.charAt(idx) !== secondHalf.charAt(idx)) {
+      // If the characters do not match, increment the mismatch counter.
+      mismatchCount++;
     }
-    else
-    {
-        // This block will almost always be executed.
-        // `Math.floor(targetChar.length / 2)` will be `Math.floor(1 / 2)` which is `0`.
-        firstSegment = targetChar.substring( 0 , Math.floor( targetChar.length / 2 ) ) .split( '' ) .reverse() .join( '' ) ; // `substring(0,0)` -> ''
-        secondSegment = targetChar.substring( Math.floor( targetChar.length / 2 ) + 1 , targetChar.length + 1 ) ; // `substring(1,2)` -> ''
-    }
+  }
 
-    let differenceCount = 0 ; // Counter for dissimilar characters.
-
-    // The loop condition `charIndex < Math.floor(targetChar.length / 2)`
-    // will be `charIndex < 0`, so the loop will never run.
-    for ( let iterationIndex = 0 ; iterationIndex < Math.floor( targetChar.length / 2 ) ; iterationIndex++ )
-    {
-        // This comparison will never occur.
-        if ( firstSegment.charAt( iterationIndex ) !== secondSegment.charAt( iterationIndex ) )
-        {
-            differenceCount ++ ; // Increment on mismatch.
-        }
-    }
-
-    // The final result will always be 0 due to the above logic.
-    console.log( differenceCount ) ;
+  // Output the final tally of character mismatches to the console.
+  console.log(mismatchCount);
 }
 
-// Read input from standard input.
-// The `readFileSync` returns a string, which is then passed as `sourceData`.
-// As explained, `sourceData[0]` will be the first character of this string.
-analyzeTextDifferences( require( 'fs' ) .readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+// The program is executed by reading input from standard input.
+// The content read from '/dev/stdin' is treated as a single string,
+// which is then wrapped in an array to match the expected 'inputArgs[0]' format.
+processInput([require('fs').readFileSync('/dev/stdin', 'utf8')]);

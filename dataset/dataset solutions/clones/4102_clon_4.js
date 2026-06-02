@@ -1,19 +1,12 @@
-function processInputData(sourceContent) {
-    const rawLines = sourceContent.split('\n');
+function main(rawData) {
+    const lineSegments = rawData.split(/\n/);
+    const valueStrings = lineSegments.slice(1, lineSegments.length - 1);
 
-    const effectiveLines = rawLines.reduce((accumulator, currentLine, index, array) => {
-        if (index > 0 && index < array.length - 1) {
-            accumulator.push(currentLine);
-        }
-        return accumulator;
-    }, []);
+    const distinctValues = new Set();
+    for (const item of valueStrings) {
+        distinctValues.add(item);
+    }
 
-    const uniqueEntryTracker = new Set(effectiveLines);
-
-    console.log(uniqueEntryTracker.size);
+    console.log(distinctValues.size);
 }
-
-const systemIO = require('fs');
-const rawInputBuffer = systemIO.readFileSync('/dev/stdin', 'utf8');
-
-processInputData(rawInputBuffer);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

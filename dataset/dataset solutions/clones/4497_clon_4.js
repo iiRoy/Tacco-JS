@@ -1,23 +1,24 @@
-'use strict'
+'use strict';
 
-function processInputData(rawData) {
-    const lines = rawData.split('\n');
-    const elementCount = parseInt(lines[0], 10);
-    const dataElements = lines[1].split(' ');
+function processSequence(inputData) {
+    const parsedLines = inputData.split('\n').map(segment => segment.split(' '));
+    const totalElements = parseInt(parsedLines[0][0], 10);
+    const sourceElements = parsedLines[1];
 
-    const targetParity = elementCount % 2;
+    const resultElements = sourceElements.slice(1, totalElements).reduce((currentAccumulator, currentItem, iterationIndex) => {
+        const originalPosition = iterationIndex + 1;
+        const totalParity = totalElements % 2;
+        const currentParity = originalPosition % 2;
 
-    const resultSequence = dataElements.slice(1).reduce((currentCollection, currentItemValue, relativePosition) => {
-        const absolutePosition = relativePosition + 1;
-        if ((absolutePosition % 2) === targetParity) {
-            currentCollection.push(currentItemValue);
+        if (currentParity === totalParity) {
+            currentAccumulator.push(currentItem);
         } else {
-            currentCollection.unshift(currentItemValue);
+            currentAccumulator.unshift(currentItem);
         }
-        return currentCollection;
-    }, [dataElements[0]]);
+        return currentAccumulator;
+    }, [sourceElements[0]]);
 
-    console.log(resultSequence.join(' '));
+    console.log(resultElements.join(' '));
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

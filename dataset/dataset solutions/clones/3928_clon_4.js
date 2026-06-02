@@ -1,33 +1,26 @@
-const calculateOutcome = (sourceData) => {
-  const lineCollection = sourceData.trim().split('\n');
-  const transformedPairs = lineCollection.slice(1).map(entryText =>
-    entryText.split(' ').map(Number)
+function processInputData(rawData) {
+  const lineSegments = rawData.split("\n");
+  const dataCount = Number(lineSegments[0]);
+
+  const numericPairs = lineSegments.slice(1, dataCount + 1).map(lineText =>
+    lineText.split(" ").map(Number)
   );
 
-  const initialStats = {
-    aggregateSum: 0,
-    minimumQualifyingValue: Number.POSITIVE_INFINITY,
-    hasQualifiedEntry: false
-  };
+  const sumOfFirstElements = numericPairs.reduce((accumulatedSum, currentPair) =>
+    accumulatedSum + currentPair[0], 0
+  );
 
-  const finalStats = transformedPairs.reduce((accumulatorObject, currentPair) => {
-    const primaryNumber = currentPair[0];
-    const secondaryNumber = currentPair[1];
+  const relevantSecondElements = numericPairs
+    .filter(pairItem => pairItem[0] > pairItem[1])
+    .map(pairItem => pairItem[1]);
 
-    accumulatorObject.aggregateSum += primaryNumber;
+  const smallestRelevantSecond = Math.min(...relevantSecondElements);
 
-    if (primaryNumber > secondaryNumber) {
-      accumulatorObject.minimumQualifyingValue = Math.min(accumulatorObject.minimumQualifyingValue, secondaryNumber);
-      accumulatorObject.hasQualifiedEntry = true;
-    }
-    return accumulatorObject;
-  }, initialStats);
+  const computedOutcome = (smallestRelevantSecond === Infinity)
+    ? 0
+    : sumOfFirstElements - smallestRelevantSecond;
 
-  const resultValue = finalStats.hasQualifiedEntry
-    ? (finalStats.aggregateSum - finalStats.minimumQualifyingValue)
-    : 0;
+  console.log(computedOutcome);
+}
 
-  console.log(resultValue);
-};
-
-calculateOutcome(require("fs").readFileSync("/dev/stdin","utf8"));
+processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));

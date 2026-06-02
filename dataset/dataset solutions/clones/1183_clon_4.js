@@ -1,34 +1,42 @@
-let _accumulatedText = '';
-const _inputStream = process.stdin;
-
-_inputStream.resume();
-_inputStream.setEncoding('utf-8');
-
-_inputStream.on('data', (segment) => {
-  _accumulatedText += segment;
+var inputBuffer = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
+process.stdin.on('data', function(chunk) {
+  inputBuffer += chunk;
 });
 
-_inputStream.on('end', () => {
-  const _contentLines = _accumulatedText.trim().split('\n');
+process.stdin.on('end', function() {
+  var lines = inputBuffer.split('\n');
+  var count = parseInt(lines[0], 10);
+  var sourceCoords = lines[1].split(' ').map(Number);
+  var targetCoords = lines[2].split(' ').map(Number);
 
-  const _elementCount = Number(_contentLines[0]);
-  const _firstVector = _contentLines[1].split(' ').map(Number);
-  const _secondVector = _contentLines[2].split(' ').map(Number);
+  const absoluteDifferences = Array.from({ length: count }, (_, index) =>
+    Math.abs(sourceCoords[index] - targetCoords[index])
+  );
 
-  const _deltas = _firstVector.map((val, idx) => Math.abs(val - _secondVector[idx]));
+  const manhattanDistance = absoluteDifferences.reduce((accumulator, currentDifference) =>
+    accumulator + currentDifference, 0
+  );
 
-  const _normOne = _deltas.reduce((sum, current) => sum + current, 0);
+  const squaredDifferencesSum = absoluteDifferences.reduce((accumulator, currentDifference) =>
+    accumulator + (currentDifference * currentDifference), 0
+  );
+  const euclideanDistance = Math.sqrt(squaredDifferencesSum);
 
-  const _normTwoSquaredSum = _deltas.reduce((sum, current) => sum + Math.pow(current, 2), 0);
-  const _normTwo = Math.sqrt(_normTwoSquaredSum);
+  const cubedDifferencesSum = absoluteDifferences.reduce((accumulator, currentDifference) =>
+    accumulator + Math.pow(currentDifference, 3), 0
+  );
+  const minkowskiDistanceP3 = Math.pow(cubedDifferencesSum, 1/3);
 
-  const _normThreeCubedSum = _deltas.reduce((sum, current) => sum + Math.pow(current, 3), 0);
-  const _normThree = Math.pow(_normThreeCubedSum, 1/3);
+  const chebyshevDistance = count === 0
+    ? 0
+    : absoluteDifferences.reduce((maximumValue, currentDifference) =>
+        Math.max(maximumValue, currentDifference), 0
+      );
 
-  const _normInfinity = _deltas.reduce((maxVal, current) => Math.max(maxVal, current), 0);
-
-  console.log(_normOne);
-  console.log(_normTwo);
-  console.log(_normThree);
-  console.log(_normInfinity);
+  console.log(manhattanDistance);
+  console.log(euclideanDistance);
+  console.log(minkowskiDistanceP3);
+  console.log(chebyshevDistance);
 });

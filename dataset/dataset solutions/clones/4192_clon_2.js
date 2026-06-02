@@ -1,20 +1,25 @@
-'use strict'
+'use strict'; // Enforce strict mode for better code quality
 
-// This is the core routine for processing numeric string data.
-function  handleNumericString (  incomingText ) {
+/**
+ * This function processes an input string, typically a number,
+ * to check a specific mathematical property.
+ * @param {string} rawData - The input string received.
+ */
+function processInput(rawData) {
+    // Calculate the total sum of the individual digits present in the input string.
+    const digitTotal = rawData
+        .split('') // Convert the input string into an array of character digits.
+        .map(digitChar => ~~digitChar) // Transform each character digit into its numerical equivalent.
+        .reduce((accumulator, currentDigit) => accumulator + currentDigit); // Aggregate all numeric digits into a single sum.
 
-  // First, we extract each character, convert it to an integer,
-  // and then compute their aggregate numerical value.
-  const digitAggregation = incomingText
-    . split ( '' )
-    . map ( ( charItem ) => parseInt(charItem,  10) ) // Converts character to integer base 10.
-    . reduce ( ( runningTotal, currentComponent ) =>   runningTotal  +  currentComponent ) ; // Sums up all components.
+    // Determine if the original number (parsed from the input string) is perfectly
+    // divisible by the sum of its digits.
+    const resultString = (Number(rawData) % digitTotal === 0) ? 'Yes' : 'No';
 
-  // Next, we determine if the original number is perfectly divisible by its digit sum.
-  const outcomeMessage = Number ( incomingText ) % digitAggregation === 0 ? 'YES' : 'NO' ;
-
-  console.log ( outcomeMessage ) ; // Display the final result.
+    // Display the computed result to the console.
+    console.log(resultString);
 }
 
-// Initiate the data processing by reading content from standard input.
-handleNumericString ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

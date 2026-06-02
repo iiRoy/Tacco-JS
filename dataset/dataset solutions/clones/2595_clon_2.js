@@ -1,62 +1,30 @@
-// This module contains a primary function designed to compute a specific value
-// based on two numerical inputs provided as a single string.
+function processInput(rawData) {
+  // This function takes a raw string input and processes it according to specific rules.
+  const parameters = rawData.split(" "); // Divide the input string into an array of substrings using space as a delimiter.
+  const firstParam = parameters[0]; // Store the first element of the split array.
+  const secondParam = parameters[1]; // Store the second element of the split array.
 
-/*
- * The core function for processing the incoming data.
- * It expects a string containing two space-separated numbers.
- */
-function processInput(  rawData  ) {
-
-  // Split the entire input string into an array of substrings
-  // using a space as the delimiter.
-  const   tokens   = rawData.split (  " "  ) ;
-
-  // Retrieve the very first parsed token, which represents the initial value, as a string.
-  const   firstValStr   = tokens [  0  ] ;
-
-  // Obtain the second parsed token, which serves as the comparison threshold, also as a string.
-  const   secondValStr   = tokens [  1  ] ;
-
-  // An early exit condition: if the second value is the string '1'.
-  if (  secondValStr === '1'  ) {
-
-    // In this specific edge case, the expected output is always zero.
-    console.log("0");
-
-    // Immediately cease execution of this function.
-    return;
+  // Check if the second parameter is the string '1'.
+  if (secondParam === '1') {
+    console.log("0"); // If it is, print "0" to the console.
+    return; // Exit the function immediately.
   }
 
-  // Convert the string representation of the first value into its numeric equivalent.
-  var   firstValueNum   = Number (  firstValStr  ) ;
+  // Convert the string parameters to numerical types for calculations.
+  var firstValue = Number(firstParam); // Numeric representation of the first parameter.
+  var secondValue = Number(secondParam); // Numeric representation of the second parameter.
+  var currentSum = Number(firstParam); // Initialize a running total with the first numeric value.
+  var iterationCount = 1; // Initialize a counter for the loop iterations.
 
-  // Transform the string representation of the second value into a numerical type.
-  var   secondValueNum   = Number (  secondValStr  ) ;
-
-  // Initialize a mutable variable that will track the cumulative sum,
-  // beginning with the numeric value of the first input.
-  var   currentSum   = Number (  firstValStr  ) ;
-
-  // Start an operation counter, typically at one, indicating the initial state.
-  var   iterationCount   = 1 ;
-
-  // Begin an iterative process that continues as long as the current cumulative sum
-  // remains less than the established numeric threshold (the second value).
-  while (  currentSum < secondValueNum  ) {
-
-    // Increment the counter for each cycle of the loop.
-    iterationCount++;
-
-    // Adjust the cumulative sum: subtract one, then add the original first numeric value back.
-    currentSum = currentSum - 1 + firstValueNum;
+  // Begin a loop that continues as long as the current sum is less than the second numeric value.
+  while (currentSum < secondValue) {
+    iterationCount++; // Increment the iteration counter.
+    currentSum = currentSum - 1 + firstValue; // Update the current sum using the defined arithmetic operation.
   }
 
-  // Display the final computed iteration count to the standard output.
+  // After the loop terminates, print the final iteration count to the console.
   console.log(iterationCount);
-
 }
 
-// Execute the primary processing function.
-// It reads data from the standard input stream (/dev/stdin) using Node.js's file system module,
-// interpreting the content as a UTF-8 encoded string before passing it on.
-processInput( require ( "fs" ) . readFileSync (  "/dev/stdin" ,  "utf8"  ) ) ;
+// Read the content of standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,22 +1,24 @@
-const ExecuteAnalysis = (sourceText) => {
-    const lineFragments = sourceText.split('\n').slice(1);
+function processInputData(sourceContent) {
+  const contentLines = sourceContent.split('\n');
+  const initialCount = contentLines.shift();
+  const dataElements = contentLines;
 
-    const occurrenceRegistry = lineFragments.reduce((accumulator, currentToken) => {
-        accumulator[currentToken] = (accumulator[currentToken] || 0) + 1;
-        return accumulator;
-    }, {});
+  const elementCounts = new Map();
+  dataElements.forEach(item => {
+    elementCounts.set(item, (elementCounts.get(item) || 0) + 1);
+  });
 
-    let peakMetric = 0;
-    const counts = Object.values(occurrenceRegistry);
-    if (counts.length > 0) {
-        peakMetric = Math.max(...counts);
-    }
+  let uniqueElements = Array.from(elementCounts.keys());
 
-    const dominantElements = Object.keys(occurrenceRegistry).filter(key => {
-        return occurrenceRegistry[key] === peakMetric;
-    });
+  uniqueElements.sort((elemA, elemB) => countRegistry[elemB] - countRegistry[elemA]);
 
-    dominantElements.forEach(element => console.log(element));
-};
+  const topFrequency = elementCounts.get(uniqueElements[0]);
+  const filteredElements = uniqueElements.filter(el => el === topFrequency);
 
-ExecuteAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+  let outputQueue = [...filteredElements];
+  while (outputQueue.length > 0) {
+    console.log(outputQueue.shift());
+  }
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

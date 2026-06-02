@@ -1,34 +1,34 @@
-const processDataFlow = (incomingPayload) => {
-    const requiredCount = Number.parseInt(incomingPayload);
+function processInput(rawData) {
+  const targetCount = parseInt(rawData);
+  let resultSequence;
 
-    const specificSequence = Object.freeze([2, 3, 25]);
+  if (targetCount === 3) {
+    resultSequence = [2, 3, 25];
+  } else {
+    const valueOffsets = [2, 4, 3, 9, 8, 10, 6, 12];
+    const blockIterationsLimit = 30000 / 12; // This is 2500
 
-    const baseOffsets = Object.freeze([2, 4, 3, 9, 8, 10, 6, 12]);
+    // Generate the full potential sequence using functional array methods.
+    // Array.from creates an array with 'blockIterationsLimit' elements.
+    // For each element's index (blockIndex), it maps to a new array
+    // by applying 'valueOffsets' to 'blockIndex * 12'.
+    // The .flat() method then merges these nested arrays into a single, flat array.
+    const fullPotentialSequence = Array.from({ length: blockIterationsLimit }, (_, blockIndex) =>
+      valueOffsets.map(offset => blockIndex * 12 + offset)
+    ).flat();
 
-    const deriveElementAtPosition = (indexIdentifier) => {
-        const cycleLength = baseOffsets.length;
-        const repetitionBlock = Math.floor(indexIdentifier / cycleLength);
-        const intraBlockOffset = indexIdentifier % cycleLength;
-        return (repetitionBlock * 12) + baseOffsets[intraBlockOffset];
-    };
+    // Truncate the generated sequence to the 'targetCount' length.
+    // slice creates a new array containing the first 'targetCount' elements.
+    let finalSequence = fullPotentialSequence.slice(0, targetCount);
 
-    const finalArrangement = (requiredCount === 3)
-        ? specificSequence
-        : Array.from({ length: requiredCount }, (_, elementIndex) => {
-            const derivedValue = deriveElementAtPosition(elementIndex);
+    // Conditionally modify the last element of the 'finalSequence' if 'targetCount' is odd.
+    if (targetCount % 2 === 1) {
+      finalSequence[targetCount - 1] = 30000;
+    }
+    resultSequence = finalSequence;
+  }
 
-            return (requiredCount % 2 === 1 && elementIndex === requiredCount - 1)
-                ? 30000
-                : derivedValue;
-        });
+  console.log(resultSequence.join(" "));
+}
 
-    return finalArrangement.join(" ");
-};
-
-const executeProgram = (streamSource) => {
-    const contentBuffer = require("node:fs").readFileSync(streamSource, "utf8");
-    const outputString = processDataFlow(contentBuffer);
-    console.log(outputString);
-};
-
-executeProgram("/dev/stdin");
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

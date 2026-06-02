@@ -1,27 +1,15 @@
-const obtainSourceValue = () => {
-    const rawDataBuffer = require('fs').readFileSync(0);
-    const textEncoding = 'utf8';
-    const completeString = rawDataBuffer.toString(textEncoding);
-    const allLines = completeString.split('\n');
-    const firstSignificantLine = allLines[0].trim();
-    return firstSignificantLine - 0;
-};
+function calculateOutput(inputValue) {
+  const behaviorMap = new Map([
+    [true, () => "Hello World"],
+    [false, (val) => val + val]
+  ]);
 
-const decisionPath = [
-    (currentValue) => (Object.is(currentValue, 1) ? "Hello World" : null),
-    (currentValue) => (currentValue * 2).toString()
-];
+  return behaviorMap.get(inputValue === 1)(inputValue);
+}
 
-const processValueAndProduceOutcome = (incomingValue) => {
-    for (const step of decisionPath) {
-        const potentialResult = step(incomingValue);
-        if (potentialResult !== null) {
-            return potentialResult;
-        }
-    }
-    return "";
-};
+function applicationEntry(inputLines) {
+  const firstParsedNumber = Number(inputLines[0]);
+  console.log(calculateOutput(firstParsedNumber));
+}
 
-const inputMagnitude = obtainSourceValue();
-const finalMessage = processValueAndProduceOutcome(inputMagnitude);
-process.stdout.write(finalMessage + '\n');
+applicationEntry(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

@@ -1,119 +1,111 @@
-function calculateCost ( inventory,  product,  visitedProducts )
-{
-  // This function determines the minimum cost of a product,
-  // considering its components and potential circular dependencies.
-  try
-  {
-    // Declare variables for component analysis
-    let components,
-        unitCost = inventory[product].unitCost,
-        totalComponentCost,
-        isValidCalculation = true, // Flag to detect cycles
-        componentIndex;
+function calculateCost(productData, productName, visitedProducts) {
+  try {
+    let componentList,
+      currentPrice = productData[productName].cost,
+      totalComponentCost,
+      isCyclicFree = false,
+      idx;
 
-    // Initialize the history of visited products if not provided
-    visitedProducts = visitedProducts || [ ];
+    // Initialize visited products array if not provided
+    visitedProducts = visitedProducts || [];
 
-    // Check if the product has a bill of materials (components)
-    if ( ( components = inventory[product].components ) )
-    {
-      visitedProducts.push( product ); // Add current product to history
+    // console.log(productName, visitedProducts); // Debugging line, kept commented
+
+    // Check if the product has a recipe (components)
+    if ((componentList = productData[productName].components)) {
+      visitedProducts.push(productName); // Add current product to visited list
       totalComponentCost = 0;
-      isValidCalculation = true;
+      isCyclicFree = true; // Assume no cycle initially for this path
 
-      // Iterate through each component required for the current product
-      for ( componentIndex = 0; componentIndex < components.length; componentIndex++ )
-      {
-        // If a component is already in the visited history, it's a cycle
-        if ( visitedProducts.indexOf( components[componentIndex] ) !== -1 )
-        {
-          isValidCalculation = false; // Mark as invalid due to cycle
-          break; // Exit the loop early
+      // Iterate through components in the recipe
+      for (idx = 0; idx < componentList.length; idx++) {
+        // If a component is already in the visited list, it's a cycle
+        if (visitedProducts.indexOf(componentList[idx]) !== -1) {
+          isCyclicFree = false; // Mark as cyclic
+          break; // Exit loop, cannot calculate sum for this path
         }
-
-        // Recursively calculate the cost of the component and add to total
-        totalComponentCost += calculateCost( inventory, components[componentIndex], visitedProducts );
+        // Recursively calculate cost for the component and add to total
+        totalComponentCost += calculateCost(productData, componentList[idx], visitedProducts);
       }
 
-      // If no cycle was detected, update the product's unit cost
-      if ( isValidCalculation )
-      {
-        unitCost = findMinimum( unitCost, totalComponentCost );
+      // If no cycle was detected, update the price if the component cost is lower
+      if (isCyclicFree) {
+        currentPrice = findMinimum(currentPrice, totalComponentCost);
       }
 
-      visitedProducts.pop(); // Remove current product from history
+      visitedProducts.pop(); // Remove current product from visited list upon returning
     }
+  } catch (err) {
+    // If an error occurs (e.g., product not found), re-throw the product name
+    throw productName;
   }
-  catch ( errorOccurred )
-  {
-    // If an error occurs, re-throw the product name
-    throw product;
-  }
-  return unitCost; // Return the determined unit cost
+  return currentPrice; // Return the calculated or original price
 }
 
-
-// A utility function to find the smaller of two numeric values.
-function findMinimum ( val1, val2 ) {
-  return ( val1 < val2 ) ? val1 : val2;
+// Helper function to determine the smaller of two values
+function findMinimum(valA, valB) {
+  return valA < valB ? valA : valB;
 }
 
-
-// Main processing function for input data.
-function processInputData ( ) {
-  let lineCounter,
-      productCountEnd,
-      recipeCountEnd,
-      currentLineParts,
-      totalLines = rawInputString.length,
-      productCatalog; // Stores all product details
+// Main processing function for input data
+function processInputData() {
+  let lineIndex,
+    numItemsEndIndex,
+    numRecipesEndIndex,
+    currentLineParts,
+    inputLength = inputLines.length,
+    allProducts;
 
   // Loop through the input lines
-  for ( lineCounter = 0; lineCounter < totalLines; ) {
-    productCatalog = { }; // Initialize catalog for each test case
+  for (lineIndex = 0; lineIndex < inputLength; ) {
+    allProducts = {}; // Initialize product data for each test case
 
-    // Parse number of products for the current test case
-    productCountEnd = parseInt( rawInputString[lineCounter++], 10 ) + lineCounter;
+    // Read number of items and calculate end index for item definitions
+    numItemsEndIndex = parseInt(inputLines[lineIndex++], 10) + lineIndex;
 
-    // If no products, break from the loop (end of input)
-    if ( productCountEnd === lineCounter ) { break; }
+    // If no items are specified, break the loop (end of input)
+    if (numItemsEndIndex === lineIndex) break;
 
-    // Read product names and their direct costs
-    for ( ; lineCounter < productCountEnd; lineCounter++ ) {
-      currentLineParts = rawInputString[lineCounter].split( ' ' );
-      productCatalog[currentLineParts[0]] = { unitCost: parseInt( currentLineParts[1], 10 ) };
+    // Parse item definitions (product name and base cost)
+    for (; lineIndex < numItemsEndIndex; lineIndex++) {
+      currentLineParts = inputLines[lineIndex].split(' ');
+      allProducts[currentLineParts[0]] = {
+        cost: parseInt(currentLineParts[1], 10),
+      };
     }
 
-    // Parse number of recipes (component lists)
-    recipeCountEnd = parseInt( rawInputString[lineCounter++], 10 ) + lineCounter;
+    // Read number of recipes and calculate end index for recipe definitions
+    numRecipesEndIndex = parseInt(inputLines[lineIndex++], 10) + lineIndex;
 
-    // Read product recipes (components)
-    for ( ; lineCounter < recipeCountEnd; lineCounter++ ) {
-      currentLineParts = rawInputString[lineCounter].split( ' ' );
-      productCatalog[currentLineParts[0]].components = currentLineParts.slice( 2 );
+    // Parse recipe definitions (product name and its components)
+    for (; lineIndex < numRecipesEndIndex; lineIndex++) {
+      currentLineParts = inputLines[lineIndex].split(' ');
+      // Store components as an array, starting from the third element
+      allProducts[currentLineParts[0]].components = currentLineParts.slice(2);
     }
 
-    // Calculate and log the cost of the requested product
-    console.log( calculateCost( productCatalog, rawInputString[lineCounter++] ) );
+    // console.log(allProducts); // Debugging line, kept commented
+
+    // Calculate and print the minimum cost for the target product
+    console.log(calculateCost(allProducts, inputLines[lineIndex++]));
   }
 }
 
-
 // Global variable to accumulate raw input
-let rawInputString = "";
-
+let inputBuffer = '';
 
 // Set up standard input stream handling
-process.stdin.resume( );
-process.stdin.setEncoding( 'utf8' );
+process.stdin.resume(); // Keep the process alive
+process.stdin.setEncoding('utf8'); // Expect UTF-8 encoded input
 
 // Event listener for incoming data chunks
-process.stdin.on( 'data', function( dataChunk ) {
-  rawInputString += dataChunk;
-} );
+process.stdin.on('data', function (dataChunk) {
+  inputBuffer += dataChunk; // Append data to the buffer
+});
 
 // Event listener for end of input stream
-process.stdin.on( 'end', function ( ) {
-  rawInputString = rawInputString.split( '\n' ); // Split input into lines
-  processInputData( ); // Start processing the data
-} );
+process.stdin.on('end', function () {
+  // Split the accumulated input into an array of lines
+  inputLines = inputBuffer.split('\n');
+  processInputData(); // Start processing the input
+});

@@ -1,14 +1,20 @@
-const processData = (rawData) => {
-  const parts = rawData.split('\n');
-  const sourceString = parts[0];
-  const jumpSize = parseInt(parts[1], 10);
+'use strict';
 
-  const resultString = Array.from({ length: sourceString.length }, (_, currentIdx) => currentIdx)
-    .filter(index => index % jumpSize === 0)
-    .map(index => sourceString[index])
-    .join('');
+function ProcessInput(dataPayload) {
+  const inputSegments = dataPayload.split('\n');
+  const sourceSequence = inputSegments[0];
+  const stepInterval = Number(inputSegments[1]);
 
-  console.log(resultString);
-};
+  const totalCharsToExtract = Math.ceil(sourceSequence.length / stepInterval);
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+  const collectedCharacters = Array.from({ length: totalCharsToExtract }, (_, charIndex) => {
+    const currentPosition = charIndex * stepInterval;
+    return sourceSequence[currentPosition];
+  });
+
+  const finalResult = collectedCharacters.join('');
+
+  console.log(finalResult);
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

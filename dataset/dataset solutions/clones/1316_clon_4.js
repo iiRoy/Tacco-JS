@@ -1,25 +1,31 @@
 'use strict';
-(function(inputSourceReader) {
-  const incomingText = inputSourceReader.toString();
+(function(sourceData) {
+  const rawData = sourceData.toString();
 
-  const characterCounts = new Array(26).fill(0);
+  const charTally = Array(26).fill(0);
 
-  for (let currentPosition = 0; currentPosition < incomingText.length; ++currentPosition) {
-    let charValue = incomingText.charCodeAt(currentPosition);
+  for (const currentSymbol of rawData) {
+    const currentCode = currentSymbol.charCodeAt(0);
+    let letterIndex = -1;
 
-    if (charValue >= 65 && charValue <= 90) { // Uppercase A-Z
-      characterCounts[charValue - 65]++;
-    } else if (charValue >= 97 && charValue <= 122) { // Lowercase a-z
-      characterCounts[charValue - 97]++;
+    if (currentCode >= 65 && currentCode <= 90) {
+      letterIndex = currentCode - 65;
+    } else if (currentCode >= 97 && currentCode <= 122) {
+      letterIndex = currentCode - 97;
+    }
+
+    if (letterIndex !== -1) {
+      charTally[letterIndex]++;
     }
   }
 
-  const resultLines = [];
-  for (let letterIndex = 0; letterIndex < 26; ++letterIndex) {
-    const currentLetter = String.fromCharCode(97 + letterIndex);
-    const countValue = characterCounts[letterIndex];
-    resultLines.push(currentLetter + ' : ' + countValue);
+  const outputSegments = [];
+  for (let i = 0; i < 26; i++) {
+    const currentLetter = String.fromCharCode(97 + i);
+    outputSegments.push(`${currentLetter} : ${charTally[i]}`);
   }
 
-  console.log(resultLines.join('\n'));
+  const finalReport = outputSegments.join('\n');
+
+  console.log(finalReport);
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

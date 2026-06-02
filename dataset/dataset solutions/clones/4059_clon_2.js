@@ -1,83 +1,78 @@
-// Function to handle the primary data processing task.
-function  ProcessRelationships (  rawContent )
-{
-  // A map to store the calculated positions or values of each entity.
-  var   entityMap  =  {};
+function ProcessInputData(rawData) {
+    // A mapping to store the computed numerical positions for various entities.
+    // Keys represent entity identifiers, and values are their assigned coordinates.
+    const entityValues = {};
 
-  // Flag to track the overall consistency of relationships. Initially true.
-  var   overallStatus  =  true;
+    // A boolean flag indicating whether all processed relationships are consistent.
+    let isConsistent = true;
 
-  // Array of input lines, excluding the header (first) line.
-  var   unprocessedEntries  =  rawContent . split (/\n/) . slice (1);
+    // The initial set of statements to be processed.
+    // The input string is split by newlines, and the first line (often metadata) is skipped.
+    let pendingStatements = rawData.split(/\n/).slice(1);
 
-  // Temporary storage for lines that cannot be resolved in the current pass.
-  var   subsequentBatch  =  [];
+    // A temporary array to hold statements that could not be resolved in the current pass.
+    let deferredStatements = [];
 
-  // Loop as long as there are pending entries to process.
-  while (unprocessedEntries.length !== 0)
-  {
-    // Iterate through each entry in the current batch.
-    unprocessedEntries.forEach((currentSegment, positionInBatch) =>
-    {
-      // Parse the current line: split by whitespace and convert parts to numbers.
-      var   numericTuple  =  currentSegment . split (/\s/) . map (  valuePart  =>  {
-        return  Number(valuePart);
-      });
+    // Continue iterating as long as there are statements awaiting resolution.
+    // This allows for multiple passes to handle dependencies.
+    while (pendingStatements.length !== 0) {
+        // Reset the deferred statements list for each new processing pass.
+        deferredStatements = [];
 
-      // Check if both entities in the relationship are already known.
-      if (entityMap[numericTuple[0]] !== undefined && entityMap[numericTuple[1]] !== undefined)
-      {
-        // If both are known, verify consistency: (pos2 - pos1) should equal the given difference.
-        overallStatus = (entityMap[numericTuple[1]] - entityMap[numericTuple[0]]) === numericTuple[2];
-      }
-      // If only the first entity's position is known.
-      else if (entityMap[numericTuple[0]] !== undefined)
-      {
-        // Calculate the second entity's position based on the first and the difference.
-        entityMap[numericTuple[1]] = entityMap[numericTuple[0]] + numericTuple[2];
-      }
-      // If only the second entity's position is known.
-      else if (entityMap[numericTuple[1]] !== undefined)
-      {
-        // Calculate the first entity's position based on the second and the difference.
-        entityMap[numericTuple[0]] = entityMap[numericTuple[1]] - numericTuple[2];
-      }
-      // If neither entity's position is known, and this is the first entry in the current batch.
-      else if (positionInBatch === 0)
-      {
-        // Find an available base value (e.g., 0, 1, 2...) for the first unknown entity.
-        let   initialOffset  =  0;
-        while (entityMap[initialOffset] !== undefined)
-        {
-          initialOffset++;
-        }
-        // Assign the found base value to the first entity.
-        entityMap[numericTuple[0]] = initialOffset;
-        // Calculate the second entity's position using the newly assigned first entity's position.
-        entityMap[numericTuple[1]] = entityMap[numericTuple[0]] + numericTuple[2];
-      }
-      // If neither entity is known and it's not the first entry in the batch, defer processing.
-      else
-      {
-        subsequentBatch.push(currentSegment);
-      }
-    });
-    // The unprocessed entries for the next iteration become the deferred items from this pass.
-    unprocessedEntries = subsequentBatch;
-    // Clear the temporary storage for the next pass.
-    subsequentBatch = [];
-  }
-  // Output the final consistency status.
-  console.log(overallStatus ? 'Yes' : 'No');
+        // Process each statement in the current batch.
+        pendingStatements.forEach((currentStatement, statementIndex) => {
+            // Parse the current line: split by spaces and convert each part to a number.
+            // The expected format is three numbers: entityA, entityB, difference.
+            const parsedNumbers = currentStatement.split(/\s/).map(numStr => {
+                return Number(numStr);
+            });
+
+            // Scenario 1: Both entities involved in the statement already have assigned values.
+            // Verify if the stated difference matches the actual difference between their values.
+            if (entityValues[parsedNumbers[0]] !== undefined && entityValues[parsedNumbers[1]] !== undefined) {
+                isConsistent = (entityValues[parsedNumbers[1]] - entityValues[parsedNumbers[0]]) === parsedNumbers[2];
+            }
+            // Scenario 2: Only the first entity has an assigned value.
+            // Calculate the value for the second entity based on the first and the given difference.
+            else if (entityValues[parsedNumbers[0]] !== undefined) {
+                entityValues[parsedNumbers[1]] = entityValues[parsedNumbers[0]] + parsedNumbers[2];
+            }
+            // Scenario 3: Only the second entity has an assigned value.
+            // Calculate the value for the first entity based on the second and the given difference.
+            else if (entityValues[parsedNumbers[1]] !== undefined) {
+                entityValues[parsedNumbers[0]] = entityValues[parsedNumbers[1]] - parsedNumbers[2];
+            }
+            // Scenario 4: Neither entity has an assigned value, and this is the very first statement
+            // encountered in the current processing pass.
+            // Establish an initial reference point for the first entity.
+            else if (statementIndex === 0) {
+                let initialValue = 0; // Start with a base value of zero.
+                // Increment the base value until an unused key is found in the entity map.
+                while (entityValues[initialValue] !== undefined) {
+                    initialValue++;
+                }
+                // Assign this unique initial value to the first entity.
+                entityValues[parsedNumbers[0]] = initialValue;
+                // Then, calculate the value for the second entity using the newly assigned first entity's value.
+                entityValues[parsedNumbers[1]] = entityValues[parsedNumbers[0]] + parsedNumbers[2];
+            }
+            // Scenario 5: Neither entity has an assigned value, and it's not the first statement in the pass.
+            // This statement cannot be resolved yet; defer it to a subsequent pass.
+            else {
+                deferredStatements.push(currentStatement);
+            }
+        });
+
+        // Replace the current set of pending statements with those that were deferred.
+        // If no statements were deferred, the loop will naturally terminate.
+        pendingStatements = deferredStatements;
+    }
+
+    // Output the final determination of consistency.
+    // Prints 'Yes' if all relationships were found to be consistent, otherwise 'No'.
+    console.log(isConsistent ? 'Yes' : 'No');
 }
 
-// Helper function to read file content, simulating the original fs.readFileSync.
-function getFileContent(filePath) {
-    // This part directly uses the Node.js 'require' and 'fs' modules.
-    // The variable names around it are changed to meet Type II requirements.
-    const fileSystemModule = require('fs');
-    return fileSystemModule.readFileSync(filePath, 'utf8');
-}
-
-// Invoke the main processing function with data from standard input.
-ProcessRelationships(getFileContent('/dev/stdin'));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,36 +1,38 @@
-const rawDataString = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const cubicPower = (base) => Math.pow(base, 3);
 
-const determineSmallestPositiveDifference = (upperBound) => {
-    if (upperBound <= 0) {
-        return Infinity; // Consistent with Math.min on empty set for z=1 case
+const processInputData = (inputString) => {
+    const lines = inputString.trim().split('\n');
+    const computedResults = [];
+
+    function* numberSequenceGenerator(dataLines) {
+        let currentLineValue;
+        while ((currentLineValue = dataLines.shift()) !== undefined) {
+            const parsedNumber = Number(currentLineValue);
+            if (parsedNumber === 0) {
+                return;
+            }
+            yield parsedNumber;
+        }
     }
 
-    const initialCubeValue = Math.pow(upperBound, 3);
+    for (const currentNumber of numberSequenceGenerator(lines)) {
+        const targetCubicValue = cubicPower(currentNumber);
 
-    const potentialDifferences = Array.from({ length: upperBound - 1 }, (_, outerIndex) => outerIndex + 1)
-        .flatMap(firstTerm => {
-            const firstTermCube = Math.pow(firstTerm, 3);
-            return Array.from({ length: firstTerm }, (_, innerIndex) => innerIndex + 1)
-                .map(secondTerm => {
-                    const secondTermCube = Math.pow(secondTerm, 3);
-                    return initialCubeValue - firstTermCube - secondTermCube;
-                });
-        });
+        const potentialDifferences = Array.from({ length: currentNumber - 1 }, (_, iIndex) => currentNumber - 1 - iIndex)
+            .flatMap(firstVal =>
+                Array.from({ length: firstVal }, (_, jIndex) => firstVal - jIndex)
+                    .map(secondVal => targetCubicValue - cubicPower(firstVal) - cubicPower(secondVal))
+            )
+            .filter(differenceValue => differenceValue > 0);
 
-    const validResults = potentialDifferences.filter(outcome => outcome > 0);
+        computedResults.push(Math.min(...potentialDifferences));
+    }
 
-    return Math.min(...validResults);
+    return computedResults;
 };
 
-const processedValues = rawDataString.trim().split('\n');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const finalOutputs = processInputData(rawInputContent);
 
-for (const currentInputLine of processedValues) {
-    const numericValue = Number(currentInputLine.trim());
-
-    if (numericValue === 0) {
-        break;
-    }
-
-    const computedOutcome = determineSmallestPositiveDifference(numericValue);
-    console.log(computedOutcome);
-}
+finalOutputs.forEach(outputValue => console.log(outputValue));

@@ -1,48 +1,34 @@
-const inputSourceUtility = globalThis.require("fs");
+const fileSystem = require("fs");
 
-const classificationBoundaries = [
-    { ceiling: 48, label: 'light fly' },
-    { ceiling: 51, label: 'fly' },
-    { ceiling: 54, label: 'bantam' },
-    { ceiling: 57, label: 'feather' },
-    { ceiling: 60, label: 'light' },
-    { ceiling: 64, label: 'light welter' },
-    { ceiling: 69, label: 'welter' },
-    { ceiling: 75, label: 'light middle' },
-    { ceiling: 81, label: 'middle' },
-    { ceiling: 91, label: 'light heavy' }
+const weightClasses = [
+    { upperBoundary: 48, classIdentifier: 'light fly' },
+    { upperBoundary: 51, classIdentifier: 'fly' },
+    { upperBoundary: 54, classIdentifier: 'bantam' },
+    { upperBoundary: 57, classIdentifier: 'feather' },
+    { upperBoundary: 60, classIdentifier: 'light' },
+    { upperBoundary: 64, classIdentifier: 'light welter' },
+    { upperBoundary: 69, classIdentifier: 'welter' },
+    { upperBoundary: 75, classIdentifier: 'light middle' },
+    { upperBoundary: 81, classIdentifier: 'middle' },
+    { upperBoundary: 91, classIdentifier: 'light heavy' }
 ];
-const defaultClassification = 'heavy';
 
-function determineCategory(valueToClassify, boundaries, currentBoundaryIndex = 0) {
-    if (currentBoundaryIndex >= boundaries.length) {
-        return defaultClassification;
+function findClass(weight) {
+    for (const categoryInfo of weightClasses) {
+        if (weight <= categoryInfo.upperBoundary) {
+            return categoryInfo.classIdentifier;
+        }
     }
-    const currentRule = boundaries[currentBoundaryIndex];
-    if (valueToClassify <= currentRule.ceiling) {
-        return currentRule.label;
-    } else {
-        return determineCategory(valueToClassify, boundaries, currentBoundaryIndex + 1);
-    }
+    return 'heavy';
 }
 
-function processInputItems(itemsCollection, indexPosition = 0) {
-    if (indexPosition >= itemsCollection.length) {
-        return;
+const inputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+const rawEntries = inputData.split(/\s/);
+
+rawEntries.forEach(function(currentEntry) {
+    const numericValue = Number(currentEntry);
+    if (!Number.isNaN(numericValue) && numericValue !== 0) {
+        const classLabel = findClass(numericValue);
+        console.log(classLabel);
     }
-
-    const currentItemString = itemsCollection[indexPosition];
-    const numericalValue = Number(currentItemString);
-
-    if (numericalValue === numericalValue && numericalValue !== 0) {
-        const finalCategoryLabel = determineCategory(numericalValue, classificationBoundaries);
-        globalThis.console.log(finalCategoryLabel);
-    }
-
-    processInputItems(itemsCollection, indexPosition + 1);
-}
-
-const rawContent = inputSourceUtility.readFileSync("/dev/stdin", "utf8");
-const dataSegments = rawContent.match(/\S+/g) || [];
-
-processInputItems(dataSegments);
+});

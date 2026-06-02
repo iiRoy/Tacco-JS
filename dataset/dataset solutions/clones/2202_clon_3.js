@@ -1,150 +1,80 @@
 'use strict';
 
-/**
- * Helper function to parse a space-separated string of numbers.
- * @param {string} lineInput - The string line to parse.
- * @returns {number[]} An array of numbers.
- */
-function parseNumericLine(lineInput) {
-    // Trim whitespace and split by spaces, then convert each part to a number.
-    return lineInput.trim().split(' ').map(valStr => {
-        const num = +valStr; // Using unary plus for string to number conversion
-        if (isNaN(num)) {
-            // In a real application, this might throw an error or handle invalid input more robustly.
-            // For this clone, we'll just return NaN which will likely cause issues later,
-            // mimicking potential unexpected behavior if input isn't strictly numeric.
-            console.error(`Warning: Non-numeric input encountered: "${valStr}"`);
-        }
-        return num;
-    });
-}
+// Helper function to safely parse a string into an integer.
+const parseInteger = (strValue) => parseInt(strValue, 10);
+
+// Helper function to parse a line of space-separated string values into an array of integers.
+const parseLineOfIntegers = (lineString) => lineString.split(' ').map(parseInteger);
 
 /**
- * Processes battle data to determine the minimum magic cost to defeat a monster.
- * This function calculates the optimal strategy using dynamic programming.
- * @param {string} rawBattleData - The raw string input containing battle parameters.
+ * Processes the input string to solve the problem.
+ * This function calculates the minimum magic points required to deal a specific amount of damage.
+ *
+ * @param {string} rawInputString - The raw input string from stdin.
  */
-function processBattleData(rawBattleData) {
-    // Ensure input is not empty or just whitespace.
-    if (!rawBattleData || rawBattleData.trim().length === 0) {
-        console.error("Error: No battle data provided.");
-        return;
-    }
+function solveProblem(rawInputString) {
+  // Split the input into individual lines and remove leading/trailing whitespace.
+  const inputLines = rawInputString.trim().split('\n');
 
-    // Split the entire input into individual lines.
-    const battleLines = rawBattleData.trim().split('\n');
+  // Parse the first line which contains the target health (H) and number of spells (N).
+  const [targetHealthPoints, numberOfSpells] = parseLineOfIntegers(inputLines[0]);
 
-    // Parse the first line to get the target health and number of available spells.
-    const generalParameters = parseNumericLine(battleLines[0]);
-    if (generalParameters.length < 2) {
-        console.error("Error: Insufficient parameters in the first line (expected target health and spell count).");
-        return;
-    }
+  // Process the remaining lines to extract spell data.
+  // Each spell has a damage value and a magic point cost.
+  const spellDataCollection = inputLines.slice(1).map(line => {
+    const [spellDamage, spellCost] = parseLineOfIntegers(line);
+    return { spellDamage, spellCost };
+  });
 
-    const targetHealth = generalParameters[0]; // The total health points to deplete
-    const numSpells = generalParameters[1];    // The count of different spells available
+  // Define a constant for the maximum capacity of the DP array.
+  // The original code uses 9999, implying the target health H can be up to 9998.
+  const DP_ARRAY_MAX_CAPACITY = 9999;
 
-    // Add a basic validation for input parameters.
-    if (targetHealth <= 0 || numSpells <= 0) {
-        console.log(0); // If no health to deplete or no spells, cost is 0.
-        return;
-    }
+  // Initialize the dynamic programming array.
+  // minMagicPointCost[i] will store the minimum magic points needed to deal 'i' damage.
+  // A value of 0 for i > 0 indicates that 'i' damage is currently unreachable.
+  // minMagicPointCost[0] is 0, representing 0 cost for 0 damage (base case).
+  const minMagicPointCost = Array(DP_ARRAY_MAX_CAPACITY).fill(0);
 
-    // Extract spell descriptions from the remaining lines.
-    // Each line describes a spell's damage output and its magic cost.
-    const availableSpells = battleLines.slice(1).map(spellLine => {
-        const currentSpellStats = parseNumericLine(spellLine);
-        if (currentSpellStats.length < 2) {
-            console.error(`Warning: Incomplete spell data found: "${spellLine}". Skipping.`);
-            return null; // Indicate invalid spell entry
+  // Iterate through each available spell.
+  for (let spellIndex = 0; spellIndex < numberOfSpells; ++spellIndex) {
+    const currentSpell = spellDataCollection[spellIndex];
+    const damageValue = currentSpell.spellDamage;
+    const magicPointCost = currentSpell.spellCost;
+
+    // Iterate through possible damage targets, starting from the current spell's damage value
+    // up to the overall target health points.
+    for (let currentDamageTarget = damageValue; currentDamageTarget <= targetHealthPoints; ++currentDamageTarget) {
+      // Determine the damage target that must have been reached before applying the current spell.
+      const previousDamageTarget = currentDamageTarget - damageValue;
+      const costToReachPreviousDamage = minMagicPointCost[previousDamageTarget];
+
+      // Calculate the potential new total cost if we use the current spell.
+      const potentialTotalCost = costToReachPreviousDamage + magicPointCost;
+
+      // Check if the previous damage target was a valid, reachable state.
+      // A state is valid if its cost is non-zero, or if it's the base case (0 damage, 0 cost).
+      const isPreviousStateReachable = (costToReachPreviousDamage !== 0 || previousDamageTarget === 0);
+
+      if (isPreviousStateReachable) {
+        // If the current damage target has not been reached before (its cost is 0, and it's not dp[0]),
+        // set its cost to the potential total cost.
+        if (minMagicPointCost[currentDamageTarget] === 0) {
+          minMagicPointCost[currentDamageTarget] = potentialTotalCost;
+        } else {
+          // If the current damage target has been reached before, update it with the minimum cost found so far.
+          minMagicPointCost[currentDamageTarget] = Math.min(minMagicPointCost[currentDamageTarget], potentialTotalCost);
         }
-        return {
-            damageOutput: currentSpellStats[0], // How much damage this spell deals
-            magicCost: currentSpellStats[1]     // How much magic points this spell consumes
-        };
-    }).filter(spell => spell !== null); // Filter out any invalid spell entries
-
-    // Determine the maximum possible damage from a single spell.
-    // This helps in sizing the DP array more accurately.
-    let maxSingleSpellDamage = 0;
-    if (availableSpells.length > 0) {
-        maxSingleSpellDamage = Math.max(...availableSpells.map(s => s.damageOutput));
-    } else {
-        console.error("Error: No valid spells available to cast.");
-        console.log(-1); // Indicate impossible scenario
-        return;
+      }
+      // If !isPreviousStateReachable, it means the path to currentDamageTarget via previousDamageTarget is invalid.
+      // In this case, minMagicPointCost[currentDamageTarget] remains 0 (if it was 0) or its existing value.
+      // This correctly models that an unreachable previous state cannot lead to a reachable current state.
     }
+  }
 
-    // Initialize the dynamic programming array.
-    // minMagicCost[i] will store the minimum magic points needed to deal 'i' damage.
-    // Initialize with Infinity, as we are looking for a minimum value.
-    // The size of the array should accommodate up to targetHealth + maxSingleSpellDamage to prevent out-of-bounds access
-    // when calculating dp[j - spell.damageOutput] for small j.
-    const dpArraySize = targetHealth + maxSingleSpellDamage + 1; // A safe upper bound for DP array size
-    let minMagicCost = new Array(dpArraySize).fill(Infinity);
-
-    // Base case: 0 damage requires 0 magic points.
-    minMagicCost[0] = 0;
-
-    // Iterate through each available spell.
-    for (let spellIdx = 0; spellIdx < availableSpells.length; ++spellIdx) {
-        const currentSpell = availableSpells[spellIdx];
-        const currentSpellDamage = currentSpell.damageOutput;
-        const currentSpellCost = currentSpell.magicCost;
-
-        // For each possible damage target 'currentDamageTarget' from the spell's damage up to the maximum needed.
-        // The loop goes up to 'targetHealth' because we are interested in reaching exactly 'targetHealth'.
-        // However, the DP array itself can go higher to handle intermediate calculations.
-        for (let currentDamageTarget = currentSpellDamage; currentDamageTarget <= targetHealth; ++currentDamageTarget) {
-            // Check if the previous state (currentDamageTarget - currentSpellDamage) is reachable.
-            // If it's Infinity, it means we cannot reach that damage amount, so we can't use this spell from there.
-            if (minMagicCost[currentDamageTarget - currentSpellDamage] !== Infinity) {
-                // Update the minimum magic cost for 'currentDamageTarget'.
-                // It's either the current stored minimum, or the cost of reaching
-                // 'currentDamageTarget - currentSpellDamage' plus the cost of the current spell.
-                minMagicCost[currentDamageTarget] = Math.min(
-                    minMagicCost[currentDamageTarget],
-                    minMagicCost[currentDamageTarget - currentSpellDamage] + currentSpellCost
-                );
-            }
-            // An additional check for values beyond targetHealth, if the problem allows for over-killing.
-            // For this specific problem, we only care about exactly H.
-            // However, a Type III change could involve considering "overkill" as well.
-            // Let's add a small fragment for potential over-killing scenarios for robustness,
-            // though it might not be strictly necessary for the original problem's solution.
-            // This part is an "added fragment" illustrating a slightly different DP approach.
-            if (currentDamageTarget + currentSpellDamage <= dpArraySize - 1) { // Check bounds
-                if (minMagicCost[currentDamageTarget] !== Infinity) {
-                     // This considers using the current spell to reach an even higher damage amount
-                     // from the current 'currentDamageTarget'. This is slightly different from
-                     // the original DP formulation which only considers building up to 'currentDamageTarget'.
-                     // It's more like a knapsack where you can exceed capacity.
-                     // For this specific problem, the original loop condition (j <= H) is usually sufficient.
-                     // Let's keep it commented out to stick closer to the original problem's intent
-                     // but demonstrate a thought process for "new fragments".
-                     /*
-                     minMagicCost[currentDamageTarget + currentSpellDamage] = Math.min(
-                         minMagicCost[currentDamageTarget + currentSpellDamage],
-                         minMagicCost[currentDamageTarget] + currentSpellCost
-                     );
-                     */
-                }
-            }
-        }
-    }
-
-    // The result is the minimum magic cost to reach exactly 'targetHealth'.
-    const finalMagicPoints = minMagicCost[targetHealth];
-
-    // Check if the target health is reachable.
-    if (finalMagicPoints === Infinity) {
-        console.log(-1); // Indicate that the target health cannot be reached.
-    } else {
-        console.log(finalMagicPoints);
-    }
+  // Output the minimum magic points required to reach the target health.
+  console.log(minMagicPointCost[targetHealthPoints]);
 }
 
-// Read input from standard input and pass it to the processing function.
-const fileSystem = require("fs");
-const inputData = fileSystem.readFileSync("/dev/stdin", "utf8");
-processBattleData(inputData);
+// Read input from stdin and pass it to the main processing function.
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,34 +1,33 @@
-const performAnalysis = (sourceData) => {
-    const lexicalUnits = [
-        'dreamer',
-        'eraser',
-        'dream',
-        'erase'
-    ];
+function processInput(rawContent) {
+    const flipStr = (strVal) => {
+        return strVal.split('').reverse().join('');
+    };
 
-    const segment = sourceData.split('\n')[0];
-    let presentIndex = segment.length;
-    let completionStatus = false;
+    const initialPhrases = ['dream', 'dreamer', 'erase', 'eraser'];
+    const targetPhrases = initialPhrases.map(flipStr);
 
-    while (presentIndex > 0) {
-        let matchLocated = false;
-        for (const unit of lexicalUnits) {
-            if (segment.substring(0, presentIndex).endsWith(unit)) {
-                presentIndex -= unit.length;
-                matchLocated = true;
-                break;
+    const inputLine = rawContent.split('\n')[0];
+    const processedText = flipStr(inputLine);
+
+    const canFormText = (currentSegment) => {
+        if (currentSegment.length === 0) {
+            return true;
+        }
+
+        return targetPhrases.some(phraseCandidate => {
+            if (currentSegment.startsWith(phraseCandidate)) {
+                const nextSegment = currentSegment.substring(phraseCandidate.length);
+                return canFormText(nextSegment);
             }
-        }
-        if (!matchLocated) {
-            break;
-        }
+            return false;
+        });
+    };
+
+    if (canFormText(processedText)) {
+        console.log('YES');
+    } else {
+        console.log('NO');
     }
+}
 
-    if (presentIndex === 0) {
-        completionStatus = true;
-    }
-
-    process.stdout.write(completionStatus ? 'YES\n' : 'NO\n');
-};
-
-performAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

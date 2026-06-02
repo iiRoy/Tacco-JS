@@ -1,271 +1,147 @@
-if (!String.prototype.repeatString) {
-    String.prototype.repeatString = function (numRepetitions) {
+if (!String.prototype.repeat) {
+    String.prototype.repeat = function (repeatCount) {
         'use strict';
-        if (this === null || this === undefined) {
-            throw new TypeError('Cannot convert ' + this + ' to a string object for repetition.');
+        const currentContext = this;
+        if (currentContext === null || currentContext === undefined) {
+            throw new TypeError('Cannot convert ' + currentContext + ' to object for string repetition');
         }
+        let baseString = String(currentContext);
+        let numRepeats = Number(repeatCount);
 
-        let baseString = String(this);
-        let repetitionCount = Number(numRepetitions);
-
-        if (Number.isNaN(repetitionCount)) { // Changed `count != count` to `Number.isNaN`
-            repetitionCount = 0;
+        if (Number.isNaN(numRepeats)) {
+            numRepeats = 0;
         }
-
-        if (repetitionCount < 0) {
-            throw new RangeError('Repetition count must be a non-negative value.');
+        if (numRepeats < 0) {
+            throw new RangeError('Repeat count must be non-negative');
         }
-
-        if (repetitionCount === Infinity) {
-            throw new RangeError('Repetition count must be a finite number.');
+        if (numRepeats === Infinity) {
+            throw new RangeError('Repeat count must be less than infinity');
         }
+        
+        numRepeats = Math.floor(numRepeats);
 
-        repetitionCount = Math.floor(repetitionCount);
-
-        if (baseString.length === 0 || repetitionCount === 0) {
+        if (baseString.length === 0 || numRepeats === 0) {
             return '';
         }
 
-        const MAX_STRING_LENGTH_THRESHOLD = 268435456; // Explicit constant, same value as 1 << 28
-        if (baseString.length * repetitionCount >= MAX_STRING_LENGTH_THRESHOLD) {
-            throw new RangeError('Resulting string size exceeds maximum allowed limit for repetition.');
+        const maxStringLength = 1 << 28;
+        if (baseString.length * numRepeats >= maxStringLength) {
+            throw new RangeError('Resulting string size would exceed maximum limit');
         }
 
-        let accumulatedResult = '';
-        let currentStringSegment = baseString;
-
-        // Core repetition logic using binary exponentiation, rewritten as a while loop
-        while (repetitionCount > 0) {
-            if ((repetitionCount & 1) === 1) {
-                accumulatedResult += currentStringSegment;
+        let resultAccumulator = '';
+        while (numRepeats > 0) {
+            if ((numRepeats & 1) === 1) {
+                resultAccumulator += baseString;
             }
-            repetitionCount >>= 1; // Changed unsigned right shift to signed right shift (for positive counts, behavior is identical)
-            currentStringSegment += currentStringSegment;
+            baseString += baseString;
+            numRepeats >>>= 1;
         }
-
-        return accumulatedResult;
+        return resultAccumulator;
     };
 }
 
-/**
- * Performs a shallow comparison of two objects' own enumerable properties.
- * @param {object} objA - The first object.
- * @param {object} objB - The second object.
- * @returns {boolean} True if objects have the same own enumerable properties and values, false otherwise.
- */
-function areObjectsShallowEqual(objA, objB) {
-    if (objA === objB) return true;
-    if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+function areObjectsShallowlyEqual(objA, objB) {
+    const propNamesA = Object.keys(objA);
+    const propNamesB = Object.keys(objB);
+
+    if (propNamesA.length !== propNamesB.length) {
         return false;
     }
 
-    const propsOfA = Object.keys(objA); // Using Object.keys instead of getOwnPropertyNames
-    const propsOfB = Object.keys(objB);
-
-    if (propsOfA.length !== propsOfB.length) {
-        return false;
-    }
-
-    // Using `every` for a more functional approach
-    return propsOfA.every(propertyName => {
-        return objB.hasOwnProperty(propertyName) && objA[propertyName] === objB[propertyName];
+    const allPropsMatch = propNamesA.every(propName => {
+        return objA[propName] === objB[propName];
     });
+
+    return allPropsMatch;
 }
 
-/**
- * Parses a string to an integer with base 10.
- * @param {string} inputString - The string to parse.
- * @returns {number} The parsed integer.
- */
-const parseDecimalInteger = (inputString) => {
-    // Added a check for empty or non-string input, then uses Number.parseInt
-    if (typeof inputString !== 'string' || inputString.trim() === '') {
-        return NaN; // Or throw an error, depending on desired strictness
+const parseDecimalInteger = (textValue) => Number.parseInt(textValue, 10);
+
+const generatePowersArray = (base, maxExponent) => {
+    const powers = [];
+    for (let exp = maxExponent; exp >= 1; exp--) {
+        powers.push(Math.pow(base, exp));
     }
-    return Number.parseInt(inputString, 10);
+    return powers;
 };
 
-// Helper function to generate an array of powers.
-const generatePowersArray = (baseValue, exponentList) => {
-    return exponentList.map(exp => baseValue ** exp); // Using exponentiation operator (**)
-};
+const powersOfBaseSix = generatePowersArray(6, 6);
+const powersOfBaseNine = generatePowersArray(9, 5);
 
-// Precomputed arrays of powers for specific bases.
-const powersOfSix = generatePowersArray(6, [6, 5, 4, 3, 2, 1]);
-const powersOfNine = generatePowersArray(9, [5, 4, 3, 2, 1]);
-
-// A cache for the recursive function to optimize performance (memoization).
-const costCalculationMemo = new Map();
-
-/**
- * Calculates a 'cost' value based on the input integer.
- * This function exhibits recursive behavior with specific base cases.
- * @param {number} inputNumber - The integer for which to calculate the cost.
- * @returns {number} The calculated cost.
- */
-function determineCostValue(inputNumber) {
-    if (inputNumber < 0) {
-        return 0; // Guard clause for negative input
+function calculateMinSteps(currentValue) {
+    if (currentValue < 6) {
+        return currentValue;
     }
-    if (costCalculationMemo.has(inputNumber)) {
-        return costCalculationMemo.get(inputNumber);
+    if (currentValue < 9) {
+        return 1 + (currentValue - 6);
     }
 
-    let result;
-    if (inputNumber < 6) {
-        result = inputNumber;
-    } else if (inputNumber < 9) {
-        result = inputNumber - 5; // Simplified (1 + (i - 6))
-    } else {
-        // Helper to find the largest power less than or equal to a target.
-        const findLargestApplicablePower = (powersArray, targetVal) => {
-            // Using `find` with `reverse()` for the largest element if sorted descending.
-            // Original `find` was sufficient, but this explicitly states intent.
-            return powersArray.find(power => power <= targetVal) || 0;
-        };
+    const subtractSixOption = calculateMinSteps(currentValue - powersOfBaseSix.find(power => power <= currentValue)) + 1;
+    const subtractNineOption = calculateMinSteps(currentValue - powersOfBaseNine.find(power => power <= currentValue)) + 1;
 
-        const largestSixPower = findLargestApplicablePower(powersOfSix, inputNumber);
-        const largestNinePower = findLargestApplicablePower(powersOfNine, inputNumber);
-
-        let optionSixCost = Infinity;
-        if (largestSixPower > 0) {
-            optionSixCost = determineCostValue(inputNumber - largestSixPower) + 1;
-        }
-
-        let optionNineCost = Infinity;
-        if (largestNinePower > 0) {
-            optionNineCost = determineCostValue(inputNumber - largestNinePower) + 1;
-        }
-
-        result = Math.min(optionSixCost, optionNineCost);
-    }
-
-    costCalculationMemo.set(inputNumber, result);
-    return result;
+    return Math.min(subtractSixOption, subtractNineOption);
 }
 
-/**
- * Main execution function for the problem.
- * Processes input data to calculate a minimum cost based on colorings.
- * @param {string} rawProblemInput - The raw string input from stdin.
- */
-function executeProblemSolver(rawProblemInput) {
-    const inputLines = rawProblemInput.split("\n").filter(line => line.trim() !== '');
+function processGridColoringProblem(problemInput) {
+    const inputLines = problemInput.split("\n");
 
-    if (inputLines.length === 0) {
-        console.error("No input lines found.");
-        return;
-    }
+    const firstLineTokens = inputLines.shift().split(" ").map(parseDecimalInteger);
+    const gridSizeN = firstLineTokens[0];
+    const numColorsC = firstLineTokens[1];
 
-    const [gridDimension, availableColors] = inputLines.shift()
-                                                .split(" ")
-                                                .map(valStr => parseDecimalInteger(valStr));
+    const parseMatrix = (lineCount) => {
+        const matrixLines = inputLines.splice(0, lineCount);
+        return matrixLines.map(line => line.split(" ").map(parseDecimalInteger));
+    };
 
-    if (Number.isNaN(gridDimension) || gridDimension <= 0 ||
-        Number.isNaN(availableColors) || availableColors <= 0) {
-        console.error("Invalid grid dimensions or color count provided. N and C must be positive integers.");
-        return;
-    }
+    const costMatrixD = parseMatrix(numColorsC);
+    const initialGridC = parseMatrix(gridSizeN);
 
-    const colorDifferenceMatrix = inputLines.splice(0, availableColors)
-                                            .map(lineStr => lineStr.split(" ")
-                                                                   .map(valStr => parseDecimalInteger(valStr)));
+    const colorCountsByMod = Array.from({ length: 3 }, () => Array(numColorsC).fill(0));
 
-    // Validate D matrix dimensions
-    if (colorDifferenceMatrix.length !== availableColors || colorDifferenceMatrix.some(row => row.length !== availableColors)) {
-        console.error("Color difference matrix (D) has incorrect dimensions.");
-        return;
-    }
-
-    const initialColorGrid = inputLines.splice(0, gridDimension)
-                                       .map(lineStr => lineStr.split(" ")
-                                                              .map(valStr => parseDecimalInteger(valStr)));
-
-    // Validate C matrix dimensions
-    if (initialColorGrid.length !== gridDimension || initialColorGrid.some(row => row.length !== gridDimension)) {
-        console.error("Initial color grid (c) has incorrect dimensions.");
-        return;
-    }
-
-    const MODULO_COUNT = 3; // Constant for the modulo value
-
-    // Initialize an array of arrays, each sub-array representing color counts for a modulo group.
-    // Replaced ".repeat(C).split('').map(() => 0)" with Array.from
-    const moduloColorAggregates = Array.from({ length: MODULO_COUNT },
-                                             () => Array(availableColors).fill(0));
-
-    // Populate the moduloColorAggregates array.
-    initialColorGrid.forEach((row, rowIndex) => {
-        row.forEach((cellColor, colIndex) => {
-            const moduloGroupIndex = (rowIndex + colIndex) % MODULO_COUNT;
-            // Colors are 1-indexed in input, so adjust to 0-indexed for array.
-            if (cellColor >= 1 && cellColor <= availableColors) { // Added validation for cell color
-                moduloColorAggregates[moduloGroupIndex][cellColor - 1]++;
-            } else {
-                console.warn(`Invalid color ${cellColor} found at [${rowIndex}, ${colIndex}]. Skipping.`);
-            }
+    initialGridC.forEach((row, rowIdx) => {
+        row.forEach((cellColor, colIdx) => {
+            const modGroup = (rowIdx + colIdx) % 3;
+            const actualColorIndex = cellColor - 1;
+            colorCountsByMod[modGroup][actualColorIndex]++;
         });
     });
 
-    // Calculate the cost for each modulo group if it were entirely colored with a specific target color.
-    // Rewritten with traditional for loops instead of nested map/reduce for clarity and control.
-    const moduloGroupTargetColorCosts = [];
-    for (let groupIdx = 0; groupIdx < MODULO_COUNT; groupIdx++) {
-        const groupStats = moduloColorAggregates[groupIdx];
-        const costsForTargets = Array(availableColors).fill(0);
-
-        for (let targetColor = 0; targetColor < availableColors; targetColor++) {
-            let currentTargetCost = 0;
-            for (let sourceColor = 0; sourceColor < availableColors; sourceColor++) {
-                if (sourceColor !== targetColor) {
-                    currentTargetCost += groupStats[sourceColor] * colorDifferenceMatrix[sourceColor][targetColor];
+    const scorePerModAndTargetColor = colorCountsByMod.map(modGroupStats => {
+        return Array.from({ length: numColorsC }, (_, targetColorIdx) => {
+            let currentModGroupCost = 0;
+            modGroupStats.forEach((countOfOriginalColor, originalColorIdx) => {
+                if (originalColorIdx !== targetColorIdx) {
+                    currentModGroupCost += countOfOriginalColor * costMatrixD[originalColorIdx][targetColorIdx];
                 }
-            }
-            costsForTargets[targetColor] = currentTargetCost;
-        }
-        moduloGroupTargetColorCosts.push(costsForTargets);
-    }
+            });
+            return currentModGroupCost;
+        });
+    });
 
-    let overallMinimumTotalCost = Infinity;
+    let overallMinCost = Infinity;
 
-    // Iterating through all possible distinct color combinations for the three modulo groups.
-    for (let colorForMod0 = 0; colorForMod0 < availableColors; colorForMod0++) {
-        for (let colorForMod1 = 0; colorForMod1 < availableColors; colorForMod1++) {
-            if (colorForMod0 === colorForMod1) {
+    for (let targetColor0 = 0; targetColor0 < numColorsC; targetColor0++) {
+        for (let targetColor1 = 0; targetColor1 < numColorsC; targetColor1++) {
+            if (targetColor0 === targetColor1) {
                 continue;
             }
-            for (let colorForMod2 = 0; colorForMod2 < availableColors; colorForMod2++) {
-                if (colorForMod1 === colorForMod2 || colorForMod0 === colorForMod2) {
+            for (let targetColor2 = 0; targetColor2 < numColorsC; targetColor2++) {
+                if (targetColor2 === targetColor0 || targetColor2 === targetColor1) {
                     continue;
                 }
 
-                // Calculate the current total cost for this specific color combination.
                 const currentCombinationCost =
-                    moduloGroupTargetColorCosts[0][colorForMod0] +
-                    moduloGroupTargetColorCosts[1][colorForMod1] +
-                    moduloGroupTargetColorCosts[2][colorForMod2];
+                    scorePerModAndTargetColor[0][targetColor0] +
+                    scorePerModAndTargetColor[1][targetColor1] +
+                    scorePerModAndTargetColor[2][targetColor2];
 
-                overallMinimumTotalCost = Math.min(overallMinimumTotalCost, currentCombinationCost);
+                overallMinCost = Math.min(overallMinCost, currentCombinationCost);
             }
         }
     }
-
-    console.log(overallMinimumTotalCost);
+    console.log(overallMinCost);
 }
 
-// Entry point for the application.
-// Reads input from standard input and passes it to the main solver function.
-// Wrapped in a try-catch block for robust error handling.
-try {
-    const fileSystemModule = require("fs");
-    const standardInputPath = "/dev/stdin";
-
-    const fileContents = fileSystemModule.readFileSync(standardInputPath, "utf8");
-
-    executeProblemSolver(fileContents);
-} catch (executionError) {
-    console.error("An unhandled error occurred during program execution:");
-    console.error(executionError.message || executionError);
-    // In a real application, you might log the stack trace or provide more user-friendly output.
-    process.exit(1); // Exit with a non-zero status code to indicate an error.
-}
+processGridColoringProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

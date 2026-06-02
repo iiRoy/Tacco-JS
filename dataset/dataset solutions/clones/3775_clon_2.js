@@ -1,97 +1,86 @@
-/*
- * This module processes input data to find the minimum cost
- * to recolor a grid based on specific rules.
- */
-function ProcessInputData(inputString) {
-  // Split the entire input string into individual lines.
-  const linesArray = inputString.split('\n');
+function ProcessInput(inputData) {
+  // Split the entire input string into an array of lines.
+  inputData = inputData.split('\n');
 
-  // The first line contains the grid dimensions (N) and number of available colors (C).
-  // Parse these values from the first line.
-  linesArray[0] = linesArray[0].split(' ').map(strVal => parseInt(strVal, 10));
+  // Parse the first line to get grid dimensions and color count.
+  // Each element is converted to a number.
+  inputData[0] = inputData[0].split(' ').map(val => +val);
 
-  const gridSize = linesArray[0][0]; // Represents N: the size of the square grid.
-  const numColors = linesArray[0][1]; // Represents C: the total number of distinct colors.
+  // Extract the grid size (N) and the number of distinct colors (C).
+  const gridSize = inputData[0][0];
+  const colorCount = inputData[0][1];
 
-  // Declare arrays to store color change costs and the original grid's color configuration.
-  const colorChangeCosts = []; // Stores the cost matrix D.
-  const originalGridColors = []; // Stores the grid A, with adjusted 0-indexed colors.
+  // Initialize arrays to store the cost matrix and the actual color grid.
+  let costMatrix = []; // Stores the cost of changing from one color to another.
+  let colorGrid = [];  // Stores the initial color configuration of the grid.
 
-  /*
-   * Populate the color change cost matrix.
-   * Each row 'i' to 'i+numColors' in the input represents
-   * the costs of changing an original color 'l' to a new color 'k'.
-   */
-  for (let currentCostRow = 0; currentCostRow < numColors; currentCostRow++) {
-    colorChangeCosts[currentCostRow] = linesArray[currentCostRow + 1].split(' ').map(strVal => parseInt(strVal, 10));
+  // Populate the cost matrix 'costMatrix'.
+  // The next 'colorCount' lines represent the cost matrix.
+  for (let rowIdx = 0; rowIdx < colorCount; rowIdx++) {
+    costMatrix[rowIdx] = inputData[rowIdx + 1].split(' ').map(val => +val);
   }
 
-  /*
-   * Populate the original grid colors.
-   * The subsequent 'gridSize' rows in the input represent the
-   * initial color values for each cell in the N x N grid.
-   * Colors are adjusted to be 0-indexed for easier processing.
-   */
-  for (let gridRowIndex = 0; gridRowIndex < gridSize; gridRowIndex++) {
-    originalGridColors[gridRowIndex] = linesArray[gridRowIndex + 1 + numColors].split(' ').map(strVal => parseInt(strVal, 10) - 1);
+  // Populate the color grid 'colorGrid'.
+  // The lines after the cost matrix represent the grid itself.
+  // Colors are 0-indexed, so subtract 1 from each value.
+  for (let rowIdx = 0; rowIdx < gridSize; rowIdx++) {
+    colorGrid[rowIdx] = inputData[rowIdx + 1 + colorCount].split(' ').map(val => +val - 1);
   }
 
-  /*
-   * Initialize a 3D-like structure to count the occurrences of each
-   * original color within each of the three modulo groups.
-   * The groups are determined by (row_index + col_index) % 3.
-   */
-  const colorCountsByModGroup = Array.from({ length: 3 }, () => Array.from({ length: numColors }, () => 0));
+  // Initialize a 3x'colorCount' 2D array to count color occurrences
+  // based on the (row + column) % 3 group.
+  // colorGroupCounts[0] for (i+j)%3 == 0
+  // colorGroupCounts[1] for (i+j)%3 == 1
+  // colorGroupCounts[2] for (i+j)%3 == 2
+  const colorGroupCounts = Array(3).fill(0).map(() => Array(colorCount).fill(0));
 
-  // Iterate through the grid to categorize and count colors by their modulo group.
+  // Iterate through the grid to populate 'colorGroupCounts'.
   for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      const groupDiscriminator = (r + c) % 3; // Calculate the modulo group (0, 1, or 2).
-      const currentCellOriginalColor = originalGridColors[r][c]; // Get the 0-indexed color of the cell.
-      colorCountsByModGroup[groupDiscriminator][currentCellOriginalColor]++; // Increment count for this color in its group.
+    for (let c_idx = 0; c_idx < gridSize; c_idx++) {
+      // Determine which group the current cell belongs to.
+      const groupIndex = (r + c_idx) % 3;
+      // Increment the count for the specific color in its corresponding group.
+      colorGroupCounts[groupIndex][colorGrid[r][c_idx]]++;
     }
   }
 
-  // Initialize the variable to store the minimum total cost found, setting it to a very large number.
-  let minimumOverallCost = Infinity;
+  // Initialize the minimum total cost with a very large number.
+  let minimumTotalCost = 9e9;
 
-  /*
-   * Iterate through all unique combinations of three distinct target colors.
-   * These three colors will be assigned to cells belonging to modulo groups 0, 1, and 2 respectively.
-   */
-  for (let targetColorForGroup0 = 0; targetColorForGroup0 < numColors; targetColorForGroup0++) {
-    for (let targetColorForGroup1 = 0; targetColorForGroup1 < numColors; targetColorForGroup1++) {
-      // The target colors for group 0 and group 1 must be different.
-      if (targetColorForGroup0 === targetColorForGroup1) continue;
+  // Iterate through all possible combinations of three distinct colors
+  // for the three (i+j)%3 groups.
+  // firstColorOption for group 0, secondColorOption for group 1, thirdColorOption for group 2.
+  for (let firstColorOption = 0; firstColorOption < colorCount; firstColorOption++) {
+    for (let secondColorOption = 0; secondColorOption < colorCount; secondColorOption++) {
+      // Ensure the first two chosen colors are distinct.
+      if (firstColorOption === secondColorOption) continue;
 
-      for (let targetColorForGroup2 = 0; targetColorForGroup2 < numColors; targetColorForGroup2++) {
-        // The target color for group 2 must be different from both group 0 and group 1.
-        if (targetColorForGroup0 === targetColorForGroup2 || targetColorForGroup1 === targetColorForGroup2) continue;
+      for (let thirdColorOption = 0; thirdColorOption < colorCount; thirdColorOption++) {
+        // Ensure all three chosen colors are distinct.
+        if (firstColorOption === thirdColorOption || secondColorOption === thirdColorOption) continue;
 
-        // Calculate the total recoloring cost for this specific combination of (targetColorForGroup0, targetColorForGroup1, targetColorForGroup2).
-        let currentCombinationCost = 0;
+        let currentCalculatedCost = 0; // Accumulator for the cost of this specific color combination.
 
-        // Sum up costs for each modulo group.
-        for (let originalColorValue = 0; originalColorValue < numColors; originalColorValue++) {
-          // Cost for group 0: count of originalColorValue in group 0 * cost to change it to targetColorForGroup0.
-          currentCombinationCost += colorCountsByModGroup[0][originalColorValue] * colorChangeCosts[originalColorValue][targetColorForGroup0];
-
-          // Cost for group 1: count of originalColorValue in group 1 * cost to change it to targetColorForGroup1.
-          currentCombinationCost += colorCountsByModGroup[1][originalColorValue] * colorChangeCosts[originalColorValue][targetColorForGroup1];
-
-          // Cost for group 2: count of originalColorValue in group 2 * cost to change it to targetColorForGroup2.
-          currentCombinationCost += colorCountsByModGroup[2][originalColorValue] * colorChangeCosts[originalColorValue][targetColorForGroup2];
+        // Calculate the total cost for this combination of (firstColorOption, secondColorOption, thirdColorOption).
+        // Iterate through all possible original colors.
+        for (let originalColorValue = 0; originalColorValue < colorCount; originalColorValue++) {
+          // Add cost for group 0: count of originalColorValue in group 0 * cost to change to firstColorOption.
+          currentCalculatedCost += colorGroupCounts[0][originalColorValue] * costMatrix[originalColorValue][firstColorOption];
+          // Add cost for group 1: count of originalColorValue in group 1 * cost to change to secondColorOption.
+          currentCalculatedCost += colorGroupCounts[1][originalColorValue] * costMatrix[originalColorValue][secondColorOption];
+          // Add cost for group 2: count of originalColorValue in group 2 * cost to change to thirdColorOption.
+          currentCalculatedCost += colorGroupCounts[2][originalColorValue] * costMatrix[originalColorValue][thirdColorOption];
         }
 
-        // Update the minimum overall cost if the current combination yields a lower cost.
-        minimumOverallCost = Math.min(minimumOverallCost, currentCombinationCost);
+        // Update the overall minimum total cost if the current combination is cheaper.
+        minimumTotalCost = Math.min(minimumTotalCost, currentCalculatedCost);
       }
     }
   }
 
-  // Output the calculated minimum cost to the console.
-  console.info(minimumOverallCost);
+  // Output the final minimum total cost to the console.
+  console.log(minimumTotalCost);
 }
 
 // Read input from standard input and pass it to the main processing function.
-ProcessInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

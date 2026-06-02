@@ -1,22 +1,6 @@
-const processDocument = (incomingText) => {
-    const firstSegment = incomingText.split('\n')[0];
-    let nonOcularCharacterCount = 0;
+function run(source) {
+  const eightVisibleNonO = /^(?:o*[^o\n]){8}/;
+  process.stdout.write(eightVisibleNonO.test(source) ? "NO\n" : "YES\n");
+}
 
-    for (let currentSymbol of firstSegment) {
-        if (currentSymbol !== 'o') {
-            nonOcularCharacterCount++;
-        }
-    }
-
-    switch (nonOcularCharacterCount >= 8) {
-        case true:
-            console.log("NO");
-            break;
-        case false:
-            console.log("YES");
-            break;
-    }
-};
-
-const rawDataSource = require("fs").readFileSync("/dev/stdin", "utf8");
-processDocument(rawDataSource);
+run(require("fs").readFileSync("/dev/stdin", "utf8"));

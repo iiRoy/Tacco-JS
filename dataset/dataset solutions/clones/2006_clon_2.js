@@ -1,55 +1,49 @@
-/*
- * This module performs a specific iterative calculation.
- */
-const ProcessInput = ( rawData ) => {
-  // Split the input string into parts and convert to BigInts
-  const parsedNumbers = rawData.split(' ') .map ( item => BigInt(item) );
+const ProcessInput = rawData => {
+  // Parse the input string, splitting by space and converting each part to a BigInt.
+  const parsedValues = rawData.split(' ').map(elementString => BigInt(elementString));
 
-  // Extract the two primary numerical values
-  const initialQuantity = parsedNumbers[0];
-  const subtractionFactor = parsedNumbers[1];
+  // Extract the initial value and the target difference from the parsed array.
+  const initialValue = parsedValues[0];
+  const targetDifference = parsedValues[1];
 
-  let currentQuantity = initialQuantity; // Holds the value from the previous iteration
-  let nextQuantity = initialQuantity;    // Holds the value for the current iteration
-  let finalOutcome;                      // Stores the ultimate calculated result
+  // Initialize variables for the iterative calculation.
+  let previousIterationValue = initialValue;
+  let currentCalculatedValue = initialValue;
+  let finalOutcome; // This will store the final result of the calculation.
 
-  // Begin an indefinite loop for the calculation process
+  // Begin an infinite loop to perform the iterative process.
   while (true) {
-    // Perform the core subtraction step
-    nextQuantity = currentQuantity - subtractionFactor;
+    // Calculate the next value by subtracting the target difference.
+    currentCalculatedValue = previousIterationValue - targetDifference;
 
-    // Ensure the value is always positive; if negative, make it positive
-    nextQuantity = nextQuantity > 0 ? nextQuantity : -1n * nextQuantity;
+    // Ensure the current calculated value is always non-negative (absolute value for BigInt).
+    currentCalculatedValue = currentCalculatedValue > 0 ? currentCalculatedValue : -1n * currentCalculatedValue;
 
-    // Output the intermediate steps for debugging or tracing
-    console.log(
-      `${currentQuantity}\n${nextQuantity}`
-    );
+    // Output the previous and current values for debugging or tracking.
+    console.log(`${previousIterationValue}\n${currentCalculatedValue}`);
 
-    // Check for the first termination condition
-    if ( nextQuantity === subtractionFactor ) {
-      finalOutcome = 0n; // Set result to zero BigInt
-      break;             // Exit the loop
+    // Check for the first termination condition: if the current value equals the target difference.
+    if (currentCalculatedValue === targetDifference) {
+      finalOutcome = 0; // Set the result to 0.
+      break; // Exit the loop.
     }
 
-    // Check for the second termination condition
-    if ( nextQuantity < subtractionFactor ) {
-      // Further condition for early exit if value is very small
-      if ( nextQuantity < subtractionFactor / 2n ) {
-        finalOutcome = nextQuantity; // Assign the current value as the result
-        break;                       // Terminate the iterative process
+    // Check for the second termination condition: if the current value is less than the target difference.
+    if (currentCalculatedValue < targetDifference) {
+      // Within this condition, check if the current value is less than half of the target difference.
+      if (currentCalculatedValue < targetDifference / 2n) {
+        finalOutcome = currentCalculatedValue; // Set the result to the current value.
+        break; // Exit the loop.
       }
     }
 
-    // Prepare for the next iteration by updating the previous value
-    currentQuantity = nextQuantity;
+    // Update the previous value for the next iteration.
+    previousIterationValue = currentCalculatedValue;
   }
 
-  // Log the final computed result, converted back to a standard Number type
-  console.log(
-    Number(finalOutcome)
-  );
+  // Output the final calculated outcome, converted to a standard JavaScript Number.
+  console.log(Number(finalOutcome));
 };
 
-// Execute the main processing function with data read from standard input
-ProcessInput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

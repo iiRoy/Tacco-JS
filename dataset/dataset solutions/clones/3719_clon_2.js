@@ -1,33 +1,24 @@
-// This function processes a given text to count specific characters.
-function calculateBalance(sourceText)
-{
-    // The initial source text might contain multiple lines.
-    // We only care about the very first line of content.
-    // Then, we break that line into individual characters for analysis.
-    const charSequence = sourceText . split ( '\n' ) [ 0 ] . split ( '' ) ;
+function processInput(rawData) {
+  // Process the raw input string: split by newline, take the first line, then split into individual characters.
+  let charArray = rawData.split('\n')[0].split('');
 
-    // Initialize counters for different types of characters.
-    let positiveCount = 0; // Tracks occurrences of the '+' symbol.
-    let negativeCount = 0; // Tracks occurrences of any other symbol (implicitly '-').
+  // Initialize counters for positive and negative signs.
+  let positiveCount = 0;
+  let negativeCount = 0;
 
-    // Iterate through each character in the sequence.
-    for ( let charIndex = 0 ; charIndex < charSequence . length ; charIndex++ )
-    {
-        // Check if the current character is a plus sign.
-        if ( charSequence [ charIndex ] === '+' )
-        {
-            positiveCount++; // Increment the positive counter.
-        }
-        else
-        {
-            negativeCount++; // Otherwise, increment the negative counter.
-        }
+  // Iterate through each character in the processed array.
+  for (let idx = 0; idx < charArray.length; idx++) {
+    // Check if the current character is a plus sign.
+    if (charArray[idx] === '+') {
+      positiveCount++; // Increment the positive counter.
+    } else {
+      negativeCount++; // Otherwise, it's a minus sign, so increment the negative counter.
     }
+  }
 
-    // Output the final difference between the positive and negative counts.
-    console.log(positiveCount - negativeCount);
+  // Output the difference between the count of plus signs and minus signs.
+  console.log(positiveCount - negativeCount);
 }
 
-// Read the input from standard input and pass it to our processing function.
-// The 'fs' module is used for file system operations, specifically reading /dev/stdin.
-calculateBalance( require("fs") . readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

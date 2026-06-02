@@ -1,60 +1,93 @@
-const contentExtractor = (rawTextContent) => {
-    const textSections = rawTextContent.trim().split('\n');
-    const firstNumericValue = parseFloat(textSections[0].split(' ').pop());
-    const secondNumericArray = textSections[1].split(' ').map(Number);
-    return {
-        acquireScalar: () => firstNumericValue,
-        acquireList: () => secondNumericArray,
-    };
-};
+const inputProcessor = (function() {
+    function createParser(sourceText) {
+        let inputLines = sourceText.trim().split('\n');
+        let linePointer = 0;
+        let tokenCache = [];
 
-const executeSequenceOperation = (inputSeries) => {
-    const seriesLength = inputSeries.length;
-
-    const finalProcessingState = Array.from({ length: seriesLength }).reduce((currentStatus) => {
-        if (!currentStatus.isFeasible || currentStatus.activeSet.length === 0) {
-            return currentStatus;
-        }
-
-        const currentSetSize = currentStatus.activeSet.length;
-        const reversedActiveSet = [...currentStatus.activeSet].reverse();
-
-        const matchingReverseIndex = reversedActiveSet.findIndex((elementValue, reversePosition) => {
-            return elementValue === (currentSetSize - 1 - reversePosition) + 1;
-        });
-
-        if (matchingReverseIndex === -1) {
-            return { ...currentStatus, isFeasible: false };
-        }
-
-        const actualMatchingIndex = currentSetSize - 1 - matchingReverseIndex;
-        const removedItem = currentStatus.activeSet[actualMatchingIndex];
-
-        const updatedSet = [
-            ...currentStatus.activeSet.slice(0, actualMatchingIndex),
-            ...currentStatus.activeSet.slice(actualMatchingIndex + 1)
-        ];
+        const refillTokens = () => {
+            if (tokenCache.length === 0 && linePointer < inputLines.length) {
+                tokenCache = inputLines[linePointer++].split(' ').reverse();
+            }
+        };
 
         return {
-            activeSet: updatedSet,
-            extractedItems: [...currentStatus.extractedItems, removedItem],
-            isFeasible: true,
+            grabValue: function(isString) {
+                refillTokens();
+                if (tokenCache.length === 0) return undefined;
+                let val = tokenCache.pop();
+                return isString ? val : Number(val);
+            },
+            fetchLine: function(isString) {
+                if (linePointer >= inputLines.length) return [];
+                let line = inputLines[linePointer++].split(' ');
+                return isString ? line : line.map(Number);
+            },
+            scanGrid: function(numRows, isString) {
+                let grid = [];
+                for (let i = 0; i < numRows; i++) {
+                    if (linePointer >= inputLines.length) break;
+                    let row = inputLines[linePointer++].split(' ');
+                    grid.push(isString ? row : row.map(Number));
+                }
+                return grid;
+            },
+            pullBlocks: function(numRows, isString) {
+                let blocks = [];
+                for (let i = 0; i < numRows; i++) {
+                    if (linePointer >= inputLines.length) break;
+                    let block = inputLines[linePointer++];
+                    blocks.push(isString ? block : Number(block));
+                }
+                return blocks;
+            }
         };
-    }, { activeSet: [...inputSeries], extractedItems: [], isFeasible: true });
-
-    if (!finalProcessingState.isFeasible) {
-        return "-1";
-    } else {
-        return finalProcessingState.extractedItems.reverse().join("\n");
     }
-};
+    return createParser;
+})();
 
-const initiateProcessing = () => {
-    const dataStreamHandler = contentExtractor(require("fs").readFileSync("/dev/stdin", "utf8"));
-    const discardableValue = dataStreamHandler.acquireScalar();
-    const targetSequence = dataStreamHandler.acquireList();
+function findRemovalSequence(initialArr) {
+    const searchStack = [{ currentArrayState: [...initialArr], removedElements: [] }];
 
-    return executeSequenceOperation(targetSequence);
-};
+    while (searchStack.length > 0) {
+        const { currentArrayState, removedElements } = searchStack.pop();
 
-console.log(initiateProcessing());
+        if (currentArrayState.length === 0) {
+            return removedElements;
+        }
+
+        for (let idx = currentArrayState.length - 1; idx >= 0; idx--) {
+            if (currentArrayState[idx] === idx + 1) {
+                const nextArrayState = [
+                    ...currentArrayState.slice(0, idx),
+                    ...currentArrayState.slice(idx + 1)
+                ];
+                const nextRemovedElements = [...removedElements, currentArrayState[idx]];
+
+                searchStack.push({
+                    currentArrayState: nextArrayState,
+                    removedElements: nextRemovedElements
+                });
+                break;
+            }
+        }
+    }
+
+    return null;
+}
+
+function processSequence() {
+    const dataReader = inputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const countVal = dataReader.grabValue();
+    const initialElements = dataReader.fetchLine();
+
+    const solutionPath = findRemovalSequence(initialElements);
+
+    if (solutionPath === null) {
+        return -1;
+    } else {
+        return solutionPath.reverse().join("\n");
+    }
+}
+
+console.log(processSequence());

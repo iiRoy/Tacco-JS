@@ -1,23 +1,21 @@
-const retrieveDigitSum = (numericValue) => {
-  let accumulatedSum = 0;
-  let workingValue = numericValue;
-  while (workingValue > 0) {
-    accumulatedSum += workingValue % 10;
-    workingValue = Math.floor(workingValue / 10);
-  }
-  return accumulatedSum;
+const sumDigits = (numVal) => {
+    let totalSum = 0;
+    let tempNum = Math.abs(numVal);
+    while (tempNum > 0) {
+        totalSum += tempNum % 10;
+        tempNum = Math.floor(tempNum / 10);
+    }
+    return totalSum;
 };
 
-const determineHighestDigitSum = (inputDataString) => {
-  const upperLimit = parseInt(inputDataString, 10);
-  if (isNaN(upperLimit) || upperLimit <= 0) {
-    return 0;
-  }
+const executeComputation = (rawInput) => {
+    const limitValue = Number(rawInput);
 
-  const generatedSequence = Array.from({ length: upperLimit }, (_, idx) => idx);
-  const sumsOfDigits = generatedSequence.map(retrieveDigitSum);
+    const peakValue = Array.from({ length: limitValue }, (_, currentNum) => currentNum)
+                            .map(sumDigits)
+                            .reduce((acc, currentSum) => Math.max(acc, currentSum), 0);
 
-  return Math.max(...sumsOfDigits);
+    console.log(peakValue);
 };
 
-console.log(determineHighestDigitSum(require("fs").readFileSync("/dev/stdin", "utf8")));
+executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));

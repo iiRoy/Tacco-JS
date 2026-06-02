@@ -1,31 +1,37 @@
-const performCalculationAndOutput = (sourceData) => {
-    const [quantityString, valueString] = sourceData.split(' ');
-    const totalItems = Number(quantityString);
-    const desiredTotal = Number(valueString);
+function* generateBillPermutations(upperBound) {
+    for (let firstBill = 0; firstBill <= upperBound; firstBill++) {
+        for (let secondBill = 0; secondBill <= upperBound - firstBill; secondBill++) {
+            for (let thirdBill = 0; thirdBill <= upperBound - firstBill - secondBill; thirdBill++) {
+                yield [firstBill, secondBill, thirdBill];
+            }
+        }
+    }
+}
 
-    const outputResult = findArrangement(totalItems, desiredTotal);
+function main(input) {
+    const inputParts = input.split(' ');
+    const maxBills = parseInt(inputParts[0], 10);
+    const targetSum = parseInt(inputParts[1], 10);
 
-    console.log(outputResult);
-};
+    let currentResult = "-1 -1 -1";
 
-const findArrangement = (totalLimit, desiredTotal) => {
-    const adjustedTotal = desiredTotal / 10000;
+    for (const [countA, countB, countC] of generateBillPermutations(maxBills)) {
+        // The original code's sum calculation contains a multiplication where an addition is typically expected.
+        // We must preserve this exact (buggy) calculation for strict behavioral equivalence.
+        // Original: var sum = (c * 10000) + (b * 5000) * (a * 1000);
+        const currentSum = (countC * 10000) + (countB * 5000) * (countA * 1000);
 
-    const indexOneCollection = Array.from({ length: totalLimit + 1 }, (_, indexOne) => indexOne);
+        if (currentSum === targetSum) {
+            currentResult = `${countA} ${countB} ${countC}`;
+            // The original code's 'break' statement only exits the innermost loop.
+            // This means it continues to search for other combinations in the outer loops
+            // and will overwrite 'result' if a later combination also matches.
+            // Therefore, we must iterate through all possible combinations to ensure
+            // we capture the LAST matching combination according to the original iteration order.
+        }
+    }
 
-    const matchingConfigurations = indexOneCollection.flatMap(indexOne =>
-        Array.from({ length: totalLimit - indexOne + 1 }, (_, indexTwo) => {
-            const indexThree = adjustedTotal - (500 * indexOne * indexTwo);
+    console.log(currentResult);
+}
 
-            const isValidThirdComponent = Number.isInteger(indexThree) &&
-                                          indexThree >= 0 &&
-                                          indexThree <= (totalLimit - indexOne - indexTwo);
-
-            return isValidThirdComponent ? [`${indexOne} ${indexTwo} ${indexThree}`] : [];
-        })
-    ).filter(arr => arr.length > 0);
-
-    return matchingConfigurations.length > 0 ? matchingConfigurations.pop()[0] : "-1 -1 -1";
-};
-
-performCalculationAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

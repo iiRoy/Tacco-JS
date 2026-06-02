@@ -1,86 +1,51 @@
-function ExecutePathSolver(dataSource) {
-    const linesOfInput = dataSource.split("\n");
-    const [totalLength, maxLeap] = linesOfInput[0].split(" ").map(Number);
-    const terrainFeatures = linesOfInput[1].split("");
+const processInputData = (rawData) => {
+    const lineSegments = rawData.split("\n");
+    const dimensionData = lineSegments[0].split(" ");
+    const totalLength = Number(dimensionData[0]);
+    const maxStepSize = Number(dimensionData[1]);
+    const pathMap = lineSegments[1].split("");
 
-    // --- Phase 1: Generate an initial sequence of movements using a generator ---
-    // This replaces the first imperative while loop with a generator-based iteration.
-    function* generateInitialMovements(startingPoint, maxDistance, totalSpan, mapData) {
-        let currentPosition = startingPoint;
-        while (currentPosition < totalSpan - 1) {
-            let chosenStride = -1;
-            for (let strideLength = 1; strideLength <= maxDistance; strideLength++) {
-                const targetSpot = currentPosition + strideLength;
-                if (targetSpot < totalSpan && mapData[targetSpot] === '0') {
-                    chosenStride = strideLength;
-                    break; // Found the shortest valid stride
-                }
-            }
-            if (chosenStride === -1) {
-                yield null; // Indicates an impassable route
-                return;
-            }
-            yield chosenStride;
-            currentPosition += chosenStride;
+    const generateInitialPath = (currentPos, endTarget, maxJump, mapString, collectedJumps = []) => {
+        if (currentPos >= endTarget - 1) {
+            return collectedJumps;
         }
-    }
 
-    let initialPathSegments = [];
-    let pathIsViable = true;
-    for (const segment of generateInitialMovements(0, maxLeap, totalLength, terrainFeatures)) {
-        if (segment === null) {
-            pathIsViable = false;
-            break;
+        let nextStep = -1;
+        for (let stepIncrement = 1; stepIncrement <= maxJump; stepIncrement++) {
+            if (mapString[currentPos + stepIncrement] === '0') {
+                nextStep = stepIncrement;
+                break;
+            }
         }
-        initialPathSegments.push(segment);
-    }
 
-    if (!pathIsViable) {
+        if (nextStep === -1) {
+            return null;
+        }
+
+        return generateInitialPath(currentPos + nextStep, endTarget, maxJump, mapString, [...collectedJumps, nextStep]);
+    };
+
+    const initialPathSegments = generateInitialPath(0, totalLength, maxStepSize, pathMap);
+
+    if (initialPathSegments === null) {
         console.log(-1);
         return;
     }
 
-    // --- Phase 2: Refine the path segments by merging from right to left recursively ---
-    // This replaces the second imperative while loop with a tail-recursive functional approach.
-    // It uses a helper function that returns new arrays (via slice) to maintain immutability in recursion.
-
-    // Helper to find a group of segments from the right that can be merged
-    function buildMergedGroup(segmentList, maxCapacity) {
-        if (segmentList.length === 0) {
-            return { groupTotal: 0, remainingSegments: [] };
+    const optimizedPathSegments = initialPathSegments.reduceRight((acc, currentJump) => {
+        if (acc.length === 0) {
+            return [currentJump];
         }
 
-        let currentSumForGroup = segmentList[segmentList.length - 1]; // Start with the rightmost element
-        let checkIndex = segmentList.length - 2; // Pointer to the element before the rightmost
-
-        while (checkIndex >= 0 && currentSumForGroup + segmentList[checkIndex] <= maxCapacity) {
-            currentSumForGroup += segmentList[checkIndex];
-            checkIndex--;
+        const rightmostCombinedJump = acc[0];
+        if (currentJump + rightmostCombinedJump <= maxStepSize) {
+            return [currentJump + rightmostCombinedJump, ...acc.slice(1)];
+        } else {
+            return [currentJump, ...acc];
         }
-        // `checkIndex` is now the index of the last element NOT included in the current group, or -1.
-        return { groupTotal: currentSumForGroup, remainingSegments: segmentList.slice(0, checkIndex + 1) };
-    }
+    }, []);
 
-    // Main recursive function to consolidate the path
-    function consolidatePathRecursively(currentSegmentCollection, capacityLimit, finalConsolidatedPath) {
-        if (currentSegmentCollection.length === 0) {
-            return finalConsolidatedPath; // Base case: no more segments to process
-        }
+    console.log(optimizedPathSegments.join(""));
+};
 
-        const { groupTotal, remainingSegments } = buildMergedGroup(currentSegmentCollection, capacityLimit);
-        
-        // Prepend the new group to the accumulated path (maintains correct order)
-        const updatedFinalPath = [groupTotal, ...finalConsolidatedPath];
-        
-        // Recursive call with the rest of the segments
-        return consolidatePathRecursively(remainingSegments, capacityLimit, updatedFinalPath);
-    }
-
-    const finalOptimizedPath = consolidatePathRecursively(initialPathSegments, maxLeap, []);
-    
-    // Output the concatenated string of the optimized path segments
-    console.log(finalOptimizedPath.join(""));
-}
-
-// Invoke the solver with input from stdin
-ExecutePathSolver(require('fs').readFileSync('/dev/stdin','utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

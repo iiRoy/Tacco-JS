@@ -1,29 +1,26 @@
-const processInputAndCompute = (sourceText) => {
-    const allLines = sourceText.trim().split('\n');
-    const [firstEntry, ...costEntryStrings] = allLines;
+function processPurchaseData(rawDataString) {
+    const lineSegments = rawDataString.split('\n').filter(Boolean);
+    const firstLineValues = lineSegments[0].split(' ');
 
-    const [ignoredIdentifier, initialResourceString] = firstEntry.split(' ');
-    let currentResource = Number.parseInt(initialResourceString, 10);
+    const initialItemCountHint = parseInt(firstLineValues[0], 10);
+    let availableFunds = parseInt(firstLineValues[1], 10);
 
-    const costValues = costEntryStrings.map(Number.parseInt);
+    const itemPrices = lineSegments.slice(1).map(Number);
 
-    const { remainingResourceAfterInitialBuy, purchasedCount } = costValues.reduce(
-        (accumulator, currentItemPrice) => ({
-            remainingResourceAfterInitialBuy: accumulator.remainingResourceAfterInitialBuy - currentItemPrice,
-            purchasedCount: accumulator.purchasedCount + 1
-        }),
-        { remainingResourceAfterInitialBuy: currentResource, purchasedCount: 0 }
-    );
+    const purchaseSummary = itemPrices.reduce((accumulator, currentPrice) => {
+        accumulator.remainingFunds -= currentPrice;
+        accumulator.itemsAcquired++;
+        if (currentPrice < accumulator.minimumPrice) {
+            accumulator.minimumPrice = currentPrice;
+        }
+        return accumulator;
+    }, { remainingFunds: availableFunds, itemsAcquired: 0, minimumPrice: Infinity });
 
-    currentResource = remainingResourceAfterInitialBuy;
-    let totalItemsAcquired = purchasedCount;
+    const additionalItems = Math.floor(purchaseSummary.remainingFunds / purchaseSummary.minimumPrice);
 
-    const sortedCosts = [...costValues].sort((a, b) => a - b);
-    const minimumUnitPrice = sortedCosts[0];
+    const finalTotal = purchaseSummary.itemsAcquired + additionalItems;
 
-    totalItemsAcquired += Math.floor(currentResource / minimumUnitPrice);
+    console.log(finalTotal);
+}
 
-    console.log(totalItemsAcquired);
-};
-
-processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processPurchaseData(require('fs').readFileSync('/dev/stdin', 'utf8'));

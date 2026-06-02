@@ -1,35 +1,54 @@
-const obtainTimeValue = (yearValue, monthValue, dayValue) => {
-    return (new Date(yearValue, monthValue - 1, dayValue)).getTime();
-};
+const obtainEpochMs = (yr, mn, dy) => new Date(yr, mn - 1, dy).getTime();
 
 const historicalPeriods = [
-    { designation: "heisei", epochStartYear: 1989, epochStartMonth: 1, epochStartDay: 8 },
-    { designation: "showa", epochStartYear: 1926, epochStartMonth: 12, epochStartDay: 25 },
-    { designation: "taisho", epochStartYear: 1912, epochStartMonth: 7, epochStartDay: 30 },
-    { designation: "meiji", epochStartYear: 1868, epochStartMonth: 9, epochStartDay: 8 }
+    {
+        periodName: "heisei",
+        periodStartGregorianYear: 1989,
+        periodStartMonth: 1,
+        periodStartDay: 8,
+        periodStartEpochMs: obtainEpochMs(1989, 1, 8)
+    },
+    {
+        periodName: "showa",
+        periodStartGregorianYear: 1926,
+        periodStartMonth: 12,
+        periodStartDay: 25,
+        periodStartEpochMs: obtainEpochMs(1926, 12, 25)
+    },
+    {
+        periodName: "taisho",
+        periodStartGregorianYear: 1912,
+        periodStartMonth: 7,
+        periodStartDay: 30,
+        periodStartEpochMs: obtainEpochMs(1912, 7, 30)
+    },
+    {
+        periodName: "meiji",
+        periodStartGregorianYear: 1868,
+        periodStartMonth: 9,
+        periodStartDay: 8,
+        periodStartEpochMs: obtainEpochMs(1868, 9, 8)
+    }
 ];
 
-// Pre-calculate epoch milliseconds for each period boundary
-historicalPeriods.forEach(period => {
-    period.boundaryMs = obtainTimeValue(period.epochStartYear, period.epochStartMonth, period.epochStartDay);
-});
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const rawInputData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawInputData.trim().split('\n');
+const dataLines = sourceData.trim().split("\n");
 
-processedLines.forEach(function(lineEntry) {
-    const numericParts = lineEntry.split(' ').map(Number);
-    const [currentYear, currentMonth, currentDay] = numericParts;
-    const momentInQuestionMs = obtainTimeValue(currentYear, currentMonth, currentDay);
+dataLines.forEach(function(lineContent){
+    const [currentYear, currentMonth, currentDay] = lineContent.split(" ").map(Number);
 
-    let eraDesignation = "pre-meiji";
-    
-    for (const periodDefinition of historicalPeriods) {
-        if (momentInQuestionMs >= periodDefinition.boundaryMs) {
-            const eraRelativeYear = currentYear - periodDefinition.epochStartYear + 1;
-            eraDesignation = `${periodDefinition.designation} ${eraRelativeYear} ${currentMonth} ${currentDay}`;
-            break; 
-        }
+    const currentMomentMs = obtainEpochMs(currentYear, currentMonth, currentDay);
+
+    const matchingPeriod = historicalPeriods.find(eraDef => currentMomentMs >= eraDef.periodStartEpochMs);
+
+    let outputPhrase;
+    if (matchingPeriod) {
+        const eraRelativeYear = currentYear - matchingPeriod.periodStartGregorianYear + 1;
+        outputPhrase = `${matchingPeriod.periodName} ${eraRelativeYear} ${currentMonth} ${currentDay}`;
+    } else {
+        outputPhrase = "pre-meiji";
     }
-    console.log(eraDesignation);
+
+    console.log(outputPhrase);
 });

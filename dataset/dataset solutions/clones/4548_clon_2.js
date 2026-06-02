@@ -1,51 +1,53 @@
-// This function orchestrates the processing of input data to compute a final sum.
-function processDataStream(incomingText) {
-    // Break down the incoming textual data into individual lines based on newline characters.
-    let parsedLinesArray = incomingText.split("\n"); // Using 'let' for variable declaration.
+function processInput(rawData) {
+    // This function takes raw text input and processes it according to specific rules.
+    var linesOfText = rawData.split("\n");
 
-    // The first line indicates the count of subsequent entries to consider.
-    let numberOfEntries = parseInt(parsedLinesArray[0], 10); // Explicitly parse the first element as an integer.
+    // The initial value from the first line determines the count of items to sum.
+    var currentLengthIndicator = linesOfText[0];
 
-    // Initialize a running total for the numerical values.
-    let currentSum = 0.0; // Using a float literal, though it's an integer.
+    // Initialize a variable to hold the running total.
+    var currentSum = 0;
 
-    // Iterate through the specified number of entries to accumulate their values.
-    for (let lineIterator = 1; lineIterator <= numberOfEntries; lineIterator += 1) { // Loop from the second line up to 'numberOfEntries'.
-        // Convert each line to an integer and add it to the current sum.
-        currentSum += parseInt(parsedLinesArray[lineIterator], 10);
+    // Loop through the specified number of items, starting from the second line.
+    for (var idx = 1; idx <= currentLengthIndicator; idx += 1) {
+        // Convert each line's content to an integer and add it to the sum.
+        currentSum += parseInt(linesOfText[idx], 10);
     }
 
-    // Begin a loop that continues as long as the current sum is perfectly divisible by 10.
+    // Continue modifying the sum as long as it is perfectly divisible by ten.
     while (currentSum % 10 === 0) {
-        // Initialize variables to track the smallest value found and its position.
-        let minimumValue = 100 + 1; // A slightly different way to represent 101.
-        let minimumIndex = ~0; // Bitwise NOT of 0, which results in -1.
+        // Set a high initial value to find the smallest number.
+        var smallestValue = 101;
+        // Initialize the index of the smallest value.
+        var smallestValueIndex = -1;
 
-        // Traverse the array of parsed lines to locate the smallest numerical entry.
-        for (let arrayPointer = 1, currentArrayLength = parsedLinesArray.length; arrayPointer < currentArrayLength; arrayPointer = arrayPointer + 1) {
-            // Check if the current element is smaller than the smallest value recorded so far.
-            if (minimumValue > parseInt(parsedLinesArray[arrayPointer], 10)) {
-                // Update the minimum value and its corresponding index.
-                minimumValue = parseInt(parsedLinesArray[arrayPointer], 10);
-                minimumIndex = arrayPointer;
+        // Iterate through the remaining elements in the array to find the minimum.
+        // Note: 'currentLengthIndicator' is re-purposed here to hold the array's current length.
+        for (var idx = 1, currentLengthIndicator = linesOfText.length; idx < currentLengthIndicator; idx += 1) {
+            // Compare the current element with the smallest value found so far.
+            if (smallestValue > parseInt(linesOfText[idx], 10)) {
+                // Update the smallest value and its corresponding position.
+                smallestValue = parseInt(linesOfText[idx], 10);
+                smallestValueIndex = idx;
             }
         }
 
-        // Remove the identified smallest element from the array.
-        parsedLinesArray.splice(minimumIndex, 1);
+        // Remove the identified smallest value from the array.
+        linesOfText.splice(smallestValueIndex, 1);
 
-        // Deduct the value of the removed element from the running total.
-        currentSum = currentSum - minimumValue;
+        // Subtract the smallest value from the running total.
+        currentSum -= smallestValue;
 
-        // If the sum becomes zero or negative after subtraction, reset it and exit the loop.
-        if (currentSum <= 0.0) { // Using float literal for consistency.
-            currentSum = 0; // Resetting to integer 0.
-            break; // Terminate the while loop.
+        // If the sum becomes non-positive, reset it to zero and exit the loop.
+        if (currentSum <= 0) {
+            currentSum = 0;
+            break; // Exit the while loop.
         }
     }
-    // Print the final calculated sum to the console.
+
+    // Print the final calculated sum to the standard output.
     console.log(currentSum);
 }
 
-// Entry point: Read input from standard input and pass it to the processing function.
-processDataStream(require("fs").readFileSync("/dev/stdin", "utf8")); // Call the primary function with file system input.
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

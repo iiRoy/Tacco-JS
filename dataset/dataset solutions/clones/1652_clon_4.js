@@ -1,32 +1,22 @@
 "use strict";
 
-const evaluateSequenceProgress = (inputSource) => {
-    const contentSegments = inputSource.trim().split('\n');
-    const numericDimensions = contentSegments[0].split(' ').map(Number);
-    const totalElements = numericDimensions[0];
-    const windowExtent = numericDimensions[1];
+const processInput = (rawData) => {
+    const inputLines = rawData.trim().split("\n");
 
-    const elementCollection = contentSegments[1].split(' ').map(Number);
+    const [totalCount, segmentLength] = inputLines[0].split(" ").map(Number);
+    const numericSequence = inputLines[1].split(" ").map(Number);
 
-    const sectionCalculations = [];
-
-    for (let currentStart = 0; currentStart <= totalElements - windowExtent; ++currentStart) {
-        let currentSectionProduct = 1;
-        for (let offset = 0; offset < windowExtent; ++offset) {
-            currentSectionProduct *= elementCollection[currentStart + offset];
-        }
-        sectionCalculations.push(currentSectionProduct);
-    }
-
-    const outcomeIndicators = [];
-
-    sectionCalculations.slice(1).forEach((val, idx) => {
-        const priorValue = sectionCalculations[idx];
-        outcomeIndicators.push(val > priorValue ? "Yes" : "No");
+    const productSeries = Array.from({ length: totalCount - segmentLength + 1 }, (_, windowIndex) => {
+        return numericSequence.slice(windowIndex, windowIndex + segmentLength)
+                             .reduce((accumulator, value) => accumulator * value, 1);
     });
 
-    return outcomeIndicators.join('\n');
+    const comparisonResults = productSeries.slice(1).map((currentValue, idx) => {
+        const priorValue = productSeries[idx];
+        return currentValue > priorValue ? "Yes" : "No";
+    });
+
+    console.log(comparisonResults.join("\n"));
 };
 
-const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(evaluateSequenceProgress(rawInput));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

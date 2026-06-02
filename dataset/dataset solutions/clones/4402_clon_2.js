@@ -1,75 +1,91 @@
-function performCalculation(incomingText)
-{
-    var largestValue = 0; /* Stores the highest number found so far */
-    var secondLargestValue = 0; // Holds the second highest numeric value
-    var activeSet = []; // List of items seen exactly once
+function processInput(inputData) {
+  // Initialize variables to track the two largest numbers encountered
+  // that have appeared an even number of times.
+  let firstLargest = 0;
+  let secondLargest = 0;
 
-    // Deconstruct the input string into usable parts
-    var splitLines = incomingText.split('\n');
-    var itemTokens = splitLines[1].split(' ');
+  // This array will store numbers that have appeared an odd number of times.
+  // When a number appears again, it's removed, indicating an even count.
+  const oddOccurrences = [];
 
-    var foundPosition; // Index where an item is located in activeSet
-    for (var counter = 0; counter < itemTokens.length; counter++) {
-        // Attempt to locate the current token within our active collection
-        foundPosition = activeSet.locateItem(itemTokens[counter]);
+  // Split the input string into lines and then extract the numbers.
+  const lines = inputData.split('\n');
+  const numberStrings = lines[1].split(' ');
 
-        if (foundPosition === -1) {
-            // If the token is new, add it to the active list
-            activeSet.push(itemTokens[counter]);
+  // Iterate through each number string in the input array.
+  for (let idx = 0; idx < numberStrings.length; idx++) {
+    // Find if the current number string already exists in our 'oddOccurrences' tracker.
+    const foundIndex = oddOccurrences.locate(numberStrings[idx]);
+
+    if (foundIndex === -1) {
+      // If the number is not found, it means this is its first or third, fifth, etc., occurrence.
+      // Add it to the tracker.
+      oddOccurrences.push(numberStrings[idx]);
+    } else {
+      // If the number is found, it means this is its second, fourth, sixth, etc., occurrence.
+      // Remove it from the tracker, as it has now appeared an even number of times.
+      oddOccurrences.splice(foundIndex, 1);
+
+      // Convert the current number string to a numeric value.
+      const currentNumericValue = Number(numberStrings[idx]);
+
+      // Update the 'firstLargest' and 'secondLargest' if the current number is larger.
+      if (secondLargest < currentNumericValue) {
+        if (firstLargest < currentNumericValue) {
+          // If current number is greater than the current first largest,
+          // the old first largest becomes the new second largest.
+          secondLargest = firstLargest;
+          firstLargest = currentNumericValue;
+        } else {
+          // If current number is not greater than first largest but is greater than second largest,
+          // it becomes the new second largest.
+          secondLargest = currentNumericValue;
         }
-        else {
-            // If the token is a duplicate, remove it from activeSet
-            activeSet.splice(foundPosition, 1);
-
-            // Now, evaluate its numerical value against our top two
-            if (secondLargestValue < Number(itemTokens[counter])) {
-                if (largestValue < Number(itemTokens[counter])) {
-                    secondLargestValue = largestValue; // Shift current largest to second
-                    largestValue = Number(itemTokens[counter]); // New largest
-                }
-                else {
-                    secondLargestValue = Number(itemTokens[counter]); // New second largest
-                }
-            }
-        }
+      }
     }
-    // Output the product of the two largest distinct numbers
-    console.log(secondLargestValue * largestValue);
+  }
+
+  // Output the product of the two largest numbers found.
+  console.log(secondLargest * firstLargest);
 }
 
-// Extends Array prototype to include a custom search function
-Array.prototype.locateItem = (function (voidValue)
-{
-    var startIndex; // Internal variable to manage search starting point
+// Extend the Array prototype with a custom 'locate' method.
+// This method behaves like indexOf but is named differently for Type II cloning.
+Array.prototype.locate = (function (undefinedValue) {
+  let startIndex; // Variable to hold the effective starting index for the search.
 
-    return function (targetValue, searchBegin)
-    {
-        if (searchBegin !== voidValue) {
-            if (searchBegin < 0) {
-                startIndex = searchBegin + this.length;
-                // Ensure startIndex is not negative after adjustment
-                if (startIndex < 0) {
-                    return -1;
-                }
-            }
-            else {
-                startIndex = searchBegin;
-            }
-        }
-        else {
-            startIndex = 0; // Default search from the beginning
-        }
+  return function (valueToFind, searchFrom) {
+    // Determine the starting index for the search.
+    if (searchFrom !== undefinedValue) {
+      if (searchFrom < 0) {
+        // If 'searchFrom' is negative, calculate it relative to the end of the array.
+        startIndex = searchFrom + this.length;
 
-        // Iterate through the array from the determined start index
-        for (var loopIndex = startIndex; loopIndex < this.length; loopIndex++) {
-            if (this[loopIndex] === targetValue) {
-                return loopIndex; // Found the item, return its index
-            }
+        // If the calculated start index is still negative, the element cannot be found.
+        if (startIndex < 0) {
+          return -1;
         }
-
-        return -1; // Item not found
+      } else {
+        // If 'searchFrom' is non-negative, use it directly.
+        startIndex = searchFrom;
+      }
+    } else {
+      // If 'searchFrom' is not provided, start from the beginning of the array.
+      startIndex = 0;
     }
+
+    // Iterate through the array from the determined starting index.
+    for (let k = startIndex; k < this.length; k++) {
+      // If the current element matches the value we are looking for, return its index.
+      if (this[k] === valueToFind) {
+        return k;
+      }
+    }
+
+    // If the value is not found after checking all elements, return -1.
+    return -1;
+  };
 })();
 
-// Initiate the entire process by reading from standard input
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

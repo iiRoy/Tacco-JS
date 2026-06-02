@@ -1,21 +1,24 @@
-(function () {
+(function() {
     'use strict';
 
-    let acquiredInputFragments = [];
-    process.stdin.on('data', (dataPayload) => {
-        acquiredInputFragments.push(dataPayload);
+    const inputLinesContainer = [];
+    require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    }).on('line', function(currentLine) {
+      inputLinesContainer.push(currentLine);
     });
+    process.stdin.on('end', function() {
+      const firstInputString = inputLinesContainer[0];
+      const originalNumericValue = Number(firstInputString);
 
-    process.stdin.on('end', () => {
-        const fullInputString = Buffer.concat(acquiredInputFragments).toString().trim();
-        
-        const mainNumericString = fullInputString.split(' ')[0];
-        const evaluatedNumber = Number(mainNumericString);
+      const calculatedDigitSum = [...firstInputString].reduce((accumulator, charDigit) => {
+        return accumulator + Number(charDigit);
+      }, 0);
 
-        const digitSum = [...String(evaluatedNumber)].reduce((accumulatorValue, digitCharacter) => accumulatorValue + Number(digitCharacter), 0);
+      const moduloResult = originalNumericValue % calculatedDigitSum;
+      const outputMessage = (moduloResult === 0) ? "Yes" : "No";
 
-        const finalDecision = (evaluatedNumber % digitSum === 0) ? "Yes" : "No";
-
-        process.stdout.write(finalDecision + '\n');
+      console.log(outputMessage);
     });
 })();

@@ -1,335 +1,262 @@
-(() => {
-    "use strict";
+module.exports = (function(moduleDefinitions) {
+    const moduleCache = {};
 
-    // --- Global Constants and Utilities ---
-    // A very large number to represent infinite distances or unreachable paths.
-    // Slightly different from original's 99999999999.
-    const PATH_IMPOSSIBLE = Number.MAX_SAFE_INTEGER;
-    // Standard input path for competitive programming environments.
-    const SOURCE_INPUT_STREAM = "/dev/stdin";
-
-    /**
-     * @typedef {number[][]} AdjacencyMatrix
-     * Represents a 2D array where matrix[i][j] stores the distance from node i to node j.
-     */
-
-    /**
-     * Helper function to create and initialize a square adjacency matrix.
-     * @param {number} dimensions - The number of rows and columns (number of vertices).
-     * @param {number} initialValue - The value to fill each cell with.
-     * @returns {AdjacencyMatrix} A new matrix filled with the initial value.
-     */
-    const createSquareMatrix = (dimensions, initialValue) => {
-        if (dimensions < 0) {
-            console.error("Matrix dimensions cannot be negative.");
-            return [];
+    function loadModule(moduleId) {
+        if (moduleCache[moduleId]) {
+            return moduleCache[moduleId].exports;
         }
-        return Array.from({ length: dimensions }, () => Array(dimensions).fill(initialValue));
+
+        const currentModule = moduleCache[moduleId] = {
+            i: moduleId,
+            l: false,
+            exports: {}
+        };
+
+        moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, loadModule);
+        currentModule.l = true;
+        return currentModule.exports;
+    }
+
+    loadModule.moduleMap = moduleDefinitions;
+    loadModule.cache = moduleCache;
+
+    loadModule.defineGetter = function(target, property, getterFunction) {
+        if (!loadModule.hasOwn(target, property)) {
+            Object.defineProperty(target, property, {
+                enumerable: true,
+                get: getterFunction
+            });
+        }
     };
 
-    /**
-     * Helper function to safely parse an integer from a string.
-     * @param {string} token - The string token to parse.
-     * @param {number} defaultValue - The value to return if parsing fails.
-     * @returns {number} The parsed integer or the default value.
-     */
-    const parseNumericToken = (token, defaultValue = 0) => {
-        const parsed = parseInt(token, 10);
-        return isNaN(parsed) ? defaultValue : parsed;
+    loadModule.registerModule = function(targetModule) {
+        if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+            Object.defineProperty(targetModule, Symbol.toStringTag, {
+                value: 'Module'
+            });
+        }
+        Object.defineProperty(targetModule, '__esModule', {
+            value: true
+        });
     };
 
-    // --- Core Data Structures ---
-
-    /**
-     * @class TokenQueue
-     * A simple queue implementation optimized for sequential token consumption.
-     * Manages a collection of items, allowing addition to the end and removal from the front.
-     */
-    class TokenQueue {
-        /**
-         * Initializes a new queue, optionally with starting elements.
-         * @param {Array<string>} [initialElements=[]] - Elements to pre-populate the queue.
-         */
-        constructor(initialElements = []) {
-            /** @private @type {Array<string>} The underlying array storing queue elements. */
-            this._elementStorage = initialElements;
-            /** @private @type {number} The index of the next element to be dequeued. */
-            this._headIndex = 0;
-            // No need for a separate size property if we can derive it or rely on array length.
+    loadModule.interopRequire = function(moduleValue, flags) {
+        if (flags & 1) {
+            moduleValue = loadModule(moduleValue);
         }
-
-        /**
-         * Adds one or more elements to the end of the queue.
-         * @param {...string} elementsToAdd - Elements to enqueue.
-         */
-        enqueue(...elementsToAdd) {
-            this._elementStorage.push(...elementsToAdd);
+        if (flags & 8) {
+            return moduleValue;
         }
-
-        /**
-         * Removes and returns the element at the front of the queue.
-         * Returns `null` if the queue is empty.
-         * @returns {string | null} The dequeued element or null.
-         */
-        dequeue() {
-            if (this.isEmpty()) {
-                return null; // Explicitly return null for empty queue.
+        if (flags & 4 && typeof moduleValue === 'object' && moduleValue && moduleValue.__esModule) {
+            return moduleValue;
+        }
+        const newModuleObject = Object.create(null);
+        loadModule.registerModule(newModuleObject);
+        Object.defineProperty(newModuleObject, 'default', {
+            enumerable: true,
+            value: moduleValue
+        });
+        if (flags & 2 && typeof moduleValue !== 'string') {
+            for (const key in moduleValue) {
+                loadModule.defineGetter(newModuleObject, key, ((k) => moduleValue[k]).bind(null, key));
             }
-            return this._elementStorage[this._headIndex++];
         }
+        return newModuleObject;
+    };
 
-        /**
-         * Returns the element at the front of the queue without removing it.
-         * Returns `null` if the queue is empty.
-         * @returns {string | null} The front element or null.
-         */
-        peek() {
-            return this.isEmpty() ? null : this._elementStorage[this._headIndex];
-        }
+    loadModule.createDefaultExport = function(moduleRef) {
+        const defaultExportGetter = moduleRef && moduleRef.__esModule ?
+            () => moduleRef.default :
+            () => moduleRef;
+        loadModule.defineGetter(defaultExportGetter, "a", defaultExportGetter);
+        return defaultExportGetter;
+    };
 
-        /**
-         * Checks if the queue contains any elements.
-         * @returns {boolean} True if the queue is empty, false otherwise.
-         */
-        isEmpty() {
-            return this._headIndex >= this._elementStorage.length;
-        }
+    loadModule.hasOwn = function(object, property) {
+        return Object.prototype.hasOwnProperty.call(object, property);
+    };
 
-        /**
-         * Gets the current number of elements in the queue.
-         * @returns {number} The count of elements.
-         */
-        get size() {
-            return this._elementStorage.length - this._headIndex;
-        }
+    loadModule.publicPath = "";
 
-        /**
-         * Clears all elements from the queue, resetting it to an empty state.
-         */
-        resetQueue() {
-            this._elementStorage = [];
-            this._headIndex = 0;
-        }
-    }
+    // --- Module Definitions (renamed and refactored) ---
 
-    /**
-     * @class InputParser
-     * Handles parsing raw input string into usable tokens and numbers.
-     * Utilizes a `TokenQueue` internally to manage parsed tokens.
-     */
-    class InputParser {
-        /**
-         * Creates an input handler from a raw string.
-         * @param {string} rawInputContent - The complete input string, typically from stdin.
-         */
-        constructor(rawInputContent) {
-            // Split by any whitespace, then filter out empty strings.
-            const initialTokens = rawInputContent.split(/\s+/).filter(Boolean);
-            /** @private @type {TokenQueue} The queue holding parsed string tokens. */
-            this._tokenBuffer = new TokenQueue(initialTokens);
-        }
+    // Module 0: Entry point
+    moduleDefinitions[0] = function(currentModule, exports, requireModule) {
+        "use strict";
+        const fileSystem = requireModule(1);
+        const mainSolver = requireModule(2);
 
-        /**
-         * Reads and returns the next raw string token from the input.
-         * @returns {string | null} The next token or null if no more tokens.
-         */
-        retrieveRawToken() {
-            return this._tokenBuffer.dequeue();
-        }
+        const readInputFromFile = (filePath, encoding) => fileSystem.readFileSync(filePath, encoding);
+        const inputContent = readInputFromFile("/dev/stdin", "utf8");
 
-        /**
-         * Reads the next token and attempts to parse it as an integer.
-         * @returns {number} The parsed integer, or 0 if parsing fails or no more tokens.
-         */
-        retrieveInteger() {
-            const token = this._tokenBuffer.dequeue();
-            return token !== null ? parseNumericToken(token) : 0;
-        }
+        mainSolver(inputContent);
+    };
 
-        /**
-         * Checks if there are more tokens available in the input stream.
-         * @returns {boolean} True if more tokens exist, false otherwise.
-         */
-        hasRemainingTokens() {
-            return !this._tokenBuffer.isEmpty();
-        }
+    // Module 1: fs module
+    moduleDefinitions[1] = function(currentModule, exports) {
+        currentModule.exports = require("fs");
+    };
 
-        /**
-         * Clears the internal token buffer, effectively resetting the input stream state.
-         */
-        clearProcessedData() {
-            this._tokenBuffer.resetQueue();
-        }
-    }
+    // Module 2: Main application logic orchestrator
+    moduleDefinitions[2] = function(currentModule, exports, requireModule) {
+        "use strict";
+        const InputProcessor = requireModule(3);
+        const GraphSolver = requireModule(5);
 
-    /**
-     * @function computeAllPairsShortestPaths
-     * Implements the Floyd-Warshall algorithm to find the shortest paths between all pairs of nodes.
-     * @param {AdjacencyMatrix} initialDistances - The initial adjacency matrix representing direct edge weights.
-     * @returns {AdjacencyMatrix} A new matrix where shortestPaths[i][j] is the shortest distance from i to j.
-     */
-    function computeAllPairsShortestPaths(initialDistances) {
-        if (!initialDistances || initialDistances.length === 0 || !Array.isArray(initialDistances[0])) {
-            console.warn("Invalid or empty adjacency matrix provided for Floyd-Warshall. Returning empty matrix.");
-            return [];
-        }
+        currentModule.exports = function(inputString) {
+            const inputReaderInstance = new InputProcessor(inputString);
+            GraphSolver(inputReaderInstance);
+        };
+    };
 
-        const graphDimension = initialDistances.length;
-        // Create a deep copy of the original distance matrix to avoid modifying it directly.
-        // Using map with spread operator for robust deep copy of a 2D array.
-        const shortestPaths = initialDistances.map(row => [...row]);
+    // Module 3: InputProcessor Class
+    moduleDefinitions[3] = function(currentModule, exports, requireModule) {
+        "use strict";
+        const TokenQueue = requireModule(4);
 
-        // Iterate through all possible intermediate nodes (k).
-        for (let kVertex = 0; kVertex < graphDimension; kVertex++) {
-            // Iterate through all possible source nodes (i).
-            for (let sourceVertex = 0; sourceVertex < graphDimension; sourceVertex++) {
-                // Iterate through all possible destination nodes (j).
-                for (let targetVertex = 0; targetVertex < graphDimension; targetVertex++) {
-                    // Check if paths through kVertex can shorten the path from sourceVertex to targetVertex.
-                    // Also, ensure that paths to kVertex and from kVertex are not impossible.
-                    const pathViaK = shortestPaths[sourceVertex][kVertex] + shortestPaths[kVertex][targetVertex];
-                    if (shortestPaths[sourceVertex][kVertex] !== PATH_IMPOSSIBLE &&
-                        shortestPaths[kVertex][targetVertex] !== PATH_IMPOSSIBLE &&
-                        shortestPaths[sourceVertex][targetVertex] > pathViaK) {
-                        shortestPaths[sourceVertex][targetVertex] = pathViaK;
+        currentModule.exports = class InputProcessor {
+            constructor(rawInputString) {
+                const tokens = rawInputString.trim().split(/\s+/g);
+                this.tokenQueue = new TokenQueue(tokens);
+            }
+
+            readNextRaw() {
+                return this.tokenQueue.dequeue();
+            }
+
+            readNextInt() {
+                return parseInt(this.tokenQueue.dequeue(), 10);
+            }
+
+            clearInputBuffer() {
+                this.tokenQueue.reset();
+            }
+        };
+    };
+
+    // Module 4: TokenQueue Class (Queue implementation)
+    moduleDefinitions[4] = function(currentModule, exports) {
+        "use strict";
+        currentModule.exports = class TokenQueue {
+            constructor(initialElements = []) {
+                this.itemCount = initialElements.length;
+                this.dataStore = initialElements;
+                this.headIndex = 0;
+            }
+
+            enqueue(item) {
+                this.itemCount += 1;
+                this.dataStore.push(item);
+            }
+
+            dequeue() {
+                if (this.headIndex >= this.dataStore.length) { // Guard clause for empty queue
+                    return undefined;
+                }
+                const item = this.dataStore[this.headIndex];
+                this.itemCount -= 1;
+                this.headIndex += 1;
+                return item;
+            }
+
+            reset() {
+                this.dataStore = [];
+                this.itemCount = 0;
+                this.headIndex = 0;
+            }
+        };
+    };
+
+    // Module 5: Graph Solver Logic
+    moduleDefinitions[5] = function(currentModule, exports, requireModule) {
+        "use strict";
+        const floydWarshallAlgorithm = requireModule(6);
+
+        currentModule.exports = function(inputReader) {
+            const INFINITY_VALUE = 99999999999;
+
+            const numNodes = inputReader.readNextInt();
+            const numEdges = inputReader.readNextInt();
+            const maxPathLength = inputReader.readNextInt();
+
+            const createSquareMatrix = (size, fillValue) => {
+                const matrix = new Array(size);
+                for (let i = 0; i < size; i++) {
+                    matrix[i] = new Array(size).fill(fillValue);
+                }
+                return matrix;
+            };
+
+            let adjacencyMatrix = createSquareMatrix(numNodes, INFINITY_VALUE);
+
+            for (let i = 0; i < numNodes; i++) {
+                adjacencyMatrix[i][i] = 0; // Distance to self is 0
+            }
+
+            for (let edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
+                const startNode = inputReader.readNextInt();
+                const endNode = inputReader.readNextInt();
+                const edgeWeight = inputReader.readNextInt();
+                adjacencyMatrix[startNode - 1][endNode - 1] = edgeWeight;
+                adjacencyMatrix[endNode - 1][startNode - 1] = edgeWeight;
+            }
+
+            const initialPathsMatrix = floydWarshallAlgorithm(adjacencyMatrix);
+
+            const transformedAdjacencyMatrix = createSquareMatrix(numNodes, INFINITY_VALUE);
+            for (let row = 0; row < numNodes; row++) {
+                for (let col = 0; col < numNodes; col++) {
+                    if (initialPathsMatrix[row][col] <= maxPathLength) {
+                        transformedAdjacencyMatrix[row][col] = 1;
                     }
                 }
             }
-        }
-        return shortestPaths;
-    }
 
-    /**
-     * @function processGraphQueries
-     * This is the main application logic, reading graph data, applying transformations,
-     * and answering path queries. It uses the Floyd-Warshall algorithm twice.
-     * @param {InputParser} inputReader - An instance of InputParser to read graph data.
-     */
-    function processGraphQueries(inputReader) {
-        // Read initial graph parameters: number of vertices (N), number of edges (M), and transfer cost threshold (T).
-        const numberOfVertices = inputReader.retrieveInteger();
-        const numberOfEdges = inputReader.retrieveInteger();
-        const transferThreshold = inputReader.retrieveInteger();
+            const finalPathsMatrix = floydWarshallAlgorithm(transformedAdjacencyMatrix);
 
-        // Basic validation for graph dimensions
-        if (numberOfVertices <= 0 || numberOfEdges < 0) {
-            console.error("Invalid graph dimensions provided. Vertices must be > 0, Edges >= 0.");
-            return;
-        }
+            const numQueries = inputReader.readNextInt();
+            const queryResults = [];
 
-        // Initialize the adjacency matrix for direct travel distances.
-        // All paths are initially considered impossible, except for self-loops (distance 0).
-        let directTravelDistances = createSquareMatrix(numberOfVertices, PATH_IMPOSSIBLE);
-        for (let v = 0; v < numberOfVertices; v++) {
-            directTravelDistances[v][v] = 0; // Distance to self is zero.
-        }
+            for (let queryIndex = 0; queryIndex < numQueries; queryIndex++) {
+                const queryStartNode = inputReader.readNextInt();
+                const queryEndNode = inputReader.readNextInt();
+                const calculatedPathLength = finalPathsMatrix[queryStartNode - 1][queryEndNode - 1];
 
-        // Populate the direct travel distances matrix with given edges.
-        // Node indices are 1-based in input, convert to 0-based for arrays.
-        for (let edgeIdx = 0; edgeIdx < numberOfEdges; edgeIdx++) {
-            const nodeA = inputReader.retrieveInteger() - 1;
-            const nodeB = inputReader.retrieveInteger() - 1;
-            const edgeWeight = inputReader.retrieveInteger();
-
-            // Ensure nodes are within bounds.
-            if (nodeA < 0 || nodeA >= numberOfVertices || nodeB < 0 || nodeB >= numberOfVertices) {
-                console.warn(`Skipping invalid edge: (${nodeA + 1}, ${nodeB + 1}) is out of bounds.`);
-                continue;
-            }
-            // For an undirected graph, set both directions.
-            directTravelDistances[nodeA][nodeB] = edgeWeight;
-            directTravelDistances[nodeB][nodeA] = edgeWeight;
-        }
-
-        // Step 1: Calculate all-pairs shortest paths considering only direct travel.
-        // This gives us the minimum cost to travel between any two nodes without considering transfers yet.
-        const shortestPathsInitial = computeAllPairsShortestPaths(directTravelDistances);
-
-        // Step 2: Create a new graph structure for 'transfer' costs.
-        // An edge exists between nodeA and nodeB with cost 1 if the shortest path between them
-        // in the 'shortestPathsInitial' matrix is less than or equal to 'transferThreshold'.
-        // Otherwise, the transfer cost is considered impossible.
-        let transferCostMatrix = createSquareMatrix(numberOfVertices, PATH_IMPOSSIBLE);
-        for (let r = 0; r < numberOfVertices; r++) {
-            for (let c = 0; c < numberOfVertices; c++) {
-                if (r === c) {
-                    transferCostMatrix[r][c] = 0; // Self-transfer cost is zero.
-                } else if (shortestPathsInitial[r][c] <= transferThreshold) {
-                    transferCostMatrix[r][c] = 1; // A transfer is possible and costs 1 unit.
+                if (calculatedPathLength === INFINITY_VALUE) {
+                    queryResults.push(-1);
+                } else {
+                    queryResults.push(calculatedPathLength - 1);
                 }
             }
-        }
 
-        // Step 3: Calculate all-pairs shortest paths on the 'transferCostMatrix'.
-        // This determines the minimum number of transfers required to get between any two nodes.
-        const minimumTransfersPaths = computeAllPairsShortestPaths(transferCostMatrix);
+            console.log(queryResults.join("\n"));
+        };
+    };
 
-        // Read the number of queries and process each one.
-        const numberOfQueries = inputReader.retrieveInteger();
-        const queryResults = [];
+    // Module 6: Floyd-Warshall Algorithm
+    moduleDefinitions[6] = function(currentModule, exports) {
+        "use strict";
+        currentModule.exports = function(graphMatrix) {
+            const numVertices = graphMatrix.length;
+            const distanceMatrix = [];
 
-        for (let queryIdx = 0; queryIdx < numberOfQueries; queryIdx++) {
-            const startNode = inputReader.retrieveInteger() - 1;
-            const endNode = inputReader.retrieveInteger() - 1;
-
-            // Validate query nodes
-            if (startNode < 0 || startNode >= numberOfVertices || endNode < 0 || endNode >= numberOfVertices) {
-                console.warn(`Query for invalid nodes (${startNode + 1}, ${endNode + 1}). Returning -1.`);
-                queryResults.push(-1);
-                continue;
+            for (let i = 0; i < numVertices; i++) {
+                distanceMatrix.push(Array.from(graphMatrix[i]));
             }
 
-            const calculatedTransfers = minimumTransfersPaths[startNode][endNode];
-
-            // If the calculated number of transfers is still PATH_IMPOSSIBLE,
-            // it means the nodes are unreachable even with transfers.
-            // Otherwise, subtract 1 because the problem implies the *number of transfers*
-            // between the start and end point, not the number of segments.
-            // A path of length L means L segments, thus L-1 transfers.
-            if (calculatedTransfers === PATH_IMPOSSIBLE) {
-                queryResults.push(-1);
-            } else {
-                queryResults.push(calculatedTransfers - 1);
+            for (let kNode = 0; kNode < numVertices; kNode++) {
+                for (let startNode = 0; startNode < numVertices; startNode++) {
+                    for (let endNode = 0; endNode < numVertices; endNode++) {
+                        const pathThroughK = distanceMatrix[startNode][kNode] + distanceMatrix[kNode][endNode];
+                        if (distanceMatrix[startNode][endNode] > pathThroughK) {
+                            distanceMatrix[startNode][endNode] = pathThroughK;
+                        }
+                    }
+                }
             }
-        }
+            return distanceMatrix;
+        };
+    };
 
-        // Output all query results, each on a new line.
-        console.log(queryResults.join("\n"));
-    }
-
-    // --- Application Entry Point ---
-    /**
-     * @function initializeAndRunApplication
-     * Main function to start the application: reads input, initializes parser, and runs the solver.
-     */
-    function initializeAndRunApplication() {
-        let inputFileContent = "";
-        const fileSystem = require("fs"); // Using Node.js built-in 'fs' module.
-
-        try {
-            // Read input from the specified path. Using options for clarity.
-            inputFileContent = fileSystem.readFileSync(SOURCE_INPUT_STREAM, { encoding: 'utf8', flag: 'r' });
-            // Basic check for empty input.
-            if (!inputFileContent || inputFileContent.trim().length === 0) {
-                console.error("Error: No input content found from " + SOURCE_INPUT_STREAM + ". Exiting.");
-                process.exit(1); // Terminate process with an error code.
-            }
-        } catch (readOperationError) {
-            console.error(`Failed to read input from ${SOURCE_INPUT_STREAM}: ${readOperationError.message}`);
-            process.exit(1); // Terminate process due to input error.
-        }
-
-        // Create an input parser instance with the read content.
-        const currentInputProcessor = new InputParser(inputFileContent);
-
-        // Execute the main graph problem solver.
-        processGraphQueries(currentInputProcessor);
-
-        // Optionally clear the parser's internal state after processing is complete.
-        currentInputProcessor.clearProcessedData();
-    }
-
-    // Begin execution of the application.
-    initializeAndRunApplication();
-
-})();
+    return loadModule(loadModule.entryModuleId = 0);
+})([]);

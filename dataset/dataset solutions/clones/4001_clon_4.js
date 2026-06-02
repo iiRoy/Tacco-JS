@@ -1,32 +1,38 @@
-const performCalculation = (sourceText) => {
-    const cleansedText = sourceText.replace(/^\s+|\s+$/g, '');
-    const numericalInterpretation = parseInt(cleansedText, 10);
+async function processInputAndCompute() {
+  let collectedInput = '';
 
-    if (isNaN(numericalInterpretation) || (0 | numericalInterpretation) !== numericalInterpretation) {
-        throw new Error("Input data is not a valid whole number.");
-    }
-
-    const resultantQuotient = Math.trunc(numericalInterpretation / 3);
-
-    return `${resultantQuotient}\n`;
-};
-
-const activateSequence = async () => {
-    let gatheredContent = '';
-
+  const inputPromise = new Promise((resolve, reject) => {
     process.stdin.setEncoding('utf8');
-    try {
-        for await (const fragment of process.stdin) {
-            gatheredContent += fragment;
-        }
 
-        const finalOutcome = performCalculation(gatheredContent);
-        process.stdout.write(finalOutcome);
+    process.stdin.on('data', (inputChunk) => {
+      collectedInput += inputChunk;
+    });
 
-    } catch (incident) {
-        process.stderr.write(`Operation halted due to an issue: ${incident.message}\n`);
-        process.exit(1);
+    process.stdin.on('end', () => {
+      resolve(collectedInput);
+    });
+
+    process.stdin.on('error', (streamError) => {
+      reject(streamError);
+    });
+  });
+
+  try {
+    const rawData = await inputPromise;
+    const trimmedData = rawData.trim();
+    const numericalValue = parseInt(trimmedData, 10);
+
+    if (isNaN(numericalValue) || !Number.isInteger(numericalValue)) {
+      throw new Error("n");
     }
-};
 
-activateSequence();
+    const quotient = Math.floor(numericalValue / 3);
+    const finalResult = String(quotient) + '\n';
+
+    process.stdout.write(finalResult, 'utf8');
+  } catch (computationError) {
+    throw computationError;
+  }
+}
+
+processInputAndCompute();

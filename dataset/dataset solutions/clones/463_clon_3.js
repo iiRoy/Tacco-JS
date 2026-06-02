@@ -1,109 +1,86 @@
-const fileSystemOperations = require('fs');
+const fileSystemModule = require('fs');
 
-// --- Stage 1: Read and prepare input from standard stream ---
+/**
+ * Reads all available content from the standard input (stdin) synchronously.
+ * This function mimics the original behavior of determining input size via fstatSync
+ * and then reading that exact amount.
+ * @returns {string} The entire content read from stdin as a UTF-8 string.
+ * @throws {Error} If fstatSync fails, preserving original error behavior.
+ */
+function readAllStdinContent() {
+    const fileDescriptor = process.stdin.fd;
 
-// Obtain a descriptor for the standard input stream.
-const standardInputDescriptor = process.stdin.fd;
+    let inputDataLength;
+    try {
+        // Determine the size of the input stream. This is crucial for fstatSync.
+        // For pipes/sockets, size might be 0 initially, requiring a different approach,
+        // but the original code relies on this, so we must preserve it.
+        inputDataLength = fileSystemModule.fstatSync(fileDescriptor).size;
+    } catch (error) {
+        // If fstatSync fails (e.g., non-seekable stream on some OS),
+        // the original code would also throw, so we re-throw.
+        throw error;
+    }
 
-// Retrieve synchronous file status for the input descriptor to determine its size.
-const inputStatResult = fileSystemOperations.fstatSync(standardInputDescriptor);
-const rawStreamByteCount = inputStatResult.size; // Renamed 'length' to 'rawStreamByteCount'
+    // If the determined length is 0, there's no data to read.
+    if (inputDataLength === 0) {
+        return '';
+    }
 
-let dataBufferContainer;
-let actualBytesTransferred = 0; // Renamed 'bytesRead' to 'actualBytesTransferred'
-let completeRawInputString = ''; // Intermediate variable for processed string content
+    // Allocate a buffer of the determined size. Using Buffer.alloc for safety.
+    const dataBuffer = Buffer.alloc(inputDataLength);
+    // Read data from stdin into the buffer.
+    const actualBytesRead = fileSystemModule.readSync(fileDescriptor, dataBuffer, 0, inputDataLength, 0);
 
-// Proceed only if there is data available in the input stream.
-if (rawStreamByteCount > 0) {
-  // Allocate a buffer of the determined size to store the incoming bytes.
-  dataBufferContainer = Buffer.alloc(rawStreamByteCount); // Renamed 'buffer' to 'dataBufferContainer'
-
-  // Synchronously read the entire content from stdin into the allocated buffer.
-  actualBytesTransferred = fileSystemOperations.readSync(
-    standardInputDescriptor,
-    dataBufferContainer,
-    0, // Offset to start writing in the buffer
-    rawStreamByteCount, // Number of bytes to read
-    0 // Position in the file to begin reading (0 for stdin)
-  );
-
-  // Convert the portion of the buffer containing actual data into a UTF-8 string.
-  completeRawInputString = dataBufferContainer.slice(0, actualBytesTransferred).toString('utf8');
-} else {
-  // If no input bytes are detected, issue a warning.
-  // The script will continue to process an empty line array, mimicking the original behavior.
-  console.warn("Warning: No data received from standard input.");
+    // Convert the buffer content to a UTF-8 string, considering only the bytes actually read.
+    return dataBuffer.toString('utf8', 0, actualBytesRead);
 }
 
-// Split the raw input string into an array of lines.
-// Using a regex for robust line ending handling (Windows/Unix) and filtering out empty lines.
-const processedInputLines = completeRawInputString
-  .split(/\r?\n/) // Renamed 'input' to 'processedInputLines'
-  .filter(lineSegment => lineSegment.trim().length > 0); // Remove empty or whitespace-only lines
+// Read the raw input content and split it into individual lines.
+const rawInputContent = readAllStdinContent();
+const inputLines = rawInputContent.split('\n');
 
-// --- Stage 2: Define the core processing logic ---
+// Define the explicit mapping for octal digits.
+// This array corresponds to the original `k` array: [0, 1, 2, 3, 5, 7, 8, 9]
+// The index represents the octal digit (0-7), and the value is its mapped output.
+const octalDigitMapping = [0, 1, 2, 3, 5, 7, 8, 9];
 
-// This function encapsulates the logic for transforming numeric lines
-// based on an octal representation and a custom digit lookup.
-const transformNumericLines = (digitSubstitutionMap) => { // Renamed 'k' to 'digitSubstitutionMap'
-  const transformationOutputs = []; // Collects all successfully transformed strings
+/**
+ * Retrieves the mapped value for a single octal digit character.
+ * @param {string} digitChar - A single character representing an octal digit (e.g., '0', '7').
+ * @param {number[]} mappingArray - The array containing the mapping values.
+ * @returns {number|undefined} The mapped numeric value, or undefined if the index is out of bounds.
+ */
+function retrieveMappedValue(digitChar, mappingArray) {
+    const numericDigit = parseInt(digitChar, 10);
+    // For valid octal digits (0-7), this will always be within the bounds
+    // of the `octalDigitMapping` array, which has 8 elements (indices 0-7).
+    return mappingArray[numericDigit];
+}
 
-  // Iterate over each line that was read from the standard input.
-  for (const currentLineContent of processedInputLines) { // Renamed 'l' to 'currentLineContent'
-    // Attempt to convert the current line's content into a numeric value.
-    const numericalInterpretation = Number(currentLineContent);
+// Iterate over each line of the processed input.
+inputLines.forEach(function (currentLine) {
+    // Convert the current line string to a number.
+    // `Number()` is more explicit than `l - 0`.
+    const parsedNumericValue = Number(currentLine);
 
-    // Only process lines that successfully convert to a non-zero number.
-    // This is equivalent to the original `l - 0 && ...` check.
-    if (numericalInterpretation) {
-      // Convert the numeric value to its octal (base-8) string representation.
-      const octalRepresentation = numericalInterpretation.toString(8);
+    // Apply the original guard condition: only process if the numeric value is not zero
+    // and is a valid number (not NaN).
+    // `Number("")` is 0, `Number("abc")` is NaN. The original `l - 0 &&` would
+    // correctly prevent processing for these cases, which this `if` statement preserves.
+    if (parsedNumericValue !== 0 && !isNaN(parsedNumericValue)) {
+        // Convert the numeric value to its octal string representation.
+        const octalRepresentation = parsedNumericValue.toString(8);
+        // Split the octal string into an array of individual digit characters.
+        const individualOctalDigits = octalRepresentation.split('');
 
-      // Split the octal string into an array of individual digit characters.
-      const octalDigitCharacters = octalRepresentation.split('');
+        // Map each individual octal digit character to its corresponding value
+        // using the `retrieveMappedValue` helper function and the `octalDigitMapping`.
+        const finalMappedSequence = individualOctalDigits.map(function (digitChar) {
+            return retrieveMappedValue(digitChar, octalDigitMapping);
+        });
 
-      // Map each octal digit character to a new value using the provided substitution map.
-      const substitutedDigits = octalDigitCharacters.map((singleOctalChar) => { // Renamed 'ch' to 'singleOctalChar'
-        const mapIndex = parseInt(singleOctalChar, 10); // Convert char to integer for array access
-
-        // Validate the index to prevent out-of-bounds access.
-        // For octal digits (0-7), this typically covers the expected range.
-        if (mapIndex >= 0 && mapIndex < digitSubstitutionMap.length) {
-          return digitSubstitutionMap[mapIndex];
-        } else {
-          // In case of an unexpected digit or map configuration, return an empty string or handle error.
-          console.error(`Error: Octal digit '${singleOctalChar}' generated an invalid index ${mapIndex} for the substitution map.`);
-          return ''; // Fallback: return an empty string for invalid mappings
-        }
-      });
-
-      // Join the substituted digits back into a single string.
-      const finalTransformedString = substitutedDigits.join('');
-
-      // Add the result of this line's transformation to our collection.
-      transformationOutputs.push(finalTransformedString);
+        // Join the mapped values back into a single string and print to console.
+        console.log(finalMappedSequence.join(''));
     }
-  }
-
-  // After processing all lines, output the collected results.
-  // This aggregates all console.log calls into a single one, if any results exist.
-  if (transformationOutputs.length > 0) {
-    console.log(transformationOutputs.join('\n'));
-  } else if (processedInputLines.length > 0) {
-    // If input lines existed but none were numeric or non-zero, inform the user.
-    console.log("No valid non-zero numeric lines were found for transformation.");
-  } else {
-    // If no input lines were even provided.
-    console.log("No input lines were provided for processing.");
-  }
-};
-
-// --- Stage 3: Execution ---
-
-// Define the custom array for digit substitution.
-// This array dictates how octal digits (0-7) are re-mapped.
-// Note the values for original digits 4 and 6 are custom.
-const customDigitMappingArray = [0, 1, 2, 3, 5, 7, 8, 9];
-
-// Invoke the transformation function with the prepared input lines and the custom mapping.
-transformNumericLines(customDigitMappingArray);
+});

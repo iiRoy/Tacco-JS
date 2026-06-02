@@ -1,21 +1,20 @@
-'use strict'
+'use strict';
 
-const calculateDivisorQuantity = (targetNumber) => {
-    const possibleDivisors = Array.from({ length: targetNumber }, (_, indexValue) => indexValue + 1);
-    const actualDivisors = possibleDivisors.filter(candidate => targetNumber % candidate === 0);
-    return actualDivisors.length;
+const factorCount = (val) => {
+    return Array.from({ length: val }, (_, testDivisor) => testDivisor + 1)
+                .filter(d => val % d === 0)
+                .length;
 };
 
-const processInputData = (inputString) => {
-    const numericalLimit = Number(inputString);
-    const numbersInRange = Array.from({ length: numericalLimit }, (_, currentNum) => currentNum + 1);
+const processInputData = (rawData) => {
+    const upperBound = Number(rawData);
+    
+    const totalMatches = Array.from({ length: upperBound + 1 }, (_, currentNumber) => currentNumber)
+                                .filter(num => num % 2 !== 0)
+                                .filter(num => factorCount(num) === 8)
+                                .length;
 
-    const qualifyingNumbersCount = numbersInRange
-        .filter(valToCheck => valToCheck % 2 !== 0) // Keep only odd numbers
-        .filter(oddNum => calculateDivisorQuantity(oddNum) === 8) // Keep only those with 8 divisors
-        .length; // Count them
-
-    console.log(qualifyingNumbersCount);
+    console.log(totalMatches);
 };
 
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

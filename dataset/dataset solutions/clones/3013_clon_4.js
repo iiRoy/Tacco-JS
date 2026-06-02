@@ -1,74 +1,58 @@
-const solveProblem = (initialText) => {
-  const lineGroups = initialText.split("\n");
-  const countOfNumbers = Number(lineGroups[0]);
-  const numberSeries = lineGroups[1].split(" ").map(val => Number(val));
+function Main(input) {
+    const inputLines = input.split("\n");
+    const elementCount = parseInt(inputLines[0], 10);
+    const numericSequence = inputLines[1].split(" ").map(s => parseInt(s, 10));
 
-  const obtainAbsoluteValue = (numValue) => (numValue < 0 ? -numValue : numValue);
-
-  const processTriple = (firstValue, secondValue, thirdValue) => {
-    let contributionToSum = 0;
-    let modifiedSecond = secondValue;
-
-    const isFirstNonNegative = firstValue >= 0;
-    const isSecondNonNegative = secondValue >= 0;
-
-    if ((isFirstNonNegative && isSecondNonNegative) || (!isFirstNonNegative && !isSecondNonNegative)) {
-      // Both have same sign
-      contributionToSum += obtainAbsoluteValue(firstValue);
-      modifiedSecond = obtainAbsoluteValue(secondValue);
-    } else if (isFirstNonNegative && !isSecondNonNegative) {
-      // First is non-negative, second is negative
-      if (firstValue > obtainAbsoluteValue(secondValue)) {
-        contributionToSum += firstValue;
-      } else {
-        if (thirdValue >= 0) { // Lookahead is non-negative (or non-existent, which evaluates to false)
-          contributionToSum += firstValue;
-        } else { // Lookahead is negative
-          contributionToSum -= firstValue;
-          modifiedSecond = -secondValue;
-        }
-      }
-    } else { // First is negative, second is non-negative
-      if (obtainAbsoluteValue(firstValue) > secondValue) {
-        contributionToSum -= firstValue;
-        modifiedSecond = -secondValue;
-      } else {
-        if (thirdValue < 0) { // Lookahead is negative (or non-existent, which evaluates to false)
-          contributionToSum -= firstValue;
-          modifiedSecond = -secondValue;
-        } else { // Lookahead is non-negative
-          contributionToSum += firstValue;
-        }
-      }
+    if (elementCount === 1) {
+        console.log(numericSequence[0]);
+        return;
     }
-    return { contributionToSum, modifiedSecond };
-  };
+    if (elementCount === 0) {
+        console.log(0);
+        return;
+    }
 
-  if (countOfNumbers === 0) {
-    return 0;
-  }
-  if (countOfNumbers === 1) {
-    return numberSeries[0];
-  }
+    const obtainNextNextSign = (value) => (value >= 0 ? 1 : -1);
 
-  const generatedTriples = Array.from({ length: countOfNumbers - 1 }, (_, position) => ([
-    numberSeries[position],
-    numberSeries[position + 1],
-    numberSeries[position + 2]
-  ]));
+    const classifyState = (currentValue, nextValue, nextNextValue) => {
+        const currentSign = currentValue >= 0 ? 1 : -1;
+        const nextSign = nextValue >= 0 ? 1 : -1;
+        const nextNextSign = obtainNextNextSign(nextNextValue);
 
-  const iterationResults = generatedTriples.map(segment =>
-    processTriple(segment[0], segment[1], segment[2])
-  );
+        if (currentSign === nextSign) {
+            return 'SAME_SIGN_CASE';
+        } else if (currentSign === 1 && nextSign === -1) {
+            return currentValue > Math.abs(nextValue) ? 'POS_NEG_CURRENT_GREATER' : `POS_NEG_CURRENT_LESS_EQ_${nextNextSign === 1 ? 'NN_POSITIVE' : 'NN_NEGATIVE'}`;
+        } else {
+            return Math.abs(currentValue) > nextValue ? 'NEG_POS_CURRENT_GREATER' : `NEG_POS_CURRENT_LESS_EQ_${nextNextSign === 1 ? 'NN_POSITIVE' : 'NN_NEGATIVE'}`;
+        }
+    };
 
-  const totalSumComponent = iterationResults.reduce((acc, currentSegmentResult) =>
-    acc + currentSegmentResult.contributionToSum, 0
-  );
+    const stateActionMap = {
+        'SAME_SIGN_CASE': (cVal, nVal) => ({ sumModification: Math.abs(cVal), nextIterationValue: Math.abs(nVal) }),
+        'POS_NEG_CURRENT_GREATER': (cVal, nVal) => ({ sumModification: cVal, nextIterationValue: nVal }),
+        'POS_NEG_CURRENT_LESS_EQ_NN_POSITIVE': (cVal, nVal) => ({ sumModification: cVal, nextIterationValue: nVal }),
+        'POS_NEG_CURRENT_LESS_EQ_NN_NEGATIVE': (cVal, nVal) => ({ sumModification: -cVal, nextIterationValue: -nVal }),
+        'NEG_POS_CURRENT_GREATER': (cVal, nVal) => ({ sumModification: -cVal, nextIterationValue: -nVal }),
+        'NEG_POS_CURRENT_LESS_EQ_NN_NEGATIVE': (cVal, nVal) => ({ sumModification: -cVal, nextIterationValue: -nVal }),
+        'NEG_POS_CURRENT_LESS_EQ_NN_POSITIVE': (cVal, nVal) => ({ sumModification: cVal, nextIterationValue: nVal }),
+    };
 
-  const finalModifiedElement = iterationResults[iterationResults.length - 1].modifiedSecond;
+    const finalAccumulatedState = Array.from({ length: elementCount - 1 }).reduce(
+        ([currentTotalSum, previousNextValue], _, iterationIndex) => {
+            const currentProcessedValue = previousNextValue;
+            const nextProcessedValue = numericSequence[iterationIndex + 1];
+            const lookAheadValue = numericSequence[iterationIndex + 2];
 
-  return totalSumComponent + finalModifiedElement;
-};
+            const stateKey = classifyState(currentProcessedValue, nextProcessedValue, lookAheadValue);
+            const { sumModification, nextIterationValue } = stateActionMap[stateKey](currentProcessedValue, nextProcessedValue);
 
-const processedInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(solveProblem(processedInputData));
+            return [currentTotalSum + sumModification, nextIterationValue];
+        },
+        [0, numericSequence[0]]
+    );
+
+    console.log(finalAccumulatedState[0] + finalAccumulatedState[1]);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

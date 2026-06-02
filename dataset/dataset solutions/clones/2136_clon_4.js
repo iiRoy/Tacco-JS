@@ -1,15 +1,21 @@
-function calculateRepresentationDigits(rawData) {
-  const lineContent = rawData.match(/^\d+\s+\d+/)[0];
-  const [numericSubject, numeralBase] = lineContent.split(' ').map(Number);
+function ProcessInputAndCalculate(inputData) {
+  const [firstLineContent] = inputData.split('\n');
+  const [valueToConvert, conversionBase] = firstLineContent.split(' ').map(Number);
 
-  let digitCount;
-  if (numericSubject === 0) {
-    digitCount = 1;
-  } else {
-    digitCount = Math.floor(Math.log(numericSubject) / Math.log(numeralBase)) + 1;
+  function determineRepresentationLength(numberValue, baseValue) {
+    if (numberValue === 0) {
+      return 1;
+    }
+    let countOfDigits = 0;
+    let currentWorkingNumber = numberValue;
+    while (currentWorkingNumber > 0) {
+      currentWorkingNumber = Math.floor(currentWorkingNumber / baseValue);
+      countOfDigits++;
+    }
+    return countOfDigits;
   }
 
-  process.stdout.write(digitCount.toString() + '\n');
+  console.log(determineRepresentationLength(valueToConvert, conversionBase));
 }
 
-calculateRepresentationDigits(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

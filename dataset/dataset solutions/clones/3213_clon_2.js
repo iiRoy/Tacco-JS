@@ -1,162 +1,161 @@
 "use strict";
 
-// This function serves as the primary entry point for processing the problem's input.
-let ProcessInput = function (rawData) {
-  // Normalize the input string: remove leading/trailing whitespace, then split by any whitespace,
-  // and finally convert each resulting string element into a numeric type.
-  let parsedData = rawData.trim().split(/\s+/).map(val => Number(val));
+// This function processes the input data to perform matrix operations
+// and calculate a final result based on rank.
+var ProcessInput = function (rawData) {
+  // Trim whitespace, split by any whitespace, and convert each part to a number.
+  rawData = rawData.trim().split(/\s+/).map((val) => val - 0.0);
 
-  // Extract the dimensions of the matrix from the beginning of the parsed data array.
-  let numRows = parsedData.shift(); // The first element is the number of rows.
-  let numCols = parsedData.shift(); // The second element is the number of columns.
+  // Extract the number of rows and columns from the beginning of the input.
+  var numRows = rawData.shift();
+  var numCols = rawData.shift();
 
-  // Initialize a counter for the rank (basis size) of the matrix.
-  let basisSize = 0;
+  // Initialize a counter for the rank of the matrix.
+  var currentRank = 0;
 
-  // Create a new binary matrix object using the extracted dimensions and remaining elements.
-  let matrixObj = new BinaryMatrix(numRows, numCols, parsedData);
+  // Create a new binary matrix instance using the provided dimensions and elements.
+  var matrixInstance = new BinaryMatrix(numRows, numCols, rawData);
 
-  // Begin Gaussian elimination-like process to determine the rank.
-  // Continue as long as there are rows remaining in the matrix.
-  while (matrixObj.rowsData.length > 0) {
-    let firstOneRowIdx = 0; // Index to track the first row with a '1' in the current leading column.
+  // Continue processing as long as there are rows in the matrix.
+  while (matrixInstance.dataRows.length > 0) {
+    let firstOneIndex = 0; // Index to find the first row starting with 1
 
-    // Iterate through the current rows to find the first row that has a '1' in the leading column (index 0).
-    for (let rowIndex = 0; rowIndex < matrixObj.rowsData.length; ++rowIndex) {
-      if (matrixObj.rowsData[rowIndex][0] === 1) {
-        break; // Found a row starting with '1', exit loop.
+    // Iterate through the current rows to find one that starts with 1.
+    for (let idx = 0; idx < matrixInstance.dataRows.length; idx++) {
+      if (matrixInstance.dataRows[idx][0] === 1.0) {
+        break; // Found a row starting with 1
       }
-      firstOneRowIdx++; // Increment index if current row starts with '0'.
+      firstOneIndex++;
     }
 
-    // Check if no row starting with '1' was found in the current leading column.
-    if (firstOneRowIdx === matrixObj.rowsData.length) {
-      // If all remaining rows start with '0', this column is linearly dependent.
-      // Move this column to the end (conceptually) and then remove it.
-      matrixObj.exchangeColumns(0, matrixObj.rowsData[0].length - 1);
-      matrixObj.removeLastColumn();
+    // If no row starts with 1 in the current first column.
+    if (firstOneIndex === matrixInstance.dataRows.length) {
+      // Move the first column to the end and then delete it.
+      matrixInstance.exchangeColumns(0, matrixInstance.dataRows[0].length - 1);
+      matrixInstance.removeLastColumn();
     } else {
-      // A row starting with '1' was found, indicating this column contributes to the rank.
-      basisSize += 1; // Increment the rank counter.
+      // A row starting with 1 was found, increment the rank.
+      currentRank += 1;
 
-      // Perform XOR operations to eliminate '1's below the pivot element.
-      // This loop continues until no more '1's are found below the current pivot row.
+      // Perform XOR operations to eliminate other rows starting with 1 in the first column.
       while (true) {
-        let nextOneRowIdx = firstOneRowIdx + 1; // Index to search for the next row with '1'.
+        let nextOneIndex = firstOneIndex + 1; // Index to find the next row starting with 1
 
-        // Search for the next row below the pivot row (`firstOneRowIdx`) that also starts with a '1'.
-        for (let r = firstOneRowIdx + 1; r < matrixObj.rowsData.length; ++r) {
-          if (matrixObj.rowsData[r][0] === 1) {
-            break; // Found a row to XOR with the pivot row.
+        // Search for another row starting with 1 after the current `firstOneIndex`.
+        for (let idx = firstOneIndex + 1; idx < matrixInstance.dataRows.length; idx++) {
+          if (matrixInstance.dataRows[idx][0] === 1.0) {
+            break; // Found another row starting with 1
           }
-          nextOneRowIdx++; // Move to the next row if current row starts with '0'.
+          nextOneIndex++;
         }
 
-        // If no more rows starting with '1' are found below the current pivot, break the inner loop.
-        if (nextOneRowIdx === matrixObj.rowsData.length) {
+        // If no more rows starting with 1 are found, break the inner loop.
+        if (nextOneIndex === matrixInstance.dataRows.length) {
           break;
         }
 
-        // Apply XOR operation: current row (nextOneRowIdx) becomes XOR of pivot row and itself.
-        matrixObj.rowsData[nextOneRowIdx] = BinaryXORVector(
-          matrixObj.rowsData[firstOneRowIdx],
-          matrixObj.rowsData[nextOneRowIdx]
+        // XOR the current row (at `firstOneIndex`) with the found row (at `nextOneIndex`).
+        matrixInstance.dataRows[nextOneIndex] = performVectorXOR(
+          matrixInstance.dataRows[firstOneIndex],
+          matrixInstance.dataRows[nextOneIndex]
         );
       }
 
-      // After elimination, move the pivot row to the end of the matrix and then remove it.
-      // This effectively processes the row and reduces the matrix size.
-      matrixObj.exchangeRows(firstOneRowIdx, matrixObj.rowsData.length - 1);
-      matrixObj.removeLastRow();
+      // Move the processed row to the end and then delete it.
+      matrixInstance.exchangeRows(firstOneIndex, matrixInstance.dataRows.length - 1);
+      matrixInstance.removeLastRow();
     }
   }
 
-  // The final rank of the matrix, derived from the Gaussian elimination.
-  const finalRank = basisSize;
+  // Store the final calculated rank.
+  var finalRank = currentRank;
 
-  // Calculate the final answer using the formula provided, which involves powers of 2 and matrix dimensions.
-  let resultVal = Math.pow(2, numRows + numCols - 1) - Math.pow(2, Math.min(numCols, numRows) - finalRank + Math.max(numCols, numRows) - 1);
+  // Calculate the final result using the given formula.
+  var resultValue =
+    Math.pow(2, numRows + numCols - 1) -
+    Math.pow(2, Math.min(numCols, numRows) - finalRank + Math.max(numCols, numRows) - 1);
 
-  // Output the computed result to the console.
-  console.log(resultVal);
+  // Output the calculated result to the console.
+  console.log(resultValue);
 };
 
-// Helper function to perform a bitwise XOR operation on two individual binary values (0 or 1).
-function bitwiseXOR(valA, valB) {
-  return valA === valB ? 0 : 1; // Returns 0 if values are the same, 1 if different.
+// Performs a binary XOR operation on two single values.
+function binaryXOR(valA, valB) {
+  return valA === valB ? 0.0 : 1.0;
 }
 
-// Helper function to perform a bitwise XOR operation on two arrays (vectors) of binary values.
-// It applies the `bitwiseXOR` function element-wise.
-function BinaryXORVector(vectorOne, vectorTwo) {
-  return vectorOne.map((element, index) => bitwiseXOR(element, vectorTwo[index]));
+// Performs a binary XOR operation on two arrays (vectors) element-wise.
+function performVectorXOR(vectorOne, vectorTwo) {
+  return vectorOne.map((element, index) => binaryXOR(element, vectorTwo[index]));
 }
 
-// Constructor function for a BinaryMatrix object.
-// It initializes a matrix of given dimensions with elements from a flattened array.
-function BinaryMatrix(rowsCount, colsCount, flatElements) {
-  const currentObject = this; // Reference to the current instance.
-  currentObject.rowsData = []; // Initialize an array to hold the matrix rows.
+// Constructor for a BinaryMatrix object.
+// `rowsCount` is the number of rows, `colsCount` is the number of columns.
+// `initialElements` is a flat array of all matrix elements.
+function BinaryMatrix(rowsCount, colsCount, initialElements) {
+  var currentMatrix = this; // Alias for 'this' to avoid confusion in nested scopes.
+  currentMatrix.dataRows = []; // Initialize an array to hold the matrix rows.
 
-  // Pre-allocate arrays for each row.
-  for (let rIdx = 0; rIdx < rowsCount; ++rIdx) {
-    currentObject.rowsData[rIdx] = [];
+  // Initialize the `dataRows` with empty arrays for each row.
+  for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+    currentMatrix.dataRows[rowIndex] = [];
   }
 
-  // Populate the matrix with elements from the flattened input array.
-  for (let rIdx = 0; rIdx < rowsCount; ++rIdx) {
-    for (let cIdx = 0; cIdx < colsCount; ++cIdx) {
-      currentObject.rowsData[rIdx][cIdx] = flatElements[rIdx * colsCount + cIdx];
+  // Populate the matrix with elements from the `initialElements` array.
+  for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+    for (let colIndex = 0; colIndex < colsCount; colIndex++) {
+      currentMatrix.dataRows[rowIndex][colIndex] = initialElements[rowIndex * colsCount + colIndex];
     }
   }
 }
 
-// Generic helper function to swap two elements within any given array.
-function performSwap(targetArray, indexOne, indexTwo) {
-  let tempA = targetArray[indexOne];
-  let tempB = targetArray[indexTwo];
-  targetArray[indexOne] = tempB;
-  targetArray[indexTwo] = tempA;
+// Helper function to swap two elements in an array.
+function exchangeElements(targetArray, indexA, indexB) {
+  var tempA = targetArray[indexA];
+  var tempB = targetArray[indexB];
+  targetArray[indexA] = tempB;
+  targetArray[indexB] = tempA;
 }
 
-// Prototype method for BinaryMatrix: Swaps two specified rows.
+// Prototype method to swap two rows in the matrix.
 BinaryMatrix.prototype.exchangeRows = function (rowIdx1, rowIdx2) {
-  const instanceRef = this;
-  performSwap(instanceRef.rowsData, rowIdx1, rowIdx2);
+  var thisMatrix = this;
+  exchangeElements(thisMatrix.dataRows, rowIdx1, rowIdx2);
 };
 
-// Prototype method for BinaryMatrix: Removes the last row from the matrix.
+// Prototype method to remove the last row from the matrix.
 BinaryMatrix.prototype.removeLastRow = function () {
-  const instanceRef = this;
-  const rowCollection = instanceRef.rowsData;
-  rowCollection.pop(); // Standard array method to remove the last element.
+  var thisMatrix = this;
+  var matrixRows = thisMatrix.dataRows;
+  matrixRows.pop(); // Remove the last element (row) from the array.
 };
 
-// Prototype method for BinaryMatrix: Swaps two specified columns.
-// This requires iterating through each row and swapping elements at the column indices.
+// Prototype method to swap two columns in the matrix.
 BinaryMatrix.prototype.exchangeColumns = function (colIdx1, colIdx2) {
-  const instanceRef = this;
-  for (let r = 0; r < instanceRef.rowsData.length; ++r) {
-    performSwap(instanceRef.rowsData[r], colIdx1, colIdx2);
+  var thisMatrix = this;
+  // Iterate through each row and swap the elements at the specified column indices.
+  for (let rowIterator = 0; rowIterator < thisMatrix.dataRows.length; rowIterator++) {
+    exchangeElements(thisMatrix.dataRows[rowIterator], colIdx1, colIdx2);
   }
 };
 
-// Prototype method for BinaryMatrix: Removes the rightmost column from the matrix.
+// Prototype method to remove the last column from the matrix.
 BinaryMatrix.prototype.removeLastColumn = function () {
-  const instanceRef = this;
-  const rowCollection = instanceRef.rowsData;
-  const currentRowCount = rowCollection.length;
+  var thisMatrix = this;
+  var matrixRows = thisMatrix.dataRows;
+  var numCurrentRows = matrixRows.length;
 
-  // Special case: if there's only one column left, clearing the array is equivalent to removing it.
-  if (rowCollection.length > 0 && rowCollection[0].length === 1) {
-    instanceRef.rowsData = [];
+  // If the matrix becomes empty after removing the last column, clear dataRows.
+  if (numCurrentRows > 0 && matrixRows[0].length === 1) {
+    thisMatrix.dataRows = [];
     return;
   }
-  // For each row, remove its last element.
-  for (let r = 0; r < currentRowCount; ++r) {
-    rowCollection[r].pop();
+
+  // For each row, remove the last element (column).
+  for (let rowIterator = 0; rowIterator < numCurrentRows; rowIterator++) {
+    matrixRows[rowIterator].pop();
   }
 };
 
-// Execute the main processing function by reading input from standard input.
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

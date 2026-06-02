@@ -1,65 +1,51 @@
-const DevModeSim = function ( ) {
-  /*
-   * This internal function simulates standard input for development.
-   * It provides fixed data for testing purposes.
-   */
-  const mockInput = function ( promptMsg ) {
-    return '431 321'; // A sample string representing two numbers.
-  }; // End of mockInput definition.
+const DevelopmentModeHandler = function () {
+    // This function provides a mock input for development purposes.
+    const mockDataFetcher = function (promptText) {
+        // In development, we return a fixed string.
+        return '431 321';
+    };
 
-  return mockInput; // Return the function that provides mock input.
-}; // End of DevModeSim module setup.
+    return mockDataFetcher; // Return the mock input function.
+};
 
 
-const ProdEnvUtil = function ( ) {
-  // We require the Node.js file system module to interact with files.
-  const fileSys = require('fs');
+const ProductionModeHandler = function () {
+    // Load the Node.js file system module for reading input.
+    const fileSystemModule = require('fs');
 
-  /*
-   * This function handles actual standard input operations in a production environment.
-   * It can optionally display a message before reading.
-   */
-  const actualInput = function ( outputMsg ) {
-    if (outputMsg) {
-      // If there's a message, output it to the console.
-      console.log( outputMsg );
-    }
-    // Synchronously read all content from the standard input device.
-    return fileSys.readFileSync( '/dev/stdin', 'utf8' );
-  }; // End of actualInput definition.
+    // This function reads actual input from standard input.
+    const actualInputReader = function (displayMessage) {
+        // If a message is provided, print it to the console.
+        if (displayMessage) {
+            console.log(displayMessage);
+        }
+        // Read content from /dev/stdin as UTF-8.
+        return fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+    };
 
-  return actualInput; // Return the function for live input.
-}; // End of ProdEnvUtil module setup.
+    return actualInputReader; // Return the real input reading function.
+};
 
 
-// A boolean flag indicating whether the current execution context is for development.
-const isDevEnv = false;
+// A flag to determine if we are in a development environment.
+const isDevEnvironment = false;
 
-/*
- * Dynamically selects the appropriate input source:
- * either the development simulator or the production utility.
- */
-const getInputProvider = isDevEnv ? DevModeSim() : ProdEnvUtil();
+// Select the appropriate input retrieval mechanism based on the environment flag.
+const retrieveInput = isDevEnvironment ? DevelopmentModeHandler() : ProductionModeHandler();
 
-/*
- * Retrieves the raw input string, then processes it:
- * 1. Splits the string into an array of lines using newline as a delimiter.
- * 2. Maps each line (string) to its integer representation, using radix 10 for safety.
- */
-const parsedNums = getInputProvider().split('\n').map( (valStr) => parseInt(valStr, 10) );
+// Fetch input, split by newlines, and convert each part to an integer.
+const parsedNumericData = retrieveInput().split('\n').map(strVal => parseInt(strVal, 10));
 
-// The first number extracted from the processed input.
-const firstNum = parsedNums[0];
-// The second number extracted from the processed input.
-const secondNum = parsedNums[1];
+// Extract the first number from the parsed data.
+const firstNumber = parsedNumericData[0];
+// Extract the second number from the parsed data.
+const secondNumber = parsedNumericData[1];
 
-// Evaluate a specific condition based on the two numbers.
-if ( firstNum % secondNum === 0 ) {
-  // If 'firstNum' is perfectly divisible by 'secondNum', output -1.
-  console.log( -1 );
+// Check if the first number is perfectly divisible by the second number.
+if (firstNumber % secondNumber === 0) {
+    // If it is, print -1 as per the problem's logic.
+    console.log(-1);
+} else {
+    // Otherwise, print the first number.
+    console.log(firstNumber);
 }
-else {
-  // Otherwise, if there's a remainder, output the 'firstNum' itself.
-  console.log( firstNum );
-}
-// Concluding the main logic block.

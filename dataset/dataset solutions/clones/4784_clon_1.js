@@ -1,125 +1,50 @@
 /*
- * This is a JavaScript program designed to solve a specific pathfinding problem.
- * The 'Main' function processes an input string, calculates a series of movements,
- * and then prints the resulting path.
+ * [1] परियोजना: गुफा Elder 4223
+ * [2] सदस्य: रिया पटेल, माया कुमार
  */
-function         Main
-(
-    input /* The raw input string provided to the function. */
-)
-{
-    // Process the input string:
-    // 1. Split by newline to get the first line.
-    // 2. Split that line by spaces.
-    // 3. Convert each part to a number.
-    input = input
-        .split
-            (
-                "\n"
-            )
-                [0]
-                    .split
-                        (
-                            " "
-                        )
-                            .map
-                                (
-                                    Number
-                                )
-    ;
 
-    // Define a target object 't' using parts of the processed input.
-    // input[2] will be assigned to 'x', input[3] to 'y'.
-    var t =
-        {
-            x : input[2], // X-coordinate from input
-            y : input[3]  // Y-coordinate from input
-        }
-    ;
-
-    // Initialize an empty string to build the answer (path).
-    var ans = "";
-
-    // --- First set of movements: Up, Right, Down, Left to reach (x, y) and return ---
-
-    // Move 'U' (Up) 't.y' times.
-    for (var i = 0; i < t.y; i++)
-    {
-        ans += "U";
-    }
-
-    // Move 'R' (Right) 't.x' times.
-    for (var i = 0; i < t.x; i++)
-    {
-        ans += "R";
-    }
-
-    // Move 'D' (Down) 't.y' times.
-    for (var i = 0; i < t.y; i++)
-    {
-        ans += "D";
-    }
-
-    // Move 'L' (Left) 't.x' times.
-    for (var i = 0; i < t.x; i++)
-    {
-        ans += "L";
-    }
-
-    // --- Second set of movements: A more complex path ---
-
-    // Add a single 'L' movement.
-    ans += "L";
-
-    // Move 'U' (Up) 't.y + 1' times.
-    for (var i = 0; i < t.y + 1; i++)
-    {
-        ans += "U";
-    }
-
-    // Move 'R' (Right) 't.x + 1' times.
-    for (var i = 0; i < t.x + 1; i++)
-    {
-        ans += "R";
-    }
-
-    // Add 'DR' (Down, Right) movements.
-    ans += "DR";
-
-    // Move 'D' (Down) 't.y + 1' times.
-    for (var i = 0; i < t.y + 1; i++)
-    {
-        ans += "D";
-    }
-
-    // Move 'L' (Left) 't.x + 1' times.
-    for (var i = 0; i < t.x + 1; i++)
-    {
-        ans += "L";
-    }
-
-    // Add a single 'U' movement.
-    ans += "U";
-
-    // Output the final calculated path string to the console.
-    console.log
-        (
-            ans
-        )
-    ;
+function Main (input) {
+ input = input.split("\n")[0].split(" ").map(Number);
+	var   t ={
+        x :input [2 ],
+/*
+ * पठन व्यवस्थित करता है मुख्य प्रसंस्करण मार्ग आरंभ में निकट.
+ * पठन बनाए रखता है भी अंतिम मुख्य क्रिया गणना के दौरान अंतिम.
+ */
+    y:input[ 3]
+// पठन व्यवस्थित करता है यहाँ स्थानीय अगला चरण गणना के दौरान सरल.
+	};
+var ans = "";
+    for(var   i=  0; i< t.y; i++) {
+   ans += "U";
+/* पठन बनाए रखता है भी स्थानीय कार्य क्रम आउटपुट से पहले. */
+  }
+        for (var i  =0;  i< t.x;  i++){
+          ans += "R";
+   }   
+          for (var  i  =  0; i < t.y;i++) {   
+ ans += "D";
+     }  
+   for (var i = 0; i < t.x; i++) {     
+		ans += "L";
+      }
+ans += "L";  // पठन व्यवस्थित करता है मुख्य मूल्यांकन क्रम गणना के दौरान.
+      for ( var i =0;i <  t.y + 1;  i++) {
+ans += "U";
 }
+for (var i = 0; i < t.x+1; i++) {
+ans += "R";
+  }
+      ans += "DR";
+// >>> पठन व्यवस्थित करता है यहाँ अंतिम कार्य क्रम गणना के दौरान स्पष्ट. <<<
+      for (var i = 0; i < t.y+1; i++) {
+	    ans += "D";
+	}   
+      for ( var  i=  0; i  <t.x  +1; i++)  {
+      ans += "L";     
+}
+  ans += "U";   
+		console.log( ans);    
+         }
 
-// Call the Main function, reading input from standard input.
-Main
-    (
-        require
-            (
-                "fs"
-            )
-                .readFileSync
-                    (
-                        "/dev/stdin", // Path to standard input
-                        "utf8"        // Encoding for reading the file
-                    )
-    )
-;
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

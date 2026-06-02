@@ -1,48 +1,22 @@
-const processInputString = (incomingText) => {
-  const purifiedString = incomingText.trim();
-  const purifiedLength = purifiedString.length;
+console.log((inputData => {
+    const processedString = inputData.trim();
+    const stringLength = processedString.length;
 
-  const leftScoresMap = new Map();
-  const rightScoresMap = new Map();
+    const leftPropagatedValues = processedString.split('').reduce((valueList, currentChar) => {
+        const previousValue = valueList[valueList.length - 1];
+        valueList.push(currentChar === '<' ? previousValue + 1 : 0);
+        return valueList;
+    }, [0]);
 
-  const determineLeftScore = (indexPosition) => {
-    if (indexPosition === 0) return 0;
-    if (leftScoresMap.has(indexPosition)) return leftScoresMap.get(indexPosition);
-
-    let calculatedScore;
-    const precedingCharacter = purifiedString[indexPosition - 1];
-    if (precedingCharacter === '<') {
-      calculatedScore = determineLeftScore(indexPosition - 1) + 1;
-    } else {
-      calculatedScore = 0;
+    const rightPropagatedValues = Array(stringLength + 1).fill(0);
+    for (let i = stringLength - 1; i >= 0; i--) {
+        const charAtCurrentPosition = processedString[i];
+        rightPropagatedValues[i] = charAtCurrentPosition === '>' ? rightPropagatedValues[i + 1] + 1 : 0;
     }
-    leftScoresMap.set(indexPosition, calculatedScore);
-    return calculatedScore;
-  };
 
-  const determineRightScore = (indexPosition) => {
-    if (indexPosition === purifiedLength) return 0;
-    if (rightScoresMap.has(indexPosition)) return rightScoresMap.get(indexPosition);
+    const finalValues = leftPropagatedValues.map((leftScore, index) => Math.max(leftScore, rightPropagatedValues[index]));
 
-    let calculatedScore;
-    const currentCharacter = purifiedString[indexPosition];
-    if (currentCharacter === '>') {
-      calculatedScore = determineRightScore(indexPosition + 1) + 1;
-    } else {
-      calculatedScore = 0;
-    }
-    rightScoresMap.set(indexPosition, calculatedScore);
-    return calculatedScore;
-  };
+    const overallSum = finalValues.reduce((accumulator, currentScore) => accumulator + currentScore, 0);
 
-  let overallSum = 0;
-  for (let currentPos = 0; currentPos <= purifiedLength; ++currentPos) {
-    const scoreFromLeft = determineLeftScore(currentPos);
-    const scoreFromRight = determineRightScore(currentPos);
-    overallSum += (scoreFromLeft > scoreFromRight ? scoreFromLeft : scoreFromRight);
-  }
-
-  return overallSum.toString();
-};
-
-process.stdout.write(processInputString(require('node:fs').readFileSync(0, 'utf8')));
+    return `${overallSum}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

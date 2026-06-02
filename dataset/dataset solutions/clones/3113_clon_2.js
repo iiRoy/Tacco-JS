@@ -1,115 +1,149 @@
-'use strict'; // Enforce strict mode for better code quality.
+'use strict'; // Enforce strict parsing and error handling for cleaner code.
 
-class PrimaryProcessor {
+// This class encapsulates the primary application logic.
+class AppProcessor {
+  /**
+   * Executes the main algorithm to process input and generate output.
+   */
+  executeLogic() {
+    // Read the first integer from the input stream.
+    let inputVal = dataReader.getIntegerArray()[0];
 
-  // Method to carry out the core computation.
-  executeTask() {
-    // Obtain the initial numerical value from the input source.
-    let countVal = dataReceiver.getIntegerArray()[0];
-    // Initialize a container for number collections.
-    const elementGroups = [];
+    // Initialize an array to hold groups of numbers.
+    const valueGroups = [];
 
-    // If the count value is odd, add it as a single-element group.
-    if (countVal % 2) {
-      elementGroups.push([countVal]);
+    // If the initial input value is odd, add it as a standalone group.
+    if (inputVal % 2 !== 0) {
+      valueGroups.push([inputVal]);
     }
 
-    // Determine an adjusted limit based on parity.
-    let limitVal = countVal % 2 ? countVal - 1 : countVal;
+    // Calculate an adjusted value for loop iteration, ensuring it's even.
+    let adjustedVal = (inputVal % 2 !== 0) ? (inputVal - 1) : inputVal;
 
-    // Populate element groups with paired numbers.
-    for (let loopIter = 0; loopIter < limitVal / 2; ++loopIter) {
-      elementGroups.push([loopIter + 1, limitVal - loopIter]);
+    // Populate the valueGroups array with pairs of numbers.
+    // These pairs sum up to (adjustedVal + 1) for the first element and (adjustedVal) for the second.
+    for (let idx = 0; idx < adjustedVal / 2; ++idx) {
+      valueGroups.push([idx + 1, adjustedVal - idx]);
     }
 
-    // Prepare an array to store the final computed output.
-    let computedOutput = [];
+    // Initialize an array to store the final set of combined pairs.
+    let resultCombinations = [];
 
-    // Iterate through the element groups to form new pairs.
-    for (let loopIter = 0; loopIter < elementGroups.length; ++loopIter) {
-      // For each element in the current group, combine it with elements from the next group (cyclically).
-      elementGroups[loopIter].forEach((valA) =>
-        computedOutput = computedOutput.concat(
-          elementGroups[(loopIter + 1) % elementGroups.length].map((valB) => [valA, valB])
-        )
-      );
+    // Iterate through the generated value groups to form combinations.
+    for (let idx = 0; idx < valueGroups.length; ++idx) {
+      // For each element in the current group, combine it with every element
+      // from the next group in a cyclic manner.
+      valueGroups[idx].forEach((elementOne) => {
+        resultCombinations = resultCombinations.concat(
+          valueGroups[(idx + 1) % valueGroups.length].map((elementTwo) => [elementOne, elementTwo])
+        );
+      });
     }
 
-    // Print the total count of the computed output pairs.
-    console.log(computedOutput.length);
-    // Format and print each computed pair on a new line.
-    console.log(computedOutput.map((item) => item.join(' ')).join('\n'));
+    // Output the total number of unique combinations found.
+    console.log(resultCombinations.length);
+    // Format and output each combination on a new line, with elements separated by a space.
+    console.log(resultCombinations.map((comboItem) => comboItem.join(' ')).join('\n'));
   }
 }
 
-class DataReader {
-  // Initializes the data reader.
+// This utility class handles reading and parsing input data.
+class DataHandler {
+  /**
+   * Constructs a new DataHandler instance, initializing the read pointer
+   * and loading all input data.
+   */
   constructor() {
-    this.currentPos = 0; // Tracks the current reading position.
-    this.loadAllData(); // Loads all input data upon instantiation.
+    this.readPointer = 0; // Tracks the current line index for reading.
+    this.loadAllData();   // Reads all lines from standard input.
   }
 
-  // Reads all content from the standard input.
+  /**
+   * Reads all available data from standard input and stores it internally.
+   * @returns {string[]} An array where each element is a line from the input.
+   */
   loadAllData() {
-    this.sourceContent = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
-    return this.sourceContent;
+    // Use Node.js 'fs' module to synchronously read from /dev/stdin.
+    this.rawDataLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+    return this.rawDataLines;
   }
 
-  // Retrieves one or more lines of text.
-  fetchLine(numLines) {
-    // If a number of lines is specified, retrieve a slice.
+  /**
+   * Retrieves one or more lines from the stored input data.
+   * @param {number} [numLines] - The number of lines to retrieve. If omitted, retrieves a single line.
+   * @returns {string|string[]} A single line string or an array of line strings.
+   */
+  getLineOrLines(numLines) {
     if (numLines) {
-      const retrievedLines = this.sourceContent.slice(this.currentPos, this.currentPos + numLines);
-      this.currentPos += numLines; // Advance the cursor.
+      // If a specific number of lines is requested, slice the array.
+      const retrievedLines = this.rawDataLines.slice(this.readPointer, this.readPointer + numLines);
+      this.readPointer += numLines; // Advance the pointer by the number of lines read.
       return retrievedLines;
     }
-    // Otherwise, retrieve a single line and advance the cursor.
-    return this.sourceContent[this.currentPos++];
+    // Otherwise, return the current line and then advance the pointer.
+    return this.rawDataLines[this.readPointer++];
   }
 
-  // Gets an array of strings from a single line.
-  getStringArray() {
-    return this.fetchLine().split(' ');
+  /**
+   * Reads a single line and splits it into an array of strings based on spaces.
+   * @returns {string[]} An array of string tokens from the current line.
+   */
+  getStringArray() { return this.getLineOrLines().split(' '); }
+
+  /**
+   * Reads a single line, splits it, and converts each token to an integer.
+   * @returns {number[]} An array of integers from the current line.
+   */
+  getIntegerArray() { return this.getStringArray().map((element) => parseInt(element, 10)); }
+
+  /**
+   * Reads a single line, splits it, and converts each token to a floating-point number.
+   * @returns {number[]} An array of floating-point numbers from the current line.
+   */
+  getFloatArray() { return this.getStringArray().map((element) => parseFloat(element)); }
+
+  /**
+   * Reads multiple lines and converts each line into a single integer.
+   * @param {number} count - The number of lines to read.
+   * @returns {number[]} An array of integers, one for each line.
+   */
+  getIntegerLines(count) { return this.getLineOrLines(count).map((element) => parseInt(element, 10)); }
+
+  /**
+   * Reads multiple lines and converts each line into a single floating-point number.
+   * @param {number} count - The number of lines to read.
+   * @returns {number[]} An array of floating-point numbers, one for each line.
+   */
+  getFloatLines(count) { return this.getLineOrLines(count).map((element) => parseFloat(element)); }
+
+  /**
+   * Reads multiple lines and splits each line into an array of strings, forming a 2D array.
+   * @param {number} count - The number of lines to read.
+   * @returns {string[][]} A 2D array of strings.
+   */
+  getStringMatrix(count) { return this.getLineOrLines(count).map((lineContent) => lineContent.split(' ')); }
+
+  /**
+   * Reads multiple lines, splits each line, and converts tokens to integers, forming a 2D array.
+   * @param {number} count - The number of lines to read.
+   * @returns {number[][]} A 2D array of integers.
+   */
+  getIntegerMatrix(count) {
+    return this.getLineOrLines(count).map((lineContent) => lineContent.split(' ').map((element) => parseInt(element, 10)));
   }
 
-  // Gets an array of integers from a single line.
-  getIntegerArray() {
-    return this.getStringArray().map((strItem) => Number(strItem));
-  }
-
-  // Gets an array of floating-point numbers from a single line.
-  getFloatArray() {
-    return this.getStringArray().map((strItem) => Number(strItem));
-  }
-
-  // Gets an array of integers from multiple lines.
-  getIntegerLines(numLines) {
-    return this.fetchLine(numLines).map((lineText) => Number(lineText));
-  }
-
-  // Gets an array of floating-point numbers from multiple lines.
-  getFloatLines(numLines) {
-    return this.fetchLine(numLines).map((lineText) => Number(lineText));
-  }
-
-  // Gets a 2D array of strings from multiple lines.
-  getStringMatrix(numLines) {
-    return this.fetchLine(numLines).map((individualLine) => individualLine.split(' '));
-  }
-
-  // Gets a 2D array of integers from multiple lines.
-  getIntegerMatrix(numLines) {
-    return this.fetchLine(numLines).map((individualLine) => individualLine.split(' ').map((strItem) => Number(strItem)));
-  }
-
-  // Gets a 2D array of floating-point numbers from multiple lines.
-  getFloatMatrix(numLines) {
-    return this.fetchLine(numLines).map((individualLine) => individualLine.split(' ').map((strItem) => Number(strItem)));
+  /**
+   * Reads multiple lines, splits each line, and converts tokens to floats, forming a 2D array.
+   * @param {number} count - The number of lines to read.
+   * @returns {number[][]} A 2D array of floating-point numbers.
+   */
+  getFloatMatrix(count) {
+    return this.getLineOrLines(count).map((lineContent) => lineContent.split(' ').map((element) => parseFloat(element)));
   }
 }
 
-// Instantiate the data reader utility.
-const dataReceiver = new DataReader();
+// Create a global instance of the data handler to manage input.
+const dataReader = new DataHandler();
 
-// Create an instance of the primary processor and run its main method.
-(new PrimaryProcessor()).executeTask();
+// Instantiate the main application processor and trigger its execution.
+(new AppProcessor()).executeLogic();

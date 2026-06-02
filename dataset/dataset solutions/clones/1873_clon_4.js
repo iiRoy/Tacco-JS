@@ -1,64 +1,62 @@
-function processInputData(rawData) {
-    const dataLines = rawData.trim().split("\n");
+function processChallenge(rawData) {
+    const allLines = rawData.split("\n");
+    const firstLineParts = allLines[0].split(' ');
+    const bookCount = Number(firstLineParts[0]);
+    const skillCount = Number(firstLineParts[1]);
+    const requiredSkill = Number(firstLineParts[2]);
 
-    const [totalBooks, totalSkills, minimumScore] = dataLines[0].split(' ').map(Number);
+    const costs = [];
+    const skillMatrix = [];
 
-    const bookPrices = [];
-    const bookSkillContributions = [];
-
-    for (let currentBookIndex = 1; currentBookIndex <= totalBooks; currentBookIndex++) {
-        const bookDetails = dataLines[currentBookIndex].split(' ').map(Number);
-        bookPrices.push(bookDetails[0]);
-        bookSkillContributions.push(bookDetails.slice(1));
+    for (let lineIdx = 1; lineIdx < allLines.length; lineIdx++) {
+        const currentLineValues = allLines[lineIdx].split(' ').map(Number);
+        if (currentLineValues.length === 0 || isNaN(currentLineValues[0])) {
+            continue;
+        }
+        costs.push(currentLineValues[0]);
+        skillMatrix.push(currentLineValues.slice(1));
     }
 
-    let overallLowestCost = Infinity;
+    let minimumAchievableCost = Infinity;
 
-    function explorePurchaseOptions(
-        bookConsiderationIndex,
-        accumulatedPayment,
-        currentSkillProficiencies
-    ) {
-        // Base case: All books have been considered
-        if (bookConsiderationIndex === totalBooks) {
-            // Check if all skill proficiencies meet the required minimum
-            const allProficienciesReached = currentSkillProficiencies.every(
-                (proficiencyLevel) => proficiencyLevel >= minimumScore
-            );
+    // Iterate through all possible combinations of books using a bitmask.
+    // Each 'comboMask' represents a unique subset of books.
+    // If the k-th bit of comboMask is 1, then book k is selected.
+    for (let comboMask = 0; comboMask < (1 << bookCount); comboMask++) {
+        let currentCombinationCost = 0;
+        // Initialize skill levels for the current combination to zero.
+        let currentSkillLevels = new Array(skillCount).fill(0);
 
-            if (allProficienciesReached) {
-                overallLowestCost = Math.min(overallLowestCost, accumulatedPayment);
+        // Evaluate each book based on the current combination mask.
+        for (let bookIndex = 0; bookIndex < bookCount; bookIndex++) {
+            // Check if the bookIndex-th bit is set in comboMask.
+            // If it is, this book is considered "bought" for the current combination.
+            if ((comboMask >> bookIndex) & 1) {
+                currentCombinationCost += costs[bookIndex];
+                // Add skill gains from this selected book to the total skill levels.
+                for (let skillIndex = 0; skillIndex < skillCount; skillIndex++) {
+                    currentSkillLevels[skillIndex] += skillMatrix[bookIndex][skillIndex];
+                }
             }
-            return;
         }
 
-        // Option 1: Do not acquire the current book
-        explorePurchaseOptions(
-            bookConsiderationIndex + 1,
-            accumulatedPayment,
-            currentSkillProficiencies
-        );
-
-        // Option 2: Acquire the current book
-        const nextPaymentTotal = accumulatedPayment + bookPrices[bookConsiderationIndex];
-        const updatedSkillProficiencies = currentSkillProficiencies.map(
-            (proficiencyLevel, skillIdentifier) => {
-                return proficiencyLevel + bookSkillContributions[bookConsiderationIndex][skillIdentifier];
+        // After processing all books for the current combination,
+        // check if all skill requirements are met.
+        let allSkillsMet = true;
+        for (let skillIndex = 0; skillIndex < skillCount; skillIndex++) {
+            if (currentSkillLevels[skillIndex] < requiredSkill) {
+                allSkillsMet = false;
+                break; // If any skill is below the target, this combination is invalid.
             }
-        );
+        }
 
-        explorePurchaseOptions(
-            bookConsiderationIndex + 1,
-            nextPaymentTotal,
-            updatedSkillProficiencies
-        );
+        // If all skill requirements are met, update the minimum cost found so far.
+        if (allSkillsMet) {
+            minimumAchievableCost = Math.min(minimumAchievableCost, currentCombinationCost);
+        }
     }
 
-    // Initiate the recursive exploration
-    explorePurchaseOptions(0, 0, new Array(totalSkills).fill(0));
-
-    console.log(overallLowestCost === Infinity ? -1 : overallLowestCost);
+    console.log(minimumAchievableCost === Infinity ? -1 : minimumAchievableCost);
 }
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputData(inputSource);
+processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));

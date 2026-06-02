@@ -1,59 +1,48 @@
-( function ( rawDataInput ) {
-  /*
-   * This self-executing function processes a series of commands
-   * to manipulate a collection of dynamic data structures.
-   * It simulates operations like push, pop, and transfer between these structures.
-   */
+(function(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    var lines = rawData.split('\n');
 
-  // Split the entire input string into individual lines
-  const lineFragments = rawDataInput.split( '\n' );
+    // The very first line specifies the total number of stacks to be managed.
+    var stackCount = Number(lines.shift());
 
-  // The first line indicates the total number of data containers to initialize
-  const totalContainers = Number( lineFragments.shift() );
-
-  // Initialize an array to hold our distinct data containers
-  const containerCollection = [];
-
-  // Populate the collection with empty arrays, representing our containers
-  for ( let containerIndex = 0; containerIndex < totalContainers; containerIndex++ ) {
-    containerCollection[ containerIndex ] = [];
-  }
-
-  // Begin an infinite loop to process commands until a 'quit' instruction is received
-  while ( true ) {
-    // Extract the next line, split it by space to get command tokens
-    let currentCommandTokens = lineFragments.shift().split( ' ' );
-
-    // The first token is the type of operation
-    let operationType = currentCommandTokens[ 0 ];
-    // The second token is typically the first operand/argument
-    let firstArgument = currentCommandTokens[ 1 ];
-    // The third token is typically the second operand/argument, if applicable
-    let secondArgument = currentCommandTokens[ 2 ];
-
-    // Check if the current operation is to terminate the program
-    if ( operationType === 'quit' ) {
-      return; // Exit the function and stop execution
+    // Initialize an array where each element will represent a distinct stack.
+    var stackCollection = [];
+    for (var idx = 0; idx < stackCount; idx++) {
+        stackCollection[idx] = []; // Each stack is initially an empty array.
     }
 
-    // Handle the 'push' operation: add an element to a specified container
-    if ( operationType === 'push' ) {
-      // Convert the argument to a number (0-indexed container) and push the second argument
-      containerCollection[ Number( firstArgument ) - 1 ].push( secondArgument );
-    }
-    // Handle the 'pop' operation: remove and display the last element from a specified container
-    else if ( operationType === 'pop' ) {
-      // Convert the argument to a number (0-indexed container) and print the popped element
-      console.log( containerCollection[ Number( firstArgument ) - 1 ].pop() );
-    }
-    // Handle any other operation (implicitly 'transfer' based on original logic)
-    else {
-      // Pop an element from the container specified by the first argument
-      let transferredItem = containerCollection[ Number( firstArgument ) - 1 ].pop();
-      // Push the popped element onto the container specified by the second argument
-      containerCollection[ Number( secondArgument ) - 1 ].push( transferredItem );
-    }
-  }
+    // Enter an infinite loop to process commands until a 'quit' command is received.
+    while (true) {
+        // Retrieve the next command line, remove it from the 'lines' array, and split it by spaces.
+        var cmdParts = lines.shift().split(' ');
+        var opType = cmdParts[0]; // The first part is the operation type (e.g., 'push', 'pop', 'quit').
+        var paramA = cmdParts[1]; // The second part is the first argument, typically a stack index.
+        var paramB = cmdParts[2]; // The third part is the second argument, e.g., an item to push or a target stack index.
 
-// Read the input from standard input using Node.js file system module
-} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+        // Check if the current operation is the termination command.
+        if (opType === 'quit') {
+            return; // Exit the immediately invoked function expression.
+        }
+
+        // Handle the 'push' operation: add an item to a specified stack.
+        if (opType === 'push') {
+            // Convert the stack index (paramA) to a number and adjust for 0-based indexing.
+            stackCollection[Number(paramA) - 1].push(paramB);
+        }
+        // Handle the 'pop' operation: remove and print an item from a specified stack.
+        else if (opType === 'pop') {
+            // Convert the stack index (paramA) to a number and adjust for 0-based indexing.
+            // Pop the top item and print it to the console.
+            console.log(stackCollection[Number(paramA) - 1].pop());
+        }
+        // Handle the 'move' operation (implied if not 'push' or 'pop'): move an item between stacks.
+        else {
+            // Convert the source stack index (paramA) to a number and adjust for 0-based indexing.
+            // Pop an item from the source stack.
+            var movedItem = stackCollection[Number(paramA) - 1].pop();
+            // Convert the destination stack index (paramB) to a number and adjust for 0-based indexing.
+            // Push the popped item onto the destination stack.
+            stackCollection[Number(paramB) - 1].push(movedItem);
+        }
+    }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read all input from standard input as a UTF-8 string.

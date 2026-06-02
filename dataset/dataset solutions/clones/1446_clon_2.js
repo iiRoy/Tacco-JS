@@ -1,79 +1,47 @@
-function ProcessInput
-    (
-        rawData
-    )
-{
-    // This line parses the input string into an array of numeric values.
-    let numSequence = rawData
-        .trim()
-        .split(
-            /\s|\n/
-        )
-        .map(
-            Number
-        )
-    ;
+function ProcessInput (rawData) {
+    // Initialize an array by processing the raw input string.
+    // It trims whitespace, splits by space or newline, and converts each part to a number.
+    var numericValues = rawData.trim().split(/\s|\n/).map(Number);
 
-    // Loop continuously until a specific termination condition is met.
-    while ( true )
-    {
-        // Extract the first number from the sequence, representing the count for the current set.
-        let currentCount = numSequence.shift();
+    // Begin an indefinite processing loop.
+    while (1) {
+        // Extract the first number from the array, which represents the count of elements for the current set.
+        let countOfElements = numericValues.shift();
 
-        // If the count is zero, it signifies the end of input, so terminate the processing loop.
-        if ( currentCount === 0 ) {
+        // If the count is zero, it signifies the end of input, so break the loop.
+        if (countOfElements === 0) {
             break;
         }
 
-        // Initialize an array to store the data points for the current set.
-        let dataPoints = new Array( currentCount );
-
+        // Declare an array to hold the data points for the current set.
+        let dataPoints = new Array(countOfElements);
         // Initialize a variable to accumulate the sum of data points.
-        let totalSum = 0.0;
-
+        let totalSum = 0;
         // Initialize a variable to accumulate the sum of squared differences from the mean.
-        let squaredDiffSum = 0.0;
+        let varianceSum = 0;
 
-        // Iterate through the input sequence to populate the data points array and calculate their sum.
-        for ( let idx = 0 ; idx < currentCount ; idx ++ )
-        {
-            // Assign the next number from the sequence to the current data point.
-            dataPoints[ idx ] = numSequence.shift();
-
-            // Add the current data point's value to the running total.
-            totalSum += dataPoints[ idx ];
+        // Loop through to populate the dataPoints array and calculate the initial sum.
+        for (let idx = 0; idx < countOfElements; idx++) {
+            // Assign the next number from the input array to the current data point.
+            dataPoints[idx] = numericValues.shift();
+            // Add the current data point to the running total.
+            totalSum += dataPoints[idx];
         }
 
-        // Calculate the arithmetic mean (average) of the data points.
-        totalSum /= currentCount;
+        // Calculate the mean (average) of the data points.
+        totalSum /= countOfElements;
 
-        // Iterate again to calculate the sum of squared differences from the mean.
-        for ( let idx = 0 ; idx < currentCount ; idx ++ )
-        {
-            // Add the square of the difference between each data point and the mean to the accumulator.
-            squaredDiffSum += Math.pow(
-                dataPoints[ idx ] - totalSum,
-                2
-            );
+        // Loop again to calculate the sum of squared differences from the mean.
+        for (let idx = 0; idx < countOfElements; idx++) {
+            // Add the square of the difference between the current data point and the mean to varianceSum.
+            varianceSum += Math.pow(dataPoints[idx] - totalSum, 2);
         }
 
-        // Output the standard deviation, calculated as the square root of the variance.
-        console.log(
-            Math.sqrt(
-                squaredDiffSum / currentCount
-            )
-        );
+        // Calculate the standard deviation and print it to the console.
+        // The standard deviation is the square root of the average of the squared differences.
+        console.log(Math.sqrt(varianceSum / countOfElements));
     }
 }
 
-// Invoke the main processing function with content read from standard input.
-ProcessInput
-    (
-        require(
-            "fs"
-        )
-        .readFileSync(
-            "/dev/stdin",
-            "utf8"
-        )
-    );
+// Read the input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

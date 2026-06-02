@@ -1,56 +1,18 @@
 "use strict";
 
-const processInputString = (entireInputContent) => {
-    let positionTracker = 0;
-    const totalLength = entireInputContent.length;
+const processInputAndFormat = (sourceData) => {
+    const globallyCleanedData = sourceData.replace(/^\s+|\s+$/g, '');
 
-    // Advance past any leading whitespace in the overall input
-    while (positionTracker < totalLength && /\s/.test(entireInputContent[positionTracker])) {
-        positionTracker++;
-    }
-    const contentStartBoundary = positionTracker;
+    const newlinePosition = globallyCleanedData.indexOf('\n');
+    const relevantSegment = (newlinePosition === -1)
+        ? globallyCleanedData
+        : globallyCleanedData.substring(0, newlinePosition);
 
-    // Find the end of the first logical line (before the first newline character)
-    let lineEndBoundary = contentStartBoundary;
-    while (lineEndBoundary < totalLength && entireInputContent[lineEndBoundary] !== '\n') {
-        lineEndBoundary++;
-    }
+    const formattedOutput = Array.from(relevantSegment).reduce((accumulator, character) => {
+        return accumulator + (character === ',' ? ' ' : character);
+    }, '');
 
-    // Extract the first line that needs to be comma-separated
-    let targetForSeparation = '';
-    for (let i = contentStartBoundary; i < lineEndBoundary; i++) {
-        targetForSeparation += entireInputContent[i];
-    }
-
-    // Manually separate the target string by commas
-    const componentList = [];
-    let currentSegment = '';
-    for (let i = 0; i < targetForSeparation.length; i++) {
-        const charAtI = targetForSeparation[i];
-        if (charAtI === ',') {
-            componentList.push(currentSegment);
-            currentSegment = ''; // Reset for the next part
-        } else {
-            currentSegment += charAtI;
-        }
-    }
-    componentList.push(currentSegment); // Add the final segment
-
-    // Manually concatenate the components with spaces
-    let finalOutputString = '';
-    for (let i = 0; i < componentList.length; i++) {
-        finalOutputString += componentList[i];
-        if (i < componentList.length - 1) {
-            finalOutputString += ' ';
-        }
-    }
-
-    return finalOutputString;
+    console.log(formattedOutput);
 };
 
-const initiateOperation = (dataSource) => {
-    const processedOutcome = processInputString(dataSource);
-    console.log(processedOutcome);
-};
-
-initiateOperation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndFormat(require('fs').readFileSync('/dev/stdin', 'utf8'));

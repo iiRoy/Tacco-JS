@@ -1,131 +1,108 @@
-function acquireInput() {
-  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
-}
+function getInputData(){ return require("fs").readFileSync("/dev/stdin", "utf8").trim(); }
+function displayResult(res){ console.log(res); } // Output to standard console
+function logError(errVal){ console.error(errVal); } // Output to error console
 
-function displayOutput(messageContent) {
-  console.log(messageContent);
-}
-
-function reportError(diagnosticInfo) {
-  console.error(diagnosticInfo);
-}
-
-// This routine handles various data transformations based on the provided option.
-// Accepted options:
-//  0: Pass through without alteration
-//  1: Convert to an integer value
-//  2: Divide string by single space characters into an array
-//  3: Divide string by newline characters into an array
-//  4: Divide by spaces, then map each segment to a numeric type
-//  5: Divide by newlines, then map each segment to a numeric type
-//  6: Break string into an array of individual characters
-//  7: Break string into characters, then map each to a numeric type
-function transformValue(sourceString, conversionOption) {
-  switch (conversionOption) {
-    case 0:
-      return sourceString;
-    case 1:
-      return parseInt(sourceString, 10);
-    case 2:
-      return sourceString.split(" ");
-    case 3:
-      return sourceString.split("\n");
-    case 4:
-      return sourceString.split(" ").map((element) => Number(element));
-    case 5:
-      return sourceString.split("\n").map((element) => Number(element));
-    case 6:
-      return sourceString.split("");
-    case 7:
-      return sourceString.split("").map((element) => Number(element));
+// This utility function handles various input parsing scenarios.
+// 0: No transformation; 1: Convert to integer; 2: Split by space; 3: Split by newline;
+// 4: Split by space and convert to number array; 5: Split by newline and convert to number array;
+// 6: Split into individual characters; 7: Split into individual characters and convert to number array.
+function transformInput(inputVal, conversionType){
+  switch(conversionType){
+    case 0: return inputVal;
+    case 1: return parseInt(inputVal, 10);
+    case 2: return inputVal.split(" ");
+    case 3: return inputVal.split("\n");
+    case 4: return inputVal.split(" ").map((item) => Number(item));
+    case 5: return inputVal.split("\n").map((item) => Number(item));
+    case 6: return inputVal.split("");
+    case 7: return inputVal.split("").map((item) => Number(item));
+    default: return inputVal; // Default case, though not explicitly in original
   }
 }
 
-function executeCoreLogic(initialData) {
-  let processedLines = transformValue(initialData, 3);
+function processData(initialInput) {
+  // First, split the raw input by newlines.
+  let processedLines = transformInput(initialInput, 3);
 
-  let totalItemsCount = transformValue(processedLines[0], 1);
-  let valueCollection = transformValue(processedLines[1], 2);
+  // Get the total number of elements from the first line.
+  let totalElements = transformInput(processedLines[0], 1);
 
-  let oddIndexedItemCounts = {};
-  let evenIndexedItemCounts = {};
+  // Get the list of elements (as strings) from the second line, split by spaces.
+  let elementStrings = transformInput(processedLines[1], 2);
 
-  // Loop through the collection to tally frequencies based on index parity
-  for (let currentIdx = 0; currentIdx < totalItemsCount; currentIdx++) {
-    // Group elements by their 0-based index parity
-    if (currentIdx % 2 === 0) {
-      // If the current index is even
-      if (oddIndexedItemCounts[valueCollection[currentIdx]] === null || oddIndexedItemCounts[valueCollection[currentIdx]] === undefined) {
-        oddIndexedItemCounts[valueCollection[currentIdx]] = 1;
-      } else {
-        oddIndexedItemCounts[valueCollection[currentIdx]]++;
-      }
-    } else {
-      // If the current index is odd
-      if (evenIndexedItemCounts[valueCollection[currentIdx]] === null || evenIndexedItemCounts[valueCollection[currentIdx]] === undefined) {
-        evenIndexedItemCounts[valueCollection[currentIdx]] = 1;
-      } else {
-        evenIndexedItemCounts[valueCollection[currentIdx]]++;
-      }
+  // Initialize objects to store frequency counts for elements at odd and even indices.
+  let oddCountsMap = {};
+  let evenCountsMap = {};
+
+  // Iterate through the elements to populate the frequency maps.
+  for(let idx = 0; idx < totalElements; idx++){
+    // Elements at even indices (0, 2, 4...) contribute to oddCountsMap.
+    if(idx % 2 === 0){
+       if(oddCountsMap[elementStrings[idx]] === undefined){
+     	  oddCountsMap[elementStrings[idx]] = 1;
+    	} else {
+    	   	oddCountsMap[elementStrings[idx]]++;
+    	}
+    } else { // Elements at odd indices (1, 3, 5...) contribute to evenCountsMap.
+       if(evenCountsMap[elementStrings[idx]] === undefined){
+     	  evenCountsMap[elementStrings[idx]] = 1;
+  	  } else {
+   	  	 evenCountsMap[elementStrings[idx]]++;
+  	  }
     }
   }
+  
+  let finalCount = 0; // This will store the final calculated value.
 
-  let finalCalculatedResult = 0;
+  // Extract unique elements (keys) from the frequency maps.
+  let uniqueOddElements = Array.from(Object.keys(oddCountsMap));
+  let uniqueEvenElements = Array.from(Object.keys(evenCountsMap));
 
-  // Extract unique keys (values) from the frequency maps
-  let uniqueOddKeys = Array.from(Object.keys(oddIndexedItemCounts));
-  let uniqueEvenKeys = Array.from(Object.keys(evenIndexedItemCounts));
-
-  // Check for a specific edge case where both sets have only one unique value, and they are identical
-  if (uniqueOddKeys.length === 1 && uniqueEvenKeys.length === 1 && uniqueEvenKeys[0] === uniqueOddKeys[0]) {
-    displayOutput(totalItemsCount / 2);
-    return; // Terminate execution early for this case
+  // Special case: If both sets have only one unique element and they are the same.
+  if(uniqueOddElements.length === 1 && uniqueEvenElements.length === 1 && uniqueEvenElements[0] === uniqueOddElements[0]){
+     displayResult(totalElements / 2); // All elements must be changed except half.
+     return;
   }
 
-  let currentMaximumFrequency = 0;
-  let dominantOddValue = "";
+  let currentMaxFreq = 0; // Temporary variable to find maximum frequency.
+  let mostFrequentOddElement = ""; // Stores the element with the highest frequency from odd positions.
 
-  // Determine the most frequent value among odd-indexed items
-  for (let currentIdx = 0; currentIdx < uniqueOddKeys.length; currentIdx++) {
-    if (currentMaximumFrequency < oddIndexedItemCounts[uniqueOddKeys[currentIdx]]) {
-      currentMaximumFrequency = oddIndexedItemCounts[uniqueOddKeys[currentIdx]];
-      dominantOddValue = uniqueOddKeys[currentIdx];
-    }
+  // Find the most frequent element in the odd-indexed positions.
+  for(let idx = 0; idx < uniqueOddElements.length; idx++){
+    if(currentMaxFreq < oddCountsMap[uniqueOddElements[idx]]){
+    	currentMaxFreq = oddCountsMap[uniqueOddElements[idx]];
+    	mostFrequentOddElement = uniqueOddElements[idx];
+  	}
+  }
+  // Calculate changes needed for odd-indexed positions.
+  finalCount += (totalElements / 2) - currentMaxFreq;
+
+  currentMaxFreq = 0; // Reset for even-indexed positions.
+
+  // If the most frequent odd element is also present in the even set, remove it temporarily
+  // to find the *second* most frequent if the most frequent odd element is chosen.
+  if(uniqueEvenElements.includes(mostFrequentOddElement)){
+  	uniqueEvenElements.splice(uniqueEvenElements.indexOf(mostFrequentOddElement), 1);
+	}
+
+  // Find the most frequent element in the even-indexed positions (after potential removal).
+  for(let idx = 0; idx < uniqueEvenElements.length; idx++){
+    // The original code had a commented-out 'continue' here, which is redundant
+    // because the element would have been spliced out if it matched 'mostFrequentOddElement'.
+    // if(mostFrequentOddElement === uniqueEvenElements[idx]){
+    //    //continue;
+    // }
+    currentMaxFreq = Math.max(currentMaxFreq, evenCountsMap[uniqueEvenElements[idx]]);
   }
 
-  // Add the required changes for the odd-indexed items to the total result
-  finalCalculatedResult += (totalItemsCount / 2) - currentMaximumFrequency;
+  logError(uniqueOddElements); // Debugging output for odd elements.
+  logError(uniqueEvenElements); // Debugging output for even elements.
 
-  // Reset the maximum frequency tracker for the next phase
-  currentMaximumFrequency = 0;
-
-  // If the dominant odd value is also present in the even-indexed unique keys, remove it
-  // This ensures that the two most frequent values (one from each parity group) are distinct
-  const positionInEvenKeys = uniqueEvenKeys.indexOf(dominantOddValue);
-  if (positionInEvenKeys !== -1) {
-    uniqueEvenKeys.splice(positionInEvenKeys, 1);
-  }
-
-  // Find the most frequent value among even-indexed items (after potential removal)
-  for (let currentIdx = 0; currentIdx < uniqueEvenKeys.length; currentIdx++) {
-    if (dominantOddValue === uniqueEvenKeys[currentIdx]) {
-      // This comment marks a line that was present but inactive in the original code.
-      // Its presence maintains structural similarity without altering runtime behavior.
-      /* continue; */
-    }
-    currentMaximumFrequency = Math.max(currentMaximumFrequency, evenIndexedItemCounts[uniqueEvenKeys[currentIdx]]);
-  }
-
-  // Output debugging information to standard error, as per original's myerr usage
-  reportError(uniqueOddKeys);
-  reportError(uniqueEvenKeys);
-
-  // Add the required changes for the even-indexed items to the total result
-  finalCalculatedResult += (totalItemsCount / 2) - currentMaximumFrequency;
-
-  // Display the grand total of required changes
-  displayOutput(finalCalculatedResult);
+  // Calculate changes needed for even-indexed positions.
+  finalCount += (totalElements / 2) - currentMaxFreq;
+  
+  displayResult(finalCount); // Output the final calculated result.
 }
 
-// Initiate the program by fetching input and passing it to the main logic
-executeCoreLogic(acquireInput());
+// Execute the main processing function with input from stdin.
+processData(getInputData());

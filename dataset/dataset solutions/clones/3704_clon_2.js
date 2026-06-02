@@ -1,38 +1,46 @@
-"use strict"; /* Strict mode activated for cleaner code */
+"use strict";
 
-const processInput = ( inputString ) => {
-    // Trim any leading/trailing whitespace and split the input into lines
-    let dataLines = inputString.trim().split('\n');
+// This function serves as the primary entry point for processing the input data.
+const processInput = (inputString) => {
+    // First, clean up the input string by removing leading/trailing whitespace,
+    // then split it into an array of lines based on newline characters.
+    let processedLines = inputString.trim().split("\n");
 
-    // Parse the first line to get the total number of items, though it's not directly used later
-    const numItems = parseInt( dataLines[0] );
+    // The first line contains the number of elements, parsed as an integer.
+    const countElements = parseInt(processedLines[0], 10); // Explicitly specify radix 10
 
-    // Parse the second line, splitting by space and converting each part to an integer
-    const originalNumbers = dataLines[1].split(' ').map( ( element ) => parseInt( element ) );
+    // The second line contains space-separated numbers, which are then
+    // split into an array of strings and mapped to integers.
+    const dataArray = processedLines[1].split(" ").map(valStr => parseInt(valStr, 10));
 
-    // Initialize an array to store computed differences
-    let differencesList = [ ];
+    // Initialize an empty array to store calculated differences.
+    let diffsList = [];
 
-    // Iterate through the original numbers using their indices
-    for ( let loopIndex in originalNumbers ) {
-        // Calculate the difference: number at index minus (index + 1)
-        let currentDifference = originalNumbers[loopIndex] - ( parseInt(loopIndex) + 1 );
+    // Iterate over the indices of the dataArray.
+    // For each element, calculate a specific difference and add it to the diffsList.
+    for (let idx in dataArray) {
+        // Calculate the difference: current array element minus (its index + 1).
+        // The index is converted to an integer for arithmetic operation.
+        let currentDiff = dataArray[idx] - (parseInt(idx, 10) + 1);
 
-        // Add the calculated difference to our list
-        differencesList.push( currentDifference );
+        // Add the computed difference to our list.
+        diffsList.push(currentDiff);
     }
 
-    // Create a Set to store only the unique differences
-    let distinctValuesSet = new Set( differencesList );
+    // Create a Set from the list of differences to automatically remove duplicate values.
+    let uniqueDiffs = new Set(diffsList);
 
-    // Convert the Set back to an array, map each unique value to its absolute value,
-    // and then reduce them to find their sum. Finally, print the result.
+    // Convert the Set back to an array, then perform a series of operations:
+    // 1. Map each unique difference to its absolute value.
+    // 2. Reduce the array of absolute values to a single sum.
+    // Finally, print the resulting sum to the console.
     console.log(
-        [ ...distinctValuesSet ]
-            .map( ( val ) => Math.abs(val) )
-            .reduce( ( accumulator, currentVal ) => accumulator + currentVal )
+        [...uniqueDiffs]
+            .map(val => Math.abs(val)) // Transform each unique difference to its positive magnitude.
+            .reduce((accumulator, currentValue) => accumulator + currentValue) // Sum all absolute values.
     );
 };
 
-// Read the standard input and pass it to our main processing function
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Execute the main processing function by reading input from standard input.
+// The 'fs' module is used to read the file synchronously, and 'utf8' specifies the encoding.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

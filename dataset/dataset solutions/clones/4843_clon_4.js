@@ -1,39 +1,49 @@
-function processInputData(rawDataContent) {
-    const rawDataSections = rawDataContent.split(/\r?\n/);
-    const configurationValues = rawDataSections[0].split(' ').map(val => +val);
-    const permissibleSumLimit = configurationValues[1];
-    const initialItemCounts = rawDataSections[1].split(' ').map(val => +val);
+function processSweetData(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const firstLineElements = inputLines[0].split(' ');
+    const containerCount = parseInt(firstLineElements[0], 10);
+    const limitPerPair = parseInt(firstLineElements[1], 10);
 
-    function computeCumulativeAdjustment(itemsCollection, currentIndex, currentTotalAdjusted) {
-        if (currentIndex >= itemsCollection.length - 1) {
-            return currentTotalAdjusted;
-        }
+    let sweetUnits = inputLines[1].split(' ').map(Number);
 
-        let firstItemAmount = itemsCollection[currentIndex];
-        let secondItemAmount = itemsCollection[currentIndex + 1];
-        let combinedAmount = firstItemAmount + secondItemAmount;
-        let immediateAdjustment = 0;
+    const initialProcessingState = {
+        currentSweetUnits: sweetUnits,
+        consumedTotal: 0
+    };
 
-        let subsequentItemsCollection = [...itemsCollection];
+    const finalProcessingState = Array.from({ length: sweetUnits.length - 1 }, (_, k) => k).reduce((accumulator, currentIdx) => {
+        const { currentSweetUnits, consumedTotal } = accumulator;
 
-        if (combinedAmount > permissibleSumLimit) {
-            const surplusAmount = combinedAmount - permissibleSumLimit;
-            immediateAdjustment = surplusAmount;
+        const firstUnitIndex = currentIdx;
+        const secondUnitIndex = currentIdx + 1;
 
-            if (surplusAmount <= secondItemAmount) {
-                subsequentItemsCollection[currentIndex + 1] -= surplusAmount;
+        const firstUnitAmount = currentSweetUnits[firstUnitIndex];
+        const secondUnitAmount = currentSweetUnits[secondUnitIndex];
+
+        const currentPairSum = firstUnitAmount + secondUnitAmount;
+
+        if (currentPairSum > limitPerPair) {
+            const excessAmount = currentPairSum - limitPerPair;
+            const nextSweetUnits = currentSweetUnits.slice(); // Create a new array for modification
+            const nextConsumedTotal = consumedTotal + excessAmount;
+
+            if (excessAmount <= nextSweetUnits[secondUnitIndex]) {
+                nextSweetUnits[secondUnitIndex] -= excessAmount;
             } else {
-                const remainingSurplus = surplusAmount - secondItemAmount;
-                subsequentItemsCollection[currentIndex + 1] = 0;
-                subsequentItemsCollection[currentIndex] -= remainingSurplus;
+                const remainingExcess = excessAmount - nextSweetUnits[secondUnitIndex];
+                nextSweetUnits[secondUnitIndex] = 0;
+                nextSweetUnits[firstUnitIndex] -= remainingExcess;
             }
+            return {
+                currentSweetUnits: nextSweetUnits,
+                consumedTotal: nextConsumedTotal
+            };
+        } else {
+            return accumulator; // No change needed
         }
+    }, initialProcessingState);
 
-        return computeCumulativeAdjustment(subsequentItemsCollection, currentIndex + 1, currentTotalAdjusted + immediateAdjustment);
-    }
-
-    const finalAccumulatedAdjustment = computeCumulativeAdjustment(initialItemCounts, 0, 0);
-    console.log(finalAccumulatedAdjustment);
+    console.log(finalProcessingState.consumedTotal);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSweetData(require("fs").readFileSync("/dev/stdin", "utf8"));

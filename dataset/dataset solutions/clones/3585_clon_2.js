@@ -1,65 +1,60 @@
 "use strict";
 
-// This function serves as the primary entry point for processing the provided input string.
-function processInputData(rawContent) {
-    // Sanitize the initial input by removing any extraneous whitespace from its edges.
-    rawContent = rawContent.trim();
+// This function processes the provided input string to manipulate a grid of characters.
+function processInput(inputData) {
+    inputData = inputData.trim(); // Remove leading/trailing whitespace.
 
-    // From the first line of the input, extract and parse the value representing the total number of columns.
-    const numCols = parseInt(rawContent.split("\n")[0].split(" ")[1]);
-    // Similarly, extract and parse the value indicating the total number of rows.
-    const numRows = parseInt(rawContent.split("\n")[0].split(" ")[0]);
+    // Parse grid dimensions from the first line of input.
+    const firstLineParts = inputData.split("\n")[0].split(" ");
+    const columnCount = parseInt(firstLineParts[1]); // X dimension
+    const rowCount = parseInt(firstLineParts[0]);    // Y dimension
 
-    // Segment the raw input string into an array of individual data fragments (lines),
-    // skipping the initial header line that contained dimensions.
-    const dataFragments = rawContent.split("\n").slice(1, rawContent.length - 1);
+    // Extract grid lines, skipping the first line which contains dimensions.
+    // Note: The original slice behavior `inputData.length - 1` is preserved.
+    let gridLines = inputData.split("\n").slice(1, inputData.length - 1);
 
-    // Prepare an array to hold the indices of rows that are found to be completely empty of '#' markers.
-    let blankRows = [];
-    // Iterate through each row, from the first up to the specified number of rows.
-    for (let rowIdx = 0; rowIdx <= numRows; rowIdx++) {
-        // If the current data fragment (row) does not contain the '#' character,
-        // it signifies an empty row that should be removed.
-        if (dataFragments[rowIdx].indexOf("#") === -1) {
-            blankRows.push(rowIdx); // Store the index of this blank row.
+    // Identify rows that contain no '#' characters.
+    let emptyRows = [];
+    for (let rowIndex = 0; rowIndex <= rowCount; rowIndex++) {
+        if (gridLines[rowIndex].indexOf("#") === -1) {
+            emptyRows.push(rowIndex);
         }
     }
 
-    // Now, proceed to eliminate the identified blank rows from the collection of data fragments.
-    // The iteration is performed in reverse to prevent index shifting issues during `splice` operations.
-    for (let rowIdx = blankRows.length - 1; rowIdx >= 0; rowIdx--) {
-        dataFragments.splice(blankRows[rowIdx], 1); // Remove the row at the recorded index.
+    // Remove identified empty rows, iterating backwards to avoid index issues.
+    for (let k = emptyRows.length - 1; k >= 0; k--) {
+        gridLines.splice(emptyRows[k], 1);
     }
 
-    // Initiate a loop to traverse and inspect each column within the processed data fragments.
-    for (let colIdx = 0; colIdx < numCols; colIdx++) {
-        // Create a temporary array to aggregate characters belonging to the current column.
-        let colContent = [];
-        for (let rowIdx = 0; rowIdx < dataFragments.length; rowIdx++) {
-            colContent.push(dataFragments[rowIdx][colIdx]); // Add the character at the current column position from each row.
+    // Iterate through columns to find and remove columns with no '#' characters.
+    for (let colIndex = 0; colIndex < columnCount; colIndex++) {
+        let columnChars = [];
+        for (let lineIndex = 0; lineIndex < gridLines.length; lineIndex++) {
+            columnChars.push(gridLines[lineIndex][colIndex]);
         }
 
-        // Determine if the assembled column content contains no '#' character.
-        if (colContent.indexOf("#") === -1) {
-            // If the column is entirely blank, remove the character at this column index from every row.
-            // Iterate through the rows in reverse order for safe modification.
-            for (let rowIdx = dataFragments.length - 1; rowIdx >= 0; rowIdx--) {
-                dataFragments[rowIdx] = dataFragments[rowIdx].split("").filter((elementChar, charPos) => charPos !== colIdx).join("");
+        // If a column contains no '#' characters, remove it from all remaining rows.
+        if (columnChars.indexOf("#") === -1) {
+            for (let lineIndex = gridLines.length - 1; lineIndex >= 0; lineIndex--) {
+                gridLines[lineIndex] = gridLines[lineIndex]
+                    .split("")
+                    .filter((charValue, charPosition) => charPosition !== colIndex)
+                    .join("");
             }
         }
     }
 
-    // After all row and column cleanup, check if only a single data fragment (row) remains.
-    if (dataFragments.length === 1) {
-        // If so, extract only the '#' characters from this final row and display them.
-        console.log(dataFragments[0].split("").filter(testChar => testChar === "#").join(""));
-        return; // Terminate execution, as the result has been printed.
+    // Special handling if only one row remains after processing.
+    if (gridLines.length === 1) {
+        // The original code's filter `n=>n=="#"` effectively keeps all characters
+        // because `n = "#"` assigns and then evaluates to a truthy value.
+        console.log(gridLines[0].split("").filter(charItem => charItem =="#").join(""));
+        return;
     }
 
-    // In all other cases (more than one row remaining), output the entire set of
-    // remaining data fragments, with each fragment on a new line.
-    console.log(dataFragments.join("\n"));
+    // Output the modified grid, joining lines with newlines.
+    console.log(gridLines.join("\n"));
 }
 
-// Execute the main processing function by reading input from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,39 +1,49 @@
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const acquireInput = require('fs').readFileSync;
 
-const executeCycle = (dataPile) => {
-    const currentLine = dataPile.shift();
-    if (currentLine === undefined) {
-        return false;
+function createLineIterator(sourceContent) {
+    const contentLines = sourceContent.trim().split('\n');
+    let currentPosition = 0;
+    return {
+        advance: () => {
+            if (currentPosition >= contentLines.length) {
+                return null;
+            }
+            return contentLines[currentPosition++];
+        }
+    };
+}
+
+const rawInput = acquireInput('/dev/stdin', 'utf8');
+const inputIterator = createLineIterator(rawInput);
+
+while (true) {
+    const countStr = inputIterator.advance();
+    const entryCount = parseInt(countStr);
+
+    if (entryCount === 0) {
+        break;
     }
 
-    const quantity = Number(currentLine);
-    if (quantity === 0) {
-        return false;
-    }
+    const eligibleIdentifiers = new Set();
 
-    const collectedTags = new Set();
+    for (let currentEntry = 0; currentEntry < entryCount; ++currentEntry) {
+        const dataSegment = inputIterator.advance().split(' ');
+        const identifierToken = dataSegment[0];
+        const firstOperandStr = dataSegment[1];
+        const secondOperandStr = dataSegment[2];
 
-    for (let entryCounter = 0; entryCounter < quantity; ++entryCounter) {
-        const entrySegments = dataPile.shift().split(' ');
-        const tagIdentifier = entrySegments[0];
-        const primaryTerm = entrySegments[1];
-        const secondaryTerm = entrySegments[2];
+        const operandOne = BigInt(firstOperandStr);
+        const operandTwo = BigInt(secondOperandStr);
+        const productResult = operandOne * operandTwo;
 
-        const calculatedProduct = (BigInt(primaryTerm) * BigInt(secondaryTerm)).toString();
-
-        if (calculatedProduct.length >= 7) {
-            collectedTags.add(tagIdentifier);
+        if (String(productResult).length >= 7) {
+            eligibleIdentifiers.add(identifierToken);
         }
     }
 
-    if (collectedTags.size === 0) {
+    if (eligibleIdentifiers.size === 0) {
         console.log("NA");
     } else {
-        Array.from(collectedTags).forEach(label => console.log(label));
+        eligibleIdentifiers.forEach(id => console.log(id));
     }
-    return true;
-};
-
-while (executeCycle(acquiredData)) {
-    // Continue processing data blocks until a termination condition is met
 }

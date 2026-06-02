@@ -1,26 +1,28 @@
-const fileSystem = require('node:fs');
-const sourceContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const fileSystemAccess = require('fs');
+const rawDataStream = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
 
-const contentLines = sourceContent.split('\n').filter(entry => entry.trim().length > 0);
+const processedSegments = rawDataStream.replace(/\n$/, "").split('\n');
+// Replicates `Arr.shift()-0` behavior: `"" - 0` results in `0`.
+const numberOfEntries = +processedSegments.shift();
 
-const totalCount = Number(contentLines[0]);
-const timeConfigurations = contentLines.slice(1, totalCount + 1);
+const decisionMatrix = [
+    { condition: (angularDelta) => angularDelta < 30, result: "alert" },
+    { condition: (angularDelta) => angularDelta >= 90 && angularDelta <= 180, result: "safe" },
+    { condition: (angularDelta) => true, result: "warning" } // Default outcome
+];
 
-const evaluatedOutcomes = timeConfigurations.map(timeSpecifier => {
-    const timeSegments = timeSpecifier.match(/^(\d{1,2}):(\d{2})$/);
+const computedResults = processedSegments.slice(0, numberOfEntries).map(timeExpression => {
+    const [hourPart, minutePart] = timeExpression.split(':');
+    const hourValue = parseInt(hourPart, 10);
+    const minuteValue = parseInt(minutePart, 10);
 
-    const clockHours = Number(timeSegments[1]);
-    const clockMinutes = Number(timeSegments[2]);
+    const hourHandPosition = (hourValue % 12) * 30 + minuteValue * 0.5;
+    const minuteHandPosition = minuteValue * 6;
 
-    const hourHandPosition = ((clockHours % 12) * 30) + (clockMinutes * 0.5);
-    const minuteHandPosition = clockMinutes * 6;
+    const absoluteAngleDifference = Math.abs(hourHandPosition - minuteHandPosition);
 
-    let angularDisparity = hourHandPosition - minuteHandPosition;
-    const absoluteAngularDisparity = (angularDisparity < 0) ? -angularDisparity : angularDisparity;
-
-    return (absoluteAngularDisparity < 30) ? "alert" :
-           (absoluteAngularDisparity >= 90 && absoluteAngularDisparity <= 180) ? "safe" :
-           "warning";
+    const applicableRule = decisionMatrix.find(rule => rule.condition(absoluteAngleDifference));
+    return applicableRule.result;
 });
 
-console.log(evaluatedOutcomes.join('\n'));
+computedResults.forEach(finalVerdict => console.log(finalVerdict));

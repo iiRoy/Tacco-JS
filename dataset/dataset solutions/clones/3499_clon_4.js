@@ -1,60 +1,44 @@
-const inputLines = [];
-const dataStreamProcessor = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const fileSystem = require('fs');
 
-dataStreamProcessor.on('line', (incomingData) => {
-    inputLines.push(incomingData);
-});
+function obtainUniquePrimeFactors(numeral) {
+    const distinctPrimes = new Set();
+    let workingValue = numeral;
+    let currentDivisor = 2;
 
-dataStreamProcessor.on('close', () => {
-    processInputValues(inputLines);
-});
-
-function retrievePrimeFactors(numericalValue) {
-    if (numericalValue <= 1) {
-        return [];
-    }
-    let remainingValue = numericalValue;
-    const uniquePrimeDivisors = new Set();
-    let potentialDivisor = 2;
-    while (potentialDivisor * potentialDivisor <= remainingValue) {
-        if (remainingValue % potentialDivisor === 0) {
-            uniquePrimeDivisors.add(potentialDivisor);
-            while (remainingValue % potentialDivisor === 0) {
-                remainingValue /= potentialDivisor;
+    while (currentDivisor * currentDivisor <= workingValue) {
+        if (workingValue % currentDivisor === 0) {
+            distinctPrimes.add(currentDivisor);
+            while (workingValue % currentDivisor === 0) {
+                workingValue /= currentDivisor;
             }
         }
-        potentialDivisor++;
+        currentDivisor++;
     }
-    if (remainingValue > 1) {
-        uniquePrimeDivisors.add(remainingValue);
+
+    if (workingValue > 1) {
+        distinctPrimes.add(workingValue);
     }
-    return Array.from(uniquePrimeDivisors);
+
+    return Array.from(distinctPrimes);
 }
 
-function processInputValues(receivedLines) {
-    const parsedNumbers = receivedLines[0].split(' ').map(Number);
-    const valueA = parsedNumbers[0];
-    const valueB = parsedNumbers[1];
+function processInputData(inputLines) {
+    const [initialDivisor, targetNumber] = inputLines[0].split(' ').map(Number);
 
-    if (valueB % valueA === 0) {
-        console.log(valueB / valueA);
-    } else {
-        const allPrimeDivisors = retrievePrimeFactors(valueB);
-        const eligibleDivisors = allPrimeDivisors.filter(
-            (divisorCandidate) => divisorCandidate >= valueA
-        );
+    const result = (targetNumber % initialDivisor === 0)
+        ? targetNumber / initialDivisor
+        : (() => {
+            const primeFactors = obtainUniquePrimeFactors(targetNumber);
+            const eligibleFactors = primeFactors.filter(factor => factor >= initialDivisor);
 
-        if (eligibleDivisors.length > 0) {
-            const smallestEligible = eligibleDivisors.reduce(
-                (currentMinimum, element) => (element < currentMinimum ? element : currentMinimum),
-                eligibleDivisors[0]
-            );
-            console.log(valueB / smallestEligible);
-        } else {
-            console.log(1);
-        }
-    }
+            const chosenFactor = eligibleFactors.length > 0
+                ? Math.min(...eligibleFactors)
+                : targetNumber;
+
+            return targetNumber / chosenFactor;
+        })();
+
+    console.log(result);
 }
+
+processInputData(fileSystem.readFileSync("/dev/stdin", "UTF-8").split("\n"));

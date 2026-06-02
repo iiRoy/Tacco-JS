@@ -1,96 +1,72 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code execution.
+"use strict";
 
 /**
- * Primary function to handle incoming text data, process it, and calculate a specific difference sum.
- * This function reads two lines of input: the first line contains a count, and the second line
- * contains a space-separated list of numbers. It then iterates through the numbers to
- * calculate a total adjustment required to make the sequence non-decreasing.
- * @param {string} incomingText The raw string input, typically from standard input.
+ * Processes the raw input string to calculate the minimum total adjustments
+ * required to make a sequence of numbers non-decreasing.
+ *
+ * @param {string} rawInputContent - The complete input string, typically read from stdin.
  */
-function processInputData(
-  incomingText
-) {
-  // Split the raw input string into individual lines, removing leading/trailing whitespace.
-  const processedLines = incomingText.trim().split(
-    "\n"
-  );
+function processInputData(rawInputContent) {
+  // Trim whitespace and split the input into individual lines.
+  const inputLines = rawInputContent.trim().split("\n");
 
-  // Parse the first line to get the total number of elements expected in the sequence.
-  const itemCount = Number(
-    processedLines[0]
-  );
+  // The first line contains the count of elements in the sequence.
+  const elementCount = Number(inputLines[0]);
 
-  // Split the second line into an array of string-represented numbers.
-  const valueTextArray = processedLines[1]
-    .split(" ");
+  // The second line contains space-separated numeric strings, which form the sequence.
+  const numericSequence = inputLines[1].split(" ");
 
-  // Initialize an accumulator for the total adjustments needed.
-  let cumulativeDifference = 0;
+  // Initialize a variable to store the cumulative sum of adjustments.
+  let totalAdjustments = 0;
 
-  // Loop through the array, comparing adjacent elements.
-  // The loop runs up to 'itemCount - 1' to ensure 'idx + 1' is always a valid index
-  // without going out of bounds.
-  for (
-    let idx = 0;
-    idx < itemCount - 1;
-    idx++
-  ) {
-    // If the current element is numerically greater than the next element, an adjustment is necessary.
-    if (
-      Number(valueTextArray[idx]) > Number(valueTextArray[idx + 1])
-    ) {
-      // Add the difference to the total cumulative difference.
-      cumulativeDifference += Number(valueTextArray[idx]) - Number(valueTextArray[idx + 1]);
+  // Iterate through the sequence from the first element up to the second-to-last.
+  // This allows comparison of each element with its immediate successor.
+  for (let currentIdx = 0; currentIdx < elementCount - 1; currentIdx++) {
+    const currentNumericValue = Number(numericSequence[currentIdx]);
+    const nextNumericValue = Number(numericSequence[currentIdx + 1]);
 
-      // Adjust the next element in the array to be equal to the current element's value (as a string).
-      // This modification ensures that subsequent comparisons reflect the change, effectively
-      // making the sequence non-decreasing from this point onward.
-      valueTextArray[idx + 1] = valueTextArray[idx];
+    // If the current element is greater than the next element, an adjustment is needed.
+    // The goal is to make the sequence non-decreasing.
+    if (currentNumericValue > nextNumericValue) {
+      // Calculate the difference that needs to be added to the total adjustments.
+      totalAdjustments += currentNumericValue - nextNumericValue;
+      // To ensure the sequence becomes non-decreasing at this point,
+      // the next element is set to the value of the current element.
+      // This modification affects subsequent comparisons in the loop.
+      numericSequence[currentIdx + 1] = numericSequence[currentIdx];
     }
   }
 
-  // Output the final calculated cumulative difference to the console.
-  console.log(
-    cumulativeDifference
-  );
+  // Output the final calculated sum of all necessary adjustments.
+  console.log(totalAdjustments);
 }
-
 
 /**
- * Sorts a given array of numbers in ascending order.
- * This function uses a custom comparison predicate for numerical sorting.
- * Note: This utility function is part of the code but not directly used by `processInputData`.
- * @param {Array<number>} inputList The array of numbers to be sorted.
- * @returns {Array<number>} The sorted array.
+ * Sorts an array of numbers in ascending order.
+ * This utility function is defined but not utilized by the primary logic.
+ *
+ * @param {Array<number>} targetArray - The array of numbers to be sorted.
+ * @returns {Array<number>} The same array, now sorted in ascending order.
  */
-function sortNumericalArray(
-  inputList
-) {
-  // Apply the custom comparison function to sort the array in place.
-  inputList.sort(
-    orderPredicate
-  );
-  // Return the modified (sorted) array.
-  return inputList;
+function sortNumericArray(targetArray) {
+  // Use the custom comparison function for proper numeric sorting.
+  targetArray.sort(ascendingComparator);
+  return targetArray;
 }
 
-
-// A comparison function used for sorting numbers in ascending order.
-// It returns a negative value if valA < valB, zero if valA == valB,
-// and a positive value if valA > valB.
-// Note: This comparison predicate is part of the code but not directly used by `processInputData`.
-var orderPredicate = function(
-  valA,
-  valB
-) {
-  return valA - valB;
+/**
+ * A comparison function designed for Array.prototype.sort() to sort numbers
+ * in ascending order.
+ *
+ * @param {number} valueA - The first number for comparison.
+ * @param {number} valueB - The second number for comparison.
+ * @returns {number} A negative value if valueA < valueB, 0 if equal,
+ *                   or a positive value if valueA > valueB.
+ */
+const ascendingComparator = function (valueA, valueB) {
+  return valueA - valueB;
 };
 
-
-// Entry point of the script:
-// Read input from standard input using the 'fs' module, decode it as UTF-8,
-// and pass the resulting string to the primary processing handler function.
-processInputData(
-  require("fs")
-  .readFileSync("/dev/stdin", "utf-8")
-);
+// Read the entire content from standard input synchronously and
+// then pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf-8"));

@@ -1,13 +1,13 @@
-function processInputData(dataStream) {
-  const relevantLines = dataStream.split("\n");
-  const numberTokens = relevantLines[1].split(" ");
-  
-  const distinctElements = new Set(numberTokens);
-  const uniqueElementCount = distinctElements.size;
-  
-  const finalValue = (uniqueElementCount % 2 === 0) ? (uniqueElementCount - 1) : uniqueElementCount;
-  
-  console.log(finalValue);
-}
+const processInput = (sourceText) => {
+  const lineSegments = sourceText.split('\n');
+  // The first line's value is not utilized in the original logic.
+  const elementCollection = lineSegments[1].split(' ');
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+  const uniqueElementSet = new Set(elementCollection);
+  const uniqueElementCount = uniqueElementSet.size;
+
+  const resultValue = uniqueElementCount - (uniqueElementCount % 2 === 0 ? 1 : 0);
+  console.log(resultValue);
+};
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

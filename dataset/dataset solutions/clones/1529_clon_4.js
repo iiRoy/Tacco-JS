@@ -1,42 +1,72 @@
-const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataSegments = fileData.split(/\s+/).filter(Boolean);
-let segmentPointer = 0;
+"use strict";
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+const tokenArray = sourceData.split(/ |\n/);
+let tokenIndex = 0;
 
-function acquireNumericInput() {
-    return BigInt(dataSegments[segmentPointer++]);
+function obtainNextNumber() {
+  return +tokenArray[tokenIndex++];
 }
 
-const primeDivisor = 1000000007n;
+const outputBuffer = [];
+function appendToOutput(content) {
+  outputBuffer.push(content);
+}
 
-function fastPower(baseValue, powerExponent) {
-    let outcome = 1n;
-    baseValue %= primeDivisor;
-    while (powerExponent > 0n) {
-        if (powerExponent % 2n === 1n) {
-            outcome = (outcome * baseValue) % primeDivisor;
-        }
-        baseValue = (baseValue * baseValue) % primeDivisor;
-        powerExponent /= 2n;
+const primeModulus = 1000000007;
+
+function computeModularProduct(...factors) {
+  let currentProduct = 1n;
+  const modulusBigInt = BigInt(primeModulus);
+  for (const factor of factors) {
+    currentProduct = (currentProduct * BigInt(factor)) % modulusBigInt;
+  }
+  return Number(currentProduct);
+}
+
+function computeModularPower(base, exponent) {
+  if (exponent === 0) return 1;
+  if (exponent === 1) return base % primeModulus;
+  
+  let halfPowerResult = computeModularPower(computeModularProduct(base, base), Math.floor(exponent / 2));
+  
+  if (exponent % 2 === 1) {
+    return computeModularProduct(halfPowerResult, base);
+  } else {
+    return halfPowerResult;
+  }
+}
+
+function normalizeModulo(value) {
+  return (value % primeModulus + primeModulus) % primeModulus;
+}
+
+function executeCoreLogic() {
+  const currentN = obtainNextNumber();
+  const basesForCalculation = [10, 9, 8];
+  const coefficientsForCalculation = [1, -2, 1];
+
+  let cumulativeSum = 0;
+
+  for (let i = 0; i < basesForCalculation.length; i++) {
+    const baseValue = basesForCalculation[i];
+    const coefficientValue = coefficientsForCalculation[i];
+
+    const termPower = computeModularPower(baseValue, currentN);
+
+    let termContribution;
+    if (coefficientValue === 1) {
+      termContribution = termPower;
+    } else if (coefficientValue === -2) {
+      termContribution = normalizeModulo(0 - computeModularProduct(2, termPower));
+    } else {
+      termContribution = computeModularProduct(coefficientValue, termPower);
     }
-    return outcome;
+    
+    cumulativeSum = normalizeModulo(cumulativeSum + termContribution);
+  }
+  return cumulativeSum;
 }
 
-function adjustToModulus(value) {
-    let result = value % primeDivisor;
-    return result < 0n ? result + primeDivisor : result;
-}
-
-function calculateFinalValue() {
-    const inputVal = acquireNumericInput();
-    
-    const termA = fastPower(10n, inputVal);
-    const termB = fastPower(9n, inputVal);
-    const termC = fastPower(8n, inputVal);
-    
-    let intermediateResult = termA - (2n * termB) + termC;
-    
-    return adjustToModulus(intermediateResult);
-}
-
-const programOutput = calculateFinalValue();
-console.log(String(programOutput));
+const finalResult = executeCoreLogic();
+if (finalResult !== undefined) console.log(String(finalResult));
+if (outputBuffer.length) console.log(outputBuffer.join("\n"));

@@ -1,37 +1,43 @@
-// This script processes numerical data from standard input to find combinations.
-process.stdin.on("data", function (inputChunk) {
-    // Convert the received data chunk to a string and then process each line.
-    (String(inputChunk)).trim().split("\n").some(function (lineStr) {
-        // Split the current line string by space to get individual numerical components.
-        let components = lineStr.split(" ");
+process.stdin.on(
+  "data",
+  function (inputBuffer) {
+    // Convert the incoming data buffer to a string, remove leading/trailing whitespace,
+    // and then split it into an array of individual lines.
+    // The 'some' method is used to iterate over these lines, allowing for early termination.
+    (String(inputBuffer))
+      .trim()
+      .split("\n")
+      .some(function (currentLine) {
+        // Divide the current line into parts based on space delimiters.
+        let lineParts = currentLine.split(" ");
 
-        // Extract and convert the numerical values for the total items and the desired sum.
-        const totalItemsAllowed = Number(components[0]);
-        const targetValueSum = Number(components[1]);
-        let validCombinationCount = 0; // Initialize a counter for successful combinations.
+        // Extract the two numerical values from the line parts.
+        // Initialize a counter for the number of valid combinations.
+        let upperBound = Number(lineParts[0]);
+        let targetSum = Number(lineParts[1]);
+        let combinationCount = 0;
 
-        // If both input values are zero, it's a signal to terminate processing.
-        if (!totalItemsAllowed && !targetValueSum) {
-            return true; // Return true to stop the 'some' loop.
+        // Check for the termination condition: if both numbers are zero.
+        if (!upperBound && !targetSum) {
+          return true; // Return true to stop the 'some' iteration.
         }
 
-        // Begin iterating through possible first numbers for the combination.
-        // The first number 'firstVal' can range from 1 up to 'totalItemsAllowed - 2'.
-        for (let firstVal = 1; firstVal <= totalItemsAllowed - 2; firstVal++) {
-            // Iterate through possible second numbers 'secondVal'.
-            // 'secondVal' must be greater than 'firstVal' and less than 'totalItemsAllowed'.
-            for (let secondVal = firstVal + 1; secondVal <= totalItemsAllowed - 1; secondVal++) {
-                // Iterate through possible third numbers 'thirdVal'.
-                // 'thirdVal' must be greater than 'secondVal' and less than or equal to 'totalItemsAllowed'.
-                for (let thirdVal = secondVal + 1; thirdVal <= totalItemsAllowed; thirdVal++) {
-                    // Check if the sum of the three selected numbers equals the target value.
-                    // If it does, increment the combination counter using short-circuit evaluation.
-                    (firstVal + secondVal + thirdVal === targetValueSum) && (validCombinationCount++);
-                }
+        // Begin a triple-nested loop to find combinations of three distinct integers (firstNum < secondNum < thirdNum).
+        // The integers must be within the range [1, upperBound].
+        for (let firstNum = 1; firstNum <= upperBound - 2; firstNum++) {
+          for (let secondNum = firstNum + 1; secondNum <= upperBound - 1; secondNum++) {
+            for (let thirdNum = secondNum + 1; thirdNum <= upperBound; thirdNum++) {
+              // If the sum of the three chosen numbers equals the target sum, increment the counter.
+              if (firstNum + secondNum + thirdNum === targetSum) {
+                combinationCount++;
+              }
             }
+          }
         }
-        // Output the final count of valid combinations found for the current line's inputs.
-        console.log(validCombinationCount);
-    });
-// Keep the standard input stream active to receive more data.
-}).resume();
+
+        // Print the final count of combinations found for the current input line.
+        console.log(combinationCount);
+        return false; // Return false to continue the 'some' iteration for the next line.
+      });
+  }
+).resume(); // Ensure the standard input stream remains active to receive data.

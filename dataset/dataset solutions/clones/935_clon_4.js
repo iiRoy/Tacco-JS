@@ -1,89 +1,83 @@
-const inputReader = require('readline');
-const outputDisplay = console.log;
+var log = console.log;
 
-async function initiateSequenceProcessing() {
-    const dataStreamHandler = inputReader.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        crlfDelay: Infinity
-    });
-
-    let collectedDataSegments = [];
-    for await (const segment of dataStreamHandler) {
-        collectedDataSegments.push(segment);
-    }
-
-    collectedDataSegments.shift();
-
-    processDataSegmentPairs(collectedDataSegments);
+if (typeof process != "undefined") {
+	var collectedInput = "";
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+	process.stdin.on('data', function (piece) {
+		collectedInput += piece;
+	});
+	process.stdin.on('end', function () {
+		run(collectedInput.split("\n"));
+	});
 }
 
-function processDataSegmentPairs(remainingSegments) {
-    if (remainingSegments.length === 0) {
-        return;
-    }
-
-    try {
-        const firstSource = remainingSegments[0];
-        const secondSource = remainingSegments[1];
-
-        const cleansedPrimary = extractAlphaLowercase(firstSource);
-        const cleansedSecondary = extractAlphaLowercase(secondSource);
-
-        const finalMetricValue = deriveComparativeMetric(cleansedPrimary, cleansedSecondary);
-        outputDisplay(finalMetricValue);
-
-        processDataSegmentPairs(remainingSegments.slice(2));
-
-    } catch (issue) {
-        outputDisplay(issue);
-        return;
-    }
+function run(allLines) {
+	var remaining = allLines.slice(1);
+	while (remaining.length > 0) {
+		try {
+			var pair = remaining.slice(0, 2).map(keepLowercaseLetters);
+			measurePair(pair);
+			remaining = remaining.slice(2);
+		} catch (error) {
+			log(error);
+		}
+	}
 }
 
-function extractAlphaLowercase(sourceString) {
-    return sourceString.replace(/[^a-z]/g, '');
+function keepLowercaseLetters(text) {
+	var found = text.match(/[a-z]/g);
+	return found ? found.join("") : "";
 }
 
-function deriveComparativeMetric(sequenceA, sequenceB) {
-    const lenA = sequenceA.length;
-    const lenB = sequenceB.length;
-    const memoMap = new Map();
-
-    function calculateRecursiveMetric(idxA, idxB) {
-        if (idxA < 0 || idxB < 0) {
-            return 0;
-        }
-
-        const currentKey = `${idxA}-${idxB}`;
-        if (memoMap.has(currentKey)) {
-            return memoMap.get(currentKey);
-        }
-
-        const currentCharacterMatch = (sequenceA.codePointAt(idxA) === sequenceB.codePointAt(idxB) ? 1 : 0);
-
-        let computedResult;
-        if (idxA === 0 && idxB === 0) {
-            computedResult = currentCharacterMatch;
-        } else if (idxA === 0) {
-            computedResult = Math.max(calculateRecursiveMetric(idxA, idxB - 1), currentCharacterMatch);
-        } else if (idxB === 0) {
-            computedResult = Math.max(calculateRecursiveMetric(idxA - 1, idxB), currentCharacterMatch);
-        } else {
-            const valueFromAbove = calculateRecursiveMetric(idxA - 1, idxB);
-            const valueFromLeft = calculateRecursiveMetric(idxA, idxB - 1);
-            const combinedPreviousValues = Math.max(valueFromAbove, valueFromLeft) + currentCharacterMatch;
-            const capLimit = Math.min(idxA, idxB) + 1;
-            computedResult = Math.min(combinedPreviousValues, capLimit);
-        }
-
-        memoMap.set(currentKey, computedResult);
-        return computedResult;
-    }
-
-    return calculateRecursiveMetric(lenA - 1, lenB - 1);
+function cellId(row, col) {
+	return row + ":" + col;
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
-    initiateSequenceProcessing();
+function measurePair(pair) {
+	var left = pair[0];
+	var right = pair[1];
+
+	if (left.length === 0) {
+		var emptyTable = [];
+		var rowAfterLoop = 0;
+		var colAfterLoop;
+		log(emptyTable[rowAfterLoop - 1][colAfterLoop - 1]);
+		return;
+	}
+
+	if (right.length === 0) {
+		log(undefined);
+		return;
+	}
+
+	var score = new Map();
+	var lastLayer = left.length + right.length - 2;
+
+	for (var layer = 0; layer <= lastLayer; layer++) {
+		var rowStart = Math.max(0, layer - right.length + 1);
+		var rowEnd = Math.min(left.length - 1, layer);
+
+		for (var row = rowStart; row <= rowEnd; row++) {
+			var col = layer - row;
+			var hit = left.charAt(row) == right.charAt(col) ? 1 : 0;
+			var best;
+
+			if (row === 0 && col === 0) {
+				best = hit;
+			} else if (row === 0) {
+				best = Math.max(score.get(cellId(row, col - 1)), hit);
+			} else if (col === 0) {
+				best = Math.max(score.get(cellId(row - 1, col)), hit);
+			} else {
+				var fromTop = score.get(cellId(row - 1, col));
+				var fromLeft = score.get(cellId(row, col - 1));
+				best = Math.min(Math.max(fromTop, fromLeft) + hit, Math.min(row, col) + 1);
+			}
+
+			score.set(cellId(row, col), best);
+		}
+	}
+
+	log(score.get(cellId(left.length - 1, right.length - 1)));
 }

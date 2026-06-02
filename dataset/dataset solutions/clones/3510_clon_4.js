@@ -1,60 +1,47 @@
-const performCalculation = (rawInput) => {
-  const lines = rawInput.trim().split('\n');
-  const totalElements = Number(lines[0]);
-  const elementStrings = lines[1].split(' ');
-
-  const segregatedElements = elementStrings.reduce((accumulator, currentString, index) => {
-    const numericValue = Number(currentString);
-    if (index % 2 === 0) {
-      accumulator.firstGroup.push(numericValue);
-    } else {
-      accumulator.secondGroup.push(numericValue);
+function getDominantFrequencies(dataArray) {
+    const frequencyMap = new Map();
+    for (const itemValue of dataArray) {
+        frequencyMap.set(itemValue, (frequencyMap.get(itemValue) || 0) + 1);
     }
-    return accumulator;
-  }, { firstGroup: [], secondGroup: [] });
 
-  const firstCollection = segregatedElements.firstGroup;
-  const secondCollection = segregatedElements.secondGroup;
+    const sortedFrequencyPairs = Array.from(frequencyMap.entries()).sort((pairA, pairB) => pairB[1] - pairA[1]);
 
-  const extractDominantFrequencies = (numericalSeries) => {
-    const frequencyMap = numericalSeries.reduce((acc, num) => {
-      acc.set(num, (acc.get(num) || 0) + 1);
-      return acc;
-    }, new Map());
+    const firstDominant = sortedFrequencyPairs[0] || [null, 0];
+    const secondDominant = sortedFrequencyPairs[1] || [null, 0];
 
-    const sortedFrequencies = Array.from(frequencyMap.entries())
-      .sort((a, b) => b[1] - a[1]);
+    return [firstDominant, secondDominant];
+}
 
-    const topEntry = sortedFrequencies[0] || [null, 0];
-    const secondEntry = sortedFrequencies[1] || [null, 0];
+function calculateMinimumReplacements(rawData) {
+    const lines = rawData.split('\n');
+    const totalElements = Number(lines[0]);
+    const allNumericValues = lines[1].split(' ').map(Number);
 
-    return [
-      { value: topEntry[0], count: topEntry[1] },
-      { value: secondEntry[0], count: secondEntry[1] }
-    ];
-  };
+    const evenPositionValues = [];
+    const oddPositionValues = [];
 
-  const dominantEvenIndexed = extractDominantFrequencies(firstCollection);
-  const dominantOddIndexed = extractDominantFrequencies(secondCollection);
+    allNumericValues.forEach((value, position) => {
+        if (position % 2 === 0) {
+            evenPositionValues.push(value);
+        } else {
+            oddPositionValues.push(value);
+        }
+    });
 
-  let finalOutcome = 0;
+    evenPositionValues.sort((a, b) => a - b);
+    oddPositionValues.sort((a, b) => a - b);
 
-  const firstEvenValue = dominantEvenIndexed[0].value;
-  const firstEvenCount = dominantEvenIndexed[0].count;
-  const secondEvenCount = dominantEvenIndexed[1].count;
+    const evenDominantFrequencies = getDominantFrequencies(evenPositionValues);
+    const oddDominantFrequencies = getDominantFrequencies(oddPositionValues);
 
-  const firstOddValue = dominantOddIndexed[0].value;
-  const firstOddCount = dominantOddIndexed[0].count;
-  const secondOddCount = dominantOddIndexed[1].count;
+    const finalReplacementCount = (evenDominantFrequencies[0][0] !== oddDominantFrequencies[0][0])
+        ? totalElements - (evenDominantFrequencies[0][1] + oddDominantFrequencies[0][1])
+        : totalElements - Math.max(
+            evenDominantFrequencies[1][1] + oddDominantFrequencies[0][1],
+            evenDominantFrequencies[0][1] + oddDominantFrequencies[1][1]
+        );
 
-  if (firstEvenValue !== firstOddValue) {
-    finalOutcome = totalElements - (firstEvenCount + firstOddCount);
-  } else {
-    const scenarioA = secondEvenCount + firstOddCount;
-    const scenarioB = firstEvenCount + secondOddCount;
-    finalOutcome = totalElements - Math.max(scenarioA, scenarioB);
-  }
-  console.log(finalOutcome);
-};
+    return finalReplacementCount;
+}
 
-performCalculation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+console.log(calculateMinimumReplacements(require('fs').readFileSync('/dev/stdin', 'utf8')));

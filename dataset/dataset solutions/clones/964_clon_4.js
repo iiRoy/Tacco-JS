@@ -1,69 +1,132 @@
-const systemConfig = { sourceData: '/dev/stdin', lineSeparator: '\n' };
+const appConfig = { input: '/dev/stdin', newline: '\n' };
 
-const dataStream = require('fs').readFileSync(systemConfig.sourceData, 'ascii');
-const parsedSegments = dataStream.trim().split(systemConfig.lineSeparator);
+const assert = require('assert');
 
-const totalVertices = Number(parsedSegments.shift());
+const fileContent = require('fs').readFileSync(appConfig.input, 'ascii');
+const inputLines = fileContent.trim().split(appConfig.newline);
 
-const graphStructure = new Array(totalVertices);
+const nodeCount = Number(inputLines.shift());
 
-for (let currentVertexId = 0; currentVertexId < totalVertices; currentVertexId++) {
-  graphStructure[currentVertexId] = {
-    identity: currentVertexId,
-    pathCost: Number.POSITIVE_INFINITY,
-    prior: null,
-    adjacencies: []
-  };
+const nodeRegistry = new Map();
+const adjacencyMatrix = new Map();
+
+function establishEdge(graphMap, source, destination, weight) {
+  if (!graphMap.has(source)) {
+    graphMap.set(source, new Map());
+  }
+  graphMap.get(source).set(destination, weight);
 }
 
-for (let segmentIndex = 0; segmentIndex < parsedSegments.length; segmentIndex++) {
-  const lineParts = parsedSegments[segmentIndex].split(' ').map(Number);
-  const originatingNodeId = lineParts[0];
+for (const currentLine of inputLines) {
+  const parsedSegment = currentLine.split(' ').map(Number);
+  const sourceNodeId = parsedSegment[0];
 
-  for (let connectionSegment = 2; connectionSegment < lineParts.length; connectionSegment += 2) {
-    const terminatingNodeId = lineParts[connectionSegment];
-    const edgeExpense = lineParts[connectionSegment + 1];
-    graphStructure[originatingNodeId].adjacencies.push({ destination: terminatingNodeId, expense: edgeExpense });
+  if (!nodeRegistry.has(sourceNodeId)) {
+    nodeRegistry.set(sourceNodeId, {
+      identifier: sourceNodeId,
+      currentDistance: Number.POSITIVE_INFINITY,
+      predecessor: null,
+    });
+  }
+
+  for (let edgeIdx = 2; edgeIdx < parsedSegment.length; edgeIdx += 2) {
+    const targetNodeId = parsedSegment[edgeIdx];
+    const edgeWeight = parsedSegment[edgeIdx + 1];
+
+    if (!nodeRegistry.has(targetNodeId)) {
+      nodeRegistry.set(targetNodeId, {
+        identifier: targetNodeId,
+        currentDistance: Number.POSITIVE_INFINITY,
+        predecessor: null,
+      });
+    }
+    establishEdge(adjacencyMatrix, sourceNodeId, targetNodeId, edgeWeight);
   }
 }
 
-graphStructure[0].pathCost = 0; // Assuming node 0 is the starting point
+if (nodeRegistry.has(0)) {
+  nodeRegistry.get(0).currentDistance = 0;
+}
 
-function computeOptimalRoutes(vertexCollection) {
-  const unvisitedPoints = new Set(vertexCollection.map(v => v.identity));
+let priorityQueueBuckets = new Map();
+let minDistanceKey = Number.POSITIVE_INFINITY;
 
-  while (unvisitedPoints.size > 0) {
-    let currentPathfinder = null;
-    let lowestKnownCost = Number.POSITIVE_INFINITY;
+function placeNodeInQueue(nodeIdentifier, distance) {
+  if (!priorityQueueBuckets.has(distance)) {
+    priorityQueueBuckets.set(distance, new Set());
+  }
+  priorityQueueBuckets.get(distance).add(nodeIdentifier);
+  minDistanceKey = Math.min(minDistanceKey, distance);
+}
 
-    for (const pointId of unvisitedPoints) {
-      const candidatePoint = vertexCollection[pointId];
-      if (candidatePoint.pathCost < lowestKnownCost) {
-        lowestKnownCost = candidatePoint.pathCost;
-        currentPathfinder = candidatePoint;
+function retrieveMinimumNode() {
+  while (priorityQueueBuckets.size > 0) {
+    while (
+      !priorityQueueBuckets.has(minDistanceKey) ||
+      priorityQueueBuckets.get(minDistanceKey).size === 0
+    ) {
+      minDistanceKey++;
+      if (minDistanceKey > Number.MAX_SAFE_INTEGER || priorityQueueBuckets.size === 0) {
+        return null;
       }
     }
 
-    if (currentPathfinder === null) {
+    const extractedId = priorityQueueBuckets.get(minDistanceKey).values().next().value;
+    priorityQueueBuckets.get(minDistanceKey).delete(extractedId);
+
+    if (priorityQueueBuckets.get(minDistanceKey).size === 0) {
+      priorityQueueBuckets.delete(minDistanceKey);
+    }
+
+    return { identifier: extractedId, distanceAtExtraction: minDistanceKey };
+  }
+  return null;
+}
+
+function evaluatePathImprovement(currentVertex, neighborVertex, weightsMap) {
+  const pathWeight = weightsMap.get(currentVertex.identifier).get(neighborVertex.identifier);
+  if (currentVertex.currentDistance !== Number.POSITIVE_INFINITY &&
+      neighborVertex.currentDistance > currentVertex.currentDistance + pathWeight) {
+    neighborVertex.currentDistance = currentVertex.currentDistance + pathWeight;
+    neighborVertex.predecessor = currentVertex.identifier;
+    placeNodeInQueue(neighborVertex.identifier, neighborVertex.currentDistance);
+  }
+}
+
+function calculateShortestPaths(weightsMap) {
+  const startNode = nodeRegistry.get(0);
+  if (startNode) {
+    placeNodeInQueue(startNode.identifier, startNode.currentDistance);
+  }
+
+  while (true) {
+    const extractedInfo = retrieveMinimumNode();
+    if (extractedInfo === null) {
       break;
     }
 
-    unvisitedPoints.delete(currentPathfinder.identity);
+    const currentId = extractedInfo.identifier;
+    const distFromQueue = extractedInfo.distanceAtExtraction;
+    const currentVertex = nodeRegistry.get(currentId);
 
-    for (const currentConnection of currentPathfinder.adjacencies) {
-      const neighborPoint = vertexCollection[currentConnection.destination];
-      const potentialNewCost = currentPathfinder.pathCost + currentConnection.expense;
+    if (currentVertex.currentDistance < distFromQueue) {
+      continue;
+    }
 
-      if (potentialNewCost < neighborPoint.pathCost) {
-        neighborPoint.pathCost = potentialNewCost;
-        neighborPoint.prior = currentPathfinder.identity;
+    const neighbors = weightsMap.get(currentId);
+    if (neighbors) {
+      for (const [neighborId, weight] of neighbors) {
+        const neighborVertex = nodeRegistry.get(neighborId);
+        if (neighborVertex) {
+          evaluatePathImprovement(currentVertex, neighborVertex, weightsMap);
+        }
       }
     }
   }
 }
 
-computeOptimalRoutes(graphStructure);
+calculateShortestPaths(adjacencyMatrix);
 
-for (let resultIndex = 0; resultIndex < totalVertices; resultIndex++) {
-  console.log(`${graphStructure[resultIndex].identity} ${graphStructure[resultIndex].pathCost}`);
+for (const [nodeId, nodeDetails] of nodeRegistry) {
+  console.log("%s %d", nodeId, nodeDetails.currentDistance);
 }

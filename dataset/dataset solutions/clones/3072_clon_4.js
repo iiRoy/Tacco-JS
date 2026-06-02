@@ -1,28 +1,27 @@
 'use strict';
 
-const retrieveSourceContent = () => require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(rawContent) {
+    const numericLines = rawContent.split('\n')
+                                   .filter(line => line.trim() !== '')
+                                   .map(Number);
 
-const analyzeNumericFeed = (incomingDataStream) => {
-    const parsedEntities = incomingDataStream
-        .split('\n')
-        .filter(segment => segment.trim() !== '')
-        .map(Number);
+    const firstValue = numericLines[0];
+    const remainingValues = numericLines.slice(1);
 
-    if (parsedEntities.length < 2) {
-        console.log(NaN);
-        return;
-    }
+    return { primaryCount: firstValue, divisorCandidates: remainingValues };
+}
 
-    const primaryTarget = parsedEntities[0];
-    const auxiliaryMeasures = parsedEntities.slice(1);
+function calculateFinalResult(primaryCount, divisorCandidates) {
+    const minimumDivisor = Math.min(...divisorCandidates);
+    const ceilingDivisionResult = Math.ceil(primaryCount / minimumDivisor);
+    const finalAnswer = ceilingDivisionResult + 4;
+    return finalAnswer;
+}
 
-    const criticalThreshold = Math.min(...auxiliaryMeasures);
+function executeProgram(inputString) {
+    const { primaryCount, divisorCandidates } = processInputData(inputString);
+    const finalOutput = calculateFinalResult(primaryCount, divisorCandidates);
+    console.log(finalOutput);
+}
 
-    const limitingConstraint = Math.ceil(primaryTarget / criticalThreshold);
-
-    const finalEvaluation = limitingConstraint + 4;
-
-    console.log(finalEvaluation);
-};
-
-analyzeNumericFeed(retrieveSourceContent());
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

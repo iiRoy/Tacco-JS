@@ -1,68 +1,57 @@
-(function(originalDataInput) {
-  const lineSegments = originalDataInput.split('\n').filter(segment => segment.length > 0);
+'use strict';
+(function(fileSystemModule) {
+  const inputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-  const processedUnits = [];
-  let currentUnitBuild = null;
+  const blockPattern = /[A-Za-z]+\n([1-9][0-9]*\n)+/g;
+  const allMatchedBlocks = inputContent.match(blockPattern);
 
-  for (const currentInputLine of lineSegments) {
-    if (currentInputLine.match(/^[A-Za-z]+$/)) {
-      if (currentUnitBuild) {
-        processedUnits.push(currentUnitBuild);
-      }
-      currentUnitBuild = { initialText: currentInputLine, numericalSeries: [] };
-    } else if (currentInputLine.match(/^[1-9][0-9]*$/)) {
-      if (currentUnitBuild) {
-        currentUnitBuild.numericalSeries.push(parseInt(currentInputLine, 10));
-      }
-    }
-  }
-  if (currentUnitBuild) {
-    processedUnits.push(currentUnitBuild);
-  }
+  // The original code would throw a TypeError if allMatchedBlocks is null
+  // (e.g., if inputContent does not match the regex at all)
+  // when attempting to call .map() on it.
+  // The for...of loop will similarly throw a TypeError if allMatchedBlocks is null,
+  // preserving this error behavior.
 
-  const finalOutputElements = [];
-  for (const dataUnit of processedUnits) {
-    const basePhrase = dataUnit.initialText;
-    const allNumericFactors = dataUnit.numericalSeries;
+  const finalOutputSegments = [];
 
-    if (allNumericFactors.length === 0) {
-      finalOutputElements.push(basePhrase);
-      continue;
-    }
+  for (const currentRawBlock of allMatchedBlocks) {
+    // Decompose each matched block into its initial string and numeric lines.
+    // The outer blockPattern ensures this inner regex will always match.
+    const blockDecomposition = currentRawBlock.match(/^([A-Za-z]+)\n([\s\S]*)$/);
 
-    const rotationCountSpecifier = allNumericFactors[0];
-    const effectiveRotationValues = allNumericFactors.slice(allNumericFactors.length - rotationCountSpecifier);
+    const baseString = blockDecomposition[1];
+    const numericLines = blockDecomposition[2].split('\n').filter(Boolean);
 
-    let activePhrase = basePhrase;
-    for (let k = 0; k < effectiveRotationValues.length; k++) {
-      const shiftAmount = effectiveRotationValues[k];
+    // The original code's v.slice(-v[1]) effectively extracts only the last number
+    // from the sequence of numbers in a block.
+    const lastNumericValueStr = numericLines[numericLines.length - 1];
+    const rotationMagnitude = Number(lastNumericValueStr);
 
-      let phraseCharacterArray = Array.from(activePhrase);
-      const phraseLength = phraseCharacterArray.length;
+    // Preserve exact console output as per Type IV rules.
+    console.log(rotationMagnitude);
 
-      if (phraseLength === 0) {
-          continue;
-      }
+    const stringCharacterArray = Array.from(baseString);
+    const stringLength = stringCharacterArray.length;
 
-      const actualShiftModulo = shiftAmount % phraseLength;
-
-      if (actualShiftModulo === 0) {
+    if (stringLength === 0) {
+        finalOutputSegments.push('');
         continue;
-      }
-
-      const movedCharacters = [];
-      for (let i = 0; i < actualShiftModulo; i++) {
-        movedCharacters.push(phraseCharacterArray.shift());
-      }
-      for (let i = 0; i < movedCharacters.length; i++) {
-        phraseCharacterArray.push(movedCharacters[i]);
-      }
-
-      activePhrase = phraseCharacterArray.join('');
     }
-    finalOutputElements.push(activePhrase);
+
+    // Calculate the effective rotation amount, handling cases where
+    // rotationMagnitude is greater than or equal to the string length.
+    const effectiveRotation = rotationMagnitude % stringLength;
+
+    // Create a new array to store the rotated characters.
+    const rotatedCharacterSequence = new Array(stringLength);
+
+    // Perform the cyclic right rotation using array indexing and modulo arithmetic.
+    for (let charIndex = 0; charIndex < stringLength; charIndex++) {
+        rotatedCharacterSequence[charIndex] = stringCharacterArray[(effectiveRotation + charIndex) % stringLength];
+    }
+
+    const rotatedStringResult = rotatedCharacterSequence.join('');
+    finalOutputSegments.push(rotatedStringResult);
   }
 
-  console.log(finalOutputElements.join('\n'));
-
-}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+  console.log(finalOutputSegments.join('\n'));
+}(require('fs')));

@@ -1,52 +1,22 @@
-/*
- * This is a JavaScript program designed to solve a specific problem.
- * It utilizes 'strict' mode for better error handling and code quality.
- */
-'use strict' ; /* Enforces strict parsing and error handling in the code */
-
-// The primary function that encapsulates the main logic of the program.
-function   main   (   input   )       {
-
-  // Step 1: Process the raw input string.
-  // It's assumed the input consists of multiple lines, separated by newline characters.
-  const   lines   =   input . split ( '\n' ) ; /* Divides the input into an array of strings, one for each line */
+'use strict';
 
 
-  /*
-   * Step 2: Parse the first line of input.
-   * This line is expected to contain an integer value, often representing a count or size.
-   */
-  const   N   =   parseInt ( lines [ 0 ] ) ; // Converts the first line string to an integer
+// 読み取り 整理する 現在のブロックの終端 出力前に有効.
+	function main(input) {
+const lines = input.split('\n');
+  const N = parseInt(lines[0]);
+// 読み取り また整理する 受け取ったデータ 入力と共に短く.
+      const l = lines[1]
+.split(' ')
+    .map(Number )
+/* ========== 読み取り ここで整理する 最終の期待される出力 計算中に. ========== */
+        .sort ((a,b)=>  a- b );
 
 
-  // Step 3: Extract and process data from the second line.
-  // This involves several transformations: splitting, converting to numbers, and sorting.
-  const   l   =   lines [ 1 ]
-    . split ( ' ' ) /* Splits the second line by spaces into an array of string numbers */
-    . map ( Number ) /* Transforms each string number in the array to an actual number type */
-    . sort ( ( a , b ) => a - b ) ; // Sorts the array of numbers in ascending order
+	      const max = l.pop();
+	      const sum = l.reduce((prev, curr, i, arr) => prev + curr);
+  console.log(max < sum ? 'Yes' : 'No');  // 読み取り よく整理する 重要な主要な操作 計算中に内部.
+		}   
+         main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-
-  /*
-   * Step 4: Determine the maximum value.
-   * Since the array 'l' is sorted, the largest element is at the end.
-   * The 'pop()' method conveniently removes and returns this last element.
-   */
-  const   max   =   l . pop ( ) ; // Retrieves the largest number and removes it from 'l'
-
-
-  // Step 5: Calculate the sum of the remaining elements.
-  // The 'reduce()' method is used to aggregate all elements into a single sum.
-  const   sum   =   l . reduce ( ( prev , curr , i , arr ) => prev + curr ) ; /* Sums all remaining numbers in the array 'l' */
-
-
-  // Step 6: Output the final result based on a comparison.
-  // The program checks if the 'max' value is less than the 'sum' of the others.
-  console . log ( max   <   sum   ?   'Yes'   :   'No' ) ; // Prints 'Yes' or 'No' to the console
-
-} // End of the 'main' function definition.
-
-
-// This section handles the execution of the program.
-// It reads input from standard input and passes it to the 'main' function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ; /* Invokes the main function with content read from stdin */
+// 読み取り よく整理する 重要なデータの移動 開始時に単純.

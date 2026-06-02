@@ -1,28 +1,49 @@
-function executeSequence(dataSource) {
-    const parsedLines = dataSource.split("\n");
+function insertSorted(sortedArray, element) {
+    if (sortedArray.length === 0) {
+        return [element];
+    }
 
-    const initialElements = parsedLines[1].split(" ").map(Number).sort((first, second) => first - second);
-
-    const combineAndReduce = (workingSet) => {
-        if (workingSet.length === 1) {
-            return workingSet[0];
+    function findInsertIndex(arr, val, start, end) {
+        if (start > end) {
+            return start;
         }
+        const mid = Math.floor((start + end) / 2);
+        if (arr[mid] === val) {
+            return mid;
+        } else if (arr[mid] < val) {
+            return findInsertIndex(arr, val, mid + 1, end);
+        } else {
+            return findInsertIndex(arr, val, start, mid - 1);
+        }
+    }
 
-        const smallestA = workingSet[0];
-        const smallestB = workingSet[1];
-
-        const intermediateAverage = (smallestA + smallestB) / 2;
-
-        const updatedSet = workingSet.slice(2).concat([intermediateAverage]);
-
-        const reorderedSet = updatedSet.sort((first, second) => first - second);
-
-        return combineAndReduce(reorderedSet);
-    };
-
-    const finalOutcome = combineAndReduce(initialElements);
-
-    console.log(finalOutcome);
+    const insertionPoint = findInsertIndex(sortedArray, element, 0, sortedArray.length - 1);
+    return [...sortedArray.slice(0, insertionPoint), element, ...sortedArray.slice(insertionPoint)];
 }
 
-executeSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+function processNumbers(currentSortedNumbers) {
+    if (currentSortedNumbers.length === 1) {
+        return currentSortedNumbers[0];
+    }
+
+    const firstVal = currentSortedNumbers[0];
+    const secondVal = currentSortedNumbers[1];
+    const computedAverage = (firstVal + secondVal) / 2;
+
+    const remainingElements = currentSortedNumbers.slice(2);
+
+    const nextSortedNumbers = insertSorted(remainingElements, computedAverage);
+
+    return processNumbers(nextSortedNumbers);
+}
+
+function EntryPoint(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const initialNumbers = inputLines[1].split(" ").map(Number);
+    initialNumbers.sort((a, b) => a - b);
+
+    const finalResult = processNumbers(initialNumbers);
+    console.log(finalResult);
+}
+
+EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8").trim());

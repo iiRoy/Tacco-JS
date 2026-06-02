@@ -1,32 +1,16 @@
-/*
- * This module performs essential arithmetic calculations
- * based on provided string data.
- * It's designed for handling two numerical inputs.
- */
-function ProcessInputData( inputContent )
-{
-    // Declare a new variable to hold the processed numerical values.
-    // The input string is first divided by whitespace, then each segment
-    // is converted into a floating-point number.
-    let  parsedNumbers = inputContent .split( /[\s]+/ ) .map( parseFloat ) ;
+function ProcessInput (rawData) {
+    // This function processes the raw input string.
+    // It splits the string by spaces and converts each part to a number.
+    var numericValues = rawData.split(" ").map(Number);
 
-    // Perform calculations and output the results.
-    // Calculations include integer division, modulus, and a precise float division.
-    console.log(
-        "Quotient: %d; Remainder: %d; Precise Result: %s",
-        Math.trunc( parsedNumbers[ 0 ] / parsedNumbers[ 1 ] ), // Calculate the integer part of the division
-        parsedNumbers[ 0 ] % parsedNumbers[ 1 ],             // Determine the remainder of the division
-        ( parsedNumbers[ 0 ] / parsedNumbers[ 1 ] ).toFixed( 6 ) // Compute the full division to 6 decimal places
-    ) ;
-} // End of ProcessInputData function definition
+    // Calculate integer division, remainder, and floating-point division.
+    let quotientInteger = Math.floor(numericValues[0] / numericValues[1]);
+    let remainderValue = numericValues[0] % numericValues[1];
+    let preciseQuotient = (numericValues[0] / numericValues[1]).toFixed(6);
 
+    // Output the results in a formatted string.
+    console.log("%d %d %d", quotientInteger, remainderValue, preciseQuotient);
+}
 
-// --- Main execution block ---
-// Reads data from standard input and passes it to the processing function.
-ProcessInputData(
-    require("fs")
-        .readFileSync(
-            "/dev/stdin", // Standard input file path
-            "utf8"        // Encoding type for reading the file
-        )
-) ; // Function call concludes
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

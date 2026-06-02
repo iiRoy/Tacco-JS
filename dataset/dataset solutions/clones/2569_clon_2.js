@@ -1,15 +1,18 @@
-"use strict" ;
+"use strict";
 
-let   executeProcessing   =   (   inputContent   )   =>   {
-    // Adjust the raw input string by trimming and splitting into lines
-    inputContent = inputContent . trim ( ) . split ( "\n" ) ;
+/*
+ * This module processes some input data.
+ */
+const processInput = (inputData) => {
+  // Clean up the raw input string and split it into lines.
+  inputData = inputData.trim().split("\n");
 
-    // Extract the primary numerical value from the first line
-    const   primaryNumber   =   parseInt (   inputContent[0]   ) ;
+  // Parse the first line as an integer.
+  const numberValue = parseInt(inputData[0]);
 
-    // Display the cubic value of the extracted number
-    console . log (   primaryNumber   *   primaryNumber   *   primaryNumber   ) ;
-}   ;
+  // Calculate the cube of the obtained number and print it to the console.
+  console.log(numberValue * numberValue * numberValue);
+};
 
-// Obtain textual data from the standard input stream and pass it for execution
-executeProcessing (   require ( 'fs' ) . readFileSync (   '/dev/stdin'   ,   'utf8'   )   )   ;
+// Read data from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

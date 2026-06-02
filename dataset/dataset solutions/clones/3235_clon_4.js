@@ -1,19 +1,11 @@
-function calculateMetrics(sourceString) {
-    const extractedNumbers = sourceString.match(/\d+/g).map(Number);
+const processData = (rawDataString) => {
+    const [totalCapacity, firstGroupSize, secondGroupSize] = rawDataString.split(" ").map(Number);
 
-    const universeCapacity = extractedNumbers[0];
-    const groupOneSize = extractedNumbers[1];
-    const groupTwoSize = extractedNumbers[2];
+    const minimumOfGroups = Math.min(firstGroupSize, secondGroupSize);
 
-    const minimumGroupSize = (groupOneSize < groupTwoSize) ? groupOneSize : groupTwoSize;
+    const unaccommodatedCount = Math.max(0, firstGroupSize + secondGroupSize - totalCapacity);
 
-    const aggregateSize = groupOneSize + groupTwoSize;
-    const excessBeyondCapacity = aggregateSize - universeCapacity;
-    
-    // This calculates Math.max(0, excessBeyondCapacity)
-    const requiredOverlap = excessBeyondCapacity * (excessBeyondCapacity > 0);
+    console.log('%d %d', minimumOfGroups, unaccommodatedCount);
+};
 
-    console.log(`${minimumGroupSize} ${requiredOverlap}`);
-}
-
-calculateMetrics(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

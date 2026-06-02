@@ -1,42 +1,29 @@
-const filesystemAccess = require('fs');
+let accumulatedData = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (inputChunk) => {
+  accumulatedData += inputChunk;
+});
 
-function calculateSquared(operand) {
-    return operand * operand;
-}
+process.stdin.on('end', () => {
+  const processedInput = accumulatedData.trim();
+  const numericStrings = processedInput.split(' ');
 
-function produceFormattedNumber(valueToFormat) {
-    const precisionMultiplier = 1000000; // For 6 decimal places (10^6)
-    let roundedValue = Math.round(valueToFormat * precisionMultiplier);
-    let stringRepresentation = String(roundedValue);
+  const pointOneX = Number(numericStrings[0]);
+  const pointOneY = Number(numericStrings[1]);
+  const pointTwoX = Number(numericStrings[2]);
+  const pointTwoY = Number(numericStrings[3]);
 
-    // Pad with leading zeros if the number is very small (e.g., 0.000001)
-    // We need at least 7 digits to represent "0.000000" correctly after splitting
-    while (stringRepresentation.length < 7) {
-        stringRepresentation = '0' + stringRepresentation;
-    }
+  const calculateSquaredDifference = (valA, valB) => {
+    const difference = valA - valB;
+    return difference * difference;
+  };
 
-    // Insert the decimal point 6 characters from the end
-    let finalFormatted = stringRepresentation.slice(0, -6) + '.' + stringRepresentation.slice(-6);
-    return finalFormatted;
-}
+  const squaredDeltaX = calculateSquaredDifference(pointOneX, pointTwoX);
+  const squaredDeltaY = calculateSquaredDifference(pointOneY, pointTwoY);
 
-(function entryPoint() {
-    const rawInputContent = filesystemAccess.readFileSync(0, 'utf8').trim();
-    const coordinateStrings = rawInputContent.split(' ');
+  const sumOfSquaredComponents = squaredDeltaX + squaredDeltaY;
+  const finalEuclideanDistance = Math.sqrt(sumOfSquaredComponents);
 
-    const pointOneX = Number(coordinateStrings[0]);
-    const pointOneY = Number(coordinateStrings[1]);
-    const pointTwoX = Number(coordinateStrings[2]);
-    const pointTwoY = Number(coordinateStrings[3]);
-
-    const deltaXValue = pointOneX - pointTwoX;
-    const deltaYValue = pointOneY - pointTwoY;
-
-    const squaredDeltaX = calculateSquared(deltaXValue);
-    const squaredDeltaY = calculateSquared(deltaYValue);
-
-    const sumOfSquaresComponents = squaredDeltaX + squaredDeltaY;
-    const finalMagnitude = Math.sqrt(sumOfSquaresComponents);
-
-    console.log(produceFormattedNumber(finalMagnitude));
-})();
+  console.log(finalEuclideanDistance.toFixed(6));
+});

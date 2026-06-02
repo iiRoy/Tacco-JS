@@ -1,11 +1,15 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const initialSegments = sourceData.split('\n');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').split(/\n/);
 
-const haltIndex = initialSegments.indexOf('0');
-const activeSegments = haltIndex === -1 ? initialSegments : initialSegments.slice(0, haltIndex);
+sourceData.every(function(currentLine) {
+    if (currentLine === '0') {
+        return false;
+    }
 
-const calculateDigitSum = (textualNumber) => Array.from(textualNumber).reduce((currentTotal, singleDigitChar) => currentTotal + Number(singleDigitChar), 0);
+    const digitSum = currentLine.split('').reduce(function(accumulator, currentDigitChar) {
+        return accumulator + Number(currentDigitChar);
+    }, 0);
 
-const resultantValues = activeSegments.map(calculateDigitSum);
+    console.log(digitSum);
 
-resultantValues.forEach(outputValue => process.stdout.write(outputValue + '\n'));
+    return true;
+});

@@ -1,15 +1,20 @@
 'use strict';
-((processSource) => {
-    const contentPayload = processSource.toString().trim().split('\n');
 
-    ((overallDurationInSeconds) => {
-        const calculatedHours = Math.floor(overallDurationInSeconds / 3600);
-        const remainderAfterHours = overallDurationInSeconds % 3600;
-        const calculatedMinutes = Math.floor(remainderAfterHours / 60);
-        const calculatedSeconds = remainderAfterHours % 60;
+const processTimeInput = (sourceData) => {
+  const dataLines = sourceData.trim().split('\n');
+  const totalDurationInSeconds = Number.parseInt(dataLines[0], 10);
 
-        console.info(calculatedHours, calculatedMinutes, calculatedSeconds);
+  let currentRemainingSeconds = totalDurationInSeconds;
 
-    })(parseInt(contentPayload[0], 10));
+  const hoursComponent = Math.floor(currentRemainingSeconds / 3600);
+  currentRemainingSeconds %= 3600;
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  const minutesComponent = Math.floor(currentRemainingSeconds / 60);
+  currentRemainingSeconds %= 60;
+
+  const secondsComponent = currentRemainingSeconds;
+
+  console.log(hoursComponent, minutesComponent, secondsComponent);
+};
+
+processTimeInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

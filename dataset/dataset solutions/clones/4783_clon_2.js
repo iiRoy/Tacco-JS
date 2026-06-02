@@ -1,84 +1,81 @@
-"use strict"; // Enforces stricter parsing and error handling in the code.
+"use strict"; // Enforce strict mode for cleaner code
 
 /**
- * Orchestrates the generation of a specific movement sequence.
- * This function processes raw input coordinates to construct a path.
- * @param {string} inputContent The complete string of input data, typically from standard input.
+ * Processes the raw input string to determine a specific movement sequence.
+ * This function calculates a path based on target coordinates.
+ * @param {string} inputData - The raw string input, typically from standard input.
  */
-const calculateTraversal = inputContent => {
+const processInput = (inputData) => {
+    // Clean up the input: remove leading/trailing whitespace and split by newline.
+    inputData = inputData.trim().split("\n");
 
-    // Preprocessing the input: remove leading/trailing whitespace and split into individual lines.
-    const inputLines = inputContent.trim().split("\n");
+    // Parse the coordinate values from the first line of input.
+    const coordinateParts = inputData[0].split(" ");
+    const startX = parseInt(coordinateParts[0], 10); // Starting X coordinate (not used in path generation logic)
+    const startY = parseInt(coordinateParts[1], 10); // Starting Y coordinate (not used in path generation logic)
+    const targetX = parseInt(coordinateParts[2], 10); // The X-dimension target for path calculation
+    const targetY = parseInt(coordinateParts[3], 10); // The Y-dimension target for path calculation
 
-    // Extracting the four coordinate values from the first line of the processed input.
-    // The values represent a starting X, starting Y, target X, and target Y.
-    const startHorizon = parseInt(inputLines[0].split(" ")[0]); // Horizontal start position.
-    const startVert = parseInt(inputLines[0].split(" ")[1]);    // Vertical start position.
-    const destHorizon = parseInt(inputLines[0].split(" ")[2]);  // Horizontal destination position.
-    const destVert = parseInt(inputLines[0].split(" ")[3]);     // Vertical destination position.
+    // Initialize an array to store the sequence of movements.
+    let pathSequence = [];
 
-    // Initialize an array to accumulate the individual movement commands.
-    let motionPlan = [];
+    // --- First phase of movement: A rectangular path from origin to target and back ---
 
-    // --- Section 1: Initial path to destination and back to origin ---
-
-    // Move 'Right' (R) for the number of steps equivalent to the target horizontal coordinate.
-    for (let stepCount = 0; stepCount < destHorizon; stepCount++) {
-        motionPlan.push("R");
+    // Move Right 'targetX' times.
+    for (let idx = 0; idx < targetX; idx++) {
+        pathSequence.push("R");
     }
 
-    // Move 'Up' (U) for the number of steps equivalent to the target vertical coordinate.
-    for (let stepCount = 0; stepCount < destVert; stepCount++) {
-        motionPlan.push("U");
+    // Move Up 'targetY' times.
+    for (let idx = 0; idx < targetY; idx++) {
+        pathSequence.push("U");
     }
 
-    // Move 'Left' (L) for the number of steps equivalent to the target horizontal coordinate.
-    for (let stepCount = 0; stepCount < destHorizon; stepCount++) {
-        motionPlan.push("L");
+    // Move Left 'targetX' times.
+    for (let idx = 0; idx < targetX; idx++) {
+        pathSequence.push("L");
     }
 
-    // Move 'Down' (D) for the number of steps equivalent to the target vertical coordinate.
-    for (let stepCount = 0; stepCount < destVert; stepCount++) {
-        motionPlan.push("D");
+    // Move Down 'targetY' times.
+    for (let idx = 0; idx < targetY; idx++) {
+        pathSequence.push("D");
     }
 
-    // --- Section 2: Detour to the left and up, then back ---
+    // --- Second phase of movement: A larger loop around the target area ---
 
-    // Execute a single 'Left' (L) movement.
-    motionPlan.push("L");
+    // Perform one additional Left movement.
+    pathSequence.push("L");
 
-    // Move 'Up' (U) for one more step than the target vertical coordinate.
-    for (let stepCount = 0; stepCount < destVert + 1; stepCount++) {
-        motionPlan.push("U");
+    // Move Up 'targetY + 1' times.
+    for (let idx = 0; idx < targetY + 1; idx++) {
+        pathSequence.push("U");
     }
 
-    // Move 'Right' (R) for one more step than the target horizontal coordinate.
-    for (let stepCount = 0; stepCount < destHorizon + 1; stepCount++) {
-        motionPlan.push("R");
+    // Move Right 'targetX + 1' times.
+    for (let idx = 0; idx < targetX + 1; idx++) {
+        pathSequence.push("R");
     }
 
-    // Execute a single 'Down' (D) movement.
-    motionPlan.push("D");
+    // Perform one additional Down movement.
+    pathSequence.push("D");
 
-    // --- Section 3: Final return path ---
-
-    // Move 'Down' (D) for one more step than the target vertical coordinate.
-    for (let stepCount = 0; stepCount < destVert + 1; stepCount++) {
-        motionPlan.push("D");
+    // Move Down 'targetY + 1' times.
+    for (let idx = 0; idx < targetY + 1; idx++) {
+        pathSequence.push("D");
     }
 
-    // Move 'Left' (L) for one more step than the target horizontal coordinate.
-    for (let stepCount = 0; stepCount < destHorizon + 1; stepCount++) {
-        motionPlan.push("L");
+    // Move Left 'targetX + 1' times.
+    for (let idx = 0; idx < targetX + 1; idx++) {
+        pathSequence.push("L");
     }
 
-    // Execute a single 'Up' (U) movement to complete the sequence.
-    motionPlan.push("U");
+    // Perform one additional Up movement.
+    pathSequence.push("U");
 
-    // Output the final concatenated string of all movement commands to the console.
-    console.log(motionPlan.join(""));
+    // Join all movement characters into a single string and print to console.
+    console.log(pathSequence.join(""));
 };
 
-// Initiate the traversal calculation by reading input from the standard input stream.
-// This typically involves reading from a file path like '/dev/stdin' in Unix-like systems.
-calculateTraversal(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

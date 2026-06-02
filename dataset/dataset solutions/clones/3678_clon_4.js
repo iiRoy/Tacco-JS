@@ -1,21 +1,26 @@
-function operationIdentifier(rawData) {
-    const spacePos = rawData.indexOf(' ');
-    const numA = parseInt(rawData.substring(0, spacePos), 10);
-    const numB = parseInt(rawData.substring(spacePos + 1), 10);
+const processInput = (inputString) => {
+  const numericValues = inputString.trim().split(/\s+/).map(Number);
 
-    const conditions = [
-        [ (valA, valB) => valA + valB === 15, '+' ],
-        [ (valA, valB) => valA * valB === 15, '*' ]
-    ];
+  const [firstOperand, secondOperand] = numericValues;
 
-    let outcome = 'x';
-    for (const [predicate, symbol] of conditions) {
-        if (predicate(numA, numB)) {
-            outcome = symbol;
-            break;
-        }
+  const operationEvaluators = [
+    {
+      condition: (op1, op2) => op1 + op2 === 15,
+      resultIdentifier: "+"
+    },
+    {
+      condition: (op1, op2) => op1 * op2 === 15,
+      resultIdentifier: "*"
     }
-    console.log(outcome);
-}
+  ];
 
-operationIdentifier(require("fs").readFileSync("/dev/stdin","utf8"));
+  const matchedOperation = operationEvaluators.find(
+    (evaluator) => evaluator.condition(firstOperand, secondOperand)
+  );
+
+  const finalOutput = matchedOperation ? matchedOperation.resultIdentifier : "x";
+
+  console.log(finalOutput);
+};
+
+processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));

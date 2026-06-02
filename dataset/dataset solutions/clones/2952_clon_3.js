@@ -1,72 +1,35 @@
-// Function to process the entire input string received from standard I/O.
-function processInputData(rawDataSet) {
-    // Break down the raw input into individual lines for easier parsing.
-    const dataLines = rawDataSet.split("\n");
+function processInputData(rawData) {
+  const lineSeparator = "\n";
+  const inputLines = rawData.split(lineSeparator);
 
-    // Extract the first line which contains space-separated numeric parameters.
-    const paramsLine = dataLines[0];
-    const numericParams = paramsLine.split(" ");
+  const firstLineParts = inputLines[0].split(" ");
+  const numN = parseInt(firstLineParts[0], 10);
+  let oneBasedIndexK = parseInt(firstLineParts[1], 10);
 
-    // Parse the first number as an initial count (corresponds to N in original context).
-    const initialCount = parseInt(numericParams[0], 10);
-    // Parse the second number as a 1-based index (corresponds to K in original context).
-    const targetIndexBaseOne = parseInt(numericParams[1], 10);
+  const targetString = inputLines[1];
+  const zeroBasedIndex = oneBasedIndexK - 1;
 
-    // The second line of input is the string to be manipulated.
-    const sourceString = dataLines[1];
+  const originalCharAtIndex = targetString[zeroBasedIndex];
+  let convertedChar;
 
-    // Adjust the 1-based index to a 0-based index for JavaScript string operations.
-    const zeroBasedIndex = targetIndexBaseOne - 1;
+  switch (originalCharAtIndex) {
+    case 'A':
+      convertedChar = 'a';
+      break;
+    case 'B':
+      convertedChar = 'b';
+      break;
+    default: // Covers 'C' and any other character, converting to 'c' as per original logic
+      convertedChar = 'c';
+      break;
+  }
 
-    // --- Introduce a guard clause for index validity ---
-    // If the calculated index is out of bounds, we'll output the original string
-    // as no modification can be performed meaningfully.
-    if (zeroBasedIndex < 0 || zeroBasedIndex >= sourceString.length) {
-        console.log(sourceString);
-        return; // Exit early if the index is invalid.
-    }
+  const stringPrefix = targetString.slice(0, zeroBasedIndex);
+  const stringSuffix = targetString.slice(zeroBasedIndex + 1);
 
-    // Identify the character at the calculated 0-based index.
-    const charToExamine = sourceString[zeroBasedIndex];
+  const finalModifiedString = stringPrefix + convertedChar + stringSuffix;
 
-    // Helper function to convert specific uppercase characters to their lowercase counterparts.
-    // This encapsulates the character transformation logic.
-    const getCaseConvertedChar = (inputChar) => {
-        let transformedChar;
-        // Using a switch statement for explicit character mapping.
-        switch (inputChar) {
-            case 'A':
-                transformedChar = 'a';
-                break;
-            case 'B':
-                transformedChar = 'b';
-                break;
-            // The original code implied 'C' to 'c' by its 'else' block.
-            case 'C':
-                transformedChar = 'c';
-                break;
-            default:
-                // If the character is not 'A', 'B', or 'C', it remains unchanged.
-                transformedChar = inputChar;
-        }
-        return transformedChar;
-    };
-
-    // Obtain the modified character using our helper function.
-    const modifiedCharacter = getCaseConvertedChar(charToExamine);
-
-    // Construct the new string by replacing the character at the specified index.
-    // This corrects a potential off-by-one bug in the original's substring logic
-    // and utilizes modern template literals for clarity.
-    const resultantString = `${sourceString.substring(0, zeroBasedIndex)}${modifiedCharacter}${sourceString.substring(zeroBasedIndex + 1)}`;
-
-    // Output the final modified string to standard output.
-    console.log(resultantString);
+  console.log(finalModifiedString);
 }
 
-/*
- * The following lines are responsible for reading input from standard I/O
- * and invoking the main processing function. Please do not alter this section
- * as it's typically part of the competitive programming environment setup.
- */
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

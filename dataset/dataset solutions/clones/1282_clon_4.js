@@ -1,70 +1,70 @@
 'use strict';
-(function(sourceInput) {
+(function(inputSource) {
+  function constructStructure(buildingCount, floorCount, roomCount) {
+    const roomRowTemplate = Array.from({ length: roomCount }, () => 0);
+    const floorLayoutTemplate = Array.from({ length: floorCount }, () => [...roomRowTemplate]);
 
-  // Helper function to recursively create N-dimensional arrays
-  const makeContainer = (dim1, dim2, dim3, initialValue) =>
-    Array.from({ length: dim1 }).reduce((accOuter, _, idxOuter) => {
-      accOuter[idxOuter] = Array.from({ length: dim2 }).reduce((accMiddle, _, idxMiddle) => {
-        accMiddle[idxMiddle] = Array.from({ length: dim3 }).fill(initialValue);
-        return accMiddle;
-      }, []);
-      return accOuter;
-    }, []);
+    const entireComplex = Array.from({ length: buildingCount }, () =>
+      floorLayoutTemplate.map(f => [...f])
+    );
 
-  // Function to construct the initial data grid
-  const forgeComplexStructure = (primaryDimension, secondaryDimension, tertiaryDimension) => {
-    const initialUnitState = 0;
-    const coreArrangement = makeContainer(primaryDimension, secondaryDimension, tertiaryDimension, initialUnitState);
-    const boundarySeparator = '#'.repeat(tertiaryDimension * 2); // Different method for separator string
-    return [boundarySeparator, ...coreArrangement]; // Use spread operator for array concatenation
-  };
+    const separatorLine = Array(roomCount * 2).fill('#').join('');
 
-  // Function to apply modifications and generate the final textual representation
-  const modifyAndVisualizeArrangement = (initialScheme, modificationRecords) => {
-    const structuralDivider = initialScheme.shift(); // Extract the separator line
+    return [separatorLine, ...entireComplex];
+  }
 
-    // Create a deep copy of the numerical grid data for modifications
-    // Manual mapping for deep copy to avoid modifying original array references
-    const currentScheme = initialScheme.map(outerBlock =>
-      outerBlock.map(middleBlock =>
-        middleBlock.slice() // Create a shallow copy of the innermost array (rooms/spaces)
+  function processOccupancyData(initialLayout, updateInstructions) {
+    const headerContent = initialLayout.shift();
+
+    let currentOccupancy = initialLayout.map(buildingUnit =>
+      buildingUnit.map(floorUnit =>
+        floorUnit.map(roomValue => roomValue)
       )
     );
 
-    // Apply updates from modification records using forEach and direct assignment
-    modificationRecords.forEach(record => {
-      const [outerIndex, middleIndex, innerIndex, newValue] = record;
-      // Adjusting to 0-based indexing for array access
-      currentScheme[outerIndex - 1][middleIndex - 1][innerIndex - 1] = newValue;
-    });
+    currentOccupancy = updateInstructions.reduce((accLayout, instructionTuple) => {
+      const [buildingId, floorId, roomId, newOccupant] = instructionTuple;
+      const targetBuildingIndex = buildingId - 1;
+      const targetFloorIndex = floorId - 1;
+      const targetRoomIndex = roomId - 1;
 
-    // Generate the formatted output string using nested reduce for aggregation
-    const finalRepresentation = currentScheme.reduce((complexAccumulator, outerBlock, outerBlockIdx) => {
-      const outerBlockString = outerBlock.reduce((middleAccumulator, middleBlock, middleBlockIdx) => {
-        const innerBlockString = ' ' + middleBlock.join(' '); // Format inner level
-        return middleAccumulator + (middleBlockIdx > 0 ? '\n' : '') + innerBlockString;
-      }, ''); // Initial empty string for the first middleBlock
+      return accLayout.map((buildingBlock, bIdx) => {
+        if (bIdx === targetBuildingIndex) {
+          return buildingBlock.map((floorBlock, fIdx) => {
+            if (fIdx === targetFloorIndex) {
+              return floorBlock.map((roomSlot, rIdx) => {
+                return rIdx === targetRoomIndex ? newOccupant : roomSlot;
+              });
+            }
+            return floorBlock;
+          });
+        }
+        return buildingBlock;
+      });
+    }, currentOccupancy);
 
-      return complexAccumulator + (outerBlockIdx > 0 ? '\n' + structuralDivider + '\n' : '') + outerBlockString;
-    }, ''); // Initial empty string for the first outerBlock
+    const formattedOutputSegments = currentOccupancy.reduce((segments, buildingBlock, bIndex) => {
+      const buildingString = buildingBlock.map(floorBlock => {
+        return ' ' + floorBlock.join(' ');
+      }).join('\n');
 
-    return finalRepresentation;
-  };
+      if (bIndex > 0) {
+        segments.push(headerContent);
+      }
+      segments.push(buildingString);
+      return segments;
+    }, []);
 
-  // Function to acquire and parse input data
-  const acquireSourceData = (rawTextContent) => {
-    const textLines = rawTextContent.toString().trim().split('\n');
-    const numericalData = textLines.map(line =>
-      line.split(' ').map(valStr => parseInt(valStr, 10)) // Explicitly use parseInt
-    );
-    numericalData.shift(); // Discard the first line as per original logic (dimensions are hardcoded elsewhere)
-    return numericalData;
-  };
+    return formattedOutputSegments.join('\n');
+  }
 
-  // Main execution block
-  const processedInputRecords = acquireSourceData(sourceInput);
-  // Hardcoded dimensions (4, 3, 10) as in the original code's function call
-  const result = modifyAndVisualizeArrangement(forgeComplexStructure(4, 3, 10), processedInputRecords);
-  console.log(result);
+  const rawInputLines = inputSource.toString().trim().split('\n');
+  const parsedNumericData = rawInputLines.map(line => line.split(' ').map(Number));
+  parsedNumericData.shift();
+
+  const initialConfiguration = constructStructure(4, 3, 10);
+  const finalDisplayContent = processOccupancyData(initialConfiguration, parsedNumericData);
+
+  console.log(finalDisplayContent);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

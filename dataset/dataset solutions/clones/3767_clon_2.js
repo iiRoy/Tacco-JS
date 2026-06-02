@@ -1,130 +1,83 @@
 const LINE_BREAK_CHAR = "\n";
-const WHITESPACE_DELIMITER = " ";
-const EMPTY_TEXT_SEGMENT = ""; // A constant for an empty string, not used in this specific logic but kept for consistency.
+const SPACE_CHAR = " ";
+const EMPTY_STRING_VAL = ""; // This constant is not used in the original logic, but is part of the initial declarations.
 
-/*
- * Primary function to process an input string and compute a specific arithmetic result.
- * This routine expects a string containing two space-separated integers on a single line.
- *
- * @param {string} rawInputString - The complete input data as a single string.
- * @returns {number} The calculated numerical result based on the input integers.
+/**
+ * Computes a specific numerical value based on two input integers.
+ * This function processes raw string input, extracts numbers, and performs a calculation.
+ * @param {string} rawData - The raw input string containing numbers.
+ * @returns {number} The calculated result.
  */
-function ComputeSequenceSum( rawInputString )
-{
-    // Normalize and tokenize the input string.
-    // First, remove leading/trailing whitespace, then split the string by line breaks.
-    // Each resulting line is subsequently split by spaces, and all generated arrays
-    // are then flattened into a single, comprehensive list of tokens.
-    let inputTokenArray = [].concat(
-        ...rawInputString
-            .trim()
-            .split( LINE_BREAK_CHAR )
-            .map( singleLine => singleLine.split( WHITESPACE_DELIMITER ) )
-    );
+function CalculateValue(rawData) {
+  // Process the input string: trim, split by line breaks, then split each line by spaces,
+  // and flatten the resulting array of arrays into a single array of string tokens.
+  let processedData = [].concat(...rawData.trim().split(LINE_BREAK_CHAR).map(lineSegment => lineSegment.split(SPACE_CHAR)));
 
-    // Helper function designed to extract the next token from the `inputTokenArray` as a string.
-    const retrieveNextString = () => inputTokenArray.shift();
+  // Helper function to get the next string token from the processed data.
+  const extractString = () => processedData.shift();
+  // Helper function to get the next integer token from the processed data.
+  const extractInteger = () => ~~processedData.shift(); // Using bitwise NOT for integer conversion.
 
-    // Helper function to extract the next token and convert its value to an integer,
-    // using base 10 for parsing.
-    const retrieveNextInteger = () => parseInt( retrieveNextString(), 10 );
+  // Extract the first two integer values from the processed input.
+  var firstNum = extractInteger();
+  var secondNum = extractInteger();
 
-    // Retrieve the two primary numerical values required for the calculation
-    // from the beginning of the token list.
-    let valueOne = retrieveNextInteger();
-    let valueTwo = retrieveNextInteger();
+  // Calculate the difference between the second and first number.
+  var differenceVal = secondNum - firstNum;
 
-    // Calculate the numerical difference between the second and first values.
-    // This represents the length or span of the sequence.
-    let numericDifference = valueTwo - valueOne;
-
-    // Perform the final calculation based on the derived difference and the second value.
-    // The formula effectively computes the sum of integers from 1 up to 'numericDifference' (inclusive),
-    // and then subtracts the 'valueTwo' from this sum. This corresponds to a specific series problem.
-    return ( numericDifference * ( numericDifference + 1 ) / 2 ) - valueTwo;
+  // Apply the core calculation: sum of integers from 1 to differenceVal, minus the second number.
+  // The sum of integers from 1 to N is N * (N + 1) / 2.
+  return differenceVal * (differenceVal + 1) / 2 - secondNum;
 }
 
-// If your primary interest lies solely in the core algorithmic logic above,
-// you may safely disregard the subsequent code block, which handles environment-specific
-// execution and result display mechanisms.
+// This section handles the execution environment, either Node.js or a browser.
+// It's a self-executing anonymous function that provides input and displays output.
+((inputContent, resultOutput, resultType) => {
+  // Check if 'require' is defined, indicating a Node.js environment.
+  if (typeof require !== "undefined") {
+    // In Node.js, read input from stdin, pass to CalculateValue, and print the result to console.
+    console.log(CalculateValue(require("fs").readFileSync("/dev/stdin", "utf8")));
+  } else {
+    // In a browser environment, simulate input and display results in a simple HTML structure.
+    // The inputContent is processed to remove leading/trailing newlines from the template literal.
+    inputContent = inputContent.split("\n").slice(1, -1).join("\n");
 
-const STANDARD_INPUT_PATH_IDENTIFIER = "/dev/stdin";
-const UTF8_ENCODING_SPECIFIER = "utf8";
-const DEFAULT_COLUMN_WIDTH = 40; // Standard width for text area displays.
+    // Attempt to execute the main calculation function.
+    resultOutput = (function() {
+      try {
+        return CalculateValue(inputContent);
+      } catch (errorObject) {
+        return errorObject.stack || errorObject.message; // Return error details if an exception occurs.
+      }
+    })();
 
-/*
- * This self-executing anonymous function is responsible for detecting the current
- * execution environment (Node.js or browser) and orchestrating the input processing
- * and output display accordingly. It is not an integral part of the core calculation.
- */
-( function( testInputDataContent, calculationOutcome, outcomeDataType ) {
-    // Determine if the code is running within a Node.js environment by checking
-    // for the global 'require' function.
-    if ( typeof require !== "undefined" )
-    {
-        // In a Node.js context:
-        // Read the input data directly from the standard input stream (stdin),
-        // using UTF-8 encoding. Then, pass this data to the main calculation function
-        // and print the resulting outcome to the console.
-        console.log( ComputeSequenceSum( require("fs").readFileSync( STANDARD_INPUT_PATH_IDENTIFIER, UTF8_ENCODING_SPECIFIER ) ) );
+    // Determine the type of the result.
+    resultType = typeof resultOutput;
+
+    // If the result is not a string, convert it to a JSON string for display.
+    if (resultType !== "string") {
+      resultOutput = JSON.stringify(resultOutput);
     }
-    else
-    {
-        // In a browser environment or other non-Node.js context:
-        // First, clean up the embedded test data string by splitting it into lines,
-        // removing the initial and final (empty) lines, and then rejoining it.
-        testInputDataContent = testInputDataContent.split( LINE_BREAK_CHAR ).slice( 1, -1 ).join( LINE_BREAK_CHAR );
 
-        // Execute the main calculation function using the prepared test data.
-        // A try-catch block is employed to gracefully capture and report any errors
-        // that might occur during the processing.
-        calculationOutcome = ( function() {
-            try {
-                return ComputeSequenceSum( testInputDataContent );
-            }
-            catch ( processingErrorObject ) {
-                // If an error is caught, return its stack trace or message for debugging.
-                return processingErrorObject.stack || processingErrorObject.message;
-            }
-        } )();
-
-        // Ascertain the JavaScript data type of the computed outcome.
-        outcomeDataType = typeof calculationOutcome;
-
-        // If the calculation outcome is not already a string, convert it into a
-        // JSON string representation for consistent display.
-        if ( "string" !== outcomeDataType )
-        {
-            calculationOutcome = JSON.stringify( calculationOutcome );
-        }
-
-        // Utilizing jQuery (assuming '$' is globally available), dynamically
-        // construct and append HTML elements to the document's body to display
-        // the input data, its type, and the final calculation result.
-        $( "<form>" )
-            .append(
-                [
-                    [ 10, testInputDataContent ], // Configuration for displaying the initial input data (10 rows).
-                    0,                            // A zero serves as a placeholder to insert a line break.
-                    [ 1, outcomeDataType ],       // Configuration for displaying the result's data type (1 row).
-                    0,                            // Another line break placeholder.
-                    [ 10, calculationOutcome ]    // Configuration for displaying the final calculated outcome (10 rows).
-                ].map( function( displayItemConfiguration ) {
-                    // For each configuration item, create either a <textarea> or a <br> element.
-                    return $(
-                        displayItemConfiguration ? "<textarea>" : "<br>", // Conditional element generation.
-                        displayItemConfiguration && {
-                            rows: displayItemConfiguration[0],  // Set the visible number of text rows.
-                            cols: DEFAULT_COLUMN_WIDTH,         // Establish a fixed column width.
-                            text: displayItemConfiguration[1]   // Assign the textual content to display.
-                        }
-                    );
-                } )
-            )
-            .appendTo( "body" ); // Attach the newly created form and its contents to the HTML document's body.
-    }
-} ) (
-    `
+    // Create a form element and append textareas/breaks to display input and output.
+    // This uses jQuery, assuming it's available in the browser context.
+    $("<form>")
+      .append(
+        [
+          [10, inputContent], // Input content in a textarea with 10 rows.
+          0, // A <br> tag.
+          [1, resultType], // Result type in a textarea with 1 row.
+          0, // Another <br> tag.
+          [10, resultOutput] // Result output in a textarea with 10 rows.
+        ].map(itemData =>
+          $(
+            itemData ? "<textarea>" : "<br>", // Create textarea or break based on itemData.
+            itemData && { rows: itemData[0], cols: 40, text: itemData[1] } // Set attributes for textarea.
+          )
+        )
+      )
+      .appendTo("body"); // Add the form to the document body.
+  }
+})(`
 54 65
-`
-);
+`); // The initial input string for the browser environment.

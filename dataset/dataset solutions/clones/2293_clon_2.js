@@ -1,37 +1,22 @@
-function  ProcessNumericalData(  incomingText  ) {
-    // This function processes a string of numerical data,
-    // applying a series of decrements based on a counter.
+function ProcessInput (rawData) {
+  // Convert the raw string input into an array of numerical values.
+  let parsedNumbers = rawData.split(" ").map(singleVal => parseInt(singleVal, 10));
 
-    // First, we parse the raw text into an array of integers.
-    // The input string is expected to contain space-separated numbers.
-    let  numericComponents  =  incomingText.split(" ").map(  (  itemSegment  )  =>  {
-        // Convert each segment to a base-10 integer for arithmetic operations.
-        return  parseInt(itemSegment,  10)  ;
-    })  ;
-
-
-    // We will iterate a specific number of times,
-    // which is determined by the third component in our parsed array.
-    for  (  let  operationCount  =  0  ;  operationCount  <  numericComponents[2]  ;  operationCount++  )  {
-
-        // During each iteration, we check the state of the first two components.
-        // If the first component is 1 or greater, we decrement it.
-        if  (  numericComponents[0]  >=  1  )  {
-            numericComponents[0]--  ;  // Decrement the primary value.
-        }
-        // Otherwise, if the first component is already zero,
-        // we then check the second component. If it's 1 or greater, we decrement it.
-        else  if  (  numericComponents[1]  >=  1  )  {
-            numericComponents[1]--  ;  // Decrement the secondary value.
-        }
+  // Loop a specific number of iterations based on the third element.
+  for (let idx = 0; idx < parsedNumbers[2]; idx++) {
+    // Check if the first number can be decremented.
+    if (parsedNumbers[0] >= 1) {
+      parsedNumbers[0]--;
     }
+    // Otherwise, check if the second number can be decremented.
+    else if (parsedNumbers[1] >= 1) {
+      parsedNumbers[1]--;
+    }
+  }
 
-
-    // Finally, after all operations are complete,
-    // output the modified first and second components to the console.
-    console.log(  "%d %d"  ,  numericComponents[0]  ,  numericComponents[1]  )  ;
+  // Print the final values of the first two numbers to the console.
+  console.log("%d %d", parsedNumbers[0], parsedNumbers[1]);
 }
 
-// This is the main execution path.
-// It reads data from standard input and passes it to our processing function.
-ProcessNumericalData(  require("fs").readFileSync("/dev/stdin",  "utf8")  )  ;
+// Invoke the main processing function with data read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

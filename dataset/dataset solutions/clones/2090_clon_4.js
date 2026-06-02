@@ -1,130 +1,151 @@
-const retrieveContent = () => require("fs").readFileSync("/dev/stdin", "utf8");
-const processContent = (textData) => textData.split(/\s+/).filter(Boolean);
+const inputData = require("fs").readFileSync(0, "utf8");
+const inputTokens = inputData.split(/\s+/).filter(Boolean);
+let currentTokenIndex = 0;
 
-let tokenCollection;
-let tokenIterator = 0;
+const getNextNumber = () => Number(inputTokens[currentTokenIndex++]);
 
-const fetchNextElement = () => tokenCollection[tokenIterator++];
-const fetchNumericElement = () => Number(fetchNextElement());
+function calculateDepthsAndParents(nodeCount, adjacencyList) {
+    const nodeDepths = new Array(nodeCount).fill(-1);
+    const nodeParents = new Array(nodeCount).fill(-1);
+    const traversalQueue = [];
 
-function manageGraphOperations() {
-    tokenCollection = processContent(retrieveContent());
+    nodeDepths[0] = 0;
+    traversalQueue.push(0);
 
-    const nodeCount = fetchNumericElement();
-
-    const adjacencyList = new Map();
-    for (let i = 0; i < nodeCount; i++) {
-        adjacencyList.set(i, new Set());
-    }
-
-    for (let i = 0; i < nodeCount - 1; i++) {
-        const firstNode = fetchNumericElement() - 1;
-        const secondNode = fetchNumericElement() - 1;
-        adjacencyList.get(firstNode).add(secondNode);
-        adjacencyList.get(secondNode).add(firstNode);
-    }
-
-    const nodeLevelMap = new Map(); // Node index -> its level (depth)
-    const nodeParentMap = new Map(); // Node index -> its parent
-    
-    const bfsQueue = [];
-
-    bfsQueue.push(0);
-    nodeLevelMap.set(0, 0);
-    nodeParentMap.set(0, -1); // Root has no parent
-
-    let queuePointer = 0;
-    while (queuePointer < bfsQueue.length) {
-        const currentVertex = bfsQueue[queuePointer++];
-        const currentVertexLevel = nodeLevelMap.get(currentVertex);
-
-        for (const neighborVertex of adjacencyList.get(currentVertex)) {
-            if (!nodeLevelMap.has(neighborVertex)) { // If not visited
-                nodeLevelMap.set(neighborVertex, currentVertexLevel + 1);
-                nodeParentMap.set(neighborVertex, currentVertex);
-                bfsQueue.push(neighborVertex);
+    let queueHead = 0;
+    while (queueHead < traversalQueue.length) {
+        const currentNode = traversalQueue[queueHead++];
+        for (const neighborNode of adjacencyList[currentNode]) {
+            if (nodeDepths[neighborNode] === -1) {
+                nodeDepths[neighborNode] = nodeDepths[currentNode] + 1;
+                nodeParents[neighborNode] = currentNode;
+                traversalQueue.push(neighborNode);
             }
         }
     }
+    return { nodeDepths, nodeParents };
+}
 
-    const evenLevelVertices = [];
-    const oddLevelVertices = [];
+let sequenceVal1 = 1;
+let sequenceVal2 = 2;
+let sequenceVal3 = 3;
+
+const retrieveNextSequenceValue = (sequenceIdentifier, maxPossibleValue) => {
+    if (sequenceIdentifier === 1) {
+        if (sequenceVal1 <= maxPossibleValue) {
+            const value = sequenceVal1;
+            sequenceVal1 += 3;
+            return value;
+        }
+    } else if (sequenceIdentifier === 2) {
+        if (sequenceVal2 <= maxPossibleValue) {
+            const value = sequenceVal2;
+            sequenceVal2 += 3;
+            return value;
+        }
+    } else if (sequenceIdentifier === 3) {
+        if (sequenceVal3 <= maxPossibleValue) {
+            const value = sequenceVal3;
+            sequenceVal3 += 3;
+            return value;
+        }
+    }
+    return null;
+};
+
+function processGraphAssignment() {
+    const nodeCount = getNextNumber();
+
+    const adjacencyList = Array.from({ length: nodeCount }, () => []);
+
+    for (let i = 0; i < nodeCount - 1; i++) {
+        const nodeA = getNextNumber() - 1;
+        const nodeB = getNextNumber() - 1;
+        adjacencyList[nodeA].push(nodeB);
+        adjacencyList[nodeB].push(nodeA);
+    }
+
+    const { nodeDepths } = calculateDepthsAndParents(nodeCount, adjacencyList);
+
+    let numOddDepths = 0;
+    let numEvenDepths = 0;
     for (let i = 0; i < nodeCount; i++) {
-        if (nodeLevelMap.get(i) % 2 === 0) {
-            evenLevelVertices.push(i);
+        if (nodeDepths[i] % 2 === 1) {
+            numOddDepths++;
         } else {
-            oddLevelVertices.push(i);
+            numEvenDepths++;
         }
     }
 
-    const finalLabelings = new Array(nodeCount);
-    
-    let labelSeq1 = 1;
-    let labelSeq2 = 2;
-    let labelSeq3 = 3;
+    const floorNOver3 = Math.floor(nodeCount / 3);
 
-    const assignLabel = (targetArray, index, sequenceIdentifier) => {
-        if (sequenceIdentifier === 1) {
-            targetArray[index] = labelSeq1;
-            labelSeq1 += 3;
-        } else if (sequenceIdentifier === 2) {
-            targetArray[index] = labelSeq2;
-            labelSeq2 += 3;
-        } else if (sequenceIdentifier === 3) {
-            targetArray[index] = labelSeq3;
-            labelSeq3 += 3;
+    const finalAssignments = new Array(nodeCount);
+
+    let assignmentStrategyType;
+    if (numOddDepths <= floorNOver3) {
+        assignmentStrategyType = 'oddGroupSmall';
+    } else if (numEvenDepths <= floorNOver3) {
+        assignmentStrategyType = 'evenGroupSmall';
+    } else {
+        assignmentStrategyType = 'bothGroupsLarge';
+    }
+
+    const applyAssignmentRule = (nodeIndex, nodeParity, strategy) => {
+        if (strategy === 'oddGroupSmall') {
+            if (nodeParity === 1) {
+                finalAssignments[nodeIndex] = retrieveNextSequenceValue(3, nodeCount);
+            } else {
+                let assignedValue = retrieveNextSequenceValue(1, nodeCount);
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(2, nodeCount);
+                }
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(3, nodeCount);
+                }
+                finalAssignments[nodeIndex] = assignedValue;
+            }
+        } else if (strategy === 'evenGroupSmall') {
+            if (nodeParity === 0) {
+                finalAssignments[nodeIndex] = retrieveNextSequenceValue(3, nodeCount);
+            } else {
+                let assignedValue = retrieveNextSequenceValue(1, nodeCount);
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(2, nodeCount);
+                }
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(3, nodeCount);
+                }
+                finalAssignments[nodeIndex] = assignedValue;
+            }
+        } else {
+            if (nodeParity === 1) {
+                let assignedValue = retrieveNextSequenceValue(1, nodeCount);
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(3, nodeCount);
+                }
+                finalAssignments[nodeIndex] = assignedValue;
+            } else {
+                let assignedValue = retrieveNextSequenceValue(2, nodeCount);
+                if (assignedValue === null) {
+                    assignedValue = retrieveNextSequenceValue(3, nodeCount);
+                }
+                finalAssignments[nodeIndex] = assignedValue;
+            }
         }
     };
 
-    const countDiv3 = Math.floor(nodeCount / 3);
-
-    if (oddLevelVertices.length <= countDiv3) {
-        for (const nodeIdx of oddLevelVertices) {
-            assignLabel(finalLabelings, nodeIdx, 3);
-        }
-        for (const nodeIdx of evenLevelVertices) {
-            if (labelSeq1 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 1);
-            } else if (labelSeq2 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 2);
-            } else {
-                assignLabel(finalLabelings, nodeIdx, 3);
-            }
-        }
-    } else if (evenLevelVertices.length <= countDiv3) {
-        for (const nodeIdx of evenLevelVertices) {
-            assignLabel(finalLabelings, nodeIdx, 3);
-        }
-        for (const nodeIdx of oddLevelVertices) {
-            if (labelSeq1 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 1);
-            } else if (labelSeq2 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 2);
-            } else {
-                assignLabel(finalLabelings, nodeIdx, 3);
-            }
-        }
-    } else {
-        for (const nodeIdx of oddLevelVertices) {
-            if (labelSeq1 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 1);
-            } else {
-                assignLabel(finalLabelings, nodeIdx, 3);
-            }
-        }
-        for (const nodeIdx of evenLevelVertices) {
-            if (labelSeq2 <= nodeCount) {
-                assignLabel(finalLabelings, nodeIdx, 2);
-            } else {
-                assignLabel(finalLabelings, nodeIdx, 3);
-            }
-        }
+    for (let i = 0; i < nodeCount; i++) {
+        applyAssignmentRule(i, nodeDepths[i] % 2, assignmentStrategyType);
     }
-    
-    return finalLabelings.join(" ");
+
+    return finalAssignments.join(" ");
 }
 
-const finalResult = manageGraphOperations();
-if (finalResult !== undefined) {
-    console.log(finalResult);
+if (process.argv.length <= 2) {
+    require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
+} else {
+    const outputResult = processGraphAssignment();
+    if (outputResult !== undefined) {
+        console.log(outputResult);
+    }
 }

@@ -1,161 +1,131 @@
-/*
- * This module processes standard input to perform graph-related computations.
- */
-function ProcessInput(rawData) {
-    "use strict"; /* Enforce strict JavaScript parsing and error handling */
+function ProcessInput(inputData) {
+    "use strict";
 
-    /**
-     * Recursively explores paths in a graph to find the maximum accumulated weight.
-     * @param {number} currentVertex The current vertex being visited.
-     * @param {number} accumulatedValue The sum of edge weights to reach this vertex.
-     * @param {number} recursionDepth The current depth of the recursion stack.
-     * @param {Array<number>} visitedVertices A list of vertices already visited in the current path.
-     * @returns {number} The maximum weight found from this vertex onwards.
-     */
-    function exploreNodes(currentVertex, accumulatedValue, recursionDepth, visitedVertices) {
-        let maximumWeight = 0;
+    // This function recursively explores paths in a directed acyclic graph
+    // to find the maximum possible weight (score) from a starting vertex.
+    function explorePath(currentVertex, currentWeight, recursionLevel, visitedNodes) {
+        let maximumPath = 0; // Stores the maximum weight found from the current path
 
-        // Optionally, one could log debug information here, for example:
-        // let currentIndent = new Array(recursionDepth + 1).join("----");
-        // displayResult(`${currentIndent} Visiting vertex: ${currentVertex}, current score: ${accumulatedValue}`);
-
-        /* If the current vertex has no outgoing allowed connections,
-         * or if it's an invalid node, return the current accumulated value.
-         */
-        if (!possibleMoves[currentVertex]) {
-            return accumulatedValue;
+        // If the current vertex has no outgoing edges (no allowed neighbors),
+        // then this path ends, and its weight is the current path's weight.
+        if (!adjacencies[currentVertex]) {
+            return currentWeight;
         }
 
-        // Iterate over each adjacent vertex from the current one
-        possibleMoves[currentVertex].forEach(function (adjVertex) {
-            /* Check if the neighbor has not been visited in the current path
-             * to prevent cycles in simple path calculations.
-             */
-            if (visitedVertices.indexOf(adjVertex) === -1) {
-                // Calculate the new accumulated value for the path through this neighbor
-                let newWeight = accumulatedValue + edgeWeights[currentVertex][adjVertex];
+        // Iterate over all neighbors reachable from the current vertex.
+        adjacencies[currentVertex].forEach(function(neighbor) {
+            // Check if the neighbor has not been visited in the current path to avoid cycles.
+            if (visitedNodes.indexOf(neighbor) === -1) {
+                // Calculate the new weight for the path including this neighbor.
+                let newWeight = currentWeight + edgeWeights[currentVertex][neighbor];
 
-                // Mark the neighbor as visited for the current path
-                visitedVertices.push(adjVertex);
-                // Recursively explore from the neighbor and update the maximum weight
-                maximumWeight = Math.max(maximumWeight, exploreNodes(adjVertex, newWeight, recursionDepth + 1, visitedVertices));
-                // Backtrack: remove the neighbor from visited list to explore other paths
-                visitedVertices.pop();
+                // Mark the neighbor as visited for the current path.
+                visitedNodes.push(neighbor);
+                // Recursively explore from the neighbor and update the maximum path found.
+                maximumPath = Math.max(maximumPath, explorePath(neighbor, newWeight, recursionLevel + 1, visitedNodes));
+                // Backtrack: remove the neighbor from visited nodes to explore other paths.
+                visitedNodes.pop();
             }
         });
-        return maximumWeight; // Return the highest weight found
+        return maximumPath;
     }
 
-    // Setup output and input utilities
-    const displayResult = console.log;
-    const emitChar = require("util").print; // This variable is unused in the original logic, maintaining for structural fidelity.
-    const inputReader = new TokenStream(rawData, " \n");
+    // Setup output functions and input parser.
+    const logOutput = console.log;
+    const printChar = require("util").print; // This variable is declared but not used in the original logic.
+    const inputReader = new InputParser(inputData, " \n");
 
-    // Initialize graph structure and variables
-    const vertexCount = inputReader.getNextInteger();
-    const edgeCount = inputReader.getNextInteger();
+    // Main processing logic starts here.
+    // Read graph dimensions.
+    let numVertices = inputReader.nextInt();
+    let numEdges = inputReader.nextInt();
 
-    let edgeWeights = []; // Represents the adjacency matrix for weights
-    let possibleMoves = []; // Represents the adjacency list for connections
-    let loopIndex;
-    let globalMaximum = -1; // Initial maximum value, unused in original logic but declared.
+    // Initialize data structures for graph representation.
+    let edgeWeights = []; // Stores the weights of edges: edgeWeights[from][to] = weight
+    let adjacencies = []; // Stores adjacency lists: adjacencies[from] = [to1, to2, ...]
+    let loopCounter;
+    let overallMax = -1; // This variable is declared but not used in the original logic.
 
-    // Prepare graph structures with empty arrays for each vertex
-    for (loopIndex = 0; loopIndex < vertexCount - 1; loopIndex++) {
-        edgeWeights[loopIndex] = [];
-        possibleMoves[loopIndex] = [];
+    // Initialize arrays for each vertex up to numVertices - 1.
+    for (loopCounter = 0; loopCounter < numVertices - 1; loopCounter++) {
+        edgeWeights[loopCounter] = [];
+        adjacencies[loopCounter] = [];
     }
 
-    // Populate graph data from input
-    for (loopIndex = 0; loopIndex < edgeCount; loopIndex++) {
-        const sourceNode = inputReader.getNextInteger();
-        const targetNode = inputReader.getNextInteger();
-        const edgeValue = inputReader.getNextInteger();
+    // Read edge data from input and populate graph structures.
+    for (loopCounter = 0; loopCounter < numEdges; loopCounter++) {
+        let startNode = inputReader.nextInt();
+        let endNode = inputReader.nextInt();
+        let edgeValue = inputReader.nextInt();
 
-        possibleMoves[sourceNode].push(targetNode);
-        edgeWeights[sourceNode][targetNode] = edgeValue;
+        // Ensure the adjacency list for startNode exists before pushing.
+        if (!adjacencies[startNode]) {
+            adjacencies[startNode] = [];
+        }
+        adjacencies[startNode].push(endNode);
+
+        // Ensure the edge weight array for startNode exists before assigning.
+        if (!edgeWeights[startNode]) {
+            edgeWeights[startNode] = [];
+        }
+        edgeWeights[startNode][endNode] = edgeValue;
     }
 
-    // Display the final computed maximum path weight
-    displayResult(exploreNodes(0, 0, 0, []));
+    // Start the DFS from node 0 with an initial score of 0, depth 0, and an empty visited list.
+    // Output the maximum path weight found.
+    logOutput(explorePath(0, 0, 0, []));
 }
 
-/*
- * Utility class for parsing input strings into tokens.
- * Provides methods to read various types of data.
- */
-const TokenStream = (function () {
-    function TokenStream(textContent, tokenDelimiter) {
-        // Construct a regular expression from the delimiter pattern
-        const splitRegex = new RegExp(tokenDelimiter.split("").join("|"), "g");
-        this.readPosition = 0; // Current index in the token list
-        // Split the input string into tokens, removing carriage returns
-        this.parsedTokens = textContent.replace(/\r/g, '').split(splitRegex);
+// InputParser utility class for reading tokens from a string.
+const InputParser = (function() {
+    function InputParser(inputString, tokenSeparator) {
+        // Create a regular expression to split the input string by the given separators.
+        const regexPattern = new RegExp(tokenSeparator.split("").join("|"), "g");
+        this.currentIndex = 0; // Current position in the token list.
+        // Split the input string into tokens, removing carriage returns.
+        this.tokenList = inputString.replace(/\r/g, '').split(regexPattern);
     }
 
-    TokenStream.prototype = {
-        /**
-         * Checks if there are more tokens available or if the next token matches an expected value.
-         * @param {string} [comparisonToken] An optional token to compare with the next available token.
-         * @returns {boolean} True if more tokens exist, or if the next token matches the comparisonToken.
-         */
-        hasMoreTokens: function (comparisonToken) {
-            if (typeof comparisonToken === "undefined") {
-                return typeof this.parsedTokens[this.readPosition] !== "undefined" && this.parsedTokens[this.readPosition] !== "";
+    InputParser.prototype = {
+        // Checks if there is a next token, optionally checking if it matches a specific value.
+        hasNext: function(checkValue) {
+            if (typeof checkValue === "undefined") {
+                return typeof this.tokenList[this.currentIndex] !== "undefined" && this.tokenList[this.currentIndex] !== "";
             } else {
-                return this.parsedTokens[this.readPosition] === comparisonToken;
+                return this.tokenList[this.currentIndex] === checkValue;
             }
         },
-        /**
-         * Retrieves the next token from the stream and advances the read position.
-         * @returns {string} The next token.
-         * @throws {RangeError} If attempting to read beyond the end of the token list.
-         */
-        getNext: function () {
-            if (typeof this.parsedTokens[this.readPosition + 1] === "undefined") {
-                throw new RangeError(`Index out of bounds at position '${this.readPosition}' during token retrieval.`);
+        // Retrieves the next token and advances the index.
+        getNextToken: function() {
+            if (typeof this.tokenList[this.currentIndex + 1] === "undefined") {
+                throw new RangeError("InputParser: index out of bounds at '" + this.currentIndex + "'");
             }
-            return this.parsedTokens[this.readPosition++];
+            return this.tokenList[this.currentIndex++];
         },
-        /**
-         * Reads the next token, attempts to convert it to a number, and returns it.
-         * @returns {number} The next token as a number.
-         * @throws {TypeError} If the next token cannot be converted to a number.
-         */
-        readNumber: function () {
-            if (isNaN(+this.peekCurrent())) {
-                throw new TypeError(`'${this.peekCurrent()}' cannot be converted to a valid Number type.`);
+        // Retrieves the next token and converts it to a Number.
+        getNextNumber: function() {
+            if (isNaN(+this.peekNext())) {
+                throw new TypeError("InputParser: '" + this.peekNext() + "' cannot convert to Number");
             }
-            return +this.getNext();
+            return +this.getNextToken();
         },
-        /**
-         * Reads the next number token and parses it as an integer with a specified radix.
-         * @param {number} [numericalBase=10] The base for parsing the integer (default is 10).
-         * @returns {number} The parsed integer.
-         */
-        getNextInteger: function (numericalBase) {
-            numericalBase = numericalBase | 10; // Default to base 10 if not provided
-            return parseInt(this.readNumber(), numericalBase);
+        // Retrieves the next token, converts it to a Number, and then to an integer with a specified base.
+        nextInt: function(baseValue) {
+            baseValue = baseValue | 10; // Default to base 10 if not provided.
+            return parseInt(this.getNextNumber(), baseValue);
         },
-        /**
-         * Peeks at the current token without advancing the read position.
-         * @returns {string} The current token.
-         */
-        peekCurrent: function () {
-            return this.parsedTokens[this.readPosition];
+        // Peeks at the next token without advancing the index.
+        peekNext: function() {
+            return this.tokenList[this.currentIndex];
         },
-        /**
-         * Resets the read position to the beginning of the token stream.
-         */
-        resetPosition: function () {
-            this.readPosition = 0;
+        // Resets the current index to the beginning of the token list.
+        resetIndex: function() {
+            this.currentIndex = 0;
         }
     };
 
-    return TokenStream;
+    return InputParser;
 }());
 
-/*
- * Entry point: Read input from standard input and pass it to the main processing function.
- */
+// Read input from stdin and pass it to the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

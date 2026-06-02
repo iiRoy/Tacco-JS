@@ -1,30 +1,28 @@
-function processData(  incomingText )
-{
-    // The incoming raw text is split into an array, with each element representing a line.
-    incomingText  =  incomingText.split(  "\n"  );
+function processInputData(rawData) {
+    // The initial raw input string is split into an array of lines.
+    let processedLines = rawData.split("\n");
 
-    // The first line is further subdivided into an array of string components, delimited by spaces.
-    let  firstLineComponents  =  incomingText[0].split(  " "  );
+    // The first line is further divided into components based on spaces.
+    let firstLineParts = processedLines[0].split(" ");
 
-    // The processing for the second line of input data.
-    const  secondLineComponents  =  incomingText[1].split(  " "  );
+    // The second line is also split into its constituent elements.
+    let secondLineElements = processedLines[1].split(" ");
 
-    let  finalTally  =  0; // A counter is initialized to zero, tracking specific occurrences.
+    // Initialize a counter for elements that meet a specific condition.
+    let matchingElementsCount = 0;
 
-    // A loop iterates a number of times determined by the first element of the first line.
-    for  (  let  currentIdx  =  0;  currentIdx  <  Number(firstLineComponents[0]);  currentIdx++  )
-    {
-        // A conditional check compares the numeric value of the current component with the second component of the first line.
-        if  (  Number(firstLineComponents[currentIdx])  <=  Number(firstLineComponents[1])  )
-        {
-            finalTally++; // If the condition is met, the counter is incremented.
+    // Iterate through a range determined by the first component of the first line.
+    for (let idx = 0; idx < firstLineParts[0]; idx++) {
+        // Check if the current element from the first line is less than or equal to the second component of the first line.
+        if (firstLineParts[idx] <= firstLineParts[1]) {
+            // If the condition is met, increment the counter.
+            matchingElementsCount++;
         }
     }
-
-    // The accumulated count is then displayed to the console.
-    console.log(  finalTally  );
+    // Output the final count to the console.
+    console.log(matchingElementsCount);
 }
 
-// The following code snippet is crucial for input/output handling and should remain untouched.
-// It reads from standard input and passes the content to the primary data processing function.
-processData(  require('fs').readFileSync('/dev/stdin', 'utf8')  );
+// This section handles reading from standard input and invoking the main processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

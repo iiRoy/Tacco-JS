@@ -1,157 +1,127 @@
-// This module handles the primary logic for processing a sequence of numbers
-// to determine the minimum possible difference between the maximum and minimum
-// sums of four distinct segments.
-function ProcessInputData(rawInputText) {
-  // Initially, the raw input string is split into an array of lines.
-  let inputLinesArray = rawInputText.split("\n");
+function ProcessInput(inputString) {
+  // Split the input string into an array of lines based on newline characters.
+  inputString = inputString.split("\n");
 
-  // The very first line of input provides the total count of numeric items
-  // that will be processed. It's parsed as an integer.
-  const totalNumericItems = +inputLinesArray[0];
+  // Parse the first line to get the total number of elements.
+  const arrayLength = +inputString[0];
 
-  // The second line contains the space-separated numerical values.
-  // These are split, and each string value is converted into a number.
-  const originalNumericSequence = inputLinesArray[1]
-    .split(" ")
-    .map(currentSeqValue => +currentSeqValue);
+  // Parse the second line, split by spaces, and convert each part to a number.
+  const initialNumbers = inputString[1].split(" ").map(val => +val);
 
-  // An array is initialized to store the cumulative sums (prefix sums)
-  // of the original numeric sequence.
-  let cumulativeSumsArray = [];
+  // Initialize an array to store prefix sums.
+  // prefixSums[k] will store the sum of initialNumbers[0] through initialNumbers[k].
+  const prefixSums = [];
 
-  // This complex reduce operation efficiently populates the cumulativeSumsArray.
-  // It computes prefix sums such that cumulativeSumsArray[k] holds the sum
-  // of originalNumericSequence[0] through originalNumericSequence[k].
-  // The final accumulated sum (total sum of all elements) is stored at
-  // the last index of the cumulativeSumsArray.
-  cumulativeSumsArray[totalNumericItems - 1] = originalNumericSequence.reduce(
-    (sumAccumulator, currentNumberValue, currentElementIndex) => {
-      // Store the sum up to the *previous* element in the cumulative sums array.
-      if (currentElementIndex > 0) { // Ensure index is valid
-        cumulativeSumsArray[currentElementIndex - 1] = sumAccumulator;
-      }
-      // Update the accumulator with the current element's value.
-      return sumAccumulator + currentNumberValue;
-    }
-  );
-  // A small correction for the first element, as reduce starts accumulator with originalNumericSequence[0]
-  // and loop from index 1.
-  if (totalNumericItems > 0) {
-    cumulativeSumsArray[0] = originalNumericSequence[0];
-  }
+  // Calculate prefix sums using the reduce method.
+  // The final result of reduce (the total sum) is assigned to prefixSums[arrayLength - 1].
+  prefixSums[arrayLength - 1] = initialNumbers.reduce((accumulator, currentElement, currentIndex) => {
+    // For each element, store the cumulative sum up to the previous element in prefixSums.
+    // Note: currentIndex starts from 1 for the second element in reduce without initialValue.
+    prefixSums[currentIndex - 1] = accumulator;
+    // Return the updated cumulative sum for the next iteration.
+    return accumulator + currentElement;
+  });
 
+  // Initialize the minimum difference found so far with a very large number.
+  let minDifference = 9000000000; // Equivalent to 9e9
 
-  // Initialize the variable that will store the smallest difference found
-  // between the maximum and minimum segment sums. It's set to a very large
-  // number initially.
-  let minimalSegmentDifference = Number.POSITIVE_INFINITY;
+  // Iterate through possible split points for the middle two partitions.
+  // 'splitPointIdx' (original 'i') defines the boundary between the second and third partitions.
+  // The loop runs from index 2 up to arrayLength - 2.
+  for (let splitPointIdx = 2; splitPointIdx < arrayLength - 1; splitPointIdx++) {
+    // Calculate target sums for the first and fourth partitions to guide binary search.
+    // targetLeftSum is half of the sum of the first two partitions (up to splitPointIdx - 1).
+    const targetLeftSum = prefixSums[splitPointIdx - 1] / 2;
+    // targetRightSum is half of the sum of the last two partitions (from splitPointIdx to arrayLength - 1),
+    // plus the sum of the first two partitions.
+    const targetRightSum = (prefixSums[arrayLength - 1] + prefixSums[splitPointIdx - 1]) / 2;
 
-  // The core logic involves iterating through all possible "midpoint" indices.
-  // These midpoints define the boundary between the second and third segments.
-  // The loop ensures there are at least two elements both before and after
-  // this midpoint, allowing for four non-empty segments.
-  for (let midpointIndex = 2; midpointIndex < totalNumericItems - 1; midpointIndex++) {
+    // Find the optimal split points for the first and fourth partitions using a binary search function.
+    // 'leftPartitionIdx' (original 'l') splits the first two partitions.
+    const leftPartitionIdx = findLowerBound(prefixSums, 1, splitPointIdx - 1, targetLeftSum);
+    // 'rightPartitionIdx' (original 'r') splits the last two partitions.
+    const rightPartitionIdx = findLowerBound(prefixSums, splitPointIdx + 1, arrayLength - 1, targetRightSum);
 
-    // Calculate target sum values for binary searching the optimal
-    // first and third split points.
-    // targetLeftSum: Aims to split the sum up to (midpointIndex - 1) into two equal halves.
-    // targetRightSum: Aims to split the sum from midpointIndex to (totalNumericItems - 1) into two equal halves,
-    //                 but calculated relative to the total sum and sum up to (midpointIndex - 1).
-    const targetLeftSum = cumulativeSumsArray[midpointIndex - 1] / 2;
-    const targetRightSum = (cumulativeSumsArray[totalNumericItems - 1] + cumulativeSumsArray[midpointIndex - 1]) / 2;
-
-    // Utilize a binary search function to find the index for the first split point.
-    // This index defines the boundary between the first and second segments.
-    // The search range is from index 1 to (midpointIndex - 1).
-    const leftBoundaryIndex = locateFirstGreaterOrEqual(cumulativeSumsArray, 1, midpointIndex - 1, targetLeftSum);
-
-    // Similarly, find the index for the third split point.
-    // This index defines the boundary between the third and fourth segments.
-    // The search range is from (midpointIndex + 1) to (totalNumericItems - 1).
-    const rightBoundaryIndex = locateFirstGreaterOrEqual(cumulativeSumsArray, midpointIndex + 1, totalNumericItems - 1, targetRightSum);
-
-    // Calculate the sums of the four segments based on the current
-    // midpointIndex and the found leftBoundaryIndex and rightBoundaryIndex.
-    // Segment 1: cumulativeSumsArray[leftBoundaryIndex - 1]
-    // Segment 2: (cumulativeSumsArray[midpointIndex - 1] - cumulativeSumsArray[leftBoundaryIndex - 1])
-    // Segment 3: (cumulativeSumsArray[rightBoundaryIndex - 1] - cumulativeSumsArray[midpointIndex - 1])
-    // Segment 4: (cumulativeSumsArray[totalNumericItems - 1] - cumulativeSumsArray[rightBoundaryIndex - 1])
-    let fourSegmentValues = [
-      cumulativeSumsArray[leftBoundaryIndex - 1],
-      cumulativeSumsArray[midpointIndex - 1] - cumulativeSumsArray[leftBoundaryIndex - 1],
-      cumulativeSumsArray[rightBoundaryIndex - 1] - cumulativeSumsArray[midpointIndex - 1],
-      cumulativeSumsArray[totalNumericItems - 1] - cumulativeSumsArray[rightBoundaryIndex - 1]
+    // Calculate the sums of the four partitions based on the current split points.
+    // P1 = prefixSums[leftPartitionIdx - 1]
+    // P2 = prefixSums[splitPointIdx - 1] - prefixSums[leftPartitionIdx - 1]
+    // P3 = prefixSums[rightPartitionIdx - 1] - prefixSums[splitPointIdx - 1]
+    // P4 = prefixSums[arrayLength - 1] - prefixSums[rightPartitionIdx - 1]
+    let currentPartitionSums = [
+      prefixSums[leftPartitionIdx - 1],
+      prefixSums[splitPointIdx - 1] - prefixSums[leftPartitionIdx - 1],
+      prefixSums[rightPartitionIdx - 1] - prefixSums[splitPointIdx - 1],
+      prefixSums[arrayLength - 1] - prefixSums[rightPartitionIdx - 1]
     ];
 
-    // Update the overall minimal difference if the current set of segments
-    // yields a smaller (MaxSum - MinSum) value.
-    minimalSegmentDifference = Math.min(minimalSegmentDifference, Math.max(...fourSegmentValues) - Math.min(...fourSegmentValues));
+    // Update the minimum difference between the maximum and minimum partition sums.
+    minDifference = Math.min(minDifference, Math.max(...currentPartitionSums) - Math.min(...currentPartitionSums));
 
-    // Explore a variation: If the first segment's boundary can be shifted one position to the right.
-    if (midpointIndex - leftBoundaryIndex > 1) {
-      fourSegmentValues = [
-        cumulativeSumsArray[leftBoundaryIndex], // Shifted left segment end
-        cumulativeSumsArray[midpointIndex - 1] - cumulativeSumsArray[leftBoundaryIndex],
-        cumulativeSumsArray[rightBoundaryIndex - 1] - cumulativeSumsArray[midpointIndex - 1],
-        cumulativeSumsArray[totalNumericItems - 1] - cumulativeSumsArray[rightBoundaryIndex - 1]
+    // Check an alternative split for the first two partitions by shifting 'leftPartitionIdx' one position to the right.
+    // This is done if there's enough room for such a shift (i.e., leftPartitionIdx is not at its maximum possible value).
+    if (splitPointIdx - leftPartitionIdx > 1) {
+      currentPartitionSums = [
+        prefixSums[leftPartitionIdx],
+        prefixSums[splitPointIdx - 1] - prefixSums[leftPartitionIdx],
+        prefixSums[rightPartitionIdx - 1] - prefixSums[splitPointIdx - 1],
+        prefixSums[arrayLength - 1] - prefixSums[rightPartitionIdx - 1]
       ];
-      minimalSegmentDifference = Math.min(minimalSegmentDifference, Math.max(...fourSegmentValues) - Math.min(...fourSegmentValues));
+      minDifference = Math.min(minDifference, Math.max(...currentPartitionSums) - Math.min(...currentPartitionSums));
 
-      // Further variation: If both the first and third segment boundaries can be shifted.
-      if (totalNumericItems - rightBoundaryIndex > 1) {
-        fourSegmentValues = [
-          cumulativeSumsArray[leftBoundaryIndex],
-          cumulativeSumsArray[midpointIndex - 1] - cumulativeSumsArray[leftBoundaryIndex],
-          cumulativeSumsArray[rightBoundaryIndex] - cumulativeSumsArray[midpointIndex - 1], // Shifted right segment start
-          cumulativeSumsArray[totalNumericItems - 1] - cumulativeSumsArray[rightBoundaryIndex]
+      // If the left split was adjusted, also check an alternative for the last two partitions
+      // by shifting 'rightPartitionIdx' one position to the right.
+      if (arrayLength - rightPartitionIdx > 1) {
+        currentPartitionSums = [
+          prefixSums[leftPartitionIdx],
+          prefixSums[splitPointIdx - 1] - prefixSums[leftPartitionIdx],
+          prefixSums[rightPartitionIdx] - prefixSums[splitPointIdx - 1],
+          prefixSums[arrayLength - 1] - prefixSums[rightPartitionIdx]
         ];
-        minimalSegmentDifference = Math.min(minimalSegmentDifference, Math.max(...fourSegmentValues) - Math.min(...fourSegmentValues));
+        minDifference = Math.min(minDifference, Math.max(...currentPartitionSums) - Math.min(...currentPartitionSums));
       }
     }
 
-    // Another variation: If only the third segment's boundary can be shifted one position to the right.
-    // This condition is evaluated independently of the previous `if` block.
-    if (totalNumericItems - rightBoundaryIndex > 1) {
-      fourSegmentValues = [
-        cumulativeSumsArray[leftBoundaryIndex - 1],
-        cumulativeSumsArray[midpointIndex - 1] - cumulativeSumsArray[leftBoundaryIndex - 1],
-        cumulativeSumsArray[rightBoundaryIndex] - cumulativeSumsArray[midpointIndex - 1], // Shifted right segment start
-        cumulativeSumsArray[totalNumericItems - 1] - cumulativeSumsArray[rightBoundaryIndex]
+    // Check an alternative split for the last two partitions by shifting 'rightPartitionIdx' one position to the right.
+    // This check is independent of the 'if (splitPointIdx - leftPartitionIdx > 1)' block,
+    // and uses the original 'leftPartitionIdx - 1' for the first partition.
+    if (arrayLength - rightPartitionIdx > 1) {
+      currentPartitionSums = [
+        prefixSums[leftPartitionIdx - 1],
+        prefixSums[splitPointIdx - 1] - prefixSums[leftPartitionIdx - 1],
+        prefixSums[rightPartitionIdx] - prefixSums[splitPointIdx - 1],
+        prefixSums[arrayLength - 1] - prefixSums[rightPartitionIdx]
       ];
-      minimalSegmentDifference = Math.min(minimalSegmentDifference, Math.max(...fourSegmentValues) - Math.min(...fourSegmentValues));
+      minDifference = Math.min(minDifference, Math.max(...currentPartitionSums) - Math.min(...currentPartitionSums));
     }
   }
 
-  // Print the final calculated minimal difference to the console.
-  console.log(minimalSegmentDifference);
+  // Print the final calculated minimum difference to the console.
+  console.log(minDifference);
 }
 
-// This function performs a binary search on a sorted array to find the
-// index of the first element that is greater than or equal to a given target value.
-// It searches within a specified range [searchStart, searchEnd].
-// Returns: The index of the first element satisfying the condition, or searchEnd
-//          if all elements in the range are smaller than the target.
-function locateFirstGreaterOrEqual(searchableArray, searchStart, searchEnd, desiredValue) {
-  let middleIndex;
-  // The loop continues as long as there are at least two elements in the search range.
-  while (1 < searchEnd - searchStart) {
-    // Calculate the middle index using a bitwise OR for efficient integer division.
-    middleIndex = 0 | (searchStart + searchEnd) / 2;
-    // If the element at the middle index is less than the desired value,
-    // it means the target must be in the upper half.
-    if (searchableArray[middleIndex] < desiredValue) {
-      searchStart = middleIndex;
-    }
-    // Otherwise, the target could be at or before the middle index.
-    else {
-      searchEnd = middleIndex;
+// Binary search function to find the lower bound of a target value in a sorted array.
+// It returns the index of the first element in 'dataArray' that is
+// greater than or equal to 'targetValue' within the specified range [startIndex, endIndex).
+function findLowerBound(dataArray, startIndex, endIndex, targetValue) {
+  let midIndex;
+  // Continue searching while the range contains more than one element.
+  while (1 < endIndex - startIndex) {
+    // Calculate the middle index. Using Math.floor ensures integer division.
+    midIndex = Math.floor((startIndex + endIndex) / 2);
+    // If the element at midIndex is less than the target,
+    // the lower bound must be in the right half (excluding midIndex).
+    if (dataArray[midIndex] < targetValue) {
+      startIndex = midIndex;
+    } else {
+      // Otherwise, the lower bound is in the left half (including midIndex).
+      endIndex = midIndex;
     }
   }
-  // After the loop, `searchStart` and `searchEnd` will be adjacent indices.
-  // We check which of these two positions holds the lower bound.
-  return searchableArray[searchStart] < desiredValue ? searchEnd : searchStart;
+  // After the loop, startIndex and endIndex will be adjacent.
+  // Check which of these two indices represents the lower bound.
+  return dataArray[startIndex] < targetValue ? endIndex : startIndex;
 }
 
-// The script reads the entire content from standard input (e.g., from a file or pipe),
-// assuming UTF-8 encoding, and then passes this raw text to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

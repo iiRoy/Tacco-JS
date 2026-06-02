@@ -1,36 +1,30 @@
-function ExecuteCalculation(dataString) {
-    const numericalElements = dataString.split(/\s+/).filter(Boolean).map(Number);
+function performCalculation(inputString) {
+    const numericParameters = inputString.trim().split(/\s+/).map(Number);
+    const initialCoordinate = numericParameters[0];
+    const totalDisplacements = numericParameters[1];
+    const displacementMagnitude = numericParameters[2];
 
-    const initialValue = numericalElements[0];
-    const totalStepCount = numericalElements[1];
-    const stepMagnitude = numericalElements[2];
+    const absoluteCoordinate = Math.abs(initialCoordinate);
+    const displacementsTowardOrigin = Math.floor(absoluteCoordinate / displacementMagnitude);
+    const distanceAfterOptimalDisplacements = absoluteCoordinate % displacementMagnitude;
 
-    const optimalDisplacementFloat = -initialValue / stepMagnitude;
+    const isWithinOptimalRangeFlag = (totalDisplacements <= displacementsTowardOrigin) ? 1 : 0;
+    const isBeyondOptimalRangeFlag = 1 - isWithinOptimalRangeFlag;
 
-    const candidateDisplacements = new Set();
-    candidateDisplacements.add(Math.floor(optimalDisplacementFloat));
-    candidateDisplacements.add(Math.ceil(optimalDisplacementFloat));
-    candidateDisplacements.add(Math.floor(optimalDisplacementFloat) - 1);
-    candidateDisplacements.add(Math.floor(optimalDisplacementFloat) + 1);
-    candidateDisplacements.add(Math.ceil(optimalDisplacementFloat) - 1);
-    candidateDisplplacements.add(Math.ceil(optimalDisplacementFloat) + 1);
+    const resultIfWithinOptimalRange = absoluteCoordinate - totalDisplacements * displacementMagnitude;
 
-    let minimumAbsoluteOutcome = Infinity;
+    const remainingDisplacements = totalDisplacements - displacementsTowardOrigin;
+    const parityIndicator = remainingDisplacements % 2;
 
-    for (const currentDisplacement of candidateDisplacements) {
-        const absoluteDisplacement = Math.abs(currentDisplacement);
+    const resultIfBeyondOptimalRange = distanceAfterOptimalDisplacements + (displacementMagnitude - 2 * distanceAfterOptimalDisplacements) * parityIndicator;
 
-        const remainingPathSteps = totalStepCount - absoluteDisplacement;
+    const finalOutcome = resultIfWithinOptimalRange * isWithinOptimalRangeFlag + resultIfBeyondOptimalRange * isBeyondOptimalRangeFlag;
 
-        if (absoluteDisplacement <= totalStepCount && remainingPathSteps % 2 === 0) {
-            const currentOutcome = Math.abs(initialValue + currentDisplacement * stepMagnitude);
-            if (currentOutcome < minimumAbsoluteOutcome) {
-                minimumAbsoluteOutcome = currentOutcome;
-            }
-        }
-    }
-
-    console.log(minimumAbsoluteOutcome);
+    console.log(finalOutcome);
 }
 
-ExecuteCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+function processInputAndExecute(rawInput) {
+    performCalculation(rawInput);
+}
+
+processInputAndExecute(require("fs").readFileSync("/dev/stdin", "utf8"));

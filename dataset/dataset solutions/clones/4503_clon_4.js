@@ -1,24 +1,22 @@
 "use strict";
 
-const evaluateScenario = (sourceText) => {
-  const numericSegments = sourceText.trim().split(" ");
-  const principalValue = Number(numericSegments[0]);
-  const startOffset = Number(numericSegments[1]);
-  const endOffset = Number(numericSegments[2]);
+const evaluateCondition = (sourceData) => {
+  const numericComponents = sourceData.trim().split(" ").map(Number);
+  const xReference = numericComponents[0];
+  const aPoint = numericComponents[1];
+  const bPoint = numericComponents[2];
 
-  const calculatedDiscrepancy = endOffset - startOffset;
+  const difference = bPoint - aPoint;
 
-  const outcomeResolvers = [
-    { conditionCheck: (disc, princ) => disc < 0, outcomeIdentifier: "delicious" },
-    { conditionCheck: (disc, princ) => disc < princ, outcomeIdentifier: "safe" },
-    { conditionCheck: (disc, princ) => true, outcomeIdentifier: "dangerous" }
+  const decisionMatrix = [
+    { test: (val, ref) => val < 0, outcome: "delicious" },
+    { test: (val, ref) => val < ref, outcome: "safe" },
+    { test: (val, ref) => true, outcome: "dangerous" }
   ];
 
-  const applicableResolver = outcomeResolvers.find(resolver =>
-    resolver.conditionCheck(calculatedDiscrepancy, principalValue)
-  );
+  const matchedRule = decisionMatrix.find(ruleEntry => ruleEntry.test(difference, xReference));
 
-  return applicableResolver.outcomeIdentifier;
+  return matchedRule.outcome;
 };
 
-console.log(evaluateScenario(require("fs").readFileSync("/dev/stdin", "utf8")));
+console.log(evaluateCondition(require("fs").readFileSync("/dev/stdin", "utf8")));

@@ -1,29 +1,24 @@
-// This function serves as the primary entry point for handling incoming data streams.
-function ProcessStream ( inputContent )
-{
-    /*
-     * The incoming content is first segmented into an array of strings,
-     * using the newline character as the delimiter for each distinct line.
-     * This prepares the raw text for line-by-line processing.
-     */
-    var   processedLines   =   inputContent . split ( '\n' ) ;
+function ProcessInput(rawData) {
+    // Divide the incoming raw string into an array of individual lines.
+    // Each entry in 'linesArray' will correspond to one line from the input source.
+    let linesArray = rawData.split("\n");
 
-    // A numeric pointer is initialized to zero, indicating the start of the 'processedLines' array.
-    var   linePointer   =   0 ;
+    // Establish a counter to track the position of the current line being examined.
+    let currentLineIdx = 0;
 
-    // This loop continues as long as the termination character '?' is present within the 'processedLines' array.
-    while   (   processedLines . indexOf ( '?' )   !==   -1   )
-    {
-        // The current line, identified by 'linePointer', is evaluated as a JavaScript expression.
-        // The outcome of this evaluation is then logged to the console as informational output.
-        console . info (   eval (   processedLines [ linePointer ]   )   ) ;
+    // Iterate through the lines as long as the specific termination character "?" is present
+    // within the collection of input lines.
+    while (linesArray.indexOf("?") !== -1) {
+        // Execute the JavaScript expression found on the current line
+        // and output the computed result to the console.
+        console.log(eval(linesArray[currentLineIdx]));
 
-        // The line pointer is incremented to move to the subsequent line in the array for the next iteration.
-        linePointer ++ ;
+        // Advance the line counter to move to the subsequent line for the next cycle.
+        currentLineIdx++;
     }
 }
 
-// The program execution begins by invoking 'ProcessStream'.
-// It reads the entire content from standard input ('/dev/stdin') using 'fs' module,
-// interpreting the content as UTF-8 encoded text, and passes it to the function.
-ProcessStream (   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' )   ) ;
+// Obtain the file system module to read data.
+// Read the complete content from the standard input stream,
+// interpreting it as UTF-8 encoded text, and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

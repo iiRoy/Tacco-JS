@@ -1,46 +1,26 @@
-'use strict'
+'use strict';
 
-function removeOuterWhitespace(textSegment) {
-    let startPosition = 0;
-    let endPosition = textSegment.length - 1;
+function ProcessData(rawData) {
+  const contentLines = rawData.split('\n');
+  // The first line, which might represent 'N', is not utilized in the original logic,
+  // so we proceed directly to process the second line.
+  const numericalSequence = contentLines[1].split(' ').map(Number);
 
-    while (startPosition <= endPosition && (textSegment.charCodeAt(startPosition) <= 32)) {
-        startPosition++;
-    }
-    while (endPosition >= startPosition && (textSegment.charCodeAt(endPosition) <= 32)) {
-        endPosition--;
-    }
+  // Employ a single 'reduce' operation to determine both the minimum and maximum
+  // values within the numerical sequence. This diverges from the original's
+  // use of separate Math.min.apply and Math.max.apply calls.
+  const rangeExtremes = numericalSequence.reduce((accumulator, currentVal) => {
+    // The first element of the accumulator stores the current minimum.
+    accumulator[0] = Math.min(accumulator[0], currentVal);
+    // The second element of the accumulator stores the current maximum.
+    accumulator[1] = Math.max(accumulator[1], currentVal);
+    return accumulator;
+  }, [Infinity, -Infinity]); // Initialize with values that guarantee the first element will set the initial min/max.
 
-    if (startPosition > endPosition) {
-        return "";
-    }
-    return textSegment.substring(startPosition, endPosition + 1);
+  const highestValue = rangeExtremes[1];
+  const lowestValue = rangeExtremes[0];
+
+  console.log(highestValue - lowestValue);
 }
 
-function displayOutcome(calculatedValue) {
-    process.stdout.write(String(calculatedValue) + '\n');
-}
-
-function processNumericalData(rawInputText) {
-    const lineBreakIndex = rawInputText.indexOf('\n');
-    const firstTextLine = rawInputText.substring(0, lineBreakIndex); // This line is not used in computation
-    const dataTextLine = rawInputText.substring(lineBreakIndex + 1);
-
-    const stringRepresentations = dataTextLine.match(/\-?\d+/g);
-    const numericalEntities = stringRepresentations.map(entry => parseInt(entry, 10));
-
-    const orderedSet = numericalEntities.sort((elementA, elementB) => elementA - elementB);
-
-    const smallestEntry = orderedSet[0];
-    const largestEntry = orderedSet[orderedSet.length - 1];
-
-    const resultantDifference = largestEntry - smallestEntry;
-
-    displayOutcome(resultantDifference);
-}
-
-const fileSystemAccessor = require("node:fs");
-const retrievedContent = fileSystemAccessor.readFileSync("/dev/stdin", "utf8");
-
-const cleanedContent = removeOuterWhitespace(retrievedContent);
-processNumericalData(cleanedContent);
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

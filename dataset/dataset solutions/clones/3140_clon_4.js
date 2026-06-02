@@ -1,45 +1,36 @@
-"use strict"
+"use strict";
 
-const createLineIterator = (textualSource) => {
-    const segments = textualSource.trim().split("\n");
-    let pointer = 0;
-    return {
-        pull: () => {
-            if (pointer < segments.length) {
-                return segments[pointer++];
-            }
-            return undefined;
-        }
-    };
-};
+function ProcessInput(rawInputData) {
+    const outputBuffer = [];
+    const inputLines = rawInputData.trim().split("\n");
+    let lineCursor = 0;
 
-const parseNumericSequence = (textLine) => textLine.split(" ").map(Number);
+    const retrieveNextLine = () => inputLines[lineCursor++];
+    const appendToOutput = (content) => outputBuffer.push(content);
+    const parseLineToNumericArray = (lineContent) => lineContent.split(" ").map(Number);
 
-function ProcessorKernel(sourceData) {
-    const outcomeCollection = [];
-    const lineSupply = createLineIterator(sourceData);
+    const initialParameters = parseLineToNumericArray(retrieveNextLine());
+    const iterationCount = initialParameters[0];
+    const dimensionSize = initialParameters[1];
+    const baseOffset = initialParameters[2];
 
-    const obtainLine = () => lineSupply.pull();
-    const storeOutcome = (data) => outcomeCollection.push(data);
+    const coefficientVector = parseLineToNumericArray(retrieveNextLine());
 
-    const [entityCount, attributeCount, offsetBias] = parseNumericSequence(obtainLine());
-    const coefficientVector = parseNumericSequence(obtainLine());
+    const positiveResultCount = Array.from({ length: iterationCount }).reduce((currentPositiveTotal, _, index) => {
+        const currentDataVector = parseLineToNumericArray(retrieveNextLine());
 
-    const finalTally = Array.from({ length: entityCount }).reduce((currentCount, _, elementIndex) => {
-        const currentAttributes = parseNumericSequence(obtainLine());
+        const calculatedSum = currentDataVector.reduce((accumulator, value, idx) => {
+            return accumulator + value * coefficientVector[idx];
+        }, baseOffset);
 
-        const computedScore = currentAttributes.reduce((scoreAccumulator, attributeValue, attributeIndex) => {
-            return scoreAccumulator + attributeValue * coefficientVector[attributeIndex];
-        }, offsetBias);
-
-        return currentCount + (computedScore > 0 ? 1 : 0);
+        return currentPositiveTotal + (calculatedSum > 0 ? 1 : 0);
     }, 0);
 
-    storeOutcome(finalTally);
+    appendToOutput(positiveResultCount);
 
-    const formattedResult = outcomeCollection.join("\n");
-    console.log(formattedResult);
-    return formattedResult;
+    const finalOutputString = outputBuffer.join("\n");
+    console.log(finalOutputString);
+    return finalOutputString;
 }
 
-ProcessorKernel(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

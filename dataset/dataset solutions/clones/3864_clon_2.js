@@ -1,36 +1,35 @@
-"use strict"
-// Implementation derived from an external source.
+"use strict";
+// This module processes input data to calculate specific combinations.
+const processData = inputContent => {
+  	// Initial data preparation steps
+    inputContent = inputContent.trim().split("\n");
+    const elementCount = parseInt(inputContent[0]);
+    const numericValues = inputContent[1].split(" ").map(strVal => Number(strVal));
 
-const entryPoint = (rawData) => {
-  // Initial data sanitization and parsing.
-  rawData = rawData.trim().split("\n")
-  const dataSize = parseInt(rawData[0])
-  const numericValues = rawData[1].split(" ").map((item) => item * 1)
+  	// Compute the running sums
+  	const prefixSumArray = new Array(elementCount).fill(0); // Note: This array might be too small for N > 0, replicating original behavior.
+  	numericValues.forEach((currentNumber, currentIndex) => {
+    	prefixSumArray[currentIndex + 1] =  prefixSumArray[currentIndex] + currentNumber;
+    });
 
-  // Calculate the running sums.
-  const prefixSums = new Array(dataSize + 1).fill(0) // Array size should be N+1 for prefix sums
-  numericValues.forEach((element, idx) => {
-    prefixSums[idx + 1] = prefixSums[idx] + element
-  })
+  	// Count occurrences of each running sum value
+  	// Using a hash map for frequency tracking
+  	let sumFrequency = {};
+  	prefixSumArray.forEach((sumValue) => {
+    	if (!sumFrequency[sumValue]) {
+        	sumFrequency[sumValue] = 1;
+        } else {
+          	sumFrequency[sumValue]++;
+        }
+    });
 
-  // Count occurrences of each running sum value.
-  let occurrenceCounter = {}
-  prefixSums.forEach((sumValue) => {
-    if (!occurrenceCounter[sumValue]) {
-      occurrenceCounter[sumValue] = 1
-    } else {
-      occurrenceCounter[sumValue]++
-    }
-  })
+  	let totalPairs = 0;
+  	// Calculate the number of pairs for each sum value
+  	Object.keys(sumFrequency).forEach((sumKey) => {
+    	totalPairs += sumFrequency[sumKey] * (sumFrequency[sumKey] - 1) / 2;
+    });
 
-  let combinationCount = 0
-  // Compute the number of pairs for each unique sum value.
-  Object.keys(occurrenceCounter).forEach((sumKey) => {
-    const freq = occurrenceCounter[sumKey]
-    combinationCount += freq * (freq - 1) / 2
-  })
+  	console.log(totalPairs);
+};
 
-  console.log(combinationCount)
-}
-
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"))
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

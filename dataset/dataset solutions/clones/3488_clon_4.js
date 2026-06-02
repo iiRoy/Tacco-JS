@@ -1,12 +1,12 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInputData = (sourceText) => {
+    const [firstSegment, secondSegment, thirdSegment] = sourceText.trim().split('\n');
 
-const contentParser = /^(\d+).*?\n(\d+)\n(\d+)/s;
-const extractedValues = dataStream.match(contentParser);
+    const numericIndicator = Number(firstSegment.split(' ')[0]);
+    const operandAlpha = Number(secondSegment);
+    const operandBeta = Number(thirdSegment);
 
-const controlValue = Number(extractedValues[1]);
-const firstComponent = Number(extractedValues[2]);
-const secondComponent = Number(extractedValues[3]);
+    return numericIndicator === 1 ? "Hello World" : operandAlpha + operandBeta;
+};
 
-const finalResult = (controlValue === 1) ? "Hello World" : (firstComponent + secondComponent);
-
-process.stdout.write(finalResult + '\n');
+const acquiredInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(processInputData(acquiredInput));

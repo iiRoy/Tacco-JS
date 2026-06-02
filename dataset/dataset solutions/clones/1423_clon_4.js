@@ -1,22 +1,19 @@
-(function (sourceContent) {
-    let firstSegment = '';
-    for (let currentPosition = 0; currentPosition < sourceContent.length; currentPosition++) {
-        if (sourceContent[currentPosition] === '\n') {
-            break;
+function processInput(sourceText) {
+    const firstLine = sourceText.split("\n")[0];
+    
+    const transformedLine = Array.from(firstLine).map(currentSymbol => {
+        const symbolCode = currentSymbol.charCodeAt(0);
+        
+        if (symbolCode >= 97 && symbolCode <= 122) {
+            return String.fromCharCode(symbolCode - 32);
+        } else if (symbolCode >= 65 && symbolCode <= 90) {
+            return String.fromCharCode(symbolCode + 32);
+        } else {
+            return currentSymbol;
         }
-        firstSegment += sourceContent[currentPosition];
-    }
+    }).join('');
+    
+    console.log(transformedLine);
+}
 
-    let modifiedCharacters = [];
-    for (const singleChar of firstSegment) {
-        const charNumericalValue = singleChar.charCodeAt(0);
-        if (charNumericalValue >= 65 && charNumericalValue <= 90) { // Check if uppercase (A-Z)
-            modifiedCharacters.push(String.fromCharCode(charNumericalValue + 32)); // Convert to lowercase
-        } else if (charNumericalValue >= 97 && charNumericalValue <= 122) { // Check if lowercase (a-z)
-            modifiedCharacters.push(String.fromCharCode(charNumericalValue - 32)); // Convert to uppercase
-        } else { // Non-alphabetic character
-            modifiedCharacters.push(singleChar);
-        }
-    }
-    console.log(modifiedCharacters.join(''));
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

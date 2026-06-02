@@ -1,49 +1,27 @@
-const streamProvider = require('node:fs');
-const entireStreamData = streamProvider.readFileSync("/dev/stdin", "utf8");
-const allSegments = entireStreamData.split('\n');
-const finalContentPiece = allSegments[allSegments.length - 1];
+const fileSystemModule = require("fs");
+const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const targetLine = rawInputContent.split('\n').pop();
 
-const performCharTransformation = (inputChar, multiplierA, adderB) => {
-    const isAlphaNumericOrUnderscore = (val) => {
-        const charCodeValue = val.charCodeAt(0);
-        return (charCodeValue >= 48 && charCodeValue <= 57) || // Digits 0-9
-               (charCodeValue >= 65 && charCodeValue <= 90) || // Uppercase A-Z
-               (charCodeValue >= 97 && charCodeValue <= 122) || // Lowercase a-z
-               charCodeValue === 95; // Underscore _
-    };
+const affineParameterCombinations = Array.from({ length: 26 * 26 }, (_, iterationIndex) => ({
+    coefficient: Math.floor(iterationIndex / 26),
+    offset: iterationIndex % 26
+}));
 
-    if (isAlphaNumericOrUnderscore(inputChar)) {
-        const originalCharCode = inputChar.charCodeAt(0);
-        const newCharCode = (originalCharCode * multiplierA + adderB) % 26 + 97;
-        return String.fromCharCode(newCharCode);
-    }
-    return inputChar;
-};
+affineParameterCombinations.forEach(currentParameters => {
+    const { coefficient, offset } = currentParameters;
 
-const identifyKeywords = (textToSearch) => {
-    return textToSearch.includes('this') || textToSearch.includes('that');
-};
-
-const runDecryptionAttempt = (sourceInput) => {
-    const discoveredSolutions = [];
-
-    for (let keyCombination = 0; keyCombination < 26 * 26; ++keyCombination) {
-        const currentMultiplier = Math.floor(keyCombination / 26);
-        const currentAdder = keyCombination % 26;
-
-        const transformedCandidate = sourceInput
-            .split('')
-            .map(character => performCharTransformation(character, currentMultiplier, currentAdder))
-            .join('');
-
-        if (identifyKeywords(transformedCandidate)) {
-            discoveredSolutions.push(transformedCandidate);
+    const characterSequence = targetLine.split('').map(sourceChar => {
+        if (sourceChar.match(/[\w]/)) {
+            const charNumericalValue = sourceChar.charCodeAt(0);
+            const modifiedNumericalValue = (charNumericalValue * coefficient + offset) % 26 + 97;
+            return String.fromCharCode(modifiedNumericalValue);
         }
-    }
-    return discoveredSolutions;
-};
+        return sourceChar;
+    });
 
-const successfulDecryptions = runDecryptionAttempt(finalContentPiece);
-successfulDecryptions.forEach(result => {
-    process.stdout.write(result + '\n');
+    const resultantString = characterSequence.join('');
+
+    if (resultantString.includes("this") || resultantString.includes("that")) {
+        console.log(resultantString);
+    }
 });

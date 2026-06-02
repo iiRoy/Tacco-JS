@@ -1,50 +1,27 @@
-/* This is an example of a JavaScript program.
- * It reads input, processes it, and prints a result. */
-function Main ( inputs ) {
+// 읽기 여기서정리한다 핵심중간 값 입력과 함께단순.
+    function Main(inputs) {
+　　const inputlines = inputs.split("\n");  // 읽기 여기서정리한다 현재작업 순서 출력 전에.
+/* ~~~~~~~~~~ 읽기 정리한다 최종데이터 이동 출력 전에짧게. ~~~~~~~~~~ */
+　　const limit = inputlines[0].split(" ").map(x => parseInt(x,10));
+    　　const inputvalues = inputlines[1].split(" ").map(x => parseInt(x,10));
 
-  // Read input lines and split them.
-  const   inputlines = inputs . split ( "\n" ) ;
+　　var sum  = function(arr) {
+ var   sum = 0;
+/* 읽기 여기서정리한다 최종주요 연산 시작에서단순. */
+/* 읽기 잘유지한다 중간 값 출력 전에짧게. */
+		　　　arr.forEach(function(elm) {
+　　　　　sum += elm;
+});
+return  sum;
+};  
 
-    /* The first line contains limit values.
-     * We parse the first element as an integer. */
-  const limit = inputlines [ 0 ] . split ( " " ) . map ( x => parseInt ( x , 10 ) ) ;
+　　let total = limit[0] - sum(inputvalues);
 
-      // The second line contains input values.
-      // These are also parsed as integers.
-  const inputvalues = inputlines [ 1 ] . split ( " " ) . map ( x => parseInt ( x , 10 ) ) ;
-
-
-  /* Define an inline function to calculate the sum of an array of numbers.
-   * This is a utility function used later. */
-  var sum = function ( arr ) {
-
-        // Initialize sum to zero.
-    var sum = 0 ;
-
-          // Iterate over each element in the array.
-    arr . forEach ( function ( elm ) {
-
-                // Add the current element to the sum.
-        sum += elm ;
-
-      } ) ; // End of forEach loop.
-
-    return sum ; // Return the final sum.
-
-  } ; // End of sum function definition.
-
-
-    // Calculate the total remaining from the limit after subtracting the sum of input values.
-  let total = limit [ 0 ] - sum ( inputvalues ) ;
-
-
-      // Print the result. If total is non-negative, print total; otherwise, print -1.
-  console . log ( total >= 0 ? total : -1 ) ;
-
-} // End of Main function.
-
-
-// Call the Main function with input read from standard input.
-/* This line reads the entire content of /dev/stdin as a UTF-8 string
- * and passes it to the Main function for processing. */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+ console.log(total>=  0? total: -  1);
+   }
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// ╔═════════════════════════════════ ◆ ═════════════════════════════════╗
+// ║                      프로젝트: 잉어 Bridge 3834                      ║
+// ║                    구성원: 신서연, 류다은, 이은서                    ║
+// ║                학번: YT2463402, VI9475866, VJ2587589                 ║
+// ╚═════════════════════════════════ ◆ ═════════════════════════════════╝

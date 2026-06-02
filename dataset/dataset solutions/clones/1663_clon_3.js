@@ -1,374 +1,190 @@
 "use strict";
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenizedInput = rawData.split(/ |\n/),
+  tokenIndex = 0;
 
-// Helper for creating multi-dimensional arrays.
-// This function recursively builds an array structure.
-function createDeepArray(dimensions, initialValueCreator) {
-  if (dimensions.length === 0) {
-    return initialValueCreator();
+function readNextNum() {
+  return +tokenizedInput[tokenIndex++];
+}
+
+function readNextStr() {
+  return tokenizedInput[tokenIndex++];
+}
+
+function readNextBigInt() {
+  return BigInt(tokenizedInput[tokenIndex++]);
+}
+
+function readNumArray(count, mapToNum) {
+  if (mapToNum) {
+    return tokenizedInput.slice(tokenIndex, tokenIndex += count);
+  } else {
+    return tokenizedInput.slice(tokenIndex, tokenIndex += count).map(val => +val);
   }
-  const currentDimSize = dimensions[0];
-  const remainingDims = dimensions.slice(1);
-  return Array.from({ length: currentDimSize }, () =>
-    createDeepArray(remainingDims, initialValueCreator)
-  );
 }
 
-// Input processing utilities
-let rawInputData;
-let dataTokens;
-let currentTokenIndex = 0;
-
-try {
-  // Attempt to read from standard input.
-  rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-  // Split the input by any sequence of whitespace characters and filter out empty strings.
-  dataTokens = rawInputData.split(/\s+/).filter(Boolean);
-} catch (error) {
-  // Guard clause: If reading from /dev/stdin fails (e.g., local development),
-  // provide sample data to allow the program to run.
-  console.error("Error reading input from /dev/stdin:", error.message);
-  rawInputData = "5\n10 20 U\n30 40 R\n10 10 D\n50 60 L\n20 20 U"; // Sample input data
-  dataTokens = rawInputData.split(/\s+/).filter(Boolean);
-  console.warn("Using sample data for execution due to input error.");
-}
-
-/**
- * Reads the next token from the input stream and parses it as an integer.
- * Throws an error if the token is not a valid number.
- * @returns {number} The parsed integer value.
- */
-function consumeInteger() {
-  const token = dataTokens[currentTokenIndex++];
-  const parsedValue = parseInt(token, 10);
-  if (isNaN(parsedValue)) {
-    throw new Error(`Input Error: Expected an integer, but received "${token}".`);
-  }
-  return parsedValue;
-}
-
-/**
- * Reads the next token from the input stream as a string.
- * @returns {string} The raw string token.
- */
-function consumeString() {
-  return dataTokens[currentTokenIndex++];
-}
-
-/**
- * Reads the next token from the input stream and parses it as a BigInt.
- * @returns {BigInt} The parsed BigInt value.
- */
-function consumeBigInt() {
-  return BigInt(dataTokens[currentTokenIndex++]);
-}
-
-/**
- * Reads a specified number of tokens from the input stream.
- * @param {number} count The number of tokens to read.
- * @param {boolean} [returnAsStrings=false] If true, tokens are returned as strings; otherwise, as integers.
- * @returns {Array<number|string>} An array containing the parsed tokens.
- */
-function consumeArray(count, returnAsStrings = false) {
-  const elements = [];
-  for (let idx = 0; idx < count; ++idx) {
-    elements.push(returnAsStrings ? consumeString() : consumeInteger());
-  }
-  return elements;
-}
-
-/**
- * Reads a 2D matrix of specified dimensions from the input stream.
- * @param {number} rows The number of rows in the matrix.
- * @param {number} columns The number of columns in each row.
- * @param {boolean} [returnAsStrings=false] If true, matrix elements are strings; otherwise, integers.
- * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
- */
-function consumeMatrix(rows, columns, returnAsStrings = false) {
-  const matrix = [];
-  for (let r = 0; r < rows; ++r) {
-    matrix.push(consumeArray(columns, returnAsStrings));
-  }
-  return matrix;
-}
-
-// Main problem-solving function
-function findMinCollisionDistance() {
-  // A very large number to represent an initially infinite distance.
-  // Using Number.MAX_SAFE_INTEGER ensures it's within JavaScript's integer limits.
-  const MAX_POSSIBLE_DIST = Number.MAX_SAFE_INTEGER;
-
-  const totalPointsToProcess = consumeInteger(); // Read the total count of points.
-
-  // This array will hold points categorized by their initial direction.
-  // Each sub-array stores point data: [x_coord, y_coord, x_minus_y, x_plus_y].
-  // Indices: 0 for 'U', 1 for 'R', 2 for 'D', 3 for 'L'.
-  const directionalPointGroups = Array.from({ length: 4 }, () => []);
-
-  // Map direction characters to their corresponding array indices.
-  const directionToIndexMap = new Map([
-    ["U", 0], // Up
-    ["R", 1], // Right
-    ["D", 2], // Down
-    ["L", 3], // Left
-  ]);
-
-  // Process all input points, extract coordinates and direction, then categorize.
-  for (let pointIndex = 0; pointIndex < totalPointsToProcess; ++pointIndex) {
-    const coordX = consumeInteger();
-    const coordY = consumeInteger();
-    const directionChar = consumeString();
-
-    // Validate the direction character. Skip if unknown.
-    if (!directionToIndexMap.has(directionChar)) {
-      console.warn(`Encountered an unknown direction: "${directionChar}". Skipping point at (${coordX}, ${coordY}).`);
-      continue;
+function readMatrix(height, width, mapToNum) {
+  var resultMatrix = [],
+    rowIdx = 0;
+  if (mapToNum) {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenizedInput.slice(tokenIndex, tokenIndex += width));
     }
-
-    const assignedGroupIndex = directionToIndexMap.get(directionChar);
-    const xMinusY = coordX - coordY; // Useful for diagonal movement (constant x-y)
-    const xPlusY = coordX + coordY;   // Useful for anti-diagonal movement (constant x+y)
-
-    // Store the point's original coordinates and derived diagonal values.
-    directionalPointGroups[assignedGroupIndex].push([coordX, coordY, xMinusY, xPlusY]);
+  } else {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenizedInput.slice(tokenIndex, tokenIndex += width).map(val => +val));
+    }
   }
+  return resultMatrix;
+}
 
-  let minimumObservedDistance = MAX_POSSIBLE_DIST;
+// Original xArray function is replaced with a direct Array.from call for clarity and safety.
+// The original xArray function used eval, which is generally discouraged.
+// This change maintains the exact behavior of initializing an array of arrays.
 
-  // Helper function to sort a given array of points based on two specified indices.
-  const sortPointsByDimensions = (pointsList, primaryDimensionIndex, secondaryDimensionIndex) => {
-    pointsList.sort((pointA, pointB) => {
-      // Primary sort criterion
-      if (pointA[primaryDimensionIndex] !== pointB[primaryDimensionIndex]) {
-        return pointA[primaryDimensionIndex] - pointB[primaryDimensionIndex];
-      }
-      // Secondary sort criterion if primary values are equal
-      return pointA[secondaryDimensionIndex] - pointB[secondaryDimensionIndex];
-    });
+var programResult = solveProblem();
+if (programResult !== undefined) console.log(String(programResult));
+
+function solveProblem() {
+  const maxPossibleDistance = 1e9;
+  const numEntries = readNextNum();
+  const directionalPoints = Array.from({
+    length: 4
+  }, () => []); // Equivalent to xArray("[]", 4)
+  const directionToGroupIndex = {
+    U: 0,
+    R: 1,
+    D: 2,
+    L: 3
   };
 
-  // --- Collision Detection Block 1: Axis-aligned (Horizontal/Vertical) collisions ---
-  // This block looks for collisions between 'U' & 'D' points (vertical)
-  // and 'R' & 'L' points (horizontal).
-  // 'U' (0) vs 'D' (2) -> Same X-coordinate, different Y-coordinates.
-  // 'R' (1) vs 'L' (3) -> Same Y-coordinate, different X-coordinates.
-
-  // First, sort each directional group.
-  // For 'U'/'D' (groups 0, 2), sort by X (index 0), then Y (index 1).
-  // For 'R'/'L' (groups 1, 3), sort by Y (index 1), then X (index 0).
-  for (let groupIdx = 0; groupIdx < 4; ++groupIdx) {
-    const primaryDim = groupIdx % 2;       // 0 for U/D (X), 1 for R/L (Y)
-    const secondaryDim = 1 - primaryDim; // 1 for U/D (Y), 0 for R/L (X)
-    sortPointsByDimensions(directionalPointGroups[groupIdx], primaryDim, secondaryDim);
+  for (let entryIdx = 0; entryIdx < numEntries; entryIdx++) {
+    const currentX = readNextNum();
+    const currentY = readNextNum();
+    const currentDirection = readNextStr();
+    const diffCoords = currentX - currentY;
+    const sumCoords = currentX + currentY;
+    directionalPoints[directionToGroupIndex[currentDirection]].push([currentX, currentY, diffCoords, sumCoords]);
   }
 
-  // Iterate over the two collision pairs: (U,D) and (R,L).
-  for (let pairType = 0; pairType < 2; ++pairType) {
-    const firstGroupIdx = pairType;       // 0 for U, 1 for R
-    const secondGroupIdx = pairType + 2; // 2 for D, 3 for L
+  let minDistance = maxPossibleDistance;
 
-    const pointsFromFirstGroup = directionalPointGroups[firstGroupIdx];
-    const pointsFromSecondGroup = directionalPointGroups[secondGroupIdx];
-
-    // Optimization: Skip if either group is empty.
-    if (pointsFromFirstGroup.length === 0 || pointsFromSecondGroup.length === 0) {
-      continue;
-    }
-
-    let secondGroupPointer = 0; // Two-pointer for the second group.
-
-    // The coordinate that must match for a potential collision (X for U/D, Y for R/L).
-    const sharedAlignmentDimension = pairType % 2;
-    // The coordinate along which distance is measured (Y for U/D, X for R/L).
-    const collisionDistanceDimension = 1 - sharedAlignmentDimension;
-
-    // Iterate through points in the first group.
-    for (let currentPointIdx = 0; currentPointIdx < pointsFromFirstGroup.length; ++currentPointIdx) {
-      const currentPointA = pointsFromFirstGroup[currentPointIdx];
-
-      // Advance secondGroupPointer past points in the second group that are "behind" currentPointA
-      // along the shared alignment dimension.
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedAlignmentDimension] < currentPointA[sharedAlignmentDimension]
-      ) {
-        secondGroupPointer++;
+  // First Calculation Block: Vertical/Horizontal alignment (comparing U-D and R-L)
+  for (let groupIdx = 0; groupIdx < 4; groupIdx++) {
+    const primarySortAxis = groupIdx & 1; // 0 for U,D; 1 for R,L
+    const secondarySortAxis = 1 - primarySortAxis;
+    directionalPoints[groupIdx].sort((ptA, ptB) => {
+      if (ptA[primarySortAxis] !== ptB[primarySortAxis]) {
+        return ptA[primarySortAxis] - ptB[primarySortAxis];
       }
+      return ptA[secondarySortAxis] - ptB[secondarySortAxis];
+    });
+  }
 
-      // Further advance secondGroupPointer if alignment dimensions match, but currentPointA
-      // is at or "behind" the point in the second group along the collision distance dimension.
-      // Example: U (Y_A) vs D (Y_B). If Y_A >= Y_B, D is not "below" U, so skip.
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedAlignmentDimension] === currentPointA[sharedAlignmentDimension] &&
-        currentPointA[collisionDistanceDimension] >= pointsFromSecondGroup[secondGroupPointer][collisionDistanceDimension]
-      ) {
-        secondGroupPointer++;
+  for (let groupPairIdx = 0; groupPairIdx < 2; groupPairIdx++) {
+    let currentPointer = 0;
+    const groupA = directionalPoints[groupPairIdx];
+    const groupB = directionalPoints[groupPairIdx + 2]; // U vs D, R vs L
+    const comparisonAxis = groupPairIdx; // 0 for U-D (x), 1 for R-L (y)
+    const valueAxis = 1 - groupPairIdx; // 1 for U-D (y), 0 for R-L (x)
+
+    if (!groupB.length) continue;
+
+    for (let i = 0; i < groupA.length; i++) {
+      const pointFromA = groupA[i];
+      while (currentPointer < groupB.length && groupB[currentPointer][comparisonAxis] < pointFromA[comparisonAxis]) {
+        currentPointer++;
       }
-
-      // If the secondGroupPointer has exhausted its list, no further collisions for currentPointA.
-      if (secondGroupPointer === pointsFromSecondGroup.length) {
-        break;
+      while (currentPointer < groupB.length &&
+        groupB[currentPointer][comparisonAxis] === pointFromA[comparisonAxis] &&
+        pointFromA[valueAxis] > groupB[currentPointer][valueAxis]) {
+        currentPointer++;
       }
+      if (currentPointer === groupB.length) break;
 
-      // If alignment dimensions match, a collision is possible.
-      if (currentPointA[sharedAlignmentDimension] === pointsFromSecondGroup[secondGroupPointer][sharedAlignmentDimension]) {
-        const calculatedDistance = Math.abs(
-          pointsFromSecondGroup[secondGroupPointer][collisionDistanceDimension] - currentPointA[collisionDistanceDimension]
-        );
-        minimumObservedDistance = Math.min(minimumObservedDistance, calculatedDistance);
+      const pointFromB = groupB[currentPointer];
+      if (pointFromA[comparisonAxis] === pointFromB[comparisonAxis]) {
+        minDistance = Math.min(minDistance, pointFromB[valueAxis] - pointFromA[valueAxis]);
       }
     }
   }
 
-  // --- Collision Detection Block 2: Anti-diagonal collisions (x+y constant) ---
-  // This block identifies collisions between 'U' & 'R' points, and 'D' & 'L' points.
-  // These pairs collide when their (x+y) sum is constant.
-  // 'U' (0) vs 'R' (1)
-  // 'D' (2) vs 'L' (3)
-
-  // Sort all directional groups by their (x+y) sum (index 3).
-  // Secondary sort: for U/D (groups 0,2) by Y (index 1); for R/L (groups 1,3) by X (index 0).
-  for (let groupIdx = 0; groupIdx < 4; ++groupIdx) {
-    const primaryDim = 3; // (x+y) sum
-    // Original logic: 1 - (i & 1) for secondary sort.
-    // i=0 (U) -> 1 (Y), i=1 (R) -> 0 (X), i=2 (D) -> 1 (Y), i=3 (L) -> 0 (X)
-    const secondaryDim = 1 - (groupIdx % 2);
-    sortPointsByDimensions(directionalPointGroups[groupIdx], primaryDim, secondaryDim);
+  // Second Calculation Block: Diagonal x+y alignment (comparing U-R and D-L)
+  for (let groupIdx = 0; groupIdx < 4; groupIdx++) {
+    const secondarySortKeyIndex = 1 - (groupIdx & 1); // 1 for U,D; 0 for R,L
+    directionalPoints[groupIdx].sort((ptA, ptB) => {
+      if (ptA[3] !== ptB[3]) { // Sort by x+y
+        return ptA[3] - ptB[3];
+      }
+      return ptA[secondarySortKeyIndex] - ptB[secondarySortKeyIndex];
+    });
   }
 
-  // Iterate over the two anti-diagonal collision pairs: (U,R) and (D,L).
-  for (let pairOffset = 0; pairOffset < 4; pairOffset += 2) {
-    const firstGroupIdx = pairOffset;       // 0 for U, 2 for D
-    const secondGroupIdx = pairOffset + 1; // 1 for R, 3 for L
+  for (let groupPairIdx = 0; groupPairIdx < 4; groupPairIdx += 2) {
+    let currentPointer = 0;
+    const groupA = directionalPoints[groupPairIdx];
+    const groupB = directionalPoints[groupPairIdx + 1]; // U vs R, D vs L
+    const comparisonAxis = 3; // x+y
+    const valueAxis = 1 - (groupPairIdx / 2); // 1 for U-R (y), 0 for D-L (x)
 
-    const pointsFromFirstGroup = directionalPointGroups[firstGroupIdx];
-    const pointsFromSecondGroup = directionalPointGroups[secondGroupIdx];
+    if (!groupB.length) continue;
 
-    if (pointsFromFirstGroup.length === 0 || pointsFromSecondGroup.length === 0) {
-      continue;
-    }
-
-    let secondGroupPointer = 0;
-    const sharedSumDimension = 3; // Index for (x+y)
-
-    // Dimension used for relative position check.
-    // Original logic: 1 - (k / 2) where k was 0 or 2.
-    // k=0 (U,R) -> 1 (Y).  k=2 (D,L) -> 0 (X).
-    const relativePositionDimension = 1 - (pairOffset / 2);
-
-    for (let currentPointIdx = 0; currentPointIdx < pointsFromFirstGroup.length; ++currentPointIdx) {
-      const currentPointA = pointsFromFirstGroup[currentPointIdx];
-
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedSumDimension] < currentPointA[sharedSumDimension]
-      ) {
-        secondGroupPointer++;
+    for (let i = 0; i < groupA.length; i++) {
+      const pointFromA = groupA[i];
+      while (currentPointer < groupB.length && groupB[currentPointer][comparisonAxis] < pointFromA[comparisonAxis]) {
+        currentPointer++;
       }
-
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedSumDimension] === currentPointA[sharedSumDimension] &&
-        currentPointA[relativePositionDimension] >= pointsFromSecondGroup[secondGroupPointer][relativePositionDimension]
-      ) {
-        secondGroupPointer++;
+      while (currentPointer < groupB.length &&
+        groupB[currentPointer][comparisonAxis] === pointFromA[comparisonAxis] &&
+        pointFromA[valueAxis] > groupB[currentPointer][valueAxis]) {
+        currentPointer++;
       }
+      if (currentPointer === groupB.length) break;
 
-      if (secondGroupPointer === pointsFromSecondGroup.length) {
-        break;
-      }
-
-      if (currentPointA[sharedSumDimension] === pointsFromSecondGroup[secondGroupPointer][sharedSumDimension]) {
-        // For anti-diagonal collisions, the distance is calculated as 2 * absolute difference
-        // in the relevant coordinate (Y for U/R, X for D/L).
-        const calculatedDistance =
-          Math.abs(pointsFromSecondGroup[secondGroupPointer][relativePositionDimension] - currentPointA[relativePositionDimension]) * 2;
-        minimumObservedDistance = Math.min(minimumObservedDistance, calculatedDistance);
+      const pointFromB = groupB[currentPointer];
+      if (pointFromA[comparisonAxis] === pointFromB[comparisonAxis]) {
+        minDistance = Math.min(minDistance, (pointFromB[valueAxis] - pointFromA[valueAxis]) * 2);
       }
     }
   }
 
-  // --- Collision Detection Block 3: Diagonal collisions (x-y constant) ---
-  // This block identifies collisions between 'U' & 'L' points, and 'D' & 'R' points.
-  // These pairs collide when their (x-y) difference is constant.
-  // 'U' (0) vs 'L' (3)
-  // 'D' (2) vs 'R' (1)
-
-  // Sort all directional groups by their (x-y) difference (index 2), then by X (index 0).
-  for (let groupIdx = 0; groupIdx < 4; ++groupIdx) {
-    const primaryDim = 2; // (x-y) difference
-    const secondaryDim = 0; // X-coordinate
-    sortPointsByDimensions(directionalPointGroups[groupIdx], primaryDim, secondaryDim);
+  // Third Calculation Block: Diagonal x-y alignment (comparing U-L and R-D)
+  for (let groupIdx = 0; groupIdx < 4; groupIdx++) {
+    directionalPoints[groupIdx].sort((ptA, ptB) => {
+      if (ptA[2] !== ptB[2]) { // Sort by x-y
+        return ptA[2] - ptB[2];
+      }
+      return ptA[0] - ptB[0]; // Then by x
+    });
   }
 
-  // Iterate over the two diagonal collision pairs: (U,L) and (D,R).
-  for (let pairOffset = 0; pairOffset < 2; ++pairOffset) {
-    const firstGroupIdx = pairOffset;       // 0 for U, 1 for R (Original: k=0,1 then a[k] vs a[3-k])
-    // The original code used `a[k]` and `a[3-k]`.
-    // For k=0 (U), it's U (0) vs L (3).
-    // For k=1 (R), it's R (1) vs D (2).
-    // Let's adjust the indices to match this.
-    // If firstGroupIdx is 0 (U), secondGroupIdx is 3 (L).
-    // If firstGroupIdx is 2 (D), secondGroupIdx is 1 (R).
-    // The original code iterated k=0,1.
-    // For k=0: a[0] (U) vs a[3] (L).
-    // For k=1: a[1] (R) vs a[2] (D).
-    // So the loop should be for (U,L) and (R,D).
-    const actualFirstGroupIdx = (pairOffset === 0) ? 0 : 2; // 0 for U, 2 for D
-    const actualSecondGroupIdx = (pairOffset === 0) ? 3 : 1; // 3 for L, 1 for R
+  for (let groupPairIdx = 0; groupPairIdx < 2; groupPairIdx++) {
+    let currentPointer = 0;
+    const groupA = directionalPoints[groupPairIdx];
+    const groupB = directionalPoints[3 - groupPairIdx]; // U vs L, R vs D
+    const comparisonAxis = 2; // x-y
+    const valueAxis = 0; // x
 
-    const pointsFromFirstGroup = directionalPointGroups[actualFirstGroupIdx];
-    const pointsFromSecondGroup = directionalPointGroups[actualSecondGroupIdx];
+    if (!groupB.length) continue;
 
-    if (pointsFromFirstGroup.length === 0 || pointsFromSecondGroup.length === 0) {
-      continue;
-    }
-
-    let secondGroupPointer = 0;
-    const sharedDiffDimension = 2; // Index for (x-y)
-    const relativePositionDimension = 0; // X-coordinate for relative position check
-
-    for (let currentPointIdx = 0; currentPointIdx < pointsFromFirstGroup.length; ++currentPointIdx) {
-      const currentPointA = pointsFromFirstGroup[currentPointIdx];
-
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedDiffDimension] < currentPointA[sharedDiffDimension]
-      ) {
-        secondGroupPointer++;
+    for (let i = 0; i < groupA.length; i++) {
+      const pointFromA = groupA[i];
+      while (currentPointer < groupB.length && groupB[currentPointer][comparisonAxis] < pointFromA[comparisonAxis]) {
+        currentPointer++;
       }
-
-      while (
-        secondGroupPointer < pointsFromSecondGroup.length &&
-        pointsFromSecondGroup[secondGroupPointer][sharedDiffDimension] === currentPointA[sharedDiffDimension] &&
-        currentPointA[relativePositionDimension] >= pointsFromSecondGroup[secondGroupPointer][relativePositionDimension]
-      ) {
-        secondGroupPointer++;
+      while (currentPointer < groupB.length &&
+        groupB[currentPointer][comparisonAxis] === pointFromA[comparisonAxis] &&
+        pointFromA[valueAxis] > groupB[currentPointer][valueAxis]) {
+        currentPointer++;
       }
+      if (currentPointer === groupB.length) break;
 
-      if (secondGroupPointer === pointsFromSecondGroup.length) {
-        break;
-      }
-
-      if (currentPointA[sharedDiffDimension] === pointsFromSecondGroup[secondGroupPointer][sharedDiffDimension]) {
-        // For diagonal collisions, the distance is calculated as 2 * absolute difference in X-coordinate.
-        const calculatedDistance =
-          Math.abs(pointsFromSecondGroup[secondGroupPointer][relativePositionDimension] - currentPointA[relativePositionDimension]) * 2;
-        minimumObservedDistance = Math.min(minimumObservedDistance, calculatedDistance);
+      const pointFromB = groupB[currentPointer];
+      if (pointFromA[comparisonAxis] === pointFromB[comparisonAxis]) {
+        minDistance = Math.min(minDistance, (pointFromB[valueAxis] - pointFromA[valueAxis]) * 2);
       }
     }
   }
 
-  // Determine the final output based on whether any collision was found.
-  const finalOutput = minimumObservedDistance === MAX_POSSIBLE_DIST ? "SAFE" : minimumObservedDistance * 5;
-  return finalOutput;
+  return minDistance === maxPossibleDistance ? "SAFE" : minDistance * 5;
 }
-
-// Entry point for executing the solution and printing the result.
-function runSolution() {
-  const problemResult = findMinCollisionDistance();
-  console.log(String(problemResult));
-}
-
-// Execute the main solution logic.
-runSolution();

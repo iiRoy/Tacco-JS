@@ -1,145 +1,141 @@
-var x_dir_vec = [-1, 0, 1, -1]; // Initial X-axis displacement values
-var y_dir_vec = [-1, -1, -1, 0]; // Initial Y-axis displacement values
-var z_dir_vec = [0, 0, 0, 0];   // Initial Z-axis displacement values
+var deltaXCoords = [-1, 0, 1, -1];
+var deltaYCoords = [-1, -1, -1, 0];
+var deltaZCoords = [0, 0, 0, 0];
 
-// Concatenate additional displacement values to expand the direction vectors
-y_dir_vec = y_dir_vec.concat([-1, 0, 1, -1]);
-z_dir_vec = z_dir_vec.concat([-1, -1, -1, 0]);
-x_dir_vec = x_dir_vec.concat([0, 0, 0, 0]);
+// Extend the direction vectors for 3D traversal
+deltaYCoords = deltaYCoords.concat([-1, 0, 1, -1]);
+deltaZCoords = deltaZCoords.concat([-1, -1, -1, 0]);
+deltaXCoords = deltaXCoords.concat([0, 0, 0, 0]);
 
-z_dir_vec = z_dir_vec.concat([-1, 0, 1, -1]);
-x_dir_vec = x_dir_vec.concat([-1, -1, -1, 0]);
-y_dir_vec = y_dir_vec.concat([0, 0, 0, 0]);
+deltaZCoords = deltaZCoords.concat([-1, 0, 1, -1]);
+deltaXCoords = deltaXCoords.concat([-1, -1, -1, 0]);
+deltaYCoords = deltaYCoords.concat([0, 0, 0, 0]);
 
-x_dir_vec = x_dir_vec.concat([1, -1, 1, -1]);
-y_dir_vec = y_dir_vec.concat([-1, -1, -1, -1]);
-z_dir_vec = z_dir_vec.concat([-1, -1, 1, 1]);
+deltaXCoords = deltaXCoords.concat([1, -1, 1, -1]);
+deltaYCoords = deltaYCoords.concat([-1, -1, -1, -1]);
+deltaZCoords = deltaZCoords.concat([-1, -1, 1, 1]);
 
 /**
- * Checks for the longest continuous line of the current player's tokens
- * starting from a given position in all defined directions.
- * @param {number} current_player_token The identifier of the current player (e.g., 1 or 2).
- * @param {number} start_x_coord The X coordinate to start the line check from.
- * @param {number} start_y_coord The Y coordinate to start the line check from.
- * @param {number} start_z_coord The Z coordinate to start the line check from.
- * @returns {number} The maximum length of a continuous line found for the current player.
+ * Checks for a winning line of 'm' consecutive pieces after a piece is placed.
+ * @param {number} currentPlayerIdentifier - The ID of the player whose piece was just placed (1 or 2).
+ * @param {number} currentXPos - The X coordinate of the newly placed piece.
+ * @param {number} currentYPos - The Y coordinate of the newly placed piece.
+ * @param {number} currentZPos - The Z coordinate of the newly placed piece.
+ * @returns {number} The maximum number of consecutive pieces found in any direction.
  */
-function check_winning_line(current_player_token, start_x_coord, start_y_coord, start_z_coord) {
-    let maximum_length = 0; // Stores the longest streak found so far.
+function checkWinCondition(currentPlayerIdentifier, currentXPos, currentYPos, currentZPos) {
+   let maximumConsecutive = 0; // Stores the highest count of consecutive pieces
+   // Iterate through all possible 3D directions
+   for (let directionIndex = 0; directionIndex < deltaXCoords.length; directionIndex++) {
+      let tempXCoord = currentXPos;
+      let tempYCoord = currentYPos;
+      let tempZCoord = currentZPos;
 
-    // Iterate through all possible 3D directions.
-    for (let direction_idx = 0; direction_idx < x_dir_vec.length; direction_idx++) {
-        let current_x_pos = start_x_coord;
-        let current_y_pos = start_y_coord;
-        let current_z_pos = start_z_coord;
+      // First, move backwards along the current direction until out of bounds or a different piece is found
+      while (true) {
+         tempXCoord -= deltaXCoords[directionIndex];
+         tempYCoord -= deltaYCoords[directionIndex];
+         tempZCoord -= deltaZCoords[directionIndex];
 
-        // Traverse backward along the current direction until out of bounds or an empty spot.
-        while (true) {
-            current_x_pos -= x_dir_vec[direction_idx];
-            current_y_pos -= y_dir_vec[direction_idx];
-            current_z_pos -= z_dir_vec[direction_idx];
+         // Check if coordinates are out of bounds
+         if (tempXCoord < 0 || tempYCoord < 0 || tempZCoord < 0) break;
+         if (tempXCoord >= gridDimensionN || tempYCoord >= gridDimensionN || tempZCoord >= totalMovesP) break;
+      }
 
-            // Break if current position is outside the grid boundaries.
-            if (current_x_pos < 0 || current_y_pos < 0 || current_z_pos < 0) break;
-            if (current_x_pos >= grid_dim_x || current_y_pos >= grid_dim_x || current_z_pos >= total_moves) break;
-        }
+      let consecutiveCount = 0; // Counter for consecutive pieces in the current line
+      // Now, move forwards along the current direction, counting consecutive pieces
+      while (true) {
+         tempXCoord += deltaXCoords[directionIndex];
+         tempYCoord += deltaYCoords[directionIndex];
+         tempZCoord += deltaZCoords[directionIndex];
 
-        let consecutive_count = 0; // Counts tokens in the current continuous line.
+         // Check if coordinates are out of bounds
+         if (tempXCoord < 0 || tempYCoord < 0 || tempZCoord < 0) break;
+         if (tempXCoord >= gridDimensionN || tempYCoord >= gridDimensionN || tempZCoord >= totalMovesP) break;
 
-        // Traverse forward along the current direction, counting player tokens.
-        while (true) {
-            current_x_pos += x_dir_vec[direction_idx];
-            current_y_pos += y_dir_vec[direction_idx];
-            current_z_pos += z_dir_vec[direction_idx];
-
-            // Break if current position is outside the grid boundaries.
-            if (current_x_pos < 0 || current_y_pos < 0 || current_z_pos < 0) break;
-            if (current_x_pos >= grid_dim_x || current_y_pos >= grid_dim_x || current_z_pos >= total_moves) break;
-
-            // If the token matches the current player, increment count; otherwise, reset.
-            if (game_board_matrix[current_x_pos][current_y_pos][current_z_pos] === current_player_token) {
-                consecutive_count++;
-            } else {
-                consecutive_count = 0;
-            }
-            // Update the maximum length found.
-            maximum_length = Math.max(maximum_length, consecutive_count);
-        }
-    }
-    return maximum_length; // Return the longest streak.
+         // If the piece belongs to the current player, increment count
+         if (gameBoardState[tempXCoord][tempYCoord][tempZCoord] === currentPlayerIdentifier) {
+            consecutiveCount++;
+         } else {
+            // Reset count if a different piece or empty spot is encountered
+            consecutiveCount = 0;
+         }
+         // Update the maximum consecutive count found so far
+         maximumConsecutive = Math.max(maximumConsecutive, consecutiveCount);
+      }
+   }
+   return maximumConsecutive;
 }
 
-// Read all input data from standard input.
-const raw_input_content = require('fs').readFileSync('/dev/stdin', 'utf8');
-// Split the input into an array of lines and remove leading/trailing whitespace.
-let input_lines_array = raw_input_content.trim().split("\n");
+// Read input from stdin
+var fileInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLineArray = fileInputContent.trim().split("\n");
 
-// Main game loop: processes multiple game scenarios until a termination condition.
+// Process game rounds until "0 0 0" is encountered
 while (true) {
-    // Extract the first line which contains game dimensions and required match length.
-    let game_dimensions_line = input_lines_array.shift();
-    // Check for termination condition "0 0 0".
-    if (game_dimensions_line === "0 0 0") break;
+   var dimensionsString = inputLineArray.shift();
+   if (dimensionsString === "0 0 0") break; // Termination condition
 
-    // Parse the game dimensions line into numbers.
-    let parsed_dimensions = game_dimensions_line.split(" ").map(Number);
-    let grid_dim_x = parsed_dimensions[0]; // N: Grid dimension (N x N base).
-    let match_length_required = parsed_dimensions[1]; // M: Length of line needed to win.
-    let total_moves = parsed_dimensions[2]; // P: Total number of moves in the game.
+   // Parse N, M, P for the current game
+   dimensionsString = dimensionsString.split(" ").map(Number);
+   var gridDimensionN = dimensionsString[0];    // Size of the N x N grid
+   var winLengthM = dimensionsString[1];        // Number of consecutive pieces for a win
+   var totalMovesP = dimensionsString[2];       // Total number of moves in the game (max Z-depth)
 
-    // Initialize the 3D game board (N x N x P) with zeros (empty slots).
-    let game_board_matrix = [];
-    for (let row_index = 0; row_index < grid_dim_x; row_index++) {
-        game_board_matrix[row_index] = [];
-        for (let column_index = 0; column_index < grid_dim_x; column_index++) {
-            game_board_matrix[row_index][column_index] = [];
-            for (let depth_index = 0; depth_index < total_moves; depth_index++) {
-                game_board_matrix[row_index][column_index][depth_index] = 0; // 0 indicates an empty slot.
-            }
-        }
-    }
+   // Initialize the 3D game board
+   var gameBoardState = [];
+   for (let loopIndex = 0; loopIndex < gridDimensionN; loopIndex++) {
+      gameBoardState[loopIndex] = [];
+      for (let nestedLoopIndexJ = 0; nestedLoopIndexJ < gridDimensionN; nestedLoopIndexJ++) {
+         gameBoardState[loopIndex][nestedLoopIndexJ] = [];
+         for (let nestedLoopIndexK = 0; nestedLoopIndexK < totalMovesP; nestedLoopIndexK++) {
+            gameBoardState[loopIndex][nestedLoopIndexJ][nestedLoopIndexK] = 0; // 0 for empty
+         }
+      }
+   }
 
-    // Read all P moves from the input and store them.
-    let player_moves_list = [];
-    for (let move_iterator = 0; move_iterator < total_moves; move_iterator++) {
-        player_moves_list.push(input_lines_array.shift().split(" ").map(Number));
-    }
+   // Read all player moves for this game
+   var playerMoveCoordinates = [];
+   for (let loopIndex = 0; loopIndex < totalMovesP; loopIndex++) {
+      playerMoveCoordinates.push(inputLineArray.shift().split(" ").map(Number));
+   }
 
-    let current_player_identifier = 1; // Player 1 starts (e.g., Black).
-    let game_is_draw = true; // Assume a draw until a winner is found.
+   var activePlayerId = 1; // Player 1 starts (Black)
+   var isGameDraw = true;  // Assume draw until a win occurs
 
-    // Process each move in the game.
-    for (let move_iterator = 0; move_iterator < total_moves; move_iterator++) {
-        let current_move_coordinates = player_moves_list[move_iterator];
-        let move_x_coord = current_move_coordinates[0] - 1; // Convert to 0-indexed.
-        let move_y_coord = current_move_coordinates[1] - 1; // Convert to 0-indexed.
+   // Simulate each move
+   for (let loopIndex = 0; loopIndex < totalMovesP; loopIndex++) {
+      var currentMovePair = playerMoveCoordinates[loopIndex];
+      var placedXCoord = currentMovePair[0] - 1; // Adjust to 0-indexed
+      var placedYCoord = currentMovePair[1] - 1; // Adjust to 0-indexed
+      var placementDepth = 0; // Z-coordinate for placing the piece
 
-        let drop_layer_index = 0; // Determines the Z-coordinate (layer) where the token will drop.
-        // Find the lowest available layer in the specified (x,y) column.
-        while (true) {
-            if (game_board_matrix[move_x_coord][move_y_coord][drop_layer_index] !== 0) {
-                drop_layer_index++; // Move to the next layer if current is occupied.
-            } else {
-                break; // Found an empty layer.
-            }
-        }
-        // Place the current player's token on the board.
-        game_board_matrix[move_x_coord][move_y_coord][drop_layer_index] = current_player_identifier;
+      // Find the lowest available Z-depth for the current (X, Y) column
+      while (true) {
+         if (gameBoardState[placedXCoord][placedYCoord][placementDepth] !== 0) {
+            placementDepth++; // Move up if current spot is occupied
+         } else {
+            break; // Found an empty spot
+         }
+      }
 
-        // Check if the current move results in a win.
-        if (check_winning_line(current_player_identifier, move_x_coord, move_y_coord, drop_layer_index) >= match_length_required) {
-            // Output winner and move number.
-            console.log((current_player_identifier === 2) ? "White" : "Black", move_iterator + 1);
-            game_is_draw = false; // A winner has been found.
-            break; // End the game loop for this scenario.
-        }
+      // Place the piece on the board
+      gameBoardState[placedXCoord][placedYCoord][placementDepth] = activePlayerId;
 
-        // Switch players for the next turn: 1 -> 2, 2 -> 1.
-        current_player_identifier = 2 / current_player_identifier;
-    }
+      // Check if the current player has won
+      if (checkWinCondition(activePlayerId, placedXCoord, placedYCoord, placementDepth) >= winLengthM) {
+         // Output winner and move number
+         console.log((activePlayerId === 2) ? "White" : "Black", loopIndex + 1);
+         isGameDraw = false; // Game is not a draw
+         break; // End the game
+      }
 
-    // If no winner was found after all moves, it's a draw.
-    if (game_is_draw) {
-        console.log("Draw");
-    }
+      // Switch to the next player (1 -> 2, 2 -> 1)
+      activePlayerId = 2 / activePlayerId;
+   }
+
+   // If no winner was found after all moves, it's a draw
+   if (isGameDraw) {
+      console.log("Draw");
+   }
 }

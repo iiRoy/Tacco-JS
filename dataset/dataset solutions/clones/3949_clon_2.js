@@ -1,57 +1,56 @@
-function processInputData(incomingText) {
-  // Break down the received string into individual lines
-  incomingText = incomingText.split("\n");
-  
-  // Parse the first two integer values from the initial line
-  let valX = parseInt(incomingText[0].split(" ")[0]);
-  let valY = parseInt(incomingText[0].split(" ")[1]);
+function ProcessInput(rawData) {
+  rawData = rawData.split("\n");
 
-  // Initialize a 2D array (matrix) of 100x100 characters
-  let charMatrix = new Array(100);
-  
-  // Populate the matrix with initial characters
-  for (let idx = 0; idx < 100; idx++) {
-    let tempArr;
-    if (idx < 50) {
-      // First 50 rows filled with '.'
-      tempArr = new Array(100).fill(".");
+  let firstValue = parseInt(rawData[0].split(" ")[0]);
+  let secondValue = parseInt(rawData[0].split(" ")[1]);
+
+  // Initialize a 100x100 grid
+  let canvasMatrix = new Array(100);
+
+  for (let rowIndex = 0; rowIndex < 100; rowIndex++) {
+    let currentLineData;
+    if (rowIndex < 50) {
+      // First 50 rows are filled with '.'
+      currentLineData = new Array(100).fill(".");
     } else {
-      // Remaining 50 rows filled with '#'
-      tempArr = new Array(100).fill("#");
+      // Remaining 50 rows are filled with '#'
+      currentLineData = new Array(100).fill("#");
     }
-    charMatrix[idx] = tempArr;
+    canvasMatrix[rowIndex] = currentLineData;
   }
 
-  // Modify the matrix based on valY
-  for (let loopX = 0; loopX < valY - 1; loopX++) {
-    charMatrix[Math.round(loopX / 50) * 2][(loopX % 50) * 2] = "#";
+  // Modify the grid based on the second input value
+  for (let bCounter = 0; bCounter < secondValue - 1; bCounter++) {
+    let targetRow = Math.round(bCounter / 50) * 2;
+    let targetCol = (bCounter % 50) * 2;
+    canvasMatrix[targetRow][targetCol] = "#";
   }
 
-  // Further modify the matrix based on valX
-  for (let loopY = 0; loopY < valX - 1; loopY++) {
-    charMatrix[99 - Math.round(loopY / 50) * 2][(loopY % 50) * 2] = ".";
+  // Modify the grid based on the first input value
+  for (let aCounter = 0; aCounter < firstValue - 1; aCounter++) {
+    let targetRow = 99 - Math.round(aCounter / 50) * 2;
+    let targetCol = (aCounter % 50) * 2;
+    canvasMatrix[targetRow][targetCol] = ".";
   }
 
-  // Convert the character matrix into an array of joined strings
-  const outputLines = new Array(100);
-  for (let rowNum = 0; rowNum < 100; rowNum++) {
-    outputLines[rowNum] = charMatrix[rowNum].join("");
+  // Convert the 2D array into an array of strings
+  let finalOutputRows = new Array(100);
+  for (let outputRowIndex = 0; outputRowIndex < 100; outputRowIndex++) {
+    finalOutputRows[outputRowIndex] = canvasMatrix[outputRowIndex].join("");
   }
-  
-  // Join all the string rows with newlines to form the final result
-  const finalOutput = outputLines.join("\n");
 
-  // Output the generated string to the console
-  console.log('%s', finalOutput);
+  // Join the array of strings into a single string with newlines
+  let finalResultString = finalOutputRows.join("\n");
+
+  // Print the generated pattern to the console
+  console.log('%s', finalResultString);
 }
 
-// Helper function for local development environment
-function testUtility() {
-  // Retrieve input from a specified HTML element
-  const testInput = document.getElementById("inputElement").value;
-  // Execute the main processing logic
-  processInputData(testInput);
+// This function is for local debugging, typically triggered by a UI button.
+function executeTest() {
+  let testData = document.getElementById("input").value;
+  ProcessInput(testData);
 }
 
-// Invoke the primary processing function with input from standard I/O
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function with input from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

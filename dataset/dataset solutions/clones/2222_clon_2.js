@@ -1,69 +1,49 @@
-"use strict"; // Enforce strict mode for cleaner code execution
+"use strict";
 
-/**
- * Executes the primary data processing logic.
- * This function calculates the sum of products of digit pair occurrences.
- * @param {string} rawInputText - The raw string input, typically from stdin.
- */
-const processInputData = (rawInputText) => {
-    // --- Pre-processing the input string ---
-    // Remove leading/trailing whitespace and split into lines.
-    const inputLines = rawInputText.trim().split("\n");
-
-    // Parse the first line to get the upper bound for number generation.
-    const upperBound = parseInt(inputLines[0], 10); // Using radix 10 for safety.
-
-    // --- Initialize a 2D array (matrix) to store digit pair frequencies ---
-    // This matrix will track how many times a number starts with 'i' and ends with 'j'.
-    const firstLastDigitCounts = [];
-
-    // Populate the matrix with initial zero values.
-    // The matrix dimensions are 10x10, representing digits 0-9.
-    for (let rowIterator = 0; rowIterator < 10; ++rowIterator) {
-        firstLastDigitCounts.push(new Array(10).fill(0));
+const processInput = (inputData) => {
+    // Clean and parse the input string
+    inputData = inputData.trim().split('\n');
+    const limitNum = parseInt(inputData[0]);
+    
+    // Initialize a 2D array (matrix) to store counts
+    // countMatrix[firstDigit][lastDigit] will store how many numbers
+    // from 1 to limitNum start with 'firstDigit' and end with 'lastDigit'.
+    const countMatrix = []; 
+    
+    // Populate the count matrix with initial zeros
+    for (let outerIdx = 0; outerIdx < 10; outerIdx++) {
+        countMatrix.push(new Array(10).fill(0)); 
     }
-
-    // --- Populate the frequency matrix based on numbers from 1 to upperBound ---
-    // Iterate through each integer from 1 up to the specified limit.
-    for (let currentInteger = 1; currentInteger <= upperBound; currentInteger++) {
-        // Convert the current integer to its string representation to easily access digits.
-        const integerString = String(currentInteger);
-
-        // Extract the first digit (head) of the number.
-        const initialDigit = parseInt(integerString[0], 10);
-
-        // Extract the last digit (tail) of the number.
-        const finalDigit = parseInt(integerString[integerString.length - 1], 10);
-
-        // Increment the count for this specific (initialDigit, finalDigit) pair in the matrix.
-        firstLastDigitCounts[initialDigit][finalDigit]++;
+    
+    // Iterate through numbers from 1 to limitNum
+    for (let currentNum = 1; currentNum <= limitNum; currentNum++) {
+        const numStr = String(currentNum);
+        // Extract the first digit
+        const firstDigit = parseInt(numStr[0]);
+        // Extract the last digit
+        const lastDigit = parseInt(numStr[numStr.length - 1]);
+        
+        // Increment the count for the corresponding (firstDigit, lastDigit) pair
+        countMatrix[firstDigit][lastDigit]++; 
     }
-
-    // A debugging line, now commented out and altered.
-    // console.debug(`Frequency matrix:\n${firstLastDigitCounts.map(r => r.join(' ')).join('\n')}`);
-
-    // --- Calculate the final result by summing products of symmetric digit pair counts ---
-    let totalPairedOccurrences = 0; // Initialize a variable to accumulate the result.
-
-    // Iterate through all possible first digits (0-9).
-    for (let firstDigitIndex = 0; firstDigitIndex < 10; firstDigitIndex++) {
-        // Iterate through all possible second digits (0-9).
-        for (let secondDigitIndex = 0; secondDigitIndex < 10; secondDigitIndex++) {
-            // Retrieve the count for (firstDigit, secondDigit) pair.
-            const countOne = firstLastDigitCounts[firstDigitIndex][secondDigitIndex];
-            // Retrieve the count for the reverse (secondDigit, firstDigit) pair.
-            const countTwo = firstLastDigitCounts[secondDigitIndex][firstDigitIndex];
-
-            // Add the product of these two counts to the running total.
-            totalPairedOccurrences += countOne * countTwo;
+    
+    // console.log(countMatrix.map(row => row.join(' ')).join('\n')); // Optional: Debugging output for the matrix
+    
+    let finalResult = 0; // This variable will accumulate the final sum
+    
+    // Calculate the total number of pairs (a, b) such that
+    // a starts with digit 'i' and ends with digit 'j', AND
+    // b starts with digit 'j' and ends with digit 'i'.
+    // This is done by multiplying countMatrix[i][j] by countMatrix[j][i].
+    for (let idxA = 0; idxA < 10; idxA++) {
+        for (let idxB = 0; idxB < 10; idxB++) {
+            finalResult += countMatrix[idxA][idxB] * countMatrix[idxB][idxA]; 
         }
     }
-
-    // --- Output the final computed result ---
-    console.log(totalPairedOccurrences);
+    
+    // Output the computed final result
+    console.log(finalResult);
 };
 
-// --- Execution entry point ---
-// Read content from standard input synchronously using Node.js 'fs' module.
-// Then, pass the read content to the main processing function.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

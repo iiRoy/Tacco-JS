@@ -1,66 +1,40 @@
-function obtainNextOccurrence(sortedIndices, referenceValue) {
-    let lowerBound = 0;
-    let upperBound = sortedIndices.length - 1;
-    let resultingIndex = -1;
+console.log((source => {
+  const [base, target] = source.trim().split('\n');
 
-    while (lowerBound <= upperBound) {
-        const midPoint = Math.floor((lowerBound + upperBound) / 2);
-        if (sortedIndices[midPoint] > referenceValue) {
-            resultingIndex = sortedIndices[midPoint];
-            upperBound = midPoint - 1;
-        } else {
-            lowerBound = midPoint + 1;
-        }
+  const occurrences = Array.from({ length: 26 }, () => []);
+  Array.prototype.forEach.call(base, (letter, at) => {
+    occurrences[letter.charCodeAt(0) - 97].push(at);
+  });
+
+  const takeAfter = (list, cursor) => {
+    let low = 0;
+    let high = list.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (list[middle] > cursor) high = middle;
+      else low = middle + 1;
     }
-    return resultingIndex;
-}
+    return low === list.length ? -1 : list[low];
+  };
 
-((dataStream) => {
-    const [initialSequence, soughtSequence] = dataStream.trim().split('\n');
-    const initialSequenceLength = initialSequence.length;
-    const soughtSequenceLength = soughtSequence.length;
+  const width = base.length;
+  const needed = target.length;
+  let cursor = -1;
+  let rounds = 0;
 
-    const characterPositionRegistry = new Map();
-    for (let currentPosition = 0; currentPosition < initialSequenceLength; currentPosition++) {
-        const characterElement = initialSequence[currentPosition];
-        if (!characterPositionRegistry.has(characterElement)) {
-            characterPositionRegistry.set(characterElement, []);
-        }
-        characterPositionRegistry.get(characterElement).push(currentPosition);
-    }
+  for (let q = 0; q < needed; q++) {
+    const wanted = target[q];
+    const bucket = occurrences[wanted.charCodeAt(0) - 97];
+    if (!bucket.length) return '-1';
 
-    let currentMatchProgress = {
-        lastMatchedPosition: -1,
-        fullSequenceIterations: 0,
-        isFeasible: true
-    };
-
-    for (let sequencePointer = 0; sequencePointer < soughtSequenceLength; sequencePointer++) {
-        if (!currentMatchProgress.isFeasible) {
-            break;
-        }
-
-        const requiredCharacter = soughtSequence[sequencePointer];
-        const availablePositions = characterPositionRegistry.get(requiredCharacter);
-
-        if (!availablePositions || availablePositions.length === 0) {
-            currentMatchProgress.isFeasible = false;
-            break;
-        }
-
-        let nextPotentialMatch = obtainNextOccurrence(availablePositions, currentMatchProgress.lastMatchedPosition);
-
-        if (nextPotentialMatch !== -1) {
-            currentMatchProgress.lastMatchedPosition = nextPotentialMatch;
-        } else {
-            currentMatchProgress.fullSequenceIterations++;
-            currentMatchProgress.lastMatchedPosition = availablePositions[0];
-        }
-    }
-
-    if (!currentMatchProgress.isFeasible) {
-        process.stdout.write('-1');
+    const sameRound = takeAfter(bucket, cursor);
+    if (sameRound >= 0) {
+      cursor = sameRound;
     } else {
-        process.stdout.write(`${currentMatchProgress.fullSequenceIterations * initialSequenceLength + currentMatchProgress.lastMatchedPosition + 1}`);
+      rounds++;
+      cursor = bucket[0];
     }
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  }
+
+  return `${rounds * width + cursor + 1}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

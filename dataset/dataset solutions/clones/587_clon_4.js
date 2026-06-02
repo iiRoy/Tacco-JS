@@ -1,87 +1,81 @@
-const applyReduction = (sourceString) => {
-    let currentWorkingString = sourceString;
-    let changedInPass;
-    do {
-        changedInPass = false;
-        let nextIterationString = '';
-        let scanIndex = 0;
-        while (scanIndex < currentWorkingString.length) {
-            const currentCharacter = currentWorkingString[scanIndex];
-            let segmentLength = 0;
-            let lookAheadIndex = scanIndex;
-            while (lookAheadIndex < currentWorkingString.length && currentWorkingString[lookAheadIndex] === currentCharacter) {
-                segmentLength++;
-                lookAheadIndex++;
-            }
+let minimumLengthFound = Infinity;
 
-            if (segmentLength >= 4 && ['1', '2', '3'].includes(currentCharacter)) {
-                changedInPass = true;
+function processSequence(inputString) {
+    let currentSequence = inputString;
+    let reductionOccurred = true;
+    const reducibleDigits = new Set(['1', '2', '3']);
+
+    while (reductionOccurred) {
+        reductionOccurred = false;
+        let processedStack = []; // Stores [character, count] pairs
+        let nextSequenceBuilder = [];
+
+        for (let k = 0; k < currentSequence.length; k++) {
+            let currentCharacter = currentSequence[k];
+
+            if (processedStack.length > 0 && processedStack[processedStack.length - 1][0] === currentCharacter && reducibleDigits.has(currentCharacter)) {
+                processedStack[processedStack.length - 1][1]++;
             } else {
-                nextIterationString += currentWorkingString.substring(scanIndex, lookAheadIndex);
+                processedStack.push([currentCharacter, 1]);
             }
-            scanIndex = lookAheadIndex;
-        }
-        currentWorkingString = nextIterationString;
-    } while (changedInPass);
-    return currentWorkingString.length;
-};
 
-const manageInput = (allLines, currentLineIndex = 0, collectedResults = []) => {
-    if (currentLineIndex >= allLines.length) {
-        return collectedResults;
-    }
-
-    const blockItemCount = Number(allLines[currentLineIndex]);
-    if (blockItemCount === 0) {
-        return collectedResults;
-    }
-
-    const blockElements = [];
-    for (let i = 1; i <= blockItemCount; i++) {
-        blockElements.push(Number(allLines[currentLineIndex + i]));
-    }
-
-    const initialCombinedString = blockElements.join('');
-
-    let smallestLengthInBlock = Infinity;
-
-    const generatedStrings = Array.from({ length: blockItemCount }).flatMap((_, currentPos) => {
-        const possibilities = [];
-        const baseChars = initialCombinedString.split('');
-
-        if (currentPos < blockItemCount) {
-            const tempChars = [...baseChars];
-            const replacementVal = blockElements[currentPos + 1];
-            tempChars[currentPos] = String(replacementVal);
-            possibilities.push(tempChars.join(''));
+            if (reducibleDigits.has(currentCharacter) && processedStack[processedStack.length - 1][1] >= 4) {
+                processedStack.pop();
+                reductionOccurred = true;
+            }
         }
 
-        if (currentPos > 0) {
-            const tempChars = [...baseChars];
-            const replacementVal = blockElements[currentPos - 1];
-            tempChars[currentPos] = String(replacementVal);
-            possibilities.push(tempChars.join(''));
+        if (reductionOccurred) {
+            nextSequenceBuilder = processedStack.map(pair => pair[0].repeat(pair[1]));
+            currentSequence = nextSequenceBuilder.join('');
         }
-        return possibilities;
+    }
+    return currentSequence.length;
+}
+
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputData.trim().split("\n");
+
+let currentLineIndex = 0;
+
+while (true) {
+    const elementCount = parseInt(inputLines[currentLineIndex++], 10);
+    if (elementCount === 0) {
+        break;
+    }
+
+    const currentElements = [];
+    for (let k = 0; k < elementCount; k++) {
+        currentElements.push(parseInt(inputLines[currentLineIndex++], 10));
+    }
+
+    minimumLengthFound = Infinity;
+
+    const baseSequenceString = currentElements.join("");
+
+    Array.from({ length: elementCount }).forEach((_, insertionPoint) => {
+        // Scenario 1: Insert element from (insertionPoint + 1) at insertionPoint
+        // Original: str.slice(0,i)+arr[i+1]+str.slice(i+1,str.length)
+        const valueToInsert1 = currentElements[insertionPoint + 1];
+        const constructedSequence1 = baseSequenceString.substring(0, insertionPoint) + String(valueToInsert1) + baseSequenceString.substring(insertionPoint + 1);
+        
+        const finalLength1 = processSequence(constructedSequence1);
+        if (finalLength1 < minimumLengthFound) {
+            minimumLengthFound = finalLength1;
+        }
+
+        // Scenario 2: Insert element from (insertionPoint - 1) at insertionPoint
+        // Original: str.slice(0,i)+arr[i-1]+str.slice(i+1,str.length)
+        if (insertionPoint > 0) {
+            const valueToInsert2 = currentElements[insertionPoint - 1];
+            const constructedSequence2 = baseSequenceString.substring(0, insertionPoint) + String(valueToInsert2) + baseSequenceString.substring(insertionPoint + 1);
+            
+            const finalLength2 = processSequence(constructedSequence2);
+            if (finalLength2 < minimumLengthFound) {
+                minimumLengthFound = finalLength2;
+            }
+        }
     });
 
-    generatedStrings.forEach(generatedStr => {
-        const finalLength = applyReduction(generatedStr);
-        if (finalLength < smallestLengthInBlock) {
-            smallestLengthInBlock = finalLength;
-        }
-    });
-
-    collectedResults.push(smallestLengthInBlock);
-
-    return manageInput(allLines, currentLineIndex + blockItemCount + 1, collectedResults);
-};
-
-const rawData = require('node:fs').readFileSync(0, 'utf8');
-const processedLines = rawData.trim().split('\n');
-
-const finalResults = manageInput(processedLines);
-
-finalResults.forEach(resultVal => {
-    process.stdout.write(resultVal + '\n');
-});
+    console.log(minimumLengthFound);
+}

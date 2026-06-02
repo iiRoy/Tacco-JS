@@ -1,78 +1,79 @@
-const ioModule = require('readline');
-const acquiredInputLines = [];
-
-const lineProcessor = ioModule.createInterface({
+var inputBuffer = [];
+var ioInterface = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-lineProcessor.on('line', (currentInputLine) => {
-    acquiredInputLines.push(currentInputLine);
+ioInterface.on('line', function (inputLine) {
+    inputBuffer.push(inputLine);
 });
 
-lineProcessor.on('close', () => {
-    const initialSourceSequence = Array.from(acquiredInputLines[0]);
-    const targetPatternSequence = Array.from(acquiredInputLines[1]);
+ioInterface.on('close', function () {
+    const sourceChars = inputBuffer[0].split("");
+    const targetChars = inputBuffer[1].split("");
 
-    const sourceLength = initialSourceSequence.length;
-    const patternLength = targetPatternSequence.length;
-
-    if (patternLength === 0) {
-        console.log("UNRESTORABLE");
-        return;
-    }
-
-    // Helper function to check if the pattern matches a segment of the source
-    // at a given starting position, considering '?' as a wildcard.
-    const checkCompatibility = (startPosition) => {
-        // This check is technically redundant if `possibleStartIndices` is generated correctly
-        if (startPosition + patternLength > sourceLength) {
+    // Helper function to determine if a segment of the source string matches the target pattern
+    // considering '?' as a wildcard.
+    const evaluateSegmentMatch = (segment, pattern) => {
+        // This check is mostly for robustness; segment length should match pattern length
+        // due to how slices are generated.
+        if (segment.length !== pattern.length) {
             return false;
         }
-
-        for (let patternCharOffset = 0; patternCharOffset < patternLength; patternCharOffset++) {
-            const sourceChar = initialSourceSequence[startPosition + patternCharOffset];
-            const patternChar = targetPatternSequence[patternCharOffset];
-
-            if (sourceChar !== patternChar && sourceChar !== '?') {
-                return false; // Mismatch and not a wildcard
-            }
-        }
-        return true; // Full match found for this segment
+        // Use 'every' to check if all characters in the pattern match the segment
+        // or if the segment character is a wildcard.
+        return pattern.every((patternChar, charIndex) => {
+            const segmentChar = segment[charIndex];
+            return patternChar === segmentChar || segmentChar === '?';
+        });
     };
 
-    let foundPatternStartIndex = undefined;
+    let finalMatchPosition = -1;
 
-    // Generate an array of possible starting indices for the pattern in the source.
-    // The original code's loop range implies checking from index 1 up to (sourceLength - patternLength).
-    // It specifically skips index 0.
-    const possibleStartIndices = [];
-    for (let candidatePosition = sourceLength - patternLength; candidatePosition >= 1; --candidatePosition) {
-        possibleStartIndices.push(candidatePosition);
-    }
+    // Generate an array of all possible starting indices for the target pattern within the source string.
+    // The length of this array is `sourceChars.length - targetChars.length + 1`.
+    // If targetChars is longer than sourceChars, this array will be empty.
+    const possibleStartIndices = Array.from(
+        { length: Math.max(0, sourceChars.length - targetChars.length + 1) },
+        (_, index) => index
+    );
 
-    // Use Array.prototype.find to get the rightmost valid starting index.
-    // Because `possibleStartIndices` is built in descending order, `find` naturally
-    // returns the rightmost (first one it encounters).
-    foundPatternStartIndex = possibleStartIndices.find(checkCompatibility);
+    // Use Array.prototype.reduceRight to iterate through possible starting indices from right to left.
+    // This ensures that the rightmost valid match is found first.
+    finalMatchPosition = possibleStartIndices.reduceRight((currentBestIndex, candidateIndex) => {
+        // If a rightmost match has already been identified, propagate it.
+        if (currentBestIndex !== -1) {
+            return currentBestIndex;
+        }
 
-    if (foundPatternStartIndex === undefined) {
+        // Extract the segment from the source string for the current candidate index.
+        const segmentToExamine = sourceChars.slice(candidateIndex, candidateIndex + targetChars.length);
+
+        // Check if this segment matches the target pattern.
+        if (evaluateSegmentMatch(segmentToExamine, targetChars)) {
+            return candidateIndex; // This is the rightmost match found so far.
+        }
+
+        return -1; // No match at this position, continue searching.
+    }, -1); // Initial value for currentBestIndex is -1 (no match found yet).
+
+
+    if (finalMatchPosition === -1) {
         console.log("UNRESTORABLE");
     } else {
-        // Construct the final string using a functional map approach.
-        const finalOutputChars = Array.from({ length: sourceLength }, (_, charIndex) => {
-            // If the current character position falls within the identified pattern insertion range
-            if (charIndex >= foundPatternStartIndex && charIndex < foundPatternStartIndex + patternLength) {
-                // Use the character from the target pattern
-                return targetPatternSequence[charIndex - foundPatternStartIndex];
-            } else if (initialSourceSequence[charIndex] === '?') {
-                // If it's a '?' outside the pattern insertion, replace with 'a'
-                return 'a';
-            } else {
-                // Otherwise, keep the original character from the source
-                return initialSourceSequence[charIndex];
-            }
-        });
-        console.log(finalOutputChars.join(''));
+        // Construct the final string by combining three parts:
+        // 1. The part of sourceChars before the match, with '?' replaced by 'a'.
+        // 2. The targetChars pattern itself.
+        // 3. The part of sourceChars after the match, with '?' replaced by 'a'.
+
+        // Process the leading part of the source string.
+        const leadingPart = sourceChars.slice(0, finalMatchPosition).map(char => char === '?' ? 'a' : char);
+
+        // Process the trailing part of the source string.
+        const trailingPart = sourceChars.slice(finalMatchPosition + targetChars.length).map(char => char === '?' ? 'a' : char);
+
+        // Combine the three parts using spread syntax and then join them into a single string.
+        const reconstructedString = [...leadingPart, ...targetChars, ...trailingPart].join("");
+        console.log(reconstructedString);
     }
 });

@@ -1,49 +1,37 @@
-const fileSystemModule = require('node:fs');
-const standardInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const processedInputLines = standardInputContent.split('\n');
+const fileSystem = require("fs");
 
-const initialTextValue = processedInputLines[0];
-const initialNumericModifier = Number.parseInt(processedInputLines[1], 10);
+const transformInput = (inputString, initialBudget) => {
+    const characterSequence = Array.from(inputString);
+    const processingResult = characterSequence.reduce((accumulator, currentCharacter, currentIndex, fullArray) => {
+        const isLastElement = (currentIndex === fullArray.length - 1);
+        const characterAsciiValue = currentCharacter.charCodeAt(0);
+        let nextCharacter = currentCharacter;
+        let budgetModification = 0;
 
-if (initialTextValue.length === 0) {
-    process.stdout.write('\n');
-    return;
-}
+        if (isLastElement) {
+            const asciiBaseForA = 'a'.charCodeAt(0);
+            const currentAlphabeticalOffset = characterAsciiValue - asciiBaseForA;
+            const effectiveShiftAmount = accumulator.currentBudget % 26;
+            const newAlphabeticalOffset = (currentAlphabeticalOffset + effectiveShiftAmount) % 26;
+            nextCharacter = String.fromCharCode(asciiBaseForA + newAlphabeticalOffset);
+        } else {
+            const costToReachA = 123 - characterAsciiValue;
+            if (costToReachA <= accumulator.currentBudget && currentCharacter !== 'a') {
+                nextCharacter = 'a';
+                budgetModification = -costToReachA;
+            }
+        }
+        accumulator.processedCharacters.push(nextCharacter);
+        accumulator.currentBudget += budgetModification;
+        return accumulator;
+    }, { processedCharacters: [], currentBudget: initialBudget });
 
-const finalCharacterOfText = initialTextValue.at(-1);
-const leadingCharactersOfText = initialTextValue.slice(0, -1);
+    return processingResult.processedCharacters.join('');
+};
 
-const processingOutcome = leadingCharactersOfText.split('').reduce((currentState, currentSymbol) => {
-    const symbolNumericalValue = currentSymbol.codePointAt(0);
-    const costToShiftToA = 123 - symbolNumericalValue;
+const inputLines = fileSystem.readFileSync("/dev/stdin", "utf8").split("\n");
+const sourceString = inputLines[0];
+const initialShiftBudget = parseInt(inputLines[1]);
 
-    if (currentSymbol !== 'a' && currentState.remainingModifier >= costToShiftToA) {
-        return {
-            accumulatedString: currentState.accumulatedString + 'a',
-            remainingModifier: currentState.remainingModifier - costToShiftToA
-        };
-    } else {
-        return {
-            accumulatedString: currentState.accumulatedString + currentSymbol,
-            remainingModifier: currentState.remainingModifier
-        };
-    }
-}, { accumulatedString: '', remainingModifier: initialNumericModifier });
-
-const finalModifierValue = processingOutcome.remainingModifier;
-const resultingLeadingSequence = processingOutcome.accumulatedString;
-
-const finalSymbolCodePoint = finalCharacterOfText.codePointAt(0);
-const effectiveLastCharacterShift = finalModifierValue % 26;
-
-let transformedFinalSymbolCode = finalSymbolCodePoint + effectiveLastCharacterShift;
-
-if (transformedFinalSymbolCode > 122) { // 'z' is 122
-    transformedFinalSymbolCode -= 26;
-}
-
-const transformedFinalSymbol = String.fromCodePoint(transformedFinalSymbolCode);
-
-const finalConstructedResult = resultingLeadingSequence + transformedFinalSymbol;
-
-process.stdout.write(finalConstructedResult + '\n');
+const finalOutput = transformInput(sourceString, initialShiftBudget);
+console.log(finalOutput);

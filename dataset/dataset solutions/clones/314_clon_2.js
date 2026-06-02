@@ -1,69 +1,43 @@
-const fileSystemUtility = require('fs');
-let rawTextualData = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read the entire input from standard input
+var lineArray = rawData.trim().split("\n"); // Split the input into an array of lines, removing leading/trailing whitespace
 
-// Clean up the raw input: remove leading/trailing whitespace and then split
-// the entire string into an array of individual lines.
-let dataLines = rawTextualData
-  .trim()
-  .split('\n');
+var numQueries = lineArray.shift().split(" ").map(Number); // Parse the first line to get N (number of players) and Q (number of queries)
 
-// The very first line of the input contains configuration settings.
-// We extract it, split by spaces, and convert each part to a number.
-const configurationSettings = dataLines
-  .shift()
-  .split(' ')
-  .map(Number);
+var scoreTracker = []; // Array to store the current score of each player
+var currentMaxScore = 0; // Stores the highest score among all players
+var leaderIndex = 0; // Stores the 0-based index of the player with the highest score
 
-// Initialize an array to hold the scores for each participant.
-let competitorScores = [];
-
-// Variables to track the highest score and the index of the participant
-// who currently holds that score.
-let peakScoreValue = 0;
-let leadingCompetitorIndex = 0;
-
-// Populate the competitorScores array with initial zero values for all participants.
-// The number of participants is given by the first configuration setting.
-for (let competitorIdx = 0; competitorIdx < configurationSettings[0]; competitorIdx++) {
-  competitorScores[competitorIdx] = 0;
+// Initialize all player scores to zero
+for (var idx = 0; idx < numQueries[0]; idx++) {
+    scoreTracker[idx] = 0;
 }
 
-// Iterate through each remaining line in the dataLines array.
-// Each line represents an operation to update a participant's score.
-dataLines.forEach(function(currentOperationLine) {
-  // Parse the current line to extract the participant's ID and the score adjustment.
-  const updateDetails = currentOperationLine
-    .split(' ')
-    .map(Number);
-  const targetCompetitorId = updateDetails[0] - 1; // Adjust to 0-based indexing
-  const scoreAdjustment = updateDetails[1];
+// Process each query line
+lineArray.forEach(function(currentLine) {
+    var actionValues = currentLine.split(" ").map(Number); // Parse the player ID and score change for the current query
+    var targetPlayer = actionValues[0] - 1; // Convert 1-based player ID to 0-based index
+    var scoreChange = actionValues[1]; // The amount by which the player's score changes
 
-  // Apply the calculated score adjustment to the relevant participant's score.
-  competitorScores[targetCompetitorId] += scoreAdjustment;
+    scoreTracker[targetPlayer] += scoreChange; // Update the target player's score
 
-  // Logic to determine if the highest score or leading participant has changed.
-  // Scenario A: The current leader's score increased or remained the same.
-  if (targetCompetitorId === leadingCompetitorIndex && scoreAdjustment >= 0) {
-    peakScoreValue += scoreAdjustment;
-  }
-  // Scenario B: The current leader's score decreased, OR
-  // a different participant's score increased. A full re-evaluation is needed.
-  else if (
-    (targetCompetitorId === leadingCompetitorIndex && scoreAdjustment < 0) ||
-    (targetCompetitorId !== leadingCompetitorIndex && scoreAdjustment > 0)
-  ) {
-    // Reset temporary maximum for finding the new highest.
-    let temporaryMax = -Infinity;
-    competitorScores.forEach(function(individualCompetitorScore, currentScoreIdx) {
-      if (temporaryMax < individualCompetitorScore) {
-        temporaryMax = individualCompetitorScore;
-        peakScoreValue = individualCompetitorScore;
-        leadingCompetitorIndex = currentScoreIdx;
-      }
-    });
-  }
-
-  // Output the 1-based index of the participant with the highest score
-  // and their current peak score value.
-  console.log((leadingCompetitorIndex + 1) + ' ' + peakScoreValue);
+    // Check if the leader's score needs to be updated or re-evaluated
+    if (targetPlayer == leaderIndex && scoreChange >= 0) {
+        // If the current leader's score increased or stayed the same,
+        // and they are still the leader, simply update the max score.
+        currentMaxScore += scoreChange;
+    } else if (targetPlayer == leaderIndex && scoreChange < 0 || targetPlayer != leaderIndex && scoreChange > 0) {
+        // If the current leader's score decreased, or if another player's score increased,
+        // a full re-evaluation of all scores is needed to find the new leader.
+        var tempMax = (-1 * Infinity); // Initialize a temporary maximum score for the scan
+        scoreTracker.forEach(function(individualScore, playerIdx) {
+            // Iterate through all players to find the new highest score and its owner
+            if (tempMax < individualScore) {
+                tempMax = individualScore;
+                currentMaxScore = individualScore; // Update the global maximum score
+                leaderIndex = playerIdx; // Update the global leader's index
+            }
+        });
+    }
+    // Output the 1-based index of the current leader and their score
+    console.log((leaderIndex + 1) + " " + currentMaxScore);
 });

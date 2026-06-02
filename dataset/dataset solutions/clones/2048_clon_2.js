@@ -1,18 +1,12 @@
-/*
- * This module processes a single numerical input
- * from standard input, performs a calculation,
- * and outputs the result.
- */
-function processInputData ( rawDataString )
-{
-    // Convert the raw string input into a floating-point number representation.
-    let numericValue = parseFloat ( rawDataString ) ;
+function processInput(rawData) {
+    // Convert the raw string data into a floating-point number.
+    rawData = parseFloat(rawData);
 
-    // Compute the cube of one-third of the parsed numerical value, then display it.
-    console . log ( Math . pow ( numericValue / 3 , 3 ) ) ;
+    // Calculate the cube of one-third of the processed numerical value
+    // and display the result to the standard output.
+    console.log(Math.pow(rawData / 3, 3));
 }
 
-
-// Initiate the primary processing function, sourcing its data
-// by reading the entire content of standard input as a UTF-8 string.
-processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content from standard input synchronously,
+// decode it as UTF-8, and then pass it to the primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

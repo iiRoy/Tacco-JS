@@ -1,46 +1,50 @@
 'use strict';
 
-/**
- * Orchestrates the primary data processing workflow.
- * @param {string} rawInputContent - The raw textual input provided for processing.
- */
-const initiateProcessor = rawInputContent => {
-    // Parse the incoming raw string into distinct lines, removing leading/trailing whitespace.
-    const contentLines = rawInputContent.trim().split('\n');
+// This function processes the incoming text data.
+const processInput = (inputString) => {
+    // Split the entire input into individual lines, removing any leading/trailing whitespace.
+    const lines = inputString.trim().split("\n");
 
-    // Extract the numerical parameter (e.g., window span) from the first line.
-    let windowSpan = contentLines[0].split(' ')[1];
+    // Extract the window size from the first line.
+    // The window size is the second element after splitting by space.
+    let windowSize = lines[0].split(' ')[1];
 
-    // Convert the second line of content into an array of numerical values.
-    let numberArray = contentLines[1].split(' ').map(valItem => Number(valItem));
+    // Parse the data points from the second line.
+    // Each element is converted to a number.
+    let dataPoints = lines[1].split(' ').map(val => Number(val));
 
-    // Allocate an array to store calculated window aggregations.
-    let windowAggregations = [];
+    // Initialize an array to store the sums of sliding windows.
+    let windowSums = [];
 
-    // Compute the prefix sums (cumulative sums) for the number array.
-    let prefixSums = [numberArray[0]];
-    for (let index = 1; index < numberArray.length; index++) {
-        prefixSums.push(prefixSums[index - 1] + numberArray[index]);
+    // Calculate prefix sums for efficient window sum computation.
+    // The first element is just the first data point.
+    let prefixSums = [dataPoints[0]];
+    // Iterate through the rest of the data points to build the prefix sum array.
+    for (let idx = 1; idx < dataPoints.length; idx++) {
+        prefixSums.push(prefixSums[idx - 1] + dataPoints[idx]);
     }
 
-    // Add the sum of the initial window segment.
-    windowAggregations.push(prefixSums[windowSpan - 1]);
+    // The sum of the first window (of size windowSize) is directly available from prefixSums.
+    windowSums.push(prefixSums[windowSize - 1]);
 
-    // Calculate sums for subsequent sliding window segments.
-    for (let index = 0; index < numberArray.length - windowSpan; index++) {
-        windowAggregations.push(prefixSums[index + Number(windowSpan)] - prefixSums[index]);
+    // Calculate sums for subsequent sliding windows.
+    // For each window, subtract the prefix sum of the element just before the window start
+    // from the prefix sum of the window end.
+    for (let jdx = 0; jdx < dataPoints.length - windowSize; jdx++) {
+        windowSums.push(prefixSums[jdx + Number(windowSize)] - prefixSums[jdx]);
     }
 
-    // Initialize an array to hold triangular numbers.
-    let triangularNumbers = [0];
-    // Populate the triangular numbers up to a predefined limit.
-    for (let index = 1; index <= 1000; index++) {
-        triangularNumbers.push((triangularNumbers[index - 1] + index));
+    // Initialize a dynamic programming array, starting with zero.
+    let dynamicProgression = [0];
+    // Populate the DP array: each element is the sum of previous element and its index.
+    // This calculates cumulative sums up to 1000.
+    for (let counter = 1; counter <= 1000; counter++) {
+        dynamicProgression.push((dynamicProgression[counter - 1] + counter));
     }
 
-    // Output a status message indicating the start of further operations.
-    console.info('commencing data transformation');
+    // Output a simple message to the console.
+    console.log('hi');
 };
 
-// Execute the main processing function by reading input from standard input.
-initiateProcessor(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

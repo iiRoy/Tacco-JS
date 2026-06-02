@@ -1,34 +1,34 @@
-function logValue(messageContent){
- console.log(messageContent);
-} /* Outputs a provided argument to the console. */
-function performCalculation( initialString )
-{
-  // Convert the input string into a numerical base value.
-  let numericBase = Number(initialString);
-  /* The following lines are commented out as they represent alternative input parsing strategies,
-     not relevant for the current problem's input format.
-     initialString = initialString.trim().split(" ");
-     initialString = initialString.trim().split("\n");
-     initialString = initialString.trim().split(" ").map((a)=>Number(a));
-     initialString = initialString.trim().split("\n").map((a)=>Number(a));
-  */
-  let leastPossibleSum = 1000000000; // Initialize with a very large number to find the minimum sum.
-  for(let multiplicationFactor = 1; multiplicationFactor <= 10; multiplicationFactor++ ) {
-    let digitList = (numericBase * multiplicationFactor) // Perform multiplication
-                      .toString() // Convert product to string
-                      .split("")  // Split string into an array of character digits
-                      .map((charDigit) => +charDigit); // Convert each character digit back to a number
-    let currentDigitSum = 0; // Accumulator for the sum of digits of the current product.
-    for(let listIndex = 0; listIndex < digitList.length; listIndex++)
-    {
-      currentDigitSum += digitList[listIndex]; // Add each digit to the sum.
-    }
-    leastPossibleSum = Math.min(leastPossibleSum, currentDigitSum); // Update the minimum sum found so far.
-  }
-  logValue(leastPossibleSum); // Display the final minimum digit sum.
+function displayMessage(msgContent) {
+  console.log(msgContent);
 }
-performCalculation(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim()
-);
+
+function ProcessInput(rawData) {
+  // Parse the incoming string data into an integer value.
+  let numericInput = parseInt(rawData);
+
+  // Initialize a variable to hold the smallest sum of digits found so far.
+  // Start with a large number to ensure any valid sum will be smaller.
+  let finalResult = 1000000000;
+
+  // Iterate through multipliers from 1 to 10.
+  for (let idxA = 1; idxA <= 10; idxA++) {
+    // Calculate the product, convert it to a string, split into individual characters,
+    // and then convert each character back to a numeric digit.
+    const tempDigits = (numericInput * idxA).toString().split("").map((digitChar) => Number(digitChar));
+
+    // Calculate the sum of the digits for the current product.
+    let currentSum = 0;
+    for (let idxB = 0; idxB < tempDigits.length; idxB++) {
+      currentSum += tempDigits[idxB];
+    }
+
+    // Update the finalResult if the current sum of digits is smaller than the previously recorded minimum.
+    finalResult = Math.min(finalResult, currentSum);
+  }
+
+  // Output the computed minimum sum of digits.
+  displayMessage(finalResult);
+}
+
+// Read input from standard input, remove any leading/trailing whitespace, and then invoke the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

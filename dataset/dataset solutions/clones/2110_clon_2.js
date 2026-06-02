@@ -1,13 +1,14 @@
-// Incoming data stream contains all necessary values
-function ProcessInput ( rawData )
-{
+// This function processes the incoming data received.
+function ProcessInput(incomingData) {
+    // The incoming data is split into an array of lines.
+    incomingData = incomingData.split("\n");
 
-  rawData = rawData . split ( "\n" ) ;
+    // The first element of the array is parsed as an integer.
+    var firstNumericValue = parseInt(incomingData[0], 10);
 
-  let firstValue = Number . parseInt ( rawData [ 0 ] , 10 ) ;
-
-  console . log ( '%d' , ( firstValue + 1 ) / 2 ) ;
+    // A calculation is performed, and the result is output to the console.
+    console.log('%d', (firstNumericValue + 1) / 2);
 }
 
-// Do not modify anything below this point (handles standard I/O and invokes the primary processing function).
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line should not be altered; it manages reading from standard input and initiating the primary function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

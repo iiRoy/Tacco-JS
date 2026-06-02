@@ -1,61 +1,32 @@
-function arrangeElements(sourceCollection, targetStorage, maximumValue) {
-    const workingCopy = Array.from(sourceCollection);
-    const collectionSize = workingCopy.length;
-    const auxiliarySpace = new Array(collectionSize);
+const performCountingSort = (sourceValues, targetContainer, maxValueRange) => {
+    const valueFrequencies = Array(maxValueRange + 1).fill(0);
+    sourceValues.forEach(val => {
+        valueFrequencies[val]++;
+    });
 
-    function divideAndMerge(dataArray, initialIndex, finalIndex, tempBuffer) {
-        if (initialIndex >= finalIndex) {
-            return;
-        }
+    let currentAccumulation = 0;
+    const cumulativePositions = valueFrequencies.map(count => {
+        currentAccumulation += count;
+        return currentAccumulation;
+    });
 
-        const midPoint = Math.floor((initialIndex + finalIndex) / 2);
+    const mutableCumulativePositions = [...cumulativePositions];
 
-        divideAndMerge(dataArray, initialIndex, midPoint, tempBuffer);
-        divideAndMerge(dataArray, midPoint + 1, finalIndex, tempBuffer);
+    sourceValues.slice().reverse().forEach(itemValue => {
+        const placementIndex = mutableCumulativePositions[itemValue] - 1;
+        targetContainer[placementIndex] = itemValue;
+        mutableCumulativePositions[itemValue]--;
+    });
+};
 
-        combinePortions(dataArray, initialIndex, midPoint, finalIndex, tempBuffer);
-    }
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.split('\n');
 
-    function combinePortions(dataArray, leftStart, leftEnd, rightEnd, tempBuffer) {
-        let leftPtr = leftStart;
-        let rightPtr = leftEnd + 1;
-        let fillPtr = leftStart;
+const elementCount = Number(inputLines.shift());
+const sourceArrayData = inputLines.shift().split(' ').map(valStr => Number(valStr));
+const resultArray = [];
 
-        while (leftPtr <= leftEnd && rightPtr <= rightEnd) {
-            if (dataArray[leftPtr] <= dataArray[rightPtr]) {
-                tempBuffer[fillPtr++] = dataArray[leftPtr++];
-            } else {
-                tempBuffer[fillPtr++] = dataArray[rightPtr++];
-            }
-        }
+performCountingSort(sourceArrayData, resultArray, elementCount);
 
-        while (leftPtr <= leftEnd) {
-            tempBuffer[fillPtr++] = dataArray[leftPtr++];
-        }
-
-        while (rightPtr <= rightEnd) {
-            tempBuffer[fillPtr++] = dataArray[rightPtr++];
-        }
-
-        for (let idx = leftStart; idx <= rightEnd; idx++) {
-            dataArray[idx] = tempBuffer[idx];
-        }
-    }
-
-    divideAndMerge(workingCopy, 0, collectionSize - 1, auxiliarySpace);
-
-    for (let idx = 0; idx < collectionSize; idx++) {
-        targetStorage[idx] = workingCopy[idx];
-    }
-}
-
-var sourceInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-var dataLines = sourceInput.split('\n');
-
-var elementCount = +dataLines.shift();
-var sequence = dataLines.shift().split(' ').map(function(numString){return +numString;});
-var resultContainer = [];
-
-arrangeElements(sequence, resultContainer, elementCount);
-
-console.log(resultContainer.join(' '));
+console.log(resultArray.join(' '));

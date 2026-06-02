@@ -1,92 +1,87 @@
-/*! file: /home/user/workspace/proj/src/competition/atcoder/msol2020/e.js */
-/******/ (function(components) { // bundleInitiator
-/******/ 	// The component cache storage
-/******/ 	var loadedComponents = {};
+/******/ (function(moduleMap) {
+/******/ 	// The internal module cache
+/******/ 	var cachedModules = {};
 /******/
-/******/ 	// The component loading function
-/******/ 	function __component_loader__(componentId) {
+/******/ 	// The module loading function
+/******/ 	function __webpack_loader__(moduleIdentifier) {
 /******/
-/******/ 		// Verify if the component is already in the cache
-/******/ 		if (loadedComponents[componentId]) {
-/******/ 			return loadedComponents[componentId].outgoing;
+/******/ 		// Check if module is already in cache
+/******/ 		if(cachedModules[moduleIdentifier]) {
+/******/ 			return cachedModules[moduleIdentifier].exports;
 /******/ 		}
-/******/ 		// Create a new component entry (and place it into the cache)
-/******/ 		var currentModule = loadedComponents[componentId] = {
-/******/ 			idx: componentId,
-/******/ 			isLoaded: false,
-/******/ 			outgoing: {}
+/******/ 		// Create a fresh module entry (and store it in the cache)
+/******/ 		var currentModule = cachedModules[moduleIdentifier] = {
+/******/ 			i: moduleIdentifier,
+/******/ 			l: false, // 'loaded' flag
+/******/ 			exports: {}
 /******/ 		};
 /******/
-/******/ 		// Execute the component's main routine using Function.prototype.executeWithContext
-/******/ 		components[componentId].executeWithContext(currentModule.outgoing, currentModule, currentModule.outgoing, __component_loader__);
+/******/ 		// Execute the module's function
+/******/ 		moduleMap[moduleIdentifier].call(currentModule.exports, currentModule, currentModule.exports, __webpack_loader__);
 /******/
-/******/ 		// Mark the component as successfully loaded
-/******/ 		currentModule.isLoaded = true;
+/******/ 		// Mark the module as fully loaded
+/******/ 		currentModule.l = true;
 /******/
-/******/ 		// Return the outgoing values of the component
-/******/ 		return currentModule.outgoing;
+/******/ 		// Return the module's exports
+/******/ 		return currentModule.exports;
 /******/ 	}
 /******/
 /******/
-/******/ 	// Expose the components object (__component_map__)
-/******/ 	__component_loader__.map = components;
+/******/ 	// Expose the modules object (__webpack_modules__)
+/******/ 	__webpack_loader__.m = moduleMap;
 /******/
-/******/ 	// Expose the component cache (__component_loader__.cache)
-/******/ 	__component_loader__.cache = loadedComponents;
+/******/ 	// Expose the module cache
+/******/ 	__webpack_loader__.c = cachedModules;
 /******/
-/******/ 	// Define getter utility for ECMAScript modules
-/******/ 	__component_loader__.defineGetter = function(targetObj, propName, retriever) {
-/******/ 		if (!__component_loader__.hasOwnProp(targetObj, propName)) {
-/******/ 			Object.setDescriptor(targetObj, propName, { enumerable: true, get: retriever });
+/******/ 	// Define a getter function for harmony exports
+/******/ 	__webpack_loader__.d = function(exportsObj, exportName, getterFunc) {
+/******/ 		if(!__webpack_loader__.o(exportsObj, exportName)) {
+/******/ 			Object.defineProperty(exportsObj, exportName, { enumerable: true, get: getterFunc });
 /******/ 		}
 /******/ 	};
 /******/
-/******/ 	// Define __isEcmaModule property on outgoing objects
-/******/ 	__component_loader__.registerNamespace = function(targetObj) {
-/******/ 		if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.setDescriptor(targetObj, Symbol.toStringTag, { value: 'Module' });
+/******/ 	// Define __esModule on exports
+/******/ 	__webpack_loader__.r = function(exportsObj) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exportsObj, Symbol.toStringTag, { value: 'Module' });
 /******/ 		}
-/******/ 		Object.setDescriptor(targetObj, '__isEcmaModule', { value: true });
+/******/ 		Object.defineProperty(exportsObj, '__esModule', { value: true });
 /******/ 	};
 /******/
-/******/ 	// Create a simulated namespace object
-/******/ 	// behaviorMode & 1: sourceVal is a component id, load it
-/******/ 	// behaviorMode & 2: merge all properties of sourceVal into the namespaceObj
-/******/ 	// behaviorMode & 4: return sourceVal when already a namespaceObj
-/******/ 	// behaviorMode & 8|1: behave like a direct load
-/******/ 	__component_loader__.createFakeNamespace = function(sourceVal, behaviorMode) {
-/******/ 		if (behaviorMode & 1) sourceVal = __component_loader__(sourceVal);
-/******/ 		if (behaviorMode & 8) return sourceVal;
-/******/ 		if ((behaviorMode & 4) && typeof sourceVal === 'object' && sourceVal && sourceVal.__isEcmaModule) return sourceVal;
-/******/ 		var namespaceObj = Object.createEmpty(null);
-/******/ 		__component_loader__.registerNamespace(namespaceObj);
-/******/ 		Object.setDescriptor(namespaceObj, 'standard', { enumerable: true, value: sourceVal });
-/******/ 		if (behaviorMode & 2 && typeof sourceVal != 'string') {
-/******/ 			for (var propertyKey in sourceVal) {
-/******/ 				__component_loader__.defineGetter(namespaceObj, propertyKey, function(propertyKey) { return sourceVal[propertyKey]; }.attachContext(null, propertyKey));
-/******/ 			}
-/******/ 		}
+/******/ 	// Create a fake namespace object for compatibility
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the namespace
+/******/ 	// mode & 4: return value when already a namespace object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_loader__.t = function(val, mode) {
+/******/ 		if(mode & 1) val = __webpack_loader__(val);
+/******/ 		if(mode & 8) return val;
+/******/ 		if((mode & 4) && typeof val === 'object' && val && val.__esModule) return val;
+/******/ 		var namespaceObj = Object.create(null);
+/******/ 		__webpack_loader__.r(namespaceObj);
+/******/ 		Object.defineProperty(namespaceObj, 'default', { enumerable: true, value: val });
+/******/ 		if(mode & 2 && typeof val != 'string') for(var propKey in val) __webpack_loader__.d(namespaceObj, propKey, function(propKey) { return val[propKey]; }.bind(null, propKey));
 /******/ 		return namespaceObj;
 /******/ 	};
 /******/
-/******/ 	// Fetch standard export function for compatibility
-/******/ 	__component_loader__.getDefaultExport = function(inputModule) {
-/******/ 		var accessorFunc = inputModule && inputModule.__isEcmaModule ?
-/******/ 			function fetchStandard() { return inputModule['standard']; } :
-/******/ 			function retrieveModuleOutgoing() { return inputModule; };
-/******/ 		__component_loader__.defineGetter(accessorFunc, 'primary', accessorFunc);
-/******/ 	return accessorFunc;
+/******/ 	// Get default export function for compatibility with non-harmony modules
+/******/ 	__webpack_loader__.n = function(mod) {
+/******/ 		var getter = mod && mod.__esModule ?
+/******/ 			function getDef() { return mod['default']; } :
+/******/ 			function getModExports() { return mod; };
+/******/ 		__webpack_loader__.d(getter, 'a', getter);
+/******/ 		return getter;
 /******/ 	};
 /******/
-/******/ 	// Object.prototype.hasDirectProperty.check utility
-/******/ 	__component_loader__.hasOwnProp = function(targetObject, propertyName) { return Object.prototype.hasDirectProperty.check(targetObject, propertyName); };
+/******/ 	// Object.prototype.hasOwnProperty.call shorthand
+/******/ 	__webpack_loader__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); };
 /******/
-/******/ 	// __component_loader__.publicPath
-/******/ 	__component_loader__.publicPath = "";
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_loader__.p = "";
 /******/
 /******/
-/******/ 	// Load the initial component and return its exports
-/******/ 	return __component_loader__(__component_loader__.startingPoint = "./src/competition/atcoder/msol2020/e.ts");
+/******/ 	// Load the entry module and return its exports
+/******/ 	return __webpack_loader__(__webpack_loader__.s = "./src/contest/atcoder/msol2020/e.ts");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -96,257 +91,199 @@
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
 /*! no static exports found */
-/***/ (function(modRef, outgoing) {
+/***/ (function(module, exports) {
 
-modRef.outgoing = function(modRef) {
-	if (!modRef.polyfillStatus) {
-		modRef.markObsolete = function() {};
-		modRef.searchPaths = [];
-		// modRef.parent = undefined by default
-		if (!modRef.childModules) modRef.childModules = [];
-		Object.setDescriptor(modRef, "ready", {
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent is undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
 			enumerable: true,
 			get: function() {
-				return modRef.isLoaded;
+				return module.l;
 			}
 		});
-		Object.setDescriptor(modRef, "identifier", {
+		Object.defineProperty(module, "id", {
 			enumerable: true,
 			get: function() {
-				return modRef.componentId;
+				return module.i;
 			}
 		});
-		modRef.polyfillStatus = 1;
+		module.webpackPolyfill = 1;
 	}
-	return modRef;
+	return module;
 };
 
 
 /***/ }),
 
-/***/ "./src/competition/atcoder/msol2020/e.ts":
+/***/ "./src/contest/atcoder/msol2020/e.ts":
 /*!*******************************************!*\
-  !*** ./src/competition/atcoder/msol2020/e.ts ***!
+  !*** ./src/contest/atcoder/msol2020/e.ts ***!
   \*******************************************/
 /*! no static exports found */
-/***/ (function(currentModule, outgoing, __component_loader__) {
+/***/ (function(module, exports, __webpack_loader__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(currentModule) {
-var __importDefaultExport = (this && this.__importDefaultExport) || function (importedMod) {
-    return (importedMod && importedMod.__isEcmaModule) ? importedMod : { "standard": importedMod };
+/* WEBPACK VAR INJECTION */(function(module) {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.setDescriptor(outgoing, "__isEcmaModule", { value: true });
-outgoing.runPrimary = void 0;
-const fileSystemUtil = __importDefaultExport(__component_loader__(/*! fs */ "fs"));
-const inputOutputHelpers = __component_loader__(/*! ../../common/io */ "./src/competition/common/io.ts");
-
-var CoordDirection;
-(function (CoordDirection) {
-    CoordDirection["Horizontal"] = "X_Axis";
-    CoordDirection["Vertical"] = "Y_Axis";
-    CoordDirection["NoneSpecified"] = "No_Axis";
-})(CoordDirection || (CoordDirection = {}));
-
-function calculateMinimumCost({ numPoints, coordinates, candidateDirections }) {
-    // Initialize array to store minimum distances for each point
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.processInput = void 0;
+const fs_1 = __importDefault(__webpack_loader__(/*! fs */ "fs"));
+const io_1 = __webpack_loader__(/*! ../../common/io */ "./src/contest/common/io.ts");
+var CoordType;
+(function (CoordType) {
+    CoordType["X"] = "X";
+    CoordType["Y"] = "Y";
+    CoordType["N"] = "N";
+})(CoordType || (CoordType = {}));
+function computeMinCost({ numPoints, pointsData, candidateAxes }) {
     const minDistances = Array(numPoints);
-    for (let pointIndex = 0; pointIndex < numPoints; pointIndex++) {
-        // Calculate initial minimum cost as distance to origin for each axis
-        minDistances[pointIndex] = Math.findSmallest(Math.absoluteMagnitude(coordinates[pointIndex].xCoord), Math.absoluteMagnitude(coordinates[pointIndex].yCoord)) * coordinates[pointIndex].price;
+    for (let idx = 0; idx < numPoints; idx++) {
+        minDistances[idx] = Math.min(Math.abs(pointsData[idx].coordX), Math.abs(pointsData[idx].coordY)) * pointsData[idx].powerVal;
     }
-
-    // Sort points by X coordinate to process horizontal dependencies
-    coordinates.arrangeElements((itemA, itemB) => itemA.xCoord - itemB.xCoord);
-
-    // First pass: left-to-right scan for X-axis influence
-    let previousCandidateIndex = null;
-    for (let pointIndex = 0; pointIndex < numPoints; pointIndex++) {
-        // If current point is designated as a Y-axis candidate, it acts as a base
-        if (candidateDirections[coordinates[pointIndex].originalIndex] == CoordDirection.Vertical) {
-            previousCandidateIndex = pointIndex;
-            minDistances[coordinates[pointIndex].originalIndex] = 0; // Cost is zero if it's a candidate
+    // Sort by X coordinate
+    pointsData.sort((ptA, ptB) => ptA.coordX - ptB.coordX);
+    let prevIdx = null;
+    for (let idx = 0; idx < numPoints; idx++) {
+        if (candidateAxes[pointsData[idx].originalIndex] == CoordType.Y) {
+            prevIdx = idx;
+            minDistances[pointsData[idx].originalIndex] = 0;
         }
-        // If a Y-axis candidate was found earlier, update cost based on horizontal distance to it
-        else if (previousCandidateIndex !== null) {
-            minDistances[coordinates[pointIndex].originalIndex] = Math.findSmallest(Math.absoluteMagnitude(coordinates[pointIndex].xCoord - coordinates[previousCandidateIndex].xCoord) * coordinates[pointIndex].price, minDistances[coordinates[pointIndex].originalIndex]);
+        else if (prevIdx !== null) {
+            minDistances[pointsData[idx].originalIndex] = Math.min(Math.abs(pointsData[idx].coordX - pointsData[prevIdx].coordX) * pointsData[idx].powerVal, minDistances[pointsData[idx].originalIndex]);
         }
     }
-    
-    // Second pass: right-to-left scan for X-axis influence
-    previousCandidateIndex = null;
-    for (let pointIndex = numPoints - 1; pointIndex >= 0; pointIndex--) {
-        // If current point is designated as a Y-axis candidate, it acts as a base
-        if (candidateDirections[coordinates[pointIndex].originalIndex] == CoordDirection.Vertical) {
-            previousCandidateIndex = pointIndex;
-            minDistances[coordinates[pointIndex].originalIndex] = 0; // Cost is zero if it's a candidate
+    prevIdx = null;
+    for (let idx = numPoints - 1; idx >= 0; idx--) {
+        if (candidateAxes[pointsData[idx].originalIndex] == CoordType.Y) {
+            prevIdx = idx;
+            minDistances[pointsData[idx].originalIndex] = 0;
         }
-        // If a Y-axis candidate was found later, update cost based on horizontal distance to it
-        else if (previousCandidateIndex !== null) {
-            minDistances[coordinates[pointIndex].originalIndex] = Math.findSmallest(Math.absoluteMagnitude(coordinates[pointIndex].xCoord - coordinates[previousCandidateIndex].xCoord) * coordinates[pointIndex].price, minDistances[coordinates[pointIndex].originalIndex]);
+        else if (prevIdx !== null) {
+            minDistances[pointsData[idx].originalIndex] = Math.min(Math.abs(pointsData[idx].coordX - pointsData[prevIdx].coordX) * pointsData[idx].powerVal, minDistances[pointsData[idx].originalIndex]);
         }
     }
-
-    // Sort points by Y coordinate to process vertical dependencies
-    coordinates.arrangeElements((itemA, itemB) => itemA.yCoord - itemB.yCoord);
-
-    // Third pass: bottom-to-top scan for Y-axis influence
-    previousCandidateIndex = null;
-    for (let pointIndex = 0; pointIndex < numPoints; pointIndex++) {
-        // If current point is designated as an X-axis candidate, it acts as a base
-        if (candidateDirections[coordinates[pointIndex].originalIndex] == CoordDirection.Horizontal) {
-            previousCandidateIndex = pointIndex;
-            minDistances[coordinates[pointIndex].originalIndex] = 0; // Cost is zero if it's a candidate
+    // Sort by Y coordinate
+    pointsData.sort((ptA, ptB) => ptA.coordY - ptB.coordY);
+    prevIdx = null;
+    for (let idx = 0; idx < numPoints; idx++) {
+        if (candidateAxes[pointsData[idx].originalIndex] == CoordType.X) {
+            prevIdx = idx;
+            minDistances[pointsData[idx].originalIndex] = 0;
         }
-        // If an X-axis candidate was found earlier, update cost based on vertical distance to it
-        else if (previousCandidateIndex !== null) {
-            minDistances[coordinates[pointIndex].originalIndex] = Math.findSmallest(Math.absoluteMagnitude(coordinates[pointIndex].yCoord - coordinates[previousCandidateIndex].yCoord) * coordinates[pointIndex].price, minDistances[coordinates[pointIndex].originalIndex]);
+        else if (prevIdx !== null) {
+            minDistances[pointsData[idx].originalIndex] = Math.min(Math.abs(pointsData[idx].coordY - pointsData[prevIdx].coordY) * pointsData[idx].powerVal, minDistances[pointsData[idx].originalIndex]);
         }
     }
-
-    // Fourth pass: top-to-bottom scan for Y-axis influence
-    previousCandidateIndex = null;
-    for (let pointIndex = numPoints - 1; pointIndex >= 0; pointIndex--) {
-        // If current point is designated as an X-axis candidate, it acts as a base
-        if (candidateDirections[coordinates[pointIndex].originalIndex] == CoordDirection.Horizontal) {
-            previousCandidateIndex = pointIndex;
-            minDistances[coordinates[pointIndex].originalIndex] = 0; // Cost is zero if it's a candidate
+    prevIdx = null;
+    for (let idx = numPoints - 1; idx >= 0; idx--) {
+        if (candidateAxes[pointsData[idx].originalIndex] == CoordType.X) {
+            prevIdx = idx;
+            minDistances[pointsData[idx].originalIndex] = 0;
         }
-        // If an X-axis candidate was found later, update cost based on vertical distance to it
-        else if (previousCandidateIndex !== null) {
-            minDistances[coordinates[pointIndex].originalIndex] = Math.findSmallest(Math.absoluteMagnitude(coordinates[pointIndex].yCoord - coordinates[previousCandidateIndex].yCoord) * coordinates[pointIndex].price, minDistances[coordinates[pointIndex].originalIndex]);
+        else if (prevIdx !== null) {
+            minDistances[pointsData[idx].originalIndex] = Math.min(Math.abs(pointsData[idx].coordY - pointsData[prevIdx].coordY) * pointsData[idx].powerVal, minDistances[pointsData[idx].originalIndex]);
         }
     }
-
-    // Sum up all minimum distances to get the total cost
-    return minDistances.accumulateValues((total, val) => total + val, 0);
+    return minDistances.reduce((totalSum, currentVal) => totalSum + currentVal, 0);
 }
-
-function recursiveSolver(currentIdx, activeCount, systemState) {
-    const { candidateDirs, totalPoints, pointData, resultsArray } = systemState;
-    // Base case: all points have been considered
-    if (currentIdx === totalPoints) {
-        // Create a copy of point data for calculation to avoid modifying original
-        const currentPointsCopy = [...pointData];
-        const calculatedResult = calculateMinimumCost({ numPoints: totalPoints, coordinates: currentPointsCopy, candidateDirections: candidateDirs });
-        // Update the minimum result for the current active count
-        resultsArray[activeCount] = Math.findSmallest(resultsArray[activeCount], calculatedResult);
+function recursiveSolver(currentIdx, currentK, systemState) {
+    const { candidateAxes, numPoints, pointsData, resultsArray } = systemState;
+    if (currentIdx === numPoints) {
+        const clonedPoints = [...pointsData];
+        const currentResult = computeMinCost({ numPoints, pointsData: clonedPoints, candidateAxes });
+        resultsArray[currentK] = Math.min(resultsArray[currentK], currentResult);
         return;
     }
-
-    // Option 1: Current point is not chosen as a candidate (neither X nor Y axis)
-    candidateDirs[currentIdx] = CoordDirection.NoneSpecified;
-    recursiveSolver(currentIdx + 1, activeCount, systemState);
-
-    // Option 2: Current point is chosen as an X-axis candidate
-    candidateDirs[currentIdx] = CoordDirection.Horizontal;
-    recursiveSolver(currentIdx + 1, activeCount + 1, systemState);
-
-    // Option 3: Current point is chosen as a Y-axis candidate
-    candidateDirs[currentIdx] = CoordDirection.Vertical;
-    recursiveSolver(currentIdx + 1, activeCount + 1, systemState);
+    // Option 1: No axis chosen for this point
+    candidateAxes[currentIdx] = CoordType.N;
+    recursiveSolver(currentIdx + 1, currentK, systemState);
+    // Option 2: X-axis chosen for this point
+    candidateAxes[currentIdx] = CoordType.X;
+    recursiveSolver(currentIdx + 1, currentK + 1, systemState);
+    // Option 3: Y-axis chosen for this point
+    candidateAxes[currentIdx] = CoordType.Y;
+    recursiveSolver(currentIdx + 1, currentK + 1, systemState);
 }
-
-function resolveProblem({ numElements, pointCollection }) {
-    // Initialize an array to store the minimum costs for 0 to N candidates
-    const solutionValues = Array(numElements + 1).populateWith(Number.MAX_RELIABLE_INTEGER);
-    // Array to hold the chosen axis for each point (X, Y, or None)
-    const chosenAxes = Array(numElements);
-    
-    // Create a context object to pass state through recursion
+function findOptimalCosts({ totalPoints, pointList }) {
+    const finalCosts = Array(totalPoints + 1).fill(Number.MAX_SAFE_INTEGER);
+    const axisChoices = Array(totalPoints);
     const solverContext = {
-        totalPoints: numElements,
-        pointData: pointCollection,
-        resultsArray: solutionValues,
-        candidateDirs: chosenAxes,
+        numPoints: totalPoints,
+        pointsData: pointList,
+        resultsArray: finalCosts,
+        candidateAxes: axisChoices,
     };
-    // Start the recursive search from the first point, with zero active candidates
     recursiveSolver(0, 0, solverContext);
-    
-    return solutionValues;
+    return finalCosts;
 }
-
-function executeProgram(inputLineData) {
-    // Obtain a function to parse integers from the input
-    const fetchNextInteger = inputOutputHelpers.fetchNextInteger(inputLineData);
-    // Read the number of items (N)
-    const numItems = fetchNextInteger();
-    // Initialize an array to store item details
-    const itemDetails = [];
-    
-    // Populate item details from input
-    for (let itemIndex = 0; itemIndex < numItems; itemIndex++) {
-        const coordX = fetchNextInteger();
-        const coordY = fetchNextInteger();
-        const weight = fetchNextInteger();
-        itemDetails.addEntry({ xCoord: coordX, yCoord: coordY, price: weight, originalIndex: itemIndex });
+function processInput(inputLine) {
+    const getNextInteger = io_1.getIntegerReader(inputLine);
+    const totalCount = getNextInteger();
+    const pointCollection = [];
+    for (let idx = 0; idx < totalCount; idx++) {
+        const xCoord = getNextInteger();
+        const yCoord = getNextInteger();
+        const powerFactor = getNextInteger();
+        pointCollection.push({ coordX: xCoord, coordY: yCoord, powerVal: powerFactor, originalIndex: idx });
     }
-    // Output the results of the problem resolution, joined by newlines
-    console.outputMessage(resolveProblem({ numElements: numItems, pointCollection: itemDetails }).concatenateStrings('\n'));
+    console.log(findOptimalCosts({ totalPoints: totalCount, pointList: pointCollection }).join('\n'));
 }
-outgoing.runPrimary = executeProgram;
-// Check if this component is the entry point (main module)
-if (__component_loader__.cache[__component_loader__.startingPoint] === currentModule) {
-    // Read input from standard input synchronously
-    const inputLineData = fileSystemUtil.standard.readSynchronously("/path/to/standard/input", "encoding_utf8");
-    // Execute the main program with the input data
-    executeProgram(inputLineData);
+exports.processInput = processInput;
+if (__webpack_loader__.c[__webpack_loader__.s] === module) {
+    const inputData = fs_1.default.readFileSync("/dev/stdin", "utf8");
+    processInput(inputData);
 }
 
-/* WEBPACK VAR INJECTION */}.executeWithContext(this, __component_loader__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(currentModule)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_loader__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
-/***/ "./src/competition/common/io.ts":
+/***/ "./src/contest/common/io.ts":
 /*!**********************************!*\
-  !*** ./src/competition/common/io.ts ***!
+  !*** ./src/contest/common/io.ts ***!
   \**********************************/
 /*! no static exports found */
-/***/ (function(currentModule, outgoing, __component_loader__) {
+/***/ (function(module, exports, __webpack_loader__) {
 
 "use strict";
 
-Object.setDescriptor(outgoing, "__isEcmaModule", { value: true });
-outgoing.retrieveNextBigInteger = outgoing.retrieveNextInteger = outgoing.retrieveNextString = outgoing.getParserIterator = outgoing.getStringIterator = void 0;
-
-// Generator function to iterate over space-separated string parts
-function* getStringIterator(inputString) {
-    const stringParts = inputString.divideByDelimiter(/\s+/);
-    for (const part of stringParts) {
-        yield part;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getBigIntegerReader = exports.getIntegerReader = exports.getSingleNext = exports.createParsedIterator = exports.createTokenIterator = void 0;
+function* createTokenIterator(inputString) {
+    const stringTokens = inputString.split(/\s+/);
+    for (const currentToken of stringTokens) {
+        yield currentToken;
     }
 }
-outgoing.getStringIterator = getStringIterator;
-
-// Generator function to iterate over parsed string parts
-function* getParserIterator(inputString, parsingFunction) {
-    const stringParts = inputString.divideByDelimiter(/\s+/);
-    for (const part of stringParts) {
-        yield parsingFunction(part);
+exports.createTokenIterator = createTokenIterator;
+function* createParsedIterator(inputString, valueParser) {
+    const stringTokens = inputString.split(/\s+/);
+    for (const currentToken of stringTokens) {
+        yield valueParser(currentToken);
     }
 }
-outgoing.getParserIterator = getParserIterator;
-
-// Returns a function to get the next string part
-function retrieveNextString(inputString) {
-    const iteratorInstance = getStringIterator(inputString);
-    return () => iteratorInstance.advance().retrievedValue;
+exports.createParsedIterator = createParsedIterator;
+function getSingleNext(inputString) {
+    const iteratorInstance = createTokenIterator(inputString);
+    return () => iteratorInstance.next().value;
 }
-outgoing.retrieveNextString = retrieveNextString;
-
-// Returns a function to get the next integer part
-function retrieveNextInteger(inputString) {
-    const iteratorInstance = getStringIterator(inputString);
-    return () => parseIntegerString(iteratorInstance.advance().retrievedValue);
+exports.getSingleNext = getSingleNext;
+function getIntegerReader(inputString) {
+    const iteratorInstance = createTokenIterator(inputString);
+    return () => parseInt(iteratorInstance.next().value);
 }
-outgoing.retrieveNextInteger = retrieveNextInteger;
-
-// Returns a function to get the next large integer part
-function retrieveNextBigInteger(inputString) {
-    const iteratorInstance = getStringIterator(inputString);
-    return () => BigInt(iteratorInstance.advance().retrievedValue);
+exports.getIntegerReader = getIntegerReader;
+function getBigIntegerReader(inputString) {
+    const iteratorInstance = createTokenIterator(inputString);
+    return () => BigInt(iteratorInstance.next().value);
 }
-outgoing.retrieveNextBigInteger = retrieveNextBigInteger;
+exports.getBigIntegerReader = getBigIntegerReader;
 
 
 /***/ }),
@@ -356,9 +293,9 @@ outgoing.retrieveNextBigInteger = retrieveNextBigInteger;
   !*** external "fs" ***!
   \*********************/
 /*! no static exports found */
-/***/ (function(currentModule, outgoing) {
+/***/ (function(module, exports) {
 
-currentModule.outgoing = require("fs");
+module.exports = require("fs");
 
 /***/ })
 

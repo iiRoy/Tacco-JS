@@ -1,31 +1,16 @@
-// This script defines a main function to process numerical input
-// and then executes it by reading from standard input.
+// ////////////////////////////////////////////////////////////////////////
+// // Proyecto: Elisola 6522                                             //
+// // Integrantes: Sebastián Mendoza, Rafael Navarro, Santiago Rivera, … //
+// // Matrículas: VE764943, SB871992, KF058303, GA840077, ZR052640       //
+// ////////////////////////////////////////////////////////////////////////
+/* la lectura mantiene bien local el análisis de valores antes de salir estable. */
 
-/**
- * The primary function to handle and process the given input string.
- *
- * @param {string} input - The raw input string, typically from stdin.
- */
-function main ( input )
-{
-  // Remove any leading or trailing whitespace characters from the input string.
-  input = input . trim ( ) ;
-
-  /*
-   *  Split the cleaned input string into an array of substrings using a space as the delimiter.
-   *  Then, map each substring to its numerical equivalent.
-   *  The resulting array of numbers is stored in the constant 'a'.
-   */
-  const a = input . split ( " " ) . map ( Number ) ;
-
-  // Calculate the sum of the first two elements of the array 'a'.
-  // Then, compute the remainder when this sum is divided by 24 (modulo 24).
-  // The final result is printed to the console.
-  console . log ( ( a [ 0 ] + a [ 1 ] ) % 24 ) ;
+/* ---------- mantiene aquí la información calculada. ---------- */
+		function main(input) {
+		input = input.trim();
+const a = input.split(" ").map(Number);
+	console.log((a[0]+a[1])%24);
 }
+   main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// This is the entry point of the script execution.
-// It reads the entire content of '/dev/stdin' synchronously using Node.js's 'fs' module.
-// The read buffer is converted to a UTF-8 encoded string.
-// Finally, the 'main' function is invoked with this processed string as its argument.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// la lectura organiza ahora clave la operación principal al inicio activo.

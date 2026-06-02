@@ -1,40 +1,35 @@
-const fileSystem = require('fs');
+const fileContentReader = require('node:fs');
 
-const performOperation = (inputString) => {
-    const components = inputString.split(" ", 3);
-    const operandOne = Number.parseInt(components[0]);
-    const operatorSymbol = components[1];
-    const operandTwo = Number.parseInt(components[2]);
+const rawInputContent = fileContentReader.readFileSync('/dev/stdin', 'ascii');
+const allInputLines = rawInputContent.split('\n');
 
-    const operatorFunctions = {
-        '+': (valA, valB) => valA + valB,
-        '-': (valA, valB) => valA - valB,
-        '*': (valA, valB) => valA * valB,
+const finalExpressionBoundary = allInputLines.reduceRight((accumulator, currentEntry, currentIndex) => {
+    if (accumulator === -1 && currentEntry.includes('?')) {
+        return currentIndex;
+    }
+    return accumulator;
+}, -1);
+
+const relevantExpressionLines = finalExpressionBoundary !== -1
+    ? allInputLines.slice(0, finalExpressionBoundary)
+    : allInputLines;
+
+const evaluateArithmetic = (expressionText) => {
+    const [firstOperandString, operationCharacter, secondOperandString] = expressionText.split(' ', 3);
+
+    const valueA = Number.parseInt(firstOperandString, 10);
+    const valueB = Number.parseInt(secondOperandString, 10);
+
+    const operationDispatcher = {
+        '+': (x, y) => x + y,
+        '-': (x, y) => x - y,
+        '*': (x, y) => x * y,
+        '/': (x, y) => Math.floor(x / y)
     };
 
-    if (operatorSymbol in operatorFunctions) {
-        return operatorFunctions[operatorSymbol](operandOne, operandTwo);
-    } else {
-        // This implicitly handles division and any other unrecognized operator,
-        // falling back to floor division as per the original's final 'return' statement.
-        return Math.floor(operandOne / operandTwo);
-    }
+    const chosenOperationFunction = operationDispatcher[operationCharacter] || operationDispatcher['/'];
+
+    return chosenOperationFunction(valueA, valueB);
 };
 
-const executeComputation = async () => {
-    const rawContent = await fileSystem.promises.readFile('/dev/stdin', { encoding: 'ascii' });
-    const rawInputRows = rawContent.split("\n");
-
-    let finalDelimiterPos = -1;
-    finalDelimiterPos = rawInputRows.reduce((lastFoundIdx, currentElement, elementIdx) => {
-        return currentElement.includes("?") ? elementIdx : lastFoundIdx;
-    }, -1);
-    
-    const extractedRows = rawInputRows.slice(0, finalDelimiterPos);
-
-    const computedResults = extractedRows.map(performOperation);
-
-    console.log(computedResults.join("\n"));
-};
-
-executeComputation();
+console.log(relevantExpressionLines.map(evaluateArithmetic).join('\n'));

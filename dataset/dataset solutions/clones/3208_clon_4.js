@@ -1,31 +1,27 @@
-const obtainNumericalValue = (strInput) => Number(strInput);
+function processValues(inputString) {
+    const parts = inputString.split(' ');
+    const valK = parseInt(parts[0]);
+    const valA = parseInt(parts[1]);
+    const valB = parseInt(parts[2]);
 
-const determineFinalCount = (limitValue, initialValue, rateValue) => {
-    const rateDifference = rateValue - initialValue;
-    const limitOffset = limitValue - initialValue;
+    const diffD = valB - valA;
+    const diffE = valK - valA;
 
-    if (limitOffset < 2 || rateDifference < 3) {
-        return limitValue + 1;
-    } else {
-        const halfOffset = Math.floor(limitOffset / 2);
-        const offsetParity = limitOffset % 2;
-
-        if (offsetParity === 0) { // limitOffset is even
-            return initialValue + halfOffset * rateDifference + 1;
-        } else { // limitOffset is odd
-            return initialValue + (halfOffset + 1) * rateDifference;
+    const computeFinalValue = (eVal, dVal, aVal, kVal) => {
+        if (eVal < 2 || dVal < 3) {
+            return kVal + 1;
         }
-    }
-};
 
-const processInputData = (rawTextContent) => {
-    const segments = rawTextContent.split(' ');
-    const valueOne = obtainNumericalValue(segments[0]);
-    const valueTwo = obtainNumericalValue(segments[1]);
-    const valueThree = obtainNumericalValue(segments[2]);
+        const parityFlag = eVal & 1;
 
-    const calculatedResult = determineFinalCount(valueOne, valueTwo, valueThree);
-    console.log(calculatedResult);
-};
+        const multiplierForD = parityFlag ? ((eVal + 1) / 2) : (eVal / 2);
+        const constantAdd = parityFlag ? 0 : 1;
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+        return aVal + multiplierForD * dVal + constantAdd;
+    };
+
+    const finalValue = computeFinalValue(diffE, diffD, valA, valK);
+    console.log(finalValue);
+}
+
+processValues(require("fs").readFileSync("/dev/stdin", "utf8"));

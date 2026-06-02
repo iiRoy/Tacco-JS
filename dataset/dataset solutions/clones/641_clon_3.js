@@ -1,119 +1,104 @@
-const acquireInputData = () => {
-    // This helper function is responsible for reading all input from standard stream.
-    // It's a common pattern in competitive programming to abstract input reading.
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
-};
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const calculateRowConversionCosts = (rowContentString) => {
-    // Analyzes a single row string and computes the minimum operations
-    // required to make that row entirely 'W', 'B', or 'R'.
-    // This replaces the original character-to-number mapping and decrement logic.
+/**
+ * Processes the raw input string by trimming, converting specific characters
+ * to numeric representations, and then splitting it into an array of lines.
+ * @param {string} inputString The raw string content read from stdin.
+ * @returns {string[]} An array of processed lines.
+ */
+function processAndSplitInput(inputString) {
+    const characterMap = { 'W': '0', 'B': '1', 'R': '2' };
+    const trimmedContent = inputString.trim();
 
-    let charCountWhite = 0;
-    let charCountBlue = 0;
-    let charCountRed = 0;
+    // Convert characters in the entire string before splitting into lines.
+    // This ensures consistency with the original regex replacement behavior.
+    const charConvertedContent = trimmedContent.split('').map(char => characterMap[char] || char).join('');
+    return charConvertedContent.split('\n');
+}
 
-    // Iterate over each character in the current row.
-    for (let charIdx = 0; charIdx < rowContentString.length; charIdx++) {
-        const currentCharacter = rowContentString[charIdx];
-        if (currentCharacter === 'W') {
-            charCountWhite++;
-        } else if (currentCharacter === 'B') {
-            charCountBlue++;
-        } else if (currentCharacter === 'R') {
-            charCountRed++;
+const processedLines = processAndSplitInput(rawInputData);
+
+// Extract dimensions (number of rows and columns)
+const dimensionsArray = processedLines.shift().split(" ").map(Number);
+const totalRows = dimensionsArray[0];
+const totalCols = dimensionsArray[1];
+
+/**
+ * Calculates the number of mismatches for each target color (White, Blue, Red)
+ * for a given row string.
+ * @param {string} rowContent The string representation of a single row (e.g., "01201").
+ * @param {number} numberOfColumns The total number of columns in the grid.
+ * @returns {number[]} An array [mismatchesForWhite, mismatchesForBlue, mismatchesForRed].
+ */
+function calculateRowMismatchCounts(rowContent, numberOfColumns) {
+    // Initialize counts for '0' (White), '1' (Blue), '2' (Red) present in the row.
+    const actualColorCounts = [0, 0, 0];
+    for (let charIdx = 0; charIdx < numberOfColumns; charIdx++) {
+        const charNumericValue = parseInt(rowContent[charIdx], 10);
+        if (!isNaN(charNumericValue) && charNumericValue >= 0 && charNumericValue <= 2) {
+            actualColorCounts[charNumericValue]++;
         }
     }
 
-    // Cost to convert the entire row to White: sum of Blue and Red characters.
-    const costForWhiteStripe = charCountBlue + charCountRed;
-    // Cost to convert the entire row to Blue: sum of White and Red characters.
-    const costForBlueStripe = charCountWhite + charCountRed;
-    // Cost to convert the entire row to Red: sum of White and Blue characters.
-    const costForRedStripe = charCountWhite + charCountBlue;
+    // Calculate mismatches: total columns minus count of the target color.
+    return [
+        numberOfColumns - actualColorCounts[0], // Mismatches if this row should be all White
+        numberOfColumns - actualColorCounts[1], // Mismatches if this row should be all Blue
+        numberOfColumns - actualColorCounts[2]  // Mismatches if this row should be all Red
+    ];
+}
 
-    // Returns an array where index 0 is cost to make row White, 1 for Blue, 2 for Red.
-    return [costForWhiteStripe, costForBlueStripe, costForRedStripe];
-};
+// Pre-calculate mismatch costs for each row
+const rowMismatchCosts = processedLines.map(function(currentRowString) {
+   return calculateRowMismatchCounts(currentRowString, totalCols);
+});
 
-const processFlagTransformation = () => {
-    // This is the main orchestrator function for solving the flag transformation problem.
+let overallMinimumCost = 2500; // Initialize with a sufficiently large value
 
-    const rawProblemInput = acquireInputData();
+// Declare `currentPartitionCost` in the outer scope to mimic `var` hoisting behavior
+// from the original code, where `cost` was declared inside the inner loop but
+// accessed outside it, retaining its value from the last inner loop iteration.
+let currentPartitionCost;
 
-    // Clean up input: trim whitespace and split into an array of individual lines.
-    const parsedInputLines = rawProblemInput.trim().split('\n');
+// Iterate through possible split points for the white and blue segments.
+// `whiteSegmentEndRow` is the last row index of the white segment.
+// `blueSegmentEndRow` is the last row index of the blue segment.
+// Constraints:
+// - At least one row for white (row 0).
+// - At least one row for blue.
+// - At least one row for red (row `totalRows - 1`).
+// This implies: `whiteSegmentEndRow` must be at least 0.
+// `blueSegmentEndRow` must be at least `whiteSegmentEndRow + 1`.
+// `totalRows - 1` must be at least `blueSegmentEndRow + 1`.
+// So, `whiteSegmentEndRow` can go from 0 up to `totalRows - 3`.
+// `blueSegmentEndRow` can go from `whiteSegmentEndRow + 1` up to `totalRows - 2`.
+// The original loops start `i` from 1 and `j` from `i+1`.
+// `i` (whiteSegmentEndRow) from 1 to `totalRows - 3`.
+// `j` (blueSegmentEndRow) from `i + 1` to `totalRows - 2`.
 
-    // Extract the dimensions (N = number of rows, M = number of columns)
-    // from the very first line of input.
-    const [totalRows, totalColumns] = parsedInputLines.shift().split(' ').map(Number);
+for (let whiteSegmentEndRow = 1; whiteSegmentEndRow <= totalRows - 3; whiteSegmentEndRow++) {
+   for (let blueSegmentEndRow = whiteSegmentEndRow + 1; blueSegmentEndRow <= totalRows - 2; blueSegmentEndRow++) {
+      currentPartitionCost = 0; // Reset cost for each new partition combination
 
-    // --- Guard Clause / Input Validation ---
-    // A flag with three distinct stripes (White, Blue, Red) requires at least three rows.
-    // If fewer than 3 rows are provided, the problem's premise cannot be met.
-    // For typical competitive programming scenarios, N >= 3 is guaranteed.
-    // If not, a specific error or base case logic might be needed here.
-    if (totalRows < 3) {
-        console.log(0); // Or throw an error, depending on problem specification.
-        return;
-    }
+      // Calculate cost for the white segment (rows 0 to whiteSegmentEndRow)
+      for (let whiteRowIterator = 0; whiteRowIterator <= whiteSegmentEndRow; whiteRowIterator++) {
+         currentPartitionCost += rowMismatchCosts[whiteRowIterator][0]; // Index 0 for white
+      }
 
-    // Pre-calculate the base conversion costs for each row.
-    // `rowWiseTransformationCosts[k]` will be an array `[cost_W, cost_B, cost_R]`
-    // for row `k`.
-    const rowWiseTransformationCosts = parsedInputLines.map(line => calculateRowConversionCosts(line));
+      // Calculate cost for the blue segment (rows whiteSegmentEndRow + 1 to blueSegmentEndRow)
+      for (let blueRowIterator = whiteSegmentEndRow + 1; blueRowIterator <= blueSegmentEndRow; blueRowIterator++) {
+         currentPartitionCost += rowMismatchCosts[blueRowIterator][1]; // Index 1 for blue
+      }
 
-    // --- Optimization: Pre-compute Prefix Sums for Costs ---
-    // This significantly speeds up the calculation of stripe costs from O(N) to O(1).
-    // `cumulativeCosts[k][colorIndex]` stores the sum of costs for `colorIndex`
-    // from row 0 up to (but not including) row `k`.
-    // `colorIndex`: 0 for White, 1 for Blue, 2 for Red.
-    const cumulativeCosts = Array(totalRows + 1).fill(null).map(() => [0, 0, 0]);
+      // Calculate cost for the red segment (rows blueSegmentEndRow + 1 to totalRows - 1)
+      for (let redRowIterator = blueSegmentEndRow + 1; redRowIterator < totalRows; redRowIterator++) {
+         currentPartitionCost += rowMismatchCosts[redRowIterator][2]; // Index 2 for red
+      }
+   }
+   // This update replicates the original code's behavior where `min` was updated
+   // with the `cost` value from the *last* iteration of the inner loop (`j`).
+   overallMinimumCost = Math.min(overallMinimumCost, currentPartitionCost);
+}
 
-    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
-        cumulativeCosts[rowIndex + 1][0] = cumulativeCosts[rowIndex][0] + rowWiseTransformationCosts[rowIndex][0];
-        cumulativeCosts[rowIndex + 1][1] = cumulativeCosts[rowIndex][1] + rowWiseTransformationCosts[rowIndex][1];
-        cumulativeCosts[rowIndex + 1][2] = cumulativeCosts[rowIndex][2] + rowWiseTransformationCosts[rowIndex][2];
-    }
-
-    // Initialize the overall minimum operations found to a very large value.
-    let overallMinimumOperations = Number.MAX_SAFE_INTEGER;
-
-    // Iterate through all possible ways to divide the flag into three stripes (White, Blue, Red).
-    // `whiteStripeSplitPoint` indicates the row *after* which the White stripe ends.
-    // (i.e., rows 0 to `whiteStripeSplitPoint - 1` are White).
-    // It must be at least 1 (to have a White stripe) and leave at least two rows for Blue and Red.
-    for (let whiteStripeSplitPoint = 1; whiteStripeSplitPoint <= totalRows - 2; whiteStripeSplitPoint++) {
-
-        // `blueStripeSplitPoint` indicates the row *after* which the Blue stripe ends.
-        // (i.e., rows `whiteStripeSplitPoint` to `blueStripeSplitPoint - 1` are Blue).
-        // It must be at least `whiteStripeSplitPoint + 1` (to have a Blue stripe)
-        // and leave at least one row for Red.
-        for (let blueStripeSplitPoint = whiteStripeSplitPoint + 1; blueStripeSplitPoint <= totalRows - 1; blueStripeSplitPoint++) {
-
-            // Calculate the cost for the White stripe using prefix sums.
-            // Sum of costs to make rows 0 to `whiteStripeSplitPoint - 1` all White.
-            const costForCurrentWhiteStripe = cumulativeCosts[whiteStripeSplitPoint][0];
-
-            // Calculate the cost for the Blue stripe using prefix sums.
-            // Sum of costs to make rows `whiteStripeSplitPoint` to `blueStripeSplitPoint - 1` all Blue.
-            const costForCurrentBlueStripe = cumulativeCosts[blueStripeSplitPoint][1] - cumulativeCosts[whiteStripeSplitPoint][1];
-
-            // Calculate the cost for the Red stripe using prefix sums.
-            // Sum of costs to make rows `blueStripeSplitPoint` to `totalRows - 1` all Red.
-            const costForCurrentRedStripe = cumulativeCosts[totalRows][2] - cumulativeCosts[blueStripeSplitPoint][2];
-
-            // Sum the costs for this specific three-stripe configuration.
-            const currentConfigurationTotalCost = costForCurrentWhiteStripe + costForCurrentBlueStripe + costForCurrentRedStripe;
-
-            // Update the overall minimum if this configuration is more efficient.
-            overallMinimumOperations = Math.min(overallMinimumOperations, currentConfigurationTotalCost);
-        }
-    }
-
-    // Output the final minimum number of operations required.
-    console.log(overallMinimumOperations);
-};
-
-// Execute the main problem-solving logic.
-processFlagTransformation();
+console.log(overallMinimumCost);

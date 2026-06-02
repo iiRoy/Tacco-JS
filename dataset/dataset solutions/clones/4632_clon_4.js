@@ -1,39 +1,36 @@
-const dataOrigin = require("node:fs").readFileSync("/dev/stdin", "utf8");
+const processInputData = (rawData) => {
+    const dataRows = rawData.split('\n');
+    const elementCount = Number(dataRows[0]);
+    const numericSequence = dataRows[1].split(' ').map(Number);
 
-((textBlock) => {
-    const rawSegments = textBlock.split('\n');
-    const numericalArray = rawSegments[1].split(' ').map(Number);
-
-    if (numericalArray.length <= 1) {
-        process.stdout.write(String(1) + '\n');
+    if (elementCount <= 1) {
+        console.log(1);
         return;
     }
 
-    const valueChanges = numericalArray.slice(1).map((element, position) => {
-        return element - numericalArray[position];
+    const valueDifferences = numericSequence.slice(1).map((currentValue, index) => {
+        return currentValue - numericSequence[index];
     });
 
-    const initialCondition = { curveCount: 0, presentPath: 0 };
+    const segmentAnalysis = valueDifferences.reduce((accumulator, differenceValue) => {
+        const { currentSegments, lastObservedDirection } = accumulator;
+        let newSegmentCount = currentSegments;
+        let newLastObservedDirection = lastObservedDirection;
 
-    const pathEvaluator = (accumulator, deltaValue) => {
-        if (deltaValue > 0) {
-            if (accumulator.presentPath === -1) {
-                return { curveCount: accumulator.curveCount + 1, presentPath: 1 };
-            } else {
-                return { ...accumulator, presentPath: 1 };
+        const directionOfChange = Math.sign(differenceValue);
+
+        if (directionOfChange !== 0) {
+            if (lastObservedDirection !== 0 && directionOfChange !== lastObservedDirection) {
+                newSegmentCount++;
             }
-        } else if (deltaValue < 0) {
-            if (accumulator.presentPath === 1) {
-                return { curveCount: accumulator.curveCount + 1, presentPath: -1 };
-            } else {
-                return { ...accumulator, presentPath: -1 };
-            }
+            newLastObservedDirection = directionOfChange;
         }
-        return accumulator;
-    };
+        
+        return { currentSegments: newSegmentCount, lastObservedDirection: newLastObservedDirection };
+    }, { currentSegments: 1, lastObservedDirection: 0 });
 
-    const finalState = valueChanges.reduce(pathEvaluator, initialCondition);
+    console.log(segmentAnalysis.currentSegments);
+};
 
-    process.stdout.write(String(finalState.curveCount + 1) + '\n');
-
-})(dataOrigin);
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+processInputData(rawInputContent);

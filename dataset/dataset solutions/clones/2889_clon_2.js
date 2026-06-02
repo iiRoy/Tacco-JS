@@ -1,57 +1,46 @@
-/*
- * This module processes a given textual input
- * to determine a specific outcome based on character counts.
- */
-function analyzeTextData (  incomingString  )   {
-  // Store the primary data source.
-  var textFragment = incomingString;
+function ProcessInput(rawData) {
+    // Initialize a character sequence from the provided input string.
+    let charSequence = rawData;
 
-  // Calculate the total number of characters in the input.
-  var totalChars = incomingString.length;
+    // Determine the total length of the input sequence.
+    const sequenceLength = rawData.length;
 
-  // Initialize a counter for a specific character.
-  var specificCharCount = 0;
+    // Initialize a counter for specific character occurrences.
+    let occurrenceCounter = 0x0; // Using hexadecimal for 0
 
-  // This variable will hold the final decision string.
-  var determination;
+    // Declare a variable to store the final outcome.
+    let finalOutcome;
 
-  // Iterate through each character of the text fragment.
-  for ( var currentPosition = 0; currentPosition < totalChars; currentPosition++ )
-  {
-    // Check if the current character matches the target character 'o'.
-    if ( textFragment[currentPosition]  ==  "o" )
-    {
-      // Increment the counter if a match is found.
-      specificCharCount++;
+    // Iterate through each character in the sequence.
+    for (let idx = 0; idx < sequenceLength; idx++) {
+        // Check if the current character is 'o'.
+        if (charSequence[idx] === "o") {
+            // Increment the counter if 'o' is found.
+            occurrenceCounter++;
+        }
     }
-  }
 
-  // First condition check: if 'o' occurrences are 8 or more.
-  if ( specificCharCount >= 8 )
-  {
-    determination = "YES"; // Set positive outcome.
-  }
-
-  // Second condition check: if 'o' occurrences strictly exceed 8.
-  // This block might overwrite the previous determination based on further logic.
-  if ( specificCharCount > 8 )
-  {
-    // Calculate a buffer space or remaining capacity based on a fixed value and total characters.
-    var bufferSpace = 15 - totalChars;
-
-    // Evaluate a combined condition involving buffer space and character count.
-    if ( 8 <= bufferSpace + specificCharCount )
-    {
-      determination = "YES"; // Confirm positive outcome.
+    // First condition check: if 'o' count is 8 or more.
+    if (occurrenceCounter >= 0o10) { // Using octal for 8
+        finalOutcome = "YES";
     }
-    else
-    {
-      determination = "NO"; // Set negative outcome.
+
+    // Second condition check: if 'o' count is strictly greater than 8.
+    if (occurrenceCounter > 0o10) { // Using octal for 8
+        // Calculate an auxiliary value based on a fixed number and sequence length.
+        const calcValue = 0xF - sequenceLength; // Using hexadecimal for 15
+
+        // Nested condition: check if 8 is less than or equal to the sum of auxiliary value and 'o' count.
+        if (0o10 <= calcValue + occurrenceCounter) { // Using octal for 8
+            finalOutcome = "YES";
+        } else {
+            finalOutcome = "NO";
+        }
     }
-  }
-  // Output the final computed determination to the console.
-  console.log( determination );
+
+    // Output the determined final outcome to the console.
+    console.log(finalOutcome);
 }
 
-// Invoke the main processing function with data read from standard input.
-analyzeTextData( require( "fs" ).readFileSync( "/dev/stdin",  "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

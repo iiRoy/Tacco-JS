@@ -1,27 +1,18 @@
-const evaluateNumericalCriteria = (rawData) => {
-    const allLines = rawData.split('\n');
-    const relevantLine = allLines[1];
-    const numericStrings = relevantLine.split(' ');
+const processInputData = (rawData) => {
+    const lineSegments = rawData.split('\n');
+    const numberStrings = lineSegments[1].split(' ');
+    
+    const numericValues = numberStrings.filter(Boolean).map(Number);
 
-    const finalDecision = numericStrings.reduce((currentStatus, valueString) => {
-        if (currentStatus === 'REJECTED') {
-            return 'REJECTED';
-        }
+    const meetsDenialCriteria = (currentValue) => {
+        return currentValue % 2 === 0 && (currentValue % 3 !== 0 && currentValue % 5 !== 0);
+    };
 
-        const valueAsNumber = Number(valueString);
+    const isAnyValueDenied = numericValues.some(meetsDenialCriteria);
 
-        const isEven = (valueAsNumber % 2 === 0);
-        const isNotDivisibleByThree = (valueAsNumber % 3 !== 0);
-        const isNotDivisibleByFive = (valueAsNumber % 5 !== 0);
+    const finalVerdict = isAnyValueDenied ? 'DENIED' : 'APPROVED';
 
-        if (isEven && isNotDivisibleByThree && isNotDivisibleByFive) {
-            return 'REJECTED';
-        }
-
-        return 'ACCEPTED';
-    }, 'ACCEPTED');
-
-    console.log(finalDecision);
+    console.log(finalVerdict);
 };
 
-evaluateNumericalCriteria(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,23 +1,26 @@
-"use strict" ;
+"use strict";
 
-const executeProcess = rawData =>   {   // This function orchestrates the main calculation logic.
-    rawData = rawData.trim( ) . split ( "\n" ) ; // First, we sanitize and segment the incoming textual data.
+// This module defines the primary execution routine.
+const executeCoreLogic = (rawInputString) => {
+    // Process the incoming data: remove leading/trailing whitespace and split by newline.
+    rawInputString = rawInputString.trim().split("\n");
 
-    // Next, we extract and convert the essential numeric components from our prepared input array.
-    const initialValue = parseInt ( rawData [ 0 ] ) ; // The primary numerical quantity to be processed.
-    const factorAlpha = parseInt ( rawData [ 1 ] ) ;  // A potential divisor option.
-    const factorBeta = parseInt ( rawData [ 2 ] ) ;   // Another option for division.
-    const factorGamma = parseInt ( rawData [ 3 ] ) ;  // A third candidate for the divisor.
-    const factorDelta = parseInt ( rawData [ 4 ] ) ;  // Yet another possible divisor.
-    const factorEpsilon = parseInt ( rawData [ 5 ] ) ;// The final potential divisor in our set.
-    
-    // Perform a series of mathematical operations:
-    // 1. Identify the smallest value among the five factors.
-    // 2. Divide the initial quantity by this smallest factor.
-    // 3. Increment the result by a fixed offset (4).
-    // 4. Round the final outcome upwards to the nearest whole number.
-    console.log ( Math.ceil ( initialValue / Math.min ( factorAlpha , factorBeta , factorGamma , factorDelta , factorEpsilon ) + 4 ) ) ;
-}
+    // Parse the numerical values from the processed input array.
+    const totalQuantity = parseInt(rawInputString[0]); // Represents the total number of items.
+    const rateAlpha = parseInt(rawInputString[1]);     // First capacity/rate value.
+    const rateBeta = parseInt(rawInputString[2]);      // Second capacity/rate value.
+    const rateGamma = parseInt(rawInputString[3]);     // Third capacity/rate value.
+    const rateDelta = parseInt(rawInputString[4]);     // Fourth capacity/rate value.
+    const rateEpsilon = parseInt(rawInputString[5]);   // Fifth capacity/rate value.
 
-// Initiate the entire process by reading content from standard input and feeding it to our primary function.
-executeProcess ( require ( 'fs' ).readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+    // Calculate the result based on the algorithm:
+    // 1. Find the minimum among the five rate values.
+    // 2. Divide the total quantity by this minimum rate.
+    // 3. Round the result up to the nearest whole number using Math.ceil.
+    // 4. Add 4 to the final ceiling value.
+    // 5. Output the computed value to the console.
+    console.log(Math.ceil(totalQuantity / Math.min(rateAlpha, rateBeta, rateGamma, rateDelta, rateEpsilon) + 4));
+};
+
+// Invoke the core logic function, reading input from standard input.
+executeCoreLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

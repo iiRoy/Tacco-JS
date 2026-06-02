@@ -1,167 +1,109 @@
-function produceArrangements(initialSequence) {
-    // Determine the total number of elements in the given sequence.
-    var sequenceLength = initialSequence.length;
+function generatePermutations(inputSequence) {
+  // Calculate the length of the input sequence.
+  let sequenceLength = inputSequence.length;
+  // Initialize the result array with the original sequence as the first permutation.
+  let allPerms = [inputSequence.slice()];
+  // Initialize a control array for Heap's algorithm, filled with zeros.
+  let controlArray = new Array(sequenceLength).fill(0);
+  // Initialize loop counter.
+  let currentIdx = 1;
+  let swapIdx, tempVal; // Variables for swapping elements.
 
-    // Initialize the collection of all permutations with a sliced copy of the original.
-    var allArrangements = [initialSequence.slice()];
-
-    // 'controlVector' is an auxiliary array used in the algorithm, initialized with zeros.
-    var controlVector = new Array(sequenceLength).fill(0);
-
-    // 'currentPosition' is the main loop counter, starting from the second element.
-    var currentPosition = 1;
-
-    // 'swapIndex' and 'tempValue' are temporary variables used during element swaps.
-    var swapIndex, tempValue;
-
-
-    // The main loop continues as long as 'currentPosition' is within the sequence bounds.
-    while (currentPosition < sequenceLength) {
-        // Check if the element at 'currentPosition' can be rotated based on the algorithm's state.
-        if (controlVector[currentPosition] < currentPosition) {
-            // Calculate the 'swapIndex' based on parity of 'currentPosition' and 'controlVector' value.
-            swapIndex = currentPosition % 2 && controlVector[currentPosition];
-
-            // Store the element at 'currentPosition' in 'tempValue' to facilitate the swap.
-            tempValue = initialSequence[currentPosition];
-
-            // Perform the first part of the swap: move element from 'swapIndex' to 'currentPosition'.
-            initialSequence[currentPosition] = initialSequence[swapIndex];
-
-            // Complete the swap: move 'tempValue' (original element at 'currentPosition') to 'swapIndex'.
-            initialSequence[swapIndex] = tempValue;
-
-            // Increment the counter in the 'controlVector' for the current position.
-            ++controlVector[currentPosition];
-
-            // Reset 'currentPosition' to 1 to re-evaluate permutations from the beginning of the sequence.
-            currentPosition = 1;
-
-            // Add a deep copy of the current permutation to the collection of all arrangements.
-            allArrangements.push(initialSequence.slice());
-        } else {
-            // If the element cannot be rotated further, reset its 'controlVector' entry to zero.
-            controlVector[currentPosition] = 0;
-
-            // Move to the next element in the sequence to continue permutation generation.
-            ++currentPosition;
-        }
+  // Main loop for generating permutations.
+  while (currentIdx < sequenceLength) {
+    // Check if the current element needs to be swapped.
+    if (controlArray[currentIdx] < currentIdx) {
+      // Determine the index for swapping based on parity.
+      swapIdx = currentIdx % 2 && controlArray[currentIdx];
+      // Store the element at currentIdx.
+      tempVal = inputSequence[currentIdx];
+      // Perform the swap.
+      inputSequence[currentIdx] = inputSequence[swapIdx];
+      inputSequence[swapIdx] = tempVal;
+      // Increment the counter for the current index.
+      ++controlArray[currentIdx];
+      // Reset currentIdx to 1 to re-evaluate from the beginning.
+      currentIdx = 1;
+      // Add the new permutation to the results.
+      allPerms.push(inputSequence.slice());
+    } else {
+      // If no swap is needed, reset the counter for currentIdx and move to the next element.
+      controlArray[currentIdx] = 0;
+      ++currentIdx;
     }
-    // Return the complete list of generated permutations for the initial sequence.
-    return allArrangements;
+  }
+  // Return the array containing all generated permutations.
+  return allPerms;
 }
 
-
-// --- Precomputation Section ---
-// This section pre-calculates permutations for arrays of different sizes (up to 10 elements).
-// 'precomputedOrders' will store permutations for arrays of length N at index N.
-var precomputedOrders = [null]; // Using null at index 0 for alignment, as permutations start from size 1.
-
-
-// Loop from 0 up to 9 to generate permutations for arrays of size 1 to 10.
-for (var elementCount = 0; elementCount < 10; elementCount++) {
-    // Create a temporary array for the current size.
-    var elementList = [];
-
-    // Populate the temporary array with integer values from 0 up to 'elementCount'.
-    for (var valueIndex = 0; valueIndex < elementCount + 1; valueIndex++) {
-        elementList.push(valueIndex);
-    }
-
-    // Store the permutations of 'elementList' in 'precomputedOrders' at the corresponding index.
-    precomputedOrders[elementCount + 1] = produceArrangements(elementList);
+// Pre-calculate permutations for sequences of length 0 to 10.
+let cachedPermutations = [
+  [0]
+]; // Initialize with a dummy for index 0, or handle it differently if 0 is not used.
+// Loop to populate cachedPermutations.
+for (let lenCounter = 0; lenCounter < 10; lenCounter++) {
+  let currentSequence = []; // Temporary array for the current sequence.
+  // Populate currentSequence with numbers from 0 to lenCounter.
+  for (let elementIdx = 0; elementIdx < lenCounter + 1; elementIdx++) {
+    currentSequence.push(elementIdx);
+  }
+  // Generate permutations for currentSequence and store them.
+  cachedPermutations[lenCounter + 1] = generatePermutations(currentSequence);
 }
 
+// Read input from standard input.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into lines and remove leading/trailing whitespace.
+let inputLines = rawData.trim().split("\n");
 
-// --- Main Program Logic ---
-// Read the entire input from standard input as a UTF-8 encoded string.
-var fileContents = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-// Trim leading/trailing whitespace and split the input string into an array of individual lines.
-var inputLines = fileContents.trim().split("\n");
-
-
-// Loop indefinitely to process multiple test cases until an explicit exit condition is met.
+// Process input lines until a '0' is encountered.
 while (true) {
-    // Extract the first line from 'inputLines', convert it to a number,
-    // representing the number of items for the current test case.
-    var numEntries = inputLines.shift() - 0;
+  // Parse the first line as the number of items for the current test case.
+  let itemCount = inputLines.shift() - 0;
+  // If itemCount is 0, terminate the loop.
+  if (itemCount === 0) break;
 
-    // If 'numEntries' is 0, it signifies the end of input, so break out of the processing loop.
-    if (numEntries === 0) {
-        break;
+  // Array to store parsed item data.
+  let parsedItems = [];
+  // Read itemCount lines and parse them.
+  for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+    parsedItems[itemIndex] = inputLines.shift().split(" ");
+  }
+  // Convert the second and third elements of each item to numbers.
+  parsedItems = parsedItems.map(itemData => [itemData[0], itemData[1] - 0, itemData[2] - 0]);
+
+  // Retrieve pre-calculated permutations for the current itemCount.
+  let currentPermutations = cachedPermutations[itemCount];
+  let maximumRatio = 0; // Stores the maximum ratio found.
+  let bestOrder = ""; // Stores the permutation that yields the maximum ratio.
+
+  // Iterate through all possible permutations.
+  for (let permIndex = 0; permIndex < currentPermutations.length; permIndex++) {
+    let currentOrder = currentPermutations[permIndex];
+    let isValidOrder = true; // Flag to check if the current order is valid.
+    let totalWeight = 0; // Accumulator for the sum of weights.
+    let weightedSum = 0; // Accumulator for the weighted sum.
+
+    // Iterate through elements in the current permutation.
+    for (let positionIndex = 0; positionIndex < currentOrder.length; positionIndex++) {
+      let originalItemIndex = currentOrder[positionIndex]; // Get the original index of the item.
+      // Check if the accumulated weight exceeds the item's capacity.
+      if (totalWeight > parsedItems[originalItemIndex][2]) {
+        isValidOrder = false; // Mark as invalid.
+        break; // Exit inner loop.
+      }
+      // Add the item's weight to the total.
+      totalWeight += parsedItems[originalItemIndex][1];
+      // Add the item's weighted value to the weighted sum.
+      weightedSum += parsedItems[originalItemIndex][1] * (positionIndex + 1);
     }
 
-    // Initialize an array to store detailed information for each item.
-    var taskInfo = [];
-
-    // Read 'numEntries' lines, each containing space-separated details for an item.
-    for (var entryIndex = 0; entryIndex < numEntries; entryIndex++) {
-        taskInfo[entryIndex] = inputLines.shift().split(" ");
+    // If the order is valid and yields a higher ratio, update maximumRatio and bestOrder.
+    if (isValidOrder && weightedSum / totalWeight > maximumRatio) {
+      maximumRatio = weightedSum / totalWeight;
+      bestOrder = currentOrder;
     }
-
-    // Process 'taskInfo': convert numerical parts (weight, capacity) from strings to actual numbers.
-    taskInfo = taskInfo.map(itemData => [
-        itemData[0],    // Item name (string).
-        itemData[1] - 0,  // Item weight (converted to number).
-        itemData[2] - 0   // Item capacity constraint (converted to number).
-    ]);
-
-    // Retrieve the pre-calculated permutations for the current 'numEntries' from the cache.
-    var availableOrders = precomputedOrders[numEntries];
-
-    // Initialize 'maximumRatio' to track the highest score found across all permutations.
-    var maximumRatio = 0;
-
-    // 'optimalSequence' will store the permutation that yields the 'maximumRatio'.
-    var optimalSequence = "";
-
-
-    // Iterate through each possible permutation for the current set of items.
-    for (var permutationIndex = 0; permutationIndex < availableOrders.length; permutationIndex++) {
-        // Get the current permutation, which is an array of item indices.
-        var currentOrder = availableOrders[permutationIndex];
-
-        // 'conditionMet' flag indicates if the current permutation is valid based on capacity constraints.
-        var conditionMet = true;
-
-        // 'accumulatedMass' tracks the total weight of items processed so far in the current order.
-        var accumulatedMass = 0;
-
-        // 'accumulatedProduct' calculates the sum of (item weight * its position in the sequence).
-        var accumulatedProduct = 0;
-
-
-        // Iterate through each item within the 'currentOrder'.
-        for (var orderPosition = 0; orderPosition < currentOrder.length; orderPosition++) {
-            // Get the original index of the item based on its position in the current permutation.
-            var originalItemIndex = currentOrder[orderPosition];
-
-            // Check if the current accumulated mass exceeds the individual capacity constraint
-            // associated with the item at 'originalItemIndex'. This implies that `taskInfo[originalItemIndex][2]`
-            // represents a maximum allowed cumulative weight for this specific item's processing point.
-            if (accumulatedMass > taskInfo[originalItemIndex][2]) {
-                conditionMet = false; // Mark the permutation as invalid.
-                break; // No need to check further elements in this permutation.
-            }
-
-            // Add the current item's weight to the running total accumulated mass.
-            accumulatedMass += taskInfo[originalItemIndex][1];
-
-            // Add the weighted product (item weight multiplied by its 1-based position in the sequence).
-            accumulatedProduct += taskInfo[originalItemIndex][1] * (orderPosition + 1);
-        }
-
-        // If the permutation is valid (all constraints met) AND its calculated ratio
-        // (accumulatedProduct / accumulatedMass) is higher than the current maximum ratio.
-        if (conditionMet && accumulatedProduct / accumulatedMass > maximumRatio) {
-            maximumRatio = accumulatedProduct / accumulatedMass; // Update the maximum ratio.
-            optimalSequence = currentOrder; // Store this permutation as the new optimal sequence.
-        }
-    }
-
-    // After evaluating all permutations, extract the names of items in the 'optimalSequence'.
-    // Reverse the order for output as per problem requirements (last item first).
-    // Join the names with newline characters and print the final result to the console.
-    console.log(optimalSequence.map(element => taskInfo[element][0]).reverse().join("\n"));
+  }
+  // Map the best order (indices) back to item names, reverse them, and join with newlines for output.
+  console.log(bestOrder.map(originalItemIndex => parsedItems[originalItemIndex][0]).reverse().join("\n"));
 }

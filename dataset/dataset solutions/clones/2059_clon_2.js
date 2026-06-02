@@ -1,112 +1,79 @@
-/*
- * This script processes a grid-based map to determine the minimum number of
- * 'difficult' cells encountered when traversing from a starting point to an
- * end point. It employs a recursive depth-first search algorithm.
- */
-
-// A global variable to hold the lowest recorded cost (number of difficult cells)
-// to reach the destination. Initialized with a hexadecimal value representing 1000,
-// ensuring any valid path will result in a lower cost.
-var leastObstacles = 0x3E8;
-
-// Another global variable that will store the parsed two-dimensional grid layout.
-// This array of arrays will represent the terrain and its characteristics.
-var terrainLayout;
+var leastSteps = 1000; // Initialize the minimum path length with a large value
+var gridState; // Global variable to store the grid configuration
 
 /**
- * The primary entry point function responsible for handling the input data,
- * preparing the grid, and initiating the pathfinding operation.
- * @param {string} receivedData - The raw string input from the source,
- *                                containing grid dimensions and the map itself.
+ * Processes the raw input data to set up the grid and initiate pathfinding.
+ * @param {string} rawData - The raw input string from stdin.
  */
-function ProcessInput(receivedData) {
-    // First, remove any extraneous whitespace from the beginning or end of the input.
-    receivedData = receivedData.trim();
+function ProcessInput(rawData) {
+    // Clean up the input string by removing leading/trailing whitespace
+    rawData = rawData.trim();
+    // Split the input into individual lines
+    let lineSegments = rawData.split("\n");
 
-    // Split the entire input string into an array of individual lines.
-    receivedData = receivedData.split("\n");
+    // The first line contains grid dimensions
+    let dimensions = lineSegments[0].split(" ");
+    // The rest of the lines represent the grid state
+    gridState = lineSegments.slice(1, lineSegments.length);
 
-    // The very first line of the input contains the grid's height and width,
-    // separated by a space. Parse these dimensions.
-    var gridSizeInfo = receivedData[0].split(" ");
+    // Convert each grid row string into an array of characters
+    gridState = gridState.map(rowString => {
+        return rowString.split('');
+    });
 
-    // Extract the actual map data, which starts from the second line (index 1)
-    // up to the end of the received data.
-    terrainLayout = receivedData.slice(1, receivedData.length);
+    // Start the recursive path exploration from the top-left corner [0,0]
+    // The target is the bottom-right corner, adjusted for 0-based indexing
+    // Initial path length is 0
+    explorePath([0, 0], [parseInt(dimensions[0]) - 1, parseInt(dimensions[1]) - 1], 0);
 
-    // Transform each line of the map data into an array of characters.
-    // This converts the array of strings into a 2D array (grid) of characters.
-    terrainLayout = terrainLayout.map(
-        (lineSegment) => {
-            return lineSegment.split('');
-        }
-    );
-
-    // Initiate the recursive grid navigation. The starting point is [0,0],
-    // the target is derived from the parsed dimensions (adjusted for 0-indexing),
-    // and the initial path cost is zero.
-    NavigateGrid(
-        [0, 0],
-        [parseInt(gridSizeInfo[0]) - 1, parseInt(gridSizeInfo[1]) - 1],
-        0
-    );
-
-    // After the entire exploration, print the final minimum obstacle count found
-    // to the console.
-    console.log(leastObstacles);
+    // Output the calculated minimum path length
+    console.log(leastSteps);
 }
 
-// Execute the main processing function by reading input from the standard input stream.
+// Read input from standard input and pass it to the main processing function
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * A recursive helper function that explores possible paths across the grid.
- * It determines the cost of reaching the destination by moving only right or down.
- * @param {number[]} currentPoint - An array `[y, x]` indicating the current row and column coordinates.
- * @param {number[]} destinationPoint - An array `[y, x]` indicating the target row and column coordinates.
- * @param {number} pathCost - The accumulated cost (number of obstacles) to reach `currentPoint`.
+ * Recursively explores possible paths from the current position to the target.
+ * This function implements a depth-first search-like approach.
+ * @param {number[]} currentPos - The current [y, x] coordinates.
+ * @param {number[]} targetPos - The target [y, x] coordinates.
+ * @param {number} pathLength - The length of the path taken so far.
  */
-function NavigateGrid(currentPoint, destinationPoint, pathCost) {
-    // Deconstruct the current coordinates for easier manipulation.
-    var rowCoordinate = currentPoint[0];
-    var colCoordinate = currentPoint[1];
+function explorePath(currentPos, targetPos, pathLength) {
+    let currentY = currentPos[0]; // Current row index
+    let currentX = currentPos[1]; // Current column index
 
-    // Check if the current cell is considered an 'obstacle'.
-    // A cell is an obstacle if it's not represented by a dot (ASCII 46).
-    if (terrainLayout[rowCoordinate][colCoordinate] !== String.fromCharCode(46)) {
-        // If it's an obstacle, increment the cost for this path.
-        pathCost++;
-        // Pruning step: If the current path's cost already exceeds the globally
-        // recorded minimum, there's no point in continuing this path; it won't
-        // lead to a better solution.
-        if (pathCost > leastObstacles) {
+    // If the current cell is not a '.' (empty path), it means it's an obstacle or visited cell that adds to the count.
+    // Increment pathLength if the cell is not empty.
+    if (gridState[currentY][currentX] !== ".") {
+        pathLength++;
+        // If the current path length already exceeds the known minimum, prune this branch.
+        if (pathLength > leastSteps) {
             return;
         }
     }
 
-    // Base case: If the current position is the same as the destination.
-    if (rowCoordinate === destinationPoint[0] && colCoordinate === destinationPoint[1]) {
-        // If the cost of this completed path is less than the current minimum,
-        // update the global minimum cost.
-        if (pathCost < leastObstacles) {
-            leastObstacles = pathCost;
+    // Check if the target has been reached
+    if (currentY === targetPos[0] && currentX === targetPos[1]) {
+        // If this path is shorter than the current minimum, update the minimum.
+        if (pathLength < leastSteps) {
+            leastSteps = pathLength;
         }
-        return; // This path has reached its end.
+        return; // Path found, terminate this branch.
     }
-    // Optimized path: If already in the destination row, only allow movement to the right.
-    else if (rowCoordinate === destinationPoint[0]) {
-        NavigateGrid([rowCoordinate, colCoordinate + 1], destinationPoint, pathCost);
+    // If not at the target, explore possible next steps.
+    else if (currentY === targetPos[0]) {
+        // If already in the target row, only move right.
+        explorePath([currentY, currentX + 1], targetPos, pathLength);
     }
-    // Optimized path: If already in the destination column, only allow movement downwards.
-    else if (colCoordinate === destinationPoint[1]) {
-        NavigateGrid([rowCoordinate + 1, colCoordinate], destinationPoint, pathCost);
+    else if (currentX === targetPos[1]) {
+        // If already in the target column, only move down.
+        explorePath([currentY + 1, currentX], targetPos, pathLength);
     }
-    // General case: If not at the edge of the grid relative to the destination,
-    // explore both possible movements: right and down.
     else {
-        // Attempt to move one step to the right.
-        NavigateGrid([rowCoordinate, colCoordinate + 1], destinationPoint, pathCost);
-        // Attempt to move one step downwards.
-        NavigateGrid([rowCoordinate + 1, colCoordinate], destinationPoint, pathCost);
+        // If not in the target row or column, explore both moving right and moving down.
+        explorePath([currentY, currentX + 1], targetPos, pathLength); // Try moving right
+        explorePath([currentY + 1, currentX], targetPos, pathLength); // Try moving down
     }
 }

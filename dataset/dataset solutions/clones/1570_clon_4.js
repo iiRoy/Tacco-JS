@@ -1,15 +1,20 @@
-const ProcessInputData = (dataSource) => {
-    const numericalComponents = dataSource.match(/\d+/g).map(Number);
+function computeTotalCost(inputDataString) {
+    const dataSegments = inputDataString.split(" ");
+    const totalItems = Number(dataSegments[0]);
+    const itemsPerBatch = Number(dataSegments[1]);
+    const costPerBatch = Number(dataSegments[2]);
 
-    const [itemCount, capacityPerBatch, timePerBatch] = numericalComponents;
+    function determineBatchCount(currentItemsRemaining, batchCapacity) {
+        if (currentItemsRemaining <= 0) {
+            return 0;
+        }
+        return 1 + determineBatchCount(currentItemsRemaining - batchCapacity, batchCapacity);
+    }
 
-    // Calculate the number of batches required using an alternative to Math.ceil
-    // For positive integers A and B, Math.ceil(A/B) is equivalent to Math.floor((A + B - 1) / B)
-    const requiredBatchCount = Math.floor((itemCount + capacityPerBatch - 1) / capacityPerBatch);
+    const finalBatchCount = determineBatchCount(totalItems, itemsPerBatch);
+    const overallExpenditure = finalBatchCount * costPerBatch;
 
-    const totalDuration = requiredBatchCount * timePerBatch;
+    console.log(overallExpenditure);
+}
 
-    console.log(totalDuration);
-};
-
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeTotalCost(require("fs").readFileSync("/dev/stdin", "utf8"));

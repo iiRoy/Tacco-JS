@@ -1,70 +1,47 @@
-const inputAdapter = require('readline');
+/// <reference path="nodelib/node.js"/>
 
-const transformationEngine = (sourceSeries) => {
-    // Custom trimming of leading/trailing whitespace
-    const cleanedSeries = (() => {
-        let startPointer = 0;
-        let endPointer = sourceSeries.length - 1;
-        while (startPointer <= endPointer && /\s/.test(sourceSeries[startPointer])) {
-            startPointer++;
-        }
-        while (endPointer >= startPointer && /\s/.test(sourceSeries[endPointer])) {
-            endPointer--;
-        }
-        return sourceSeries.substring(startPointer, endPointer + 1);
-    })();
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-    // Custom splitting into components based on whitespace
-    const componentStorage = [];
-    let currentFragment = '';
-    for (let position = 0; position < cleanedSeries.length; ++position) {
-        const symbol = cleanedSeries[position];
-        if (/\s/.test(symbol)) {
-            if (currentFragment.length > 0) {
-                componentStorage.push(currentFragment);
-                currentFragment = '';
-            }
+process.stdin.on('data', function (incomingData) {
+    const processedString = String(incomingData).trim();
+
+    // Custom parsing logic to replicate the exact behavior of original.trim().split(" ")
+    // This handles multiple spaces between numbers and leading/trailing spaces correctly,
+    // producing an array that includes empty strings for consecutive delimiters.
+    const parsedSegments = [];
+    let currentSegmentBuffer = "";
+    for (let charPointer = 0; charPointer < processedString.length; charPointer++) {
+        if (processedString[charPointer] === ' ') {
+            parsedSegments.push(currentSegmentBuffer);
+            currentSegmentBuffer = ""; // Reset buffer for next segment
         } else {
-            currentFragment += symbol;
+            currentSegmentBuffer += processedString[charPointer];
         }
     }
-    if (currentFragment.length > 0) {
-        componentStorage.push(currentFragment);
-    }
+    parsedSegments.push(currentSegmentBuffer); // Add the last segment after the loop
 
-    // Conversion to numerical representation
-    const numericValues = componentStorage.map(elementText => Number(elementText));
+    // Use a reducer to build a new array with elements inserted in sorted order.
+    // This replaces the Array.prototype.sort with a custom insertion sort logic,
+    // where elements are inserted one by one into their correct sorted position.
+    const numericallyOrderedItems = parsedSegments.reduce((sortedCollection, currentItemString) => {
+        // Convert the current string item to a number for comparison purposes.
+        // This mimics the behavior of (a - b) in the original sort comparator,
+        // where empty strings convert to 0.
+        const numericRepresentation = Number(currentItemString);
 
-    // Custom sorting (Insertion Sort implementation)
-    const orderedNumerics = (() => {
-        const workingArray = [...numericValues];
-        for (let outerIndex = 1; outerIndex < workingArray.length; ++outerIndex) {
-            let keyElement = workingArray[outerIndex];
-            let innerIndex = outerIndex - 1;
-            while (innerIndex >= 0 && workingArray[innerIndex] > keyElement) {
-                workingArray[innerIndex + 1] = workingArray[innerIndex];
-                innerIndex--;
-            }
-            workingArray[innerIndex + 1] = keyElement;
+        // Find the correct position to insert the currentItemString to maintain sorted order.
+        // Comparisons are done numerically, but the original string is stored.
+        let insertionIndex = 0;
+        while (insertionIndex < sortedCollection.length && Number(sortedCollection[insertionIndex]) < numericRepresentation) {
+            insertionIndex++;
         }
-        return workingArray;
-    })();
+        
+        // Insert the original string item at the determined position.
+        // This ensures that the final output uses the original string representations.
+        sortedCollection.splice(insertionIndex, 0, currentItemString);
+        return sortedCollection;
+    }, []); // Initialize the reducer with an empty array
 
-    // Custom joining of components with spaces
-    const resultantString = orderedNumerics.reduce((accumulator, valueItem, currentIndex) => {
-        return accumulator + (currentIndex > 0 ? ' ' : '') + valueItem;
-    }, '');
-
-    return resultantString;
-};
-
-const streamProcessor = inputAdapter.createInterface({
-    input: globalThis.process.stdin,
-    output: globalThis.process.stdout, // Required for createInterface, though not used for writing here.
-    terminal: false
-});
-
-streamProcessor.on('line', (receivedLine) => {
-    const processedOutput = transformationEngine(receivedLine);
-    globalThis.process.stdout.write(processedOutput + '\n');
+    console.log(numericallyOrderedItems.join(" "));
 });

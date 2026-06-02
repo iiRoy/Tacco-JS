@@ -1,38 +1,30 @@
-function processData(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const numericalIdentifier = +contentLines[0]; // Using unary plus for numeric conversion
+function processInput(rawData) {
+    const lineSegments = rawData.split("\n");
+    const elementQuantity = parseInt(lineSegments[0], 10);
+    const numericStrings = lineSegments[1].split(" ");
 
-    const sourceNumbers = contentLines[1].split(' ').map(Number); // Using Number constructor for conversion
+    const initialCollection = Array.from({ length: 2 * elementQuantity - 1 }, (_, index) =>
+        parseInt(numericStrings[index], 10)
+    );
 
-    // Different approach for finding the median of three values
-    const obtainMedianOfThree = (valueX, valueY, valueZ) =>
-        Math.max(Math.min(valueX, valueY), Math.min(valueY, valueZ), Math.min(valueX, valueZ));
+    const determineMiddleValue = (firstVal, secondVal, thirdVal) =>
+        Math.max(Math.min(firstVal, secondVal), Math.min(thirdVal, Math.max(firstVal, secondVal)));
 
-    // Recursive function to apply the reduction until a single element remains
-    const collapseSequence = (currentList) => {
-        // Base case: if the list has only one element, return it
-        if (currentList.length === 1) {
-            return currentList[0];
+    const recursivelyReduceCollection = (currentCollection) => {
+        if (currentCollection.length === 1) {
+            return currentCollection[0];
         }
 
-        // Determine the size of the next, reduced list
-        const reducedListSize = currentList.length - 2;
+        const nextGenerationCollection = Array.from({ length: currentCollection.length - 2 }, (_, position) =>
+            determineMiddleValue(currentCollection[position], currentCollection[position + 1], currentCollection[position + 2])
+        );
 
-        // Generate the next list using functional array methods
-        // Array.from creates a new array and maps each index to a value
-        const nextIterationList = Array.from({ length: reducedListSize }, (_, position) => {
-            const firstNum = currentList[position];
-            const secondNum = currentList[position + 1];
-            const thirdNum = currentList[position + 2];
-            return obtainMedianOfThree(firstNum, secondNum, thirdNum);
-        });
-
-        // Recursively call the function with the newly generated list
-        return collapseSequence(nextIterationList);
+        return recursivelyReduceCollection(nextGenerationCollection);
     };
 
-    const finalResult = collapseSequence(sourceNumbers);
+    const finalOutcome = recursivelyReduceCollection(initialCollection);
 
-    console.log(finalResult);
+    console.log('%d', finalOutcome);
 }
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

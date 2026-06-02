@@ -1,40 +1,25 @@
-console.log((function(rawInput) {
-    const inputLines = rawInput.trim().split('\n');
+const processInput = (rawText) => {
+    const lineSegments = rawText.trim().split('\n');
+    const [initialCount, ...dataLines] = lineSegments;
+    const elementCount = Number(initialCount);
 
-    const totalItemCount = +inputLines[0];
+    const { primaryValues, secondaryValues } = dataLines.reduce((acc, currentLine) => {
+        const [firstNum, secondNum] = currentLine.split(' ').map(Number);
+        acc.primaryValues.push(firstNum);
+        acc.secondaryValues.push(secondNum);
+        return acc;
+    }, { primaryValues: [], secondaryValues: [] });
 
-    const itemPairs = inputLines.slice(1, totalItemCount + 1).map(line => line.split(' ').map(val => +val));
+    primaryValues.sort((x, y) => x - y);
+    secondaryValues.sort((x, y) => x - y);
 
-    const firstCollection = itemPairs.map(pair => pair[0]);
-    const secondCollection = itemPairs.map(pair => pair[1]);
+    const lowerMid = Math.floor((elementCount - 1) / 2);
+    const upperMid = Math.ceil((elementCount - 1) / 2);
 
-    const customSortAsc = (arrToSort) => {
-        const localArray = [...arrToSort];
-        const dataLength = localArray.length;
-        for (let i = 0; i < dataLength - 1; i++) {
-            for (let j = 0; j < dataLength - 1 - i; j++) {
-                if (localArray[j] > localArray[j + 1]) {
-                    [localArray[j], localArray[j + 1]] = [localArray[j + 1], localArray[j]];
-                }
-            }
-        }
-        return localArray;
-    };
+    const finalResult = (secondaryValues[lowerMid] - primaryValues[lowerMid]) +
+                        (elementCount % 2 === 0 ? (secondaryValues[upperMid] - primaryValues[upperMid]) : 0) + 1;
 
-    const sortedFirstCollection = customSortAsc(firstCollection);
-    const sortedSecondCollection = customSortAsc(secondCollection);
+    return finalResult;
+};
 
-    const lowerCentralIndex = Math.floor((totalItemCount - 1) / 2);
-    const upperCentralIndex = Math.floor(totalItemCount / 2);
-
-    const sumOfLowerBounds = totalItemCount % 2 !== 0
-        ? sortedFirstCollection[lowerCentralIndex]
-        : sortedFirstCollection[lowerCentralIndex] + sortedFirstCollection[upperCentralIndex];
-
-    const sumOfUpperBounds = totalItemCount % 2 !== 0
-        ? sortedSecondCollection[lowerCentralIndex]
-        : sortedSecondCollection[lowerCentralIndex] + sortedSecondCollection[upperCentralIndex];
-
-    return sumOfUpperBounds - sumOfLowerBounds + 1;
-
-})(require('node:fs').readFileSync(0, 'utf8')));
+console.log(processInput(require('fs').readFileSync('/dev/stdin', 'utf8')));

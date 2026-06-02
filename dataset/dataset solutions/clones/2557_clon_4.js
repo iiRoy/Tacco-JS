@@ -1,28 +1,22 @@
 "use strict";
 
-const rawInputDataSource = require('fs').readFileSync('/dev/stdin', 'UTF-8');
-const processedInputLines = rawInputDataSource.trim().split('\n');
+const inputDataLines = require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split('\n');
 
-const [totalParticipants, initialScoreValue, totalQuestionsAsked] = processedInputLines[0].split(' ').map(Number);
+const [participantTotal, initialScore, questionTotal] = inputDataLines[0].split(' ').map(Number);
 
-const correctResponseCounts = processedInputLines.slice(1).reduce((scoreAccumulator, participantIdentifier) => {
-    const participantIndex = parseInt(participantIdentifier, 10);
-    scoreAccumulator[participantIndex] = (scoreAccumulator[participantIndex] || 0) + 1;
-    return scoreAccumulator;
-}, {});
+const correctAnswererIndices = inputDataLines.slice(1).map(Number);
 
-const finalDecisionList = [];
+const correctResponseCounts = new Map();
 
-for (let participantId = 1; participantId <= totalParticipants; ++participantId) {
-    const individualCorrectResponses = correctResponseCounts[participantId] || 0;
-    
-    const calculatedFinalStanding = initialScoreValue - totalQuestionsAsked + individualCorrectResponses;
-    
-    if (calculatedFinalStanding > 0) {
-        finalDecisionList.push('Yes');
-    } else {
-        finalDecisionList.push('No');
-    }
+for (const participantIdentifier of correctAnswererIndices) {
+    correctResponseCounts.set(participantIdentifier, (correctResponseCounts.get(participantIdentifier) || 0) + 1);
 }
 
-console.log(finalDecisionList.join('\n'));
+for (let participantIndex = 1; participantIndex <= participantTotal; participantIndex++) {
+    const finalParticipantScore = initialScore - questionTotal + (correctResponseCounts.get(participantIndex) || 0);
+    if (finalParticipantScore > 0) {
+        console.log('Yes');
+    } else {
+        console.log('No');
+    }
+}

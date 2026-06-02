@@ -1,42 +1,20 @@
-const retrieveSourceData = require("node:fs").readFileSync("/dev/stdin", "utf8");
+function processChallenge(rawData) {
+  const lineContent = rawData.split("\n")[0];
+  const numericParts = lineContent.match(/(\d+)\s+(\d+)/);
+  
+  const firstQuantity = parseInt(numericParts[1], 10);
+  const secondQuantity = parseInt(numericParts[2], 10);
 
-const extractNumericalParameters = (sourceText) => {
-    const patternForNumbers = /^(\d+)\s+(\d+)/;
-    const matchedSegments = sourceText.match(patternForNumbers);
+  const powerTerm = Math.pow(2, secondQuantity);
+  const baseCoefficient = 18;
+  const scalingFactor = 100;
 
-    if (!matchedSegments || matchedSegments.length < 3) {
-        // Fallback or error handling, though for this problem, valid input is assumed.
-        // For robustness, one might throw an error or return default values.
-        return { first: 0, second: 0 };
-    }
-    return {
-        first: Number(matchedSegments[1]),
-        second: Number(matchedSegments[2])
-    };
-};
+  const intermediateSum = (baseCoefficient * secondQuantity) + firstQuantity;
+  const scaledSum = scalingFactor * intermediateSum;
+  
+  const finalResult = powerTerm * scaledSum;
 
-const recursivelyComputePowerOfTwo = (exponentValue) => {
-    if (exponentValue === 0) {
-        return 1;
-    } else {
-        return 2 * recursivelyComputePowerOfTwo(exponentValue - 1);
-    }
-};
+  console.log(finalResult);
+}
 
-const aggregateMultiplicativeTerms = (...factors) => {
-    return factors.reduce((accumulatedProduct, currentFactor) => accumulatedProduct * currentFactor, 1);
-};
-
-const { first: valA, second: valB } = extractNumericalParameters(retrieveSourceData);
-
-const termOne = recursivelyComputePowerOfTwo(valB);
-const termTwo = 100;
-const termThree = (18 * valB) + valA;
-
-const ultimateOutcome = aggregateMultiplicativeTerms(termOne, termTwo, termThree);
-
-const deliverOutcome = (valueToDisplay) => {
-    process.stdout.write(String(valueToDisplay) + "\n");
-};
-
-deliverOutcome(ultimateOutcome);
+processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));

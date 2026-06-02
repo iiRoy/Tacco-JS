@@ -1,68 +1,24 @@
-class OptimalResourceAllocator {
-    #initialQuantity;
-    #scenarioOneBatchSize;
-    #scenarioOneBatchCost;
-    #scenarioTwoBatchSize;
-    #scenarioTwoBatchCost;
+const obtainCeilingQuotient = (dividendValue, divisorValue) => {
+  if (divisorValue <= 0) {
+    return Infinity;
+  }
+  return Math.floor((dividendValue + divisorValue - 1) / divisorValue);
+};
 
-    constructor(
-        quantity,
-        batchSizeA,
-        costA,
-        batchSizeB,
-        costB
-    ) {
-        this.#initialQuantity = quantity;
-        this.#scenarioOneBatchSize = batchSizeA;
-        this.#scenarioOneBatchCost = costA;
-        this.#scenarioTwoBatchSize = batchSizeB;
-        this.#scenarioTwoBatchCost = costB;
-    }
+const executionArguments = process.argv.slice(2);
 
-    #calculateNeededBatches(totalAmount, singleBatchSize) {
-        return Math.ceil(totalAmount / singleBatchSize);
-    }
+if (executionArguments.length === 5) {
+  const targetQuantity = Number(executionArguments[0]);
+  const unitSizeA = Number(executionArguments[1]);
+  const costPerUnitA = Number(executionArguments[2]);
+  const unitSizeB = Number(executionArguments[3]);
+  const costPerUnitB = Number(executionArguments[4]);
 
-    #determineTotalExpense(requiredBatches, unitPrice) {
-        return requiredBatches * unitPrice;
-    }
+  const batchesForOptionA = obtainCeilingQuotient(targetQuantity, unitSizeA);
+  const batchesForOptionB = obtainCeilingQuotient(targetQuantity, unitSizeB);
 
-    evaluateMinimumExpenditure() {
-        const batchesForOptionA = this.#calculateNeededBatches(
-            this.#initialQuantity,
-            this.#scenarioOneBatchSize
-        );
-        const expenseOptionA = this.#determineTotalExpense(
-            batchesForOptionA,
-            this.#scenarioOneBatchCost
-        );
+  const totalExpenditureA = costPerUnitA * batchesForOptionA;
+  const totalExpenditureB = costPerUnitB * batchesForOptionB;
 
-        const batchesForOptionB = this.#calculateNeededBatches(
-            this.#initialQuantity,
-            this.#scenarioTwoBatchSize
-        );
-        const expenseOptionB = this.#determineTotalExpense(
-            batchesForOptionB,
-            this.#scenarioTwoBatchCost
-        );
-
-        return Math.min(expenseOptionA, expenseOptionB);
-    }
-}
-
-// Entry point for execution in a Node.js environment
-const programArguments = process.argv.slice(2);
-
-if (programArguments.length === 5) {
-    const numericInputs = programArguments.map(arg => parseInt(arg, 10));
-
-    const decisionEngine = new OptimalResourceAllocator(
-        numericInputs[0],
-        numericInputs[1],
-        numericInputs[2],
-        numericInputs[3],
-        numericInputs[4]
-    );
-
-    console.log(decisionEngine.evaluateMinimumExpenditure());
+  console.log(Math.min(totalExpenditureA, totalExpenditureB));
 }

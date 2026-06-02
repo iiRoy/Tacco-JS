@@ -1,37 +1,49 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-
-const transformInput = (rawText) =>
-    rawText
-        .split('\n')
-        .map(lineContent => parseInt(lineContent.trim(), 10))
-        .filter(processedNumber => !isNaN(processedNumber) && processedNumber !== 0);
-
-const numericInputs = transformInput(sourceData);
-
-function* sumPossibilities(targetQuantity) {
-    const componentALimit = 100;
-    const componentBLimit = 1000;
-
-    for (let currentA = 0; currentA <= componentALimit; currentA++) {
-        const cubicA = currentA ** 3;
-        for (let currentB = 0; currentB <= componentBLimit; currentB++) {
-            const squareB = currentB ** 2;
-            const componentC = targetQuantity - cubicA + squareB;
-
-            if (componentC < 0) {
+function* combinationGenerator(targetValue) {
+    for (let zAxis = 0; zAxis <= 100; zAxis++) {
+        const zCubedResult = zAxis * zAxis * zAxis;
+        for (let yAxis = 0; yAxis <= 1000; yAxis++) {
+            const ySquaredResult = yAxis * yAxis;
+            const xCoordinate = targetValue - zCubedResult + ySquaredResult;
+            if (xCoordinate < 0) {
                 break;
             }
-            yield currentA + currentB + componentC;
+            yield zAxis + yAxis + xCoordinate;
         }
     }
 }
 
-numericInputs.forEach(specificValue => {
-    let minimumAttained = Number.POSITIVE_INFINITY;
-    for (const potentialSum of sumPossibilities(specificValue)) {
-        if (potentialSum < minimumAttained) {
-            minimumAttained = potentialSum;
+const processInputSequence = (sourceData) => {
+    const parsedLines = sourceData.trim().split("\n");
+    const collectedResults = [];
+    let currentPosition = 0;
+
+    const processNextEntry = () => {
+        if (currentPosition >= parsedLines.length) {
+            return;
         }
-    }
-    console.log(minimumAttained);
-});
+
+        const currentNumericValue = Number(parsedLines[currentPosition]);
+        currentPosition++;
+
+        if (currentNumericValue === 0) {
+            return;
+        }
+
+        let lowestSumEncountered = Infinity;
+        for (const potentialSum of combinationGenerator(currentNumericValue)) {
+            if (potentialSum < lowestSumEncountered) {
+                lowestSumEncountered = potentialSum;
+            }
+        }
+        collectedResults.push(lowestSumEncountered);
+
+        processNextEntry();
+    };
+
+    processNextEntry();
+    return collectedResults;
+};
+
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const finalCalculations = processInputSequence(fileContent);
+finalCalculations.forEach(outputValue => console.log(outputValue));

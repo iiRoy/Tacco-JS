@@ -1,27 +1,24 @@
-(() => {
-    let collectedData = '';
-
-    global.process.stdin.on('data', (portionBuffer) => {
-        collectedData += portionBuffer.toString();
+(async () => {
+    const acquireInput = () => new Promise((resolve, reject) => {
+        let collectedData = '';
+        process.stdin.on('data', (dataSegment) => {
+            collectedData += dataSegment.toString();
+        });
+        process.stdin.on('end', () => {
+            resolve(collectedData);
+        });
+        process.stdin.on('error', (issue) => {
+            reject(issue);
+        });
     });
 
-    global.process.stdin.on('end', () => {
-        let firstToken = '';
-        const tokenSeeker = collectedData.match(/(\S+)/);
+    const receivedText = await acquireInput();
 
-        if (tokenSeeker && tokenSeeker.length > 0) {
-            firstToken = tokenSeeker[0];
-        }
+    const firstWhitespaceIndex = receivedText.search(/\s/);
+    const extractedToken = (firstWhitespaceIndex === -1)
+        ? receivedText
+        : receivedText.slice(0, firstWhitespaceIndex);
 
-        const numericInterpretation = parseFloat(firstToken);
-        
-        const finalComputation = 1 - numericInterpretation;
-        
-        global.process.stdout.write(finalComputation + '\n');
-    });
-
-    global.process.stdin.on('error', (failure) => {
-        global.process.stderr.write('IO issue: ' + failure.message + '\n');
-        global.process.exit(1);
-    });
+    const numericValue = Number(extractedToken);
+    console.log(1 - numericValue);
 })();

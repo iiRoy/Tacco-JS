@@ -1,176 +1,140 @@
-// This section handles input processing and should generally not be modified.
 var inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+  input: process.stdin,
+  output: process.stdout
 });
 
-var dataSource;
-var capturedLines = [];
+var inputProcessor;
+var inputLines = [];
 
-inputReader.on('line', function(singleLine) {
-    capturedLines.push(singleLine);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-inputReader.on('close', function() {
-    dataSource = prepareInput(capturedLines);
-    console.warn('\n↑Input data ↓Output result'); // Changed error to warn, and message
-    executePrimaryLogic();
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  // Debug message for input/output separation
+  console.error('\n↑ Input ↓ Output');
+  executeSolution();
 });
 
-// Utility function to create a deep copy of an object or Set.
-function replicateObject(sourceObj) {
-    return (sourceObj instanceof Set) ? new Set(Array.from(sourceObj)) : JSON.parse(JSON.stringify(sourceObj));
+// Utility function to create a deep copy of an object or Set
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Functions to retrieve and convert the next piece of input data.
-function retrieveInteger() {
-    return convertInput(fetchNextItem(), 1);
-}
+// Helper functions for reading various input types
+function readInteger(){ return convertInputType(getNextInputLine(), 1); }
+function readStringArray(){ return convertInputType(getNextInputLine(), 2); }
+function readIntegerArray(){ return convertInputType(getNextInputLine(), 4); }
+function readCharacterArray(){ return convertInputType(getNextInputLine(), 6); }
 
-function retrieveStringArray() {
-    return convertInput(fetchNextItem(), 2);
-}
+// Core input stream methods
+function getNextInputLine(){ return inputProcessor.advanceAndGet(); }
+function hasMoreInput(){ return inputProcessor.canAdvance(); }
 
-function retrieveIntegerArray() {
-    return convertInput(fetchNextItem(), 4);
-}
+// Initializes an object to manage input lines
+function initializeInputHandler(linesCollection){
+  return {
+    dataLines : linesCollection,
+    currentLineIndex : 0,
+    totalLines : linesCollection.length,
 
-function retrieveCharacterArray() {
-    return convertInput(fetchNextItem(), 6);
-}
+    canAdvance : function(){
+      return (this.currentLineIndex < this.totalLines);
+    },
 
-// Retrieves the next item from the input source.
-function fetchNextItem() {
-    return dataSource.fetchNextItem();
-}
-
-// Checks if there are more items available in the input source.
-function hasMoreItems() {
-    return dataSource.hasMoreItems();
-}
-
-// Initializes the data source object from raw input lines.
-function prepareInput(rawInputLines) {
-    return {
-        dataList: rawInputLines,
-        currentPosition: 0,
-        maximumCount: rawInputLines.length,
-        hasMoreItems: function() {
-            return (this.currentPosition < this.maximumCount);
-        },
-        fetchNextItem: function() {
-            if (this.hasMoreItems()) {
-                return this.dataList[this.currentPosition++];
-            } else {
-                throw 'DataRetrievalError: No further input available'; // Changed error message
-            }
-        }
-    };
-}
-
-// Displays the final result to the console.
-function displayResult(messageContent) {
-    console.log(messageContent);
-}
-
-// Logs debug information to the standard error stream.
-function logDebugInfo(debugPayload) {
-    console.error('trace:' + require('util').inspect(debugPayload, false, null)); // Changed debug prefix
-}
-
-// Helper function for various input conversions.
-// The 'conversionType' parameter dictates the transformation:
-// 1: Parses to an integer.
-// 2: Splits string by space.
-// 4: Splits string by space and converts parts to numbers.
-// 6: Splits string into individual characters.
-// 7: Splits string into characters and converts them to numbers.
-// 8: Joins array elements with spaces.
-// 9: Joins array elements with newlines.
-// 0: Joins array elements without a separator.
-// Default: Returns the input value as is.
-function convertInput(inputValue, conversionType) {
-    try {
-        switch (conversionType) {
-            case 1:
-                return Number.parseInt(inputValue); // Changed parseInt to Number.parseInt
-            case 2:
-                return inputValue.split(' ');
-            case 4:
-                return inputValue.split(' ').map(Number);
-            case 6:
-                return inputValue.split('');
-            case 7:
-                return inputValue.split('').map(Number);
-            case 8:
-                return inputValue.join(' ');
-            case 9:
-                return inputValue.join('\n');
-            case 0:
-                return inputValue.join('');
-            default:
-                return inputValue;
-        }
-    } catch (errorObject) { // Changed 'e' to 'errorObject'
-        return inputValue;
+    advanceAndGet : function(){
+      if(this.canAdvance()){
+        return this.dataLines[this.currentLineIndex++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
+  };
 }
 
-// End of utility functions.
-// ----------------------------------------------------------------------------------------------------------------------
-// Main program logic starts here.
+// Function to print the final result
+function printResult(outputValue){
+  console.log(outputValue);
+}
 
-function executePrimaryLogic() {
-    // Read the initial set of parameters for the problem.
-    var initialParameters = retrieveIntegerArray();
+// Function for logging debug information to stderr
+function logDebug(debugData){
+  console.error('debug:' + require('util').inspect(debugData, false, null));
+}
 
-    // Extract problem-specific variables from the initial input.
-    var monsterCount = initialParameters[0]; // Total number of monsters.
-    var attackRange = initialParameters[1]; // Range of the bomb's effect.
-    var bombDamage = initialParameters[2]; // Damage inflicted by a single bomb.
+// Universal input conversion utility
+// param "conversionType" specifies the desired output format
+// 1: parseInt
+// 2: split by space
+// 4: split by space and map to Number
+// 6: split by character
+// 7: split by character and map to Number
+// 8: join array elements with space
+// 9: join array elements with newline
+// 0: join array elements without separator
+function convertInputType(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
+    }
+  } catch(error) {
+    return inputValue;
+  }
+}
 
-    // Initialize an array to store monster details (position, health).
-    var monsterData = new Array(monsterCount);
+// Main solution logic starts here
+function executeSolution(){
+  var firstLineData = readIntegerArray();
+  var numMonsters = firstLineData[0];
+  var bombRange = firstLineData[1];
+  var bombDamage = firstLineData[2];
 
-    // Populate the monster data array with input.
-    for (var idx = 0; idx < monsterCount; idx++) {
-        monsterData[idx] = retrieveIntegerArray();
+  var monsterData = new Array(numMonsters);
+  for(var idx = 0; idx < numMonsters; idx++){
+    monsterData[idx] = readIntegerArray();
+  }
+
+  // Sort monsters by their position (first element)
+  monsterData.sort(function(monsterA, monsterB){
+    return monsterA[0] - monsterB[0];
+  });
+
+  var totalBombs = 0;
+
+  // Iterate through each monster to determine bombing strategy
+  for(var idx = 0; idx < numMonsters; idx++){
+    // If monster's HP is already 0 or less, skip it
+    if(monsterData[idx][1] <= 0){
+      continue;
     }
 
-    // Sort the monster data based on their positions (first element).
-    monsterData.sort(function(entityA, entityB) {
-        return entityA[0] - entityB[0];
-    });
+    var currentMonsterPos = monsterData[idx][0];
+    // Calculate how many bombs are needed for the current monster
+    var bombsToDeploy = Math.ceil(monsterData[idx][1] / bombDamage);
+    totalBombs += bombsToDeploy;
 
-    var totalBombsUsed = 0; // Accumulator for the total number of bombs needed.
-
-    // Iterate through each monster to determine bomb requirements.
-    for (var currIdx = 0; currIdx < monsterCount; currIdx++) {
-        // If a monster's health is already zero or less, skip it.
-        if (monsterData[currIdx][1] === 0) { // Changed == to ===
-            continue;
-        }
-
-        var currentMonsterPosition = monsterData[currIdx][0]; // Position of the current monster.
-        // Calculate the number of bombs required to defeat the current monster.
-        var requiredBombs = Math.ceil(monsterData[currIdx][1] / bombDamage);
-
-        totalBombsUsed += requiredBombs; // Add to the total bomb count.
-
-        // Apply bomb damage to subsequent monsters within the attack radius.
-        for (var nextIdx = currIdx + 1; nextIdx < monsterCount; nextIdx++) {
-            // Check if the next monster is within the blast radius of the current monster's bomb.
-            // The blast radius extends 'attackRange' in both directions, so '2 * attackRange' from the current monster's position.
-            if (currentMonsterPosition + 2 * attackRange >= monsterData[nextIdx][0]) {
-                // Reduce the next monster's health, ensuring it doesn't go below zero.
-                monsterData[nextIdx][1] = Math.max(0, monsterData[nextIdx][1] - requiredBombs * bombDamage);
-            } else {
-                // If the next monster is out of range, subsequent monsters will also be, due to sorting.
-                break;
-            }
-        }
+    // Apply bomb damage to subsequent monsters within range
+    for(var innerIdx = idx + 1; innerIdx < numMonsters; innerIdx++){
+      // Check if the current bomb's effective range covers the next monster
+      // The bomb covers from currentMonsterPos to currentMonsterPos + 2 * bombRange
+      if(currentMonsterPos + 2 * bombRange >= monsterData[innerIdx][0]){
+        // Reduce the next monster's HP, ensuring it doesn't go below zero
+        monsterData[innerIdx][1] = Math.max(0, monsterData[innerIdx][1] - bombsToDeploy * bombDamage);
+      } else {
+        // Monsters are sorted by position, so if this one is out of range,
+        // all subsequent monsters will also be out of range.
+        break;
+      }
     }
-
-    // Output the final count of bombs used.
-    displayResult(totalBombsUsed);
+  }
+  printResult(totalBombs);
 }

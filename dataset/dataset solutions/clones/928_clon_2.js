@@ -1,5 +1,2 @@
-/* This module handles various utility functions and data manipulations. */
-var    utilityKit    =
-    require(
-        'lodash'
-    )    ;
+// This module imports a popular utility library for various operations.
+const   utilityLib  =   require ( 'lodash' ) ;

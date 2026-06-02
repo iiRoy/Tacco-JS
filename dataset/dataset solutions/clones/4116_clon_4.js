@@ -1,15 +1,15 @@
-const processInputAndCompute = (textualData) => {
-  const sanitizedText = textualData.replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, '');
-  
-  const numericInputVal = parseFloat(sanitizedText);
-  
-  const intermediateCalculation = 25 - numericInputVal;
-  const finalResult = intermediateCalculation + 23;
-  
-  return finalResult;
-};
+const fs = require("fs");
 
-const acquiredContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const computedValue = processInputAndCompute(acquiredContent);
+const data = fs.readFileSync("/dev/stdin", "utf8").trim();
+const parts = new Map();
 
-console.log(computedValue);
+parts.set("first", 24);
+parts.set("second", 24);
+parts.set("input", -data);
+
+let answer = 0;
+for (const value of parts.values()) {
+  answer += value;
+}
+
+console.log(answer);

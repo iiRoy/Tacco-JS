@@ -1,101 +1,103 @@
-var dataStream = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input as a UTF-8 string
-var inputLines = dataStream.stripSpaces().divideByDelimiter("\n"); // Trim whitespace and split into an array of lines
+let rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
 
-// Main processing loop for multiple test cases
+// Split the input into individual lines and remove any leading/trailing whitespace.
+let lineSegments = rawData.trim().split('\n');
+
+// Main processing loop for multiple test cases.
 while (true) {
-    // Parse the first line of current test case for graph dimensions
-    var graphParams = inputLines.dequeueElement().divideByDelimiter(" ").transformToNumbers(Number);
+  // Read the number of nodes and edges for the current test case.
+  let nodeEdgeCounts = lineSegments.shift().split(' ').map(Number);
 
-    // Check for termination condition (0 0)
-    if (graphParams.combineElements(" ") === "0 0") {
-        break; // Exit loop if dimensions are 0 0
+  // If both N and M are 0, it's the termination condition.
+  if (nodeEdgeCounts.join(' ') === '0 0') {
+    break;
+  }
+
+  // Extract N (number of nodes) and M (number of edges).
+  let numNodes = nodeEdgeCounts[0];
+  let numEdges = nodeEdgeCounts[1];
+
+  // Define the number of cost categories for DP (0, 1, 2).
+  const costCategories = 2; // Represents indices 0, 1, 2 (total 3 categories)
+
+  // Define the start and destination nodes.
+  const startNode = 1;
+  const destinationNode = numNodes;
+
+  // Store all edges.
+  let edgeList = [];
+  for (let idx = 0; idx < numEdges; idx++) {
+    edgeList.push(lineSegments.shift().split(' ').map(Number));
+  }
+
+  // Initialize the dynamic programming table.
+  // minCosts[node][category] stores the minimum cost to reach 'node' with 'category' conditions.
+  let minCosts = [];
+  for (let idx = 0; idx <= numNodes; idx++) {
+    minCosts[idx] = [];
+    for (let catIdx = 0; catIdx <= costCategories; catIdx++) {
+      minCosts[idx][catIdx] = Infinity; // Initialize with a very large value.
+    }
+  }
+
+  // Set the initial cost for the starting node and category 0.
+  minCosts[startNode][0] = 0;
+
+  // Use a queue for a breadth-first-like traversal.
+  let nodeQueue = [startNode];
+  // Keep track of visited nodes to avoid redundant processing in this specific algorithm.
+  let visitedNodes = {};
+
+  // Process nodes from the queue.
+  while (true) {
+    if (nodeQueue.length === 0) {
+      break; // No more nodes to process.
     }
 
-    // Extract number of nodes and edges
-    var nodeCount = graphParams[0];
-    var edgeCount = graphParams[1];
+    let currentNode = nodeQueue.shift(); // Get the next node from the queue.
 
-    // Define constants for path states and special nodes
-    const stateDimension = 2; // Represents the number of additional states for path tracking
-    const sourceNode = 1;     // The starting node (1-indexed in problem)
-    const targetNode = nodeCount; // The destination node
-
-    var connectionList = []; // Array to store all graph edges
-
-    // Read all edge definitions for the current test case
-    for (var loopIndex = 0; loopIndex < edgeCount; loopIndex++) {
-        connectionList.addToList(inputLines.dequeueElement().divideByDelimiter(" ").transformToNumbers(Number));
+    // If this node has already been fully processed, skip it.
+    if (visitedNodes.hasOwnProperty(currentNode)) {
+      continue;
     }
+    visitedNodes[currentNode] = true; // Mark the node as processed.
 
-    // Initialize distance matrix (dp table)
-    // minDistances[node][state] stores the minimum distance to 'node' in a particular 'state'
-    var minDistances = [];
-    for (var loopIndex = 0; loopIndex <= nodeCount; loopIndex++) {
-        minDistances[loopIndex] = [];
-        for (var stateIndex = 0; stateIndex <= stateDimension; stateIndex++) {
-            minDistances[loopIndex][stateIndex] = Number.MAX_VALUE; // Initialize with a very large value
-        }
-    }
+    // Iterate through all edges to find connections from/to the current node.
+    edgeList.forEach(function(currentEdge) {
+      let nodeA = currentEdge[0];
+      let nodeB = currentEdge[1];
+      let edgeWeight = currentEdge[2];
 
-    // Set initial distance for the source node
-    minDistances[sourceNode][0] = 0;
-
-    // Initialize a queue for nodes to process (similar to a BFS/Dijkstra queue)
-    var processingQueue = [sourceNode];
-    // Keep track of visited nodes to avoid redundant processing in a cycle (though this isn't a true BFS/Dijkstra visited set due to path states)
-    var visitedSet = {};
-
-    // Process nodes from the queue until it's empty
-    while (true) {
-        if (processingQueue.length === 0) {
-            break; // All reachable nodes processed
-        }
-
-        var currentVertex = processingQueue.dequeueElement(); // Get the next node to process
-
-        // If this node has already been fully processed for all its paths, skip
-        // (This check might not be fully accurate for all path state combinations, but matches original logic)
-        if (visitedSet.checkOwnership(currentVertex)) {
-            continue;
-        }
-        visitedSet[currentVertex] = true; // Mark as processed
-
-        // Iterate over all connections (edges) to update distances
-        connectionList.processEach(function (currentConnection) {
-            var vertexA = currentConnection[0]; // First node in the edge
-            var vertexB = currentConnection[1]; // Second node in the edge
-            var weightValue = currentConnection[2]; // Weight of the edge
-
-            // If vertexA is the current processing vertex
-            if (vertexA === currentVertex) {
-                // Update minimum distances for vertexB based on paths through vertexA
-                minDistances[vertexB][0] = Math.min(minDistances[vertexB][0], minDistances[vertexA][0] + weightValue);
-                minDistances[vertexB][1] = Math.min(minDistances[vertexB][1], minDistances[vertexA][0]);
-                minDistances[vertexB][2] = Math.min(minDistances[vertexB][2], minDistances[vertexA][1]);
-                minDistances[vertexB][2] = Math.min(minDistances[vertexB][2], minDistances[vertexA][2] + weightValue);
-                processingQueue.addToList(vertexB); // Add vertexB to the queue for further processing
-            }
-            // If vertexB is the current processing vertex
-            else if (vertexB === currentVertex) {
-                // Update minimum distances for vertexA based on paths through vertexB
-                minDistances[vertexA][0] = Math.min(minDistances[vertexA][0], minDistances[vertexB][0] + weightValue);
-                minDistances[vertexA][1] = Math.min(minDistances[vertexA][1], minDistances[vertexB][0]);
-                minDistances[vertexA][2] = Math.min(minDistances[vertexA][2], minDistances[vertexB][1]);
-                minDistances[vertexA][2] = Math.min(minDistances[vertexA][2], minDistances[vertexB][2] + weightValue);
-                processingQueue.addToList(vertexA); // Add vertexA to the queue
-            }
-        });
-    }
-
-    // Determine the final minimum distance to the target node
-    var finalDistance = Number.MAX_VALUE;
-    minDistances[targetNode].processEach(function (distanceValue, stateIdx) {
-        // Exclude the distance for state 1 from the final answer calculation
-        if (stateIdx !== 1) {
-            finalDistance = Math.min(finalDistance, distanceValue);
-        }
+      // If the current node is 'nodeA' in an edge.
+      if (nodeA === currentNode) {
+        // Update costs for 'nodeB'.
+        minCosts[nodeB][0] = Math.min(minCosts[nodeB][0], minCosts[nodeA][0] + edgeWeight);
+        minCosts[nodeB][1] = Math.min(minCosts[nodeB][1], minCosts[nodeA][0]);
+        minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], minCosts[nodeA][1]);
+        minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], minCosts[nodeA][2] + edgeWeight);
+        nodeQueue.push(nodeB); // Add 'nodeB' to the queue for further processing.
+      }
+      // If the current node is 'nodeB' in an edge.
+      else if (nodeB === currentNode) {
+        // Update costs for 'nodeA'.
+        minCosts[nodeA][0] = Math.min(minCosts[nodeA][0], minCosts[nodeB][0] + edgeWeight);
+        minCosts[nodeA][1] = Math.min(minCosts[nodeA][1], minCosts[nodeB][0]);
+        minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], minCosts[nodeB][1]);
+        minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], minCosts[nodeB][2] + edgeWeight);
+        nodeQueue.push(nodeA); // Add 'nodeA' to the queue.
+      }
     });
+  }
 
-    // Output the computed minimum distance
-    console.log(finalDistance);
+  // Calculate the final minimum cost to reach the destination node.
+  let finalResult = Infinity;
+  minCosts[destinationNode].forEach(function(costValue, categoryIndex) {
+    // Exclude category 1 from the final answer calculation.
+    if (categoryIndex !== 1) {
+      finalResult = Math.min(finalResult, costValue);
+    }
+  });
+
+  // Output the calculated minimum cost.
+  console.log(finalResult);
 }

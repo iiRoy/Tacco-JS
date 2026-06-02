@@ -1,48 +1,36 @@
-// This function processes all incoming raw data.
 function ProcessInput(rawData) {
+  // Process the raw input data
+  let processedLines = rawData.split("\n");
 
-    // Split the entire input string into an array of lines.
-    let linesArray = rawData.split("\n");
+  // Extract numerical parameters from the first line
+  const firstLineParts = processedLines[0].split(" ");
+  const firstNum = parseInt(firstLineParts[0], 10);
+  let secondNum = parseInt(firstLineParts[1], 10);
 
-    // Extract the first line which contains space-separated parameters.
-    const paramsStr = linesArray[0].split(" ");
-    let firstNum = parseInt(paramsStr[0], 10); // The first numerical parameter.
-    let secondNum = parseInt(paramsStr[1], 10); // The second numerical parameter.
+  // Retrieve the target string from the second line
+  const targetString = processedLines[1];
 
-    // Retrieve the second line which is the main string for manipulation.
-    let originalString = linesArray[1];
+  // Adjust the index for zero-based array access
+  secondNum = secondNum - 1;
 
-    // Adjust the second number to be a zero-based index.
-    let targetIdx = secondNum - 1;
+  // Determine the character at the adjusted index
+  let charToModify = targetString[secondNum];
 
-    // Get the character at the computed index from the original string.
-    let charToExamine = originalString[targetIdx];
+  // Apply transformation based on the character's value
+  if (charToModify === 'A') {
+    charToModify = 'a';
+  } else if (charToModify === 'B') {
+    charToModify = 'b';
+  } else {
+    charToModify = 'c';
+  }
 
-    // Determine the replacement character based on the character examined.
-    let replacementCharValue;
-    if (charToExamine === 'A') {
-        replacementCharValue = 'a';
-    } else if (charToExamine === 'B') {
-        replacementCharValue = 'b';
-    } else {
-        replacementCharValue = 'c';
-    }
+  // Construct the final string by replacing the character at the specific index
+  const finalString = targetString.substring(0, secondNum) + charToModify + targetString.substring(secondNum + 1);
 
-    // Construct the final string by replacing a character based on the original logic.
-    // The original logic uses substr in a specific way that affects the indices.
-    // First part: substring from index 0 with length (targetIdx - 1).
-    let prefixPart = originalString.substr(0, targetIdx - 1);
-    // Second part: substring from index (targetIdx + 1) to the end.
-    let suffixPart = originalString.substr(targetIdx + 1);
-
-    let finalOutputString = prefixPart + replacementCharValue + suffixPart;
-
-    // Display the final, altered string to standard output.
-    console.log(finalOutputString);
-
+  // Output the resulting string to the console
+  console.log(finalString);
 }
 
-
-// The following section handles standard input/output.
-// Do not modify this part as it is crucial for the execution environment.
+// Standard input handling: read from stdin and invoke the main processing function
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

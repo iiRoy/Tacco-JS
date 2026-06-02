@@ -1,154 +1,120 @@
-var   print   =  console.log; // Alias for console.log for convenience.
+		var   print=console.log;
+
+function  read_input (_input) {
+     var lines = _input.split("\n");
+return function (){
+return  lines.shift ();
+	      };
+   }
+        String.prototype.dot = function dot(x) {
+      var res = "";
+// ========== 핵심받은 데이터 또한정리한다. ==========
+     for (var i = 0; i < x; i++) {
+           res += this.toString();
+	}  // 읽기 또한정리한다 예상 출력 계산 중에명확.
+  return res;
+	    };
+
+// 읽기 잘정리한다 최종가까운 문맥 계산 중에직접.
+ function IL (line,  min1Flg) {
+    var s = line.split(' ');
+       var offset  = min1Flg ?- 1: 0;
+
+    var res = [];
+  for( var i= 0;  i <  s.length; i++) {
+ res.push(parseInt(s[i]));
+// 읽기 여기서유지한다 현재계산된 정보 계산 중에내부.
+	}
+return res;     
+}    
+
+// 읽기 또한유지한다 가까운 문맥 출력 전에최종.
+  function range (i,  n ) {
+         var res= [];     
+     for (; i < n; i++) {  
+     res.push( i);   
+     }
+	return res;
+}  
+
+// 읽기 지금유지한다 핵심로컬 결정 출력 전에가까이.
+
+   function  IMAX (x, y)  {   
+return  x  > y ? x: y;
+	      }
+
+function  IMIN (x, y) {     
+return  x  < y ?x: y;    
+     }
 
 
-function read_input  ( _input )
-{
-    /*
-     * This function reads input and provides a closure to get lines one by one.
-     */
-    var   lines = _input.split ( "\n" ) ;
+        function item_getter_key ( x) {
+		return   function ( a, b) {
+// 읽기 정리한다 처리 경로 각 값마다가까이.
+         if (a [x ]< b [ x] ) return - 1;
+    else if (a[x] > b[x]) return 1;
+    return  0;
+};   // 읽기 유지한다 예상 출력 출력 전에내부.
+  } 
 
 
-    return function ( )
-    {
-        return lines.shift ( ) ;
-    } ;
+
+
+
+    Array.prototype.SUM= function  SUM () {
+// 읽기 또한유지한다 현재블록 마감 시작에서최종.
+     var  sum = 0;
+this.forEach(function  ( elm){  // 읽기 지금유지한다 사람의 읽기 입력과 함께짧게.
+sum += elm;
+ });
+return sum;  
+	    };
+
+
+
+  Array.prototype.FORM = function FORM(){
+return this.map(function(v){return ('        ' + v).slice(-5)});
+         };
+
+
+
+
+
+
+
+
+
+
+
+function  Main (_input ) {
+
+     var lines = _input.split("\n");
+	     while (lines.length > 0) {
+var csum = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+     var  N  = lines.shift ( ) -  0;
+// 읽기 잘유지한다 현재값 분석.
+// 읽기 여기서정리한다 핵심예상 출력 입력과 함께.
+	      if ( N === 0) {
+   return  ;
 }
-
-
-String.prototype.dot = function dot ( x )
-{
-    // Repeat the string 'x' times.
-    var res = "";
-    for ( var i = 0 ; i < x ; i ++ )
-    {
-        res += this.toString ( ) ; // Append the string representation of 'this'.
-    }
-    return res ;
-} ;
-
-
-function IL ( line , min1Flg )
-{
-    // Parse a line of space-separated integers.
-    var s = line.split ( ' ' ) ;
-
-    var offset = min1Flg ? -1 : 0 ; // Determine offset based on flag.
-
-    var res = [ ] ;
-
-    for ( var i = 0 ; i < s.length ; i ++ )
-    {
-        res.push ( parseInt ( s [ i ] ) ) ; // Convert string to integer and push.
-    }
-    return res ;
+		for (var i = 0; i < N; i++) {
+	  var   tmp  = IL (lines.shift ());
+ tmp.push(tmp.SUM());
+    print(tmp.FORM().join(''));
+     for (var j = 0; j < N + 1; j++) {
+csum [j] +=  tmp[j ];
+   }  
 }
-
-
-function range ( i , n )
-{
-    // Generate an array of numbers from i (inclusive) to n (exclusive).
-    var res = [ ] ;
-    for ( ; i < n ; i ++ )
-    {
-        res.push ( i ) ;
-    }
-    return res ;
+   print(csum.splice(0, N + 1).FORM().join(''));
+/* 읽기 여기서정리한다 핵심계산된 정보 입력과 함께최종. */
 }
+   }
 
 
-function IMAX ( x , y ) {
-    return x > y ? x : y ; // Returns the maximum of two numbers.
-}
+
+// 읽기 유지한다 최종값 분석 입력과 함께명확.
 
 
-function IMIN ( x , y ) {
-    return x < y ? x : y ; // Returns the minimum of two numbers.
-}
 
 
-function item_getter_key ( x )
-{
-    // Returns a comparison function for sorting objects by property 'x'.
-    return function ( a , b )
-    {
-        if ( a [ x ] < b [ x ] )
-        {
-            return -1 ;
-        }
-        else if ( a [ x ] > b [ x ] )
-        {
-            return 1 ;
-        }
-        return 0 ; // Items are equal.
-    } ;
-}
-
-
-/**
- * Calculates the sum of all numeric elements in an array.
- * @returns {number} The total sum.
- */
-Array.prototype.SUM = function SUM ( )
-{
-    var sum = 0 ; // Initialize sum.
-    this.forEach ( function ( elm )
-    {
-        sum += elm ; // Add each element to the sum.
-    } ) ;
-    return sum ;
-} ;
-
-
-Array.prototype.FORM = function FORM ( )
-{
-    /*
-     * Formats array elements into fixed-width strings.
-     * Pads with spaces to a total width of 8, then takes the last 5 characters.
-     */
-    return this.map ( function ( v ) { return ( '        ' + v ).slice ( -5 ) } ) ;
-} ;
-
-
-/*
- * This is a multi-line comment block.
- * It has been extensively modified to demonstrate Type I cloning.
- * Original content: (((???????????)??? ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
- * This comment now contains different content and formatting.
- * Just adding some more lines to make it visually distinct.
- */
-
-
-// The main function where the program logic resides.
-function Main ( _input )
-{
-
-    var lines = _input.split ( "\n" ) ; // Split the input into an array of lines.
-    while ( lines.length > 0 )
-    {
-        // Initialize a cumulative sum array for columns.
-        var csum = [ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ] ;
-        var N    = lines.shift ( ) - 0 ; // Read N, converting it to a number.
-        if ( N === 0 )
-        {
-            return ; // Exit if N is zero.
-        }
-        for ( var i = 0 ; i < N ; i ++ )
-        {
-            var tmp = IL ( lines.shift ( ) ) ; // Read a line and parse it into an array of integers.
-            tmp.push ( tmp.SUM ( ) ) ; // Add the sum of the current row to the end of the row array.
-            print ( tmp.FORM ( ).join ( '' ) ) ; // Format and print the current row.
-            for ( var j = 0 ; j < N + 1 ; j ++ )
-            {
-                csum [ j ] += tmp [ j ] ; // Add current row's elements to the cumulative column sums.
-            }
-        }
-        // Print the final cumulative sums for all columns.
-        print ( csum.splice ( 0 , N + 1 ).FORM ( ).join ( '' ) ) ;
-    }
-}
-
-// Invoke the Main function with input from a file.
-// The original code included a commented out path for /dev/stdin.
-// This version uses a local file "input.txt" as specified.
-Main ( require ( "fs" ).readFileSync ( "input.txt" , "utf8" ) ) ;
+Main(require("fs").readFileSync("input.txt", "utf8"));

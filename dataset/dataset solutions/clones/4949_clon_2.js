@@ -1,338 +1,375 @@
-'use strict'; /* Enforce strict parsing and error handling */
+'use strict';
+// Retrieve input data from standard input.
+// Reads the entire file, decodes as UTF-8, removes leading/trailing whitespace, and splits into an array of lines.
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Acquire file system module for input operations
-const getFileSys = require('fs');
+// Parse the first line to get the grid dimensions (number of rows and columns).
+const gridDimensions = inputLines[0].split(' ').map(Number);
+const numRows = gridDimensions[0]; // The total count of rows in the grid.
+const numCols = gridDimensions[1]; // The total count of columns in the grid.
+const numPoints = parseInt(inputLines[1]); // The quantity of data points to process.
 
-// Read standard input, decode as UTF-8, remove leading/trailing whitespace, and split into lines
-const dataLines = getFileSys.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+// Extract the actual data points (each containing a row, column, and value) from the input.
+const pointData = inputLines.slice(2);
 
-// Parse the first line for grid dimensions
-const dimArray = dataLines[0].split(' ').map(Number);
-const numRows = dimArray[0]; // Total number of rows in the grid
-const numCols = dimArray[1]; // Total number of columns in the grid
+// Initialize variables to store the common differences (slopes) found along X and Y axes,
+// categorized by the parity of the coordinate. 'false' indicates no difference has been established yet.
+let xOddDiff = false;
+let xEvenDiff = false;
+let yOddDiff = false;
+let yEvenDiff = false;
 
-// Parse the second line for the count of data points
-const pointCount = parseInt(dataLines[1], 10); // Number of data points to process
+// Initialize Maps to store previously encountered points.
+// These maps help in finding a second point on the same line (same row for X-maps, same column for Y-maps)
+// to calculate a difference.
+// Keys are the fixed coordinate (row for X-maps, column for Y-maps), values are an array [other_coord, value].
+let xOddMap = new Map();
+let xEvenMap = new Map();
+let yOddMap = new Map();
+let yEvenMap = new Map();
 
-// Extract raw data strings for each point (row, column, value)
-const pointDataStrings = dataLines.slice(2);
+// Iterate through each provided data point.
+for (let pointIndex = 0; pointIndex < numPoints; pointIndex++) {
+    // Parse the current data point string into its components: row, column, and value.
+    let currentPointString = pointData[pointIndex].split(' ');
+    let rowCoordinate = parseInt(currentPointString[0]);
+    let colCoordinate = parseInt(currentPointString[1]);
+    let valueAtPoint = parseInt(currentPointString[2]);
 
-// Initialize slope storage variables. `null` indicates no slope has been determined yet.
-let slopeXOdd = null; // Slope for odd-indexed columns (X-axis)
-let slopeXEven = null; // Slope for even-indexed columns (X-axis)
-let slopeYOdd = null; // Slope for odd-indexed rows (Y-axis)
-let slopeYEven = null; // Slope for even-indexed rows (Y-axis)
+    // --- Processing for Y-axis (vertical) differences ---
+    // This section handles calculations and validations for differences along columns.
+    if (numRows === 2) {
+        // Special handling for a grid with exactly two rows.
+        // In this scenario, all row-based calculations effectively treat rows as 'even' for simplicity.
+        if (yEvenMap.has(colCoordinate)) {
+            // If another point has already been recorded for this column.
+            let previousRowValue = yEvenMap.get(colCoordinate);
+            let previousRow = previousRowValue[0];
+            let previousValue = previousRowValue[1];
 
-// Initialize maps to store previously encountered points for each parity and axis
-// Key: Row/Column index, Value: [Column/Row index, Value]
-const coordMapXOdd = new Map(); // Stores (row -> [col, val]) for odd columns
-const coordMapXEven = new Map(); // Stores (row -> [col, val]) for even columns
-const coordMapYOdd = new Map(); // Stores (col -> [row, val]) for odd rows
-const coordMapYEven = new Map(); // Stores (col -> [row, val]) for even rows
+            // Calculate the common difference (slope) using the current and previous points.
+            let calculatedDifference = (previousValue - valueAtPoint) / (previousRow - rowCoordinate);
 
-// Iterate through each data point provided in the input
-for (let idx = 0; idx < pointCount; ++idx) {
-	// Parse the current data point string into its components: row, column, and value
-	const currentPointStr = pointDataStrings[idx].split(' ');
-	const currRow = parseInt(currentPointStr[0], 10); // Current row index
-	const currCol = parseInt(currentPointStr[1], 10); // Current column index
-	const currVal = parseInt(currentPointStr[2], 10); // Current value at (row, col)
+            if (yEvenDiff === false) {
+                // If this is the first time a y-even difference is determined.
+                yEvenDiff = calculatedDifference;
 
-	// --- Process Y-axis (Row-wise) relationships ---
-	// Special handling if the number of rows is exactly 2
-	if (numRows === 2) {
-		// Check if we've already processed a point in this column for Y-even (R=2 implies all rows are effectively 'even' for this logic)
-		if (coordMapYEven.has(currCol)) {
-			// Retrieve the previously stored row and value for this column
-			const prevRowVal = coordMapYEven.get(currCol);
-			const prevRow = prevRowVal[0]; // Previous row index
-			const prevVal = prevRowVal[1]; // Previous value
+                // Validate all previously stored y-even points against this newly found difference.
+                for (let mapEntry of yEvenMap.entries()) {
+                    let iteratedColumn = mapEntry[0]; // The column (map key).
+                    let iteratedRow = mapEntry[1][0]; // The row of the stored point.
+                    let iteratedValue = mapEntry[1][1]; // The value of the stored point.
 
-			// Calculate the slope based on the two points in this column
-			const calcSlope = (prevVal - currVal) / (prevRow - currRow);
+                    // Check if the value at the boundaries (row 1 or row 2) would become negative.
+                    if (iteratedValue - calculatedDifference * (iteratedRow - 1) < 0 ||
+                        iteratedValue + calculatedDifference * (2 - iteratedRow) < 0) {
+                        console.log('No');
+                        process.exit(); // Exit if an invalid state is found.
+                    }
+                }
+            } else {
+                // If a y-even difference was already established, ensure consistency.
+                if (calculatedDifference !== yEvenDiff) {
+                    console.log('No');
+                    process.exit(); // Exit if the new difference is inconsistent.
+                }
+            }
 
-			// If no Y-even slope has been established yet
-			if (slopeYEven === null) {
-				slopeYEven = calcSlope; // Set the global Y-even slope
+            // Validate the current point against the established difference.
+            if (valueAtPoint - calculatedDifference * (rowCoordinate - 1) < 0 ||
+                valueAtPoint + calculatedDifference * (2 - rowCoordinate) < 0) {
+                console.log('No');
+                process.exit(); // Exit if the current point is invalid.
+            }
 
-				// Validate all existing points in coordMapYEven against the newly established slope
-				for (const mapEntry of coordMapYEven.entries()) {
-					const entryCol = mapEntry[0]; // Column of the existing entry
-					const entryRow = mapEntry[1][0]; // Row of the existing entry
-					const entryVal = mapEntry[1][1]; // Value of the existing entry
+        } else {
+            // If this is the first point encountered for this specific column.
+            if (yEvenDiff !== false) {
+                // If a common y-even difference already exists, validate this point against it.
+                if (valueAtPoint - yEvenDiff * (rowCoordinate - 1) < 0 ||
+                    valueAtPoint + yEvenDiff * (2 - rowCoordinate) < 0) {
+                    console.log('No');
+                    process.exit(); // Exit if the point is invalid with the existing difference.
+                }
+            }
+            // Store the current point's row and value in the map for future comparisons.
+            yEvenMap.set(colCoordinate, [rowCoordinate, valueAtPoint]);
+        }
 
-					// Check if the value at (entryRow, entryCol) is consistent with the slope
-					// The conditions represent linear interpolation/extrapolation bounds
-					if (entryVal - calcSlope * (entryRow - 1) < 0 ||
-						entryVal + calcSlope * (2 - entryRow) < 0) {
-						console.log('No'); // Output 'No' and terminate if inconsistent
-						process.exit();
-					}
-				}
-			} else {
-				// If a Y-even slope already exists, ensure the newly calculated slope matches
-				if (calcSlope !== slopeYEven) {
-					console.log('No'); // Output 'No' and terminate if slopes differ
-					process.exit();
-				}
-			}
+    } else {
+        // General case: Grid has more than two rows.
+        // Differences are categorized based on the parity of the row coordinate.
+        if (rowCoordinate % 2 === 0) {
+            // Current point is on an even-numbered row.
+            if (yEvenMap.has(colCoordinate)) {
+                let previousRowValue = yEvenMap.get(colCoordinate);
+                let previousRow = previousRowValue[0];
+                let previousValue = previousRowValue[1];
 
-			// Finally, validate the current point against the established slope
-			if (currVal - calcSlope * (currRow - 1) < 0 ||
-				currVal + calcSlope * (2 - currRow) < 0) {
-				console.log('No'); // Output 'No' and terminate if inconsistent
-				process.exit();
-			}
-		} else {
-			// If no previous point in this column, but a global Y-even slope exists
-			if (slopeYEven !== null) {
-				// Validate the current point against the global slope
-				if (currVal - slopeYEven * (currRow - 1) < 0 ||
-					currVal + slopeYEven * (2 - currRow) < 0) {
-					console.log('No'); // Output 'No' and terminate if inconsistent
-					process.exit();
-				}
-			}
-			// Store the current point in the map for future comparisons
-			coordMapYEven.set(currCol, [currRow, currVal]);
-		}
-	} else {
-		// General case: More than 2 rows
-		// Check if the current row index is even
-		if (currRow % 2 === 0) {
-			// Process for even rows
-			if (coordMapYEven.has(currCol)) {
-				const prevRowVal = coordMapYEven.get(currCol);
-				const prevRow = prevRowVal[0];
-				const prevVal = prevRowVal[1];
+                // Calculate difference, adjusted for row parity (distance is (r2-r1)/2).
+                let calculatedDifference = (previousValue - valueAtPoint) / ((previousRow - rowCoordinate) / 2);
 
-				const calcSlope = (prevVal - currVal) / ((prevRow - currRow) / 2);
+                if (yEvenDiff === false) {
+                    yEvenDiff = calculatedDifference;
 
-				if (slopeYEven === null) {
-					slopeYEven = calcSlope;
+                    // Validate all previously stored y-even points.
+                    for (let mapEntry of yEvenMap.entries()) {
+                        let iteratedColumn = mapEntry[0];
+                        let iteratedRow = mapEntry[1][0];
+                        let iteratedValue = mapEntry[1][1];
 
-					// Note: Original code iterates over `map_y_odd` here, which might be a bug.
-					// Replicating original logic.
-					for (const mapEntry of coordMapYOdd.entries()) {
-						const entryCol = mapEntry[0];
-						const entryRow = mapEntry[1][0];
-						const entryVal = mapEntry[1][1];
+                        // Check for negative values at boundaries.
+                        if (iteratedValue - calculatedDifference * ((iteratedRow / 2) - 1) < 0 ||
+                            iteratedValue + calculatedDifference * Math.floor((numRows - iteratedRow) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (calculatedDifference !== yEvenDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                // Validate the current point.
+                if (valueAtPoint - calculatedDifference * ((rowCoordinate / 2) - 1) < 0 ||
+                    valueAtPoint + calculatedDifference * Math.floor((numRows - rowCoordinate) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
 
-						if (entryVal - calcSlope * ((entryRow / 2) - 1) < 0 ||
-							entryVal + calcSlope * Math.floor((numRows - entryRow) / 2) < 0) {
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if (calcSlope !== slopeYEven) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				if (currVal - calcSlope * ((currRow / 2) - 1) < 0 ||
-					currVal + calcSlope * Math.floor((numRows - currRow) / 2) < 0) {
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				if (slopeYEven !== null) { // Changed from `false` to `null`
-					if (currVal - slopeYEven * ((currRow / 2) - 1) < 0 ||
-						currVal + slopeYEven * Math.floor((numRows - currRow) / 2) < 0) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				coordMapYEven.set(currCol, [currRow, currVal]);
-			}
-		} else {
-			// Process for odd rows
-			if (coordMapYOdd.has(currCol)) {
-				const prevRowVal = coordMapYOdd.get(currCol);
-				const prevRow = prevRowVal[0];
-				const prevVal = prevRowVal[1];
+            } else {
+                if (yEvenDiff !== false) {
+                    // If a common difference already exists, validate this point.
+                    if (valueAtPoint - yEvenDiff * ((rowCoordinate / 2) - 1) < 0 ||
+                        valueAtPoint + yEvenDiff * Math.floor((numRows - rowCoordinate) / 2) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                yEvenMap.set(colCoordinate, [rowCoordinate, valueAtPoint]);
+            }
+        } else {
+            // Current point is on an odd-numbered row.
+            if (yOddMap.has(colCoordinate)) {
+                let previousRowValue = yOddMap.get(colCoordinate);
+                let previousRow = previousRowValue[0];
+                let previousValue = previousRowValue[1];
 
-				const calcSlope = (prevVal - currVal) / ((prevRow - currRow) / 2);
+                // Calculate difference, adjusted for row parity.
+                let calculatedDifference = (previousValue - valueAtPoint) / ((previousRow - rowCoordinate) / 2);
 
-				if (slopeYOdd === null) {
-					slopeYOdd = calcSlope;
+                if (yOddDiff === false) {
+                    yOddDiff = calculatedDifference;
 
-					for (const mapEntry of coordMapYOdd.entries()) {
-						const entryCol = mapEntry[0];
-						const entryRow = mapEntry[1][0];
-						const entryVal = mapEntry[1][1];
+                    // Validate all previously stored y-odd points.
+                    for (let mapEntry of yOddMap.entries()) {
+                        let iteratedColumn = mapEntry[0];
+                        let iteratedRow = mapEntry[1][0];
+                        let iteratedValue = mapEntry[1][1];
 
-						if (entryVal - calcSlope * Math.floor(entryRow / 2) < 0 ||
-							entryVal + calcSlope * Math.floor((numRows - entryRow) / 2) < 0) {
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if (calcSlope !== slopeYOdd) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				if (currVal - calcSlope * Math.floor((currRow - 1) / 2) < 0 ||
-					currVal + calcSlope * Math.floor((numRows - currRow) / 2) < 0) {
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				if (slopeYOdd !== null) { // Changed from `false` to `null`
-					if (currVal - slopeYOdd * Math.floor(currRow / 2) < 0 ||
-						currVal + slopeYOdd * Math.floor((numRows - currRow) / 2) < 0) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				coordMapYOdd.set(currCol, [currRow, currVal]);
-			}
-		}
-	}
+                        // Check for negative values at boundaries.
+                        if (iteratedValue - calculatedDifference * Math.floor(iteratedRow / 2) < 0 ||
+                            iteratedValue + calculatedDifference * Math.floor((numRows - iteratedRow) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (calculatedDifference !== yOddDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                // Validate the current point.
+                if (valueAtPoint - calculatedDifference * Math.floor((rowCoordinate - 1) / 2) < 0 ||
+                    valueAtPoint + calculatedDifference * Math.floor((numRows - rowCoordinate) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                if (yOddDiff !== false) {
+                    // If a common difference already exists, validate this point.
+                    if (valueAtPoint - yOddDiff * Math.floor(rowCoordinate / 2) < 0 ||
+                        valueAtPoint + yOddDiff * Math.floor((numRows - rowCoordinate) / 2) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                yOddMap.set(colCoordinate, [rowCoordinate, valueAtPoint]);
+            }
+        }
+    }
 
-	// --- Process X-axis (Column-wise) relationships ---
-	// Special handling if the number of columns is exactly 2
-	if (numCols === 2) {
-		// Check if we've already processed a point in this row for X-even
-		if (coordMapXEven.has(currRow)) {
-			const prevColVal = coordMapXEven.get(currRow);
-			const prevCol = prevColVal[0];
-			const prevVal = prevColVal[1];
+    // --- Processing for X-axis (horizontal) differences ---
+    // This section handles calculations and validations for differences along rows.
+    if (numCols === 2) {
+        // Special handling for a grid with exactly two columns.
+        // All column-based calculations effectively treat columns as 'even'.
+        if (xEvenMap.has(rowCoordinate)) {
+            // If another point has already been recorded for this row.
+            let previousColValue = xEvenMap.get(rowCoordinate);
+            let previousCol = previousColValue[0];
+            let previousValue = previousColValue[1];
 
-			const calcSlope = (prevVal - currVal) / (prevCol - currCol);
+            // Calculate the common difference (slope) using the current and previous points.
+            let calculatedDifference = (previousValue - valueAtPoint) / (previousCol - colCoordinate);
 
-			// Note: Original code uses -1 here, changing to null for consistency
-			if (slopeXEven === null) {
-				slopeXEven = calcSlope;
+            // NOTE: The original code initializes `xEvenDiff` to `false` but checks `xEvenDiff === -1` here.
+            // This condition `xEvenDiff === -1` will always be false on the first pass,
+            // causing the `else` block to execute. The `calculatedDifference !== xEvenDiff` check
+            // will then compare a number (`calculatedDifference`) with `false`, which is always true,
+            // leading to an immediate 'No' output and exit for the first relevant point when `numCols === 2`.
+            // This behavior (likely a bug in the original) is preserved as per Type II cloning rules.
+            if (xEvenDiff === -1) { // This condition is effectively unreachable with initial `xEvenDiff = false`.
+                xEvenDiff = calculatedDifference;
 
-				for (const mapEntryX of coordMapXEven.entries()) {
-					const entryRowX = mapEntryX[0];
-					const entryColX = mapEntryX[1][0];
-					const entryValX = mapEntryX[1][1];
+                // Validate all previously stored x-even points with this new difference.
+                for (let mapEntryX of xEvenMap.entries()) {
+                    let iteratedRow = mapEntryX[0];
+                    let iteratedColumn = mapEntryX[1][0];
+                    let iteratedValue = mapEntryX[1][1];
 
-					if (entryValX - calcSlope * (entryColX - 1) < 0 ||
-						entryValX + calcSlope * (numCols - entryColX) < 0) {
-						console.log('No');
-						process.exit();
-					}
-				}
-			} else {
-				if (calcSlope !== slopeXEven) {
-					console.log('No');
-					process.exit();
-				}
-			}
-			if (currVal - calcSlope * (currCol - 1) < 0 ||
-				currVal + calcSlope * (numCols - currCol) < 0) {
-				console.log('No');
-				process.exit();
-			}
-		} else {
-			if (slopeXEven !== null) { // Changed from `false` to `null`
-				if (currVal - slopeXEven * (currCol - 1) < 0 ||
-					currVal + slopeXEven * (numCols - currCol) < 0) {
-					console.log('No');
-					process.exit();
-				}
-			}
-			coordMapXEven.set(currRow, [currCol, currVal]);
-		}
-	} else {
-		// General case: More than 2 columns
-		// Check if the current column index is even
-		if (currCol % 2 === 0) {
-			// Process for even columns
-			if (coordMapXEven.has(currRow)) {
-				const prevColVal = coordMapXEven.get(currRow);
-				const prevCol = prevColVal[0];
-				const prevVal = prevColVal[1];
+                    // Check for negative values at boundaries (column 1 or column C).
+                    if (iteratedValue - calculatedDifference * (iteratedColumn - 1) < 0 ||
+                        iteratedValue + calculatedDifference * (numCols - iteratedColumn) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+            } else {
+                // This `else` block will always be executed due to the `xEvenDiff === -1` condition.
+                if (calculatedDifference !== xEvenDiff) { // `calculatedDifference !== false` is always true.
+                    console.log('No');
+                    process.exit(); // This will cause an early exit for numCols === 2.
+                }
+            }
+            // Validate the current point with the established difference.
+            if (valueAtPoint - calculatedDifference * (colCoordinate - 1) < 0 ||
+                valueAtPoint + calculatedDifference * (numCols - colCoordinate) < 0) {
+                console.log('No');
+                process.exit();
+            }
 
-				const calcSlope = (prevVal - currVal) / ((prevCol - currCol) / 2);
+        } else {
+            // If this is the first point encountered for this specific row.
+            if (xEvenDiff !== false) {
+                // If a common x-even difference already exists, validate this point against it.
+                if (valueAtPoint - xEvenDiff * (colCoordinate - 1) < 0 ||
+                    valueAtPoint + xEvenDiff * (numCols - colCoordinate) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            }
+            // Store the current point's column and value in the map for future comparisons.
+            xEvenMap.set(rowCoordinate, [colCoordinate, valueAtPoint]);
+        }
+    } else {
+        // General case: Grid has more than two columns.
+        // Differences are categorized based on the parity of the column coordinate.
+        if (colCoordinate % 2 === 0) {
+            // Current point is on an even-numbered column.
+            if (xEvenMap.has(rowCoordinate)) {
+                let previousColValue = xEvenMap.get(rowCoordinate);
+                let previousCol = previousColValue[0];
+                let previousValue = previousColValue[1];
 
-				if (slopeXEven === null) {
-					slopeXEven = calcSlope;
+                // Calculate difference, adjusted for column parity (distance is (c2-c1)/2).
+                let calculatedDifference = (previousValue - valueAtPoint) / ((previousCol - colCoordinate) / 2);
 
-					for (const mapEntryX of coordMapXEven.entries()) {
-						const entryRowX = mapEntryX[0];
-						const entryColX = mapEntryX[1][0];
-						const entryValX = mapEntryX[1][1];
+                if (xEvenDiff === false) {
+                    xEvenDiff = calculatedDifference;
 
-						if (entryValX - calcSlope * ((entryColX / 2) - 1) < 0 ||
-							entryValX + calcSlope * Math.floor((numCols - entryColX) / 2) < 0) {
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if (calcSlope !== slopeXEven) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				if (currVal - calcSlope * ((currCol / 2) - 1) < 0 ||
-					currVal + calcSlope * Math.floor((numCols - currCol) / 2) < 0) {
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				if (slopeXEven !== null) { // Changed from `false` to `null`
-					if (currVal - slopeXEven * ((currCol / 2) - 1) < 0 ||
-						currVal + slopeXEven * Math.floor((numCols - currCol) / 2) < 0) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				coordMapXEven.set(currRow, [currCol, currVal]);
-			}
-		} else {
-			// Process for odd columns
-			if (coordMapXOdd.has(currRow)) {
-				const prevColVal = coordMapXOdd.get(currRow);
-				const prevCol = prevColVal[0];
-				const prevVal = prevColVal[1];
+                    // Validate all previously stored x-even points.
+                    for (let mapEntryX of xEvenMap.entries()) {
+                        let iteratedRow = mapEntryX[0];
+                        let iteratedColumn = mapEntryX[1][0];
+                        let iteratedValue = mapEntryX[1][1];
 
-				const calcSlope = (prevVal - currVal) / ((prevCol - currCol) / 2);
+                        // Check for negative values at boundaries.
+                        if (iteratedValue - calculatedDifference * ((iteratedColumn / 2) - 1) < 0 ||
+                            iteratedValue + calculatedDifference * Math.floor((numCols - iteratedColumn) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (calculatedDifference !== xEvenDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                // Validate the current point.
+                if (valueAtPoint - calculatedDifference * ((colCoordinate / 2) - 1) < 0 ||
+                    valueAtPoint + calculatedDifference * Math.floor((numCols - colCoordinate) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                if (xEvenDiff !== false) {
+                    // If a common difference already exists, validate this point.
+                    if (valueAtPoint - xEvenDiff * ((colCoordinate / 2) - 1) < 0 ||
+                        valueAtPoint + xEvenDiff * Math.floor((numCols - colCoordinate) / 2) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                xEvenMap.set(rowCoordinate, [colCoordinate, valueAtPoint]);
+            }
 
-				if (slopeXOdd === null) {
-					slopeXOdd = calcSlope;
+        } else {
+            // Current point is on an odd-numbered column.
+            if (xOddMap.has(rowCoordinate)) {
+                let previousColValue = xOddMap.get(rowCoordinate);
+                let previousCol = previousColValue[0];
+                let previousValue = previousColValue[1];
 
-					for (const mapEntryX of coordMapXOdd.entries()) {
-						const entryRowX = mapEntryX[0];
-						const entryColX = mapEntryX[1][0];
-						const entryValX = mapEntryX[1][1];
+                // Calculate difference, adjusted for column parity.
+                let calculatedDifference = (previousValue - valueAtPoint) / ((previousCol - colCoordinate) / 2);
 
-						if (entryValX - calcSlope * Math.floor(entryColX / 2) < 0 ||
-							entryValX + calcSlope * Math.floor((numCols - entryColX) / 2) < 0) {
-							console.log('No');
-							process.exit();
-						}
-					}
-				} else {
-					if (calcSlope !== slopeXOdd) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				if (currVal - calcSlope * Math.floor(currCol / 2) < 0 ||
-					currVal + calcSlope * Math.floor((numCols - currCol) / 2) < 0) {
-					console.log('No');
-					process.exit();
-				}
-			} else {
-				if (slopeXOdd !== null) { // Changed from `false` to `null`
-					if (currVal - slopeXOdd * Math.floor(currCol / 2) < 0 ||
-						currVal + slopeXOdd * Math.floor((numCols - currCol) / 2) < 0) {
-						console.log('No');
-						process.exit();
-					}
-				}
-				coordMapXOdd.set(currRow, [currCol, currVal]);
-			}
-		}
-	}
+                if (xOddDiff === false) {
+                    xOddDiff = calculatedDifference;
+
+                    // Validate all previously stored x-odd points.
+                    for (let mapEntryX of xOddMap.entries()) {
+                        let iteratedRow = mapEntryX[0];
+                        let iteratedColumn = mapEntryX[1][0];
+                        let iteratedValue = mapEntryX[1][1];
+
+                        // Check for negative values at boundaries.
+                        if (iteratedValue - calculatedDifference * Math.floor(iteratedColumn / 2) < 0 ||
+                            iteratedValue + calculatedDifference * Math.floor((numCols - iteratedColumn) / 2) < 0) {
+                            console.log('No');
+                            process.exit();
+                        }
+                    }
+                } else {
+                    if (calculatedDifference !== xOddDiff) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                // Validate the current point.
+                if (valueAtPoint - calculatedDifference * Math.floor(colCoordinate / 2) < 0 ||
+                    valueAtPoint + calculatedDifference * Math.floor((numCols - colCoordinate) / 2) < 0) {
+                    console.log('No');
+                    process.exit();
+                }
+            } else {
+                if (xOddDiff !== false) {
+                    // If a common difference already exists, validate this point.
+                    if (valueAtPoint - xOddDiff * Math.floor(colCoordinate / 2) < 0 ||
+                        valueAtPoint + xOddDiff * Math.floor((numCols - colCoordinate) / 2) < 0) {
+                        console.log('No');
+                        process.exit();
+                    }
+                }
+                xOddMap.set(rowCoordinate, [colCoordinate, valueAtPoint]);
+            }
+        }
+    }
 }
 
-// If the program reaches this point, all checks passed successfully.
+// If the program reaches this point, all data points have been processed
+// without encountering any inconsistencies or invalid conditions.
 console.log('Yes');

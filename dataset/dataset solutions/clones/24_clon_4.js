@@ -1,91 +1,80 @@
-const NumeralTools = {};
-NumeralTools.formatDecimalString = function(valueToProcess, _unusedA, _unusedB, decimalCount) {
-    let powerOfTenFactor = 1;
-    for (let currentPower = 0; currentPower < decimalCount; currentPower++) {
-        powerOfTenFactor *= 10;
-    }
-    let numericalRepresentation = String(Math.round(valueToProcess * powerOfTenFactor));
-
-    if (numericalRepresentation === '0') {
-        return '0.' + '0'.repeat(decimalCount);
-    }
-
-    const decimalPointIndex = numericalRepresentation.length - decimalCount;
-
-    if (decimalPointIndex === 0) {
-        return "0." + numericalRepresentation.substring(0, decimalCount);
-    }
-    return numericalRepresentation.substring(0, decimalPointIndex) + "." + numericalRepresentation.substring(decimalPointIndex, decimalCount);
+global.decimalFormatter = function(value, base, pad, precision) {
+    return value.toFixed(precision);
 };
 
-const Arithmetics = {};
-
-Arithmetics.determineCommonDivisor = function(firstOperand, secondOperand) {
-    while (secondOperand !== 0) {
-        let temporaryValue = secondOperand;
-        secondOperand = firstOperand % secondOperand;
-        firstOperand = temporaryValue;
+global.greatestCommonDivisor = function(firstNumber, secondNumber) {
+    let currentDividend = firstNumber;
+    let currentDivisor = secondNumber;
+    while (currentDivisor !== 0) {
+        let remainder = currentDividend % currentDivisor;
+        currentDividend = currentDivisor;
+        currentDivisor = remainder;
     }
-    return firstOperand;
+    return currentDividend;
 };
 
-Arithmetics.computeLeastCommonMultiple = function(firstOperand, secondOperand) {
-    if (firstOperand === 0 || secondOperand === 0) return 0;
-    const commonDivisor = this.determineCommonDivisor(firstOperand, secondOperand);
-    return (firstOperand / commonDivisor) * secondOperand;
+global.leastCommonMultiple = function(valueA, valueB) {
+    return (valueA / global.greatestCommonDivisor(valueA, valueB)) * valueB;
 };
 
-Arithmetics.computeSquaredValue = function(inputNumber) {
-    return inputNumber ** 2;
+global.squareNumber = function(inputArgument) {
+    return Math.pow(inputArgument, 2);
 };
 
-class SystemHandler {
-    constructor() {
-        this.displayOutput = (...messages) => console.log(...messages);
-        this.dataStream = process.stdin;
-        this.dataStream.setEncoding('utf8');
-        this.incomingNumericItems = [];
+let accumulatedInputString = '';
+let processedNumericValues = [];
+let currentReadPosition = 0;
 
-        this.dataStream.on('data', (dataChunk) => {
-            const potentialNumbers = dataChunk.match(/[-]?\d+/g);
-            if (potentialNumbers) {
-                this.incomingNumericItems.push(...potentialNumbers);
-            }
-        });
+global.logOutput = function(...messagesToLog) {
+    console.log(...messagesToLog);
+};
 
-        this.dataStream.on('end', () => {
-            this.startProcessing();
-        });
+const standardInputHandle = process.openStdin();
+standardInputHandle.setEncoding('utf8');
+
+standardInputHandle.on('data', function(dataSegment) {
+    accumulatedInputString += dataSegment;
+});
+
+standardInputHandle.on('end', function() {
+    const detectedNumbers = accumulatedInputString.match(/[-]?\d+/g);
+    if (detectedNumbers) {
+        processedNumericValues = detectedNumbers.map(Number);
+    }
+    global.startProcessing();
+});
+
+global.getNextInputNumber = function() {
+    if (currentReadPosition < processedNumericValues.length) {
+        return processedNumericValues[currentReadPosition++];
+    }
+    return NaN;
+};
+
+global.checkMoreInputs = function() {
+    return currentReadPosition < processedNumericValues.length;
+};
+
+global.startProcessing = function() {
+    if (global.checkMoreInputs()) {
+        setImmediate(executeCalculationPair);
+    }
+};
+
+function executeCalculationPair() {
+    if (!global.checkMoreInputs()) {
+        return;
     }
 
-    retrieveNextNumericItem() {
-        if (this.incomingNumericItems.length > 0) {
-            return parseInt(this.incomingNumericItems.shift(), 10);
-        }
-        return NaN;
-    }
+    const operandOne = global.getNextInputNumber();
+    const operandTwo = global.getNextInputNumber();
 
-    areNoMoreItems() {
-        return this.incomingNumericItems.length === 0;
-    }
+    global.logOutput(
+        global.greatestCommonDivisor(operandOne, operandTwo),
+        global.leastCommonMultiple(operandOne, operandTwo)
+    );
 
-    startProcessing() {
-        this.executeCalculations();
-    }
-
-    executeCalculations() {
-        while (!this.areNoMoreItems()) {
-            const firstInput = this.retrieveNextNumericItem();
-            const secondInput = this.retrieveNextNumericItem();
-
-            const resultGCD = Arithmetics.determineCommonDivisor(firstInput, secondInput);
-            const resultLCM = Arithmetics.computeLeastCommonMultiple(firstInput, secondInput);
-
-            this.displayOutput(resultGCD, resultLCM);
-        }
+    if (global.checkMoreInputs()) {
+        setImmediate(executeCalculationPair);
     }
 }
-
-global.NumeralTools = NumeralTools;
-global.Arithmetics = Arithmetics;
-global.SystemHandlerInstance = new SystemHandler();

@@ -1,33 +1,42 @@
-function calculateCombinations(sourceData) {
-  const processedData = sourceData.trim().split('\n');
-  const limit500 = parseInt(processedData[0]);
-  const limit100 = parseInt(processedData[1]);
-  const limit50 = parseInt(processedData[2]);
-  const targetSum = parseInt(processedData[3]);
+"use strict";
 
-  const coinDenominations = [500, 100, 50];
-  const coinLimits = [limit500, limit100, limit50];
+function processInputAndCalculate(rawInput) {
+    const lines = rawInput.trim().split('\n');
+    const limitFiveHundred = Number(lines[0]);
+    const limitOneHundred = Number(lines[1]);
+    const limitFifty = Number(lines[2]);
+    const desiredTotal = Number(lines[3]);
 
-  function explorePaths(currentCoinIndex, remainingAmount) {
-    if (remainingAmount === 0) {
-      return 1; // Successfully reached the target sum
+    const coinDenominations = [500, 100, 50];
+    const coinMaximums = [limitFiveHundred, limitOneHundred, limitFifty];
+
+    function countValidCombinations(currentAccumulatedSum, currentCoinTypeIndex) {
+        if (currentCoinTypeIndex === coinDenominations.length) {
+            return currentAccumulatedSum === desiredTotal ? 1 : 0;
+        }
+
+        if (currentAccumulatedSum > desiredTotal) {
+            return 0;
+        }
+
+        let totalWaysFound = 0;
+        const currentDenominationValue = coinDenominations[currentCoinTypeIndex];
+        const maxAllowedForThisCoin = coinMaximums[currentCoinTypeIndex];
+
+        for (let countOfCurrentCoin = 0; countOfCurrentCoin <= maxAllowedForThisCoin; countOfCurrentCoin++) {
+            const nextAccumulatedSum = currentAccumulatedSum + countOfCurrentCoin * currentDenominationValue;
+            totalWaysFound += countValidCombinations(nextAccumulatedSum, currentCoinTypeIndex + 1);
+        }
+
+        return totalWaysFound;
     }
-    if (remainingAmount < 0 || currentCoinIndex >= coinDenominations.length) {
-      return 0; // Over-shot the target or no more coin types to use
-    }
 
-    let totalValidPaths = 0;
-    const currentDenomination = coinDenominations[currentCoinIndex];
-    const maxCountForThisCoin = coinLimits[currentCoinIndex];
-
-    for (let count = 0; count <= maxCountForThisCoin; count++) {
-      totalValidPaths += explorePaths(currentCoinIndex + 1, remainingAmount - (count * currentDenomination));
-    }
-    return totalValidPaths;
-  }
-
-  const finalResult = explorePaths(0, targetSum);
-  console.log(finalResult);
+    return countValidCombinations(0, 0);
 }
 
-calculateCombinations(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(inputString) {
+    const finalCount = processInputAndCalculate(inputString);
+    console.log(finalCount);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

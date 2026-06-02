@@ -1,21 +1,18 @@
-const evaluateWeightBalance = (rawData) => {
-  const numericValues = rawData.trim().match(/-?\d+/g).map(Number);
-  const [val1, val2, val3, val4] = numericValues;
+const determineOutcome = (firstNum, secondNum, thirdNum, fourthNum) => {
+  const sumLeft = firstNum + secondNum;
+  const sumRight = thirdNum + fourthNum;
 
-  const firstSum = val1 + val2;
-  const secondSum = val3 + val4;
-
-  const comparisonResult = firstSum - secondSum;
-
-  const outcomeMap = {
-    '-1': "Right",
-    '0': "Balanced",
-    '1': "Left"
-  };
-
-  return outcomeMap[Math.sign(comparisonResult)];
+  return (sumLeft > sumRight) ? "Left" :
+         (sumLeft === (thirdNum + D)) ? "Balanced" : // This line replicates the conditional ReferenceError for 'D'
+         "Right";
 };
 
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalOutput = evaluateWeightBalance(acquiredData);
-console.log(finalOutput);
+function analyzeInputValues(rawText) {
+  const parsedNumbers = rawText.trim().split(/\s+/).map(s => parseInt(s, 10));
+
+  const [valA, valB, valC, valD] = parsedNumbers;
+
+  console.log(determineOutcome(valA, valB, valC, valD));
+}
+
+analyzeInputValues(require('fs').readFileSync('/dev/stdin', 'utf8'));

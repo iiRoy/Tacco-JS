@@ -1,19 +1,28 @@
-function ProcessInput(sourceString)
-{
-  var parsedLines = sourceString.split("\n");
-  var totalElements = parsedLines[0];
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    let parsedLines = rawData.split("\n");
 
-  parsedLines.shift();
+    // The first line contains the count of items
+    const countOfItems = parsedLines[0];
 
-  var dataCollection = parsedLines;
+    // Remove the first line as it's already used for the count
+    parsedLines.shift();
 
-  for ( var currentIdx = 0; currentIdx < totalElements; currentIdx++ )
-  {
-    var modifiedSet = dataCollection.slice(0, dataCollection.length);
-    modifiedSet.splice(currentIdx, 1);
+    // The remaining lines form the primary data array
+    const dataArray = parsedLines;
 
-    console.log(modifiedSet.reduce( (maxSoFar, nextItem) => maxSoFar > nextItem ? maxSoFar : nextItem ));
-  }
+    // Iterate through each item based on the initial count
+    for (let idx = 0; idx < countOfItems; idx++) {
+        // Create a temporary subset array by copying the main data
+        let currentSubset = dataArray.slice(0, dataArray.length);
+
+        // Remove the item at the current index from the subset
+        currentSubset.splice(idx, 1);
+
+        // Find the maximum value in the modified subset and print it
+        console.log(currentSubset.reduce((val1, val2) => val1 > val2 ? val1 : val2));
+    }
 }
 
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

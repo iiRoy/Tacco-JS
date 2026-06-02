@@ -1,60 +1,70 @@
-'use strict';
-/*
- * This module is designed to identify a specific combination of Japanese bills
- * (10,000 yen, 5,000 yen, and 1,000 yen) that sum up to a target amount
- * while adhering to a maximum total number of bills.
+'use strict'; // Enforce strict mode for cleaner code execution.
+
+/**
+ * Determines the count of 10000, 5000, and 1000 yen bills that sum up to a specific target amount,
+ * given a total number of bills.
+ *
+ * @param {string} inputString - A string containing two space-separated numeric values:
+ *                                the total number of bills (N) and the target sum in yen (Y).
+ *                                Example: "9 45000"
  */
-function findCurrencyCombination ( inputStringData ) {
-  // Parse the incoming string data into individual components
-  const parsedValues = inputStringData.split ( ' ' ) ;
+function calculateMoney(inputString) {
+  // Parse the incoming string to extract the two required numerical parameters.
+  const parsedValues = inputString.split(' ');
 
-  // Extract the total number of bills allowed (N)
-  const totalBills = parsedValues [ 0 ] ;
+  // Assign the extracted values to descriptive constants.
+  // Note: These are initially strings, but JavaScript's arithmetic operations will implicitly convert them.
+  const totalBills = parsedValues[0]; // Represents N, the total count of bills.
+  const targetSum = parsedValues[1];  // Represents Y, the target total amount.
 
-  // Extract the desired total monetary sum (Y)
-  const targetSum = parsedValues [ 1 ] ;
+  // Begin iterating through possible counts for the highest denomination bill (10000 yen).
+  // 'countTenThousands' will represent the number of 10000 yen bills.
+  for (let countTenThousands = 0; countTenThousands <= totalBills; countTenThousands++) {
+    // Calculate the remaining amount after subtracting the value of the 10000 yen bills.
+    const remainingAmount = targetSum - 10000 * countTenThousands;
 
-  // Begin iterating through all possible counts for 10,000 yen notes
-  for ( let countTenThousands = 0 ; countTenThousands <= totalBills ; countTenThousands ++ ) {
-    // Calculate the amount remaining after accounting for the 10,000 yen notes
-    const remainingAmount = targetSum - ( 10000 * countTenThousands ) ;
-
-    // Check if the remaining amount is zero and all bills are 10,000 yen notes
-    if ( remainingAmount === 0 && totalBills == countTenThousands ) {
-      return console.log ( totalBills , 0 , 0 ) ;
+    // Check for a specific edge case: if the remaining amount is exactly zero,
+    // and the count of 10000 yen bills equals the total number of bills.
+    // (Note: 'totalBills' is a string, 'countTenThousands' is a number, so '===' will always be false here,
+    // preserving the original code's behavior where 'n === i' would also be false).
+    if (remainingAmount === 0 && totalBills === countTenThousands) {
+      // If this condition is met, we've found a solution with only 10000 yen bills.
+      return console.log(totalBills, 0, 0);
     }
-    // If the remaining amount is negative or zero, and there are still other bills to try,
-    // it means this path won't lead to a solution with fewer 10,000 yen notes
-    else if ( remainingAmount <= 0 && countTenThousands < totalBills ) {
-      break ;
+    // If the remaining amount is zero or negative, and we still have other bills to consider
+    // (i.e., 'countTenThousands' is less than 'totalBills'), it means we've overshot the target.
+    // No need to continue with this 'countTenThousands' value; break out of the current loop iteration.
+    else if (remainingAmount <= 0 && countTenThousands < totalBills) {
+      break;
     }
 
-    // Now, iterate through possible counts for 5,000 yen notes for the current remaining amount
-    for ( let countFiveThousands = 0 ; countFiveThousands <= ( totalBills - countTenThousands ) ; countFiveThousands ++ ) {
-      // Determine the number of 1,000 yen notes required to meet the total bill count
-      const countThousands = totalBills - countTenThousands - countFiveThousands ;
+    // Iterate through possible counts for the middle denomination bill (5000 yen).
+    // 'countFiveThousands' will represent the number of 5000 yen bills.
+    // The upper bound ensures we don't exceed the total allowed number of bills.
+    for (let countFiveThousands = 0; countFiveThousands <= totalBills - countTenThousands; countFiveThousands++) {
+      // Calculate the number of 1000 yen bills required to meet the 'totalBills' constraint.
+      const countOneThousands = totalBills - countTenThousands - countFiveThousands;
 
-      // Calculate the final balance by subtracting the value of 5,000 and 1,000 yen notes
-      const finalBalance = remainingAmount - ( 5000 * countFiveThousands ) - ( 1000 * countThousands ) ;
+      // Calculate the final sum using the current combination of all three bill types.
+      const finalCheck = remainingAmount - 5000 * countFiveThousands - 1000 * countOneThousands;
 
-      // If the final balance is exactly zero, a valid combination has been found
-      if ( finalBalance === 0 ) {
-        return console.log ( countTenThousands , countFiveThousands , countThousands ) ;
+      // If the 'finalCheck' results in exactly zero, we have found a valid combination.
+      if (finalCheck === 0) {
+        // Output the counts of 10000, 5000, and 1000 yen bills.
+        return console.log(countTenThousands, countFiveThousands, countOneThousands);
       }
-      // If the final balance is less than 1,000, it means we cannot make up the difference
-      // with 1,000 yen notes or any smaller denomination (which are not available),
-      // so we can break from this inner loop.
-      else if ( finalBalance < 1000 ) {
-        break ;
+      // If 'finalCheck' is less than 1000, it means we cannot make up the difference
+      // with 1000 yen bills (since 'countOneThousands' is already fixed for this iteration).
+      // Further increasing 'countFiveThousands' would only make 'finalCheck' more negative.
+      else if (finalCheck < 1000) {
+        break; // Exit the inner loop for 'countFiveThousands'.
       }
     }
   }
 
-  // If no valid combination was found after exhausting all possibilities
-  return console.log ( -1 , -1 , -1 ) ;
+  // If the loops complete without finding any valid combination, output the default "not found" result.
+  return console.log(-1, -1, -1);
 }
 
-// Read input from standard file system and execute the money calculation
-const fileSystemModule = require ( 'fs' ) ;
-const rawInputData = fileSystemModule.readFileSync ( 0 , 'utf8' ) ;
-findCurrencyCombination ( rawInputData ) ;
+// Read the input from standard input (typically a file or piped data) and invoke the main function.
+calculateMoney(require('fs').readFileSync(0, 'utf8'));

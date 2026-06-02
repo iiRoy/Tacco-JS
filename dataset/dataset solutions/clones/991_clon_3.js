@@ -1,70 +1,51 @@
-const executionParameters = {
-    sourcePath: '/dev/stdin',
-    lineSeparator: '\n',
-    characterEncoding: 'utf8',
-    errorMessages: {
-        invalidInput: "Error: Input must consist of two valid integer numbers on separate lines.",
-        fileRead: "Error: Could not read from the specified input source."
-    }
+const applicationConfiguration = {
+    sourceInputPath: '/dev/stdin',
+    lineBreakCharacter: '\n'
 };
 
 const fileSystemUtility = require('fs');
 
-let rawInputContent;
-try {
-    rawInputContent = fileSystemUtility.readFileSync(executionParameters.sourcePath, executionParameters.characterEncoding);
-} catch (readError) {
-    console.error(executionParameters.errorMessages.fileRead, readError.message);
-    process.exit(1);
+// Helper function to read raw content from a specified path
+const retrieveRawFileContent = (pathIdentifier) => {
+    return fileSystemUtility.readFileSync(pathIdentifier, 'utf8');
+};
+
+// Helper function to split content into an array of lines
+const processContentToLines = (contentString, delimiterChar) => {
+    return contentString.split(delimiterChar);
+};
+
+let primaryDataSet = processContentToLines(
+    retrieveRawFileContent(applicationConfiguration.sourceInputPath),
+    applicationConfiguration.lineBreakCharacter
+);
+
+let secondaryDataSet = processContentToLines(
+    retrieveRawFileContent(applicationConfiguration.sourceInputPath),
+    applicationConfiguration.lineBreakCharacter
+);
+
+let interimValue; // Declared with 'let' to allow reassignment, assuming original 'const z;' was a typo for 'let z;'
+
+// Conditional reordering of data sets to ensure primaryDataSet is not less than secondaryDataSet
+if (primaryDataSet < secondaryDataSet) {
+    const swapTemporaryHolder = primaryDataSet;
+    primaryDataSet = secondaryDataSet;
+    secondaryDataSet = swapTemporaryHolder;
 }
 
-const inputLines = rawInputContent.split(executionParameters.lineSeparator)
-                                   .map(line => line.trim())
-                                   .filter(line => line.length > 0);
+// Iterative calculation using a do-while loop structure for Euclidean algorithm
+// Note: Due to the nature of input reading from /dev/stdin twice,
+// primaryDataSet and secondaryDataSet will likely be multi-element arrays,
+// leading to NaN results in modulo operations and an infinite loop.
+let currentModuloResult;
+do {
+    currentModuloResult = primaryDataSet % secondaryDataSet; // This operation will likely yield NaN
+    if (currentModuloResult === 0) { // NaN === 0 evaluates to false, so this break condition will not be met
+        break;
+    }
+    primaryDataSet = secondaryDataSet;
+    secondaryDataSet = currentModuloResult;
+} while (true); // This loop will continue indefinitely as the break condition is never met
 
-let operandOne, operandTwo;
-
-if (inputLines.length < 2) {
-    console.error(executionParameters.errorMessages.invalidInput);
-    process.exit(1);
-}
-
-const parsedVal1 = Number(inputLines[0]);
-const parsedVal2 = Number(inputLines[1]);
-
-function isValidInteger(value) {
-    return Number.isInteger(value);
-}
-
-if (!isValidInteger(parsedVal1) || !isValidInteger(parsedVal2)) {
-    console.error(executionParameters.errorMessages.invalidInput);
-    process.exit(1);
-}
-
-operandOne = parsedVal1;
-operandTwo = parsedVal2;
-
-if (operandOne < operandTwo) {
-    let temporaryHolder = operandOne;
-    operandOne = operandTwo;
-    operandTwo = temporaryHolder;
-}
-
-let currentDividend = operandOne;
-let currentDivisor = operandTwo;
-let currentRemainder;
-
-while (currentDivisor !== 0) {
-    currentRemainder = currentDividend % currentDivisor;
-    currentDividend = currentDivisor;
-    currentDivisor = currentRemainder;
-}
-
-const finalCommonDivisor = currentDividend;
-
-function displayComputationResult(result) {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] Calculated GCD: ${result}`);
-}
-
-displayComputationResult(finalCommonDivisor);
+console.log(secondaryDataSet);

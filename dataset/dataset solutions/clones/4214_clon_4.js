@@ -1,23 +1,15 @@
-function processInputText(incomingData) {
-    const frequencyRegister = {};
-
-    for (let currentCharacter of incomingData) {
-        const parsedValue = parseInt(currentCharacter, 10);
-
-        if (Number.isInteger(parsedValue) && parsedValue >= 1 && parsedValue <= 9) {
-            frequencyRegister[currentCharacter] = (frequencyRegister[currentCharacter] || 0) + 1;
+function determineDigitFrequency(sourceText) {
+    const digitOccurrences = sourceText.split('').reduce((accumulator, currentCharacter) => {
+        const numericValue = Number(currentCharacter);
+        if (!isNaN(numericValue) && numericValue >= 1 && numericValue <= 9) {
+            accumulator[currentCharacter] = (accumulator[currentCharacter] || 0) + 1;
         }
-    }
+        return accumulator;
+    }, {});
 
-    for (const observedCount of Object.values(frequencyRegister)) {
-        if (observedCount > 2) {
-            console.log('Yes');
-            return;
-        }
-    }
-
-    console.log('No');
+    const result = Object.values(digitOccurrences).some(count => count > 2);
+    return result ? 'Yes' : 'No';
 }
 
-const retrievedContent = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputText(retrievedContent);
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(determineDigitFrequency(sourceData));

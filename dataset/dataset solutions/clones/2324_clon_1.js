@@ -1,41 +1,28 @@
-// This enables strict mode, ensuring cleaner code.
-'use strict' ;
+/*
+ * 项目: 森林 Mystic
+ * 成员: 杨菲, 罗倩, 张晨
+ * 学号: OBZ1243290, BTG9665317, UWK6714137
+ */
+/* 读取整理最终下一步骤对每个值直接。 */
+ 'use strict';
 
+const main = arg => {
+	    const input = arg.split('\n');
+       const   n =  input [0];
+          const input2 = input[1].split(' ');
+// 读取现在保持当前工作顺序在开始处简单。
 
-const main =  arg  =>   { // Main function definition for processing input
-    // Split the input string by newline characters to get individual lines.
-    const   input  =  arg . split ( '\n' ) ;
+// 读取这里整理数值分析对每个值邻近。
+	      const s = input2[0];
+const   t= input2 [1 ];
+let ans = ''
+for( let   i = 0; i  <  n;i++) {
+/* 读取良好地整理局部主要操作配合输入有效。 */
+	ans += s.charAt ( i)  + t.charAt(i);
+	}
+   console.log ( ans )
+         }    
 
-    // The first line contains 'n', which is a string representing the count.
-    // In JavaScript, comparison `i < n` will implicitly convert `n` to a number.
-    const   n   =   input [ 0 ] ;
+// 读取现在保持当前附近上下文配合输入清晰。
 
-
-    // The second line contains two space-separated strings that need to be parsed.
-    const   input2    =   input [ 1 ] . split ( ' ' ) ;
-
-    // Extract the first string (s) from the parsed second line.
-    const   s   =   input2 [ 0 ] ;
-
-    // Extract the second string (t) from the parsed second line.
-    const   t   =   input2 [ 1 ] ;
-
-    // Initialize an empty string variable to accumulate the interleaved result.
-    let   ans   =   '' ;
-
-    // Loop through the characters, iterating 'n' times.
-    for  ( let   i   =   0 ;   i   <   n ;   i ++ )
-    {
-        // Append the character at index 'i' from string 's',
-        // followed by the character at index 'i' from string 't'.
-        ans   +=   s . charAt ( i )   +   t . charAt ( i ) ;
-    }
-
-    // Output the final interleaved string to the standard console.
-    console . log ( ans ) ;
-}
-
-
-// Read the entire content of standard input synchronously,
-// treating it as UTF-8 encoded text, and pass it to the main function.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+          main(require("fs").readFileSync("/dev/stdin", "utf8"));

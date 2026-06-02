@@ -1,62 +1,40 @@
-console.log((inputData => {
-  // First, parse the input string into structured data.
-  // The first line typically contains a single number (startingCount), the second line contains a sequence of numbers (numberSequence).
-  const [
-    [startingCount],
-    numberSequence
-  ] =
-    inputData
-      .trim() // Remove leading/trailing whitespace from the input string.
-      .split`\n` // Split the entire string into an array of lines based on newline characters.
-      .map(lineContent => // Process each individual line of the input.
-        lineContent
-          .split` ` // Split each line into an array of string values, using spaces as delimiters.
-          .map(stringVal =>
-            stringVal | 0 // Convert each string value to an integer using a bitwise OR 0 operation.
-          )
-      );
+console.log((inputString => {
+  // This function processes input data to determine a specific numerical range.
+  // The input string is expected to have two lines:
+  // - The first line contains a single integer, which we'll call 'numItems'.
+  // - The second line contains a series of space-separated integers, forming 'dataArray'.
+  const [[numItems], dataArray] = inputString
+    .trim() // Remove any leading or trailing whitespace from the input.
+    .split('\n') // Divide the input string into an array of lines.
+    .map(lineStr => lineStr.split(' ').map(numStr => parseInt(numStr, 10))); // For each line, split by space and convert parts to integers.
 
-  // Initialize the range bounds. These variables will represent the minimum and maximum possible values of an interval.
-  let minimumValue = 2,
-    maximumValue = 2;
+  // Initialize the current lower and upper bounds for our calculation.
+  let currentMin = 2;
+  let currentMax = 2;
 
-  // Iterate backward through the 'numberSequence' array. The loop starts from 'startingCount - 2' and goes down to 0.
-  // This iteration process is crucial for refining the 'minimumValue' and 'maximumValue' based on specific division rules.
-  for (
-    let loopIndex = startingCount - 2;
-    loopIndex >= 0;
-    loopIndex--
-  ) {
-    // Critical condition check for an impossible scenario:
-    // If the current maximum possible value, when combined with the next element in the sequence (minus one),
-    // results in a value strictly less than the current element in the sequence, then no valid range can be constructed.
-    if (maximumValue + numberSequence[loopIndex + 1] - 1 < numberSequence[loopIndex]) {
-      return '-1'; // Return a specific string to indicate an unresolvable or impossible state.
+  // Iterate backwards through a specific segment of the 'dataArray'.
+  // The loop starts from 'numItems - 2' and goes down to '0'.
+  for (let loopIndex = numItems - 2; loopIndex >= 0; loopIndex--) {
+    // Check for a condition that indicates an impossible scenario.
+    // If this condition is met, the function immediately returns the string '-1'.
+    if (currentMax + dataArray[loopIndex + 1] - 1 < dataArray[loopIndex]) {
+      return '-1';
     }
 
-    // Calculate the new 'minimumValue'.
-    // It must be the smallest multiple of 'numberSequence[loopIndex]' that is greater than or equal to the current 'minimumValue'.
-    minimumValue = Math.ceil(minimumValue / numberSequence[loopIndex]) * numberSequence[loopIndex];
+    // Update the lower bound ('currentMin') based on the current element of 'dataArray'.
+    // This calculation ensures 'currentMin' is a multiple of 'dataArray[loopIndex]'
+    // and is greater than or equal to the previous 'currentMin'.
+    currentMin = Math.ceil(currentMin / dataArray[loopIndex]) * dataArray[loopIndex];
 
-    // Calculate the new 'maximumValue'.
-    // This calculation involves several steps to ensure it aligns with the division rules for both the current and the next elements.
-    maximumValue =
-      Math.ceil(maximumValue / numberSequence[loopIndex + 1]) * numberSequence[loopIndex + 1] +
-      numberSequence[loopIndex + 1] -
-      1;
-
-    // Further adjust the 'maximumValue'.
-    // This step ensures that 'maximumValue' is the largest possible value that still satisfies the conditions
-    // related to 'numberSequence[loopIndex]'. Effectively, it is reduced to the highest multiple of 'numberSequence[loopIndex]'
-    // that is less than or equal to the current 'maximumValue'.
-    maximumValue -= maximumValue % numberSequence[loopIndex];
+    // Update the upper bound ('currentMax') in two steps.
+    // First, calculate a preliminary 'currentMax' based on the next element in 'dataArray'.
+    currentMax = Math.ceil(currentMax / dataArray[loopIndex + 1]) * dataArray[loopIndex + 1] + dataArray[loopIndex + 1] - 1;
+    // Second, adjust 'currentMax' to ensure it aligns with 'dataArray[loopIndex]'
+    // by subtracting its remainder when divided by 'dataArray[loopIndex]'.
+    currentMax -= currentMax % dataArray[loopIndex];
   }
 
-  // After the loop completes, format and return the final calculated range.
-  // The final upper bound requires an additional adjustment involving the first element of the sequence.
-  return `${minimumValue} ${maximumValue + numberSequence[0] - 1}`;
-})(
-  // Read the input data from standard input.
-  // This leverages Node.js's built-in 'fs' (file system) module to synchronously read a file.
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-));
+  // After the loop completes, format the final 'currentMin' and adjusted 'currentMax' into a string.
+  // The adjustment for 'currentMax' involves adding 'dataArray[0] - 1'.
+  return `${currentMin} ${currentMax + dataArray[0] - 1}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Execute the function immediately with content read from standard input.

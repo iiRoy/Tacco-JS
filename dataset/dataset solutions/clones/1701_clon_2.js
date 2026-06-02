@@ -1,155 +1,186 @@
-function processInput(rawData) {
-    const MODULUS_VAL = 1_000_000_007; // A large prime constant for modular arithmetic
-    const CHUNK_SIZE = 100_000;       // A chunk size for optimized modular multiplication
+function ProcessInput(rawData) {
+    // Define a large prime modulus for calculations, often used in competitive programming.
+    const MOD_VAL = 1_000_000_000 + 7;
+    // Define a factor for splitting numbers in multiplication to prevent overflow before modulo.
+    const FACTOR_VAL = 100_000;
 
-    let processedLines = rawData
-        .trim()
-        .split("\n")
-        .map(function(lineStr) {
-            return lineStr.split(" ");
-        });
+    // Pre-process the raw input string: trim leading/trailing whitespace,
+    // split into lines, then split each line by space.
+    let processedLines = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
 
-    const elementCount = parseInt(processedLines[0][0], 10); // Total number of elements
-    const selectionCount = parseInt(processedLines[0][1], 10); // Number of elements to select
+    // Parse the first line to extract the total number of elements (N)
+    // and the number of elements to select (K).
+    const arraySize = parseInt(processedLines[0][0], 10);
+    const elementsToSelect = parseInt(processedLines[0][1], 10);
 
-    let numberArray = processedLines[1].map(element => parseInt(element, 10)); // Array of input numbers
+    // Parse the second line to create the numeric array.
+    let numericArray = processedLines[1].map(elementStr => parseInt(elementStr, 10));
 
-    // Sort the array by the absolute value of elements in descending order
-    // This prioritizes elements with larger magnitudes.
-    numberArray.sort((valA, valB) => Math.abs(valB) - Math.abs(valA));
+    // Sort the array by the absolute value of its elements in descending order.
+    // This strategy prioritizes numbers with larger magnitudes.
+    numericArray.sort((valA, valB) => Math.abs(valB) - Math.abs(valA));
 
-    let finalResult = calculateProduct(numberArray, elementCount, selectionCount, MODULUS_VAL, CHUNK_SIZE);
+    // Compute the maximum product of 'elementsToSelect' elements from 'numericArray'.
+    let finalResult = computeProduct(numericArray, arraySize, elementsToSelect, MOD_VAL, FACTOR_VAL);
 
-    // Print the final calculated product modulo MODULUS_VAL
-    console.log(applyModulo(finalResult, MODULUS_VAL));
+    // Print the final result, ensuring it's a positive value within the modulus.
+    console.log(moduloOperation(finalResult, MOD_VAL));
 }
 
-function calculateProduct(numList, totalElements, numToSelect, modBase, divisorChunk) {
-    let currentProduct = 1;
-    let negativeCount = 0;
-    let lastPositiveIdx; // Stores the index of the last positive number found in the top K
-    let lastNegativeIdx; // Stores the index of the last negative number found in the top K
+// This function calculates the maximum product of 'numToPick' elements
+// from the 'dataVector', applying modular arithmetic.
+function computeProduct(dataVector, totalElements, numToPick, modulus, multiplier) {
+    let currentProduct = 1; // Initialize the product accumulator.
+    let negativeCount = 0; // Tracks the number of negative values among the first 'numToPick' elements.
+    let firstPositiveIdx;  // Stores the index of the last positive number encountered in the initial 'numToPick' elements.
+    let firstNegativeIdx;  // Stores the index of the last negative number encountered in the initial 'numToPick' elements.
 
-    // Calculate the product of the first 'numToSelect' elements and count negatives/positives
-    for (let idx = 0; idx < numToSelect; idx++) {
-        currentProduct = multiplyMod(currentProduct, numList[idx], modBase, divisorChunk);
-        if (currentProduct === 0) return 0; // If product becomes zero, return immediately
+    // Iterate through the first 'numToPick' elements to form an initial product
+    // and gather information about positive/negative numbers.
+    for (let idx = 0; idx < numToPick; idx++) {
+        currentProduct = multiplyAndMod(currentProduct, dataVector[idx], modulus, multiplier);
+        // If at any point the product becomes zero, the final result is zero.
+        if (currentProduct === 0) return 0;
 
-        if (numList[idx] > 0) {
-            lastPositiveIdx = idx;
+        if (dataVector[idx] > 0) {
+            firstPositiveIdx = idx; // Update index of the last positive element.
         }
-        if (numList[idx] < 0) {
-            lastNegativeIdx = idx;
+        if (dataVector[idx] < 0) {
+            firstNegativeIdx = idx; // Update index of the last negative element.
             negativeCount++;
         }
     }
 
-    // If 'numToSelect' equals 'totalElements', no further adjustments are possible
-    if (numToSelect === totalElements) {
-        return currentProduct;
-    }
+    // If all available elements are selected, the current product is the final answer.
+    if (numToPick === totalElements) return currentProduct;
 
-    // If the count of negative numbers in the top 'numToSelect' is even,
-    // the product is positive, which is the desired outcome.
-    if (negativeCount % 2 === 0) {
-        return currentProduct;
-    }
+    // If the count of negative numbers in the initial 'numToPick' elements is even,
+    // the product is positive, which is generally optimal.
+    if (negativeCount % 2 === 0) return currentProduct;
 
-    // If the product is currently negative (odd count of negatives),
-    // we try to make it positive by swapping elements.
+    // If the product is currently negative (odd number of negatives),
+    // we need to adjust the selection to make it positive or maximize its magnitude.
 
-    // Scenario 1: There are both positive and negative numbers in the top 'numToSelect'
-    // and also elements remaining beyond 'numToSelect'.
-    if (negativeCount < numToSelect) {
-        let negativeCandidate = [0, -1, -1]; // [value_from_remaining, old_positive_from_topK, index_in_remaining]
-        let positiveCandidate = [0, -1, -1]; // [value_from_remaining, old_negative_from_topK, index_in_remaining]
+    // Case 1: There's at least one positive number among the initial 'numToPick' elements.
+    // We can try to swap a negative from the initial 'numToPick' with a positive from the remaining,
+    // OR swap a positive from the initial 'numToPick' with a negative from the remaining.
+    if (negativeCount < numToPick) {
+        // console.log("Adjusting for negative product with mixed signs in initial selection."); // Debugging comment
+        let potentialSwapOne = [0, -1, -1]; // [new_negative_value, old_positive_value, new_negative_index]
+        let potentialSwapTwo = [0, -1, -1]; // [new_positive_value, old_negative_value, new_positive_index]
 
-        // Search for the first negative number in the remaining elements
-        for (let idx = numToSelect; idx < totalElements; idx++) {
-            if (numList[idx] < 0) {
-                negativeCandidate = [numList[idx], numList[lastPositiveIdx], idx];
+        // Search for the first negative number outside the initial 'numToPick' elements.
+        for (let idx = numToPick; idx < totalElements; idx++) {
+            if (dataVector[idx] < 0) {
+                potentialSwapOne = [dataVector[idx], dataVector[firstPositiveIdx], idx];
+                break;
+            }
+        }
+        // Search for the first positive number outside the initial 'numToPick' elements.
+        for (let idx = numToPick; idx < totalElements; idx++) {
+            if (dataVector[idx] > 0) {
+                potentialSwapTwo = [dataVector[idx], dataVector[firstNegativeIdx], idx];
                 break;
             }
         }
 
-        // Search for the first positive number in the remaining elements
-        for (let idx = numToSelect; idx < totalElements; idx++) {
-            if (numList[idx] > 0) {
-                positiveCandidate = [numList[idx], numList[lastNegativeIdx], idx];
-                break;
-            }
-        }
-
-        // Compare which swap yields a larger positive product:
-        // (new_negative_from_remaining * old_negative_from_topK) vs (new_positive_from_remaining * old_positive_from_topK)
-        if (negativeCandidate[0] * positiveCandidate[1] >= positiveCandidate[0] * negativeCandidate[1]) {
-            // Option chosen: replace an old positive from top K with a new negative from remaining
-            numList.splice(numToSelect, negativeCandidate[2] - numToSelect); // Remove intermediate elements
-            numList.splice(lastPositiveIdx, 1); // Remove the old positive element
+        // Compare the potential swaps to determine which one yields a larger (less negative or more positive) product.
+        // The comparison `potentialSwapOne[0] * potentialSwapTwo[1] >= potentialSwapTwo[0] * potentialSwapOne[1]`
+        // effectively compares `(new_negative * old_negative)` vs `(new_positive * old_positive)`.
+        // This helps decide which swap (replacing old_positive with new_negative, or old_negative with new_positive)
+        // results in a product with a larger absolute value, while also making it positive.
+        if (potentialSwapOne[0] * potentialSwapTwo[1] >= potentialSwapTwo[0] * potentialSwapOne[1]) {
+            // Perform the first swap: replace an 'old_positive' with a 'new_negative'.
+            // First, remove elements between 'numToPick' and the index of the 'new_negative'.
+            dataVector.splice(numToPick, potentialSwapOne[2] - numToPick);
+            // Then, remove the 'old_positive' element from its position.
+            dataVector.splice(firstPositiveIdx, 1);
         } else {
-            // Option chosen: replace an old negative from top K with a new positive from remaining
-            numList.splice(numToSelect, positiveCandidate[2] - numToSelect); // Remove intermediate elements
-            numList.splice(lastNegativeIdx, 1); // Remove the old negative element
+            // Perform the second swap: replace an 'old_negative' with a 'new_positive'.
+            // First, remove elements between 'numToPick' and the index of the 'new_positive'.
+            dataVector.splice(numToPick, potentialSwapTwo[2] - numToPick);
+            // Then, remove the 'old_negative' element from its position.
+            dataVector.splice(firstNegativeIdx, 1);
         }
 
-        // Recalculate product with the modified top K elements
+        // Recalculate the product with the modified 'dataVector'.
         currentProduct = 1;
-        for (let idx = 0; idx < numToSelect; idx++) {
-            currentProduct = multiplyMod(currentProduct, numList[idx], modBase, divisorChunk);
+        for (let idx = 0; idx < numToPick; idx++) {
+            currentProduct = multiplyAndMod(currentProduct, dataVector[idx], modulus, multiplier);
             if (currentProduct === 0) return 0;
         }
         return currentProduct;
 
-    } else {
-        // Scenario 2: All 'numToSelect' elements are negative (product is negative)
-        // We must find a non-negative element in the remaining part to swap.
-        for (let idx = numToSelect; idx < totalElements; idx++) {
-            if (numList[idx] >= 0) {
-                // Found a non-negative element to swap with an old negative
-                numList.splice(numToSelect, idx - numToSelect); // Remove intermediate elements
-                numList.splice(lastNegativeIdx, 1); // Remove the old negative element
+    } else { // Case 2: All 'numToPick' elements are negative, and the product is negative.
+        // console.log("All initial elements are negative, seeking a positive outside."); // Debugging comment
+        // Try to replace the negative number with the smallest absolute value (which is `dataVector[firstNegativeIdx]`
+        // due to sorting by absolute value) with a non-negative number from outside the initial 'numToPick' elements.
+        for (let idx = numToPick; idx < totalElements; idx++) {
+            if (dataVector[idx] >= 0) { // Found a non-negative number.
+                // Remove elements between 'numToPick' and the index of the found non-negative.
+                dataVector.splice(numToPick, idx - numToPick);
+                // Remove the negative element that was in the initial 'numToPick' selection.
+                dataVector.splice(firstNegativeIdx, 1);
 
-                // Recalculate product with the modified top K elements
+                // Recalculate the product.
                 currentProduct = 1;
-                for (let j = 0; j < numToSelect; j++) {
-                    currentProduct = multiplyMod(currentProduct, numList[j], modBase, divisorChunk);
+                for (let jdx = 0; jdx < numToPick; jdx++) {
+                    currentProduct = multiplyAndMod(currentProduct, dataVector[jdx], modulus, multiplier);
                     if (currentProduct === 0) return 0;
                 }
                 return currentProduct;
             }
         }
-
-        // If no non-negative element was found in the entire array to make the product positive,
-        // and 'numToSelect' is odd (meaning the current product of K largest magnitudes is negative),
-        // we must choose the K elements that result in the largest (closest to zero) negative product.
-        // This means selecting the K elements with the smallest absolute values.
+        // console.log("No positive found outside, selecting K smallest absolute values."); // Debugging comment
+        // If no non-negative number is found outside the initial 'numToPick' elements,
+        // it means all remaining numbers are also negative.
+        // In this scenario, to maximize a negative product, we must select the 'numToPick'
+        // numbers with the smallest absolute values. Since the array is sorted by absolute value
+        // in descending order, these will be the last 'numToPick' elements in the original array.
         currentProduct = 1;
-        for (let idx = totalElements - 1; idx >= (totalElements - numToSelect); idx--) {
-            currentProduct = multiplyMod(currentProduct, numList[idx], modBase, divisorChunk);
+        for (let idx = totalElements - 1; idx >= (totalElements - numToPick); idx--) {
+            currentProduct = multiplyAndMod(currentProduct, dataVector[idx], modulus, multiplier);
         }
         return currentProduct;
     }
 }
 
-// Performs modular multiplication (operandA * operandB) % modBase
-// Optimized to handle large numbers by splitting operandB
-function multiplyMod(operandA, operandB, modBase, divisorChunk) {
-    let quotientPart, remainderPart, productResult;
+// This utility function performs modular multiplication,
+// splitting one of the operands to handle potentially large intermediate products
+// before applying the modulo.
+function multiplyAndMod(operandA, operandB, modVal, splitFactor) {
+    let quotientPart; // Stores the quotient of operandB divided by splitFactor.
+    let remainderPart; // Stores the remainder of operandB divided by splitFactor.
+    let intermediateResult; // Accumulates the modular product.
 
-    quotientPart = (operandB / divisorChunk) | 0; // Integer division for the quotient
-    remainderPart = operandB - (quotientPart * divisorChunk); // Remainder part
+    // Calculate the integer quotient.
+    quotientPart = (operandB / splitFactor | 0);
+    // Calculate the remainder.
+    remainderPart = operandB - (quotientPart * splitFactor);
 
-    // Calculate the product in two parts to prevent intermediate overflow
-    productResult = (operandA * quotientPart % modBase) * divisorChunk % modBase + (operandA * remainderPart);
+    // Apply modular multiplication using the split parts:
+    // (A * B) % M = (A * (Q * F + R)) % M
+    //             = (A * Q * F + A * R) % M
+    //             = (((A * Q) % M) * F % M + (A * R)) % M
+    intermediateResult = (operandA * quotientPart % modVal) * splitFactor % modVal + (operandA * remainderPart);
 
-    productResult %= modBase; // Ensure final result is within the modulo range
-    return productResult;
+    // Ensure the final result is within the modulo range.
+    intermediateResult %= modVal;
+    return intermediateResult;
 }
 
-// Ensures a number is a positive result after modulo operation
-function applyModulo(value, modulus) {
-    return (value % modulus < 0) ? (value % modulus) + modulus : (value % modulus);
+// This function calculates the modulo of a dividend by a divisor,
+// ensuring the result is always non-negative, even if the dividend is negative.
+function moduloOperation(dividend, divisor) {
+    // Calculate the standard JavaScript modulo.
+    const standardMod = dividend % divisor;
+    // If the standard modulo result is negative, adjust it by adding the absolute divisor.
+    // The `+ 0` is a stylistic choice from the original code, functionally redundant.
+    return standardMod < 0 ? (standardMod + 0 + (divisor < 0 ? -divisor : divisor)) : (standardMod + 0);
 }
 
-// Read input from standard input and start the processing
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input (e.g., from a file or console pipe)
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,139 +1,182 @@
-const inputSourceConfiguration = {
-  path: '/dev/stdin',
-  lineDelimiter: '\n'
-};
-
-const acquireAndParseContent = (configurationObject) => {
-  const fileSystemModule = require('node:fs');
-  const rawText = fileSystemModule.readFileSync(configurationObject.path, { encoding: 'utf8' });
-  const segmentedLines = rawText.trim().split(configurationObject.lineDelimiter);
-  return segmentedLines;
-};
-
-class ElementHeap {
+class MinPriorityQueue {
   constructor() {
-    this.elements = [];
+    this.heap = [];
   }
 
-  insert(priorityValue, itemValue) {
-    this.elements.push({ priority: priorityValue, value: itemValue });
-    this.reorderUp(this.elements.length - 1);
+  enqueue(element) {
+    this.heap.push(element);
+    this._bubbleUp(this.heap.length - 1);
   }
 
-  extractMin() {
+  dequeue() {
     if (this.isEmpty()) return null;
-    const minimum = this.elements[0];
-    const lastElement = this.elements.pop();
+    const min = this.heap[0];
+    const last = this.heap.pop();
     if (!this.isEmpty()) {
-      this.elements[0] = lastElement;
-      this.reorderDown(0);
+      this.heap[0] = last;
+      this._sinkDown(0);
     }
-    return minimum.value;
+    return min;
   }
 
   isEmpty() {
-    return this.elements.length === 0;
+    return this.heap.length === 0;
   }
 
-  reorderUp(index) {
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      if (this.elements[index].priority >= this.elements[parentIndex].priority) break;
-      [this.elements[index], this.elements[parentIndex]] = [this.elements[parentIndex], this.elements[index]];
-      index = parentIndex;
+  _bubbleUp(idx) {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.heap[parentIdx][0] > this.heap[idx][0]) {
+        [this.heap[parentIdx], this.heap[idx]] = [this.heap[idx], this.heap[parentIdx]];
+        idx = parentIdx;
+      } else {
+        break;
+      }
     }
   }
 
-  reorderDown(index) {
-    const totalLength = this.elements.length;
-    const currentElement = this.elements[index];
-    while (true) {
-      const leftChildIdx = 2 * index + 1;
-      const rightChildIdx = 2 * index + 2;
-      let leftChildItem, rightChildItem;
-      let swapPosition = null;
+  _sinkDown(idx) {
+    const leftChildIdx = 2 * idx + 1;
+    const rightChildIdx = 2 * idx + 2;
+    let smallestIdx = idx;
+    const len = this.heap.length;
 
-      if (leftChildIdx < totalLength) {
-        leftChildItem = this.elements[leftChildIdx];
-        if (leftChildItem.priority < currentElement.priority) {
-          swapPosition = leftChildIdx;
-        }
-      }
+    if (leftChildIdx < len && this.heap[leftChildIdx][0] < this.heap[smallestIdx][0]) {
+      smallestIdx = leftChildIdx;
+    }
+    if (rightChildIdx < len && this.heap[rightChildIdx][0] < this.heap[smallestIdx][0]) {
+      smallestIdx = rightChildIdx;
+    }
 
-      if (rightChildIdx < totalLength) {
-        rightChildItem = this.elements[rightChildIdx];
-        if (
-          (swapPosition === null && rightChildItem.priority < currentElement.priority) ||
-          (swapPosition !== null && rightChildItem.priority < leftChildItem.priority)
-        ) {
-          swapPosition = rightChildIdx;
-        }
-      }
-
-      if (swapPosition === null) break;
-      [this.elements[index], this.elements[swapPosition]] = [this.elements[swapPosition], this.elements[index]];
-      index = swapPosition;
+    if (smallestIdx !== idx) {
+      [this.heap[idx], this.heap[smallestIdx]] = [this.heap[smallestIdx], this.heap[idx]];
+      this._sinkDown(smallestIdx);
     }
   }
 }
 
-const computeOptimalRoutes = () => {
-  const content = acquireAndParseContent(inputSourceConfiguration);
+const inputConfiguration = { sourcePath: '/dev/stdin', lineDelimiter: '\n' };
 
-  let nodeQuantity = Number(content.shift());
+const fileContent = require('fs').readFileSync(inputConfiguration.sourcePath, 'ascii');
+const inputLines = fileContent.trim().split(inputConfiguration.lineDelimiter);
 
-  const outboundLinks = new Map(); // Map<sourceNode, Map<targetNode, weight>>
-  const inboundLinks = new Map();  // Map<targetNode, Map<sourceNode, weight>> (for divergence)
+const nodeCount = Number(inputLines.shift());
 
-  const registerPath = (mapStructure, origin, destination, value) => {
-    if (!mapStructure.has(origin)) {
-      mapStructure.set(origin, new Map());
-    }
-    mapStructure.get(origin).set(destination, value);
-  };
+const forwardEdges = new Map();
+const backwardEdges = new Map();
 
-  for (let lineIndex = 0; lineIndex < content.length; lineIndex++) {
-    const parts = content[lineIndex].split(' ').map(Number);
-    const sourceIdentifier = parts[0];
-    for (let partsIterator = 2; partsIterator < parts.length; partsIterator += 2) {
-      const destinationIdentifier = parts[partsIterator];
-      const linkValue = parts[partsIterator + 1];
-      registerPath(outboundLinks, sourceIdentifier, destinationIdentifier, linkValue);
-      registerPath(inboundLinks, destinationIdentifier, sourceIdentifier, linkValue);
-    }
+function establishEdge(graphMap, origin, destination, cost) {
+  if (!graphMap.has(origin)) {
+    graphMap.set(origin, new Map());
+  }
+  graphMap.get(origin).set(destination, cost);
+}
+
+inputLines.forEach(lineEntry => {
+  const parsedData = lineEntry.split(' ').map(Number);
+  const sourceNode = parsedData[0];
+  for (let k = 2; k < parsedData.length; k += 2) {
+    const targetNode = parsedData[k];
+    const edgeWeight = parsedData[k + 1];
+    establishEdge(forwardEdges, sourceNode, targetNode, edgeWeight);
+    establishEdge(backwardEdges, targetNode, sourceNode, edgeWeight);
+  }
+});
+
+const nodeDistances = new Array(nodeCount).fill(Number.MAX_VALUE);
+const pathQueue = new MinPriorityQueue();
+
+nodeDistances[0] = 0;
+pathQueue.enqueue([0, 0]);
+
+while (!pathQueue.isEmpty()) {
+  const [currentDistance, currentNode] = pathQueue.dequeue();
+
+  if (currentDistance > nodeDistances[currentNode]) {
+    continue;
   }
 
-  const finalDistances = new Array(nodeQuantity).fill(Infinity);
-  const exploredVertices = new Set();
-  const priorityQueue = new ElementHeap();
+  const outgoingEdges = forwardEdges.get(currentNode);
+  if (outgoingEdges) {
+    for (const [neighborNode, edgeWeight] of outgoingEdges.entries()) {
+      const newDistance = currentDistance + edgeWeight;
+      if (newDistance < nodeDistances[neighborNode]) {
+        nodeDistances[neighborNode] = newDistance;
+        pathQueue.enqueue([newDistance, neighborNode]);
+      }
+    }
+  }
+}
 
-  finalDistances[0] = 0;
-  priorityQueue.insert(0, 0); // [distance, node_id]
+const orderedNodes = Array.from({ length: nodeCount }, (_, idx) => idx);
+orderedNodes.sort((nodeA, nodeB) => nodeDistances[nodeA] - nodeDistances[nodeB]);
 
-  while (!priorityQueue.isEmpty()) {
-    const currentVertex = priorityQueue.extractMin();
-    const currentVertexDistance = finalDistances[currentVertex];
+const nodeRankMapping = new Map();
+orderedNodes.forEach((nodeId, rank) => nodeRankMapping.set(nodeId, rank));
 
-    if (exploredVertices.has(currentVertex)) {
+function findConstrainedPathValue(targetNode, currentProcessingNode, pruningThreshold) {
+  const pathCostsFromTarget = new Map();
+  const localPriorityQueue = new MinPriorityQueue();
+
+  pathCostsFromTarget.set(targetNode, 0);
+  localPriorityQueue.enqueue([0, targetNode]);
+
+  let minimumOverallPath = Number.MAX_VALUE;
+
+  while (!localPriorityQueue.isEmpty()) {
+    const [currentCostFromTarget, currentNode] = localPriorityQueue.dequeue();
+
+    if (currentCostFromTarget > (pathCostsFromTarget.get(currentNode) || Number.MAX_VALUE)) {
       continue;
     }
-    exploredVertices.add(currentVertex);
 
-    if (outboundLinks.has(currentVertex)) {
-      for (const [neighborVertex, weightToNeighbor] of outboundLinks.get(currentVertex).entries()) {
-        const potentialNewDistance = currentVertexDistance + weightToNeighbor;
+    if (nodeRankMapping.get(currentNode) < nodeRankMapping.get(currentProcessingNode)) {
+      const potentialPath = nodeDistances[currentNode] + currentCostFromTarget;
+      minimumOverallPath = Math.min(minimumOverallPath, potentialPath);
+      continue;
+    }
 
-        if (potentialNewDistance < finalDistances[neighborVertex]) {
-          finalDistances[neighborVertex] = potentialNewDistance;
-          priorityQueue.insert(potentialNewDistance, neighborVertex);
+    const incomingEdges = backwardEdges.get(currentNode);
+    if (incomingEdges) {
+      for (const [predecessorNode, edgeWeight] of incomingEdges.entries()) {
+        const newCostFromTarget = currentCostFromTarget + edgeWeight;
+
+        if (nodeDistances[predecessorNode] !== Number.MAX_VALUE &&
+            newCostFromTarget + nodeDistances[predecessorNode] >= pruningThreshold) {
+            continue;
+        }
+
+        if (newCostFromTarget < (pathCostsFromTarget.get(predecessorNode) || Number.MAX_VALUE)) {
+          pathCostsFromTarget.set(predecessorNode, newCostFromTarget);
+          localPriorityQueue.enqueue([newCostFromTarget, predecessorNode]);
         }
       }
     }
   }
+  return minimumOverallPath;
+}
 
-  for (let resultIndex = 0; resultIndex < nodeQuantity; resultIndex++) {
-    console.log(resultIndex + ' ' + finalDistances[resultIndex]);
+orderedNodes.forEach(currentU => {
+  const incomingEdgesToU = backwardEdges.get(currentU);
+  if (incomingEdgesToU) {
+    for (const [predecessorV, weightVU] of incomingEdgesToU.entries()) {
+      if (nodeRankMapping.get(predecessorV) < nodeRankMapping.get(currentU)) {
+        const edgeWeightUV = forwardEdges.get(predecessorV).get(currentU);
+        nodeDistances[currentU] = Math.min(nodeDistances[currentU], nodeDistances[predecessorV] + edgeWeightUV);
+      }
+    }
+
+    for (const [predecessorV, weightVU] of incomingEdgesToU.entries()) {
+      if (nodeRankMapping.get(predecessorV) > nodeRankMapping.get(currentU)) {
+        const edgeWeightUV = forwardEdges.get(predecessorV).get(currentU);
+        const currentPathToUThroughV = nodeDistances[currentU] - edgeWeightUV;
+        const constrainedPathToV = findConstrainedPathValue(predecessorV, currentU, currentPathToUThroughV);
+        nodeDistances[currentU] = Math.min(nodeDistances[currentU], constrainedPathToV + edgeWeightUV);
+      }
+    }
   }
-};
+});
 
-computeOptimalRoutes();
+for (let i = 0; i < nodeCount; i++) {
+  console.log(`${i} ${nodeDistances[i]}`);
+}

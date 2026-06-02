@@ -1,111 +1,97 @@
-let entireInput = '';
+const readline = require('readline');
 
-process.stdin.on('readable', () => {
-    let piece;
-    while ((piece = process.stdin.read()) !== null) {
-        entireInput += piece;
-    }
+const inputHandler = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-process.stdin.on('end', () => {
-    class CalculationEngine {
-        constructor(rawInput) {
-            const linesSeparated = rawInput.trim().split('\n');
-            const initialParameters = linesSeparated[0].split(' ');
-            this.totalAmount = parseInt(initialParameters[0], 10);
-            this.minAmountToPick = parseInt(initialParameters[1], 10);
-            this.maxAmountToPick = parseInt(initialParameters[2], 10);
+// Async generator to yield lines from stdin
+async function* generateInputLines() {
+    for await (const lineContent of inputHandler) {
+        yield lineContent;
+    }
+}
 
-            this.numericSequence = linesSeparated[1].split(' ').map(Number);
-            this.numericSequence = this.sortDescendingValues(this.numericSequence); 
-            
-            this.valueOccurrences = new Map();
-            this.numericSequence.forEach(item => {
-                this.valueOccurrences.set(item, (this.valueOccurrences.get(item) || 0) + 1);
-            });
-        }
-
-        // Custom Merge Sort for descending order
-        mergeSegments(leftSegment, rightSegment) {
-            const finalSorted = [];
-            let leftPointer = 0;
-            let rightPointer = 0;
-
-            while (leftPointer < leftSegment.length && rightPointer < rightSegment.length) {
-                if (leftSegment[leftPointer] >= rightSegment[rightPointer]) {
-                    finalSorted.push(leftSegment[leftPointer]);
-                    leftPointer++;
-                } else {
-                    finalSorted.push(rightSegment[rightPointer]);
-                    rightPointer++;
-                }
-            }
-            return finalSorted.concat(leftSegment.slice(leftPointer)).concat(rightSegment.slice(rightPointer));
-        }
-
-        sortDescendingValues(collection) {
-            if (collection.length <= 1) {
-                return collection;
-            }
-            const midPoint = Math.floor(collection.length / 2);
-            const leftHalf = collection.slice(0, midPoint);
-            const rightHalf = collection.slice(midPoint);
-
-            return this.mergeSegments(this.sortDescendingValues(leftHalf), this.sortDescendingValues(rightHalf));
-        }
-
-        determineHighestAverage() {
-            const sumFirstSelected = this.numericSequence.slice(0, this.minAmountToPick).reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-            return sumFirstSelected / this.minAmountToPick;
-        }
-
-        // Static memoized factorial function
-        static factorialMemo = new Map();
-        static computeFactorial(val) {
-            if (val < 0) return 0;
-            if (val === 0 || val === 1) return 1;
-            if (CalculationEngine.factorialMemo.has(val)) return CalculationEngine.factorialMemo.get(val);
-            const outcome = val * CalculationEngine.computeFactorial(val - 1);
-            CalculationEngine.factorialMemo.set(val, outcome);
-            return outcome;
-        }
-
-        // Combination function (nCk)
-        combinations(totalAvailable, itemsToChoose) {
-            if (itemsToChoose < 0 || itemsToChoose > totalAvailable) return 0;
-            if (itemsToChoose === 0 || itemsToChoose === totalAvailable) return 1;
-            if (itemsToChoose > totalAvailable / 2) itemsToChoose = totalAvailable - itemsToChoose; 
-            return CalculationEngine.computeFactorial(totalAvailable) / (CalculationEngine.computeFactorial(itemsToChoose) * CalculationEngine.computeFactorial(totalAvailable - itemsToChoose));
-        }
-
-        countPossibleSelections() {
-            let numWays = 0;
-
-            if (this.numericSequence[0] !== this.numericSequence[this.maxAmountToPick - 1]) {
-                const thresholdValue = this.numericSequence[this.minAmountToPick - 1];
-                let countSuperiorValues = 0;
-                for (let i = 0; i < this.numericSequence.length; i++) {
-                    if (this.numericSequence[i] > thresholdValue) {
-                        countSuperiorValues++;
-                    } else {
-                        break; 
-                    }
-                }
-
-                const requiredFromThreshold = this.minAmountToPick - countSuperiorValues;
-                const totalThresholdOccurrences = this.valueOccurrences.get(thresholdValue);
-                numWays = this.combinations(totalThresholdOccurrences, requiredFromThreshold);
-
-            } else {
-                // All values from numericSequence[0] to numericSequence[maxAmountToPick-1] are identical.
-                // The original code computes 2^B - 1 in this specific case.
-                numWays = Math.pow(2, this.maxAmountToPick) - 1;
-            }
-            return numWays;
-        }
+// Function to calculate combinations C(n, k)
+const computeCombinations = (totalItems, chosenItems) => {
+    if (chosenItems < 0 || chosenItems > totalItems) {
+        return 0;
+    }
+    if (chosenItems === 0 || chosenItems === totalItems) {
+        return 1;
+    }
+    // Optimization: C(n, k) = C(n, n-k)
+    if (chosenItems > totalItems / 2) {
+        chosenItems = totalItems - chosenItems;
     }
 
-    const problemInstance = new CalculationEngine(entireInput);
-    console.log(problemInstance.determineHighestAverage());
-    console.log(problemInstance.countPossibleSelections());
-});
+    let resultAccumulator = 1;
+    for (let i = 1; i <= chosenItems; i++) {
+        resultAccumulator = resultAccumulator * (totalItems - i + 1) / i;
+    }
+    return resultAccumulator;
+};
+
+// Main asynchronous processing logic
+async function executeProblemSolution() {
+    const lineIterator = generateInputLines();
+
+    // Parse initial parameters from the first line
+    const firstLineData = (await lineIterator.next()).value;
+    const [totalNumbers, minCountForAverage, maxCountForCombinations] = firstLineData.split(" ").map(Number);
+
+    // Parse numeric values from the second line
+    const secondLineData = (await lineIterator.next()).value;
+    const numberSequence = secondLineData.split(" ").map(Number);
+
+    // Sort the numbers in descending order
+    numberSequence.sort((valA, valB) => valB - valA);
+
+    // Calculate the maximum possible average
+    const sumOfTopNumbers = numberSequence.slice(0, minCountForAverage).reduce((sum, num) => sum + num, 0);
+    const maximumAchievableAverage = sumOfTopNumbers / minCountForAverage;
+    console.log(maximumAchievableAverage);
+
+    // Build a frequency map for all numbers
+    const valueFrequencyMap = numberSequence.reduce((map, num) => {
+        map[num] = (map[num] || 0) + 1;
+        return map;
+    }, {});
+
+    let numberOfWays = 0;
+
+    // Determine the number of ways based on the problem's specific conditions
+    if (numberSequence[0] !== numberSequence[maxCountForCombinations - 1]) {
+        // Condition 1: The largest 'maxCountForCombinations' elements are not all identical.
+        // In this scenario, to achieve the maximum average, we must select exactly 'minCountForAverage' elements.
+        // The number of ways is determined by how many of the 'minCountForAverage'-th largest value
+        // we need to pick from its total occurrences.
+        const criticalValue = numberSequence[minCountForAverage - 1];
+        const totalOccurrencesOfCriticalValue = valueFrequencyMap[criticalValue];
+
+        let countOfValuesStrictlyLargerThanCritical = 0;
+        for (let i = 0; i < minCountForAverage; i++) {
+            if (numberSequence[i] > criticalValue) {
+                countOfValuesStrictlyLargerThanCritical++;
+            }
+        }
+        const requiredCriticalValues = minCountForAverage - countOfValuesStrictlyLargerThanCritical;
+        numberOfWays = computeCombinations(totalOccurrencesOfCriticalValue, requiredCriticalValues);
+
+    } else {
+        // Condition 2: The largest 'maxCountForCombinations' elements are all identical.
+        // This implies that any selection of 'k' elements (where minCountForAverage <= k <= maxCountForCombinations)
+        // from these 'maxCountForCombinations' identical elements will yield the same maximum average.
+        // The original code sums C(maxCountForCombinations, j) for j from 1 to maxCountForCombinations.
+        // This is equivalent to 2^maxCountForCombinations - 1.
+        numberOfWays = Array.from({ length: maxCountForCombinations }, (_, index) => index + 1)
+                            .reduce((currentSum, k) => currentSum + computeCombinations(maxCountForCombinations, k), 0);
+    }
+
+    console.log(numberOfWays);
+
+    inputHandler.close(); // Ensure the readline interface is closed
+}
+
+// Initiate the solution execution
+executeProblemSolution();

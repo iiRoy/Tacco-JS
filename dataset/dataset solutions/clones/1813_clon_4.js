@@ -1,58 +1,47 @@
-const fileSystemInterface = require("fs");
+(function(fileSystemModule) {
+    const processInputData = (rawTextContent) => {
+        const inputSegments = rawTextContent.trim().split(" ");
+        
+        const firstNumericString = inputSegments[0];
+        const secondNumericDecimalString = inputSegments[1];
 
-const rawDataStream = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
+        const firstFactorBigInt = BigInt(firstNumericString);
 
-const sanitizedData = rawDataStream.trim();
+        const decimalSeparatorPosition = secondNumericDecimalString.indexOf('.');
+        let wholeNumberComponent = secondNumericDecimalString;
+        let fractionalNumberComponent = '';
 
-const dividerPosition = sanitizedData.indexOf(" ");
+        if (decimalSeparatorPosition !== -1) {
+            wholeNumberComponent = secondNumericDecimalString.substring(0, decimalSeparatorPosition);
+            fractionalNumberComponent = secondNumericDecimalString.substring(decimalSeparatorPosition + 1);
+        }
 
-let initialNumericFactor;
-let decimalMagnitudeSpecifier;
+        if (wholeNumberComponent === '') {
+            wholeNumberComponent = '0';
+        }
 
-if (dividerPosition === -1) {
-    initialNumericFactor = sanitizedData;
-    decimalMagnitudeSpecifier = "0";
-} else {
-    initialNumericFactor = sanitizedData.substring(0, dividerPosition);
-    decimalMagnitudeSpecifier = sanitizedData.substring(dividerPosition + 1);
-}
+        let normalizedFractional = '';
+        if (fractionalNumberComponent.length >= 2) {
+            normalizedFractional = fractionalNumberComponent.substring(0, 2);
+        } else {
+            normalizedFractional = fractionalNumberComponent.padEnd(2, '0');
+        }
 
-let scaledDecimalComponent;
-const pointIndicatorPosition = decimalMagnitudeSpecifier.indexOf(".");
+        const secondFactorScaledBigInt = BigInt(wholeNumberComponent + normalizedFractional);
 
-if (pointIndicatorPosition === -1) {
-    scaledDecimalComponent = BigInt(decimalMagnitudeSpecifier + "00");
-} else {
-    const wholePart = decimalMagnitudeSpecifier.substring(0, pointIndicatorPosition);
-    let fractionalSegment = decimalMagnitudeSpecifier.substring(pointIndicatorPosition + 1);
+        const productInCents = firstFactorBigInt * secondFactorScaledBigInt;
 
-    let hundredthsSegment;
-    if (fractionalSegment.length >= 2) {
-        hundredthsSegment = fractionalSegment.substring(0, 2);
-    } else if (fractionalSegment.length === 1) {
-        hundredthsSegment = fractionalSegment + "0";
-    } else {
-        hundredthsSegment = "00";
-    }
-    scaledDecimalComponent = BigInt(wholePart + hundredthsSegment);
-}
+        let finalOutputValue;
+        if (productInCents < 100n) {
+            finalOutputValue = '0';
+        } else {
+            const integerDivisionResult = productInCents / 100n;
+            finalOutputValue = integerDivisionResult.toString();
+        }
+        
+        console.log(finalOutputValue);
+    };
 
-const primaryQuantity = BigInt(initialNumericFactor);
-
-const computedProduct = primaryQuantity * scaledDecimalComponent;
-
-const minimumOutputThreshold = BigInt(100);
-
-if (computedProduct < minimumOutputThreshold) {
-    console.log(0);
-} else {
-    const productRepresentation = computedProduct.toString();
-
-    let finalRenderedValue;
-    if (productRepresentation.length <= 2) {
-        finalRenderedValue = "0";
-    } else {
-        finalRenderedValue = productRepresentation.substring(0, productRepresentation.length - 2);
-    }
-    console.log(finalRenderedValue);
-}
+    const standardInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+    processInputData(standardInputContent);
+})(require('fs'));

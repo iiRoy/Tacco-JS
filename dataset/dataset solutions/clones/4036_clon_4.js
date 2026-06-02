@@ -1,75 +1,102 @@
-const dataAcquirer = (inputPayload) => {
-    let currentLineList = inputPayload.trim().split('\n');
-    let currentLineIndex = 0;
+class InputReader {
+    constructor(rawInputContent) {
+        this.lineSegments = rawInputContent.trim().split('\n');
+        this.currentLineIndex = 0;
+        this.currentLineTokens = [];
+        this.currentTokenIndex = 0;
+    }
 
-    const pullNextLine = () => {
-        if (currentLineIndex >= currentLineList.length) {
-            throw new Error("No more input data available.");
-        }
-        return currentLineList[currentLineIndex++];
-    };
-
-    return {
-        extractInteger: () => parseInt(pullNextLine(), 10),
-        extractStringRows: (count) => {
-            const rows = [];
-            for (let k = 0; k < count; k++) {
-                rows.push(pullNextLine());
+    _advanceTokenPointer() {
+        if (this.currentTokenIndex >= this.currentLineTokens.length) {
+            if (this.currentLineIndex >= this.lineSegments.length) {
+                throw new Error("Input exhausted: No more lines to read.");
             }
-            return rows;
-        }
-    };
-};
-
-function findShortestPathAndRemainingCells() {
-    const dataParser = dataAcquirer(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const mazeRows = dataParser.extractInteger();
-    const mazeCols = dataParser.extractInteger();
-    const mazeLayout = dataParser.extractStringRows(mazeRows);
-
-    let visitedDistances = Array.from({ length: mazeRows }, () => Array(mazeCols).fill(0)); // 0 for unvisited
-    let totalOpenCells = 0;
-    for (let r = 0; r < mazeRows; r++) {
-        for (let c = 0; c < mazeCols; c++) {
-            if (mazeLayout[r][c] === '.') {
-                totalOpenCells++;
-            }
+            this.currentLineTokens = this.lineSegments[this.currentLineIndex].split(' ');
+            this.currentTokenIndex = 0;
+            this.currentLineIndex++;
         }
     }
 
-    const startCoord = [0, 0];
-    const endRow = mazeRows - 1;
-    const endCol = mazeCols - 1;
-
-    let pathQueue = [[startCoord[0], startCoord[1], 1]]; // [row, col, distance]
-    visitedDistances[startCoord[0]][startCoord[1]] = 1; // Mark start as visited with distance 1
-
-    const neighborOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Up, Down, Left, Right
-
-    while (pathQueue.length > 0) {
-        const [currentRow, currentCol, currentPathLength] = pathQueue.shift(); // Use shift for true BFS
-
-        if (currentRow === endRow && currentCol === endCol) {
-            return totalOpenCells - currentPathLength;
-        }
-
-        for (const [dr, dc] of neighborOffsets) {
-            const nextRow = currentRow + dr;
-            const nextCol = currentCol + dc;
-
-            if (nextRow >= 0 && nextRow < mazeRows &&
-                nextCol >= 0 && nextCol < mazeCols &&
-                mazeLayout[nextRow][nextCol] === '.' &&
-                visitedDistances[nextRow][nextCol] === 0)
-            {
-                visitedDistances[nextRow][nextCol] = currentPathLength + 1;
-                pathQueue.push([nextRow, nextCol, currentPathLength + 1]);
-            }
-        }
+    readToken() {
+        this._advanceTokenPointer();
+        return this.currentLineTokens[this.currentTokenIndex++];
     }
 
-    return -1; // Path not found
+    readNum() {
+        return Number(this.readToken());
+    }
+
+    readLineString() {
+        if (this.currentLineIndex >= this.lineSegments.length) {
+            throw new Error("Input exhausted: No more lines to read.");
+        }
+        return this.lineSegments[this.currentLineIndex++];
+    }
+
+    readRawLines(count) {
+        const collectedLines = [];
+        for (let i = 0; i < count; i++) {
+            collectedLines.push(this.readLineString());
+        }
+        return collectedLines;
+    }
 }
 
-console.log(findShortestPathAndRemainingCells());
+console.log(processMaze());
+
+function processMaze() {
+    const inputSource = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const mazeHeight = inputSource.readNum();
+    const mazeWidth = inputSource.readNum();
+    const mazeGrid = inputSource.readRawLines(mazeHeight);
+
+    let totalTraversableCells = 0;
+    mazeGrid.forEach(rowString => {
+        Array.from(rowString).forEach(char => {
+            if (char === '.') {
+                totalTraversableCells++;
+            }
+        });
+    });
+
+    const startRow = 0;
+    const startCol = 0;
+    const targetRow = mazeHeight - 1;
+    const targetCol = mazeWidth - 1;
+
+    if (mazeGrid[startRow][startCol] === '#') {
+        return -1;
+    }
+
+    const visitedStatus = Array.from({ length: mazeHeight }, () => Array(mazeWidth).fill(false));
+    const searchQueue = [];
+
+    searchQueue.push({ r: startRow, c: startCol, distance: 1 });
+    visitedStatus[startRow][startCol] = true;
+
+    const rowDelta = [-1, 1, 0, 0];
+    const colDelta = [0, 0, -1, 1];
+
+    while (searchQueue.length > 0) {
+        const { r: currentRow, c: currentCol, distance: currentPathLength } = searchQueue.shift();
+
+        if (currentRow === targetRow && currentCol === targetCol) {
+            return totalTraversableCells - currentPathLength;
+        }
+
+        for (let i = 0; i < 4; i++) {
+            const nextRow = currentRow + rowDelta[i];
+            const nextCol = currentCol + colDelta[i];
+
+            if (nextRow >= 0 && nextRow < mazeHeight && nextCol >= 0 && nextCol < mazeWidth) {
+                if (!visitedStatus[nextRow][nextCol] && mazeGrid[nextRow][nextCol] === '.') {
+                    visitedStatus[nextRow][nextCol] = true;
+                    searchQueue.push({ r: nextRow, c: nextCol, distance: currentPathLength + 1 });
+                }
+            }
+        }
+    }
+
+    return -1;
+}

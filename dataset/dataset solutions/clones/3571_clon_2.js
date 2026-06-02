@@ -1,59 +1,63 @@
-// This routine processes the provided information.
-function ProcessData(rawData) {
-	// The initial segment of data is parsed from the input string.
-	var coordinates = rawData.split(' ');
-	var limitVal = parseInt(coordinates[0]);
-	var divisor = parseInt(coordinates[1]);
-	var totalCount = 0;
+function ProcessInput(rawData) {
+    // The input string is expected to contain two space-separated numbers.
+    const coords = rawData.split(' ');
+    const limitVal = parseInt(coords[0], 10); // Parse the first number as the upper limit N.
+    const divisorVal = parseInt(coords[1], 10); // Parse the second number as the divisor k.
+    let resultCount = 0; // Initialize a counter for valid combinations.
 
-	// Early exit condition based on input values.
-	if (2 * limitVal < divisor) {
-		return 0;
-	}
+    // Early exit condition: if 2*N is less than k, no valid triplets can exist.
+    if (2 * limitVal < divisorVal) {
+        return 0;
+    }
 
-	// Iterate through the first set of numbers.
-	for (var firstNum = 1; firstNum <= limitVal; firstNum++) {
+    // Iterate through possible values for the first number 'a' (renamed to iterA).
+    for (let iterA = 1; iterA <= limitVal; iterA++) {
+        // Calculate the initial value for 'b' (renamed to iterB) based on 'a' and 'k'.
+        let iterB = iterA % divisorVal;
+        if (iterB === 0) {
+            iterB = divisorVal; // If remainder is 0, set to k.
+        }
 
-		var secondNum = firstNum % divisor;
-		// Adjust the second number if it's zero.
-		if (secondNum == 0)
-			secondNum = divisor;
-		
-		// Loop for the second number, ensuring it stays within bounds.
-		while (secondNum <= limitVal) {
+        // Loop for the second number 'b'.
+        while (iterB <= limitVal) {
+            // Check the condition (a + b) % k == 0.
+            if ((iterA + iterB) % divisorVal === 0) {
+                // Calculate the initial value for 'c' (renamed to iterC).
+                let iterC = iterA % divisorVal;
+                if (iterC === 0) {
+                    iterC = divisorVal; // If remainder is 0, set to k.
+                }
 
-			// Check a specific condition involving the first two numbers.
-			if ((firstNum + secondNum) % divisor == 0) {
-				var thirdNum = firstNum % divisor;
-				// Adjust the third number if it's zero.
-				if (thirdNum == 0)
-					thirdNum = divisor;
-				
-				// Loop for the third number.
-				while (thirdNum <= limitVal) {
-					// Core condition check for all three numbers.
-					if ((firstNum + thirdNum) % divisor == 0 && (thirdNum + secondNum) % divisor == 0) {
-						// A valid triplet found, increment the counter.
-						totalCount++;
-					} else {
-						// Break condition for the inner loop.
-						if ((firstNum + thirdNum) >= divisor && (thirdNum + secondNum) >= divisor)
-							break;
-					}
-					// Increment the third number by the divisor.
-					thirdNum += divisor;
-				}
-			} else {
-				// Break condition for the middle loop.
-				if ((firstNum + secondNum) >= divisor)
-					break;
-			}
-			// Increment the second number by the divisor.
-			secondNum += divisor;
-		}
-	}
-	// Output the final computed count.
-	console.log(totalCount);
+                // Loop for the third number 'c'.
+                while (iterC <= limitVal) {
+                    // Check both conditions for 'c': (a + c) % k == 0 AND (c + b) % k == 0.
+                    if ((iterA + iterC) % divisorVal === 0 && (iterC + iterB) % divisorVal === 0) {
+                        // A valid triplet (a, b, c) has been found.
+                        // console.log(iterA, iterB, iterC); // Original debug line, commented out.
+                        resultCount++; // Increment the counter.
+                    } else {
+                        // Optimization: if (a+c) and (c+b) are already large enough,
+                        // further increments of c will also be large, so break.
+                        if ((iterA + iterC) >= divisorVal && (iterC + iterB) >= divisorVal) {
+                            break;
+                        }
+                    }
+                    iterC += divisorVal; // Increment 'c' by 'k'.
+                }
+            } else {
+                // Optimization: if (a+b) is already large enough,
+                // further increments of b will also be large, so break.
+                if ((iterA + iterB) >= divisorVal) {
+                    break;
+                }
+            }
+            iterB += divisorVal; // Increment 'b' by 'k'.
+        }
+    }
+    // Output the final count of valid triplets.
+    console.log(resultCount);
 }
-// Do not alter the following execution block.
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Standard input reading mechanism.
+// ProcessInput(require("fs").readFileSync(__dirname + '/in.txt', "utf8")); // Example for local file.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read from standard input.

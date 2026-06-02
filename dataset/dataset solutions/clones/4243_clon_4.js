@@ -1,40 +1,51 @@
-((initializationRoutine) => {
+(function() {
     'use strict';
 
-    const inputPayload = [];
-    const inputSource = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
+    const inputLines = [];
+    require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    }).on('line', function(currentInputLine) {
+      inputLines.push(currentInputLine);
     });
+    process.stdin.on('end', function() {
+      const firstLineTokens = inputLines[0].split(" ");
+      const cardQuantity = Number(firstLineTokens[0]);
+      const playerZScore = Number(firstLineTokens[1]); // This value is parsed but not used in the original's core logic.
+      const initialWScore = Number(firstLineTokens[2]);
 
-    inputSource.on('line', (segment) => {
-        inputPayload.push(segment);
+      const cardCollection = inputLines[1].split(" ").map(Number);
+      
+      // The problem implies a simplified game where the outcome depends only on the last two cards.
+      // We define two primary scenarios for the final score calculation.
+      // Each scenario describes the final card held by player X and player Y.
+
+      // Scenario 1: Player X takes the very last card from the collection.
+      // Player Y's final score is the initial 'W' value.
+      const scenarioOne = {
+          playerXFinalCard: cardCollection.at(-1),
+          playerYFinalCard: initialWScore
+      };
+
+      // Scenario 2: Player Y takes the very last card from the collection.
+      // Player X then takes the second-to-last card from the collection.
+      const scenarioTwo = {
+          playerXFinalCard: cardCollection.at(-2),
+          playerYFinalCard: cardCollection.at(-1)
+      };
+
+      // Collect all potential final score configurations into an array.
+      const gameOutcomes = [scenarioOne, scenarioTwo];
+
+      // Calculate the absolute difference for each potential outcome.
+      // This represents the score for each scenario.
+      const calculatedScores = gameOutcomes.map(outcome =>
+          Math.abs(outcome.playerXFinalCard - outcome.playerYFinalCard)
+      );
+
+      // The final answer is the maximum score achievable across these scenarios.
+      const finalResult = Math.max(...calculatedScores);
+      
+      console.log(finalResult);
     });
-
-    process.stdin.on('end', () => {
-        initializationRoutine(inputPayload);
-    });
-
-})((collectedData) => {
-    const stringToInteger = (textValue) => Number(textValue);
-    const divideBySpaceAndTransform = (lineContent) => lineContent.split(' ').map(stringToInteger);
-    const calculateMagnitude = (firstValue, secondValue) => {
-        const difference = firstValue - secondValue;
-        return difference < 0 ? -difference : difference;
-    };
-    const determineGreater = (valueA, valueB) => valueA > valueB ? valueA : valueB;
-
-    const [ elementCount, initialValue, weightFactor ] = divideBySpaceAndTransform(collectedData[0]);
-
-    const numericCollection = divideBySpaceAndTransform(collectedData[1]);
-
-    const lastElementValue = numericCollection.at(-1);
-    const firstComputation = calculateMagnitude(lastElementValue, weightFactor);
-
-    const secondToLastElementValue = numericCollection.at(-2);
-    const secondComputation = calculateMagnitude(secondToLastElementValue, lastElementValue);
-
-    const finalResult = determineGreater(firstComputation, secondComputation);
-
-    console.log(finalResult);
-});
+})();

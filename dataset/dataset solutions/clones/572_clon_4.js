@@ -1,36 +1,33 @@
-let gatheredDataBuffer = '';
+function processInputLines(lineSegments) {
+    lineSegments.forEach(function(currentText) {
+        const tally = { JOI: 0, IOI: 0 };
 
-const processIndividualLine = (textSegment) => {
-    if (!textSegment) {
-        return;
-    }
-
-    const searchPattern = /(?=(JOI|IOI))/g;
-    let currentMatch;
-    const occurrenceCounter = { 'JOI': 0, 'IOI': 0 };
-
-    while ((currentMatch = searchPattern.exec(textSegment)) !== null) {
-        const identifiedSequence = currentMatch[1];
-        if (occurrenceCounter.hasOwnProperty(identifiedSequence)) {
-            occurrenceCounter[identifiedSequence]++;
+        const joiOccurrences = currentText.match(/JOI/g);
+        if (joiOccurrences) {
+            tally.JOI = joiOccurrences.length;
         }
-    }
 
-    console.log(occurrenceCounter.JOI);
-    console.log(occurrenceCounter.IOI);
-};
+        const ioiOccurrences = currentText.match(/IOI/g);
+        if (ioiOccurrences) {
+            tally.IOI = ioiOccurrences.length;
+        }
 
-const beginProcessing = (allInputSegments) => {
-    allInputSegments.forEach(processIndividualLine);
-};
+        console.log(tally.JOI);
+        console.log(tally.IOI);
+    });
+}
+
+let accumulatedDataChunks = [];
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (incomingDataChunk) => {
-    gatheredDataBuffer += incomingDataChunk;
+process.stdin.on('data', function(incomingChunk) {
+    accumulatedDataChunks.push(incomingChunk);
 });
 
-process.stdin.on('end', () => {
-    beginProcessing(gatheredDataBuffer.split('\n'));
+process.stdin.on('end', function() {
+    const fullInputString = accumulatedDataChunks.join('');
+    const inputLines = fullInputString.split('\n');
+    processInputLines(inputLines);
 });

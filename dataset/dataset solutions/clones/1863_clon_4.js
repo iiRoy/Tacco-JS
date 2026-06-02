@@ -1,165 +1,174 @@
 "use strict";
-const fileSystemInterface = require("fs");
 
-class SourceDataProcessor {
-    constructor(sourceText) {
-        this.dataElements = sourceText.split(/ |\n/);
-        this.elementPointer = 0;
+// Custom input stream handler using a generator
+let inputBuffer = require("fs").readFileSync("/dev/stdin", "utf8");
+let tokenStream = (function* (sourceText) {
+    const tokens = sourceText.split(/\s+/).filter(token => token.length > 0);
+    for (const token of tokens) {
+        yield token;
     }
+})(inputBuffer);
 
-    pullNextInteger() {
-        return parseInt(this.dataElements[this.elementPointer++], 10);
+function extractNumber() {
+    const { value, done } = tokenStream.next();
+    if (done) throw new Error("End of input stream reached for number.");
+    return Number(value);
+}
+
+function extractString() {
+    const { value, done } = tokenStream.next();
+    if (done) throw new Error("End of input stream reached for string.");
+    return value;
+}
+
+function extractBigInt() {
+    const { value, done } = tokenStream.next();
+    if (done) throw new Error("End of input stream reached for BigInt.");
+    return BigInt(value);
+}
+
+// Mathematical utility functions
+const MOD_PRIME = 1000000007;
+
+function calculateGreatestCommonDivisor(val1, val2) {
+    while (val2 !== 0n) {
+        const temporary = val2;
+        val2 = val1 % val2;
+        val1 = temporary;
     }
+    return val1;
+}
 
-    pullNextBigInteger() {
-        return BigInt(this.dataElements[this.elementPointer++]);
+function performModularMultiplication() {
+    let currentProduct = arguments[0];
+    for (let k = 1; k < arguments.length; k++) {
+        currentProduct = (currentProduct * arguments[k]) % MOD_PRIME;
+    }
+    return currentProduct;
+}
+
+let cachedFactorials = [];
+let cachedInverseFactorials = [];
+
+function precomputeFactorials(limit) {
+    cachedFactorials[0] = 1;
+    cachedInverseFactorials[0] = 1;
+    for (let k = 1; k <= limit; k++) {
+        cachedFactorials[k] = (cachedFactorials[k - 1] * k) % MOD_PRIME;
+        cachedInverseFactorials[k] = findModularInverse(cachedFactorials[k]);
     }
 }
 
-class AdvancedMathematicalOperations {
-    static get PRIME_NUMBER() { return 1000000007; }
-    static get ONE_BIGINT() { return 1n; }
-    static get ZERO_BIGINT() { return 0n; }
-    static get TWO_BIGINT() { return 2n; }
-
-    static calculateCommonDivisor(valueA, valueB) {
-        valueA = valueA < AdvancedMathematicalOperations.ZERO_BIGINT ? -valueA : valueA;
-        valueB = valueB < AdvancedMathematicalOperations.ZERO_BIGINT ? -valueB : valueB;
-        while (valueB !== AdvancedMathematicalOperations.ZERO_BIGINT) {
-            const tempValue = valueB;
-            valueB = valueA % valueB;
-            valueA = tempValue;
-        }
-        return valueA;
+function findModularInverse(value) {
+    let modulus = MOD_PRIME;
+    let [coefficientU, coefficientV] = [0, 1];
+    while (value !== 0) {
+        let quotient = Math.floor(modulus / value);
+        [modulus, value] = [value, modulus % value];
+        [coefficientU, coefficientV] = [coefficientV, coefficientU - quotient * coefficientV];
     }
-
-    static addModulo(operandA, operandB) {
-        return (operandA + operandB) % AdvancedMathematicalOperations.PRIME_NUMBER;
-    }
-
-    static subtractModulo(operandA, operandB) {
-        return (operandA - operandB + AdvancedMathematicalOperations.PRIME_NUMBER) % AdvancedMathematicalOperations.PRIME_NUMBER;
-    }
-
-    static multiplyModulo(...terms) {
-        let currentProduct = AdvancedMathematicalOperations.ONE_BIGINT;
-        for (const term of terms) {
-            currentProduct = (currentProduct * term) % BigInt(AdvancedMathematicalOperations.PRIME_NUMBER);
-        }
-        return currentProduct;
-    }
-
-    static exponentiateModulo(baseValue, powerValue) {
-        let resultValue = AdvancedMathematicalOperations.ONE_BIGINT;
-        let currentBase = baseValue % BigInt(AdvancedMathematicalOperations.PRIME_NUMBER);
-        while (powerValue > AdvancedMathematicalOperations.ZERO_BIGINT) {
-            if (powerValue % AdvancedMathematicalOperations.TWO_BIGINT === AdvancedMathematicalOperations.ONE_BIGINT) {
-                resultValue = AdvancedMathematicalOperations.multiplyModulo(resultValue, currentBase);
-            }
-            currentBase = AdvancedMathematicalOperations.multiplyModulo(currentBase, currentBase);
-            powerValue /= AdvancedMathematicalOperations.TWO_BIGINT;
-        }
-        return resultValue;
-    }
-
-    static formStandardizedKey(coordinateX, coordinateY) {
-        if (coordinateX === AdvancedMathematicalOperations.ZERO_BIGINT && coordinateY === AdvancedMathematicalOperations.ZERO_BIGINT) return "0:0"; 
-        if (coordinateX === AdvancedMathematicalOperations.ZERO_BIGINT) return "0:1"; 
-        if (coordinateY === AdvancedMathematicalOperations.ZERO_BIGINT) return "1:0"; 
-
-        const commonDivisor = AdvancedMathematicalOperations.calculateCommonDivisor(coordinateX, coordinateY);
-        let normalizedX = coordinateX / commonDivisor;
-        let normalizedY = coordinateY / commonDivisor;
-
-        if (normalizedX < AdvancedMathematicalOperations.ZERO_BIGINT || (normalizedX === AdvancedMathematicalOperations.ZERO_BIGINT && normalizedY < AdvancedMathematicalOperations.ZERO_BIGINT)) {
-            normalizedX = -normalizedX;
-            normalizedY = -normalizedY;
-        }
-        return `${normalizedX}:${normalizedY}`;
-    }
-
-    static ensurePositiveResult(value) {
-        return (Number(value) % AdvancedMathematicalOperations.PRIME_NUMBER + AdvancedMathematicalOperations.PRIME_NUMBER) % AdvancedMathematicalOperations.PRIME_NUMBER;
-    }
+    coefficientU %= MOD_PRIME;
+    return coefficientU < 0 ? coefficientU + MOD_PRIME : coefficientU;
 }
 
-const processSolution = () => {
-    const rawInput = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
-    const streamParser = new SourceDataProcessor(rawInput);
-
-    const totalObjectCount = streamParser.pullNextInteger();
-
-    let countOfNullVectors = 0;
-    let countOfXAxisVectors = 0;
-    let countOfYAxisVectors = 0;
-
-    const directionalVectorRegistry = new Map();
-
-    for (let currentCount = 0; currentCount < totalObjectCount; currentCount++) {
-        const xComponent = streamParser.pullNextBigInteger();
-        const yComponent = streamParser.pullNextBigInteger();
-
-        if (xComponent === AdvancedMathematicalOperations.ZERO_BIGINT && yComponent === AdvancedMathematicalOperations.ZERO_BIGINT) {
-            countOfNullVectors++;
-        } else if (xComponent === AdvancedMathematicalOperations.ZERO_BIGINT) {
-            countOfYAxisVectors++;
-        } else if (yComponent === AdvancedMathematicalOperations.ZERO_BIGINT) {
-            countOfXAxisVectors++;
-        } else {
-            const vectorIdentifier = AdvancedMathematicalOperations.formStandardizedKey(xComponent, yComponent);
-            directionalVectorRegistry.set(vectorIdentifier, (directionalVectorRegistry.get(vectorIdentifier) || 0) + 1);
-        }
+function calculateModularExponentiation(base, exponent) {
+    let result = 1;
+    base %= MOD_PRIME;
+    while (exponent > 0) {
+        if (exponent % 2 === 1) result = (result * base) % MOD_PRIME;
+        base = (base * base) % MOD_PRIME;
+        exponent = Math.floor(exponent / 2);
     }
+    return result;
+}
 
-    let overallProductAccumulator = AdvancedMathematicalOperations.ONE_BIGINT;
-    const visitedIdentifiers = new Set();
+function calculateCombinationsMod(n, r) {
+    if (r < 0 || r > n) return 0;
+    return performModularMultiplication(cachedFactorials[n], cachedInverseFactorials[r], cachedInverseFactorials[n - r]);
+}
 
-    for (const [currentIdentifier, currentGroupSize] of directionalVectorRegistry.entries()) {
-        if (visitedIdentifiers.has(currentIdentifier)) {
+function calculatePermutationsMod(n, r) {
+    if (r < 0 || r > n) return 0;
+    return performModularMultiplication(cachedFactorials[n], cachedInverseFactorials[n - r]);
+}
+
+function normalizeResultModulo(value) {
+    return (value % MOD_PRIME + MOD_PRIME) % MOD_PRIME;
+}
+
+// Helper for vector normalization
+function obtainCanonicalForm(xCoord, yCoord) {
+    if (xCoord === 0n && yCoord === 0n) return [0n, 0n];
+    const divisor = calculateGreatestCommonDivisor(xCoord, yCoord);
+    xCoord /= divisor;
+    yCoord /= divisor;
+
+    if (xCoord < 0n) {
+        xCoord = -xCoord;
+        yCoord = -yCoord;
+    } else if (xCoord === 0n && yCoord < 0n) {
+        yCoord = -yCoord;
+    }
+    return [xCoord, yCoord];
+}
+
+// Main program logic
+function executeVectorAnalysis() {
+    const totalVectors = extractNumber();
+    let countZeroXNonZeroY = 0; // Vectors like (0, Y) where Y != 0
+    let countNonZeroXZeroY = 0; // Vectors like (X, 0) where X != 0
+    let countZeroZero = 0;      // Vectors like (0, 0)
+
+    const canonicalVectorOccurrences = new Map(); // Stores counts of unique canonical non-axis-aligned vectors
+
+    for (let i = 0; i < totalVectors; i++) {
+        const currentX = extractBigInt();
+        const currentY = extractBigInt();
+
+        if (currentX === 0n && currentY === 0n) {
+            countZeroZero++;
+            continue;
+        }
+        if (currentX === 0n) {
+            countZeroXNonZeroY++;
+            continue;
+        }
+        if (currentY === 0n) {
+            countNonZeroXZeroY++;
             continue;
         }
 
-        const [xCoordStr, yCoordStr] = currentIdentifier.split(':');
-        const currentXCoord = BigInt(xCoordStr);
-        const currentYCoord = BigInt(yCoordStr);
-
-        const orthogonalXCoord = currentYCoord;
-        const orthogonalYCoord = -currentXCoord;
-
-        const orthogonalIdentifier = AdvancedMathematicalOperations.formStandardizedKey(orthogonalXCoord, orthogonalYCoord);
-
-        let currentGroupContribution;
-
-        if (currentIdentifier === orthogonalIdentifier) { 
-            currentGroupContribution = AdvancedMathematicalOperations.exponentiateModulo(AdvancedMathematicalOperations.TWO_BIGINT, BigInt(currentGroupSize));
-        } else {
-            const orthogonalGroupSize = directionalVectorRegistry.get(orthogonalIdentifier) || 0;
-            const termOne = AdvancedMathematicalOperations.exponentiateModulo(AdvancedMathematicalOperations.TWO_BIGINT, BigInt(currentGroupSize));
-            const termTwo = AdvancedMathematicalOperations.exponentiateModulo(AdvancedMathematicalOperations.TWO_BIGINT, BigInt(orthogonalGroupSize));
-
-            currentGroupContribution = AdvancedMathematicalOperations.addModulo(termOne, termTwo);
-            currentGroupContribution = AdvancedMathematicalOperations.subtractModulo(currentGroupContribution, AdvancedMathematicalOperations.ONE_BIGINT);
-        }
-
-        overallProductAccumulator = AdvancedMathematicalOperations.multiplyModulo(overallProductAccumulator, currentGroupContribution);
-        visitedIdentifiers.add(currentIdentifier);
-        visitedIdentifiers.add(orthogonalIdentifier);
+        const [cX, cY] = obtainCanonicalForm(currentX, currentY);
+        const canonicalKey = `${cX},${cY}`;
+        canonicalVectorOccurrences.set(canonicalKey, (canonicalVectorOccurrences.get(canonicalKey) || 0) + 1);
     }
 
-    let axisVectorCombinations = AdvancedMathematicalOperations.addModulo(
-        AdvancedMathematicalOperations.exponentiateModulo(AdvancedMathematicalOperations.TWO_BIGINT, BigInt(countOfYAxisVectors)),
-        AdvancedMathematicalOperations.exponentiateModulo(AdvancedMathematicalOperations.TWO_BIGINT, BigInt(countOfXAxisVectors))
-    );
-    axisVectorCombinations = AdvancedMathematicalOperations.subtractModulo(axisVectorCombinations, AdvancedMathematicalOperations.ONE_BIGINT);
+    let cumulativeProduct = (calculateModularExponentiation(2, countZeroXNonZeroY) + calculateModularExponentiation(2, countNonZeroXZeroY) - 1 + MOD_PRIME) % MOD_PRIME;
 
-    let finalCalculation = AdvancedMathematicalOperations.multiplyModulo(overallProductAccumulator, axisVectorCombinations);
-    finalCalculation = AdvancedMathematicalOperations.subtractModulo(finalCalculation, AdvancedMathematicalOperations.ONE_BIGINT);
-    finalCalculation = AdvancedMathematicalOperations.addModulo(finalCalculation, BigInt(countOfNullVectors));
+    const processedKeySet = new Set();
 
-    return AdvancedMathematicalOperations.ensurePositiveResult(finalCalculation);
-};
+    for (const [keyString, currentCount] of canonicalVectorOccurrences.entries()) {
+        if (processedKeySet.has(keyString)) {
+            continue;
+        }
 
-const finalResult = processSolution();
+        const [cX, cY] = keyString.split(',').map(BigInt);
+        const [orthogonalCX, orthogonalCY] = obtainCanonicalForm(cY, -cX);
+        const orthogonalKeyString = `${orthogonalCX},${orthogonalCY}`;
+
+        const orthogonalCount = canonicalVectorOccurrences.get(orthogonalKeyString) || 0;
+
+        const termForPair = (calculateModularExponentiation(2, currentCount) + calculateModularExponentiation(2, orthogonalCount) - 1 + MOD_PRIME) % MOD_PRIME;
+        cumulativeProduct = performModularMultiplication(cumulativeProduct, termForPair);
+
+        processedKeySet.add(keyString);
+        processedKeySet.add(orthogonalKeyString);
+    }
+
+    return normalizeResultModulo(cumulativeProduct - 1 + countZeroZero);
+}
+
+let finalResult = executeVectorAnalysis();
 if (finalResult !== undefined) {
     console.log(finalResult);
 }

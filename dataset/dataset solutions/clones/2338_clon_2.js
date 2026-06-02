@@ -1,76 +1,100 @@
-'use strict'
+'use strict';
 
-function ExecuteProgram ( dataSource ) {
- dataSource = dataSource.trim().split( '\n' )
+// This function processes the raw input data to solve a graph problem.
+function ProcessInput(rawData) {
+  // Clean up the input string and split it into individual lines.
+  let processedLines = rawData.trim().split('\n');
 
- const initialConfig = dataSource[0].split( ' ' ).map( lineContent => parseInt(lineContent) )
- const nodeCount = initialConfig[0]
- const startNodeX = initialConfig[1]
- const startNodeY = initialConfig[2]
- const connectionLines = dataSource.slice(1)
+  // Parse the first line to get key numerical parameters.
+  const initialParameters = processedLines[0].split(' ').map(strVal => parseInt(strVal, 10));
 
- const edgePairs = connectionLines.map( lineContent => {
-  return lineContent.split( ' ' ).map( numericToken => parseInt(numericToken) )
- } )
+  // Extract the number of nodes, and the two starting nodes for distance calculations.
+  const nodeCount = initialParameters[0];
+  const startNodeA = initialParameters[1];
+  const startNodeB = initialParameters[2];
 
- let graphAdjacency = { }
- 
- for ( let edgeIdx = 0; edgeIdx < nodeCount - 1; ++edgeIdx ) {
-  const currentPair = edgePairs[edgeIdx]
-  const vertexOne = currentPair[0]
-  const vertexTwo = currentPair[1]
+  // Get the remaining lines which represent the edges of the graph.
+  const remainingLines = processedLines.slice(1);
 
-  // Initialize adjacency lists if they don't exist
-  if ( !graphAdjacency[vertexOne] ) {
-   graphAdjacency[vertexOne] = []
+  // Convert edge lines into an array of arrays, where each inner array is an edge [node1, node2].
+  const edgeList = remainingLines.map(lineStr => {
+    return lineStr.split(' ').map(numStr => parseInt(numStr, 10));
+  });
+
+  // Initialize an adjacency map (or list) to represent the graph.
+  let adjacencyMap = {};
+
+  // Populate the adjacency map based on the edge list.
+  // The graph is undirected, so add connections in both directions.
+  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; ++edgeIndex) {
+    const currentEdge = edgeList[edgeIndex];
+    const nodeOne = currentEdge[0];
+    const nodeTwo = currentEdge[1];
+
+    // Ensure arrays exist for both nodes in the map.
+    if (!adjacencyMap[nodeOne]) {
+      adjacencyMap[nodeOne] = [];
+    }
+    if (!adjacencyMap[nodeTwo]) {
+      adjacencyMap[nodeTwo] = [];
+    }
+
+    // Add connections.
+    adjacencyMap[nodeOne].push(nodeTwo);
+    adjacencyMap[nodeTwo].push(nodeOne);
   }
-  if ( !graphAdjacency[vertexTwo] ) {
-   graphAdjacency[vertexTwo] = []
+
+  // Initialize arrays to store distances from startNodeA and startNodeB.
+  // Arrays are sized nodeCount + 1 because nodes are 1-indexed.
+  let distanceFromA = Array(nodeCount + 1);
+  distanceFromA.fill(0); // Initialize all distances to zero.
+
+  let distanceFromB = Array(nodeCount + 1);
+  distanceFromB.fill(0); // Initialize all distances to zero.
+
+  /**
+   * Performs a Depth-First Search (DFS) to calculate distances from a starting node.
+   * @param {number} currentNode - The current node being visited.
+   * @param {number} previousNode - The node from which the current node was visited (to avoid going back).
+   * @param {number} currentDepth - The distance from the starting node to the currentNode.
+   * @param {number[]} distanceArray - The array to store calculated distances.
+   */
+  const calculateDistances = (currentNode, previousNode, currentDepth, distanceArray) => {
+    // Store the distance for the current node.
+    distanceArray[currentNode] = currentDepth;
+
+    // Iterate over all neighbors of the current node.
+    for (let neighborIndex in adjacencyMap[currentNode]) {
+      const nextNode = parseInt(adjacencyMap[currentNode][neighborIndex], 10);
+
+      // If the neighbor is not the previous node, recursively call DFS.
+      if (nextNode !== previousNode) {
+        calculateDistances(nextNode, currentNode, currentDepth + 1, distanceArray);
+      }
+    }
+  };
+
+  // Perform DFS starting from startNodeA to populate distanceFromA.
+  calculateDistances(startNodeA, 0, 0, distanceFromA);
+  // Perform DFS starting from startNodeB to populate distanceFromB.
+  calculateDistances(startNodeB, 0, 0, distanceFromB);
+
+  // Initialize a variable to store the maximum calculated value.
+  let maximumValue = 0;
+
+  // Iterate through all nodes (from 1 to nodeCount) to find the maximum.
+  for (let nodeIdx = 0; nodeIdx < nodeCount + 1; ++nodeIdx) {
+    // The condition checks if nodeIdx is reachable from A in fewer steps than from B.
+    // If so, it means B can "catch" A at nodeIdx, and the value is distanceFromB[nodeIdx] - 1.
+    // We want the maximum such value.
+    if (distanceFromA[nodeIdx] < distanceFromB[nodeIdx]) {
+      maximumValue = Math.max(maximumValue, distanceFromB[nodeIdx] - 1);
+    }
   }
-  // Add connections for undirected graph
-  graphAdjacency[vertexOne].push(vertexTwo)
-  graphAdjacency[vertexTwo].push(vertexOne)
- }
 
- // Array to store path lengths from startNodeX
- let distancesX = Array( nodeCount + 1 )
- distancesX.fill( 0 )
-
- // Array to store path lengths from startNodeY
- let distancesY = Array( nodeCount + 1 )
- distancesY.fill( 0 )
-
- // Depth-First Search function to compute distances
- const explorePath = ( currentPoint, previousPoint, depthLevel, distanceMetrics ) => {
-  // Set the distance for the current point
-  distanceMetrics[currentPoint] = depthLevel
-  
-  // Iterate through neighbors of the current point
-  for ( let neighborIndex in graphAdjacency[currentPoint] ) {
-   const nextPoint = parseInt( graphAdjacency[currentPoint][neighborIndex] )
-   // Avoid revisiting the immediate parent in the DFS tree
-   if ( nextPoint !== previousPoint ) {
-    explorePath( nextPoint, currentPoint, depthLevel + 1, distanceMetrics )
-   }
-  }
- }
-
- // Calculate distances from startNodeX using DFS
- explorePath( startNodeX, 0, 0, distancesX )
- // Calculate distances from startNodeY using DFS
- explorePath( startNodeY, 0, 0, distancesY )
-
- let finalResult = 0
- // Iterate through all possible points to find the maximum difference
- for ( let pointIndex = 0; pointIndex < nodeCount + 1; ++pointIndex ) {
-  // Check if point X's distance is less than point Y's distance
-  if ( distancesX[pointIndex] < distancesY[pointIndex] ) {
-   // Update the maximum result based on point Y's distance
-   finalResult = Math.max( finalResult, distancesY[pointIndex] - 1 )
-  }
- }
-
- console.log( finalResult )
+  // Output the final maximum value.
+  console.log(maximumValue);
 }
 
-ExecuteProgram( require("fs").readFileSync("/dev/stdin", "utf8") )
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,38 @@
-'use strict'; // Enforce stricter parsing and error handling
+'use strict';
 
-/**
- * Processes the raw input string to determine if the first number
- * on the first line contains the digit 7.
- * @param {string} rawInputString - The entire input data as a single string.
- */
-function processNumericInput(rawInputString) {
-    // Break down the input string into individual lines for easier processing.
-    const inputLines = rawInputString.split('\n');
+const outputMessage = (textToDisplay) => console.log(textToDisplay);
 
-    // Early exit if there's no meaningful input provided.
-    if (inputLines.length === 0 || inputLines[0].trim() === '') {
-        console.log('No'); // If input is empty or just whitespace, no '7' can be found.
-        return;
+// This function processes the entire input data string.
+function processInputString(rawInputString) {
+  // The input string is split into lines.
+  const inputLines = rawInputString.split("\n");
+  
+  // The first line is taken, split by space, and the first part is parsed as an integer.
+  const firstLineContent = inputLines[0];
+  let targetNumber = parseInt(firstLineContent.split(" ")[0], 10);
+
+  const SEVEN_DIGIT_VALUE = 7;
+  let containsDigitSeven = false;
+
+  // Loop through the digits of the number from right to left.
+  // The loop continues as long as there are digits left to check (number > 0).
+  // This ensures all digits, including single-digit numbers, are evaluated.
+  while (targetNumber > 0) {
+    const currentDigit = targetNumber % 10; // Get the last digit
+    
+    if (currentDigit === SEVEN_DIGIT_VALUE) {
+      containsDigitSeven = true;
+      break; // If 7 is found, no need to check further digits.
     }
+    
+    // Remove the last digit by performing integer division.
+    targetNumber = Math.floor(targetNumber / 10);
+  }
 
-    // Extract the first token from the very first line, assuming it represents the number of interest.
-    const firstLineSegment = inputLines[0].split(' ')[0];
-
-    // Convert the extracted string segment into an integer base 10.
-    // This handles potential leading/trailing whitespace if any remained after split.
-    let currentNumberUnderTest = parseInt(firstLineSegment, 10);
-
-    // Validate if the conversion resulted in a valid number.
-    // If the input isn't a number, it cannot contain the digit '7'.
-    if (isNaN(currentNumberUnderTest)) {
-        console.log('No');
-        return;
-    }
-
-    // Initialize a boolean flag to track whether the target digit (7) has been found.
-    let foundSpecificDigit = false;
-
-    // Iterate through each digit of the number.
-    // A do-while loop is used to ensure that even single-digit numbers (including 0) are checked at least once.
-    do {
-        // Extract the last digit of the current number using the modulo operator.
-        const digitToCheck = currentNumberUnderTest % 10;
-
-        // Compare the extracted digit with our target digit (7).
-        if (digitToCheck === 7) {
-            foundSpecificDigit = true; // Set the flag to true.
-            break; // Exit the loop immediately as the digit has been found.
-        }
-
-        // Remove the last digit from the number by performing integer division.
-        // Math.floor ensures we get an integer result, correctly truncating decimals.
-        currentNumberUnderTest = Math.floor(currentNumberUnderTest / 10);
-
-    } while (currentNumberUnderTest > 0); // Continue looping as long as there are digits left to process.
-
-    // Output the final result based on the state of the 'foundSpecificDigit' flag.
-    // A ternary operator provides a concise way to log 'Yes' or 'No'.
-    console.log(foundSpecificDigit ? 'Yes' : 'No');
+  // Determine the final output message based on whether the digit 7 was found.
+  const finalResult = containsDigitSeven ? 'Yes' : 'No';
+  outputMessage(finalResult);
 }
 
-// This section of the code handles standard input/output operations.
-// It reads the entire input from stdin, decodes it as UTF-8,
-// and then invokes the primary processing function with the raw data.
-// It is typically not modified for competitive programming environments.
-processNumericInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// *この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,132 +1,130 @@
-var incomingData = "";
+let rawInputData = '';
 
-// Establish an alias for the global process object to allow renaming its usage
-const systemOperation = process;
+// Begin listening for incoming data from standard input.
+process.stdin.resume();
 
-// Activate the standard input stream to begin receiving data
-systemOperation.stdin.resume();
+// Set the character encoding for the input stream.
+process.stdin.setEncoding('utf8');
 
-// Specify the character encoding for the incoming data stream
-systemOperation.stdin.setEncoding('utf8');
-
-// Attach an event handler for when new data chunks arrive
-systemOperation.stdin.on('data', function (dataBlock) {
-    // Accumulate the received data block into the main data buffer
-    incomingData += dataBlock;
+// Accumulate data chunks as they arrive.
+process.stdin.on('data', function(chunkSegment) {
+    rawInputData += chunkSegment;
 });
 
-// Attach an event handler for when the input stream concludes
-systemOperation.stdin.on('end', function () {
-    // Once all input is received, divide the accumulated data into individual lines
-    const dataLines = incomingData.split('\n');
+// Process all accumulated input once the stream ends.
+process.stdin.on('end', function() {
+    const processedLines = rawInputData.split('\n');
 
-    // Definition for a structural unit within a tree-like data representation
-    class Branch {
-        // Constructor method to initialize a new Branch instance
+    // Defines a class for nodes within a binary tree structure.
+    class BinaryTreeNode {
         constructor() {
-            this.childA = null;    // Reference to the first child branch
-            this.childB = null;    // Reference to the second child branch
-            this.ancestor = null;  // Reference to the parent branch
+            this.leftChild = null;
+            this.rightChild = null;
+            this.parentNode = null;
         }
 
-        // Method to assign a sub-branch as the first child of this branch
-        placeChildA(subBranch) {
-            this.childA = subBranch;    // Set the first child
-            subBranch.ancestor = this;  // Set the parent of the sub-branch to this branch
+        // Links a given node as the left child of the current node.
+        attachLeft(childNode) {
+            this.leftChild = childNode;
+            childNode.parentNode = this;
         }
 
-        // Method to assign a sub-branch as the second child of this branch
-        placeChildB(subBranch) {
-            this.childB = subBranch;    // Set the second child
-            subBranch.ancestor = this;  // Set the parent of the sub-branch to this branch
+        // Links a given node as the right child of the current node.
+        attachRight(childNode) {
+            this.rightChild = childNode;
+            childNode.parentNode = this;
         }
 
-        // Generates a string representation of the branch's structure
-        renderStructure() {
-            return `(${this.childA == null ? '' : this.childA.renderStructure()},${this.childB == null ? '' : this.childB.renderStructure()})`;
+        // Provides a string representation of the node and its children.
+        representAsString() {
+            return `(${this.leftChild === null ? '' : this.leftChild.representAsString()},${this.rightChild === null ? '' : this.rightChild.representAsString()})`;
         }
     }
 
-    // Function to construct a tree structure from a serialized string input
-    const buildStructure = inputSequence => {
-        const baseBranch = new Branch();    // Create a dummy root branch
-        let currentStructure = baseBranch;  // Pointer to the current branch being processed
-        let separatorFlag = 0;             // Flag to distinguish between first (0) and second (1) child
+    // Constructs a binary tree from a string representation.
+    const buildBinaryTree = treeStructureString => {
+        const baseNode = new BinaryTreeNode();
+        let currentTraversalNode = baseNode;
+        let separatorFlag = 0; // 0 for left child, 1 for right child
 
-        // Iterate through each character of the input string
-        for (const symbol of inputSequence) {
-            if (symbol === "(") { // If an opening parenthesis is found, create a new child
-                const newBranch = new Branch();
+        for (const charSymbol of treeStructureString) {
+            if (charSymbol === "(") {
+                const newNodeInstance = new BinaryTreeNode();
                 if (separatorFlag === 0) {
-                    currentStructure.placeChildA(newBranch); // Attach as the first child
+                    currentTraversalNode.attachLeft(newNodeInstance);
                 } else {
-                    currentStructure.placeChildB(newBranch); // Attach as the second child
+                    currentTraversalNode.attachRight(newNodeInstance);
                 }
-                currentStructure = newBranch; // Move the pointer to the new child
+                currentTraversalNode = newNodeInstance;
             }
-            if (symbol === ",") { // If a comma is found, subsequent child should be the second
-                separatorFlag = 1;
+            if (charSymbol === ",") {
+                separatorFlag = 1; // Switch to right child insertion
             }
-            if (symbol === ")") { // If a closing parenthesis is found, move up to the parent
-                currentStructure = currentStructure.ancestor;
-                separatorFlag = 0; // Reset flag for potential next sibling
+            if (charSymbol === ")") {
+                currentTraversalNode = currentTraversalNode.parentNode;
+                separatorFlag = 0; // Reset to left child for parent's next child
             }
         }
-        return baseBranch.childA; // Return the actual root of the tree (excluding the dummy root)
+        return baseNode.leftChild; // The actual root of the constructed tree
     };
 
-    // Function to compute the union of two tree structures
-    const mergeStructures = (structA, structB) => {
-        const resultBranch = new Branch(); // Create a new branch for the merged result
-        if (structA === null) return structB; // If first structure is null, return the second
-        if (structB === null) return structA; // If second structure is null, return the first
+    // Performs a union operation on two binary trees.
+    const performUnionOperation = (firstTree, secondTree) => {
+        const resultantNode = new BinaryTreeNode();
 
-        let tempResult = mergeStructures(structA.childA, structB.childA); // Recursively merge first children
-        if (tempResult !== null) {
-            resultBranch.placeChildA(tempResult); // Attach if a merged child exists
+        if (firstTree === null) {
+            return secondTree;
+        }
+        if (secondTree === null) {
+            return firstTree;
         }
 
-        tempResult = mergeStructures(structA.childB, structB.childB); // Recursively merge second children
-        if (tempResult !== null) {
-            resultBranch.placeChildB(tempResult); // Attach if a merged child exists
+        let recursiveResult = performUnionOperation(firstTree.leftChild, secondTree.leftChild);
+        if (recursiveResult !== null) {
+            resultantNode.attachLeft(recursiveResult);
         }
-        return resultBranch; // Return the resulting merged branch
+
+        recursiveResult = performUnionOperation(firstTree.rightChild, secondTree.rightChild);
+        if (recursiveResult !== null) {
+            resultantNode.attachRight(recursiveResult);
+        }
+
+        return resultantNode;
     };
 
-    // Function to compute the intersection of two tree structures
-    const findCommon = (structA_param, structB_param) => {
-        const commonBranch = new Branch(); // Create a new branch for the common part
-        if (structA_param === null || structB_param === null) {
-            return null; // If either structure is null, there is no common part
+    // Performs an intersection operation on two binary trees.
+    const performIntersectionOperation = (treeOne, treeTwo) => {
+        const outputNode = new BinaryTreeNode();
+
+        if (treeOne === null || treeTwo === null) {
+            return null;
         }
 
-        let currentCommon = findCommon(structA_param.childA, structB_param.childA); // Recursively intersect first children
-        if (currentCommon !== null) {
-            commonBranch.placeChildA(currentCommon); // Attach if a common child exists
+        let subResult = performIntersectionOperation(treeOne.leftChild, treeTwo.leftChild);
+        if (subResult !== null) {
+            outputNode.attachLeft(subResult);
         }
 
-        currentCommon = findCommon(structA_param.childB, structB_param.childB); // Recursively intersect second children
-        if (currentCommon !== null) {
-            commonBranch.placeChildB(currentCommon); // Attach if a common child exists
+        subResult = performIntersectionOperation(treeOne.rightChild, treeTwo.rightChild);
+        if (subResult !== null) {
+            outputNode.attachRight(subResult);
         }
-        return commonBranch; // Return the resulting common branch
+
+        return outputNode;
     };
 
-    // Process each line of the input data
-    for (const singleLineInput of dataLines) {
-        // Deconstruct each line into the operation type and two tree strings
-        const [operationKind, structureStringA, structureStringB] = singleLineInput.split(' ');
+    // Iterate through each line of input to perform tree operations.
+    for (const currentInputLine of processedLines) {
+        const [operationType, firstTreeString, secondTreeString] = currentInputLine.split(' ');
+        const parsedTreeOne = buildBinaryTree(firstTreeString);
+        const parsedTreeTwo = buildBinaryTree(secondTreeString);
 
-        const parsedStructureA = buildStructure(structureStringA); // Build the first tree from its string
-        const parsedStructureB = buildStructure(structureStringB); // Build the second tree from its string
-
-        let finalOutcome; // Variable to hold the result of the tree operation
-
-        if (operationKind === "unite") { // Check if the operation is union
-            finalOutcome = mergeStructures(parsedStructureA, parsedStructureB); // Perform the union operation
-        } else if (operationKind === "intersect") { // Check if the operation is intersection
-            finalOutcome = findCommon(parsedStructureA, parsedStructureB); // Perform the intersection operation
+        let finalOperationResult;
+        if (operationType === "u") {
+            finalOperationResult = performUnionOperation(parsedTreeOne, parsedTreeTwo);
+        } else if (operationType === "i") {
+            finalOperationResult = performIntersectionOperation(parsedTreeOne, parsedTreeTwo);
         }
-        // The result `finalOutcome` is available here, but the original code does not print it.
+        // The original code does not output the result, so we maintain that behavior.
     }
 });

@@ -1,119 +1,88 @@
-function processInputData(rawData) {
-  // Parse the raw input string into an array of lines.
+function processInput(rawData) {
+  // Parse the raw input string into an array of lines
   const parsedLines = rawData.trim().split('\n');
 
-  // Extract the number of nodes (vertices) and edges (connections).
-  // Using Number() for explicit type conversion.
-  let totalVertices = Number(parsedLines[0].split(' ')[0]);
-  let totalEdges = Number(parsedLines[0].split(' ')[1]);
+  // Extract N (number of nodes) and M (number of edges) from the first line
+  let nodeCount = Number(parsedLines[0].split(' ')[0]);
+  let edgeCount = Number(parsedLines[0].split(' ')[1]);
 
-  // Initialize an adjacency list to represent the graph.
-  // Each element in graphAdjacency[k] will be a list of nodes connected to node k.
-  var graphAdjacency = [];
-  for (let vertexIndex = 0; vertexIndex < totalVertices; vertexIndex++) {
-    graphAdjacency.push([]);
+  // Initialize an adjacency list for the graph representation
+  const adjacencyList = [];
+  for (let idx = 0; idx < nodeCount; idx++) {
+    adjacencyList.push([]);
   }
 
-  // Populate the adjacency list based on the provided edge data.
-  // Edges are 1-indexed in input, convert to 0-indexed for array access.
-  for (let edgeLineIndex = 1; edgeLineIndex <= totalEdges; edgeLineIndex++) {
-    const edgeData = parsedLines[edgeLineIndex].split(' ');
-    let firstVertex = Number(edgeData[0]) - 1;
-    let secondVertex = Number(edgeData[1]) - 1;
+  // Populate the adjacency list with edges from the input
+  for (let idx = 1; idx <= edgeCount; idx++) {
+    const currentEdgeData = parsedLines[idx].split(' ');
+    const vertexA = Number(currentEdgeData[0]) - 1; // Adjust to 0-indexed
+    const vertexB = Number(currentEdgeData[1]) - 1;
 
-    // For an undirected graph, add connection in both directions.
-    graphAdjacency[firstVertex].push(secondVertex);
-    graphAdjacency[secondVertex].push(firstVertex);
+    adjacencyList[vertexA].push(vertexB);
+    adjacencyList[vertexB].push(vertexA); // Graph is undirected, so add both ways
   }
 
-  // --- Breadth-First Search (BFS) for shortest path to all reachable nodes ---
+  // Variables for Breadth-First Search (BFS) traversal
+  const visitedNodes = [0]; // Keep track of all nodes visited, starting with node 0
+  let keepExploring = true; // Flag to control the BFS loop
+  let currentLevel = 0; // Current level in the BFS tree
+  let nodesAtCurrentLevel = [0]; // Nodes to process in the current level
+  const levelStructure = []; // Stores nodes grouped by their BFS level
 
-  // Keep track of visited nodes to avoid cycles and redundant processing.
-  // Start with node 0 as visited.
-  var visitedVertices = [0];
+  // Perform BFS traversal
+  while (keepExploring) {
+    levelStructure.push([]); // Add a new array for the nodes at the current level
+    let newNodesFound = 0; // Counter for nodes discovered in this level
+    const nodesForNextLevel = []; // Nodes that will be processed in the next level
 
-  // Flag to control the BFS loop.
-  let bfsInProgress = true;
-
-  // Current depth/level in the BFS tree.
-  var currentDepth = 0;
-
-  // Nodes to be processed in the current depth level.
-  var nodesToProcessInCurrentDepth = [0];
-
-  // Stores nodes grouped by their depth level from the starting node.
-  var depthLevels = [];
-
-  // Main BFS traversal loop.
-  while (bfsInProgress) {
-    // Prepare for the current depth level's nodes.
-    depthLevels.push([]);
-    let newlyReachedCount = 0;
-    var nodesForNextDepth = [];
-
-    // Iterate through all nodes at the current depth.
-    for (let k = 0; k < nodesToProcessInCurrentDepth.length; k++) {
-      const currentNode = nodesToProcessInCurrentDepth[k];
-
-      // Examine all neighbors of the current node.
-      for (let l = 0; l < graphAdjacency[currentNode].length; l++) {
-        const neighborNode = graphAdjacency[currentNode][l];
-
-        // If the neighbor hasn't been visited yet, process it.
-        if (!visitedVertices.includes(neighborNode)) {
-          newlyReachedCount++; // Increment count of newly discovered nodes.
-          nodesForNextDepth.push(neighborNode); // Add to the next depth's processing queue.
-          depthLevels[currentDepth].push(neighborNode); // Assign to current depth level.
-          visitedVertices.push(neighborNode); // Mark as visited.
+    // Iterate through each node in the current level
+    for (let idx = 0; idx < nodesAtCurrentLevel.length; idx++) {
+      const currentNode = nodesAtCurrentLevel[idx];
+      // Explore all neighbors of the current node
+      for (let k = 0; k < adjacencyList[currentNode].length; k++) {
+        const connectedNode = adjacencyList[currentNode][k];
+        // If the neighbor has not been visited yet
+        if (!visitedNodes.includes(connectedNode)) {
+          newNodesFound++; // Increment count of newly found nodes
+          nodesForNextLevel.push(connectedNode); // Add to the list for the next level
+          levelStructure[currentLevel].push(connectedNode); // Assign to the current level
+          visitedNodes.push(connectedNode); // Mark as visited
         }
       }
     }
-
-    // Move to the next depth level.
-    currentDepth++;
-    // Update nodes for the next iteration. Using slice() to create a shallow copy.
-    nodesToProcessInCurrentDepth = nodesForNextDepth.slice();
-
-    // If no new nodes were discovered in this depth, the BFS is complete.
-    if (newlyReachedCount === 0) {
-      bfsInProgress = false;
+    currentLevel++; // Advance to the next level
+    nodesAtCurrentLevel = nodesForNextLevel.slice(); // Prepare nodes for the next iteration
+    if (newNodesFound === 0) {
+      keepExploring = false; // If no new nodes were found, BFS is complete
     }
   }
 
-  // --- Process BFS results ---
-
-  // Initialize an array to store the shortest distance (depth) for each node.
-  var distanceResults = [];
-  for (let m = 0; m < totalVertices; m++) {
-    distanceResults.push(0); // Default to 0, will be overwritten.
+  // Prepare the final output array to store the assigned level for each node
+  const resultLevels = [];
+  for (let idx = 0; idx < nodeCount; idx++) {
+    resultLevels.push(0); // Initialize all nodes to a default level (e.g., 0)
   }
 
-  // Populate the distanceResults array with the depth level of each node.
-  for (let n = 0; n < depthLevels.length; n++) {
-    for (let p = 0; p < depthLevels[n].length; p++) {
-      distanceResults[depthLevels[n][p]] = n;
+  // Assign the determined BFS level to each node
+  for (let idx = 0; idx < levelStructure.length; idx++) {
+    for (let k = 0; k < levelStructure[idx].length; k++) {
+      resultLevels[levelStructure[idx][k]] = idx;
     }
   }
+  resultLevels.shift(); // Remove the level for the starting node (node 0) as it's not part of the output format
 
-  // The problem implies that node 0 is the starting node and might not be
-  // part of the final output, or its depth is implicitly 0.
-  // Removing the first element (corresponding to node 0).
-  distanceResults.shift();
-
-  // --- Final Output Decision ---
-
-  // Check if all nodes were reachable from the starting node (node 0).
-  if (visitedVertices.length !== totalVertices) {
-    console.log('No'); // Not all nodes were visited.
+  // Check if all nodes in the graph were reachable from the starting node
+  if (visitedNodes.length !== nodeCount) {
+    console.log('No'); // Not all nodes were visited, so it's not a connected graph from node 0
   } else {
-    console.log('Yes'); // All nodes were visited.
-    // Print the depth (distance + 1 for 1-based output) for each node.
-    for (let q = 0; q < distanceResults.length; q++) {
-      console.log(distanceResults[q] + 1);
+    console.log('Yes'); // All nodes were visited
+    // Output the level for each node, adjusted to be 1-indexed as per problem statement
+    for (let idx = 0; idx < resultLevels.length; idx++) {
+      console.log(resultLevels[idx] + 1);
     }
   }
-  // Outputting the full level structure for debugging is sometimes useful.
+  // console.log(levelStructure); // Original debug comment, kept as is
 }
 
-// Read input from standard input and pass it to the processing function.
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,117 +1,81 @@
-/*
- * This function locates the insertion point for a value in a sorted array using binary search.
- * It returns the index where the targetValue could be inserted to maintain sorted order,
- * or the index of the first element greater than or equal to targetValue.
- */
-function findBoundaryIndex(
-  dataCollection, // The array to search within
-  startPtr,       // The starting index of the current search range
-  endPtr,         // The ending index of the current search range (exclusive)
-  targetVal       // The value to find the lower bound for
-) {
-  for (
-    let midPtr; // Declare a variable for the middle pointer
-    1 < endPtr - startPtr; // Continue as long as the search range has more than one element
-  ) {
-    // Calculate the middle index, using bitwise operations for efficiency and integer truncation
-    midPtr = 0 | ((startPtr + endPtr) >> 1);
-
-    // If the element at the middle index is less than the target value,
-    // then the target must be in the upper half (or beyond the current midPtr).
-    if (dataCollection[midPtr] < targetVal) {
-      startPtr = midPtr; // Move the start pointer to midPtr
+function findInsertionPoint(dataArray, startIndex, endIndex, targetValue) {
+    let midPoint; // Variable to store the calculated middle index
+    // Perform a binary search within the specified range [startIndex, endIndex)
+    // The loop continues as long as there are at least two elements in the search range.
+    for (; (endIndex - startIndex) > 1; ) {
+        // Calculate the middle index using an unsigned right shift for efficient integer division.
+        midPoint = (startIndex + endIndex) >>> 1;
+        // If the element at the middle index is less than the target value,
+        // then the target must be in the upper half of the current range.
+        if (dataArray[midPoint] < targetValue) {
+            startIndex = midPoint; // Adjust the lower bound of the search range.
+        } else {
+            // Otherwise, the target is in the lower half or at the midPoint itself.
+            endIndex = midPoint; // Adjust the upper bound of the search range.
+        }
     }
-    // Otherwise, the target value is in the lower half (or at midPtr).
-    else {
-      endPtr = midPtr; // Move the end pointer to midPtr
-    }
-  }
-  // After the loop, startPtr and endPtr are adjacent.
-  // Check if the element at startPtr is less than the target.
-  // If it is, the insertion point is endPtr; otherwise, it's startPtr.
-  return dataCollection[startPtr] < targetVal ? endPtr : startPtr;
+    // After the loop, startIndex and endIndex will be adjacent.
+    // Determine the correct insertion point based on the element at startIndex.
+    return dataArray[startIndex] < targetValue ? endIndex : startIndex;
 }
 
-/**
- * A utility function designed to sort numerical values in ascending order.
- * This is typically used with Array.prototype.sort().
- * @param {number} valueOne - The first number for comparison.
- * @param {number} valueTwo - The second number for comparison.
- * @returns {number} A negative value if valueOne < valueTwo, zero if equal, a positive value if valueOne > valueTwo.
- */
-function sortNumericalValues(
-  valueOne,
-  valueTwo
-) {
-  return valueOne - valueTwo; // Standard numerical ascending sort logic
+// A simple comparison function for sorting numbers in ascending order.
+// This function is intended for use with Array.prototype.sort().
+function numericComparator(valA, valB) {
+    return valA - valB; // Returns a negative, zero, or positive value based on comparison.
 }
 
-/**
- * The primary execution function for processing input data.
- * It reads a sequence of numbers and calculates a specific combination count.
- * @param {string} rawInputText - The raw input string containing numbers, separated by newlines and spaces.
- */
-function executeProgram(rawInputText) {
+// The primary function to process the input string and calculate the result.
+function ProcessInput(inputString) {
+    // Parse the first line of the input to get the total count of elements.
+    // The unary plus operator converts the string to a number.
+    const countElements = +inputString.split("\n")[0];
 
-  // Parse the total quantity of elements from the first line of input.
-  const quantityOfElements = rawInputText.split("\n")[0] - 0;
+    // Parse the second line of the input.
+    // Split by spaces, then map each string value to a number.
+    const dataList = inputString.split("\n")[1].split(" ").map(value => value - 0);
 
-  // Parse the sequence of numbers from the second line, converting them to numeric type.
-  const numberSequence = rawInputText.split("\n")[1].split(" ").map(
-    (currentVal) => currentVal - 0
-  );
+    let totalTriplets = 0; // Initialize a counter for the valid triplets found.
 
-  // Initialize the accumulator for the final result.
-  let finalTally = 0;
+    let firstVal, secondVal, thirdVal; // Declare variables for the triplet elements (thirdVal is declared but not explicitly used in this loop structure).
 
-  // Declare variables for the elements in the triplet and a placeholder.
-  let firstElement, secondElement, thirdElementPlaceholder;
+    // Sort the list of numbers in ascending order. This is a prerequisite for the algorithm.
+    dataList.sort(numericComparator);
 
-  // Sort the array of numbers in ascending order to enable binary search.
-  numberSequence.sort(sortNumericalValues);
+    // Outer loop: Iterate to select the first element of the triplet (a).
+    // 'idxOne' goes up to 'countElements - 2' because we need at least two more elements for a triplet.
+    for (let idxOne = 0; idxOne < countElements - 2; idxOne++) {
+        firstVal = dataList[idxOne]; // Assign the current element to 'firstVal'.
 
-  // Iterate through the array to pick the first element of a potential triplet.
-  for (
-    let outerLoopIdx = 0;
-    outerLoopIdx < quantityOfElements - 2;
-    outerLoopIdx++
-  ) {
-    firstElement = numberSequence[outerLoopIdx]; // Assign the current element to firstElement
+        // Inner loop: Iterate to select the second element of the triplet (b).
+        // 'idxTwo' starts from 'idxOne + 1' to ensure distinct elements and maintain order.
+        // 'idxTwo' goes up to 'countElements - 1' because we need at least one more element.
+        for (let idxTwo = idxOne + 1; idxTwo < countElements - 1; idxTwo++) {
+            secondVal = dataList[idxTwo]; // Assign the current element to 'secondVal'.
 
-    // Iterate through the remaining array elements to pick the second element.
-    for (
-      let innerLoopIdx = outerLoopIdx + 1;
-      innerLoopIdx < quantityOfElements - 1;
-      innerLoopIdx++
-    ) {
-      secondElement = numberSequence[innerLoopIdx]; // Assign the current element to secondElement
+            // Use the binary search function to find the upper bound for the third element (c).
+            // We are looking for elements 'c' such that 'c < firstVal + secondVal'.
+            // 'findInsertionPoint' returns the index of the first element >= (firstVal + secondVal).
+            // Subtracting 1 gives the index of the last element < (firstVal + secondVal).
+            // The search starts from 'idxTwo + 1' to ensure 'c' is distinct from 'firstVal' and 'secondVal'.
+            const upperBoundIdx = findInsertionPoint(dataList, idxTwo + 1, countElements, firstVal + secondVal) - 1;
 
-      // Find the upper bound for the sum of the first two elements.
-      // This uses binary search to find the first element in the remaining part of the array
-      // that is greater than or equal to `firstElement + secondElement`.
-      // Subtracting 1 gives the index of the last element less than `firstElement + secondElement`.
-      const temporaryIndex =
-        findBoundaryIndex(
-          numberSequence,
-          innerLoopIdx + 1, // Start search from the element after secondElement
-          quantityOfElements,
-          firstElement + secondElement
-        ) - 1;
-
-      // Add the count of valid third elements to the final tally.
-      // A valid third element is one that is greater than secondElement
-      // and less than firstElement + secondElement.
-      // The count is `temporaryIndex - innerLoopIdx`.
-      finalTally += temporaryIndex - innerLoopIdx;
+            // Calculate the number of valid 'c' values for the current 'firstVal' and 'secondVal'.
+            // If 'upperBoundIdx' is greater than 'idxTwo', it means there are valid 'c' values.
+            // The count is 'upperBoundIdx - idxTwo'. If 'upperBoundIdx <= idxTwo', this will be 0 or negative,
+            // but since 'upperBoundIdx' will be at least 'idxTwo' (as 'findInsertionPoint' starts from 'idxTwo + 1'),
+            // the result 'upperBoundIdx - idxTwo' will always be non-negative.
+            totalTriplets += (upperBoundIdx - idxTwo);
+        }
     }
-  }
 
-  // Output the computed final result to the console.
-  console.log(finalTally);
+    // Print the final calculated total number of triplets to the console.
+    console.log(totalTriplets);
 
-  // The function implicitly returns undefined, but an explicit return can be added for clarity.
-  return;
+    // The function completes its execution.
+    return;
 }
 
-// Invoke the main program function, reading input from standard input.
-executeProgram(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input and pass it to the main processing function.
+// This part interacts with the file system and is considered an external contract.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

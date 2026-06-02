@@ -1,74 +1,42 @@
-const fileSystemModule = require('fs');
+const fileSystem = require('fs');
+const inputFilePath = '/dev/stdin';
 
-// Define the standard input file path as a constant.
-const standardInputPath = '/dev/stdin';
+const rawInputContent = fileSystem.readFileSync(inputFilePath, 'utf8');
+const trimmedAndSplitInput = rawInputContent.trim().split(/\s/);
 
-// Read the raw input data from the specified path, decoding it as UTF-8.
-const rawDataString = fileSystemModule.readFileSync(standardInputPath, 'utf8');
+const sortedNumbers = trimmedAndSplitInput.sort((firstNum, secondNum) => firstNum - secondNum);
 
-// Process the input string:
-// 1. Trim any leading or trailing whitespace.
-// 2. Split the string by one or more whitespace characters into an array of strings.
-// 3. Convert each string element to a number.
-// 4. Sort the resulting array of numbers in ascending order.
-const numericValuesSorted = rawDataString.trim().split(/\s+/).map(Number).sort((valA, valB) => valA - valB);
-
-// This array will store the frequency count for each number in `numericValuesSorted`.
-// `elementFrequencies[i]` will hold the total occurrences of `numericValuesSorted[i]` in the original input.
-let elementFrequencies = [];
-
-// Initialize a Map to efficiently count the occurrences of each unique number.
-const valueOccurrenceMap = new Map();
-
-// Populate the `valueOccurrenceMap`: iterate through the sorted numbers
-// and increment their respective counts.
-for (const itemValue of numericValuesSorted) {
-    valueOccurrenceMap.set(itemValue, (valueOccurrenceMap.get(itemValue) || 0) + 1);
-}
-
-// Reconstruct the `elementFrequencies` array.
-// This array's structure is crucial: `elementFrequencies[idx]` corresponds to the frequency
-// of `numericValuesSorted[idx]`. This matches the behavior of the original code's `mode` array.
-for (const itemValue of numericValuesSorted) {
-    elementFrequencies.push(valueOccurrenceMap.get(itemValue));
-}
-
-// Determine the highest frequency observed across all numbers at the beginning.
-// Handle the case of an empty array to prevent `Math.max()` errors.
-const globalMaxFrequency = elementFrequencies.length > 0 ? Math.max(...elementFrequencies) : -1;
-
-// Initialize an offset variable that will be used to select elements for output.
-// This offset increments with each value printed.
-let currentOutputOffset = 1;
-
-// Begin a loop to identify and print numbers based on the highest frequency logic.
-// The loop continues as long as the initial `globalMaxFrequency` is still present
-// as the highest frequency in the `elementFrequencies` array (which is dynamically modified).
-while (true) {
-    // Calculate the current highest frequency among the remaining elements in `elementFrequencies`.
-    // If the array becomes empty, set to -1 to ensure loop termination.
-    const currentHighestInRemaining = elementFrequencies.length > 0 ? Math.max(...elementFrequencies) : -1;
-
-    // Check for termination conditions:
-    // 1. If the initial `globalMaxFrequency` is no longer the highest in the modified array.
-    // 2. If there are no more frequency counts left to process.
-    if (globalMaxFrequency !== currentHighestInRemaining || elementFrequencies.length === 0) {
-        break; // Exit the loop.
+const calculateSubarrayFrequency = (sourceArray, startingIndex) => {
+    let elementCount = 1;
+    const targetElement = sourceArray[startingIndex];
+    for (let checkIndex = startingIndex + 1; checkIndex < sourceArray.length; checkIndex++) {
+        if (sourceArray[checkIndex] === targetElement) {
+            elementCount++;
+        }
     }
+    return elementCount;
+};
 
-    // Find the first index where the `currentHighestInRemaining` frequency appears
-    // within the `elementFrequencies` array.
-    const firstIndexOfHighestFreq = elementFrequencies.indexOf(currentHighestInRemaining);
+let frequencyCounts = [];
+const totalElements = sortedNumbers.length;
 
-    // Output the number from `numericValuesSorted` at a specific calculated index.
-    // The index is determined by `firstIndexOfHighestFreq` (from the frequency array)
-    // combined with the continuously incrementing `currentOutputOffset`.
-    console.log(numericValuesSorted[firstIndexOfHighestFreq + currentOutputOffset++]);
-
-    // Remove the found highest frequency entry from the `elementFrequencies` array.
-    // This ensures that in the next iteration, a new highest frequency (or the next occurrence
-    // of the same highest frequency) can be identified.
-    elementFrequencies.splice(firstIndexOfHighestFreq, 1);
+for (let outerIterationIndex = 0; outerIterationIndex < totalElements; outerIterationIndex++) {
+    const currentElementFrequency = calculateSubarrayFrequency(sortedNumbers, outerIterationIndex);
+    frequencyCounts.push(currentElementFrequency);
 }
 
-// The script finishes after the loop terminates.
+const findMaximumInArray = (numericArray) => Math.max.apply(null, numericArray);
+
+const initialMaxFrequency = findMaximumInArray(frequencyCounts);
+let outputIndexOffset = 1;
+
+while (initialMaxFrequency === findMaximumInArray(frequencyCounts)) {
+    const currentHighestFrequencyInLoop = findMaximumInArray(frequencyCounts);
+    const indexOfHighestFrequency = frequencyCounts.indexOf(currentHighestFrequencyInLoop);
+
+    const valueToPrint = sortedNumbers[indexOfHighestFrequency + outputIndexOffset];
+    console.log(valueToPrint);
+
+    outputIndexOffset++;
+    frequencyCounts.splice(indexOfHighestFrequency, 1);
+}

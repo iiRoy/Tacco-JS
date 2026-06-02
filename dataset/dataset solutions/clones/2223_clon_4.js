@@ -1,68 +1,69 @@
-const getNumberCharacteristics = (val) => {
-    const textRepresentation = String(val);
-    const initialDigit = parseInt(textRepresentation[0], 10);
-    const finalDigit = parseInt(textRepresentation[textRepresentation.length - 1], 10);
-    const digitCount = textRepresentation.length;
-    return { initialDigit, finalDigit, digitCount };
+"use strict";
+
+const obtainBoundaryDigits = (numericValue) => {
+    const stringRepresentation = String(numericValue);
+    return [Number(stringRepresentation[0]), Number(stringRepresentation[stringRepresentation.length - 1])];
 };
 
-const produceThreeDigitCandidates = (firstBoundary, lastBoundary, upperLimit) => {
-    const potentialValues = [];
-    for (let middleDigit = 0; middleDigit <= 9; ++middleDigit) {
-        const formedValue = parseInt(`${firstBoundary}${middleDigit}${lastBoundary}`, 10);
-        if (formedValue <= upperLimit) {
-            potentialValues.push(formedValue);
-        } else {
+const calculatePatternOccurrences = (leadingDigit, trailingDigit, upperBoundary) => {
+    let patternTally = 0;
+    for (let middleSegment = 0; ; middleSegment++) {
+        const candidateString = String(leadingDigit) + String(middleSegment) + String(trailingDigit);
+        const candidateNumber = Number(candidateString);
+        if (candidateNumber > upperBoundary) {
             break;
         }
+        patternTally++;
     }
-    return potentialValues;
+    return patternTally;
 };
 
-const determineAggregateScore = (sourceInputData) => {
-    const numericalCeiling = parseInt(sourceInputData.split('\n')[0].split(' ')[0], 10);
-    const numericalCeilingLength = numericalCeiling.toString().length;
+function primaryExecution(inputData) {
+    const numericLimit = Number(inputData.split("\n")[0].split(" ")[0]);
+    const limitDigitCount = String(numericLimit).length;
 
-    let cumulativeScore = 0;
+    const finalAccumulatedCount = Array.from({ length: numericLimit - 1 }, (_, index) => index + 1).reduce((currentTotal, currentNumber) => {
+        const [firstDigitOfCurrent, lastDigitOfCurrent] = obtainBoundaryDigits(currentNumber);
+        const lengthOfCurrentNumber = String(currentNumber).length;
+        let currentNumberContribution = 0;
 
-    for (let leftHandValue = 1; leftHandValue < numericalCeiling; ++leftHandValue) {
-        const { initialDigit: leftInitial, finalDigit: leftFinal, digitCount: leftLength } = getNumberCharacteristics(leftHandValue);
-
-        let targetRightInitial, targetRightFinal;
-
-        if (leftLength === 1) {
-            // If the left-hand value is a single digit, its initial and final digits are the same.
-            // The original logic counts B=leftHandValue and B=leftHandValue*10+leftHandValue unconditionally.
-            cumulativeScore++; // Corresponds to B being the single digit leftHandValue
-            cumulativeScore++; // Corresponds to B being the two-digit leftHandValue concatenated with itself
-            
-            targetRightInitial = leftInitial;
-            targetRightFinal = leftInitial;
-        } else { // leftHandValue has multiple digits
-            if (leftInitial === leftFinal) {
-                // If left-hand value has multiple digits but its initial and final digits are the same.
-                // The original logic counts B=leftInitial and B=leftInitial*10+leftInitial unconditionally.
-                cumulativeScore++; // Corresponds to B being the single digit leftInitial
-                cumulativeScore++; // Corresponds to B being the two-digit leftInitial concatenated with itself
-                
-                targetRightInitial = leftInitial;
-                targetRightFinal = leftInitial;
-            } else {
-                // If left-hand value has multiple digits and its initial and final digits are different.
-                // The original logic does not count single or double digit B's in this specific sub-case.
-                targetRightInitial = leftFinal;
-                targetRightFinal = leftInitial;
+        // Replicating the original logic for j=1
+        if (lengthOfCurrentNumber === 1) {
+            currentNumberContribution += 1; // Corresponds to x = currentNumber
+        } else { // lengthOfCurrentNumber > 1
+            if (firstDigitOfCurrent === lastDigitOfCurrent) {
+                currentNumberContribution += 1; // Corresponds to x = firstDigitOfCurrent
             }
         }
 
-        // The original logic's `j > 2` block (for 3-digit B values)
-        // This part is executed if N's length is 3 or more.
-        if (numericalCeilingLength >= 3) {
-            const threeDigitCandidateList = produceThreeDigitCandidates(targetRightInitial, targetRightFinal, numericalCeiling);
-            cumulativeScore += threeDigitCandidateList.length;
+        // Replicating the original logic for j=2
+        if (lengthOfCurrentNumber === 1) {
+            currentNumberContribution += 1; // Corresponds to x = currentNumber * 10 + currentNumber
+        } else { // lengthOfCurrentNumber > 1
+            if (firstDigitOfCurrent === lastDigitOfCurrent) {
+                // Corresponds to x = lastDigitOfCurrent * 10 + firstDigitOfCurrent
+                currentNumberContribution += 1;
+            }
         }
-    }
-    console.log(cumulativeScore);
-};
 
-determineAggregateScore(require('fs').readFileSync('/dev/stdin', 'utf8'));
+        // Replicating the original logic for j > 2
+        // The original code executes the inner k-loop for each j from 3 up to limitDigitCount.
+        // This means the result of calculatePatternOccurrences is effectively multiplied by (limitDigitCount - 2).
+        if (limitDigitCount > 2) { // This condition ensures j can be > 2
+            if (lengthOfCurrentNumber === 1) {
+                // For single-digit currentNumber, firstDigitOfCurrent === lastDigitOfCurrent is always true
+                currentNumberContribution += (limitDigitCount - 2) * calculatePatternOccurrences(firstDigitOfCurrent, lastDigitOfCurrent, numericLimit);
+            } else { // lengthOfCurrentNumber > 1
+                if (firstDigitOfCurrent === lastDigitOfCurrent) {
+                    currentNumberContribution += (limitDigitCount - 2) * calculatePatternOccurrences(lastDigitOfCurrent, firstDigitOfCurrent, numericLimit);
+                }
+            }
+        }
+
+        return currentTotal + currentNumberContribution;
+    }, 0);
+
+    console.log(finalAccumulatedCount);
+}
+
+primaryExecution(require('fs').readFileSync('/dev/stdin', 'utf8'));

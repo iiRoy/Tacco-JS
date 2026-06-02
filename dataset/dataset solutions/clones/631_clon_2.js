@@ -1,274 +1,206 @@
-/* This script processes input from standard input to solve a pathfinding problem. */
+var rawData = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
+});
+process.stdin.on('end', function() {
+  executeProgram();
+});
 
-var rawData = ''; // Stores all incoming standard input data.
+function executeProgram() {
+  // Split the entire input into individual lines for processing.
+  var inputLines = rawData.split('\n');
 
-// Resume the standard input stream to listen for data.
-process.stdin.resume( );
+  // Parse the first line to get graph dimensions and initial water level.
+  var firstLineParts = inputLines[0].split(' ');
+  var nodeCount = parseInt(firstLineParts[0], 10); // Number of nodes (vertices)
+  var edgeCount = parseInt(firstLineParts[1], 10); // Number of edges
+  var initialWaterLevel = parseInt(firstLineParts[2], 10); // Starting water level
 
-// Set the encoding for the input stream to UTF-8.
-process.stdin.setEncoding( 'utf8' );
+  var idxA, idxB; // Loop counters
+  var nodeHeights = Array(nodeCount); // Array to store height of each node
+  var adjList = Array(nodeCount); // Adjacency list for graph traversal
+  var visitedStates = Array(nodeCount); // Stores visited states (time, height) for each node
+  var processingQueue = []; // Stack for DFS-like traversal
 
-// Attach a listener for 'data' events.
-process.stdin.on( 'data', function ( dataSegment ) {
-  rawData += dataSegment; // Append new data segments to the rawData string.
-} );
-
-// Attach a listener for the 'end' event, indicating all input has been received.
-process.stdin.on( 'end', function ( ) {
-  executeProblemSolver( ); // Once input is complete, invoke the main solver function.
-} );
-
-
-/**
- * The primary function that orchestrates the problem-solving logic.
- * It parses input, initializes graph structures, performs a Bellman-Ford
- * calculation, and then executes a state-space search.
- */
-function executeProblemSolver( ) {
-
-  // Split the entire raw input into individual lines.
-  const inputLines = rawData.split( '\n' );
-
-  // Parse the first line to get problem parameters:
-  // numVertices: total number of nodes/vertices in the graph.
-  const numVertices = inputLines[ 0 ].split( ' ' )[ 0 ] - 0;
-  // numConnections: total number of edges/connections between nodes.
-  const numConnections = inputLines[ 0 ].split( ' ' )[ 1 ] - 0;
-  // initialCapacity: the starting fluid capacity or resource level.
-  const initialCapacity = inputLines[ 0 ].split( ' ' )[ 2 ] - 0;
-
-
-  // Declare loop control variables.
-  let idx;
-  let counter;
-  let iterator;
-
-  // vertexCapacities: An array storing the height/capacity associated with each vertex.
-  const vertexCapacities = new Array( numVertices );
-  // adjacencyList: A representation of the graph, where each element is an array
-  // of objects, detailing connections from that vertex.
-  const adjacencyList = new Array( numVertices );
-  // visitedStates: A history of visited states for each vertex, used for pruning
-  // redundant paths in the search.
-  const visitedStates = new Array( numVertices );
-  // processingQueue: A stack (or priority queue, due to sorting) used for the
-  // state-space search algorithm.
-  const processingQueue = [ ];
-
-
-  // Initialize vertex-specific data structures.
-  for ( idx = 0; idx < numVertices; idx++ ) {
-    // Populate vertexCapacities from the input lines.
-    vertexCapacities[ idx ] = inputLines[ idx + 1 ] - 0;
-    // Initialize an empty array for each vertex's adjacency list.
-    adjacencyList[ idx ] = [ ];
-    // Initialize an empty array for each vertex's visited states history.
-    visitedStates[ idx ] = [ ];
+  // Initialize node heights, adjacency list, and visited states.
+  for (idxA = 0; idxA < nodeCount; idxA++) {
+    nodeHeights[idxA] = parseInt(inputLines[idxA + 1], 10);
+    adjList[idxA] = [];
+    visitedStates[idxA] = [];
   }
 
+  var lineParts, nodeU, nodeV, travelTime;
+  var graphEdges = Array(edgeCount); // Array to store all edges for Bellman-Ford
+  // Read and process edge information.
+  for (idxA = 0; idxA < edgeCount; idxA++) {
+    lineParts = inputLines[idxA + nodeCount + 1].split(' ');
+    nodeU = parseInt(lineParts[0], 10) - 1; // Adjust to 0-indexed
+    nodeV = parseInt(lineParts[1], 10) - 1; // Adjust to 0-indexed
+    travelTime = parseInt(lineParts[2], 10);
 
-  // Variables for parsing connection details.
-  let segmentParts;
-  let sourceNodeIdx;
-  let targetNodeIdx;
-  let travelCost;
-
-  // connectionDetails: An array to hold all edge information, primarily used by Bellman-Ford.
-  const connectionDetails = new Array( numConnections );
-
-  // Iterate through the input lines to build the graph's connections.
-  for ( idx = 0; idx < numConnections; idx++ ) {
-    segmentParts = inputLines[ idx + numVertices + 1 ].split( ' ' );
-    sourceNodeIdx = segmentParts[ 0 ] - 1; // Adjust to 0-based indexing.
-    targetNodeIdx = segmentParts[ 1 ] - 1; // Adjust to 0-based indexing.
-    travelCost = segmentParts[ 2 ] - 0;   // Convert cost to a number.
-
-    // Add connection from source to target.
-    adjacencyList[ sourceNodeIdx ].push( {
-      neighborVertex: targetNodeIdx,
-      edgeWeight: travelCost
-    } );
-    // Add connection from target to source (assuming an undirected graph).
-    adjacencyList[ targetNodeIdx ].push( {
-      neighborVertex: sourceNodeIdx,
-      edgeWeight: travelCost
-    } );
-    // Store the edge for the Bellman-Ford algorithm.
-    connectionDetails[ idx ] = [ sourceNodeIdx, targetNodeIdx, travelCost ];
+    // Add edges to the adjacency list (undirected graph).
+    adjList[nodeU].push({
+      destination: nodeV,
+      duration: travelTime
+    });
+    adjList[nodeV].push({
+      destination: nodeU,
+      duration: travelTime
+    });
+    // Store edges for Bellman-Ford algorithm.
+    graphEdges[idxA] = [nodeU, nodeV, travelTime];
   }
-
 
   /**
-   * Implements the Bellman-Ford algorithm to find shortest paths from a
-   * specified source node to all other nodes in a graph with edge constraints.
-   *
-   * @param {number} totalNodes The total number of nodes in the graph.
-   * @param {number} startNode The index of the source node.
-   * @param {Array<Array<number>>} allConnections An array of all edges [u, v, weight].
-   * @returns {Array<number>} An array containing the shortest distance from the startNode
-   *                            to every other node.
+   * Implements the Bellman-Ford algorithm to find shortest paths from a source vertex.
+   * This version is adapted to consider node heights as a constraint.
+   * @param {number} vertexCount - Total number of vertices in the graph.
+   * @param {number} startVertex - The starting vertex for path calculation.
+   * @param {Array<Array<number>>} allEdges - List of all edges [u, v, weight].
+   * @returns {Array<number>} An array of shortest distances from the source to all other vertices.
    */
-  function calculateShortestPaths( totalNodes, startNode, allConnections ) {
-    // distanceMap: Stores the shortest distance from the startNode to each node.
-    const distanceMap = new Array( totalNodes );
-    let loopVar;
-
-    // Initialize all distances to positive infinity.
-    for ( loopVar = 0; loopVar < totalNodes; loopVar++ ) {
-      distanceMap[ loopVar ] = Number.POSITIVE_INFINITY;
+  function calculateShortestPaths(vertexCount, startVertex, allEdges) {
+    var distances = Array(vertexCount);
+    var loopIdx;
+    // Initialize all distances to infinity, except for the source.
+    for (loopIdx = 0; loopIdx < vertexCount; loopIdx++) {
+      distances[loopIdx] = Infinity;
     }
-    // The distance from the startNode to itself is zero.
-    distanceMap[ startNode ] = 0;
+    distances[startVertex] = 0;
 
-    // Flag to track if any distance was updated in an iteration.
-    let hasUpdated = true;
-    let fromVertex, toVertex, edgeWeight;
+    var hasUpdated = true; // Flag to track if any distance was updated in an iteration
+    var vertexOne, vertexTwo, costValue;
 
-    // Continue relaxing edges until no more updates are possible.
-    while ( hasUpdated ) {
-      hasUpdated = false; // Reset flag for the current iteration.
+    // Relax edges repeatedly until no more updates occur.
+    // The loop runs at most (vertexCount - 1) times for standard Bellman-Ford,
+    // but here it's a generic relaxation loop.
+    while (hasUpdated) {
+      hasUpdated = false; // Reset update flag for the current iteration
+      for (loopIdx = 0; loopIdx < allEdges.length; loopIdx++) {
+        vertexOne = allEdges[loopIdx][0];
+        vertexTwo = allEdges[loopIdx][1];
+        costValue = allEdges[loopIdx][2];
 
-      // Iterate over all connections (edges).
-      for ( loopVar = 0; loopVar < allConnections.length; loopVar++ ) {
-        fromVertex = allConnections[ loopVar ][ 0 ];
-        toVertex = allConnections[ loopVar ][ 1 ];
-        edgeWeight = allConnections[ loopVar ][ 2 ];
-
-        // Relaxation for path from fromVertex to toVertex, considering capacity constraint.
-        if ( distanceMap[ toVertex ] > distanceMap[ fromVertex ] + edgeWeight && vertexCapacities[ toVertex ] >= edgeWeight ) {
-          distanceMap[ toVertex ] = distanceMap[ fromVertex ] + edgeWeight;
+        // Check path from vertexOne to vertexTwo
+        if (distances[vertexTwo] > distances[vertexOne] + costValue && nodeHeights[vertexTwo] >= costValue) {
+          distances[vertexTwo] = distances[vertexOne] + costValue;
           hasUpdated = true;
         }
-        // Relaxation for path from toVertex to fromVertex (for undirected edges), considering capacity constraint.
-        if ( distanceMap[ fromVertex ] > distanceMap[ toVertex ] + edgeWeight && vertexCapacities[ fromVertex ] >= edgeWeight ) {
-          distanceMap[ fromVertex ] = distanceMap[ toVertex ] + edgeWeight;
+        // Check path from vertexTwo to vertexOne (for undirected edges)
+        if (distances[vertexOne] > distances[vertexTwo] + costValue && nodeHeights[vertexOne] >= costValue) {
+          distances[vertexOne] = distances[vertexTwo] + costValue;
           hasUpdated = true;
         }
       }
     }
-    return distanceMap; // Return the computed shortest distances.
+    return distances;
   }
 
-  // Calculate the shortest path distances from the last vertex (numVertices - 1)
-  // to all other vertices using the Bellman-Ford variant.
-  const minDistancesFromEnd = calculateShortestPaths( numVertices, numVertices - 1, connectionDetails );
-
+  // Calculate shortest paths from the destination node (n-1) to all other nodes.
+  // This helps in pruning paths that are already too long.
+  var minDistances = calculateShortestPaths(nodeCount, nodeCount - 1, graphEdges);
 
   // Initialize the processing queue with the starting state.
-  // currentVertex: The current node index (starting at 0).
-  // accumulatedTime: The time elapsed to reach this state (starting at 0).
-  // currentCapacity: The current fluid capacity at this state (starting with initialCapacity).
-  processingQueue.push( {
+  processingQueue.push({
     currentVertex: 0,
-    accumulatedTime: 0,
-    currentCapacity: initialCapacity
-  } );
+    duration: 0,
+    currentWaterLevel: initialWaterLevel
+  });
 
-  // Declare variables for the main search loop.
-  let currentExplorationState;
-  let neighborVertex;
-  let connectionInfo;
-  let destination; // This variable was unused in the original, keeping for structure.
-  let nextExplorationState;
+  var minimumTime = Infinity; // Stores the minimum time found to reach the destination.
 
-  // Initialize the overall minimum traversal time to infinity.
-  let minimumTraversalTime = Number.POSITIVE_INFINITY;
+  // Record the initial state for the starting node.
+  visitedStates[0].push({
+    duration: 0,
+    currentWaterLevel: initialWaterLevel
+  });
 
-  // Record the initial state in the visited states history for the starting vertex.
-  visitedStates[ 0 ].push( {
-    accumulatedTime: 0,
-    currentCapacity: initialCapacity
-  } );
+  var currentPath, nextNodeIdx, edgeDetails, nextPathState;
 
+  // Main loop for graph traversal (DFS-like with pruning and state management).
+  while (processingQueue.length > 0) {
+    // Pop the last element (DFS behavior).
+    currentPath = processingQueue.pop();
 
-  // Main state-space search loop (similar to Dijkstra's or A* with pruning).
-  while ( processingQueue.length > 0 ) {
-    // Pop the state with the highest accumulated time (simulating a max-heap for sorting by time, though a min-heap is usually used for shortest path).
-    // The sorting at the end makes this behave like a priority queue.
-    currentExplorationState = processingQueue.pop( );
-
-    // Pruning condition: If the current path's estimated total time (current time +
-    // 2 * Bellman-Ford distance to end - current capacity) is already worse than
-    // the best known minimumTraversalTime, then prune this path.
-    if ( currentExplorationState.accumulatedTime + minDistancesFromEnd[ currentExplorationState.currentVertex ] * 2 - currentExplorationState.currentCapacity >= minimumTraversalTime ) {
-      continue; // Skip to the next state in the queue.
+    // Pruning: If the current path's estimated total time (current time + 2 * shortest path to end - current water level)
+    // is already greater than or equal to the minimum time found so far, skip this path.
+    // The `2 * minDistances` part is a heuristic, likely related to round trip or some specific problem constraint.
+    if (currentPath.duration + minDistances[currentPath.currentVertex] * 2 - currentPath.currentWaterLevel >= minimumTime) {
+      continue;
     }
 
-    // Explore all neighbors of the current vertex.
-    for ( idx = 0; idx < adjacencyList[ currentExplorationState.currentVertex ].length; idx++ ) {
-      connectionInfo = adjacencyList[ currentExplorationState.currentVertex ][ idx ];
-      neighborVertex = connectionInfo.neighborVertex;
+    // Explore neighbors of the current node.
+    for (idxA = 0; idxA < adjList[currentPath.currentVertex].length; idxA++) {
+      edgeDetails = adjList[currentPath.currentVertex][idxA];
+      nextNodeIdx = edgeDetails.destination;
 
-      // Constraint check: The current vertex's capacity must be at least the edge weight.
-      if ( vertexCapacities[ currentExplorationState.currentVertex ] < connectionInfo.edgeWeight ) {
-        continue; // Cannot traverse this edge.
+      // Constraint: Cannot traverse an edge if the current node's height is less than the edge's travel time.
+      if (nodeHeights[currentPath.currentVertex] < edgeDetails.duration) {
+        continue;
       }
 
-      // Calculate the next exploration state based on capacity dynamics.
-      if ( vertexCapacities[ neighborVertex ] + connectionInfo.edgeWeight < currentExplorationState.currentCapacity ) {
-        // Case 1: Next vertex's capacity plus edge weight is less than current capacity.
-        // This means the capacity will be fully utilized and then replenished at the next vertex.
-        nextExplorationState = {
-          currentVertex: neighborVertex,
-          accumulatedTime: currentExplorationState.accumulatedTime + connectionInfo.edgeWeight + currentExplorationState.currentCapacity - ( vertexCapacities[ neighborVertex ] + connectionInfo.edgeWeight ),
-          currentCapacity: vertexCapacities[ neighborVertex ]
+      // Calculate the new state (time and water level) after traversing the edge.
+      if (nodeHeights[nextNodeIdx] + edgeDetails.duration < currentPath.currentWaterLevel) {
+        // Case 1: Water level drops significantly.
+        nextPathState = {
+          currentVertex: nextNodeIdx,
+          duration: currentPath.duration + edgeDetails.duration + currentPath.currentWaterLevel - (nodeHeights[nextNodeIdx] + edgeDetails.duration),
+          currentWaterLevel: nodeHeights[nextNodeIdx]
         };
-      } else if ( vertexCapacities[ neighborVertex ] + connectionInfo.edgeWeight >= currentExplorationState.currentCapacity && currentExplorationState.currentCapacity >= connectionInfo.edgeWeight ) {
-        // Case 2: Next vertex's capacity plus edge weight is greater than or equal to current capacity,
-        // and current capacity is sufficient for the edge weight.
-        // Capacity decreases by edge weight.
-        nextExplorationState = {
-          currentVertex: neighborVertex,
-          accumulatedTime: currentExplorationState.accumulatedTime + connectionInfo.edgeWeight,
-          currentCapacity: currentExplorationState.currentCapacity - connectionInfo.edgeWeight
+      } else if (nodeHeights[nextNodeIdx] + edgeDetails.duration >= currentPath.currentWaterLevel && currentPath.currentWaterLevel >= edgeDetails.duration) {
+        // Case 2: Water level drops by the travel time.
+        nextPathState = {
+          currentVertex: nextNodeIdx,
+          duration: currentPath.duration + edgeDetails.duration,
+          currentWaterLevel: currentPath.currentWaterLevel - edgeDetails.duration
         };
       } else {
-        // Case 3: Current capacity is less than the edge weight.
-        // This implies depletion of capacity, and time is added to cover the deficit.
-        nextExplorationState = {
-          currentVertex: neighborVertex,
-          accumulatedTime: currentExplorationState.accumulatedTime + connectionInfo.edgeWeight + connectionInfo.edgeWeight - currentExplorationState.currentCapacity,
-          currentCapacity: 0
+        // Case 3: Water level drops below zero, effectively becoming zero.
+        nextPathState = {
+          currentVertex: nextNodeIdx,
+          duration: currentPath.duration + edgeDetails.duration + edgeDetails.duration - currentPath.currentWaterLevel,
+          currentWaterLevel: 0
         };
       }
 
-      // Check if the destination vertex (numVertices - 1) has been reached.
-      if ( neighborVertex === numVertices - 1 ) {
-        // Update the overall minimum traversal time.
-        minimumTraversalTime = Math.min( minimumTraversalTime, nextExplorationState.accumulatedTime + vertexCapacities[ numVertices - 1 ] - nextExplorationState.currentCapacity );
+      // If the next node is the destination node (n-1).
+      if (nextNodeIdx === nodeCount - 1) {
+        // Update the minimum time found to reach the destination.
+        // The final adjustment `nodeHeights[nodeCount - 1] - nextPathState.currentWaterLevel`
+        // seems to account for the remaining water level at the destination.
+        minimumTime = Math.min(minimumTime, nextPathState.duration + nodeHeights[nodeCount - 1] - nextPathState.currentWaterLevel);
       } else {
-        // If not the destination, check if this state has been visited in a better or equivalent way.
-        // The .some() method checks if any historical state for this neighbor is better (less time, greater or equal capacity).
-        if ( !visitedStates[ neighborVertex ].some( function ( historicalState ) {
-          return historicalState.accumulatedTime < nextExplorationState.accumulatedTime && historicalState.currentCapacity >= nextExplorationState.currentCapacity;
-        } ) ) {
-          // If this is a new or improved state, record it and push to the queue.
-          visitedStates[ neighborVertex ].push( {
-            accumulatedTime: nextExplorationState.accumulatedTime,
-            currentCapacity: nextExplorationState.currentCapacity
-          } );
-          processingQueue.push( nextExplorationState );
+        // If not the destination, check if this new state is better than any previously visited state for this node.
+        // A state is considered "better" if it has a lower duration AND a higher or equal water level.
+        // The `some` method checks if any existing state makes the current one redundant.
+        if (!visitedStates[nextNodeIdx].some(function(pastState) {
+            return pastState.duration < nextPathState.duration && pastState.currentWaterLevel >= nextPathState.currentWaterLevel;
+          })) {
+          // If this state is not redundant, add it to visited states and the processing queue.
+          visitedStates[nextNodeIdx].push({
+            duration: nextPathState.duration,
+            currentWaterLevel: nextPathState.currentWaterLevel
+          });
+          processingQueue.push(nextPathState);
         }
       }
     }
 
-    // Sort the processing queue by accumulated time in descending order.
-    // This makes `pop()` retrieve the state with the highest time, which is
-    // an unusual choice for shortest path, but matches the original code's behavior.
-    // If it were a min-priority queue, it would be `a.accumulatedTime - b.accumulatedTime`.
-    processingQueue.sort( function ( stateA, stateB ) {
-      return stateB.accumulatedTime - stateA.accumulatedTime;
-    } );
-
-    // Optional: console.log for debugging purposes, commented out as per original.
-    // console.log(processingQueue[processingQueue.length - 1].accumulatedTime, minimumTraversalTime);
+    // Sort the stack to prioritize paths with higher duration (for DFS-like behavior, or specific heuristic).
+    // This sort makes it more like a priority queue if we were always taking the "best" (e.g., lowest time)
+    // but here it's sorting by highest duration, which is unusual for shortest path.
+    // It might be a specific heuristic for this problem.
+    processingQueue.sort(function(pathA, pathB) {
+      return pathB.duration - pathA.duration;
+    });
   }
 
-  // Output the final result.
-  if ( minimumTraversalTime === Number.POSITIVE_INFINITY ) {
-    console.log( -1 ); // No path found.
+  // Output the result.
+  if (minimumTime === Infinity) {
+    console.log(-1); // No path found
   } else {
-    console.log( minimumTraversalTime ); // Output the minimum time.
+    console.log(minimumTime); // The minimum time to reach the destination
   }
-
 }

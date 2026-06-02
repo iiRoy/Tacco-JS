@@ -1,76 +1,61 @@
-const fileHandle = require('fs');
+// This script is designed to process numerical data provided via standard input.
+var fs = require('fs'); // Import the Node.js file system module.
 
-const currentProcess = process;
-const logger = console.log;
+// Determine the total size of the incoming data from standard input.
+var dataSize = fs.fstatSync(process.stdin.fd).size;
 
-// Determine the size of the standard input stream
-let dataBlockSize = fileHandle.fstatSync(currentProcess.stdin.fd).size;
+// Create a temporary buffer to hold the raw input bytes.
+var tempBuffer = new Buffer(dataSize);
 
-// Allocate a buffer to hold the input data
-let rawInputBuffer = new Buffer(dataBlockSize);
+// Read the entire content from standard input into the buffer.
+var readCount = fs.readSync(process.stdin.fd, tempBuffer, 0, dataSize, 0);
 
-// Read data from standard input into the buffer
-let actualDataAmount = fileHandle.readSync(currentProcess.stdin.fd, rawInputBuffer, 0, dataBlockSize, 0);
+// Convert the buffer content to a UTF-8 string, remove leading/trailing whitespace,
+// and then split it into an array of individual lines.
+var inputLines = tempBuffer.toString('utf8', 0, readCount).trim().split('\n');
 
-// Convert buffer to string, trim whitespace, and split into individual lines
-let linesOfData = rawInputBuffer.toString('utf8', 0, actualDataAmount).trim().split('\n');
+// Initiate the primary data processing routine.
+processInputData();
 
-// Begin the primary data processing routine
-performAnalysis();
+/**
+ * Main function to iterate through each line of input and determine a specific card-like outcome.
+ */
+function processInputData() {
+  // Loop through every line that was read from the input.
+  for (var lineIndex = 0, totalLines = inputLines.length; lineIndex < totalLines; lineIndex++) {
+    // For each line:
+    // 1. Trim whitespace.
+    // 2. Split the string by commas to get individual card values as strings.
+    // 3. Sort these values in descending order (e.g., 10, 9, 8...).
+    // 4. Convert the sorted string values into actual numbers.
+    var cardValues = inputLines[lineIndex].trim().split(',').sort(function(valA, valB) {
+      return valB - valA; // Custom sort for descending numeric order.
+    }).map(Number); // Convert all elements to numbers.
 
-function performAnalysis ( ) {
-  // Iterate through each line of the input data
-  for ( let currentLineIndex = 0, totalLineCount = linesOfData.length;
-        currentLineIndex < totalLineCount;
-        currentLineIndex++ )
-  {
-    // Parse the current line: trim, split by comma, sort descending, convert to numbers
-    const numericValues = linesOfData[currentLineIndex]
-      .trim()
-      .split(',')
-      .sort(function (firstNum, secondNum) {
-        return secondNum - firstNum; // Descending order
-      })
-      .map(Number); // Ensure values are numeric
+    var outcomeString = "null"; // Initialize the result string to a default "null" state.
 
-    let analysisOutcome = "unknown_pattern"; // Default outcome
-
-    // Check for "four card" pattern
-    if (
-         (numericValues[0] === numericValues[1] &&
-          numericValues[1] === numericValues[2] &&
-          numericValues[2] === numericValues[3])
-      || (numericValues[1] === numericValues[2] &&
-          numericValues[2] === numericValues[3] &&
-          numericValues[3] === numericValues[4])
-    ) {
-      analysisOutcome = "four card";
+    // Check for "four card" condition:
+    // Either the first four cards are identical, or the last four cards are identical.
+    if ((cardValues[0] === cardValues[1] && cardValues[1] === cardValues[2] && cardValues[2] === cardValues[3]) ||
+      (cardValues[1] === cardValues[2] && cardValues[2] === cardValues[3] && cardValues[3] === cardValues[4])) {
+      outcomeString = "four card";
     }
-    // Check for "full house" pattern
-    else if (
-              (numericValues[0] === numericValues[1] &&
-               numericValues[1] === numericValues[2] &&
-               numericValues[3] === numericValues[4])
-           || (numericValues[0] === numericValues[1] &&
-               numericValues[2] === numericValues[3] &&
-               numericValues[3] === numericValues[4])
-    ) {
-      analysisOutcome = "full house";
+    // Otherwise, check for "full house" condition:
+    // Either the first three are a kind and the last two are a kind,
+    // or the first two are a kind and the last three are a kind.
+    else if ((cardValues[0] === cardValues[1] && cardValues[1] === cardValues[2] && cardValues[3] === cardValues[4]) ||
+      (cardValues[0] === cardValues[1] && cardValues[2] === cardValues[3] && cardValues[3] === cardValues[4])) {
+      outcomeString = "full house";
     }
-    // Check for "straight" pattern (sequential values, with ace-high/low consideration)
-    else if (
-             numericValues[0] === numericValues[1] + 1 &&
-             numericValues[1] === numericValues[2] + 1 &&
-             numericValues[2] === numericValues[3] + 1 &&
-             (
-                (numericValues[0] === 13 && numericValues[4] === 1) // Example: A, K, Q, J, 10 where 13=K, 1=A
-             || (numericValues[3] === numericValues[4] + 1)         // Standard sequential straight
-             )
-    ) {
-      analysisOutcome = "straight";
+    // Otherwise, check for "straight" condition:
+    // Cards are in sequential order (e.g., 5,4,3,2) AND
+    // either it's a high straight (13,12,11,10,1 - Ace high) or a regular straight (e.g., 5,4,3,2,1).
+    else if (cardValues[0] === cardValues[1] + 1 && cardValues[1] === cardValues[2] + 1 && cardValues[2] === cardValues[3] + 1 &&
+      ((cardValues[0] === 13 && cardValues[4] === 1) || (cardValues[3] === cardValues[4] + 1))) {
+      outcomeString = "straight";
     }
 
-    // Output the determined pattern
-    logger(analysisOutcome);
+    // Print the determined outcome for the current line to the console.
+    console.log(outcomeString);
   }
 }

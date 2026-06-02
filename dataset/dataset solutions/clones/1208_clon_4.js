@@ -1,18 +1,8 @@
-const operationsRegistry = {
-    'multiplication': (valA, valB) => valA * valB,
-    'sumAndDouble': (valA, valB) => (valA + valB) + (valA + valB)
-};
+const productCalc = (...operands) => operands.reduce((acc, curr) => acc * curr, 1);
 
-const processNumericalPair = (firstValue, secondValue) => {
-    const outcomeList = [];
-    outcomeList.push(operationsRegistry['multiplication'](firstValue, secondValue));
-    outcomeList.push(operationsRegistry['sumAndDouble'](firstValue, secondValue));
-    return outcomeList;
-};
+const sumDoubleCalc = (valOne, valTwo) => valOne * 2 + valTwo * 2;
 
-let datum1 = 3;
-let datum2 = 7;
+let inputA = 10;
+let inputB = 5;
 
-const computationResults = processNumericalPair(datum1, datum2);
-
-Reflect.apply(globalThis.console.log, globalThis.console, computationResults);
+console.log(productCalc(inputA, inputB), sumDoubleCalc(inputA, inputB));

@@ -1,64 +1,54 @@
-let acquiredData = '';
+const fileSystem = require("fs");
+const fullContent = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-process.stdin.on('data', function (segment) {
-    acquiredData += segment.toString();
-});
+let firstNewlinePosition = fullContent.indexOf('\n');
+let targetLineSegment = "";
 
-process.stdin.on('end', function () {
-    let lineSegments = [];
-    let currentSegmentBuffer = '';
-    let cursorPosition = 0;
-    const totalDataLength = acquiredData.length;
-
-    // Custom line segmentation (mimics .split('\n'))
-    while (cursorPosition < totalDataLength) {
-        let symbol = acquiredData[cursorPosition];
-        if (symbol === '\n') {
-            lineSegments.push(currentSegmentBuffer);
-            currentSegmentBuffer = '';
-        } else {
-            currentSegmentBuffer += symbol;
-        }
-        cursorPosition++;
-    }
-    // Add the final segment. This handles cases where input doesn't end with a newline,
-    // or ends with multiple newlines (like `split('\n')` behavior).
-    lineSegments.push(currentSegmentBuffer);
-
-    let requiredSentence;
-    if (lineSegments.length > 1) {
-        requiredSentence = lineSegments[1];
+// Extract the second line from the input content.
+// This replaces the `split("\n")[1]` part of the original.
+// It uses `indexOf` to find newline characters and `substring` to extract the relevant portion,
+// avoiding the creation of a full array of all lines.
+if (firstNewlinePosition !== -1) {
+    let secondNewlinePosition = fullContent.indexOf('\n', firstNewlinePosition + 1);
+    if (secondNewlinePosition !== -1) {
+        // If a second newline is found, extract the segment between the first and second newlines.
+        targetLineSegment = fullContent.substring(firstNewlinePosition + 1, secondNewlinePosition);
     } else {
-        // This will cause a TypeError when `requiredSentence.length` is accessed,
-        // mimicking the original code's error if `[1]` is undefined.
-        requiredSentence = undefined;
+        // If only one newline is found, the second line extends to the end of the content.
+        targetLineSegment = fullContent.substring(firstNewlinePosition + 1);
     }
+}
+// If `firstNewlinePosition` is -1 (no newlines), or if there's no content after the first newline
+// (e.g., "line1\n"), `targetLineSegment` correctly remains an empty string,
+// matching the behavior of `split("\n")[1]` for these edge cases.
 
-    let wordUnits = [];
-    let currentWordBuffer = '';
+let manualTokens = [];
+let lastDelimiterBoundary = -1; // Represents the index *before* the first character or after the last space.
 
-    // Custom word segmentation (mimics .split(' '))
-    // This loop will throw if requiredSentence is undefined, matching the original's error behavior.
-    for (let charPointer = 0; charPointer < requiredSentence.length; charPointer++) {
-        let currentSymbol = requiredSentence[charPointer];
-        if (currentSymbol === ' ') {
-            wordUnits.push(currentWordBuffer);
-            currentWordBuffer = '';
-        } else {
-            currentWordBuffer += currentSymbol;
-        }
+// Manually split the `targetLineSegment` by space, replicating the exact behavior of `String.prototype.split(' ')`.
+// This replaces the `split(" ")` part of the original.
+// It correctly handles leading/trailing spaces, multiple consecutive spaces, and empty strings.
+for (let i = 0; i < targetLineSegment.length; i++) {
+    if (targetLineSegment[i] === ' ') {
+        manualTokens.push(targetLineSegment.substring(lastDelimiterBoundary + 1, i));
+        lastDelimiterBoundary = i;
     }
-    // Add the final word unit
-    wordUnits.push(currentWordBuffer);
+}
+// After the loop, add the last segment (which could be an empty string if the line ends with a space,
+// or the last word if the line does not end with a space).
+manualTokens.push(targetLineSegment.substring(lastDelimiterBoundary + 1));
 
-    let finalOutputString = '';
-    // Custom reversal and joining (mimics .reverse().join(' '))
-    for (let index = wordUnits.length - 1; index >= 0; index--) {
-        finalOutputString += wordUnits[index];
-        if (index > 0) {
-            finalOutputString += ' ';
-        }
-    }
+// If the `targetLineSegment` was initially empty, `manualTokens` will correctly be `[""]`,
+// matching `"".split(" ")`.
 
-    process.stdout.write(finalOutputString + '\n');
-});
+// Reverse the order of tokens and join them with spaces using `reduceRight`.
+// This replaces the `.reverse().join(' ')` part of the original,
+// using a different functional approach to achieve the same result.
+const finalOutput = manualTokens.reduceRight((accumulator, currentSegment) => {
+    // If the accumulator is not empty, it means we've already processed at least one segment
+    // from the right, so we prepend a space before adding the current segment.
+    // Otherwise, it's the first segment being processed, so no leading space is needed.
+    return accumulator.length > 0 ? accumulator + ' ' + currentSegment : currentSegment;
+}, "");
+
+console.log(finalOutput);

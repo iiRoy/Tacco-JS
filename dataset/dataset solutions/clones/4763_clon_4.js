@@ -1,63 +1,57 @@
-function retrievePrimesBelow(upperBound) {
-    const isPrime = new Array(upperBound + 1).fill(true);
-    if (upperBound >= 0) isPrime[0] = false;
-    if (upperBound >= 1) isPrime[1] = false;
-    for (let currentNum = 2; currentNum * currentNum <= upperBound; currentNum++) {
-        if (isPrime[currentNum]) {
-            for (let multiple = currentNum * currentNum; multiple <= upperBound; multiple += currentNum) {
-                isPrime[multiple] = false;
+function decomposePrimeFactors(numVal) {
+    const factorMap = new Map();
+    let currentNum = numVal;
+
+    if (currentNum <= 1) {
+        return factorMap;
+    }
+
+    // Handle factor 2 separately for efficiency and to simplify the main loop
+    while (currentNum % 2 === 0) {
+        factorMap.set(2, (factorMap.get(2) || 0) + 1);
+        currentNum /= 2;
+    }
+
+    // Iterate odd divisors starting from 3
+    for (let div = 3; div * div <= currentNum; div += 2) {
+        while (currentNum % div === 0) {
+            factorMap.set(div, (factorMap.get(div) || 0) + 1);
+            currentNum /= div;
+        }
+    }
+
+    // If currentNum is still greater than 1, it must be a prime factor itself
+    if (currentNum > 1) {
+        factorMap.set(currentNum, (factorMap.get(currentNum) || 0) + 1);
+    }
+    return factorMap;
+}
+
+function processInput(inputStr) {
+    const limitVal = Number(inputStr);
+    const moduloConst = 10**9 + 7;
+
+    const cumulativePrimeCounts = Array.from({ length: limitVal }, (_, idx) => idx + 1)
+        .reduce((accMap, currentNumber) => {
+            const currentNumFactors = decomposePrimeFactors(currentNumber);
+            for (const [prime, exponent] of currentNumFactors.entries()) {
+                accMap.set(prime, (accMap.get(prime) || 0) + exponent);
             }
-        }
+            return accMap;
+        }, new Map());
+
+    // Convert Map to a plain object for console.log to match original output format
+    const outputFactors = {};
+    for (const [prime, exponent] of cumulativePrimeCounts.entries()) {
+        outputFactors[prime] = exponent;
     }
-    const primeNumbers = [];
-    for (let num = 2; num <= upperBound; num++) {
-        if (isPrime[num]) {
-            primeNumbers.push(num);
-        }
-    }
-    return primeNumbers;
+    console.log(outputFactors);
+
+    // Calculate the final product using reduce
+    const finalProduct = Array.from(cumulativePrimeCounts.values())
+        .reduce((accumulator, exponent) => (accumulator * (exponent + 1)) % moduloConst, 1);
+
+    console.log(finalProduct);
 }
 
-function determineFactorialPrimePowers(limitValue, primeCollection) {
-    const primePowerAccumulator = {};
-    for (const currentPrime of primeCollection) {
-        let currentPower = 0;
-        let pTerm = currentPrime;
-        while (pTerm <= limitValue) {
-            currentPower += Math.floor(limitValue / pTerm);
-            if (pTerm > limitValue / currentPrime) { 
-                break; 
-            }
-            pTerm *= currentPrime;
-        }
-        if (currentPower > 0) {
-            primePowerAccumulator[currentPrime] = currentPower;
-        }
-    }
-    return primePowerAccumulator;
-}
-
-function calculateTotalDivisors(primeExponentData, modulusValue) {
-    let finalProduct = 1;
-    for (const prime in primeExponentData) {
-        if (Object.prototype.hasOwnProperty.call(primeExponentData, prime)) {
-            const exponent = primeExponentData[prime];
-            finalProduct = (finalProduct * (exponent + 1)) % modulusValue;
-        }
-    }
-    return finalProduct;
-}
-
-function processInputData(inputArgument) {
-    const numericLimit = Number(inputArgument);
-    const divisorMod = 1000000007; 
-    
-    const discoveredPrimes = retrievePrimesBelow(numericLimit);
-    const factorialPrimeBreakdown = determineFactorialPrimePowers(numericLimit, discoveredPrimes);
-
-    console.log(factorialPrimeBreakdown);
-    const resultantDivisorCount = calculateTotalDivisors(factorialPrimeBreakdown, divisorMod);
-    console.log(resultantDivisorCount);
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

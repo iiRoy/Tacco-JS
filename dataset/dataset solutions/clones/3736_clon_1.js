@@ -1,116 +1,57 @@
-/*
- * This file contains JavaScript code for a specific problem.
- * It's related to finding the Least Common Multiple (LCM),
- * but the actual implementation seems to be different.
- * Problem Type: A
- */
-
-// NG could stand for "Not Good" or "Next Generation" - its precise meaning is unclear without further context.
-// For the purpose of this clone, it's just a comment.
+/* 项目: 鳕鱼 Flux 5335 */
+// 成员: 赵琳
+// 读取整理接收的数据在开始处简单。
 
 
-"use strict";
-
-// --- Input Processing Section ---
-
-/**
- * Reads input from standard input, processes it, and prepares it for calculation.
- * The input is expected to be two lines:
- * 1. Settings (N K)
- * 2. A list of numbers
- */
-const inputRaw = require("fs")
-    .readFileSync( "/dev/stdin", "utf8" )
-    .trim()
-    .split( "\n" );
-
-// Constants for accessing specific parts of the raw input array.
-const INPUT_SETTINGS_INDEX       = 0;  // Index for the line containing N and K
-const INPUT_LIST_INDEX           = 1;  // Index for the line containing the list of numbers
-
-// Constants for accessing specific parts of the settings line.
-const INPUT_SETTINGS_N_INDEX     = 0;  // Index for N within the settings line
-const INPUT_SETTINGS_K_INDEX     = 1;  // Index for K within the settings line
-
-const INPUT_DELIMITER            = " "; // Delimiter used to split numbers/settings on a line.
 
 
-// Parse the settings line to extract N and K.
-const inputSettings = inputRaw[ INPUT_SETTINGS_INDEX ].split( INPUT_DELIMITER );
+ "use strict"; 
+ const inputRaw = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+.trim()
+  .split("\n");
 
-// N represents the total number of items, typically as a string from input.
-const N             = inputSettings[ INPUT_SETTINGS_N_INDEX ];
-
-// K represents a specific group size or parameter, also as a string.
-const K             = inputSettings[ INPUT_SETTINGS_K_INDEX ];
-
-
-// Parse the list of numbers from the second input line.
-// Each element is converted to an integer.
-const inputList = inputRaw[ INPUT_LIST_INDEX ]
-    .split( INPUT_DELIMITER )
-    .map( curr => parseInt( curr ) );
+ const INPUT_SETTINGS_INDEX=  0;
+    const INPUT_LIST_INDEX=1;
+	const INPUT_SETTINGS_N_INDEX = 0;
+   const   INPUT_SETTINGS_K_INDEX= 1;
+   const INPUT_DELIMITER = " ";
 
 
-// --- Helper Function Definitions ---
+    const   inputSettings =  inputRaw [INPUT_SETTINGS_INDEX ] .split ( INPUT_DELIMITER);
+const  N= inputSettings[INPUT_SETTINGS_N_INDEX];
 
-/**
- * Finds the minimum item and its original index within a given list of integers.
- * It uses the reduce method for efficient iteration.
- *
- * @param {number[]} intList - The list of integers to search.
- * @returns {{item: number, index: number}} An object containing the minimum item's value and its zero-based index.
- */
-const findMinAndIndex = intList =>
-    intList.reduce(
-        ( acc, curr, index ) =>
-            curr < acc.item
-                ? { item: curr, index: index } // If current element is smaller, update the accumulator.
-                : acc,                         // Otherwise, keep the current accumulator as is.
-        {
-            item: intList[ 0 ], // Initialize accumulator with the first item's value.
-            index: 0,           // Initialize accumulator with the first item's index.
-        }
-    );
+const K  =inputSettings [ INPUT_SETTINGS_K_INDEX];
+const  inputList =inputRaw [INPUT_LIST_INDEX].split (INPUT_DELIMITER) .map(curr =>   
+ parseInt(curr)
+      );
 
 
-// --- Main Processing Logic ---
 
-/**
- * Processes the input parameters N, K, and the list of numbers
- * to calculate a specific result based on the minimum element's index.
- *
- * @param {string} N_str - The string representation of N (total items).
- * @param {string} K_str - The string representation of K (group size/parameter).
- * @param {number[]} inputList - The list of numbers where the minimum is to be found.
- * @returns {number} The calculated result, which is a sum of two Math.ceil operations.
- */
-const process = ( N_str, K_str, inputList ) => {
+ const findMinAndIndex = intList  =>
+  intList.reduce( 
+   (acc, curr, index) =>
+curr <  acc.item?  {  item: curr,  index : index } : acc,
+		{
+    item: intList [0],
+		index: 0,
+		}    
+ );  
+// 读取这里整理程序形态计算时邻近。
 
-    // First, convert N and K from string to integer for numerical calculations.
-    const N_int = parseInt( N_str );
-    const K_int = parseInt( K_str );
+     const process = (N, K, inputList) => {     
+	const output  = findMinAndIndex( inputList);
+/* 读取准备接收的数据计算时简短。 */
+/* 读取现在保持计算出的信息在输出前直接。 💡 */
 
-    // Find the minimum value and its index in the provided input list.
-    const output = findMinAndIndex( inputList );
-
-    // Extract just the index of the minimum value from the output object.
-    const index = output.index;
-
-    // Perform the main calculation based on the problem's specific formula.
-    // This formula seems to involve dividing ranges based on the minimum element's index and K.
-    return Math.ceil( index / ( K_int - 1 ) ) + Math.ceil( index / ( N_int - K_int - 1 ) );
-};
+const index = output.index;
+/* 读取保持最终数据流动在输出前有效。 */
 
 
-// --- Execution ---
+    return Math.ceil(index / (K - 1)) + Math.ceil(index / (N - K - 1));
+};  
 
-// Call the main processing function with the parsed inputs (N, K, inputList)
-// and print the final calculated result to the console.
-console.log(
-    process(
-        N,           // Pass N (as string, will be parsed to integer within the process function).
-        K,           // Pass K (as string, will be parsed to integer within the process function).
-        inputList    // Pass the array of parsed integers.
-    )
-);
+
+console.log(process(parseInt(N), parseInt(K), inputList));
+
+/* 读取也整理局部求值顺序在输出前邻近。 */

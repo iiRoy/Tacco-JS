@@ -1,65 +1,74 @@
-let permutation_counts = [];
+var memoTable = [];
 
-// Initialize a 2D array to store calculated permutation frequencies.
-// The outer loop handles the count dimension (up to 10 iterations for a total of 11 levels).
-for (let iteration_a = 0; iteration_a <= 10; iteration_a++) {
-  permutation_counts[iteration_a] = [];
-  // The inner loop handles the sum dimension (up to 330).
-  for (let iteration_b = 0; iteration_b <= 330; iteration_b++) {
-    permutation_counts[iteration_a][iteration_b] = 0;
-  }
+// Initialize the 2D array 'memoTable' with zeros.
+// The outer loop goes from 0 to 10 (inclusive), representing 'count'.
+for (var idx = 0; idx <= 10; idx++) {
+    memoTable[idx] = []; // Create an inner array for each 'count'
+    // The inner loop goes from 0 to 330 (inclusive), representing 'sum'.
+    for (var val = 0; val <= 330; val++) {
+        memoTable[idx][val] = 0; // Set initial value to zero
+    }
 }
 
-let digit_availability = [];
-// Initialize an array to track which digits (0-9) have been used in the current path.
-for (let digit_index = 0; digit_index <= 9; digit_index++)
-  digit_availability[digit_index] = false;
+// 'digitTracker' keeps track of which digits (0-9) have been used in the current combination.
+var digitTracker = [];
+// Initialize all entries in 'digitTracker' to 'false', meaning no digits are used initially.
+for (var idx = 0; idx <= 9; idx++) {
+    digitTracker[idx] = false;
+}
 
 /**
- * Recursively calculates and stores the number of ways to form sums with digits.
- * This function explores different permutations of digits to build up sums.
+ * This recursive function calculates and stores the number of ways to achieve a specific
+ * weighted sum using unique digits.
  *
- * @param {number} current_total - The sum accumulated so far in the current recursive path.
- * @param {number} current_depth - The current depth of recursion, representing the number of digits placed.
+ * @param {number} currentSum   - The accumulated weighted sum for the current combination.
+ * @param {number} currentCount - The current number of digits processed (acts as a weight multiplier).
  */
-function compute_combinations(current_total, current_depth) {
-  // Increment the counter for the specific sum and depth combination.
-  permutation_counts[current_depth][current_total]++;
-  current_depth++;
+function calculateCombinations(currentSum, currentCount) {
+    // Increment the counter in 'memoTable' for the current (currentCount, currentSum) pair.
+    memoTable[currentCount][currentSum]++;
 
-  // Base case: if we have placed 11 digits, stop the recursion.
-  if (current_depth === 11) return;
+    // Base case: If 11 digits have been processed, stop the recursion.
+    // This implies combinations of length 11 (from count 0 to 10).
+    if (currentCount === 11) {
+        return;
+    }
 
-  // Iterate through possible digits (0-9) to place next.
-  for (let next_digit = 0; next_digit <= 9; next_digit++) {
-    // If the digit is already used in the current path, skip it.
-    if (digit_availability[next_digit]) continue;
+    // Iterate through all possible digits from 0 to 9.
+    for (var idx = 0; idx <= 9; idx++) {
+        // If the current digit 'idx' has already been used in this combination, skip it.
+        if (digitTracker[idx]) {
+            continue;
+        }
 
-    // Mark the digit as used.
-    digit_availability[next_digit] = true;
-    // Recursive call: update sum and depth, considering the new digit's contribution.
-    compute_combinations(current_total + next_digit * current_depth, current_depth);
-    // Backtrack: unmark the digit as used for other branches.
-    digit_availability[next_digit] = false;
-  }
+        // Mark the current digit 'idx' as used.
+        digitTracker[idx] = true;
+        // Recursively call the function with an updated sum and incremented count.
+        // The digit 'idx' is multiplied by 'currentCount' to get its weighted value.
+        calculateCombinations(currentSum + idx * currentCount, currentCount + 1);
+        // Backtrack: Unmark the current digit 'idx' as used, allowing it to be used in other branches.
+        digitTracker[idx] = false;
+    }
 }
 
-// Start the recursive computation from an initial state (sum 0, depth 0).
-compute_combinations(0, 0);
+// Initiate the recursive calculation process starting with a sum of 0 and a count of 0.
+calculateCombinations(0, 0);
 
-// Read input from standard input using Node.js file system module.
-const input_data = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-// Process the input: trim whitespace and split into an array of lines.
-let input_lines = input_data.trim().split('\n');
+// Read the entire content from standard input as a UTF-8 string.
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Trim any leading/trailing whitespace from the content and split it into an array of lines.
+var lineArray = fileContent.trim().split("\n");
 
-// Iterate over each line of input.
-input_lines.forEach(function(line_content) {
-  // Parse numbers from the current line.
-  const numerical_params = line_content.split(' ').map(Number);
-  let param_n = numerical_params[0]; // First parameter (n)
-  let param_s = numerical_params[1]; // Second parameter (s)
+// Process each line from the input array.
+lineArray.forEach(function(lineStr) {
+    // Split the current line by space and convert each part to a number.
+    var numStrings = lineStr.split(" ").map(Number);
+    // The first number is 'n' (representing count in the problem context).
+    var countParam = numStrings[0];
+    // The second number is 's' (representing sum in the problem context).
+    var sumParam = numStrings[1];
 
-  // Output the pre-calculated count for the given n and s.
-  // Note: The original logic uses n+1 for the first dimension.
-  console.log(permutation_counts[param_n + 1][param_s]);
+    // Output the pre-calculated value from 'memoTable'.
+    // Note: The problem uses 'n+1' as the index for the count dimension.
+    console.log(memoTable[countParam + 1][sumParam]);
 });

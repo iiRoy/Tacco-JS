@@ -1,45 +1,50 @@
-let rawDataStream = require('fs') . readFileSync ( '/dev/stdin' , 'utf-8' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let processedLines = ( rawDataStream . trim ( ) ) . split ( '\n' ) ;
+// Process the raw input data
+var lineSegments = (rawData.trim()).split("\n");
 
-while ( ! false )
-{
-    let currentBatchSize = processedLines . shift ( ) * 1.0 ;
+// Main processing loop
+while (true) {
+    // Read the number of items for the current test case
+    var countOfItems = Number(lineSegments.shift());
 
-    if ( currentBatchSize === 0.0 )
-    {
-        break ;
+    // If the count is zero, terminate the program
+    if (countOfItems === 0) {
+        break;
     }
 
-    let itemRecords = [ ] ;
-    let currentTotalValue = 0.0 ;
+    // Initialize an array to store item details and a running total
+    var itemData = [];
+    var totalValue = 0;
 
-    for ( let loopIndexOne = 0 ; loopIndexOne < currentBatchSize ; ++ loopIndexOne )
-    {
-        let singleRecord = ( processedLines . shift ( ) ) . split ( ' ' ) . map ( ( strVal ) => Number ( strVal ) ) ;
-        itemRecords . push ( singleRecord ) ;
-        currentTotalValue += singleRecord [ 0 ] ;
+    // Loop to read each item's data
+    for (let idx = 0; idx < countOfItems; idx++) {
+        // Parse the current line into an array of numbers
+        var currentEntry = (lineSegments.shift()).split(" ").map(Number);
+        itemData.push(currentEntry);
+        totalValue += currentEntry[0]; // Add the first element to the total
     }
 
-    itemRecords . sort ( function ( firstItem , secondItem )
-    {
-        let firstItemVal = firstItem [ 1 ] ;
-        let secondItemVal = secondItem [ 1 ] ;
-        return secondItemVal - firstItemVal ;
-    } ) ;
+    // Sort the item data based on the second element in descending order
+    itemData.sort(function(firstElement, secondElement) {
+        let valA = firstElement[1];
+        let valB = secondElement[1];
+        return valB - valA; // Descending sort
+    });
 
-    let finalDecision = 'Affirmative' ;
-
-    for ( let loopIndexTwo = 0 ; loopIndexTwo < itemRecords . length ; loopIndexTwo ++ )
-    {
-        let iteratedRecord = itemRecords [ loopIndexTwo ] ;
-        if ( currentTotalValue > iteratedRecord [ 1 ] )
-        {
-            finalDecision = 'Negative' ;
-            break ;
+    // Determine the final outcome
+    var finalOutcome = "Yes";
+    for (let k = 0; k < itemData.length; k++) {
+        var currentItem = itemData[k];
+        // Check if the current total exceeds the item's second value
+        if (totalValue > currentItem[1]) {
+            finalOutcome = "No";
+            break; // No need to check further
         }
-        currentTotalValue -= iteratedRecord [ 0 ] ;
+        // Subtract the item's first value from the total
+        totalValue -= currentItem[0];
     }
 
-    console . log ( finalDecision ) ;
+    // Output the result for the current test case
+    console.log(finalOutcome);
 }

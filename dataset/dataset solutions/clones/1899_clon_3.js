@@ -1,61 +1,44 @@
-const processInputLine = (lineContent, offsetValue = 0) => {
-  // Helper function to parse a string line into an array of numbers,
-  // applying an optional offset for 0-indexing.
-  return lineContent.split(' ').map(stringVal => Number(stringVal) + offsetValue);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawDataLines = fileContent.split('\n');
+
+const parseSpaceSeparatedNumbers = (lineString) => {
+    return lineString.split(' ').map(Number);
 };
 
-// Retrieve all raw data lines from the standard input stream.
-// .trim() is added to handle potential leading/trailing whitespace or empty lines.
-const allInputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const parseAndAdjustIndices = (lineString) => {
+    return lineString.split(' ').map(strVal => Number(strVal) - 1);
+};
 
-// The first line contains the total number of locations and the number of road connections.
-const [totalLocations, numberOfRoads] = processInputLine(allInputData[0]);
+const firstLineValues = parseSpaceSeparatedNumbers(rawDataLines[0]);
+const numLocations = firstLineValues[0];
+const numPaths = firstLineValues[1];
 
-// The second line provides the elevation data for each location.
-const locationElevations = processInputLine(allInputData[1]);
+const locationHeights = parseSpaceSeparatedNumbers(rawDataLines[1]);
 
-// Initialize an array to track which locations are potential peak candidates.
-// Initially, all locations are considered potential peaks.
-// Using a loop for initialization instead of Array.fill() as a structural change.
-const candidatePeaks = new Array(totalLocations);
-for (let currentLocIndex = 0; currentLocIndex < totalLocations; currentLocIndex++) {
-  candidatePeaks[currentLocIndex] = true;
-}
+const potentialPeaks = Array.from({ length: numLocations }, () => true);
 
-// Iterate through each road connection to update the peak candidates status.
-// A location is disqualified as a peak if an adjacent location has an equal or higher elevation.
-for (let roadIterator = 0; roadIterator < numberOfRoads; roadIterator++) {
-  // Parse the current road connection line.
-  // The original input uses 1-based indexing, so we subtract 1 to get 0-based indices.
-  const [firstEndpoint, secondEndpoint] = processInputLine(allInputData[roadIterator + 2], -1);
+for (let pathIdx = 0; pathIdx < numPaths; pathIdx++) {
+  const currentPathLine = rawDataLines[pathIdx + 2];
+  const [firstLocIdx, secondLocIdx] = parseAndAdjustIndices(currentPathLine);
 
-  // Fetch the elevations of the two connected locations.
-  const elevationOfFirst = locationElevations[firstEndpoint];
-  const elevationOfSecond = locationElevations[secondEndpoint];
+  const heightA = locationHeights[firstLocIdx];
+  const heightB = locationHeights[secondLocIdx];
 
-  // Apply the peak disqualification logic:
-  // If the first endpoint's elevation is less than or equal to the second,
-  // then the first endpoint cannot be a peak.
-  if (elevationOfFirst <= elevationOfSecond) {
-    candidatePeaks[firstEndpoint] = false;
-  }
-  // If the second endpoint's elevation is less than or equal to the first,
-  // then the second endpoint cannot be a peak.
-  // This separate check correctly handles cases where elevations are equal (both become false)
-  // or one is strictly lower (only that one becomes false).
-  if (elevationOfSecond <= elevationOfFirst) {
-    candidatePeaks[secondEndpoint] = false;
+  if (heightA < heightB) {
+    potentialPeaks[firstLocIdx] = false;
+  } else if (heightB < heightA) {
+    potentialPeaks[secondLocIdx] = false;
+  } else {
+    potentialPeaks[firstLocIdx] = false;
+    potentialPeaks[secondLocIdx] = false;
   }
 }
 
-// Count the total number of locations that remain as valid peaks.
-// Using a simple loop with a counter instead of Array.filter().length for a structural change.
-let finalPeakCount = 0;
-for (let checkIndex = 0; checkIndex < totalLocations; checkIndex++) {
-  if (candidatePeaks[checkIndex]) {
-    finalPeakCount++;
-  }
+let peakCount = 0;
+const totalLocations = potentialPeaks.length;
+for (let k = 0; k < totalLocations; k++) {
+    if (potentialPeaks[k] === true) {
+        peakCount++;
+    }
 }
-
-// Output the final tally of good peaks.
-console.log(finalPeakCount);
+console.log(peakCount);

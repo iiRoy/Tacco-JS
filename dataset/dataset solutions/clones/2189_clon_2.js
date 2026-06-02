@@ -1,27 +1,41 @@
-'use   strict' ;
-function primaryProcess ( rawData ) {
-  // Process the incoming raw text data
-  rawData = rawData . split ( "\n" ) ;
+'use strict';
 
-  let   firstLineParts = rawData [ 0 ] . split ( " " ) ;
-  let   secondLineElements = rawData [ 1 ] . split ( " " ) ;
+/*
+ * This module handles the primary logic for processing input data.
+ * Please do not modify the subsequent lines that manage standard I/O.
+ */
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  rawData = rawData.split("\n");
 
-  var targetValue = parseInt ( firstLineParts [ 0 ] ) ;
+  // The first line contains a single number, split by space (though only one element).
+  let firstLineParts = rawData[0].split(" ");
 
-  let totalAmount = 0 ;
-  for ( let idx = 0 ; idx < secondLineElements . length ; idx ++ ) {
-    totalAmount += parseInt ( secondLineElements [ idx ] ) ;
+  // The second line contains multiple numbers, also split by spaces.
+  let secondLineElements = rawData[1].split(" ");
+
+  // Parse the first number from the first line as the comparison target.
+  let targetValue = parseInt(firstLineParts[0], 10); // Explicitly use base 10
+
+  // Initialize an accumulator for the sum of numbers from the second line.
+  let totalAccumulator = 0;
+
+  // Iterate through each element in the second line.
+  for (let idx = 0; idx < secondLineElements.length; idx++) {
+    // Convert each string element to an integer and add it to the total.
+    totalAccumulator += parseInt(secondLineElements[idx], 10); // Explicitly use base 10
   }
 
-  if ( totalAmount >= targetValue ) {
-    console . log ( "Yes" ) ;
+  // Compare the calculated total with the target value.
+  if (totalAccumulator >= targetValue) {
+    // If the total is greater than or equal to the target, print "Yes".
+    console.log("Yes");
   } else {
-    console . log ( "No" ) ;
+    // Otherwise, print "No".
+    console.log("No");
   }
 }
 
-/*
- * The following section should not be modified. It manages input/output operations
- * and invokes the primary processing function with the gathered data.
- */
-primaryProcess ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line reads input from standard input and invokes the main processing function.
+// It should not be altered to ensure proper execution in the given environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

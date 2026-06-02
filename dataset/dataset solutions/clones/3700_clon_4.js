@@ -1,26 +1,22 @@
-let inputBuffer = '';
-
-const dataCollector = new Promise(resolve => {
-    process.stdin.on('readable', () => {
-        let chunkSegment;
-        while (null !== (chunkSegment = process.stdin.read())) {
-            inputBuffer += chunkSegment;
-        }
-    });
-
-    process.stdin.on('end', () => {
-        resolve(inputBuffer);
-    });
+const lineReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-dataCollector.then(rawTransmission => {
-    const signalChunks = rawTransmission.trim().split('\n');
-    const dataPoints = signalChunks[1].split(' ').map(digitToken => parseInt(digitToken, 10));
+let inputBuffer = [];
 
-    const peakMagnitude = Math.max(...dataPoints);
-    const troughMagnitude = Math.min(...dataPoints);
+lineReader.on('line', function (currentLine) {
+    inputBuffer.push(currentLine);
+});
 
-    const amplitudeSpan = peakMagnitude - troughMagnitude;
+lineReader.on('close', function () {
+    const elementCount = Number(inputBuffer[0]);
+    const numericValues = inputBuffer[1].split(" ").map(val => Number(val));
 
-    process.stdout.write(amplitudeSpan + '\n');
+    const minimumValue = Math.min(...numericValues);
+    const maximumValue = Math.max(...numericValues);
+
+    const rangeMagnitude = maximumValue - minimumValue;
+
+    console.log(rangeMagnitude);
 });

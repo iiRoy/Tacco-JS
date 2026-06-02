@@ -1,74 +1,35 @@
-const processGameOutcome = (rawDataStream) => {
-    const lines = rawDataStream.trim().split('\n');
+function processGameData(rawData) {
+    const lines = rawData.trim().split('\n');
 
-    // Parse game settings (N, K, D)
-    const settingsParts = lines[0].split(' ').map(Number);
-    const gameSettings = {
-        roundCount: settingsParts[0],
-        penaltyOffset: settingsParts[1],
-        dummyValue: settingsParts[2]
-    };
+    const parseNumericLine = (lineContent) => lineContent.split(' ').map(Number);
 
-    // Parse point definitions (s, p, r)
-    const pointParts = lines[1].split(' ').map(Number);
-    const pointDefinitions = {
-        scissorPoints: pointParts[0],
-        paperPoints: pointParts[1],
-        rockPoints: pointParts[2]
-    };
+    const gameParameters = parseNumericLine(lines[0]);
+    const movePointValues = parseNumericLine(lines[1]);
+    const opponentHandSequence = [...lines[2]];
 
-    // Player's move sequence (the third line as a string)
-    const playerSequence = lines[2];
+    const blockDistance = gameParameters[1];
 
-    // Create a lookup map for initial points based on move type
-    const movePointLookup = new Map();
-    movePointLookup.set('r', pointDefinitions.rockPoints);
-    movePointLookup.set('s', pointDefinitions.scissorPoints);
-    movePointLookup.set('p', pointDefinitions.paperPoints);
+    const winningMoveScores = new Map([
+        ['r', movePointValues[2]], // Player plays paper (P) to beat rock
+        ['s', movePointValues[0]], // Player plays rock (R) to beat scissors
+        ['p', movePointValues[1]]  // Player plays scissors (S) to beat paper
+    ]);
 
-    // Calculate initial points for each move using Array.from and the lookup map
-    const initialCalculations = Array.from(playerSequence, (character) =>
-        movePointLookup.get(character)
-    );
+    const initialMoveScores = opponentHandSequence.map(char => winningMoveScores.get(char));
 
-    // Recursive function to apply the penalty rule
-    // This function takes the current index, the current state of scores, and the penalty offset.
-    // It returns a NEW array for each step, representing the modified state,
-    // ensuring a functional approach without direct in-place mutation of the original array.
-    const applyPenaltyRecursively = (currentIndex, currentScoreSnapshot, offsetDistance) => {
-        if (currentIndex >= currentScoreSnapshot.length) {
-            return currentScoreSnapshot; // Base case: all positions checked
-        }
+    const finalScoresAccumulator = [...initialMoveScores];
 
-        // Create a copy of the current score state for this step's potential modification.
-        // This ensures immutability for the previous recursive call's view of the array.
-        let nextScoreState = [...currentScoreSnapshot];
-
-        const comparisonIndex = currentIndex + offsetDistance;
-
-        if (comparisonIndex < nextScoreState.length) {
-            // If the score at the current position matches the score at the comparison position,
-            // zero out the score at the comparison position in this step's new state.
-            if (nextScoreState[currentIndex] === nextScoreState[comparisonIndex]) {
-                nextScoreState[comparisonIndex] = 0;
+    for (let sequenceOffset = 0; sequenceOffset < blockDistance; sequenceOffset++) {
+        for (let currentPosition = sequenceOffset; currentPosition < finalScoresAccumulator.length - blockDistance; currentPosition += blockDistance) {
+            if (finalScoresAccumulator[currentPosition] === finalScoresAccumulator[currentPosition + blockDistance]) {
+                finalScoresAccumulator[currentPosition + blockDistance] = 0;
             }
         }
-
-        // Recurse with the next index and the potentially modified score state
-        return applyPenaltyRecursively(currentIndex + 1, nextScoreState, offsetDistance);
-    };
-
-    // Get the final adjusted scores by invoking the recursive penalty application starting from index 0
-    const adjustedScores = applyPenaltyRecursively(0, initialCalculations, gameSettings.penaltyOffset);
-
-    // Calculate the total score using a simple for...of loop (divergent from original's reduce)
-    let cumulativeScore = 0;
-    for (const value of adjustedScores) {
-        cumulativeScore += value;
     }
 
-    console.log(cumulativeScore);
-};
+    const totalGameScore = finalScoresAccumulator.reduce((sum, value) => sum + value, 0);
 
-// Invoke the main processing function with the input from stdin
-processGameOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(totalGameScore);
+}
+
+processGameData(require("fs").readFileSync("/dev/stdin", "utf8"));

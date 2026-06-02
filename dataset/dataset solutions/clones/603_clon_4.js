@@ -1,18 +1,9 @@
-const fileSystemInterface = require('node:fs');
-const rawContent = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const dataRows = sourceData.split('\n');
 
-const transformedValues = rawContent.split('\n').map(Number);
+const numericValues = dataRows.slice(0, 5).map(Number);
 
-const determineMinimum = (collection) => {
-    return collection.reduce((currentMin, element) => (element < currentMin ? element : currentMin), collection[0]);
-};
+const firstSetMinimum = numericValues.slice(0, 3).reduce((currentMin, value) => Math.min(currentMin, value), Infinity);
+const secondSetMinimum = numericValues.slice(3, 5).reduce((currentMin, value) => Math.min(currentMin, value), Infinity);
 
-const primarySet = transformedValues.slice(0, 3);
-const secondarySet = transformedValues.slice(3, 5);
-
-const smallestPrimary = determineMinimum(primarySet);
-const smallestSecondary = determineMinimum(secondarySet);
-
-const combinedOutcome = smallestPrimary + smallestSecondary;
-
-process.stdout.write(String(combinedOutcome) + '\n');
+console.log(firstSetMinimum + secondSetMinimum);

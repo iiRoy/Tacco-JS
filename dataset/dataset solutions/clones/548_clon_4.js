@@ -1,49 +1,34 @@
-function processNumericalSeries(inputDataset) {
-  const parsedLines = inputDataset.split('\n');
+let rawInputBuffer = '';
 
-  const entryCount = parseInt(parsedLines[0], 10);
+function processInputData() {
+    const allInputLines = rawInputBuffer.split('\n');
 
-  const numericalPairs = parsedLines.slice(1, entryCount + 1).map(segment =>
-    segment.split(' ').map(parseFloat)
-  );
+    const entryCount = parseInt(allInputLines[0], 10);
 
-  const accumulationStrategies = {
-    'firstValueGreater': (valA, valB) => [valA + valB, 0],
-    'secondValueGreater': (valA, valB) => [0, valA + valB],
-    'valuesAreEquivalent': (valA, valB) => [valA, valB]
-  };
+    const dataSegments = allInputLines.slice(1, entryCount + 1);
 
-  const finalResults = numericalPairs.reduce((currentAccumulators, pair) => {
-    const primaryValue = pair[0];
-    const secondaryValue = pair[1];
+    const finalAccumulations = dataSegments.reduce((currentTotals, currentSegment) => {
+        const [valA, valB] = currentSegment.split(' ').map(parseFloat);
 
-    let chosenStrategyKey;
-    if (primaryValue > secondaryValue) {
-      chosenStrategyKey = 'firstValueGreater';
-    } else if (primaryValue < secondaryValue) {
-      chosenStrategyKey = 'secondValueGreater';
-    } else {
-      chosenStrategyKey = 'valuesAreEquivalent';
-    }
+        const [deltaFirst, deltaSecond] =
+            (valA > valB) ? [valA + valB, 0] :
+            (valA < valB) ? [0, valA + valB] :
+            [valA, valB];
 
-    const [deltaToFirst, deltaToSecond] = accumulationStrategies[chosenStrategyKey](primaryValue, secondaryValue);
+        return {
+            firstAcc: currentTotals.firstAcc + deltaFirst,
+            secondAcc: currentTotals.secondAcc + deltaSecond
+        };
+    }, { firstAcc: 0, secondAcc: 0 });
 
-    currentAccumulators[0] += deltaToFirst;
-    currentAccumulators[1] += deltaToSecond;
-
-    return currentAccumulators;
-  }, [0.0, 0.0]);
-
-  console.log(`${finalResults[0]} ${finalResults[1]}`);
+    console.log("%d %d", finalAccumulations.firstAcc, finalAccumulations.secondAcc);
 }
-
-let incomingStreamData = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(chunkOfData) {
-  incomingStreamData += chunkOfData;
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
 });
 process.stdin.on('end', function() {
-  processNumericalSeries(incomingStreamData);
+    processInputData();
 });

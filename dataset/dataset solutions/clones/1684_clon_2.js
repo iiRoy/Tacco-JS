@@ -1,134 +1,123 @@
-// This module handles processing of structured input data from a file.
-function ProcessInputData(receivedText) {
-    // Clean and parse the incoming text. It converts each line into an array of string segments.
-    receivedText = receivedText.trim().split("\n").map(function(segment) {
-        return segment.split(" ");
-    });
+function ProcessInput(rawData) {
+    // Process raw input data: trim, split by newline, then split each line by space.
+    rawData = rawData.trim().split("\n").map(function(lineStr) { return lineStr.split(" "); });
 
-    // Initialize the current line offset for navigating through the input data blocks.
-    var currentLineOffset = 1;
+    // Initialize line offset for reading input blocks.
+    let lineOffset = 1;
 
-    // A utility function to find the insertion point for a value in a sorted list.
-    // This is equivalent to a lower bound search.
-    const searchLowerBound = (sortedList, targetValue) => {
-        let startIndex = 0,
-            endIndex = sortedList.length - 1,
-            midPoint;
+    // Helper function to find the lower bound (first element >= targetValue) in a sorted array.
+    const findInsertionPoint = (sortedArray, targetValue) => {
+        let startIndex = 0, endIndex = sortedArray.length - 1, midPoint;
         while (startIndex <= endIndex) {
-            midPoint = Math.floor((startIndex + endIndex) / 2); // Calculate the middle index.
-            if (sortedList[midPoint] < targetValue) {
-                startIndex = midPoint + 1; // Move to the right half.
+            midPoint = 0 | (startIndex + endIndex) / 2; // Integer division
+            if (sortedArray[midPoint] < targetValue) {
+                startIndex = midPoint + 1;
             } else {
-                endIndex = midPoint - 1; // Move to the left half.
+                endIndex = midPoint - 1;
             }
         }
-        return startIndex; // Return the first index where targetValue could be inserted.
+        return startIndex;
     };
 
-    // Main processing loop that iterates through multiple data sets within the input file.
+    // Main loop to process multiple test cases.
     while (true) {
-        // Check if there are no more data blocks to process.
-        if (receivedText[currentLineOffset] == null) {
+        // Check if there's more input data.
+        if (rawData[lineOffset] == null) {
             break;
         }
 
-        // Parse the total number of records for the current data block.
-        var numRecords = parseInt(receivedText[currentLineOffset][0], 10);
+        // Parse the number of entries for the current test case.
+        let numEntries = parseInt(rawData[lineOffset][0], 10);
 
-        // Declare two lists to categorize parsed records based on specific criteria.
-        var primaryItems = [];
-        var secondaryItems = [];
+        // Arrays to categorize entries based on conditions.
+        let firstCategoryItems = [];
+        let secondCategoryItems = [];
 
-        var dataEntry; // Temporary variable to hold the parsed numeric values of a single record.
-        var minimumTotal = 0; // Accumulates a base sum based on initial record conditions.
-        var adjustedCount = numRecords; // Tracks the number of records that require further processing.
+        // Variables for accumulating base sum and tracking remaining slots.
+        let baseSum = 0;
+        let remainingSlots = numEntries;
 
-        // Loop through each individual record within the current data block.
-        for (var recordCounter = 0; recordCounter < numRecords; recordCounter++) {
-            // Parse the current line's string segments into an array of integers.
-            dataEntry = receivedText[currentLineOffset + recordCounter + 1].map(numericString => parseInt(numericString, 10));
+        // Loop through each entry of the current test case.
+        for (let idx = 0; idx < numEntries; idx++) {
+            // Parse the current line's values as integers.
+            let currentEntry = rawData[lineOffset + idx + 1].map(elementVal => parseInt(elementVal, 10));
+            console.log; // This line in the original code does nothing, preserving its behavior.
 
-            // Apply conditional logic to categorize records and update sums/counts.
-            if (dataEntry[0] === numRecords) {
-                // If the first element matches total records, sum the second element and reduce the adjusted count.
-                minimumTotal += dataEntry[1];
-                adjustedCount--;
-            } else if (dataEntry[1] > dataEntry[2]) {
-                // If the second element is greater than the third, add to primary items and sum the third element.
-                primaryItems.push(dataEntry);
-                minimumTotal += dataEntry[2];
-            } else if (dataEntry[1] < dataEntry[2]) {
-                // If the second element is less than the third, transform the record, add to secondary items, and sum the third element.
-                dataEntry = [numRecords - dataEntry[0], dataEntry[2], dataEntry[1]];
-                secondaryItems.push(dataEntry);
-                minimumTotal += dataEntry[2];
+            // Categorize entries and update baseSum and remainingSlots.
+            if (currentEntry[0] === numEntries) {
+                baseSum += currentEntry[1];
+                remainingSlots--;
+            } else if (currentEntry[1] > currentEntry[2]) {
+                firstCategoryItems.push(currentEntry);
+                baseSum += currentEntry[2];
+            } else if (currentEntry[1] < currentEntry[2]) {
+                // Transform the entry for the second category.
+                currentEntry = [numEntries - currentEntry[0], currentEntry[2], currentEntry[1]];
+                secondCategoryItems.push(currentEntry);
+                baseSum += currentEntry[2];
             } else {
-                // If the second and third elements are equal, sum the second element and reduce the adjusted count.
-                minimumTotal += dataEntry[1];
-                adjustedCount--;
+                baseSum += currentEntry[1];
+                remainingSlots--;
             }
         }
 
-        // Sort both categorized lists in ascending order based on their first element.
-        primaryItems.sort((itemA, itemB) => itemA[0] - itemB[0]);
-        secondaryItems.sort((itemA, itemB) => itemA[0] - itemB[0]);
+        // Sort the categorized arrays based on their first element.
+        firstCategoryItems.sort((valA, valB) => valA[0] - valB[0]);
+        secondCategoryItems.sort((valA, valB) => valA[0] - valB[0]);
 
-        // Initialize the final computed sum with the accumulated minimum total.
-        var computedSum = minimumTotal;
+        // Initialize the final result with the accumulated base sum.
+        let finalResult = baseSum;
 
-        // Create a boolean array to manage slot availability for dynamic adjustments.
-        var occupiedSlots = Array.from({
-            length: adjustedCount
-        }, () => false);
-        var targetSlot; // Variable to store the currently considered optimal slot index.
-        var deltaAmount; // Variable to store the calculated value increase.
+        // Process first category items to maximize the sum.
+        let slotOccupancy = Array.from({length: remainingSlots}, () => false); // Initialize slot occupancy map.
+        let optimalPosition;
+        let valueBoost;
 
-        // Process the primary items to find potential sum increases.
-        for (var idx = 0; idx < primaryItems.length; idx++) {
-            targetSlot = primaryItems[idx][0] - 1; // Determine the initial target slot based on the item's first value.
-            deltaAmount = primaryItems[idx][1] - primaryItems[idx][2]; // Calculate the potential increase.
+        for (let idx = 0; idx < firstCategoryItems.length; idx++) {
+            optimalPosition = firstCategoryItems[idx][0] - 1;
+            valueBoost = firstCategoryItems[idx][1] - firstCategoryItems[idx][2];
 
-            // Find the first available slot by decrementing from the target slot.
-            while (occupiedSlots[targetSlot] !== false) {
-                targetSlot--;
+            // Find the first available slot backwards from the optimal position.
+            while (slotOccupancy[optimalPosition] !== false) {
+                optimalPosition--;
             }
 
-            // If a valid (non-negative) and available slot is found, mark it as occupied and add the delta to the sum.
-            if (targetSlot >= 0) {
-                occupiedSlots[targetSlot] = true;
-                computedSum += deltaAmount;
+            // If a valid slot is found, mark it as occupied and add the boost.
+            if (optimalPosition >= 0) {
+                slotOccupancy[optimalPosition] = true;
+                finalResult += valueBoost;
             }
         }
+        // console.log(slotOccupancy); // Original commented-out debug line.
 
-        // Reset the slot availability tracker for processing the secondary items.
-        occupiedSlots = Array.from({
-            length: adjustedCount
-        }, () => false);
+        // Reset slot occupancy for processing the second category items.
+        slotOccupancy = Array.from({length: remainingSlots}, () => false);
 
-        // Process the secondary items, similar to primary items, for additional sum increases.
-        for (var idx = 0; idx < secondaryItems.length; idx++) {
-            targetSlot = secondaryItems[idx][0] - 1; // Determine the initial target slot.
-            deltaAmount = secondaryItems[idx][1] - secondaryItems[idx][2]; // Calculate the potential increase.
+        // Process second category items to maximize the sum.
+        for (let idx = 0; idx < secondCategoryItems.length; idx++) {
+            optimalPosition = secondCategoryItems[idx][0] - 1;
+            valueBoost = secondCategoryItems[idx][1] - secondCategoryItems[idx][2];
 
-            // Find the first available slot by decrementing from the target slot.
-            while (occupiedSlots[targetSlot] !== false) {
-                targetSlot--;
+            // Find the first available slot backwards from the optimal position.
+            while (slotOccupancy[optimalPosition] !== false) {
+                optimalPosition--;
             }
 
-            // If a valid and available slot is found, mark it and add the delta to the sum.
-            if (targetSlot >= 0) {
-                occupiedSlots[targetSlot] = true;
-                computedSum += deltaAmount;
+            // If a valid slot is found, mark it as occupied and add the boost.
+            if (optimalPosition >= 0) {
+                slotOccupancy[optimalPosition] = true;
+                finalResult += valueBoost;
             }
         }
+        // console.log(slotOccupancy); // Original commented-out debug line.
 
-        // Output the final calculated sum for the current data block.
-        console.log(computedSum);
+        // Output the final calculated result for the current test case.
+        console.log(finalResult);
 
-        // Advance the line offset to the beginning of the next data block.
-        currentLineOffset += numRecords + 1;
+        // Advance the line offset to the next test case.
+        lineOffset += numEntries + 1;
     }
 }
 
-// Call the main processing function with data read from standard input as a UTF-8 string.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,37 +1,21 @@
-/*
- * This is a JavaScript file demonstrating
- * a specific string processing algorithm.
- * It's a Type I clone, focusing on whitespace and comments.
- * The core logic remains entirely unchanged.
- */
+/* 읽기 지금유지한다 핵심가까운 문맥 시작에서명확. */
+/* 읽기 지금유지한다 최종사람의 읽기 출력 전에내부. */
 
-"use strict" ; // Enforce strict mode for better error handling and cleaner code.
+"use strict";
+// 읽기 유지한다 작업 순서 시작에서직접.
+ function  main (input ) {      // 읽기 또한유지한다 핵심평가 순서 출력 전에직접.
+        const inputs = input.split("\n").filter(x => x !== "");
+// 읽기 또한유지한다 최종주요 연산 출력 전에최종.
+        const  s =inputs [ 0 ];
+	   const result = s
+    .split("")
+	    .map((input, index) => (input === "W" ? index : 0))   
+ .filter(x => x !== 0)
+	      .reduce((acc, cur, index) => acc + cur - index);
 
-
-// Define the main function that processes the input.
-function   main(  input  ) {
-
-    // Split the entire input string by newline characters.
-    // Then, filter out any resulting empty strings to ensure valid lines.
-    const inputs   =   input . split ( "\n" ) . filter (   x   =>   x   !==   ""   ) ;
-
-    // The problem logic indicates we are interested in the first line of input.
-    const   s   =   inputs[   0   ] ;
-
-    // This section calculates the final result by chaining several array methods.
-    const   result   =   s
-        . split (   ""   ) // Step 1: Convert the input string 's' into an array of individual characters.
-        . map (   (   char  ,   idx   )   =>   (   char   ===   "W"   ?   idx   :   0   )   ) // Step 2: Map each character. If it's 'W', replace it with its original index; otherwise, replace with 0.
-        . filter (   val   =>   val   !==   0   ) // Step 3: Filter out all the zeros, retaining only the original indices of 'W' characters.
-        . reduce (   (   accumulator  ,   currentValue  ,   currentIndex   )   =>   accumulator   +   currentValue   -   currentIndex   ) ; // Step 4: Reduce the array of indices. The formula is `sum_of_indices_of_W - sum_of_their_positions_in_the_filtered_array`.
-
-    // Output the final computed result to the standard console.
-    console . log (   result   ) ;
-
-} // End of the main function definition.
+      console.log(result);  // 읽기 또한유지한다 현재예상 출력 계산 중에활성.
+	}
 
 
-// Immediately invoke the main function upon script execution.
-// It reads the entire content of standard input synchronously,
-// assuming it's UTF-8 encoded.
-main (   require (   "fs"   ) . readFileSync (   "/dev/stdin"  ,   "utf8"   )   ) ;
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

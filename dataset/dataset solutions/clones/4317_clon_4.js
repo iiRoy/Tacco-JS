@@ -1,23 +1,11 @@
 'use strict';
 
-function performCalculation(rawData) {
-  const firstLineEnd = rawData.indexOf('\n');
-  const relevantPortion = firstLineEnd !== -1 ? rawData.substring(0, firstLineEnd) : rawData;
-
-  const outcome = Array.from(relevantPortion).reduce((accumulator, character) => {
-    return accumulator + (character === '1' ? 1 : 0);
-  }, 0);
-  publishResult(outcome);
+function processInput(sourceData) {
+  const firstRelevantLine = sourceData.split('\n')[0];
+  const targetCharacterPattern = /1/g;
+  const matchedInstances = firstRelevantLine.match(targetCharacterPattern);
+  const finalTally = matchedInstances ? matchedInstances.length : 0;
+  console.log(finalTally);
 }
 
-const fileAccess = require('node:fs');
-const dataPath = '/dev/stdin';
-const dataEncoding = 'utf8';
-
-const retrieveText = (path, encoding) => fileAccess.readFileSync(path, encoding);
-
-function publishResult(value) {
-  console.log(value);
-}
-
-performCalculation(retrieveText(dataPath, dataEncoding));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

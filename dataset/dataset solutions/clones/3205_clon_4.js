@@ -1,37 +1,16 @@
-const acquireNumericalParameters = () => {
-    const dataSource = require('node:fs').readFileSync(process.stdin.fd, 'utf8');
-    return dataSource.split(' ').map(x => +x);
-};
+const fs = require("fs");
 
-const evaluateScenario = (alpha, beta, gamma) => {
-    const ruleset = [
-        {
-            condition: (x, y, z) => x < (y + 1),
-            result: (x, y, z) => x + 1
-        },
-        {
-            condition: (x, y, z) => z <= (y + 2),
-            result: (x, y, z) => x + 1
-        }
-    ];
+const [K, A, B] = fs.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/).map(Number);
 
-    for (const rule of ruleset) {
-        if (rule.condition(alpha, beta, gamma)) {
-            return rule.result(alpha, beta, gamma);
-        }
-    }
+const simpleGrowthIsBest = (B - A <= 2) || (K <= A);
 
-    const differenceMeasure = alpha - beta; 
+if (simpleGrowthIsBest) {
+    console.log(K + 1);
+} else {
+    const movesAfterReachingA = K - (A - 1);
+    const exchangeCount = Math.floor(movesAfterReachingA / 2);
+    const leftoverMove = movesAfterReachingA % 2;
 
-    const computationStrategy = {
-        true: (x, y, z, dm) => y + (z - y) * ((dm + 1) / 2), 
-        false: (x, y, z, dm) => y + (z - y) * (dm / 2) + 1 
-    };
-
-    const isDifferenceMeasureOdd = (differenceMeasure % 2 !== 0);
-
-    return computationStrategy[isDifferenceMeasureOdd](alpha, beta, gamma, differenceMeasure);
-};
-
-const [firstValue, secondValue, thirdValue] = acquireNumericalParameters();
-console.log(evaluateScenario(firstValue, secondValue, thirdValue));
+    const result = A + exchangeCount * (B - A) + leftoverMove;
+    console.log(result);
+}

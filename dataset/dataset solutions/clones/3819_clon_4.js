@@ -1,35 +1,34 @@
-const parseRawDataToNumbers = (inputBlob) => {
-    return inputBlob.split('\n').map(Number);
-};
-
-const recursivelyCalculate = (dataSeries, currentPointer, runningTotal) => {
-    if (currentPointer < 2) {
+function computeAccumulatedValue(dataElements, currentPosition, lowerBound, runningTotal) {
+    if (currentPosition < lowerBound) {
         return runningTotal;
     }
 
-    const valueAtCurrent = dataSeries[currentPointer];
-    const valuePreceding = dataSeries[currentPointer - 1];
+    const currentItem = dataElements[currentPosition];
+    const precedingItem = dataElements[currentPosition - 1];
 
-    const increment = (valueAtCurrent === valuePreceding + 1) ? 1 : valueAtCurrent;
-
-    return recursivelyCalculate(dataSeries, currentPointer - 1, runningTotal + increment);
-};
-
-const processInputData = (inputBlob) => {
-    const processedNumbers = parseRawDataToNumbers(inputBlob);
-
-    const upperBound = processedNumbers[0];
-    const secondElementCheck = processedNumbers[1];
-
-    if (secondElementCheck !== 0) {
-        return -1;
+    let updatedTotal;
+    if (currentItem === precedingItem + 1) {
+        updatedTotal = runningTotal + 1;
+    } else {
+        updatedTotal = runningTotal + currentItem;
     }
 
-    return recursivelyCalculate(processedNumbers, upperBound, 0);
-};
+    return computeAccumulatedValue(dataElements, currentPosition - 1, lowerBound, updatedTotal);
+}
 
-(() => {
-    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const resultValue = processInputData(fileContent);
-    console.log(resultValue);
-})();
+function ProcessInputData(sourceText) {
+    const parsedNumbers = sourceText.split('\n').map(Number);
+
+    const firstValue = parsedNumbers[0];
+
+    if (parsedNumbers[1] !== 0) {
+        console.log(-1);
+        return;
+    }
+
+    const finalSum = computeAccumulatedValue(parsedNumbers, firstValue, 2, 0);
+
+    console.log(finalSum);
+}
+
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

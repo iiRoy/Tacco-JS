@@ -1,186 +1,167 @@
-let inputReader = require('readline').createInterface({
-  inputStream: process.stdin,
-  outputStream: process.stdout
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let dataStore;
-let receivedLines = [];
+let dataProcessor; // Global object to manage the input stream
+const inputLines = []; // Array to store all incoming lines from stdin
 
-inputReader.addEventListener('line', (currentLine) => {
-  receivedLines.push(currentLine);
+// Attach an event listener for each line of input received
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-inputReader.addEventListener('close', () => {
-  dataStore = initializeParser(receivedLines);
-  console.error('\n▲ Input ▼ Output'); // Informative message about input/output flow
-  primaryProcess();
+// Attach an event listener for when the input stream closes
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines); // Initialize the input handler
+  console.error('\n--- Input Processing Complete, Initiating Main Logic ---'); // Debug message
+  executeMainLogic(); // Call the primary function to solve the problem
 });
 
-// Creates a deep copy of an object or a Set instance.
-function duplicateObject(sourceObj) {
-  return (sourceObj instanceof Set) ? new Set(Array.from(sourceObj)) : JSON.parse(JSON.stringify(sourceObj));
+/**
+ * Creates a deep copy of an object or a Set.
+ * This utility function ensures independent copies.
+ * @param {any} originalObject - The object or Set to be cloned.
+ * @returns {any} A new, deep copy of the input.
+ */
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set)
+    ? new Set(Array.from(originalObject))
+    : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Retrieves the next item from the data source and converts it to an integer.
-function retrieveInteger() {
-  return dataConverter(fetchNextItem(), 1);
-}
+// Helper functions to fetch and convert the next input item based on type
+function getNextInteger(){ return convertInput(fetchNextItem(), 0x1); }
+function getNextStringArray(){ return convertInput(fetchNextItem(), 0x2); }
+function getNextIntegerArray(){ return convertInput(fetchNextItem(), 0x4); }
+function getNextCharacterArray(){ return convertInput(fetchNextItem(), 0x6); }
 
-// Retrieves the next item from the data source and converts it to a string array.
-function retrieveStringArray() {
-  return dataConverter(fetchNextItem(), 2);
-}
+// Core functions for navigating through the processed input
+function fetchNextItem(){ return dataProcessor.fetchNextItem(); }
+function hasMoreItems(){ return dataProcessor.hasMoreItems(); }
 
-// Retrieves the next item from the data source and converts it to an integer array.
-function retrieveIntegerArray() {
-  return dataConverter(fetchNextItem(), 4);
-}
-
-// Retrieves the next item from the data source and converts it to a character array.
-function retrieveCharacterArray() {
-  return dataConverter(fetchNextItem(), 6);
-}
-
-// Fetches the next available item from the data source.
-function fetchNextItem() {
-  return dataStore.fetchNextItem();
-}
-
-// Checks if there are more items available in the data source.
-function hasMoreItems() {
-  return dataStore.hasMoreItems();
-}
-
-// Initializes the data parser with the provided input.
-function initializeParser(sourceData) {
+/**
+ * Initializes an input handler object that provides methods to consume input.
+ * @param {string[]} rawInputData - An array of raw string lines from standard input.
+ * @returns {object} An object with `hasMoreItems` and `fetchNextItem` methods.
+ */
+function initializeInputHandler(rawInputData){
   return {
-    itemsList: sourceData,
-    currentIndex: 0,
-    maximumCount: sourceData.length,
-    // Method to check if more items are available.
-    hasMoreItems: function() {
-      return (this.currentIndex < this.maximumCount);
+    sourceList : rawInputData,
+    currentPosition : 0x0,
+    maximumCount : rawInputData.length,
+    hasMoreItems : function(){
+      return (this.currentPosition < this.maximumCount);
     },
-    // Method to retrieve the next item. Throws an error if no more items.
-    fetchNextItem: function() {
-      if (this.hasMoreItems()) {
-        return this.itemsList[this.currentIndex++];
+    fetchNextItem : function(){
+      if(this.hasMoreItems()){
+        return this.sourceList[this.currentPosition++];
       } else {
-        throw 'EndOfInputException: No further input available for processing.';
+        throw 'InputOutOfBoundsException: No more input available.';
       }
     }
   };
 }
 
-// Displays the final computed result to the console.
-function displayResult(messageContent) {
-  console.log(messageContent);
-}
-
-// Logs debug information to the error stream.
-function logDebugMessage(debugPayload) {
-  console.error('DEBUG INFO: ' + require('util').inspect(debugPayload, false, null));
+/**
+ * Displays a given value to standard output.
+ * This is the primary method for problem output.
+ * @param {any} outputValue - The value to be printed.
+ */
+function displayResult(outputValue){
+  console.log(outputValue);
 }
 
 /**
- * Converts the input value based on the specified conversion type.
- * @param {any} inputValue - The value to be converted.
- * @param {number} conversionType - Specifies the conversion logic:
- *   1: Parse as integer.
- *   2: Split by space into string array.
- *   4: Split by space and parse each element as integer.
- *   6: Split into character array.
- *   7: Split into character array and parse each element as integer.
- *   8: Join array elements with space.
- *   9: Join array elements with newline.
- *   0: Join array elements without separator.
- *   Default: Return input as is.
- * @returns {any} The converted value.
+ * Logs debug information to standard error.
+ * Useful for inspecting variables during development.
+ * @param {any} debugValue - The value to log for debugging.
  */
-function dataConverter(inputValue, conversionType) {
+function logDebugInfo(debugValue){
+  console.error('DEBUG_INFO: ' + require('util').inspect(debugValue, false, null));
+}
+
+/**
+ * Converts an input string based on a specified conversion type.
+ * @param {string} inputValue - The input string to be converted.
+ * @param {number} conversionType - An integer code indicating the desired conversion.
+ * @returns {any} The converted value, or the original input if conversion fails or type is unknown.
+ */
+function convertInput(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(' ');
-      case 4:
-        return inputValue.split(' ').map(Number);
-      case 6:
-        return inputValue.split('');
-      case 7:
-        return inputValue.split('').map(Number);
-      case 8:
-        return inputValue.join(' ');
-      case 9:
-        return inputValue.join('\n');
-      case 0:
-        return inputValue.join('');
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 0x1: return parseInt(inputValue);
+      case 0x2: return inputValue.split(' ');
+      case 0x4: return inputValue.split(' ').map(Number);
+      case 0x6: return inputValue.split('');
+      case 0x7: return inputValue.split('').map(Number);
+      case 0x8: return inputValue.join(' ');
+      case 0x9: return inputValue.join('\n');
+      case 0x0: return inputValue.join('');
+      default: return inputValue;
     }
-  } catch (conversionError) {
-    return inputValue; // Return original value on error
+  } catch(err) {
+    return inputValue; // In case of conversion error, return the original input
   }
 }
 
-// End of utility functions.
-// -----------------------------------------------------------------------------------
+// End of input processing and utility functions.
 
-// Main processing logic for the problem.
-function primaryProcess() {
-  const SHEEP_STATE = "S"; // Represents the 'Sheep' state
-  const WOLF_STATE = "W";  // Represents the 'Wolf' state
-  const OBSERVED_O = "o";  // Represents the 'o' observation in the input
+/**
+ * The main execution logic for the problem.
+ * This function implements the core algorithm to solve the task.
+ */
+function executeMainLogic(){
+  const sequenceLength = getNextInteger(); // Read the integer N
+  const initialState = 'S'; // Define the initial state character 'L'
+  const charSequence = getNextCharacterArray(); // Read the input string as a character array
+  const stateTracker = ['S']; // Initialize the state tracking array with 'S'
 
-  let sequenceLength = retrieveInteger();
-  let initialState = SHEEP_STATE; // Initial assumption for the first character if needed
-  let inputSequence = retrieveCharacterArray();
-  let stateTracker = [SHEEP_STATE]; // Stores the deduced states for each position
-
-  // Iterate through the input sequence to determine states
-  for (let currentPosition = 0; currentPosition < sequenceLength; currentPosition++) {
-    const currentObservation = inputSequence[currentPosition];
-    const currentStateAtPosition = stateTracker[currentPosition];
-    const previousState = (currentPosition > 0) ? stateTracker[currentPosition - 1] : undefined;
-
-    if (currentObservation === OBSERVED_O) {
-      // Logic branch for 'o' observation
-      if (currentStateAtPosition === SHEEP_STATE) {
-        if (currentPosition === 0) {
-          stateTracker.push(initialState); // Use the global initial state for the first prediction
+  // Iterate through the character sequence to determine subsequent states
+  for(let idx = 0x0; idx < sequenceLength; idx++){
+    // Check the current character in the sequence ('o' or 'x')
+    if(charSequence[idx] === 'o'){
+      // If the current state in the tracker is 'S'
+      if(stateTracker[idx] === 'S'){
+        // Special handling for the very first element (idx === 0)
+        if(idx === 0x0){
+          stateTracker.push(initialState); // Push the 'L' (initialState)
         } else {
-          stateTracker.push(previousState);
+          stateTracker.push(stateTracker[idx - 0x1]); // Push the previous state
         }
-      } else { // currentStateAtPosition === WOLF_STATE
-        if (previousState === SHEEP_STATE) {
-          stateTracker.push(WOLF_STATE);
+      } else { // If the current state in the tracker is 'W'
+        // Determine the next state based on the previous state
+        if(stateTracker[idx - 0x1] === 'S'){
+          stateTracker.push('W'); // Push 'W'
         } else {
-          stateTracker.push(SHEEP_STATE);
+          stateTracker.push('S'); // Push 'S'
         }
       }
-    } else { // Logic branch for non-'o' observation (e.g., 'x')
-      if (currentStateAtPosition === SHEEP_STATE) {
-        if (currentPosition === 0) {
-          stateTracker.push(WOLF_STATE);
+    } else { // If the current character in the sequence is 'x'
+      // If the current state in the tracker is 'S'
+      if(stateTracker[idx] === 'S'){
+        // Special handling for the very first element (idx === 0)
+        if(idx === 0x0){
+          stateTracker.push('W'); // Push 'W'
         } else {
-          if (previousState === SHEEP_STATE) {
-            stateTracker.push(WOLF_STATE);
+          // Determine the next state based on the previous state
+          if(stateTracker[idx - 0x1] === 'S'){
+            stateTracker.push('W'); // Push 'W'
           } else {
-            stateTracker.push(SHEEP_STATE);
+            stateTracker.push('S'); // Push 'S'
           }
         }
-      } else { // currentStateAtPosition === WOLF_STATE
-        stateTracker.push(previousState);
+      } else { // If the current state in the tracker is 'W'
+        stateTracker.push(stateTracker[idx - 0x1]); // Push the previous state
       }
     }
   }
 
-  // Check the final state and output the result
-  if (stateTracker[sequenceLength] === initialState) {
-    stateTracker.pop(); // Remove the last state, which is redundant for the output string
-    displayResult(stateTracker.join(""));
+  // Perform a final check and output the result
+  if(stateTracker[sequenceLength] === initialState){
+    stateTracker.pop(); // Remove the last element as it's an extra
+    displayResult(stateTracker.join('')); // Join the states and display
   } else {
-    displayResult(-1); // Indicate that no valid sequence matching the criteria was found
+    displayResult(-0x1); // Display -1 if the condition is not met
   }
 }

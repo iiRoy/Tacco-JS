@@ -1,24 +1,16 @@
-/*
- * This utility processes incoming textual information to produce a numerical outcome.
- */
-function  ProcessInputData (   incomingText   )
-{
-    // Sanitize the supplied content by removing any extraneous leading or trailing spaces.
-    let  cleanedString  = incomingText . trim( ) ;
+function ProcessInput(rawData) {
+  // Remove any leading or trailing whitespace from the received string.
+  rawData = rawData.trim();
 
-    // Note: This segment would typically manage the parsing of multiple distinct values,
-    // e.g., cleanedString = cleanedString.split(" ").map(val => parseInt(val, 10));
-    // however, it is currently deactivated within this version.
+  // The following line is commented out, indicating an alternative data processing
+  // that is not currently active in this version of the code.
+  // rawData = rawData.split(" ").map(Number);
 
-    // Compute the final integer value using a fixed baseline and the refined string data.
-    const   calculatedResult   =   24  +  (   24   -   Number(cleanedString)   ) ;
-
-    // Present the derived numerical result to the standard output stream.
-    console.log(   calculatedResult   ) ;
+  // Calculate a specific value based on the processed input and print it to the console.
+  // The calculation involves adding 24 to the result of subtracting the input from 24.
+  console.log(24 + (24 - rawData));
 }
 
-// Obtain the necessary file system functionality for reading external data sources.
-const   ioUtility   =   require( "node:fs" ) ;
-
-// Initiate the primary processing routine using the data acquired from the standard input source.
-ProcessInputData (   ioUtility.readFileSync(   "/dev/stdin"   ,   "utf8"   )   ) ;
+// Obtain the raw data by reading the entire content of standard input as a UTF-8 string,
+// and then pass this data to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

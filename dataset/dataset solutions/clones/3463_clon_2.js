@@ -1,85 +1,103 @@
-const stringToInteger = ( inputString ) => Number.parseInt( inputString, 10 ) ;
+var parseInteger = val => parseInt(val, 10);
 
-const parseStringArrayToNumbers = ( stringValues ) => stringValues.map( ( currentElement ) => stringToInteger( currentElement ) ) ;
+var parseIntegerArray = inputArray => inputArray.map(element => parseInteger(element));
 
-const calculateAbsolute = ( numericalValue ) => ( numericalValue > 0 ? numericalValue : -numericalValue ) ;
+var absoluteValue = numberValue => numberValue > 0 ? numberValue : -numberValue;
 
-function retrieveMinimum ( ) {
-  let inputArguments = arguments;
-  let smallestVal = inputArguments[ 0 ];
-  for ( let loopCounter = 1; loopCounter < inputArguments.length; loopCounter++ ) {
-    if ( inputArguments[ loopCounter ] < smallestVal ) {
-      smallestVal = inputArguments[ loopCounter ];
+function findMinimum() {
+    var argsCollection = arguments;
+    var currentMin = argsCollection[0];
+    for (var idx = 1; idx < argsCollection.length; idx++) {
+        if (argsCollection[idx] < currentMin) {
+            currentMin = argsCollection[idx];
+        }
     }
-  }
-  return smallestVal;
+    return currentMin;
 }
 
-function retrieveMaximum ( ) {
-  let providedArguments = arguments;
-  let largestVal = providedArguments[ 0 ];
-  for ( let indexValue = 1; indexValue < providedArguments.length; indexValue++ ) {
-    if ( providedArguments[ indexValue ] > largestVal ) {
-      largestVal = providedArguments[ indexValue ];
+function findMaximum() {
+    var argsCollection = arguments;
+    var currentMax = argsCollection[0];
+    for (var idx = 1; idx < argsCollection.length; idx++) {
+        if (argsCollection[idx] > currentMax) {
+            currentMax = argsCollection[idx];
+        }
     }
-  }
-  return largestVal;
+    return currentMax;
 }
 
-function findGreatestCommonDivisor ( ) {
-  let argumentList = arguments;
-  let currentCommonDivisor = argumentList[ 0 ];
-  // Helper function for Euclidean algorithm implementation
-  const euclideanHelper = ( firstNum, secondNum ) => ( secondNum ? euclideanHelper( secondNum, firstNum % secondNum ) : firstNum );
-  for ( let iter = 1; iter < argumentList.length; iter++ ) {
-    currentCommonDivisor = euclideanHelper( currentCommonDivisor, argumentList[ iter ] );
-  }
-  return currentCommonDivisor;
+function calculateGCD() {
+    var argsCollection = arguments;
+    var resultGCD = argsCollection[0];
+
+    // Helper function for calculating GCD of two numbers
+    var recursiveGCD = (numA, numB) => numB ? recursiveGCD(numB, numA % numB) : numA;
+
+    for (var idx = 1; idx < argsCollection.length; idx++) {
+        resultGCD = recursiveGCD(resultGCD, argsCollection[idx]);
+    }
+    return resultGCD;
 }
 
-// Entry point for the application, processing standard input
-executeMainLogic( require( "node:fs" ).readFileSync( "/dev/stdin", { encoding: "utf8" } ) );
+// Execute the main processing function with input from standard input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function executeMainLogic ( programInputContent ) {
-  // Split the entire input content by newline characters
-  let inputLines = programInputContent.split( '\n' );
-  // Parse the first line as the count of elements
-  let totalElements = stringToInteger( inputLines[ 0 ] );
+/**
+ * Main function to process the input data and compute the result.
+ * @param {string} rawData - The raw input string read from stdin.
+ */
+function ProcessInput(rawData) {
+    // Split the input string into an array of lines
+    var lines = rawData.split('\n');
 
-  let numericData = [ ];
-  // Populate the array with numerical values from subsequent input lines
-  for ( let dataIndex = 0; dataIndex < totalElements; dataIndex++ ) {
-    numericData[ dataIndex ] = stringToInteger( inputLines[ dataIndex + 1 ] );
-  }
+    // Parse the first line to get the count of numbers
+    var count = parseInteger(lines[0]);
 
-  // Sort the collected numerical data in ascending order
-  numericData.sort( ( valA, valB ) => valA - valB );
+    // Initialize an array to store the numbers
+    var numberArray = [];
 
-  let sumAccumulatorA = 0;
-  let sumAccumulatorB = 0;
-
-  // Conditional logic based on whether the total number of elements is even or odd
-  if ( totalElements % 2 === 0 ) {
-    // Process for an even number of elements
-    for ( let elementPos = 0; elementPos < totalElements; elementPos++ ) {
-      sumAccumulatorA += elementPos >= totalElements / 2 ? 2 * numericData[ elementPos ] : -2 * numericData[ elementPos ];
+    // Populate the number array by parsing subsequent lines
+    for (var loopIndex = 0; loopIndex < count; loopIndex++) {
+        numberArray[loopIndex] = parseInteger(lines[loopIndex + 1]);
     }
-    sumAccumulatorA += numericData[ totalElements / 2 ] - numericData[ totalElements / 2 + 1 ];
-  } else {
-    // Process for an odd number of elements
-    for ( let elementPos = 0; elementPos < totalElements; elementPos++ ) {
-      sumAccumulatorA += elementPos >= ( totalElements - 1 ) / 2 ? 2 * numericData[ elementPos ] : -2 * numericData[ elementPos ];
-      sumAccumulatorB += elementPos > ( totalElements - 1 ) / 2 ? 2 * numericData[ elementPos ] : -2 * numericData[ elementPos ];
+
+    // Sort the array of numbers in ascending order
+    numberArray.sort((valA, valB) => valA - valB);
+
+    // Initialize two sum variables for calculation
+    var sumX = 0;
+    var sumY = 0;
+
+    // Check if the count of numbers is even or odd
+    if (count % 2 === 0) {
+        // Case: Even number of elements
+        for (var iter = 0; iter < count; iter++) {
+            // Accumulate sumX based on element position relative to the middle
+            sumX += iter >= count / 2 ? 2 * numberArray[iter] : -2 * numberArray[iter];
+        }
+        // Adjust sumX with specific middle elements
+        sumX += numberArray[count / 2] - numberArray[count / 2 + 1];
+    } else {
+        // Case: Odd number of elements
+        for (var idxVal = 0; idxVal < count; idxVal++) {
+            // Accumulate sumX and sumY based on element position
+            sumX += idxVal >= (count - 1) / 2 ? 2 * numberArray[idxVal] : -2 * numberArray[idxVal];
+            sumY += idxVal > (count - 1) / 2 ? 2 * numberArray[idxVal] : -2 * numberArray[idxVal];
+        }
+        // Adjust sumX with specific middle elements
+        sumX -= numberArray[(count - 1) / 2] + numberArray[(count + 1) / 2];
+        // Adjust sumY with specific middle elements
+        sumY += numberArray[(count - 1) / 2] + numberArray[(count - 3) / 2];
     }
-    sumAccumulatorA -= numericData[ ( totalElements - 1 ) / 2 ] + numericData[ ( totalElements + 1 ) / 2 ];
-    sumAccumulatorB += numericData[ ( totalElements - 1 ) / 2 ] + numericData[ ( totalElements - 3 ) / 2 ];
-  }
 
-  // Determine the maximum of the two calculated sums
-  let finalCalculatedResult = retrieveMaximum( sumAccumulatorA, sumAccumulatorB );
+    // Determine the maximum of the two calculated sums
+    var finalResult = findMaximum(sumX, sumY);
 
-  // Output the final result to the console
-  console.log( finalCalculatedResult );
+    // Debugging: console.log(numberArray, otherArray); // This line was commented out in the original
 
-  return 0; // Indicate successful execution of the program
+    // Output the final computed result to the console
+    console.log(finalResult);
+
+    // Indicate successful execution
+    return 0;
 }

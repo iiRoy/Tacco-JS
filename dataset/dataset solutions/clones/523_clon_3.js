@@ -1,175 +1,77 @@
 const fileSystem = require('fs');
+const inputFilePath = '/dev/stdin';
+const rawInputString = fileSystem.readFileSync(inputFilePath, 'utf8');
 
-// Read raw input data from standard input.
-// This data typically contains configuration parameters and a list of events.
-const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputString.trim().split('\n');
 
-// Trim any leading/trailing whitespace and split the input into an array of lines.
-// Each line represents either initial configuration or a specific event.
-const inputEventLines = rawInputData.trim().split('\n');
+const initialConfigLine = processedLines.shift();
+const configValues = initialConfigLine.split(' ').map(Number);
 
-// The very first line of input provides general configuration parameters.
-// Extract this line and parse its numerical components.
-const initialConfigurationString = inputEventLines.shift();
-const parsedConfigurationValues = initialConfigurationString.split(' ').map(Number);
+const numDataPoints = configValues[0];
+const lengthLimit = configValues[2];
 
-// Extract key parameters from the configuration:
-// 'numberOfParticipants' (N) - the total number of items/participants.
-// 'eventTimeHorizon' (L) - a time limit, used for the sentinel event.
-const numberOfParticipants = parsedConfigurationValues[0];
-const eventTimeHorizon = parsedConfigurationValues[2]; // 'L' in original code, value is used in sentinel event
-
-// Initialize an array to store detailed performance statistics for each participant.
-// Each participant's record is an object for improved clarity and maintainability,
-// tracking their current score, the total time they've spent as the leader,
-// and their original 0-based index for tie-breaking and final output.
-const participantPerformanceRecords = [];
-for (let participantIndex = 0; participantIndex < numberOfParticipants; participantIndex++) {
-    participantPerformanceRecords.push({
-        currentScore: 0,           // The participant's current accumulated score.
-        totalTimeAtPeak: 0,        // Accumulated time this participant was the sole or tie-breaking leader.
-        initialRankIdentifier: participantIndex // Original 0-based index.
-    });
+const dataEntries = [];
+for (let dataIdx = 0; dataIdx < numDataPoints; dataIdx++) {
+    dataEntries.push([0, 0, dataIdx]);
 }
 
-// Initialize state variables for tracking the current leader and the simulation time.
-// 'currentActiveLeader' stores the index and score of the participant currently holding the top score.
-// 'currentSimulationTimestamp' tracks the time point of the last processed event.
-let currentActiveLeader = {
-    identifier: 0, // Index of the participant currently leading (0-based).
-    scoreValue: 0  // The score of the participant currently leading.
-};
-let currentSimulationTimestamp = 0; // Tracks the elapsed time in the simulation.
+let currentMaxEntry = [0, 0]; // [index, value]
+let accumulatedTime = 0;
 
-// --- Helper Function for Recalculating Leader ---
+const finalEventParts = [1, lengthLimit, 0];
+const finalEventString = finalEventParts.join(' ');
+processedLines.push(finalEventString);
 
-/**
- * Recalculates the current leader from the entire set of participant records.
- * This is necessary when the current leader's score decreases, invalidating their leadership.
- * Tie-breaking rule: if multiple participants have the same highest score, the one
- * with the smallest original index (identifier) is chosen.
- * @param {Array<Object>} records - The array of participant performance records.
- * @returns {{identifier: number, scoreValue: number}} An object representing the new leader.
- */
-const reEvaluateLeadership = (records) => {
-    // Handle edge case of no participants.
-    if (records.length === 0) {
-        return { identifier: -1, scoreValue: -1 };
-    }
-
-    // Initialize with the first participant's data.
-    let highestScoreObserved = records[0].currentScore;
-    let newLeaderIdentifier = records[0].initialRankIdentifier; // Or 0
-
-    // Iterate through all participants to find the one with the highest score.
-    for (let currentParticipantIdx = 1; currentParticipantIdx < records.length; currentParticipantIdx++) {
-        const participant = records[currentParticipantIdx];
-        if (participant.currentScore > highestScoreObserved) {
-            // Found a participant with a strictly higher score.
-            highestScoreObserved = participant.currentScore;
-            newLeaderIdentifier = currentParticipantIdx;
-        } else if (participant.currentScore === highestScoreObserved) {
-            // If scores are equal, apply the tie-breaking rule: smaller index wins.
-            if (currentParticipantIdx < newLeaderIdentifier) {
-                newLeaderIdentifier = currentParticipantIdx;
-            }
+const recalculateMax = (entries) => {
+    let highestValueFound = 0;
+    let highestIndexFound = 0;
+    for (let k = 0; k < entries.length; k++) {
+        if (entries[k][0] > highestValueFound) {
+            highestValueFound = entries[k][0];
+            highestIndexFound = k;
         }
     }
-    return { identifier: newLeaderIdentifier, scoreValue: highestScoreObserved };
+    return [highestIndexFound, highestValueFound];
 };
 
-// --- Event Processing Setup ---
+for (let eventIndex = 0; eventIndex < processedLines.length; eventIndex++) {
+    const currentEventLine = processedLines[eventIndex];
+    const eventDetails = currentEventLine.split(' ').map(Number);
 
-// Add a final "sentinel" event to the end of the event list.
-// This ensures that the time accumulated by the last active leader, up to the 'eventTimeHorizon' (L),
-// is correctly accounted for. The original code uses item 1 (index 0), time 'L', and score change 0.
-const closingEventDetails = [1, eventTimeHorizon, 0].join(' ');
-inputEventLines.push(closingEventDetails);
+    const targetDataIndex = eventDetails[0] - 1;
+    const eventTimestamp = eventDetails[1];
+    const valueModifier = eventDetails[2];
 
-// --- Main Event Loop for Processing All Events ---
+    const timeDifference = eventTimestamp - accumulatedTime;
+    dataEntries[currentMaxEntry[0]][1] += timeDifference;
+    accumulatedTime = eventTimestamp;
 
-// Iterate through each event line to update participant scores and leadership status.
-for (let eventCounter = 0; eventCounter < inputEventLines.length; eventCounter++) {
-    const currentEventString = inputEventLines[eventCounter];
+    dataEntries[targetDataIndex][0] += valueModifier;
 
-    // Parse the current event string into its numerical components.
-    const eventDataTokens = currentEventString.split(' ').map(Number);
+    if (valueModifier > 0) {
+        const currentDataValue = dataEntries[targetDataIndex][0];
+        const currentMaxVal = currentMaxEntry[1];
+        const currentMaxIdx = currentMaxEntry[0];
 
-    // Extract event details: target participant index, event timestamp, and score modification.
-    const affectedParticipantIndex = eventDataTokens[0] - 1; // Convert to 0-based index.
-    const eventTimePoint = eventDataTokens[1];
-    const scoreModificationAmount = eventDataTokens[2];
-
-    // Optional: Basic input validation for participant index to ensure robustness (Type III addition).
-    if (affectedParticipantIndex < 0 || affectedParticipantIndex >= numberOfParticipants) {
-        // In a real application, one might log an error or skip the event.
-        // For this problem, we proceed assuming valid input indices.
-    }
-
-    // Calculate the duration since the last event.
-    const durationSinceLastEvent = eventTimePoint - currentSimulationTimestamp;
-
-    // If time has genuinely passed, accumulate this duration to the 'totalTimeAtPeak'
-    // of the participant who was the leader during this interval.
-    if (durationSinceLastEvent > 0) {
-        participantPerformanceRecords[currentActiveLeader.identifier].totalTimeAtPeak += durationSinceLastEvent;
-    }
-
-    // Update the global simulation timestamp to the current event's time.
-    currentSimulationTimestamp = eventTimePoint;
-
-    // Apply the score change to the affected participant's record.
-    participantPerformanceRecords[affectedParticipantIndex].currentScore += scoreModificationAmount;
-
-    // --- Logic to Update Current Leadership Status ---
-
-    if (scoreModificationAmount > 0) {
-        // If a participant's score increased:
-        const candidateLeaderScore = participantPerformanceRecords[affectedParticipantIndex].currentScore;
-
-        if (candidateLeaderScore > currentActiveLeader.scoreValue) {
-            // This participant now has a strictly higher score, becoming the new leader.
-            currentActiveLeader = {
-                identifier: affectedParticipantIndex,
-                scoreValue: candidateLeaderScore
-            };
-        } else if (candidateLeaderScore === currentActiveLeader.scoreValue) {
-            // If scores are equal, apply tie-breaking: the participant with the smaller index wins.
-            if (affectedParticipantIndex < currentActiveLeader.identifier) {
-                currentActiveLeader = {
-                    identifier: affectedParticipantIndex,
-                    scoreValue: candidateLeaderScore
-                };
-            }
+        if (currentDataValue > currentMaxVal) {
+            currentMaxEntry = [targetDataIndex, currentDataValue];
+        } else if (currentDataValue === currentMaxVal && targetDataIndex <= currentMaxIdx) {
+            currentMaxEntry = [targetDataIndex, currentDataValue];
         }
-    } else if (scoreModificationAmount < 0) {
-        // If a participant's score decreased:
-        // Only re-evaluate leadership if the affected participant was the current leader.
-        // A non-leader decreasing their score doesn't change the current leader unless they were tied.
-        // The original logic specifically re-scans only if the leader's score drops.
-        if (affectedParticipantIndex === currentActiveLeader.identifier) {
-            currentActiveLeader = reEvaluateLeadership(participantPerformanceRecords);
-        }
+    } else if (valueModifier < 0 && currentMaxEntry[0] === targetDataIndex) {
+        currentMaxEntry = recalculateMax(dataEntries);
     }
-    // If scoreModificationAmount is 0, no change in score, so no change in leadership.
 }
 
-// --- Final Sorting and Output ---
-
-// Sort the participant performance records to determine the ultimate winner.
-// The primary sorting criterion is 'totalTimeAtPeak' in descending order (more time at peak is better).
-// The secondary sorting criterion (for ties in 'totalTimeAtPeak') is 'initialRankIdentifier' in ascending order (smaller index wins).
-participantPerformanceRecords.sort((recordA, recordB) => {
-    // Primary sort: by total time spent at peak (descending).
-    if (recordA.totalTimeAtPeak === recordB.totalTimeAtPeak) {
-        // Secondary sort: if times are equal, sort by original identifier (ascending).
-        return recordA.initialRankIdentifier - recordB.initialRankIdentifier;
+dataEntries.sort((entryA, entryB) => {
+    const timeA = entryA[1];
+    const timeB = entryB[1];
+    if (timeA === timeB) {
+        const originalIndexA = entryA[2];
+        const originalIndexB = entryB[2];
+        return originalIndexA - originalIndexB;
     }
-    // Otherwise, sort by total time at peak in descending order.
-    return recordB.totalTimeAtPeak - recordA.totalTimeAtPeak;
+    return timeB - timeA;
 });
 
-// The participant at the first position in the sorted array is the overall winner.
-// Output their original 1-based index (as per problem requirements).
-const winningParticipantOriginalIndex = participantPerformanceRecords[0].initialRankIdentifier;
-console.log(winningParticipantOriginalIndex + 1);
+console.log(dataEntries[0][2] + 1);

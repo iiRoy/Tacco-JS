@@ -1,88 +1,76 @@
 "use strict";
+class DisjointSet {
+    constructor(elementCount) {
+        this.parentMap = new Map();
+        this.setSizes = new Map();
 
-// Functional approach for Disjoint Set Union operations
-function createDisjointSetSystem(initialCapacity) {
-    // Each element is initially its own parent
-    const ancestors = Array.from({ length: initialCapacity }, (_, idx) => idx);
-
-    // Finds the representative (root) of the set containing the given element.
-    // Employs iterative full path compression.
-    function findRepresentative(elementIndex) {
-        let currentRoot = elementIndex;
-        // First, traverse up to find the absolute root of the set
-        while (ancestors[currentRoot] !== currentRoot) {
-            currentRoot = ancestors[currentRoot];
-        }
-
-        // Second, path compression: make all nodes on the path from elementIndex
-        // to currentRoot point directly to currentRoot.
-        let traversalNode = elementIndex;
-        while (ancestors[traversalNode] !== currentRoot) {
-            let nextNode = ancestors[traversalNode];
-            ancestors[traversalNode] = currentRoot;
-            traversalNode = nextNode;
-        }
-        return currentRoot;
+        Array.from({ length: elementCount }, (_, index) => {
+            this.parentMap.set(index, index);
+            this.setSizes.set(index, 1);
+        });
     }
 
-    // Merges the sets containing two given elements.
-    function combineGroups(firstElement, secondElement) {
-        const representativeA = findRepresentative(firstElement);
-        const representativeB = findRepresentative(secondElement);
+    findRepresentative(element) {
+        let currentElement = element;
+        while (this.parentMap.get(currentElement) !== currentElement) {
+            currentElement = this.parentMap.get(currentElement);
+        }
 
-        // If they are not already in the same set, merge them by setting one root's parent to the other.
-        if (representativeA !== representativeB) {
-            ancestors[representativeA] = representativeB;
+        let pathNode = element;
+        while (this.parentMap.get(pathNode) !== currentElement) {
+            let nextInPath = this.parentMap.get(pathNode);
+            this.parentMap.set(pathNode, currentElement);
+            pathNode = nextInPath;
+        }
+        return currentElement;
+    }
+
+    mergeSets(elementA, elementB) {
+        let representativeA = this.findRepresentative(elementA);
+        let representativeB = this.findRepresentative(elementB);
+
+        if (representativeA === representativeB) {
+            return;
+        }
+
+        let sizeA = this.setSizes.get(representativeA);
+        let sizeB = this.setSizes.get(representativeB);
+
+        if (sizeA < sizeB) {
+            this.parentMap.set(representativeA, representativeB);
+            this.setSizes.set(representativeB, sizeA + sizeB);
+            this.setSizes.delete(representativeA);
+        } else {
+            this.parentMap.set(representativeB, representativeA);
+            this.setSizes.set(representativeA, sizeA + sizeB);
+            this.setSizes.delete(representativeB);
         }
     }
 
-    // Checks if two elements are in the same set.
-    function areInSameGroup(firstElement, secondElement) {
-        return findRepresentative(firstElement) === findRepresentative(secondElement);
+    areConnected(elementA, elementB) {
+        return this.findRepresentative(elementA) === this.findRepresentative(elementB);
     }
-
-    // Expose the DSU operations as an object.
-    return {
-        findRepresentative: findRepresentative,
-        combineGroups: combineGroups,
-        areInSameGroup: areInSameGroup
-    };
 }
 
-// Main processing function for the problem
-function ProcessInputAndCompute(rawData) {
-    const dataLines = rawData.split("\n");
+function ProcessInput(rawInput) {
+    const inputLines = rawInput.split("\n");
 
-    // Parse the first line for configuration values: total number of items and merge operations count.
-    const configValues = dataLines.shift().split(/\s/).map(Number);
-    const totalItems = configValues[0];
-    const mergeOperations = configValues[1];
+    const [nodeCount, operationCount] = inputLines.shift().split(/\s/).map(Number);
+    const permutationArray = inputLines.shift().split(/\s/).map(Number);
 
-    // Initialize the disjoint set system with the total number of items.
-    const groupManager = createDisjointSetSystem(totalItems);
+    const setStructure = new DisjointSet(nodeCount);
 
-    // Parse the second line for the target mapping array.
-    const targetMapping = dataLines.shift().split(/\s/).map(Number);
+    inputLines.slice(0, operationCount)
+        .map(line => line.split(/\s/).map(Number))
+        .forEach(([val1, val2]) => {
+            setStructure.mergeSets(val1 - 1, val2 - 1);
+        });
 
-    // Perform the specified number of merge operations.
-    for (let opIdx = 0; opIdx < mergeOperations; opIdx++) {
-        const [itemA, itemB] = dataLines.shift().split(/\s/).map(Number);
-        // Adjust to 0-indexed values before merging.
-        groupManager.combineGroups(itemA - 1, itemB - 1);
-    }
+    const connectedCount = Array.from({ length: nodeCount }, (_, index) => index)
+        .filter(idx => setStructure.areConnected(idx, permutationArray[idx] - 1))
+        .length;
 
-    let matchCount = 0;
-    // Iterate through all items to check their connection to their mapped targets.
-    for (let itemIdx = 0; itemIdx < totalItems; itemIdx++) {
-        // Check if the current item (itemIdx) and its mapped target (targetMapping[itemIdx]-1)
-        // belong to the same group in the disjoint set system.
-        if (groupManager.areInSameGroup(itemIdx, targetMapping[itemIdx] - 1)) {
-            matchCount++;
-        }
-    }
-
-    console.log(matchCount);
+    console.log(connectedCount);
 }
 
-// Execute the main logic by reading input from standard input.
-ProcessInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

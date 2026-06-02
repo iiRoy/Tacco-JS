@@ -1,63 +1,49 @@
 "use strict";
 
 (function () {
-  const parseNumericLine = (textLine) => {
-    return textLine.trim().split(/\s+/).map(Number);
+  const determineGreater = (firstCandidate, secondCandidate) => {
+    if (firstCandidate === null) return secondCandidate;
+    if (secondCandidate === null) return firstCandidate;
+
+    if (firstCandidate.length !== secondCandidate.length) {
+      return firstCandidate.length > secondCandidate.length ? firstCandidate : secondCandidate;
+    }
+    return firstCandidate > secondCandidate ? firstCandidate : secondCandidate;
   };
 
-  const isSuperior = (candidateString, currentBestString) => {
-    if (currentBestString === null) {
-      return true;
-    }
-    if (candidateString.length > currentBestString.length) {
-      return true;
-    }
-    if (candidateString.length < currentBestString.length) {
-      return false;
-    }
-    return candidateString > currentBestString;
-  };
+  const processMatchstickInput = (rawInputContent) => {
+    const inputLines = rawInputContent.split("\n");
 
-  const processInputData = (rawText) => {
-    const inputLines = rawText.split("\n");
+    const [targetMatchsticks, availableDigitCount] = inputLines[0].split(/\s+/).map(Number);
+    const providedDigits = inputLines[1].split(/\s+/).map(Number).slice(0, availableDigitCount);
 
-    const [targetEnergy, availableCount] = parseNumericLine(inputLines[0]);
-    const suppliedNumerals = parseNumericLine(inputLines[1]).slice(0, availableCount);
+    const digitMatchstickCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
 
-    const numeralCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
+    const sortedUsableDigits = providedDigits
+      .map(dVal => ({ digit: dVal, cost: digitMatchstickCosts[dVal] }))
+      .sort((a, b) => b.digit - a.digit);
 
-    const possibleConstituents = suppliedNumerals
-      .map((value) => ({
-        numeralValue: value,
-        numeralEnergy: numeralCosts[value],
-      }))
-      .sort((a, b) => b.numeralValue - a.numeralValue);
+    const maxNumberStringForCost = new Array(targetMatchsticks + 1).fill(null);
+    maxNumberStringForCost[0] = "";
 
-    const bestConstruction = Array(targetEnergy + 1).fill(null);
-    bestConstruction[0] = "";
+    for (let currentCostIndex = 1; currentCostIndex <= targetMatchsticks; currentCostIndex++) {
+      for (const { digit: currentDigit, cost: currentDigitCost } of sortedUsableDigits) {
+        if (currentCostIndex < currentDigitCost) {
+          continue;
+        }
 
-    for (let currentEnergyLevel = 1; currentEnergyLevel <= targetEnergy; ++currentEnergyLevel) {
-      for (const constituent of possibleConstituents) {
-        const { numeralValue, numeralEnergy } = constituent;
+        const remainingCost = currentCostIndex - currentDigitCost;
+        const numberForRemainingCost = maxNumberStringForCost[remainingCost];
 
-        if (currentEnergyLevel - numeralEnergy >= 0) {
-          const priorConstruction = bestConstruction[currentEnergyLevel - numeralEnergy];
-
-          if (priorConstruction !== null) {
-            const potentialString = numeralValue.toString() + priorConstruction;
-
-            if (isSuperior(potentialString, bestConstruction[currentEnergyLevel])) {
-              bestConstruction[currentEnergyLevel] = potentialString;
-            }
-          }
+        if (numberForRemainingCost !== null) {
+          const potentialNumber = String(currentDigit) + numberForRemainingCost;
+          maxNumberStringForCost[currentCostIndex] = determineGreater(maxNumberStringForCost[currentCostIndex], potentialNumber);
         }
       }
     }
 
-    const finalResult = bestConstruction[targetEnergy] === null ? "" : bestConstruction[targetEnergy];
-
-    console.log(finalResult);
+    console.log(maxNumberStringForCost[targetMatchsticks]);
   };
 
-  processInputData(require("fs").readFileSync(0, "utf8"));
+  processMatchstickInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 })();

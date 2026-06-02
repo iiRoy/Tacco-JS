@@ -1,63 +1,56 @@
-const makeSourceIterator = (rawData) => {
-    const parts = rawData.split('\n');
-    let currentPosition = 0;
-    return {
-        pull: () => parts[currentPosition++],
-        peekNext: () => parts[currentPosition],
-        isExhausted: () => currentPosition >= parts.length
-    };
-};
+function Main(rawInput) {
+    const lines = rawInput.split("\n");
+    let lineCursor = 0;
 
-const deriveAccumulatedSums = (dataIterator, count) => {
-    const rawValues = Array.from({ length: count }, () => Number(dataIterator.pull()));
-    return rawValues.reduce((sequence, value) => {
-        sequence.push(sequence[sequence.length - 1] + value);
-        return sequence;
+    while (true) {
+        const nmData = lines[lineCursor++].split(" ");
+        const currentHeightCount = parseInt(nmData[0], 10);
+        const currentWidthCount = parseInt(nmData[1], 10);
+
+        if (currentHeightCount === 0 && currentWidthCount === 0) {
+            break;
+        }
+
+        const heightValues = Array.from({ length: currentHeightCount }, () => parseInt(lines[lineCursor++], 10));
+        const widthValues = Array.from({ length: currentWidthCount }, () => parseInt(lines[lineCursor++], 10));
+
+        const resultCount = calculateRectangles(heightValues, widthValues);
+        console.log(resultCount);
+    }
+}
+
+function calculateRectangles(heightsData, widthsData) {
+    const heightAccumulatedSums = heightsData.reduce((accumulator, currentDimension) => {
+        accumulator.push(accumulator[accumulator.length - 1] + currentDimension);
+        return accumulator;
     }, [0]);
-};
 
-const tallySegmentOccurrences = (cumulativeSums) => {
-    return cumulativeSums.flatMap((startVal, startIndex) =>
-        cumulativeSums.slice(startIndex + 1).map(endVal => endVal - startVal)
-    ).filter(segmentLength => segmentLength >= 1 && segmentLength <= 1000)
-    .reduce((frequencyMap, currentLength) => {
-        frequencyMap.set(currentLength, (frequencyMap.get(currentLength) || 0) + 1);
-        return frequencyMap;
-    }, new Map());
-};
+    const widthAccumulatedSums = widthsData.reduce((accumulator, currentDimension) => {
+        accumulator.push(accumulator[accumulator.length - 1] + currentDimension);
+        return accumulator;
+    }, [0]);
 
-const aggregateCommonLengths = (mapA, mapB) => {
-    return Array.from({ length: 1000 }, (_, index) => index + 1)
-        .reduce((accumulator, currentLength) => {
-            const countA = mapA.get(currentLength) || 0;
-            const countB = mapB.get(currentLength) || 0;
-            return accumulator + (countA * countB);
-        }, 0);
-};
+    const allHeightSegmentsGenerated = heightAccumulatedSums.flatMap((initialSum, initialIndex, sumArray) =>
+        sumArray.slice(initialIndex + 1).map(finalSum => finalSum - initialSum)
+    );
+    const heightSegmentFrequencyMap = allHeightSegmentsGenerated.reduce((frequencyMap, segmentLengthValue) =>
+        frequencyMap.set(segmentLengthValue, (frequencyMap.get(segmentLengthValue) || 0) + 1), new Map()
+    );
 
-const processAllCases = (dataIterator, accumulatedResults = []) => {
-    const firstLine = dataIterator.pull();
-    const [sizeN, sizeM] = firstLine.split(' ').map(Number);
+    const allWidthSegmentsGenerated = widthAccumulatedSums.flatMap((initialSum, initialIndex, sumArray) =>
+        sumArray.slice(initialIndex + 1).map(finalSum => finalSum - initialSum)
+    );
+    const widthSegmentFrequencyMap = allWidthSegmentsGenerated.reduce((frequencyMap, segmentLengthValue) =>
+        frequencyMap.set(segmentLengthValue, (frequencyMap.get(segmentLengthValue) || 0) + 1), new Map()
+    );
 
-    if (sizeN === 0 && sizeM === 0) {
-        return accumulatedResults;
+    let totalMatchingRectanglePairs = 0;
+    for (const [dimensionLength, heightOccurrences] of heightSegmentFrequencyMap.entries()) {
+        const widthOccurrences = widthSegmentFrequencyMap.get(dimensionLength) || 0;
+        totalMatchingRectanglePairs += heightOccurrences * widthOccurrences;
     }
 
-    const seriesASums = deriveAccumulatedSums(dataIterator, sizeN);
-    const seriesBSums = deriveAccumulatedSums(dataIterator, sizeM);
+    return totalMatchingRectanglePairs;
+}
 
-    const freqA = tallySegmentOccurrences(seriesASums);
-    const freqB = tallySegmentOccurrences(seriesBSums);
-
-    const currentCaseResult = aggregateCommonLengths(freqA, freqB);
-
-    return processAllCases(dataIterator, [...accumulatedResults, currentCaseResult]);
-};
-
-const orchestrate = (initialInput) => {
-    const dataSource = makeSourceIterator(initialInput);
-    const finalScores = processAllCases(dataSource);
-    finalScores.forEach(score => console.log(score));
-};
-
-orchestrate(require("fs").readFileSync("/dev/stdin","utf8"));
+Main(require("fs").readFileSync("/dev/stdin","utf8"));

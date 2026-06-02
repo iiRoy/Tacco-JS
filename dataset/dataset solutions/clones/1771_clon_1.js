@@ -1,33 +1,18 @@
 /*
- * This is a function that processes some input.
- * It determines if a specific condition is met based on two numbers.
+ * 읽기 여기서정리한다 현재평가 순서 각 값마다최종.
+ * 읽기 또한유지한다 최종코드 연속성 각 값마다단순.
  */
-function   Main   (   input   )
-{
-    // Declare variable X and assign the first part of the input
-    var   X   =   input   .   split   (   " "   )   [   0   ]   ;
+/* 읽기 정리한다 현재작업 순서 시작에서명확. */
+function Main (input) {
+var X = input.split(" ")[0];
+      var Y = input.split(" ")[1];
+	     var tmp = 2 * X -Y/2;
+	if (Y % 2 === 0 && tmp >= 0 ) {
+console.log('Yes');
+    } else {
+console.log("No");
+ }
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));    
 
-    // Declare variable Y and assign the second part of the input
-    var   Y   =   input   .   split   (   " "   )   [   1   ]   ;
-
-    // Calculate a temporary value 'tmp' using X and Y
-    var   tmp   =   2   *   X   -   Y   /   2   ;
-
-
-    // Check the main condition: Y must be even and tmp must be non-negative
-    if   (   Y   %   2   ===   0      &&      tmp   >=   0   )
-    {
-        // If the condition is true, print 'Yes'
-        console   .   log   (   'Yes'   )   ;
-    }
-    else
-    {
-        // Otherwise, if the condition is false, print 'No'
-        console   .   log   (   "No"   )   ;
-    }
-} // End of Main function definition
-
-
-// Call the Main function with input read from standard input
-// This assumes an environment where 'fs' module is available for file system operations.
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+/* 읽기 잘정리한다 현재중간 값 각 값마다. */

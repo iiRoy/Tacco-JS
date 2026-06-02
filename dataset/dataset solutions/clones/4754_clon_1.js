@@ -1,41 +1,15 @@
+/* ========== 读取保持关键下一步骤对每个值内部。 ========== */
+   function main (s) {
+s=s.split(" ");
+      for(var i=0;i<4;i++)s[i]=parseInt(s[i]);
 /*
- * This is a JavaScript program demonstrating basic input processing
- * and conditional logic.
- *
- * The `main` function processes a string input, converts parts of it to integers,
- * and then performs a comparison to print the larger product.
+ * 读取也保持当前接收的数据在输出前。
+ * 读取也保持中间值计算时内部。
  */
-
-function   main   (   s   )
-{
-  // Split the input string 's' by spaces into an array of strings.
-  // This assumes 's' contains space-separated values.
-  s     =     s  .  split  (  " "  )  ;
-
-  // Loop through the first four elements of the array 's'.
-  // Convert each element from a string to an integer using parseInt().
-  // The loop runs for i = 0, 1, 2, 3.
-  for     (   var     i     =     0   ;   i     <     4   ;   i  ++   )
-  {
-    s  [  i  ]     =     parseInt  (  s  [  i  ]  )  ;   // Convert and assign back to the array.
-  }
-
-  // Calculate two products: s[0]*s[1] and s[2]*s[3].
-  // Then, use a ternary operator to log the larger of the two products to the console.
-  console  .  log  (
-    (   s  [  0  ]     *     s  [  1  ]     >     s  [  2  ]     *     s  [  3  ]   )
-      ?
-    (   s  [  0  ]     *     s  [  1  ]   )
-      :
-    (   s  [  2  ]     *     s  [  3  ]   )
-  )  ;
-
-}   //   End   of   main   function  .
+console.log((s[0]*s[1]>s[2]*s[3])?(s[0]*s[1]):(s[2]*s[3]));
+      }
 
 
-// This section handles reading input from standard input and calling the main function.
-// It uses Node.js 'fs' module to read synchronously from /dev/stdin.
-main   (
-  require   (   'fs'   )
-    .  readFileSync   (   '/dev/stdin'   ,   'utf8'   )
-)  ;
+// 读取现在整理当前数值分析对每个值。
+
+    main(require('fs').readFileSync('/dev/stdin', 'utf8'));  // 读取准备关键中间值在开始处。

@@ -1,115 +1,98 @@
-const InputReaderFactory = (rawInputContent) => {
-    let lineTokensStore = rawInputContent.trim().split('\n').map(line => line.split(' '));
-    let currentLineCursor = 0;
+const InputReaderFactory = (rawInputString) => {
+    let sourceLines = rawInputString.trim().split(/\r?\n/);
+    let currentLinePointer = 0;
+    let currentLineSegments = [];
 
-    const extractTokenFromLine = (returnRaw) => {
-        if (currentLineCursor >= lineTokensStore.length) {
-            return undefined;
+    const ensureSegmentsAvailable = () => {
+        if (currentLineSegments.length === 0 && currentLinePointer < sourceLines.length) {
+            currentLineSegments = sourceLines[currentLinePointer++].split(' ').reverse();
         }
-
-        let activeLineSegments = lineTokensStore[currentLineCursor];
-        if (activeLineSegments.length === 0) {
-            currentLineCursor++;
-            return extractTokenFromLine(returnRaw);
-        }
-
-        let tokenValue = activeLineSegments.pop();
-        if (activeLineSegments.length === 0) {
-            currentLineCursor++;
-        }
-        return returnRaw ? tokenValue : Number(tokenValue);
     };
 
-    const extractFullLine = (returnRaw) => {
-        if (currentLineCursor >= lineTokensStore.length) {
-            return undefined;
-        }
-        let wholeLineTokens = lineTokensStore[currentLineCursor];
-        lineTokensStore[currentLineCursor] = [];
-        currentLineCursor++;
-        return returnRaw ? wholeLineTokens : wholeLineTokens.map(Number);
+    const extractNextSegment = (asString) => {
+        ensureSegmentsAvailable();
+        const segment = currentLineSegments.pop();
+        return asString ? segment : Number(segment);
+    };
+
+    const retrieveLineSegments = (asStrings) => {
+        if (currentLinePointer >= sourceLines.length) throw new Error("No more input lines.");
+        const line = sourceLines[currentLinePointer++].split(' ');
+        return asStrings ? line : line.map(Number);
+    };
+
+    const retrieveMultiLineSegments = (count, asStrings) => {
+        return Array.from({ length: count }, () => retrieveLineSegments(asStrings));
+    };
+
+    const retrieveRawLines = (count, asNumbers) => {
+        const extracted = sourceLines.slice(currentLinePointer, currentLinePointer + count);
+        currentLinePointer += count;
+        return asNumbers ? extracted.map(Number) : extracted;
     };
 
     return {
-        grabValue: (rawFlag = false) => extractTokenFromLine(rawFlag),
-        grabLine: (rawFlag = false) => extractFullLine(rawFlag),
-        grabMatrix: (rowCount, rawFlag = false) => {
-            let collectedRows = [];
-            for (let i = 0; i < rowCount; i++) {
-                collectedRows.push(extractFullLine(rawFlag));
-            }
-            return collectedRows;
-        },
-        grabVector: (elementCount, rawFlag = false) => {
-            let collectedElements = [];
-            for (let i = 0; i < elementCount; i++) {
-                let lineAsTokens = extractFullLine(true);
-                if (lineAsTokens && lineAsTokens.length > 0) {
-                    collectedElements.push(rawFlag ? lineAsTokens[0] : Number(lineAsTokens[0]));
-                } else {
-                    collectedElements.push(undefined);
-                }
-            }
-            return collectedElements;
-        }
+        readOne: extractNextSegment,
+        readFullLine: retrieveLineSegments,
+        readBlock: retrieveMultiLineSegments,
+        readLinesDirect: retrieveRawLines,
     };
 };
 
-const buildMultiArray = (initialFill, ...dimensions) => {
-    const recurseBuild = (dims) => {
+const createMultiDimensionalArray = (initialValue, ...dimensions) => {
+    const constructArrayRecursively = (dims) => {
         if (dims.length === 0) {
-            return initialFill;
+            return initialValue;
         }
         const currentDimensionSize = dims[0];
         const remainingDimensions = dims.slice(1);
-        return Array.from({ length: currentDimensionSize }, () => recurseBuild(remainingDimensions));
+        return Array.from({ length: currentDimensionSize }, () => constructArrayRecursively(remainingDimensions));
     };
-    return recurseBuild(dimensions);
+    return constructArrayRecursively(dimensions);
 };
 
-const inputReader = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
+const solveProblem = () => {
+    const dataStream = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-console.log(determineShortestPathDiscrepancies());
+    const graphNodeCount = dataStream.readOne();
+    const graphEdgeCount = dataStream.readOne();
 
-function determineShortestPathDiscrepancies() {
-    const vertexCount = inputReader.grabValue();
-    const edgeCount = inputReader.grabValue();
-    
-    const GRAPH_INFINITY = Infinity; 
+    const shortestPathMatrix = createMultiDimensionalArray(1e9, graphNodeCount, graphNodeCount);
 
-    let pathDistances = buildMultiArray(GRAPH_INFINITY, vertexCount, vertexCount);
-
-    Array.from({ length: vertexCount }).forEach((_, index) => {
-        pathDistances[index][index] = 0;
+    Array.from({ length: graphNodeCount }, (_, nodeIdx) => {
+        shortestPathMatrix[nodeIdx][nodeIdx] = 0;
     });
 
-    const originalConnections = inputReader.grabMatrix(edgeCount);
-
-    originalConnections.forEach(connection => {
-        let [rawSourceNode, rawDestinationNode, weight] = connection;
-        const sourceNode = rawSourceNode - 1; 
-        const destinationNode = rawDestinationNode - 1; 
-        pathDistances[sourceNode][destinationNode] = pathDistances[destinationNode][sourceNode] = weight;
+    const initialEdgeList = dataStream.readBlock(graphEdgeCount);
+    initialEdgeList.forEach(edgeDetails => {
+        const sourceNode = edgeDetails[0] - 1;
+        const targetNode = edgeDetails[1] - 1;
+        const edgeWeight = edgeDetails[2];
+        shortestPathMatrix[sourceNode][targetNode] = shortestPathMatrix[targetNode][sourceNode] = edgeWeight;
     });
 
-    for (let pivotNode = 0; pivotNode < vertexCount; pivotNode++) {
-        for (let startNode = 0; startNode < vertexCount; startNode++) {
-            for (let endNode = 0; endNode < vertexCount; endNode++) {
-                const pathThroughPivot = pathDistances[startNode][pivotNode] + pathDistances[pivotNode][endNode];
-                pathDistances[startNode][endNode] = Math.min(pathDistances[startNode][endNode], pathThroughPivot);
-            }
-        }
-    }
+    Array.from({ length: graphNodeCount }, (_, intermediateVertex) => {
+        Array.from({ length: graphNodeCount }, (_, startVertex) => {
+            Array.from({ length: graphNodeCount }, (_, endVertex) => {
+                const pathViaIntermediate = shortestPathMatrix[startVertex][intermediateVertex] + shortestPathMatrix[intermediateVertex][endVertex];
+                if (shortestPathMatrix[startVertex][endVertex] > pathViaIntermediate) {
+                    shortestPathMatrix[startVertex][endVertex] = pathViaIntermediate;
+                }
+            });
+        });
+    });
 
-    const discrepancyCounter = originalConnections.reduce((accumulator, connection) => {
-        let [rawSourceNode, rawDestinationNode, weight] = connection;
-        const sourceNode = rawSourceNode - 1;
-        const destinationNode = rawDestinationNode - 1;
-        if (pathDistances[sourceNode][destinationNode] < weight) {
+    const superfluousEdgeCount = initialEdgeList.reduce((accumulator, edgeDetails) => {
+        const sourceNode = edgeDetails[0] - 1;
+        const targetNode = edgeDetails[1] - 1;
+        const edgeWeight = edgeDetails[2];
+        if (shortestPathMatrix[sourceNode][targetNode] < edgeWeight) {
             return accumulator + 1;
         }
         return accumulator;
     }, 0);
 
-    return discrepancyCounter;
-}
+    return superfluousEdgeCount;
+};
+
+console.log(solveProblem());

@@ -1,56 +1,40 @@
-'use strict'
+'use strict';
 
-const obtainInputData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf-8').toString()
-}
+const processGameData = (sourceText) => {
+    const lineSegments = sourceText.split('\n').map(segment => segment.split(''));
+    return new Map([
+        ['a', lineSegments[0]],
+        ['b', lineSegments[1]],
+        ['c', lineSegments[2]]
+    ]);
+};
 
-const organizeGameElements = (rawData) => {
-    const lines = rawData.split('\n')
-    const playerIdentifierMap = {
-        'a': 'alpha',
-        'b': 'beta',
-        'c': 'gamma'
-    }
+const resolveGameOutcome = (initialParticipant, participantDecks) => {
+    const validParticipantKeys = ['a', 'b', 'c'];
 
-    const elementStorage = {
-        [playerIdentifierMap['a']]: lines[0],
-        [playerIdentifierMap['b']]: lines[1],
-        [playerIdentifierMap['c']]: lines[2],
-    }
-    return { elementStorage, playerIdentifierMap }
-}
+    const conductRound = (currentParticipantIdentifier, currentDeckStates) => {
+        const effectiveParticipantKey = validParticipantKeys.includes(currentParticipantIdentifier)
+            ? currentParticipantIdentifier
+            : 'c';
 
-const processGameRound = (currentParticipantKey, currentCollections, participantMapping) => {
-    const activeCollection = currentCollections[currentParticipantKey]
+        const activeDeck = currentDeckStates.get(effectiveParticipantKey);
 
-    if (activeCollection.length === 0) {
-        return currentParticipantKey
-    }
+        if (activeDeck.length === 0) {
+            return currentParticipantIdentifier.toUpperCase();
+        }
 
-    const nextCharacterValue = activeCollection.charAt(0)
-    const remainingPart = activeCollection.substring(1)
+        const nextParticipantIdentifier = activeDeck.shift();
+        return conductRound(nextParticipantIdentifier, currentDeckStates);
+    };
 
-    const updatedCollections = { ...currentCollections }
-    updatedCollections[currentParticipantKey] = remainingPart
+    return conductRound(initialParticipant, participantDecks);
+};
 
-    const nextParticipantKey = participantMapping[nextCharacterValue]
+const initiateGame = (rawData) => {
+    const gameDecks = processGameData(rawData);
+    const firstParticipant = 'a';
+    const winningParticipant = resolveGameOutcome(firstParticipant, gameDecks);
+    console.log(winningParticipant);
+};
 
-    return processGameRound(nextParticipantKey, updatedCollections, participantMapping)
-}
-
-const initiateGameSequence = () => {
-    const rawDataStream = obtainInputData()
-    const { elementStorage: initialCollections, playerIdentifierMap: charToKeyMap } = organizeGameElements(rawDataStream)
-
-    const winnerKey = processGameRound(charToKeyMap['a'], initialCollections, charToKeyMap)
-
-    const keyToCharMap = {
-        'alpha': 'A',
-        'beta': 'B',
-        'gamma': 'C'
-    }
-
-    console.log(keyToCharMap[winnerKey])
-}
-
-initiateGameSequence()
+initiateGame(require('fs').readFileSync('/dev/stdin', 'utf-8'));

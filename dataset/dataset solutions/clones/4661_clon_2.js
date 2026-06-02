@@ -1,65 +1,58 @@
-// This module handles input data processing.
-function ProcessCoordinates(rawData) {
-    // The raw input string is split into an array of individual lines.
-    let lineData = rawData.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters
+  let processedLines = rawData.split("\n");
 
-    let dimensions = lineData[0].split(' ');
-    let firstCount = parseInt(dimensions[0], 10);
-    let secondCount = parseInt(dimensions[1], 10);
-    // console.debug('Counts: %d %d', firstCount, secondCount); // Debugging output for counts.
+  // Parse the first line to get the dimensions
+  let dimensions = processedLines[0].split(" ");
+  let numItemsA = parseInt(dimensions[0], 10);
+  let numItemsB = parseInt(dimensions[1], 10);
 
-    let coordSetOneX = [];
-    let coordSetOneY = [];
-    // Iterate through the first set of points.
-    for (let idxA = 1; idxA <= firstCount; idxA++) {
-        let pointAString = lineData[1 + idxA - 1].split(' ');
-        coordSetOneX[idxA] = parseInt(pointAString[0], 10);
-        coordSetOneY[idxA] = parseInt(pointAString[1], 10);
-        // console.debug('Point A: %d %d', coordSetOneX[idxA], coordSetOneY[idxA]); // Displaying first set coordinates.
-    }
+  // Initialize arrays for the first set of coordinates
+  let coordsA_X = [];
+  let coordsA_Y = [];
+  // Populate the first set of coordinates
+  for (let idxA = 1; idxA <= numItemsA; idxA++) {
+    let itemA_Str = processedLines[idxA].split(" ");
+    coordsA_X[idxA] = parseInt(itemA_Str[0], 10);
+    coordsA_Y[idxA] = parseInt(itemA_Str[1], 10);
+  }
 
-    let coordSetTwoX = [];
-    let coordSetTwoY = [];
-    // Iterate through the second set of points.
-    for (let idxB = 1; idxB <= secondCount; idxB++) {
-        let pointBString = lineData[1 + firstCount + idxB - 1].split(' ');
-        coordSetTwoX[idxB] = parseInt(pointBString[0], 10);
-        coordSetTwoY[idxB] = parseInt(pointBString[1], 10);
-        // console.debug('Point B: %d %d', coordSetTwoX[idxB], coordSetTwoY[idxB]); // Displaying second set coordinates.
-    }
-    // console.debug('--- Separator ---'); // Visual separator for debug logs.
+  // Initialize arrays for the second set of coordinates
+  let coordsB_X = [];
+  let coordsB_Y = [];
+  // Populate the second set of coordinates
+  for (let idxB = 1; idxB <= numItemsB; idxB++) {
+    let itemB_Str = processedLines[1 + numItemsA + idxB - 1].split(" ");
+    coordsB_X[idxB] = parseInt(itemB_Str[0], 10);
+    coordsB_Y[idxB] = parseInt(itemB_Str[1], 10);
+  }
 
-    // Process each point from the first collection.
-    for (let idxA = 1; idxA <= firstCount; idxA++) {
-        let shortestDist = 0;
-        let nearestIdx = 0;
-        // Compare the current point from the first collection against all points in the second collection.
-        for (let idxB = 1; idxB <= secondCount; idxB++) {
-            // console.debug('== Current distance calculation: %d', Math.abs(coordSetOneX[idxA] - coordSetTwoX[idxB]) + Math.abs(coordSetOneY[idxA] - coordSetTwoY[idxB]));
-            let currentDist = Math.abs(coordSetOneX[idxA] - coordSetTwoX[idxB]) + Math.abs(coordSetOneY[idxA] - coordSetTwoY[idxB]);
-            if (idxB === 1) { // For the very first comparison, initialize minimums.
-                shortestDist = currentDist;
-                nearestIdx = idxB;
-            } else { // For subsequent comparisons, check if a new minimum is found.
-                if (currentDist < shortestDist) {
-                    shortestDist = currentDist;
-                    nearestIdx = idxB;
-                }
-            }
+  // Iterate through each item in the first set
+  for (let currentA_Idx = 1; currentA_Idx <= numItemsA; currentA_Idx++) {
+    let closestDist = 0;
+    let closestB_Idx = 0;
+
+    // Find the closest item in the second set
+    for (let currentB_Idx = 1; currentB_Idx <= numItemsB; currentB_Idx++) {
+      let currentDist =
+        Math.abs(coordsA_X[currentA_Idx] - coordsB_X[currentB_Idx]) +
+        Math.abs(coordsA_Y[currentA_Idx] - coordsB_Y[currentB_Idx]);
+
+      // If it's the first comparison or a closer distance is found
+      if (currentB_Idx === 1) {
+        closestDist = currentDist;
+        closestB_Idx = currentB_Idx;
+      } else {
+        if (currentDist < closestDist) {
+          closestDist = currentDist;
+          closestB_Idx = currentB_Idx;
         }
-        // console.debug('--- End of inner loop ---'); // Another debug separator.
-        console.log(nearestIdx); // Output the index of the closest point from the second collection.
+      }
     }
-
-    // Commented out section for reference, not part of active logic.
-    // let valA = parseInt(lineData[0], 10);
-    // let tmpArr = someArray[0].split(' ');
-    // let valB = parseInt(tmpArr[0], 10);
-    // let valC = parseInt(tmpArr[1], 10);
-    // let textSegment = lineData[2];
-    // Final output example:
-    // console.log('%d %s', valA + valB + valC, textSegment);
+    // Output the index of the closest item from the second set
+    console.log(closestB_Idx);
+  }
 }
 
-// Do not modify the following line; it handles input/output redirection.
-ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This part handles reading from standard input and calling the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

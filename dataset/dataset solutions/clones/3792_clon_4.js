@@ -1,28 +1,31 @@
 'use strict';
 
-const executeAnalysis = (rawData) => {
-  const dataLines = rawData.split('\n');
-  const totalLength = Number(dataLines[0]);
-  const primaryString = dataLines[1].split('');
+function processInput(textualData) {
+    const lines = textualData.split('\n');
+    const charCount = Number(lines[0]);
+    const charSequence = lines[1];
 
-  const splitIndices = Array.from({ length: totalLength - 1 }, (_, idx) => idx + 1);
+    const splitPointIndices = Array.from({ length: charCount - 1 }, (_, index) => index + 1);
 
-  const intersectionResults = splitIndices.map(separationPoint => {
-    const leftSegmentChars = primaryString.slice(0, separationPoint);
-    const rightSegmentChars = primaryString.slice(separationPoint);
+    const intersectionSizes = splitPointIndices.map(currentSplitIndex => {
+        const leftSegment = charSequence.substring(0, currentSplitIndex);
+        const rightSegment = charSequence.substring(currentSplitIndex);
 
-    const distinctLeftSet = new Set(leftSegmentChars);
-    const distinctRightSet = new Set(rightSegmentChars);
+        const uniqueLeftSet = new Set(leftSegment);
+        const uniqueRightSet = new Set(rightSegment);
 
-    const commonElementsCount = [...distinctLeftSet].filter(symbol =>
-      distinctRightSet.has(symbol)
-    ).length;
+        let currentIntersectionCount = 0;
+        for (const character of uniqueLeftSet) {
+            if (uniqueRightSet.has(character)) {
+                currentIntersectionCount++;
+            }
+        }
+        return currentIntersectionCount;
+    });
 
-    return commonElementsCount;
-  });
+    const maximumIntersection = Math.max(...intersectionSizes);
 
-  const highestCount = Math.max(...intersectionResults);
-  console.log(highestCount);
-};
+    console.log(maximumIntersection);
+}
 
-executeAnalysis(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

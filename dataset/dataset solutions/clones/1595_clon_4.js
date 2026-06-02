@@ -1,14 +1,14 @@
-const analyzeText = (textualSource) => {
-  const outcomeRules = [
-    { expr: /RRR/, val: 3 },
-    { expr: /RR/, val: 2 },
-    { expr: /R/, val: 1 }
-  ];
+function processInput(sourceText) {
+  const rSequences = sourceText.match(/R+/g);
 
-  const firstMatch = outcomeRules.find(rule => rule.expr.test(textualSource));
+  if (!rSequences) {
+    console.log(0);
+  } else {
+    const maxConsecutiveR = rSequences.reduce((currentMaximum, sequenceSegment) => {
+      return Math.max(currentMaximum, sequenceSegment.length);
+    }, 0);
+    console.log(maxConsecutiveR);
+  }
+}
 
-  return firstMatch ? firstMatch.val : 0;
-};
-
-const inputData = require("node:fs").readFileSync("/dev/stdin", "utf8");
-process.stdout.write(String(analyzeText(inputData)) + '\n');
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

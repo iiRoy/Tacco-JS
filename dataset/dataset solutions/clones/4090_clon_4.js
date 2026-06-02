@@ -1,35 +1,29 @@
-const stdio = process.stdin;
-const std_out = process.stdout;
+const { createInterface: establishInputChannel } = require('readline');
 
-let fullInputBuffer = '';
+async function processGameOutcome() {
+    const inputSource = establishInputChannel({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+    });
 
-const determineOutcome = (inputStringContent) => {
-    const segments = inputStringContent.trim().split(/\s+/);
-    const valueOne = parseInt(segments[1], 10);
-    const valueTwo = parseInt(segments[2], 10);
+    let capturedInputLine = '';
 
-    const isValueOneOdd = (valueOne & 1); // 1 if odd, 0 if even
-    const isValueTwoOdd = (valueTwo & 1); // 1 if odd, 0 if even
+    for await (const currentDataLine of inputSource) {
+        capturedInputLine = currentDataLine;
+    }
 
-    // Map the combined parity states to the outcome
-    const resultLookup = new Map([
-        ['00', 'Alice'], // Both even
-        ['11', 'Alice'], // Both odd
-        ['01', 'Bolis'], // First even, second odd
-        ['10', 'Bolis']  // First odd, second even
-    ]);
+    const parsedNumericValues = capturedInputLine.split(' ').slice(1).map(Number);
 
-    const parityKey = `${isValueOneOdd}${isValueTwoOdd}`;
-    return resultLookup.get(parityKey);
-};
+    const [firstOperand, secondOperand] = parsedNumericValues;
 
-stdio.on('data', (dataPortion) => {
-    fullInputBuffer += dataPortion.toString();
-});
+    const winnerDesignations = ['Alice', 'Bolis'];
 
-stdio.on('end', () => {
-    const finalDecision = determineOutcome(fullInputBuffer);
-    std_out.write(finalDecision + '\n');
-});
+    const finalResult = (Number.isNaN(firstOperand) || Number.isNaN(secondOperand))
+        ? winnerDesignations[1] // Corresponds to 'Bolis' if input is invalid (NaN)
+        : winnerDesignations[(firstOperand & 1) ^ (secondOperand & 1)]; // Parity check for valid numbers
 
-stdio.resume();
+    console.log(finalResult);
+}
+
+processGameOutcome();

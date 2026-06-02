@@ -1,27 +1,24 @@
-function assessNumericCharacteristics(incomingData) {
-    const textLines = incomingData.split('\n');
-    const totalCount = Number(textLines[0]);
-    const numberSeries = textLines[1].split(' ').map(Number);
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const elementCount = Number(lineSegments[0]);
+  const numericalSequence = lineSegments[1].split(' ').map(Number);
 
-    const tally = numberSeries.reduce((currentTally, itemValue) => {
-        if (itemValue % 2 !== 0) {
-            currentTally.oddCounter++;
-        } else if (itemValue % 4 === 0) {
-            currentTally.fourMultipleCounter++;
-        }
-        return currentTally;
-    }, { oddCounter: 0, fourMultipleCounter: 0 });
+  const { oddQuantity, fourMultipleQuantity } = numericalSequence.reduce((accumulator, currentNumber) => {
+    if (currentNumber % 2 !== 0) {
+      accumulator.oddQuantity++;
+    } else if (currentNumber % 4 === 0) {
+      accumulator.fourMultipleQuantity++;
+    }
+    return accumulator;
+  }, { oddQuantity: 0, fourMultipleQuantity: 0 });
 
-    const totalOdds = tally.oddCounter;
-    const totalFours = tally.fourMultipleCounter;
+  const finalVerdict = (
+    oddQuantity === 0 ||
+    oddQuantity <= fourMultipleQuantity ||
+    (elementCount === 3 && oddQuantity <= fourMultipleQuantity + 1 && fourMultipleQuantity > 0)
+  ) ? "Yes" : "No";
 
-    const conditionOne = (totalOdds === 0);
-    const conditionTwo = (totalOdds - totalFours <= 0);
-    const conditionThree = (totalCount === 3 && (totalOdds - totalFours <= 1) && totalFours > 0);
-
-    const outcome = (conditionOne || conditionTwo || conditionThree) ? "Yes" : "No";
-
-    console.log(outcome);
+  console.log('%s', finalVerdict);
 }
 
-assessNumericCharacteristics(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

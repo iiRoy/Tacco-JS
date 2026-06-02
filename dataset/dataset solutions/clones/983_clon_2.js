@@ -1,21 +1,16 @@
-// Obtain raw textual content from standard input file system
-let sourceContent = require('fs') . readFileSync ( '/dev/stdin' ,   'utf8' );
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input as a UTF-8 string
 
-// Process the acquired content: remove leading/trailing whitespace and split into an array of lines
-let lineSegments = sourceContent . trim() . split ( "\n" );
+var lineData = rawData.trim().split("\n"); // Trim whitespace and split the input into an array of lines
 
-// Extract the first line as the primary string to search within
-let primaryTarget = lineSegments . shift();
+var mainString = lineData.shift(); // The first line is the main string to search within
 
-// Extract the next line and convert it to a number, representing how many queries will follow
-let queryCount = lineSegments . shift() - 0 ;
+var numQueries = lineData.shift() - 0; // The second line is the number of queries, converted to a number
 
-// Initialize a placeholder string variable (not actively used in this specific logic flow)
-let tempOutputBuffer = "" ;
+var resultString = ""; // This variable is declared but not used in the current logic
 
-// Iterate through the remaining lines, performing a check for each query
-for ( let idx = 0 ; idx < queryCount ; idx ++ ) {
-   // For each query, check if the primary target string includes the current line segment
-   // Print 1 if it does, otherwise print 0
-   console . log ( primaryTarget . includes ( lineSegments [ idx ] ) ? 1 : 0 ) ;
+// Loop through each query string
+for (var idx = 0; idx < numQueries; idx++) {
+    // Check if the main string contains the current query string
+    // and print 1 if it does, otherwise print 0
+    console.log(mainString.includes(lineData[idx]) ? 1 : 0);
 }

@@ -1,54 +1,39 @@
-var receivedContent = ''; /* This variable serves as a buffer to accumulate all incoming data from the standard input stream. */
-var sourceStream = process.stdin; // Access the standard input stream provided by the Node.js runtime environment.
+var receivedData = ''; // Initialize a string to accumulate incoming data
+const dataStream = process.stdin; // Obtain the standard input stream object
 
-sourceStream.resume(); // Instruct the input stream to begin emitting 'data' events, allowing it to flow.
+// Ensure the input stream is active and ready to emit data
+dataStream.resume();
 
-sourceStream.setEncoding('utf-8'); /* Configure the stream to interpret byte sequences as UTF-8 encoded characters. */
+// Configure the encoding for the incoming data chunks
+dataStream.setEncoding('utf-8');
 
-sourceStream.on('data',
-  function
-  (
-    dataBlock /* This parameter represents a segment of data received from the input stream. */
-  )
-{
-  receivedContent += dataBlock; // Append the newly arrived data segment to our existing content buffer.
+// Attach an event listener for 'data' events from the input stream
+dataStream.on('data', function (dataSegment) {
+  // Append the current data chunk to our accumulated string
+  receivedData += dataSegment;
 
-  var processedChars = []; /* Initialize an array to store individual characters after their case transformation. */
+  // Prepare an array to store the characters after processing
+  let processedChars = [];
 
-  // Iterate over each character within the entire accumulated content.
-  for
-  (
-    var charIndex = 0; /* Loop counter, representing the current character's position. */
-    charIndex < receivedContent.length;
-    charIndex++
-  )
-  {
-    // Evaluate if the character at the current index is a lowercase alphabetic character.
-    if
-    (
-      'a' <= receivedContent[charIndex] &&
-      receivedContent[charIndex] <= 'z'
-    )
-    {
-      processedChars.push(receivedContent[charIndex].toUpperCase()); // Convert the lowercase character to its uppercase equivalent and add to the result array.
+  // Iterate through each character of the accumulated input
+  for (let idx = 0; idx < receivedData.length; idx++) {
+    // Check if the current character is a lowercase letter
+    if (receivedData[idx] >= 'a' && receivedData[idx] <= 'z') {
+      // If it's lowercase, convert it to uppercase and add to the result
+      processedChars.push(receivedData[idx].toUpperCase());
     }
-    // Otherwise, check if the character is an uppercase alphabetic character.
-    else if
-    (
-      'A' <= receivedContent[charIndex] &&
-      receivedContent[charIndex] <= 'Z'
-    )
-    {
-      processedChars.push(receivedContent[charIndex].toLowerCase()); // Convert the uppercase character to its lowercase equivalent and add to the result array.
+    // Otherwise, check if it's an uppercase letter
+    else if (receivedData[idx] >= 'A' && receivedData[idx] <= 'Z') {
+      // If it's uppercase, convert it to lowercase and add to the result
+      processedChars.push(receivedData[idx].toLowerCase());
     }
-    // If the character is neither lowercase nor uppercase (e.g., a number, symbol, space),
-    // then it is added to the result array without any modification.
-    else
-    {
-      processedChars.push(receivedContent[charIndex]); // Retain the original character.
+    // If it's neither an uppercase nor a lowercase letter
+    else {
+      // Add the character as is to the result
+      processedChars.push(receivedData[idx]);
     }
   }
-  // Concatenate all characters in the 'processedChars' array into a single string and output it to the console.
+
+  // Join the processed characters back into a single string and print to console
   console.log(processedChars.join(''));
-}
-);
+});

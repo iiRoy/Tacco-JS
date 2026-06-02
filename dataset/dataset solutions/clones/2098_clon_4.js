@@ -1,33 +1,32 @@
-function parseInputValues(sourceText) {
-  const foundNumbers = sourceText.match(/\d+/g);
-  if (!foundNumbers || foundNumbers.length !== 3) {
-    throw new Error("Data parsing failed: Expected three numeric components.");
-  }
-  return foundNumbers.map(Number);
-}
+function ProcessInputAndCompute(rawInput) {
+  const parts = rawInput.trim().split(' ');
+  const initialResource = Number(parts[0]);
+  const workDuration = Number(parts[1]);
+  const restDuration = Number(parts[2]);
 
-function determineOutcome(initialQuantity, outputPerCycle, additionalCost) {
-  let remainingQuantity = initialQuantity;
-  let totalOutput = 0;
-  const fullCycleCost = outputPerCycle + additionalCost;
+  let accumulatedWork = 0;
+  let currentResource = initialResource;
+  const fullCycleLength = workDuration + restDuration;
 
-  while (remainingQuantity >= fullCycleCost) {
-    remainingQuantity -= fullCycleCost;
-    totalOutput += outputPerCycle;
+  while (currentResource >= fullCycleLength) {
+    accumulatedWork += workDuration;
+    currentResource -= fullCycleLength;
   }
 
-  // Calculate the contribution from remaining quantity without direct Math.min or ternary
-  // min(X, Y) = (X + Y - abs(X - Y)) / 2
-  totalOutput += (outputPerCycle + remainingQuantity - Math.abs(outputPerCycle - remainingQuantity)) / 2;
+  let finalSegmentContribution;
+  if (workDuration < currentResource) {
+    finalSegmentContribution = workDuration;
+  } else {
+    finalSegmentContribution = currentResource;
+  }
 
-  return totalOutput;
+  return accumulatedWork + finalSegmentContribution;
 }
 
-function executeComputation(incomingData) {
+function EntryPoint(inputString) {
   'use strict';
-  const [initialMeasure, productionRate, overheadExpense] = parseInputValues(incomingData);
-  const finalResult = determineOutcome(initialMeasure, productionRate, overheadExpense);
-  console.log(finalResult);
+  const computedValue = ProcessInputAndCompute(inputString);
+  console.log(computedValue);
 }
 
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

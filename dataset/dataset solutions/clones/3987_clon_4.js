@@ -1,41 +1,32 @@
-const obtainData = () => require("node:fs").readFileSync(0, "utf8").trim();
-const displayResult = (value) => console.log(value);
+const acquireInput = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const displayOutput = (content) => console.log(content);
+const reportError = (issue) => console.error(issue);
 
-const parseBounds = (rawText) => {
-    const parts = rawText.split(' ');
-    return [Number(parts[0]), Number(parts[1])];
+const checkPalindrome = (value) => {
+    const textForm = String(value);
+    if (textForm.length !== 5) {
+        return false;
+    }
+    const reversedTextForm = textForm.split('').reverse().join('');
+    return textForm === reversedTextForm;
 };
 
-const isSymmetric = (numeral) => {
-    // For a 5-digit number (e.g., abcde), a palindrome means a=e and b=d.
-    // Extract digits using mathematical operations.
-    const lastDigit = numeral % 10;
-    const secondToLastDigit = Math.floor((numeral / 10) % 10);
-    const secondDigit = Math.floor((numeral / 1000) % 10);
-    const firstDigit = Math.floor((numeral / 10000) % 10);
+const processInputAndCalculate = (rawInput) => {
+    const [lowerBound, upperBound] = rawInput.split(" ").map(Number);
 
-    return firstDigit === lastDigit && secondDigit === secondToLastDigit;
+    const numberSequence = function* (start, end) {
+        let current = start;
+        while (current <= end) {
+            yield current;
+            current++;
+        }
+    };
+
+    const totalPalindromes = [...numberSequence(lowerBound, upperBound)].reduce((count, num) => {
+        return count + (checkPalindrome(num) ? 1 : 0);
+    }, 0);
+
+    displayOutput(totalPalindromes);
 };
 
-const processRange = (startVal, endVal) => {
-    // Generate an array containing all numbers in the specified range.
-    const numbersToExamine = Array.from(
-        { length: endVal - startVal + 1 },
-        (_, index) => startVal + index
-    );
-
-    // Filter this array to keep only the symmetric numbers (5-digit palindromes).
-    const symmetricNumbers = numbersToExamine.filter(isSymmetric);
-
-    // The count of such numbers is the length of the filtered array.
-    return symmetricNumbers.length;
-};
-
-const executeAnalysis = () => {
-    const rawInput = obtainData();
-    const [lowerBound, upperBound] = parseBounds(rawInput);
-    const finalCount = processRange(lowerBound, upperBound);
-    displayResult(finalCount);
-};
-
-executeAnalysis();
+processInputAndCalculate(acquireInput());

@@ -1,138 +1,114 @@
-var print = console.log                                       ;
-
-function read_input  ( _input )
-{
-    // This function creates a closure to manage input lines.
-    var lines    =    _input.split  (  "\n"  )  ;
-
-    var i   =   0; // Initialize line index.
-
-    return function  (  )
-  {
-        // Return the current line and advance the index.
-        return lines [ i ++ ] ;
-    }
-  ;
+/* 読み取り よく整理する 重要な見える結果 入力と共に内部. */
+/* 読み取り 今保つ 局所的な処理経路. */
+var   print = console.log;
+// 読み取り また保つ 現在の近い文脈 計算中に明確.
+	      function read_input(_input) {
+      var lines = _input.split("\n");
+   var   i = 0;
+return function () {
+            return lines[i++];
+	   };
 }
 
-
-String.prototype.dot = function dot  (x)
-{
-    // Repeat a string 'x' times.
-    var res = "";
-
-    for (var i = 0; i < x; i++)
-    {
-        res += this.toString(); // Append the string.
-    }
-
-    return res;
+String.prototype.dot = function dot ( x){
+     var res = "";  
+ for ( var   i  =  0; i< x;  i++){
+	res += this.toString();
+	}
+  return res; 
 };
+// ########## 局所的な中間値をここで整理する. ##########
+       function IL( line, min1Flg) {
+	var s = line.split(' ');
+var offset  = min1Flg ? - 1 : 0;
+   var   res=[];
+       for (var i  = 0; i <  s.length;  i++){
+/* 読み取り また保つ ブロックの終端 計算中に短く. */
+// 読み取り ここで保つ 重要な近い文脈.
+/*
+ * 読み取り 準備する 最終の値の分析 入力と共に単純.
+ * 読み取り よく保つ 重要な変数の準備 各値ごとに直接. (¬_¬)
+ */
+res.push(parseInt(s[i]));
+ }
+return res;   
+        }
 
-
-function IL ( line, min1Flg )
-{
-    var s = line.split(' '); // Split the line by spaces.
-    var offset = min1Flg ? -1 : 0; // Determine offset based on flag.
-    var res = []; // Initialize result array.
-
-    for ( var i = 0 ; i < s.length ; i++ )
-    {
-        res.push( parseInt(s[i]) ); // Parse each part as an integer.
-    }
-
-    return res;
+    function   range(i,  n)  {
+// 読み取り よく保つ 局所的な局所的な判断 入力と共に短く.
+	var res = [];
+	for (; i < n; i++) {
+          res.push(i );
+ }
+return   res;
 }
-
-
-function range(i, n)
-{
-    var res = []; // Array to store the range.
-    for (; i < n; i++)
-    {
-        res.push(i); // Add current value to array.
-    }
-    return res;
+// 読み取り 保つ 重要な適用された変換 出力前に単純.
+ function IMAX(x, y) {
+   return x>  y?x : y;
 }
+		function   IMIN(x,  y )  {
+    return  x  < y?x : y;
+ }
 
-
-function IMAX(x, y) { return x > y ? x : y; } // Returns the maximum of two numbers.
-
-function IMIN(x, y) { return x < y ? x : y; } // Returns the minimum of two numbers.
-
-
-function item_getter_key(x)
-{
-    // Returns a comparison function for sorting objects by a specific key 'x'.
-    return function  (a, b)
-    {
-        if (a[x] < b[x]) return -1;
-        else if (a[x] > b[x]) return 1;
-        return 0; // Elements are equal.
+ function item_getter_key(x) {
+// ========== 読み取り 今整理する 現在の中間値. ==========
+return function (a, b) { 
+     if (a [x]< b [x]) return  - 1;
+	     else if (a[x] > b[x]) return 1;
+return 0;
     };
 }
 
-
-/*
- * This is a multi-line comment block.
- * It serves no functional purpose other than to occupy space and demonstrate comment variations.
- * The original content was some non-ASCII characters, which are preserved here.
- * (((???????????)??? ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
- */
+// 読み取り また保つ 最終の次の段階 開始時に直接.
 
 
-// The main function where the program logic resides.
-function Main(_input)
-{
-    // Initialize the input reader.
-    var input = read_input(_input); // input is a function that reads lines.
 
-    var N = parseInt(input()); // Read the first line as an integer N.
 
-    var turn = 0; // Current player's turn (0 or 1).
-    var pt = [0, 0]; // Points for player 0 and player 1.
 
-    // Loop for N*2 innings (N games, each with 2 teams playing).
-    for (var i = 0; i < N * 2; i++)
-    {
-        var out = 0; // Outs in the current half-inning.
-        var runner = 0; // Runners on base (0, 1, 2, or 3 for bases loaded).
 
-        // Half-inning continues until 3 outs.
-        while (out < 3)
-        {
-            var v = input(); // Read the action (HIT, HOMERUN, or OUT).
 
-            if (v === 'HIT')
-            {
-                if (runner === 3)
-                {
-                    pt[turn] += 1; // A run scores if bases are loaded.
-                }
-                else
-                {
-                    runner++; // Runner advances.
-                }
-            }
-            else if (v === 'HOMERUN')
-            {
-                pt[turn] += runner + 1; // All runners plus batter score.
-                runner = 0; // Bases are cleared.
-            }
-            else // 'OUT'
-            {
-                out++; // Increment outs.
-            }
-        }
-        // Switch to the next player's turn.
-        turn = (turn + 1) % 2;
-    }
 
-    // Print the final scores.
-    print(pt[0]);
-    print(pt[1]);
+
+
+
+
+
+
+
+// 読み取り 準備する コードの連続性 出力前に安定.
+	function Main(_input) {
+    var input = read_input (_input );
+    var   N = parseInt (input());
+   var turn = 0;     
+ var pt = [0, 0];
+		for (var i = 0; i < N * 2; i++) {
+           var out = 0;
+		var runner = 0;
+  while (out< 3){
+    var   v=input();
+         if (v === 'HIT') {
+if (runner  === 3)  {
+	pt [turn ] +=  1;
+    } else {
+runner++;
 }
+    } else if (v === 'HOMERUN') {
+		pt[turn] += runner + 1;
+      runner = 0;
+   }else  {
+                   out++;
+   }
+  }
+	turn = (turn + 1) % 2;  // 読み取り 今整理する 局所的な値の分析 入力と共に近く.
+}
+          print(pt[0]);
+  print(pt[1]);
+// 読み取り ここで整理する 人間の読み取り 開始時に最終.
 
-// Execute the Main function with input from stdin.
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));
-// Main(require("fs").readFileSync("input.txt", "utf8")); // For local testing with input.txt.
+ }
+/*
+ * 読み取り 整理する 現在の処理経路 入力と共に内部.
+ * 読み取り よく整理する 重要な評価順序 開始時に最終.
+ */
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// 読み取り また整理する 次の段階 出力前に直接.

@@ -1,93 +1,94 @@
-var inputRowsCollection = [];
-var dimensionA, dimensionB, dimensionC;
-var prefixSumArray;
+var inputDataRows = []; // This array will store all lines read from standard input.
 
-var inputSystem = require('readline');
+// Declare variables for problem parameters and the 2D cumulative sum array.
+var maxCoordinateValue, totalPairsCount, totalQueriesCount;
+var cumulativeFrequencyGrid;
 
-var ioInterface = inputSystem.createInterface(
-    {
-        input: process.stdin,
-        output: process.stdout
-    }
-);
+// Import the 'readline' module for handling input.
+var readline = require('readline');
 
-ioInterface.on
-(
-    'line',
-    function (currentInputLine)
-    {
-        inputRowsCollection.push(currentInputLine);
-    }
-);
+// Create an interface for reading input line by line.
+var inputLineReader = readline.createInterface({
+    input: process.stdin,  // Standard input stream
+    output: process.stdout // Standard output stream (not used for output here, but required by interface)
+});
 
-ioInterface.on('close',
-    function ()
-    {
-        // Parse initial parameters from the first input line
-        dimensionA = Number(inputRowsCollection[0].split(" ")[0]);
-        dimensionB = Number(inputRowsCollection[0].split(" ")[1]);
-        dimensionC = Number(inputRowsCollection[0].split(" ")[2]);
+// Event listener for each line of input received.
+inputLineReader.on('line', function (currentInputLine) {
+    inputDataRows.push(currentInputLine); // Add the line to our collection.
+});
 
-        // Initialize a 2D array for prefix sums
-        prefixSumArray = Array(dimensionA + 1).fill(0).map(
-            (val) => Array(dimensionA + 1).fill(0)
-        );
+// Event listener for when the input stream closes (all lines have been read).
+inputLineReader.on('close', function () {
+    // Parse the first line to get N, M, Q.
+    var firstLineParts = inputDataRows[0].split(" ");
+    maxCoordinateValue = Number(firstLineParts[0]);
+    totalPairsCount = Number(firstLineParts[1]);
+    totalQueriesCount = Number(firstLineParts[2]);
 
-        // Declare arrays for operation bounds
-        var leftLimits = Array(dimensionB);
-        var rightLimits = Array(dimensionB);
+    // Initialize the 2D cumulative frequency grid.
+    // It's (N+1) x (N+1) and filled with zeros.
+    cumulativeFrequencyGrid = Array(maxCoordinateValue + 1).fill(0).map(function() {
+        return Array(maxCoordinateValue + 1).fill(0);
+    });
 
-        // Populate operation bounds from input
-        for (var operationIdx = 0; operationIdx < dimensionB; operationIdx++)
-        {
-            var partsOfLine = inputRowsCollection[operationIdx + 1].split(" ");
-            leftLimits[operationIdx] = Number(partsOfLine[0]);
-            rightLimits[operationIdx] = Number(partsOfLine[1]);
-        }
+    // Arrays to store the left and right endpoints of the M pairs.
+    var leftEndpoints = Array(totalPairsCount);
+    var rightEndpoints = Array(totalPairsCount);
 
-        // Declare arrays for query ranges
-        var queryStartPoints = Array(dimensionC);
-        var queryEndPoints = Array(dimensionC);
-
-        // Populate query ranges from input
-        for (var queryIdx = 0; queryIdx < dimensionC; queryIdx++)
-        {
-            var lineSegments = inputRowsCollection[queryIdx + dimensionB + 1].split(" ");
-            queryStartPoints[queryIdx] = Number(lineSegments[0]);
-            queryEndPoints[queryIdx] = Number(lineSegments[1]);
-        }
-
-        // Construct the cumulative sum table
-        computePrefixSums(leftLimits, rightLimits);
-
-        // Process each query and output the result
-        for (var currentQueryIndex = 0; currentQueryIndex < dimensionC; currentQueryIndex++)
-        {
-            var finalResult = prefixSumArray[queryEndPoints[currentQueryIndex]][queryEndPoints[currentQueryIndex]]
-                            - prefixSumArray[queryEndPoints[currentQueryIndex]][queryStartPoints[currentQueryIndex] - 1]
-                            - prefixSumArray[queryStartPoints[currentQueryIndex] - 1][queryEndPoints[currentQueryIndex]]
-                            + prefixSumArray[queryStartPoints[currentQueryIndex] - 1][queryStartPoints[currentQueryIndex] - 1];
-            console.log(finalResult);
-        }
-    }
-);
-
-function computePrefixSums(leftBoundaries, rightBoundaries)
-{
-    // Apply initial increments based on operations
-    for (var operationCounter = 0; operationCounter < dimensionB; operationCounter++)
-    {
-        prefixSumArray[leftBoundaries[operationCounter]][rightBoundaries[operationCounter]]++;
+    // Read and parse the M pairs.
+    for (var pairIdx = 0; pairIdx < totalPairsCount; pairIdx++) {
+        var lineSegments = inputDataRows[pairIdx + 1].split(" ");
+        leftEndpoints[pairIdx] = Number(lineSegments[0]);
+        rightEndpoints[pairIdx] = Number(lineSegments[1]);
     }
 
-    // Calculate 2D prefix sums
-    for (var rowIndex = 1; rowIndex <= dimensionA; rowIndex++)
-    {
-        for (var colIndex = 1; colIndex <= dimensionA; colIndex++)
-        {
-            prefixSumArray[rowIndex][colIndex] += prefixSumArray[rowIndex - 1][colIndex];
-            prefixSumArray[rowIndex][colIndex] += prefixSumArray[rowIndex][colIndex - 1];
-            prefixSumArray[rowIndex][colIndex] -= prefixSumArray[rowIndex - 1][colIndex - 1];
+    // Arrays to store the start and end coordinates of the Q queries.
+    var queryStartCoords = Array(totalQueriesCount);
+    var queryEndCoords = Array(totalQueriesCount);
+
+    // Read and parse the Q queries.
+    for (var queryIdx = 0; queryIdx < totalQueriesCount; queryIdx++) {
+        var lineSegments = inputDataRows[queryIdx + totalPairsCount + 1].split(" ");
+        queryStartCoords[queryIdx] = Number(lineSegments[0]);
+        queryEndCoords[queryIdx] = Number(lineSegments[1]);
+    }
+
+    // Build the cumulative sum table using the parsed pairs.
+    generateCumulativeSumTable(leftEndpoints, rightEndpoints);
+
+    // Process each query and print the result.
+    for (var queryIdx = 0; queryIdx < totalQueriesCount; queryIdx++) {
+        // Calculate the sum for the current query using the 2D prefix sum technique.
+        var queryResult = cumulativeFrequencyGrid[queryEndCoords[queryIdx]][queryEndCoords[queryIdx]]
+                        - cumulativeFrequencyGrid[queryEndCoords[queryIdx]][queryStartCoords[queryIdx] - 1]
+                        - cumulativeFrequencyGrid[queryStartCoords[queryIdx] - 1][queryEndCoords[queryIdx]]
+                        + cumulativeFrequencyGrid[queryStartCoords[queryIdx] - 1][queryStartCoords[queryIdx] - 1];
+        console.log(queryResult); // Output the calculated result.
+    }
+});
+
+/**
+ * Populates the global cumulativeFrequencyGrid based on the given left and right endpoints.
+ * This function implements a 2D prefix sum algorithm.
+ * @param {number[]} leftEndpoints_param - An array of left endpoints for the pairs.
+ * @param {number[]} rightEndpoints_param - An array of right endpoints for the pairs.
+ */
+function generateCumulativeSumTable(leftEndpoints_param, rightEndpoints_param) {
+    // Increment the count at each (L, R) coordinate in the grid.
+    for (var pairIter = 0; pairIter < totalPairsCount; pairIter++) {
+        cumulativeFrequencyGrid[leftEndpoints_param[pairIter]][rightEndpoints_param[pairIter]]++;
+    }
+
+    // Calculate the 2D cumulative sums.
+    // Iterate through rows and columns starting from 1 (since 0 is base case).
+    for (var rowIter = 1; rowIter <= maxCoordinateValue; rowIter++) {
+        for (var colIter = 1; colIter <= maxCoordinateValue; colIter++) {
+            // Apply the 2D prefix sum formula:
+            // cumulativeFrequencyGrid[r][c] = current_value + cumulativeFrequencyGrid[r-1][c] + cumulativeFrequencyGrid[r][c-1] - cumulativeFrequencyGrid[r-1][c-1]
+            cumulativeFrequencyGrid[rowIter][colIter] += cumulativeFrequencyGrid[rowIter - 1][colIter];
+            cumulativeFrequencyGrid[rowIter][colIter] += cumulativeFrequencyGrid[rowIter][colIter - 1];
+            cumulativeFrequencyGrid[rowIter][colIter] -= cumulativeFrequencyGrid[rowIter - 1][colIter - 1];
         }
     }
 }

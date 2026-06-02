@@ -1,53 +1,42 @@
 "use strict";
 
-const determineCombinations = (initialInput) => {
-    const numericValues = initialInput.trim().split('\n').map(val => parseInt(val, 10));
-
-    const maxCountA = numericValues[0];
-    const maxCountB = numericValues[1];
-    const maxCountC = numericValues[2];
-    const targetAmount = numericValues[3];
-
-    const denominations = [500, 100, 50];
-    const limits = [maxCountA, maxCountB, maxCountC];
-
-    const recursiveSolver = (
-        currentDenominationIndex,
-        remainingValue
-    ) => {
-        if (currentDenominationIndex === denominations.length) {
-            return remainingValue === 0 ? 1 : 0;
-        }
-
-        if (remainingValue < 0) {
-            return 0;
-        }
-
-        let totalValidWays = 0;
-        const currentDenomination = denominations[currentDenominationIndex];
-        const maximumUnits = limits[currentDenominationIndex];
-
-        for (let unitCount = 0; unitCount <= maximumUnits; ++unitCount) {
-            const valueFromUnits = unitCount * currentDenomination;
-            if (valueFromUnits > remainingValue) {
-                break;
-            }
-
-            totalValidWays += recursiveSolver(
-                currentDenominationIndex + 1,
-                remainingValue - valueFromUnits
-            );
-        }
-        return totalValidWays;
-    };
-
-    return recursiveSolver(0, targetAmount);
+const processInputData = (inputString) => {
+    const dataLines = inputString.trim().split("\n");
+    const coinLimits = dataLines.slice(0, 3).map(Number);
+    const targetValue = Number(dataLines[3]);
+    return { coinLimits, targetValue };
 };
 
-const processInput = (sourceReader) => {
-    const rawData = sourceReader.readFileSync('/dev/stdin', 'utf8');
-    const result = determineCombinations(rawData);
-    console.log(result);
+const currencyDenominations = [500, 100, 50];
+
+const calculateCombinations = (currentCoinIndex, remainingAmount, maximumCounts) => {
+    if (currentCoinIndex === currencyDenominations.length) {
+        return remainingAmount === 0 ? 1 : 0;
+    }
+
+    if (remainingAmount < 0) {
+        return 0;
+    }
+
+    let totalValidWays = 0;
+    const currentDenomination = currencyDenominations[currentCoinIndex];
+    const maxCountForCurrent = maximumCounts[currentCoinIndex];
+
+    for (let count = 0; count <= maxCountForCurrent; count++) {
+        const amountUsed = count * currentDenomination;
+        if (amountUsed > remainingAmount) {
+            break;
+        }
+        totalValidWays += calculateCombinations(currentCoinIndex + 1, remainingAmount - amountUsed, maximumCounts);
+    }
+
+    return totalValidWays;
 };
 
-processInput(require('fs'));
+const executeCalculation = (rawInputContent) => {
+    const { coinLimits, targetValue } = processInputData(rawInputContent);
+    const finalResult = calculateCombinations(0, targetValue, coinLimits);
+    console.log(finalResult);
+};
+
+executeCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));

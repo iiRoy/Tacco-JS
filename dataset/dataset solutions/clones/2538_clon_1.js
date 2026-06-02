@@ -1,6678 +1,1145 @@
-'use strict';
-
-
-// This is a Type I clone, meaning it's exactly the same code
-// except for variations in whitespace and comments.
-// Every identifier, variable name, function name, operator, and expression
-// remains completely unchanged.
-// The only permitted changes are whitespace (indentation, spacing, blank lines)
-// and comments (add, remove, or modify them).
-// These changes are made extensively throughout the entire file so the result
-// looks visually different but is logically and structurally identical.
-
-
-// Global variable declaration for 'd'
-var d;
-
-// Initialize 'aa' based on '__ScalaJSEnv' or an empty object
-var aa = "object" === typeof __ScalaJSEnv && __ScalaJSEnv ? __ScalaJSEnv : {};
-
-// Determine the global object ('l')
-var l = "object" === typeof aa.global && aa.global ? aa.global : "object" === typeof global && global && global.Object === Object ? global : this;
-
-// Set global and exportsNamespace properties on 'aa'
-aa.global = l;
-aa.exportsNamespace = exports;
-
-// Freeze the 'aa' object to prevent modifications
-l.Object.freeze(aa);
-
-// Initialize 'ba' with environment info, semantics, ES6 assumption, linker version, and globalThis
-var ba = {
-    envInfo: aa,
-    semantics: {
-        asInstanceOfs: 2,
-        arrayIndexOutOfBounds: 2,
-        moduleInit: 2,
-        strictFloats: !1,
-        productionMode: !0
-    },
-    assumingES6: !1,
-    linkerVersion: "0.6.29",
-    globalThis: this
-};
-
-// Freeze 'ba' and its 'semantics' property
-l.Object.freeze(ba);
-l.Object.freeze(ba.semantics);
-
-// Polyfills for Math functions: imul, fround, clz32
-var n = l.Math.imul || function(a, b) {
-    var c = a & 65535,
-        e = b & 65535;
-    return c * e + ((a >>> 16 & 65535) * e + c * (b >>> 16 & 65535) << 16 >>> 0) | 0
-},
-ca = l.Math.fround || function(a) {
-    return +a
-},
-da = l.Math.clz32 || function(a) {
-    if (0 === a) return 32;
-    var b = 1;
-    0 === (a & 4294901760) && (a <<= 16, b += 16);
-    0 === (a & 4278190080) && (a <<= 8, b += 8);
-    0 === (a & 4026531840) && (a <<= 4, b += 4);
-    0 === (a & 3221225472) && (a <<= 2, b += 2);
-    return b + (a >> 31)
-},
-fa = 0,
-ha = l.WeakMap ? new l.WeakMap : null;
-
-
-// Function to check if an object 'b' is an instance of a class with specific class data properties
-function ia(a) {
-    return function(b, c) {
-        return !(!b || !b.$classData || b.$classData.ih !== c || b.$classData.hh !== a)
-    }
-}
-
-// Function to get the first enumerable property name of an object
-function ja(a) {
-    for (var b in a) return b
-}
-
-// Function to create a new instance of a class 'a' with a given 'b' value
-function ka(a, b) {
-    return new a.Ik(b)
-}
-
-// Wrapper for 'la' with a default 'c' value of 0
-function r(a, b) {
-    return la(a, b, 0)
-}
-
-// Recursive function to create a nested array structure based on 'a' and 'b'
-function la(a, b, c) {
-    var e = new a.Ik(b[c]);
-    if (c < b.length - 1) {
-        a = a.Xh;
-        c += 1;
-        for (var f = e.b, g = 0; g < f.length; g++) f[g] = la(a, b, c)
-    }
-    return e
-}
-
-// Function to convert a value to its string representation, or "undefined" if it's undefined
-function ma(a) {
-    return void 0 === a ? "undefined" : a.toString()
-}
-
-// Function to determine the class data for a given value 'a' based on its type
-function na(a) {
-    switch (typeof a) {
-        case "string":
-            return w(oa);
-        case "number":
-            var b = a | 0;
-            return b === a ? pa(b) ? w(ra) : sa(b) ? w(ta) : w(ua) : wa(a) ? w(xa) : w(ya);
-        case "boolean":
-            return w(za);
-        case "undefined":
-            return w(Aa);
-        default:
-            return null === a ? a.xH() : a instanceof x ? w(Ba) : a && a.$classData ? w(a.$classData) : null
-    }
-}
-
-// Function to compare two values 'a' and 'b' for equality, handling different types
-function Ca(a, b) {
-    return a && a.$classData || null === a ? a.t(b) : "number" === typeof a ? "number" === typeof b && (a === b ? 0 !== a || 1 / a === 1 / b : a !== a && b !== b) : a === b
-}
-
-// Function to calculate a hash code for a given value 'a'
-function Da(a) {
-    switch (typeof a) {
-        case "string":
-            return Ea(Fa(), a);
-        case "number":
-            return Ga(Ha(), a);
-        case "boolean":
-            return a ? 1231 : 1237;
-        case "undefined":
-            return 0;
-        default:
-            return a && a.$classData || null === a ? a.z() : null === ha ? 42 : Ia(a)
-    }
-}
-
-// Function to clamp a number 'a' to the range of a 32-bit signed integer
-function Ja(a) {
-    return 2147483647 < a ? 2147483647 : -2147483648 > a ? -2147483648 : a | 0
-}
-
-// Function to copy a range of elements from one array to another, handling overlapping ranges
-function Ka(a, b, c, e, f) {
-    a = a.b;
-    c = c.b;
-    if (a !== c || e < b || (b + f | 0) < e)
-        for (var g = 0; g < f; g = g + 1 | 0) c[e + g | 0] = a[b + g | 0];
-    else
-        for (g = f - 1 | 0; 0 <= g; g = g - 1 | 0) c[e + g | 0] = a[b + g | 0]
-}
-
-// Function to get or generate an ID hash code for an object
-var Ia = null !== ha ? function(a) {
-    switch (typeof a) {
-        case "string":
-        case "number":
-        case "boolean":
-        case "undefined":
-            return Da(a);
-        default:
-            if (null === a) return 0;
-            var b = ha.get(a);
-            void 0 === b && (fa = b = fa + 1 | 0, ha.set(a, b));
-            return b
-    }
-} : function(a) {
-    if (a && a.$classData) {
-        var b = a.$idHashCode$0;
-        if (void 0 !== b) return b;
-        if (l.Object.isSealed(a)) return 42;
-        fa = b = fa + 1 | 0;
-        return a.$idHashCode$0 = b
-    }
-    return null === a ? 0 : Da(a)
-};
-
-// Check if a number 'a' is a byte (8-bit signed integer)
-function pa(a) {
-    return "number" === typeof a && a << 24 >> 24 === a && 1 / a !== 1 / -0
-}
-
-// Check if a number 'a' is a short (16-bit signed integer)
-function sa(a) {
-    return "number" === typeof a && a << 16 >> 16 === a && 1 / a !== 1 / -0
-}
-
-// Check if a number 'a' is an integer (32-bit signed integer)
-function La(a) {
-    return "number" === typeof a && (a | 0) === a && 1 / a !== 1 / -0
-}
-
-// Check if a number 'a' is a double (floating-point number)
-function wa(a) {
-    return "number" === typeof a
-}
-
-// Return the 'mg' property of a 'y' object if 'a' is null, otherwise return 'a'
-function Ma(a) {
-    return null === a ? y().mg : a
-}
-
-// Na class constructor
-function Na() {
-    this.Ij = this.Ik = void 0;
-    this.hh = this.Xh = this.qa = null;
-    this.ih = 0;
-    this.Ol = null;
-    this.bj = "";
-    this.Od = this.$i = this.aj = void 0;
-    this.name = "";
-    this.isRawJSType = this.isArrayClass = this.isInterface = this.isPrimitive = !1;
-    this.isInstance = void 0
-}
-
-// Oa function to create a primitive type class data object
-function Oa(a, b, c) {
-    var e = new Na;
-    e.qa = {};
-    e.Xh = null;
-    e.Ol = a;
-    e.bj = b;
-    e.Od = function() {
-        return !1
-    };
-    e.name = c;
-    e.isPrimitive = !0;
-    e.isInstance = function() {
-        return !1
-    };
-    return e
-}
-
-// z function to create a class data object for a non-primitive type
-function z(a, b, c, e, f, g, h, k) {
-    var m = new Na,
-        p = ja(a);
-    h = h || function(q) {
-        return !!(q && q.$classData && q.$classData.qa[p])
-    };
-    k = k || function(q, t) {
-        return !!(q && q.$classData && q.$classData.ih === t && q.$classData.hh.qa[p])
-    };
-    m.Ij = g;
-    m.qa = e;
-    m.bj = "L" + c + ";";
-    m.Od = k;
-    m.name = c;
-    m.isInterface = b;
-    m.isRawJSType = !!f;
-    m.isInstance = h;
-    return m
-}
-
-// Pa function to create an array class data object
-function Pa(a) {
-    function b(k) {
-        if ("number" === typeof k) {
-            this.b = Array(k);
-            for (var m = 0; m < k; m++) this.b[m] = f
-        } else this.b = k
-    }
-    var c = new Na,
-        e = a.Ol,
-        f = "longZero" == e ? y().mg : e;
-    b.prototype = new A;
-    b.prototype.constructor = b;
-    b.prototype.mu = function() {
-        return this.b instanceof Array ? new b(this.b.slice(0)) : new b(new this.b.constructor(this.b))
-    };
-    b.prototype.$classData = c;
-    e = "[" + a.bj;
-    var g = a.hh || a,
-        h = a.ih + 1;
-    c.Ik = b;
-    c.Ij = C;
-    c.qa = {
-        c: 1,
-        Ae: 1,
-        d: 1
-    };
-    c.Xh = a;
-    c.hh = g;
-    c.ih = h;
-    c.Ol = null;
-    c.bj = e;
-    c.aj = void 0;
-    c.$i = void 0;
-    c.Od = void 0;
-    c.name = e;
-    c.isPrimitive = !1;
-    c.isInterface = !1;
-    c.isArrayClass = !0;
-    c.isInstance = function(k) {
-        return g.Od(k, h)
-    };
-    return c
-}
-
-// w function to get the class data object for a given 'a'
-function w(a) {
-    if (!a.aj) {
-        var b = new Qa;
-        b.jd = a;
-        a.aj = b
-    }
-    return a.aj
-}
-
-// D function to get the array class data object for a given 'a'
-function D(a) {
-    a.$i || (a.$i = Pa(a));
-    return a.$i
-}
-
-// Na prototype methods
-Na.prototype.getFakeInstance = function() {
-    if (this === oa) return "some string";
-    if (this === za) return !1;
-    if (this === ra || this === ta || this === ua || this === xa || this === ya) return 0;
-    if (this === Ba) return y().mg;
-    if (this !== Aa) return {
-        $classData: this
-    }
-};
-Na.prototype.getSuperclass = function() {
-    return this.Ij ? w(this.Ij) : null
-};
-Na.prototype.getComponentType = function() {
-    return this.Xh ? w(this.Xh) : null
-};
-Na.prototype.newArrayOfThisClass = function(a) {
-    for (var b = this, c = 0; c < a.length; c++) b = D(b);
-    return r(b, a)
-};
-
-// Primitive type class data objects
-var Ra = Oa(void 0, "V", "void"),
-    Sa = Oa(!1, "Z", "boolean"),
-    Ua = Oa(0, "C", "char"),
-    Va = Oa(0, "B", "byte"),
-    Wa = Oa(0, "S", "short"),
-    E = Oa(0, "I", "int"),
-    Xa = Oa("longZero", "J", "long"),
-    Ya = Oa(0, "F", "float"),
-    Za = Oa(0, "D", "double"),
-    $a = ia(Sa);
-
-// Set Od property for primitive types
-Sa.Od = $a;
-var bb = ia(Ua);
-Ua.Od = bb;
-var cb = ia(Va);
-Va.Od = cb;
-var db = ia(Wa);
-Wa.Od = db;
-var eb = ia(E);
-E.Od = eb;
-var fb = ia(Xa);
-Xa.Od = fb;
-var gb = ia(Ya);
-Ya.Od = gb;
-var hb = ia(Za);
-Za.Od = hb;
-
-// Require 'fs' module
-var ib = require("fs");
-
-// Function to compose two functions 'a' and 'b'
-function jb(a, b) {
-    return F(function(c, e) {
-        return function(f) {
-            return e.l(c.l(f))
-        }
-    }(a, b))
-}
-
-// Define kb as a class data object
-var kb = z({
-    tk: 0
-}, !0, "scalax.collection.GraphEdge$Keyed", {
-    tk: 1
-});
-
-// Function lb: calls mb.il, then Gb, then Ca
-function lb(a, b, c) {
-    return mb.il(b, c).Gb(a).Ca()
-}
-
-// Function nb: performs calculations based on 'a' and 'b'
-function nb(a, b) {
-    return 0 < b ? 0 < a.gd ? (b = b + a.gd | 0, b > a.Kd ? 0 : b) : 0 : 0 < a.Nd ? a.Nd : 0 < a.gd ? a.gd : 0
-}
-
-// Function ob: compares two objects based on their properties and a filter function
-function ob(a, b) {
-    return b && b.$classData && b.$classData.qa.Mt && b && b.$classData && b.$classData.qa.y && b && b.$classData && b.$classData.qa.p ? b.oa(a) && b.x() === a.x() && b.Wa(F(function(c) {
-        return function(e) {
-            a: {
-                var f = e.Ga();f = null === f ? pb().Ee : f;
-                var g = c.Dd.b.length;pb();
-                var h = Ia(f);f = qb(c, f, ((h << 1) - (h << 8) | 0) & (-1 + g | 0), g);e = !(0 > f) && G(H(), c.Dd.b[1 + f | 0], e.Qa());
-                break a;e = void 0
-            }
-            return e
-        }
-    }(a))) : !1
-}
-
-// Function qb: searches for an element in an array-like structure
-function qb(a, b, c, e) {
-    for (a = a.Dd;;) {
-        var f = a.b[c];
-        if (f === b) return c;
-        if (null === f) return ~c;
-        c = 2 + c | 0;
-        c = c < e ? c : 0
-    }
-}
-
-// rb class constructor (empty)
-function rb() {}
-
-// A class constructor (empty)
-function A() {}
-
-// Set A's prototype to rb's prototype
-A.prototype = rb.prototype;
-
-// rb prototype methods
-rb.prototype.a = function() {
-    return this
-};
-rb.prototype.t = function(a) {
-    return this === a
-};
-rb.prototype.n = function() {
-    var a = sb(na(this)),
-        b = (+(this.z() >>> 0)).toString(16);
-    return a + "@" + b
-};
-rb.prototype.z = function() {
-    return Ia(this)
-};
-rb.prototype.toString = function() {
-    return this.n()
-};
-
-// ub function to check if an object is an instance of a class with specific hierarchy properties
-function ub(a, b) {
-    if (a = a && a.$classData) {
-        var c = a.ih || 0;
-        return !(c < b) && (c > b || !a.hh.isPrimitive)
-    }
-    return !1
-}
-
-// C class data object
-var C = z({
-    c: 0
-}, !1, "java.lang.Object", {
-    c: 1
-}, void 0, void 0, function(a) {
-    return null !== a
-}, ub);
-
-// Set rb's $classData to C
-rb.prototype.$classData = C;
-
-// vb function to compare 'a' with 'b' based on their types and values
-function vb(a, b) {
-    if (b instanceof wb) return b = null === b ? 0 : b.s, a.yj() && a.Xc() === b;
-    if (pa(b)) return b |= 0, a.xj() && a.Th() === b;
-    if (sa(b)) return b |= 0, a.Aj() && a.zi() === b;
-    if (La(b)) return b |= 0, a.hi() && a.Xc() === b;
-    if (b instanceof x) {
-        var c = Ma(b);
-        b = c.f;
-        c = c.i;
-        a = a.Yc();
-        var e = a.i;
-        return a.f === b && e === c
-    }
-    return wa(b) ? (b = +b, a.Kf() === b) : "number" === typeof b ? (b = +b, a.ee() === b) : !1
-}
-
-// xb function to compare two iterators 'a' and 'b' for equality
-function xb(a, b) {
-    a = yb(a);
-    if (!a.r()) return !b.r();
-    for (var c = zb(a); b.r();)
-        for (var e = b.u();;) {
-            var f = e | 0,
-                g = c | 0;
-            f = f === g ? 0 : f < g ? -1 : 1;
-            if (0 !== f) {
-                if (0 > f || !a.r()) return !1;
-                f = !0
-            } else f = !1;
-            if (f) c = zb(a);
-            else break
-        }
-    return !0
-}
-
-// I function to create a new array with elements copied from 'a.b'
-function I(a) {
-    var b = r(D(C), [a.b.length]);
-    Ka(a, 0, b, 0, a.b.length);
-    return b
-}
-
-// Ab function to access an element in a multi-level array structure based on 'b' and 'c'
-function Ab(a, b, c) {
-    if (32 > c) return a.mb().b[31 & b];
-    if (1024 > c) return a.L().b[31 & (b >>> 5 | 0)].b[31 & b];
-    if (32768 > c) return a.X().b[31 & (b >>> 10 | 0)].b[31 & (b >>> 5 | 0)].b[31 & b];
-    if (1048576 > c) return a.ta().b[31 & (b >>> 15 | 0)].b[31 & (b >>> 10 | 0)].b[31 & (b >>> 5 | 0)].b[31 & b];
-    if (33554432 > c) return a.gb().b[31 & (b >>> 20 | 0)].b[31 & (b >>> 15 | 0)].b[31 & (b >>> 10 | 0)].b[31 & (b >>> 5 | 0)].b[31 & b];
-    if (1073741824 > c) return a.Rc().b[31 & (b >>> 25 | 0)].b[31 & (b >>> 20 | 0)].b[31 & (b >>> 15 | 0)].b[31 & (b >>> 10 | 0)].b[31 & (b >>> 5 | 0)].b[31 & b];
-    throw (new Bb).a();
-}
-
-// Cb function to update references in a multi-level array structure based on 'b' and 'c'
-function Cb(a, b, c) {
-    if (!(32 > c))
-        if (1024 > c) a.La(a.L().b[31 & (b >>> 5 | 0)]);
-        else if (32768 > c) a.xa(a.X().b[31 & (b >>> 10 | 0)]), a.La(a.L().b[31 & (b >>> 5 | 0)]);
-    else if (1048576 > c) a.ab(a.ta().b[31 & (b >>> 15 | 0)]), a.xa(a.X().b[31 & (b >>> 10 | 0)]), a.La(a.L().b[31 & (b >>> 5 | 0)]);
-    else if (33554432 > c) a.Ib(a.gb().b[31 & (b >>> 20 | 0)]), a.ab(a.ta().b[31 & (b >>> 15 | 0)]), a.xa(a.X().b[31 & (b >>> 10 | 0)]), a.La(a.L().b[31 & (b >>> 5 | 0)]);
-    else if (1073741824 > c) a.Qc(a.Rc().b[31 & (b >>> 25 | 0)]), a.Ib(a.gb().b[31 & (b >>> 20 | 0)]), a.ab(a.ta().b[31 & (b >>> 15 | 0)]), a.xa(a.X().b[31 & (b >>> 10 | 0)]), a.La(a.L().b[31 & (b >>> 5 | 0)]);
-    else throw (new Bb).a();
-}
-
-// Db function to remove an element from an array and return it as a new array
-function Db(a, b) {
-    var c = a.b[b];
-    a.b[b] = null;
-    return I(c)
-}
-
-// Eb function to update array structure based on 'c' level
-function Eb(a, b, c) {
-    a.Ef(c);
-    c = -1 + c | 0;
-    switch (c) {
-        case -1:
-            break;
-        case 0:
-            a.La(b.mb());
-            break;
-        case 1:
-            a.xa(b.L());
-            a.La(b.mb());
-            break;
-        case 2:
-            a.ab(b.X());
-            a.xa(b.L());
-            a.La(b.mb());
-            break;
-        case 3:
-            a.Ib(b.ta());
-            a.ab(b.X());
-            a.xa(b.L());
-            a.La(b.mb());
-            break;
-        case 4:
-            a.Qc(b.gb());
-            a.Ib(b.ta());
-            a.ab(b.X());
-            a.xa(b.L());
-            a.La(b.mb());
-            break;
-        case 5:
-            a.tg(b.Rc());
-            a.Qc(b.gb());
-            a.Ib(b.ta());
-            a.ab(b.X());
-            a.xa(b.L());
-            a.La(b.mb());
-            break;
-        default:
-            throw (new J).j(c);
-    }
-}
-
-// Fb function to return a default object if 'a' is null
-function Fb(a) {
-    return null === a ? Gb() : a
-}
-
-// Hb function to return null if 'a' is a specific default object
-function Hb(a) {
-    return a === Gb() ? null : a
-}
-
-// Ib class constructor (empty)
-function Ib() {}
-
-// Ib prototype methods
-Ib.prototype = new A;
-Ib.prototype.constructor = Ib;
-Ib.prototype.a = function() {
-    return this
-};
-
-// Jb function: initializes Kb if needed, then returns a new Nb with an Ob function
-function Jb(a, b) {
-    Kb || (Kb = (new Lb).a());
-    var c = Kb.Io;
-    Mb();
-    return (new Nb).ge(Ob(function(e, f, g) {
-        return function() {
-            var h = Pb().Xn;
-            Qb();
-            var k = new Rb;
-            k.la = f;
-            k.Po = g;
-            k = k.Po.Jo(k.la);
-            Sb(h, null === k ? "null" : k);
-            Sb(h, "\n")
-        }
-    }(a, b, c)))
-}
-
-// Tb function: processes data using several helper functions
-function Tb(a, b) {
-    b.w();
-    b.w();
-    var c = b.cb();
-    b = function() {
-        return function(h) {
-            if (null !== h) return (new Ub).af((new K).Q(h.bk(), h.dk()));
-            throw (new J).j(h);
-        }
-    }(a);
-    var e = L().G;
-    if (e === L().G)
-        if (c === M()) b = M();
-        else {
-            e = c.w();
-            var f = e = Vb(new N, b(e), M());
-            for (c = c.cb(); c !== M();) {
-                var g = c.w();
-                g = Vb(new N, b(g), M());
-                f = f.uc = g;
-                c = c.cb()
-            }
-            b = e
-        }
-    else {
-        for (e = Wb(c, e); !c.m();) f = c.w(), e.Ta(b(f)), c = c.cb();
-        b = e.Ca()
-    }
-    c = Xb();
-    e = Yb();
-    mb || (mb = (new Zb).a());
-    b = lb(b, c, e);
-    b = $b(b);
-    a = ac(b, F(function() {
-        return function(h) {
-            Qb();
-            var k = new bc;
-            k.Hl = h.ac;
-            h = k.na();
-            k = Qb().dj;
-            return cc(dc(h, k), 0)
-        }
-    }(a)));
-    a: {
-        for (; a.r();) {
-            b = a.u();
-            c = ec(b.ac.Za);
-            for (e = !0; e && c.r();) e = c.u(), Qb(), f = fc(e), g = L().G, f = O(f, g), f = gc(f), g = Qb().dj, cc(dc(f, g), 1) ? (Qb(), e = hc(e), f = L().G, e = O(e, f), e = gc(e), f = Qb().dj, e = cc(dc(e, f), 1)) : e = !1;
-            if (e) {
-                a = (new Q).j(b);
-                break a
-            }
-        }
-        a = R()
-    }
-    if (a.m()) a = R();
-    else {
-        a = a.Nb().ac;
-        b = ic();
-        b = jc(b);
-        b = Wb(a, b);
-        for (a = ec(a.Za); a.r();) c = a.u(), b.Ta(c.E | 0);
-        a = (new Q).j(b.Ca().lb())
-    }
-    return kc(a)
-}
-
-// lc function: reads from /dev/stdin, then calls mc and Oh
-function lc(a) {
-    r(D(oa), [0]);
-    Mb();
-    a = (new Nb).ge(Ob(function() {
-        return function() {
-            return ib.readFileSync("/dev/stdin", "utf8")
-        }
-    }(a)));
-    var b = mc();
-    return nc().Oh(a, b)
-}
-
-// oc function: calls pc, then ge, then lf, then Xe
-function oc(a, b) {
-    var c = pc();
-    return (new qc).ge(Ob(function(e, f) {
-        return function() {
-            return f
-        }
-    }(a, c))).lf().Xe(b)
-}
-
-// Ib prototype $classData
-Ib.prototype.$classData = z({
-    Yo: 0
-}, !1, "atcoder.ABC142F$", {
-    Yo: 1,
-    c: 1
-});
-
-// rc global variable
-var rc = void 0;
-
-// sc function: initializes and returns rc
-function sc() {
-    rc || (rc = (new Ib).a());
-    return rc
-}
-
-// tc class constructor (empty)
-function tc() {}
-
-// tc prototype methods
-tc.prototype = new A;
-tc.prototype.constructor = tc;
-tc.prototype.a = function() {
-    return this
-};
-
-// uc function: processes a list 'b' based on its type
-function uc(a, b, c) {
-    if (M().t(b)) return Qb(), c = M(), vc(), (new wc).j(c);
-    if (b instanceof N) return a = b.uc, b = c.Xe(b.th), b instanceof wc ? (b = b.E, c = uc(xc(), a, c), c instanceof wc ? (new wc).j(Vb(new N, b, c.E)) : c) : b;
-    throw (new J).j(b);
-}
-
-// yc function: creates a new zc object with a function that handles string conversion errors
-function yc() {
-    var a = xc();
-    return (new zc).j(function() {
-        return function(b) {
-            if ("" === b) {
-                Qb();
-                var c = Ac();
-                vc();
-                return (new wc).j(c)
-            }
-            Qb();
-            c = (new Bc).h("Cannot convert '");
-            b = (new Bc).h(b);
-            var e = Cc().Nh;
-            c = Dc(c, b, e);
-            c = (new Bc).h(c);
-            b = (new Bc).h("' to HNil");
-            e = Cc().Nh;
-            c = (new Ec).h(Dc(c, b, e));
-            vc();
-            return (new Fc).j(c)
-        }
-    }(a))
-}
-
-// Gc function: creates a new Hc object with a function to process input strings
-function Gc(a, b) {
-    return (new Hc).j(function(c, e) {
-        return function(f) {
-            xc();
-            f = Ic(Fa(), f, "\n");
-            for (var g = -1 + f.b.length | 0, h = M(); 0 <= g;) h = Vb(new N, f.b[g], h), g = -1 + g | 0;
-            return uc(0, h, e)
-        }
-    }(a, b))
-}
-
-// Jc function: creates a new Kc object with a function that processes input 'g'
-function Jc(a, b, c) {
-    return (new Kc).j(function(e, f) {
-        return function(g) {
-            g = f.Xe(g);
-            return g instanceof wc ? (new wc).j(Lc(g.E)) : g
-        }
-    }(a, c, b))
-}
-
-// Mc function: creates a new Nc object with a function to parse and convert a string to an HList
-function Mc(a, b, c) {
-    return (new Nc).j(function(e, f, g) {
-        return function(h) {
-            for (var k = (new Bc).h(h), m = k.ob.length | 0, p = 0;;) {
-                if (p < m) {
-                    var q = k.db(p);
-                    q = 32 !== (null === q ? 0 : q.s)
-                } else q = !1;
-                if (q) p = 1 + p | 0;
-                else break
-            }
-            m = p;
-            k = (new K).Q(k.Rg(0, m), k.Rg(m, k.na()));
-            if (null !== k) {
-                h = k.Ga();
-                m = k.Qa();
-                h = f.lf().Xe(h);
-                if (h instanceof wc) {
-                    h = h.E;
-                    k = g.lf();
-                    if (null === m) throw (new Oc).a();
-                    if ("" !== m)
-                        if (m = (new Bc).h(m), 0 === m.na()) {
-                            if (m.m()) throw (new Pc).h("empty.tail");
-                            m = m.Tb(1)
-                        } else m = m.Rg(1, m.na());
-                    k = k.Xe(m);
-                    return k instanceof wc ? (new wc).j(Qc(Rc(k.E), h)) : k
-                }
-                return h
-            }
-            Qb();
-            k = (new Bc).h("Cannot convert '");
-            h = (new Bc).h(h);
-            m = Cc().Nh;
-            h = Dc(k, h, m);
-            h = (new Bc).h(h);
-            k = (new Bc).h("' to HList");
-            m = Cc().Nh;
-            h = (new Ec).h(Dc(h, k, m));
-            vc();
-            return (new Fc).j(h)
-        }
-    }(a, b, c))
-}
-
-// Sc function: creates a new Tc object with a function to parse a string to an integer
-function Sc() {
-    var a = xc();
-    return (new Tc).j(function() {
-        return function(b) {
-            Qb();
-            vc();
-            Uc || (Uc = (new Vc).a());
-            try {
-                vc();
-                var c = (new Bc).h(b),
-                    e = Wc(Xc(), c.ob, 10);
-                return (new wc).j(e)
-            } catch (f) {
-                b = Yc(S(), f);
-                if (null !== b) {
-                    if (Zc(w($c), b)) return vc(), (new Fc).j(b);
-                    throw T(S(), b);
-                }
-                throw f;
-            }
-        }
-    }(a))
-}
-
-// tc prototype $classData
-tc.prototype.$classData = z({
-    dp: 0
-}, !1, "atcoder.StdInConverter$", {
-    dp: 1,
-    c: 1
-});
-
-// ad global variable
-var ad = void 0;
-
-// xc function: initializes and returns ad
-function xc() {
-    ad || (ad = (new tc).a());
-    return ad
-}
-
-// Vc class constructor (empty)
-function Vc() {}
-
-// Vc prototype methods
-Vc.prototype = new A;
-Vc.prototype.constructor = Vc;
-Vc.prototype.a = function() {
-    Uc = this;
-    (new bd).a();
-    return this
-};
-
-// Vc prototype $classData
-Vc.prototype.$classData = z({
-    tp: 0
-}, !1, "cats.NotNull$", {
-    tp: 1,
-    c: 1
-});
-
-// Uc global variable
-var Uc = void 0;
-
-// cd class constructor (empty)
-function cd() {}
-
-// cd prototype methods
-cd.prototype = new A;
-cd.prototype.constructor = cd;
-cd.prototype.a = function() {
-    return this
-};
-cd.prototype.Oh = function(a, b) {
-    var c = vc().jk;
-    return (new dd).j(b.ni(a, F(function() {
-        return function(e) {
-            vc();
-            return (new Fc).j(e)
-        }
-    }(this, c))))
-};
-
-// cd prototype $classData
-cd.prototype.$classData = z({
-    Gp: 0
-}, !1, "cats.data.EitherT$LeftPartiallyApplied$", {
-    Gp: 1,
-    c: 1
-});
-
-// ed global variable
-var ed = void 0;
-
-// fd class constructor (empty)
-function fd() {}
-
-// fd prototype methods
-fd.prototype = new A;
-fd.prototype.constructor = fd;
-fd.prototype.a = function() {
-    return this
-};
-
-// fd prototype $classData
-fd.prototype.$classData = z({
-    Hp: 0
-}, !1, "cats.data.EitherT$PurePartiallyApplied$", {
-    Hp: 1,
-    c: 1
-});
-
-// gd global variable
-var gd = void 0;
-
-// hd class constructor (empty)
-function hd() {}
-
-// hd prototype methods
-hd.prototype = new A;
-hd.prototype.constructor = hd;
-hd.prototype.a = function() {
-    return this
-};
-hd.prototype.Oh = function(a, b) {
-    var c = vc().jk;
-    return (new dd).j(b.ni(a, F(function() {
-        return function(e) {
-            vc();
-            return (new wc).j(e)
-        }
-    }(this, c))))
-};
-
-// hd prototype $classData
-hd.prototype.$classData = z({
-    Ip: 0
-}, !1, "cats.data.EitherT$RightPartiallyApplied$", {
-    Ip: 1,
-    c: 1
-});
-
-// id global variable
-var id = void 0;
-
-// nc function: initializes and returns id
-function nc() {
-    id || (id = (new hd).a());
-    return id
-}
-
-// jd class constructor (empty)
-function jd() {}
-
-// jd prototype methods
-jd.prototype = new A;
-jd.prototype.constructor = jd;
-
-// kd class constructor (inherits from jd)
-function kd() {}
-
-// Set kd's prototype to jd's prototype
-kd.prototype = jd.prototype;
-
-// ld class constructor
-function ld() {
-    this.lo = null;
-    this.ma = 0
-}
-
-// ld prototype methods
-ld.prototype = new A;
-ld.prototype.constructor = ld;
-ld.prototype.a = function() {
-    md = this;
-    this.lo = F(function() {
-        return function(a) {
-            a instanceof Fc && (a = a.E, nd().l(a))
-        }
-    }(this));
-    this.ma = (1 | this.ma) << 24 >> 24;
-    vc();
-    (new wc).j(void 0);
-    this.ma = (2 | this.ma) << 24 >> 24;
-    (new od).j(void 0);
-    this.ma = (4 | this.ma) << 24 >> 24;
-    this.ma = (8 | this.ma) << 24 >> 24;
-    return this
-};
-
-// ld prototype $classData
-ld.prototype.$classData = z({
-    Xp: 0
-}, !1, "cats.effect.internals.Callback$", {
-    Xp: 1,
-    c: 1
-});
-
-// md global variable
-var md = void 0;
-
-// pd function: initializes and returns md
-function pd() {
-    md || (md = (new ld).a());
-    return md
-}
-
-// qd class constructor (empty)
-function qd() {}
-
-// qd prototype methods
-qd.prototype = new A;
-qd.prototype.constructor = qd;
-qd.prototype.a = function() {
-    return this
-};
-
-// rd function: returns a new td object if 'b' is not empty
-function rd(a, b) {
-    if (!b.r()) return sd();
-    Mb();
-    return (new td).ge(Ob(function(c, e) {
-        return function() {
-            return ud((new vd).bl(e))
-        }
-    }(a, b)))
-}
-
-// qd prototype $classData
-qd.prototype.$classData = z({
-    Zp: 0
-}, !1, "cats.effect.internals.CancelUtils$", {
-    Zp: 1,
-    c: 1
-});
-
-// wd global variable
-var wd = void 0;
-
-// xd class constructor (empty)
-function xd() {}
-
-// xd prototype methods
-xd.prototype = new A;
-xd.prototype.constructor = xd;
-
-// yd class constructor (inherits from xd)
-function yd() {}
-
-// Set yd's prototype to xd's prototype
-yd.prototype = xd.prototype;
-
-// zd class constructor
-function zd() {
-    this.Qo = null;
-    this.ma = !1
-}
-
-// zd prototype methods
-zd.prototype = new A;
-zd.prototype.constructor = zd;
-zd.prototype.a = function() {
-    Ad = this;
-    this.Qo = (new Cd).a();
-    this.ma = !0;
-    return this
-};
-
-// zd prototype $classData
-zd.prototype.$classData = z({
-    bq: 0
-}, !1, "cats.effect.internals.IOConnection$", {
-    bq: 1,
-    c: 1
-});
-
-// Ad global variable
-var Ad = void 0;
-
-// Dd function: initializes and returns Ad
-function Dd() {
-    Ad || (Ad = (new zd).a());
-    return Ad
-}
-
-// Ed class constructor (empty)
-function Ed() {}
-
-// Ed prototype methods
-Ed.prototype = new A;
-Ed.prototype.constructor = Ed;
-Ed.prototype.a = function() {
-    return this
-};
-
-// Ed prototype $classData
-Ed.prototype.$classData = z({
-    fq: 0
-}, !1, "cats.effect.internals.IOPlatform$", {
-    fq: 1,
-    c: 1
-});
-
-// Fd global variable
-var Fd = void 0;
-
-// Gd class constructor
-function Gd() {
-    this.Pn = 0;
-    this.ma = !1
-}
-
-// Gd prototype methods
-Gd.prototype = new A;
-Gd.prototype.constructor = Gd;
-
-// Hd function: returns 'a' if not null, otherwise tries to get an element from 'b'
-function Hd(a, b) {
-    if (null !== a) return a;
-    if (null === b) return null;
-    for (;;) return a = Id(b), null === a ? null : a
-}
-
-// Gd prototype a method
-Gd.prototype.a = function() {
-    this.Pn = 512;
-    this.ma = !0;
-    return this
-};
-
-// Jd function: returns 'a' if it's a Kd, otherwise tries to get a Kd element from 'b'
-function Jd(a, b) {
-    if (a instanceof Kd) return a;
-    if (null === b) return null;
-    for (;;) {
-        a = Id(b);
-        if (null === a) return null;
-        if (a instanceof Kd) return a
-    }
-}
-
-// Ld function: processes based on 'c' and 'e'
-function Ld(a, b, c, e) {
-    return null !== c || null !== e && !e.m() ? Md(new Nd, Od(function(f, g, h, k) {
-        return function(m, p) {
-            Pd(Qd(), g, m, p, null, h, k)
-        }
-    }(a, b, c, e))) : b
-}
-
-// Rd function: attempts to execute 'a' and handle exceptions
-function Rd(a) {
-    try {
-        return Sd(a)
-    } catch (c) {
-        a = Yc(S(), c);
-        if (null !== a) {
-            var b = Td(Ud(), a);
-            if (!b.m()) return a = b.Nb(), Vd(a);
-            throw T(S(), a);
-        }
-        throw c;
-    }
-}
-
-// Pd function: main IORunLoop processing logic
-function Pd(a, b, c, e, f, g, h) {
-    var k = b;
-    b = g;
-    var m = !1,
-        p = null;
-    for (g = 0;;) {
-        var q = k;
-        if (q instanceof Wd) k = q.Xb, q = q.Jb, null !== b && (null === h && (h = (new Xd).a()), Yd(h, b)), b = q;
-        else if (q instanceof Zd) p = q.yf, m = !0;
-        else if (q instanceof Nb) {
-            q = q.Ed;
-            try {
-                p = Sd(q), m = !0, k = null
-            } catch (ea) {
-                if (k = Yc(S(), ea), null !== k) {
-                    q = Td(Ud(), k);
-                    if (q.m()) throw T(S(), k);
-                    k = q.Nb();
-                    k = Vd(k)
-                } else throw ea;
-            }
-        } else if (q instanceof td) a: try {
-            k = Sd(q.Ed)
-        } catch (ea) {
-            k = Yc(S(), ea);
-            if (null !== k) {
-                q = Td(Ud(), k);
-                if (!q.m()) {
-                    k = q.Nb();
-                    k = Vd(k);
-                    break a
-                }
-                throw T(S(), k);
-            }
-            throw ea;
-        } else if (q instanceof $d) {
-            k = q.Gf;
-            b = Jd(b, h);
-            if (null === b) {
-                e.l((vc(), (new Fc).j(k)));
-                break
-            }
-            try {
-                var t = b.ml(k)
-            } catch (ea) {
-                if (t = Yc(S(), ea), null !== t) {
-                    b = Td(Ud(), t);
-                    if (b.m()) throw T(S(), t);
-                    t = b.Nb();
-                    t = Vd(t)
-                } else throw ea;
-            }
-            b = null;
-            k = t
-        } else if (q instanceof ae) k = q, q = k.Xb, null !== b && (null === h && (h = (new Xd).a()), Yd(h, b)), b = k, k = q;
-        else {
-            if (q instanceof Nd) {
-                a = q;
-                null === c && (Dd(), c = (new be).a());
-                null === f && (f = (new ce).Yk(c, e));
-                e = f;
-                c = b;
-                e.pg = !0;
-                e.Ek = c;
-                e.Fk = h;
-                e.Ml = a.Dh;
-                de(a.vh, e.xe, e);
-                break
-            }
-            if (q instanceof ee) {
-                var u = q.Xb;
-                k = q.qi;
-                var v = q.Hg;
-                q = null !== c ? c : (Dd(), (new be).a());
-                c = k.l(q);
-                k = u;
-                if (c !== q && (null !== f && (f.xe = c), null !== v)) {
-                    k = new Wd;
-                    var B = new fe;
-                    B.ll = q;
-                    B.Hg = v;
-                    k = ge(k, u, B)
-                }
-            } else throw (new J).j(q);
-        }
-        if (m) {
-            b = Hd(b, h);
-            if (null === b) {
-                vc();
-                e.l((new wc).j(p));
-                break
-            }
-            try {
-                var P = b.l(p)
-            } catch (ea) {
-                if (P = Yc(S(), ea), null !== P) {
-                    b = Td(Ud(), P);
-                    if (b.m()) throw T(S(), P);
-                    P = b.Nb();
-                    P = Vd(P)
-                } else throw ea;
-            }
-            m = !1;
-            b = p = null;
-            k = P
-        }
-        g = 1 + g | 0;
-        if (g === a.Pn) {
-            if (c.el()) break;
-            g = 0
-        }
-    }
-}
-
-// he function: processes an IO action 'b' with error handling and context restoration
-function he(a, b) {
-    b = (new ie).j(b);
-    var c = (new ie).j(null),
-        e = (new ie).j(null),
-        f = !1,
-        g = null;
-    for (g = null;;) {
-        var h = b.o;
-        if (h instanceof Wd) {
-            var k = h;
-            h = k.Xb;
-            k = k.Jb;
-            null !== c.o && (null === e.o && (e.o = (new Xd).a()), Yd(e.o, c.o));
-            c.o = k;
-            b.o = h
-        } else if (h instanceof Zd) g = h.yf, f = !0;
-        else if (h instanceof Nb) {
-            h = h.Ed;
-            try {
-                g = Sd(h), f = !0, b.o = null
-            } catch (q) {
-                if (h = Yc(S(), q), null !== h) {
-                    k = Td(Ud(), h);
-                    if (k.m()) throw T(S(), h);
-                    h = k.Nb();
-                    b.o = Vd(h)
-                } else throw q;
-            }
-        } else if (h instanceof td) b.o = Rd(h.Ed);
-        else if (h instanceof $d) {
-            h = h.Gf;
-            k = Jd(c.o, e.o);
-            if (null === k) return b.o;
-            try {
-                var m = k.ml(h)
-            } catch (q) {
-                if (m = Yc(S(), q), null !== m) {
-                    h = Td(Ud(), m);
-                    if (h.m()) throw T(S(), m);
-                    m = h.Nb();
-                    m = Vd(m)
-                } else throw q;
-            }
-            c.o = null;
-            b.o = m
-        } else if (h instanceof ae) k = h.Xb, null !== c.o && (null === e.o && (e.o = (new Xd).a()), Yd(e.o, c.o)), c.o = h, b.o = k;
-        else return h instanceof Nd ? Ld(a, b.o, c.o, e.o) : Md(new Nd, Od(function(q, t, u, v) {
-            return function(B, P) {
-                Pd(Qd(), t.o, B, P, null, u.o, v.o)
-            }
-        }(a, b, c, e)));
-        if (f) {
-            f = Hd(c.o, e.o);
-            if (null === f) return null !== b.o ? b.o : (new Zd).j(g);
-            try {
-                var p = f.l(g)
-            } catch (q) {
-                if (p = Yc(S(), q), null !== p) {
-                    g = Td(Ud(), p);
-                    if (g.m()) throw T(S(), g);
-                    p = g.Nb();
-                    p = Vd(p)
-                } else throw q;
-            }
-            b.o = p;
-            f = !1;
-            g = null;
-            c.o = null
-        }
-    }
-}
-
-// Gd prototype $classData
-Gd.prototype.$classData = z({
-    hq: 0
-}, !1, "cats.effect.internals.IORunLoop$", {
-    hq: 1,
-    c: 1
-});
-
-// je global variable
-var je = void 0;
-
-// Qd function: initializes and returns je
-function Qd() {
-    je || (je = (new Gd).a());
-    return je
-}
-
-// ke class constructor
-function ke() {
-    this.Nn = null;
-    this.q = !1
-}
-
-// ke prototype methods
-ke.prototype = new A;
-ke.prototype.constructor = ke;
-ke.prototype.a = function() {
-    return this
-};
-
-// nd function: initializes and returns le.Nn
-function nd() {
-    le || (le = (new ke).a());
-    var a = le;
-    a.q || a.q || (a.Nn = me(), a.q = !0);
-    return a.Nn
-}
-
-// ke prototype $classData
-ke.prototype.$classData = z({
-    kq: 0
-}, !1, "cats.effect.internals.Logger$", {
-    kq: 1,
-    c: 1
-});
-
-// le global variable
-var le = void 0;
-
-// ne class constructor
-function ne() {
-    this.qg = this.Eh = null;
-    this.Zj = !1;
-    this.ma = 0
-}
-
-// ne prototype methods
-ne.prototype = new A;
-ne.prototype.constructor = ne;
-
-// oe function: processes elements from 'b' and handles exceptions
-function oe(a, b) {
-    a: for (;;) {
-        try {
-            b.Lj()
-        } catch (g) {
-            if (b = Yc(S(), g), null !== b) {
-                var c = a,
-                    e = Id(c.qg);
-                if (null !== e) {
-                    var f = c.qg;
-                    c.qg = (new Xd).a();
-                    c.Eh.oh(pe(c, e, f))
-                }
-                Ud();
-                if (b && b.$classData && b.$classData.qa.rl) throw T(S(), b);
-                a.Eh.ol(b)
-            } else throw g;
-        }
-        b = Id(a.qg);
-        if (null !== b) continue a;
-        break
-    }
-}
-
-// ne prototype al method
-ne.prototype.al = function(a) {
-    this.Eh = a;
-    this.qg = (new Xd).a();
-    this.ma = (1 | this.ma) << 24 >> 24;
-    this.Zj = !1;
-    this.ma = (2 | this.ma) << 24 >> 24;
-    return this
-};
-
-// ne prototype oh method
-ne.prototype.oh = function(a) {
-    if (this.Zj) Yd(this.qg, a);
-    else {
-        this.Zj = !0;
-        try {
-            oe(this, a)
-        } finally {
-            this.Zj = !1
-        }
-    }
-};
-
-// ne prototype $classData
-ne.prototype.$classData = z({
-    lq: 0
-}, !1, "cats.effect.internals.Trampoline", {
-    lq: 1,
-    c: 1
-});
-
-// qe class constructor
-function qe() {
-    this.ln = null;
-    this.ma = !1
-}
-
-// qe prototype methods
-qe.prototype = new A;
-qe.prototype.constructor = qe;
-qe.prototype.a = function() {
-    re = this;
-    this.ln = (new se).al((new te).a());
-    this.ma = !0;
-    return this
-};
-
-// ue function: initializes and returns re.ln
-function ue() {
-    re || (re = (new qe).a());
-    var a = re;
-    if (!a.ma) throw (new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/js/src/main/scala/cats/effect/internals/TrampolineEC.scala: 47");
-    return a.ln
-}
-
-// qe prototype $classData
-qe.prototype.$classData = z({
-    oq: 0
-}, !1, "cats.effect.internals.TrampolineEC$", {
-    oq: 1,
-    c: 1
-});
-
-// re global variable
-var re = void 0;
-
-// we class constructor (empty)
-function we() {}
-
-// we prototype methods
-we.prototype = new A;
-we.prototype.constructor = we;
-
-// xe class constructor (inherits from we)
-function xe() {}
-
-// Set xe's prototype to we's prototype
-xe.prototype = we.prototype;
-
-// ye class constructor (empty)
-function ye() {}
-
-// ye prototype methods
-ye.prototype = new A;
-ye.prototype.constructor = ye;
-
-// ze class constructor (inherits from ye)
-function ze() {}
-
-// Set ze's prototype to ye's prototype
-ze.prototype = ye.prototype;
-
-// Ae class constructor
-function Ae() {
-    this.Bm = null
-}
-
-// Ae prototype methods
-Ae.prototype = new A;
-Ae.prototype.constructor = Ae;
-Ae.prototype.a = function() {
-    Be = this;
-    this.Bm = (new Ce).a();
-    (new De).a();
-    (new Ee).a();
-    (new Ee).a();
-    Fe || (Fe = (new Ge).a());
-    He || (He = (new Ie).a());
-    Je || (Je = (new Ke).a());
-    Le || (Le = (new Ne).a());
-    Oe || (Oe = (new Pe).a());
-    Qe || (Qe = (new Re).a());
-    Se || (Se = (new Te).a());
-    Ue || (Ue = (new Ve).a());
-    return this
-};
-
-// Ae prototype $classData
-Ae.prototype.$classData = z({
-    ts: 0
-}, !1, "cats.package$", {
-    ts: 1,
-    c: 1
-});
-
-// Be global variable
-var Be = void 0;
-
-// We function: initializes and returns Be
-function We() {
-    Be || (Be = (new Ae).a());
-    return Be
-}
-
-// Xe class constructor (empty)
-function Xe() {}
-
-// Xe prototype methods
-Xe.prototype = new A;
-Xe.prototype.constructor = Xe;
-Xe.prototype.a = function() {
-    return this
-};
-
-// Xe prototype $classData
-Xe.prototype.$classData = z({
-    ws: 0
-}, !1, "cats.syntax.EitherOps$", {
-    ws: 1,
-    c: 1
-});
-
-// Ye global variable
-var Ye = void 0;
-
-// Ze class constructor
-function Ze() {
-    this.Kj = this.Jj = null
-}
-
-// Ze prototype methods
-Ze.prototype = new A;
-Ze.prototype.constructor = Ze;
-
-// dc function: creates and returns a new Ze object
-function dc(a, b) {
-    var c = new Ze;
-    c.Mn = a;
-    c.gn = b;
-    return c
-}
-
-// cc function: calls gn.Bc on a.Mn and b
-function cc(a, b) {
-    We();
-    return a.gn.Bc(a.Mn, b)
-}
-
-// Ze prototype $classData
-Ze.prototype.$classData = z({
-    xs: 0
-}, !1, "cats.syntax.EqOps", {
-    xs: 1,
-    c: 1
-});
-
-// $e class constructor
-function $e() {
-    this.Kj = this.Jj = null
-}
-
-// $e prototype methods
-$e.prototype = new A;
-$e.prototype.constructor = $e;
-
-// af function: returns a new bf array with Jj and Kj
-function af(a) {
-    return ka(D(bf), [a.Jj, a.Kj])
-}
-
-// cf function: sets Jj and Kj properties and returns 'a'
-function cf(a, b, c) {
-    a.Jj = b;
-    a.Kj = c;
-    return a
-}
-
-// $e prototype $classData
-$e.prototype.$classData = z({
-    Ds: 0
-}, !1, "java.math.BigInteger$QuotAndRem", {
-    Ds: 1,
-    c: 1
-});
-
-// df class constructor (empty)
-function df() {}
-
-// df prototype methods
-df.prototype = new A;
-df.prototype.constructor = df;
-df.prototype.a = function() {
-    return this
-};
-
-// ef function: performs a bit shift operation on an array 'c' and stores it in 'b'
-function ef(a, b, c, e) {
-    for (var f = a = 0; f < e;) {
-        var g = f,
-            h = c.b[g];
-        b.b[g] = h << 1 | a;
-        a = h >>> 31 | 0;
-        f = 1 + f | 0
-    }
-    0 !== a && (b.b[e] = a)
-}
-
-// ff function: performs a right bit shift operation on 'b' and returns a new hf object
-function ff(a, b, c) {
-    a = c >> 5;
-    c &= 31;
-    var e = (b.ga + a | 0) + (0 === c ? 0 : 1) | 0,
-        f = r(D(E), [e]);
-    gf(0, f, b.H, a, c);
-    b = hf(b.N, e, f);
-    jf(b);
-    return b
-}
-
-// kf function: performs a left bit shift operation on 'b' and returns a new hf object
-function kf(a, b, c) {
-    a = c >> 5;
-    var e = 31 & c;
-    if (a >= b.ga) return 0 > b.N ? lf().Si : lf().be;
-    c = b.ga - a | 0;
-    var f = r(D(E), [1 + c | 0]);
-    mf(0, f, c, b.H, a, e);
-    if (0 > b.N) {
-        for (var g = 0; g < a && 0 === b.H.b[g];) g = 1 + g | 0;
-        var h = 0 !== b.H.b[g] << (32 - e | 0);
-        if (g < a || 0 < e && h) {
-            for (g = 0; g < c && -1 === f.b[g];) f.b[g] = 0, g = 1 + g | 0;
-            g === c && (c = 1 + c | 0);
-            a = g;
-            f.b[a] = 1 + f.b[a] | 0
-        }
-    }
-    b = hf(b.N, c, f);
-    jf(b);
-    return b
-}
-
-// nf function: calculates the number of bits in 'b'
-function nf(a, b) {
-    if (0 === b.N) return 0;
-    a = b.ga << 5;
-    var c = b.H.b[-1 + b.ga | 0];
-    0 > b.N && of (b) === (-1 + b.ga | 0) && (c = -1 + c | 0);
-    return a = a - da(c) | 0
-}
-
-// mf function: copies a portion of an array 'e' to 'b' with a bit shift
-function mf(a, b, c, e, f, g) {
-    for (a = 0; a < f;) a = 1 + a | 0;
-    if (0 === g) Ka(e, f, b, 0, c);
-    else {
-        var h = 32 - g | 0;
-        for (a = 0; a < (-1 + c | 0);) b.b[a] = e.b[a + f | 0] >>> g | 0 | e.b[1 + (a + f | 0) | 0] << h, a = 1 + a | 0;
-        b.b[a] = e.b[a + f | 0] >>> g | 0
-    }
-}
-
-// gf function: shifts elements of 'c' into 'b'
-function gf(a, b, c, e, f) {
-    if (0 === f) Ka(c, 0, b, e, b.b.length - e | 0);
-    else {
-        a = 32 - f | 0;
-        b.b[-1 + b.b.length | 0] = 0;
-        for (var g = -1 + b.b.length | 0; g > e;) {
-            var h = g;
-            b.b[h] = b.b[h] | c.b[-1 + (g - e | 0) | 0] >>> a | 0;
-            b.b[-1 + g | 0] = c.b[-1 + (g - e | 0) | 0] << f;
-            g = -1 + g | 0
-        }
-    }
-    for (c = 0; c < e;) b.b[c] = 0, c = 1 + c | 0
-}
-
-// df prototype $classData
-df.prototype.$classData = z({
-    Es: 0
-}, !1, "java.math.BitLevel$", {
-    Es: 1,
-    c: 1
-});
-
-// pf global variable
-var pf = void 0;
-
-// qf function: initializes and returns pf
-function qf() {
-    pf || (pf = (new df).a());
-    return pf
-}
-
-// rf class constructor
-function rf() {
-    this.Zl = this.am = null
-}
-
-// rf prototype methods
-rf.prototype = new A;
-rf.prototype.constructor = rf;
-rf.prototype.a = function() {
-    sf = this;
-    this.am = ka(D(E), [-1, -1, 31, 19, 15, 13, 11, 11, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5]);
-    this.Zl = ka(D(E), [-2147483648, 1162261467, 1073741824, 1220703125, 362797056, 1977326743, 1073741824, 387420489, 1E9, 214358881, 429981696, 815730721, 1475789056, 170859375, 268435456, 410338673, 612220032, 893871739, 128E7, 1801088541, 113379904, 148035889, 191102976, 244140625, 308915776, 387420489, 481890304, 594823321, 729E6, 887503681, 1073741824, 1291467969, 1544804416, 1838265625, 60466176]);
-    return this
-};
-
-// tf function: formats a BigInt 'b' as a string with a given precision 'c'
-function tf(a, b, c) {
-    if (0 === b.f && 0 === b.i) switch (c) {
-        case 0:
-            return "0";
-        case 1:
-            return "0.0";
-        case 2:
-            return "0.00";
-        case 3:
-            return "0.000";
-        case 4:
-            return "0.0000";
-        case 5:
-            return "0.00000";
-        case 6:
-            return "0.000000";
-        default:
-            return (0 > c ? "0E+" : "0E") + (-2147483648 === c ? "2147483648" : "" + (-c | 0))
-    } else {
-        a = 0 > b.i;
-        var e = "";
-        var f = 18;
-        if (a) {
-            var g = b.f;
-            b = b.i;
-            b = (new x).g(-g | 0, 0 !== g ? ~b : -b | 0)
-        }
-        g = b.f;
-        for (var h = b.i;;) {
-            b = g;
-            var k = h;
-            h = y();
-            g = uf(h, g, k, 10, 0);
-            h = h.M;
-            f = -1 + f | 0;
-            k = h;
-            var m = g,
-                p = m >>> 16 | 0;
-            m = n(10, 65535 & m);
-            p = n(10, p);
-            p = m + (p << 16) | 0;
-            n(10, k);
-            e = "" + (b - p | 0) + e;
-            b = h;
-            if (0 === g && 0 === b) break
-        }
-        b = -1 + ((18 - f | 0) - c | 0) | 0;
-        if (0 < c && -6 <= b)
-            if (c = 1 + b | 0, 0 < c) e = e.substring(0, c) + "." + e.substring(c);
-            else {
-                c = -c | 0;
-                for (f = 0; f < c;) e = "0" + e, f = 1 + f | 0;
-                e = "0." + e
-            }
-        else 0 !== c && (c = "" + b, 0 < b && (c = "+" + c), c = "E" + c, e = 1 < (18 - f | 0) ? e.substring(0, 1) + "." + e.substring(1) + c : "" + e + c);
-        return a ? "-" + e : e
-    }
-}
-
-// vf function: converts a BigInt 'b' to a string representation
-function vf(a, b) {
-    a = b.N;
-    var c = b.ga,
-        e = b.H;
-    if (0 === a) return "0";
-    if (1 === c) return b = (+(e.b[0] >>> 0)).toString(10), 0 > a ? "-" + b : b;
-    b = "";
-    var f = r(D(E), [c]);
-    Ka(e, 0, f, 0, c);
-    do {
-        var g = 0;
-        for (e = -1 + c | 0; 0 <= e;) {
-            var h = g;
-            g = f.b[e];
-            var k = wf(y(), g, h, 1E9, 0);
-            f.b[e] = k;
-            h = k >> 31;
-            var m = 65535 & k;
-            k = k >>> 16 | 0;
-            var p = n(51712, m);
-            m = n(15258, m);
-            var q = n(51712, k);
-            p = p + ((m + q | 0) << 16) | 0;
-            n(1E9, h);
-            n(15258, k);
-            g = g - p | 0;
-            e = -1 + e | 0
-        }
-        e = "" + g;
-        for (b = "000000000".substring(e.length | 0) + e + b; 0 !== c && 0 === f.b[-1 + c | 0];) c = -1 + c | 0
-    } while (0 !== c);
-    f = 0;
-    for (c = b.length | 0;;)
-        if (f < c && 48 === (65535 & (b.charCodeAt(f) | 0))) f = 1 + f | 0;
-        else break;
-    b = b.substring(f);
-    return 0 > a ? "-" + b : b
-}
-
-// rf prototype $classData
-rf.prototype.$classData = z({
-    Fs: 0
-}, !1, "java.math.Conversion$", {
-    Fs: 1,
-    c: 1
-});
-
-// sf global variable
-var sf = void 0;
-
-// xf function: initializes and returns sf
-function xf() {
-    sf || (sf = (new rf).a());
-    return sf
-}
-
-// yf class constructor (empty)
-function yf() {}
-
-// yf prototype methods
-yf.prototype = new A;
-yf.prototype.constructor = yf;
-yf.prototype.a = function() {
-    return this
-};
-
-// zf function: performs BigInt division and returns the quotient array
-function zf(a, b, c, e, f, g, h) {
-    a = r(D(E), [1 + f | 0]);
-    var k = r(D(E), [1 + h | 0]),
-        m = da(g.b[-1 + h | 0]);
-    0 !== m ? (gf(qf(), k, g, 0, m), gf(qf(), a, e, 0, m)) : (Ka(e, 0, a, 0, f), Ka(g, 0, k, 0, h));
-    e = k.b[-1 + h | 0];
-    for (c = -1 + c | 0; 0 <= c;) {
-        if (a.b[f] === e) g = -1;
-        else {
-            var p = a.b[f],
-                q = a.b[-1 + f | 0];
-            g = y();
-            var t = wf(g, q, p, e, 0);
-            p = g.M;
-            g = t;
-            var u = 65535 & t;
-            t = t >>> 16 | 0;
-            var v = 65535 & e,
-                B = e >>> 16 | 0,
-                P = n(u, v);
-            v = n(t, v);
-            u = n(u, B);
-            u = P + ((v + u | 0) << 16) | 0;
-            n(p, e);
-            n(t, B);
-            q = q - u | 0;
-            if (0 !== g) a: for (g = 1 + g | 0;;){
-                t = g = -1 + g | 0;
-                B = k.b[-2 + h | 0];
-                p = 65535 & t;
-                t = t >>> 16 | 0;
-                P = 65535 & B;
-                B = B >>> 16 | 0;
-                u = n(p, P);
-                P = n(t, P);
-                v = n(p, B);
-                p = u + ((P + v | 0) << 16) | 0;
-                u = (u >>> 16 | 0) + v | 0;
-                u = (n(t, B) + (u >>> 16 | 0) | 0) + (((65535 & u) + P | 0) >>> 16 | 0) | 0;
-                B = q;
-                t = a.b[-2 + f | 0];
-                P = q + e | 0;
-                if (0 === ((-2147483648 ^ P) < (-2147483648 ^ q) ? 1 : 0) && (q = P, u ^= -2147483648, B ^= -2147483648, u === B ? (-2147483648 ^ p) > (-2147483648 ^ t) : u > B)) continue a;
-                break
-            }
-        }
-        if (q = 0 !== g) {
-            Af();
-            q = a;
-            p = f - h | 0;
-            B = k;
-            t = h;
-            u = g;
-            var ea = 0;
-            var Ta;
-            for (P = Ta = 0; P < t;) {
-                v = P;
-                Bf();
-                var va = B.b[v],
-                    qa = 65535 & va;
-                va = va >>> 16 | 0;
-                var Vf = 65535 & u,
-                    ab = u >>> 16 | 0,
-                    Wf = n(qa, Vf);
-                Vf = n(va, Vf);
-                var tl = n(qa, ab);
-                qa = Wf + ((Vf + tl | 0) << 16) | 0;
-                Wf = (Wf >>> 16 | 0) + tl | 0;
-                ab = (n(va, ab) + (Wf >>> 16 | 0) | 0) + (((65535 & Wf) + Vf | 0) >>> 16 | 0) | 0;
-                va = qa + ea | 0;
-                ea = (-2147483648 ^ va) < (-2147483648 ^ qa) ? 1 + ab | 0 : ab;
-                ab = q.b[p + v | 0];
-                va = ab - va | 0;
-                ab = (-2147483648 ^ va) > (-2147483648 ^ ab) ? -1 : 0;
-                qa = Ta;
-                Ta = qa >> 31;
-                qa = va + qa | 0;
-                Ta = (-2147483648 ^ qa) < (-2147483648 ^ va) ? 1 + (ab + Ta | 0) | 0 : ab + Ta | 0;
-                q.b[p + v | 0] = qa;
-                P = 1 + P | 0
-            }
-            u = q.b[p + t | 0];
-            B = u - ea | 0;
-            u = (-2147483648 ^ B) > (-2147483648 ^ u) ? -1 : 0;
-            v = Ta;
-            P = v >> 31;
-            v = B + v | 0;
-            q.b[p + t | 0] = v;
-            q = 0 !== ((-2147483648 ^ v) < (-2147483648 ^ B) ? 1 + (u + P | 0) | 0 : u + P | 0)
-        }
-        if (q)
-            for (g = -1 + g | 0, q = P = u = 0; q < h;) p = q, B = a.b[(f - h | 0) + p | 0], t = B + k.b[p] | 0, B = (-2147483648 ^ t) < (-2147483648 ^ B) ? 1 : 0, t = u + t | 0, B = (-2147483648 ^ t) < (-2147483648 ^ u) ? 1 + (P + B | 0) | 0 : P + B | 0, u = t, P = B, a.b[(f - h | 0) + p | 0] = u, u = P, P = 0, q = 1 + q | 0;
-        null !== b && (b.b[c] = g);
-        f = -1 + f | 0;
-        c = -1 + c | 0
-    }
-    return 0 !== m ? (mf(qf(), k, h, a, 0, m), k) : (Ka(a, 0, k, 0, h), a)
-}
-
-// Cf function: performs a division operation and returns the remainder
-function Cf(a, b, c, e, f) {
-    a = 0;
-    for (e = -1 + e | 0; 0 <= e;) {
-        var g = a;
-        a = c.b[e];
-        var h = y();
-        g = wf(h, a, g, f, 0);
-        h = h.M;
-        var k = 65535 & g,
-            m = g >>> 16 | 0,
-            p = 65535 & f,
-            q = f >>> 16 | 0,
-            t = n(k, p);
-        p = n(m, p);
-        k = n(k, q);
-        t = t + ((p + k | 0) << 16) | 0;
-        n(h, f);
-        n(m, q);
-        a = a - t | 0;
-        b.b[e] = g;
-        e = -1 + e | 0
-    }
-    return a
-}
-
-// yf prototype $classData
-yf.prototype.$classData = z({
-    Gs: 0
-}, !1, "java.math.Division$", {
-    Gs: 1,
-    c: 1
-});
-
-// Df global variable
-var Df = void 0;
-
-// Af function: initializes and returns Df
-function Af() {
-    Df || (Df = (new yf).a());
-    return Df
-}
-
-// Ef class constructor (empty)
-function Ef() {}
-
-// Ef prototype methods
-Ef.prototype = new A;
-Ef.prototype.constructor = Ef;
-Ef.prototype.a = function() {
-    return this
-};
-
-// Ff function: performs subtraction on two arrays 'a' and 'c' and stores the result in 'f'
-function Ff(a, b, c, e) {
-    for (var f = r(D(E), [b]), g = 0, h = 0; g < e;) {
-        var k = a.b[g],
-            m = k - c.b[g] | 0;
-        k = (-2147483648 ^ m) > (-2147483648 ^ k) ? -1 : 0;
-        var p = h;
-        h = p >> 31;
-        p = m + p | 0;
-        m = (-2147483648 ^ p) < (-2147483648 ^ m) ? 1 + (k + h | 0) | 0 : k + h | 0;
-        f.b[g] = p;
-        h = m;
-        g = 1 + g | 0
-    }
-    for (; g < b;) c = a.b[g], m = h, e = m >> 31, m = c + m | 0, c = (-2147483648 ^ m) < (-2147483648 ^ c) ? 1 + e | 0 : e, f.b[g] = m, h = c, g = 1 + g | 0;
-    return f
-}
-
-// Gf function: compares two arrays 'b' and 'c'
-function Gf(a, b, c, e) {
-    for (a = -1 + e | 0; 0 <= a && b.b[a] === c.b[a];) a = -1 + a | 0;
-    return 0 > a ? 0 : (-2147483648 ^ b.b[a]) < (-2147483648 ^ c.b[a]) ? -1 : 1
-}
-
-// Hf function: performs addition on two arrays 'a' and 'c' and stores the result in 'f'
-function Hf(a, b, c, e) {
-    var f = r(D(E), [1 + b | 0]),
-        g = 1,
-        h = a.b[0],
-        k = h + c.b[0] | 0;
-    f.b[0] = k;
-    h = (-2147483648 ^ k) < (-2147483648 ^ h) ? 1 : 0;
-    if (b >= e) {
-        for (; g < e;) {
-            var m = a.b[g];
-            k = m + c.b[g] | 0;
-            m = (-2147483648 ^ k) < (-2147483648 ^ m) ? 1 : 0;
-            h = k + h | 0;
-            k = (-2147483648 ^ h) < (-2147483648 ^ k) ? 1 + m | 0 : m;
-            f.b[g] = h;
-            h = k;
-            g = 1 + g | 0
-        }
-        for (; g < b;) c = a.b[g], e = c + h | 0, c = (-2147483648 ^ e) < (-2147483648 ^ c) ? 1 : 0, f.b[g] = e, h = c, g = 1 + g | 0
-    } else {
-        for (; g < b;) m = a.b[g], k = m + c.b[g] | 0, m = (-2147483648 ^ k) < (-2147483648 ^ m) ? 1 : 0, h = k + h | 0, k = (-2147483648 ^ h) < (-2147483648 ^ k) ? 1 + m | 0 : m, f.b[g] = h, h = k, g = 1 + g | 0;
-        for (; g < e;) a = c.b[g], b = a + h | 0, a = (-2147483648 ^ b) < (-2147483648 ^ a) ? 1 : 0, f.b[g] = b, h = a, g = 1 + g | 0
-    }
-    0 !== h && (f.b[g] = h);
-    return f
-}
-
-// If function: performs addition on two BigInts 'b' and 'c'
-function If(a, b, c) {
-    a = b.N;
-    var e = c.N,
-        f = b.ga,
-        g = c.ga;
-    if (0 === a) return c;
-    if (0 === e) return b;
-    if (2 === (f + g | 0)) {
-        b = b.H.b[0];
-        c = c.H.b[0];
-        if (a === e) return e = b + c | 0, c = (-2147483648 ^ e) < (-2147483648 ^ b) ? 1 : 0, 0 === c ? (new Jf).g(a, e) : hf(a, 2, ka(D(E), [e, c]));
-        e = lf();
-        0 > a ? (a = b = c - b | 0, c = (-2147483648 ^ b) > (-2147483648 ^ c) ? -1 : 0) : (a = c = b - c | 0, c = (-2147483648 ^ c) > (-2147483648 ^ b) ? -1 : 0);
-        return Kf(e, (new x).g(a, c))
-    }
-    if (a === e) e = f >= g ? Hf(b.H, f, c.H, g) : Hf(c.H, g, b.H, f);
-    else {
-        var h = f !== g ? f > g ? 1 : -1 : Gf(0, b.H, c.H, f);
-        if (0 === h) return lf().be;
-        1 === h ? e = Ff(b.H, f, c.H, g) : (c = Ff(c.H, g, b.H, f), a = e, e = c)
-    }
-    a = hf(a | 0, e.b.length, e);
-    jf(a);
-    return a
-}
-
-// Lf function: performs subtraction on two BigInts 'b' and 'c'
-function Lf(a, b, c) {
-    var e = b.N;
-    a = c.N;
-    var f = b.ga,
-        g = c.ga;
-    if (0 === a) return b;
-    if (0 === e) return Mf(c);
-    if (2 === (f + g | 0)) return b = b.H.b[0], f = 0, c = c.H.b[0], g = 0, 0 > e && (e = b, b = -e | 0, f = 0 !== e ? ~f : -f | 0), 0 > a && (a = c, e = g, c = -a | 0, g = 0 !== a ? ~e : -e | 0), a = lf(), e = b, b = f, f = g, c = e - c | 0, Kf(a, (new x).g(c, (-2147483648 ^ c) > (-2147483648 ^ e) ? -1 + (b - f | 0) | 0 : b - f | 0));
-    var h = f !== g ? f > g ? 1 : -1 : Gf(Nf(), b.H, c.H, f);
-    if (e === a && 0 === h) return lf().be;
-    -1 === h ? (c = e === a ? Ff(c.H, g, b.H, f) : Hf(c.H, g, b.H, f), a = -a | 0) : e === a ? (c = Ff(b.H, f, c.H, g), a = e) : (c = Hf(b.H, f, c.H, g), a = e);
-    a = hf(a | 0, c.b.length, c);
-    jf(a);
-    return a
-}
-
-// Ef prototype $classData
-Ef.prototype.$classData = z({
-    Hs: 0
-}, !1, "java.math.Elementary$", {
-    Hs: 1,
-    c: 1
-});
-
-// Of global variable
-var Of = void 0;
-
-// Nf function: initializes and returns Of
-function Nf() {
-    Of || (Of = (new Ef).a());
-    return Of
-}
-
-// Pf class constructor
-function Pf() {
-    this.Vf = 0;
-    this.Ig = null
-}
-
-// Pf prototype methods
-Pf.prototype = new A;
-Pf.prototype.constructor = Pf;
-Pf.prototype.t = function(a) {
-    return a instanceof Pf ? this.Vf === a.Vf ? this.Ig === a.Ig : !1 : !1
-};
-Pf.prototype.n = function() {
-    return "precision=" + this.Vf + " roundingMode=" + this.Ig
-};
-Pf.prototype.z = function() {
-    return this.Vf << 3 | this.Ig.Tl
-};
-
-// Pf prototype $classData
-Pf.prototype.$classData = z({
-    Is: 0
-}, !1, "java.math.MathContext", {
-    Is: 1,
-    c: 1
-});
-
-// Qf class constructor
-function Qf() {
-    this.$l = null
-}
-
-// Qf prototype methods
-Qf.prototype = new A;
-Qf.prototype.constructor = Qf;
-Qf.prototype.a = function() {
-    Rf = this;
-    Sf();
-    var a = Tf().Ji,
-        b = new Pf;
-    b.Vf = 34;
-    b.Ig = a;
-    this.$l = b;
-    Sf();
-    Tf();
-    Sf();
-    Tf();
-    Sf();
-    Tf();
-    return this
-};
-
-// Qf prototype $classData
-Qf.prototype.$classData = z({
-    Js: 0
-}, !1, "java.math.MathContext$", {
-    Js: 1,
-    c: 1
-});
-
-// Rf global variable
-var Rf = void 0;
-
-// Sf function: initializes and returns Rf
-function Sf() {
-    Rf || (Rf = (new Qf).a());
-    return Rf
-}
-
-// Uf class constructor
-function Uf() {
-    this.of = this.pf = null
-}
-
-// Uf prototype methods
-Uf.prototype = new A;
-Uf.prototype.constructor = Uf;
-Uf.prototype.a = function() {
-    Xf = this;
-    Yf(10, 10);
-    Yf(14, 5);
-    this.pf = r(D(bf), [32]);
-    this.of = r(D(bf), [32]);
-    var a;
-    var b = 1;
-    for (var c = a = 0; 32 > c;) {
-        var e = c;
-        if (18 >= e) {
-            Bf().of.b[e] = Kf(lf(), (new x).g(b, a));
-            var f = Bf().pf,
-                g = lf(),
-                h = b,
-                k = a;
-            f.b[e] = Kf(g, (new x).g(0 === (32 & e) ? h << e : 0, 0 === (32 & e) ? (h >>> 1 | 0) >>> (31 - e | 0) | 0 | k << e : h << e));
-            e = b;
-            b = e >>> 16 | 0;
-            e = n(5, 65535 & e);
-            f = n(5, b);
-            b = e + (f << 16) | 0;
-            e = (e >>> 16 | 0) + f | 0;
-            a = n(5, a) + (e >>> 16 | 0) | 0
-        } else Bf().of.b[e] = Zf(Bf().of.b[-1 + e | 0], Bf().of.b[1]), Bf().pf.b[e] = Zf(Bf().pf.b[-1 + e | 0], lf().lg);
-        c = 1 + c | 0
-    }
-    return this
-};
-
-// $f function: performs multiplication on array 'a' and stores result in 'c'
-function $f(a, b, c) {
-    for (var e, f = 0; f < b;) {
-        var g = f;
-        e = 0;
-        for (var h = 1 + g | 0; h < b;) {
-            var k = h;
-            Bf();
-            var m = a.b[g],
-                p = a.b[k],
-                q = c.b[g + k | 0],
-                t = 65535 & m;
-            m = m >>> 16 | 0;
-            var u = 65535 & p;
-            p = p >>> 16 | 0;
-            var v = n(t, u);
-            u = n(m, u);
-            var B = n(t, p);
-            t = v + ((u + B | 0) << 16) | 0;
-            v = (v >>> 16 | 0) + B | 0;
-            m = (n(m, p) + (v >>> 16 | 0) | 0) + (((65535 & v) + u | 0) >>> 16 | 0) | 0;
-            q = t + q | 0;
-            m = (-2147483648 ^ q) < (-2147483648 ^ t) ? 1 + m | 0 : m;
-            e = q + e | 0;
-            q = (-2147483648 ^ e) < (-2147483648 ^ q) ? 1 + m | 0 : m;
-            c.b[g + k | 0] = e;
-            e = q;
-            h = 1 + h | 0
-        }
-        c.b[g + b | 0] = e;
-        f = 1 + f | 0
-    }
-    ef(qf(), c, c, b << 1);
-    for (g = f = e = 0; f < b;) p = a.b[f], q = a.b[f], k = c.b[g], h = e, m = 65535 & p, e = p >>> 16 | 0, t = 65535 & q, q = q >>> 16 | 0, p = n(m, t), t = n(e, t), v = n(m, q), m = p + ((t + v | 0) << 16) | 0, p = (p >>> 16 | 0) + v | 0, e = (n(e, q) + (p >>> 16 | 0) | 0) + (((65535 & p) + t | 0) >>> 16 | 0) | 0, k = m + k | 0, e = (-2147483648 ^ k) < (-2147483648 ^ m) ? 1 + e | 0 : e, h = k + h | 0, k = (-2147483648 ^ h) < (-2147483648 ^ k) ? 1 + e | 0 : e, c.b[g] = h, g = 1 + g | 0, h = k + c.b[g] | 0, k = (-2147483648 ^ h) < (-2147483648 ^ k) ? 1 : 0, c.b[g] = h, e = k, f = 1 + f | 0, g = 1 + g | 0;
-    return c
-}
-
-// Yf function: creates an array of BigInts based on 'a' and 'b'
-function Yf(a, b) {
-    var c = [];
-    if (0 < a) {
-        var e = 1,
-            f = 1,
-            g = e;
-        for (c.push(null === g ? 0 : g); f < a;) e = n(e | 0, b), f = 1 + f | 0, g = e, c.push(null === g ? 0 : g)
-    }
-    ka(D(E), c)
-}
-
-// ag function: performs multiplication on two BigInts 'b' and 'c' using Karatsuba algorithm
-function ag(a, b, c) {
-    if (c.ga > b.ga) var e = c;
-    else e = b, b = c;
-    var f = e,
-        g = b;
-    if (63 > g.ga) {
-        e = f.ga;
-        b = g.ga;
-        c = e + b | 0;
-        a = f.N !== g.N ? -1 : 1;
-        if (2 === c) {
-            e = f.H.b[0];
-            b = g.H.b[0];
-            c = 65535 & e;
-            e = e >>> 16 | 0;
-            g = 65535 & b;
-            b = b >>> 16 | 0;
-            f = n(c, g);
-            g = n(e, g);
-            var h = n(c, b);
-            c = f + ((g + h | 0) << 16) | 0;
-            f = (f >>> 16 | 0) + h | 0;
-            e = (n(e, b) + (f >>> 16 | 0) | 0) + (((65535 & f) + g | 0) >>> 16 | 0) | 0;
-            a = 0 === e ? (new Jf).g(a, c) : hf(a, 2, ka(D(E), [c, e]))
-        } else {
-            f = f.H;
-            g = g.H;
-            h = r(D(E), [c]);
-            if (0 !== e && 0 !== b)
-                if (1 === e) h.b[b] = bg(0, h, g, b, f.b[0]);
-                else if (1 === b) h.b[e] = bg(0, h, f, e, g.b[0]);
-            else if (f === g && e === b) $f(f, e, h);
-            else
-                for (var k = 0; k < e;) {
-                    var m = k;
-                    var p = 0;
-                    for (var q = f.b[m], t = 0; t < b;) {
-                        var u = t;
-                        Bf();
-                        var v = g.b[u],
-                            B = h.b[m + u | 0],
-                            P = 65535 & q,
-                            ea = q >>> 16 | 0,
-                            Ta = 65535 & v;
-                        v = v >>> 16 | 0;
-                        var va = n(P, Ta);
-                        Ta = n(ea, Ta);
-                        var qa = n(P, v);
-                        P = va + ((Ta + qa | 0) << 16) | 0;
-                        va = (va >>> 16 | 0) + qa | 0;
-                        ea = (n(ea, v) + (va >>> 16 | 0) | 0) + (((65535 & va) + Ta | 0) >>> 16 | 0) | 0;
-                        B = P + B | 0;
-                        ea = (-2147483648 ^ B) < (-2147483648 ^ P) ? 1 + ea | 0 : ea;
-                        p = B + p | 0;
-                        B = (-2147483648 ^ p) < (-2147483648 ^ B) ? 1 + ea | 0 : ea;
-                        h.b[m + u | 0] = p;
-                        p = B;
-                        t = 1 + t | 0
-                    }
-                    h.b[m + b | 0] = p;
-                    k = 1 + k | 0
-                }
-            a = hf(a, c, h);
-            jf(a)
-        }
-        return a
-    }
-    e = (-2 & f.ga) << 4;
-    c = cg(f, e);
-    h = cg(g, e);
-    b = dg(c, e);
-    k = Lf(Nf(), f, b);
-    b = dg(h, e);
-    g = Lf(Nf(), g, b);
-    f = ag(a, c, h);
-    b = ag(a, k, g);
-    a = ag(a, Lf(Nf(), c, k), Lf(Nf(), g, h));
-    c = f;
-    a = If(Nf(), a, c);
-    a = If(Nf(), a, b);
-    a = dg(a, e);
-    e = f = dg(f, e << 1);
-    a = If(Nf(), e, a);
-    return If(Nf(), a, b)
-}
-
-// bg function: performs multiplication on arrays 'c' and 'f' and stores result in 'b'
-function bg(a, b, c, e, f) {
-    var g;
-    for (a = g = 0; a < e;) {
-        var h = a;
-        Bf();
-        var k = c.b[h],
-            m = 65535 & k;
-        k = k >>> 16 | 0;
-        var p = 65535 & f,
-            q = f >>> 16 | 0,
-            t = n(m, p);
-        p = n(k, p);
-        var u = n(m, q);
-        m = t + ((p + u | 0) << 16) | 0;
-        t = (t >>> 16 | 0) + u | 0;
-        k = (n(k, q) + (t >>> 16 | 0) | 0) + (((65535 & t) + p | 0) >>> 16 | 0) | 0;
-        g = m + g | 0;
-        k = (-2147483648 ^ g) < (-2147483648 ^ m) ? 1 + k | 0 : k;
-        b.b[h] = g;
-        g = k;
-        a = 1 + a | 0
-    }
-    return g
-}
-
-// eg function: calculates a BigInt based on 'b' and Bf's lookup tables
-function eg(a, b) {
-    var c = a.pf.b.length,
-        e = c >> 31,
-        f = b.i;
-    if (f === e ? (-2147483648 ^ b.f) < (-2147483648 ^ c) : f < e) return a.pf.b[b.f];
-    c = b.i;
-    if (0 === c ? -2147483598 >= (-2147483648 ^ b.f) : 0 > c) return fg(lf().lg, b.f);
-    c = b.i;
-    if (0 === c ? -1 >= (-2147483648 ^ b.f) : 0 > c) return dg(fg(a.of.b[1], b.f), b.f);
-    var g = fg(a.of.b[1], 2147483647);
-    c = g;
-    f = b.i;
-    var h = -2147483647 + b.f | 0;
-    e = h;
-    h = 1 > (-2147483648 ^ h) ? f : -1 + f | 0;
-    for (f = gg(y(), b.f, b.i, 2147483647, 0);;) {
-        var k = e,
-            m = h;
-        if (0 === m ? -1 < (-2147483648 ^ k) : 0 < m) c = Zf(c, g), e = -2147483647 + e | 0, h = 1 > (-2147483648 ^ e) ? h : -1 + h | 0;
-        else break
-    }
-    c = Zf(c, fg(a.of.b[1], f));
-    c = dg(c, 2147483647);
-    a = b.i;
-    e = b = -2147483647 + b.f | 0;
-    for (h = 1 > (-2147483648 ^ b) ? a : -1 + a | 0;;)
-        if (b = e, a = h, 0 === a ? -1 < (-2147483648 ^ b) : 0 < a) c = dg(c, 2147483647), b = h, a = -2147483647 + e | 0, b = 1 > (-2147483648 ^ a) ? b : -1 + b | 0, e = a, h = b;
-        else break;
-    return dg(c, f)
-}
-
-// Uf prototype $classData
-Uf.prototype.$classData = z({
-    Ks: 0
-}, !1, "java.math.Multiplication$", {
-    Ks: 1,
-    c: 1
-});
-
-// Xf global variable
-var Xf = void 0;
-
-// Bf function: initializes and returns Xf
-function Bf() {
-    Xf || (Xf = (new Uf).a());
-    return Xf
-}
-
-// hg class constructor
-function hg() {
-    this.Sn = this.Rn = this.kl = 0
-}
-
-// hg prototype methods
-hg.prototype = new A;
-hg.prototype.constructor = hg;
-hg.prototype.a = function() {
-    ig = this;
-    this.kl = 64;
-    this.Rn = this.kl >> 2;
-    this.Sn = this.kl;
-    jg(Cc(), this.Rn < this.Sn);
-    return this
-};
-
-// hg prototype $classData
-hg.prototype.$classData = z({
-    kt: 0
-}, !1, "scalax.collection.State$", {
-    kt: 1,
-    c: 1
-});
-
-// ig global variable
-var ig = void 0;
-
-// kg class constructor
-function kg() {
-    this.Pm = 0
-}
-
-// kg prototype methods
-kg.prototype = new A;
-kg.prototype.constructor = kg;
-kg.prototype.a = function() {
-    this.Pm = 4E3;
-    return this
-};
-
-// kg prototype $classData
-kg.prototype.$classData = z({
-    ot: 0
-}, !1, "scalax.collection.config.GraphConfig$", {
-    ot: 1,
-    c: 1
-});
-
-// lg global variable
-var lg = void 0;
-
-// mg class constructor (empty)
-function mg() {}
-
-// mg prototype methods
-mg.prototype = new A;
-mg.prototype.constructor = mg;
-mg.prototype.a = function() {
-    return this
-};
-
-// ng function: performs a check and returns an og object
-function ng(a, b) {
-    jg(Cc(), 0 <= b && 48 >= b && !0);
-    a = b + 32 | 0;
-    return og(b, 32, 48 < a ? a : 48, 80)
-}
-
-// mg prototype $classData
-mg.prototype.$classData = z({
-    Jt: 0
-}, !1, "scalax.collection.mutable.ArraySet$Hints$", {
-    Jt: 1,
-    c: 1
-});
-
-// pg global variable
-var pg = void 0;
-
-// qg function: initializes and returns pg
-function qg() {
-    pg || (pg = (new mg).a());
-    return pg
-}
-
-// rg class constructor
-function rg() {
-    this.Ee = null
-}
-
-// rg prototype methods
-rg.prototype = new A;
-rg.prototype.constructor = rg;
-rg.prototype.a = function() {
-    sg = this;
-    this.Ee = (new rb).a();
-    return this
-};
-
-// rg prototype $classData
-rg.prototype.$classData = z({
-    Nt: 0
-}, !1, "scalax.collection.mutable.EqHash$", {
-    Nt: 1,
-    c: 1
-});
-
-// sg global variable
-var sg = void 0;
-
-// pb function: initializes and returns sg
-function pb() {
-    sg || (sg = (new rg).a());
-    return sg
-}
-
-// Qa class constructor
-function Qa() {
-    this.jd = null
-}
-
-// Qa prototype methods
-Qa.prototype = new A;
-Qa.prototype.constructor = Qa;
-
-// sb function: returns the name of the class data
-function sb(a) {
-    return a.jd.name
-}
-
-// Qa prototype n method
-Qa.prototype.n = function() {
-    return (this.jd.isInterface ? "interface " : this.jd.isPrimitive ? "" : "class ") + sb(this)
-};
-
-// tg function: compares two class data objects for compatibility
-function tg(a, b) {
-    return a.jd.isPrimitive || b.jd.isPrimitive ? a === b || (a === w(Wa) ? b === w(Va) : a === w(E) ? b === w(Va) || b === w(Wa) : a === w(Ya) ? b === w(Va) || b === w(Wa) || b === w(E) : a === w(Za) && (b === w(Va) || b === w(Wa) || b === w(E) || b === w(Ya))) : Zc(a, b.jd.getFakeInstance())
-}
-
-// Zc function: checks if 'b' is an instance of the class represented by 'a'
-function Zc(a, b) {
-    return !!a.jd.isInstance(b)
-}
-
-// ug function: creates a new array of the class type represented by 'a'
-function ug(a, b) {
-    return a.jd.newArrayOfThisClass(b)
-}
-
-// Qa prototype $classData
-Qa.prototype.$classData = z({
-    Gu: 0
-}, !1, "java.lang.Class", {
-    Gu: 1,
-    c: 1
-});
-
-// vg class constructor
-function vg() {
-    this.Cm = 0;
-    this.ho = wg();
-    this.Zn = wg()
-}
-
-// vg prototype methods
-vg.prototype = new A;
-vg.prototype.constructor = vg;
-
-// vg prototype $classData
-vg.prototype.$classData = z({
-    Qu: 0
-}, !1, "java.lang.Long$StringRadixInfo", {
-    Qu: 1,
-    c: 1
-});
-
-// xg class constructor
-function xg() {
-    this.fn = this.Xn = null
-}
-
-// xg prototype methods
-xg.prototype = new A;
-xg.prototype.constructor = xg;
-xg.prototype.a = function() {
-    yg = this;
-    this.Xn = (new zg).$e(!1);
-    this.fn = (new zg).$e(!0);
-    return this
-};
-
-// xg prototype $classData
-xg.prototype.$classData = z({
-    Yu: 0
-}, !1, "java.lang.System$", {
-    Yu: 1,
-    c: 1
-});
-
-// yg global variable
-var yg = void 0;
-
-// Pb function: initializes and returns yg
-function Pb() {
-    yg || (yg = (new xg).a());
-    return yg
-}
-
-// Ag class constructor (empty)
-function Ag() {}
-
-// Ag prototype methods
-Ag.prototype = new A;
-Ag.prototype.constructor = Ag;
-Ag.prototype.a = function() {
-    return this
-};
-
-// Ag prototype $classData
-Ag.prototype.$classData = z({
-    $u: 0
-}, !1, "java.lang.reflect.Array$", {
-    $u: 1,
-    c: 1
-});
-
-// Bg global variable
-var Bg = void 0;
-
-// Cg class constructor (empty)
-function Cg() {}
-
-// Cg prototype methods
-Cg.prototype = new A;
-Cg.prototype.constructor = Cg;
-Cg.prototype.a = function() {
-    return this
-};
-
-// Dg function: performs a binary search on array 'b' for value 'c'
-function Dg(a, b, c) {
-    a = 0;
-    var e = b.b.length;
-    for (;;) {
-        if (a === e) return -1 - a | 0;
-        var f = (a + e | 0) >>> 1 | 0,
-            g = b.b[f];
-        if (c < g) e = f;
-        else {
-            if (G(H(), c, g)) return f;
-            a = 1 + f | 0
-        }
-    }
-}
-
-// Eg function: sorts a portion of array 'a.b' using insertion sort
-function Eg(a, b, c, e) {
-    c = c - b | 0;
-    if (2 <= c) {
-        if (0 < e.$a(a.b[b], a.b[1 + b | 0])) {
-            var f = a.b[b];
-            a.b[b] = a.b[1 + b | 0];
-            a.b[1 + b | 0] = f
-        }
-        for (f = 2; f < c;) {
-            var g = a.b[b + f | 0];
-            if (0 > e.$a(g, a.b[-1 + (b + f | 0) | 0])) {
-                for (var h = b, k = -1 + (b + f | 0) | 0; 1 < (k - h | 0);) {
-                    var m = (h + k | 0) >>> 1 | 0;
-                    0 > e.$a(g, a.b[m]) ? k = m : h = m
-                }
-                h = h + (0 > e.$a(g, a.b[h]) ? 0 : 1) | 0;
-                for (k = b + f | 0; k > h;) a.b[k] = a.b[-1 + k | 0], k = -1 + k | 0;
-                a.b[h] = g
-            }
-            f = 1 + f | 0
-        }
-    }
-}
-
-// Fg function: sorts array 'b' using quicksort or insertion sort
-function Fg(a, b, c) {
-    var e = new Gg;
-    e.Vh = c;
-    c = b.b.length;
-    16 < c ? Hg(a, b, r(D(C), [b.b.length]), 0, c, e) : Eg(b, 0, c, e)
-}
-
-// Hg function: recursively sorts a portion of array 'b' using merge sort
-function Hg(a, b, c, e, f, g) {
-    var h = f - e | 0;
-    if (16 < h) {
-        var k = e + (h / 2 | 0) | 0;
-        Hg(a, b, c, e, k, g);
-        Hg(a, b, c, k, f, g);
-        for (var m = a = e, p = k; a < f;) m < k && (p >= f || g.mi(b.b[m], b.b[p])) ? (c.b[a] = b.b[m], m = 1 + m | 0) : (c.b[a] = b.b[p], p = 1 + p | 0), a = 1 + a | 0;
-        Ka(c, e, b, e, h)
-    } else Eg(b, e, f, g)
-}
-
-// Cg prototype $classData
-Cg.prototype.$classData = z({
-    av: 0
-}, !1, "java.util.Arrays$", {
-    av: 1,
-    c: 1
-});
-
-// Ig global variable
-var Ig = void 0;
-
-// Jg function: initializes and returns Ig
-function Jg() {
-    Ig || (Ig = (new Cg).a());
-    return Ig
-}
-
-// Kg class constructor
-function Kg() {
-    this.Cn = null
-}
-
-// Kg prototype methods
-Kg.prototype = new A;
-Kg.prototype.constructor = Kg;
-Kg.prototype.a = function() {
-    Lg = this;
-    this.Cn = new l.RegExp("(?:(\\d+)\\$)?([-#+ 0,\\(\x3c]*)(\\d+)?(?:\\.(\\d+))?[%A-Za-z]", "g");
-    return this
-};
-
-// Kg prototype $classData
-Kg.prototype.$classData = z({
-    fv: 0
-}, !1, "java.util.Formatter$", {
-    fv: 1,
-    c: 1
-});
-
-// Lg global variable
-var Lg = void 0;
-
-// Mg class constructor (empty)
-function Mg() {}
-
-// Mg prototype methods
-Mg.prototype = new A;
-Mg.prototype.constructor = Mg;
-
-// Ng class constructor (inherits from Mg)
-function Ng() {}
-
-// Set Ng's prototype to Mg's prototype
-Ng.prototype = Mg.prototype;
-
-// Og class constructor (empty)
-function Og() {}
-
-// Og prototype methods
-Og.prototype = new A;
-Og.prototype.constructor = Og;
-
-// Pg class constructor (inherits from Og)
-function Pg() {}
-
-// Set Pg's prototype to Og's prototype
-Pg.prototype = Og.prototype;
-
-// Qg class constructor (empty)
-function Qg() {}
-
-// Qg prototype methods
-Qg.prototype = new A;
-Qg.prototype.constructor = Qg;
-Qg.prototype.a = function() {
-    return this
-};
-
-// Qg prototype $classData
-Qg.prototype.$classData = z({
-    Rv: 0
-}, !1, "scala.Predef$any2stringadd$", {
-    Rv: 1,
-    c: 1
-});
-
-// Sg global variable
-var Sg = void 0;
-
-// Tg class constructor (empty)
-function Tg() {}
-
-// Tg prototype methods
-Tg.prototype = new A;
-Tg.prototype.constructor = Tg;
-Tg.prototype.a = function() {
-    return this
-};
-
-// me function: initializes and returns Ug's function
-function me() {
-    Ug || (Ug = (new Tg).a());
-    return F(function() {
-        return function(a) {
-            Vg(a)
-        }
-    }(Ug))
-}
-
-// Tg prototype $classData
-Tg.prototype.$classData = z({
-    Yv: 0
-}, !1, "scala.concurrent.ExecutionContext$", {
-    Yv: 1,
-    c: 1
-});
-
-// Ug global variable
-var Ug = void 0;
-
-// Wg class constructor (empty)
-function Wg() {}
-
-// Wg prototype methods
-Wg.prototype = new A;
-Wg.prototype.constructor = Wg;
-Wg.prototype.a = function() {
-    return this
-};
-
-// Wg prototype $classData
-Wg.prototype.$classData = z({
-    lw: 0
-}, !1, "scala.math.Ordered$", {
-    lw: 1,
-    c: 1
-});
-
-// Xg global variable
-var Xg = void 0;
-
-// Yg class constructor
-function Yg() {
-    this.jk = this.bm = this.Xl = this.Wl = null;
-    this.q = 0
-}
-
-// Yg prototype methods
-Yg.prototype = new A;
-Yg.prototype.constructor = Yg;
-
-// Yg prototype a method
-Yg.prototype.a = function() {
-    Zg = this;
-    (new $g).a();
-    ah();
-    bh();
-    ch();
-    dh();
-    this.bm = eh();
-    L();
-    M();
-    fh || (fh = (new gh).a());
-    hh || (hh = (new ih).a());
-    jh || (jh = (new kh).a());
-    lh();
-    mh || (mh = (new nh).a());
-    oh();
-    ph || (ph = (new qh).a());
-    rh();
-    sh || (sh = (new th).a());
-    uh || (uh = (new vh).a());
-    wh || (wh = (new xh).a());
-    yh || (yh = (new zh).a());
-    Xg || (Xg = (new Wg).a());
-    Ah || (Ah = (new Bh).a());
-    Ch || (Ch = (new Dh).a());
-    this.jk = Ch;
-    Eh || (Eh = (new Fh).a());
-    Gh || (Gh = (new Hh).a());
-    return this
-};
-
-// Yg prototype $classData
-Yg.prototype.$classData = z({
-    qw: 0
-}, !1, "scala.package$", {
-    qw: 1,
-    c: 1
-});
-
-// Zg global variable
-var Zg = void 0;
-
-// vc function: initializes and returns Zg
-function vc() {
-    Zg || (Zg = (new Yg).a());
-    return Zg
-}
-
-// Ih class constructor (empty)
-function Ih() {}
-
-// Ih prototype methods
-Ih.prototype = new A;
-Ih.prototype.constructor = Ih;
-Ih.prototype.a = function() {
-    Jh = this;
-    Kh || (Kh = (new Lh).a());
-    Mh || (Mh = (new Nh).a());
-    Oh || (Oh = (new Ph).a());
-    Qh || (Qh = (new Rh).a());
-    Sh || (Sh = (new Th).a());
-    Uh || (Uh = (new Vh).a());
-    Wh || (Wh = (new Xh).a());
-    Yh || (Yh = (new Zh).a());
-    $h || ($h = (new ai).a());
-    bi || (bi = (new ci).a());
-    di();
-    ei || (ei = (new fi).a());
-    gi || (gi = (new hi).a());
-    ii || (ii = (new ji).a());
-    return this
-};
-
-// Ih prototype $classData
-Ih.prototype.$classData = z({
-    sw: 0
-}, !1, "scala.reflect.ClassManifestFactory$", {
-    sw: 1,
-    c: 1
-});
-
-// Jh global variable
-var Jh = void 0;
-
-// ki class constructor (empty)
-function ki() {}
-
-// ki prototype methods
-ki.prototype = new A;
-ki.prototype.constructor = ki;
-ki.prototype.a = function() {
-    return this
-};
-
-// ki prototype $classData
-ki.prototype.$classData = z({
-    uw: 0
-}, !1, "scala.reflect.ManifestFactory$", {
-    uw: 1,
-    c: 1
-});
-
-// li global variable
-var li = void 0;
-
-// mi class constructor (empty)
-function mi() {}
-
-// mi prototype methods
-mi.prototype = new A;
-mi.prototype.constructor = mi;
-mi.prototype.a = function() {
-    ni = this;
-    Jh || (Jh = (new Ih).a());
-    li || (li = (new ki).a());
-    return this
-};
-
-// mi prototype $classData
-mi.prototype.$classData = z({
-    Kw: 0
-}, !1, "scala.reflect.package$", {
-    Kw: 1,
-    c: 1
-});
-
-// ni global variable
-var ni = void 0;
-
-// oi class constructor (empty)
-function oi() {}
-
-// oi prototype methods
-oi.prototype = new A;
-oi.prototype.constructor = oi;
-oi.prototype.a = function() {
-    (new pi).a();
-    return this
-};
-
-// oi prototype $classData
-oi.prototype.$classData = z({
-    Tw: 0
-}, !1, "scala.util.control.Breaks", {
-    Tw: 1,
-    c: 1
-});
-
-// qi class constructor (empty)
-function qi() {}
-
-// qi prototype methods
-qi.prototype = new A;
-qi.prototype.constructor = qi;
-qi.prototype.a = function() {
-    return this
-};
-
-// Td function: returns R if 'b' has a specific class data property, otherwise returns a new Q object
-function Td(a, b) {
-    return b && b.$classData && b.$classData.qa.rl ? R() : (new Q).j(b)
-}
-
-// qi prototype $classData
-qi.prototype.$classData = z({
-    Ww: 0
-}, !1, "scala.util.control.NonFatal$", {
-    Ww: 1,
-    c: 1
-});
-
-// ri global variable
-var ri = void 0;
-
-// Ud function: initializes and returns ri
-function Ud() {
-    ri || (ri = (new qi).a());
-    return ri
-}
-
-// si class constructor (empty)
-function si() {}
-
-// si prototype methods
-si.prototype = new A;
-si.prototype.constructor = si;
-
-// ti class constructor (inherits from si)
-function ti() {}
-
-// Set ti's prototype to si's prototype
-ti.prototype = si.prototype;
-
-// si prototype pi method: performs a bitwise operation on 'a' and 'b'
-si.prototype.pi = function(a, b) {
-    b = n(-862048943, b);
-    b = n(461845907, b << 15 | b >>> 17 | 0);
-    return a ^ b
-};
-
-// si prototype Fc method: performs a hash calculation
-si.prototype.Fc = function(a, b) {
-    a = this.pi(a, b);
-    return -430675100 + n(5, a << 13 | a >>> 19 | 0) | 0
-};
-
-// ui function: calculates a hash code for 'a'
-function ui(a) {
-    var b = vi(),
-        c = a.za();
-    if (0 === c) return a = a.Ba(), Ea(Fa(), a);
-    for (var e = -889275714, f = 0; f < c;) e = b.Fc(e, wi(xi(), a.U(f))), f = 1 + f | 0;
-    return b.We(e, c)
-}
-
-// yi function: calculates a hash code for 'b' using a custom function
-function yi(a, b, c) {
-    var e = (new zi).ua(0),
-        f = (new zi).ua(0),
-        g = (new zi).ua(0),
-        h = (new zi).ua(1);
-    b.K(F(function(k, m, p, q, t) {
-        return function(u) {
-            u = wi(xi(), u);
-            m.o = m.o + u | 0;
-            p.o ^= u;
-            0 !== u && (q.o = n(q.o, u));
-            t.o = 1 + t.o | 0
-        }
-    }(a, e, f, h, g)));
-    b = a.Fc(c, e.o);
-    b = a.Fc(b, f.o);
-    b = a.pi(b, h.o);
-    return a.We(b, g.o)
-}
-
-// si prototype We method: performs a final hash transformation
-si.prototype.We = function(a, b) {
-    a ^= b;
-    a = n(-2048144789, a ^ (a >>> 16 | 0));
-    a = n(-1028477387, a ^ (a >>> 13 | 0));
-    return a ^ (a >>> 16 | 0)
-};
-
-// Ai function: calculates a hash code for 'b' using a custom function and initial value 'c'
-function Ai(a, b, c) {
-    var e = (new zi).ua(0);
-    c = (new zi).ua(c);
-    b.K(F(function(f, g, h) {
-        return function(k) {
-            g.o = f.Fc(g.o, wi(xi(), k));
-            h.o = 1 + h.o | 0
-        }
-    }(a, c, e)));
-    return a.We(c.o, e.o)
-}
-
-// Bi class constructor (empty)
-function Bi() {}
-
-// Bi prototype methods
-Bi.prototype = new A;
-Bi.prototype.constructor = Bi;
-Bi.prototype.a = function() {
-    return this
-};
-
-// Bi prototype $classData
-Bi.prototype.$classData = z({
-    Yw: 0
-}, !1, "scala.util.hashing.package$", {
-    Yw: 1,
-    c: 1
-});
-
-// Ci global variable
-var Ci = void 0;
-
-// kh class constructor (empty)
-function kh() {}
-
-// kh prototype methods
-kh.prototype = new A;
-kh.prototype.constructor = kh;
-kh.prototype.a = function() {
-    return this
-};
-
-// kh prototype $classData
-kh.prototype.$classData = z({
-    Zw: 0
-}, !1, "scala.collection.$colon$plus$", {
-    Zw: 1,
-    c: 1
-});
-
-// jh global variable
-var jh = void 0;
-
-// ih class constructor (empty)
-function ih() {}
-
-// ih prototype methods
-ih.prototype = new A;
-ih.prototype.constructor = ih;
-ih.prototype.a = function() {
-    return this
-};
-
-// ih prototype $classData
-ih.prototype.$classData = z({
-    $w: 0
-}, !1, "scala.collection.$plus$colon$", {
-    $w: 1,
-    c: 1
-});
-
-// hh global variable
-var hh = void 0;
-
-// Di class constructor
-function Di() {
-    this.nb = null
-}
-
-// Di prototype methods
-Di.prototype = new A;
-Di.prototype.constructor = Di;
-Di.prototype.a = function() {
-    Ei = this;
-    this.nb = (new Fi).a();
-    return this
-};
-
-// Di prototype $classData
-Di.prototype.$classData = z({
-    hx: 0
-}, !1, "scala.collection.Iterator$", {
-    hx: 1,
-    c: 1
-});
-
-// Ei global variable
-var Ei = void 0;
-
-// eh function: initializes and returns Ei.nb
-function eh() {
-    Ei || (Ei = (new Di).a());
-    return Ei.nb
-}
-
-// Gi class constructor
-function Gi() {
-    this.xb = this.Uc = null
-}
-
-// Gi prototype methods
-Gi.prototype = new A;
-Gi.prototype.constructor = Gi;
-
-// Gi prototype $classData
-Gi.prototype.$classData = z({
-    mx: 0
-}, !1, "scala.collection.Iterator$ConcatIteratorCell", {
-    mx: 1,
-    c: 1
-});
-
-// Hi function: calls tb on 'a' with 'b', 'c', and a calculated length
-function Hi(a, b, c) {
-    a.tb(b, c, Ii(Ji(), b) - c | 0)
-}
-
-// Ki function: converts 'b' to an iterator and then collects its elements
-function Ki(a, b) {
-    b = b.ng();
-    b.Gb(a.pa());
-    return b.Ca()
-}
-
-// U function: calls Hb on 'a' with default values
-function U(a, b, c, e) {
-    return a.Hb((new Li).a(), b, c, e).vc.ub
-}
-
-// Mi function: counts the number of elements in iterator 'a'
-function Mi(a) {
-    var b = (new zi).ua(0);
-    a.K(F(function(c, e) {
-        return function() {
-            e.o = 1 + e.o | 0
-        }
-    }(a, b)));
-    return b.o
-}
-
-// Ni function: filters elements from 'a' into 'b' based on a condition
-function Ni(a, b, c, e, f) {
-    var g = (new Oi).$e(!0);
-    Pi(b, c);
-    a.K(F(function(h, k, m, p) {
-        return function(q) {
-            if (k.o) Qi(m, q), k.o = !1;
-            else return Pi(m, p), Qi(m, q)
-        }
-    }(a, g, b, e)));
-    Pi(b, f);
-    return b
-}
-
-// Ri function: either returns a new 'b' object or converts 'a' to an iterator and uses 'Kb'
-function Ri(a, b) {
-    return a.fc() ? (b = b.$c(a.x()), a.Yb(b, 0), b) : a.ib().Kb(b)
-}
-
-// Si class constructor (empty)
-function Si() {}
-
-// Si prototype methods
-Si.prototype = new A;
-Si.prototype.constructor = Si;
-Si.prototype.a = function() {
-    return this
-};
-
-// Si prototype Gj method: calculates a bitmask
-Si.prototype.Gj = function(a) {
-    return 1 << (-da(-1 + a | 0) | 0)
-};
-
-// Si prototype $classData
-Si.prototype.$classData = z({
-    wx: 0
-}, !1, "scala.collection.Util$", {
-    wx: 1,
-    c: 1
-});
-
-// Ti global variable
-var Ti = void 0;
-
-// Ui class constructor (empty)
-function Ui() {}
-
-// Ui prototype methods
-Ui.prototype = new A;
-Ui.prototype.constructor = Ui;
-
-// Vi class constructor (inherits from Ui)
-function Vi() {}
-
-// Set Vi's prototype to Ui's prototype
-Vi.prototype = Ui.prototype;
-
-// Wi class constructor (empty)
-function Wi() {}
-
-// Wi prototype methods
-Wi.prototype = new A;
-Wi.prototype.constructor = Wi;
-
-// Xi class constructor (inherits from Wi)
-function Xi() {}
-
-// Set Xi's prototype to Wi's prototype
-Xi.prototype = Wi.prototype;
-
-// Wi prototype Jd method
-Wi.prototype.Jd = function() {
-    return this.fa().Ca()
-};
-
-// Yi function: iterates through 'b' and calls 'kc' on 'a' for each element
-function Yi(a, b) {
-    a: for (;;) {
-        if (!b.m()) {
-            a.kc(b.w());
-            b = b.Aa();
-            continue a
-        }
-        break
-    }
-}
-
-// Zi function: iterates through 'b' and calls 'kc' on 'a' for each element, handling different types
-function Zi(a, b) {
-    b && b.$classData && b.$classData.qa.Jg ? Yi(a, b) : b.K(F(function(c) {
-        return function(e) {
-            return c.kc(e)
-        }
-    }(a)));
-    return a
-}
-
-// $i class constructor (empty)
-function $i() {}
-
-// $i prototype methods
-$i.prototype = new A;
-$i.prototype.constructor = $i;
-
-// aj class constructor (inherits from $i)
-function aj() {}
-
-// Set aj's prototype to $i's prototype
-aj.prototype = $i.prototype;
-
-// nh class constructor (empty)
-function nh() {}
-
-// nh prototype methods
-nh.prototype = new A;
-nh.prototype.constructor = nh;
-nh.prototype.a = function() {
-    return this
-};
-
-// nh prototype $classData
-nh.prototype.$classData = z({
-    Ey: 0
-}, !1, "scala.collection.immutable.Stream$$hash$colon$colon$", {
-    Ey: 1,
-    c: 1
-});
-
-// mh global variable
-var mh = void 0;
-
-// bj class constructor
-function bj() {
-    this.Gl = this.To = null;
-    this.q = !1;
-    this.k = null
-}
-
-// bj prototype methods
-bj.prototype = new A;
-bj.prototype.constructor = bj;
-
-// cj function: sets Gl and k properties and returns 'a'
-function cj(a, b, c) {
-    a.Gl = c;
-    if (null === b) throw T(S(), null);
-    a.k = b;
-    return a
-}
-
-// dj function: initializes To if not already done, then returns it
-function dj(a) {
-    a.q || (a.q || (a.To = Sd(a.Gl), a.q = !0), a.Gl = null);
-    return a.To
-}
-
-// bj prototype $classData
-bj.prototype.$classData = z({
-    Ky: 0
-}, !1, "scala.collection.immutable.StreamIterator$LazyCell", {
-    Ky: 1,
-    c: 1
-});
-
-// ej class constructor (empty)
-function ej() {}
-
-// ej prototype methods
-ej.prototype = new A;
-ej.prototype.constructor = ej;
-ej.prototype.a = function() {
-    return this
-};
-
-// fj function: extracts a substring from 'b'
-function fj(a, b, c, e) {
-    a = 0 > c ? 0 : c;
-    return e <= a || a >= (b.length | 0) ? "" : b.substring(a, e > (b.length | 0) ? b.length | 0 : e)
-}
-
-// ej prototype $classData
-ej.prototype.$classData = z({
-    My: 0
-}, !1, "scala.collection.immutable.StringOps$", {
-    My: 1,
-    c: 1
-});
-
-// gj global variable
-var gj = void 0;
-
-// hj function: initializes and returns gj
-function hj() {
-    gj || (gj = (new ej).a());
-    return gj
-}
-
-// ij class constructor (empty)
-function ij() {}
-
-// ij prototype methods
-ij.prototype = new A;
-ij.prototype.constructor = ij;
-ij.prototype.a = function() {
-    return this
-};
-ij.prototype.fa = function() {
-    var a = (new Li).a();
-    return jj(new kj, a, F(function() {
-        return function(b) {
-            return (new lj).h(b)
-        }
-    }(this)))
-};
-
-// ij prototype $classData
-ij.prototype.$classData = z({
-    Uy: 0
-}, !1, "scala.collection.immutable.WrappedString$", {
-    Uy: 1,
-    c: 1
-});
-
-// mj global variable
-var mj = void 0;
-
-// nj function: calculates a hash value based on 'a'
-function nj(a) {
-    return oj(Xc(), -1 + a.Ya.b.length | 0)
-}
-
-// pj function: calls qj with Fb(b)
-function pj(a, b) {
-    b = Fb(b);
-    return qj(a, b)
-}
-
-// qj function: adds 'b' to a hash table 'a', resizing if necessary
-function qj(a, b) {
-    var c = Da(b);
-    c = rj(a, c);
-    for (var e = a.Ya.b[c]; null !== e;) {
-        if (G(H(), e, b)) return !1;
-        c = (1 + c | 0) % a.Ya.b.length | 0;
-        e = a.Ya.b[c]
-    }
-    a.Ya.b[c] = b;
-    a.He = 1 + a.He | 0;
-    null !== a.Qg && (b = c >> 5, c = a.Qg, c.b[b] = 1 + c.b[b] | 0);
-    if (a.He >= a.Kl) {
-        b = a.Ya;
-        a.Ya = r(D(C), [a.Ya.b.length << 1]);
-        a.He = 0;
-        if (null !== a.Qg)
-            if (c = 1 + (a.Ya.b.length >> 5) | 0, a.Qg.b.length !== c) a.Qg = r(D(E), [c]);
-            else {
-                Jg();
-                c = a.Qg;
-                e = c.b.length;
-                for (var f = 0; f !== e;) c.b[f] = 0, f = 1 + f | 0
-            }
-        a.Dl = nj(a);
-        a.Kl = sj(tj(), a.gk, a.Ya.b.length);
-        for (c = 0; c < b.b.length;) e = b.b[c], null !== e && qj(a, e), c = 1 + c | 0
-    }
-    return !0
-}
-
-// rj function: calculates an index for a hash table based on 'b' and 'a.Dl'
-function rj(a, b) {
-    var c = a.Dl;
-    Ci || (Ci = (new Bi).a());
-    b = n(-1640532531, b);
-    Xc();
-    b = n(-1640532531, b << 24 | 16711680 & b << 8 | 65280 & (b >>> 8 | 0) | b >>> 24 | 0);
-    a = -1 + a.Ya.b.length | 0;
-    return ((b >>> c | 0 | b << (-c | 0)) >>> (32 - oj(Xc(), a) | 0) | 0) & a
-}
-
-// uj function: searches for an element 'b' in a hash table 'a'
-function uj(a, b) {
-    b = Fb(b);
-    var c = Da(b);
-    c = rj(a, c);
-    for (var e = a.Ya.b[c]; null !== e && !G(H(), e, b);) c = (1 + c | 0) % a.Ya.b.length | 0, e = a.Ya.b[c];
-    return e
-}
-
-// vj class constructor (empty)
-function vj() {}
-
-// vj prototype methods
-vj.prototype = new A;
-vj.prototype.constructor = vj;
-vj.prototype.a = function() {
-    return this
-};
-
-// sj function: calculates a load factor for a hash table
-function sj(a, b, c) {
-    if (!(500 > b)) throw (new wj).j("assertion failed: loadFactor too large; must be < 0.5");
-    a = c >> 31;
-    var e = b >> 31,
-        f = 65535 & c,
-        g = c >>> 16 | 0,
-        h = 65535 & b,
-        k = b >>> 16 | 0,
-        m = n(f, h);
-    h = n(g, h);
-    var p = n(f, k);
-    f = m + ((h + p | 0) << 16) | 0;
-    m = (m >>> 16 | 0) + p | 0;
-    b = (((n(c, e) + n(a, b) | 0) + n(g, k) | 0) + (m >>> 16 | 0) | 0) + (((65535 & m) + h | 0) >>> 16 | 0) | 0;
-    return uf(y(), f, b, 1E3, 0)
-}
-
-// vj prototype $classData
-vj.prototype.$classData = z({
-    Zy: 0
-}, !1, "scala.collection.mutable.FlatHashTable$", {
-    Zy: 1,
-    c: 1
-});
-
-// xj global variable
-var xj = void 0;
-
-// tj function: initializes and returns xj
-function tj() {
-    xj || (xj = (new vj).a());
-    return xj
-}
-
-// yj class constructor (empty)
-function yj() {}
-
-// yj prototype methods
-yj.prototype = new A;
-yj.prototype.constructor = yj;
-yj.prototype.a = function() {
-    return this
-};
-yj.prototype.n = function() {
-    return "NullSentinel"
-};
-yj.prototype.z = function() {
-    return 0
-};
-
-// yj prototype $classData
-yj.prototype.$classData = z({
-    bz: 0
-}, !1, "scala.collection.mutable.FlatHashTable$NullSentinel$", {
-    bz: 1,
-    c: 1
-});
-
-// zj global variable
-var zj = void 0;
-
-// Gb function: initializes and returns zj
-function Gb() {
-    zj || (zj = (new yj).a());
-    return zj
-}
-
-// Aj class constructor (empty)
-function Aj() {}
-
-// Aj prototype methods
-Aj.prototype = new A;
-Aj.prototype.constructor = Aj;
-Aj.prototype.a = function() {
-    return this
-};
-Aj.prototype.Gj = function(a) {
-    return 1 << (-da(-1 + a | 0) | 0)
-};
-
-// Aj prototype $classData
-Aj.prototype.$classData = z({
-    dz: 0
-}, !1, "scala.collection.mutable.HashTable$", {
-    dz: 1,
-    c: 1
-});
-
-// Bj global variable
-var Bj = void 0;
-
-// Cj function: initializes and returns Bj
-function Cj() {
-    Bj || (Bj = (new Aj).a());
-    return Bj
-}
-
-// Dj class constructor
-function Dj() {
-    this.Sj = null
-}
-
-// Dj prototype methods
-Dj.prototype = new A;
-Dj.prototype.constructor = Dj;
-Dj.prototype.a = function() {
-    Ej = this;
-    this.Sj = l.Object.prototype.hasOwnProperty;
-    return this
-};
-
-// Dj prototype $classData
-Dj.prototype.$classData = z({
-    tz: 0
-}, !1, "scala.scalajs.js.WrappedDictionary$Cache$", {
-    tz: 1,
-    c: 1
-});
-
-// Ej global variable
-var Ej = void 0;
-
-// Fj function: initializes and returns Ej
-function Fj() {
-    Ej || (Ej = (new Dj).a());
-    return Ej
-}
-
-// Gj class constructor
-function Gj() {
-    this.$f = !1;
-    this.Sk = this.uh = this.Qh = null;
-    this.Dk = !1;
-    this.hl = this.Vk = 0
-}
-
-// Gj prototype methods
-Gj.prototype = new A;
-Gj.prototype.constructor = Gj;
-
-// Gj prototype a method
-Gj.prototype.a = function() {
-    Hj = this;
-    this.Qh = (this.$f = !!(l.ArrayBuffer && l.Int32Array && l.Float32Array && l.Float64Array)) ? new l.ArrayBuffer(8) : null;
-    this.uh = this.$f ? new l.Int32Array(this.Qh, 0, 2) : null;
-    this.$f && new l.Float32Array(this.Qh, 0, 2);
-    this.Sk = this.$f ? new l.Float64Array(this.Qh, 0, 1) : null;
-    if (this.$f) this.uh[0] = 16909060, a = 1 === ((new l.Int8Array(this.Qh, 0, 8))[0] | 0);
-    else var a = !0;
-    this.Vk = (this.Dk = a) ? 0 : 1;
-    this.hl = this.Dk ? 1 : 0;
-    return this
-};
-
-// Ga function: converts a number 'b' to a long representation
-function Ga(a, b) {
-    var c = b | 0;
-    if (c === b && -Infinity !== 1 / b) return c;
-    if (a.$f) a.Sk[0] = b, a = (new x).g(a.uh[a.hl] | 0, a.uh[a.Vk] | 0);
-    else {
-        if (b !== b) a = !1, b = 2047, c = +l.Math.pow(2, 51);
-        else if (Infinity === b || -Infinity === b) a = 0 > b, b = 2047, c = 0;
-        else if (0 === b) a = -Infinity === 1 / b, c = b = 0;
-        else {
-            var e = (a = 0 > b) ? -b : b;
-            if (e >= +l.Math.pow(2, -1022)) {
-                b = +l.Math.pow(2, 52);
-                c = +l.Math.log(e) / .6931471805599453;
-                c = +l.Math.floor(c) | 0;
-                c = 1023 > c ? c : 1023;
-                var f = +l.Math.pow(2, c);
-                f > e && (c = -1 + c | 0, f /= 2);
-                f = e / f * b;
-                e = +l.Math.floor(f);
-                f -= e;
-                e = .5 > f ? e : .5 < f ? 1 + e : 0 !== e % 2 ? 1 + e : e;
-                2 <= e / b && (c = 1 + c | 0, e = 1);
-                1023 < c ? (c = 2047, e = 0) : (c = 1023 + c | 0, e -= b);
-                b = c;
-                c = e
-            } else b = e / +l.Math.pow(2, -1074), c = +l.Math.floor(b), e = b - c, b = 0, c = .5 > e ? c : .5 < e ? 1 + c : 0 !== c % 2 ? 1 + c : c
-        }
-        c = +c;
-        a = (new x).g(c | 0, (a ? -2147483648 : 0) | (b | 0) << 20 | c / 4294967296 | 0)
-    }
-    return a.f ^ a.i
-}
-
-// Gj prototype Dv method: converts a long 'a' to a double
-Gj.prototype.Dv = function(a) {
-    var b = a.i,
-        c = 0 > b,
-        e = 2047 & b >> 20;
-    a = 4294967296 * (1048575 & b) + +(a.f >>> 0);
-    return 2047 === e ? 0 !== a ? NaN : c ? -Infinity : Infinity : 0 < e ? (e = +l.Math.pow(2, -1023 + e | 0) * (1 + a / +l.Math.pow(2, 52)), c ? -e : e) : 0 !== a ? (e = +l.Math.pow(2, -1022) * (a / +l.Math.pow(2, 52)), c ? -e : e) : c ? -0 : 0
-};
-
-// Gj prototype $classData
-Gj.prototype.$classData = z({
-    xz: 0
-}, !1, "scala.scalajs.runtime.Bits$", {
-    xz: 1,
-    c: 1
-});
-
-// Hj global variable
-var Hj = void 0;
-
-// Ha function: initializes and returns Hj
-function Ha() {
-    Hj || (Hj = (new Gj).a());
-    return Hj
-}
-
-// Ij class constructor
-function Ij() {
-    this.q = !1
-}
-
-// Ij prototype methods
-Ij.prototype = new A;
-Ij.prototype.constructor = Ij;
-Ij.prototype.a = function() {
-    return this
-};
-
-// Ic function: parses a string 'c' using regex and returns a K object
-function Ic(a, b, c) {
-    if (null === b) throw (new Oc).a();
-    a = Jj().En.exec(c);
-    if (null !== a) {
-        a = a[1];
-        if (void 0 === a) throw (new V).h("undefined.get");
-        a = (new Q).j((new K).Q(Kj(a), 0))
-    } else a = R();
-    if (a.m()) {
-        var e = Jj().Dn.exec(c);
-        if (null !== e) {
-            a = e[0];
-            if (void 0 === a) throw (new V).h("undefined.get");
-            a = c.substring(a.length | 0);
-            var f = 0;
-            var g = e[1];
-            if (void 0 !== g)
-                for (var h = g.length | 0, k = 0; k < h;) {
-                    var m = k;
-                    f |= Lj(Jj(), 65535 & (g.charCodeAt(m) | 0));
-                    k = 1 + k | 0
-                }
-            e = e[2];
-            if (void 0 !== e)
-                for (g = e.length | 0, h = 0; h < g;) k = h, f &= ~Lj(Jj(), 65535 & (e.charCodeAt(k) | 0)), h = 1 + h | 0;
-            a = (new Q).j((new K).Q(a, f))
-        } else a = R()
-    }
-    a = a.m() ? (new K).Q(c, 0) : a.Nb();
-    if (null === a) throw (new J).j(a);
-    f = a.dk();
-    f = new l.RegExp(a.Ga(), "g" + (0 !== (2 & f) ? "i" : "") + (0 !== (8 & f) ? "m" : ""));
-    a = new Mj;
-    a.Dg = f;
-    a.Ul = c;
-    b = ma(b);
-    if ("" === b) b = ka(D(oa), [""]);
-    else {
-        f = b.length | 0;
-        c = new Nj;
-        c.co = a;
-        c.sn = b;
-        c.ko = 0;
-        c.jo = f;
-        a = c.co;
-        f = new l.RegExp(a.Dg);
-        a = f !== a.Dg ? f : new l.RegExp(a.Dg.source, (a.Dg.global ? "g" : "") + (a.Dg.ignoreCase ? "i" : "") + (a.Dg.multiline ? "m" : ""));
-        c.nl = a;
-        a = c.sn;
-        f = c.ko;
-        e = c.jo;
-        a = "string" === typeof a ? a.substring(f, e) : a.Lo(f, e);
-        c.tn = ma(a);
-        c.Fg = null;
-        c.Hk = !0;
-        R();
-        R();
-        a = [];
-        for (f = e = 0; 2147483646 > f && Oj(c);) 0 !== Pj(c) && (g = Qj(c).index | 0, e = b.substring(e, g), a.push(null === e ? null : e), f = 1 + f | 0), e = Pj(c);
-        b = b.substring(e);
-        a.push(null === b ? null : b);
-        b = ka(D(oa), a);
-        for (c = b.b.length; 0 !== c && "" === b.b[-1 + c | 0];) c = -1 + c | 0;
-        c !== b.b.length && (a = r(D(oa), [c]), Ka(b, 0, a, 0, c), b = a)
-    }
-    return b
-}
-
-// Rj function: converts a string 'b' to an array of characters
-function Rj(a, b) {
-    a = b.length | 0;
-    for (var c = r(D(Ua), [a]), e = 0; e < a;) c.b[e] = 65535 & (b.charCodeAt(e) | 0), e = 1 + e | 0;
-    return c
-}
-
-// Sj function: extracts a substring from a character array 'b'
-function Sj(a, b, c, e) {
-    a = c + e | 0;
-    if (0 > c || a < c || a > b.b.length) throw (new Tj).a();
-    for (e = ""; c !== a;) e = "" + e + l.String.fromCharCode(b.b[c]), c = 1 + c | 0;
-    return e
-}
-
-// Ea function: calculates a hash code for a string 'b'
-function Ea(a, b) {
-    a = 0;
-    for (var c = 1, e = -1 + (b.length | 0) | 0; 0 <= e;) a = a + n(65535 & (b.charCodeAt(e) | 0), c) | 0, c = n(31, c), e = -1 + e | 0;
-    return a
-}
-
-// Uj function: formats a string 'a' with arguments 'b'
-function Uj(a, b) {
-    var c = (new Vj).a();
-    if (c.ji) throw (new Wj).a();
-    for (var e = 0, f = 0, g = a.length | 0, h = 0; h !== g;) {
-        var k = a.indexOf("%", h) | 0;
-        if (0 > k) {
-            Xj(c, a.substring(h));
-            break
-        }
-        Xj(c, a.substring(h, k));
-        h = 1 + k | 0;
-        Lg || (Lg = (new Kg).a());
-        var m = Lg.Cn;
-        m.lastIndex = h;
-        k = m.exec(a);
-        if (null === k || (k.index | 0) !== h) throw c = h === g ? "%" : a.substring(h, 1 + h | 0), (new Yj).h(c);
-        h = m.lastIndex | 0;
-        m = 65535 & (a.charCodeAt(-1 + h | 0) | 0);
-        for (var p, q = k[2], t = 90 >= m ? 256 : 0, u = q.length | 0, v = 0; v !== u;) {
-            p = 65535 & (q.charCodeAt(v) | 0);
-            switch (p) {
-                case 45:
-                    var B = 1;
-                    break;
-                case 35:
-                    B = 2;
-                    break;
-                case 43:
-                    B = 4;
-                    break;
-                case 32:
-                    B = 8;
-                    break;
-                case 48:
-                    B = 16;
-                    break;
-                case 44:
-                    B = 32;
-                    break;
-                case 40:
-                    B = 64;
-                    break;
-                case 60:
-                    B = 128;
-                    break;
-                default:
-                    throw (new J).j(Zj(p));
-            }
-            if (0 !== (t & B)) throw (new ak).h(l.String.fromCharCode(p));
-            t |= B;
-            v = 1 + v | 0
-        }
-        p = t;
-        u = ck(k[3], -1);
-        t = ck(k[4], -1);
-        if (37 === m || 110 === m) k = null;
-        else {
-            if (0 !== (1 & p) && 0 > u) throw (new dk).h("%" + k[0]);
-            0 !== (128 & p) ? q = f : (q = ck(k[1], 0), q = 0 === q ? e = 1 + e | 0 : 0 > q ? f : q);
-            if (0 >= q || q > b.b.length) {
-                c = l.String.fromCharCode(m);
-                if (0 > ("bBhHsHcCdoxXeEgGfn%".indexOf(c) | 0)) throw (new Yj).h(c);
-                throw (new ek).h("%" + k[0]);
-            }
-            f = q;
-            k = b.b[-1 + q | 0]
-        }
-        q = c;
-        v = k;
-        B = m;
-        k = p;
-        m = u;
-        u = t;
-        switch (B) {
-            case 98:
-            case 66:
-                0 !== (126 & k) && fk(k, 126, B);
-                gk(q, k, m, u, !1 === v || null === v ? "false" : "true");
-                break;
-            case 104:
-            case 72:
-                0 !== (126 & k) && fk(k, 126, B);
-                t = null === v ? "null" : (+(Da(v) >>> 0)).toString(16);
-                gk(q, k, m, u, t);
-                break;
-            case 115:
-            case 83:
-                v && v.$classData && v.$classData.qa.zH ? (0 !== (124 & k) && fk(k, 124, B), v.wH(q, (0 !== (1 & k) ? 1 : 0) | (0 !== (2 & k) ? 4 : 0) | (0 !== (256 & k) ? 2 : 0), m, u)) : (0 !== (126 & k) && fk(k, 126, B), gk(q, k, m, u, "" + v));
-                break;
-            case 99:
-            case 67:
-                0 !== (126 & k) && fk(k, 126, B);
-                if (0 <= u) throw (new hk).ua(u);
-                if (v instanceof wb) gk(q, k, m, -1, l.String.fromCharCode(null === v ? 0 : v.s));
-                else if (La(v)) {
-                    t = v | 0;
-                    if (!(0 <= t && 1114111 >= t)) throw (new ik).ua(t);
-                    t = 65536 > t ? l.String.fromCharCode(t) : l.String.fromCharCode(-64 + (t >> 10) | 55296, 56320 | 1023 & t);
-                    gk(q, k, m, -1, t)
-                } else jk(q, v, k, m, u, B);
-                break;
-            case 100:
-                0 !== (2 & k) && fk(k, 2, B);
-                17 !== (17 & k) && 12 !== (12 & k) || kk(k);
-                if (0 <= u) throw (new hk).ua(u);
-                La(v) ? lk(q, k, m, "" + (v | 0)) : v instanceof x ? (u = Ma(v), t = u.f, u = u.i, lk(q, k, m, mk(y(), t, u))) : jk(q, v, k, m, u, B);
-                break;
-            case 111:
-                0 !== (108 & k) && fk(k, 108, B);
-                17 === (17 & k) && kk(k);
-                if (0 <= u) throw (new hk).ua(u);
-                t = 0 === (2 & k) ? "0" : "";
-                La(v) ? (u = (+((v | 0) >>> 0)).toString(8), nk(q, k, m, t, u)) : v instanceof x ? (u = Ma(v), v = u.f, p = u.i, ok(), u = 1073741823 & v, B = 1073741823 & ((v >>> 30 | 0) + (p << 2) | 0), v = p >>> 28 | 0, 0 !== v ? (v = (+(v >>> 0)).toString(8), p = (+(B >>> 0)).toString(8), B = "0000000000".substring(p.length | 0), u = (+(u >>> 0)).toString(8), u = v + ("" + B + p) + ("" + "0000000000".substring(u.length | 0) + u)) : 0 !== B ? (v = (+(B >>> 0)).toString(8), u = (+(u >>> 0)).toString(8), u = v + ("" + "0000000000".substring(u.length | 0) + u)) : u = (+(u >>> 0)).toString(8), nk(q, k, m, t, u)) : jk(q, v, k, m, u, B);
-                break;
-            case 120:
-            case 88:
-                0 !== (108 & k) && fk(k, 108, B);
-                17 === (17 & k) && kk(k);
-                if (0 <= u) throw (new hk).ua(u);
-                t = 0 === (2 & k) ? "" : 0 !== (256 & k) ? "0X" : "0x";
-                La(v) ? (u = (+((v | 0) >>> 0)).toString(16), nk(q, k, m, t, pk(k, u))) : v instanceof x ? (u = Ma(v), v = u.f, p = u.i, ok(), u = k, 0 !== p ? (p = (+(p >>> 0)).toString(16), v = (+(v >>> 0)).toString(16), v = p + ("" + "00000000".substring(v.length | 0) + v)) : v = (+(v >>> 0)).toString(16), nk(q, u, m, t, pk(k, v))) : jk(q, v, k, m, u, B);
-                break;
-            case 101:
-            case 69:
-                0 !== (32 & k) && fk(k, 32, B);
-                17 !== (17 & k) && 12 !== (12 & k) || kk(k);
-                "number" === typeof v ? (t = +v, t !== t || Infinity === t || -Infinity === t ? qk(q, k, m, t) : lk(q, k, m, rk(t, 0 <= u ? u : 6, 0 !== (2 & k)))) : jk(q, v, k, m, u, B);
-                break;
-            case 103:
-            case 71:
-                0 !== (2 & k) && fk(k, 2, B);
-                17 !== (17 & k) && 12 !== (12 & k) || kk(k);
-                "number" === typeof v ? (v = +v, v !== v || Infinity === v || -Infinity === v ? qk(q, k, m, v) : (t = k, p = 0 <= u ? u : 6, k = 0 !== (2 & k), u = +l.Math.abs(v), p = 0 === p ? 1 : p, 1E-4 <= u && u < +l.Math.pow(10, p) ? (B = void 0 !== l.Math.log10 ? +l.Math.log10(u) : +l.Math.log(u) / 2.302585092994046, B = Ja(+l.Math.ceil(B)), u = +l.Math.pow(10, B) <= u ? 1 + B | 0 : B, u = p - u | 0, k = sk(v, 0 < u ? u : 0, k)) : k = rk(v, -1 + p | 0, k), lk(q, t, m, k))) : jk(q, v, k, m, u, B);
-                break;
-            case 102:
-                17 !== (17 & k) && 12 !== (12 & k) || kk(k);
-                "number" === typeof v ? (t = +v, t !== t || Infinity === t || -Infinity === t ? qk(q, k, m, t) : lk(q, k, m, sk(t, 0 <= u ? u : 6, 0 !== (2 & k)))) : jk(q, v, k, m, u, B);
-                break;
-            case 37:
-                if (0 !== (254 & k)) throw (new tk).h(uk(k));
-                if (0 <= u) throw (new hk).ua(u);
-                if (0 !== (1 & k) && 0 > m) throw (new dk).h("%-%");
-                vk(q, k, m, "%");
-                break;
-            case 110:
-                if (0 !== (255 & k)) throw (new tk).h(uk(k));
-                if (0 <= u) throw (new hk).ua(u);
-                if (0 <= m) throw (new wk).ua(m);
-                Xj(q, "\n");
-                break;
-            default:
-                throw (new Yj).h(l.String.fromCharCode(B));
-        }
-    }
-    a = c.n();
-    c.ej();
-    return a
-}
-
-// Ij prototype $classData
-Ij.prototype.$classData = z({
-    Az: 0
-}, !1, "scala.scalajs.runtime.RuntimeString$", {
-    Az: 1,
-    c: 1
-});
-
-// xk global variable
-var xk = void 0;
-
-// Fa function: initializes and returns xk
-function Fa() {
-    xk || (xk = (new Ij).a());
-    return xk
-}
-
-// yk class constructor
-function yk() {
-    this.An = !1;
-    this.Jm = this.Mm = this.Lm = null;
-    this.q = 0
-}
-
-// yk prototype methods
-yk.prototype = new A;
-yk.prototype.constructor = yk;
-yk.prototype.a = function() {
-    return this
-};
-
-// zk function: cleans up and formats a stack trace string
-function zk(a) {
-    return (a.stack + "\n").replace(Ak("^[\\s\\S]+?\\s+at\\s+"), " at ").replace(Bk("^\\s+(at eval )?at\\s+", "gm"), "").replace(Bk("^([^\\(]+?)([\\n])", "gm"), "{anonymous}() ($1)$2").replace(Bk("^Object.\x3canonymous\x3e\\s*\\(([^\\)]+)\\)", "gm"), "{anonymous}() ($1)").replace(Bk("^([^\\(]+|\\{anonymous\\}\\(\\)) \\((.+)\\)$", "gm"), "$1@$2").split("\n").slice(0, -1)
-}
-
-// Ck function: gets keys from Dk(a) and caches them
-function Ck(a) {
-    0 === (8 & a.q) << 24 >> 24 && 0 === (8 & a.q) << 24 >> 24 && (a.Jm = l.Object.keys(Dk(a)), a.q = (8 | a.q) << 24 >> 24);
-    return a.Jm
-}
-
-// Ek function: gets a map of Scala.js type names and caches it
-function Ek(a) {
-    if (0 === (2 & a.q) << 24 >> 24 && 0 === (2 & a.q) << 24 >> 24) {
-        for (var b = {
-            O: "java_lang_Object",
-            T: "java_lang_String",
-            V: "scala_Unit",
-            Z: "scala_Boolean",
-            C: "scala_Char",
-            B: "scala_Byte",
-            S: "scala_Short",
-            I: "scala_Int",
-            J: "scala_Long",
-            F: "scala_Float",
-            D: "scala_Double"
-        }, c = 0; 22 >= c;) 2 <= c && (b["T" + c] = "scala_Tuple" + c), b["F" + c] = "scala_Function" + c, c = 1 + c | 0;
-        a.Lm = b;
-        a.q = (2 | a.q) << 24 >> 24
-    }
-    return a.Lm
-}
-
-// Fk function: parses a stack frame string 'b' to extract class and method names
-function Fk(a, b) {
-    var c = Ak("^(?:Object\\.|\\u005bobject Object\\u005d\\.)?(?:ScalaJS\\.c\\.|\\$c_)([^\\.]+)(?:\\.prototype)?\\.([^\\.]+)$"),
-        e = Ak("^(?:Object\\.|\\u005bobject Object\\u005d\\.)?(?:ScalaJS\\.(?:s|f)\\.|\\$(?:s|f)_)((?:_[^_]|[^_])+)__([^\\.]+)$"),
-        f = Ak("^(?:Object\\.|\\u005bobject Object\\u005d\\.)?(?:ScalaJS\\.m\\.|\\$m_)([^\\.]+)$"),
-        g = !1;
-    c = c.exec(b);
-    null === c && (c = e.exec(b), null === c && (c = f.exec(b), g = !0));
-    if (null !== c) {
-        b = c[1];
-        if (void 0 === b) throw (new V).h("undefined.get");
-        b = 36 === (65535 & (b.charCodeAt(0) | 0)) ? b.substring(1) : b;
-        e = Ek(a);
-        if (Fj().Sj.call(e, b)) {
-            a = Ek(a);
-            if (!Fj().Sj.call(a, b)) throw (new V).h("key not found: " + b);
-            a = a[b]
-        } else a: for (f = 0;;)
-            if (f < (Ck(a).length | 0)) {
-                e = Ck(a)[f];
-                if (0 < (b.length | 0) && b.substring(0, e.length | 0) === e) {
-                    a = Dk(a);
-                    if (!Fj().Sj.call(a, e)) throw (new V).h("key not found: " + e);
-                    a = "" + a[e] + b.substring(e.length | 0);
-                    break a
-                }
-                f = 1 + f | 0
-            } else {
-                a = 0 < (b.length | 0) && "L" === b.substring(0, 1) ? b.substring(1) : b;
-                break a
-            }
-        a = a.split("_").join(".").split("$und").join("_");
-        if (g) g = "\x3cclinit\x3e";
-        else {
-            g = c[2];
-            if (void 0 === g) throw (new V).h("undefined.get");
-            0 < (g.length | 0) && "init___" === g.substring(0, 7) ? g = "\x3cinit\x3e" : (c = g.indexOf("__") | 0, g = 0 > c ? g : g.substring(0, c))
-        }
-        return (new K).Q(a, g)
-    }
-    return (new K).Q("\x3cjscode\x3e", b)
-}
-
-// Gk function: parses Firefox stack traces from 'a.message'
-function Gk(a) {
-    var b = Bk("Line (\\d+).*script (?:in )?(\\S+)", "i");
-    a = a.message.split("\n");
-    for (var c = [], e = 2, f = a.length | 0; e < f;) {
-        var g = b.exec(a[e]);
-        if (null !== g) {
-            var h = g[2];
-            if (void 0 === h) throw (new V).h("undefined.get");
-            g = g[1];
-            if (void 0 === g) throw (new V).h("undefined.get");
-            c.push("{anonymous}()@" + h + ":" + g)
-        }
-        e = 2 + e | 0
-    }
-    return c
-}
-
-// Dk function: gets a map of Scala.js package prefixes and caches it
-function Dk(a) {
-    0 === (4 & a.q) << 24 >> 24 && 0 === (4 & a.q) << 24 >> 24 && (a.Mm = {
-        sjsr_: "scala_scalajs_runtime_",
-        sjs_: "scala_scalajs_",
-        sci_: "scala_collection_immutable_",
-        scm_: "scala_collection_mutable_",
-        scg_: "scala_collection_generic_",
-        sc_: "scala_collection_",
-        sr_: "scala_runtime_",
-        s_: "scala_",
-        jl_: "java_lang_",
-        ju_: "java_util_"
-    }, a.q = (4 | a.q) << 24 >> 24);
-    return a.Mm
-}
-
-// yk prototype $classData
-yk.prototype.$classData = z({
-    Bz: 0
-}, !1, "scala.scalajs.runtime.StackTrace$", {
-    Bz: 1,
-    c: 1
-});
-
-// Hk global variable
-var Hk = void 0;
-
-// Ik class constructor (empty)
-function Ik() {}
-
-// Ik prototype methods
-Ik.prototype = new A;
-Ik.prototype.constructor = Ik;
-Ik.prototype.a = function() {
-    return this
-};
-
-// Bk function: creates a new RegExp object
-function Bk(a, b) {
-    Jk || (Jk = (new Ik).a());
-    return new l.RegExp(a, b)
-}
-
-// Ak function: creates a new RegExp object with a single argument
-function Ak(a) {
-    Jk || (Jk = (new Ik).a());
-    return new l.RegExp(a)
-}
-
-// Ik prototype $classData
-Ik.prototype.$classData = z({
-    Cz: 0
-}, !1, "scala.scalajs.runtime.StackTrace$StringRE$", {
-    Cz: 1,
-    c: 1
-});
-
-// Jk global variable
-var Jk = void 0;
-
-// Kk class constructor (empty)
-function Kk() {}
-
-// Kk prototype methods
-Kk.prototype = new A;
-Kk.prototype.constructor = Kk;
-Kk.prototype.a = function() {
-    return this
-};
-
-// T function: returns 'b.If' if 'b' is an instance of Lk, otherwise returns 'b'
-function T(a, b) {
-    return b instanceof Lk ? b.If : b
-}
-
-// Yc function: returns 'b' if it's an instance of W, otherwise returns a new Lk object
-function Yc(a, b) {
-    return b instanceof W ? b : (new Lk).j(b)
-}
-
-// Kk prototype $classData
-Kk.prototype.$classData = z({
-    Dz: 0
-}, !1, "scala.scalajs.runtime.package$", {
-    Dz: 1,
-    c: 1
-});
-
-// Mk global variable
-var Mk = void 0;
-
-// S function: initializes and returns Mk
-function S() {
-    Mk || (Mk = (new Kk).a());
-    return Mk
-}
-
-// Nk class constructor (empty)
-function Nk() {}
-
-// Nk prototype methods
-Nk.prototype = new A;
-Nk.prototype.constructor = Nk;
-Nk.prototype.a = function() {
-    return this
-};
-
-// Ok function: compares 'a' with 'b' for equality, handling different types
-function Ok(a, b) {
-    if (b instanceof wb) return a.s === b.s;
-    if (Pk(b)) {
-        if ("number" === typeof b) return +b === a.s;
-        if (b instanceof x) {
-            b = Ma(b);
-            var c = b.i;
-            a = a.s;
-            return b.f === a && c === a >> 31
-        }
-        return null === b ? null === a : Ca(b, a)
-    }
-    return null === a && null === b
-}
-
-// G function: compares 'b' and 'c' for equality, handling different types
-function G(a, b, c) {
-    if (b === c) c = !0;
-    else if (Pk(b)) a: if (Pk(c)) c = Qk(0, b, c);
-        else {
-            if (c instanceof wb) {
-                if ("number" === typeof b) {
-                    c = +b === c.s;
-                    break a
-                }
-                if (b instanceof x) {
-                    a = Ma(b);
-                    b = a.i;
-                    c = c.s;
-                    c = a.f === c && b === c >> 31;
-                    break a
-                }
-            }
-            c = null === b ? null === c : Ca(b, c)
-        }
-    else c = b instanceof wb ? Ok(b, c) : null === b ? null === c : Ca(b, c);
-    return c
-}
-
-// Qk function: compares 'b' and 'c' for equality, handling different types
-function Qk(a, b, c) {
-    if ("number" === typeof b) return a = +b, "number" === typeof c ? a === +c : c instanceof x ? (b = Ma(c), c = b.f, b = b.i, a === Rk(y(), c, b)) : c instanceof Sk ? c.t(a) : !1;
-    if (b instanceof x) {
-        b = Ma(b);
-        a = b.f;
-        b = b.i;
-        if (c instanceof x) {
-            c = Ma(c);
-            var e = c.i;
-            return a === c.f && b === e
-        }
-        return "number" === typeof c ? (c = +c, Rk(y(), a, b) === c) : c instanceof Sk ? c.t((new x).g(a, b)) : !1
-    }
-    return null === b ? null === c : Ca(b, c)
-}
-
-// Nk prototype $classData
-Nk.prototype.$classData = z({
-    Fz: 0
-}, !1, "scala.runtime.BoxesRunTime$", {
-    Fz: 1,
-    c: 1
-});
-
-// Tk global variable
-var Tk = void 0;
-
-// H function: initializes and returns Tk
-function H() {
-    Tk || (Tk = (new Nk).a());
-    return Tk
-}
-
-// Uk class data object
-var Uk = z({
-    Jz: 0
-}, !1, "scala.runtime.Null$", {
-    Jz: 1,
-    c: 1
-});
-
-// Vk class constructor (empty)
-function Vk() {}
-
-// Vk prototype methods
-Vk.prototype = new A;
-Vk.prototype.constructor = Vk;
-Vk.prototype.a = function() {
-    return this
-};
-
-// Vk prototype $classData
-Vk.prototype.$classData = z({
-    Oz: 0
-}, !1, "scala.runtime.RichDouble$", {
-    Oz: 1,
-    c: 1
-});
-
-// Wk global variable
-var Wk = void 0;
-
-// Xk function: initializes Wk
-function Xk() {
-    Wk || (Wk = (new Vk).a())
-}
-
-// Yk class constructor (empty)
-function Yk() {}
-
-// Yk prototype methods
-Yk.prototype = new A;
-Yk.prototype.constructor = Yk;
-Yk.prototype.a = function() {
-    return this
-};
-
-// Zk function: returns the long value of 'b'
-function Zk(a, b) {
-    return Rk(y(), b.f, b.i)
-}
-
-// Yk prototype $classData
-Yk.prototype.$classData = z({
-    Qz: 0
-}, !1, "scala.runtime.RichLong$", {
-    Qz: 1,
-    c: 1
-});
-
-// $k global variable
-var $k = void 0;
-
-// al function: initializes and returns $k
-function al() {
-    $k || ($k = (new Yk).a());
-    return $k
-}
-
-// bl class constructor (empty)
-function bl() {}
-
-// bl prototype methods
-bl.prototype = new A;
-bl.prototype.constructor = bl;
-bl.prototype.a = function() {
-    return this
-};
-
-// Ii function: returns the length of 'b' if it's an array-like object, otherwise throws an error
-function Ii(a, b) {
-    if (ub(b, 1) || eb(b, 1) || hb(b, 1) || fb(b, 1) || gb(b, 1) || bb(b, 1) || cb(b, 1) || db(b, 1) || $a(b, 1) || cl(b)) return b.b.length;
-    if (null === b) throw (new Oc).a();
-    throw (new J).j(b);
-}
-
-// dl function: sets the element at index 'c' in array 'b' to 'e'
-function dl(a, b, c, e) {
-    if (ub(b, 1)) b.b[c] = e;
-    else if (eb(b, 1)) b.b[c] = e | 0;
-    else if (hb(b, 1)) b.b[c] = +e;
-    else if (fb(b, 1)) b.b[c] = Ma(e);
-    else if (gb(b, 1)) b.b[c] = +e;
-    else if (bb(b, 1)) b.b[c] = null === e ? 0 : e.s;
-    else if (cb(b, 1)) b.b[c] = e | 0;
-    else if (db(b, 1)) b.b[c] = e | 0;
-    else if ($a(b, 1)) b.b[c] = !!e;
-    else if (cl(b)) b.b[c] = void 0;
-    else {
-        if (null === b) throw (new Oc).a();
-        throw (new J).j(b);
-    }
-}
-
-// el function: formats a string representation of 'a'
-function el(a) {
-    Ji();
-    var b = (new fl).af(a);
-    return U(b, a.Ba() + "(", ",", ")")
-}
-
-// gl function: gets the element at index 'c' from array 'b'
-function gl(a, b, c) {
-    if (ub(b, 1) || eb(b, 1) || hb(b, 1) || fb(b, 1) || gb(b, 1)) return b.b[c];
-    if (bb(b, 1)) return Zj(b.b[c]);
-    if (cb(b, 1) || db(b, 1) || $a(b, 1) || cl(b)) return b.b[c];
-    if (null === b) throw (new Oc).a();
-    throw (new J).j(b);
-}
-
-// bl prototype $classData
-bl.prototype.$classData = z({
-    Sz: 0
-}, !1, "scala.runtime.ScalaRunTime$", {
-    Sz: 1,
-    c: 1
-});
-
-// hl global variable
-var hl = void 0;
-
-// Ji function: initializes and returns hl
-function Ji() {
-    hl || (hl = (new bl).a());
-    return hl
-}
-
-// il class constructor (empty)
-function il() {}
-
-// il prototype methods
-il.prototype = new A;
-il.prototype.constructor = il;
-d = il.prototype;
-d.a = function() {
-    return this
-};
-d.pi = function(a, b) {
-    b = n(-862048943, b);
-    b = n(461845907, b << 15 | b >>> 17 | 0);
-    return a ^ b
-};
-
-// jl function: converts 'b' to an integer, handling long values
-function jl(a, b) {
-    a = Ja(b);
-    if (a === b) return a;
-    var c = y();
-    a = kl(c, b);
-    c = c.M;
-    return Rk(y(), a, c) === b ? a ^ c : Ga(Ha(), b)
-}
-
-// wi function: calculates a hash code for 'b'
-function wi(a, b) {
-    return null === b ? 0 : "number" === typeof b ? jl(0, +b) : b instanceof x ? (a = Ma(b), ll(0, (new x).g(a.f, a.i))) : Da(b)
-}
-
-// il prototype Fc method
-d.Fc = function(a, b) {
-    a = this.pi(a, b);
-    return -430675100 + n(5, a << 13 | a >>> 19 | 0) | 0
-};
-
-// ll function: performs a bitwise XOR on 'a' and 'b'
-function ll(a, b) {
-    a = b.f;
-    b = b.i;
-    return b === a >> 31 ? a : a ^ b
-}
-
-// il prototype We method
-d.We = function(a, b) {
-    a ^= b;
-    a = n(-2048144789, a ^ (a >>> 16 | 0));
-    a = n(-1028477387, a ^ (a >>> 13 | 0));
-    return a ^ (a >>> 16 | 0)
-};
-
-// il prototype $classData
-d.$classData = z({
-    Uz: 0
-}, !1, "scala.runtime.Statics$", {
-    Uz: 1,
-    c: 1
-});
-
-// ml global variable
-var ml = void 0;
-
-// xi function: initializes and returns ml
-function xi() {
-    ml || (ml = (new il).a());
-    return ml
-}
-
-// Tc class constructor
-function Tc() {
-    this.Cc = null
-}
-
-// Tc prototype methods
-Tc.prototype = new A;
-Tc.prototype.constructor = Tc;
-Tc.prototype.j = function(a) {
-    this.Cc = a;
-    return this
-};
-Tc.prototype.Xe = function(a) {
-    return (0, this.Cc)(a)
-};
-
-// Tc prototype $classData
-Tc.prototype.$classData = z({
-    ep: 0
-}, !1, "atcoder.StdInConverter$$$Lambda$1", {
-    ep: 1,
-    c: 1,
-    Mi: 1
-});
-
-// Hc class constructor
-function Hc() {
-    this.Cc = null
-}
-
-// Hc prototype methods
-Hc.prototype = new A;
-Hc.prototype.constructor = Hc;
-Hc.prototype.j = function(a) {
-    this.Cc = a;
-    return this
-};
-Hc.prototype.Xe = function(a) {
-    return (0, this.Cc)(a)
-};
-
-// Hc prototype $classData
-Hc.prototype.$classData = z({
-    fp: 0
-}, !1, "atcoder.StdInConverter$$$Lambda$2", {
-    fp: 1,
-    c: 1,
-    Mi: 1
-});
-
-// zc class constructor
-function zc() {
-    this.Cc = null
-}
-
-// zc prototype methods
-zc.prototype = new A;
-zc.prototype.constructor = zc;
-zc.prototype.j = function(a) {
-    this.Cc = a;
-    return this
-};
-zc.prototype.Xe = function(a) {
-    return (0, this.Cc)(a)
-};
-
-// zc prototype $classData
-zc.prototype.$classData = z({
-    gp: 0
-}, !1, "atcoder.StdInConverter$$$Lambda$3", {
-    gp: 1,
-    c: 1,
-    Mi: 1
-});
-
-// Nc class constructor
-function Nc() {
-    this.Cc = null
-}
-
-// Nc prototype methods
-Nc.prototype = new A;
-Nc.prototype.constructor = Nc;
-Nc.prototype.j = function(a) {
-    this.Cc = a;
-    return this
-};
-Nc.prototype.Xe = function(a) {
-    return (0, this.Cc)(a)
-};
-
-// Nc prototype $classData
-Nc.prototype.$classData = z({
-    hp: 0
-}, !1, "atcoder.StdInConverter$$$Lambda$4", {
-    hp: 1,
-    c: 1,
-    Mi: 1
-});
-
-// Kc class constructor
-function Kc() {
-    this.Cc = null
-}
-
-// Kc prototype methods
-Kc.prototype = new A;
-Kc.prototype.constructor = Kc;
-Kc.prototype.j = function(a) {
-    this.Cc = a;
-    return this
-};
-Kc.prototype.Xe = function(a) {
-    return (0, this.Cc)(a)
-};
-
-// Kc prototype $classData
-Kc.prototype.$classData = z({
-    ip: 0
-}, !1, "atcoder.StdInConverter$$$Lambda$5", {
-    ip: 1,
-    c: 1,
-    Mi: 1
-});
-
-// bd class constructor (empty)
-function bd() {}
-
-// bd prototype methods
-bd.prototype = new A;
-bd.prototype.constructor = bd;
-bd.prototype.a = function() {
-    return this
-};
-
-// bd prototype $classData
-bd.prototype.$classData = z({
-    up: 0
-}, !1, "cats.NotNull$$anon$1", {
-    up: 1,
-    c: 1,
-    lA: 1
-});
-
-// Rb class constructor
-function Rb() {
-    this.Po = this.la = null
-}
-
-// Rb prototype methods
-Rb.prototype = new A;
-Rb.prototype.constructor = Rb;
-
-// Rb prototype $classData
-Rb.prototype.$classData = z({
-    Bp: 0
-}, !1, "cats.Show$ToShowOps$$anon$1", {
-    Bp: 1,
-    c: 1,
-    rA: 1
-});
-
-// nl class constructor (inherits from kd)
-function nl() {}
-
-// Set nl's prototype to kd's prototype
-nl.prototype = new kd;
-nl.prototype.constructor = nl;
-
-// ol class constructor (inherits from nl)
-function ol() {}
-
-// Set ol's prototype to nl's prototype
-ol.prototype = nl.prototype;
-
-// pl class constructor (empty)
-function pl() {}
-
-// pl prototype methods
-pl.prototype = new A;
-pl.prototype.constructor = pl;
-
-// ql class constructor (inherits from pl)
-function ql() {}
-
-// Set ql's prototype to pl's prototype
-ql.prototype = pl.prototype;
-
-// rl function: executes an IO action 'a' and handles its result
-function rl(a) {
-    sl();
-    a = he(Qd(), a);
-    if (a instanceof Zd) a = (new Q).j(a.yf);
-    else {
-        if (a instanceof $d) throw a = a.Gf, T(S(), a);
-        if (a instanceof Nd) {
-            Fd || (Fd = (new Ed).a());
-            var b = (new ul).a();
-            Dd();
-            var c = (new be).a();
-            Pd(Qd(), a, c, b, null, null, null);
-            if (0 === (2 & c.ue) << 24 >> 24) throw (new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/IOConnection.scala: 109");
-            a = c.Am;
-            c = b.s;
-            if (c instanceof wc) a = (new Q).j(c.E);
-            else {
-                if (c instanceof Fc) throw a = c.E, T(S(), a);
-                if (null === c) {
-                    b.wj = !1;
-                    b.ma = !0;
-                    b = pd();
-                    if (0 === (1 & b.ma) << 24 >> 24) throw (new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/Callback.scala: 37");
-                    b = b.lo;
-                    c = Qd();
-                    var e = Dd();
-                    if (!e.ma) throw (new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/IOConnection.scala: 94");
-                    Pd(c, a, e.Qo, b, null, null, null);
-                    throw (new Pc).h("cannot synchronously await result on JavaScript; use runAsync or unsafeRunAsync");
-                }
-                throw (new J).j(c);
-            }
-        } else throw (new wj).j("unreachable");
-    }
-    a.Nb()
-}
-
-// pl prototype n method
-pl.prototype.n = function() {
-    return this instanceof Zd ? "IO(" + this.yf + ")" : this instanceof $d ? "IO(throw " + this.Gf + ")" : "IO$" + Ia(this)
-};
-
-// vl function: creates a new ae object
-function vl(a, b) {
-    if (a instanceof ae) {
-        var c = a.Xb,
-            e = a.Jb,
-            f = a.wd;
-        return 31 !== f ? wl(new ae, c, e.Rb(b), 1 + f | 0) : wl(new ae, a, b, 0)
-    }
-    return wl(new ae, a, b, 0)
-}
-
-// be class constructor
-function be() {
-    this.Am = this.Ai = null;
-    this.ue = 0
-}
-
-// be prototype methods
-be.prototype = new yd;
-be.prototype.constructor = be;
-
-// be prototype a method
-be.prototype.a = function() {
-    this.Ai = (new xl).j((L(), M()));
-    this.ue = (1 | this.ue) << 24 >> 24;
-    Mb();
-    this.Am = (new td).ge(Ob(function(a) {
-        return function() {
-            var b = a.Ai,
-                c = b.s;
-            b.s = null;
-            null === c || M().t(c) ? b = sd() : (wd || (wd = (new qd).a()), b = rd(wd, yl(c)));
-            return b
-        }
-    }(this)));
-    this.ue = (2 | this.ue) << 24 >> 24;
-    return this
-};
-
-// be prototype el method
-be.prototype.el = function() {
-    return null === this.Ai.s
-};
-
-// be prototype fo method
-be.prototype.fo = function() {
-    for (;;) {
-        var a = this.Ai.s;
-        if (null === a || M().t(a)) {
-            sd();
-            break
-        }
-        if (a instanceof N) {
-            var b = this.Ai;
-            a === b.s ? (b.s = a.uc, a = !0) : a = !1;
-            if (a) break
-        } else throw (new J).j(a);
-    }
-};
-
-// be prototype $classData
-be.prototype.$classData = z({
-    cq: 0
-}, !1, "cats.effect.internals.IOConnection$Impl", {
-    cq: 1,
-    aq: 1,
-    c: 1
-});
-
-// Cd class constructor
-function Cd() {}
-
-// Cd prototype methods
-Cd.prototype = new yd;
-Cd.prototype.constructor = Cd;
-Cd.prototype.a = function() {
-    return this
-};
-Cd.prototype.el = function() {
-    return !1
-};
-Cd.prototype.fo = function() {
-    sd()
-};
-
-// Cd prototype $classData
-Cd.prototype.$classData = z({
-    dq: 0
-}, !1, "cats.effect.internals.IOConnection$Uncancelable", {
-    dq: 1,
-    aq: 1,
-    c: 1
-});
-
-// Kd class constructor (empty)
-function Kd() {}
-
-// Kd prototype methods
-Kd.prototype = new A;
-Kd.prototype.constructor = Kd;
-
-// zl class constructor (inherits from Kd)
-function zl() {}
-
-// Set zl's prototype to Kd's prototype
-zl.prototype = Kd.prototype;
-
-// Kd prototype n method
-Kd.prototype.n = function() {
-    return "\x3cfunction1\x3e"
-};
-
-// Kd prototype Rb method
-Kd.prototype.Rb = function(a) {
-    return jb(this, a)
-};
-
-// ul class constructor
-function ul() {
-    this.wj = !1;
-    this.s = null;
-    this.ma = !1
-}
-
-// ul prototype methods
-ul.prototype = new A;
-ul.prototype.constructor = ul;
-d = ul.prototype;
-d.a = function() {
-    this.ma = this.wj = !0;
-    return this
-};
-d.l = function(a) {
-    this.gh(a)
-};
-d.n = function() {
-    return "\x3cfunction1\x3e"
-};
-d.gh = function(a) {
-    if (!this.ma) throw (new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/js/src/main/scala/cats/effect/internals/IOPlatform.scala: 66");
-    this.wj ? (this.wj = !1, this.ma = !0, this.s = a) : a instanceof Fc && (a = a.E, nd().l(a))
-};
-d.Rb = function(a) {
-    return jb(this, a)
-};
-
-// ul prototype $classData
-d.$classData = z({
-    gq: 0
-}, !1, "cats.effect.internals.IOPlatform$ResyncCallback", {
-    gq: 1,
-    c: 1,
-    P: 1
-});
-
-// Al class constructor
-function Al() {
-    this.k = this.mo = this.Uc = null
-}
-
-// Al prototype methods
-Al.prototype = new A;
-Al.prototype.constructor = Al;
-Al.prototype.Lj = function() {
-    var a = this.k.qg,
-        b = this.mo,
-        c = new Bl;
-    if (null === b) throw T(S(), null);
-    c.k = b;
-    c.Ph = b.ce;
-    c.ma = (1 | c.ma) << 24 >> 24;
-    c.Wc = b.hd;
-    for (c.ma = (2 | c.ma) << 24 >> 24; c.r();) Yd(a, c.u());
-    oe(this.k, this.Uc)
-};
-
-// pe function: creates and returns a new Al object
-function pe(a, b, c) {
-    var e = new Al;
-    e.Uc = b;
-    e.mo = c;
-    if (null === a) throw T(S(), null);
-    e.k = a;
-    return e
-}
-
-// Al prototype $classData
-Al.prototype.$classData = z({
-    mq: 0
-}, !1, "cats.effect.internals.Trampoline$ResumeRun$1", {
-    mq: 1,
-    c: 1,
-    Jn: 1
-});
-
-// se class constructor
-function se() {
-    this.Oo = this.Eh = null;
-    this.ma = !1
-}
-
-// se prototype methods
-se.prototype = new A;
-se.prototype.constructor = se;
-se.prototype.ol = function(a) {
-    this.Eh.ol(a)
-};
-se.prototype.al = function(a) {
-    this.Eh = a;
-    this.Oo = (new ne).al(a);
-    this.ma = !0;
-    return this
-};
-se.prototype.oh = function(a) {
-    this.Oo.oh(a)
-};
-
-// se prototype $classData
-se.prototype.$classData = z({
-    nq: 0
-}, !1, "cats.effect.internals.TrampolineEC", {
-    nq: 1,
-    c: 1,
-    Xv: 1
-});
-
-// te class constructor (empty)
-function te() {}
-
-// te prototype methods
-te.prototype = new A;
-te.prototype.constructor = te;
-te.prototype.a = function() {
-    return this
-};
-te.prototype.ol = function(a) {
-    nd().l(a)
-};
-te.prototype.oh = function(a) {
-    a.Lj()
-};
-
-// te prototype $classData
-te.prototype.$classData = z({
-    pq: 0
-}, !1, "cats.effect.internals.TrampolineEC$$anon$1", {
-    pq: 1,
-    c: 1,
-    Xv: 1
-});
-
-// Cl class constructor (inherits from xe)
-function Cl() {}
-
-// Set Cl's prototype to xe's prototype
-Cl.prototype = new xe;
-Cl.prototype.constructor = Cl;
-
-// Dl class constructor (inherits from Cl)
-function Dl() {}
-
-// Set Dl's prototype to Cl's prototype
-Dl.prototype = Cl.prototype;
-
-// El class constructor (inherits from ze)
-function El() {}
-
-// Set El's prototype to ze's prototype
-El.prototype = new ze;
-El.prototype.constructor = El;
-
-// Fl class constructor (inherits from El)
-function Fl() {}
-
-// Set Fl's prototype to El's prototype
-Fl.prototype = El.prototype;
-
-// Gl class constructor (inherits from xe)
-function Gl() {}
-
-// Set Gl's prototype to xe's prototype
-Gl.prototype = new xe;
-Gl.prototype.constructor = Gl;
-
-// Hl class constructor (inherits from Gl)
-function Hl() {}
-
-// Set Hl's prototype to Gl's prototype
-Hl.prototype = Gl.prototype;
-
-// Il function: creates a new Ll object with a comparison function
-function Il(a) {
-    var b = Jl(a);
-    return Kl(new Ll, b, Od(function(c) {
-        return function(e, f) {
-            return Ml(c).$a(e.E, f.E)
-        }
-    }(a)))
-}
-
-// Nl function: creates a new Ql object with a comparison function
-function Nl(a) {
-    var b = Ol(a);
-    return Pl(new Ql, b, Od(function(c) {
-        return function(e, f) {
-            var g = e.ra,
-                h = f.ra,
-                k = bh().G;
-            g = Rl(g, h, k).Mb(F(function() {
-                return function(m) {
-                    return !G(H(), m.Ga(), m.Qa())
-                }
-            }(c)));
-            g.m() ? g = R() : (g = g.Nb(), g = (new Q).j(Ml(c).$a(g.Ga().E, g.Qa().E)));
-            g.m() ? (Sl(c), e = Tl(e.ra), Sl(c), f = Tl(f.ra), f = e === f ? 0 : e < f ? -1 : 1) : f = g.Nb();
-            return f | 0
-        }
-    }(a)))
-}
-
-// Ul function: sets lu, Fv, and ku properties as functions
-function Ul(a) {
-    a.lu = F(function() {
-        return function() {
-            return !0
-        }
-    }(a));
-    a.Fv = F(function() {
-        return function() {
-            return !1
-        }
-    }(a));
-    a.ku = F(function() {
-        return function() {
-            return !0
-        }
-    }(a))
-}
-
-// Vl class constructor (empty)
-function Vl() {}
-
-// Vl prototype methods
-Vl.prototype = new A;
-Vl.prototype.constructor = Vl;
-
-// Wl class constructor (inherits from Vl)
-function Wl() {}
-
-// Set Wl's prototype to Vl's prototype
-Wl.prototype = Vl.prototype;
-
-// Pk function: checks if 'a' is an instance of Vl or a number
-function Pk(a) {
-    return a instanceof Vl || "number" === typeof a
-}
-
-// Xl class constructor
-function Xl() {
-    this.ci = this.oi = this.lh = null;
-    this.Wh = this.li = 0
-}
-
-// Xl prototype methods
-Xl.prototype = new A;
-Xl.prototype.constructor = Xl;
-Xl.prototype.t = function(a) {
-    return a instanceof Xl ? this.ci === a.ci && this.li === a.li && this.lh === a.lh && this.oi === a.oi : !1
-};
-Xl.prototype.n = function() {
-    var a = "";
-    "\x3cjscode\x3e" !== this.lh && (a = "" + a + this.lh + ".");
-    a = "" + a + this.oi;
-    null === this.ci ? a += "(Unknown Source)" : (a = a + "(" + this.ci, 0 <= this.li && (a = a + ":" + this.li, 0 <= this.Wh && (a = a + ":" + this.Wh)), a += ")");
-    return a
-};
-Xl.prototype.z = function() {
-    var a = this.lh;
-    a = Ea(Fa(), a);
-    var b = this.oi;
-    return a ^ Ea(Fa(), b)
-};
-Xl.prototype.setColumnNumber = function(a) {
-    this.Wh = a | 0
-};
-Xl.prototype.getColumnNumber = function() {
-    return this.Wh
-};
-
-// Yl class data object
-var Yl = z({
-    Vu: 0
-}, !1, "java.lang.StackTraceElement", {
-    Vu: 1,
-    c: 1,
-    d: 1
-});
-
-// Xl prototype $classData
-Xl.prototype.$classData = Yl;
-
-// W class constructor
-function W() {
-    this.hj = this.no = null;
-    this.Wo = !1;
-    this.Bh = null
-}
-
-// W prototype methods
-W.prototype = new A;
-W.prototype.constructor = W;
-
-// Zl class constructor (inherits from W)
-function Zl() {}
-
-// Set Zl's prototype to W's prototype
-Zl.prototype = W.prototype;
-
-// W prototype di method
-W.prototype.di = function() {
-    if (void 0 === l.Error.captureStackTrace) {
-        try {
-            var a = {}.undef()
-        } catch (b) {
-            if (a = Yc(S(), b), null !== a)
-                if (a instanceof Lk) a = a.If;
-                else throw T(S(), a);
-            else throw b;
-        }
-        this.stackdata = a
-    } else l.Error.captureStackTrace(this), this.stackdata = this;
-    return this
-};
-
-// W prototype ud method
-W.prototype.ud = function() {
-    return this.no
-};
-
-// W prototype n method
-W.prototype.n = function() {
-    var a = sb(na(this)),
-        b = this.ud();
-    return null === b ? a : a + ": " + b
-};
-
-// $l function: formats a stack trace for 'a'
-function $l(a) {
-    if (null === a.Bh) {
-        if (a.Wo) {
-            Hk || (Hk = (new yk).a());
-            var b = Hk;
-            var c = a.stackdata;
-            if (c) {
-                if (0 === (1 & b.q) << 24 >> 24 && 0 === (1 & b.q) << 24 >> 24) {
-                    a: try {
-                        l.Packages.org.mozilla.javascript.JavaScriptException;
-                        var e = !0
-                    } catch (u) {
-                        e = Yc(S(), u);
-                        if (null !== e) {
-                            if (e instanceof Lk) {
-                                e = !1;
-                                break a
-                            }
-                            throw T(S(), e);
-                        }
-                        throw u;
-                    }
-                    b.An = e;
-                    b.q = (1 | b.q) << 24 >> 24
-                }
-                if (b.An) e = c.stack, e = (void 0 === e ? "" : e).replace(Bk("^\\s+at\\s+", "gm"), "").replace(Bk("^(.+?)(?: \\((.+)\\))?$", "gm"), "$2@$1").replace(Bk("\\r\\n?", "gm"), "\n").split("\n");
-                else if (c.arguments && c.stack) e = zk(c);
-                else if (c.stack && c.sourceURL) e = c.stack.replace(Bk("\\[native code\\]\\n", "m"), "").replace(Bk("^(?\x3d\\w+Error\\:).*$\\n", "m"), "").replace(Bk("^@", "gm"), "{anonymous}()@").split("\n");
-                else if (c.stack && c.number) e = c.stack.replace(Bk("^\\s*at\\s+(.*)$", "gm"), "$1").replace(Bk("^Anonymous function\\s+", "gm"), "{anonymous}() ").replace(Bk("^([^\\(]+|\\{anonymous\\}\\(\\))\\s+\\((.+)\\)$", "gm"), "$1@$2").split("\n").slice(1);
-                else if (c.stack && c.fileName) e = c.stack.replace(Bk("(?:\\n@:0)?\\s+$", "m"), "").replace(Bk("^(?:\\((\\S*)\\))?@", "gm"), "{anonymous}($1)@").split("\n");
-                else if (c.message && c["opera#sourceloc"])
-                    if (c.stacktrace)
-                        if (-1 < c.message.indexOf("\n") && c.message.split("\n").length > c.stacktrace.split("\n").length) e = Gk(c);
-                        else {
-                            e = Bk("Line (\\d+).*script (?:in )?(\\S+)(?:: In function (\\S+))?$", "i");
-                            c = c.stacktrace.split("\n");
-                            var f = [];
-                            for (var g = 0, h = c.length | 0; g < h;) {
-                                var k = e.exec(c[g]);
-                                if (null !== k) {
-                                    var m = k[3];
-                                    m = void 0 === m ? "{anonymous}" : m;
-                                    var p = k[2];
-                                    if (void 0 === p) throw (new V).h("undefined.get");
-                                    k = k[1];
-                                    if (void 0 === k) throw (new V).h("undefined.get");
-                                    f.push(m + "()@" + p + ":" + k)
-                                }
-                                g = 2 + g | 0
-                            }
-                            e = f
-                        }
-                else e = Gk(c);
-                else if (c.message && c.stack && c.stacktrace)
-                    if (0 > c.stacktrace.indexOf("called from line")) {
-                        e = Ak("^(.*)@(.+):(\\d+)$");
-                        c = c.stacktrace.split("\n");
-                        f = [];
-                        g = 0;
-                        for (h = c.length | 0; g < h;) {
-                            k = e.exec(c[g]);
-                            if (null !== k) {
-                                m = k[1];
-                                m = void 0 === m ? "global code" : m + "()";
-                                p = k[2];
-                                if (void 0 === p) throw (new V).h("undefined.get");
-                                k = k[3];
-                                if (void 0 === k) throw (new V).h("undefined.get");
-                                f.push(m + "@" + p + ":" + k)
-                            }
-                            g = 1 + g | 0
-                        }
-                        e = f
-                    } else {
-                        e = Ak("^.*line (\\d+), column (\\d+)(?: in (.+))? in (\\S+):$");
-                        c = c.stacktrace.split("\n");
-                        f = [];
-                        g = 0;
-                        for (h = c.length | 0; g < h;) {
-                            k = e.exec(c[g]);
-                            if (null !== k) {
-                                m = k[4];
-                                if (void 0 === m) throw (new V).h("undefined.get");
-                                p = k[1];
-                                if (void 0 === p) throw (new V).h("undefined.get");
-                                var q = k[2];
-                                if (void 0 === q) throw (new V).h("undefined.get");
-                                m = m + ":" + p + ":" + q;
-                                k = k[2];
-                                k = (void 0 === k ? "global code" : k).replace(Ak("\x3canonymous function: (\\S+)\x3e"), "$1").replace(Ak("\x3canonymous function\x3e"), "{anonymous}");
-                                f.push(k + "@" + m) | 0
-                            }
-                            g = 2 + g | 0
-                        }
-                        e = f
-                    }
-                else e = c.stack && !c.fileName ? zk(c) : []
-            } else e = [];
-            f = e;
-            g = Ak("^([^\\@]*)\\@(.*):([0-9]+)$");
-            h = Ak("^([^\\@]*)\\@(.*):([0-9]+):([0-9]+)$");
-            c = [];
-            for (e = 0; e < (f.length | 0);) {
-                k = f[e];
-                if (null === k) throw (new Oc).a();
-                if ("" !== k)
-                    if (m = h.exec(k), null !== m) {
-                        k = m[1];
-                        if (void 0 === k) throw (new V).h("undefined.get");
-                        p = Fk(b, k);
-                        if (null === p) throw (new J).j(p);
-                        k = p.Ga();
-                        p = p.Qa();
-                        q = m[2];
-                        if (void 0 === q) throw (new V).h("undefined.get");
-                        var t = m[3];
-                        if (void 0 === t) throw (new V).h("undefined.get");
-                        t = (new Bc).h(t);
-                        t = Wc(Xc(), t.ob, 10);
-                        m = m[4];
-                        if (void 0 === m) throw (new V).h("undefined.get");
-                        m = (new Bc).h(m);
-                        m = Wc(Xc(), m.ob, 10);
-                        c.push({
-                            declaringClass: k,
-                            methodName: p,
-                            fileName: q,
-                            lineNumber: t,
-                            columnNumber: void 0 === m ? void 0 : m
-                        })
-                    } else if (m = g.exec(k), null !== m) {
-                        k = m[1];
-                        if (void 0 === k) throw (new V).h("undefined.get");
-                        p = Fk(b, k);
-                        if (null === p) throw (new J).j(p);
-                        k = p.Ga();
-                        p = p.Qa();
-                        q = m[2];
-                        if (void 0 === q) throw (new V).h("undefined.get");
-                        m = m[3];
-                        if (void 0 === m) throw (new V).h("undefined.get");
-                        m = (new Bc).h(m);
-                        m = Wc(Xc(), m.ob, 10);
-                        c.push({
-                            declaringClass: k,
-                            methodName: p,
-                            fileName: q,
-                            lineNumber: m,
-                            columnNumber: void 0
-                        })
-                    } else c.push({
-                        declaringClass: "\x3cjscode\x3e",
-                        methodName: k,
-                        fileName: null,
-                        lineNumber: -1,
-                        columnNumber: void 0
-                    }) | 0;
-                e = 1 + e | 0
-            }
-            b = aa.sourceMapper;
-            b = void 0 === b ? c : b(c);
-            c = r(D(Yl), [b.length | 0]);
-            for (e = 0; e < (b.length | 0);) f = b[e], g = f.methodName, h = f.fileName, k = f.lineNumber | 0, m = new Xl, m.lh = f.declaringClass, m.oi = g, m.ci = h, m.li = k, m.Wh = -1, g = m, f = f.columnNumber, void 0 !== f && g.setColumnNumber(f | 0), c.b[e] = g, e = 1 + e | 0;
-            b = c
-        } else b = r(D(Yl), [0]);
-        a.Bh = b
-    }
-    return a.Bh
-}
-
-// Vg function: prints the stack trace of 'a' to the console
-function Vg(a) {
-    var b = Pb().fn;
-    b = function(p, q) {
-        return function(t) {
-            Sb(q, null === t ? "null" : t);
-            Sb(q, "\n")
-        }
-    }(a, b);
-    $l(a);
-    var c = a.n();
-    b(c);
-    if (0 !== a.Bh.b.length)
-        for (c = 0; c < a.Bh.b.length;) b("  at " + a.Bh.b[c]), c = 1 + c | 0;
-    else b("  \x3cno stack trace available\x3e");
-    for (;;)
-        if (a !== a.hj && null !== a.hj) {
-            var e = $l(a);
-            a = a.hj;
-            c = $l(a);
-            var f = c.b.length,
-                g = e.b.length,
-                h = "Caused by: " + a.n();
-            b(h);
-            if (0 !== f) {
-                for (h = 0;;) {
-                    if (h < f && h < g) {
-                        var k = c.b[-1 + (f - h | 0) | 0],
-                            m = e.b[-1 + (g - h | 0) | 0];
-                        k = null === k ? null === m : k.t(m)
-                    } else k = !1;
-                    if (k) h = 1 + h | 0;
-                    else break
-                }
-                0 < h && (h = -1 + h | 0);
-                e = f - h | 0;
-                for (f = 0; f < e;) b("  at " + c.b[f]), f = 1 + f | 0;
-                0 < h && b("  ... " + h + " more")
-            } else b("  \x3cno stack trace available\x3e")
-        } else break
-}
-
-// W prototype Ua method
-W.prototype.Ua = function(a, b) {
-    this.no = a;
-    this.hj = b;
-    this.Wo = !0;
-    this.di()
-};
-
-// Nj class constructor
-function Nj() {
-    this.sn = this.co = null;
-    this.jo = this.ko = 0;
-    this.Fg = this.tn = this.nl = null;
-    this.Hk = !1
-}
-
-// Nj prototype methods
-Nj.prototype = new A;
-Nj.prototype.constructor = Nj;
-
-// Oj function: attempts to find the next match in 'a.tn' using 'a.nl'
-function Oj(a) {
-    if (a.Hk) {
-        a.Fg = a.nl.exec(a.tn);
-        if (null !== a.Fg) {
-            var b = a.Fg[0];
-            if (void 0 === b) throw (new V).h("undefined.get");
-            if (null === b) throw (new Oc).a();
-            "" === b && (b = a.nl, b.lastIndex = 1 + (b.lastIndex | 0) | 0)
-        } else a.Hk = !1;
-        R();
-        return null !== a.Fg
-    }
-    return !1
-}
-
-// Qj function: returns the current match result from 'a.Fg'
-function Qj(a) {
-    if (null === a.Fg) throw (new am).h("No match available");
-    return a.Fg
-}
-
-// Pj function: returns the end index of the current match in 'a.tn'
-function Pj(a) {
-    var b = Qj(a).index | 0;
-    a = Qj(a)[0];
-    if (void 0 === a) throw (new V).h("undefined.get");
-    return b + (a.length | 0) | 0
-}
-
-// Nj prototype $classData
-Nj.prototype.$classData = z({
-    Av: 0
-}, !1, "java.util.regex.Matcher", {
-    Av: 1,
-    c: 1,
-    AH: 1
-});
-
-// bm class constructor (empty)
-function bm() {}
-
-// bm prototype methods
-bm.prototype = new A;
-bm.prototype.constructor = bm;
-bm.prototype.ng = function() {
-    cm();
-    oh();
-    return (new dm).a()
-};
-bm.prototype.Qe = function() {
-    cm();
-    oh();
-    return (new dm).a()
-};
-
-// bm prototype $classData
-bm.prototype.$classData = z({
-    Hv: 0
-}, !1, "scala.LowPriorityImplicits$$anon$4", {
-    Hv: 1,
-    c: 1,
-    ui: 1
-});
-
-// em class constructor (empty)
-function em() {}
-
-// em prototype methods
-em.prototype = new A;
-em.prototype.constructor = em;
-em.prototype.a = function() {
-    return this
-};
-em.prototype.ng = function() {
-    return (new Li).a()
-};
-em.prototype.Qe = function() {
-    return (new Li).a()
-};
-
-// em prototype $classData
-em.prototype.$classData = z({
-    Ov: 0
-}, !1, "scala.Predef$$anon$1", {
-    Ov: 1,
-    c: 1,
-    ui: 1
-});
-
-// fm function: returns a property of 'a' based on 'b'
-function fm(a, b) {
-    switch (b) {
-        case 0:
-            return a.lc;
-        case 1:
-            return a.nc;
-        case 2:
-            return a.pc;
-        case 3:
-            return a.Fd;
-        default:
-            throw (new X).h("" + b);
-    }
-}
-
-// gm function: returns a property of 'a' based on 'b'
-function gm(a, b) {
-    switch (b) {
-        case 0:
-            return a.lc;
-        case 1:
-            return a.nc;
-        case 2:
-            return a.pc;
-        case 3:
-            return a.Fd;
-        case 4:
-            return a.ah;
-        default:
-            throw (new X).h("" + b);
-    }
-}
-
-// $g class constructor (empty)
-function $g() {}
-
-// $g prototype methods
-$g.prototype = new A;
-$g.prototype.constructor = $g;
-$g.prototype.a = function() {
-    return this
-};
-$g.prototype.n = function() {
-    return "object AnyRef"
-};
-
-// $g prototype $classData
-$g.prototype.$classData = z({
-    rw: 0
-}, !1, "scala.package$$anon$1", {
-    rw: 1,
-    c: 1,
-    KH: 1
-});
-
-// hm class constructor (inherits from ti)
-function hm() {
-    this.cg = this.On = this.El = 0
-}
-
-// Set hm's prototype to ti's prototype
-hm.prototype = new ti;
-hm.prototype.constructor = hm;
-
-// hm prototype a method
-hm.prototype.a = function() {
-    im = this;
-    this.El = Ea(Fa(), "Seq");
-    this.On = Ea(Fa(), "Map");
-    this.cg = Ea(Fa(), "Set");
-    return this
-};
-
-// jm function: calculates a hash code for 'a'
-function jm(a) {
-    var b = vi();
-    if (a instanceof km) {
-        for (var c = 0, e = b.El, f = a; !f.m();) a = f.w(), f = f.cb(), e = b.Fc(e, wi(xi(), a)), c = 1 + c | 0;
-        b = b.We(e, c)
-    } else b = Ai(b, a, b.El);
-    return b
-}
-
-// hm prototype $classData
-hm.prototype.$classData = z({
-    Xw: 0
-}, !1, "scala.util.hashing.MurmurHash3$", {
-    Xw: 1,
-    PH: 1,
-    c: 1
-});
-
-// im global variable
-var im = void 0;
-
-// vi function: initializes and returns im
-function vi() {
-    im || (im = (new hm).a());
-    return im
-}
-
-// ac function: creates a new lm object with a filter function
-function ac(a, b) {
-    return (new lm).fi(a, F(function(c, e) {
-        return function(f) {
-            return !e.l(f)
-        }
-    }(a, b)))
-}
-
-// mm function: checks if all elements in 'a' satisfy the condition 'b'
-function mm(a, b) {
-    for (var c = !0; c && a.r();) c = !!b.l(a.u());
-    return c
-}
-
-// nm function: applies function 'b' to each element in 'a'
-function nm(a, b) {
-    for (; a.r();) b.l(a.u())
-}
-
-// om function: creates a new Gi object and sets its properties
-function om(a, b) {
-    a = (new pm).bl(a);
-    var c = new Gi;
-    c.Uc = b;
-    c.xb = null;
-    null === a.xb ? a.xb = c : a.ki.xb = c;
-    a.ki = c;
-    null === a.id && (a.id = eh().nb);
-    return a
-}
-
-// qm function: finds the first element in 'a' that satisfies 'b'
-function qm(a, b) {
-    for (; a.r();) {
-        var c = a.u();
-        if (b.l(c)) return (new Q).j(c)
-    }
-    return R()
-}
-
-// rm function: returns an xm object if 'a' is not empty, otherwise returns a zm object
-function rm(a) {
-    if (a.r()) {
-        var b = a.u();
-        return xm(new ym, b, Ob(function(c) {
-            return function() {
-                return c.Ka()
-            }
-        }(a)))
-    }
-    lh();
-    return zm()
-}
-
-// Am function: copies elements from 'a' to 'b'
-function Am(a, b, c, e) {
-    var f = c,
-        g = Ii(Ji(), b) - c | 0;
-    for (c = c + (e < g ? e : g) | 0; f < c && a.r();) dl(Ji(), b, f, a.u()), f = 1 + f | 0
-}
-
-// Bm class constructor
-function Bm() {
-    this.k = this.$n = null
-}
-
-// Bm prototype methods
-Bm.prototype = new A;
-Bm.prototype.constructor = Bm;
-Bm.prototype.K = function(a) {
-    this.k.K(F(function(b, c) {
-        return function(e) {
-            return b.$n.l(e) ? c.l(e) : void 0
-        }
-    }(this, a)))
-};
-
-// Cm function: sets $n and k properties and returns 'a'
-function Cm(a, b, c) {
-    a.$n = c;
-    if (null === b) throw T(S(), null);
-    a.k = b;
-    return a
-}
-
-// Bm prototype $classData
-Bm.prototype.$classData = z({
-    vx: 0
-}, !1, "scala.collection.TraversableLike$WithFilter", {
-    vx: 1,
-    c: 1,
-    W: 1
-});
-
-// Dm class constructor (empty)
-function Dm() {}
-
-// Dm prototype methods
-Dm.prototype = new Xi;
-Dm.prototype.constructor = Dm;
-
-// Em class constructor (inherits from Dm)
-function Em() {}
-
-// Set Em's prototype to Dm's prototype
-Em.prototype = Dm.prototype;
-
-// Fm class constructor
-function Fm() {
-    this.k = null
-}
-
-// Fm prototype methods
-Fm.prototype = new A;
-Fm.prototype.constructor = Fm;
-Fm.prototype.ng = function() {
-    return this.k.fa()
-};
-Fm.prototype.Qe = function(a) {
-    return a && a.$classData && a.$classData.qa.Wb ? a.Ra().fa() : this.k.fa()
-};
-
-// jc function: creates and returns a new Fm object
-function jc(a) {
-    var b = new Fm;
-    if (null === a) throw T(S(), null);
-    b.k = a;
-    return b
-}
-
-// Fm prototype $classData
-Fm.prototype.$classData = z({
-    Bx: 0
-}, !1, "scala.collection.generic.GenSetFactory$$anon$1", {
-    Bx: 1,
-    c: 1,
-    ui: 1
-});
-
-// Gm class constructor
-function Gm() {
-    this.G = null
-}
-
-// Gm prototype methods
-Gm.prototype = new Xi;
-Gm.prototype.constructor = Gm;
-
-// Hm class constructor (inherits from Gm)
-function Hm() {}
-
-// Set Hm's prototype to Gm's prototype
-Hm.prototype = Gm.prototype;
-
-// Gm prototype a method
-Gm.prototype.a = function() {
-    this.G = (new Im).gi(this);
-    return this
-};
-
-// Jm class constructor
-function Jm() {
-    this.k = null
-}
-
-// Jm prototype methods
-Jm.prototype = new A;
-Jm.prototype.constructor = Jm;
-
-// Km class constructor (inherits from Jm)
-function Km() {}
-
-// Set Km's prototype to Jm's prototype
-Km.prototype = Jm.prototype;
-
-// Jm prototype ng method
-Jm.prototype.ng = function() {
-    return this.k.fa()
-};
-
-// Jm prototype Qe method
-Jm.prototype.Qe = function(a) {
-    return a.Ra().fa()
-};
-
-// Jm prototype gi method
-Jm.prototype.gi = function(a) {
-    if (null === a) throw T(S(), null);
-    this.k = a;
-    return this
-};
-
-// Lm class constructor (inherits from Vi)
-function Lm() {}
-
-// Set Lm's prototype to Vi's prototype
-Lm.prototype = new Vi;
-Lm.prototype.constructor = Lm;
-
-// Mm class constructor (inherits from Lm)
-function Mm() {}
-
-// Set Mm's prototype to Lm's prototype
-Mm.prototype = Lm.prototype;
-
-// Nm class constructor (inherits from aj)
-function Nm() {
-    this.Qn = null
-}
-
-// Nm prototype methods
-Nm.prototype = new aj;
-Nm.prototype.constructor = Nm;
-
-// Om function: sets Qn property and performs a null check
-function Om(a, b) {
-    a.Qn = b;
-    if (null === a) throw T(S(), null);
-}
-
-// Nm prototype ym method
-Nm.prototype.ym = function(a, b) {
-    return de(this.Qn, a, b)
-};
-
-// Nm prototype $classData
-Nm.prototype.$classData = z({
-    Jx: 0
-}, !1, "scala.collection.immutable.HashMap$$anon$1", {
-    Jx: 1,
-    Qx: 1,
-    c: 1
-});
-
-// Class data object for scala.collection.immutable.HashMap$$anon$1$$anon$2
-z({
-    Kx: 0
-}, !1, "scala.collection.immutable.HashMap$$anon$1$$anon$2", {
-    Kx: 1,
-    Qx: 1,
-    c: 1
-});
-
-// Pm class constructor (empty)
-function Pm() {}
-
-// Pm prototype methods
-Pm.prototype = new A;
-Pm.prototype.constructor = Pm;
-d = Pm.prototype;
-d.a = function() {
-    return this
-};
-d.l = function() {
-    return this
-};
-d.n = function() {
-    return "\x3cfunction1\x3e"
-};
-d.Rb = function(a) {
-    return jb(this, a)
-};
-
-// Pm prototype $classData
-d.$classData = z({
-    by: 0
-}, !1, "scala.collection.immutable.List$$anon$1", {
-    by: 1,
-    c: 1,
-    P: 1
-});
-
-// Qm function: calls hc on 'a' with 'b'
-function Qm(a, b) {
-    b = b.gc();
-    switch (b) {
-        case -1:
-            break;
-        default:
-            a.hc(b)
-    }
-}
-
-// Rm function: calls hc on 'a' with 'b + c'
-function Rm(a, b, c) {
-    b = b.gc();
-    switch (b) {
-        case -1:
-            break;
-        default:
-            a.hc(b + c | 0)
-    }
-}
-
-// Sm function: calls hc on 'a' with the minimum of 'b' and 'c'
-function Sm(a, b, c) {
-    c = c.gc();
-    switch (c) {
-        case -1:
-            break;
-        default:
-            a.hc(b < c ? b : c)
-    }
-}
-
-// Tm class constructor (empty)
-function Tm() {}
-
-// Tm prototype methods
-Tm.prototype = new A;
-Tm.prototype.constructor = Tm;
-
-// Um class constructor (inherits from Tm)
-function Um() {}
-
-// Set Um's prototype to Tm's prototype
-Um.prototype = Tm.prototype;
-
-// Tm prototype n method
-Tm.prototype.n = function() {
-    return "\x3cfunction0\x3e"
-};
-
-// Vm class constructor (empty)
-function Vm() {}
-
-// Vm prototype methods
-Vm.prototype = new A;
-Vm.prototype.constructor = Vm;
-
-// Wm class constructor (inherits from Vm)
-function Wm() {}
-
-// Set Wm's prototype to Vm's prototype
-Wm.prototype = Vm.prototype;
-
-// Vm prototype n method
-Vm.prototype.n = function() {
-    return "\x3cfunction1\x3e"
-};
-
-// Vm prototype Rb method
-Vm.prototype.Rb = function(a) {
-    return jb(this, a)
-};
-
-// Xm class constructor (empty)
-function Xm() {}
-
-// Xm prototype methods
-Xm.prototype = new A;
-Xm.prototype.constructor = Xm;
-
-// Ym class constructor (inherits from Xm)
-function Ym() {}
-
-// Set Ym's prototype to Xm's prototype
-Ym.prototype = Xm.prototype;
-
-// Xm prototype n method
-Xm.prototype.n = function() {
-    return "\x3cfunction2\x3e"
-};
-
-// Oi class constructor
-function Oi() {
-    this.o = !1
-}
-
-// Oi prototype methods
-Oi.prototype = new A;
-Oi.prototype.constructor = Oi;
-Oi.prototype.n = function() {
-    return "" + this.o
-};
-Oi.prototype.$e = function(a) {
-    this.o = a;
-    return this
-};
-
-// Oi prototype $classData
-Oi.prototype.$classData = z({
-    Ez: 0
-}, !1, "scala.runtime.BooleanRef", {
-    Ez: 1,
-    c: 1,
-    d: 1
-});
-
-// cl function: checks if 'a' has a specific class data property
-function cl(a) {
-    return !!(a && a.$classData && 1 === a.$classData.ih && a.$classData.hh.qa.Ko)
-}
-
-// Aa class data object
-var Aa = z({
-    Ko: 0
-}, !1, "scala.runtime.BoxedUnit", {
-    Ko: 1,
-    c: 1,
-    d: 1
-}, void 0, void 0, function(a) {
-    return void 0 === a
-});
-
-// zi class constructor
-function zi() {
-    this.o = 0
-}
-
-// zi prototype methods
-zi.prototype = new A;
-zi.prototype.constructor = zi;
-zi.prototype.n = function() {
-    return "" + this.o
-};
-zi.prototype.ua = function(a) {
-    this.o = a;
-    return this
-};
-
-// zi prototype $classData
-zi.prototype.$classData = z({
-    Gz: 0
-}, !1, "scala.runtime.IntRef", {
-    Gz: 1,
-    c: 1,
-    d: 1
-});
-
-// ie class constructor
-function ie() {
-    this.o = null
-}
-
-// ie prototype methods
-ie.prototype = new A;
-ie.prototype.constructor = ie;
-ie.prototype.n = function() {
-    return "" + this.o
-};
-ie.prototype.j = function(a) {
-    this.o = a;
-    return this
-};
-
-// ie prototype $classData
-ie.prototype.$classData = z({
-    Kz: 0
-}, !1, "scala.runtime.ObjectRef", {
-    Kz: 1,
-    c: 1,
-    d: 1
-});
-
-// Lb class constructor
-function Lb() {
-    this.Io = null
-}
-
-// Lb prototype methods
-Lb.prototype = new A;
-Lb.prototype.constructor = Lb;
-Lb.prototype.a = function() {
-    Kb = this;
-    this.Io = (new Zm).j(function() {
-        return function(a) {
-            a = a.s;
-            if (a.m()) return "-1";
-            a = a.Nb();
-            var b = L().G;
-            b = O(a, b);
-            return gc(b) + "\n" + U(a, "", "\n", "")
-        }
-    }(this));
-    return this
-};
-
-// Lb prototype $classData
-Lb.prototype.$classData = z({
-    $o: 0
-}, !1, "atcoder.ABC142F$Answer$", {
-    $o: 1,
-    c: 1,
-    e: 1,
-    d: 1
-});
-
-// Kb global variable
-var Kb = void 0;
-
-// $m class constructor
-function $m() {
-    this.cl = this.dl = this.vn = this.un = null;
-    this.q = 0
-}
-
-// $m prototype methods
-$m.prototype = new A;
-$m.prototype.constructor = $m;
-$m.prototype.a = function() {
-    return this
-};
-
-// an function: initializes dl property if not already done
-function an(a) {
-    0 === (4 & a.q) << 24 >> 24 && 0 === (4 & a.q) << 24 >> 24 && (a.dl = Mc(xc(), (new qc).ge(Ob(function(b) {
-        return function() {
-            return bn(b)
-        }
-    }(a))), (new qc).ge(Ob(function(b) {
-        return function() {
-            0 === (2 & b.q) << 24 >> 24 && 0 === (2 & b.q) << 24 >> 24 && (b.vn = yc(), b.q = (2 | b.q) << 24 >> 24);
-            return b.vn
-        }
-    }(a))))), a.q = (4 | a.q) << 24 >> 24);
-    return a.dl
-}
-
-// bn function: initializes un property if not already done
-function bn(a) {
-    0 === (1 & a.q) << 24 >> 24 && 0 === (1 & a.q) << 24 >> 24 && (a.un = Sc(), a.q = (1 | a.q) << 24 >> 24);
-    return a.un
-}
-
-// pc function: returns cl property, initializing it if necessary
-function pc() {
-    var a = (new $m).a();
-    return 0 === (8 & a.q) << 24 >> 24 ? cn(a) : a.cl
-}
-
-// cn function: initializes cl property if not already done
-function cn(a) {
-    if (0 === (8 & a.q) << 24 >> 24) {
-        var b = xc(),
-            c = xc(),
-            e = new dn,
-            f = xc();
-        a.cl = Gc(b, Jc(c, e, Mc(f, (new qc).ge(Ob(function(g) {
-            return function() {
-                return bn(g)
-            }
-        }(a))), (new qc).ge(Ob(function(g) {
-            return function() {
-                return 0 === (4 & g.q) << 24 >> 24 ? an(g) : g.dl
-            }
-        }(a))))));
-        a.q = (8 | a.q) << 24 >> 24
-    }
-    return a.cl
-}
-
-// $m prototype $classData
-$m.prototype.$classData = z({
-    bp: 0
-}, !1, "atcoder.ABC142F$anon$lazy$macro$9$1", {
-    bp: 1,
-    c: 1,
-    e: 1,
-    d: 1
-});
-
-// en class constructor (empty)
-function en() {}
-
-// en prototype methods
-en.prototype = new A;
-en.prototype.constructor = en;
-en.prototype.a = function() {
-    fn = this;
-    (new gn).a();
-    return this
-};
-
-// en prototype $classData
-en.prototype.$classData = z({
-    xp: 0
-}, !1, "cats.Show$", {
-    xp: 1,
-    c: 1,
-    e: 1,
-    d: 1
-});
-
-// fn global variable
-var fn = void 0;
-
-// hn function: initializes fn
-function hn() {
-    fn || (fn = (new en).a())
-}
-
-// jn class constructor (inherits from ol)
-function jn() {}
-
-// Set jn's prototype to ol's prototype
-jn.prototype = new ol;
-jn.prototype.constructor = jn;
-
-// kn class constructor (inherits from jn)
-function kn() {}
-
-// Set kn's prototype to jn's prototype
-kn.prototype = jn.prototype;
-
-// ln class constructor
-function ln() {
-    this.ma = !1
-}
-
-// ln prototype methods
-ln.prototype = new A;
-ln.prototype.constructor = ln;
-
-// mn class constructor (inherits from ln)
-function mn() {}
-
-// Set mn's prototype to ln's prototype
-mn.prototype = ln.prototype;
-
-// Xd class constructor
-function Xd() {
-    this.cj = this.Dm = 0;
-    this.ce = null;
-    this.ma = this.hd = 0
-}
-
-// Xd prototype methods
-Xd.prototype = new A;
-Xd.prototype.constructor = Xd;
-d = Xd.prototype;
-d.a = function() {
-    Xd.prototype.ua.call(this, 8);
-    return this
-};
-d.m = function() {
-    return 0 === this.hd && null === this.ce.b[0]
-};
-d.qu = function(a, b) {
-    this.Dm = b;
-    this.cj = -1 + b | 0;
-    this.ma = (1 | this.ma) << 24 >> 24;
-    this.ce = a;
-    this.ma = (2 | this.ma) << 24 >> 24;
-    this.hd = 0;
-    this.ma = (4 | this.ma) << 24 >> 24
-};
-
-// Id function: gets an element from 'a' and updates its state
-function Id(a) {
-    if (0 === a.hd)
-        if (null !== a.ce.b[0]) a.ce = a.ce.b[0], a.hd = a.cj;
-        else return null;
-    var b = a.ce.b[a.hd];
-    a.ce.b[a.hd] = null;
-    a.hd = -1 + a.hd | 0;
-    return b
-}
-
-// d.ua method on Xd's prototype
-d.ua = function(a) {
-    Xd.prototype.qu.call(this, r(D(C), [a]), a);
-    return this
-};
-
-// Yd function: adds 'b' to 'a' and updates its state
-function Yd(a, b) {
-    if (a.hd === a.cj) {
-        var c = r(D(C), [a.Dm]);
-        c.b[0] = a.ce;
-        a.ce = c;
-        a.hd = 1
-    } else a.hd = 1 + a.hd | 0;
-    a.ce.b[a.hd] = b
-}
-
-// Xd prototype $classData
-d.$classData = z({
-    Vp: 0
-}, !1, "cats.effect.internals.ArrayStack", {
-    Vp: 1,
-    c: 1,
-    e: 1,
-    d: 1
-});
-
-// nn class constructor
-function nn() {
-    this.s = this.pg = this.jh = this.xe = null;
-    this.ma = !1
-}
-
-// nn prototype methods
-nn.prototype = new A;
-nn.prototype.constructor = nn;
-d = nn.prototype;
-d.l = function(a) {
-    this.gh(a)
-};
-d.Yk = function(a, b) {
-    this.xe = a;
-    this.jh = b;
-    this.pg = (new on).$e(!0);
-    this.ma = !0;
-    return this
-};
-d.Lj = function() {
-    this.jh.l(this.s)
-};
-d.n = function() {
-    return "\x3cfunction1\x3e"
-};
-d.gh = function(a) {
-    var b = this.pg,
-        c = b.s;
-    b.s = !1;
-    if (c) null !== this.xe && this.xe.fo(), this.s = a, ue().oh(this);
-    else if (!(a instanceof wc))
-        if (a instanceof Fc) a = a.E, nd().l(a);
-        else throw (new J).j(a);
-};
-d.Rb = function(a) {
-    return jb(this, a)
-};
-
-// nn prototype $classData
-d.$classData = z({
-    Yp: 0
-}, !1, "cats.effect.internals.Callback$AsyncIdempotentCallback", {
-    Yp: 1,
-    c: 1,
-    P: 1,
-    Jn: 1
-});
-
-// vd class constructor (inherits from zl)
-function vd() {
-    this.Pk = this.Se = null;
-    this.ue = !1
-}
-
-// Set vd's prototype to zl's prototype
-vd.prototype = new zl;
-vd.prototype.constructor = vd;
-
-// vd prototype l method
-vd.prototype.l = function() {
-    return ud(this)
-};
-
-// ud function: processes elements from 'a.Se' or 'a.Pk'
-function ud(a) {
-    if (a.Se.r()) {
-        var b = a.Se.u();
-        return ge(new Wd, b, a)
-    }
-    b = a.Pk.Sa();
-    if (M().t(b)) return sd();
-    if (b instanceof N) {
-        a = b.th;
-        for (b = b.uc; !b.m();) {
-            var c = b.w();
-            nd().l(c);
-            b = b.cb()
-        }
-        Mb();
-        return Vd(a)
-    }
-    throw (new J).j(b);
-}
-
-// vd prototype ml method
-vd.prototype.ml = function(a) {
-    pn(this.Pk, a);
-    return ud(this)
-};
-
-// vd prototype bl method
-vd.prototype.bl = function(a) {
-    this.Se = a;
-    qn();
-    this.Pk = (new rn).Bg((new sn).a()).Lb;
-    this.ue = !0;
-    return this
-};
-
-// vd prototype $classData
-vd.prototype.$classData = z({
-    $p: 0
-}, !1, "cats.effect.internals.CancelUtils$CancelAllFrame", {
-    $p: 1,
-    eq: 1,
-    c: 1,
-    P: 1
-});
-
-// ce class constructor
-function ce() {
-    this.xe = this.jh = null;
-    this.Ml = this.pg = !1;
-    this.s = this.Fk = this.Ek = null;
-    this.ma = 0
-}
-
-// ce prototype methods
-ce.prototype = new A;
-ce.prototype.constructor = ce;
-d = ce.prototype;
-d.l = function(a) {
-    this.gh(a)
-};
-d.Yk = function(a, b) {
-    this.jh = b;
-    this.xe = a;
-    this.ma = (1 | this.ma) << 24 >> 24;
-    this.pg = !1;
-    this.ma = (2 | this.ma) << 24 >> 24;
-    this.Ml = !1;
-    this.ma = (4 | this.ma) << 24 >> 24;
-    return this
-};
-
-// tn function: processes a result 'b' and calls Pd
-function tn(a, b) {
-    var c = a.Ek,
-        e = a.Fk;
-    a.Ek = null;
-    a.Fk = null;
-    if (!a.xe.el())
-        if (b instanceof wc) b = b.E, Pd(Qd(), (new Zd).j(b), a.xe, a.jh, a, c, e);
-        else if (b instanceof Fc) b = b.E, Pd(Qd(), Vd(b), a.xe, a.jh, a, c, e);
-        else throw (new J).j(b);
-}
-
-// ce prototype Lj method
-d.Lj = function() {
-    var a = this.s;
-    this.s = null;
-    tn(this, a)
-};
-
-// ce prototype n method
-d.n = function() {
-    return "\x3cfunction1\x3e"
-};
-
-// ce prototype gh method
-d.gh = function(a) {
-    this.pg && (this.pg = !1, this.Ml ? (this.s = a, ue().oh(this)) : tn(this, a))
-};
-
-// ce prototype Rb method
-d.Rb = function(a) {
-    return jb(this, a)
-};
-
-// ce prototype $classData
-d.$classData = z({
-    iq: 0
-}, !1, "cats.effect.internals.IORunLoop$RestartCallback", {
-    iq: 1,
-    c: 1,
-    P: 1,
-    Jn: 1
-});
-
-// fe class constructor (inherits from zl)
-function fe() {
-    this.Hg = this.ll = null
-}
-
-// Set fe's prototype to zl's prototype
-fe.prototype = new zl;
-fe.prototype.constructor = fe;
-
-// fe prototype l method
-fe.prototype.l = function(a) {
-    return this.Ck(a)
-};
-
-// fe prototype ml method
-fe.prototype.ml = function(a) {
-    return un(new ee, Vd(a), F(function(b, c) {
-        return function(e) {
-            return og(0, c | 0, b.ll | 0, e | 0)
-        }
-    }(this, a)))
-};
-
-// fe prototype Ck method
-fe.prototype.Ck = function(a) {
-    return un(new ee, (new Zd).j(a), F(function(b, c) {
-        return function(e) {
-            return og(c | 0, 0
+ 'use strict';     
+	  'use strict';var d,aa="object"===typeof __ScalaJSEnv&&__ScalaJSEnv?__ScalaJSEnv:{},l="object"===typeof aa.global&&aa.global?aa.global:"object"===typeof global&&global&&global.Object===Object?global:this;aa.global=l;aa.exportsNamespace=exports;l.Object.freeze(aa);var ba={envInfo:aa,semantics:{asInstanceOfs:2,arrayIndexOutOfBounds:2,moduleInit:2,strictFloats:!1,productionMode:!0},assumingES6:!1,linkerVersion:"0.6.29",globalThis:this};l.Object.freeze(ba);l.Object.freeze(ba.semantics);
+/* ========== la lecture maintenant organise clé l'information calculée avec l'entrée 98. ========== */
+	 var n=l.Math.imul||function(a,b){var c=a&65535,e=b&65535;return c*e+((a>>>16&65535)*e+c*(b>>>16&65535)<<16>>>0)|0},ca=l.Math.fround||function(a){return+a},da=l.Math.clz32||function(a){if(0===a)return 32;var b=1;0===(a&4294901760)&&(a<<=16,b+=16);0===(a&4278190080)&&(a<<=8,b+=8);0===(a&4026531840)&&(a<<=4,b+=4);0===(a&3221225472)&&(a<<=2,b+=2);return b+(a>>31)},fa=0,ha=l.WeakMap?new l.WeakMap:null;
+    function ia(a){return function(b,c){return!(!b||!b.$classData||b.$classData.ih!==c||b.$classData.hh!==a)}}function ja(a){for(var b in a)return b}function ka(a,b){return new a.Ik(b)}function r(a,b){return la(a,b,0)}function la(a,b,c){var e=new a.Ik(b[c]);if(c<b.length-1){a=a.Xh;c+=1;for(var f=e.b,g=0;g<f.length;g++)f[g]=la(a,b,c)}return e}function ma(a){return void 0===a?"undefined":a.toString()}
+/*
+ * la lecture ici maintient la continuité du code.
+ */
+  function na(a){switch(typeof a){case "string":return w(oa);case "number":var b=a|0;return b===a?pa(b)?w(ra):sa(b)?w(ta):w(ua):wa(a)?w(xa):w(ya);case "boolean":return w(za);case "undefined":return w(Aa);default:return null===a?a.xH():a instanceof x?w(Ba):a&&a.$classData?w(a.$classData):null}}function Ca(a,b){return a&&a.$classData||null===a?a.t(b):"number"===typeof a?"number"===typeof b&&(a===b?0!==a||1/a===1/b:a!==a&&b!==b):a===b}   
+// ========== la lecture bien maintient actuel la séquence de travail avec l'entrée 48. ==========
+    function Da(a){switch(typeof a){case "string":return Ea(Fa(),a);case "number":return Ga(Ha(),a);case "boolean":return a?1231:1237;case "undefined":return 0;default:return a&&a.$classData||null===a?a.z():null===ha?42:Ia(a)}}function Ja(a){return 2147483647<a?2147483647:-2147483648>a?-2147483648:a|0}function Ka(a,b,c,e,f){a=a.b;c=c.b;if(a!==c||e<b||(b+f|0)<e)for(var g=0;g<f;g=g+1|0)c[e+g|0]=a[b+g|0];else for(g=f-1|0;0<=g;g=g-1|0)c[e+g|0]=a[b+g|0]}
+var Ia=null!==ha?function(a){switch(typeof a){case "string":case "number":case "boolean":case "undefined":return Da(a);default:if(null===a)return 0;var b=ha.get(a);void 0===b&&(fa=b=fa+1|0,ha.set(a,b));return b}}:function(a){if(a&&a.$classData){var b=a.$idHashCode$0;if(void 0!==b)return b;if(l.Object.isSealed(a))return 42;fa=b=fa+1|0;return a.$idHashCode$0=b}return null===a?0:Da(a)};function pa(a){return"number"===typeof a&&a<<24>>24===a&&1/a!==1/-0}
+// la lecture aussi maintient clé la lecture humaine avant la sortie 82.
+function sa(a){return"number"===typeof a&&a<<16>>16===a&&1/a!==1/-0}function La(a){return"number"===typeof a&&(a|0)===a&&1/a!==1/-0}function wa(a){return"number"===typeof a}function Ma(a){return null===a?y().mg:a}function Na(){this.Ij=this.Ik=void 0;this.hh=this.Xh=this.qa=null;this.ih=0;this.Ol=null;this.bj="";this.Od=this.$i=this.aj=void 0;this.name="";this.isRawJSType=this.isArrayClass=this.isInterface=this.isPrimitive=!1;this.isInstance=void 0}
+  function Oa(a,b,c){var e=new Na;e.qa={};e.Xh=null;e.Ol=a;e.bj=b;e.Od=function(){return!1};e.name=c;e.isPrimitive=!0;e.isInstance=function(){return!1};return e}function z(a,b,c,e,f,g,h,k){var m=new Na,p=ja(a);h=h||function(q){return!!(q&&q.$classData&&q.$classData.qa[p])};k=k||function(q,t){return!!(q&&q.$classData&&q.$classData.ih===t&&q.$classData.hh.qa[p])};m.Ij=g;m.qa=e;m.bj="L"+c+";";m.Od=k;m.name=c;m.isInterface=b;m.isRawJSType=!!f;m.isInstance=h;return m}
+    function Pa(a){function b(k){if("number"===typeof k){this.b=Array(k);for(var m=0;m<k;m++)this.b[m]=f}else this.b=k}var c=new Na,e=a.Ol,f="longZero"==e?y().mg:e;b.prototype=new A;b.prototype.constructor=b;b.prototype.mu=function(){return this.b instanceof Array?new b(this.b.slice(0)):new b(new this.b.constructor(this.b))};b.prototype.$classData=c;e="["+a.bj;var g=a.hh||a,h=a.ih+1;c.Ik=b;c.Ij=C;c.qa={c:1,Ae:1,d:1};c.Xh=a;c.hh=g;c.ih=h;c.Ol=null;c.bj=e;c.aj=void 0;c.$i=void 0;c.Od=void 0;c.name=e;c.isPrimitive=
+// >>> la lecture maintient clé la valeur intermédiaire avant la sortie 32. 🌊 <<<
+!1;c.isInterface=!1;c.isArrayClass=!0;c.isInstance=function(k){return g.Od(k,h)};return c}function w(a){if(!a.aj){var b=new Qa;b.jd=a;a.aj=b}return a.aj}function D(a){a.$i||(a.$i=Pa(a));return a.$i}Na.prototype.getFakeInstance=function(){if(this===oa)return"some string";if(this===za)return!1;if(this===ra||this===ta||this===ua||this===xa||this===ya)return 0;if(this===Ba)return y().mg;if(this!==Aa)return{$classData:this}};Na.prototype.getSuperclass=function(){return this.Ij?w(this.Ij):null};
+Na.prototype.getComponentType=function(){return this.Xh?w(this.Xh):null};Na.prototype.newArrayOfThisClass=function(a){for(var b=this,c=0;c<a.length;c++)b=D(b);return r(b,a)};var Ra=Oa(void 0,"V","void"),Sa=Oa(!1,"Z","boolean"),Ua=Oa(0,"C","char"),Va=Oa(0,"B","byte"),Wa=Oa(0,"S","short"),E=Oa(0,"I","int"),Xa=Oa("longZero","J","long"),Ya=Oa(0,"F","float"),Za=Oa(0,"D","double"),$a=ia(Sa);Sa.Od=$a;var bb=ia(Ua);Ua.Od=bb;var cb=ia(Va);Va.Od=cb;var db=ia(Wa);Wa.Od=db;var eb=ia(E);E.Od=eb;var fb=ia(Xa);
+/* la lecture ici maintient la transformation appliquée. Treecko */
+Xa.Od=fb;var gb=ia(Ya);Ya.Od=gb;var hb=ia(Za);Za.Od=hb;var ib=require("fs");function jb(a,b){return F(function(c,e){return function(f){return e.l(c.l(f))}}(a,b))}var kb=z({tk:0},!0,"scalax.collection.GraphEdge$Keyed",{tk:1});function lb(a,b,c){return mb.il(b,c).Gb(a).Ca()}function nb(a,b){return 0<b?0<a.gd?(b=b+a.gd|0,b>a.Kd?0:b):0:0<a.Nd?a.Nd:0<a.gd?a.gd:0}
+function ob(a,b){return b&&b.$classData&&b.$classData.qa.Mt&&b&&b.$classData&&b.$classData.qa.y&&b&&b.$classData&&b.$classData.qa.p?b.oa(a)&&b.x()===a.x()&&b.Wa(F(function(c){return function(e){a:{var f=e.Ga();f=null===f?pb().Ee:f;var g=c.Dd.b.length;pb();var h=Ia(f);f=qb(c,f,((h<<1)-(h<<8)|0)&(-1+g|0),g);e=!(0>f)&&G(H(),c.Dd.b[1+f|0],e.Qa());break a;e=void 0}return e}}(a))):!1}function qb(a,b,c,e){for(a=a.Dd;;){var f=a.b[c];if(f===b)return c;if(null===f)return~c;c=2+c|0;c=c<e?c:0}}
+function rb(){}function A(){}A.prototype=rb.prototype;rb.prototype.a=function(){return this};rb.prototype.t=function(a){return this===a};rb.prototype.n=function(){var a=sb(na(this)),b=(+(this.z()>>>0)).toString(16);return a+"@"+b};rb.prototype.z=function(){return Ia(this)};rb.prototype.toString=function(){return this.n()};function ub(a,b){if(a=a&&a.$classData){var c=a.ih||0;return!(c<b)&&(c>b||!a.hh.isPrimitive)}return!1} 
+      var C=z({c:0},!1,"java.lang.Object",{c:1},void 0,void 0,function(a){return null!==a},ub);rb.prototype.$classData=C;function vb(a,b){if(b instanceof wb)return b=null===b?0:b.s,a.yj()&&a.Xc()===b;if(pa(b))return b|=0,a.xj()&&a.Th()===b;if(sa(b))return b|=0,a.Aj()&&a.zi()===b;if(La(b))return b|=0,a.hi()&&a.Xc()===b;if(b instanceof x){var c=Ma(b);b=c.f;c=c.i;a=a.Yc();var e=a.i;return a.f===b&&e===c}return wa(b)?(b=+b,a.Kf()===b):"number"===typeof b?(b=+b,a.ee()===b):!1}
+function xb(a,b){a=yb(a);if(!a.r())return!b.r();for(var c=zb(a);b.r();)for(var e=b.u();;){var f=e|0,g=c|0;f=f===g?0:f<g?-1:1;if(0!==f){if(0>f||!a.r())return!1;f=!0}else f=!1;if(f)c=zb(a);else break}return!0}function I(a){var b=r(D(C),[a.b.length]);Ka(a,0,b,0,a.b.length);return b}
+   function Ab(a,b,c){if(32>c)return a.mb().b[31&b];if(1024>c)return a.L().b[31&(b>>>5|0)].b[31&b];if(32768>c)return a.X().b[31&(b>>>10|0)].b[31&(b>>>5|0)].b[31&b];if(1048576>c)return a.ta().b[31&(b>>>15|0)].b[31&(b>>>10|0)].b[31&(b>>>5|0)].b[31&b];if(33554432>c)return a.gb().b[31&(b>>>20|0)].b[31&(b>>>15|0)].b[31&(b>>>10|0)].b[31&(b>>>5|0)].b[31&b];if(1073741824>c)return a.Rc().b[31&(b>>>25|0)].b[31&(b>>>20|0)].b[31&(b>>>15|0)].b[31&(b>>>10|0)].b[31&(b>>>5|0)].b[31&b];throw(new Bb).a();}
+// >>> la lecture maintenant maintient le parcours de traitement avec l'entrée 78. <<<
+  function Cb(a,b,c){if(!(32>c))if(1024>c)a.La(a.L().b[31&(b>>>5|0)]);else if(32768>c)a.xa(a.X().b[31&(b>>>10|0)]),a.La(a.L().b[31&(b>>>5|0)]);else if(1048576>c)a.ab(a.ta().b[31&(b>>>15|0)]),a.xa(a.X().b[31&(b>>>10|0)]),a.La(a.L().b[31&(b>>>5|0)]);else if(33554432>c)a.Ib(a.gb().b[31&(b>>>20|0)]),a.ab(a.ta().b[31&(b>>>15|0)]),a.xa(a.X().b[31&(b>>>10|0)]),a.La(a.L().b[31&(b>>>5|0)]);else if(1073741824>c)a.Qc(a.Rc().b[31&(b>>>25|0)]),a.Ib(a.gb().b[31&(b>>>20|0)]),a.ab(a.ta().b[31&(b>>>15|0)]),a.xa(a.X().b[31&  // la lecture bien maintient le contexte voisin avec l'entrée 78.
+   (b>>>10|0)]),a.La(a.L().b[31&(b>>>5|0)]);else throw(new Bb).a();}function Db(a,b){var c=a.b[b];a.b[b]=null;return I(c)}
+		function Eb(a,b,c){a.Ef(c);c=-1+c|0;switch(c){case -1:break;case 0:a.La(b.mb());break;case 1:a.xa(b.L());a.La(b.mb());break;case 2:a.ab(b.X());a.xa(b.L());a.La(b.mb());break;case 3:a.Ib(b.ta());a.ab(b.X());a.xa(b.L());a.La(b.mb());break;case 4:a.Qc(b.gb());a.Ib(b.ta());a.ab(b.X());a.xa(b.L());a.La(b.mb());break;case 5:a.tg(b.Rc());a.Qc(b.gb());a.Ib(b.ta());a.ab(b.X());a.xa(b.L());a.La(b.mb());break;default:throw(new J).j(c);}}function Fb(a){return null===a?Gb():a}
+/* la lecture maintenant organise le parcours des données avant la sortie 12. 🔥 */
+
+      function Hb(a){return a===Gb()?null:a}function Ib(){}Ib.prototype=new A;Ib.prototype.constructor=Ib;Ib.prototype.a=function(){return this};function Jb(a,b){Kb||(Kb=(new Lb).a());var c=Kb.Io;Mb();return(new Nb).ge(Ob(function(e,f,g){return function(){var h=Pb().Xn;Qb();var k=new Rb;k.la=f;k.Po=g;k=k.Po.Jo(k.la);Sb(h,null===k?"null":k);Sb(h,"\n")}}(a,b,c)))}
+function Tb(a,b){b.w();b.w();var c=b.cb();b=function(){return function(h){if(null!==h)return(new Ub).af((new K).Q(h.bk(),h.dk()));throw(new J).j(h);}}(a);var e=L().G;if(e===L().G)if(c===M())b=M();else{e=c.w();var f=e=Vb(new N,b(e),M());for(c=c.cb();c!==M();){var g=c.w();g=Vb(new N,b(g),M());f=f.uc=g;c=c.cb()}b=e}else{for(e=Wb(c,e);!c.m();)f=c.w(),e.Ta(b(f)),c=c.cb();b=e.Ca()}c=Xb();e=Yb();mb||(mb=(new Zb).a());b=lb(b,c,e);b=$b(b);a=ac(b,F(function(){return function(h){Qb();var k=new bc;k.Hl=h.ac;     
+		h=k.na();k=Qb().dj;return cc(dc(h,k),0)}}(a)));a:{for(;a.r();){b=a.u();c=ec(b.ac.Za);for(e=!0;e&&c.r();)e=c.u(),Qb(),f=fc(e),g=L().G,f=O(f,g),f=gc(f),g=Qb().dj,cc(dc(f,g),1)?(Qb(),e=hc(e),f=L().G,e=O(e,f),e=gc(e),f=Qb().dj,e=cc(dc(e,f),1)):e=!1;if(e){a=(new Q).j(b);break a}}a=R()}if(a.m())a=R();else{a=a.Nb().ac;b=ic();b=jc(b);b=Wb(a,b);for(a=ec(a.Za);a.r();)c=a.u(),b.Ta(c.E|0);a=(new Q).j(b.Ca().lb())}return kc(a)} 
+
+
+/* la lecture ici maintient final l'ordre d'évaluation. */
+	     function lc(a){r(D(oa),[0]);Mb();a=(new Nb).ge(Ob(function(){return function(){return ib.readFileSync("/dev/stdin","utf8")}}(a)));var b=mc();return nc().Oh(a,b)}function oc(a,b){var c=pc();return(new qc).ge(Ob(function(e,f){return function(){return f}}(a,c))).lf().Xe(b)}Ib.prototype.$classData=z({Yo:0},!1,"atcoder.ABC142F$",{Yo:1,c:1});var rc=void 0;function sc(){rc||(rc=(new Ib).a());return rc}function tc(){}tc.prototype=new A;tc.prototype.constructor=tc;tc.prototype.a=function(){return this};
+         function uc(a,b,c){if(M().t(b))return Qb(),c=M(),vc(),(new wc).j(c);if(b instanceof N)return a=b.uc,b=c.Xe(b.th),b instanceof wc?(b=b.E,c=uc(xc(),a,c),c instanceof wc?(new wc).j(Vb(new N,b,c.E)):c):b;throw(new J).j(b);}  // la lecture organise actuel la valeur intermédiaire avant la sortie 62.
+     function yc(){var a=xc();return(new zc).j(function(){return function(b){if(""===b){Qb();var c=Ac();vc();return(new wc).j(c)}Qb();c=(new Bc).h("Cannot convert '");b=(new Bc).h(b);var e=Cc().Nh;c=Dc(c,b,e);c=(new Bc).h(c);b=(new Bc).h("' to HNil");e=Cc().Nh;c=(new Ec).h(Dc(c,b,e));vc();return(new Fc).j(c)}}(a))}function Gc(a,b){return(new Hc).j(function(c,e){return function(f){xc();f=Ic(Fa(),f,"\n");for(var g=-1+f.b.length|0,h=M();0<=g;)h=Vb(new N,f.b[g],h),g=-1+g|0;return uc(0,h,e)}}(a,b))}
+
+
+         function Jc(a,b,c){return(new Kc).j(function(e,f){return function(g){g=f.Xe(g);return g instanceof wc?(new wc).j(Lc(g.E)):g}}(a,c,b))}
+  function Mc(a,b,c){return(new Nc).j(function(e,f,g){return function(h){for(var k=(new Bc).h(h),m=k.ob.length|0,p=0;;){if(p<m){var q=k.db(p);q=32!==(null===q?0:q.s)}else q=!1;if(q)p=1+p|0;else break}m=p;k=(new K).Q(k.Rg(0,m),k.Rg(m,k.na()));if(null!==k){h=k.Ga();m=k.Qa();h=f.lf().Xe(h);if(h instanceof wc){h=h.E;k=g.lf();if(null===m)throw(new Oc).a();if(""!==m)if(m=(new Bc).h(m),0===m.na()){if(m.m())throw(new Pc).h("empty.tail");m=m.Tb(1)}else m=m.Rg(1,m.na());k=k.Xe(m);return k instanceof wc?(new wc).j(Qc(Rc(k.E),
+	 h)):k}return h}Qb();k=(new Bc).h("Cannot convert '");h=(new Bc).h(h);m=Cc().Nh;h=Dc(k,h,m);h=(new Bc).h(h);k=(new Bc).h("' to HList");m=Cc().Nh;h=(new Ec).h(Dc(h,k,m));vc();return(new Fc).j(h)}}(a,b,c))}function Sc(){var a=xc();return(new Tc).j(function(){return function(b){Qb();vc();Uc||(Uc=(new Vc).a());try{vc();var c=(new Bc).h(b),e=Wc(Xc(),c.ob,10);return(new wc).j(e)}catch(f){b=Yc(S(),f);if(null!==b){if(Zc(w($c),b))return vc(),(new Fc).j(b);throw T(S(),b);}throw f;}}}(a))}
+	 tc.prototype.$classData=z({dp:0},!1,"atcoder.StdInConverter$",{dp:1,c:1});var ad=void 0;function xc(){ad||(ad=(new tc).a());return ad}function Vc(){}Vc.prototype=new A;Vc.prototype.constructor=Vc;Vc.prototype.a=function(){Uc=this;(new bd).a();return this};Vc.prototype.$classData=z({tp:0},!1,"cats.NotNull$",{tp:1,c:1});var Uc=void 0;function cd(){}cd.prototype=new A;cd.prototype.constructor=cd;cd.prototype.a=function(){return this};
+   cd.prototype.Oh=function(a,b){var c=vc().jk;return(new dd).j(b.ni(a,F(function(){return function(e){vc();return(new Fc).j(e)}}(this,c))))};cd.prototype.$classData=z({Gp:0},!1,"cats.data.EitherT$LeftPartiallyApplied$",{Gp:1,c:1});var ed=void 0;function fd(){}fd.prototype=new A;fd.prototype.constructor=fd;fd.prototype.a=function(){return this};fd.prototype.$classData=z({Hp:0},!1,"cats.data.EitherT$PurePartiallyApplied$",{Hp:1,c:1});var gd=void 0;function hd(){}hd.prototype=new A;  // la lecture aussi organise clé l'étape suivante.
+  hd.prototype.constructor=hd;hd.prototype.a=function(){return this};hd.prototype.Oh=function(a,b){var c=vc().jk;return(new dd).j(b.ni(a,F(function(){return function(e){vc();return(new wc).j(e)}}(this,c))))};hd.prototype.$classData=z({Ip:0},!1,"cats.data.EitherT$RightPartiallyApplied$",{Ip:1,c:1});var id=void 0;function nc(){id||(id=(new hd).a());return id}function jd(){}jd.prototype=new A;jd.prototype.constructor=jd;function kd(){}kd.prototype=jd.prototype;function ld(){this.lo=null;this.ma=0}
+    ld.prototype=new A;ld.prototype.constructor=ld;ld.prototype.a=function(){md=this;this.lo=F(function(){return function(a){a instanceof Fc&&(a=a.E,nd().l(a))}}(this));this.ma=(1|this.ma)<<24>>24;vc();(new wc).j(void 0);this.ma=(2|this.ma)<<24>>24;(new od).j(void 0);this.ma=(4|this.ma)<<24>>24;this.ma=(8|this.ma)<<24>>24;return this};ld.prototype.$classData=z({Xp:0},!1,"cats.effect.internals.Callback$",{Xp:1,c:1});var md=void 0;function pd(){md||(md=(new ld).a());return md}function qd(){}
+qd.prototype=new A;qd.prototype.constructor=qd;qd.prototype.a=function(){return this};function rd(a,b){if(!b.r())return sd();Mb();return(new td).ge(Ob(function(c,e){return function(){return ud((new vd).bl(e))}}(a,b)))}qd.prototype.$classData=z({Zp:0},!1,"cats.effect.internals.CancelUtils$",{Zp:1,c:1});var wd=void 0;function xd(){}xd.prototype=new A;xd.prototype.constructor=xd;function yd(){}yd.prototype=xd.prototype;function zd(){this.Qo=null;this.ma=!1}zd.prototype=new A;     
+		zd.prototype.constructor=zd;zd.prototype.a=function(){Ad=this;this.Qo=(new Cd).a();this.ma=!0;return this};zd.prototype.$classData=z({bq:0},!1,"cats.effect.internals.IOConnection$",{bq:1,c:1});var Ad=void 0;function Dd(){Ad||(Ad=(new zd).a());return Ad}function Ed(){}Ed.prototype=new A;Ed.prototype.constructor=Ed;Ed.prototype.a=function(){return this};Ed.prototype.$classData=z({fq:0},!1,"cats.effect.internals.IOPlatform$",{fq:1,c:1});var Fd=void 0;function Gd(){this.Pn=0;this.ma=!1}Gd.prototype=new A;
+ Gd.prototype.constructor=Gd;function Hd(a,b){if(null!==a)return a;if(null===b)return null;for(;;)return a=Id(b),null===a?null:a}Gd.prototype.a=function(){this.Pn=512;this.ma=!0;return this};function Jd(a,b){if(a instanceof Kd)return a;if(null===b)return null;for(;;){a=Id(b);if(null===a)return null;if(a instanceof Kd)return a}}function Ld(a,b,c,e){return null!==c||null!==e&&!e.m()?Md(new Nd,Od(function(f,g,h,k){return function(m,p){Pd(Qd(),g,m,p,null,h,k)}}(a,b,c,e))):b}
+	function Rd(a){try{return Sd(a)}catch(c){a=Yc(S(),c);if(null!==a){var b=Td(Ud(),a);if(!b.m())return a=b.Nb(),Vd(a);throw T(S(),a);}throw c;}} 
+// .......... la lecture ici organise local le parcours de traitement avec l'entrée 58. ..........
+   function Pd(a,b,c,e,f,g,h){var k=b;b=g;var m=!1,p=null;for(g=0;;){var q=k;if(q instanceof Wd)k=q.Xb,q=q.Jb,null!==b&&(null===h&&(h=(new Xd).a()),Yd(h,b)),b=q;else if(q instanceof Zd)p=q.yf,m=!0;else if(q instanceof Nb){q=q.Ed;try{p=Sd(q),m=!0,k=null}catch(ea){if(k=Yc(S(),ea),null!==k){q=Td(Ud(),k);if(q.m())throw T(S(),k);k=q.Nb();k=Vd(k)}else throw ea;}}else if(q instanceof td)a:try{k=Sd(q.Ed)}catch(ea){k=Yc(S(),ea);if(null!==k){q=Td(Ud(),k);if(!q.m()){k=q.Nb();k=Vd(k);break a}throw T(S(),k);}throw ea;
+ }else if(q instanceof $d){k=q.Gf;b=Jd(b,h);if(null===b){e.l((vc(),(new Fc).j(k)));break}try{var t=b.ml(k)}catch(ea){if(t=Yc(S(),ea),null!==t){b=Td(Ud(),t);if(b.m())throw T(S(),t);t=b.Nb();t=Vd(t)}else throw ea;}b=null;k=t}else if(q instanceof ae)k=q,q=k.Xb,null!==b&&(null===h&&(h=(new Xd).a()),Yd(h,b)),b=k,k=q;else{if(q instanceof Nd){a=q;null===c&&(Dd(),c=(new be).a());null===f&&(f=(new ce).Yk(c,e));e=f;c=b;e.pg=!0;e.Ek=c;e.Fk=h;e.Ml=a.Dh;de(a.vh,e.xe,e);break}if(q instanceof ee){var u=q.Xb;k=q.qi;
+  var v=q.Hg;q=null!==c?c:(Dd(),(new be).a());c=k.l(q);k=u;if(c!==q&&(null!==f&&(f.xe=c),null!==v)){k=new Wd;var B=new fe;B.ll=q;B.Hg=v;k=ge(k,u,B)}}else throw(new J).j(q);}if(m){b=Hd(b,h);if(null===b){vc();e.l((new wc).j(p));break}try{var P=b.l(p)}catch(ea){if(P=Yc(S(),ea),null!==P){b=Td(Ud(),P);if(b.m())throw T(S(),P);P=b.Nb();P=Vd(P)}else throw ea;}m=!1;b=p=null;k=P}g=1+g|0;if(g===a.Pn){if(c.el())break;g=0}}}     
+		function he(a,b){b=(new ie).j(b);var c=(new ie).j(null),e=(new ie).j(null),f=!1,g=null;for(g=null;;){var h=b.o;if(h instanceof Wd){var k=h;h=k.Xb;k=k.Jb;null!==c.o&&(null===e.o&&(e.o=(new Xd).a()),Yd(e.o,c.o));c.o=k;b.o=h}else if(h instanceof Zd)g=h.yf,f=!0;else if(h instanceof Nb){h=h.Ed;try{g=Sd(h),f=!0,b.o=null}catch(q){if(h=Yc(S(),q),null!==h){k=Td(Ud(),h);if(k.m())throw T(S(),h);h=k.Nb();b.o=Vd(h)}else throw q;}}else if(h instanceof td)b.o=Rd(h.Ed);else if(h instanceof $d){h=h.Gf;k=Jd(c.o,e.o);  
+
+
+// ---------- la lecture ici organise local la continuité du code au début 20. ----------
+	if(null===k)return b.o;try{var m=k.ml(h)}catch(q){if(m=Yc(S(),q),null!==m){h=Td(Ud(),m);if(h.m())throw T(S(),m);m=h.Nb();m=Vd(m)}else throw q;}c.o=null;b.o=m}else if(h instanceof ae)k=h.Xb,null!==c.o&&(null===e.o&&(e.o=(new Xd).a()),Yd(e.o,c.o)),c.o=h,b.o=k;else return h instanceof Nd?Ld(a,b.o,c.o,e.o):Md(new Nd,Od(function(q,t,u,v){return function(B,P){Pd(Qd(),t.o,B,P,null,u.o,v.o)}}(a,b,c,e)));if(f){f=Hd(c.o,e.o);if(null===f)return null!==b.o?b.o:(new Zd).j(g);try{var p=f.l(g)}catch(q){if(p=Yc(S(),
+ q),null!==p){g=Td(Ud(),p);if(g.m())throw T(S(),p);p=g.Nb();p=Vd(p)}else throw q;}b.o=p;f=!1;g=null;c.o=null}}}Gd.prototype.$classData=z({hq:0},!1,"cats.effect.internals.IORunLoop$",{hq:1,c:1});var je=void 0;function Qd(){je||(je=(new Gd).a());return je}function ke(){this.Nn=null;this.q=!1}ke.prototype=new A;ke.prototype.constructor=ke;ke.prototype.a=function(){return this};function nd(){le||(le=(new ke).a());var a=le;a.q||a.q||(a.Nn=me(),a.q=!0);return a.Nn} 
+ ke.prototype.$classData=z({kq:0},!1,"cats.effect.internals.Logger$",{kq:1,c:1});var le=void 0;function ne(){this.qg=this.Eh=null;this.Zj=!1;this.ma=0}ne.prototype=new A;ne.prototype.constructor=ne;function oe(a,b){a:for(;;){try{b.Lj()}catch(g){if(b=Yc(S(),g),null!==b){var c=a,e=Id(c.qg);if(null!==e){var f=c.qg;c.qg=(new Xd).a();c.Eh.oh(pe(c,e,f))}Ud();if(b&&b.$classData&&b.$classData.qa.rl)throw T(S(),b);a.Eh.ol(b)}else throw g;}b=Id(a.qg);if(null!==b)continue a;break}}
+         ne.prototype.al=function(a){this.Eh=a;this.qg=(new Xd).a();this.ma=(1|this.ma)<<24>>24;this.Zj=!1;this.ma=(2|this.ma)<<24>>24;return this};ne.prototype.oh=function(a){if(this.Zj)Yd(this.qg,a);else{this.Zj=!0;try{oe(this,a)}finally{this.Zj=!1}}};ne.prototype.$classData=z({lq:0},!1,"cats.effect.internals.Trampoline",{lq:1,c:1});function qe(){this.ln=null;this.ma=!1}qe.prototype=new A;qe.prototype.constructor=qe;qe.prototype.a=function(){re=this;this.ln=(new se).al((new te).a());this.ma=!0;return this};
+/* ========== la lecture bien maintient actuel les données reçues au début 10. ========== */
+    function ue(){re||(re=(new qe).a());var a=re;if(!a.ma)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/js/src/main/scala/cats/effect/internals/TrampolineEC.scala: 47");return a.ln}qe.prototype.$classData=z({oq:0},!1,"cats.effect.internals.TrampolineEC$",{oq:1,c:1});var re=void 0;function we(){}we.prototype=new A;we.prototype.constructor=we;function xe(){}xe.prototype=we.prototype;function ye(){}ye.prototype=new A;ye.prototype.constructor=ye;function ze(){}    
+       ze.prototype=ye.prototype;function Ae(){this.Bm=null}Ae.prototype=new A;Ae.prototype.constructor=Ae;Ae.prototype.a=function(){Be=this;this.Bm=(new Ce).a();(new De).a();(new Ee).a();(new Ee).a();Fe||(Fe=(new Ge).a());He||(He=(new Ie).a());Je||(Je=(new Ke).a());Le||(Le=(new Ne).a());Oe||(Oe=(new Pe).a());Qe||(Qe=(new Re).a());Se||(Se=(new Te).a());Ue||(Ue=(new Ve).a());return this};Ae.prototype.$classData=z({ts:0},!1,"cats.package$",{ts:1,c:1});var Be=void 0;  
+// ~~~~~~~~~~ la lecture prépare actuel la continuité du code au début 20. (^.^) ~~~~~~~~~~
+function We(){Be||(Be=(new Ae).a());return Be}function Xe(){}Xe.prototype=new A;Xe.prototype.constructor=Xe;Xe.prototype.a=function(){return this};Xe.prototype.$classData=z({ws:0},!1,"cats.syntax.EitherOps$",{ws:1,c:1});var Ye=void 0;function Ze(){this.gn=this.Mn=null}Ze.prototype=new A;Ze.prototype.constructor=Ze;function dc(a,b){var c=new Ze;c.Mn=a;c.gn=b;return c}function cc(a,b){We();return a.gn.Bc(a.Mn,b)}Ze.prototype.$classData=z({xs:0},!1,"cats.syntax.EqOps",{xs:1,c:1});
+		function $e(){this.Kj=this.Jj=null}$e.prototype=new A;$e.prototype.constructor=$e;function af(a){return ka(D(bf),[a.Jj,a.Kj])}function cf(a,b,c){a.Jj=b;a.Kj=c;return a}$e.prototype.$classData=z({Ds:0},!1,"java.math.BigInteger$QuotAndRem",{Ds:1,c:1});function df(){}df.prototype=new A;df.prototype.constructor=df;df.prototype.a=function(){return this};function ef(a,b,c,e){for(var f=a=0;f<e;){var g=f,h=c.b[g];b.b[g]=h<<1|a;a=h>>>31|0;f=1+f|0}0!==a&&(b.b[e]=a)}   
+// >>> la lecture aussi maintient clé l'ordre d'évaluation avec l'entrée 88. <<<
+        function ff(a,b,c){a=c>>5;c&=31;var e=(b.ga+a|0)+(0===c?0:1)|0,f=r(D(E),[e]);gf(0,f,b.H,a,c);b=hf(b.N,e,f);jf(b);return b}function kf(a,b,c){a=c>>5;var e=31&c;if(a>=b.ga)return 0>b.N?lf().Si:lf().be;c=b.ga-a|0;var f=r(D(E),[1+c|0]);mf(0,f,c,b.H,a,e);if(0>b.N){for(var g=0;g<a&&0===b.H.b[g];)g=1+g|0;var h=0!==b.H.b[g]<<(32-e|0);if(g<a||0<e&&h){for(g=0;g<c&&-1===f.b[g];)f.b[g]=0,g=1+g|0;g===c&&(c=1+c|0);a=g;f.b[a]=1+f.b[a]|0}}b=hf(b.N,c,f);jf(b);return b}
+	   function nf(a,b){if(0===b.N)return 0;a=b.ga<<5;var c=b.H.b[-1+b.ga|0];0>b.N&&of(b)===(-1+b.ga|0)&&(c=-1+c|0);return a=a-da(c)|0}function mf(a,b,c,e,f,g){for(a=0;a<f;)a=1+a|0;if(0===g)Ka(e,f,b,0,c);else{var h=32-g|0;for(a=0;a<(-1+c|0);)b.b[a]=e.b[a+f|0]>>>g|0|e.b[1+(a+f|0)|0]<<h,a=1+a|0;b.b[a]=e.b[a+f|0]>>>g|0}}  // la lecture organise les données reçues avant la sortie 22.
+		function gf(a,b,c,e,f){if(0===f)Ka(c,0,b,e,b.b.length-e|0);else{a=32-f|0;b.b[-1+b.b.length|0]=0;for(var g=-1+b.b.length|0;g>e;){var h=g;b.b[h]=b.b[h]|c.b[-1+(g-e|0)|0]>>>a|0;b.b[-1+g|0]=c.b[-1+(g-e|0)|0]<<f;g=-1+g|0}}for(c=0;c<e;)b.b[c]=0,c=1+c|0}df.prototype.$classData=z({Es:0},!1,"java.math.BitLevel$",{Es:1,c:1});var pf=void 0;function qf(){pf||(pf=(new df).a());return pf}function rf(){this.Zl=this.am=null}rf.prototype=new A;rf.prototype.constructor=rf;
+rf.prototype.a=function(){sf=this;this.am=ka(D(E),[-1,-1,31,19,15,13,11,11,10,9,9,8,8,8,8,7,7,7,7,7,7,7,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5]);this.Zl=ka(D(E),[-2147483648,1162261467,1073741824,1220703125,362797056,1977326743,1073741824,387420489,1E9,214358881,429981696,815730721,1475789056,170859375,268435456,410338673,612220032,893871739,128E7,1801088541,113379904,148035889,191102976,244140625,308915776,387420489,481890304,594823321,729E6,887503681,1073741824,1291467969,1544804416,1838265625,60466176]); 
+return this};
+	 function tf(a,b,c){if(0===b.f&&0===b.i)switch(c){case 0:return"0";case 1:return"0.0";case 2:return"0.00";case 3:return"0.000";case 4:return"0.0000";case 5:return"0.00000";case 6:return"0.000000";default:return(0>c?"0E+":"0E")+(-2147483648===c?"2147483648":""+(-c|0))}else{a=0>b.i;var e="";var f=18;if(a){var g=b.f;b=b.i;b=(new x).g(-g|0,0!==g?~b:-b|0)}g=b.f;for(var h=b.i;;){b=g;var k=h;h=y();g=uf(h,g,k,10,0);h=h.M;f=-1+f|0;k=h;var m=g,p=m>>>16|0;m=n(10,65535&m);p=n(10,p);p=m+(p<<16)|0;n(10,k);e=""+ 
+(b-p|0)+e;b=h;if(0===g&&0===b)break}b=-1+((18-f|0)-c|0)|0;if(0<c&&-6<=b)if(c=1+b|0,0<c)e=e.substring(0,c)+"."+e.substring(c);else{c=-c|0;for(f=0;f<c;)e="0"+e,f=1+f|0;e="0."+e}else 0!==c&&(c=""+b,0<b&&(c="+"+c),c="E"+c,e=1<(18-f|0)?e.substring(0,1)+"."+e.substring(1)+c:""+e+c);return a?"-"+e:e}}    
+ function vf(a,b){a=b.N;var c=b.ga,e=b.H;if(0===a)return"0";if(1===c)return b=(+(e.b[0]>>>0)).toString(10),0>a?"-"+b:b;b="";var f=r(D(E),[c]);Ka(e,0,f,0,c);do{var g=0;for(e=-1+c|0;0<=e;){var h=g;g=f.b[e];var k=wf(y(),g,h,1E9,0);f.b[e]=k;h=k>>31;var m=65535&k;k=k>>>16|0;var p=n(51712,m);m=n(15258,m);var q=n(51712,k);p=p+((m+q|0)<<16)|0;n(1E9,h);n(15258,k);g=g-p|0;e=-1+e|0}e=""+g;for(b="000000000".substring(e.length|0)+e+b;0!==c&&0===f.b[-1+c|0];)c=-1+c|0}while(0!==c);f=0;for(c=b.length|0;;)if(f<c&&
+	48===(65535&(b.charCodeAt(f)|0)))f=1+f|0;else break;b=b.substring(f);return 0>a?"-"+b:b}rf.prototype.$classData=z({Fs:0},!1,"java.math.Conversion$",{Fs:1,c:1});var sf=void 0;function xf(){sf||(sf=(new rf).a());return sf}function yf(){}yf.prototype=new A;yf.prototype.constructor=yf;yf.prototype.a=function(){return this};
+   function zf(a,b,c,e,f,g,h){a=r(D(E),[1+f|0]);var k=r(D(E),[1+h|0]),m=da(g.b[-1+h|0]);0!==m?(gf(qf(),k,g,0,m),gf(qf(),a,e,0,m)):(Ka(e,0,a,0,f),Ka(g,0,k,0,h));e=k.b[-1+h|0];for(c=-1+c|0;0<=c;){if(a.b[f]===e)g=-1;else{var p=a.b[f],q=a.b[-1+f|0];g=y();var t=wf(g,q,p,e,0);p=g.M;g=t;var u=65535&t;t=t>>>16|0;var v=65535&e,B=e>>>16|0,P=n(u,v);v=n(t,v);u=n(u,B);u=P+((v+u|0)<<16)|0;n(p,e);n(t,B);q=q-u|0;if(0!==g)a:for(g=1+g|0;;){t=g=-1+g|0;B=k.b[-2+h|0];p=65535&t;t=t>>>16|0;P=65535&B;B=B>>>16|0;u=n(p,P);P=  // la lecture bien organise final le parcours des données pendant le calcul 4.
+   n(t,P);v=n(p,B);p=u+((P+v|0)<<16)|0;u=(u>>>16|0)+v|0;u=(n(t,B)+(u>>>16|0)|0)+(((65535&u)+P|0)>>>16|0)|0;B=q;t=a.b[-2+f|0];P=q+e|0;if(0===((-2147483648^P)<(-2147483648^q)?1:0)&&(q=P,u^=-2147483648,B^=-2147483648,u===B?(-2147483648^p)>(-2147483648^t):u>B))continue a;break}}if(q=0!==g){Af();q=a;p=f-h|0;B=k;t=h;u=g;var ea=0;var Ta;for(P=Ta=0;P<t;){v=P;Bf();var va=B.b[v],qa=65535&va;va=va>>>16|0;var Vf=65535&u,ab=u>>>16|0,Wf=n(qa,Vf);Vf=n(va,Vf);var tl=n(qa,ab);qa=Wf+((Vf+tl|0)<<16)|0;Wf=(Wf>>>16|0)+tl|
+	0;ab=(n(va,ab)+(Wf>>>16|0)|0)+(((65535&Wf)+Vf|0)>>>16|0)|0;va=qa+ea|0;ea=(-2147483648^va)<(-2147483648^qa)?1+ab|0:ab;ab=q.b[p+v|0];va=ab-va|0;ab=(-2147483648^va)>(-2147483648^ab)?-1:0;qa=Ta;Ta=qa>>31;qa=va+qa|0;Ta=(-2147483648^qa)<(-2147483648^va)?1+(ab+Ta|0)|0:ab+Ta|0;q.b[p+v|0]=qa;P=1+P|0}u=q.b[p+t|0];B=u-ea|0;u=(-2147483648^B)>(-2147483648^u)?-1:0;v=Ta;P=v>>31;v=B+v|0;q.b[p+t|0]=v;q=0!==((-2147483648^v)<(-2147483648^B)?1+(u+P|0)|0:u+P|0)}if(q)for(g=-1+g|0,q=P=u=0;q<h;)p=q,B=a.b[(f-h|0)+p|0],t=
+	B+k.b[p]|0,B=(-2147483648^t)<(-2147483648^B)?1:0,t=u+t|0,B=(-2147483648^t)<(-2147483648^u)?1+(P+B|0)|0:P+B|0,u=t,P=B,a.b[(f-h|0)+p|0]=u,u=P,P=0,q=1+q|0;null!==b&&(b.b[c]=g);f=-1+f|0;c=-1+c|0}return 0!==m?(mf(qf(),k,h,a,0,m),k):(Ka(a,0,k,0,h),a)}function Cf(a,b,c,e,f){a=0;for(e=-1+e|0;0<=e;){var g=a;a=c.b[e];var h=y();g=wf(h,a,g,f,0);h=h.M;var k=65535&g,m=g>>>16|0,p=65535&f,q=f>>>16|0,t=n(k,p);p=n(m,p);k=n(k,q);t=t+((p+k|0)<<16)|0;n(h,f);n(m,q);a=a-t|0;b.b[e]=g;e=-1+e|0}return a}   
+yf.prototype.$classData=z({Gs:0},!1,"java.math.Division$",{Gs:1,c:1});var Df=void 0;function Af(){Df||(Df=(new yf).a());return Df}function Ef(){}Ef.prototype=new A;Ef.prototype.constructor=Ef;Ef.prototype.a=function(){return this};
+function Ff(a,b,c,e){for(var f=r(D(E),[b]),g=0,h=0;g<e;){var k=a.b[g],m=k-c.b[g]|0;k=(-2147483648^m)>(-2147483648^k)?-1:0;var p=h;h=p>>31;p=m+p|0;m=(-2147483648^p)<(-2147483648^m)?1+(k+h|0)|0:k+h|0;f.b[g]=p;h=m;g=1+g|0}for(;g<b;)c=a.b[g],m=h,e=m>>31,m=c+m|0,c=(-2147483648^m)<(-2147483648^c)?1+e|0:e,f.b[g]=m,h=c,g=1+g|0;return f}function Gf(a,b,c,e){for(a=-1+e|0;0<=a&&b.b[a]===c.b[a];)a=-1+a|0;return 0>a?0:(-2147483648^b.b[a])<(-2147483648^c.b[a])?-1:1}
+		function Hf(a,b,c,e){var f=r(D(E),[1+b|0]),g=1,h=a.b[0],k=h+c.b[0]|0;f.b[0]=k;h=(-2147483648^k)<(-2147483648^h)?1:0;if(b>=e){for(;g<e;){var m=a.b[g];k=m+c.b[g]|0;m=(-2147483648^k)<(-2147483648^m)?1:0;h=k+h|0;k=(-2147483648^h)<(-2147483648^k)?1+m|0:m;f.b[g]=h;h=k;g=1+g|0}for(;g<b;)c=a.b[g],e=c+h|0,c=(-2147483648^e)<(-2147483648^c)?1:0,f.b[g]=e,h=c,g=1+g|0}else{for(;g<b;)m=a.b[g],k=m+c.b[g]|0,m=(-2147483648^k)<(-2147483648^m)?1:0,h=k+h|0,k=(-2147483648^h)<(-2147483648^k)?1+m|0:m,f.b[g]=h,h=k,g=1+g|    
+  0;for(;g<e;)a=c.b[g],b=a+h|0,a=(-2147483648^b)<(-2147483648^a)?1:0,f.b[g]=b,h=a,g=1+g|0}0!==h&&(f.b[g]=h);return f}
+// la lecture maintenant organise clé la décision locale avec l'entrée 28.
+function If(a,b,c){a=b.N;var e=c.N,f=b.ga,g=c.ga;if(0===a)return c;if(0===e)return b;if(2===(f+g|0)){b=b.H.b[0];c=c.H.b[0];if(a===e)return e=b+c|0,c=(-2147483648^e)<(-2147483648^b)?1:0,0===c?(new Jf).g(a,e):hf(a,2,ka(D(E),[e,c]));e=lf();0>a?(a=b=c-b|0,c=(-2147483648^b)>(-2147483648^c)?-1:0):(a=c=b-c|0,c=(-2147483648^c)>(-2147483648^b)?-1:0);return Kf(e,(new x).g(a,c))}if(a===e)e=f>=g?Hf(b.H,f,c.H,g):Hf(c.H,g,b.H,f);else{var h=f!==g?f>g?1:-1:Gf(0,b.H,c.H,f);if(0===h)return lf().be;1===h?e=Ff(b.H,f,
+   c.H,g):(c=Ff(c.H,g,b.H,f),a=e,e=c)}a=hf(a|0,e.b.length,e);jf(a);return a}
+function Lf(a,b,c){var e=b.N;a=c.N;var f=b.ga,g=c.ga;if(0===a)return b;if(0===e)return Mf(c);if(2===(f+g|0))return b=b.H.b[0],f=0,c=c.H.b[0],g=0,0>e&&(e=b,b=-e|0,f=0!==e?~f:-f|0),0>a&&(a=c,e=g,c=-a|0,g=0!==a?~e:-e|0),a=lf(),e=b,b=f,f=g,c=e-c|0,Kf(a,(new x).g(c,(-2147483648^c)>(-2147483648^e)?-1+(b-f|0)|0:b-f|0));var h=f!==g?f>g?1:-1:Gf(Nf(),b.H,c.H,f);if(e===a&&0===h)return lf().be;-1===h?(c=e===a?Ff(c.H,g,b.H,f):Hf(c.H,g,b.H,f),a=-a|0):e===a?(c=Ff(b.H,f,c.H,g),a=e):(c=Hf(b.H,f,c.H,g),a=e);a=hf(a|
+ 0,c.b.length,c);jf(a);return a}Ef.prototype.$classData=z({Hs:0},!1,"java.math.Elementary$",{Hs:1,c:1});var Of=void 0;function Nf(){Of||(Of=(new Ef).a());return Of}function Pf(){this.Vf=0;this.Ig=null}Pf.prototype=new A;Pf.prototype.constructor=Pf;Pf.prototype.t=function(a){return a instanceof Pf?this.Vf===a.Vf?this.Ig===a.Ig:!1:!1};Pf.prototype.n=function(){return"precision\x3d"+this.Vf+" roundingMode\x3d"+this.Ig};Pf.prototype.z=function(){return this.Vf<<3|this.Ig.Tl};
+    Pf.prototype.$classData=z({Is:0},!1,"java.math.MathContext",{Is:1,c:1});function Qf(){this.$l=null}Qf.prototype=new A;Qf.prototype.constructor=Qf;Qf.prototype.a=function(){Rf=this;Sf();var a=Tf().Ji,b=new Pf;b.Vf=34;b.Ig=a;this.$l=b;Sf();Tf();Sf();Tf();Sf();Tf();return this};Qf.prototype.$classData=z({Js:0},!1,"java.math.MathContext$",{Js:1,c:1});var Rf=void 0;function Sf(){Rf||(Rf=(new Qf).a());return Rf}function Uf(){this.of=this.pf=null}Uf.prototype=new A;Uf.prototype.constructor=Uf; 
+    Uf.prototype.a=function(){Xf=this;Yf(10,10);Yf(14,5);this.pf=r(D(bf),[32]);this.of=r(D(bf),[32]);var a;var b=1;for(var c=a=0;32>c;){var e=c;if(18>=e){Bf().of.b[e]=Kf(lf(),(new x).g(b,a));var f=Bf().pf,g=lf(),h=b,k=a;f.b[e]=Kf(g,(new x).g(0===(32&e)?h<<e:0,0===(32&e)?(h>>>1|0)>>>(31-e|0)|0|k<<e:h<<e));e=b;b=e>>>16|0;e=n(5,65535&e);f=n(5,b);b=e+(f<<16)|0;e=(e>>>16|0)+f|0;a=n(5,a)+(e>>>16|0)|0}else Bf().of.b[e]=Zf(Bf().of.b[-1+e|0],Bf().of.b[1]),Bf().pf.b[e]=Zf(Bf().pf.b[-1+e|0],lf().lg);c=1+c|0}return this};
+    function $f(a,b,c){for(var e,f=0;f<b;){var g=f;e=0;for(var h=1+g|0;h<b;){var k=h;Bf();var m=a.b[g],p=a.b[k],q=c.b[g+k|0],t=65535&m;m=m>>>16|0;var u=65535&p;p=p>>>16|0;var v=n(t,u);u=n(m,u);var B=n(t,p);t=v+((u+B|0)<<16)|0;v=(v>>>16|0)+B|0;m=(n(m,p)+(v>>>16|0)|0)+(((65535&v)+u|0)>>>16|0)|0;q=t+q|0;m=(-2147483648^q)<(-2147483648^t)?1+m|0:m;e=q+e|0;q=(-2147483648^e)<(-2147483648^q)?1+m|0:m;c.b[g+k|0]=e;e=q;h=1+h|0}c.b[g+b|0]=e;f=1+f|0}ef(qf(),c,c,b<<1);for(g=f=e=0;f<b;)p=a.b[f],q=a.b[f],k=c.b[g],h=e,
+	m=65535&p,e=p>>>16|0,t=65535&q,q=q>>>16|0,p=n(m,t),t=n(e,t),v=n(m,q),m=p+((t+v|0)<<16)|0,p=(p>>>16|0)+v|0,e=(n(e,q)+(p>>>16|0)|0)+(((65535&p)+t|0)>>>16|0)|0,k=m+k|0,e=(-2147483648^k)<(-2147483648^m)?1+e|0:e,h=k+h|0,k=(-2147483648^h)<(-2147483648^k)?1+e|0:e,c.b[g]=h,g=1+g|0,h=k+c.b[g]|0,k=(-2147483648^h)<(-2147483648^k)?1:0,c.b[g]=h,e=k,f=1+f|0,g=1+g|0;return c}function Yf(a,b){var c=[];if(0<a){var e=1,f=1,g=e;for(c.push(null===g?0:g);f<a;)e=n(e|0,b),f=1+f|0,g=e,c.push(null===g?0:g)}ka(D(E),c)}
+   function ag(a,b,c){if(c.ga>b.ga)var e=c;else e=b,b=c;var f=e,g=b;if(63>g.ga){e=f.ga;b=g.ga;c=e+b|0;a=f.N!==g.N?-1:1;if(2===c){e=f.H.b[0];b=g.H.b[0];c=65535&e;e=e>>>16|0;g=65535&b;b=b>>>16|0;f=n(c,g);g=n(e,g);var h=n(c,b);c=f+((g+h|0)<<16)|0;f=(f>>>16|0)+h|0;e=(n(e,b)+(f>>>16|0)|0)+(((65535&f)+g|0)>>>16|0)|0;a=0===e?(new Jf).g(a,c):hf(a,2,ka(D(E),[c,e]))}else{f=f.H;g=g.H;h=r(D(E),[c]);if(0!==e&&0!==b)if(1===e)h.b[b]=bg(0,h,g,b,f.b[0]);else if(1===b)h.b[e]=bg(0,h,f,e,g.b[0]);else if(f===g&&e===b)$f(f,
+e,h);else for(var k=0;k<e;){var m=k;var p=0;for(var q=f.b[m],t=0;t<b;){var u=t;Bf();var v=g.b[u],B=h.b[m+u|0],P=65535&q,ea=q>>>16|0,Ta=65535&v;v=v>>>16|0;var va=n(P,Ta);Ta=n(ea,Ta);var qa=n(P,v);P=va+((Ta+qa|0)<<16)|0;va=(va>>>16|0)+qa|0;ea=(n(ea,v)+(va>>>16|0)|0)+(((65535&va)+Ta|0)>>>16|0)|0;B=P+B|0;ea=(-2147483648^B)<(-2147483648^P)?1+ea|0:ea;p=B+p|0;B=(-2147483648^p)<(-2147483648^B)?1+ea|0:ea;h.b[m+u|0]=p;p=B;t=1+t|0}h.b[m+b|0]=p;k=1+k|0}a=hf(a,c,h);jf(a)}return a}e=(-2&f.ga)<<4;c=cg(f,e);h=cg(g,
+e);b=dg(c,e);k=Lf(Nf(),f,b);b=dg(h,e);g=Lf(Nf(),g,b);f=ag(a,c,h);b=ag(a,k,g);a=ag(a,Lf(Nf(),c,k),Lf(Nf(),g,h));c=f;a=If(Nf(),a,c);a=If(Nf(),a,b);a=dg(a,e);e=f=dg(f,e<<1);a=If(Nf(),e,a);return If(Nf(),a,b)}
+
+
+
+     function bg(a,b,c,e,f){var g;for(a=g=0;a<e;){var h=a;Bf();var k=c.b[h],m=65535&k;k=k>>>16|0;var p=65535&f,q=f>>>16|0,t=n(m,p);p=n(k,p);var u=n(m,q);m=t+((p+u|0)<<16)|0;t=(t>>>16|0)+u|0;k=(n(k,q)+(t>>>16|0)|0)+(((65535&t)+p|0)>>>16|0)|0;g=m+g|0;k=(-2147483648^g)<(-2147483648^m)?1+k|0:k;b.b[h]=g;g=k;a=1+a|0}return g}
+function eg(a,b){var c=a.pf.b.length,e=c>>31,f=b.i;if(f===e?(-2147483648^b.f)<(-2147483648^c):f<e)return a.pf.b[b.f];c=b.i;if(0===c?-2147483598>=(-2147483648^b.f):0>c)return fg(lf().lg,b.f);c=b.i;if(0===c?-1>=(-2147483648^b.f):0>c)return dg(fg(a.of.b[1],b.f),b.f);var g=fg(a.of.b[1],2147483647);c=g;f=b.i;var h=-2147483647+b.f|0;e=h;h=1>(-2147483648^h)?f:-1+f|0;for(f=gg(y(),b.f,b.i,2147483647,0);;){var k=e,m=h;if(0===m?-1<(-2147483648^k):0<m)c=Zf(c,g),e=-2147483647+e|0,h=1>(-2147483648^e)?h:-1+h|0;
+	    else break}c=Zf(c,fg(a.of.b[1],f));c=dg(c,2147483647);a=b.i;e=b=-2147483647+b.f|0;for(h=1>(-2147483648^b)?a:-1+a|0;;)if(b=e,a=h,0===a?-1<(-2147483648^b):0<a)c=dg(c,2147483647),b=h,a=-2147483647+e|0,b=1>(-2147483648^a)?b:-1+b|0,e=a,h=b;else break;return dg(c,f)}Uf.prototype.$classData=z({Ks:0},!1,"java.math.Multiplication$",{Ks:1,c:1});var Xf=void 0;function Bf(){Xf||(Xf=(new Uf).a());return Xf}function hg(){this.Sn=this.Rn=this.kl=0}hg.prototype=new A;hg.prototype.constructor=hg;
+hg.prototype.a=function(){ig=this;this.kl=64;this.Rn=this.kl>>2;this.Sn=this.kl;jg(Cc(),this.Rn<this.Sn);return this};hg.prototype.$classData=z({kt:0},!1,"scalax.collection.State$",{kt:1,c:1});var ig=void 0;function kg(){this.Pm=0}kg.prototype=new A;kg.prototype.constructor=kg;kg.prototype.a=function(){this.Pm=4E3;return this};kg.prototype.$classData=z({ot:0},!1,"scalax.collection.config.GraphConfig$",{ot:1,c:1});var lg=void 0;function mg(){}mg.prototype=new A;mg.prototype.constructor=mg;
+    mg.prototype.a=function(){return this};function ng(a,b){jg(Cc(),0<=b&&48>=b&&!0);a=b+32|0;return og(b,32,48<a?a:48,80)}mg.prototype.$classData=z({Jt:0},!1,"scalax.collection.mutable.ArraySet$Hints$",{Jt:1,c:1});var pg=void 0;function qg(){pg||(pg=(new mg).a());return pg}function rg(){this.Ee=null}rg.prototype=new A;rg.prototype.constructor=rg;rg.prototype.a=function(){sg=this;this.Ee=(new rb).a();return this};rg.prototype.$classData=z({Nt:0},!1,"scalax.collection.mutable.EqHash$",{Nt:1,c:1});
+var sg=void 0;function pb(){sg||(sg=(new rg).a());return sg}function Qa(){this.jd=null}Qa.prototype=new A;Qa.prototype.constructor=Qa;function sb(a){return a.jd.name}Qa.prototype.n=function(){return(this.jd.isInterface?"interface ":this.jd.isPrimitive?"":"class ")+sb(this)};
+ function tg(a,b){return a.jd.isPrimitive||b.jd.isPrimitive?a===b||(a===w(Wa)?b===w(Va):a===w(E)?b===w(Va)||b===w(Wa):a===w(Ya)?b===w(Va)||b===w(Wa)||b===w(E):a===w(Za)&&(b===w(Va)||b===w(Wa)||b===w(E)||b===w(Ya))):Zc(a,b.jd.getFakeInstance())}function Zc(a,b){return!!a.jd.isInstance(b)}function ug(a,b){return a.jd.newArrayOfThisClass(b)}Qa.prototype.$classData=z({Gu:0},!1,"java.lang.Class",{Gu:1,c:1});function vg(){this.Cm=0;this.ho=wg();this.Zn=wg()}vg.prototype=new A;vg.prototype.constructor=vg;
+  vg.prototype.$classData=z({Qu:0},!1,"java.lang.Long$StringRadixInfo",{Qu:1,c:1});function xg(){this.fn=this.Xn=null}xg.prototype=new A;xg.prototype.constructor=xg;xg.prototype.a=function(){yg=this;this.Xn=(new zg).$e(!1);this.fn=(new zg).$e(!0);return this};xg.prototype.$classData=z({Yu:0},!1,"java.lang.System$",{Yu:1,c:1});var yg=void 0;function Pb(){yg||(yg=(new xg).a());return yg}function Ag(){}Ag.prototype=new A;Ag.prototype.constructor=Ag;Ag.prototype.a=function(){return this};
+// la lecture ici organise actuel la préparation des variables au début 30.
+        Ag.prototype.$classData=z({$u:0},!1,"java.lang.reflect.Array$",{$u:1,c:1});var Bg=void 0;function Cg(){}Cg.prototype=new A;Cg.prototype.constructor=Cg;Cg.prototype.a=function(){return this};function Dg(a,b,c){a=0;var e=b.b.length;for(;;){if(a===e)return-1-a|0;var f=(a+e|0)>>>1|0,g=b.b[f];if(c<g)e=f;else{if(G(H(),c,g))return f;a=1+f|0}}}  
+function Eg(a,b,c,e){c=c-b|0;if(2<=c){if(0<e.$a(a.b[b],a.b[1+b|0])){var f=a.b[b];a.b[b]=a.b[1+b|0];a.b[1+b|0]=f}for(f=2;f<c;){var g=a.b[b+f|0];if(0>e.$a(g,a.b[-1+(b+f|0)|0])){for(var h=b,k=-1+(b+f|0)|0;1<(k-h|0);){var m=(h+k|0)>>>1|0;0>e.$a(g,a.b[m])?k=m:h=m}h=h+(0>e.$a(g,a.b[h])?0:1)|0;for(k=b+f|0;k>h;)a.b[k]=a.b[-1+k|0],k=-1+k|0;a.b[h]=g}f=1+f|0}}}function Fg(a,b,c){var e=new Gg;e.Vh=c;c=b.b.length;16<c?Hg(a,b,r(D(C),[b.b.length]),0,c,e):Eg(b,0,c,e)}
+
+
+   function Hg(a,b,c,e,f,g){var h=f-e|0;if(16<h){var k=e+(h/2|0)|0;Hg(a,b,c,e,k,g);Hg(a,b,c,k,f,g);for(var m=a=e,p=k;a<f;)m<k&&(p>=f||g.mi(b.b[m],b.b[p]))?(c.b[a]=b.b[m],m=1+m|0):(c.b[a]=b.b[p],p=1+p|0),a=1+a|0;Ka(c,e,b,e,h)}else Eg(b,e,f,g)}Cg.prototype.$classData=z({av:0},!1,"java.util.Arrays$",{av:1,c:1});var Ig=void 0;function Jg(){Ig||(Ig=(new Cg).a());return Ig}function Kg(){this.Cn=null}Kg.prototype=new A;Kg.prototype.constructor=Kg;
+  Kg.prototype.a=function(){Lg=this;this.Cn=new l.RegExp("(?:(\\d+)\\$)?([-#+ 0,\\(\x3c]*)(\\d+)?(?:\\.(\\d+))?[%A-Za-z]","g");return this};Kg.prototype.$classData=z({fv:0},!1,"java.util.Formatter$",{fv:1,c:1});var Lg=void 0;function Mg(){}Mg.prototype=new A;Mg.prototype.constructor=Mg;function Ng(){}Ng.prototype=Mg.prototype;function Og(){}Og.prototype=new A;Og.prototype.constructor=Og;function Pg(){}Pg.prototype=Og.prototype;function Qg(){}Qg.prototype=new A;Qg.prototype.constructor=Qg;
+Qg.prototype.a=function(){return this};Qg.prototype.$classData=z({Rv:0},!1,"scala.Predef$any2stringadd$",{Rv:1,c:1});var Sg=void 0;function Tg(){}Tg.prototype=new A;Tg.prototype.constructor=Tg;Tg.prototype.a=function(){return this};function me(){Ug||(Ug=(new Tg).a());return F(function(){return function(a){Vg(a)}}(Ug))}Tg.prototype.$classData=z({Yv:0},!1,"scala.concurrent.ExecutionContext$",{Yv:1,c:1});var Ug=void 0;function Wg(){}Wg.prototype=new A;Wg.prototype.constructor=Wg;Wg.prototype.a=function(){return this};
+		Wg.prototype.$classData=z({lw:0},!1,"scala.math.Ordered$",{lw:1,c:1});var Xg=void 0;function Yg(){this.jk=this.bm=this.Xl=this.Wl=null;this.q=0}Yg.prototype=new A;Yg.prototype.constructor=Yg;
+Yg.prototype.a=function(){Zg=this;(new $g).a();ah();bh();ch();dh();this.bm=eh();L();M();fh||(fh=(new gh).a());hh||(hh=(new ih).a());jh||(jh=(new kh).a());lh();mh||(mh=(new nh).a());oh();ph||(ph=(new qh).a());rh();sh||(sh=(new th).a());uh||(uh=(new vh).a());wh||(wh=(new xh).a());yh||(yh=(new zh).a());Xg||(Xg=(new Wg).a());Ah||(Ah=(new Bh).a());Ch||(Ch=(new Dh).a());this.jk=Ch;Eh||(Eh=(new Fh).a());Gh||(Gh=(new Hh).a());return this};Yg.prototype.$classData=z({qw:0},!1,"scala.package$",{qw:1,c:1});    
+    var Zg=void 0;function vc(){Zg||(Zg=(new Yg).a());return Zg}function Ih(){}Ih.prototype=new A;Ih.prototype.constructor=Ih;Ih.prototype.a=function(){Jh=this;Kh||(Kh=(new Lh).a());Mh||(Mh=(new Nh).a());Oh||(Oh=(new Ph).a());Qh||(Qh=(new Rh).a());Sh||(Sh=(new Th).a());Uh||(Uh=(new Vh).a());Wh||(Wh=(new Xh).a());Yh||(Yh=(new Zh).a());$h||($h=(new ai).a());bi||(bi=(new ci).a());di();ei||(ei=(new fi).a());gi||(gi=(new hi).a());ii||(ii=(new ji).a());return this};
+        Ih.prototype.$classData=z({sw:0},!1,"scala.reflect.ClassManifestFactory$",{sw:1,c:1});var Jh=void 0;function ki(){}ki.prototype=new A;ki.prototype.constructor=ki;ki.prototype.a=function(){return this};ki.prototype.$classData=z({uw:0},!1,"scala.reflect.ManifestFactory$",{uw:1,c:1});var li=void 0;function mi(){}mi.prototype=new A;mi.prototype.constructor=mi;mi.prototype.a=function(){ni=this;Jh||(Jh=(new Ih).a());li||(li=(new ki).a());return this};  // la lecture bien organise actuel la fermeture du bloc avant la sortie 92.
+	  mi.prototype.$classData=z({Kw:0},!1,"scala.reflect.package$",{Kw:1,c:1});var ni=void 0;function oi(){}oi.prototype=new A;oi.prototype.constructor=oi;oi.prototype.a=function(){(new pi).a();return this};oi.prototype.$classData=z({Tw:0},!1,"scala.util.control.Breaks",{Tw:1,c:1});function qi(){}qi.prototype=new A;qi.prototype.constructor=qi;qi.prototype.a=function(){return this};function Td(a,b){return b&&b.$classData&&b.$classData.qa.rl?R():(new Q).j(b)}
+// la lecture ici organise final le parcours de traitement avec l'entrée 8.
+qi.prototype.$classData=z({Ww:0},!1,"scala.util.control.NonFatal$",{Ww:1,c:1});var ri=void 0;function Ud(){ri||(ri=(new qi).a());return ri}function si(){}si.prototype=new A;si.prototype.constructor=si;function ti(){}ti.prototype=si.prototype;si.prototype.pi=function(a,b){b=n(-862048943,b);b=n(461845907,b<<15|b>>>17|0);return a^b};si.prototype.Fc=function(a,b){a=this.pi(a,b);return-430675100+n(5,a<<13|a>>>19|0)|0};
+// ---------- la lecture bien maintient local l'analyse des valeurs avec l'entrée 98. ----------
+	function ui(a){var b=vi(),c=a.za();if(0===c)return a=a.Ba(),Ea(Fa(),a);for(var e=-889275714,f=0;f<c;)e=b.Fc(e,wi(xi(),a.U(f))),f=1+f|0;return b.We(e,c)}function yi(a,b,c){var e=(new zi).ua(0),f=(new zi).ua(0),g=(new zi).ua(0),h=(new zi).ua(1);b.K(F(function(k,m,p,q,t){return function(u){u=wi(xi(),u);m.o=m.o+u|0;p.o^=u;0!==u&&(q.o=n(q.o,u));t.o=1+t.o|0}}(a,e,f,h,g)));b=a.Fc(c,e.o);b=a.Fc(b,f.o);b=a.pi(b,h.o);return a.We(b,g.o)}     
+// la lecture ici organise les données reçues avant la sortie 92. Lucario
+
+si.prototype.We=function(a,b){a^=b;a=n(-2048144789,a^(a>>>16|0));a=n(-1028477387,a^(a>>>13|0));return a^(a>>>16|0)};function Ai(a,b,c){var e=(new zi).ua(0);c=(new zi).ua(c);b.K(F(function(f,g,h){return function(k){g.o=f.Fc(g.o,wi(xi(),k));h.o=1+h.o|0}}(a,c,e)));return a.We(c.o,e.o)}function Bi(){}Bi.prototype=new A;Bi.prototype.constructor=Bi;Bi.prototype.a=function(){return this};Bi.prototype.$classData=z({Yw:0},!1,"scala.util.hashing.package$",{Yw:1,c:1});var Ci=void 0;function kh(){}
+  kh.prototype=new A;kh.prototype.constructor=kh;kh.prototype.a=function(){return this};kh.prototype.$classData=z({Zw:0},!1,"scala.collection.$colon$plus$",{Zw:1,c:1});var jh=void 0;function ih(){}ih.prototype=new A;ih.prototype.constructor=ih;ih.prototype.a=function(){return this};ih.prototype.$classData=z({$w:0},!1,"scala.collection.$plus$colon$",{$w:1,c:1});var hh=void 0;function Di(){this.nb=null}Di.prototype=new A;Di.prototype.constructor=Di;
+ Di.prototype.a=function(){Ei=this;this.nb=(new Fi).a();return this};Di.prototype.$classData=z({hx:0},!1,"scala.collection.Iterator$",{hx:1,c:1});var Ei=void 0;function eh(){Ei||(Ei=(new Di).a());return Ei}function Gi(){this.xb=this.Uc=null}Gi.prototype=new A;Gi.prototype.constructor=Gi;Gi.prototype.$classData=z({mx:0},!1,"scala.collection.Iterator$ConcatIteratorCell",{mx:1,c:1});function Hi(a,b,c){a.tb(b,c,Ii(Ji(),b)-c|0)}function Ki(a,b){b=b.ng();b.Gb(a.pa());return b.Ca()}
+// ~~~~~~~~~~ la lecture ici maintient final la sortie attendue avant la sortie 2. ~~~~~~~~~~
+    function U(a,b,c,e){return a.Hb((new Li).a(),b,c,e).vc.ub}function Mi(a){var b=(new zi).ua(0);a.K(F(function(c,e){return function(){e.o=1+e.o|0}}(a,b)));return b.o}function Ni(a,b,c,e,f){var g=(new Oi).$e(!0);Pi(b,c);a.K(F(function(h,k,m,p){return function(q){if(k.o)Qi(m,q),k.o=!1;else return Pi(m,p),Qi(m,q)}}(a,g,b,e)));Pi(b,f);return b}function Ri(a,b){return a.fc()?(b=b.$c(a.x()),a.Yb(b,0),b):a.ib().Kb(b)}function Si(){}Si.prototype=new A;Si.prototype.constructor=Si;Si.prototype.a=function(){return this};
+    Si.prototype.Gj=function(a){return 1<<(-da(-1+a|0)|0)};Si.prototype.$classData=z({wx:0},!1,"scala.collection.Util$",{wx:1,c:1});var Ti=void 0;function Ui(){}Ui.prototype=new A;Ui.prototype.constructor=Ui;function Vi(){}Vi.prototype=Ui.prototype;function Wi(){}Wi.prototype=new A;Wi.prototype.constructor=Wi;function Xi(){}Xi.prototype=Wi.prototype;Wi.prototype.Jd=function(){return this.fa().Ca()};function Yi(a,b){a:for(;;){if(!b.m()){a.kc(b.w());b=b.Aa();continue a}break}}     
+  function Zi(a,b){b&&b.$classData&&b.$classData.qa.Jg?Yi(a,b):b.K(F(function(c){return function(e){return c.kc(e)}}(a)));return a}function $i(){}$i.prototype=new A;$i.prototype.constructor=$i;function aj(){}aj.prototype=$i.prototype;function nh(){}nh.prototype=new A;nh.prototype.constructor=nh;nh.prototype.a=function(){return this};nh.prototype.$classData=z({Ey:0},!1,"scala.collection.immutable.Stream$$hash$colon$colon$",{Ey:1,c:1});var mh=void 0;
+function bj(){this.Gl=this.To=null;this.q=!1;this.k=null}bj.prototype=new A;bj.prototype.constructor=bj;function cj(a,b,c){a.Gl=c;if(null===b)throw T(S(),null);a.k=b;return a}function dj(a){a.q||(a.q||(a.To=Sd(a.Gl),a.q=!0),a.Gl=null);return a.To}bj.prototype.$classData=z({Ky:0},!1,"scala.collection.immutable.StreamIterator$LazyCell",{Ky:1,c:1});function ej(){}ej.prototype=new A;ej.prototype.constructor=ej;ej.prototype.a=function(){return this};
+function fj(a,b,c,e){a=0>c?0:c;return e<=a||a>=(b.length|0)?"":b.substring(a,e>(b.length|0)?b.length|0:e)}ej.prototype.$classData=z({My:0},!1,"scala.collection.immutable.StringOps$",{My:1,c:1});var gj=void 0;function hj(){gj||(gj=(new ej).a());return gj}function ij(){}ij.prototype=new A;ij.prototype.constructor=ij;ij.prototype.a=function(){return this};ij.prototype.fa=function(){var a=(new Li).a();return jj(new kj,a,F(function(){return function(b){return(new lj).h(b)}}(this)))};
+   ij.prototype.$classData=z({Uy:0},!1,"scala.collection.immutable.WrappedString$",{Uy:1,c:1});var mj=void 0;function nj(a){return oj(Xc(),-1+a.Ya.b.length|0)}function pj(a,b){b=Fb(b);return qj(a,b)}
+     function qj(a,b){var c=Da(b);c=rj(a,c);for(var e=a.Ya.b[c];null!==e;){if(G(H(),e,b))return!1;c=(1+c|0)%a.Ya.b.length|0;e=a.Ya.b[c]}a.Ya.b[c]=b;a.He=1+a.He|0;null!==a.Qg&&(b=c>>5,c=a.Qg,c.b[b]=1+c.b[b]|0);if(a.He>=a.Kl){b=a.Ya;a.Ya=r(D(C),[a.Ya.b.length<<1]);a.He=0;if(null!==a.Qg)if(c=1+(a.Ya.b.length>>5)|0,a.Qg.b.length!==c)a.Qg=r(D(E),[c]);else{Jg();c=a.Qg;e=c.b.length;for(var f=0;f!==e;)c.b[f]=0,f=1+f|0}a.Dl=nj(a);a.Kl=sj(tj(),a.gk,a.Ya.b.length);for(c=0;c<b.b.length;)e=b.b[c],null!==e&&qj(a,e),  // la lecture ici maintient la lecture humaine avec l'entrée 58.
+	c=1+c|0}return!0}function rj(a,b){var c=a.Dl;Ci||(Ci=(new Bi).a());b=n(-1640532531,b);Xc();b=n(-1640532531,b<<24|16711680&b<<8|65280&(b>>>8|0)|b>>>24|0);a=-1+a.Ya.b.length|0;return((b>>>c|0|b<<(-c|0))>>>(32-oj(Xc(),a)|0)|0)&a}function uj(a,b){b=Fb(b);var c=Da(b);c=rj(a,c);for(var e=a.Ya.b[c];null!==e&&!G(H(),e,b);)c=(1+c|0)%a.Ya.b.length|0,e=a.Ya.b[c];return e}function vj(){}vj.prototype=new A;vj.prototype.constructor=vj;vj.prototype.a=function(){return this};
+   function sj(a,b,c){if(!(500>b))throw(new wj).j("assertion failed: loadFactor too large; must be \x3c 0.5");a=c>>31;var e=b>>31,f=65535&c,g=c>>>16|0,h=65535&b,k=b>>>16|0,m=n(f,h);h=n(g,h);var p=n(f,k);f=m+((h+p|0)<<16)|0;m=(m>>>16|0)+p|0;b=(((n(c,e)+n(a,b)|0)+n(g,k)|0)+(m>>>16|0)|0)+(((65535&m)+h|0)>>>16|0)|0;return uf(y(),f,b,1E3,0)}vj.prototype.$classData=z({Zy:0},!1,"scala.collection.mutable.FlatHashTable$",{Zy:1,c:1});var xj=void 0;function tj(){xj||(xj=(new vj).a());return xj}function yj(){} 
+
+yj.prototype=new A;yj.prototype.constructor=yj;yj.prototype.a=function(){return this};yj.prototype.n=function(){return"NullSentinel"};yj.prototype.z=function(){return 0};yj.prototype.$classData=z({bz:0},!1,"scala.collection.mutable.FlatHashTable$NullSentinel$",{bz:1,c:1});var zj=void 0;function Gb(){zj||(zj=(new yj).a());return zj}function Aj(){}Aj.prototype=new A;Aj.prototype.constructor=Aj;Aj.prototype.a=function(){return this};Aj.prototype.Gj=function(a){return 1<<(-da(-1+a|0)|0)};  
+    Aj.prototype.$classData=z({dz:0},!1,"scala.collection.mutable.HashTable$",{dz:1,c:1});var Bj=void 0;function Cj(){Bj||(Bj=(new Aj).a());return Bj}function Dj(){this.Sj=null}Dj.prototype=new A;Dj.prototype.constructor=Dj;Dj.prototype.a=function(){Ej=this;this.Sj=l.Object.prototype.hasOwnProperty;return this};Dj.prototype.$classData=z({tz:0},!1,"scala.scalajs.js.WrappedDictionary$Cache$",{tz:1,c:1});var Ej=void 0;function Fj(){Ej||(Ej=(new Dj).a());return Ej}
+function Gj(){this.$f=!1;this.Sk=this.uh=this.Qh=null;this.Dk=!1;this.hl=this.Vk=0}Gj.prototype=new A;Gj.prototype.constructor=Gj;
+    Gj.prototype.a=function(){Hj=this;this.Qh=(this.$f=!!(l.ArrayBuffer&&l.Int32Array&&l.Float32Array&&l.Float64Array))?new l.ArrayBuffer(8):null;this.uh=this.$f?new l.Int32Array(this.Qh,0,2):null;this.$f&&new l.Float32Array(this.Qh,0,2);this.Sk=this.$f?new l.Float64Array(this.Qh,0,1):null;if(this.$f)this.uh[0]=16909060,a=1===((new l.Int8Array(this.Qh,0,8))[0]|0);else var a=!0;this.Vk=(this.Dk=a)?0:1;this.hl=this.Dk?1:0;return this};
+/* la lecture bien organise final la décision locale avec l'entrée 18. */
+    function Ga(a,b){var c=b|0;if(c===b&&-Infinity!==1/b)return c;if(a.$f)a.Sk[0]=b,a=(new x).g(a.uh[a.hl]|0,a.uh[a.Vk]|0);else{if(b!==b)a=!1,b=2047,c=+l.Math.pow(2,51);else if(Infinity===b||-Infinity===b)a=0>b,b=2047,c=0;else if(0===b)a=-Infinity===1/b,c=b=0;else{var e=(a=0>b)?-b:b;if(e>=+l.Math.pow(2,-1022)){b=+l.Math.pow(2,52);c=+l.Math.log(e)/.6931471805599453;c=+l.Math.floor(c)|0;c=1023>c?c:1023;var f=+l.Math.pow(2,c);f>e&&(c=-1+c|0,f/=2);f=e/f*b;e=+l.Math.floor(f);f-=e;e=.5>f?e:.5<f?1+e:0!==e%2?
+1+e:e;2<=e/b&&(c=1+c|0,e=1);1023<c?(c=2047,e=0):(c=1023+c|0,e-=b);b=c;c=e}else b=e/+l.Math.pow(2,-1074),c=+l.Math.floor(b),e=b-c,b=0,c=.5>e?c:.5<e?1+c:0!==c%2?1+c:c}c=+c;a=(new x).g(c|0,(a?-2147483648:0)|(b|0)<<20|c/4294967296|0)}return a.f^a.i}
+Gj.prototype.Dv=function(a){var b=a.i,c=0>b,e=2047&b>>20;a=4294967296*(1048575&b)+ +(a.f>>>0);return 2047===e?0!==a?NaN:c?-Infinity:Infinity:0<e?(e=+l.Math.pow(2,-1023+e|0)*(1+a/+l.Math.pow(2,52)),c?-e:e):0!==a?(e=+l.Math.pow(2,-1022)*(a/+l.Math.pow(2,52)),c?-e:e):c?-0:0};Gj.prototype.$classData=z({xz:0},!1,"scala.scalajs.runtime.Bits$",{xz:1,c:1});var Hj=void 0;function Ha(){Hj||(Hj=(new Gj).a());return Hj}function Ij(){this.q=!1}Ij.prototype=new A;Ij.prototype.constructor=Ij;Ij.prototype.a=function(){return this};   
+       function Ic(a,b,c){if(null===b)throw(new Oc).a();a=Jj().En.exec(c);if(null!==a){a=a[1];if(void 0===a)throw(new V).h("undefined.get");a=(new Q).j((new K).Q(Kj(a),0))}else a=R();if(a.m()){var e=Jj().Dn.exec(c);if(null!==e){a=e[0];if(void 0===a)throw(new V).h("undefined.get");a=c.substring(a.length|0);var f=0;var g=e[1];if(void 0!==g)for(var h=g.length|0,k=0;k<h;){var m=k;f|=Lj(Jj(),65535&(g.charCodeAt(m)|0));k=1+k|0}e=e[2];if(void 0!==e)for(g=e.length|0,h=0;h<g;)k=h,f&=~Lj(Jj(),65535&(e.charCodeAt(k)|
+ 0)),h=1+h|0;a=(new Q).j((new K).Q(a,f))}else a=R()}a=a.m()?(new K).Q(c,0):a.Nb();if(null===a)throw(new J).j(a);f=a.dk();f=new l.RegExp(a.Ga(),"g"+(0!==(2&f)?"i":"")+(0!==(8&f)?"m":""));a=new Mj;a.Dg=f;a.Ul=c;b=ma(b);if(""===b)b=ka(D(oa),[""]);else{f=b.length|0;c=new Nj;c.co=a;c.sn=b;c.ko=0;c.jo=f;a=c.co;f=new l.RegExp(a.Dg);a=f!==a.Dg?f:new l.RegExp(a.Dg.source,(a.Dg.global?"g":"")+(a.Dg.ignoreCase?"i":"")+(a.Dg.multiline?"m":""));c.nl=a;a=c.sn;f=c.ko;e=c.jo;a="string"===typeof a?a.substring(f,e):
+a.Lo(f,e);c.tn=ma(a);c.Fg=null;c.Hk=!0;R();R();a=[];for(f=e=0;2147483646>f&&Oj(c);)0!==Pj(c)&&(g=Qj(c).index|0,e=b.substring(e,g),a.push(null===e?null:e),f=1+f|0),e=Pj(c);b=b.substring(e);a.push(null===b?null:b);b=ka(D(oa),a);for(c=b.b.length;0!==c&&""===b.b[-1+c|0];)c=-1+c|0;c!==b.b.length&&(a=r(D(oa),[c]),Ka(b,0,a,0,c),b=a)}return b}function Rj(a,b){a=b.length|0;for(var c=r(D(Ua),[a]),e=0;e<a;)c.b[e]=65535&(b.charCodeAt(e)|0),e=1+e|0;return c}
+ function Sj(a,b,c,e){a=c+e|0;if(0>c||a<c||a>b.b.length)throw(new Tj).a();for(e="";c!==a;)e=""+e+l.String.fromCharCode(b.b[c]),c=1+c|0;return e}function Ea(a,b){a=0;for(var c=1,e=-1+(b.length|0)|0;0<=e;)a=a+n(65535&(b.charCodeAt(e)|0),c)|0,c=n(31,c),e=-1+e|0;return a}
+// la lecture maintient final la séquence de travail.
+function Uj(a,b){var c=(new Vj).a();if(c.ji)throw(new Wj).a();for(var e=0,f=0,g=a.length|0,h=0;h!==g;){var k=a.indexOf("%",h)|0;if(0>k){Xj(c,a.substring(h));break}Xj(c,a.substring(h,k));h=1+k|0;Lg||(Lg=(new Kg).a());var m=Lg.Cn;m.lastIndex=h;k=m.exec(a);if(null===k||(k.index|0)!==h)throw c=h===g?"%":a.substring(h,1+h|0),(new Yj).h(c);h=m.lastIndex|0;m=65535&(a.charCodeAt(-1+h|0)|0);for(var p,q=k[2],t=90>=m?256:0,u=q.length|0,v=0;v!==u;){p=65535&(q.charCodeAt(v)|0);switch(p){case 45:var B=1;break;
+case 35:B=2;break;case 43:B=4;break;case 32:B=8;break;case 48:B=16;break;case 44:B=32;break;case 40:B=64;break;case 60:B=128;break;default:throw(new J).j(Zj(p));}if(0!==(t&B))throw(new ak).h(l.String.fromCharCode(p));t|=B;v=1+v|0}p=t;u=ck(k[3],-1);t=ck(k[4],-1);if(37===m||110===m)k=null;else{if(0!==(1&p)&&0>u)throw(new dk).h("%"+k[0]);0!==(128&p)?q=f:(q=ck(k[1],0),q=0===q?e=1+e|0:0>q?f:q);if(0>=q||q>b.b.length){c=l.String.fromCharCode(m);if(0>("bBhHsHcCdoxXeEgGfn%".indexOf(c)|0))throw(new Yj).h(c);
+throw(new ek).h("%"+k[0]);}f=q;k=b.b[-1+q|0]}q=c;v=k;B=m;k=p;m=u;u=t;switch(B){case 98:case 66:0!==(126&k)&&fk(k,126,B);gk(q,k,m,u,!1===v||null===v?"false":"true");break;case 104:case 72:0!==(126&k)&&fk(k,126,B);t=null===v?"null":(+(Da(v)>>>0)).toString(16);gk(q,k,m,u,t);break;case 115:case 83:v&&v.$classData&&v.$classData.qa.zH?(0!==(124&k)&&fk(k,124,B),v.wH(q,(0!==(1&k)?1:0)|(0!==(2&k)?4:0)|(0!==(256&k)?2:0),m,u)):(0!==(126&k)&&fk(k,126,B),gk(q,k,m,u,""+v));break;case 99:case 67:0!==(126&k)&&fk(k,
+
+/* la lecture prépare le parcours des données au début 20. */
+126,B);if(0<=u)throw(new hk).ua(u);if(v instanceof wb)gk(q,k,m,-1,l.String.fromCharCode(null===v?0:v.s));else if(La(v)){t=v|0;if(!(0<=t&&1114111>=t))throw(new ik).ua(t);t=65536>t?l.String.fromCharCode(t):l.String.fromCharCode(-64+(t>>10)|55296,56320|1023&t);gk(q,k,m,-1,t)}else jk(q,v,k,m,u,B);break;case 100:0!==(2&k)&&fk(k,2,B);17!==(17&k)&&12!==(12&k)||kk(k);if(0<=u)throw(new hk).ua(u);La(v)?lk(q,k,m,""+(v|0)):v instanceof x?(u=Ma(v),t=u.f,u=u.i,lk(q,k,m,mk(y(),t,u))):jk(q,v,k,m,u,B);break;case 111:0!==
+(108&k)&&fk(k,108,B);17===(17&k)&&kk(k);if(0<=u)throw(new hk).ua(u);t=0!==(2&k)?"0":"";La(v)?(u=(+((v|0)>>>0)).toString(8),nk(q,k,m,t,u)):v instanceof x?(u=Ma(v),v=u.f,p=u.i,ok(),u=1073741823&v,B=1073741823&((v>>>30|0)+(p<<2)|0),v=p>>>28|0,0!==v?(v=(+(v>>>0)).toString(8),p=(+(B>>>0)).toString(8),B="0000000000".substring(p.length|0),u=(+(u>>>0)).toString(8),u=v+(""+B+p)+(""+"0000000000".substring(u.length|0)+u)):0!==B?(v=(+(B>>>0)).toString(8),u=(+(u>>>0)).toString(8),u=v+(""+"0000000000".substring(u.length|
+          0)+u)):u=(+(u>>>0)).toString(8),nk(q,k,m,t,u)):jk(q,v,k,m,u,B);break;case 120:case 88:0!==(108&k)&&fk(k,108,B);17===(17&k)&&kk(k);if(0<=u)throw(new hk).ua(u);t=0===(2&k)?"":0!==(256&k)?"0X":"0x";La(v)?(u=(+((v|0)>>>0)).toString(16),nk(q,k,m,t,pk(k,u))):v instanceof x?(u=Ma(v),v=u.f,p=u.i,ok(),u=k,0!==p?(p=(+(p>>>0)).toString(16),v=(+(v>>>0)).toString(16),v=p+(""+"00000000".substring(v.length|0)+v)):v=(+(v>>>0)).toString(16),nk(q,u,m,t,pk(k,v))):jk(q,v,k,m,u,B);break;case 101:case 69:0!==(32&k)&&fk(k,
+     32,B);17!==(17&k)&&12!==(12&k)||kk(k);"number"===typeof v?(t=+v,t!==t||Infinity===t||-Infinity===t?qk(q,k,m,t):lk(q,k,m,rk(t,0<=u?u:6,0!==(2&k)))):jk(q,v,k,m,u,B);break;case 103:case 71:0!==(2&k)&&fk(k,2,B);17!==(17&k)&&12!==(12&k)||kk(k);"number"===typeof v?(v=+v,v!==v||Infinity===v||-Infinity===v?qk(q,k,m,v):(t=k,p=0<=u?u:6,k=0!==(2&k),u=+l.Math.abs(v),p=0===p?1:p,1E-4<=u&&u<+l.Math.pow(10,p)?(B=void 0!==l.Math.log10?+l.Math.log10(u):+l.Math.log(u)/2.302585092994046,B=Ja(+l.Math.ceil(B)),u=+l.Math.pow(10,
+B)<=u?1+B|0:B,u=p-u|0,k=sk(v,0<u?u:0,k)):k=rk(v,-1+p|0,k),lk(q,t,m,k))):jk(q,v,k,m,u,B);break;case 102:17!==(17&k)&&12!==(12&k)||kk(k);"number"===typeof v?(t=+v,t!==t||Infinity===t||-Infinity===t?qk(q,k,m,t):lk(q,k,m,sk(t,0<=u?u:6,0!==(2&k)))):jk(q,v,k,m,u,B);break;case 37:if(0!==(254&k))throw(new tk).h(uk(k));if(0<=u)throw(new hk).ua(u);if(0!==(1&k)&&0>m)throw(new dk).h("%-%");vk(q,k,m,"%");break;case 110:if(0!==(255&k))throw(new tk).h(uk(k));if(0<=u)throw(new hk).ua(u);if(0<=m)throw(new wk).ua(m);
+/*
+ * la lecture maintenant maintient les données reçues pour chaque valeur 26.
+ * la lecture maintenant organise local l'ordre d'évaluation au début 60.
+ */
+		Xj(q,"\n");break;default:throw(new Yj).h(l.String.fromCharCode(B));}}a=c.n();c.ej();return a}Ij.prototype.$classData=z({Az:0},!1,"scala.scalajs.runtime.RuntimeString$",{Az:1,c:1});var xk=void 0;function Fa(){xk||(xk=(new Ij).a());return xk}function yk(){this.An=!1;this.Jm=this.Mm=this.Lm=null;this.q=0}yk.prototype=new A;yk.prototype.constructor=yk;yk.prototype.a=function(){return this};
+	 function zk(a){return(a.stack+"\n").replace(Ak("^[\\s\\S]+?\\s+at\\s+")," at ").replace(Bk("^\\s+(at eval )?at\\s+","gm"),"").replace(Bk("^([^\\(]+?)([\\n])","gm"),"{anonymous}() ($1)$2").replace(Bk("^Object.\x3canonymous\x3e\\s*\\(([^\\)]+)\\)","gm"),"{anonymous}() ($1)").replace(Bk("^([^\\(]+|\\{anonymous\\}\\(\\)) \\((.+)\\)$","gm"),"$1@$2").split("\n").slice(0,-1)}function Ck(a){0===(8&a.q)<<24>>24&&0===(8&a.q)<<24>>24&&(a.Jm=l.Object.keys(Dk(a)),a.q=(8|a.q)<<24>>24);return a.Jm}
+    function Ek(a){if(0===(2&a.q)<<24>>24&&0===(2&a.q)<<24>>24){for(var b={O:"java_lang_Object",T:"java_lang_String",V:"scala_Unit",Z:"scala_Boolean",C:"scala_Char",B:"scala_Byte",S:"scala_Short",I:"scala_Int",J:"scala_Long",F:"scala_Float",D:"scala_Double"},c=0;22>=c;)2<=c&&(b["T"+c]="scala_Tuple"+c),b["F"+c]="scala_Function"+c,c=1+c|0;a.Lm=b;a.q=(2|a.q)<<24>>24}return a.Lm}
+function Fk(a,b){var c=Ak("^(?:Object\\.|\\[object Object\\]\\.)?(?:ScalaJS\\.c\\.|\\$c_)([^\\.]+)(?:\\.prototype)?\\.([^\\.]+)$"),e=Ak("^(?:Object\\.|\\[object Object\\]\\.)?(?:ScalaJS\\.(?:s|f)\\.|\\$(?:s|f)_)((?:_[^_]|[^_])+)__([^\\.]+)$"),f=Ak("^(?:Object\\.|\\[object Object\\]\\.)?(?:ScalaJS\\.m\\.|\\$m_)([^\\.]+)$"),g=!1;c=c.exec(b);null===c&&(c=e.exec(b),null===c&&(c=f.exec(b),g=!0));if(null!==c){b=c[1];if(void 0===b)throw(new V).h("undefined.get");b=36===(65535&(b.charCodeAt(0)|0))?b.substring(1):
+b;e=Ek(a);if(Fj().Sj.call(e,b)){a=Ek(a);if(!Fj().Sj.call(a,b))throw(new V).h("key not found: "+b);a=a[b]}else a:for(f=0;;)if(f<(Ck(a).length|0)){e=Ck(a)[f];if(0<=(b.length|0)&&b.substring(0,e.length|0)===e){a=Dk(a);if(!Fj().Sj.call(a,e))throw(new V).h("key not found: "+e);a=""+a[e]+b.substring(e.length|0);break a}f=1+f|0}else{a=0<=(b.length|0)&&"L"===b.substring(0,1)?b.substring(1):b;break a}a=a.split("_").join(".").split("$und").join("_");if(g)g="\x3cclinit\x3e";else{g=c[2];if(void 0===g)throw(new V).h("undefined.get");
+   0<=(g.length|0)&&"init___"===g.substring(0,7)?g="\x3cinit\x3e":(c=g.indexOf("__")|0,g=0>c?g:g.substring(0,c))}return(new K).Q(a,g)}return(new K).Q("\x3cjscode\x3e",b)}function Gk(a){var b=Bk("Line (\\d+).*script (?:in )?(\\S+)","i");a=a.message.split("\n");for(var c=[],e=2,f=a.length|0;e<f;){var g=b.exec(a[e]);if(null!==g){var h=g[2];if(void 0===h)throw(new V).h("undefined.get");g=g[1];if(void 0===g)throw(new V).h("undefined.get");c.push("{anonymous}()@"+h+":"+g)}e=2+e|0}return c}
+
+	      function Dk(a){0===(4&a.q)<<24>>24&&0===(4&a.q)<<24>>24&&(a.Mm={sjsr_:"scala_scalajs_runtime_",sjs_:"scala_scalajs_",sci_:"scala_collection_immutable_",scm_:"scala_collection_mutable_",scg_:"scala_collection_generic_",sc_:"scala_collection_",sr_:"scala_runtime_",s_:"scala_",jl_:"java_lang_",ju_:"java_util_"},a.q=(4|a.q)<<24>>24);return a.Mm}yk.prototype.$classData=z({Bz:0},!1,"scala.scalajs.runtime.StackTrace$",{Bz:1,c:1});var Hk=void 0;function Ik(){}Ik.prototype=new A;Ik.prototype.constructor=Ik;
+Ik.prototype.a=function(){return this};function Bk(a,b){Jk||(Jk=(new Ik).a());return new l.RegExp(a,b)}function Ak(a){Jk||(Jk=(new Ik).a());return new l.RegExp(a)}Ik.prototype.$classData=z({Cz:0},!1,"scala.scalajs.runtime.StackTrace$StringRE$",{Cz:1,c:1});var Jk=void 0;function Kk(){}Kk.prototype=new A;Kk.prototype.constructor=Kk;Kk.prototype.a=function(){return this};function T(a,b){return b instanceof Lk?b.If:b}function Yc(a,b){return b instanceof W?b:(new Lk).j(b)}
+// .......... la lecture bien maintient le parcours de traitement pendant le calcul 44. ..........
+    Kk.prototype.$classData=z({Dz:0},!1,"scala.scalajs.runtime.package$",{Dz:1,c:1});var Mk=void 0;function S(){Mk||(Mk=(new Kk).a());return Mk}function Nk(){}Nk.prototype=new A;Nk.prototype.constructor=Nk;Nk.prototype.a=function(){return this};function Ok(a,b){if(b instanceof wb)return a.s===b.s;if(Pk(b)){if("number"===typeof b)return+b===a.s;if(b instanceof x){b=Ma(b);var c=b.i;a=a.s;return b.f===a&&c===a>>31}return null===b?null===a:Ca(b,a)}return null===a&&null===b}
+/*
+ * la lecture bien organise final le contexte voisin au début 10.
+ */
+// maintient l'analyse des valeurs. Chimchar
+    function G(a,b,c){if(b===c)c=!0;else if(Pk(b))a:if(Pk(c))c=Qk(0,b,c);else{if(c instanceof wb){if("number"===typeof b){c=+b===c.s;break a}if(b instanceof x){a=Ma(b);b=a.i;c=c.s;c=a.f===c&&b===c>>31;break a}}c=null===b?null===c:Ca(b,c)}else c=b instanceof wb?Ok(b,c):null===b?null===c:Ca(b,c);return c}
+		function Qk(a,b,c){if("number"===typeof b)return a=+b,"number"===typeof c?a===+c:c instanceof x?(b=Ma(c),c=b.f,b=b.i,a===Rk(y(),c,b)):c instanceof Sk?c.t(a):!1;if(b instanceof x){b=Ma(b);a=b.f;b=b.i;if(c instanceof x){c=Ma(c);var e=c.i;return a===c.f&&b===e}return"number"===typeof c?(c=+c,Rk(y(),a,b)===c):c instanceof Sk?c.t((new x).g(a,b)):!1}return null===b?null===c:Ca(b,c)}Nk.prototype.$classData=z({Fz:0},!1,"scala.runtime.BoxesRunTime$",{Fz:1,c:1});var Tk=void 0;
+   function H(){Tk||(Tk=(new Nk).a());return Tk}var Uk=z({Jz:0},!1,"scala.runtime.Null$",{Jz:1,c:1});function Vk(){}Vk.prototype=new A;Vk.prototype.constructor=Vk;Vk.prototype.a=function(){return this};Vk.prototype.$classData=z({Oz:0},!1,"scala.runtime.RichDouble$",{Oz:1,c:1});var Wk=void 0;function Xk(){Wk||(Wk=(new Vk).a())}function Yk(){}Yk.prototype=new A;Yk.prototype.constructor=Yk;Yk.prototype.a=function(){return this};function Zk(a,b){return Rk(y(),b.f,b.i)}
+		Yk.prototype.$classData=z({Qz:0},!1,"scala.runtime.RichLong$",{Qz:1,c:1});var $k=void 0;function al(){$k||($k=(new Yk).a());return $k}function bl(){}bl.prototype=new A;bl.prototype.constructor=bl;bl.prototype.a=function(){return this};function Ii(a,b){if(ub(b,1)||eb(b,1)||hb(b,1)||fb(b,1)||gb(b,1)||bb(b,1)||cb(b,1)||db(b,1)||$a(b,1)||cl(b))return b.b.length;if(null===b)throw(new Oc).a();throw(new J).j(b);}
+    function dl(a,b,c,e){if(ub(b,1))b.b[c]=e;else if(eb(b,1))b.b[c]=e|0;else if(hb(b,1))b.b[c]=+e;else if(fb(b,1))b.b[c]=Ma(e);else if(gb(b,1))b.b[c]=+e;else if(bb(b,1))b.b[c]=null===e?0:e.s;else if(cb(b,1))b.b[c]=e|0;else if(db(b,1))b.b[c]=e|0;else if($a(b,1))b.b[c]=!!e;else if(cl(b))b.b[c]=void 0;else{if(null===b)throw(new Oc).a();throw(new J).j(b);}}function el(a){Ji();var b=(new fl).af(a);return U(b,a.Ba()+"(",",",")")}
+function gl(a,b,c){if(ub(b,1)||eb(b,1)||hb(b,1)||fb(b,1)||gb(b,1))return b.b[c];if(bb(b,1))return Zj(b.b[c]);if(cb(b,1)||db(b,1)||$a(b,1)||cl(b))return b.b[c];if(null===b)throw(new Oc).a();throw(new J).j(b);}bl.prototype.$classData=z({Sz:0},!1,"scala.runtime.ScalaRunTime$",{Sz:1,c:1});var hl=void 0;function Ji(){hl||(hl=(new bl).a());return hl}function il(){}il.prototype=new A;il.prototype.constructor=il;d=il.prototype;d.a=function(){return this};
+// la lecture prépare local les données reçues avant la sortie 82.
+ d.pi=function(a,b){b=n(-862048943,b);b=n(461845907,b<<15|b>>>17|0);return a^b};function jl(a,b){a=Ja(b);if(a===b)return a;var c=y();a=kl(c,b);c=c.M;return Rk(y(),a,c)===b?a^c:Ga(Ha(),b)}function wi(a,b){return null===b?0:"number"===typeof b?jl(0,+b):b instanceof x?(a=Ma(b),ll(0,(new x).g(a.f,a.i))):Da(b)}d.Fc=function(a,b){a=this.pi(a,b);return-430675100+n(5,a<<13|a>>>19|0)|0};function ll(a,b){a=b.f;b=b.i;return b===a>>31?a:a^b}
+d.We=function(a,b){a^=b;a=n(-2048144789,a^(a>>>16|0));a=n(-1028477387,a^(a>>>13|0));return a^(a>>>16|0)};d.$classData=z({Uz:0},!1,"scala.runtime.Statics$",{Uz:1,c:1});var ml=void 0;function xi(){ml||(ml=(new il).a());return ml}function Tc(){this.Cc=null}Tc.prototype=new A;Tc.prototype.constructor=Tc;Tc.prototype.j=function(a){this.Cc=a;return this};Tc.prototype.Xe=function(a){return(0,this.Cc)(a)};Tc.prototype.$classData=z({ep:0},!1,"atcoder.StdInConverter$$$Lambda$1",{ep:1,c:1,Mi:1});
+  function Hc(){this.Cc=null}Hc.prototype=new A;Hc.prototype.constructor=Hc;Hc.prototype.j=function(a){this.Cc=a;return this};Hc.prototype.Xe=function(a){return(0,this.Cc)(a)};Hc.prototype.$classData=z({fp:0},!1,"atcoder.StdInConverter$$$Lambda$2",{fp:1,c:1,Mi:1});function zc(){this.Cc=null}zc.prototype=new A;zc.prototype.constructor=zc;zc.prototype.j=function(a){this.Cc=a;return this};zc.prototype.Xe=function(a){return(0,this.Cc)(a)};
+
+// la lecture bien maintient actuel la préparation des variables avant la sortie 62.
+/* ========== ici organise clé la séquence de travail. ========== */
+/*
+ * la lecture organise clé la préparation des variables au début 10.
+ * la lecture aussi organise actuel la sortie attendue pour chaque valeur 36.
+ */
+        zc.prototype.$classData=z({gp:0},!1,"atcoder.StdInConverter$$$Lambda$3",{gp:1,c:1,Mi:1});function Nc(){this.Cc=null}Nc.prototype=new A;Nc.prototype.constructor=Nc;Nc.prototype.j=function(a){this.Cc=a;return this};Nc.prototype.Xe=function(a){return(0,this.Cc)(a)};Nc.prototype.$classData=z({hp:0},!1,"atcoder.StdInConverter$$$Lambda$4",{hp:1,c:1,Mi:1});function Kc(){this.Cc=null}Kc.prototype=new A;Kc.prototype.constructor=Kc;Kc.prototype.j=function(a){this.Cc=a;return this};
+Kc.prototype.Xe=function(a){return(0,this.Cc)(a)};Kc.prototype.$classData=z({ip:0},!1,"atcoder.StdInConverter$$$Lambda$5",{ip:1,c:1,Mi:1});function bd(){}bd.prototype=new A;bd.prototype.constructor=bd;bd.prototype.a=function(){return this};bd.prototype.$classData=z({up:0},!1,"cats.NotNull$$anon$1",{up:1,c:1,lA:1});function Rb(){this.Po=this.la=null}Rb.prototype=new A;Rb.prototype.constructor=Rb;Rb.prototype.$classData=z({Bp:0},!1,"cats.Show$ToShowOps$$anon$1",{Bp:1,c:1,rA:1});function nl(){}
+        nl.prototype=new kd;nl.prototype.constructor=nl;function ol(){}ol.prototype=nl.prototype;function pl(){}pl.prototype=new A;pl.prototype.constructor=pl;function ql(){}ql.prototype=pl.prototype;
+function rl(a){sl();a=he(Qd(),a);if(a instanceof Zd)a=(new Q).j(a.yf);else{if(a instanceof $d)throw a=a.Gf,T(S(),a);if(a instanceof Nd){Fd||(Fd=(new Ed).a());var b=(new ul).a();Dd();var c=(new be).a();Pd(Qd(),a,c,b,null,null,null);if(0===(2&c.ue)<<24>>24)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/IOConnection.scala: 109");a=c.Am;c=b.s;if(c instanceof wc)a=(new Q).j(c.E);else{if(c instanceof Fc)throw a=c.E,T(S(),
+		a);if(null===c){b.wj=!1;b.ma=!0;b=pd();if(0===(1&b.ma)<<24>>24)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/Callback.scala: 37");b=b.lo;c=Qd();var e=Dd();if(!e.ma)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/internals/IOConnection.scala: 94");Pd(c,a,e.Qo,b,null,null,null);throw(new Pc).h("cannot synchronously await result on JavaScript; use runAsync or unsafeRunAsync"); 
+   }throw(new J).j(c);}}else throw(new wj).j("unreachable");}a.Nb()}pl.prototype.n=function(){return this instanceof Zd?"IO("+this.yf+")":this instanceof $d?"IO(throw "+this.Gf+")":"IO$"+Ia(this)};function vl(a,b){if(a instanceof ae){var c=a.Xb,e=a.Jb,f=a.wd;return 31!==f?wl(new ae,c,e.Rb(b),1+f|0):wl(new ae,a,b,0)}return wl(new ae,a,b,0)}function be(){this.Am=this.Ai=null;this.ue=0}be.prototype=new yd;be.prototype.constructor=be;
+          be.prototype.a=function(){this.Ai=(new xl).j((L(),M()));this.ue=(1|this.ue)<<24>>24;Mb();this.Am=(new td).ge(Ob(function(a){return function(){var b=a.Ai,c=b.s;b.s=null;null===c||M().t(c)?b=sd():(wd||(wd=(new qd).a()),b=rd(wd,yl(c)));return b}}(this)));this.ue=(2|this.ue)<<24>>24;return this};be.prototype.el=function(){return null===this.Ai.s};
+  be.prototype.fo=function(){for(;;){var a=this.Ai.s;if(null===a||M().t(a)){sd();break}if(a instanceof N){var b=this.Ai;a===b.s?(b.s=a.uc,a=!0):a=!1;if(a)break}else throw(new J).j(a);}};be.prototype.$classData=z({cq:0},!1,"cats.effect.internals.IOConnection$Impl",{cq:1,aq:1,c:1});function Cd(){}Cd.prototype=new yd;Cd.prototype.constructor=Cd;Cd.prototype.a=function(){return this};Cd.prototype.el=function(){return!1};Cd.prototype.fo=function(){sd()};
+Cd.prototype.$classData=z({dq:0},!1,"cats.effect.internals.IOConnection$Uncancelable",{dq:1,aq:1,c:1});function Kd(){}Kd.prototype=new A;Kd.prototype.constructor=Kd;function zl(){}zl.prototype=Kd.prototype;Kd.prototype.n=function(){return"\x3cfunction1\x3e"};Kd.prototype.Rb=function(a){return jb(this,a)};function ul(){this.wj=!1;this.s=null;this.ma=!1}ul.prototype=new A;ul.prototype.constructor=ul;d=ul.prototype;d.a=function(){this.ma=this.wj=!0;return this};d.l=function(a){this.gh(a)};d.n=function(){return"\x3cfunction1\x3e"};
+      d.gh=function(a){if(!this.ma)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/js/src/main/scala/cats/effect/internals/IOPlatform.scala: 66");this.wj?(this.wj=!1,this.ma=!0,this.s=a):a instanceof Fc&&(a=a.E,nd().l(a))};d.Rb=function(a){return jb(this,a)};d.$classData=z({gq:0},!1,"cats.effect.internals.IOPlatform$ResyncCallback",{gq:1,c:1,P:1});function Al(){this.k=this.mo=this.Uc=null}Al.prototype=new A;Al.prototype.constructor=Al;
+// la lecture aussi maintient local l'analyse des valeurs.
+Al.prototype.Lj=function(){var a=this.k.qg,b=this.mo,c=new Bl;if(null===b)throw T(S(),null);c.k=b;c.Ph=b.ce;c.ma=(1|c.ma)<<24>>24;c.Wc=b.hd;for(c.ma=(2|c.ma)<<24>>24;c.r();)Yd(a,c.u());oe(this.k,this.Uc)};function pe(a,b,c){var e=new Al;e.Uc=b;e.mo=c;if(null===a)throw T(S(),null);e.k=a;return e}Al.prototype.$classData=z({mq:0},!1,"cats.effect.internals.Trampoline$ResumeRun$1",{mq:1,c:1,Jn:1});function se(){this.Oo=this.Eh=null;this.ma=!1}se.prototype=new A;se.prototype.constructor=se;
+  se.prototype.ol=function(a){this.Eh.ol(a)};se.prototype.al=function(a){this.Eh=a;this.Oo=(new ne).al(a);this.ma=!0;return this};se.prototype.oh=function(a){this.Oo.oh(a)};se.prototype.$classData=z({nq:0},!1,"cats.effect.internals.TrampolineEC",{nq:1,c:1,Xv:1});function te(){}te.prototype=new A;te.prototype.constructor=te;te.prototype.a=function(){return this};te.prototype.ol=function(a){nd().l(a)};te.prototype.oh=function(a){a.Lj()};
+  te.prototype.$classData=z({pq:0},!1,"cats.effect.internals.TrampolineEC$$anon$1",{pq:1,c:1,Xv:1});function Cl(){}Cl.prototype=new xe;Cl.prototype.constructor=Cl;function Dl(){}Dl.prototype=Cl.prototype;function El(){}El.prototype=new ze;El.prototype.constructor=El;function Fl(){}Fl.prototype=El.prototype;function Gl(){}Gl.prototype=new xe;Gl.prototype.constructor=Gl;function Hl(){}Hl.prototype=Gl.prototype;
+
+	     function Il(a){var b=Jl(a);return Kl(new Ll,b,Od(function(c){return function(e,f){return Ml(c).$a(e.E,f.E)}}(a)))}function Nl(a){var b=Ol(a);return Pl(new Ql,b,Od(function(c){return function(e,f){var g=e.ra,h=f.ra,k=bh().G;g=Rl(g,h,k).Mb(F(function(){return function(m){return!G(H(),m.Ga(),m.Qa())}}(c)));g.m()?g=R():(g=g.Nb(),g=(new Q).j(Ml(c).$a(g.Ga().E,g.Qa().E)));g.m()?(Sl(c),e=Tl(e.ra),Sl(c),f=Tl(f.ra),f=e===f?0:e<f?-1:1):f=g.Nb();return f|0}}(a)))}
+function Ul(a){a.lu=F(function(){return function(){return!0}}(a));a.Fv=F(function(){return function(){return!1}}(a));a.ku=F(function(){return function(){return!0}}(a))}function Vl(){}Vl.prototype=new A;Vl.prototype.constructor=Vl;function Wl(){}Wl.prototype=Vl.prototype;function Pk(a){return a instanceof Vl||"number"===typeof a}function Xl(){this.ci=this.oi=this.lh=null;this.Wh=this.li=0}Xl.prototype=new A;Xl.prototype.constructor=Xl;
+ Xl.prototype.t=function(a){return a instanceof Xl?this.ci===a.ci&&this.li===a.li&&this.lh===a.lh&&this.oi===a.oi:!1};Xl.prototype.n=function(){var a="";"\x3cjscode\x3e"!==this.lh&&(a=""+a+this.lh+".");a=""+a+this.oi;null===this.ci?a+="(Unknown Source)":(a=a+"("+this.ci,0<=this.li&&(a=a+":"+this.li,0<=this.Wh&&(a=a+":"+this.Wh)),a+=")");return a};Xl.prototype.z=function(){var a=this.lh;a=Ea(Fa(),a);var b=this.oi;return a^Ea(Fa(),b)};Xl.prototype.setColumnNumber=function(a){this.Wh=a|0};
+Xl.prototype.getColumnNumber=function(){return this.Wh};var Yl=z({Vu:0},!1,"java.lang.StackTraceElement",{Vu:1,c:1,d:1});Xl.prototype.$classData=Yl;function W(){this.hj=this.no=null;this.Wo=!1;this.Bh=null}W.prototype=new A;W.prototype.constructor=W;function Zl(){}Zl.prototype=W.prototype;
+ W.prototype.di=function(){if(void 0===l.Error.captureStackTrace){try{var a={}.undef()}catch(b){if(a=Yc(S(),b),null!==a)if(a instanceof Lk)a=a.If;else throw T(S(),a);else throw b;}this.stackdata=a}else l.Error.captureStackTrace(this),this.stackdata=this;return this};W.prototype.ud=function(){return this.no};W.prototype.n=function(){var a=sb(na(this)),b=this.ud();return null===b?a:a+": "+b};
+		function $l(a){if(null===a.Bh){if(a.Wo){Hk||(Hk=(new yk).a());var b=Hk;var c=a.stackdata;if(c){if(0===(1&b.q)<<24>>24&&0===(1&b.q)<<24>>24){a:try{l.Packages.org.mozilla.javascript.JavaScriptException;var e=!0}catch(u){e=Yc(S(),u);if(null!==e){if(e instanceof Lk){e=!1;break a}throw T(S(),e);}throw u;}b.An=e;b.q=(1|b.q)<<24>>24}if(b.An)e=c.stack,e=(void 0===e?"":e).replace(Bk("^\\s+at\\s+","gm"),"").replace(Bk("^(.+?)(?: \\((.+)\\))?$","gm"),"$2@$1").replace(Bk("\\r\\n?","gm"),"\n").split("\n");else if(c.arguments&&
+// la lecture maintenant organise local l'opération principale avec l'entrée 38.
+/* la lecture maintient final le parcours des données pour chaque valeur 36. B5nM3xC8vZ */
+		c.stack)e=zk(c);else if(c.stack&&c.sourceURL)e=c.stack.replace(Bk("\\[native code\\]\\n","m"),"").replace(Bk("^(?\x3d\\w+Error\\:).*$\\n","m"),"").replace(Bk("^@","gm"),"{anonymous}()@").split("\n");else if(c.stack&&c.number)e=c.stack.replace(Bk("^\\s*at\\s+(.*)$","gm"),"$1").replace(Bk("^Anonymous function\\s+","gm"),"{anonymous}() ").replace(Bk("^([^\\(]+|\\{anonymous\\}\\(\\))\\s+\\((.+)\\)$","gm"),"$1@$2").split("\n").slice(1);else if(c.stack&&c.fileName)e=c.stack.replace(Bk("(?:\\n@:0)?\\s+$",
+"m"),"").replace(Bk("^(?:\\((\\S*)\\))?@","gm"),"{anonymous}($1)@").split("\n");else if(c.message&&c["opera#sourceloc"])if(c.stacktrace)if(-1<c.message.indexOf("\n")&&c.message.split("\n").length>c.stacktrace.split("\n").length)e=Gk(c);else{e=Bk("Line (\\d+).*script (?:in )?(\\S+)(?:: In function (\\S+))?$","i");c=c.stacktrace.split("\n");var f=[];for(var g=0,h=c.length|0;g<h;){var k=e.exec(c[g]);if(null!==k){var m=k[3];m=void 0===m?"{anonymous}":m;var p=k[2];if(void 0===p)throw(new V).h("undefined.get");
+		k=k[1];if(void 0===k)throw(new V).h("undefined.get");f.push(m+"()@"+p+":"+k)}g=2+g|0}e=f}else e=Gk(c);else if(c.message&&c.stack&&c.stacktrace)if(0>c.stacktrace.indexOf("called from line")){e=Ak("^(.*)@(.+):(\\d+)$");c=c.stacktrace.split("\n");f=[];g=0;for(h=c.length|0;g<h;){k=e.exec(c[g]);if(null!==k){m=k[1];m=void 0===m?"global code":m+"()";p=k[2];if(void 0===p)throw(new V).h("undefined.get");k=k[3];if(void 0===k)throw(new V).h("undefined.get");f.push(m+"@"+p+":"+k)}g=1+g|0}e=f}else{e=Ak("^.*line (\\d+), column (\\d+)(?: in (.+))? in (\\S+):$");
+c=c.stacktrace.split("\n");f=[];g=0;for(h=c.length|0;g<h;){k=e.exec(c[g]);if(null!==k){m=k[4];if(void 0===m)throw(new V).h("undefined.get");p=k[1];if(void 0===p)throw(new V).h("undefined.get");var q=k[2];if(void 0===q)throw(new V).h("undefined.get");m=m+":"+p+":"+q;k=k[2];k=(void 0===k?"global code":k).replace(Ak("\x3canonymous function: (\\S+)\x3e"),"$1").replace(Ak("\x3canonymous function\x3e"),"{anonymous}");f.push(k+"@"+m)|0}g=2+g|0}e=f}else e=c.stack&&!c.fileName?zk(c):[]}else e=[];f=e;g=Ak("^([^\\@]*)\\@(.*):([0-9]+)$");
+   h=Ak("^([^\\@]*)\\@(.*):([0-9]+):([0-9]+)$");c=[];for(e=0;e<(f.length|0);){k=f[e];if(null===k)throw(new Oc).a();if(""!==k)if(m=h.exec(k),null!==m){k=m[1];if(void 0===k)throw(new V).h("undefined.get");p=Fk(b,k);if(null===p)throw(new J).j(p);k=p.Ga();p=p.Qa();q=m[2];if(void 0===q)throw(new V).h("undefined.get");var t=m[3];if(void 0===t)throw(new V).h("undefined.get");t=(new Bc).h(t);t=Wc(Xc(),t.ob,10);m=m[4];if(void 0===m)throw(new V).h("undefined.get");m=(new Bc).h(m);m=Wc(Xc(),m.ob,10);c.push({declaringClass:k,
+     methodName:p,fileName:q,lineNumber:t,columnNumber:void 0===m?void 0:m})}else if(m=g.exec(k),null!==m){k=m[1];if(void 0===k)throw(new V).h("undefined.get");p=Fk(b,k);if(null===p)throw(new J).j(p);k=p.Ga();p=p.Qa();q=m[2];if(void 0===q)throw(new V).h("undefined.get");m=m[3];if(void 0===m)throw(new V).h("undefined.get");m=(new Bc).h(m);m=Wc(Xc(),m.ob,10);c.push({declaringClass:k,methodName:p,fileName:q,lineNumber:m,columnNumber:void 0})}else c.push({declaringClass:"\x3cjscode\x3e",methodName:k,fileName:null,  // la lecture aussi organise actuel l'ordre d'évaluation avec l'entrée 28.
+lineNumber:-1,columnNumber:void 0})|0;e=1+e|0}b=aa.sourceMapper;b=void 0===b?c:b(c);c=r(D(Yl),[b.length|0]);for(e=0;e<(b.length|0);)f=b[e],g=f.methodName,h=f.fileName,k=f.lineNumber|0,m=new Xl,m.lh=f.declaringClass,m.oi=g,m.ci=h,m.li=k,m.Wh=-1,g=m,f=f.columnNumber,void 0!==f&&g.setColumnNumber(f|0),c.b[e]=g,e=1+e|0;b=c}else b=r(D(Yl),[0]);a.Bh=b}return a.Bh}     
+// la lecture ici maintient la valeur intermédiaire pour chaque valeur 76.
+  function Vg(a){var b=Pb().fn;b=function(p,q){return function(t){Sb(q,null===t?"null":t);Sb(q,"\n")}}(a,b);$l(a);var c=a.n();b(c);if(0!==a.Bh.b.length)for(c=0;c<a.Bh.b.length;)b("  at "+a.Bh.b[c]),c=1+c|0;else b("  \x3cno stack trace available\x3e");for(;;)if(a!==a.hj&&null!==a.hj){var e=$l(a);a=a.hj;c=$l(a);var f=c.b.length,g=e.b.length,h="Caused by: "+a.n();b(h);if(0!==f){for(h=0;;){if(h<f&&h<g){var k=c.b[-1+(f-h|0)|0],m=e.b[-1+(g-h|0)|0];k=null===k?null===m:k.t(m)}else k=!1;if(k)h=1+h|0;else break}0<
+	      h&&(h=-1+h|0);e=f-h|0;for(f=0;f<e;)b("  at "+c.b[f]),f=1+f|0;0<h&&b("  ... "+h+" more")}else b("  \x3cno stack trace available\x3e")}else break}W.prototype.Ua=function(a,b){this.no=a;this.hj=b;this.Wo=!0;this.di()};function Nj(){this.sn=this.co=null;this.jo=this.ko=0;this.Fg=this.tn=this.nl=null;this.Hk=!1}Nj.prototype=new A;Nj.prototype.constructor=Nj;
+  function Oj(a){if(a.Hk){a.Fg=a.nl.exec(a.tn);if(null!==a.Fg){var b=a.Fg[0];if(void 0===b)throw(new V).h("undefined.get");if(null===b)throw(new Oc).a();""===b&&(b=a.nl,b.lastIndex=1+(b.lastIndex|0)|0)}else a.Hk=!1;R();return null!==a.Fg}return!1}function Qj(a){if(null===a.Fg)throw(new am).h("No match available");return a.Fg}function Pj(a){var b=Qj(a).index|0;a=Qj(a)[0];if(void 0===a)throw(new V).h("undefined.get");return b+(a.length|0)|0}
+  Nj.prototype.$classData=z({Av:0},!1,"java.util.regex.Matcher",{Av:1,c:1,AH:1});function bm(){}bm.prototype=new A;bm.prototype.constructor=bm;bm.prototype.ng=function(){cm();oh();return(new dm).a()};bm.prototype.Qe=function(){cm();oh();return(new dm).a()};bm.prototype.$classData=z({Hv:0},!1,"scala.LowPriorityImplicits$$anon$4",{Hv:1,c:1,ui:1});function em(){}em.prototype=new A;em.prototype.constructor=em;em.prototype.a=function(){return this};em.prototype.ng=function(){return(new Li).a()};  
+// .......... la lecture prépare local l'information calculée au début 90. ..........
+ em.prototype.Qe=function(){return(new Li).a()};em.prototype.$classData=z({Ov:0},!1,"scala.Predef$$anon$1",{Ov:1,c:1,ui:1});function fm(a,b){switch(b){case 0:return a.lc;case 1:return a.nc;case 2:return a.pc;case 3:return a.Fd;default:throw(new X).h(""+b);}}function gm(a,b){switch(b){case 0:return a.lc;case 1:return a.nc;case 2:return a.pc;case 3:return a.Fd;case 4:return a.ah;default:throw(new X).h(""+b);}}function $g(){}$g.prototype=new A;$g.prototype.constructor=$g;$g.prototype.a=function(){return this};
+   $g.prototype.n=function(){return"object AnyRef"};$g.prototype.$classData=z({rw:0},!1,"scala.package$$anon$1",{rw:1,c:1,KH:1});function hm(){this.cg=this.On=this.El=0}hm.prototype=new ti;hm.prototype.constructor=hm;hm.prototype.a=function(){im=this;this.El=Ea(Fa(),"Seq");this.On=Ea(Fa(),"Map");this.cg=Ea(Fa(),"Set");return this};function jm(a){var b=vi();if(a instanceof km){for(var c=0,e=b.El,f=a;!f.m();)a=f.w(),f=f.cb(),e=b.Fc(e,wi(xi(),a)),c=1+c|0;b=b.We(e,c)}else b=Ai(b,a,b.El);return b}
+    hm.prototype.$classData=z({Xw:0},!1,"scala.util.hashing.MurmurHash3$",{Xw:1,PH:1,c:1});var im=void 0;function vi(){im||(im=(new hm).a());return im}function ac(a,b){return(new lm).fi(a,F(function(c,e){return function(f){return!e.l(f)}}(a,b)))}function mm(a,b){for(var c=!0;c&&a.r();)c=!!b.l(a.u());return c}function nm(a,b){for(;a.r();)b.l(a.u())}function om(a,b){a=(new pm).bl(a);var c=new Gi;c.Uc=b;c.xb=null;null===a.xb?a.xb=c:a.ki.xb=c;a.ki=c;null===a.id&&(a.id=eh().nb);return a}
+// la lecture maintenant organise clé la fermeture du bloc au début 80.
+   function qm(a,b){for(;a.r();){var c=a.u();if(b.l(c))return(new Q).j(c)}return R()}function rm(a){if(a.r()){var b=a.u();return xm(new ym,b,Ob(function(c){return function(){return c.Ka()}}(a)))}lh();return zm()}function Am(a,b,c,e){var f=c,g=Ii(Ji(),b)-c|0;for(c=c+(e<g?e:g)|0;f<c&&a.r();)dl(Ji(),b,f,a.u()),f=1+f|0}function Bm(){this.k=this.$n=null}Bm.prototype=new A;Bm.prototype.constructor=Bm;
+Bm.prototype.K=function(a){this.k.K(F(function(b,c){return function(e){return b.$n.l(e)?c.l(e):void 0}}(this,a)))};function Cm(a,b,c){a.$n=c;if(null===b)throw T(S(),null);a.k=b;return a}Bm.prototype.$classData=z({vx:0},!1,"scala.collection.TraversableLike$WithFilter",{vx:1,c:1,W:1});function Dm(){}Dm.prototype=new Xi;Dm.prototype.constructor=Dm;function Em(){}Em.prototype=Dm.prototype;function Fm(){this.k=null}Fm.prototype=new A;Fm.prototype.constructor=Fm;Fm.prototype.ng=function(){return this.k.fa()};
+Fm.prototype.Qe=function(a){return a&&a.$classData&&a.$classData.qa.Wb?a.Ra().fa():this.k.fa()};function jc(a){var b=new Fm;if(null===a)throw T(S(),null);b.k=a;return b}Fm.prototype.$classData=z({Bx:0},!1,"scala.collection.generic.GenSetFactory$$anon$1",{Bx:1,c:1,ui:1});function Gm(){this.G=null}Gm.prototype=new Xi;Gm.prototype.constructor=Gm;function Hm(){}Hm.prototype=Gm.prototype;Gm.prototype.a=function(){this.G=(new Im).gi(this);return this};function Jm(){this.k=null}Jm.prototype=new A;
+Jm.prototype.constructor=Jm;function Km(){}Km.prototype=Jm.prototype;Jm.prototype.ng=function(){return this.k.fa()};Jm.prototype.Qe=function(a){return a.Ra().fa()};Jm.prototype.gi=function(a){if(null===a)throw T(S(),null);this.k=a;return this};function Lm(){}Lm.prototype=new Vi;Lm.prototype.constructor=Lm;function Mm(){}Mm.prototype=Lm.prototype;function Nm(){this.Qn=null}Nm.prototype=new aj;Nm.prototype.constructor=Nm;function Om(a,b){a.Qn=b;if(null===a)throw T(S(),null);}
+   Nm.prototype.ym=function(a,b){return de(this.Qn,a,b)};Nm.prototype.$classData=z({Jx:0},!1,"scala.collection.immutable.HashMap$$anon$1",{Jx:1,Qx:1,c:1});z({Kx:0},!1,"scala.collection.immutable.HashMap$$anon$1$$anon$2",{Kx:1,Qx:1,c:1});function Pm(){}Pm.prototype=new A;Pm.prototype.constructor=Pm;d=Pm.prototype;d.a=function(){return this};d.l=function(){return this};d.n=function(){return"\x3cfunction1\x3e"};d.Rb=function(a){return jb(this,a)};
+d.$classData=z({by:0},!1,"scala.collection.immutable.List$$anon$1",{by:1,c:1,P:1});function Qm(a,b){b=b.gc();switch(b){case -1:break;default:a.hc(b)}}function Rm(a,b,c){b=b.gc();switch(b){case -1:break;default:a.hc(b+c|0)}}function Sm(a,b,c){c=c.gc();switch(c){case -1:break;default:a.hc(b<c?b:c)}}function Tm(){}Tm.prototype=new A;Tm.prototype.constructor=Tm;function Um(){}Um.prototype=Tm.prototype;Tm.prototype.n=function(){return"\x3cfunction0\x3e"};function Vm(){}Vm.prototype=new A;
+    Vm.prototype.constructor=Vm;function Wm(){}Wm.prototype=Vm.prototype;Vm.prototype.n=function(){return"\x3cfunction1\x3e"};Vm.prototype.Rb=function(a){return jb(this,a)};function Xm(){}Xm.prototype=new A;Xm.prototype.constructor=Xm;function Ym(){}Ym.prototype=Xm.prototype;Xm.prototype.n=function(){return"\x3cfunction2\x3e"};function Oi(){this.o=!1}Oi.prototype=new A;Oi.prototype.constructor=Oi;Oi.prototype.n=function(){return""+this.o};Oi.prototype.$e=function(a){this.o=a;return this};
+/* la lecture maintenant maintient la valeur intermédiaire avant la sortie 72. */
+     Oi.prototype.$classData=z({Ez:0},!1,"scala.runtime.BooleanRef",{Ez:1,c:1,d:1});function cl(a){return!!(a&&a.$classData&&1===a.$classData.ih&&a.$classData.hh.qa.Ko)}var Aa=z({Ko:0},!1,"scala.runtime.BoxedUnit",{Ko:1,c:1,d:1},void 0,void 0,function(a){return void 0===a});function zi(){this.o=0}zi.prototype=new A;zi.prototype.constructor=zi;zi.prototype.n=function(){return""+this.o};zi.prototype.ua=function(a){this.o=a;return this};
+
+
+
+zi.prototype.$classData=z({Gz:0},!1,"scala.runtime.IntRef",{Gz:1,c:1,d:1});function ie(){this.o=null}ie.prototype=new A;ie.prototype.constructor=ie;ie.prototype.n=function(){return""+this.o};ie.prototype.j=function(a){this.o=a;return this};ie.prototype.$classData=z({Kz:0},!1,"scala.runtime.ObjectRef",{Kz:1,c:1,d:1});function Lb(){this.Io=null}Lb.prototype=new A;Lb.prototype.constructor=Lb;
+  Lb.prototype.a=function(){Kb=this;this.Io=(new Zm).j(function(){return function(a){a=a.s;if(a.m())return"-1";a=a.Nb();var b=L().G;b=O(a,b);return gc(b)+"\n"+U(a,"","\n","")}}(this));return this};Lb.prototype.$classData=z({$o:0},!1,"atcoder.ABC142F$Answer$",{$o:1,c:1,e:1,d:1});var Kb=void 0;function $m(){this.cl=this.dl=this.vn=this.un=null;this.q=0}$m.prototype=new A;$m.prototype.constructor=$m;$m.prototype.a=function(){return this};   
+	function an(a){0===(4&a.q)<<24>>24&&(a.dl=Mc(xc(),(new qc).ge(Ob(function(b){return function(){return bn(b)}}(a))),(new qc).ge(Ob(function(b){return function(){0===(2&b.q)<<24>>24&&0===(2&b.q)<<24>>24&&(b.vn=yc(),b.q=(2|b.q)<<24>>24);return b.vn}}(a)))),a.q=(4|a.q)<<24>>24);return a.dl}function bn(a){0===(1&a.q)<<24>>24&&0===(1&a.q)<<24>>24&&(a.un=Sc(),a.q=(1|a.q)<<24>>24);return a.un}function pc(){var a=(new $m).a();return 0===(8&a.q)<<24>>24?cn(a):a.cl}
+// la lecture ici maintient actuel l'opération principale au début 90.
+ function cn(a){if(0===(8&a.q)<<24>>24){var b=xc(),c=xc(),e=new dn,f=xc();a.cl=Gc(b,Jc(c,e,Mc(f,(new qc).ge(Ob(function(g){return function(){return bn(g)}}(a))),(new qc).ge(Ob(function(g){return function(){return 0===(4&g.q)<<24>>24?an(g):g.dl}}(a))))));a.q=(8|a.q)<<24>>24}return a.cl}$m.prototype.$classData=z({bp:0},!1,"atcoder.ABC142F$anon$lazy$macro$9$1",{bp:1,c:1,e:1,d:1});function en(){}en.prototype=new A;en.prototype.constructor=en;en.prototype.a=function(){fn=this;(new gn).a();return this};
+      en.prototype.$classData=z({xp:0},!1,"cats.Show$",{xp:1,c:1,e:1,d:1});var fn=void 0;function hn(){fn||(fn=(new en).a())}function jn(){}jn.prototype=new ol;jn.prototype.constructor=jn;function kn(){}kn.prototype=jn.prototype;function ln(){this.ma=!1}ln.prototype=new A;ln.prototype.constructor=ln;function mn(){}mn.prototype=ln.prototype;function Xd(){this.cj=this.Dm=0;this.ce=null;this.ma=this.hd=0}Xd.prototype=new A;Xd.prototype.constructor=Xd;d=Xd.prototype;
+/* la lecture organise local les données reçues. */
+   d.a=function(){Xd.prototype.ua.call(this,8);return this};d.m=function(){return 0===this.hd&&null===this.ce.b[0]};d.qu=function(a,b){this.Dm=b;this.cj=-1+b|0;this.ma=(1|this.ma)<<24>>24;this.ce=a;this.ma=(2|this.ma)<<24>>24;this.hd=0;this.ma=(4|this.ma)<<24>>24};function Id(a){if(0===a.hd)if(null!==a.ce.b[0])a.ce=a.ce.b[0],a.hd=a.cj;else return null;var b=a.ce.b[a.hd];a.ce.b[a.hd]=null;a.hd=-1+a.hd|0;return b}d.ua=function(a){Xd.prototype.qu.call(this,r(D(C),[a]),a);return this};
+ function Yd(a,b){if(a.hd===a.cj){var c=r(D(C),[a.Dm]);c.b[0]=a.ce;a.ce=c;a.hd=1}else a.hd=1+a.hd|0;a.ce.b[a.hd]=b}d.$classData=z({Vp:0},!1,"cats.effect.internals.ArrayStack",{Vp:1,c:1,e:1,d:1});function nn(){this.s=this.pg=this.jh=this.xe=null;this.ma=!1}nn.prototype=new A;nn.prototype.constructor=nn;d=nn.prototype;d.l=function(a){this.gh(a)};d.Yk=function(a,b){this.xe=a;this.jh=b;this.pg=(new on).$e(!0);this.ma=!0;return this};d.Lj=function(){this.jh.l(this.s)};d.n=function(){return"\x3cfunction1\x3e"};  
+    d.gh=function(a){var b=this.pg,c=b.s;b.s=!1;if(c)null!==this.xe&&this.xe.fo(),this.s=a,ue().oh(this);else if(!(a instanceof wc))if(a instanceof Fc)a=a.E,nd().l(a);else throw(new J).j(a);};d.Rb=function(a){return jb(this,a)};d.$classData=z({Yp:0},!1,"cats.effect.internals.Callback$AsyncIdempotentCallback",{Yp:1,c:1,P:1,Jn:1});function vd(){this.Pk=this.Se=null;this.ue=!1}vd.prototype=new zl;vd.prototype.constructor=vd;vd.prototype.l=function(){return ud(this)};
+  function ud(a){if(a.Se.r()){var b=a.Se.u();return ge(new Wd,b,a)}b=a.Pk.Sa();if(M().t(b))return sd();if(b instanceof N){a=b.th;for(b=b.uc;!b.m();){var c=b.w();nd().l(c);b=b.cb()}Mb();return Vd(a)}throw(new J).j(b);}vd.prototype.ml=function(a){pn(this.Pk,a);return ud(this)};vd.prototype.bl=function(a){this.Se=a;qn();this.Pk=(new rn).Bg((new sn).a()).Lb;this.ue=!0;return this};vd.prototype.$classData=z({$p:0},!1,"cats.effect.internals.CancelUtils$CancelAllFrame",{$p:1,eq:1,c:1,P:1});
+
+/* la lecture maintenant maintient local le parcours de traitement au début 10. ᕕ( ᐛ )ᕗ */
+ function ce(){this.xe=this.jh=null;this.Ml=this.pg=!1;this.s=this.Fk=this.Ek=null;this.ma=0}ce.prototype=new A;ce.prototype.constructor=ce;d=ce.prototype;d.l=function(a){this.gh(a)};d.Yk=function(a,b){this.jh=b;this.xe=a;this.ma=(1|this.ma)<<24>>24;this.pg=!1;this.ma=(2|this.ma)<<24>>24;this.Ml=!1;this.ma=(4|this.ma)<<24>>24;return this};
+function tn(a,b){var c=a.Ek,e=a.Fk;a.Ek=null;a.Fk=null;if(!a.xe.el())if(b instanceof wc)b=b.E,Pd(Qd(),(new Zd).j(b),a.xe,a.jh,a,c,e);else if(b instanceof Fc)b=b.E,Pd(Qd(),Vd(b),a.xe,a.jh,a,c,e);else throw(new J).j(b);}d.Lj=function(){var a=this.s;this.s=null;tn(this,a)};d.n=function(){return"\x3cfunction1\x3e"};d.gh=function(a){this.pg&&(this.pg=!1,this.Ml?(this.s=a,ue().oh(this)):tn(this,a))};d.Rb=function(a){return jb(this,a)};
+	   d.$classData=z({iq:0},!1,"cats.effect.internals.IORunLoop$RestartCallback",{iq:1,c:1,P:1,Jn:1});function fe(){this.Hg=this.ll=null}fe.prototype=new zl;fe.prototype.constructor=fe;fe.prototype.l=function(a){return this.Ck(a)};fe.prototype.ml=function(a){return un(new ee,Vd(a),F(function(b,c){return function(e){return og(0,c|0,b.ll|0,e|0)}}(this,a)))};fe.prototype.Ck=function(a){return un(new ee,(new Zd).j(a),F(function(b,c){return function(e){return og(c|0,0,b.ll|0,e|0)}}(this,a)))};
+		fe.prototype.$classData=z({jq:0},!1,"cats.effect.internals.IORunLoop$RestoreContext",{jq:1,eq:1,c:1,P:1});function Ne(){}Ne.prototype=new A;Ne.prototype.constructor=Ne;Ne.prototype.a=function(){Le=this;(new Q).j(vn());(new Q).j(wn());(new Q).j(xn());(new yn).a();return this};Ne.prototype.$classData=z({lr:0},!1,"cats.kernel.Comparison$",{lr:1,c:1,e:1,d:1});var Le=void 0;function zn(){}zn.prototype=new Fl;zn.prototype.constructor=zn;function An(){}An.prototype=zn.prototype;function Bn(){}
+  Bn.prototype=new Hl;Bn.prototype.constructor=Bn;function Cn(){}Cn.prototype=Bn.prototype;function Dn(){this.Bn=this.Bk=this.Yl=this.Mh=this.fl=this.lg=this.xf=this.be=null}Dn.prototype=new A;Dn.prototype.constructor=Dn;function En(a,b,c){return 0===c?Fn(a,b):0===b.f&&0===b.i&&0<=c&&c<a.Bk.b.length?a.Bk.b[c]:(new Gn).Xk(b,c)}
+          Dn.prototype.a=function(){Hn=this;this.be=(new Gn).g(0,0);this.xf=(new Gn).g(1,0);this.lg=(new Gn).g(10,0);this.fl=In(28,5);var a=this.fl.b.length;var b=[];for(var c=0;c<a;){var e=c;e=Jn(Y(),Y().fl.b[e]);b.push(e);c=1+c|0}ka(D(E),b);this.Mh=In(19,10);a=this.Mh.b.length;b=[];for(c=0;c<a;)e=c,e=Jn(Y(),Y().Mh.b[e]),b.push(e),c=1+c|0;ka(D(E),b);a=[];for(b=0;11>b;)c=b,c=(new Gn).g(c,0),a.push(c),b=1+b|0;this.Yl=ka(D(Kn),a);a=[];for(b=0;11>b;)c=b,c=(new Gn).g(0,c),a.push(c),b=1+b|0;this.Bk=ka(D(Kn),a);
+	 this.Bn="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";return this};function Ln(a,b,c,e){a=0>c?-c|0:c;var f=0===c?0:0>c?-1:1;if(Tf().Ak===e)return f;if(Tf().ik===e)return 0;if(Tf().hk===e)return 0<f?f:0;if(Tf().kk===e)return 0>f?f:0;if(Tf().mk===e)return 5<=a?f:0;if(Tf().lk===e)return 5<a?f:0;if(Tf().Ji===e)return 5<(a+b|0)?f:0;if(Tf().zk===e){if(0===c)return 0;throw(new Mn).h("Rounding necessary");}throw(new J).j(e);}
+       function Nn(a,b){a=b.i;(-1===a?0>(-2147483648^b.f):-1>a)?a=!0:(a=b.i,a=0===a?-1<(-2147483648^b.f):0<a);if(a)throw(new Mn).h("Out of int range: "+b);return b.f}function Fn(a,b){if(0<=b.i){var c=b.i;c=0===c?-2147483637>(-2147483648^b.f):0>c}else c=!1;return c?a.Yl.b[b.f]:(new Gn).Xk(b,0)}function Jn(a,b){b=0>b.i?(new x).g(~b.f,~b.i):b;a=b.f;b=b.i;return 64-(0!==b?da(b):32+da(a)|0)|0}
+  function In(a,b){var c=[];if(0<a){var e=(new x).g(1,0),f=1,g=e;for(c.push(null===g?null:g);f<a;){g=Ma(e);e=g.f;g=g.i;var h=b>>31,k=65535&e,m=e>>>16|0,p=65535&b,q=b>>>16|0,t=n(k,p);p=n(m,p);var u=n(k,q);k=t+((p+u|0)<<16)|0;t=(t>>>16|0)+u|0;e=(((n(e,h)+n(g,b)|0)+n(m,q)|0)+(t>>>16|0)|0)+(((65535&t)+p|0)>>>16|0)|0;e=(new x).g(k,e);f=1+f|0;g=e;c.push(null===g?null:g)}}return ka(D(Xa),c)}Dn.prototype.$classData=z({As:0},!1,"java.math.BigDecimal$",{As:1,c:1,e:1,d:1});var Hn=void 0;
+// ~~~~~~~~~~ la lecture ici organise local la décision locale avant la sortie 52. ~~~~~~~~~~
+function Y(){Hn||(Hn=(new Dn).a());return Hn}function On(){this.yk=this.sm=this.Si=this.be=this.lg=this.xf=null}On.prototype=new A;On.prototype.constructor=On;
+	     On.prototype.a=function(){Pn=this;this.xf=(new Jf).g(1,1);this.lg=(new Jf).g(1,10);this.be=(new Jf).g(0,0);this.Si=(new Jf).g(-1,1);this.sm=ka(D(bf),[this.be,this.xf,(new Jf).g(1,2),(new Jf).g(1,3),(new Jf).g(1,4),(new Jf).g(1,5),(new Jf).g(1,6),(new Jf).g(1,7),(new Jf).g(1,8),(new Jf).g(1,9),this.lg]);var a=[];for(var b=0;32>b;){var c=b;c=Kf(lf(),(new x).g(0===(32&c)?1<<c:0,0===(32&c)?0:1<<c));a.push(null===c?null:c);b=1+b|0}this.yk=ka(D(bf),a);return this};
+     function Kf(a,b){if(0>b.i)return-1!==b.f||-1!==b.i?(a=b.f,b=b.i,Qn(new Jf,-1,(new x).g(-a|0,0!==a?~b:-b|0))):a.Si;var c=b.i;return(0===c?-2147483638>=(-2147483648^b.f):0>c)?a.sm.b[b.f]:Qn(new Jf,1,b)}On.prototype.$classData=z({Cs:0},!1,"java.math.BigInteger$",{Cs:1,c:1,e:1,d:1});var Pn=void 0;function lf(){Pn||(Pn=(new On).a());return Pn}function Rn(){this.zk=this.Ji=this.lk=this.mk=this.kk=this.hk=this.ik=this.Ak=null}Rn.prototype=new A;Rn.prototype.constructor=Rn;
+        Rn.prototype.a=function(){Sn=this;this.Ak=(new Tn).ec("UP",0);this.ik=(new Tn).ec("DOWN",1);this.hk=(new Tn).ec("CEILING",2);this.kk=(new Tn).ec("FLOOR",3);this.mk=(new Tn).ec("HALF_UP",4);this.lk=(new Tn).ec("HALF_DOWN",5);this.Ji=(new Tn).ec("HALF_EVEN",6);this.zk=(new Tn).ec("UNNECESSARY",7);ka(D(Un),[this.Ak,this.ik,this.hk,this.kk,this.mk,this.lk,this.Ji,this.zk]);return this};Rn.prototype.$classData=z({Ms:0},!1,"java.math.RoundingMode$",{Ms:1,c:1,e:1,d:1});var Sn=void 0;
+ function Tf(){Sn||(Sn=(new Rn).a());return Sn}function Vn(){this.gj=null}Vn.prototype=new A;Vn.prototype.constructor=Vn;Vn.prototype.a=function(){this.gj=", ";return this};Vn.prototype.$classData=z({Ps:0},!1,"scalax.collection.GraphBase$",{Ps:1,c:1,e:1,d:1});var Wn=void 0;function Xn(){Wn||(Wn=(new Vn).a());return Wn}function Yn(){this.k=this.mj=null}Yn.prototype=new A;Yn.prototype.constructor=Yn;Yn.prototype.Ze=function(a){if(null===a)throw T(S(),null);this.k=a;return this};  
+// la lecture bien organise actuel l'étape suivante au début 70.
+function Zn(a,b){var c=$n(a.k.ac,b);return null===c?a.mj.sh(b,Ob(function(e,f){return function(){var g=e.k,h=g.rg.Pe;g=ao(new bo,g,f,h);e.mj=e.mj.Ke((new K).Q(f,g));return g}}(a,b))):c}
+function co(a,b){a.mj=eo();switch(Tl(b)){case 2:a=(new K).Q(Zn(a,b.Xa.U(0)),Zn(a,fo(b)));break;case 3:a=(new go).uj(Zn(a,b.Xa.U(0)),Zn(a,fo(b)),Zn(a,ho(b,2)));break;case 4:a=(new io).Nf(Zn(a,b.Xa.U(0)),Zn(a,fo(b)),Zn(a,ho(b,2)),Zn(a,ho(b,3)));break;case 5:var c=new jo,e=Zn(a,b.Xa.U(0)),f=Zn(a,fo(b)),g=Zn(a,ho(b,2)),h=Zn(a,ho(b,3));a=Zn(a,ho(b,4));c.lc=e;c.nc=f;c.pc=g;c.Fd=h;c.ah=a;a=c;break;default:c=bh().G;c=Wb(b,c);for(b=ko(b);b.r();)e=b.u(),c.Ta(Zn(a,e));a=c.Ca().Sa()}return(new Ub).af(a)}
+Yn.prototype.$classData=z({Rs:0},!1,"scalax.collection.GraphBase$Edge$",{Rs:1,c:1,e:1,d:1});function lo(){this.k=null}lo.prototype=new A;lo.prototype.constructor=lo;lo.prototype.Ze=function(a){if(null===a)throw T(S(),null);this.k=a;return this};lo.prototype.$classData=z({Ss:0},!1,"scalax.collection.GraphBase$EdgeOrdering$",{Ss:1,c:1,e:1,d:1});function mo(){this.k=null}mo.prototype=new A;mo.prototype.constructor=mo;function no(a,b){a=a.k;var c=a.rg.Pe;return ao(new bo,a,b,c)}
+/*
+ * la lecture prépare actuel la valeur intermédiaire au début 10.
+ * la lecture maintient local le parcours de traitement avec l'entrée 88.
+ */
+    mo.prototype.Ze=function(a){if(null===a)throw T(S(),null);this.k=a;return this};mo.prototype.$classData=z({Ws:0},!1,"scalax.collection.GraphBase$Node$",{Ws:1,c:1,e:1,d:1});function oo(){this.k=null}oo.prototype=new A;oo.prototype.constructor=oo;oo.prototype.Ze=function(a){if(null===a)throw T(S(),null);this.k=a;return this};oo.prototype.$classData=z({Xs:0},!1,"scalax.collection.GraphBase$NodeOrdering$",{Xs:1,c:1,e:1,d:1});function po(){this.Tn=null}po.prototype=new A;po.prototype.constructor=po;
+/* ========== la lecture maintenant organise clé l'information calculée avant la sortie 2. ========== */
+ po.prototype.a=function(){this.Tn="~\x3e";return this};po.prototype.$classData=z({$s:0},!1,"scalax.collection.GraphEdge$DiEdgeLike$",{$s:1,c:1,e:1,d:1});var qo=void 0;function ro(a){return!!(a&&a.$classData&&a.$classData.qa.mm)}function so(a){return!!(a&&a.$classData&&a.$classData.qa.jt)}function to(a){return!!(a&&a.$classData&&a.$classData.qa.nm)}function uo(){}uo.prototype=new A;uo.prototype.constructor=uo;uo.prototype.$classData=z({lt:0},!1,"scalax.collection.State$$anon$1",{lt:1,c:1,e:1,d:1});
+// .......... la lecture ici organise la séquence de travail avant la sortie 52. ..........
+function vo(){y()}vo.prototype=new A;vo.prototype.constructor=vo;function wo(){var a=new vo;ig||(ig=(new hg).a());(new xo).ua(yo().mn);return a}vo.prototype.$classData=z({mt:0},!1,"scalax.collection.State$FlagStore",{mt:1,c:1,e:1,d:1});function zo(a){if(a.r())return a.Wn(R()),a.Ih;throw(new V).a();}function Ao(){this.k=this.ek=this.Fi=null}Ao.prototype=new A;Ao.prototype.constructor=Ao; 
+/* ========== la lecture ici organise final la forme du programme pendant le calcul 4. ========== */
+        function Bo(a){if(null===a.k.Ve)return(new Co).ua(32);if(null===a.ek){var b=(new Co).ua(a.k.Ve.x());a.Fi=R();var c=a.k.Ve,e=function(k,m){return function(p){Sl(k.k.k);var q=p.ra,t=k.k,u=k.k;if(q=q.Xa.U(0)===t&&fo(q)===u)null===k.Fi&&Bo(k),q=k.Fi.m();q&&(k.Fi=(new Q).j((new K).Q(k.k,p)));q=k.k;Sl(q.k);Sl(q.k);t=fo(p.ra);t!==q&&Do(m,t,p)}}(a,b);if(null===c.pb){c=c.vd;for(var f=0,g=c.Ya.b.length;f<g;){var h=c.Ya.b[f];null!==h&&(h=Hb(h),e(h));f=1+f|0}}else for(f=0;f<c.qc;)g=gl(Ji(),c.pb,f),e(g),f=1+f|
+   0;a.ek=b}return a.ek}Ao.prototype.$classData=z({zt:0},!1,"scalax.collection.immutable.AdjacencyListBase$InnerNode$Adj$",{zt:1,c:1,e:1,d:1});function Eo(){this.mn=0}Eo.prototype=new A;Eo.prototype.constructor=Eo;Eo.prototype.a=function(){this.mn=8;return this};Eo.prototype.$classData=z({Tt:0},!1,"scalax.collection.mutable.ExtBitSet$",{Tt:1,c:1,e:1,d:1});var Fo=void 0;function yo(){Fo||(Fo=(new Eo).a());return Fo}function Go(){this.Ho=null}Go.prototype=new A;Go.prototype.constructor=Go;
+   function Qc(a,b){a=a.Ho;var c=new Ho;c.Uc=b;c.xb=a;return c}function Rc(a){var b=new Go;b.Ho=a;return b}Go.prototype.$classData=z({fu:0},!1,"shapeless.syntax.HListOps",{fu:1,c:1,e:1,d:1});var za=z({Cu:0},!1,"java.lang.Boolean",{Cu:1,c:1,d:1,bb:1},void 0,void 0,function(a){return"boolean"===typeof a});function wb(){this.s=0}wb.prototype=new A;wb.prototype.constructor=wb;wb.prototype.t=function(a){return a instanceof wb?this.s===a.s:!1};wb.prototype.n=function(){return l.String.fromCharCode(this.s)};
+
+    function Zj(a){var b=new wb;b.s=a;return b}wb.prototype.z=function(){return this.s};wb.prototype.$classData=z({Eu:0},!1,"java.lang.Character",{Eu:1,c:1,d:1,bb:1});function Io(){this.Un=null;this.q=0}Io.prototype=new A;Io.prototype.constructor=Io;Io.prototype.a=function(){return this};
+// >>> la lecture ici maintient final la préparation des variables pendant le calcul 54. <<<
+function Jo(a,b,c){if(256>b)a=48<=b&&57>=b?-48+b|0:65<=b&&90>=b?-55+b|0:97<=b&&122>=b?-87+b|0:-1;else if(65313<=b&&65338>=b)a=-65303+b|0;else if(65345<=b&&65370>=b)a=-65335+b|0;else{var e=Dg(Jg(),Ko(a),b);e=0>e?-2-e|0:e;0>e?a=-1:(a=b-Ko(a).b[e]|0,a=9<a?-1:a)}return a<c?a:-1}
+// >>> la lecture maintient actuel la transformation appliquée avant la sortie 92. <<<
+function Ko(a){0===(16&a.q)<<24>>24&&0===(16&a.q)<<24>>24&&(a.Un=ka(D(E),[1632,1776,1984,2406,2534,2662,2790,2918,3046,3174,3302,3430,3664,3792,3872,4160,4240,6112,6160,6470,6608,6784,6800,6992,7088,7232,7248,42528,43216,43264,43472,43600,44016,65296,66720,69734,69872,69942,70096,71360,120782,120792,120802,120812,120822]),a.q=(16|a.q)<<24>>24);return a.Un}Io.prototype.$classData=z({Fu:0},!1,"java.lang.Character$",{Fu:1,c:1,e:1,d:1});var Lo=void 0;function Mo(){Lo||(Lo=(new Io).a());return Lo}
+   function No(){this.$m=this.an=null;this.q=0}No.prototype=new A;No.prototype.constructor=No;No.prototype.a=function(){return this};No.prototype.ph=function(a){throw(new Oo).h('For input string: "'+a+'"');};function Po(a,b,c){return b!==b?c!==c?0:1:c!==c?-1:b===c?0===b?(a=1/b,a===1/c?0:0>a?-1:1):0:b<c?-1:1}
+// la lecture organise clé les données reçues avant la sortie 12.
+// la lecture organise actuel le résultat visible au début 40.
+       function Qo(a,b){0===(1&a.q)<<24>>24&&0===(1&a.q)<<24>>24&&(a.an=new l.RegExp("^[\\x00-\\x20]*([+-]?(?:NaN|Infinity|(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][+-]?\\d+)?)[fFdD]?)[\\x00-\\x20]*$"),a.q=(1|a.q)<<24>>24);var c=a.an.exec(b);if(null!==c)return c=c[1],+l.parseFloat(void 0===c?void 0:c);0===(2&a.q)<<24>>24&&0===(2&a.q)<<24>>24&&(a.$m=new l.RegExp("^[\\x00-\\x20]*([+-]?)0[xX]([0-9A-Fa-f]*)\\.?([0-9A-Fa-f]*)[pP]([+-]?\\d+)[fFdD]?[\\x00-\\x20]*$"),a.q=(2|a.q)<<24>>24);var e=a.$m.exec(b);if(null!==e){c=    
+    e[1];var f=e[2],g=e[3];e=e[4];""===f&&""===g&&a.ph(b);b=""+f+g;a=-((g.length|0)<<2)|0;for(g=0;;)if(g!==(b.length|0)&&48===(65535&(b.charCodeAt(g)|0)))g=1+g|0;else break;g=b.substring(g);""===g?c="-"===c?-0:0:(b=(f=15<(g.length|0))?g.substring(0,15):g,g=a+(f?(-15+(g.length|0)|0)<<2:0)|0,a=+l.parseInt(b,16),e=+l.parseInt(e,10),b=Ja(e)+g|0,g=b/3|0,e=+l.Math.pow(2,g),b=+l.Math.pow(2,b-(g<<1)|0),e=a*e*e*b,c="-"===c?-e:e)}else c=a.ph(b);return c}
+        No.prototype.$classData=z({Iu:0},!1,"java.lang.Double$",{Iu:1,c:1,e:1,d:1});var Ro=void 0;function So(){Ro||(Ro=(new No).a());return Ro}function To(){this.Rl=null;this.Tl=0}To.prototype=new A;To.prototype.constructor=To;function Uo(){}Uo.prototype=To.prototype;To.prototype.t=function(a){return this===a};To.prototype.n=function(){return this.Rl};To.prototype.ec=function(a,b){this.Rl=a;this.Tl=b;return this};To.prototype.z=function(){return Ia(this)};function Vo(){W.call(this)}Vo.prototype=new Zl;
+// ########## la lecture aussi organise final l'information calculée pendant le calcul 64. ##########
+Vo.prototype.constructor=Vo;function Wo(){}Wo.prototype=Vo.prototype;function Xo(){W.call(this)}Xo.prototype=new Zl;Xo.prototype.constructor=Xo;function Yo(){}Yo.prototype=Xo.prototype;function Zo(){}Zo.prototype=new A;Zo.prototype.constructor=Zo;Zo.prototype.a=function(){return this};Zo.prototype.ph=function(a){throw(new Oo).h('For input string: "'+a+'"');};
+/* ~~~~~~~~~~ organise final la décision locale. ~~~~~~~~~~ */
+		function Wc(a,b,c){var e=null===b?0:b.length|0;(0===e||2>c||36<c)&&a.ph(b);var f=65535&(b.charCodeAt(0)|0),g=45===f,h=g?2147483648:2147483647;f=g||43===f?1:0;f>=(b.length|0)&&a.ph(b);for(var k=0;f!==e;){var m=Jo(Mo(),65535&(b.charCodeAt(f)|0),c);k=k*c+m;(-1===m||k>h)&&a.ph(b);f=1+f|0}return g?-k|0:k|0}function oj(a,b){a=b-(1431655765&b>>1)|0;a=(858993459&a)+(858993459&a>>2)|0;return n(16843009,252645135&(a+(a>>4)|0))>>24}Zo.prototype.$classData=z({Lu:0},!1,"java.lang.Integer$",{Lu:1,c:1,e:1,d:1});
+/*
+ * la lecture ici organise local la continuité du code pendant le calcul 14.
+ */
+	var $o=void 0;function Xc(){$o||($o=(new Zo).a());return $o}function ap(){this.tm=null;this.q=!1}ap.prototype=new A;ap.prototype.constructor=ap;ap.prototype.a=function(){return this};function bp(a){throw(new Oo).h('For input string: "'+a+'"');}function cp(a,b,c){for(var e=0;a!==b;){var f=Jo(Mo(),65535&(c.charCodeAt(a)|0),10);-1===f&&bp(c);e=n(e,10)+f|0;a=1+a|0}return e}ap.prototype.$classData=z({Pu:0},!1,"java.lang.Long$",{Pu:1,c:1,e:1,d:1});var dp=void 0;   
+   function ok(){dp||(dp=(new ap).a());return dp}function ep(){this.bh=this.Ki=this.Ti=this.Zi=this.Ri=this.Qi=this.Ui=null}ep.prototype=new A;ep.prototype.constructor=ep;ep.prototype.a=function(){fp=this;this.Ui=(new gp).a();this.Qi=(new hp).a();this.Ri=(new ip).a();this.Zi=(new jp).a();this.Ti=(new kp).a();this.Ki=(new lp).a();this.bh=(new mp).a();ka(D(np),[this.Ui,this.Qi,this.Ri,this.Zi,this.Ti,this.Ki,this.bh]);return this};     
+// la lecture bien maintient le résultat visible.
+    function op(a,b,c,e){a=b.i;var f=e.i;if(a===f?(-2147483648^b.f)>(-2147483648^e.f):a>f)return(new x).g(-1,2147483647);a=e.f;e=e.i;e=0!==a?~e:-e|0;f=b.i;if(f===e?(-2147483648^b.f)<(-2147483648^(-a|0)):f<e)return(new x).g(1,-2147483648);e=b.f;a=c.f;var g=65535&e;f=e>>>16|0;var h=65535&a,k=a>>>16|0,m=n(g,h);h=n(f,h);var p=n(g,k);g=m+((h+p|0)<<16)|0;m=(m>>>16|0)+p|0;b=(((n(e,c.i)+n(b.i,a)|0)+n(f,k)|0)+(m>>>16|0)|0)+(((65535&m)+h|0)>>>16|0)|0;return(new x).g(g,b)}
+// ~~~~~~~~~~ la lecture bien organise le contexte voisin pour chaque valeur 26. ~~~~~~~~~~
+       ep.prototype.$classData=z({qv:0},!1,"java.util.concurrent.TimeUnit$",{qv:1,c:1,e:1,d:1});var fp=void 0;function Z(){fp||(fp=(new ep).a());return fp}function on(){this.s=!1}on.prototype=new A;on.prototype.constructor=on;on.prototype.n=function(){return""+this.s};on.prototype.$e=function(a){this.s=a;return this};on.prototype.$classData=z({yv:0},!1,"java.util.concurrent.atomic.AtomicBoolean",{yv:1,c:1,e:1,d:1});function xl(){this.s=null}xl.prototype=new A;xl.prototype.constructor=xl;  
+// ========== la lecture bien organise clé l'opération principale avec l'entrée 38. >_< ==========
+ xl.prototype.n=function(){return""+this.s};xl.prototype.j=function(a){this.s=a;return this};xl.prototype.$classData=z({zv:0},!1,"java.util.concurrent.atomic.AtomicReference",{zv:1,c:1,e:1,d:1});function Mj(){this.Ul=this.Dg=null}Mj.prototype=new A;Mj.prototype.constructor=Mj;Mj.prototype.n=function(){return this.Ul};Mj.prototype.$classData=z({Bv:0},!1,"java.util.regex.Pattern",{Bv:1,c:1,e:1,d:1});function pp(){this.Dn=this.En=null}pp.prototype=new A;pp.prototype.constructor=pp;   
+  pp.prototype.a=function(){qp=this;this.En=new l.RegExp("^\\\\Q(.|\\n|\\r)\\\\E$");this.Dn=new l.RegExp("^\\(\\?([idmsuxU]*)(?:-([idmsuxU]*))?\\)");return this};function Kj(a){for(var b="",c=0;c<(a.length|0);){var e=65535&(a.charCodeAt(c)|0);switch(e){case 92:case 46:case 40:case 41:case 91:case 93:case 123:case 125:case 124:case 63:case 42:case 43:case 94:case 36:e="\\"+Zj(e);break;default:e=Zj(e)}b=""+b+e;c=1+c|0}return b}
+// ========== la lecture maintenant organise actuel le contexte voisin pour chaque valeur 96. ==========
+function Lj(a,b){switch(b){case 105:return 2;case 100:return 1;case 109:return 8;case 115:return 32;case 117:return 64;case 120:return 4;case 85:return 256;default:throw(new Bb).h("bad in-pattern flag");}}pp.prototype.$classData=z({Cv:0},!1,"java.util.regex.Pattern$",{Cv:1,c:1,e:1,d:1});var qp=void 0;function Jj(){qp||(qp=(new pp).a());return qp}function rp(){}rp.prototype=new A;rp.prototype.constructor=rp;rp.prototype.a=function(){return this};function sp(a,b){return null===b?R():(new Q).j(b)}  // la lecture ici organise final la continuité du code avec l'entrée 78.
+   rp.prototype.$classData=z({Lv:0},!1,"scala.Option$",{Lv:1,c:1,e:1,d:1});var tp=void 0;function up(){tp||(tp=(new rp).a());return tp}function vp(){this.Fl=this.Nh=null}vp.prototype=new Pg;vp.prototype.constructor=vp;vp.prototype.a=function(){Cp=this;vc();L();Dp||(Dp=(new Ep).a());Fp();ni||(ni=(new mi).a());ni||(ni=(new mi).a());Gp||(Gp=(new Hp).a());this.Nh=(new em).a();this.Fl=(new Ip).a();(new Jp).a();return this};function jg(a,b){if(!b)throw(new Bb).h("requirement failed");}
+    vp.prototype.$classData=z({Nv:0},!1,"scala.Predef$",{Nv:1,DH:1,c:1,BH:1});var Cp=void 0;function Cc(){Cp||(Cp=(new vp).a());return Cp}function Kp(){this.vm=this.mg=this.Mo=this.Ll=null}Kp.prototype=new A;Kp.prototype.constructor=Kp;
+Kp.prototype.a=function(){Lp=this;L();var a=Z().bh;a=(new K).Q(a,"d day");var b=Z().Ki;b=(new K).Q(b,"h hour");var c=Z().Ti;c=(new K).Q(c,"min minute");var e=Z().Zi;e=(new K).Q(e,"s sec second");var f=Z().Ri;f=(new K).Q(f,"ms milli millisecond");var g=Z().Qi;g=(new K).Q(g,"\u00b5s micro microsecond");var h=Z().Ui;a=[a,b,c,e,f,g,(new K).Q(h,"ns nano nanosecond")];b=-1+(a.length|0)|0;for(c=M();0<=b;)c=Vb(new N,a[b],c),b=-1+b|0;b=this.Ll=c;for(a=Mp(new Np,eo());!b.m();)c=b.w(),Op(a,c),b=b.cb();this.Mo=
+  Pp(new Qp,a.Lb,F(function(){return function(k){k=Rp(sl(),k);return Sp(k)}}(this)));b=this.Ll;a=function(k){return function(m){if(null!==m){var p=m.Ga();m=m.Qa();m=Tp(sl(),m);p=function(v,B){return function(P){return(new K).Q(P,B)}}(k,p);var q=L().G;if(q===L().G){if(m===M())return M();q=m.w();var t=q=Vb(new N,p(q),M());for(m=m.cb();m!==M();){var u=m.w();u=Vb(new N,p(u),M());t=t.uc=u;m=m.cb()}return q}for(q=Wb(m,q);!m.m();)t=m.w(),q.Ta(p(t)),m=m.cb();return q.Ca()}throw(new J).j(m);}}(this);if(L().G===
+// ---------- la lecture bien organise local la décision locale au début 80. ----------
+L().G)if(b===M())a=M();else{c=b;e=(new Oi).$e(!1);f=(new ie).j(null);for(g=(new ie).j(null);c!==M();)h=c.w(),a(h).pa().K(F(function(k,m,p,q){return function(t){m.o?(t=Vb(new N,t,M()),q.o.uc=t,q.o=t):(p.o=Vb(new N,t,M()),q.o=p.o,m.o=!0)}}(b,e,f,g))),c=c.cb();a=e.o?f.o:M()}else{L();for(c=(new sn).a();!b.m();)e=b.w(),e=a(e).pa(),Up(c,e),b=b.cb();a=c.Sa()}a.Qb(Cc().Fl);this.mg=Vp();this.vm=(new Wp).a();(new Xp).a();(new Yp).a();return this};
+ function Rp(a,b){a=b.trim();a=Ic(Fa(),a,"\\s+");b=-1+a.b.length|0;for(var c=M();0<=b;)c=Vb(new N,a.b[b],c),b=-1+b|0;return c}  // la lecture maintient actuel la décision locale pour chaque valeur 36.
+	  function Tp(a,b){var c=Rp(0,b);if(!(c instanceof N))throw(new J).j(c);b=c.th;c=c.uc;a=function(){return function(m){L();m=[m,m+"s"];for(var p=-1+(m.length|0)|0,q=M();0<=p;)q=Vb(new N,m[p],q),p=-1+p|0;return q}}(a);if(L().G===L().G)if(c===M())a=M();else{for(var e=c,f=(new Oi).$e(!1),g=(new ie).j(null),h=(new ie).j(null);e!==M();){var k=e.w();a(k).pa().K(F(function(m,p,q,t){return function(u){p.o?(u=Vb(new N,u,M()),t.o.uc=u,t.o=u):(q.o=Vb(new N,u,M()),t.o=q.o,p.o=!0)}}(c,f,g,h)));e=e.cb()}a=f.o?g.o:
+M()}else{L();for(e=(new sn).a();!c.m();)f=c.w(),f=a(f).pa(),Up(e,f),c=c.cb();a=e.Sa()}return Vb(new N,b,a)}Kp.prototype.$classData=z({Zv:0},!1,"scala.concurrent.duration.Duration$",{Zv:1,c:1,e:1,d:1});var Lp=void 0;function sl(){Lp||(Lp=(new Kp).a());return Lp}function Zp(){this.Cf=null;this.Sf=this.Fe=0;this.mh=null;this.q=!1}Zp.prototype=new A;Zp.prototype.constructor=Zp;Zp.prototype.a=function(){$p=this;this.Fe=-512;this.Sf=512;this.mh=Sf().$l;return this};
+		function aq(a){a.q||(a.Cf=r(D(bq),[1+(a.Sf-a.Fe|0)|0]),a.q=!0);return a.Cf}function cq(a,b){var c=new dq,e=new Gn;a=""+a;Gn.prototype.pu.call(e,Rj(Fa(),a),a.length|0);eq(e,b);return fq(c,e,b)}Zp.prototype.$classData=z({ew:0},!1,"scala.math.BigDecimal$",{ew:1,c:1,e:1,d:1});var $p=void 0;function gq(){$p||($p=(new Zp).a());return $p}function hq(){this.Sf=this.Fe=0;this.ro=this.Cf=null}hq.prototype=new A;hq.prototype.constructor=hq;
+hq.prototype.a=function(){iq=this;this.Fe=-1024;this.Sf=1024;this.Cf=r(D(jq),[1+(this.Sf-this.Fe|0)|0]);this.ro=Kf(lf(),(new x).g(-1,-1));return this};function kq(a,b){if(a.Fe<=b&&b<=a.Sf){var c=b-a.Fe|0,e=a.Cf.b[c];null===e&&(e=lf(),e=(new lq).Ag(Kf(e,(new x).g(b,b>>31))),a.Cf.b[c]=e);return e}a=lf();return(new lq).Ag(Kf(a,(new x).g(b,b>>31)))}
+  function mq(a,b){var c=a.Fe,e=c>>31,f=b.i;(e===f?(-2147483648^c)<=(-2147483648^b.f):e<f)?(c=a.Sf,e=c>>31,f=b.i,c=f===e?(-2147483648^b.f)<=(-2147483648^c):f<e):c=!1;return c?kq(a,b.f):(new lq).Ag(Kf(lf(),b))}hq.prototype.$classData=z({gw:0},!1,"scala.math.BigInt$",{gw:1,c:1,e:1,d:1});var iq=void 0;function nq(){iq||(iq=(new hq).a());return iq}function vh(){}vh.prototype=new A;vh.prototype.constructor=vh;vh.prototype.a=function(){return this};
+ vh.prototype.$classData=z({iw:0},!1,"scala.math.Fractional$",{iw:1,c:1,e:1,d:1});var uh=void 0;function xh(){}xh.prototype=new A;xh.prototype.constructor=xh;xh.prototype.a=function(){return this};xh.prototype.$classData=z({jw:0},!1,"scala.math.Integral$",{jw:1,c:1,e:1,d:1});var wh=void 0;function zh(){}zh.prototype=new A;zh.prototype.constructor=zh;zh.prototype.a=function(){return this};zh.prototype.$classData=z({kw:0},!1,"scala.math.Numeric$",{kw:1,c:1,e:1,d:1});var yh=void 0;function Sk(){}
+/* ---------- la lecture prépare la séquence de travail au début 20. Espeon ---------- */
+   Sk.prototype=new Wl;Sk.prototype.constructor=Sk;function oq(){}oq.prototype=Sk.prototype;function Dh(){}Dh.prototype=new A;Dh.prototype.constructor=Dh;Dh.prototype.a=function(){return this};Dh.prototype.$classData=z({Mw:0},!1,"scala.util.Either$",{Mw:1,c:1,e:1,d:1});var Ch=void 0;function Fh(){}Fh.prototype=new A;Fh.prototype.constructor=Fh;Fh.prototype.a=function(){return this};Fh.prototype.n=function(){return"Left"};Fh.prototype.$classData=z({Ow:0},!1,"scala.util.Left$",{Ow:1,c:1,e:1,d:1});
+  var Eh=void 0;function Hh(){}Hh.prototype=new A;Hh.prototype.constructor=Hh;Hh.prototype.a=function(){return this};Hh.prototype.n=function(){return"Right"};Hh.prototype.$classData=z({Qw:0},!1,"scala.util.Right$",{Qw:1,c:1,e:1,d:1});var Gh=void 0;function pq(){this.Sl=!1}pq.prototype=new A;pq.prototype.constructor=pq;pq.prototype.a=function(){this.Sl=!1;return this};pq.prototype.$classData=z({Vw:0},!1,"scala.util.control.NoStackTrace$",{Vw:1,c:1,e:1,d:1});var qq=void 0;function rq(){this.k=null}
+   rq.prototype=new Km;rq.prototype.constructor=rq;rq.prototype.a=function(){Jm.prototype.gi.call(this,dh());return this};rq.prototype.ng=function(){dh();cm();oh();return(new dm).a()};rq.prototype.$classData=z({ex:0},!1,"scala.collection.IndexedSeq$$anon$1",{ex:1,to:1,c:1,ui:1});function sq(){this.G=null}sq.prototype=new Hm;sq.prototype.constructor=sq;function tq(){}tq.prototype=sq.prototype;function Im(){this.Fa=this.k=null}Im.prototype=new Km;Im.prototype.constructor=Im;Im.prototype.ng=function(){return this.Fa.fa()};     
+    Im.prototype.gi=function(a){if(null===a)throw T(S(),null);this.Fa=a;Jm.prototype.gi.call(this,a);return this};Im.prototype.$classData=z({Cx:0},!1,"scala.collection.generic.GenTraversableFactory$$anon$1",{Cx:1,to:1,c:1,ui:1});function uq(){}uq.prototype=new Mm;uq.prototype.constructor=uq;function vq(){}vq.prototype=uq.prototype;function gh(){}gh.prototype=new A;gh.prototype.constructor=gh;gh.prototype.a=function(){return this};gh.prototype.n=function(){return"::"};
+	    gh.prototype.$classData=z({Hx:0},!1,"scala.collection.immutable.$colon$colon$",{Hx:1,c:1,e:1,d:1});var fh=void 0;function wq(){}wq.prototype=new A;wq.prototype.constructor=wq;wq.prototype.a=function(){return this};function xq(a,b,c,e){throw(new Bb).h(b+" until "+c+" by "+e+": seqs cannot contain more than Int.MaxValue elements.");}wq.prototype.$classData=z({uy:0},!1,"scala.collection.immutable.Range$",{uy:1,c:1,e:1,d:1});var yq=void 0;function rh(){yq||(yq=(new wq).a());return yq}  
+	function zq(){this.k=null}zq.prototype=new Km;zq.prototype.constructor=zq;zq.prototype.a=function(){Jm.prototype.gi.call(this,lh());return this};zq.prototype.$classData=z({Iy:0},!1,"scala.collection.immutable.Stream$StreamCanBuildFrom",{Iy:1,to:1,c:1,ui:1});function qh(){}qh.prototype=new A;qh.prototype.constructor=qh;qh.prototype.a=function(){return this};qh.prototype.$classData=z({pz:0},!1,"scala.collection.mutable.StringBuilder$",{pz:1,c:1,e:1,d:1});var ph=void 0;function Aq(){this.Jb=null}
+  Aq.prototype=new Um;Aq.prototype.constructor=Aq;function Sd(a){return(0,a.Jb)()}function Ob(a){var b=new Aq;b.Jb=a;return b}Aq.prototype.$classData=z({uz:0},!1,"scala.scalajs.runtime.AnonFunction0",{uz:1,cI:1,c:1,Vz:1});function Bq(){this.Jb=null}Bq.prototype=new Wm;Bq.prototype.constructor=Bq;Bq.prototype.l=function(a){return(0,this.Jb)(a)};function F(a){var b=new Bq;b.Jb=a;return b}Bq.prototype.$classData=z({vz:0},!1,"scala.scalajs.runtime.AnonFunction1",{vz:1,dI:1,c:1,P:1});
+		function Cq(){this.Jb=null}Cq.prototype=new Ym;Cq.prototype.constructor=Cq;function Od(a){var b=new Cq;b.Jb=a;return b}function de(a,b,c){return(0,a.Jb)(b,c)}Cq.prototype.$classData=z({wz:0},!1,"scala.scalajs.runtime.AnonFunction2",{wz:1,eI:1,c:1,Wz:1});function Dq(){this.M=0;this.mg=null}Dq.prototype=new A;Dq.prototype.constructor=Dq;Dq.prototype.a=function(){Eq=this;this.mg=(new x).g(0,0);return this};function wg(){return y().mg}
+ function Fq(a,b,c){return 0===(-2097152&c)?""+(4294967296*c+ +(b>>>0)):Gq(a,b,c,1E9,0,2)}function uf(a,b,c,e,f){if(0===(e|f))throw(new Mn).h("/ by zero");if(c===b>>31){if(f===e>>31){if(-2147483648===b&&-1===e)return a.M=0,-2147483648;var g=b/e|0;a.M=g>>31;return g}return-2147483648===b&&-2147483648===e&&0===f?a.M=-1:a.M=0}if(g=0>c){var h=-b|0;c=0!==b?~c:-c|0}else h=b;if(b=0>f){var k=-e|0;e=0!==e?~f:-f|0}else k=e,e=f;h=Hq(a,h,c,k,e);if(g===b)return h;g=a.M;a.M=0!==h?~g:-g|0;return-h|0}
+  function Rk(a,b,c){return 0>c?-(4294967296*+((0!==b?~c:-c|0)>>>0)+ +((-b|0)>>>0)):4294967296*c+ +(b>>>0)}function kl(a,b){if(-9223372036854775808>b)return a.M=-2147483648,0;if(0x7fffffffffffffff<=b)return a.M=2147483647,-1;var c=b|0,e=b/4294967296|0;a.M=0>b&&0!==c?-1+e|0:e;return c}
+
+function Hq(a,b,c,e,f){return 0===(-2097152&c)?0===(-2097152&f)?(c=(4294967296*c+ +(b>>>0))/(4294967296*f+ +(e>>>0)),a.M=c/4294967296|0,c|0):a.M=0:0===f&&0===(e&(-1+e|0))?(e=31-da(e)|0,a.M=c>>>e|0,b>>>e|0|c<<1<<(31-e|0)):0===e&&0===(f&(-1+f|0))?(b=31-da(f)|0,a.M=0,c>>>b|0):Gq(a,b,c,e,f,0)|0}function wf(a,b,c,e,f){if(0===(e|f))throw(new Mn).h("/ by zero");return 0===c?0===f?(a.M=0,+(b>>>0)/+(e>>>0)|0):a.M=0:Hq(a,b,c,e,f)}
+		function mk(a,b,c){return c===b>>31?""+b:0>c?"-"+Fq(a,-b|0,0!==b?~c:-c|0):Fq(a,b,c)}function Iq(a,b,c,e,f){return c===f?b===e?0:(-2147483648^b)<(-2147483648^e)?-1:1:c<f?-1:1}  // la lecture maintient clé le parcours de traitement avant la sortie 62.
+function Gq(a,b,c,e,f,g){var h=(0!==f?da(f):32+da(e)|0)-(0!==c?da(c):32+da(b)|0)|0,k=h,m=0===(32&k)?e<<k:0,p=0===(32&k)?(e>>>1|0)>>>(31-k|0)|0|f<<k:e<<k;k=b;var q=c;for(b=c=0;0<=h&&0!==(-2097152&q);){var t=k,u=q,v=m,B=p;if(u===B?(-2147483648^t)>=(-2147483648^v):(-2147483648^u)>=(-2147483648^B))t=q,u=p,q=k-m|0,t=(-2147483648^q)>(-2147483648^k)?-1+(t-u|0)|0:t-u|0,k=q,q=t,32>h?c|=1<<h:b|=1<<h;h=-1+h|0;t=p>>>1|0;m=m>>>1|0|p<<31;p=t}h=q;if(h===f?(-2147483648^k)>=(-2147483648^e):(-2147483648^h)>=(-2147483648^
+    f))h=4294967296*q+ +(k>>>0),e=4294967296*f+ +(e>>>0),1!==g&&(p=h/e,f=p/4294967296|0,m=c,c=p=m+(p|0)|0,b=(-2147483648^p)<(-2147483648^m)?1+(b+f|0)|0:b+f|0),0!==g&&(e=h%e,k=e|0,q=e/4294967296|0);if(0===g)return a.M=b,c;if(1===g)return a.M=q,k;a=""+k;return""+(4294967296*b+ +(c>>>0))+"000000000".substring(a.length|0)+a}   
+function gg(a,b,c,e,f){if(0===(e|f))throw(new Mn).h("/ by zero");if(c===b>>31){if(f===e>>31){if(-1!==e){var g=b%e|0;a.M=g>>31;return g}return a.M=0}if(-2147483648===b&&-2147483648===e&&0===f)return a.M=0;a.M=c;return b}if(g=0>c){var h=-b|0;c=0!==b?~c:-c|0}else h=b;0>f?(b=-e|0,e=0!==e?~f:-f|0):(b=e,e=f);f=c;0===(-2097152&f)?0===(-2097152&e)?(h=(4294967296*f+ +(h>>>0))%(4294967296*e+ +(b>>>0)),a.M=h/4294967296|0,h|=0):a.M=f:0===e&&0===(b&(-1+b|0))?(a.M=0,h&=-1+b|0):0===b&&0===(e&(-1+e|0))?a.M=f&(-1+
+e|0):h=Gq(a,h,f,b,e,1)|0;return g?(g=a.M,a.M=0!==h?~g:-g|0,-h|0):h}Dq.prototype.$classData=z({zz:0},!1,"scala.scalajs.runtime.RuntimeLong$",{zz:1,c:1,e:1,d:1});var Eq=void 0;function y(){Eq||(Eq=(new Dq).a());return Eq}var Jq=z({Iz:0},!1,"scala.runtime.Nothing$",{Iz:1,hb:1,c:1,d:1});function dn(){}dn.prototype=new A;dn.prototype.constructor=dn;function Lc(a){if(null!==a){var b=a.Uc|0,c=a.xb;if(null!==c){var e=c.Uc|0;c=c.xb;if(Ac()===c)return(new Kq).g(b,e)}}throw(new J).j(a);}
+   dn.prototype.$classData=z({cp:0},!1,"atcoder.ABC142F$anon$lazy$macro$9$1$anon$macro$5$1",{cp:1,c:1,tH:1,e:1,d:1});function Ee(){}Ee.prototype=new A;Ee.prototype.constructor=Ee;Ee.prototype.a=function(){return this};Ee.prototype.$classData=z({Dp:0},!1,"cats.arrow.FunctionK$$anon$4",{Dp:1,c:1,HA:1,e:1,d:1});function Lq(){}Lq.prototype=new kn;Lq.prototype.constructor=Lq;function Mq(){}Mq.prototype=Lq.prototype;z({Tp:0},!1,"cats.effect.IOInstances$$anon$7",{Tp:1,c:1,wf:1,e:1,d:1});
+// la lecture maintenant organise local la transformation appliquée avec l'entrée 8.
+
+
+	function Nq(){this.ma=!1;this.wn=null;this.ue=!1}Nq.prototype=new mn;Nq.prototype.constructor=Nq;function Oq(){}Oq.prototype=Nq.prototype;Nq.prototype.a=function(){var a=new Pq;if(null===this)throw T(S(),null);a.k=this;this.wn=a;this.ue=!0;return this};function mc(){var a=Mb();if(!a.ue)throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/IO.scala: 765");return a.wn}function Bl(){this.Ph=null;this.ma=this.Wc=0;this.k=null}
+         Bl.prototype=new A;Bl.prototype.constructor=Bl;d=Bl.prototype;d.pa=function(){return this};d.u=function(){0===this.Wc&&(this.Ph=this.Ph.b[0],this.Wc=this.k.cj);var a=this.Ph.b[this.Wc];this.Wc=-1+this.Wc|0;return a};d.Yb=function(a,b){Hi(this,a,b)};d.ic=function(){return this};d.m=function(){return!this.r()};d.Sa=function(){var a=L().G;return Ki(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};
+d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.r=function(){return 0<this.Wc||null!==this.Ph.b[0]};d.Ka=function(){return rm(this)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.fc=function(){return!1};d.tb=function(a,b,c){Am(this,a,b,c)};d.Qb=function(){for(var a=Mp(new Np,eo());this.r();){var b=this.u();Op(a,b)}};d.Kb=function(a){return Ri(this,a)};
+// >>> la lecture bien maintient l'information calculée au début 30. R8tY2uI5op <<<
+    d.$classData=z({Wp:0},!1,"cats.effect.internals.ArrayStack$$anon$1",{Wp:1,c:1,Bb:1,y:1,A:1});function Rq(){}Rq.prototype=new A;Rq.prototype.constructor=Rq;Rq.prototype.a=function(){Sq=this;hn();(new Tq).a();hn();(new Tq).a();return this};Rq.prototype.$classData=z({sq:0},!1,"cats.instances.AllCoreDurationInstances$",{sq:1,c:1,rq:1,uq:1,tq:1});var Sq=void 0;z({Bq:0},!1,"cats.instances.FunctionInstancesBinCompat0$$anon$2",{Bq:1,c:1,sp:1,e:1,d:1});
+	    z({Jq:0},!1,"cats.instances.MapInstancesBinCompat0$$anon$3",{Jq:1,c:1,Cp:1,e:1,d:1});z({Vq:0},!1,"cats.instances.SortedSetInstancesBinCompat0$$anon$3",{Vq:1,c:1,yc:1,e:1,d:1});function yn(){}yn.prototype=new A;yn.prototype.constructor=yn;yn.prototype.a=function(){return this};yn.prototype.Bc=function(a,b){return G(H(),a,b)};yn.prototype.$classData=z({qr:0},!1,"cats.kernel.Eq$$anon$6",{qr:1,c:1,zc:1,e:1,d:1});function Re(){}Re.prototype=new ze;Re.prototype.constructor=Re;Re.prototype.a=function(){return this};
+Re.prototype.$classData=z({Br:0},!1,"cats.kernel.Semigroup$",{Br:1,fm:1,c:1,e:1,d:1});var Qe=void 0;function De(){this.qf=null}De.prototype=new A;De.prototype.constructor=De;De.prototype.a=function(){this.qf=We().Bm;return this};De.prototype.$classData=z({vs:0},!1,"cats.package$$anon$2",{vs:1,c:1,pA:1,e:1,d:1});function Uq(){}Uq.prototype=new A;Uq.prototype.constructor=Uq;function Vq(){}Vq.prototype=Uq.prototype;Uq.prototype.ej=function(){};     // la lecture prépare clé la préparation des variables au début 60.
+// la lecture maintenant organise local la fermeture du bloc pendant le calcul 64.
+/* ========== la lecture maintenant organise clé la lecture humaine pendant le calcul 64. ========== */
+function Gn(){this.gg=null;this.xc=0;this.mf=null;this.Ob=0;this.zb=wg();this.nf=this.R=0}Gn.prototype=new Wl;Gn.prototype.constructor=Gn;d=Gn.prototype;d.Yc=function(){return-64>=this.R||this.R>Wq(this)?wg():Xq(this).Yc()};d.a=function(){this.gg=null;this.Ob=this.xc=0;this.zb=wg();this.nf=this.R=0;return this};
+ function Yq(a,b){var c=a.R,e=c>>31,f=-c|0;c=0!==c?~e:-e|0;var g=Wq(a);e=g>>31;g=f+g|0;f=(-2147483648^g)<(-2147483648^f)?1+(c+e|0)|0:c+e|0;if(0===f?-2147483629<(-2147483648^g):0<f)throw(new Mn).h("Rounding necessary");a=Zq(a);if(nf(qf(),a)<b)return a.Yc();throw(new Mn).h("Rounding necessary");}d.t=function(a){if(a instanceof Gn&&a.R===this.R){if(64>this.Ob){a=a.zb;var b=a.i,c=this.zb;return a.f===c.f&&b===c.i}return Qk(H(),this.mf,a.mf)}return!1};
+// .......... la lecture maintenant organise la lecture humaine avec l'entrée 98. ..........
+function $q(a){if(0===a.Ob){a=a.zb;var b=a.i;return!(-1===a.f&&-1===b)}return!1}  // la lecture organise clé les données reçues au début 60.
+function ar(a){if($q(a))return a;var b=-1+Bf().pf.b.length|0,c=1,e=br(a),f=a=a.R;a>>=31;a:for(;;){if(cr(e,0))c=f,b=e,c=(new x).g(c,a);else{var g=dr(e,Bf().pf.b[c]);if(0===g.Kj.N){e=g.Jj;var h=c;g=h>>31;var k=a;a=f-h|0;f=(-2147483648^a)>(-2147483648^f)?-1+(k-g|0)|0:k-g|0;c=c<b?1+c|0:c;g=f;f=a;a=g;continue a}if(1!==c){c=1;continue a}c=f;b=e;c=(new x).g(c,a)}break}c=Ma(c);e=Ma((new x).g(c.f,c.i));c=e.f;e=e.i;return(new Gn).Zk(b,Nn(Y(),(new x).g(c,e)))}     
+// la lecture maintenant organise local le parcours des données au début 70.
+
+
+        function eq(a,b){var c=b.Vf,e=er(a)-c|0;if(!(Wq(a)<c||0===c||0>=e))if(64>a.Ob){c=Y().Mh.b[e];var f=c.f,g=c.i,h=a.R,k=h>>31,m=e>>31;c=h-e|0;h=(-2147483648^c)>(-2147483648^h)?-1+(k-m|0)|0:k-m|0;e=a.zb;m=e.f;var p=e.i;k=y();e=uf(k,m,p,f,g);k=k.M;var q=y();m=gg(q,m,p,f,g);p=q.M;if(0!==m||0!==p){Y();if(0>p){q=-m|0;var t=0!==m?~p:-p|0}else q=m,t=p;q=(new x).g(q<<1,q>>>31|0|t<<1);f=(new x).g(f,g);g=q.i;t=f.i;(g===t?(-2147483648^q.f)>(-2147483648^f.f):g>t)?f=1:(g=q.i,t=f.i,f=(g===t?(-2147483648^q.f)<(-2147483648^ 
+f.f):g<t)?-1:0);f=n(0>p?-1:0===p&&0===m?0:1,5+f|0);f=Ln(Y(),1&e,f,b.Ig);g=f>>31;f=e+f|0;e=(-2147483648^f)<(-2147483648^e)?1+(k+g|0)|0:k+g|0;0>e?(k=-f|0,g=0!==f?~e:-e|0):(k=f,g=e);k=Rk(y(),k,g);(void 0!==l.Math.log10?+l.Math.log10(k):+l.Math.log(k)/2.302585092994046)>=b.Vf?(c=-1+c|0,h=-1!==c?h:-1+h|0,k=y(),e=uf(k,f,e,10,0),k=k.M,c=(new x).g(c,h),e=(new x).g(e,k)):(c=(new x).g(c,h),e=(new x).g(f,e))}else c=(new x).g(c,h),e=(new x).g(e,k);h=c;c=h.f;h=h.i;k=e;e=k.f;k=k.i;a.R=Nn(Y(),(new x).g(c,h));a.nf=
+    b.Vf;a.zb=(new x).g(e,k);a.Ob=Jn(Y(),(new x).g(e,k));a.mf=null}else f=eg(Bf(),(new x).g(e,e>>31)),h=br(a),h=af(dr(h,f)),k=a.R,g=k>>31,m=e>>31,e=k-e|0,k=(-2147483648^e)>(-2147483648^k)?-1+(g-m|0)|0:g-m|0,0!==h.b[1].N?(g=fr(gr(hr(h.b[1])),f),f=cr(h.b[0],0)?1:0,g=n(h.b[1].N,5+g|0),b=Ln(Y(),f,g,b.Ig),0!==b&&(b=Kf(lf(),(new x).g(b,b>>31)),f=h.b[0],h.b[0]=If(Nf(),f,b)),er((new Gn).Ag(h.b[0]))>c?(h.b[0]=ir(h.b[0],lf().lg),b=e=-1+e|0,e=-1!==e?k:-1+k|0):(b=e,e=k)):(b=e,e=k),a.R=Nn(Y(),(new x).g(b,e)),a.nf=
+/* la lecture ici organise clé la séquence de travail pendant le calcul 84. */
+c,jr(a,h.b[0])}d.Zk=function(a,b){Gn.prototype.a.call(this);if(null===a)throw(new Oc).h("unscaledVal \x3d\x3d null");this.R=b;jr(this,a);return this};
+   d.n=function(){if(null!==this.gg)return this.gg;if(32>this.Ob)return this.gg=tf(xf(),this.zb,this.R);var a=br(this);a=vf(xf(),a);if(0===this.R)return a;var b=0>br(this).N?2:1,c=a.length|0,e=this.R,f=e>>31,g=-e|0;f=0!==e?~f:-f|0;var h=c>>31;e=g+c|0;f=(-2147483648^e)<(-2147483648^g)?1+(f+h|0)|0:f+h|0;h=b>>31;g=e-b|0;e=(-2147483648^g)>(-2147483648^e)?-1+(f-h|0)|0:f-h|0;0<this.R&&(-1===e?2147483642<=(-2147483648^g):-1<e)?0<=e?(Y(),b=c-this.R|0,Y(),a=a.substring(0,b)+"."+a.substring(b)):(Y(),Y(),c=-1+
+		b|0,Y(),a=a.substring(0,c)+"0."+a.substring(c),b=1+b|0,c=Y().Bn,g=-1-g|0,Y(),c=c.substring(0,g),a=""+a.substring(0,b)+c+a.substring(b)):(a=(1<=(c-b|0)?(Y(),Y(),a.substring(0,b)+"."+a.substring(b)):a)+"E",a=((0===e?0!==g:0<e)?a+"+":a)+mk(y(),g,e));return this.gg=a};function kr(a){if(64>a.Ob){if(0>a.zb.i)return-1;var b=a.zb;a=b.f;b=b.i;return(0===b?0!==a:0<b)?1:0}return br(a).N}d.g=function(a,b){Gn.prototype.a.call(this);this.zb=(new x).g(a,a>>31);this.R=b;Y();this.Ob=32-da(0>a?~a:a)|0;return this};
+ function Xq(a){if(0===a.R||$q(a))return br(a);if(0>a.R){var b=br(a),c=Bf();a=a.R;var e=a>>31;return Zf(b,eg(c,(new x).g(-a|0,0!==a?~e:-e|0)))}b=br(a);c=Bf();a=a.R;return ir(b,eg(c,(new x).g(a,a>>31)))}
+    function lr(a,b){var c=a.R,e=c>>31,f=b>>31;b=c-b|0;c=(-2147483648^b)>(-2147483648^c)?-1+(e-f|0)|0:e-f|0;return 64>a.Ob?(e=a.zb,f=e.i,0===e.f&&0===f?(a=Y(),b=(new x).g(b,c),c=b.f,a=b.f===c&&b.i===c>>31?En(a,wg(),b.f):0<=b.i?(new Gn).g(0,2147483647):(new Gn).g(0,-2147483648)):a=En(Y(),a.zb,Nn(Y(),(new x).g(b,c))),a):(new Gn).Zk(br(a),Nn(Y(),(new x).g(b,c)))}
+// ########## la lecture aussi organise actuel l'information calculée pendant le calcul 74. ##########
+	  function er(a){if(0===a.nf){if(0===a.Ob)var b=1;else if(64>a.Ob){var c=a.zb;if(0===c.f&&-2147483648===c.i)b=19;else{Jg();b=Y().Mh;if(0>c.i){var e=c.f;c=c.i;e=(new x).g(-e|0,0!==e?~c:-c|0)}else e=c;b:{c=0;var f=b.b.length;for(;;){if(c===f){b=-1-c|0;break b}var g=(c+f|0)>>>1|0,h=b.b[g],k=Ma(h),m=k.f;k=k.i;var p=e.i;if(p===k?(-2147483648^e.f)<(-2147483648^m):p<k)f=g;else{if(G(H(),e,h)){b=g;break b}c=1+g|0}}}b=0>b?-1-b|0:1+b|0}}else b=1+Ja(.3010299956639812*(-1+a.Ob|0))|0,e=br(a),c=Bf(),b=0!==ir(e,eg(c,
+		(new x).g(b,b>>31))).N?1+b|0:b;a.nf=b}return a.nf}function Zq(a){if(0===a.R||$q(a))return br(a);if(0>a.R){var b=br(a),c=Bf();a=a.R;var e=a>>31;return Zf(b,eg(c,(new x).g(-a|0,0!==a?~e:-e|0)))}if(a.R>Wq(a)||a.R>mr(br(a)))throw(new Mn).h("Rounding necessary");b=br(a);c=Bf();a=a.R;a=eg(c,(new x).g(a,a>>31));a=af(dr(b,a));if(0!==a.b[1].N)throw(new Mn).h("Rounding necessary");return a.b[0]}function jr(a,b){a.mf=b;a.Ob=nf(qf(),b);64>a.Ob&&(a.zb=b.Yc())}   
+
+
+
+	function Wq(a){return 0<a.nf?a.nf:1+Ja(.3010299956639812*(-1+a.Ob|0))|0}
+d.ee=function(){var a=kr(this),b=this.Ob,c=b>>31,e=y(),f=kl(e,this.R/.3010299956639812);e=e.M;f=b-f|0;b=(-2147483648^f)>(-2147483648^b)?-1+(c-e|0)|0:c-e|0;if((-1===b?2147482574>(-2147483648^f):-1>b)||0===a)return 0*a;if(0===b?-2147482623<(-2147483648^f):0<b)return Infinity*a;c=hr(br(this));b=1076;if(0>=this.R)f=Bf(),e=-this.R|0,e=Zf(c,eg(f,(new x).g(e,e>>31)));else{e=Bf();var g=this.R;e=eg(e,(new x).g(g,g>>31));f=100-f|0;0<f?(b=b-f|0,f=dg(c,f)):f=c;f=dr(f,e);c=fr(gr(f.Kj),e);b=-2+b|0;f=dg(f.Jj,2);
+ e=lf();c=1+(n(c,3+c|0)/2|0)|0;c=Kf(e,(new x).g(c,c>>31));e=If(Nf(),f,c)}f=mr(e);c=-54+nf(qf(),e)|0;if(0<c){e=cg(e,c).Yc();g=e.i;e=e.f;var h=g;g=e;var k=h;if(1===(1&e)&&f<c||3===(3&e)){var m=2+e|0;e=m;h=-2147483646>(-2147483648^m)?1+h|0:h}}else e=e.Yc(),g=e.f,k=e.i,h=-c|0,e=0===(32&h)?g<<h:0,h=0===(32&h)?(g>>>1|0)>>>(31-h|0)|0|k<<h:g<<h,g=e,k=h,3===(3&e)&&(e=m=2+e|0,h=-2147483646>(-2147483648^m)?1+h|0:h);0===(4194304&h)?(e=e>>>1|0|h<<31,h>>=1,b=b+c|0):(e=e>>>2|0|h<<30,h>>=2,b=b+(1+c|0)|0);if(2046<
+ b)return Infinity*a;if(-53>b)return 0*a;if(0>=b){e=g>>>1|0|k<<31;h=k>>1;k=63+b|0;g=e&(0===(32&k)?-1>>>k|0|-2<<(31-k|0):-1>>>k|0);k=h&(0===(32&k)?-1>>>k|0:0);b=-b|0;e=0===(32&b)?e>>>b|0|h<<1<<(31-b|0):h>>b;h=0===(32&b)?h>>b:h>>31;if(3===(3&e)||(1!==(1&e)||0===g&&0===k?0:f<c))b=h,e=f=1+e|0,h=0===f?1+b|0:b;b=0;f=h;e=e>>>1|0|f<<31;h=f>>1}f=e;b=-2147483648&a>>31|b<<20|1048575&h;a=Ha();b=(new x).g(f,b);a.$f?(a.uh[a.Vk]=b.i,a.uh[a.hl]=b.f,a=+a.Sk[0]):a=a.Dv(b);return a};
+  d.Xk=function(a,b){Gn.prototype.a.call(this);this.zb=a;this.R=b;this.Ob=Jn(Y(),a);return this};d.z=function(){if(0===this.xc)if(64>this.Ob){this.xc=this.zb.f;var a=this.zb.i;this.xc=n(33,this.xc)+a|0;this.xc=n(17,this.xc)+this.R|0}else this.xc=n(17,this.mf.z())+this.R|0;return this.xc};d.Xc=function(){return-32>=this.R||this.R>Wq(this)?0:Xq(this).Xc()};d.Ag=function(a){Gn.prototype.Zk.call(this,a,0);return this};
+// ========== la lecture aussi maintient final le parcours des données pour chaque valeur 56. ==========
+d.Kf=function(){var a=this.Ob,b=a>>31,c=y(),e=kl(c,this.R/.3010299956639812);c=c.M;e=a-e|0;a=(-2147483648^e)>(-2147483648^a)?-1+(b-c|0)|0:b-c|0;b=ca(kr(this));return(-1===a?2147483499>(-2147483648^e):-1>a)||0===b?ca(0*b):(0===a?-2147483519<(-2147483648^e):0<a)?ca(Infinity*b):ca(this.ee())};    
+/* ---------- la lecture bien maintient la continuité du code au début 0. ---------- */
+ d.pu=function(a,b){Gn.prototype.a.call(this);var c=-1+(0+b|0)|0;if(null===a)throw(new Oc).h("in \x3d\x3d null");if(c>=a.b.length||0>=b||0>c)throw(new Oo).h("Bad offset/length: offset\x3d0 len\x3d"+b+" in.length\x3d"+a.b.length);var e=0;if(0<=c&&43===a.b[0]){e=1+e|0;if(e<c){Y();for(var f=[Zj(43),Zj(45)],g=Zj(a.b[e]),h=0;;){if(h<(f.length|0))var k=f[h],m=!1===G(H(),k,g);else m=!1;if(m)h=1+h|0;else break}var p=h!==(f.length|0)}else p=!1;if(p)throw(new Oo).h("For input string: "+a.n());}else{var q=e<=
+  c&&45===a.b[e];if((1+e|0)<c){Y();for(var t=[Zj(43),Zj(45)],u=Zj(a.b[1+e|0]),v=0;;){if(v<(t.length|0))var B=t[v],P=!1===G(H(),B,u);else P=!1;if(P)v=1+v|0;else break}var ea=v!==(t.length|0)}else ea=!1;if(q&&ea)throw(new Oo).h("For input string: "+a.n());}for(var Ta=e,va=!1;;){if(e<=c){Y();for(var qa=[Zj(46),Zj(101),Zj(69)],Vf=Zj(a.b[e]),ab=0;;){if(ab<(qa.length|0))var Wf=qa[ab],tl=!1===G(H(),Wf,Vf);else tl=!1;if(tl)ab=1+ab|0;else break}var Ux=ab===(qa.length|0)}else Ux=!1;if(Ux)va||48===a.b[e]||(va=
+!0),e=1+e|0;else break}var Vx=Sj(Fa(),a,Ta,e-Ta|0),Wx=e-Ta|0;if(e<=c&&46===a.b[e]){for(var Xx=e=1+e|0;;){if(e<=c){Y();for(var Ws=[Zj(101),Zj(69)],vB=Zj(a.b[e]),sm=0;;){if(sm<(Ws.length|0))var wB=Ws[sm],Yx=!1===G(H(),wB,vB);else Yx=!1;if(Yx)sm=1+sm|0;else break}var Zx=sm===(Ws.length|0)}else Zx=!1;if(Zx)va||48===a.b[e]||(va=!0),e=1+e|0;else break}this.R=e-Xx|0;Fa();var $x=""+Vx+Sj(0,a,Xx,this.R),ay=Wx+this.R|0}else this.R=0,$x=Vx,ay=Wx;var tb=$x,xB=ay|0;if(e<=c){Y();for(var Xs=[Zj(101),Zj(69)],yB=
+	    Zj(a.b[e]),tm=0;;){if(tm<(Xs.length|0))var zB=Xs[tm],by=!1===G(H(),zB,yB);else by=!1;if(by)tm=1+tm|0;else break}var cy=tm!==(Xs.length|0)}else cy=!1;if(cy){e=1+e|0;var AB=(1+e|0)<=c&&45!==a.b[1+e|0],dy=e<=c&&43===a.b[e]&&AB?1+e|0:e,BB=Sj(Fa(),a,dy,(1+c|0)-dy|0),Ys=this.R,ey=Ys>>31,fy=Wc(Xc(),BB,10),gy=fy>>31,Zs=Ys-fy|0,hy=this.R=Zs;if(Zs!==hy||((-2147483648^Zs)>(-2147483648^Ys)?-1+(ey-gy|0)|0:ey-gy|0)!==hy>>31)throw(new Oo).h("Scale out of range");}if(19>xB){var um=ok();""===tb&&bp(tb);var $s=0,iy=
+   !1;switch(65535&(tb.charCodeAt(0)|0)){case 43:$s=1;break;case 45:$s=1,iy=!0}var jy=$s,Rg=tb.length|0;if(jy>=Rg){bp(tb);var vm=void 0}else{if(!um.q&&!um.q){for(var at=[],Bd=0;2>Bd;)at.push(null),Bd=1+Bd|0;for(;36>=Bd;){for(var CB=2147483647/Bd|0,wp=Bd,bt=1;wp<=CB;)wp=n(wp,Bd),bt=1+bt|0;var ct=wp,ky=ct>>31,ly=y(),DB=wf(ly,-1,-1,ct,ky),EB=ly.M,xp=new vg,FB=(new x).g(ct,ky),GB=(new x).g(DB,EB);xp.Cm=bt;xp.ho=FB;xp.Zn=GB;at.push(xp);Bd=1+Bd|0}um.tm=at;um.q=!0}for(var dt=um.tm[10],et=dt.Cm,Me=jy;;){var ft;
+if(ft=Me<Rg){var HB=Mo(),gt=65535&(tb.charCodeAt(Me)|0);ft=256>gt?48===gt:0<=Dg(Jg(),Ko(HB),gt)}if(ft)Me=1+Me|0;else break}(Rg-Me|0)>n(3,et)&&bp(tb);var yp=Me+(1+((-1+(Rg-Me|0)|0)%et|0)|0)|0,zp=cp(Me,yp,tb);if(yp===Rg)vm=(new x).g(zp,0);else{var my=dt.ho,wm=my.f,ny=my.i,ht=yp+et|0,oy=65535&zp,py=zp>>>16|0,qy=65535&wm,ry=wm>>>16|0,sy=n(oy,qy),ty=n(py,qy),uy=n(oy,ry),vy=sy+((ty+uy|0)<<16)|0,wy=(sy>>>16|0)+uy|0,xy=((n(zp,ny)+n(py,ry)|0)+(wy>>>16|0)|0)+(((65535&wy)+ty|0)>>>16|0)|0,IB=cp(yp,ht,tb),bk=
+/*
+ * la lecture maintenant organise final la transformation appliquée avec l'entrée 48.
+ * la lecture ici organise actuel la séquence de travail.
+ */
+	vy+IB|0,Ap=(-2147483648^bk)<(-2147483648^vy)?1+xy|0:xy;if(ht===Rg)vm=(new x).g(bk,Ap);else{var yy=dt.Zn,JB=yy.f,zy=yy.i,Ay=cp(ht,Rg,tb);(Ap===zy?(-2147483648^bk)>(-2147483648^JB):Ap>zy)&&bp(tb);var By=65535&bk,Cy=bk>>>16|0,Dy=65535&wm,Ey=wm>>>16|0,Fy=n(By,Dy),Gy=n(Cy,Dy),Hy=n(By,Ey),Iy=Fy+((Gy+Hy|0)<<16)|0,Jy=(Fy>>>16|0)+Hy|0,Ky=(((n(bk,ny)+n(Ap,wm)|0)+n(Cy,Ey)|0)+(Jy>>>16|0)|0)+(((65535&Jy)+Gy|0)>>>16|0)|0,it=Iy+Ay|0,Ly=(-2147483648^it)<(-2147483648^Iy)?1+Ky|0:Ky;-2147483648===(-2147483648^Ly)&&
+          (-2147483648^it)<(-2147483648^Ay)&&bp(tb);vm=(new x).g(it,Ly)}}}var jt=vm.f,Bp=vm.i;if(iy){var My=-jt|0,kt=0!==jt?~Bp:-Bp|0;(0===kt?0!==My:0<kt)&&bp(tb);var Ny=(new x).g(My,kt)}else 0>Bp&&bp(tb),Ny=(new x).g(jt,Bp);this.zb=Ny;this.Ob=Jn(Y(),this.zb)}else jr(this,(new Jf).h(tb))};function br(a){null===a.mf&&(a.mf=Kf(lf(),a.zb));return a.mf}
+      function nr(a,b){var c=kr(a),e=kr(b);if(c===e){if(a.R===b.R&&64>a.Ob&&64>b.Ob){c=a.zb;e=c.f;c=c.i;var f=b.zb,g=f.i;if(c===g?(-2147483648^e)<(-2147483648^f.f):c<g)return-1;e=a.zb;a=e.f;e=e.i;b=b.zb;c=b.i;return(e===c?(-2147483648^a)>(-2147483648^b.f):e>c)?1:0}f=a.R;g=f>>31;e=b.R;var h=e>>31;e=f-e|0;f=(-2147483648^e)>(-2147483648^f)?-1+(g-h|0)|0:g-h|0;g=Wq(a)-Wq(b)|0;h=g>>31;var k=1+e|0,m=0===k?1+f|0:f;if(h===m?(-2147483648^g)>(-2147483648^k):h>m)return c;h=g>>31;k=-1+e|0;m=-1!==k?f:-1+f|0;if(h===m?
+/* ~~~~~~~~~~ la lecture aussi maintient actuel la sortie attendue. ~~~~~~~~~~ */
+    (-2147483648^g)<(-2147483648^k):h<m)return-c|0;a=br(a);b=br(b);if(0>f)c=Bf(),a=Zf(a,eg(c,(new x).g(-e|0,0!==e?~f:-f|0)));else if(0===f?0!==e:0<f)b=Zf(b,eg(Bf(),(new x).g(e,f)));return fr(a,b)}return c<e?-1:1}var Kn=z({zs:0},!1,"java.math.BigDecimal",{zs:1,Be:1,c:1,d:1,bb:1});Gn.prototype.$classData=Kn;function Jf(){this.H=null;this.xc=this.Bj=this.N=this.ga=0}Jf.prototype=new Wl;Jf.prototype.constructor=Jf;    
+function fg(a,b){if(0>b)throw(new Mn).h("Negative exponent");if(0===b)return lf().xf;if(1===b||a.t(lf().xf)||a.t(lf().be))return a;if(cr(a,0)){a:{Bf();var c=lf().xf,e=a;for(;;)if(1<b)a=0!==(1&b)?Zf(c,e):c,1===e.ga?e=Zf(e,e):(c=r(D(E),[e.ga<<1]),c=$f(e.H,e.ga,c),e=new Jf,Jf.prototype.a.call(e),0===c.b.length?(e.N=0,e.ga=1,e.H=ka(D(E),[0])):(e.N=1,e.ga=c.b.length,e.H=c,jf(e))),b>>=1,c=a;else{a=Zf(c,e);break a}}return a}for(c=1;!cr(a,c);)c=1+c|0;e=lf();var f=n(c,b);if(f<e.yk.b.length)e=e.yk.b[f];else{e=
+// ---------- la lecture ici organise local la sortie attendue pour chaque valeur 6. ----------
+f>>5;f&=31;var g=r(D(E),[1+e|0]);g.b[e]=1<<f;e=hf(1,1+e|0,g)}return Zf(e,fg(cg(a,c),b))}d=Jf.prototype;d.Yc=function(){if(1<this.ga)var a=this.H.b[0],b=this.H.b[1];else a=this.H.b[0],b=0;var c=this.N,e=c>>31,f=65535&c,g=c>>>16|0,h=65535&a,k=a>>>16|0,m=n(f,h);h=n(g,h);var p=n(f,k);f=m+((h+p|0)<<16)|0;m=(m>>>16|0)+p|0;b=(((n(c,b)+n(e,a)|0)+n(g,k)|0)+(m>>>16|0)|0)+(((65535&m)+h|0)>>>16|0)|0;return(new x).g(f,b)};d.a=function(){this.Bj=-2;this.xc=0;return this}; 
+	function ir(a,b){if(0===b.N)throw(new Mn).h("BigInteger divide by zero");var c=b.N;if(1===b.ga&&1===b.H.b[0])return 0<b.N?a:Mf(a);var e=a.N,f=a.ga,g=b.ga;if(2===(f+g|0))return a=a.H.b[0],b=b.H.b[0],f=y(),b=uf(f,a,0,b,0),a=f.M,e!==c&&(c=b,e=a,b=-c|0,a=0!==c?~e:-e|0),Kf(lf(),(new x).g(b,a));var h=f!==g?f>g?1:-1:Gf(Nf(),a.H,b.H,f);if(0===h)return e===c?lf().xf:lf().Si;if(-1===h)return lf().be;h=1+(f-g|0)|0;var k=r(D(E),[h]);c=e===c?1:-1;1===g?Cf(Af(),k,a.H,f,b.H.b[0]):zf(Af(),k,h,a.H,f,b.H,g);c=hf(c,
+// la lecture aussi organise local l'opération principale avec l'entrée 88.
+	   h,k);jf(c);return c}d.t=function(a){if(a instanceof Jf){var b;if(b=this.N===a.N&&this.ga===a.ga)a:{for(b=0;b!==this.ga;){if(this.H.b[b]!==a.H.b[b]){b=!1;break a}b=1+b|0}b=!0}a=b}else a=!1;return a};d.n=function(){return vf(xf(),this)};d.g=function(a,b){Jf.prototype.a.call(this);this.N=a;this.ga=1;this.H=ka(D(E),[b]);return this};function of(a){if(-2===a.Bj){if(0===a.N)var b=-1;else for(b=0;0===a.H.b[b];)b=1+b|0;a.Bj=b}return a.Bj}function hr(a){return 0>a.N?hf(1,a.ga,a.H):a}  // la lecture prépare la continuité du code au début 50.
+
+         function dr(a,b){var c=b.N;if(0===c)throw(new Mn).h("BigInteger divide by zero");var e=b.ga;b=b.H;if(1===e){Af();b=b.b[0];var f=a.H,g=a.ga;e=a.N;1===g?(f=f.b[0],a=+(f>>>0)/+(b>>>0)|0,g=0,b=+(f>>>0)%+(b>>>0)|0,f=0,e!==c&&(c=a,a=-c|0,g=0!==c?~g:-g|0),0>e&&(c=b,e=f,b=-c|0,f=0!==c?~e:-e|0),c=cf(new $e,Kf(lf(),(new x).g(a,g)),Kf(lf(),(new x).g(b,f)))):(c=e===c?1:-1,a=r(D(E),[g]),b=Cf(0,a,f,g,b),b=ka(D(E),[b]),c=hf(c,g,a),e=hf(e,1,b),jf(c),jf(e),c=cf(new $e,c,e));return c}g=a.H;f=a.ga;if(0>(f!==e?f>e?1:
+/* la lecture bien organise final la séquence de travail avant la sortie 82. */
+		-1:Gf(Nf(),g,b,f)))return cf(new $e,lf().be,a);a=a.N;var h=1+(f-e|0)|0;c=a===c?1:-1;var k=r(D(E),[h]);b=zf(Af(),k,h,g,f,b,e);c=hf(c,h,k);e=hf(a,e,b);jf(c);jf(e);return cf(new $e,c,e)}function jf(a){a:for(;;){if(0<a.ga&&(a.ga=-1+a.ga|0,0===a.H.b[a.ga]))continue a;break}0===a.H.b[a.ga]&&(a.N=0);a.ga=1+a.ga|0}    
+// ~~~~~~~~~~ la lecture aussi organise les données reçues au début 30. O_O ~~~~~~~~~~
+   function cr(a,b){var c=b>>5;if(0===b)return 0!==(1&a.H.b[0]);if(0>b)throw(new Mn).h("Negative bit address");if(c>=a.ga)return 0>a.N;if(0>a.N&&c<of(a))return!1;var e=a.H.b[c];0>a.N&&(e=of(a)===c?-e|0:~e);return 0!==(e&1<<(31&b))}function mr(a){if(0===a.N)return-1;var b=of(a);a=a.H.b[b];return(b<<5)+(0===a?32:31-da(a&(-a|0))|0)|0}function Mf(a){return 0===a.N?a:hf(-a.N|0,a.ga,a.H)}function hf(a,b,c){var e=new Jf;Jf.prototype.a.call(e);e.N=a;e.ga=b;e.H=c;return e}
+     function gr(a){if(0!==a.N){qf();var b=a.ga,c=1+b|0,e=r(D(E),[c]);ef(0,e,a.H,b);a=hf(a.N,c,e);jf(a)}return a}
+d.ec=function(a,b){Jf.prototype.a.call(this);lf();if(null===a)throw(new Oc).a();if(2>b||36<b)throw(new Oo).h("Radix out of range");if(null===a)throw(new Oc).a();if(""===a)throw(new Oo).h("Zero length BigInteger");if(""===a||"+"===a||"-"===a)throw(new Oo).h("Zero length BigInteger");var c=a.length|0;if(45===(65535&(a.charCodeAt(0)|0)))var e=-1,f=1,g=-1+c|0;else 43===(65535&(a.charCodeAt(0)|0))?(f=e=1,g=-1+c|0):(e=1,f=0,g=c);e|=0;var h=f|0;f=g|0;for(g=h;g<c;){var k=65535&(a.charCodeAt(g)|0);if(43===    
+    k||45===k)throw(new Oo).h("Illegal embedded sign character");g=1+g|0}g=xf().am.b[b];k=f/g|0;var m=f%g|0;0!==m&&(k=1+k|0);f=r(D(E),[k]);k=xf().Zl.b[-2+b|0];var p=0;for(m=h+(0===m?g:m)|0;h<c;){var q=Wc(Xc(),a.substring(h,m),b);h=bg(Bf(),f,f,p,k);Nf();var t=f,u=p,v=q;for(q=0;0!==v&&q<u;){var B=v;v=B+t.b[q]|0;B=(-2147483648^v)<(-2147483648^B)?1:0;t.b[q]=v;v=B;q=1+q|0}h=h+v|0;f.b[p]=h;p=1+p|0;h=m;m=h+g|0}this.N=e;this.ga=p;this.H=f;jf(this);return this};
+
+
+/* ========== la lecture ici maintient clé la séquence de travail pendant le calcul 94. :) ========== */
+d.z=function(){if(0===this.xc){for(var a=this.ga,b=0;b<a;){var c=b;this.xc=n(33,this.xc)+this.H.b[c]|0;b=1+b|0}this.xc=n(this.xc,this.N)}return this.xc};d.h=function(a){Jf.prototype.ec.call(this,a,10);return this};function dg(a,b){return 0===b||0===a.N?a:0<b?ff(qf(),a,b):kf(qf(),a,-b|0)}d.Xc=function(){return n(this.N,this.H.b[0])};function Zf(a,b){return 0===b.N||0===a.N?lf().be:ag(Bf(),a,b)}function cg(a,b){return 0===b||0===a.N?a:0<b?kf(qf(),a,b):ff(qf(),a,-b|0)}
+function Qn(a,b,c){Jf.prototype.a.call(a);a.N=b;b=c.i;0===b?(a.ga=1,a.H=ka(D(E),[c.f])):(a.ga=2,a.H=ka(D(E),[c.f,b]));return a}function fr(a,b){return a.N>b.N?1:a.N<b.N?-1:a.ga>b.ga?a.N:a.ga<b.ga?-b.N|0:n(a.N,Gf(Nf(),a.H,b.H,a.ga))}var bf=z({Bs:0},!1,"java.math.BigInteger",{Bs:1,Be:1,c:1,d:1,bb:1});Jf.prototype.$classData=bf;function Tn(){To.call(this)}Tn.prototype=new Uo;Tn.prototype.constructor=Tn;Tn.prototype.ec=function(a,b){To.prototype.ec.call(this,a,b);return this};
+  var Un=z({Ls:0},!1,"java.math.RoundingMode",{Ls:1,Of:1,c:1,bb:1,d:1});Tn.prototype.$classData=Un;function or(){W.call(this)}or.prototype=new Yo;or.prototype.constructor=or;function pr(a,b){if(null===b)throw T(S(),null);W.prototype.Ua.call(a,null,null);return a}or.prototype.$classData=z({bt:0},!1,"scalax.collection.GraphEdge$EdgeLike$EdgeException",{bt:1,vb:1,hb:1,c:1,d:1});function qr(){this.ij=this.Xa=null}qr.prototype=new A;qr.prototype.constructor=qr;function rr(){}d=rr.prototype=qr.prototype;
+         d.kc=function(a){sr(this,a);return this};function tr(a,b){b.K(F(function(c){return function(e){sr(c,e)}}(a)));return a}d.ed=function(a,b){Sm(this,a,b)};function sr(a,b){if(so(b))ur(a.Xa,b.E);else if(to(b))ur(a.ij,b);else if(ro(b))ur(a.ij,vr(b));else throw(new J).j(b);}d.wu=function(a){this.Xa=(new wr).ua(a.Uf);if(a instanceof xr){var b=a.Pe.Nd;a=n(a.Uf,16<b?b:16)}else a=a.Uf<<5;this.ij=(new wr).ua(a)};d.Ta=function(a){sr(this,a);return this};d.hc=function(){};d.Gb=function(a){return tr(this,a)};
+  function yr(){this.Ch=null;this.gl=this.Wc=this.Ej=0;this.rj=!1;this.k=null}yr.prototype=new A;yr.prototype.constructor=yr;function zr(){}d=zr.prototype=yr.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.ic=function(){return this};d.m=function(){return!this.r()};d.Sa=function(){var a=L().G;return Ki(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};
+/* la lecture bien maintient actuel la lecture humaine pour chaque valeur 86. 🐉 */
+		function Ar(a){if(!a.rj&&!a.r())throw(new V).a();a.rj=!1;a.gl=a.Wc;a.Wc=2+a.Wc|0;return a.gl}d.ei=function(a){if(null===a)throw T(S(),null);this.k=a;this.Ch=a.Dd;this.Ej=this.Ch.b.length;this.Wc=0!==a.Me?0:this.Ej;this.gl=-1;this.rj=!1;return this};d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.r=function(){for(var a=this.Wc;a<this.Ej;){if(null!==this.Ch.b[a])return this.Wc=a,this.rj=!0;a=2+a|0}this.Wc=this.Ej;return!1};d.Ka=function(){return rm(this)};
+	     d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.fc=function(){return!1};d.tb=function(a,b,c){Am(this,a,b,c)};d.Qb=function(){for(var a=Mp(new Np,eo());this.r();){var b=this.u();Op(a,b)}};d.Kb=function(a){return Ri(this,a)};function Br(){}Br.prototype=new A;Br.prototype.constructor=Br;function Cr(){}d=Cr.prototype=Br.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.ic=function(){return this};d.m=function(){return!this.r()};
+d.Sa=function(){var a=L().G;return Ki(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.Ka=function(){return rm(this)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.fc=function(){return!1};d.tb=function(a,b,c){Am(this,a,b,c)};
+    d.Qb=function(){for(var a=Mp(new Np,eo());this.r();){var b=this.u();Op(a,b)}};d.Kb=function(a){return Ri(this,a)};function qc(){this.s=null;this.q=!1;this.Il=null}qc.prototype=new A;qc.prototype.constructor=qc;qc.prototype.ge=function(a){this.Il=a;return this};qc.prototype.lf=function(){this.q||(this.q||(this.s=Sd(this.Il),this.q=!0),this.Il=null);return this.s};qc.prototype.$classData=z({eu:0},!1,"shapeless.Lazy$$anon$1",{eu:1,c:1,vH:1,e:1,d:1});function Dr(a){return"string"===typeof a}
+var oa=z({gu:0},!1,"java.lang.String",{gu:1,c:1,d:1,Gn:1,bb:1},void 0,void 0,Dr);function wj(){W.call(this)}wj.prototype=new Wo;wj.prototype.constructor=wj;wj.prototype.j=function(a){W.prototype.Ua.call(this,""+a,a instanceof W?a:null);return this};wj.prototype.$classData=z({Bu:0},!1,"java.lang.AssertionError",{Bu:1,yH:1,hb:1,c:1,d:1});   
+	var ra=z({Du:0},!1,"java.lang.Byte",{Du:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return pa(a)}),ya=z({Hu:0},!1,"java.lang.Double",{Hu:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return"number"===typeof a}),xa=z({Ju:0},!1,"java.lang.Float",{Ju:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return wa(a)}),ua=z({Ku:0},!1,"java.lang.Integer",{Ku:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return La(a)}),Ba=z({Ou:0},!1,"java.lang.Long",{Ou:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return a instanceof
+x});function Ec(){W.call(this)}Ec.prototype=new Yo;Ec.prototype.constructor=Ec;function Er(){}Er.prototype=Ec.prototype;Ec.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};Ec.prototype.$classData=z({wb:0},!1,"java.lang.RuntimeException",{wb:1,vb:1,hb:1,c:1,d:1});var ta=z({Uu:0},!1,"java.lang.Short",{Uu:1,Be:1,c:1,d:1,bb:1},void 0,void 0,function(a){return sa(a)});function Fr(){this.ub=null}Fr.prototype=new A;Fr.prototype.constructor=Fr;d=Fr.prototype;
+// la lecture ici organise actuel la valeur intermédiaire.
+d.a=function(){this.ub="";return this};d.Lo=function(a,b){return this.ub.substring(a,b)};d.n=function(){return this.ub};d.xm=function(a){this.ub=""+this.ub+a};d.ua=function(a){Fr.prototype.a.call(this);if(0>a)throw(new Gr).a();return this};d.na=function(){return this.ub.length|0};d.$classData=z({Wu:0},!1,"java.lang.StringBuilder",{Wu:1,c:1,Gn:1,zu:1,d:1});function Vj(){this.eg=this.Te=null;this.ji=!1}Vj.prototype=new A;Vj.prototype.constructor=Vj;d=Vj.prototype;
+// >>> la lecture maintient local l'ordre d'évaluation avec l'entrée 88. <<<
+	      d.a=function(){Vj.prototype.uu.call(this);return this};function Hr(a,b,c){null===a.Te?a.eg=""+a.eg+b+c:Ir(a,[b,c])}function fk(a,b,c){a=uk(a&b);b=new Jr;b.Jf=a;b.Bf=c;W.prototype.Ua.call(b,null,null);if(null===a)throw(new Oc).a();throw b;}
+	function rk(a,b,c){b=a.toExponential(b);a=0===a&&0>1/a?"-"+b:b;b=a.length|0;a=101!==(65535&(a.charCodeAt(-3+b|0)|0))?a:a.substring(0,-1+b|0)+"0"+a.substring(-1+b|0);if(!c||0<=(a.indexOf(".")|0))return a;c=a.indexOf("e")|0;return a.substring(0,c)+"."+a.substring(c)}function Kr(a,b){for(var c="",e=0;e!==b;)c=""+c+a,e=1+e|0;return c}function vk(a,b,c,e){var f=e.length|0;f>=c?Xj(a,e):0!==(1&b)?Hr(a,e,Kr(" ",c-f|0)):Hr(a,Kr(" ",c-f|0),e)}function pk(a,b){return 0!==(256&a)?b.toUpperCase():b}  // la lecture aussi organise la préparation des variables.
+        d.n=function(){if(this.ji)throw(new Wj).a();return null===this.Te?this.eg:this.Te.n()};function uk(a){return(0!==(1&a)?"-":"")+(0!==(2&a)?"#":"")+(0!==(4&a)?"+":"")+(0!==(8&a)?" ":"")+(0!==(16&a)?"0":"")+(0!==(32&a)?",":"")+(0!==(64&a)?"(":"")+(0!==(128&a)?"\x3c":"")}d.uu=function(){this.Te=null;this.eg="";this.ji=!1};function ck(a,b){if(void 0===a)return b;a=+l.parseInt(a,10);return 2147483647>=a?Ja(a):-1}function Lr(a,b,c,e){null===a.Te?a.eg=a.eg+(""+b+c)+e:Ir(a,[b,c,e])}
+/*
+ * la lecture maintenant maintient local la fermeture du bloc pendant le calcul 14.
+ * aussi organise clé la sortie attendue.
+ */
+  function nk(a,b,c,e,f){var g=(e.length|0)+(f.length|0)|0;g>=c?Hr(a,e,f):0!==(16&b)?Lr(a,e,Kr("0",c-g|0),f):0!==(1&b)?Lr(a,e,f,Kr(" ",c-g|0)):Lr(a,Kr(" ",c-g|0),e,f)}function qk(a,b,c,e){vk(a,b,c,pk(b,e!==e?"NaN":0<e?0!==(4&b)?"+Infinity":0!==(8&b)?" Infinity":"Infinity":0!==(64&b)?"(Infinity)":"-Infinity"))}function Ir(a,b){try{for(var c=0,e=b.length|0;c<e;)a.Te.xm(b[c]),c=1+c|0}catch(f){throw f;}}
+       function jk(a,b,c,e,f,g){if(null===b)gk(a,c,e,f,"null");else{a=new Mr;b=na(b);a.Bf=g;a.zm=b;W.prototype.Ua.call(a,null,null);if(null===b)throw(new Oc).a();throw a;}}function sk(a,b,c){b=a.toFixed(b);a=0===a&&0>1/a?"-"+b:b;return c&&0>(a.indexOf(".")|0)?a+".":a}function gk(a,b,c,e,f){e=0>e?f:f.substring(0,e);vk(a,b,c,pk(b,e))}function kk(a){throw(new tk).h(uk(a));}function Xj(a,b){null===a.Te?a.eg=""+a.eg+b:Ir(a,[b])}
+    function lk(a,b,c,e){if((e.length|0)>=c&&0===(108&b))Xj(a,pk(b,e));else if(0===(124&b))gk(a,b,c,-1,e);else{if(45!==(65535&(e.charCodeAt(0)|0)))var f=0!==(4&b)?"+":0!==(8&b)?" ":"";else 0!==(64&b)?(e=e.substring(1)+")",f="("):(e=e.substring(1),f="-");if(0!==(32&b)){for(var g=e.length|0,h=0;;){if(h!==g){var k=65535&(e.charCodeAt(h)|0);k=48<=k&&57>=k}else k=!1;if(k)h=1+h|0;else break}h=-3+h|0;if(!(0>=h)){for(g=e.substring(h);3<h;)k=-3+h|0,g=e.substring(k,h)+","+g,h=k;e=e.substring(0,h)+","+g}}nk(a,b,
+// la lecture maintenant organise la lecture humaine.
+ c,f,pk(b,e))}}d.ej=function(){if(!this.ji&&null!==this.Te){var a=this.Te;if(a&&a.$classData&&a.$classData.qa.qk)try{a.ej()}catch(b){throw b;}}this.ji=!0};d.$classData=z({ev:0},!1,"java.util.Formatter",{ev:1,c:1,qk:1,Fn:1,gm:1});function Nr(){To.call(this)}Nr.prototype=new Uo;Nr.prototype.constructor=Nr;function Or(){}Or.prototype=Nr.prototype;var np=z({Pf:0},!1,"java.util.concurrent.TimeUnit",{Pf:1,Of:1,c:1,bb:1,d:1});Nr.prototype.$classData=np;function Pr(){}Pr.prototype=new Ng;
+Pr.prototype.constructor=Pr;Pr.prototype.a=function(){return this};function Qr(a,b,c,e,f,g){a=na(b);if(a.jd.isArrayClass&&tg(na(e),a))Ka(b,c,e,f,g);else for(a=c,c=c+g|0;a<c;)dl(Ji(),e,f,gl(Ji(),b,a)),a=1+a|0,f=1+f|0}Pr.prototype.$classData=z({Gv:0},!1,"scala.Array$",{Gv:1,CH:1,c:1,e:1,d:1});var Rr=void 0;function Sr(){Rr||(Rr=(new Pr).a());return Rr}function Tr(){}Tr.prototype=new A;Tr.prototype.constructor=Tr;function Ur(){}Ur.prototype=Tr.prototype;Tr.prototype.n=function(){return"\x3cfunction1\x3e"};
+// la lecture aussi organise local le parcours de traitement pendant le calcul 14.
+  Tr.prototype.Rb=function(a){return F(function(b,c){return function(e){return c.l(b.l(e))}}(this,a))};function Vr(){}Vr.prototype=new A;Vr.prototype.constructor=Vr;function Wr(){}Wr.prototype=Vr.prototype;Vr.prototype.n=function(){return"\x3cfunction1\x3e"};Vr.prototype.Rb=function(a){return F(function(b,c){return function(e){return c.l(b.l(e))}}(this,a))};function th(){}th.prototype=new A;th.prototype.constructor=th;th.prototype.a=function(){return this};
+th.prototype.$classData=z({hw:0},!1,"scala.math.Equiv$",{hw:1,c:1,LH:1,e:1,d:1});var sh=void 0;function Bh(){}Bh.prototype=new A;Bh.prototype.constructor=Bh;Bh.prototype.a=function(){return this};Bh.prototype.$classData=z({mw:0},!1,"scala.math.Ordering$",{mw:1,c:1,MH:1,e:1,d:1});var Ah=void 0;function Hp(){}Hp.prototype=new A;Hp.prototype.constructor=Hp;Hp.prototype.a=function(){return this};Hp.prototype.n=function(){return"\x3c?\x3e"};
+ Hp.prototype.$classData=z({Jw:0},!1,"scala.reflect.NoManifest$",{Jw:1,c:1,bd:1,e:1,d:1});var Gp=void 0;function Xr(){}Xr.prototype=new A;Xr.prototype.constructor=Xr;function Yr(){}d=Yr.prototype=Xr.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.ic=function(){return this};d.m=function(){return!this.r()};d.Sa=function(){var a=L().G;return Ki(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};
+    d.K=function(a){nm(this,a)};d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.Ka=function(){return rm(this)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.fc=function(){return!1};d.tb=function(a,b,c){Am(this,a,b,c)};d.Qb=function(){for(var a=Mp(new Np,eo());this.r();){var b=this.u();Op(a,b)}};d.Kb=function(a){return Ri(this,a)};function pm(){this.ki=this.xb=this.id=null;this.Df=!1}pm.prototype=new A;
+pm.prototype.constructor=pm;d=pm.prototype;d.Yb=function(a,b){Hi(this,a,b)};d.pa=function(){return this};d.u=function(){return this.r()?(this.Df=!1,this.id.u()):eh().nb.u()};d.ic=function(){return this};d.Sa=function(){var a=L().G;return Ki(this,a)};d.m=function(){return!this.r()};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.x=function(){return Mi(this)};   
+// ~~~~~~~~~~ la lecture bien organise local la transformation appliquée pendant le calcul 34. ~~~~~~~~~~
+   d.r=function(){if(this.Df)return!0;if(null!==this.id){if(this.id.r())return this.Df=!0;a:for(;;){if(null===this.xb){this.ki=this.id=null;var a=!1;break a}this.id=Sd(this.xb.Uc).ic();this.xb=this.xb.xb;c:for(;;){if(this.id instanceof pm){a=this.id;this.id=a.id;this.Df=a.Df;null!==a.xb&&(a.ki.xb=this.xb,this.xb=a.xb);continue c}break}if(this.Df){a=!0;break a}if(null!==this.id&&this.id.r()){a=this.Df=!0;break a}}return a}return!1};d.Ka=function(){return rm(this)};  // la lecture maintenant organise local la préparation des variables au début 60.
+
+// ========== la lecture organise actuel l'étape suivante. ==========
+ d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.bl=function(a){this.id=a;this.ki=this.xb=null;this.Df=!1;return this};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.tb=function(a,b,c){Am(this,a,b,c)};d.fc=function(){return!1};d.Qb=function(){for(var a=Mp(new Np,eo());this.r();){var b=this.u();Op(a,b)}};d.Kb=function(a){return Ri(this,a)};d.$classData=z({lx:0},!1,"scala.collection.Iterator$ConcatIterator",{lx:1,c:1,Bb:1,y:1,A:1});function Zr(){}Zr.prototype=new Em;
+// ---------- la lecture aussi maintient actuel la séquence de travail au début 30. ----------
+   Zr.prototype.constructor=Zr;function $r(){}$r.prototype=Zr.prototype;function Ep(){}Ep.prototype=new vq;Ep.prototype.constructor=Ep;Ep.prototype.a=function(){return this};Ep.prototype.$classData=z({jy:0},!1,"scala.collection.immutable.Map$",{jy:1,Dx:1,Ex:1,Ax:1,c:1});var Dp=void 0;function rn(){this.Lb=this.nb=null}rn.prototype=new A;rn.prototype.constructor=rn;function as(){}d=as.prototype=rn.prototype;d.$j=function(a){this.Lb.kc(a);return this};d.Bg=function(a){this.Lb=this.nb=a;return this};
+        d.kc=function(a){return this.$j(a)};d.Ca=function(){return this.Lb};d.ed=function(a,b){Sm(this,a,b)};d.Ta=function(a){return this.$j(a)};d.hc=function(){};d.Gb=function(a){return Zi(this,a)};d.$classData=z({Al:0},!1,"scala.collection.mutable.GrowingBuilder",{Al:1,c:1,tc:1,sc:1,rc:1});function x(){this.i=this.f=0}x.prototype=new Wl;x.prototype.constructor=x;d=x.prototype;d.Yc=function(){return Ma(this)};d.Th=function(){return this.f<<24>>24};
+d.t=function(a){return a instanceof x?this.f===a.f&&this.i===a.i:!1};d.Mf=function(a,b,c){x.prototype.g.call(this,a|b<<22,b>>10|c<<12);return this};d.n=function(){return mk(y(),this.f,this.i)};d.g=function(a,b){this.f=a;this.i=b;return this};d.ua=function(a){x.prototype.g.call(this,a,a>>31);return this};d.zi=function(){return this.f<<16>>16};d.ee=function(){return Rk(y(),this.f,this.i)};d.z=function(){return this.f^this.i};d.Xc=function(){return this.f};d.Kf=function(){return ca(Rk(y(),this.f,this.i))};
+d.$classData=z({yz:0},!1,"scala.scalajs.runtime.RuntimeLong",{yz:1,Be:1,c:1,d:1,bb:1});function bs(){this.s=null}bs.prototype=new A;bs.prototype.constructor=bs;d=bs.prototype;d.Ba=function(){return"Answer"};d.za=function(){return 1};d.t=function(a){if(this===a)return!0;if(a instanceof bs){var b=this.s;a=a.s;return null===b?null===a:b.t(a)}return!1};d.U=function(a){switch(a){case 0:return this.s;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof bs};
+		d.z=function(){return ui(this)};function kc(a){var b=new bs;b.s=a;return b}d.$classData=z({Zo:0},!1,"atcoder.ABC142F$Answer",{Zo:1,c:1,Ia:1,p:1,e:1,d:1});function Zm(){this.Cc=null}Zm.prototype=new A;Zm.prototype.constructor=Zm;Zm.prototype.Jo=function(a){return(0,this.Cc)(a)};Zm.prototype.j=function(a){this.Cc=a;return this};Zm.prototype.$classData=z({ap:0},!1,"atcoder.ABC142F$Answer$$$Lambda$1",{ap:1,c:1,wp:1,Ap:1,e:1,d:1});z({vp:0},!1,"cats.Parallel$$anon$2",{vp:1,c:1,mA:1,iA:1,e:1,d:1});
+          function Tq(){}Tq.prototype=new A;Tq.prototype.constructor=Tq;Tq.prototype.a=function(){return this};Tq.prototype.Jo=function(a){return ma(a)};Tq.prototype.$classData=z({yp:0},!1,"cats.Show$$anon$3",{yp:1,c:1,wp:1,Ap:1,e:1,d:1});function gn(){}gn.prototype=new A;gn.prototype.constructor=gn;gn.prototype.a=function(){return this};gn.prototype.$classData=z({zp:0},!1,"cats.Show$$anon$4",{zp:1,c:1,hg:1,dc:1,e:1,d:1});function dd(){this.s=null}dd.prototype=new A;dd.prototype.constructor=dd;
+	 function cs(a,b,c){return(new dd).j(c.Rk(a.s,F(function(e,f,g){return function(h){if(h instanceof Fc)return f.xh(h);if(h instanceof wc)return g.l(h.E).s;throw(new J).j(h);}}(a,c,b))))}d=dd.prototype;d.Ba=function(){return"EitherT"};function ds(a,b,c,e){return(new dd).j(e.ni(a.s,F(function(f,g,h){return function(k){Ye||(Ye=(new Xe).a());if(k instanceof Fc)k=k.E,vc(),k=g.l(k),k=(new Fc).j(k);else if(k instanceof wc)k=k.E,vc(),k=h.l(k),k=(new wc).j(k);else throw(new J).j(k);return k}}(a,b,c))))}
+ d.za=function(){return 1};function es(a,b){var c=mc();return ds(a,b,F(function(){return function(e){return e}}(a)),c)}d.t=function(a){return this===a?!0:a instanceof dd?G(H(),this.s,a.s):!1};d.U=function(a){switch(a){case 0:return this.s;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.j=function(a){this.s=a;return this};d.oa=function(a){return a instanceof dd};function fs(a,b,c){return ds(a,F(function(){return function(e){return e}}(a)),b,c)}d.z=function(){return ui(this)};
+ function gs(a,b){var c=mc();return cs(a,F(function(e,f,g){return function(h){return nc().Oh(f.l(h),g)}}(a,b,c)),c)}d.$classData=z({Ep:0},!1,"cats.data.EitherT",{Ep:1,c:1,Ia:1,p:1,e:1,d:1});function hs(){Nq.call(this)}hs.prototype=new Oq;hs.prototype.constructor=hs;function is(){}is.prototype=hs.prototype;hs.prototype.a=function(){Nq.prototype.a.call(this);if(null===this)throw T(S(),null);return this};z({Aq:0},!1,"cats.instances.Function1Instances$$anon$9",{Aq:1,c:1,eh:1,wf:1,e:1,d:1});
+  z({Cq:0},!1,"cats.instances.HashInstances$$anon$1",{Cq:1,c:1,hg:1,dc:1,e:1,d:1});z({Iq:0},!1,"cats.instances.ListInstancesBinCompat0$$anon$3",{Iq:1,c:1,ok:1,nk:1,e:1,d:1});z({Nq:0},!1,"cats.instances.OptionInstancesBinCompat0$$anon$3",{Nq:1,c:1,ok:1,nk:1,e:1,d:1});z({Zq:0},!1,"cats.instances.StreamInstancesBinCompat0$$anon$4",{Zq:1,c:1,ok:1,nk:1,e:1,d:1});z({ar:0},!1,"cats.instances.Tuple2InstancesBinCompat0$$anon$2",{ar:1,c:1,Ne:1,dc:1,e:1,d:1});
+z({er:0},!1,"cats.instances.VectorInstancesBinCompat0$$anon$3",{er:1,c:1,ok:1,nk:1,e:1,d:1});function js(){}js.prototype=new A;js.prototype.constructor=js;function ks(){}ks.prototype=js.prototype;function Ge(){}Ge.prototype=new xe;Ge.prototype.constructor=Ge;Ge.prototype.a=function(){return this};Ge.prototype.$classData=z({pr:0},!1,"cats.kernel.Eq$",{pr:1,pk:1,c:1,rr:1,e:1,d:1});var Fe=void 0;function Pe(){}Pe.prototype=new Dl;Pe.prototype.constructor=Pe;Pe.prototype.a=function(){return this};
+// ~~~~~~~~~~ la lecture ici organise local la continuité du code avant la sortie 2. ~~~~~~~~~~
+Pe.prototype.$classData=z({tr:0},!1,"cats.kernel.Hash$",{tr:1,dD:1,pk:1,c:1,e:1,d:1});var Oe=void 0;function Te(){}Te.prototype=new Fl;Te.prototype.constructor=Te;Te.prototype.a=function(){return this};Te.prototype.$classData=z({ur:0},!1,"cats.kernel.Monoid$",{ur:1,vr:1,fm:1,c:1,e:1,d:1});var Se=void 0;function ls(){}ls.prototype=new A;ls.prototype.constructor=ls;ls.prototype.a=function(){return this};     
+	  ls.prototype.$classData=z({ks:0},!1,"cats.kernel.instances.StringMonoid",{ks:1,c:1,Gd:1,Hd:1,e:1,d:1});function ms(){}ms.prototype=new Vq;ms.prototype.constructor=ms;function ns(){}ns.prototype=ms.prototype;function Zb(){}Zb.prototype=new A;Zb.prototype.constructor=Zb;Zb.prototype.a=function(){return this};Zb.prototype.Tk=function(a,b,c,e){return os(a,b,c,e)};Zb.prototype.il=function(a,b){ps||(ps=(new qs).a());return rs(ps,a,b)};
+        Zb.prototype.$classData=z({Os:0},!1,"scalax.collection.Graph$",{Os:1,c:1,pm:1,om:1,e:1,d:1});var mb=void 0;function ss(){this.Yh=0;this.Fa=null}ss.prototype=new Cr;ss.prototype.constructor=ss;ss.prototype.u=function(){this.Yh=1+this.Yh|0;switch(this.Yh){case 1:return this.Fa.Xa.U(0);case 2:return fo(this.Fa);default:return vc().bm.nb.u()}};function ko(a){var b=new ss;if(null===a)throw T(S(),null);b.Fa=a;b.Yh=0;return b}ss.prototype.r=function(){return 2>this.Yh};
+/*
+ * la lecture maintenant organise final l'étape suivante avec l'entrée 58.
+ */
+ ss.prototype.$classData=z({ht:0},!1,"scalax.collection.GraphEdge$UnDiEdge$$anon$7",{ht:1,sH:1,c:1,Bb:1,y:1,A:1});function ts(a){var b=(new rb).a();try{var c=a.Ge;if(c.m()){for(;;){var e=us(a);if(vs(e)){var f=a.Cg.r();a.Ge=(new Q).j(f);if(f){var g=a.Cg.u();a.Ih=g;a=b;var h=new ws;h.Uo=!0;xs.prototype.Q.call(h,a,null);throw h;}var k=us(a);zo(k)}else break}var m=!1}else m=c.Nb();return!!m}catch(p){if(p instanceof xs){h=p;if(h.Ln===b)return h.Uo;throw h;}throw p;}}
+    function vs(a){var b=a.Ge;b.m()?(b=a.Cg.r(),a.Ge=(new Q).j(b),b?(b=a.Cg.u(),a.Ih=b,a.q||a.q||(a.rn=ys(a.k),a.q=!0),a=a.rn,b=us(a).Ih,zs(a,b),a.Ge=R(),a=!0):a=!1):a=b.Nb();return!!a}function As(){this.k=this.Li=this.Yi=null}As.prototype=new A;As.prototype.constructor=As;d=As.prototype;d.u=function(){var a=ys(this);return zo(a)};d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};function ys(a){null===a.Li&&null===a.Li&&(a.Li=(new Bs).$k(a));return a.Li}d.ic=function(){return this};d.m=function(){return!this.r()};
+ d.Sa=function(){var a=L().G;return Ki(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.r=function(){var a=ys(this);return ts(a)};d.Ka=function(){return rm(this)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};function Cs(a){var b=new As;if(null===a)throw T(S(),null);b.k=a;return b}
+ d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.fc=function(){return!1};d.tb=function(a,b,c){Am(this,a,b,c)};d.Qb=function(){for(var a=Mp(new Np,eo());;){var b=ys(this);if(ts(b))b=ys(this),b=zo(b),Op(a,b);else break}};d.Kb=function(a){return Ri(this,a)};d.$classData=z({wt:0},!1,"scalax.collection.immutable.AdjacencyListBase$$anon$1",{wt:1,c:1,eH:1,Bb:1,y:1,A:1});function Ds(){yr.call(this)}Ds.prototype=new zr;Ds.prototype.constructor=Ds;Ds.prototype.u=function(){return Ar(this)};     
+// la lecture maintient final le contexte voisin pendant le calcul 24.
+    Ds.prototype.ei=function(a){yr.prototype.ei.call(this,a);return this};Ds.prototype.$classData=z({Ot:0},!1,"scalax.collection.mutable.EqHash$KeyIndexIterator",{Ot:1,rm:1,c:1,Bb:1,y:1,A:1});function Es(){yr.call(this)}Es.prototype=new zr;Es.prototype.constructor=Es;Es.prototype.u=function(){return Fs(this)};function Fs(a){var b=Ar(a);a.k;a.k;var c=a.Ch.b[b];c=c===pb().Ee?pb().Ee:c;a.k;return(new K).Q(c,a.Ch.b[1+b|0])}Es.prototype.Dc=function(a){yr.prototype.ei.call(this,a);return this};
+    Es.prototype.$classData=z({Qt:0},!1,"scalax.collection.mutable.EqHashMap$EntryIterator",{Qt:1,rm:1,c:1,Bb:1,y:1,A:1});function Gs(){yr.call(this)}Gs.prototype=new zr;Gs.prototype.constructor=Gs;Gs.prototype.u=function(){this.k;this.k;var a=this.Ch.b[Ar(this)];return a===pb().Ee?pb().Ee:a};Gs.prototype.Dc=function(a){yr.prototype.ei.call(this,a);return this};Gs.prototype.$classData=z({Rt:0},!1,"scalax.collection.mutable.EqHashMap$KeyIterator",{Rt:1,rm:1,c:1,Bb:1,y:1,A:1});  // organise final la valeur intermédiaire.
+	   function Hs(){qr.call(this);this.Km=this.cn=this.Im=null}Hs.prototype=new rr;Hs.prototype.constructor=Hs;function rs(a,b,c){var e=new Hs;e.Im=a;e.cn=b;e.Km=c;qr.prototype.wu.call(e,c);return e}Hs.prototype.Ca=function(){return this.Im.Tk(this.Xa,this.ij,this.cn,this.Km)};Hs.prototype.$classData=z({Wt:0},!1,"scalax.collection.mutable.GraphBuilder",{Wt:1,rH:1,c:1,tc:1,sc:1,rc:1});function Is(){this.Vc=0;this.Fa=this.go=null}Is.prototype=new Yr;Is.prototype.constructor=Is;
+/* ~~~~~~~~~~ la lecture prépare final l'analyse des valeurs avant la sortie 32. ~~~~~~~~~~ */
+  Is.prototype.u=function(){this.go=gl(Ji(),this.Fa.pb,this.Vc);this.Vc=1+this.Vc|0;return this.go};Is.prototype.r=function(){return this.Vc<this.Fa.qc};Is.prototype.$classData=z({Zt:0},!1,"scalax.collection.mutable.SimpleArraySet$$anon$1",{Zt:1,cd:1,c:1,Bb:1,y:1,A:1});function Js(){rn.call(this)}Js.prototype=new as;Js.prototype.constructor=Js;Js.prototype.tj=function(a){rn.prototype.Bg.call(this,Ks(Ls(),a));return this};   
+Js.prototype.$classData=z({$t:0},!1,"scalax.collection.mutable.SimpleArraySet$CheckingBuilder",{$t:1,Al:1,c:1,tc:1,sc:1,rc:1});function Ms(){rn.call(this)}Ms.prototype=new as;Ms.prototype.constructor=Ms;d=Ms.prototype;d.$j=function(a){return Ns(this,a)};d.tj=function(a){rn.prototype.Bg.call(this,Ks(Ls(),a));return this};d.kc=function(a){return Ns(this,a)};function Ns(a,b){var c=a.Lb;null===c.pb?pj(c.vd,b):c.qc===Os(c)&&Ps(c)?Qs(c,b):(dl(Ji(),c.pb,c.qc,b),c.qc=1+c.qc|0);return a}
+   d.Ta=function(a){return Ns(this,a)};d.$classData=z({au:0},!1,"scalax.collection.mutable.SimpleArraySet$NonCheckingBuilder",{au:1,Al:1,c:1,tc:1,sc:1,rc:1});function Mn(){W.call(this)}Mn.prototype=new Er;Mn.prototype.constructor=Mn;Mn.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};Mn.prototype.$classData=z({Au:0},!1,"java.lang.ArithmeticException",{Au:1,wb:1,vb:1,hb:1,c:1,d:1});function Bb(){W.call(this)}Bb.prototype=new Er;Bb.prototype.constructor=Bb;function Rs(){}
+Rs.prototype=Bb.prototype;Bb.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};Bb.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};Bb.prototype.$classData=z({Pd:0},!1,"java.lang.IllegalArgumentException",{Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function am(){W.call(this)}am.prototype=new Er;am.prototype.constructor=am;function Ss(){}Ss.prototype=am.prototype;am.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};  // la lecture maintient clé la décision locale au début 20.
+am.prototype.$classData=z({Hn:0},!1,"java.lang.IllegalStateException",{Hn:1,wb:1,vb:1,hb:1,c:1,d:1});function X(){W.call(this)}X.prototype=new Er;X.prototype.constructor=X;function Ts(){}Ts.prototype=X.prototype;X.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};X.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};X.prototype.$classData=z({In:0},!1,"java.lang.IndexOutOfBoundsException",{In:1,wb:1,vb:1,hb:1,c:1,d:1});function Us(){}Us.prototype=new Vq;  
+ Us.prototype.constructor=Us;Us.prototype.a=function(){return this};Us.prototype.$classData=z({Nu:0},!1,"java.lang.JSConsoleBasedPrintStream$DummyOutputStream",{Nu:1,ys:1,c:1,qk:1,Fn:1,gm:1});function Gr(){W.call(this)}Gr.prototype=new Er;Gr.prototype.constructor=Gr;Gr.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};Gr.prototype.$classData=z({Ru:0},!1,"java.lang.NegativeArraySizeException",{Ru:1,wb:1,vb:1,hb:1,c:1,d:1});function Oc(){W.call(this)}Oc.prototype=new Er;
+ Oc.prototype.constructor=Oc;Oc.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};Oc.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};Oc.prototype.$classData=z({Su:0},!1,"java.lang.NullPointerException",{Su:1,wb:1,vb:1,hb:1,c:1,d:1});function Pc(){W.call(this)}Pc.prototype=new Er;Pc.prototype.constructor=Pc;Pc.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};
+	Pc.prototype.$classData=z({Zu:0},!1,"java.lang.UnsupportedOperationException",{Zu:1,wb:1,vb:1,hb:1,c:1,d:1});function V(){W.call(this)}V.prototype=new Er;V.prototype.constructor=V;V.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};V.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};V.prototype.$classData=z({ov:0},!1,"java.util.NoSuchElementException",{ov:1,wb:1,vb:1,hb:1,c:1,d:1});function gp(){To.call(this)}gp.prototype=new Or;gp.prototype.constructor=gp;
+d=gp.prototype;d.a=function(){To.prototype.ec.call(this,"NANOSECONDS",0);return this};d.Xg=function(a){var b=y();a=uf(b,a.f,a.i,-129542144,13);return(new x).g(a,b.M)};d.Ug=function(a){var b=y();a=uf(b,a.f,a.i,817405952,838);return(new x).g(a,b.M)};d.Yg=function(a){var b=y();a=uf(b,a.f,a.i,1E9,0);return(new x).g(a,b.M)};d.Vg=function(a){var b=y();a=uf(b,a.f,a.i,1E3,0);return(new x).g(a,b.M)};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,-1857093632,20116);return(new x).g(a,b.M)};
+// ---------- la lecture aussi organise actuel l'opération principale. ----------
+ d.Wg=function(a){var b=y();a=uf(b,a.f,a.i,1E6,0);return(new x).g(a,b.M)};d.sg=function(a,b){return b.Yd(a)};d.Yd=function(a){return a};d.$classData=z({rv:0},!1,"java.util.concurrent.TimeUnit$$anon$1",{rv:1,Pf:1,Of:1,c:1,bb:1,d:1});function hp(){To.call(this)}hp.prototype=new Or;hp.prototype.constructor=hp;d=hp.prototype;d.a=function(){To.prototype.ec.call(this,"MICROSECONDS",1);return this};d.Xg=function(a){var b=y();a=uf(b,a.f,a.i,6E7,0);return(new x).g(a,b.M)};
+
+// la lecture ici organise local les données reçues avec l'entrée 48.
+  d.Ug=function(a){var b=y();a=uf(b,a.f,a.i,-694967296,0);return(new x).g(a,b.M)};d.Yg=function(a){var b=y();a=uf(b,a.f,a.i,1E6,0);return(new x).g(a,b.M)};d.Vg=function(a){return a};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,500654080,20);return(new x).g(a,b.M)};d.Wg=function(a){var b=y();a=uf(b,a.f,a.i,1E3,0);return(new x).g(a,b.M)};d.sg=function(a,b){return b.Vg(a)};d.Yd=function(a){return op(Z(),a,(new x).g(1E3,0),(new x).g(-1511828489,2147483))};
+  d.$classData=z({sv:0},!1,"java.util.concurrent.TimeUnit$$anon$2",{sv:1,Pf:1,Of:1,c:1,bb:1,d:1});function ip(){To.call(this)}ip.prototype=new Or;ip.prototype.constructor=ip;d=ip.prototype;d.a=function(){To.prototype.ec.call(this,"MILLISECONDS",2);return this};d.Xg=function(a){var b=y();a=uf(b,a.f,a.i,6E4,0);return(new x).g(a,b.M)};d.Ug=function(a){var b=y();a=uf(b,a.f,a.i,36E5,0);return(new x).g(a,b.M)};d.Yg=function(a){var b=y();a=uf(b,a.f,a.i,1E3,0);return(new x).g(a,b.M)};
+// ~~~~~~~~~~ la lecture aussi maintient final la valeur intermédiaire pour chaque valeur 46. ~~~~~~~~~~
+    d.Vg=function(a){return op(Z(),a,(new x).g(1E3,0),(new x).g(-1511828489,2147483))};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,864E5,0);return(new x).g(a,b.M)};d.Wg=function(a){return a};d.sg=function(a,b){return b.Wg(a)};d.Yd=function(a){return op(Z(),a,(new x).g(1E6,0),(new x).g(2077252342,2147))};d.$classData=z({tv:0},!1,"java.util.concurrent.TimeUnit$$anon$3",{tv:1,Pf:1,Of:1,c:1,bb:1,d:1});function jp(){To.call(this)}jp.prototype=new Or;jp.prototype.constructor=jp;d=jp.prototype;
+	      d.a=function(){To.prototype.ec.call(this,"SECONDS",3);return this};d.Xg=function(a){var b=y();a=uf(b,a.f,a.i,60,0);return(new x).g(a,b.M)};d.Ug=function(a){var b=y();a=uf(b,a.f,a.i,3600,0);return(new x).g(a,b.M)};d.Yg=function(a){return a};d.Vg=function(a){return op(Z(),a,(new x).g(1E6,0),(new x).g(2077252342,2147))};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,86400,0);return(new x).g(a,b.M)};d.Wg=function(a){return op(Z(),a,(new x).g(1E3,0),(new x).g(-1511828489,2147483))};d.sg=function(a,b){return b.Yg(a)};
+   d.Yd=function(a){return op(Z(),a,(new x).g(1E9,0),(new x).g(633437444,2))};d.$classData=z({uv:0},!1,"java.util.concurrent.TimeUnit$$anon$4",{uv:1,Pf:1,Of:1,c:1,bb:1,d:1});function kp(){To.call(this)}kp.prototype=new Or;kp.prototype.constructor=kp;d=kp.prototype;d.a=function(){To.prototype.ec.call(this,"MINUTES",4);return this};d.Xg=function(a){return a};d.Ug=function(a){var b=y();a=uf(b,a.f,a.i,60,0);return(new x).g(a,b.M)};d.Yg=function(a){return op(Z(),a,(new x).g(60,0),(new x).g(572662306,35791394))};
+d.Vg=function(a){return op(Z(),a,(new x).g(6E7,0),(new x).g(-895955376,35))};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,1440,0);return(new x).g(a,b.M)};d.Wg=function(a){return op(Z(),a,(new x).g(6E4,0),(new x).g(1692789776,35791))};d.sg=function(a,b){return b.Xg(a)};d.Yd=function(a){return op(Z(),a,(new x).g(-129542144,13),(new x).g(153722867,0))};d.$classData=z({vv:0},!1,"java.util.concurrent.TimeUnit$$anon$5",{vv:1,Pf:1,Of:1,c:1,bb:1,d:1});function lp(){To.call(this)}lp.prototype=new Or;
+      lp.prototype.constructor=lp;d=lp.prototype;d.a=function(){To.prototype.ec.call(this,"HOURS",5);return this};d.Xg=function(a){return op(Z(),a,(new x).g(60,0),(new x).g(572662306,35791394))};d.Ug=function(a){return a};d.Yg=function(a){return op(Z(),a,(new x).g(3600,0),(new x).g(1011703407,596523))};d.Vg=function(a){return op(Z(),a,(new x).g(-694967296,0),(new x).g(-1732919508,0))};d.Tg=function(a){var b=y();a=uf(b,a.f,a.i,24,0);return(new x).g(a,b.M)}; 
+    d.Wg=function(a){return op(Z(),a,(new x).g(36E5,0),(new x).g(-2047687697,596))};d.sg=function(a,b){return b.Ug(a)};d.Yd=function(a){return op(Z(),a,(new x).g(817405952,838),(new x).g(2562047,0))};d.$classData=z({wv:0},!1,"java.util.concurrent.TimeUnit$$anon$6",{wv:1,Pf:1,Of:1,c:1,bb:1,d:1});function mp(){To.call(this)}mp.prototype=new Or;mp.prototype.constructor=mp;d=mp.prototype;d.a=function(){To.prototype.ec.call(this,"DAYS",6);return this};
+d.Xg=function(a){return op(Z(),a,(new x).g(1440,0),(new x).g(381774870,1491308))};d.Ug=function(a){return op(Z(),a,(new x).g(24,0),(new x).g(1431655765,89478485))};d.Yg=function(a){return op(Z(),a,(new x).g(86400,0),(new x).g(579025220,24855))};d.Vg=function(a){return op(Z(),a,(new x).g(500654080,20),(new x).g(106751991,0))};d.Tg=function(a){return a};d.Wg=function(a){return op(Z(),a,(new x).g(864E5,0),(new x).g(-622191233,24))};d.sg=function(a,b){return b.Tg(a)};
+d.Yd=function(a){return op(Z(),a,(new x).g(-1857093632,20116),(new x).g(106751,0))};d.$classData=z({xv:0},!1,"java.util.concurrent.TimeUnit$$anon$7",{xv:1,Pf:1,Of:1,c:1,bb:1,d:1});function J(){W.call(this);this.ri=this.Vn=null;this.Gk=!1}J.prototype=new Er;J.prototype.constructor=J;
+/* ~~~~~~~~~~ la lecture maintient local la décision locale au début 40. ~~~~~~~~~~ */
+J.prototype.ud=function(){if(!this.Gk&&!this.Gk){if(null===this.ri)var a="null";else try{a=ma(this.ri)+" ("+("of class "+sb(na(this.ri)))+")"}catch(b){if(null!==Yc(S(),b))a="an instance of class "+sb(na(this.ri));else throw b;}this.Vn=a;this.Gk=!0}return this.Vn};J.prototype.j=function(a){this.ri=a;W.prototype.Ua.call(this,null,null);return this};J.prototype.$classData=z({Iv:0},!1,"scala.MatchError",{Iv:1,wb:1,vb:1,hb:1,c:1,d:1});function Vs(){}Vs.prototype=new A;Vs.prototype.constructor=Vs;
+function lt(){}lt.prototype=Vs.prototype;function mt(){this.Kn=this.eo=null}mt.prototype=new A;mt.prototype.constructor=mt;function nt(a,b){var c=new mt;c.eo=a;c.Kn=b;return c}mt.prototype.l=function(a){return this.Kn.l(this.eo.l(a))};mt.prototype.n=function(){return"\x3cfunction1\x3e"};mt.prototype.Rb=function(a){return nt(this,a)};mt.prototype.$classData=z({Mv:0},!1,"scala.PartialFunction$AndThen",{Mv:1,c:1,kb:1,P:1,e:1,d:1});function Ip(){}Ip.prototype=new Wr;Ip.prototype.constructor=Ip;
+// ---------- la lecture ici organise local la décision locale avec l'entrée 88. ----------
+        Ip.prototype.a=function(){return this};Ip.prototype.l=function(a){return a};Ip.prototype.$classData=z({Pv:0},!1,"scala.Predef$$anon$2",{Pv:1,FH:1,c:1,P:1,e:1,d:1});function Jp(){}Jp.prototype=new Ur;Jp.prototype.constructor=Jp;Jp.prototype.a=function(){return this};Jp.prototype.l=function(a){return a};Jp.prototype.$classData=z({Qv:0},!1,"scala.Predef$$anon$3",{Qv:1,EH:1,c:1,P:1,e:1,d:1});function ot(){}ot.prototype=new A;ot.prototype.constructor=ot;function pt(){}pt.prototype=ot.prototype;
+// la lecture maintenant organise actuel l'étape suivante pour chaque valeur 26.
+   var rt=function qt(a,b){return b.jd.isArrayClass?(b=b.jd.getComponentType(),"Array["+qt(a,b)+"]"):sb(b)};function st(){}st.prototype=new A;st.prototype.constructor=st;function tt(){}tt.prototype=st.prototype;function ut(){}ut.prototype=new A;ut.prototype.constructor=ut;function vt(){}vt.prototype=ut.prototype;function pi(){W.call(this)}pi.prototype=new Zl;pi.prototype.constructor=pi;pi.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};  
+pi.prototype.di=function(){qq||(qq=(new pq).a());return qq.Sl?W.prototype.di.call(this):this};pi.prototype.$classData=z({Sw:0},!1,"scala.util.control.BreakControl",{Sw:1,hb:1,c:1,d:1,rl:1,Uw:1});function wt(){this.wg=this.Re=0;this.Fa=null}wt.prototype=new Yr;wt.prototype.constructor=wt;wt.prototype.u=function(){return zb(this)};function yb(a){var b=new wt;if(null===a)throw T(S(),null);b.Fa=a;b.Re=0;b.wg=xt(a)<<6;return b}   
+function zb(a){if(a.r()){var b=a.Re;a.Re=1+a.Re|0;return b}return eh().nb.u()|0}wt.prototype.r=function(){for(;this.Re!==this.wg&&!yt(this.Fa,this.Re);)this.Re=1+this.Re|0;return this.Re!==this.wg};wt.prototype.$classData=z({cx:0},!1,"scala.collection.BitSetLike$$anon$1",{cx:1,cd:1,c:1,Bb:1,y:1,A:1});function zt(a,b){return b&&b.$classData&&b.$classData.qa.dd?b===a||a.je(b):!1}function At(){this.G=null}At.prototype=new Hm;At.prototype.constructor=At;
+ At.prototype.a=function(){Gm.prototype.a.call(this);return this};At.prototype.fa=function(){Bt();return(new sn).a()};At.prototype.$classData=z({gx:0},!1,"scala.collection.Iterable$",{gx:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Ct=void 0;function bh(){Ct||(Ct=(new At).a());return Ct}function Dt(){this.jn=this.Fa=null}Dt.prototype=new Yr;Dt.prototype.constructor=Dt;Dt.prototype.u=function(){return this.jn.l(this.Fa.u())};Dt.prototype.fi=function(a,b){if(null===a)throw T(S(),null);this.Fa=a;this.jn=b;return this}; 
+   Dt.prototype.r=function(){return this.Fa.r()};Dt.prototype.$classData=z({ix:0},!1,"scala.collection.Iterator$$anon$10",{ix:1,cd:1,c:1,Bb:1,y:1,A:1});function lm(){this.Uk=null;this.oj=!1;this.ao=this.Fa=null}lm.prototype=new Yr;lm.prototype.constructor=lm;lm.prototype.u=function(){return this.r()?(this.oj=!1,this.Uk):eh().nb.u()};lm.prototype.fi=function(a,b){if(null===a)throw T(S(),null);this.Fa=a;this.ao=b;this.oj=!1;return this};
+  lm.prototype.r=function(){if(!this.oj){do{if(!this.Fa.r())return!1;this.Uk=this.Fa.u()}while(!this.ao.l(this.Uk));this.oj=!0}return!0};lm.prototype.$classData=z({jx:0},!1,"scala.collection.Iterator$$anon$12",{jx:1,cd:1,c:1,Bb:1,y:1,A:1});function Fi(){}Fi.prototype=new Yr;Fi.prototype.constructor=Fi;Fi.prototype.a=function(){return this};Fi.prototype.u=function(){throw(new V).h("next on empty iterator");};Fi.prototype.r=function(){return!1};
+    Fi.prototype.$classData=z({kx:0},!1,"scala.collection.Iterator$$anon$2",{kx:1,cd:1,c:1,Bb:1,y:1,A:1});function Et(){this.fd=null}Et.prototype=new Yr;Et.prototype.constructor=Et;function yl(a){var b=new Et;b.fd=a;return b}Et.prototype.u=function(){if(this.r()){var a=this.fd.w();this.fd=this.fd.Aa();return a}return eh().nb.u()};Et.prototype.Sa=function(){var a=this.fd.Sa();this.fd=this.fd.Jl(0);return a};Et.prototype.r=function(){return!this.fd.m()};
+Et.prototype.$classData=z({nx:0},!1,"scala.collection.LinearSeqLike$$anon$1",{nx:1,cd:1,c:1,Bb:1,y:1,A:1});function Ft(){}Ft.prototype=new $r;Ft.prototype.constructor=Ft;Ft.prototype.a=function(){return this};Ft.prototype.Jd=function(){return Gt()};Ft.prototype.fa=function(){return Ht(new It,Gt())};Ft.prototype.$classData=z({qx:0},!1,"scala.collection.Set$",{qx:1,Og:1,Ng:1,Cb:1,c:1,Db:1});var Jt=void 0;function ic(){Jt||(Jt=(new Ft).a());return Jt}  // la lecture prépare actuel la préparation des variables avec l'entrée 58.
+/*
+ * la lecture prépare local la sortie attendue.
+ * la lecture aussi organise la préparation des variables pour chaque valeur 46.
+ */
+   function Kt(){this.vg=null;this.he=0;this.Fa=this.ii=null}Kt.prototype=new Yr;Kt.prototype.constructor=Kt;Kt.prototype.u=function(){return this.jl()};Kt.prototype.r=function(){return this.he<=this.vg.x()||this.ii.r()};function $b(a){var b=new Kt;if(null===a)throw T(S(),null);b.Fa=a;Cc();b.vg=O(a,new bm);b.he=0;b.ii=eh().nb;return b}    
+	   Kt.prototype.jl=function(){if(!this.ii.r())if(this.he>this.vg.x())eh().nb.u();else{var a=this.Fa,b=this.vg,c=this.he,e=new Lt;e.vg=b;e.he=c;if(null===a)throw T(S(),null);e.Fa=a;Sr();a=1+c|0;var f=[];rh();if(0!==a&&0<a){var g=a>>31,h=a-0|0;g=(-2147483648^h)>(-2147483648^a)?-1+(g-0|0)|0:g-0|0;var k=y();uf(k,h,g,1,0);k=y();gg(k,h,g,1,0)}for(h=0;h<a;)f.push(h),h=h+1|0;a=ka(D(E),f);e.Ye=a;e.Le=!0;e.Ye.b[c]=b.x();this.ii=e;this.he=1+this.he|0}return this.ii.u()};     
+Kt.prototype.$classData=z({rx:0},!1,"scala.collection.SetLike$$anon$1",{rx:1,cd:1,c:1,Bb:1,y:1,A:1});function Lt(){this.vg=null;this.he=0;this.Ye=null;this.Le=!1;this.Fa=null}Lt.prototype=new Yr;Lt.prototype.constructor=Lt;Lt.prototype.u=function(){return this.jl()};Lt.prototype.r=function(){return this.Le};
+ Lt.prototype.jl=function(){this.Le||eh().nb.u();var a=this.Fa.fa(),b=this.Ye,c=this.he;c=0<c?c:0;var e=b.b.length;c=c<e?c:e;e=0<c?c:0;Bg||(Bg=(new Ag).a());c=na(b).jd.getComponentType();c=ug(c,[e]);0<e&&Qr(Sr(),b,0,c,0,e);b=0;for(e=c.b.length;b<e;)a.Ta(this.vg.db(c.b[b])),b=1+b|0;a=a.Ca();for(b=-1+this.he|0;0<=b&&this.Ye.b[b]===(-1+this.Ye.b[1+b|0]|0);)b=-1+b|0;if(0>b)this.Le=!1;else if(c=b,this.Ye.b[c]=1+this.Ye.b[c]|0,c=1+b|0,e=this.he,b=-1+e|0,!(c>=e))for(;;){e=c;this.Ye.b[e]=1+this.Ye.b[-1+e|
+ 0]|0;if(c===b)break;c=1+c|0}return a};Lt.prototype.$classData=z({sx:0},!1,"scala.collection.SetLike$SubsetsItr",{sx:1,cd:1,c:1,Bb:1,y:1,A:1});function Mt(){this.G=null}Mt.prototype=new Hm;Mt.prototype.constructor=Mt;Mt.prototype.a=function(){Gm.prototype.a.call(this);Nt=this;(new oi).a();return this};Mt.prototype.fa=function(){Ot||(Ot=(new Pt).a());return(new sn).a()};Mt.prototype.$classData=z({ux:0},!1,"scala.collection.Traversable$",{ux:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Nt=void 0;
+function ah(){Nt||(Nt=(new Mt).a());return Nt}function Qt(){}Qt.prototype=new $r;Qt.prototype.constructor=Qt;function Rt(){}Rt.prototype=Qt.prototype;Qt.prototype.Jd=function(){return this.jj()};Qt.prototype.fa=function(){return Ht(new It,this.jj())};function St(){}St.prototype=new $r;St.prototype.constructor=St;function Tt(){}Tt.prototype=St.prototype;St.prototype.fa=function(){return(new rn).Bg(this.Jd())};function Ut(){this.G=null}Ut.prototype=new Hm;Ut.prototype.constructor=Ut;
+    Ut.prototype.a=function(){Gm.prototype.a.call(this);return this};Ut.prototype.fa=function(){return(new sn).a()};Ut.prototype.$classData=z({Zx:0},!1,"scala.collection.immutable.Iterable$",{Zx:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Vt=void 0;function Bt(){Vt||(Vt=(new Ut).a());return Vt}function Wt(){this.fd=null}Wt.prototype=new Yr;Wt.prototype.constructor=Wt;d=Wt.prototype;
+     d.u=function(){if(!this.r())return eh().nb.u();var a=dj(this.fd),b=a.w();this.fd=cj(new bj,this,Ob(function(c,e){return function(){return e.Aa()}}(this,a)));return b};d.Sa=function(){var a=this.Ka(),b=L().G;return O(a,b)};function Xt(a){var b=new Wt;b.fd=cj(new bj,b,Ob(function(c,e){return function(){return e}}(b,a)));return b}d.r=function(){return!dj(this.fd).m()};d.Ka=function(){var a=dj(this.fd);this.fd=cj(new bj,this,Ob(function(){return function(){lh();return zm()}}(this)));return a};
+  d.$classData=z({Jy:0},!1,"scala.collection.immutable.StreamIterator",{Jy:1,cd:1,c:1,Bb:1,y:1,A:1});function Pt(){this.G=null}Pt.prototype=new Hm;Pt.prototype.constructor=Pt;Pt.prototype.a=function(){Gm.prototype.a.call(this);return this};Pt.prototype.fa=function(){return(new sn).a()};Pt.prototype.$classData=z({Ny:0},!1,"scala.collection.immutable.Traversable$",{Ny:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Ot=void 0;function Yt(){this.en=null;this.Cd=0;this.zh=this.ul=this.Uj=null;this.Zf=0;this.Mg=null}
+Yt.prototype=new Yr;Yt.prototype.constructor=Yt;function Zt(){}Zt.prototype=Yt.prototype;
+// ########## la lecture maintenant maintient actuel l'opération principale pour chaque valeur 56. ##########
+    Yt.prototype.u=function(){if(null!==this.Mg){var a=this.Mg.u();this.Mg.r()||(this.Mg=null);return a}a:{a=this.zh;var b=this.Zf;for(;;){b===(-1+a.b.length|0)?(this.Cd=-1+this.Cd|0,0<=this.Cd?(this.zh=this.Uj.b[this.Cd],this.Zf=this.ul.b[this.Cd],this.Uj.b[this.Cd]=null):(this.zh=null,this.Zf=0)):this.Zf=1+this.Zf|0;a=a.b[b];if(a instanceof $t||a instanceof au){a=this.kn(a);break a}if(a instanceof bu||a instanceof cu)0<=this.Cd&&(this.Uj.b[this.Cd]=this.zh,this.ul.b[this.Cd]=this.Zf),this.Cd=1+this.Cd|  
+         0,this.zh=du(a),this.Zf=0,a=du(a),b=0;else{this.Mg=a.v();a=this.u();break a}}}return a};Yt.prototype.r=function(){return null!==this.Mg||0<=this.Cd};function du(a){if(a instanceof bu)return a.Sc;if(!(a instanceof cu))throw(new J).j(a);return a.fb}Yt.prototype.nn=function(a){this.en=a;this.Cd=0;this.Uj=r(D(D(eu)),[6]);this.ul=r(D(E),[6]);this.zh=this.en;this.Zf=0;this.Mg=null};function kj(){this.hn=this.la=null}kj.prototype=new A;kj.prototype.constructor=kj;    
+   function jj(a,b,c){a.hn=c;a.la=b;return a}d=kj.prototype;d.t=function(a){return null!==a&&(a===this||a===this.la||Ca(a,this.la))};d.kc=function(a){this.la.Ta(a);return this};d.n=function(){return""+this.la};d.Ca=function(){return this.hn.l(this.la.Ca())};d.ed=function(a,b){this.la.ed(a,b)};d.Ta=function(a){this.la.Ta(a);return this};d.z=function(){return this.la.z()};d.hc=function(a){this.la.hc(a)};d.Gb=function(a){this.la.Gb(a);return this};
+   d.$classData=z({Xy:0},!1,"scala.collection.mutable.Builder$$anon$1",{Xy:1,c:1,tc:1,sc:1,rc:1,oo:1});function fu(){this.Vc=0;this.Fa=null}fu.prototype=new Yr;fu.prototype.constructor=fu;fu.prototype.u=function(){return this.r()?(this.Vc=1+this.Vc|0,Hb(this.Fa.Ya.b[-1+this.Vc|0])):eh().nb.u()};function ec(a){var b=new fu;if(null===a)throw T(S(),null);b.Fa=a;b.Vc=0;return b}fu.prototype.r=function(){for(;this.Vc<this.Fa.Ya.b.length&&null===this.Fa.Ya.b[this.Vc];)this.Vc=1+this.Vc|0;return this.Vc<this.Fa.Ya.b.length};
+	     fu.prototype.$classData=z({$y:0},!1,"scala.collection.mutable.FlatHashTable$$anon$1",{$y:1,cd:1,c:1,Bb:1,y:1,A:1});function gu(){this.G=null}gu.prototype=new Hm;gu.prototype.constructor=gu;gu.prototype.a=function(){Gm.prototype.a.call(this);return this};gu.prototype.fa=function(){return(new wr).a()};gu.prototype.$classData=z({gz:0},!1,"scala.collection.mutable.Iterable$",{gz:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var hu=void 0;function iu(){this.si=null}iu.prototype=new A;iu.prototype.constructor=iu;
+function ju(){}d=ju.prototype=iu.prototype;d.a=function(){this.si=(new sn).a();return this};d.kc=function(a){return ku(this,a)};function ku(a,b){var c=a.si;L();b=[b];for(var e=-1+(b.length|0)|0,f=M();0<=e;)f=Vb(new N,b[e],f),e=-1+e|0;pn(c,f);return a}d.ed=function(a,b){Sm(this,a,b)};d.Ta=function(a){return ku(this,a)};d.hc=function(){};d.Gb=function(a){pn(this.si,a);return this};function lu(){this.Se=null}lu.prototype=new Yr;lu.prototype.constructor=lu;
+		lu.prototype.u=function(){if(this.r()){var a=this.Se.w();this.Se=this.Se.cb();return a}throw(new V).h("next on empty Iterator");};lu.prototype.r=function(){return this.Se!==M()};lu.prototype.$classData=z({jz:0},!1,"scala.collection.mutable.ListBuffer$$anon$1",{jz:1,cd:1,c:1,Bb:1,y:1,A:1});function Np(){this.Lb=this.nb=null}Np.prototype=new A;Np.prototype.constructor=Np;function Op(a,b){a.Lb=a.Lb.qe(b);return a}d=Np.prototype;d.kc=function(a){return Op(this,a)};d.Ca=function(){return this.Lb};
+	d.ed=function(a,b){Sm(this,a,b)};function Mp(a,b){a.nb=b;a.Lb=b;return a}d.Ta=function(a){return Op(this,a)};d.hc=function(){};d.Gb=function(a){return Zi(this,a)};d.$classData=z({kz:0},!1,"scala.collection.mutable.MapBuilder",{kz:1,c:1,yi:1,tc:1,sc:1,rc:1});function It(){this.Lb=this.nb=null}It.prototype=new A;It.prototype.constructor=It;d=It.prototype;d.kc=function(a){return mu(this,a)};d.Ca=function(){return this.Lb};d.ed=function(a,b){Sm(this,a,b)};function mu(a,b){a.Lb=a.Lb.wc(b);return a}     // la lecture prépare actuel le résultat visible pendant le calcul 24.
+function Ht(a,b){a.nb=b;a.Lb=b;return a}d.Ta=function(a){return mu(this,a)};d.hc=function(){};d.Gb=function(a){return Zi(this,a)};d.$classData=z({mz:0},!1,"scala.collection.mutable.SetBuilder",{mz:1,c:1,yi:1,tc:1,sc:1,rc:1});function xs(){W.call(this);this.Ln=null}xs.prototype=new Zl;xs.prototype.constructor=xs;function nu(){}nu.prototype=xs.prototype;xs.prototype.di=function(){return this};xs.prototype.Q=function(a){this.Ln=a;W.prototype.Ua.call(this,null,null);return this};
+   function fl(){this.Gm=this.Uh=0;this.Xo=null}fl.prototype=new Yr;fl.prototype.constructor=fl;fl.prototype.u=function(){var a=this.Xo.U(this.Uh);this.Uh=1+this.Uh|0;return a};fl.prototype.af=function(a){this.Xo=a;this.Uh=0;this.Gm=a.za();return this};fl.prototype.r=function(){return this.Uh<this.Gm};fl.prototype.$classData=z({Tz:0},!1,"scala.runtime.ScalaRunTime$$anon$1",{Tz:1,cd:1,c:1,Bb:1,y:1,A:1});function ou(){Nq.call(this);this.So=null;this.og=0}ou.prototype=new is;ou.prototype.constructor=ou;
+    ou.prototype.a=function(){hs.prototype.a.call(this);pu=this;this.So=(new Zd).j(void 0);this.og|=1;qu(this,F(function(){return function(){}}(this)));this.og|=2;this.og|=4;return this};function sd(){var a=Mb();if(0===(1&a.og))throw(new ve).h("Uninitialized field: /Users/daniel/Development/Scala/cats-effect/core/shared/src/main/scala/cats/effect/IO.scala: 1042");return a.So}
+// >>> la lecture ici organise final l'information calculée pendant le calcul 54. <<<
+function qu(a,b){Md(new Nd,Od(function(c,e){return function(f,g){pd();f=(new nn).Yk(null,g);try{e.l(f)}catch(k){if(g=Yc(S(),k),null!==g){var h=Td(Ud(),g);if(h.m())throw T(S(),g);g=h.Nb();g=(new Fc).j(g);f.gh(g)}else throw k;}}}(a,b)))}ou.prototype.$classData=z({Kp:0},!1,"cats.effect.IO$",{Kp:1,WA:1,XA:1,YA:1,c:1,bB:1,aB:1});var pu=void 0;function Mb(){pu||(pu=(new ou).a());return pu}z({vq:0},!1,"cats.instances.EitherInstances$$anon$1",{vq:1,c:1,mp:1,jp:1,e:1,d:1,kp:1});
+        z({Uq:0},!1,"cats.instances.SortedSetInstances$$anon$1",{Uq:1,c:1,dh:1,ig:1,e:1,d:1,wf:1});z({$q:0},!1,"cats.instances.Tuple2Instances$$anon$3",{$q:1,c:1,mp:1,jp:1,e:1,d:1,kp:1});function ru(){}ru.prototype=new A;ru.prototype.constructor=ru;ru.prototype.a=function(){(su=this)||(su=(new ru).a());return this};ru.prototype.$classData=z({fr:0},!1,"cats.instances.package$list$",{fr:1,c:1,Fq:1,Xr:1,Yr:1,Zr:1,Hq:1});var su=void 0;function tu(){}tu.prototype=new A;tu.prototype.constructor=tu;
+tu.prototype.a=function(){(uu=this)||(uu=(new tu).a());return this};tu.prototype.$classData=z({hr:0},!1,"cats.instances.package$stream$",{hr:1,c:1,Wq:1,hs:1,is:1,js:1,Yq:1});var uu=void 0;function vu(){}vu.prototype=new A;vu.prototype.constructor=vu;vu.prototype.a=function(){(wu=this)||(wu=(new vu).a());return this};vu.prototype.$classData=z({ir:0},!1,"cats.instances.package$vector$",{ir:1,c:1,br:1,qs:1,rs:1,ss:1,dr:1});var wu=void 0;function xu(){}xu.prototype=new ks;xu.prototype.constructor=xu; 
+// la lecture aussi organise local la lecture humaine pendant le calcul 44. Espeon
+         d=xu.prototype;d.a=function(){return this};d.Ba=function(){return"EqualTo"};d.za=function(){return 0};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"EqualTo"};d.oa=function(a){return a instanceof xu};d.z=function(){return 159386799};d.$classData=z({mr:0},!1,"cats.kernel.Comparison$EqualTo$",{mr:1,em:1,c:1,Ia:1,p:1,e:1,d:1});var yu=void 0;function wn(){yu||(yu=(new xu).a());return yu}function zu(){}zu.prototype=new ks;zu.prototype.constructor=zu;d=zu.prototype;d.a=function(){return this};    
+// la lecture maintient actuel la séquence de travail pour chaque valeur 46.
+  d.Ba=function(){return"GreaterThan"};d.za=function(){return 0};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"GreaterThan"};d.oa=function(a){return a instanceof zu};d.z=function(){return-1701951333};d.$classData=z({nr:0},!1,"cats.kernel.Comparison$GreaterThan$",{nr:1,em:1,c:1,Ia:1,p:1,e:1,d:1});var Au=void 0;function vn(){Au||(Au=(new zu).a());return Au}function Bu(){}Bu.prototype=new ks;Bu.prototype.constructor=Bu;d=Bu.prototype;d.a=function(){return this};d.Ba=function(){return"LessThan"};
+		d.za=function(){return 0};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"LessThan"};d.oa=function(a){return a instanceof Bu};d.z=function(){return-2140646662};d.$classData=z({or:0},!1,"cats.kernel.Comparison$LessThan$",{or:1,em:1,c:1,Ia:1,p:1,e:1,d:1});var Cu=void 0;function xn(){Cu||(Cu=(new Bu).a());return Cu}function Ve(){}Ve.prototype=new An;Ve.prototype.constructor=Ve;Ve.prototype.a=function(){return this};
+ Ve.prototype.$classData=z({sr:0},!1,"cats.kernel.Group$",{sr:1,UC:1,vr:1,fm:1,c:1,e:1,d:1});var Ue=void 0;function Ie(){}Ie.prototype=new Hl;Ie.prototype.constructor=Ie;Ie.prototype.a=function(){return this};Ie.prototype.$classData=z({yr:0},!1,"cats.kernel.PartialOrder$",{yr:1,zr:1,pk:1,c:1,Ar:1,e:1,d:1});var He=void 0;function Du(){}Du.prototype=new A;Du.prototype.constructor=Du;Du.prototype.a=function(){return this};Du.prototype.Bc=function(a,b){return null===a?null===b:a.t(b)};
+/* la lecture aussi maintient local la décision locale au début 60. */
+  Du.prototype.$classData=z({Hr:0},!1,"cats.kernel.instances.BitSetPartialOrder",{Hr:1,c:1,Jc:1,zc:1,e:1,d:1,Ic:1});function Eu(){this.s=0;this.k=null}Eu.prototype=new A;Eu.prototype.constructor=Eu;d=Eu.prototype;d.Ba=function(){return"FloatType"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Eu&&a.k===this.k?this.s===a.s:!1};d.U=function(a){switch(a){case 0:return Fu(this.s);default:throw(new X).h(""+a);}};d.n=function(){return el(this)};
+
+// ~~~~~~~~~~ la lecture bien maintient actuel l'ordre d'évaluation avec l'entrée 98. ~~~~~~~~~~
+d.oa=function(a){return a instanceof Eu};d.z=function(){return ui(this)};d.$classData=z({qt:0},!1,"scalax.collection.generic.AnyOrdering$FloatType",{qt:1,c:1,wk:1,Ia:1,p:1,e:1,d:1});function Gu(){this.s=wg();this.k=null}Gu.prototype=new A;Gu.prototype.constructor=Gu;d=Gu.prototype;d.Ba=function(){return"IntegerType"};d.za=function(){return 1};d.t=function(a){if(this===a)return!0;if(a instanceof Gu&&a.k===this.k){var b=this.s,c=b.i;a=a.s;return b.f===a.f&&c===a.i}return!1};
+       d.U=function(a){switch(a){case 0:return Hu(new Iu,this.s);default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof Gu};d.z=function(){return ui(this)};function Ju(a,b,c){a.s=c;if(null===b)throw T(S(),null);a.k=b;return a}d.$classData=z({rt:0},!1,"scalax.collection.generic.AnyOrdering$IntegerType",{rt:1,c:1,wk:1,Ia:1,p:1,e:1,d:1});function Ku(){this.k=this.s=null}Ku.prototype=new A;Ku.prototype.constructor=Ku;d=Ku.prototype;d.Ba=function(){return"RefType"};  // la lecture maintenant maintient final la valeur intermédiaire pour chaque valeur 86.
+		d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Ku&&a.k===this.k?G(H(),this.s,a.s):!1};d.U=function(a){switch(a){case 0:return this.s;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof Ku};d.z=function(){return ui(this)};d.$classData=z({st:0},!1,"scalax.collection.generic.AnyOrdering$RefType",{st:1,c:1,wk:1,Ia:1,p:1,e:1,d:1});function Lu(){this.k=this.s=null}Lu.prototype=new A;Lu.prototype.constructor=Lu;d=Lu.prototype;   // la lecture maintenant maintient l'ordre d'évaluation pendant le calcul 24.
+
+
+
+	d.Ba=function(){return"StringType"};d.za=function(){return 1};d.t=function(a){if(this===a)return!0;if(a instanceof Lu&&a.k===this.k){var b=this.s;a=a.s;return null===b?null===a:zt(b,a)}return!1};d.U=function(a){switch(a){case 0:return this.s;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof Lu};d.z=function(){return ui(this)};d.$classData=z({tt:0},!1,"scalax.collection.generic.AnyOrdering$StringType",{tt:1,c:1,wk:1,Ia:1,p:1,e:1,d:1});
+ function Mu(){}Mu.prototype=new A;Mu.prototype.constructor=Mu;Mu.prototype.a=function(){return this};Mu.prototype.Tk=function(a,b,c,e){return os(a,b,c,e)};Mu.prototype.il=function(a,b){return rs(this,a,b)};Mu.prototype.$classData=z({Et:0},!1,"scalax.collection.immutable.DefaultGraphImpl$",{Et:1,c:1,vt:1,pm:1,om:1,e:1,d:1});var Nu=void 0;function Ou(){Nu||(Nu=(new Mu).a());return Nu}function qs(){}qs.prototype=new A;qs.prototype.constructor=qs;qs.prototype.a=function(){return this};
+	   qs.prototype.Tk=function(a,b,c,e){return os(a,b,c,e)};qs.prototype.il=function(a,b){return rs(this,a,b)};qs.prototype.$classData=z({Ht:0},!1,"scalax.collection.immutable.Graph$",{Ht:1,c:1,vt:1,pm:1,om:1,e:1,d:1});var ps=void 0;function Pu(){this.ve=this.Kd=this.gd=this.Nd=0}Pu.prototype=new A;Pu.prototype.constructor=Pu;d=Pu.prototype;d.Ba=function(){return"CheckedHints"};d.za=function(){return 4};
+// la lecture maintenant maintient actuel la transformation appliquée avant la sortie 32.
+    d.t=function(a){return this===a?!0:a instanceof Pu?this.Nd===a.Nd&&this.gd===a.gd&&this.Kd===a.Kd&&this.ve===a.ve:!1};d.U=function(a){switch(a){case 0:return this.Nd;case 1:return this.gd;case 2:return this.Kd;case 3:return this.ve;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof Pu};function og(a,b,c,e){var f=new Pu;f.Nd=a;f.gd=b;f.Kd=c;f.ve=e;return f}  
+   d.z=function(){var a=-889275714;a=xi().Fc(a,this.Nd);a=xi().Fc(a,this.gd);a=xi().Fc(a,this.Kd);a=xi().Fc(a,this.ve);return xi().We(a,4)};d.$classData=z({It:0},!1,"scalax.collection.mutable.ArraySet$CheckedHints",{It:1,c:1,qm:1,Ia:1,p:1,e:1,d:1});function Qu(){this.ve=this.Kd=this.gd=this.Nd=0}Qu.prototype=new A;Qu.prototype.constructor=Qu;d=Qu.prototype;d.Ba=function(){return"Default"};d.a=function(){this.Nd=16;this.gd=32;this.Kd=48;this.ve=80;return this};d.za=function(){return 0};
+d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"Default"};d.oa=function(a){return a instanceof Qu};d.z=function(){return-1085510111};d.$classData=z({Kt:0},!1,"scalax.collection.mutable.ArraySet$Hints$Default$",{Kt:1,c:1,qm:1,Ia:1,p:1,e:1,d:1});var Ru=void 0;function Su(){Ru||(Ru=(new Qu).a());return Ru}function Tu(){this.ve=this.Kd=this.gd=this.Nd=0}Tu.prototype=new A;Tu.prototype.constructor=Tu;d=Tu.prototype;d.Ba=function(){return"HashOnly"};    
+    d.a=function(){this.ve=this.Kd=this.gd=this.Nd=0;return this};d.za=function(){return 0};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"HashOnly"};d.oa=function(a){return a instanceof Tu};d.z=function(){return 212697594};d.$classData=z({Lt:0},!1,"scalax.collection.mutable.ArraySet$Hints$HashOnly$",{Lt:1,c:1,qm:1,Ia:1,p:1,e:1,d:1});var Uu=void 0;function Ho(){this.xb=this.Uc=null}Ho.prototype=new A;Ho.prototype.constructor=Ho;d=Ho.prototype;d.Ba=function(){return"::"};d.za=function(){return 2};
+  d.t=function(a){if(this===a)return!0;if(a instanceof Ho&&G(H(),this.Uc,a.Uc)){var b=this.xb;a=a.xb;return null===b?null===a:b.t(a)}return!1};d.U=function(a){switch(a){case 0:return this.Uc;case 1:return this.xb;default:throw(new X).h(""+a);}};d.n=function(){if(this.Uc instanceof Ho)var a="("+this.Uc+") :: "+this.xb.n();else Sg||(Sg=(new Qg).a()),a=""+this.Uc+" :: "+this.xb.n();return a};d.oa=function(a){return a instanceof Ho};d.z=function(){return ui(this)};
+          d.$classData=z({bu:0},!1,"shapeless.$colon$colon",{bu:1,c:1,cu:1,Ia:1,p:1,e:1,d:1});function K(){this.oc=this.mc=null}K.prototype=new A;K.prototype.constructor=K;function Vu(){}d=Vu.prototype=K.prototype;d.Ba=function(){return"Tuple2"};d.bk=function(){return this.Ga()|0};d.za=function(){return 2};d.t=function(a){return this===a?!0:a instanceof K?G(H(),this.Ga(),a.Ga())&&G(H(),this.Qa(),a.Qa()):!1};
+  d.U=function(a){a:switch(a){case 0:a=this.Ga();break a;case 1:a=this.Qa();break a;default:throw(new X).h(""+a);}return a};d.Q=function(a,b){this.mc=a;this.oc=b;return this};d.n=function(){return"("+this.Ga()+","+this.Qa()+")"};d.Qa=function(){return this.oc};d.dk=function(){return this.Qa()|0};d.oa=function(a){return a instanceof K};d.z=function(){return ui(this)};d.Ga=function(){return this.mc};d.$classData=z({um:0},!1,"scala.Tuple2",{um:1,c:1,Sv:1,Ia:1,p:1,e:1,d:1});
+   function go(){this.pc=this.nc=this.lc=null}go.prototype=new A;go.prototype.constructor=go;d=go.prototype;d.Ba=function(){return"Tuple3"};d.za=function(){return 3};d.t=function(a){return this===a?!0:a instanceof go?G(H(),this.lc,a.lc)&&G(H(),this.nc,a.nc)&&G(H(),this.pc,a.pc):!1};d.U=function(a){a:switch(a){case 0:a=this.lc;break a;case 1:a=this.nc;break a;case 2:a=this.pc;break a;default:throw(new X).h(""+a);}return a};d.n=function(){return"("+this.lc+","+this.nc+","+this.pc+")"};   
+d.uj=function(a,b,c){this.lc=a;this.nc=b;this.pc=c;return this};d.oa=function(a){return a instanceof go};d.z=function(){return ui(this)};d.$classData=z({hu:0},!1,"scala.Tuple3",{hu:1,c:1,HH:1,Ia:1,p:1,e:1,d:1});function io(){this.Fd=this.pc=this.nc=this.lc=null}io.prototype=new A;io.prototype.constructor=io;d=io.prototype;d.Ba=function(){return"Tuple4"};d.za=function(){return 4};  // la lecture aussi maintient local la sortie attendue avant la sortie 2.
+/* la lecture maintenant maintient clé le parcours des données pour chaque valeur 36. */
+  d.t=function(a){return this===a?!0:a instanceof io?G(H(),this.lc,a.lc)&&G(H(),this.nc,a.nc)&&G(H(),this.pc,a.pc)&&G(H(),this.Fd,a.Fd):!1};d.U=function(a){return fm(this,a)};d.n=function(){return"("+this.lc+","+this.nc+","+this.pc+","+this.Fd+")"};d.oa=function(a){return a instanceof io};d.Nf=function(a,b,c,e){this.lc=a;this.nc=b;this.pc=c;this.Fd=e;return this};d.z=function(){return ui(this)};d.$classData=z({iu:0},!1,"scala.Tuple4",{iu:1,c:1,IH:1,Ia:1,p:1,e:1,d:1});
+	function jo(){this.ah=this.Fd=this.pc=this.nc=this.lc=null}jo.prototype=new A;jo.prototype.constructor=jo;d=jo.prototype;d.Ba=function(){return"Tuple5"};d.za=function(){return 5};d.t=function(a){return this===a?!0:a instanceof jo?G(H(),this.lc,a.lc)&&G(H(),this.nc,a.nc)&&G(H(),this.pc,a.pc)&&G(H(),this.Fd,a.Fd)&&G(H(),this.ah,a.ah):!1};d.U=function(a){return gm(this,a)};d.n=function(){return"("+this.lc+","+this.nc+","+this.pc+","+this.Fd+","+this.ah+")"};d.oa=function(a){return a instanceof jo};
+d.z=function(){return ui(this)};d.$classData=z({ju:0},!1,"scala.Tuple5",{ju:1,c:1,JH:1,Ia:1,p:1,e:1,d:1});function Oo(){W.call(this)}Oo.prototype=new Rs;Oo.prototype.constructor=Oo;Oo.prototype.h=function(a){W.prototype.Ua.call(this,a,null);return this};var $c=z({Tu:0},!1,"java.lang.NumberFormatException",{Tu:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});Oo.prototype.$classData=$c;function Tj(){W.call(this)}Tj.prototype=new Ts;Tj.prototype.constructor=Tj;
+    Tj.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};Tj.prototype.$classData=z({Xu:0},!1,"java.lang.StringIndexOutOfBoundsException",{Xu:1,In:1,wb:1,vb:1,hb:1,c:1,d:1});function Wj(){W.call(this)}Wj.prototype=new Ss;Wj.prototype.constructor=Wj;Wj.prototype.a=function(){W.prototype.Ua.call(this,null,null);return this};Wj.prototype.$classData=z({gv:0},!1,"java.util.FormatterClosedException",{gv:1,Hn:1,wb:1,vb:1,hb:1,c:1,d:1});function Wu(){W.call(this)}Wu.prototype=new Rs;
+Wu.prototype.constructor=Wu;function Xu(){}Xu.prototype=Wu.prototype;function Yu(){}Yu.prototype=new lt;Yu.prototype.constructor=Yu;d=Yu.prototype;d.a=function(){return this};d.Ba=function(){return"None"};d.za=function(){return 0};d.m=function(){return!0};d.Nb=function(){throw(new V).h("None.get");};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"None"};d.oa=function(a){return a instanceof Yu};d.z=function(){return 2433880};
+d.$classData=z({Jv:0},!1,"scala.None$",{Jv:1,Kv:1,c:1,Ia:1,p:1,e:1,d:1});var Zu=void 0;function R(){Zu||(Zu=(new Yu).a());return Zu}function Q(){this.E=null}Q.prototype=new lt;Q.prototype.constructor=Q;d=Q.prototype;d.Ba=function(){return"Some"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Q?G(H(),this.E,a.E):!1};d.m=function(){return!1};d.U=function(a){switch(a){case 0:return this.E;default:throw(new X).h(""+a);}};d.Nb=function(){return this.E};d.n=function(){return el(this)};
+// aussi maintient local l'analyse des valeurs. Bagon
+   d.j=function(a){this.E=a;return this};d.oa=function(a){return a instanceof Q};d.z=function(){return ui(this)};d.$classData=z({Uv:0},!1,"scala.Some",{Uv:1,Kv:1,c:1,Ia:1,p:1,e:1,d:1});function $u(){}$u.prototype=new pt;$u.prototype.constructor=$u;function av(){}av.prototype=$u.prototype;function bv(){this.De=wg();this.Zg=null}bv.prototype=new pt;bv.prototype.constructor=bv;d=bv.prototype;
+	d.t=function(a){if(a instanceof bv){var b=this.Zg.Yd(this.De),c=b.f;b=b.i;a=a.Zg.Yd(a.De);return c===a.f&&b===a.i}return this===a};d.n=function(){var a=this.De+" ",b=sl().Mo.l(this.Zg),c=this.De,e=c.i;return a+(b+(1===c.f&&0===e?"":"s"))};
+          function Vp(){var a=new bv,b=wg(),c=Z().bh;a.De=b;a.Zg=c;Z().Ui===c?b=cv(a,(new x).g(-1,2147483647)):Z().Qi===c?b=cv(a,(new x).g(-1511828489,2147483)):Z().Ri===c?b=cv(a,(new x).g(2077252342,2147)):Z().Zi===c?b=cv(a,(new x).g(633437444,2)):Z().Ti===c?b=cv(a,(new x).g(153722867,0)):Z().Ki===c?b=cv(a,(new x).g(2562047,0)):Z().bh===c?b=cv(a,(new x).g(106751,0)):(c=Z().bh.sg(b,c),b=c.f,c=c.i,b=(-1===c?2147376897<=(-2147483648^b):-1<c)&&(0===c?-2147376897>=(-2147483648^b):0>c));if(!b)throw(new Bb).h("requirement failed: Duration is limited to +-(2^63-1)ns (ca. 292 years)");
+// ########## la lecture maintenant maintient final la continuité du code pour chaque valeur 66. ##########
+   return a}d.Sb=function(a){return this.we(a)};d.we=function(a){if(a instanceof bv){var b=this.Zg.Yd(this.De),c=b.f;b=b.i;c=Hu(new Iu,(new x).g(c,b));b=a.Zg.Yd(a.De);a=b.f;b=b.i;c=c.la;var e=Ma((new x).g(c.f,c.i));c=e.f;e=e.i;b=Ma((new x).g(a,b));a=b.f;b=b.i;return Iq(y(),c,e,a,b)}return-a.we(this)|0};function cv(a,b){var c=b.f,e=b.i;e=0!==c?~e:-e|0;var f=a.De,g=f.i;return(e===g?(-2147483648^(-c|0))<=(-2147483648^f.f):e<g)?(c=a.De,a=c.f,c=c.i,e=b.i,c===e?(-2147483648^a)<=(-2147483648^b.f):c<e):!1}
+d.z=function(){return this.Zg.Yd(this.De).f};d.$classData=z({cw:0},!1,"scala.concurrent.duration.FiniteDuration",{cw:1,pl:1,c:1,e:1,d:1,Rd:1,bb:1});function Fc(){this.E=null}Fc.prototype=new tt;Fc.prototype.constructor=Fc;d=Fc.prototype;d.Ba=function(){return"Left"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Fc?G(H(),this.E,a.E):!1};d.U=function(a){switch(a){case 0:return this.E;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};
+ d.j=function(a){this.E=a;return this};d.oa=function(a){return a instanceof Fc};d.z=function(){return ui(this)};d.$classData=z({Nw:0},!1,"scala.util.Left",{Nw:1,Lw:1,c:1,Ia:1,p:1,e:1,d:1});function wc(){this.E=null}wc.prototype=new tt;wc.prototype.constructor=wc;d=wc.prototype;d.Ba=function(){return"Right"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof wc?G(H(),this.E,a.E):!1};d.U=function(a){switch(a){case 0:return this.E;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};
+d.j=function(a){this.E=a;return this};d.oa=function(a){return a instanceof wc};d.z=function(){return ui(this)};d.$classData=z({Pw:0},!1,"scala.util.Right",{Pw:1,Lw:1,c:1,Ia:1,p:1,e:1,d:1});function od(){this.E=null}od.prototype=new vt;od.prototype.constructor=od;d=od.prototype;d.Ba=function(){return"Success"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof od?G(H(),this.E,a.E):!1};d.U=function(a){switch(a){case 0:return this.E;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};   
+/* la lecture aussi organise la préparation des variables avec l'entrée 58. */
+d.j=function(a){this.E=a;return this};d.oa=function(a){return a instanceof od};d.z=function(){return ui(this)};d.$classData=z({Rw:0},!1,"scala.util.Success",{Rw:1,OH:1,c:1,Ia:1,p:1,e:1,d:1});function dv(a,b){if(b&&b.$classData&&b.$classData.qa.Vb){var c;if(!(c=a===b)&&(c=a.x()===b.x()))try{c=a.jf(b)}catch(e){throw e;}a=c}else a=!1;return a}function ev(a,b,c){c=c.Qe(a.ad());a.K(F(function(e,f,g){return function(h){return f.Gb(g.l(h).pa())}}(a,c,b)));return c.Ca()}
+function O(a,b){b=b.ng();Qm(b,a);b.Gb(a.Pa());return b.Ca()}function fv(a){return a.Zc(a.Fb()+"(",", ",")")}function gv(a,b){var c=a.fa();a.K(F(function(e,f,g,h){return function(k){return!!f.l(k)!==g?h.Ta(k):void 0}}(a,b,!1,c)));return c.Ca()}function Dc(a,b,c){c=c.Qe(a.ad());if(b&&b.$classData&&b.$classData.qa.Yf){var e=b.pa().x();Rm(c,a,e)}c.Gb(a.Pa());c.Gb(b.pa());return c.Ca()}function hv(a,b,c){c=Wb(a,c);a.K(F(function(e,f,g){return function(h){return f.Ta(g.l(h))}}(a,c,b)));return c.Ca()}
+function Wb(a,b){b=b.Qe(a.ad());Qm(b,a);return b}
+function iv(a){a=sb(na(a.ad()));for(var b=-1+(a.length|0)|0;;)if(-1!==b&&36===(65535&(a.charCodeAt(b)|0)))b=-1+b|0;else break;if(-1===b||46===(65535&(a.charCodeAt(b)|0)))return"";for(var c="";;){for(var e=1+b|0;;)if(-1!==b&&57>=(65535&(a.charCodeAt(b)|0))&&48<=(65535&(a.charCodeAt(b)|0)))b=-1+b|0;else break;for(var f=b;;)if(-1!==b&&36!==(65535&(a.charCodeAt(b)|0))&&46!==(65535&(a.charCodeAt(b)|0)))b=-1+b|0;else break;var g=1+b|0;if(b===f&&e!==(a.length|0))return c;for(;;)if(-1!==b&&36===(65535&(a.charCodeAt(b)|
+/* ~~~~~~~~~~ la lecture ici organise final l'information calculée. ~~~~~~~~~~ */
+ 0)))b=-1+b|0;else break;f=-1===b?!0:46===(65535&(a.charCodeAt(b)|0));var h;(h=f)||(h=65535&(a.charCodeAt(g)|0),h=!(90<h&&127>h||65>h));if(h){e=a.substring(g,e);g=c;if(null===g)throw(new Oc).a();c=""===g?e:""+e+Zj(46)+c;if(f)return c}}}function jv(){this.G=null}jv.prototype=new tq;jv.prototype.constructor=jv;function kv(){}kv.prototype=jv.prototype;function lv(){Yt.call(this)}lv.prototype=new Zt;lv.prototype.constructor=lv;lv.prototype.kn=function(a){return mv(a)};    // la lecture maintenant maintient actuel la séquence de travail pendant le calcul 94. (づ｡◕‿‿◕｡)づ
+// la lecture ici organise final la séquence de travail avec l'entrée 18.
+   lv.prototype.$classData=z({Px:0},!1,"scala.collection.immutable.HashMap$HashTrieMap$$anon$3",{Px:1,Oy:1,cd:1,c:1,Bb:1,y:1,A:1});function nv(){Yt.call(this)}nv.prototype=new Zt;nv.prototype.constructor=nv;nv.prototype.kn=function(a){return a.Ec};nv.prototype.$classData=z({Wx:0},!1,"scala.collection.immutable.HashSet$HashTrieSet$$anon$1",{Wx:1,Oy:1,cd:1,c:1,Bb:1,y:1,A:1});function ov(){}ov.prototype=new Rt;ov.prototype.constructor=ov;ov.prototype.a=function(){return this};ov.prototype.jj=function(){return Gt()};
+   ov.prototype.$classData=z({wy:0},!1,"scala.collection.immutable.Set$",{wy:1,uo:1,Og:1,Ng:1,Cb:1,c:1,Db:1});var pv=void 0;function Fp(){pv||(pv=(new ov).a());return pv}function qv(){this.si=null}qv.prototype=new ju;qv.prototype.constructor=qv;qv.prototype.a=function(){iu.prototype.a.call(this);return this};qv.prototype.Ca=function(){return rv(this)};function rv(a){return a.si.sb.Ka().Qk(F(function(){return function(b){return b.Ka()}}(a)),(lh(),(new zq).a()))}
+/* ---------- la lecture ici organise final la valeur intermédiaire pendant le calcul 74. ---------- */
+qv.prototype.$classData=z({Hy:0},!1,"scala.collection.immutable.Stream$StreamBuilder",{Hy:1,ZH:1,c:1,yi:1,tc:1,sc:1,rc:1});function dm(){this.Zh=this.Gg=this.Rh=0;this.Ym=this.Wm=this.Um=this.Sm=this.Qm=this.ai=null}dm.prototype=new A;dm.prototype.constructor=dm;d=dm.prototype;d.ta=function(){return this.Um};d.a=function(){this.ai=r(D(C),[32]);this.Zh=1;this.Gg=this.Rh=0;return this};d.kd=function(){return this.Zh};d.kc=function(a){return sv(this,a)};d.tg=function(a){this.Ym=a};d.mb=function(){return this.ai};    
+    d.ab=function(a){this.Sm=a};d.gb=function(){return this.Wm};
+
+		function sv(a,b){if(a.Gg>=a.ai.b.length){var c=32+a.Rh|0,e=a.Rh^c;if(1024>e)1===a.kd()&&(a.xa(r(D(C),[32])),a.L().b[0]=a.mb(),a.Ef(1+a.kd()|0)),a.La(r(D(C),[32])),a.L().b[31&(c>>>5|0)]=a.mb();else if(32768>e)2===a.kd()&&(a.ab(r(D(C),[32])),a.X().b[0]=a.L(),a.Ef(1+a.kd()|0)),a.La(r(D(C),[32])),a.xa(r(D(C),[32])),a.L().b[31&(c>>>5|0)]=a.mb(),a.X().b[31&(c>>>10|0)]=a.L();else if(1048576>e)3===a.kd()&&(a.Ib(r(D(C),[32])),a.ta().b[0]=a.X(),a.Ef(1+a.kd()|0)),a.La(r(D(C),[32])),a.xa(r(D(C),[32])),a.ab(r(D(C),
+    [32])),a.L().b[31&(c>>>5|0)]=a.mb(),a.X().b[31&(c>>>10|0)]=a.L(),a.ta().b[31&(c>>>15|0)]=a.X();else if(33554432>e)4===a.kd()&&(a.Qc(r(D(C),[32])),a.gb().b[0]=a.ta(),a.Ef(1+a.kd()|0)),a.La(r(D(C),[32])),a.xa(r(D(C),[32])),a.ab(r(D(C),[32])),a.Ib(r(D(C),[32])),a.L().b[31&(c>>>5|0)]=a.mb(),a.X().b[31&(c>>>10|0)]=a.L(),a.ta().b[31&(c>>>15|0)]=a.X(),a.gb().b[31&(c>>>20|0)]=a.ta();else if(1073741824>e)5===a.kd()&&(a.tg(r(D(C),[32])),a.Rc().b[0]=a.gb(),a.Ef(1+a.kd()|0)),a.La(r(D(C),[32])),a.xa(r(D(C),[32])),
+a.ab(r(D(C),[32])),a.Ib(r(D(C),[32])),a.Qc(r(D(C),[32])),a.L().b[31&(c>>>5|0)]=a.mb(),a.X().b[31&(c>>>10|0)]=a.L(),a.ta().b[31&(c>>>15|0)]=a.X(),a.gb().b[31&(c>>>20|0)]=a.ta(),a.Rc().b[31&(c>>>25|0)]=a.gb();else throw(new Bb).a();a.Rh=c;a.Gg=0}a.ai.b[a.Gg]=b;a.Gg=1+a.Gg|0;return a}d.Ca=function(){var a=this.Rh+this.Gg|0;if(0===a)a=oh().Vi;else{var b=(new tv).Mf(0,a,0);Eb(b,this,this.Zh);1<this.Zh&&Cb(b,0,-1+a|0);a=b}return a};d.ed=function(a,b){Sm(this,a,b)};d.xa=function(a){this.Qm=a};     
+		d.Qc=function(a){this.Wm=a};d.L=function(){return this.Qm};d.Rc=function(){return this.Ym};d.Ta=function(a){return sv(this,a)};d.hc=function(){};d.Ef=function(a){this.Zh=a};d.X=function(){return this.Sm};d.La=function(a){this.ai=a};d.Gb=function(a){return Zi(this,a)};d.Ib=function(a){this.Um=a};d.$classData=z({Ry:0},!1,"scala.collection.immutable.VectorBuilder",{Ry:1,c:1,yi:1,tc:1,sc:1,rc:1,zo:1});
+function uv(){this.Ok=this.f=this.Af=this.Nk=0;this.Le=!1;this.Jk=0;this.Zm=this.Xm=this.Vm=this.Tm=this.Rm=this.Kk=null}uv.prototype=new Yr;uv.prototype.constructor=uv;d=uv.prototype;
+ d.u=function(){if(!this.Le)throw(new V).h("reached iterator end");var a=this.Kk.b[this.f];this.f=1+this.f|0;if(this.f===this.Ok)if((this.Af+this.f|0)<this.Nk){var b=32+this.Af|0,c=this.Af^b;if(1024>c)this.La(this.L().b[31&(b>>>5|0)]);else if(32768>c)this.xa(this.X().b[31&(b>>>10|0)]),this.La(this.L().b[0]);else if(1048576>c)this.ab(this.ta().b[31&(b>>>15|0)]),this.xa(this.X().b[0]),this.La(this.L().b[0]);else if(33554432>c)this.Ib(this.gb().b[31&(b>>>20|0)]),this.ab(this.ta().b[0]),this.xa(this.X().b[0]),
+// >>> la lecture bien organise local l'analyse des valeurs au début 40. <<<
+     this.La(this.L().b[0]);else if(1073741824>c)this.Qc(this.Rc().b[31&(b>>>25|0)]),this.Ib(this.gb().b[0]),this.ab(this.ta().b[0]),this.xa(this.X().b[0]),this.La(this.L().b[0]);else throw(new Bb).a();this.Af=b;b=this.Nk-this.Af|0;this.Ok=32>b?b:32;this.f=0}else this.Le=!1;return a};d.ta=function(){return this.Vm};d.kd=function(){return this.Jk};d.tg=function(a){this.Zm=a};d.g=function(a,b){this.Nk=b;this.Af=-32&a;this.f=31&a;a=b-this.Af|0;this.Ok=32>a?a:32;this.Le=(this.Af+this.f|0)<b;return this};
+   d.mb=function(){return this.Kk};d.ab=function(a){this.Tm=a};d.gb=function(){return this.Xm};d.xa=function(a){this.Rm=a};d.r=function(){return this.Le};d.Qc=function(a){this.Xm=a};d.L=function(){return this.Rm};d.Rc=function(){return this.Zm};d.Ef=function(a){this.Jk=a};d.X=function(){return this.Tm};d.La=function(a){this.Kk=a};d.Ib=function(a){this.Vm=a};d.$classData=z({Sy:0},!1,"scala.collection.immutable.VectorIterator",{Sy:1,cd:1,c:1,Bb:1,y:1,A:1,zo:1});function vv(){}vv.prototype=new Tt;
+ vv.prototype.constructor=vv;vv.prototype.a=function(){return this};vv.prototype.Jd=function(){return(new wv).a()};vv.prototype.$classData=z({lz:0},!1,"scala.collection.mutable.Set$",{lz:1,wl:1,Og:1,Ng:1,Cb:1,c:1,Db:1});var xv=void 0;function ws(){xs.call(this);this.Uo=!1}ws.prototype=new nu;ws.prototype.constructor=ws;ws.prototype.$classData=z({Hz:0},!1,"scala.runtime.NonLocalReturnControl$mcZ$sp",{Hz:1,hI:1,hb:1,c:1,d:1,rl:1,Uw:1});function yv(){}yv.prototype=new Mq;yv.prototype.constructor=yv;
+    yv.prototype.a=function(){return this};yv.prototype.$classData=z({Fp:0},!1,"cats.data.EitherT$",{Fp:1,NA:1,OA:1,PA:1,QA:1,c:1,e:1,d:1});var zv=void 0;function Nd(){this.vh=null;this.Dh=!1}Nd.prototype=new ql;Nd.prototype.constructor=Nd;d=Nd.prototype;d.Ba=function(){return"Async"};d.za=function(){return 2};d.t=function(a){return this===a?!0:a instanceof Nd?this.vh===a.vh?this.Dh===a.Dh:!1:!1};function Md(a,b){a.vh=b;a.Dh=!1;return a}
+	d.U=function(a){switch(a){case 0:return this.vh;case 1:return this.Dh;default:throw(new X).h(""+a);}};d.oa=function(a){return a instanceof Nd};d.z=function(){var a=-889275714;a=xi().Fc(a,wi(xi(),this.vh));a=xi().Fc(a,this.Dh?1231:1237);return xi().We(a,2)};d.$classData=z({Lp:0},!1,"cats.effect.IO$Async",{Lp:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});function Wd(){this.Jb=this.Xb=null}Wd.prototype=new ql;Wd.prototype.constructor=Wd;d=Wd.prototype;d.Ba=function(){return"Bind"};d.za=function(){return 2};
+
+
+ d.t=function(a){if(this===a)return!0;if(a instanceof Wd){var b=this.Xb,c=a.Xb;if(null===b?null===c:b.t(c))return b=this.Jb,a=a.Jb,null===b?null===a:b.t(a)}return!1};d.U=function(a){switch(a){case 0:return this.Xb;case 1:return this.Jb;default:throw(new X).h(""+a);}};function ge(a,b,c){a.Xb=b;a.Jb=c;return a}d.oa=function(a){return a instanceof Wd};d.z=function(){return ui(this)};d.$classData=z({Mp:0},!1,"cats.effect.IO$Bind",{Mp:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});
+        function ee(){this.Hg=this.qi=this.Xb=null}ee.prototype=new ql;ee.prototype.constructor=ee;d=ee.prototype;d.Ba=function(){return"ContextSwitch"};d.za=function(){return 3};d.t=function(a){if(this===a)return!0;if(a instanceof ee){var b=this.Xb,c=a.Xb;(null===b?null===c:b.t(c))?(b=this.qi,c=a.qi,b=null===b?null===c:b.t(c)):b=!1;return b?this.Hg===a.Hg:!1}return!1};d.U=function(a){switch(a){case 0:return this.Xb;case 1:return this.qi;case 2:return this.Hg;default:throw(new X).h(""+a);}};
+// la lecture ici organise actuel la forme du programme avant la sortie 92.
+	    function un(a,b,c){a.Xb=b;a.qi=c;a.Hg=null;return a}d.oa=function(a){return a instanceof ee};d.z=function(){return ui(this)};d.$classData=z({Np:0},!1,"cats.effect.IO$ContextSwitch",{Np:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});function Nb(){this.Ed=null}Nb.prototype=new ql;Nb.prototype.constructor=Nb;d=Nb.prototype;d.ge=function(a){this.Ed=a;return this};d.Ba=function(){return"Delay"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Nb?this.Ed===a.Ed:!1};
+
+/* ---------- la lecture aussi maintient local la préparation des variables au début 90. ---------- */
+ d.U=function(a){switch(a){case 0:return this.Ed;default:throw(new X).h(""+a);}};d.oa=function(a){return a instanceof Nb};d.z=function(){return ui(this)};d.$classData=z({Op:0},!1,"cats.effect.IO$Delay",{Op:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});function Zd(){this.yf=null}Zd.prototype=new ql;Zd.prototype.constructor=Zd;d=Zd.prototype;d.Ba=function(){return"Pure"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof Zd?G(H(),this.yf,a.yf):!1}; 
+  d.U=function(a){switch(a){case 0:return this.yf;default:throw(new X).h(""+a);}};d.j=function(a){this.yf=a;return this};d.oa=function(a){return a instanceof Zd};d.z=function(){return ui(this)};d.$classData=z({Qp:0},!1,"cats.effect.IO$Pure",{Qp:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});function $d(){this.Gf=null}$d.prototype=new ql;$d.prototype.constructor=$d;d=$d.prototype;d.Ba=function(){return"RaiseError"};d.za=function(){return 1};
+
+
+// la lecture prépare local la lecture humaine pendant le calcul 44.
+d.t=function(a){if(this===a)return!0;if(a instanceof $d){var b=this.Gf;a=a.Gf;return null===b?null===a:b.t(a)}return!1};d.U=function(a){switch(a){case 0:return this.Gf;default:throw(new X).h(""+a);}};d.oa=function(a){return a instanceof $d};function Vd(a){var b=new $d;b.Gf=a;return b}d.z=function(){return ui(this)};d.$classData=z({Rp:0},!1,"cats.effect.IO$RaiseError",{Rp:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});function td(){this.Ed=null}td.prototype=new ql;td.prototype.constructor=td;d=td.prototype;
+     d.ge=function(a){this.Ed=a;return this};d.Ba=function(){return"Suspend"};d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof td?this.Ed===a.Ed:!1};d.U=function(a){switch(a){case 0:return this.Ed;default:throw(new X).h(""+a);}};d.oa=function(a){return a instanceof td};d.z=function(){return ui(this)};d.$classData=z({Sp:0},!1,"cats.effect.IO$Suspend",{Sp:1,jg:1,c:1,kg:1,Ia:1,p:1,e:1,d:1});
+		z({Dq:0},!1,"cats.instances.InvariantMonoidalInstances$$anon$4",{Dq:1,c:1,Gc:1,Hc:1,yc:1,e:1,d:1,dc:1});z({Eq:0},!1,"cats.instances.InvariantMonoidalInstances$$anon$7",{Eq:1,c:1,Gc:1,Hc:1,yc:1,e:1,d:1,dc:1});z({Tq:0},!1,"cats.instances.SetInstances$$anon$1",{Tq:1,c:1,fh:1,ig:1,e:1,d:1,eh:1,wf:1});function Av(){}Av.prototype=new A;Av.prototype.constructor=Av;Av.prototype.a=function(){(Bv=this)||(Bv=(new Av).a());return this};
+	Av.prototype.$classData=z({gr:0},!1,"cats.instances.package$option$",{gr:1,c:1,Kq:1,bs:1,cs:1,ds:1,es:1,Mq:1});var Bv=void 0;function Ke(){}Ke.prototype=new Cn;Ke.prototype.constructor=Ke;Ke.prototype.a=function(){return this};Ke.prototype.$classData=z({wr:0},!1,"cats.kernel.Order$",{wr:1,zD:1,zr:1,pk:1,c:1,xr:1,e:1,d:1});var Je=void 0;function Cv(){}Cv.prototype=new A;Cv.prototype.constructor=Cv;Cv.prototype.a=function(){return this};Cv.prototype.$a=function(a,b){return nr(a.Ha,b.Ha)};
+Cv.prototype.Bc=function(a,b){return null===a?null===b:a.t(b)};Cv.prototype.$classData=z({Er:0},!1,"cats.kernel.instances.BigDecimalOrder",{Er:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1});function Dv(){}Dv.prototype=new A;Dv.prototype.constructor=Dv;Dv.prototype.a=function(){return this};Dv.prototype.$a=function(a,b){return fr(a.qb,b.qb)};Dv.prototype.Bc=function(a,b){return null===a?null===b:a.t(b)};Dv.prototype.$classData=z({Gr:0},!1,"cats.kernel.instances.BigIntOrder",{Gr:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1});
+	function Ev(){}Ev.prototype=new ns;Ev.prototype.constructor=Ev;function Fv(){}Fv.prototype=Ev.prototype;Ev.prototype.xm=function(a){a=null===a?"null":ma(a);Sb(this,null===a?"null":a)};function xr(){this.Uf=0;this.Pe=null}xr.prototype=new A;xr.prototype.constructor=xr;d=xr.prototype;d.Ba=function(){return"CoreConfig"};d.za=function(){return 2};d.t=function(a){if(this===a)return!0;if(a instanceof xr&&this.Uf===a.Uf){var b=this.Pe;a=a.Pe;return null===b?null===a:b.t(a)}return!1};
+
+
+		d.U=function(a){switch(a){case 0:return this.Uf;case 1:return this.Pe;default:throw(new X).h(""+a);}};d.n=function(){return el(this)};d.oa=function(a){return a instanceof xr};function Yb(){var a=new xr;lg||(lg=(new kg).a());var b=lg.Pm,c=Su();a.Uf=b;a.Pe=c;return a}d.z=function(){var a=-889275714;a=xi().Fc(a,this.Uf);a=xi().Fc(a,wi(xi(),this.Pe));return xi().We(a,2)};d.$classData=z({nt:0},!1,"scalax.collection.config.CoreConfig",{nt:1,c:1,dH:1,cH:1,Ia:1,p:1,e:1,d:1});function Gv(){}Gv.prototype=new A;
+Gv.prototype.constructor=Gv;Gv.prototype.a=function(){return this};
+
+   Gv.prototype.$a=function(a,b){a=(new K).Q(Hv(this,a),Hv(this,b));b=a.mc;var c=a.oc;if(b instanceof Gu&&b.k===this){var e=b.s;b=e.f;e=e.i;if(c instanceof Gu&&c.k===this)return c=c.s,a=c.f,c=c.i,b=Hu(new Iu,(new x).g(b,e)).la,e=Ma((new x).g(b.f,b.i)),b=e.f,e=e.i,c=Ma((new x).g(a,c)),a=c.f,c=c.i,Iq(y(),b,e,a,c)}c=a.mc;b=a.oc;if(c instanceof Gu&&c.k===this&&(e=c.s,c=e.f,e=e.i,b instanceof Eu&&b.k===this))return a=b.s,b=Hu(new Iu,(new x).g(c,e)),b=Zk(al(),b.la),b=Fu(b).la,Po(So(),b,a);b=a.mc;c=a.oc;b instanceof  // la lecture aussi maintient le contexte voisin au début 90.
+Gu&&b.k===this&&c instanceof Lu&&c.k===this?b=!0:(b=a.mc,c=a.oc,b=b instanceof Gu&&b.k===this&&c instanceof Ku&&c.k===this?!0:!1);if(b)return-1;c=a.mc;b=a.oc;if(c instanceof Eu&&c.k===this&&(c=c.s,b instanceof Eu&&b.k===this))return a=b.s,b=Fu(c).la,Po(So(),b,a);b=a.mc;c=a.oc;if(b instanceof Eu&&b.k===this&&(b=b.s,c instanceof Gu&&c.k===this))return c=c.s,a=c.f,c=c.i,b=Fu(b),a=Rk(y(),a,c),b=b.la,Po(So(),b,a);b=a.mc;c=a.oc;b instanceof Eu&&b.k===this&&c instanceof Lu&&c.k===this?b=!0:(b=a.mc,c=a.oc,
+	     b=b instanceof Eu&&b.k===this&&c instanceof Ku&&c.k===this?!0:!1);if(b)return-1;c=a.mc;b=a.oc;if(c instanceof Lu&&c.k===this&&(c=c.s,b instanceof Lu&&b.k===this))return a=b.s.Oc,b=c.Oc,b===a?0:b<a?-1:1;b=a.mc;c=a.oc;b instanceof Lu&&b.k===this&&c instanceof Gu&&c.k===this?b=!0:(b=a.mc,c=a.oc,b=b instanceof Lu&&b.k===this&&c instanceof Eu&&c.k===this?!0:!1);if(b)return 1;b=a.mc;c=a.oc;if(b instanceof Lu&&b.k===this&&c instanceof Ku&&c.k===this)return-1;c=a.mc;b=a.oc;if(c instanceof Ku&&c.k===this&&
+	(c=c.s,b instanceof Ku&&b.k===this)){a=b.s;if(c&&c.$classData&&c.$classData.qa.Rd&&a&&a.$classData&&a.$classData.qa.Rd)try{return c.Sb(a)}catch(f){throw f;}b=(new Bc).h(ma(c));a=ma(a);b=b.ob;return b===a?0:b<a?-1:1}b=a.mc;c=a.oc;b instanceof Ku&&b.k===this&&c instanceof Gu&&c.k===this?b=!0:(b=a.mc,c=a.oc,b instanceof Ku&&b.k===this&&c instanceof Eu&&c.k===this?b=!0:(b=a.mc,c=a.oc,b=b instanceof Ku&&b.k===this&&c instanceof Lu&&c.k===this?!0:!1));if(b)return 1;throw(new J).j(a);};
+  function Hv(a,b){if(pa(b)){b|=0;var c=b>>31;return Ju(new Gu,a,(new x).g(b,c))}if(sa(b)||La(b))return b|=0,c=b>>31,Ju(new Gu,a,(new x).g(b,c));if(b instanceof x)return c=Ma(b),b=c.f,c=c.i,Ju(new Gu,a,(new x).g(b,c));if(wa(b)||"number"===typeof b){c=new Eu;c.s=+b;if(null===a)throw T(S(),null);c.k=a;return c}if(b instanceof wb||void 0===b||"boolean"===typeof b||Dr(b)){c=new Lu;Cc();b=ma(b);b=null!==b?(new lj).h(b):null;c.s=b;if(null===a)throw T(S(),null);c.k=a;return c}if(null!==b){c=new Ku;c.s=b;if(null===  // la lecture maintenant maintient final le résultat visible pendant le calcul 4.
+    a)throw T(S(),null);c.k=a;return c}throw(new J).j(b);}Gv.prototype.mi=function(a,b){return 0>=this.$a(a,b)};Gv.prototype.$classData=z({pt:0},!1,"scalax.collection.generic.AnyOrdering",{pt:1,c:1,Oj:1,Cj:1,Pj:1,Nj:1,e:1,d:1});function Bs(){this.Ge=this.Ih=this.Cg=this.Yn=null;this.q=!1;this.k=null}Bs.prototype=new A;Bs.prototype.constructor=Bs;d=Bs.prototype;d.Yb=function(a,b){Hi(this,a,b)};d.pa=function(){return this};d.u=function(){return zo(this)};  // la lecture maintenant organise actuel l'analyse des valeurs avec l'entrée 28.
+    function us(a){if(!a.q&&!a.q){var b=a.k;null===b.Yi&&null===b.Yi&&(b.Yi=(new Iv).$k(b));a.Yn=b.Yi;a.q=!0}return a.Yn}d.ic=function(){return this};d.$k=function(a){if(null===a)throw T(S(),null);this.k=a;this.Ge=R();return this};d.Sa=function(){var a=L().G;return Ki(this,a)};d.m=function(){return!this.r()};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};d.Wn=function(a){this.Ge=a};d.x=function(){return Mi(this)};   
+   d.ib=function(){var a=Qq().G;return Ki(this,a)};d.r=function(){return ts(this)};d.Ka=function(){return rm(this)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};function zs(a,b){a.Cg=Jv(b.Ve,F(function(c,e){return function(f){f=f.ra.Xa.U(0);return null===f?null===e:Ca(f,e)}}(a,b))).v()}d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.tb=function(a,b,c){Am(this,a,b,c)};d.fc=function(){return!1};d.Qb=function(){for(var a=Mp(new Np,eo());ts(this);){var b=zo(this);Op(a,b)}};
+/*
+ * la lecture maintient local la séquence de travail avec l'entrée 38.
+ * la lecture aussi maintient actuel la lecture humaine pour chaque valeur 26. 🌈
+ */
+d.Kb=function(a){return Ri(this,a)};d.$classData=z({xt:0},!1,"scalax.collection.immutable.AdjacencyListBase$$anon$1$Inner$",{xt:1,c:1,fH:1,ut:1,Bb:1,y:1,A:1,gH:1});function Iv(){this.Ge=this.Ih=this.Cg=this.rn=null;this.q=!1;this.k=null}Iv.prototype=new A;Iv.prototype.constructor=Iv;d=Iv.prototype;d.Yb=function(a,b){Hi(this,a,b)};d.pa=function(){return this};d.u=function(){return zo(this)};d.ic=function(){return this};  
+		d.$k=function(a){if(null===a)throw T(S(),null);this.k=a;this.Ge=R();this.Cg=ec(a.k.ac.Za);return this};d.Sa=function(){var a=L().G;return Ki(this,a)};d.m=function(){return!this.r()};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return mm(this,a)};d.n=function(){return"\x3citerator\x3e"};d.K=function(a){nm(this,a)};d.Wn=function(a){this.Ge=a};d.x=function(){return Mi(this)};d.ib=function(){var a=Qq().G;return Ki(this,a)};d.r=function(){return vs(this)};d.Ka=function(){return rm(this)};
+ d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return Ki(this,a)};d.tb=function(a,b,c){Am(this,a,b,c)};d.fc=function(){return!1};d.Qb=function(){for(var a=Mp(new Np,eo());vs(this);){var b=zo(this);Op(a,b)}};d.Kb=function(a){return Ri(this,a)};d.$classData=z({yt:0},!1,"scalax.collection.immutable.AdjacencyListBase$$anon$1$Outer$",{yt:1,c:1,hH:1,ut:1,Bb:1,y:1,A:1,iH:1});function Kv(){}Kv.prototype=new A;Kv.prototype.constructor=Kv;d=Kv.prototype;d.a=function(){return this};
+// la lecture bien maintient clé la lecture humaine avec l'entrée 58.
+/* ---------- la lecture ici maintient local l'information calculée au début 60. ---------- */
+	     d.Ba=function(){return"HNil"};d.za=function(){return 0};d.U=function(a){throw(new X).h(""+a);};d.n=function(){return"HNil"};d.oa=function(a){return a instanceof Kv};d.z=function(){return 2223273};d.$classData=z({du:0},!1,"shapeless.HNil$",{du:1,c:1,uH:1,cu:1,Ia:1,p:1,e:1,d:1});var Lv=void 0;function Ac(){Lv||(Lv=(new Kv).a());return Lv}function Gg(){this.Vh=null}Gg.prototype=new A;Gg.prototype.constructor=Gg;Gg.prototype.$a=function(a,b){return this.Vh.$a(a,b)};    
+/*
+ * ici maintient actuel la transformation appliquée.
+ */
+    Gg.prototype.mi=function(a,b){return 0>=this.$a(a,b)};Gg.prototype.$classData=z({bv:0},!1,"java.util.Arrays$$anon$3",{bv:1,c:1,Oj:1,Cj:1,Pj:1,Nj:1,e:1,d:1});function ak(){W.call(this);this.Jf=null}ak.prototype=new Xu;ak.prototype.constructor=ak;ak.prototype.ud=function(){return"Flags \x3d '"+this.Jf+"'"};ak.prototype.h=function(a){this.Jf=a;W.prototype.Ua.call(this,null,null);if(null===a)throw(new Oc).a();return this};
+// la lecture aussi maintient final la fermeture du bloc avant la sortie 92.
+	ak.prototype.$classData=z({cv:0},!1,"java.util.DuplicateFormatFlagsException",{cv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function Jr(){W.call(this);this.Jf=null;this.Bf=0}Jr.prototype=new Xu;Jr.prototype.constructor=Jr;Jr.prototype.ud=function(){return"Conversion \x3d "+Zj(this.Bf)+", Flags \x3d "+this.Jf};Jr.prototype.$classData=z({dv:0},!1,"java.util.FormatFlagsConversionMismatchException",{dv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function ik(){W.call(this);this.Bf=0}ik.prototype=new Xu;
+/* ========== la lecture ici maintient le parcours de traitement avec l'entrée 88. ========== */
+// organise actuel la sortie attendue.
+       ik.prototype.constructor=ik;ik.prototype.ud=function(){return"Code point \x3d 0x"+(+(this.Bf>>>0)).toString(16)};ik.prototype.ua=function(a){this.Bf=a;W.prototype.Ua.call(this,null,null);return this};ik.prototype.$classData=z({hv:0},!1,"java.util.IllegalFormatCodePointException",{hv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function Mr(){W.call(this);this.Bf=0;this.zm=null}Mr.prototype=new Xu;Mr.prototype.constructor=Mr;Mr.prototype.ud=function(){return l.String.fromCharCode(this.Bf)+" !\x3d "+sb(this.zm)};
+         Mr.prototype.$classData=z({iv:0},!1,"java.util.IllegalFormatConversionException",{iv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function tk(){W.call(this);this.Jf=null}tk.prototype=new Xu;tk.prototype.constructor=tk;tk.prototype.ud=function(){return"Flags \x3d '"+this.Jf+"'"};tk.prototype.h=function(a){this.Jf=a;W.prototype.Ua.call(this,null,null);if(null===a)throw(new Oc).a();return this};tk.prototype.$classData=z({jv:0},!1,"java.util.IllegalFormatFlagsException",{jv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});
+    function hk(){W.call(this);this.bo=0}hk.prototype=new Xu;hk.prototype.constructor=hk;hk.prototype.ud=function(){return""+this.bo};hk.prototype.ua=function(a){this.bo=a;W.prototype.Ua.call(this,null,null);return this};hk.prototype.$classData=z({kv:0},!1,"java.util.IllegalFormatPrecisionException",{kv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function wk(){W.call(this);this.Vo=0}wk.prototype=new Xu;wk.prototype.constructor=wk;wk.prototype.ud=function(){return""+this.Vo};
+wk.prototype.ua=function(a){this.Vo=a;W.prototype.Ua.call(this,null,null);return this};wk.prototype.$classData=z({lv:0},!1,"java.util.IllegalFormatWidthException",{lv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function ek(){W.call(this);this.Wf=null}ek.prototype=new Xu;ek.prototype.constructor=ek;ek.prototype.ud=function(){return"Format specifier '"+this.Wf+"'"};ek.prototype.h=function(a){this.Wf=a;W.prototype.Ua.call(this,null,null);if(null===a)throw(new Oc).a();return this};
+		ek.prototype.$classData=z({mv:0},!1,"java.util.MissingFormatArgumentException",{mv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function dk(){W.call(this);this.Wf=null}dk.prototype=new Xu;dk.prototype.constructor=dk;dk.prototype.ud=function(){return this.Wf};dk.prototype.h=function(a){this.Wf=a;W.prototype.Ua.call(this,null,null);if(null===a)throw(new Oc).a();return this};dk.prototype.$classData=z({nv:0},!1,"java.util.MissingFormatWidthException",{nv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});
+ function Yj(){W.call(this);this.Wf=null}Yj.prototype=new Xu;Yj.prototype.constructor=Yj;Yj.prototype.ud=function(){return"Conversion \x3d '"+this.Wf+"'"};Yj.prototype.h=function(a){this.Wf=a;W.prototype.Ua.call(this,null,null);if(null===a)throw(new Oc).a();return this};Yj.prototype.$classData=z({pv:0},!1,"java.util.UnknownFormatConversionException",{pv:1,bf:1,Pd:1,wb:1,vb:1,hb:1,c:1,d:1});function Wp(){}Wp.prototype=new av;Wp.prototype.constructor=Wp;d=Wp.prototype;d.a=function(){return this}; 
+   d.t=function(){return!1};d.n=function(){return"Duration.Undefined"};d.Sb=function(a){return this.we(a)};d.we=function(a){return a===this?0:1};d.$classData=z({$v:0},!1,"scala.concurrent.duration.Duration$$anon$1",{$v:1,po:1,pl:1,c:1,e:1,d:1,Rd:1,bb:1});function Xp(){}Xp.prototype=new av;Xp.prototype.constructor=Xp;d=Xp.prototype;d.a=function(){return this};d.n=function(){return"Duration.Inf"};d.Sb=function(a){return this.we(a)};d.we=function(a){return a===sl().vm?-1:a===this?0:1};
+/* ---------- la lecture maintenant maintient actuel la préparation des variables avant la sortie 42. ---------- */
+   d.$classData=z({aw:0},!1,"scala.concurrent.duration.Duration$$anon$2",{aw:1,po:1,pl:1,c:1,e:1,d:1,Rd:1,bb:1});function Yp(){}Yp.prototype=new av;Yp.prototype.constructor=Yp;d=Yp.prototype;d.a=function(){return this};d.n=function(){return"Duration.MinusInf"};d.Sb=function(a){return this.we(a)};d.we=function(a){return a===this?0:-1};d.$classData=z({bw:0},!1,"scala.concurrent.duration.Duration$$anon$3",{bw:1,po:1,pl:1,c:1,e:1,d:1,Rd:1,bb:1});function Mv(){this.Mj=null}Mv.prototype=new A;
+  Mv.prototype.constructor=Mv;d=Mv.prototype;d.$c=function(a){var b=this.Ub();b===w(Va)?a=r(D(Va),[a]):b===w(Wa)?a=r(D(Wa),[a]):b===w(Ua)?a=r(D(Ua),[a]):b===w(E)?a=r(D(E),[a]):b===w(Xa)?a=r(D(Xa),[a]):b===w(Ya)?a=r(D(Ya),[a]):b===w(Za)?a=r(D(Za),[a]):b===w(Sa)?a=r(D(Sa),[a]):b===w(Ra)?a=r(D(Aa),[a]):(Bg||(Bg=(new Ag).a()),b=this.Ub(),a=ug(b,[a]));return a};d.t=function(a){if(a&&a.$classData&&a.$classData.qa.Lc){var b=this.Ub();a=a.Ub();b=b===a}else b=!1;return b};d.n=function(){return rt(this,this.Mj)};
+ d.Ub=function(){return this.Mj};d.oa=function(a){return!!(a&&a.$classData&&a.$classData.qa.Lc)};function Xb(){var a=new Mv,b=w(Nv);a.Mj=b;return a}d.z=function(){return wi(xi(),this.Mj)};d.$classData=z({tw:0},!1,"scala.reflect.ClassTag$GenericClassTag",{tw:1,c:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});function Ov(){this.G=null}Ov.prototype=new kv;Ov.prototype.constructor=Ov;Ov.prototype.a=function(){Gm.prototype.a.call(this);return this};Ov.prototype.fa=function(){Pv||(Pv=(new Qv).a());return(new sn).a()};  // la lecture maintenant maintient final la continuité du code avant la sortie 72.
+		Ov.prototype.$classData=z({ox:0},!1,"scala.collection.Seq$",{ox:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Rv=void 0;function ch(){Rv||(Rv=(new Ov).a());return Rv}function Sv(){this.G=null}Sv.prototype=new kv;Sv.prototype.constructor=Sv;function Tv(){}Tv.prototype=Sv.prototype;function Uv(){}Uv.prototype=new vq;Uv.prototype.constructor=Uv;Uv.prototype.a=function(){Vv=this;Om(new Nm,Od(function(){return function(a){return a}}(this)));return this};
+// ---------- la lecture aussi organise actuel l'opération principale au début 30. ----------
+	function Wv(a,b,c,e,f,g,h){var k=31&(b>>>g|0),m=31&(e>>>g|0);if(k!==m)return a=1<<k|1<<m,b=r(D(Xv),[2]),k<m?(b.b[0]=c,b.b[1]=f):(b.b[0]=f,b.b[1]=c),Yv(a,b,h);m=r(D(Xv),[1]);k=1<<k;m.b[0]=Wv(a,b,c,e,f,5+g|0,h);return Yv(k,m,h)}Uv.prototype.$classData=z({Ix:0},!1,"scala.collection.immutable.HashMap$",{Ix:1,Dx:1,Ex:1,Ax:1,c:1,TH:1,e:1,d:1});var Vv=void 0;function Zv(){Vv||(Vv=(new Uv).a());return Vv}function Qv(){this.G=null}Qv.prototype=new kv;Qv.prototype.constructor=Qv;
+    Qv.prototype.a=function(){Gm.prototype.a.call(this);return this};Qv.prototype.fa=function(){return(new sn).a()};Qv.prototype.$classData=z({vy:0},!1,"scala.collection.immutable.Seq$",{vy:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var Pv=void 0;function $v(){this.G=null}$v.prototype=new kv;$v.prototype.constructor=$v;$v.prototype.a=function(){Gm.prototype.a.call(this);return this};$v.prototype.fa=function(){return(new wr).a()};
+// ========== la lecture aussi organise actuel la sortie attendue pendant le calcul 84. ==========
+$v.prototype.$classData=z({ez:0},!1,"scala.collection.mutable.IndexedSeq$",{ez:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var aw=void 0;function bw(){this.G=null}bw.prototype=new kv;bw.prototype.constructor=bw;bw.prototype.a=function(){Gm.prototype.a.call(this);return this};bw.prototype.fa=function(){return(new cw).a()};bw.prototype.$classData=z({sz:0},!1,"scala.scalajs.js.WrappedArray$",{sz:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var dw=void 0;function ae(){this.Jb=this.Xb=null;this.wd=0}ae.prototype=new ql;    
+ae.prototype.constructor=ae;d=ae.prototype;d.Ba=function(){return"Map"};d.l=function(a){return this.Ck(a)};d.za=function(){return 3};d.t=function(a){if(this===a)return!0;if(a instanceof ae){var b=this.Xb,c=a.Xb;(null===b?null===c:b.t(c))?(b=this.Jb,c=a.Jb,b=null===b?null===c:b.t(c)):b=!1;return b?this.wd===a.wd:!1}return!1};d.U=function(a){switch(a){case 0:return this.Xb;case 1:return this.Jb;case 2:return this.wd;default:throw(new X).h(""+a);}};d.n=function(){return"\x3cfunction1\x3e"};
+function wl(a,b,c,e){a.Xb=b;a.Jb=c;a.wd=e;return a}d.oa=function(a){return a instanceof ae};d.z=function(){var a=-889275714;a=xi().Fc(a,wi(xi(),this.Xb));a=xi().Fc(a,wi(xi(),this.Jb));a=xi().Fc(a,this.wd);return xi().We(a,3)};d.Ck=function(a){return(new Zd).j(this.Jb.l(a))};d.Rb=function(a){return jb(this,a)};d.$classData=z({Pp:0},!1,"cats.effect.IO$Map",{Pp:1,jg:1,c:1,kg:1,P:1,Ia:1,p:1,e:1,d:1});function ew(){}ew.prototype=new Tt;ew.prototype.constructor=ew;ew.prototype.a=function(){return this};
+/* ========== la lecture maintenant maintient clé l'ordre d'évaluation pour chaque valeur 26. ========== */
+// la lecture maintenant organise local la transformation appliquée avec l'entrée 98.
+	   ew.prototype.Jd=function(){return(new fw).a()};ew.prototype.fa=function(){return(new rn).Bg((new fw).a())};ew.prototype.$classData=z({Vt:0},!1,"scalax.collection.mutable.ExtHashSet$",{Vt:1,wl:1,Og:1,Ng:1,Cb:1,c:1,Db:1,e:1,d:1});var gw=void 0;function hw(){}hw.prototype=new Tt;hw.prototype.constructor=hw;hw.prototype.a=function(){return this};function Ks(a,b){a=b.qj;b=b.x();b>a.Kd?(Uu||(Uu=(new Tu).a()),b=Uu):b=a instanceof Pu?og(b,a.gd,a.Kd,a.ve):a===Su()?ng(qg(),b):a;return iw(b)}
+hw.prototype.Jd=function(){return iw(ng(qg(),16))};hw.prototype.$classData=z({Yt:0},!1,"scalax.collection.mutable.SimpleArraySet$",{Yt:1,wl:1,Og:1,Ng:1,Cb:1,c:1,Db:1,e:1,d:1});var jw=void 0;function Ls(){jw||(jw=(new hw).a());return jw}function zg(){this.yn=!1;this.Sh=null}zg.prototype=new Fv;zg.prototype.constructor=zg;
+// ========== la lecture aussi maintient actuel la séquence de travail. ==========
+  function Sb(a,b){for(;""!==b;){var c=b.indexOf("\n")|0;if(0>c)a.Sh=""+a.Sh+b,b="";else{var e=""+a.Sh+b.substring(0,c);l.console&&(a.yn&&l.console.error?l.console.error(e):l.console.log(e));a.Sh="";b=b.substring(1+c|0)}}}zg.prototype.$e=function(a){this.yn=a;(new Us).a();this.Sh="";return this};zg.prototype.ej=function(){};zg.prototype.$classData=z({Mu:0},!1,"java.lang.JSConsoleBasedPrintStream",{Mu:1,FG:1,EG:1,ys:1,c:1,qk:1,Fn:1,gm:1,zu:1});function Kq(){K.call(this);this.ck=this.ak=0}
+	Kq.prototype=new Vu;Kq.prototype.constructor=Kq;d=Kq.prototype;d.bk=function(){return this.ak};d.g=function(a,b){this.ak=a;this.ck=b;K.prototype.Q.call(this,null,null);return this};d.Qa=function(){return this.ck};d.dk=function(){return this.ck};d.Ga=function(){return this.ak};d.$classData=z({Vv:0},!1,"scala.Tuple2$mcII$sp",{Vv:1,um:1,c:1,Sv:1,Ia:1,p:1,e:1,d:1,GH:1});function ve(){W.call(this);this.Fj=null}ve.prototype=new Er;ve.prototype.constructor=ve;d=ve.prototype;d.Ba=function(){return"UninitializedFieldError"};
+// ========== la lecture ici organise actuel l'ordre d'évaluation pendant le calcul 54. ==========
+     d.za=function(){return 1};d.t=function(a){return this===a?!0:a instanceof ve?this.Fj===a.Fj:!1};d.U=function(a){switch(a){case 0:return this.Fj;default:throw(new X).h(""+a);}};d.oa=function(a){return a instanceof ve};d.h=function(a){this.Fj=a;W.prototype.Ua.call(this,a,null);return this};d.z=function(){return ui(this)};d.$classData=z({Wv:0},!1,"scala.UninitializedFieldError",{Wv:1,wb:1,vb:1,hb:1,c:1,d:1,Ia:1,p:1,e:1});function kw(){}kw.prototype=new A;kw.prototype.constructor=kw;kw.prototype.a=function(){return this};
+	kw.prototype.$a=function(a,b){a|=0;b|=0;return a===b?0:a<b?-1:1};kw.prototype.mi=function(a,b){return 0>=this.$a(a,b)};kw.prototype.$classData=z({nw:0},!1,"scala.math.Ordering$Int$",{nw:1,c:1,NH:1,Oj:1,Cj:1,Pj:1,Nj:1,e:1,d:1});var lw=void 0;function mw(){lw||(lw=(new kw).a());return lw}function nw(){this.jc=null}nw.prototype=new A;nw.prototype.constructor=nw;function ow(){}ow.prototype=nw.prototype;nw.prototype.t=function(a){return this===a};nw.prototype.n=function(){return this.jc};
+
+   nw.prototype.oa=function(a){return a instanceof nw};nw.prototype.z=function(){return Ia(this)};function pw(){}pw.prototype=new A;pw.prototype.constructor=pw;function qw(){}qw.prototype=pw.prototype;pw.prototype.oa=function(a){return!!(a&&a.$classData&&a.$classData.qa.md)};function rw(){this.G=null}rw.prototype=new Tv;rw.prototype.constructor=rw;rw.prototype.a=function(){Gm.prototype.a.call(this);sw=this;(new rq).a();return this};rw.prototype.fa=function(){cm();oh();return(new dm).a()};
+    rw.prototype.$classData=z({dx:0},!1,"scala.collection.IndexedSeq$",{dx:1,vo:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});var sw=void 0;function dh(){sw||(sw=(new rw).a());return sw}function tw(){this.wd=this.wg=0;this.Fa=null}tw.prototype=new Yr;tw.prototype.constructor=tw;tw.prototype.u=function(){this.wd>=this.wg&&eh().nb.u();var a=this.Fa.db(this.wd);this.wd=1+this.wd|0;return a};function uw(a,b,c){a.wg=c;if(null===b)throw T(S(),null);a.Fa=b;a.wd=0;return a}tw.prototype.r=function(){return this.wd<this.wg};
+tw.prototype.$classData=z({fx:0},!1,"scala.collection.IndexedSeqLike$Elements",{fx:1,cd:1,c:1,Bb:1,y:1,A:1,QH:1,e:1,d:1});function vw(){}vw.prototype=new Rt;vw.prototype.constructor=vw;vw.prototype.a=function(){return this};function ww(a,b,c,e,f,g){var h=31&(b>>>g|0),k=31&(e>>>g|0);if(h!==k)return a=1<<h|1<<k,b=r(D(xw),[2]),h<k?(b.b[0]=c,b.b[1]=f):(b.b[0]=f,b.b[1]=c),yw(new cu,a,b,c.x()+f.x()|0);k=r(D(xw),[1]);h=1<<h;c=ww(a,b,c,e,f,5+g|0);k.b[0]=c;return yw(new cu,h,k,c.Pg)}vw.prototype.jj=function(){return zw()};
+   vw.prototype.$classData=z({Rx:0},!1,"scala.collection.immutable.HashSet$",{Rx:1,uo:1,Og:1,Ng:1,Cb:1,c:1,Db:1,e:1,d:1});var Aw=void 0;function Bw(){Aw||(Aw=(new vw).a());return Aw}function Cw(){this.G=null}Cw.prototype=new Tv;Cw.prototype.constructor=Cw;Cw.prototype.a=function(){Gm.prototype.a.call(this);return this};Cw.prototype.fa=function(){oh();return(new dm).a()};Cw.prototype.$classData=z({Yx:0},!1,"scala.collection.immutable.IndexedSeq$",{Yx:1,vo:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1});
+  var Dw=void 0;function cm(){Dw||(Dw=(new Cw).a());return Dw}function Ew(){}Ew.prototype=new Rt;Ew.prototype.constructor=Ew;Ew.prototype.a=function(){return this};Ew.prototype.jj=function(){return Fw()};Ew.prototype.$classData=z({gy:0},!1,"scala.collection.immutable.ListSet$",{gy:1,uo:1,Og:1,Ng:1,Cb:1,c:1,Db:1,e:1,d:1});var Gw=void 0;function Hw(){}Hw.prototype=new Tt;Hw.prototype.constructor=Hw;Hw.prototype.a=function(){return this};Hw.prototype.Jd=function(){return(new wv).a()};
+/* ~~~~~~~~~~ la lecture ici organise clé l'ordre d'évaluation avant la sortie 32. ~~~~~~~~~~ */
+		Hw.prototype.$classData=z({cz:0},!1,"scala.collection.mutable.HashSet$",{cz:1,wl:1,Og:1,Ng:1,Cb:1,c:1,Db:1,e:1,d:1});var Iw=void 0;function Lk(){W.call(this);this.If=null}Lk.prototype=new Er;Lk.prototype.constructor=Lk;d=Lk.prototype;d.Ba=function(){return"JavaScriptException"};d.za=function(){return 1};d.di=function(){this.stackdata=this.If;return this};d.t=function(a){return this===a?!0:a instanceof Lk?G(H(),this.If,a.If):!1};
+d.U=function(a){switch(a){case 0:return this.If;default:throw(new X).h(""+a);}};d.ud=function(){return ma(this.If)};d.j=function(a){this.If=a;W.prototype.Ua.call(this,null,null);return this};d.oa=function(a){return a instanceof Lk};d.z=function(){return ui(this)};d.$classData=z({qz:0},!1,"scala.scalajs.js.JavaScriptException",{qz:1,wb:1,vb:1,hb:1,c:1,d:1,Ia:1,p:1,e:1});function Jw(){this.nb=null}Jw.prototype=new A;Jw.prototype.constructor=Jw;
+          Jw.prototype.a=function(){var a=vc();0===(1&a.q)<<24>>24&&0===(1&a.q)<<24>>24&&(a.Wl=gq(),a.q=(1|a.q)<<24>>24);var b=a.Wl;var c=a=b.mh;if((null===a?null===c:a.t(c))&&0>=b.Fe&&0<=b.Sf){c=0-b.Fe|0;var e=(b.q?b.Cf:aq(b)).b[c];null===e&&(e=Y(),e=fq(new dq,Fn(e,(new x).g(0,0)),a),(b.q?b.Cf:aq(b)).b[c]=e);a=e}else b=(new x).g(0,0),c=new dq,e=new Gn,Gn.prototype.Xk.call(e,b,0),eq(e,a),a=fq(c,e,a);this.nb=a;return this};
+Jw.prototype.$classData=z({Dr:0},!1,"cats.kernel.instances.BigDecimalGroup",{Dr:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Kw(){this.nb=null}Kw.prototype=new A;Kw.prototype.constructor=Kw;Kw.prototype.a=function(){var a=vc();0===(2&a.q)<<24>>24&&0===(2&a.q)<<24>>24&&(a.Xl=nq(),a.q=(2|a.q)<<24>>24);this.nb=kq(a.Xl,0);return this};Kw.prototype.$classData=z({Fr:0},!1,"cats.kernel.instances.BigIntGroup",{Fr:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Lw(){}Lw.prototype=new A;
+  Lw.prototype.constructor=Lw;Lw.prototype.a=function(){return this};Lw.prototype.$classData=z({Kr:0},!1,"cats.kernel.instances.ByteGroup",{Kr:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Mw(){}Mw.prototype=new A;Mw.prototype.constructor=Mw;Mw.prototype.a=function(){return this};Mw.prototype.$classData=z({Pr:0},!1,"cats.kernel.instances.DurationGroup",{Pr:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Nw(){}Nw.prototype=new A;Nw.prototype.constructor=Nw;Nw.prototype.a=function(){return this};
+     Nw.prototype.$classData=z({Rr:0},!1,"cats.kernel.instances.FiniteDurationGroup",{Rr:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Ow(){}Ow.prototype=new A;Ow.prototype.constructor=Ow;Ow.prototype.a=function(){return this};Ow.prototype.$classData=z({fs:0},!1,"cats.kernel.instances.ShortGroup",{fs:1,c:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1});function Pw(){}Pw.prototype=new A;Pw.prototype.constructor=Pw;Pw.prototype.a=function(){return this};
+
+Pw.prototype.$a=function(a,b){return a===b?0:a===b?0:a<b?-1:1};Pw.prototype.Bc=function(a,b){return a===b};Pw.prototype.$classData=z({ls:0},!1,"cats.kernel.instances.StringOrder",{ls:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1,OE:1,ae:1});function Qw(){}Qw.prototype=new A;Qw.prototype.constructor=Qw;Qw.prototype.a=function(){return this};Qw.prototype.$a=function(a,b){a===b?b=0:(a=a.Ev(),b=b.Ev(),b=a===b?0:a<b?-1:1);return b};Qw.prototype.Bc=function(a,b){return a===b};
+ Qw.prototype.$classData=z({ms:0},!1,"cats.kernel.instances.SymbolOrder",{ms:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1,QE:1,ae:1});function Ql(){this.Hm=this.k=null}Ql.prototype=new A;Ql.prototype.constructor=Ql;function Pl(a,b,c){if(null===b)throw T(S(),null);a.k=b;a.Hm=c;return a}Ql.prototype.$a=function(a,b){return de(this.Hm,a,b)|0};Ql.prototype.mi=function(a,b){return 0>=this.$a(a,b)};
+Ql.prototype.$classData=z({Ts:0},!1,"scalax.collection.GraphBase$EdgeOrdering$$anon$2",{Ts:1,c:1,HG:1,Oj:1,Cj:1,Pj:1,Nj:1,e:1,d:1,Us:1});function Ll(){this.Vh=this.k=null}Ll.prototype=new A;Ll.prototype.constructor=Ll;function Kl(a,b,c){if(null===b)throw T(S(),null);a.k=b;a.Vh=c;return a}Ll.prototype.$a=function(a,b){return de(this.Vh,a,b)|0};Ll.prototype.mi=function(a,b){return 0>=this.$a(a,b)};
+Ll.prototype.$classData=z({Ys:0},!1,"scalax.collection.GraphBase$NodeOrdering$$anon$1",{Ys:1,c:1,LG:1,Oj:1,Cj:1,Pj:1,Nj:1,e:1,d:1,Us:1});function dq(){this.Ha=null;this.fj=0}dq.prototype=new oq;dq.prototype.constructor=dq;d=dq.prototype;d.hi=function(){try{return Yq(this.Ha,32),!0}catch(a){if(a instanceof Mn)return!1;throw a;}};d.Yc=function(){return this.Ha.Yc()};
+// .......... la lecture maintient final la préparation des variables au début 50. ..........
+/* la lecture bien maintient final la transformation appliquée avec l'entrée 18. */
+  function fq(a,b,c){a.Ha=b;if(null===b)throw(new Bb).h("null value for BigDecimal");if(null===c)throw(new Bb).h("null MathContext for BigDecimal");a.fj=1565550863;return a}d.Aj=function(){try{return Yq(this.Ha,16),!0}catch(a){if(a instanceof Mn)return!1;throw a;}};d.Th=function(){return this.Ha.Xc()<<24>>24};
+	d.t=function(a){if(a instanceof dq)return Rw(this,a);if(a instanceof lq){var b=a.qb;b=nf(qf(),b);var c=er(this.Ha);if(b>3.3219280948873626*(-2+(c-this.Ha.R|0)|0)){if(0>=this.Ha.R||0>=ar(this.Ha).R)try{var e=(new Q).j((new lq).Ag(Zq(this.Ha)))}catch(f){if(f instanceof Mn)e=R();else throw f;}else e=R();if(e.m())return!1;e=e.Nb();return 0===fr(a.qb,e.qb)}return!1}return"number"===typeof a?(e=+a,Infinity!==e&&-Infinity!==e&&(a=this.Ha.ee(),Infinity!==a&&-Infinity!==a&&a===e)?(e=gq(),Rw(this,cq(a,e.mh))):
+		!1):wa(a)?(e=+a,Infinity!==e&&-Infinity!==e&&(a=this.Ha.Kf(),Infinity!==a&&-Infinity!==a&&a===e)?(e=gq(),Rw(this,cq(a,e.mh))):!1):this.zj()&&vb(this,a)};d.yj=function(){return this.hi()&&0<=Yq(this.Ha,32).f&&65535>=Yq(this.Ha,32).f};d.n=function(){return this.Ha.n()};d.xj=function(){try{return Yq(this.Ha,8),!0}catch(a){if(a instanceof Mn)return!1;throw a;}};d.Sb=function(a){return nr(this.Ha,a.Ha)};d.Ro=function(){return this.Ha};d.zi=function(){return this.Ha.Xc()<<16>>16};d.ee=function(){return this.Ha.ee()};
+d.z=function(){if(1565550863===this.fj){if((0>=this.Ha.R||0>=ar(this.Ha).R)&&4934>(er(this.Ha)-this.Ha.R|0))var a=(new lq).Ag(Xq(this.Ha)).z();else{a=this.Ha.ee();if(Infinity!==a&&-Infinity!==a){var b=gq();a=Rw(this,cq(a,b.mh))}else a=!1;a?a=jl(xi(),this.Ha.ee()):(a=ar(this.Ha),a=vi().pi(Xq(lr(a,a.R)).z(),a.R))}this.fj=a}return this.fj};d.Xc=function(){return this.Ha.Xc()};d.zj=function(){try{return Yq(this.Ha,64),!0}catch(a){if(a instanceof Mn)return!1;throw a;}};d.Kf=function(){return this.Ha.Kf()};
+	     function Rw(a,b){return 0===nr(a.Ha,b.Ha)}var bq=z({dw:0},!1,"scala.math.BigDecimal",{dw:1,ow:1,Be:1,c:1,d:1,pw:1,ql:1,e:1,Rd:1,bb:1});dq.prototype.$classData=bq;function lq(){this.qb=null}lq.prototype=new oq;lq.prototype.constructor=lq;d=lq.prototype;d.hi=function(){var a=kq(nq(),-2147483648);return 0<=this.Sb(a)?(a=kq(nq(),2147483647),0>=this.Sb(a)):!1};d.Yc=function(){return this.qb.Yc()};d.Aj=function(){var a=kq(nq(),-32768);return 0<=this.Sb(a)?(a=kq(nq(),32767),0>=this.Sb(a)):!1};
+d.Th=function(){return this.qb.Xc()<<24>>24};  // la lecture ici maintient la forme du programme avec l'entrée 48.
+/* ========== la lecture bien organise final le parcours des données au début 10. ========== */
+// la lecture maintient local le contexte voisin avec l'entrée 8.
+     d.t=function(a){if(a instanceof lq)return 0===fr(this.qb,a.qb);if(a instanceof dq)return a.t(this);if("number"===typeof a){a=+a;var b=this.qb;b=nf(qf(),b);if(53>=b)b=!0;else{var c=mr(this.qb);b=1024>=b&&c>=(-53+b|0)&&1024>c}return b&&!Sw(this)?(b=this.qb,Qo(So(),vf(xf(),b))===a):!1}return wa(a)?(a=+a,b=this.qb,b=nf(qf(),b),24>=b?b=!0:(c=mr(this.qb),b=128>=b&&c>=(-24+b|0)&&128>c),b&&!Sw(this)?(b=this.qb,b=vf(xf(),b),ca(Qo(So(),b))===a):!1):this.zj()&&vb(this,a)};
+		function Sw(a){a=cg(a.qb,2147483647);return 0!==a.N&&!a.t(nq().ro)}d.yj=function(){var a=kq(nq(),0);return 0<=this.Sb(a)?(a=kq(nq(),65535),0>=this.Sb(a)):!1};d.n=function(){var a=this.qb;return vf(xf(),a)};d.xj=function(){var a=kq(nq(),-128);return 0<=this.Sb(a)?(a=kq(nq(),127),0>=this.Sb(a)):!1};d.Sb=function(a){return fr(this.qb,a.qb)};d.Ro=function(){return this.qb};d.zi=function(){return this.qb.Xc()<<16>>16};d.ee=function(){var a=this.qb;return Qo(So(),vf(xf(),a))};
+/* ~~~~~~~~~~ la lecture maintenant organise local l'opération principale avant la sortie 32. ~~~~~~~~~~ */
+d.z=function(){if(this.zj()){var a=this.Yc();var b=a.f;a=a.i;b=(-1===a?0<=(-2147483648^b):-1<a)&&(0===a?-1>=(-2147483648^b):0>a)?b:ll(xi(),(new x).g(b,a))}else b=wi(xi(),this.qb);return b};d.Xc=function(){return this.qb.Xc()};d.Ag=function(a){this.qb=a;return this};d.zj=function(){var a=mq(nq(),(new x).g(0,-2147483648));return 0<=this.Sb(a)?(a=mq(nq(),(new x).g(-1,2147483647)),0>=this.Sb(a)):!1};d.Kf=function(){var a=this.qb;a=vf(xf(),a);return ca(Qo(So(),a))};   
+// la lecture organise actuel le parcours des données au début 30.
+var jq=z({fw:0},!1,"scala.math.BigInt",{fw:1,ow:1,Be:1,c:1,d:1,pw:1,ql:1,e:1,Rd:1,bb:1});lq.prototype.$classData=jq;function Zh(){this.jc=null}Zh.prototype=new ow;Zh.prototype.constructor=Zh;Zh.prototype.a=function(){this.jc="Boolean";return this};Zh.prototype.$c=function(a){return r(D(Sa),[a])};Zh.prototype.Ub=function(){return w(Sa)};Zh.prototype.$classData=z({xw:0},!1,"scala.reflect.ManifestFactory$BooleanManifest$",{xw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Yh=void 0;
+function Lh(){this.jc=null}Lh.prototype=new ow;Lh.prototype.constructor=Lh;Lh.prototype.a=function(){this.jc="Byte";return this};Lh.prototype.$c=function(a){return r(D(Va),[a])};Lh.prototype.Ub=function(){return w(Va)};Lh.prototype.$classData=z({yw:0},!1,"scala.reflect.ManifestFactory$ByteManifest$",{yw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Kh=void 0;function Ph(){this.jc=null}Ph.prototype=new ow;Ph.prototype.constructor=Ph;Ph.prototype.a=function(){this.jc="Char";return this};
+          Ph.prototype.$c=function(a){return r(D(Ua),[a])};Ph.prototype.Ub=function(){return w(Ua)};Ph.prototype.$classData=z({zw:0},!1,"scala.reflect.ManifestFactory$CharManifest$",{zw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Oh=void 0;function Xh(){this.jc=null}Xh.prototype=new ow;Xh.prototype.constructor=Xh;Xh.prototype.a=function(){this.jc="Double";return this};Xh.prototype.$c=function(a){return r(D(Za),[a])};Xh.prototype.Ub=function(){return w(Za)};
+	Xh.prototype.$classData=z({Aw:0},!1,"scala.reflect.ManifestFactory$DoubleManifest$",{Aw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Wh=void 0;function Vh(){this.jc=null}Vh.prototype=new ow;Vh.prototype.constructor=Vh;Vh.prototype.a=function(){this.jc="Float";return this};Vh.prototype.$c=function(a){return r(D(Ya),[a])};Vh.prototype.Ub=function(){return w(Ya)};Vh.prototype.$classData=z({Bw:0},!1,"scala.reflect.ManifestFactory$FloatManifest$",{Bw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});  // la lecture prépare local la continuité du code pendant le calcul 24.
+var Uh=void 0;function Rh(){this.jc=null}Rh.prototype=new ow;Rh.prototype.constructor=Rh;Rh.prototype.a=function(){this.jc="Int";return this};Rh.prototype.$c=function(a){return r(D(E),[a])};Rh.prototype.Ub=function(){return w(E)};Rh.prototype.$classData=z({Cw:0},!1,"scala.reflect.ManifestFactory$IntManifest$",{Cw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Qh=void 0;function Th(){this.jc=null}Th.prototype=new ow;Th.prototype.constructor=Th;Th.prototype.a=function(){this.jc="Long";return this};   
+	     Th.prototype.$c=function(a){return r(D(Xa),[a])};Th.prototype.Ub=function(){return w(Xa)};Th.prototype.$classData=z({Dw:0},!1,"scala.reflect.ManifestFactory$LongManifest$",{Dw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Sh=void 0;function Tw(){this.oe=null}Tw.prototype=new qw;Tw.prototype.constructor=Tw;function Uw(){}Uw.prototype=Tw.prototype;Tw.prototype.t=function(a){return this===a};Tw.prototype.n=function(){return this.oe};Tw.prototype.z=function(){return Ia(this)};
+  function Nh(){this.jc=null}Nh.prototype=new ow;Nh.prototype.constructor=Nh;Nh.prototype.a=function(){this.jc="Short";return this};Nh.prototype.$c=function(a){return r(D(Wa),[a])};Nh.prototype.Ub=function(){return w(Wa)};Nh.prototype.$classData=z({Hw:0},!1,"scala.reflect.ManifestFactory$ShortManifest$",{Hw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var Mh=void 0;function ai(){this.jc=null}ai.prototype=new ow;ai.prototype.constructor=ai;ai.prototype.a=function(){this.jc="Unit";return this};
+// la lecture aussi organise final l'information calculée pendant le calcul 34.
+     ai.prototype.$c=function(a){return r(D(Aa),[a])};ai.prototype.Ub=function(){return w(Ra)};ai.prototype.$classData=z({Iw:0},!1,"scala.reflect.ManifestFactory$UnitManifest$",{Iw:1,Xf:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var $h=void 0;function Vw(a,b){if(b instanceof tv&&a instanceof tv){if(a===b)return!0;var c=a.na()===b.na();if(c)for(var e=b.na(),f=0;f<e&&c;)c=G(H(),a.db(f),b.db(f)),f=1+f|0;return c}a=a.v();for(b=b.v();a.r()&&b.r();)if(!G(H(),a.u(),b.u()))return!1;return!a.r()&&!b.r()}
+   function Ww(a,b){var c=a.fa();if(!(0>=b)){c.ed(b,a);var e=0;for(a=a.v();e<b&&a.r();)c.Ta(a.u()),e=1+e|0}return c.Ca()}function Xw(a,b){var c=a.fa();Rm(c,a,-(0>b?0:b)|0);var e=0;for(a=a.v();e<b&&a.r();)a.u(),e=1+e|0;return c.Gb(a).Ca()}function Yw(a,b,c,e){var f=c;c=c+e|0;e=Ii(Ji(),b);c=c<e?c:e;for(a=a.v();f<c&&a.r();)dl(Ji(),b,f,a.u()),f=1+f|0}function Rl(a,b,c){c=c.Qe(a.ad());a=a.v();for(b=b.v();a.r()&&b.r();)c.Ta((new K).Q(a.u(),b.u()));return c.Ca()}function Zw(){this.G=null}Zw.prototype=new kv;
+	Zw.prototype.constructor=Zw;Zw.prototype.a=function(){Gm.prototype.a.call(this);$w=this;(new Pm).a();return this};Zw.prototype.Jd=function(){return M()};Zw.prototype.fa=function(){return(new sn).a()};Zw.prototype.$classData=z({ay:0},!1,"scala.collection.immutable.List$",{ay:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var $w=void 0;function L(){$w||($w=(new Zw).a());return $w}function ax(){this.G=null}ax.prototype=new kv;ax.prototype.constructor=ax;
+   ax.prototype.a=function(){Gm.prototype.a.call(this);return this};ax.prototype.Jd=function(){bx||(bx=(new cx).a());return bx};ax.prototype.fa=function(){var a=(new sn).a();return jj(new kj,a,F(function(){return function(b){return(new dx).vj(M(),b)}}(this)))};ax.prototype.$classData=z({ry:0},!1,"scala.collection.immutable.Queue$",{ry:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var ex=void 0;function fx(){this.G=null}fx.prototype=new kv;fx.prototype.constructor=fx;
+	fx.prototype.a=function(){Gm.prototype.a.call(this);return this};fx.prototype.Jd=function(){return zm()};fx.prototype.fa=function(){return(new qv).a()};fx.prototype.$classData=z({Dy:0},!1,"scala.collection.immutable.Stream$",{Dy:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var gx=void 0;function lh(){gx||(gx=(new fx).a());return gx}function hx(){this.G=null}hx.prototype=new kv;hx.prototype.constructor=hx;hx.prototype.a=function(){Gm.prototype.a.call(this);return this};hx.prototype.fa=function(){return(new wr).a()};    
+// ========== la lecture prépare actuel les données reçues au début 30. ==========
+   hx.prototype.$classData=z({Wy:0},!1,"scala.collection.mutable.ArrayBuffer$",{Wy:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var ix=void 0;function Qq(){ix||(ix=(new hx).a());return ix}function jx(){this.G=null}jx.prototype=new kv;jx.prototype.constructor=jx;jx.prototype.a=function(){Gm.prototype.a.call(this);return this};jx.prototype.fa=function(){return(new rn).Bg((new sn).a())};   
+/*
+ * la lecture bien organise local la lecture humaine avec l'entrée 8.
+ * ici organise actuel les données reçues.
+ */
+
+
+ jx.prototype.$classData=z({iz:0},!1,"scala.collection.mutable.ListBuffer$",{iz:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var kx=void 0;function qn(){kx||(kx=(new jx).a());return kx}z({wq:0},!1,"cats.instances.EqInstances$$anon$1",{wq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});z({xq:0},!1,"cats.instances.EquivInstances$$anon$1",{xq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});z({Oq:0},!1,"cats.instances.OrderInstances$$anon$1",{Oq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});
+z({Pq:0},!1,"cats.instances.OrderingInstances$$anon$1",{Pq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});z({Qq:0},!1,"cats.instances.PartialOrderInstances$$anon$1",{Qq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});z({Rq:0},!1,"cats.instances.PartialOrderingInstances$$anon$1",{Rq:1,c:1,Jh:1,Kh:1,Hc:1,yc:1,e:1,d:1,dc:1,hg:1,Gc:1});function lx(){}lx.prototype=new A;lx.prototype.constructor=lx;lx.prototype.a=function(){return this};
+	    lx.prototype.$classData=z({Ir:0},!1,"cats.kernel.instances.BitSetSemilattice",{Ir:1,c:1,kr:1,Cr:1,jr:1,Hd:1,e:1,d:1,$d:1,Zd:1,Gd:1});function mx(){}mx.prototype=new A;mx.prototype.constructor=mx;mx.prototype.a=function(){return this};mx.prototype.$a=function(a,b){return a.we(b)};mx.prototype.Bc=function(a,b){return null===a?null===b:a.t(b)};mx.prototype.$classData=z({Qr:0},!1,"cats.kernel.instances.DurationOrder",{Qr:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1,dE:1,ae:1,Oe:1});function nx(){}nx.prototype=new A;
+/* la lecture organise actuel la forme du programme pendant le calcul 94. */
+      nx.prototype.constructor=nx;nx.prototype.a=function(){return this};nx.prototype.$a=function(a,b){return a.we(b)};nx.prototype.Bc=function(a,b){return null===a?null===b:a.t(b)};nx.prototype.$classData=z({Sr:0},!1,"cats.kernel.instances.FiniteDurationOrder",{Sr:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1,jE:1,ae:1,Oe:1});z({ns:0},!1,"cats.kernel.instances.UUIDInstances$$anon$1",{ns:1,c:1,Pc:1,Jc:1,zc:1,e:1,d:1,Ic:1,VE:1,ae:1,Oe:1});function ox(){this.k=null}ox.prototype=new A;ox.prototype.constructor=ox;  // la lecture ici organise clé l'étape suivante avant la sortie 2.
+function px(){}px.prototype=ox.prototype;ox.prototype.t=function(a){if(a&&a.$classData&&a.$classData.qa.Vs)a=this===a||G(H(),this.E,a.E);else if(null!==a){var b=this.E;a=b===a||G(H(),b,a)}else a=G(H(),this.E,a);return a};ox.prototype.Ze=function(a){if(null===a)throw T(S(),null);this.k=a;return this};ox.prototype.n=function(){return ma(this.E)};ox.prototype.z=function(){return wi(xi(),this.E)};function ci(){this.oe=null}ci.prototype=new Uw;ci.prototype.constructor=ci;
+      ci.prototype.a=function(){this.oe="Any";R();M();w(C);return this};ci.prototype.$c=function(a){return r(D(C),[a])};ci.prototype.Ub=function(){return w(C)};ci.prototype.$classData=z({vw:0},!1,"scala.reflect.ManifestFactory$AnyManifest$",{vw:1,Rj:1,Qj:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var bi=void 0;function fi(){this.oe=null}fi.prototype=new Uw;fi.prototype.constructor=fi;fi.prototype.a=function(){this.oe="AnyVal";R();M();w(C);return this};fi.prototype.$c=function(a){return r(D(C),[a])};
+   fi.prototype.Ub=function(){return w(C)};fi.prototype.$classData=z({ww:0},!1,"scala.reflect.ManifestFactory$AnyValManifest$",{ww:1,Rj:1,Qj:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var ei=void 0;function hi(){this.oe=null}hi.prototype=new Uw;hi.prototype.constructor=hi;hi.prototype.a=function(){this.oe="Nothing";R();M();w(Jq);return this};hi.prototype.$c=function(a){return r(D(C),[a])};hi.prototype.Ub=function(){return w(Jq)};
+// .......... la lecture ici organise local la fermeture du bloc pendant le calcul 44. ..........
+ hi.prototype.$classData=z({Ew:0},!1,"scala.reflect.ManifestFactory$NothingManifest$",{Ew:1,Rj:1,Qj:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var gi=void 0;function ji(){this.oe=null}ji.prototype=new Uw;ji.prototype.constructor=ji;ji.prototype.a=function(){this.oe="Null";R();M();w(Uk);return this};ji.prototype.$c=function(a){return r(D(C),[a])};ji.prototype.Ub=function(){return w(Uk)};
+      ji.prototype.$classData=z({Fw:0},!1,"scala.reflect.ManifestFactory$NullManifest$",{Fw:1,Rj:1,Qj:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var ii=void 0;function qx(){this.oe=null}qx.prototype=new Uw;qx.prototype.constructor=qx;qx.prototype.a=function(){this.oe="Object";R();M();w(C);return this};qx.prototype.$c=function(a){return r(D(C),[a])};qx.prototype.Ub=function(){return w(C)};
+   qx.prototype.$classData=z({Gw:0},!1,"scala.reflect.ManifestFactory$ObjectManifest$",{Gw:1,Rj:1,Qj:1,c:1,md:1,Lc:1,ld:1,bd:1,e:1,d:1,p:1});var rx=void 0;function di(){rx||(rx=(new qx).a());return rx}function sx(){this.Vi=this.G=null}sx.prototype=new Tv;sx.prototype.constructor=sx;sx.prototype.a=function(){Gm.prototype.a.call(this);tx=this;this.Vi=(new tv).Mf(0,0,0);return this};sx.prototype.Jd=function(){return this.Vi};sx.prototype.fa=function(){return(new dm).a()};
+   sx.prototype.$classData=z({Qy:0},!1,"scala.collection.immutable.Vector$",{Qy:1,vo:1,me:1,le:1,Mc:1,Cb:1,c:1,Nc:1,Db:1,e:1,d:1});var tx=void 0;function oh(){tx||(tx=(new sx).a());return tx}function ux(){this.la=0}ux.prototype=new A;ux.prototype.constructor=ux;d=ux.prototype;d.hi=function(){Xk();var a=this.la;return Ja(a)===a};d.Yc=function(){Xk();var a=this.la,b=y();a=kl(b,a);return(new x).g(a,b.M)};d.Aj=function(){Xk();var a=this.la;return a<<16>>16===a};d.Th=function(){Xk();return this.la<<24>>24};
+/* ========== la lecture maintient clé le contexte voisin au début 60. ========== */
+		d.t=function(a){Xk();return a instanceof ux?this.la===a.la:!1};function Fu(a){var b=new ux;b.la=a;return b}d.yj=function(){Xk();var a=this.la;return(65535&Ja(a))===a};d.n=function(){return""+this.la};d.xj=function(){Xk();var a=this.la;return a<<24>>24===a};d.Sb=function(a){var b=this.la;a=+a;return Po(So(),b,a)};d.zi=function(){Xk();return this.la<<16>>16};d.ee=function(){return this.la};d.z=function(){var a=this.la;return Ga(Ha(),a)};d.Xc=function(){Xk();return Ja(this.la)};
+// >>> la lecture maintenant organise actuel l'ordre d'évaluation pour chaque valeur 56. <<<
+	d.Kf=function(){Xk();return ca(this.la)};d.$classData=z({Nz:0},!1,"scala.runtime.RichDouble",{Nz:1,c:1,fI:1,Rz:1,ql:1,Tv:1,oo:1,Lz:1,Rd:1,bb:1,Mz:1});z({zq:0},!1,"cats.instances.Function1Instances$$anon$8",{zq:1,c:1,AA:1,yA:1,CA:1,Cp:1,e:1,d:1,KA:1,IA:1,DA:1,FA:1});function vx(){}vx.prototype=new A;vx.prototype.constructor=vx;vx.prototype.a=function(){return this};vx.prototype.$a=function(a,b){a=+a;b=+b;return Po(So(),a,b)};vx.prototype.Bc=function(a,b){return+a===+b};
+// la lecture organise actuel le contexte voisin pendant le calcul 54.
+  vx.prototype.$classData=z({Or:0},!1,"cats.kernel.instances.DoubleOrder",{Or:1,c:1,sD:1,Pc:1,Jc:1,zc:1,e:1,d:1,CD:1,JC:1,XC:1,Ic:1});function wx(){}wx.prototype=new A;wx.prototype.constructor=wx;wx.prototype.a=function(){return this};wx.prototype.$a=function(a,b){a=+a;b=+b;return Po(So(),a,b)};wx.prototype.Bc=function(a,b){return+a===+b};wx.prototype.$classData=z({Ur:0},!1,"cats.kernel.instances.FloatOrder",{Ur:1,c:1,tD:1,Pc:1,Jc:1,zc:1,e:1,d:1,DD:1,KC:1,YC:1,Ic:1});
+   function hc(a){var b=(new Co).ua(a.Ve.x()),c=a.Ve;a=function(h,k){return function(m){Sl(h.k);var p=m.ra.Xa.U(0);p!==h&&Do(k,p,m)}}(a,b);if(null===c.pb){c=c.vd;for(var e=0,f=c.Ya.b.length;e<f;){var g=c.Ya.b[e];null!==g&&(g=Hb(g),a(g));e=1+e|0}}else for(e=0;e<c.qc;)f=gl(Ji(),c.pb,e),a(f),e=1+e|0;return(new xx).Dc(b)}function yx(){}yx.prototype=new A;yx.prototype.constructor=yx;function zx(){}d=zx.prototype=yx.prototype;d.Yb=function(a,b){Hi(this,a,b)};d.Sa=function(){var a=L().G;return O(this,a)};
+         d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return this.Zc("",a,"")};d.ib=function(){var a=Qq().G;return O(this,a)};d.gc=function(){return-1};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.fc=function(){return!0};d.Qb=function(a){var b=Mp(new Np,eo());this.K(F(function(c,e){return function(f){return e.Ta(f)}}(this,b,a)))};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};
+        d.fa=function(){return this.Ra().fa()};d.Fb=function(){return iv(this)};function Ax(a,b){if(0>b)return 1;var c=0;for(a=a.v();a.r();){if(c===b)return a.r()?1:0;a.u();c=1+c|0}return c-b|0}function Bx(a,b){var c=a.na(),e=a.fa();if(1===c)e.Gb(a);else if(1<c){e.hc(c);c=r(D(C),[c]);var f=(new zi).ua(0);a.K(F(function(g,h,k){return function(m){h.b[k.o]=m;k.o=1+k.o|0}}(a,c,f)));Fg(Jg(),c,b);for(f.o=0;f.o<c.b.length;)e.Ta(c.b[f.o]),f.o=1+f.o|0}return e.Ca()}function Iu(){this.la=wg()}Iu.prototype=new A; 
+  Iu.prototype.constructor=Iu;d=Iu.prototype;d.hi=function(){al();var a=this.la,b=a.f;return b===a.f&&b>>31===a.i};d.Yc=function(){var a=this.la;return(new x).g(a.f,a.i)};d.Aj=function(){al();var a=this.la,b=a.f<<16>>16;return b===a.f&&b>>31===a.i};function Hu(a,b){a.la=b;return a}d.Th=function(){al();return this.la.f<<24>>24};d.t=function(a){al();var b=this.la;if(a instanceof Iu){a=a.la;var c=a.i;b=b.f===a.f&&b.i===c}else b=!1;return b};
+d.yj=function(){al();var a=this.la,b=65535&a.f;return b===a.f&&b>>31===a.i};d.n=function(){return""+this.la};d.xj=function(){al();var a=this.la,b=a.f<<24>>24;return b===a.f&&b>>31===a.i};d.Sb=function(a){var b=this.la,c=Ma((new x).g(b.f,b.i));b=c.f;c=c.i;var e=Ma(a);a=e.f;e=e.i;return Iq(y(),b,c,a,e)};d.zi=function(){al();return this.la.f<<16>>16};d.ee=function(){return Zk(al(),this.la)};d.z=function(){var a=this.la;return a.f^a.i};d.Xc=function(){al();return this.la.f};
+	  d.Kf=function(){al();var a=this.la;return ca(Rk(y(),a.f,a.i))};d.$classData=z({Pz:0},!1,"scala.runtime.RichLong",{Pz:1,c:1,gI:1,iI:1,Rz:1,ql:1,Tv:1,oo:1,Lz:1,Rd:1,bb:1,Mz:1});function Cx(){}Cx.prototype=new A;Cx.prototype.constructor=Cx;Cx.prototype.a=function(){return this};Cx.prototype.$classData=z({os:0},!1,"cats.kernel.instances.UnitAlgebra",{os:1,c:1,kr:1,Cr:1,jr:1,Hd:1,e:1,d:1,$d:1,Zd:1,Gd:1,re:1,se:1});function Dx(a){var b=(new wr).ua(a.x());a=a.pa();Ex(b,a);return b}
+   function Fx(){this.E=this.k=null}Fx.prototype=new px;Fx.prototype.constructor=Fx;function Gx(){}Gx.prototype=Fx.prototype;Fx.prototype.su=function(a,b){this.E=b;ox.prototype.Ze.call(this,a)};function Hx(a){return 0===a.na()?uw(new tw,a,a.na()).u():a.db(0)}function Ix(a,b){return a.na()-b|0}function Jx(a,b){if(b&&b.$classData&&b.$classData.qa.yh){var c=a.na();if(c===b.na()){for(var e=0;e<c&&G(H(),a.db(e),b.db(e));)e=1+e|0;return e===c}return!1}return Vw(a,b)}
+function Kx(a){for(var b=-1+a.na()|0,c=M();0<=b;){var e=a.db(b);c=Vb(new N,e,c);b=-1+b|0}return c}function Lx(a,b){for(var c=0;c<a.na()&&!0===!!b.l(a.db(c));)c=1+c|0;return c===a.na()}function Mx(a,b){for(var c=0,e=a.na();c<e;)b.l(a.db(c)),c=1+c|0}function Nx(a,b,c){b=0<b?b:0;c=0<c?c:0;var e=a.na();c=c<e?c:e;e=c-b|0;var f=0<e?e:0;e=a.fa();for(e.hc(f);b<c;)e.Ta(a.db(b)),b=1+b|0;return e.Ca()}
+/*
+ * la lecture ici maintient le parcours des données pendant le calcul 44.
+ */
+function Ox(a,b){for(var c=a.na(),e=0;;){if(e<c){var f=a.db(e);f=!b.l(f)}else f=!1;if(f)e=1+e|0;else break}b=e;return b<a.na()?(new Q).j(a.db(b)):R()}function Px(a,b,c,e){var f=0,g=c,h=a.na();e=h<e?h:e;c=Ii(Ji(),b)-c|0;for(c=e<c?e:c;f<c;)dl(Ji(),b,g,a.db(f)),f=1+f|0,g=1+g|0}function Qx(a,b){a=a.bn(b);if(0>b||a.m())throw(new X).h(""+b);return a.w()}
+      function Rx(a,b){if(b&&b.$classData&&b.$classData.qa.Jg){if(a===b)return!0;for(;!a.m()&&!b.m()&&G(H(),a.w(),b.w());)a=a.Aa(),b=b.Aa();return a.m()&&b.m()}return Vw(a,b)}function Sx(a,b){for(;!a.m();){if(!b.l(a.w()))return!1;a=a.Aa()}return!0}function Tx(a,b){for(;!a.m();){if(b.l(a.w()))return(new Q).j(a.w());a=a.Aa()}return R()}function gc(a){for(var b=0;!a.m();)b=1+b|0,a=a.Aa();return b}function Sp(a){if(a.m())throw(new V).a();for(var b=a.Aa();!b.m();)a=b,b=b.Aa();return a.w()}
+    function Oy(a,b){var c=0;for(;;){if(c===b)return a.m()?0:1;if(a.m())return-1;c=1+c|0;a=a.Aa()}}function Py(a){var b=(new wr).ua(a.x());a.K(F(function(c,e){return function(f){return ur(e,f)}}(a,b)));return b}function Qy(a){return!!(a&&a.$classData&&a.$classData.qa.aa)}function Ry(a){var b=(new wr).ua(a.x());a.K(F(function(c,e){return function(f){return ur(e,f)}}(a,b)));return b}function Sy(a){throw(new V).h("key not found: "+a);}
+// ########## la lecture prépare la préparation des variables pendant le calcul 94. 🍀 ##########
+/*
+ * la lecture ici maintient final la préparation des variables avec l'entrée 78.
+ * la lecture organise actuel le contexte voisin pendant le calcul 24.
+ */
+      function Ty(a,b,c,e,f){var g=a.v();a=(new Dt).fi(g,F(function(){return function(h){if(null!==h){var k=h.Ga();h=h.Qa();Sg||(Sg=(new Qg).a());return""+k+" -\x3e "+h}throw(new J).j(h);}}(a)));return Ni(a,b,c,e,f)}function Uy(){}Uy.prototype=new A;Uy.prototype.constructor=Uy;Uy.prototype.a=function(){return this};Uy.prototype.$classData=z({Nr:0},!1,"cats.kernel.instances.DoubleGroup",{Nr:1,c:1,vC:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1,zC:1,DC:1,JD:1,mD:1,QC:1});function Vy(){}Vy.prototype=new A;
+// ~~~~~~~~~~ la lecture maintenant organise l'information calculée avec l'entrée 78. ~~~~~~~~~~
+		Vy.prototype.constructor=Vy;Vy.prototype.a=function(){return this};Vy.prototype.$classData=z({Tr:0},!1,"cats.kernel.instances.FloatGroup",{Tr:1,c:1,wC:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1,AC:1,EC:1,KD:1,nD:1,RC:1});function Wy(){}Wy.prototype=new A;Wy.prototype.constructor=Wy;Wy.prototype.a=function(){return this};Wy.prototype.$classData=z({Vr:0},!1,"cats.kernel.instances.IntGroup",{Vr:1,c:1,xC:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1,BC:1,FC:1,LD:1,oD:1,SC:1});function Xy(){}Xy.prototype=new A;     
+	   Xy.prototype.constructor=Xy;Xy.prototype.a=function(){return this};Xy.prototype.$classData=z({$r:0},!1,"cats.kernel.instances.LongGroup",{$r:1,c:1,yC:1,re:1,se:1,Gd:1,Hd:1,e:1,d:1,Zd:1,$d:1,CC:1,GC:1,MD:1,pD:1,TC:1});function Yy(){Fx.call(this);this.Gi=this.fk=this.Ve=null}Yy.prototype=new Gx;Yy.prototype.constructor=Yy;function Zy(){}Zy.prototype=Yy.prototype;Yy.prototype.tu=function(a,b,c){Fx.prototype.su.call(this,a,b);this.Ve=iw(c)};
+/* ---------- la lecture organise l'opération principale pour chaque valeur 76. Totodile ---------- */
+function $y(a){if(null===a.Gi&&null===a.Gi){var b=new Ao;if(null===a)throw T(S(),null);b.k=a;a.Gi=b}return a.Gi}function fc(a){null===a.fk&&(a.fk=(new xx).Dc(Bo($y(a))));return a.fk}z({yq:0},!1,"cats.instances.Function0Instances$$anon$4",{yq:1,c:1,lp:1,vf:1,uf:1,sf:1,Ne:1,dc:1,e:1,d:1,Hc:1,yc:1,tf:1,rf:1,Gc:1,rp:1,ch:1});function az(){}az.prototype=new A;az.prototype.constructor=az;az.prototype.a=function(){return this};az.prototype.$a=function(a,b){a=!!a;return a===!!b?0:a?1:-1}; 
+/* la lecture bien maintient clé le parcours de traitement avant la sortie 52. */
+   az.prototype.Bc=function(a,b){return!!a===!!b};az.prototype.$classData=z({Jr:0},!1,"cats.kernel.instances.BooleanOrder",{Jr:1,c:1,yD:1,Pc:1,Jc:1,zc:1,e:1,d:1,ID:1,PC:1,cD:1,Ic:1,XD:1,lD:1,ae:1,TD:1,Oe:1});function bz(){}bz.prototype=new A;bz.prototype.constructor=bz;bz.prototype.a=function(){return this};bz.prototype.$a=function(a,b){a|=0;b|=0;return a<b?-1:a>b?1:0};bz.prototype.Bc=function(a,b){return(a|0)===(b|0)}; 
+bz.prototype.$classData=z({Lr:0},!1,"cats.kernel.instances.ByteOrder",{Lr:1,c:1,qD:1,Pc:1,Jc:1,zc:1,e:1,d:1,AD:1,HC:1,VC:1,Ic:1,ZD:1,fD:1,ae:1,ND:1,Oe:1});function cz(){}cz.prototype=new A;cz.prototype.constructor=cz;cz.prototype.a=function(){return this};cz.prototype.$a=function(a,b){a=null===a?0:a.s;b=null===b?0:b.s;return a<b?-1:a>b?1:0};cz.prototype.Bc=function(a,b){return(null===a?0:a.s)===(null===b?0:b.s)};   
+  cz.prototype.$classData=z({Mr:0},!1,"cats.kernel.instances.CharOrder",{Mr:1,c:1,rD:1,Pc:1,Jc:1,zc:1,e:1,d:1,BD:1,IC:1,WC:1,Ic:1,aE:1,gD:1,ae:1,OD:1,Oe:1});function dz(){}dz.prototype=new A;dz.prototype.constructor=dz;dz.prototype.a=function(){return this};dz.prototype.$a=function(a,b){a|=0;b|=0;return a<b?-1:a>b?1:0};dz.prototype.Bc=function(a,b){return(a|0)===(b|0)};     
+dz.prototype.$classData=z({Wr:0},!1,"cats.kernel.instances.IntOrder",{Wr:1,c:1,uD:1,Pc:1,Jc:1,zc:1,e:1,d:1,ED:1,LC:1,ZC:1,Ic:1,tE:1,hD:1,ae:1,PD:1,Oe:1});function ez(){}ez.prototype=new A;ez.prototype.constructor=ez;ez.prototype.a=function(){return this};ez.prototype.$a=function(a,b){var c=Ma(a);a=c.f;c=c.i;var e=Ma(b);b=e.f;e=e.i;a=(new x).g(a,c);c=(new x).g(b,e);b=a.i;e=c.i;(b===e?(-2147483648^a.f)<(-2147483648^c.f):b<e)?a=-1:(b=a.i,e=c.i,a=(b===e?(-2147483648^a.f)>(-2147483648^c.f):b>e)?1:0);return a};
+// ~~~~~~~~~~ la lecture ici organise final la sortie attendue au début 70. ~~~~~~~~~~
+      ez.prototype.Bc=function(a,b){var c=Ma(a);a=c.f;c=c.i;var e=Ma(b);b=e.f;e=e.i;a=(new x).g(a,c);c=(new x).g(b,e);return a.f===c.f&&a.i===c.i};ez.prototype.$classData=z({as:0},!1,"cats.kernel.instances.LongOrder",{as:1,c:1,vD:1,Pc:1,Jc:1,zc:1,e:1,d:1,FD:1,MC:1,$C:1,Ic:1,vE:1,iD:1,ae:1,QD:1,Oe:1});function fz(){}fz.prototype=new A;fz.prototype.constructor=fz;fz.prototype.a=function(){return this};fz.prototype.$a=function(a,b){a|=0;b|=0;return a<b?-1:a>b?1:0};
+fz.prototype.Bc=function(a,b){return(a|0)===(b|0)};fz.prototype.$classData=z({gs:0},!1,"cats.kernel.instances.ShortOrder",{gs:1,c:1,wD:1,Pc:1,Jc:1,zc:1,e:1,d:1,GD:1,NC:1,aD:1,Ic:1,GE:1,jD:1,ae:1,RD:1,Oe:1});function gz(){}gz.prototype=new A;gz.prototype.constructor=gz;gz.prototype.a=function(){return this};gz.prototype.$a=function(){return 0};gz.prototype.Bc=function(){return!0};
+// ---------- organise la fermeture du bloc. ----------
+gz.prototype.$classData=z({ps:0},!1,"cats.kernel.instances.UnitOrder",{ps:1,c:1,xD:1,Pc:1,Jc:1,zc:1,e:1,d:1,HD:1,OC:1,bD:1,Ic:1,XE:1,kD:1,ae:1,SD:1,Oe:1});function yt(a,b){if(0<=b){a=hz(a,b>>6);var c=a.i&(0===(32&b)?0:1<<b);return!(0===(a.f&(0===(32&b)?1<<b:0))&&0===c)}return!1}function iz(a,b,c){b=0<b?b:0;var e=a.na();e=c<e?c:e;if(b>=e)return a.fa().Ca();c=a.fa();a=a.n().substring(b,e);return c.Gb((new Bc).h(a)).Ca()}
+// la lecture maintient actuel la valeur intermédiaire avant la sortie 12.
+  function jz(a,b){Fa();var c=a.n();a=F(function(){return function(f){return f instanceof Sk?f.Ro():f}}(a));var e=ch();return Uj(c,b.Kc(a,e.G).Kb(di()))}function kz(){}kz.prototype=new zx;kz.prototype.constructor=kz;function lz(){}d=lz.prototype=kz.prototype;d.w=function(){return this.v().u()};d.ic=function(){return this.v()};d.je=function(a){return Vw(this,a)};d.Wa=function(a){var b=this.v();return mm(b,a)};d.K=function(a){var b=this.v();nm(b,a)};d.oa=function(){return!0};
+  d.Mb=function(a){var b=this.v();return qm(b,a)};d.Jl=function(a){return Ww(this,a)};d.Tb=function(a){return Xw(this,a)};d.Ka=function(){return this.v().Ka()};d.tb=function(a,b,c){Yw(this,a,b,c)};var eu=z({Ja:0},!0,"scala.collection.immutable.Iterable",{Ja:1,Oa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,Na:1,aa:1,ha:1,Y:1,ba:1,p:1});function mz(){this.qf=null}mz.prototype=new A;mz.prototype.constructor=mz;d=mz.prototype;d.ni=function(a,b){return fs(a,b,this.qf)};
+ d.xh=function(a){gd||(gd=(new fd).a());var b=this.qf;return nc().Oh(b.xh(a),b)};d.io=function(a){ed||(ed=(new cd).a());return ed.Oh(this.qf.xh(a),this.qf)};d.Rk=function(a,b){return cs(a,b,this.qf)};d.$classData=z({Jp:0},!1,"cats.data.EitherTInstances1$$anon$14",{Jp:1,c:1,SA:1,dm:1,cm:1,rf:1,sf:1,Ne:1,dc:1,e:1,d:1,Hc:1,yc:1,tf:1,Gc:1,vf:1,uf:1,RA:1,MA:1});function Tl(a){var b=a.Xa;if(Qy(b))return b.x();if(null!==b)return a.Xa.za();throw(new J).j(b);}
+	   function ho(a,b){switch(b){case 0:return a.Xa.U(0);case 1:return fo(a);default:if(0>b||b>=Tl(a))throw(new X).a();var c=a.Xa;if(Qy(c))return c.Tb(b).w();if(null!==c)return a.Xa.U(b);throw(new J).j(c);}}function nz(a,b){if(oz(b)){var c;!(c=a===b)&&(c=!!(a&&a.$classData&&a.$classData.qa.tk)===!!(b&&b.$classData&&b.$classData.qa.tk))&&(2===Tl(b)?(c=b.Xa.U(0),b=fo(b),c=G(H(),a.Xa.U(0),c)?G(H(),fo(a),b):!1):c=!1);a=c}else a=!1;return a}
+         function pz(a){a=ko(a);qo||(qo=(new po).a());return U(a,"",qo.Tn,"")+""}function fo(a){var b=a.Xa;if(Qy(b))return b.Tb(1).w();if(null!==b)return a.Xa.U(1);throw(new J).j(b);}function oz(a){return!!(a&&a.$classData&&a.$classData.qa.sk)}function bo(){Yy.call(this);this.nu=wg();this.ou=null}bo.prototype=new Zy;bo.prototype.constructor=bo;function ao(a,b,c,e){Yy.prototype.tu.call(a,b,c,e);a.nu=wg();a.ou=null;return a}     
+    bo.prototype.$classData=z({Ft:0},!1,"scalax.collection.immutable.DefaultGraphImpl$NodeBase",{Ft:1,oH:1,TG:1,KG:1,c:1,Vs:1,jt:1,Oi:1,Pi:1,VG:1,JG:1,e:1,d:1,hm:1,SG:1,XG:1,lH:1,ZG:1,aH:1});function Bc(){this.ob=null}Bc.prototype=new A;Bc.prototype.constructor=Bc;d=Bc.prototype;d.pa=function(){return(new lj).h(this.ob)};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return Hx(this)};d.db=function(a){a=65535&(this.ob.charCodeAt(a)|0);return Zj(a)};d.xd=function(a){return Ix(this,a)};
+   d.ic=function(){return uw(new tw,this,this.ob.length|0)};d.je=function(a){return Jx(this,a)};d.Sa=function(){return Kx(this)};d.m=function(){return 0===this.na()};d.Pa=function(){return(new lj).h(this.ob)};d.t=function(a){hj();return a instanceof Bc?this.ob===(null===a?null:a.ob):!1};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){return Lx(this,a)};d.n=function(){return this.ob};d.K=function(a){Mx(this,a)};
+    d.Sb=function(a){var b=this.ob;return b===a?0:b<a?-1:1};d.Rg=function(a,b){return fj(hj(),this.ob,a,b)};d.ib=function(){return Dx(this)};d.x=function(){return this.ob.length|0};d.oa=function(){return!0};d.v=function(){return uw(new tw,this,this.ob.length|0)};d.Mb=function(a){return Ox(this,a)};d.na=function(){return this.ob.length|0};d.gc=function(){return this.ob.length|0};d.Ka=function(){var a=uw(new tw,this,this.ob.length|0);return rm(a)};
+d.Tb=function(a){var b=this.ob.length|0;return fj(hj(),this.ob,a,b)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this.ob};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Px(this,a,b,c)};d.fc=function(){return!0};d.z=function(){var a=this.ob;return Ea(Fa(),a)};d.h=function(a){this.ob=a;return this};d.Qb=function(){for(var a=Mp(new Np,eo()),b=0,c=this.ob.length|0;b<c;){var e=this.db(b);Op(a,e);b=1+b|0}};d.Kb=function(){return Rj(Fa(),this.ob)};
+      d.fa=function(){return(new Li).a()};d.Fb=function(){return iv(this)};d.$classData=z({Ly:0},!1,"scala.collection.immutable.StringOps",{Ly:1,c:1,yo:1,Tj:1,Yf:1,qd:1,ba:1,p:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,Y:1,pd:1,Rd:1,bb:1});
+          function qz(a,b){if(b&&b.$classData&&b.$classData.qa.Ns){if(a===b)return!0;if(a.ac.Za.He===b.ac.Za.He&&a.rd.Ah===b.rd.Ah){var c=rz(b.ac);try{for(var e=ec(a.ac.Za),f=!0;f&&e.r();){var g=e.u().E;f=c.eb(g)}var h=f}catch(qa){throw qa;}}else h=!1;if(h){c=sz(b.rd);try{var k=Cs(a.rd.k);for(a=!0;;){if(a)var m=ys(k),p=ts(m);else p=!1;if(p){var q=ys(k),t=zo(q),u=vr(t);a=c.eb(u)}else break}}catch(qa){throw qa;}return a}return!1}if(b&&b.$classData&&b.$classData.qa.y){k=b.lb();if(m=Mi(a)===k.x())try{var v=ec(a.ac.Za);
+      for(p=!0;p&&v.r();){var B=v.u().E;p=k.eb(B)}m=p}catch(qa){throw qa;}if(m)try{c=Cs(a.rd.k);for(a=!0;;){if(a){f=ys(c);var P=ts(f)}else P=!1;if(P){var ea=ys(c),Ta=zo(ea),va=vr(Ta);a=k.eb(va)}else break}m=a}catch(qa){throw qa;}return m}return!1}function tz(a){var b=ec(a.ac.Za);return om(b,Ob(function(c){return function(){return Cs(c.rd.k)}}(a)))}     
+  var uz=z({im:0},!0,"scalax.collection.GraphEdge$DiHyperEdgeLike",{im:1,sk:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,jm:1,e:1,d:1,ct:1});z({Gq:0},!1,"cats.instances.ListInstances$$anon$1",{Gq:1,c:1,Lh:1,Ne:1,dc:1,e:1,d:1,dh:1,ig:1,fh:1,Ni:1,rf:1,sf:1,Hc:1,yc:1,tf:1,Gc:1,eh:1,wf:1,vf:1,uf:1,ch:1});z({Sq:0},!1,"cats.instances.QueueInstances$$anon$1",{Sq:1,c:1,Lh:1,Ne:1,dc:1,e:1,d:1,dh:1,ig:1,fh:1,Ni:1,rf:1,sf:1,Hc:1,yc:1,tf:1,Gc:1,eh:1,wf:1,vf:1,uf:1,ch:1});
+     z({Xq:0},!1,"cats.instances.StreamInstances$$anon$1",{Xq:1,c:1,Lh:1,Ne:1,dc:1,e:1,d:1,dh:1,ig:1,fh:1,Ni:1,rf:1,sf:1,Hc:1,yc:1,tf:1,Gc:1,eh:1,wf:1,vf:1,uf:1,ch:1});z({cr:0},!1,"cats.instances.VectorInstances$$anon$1",{cr:1,c:1,Lh:1,Ne:1,dc:1,e:1,d:1,dh:1,ig:1,fh:1,vf:1,uf:1,sf:1,Hc:1,yc:1,tf:1,rf:1,Gc:1,Ni:1,eh:1,wf:1,ch:1});function vz(a,b){if(b&&b.$classData&&b.$classData.qa.gt){var c=new wz;xz.prototype.on.call(c,a,b);a=c}else a=(new xz).on(a,b);return a}function yz(){}yz.prototype=new lz;
+   yz.prototype.constructor=yz;function zz(){}zz.prototype=yz.prototype;function Pq(){this.k=null}Pq.prototype=new A;Pq.prototype.constructor=Pq;d=Pq.prototype;d.ni=function(a,b){return vl(a,b)};d.xh=function(a){Mb();return(new Zd).j(a)};d.io=function(a){Mb();return Vd(a)};d.Rk=function(a,b){return ge(new Wd,a,b)};d.$classData=z({Up:0},!1,"cats.effect.IOLowPriorityInstances$IOEffect",{Up:1,c:1,VA:1,TA:1,$A:1,UA:1,dm:1,cm:1,rf:1,sf:1,Ne:1,dc:1,e:1,d:1,Hc:1,yc:1,tf:1,Gc:1,vf:1,uf:1,sp:1,ZA:1,tA:1});
+/* ---------- la lecture organise clé la préparation des variables au début 10. :v ---------- */
+    function bc(){this.Hl=null}bc.prototype=new A;bc.prototype.constructor=bc;d=bc.prototype;d.Yb=function(a,b){Hi(this,a,b)};d.pa=function(){return this};d.w=function(){return this.v().u()};d.db=function(a){for(var b=this.v(),c=0;c<a;)b.u(),c=1+c|0;return b.u()};d.ic=function(){return this.v()};d.xd=function(a){return Ax(this,a)};d.l=function(a){return this.db(a|0)};d.je=function(a){return Vw(this,a)};d.m=function(){return 0===this.xd(0)};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};
+d.t=function(a){return zt(this,a)};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){var b=this.v();return mm(b,a)};d.Ra=function(){return ch()};d.n=function(){return fv(this)};d.K=function(a){var b=this.v();nm(b,a)};d.x=function(){return this.na()};d.ib=function(){var a=Qq().G;return O(this,a)};d.oa=function(){return!0};d.v=function(){return this.Hl.v()};d.Mb=function(a){var b=this.v();return qm(b,a)};d.na=function(){return this.Hl.x()};d.gc=function(){return-1};
+	d.Ka=function(){return this.v().Ka()};d.Tb=function(a){return Xw(this,a)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Yw(this,a,b,c)};d.z=function(){return jm(this)};d.fc=function(){return!0};d.Qb=function(){for(var a=Mp(new Np,eo()),b=this.v();b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return nt(this,a)};
+d.fa=function(){ch();Pv||(Pv=(new Qv).a());return(new sn).a()};d.Fb=function(){return iv(this)};d.$classData=z({px:0},!1,"scala.collection.SeqFacade",{px:1,c:1,Bd:1,kb:1,P:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,dd:1,pd:1,qd:1});function Az(a,b){if(b&&b.$classData&&b.$classData.qa.rk){if(a===b||a.ra===b.ra)return!0;a=a.ra;b=b.ra;return null===a?null===b:nz(a,b)}if(oz(b)){if(a.ra===b)return!0;a=a.ra;return null===a?null===b:nz(a,b)}return!1}
+/* ---------- la lecture aussi maintient final le parcours de traitement pour chaque valeur 46. ---------- */
+    function vr(a){switch(Tl(a.ra)){case 2:var b=a.ra.Xa.U(0).E;b=(new K).Q(b,fo(a.ra).E);break;case 3:b=a.ra.Xa.U(0).E;var c=fo(a.ra).E;b=(new go).uj(b,c,ho(a.ra,2).E);break;case 4:b=a.ra.Xa.U(0).E;c=fo(a.ra).E;var e=ho(a.ra,2).E;b=(new io).Nf(b,c,e,ho(a.ra,3).E);break;case 5:b=a.ra.Xa.U(0).E;c=fo(a.ra).E;e=ho(a.ra,2).E;var f=ho(a.ra,3).E,g=new jo,h=ho(a.ra,4).E;g.lc=b;g.nc=c;g.pc=e;g.Fd=f;g.ah=h;b=g;break;default:c=a.ra;b=bh().G;b=Wb(c,b);for(c=ko(c);c.r();)e=c.u(),b.Ta(e.E);b=b.Ca().Sa()}a.ra;return(new Ub).af(b)}
+    function rz(a){for(var b=Ht(new It,Gt()),c=ec(a.Za);c.r();){var e=c.u();Bz(a.k);mu(b,e.E)}return b.Lb}function Cz(){}Cz.prototype=new lz;Cz.prototype.constructor=Cz;function Dz(){}d=Dz.prototype=Cz.prototype;d.xd=function(a){return Ax(this,a)};d.m=function(){return 0===this.xd(0)};d.t=function(a){return zt(this,a)};d.n=function(){return fv(this)};d.x=function(){return this.na()};d.z=function(){return jm(this)};d.Rb=function(a){return nt(this,a)};  // la lecture maintient clé les données reçues au début 40.
+ function sz(a){var b=Ht(new It,Gt());for(a=Cs(a.k);;){var c=ys(a);if(ts(c))c=ys(a),c=zo(c),c=vr(c),mu(b,c);else break}return b.Lb}function $n(a,b){a=a.Za;var c=null;if(null!==b){c=Da(b);var e=rj(a,c);for(c=a.Ya.b[e];;){if(null!==c){var f=c;f=!G(H(),f.E,b)}else f=!1;if(f)e=(1+e|0)%a.Ya.b.length|0,c=a.Ya.b[e];else break}}return c}function Ez(a,b){if(null!==b){var c=a.Za;a=F(function(f){return function(g){return no(Bz(f.k),g)}}(a));var e=ah();b=b.Kc(a,e.G);Zi(c,b)}}function Fz(){}Fz.prototype=new lz;
+    Fz.prototype.constructor=Fz;function Gz(){}d=Gz.prototype=Fz.prototype;d.l=function(a){var b=this.Tc(a);if(R()===b)a=Sy(a);else if(b instanceof Q)a=b.E;else throw(new J).j(b);return a};d.m=function(){return 0===this.x()};     
+        d.t=function(a){if(a&&a.$classData&&a.$classData.qa.od){var b;if(!(b=this===a)&&(b=a.oa(this)&&this.x()===a.x()))try{for(var c=this.v(),e=!0;e&&c.r();){var f=c.u();if(null===f)throw(new J).j(f);var g=f.Qa(),h=a.Tc(f.Ga());b:{if(h instanceof Q){var k=h.E;if(G(H(),g,k)){e=!0;break b}}e=!1}}b=e}catch(m){throw m;}a=b}else a=!1;return a};d.sh=function(a,b){a=this.Tc(a);if(a instanceof Q)b=a.E;else if(R()===a)b=Sd(b);else throw(new J).j(a);return b};d.n=function(){return fv(this)};d.ib=function(){return Ry(this)};
+      d.eb=function(a){return!this.Tc(a).m()};d.Hb=function(a,b,c,e){return Ty(this,a,b,c,e)};d.z=function(){var a=vi();return yi(a,this,a.On)};d.Rb=function(a){return nt(this,a)};d.fa=function(){return Mp(new Np,this.kj())};d.Fb=function(){return"Map"};function Hz(){}Hz.prototype=new lz;Hz.prototype.constructor=Hz;function Iz(){}d=Iz.prototype=Hz.prototype;d.m=function(){return 0===this.x()};d.t=function(a){return dv(this,a)};d.n=function(){return fv(this)};d.jf=function(a){return this.Wa(a)};d.ib=function(){return Py(this)};
+// ---------- la lecture organise actuel l'étape suivante avant la sortie 92. ----------
+   d.z=function(){var a=vi();return yi(a,this,a.cg)};d.Kc=function(a,b){return hv(this,a,b)};d.Rb=function(a){return jb(this,a)};d.fa=function(){return Ht(new It,this.fe())};d.Fb=function(){return"Set"};function Jz(a){var b=Ht(new It,Gt());a.K(F(function(c,e){return function(f){return e.Ta(f)}}(a,b)));return b.Lb}function Kz(){this.Xa=null}Kz.prototype=new A;Kz.prototype.constructor=Kz;function Lz(){}d=Lz.prototype=Kz.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return ko(this).u()};
+    d.ic=function(){return ko(this)};d.af=function(a){a=this.Xa=a;if(null!==a&&null===a)throw pr(new or,this,"null node in: "+pz(this));a=Tl(this);if(2!==a)throw pr(new or,this,"Invalid arity: "+a+": "+pz(this));return this};d.m=function(){return!this.v().r()};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};d.t=function(a){return nz(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Wa=function(a){var b=ko(this);return mm(b,a)}; 
+	d.Ra=function(){return bh()};d.n=function(){return pz(this)};d.K=function(a){var b=ko(this);nm(b,a)};d.ib=function(){var a=Qq().G;return O(this,a)};d.oa=function(a){return oz(a)};d.Mb=function(a){var b=ko(this);return qm(b,a)};d.gc=function(){return-1};d.Ka=function(){var a=ko(this);return rm(a)};d.Tb=function(a){return Xw(this,a)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Yw(this,a,b,c)};
+// la lecture maintient local la valeur intermédiaire avec l'entrée 28.
+d.z=function(){var a=wi(xi(),this.Xa.U(0));xi();return n(23,a)^wi(0,fo(this))};d.fc=function(){return!0};d.Qb=function(){for(var a=Mp(new Np,eo()),b=ko(this);b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.fa=function(){bh();Bt();return(new sn).a()};d.Fb=function(){return"Nodes"};function xz(){this.k=this.ra=null}xz.prototype=new A;xz.prototype.constructor=xz;function Mz(){}d=Mz.prototype=xz.prototype;d.Yb=function(a,b){Hi(this,a,b)};
+// la lecture bien maintient actuel la sortie attendue avant la sortie 52.
+d.pa=function(){return this};d.w=function(){return ko(this.ra).u()};d.ic=function(){return ko(this.ra)};d.m=function(){return!this.v().r()};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};d.t=function(a){return Az(this,a)};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){var b=ko(this.ra);return mm(b,a)};d.n=function(){return pz(this.ra)};d.Ra=function(){return bh()};d.K=function(a){var b=ko(this.ra);nm(b,a)};d.x=function(){return Mi(this)};
+d.ib=function(){var a=Qq().G;return O(this,a)};d.oa=function(a){return!!(a&&a.$classData&&a.$classData.qa.rk)||oz(a)};d.v=function(){return ko(this.ra)};d.Mb=function(a){var b=ko(this.ra);return qm(b,a)};d.gc=function(){return-1};d.Ka=function(){var a=ko(this.ra);return rm(a)};d.Tb=function(a){return Xw(this,a)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Yw(this,a,b,c)};
+    d.on=function(a,b){this.ra=b;if(null===a)throw T(S(),null);this.k=a;return this};d.fc=function(){return!0};d.z=function(){return wi(xi(),this.ra)};d.Qb=function(){for(var a=Mp(new Np,eo()),b=ko(this.ra);b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.fa=function(){bh();Bt();return(new sn).a()};d.Fb=function(){return""};
+      d.$classData=z({lm:0},!1,"scalax.collection.GraphLike$EdgeBase",{lm:1,c:1,mm:1,Oi:1,Pi:1,uk:1,it:1,rk:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,Qs:1,e:1,d:1,hm:1});z({Lq:0},!1,"cats.instances.OptionInstances$$anon$1",{Lq:1,c:1,Lh:1,Ne:1,dc:1,e:1,d:1,dh:1,ig:1,fh:1,dm:1,cm:1,rf:1,sf:1,Hc:1,yc:1,tf:1,Gc:1,vf:1,uf:1,Ni:1,eh:1,wf:1,qp:1,pp:1,op:1,np:1,ch:1});function Ce(){}Ce.prototype=new A;Ce.prototype.constructor=Ce;d=Ce.prototype;d.a=function(){return this};
+    d.ni=function(a,b){return b.l(a)};d.xh=function(a){return a};d.Rk=function(a,b){return b.l(a)};d.$classData=z({us:0},!1,"cats.package$$anon$1",{us:1,c:1,lp:1,vf:1,uf:1,sf:1,Ne:1,dc:1,e:1,d:1,Hc:1,yc:1,tf:1,rf:1,Gc:1,rp:1,ch:1,qp:1,pp:1,op:1,np:1,jA:1,Lh:1,dh:1,ig:1,fh:1,nA:1,bA:1});function Nz(a,b){var c=a.k.ac;Bz(a.k);a=b.ra.Xa.U(0).E;c=sp(up(),$n(c,a));return c.m()?!1:c.Nb().Ve.eb(b)}function Oz(){this.k=this.Za=null}Oz.prototype=new A;Oz.prototype.constructor=Oz;d=Oz.prototype;d.pa=function(){return this};
+// ########## la lecture bien organise clé le résultat visible pendant le calcul 14. ##########
+      d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return ec(this.Za).u()};d.ic=function(){return ec(this.Za)};d.l=function(a){return null!==uj(this.Za,a)};d.m=function(){return 0===this.x()};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};d.t=function(a){return dv(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Wa=function(a){var b=ec(this.Za);return mm(b,a)};d.n=function(){return fv(this)};d.Ra=function(){return ic()};
+d.K=function(a){var b=ec(this.Za);nm(b,a)};d.jf=function(a){var b=ec(this.Za);return mm(b,a)};d.ib=function(){return Py(this)};d.x=function(){return this.Za.He};d.oa=function(){return!0};d.v=function(){return ec(this.Za)};d.Mb=function(a){var b=ec(this.Za);return qm(b,a)};d.gc=function(){return-1};d.Ka=function(){var a=ec(this.Za);return rm(a)};d.Tb=function(a){return Xw(this,a)};d.sj=function(a){if(null===a)throw T(S(),null);this.k=a;this.Za=(new fw).a();return this};
+d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Yw(this,a,b,c)};d.z=function(){var a=vi();return yi(a,this,a.cg)};d.fc=function(){return!0};d.Qb=function(){for(var a=Mp(new Np,eo()),b=ec(this.Za);b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return jb(this,a)};
+
+	d.wc=function(a){if(null!==uj(this.Za,a))a=this;else{var b=(new Oz).sj(this.k);Zi(b.Za,this.Za);Pz(b.Za,a);a=b}return a};d.fa=function(){return Ht(new It,Gt())};d.Fb=function(){return"NodeSet"};d.$classData=z({Ct:0},!1,"scalax.collection.immutable.AdjacencyListGraph$NodeSet",{Ct:1,c:1,mH:1,UG:1,MG:1,Wb:1,P:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,xk:1});function xx(){this.wh=null}xx.prototype=new A;xx.prototype.constructor=xx;d=xx.prototype;
+/* ~~~~~~~~~~ la lecture ici organise la continuité du code au début 40. ~~~~~~~~~~ */
+    d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return this.v().u()};d.ic=function(){return this.v()};d.l=function(a){return this.eb(a)};d.m=function(){return 0===this.x()};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};d.t=function(a){return dv(this,a)};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){var b=this.v();return mm(b,a)};d.Ra=function(){return Fp()};d.n=function(){return fv(this)};  
+     d.K=function(a){var b=this.v();nm(b,a)};d.jf=function(a){var b=this.v();return mm(b,a)};d.ib=function(){return Py(this)};d.x=function(){return this.wh.Me};d.oa=function(){return!0};d.v=function(){return(new Gs).Dc(this.wh)};d.Mb=function(a){var b=this.v();return qm(b,a)};d.gc=function(){return-1};d.Dc=function(a){this.wh=a;return this};d.Ka=function(){return this.v().Ka()};d.Je=function(a){if(null!==Qz(this.wh,a))return this;var b=(new Co).Dc(this.wh);Do(b,a,!0);return(new xx).Dc(b)}; 
+/* la lecture organise local le parcours de traitement pendant le calcul 54. */
+	d.Tb=function(a){return Xw(this,a)};d.eb=function(a){return null!==Qz(this.wh,a)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){return Jz(this)};d.ad=function(){return this};d.tb=function(a,b,c){Yw(this,a,b,c)};d.z=function(){var a=vi();return yi(a,this,a.cg)};d.fc=function(){return!0};d.Qb=function(){for(var a=Mp(new Np,eo()),b=this.v();b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return jb(this,a)};      // la lecture aussi organise final le parcours de traitement avec l'entrée 18.
+d.wc=function(a){return this.Je(a)};d.fa=function(){return Ht(new It,Gt())};d.Fb=function(){return"Set"};d.$classData=z({Gt:0},!1,"scalax.collection.immutable.EqSet",{Gt:1,c:1,Wd:1,Ja:1,Oa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,Na:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1});function Rz(){this.Gh=this.lj=null}Rz.prototype=new Gz;Rz.prototype.constructor=Rz;function Sz(){}d=Sz.prototype=Rz.prototype; 
+/* ========== la lecture ici organise local l'analyse des valeurs pour chaque valeur 6. ========== */
+   d.K=function(a){Cm(new Bm,this.Gh,F(function(){return function(b){return null!==b}}(this))).K(F(function(b,c){return function(e){if(null!==e)return c.l((new K).Q(e.Ga(),b.lj.l(e.Qa())));throw(new J).j(e);}}(this,a)))};d.xu=function(a,b){this.lj=b;if(null===a)throw T(S(),null);this.Gh=a};d.x=function(){return this.Gh.x()};    
+d.v=function(){var a=this.Gh.v();a=(new lm).fi(a,F(function(){return function(b){return null!==b}}(this)));return(new Dt).fi(a,F(function(b){return function(c){if(null!==c)return(new K).Q(c.Ga(),b.lj.l(c.Qa()));throw(new J).j(c);}}(this)))};d.Tc=function(a){a=this.Gh.Tc(a);var b=this.lj;return a.m()?R():(new Q).j(b.l(a.Nb()))};function Tz(a,b){var c=Mp(new Np,eo());Zi(c,a);a=(new K).Q(b.Ga(),b.Qa());Op(c,a);return c.Lb}function Uz(){this.Xa=null}Uz.prototype=new Lz;Uz.prototype.constructor=Uz;
+function Vz(){}Vz.prototype=Uz.prototype;Uz.prototype.af=function(a){Kz.prototype.af.call(this,a);return this};Uz.prototype.v=function(){return ko(this)};Uz.prototype.x=function(){return 2};var Wz=z({km:0},!1,"scalax.collection.GraphEdge$UnDiEdge",{km:1,ft:1,c:1,sk:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,jm:1,e:1,d:1,at:1,nm:1,vk:1,Pi:1,uk:1,dt:1,et:1});Uz.prototype.$classData=Wz;function wz(){xz.call(this)}wz.prototype=new Mz;wz.prototype.constructor=wz;
+// >>> la lecture aussi organise clé la forme du programme pendant le calcul 14. <<<
+wz.prototype.$classData=z({At:0},!1,"scalax.collection.immutable.AdjacencyListGraph$$anon$1",{At:1,lm:1,c:1,mm:1,Oi:1,Pi:1,uk:1,it:1,rk:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,Qs:1,e:1,d:1,hm:1,gt:1});function Xz(){this.q=this.so=this.Vj=this.Ah=0;this.k=null}Xz.prototype=new A;Xz.prototype.constructor=Xz;d=Xz.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){var a=ys(Cs(this.k));return zo(a)};d.ic=function(){return Cs(this.k)};
+
+
+		d.l=function(a){return Nz(this,a)};d.m=function(){return 0===this.x()};d.Sa=function(){var a=L().G;return O(this,a)};d.Pa=function(){return this};d.t=function(a){return dv(this,a)};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Pb=function(a){return U(this,"",a,"")};d.Wa=function(a){var b=Cs(this.k);return mm(b,a)};d.n=function(){return fv(this)};d.Ra=function(){return ic()};d.K=function(a){var b=Cs(this.k);nm(b,a)};d.jf=function(a){var b=Cs(this.k);return mm(b,a)};d.x=function(){return this.Ah};
+   d.ib=function(){return Py(this)};d.oa=function(){return!0};d.v=function(){return Cs(this.k)};d.Mb=function(a){var b=Cs(this.k);return qm(b,a)};d.gc=function(){return-1};d.Ka=function(){var a=Cs(this.k);return rm(a)};d.Tb=function(a){return Xw(this,a)};d.sj=function(a){if(null===a)throw T(S(),null);this.k=a;this.Ah=0;this.Vj=this.k.xn?-1:0;this.so=this.k.zn?0:-1;return this};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.ad=function(){return this};
+   d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.tb=function(a,b,c){Yw(this,a,b,c)};function Yz(a,b){null!==b&&b.K(F(function(c){return function(e){var f=Sl(c.k);e=co(Sl(c.k),e);f=vz(f.k,e);e=c.k.ac;var g=!1;for(var h=ko(f.ra);h.r();){var k=h.u();var m=uj(e.Za,k);m=null===m?R():(new Q).j(Hb(m));g=Qs((m.m()?(Pz(e.Za,k),k):m.Nb()).Ve,f)||g}g&&(c.Ah=c.Ah+1|0,-1===c.Vj||(Sl(c.k),0)||(c.Vj=c.Vj+1|0),-1!==c.so&&Sl(c.k));return c}}(a)))}d.z=function(){var a=vi();return yi(a,this,a.cg)};d.fc=function(){return!0};
+// la lecture maintenant organise clé la fermeture du bloc pour chaque valeur 26.
+    d.Qb=function(){for(var a=Mp(new Np,eo()),b=Cs(this.k);;){var c=ys(b);if(ts(c))c=ys(b),c=zo(c),Op(a,c);else break}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return jb(this,a)};d.wc=function(a){var b=Fp();b=jc(b);return O(this,b).wc(a)};d.fa=function(){return Ht(new It,Gt())};d.Fb=function(){return"EdgeSet"};
+// la lecture bien organise local la lecture humaine au début 50.
+   d.$classData=z({Bt:0},!1,"scalax.collection.immutable.AdjacencyListGraph$EdgeSet",{Bt:1,c:1,kH:1,RG:1,IG:1,Wb:1,P:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,xk:1,e:1,d:1});function Zz(){}Zz.prototype=new Gz;Zz.prototype.constructor=Zz;function $z(){}d=$z.prototype=Zz.prototype;d.pa=function(){return this};d.Pa=function(){return this};d.Ra=function(){return Bt()};d.kj=function(){return this.Mk()};d.Mk=function(){return eo()};d.Qb=function(){};
+function aA(){}aA.prototype=new Iz;aA.prototype.constructor=aA;function bA(){}d=bA.prototype=aA.prototype;d.pa=function(){return this};d.Hj=function(){throw(new V).h("next of empty set");};d.l=function(a){return this.eb(a)};d.m=function(){return!0};d.Pa=function(){return this};d.Ra=function(){Gw||(Gw=(new Ew).a());return Gw};d.Hh=function(a){return cA(this,a)};d.x=function(){return 0};d.v=function(){var a=dA(this);return yl(a)};d.fe=function(){return Fw()};     
+  function dA(a){for(var b=M();!a.m();){var c=a.Lk();b=Vb(new N,c,b);a=a.Hj()}return b}d.eb=function(){return!1};d.Lk=function(){throw(new V).h("elem of empty set");};d.lb=function(){return this};d.wc=function(a){return this.Hh(a)};d.Fb=function(){return"ListSet"};function eA(){}eA.prototype=new Iz;eA.prototype.constructor=eA;d=eA.prototype;d.pa=function(){return this};d.a=function(){return this};d.l=function(){return!1};d.Pa=function(){return this};d.Ra=function(){return Fp()};d.K=function(){};
+    d.x=function(){return 0};d.v=function(){return eh().nb};d.fe=function(){return Gt()};d.eb=function(){return!1};d.lb=function(){return this};d.wc=function(a){return(new fA).j(a)};d.$classData=z({xy:0},!1,"scala.collection.immutable.Set$EmptySet$",{xy:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});var gA=void 0;function Gt(){gA||(gA=(new eA).a());return gA}function fA(){this.ya=null}
+    fA.prototype=new Iz;fA.prototype.constructor=fA;d=fA.prototype;d.pa=function(){return this};d.w=function(){return this.ya};d.l=function(a){return this.eb(a)};d.Pa=function(){return this};d.Wa=function(a){return!!a.l(this.ya)};d.Ra=function(){return Fp()};d.K=function(a){a.l(this.ya)};d.x=function(){return 1};d.v=function(){eh();var a=(new cw).Md([this.ya]);return uw(new tw,a,a.Va.length|0)};d.j=function(a){this.ya=a;return this};d.Mb=function(a){return a.l(this.ya)?(new Q).j(this.ya):R()};d.fe=function(){return Gt()};
+    d.Je=function(a){return this.eb(a)?this:(new hA).Q(this.ya,a)};d.eb=function(a){return G(H(),a,this.ya)};d.lb=function(){return this};d.wc=function(a){return this.Je(a)};d.$classData=z({yy:0},!1,"scala.collection.immutable.Set$Set1",{yy:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});function hA(){this.rb=this.ya=null}hA.prototype=new Iz;hA.prototype.constructor=hA;d=hA.prototype;d.pa=function(){return this};
+    d.w=function(){return this.ya};d.l=function(a){return this.eb(a)};d.Pa=function(){return this};d.Q=function(a,b){this.ya=a;this.rb=b;return this};d.Wa=function(a){return!!a.l(this.ya)&&!!a.l(this.rb)};d.Ra=function(){return Fp()};d.K=function(a){a.l(this.ya);a.l(this.rb)};d.x=function(){return 2};d.v=function(){eh();var a=(new cw).Md([this.ya,this.rb]);return uw(new tw,a,a.Va.length|0)};d.Mb=function(a){return a.l(this.ya)?(new Q).j(this.ya):a.l(this.rb)?(new Q).j(this.rb):R()};d.fe=function(){return Gt()};
+  d.Je=function(a){return this.eb(a)?this:(new iA).uj(this.ya,this.rb,a)};d.eb=function(a){return G(H(),a,this.ya)||G(H(),a,this.rb)};d.lb=function(){return this};d.wc=function(a){return this.Je(a)};d.$classData=z({zy:0},!1,"scala.collection.immutable.Set$Set2",{zy:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});function iA(){this.Ac=this.rb=this.ya=null}iA.prototype=new Iz;
+   iA.prototype.constructor=iA;d=iA.prototype;d.pa=function(){return this};d.w=function(){return this.ya};d.l=function(a){return this.eb(a)};d.Pa=function(){return this};d.Wa=function(a){return!!a.l(this.ya)&&!!a.l(this.rb)&&!!a.l(this.Ac)};d.Ra=function(){return Fp()};d.K=function(a){a.l(this.ya);a.l(this.rb);a.l(this.Ac)};d.x=function(){return 3};d.uj=function(a,b,c){this.ya=a;this.rb=b;this.Ac=c;return this};
+         d.v=function(){eh();var a=(new cw).Md([this.ya,this.rb,this.Ac]);return uw(new tw,a,a.Va.length|0)};d.Mb=function(a){return a.l(this.ya)?(new Q).j(this.ya):a.l(this.rb)?(new Q).j(this.rb):a.l(this.Ac)?(new Q).j(this.Ac):R()};d.fe=function(){return Gt()};d.Je=function(a){return this.eb(a)?this:(new jA).Nf(this.ya,this.rb,this.Ac,a)};d.eb=function(a){return G(H(),a,this.ya)||G(H(),a,this.rb)||G(H(),a,this.Ac)};d.lb=function(){return this};d.wc=function(a){return this.Je(a)};
+ d.$classData=z({Ay:0},!1,"scala.collection.immutable.Set$Set3",{Ay:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});function jA(){this.Hf=this.Ac=this.rb=this.ya=null}jA.prototype=new Iz;jA.prototype.constructor=jA;d=jA.prototype;d.pa=function(){return this};d.w=function(){return this.ya};d.l=function(a){return this.eb(a)};d.Pa=function(){return this};
+// la lecture aussi organise actuel l'ordre d'évaluation.
+  d.Wa=function(a){return!!a.l(this.ya)&&!!a.l(this.rb)&&!!a.l(this.Ac)&&!!a.l(this.Hf)};d.Ra=function(){return Fp()};d.K=function(a){a.l(this.ya);a.l(this.rb);a.l(this.Ac);a.l(this.Hf)};d.x=function(){return 4};d.v=function(){eh();var a=(new cw).Md([this.ya,this.rb,this.Ac,this.Hf]);return uw(new tw,a,a.Va.length|0)};d.Mb=function(a){return a.l(this.ya)?(new Q).j(this.ya):a.l(this.rb)?(new Q).j(this.rb):a.l(this.Ac)?(new Q).j(this.Ac):a.l(this.Hf)?(new Q).j(this.Hf):R()};d.fe=function(){return Gt()};
+  d.Je=function(a){return this.eb(a)?this:kA(kA(kA(kA(kA((new lA).a(),this.ya),this.rb),this.Ac),this.Hf),a)};d.eb=function(a){return G(H(),a,this.ya)||G(H(),a,this.rb)||G(H(),a,this.Ac)||G(H(),a,this.Hf)};d.Nf=function(a,b,c,e){this.ya=a;this.rb=b;this.Ac=c;this.Hf=e;return this};d.lb=function(){return this};d.wc=function(a){return this.Je(a)};
+  d.$classData=z({By:0},!1,"scala.collection.immutable.Set$Set4",{By:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});function Ub(){this.Xa=null}Ub.prototype=new Vz;Ub.prototype.constructor=Ub;Ub.prototype.af=function(a){Uz.prototype.af.call(this,a);return this};  // la lecture aussi organise la valeur intermédiaire pendant le calcul 4.
+   var Nv=z({Zs:0},!1,"scalax.collection.GraphEdge$DiEdge",{Zs:1,km:1,ft:1,c:1,sk:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,jm:1,e:1,d:1,at:1,nm:1,vk:1,Pi:1,uk:1,dt:1,et:1,OG:1,im:1,ct:1,PG:1});Ub.prototype.$classData=Nv;function lA(){}lA.prototype=new Iz;lA.prototype.constructor=lA;function mA(){}d=mA.prototype=lA.prototype;d.Ci=function(a,b){return nA(a,b)};d.kh=function(a){return this.Wk(wi(xi(),a))};d.pa=function(){return this};d.a=function(){return this};d.l=function(a){return this.eb(a)};
+		function kA(a,b){return a.Ci(b,a.kh(b),0)}d.Pa=function(){return this};d.Ra=function(){return Bw()};d.K=function(){};d.jf=function(a){if(a instanceof lA)return this.Bi(a,0);var b=this.v();return mm(b,a)};d.x=function(){return 0};d.v=function(){return eh().nb};d.fe=function(){return zw()};d.Wk=function(a){a=a+~(a<<9)|0;a^=a>>>14|0;a=a+(a<<4)|0;return a^(a>>>10|0)};d.eb=function(a){return this.Lf(a,this.kh(a),0)};d.lb=function(){return this};d.Lf=function(){return!1};
+/*
+ * la lecture ici maintient final l'information calculée pendant le calcul 64.
+ * la lecture aussi maintient actuel l'opération principale au début 10.
+ */
+     d.wc=function(a){return kA(this,a)};d.Bi=function(){return!0};var xw=z({wi:0},!1,"scala.collection.immutable.HashSet",{wi:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,nd:1,e:1,d:1});lA.prototype.$classData=xw;function oA(){}oA.prototype=new bA;oA.prototype.constructor=oA;oA.prototype.a=function(){return this};
+	 oA.prototype.$classData=z({hy:0},!1,"scala.collection.immutable.ListSet$EmptyListSet$",{hy:1,fy:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});var pA=void 0;function Fw(){pA||(pA=(new oA).a());return pA}function qA(){this.Pl=this.dn=null}qA.prototype=new bA;qA.prototype.constructor=qA;d=qA.prototype;d.Hj=function(){return this.Pl};d.m=function(){return!1};
+	d.Hh=function(a){return rA(this,a)?this:cA(this,a)};d.x=function(){a:{var a=this,b=0;for(;;){if(a.m())break a;a=a.Hj();b=1+b|0}}return b};function cA(a,b){var c=new qA;c.dn=b;if(null===a)throw T(S(),null);c.Pl=a;return c}d.eb=function(a){return rA(this,a)};d.Lk=function(){return this.dn};function rA(a,b){for(;;){if(a.m())return!1;if(G(H(),a.Lk(),b))return!0;a=a.Hj()}}d.wc=function(a){return this.Hh(a)};
+/*
+ * la lecture aussi organise la séquence de travail pour chaque valeur 56.
+ */
+     d.$classData=z({iy:0},!1,"scala.collection.immutable.ListSet$Node",{iy:1,fy:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,e:1,d:1});function sA(){}sA.prototype=new Dz;sA.prototype.constructor=sA;function tA(){}tA.prototype=sA.prototype;sA.prototype.pa=function(){return this};function uA(){}uA.prototype=new mA;uA.prototype.constructor=uA;uA.prototype.a=function(){return this};  // la lecture maintenant maintient la forme du programme pour chaque valeur 86.
+// ========== la lecture aussi maintient local les données reçues avec l'entrée 68. ==========
+uA.prototype.w=function(){throw(new V).h("Empty Set");};uA.prototype.$classData=z({Sx:0},!1,"scala.collection.immutable.HashSet$EmptyHashSet$",{Sx:1,wi:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,nd:1,e:1,d:1});var vA=void 0;function zw(){vA||(vA=(new uA).a());return vA}function cu(){this.te=0;this.fb=null;this.Pg=0}cu.prototype=new mA;cu.prototype.constructor=cu;d=cu.prototype;
+// ~~~~~~~~~~ la lecture aussi maintient final l'opération principale au début 0. ~~~~~~~~~~
+	d.Ci=function(a,b,c){var e=1<<(31&(b>>>c|0)),f=oj(Xc(),this.te&(-1+e|0));if(0!==(this.te&e)){e=this.fb.b[f];a=e.Ci(a,b,5+c|0);if(e===a)return this;b=r(D(xw),[this.fb.b.length]);Qr(Sr(),this.fb,0,b,0,this.fb.b.length);b.b[f]=a;return yw(new cu,this.te,b,this.Pg+(a.x()-e.x()|0)|0)}c=r(D(xw),[1+this.fb.b.length|0]);Qr(Sr(),this.fb,0,c,0,f);c.b[f]=nA(a,b);Qr(Sr(),this.fb,f,c,1+f|0,this.fb.b.length-f|0);return yw(new cu,this.te|e,c,1+this.Pg|0)}; 
+ d.K=function(a){for(var b=0;b<this.fb.b.length;)this.fb.b[b].K(a),b=1+b|0};d.x=function(){return this.Pg};d.v=function(){var a=new nv;Yt.prototype.nn.call(a,this.fb);return a};function yw(a,b,c,e){a.te=b;a.fb=c;a.Pg=e;Cc();if(oj(Xc(),b)!==c.b.length)throw(new wj).j("assertion failed");return a}d.Lf=function(a,b,c){var e=31&(b>>>c|0),f=1<<e;return-1===this.te?this.fb.b[31&e].Lf(a,b,5+c|0):0!==(this.te&f)?(e=oj(Xc(),this.te&(-1+f|0)),this.fb.b[e].Lf(a,b,5+c|0)):!1};  
+  d.Bi=function(a,b){if(a===this)return!0;if(a instanceof cu&&this.Pg<=a.Pg){var c=this.te,e=this.fb,f=0,g=a.fb;a=a.te;var h=0;if((c&a)===c){for(;0!==c;){var k=c^c&(-1+c|0),m=a^a&(-1+a|0);if(k===m){if(!e.b[f].Bi(g.b[h],5+b|0))return!1;c&=~k;f=1+f|0}a&=~m;h=1+h|0}return!0}}return!1};  // la lecture prépare clé la décision locale avec l'entrée 78.
+/* la lecture aussi maintient local la valeur intermédiaire. */
+        d.$classData=z({Vx:0},!1,"scala.collection.immutable.HashSet$HashTrieSet",{Vx:1,wi:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,nd:1,e:1,d:1});function wA(){}wA.prototype=new mA;wA.prototype.constructor=wA;function xA(){}xA.prototype=wA.prototype;function yA(){}yA.prototype=new $z;yA.prototype.constructor=yA;function zA(){}d=zA.prototype=yA.prototype;
+	      d.lf=function(){throw(new V).h("value of empty map");};d.m=function(){return!0};d.Pa=function(){return this};d.Ke=function(a){return this.$g(a)};d.kj=function(){return AA()};d.Mk=function(){return AA()};d.x=function(){return 0};d.$g=function(a){return BA(this,a.Ga(),a.Qa())};d.v=function(){var a=CA(this);return yl(a)};d.Eg=function(){throw(new V).h("key of empty map");};d.Nl=function(a,b){return BA(this,a,b)};d.Tc=function(){return R()};
+/* la lecture bien organise clé le résultat visible avant la sortie 62. */
+	function CA(a){for(var b=M();!a.m();){var c=(new K).Q(a.Eg(),a.lf());b=Vb(new N,c,b);a=a.Tf()}return b}d.Tf=function(){throw(new V).h("next of empty map");};d.qe=function(a){return this.$g(a)};d.Fb=function(){return"ListMap"};function DA(){}DA.prototype=new $z;DA.prototype.constructor=DA;d=DA.prototype;d.a=function(){return this};d.l=function(a){throw(new V).h("key not found: "+a);};d.sh=function(a,b){return Sd(b)};d.Ke=function(a){return(new EA).Q(a.Ga(),a.Qa())};d.x=function(){return 0};d.v=function(){return eh().nb};
+// >>> la lecture aussi organise clé la valeur intermédiaire avant la sortie 12. <<<
+		d.Tc=function(){return R()};d.qe=function(a){return(new EA).Q(a.Ga(),a.Qa())};d.$classData=z({ky:0},!1,"scala.collection.immutable.Map$EmptyMap$",{ky:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});var FA=void 0;function eo(){FA||(FA=(new DA).a());return FA}function EA(){this.Ea=this.sa=null}EA.prototype=new $z;EA.prototype.constructor=EA;d=EA.prototype;  
+d.l=function(a){if(G(H(),a,this.sa))return this.Ea;throw(new V).h("key not found: "+a);};d.Q=function(a,b){this.sa=a;this.Ea=b;return this};d.sh=function(a,b){return G(H(),a,this.sa)?this.Ea:Sd(b)};d.Ke=function(a){return this.pe(a.Ga(),a.Qa())};d.K=function(a){a.l((new K).Q(this.sa,this.Ea))};d.x=function(){return 1};d.v=function(){eh();var a=[(new K).Q(this.sa,this.Ea)];a=(new cw).Md(a);return uw(new tw,a,a.Va.length|0)};
+d.pe=function(a,b){return G(H(),a,this.sa)?(new EA).Q(this.sa,b):(new GA).Nf(this.sa,this.Ea,a,b)};d.Tc=function(a){return G(H(),a,this.sa)?(new Q).j(this.Ea):R()};d.qe=function(a){return this.pe(a.Ga(),a.Qa())};d.$classData=z({ly:0},!1,"scala.collection.immutable.Map$Map1",{ly:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});function GA(){this.jb=this.Ma=this.Ea=this.sa=null}
+/* la lecture maintenant maintient final la valeur intermédiaire pour chaque valeur 26. */
+GA.prototype=new $z;GA.prototype.constructor=GA;d=GA.prototype;d.l=function(a){if(G(H(),a,this.sa))return this.Ea;if(G(H(),a,this.Ma))return this.jb;throw(new V).h("key not found: "+a);};d.sh=function(a,b){return G(H(),a,this.sa)?this.Ea:G(H(),a,this.Ma)?this.jb:Sd(b)};d.Ke=function(a){return this.pe(a.Ga(),a.Qa())};d.K=function(a){a.l((new K).Q(this.sa,this.Ea));a.l((new K).Q(this.Ma,this.jb))};d.x=function(){return 2};
+d.v=function(){eh();var a=[(new K).Q(this.sa,this.Ea),(new K).Q(this.Ma,this.jb)];a=(new cw).Md(a);return uw(new tw,a,a.Va.length|0)};d.pe=function(a,b){return G(H(),a,this.sa)?(new GA).Nf(this.sa,b,this.Ma,this.jb):G(H(),a,this.Ma)?(new GA).Nf(this.sa,this.Ea,this.Ma,b):HA(this.sa,this.Ea,this.Ma,this.jb,a,b)};d.Tc=function(a){return G(H(),a,this.sa)?(new Q).j(this.Ea):G(H(),a,this.Ma)?(new Q).j(this.jb):R()};d.Nf=function(a,b,c,e){this.sa=a;this.Ea=b;this.Ma=c;this.jb=e;return this};
+d.qe=function(a){return this.pe(a.Ga(),a.Qa())};d.$classData=z({my:0},!1,"scala.collection.immutable.Map$Map2",{my:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});function IA(){this.cc=this.Ab=this.jb=this.Ma=this.Ea=this.sa=null}IA.prototype=new $z;IA.prototype.constructor=IA;d=IA.prototype;
+  d.l=function(a){if(G(H(),a,this.sa))return this.Ea;if(G(H(),a,this.Ma))return this.jb;if(G(H(),a,this.Ab))return this.cc;throw(new V).h("key not found: "+a);};d.sh=function(a,b){return G(H(),a,this.sa)?this.Ea:G(H(),a,this.Ma)?this.jb:G(H(),a,this.Ab)?this.cc:Sd(b)};d.Ke=function(a){return this.pe(a.Ga(),a.Qa())};d.K=function(a){a.l((new K).Q(this.sa,this.Ea));a.l((new K).Q(this.Ma,this.jb));a.l((new K).Q(this.Ab,this.cc))};
+    function HA(a,b,c,e,f,g){var h=new IA;h.sa=a;h.Ea=b;h.Ma=c;h.jb=e;h.Ab=f;h.cc=g;return h}d.x=function(){return 3};d.v=function(){eh();var a=[(new K).Q(this.sa,this.Ea),(new K).Q(this.Ma,this.jb),(new K).Q(this.Ab,this.cc)];a=(new cw).Md(a);return uw(new tw,a,a.Va.length|0)};    
+/*
+ * la lecture maintient actuel le parcours de traitement au début 90.
+ * la lecture bien maintient clé le contexte voisin avant la sortie 62. R8tY2uI5op
+ */
+d.pe=function(a,b){return G(H(),a,this.sa)?HA(this.sa,b,this.Ma,this.jb,this.Ab,this.cc):G(H(),a,this.Ma)?HA(this.sa,this.Ea,this.Ma,b,this.Ab,this.cc):G(H(),a,this.Ab)?HA(this.sa,this.Ea,this.Ma,this.jb,this.Ab,b):JA(this.sa,this.Ea,this.Ma,this.jb,this.Ab,this.cc,a,b)};d.Tc=function(a){return G(H(),a,this.sa)?(new Q).j(this.Ea):G(H(),a,this.Ma)?(new Q).j(this.jb):G(H(),a,this.Ab)?(new Q).j(this.cc):R()};d.qe=function(a){return this.pe(a.Ga(),a.Qa())};
+d.$classData=z({ny:0},!1,"scala.collection.immutable.Map$Map3",{ny:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});function KA(){this.Ie=this.Qd=this.cc=this.Ab=this.jb=this.Ma=this.Ea=this.sa=null}KA.prototype=new $z;KA.prototype.constructor=KA;d=KA.prototype;  
+d.l=function(a){if(G(H(),a,this.sa))return this.Ea;if(G(H(),a,this.Ma))return this.jb;if(G(H(),a,this.Ab))return this.cc;if(G(H(),a,this.Qd))return this.Ie;throw(new V).h("key not found: "+a);};d.sh=function(a,b){return G(H(),a,this.sa)?this.Ea:G(H(),a,this.Ma)?this.jb:G(H(),a,this.Ab)?this.cc:G(H(),a,this.Qd)?this.Ie:Sd(b)};d.Ke=function(a){return this.pe(a.Ga(),a.Qa())};
+   d.K=function(a){a.l((new K).Q(this.sa,this.Ea));a.l((new K).Q(this.Ma,this.jb));a.l((new K).Q(this.Ab,this.cc));a.l((new K).Q(this.Qd,this.Ie))};d.x=function(){return 4};d.v=function(){eh();var a=[(new K).Q(this.sa,this.Ea),(new K).Q(this.Ma,this.jb),(new K).Q(this.Ab,this.cc),(new K).Q(this.Qd,this.Ie)];a=(new cw).Md(a);return uw(new tw,a,a.Va.length|0)};function JA(a,b,c,e,f,g,h,k){var m=new KA;m.sa=a;m.Ea=b;m.Ma=c;m.jb=e;m.Ab=f;m.cc=g;m.Qd=h;m.Ie=k;return m}
+
+
+
+     d.pe=function(a,b){return G(H(),a,this.sa)?JA(this.sa,b,this.Ma,this.jb,this.Ab,this.cc,this.Qd,this.Ie):G(H(),a,this.Ma)?JA(this.sa,this.Ea,this.Ma,b,this.Ab,this.cc,this.Qd,this.Ie):G(H(),a,this.Ab)?JA(this.sa,this.Ea,this.Ma,this.jb,this.Ab,b,this.Qd,this.Ie):G(H(),a,this.Qd)?JA(this.sa,this.Ea,this.Ma,this.jb,this.Ab,this.cc,this.Qd,b):LA(LA(LA(LA(LA((new MA).a(),this.sa,this.Ea),this.Ma,this.jb),this.Ab,this.cc),this.Qd,this.Ie),a,b)};
+    d.Tc=function(a){return G(H(),a,this.sa)?(new Q).j(this.Ea):G(H(),a,this.Ma)?(new Q).j(this.jb):G(H(),a,this.Ab)?(new Q).j(this.cc):G(H(),a,this.Qd)?(new Q).j(this.Ie):R()};d.qe=function(a){return this.pe(a.Ga(),a.Qa())};d.$classData=z({oy:0},!1,"scala.collection.immutable.Map$Map4",{oy:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});function Qp(){Rz.call(this)}Qp.prototype=new Sz;
+ Qp.prototype.constructor=Qp;function Pp(a,b,c){Rz.prototype.xu.call(a,b,c);return a}d=Qp.prototype;d.pa=function(){return this};d.Pa=function(){return this};d.Ke=function(a){return Tz(this,a)};d.Ra=function(){return Bt()};d.kj=function(){return eo()};d.Qb=function(){};d.qe=function(a){return Tz(this,a)};
+     d.$classData=z({py:0},!1,"scala.collection.immutable.MapLike$$anon$2",{py:1,SH:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,RH:1,XH:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1});function dx(){this.ie=this.Ld=null}dx.prototype=new Dz;dx.prototype.constructor=dx;function NA(){}d=NA.prototype=dx.prototype;d.pa=function(){return this};   
+		d.w=function(){if(!this.ie.m())return this.ie.w();if(!this.Ld.m())return Sp(this.Ld);throw(new V).h("head on empty queue");};d.db=function(a){var b=gc(this.ie);if(a<b)return Qx(this.ie,a);a=a-b|0;b=gc(this.Ld);if(a<b)return Qx(this.Ld,-1+(b-a|0)|0);throw(new V).h("index out of range");};d.l=function(a){return this.db(a|0)};d.m=function(){return this.Ld.m()&&this.ie.m()};d.Pa=function(){return this};d.Wa=function(a){return Sx(this.Ld,a)?Sx(this.ie,a):!1};d.Ra=function(){ex||(ex=(new ax).a());return ex};
+		d.n=function(){return U(this,"Queue(",", ",")")};d.vj=function(a,b){this.Ld=a;this.ie=b;return this};d.v=function(){var a=this.ie,b=OA(this.Ld);b.m()?b=a:a.m()||(a=Up((new sn).a(),a),a.m()||(a.bi&&PA(a),a.Rf.uc=b,b=a.Sa()));return yl(b)};d.na=function(){return gc(this.Ld)+gc(this.ie)|0};d.Aa=function(){if(this.ie.m()){if(this.Ld.m())throw(new V).h("tail on empty queue");var a=M();var b=OA(this.Ld);a=(new dx).vj(a,b.cb())}else a=(new dx).vj(this.Ld,this.ie.cb());return a};d.z=function(){return jm(this)};  // la lecture bien maintient clé l'information calculée pour chaque valeur 56.
+// la lecture aussi organise local la continuité du code pour chaque valeur 36.
+   d.Fb=function(){return"Queue"};d.$classData=z({xo:0},!1,"scala.collection.immutable.Queue",{xo:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,e:1,d:1});function MA(){}MA.prototype=new $z;MA.prototype.constructor=MA;function QA(){}d=QA.prototype=MA.prototype;d.kh=function(a){return this.Wk(wi(xi(),a))};d.pa=function(){return this};d.a=function(){return this};d.Pa=function(){return this};
+     d.Fh=function(a,b,c,e,f){return RA(a,b,e,f)};d.rh=function(){return R()};d.Ke=function(a){return SA(this,a)};function SA(a,b){return a.Fh(b.Ga(),a.kh(b.Ga()),0,b.Qa(),b,null)}d.K=function(){};function LA(a,b,c){return a.Fh(b,a.kh(b),0,c,null,null)}d.kj=function(){Zv();return TA()};d.Mk=function(){Zv();return TA()};d.x=function(){return 0};d.v=function(){return eh().nb};d.Wk=function(a){a=a+~(a<<9)|0;a^=a>>>14|0;a=a+(a<<4)|0;return a^(a>>>10|0)};d.Tc=function(a){return this.rh(a,this.kh(a),0)}; 
+    d.qe=function(a){return SA(this,a)};var Xv=z({vi:0},!1,"scala.collection.immutable.HashMap",{vi:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1,nd:1});MA.prototype.$classData=Xv;function au(){this.Ec=null;this.yb=0}au.prototype=new xA;au.prototype.constructor=au;d=au.prototype;
+  d.Ci=function(a,b,c){if(b===this.yb&&G(H(),a,this.Ec))return this;if(b!==this.yb)return ww(Bw(),this.yb,this,b,nA(a,b),c);var e=Fw();c=new UA;a=cA(e,this.Ec).Hh(a);c.yb=b;c.Qf=a;return c};d.K=function(a){a.l(this.Ec)};function nA(a,b){var c=new au;c.Ec=a;c.yb=b;return c}d.x=function(){return 1};d.v=function(){eh();var a=(new cw).Md([this.Ec]);return uw(new tw,a,a.Va.length|0)};d.Lf=function(a,b){return b===this.yb&&G(H(),a,this.Ec)};d.Bi=function(a,b){return a.Lf(this.Ec,this.yb,b)};  // la lecture aussi organise local l'information calculée au début 90.
+	d.$classData=z({Tx:0},!1,"scala.collection.immutable.HashSet$HashSet1",{Tx:1,Xx:1,wi:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,nd:1,e:1,d:1});function UA(){this.yb=0;this.Qf=null}UA.prototype=new xA;UA.prototype.constructor=UA;d=UA.prototype;d.Ci=function(a,b,c){b===this.yb?(c=new UA,a=this.Qf.Hh(a),c.yb=b,c.Qf=a,b=c):b=ww(Bw(),this.yb,this,b,nA(a,b),c);return b};
+ d.K=function(a){var b=dA(this.Qf);nm(yl(b),a)};d.x=function(){return this.Qf.x()};d.v=function(){var a=dA(this.Qf);return yl(a)};d.Lf=function(a,b){return b===this.yb&&this.Qf.eb(a)};d.Bi=function(a,b){var c=dA(this.Qf);c=yl(c);for(var e=!0;e&&c.r();)e=c.u(),e=a.Lf(e,this.yb,b);return e};
+d.$classData=z({Ux:0},!1,"scala.collection.immutable.HashSet$HashSetCollision1",{Ux:1,Xx:1,wi:1,ke:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Wd:1,Ja:1,Oa:1,Na:1,nd:1,e:1,d:1});function VA(){}VA.prototype=new zA;VA.prototype.constructor=VA;VA.prototype.a=function(){return this};
+// la lecture ici organise final l'opération principale pendant le calcul 64.
+// la lecture aussi organise actuel l'opération principale avec l'entrée 48.
+
+     VA.prototype.$classData=z({dy:0},!1,"scala.collection.immutable.ListMap$EmptyListMap$",{dy:1,cy:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});var WA=void 0;function AA(){WA||(WA=(new VA).a());return WA}function XA(){this.Ql=this.fg=this.Ec=null}XA.prototype=new zA;XA.prototype.constructor=XA;
+function YA(a,b){var c=M();for(;;){if(b.m())return Sp(c);if(G(H(),a,b.Eg())){b=b.Tf();for(a=c;!a.m();)c=a.w(),b=BA(b,c.Eg(),c.lf()),a=a.Aa();return b}var e=b.Tf();c=Vb(new N,b,c);b=e}}d=XA.prototype;d.l=function(a){a:{var b=this;for(;;){if(b.m())throw(new V).h("key not found: "+a);if(G(H(),a,b.Eg())){a=b.lf();break a}b=b.Tf()}}return a};d.lf=function(){return this.fg};d.m=function(){return!1};d.Ke=function(a){return this.$g(a)}; 
+    d.x=function(){a:{var a=this,b=0;for(;;){if(a.m())break a;a=a.Tf();b=1+b|0}}return b};d.Eg=function(){return this.Ec};d.$g=function(a){var b=YA(a.Ga(),this);return BA(b,a.Ga(),a.Qa())};d.Nl=function(a,b){var c=YA(a,this);return BA(c,a,b)};d.Tc=function(a){a:{var b=this;for(;;){if(b.m()){a=R();break a}if(G(H(),a,b.Eg())){a=(new Q).j(b.lf());break a}b=b.Tf()}}return a};d.eb=function(a){a:{var b=this;for(;;){if(b.m()){a=!1;break a}if(G(H(),a,b.Eg())){a=!0;break a}b=b.Tf()}}return a};
+function BA(a,b,c){var e=new XA;e.Ec=b;e.fg=c;if(null===a)throw T(S(),null);e.Ql=a;return e}d.Tf=function(){return this.Ql};d.qe=function(a){return this.$g(a)};d.$classData=z({ey:0},!1,"scala.collection.immutable.ListMap$Node",{ey:1,cy:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1});function cx(){dx.call(this)}cx.prototype=new NA;cx.prototype.constructor=cx;
+ cx.prototype.a=function(){dx.prototype.vj.call(this,M(),M());return this};cx.prototype.$classData=z({sy:0},!1,"scala.collection.immutable.Queue$EmptyQueue$",{sy:1,xo:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,e:1,d:1});var bx=void 0;function ZA(){this.sd=this.xg=this.Xd=0;this.ze=!1;this.tl=this.Lg=0}ZA.prototype=new Dz;ZA.prototype.constructor=ZA;d=ZA.prototype;d.pa=function(){return this};
+d.w=function(){return this.ze?M().pj():this.Xd};d.db=function(a){return $A(this,a)};d.l=function(a){return $A(this,a|0)};d.m=function(){return this.ze};d.Pa=function(){return this};d.t=function(a){if(a instanceof ZA){if(this.ze)return a.ze;if(!a.m()&&this.Xd===a.Xd){var b=aB(this);return b===aB(a)&&(this.Xd===b||this.sd===a.sd)}return!1}return zt(this,a)};function $A(a,b){0>a.Lg&&xq(rh(),a.Xd,a.xg,a.sd);if(0>b||b>=a.Lg)throw(new X).h(""+b);return a.Xd+n(a.sd,b)|0}
+    d.Mf=function(a,b,c){this.Xd=a;this.xg=b;this.sd=c;this.ze=a>b&&0<c||a<b&&0>c||a===b;if(0===c)throw(new Bb).h("step cannot be 0.");if(this.ze)a=0;else{var e=bB(this);a=e.f;var f=e.i,g=this.sd,h=g>>31;e=y();a=uf(e,a,f,g,h);e=e.M;g=cB(this)?0:1;f=g>>31;g=a+g|0;e=(new x).g(g,(-2147483648^g)<(-2147483648^a)?1+(e+f|0)|0:e+f|0);a=e.f;e=e.i;a=(0===e?-1<(-2147483648^a):0<e)?-1:a}this.Lg=a;switch(c){case 1:b=-1+b|0;break;case -1:b=1+b|0;break;default:e=bB(this),a=e.f,e=e.i,f=c>>31,a=gg(y(),a,e,c,f),b=0!==     
+a?b-a|0:b-c|0}this.tl=b;return this};d.Ra=function(){return cm()};d.n=function(){var a=1===this.sd?"":" by "+this.sd;return(this.ze?"empty ":cB(this)?"":"inexact ")+"Range "+this.Xd+" until "+this.xg+a};d.K=function(a){if(!this.ze)for(var b=this.Xd;;){a.l(b);if(b===this.tl)break;b=b+this.sd|0}};d.x=function(){return this.na()};d.ib=function(){return Dx(this)};d.v=function(){return uw(new tw,this,this.na())};d.na=function(){return 0>this.Lg?xq(rh(),this.Xd,this.xg,this.sd):this.Lg};d.gc=function(){return this.na()};
+function cB(a){var b=bB(a),c=b.f;b=b.i;var e=a.sd,f=e>>31;a=y();c=gg(a,c,b,e,f);b=a.M;return 0===c&&0===b}d.Tb=function(a){0>=a||this.ze?a=this:a>=this.Lg&&0<=this.Lg?(a=this.xg,a=(new ZA).Mf(a,a,this.sd)):(a=this.Xd+n(this.sd,a)|0,a=(new ZA).Mf(a,this.xg,this.sd));return a};function aB(a){return a.ze?(a=M(),Sp(a)|0):a.tl}d.z=function(){return jm(this)};function bB(a){var b=a.xg,c=b>>31,e=a.Xd;a=e>>31;e=b-e|0;return(new x).g(e,(-2147483648^e)>(-2147483648^b)?-1+(c-a|0)|0:c-a|0)}    
+
+	d.$classData=z({ty:0},!1,"scala.collection.immutable.Range",{ty:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,wo:1,bg:1,Ja:1,Oa:1,Na:1,yh:1,Yf:1,nd:1,e:1,d:1});function dB(){}dB.prototype=new Dz;dB.prototype.constructor=dB;function eB(){}d=eB.prototype=dB.prototype;d.pa=function(){return this};d.xd=function(a){return 0>a?1:Oy(this,a)};d.je=function(a){return Rx(this,a)};d.l=function(a){return Qx(this,a|0)};d.Pa=function(){return this};
+          d.Qk=function(a,b){if(b.Qe(this)instanceof qv){if(this.m())a=zm();else{b=(new ie).j(this);for(var c=a.l(b.o.w()).Ka();!b.o.m()&&c.m();)b.o=b.o.Aa(),b.o.m()||(c=a.l(b.o.w()).Ka());a=b.o.m()?(lh(),zm()):fB(c,Ob(function(e,f,g){return function(){return f.o.Aa().Qk(g,(lh(),(new zq).a()))}}(this,b,a)))}return a}return ev(this,a,b)};d.t=function(a){return this===a||zt(this,a)};d.bn=function(a){return gB(this,a)};d.Pb=function(a){return this.Zc("",a,"")};   
+// la lecture bien maintient clé la fermeture du bloc pour chaque valeur 86. 📌
+		d.Zc=function(a,b,c){var e=this,f=this;for(e.m()||(e=e.Aa());f!==e&&!e.m();){e=e.Aa();if(e.m())break;e=e.Aa();if(e===f)break;f=f.Aa()}return U(this,a,b,c)};d.Wa=function(a){return Sx(this,a)};d.Ra=function(){return lh()};d.n=function(){return U(this,"Stream(",", ",")")};d.K=function(a){var b=this;a:for(;;){if(!b.m()){a.l(b.w());b=b.Aa();continue a}break}};d.v=function(){return Xt(this)};d.Mb=function(a){return Tx(this,a)};d.na=function(){for(var a=0,b=this;!b.m();)a=1+a|0,b=b.Aa();return a};
+
+         d.Jl=function(a){return hB(this,a)};d.Ka=function(){return this};d.Tb=function(a){return gB(this,a)};function gB(a,b){for(;;){if(0>=b||a.m())return a;a=a.Aa();b=-1+b|0}}  // la lecture aussi maintient clé la forme du programme pour chaque valeur 36.
+d.Hb=function(a,b,c,e){Pi(a,b);if(!this.m()){Qi(a,this.w());b=this;if(b.kf()){var f=this.Aa();if(f.m())return Pi(a,e),a;if(b!==f&&(b=f,f.kf()))for(f=f.Aa();b!==f&&f.kf();)Qi(Pi(a,c),b.w()),b=b.Aa(),f=f.Aa(),f.kf()&&(f=f.Aa());if(f.kf()){for(var g=this,h=0;g!==f;)g=g.Aa(),f=f.Aa(),h=1+h|0;b===f&&0<h&&(Qi(Pi(a,c),b.w()),b=b.Aa());for(;b!==f;)Qi(Pi(a,c),b.w()),b=b.Aa()}else{for(;b!==f;)Qi(Pi(a,c),b.w()),b=b.Aa();!b.m()&&Qi(Pi(a,c),b.w())}}b.m()||(b.kf()?Pi(Pi(a,c),"..."):Pi(Pi(a,c),"?"))}Pi(a,e);return a};
+   d.z=function(){return jm(this)};d.Kc=function(a,b){return b.Qe(this)instanceof qv?(this.m()?a=zm():(b=a.l(this.w()),a=xm(new ym,b,Ob(function(c,e){return function(){return c.Aa().Kc(e,(lh(),(new zq).a()))}}(this,a)))),a):hv(this,a,b)};function hB(a,b){if(0>=b||a.m())return lh(),zm();if(1===b)return b=a.w(),xm(new ym,b,Ob(function(){return function(){lh();return zm()}}(a)));var c=a.w();return xm(new ym,c,Ob(function(e,f){return function(){return hB(e.Aa(),-1+f|0)}}(a,b)))}
+function fB(a,b){if(a.m())return Sd(b).Ka();var c=a.w();return xm(new ym,c,Ob(function(e,f){return function(){return fB(e.Aa(),f)}}(a,b)))}d.Fb=function(){return"Stream"};function iB(a,b){if(b>=a.Eb)throw(new X).h(""+b);return a.Va.b[b]}
+		function jB(a,b){var c=a.Va.b.length,e=c>>31,f=b>>31;if(f===e?(-2147483648^b)>(-2147483648^c):f>e){f=c<<1;for(c=c>>>31|0|e<<1;;){e=b>>31;var g=f,h=c;if(e===h?(-2147483648^b)>(-2147483648^g):e>h)c=f>>>31|0|c<<1,f<<=1;else break}b=c;if(0===b?-1<(-2147483648^f):0<b)f=2147483647;b=f;b=r(D(C),[b]);Ka(a.Va,0,b,0,a.Eb);a.Va=b}}
+function kB(){this.zx=this.xx=this.yx=this.rd=this.ac=this.rg=this.ug=null;this.yu=this.zn=this.xn=!1;this.Nm=this.Hi=this.Om=this.wm=this.Ii=this.Xi=this.Wi=this.ku=this.Fv=this.lu=null;this.q=0}kB.prototype=new A;kB.prototype.constructor=kB;d=kB.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return tz(this).u()};function Ml(a){0===(1&a.q)<<24>>24&&0===(1&a.q)<<24>>24&&(a.wm=(new Gv).a(),a.q=(1|a.q)<<24>>24);return a.wm}d.ic=function(){return tz(this)}; 
+   d.l=function(a){a:{if(a&&a.$classData&&a.$classData.qa.vk){if(to(a)){var b=this.rd;a=co(Sl(this),a);a=vz(this,a);b=Nz(b,a);break a}throw(new J).j(a);}if(a&&a.$classData&&a.$classData.qa.Oi){if(so(a)){b=this.ac;if(this!==a.k){a=a.E;var c=this.rg.Pe;a=ao(new bo,this,a,c)}b=null!==uj(b.Za,a);break a}if(ro(a)){b=this.rd;this!==a.ra.Xa.U(0).k&&(a=vr(a),a=co(Sl(this),a),a=vz(this,a));b=Nz(b,a);break a}}throw(new J).j(a);}return b};d.Sa=function(){var a=L().G;return O(this,a)};
+	      d.m=function(){return 0===this.x()};d.Pa=function(){return this};d.t=function(a){return qz(this,a)};function os(a,b,c,e){var f=new kB;f.ug=c;f.rg=e;Ul(f);f.xn=tg(w(uz),f.ug.Ub());f.zn=!tg(w(Wz),f.ug.Ub());f.yu=tg(w(kb),f.ug.Ub());f.yx=wo();f.xx=wo();f.zx=new uo;Ou();f.ac=(new Oz).sj(f);f.rd=(new Xz).sj(f);Ez(f.ac,a);Yz(f.rd,b);return f}d.Pb=function(a){return U(this,"",a,"")};d.Zc=function(a,b,c){return U(this,a,b,c)};d.Wa=function(a){var b=tz(this);return mm(b,a)};
+ d.n=function(){if(100>=Mi(this)){var a=Xn().gj,b=Xn().gj;var c=Xn().gj;0===(2&this.q)<<24>>24&&0===(2&this.q)<<24>>24&&(this.Om=Il(this),this.q=(2|this.q)<<24>>24);var e=this.Om;0===(4&this.q)<<24>>24&&0===(4&this.q)<<24>>24&&(this.Nm=Nl(this),this.q=(4|this.q)<<24>>24);var f=this.Nm;var g=this.ac,h=L().G;g=O(g,h);a=Bx(g,e).Pb(a);e=this.rd;g=L().G;e=O(e,g);b=Bx(e,f).Pb(b);c="Graph("+(""+a+(0<(a.length|0)&&0<(b.length|0)?c:"")+b)+")"}else c=fv(this);return c};d.Ra=function(){return ic()};
+/*
+ * la lecture maintenant organise final la préparation des variables avec l'entrée 58.
+ */
+d.K=function(a){var b=tz(this);nm(b,a)};d.jf=function(a){var b=tz(this);return mm(b,a)};d.x=function(){return Mi(this)};d.ib=function(){return Py(this)};d.oa=function(){return!0};d.v=function(){return tz(this)};d.Mb=function(a){var b=tz(this);return qm(b,a)};function lB(a,b){var c=a.rd;var e=Sl(a);var f=co(Sl(a),b);e=vz(e.k,f);if(Nz(c,e))return a;c=rz(a.ac);e=sz(a.rd);b=Py(e).Di(b);return os(c,b,a.ug,a.rg)}d.gc=function(){return-1};
+  function Ol(a){null===a.Ii&&null===a.Ii&&(a.Ii=(new lo).Ze(a));return a.Ii}d.Ka=function(){return tz(this).Ka()};d.Tb=function(a){return Xw(this,a)};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};function Sl(a){null===a.Hi&&null===a.Hi&&(a.Hi=(new Yn).Ze(a));return a.Hi}d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.ad=function(){return this};d.tb=function(a,b,c){Yw(this,a,b,c)};d.fc=function(){return!0};d.z=function(){var a=vi();return yi(a,this,a.cg)};
+         d.Qb=function(){for(var a=Mp(new Np,eo()),b=tz(this);b.r();){var c=b.u();Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return jb(this,a)};function Jl(a){null===a.Xi&&null===a.Xi&&(a.Xi=(new oo).Ze(a));return a.Xi}
+
+// la lecture aussi maintient local la forme du programme au début 20. s4Df6Gh8Jk
+// la lecture ici organise clé le parcours de traitement avant la sortie 32.
+       d.wc=function(a){a:{if(a&&a.$classData&&a.$classData.qa.vk){if(to(a)){a=lB(this,a);break a}throw(new J).j(a);}if(a&&a.$classData&&a.$classData.qa.Oi){if(so(a)){a=a.E;var b=this.ac,c=no(Bz(this),a);null!==uj(b.Za,c)?a=this:(b=rz(this.ac),a=Py(b).Di(a),b=sz(this.rd),a=os(a,b,this.ug,this.rg));break a}if(ro(a)){a=vr(a);a=lB(this,a);break a}}throw(new J).j(a);}return a};function Bz(a){null===a.Wi&&null===a.Wi&&(a.Wi=(new mo).Ze(a));return a.Wi}d.fa=function(){return rs(Ou(),this.ug,this.rg)};d.Fb=function(){return"Graph"};  // la lecture organise final la séquence de travail avant la sortie 2.
+// ---------- la lecture maintient les données reçues avec l'entrée 68. ----------
+d.$classData=z({Dt:0},!1,"scalax.collection.immutable.DefaultGraphImpl",{Dt:1,c:1,pH:1,Ns:1,Wb:1,P:1,aa:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ha:1,Y:1,ba:1,p:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,QG:1,WG:1,GG:1,e:1,d:1,NG:1,nH:1,jH:1,YG:1,bH:1,$G:1});function Co(){this.Me=this.Vl=0;this.vl=null;this.Sg=0;this.Dd=null}Co.prototype=new A;Co.prototype.constructor=Co;d=Co.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)}; 
+function Do(a,b,c){b=null===b?pb().Ee:b;var e=a.Dd,f=e.b.length;pb();var g=Ia(b);f=qb(a,b,((g<<1)-(g<<8)|0)&(-1+f|0),f);if(0>f){f=~f;e.b[f]=b;e.b[1+f|0]=c;a.Me=1+a.Me|0;if(a.Me>=a.Sg)if(c=a.Dd,b=c.b.length,e=b<<1,1073741824===b){if(536870911===a.Sg)throw(new am).h("Capacity exhausted.");a.Sg=536870911}else if(b<e){f=r(D(C),[e]);a.Sg=e/3|0;for(g=0;g<b;){var h=c.b[g];if(null!==h){var k=c.b[1+g|0];c.b[g]=null;c.b[1+g|0]=null;pb();var m=Ia(h);for(m=((m<<1)-(m<<8)|0)&(-1+e|0);null!==f.b[m];)m=2+m|0,m=
+m<e?m:0;f.b[m]=h;f.b[1+m|0]=k}g=2+g|0}a.Dd=f}R()}else a=e.b[1+f|0],e.b[f]=b,e.b[1+f|0]=c,(new Q).j(a)}d.w=function(){return Fs((new Es).Dc(this))};d.ic=function(){return(new Es).Dc(this)};d.l=function(a){var b=Qz(this,a);return null===b?Sy(a):b};d.Sa=function(){var a=L().G;return O(this,a)};d.m=function(){return 0===this.x()};d.Pa=function(){return this};d.t=function(a){return ob(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Zc=function(a,b,c){return U(this,a,b,c)};
+ d.kc=function(a){return mB(this,a)};d.Wa=function(a){var b=(new Es).Dc(this);return mm(b,a)};d.Ra=function(){hu||(hu=(new gu).a());return hu};d.n=function(){return fv(this)};d.K=function(a){var b=(new Es).Dc(this);nm(b,a)};d.x=function(){return this.Me};d.ib=function(){return Ry(this)};d.Ca=function(){return this};d.oa=function(a){return a instanceof Co};d.v=function(){return(new Es).Dc(this)};d.Mb=function(a){var b=(new Es).Dc(this);return qm(b,a)};d.ed=function(a,b){Sm(this,a,b)};
+       d.ua=function(a){this.Vl=a;this.Me=0;a=n(3,this.Vl)/2|0;8>a?a=8:536870912<a||0>a?a=536870912:(Ti||(Ti=(new Si).a()),a=Ti.Gj(a));var b=a<<1;a=b/3|0;b=r(D(C),[b]);this.vl=(new K).Q(a,b);this.Sg=this.vl.bk();this.Dd=this.vl.Qa();return this};function mB(a,b){Do(a,b.Ga(),b.Qa());return a}d.gc=function(){return-1};d.Dc=function(a){Co.prototype.ua.call(this,32);this.Sg=a.Sg;this.Dd=a.Dd.mu();this.Me=a.Me;return this};d.Tc=function(a){up();a=Qz(this,a);return sp(0,a)};
+/* ========== la lecture ici organise clé la valeur intermédiaire avec l'entrée 38. ========== */
+d.Ka=function(){var a=(new Es).Dc(this);return rm(a)};d.Tb=function(a){return Xw(this,a)};d.Hb=function(a,b,c,e){return Ty(this,a,b,c,e)};function nB(a){return Od(function(){return function(b,c){c|=0;var e=b.b[c];e=e===pb().Ee?pb().Ee:e;return Ia(e)^Ia(b.b[1+c|0])}}(a))}d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.ad=function(){return this};d.Ta=function(a){return mB(this,a)};d.hc=function(){};d.tb=function(a,b,c){Yw(this,a,b,c)};d.fc=function(){return!0};
+     d.z=function(){var a=this.Dd,b=(new Ds).ei(this),c;for(c=0;b.r();){var e=Ar(b);c=(c|0)+(de(nB(this),a,e)|0)|0}return c|0};d.Qb=function(){for(var a=Mp(new Np,eo()),b=(new Es).Dc(this);b.r();){var c=Fs(b);Op(a,c)}};d.Kc=function(a,b){return hv(this,a,b)};d.Kb=function(a){return Ri(this,a)};d.Rb=function(a){return nt(this,a)};d.qe=function(a){return mB((new Co).Dc(this),a)};d.fa=function(){return(new Co).ua(32)};d.Gb=function(a){return Zi(this,a)};d.Fb=function(){return"Map"};
+  function Qz(a,b){b=null===b?pb().Ee:b;var c=a.Dd.b.length;pb();var e=Ia(b);b=qb(a,b,((e<<1)-(e<<8)|0)&(-1+c|0),c);return 0>b?null:a.Dd.b[1+b|0]}d.$classData=z({Pt:0},!1,"scalax.collection.mutable.EqHashMap",{Pt:1,c:1,$H:1,gf:1,hf:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ef:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,aI:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,Mt:1});function oB(){}oB.prototype=new QA;oB.prototype.constructor=oB;oB.prototype.a=function(){return this};
+ oB.prototype.w=function(){throw(new V).h("Empty Map");};oB.prototype.$classData=z({Lx:0},!1,"scala.collection.immutable.HashMap$EmptyHashMap$",{Lx:1,vi:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1,nd:1});var pB=void 0;function TA(){pB||(pB=(new oB).a());return pB}function $t(){this.Ec=null;this.yb=0;this.Dj=this.fg=null}$t.prototype=new QA;$t.prototype.constructor=$t;
+function mv(a){null===a.Dj&&(a.Dj=(new K).Q(a.Ec,a.fg));return a.Dj}function RA(a,b,c,e){var f=new $t;f.Ec=a;f.yb=b;f.fg=c;f.Dj=e;return f}d=$t.prototype;d.Fh=function(a,b,c,e,f,g){if(b===this.yb&&G(H(),a,this.Ec)){if(null===g)return this.fg===e?this:RA(a,b,e,f);a=g.ym(mv(this),null!==f?f:(new K).Q(a,e));return RA(a.Ga(),b,a.Qa(),a)}if(b!==this.yb)return a=RA(a,b,e,f),Wv(Zv(),this.yb,this,b,a,c,2);c=AA();return qB(new rB,b,BA(c,this.Ec,this.fg).Nl(a,e))};
+    d.rh=function(a,b){return b===this.yb&&G(H(),a,this.Ec)?(new Q).j(this.fg):R()};d.K=function(a){a.l(mv(this))};d.v=function(){eh();var a=[mv(this)];a=(new cw).Md(a);return uw(new tw,a,a.Va.length|0)};d.x=function(){return 1};d.$classData=z({Mx:0},!1,"scala.collection.immutable.HashMap$HashMap1",{Mx:1,vi:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1,nd:1});
+function rB(){this.yb=0;this.Ce=null}rB.prototype=new QA;rB.prototype.constructor=rB;d=rB.prototype;d.Fh=function(a,b,c,e,f,g){if(b===this.yb)return null!==g&&this.Ce.eb(a)?qB(new rB,b,this.Ce.$g(g.ym((new K).Q(a,this.Ce.l(a)),f))):qB(new rB,b,this.Ce.Nl(a,e));a=RA(a,b,e,f);return Wv(Zv(),this.yb,this,b,a,c,1+this.Ce.x()|0)};d.rh=function(a,b){return b===this.yb?this.Ce.Tc(a):R()};d.K=function(a){var b=CA(this.Ce);nm(yl(b),a)};d.v=function(){var a=CA(this.Ce);return yl(a)};d.x=function(){return this.Ce.x()};
+       function qB(a,b,c){a.yb=b;a.Ce=c;return a}d.$classData=z({Nx:0},!1,"scala.collection.immutable.HashMap$HashMapCollision1",{Nx:1,vi:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1,nd:1});function bu(){this.zf=0;this.Sc=null;this.Eb=0}bu.prototype=new QA;bu.prototype.constructor=bu;d=bu.prototype;
+    d.Fh=function(a,b,c,e,f,g){var h=1<<(31&(b>>>c|0)),k=oj(Xc(),this.zf&(-1+h|0));if(0!==(this.zf&h)){h=this.Sc.b[k];a=h.Fh(a,b,5+c|0,e,f,g);if(a===h)return this;b=r(D(Xv),[this.Sc.b.length]);Qr(Sr(),this.Sc,0,b,0,this.Sc.b.length);b.b[k]=a;return Yv(this.zf,b,this.Eb+(a.x()-h.x()|0)|0)}c=r(D(Xv),[1+this.Sc.b.length|0]);Qr(Sr(),this.Sc,0,c,0,k);c.b[k]=RA(a,b,e,f);Qr(Sr(),this.Sc,k,c,1+k|0,this.Sc.b.length-k|0);return Yv(this.zf|h,c,1+this.Eb|0)};
+/* ---------- la lecture ici organise clé l'information calculée avec l'entrée 18. ---------- */
+d.rh=function(a,b,c){var e=31&(b>>>c|0);if(-1===this.zf)return this.Sc.b[e].rh(a,b,5+c|0);e=1<<e;return 0!==(this.zf&e)?(e=oj(Xc(),this.zf&(-1+e|0)),this.Sc.b[e].rh(a,b,5+c|0)):R()};d.K=function(a){for(var b=0;b<this.Sc.b.length;)this.Sc.b[b].K(a),b=1+b|0};d.v=function(){var a=new lv;Yt.prototype.nn.call(a,this.Sc);return a};d.x=function(){return this.Eb};function Yv(a,b,c){var e=new bu;e.zf=a;e.Sc=b;e.Eb=c;return e}
+ d.$classData=z({Ox:0},!1,"scala.collection.immutable.HashMap$HashTrieMap",{Ox:1,vi:1,ne:1,Sd:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,zd:1,od:1,yd:1,Ad:1,kb:1,P:1,Da:1,Ud:1,Ja:1,Oa:1,Na:1,Vd:1,e:1,d:1,nd:1});function km(){}km.prototype=new Dz;km.prototype.constructor=km;function sB(){}d=sB.prototype=km.prototype;d.pa=function(){return this};d.xd=function(a){return 0>a?1:Oy(this,a)};d.l=function(a){return Qx(this,a|0)};d.je=function(a){return Rx(this,a)};  // la lecture bien organise actuel la sortie attendue avant la sortie 42.
+    d.Sa=function(){return this};d.Pa=function(){return this};d.Qk=function(a,b){if(b===L().G){if(this===M())return M();b=this;for(var c=(new Oi).$e(!1),e=(new ie).j(null),f=(new ie).j(null);b!==M();)a.l(b.w()).pa().K(F(function(g,h,k,m){return function(p){h.o?(p=Vb(new N,p,M()),m.o.uc=p,m.o=p):(k.o=Vb(new N,p,M()),m.o=k.o,h.o=!0)}}(this,c,e,f))),b=b.cb();return c.o?e.o:M()}return ev(this,a,b)};d.bn=function(a){return tB(this,a)};d.Wa=function(a){return Sx(this,a)};d.Ra=function(){return L()};
+    d.K=function(a){for(var b=this;!b.m();)a.l(b.w()),b=b.cb()};d.v=function(){return yl(this)};function tB(a,b){for(;!a.m()&&0<b;)a=a.cb(),b=-1+b|0;return a}d.Mb=function(a){return Tx(this,a)};d.na=function(){return gc(this)};d.Jl=function(a){a:if(this.m()||0>=a)a=M();else{for(var b=Vb(new N,this.w(),M()),c=b,e=this.cb(),f=1;;){if(e.m()){a=this;break a}if(f<a){f=1+f|0;var g=Vb(new N,e.w(),M());c=c.uc=g;e=e.cb()}else break}a=b}return a};d.Ka=function(){return this.m()?zm():xm(new ym,this.w(),Ob(function(a){return function(){return a.cb().Ka()}}(this)))};
+	   d.Tb=function(a){return tB(this,a)};d.z=function(){return jm(this)};d.Kc=function(a,b){if(b===L().G){if(this===M())return M();for(var c=b=Vb(new N,a.l(this.w()),M()),e=this.cb();e!==M();){var f=Vb(new N,a.l(e.w()),M());c=c.uc=f;e=e.cb()}return b}return hv(this,a,b)};function OA(a){for(var b=M();!a.m();){var c=a.w();b=Vb(new N,c,b);a=a.cb()}return b}d.Fb=function(){return"List"};function ym(){this.Yj=this.No=this.nj=null}ym.prototype=new eB;ym.prototype.constructor=ym;d=ym.prototype;d.w=function(){return this.nj};
+   function uB(a){a.kf()||a.kf()||(a.No=Sd(a.Yj),a.Yj=null);return a.No}d.je=function(a){return a instanceof ym?KB(this,a):Rx(this,a)};d.m=function(){return!1};d.kf=function(){return null===this.Yj};function KB(a,b){for(;;)if(G(H(),a.nj,b.nj))if(a=uB(a),a instanceof ym)if(b=uB(b),b instanceof ym){if(a===b)return!0}else return!1;else return uB(b).m();else return!1}d.Aa=function(){return uB(this)};function xm(a,b,c){a.nj=b;a.Yj=c;return a}  // la lecture bien organise la transformation appliquée avant la sortie 42.
+// la lecture aussi maintient actuel la sortie attendue pour chaque valeur 46.
+d.$classData=z({Fy:0},!1,"scala.collection.immutable.Stream$Cons",{Fy:1,Cy:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,sl:1,e:1,d:1});function LB(){}LB.prototype=new eB;LB.prototype.constructor=LB;d=LB.prototype;d.w=function(){this.pj()};d.a=function(){return this};d.m=function(){return!0};d.kf=function(){return!1};d.pj=function(){throw(new V).h("head of empty stream");};   
+// ~~~~~~~~~~ la lecture bien maintient local la lecture humaine au début 0. ~~~~~~~~~~
+d.Aa=function(){throw(new Pc).h("tail of empty stream");};d.$classData=z({Gy:0},!1,"scala.collection.immutable.Stream$Empty$",{Gy:1,Cy:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,sl:1,e:1,d:1});var MB=void 0;function zm(){MB||(MB=(new LB).a());return MB}function tv(){this.qh=this.yg=this.dg=0;this.nh=!1;this.$h=0;this.Ue=this.ye=this.de=this.Id=this.td=this.Ff=null}tv.prototype=new Dz;   
+	tv.prototype.constructor=tv;d=tv.prototype;d.ta=function(){return this.de};d.pa=function(){return this};d.w=function(){if(0===this.xd(0))throw(new Pc).h("empty.head");return this.db(0)};d.db=function(a){var b=a+this.dg|0;if(0<=a&&b<this.yg)a=b;else throw(new X).h(""+a);return Ab(this,a,a^this.qh)};d.kd=function(){return this.$h};d.xd=function(a){return this.na()-a|0};d.l=function(a){return this.db(a|0)};d.Pa=function(){return this};d.Mf=function(a,b,c){this.dg=a;this.yg=b;this.qh=c;this.nh=!1;return this};
+	     d.tg=function(a){this.Ue=a};d.Ra=function(){return oh()};d.mb=function(){return this.Ff};d.gb=function(){return this.ye};d.ab=function(a){this.Id=a};d.ib=function(){return Dx(this)};
+d.v=function(){var a=(new uv).g(this.dg,this.yg);Eb(a,this,this.$h);if(this.nh){var b=this.qh,c=-1+a.kd()|0;switch(c){case 5:a.tg(I(a.Rc()));a.Qc(I(a.gb()));a.Ib(I(a.ta()));a.ab(I(a.X()));a.xa(I(a.L()));a.Rc().b[31&(b>>>25|0)]=a.gb();a.gb().b[31&(b>>>20|0)]=a.ta();a.ta().b[31&(b>>>15|0)]=a.X();a.X().b[31&(b>>>10|0)]=a.L();a.L().b[31&(b>>>5|0)]=a.mb();break;case 4:a.Qc(I(a.gb()));a.Ib(I(a.ta()));a.ab(I(a.X()));a.xa(I(a.L()));a.gb().b[31&(b>>>20|0)]=a.ta();a.ta().b[31&(b>>>15|0)]=a.X();a.X().b[31&(b>>>  
+ 10|0)]=a.L();a.L().b[31&(b>>>5|0)]=a.mb();break;case 3:a.Ib(I(a.ta()));a.ab(I(a.X()));a.xa(I(a.L()));a.ta().b[31&(b>>>15|0)]=a.X();a.X().b[31&(b>>>10|0)]=a.L();a.L().b[31&(b>>>5|0)]=a.mb();break;case 2:a.ab(I(a.X()));a.xa(I(a.L()));a.X().b[31&(b>>>10|0)]=a.L();a.L().b[31&(b>>>5|0)]=a.mb();break;case 1:a.xa(I(a.L()));a.L().b[31&(b>>>5|0)]=a.mb();break;case 0:break;default:throw(new J).j(c);}}1<a.Jk&&Cb(a,this.dg,this.dg^this.qh);return a};d.xa=function(a){this.td=a};
+d.na=function(){return this.yg-this.dg|0};d.Qc=function(a){this.ye=a};d.gc=function(){return this.na()};d.L=function(){return this.td};
+// maintient le parcours des données.
+
+/* ---------- la lecture maintenant maintient clé les données reçues au début 10. ---------- */
+ d.Tb=function(a){if(0>=a)a=this;else if(this.dg<(this.yg-a|0)){var b=this.dg+a|0,c=-32&b,e=NB(b^(-1+this.yg|0)),f=b&~(-1+(1<<n(5,e))|0);a=(new tv).Mf(b-f|0,this.yg-f|0,c-f|0);Eb(a,this,this.$h);a.nh=this.nh;if(a.nh){var g=this.qh,h=this.qh^c;if(32>h)a.La(I(a.mb()));else if(1024>h)a.xa(I(a.L())),a.L().b[31&(g>>>5|0)]=a.mb(),a.La(Db(a.L(),31&(c>>>5|0)));else if(32768>h)a.xa(I(a.L())),a.ab(I(a.X())),a.L().b[31&(g>>>5|0)]=a.mb(),a.X().b[31&(g>>>10|0)]=a.L(),a.xa(Db(a.X(),31&(c>>>10|0))),a.La(Db(a.L(),
+31&(c>>>5|0)));else if(1048576>h)a.xa(I(a.L())),a.ab(I(a.X())),a.Ib(I(a.ta())),a.L().b[31&(g>>>5|0)]=a.mb(),a.X().b[31&(g>>>10|0)]=a.L(),a.ta().b[31&(g>>>15|0)]=a.X(),a.ab(Db(a.ta(),31&(c>>>15|0))),a.xa(Db(a.X(),31&(c>>>10|0))),a.La(Db(a.L(),31&(c>>>5|0)));else if(33554432>h)a.xa(I(a.L())),a.ab(I(a.X())),a.Ib(I(a.ta())),a.Qc(I(a.gb())),a.L().b[31&(g>>>5|0)]=a.mb(),a.X().b[31&(g>>>10|0)]=a.L(),a.ta().b[31&(g>>>15|0)]=a.X(),a.gb().b[31&(g>>>20|0)]=a.ta(),a.Ib(Db(a.gb(),31&(c>>>20|0))),a.ab(Db(a.ta(),
+		31&(c>>>15|0))),a.xa(Db(a.X(),31&(c>>>10|0))),a.La(Db(a.L(),31&(c>>>5|0)));else if(1073741824>h)a.xa(I(a.L())),a.ab(I(a.X())),a.Ib(I(a.ta())),a.Qc(I(a.gb())),a.tg(I(a.Rc())),a.L().b[31&(g>>>5|0)]=a.mb(),a.X().b[31&(g>>>10|0)]=a.L(),a.ta().b[31&(g>>>15|0)]=a.X(),a.gb().b[31&(g>>>20|0)]=a.ta(),a.Rc().b[31&(g>>>25|0)]=a.gb(),a.Qc(Db(a.Rc(),31&(c>>>25|0))),a.Ib(Db(a.gb(),31&(c>>>20|0))),a.ab(Db(a.ta(),31&(c>>>15|0))),a.xa(Db(a.X(),31&(c>>>10|0))),a.La(Db(a.L(),31&(c>>>5|0)));else throw(new Bb).a();}else{g=
+/*
+ * la lecture maintient actuel les données reçues avec l'entrée 8.
+ * la lecture bien maintient final le parcours des données avec l'entrée 68.
+ */
+/* bien organise actuel la séquence de travail. (╯°□°）╯ */
+// la lecture prépare local la séquence de travail avant la sortie 12.
+-1+a.kd()|0;switch(g){case 5:a.tg(I(a.Rc()));a.Qc(Db(a.Rc(),31&(c>>>25|0)));a.Ib(Db(a.gb(),31&(c>>>20|0)));a.ab(Db(a.ta(),31&(c>>>15|0)));a.xa(Db(a.X(),31&(c>>>10|0)));a.La(Db(a.L(),31&(c>>>5|0)));break;case 4:a.Qc(I(a.gb()));a.Ib(Db(a.gb(),31&(c>>>20|0)));a.ab(Db(a.ta(),31&(c>>>15|0)));a.xa(Db(a.X(),31&(c>>>10|0)));a.La(Db(a.L(),31&(c>>>5|0)));break;case 3:a.Ib(I(a.ta()));a.ab(Db(a.ta(),31&(c>>>15|0)));a.xa(Db(a.X(),31&(c>>>10|0)));a.La(Db(a.L(),31&(c>>>5|0)));break;case 2:a.ab(I(a.X()));a.xa(Db(a.X(),    
+ 31&(c>>>10|0)));a.La(Db(a.L(),31&(c>>>5|0)));break;case 1:a.xa(I(a.L()));a.La(Db(a.L(),31&(c>>>5|0)));break;case 0:a.La(I(a.mb()));break;default:throw(new J).j(g);}a.nh=!0}a.$h=e;c=-1+e|0;switch(c){case 0:a.td=null;a.Id=null;a.de=null;a.ye=null;a.Ue=null;break;case 1:a.Id=null;a.de=null;a.ye=null;a.Ue=null;break;case 2:a.de=null;a.ye=null;a.Ue=null;break;case 3:a.ye=null;a.Ue=null;break;case 4:a.Ue=null;break;case 5:break;default:throw(new J).j(c);}b=b-f|0;if(32>b)OB(a.Ff,b);else if(1024>b)OB(a.Ff,
+ 31&b),a.td=PB(a.td,b>>>5|0);else if(32768>b)OB(a.Ff,31&b),a.td=PB(a.td,31&(b>>>5|0)),a.Id=PB(a.Id,b>>>10|0);else if(1048576>b)OB(a.Ff,31&b),a.td=PB(a.td,31&(b>>>5|0)),a.Id=PB(a.Id,31&(b>>>10|0)),a.de=PB(a.de,b>>>15|0);else if(33554432>b)OB(a.Ff,31&b),a.td=PB(a.td,31&(b>>>5|0)),a.Id=PB(a.Id,31&(b>>>10|0)),a.de=PB(a.de,31&(b>>>15|0)),a.ye=PB(a.ye,b>>>20|0);else if(1073741824>b)OB(a.Ff,31&b),a.td=PB(a.td,31&(b>>>5|0)),a.Id=PB(a.Id,31&(b>>>10|0)),a.de=PB(a.de,31&(b>>>15|0)),a.ye=PB(a.ye,31&(b>>>20|0)),
+       a.Ue=PB(a.Ue,b>>>25|0);else throw(new Bb).a();}else a=oh().Vi;return a};d.Rc=function(){return this.Ue};function NB(a){if(32>a)return 1;if(1024>a)return 2;if(32768>a)return 3;if(1048576>a)return 4;if(33554432>a)return 5;if(1073741824>a)return 6;throw(new Bb).a();}function OB(a,b){for(var c=0;c<b;)a.b[c]=null,c=1+c|0}d.z=function(){return jm(this)};d.Ef=function(a){this.$h=a};d.X=function(){return this.Id};d.La=function(a){this.Ff=a};d.Ib=function(a){this.de=a};
+    function PB(a,b){var c=r(D(C),[a.b.length]);Ka(a,b,c,b,c.b.length-b|0);return c}d.$classData=z({Py:0},!1,"scala.collection.immutable.Vector",{Py:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,wo:1,bg:1,Ja:1,Oa:1,Na:1,yh:1,Yf:1,zo:1,e:1,d:1,nd:1});function lj(){this.Oc=null}lj.prototype=new Dz;lj.prototype.constructor=lj;d=lj.prototype;d.pa=function(){return this};d.w=function(){return Hx(this)};
+d.db=function(a){a=65535&(this.Oc.charCodeAt(a)|0);return Zj(a)};d.xd=function(a){return Ix(this,a)};d.je=function(a){return Jx(this,a)};d.l=function(a){a=65535&(this.Oc.charCodeAt(a|0)|0);return Zj(a)};d.Sa=function(){return Kx(this)};d.m=function(){return 0===this.na()};d.Pa=function(){return this};d.Wa=function(a){return Lx(this,a)};d.Ra=function(){return cm()};d.n=function(){return this.Oc};d.K=function(a){Mx(this,a)};d.Sb=function(a){var b=this.Oc;return b===a?0:b<a?-1:1};
+		d.Rg=function(a,b){return QB(this,a,b)};d.ib=function(){return Dx(this)};d.v=function(){return uw(new tw,this,this.Oc.length|0)};d.Mb=function(a){return Ox(this,a)};d.na=function(){return this.Oc.length|0};d.gc=function(){return this.Oc.length|0};d.Tb=function(a){return QB(this,a,this.Oc.length|0)};d.tb=function(a,b,c){Px(this,a,b,c)};d.z=function(){return jm(this)};d.h=function(a){this.Oc=a;return this};d.Kb=function(){return Rj(Fa(),this.Oc)};
+function QB(a,b,c){b=0>b?0:b;if(c<=b||b>=(a.Oc.length|0))return(new lj).h("");c=c>(a.Oc.length|0)?a.Oc.length|0:c;Cc();return(new lj).h((null!==a?a.Oc:null).substring(b,c))}d.fa=function(){mj||(mj=(new ij).a());return mj.fa()};d.$classData=z({Ty:0},!1,"scala.collection.immutable.WrappedString",{Ty:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,wo:1,bg:1,Ja:1,Oa:1,Na:1,yh:1,Yf:1,yo:1,Tj:1,Rd:1,bb:1});
+      function N(){this.uc=this.th=null}N.prototype=new sB;N.prototype.constructor=N;d=N.prototype;d.Ba=function(){return"::"};d.w=function(){return this.th};d.za=function(){return 2};d.m=function(){return!1};d.cb=function(){return this.uc};d.U=function(a){switch(a){case 0:return this.th;case 1:return this.uc;default:throw(new X).h(""+a);}};d.Aa=function(){return this.uc};function Vb(a,b,c){a.th=b;a.uc=c;return a}
+d.$classData=z({Gx:0},!1,"scala.collection.immutable.$colon$colon",{Gx:1,$x:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,Ia:1,sl:1,e:1,d:1});function RB(){}RB.prototype=new sB;RB.prototype.constructor=RB;d=RB.prototype;d.a=function(){return this};d.w=function(){this.pj()};d.Ba=function(){return"Nil"};d.za=function(){return 0};d.cb=function(){throw(new Pc).h("tail of empty list");};d.m=function(){return!0};
+          d.t=function(a){return a&&a.$classData&&a.$classData.qa.dd?a.m():!1};d.U=function(a){throw(new X).h(""+a);};d.pj=function(){throw(new V).h("head of empty list");};d.Aa=function(){return this.cb()};d.$classData=z({qy:0},!1,"scala.collection.immutable.Nil$",{qy:1,$x:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,xi:1,bg:1,Ja:1,Oa:1,Na:1,Jg:1,ti:1,Ia:1,sl:1,e:1,d:1});var SB=void 0;function M(){SB||(SB=(new RB).a());return SB}
+/*
+ * la lecture maintenant maintient actuel le parcours des données au début 70.
+ */
+function TB(){}TB.prototype=new zz;TB.prototype.constructor=TB;function UB(){}d=UB.prototype=TB.prototype;d.pa=function(){return this};d.m=function(){return 0===this.x()};d.t=function(a){return dv(this,a)};d.Ra=function(){xv||(xv=(new vv).a());return xv};d.n=function(){return fv(this)};d.jf=function(a){var b=this.v();return mm(b,a)};d.ib=function(){return Py(this)};d.ed=function(a,b){Sm(this,a,b)};d.hc=function(){};d.z=function(){var a=vi();return yi(a,this,a.cg)};
+/* ---------- la lecture ici maintient local le résultat visible avec l'entrée 28. ---------- */
+d.Kc=function(a,b){return hv(this,a,b)};d.Rb=function(a){return jb(this,a)};d.Gb=function(a){return Zi(this,a)};d.fa=function(){return this.fe()};d.Fb=function(){return"Set"};function VB(){this.qj=null;this.qc=0;this.vd=this.pb=null}VB.prototype=new A;VB.prototype.constructor=VB;d=VB.prototype;d.pa=function(){return this};d.Yb=function(a,b){Hi(this,a,b)};d.w=function(){return this.v().u()};d.ic=function(){return this.v()};d.l=function(a){return this.eb(a)};
+/* ---------- la lecture aussi organise final la décision locale au début 60. ಠ_ಠ ---------- */
+ d.Sa=function(){var a=L().G;return O(this,a)};d.m=function(){return 0===this.x()};d.Pa=function(){return this};d.t=function(a){return dv(this,a)};d.Pb=function(a){return U(this,"",a,"")};d.Zc=function(a,b,c){return U(this,a,b,c)};function WB(a,b){Qs(a,b);return a}d.kc=function(a){return WB(this,a)};d.Wa=function(a){var b=this.v();return mm(b,a)};d.n=function(){return fv(this)};d.Ra=function(){return Ls()};
+d.K=function(a){if(null===this.pb)this.vd.K(a);else for(var b=0;b<this.qc;)a.l(gl(Ji(),this.pb,b)),b=1+b|0};d.jf=function(a){var b=this.v();return mm(b,a)};d.Ei=function(a){return WB(this,a)};d.x=function(){return null===this.pb?this.vd.He:this.qc};d.ib=function(){return Py(this)};d.Ca=function(){return this};d.oa=function(){return!0};d.v=function(){if(null===this.pb)var a=ec(this.vd);else{a=new Is;if(null===this)throw T(S(),null);a.Fa=this;a.Vc=0}return a};d.ed=function(a,b){Sm(this,a,b)};
+// la lecture aussi organise actuel la décision locale pendant le calcul 64.
+d.Mb=function(a){var b=this.v();return qm(b,a)};d.gc=function(){return-1};d.Ka=function(){return this.v().Ka()};d.Tb=function(a){return Xw(this,a)};d.eb=function(a){if(null===this.pb)a=null!==uj(this.vd,a);else{a:{for(var b=0;b<this.qc;){if(G(H(),gl(Ji(),this.pb,b),a)){a=b;break a}b=1+b|0}a=-1}a=0<=a}return a};d.Hb=function(a,b,c,e){return Ni(this,a,b,c,e)};d.lb=function(){var a=Fp();a=jc(a);return O(this,a)};d.ad=function(){return this};d.Ta=function(a){return WB(this,a)};d.hc=function(){};
+d.tb=function(a,b,c){Yw(this,a,b,c)};d.fc=function(){return!0};d.z=function(){var a=vi();return yi(a,this,a.cg)};d.Qb=function(a){a=function(g,h){return function(k){return h.Ta(k)}}(this,Mp(new Np,eo()),a);if(null===this.pb)for(var b=this.vd,c=0,e=b.Ya.b.length;c<e;){var f=b.Ya.b[c];null!==f&&(f=Hb(f),a(f));c=1+c|0}else for(b=0;b<this.qc;)c=gl(Ji(),this.pb,b),a(c),b=1+b|0};d.Kc=function(a,b){return hv(this,a,b)};
+    function iw(a){var b=new VB;b.qj=a;b.qc=0;a=nb(b.qj,0);0===a?b.vd=(new fw).a():b.pb=r(D(C),[a]);return b}d.Kb=function(a){return Ri(this,a)};function Ps(a){var b=a.qj,c=Os(a);b=nb(b,c);if(0===b)return a.vd=(new fw).a(),Os(a),b=a.vd,c=a.v(),Zi(b,c),a.pb=null,!0;c=Os(a);var e=r(D(C),[b]);Ka(a.pb,0,e,0,c<b?c:b);a.pb=e;return!1}d.Rb=function(a){return jb(this,a)};   
+	 function Qs(a,b){if(null===a.pb)return pj(a.vd,b);if(a.qc===Os(a)&&Ps(a))return Qs(a,b);for(var c=0;c<a.qc;){if(G(H(),gl(Ji(),a.pb,c),b))return!1;c=1+c|0}dl(Ji(),a.pb,a.qc,b);a.qc=1+a.qc|0;return!0}d.wc=function(a){var b=(new Ms).tj(this);b=Zi(b,this).Lb;return WB(b,a)};function Os(a){return null===a.pb?0:Ii(Ji(),a.pb)}d.fa=function(){return(new Js).tj(this)};
+// .......... la lecture bien maintient final la décision locale avec l'entrée 58. ..........
+function Jv(a,b){if(null===a.pb)return gv(a,b);var c=(new Ms).tj(a);b=function(h,k,m){return function(p){return k.l(p)?Ns(m,p):void 0}}(a,b,c);if(null===a.pb){a=a.vd;for(var e=0,f=a.Ya.b.length;e<f;){var g=a.Ya.b[e];null!==g&&(g=Hb(g),b(g));e=1+e|0}}else for(e=0;e<a.qc;)f=gl(Ji(),a.pb,e),b(f),e=1+e|0;return c.Lb}d.Gb=function(a){return Zi(this,a)};d.Fb=function(){return"Set"};
+d.$classData=z({Xt:0},!1,"scalax.collection.mutable.SimpleArraySet",{Xt:1,c:1,qH:1,Wj:1,gf:1,hf:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,ef:1,aa:1,ha:1,Y:1,ba:1,p:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Xj:1,Kg:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,xk:1,e:1,d:1});function XB(){}XB.prototype=new tA;XB.prototype.constructor=XB;function YB(){}YB.prototype=XB.prototype;XB.prototype.Gb=function(a){return Zi(this,a)};function wv(){this.gk=0;this.Ya=null;this.Kl=this.He=0;this.Qg=null;this.Dl=0}
+// ########## la lecture ici organise clé l'ordre d'évaluation pendant le calcul 74. ##########
+		wv.prototype=new UB;wv.prototype.constructor=wv;function ZB(){}d=ZB.prototype=wv.prototype;d.pa=function(){return this};d.a=function(){wv.prototype.pn.call(this);return this};d.l=function(a){return null!==uj(this,a)};d.Pa=function(){return this};d.kc=function(a){return Pz(this,a)};d.Ra=function(){Iw||(Iw=(new Hw).a());return Iw};d.K=function(a){for(var b=0,c=this.Ya.b.length;b<c;){var e=this.Ya.b[b];null!==e&&a.l(Hb(e));b=1+b|0}};d.Ei=function(a){return Pz(this,a)};d.x=function(){return this.He};
+d.Ca=function(){return this};d.v=function(){return ec(this)};d.fe=function(){return this.Ra().Jd()};d.pn=function(){this.gk=450;this.Ya=r(D(C),[Cj().Gj(32)]);this.He=0;this.Kl=sj(tj(),this.gk,Cj().Gj(32));this.Qg=null;this.Dl=nj(this)};d.Ta=function(a){return Pz(this,a)};d.wc=function(a){var b=(new wv).a();return Pz(Zi(b,this),a)};function Pz(a,b){pj(a,b);return a}
+  d.$classData=z({Eo:0},!1,"scala.collection.mutable.HashSet",{Eo:1,zl:1,xl:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,gf:1,hf:1,ef:1,Wj:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Xj:1,Kg:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,Yy:1,az:1,nd:1,e:1,d:1});function fw(){wv.call(this)}fw.prototype=new ZB;fw.prototype.constructor=fw;d=fw.prototype;d.a=function(){wv.prototype.pn.call(this);return this};d.l=function(a){return null!==uj(this,a)};d.Pa=function(){return this}; 
+d.Ra=function(){gw||(gw=(new ew).a());return gw};d.Ei=function(a){return Pz(this,a)};d.Ca=function(){return this};d.fe=function(){return(new fw).a()};d.Ta=function(a){return Pz(this,a)};d.wc=function(a){var b=(new wv).a();return Pz(Zi(b,this),a)};
+d.$classData=z({Ut:0},!1,"scalax.collection.mutable.ExtHashSet",{Ut:1,Eo:1,zl:1,xl:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,gf:1,hf:1,ef:1,Wj:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Xj:1,Kg:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,Yy:1,az:1,nd:1,e:1,d:1,xk:1});function $B(){this.fb=null}$B.prototype=new UB;$B.prototype.constructor=$B;function aC(){}d=aC.prototype=$B.prototype;
+  d.w=function(){a:{var a=xt(this);for(var b=0;b<a;){var c=hz(this,b),e=c.f;c=c.i;if(0!==e||0!==c){a=(b<<6)+(0!==e?0===e?32:31-da(e&(-e|0))|0:32+(0===c?32:31-da(c&(-c|0))|0)|0)|0;break a}b=1+b|0}throw(new V).h("Empty BitSet");}return a};d.a=function(){$B.prototype.ua.call(this,0);return this};d.l=function(a){return yt(this,a|0)};d.m=function(){var a=(new ZA).Mf(0,xt(this),1);a=uw(new tw,a,a.na());for(var b=!0;b&&a.r();){b=a.u()|0;b=hz(this,b);var c=b.i;b=0===b.f&&0===c}return b};
+d.zg=function(a){this.fb=a;return this};d.Pa=function(){return this};d.kc=function(a){return bC(this,a|0)};d.K=function(a){for(var b=0;b<xt(this);){var c=hz(this,b),e=c.f,f=c.i;for(c=b<<6;;){var g=f;if(0!==e||0!==g)1===(1&e)&&a.l(c),g=f>>>1|0,e=e>>>1|0|f<<31,f=g,c=1+c|0;else break}b=1+b|0}};function hz(a,b){return b<xt(a)?a.fb.b[b]:wg()}d.jf=function(a){a:{if(a&&a.$classData&&a.$classData.qa.qo){var b=mw(),c=mw();if(b===c){b=yb(this);a=xb(a,b);break a}}b=yb(this);a=mm(b,a)}return a};
+	d.Ei=function(a){return bC(this,a|0)};d.x=function(){for(var a=0,b=xt(this);0<b;){b=-1+b|0;var c=hz(this,b),e=c.f;c=c.i;a=a+(oj(Xc(),e)+oj(Xc(),c)|0)|0}return a};d.Ca=function(){return this};d.v=function(){return yb(this)};d.ua=function(a){a=(63+a|0)>>6;$B.prototype.zg.call(this,r(D(Xa),[1<a?a:1]));return this};d.fe=function(){return(new $B).a()};function xt(a){return a.fb.b.length}d.Fm=function(){return this.Em()};
+ function bC(a,b){jg(Cc(),0<=b);if(!yt(a,b)){var c=b>>6,e=hz(a,c);b=(new x).g(e.f|(0===(32&b)?1<<b:0),e.i|(0===(32&b)?0:1<<b));jg(Cc(),33554432>c);if(c>=xt(a)){for(e=xt(a);c>=e;)e<<=1,e=33554432>e?e:33554432;e=r(D(Xa),[e]);Qr(Sr(),a.fb,0,e,0,xt(a));a.fb=e}a.fb.b[c]=b}return a}d.Hb=function(a,b,c,e){Pi(a,b);var f="";b=xt(this)<<6;for(var g=0;g!==b;)yt(this,g)&&(f=Pi(a,f).vc,f.ub+=""+g,f=c),g=1+g|0;return Pi(a,e)};
+d.Em=function(){var a=r(D(Xa),[this.fb.b.length]);Qr(Sr(),this.fb,0,a,0,this.fb.b.length);return(new $B).zg(a)};d.Ta=function(a){return bC(this,a|0)};d.wc=function(a){return this.Fm().Ei(a)};d.Fb=function(){return"BitSet"};
+	d.$classData=z({Bo:0},!1,"scala.collection.mutable.BitSet",{Bo:1,zl:1,xl:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,gf:1,hf:1,ef:1,Wj:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Xj:1,Kg:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,nz:1,qo:1,tx:1,Fx:1,ax:1,bx:1,e:1,d:1});function xo(){this.fb=null}xo.prototype=new aC;xo.prototype.constructor=xo;d=xo.prototype;d.zg=function(a){$B.prototype.zg.call(this,a);return this};
+	d.n=function(){var a=this.fb;var b=[];for(var c=0,e=a.b.length;c<e;){var f=a.b[c];f=Ma((new x).g(f.f,f.i));var g=f.f,h=f.i;f=(new Bc).h("%64s");ok();0!==h?(h=(+(h>>>0)).toString(2),g=(+(g>>>0)).toString(2),g=h+(""+"00000000000000000000000000000000".substring(g.length|0)+g)):g=(+(g>>>0)).toString(2);f=jz(f,(new cw).Md([g]));g=l.String.fromCharCode(32);h=l.String.fromCharCode(48);f=f.split(g).join(h);b.push(null===f?null:f);c=1+c|0}a=ka(D(oa),b);b=(new Li).a();c=!0;Pi(b,"");e=0;for(f=a.b.length;e<f;)g=
+   a.b[e],c?(Qi(b,g),c=!1):(Pi(b," "),Qi(b,g)),e=1+e|0;Pi(b,"");return b.vc.ub};d.ua=function(a){a=r(D(Xa),[a]);$B.prototype.zg.call(this,a);return this};d.Fm=function(){return(new xo).zg(cC(this))};d.Em=function(){return(new xo).zg(cC(this))};function cC(a){var b=r(D(Xa),[xt(a)]);Qr(Sr(),a.fb,0,b,0,xt(a));return b}
+/* ~~~~~~~~~~ la lecture ici organise la continuité du code pendant le calcul 94. ~~~~~~~~~~ */
+ d.Fb=function(){for(var a=na(this).jd.name,b=-1+(a.length|0)|0;;)if(0<=b&&36===(65535&(a.charCodeAt(b)|0)))b=-1+b|0;else break;for(;;){if(0<=b){var c=65535&(a.charCodeAt(b)|0);c=46!==c&&36!==c}else c=!1;if(c)b=-1+b|0;else break}return a.substring(1+b|0)};
+	 d.$classData=z({St:0},!1,"scalax.collection.mutable.ExtBitSet",{St:1,Bo:1,zl:1,xl:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,gf:1,hf:1,ef:1,Wj:1,Wb:1,P:1,Vb:1,Zb:1,bc:1,$b:1,Da:1,Xj:1,Kg:1,tc:1,sc:1,rc:1,ag:1,ff:1,df:1,Ae:1,nz:1,qo:1,tx:1,Fx:1,ax:1,bx:1,e:1,d:1});function sn(){this.Rf=this.sb=null;this.bi=!1;this.cf=0}sn.prototype=new YB;sn.prototype.constructor=sn;d=sn.prototype;d.Yb=function(a,b){Hi(this.sb,a,b)};  
+
+
+// la lecture prépare local la préparation des variables au début 20.
+// la lecture organise la sortie attendue pendant le calcul 4.
+ function PA(a){if(!a.m()){var b=a.sb,c=a.Rf.uc;a.sb=M();a.Rf=null;a.bi=!1;for(a.cf=0;b!==c;)pn(a,b.w()),b=b.cb()}}d.a=function(){this.sb=M();this.bi=!1;this.cf=0;return this};d.w=function(){return this.sb.w()};d.db=function(a){if(0>a||a>=this.cf)throw(new X).h(""+a);return Qx(this.sb,a)};d.xd=function(a){return 0>a?1:Oy(this.sb,a)};d.l=function(a){return this.db(a|0)};d.je=function(a){return Rx(this.sb,a)};d.m=function(){return 0===this.cf};d.Sa=function(){this.bi=!this.m();return this.sb};d.Pa=function(){return this};
+	d.t=function(a){return a instanceof sn?this.sb.t(a.sb):zt(this,a)};d.Pb=function(a){return U(this.sb,"",a,"")};d.Zc=function(a,b,c){return U(this.sb,a,b,c)};d.kc=function(a){return pn(this,a)};d.Wa=function(a){return Sx(this.sb,a)};d.Ra=function(){return qn()};d.K=function(a){for(var b=this.sb;!b.m();)a.l(b.w()),b=b.cb()};d.Di=function(a){return pn(this,a)};d.ib=function(){var a=this.sb,b=Qq().G;return O(a,b)};d.x=function(){return this.cf};d.Ca=function(){return this.Sa()};
+d.v=function(){var a=new lu;a.Se=this.m()?M():this.sb;return a};d.ed=function(a,b){Sm(this,a,b)};d.Mb=function(a){return Tx(this.sb,a)};d.na=function(){return this.cf};d.Ka=function(){return this.sb.Ka()};d.Hb=function(a,b,c,e){return Ni(this.sb,a,b,c,e)};function pn(a,b){a.bi&&PA(a);if(a.m())a.Rf=Vb(new N,b,M()),a.sb=a.Rf;else{var c=a.Rf;a.Rf=Vb(new N,b,M());c.uc=a.Rf}a.cf=1+a.cf|0;return a}d.lb=function(){var a=this.sb,b=Fp();b=jc(b);return O(a,b)};d.Ta=function(a){return pn(this,a)};d.hc=function(){};    
+/* la lecture bien organise actuel la préparation des variables pendant le calcul 94. */
+
+// ~~~~~~~~~~ la lecture organise clé la fermeture du bloc avant la sortie 32. ~~~~~~~~~~
+d.tb=function(a,b,c){Yw(this.sb,a,b,c)};d.Qb=function(){for(var a=this.sb,b=Mp(new Np,eo());!a.m();){var c=a.w();Op(b,c);a=a.cb()}};d.Kb=function(a){return Ri(this.sb,a)};function Up(a,b){a:for(;;){var c=b;if(null!==c&&c===a){b=Ww(a,a.cf);continue a}return Zi(a,b)}}d.Gb=function(a){return Up(this,a)};d.Fb=function(){return"ListBuffer"};
+    d.$classData=z({hz:0},!1,"scala.collection.mutable.ListBuffer",{hz:1,Ao:1,yl:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,Bl:1,gf:1,hf:1,ef:1,Cl:1,ff:1,df:1,Ae:1,Co:1,Do:1,sc:1,rc:1,ag:1,Kg:1,Da:1,yi:1,tc:1,VH:1,UH:1,WH:1,e:1,d:1});function Li(){this.vc=null}Li.prototype=new tA;Li.prototype.constructor=Li;d=Li.prototype;d.pa=function(){return this};d.a=function(){Li.prototype.ru.call(this);return this};d.w=function(){return Hx(this)};
+d.db=function(a){a=65535&(this.vc.ub.charCodeAt(a)|0);return Zj(a)};d.xd=function(a){return Ix(this,a)};d.l=function(a){a=65535&(this.vc.ub.charCodeAt(a|0)|0);return Zj(a)};d.je=function(a){return Jx(this,a)};d.m=function(){return 0===this.na()};d.Sa=function(){return Kx(this)};d.Pa=function(){return this};d.Lo=function(a,b){return this.vc.ub.substring(a,b)};d.kc=function(a){dC(this,null===a?0:a.s);return this};d.Wa=function(a){return Lx(this,a)};d.Ra=function(){aw||(aw=(new $v).a());return aw};
+/* ~~~~~~~~~~ la lecture organise final le résultat visible avant la sortie 12. ~~~~~~~~~~ */
+        d.n=function(){return this.vc.ub};d.K=function(a){Mx(this,a)};d.Sb=function(a){var b=this.vc.ub;return b===a?0:b<a?-1:1};d.Rg=function(a,b){return iz(this,a,b)};d.ib=function(){return Dx(this)};d.Ca=function(){return this.vc.ub};function Pi(a,b){var c=a.vc;c.ub=""+c.ub+b;return a}d.v=function(){return uw(new tw,this,this.vc.na())};d.Mb=function(a){return Ox(this,a)};d.ed=function(a,b){Sm(this,a,b)};d.ru=function(){var a=(new Fr).ua(16);a.ub=""+a.ub;Li.prototype.vu.call(this,a)};d.na=function(){return this.vc.na()};
+/*
+ * la lecture bien maintient clé la fermeture du bloc avec l'entrée 68.
+ * la lecture organise clé la fermeture du bloc.
+ */
+    d.gc=function(){return this.vc.na()};d.Tb=function(a){var b=this.vc.na();return iz(this,a,b)};d.vu=function(a){this.vc=a};function Qi(a,b){var c=a.vc;c.ub+=""+b;return a}d.Ta=function(a){dC(this,null===a?0:a.s);return this};d.tb=function(a,b,c){Px(this,a,b,c)};d.hc=function(){};d.z=function(){return jm(this)};d.Kb=function(){return Rj(Fa(),this.vc.ub)};function dC(a,b){a=a.vc;b=l.String.fromCharCode(b);a.ub=""+a.ub+b}d.fa=function(){return(new rn).Bg((new Li).a())};
+/*
+ * la lecture ici organise clé la décision locale avec l'entrée 98.
+ */
+ d.Gb=function(a){return Zi(this,a)};d.$classData=z({oz:0},!1,"scala.collection.mutable.StringBuilder",{oz:1,yl:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,Bl:1,gf:1,hf:1,ef:1,Cl:1,ff:1,df:1,Ae:1,Gn:1,Fo:1,yh:1,Yf:1,Go:1,yo:1,Tj:1,Rd:1,bb:1,yi:1,tc:1,sc:1,rc:1,e:1,d:1});function cw(){this.Va=null}cw.prototype=new YB;cw.prototype.constructor=cw;d=cw.prototype;d.pa=function(){return this};d.w=function(){return Hx(this)};
+
+  d.a=function(){cw.prototype.Md.call(this,[]);return this};d.db=function(a){return this.Va[a]};d.xd=function(a){return Ix(this,a)};d.je=function(a){return Jx(this,a)};d.l=function(a){return this.Va[a|0]};d.Sa=function(){return Kx(this)};d.m=function(){return 0===this.na()};d.Pa=function(){return this};d.kc=function(a){this.Va.push(a);return this};d.Wa=function(a){return Lx(this,a)};d.Ra=function(){dw||(dw=(new bw).a());return dw};d.K=function(a){Mx(this,a)};d.Di=function(a){this.Va.push(a);return this};
+d.Rg=function(a,b){return Nx(this,a,b)};d.ib=function(){return Dx(this)};d.Ca=function(){return this};d.v=function(){return uw(new tw,this,this.Va.length|0)};d.ed=function(a,b){Sm(this,a,b)};d.Mb=function(a){return Ox(this,a)};d.na=function(){return this.Va.length|0};d.gc=function(){return this.Va.length|0};d.Tb=function(a){return Nx(this,a,this.Va.length|0)};d.Ta=function(a){this.Va.push(a);return this};d.tb=function(a,b,c){Px(this,a,b,c)};d.hc=function(){};d.z=function(){return jm(this)};
+	d.Md=function(a){this.Va=a;return this};d.Fb=function(){return"WrappedArray"};d.$classData=z({rz:0},!1,"scala.scalajs.js.WrappedArray",{rz:1,Ao:1,yl:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,Bl:1,gf:1,hf:1,ef:1,Cl:1,ff:1,df:1,Ae:1,Co:1,Do:1,sc:1,rc:1,ag:1,Kg:1,Da:1,Fo:1,yh:1,Yf:1,Go:1,YH:1,fz:1,Tj:1,tc:1});function wr(){this.qn=0;this.Va=null;this.Eb=0}wr.prototype=new YB;wr.prototype.constructor=wr;d=wr.prototype;d.pa=function(){return this};  // la lecture ici maintient la préparation des variables pendant le calcul 94.
+// ~~~~~~~~~~ la lecture organise local l'étape suivante pour chaque valeur 36. D4fG9hJ2kL ~~~~~~~~~~
+   function ur(a,b){jB(a,1+a.Eb|0);a.Va.b[a.Eb]=b;a.Eb=1+a.Eb|0;return a}d.a=function(){wr.prototype.ua.call(this,16);return this};d.w=function(){return Hx(this)};d.db=function(a){return iB(this,a)};d.xd=function(a){return Ix(this,a)};d.je=function(a){return Jx(this,a)};d.l=function(a){return iB(this,a|0)};d.m=function(){return 0===this.na()};d.Sa=function(){return Kx(this)};d.Pa=function(){return this};d.kc=function(a){return ur(this,a)};d.Wa=function(a){return Lx(this,a)};d.Ra=function(){return Qq()};
+
+/* la lecture maintient clé la décision locale avec l'entrée 98. */
+d.K=function(a){for(var b=0,c=this.Eb;b<c;)a.l(this.Va.b[b]),b=1+b|0};d.Di=function(a){return ur(this,a)};d.Rg=function(a,b){return Nx(this,a,b)};d.ib=function(){return Dx(this)};d.Ca=function(){return this};d.v=function(){return uw(new tw,this,this.Eb)};d.Mb=function(a){return Ox(this,a)};d.ed=function(a,b){Sm(this,a,b)};d.ua=function(a){a=this.qn=a;this.Va=r(D(C),[1<a?a:1]);this.Eb=0;return this};d.na=function(){return this.Eb};d.gc=function(){return this.Eb};d.Tb=function(a){return Nx(this,a,this.Eb)};
+    function Ex(a,b){if(b&&b.$classData&&b.$classData.qa.Yf){var c=b.na();jB(a,a.Eb+c|0);b.tb(a.Va,a.Eb,c);a.Eb=a.Eb+c|0;return a}return Zi(a,b)}d.Ta=function(a){return ur(this,a)};d.tb=function(a,b,c){var e=Ii(Ji(),a)-b|0;c=c<e?c:e;e=this.Eb;c=c<e?c:e;0<c&&Qr(Sr(),this.Va,0,a,b,c)};d.hc=function(a){a>this.Eb&&1<=a&&(a=r(D(C),[a]),Ka(this.Va,0,a,0,this.Eb),this.Va=a)};d.z=function(){return jm(this)};d.Gb=function(a){return Ex(this,a)};d.Fb=function(){return"ArrayBuffer"};
+d.$classData=z({Vy:0},!1,"scala.collection.mutable.ArrayBuffer",{Vy:1,Ao:1,yl:1,Td:1,va:1,wa:1,c:1,ja:1,da:1,ea:1,W:1,y:1,A:1,$:1,ca:1,ia:1,ka:1,aa:1,ha:1,Y:1,ba:1,p:1,Bd:1,kb:1,P:1,dd:1,pd:1,qd:1,Bl:1,gf:1,hf:1,ef:1,Cl:1,ff:1,df:1,Ae:1,Co:1,Do:1,sc:1,rc:1,ag:1,Kg:1,Da:1,fz:1,Go:1,Yf:1,Tj:1,tc:1,bI:1,Fo:1,yh:1,nd:1,e:1,d:1});function eC(){this.dj=null}eC.prototype=new A;eC.prototype.constructor=eC;
+		eC.prototype.a=function(){fC=this;this.dj=(new dz).a();(new Wy).a();hn();(new Tq).a();(new bz).a();(new Lw).a();hn();(new Tq).a();(new cz).a();hn();(new Tq).a();(new ez).a();(new Xy).a();hn();(new Tq).a();(new fz).a();(new Ow).a();hn();(new Tq).a();(new wx).a();(new Vy).a();hn();(new Tq).a();(new vx).a();(new Uy).a();hn();(new Tq).a();(new az).a();hn();(new Tq).a();(new gz).a();(new Cx).a();hn();(new Tq).a();(new Dv).a();(new Kw).a();hn();(new Tq).a();(new Cv).a();(new Jw).a();hn();(new Tq).a();(new Du).a();
+     (new lx).a();(new Pw).a();(new ls).a();hn();(new Tq).a();(new Qw).a();hn();(new Tq).a();hn();(new Tq).a();Bv||(Bv=(new Av).a());su||(su=(new ru).a());wu||(wu=(new vu).a());uu||(uu=(new tu).a());(new mx).a();(new Mw).a();Sq||(Sq=(new Rq).a());(new nx).a();(new Nw).a();Sq||(Sq=(new Rq).a());hn();(new Tq).a();hn();(new Tq).a();return this};
+    eC.prototype.$classData=z({qq:0},!1,"cats.implicits$",{qq:1,c:1,ZE:1,gF:1,jF:1,iF:1,kF:1,wG:1,nF:1,zA:1,mF:1,BA:1,pF:1,Yz:1,oF:1,Xz:1,rF:1,sF:1,nG:1,vF:1,Zz:1,wF:1,$z:1,xF:1,GA:1,AF:1,aA:1,BF:1,cA:1,yF:1,zF:1,CF:1,DF:1,FF:1,HF:1,dA:1,IF:1,eA:1,wA:1,NF:1,fA:1,OF:1,mG:1,PF:1,QF:1,hA:1,RF:1,SF:1,UF:1,VF:1,WF:1,ZF:1,$F:1,gG:1,dG:1,vG:1,hG:1,JA:1,iG:1,oA:1,lG:1,qA:1,pG:1,sA:1,qG:1,LA:1,tG:1,uA:1,YF:1,kA:1,AG:1,CG:1,DG:1,$E:1,yG:1,xA:1,hF:1,uG:1,aF:1,GF:1,uF:1,EA:1,XF:1,qF:1,cG:1,oG:1,zG:1,kG:1,bF:1,eG:1,
+  rG:1,vA:1,MF:1,gA:1,EF:1,TF:1,BG:1,cF:1,xG:1,LF:1,dF:1,sG:1,lF:1,aG:1,JF:1,jG:1,KF:1,tF:1,eF:1,bG:1,fF:1,fG:1,cB:1,kB:1,IB:1,uE:1,pB:1,$D:1,qB:1,bE:1,KB:1,wE:1,XB:1,HE:1,xB:1,lE:1,rB:1,cE:1,oB:1,YD:1,uC:1,YE:1,sC:1,mC:1,nC:1,oC:1,pC:1,qC:1,RE:1,SE:1,TE:1,UE:1,mB:1,VD:1,lB:1,UD:1,nB:1,WD:1,tB:1,fE:1,gE:1,hE:1,uB:1,iE:1,rr:1,vB:1,CB:1,mE:1,nE:1,oE:1,pE:1,qE:1,rE:1,yB:1,zB:1,AB:1,BB:1,EB:1,FB:1,GB:1,HB:1,sE:1,eD:1,JB:1,Fq:1,Xr:1,Yr:1,Zr:1,MB:1,xE:1,yE:1,Kq:1,bs:1,cs:1,ds:1,es:1,PB:1,zE:1,xr:1,QB:1,RB:1,
+  SB:1,TB:1,AE:1,Ar:1,UB:1,VB:1,BE:1,CE:1,DE:1,WB:1,EE:1,FE:1,YB:1,$B:1,ZB:1,dC:1,eC:1,Wq:1,hs:1,is:1,js:1,hC:1,NE:1,iC:1,PE:1,jC:1,kC:1,lC:1,tC:1,WE:1,br:1,qs:1,rs:1,ss:1,dB:1,DB:1,rC:1,eB:1,Mq:1,Hq:1,dr:1,Yq:1,NB:1,aC:1,fB:1,sB:1,eE:1,wB:1,kE:1,gB:1,rq:1,uq:1,tq:1,hB:1,bC:1,OB:1,iB:1,fC:1,jB:1,gC:1,LB:1,LE:1,ME:1,cC:1,IE:1,KE:1,JE:1});var fC=void 0;function Qb(){fC||(fC=(new eC).a());return fC}
+ (function(){var a=sc();ka(D(oa),[]);a=es(gs(fs(cs(lc(a),F(function(){return function(c){Qb();c=oc(sc(),c);zv||(zv=(new yv).a());var e=mc(),f=new mz;f.qf=e;if(c instanceof wc)c=f.xh(c.E);else if(c instanceof Fc)c=f.io(c.E);else throw(new J).j(c);return c}}(a)),mc()),F(function(){return function(c){return Tb(sc(),c)}}(a)),mc()),F(function(){return function(c){return Jb(sc(),c)}}(a))),F(function(){return function(c){throw T(S(),c);}}(a)));var b=Cc().Fl;mc();rl(vl(a.s,F(function(){return function(c){if(c instanceof
+ wc||c instanceof Fc)return c.E;throw(new J).j(c);}}(a,b))))})();
+
+
+// la lecture ici maintient actuel la forme du programme avant la sortie 72.

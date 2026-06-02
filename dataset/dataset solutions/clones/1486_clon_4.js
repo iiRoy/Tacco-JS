@@ -1,90 +1,68 @@
-const rawData = require("node:fs").readFileSync("/dev/stdin", "utf8");
-const dataRows = rawData.split('\n');
-const parameters = dataRows[0].split(' ').map(parseFloat);
-const countElements = parameters[0];
-const elementSpread = parameters[1];
+const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataLines = inputSource.split('\n');
+const [initialN, limitK] = dataLines[0].split(' ').map(Number);
 
-const MAX_VALUE_LIMIT = 300000;
-const segmentTreeContainer = new Array(4 * (MAX_VALUE_LIMIT + 1)).fill(0);
-const pendingUpdates = new Array(4 * (MAX_VALUE_LIMIT + 1)).fill(0);
+const MAX_INDEX_VALUE = 300001;
+const segmentTreeNodes = new Array(4 * MAX_INDEX_VALUE).fill(0);
+const lazyPropagationValues = new Array(4 * MAX_INDEX_VALUE).fill(0);
 
-function transferPending(nodeIdx) {
-    if (pendingUpdates[nodeIdx] !== 0) {
-        segmentTreeContainer[nodeIdx * 2] = Math.max(segmentTreeContainer[nodeIdx * 2], pendingUpdates[nodeIdx]);
-        pendingUpdates[nodeIdx * 2] = Math.max(pendingUpdates[nodeIdx * 2], pendingUpdates[nodeIdx]);
+function propagateLazy(nodeIndex) {
+    if (lazyPropagationValues[nodeIndex] !== 0) {
+        segmentTreeNodes[2 * nodeIndex] = Math.max(segmentTreeNodes[2 * nodeIndex], lazyPropagationValues[nodeIndex]);
+        segmentTreeNodes[2 * nodeIndex + 1] = Math.max(segmentTreeNodes[2 * nodeIndex + 1], lazyPropagationValues[nodeIndex]);
 
-        segmentTreeContainer[nodeIdx * 2 + 1] = Math.max(segmentTreeContainer[nodeIdx * 2 + 1], pendingUpdates[nodeIdx]);
-        pendingUpdates[nodeIdx * 2 + 1] = Math.max(pendingUpdates[nodeIdx * 2 + 1], pendingUpdates[nodeIdx]);
+        lazyPropagationValues[2 * nodeIndex] = Math.max(lazyPropagationValues[2 * nodeIndex], lazyPropagationValues[nodeIndex]);
+        lazyPropagationValues[2 * nodeIndex + 1] = Math.max(lazyPropagationValues[2 * nodeIndex + 1], lazyPropagationValues[nodeIndex]);
 
-        pendingUpdates[nodeIdx] = 0;
+        lazyPropagationValues[nodeIndex] = 0;
     }
 }
 
-function updateValueRange(nodeIdx, currentLow, currentHigh, targetLow, targetHigh, newValue) {
-    segmentTreeContainer[nodeIdx] = Math.max(segmentTreeContainer[nodeIdx], pendingUpdates[nodeIdx]);
-
-    if (currentLow > targetHigh || currentHigh < targetLow) {
+function updateSegmentRange(nodeIndex, currentStart, currentEnd, queryStart, queryEnd, newValue) {
+    if (currentStart > currentEnd || currentStart > queryEnd || currentEnd < queryStart) {
         return;
     }
 
-    if (targetLow <= currentLow && currentHigh <= targetHigh) {
-        segmentTreeContainer[nodeIdx] = Math.max(segmentTreeContainer[nodeIdx], newValue);
-        pendingUpdates[nodeIdx] = Math.max(pendingUpdates[nodeIdx], newValue);
+    if (queryStart <= currentStart && currentEnd <= queryEnd) {
+        segmentTreeNodes[nodeIndex] = Math.max(segmentTreeNodes[nodeIndex], newValue);
+        lazyPropagationValues[nodeIndex] = Math.max(lazyPropagationValues[nodeIndex], newValue);
         return;
     }
 
-    transferPending(nodeIdx);
+    propagateLazy(nodeIndex);
 
-    const mid = Math.floor((currentLow + currentHigh) / 2);
-    updateValueRange(nodeIdx * 2, currentLow, mid, targetLow, targetHigh, newValue);
-    updateValueRange(nodeIdx * 2 + 1, mid + 1, currentHigh, targetLow, targetHigh, newValue);
+    const midPoint = Math.floor((currentStart + currentEnd) / 2);
+    updateSegmentRange(2 * nodeIndex, currentStart, midPoint, queryStart, queryEnd, newValue);
+    updateSegmentRange(2 * nodeIndex + 1, midPoint + 1, currentEnd, queryStart, queryEnd, newValue);
 
-    segmentTreeContainer[nodeIdx] = Math.max(segmentTreeContainer[nodeIdx * 2], segmentTreeContainer[nodeIdx * 2 + 1]);
+    segmentTreeNodes[nodeIndex] = Math.max(segmentTreeNodes[2 * nodeIndex], segmentTreeNodes[2 * nodeIndex + 1]);
 }
 
-function retrievePointValue(nodeIdx, currentLow, currentHigh, searchPoint) {
-    segmentTreeContainer[nodeIdx] = Math.max(segmentTreeContainer[nodeIdx], pendingUpdates[nodeIdx]);
-
-    if (currentLow === currentHigh) {
-        return segmentTreeContainer[nodeIdx];
+function queryPointValue(nodeIndex, currentStart, currentEnd, targetIndex) {
+    if (currentStart === currentEnd) {
+        return segmentTreeNodes[nodeIndex];
     }
 
-    transferPending(nodeIdx);
+    propagateLazy(nodeIndex);
 
-    const mid = Math.floor((currentLow + currentHigh) / 2);
-    if (searchPoint <= mid) {
-        return retrievePointValue(nodeIdx * 2, currentLow, mid, searchPoint);
+    const midPoint = Math.floor((currentStart + currentEnd) / 2);
+    if (targetIndex <= midPoint) {
+        return queryPointValue(2 * nodeIndex, currentStart, midPoint, targetIndex);
     } else {
-        return retrievePointValue(nodeIdx * 2 + 1, mid + 1, currentHigh, searchPoint);
+        return queryPointValue(2 * nodeIndex + 1, midPoint + 1, currentEnd, targetIndex);
     }
 }
 
-for (let elementIndex = 1; elementIndex <= countElements; elementIndex++) {
-    const currentDatum = parseFloat(dataRows[elementIndex]);
-    const maxPathBefore = retrievePointValue(1, 0, MAX_VALUE_LIMIT, currentDatum);
+for (let i = 1; i <= initialN; i++) {
+    const currentElementValue = Number(dataLines[i]);
 
-    const newPathLength = maxPathBefore + 1;
+    const previousMaxSequenceLength = queryPointValue(1, 0, MAX_INDEX_VALUE - 1, currentElementValue);
+    const newCalculatedLength = previousMaxSequenceLength + 1;
 
-    const lowerLimit = Math.max(0, currentDatum - elementSpread);
-    const upperLimit = currentDatum + elementSpread;
+    const lowerBound = Math.max(0, currentElementValue - limitK);
+    const upperBound = currentElementValue + limitK;
 
-    updateValueRange(1, 0, MAX_VALUE_LIMIT, lowerLimit, upperLimit, newPathLength);
+    updateSegmentRange(1, 0, MAX_INDEX_VALUE - 1, lowerBound, upperBound, newCalculatedLength);
 }
 
-function obtainOverallMax(nodeIdx, currentLow, currentHigh) {
-    segmentTreeContainer[nodeIdx] = Math.max(segmentTreeContainer[nodeIdx], pendingUpdates[nodeIdx]);
-
-    if (currentLow === currentHigh) {
-        return segmentTreeContainer[nodeIdx];
-    }
-
-    transferPending(nodeIdx);
-
-    const mid = Math.floor((currentLow + currentHigh) / 2);
-    const leftSegmentMax = obtainOverallMax(nodeIdx * 2, currentLow, mid);
-    const rightSegmentMax = obtainOverallMax(nodeIdx * 2 + 1, mid + 1, currentHigh);
-    return Math.max(leftSegmentMax, rightSegmentMax);
-}
-
-const finalResult = obtainOverallMax(1, 0, MAX_VALUE_LIMIT);
-console.log(finalResult);
+console.log(segmentTreeNodes[1]);

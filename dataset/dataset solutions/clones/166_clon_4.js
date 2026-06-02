@@ -1,121 +1,123 @@
-const someInputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const getRawInputContent = () => {
+    const fileDescriptor = require('process').stdin.fd;
+    const fileStats = require('fs').fstatSync(fileDescriptor);
+    const dataBuffer = Buffer.alloc(fileStats.size);
+    require('fs').readSync(fileDescriptor, dataBuffer, 0, fileStats.size, 0);
+    return dataBuffer.toString('utf8').trim();
+};
 
-const allPossibleOperators = ['+', '-', '*'];
+const parseInputLines = (rawTextContent) => {
+    return rawTextContent.split('\n').map(lineContent => lineContent.split(' ').map(Number));
+};
 
-class ExpressionNode {
-    constructor(val, repr, opsUsed) {
-        this.currentValue = val;
-        this.textRepresentation = repr;
-        this.operatorsInvolved = opsUsed;
+const operatorSymbols = ['+', '-', '*'];
+const desiredResult = 10;
+
+const generatePermutationsOfIndices = (sourceArrayLength) => {
+    const allPerms = [];
+    const recursePermute = (currentPerm, remainingIndices) => {
+        if (remainingIndices.length === 0) {
+            allPerms.push(currentPerm);
+            return;
+        }
+        for (let i = 0; i < remainingIndices.length; i++) {
+            const nextIndex = remainingIndices[i];
+            const newRemaining = remainingIndices.slice(0, i).concat(remainingIndices.slice(i + 1));
+            recursePermute(currentPerm.concat(nextIndex), newRemaining);
+        }
+    };
+    recursePermute([], Array.from({ length: sourceArrayLength }, (_, i) => i));
+    return allPerms;
+};
+
+const allNumberIndexPermutations = generatePermutationsOfIndices(4);
+
+const generateOperatorTriplets = () => {
+    const triplets = [];
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            for (let k = 0; k < 3; k++) {
+                triplets.push([operatorSymbols[i], operatorSymbols[j], operatorSymbols[k]]);
+            }
+        }
     }
-}
+    return triplets;
+};
 
-function executeOperation(leftNode, rightNode, operationSymbol) {
-    let resultValue;
-    const leftText = leftNode.textRepresentation;
-    const rightText = rightNode.textRepresentation;
+const allOperatorCombinations = generateOperatorTriplets();
 
-    switch (operationSymbol) {
-        case '+':
-            resultValue = leftNode.currentValue + rightNode.currentValue;
-            break;
-        case '-':
-            resultValue = leftNode.currentValue - rightNode.currentValue;
-            break;
-        case '*':
-            resultValue = leftNode.currentValue * rightNode.currentValue;
-            break;
-        default:
-            throw new Error('Unknown operation');
+const constructRpnPatternA = (val1, val2, val3, val4, opA, opB, opC) => [val1, val2, opA, val3, opB, val4, opC];
+const constructRpnPatternB = (val1, val2, val3, val4, opA, opB, opC) => [val1, val2, val3, opA, opB, val4, opC];
+const constructRpnPatternC = (val1, val2, val3, val4, opA, opB, opC) => [val1, val2, opA, val3, val4, opB, opC];
+
+const rpnConstructors = [constructRpnPatternA, constructRpnPatternB, constructRpnPatternC];
+
+const performRpnEvaluation = (rpnTokens) => {
+    const evaluationStack = rpnTokens.reduce((accumulator, currentToken) => {
+        if (typeof currentToken === 'number') {
+            accumulator.push(currentToken);
+        } else {
+            const rightOperand = accumulator.pop();
+            const leftOperand = accumulator.pop();
+            switch (currentToken) {
+                case '+': accumulator.push(leftOperand + rightOperand); break;
+                case '-': accumulator.push(leftOperand - rightOperand); break;
+                case '*': accumulator.push(leftOperand * rightOperand); break;
+            }
+        }
+        return accumulator;
+    }, []);
+    return evaluationStack.pop();
+};
+
+const generateInfixString = (rpnTokens) => {
+    const stringStack = rpnTokens.reduce((accumulator, currentToken) => {
+        if (typeof currentToken === 'number') {
+            accumulator.push(String(currentToken));
+        } else {
+            const rightExpr = accumulator.pop();
+            const leftExpr = accumulator.pop();
+            accumulator.push(`(${leftExpr} ${currentToken} ${rightExpr})`);
+        }
+        return accumulator;
+    }, []);
+    return stringStack.pop();
+};
+
+const findSolutionForNumbers = (currentNumbers) => {
+    if (currentNumbers.every(num => num === 0)) {
+        return null;
     }
 
-    const resultText = `(${leftText} ${operationSymbol} ${rightText})`;
-    const combinedOperators = leftNode.operatorsInvolved.concat(rightNode.operatorsInvolved, [operationSymbol]);
+    for (const indexPerm of allNumberIndexPermutations) {
+        const [numA, numB, numC, numD] = indexPerm.map(idx => currentNumbers[idx]);
 
-    return new ExpressionNode(resultValue, resultText, combinedOperators);
-}
+        for (const opsTuple of allOperatorCombinations) {
+            const [opX, opY, opZ] = opsTuple;
 
-function produceAllArrangements(numbersToCombine) {
-    if (numbersToCombine.length === 1) {
-        return [new ExpressionNode(numbersToCombine[0], String(numbersToCombine[0]), [])];
-    }
+            if (opX === '-' && opY === '-' && opZ === '-') {
+                continue;
+            }
 
-    const currentArrangements = [];
+            for (const rpnBuilder of rpnConstructors) {
+                const rpnExpression = rpnBuilder(numA, numB, numC, numD, opX, opY, opZ);
+                const computedResult = performRpnEvaluation(rpnExpression);
 
-    for (let i = 1; i < numbersToCombine.length; i++) {
-        const leftGroup = numbersToCombine.slice(0, i);
-        const rightGroup = numbersToCombine.slice(i);
-
-        const leftExpressions = produceAllArrangements(leftGroup);
-        const rightExpressions = produceAllArrangements(rightGroup);
-
-        for (const leftOperand of leftExpressions) {
-            for (const rightOperand of rightExpressions) {
-                for (const op of allPossibleOperators) {
-                    const newExpression = executeOperation(leftOperand, rightOperand, op);
-
-                    // Replicate the original code's specific skip: if all three operators are '-'
-                    if (newExpression.operatorsInvolved.length === 3 && newExpression.operatorsInvolved.every(o => o === '-')) {
-                        continue;
-                    }
-                    currentArrangements.push(newExpression);
+                if (computedResult === desiredResult) {
+                    return generateInfixString(rpnExpression);
                 }
             }
         }
     }
-    return currentArrangements;
+    return '0';
+};
+
+const allInputLines = parseInputLines(getRawInputContent());
+
+for (const currentLineNumbers of allInputLines) {
+    const lineResult = findSolutionForNumbers(currentLineNumbers);
+    if (lineResult === null) {
+        break;
+    }
+    console.log(lineResult);
 }
-
-function generateAllSequences(inputArray) {
-    const resultSequences = [];
-    function permuteRecursive(currentSequence, remainingElements) {
-        if (remainingElements.length === 0) {
-            resultSequences.push(currentSequence);
-            return;
-        }
-        for (let i = 0; i < remainingElements.length; i++) {
-            const nextElement = remainingElements[i];
-            const updatedRemaining = remainingElements.filter((_, index) => index !== i);
-            permuteRecursive(currentSequence.concat(nextElement), updatedRemaining);
-        }
-    }
-    permuteRecursive([], inputArray);
-    return resultSequences;
-}
-
-function processInputLine(lineContent) {
-    if (lineContent === '0 0 0 0') {
-        someInputReader.close();
-        return;
-    }
-
-    const initialNumbers = lineContent.split(' ').map(Number);
-    let solutionFound = false;
-
-    const numberPermutations = generateAllSequences(initialNumbers);
-
-    for (const currentPermutation of numberPermutations) {
-        const allExpressionsForPermutation = produceAllArrangements(currentPermutation);
-
-        for (const expr of allExpressionsForPermutation) {
-            if (expr.currentValue === 10) {
-                console.log(expr.textRepresentation);
-                solutionFound = true;
-                break;
-            }
-        }
-        if (solutionFound) {
-            break;
-        }
-    }
-
-    if (!solutionFound) {
-        console.log(0);
-    }
-}
-
-someInputReader.on('line', processInputLine);
-someInputReader.on('close', () => {});

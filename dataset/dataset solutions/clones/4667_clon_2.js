@@ -1,63 +1,61 @@
-function printToConsole( messageContent ) {
-  console.log(messageContent);
+function logMessage(content) {
+  console.log(content);
 }
 
-function ProcessInputData( initialDataString ) {
+function ProcessInput(rawInputData) {
+  // Convert the input string to an integer.
+  let numericValue = parseInt(rawInputData, 10);
 
-  let numericValue = parseInt(initialDataString);
-  // This line converts the input string to an integer.
-  // Other potential input parsing methods, currently inactive:
-  // numericValue = initialDataString.split(" ");
-  // numericValue = initialDataString.split("\n");
-  // numericValue = initialDataString.split(" ").map((element)=>Number(element));
-  // numericValue = initialDataString.split("\n").map((element)=>Number(element));
-
-  if ( numericValue === 1 ) {
-    printToConsole("1");
+  // Handle the base case where the input is 1.
+  if (numericValue === 1) {
+    logMessage("1");
     return;
   }
 
-  const factorCollection = retrieveDivisors(numericValue);
-  // Debugging line to view the collected factors (currently commented).
-  // printToConsole(factorCollection);
+  // Obtain a sorted list of all divisors for the given number.
+  const divisorCollection = retrieveDivisorSet(numericValue);
 
-  let minimumDigitCount = 20;
+  // Initialize the minimum digit count with a sufficiently large value.
+  let minimumDigitCount = 20; // A reasonable upper bound for typical problem constraints.
 
-  for ( let loopIndex = 0 ; loopIndex < factorCollection.length / 2 ; loopIndex++ ) {
-    const firstFactor = factorCollection[loopIndex];
-    const secondFactor = factorCollection[ factorCollection.length - ( loopIndex + 1 ) ];
-    // Another debugging line, showing factor pairs (currently commented).
-    // printToConsole(firstFactor + ":" + secondFactor);
-    minimumDigitCount = Math.min( minimumDigitCount , calculateMaxDigits(firstFactor, secondFactor) );
+  // Iterate through the first half of the divisor list to find pairs.
+  for (let index = 0; index < divisorCollection.length / 2; index++) {
+    const firstFactor = divisorCollection[index];
+    const secondFactor = divisorCollection[divisorCollection.length - (index + 1)];
+
+    // Calculate the maximum digit count for the current pair of factors.
+    // Update the overall minimum if this pair yields a smaller maximum.
+    minimumDigitCount = Math.min(minimumDigitCount, determineMaxDigits(firstFactor, secondFactor));
   }
 
-  printToConsole(minimumDigitCount);
+  // Output the final minimum digit count.
+  logMessage(minimumDigitCount);
 }
 
-function calculateMaxDigits( valueOne , valueTwo ) {
-  return Math.max( valueOne.toString().length , valueTwo.toString().length );
+// Calculates the maximum number of digits between two given numbers.
+function determineMaxDigits(numberOne, numberTwo) {
+  return Math.max(numberOne.toString().length, numberTwo.toString().length);
 }
 
-// This function efficiently computes all positive divisors for a given number.
-function retrieveDivisors( targetNumber ) {
-
-  const divisorList = [];
-
-  for ( let currentCandidate = 1 ; currentCandidate * currentCandidate <= targetNumber ; currentCandidate++ ) {
-    if ( targetNumber % currentCandidate === 0 ) {
-      divisorList.push(currentCandidate);
-      if ( currentCandidate * currentCandidate !== targetNumber ) {
-        divisorList.push(targetNumber / currentCandidate);
+// Generates a sorted list of all positive divisors for a given integer.
+// This implementation is optimized for performance.
+function retrieveDivisorSet(targetInteger) {
+  const divisors = [];
+  // Iterate up to the square root of the target integer.
+  for (let counter = 1; counter * counter <= targetInteger; counter++) {
+    if (targetInteger % counter === 0) {
+      // If 'counter' is a divisor, add it to the list.
+      divisors.push(counter);
+      // If 'counter' is not the square root, then 'targetInteger / counter' is also a divisor.
+      if (counter * counter !== targetInteger) {
+        divisors.push(targetInteger / counter);
       }
     }
   }
-
-  divisorList.sort( ( itemA , itemB ) => {
-    return itemA - itemB;
-  });
-
-  return divisorList;
+  // Sort the collected divisors in ascending order.
+  divisors.sort((valA, valB) => valA - valB);
+  return divisors;
 }
 
-// Initiates the program by reading input from the standard input stream.
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8").trim() );
+// Read input from standard input, process it, and execute the main logic.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

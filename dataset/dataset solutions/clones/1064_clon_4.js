@@ -1,42 +1,47 @@
-function processInput(rawText) {
-    const lines = rawText.trim().split('\n');
-    const elementCount = Number(lines.shift());
-    const originalSequence = lines.shift().split(' ').map(Number);
+function processInputAndCompute(inputDataString) {
+    const parsedLines = inputDataString.trim().split('\n');
+    const elementCount = Number(parsedLines.shift());
+    const originalNumbers = parsedLines.shift().split(' ').map(Number);
 
-    const uniqueSorted = Array.from(new Set(originalSequence)).sort((a, b) => a - b);
-    const valueToRank = new Map();
-    for (let i = 0; i < uniqueSorted.length; i++) {
-        valueToRank.set(uniqueSorted[i], i + 1);
-    }
-    const rankedSequence = originalSequence.map(val => valueToRank.get(val));
-    const maxRank = uniqueSorted.length;
+    const totalInversions = calculateInversionsWithFenwick(originalNumbers, elementCount);
+
+    console.log(totalInversions);
+}
+
+function calculateInversionsWithFenwick(dataCollection, collectionLength) {
+    const uniqueValues = [...new Set(dataCollection)].sort((a, b) => a - b);
+    const valueRankMap = new Map();
+    uniqueValues.forEach((val, index) => valueRankMap.set(val, index + 1));
+    const maxRank = uniqueValues.length;
+
+    const rankedCollection = dataCollection.map(val => valueRankMap.get(val));
 
     const bitStorage = new Array(maxRank + 1).fill(0);
 
-    function adjustValue(position, amount) {
-        for (; position <= maxRank; position += position & -position) {
-            bitStorage[position] += amount;
+    const updateBit = (rankIndex, deltaValue) => {
+        while (rankIndex <= maxRank) {
+            bitStorage[rankIndex] += deltaValue;
+            rankIndex += rankIndex & (-rankIndex);
         }
-    }
+    };
 
-    function retrieveSum(position) {
-        let currentSum = 0;
-        for (; position > 0; position -= position & -position) {
-            currentSum += bitStorage[position];
+    const queryBit = (rankIndex) => {
+        let sumResult = 0;
+        while (rankIndex > 0) {
+            sumResult += bitStorage[rankIndex];
+            rankIndex -= rankIndex & (-rankIndex);
         }
-        return currentSum;
+        return sumResult;
+    };
+
+    let inversionCounter = 0;
+    for (let currentElementIndex = 0; currentElementIndex < collectionLength; currentElementIndex++) {
+        const currentRank = rankedCollection[currentElementIndex];
+        inversionCounter += queryBit(maxRank) - queryBit(currentRank);
+        updateBit(currentRank, 1);
     }
 
-    let totalMisorderedPairs = 0;
-    for (let i = 0; i < elementCount; i++) {
-        const currentRank = rankedSequence[i];
-        const largerElementsCount = retrieveSum(maxRank) - retrieveSum(currentRank);
-        totalMisorderedPairs += largerElementsCount;
-
-        adjustValue(currentRank, 1);
-    }
-
-    console.log(totalMisorderedPairs);
+    return inversionCounter;
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));

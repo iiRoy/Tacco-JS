@@ -1,44 +1,59 @@
-function ProcessContent(sourceContent) {
-  // This function processes multi-line input data to categorize numeric values.
-  const linesArray = sourceContent.split("\n"); // Divide the full input string into an array of lines.
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+  // First, the raw input string is divided into individual lines.
+  let lines = rawData.split("\n");
 
-  var totalItems = parseInt(linesArray[0]); // Extract the total count of items from the first line.
-  var firstBound = parseInt(linesArray[1].split(" ")[0]); // Parse the first threshold value from the second line.
-  var secondBound = parseInt(linesArray[1].split(" ")[1]); // Parse the second threshold value from the second line.
+  // The total count of items is extracted from the initial line.
+  const totalItems = parseInt(lines[0], 10);
 
-  let categoryOne = [];   // Initialize an array for numbers less than or equal to the first threshold.
-  let categoryTwo = [];   // Initialize an array for numbers between the two thresholds (exclusive of first, inclusive of second).
-  let categoryThree = []; // Initialize an array for numbers greater than the second threshold.
+  // The first categorization threshold is parsed from the second line.
+  const thresholdOne = parseInt(lines[1].split(" ")[0], 10);
 
-  const itemStrings = linesArray[2].split(" "); // Split the third line into an array of number strings.
+  // The second categorization threshold is also parsed from the second line.
+  const thresholdTwo = parseInt(lines[1].split(" ")[1], 10);
 
-  for (var idx = 0; idx < totalItems; idx++) { // Iterate through each individual item.
-    let currentValue = parseInt(itemStrings[idx]); // Convert the current item string to an integer.
+  // Three distinct arrays are initialized to store items based on their categories.
+  let groupAlpha = [];
+  let groupBeta = [];
+  let groupGamma = [];
 
-    if (currentValue <= firstBound) {     // Check if the number belongs to the first category.
-      categoryOne.push(currentValue);
-    } else if (currentValue <= secondBound) { // Check if the number belongs to the second category.
-      categoryTwo.push(currentValue);
-    } else {                              // Otherwise, it falls into the third category.
-      categoryThree.push(currentValue);
+  // The third line, containing space-separated item values, is split into an array of strings.
+  const itemStrings = lines[2].split(" ");
+
+  // A loop iterates through each item to assign it to the appropriate category.
+  for (let idx = 0; idx < totalItems; idx++) {
+    // The current item's string representation is converted to an integer.
+    const currentValue = parseInt(itemStrings[idx], 10);
+
+    // Items less than or equal to the first threshold go into group Alpha.
+    if (currentValue <= thresholdOne) {
+      groupAlpha.push(currentValue);
+    }
+    // Items less than or equal to the second threshold (but greater than the first) go into group Beta.
+    else if (currentValue <= thresholdTwo) {
+      groupBeta.push(currentValue);
+    }
+    // All other items are placed into group Gamma.
+    else {
+      groupGamma.push(currentValue);
     }
   }
 
-  var finalResult = Math.min(
-    categoryOne.length,    // Get the count of elements in the first category.
-    categoryTwo.length,    // Get the count of elements in the second category.
-    categoryThree.length   // Get the count of elements in the third category.
-  ); // Determine the minimum number of elements across all three categories.
+  // The final outcome is the minimum length among the three categorized groups.
+  const finalResult = Math.min(groupAlpha.length, groupBeta.length, groupGamma.length);
 
-  console.log('%s', finalResult); // Print the calculated minimum value to the console.
+  // The computed result is then printed to the console.
+  console.log('%s', finalResult);
 }
 
-
-// Utility function for local testing, typically triggered by a UI element.
-function performTest() {
-  const testData = document.getElementById("input").value; // Retrieve sample input from a web page element.
-  ProcessContent(testData); // Execute the main logic with the provided test data.
+// This auxiliary function is provided for debugging purposes, typically in a browser environment.
+function testFunction() {
+  // It retrieves input from a specific HTML element.
+  var browserInput = document.getElementById("input").value;
+  // And then passes this input to the main processing function.
+  ProcessInput(browserInput);
 }
 
-// Execute the primary data processing function using content read from the standard input file.
-ProcessContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The main processing function is invoked with data read from standard input,
+// which is common in Node.js environments for competitive programming.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

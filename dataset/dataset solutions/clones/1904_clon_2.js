@@ -1,29 +1,29 @@
-const computeSolution=(rawInputText)=>{
-  // The primary numerical value to be matched by computations.
-  const targetSum=BigInt(rawInputText.trim());
+const executeCalculation = (dataString) => {
+  // Convert the trimmed input string to a BigInt for calculations
+  const targetValue = BigInt(dataString.trim());
 
-  // First iterator for potential solution components.
-  for(let valA=0n;valA<100n;valA++){
-    // Second iterator, nested within the first, for other components.
-    for(let valB=0n;valB<100n;valB++){
-      // Check if the difference of their fifth powers matches the target.
-      if(valA**5n-valB**5n===targetSum){
-        // If a match is found, output the pair and exit the execution path.
-        return console.log(`${valA} ${valB}`);
+  // Outer loop for the first potential number, iterating from 0 to 99 (inclusive)
+  for (let firstNum = 0n; firstNum < 100n; firstNum++) {
+    // Inner loop for the second potential number, also from 0 to 99 (inclusive)
+    for (let secondNum = 0n; secondNum < 100n; secondNum++) {
+      // Check if the difference of their fifth powers matches the target value
+      if (firstNum ** 5n - secondNum ** 5n === targetValue) {
+        // If a match is found, print the numbers and terminate the function
+        return console.log(`${firstNum} ${secondNum}`);
       }
-      // Alternatively, check if the sum of their fifth powers matches the target.
-      else if(valA**5n+valB**5n===targetSum){
-        // If this alternative match is found, output the first value and the negated second value, then exit.
-        return console.log(`${valA} ${-valB}`);
+      // Otherwise, check if the sum of their fifth powers matches the target value
+      else if (firstNum ** 5n + secondNum ** 5n === targetValue) {
+        // If this condition is met, print the first number and the negated second number, then exit
+        return console.log(`${firstNum} ${-secondNum}`);
       }
     }
   }
 };
 
-// Conditional execution block for varying environments.
-// Checks an environment variable to determine the operational mode.
-process.env.RUN_MODE
-  ? (process.env.RUN_MODE==='test'
-      ? performTests() // Invokes a test routine if the mode is 'test'.
-      : computeSolution(require('fs').readFileSync('dev/stdin','utf8'))) // Otherwise, processes input from a specific development path.
-  : computeSolution(require('fs').readFileSync('/dev/stdin','utf8')); // Default action: processes input from the standard system path.
+// Conditional execution based on the 'MYTEST' environment variable
+process.env.MYTEST
+  ? (process.env.MYTEST === 'test' // Check if 'MYTEST' is specifically set to 'test'
+      ? test() // If 'test', execute the 'test' function (assumed external)
+      : executeCalculation(require('fs').readFileSync('dev/stdin', 'utf8')) // Otherwise, read from 'dev/stdin' and pass to the main function
+    )
+  : executeCalculation(require('fs').readFileSync('/dev/stdin', 'utf8')); // If 'MYTEST' is not set, read from '/dev/stdin' and execute

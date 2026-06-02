@@ -1,39 +1,30 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let fullStreamAccumulator = '';
-
-process.stdin.on('data', (dataChunk) => {
-    fullStreamAccumulator += dataChunk;
+var inputAccumulator = '';
+process.stdin.on('data', function(dataChunk) {
+    inputAccumulator += dataChunk;
 });
 
-function safeParseInteger(stringValue) {
-    const parsedValue = parseInt(stringValue.trim(), 10);
-    if (isNaN(parsedValue)) {
-        console.error(`[ERROR] Unable to convert "${stringValue.trim()}" to an integer. Defaulting to 0.`);
-        return 0;
-    }
-    return parsedValue;
+process.stdin.on('end', function() {
+    const rawInputLines = inputAccumulator.split(/\r?\n/);
+    calculateAndDisplay(rawInputLines);
+});
+
+function parseLineAsInt(lineContent) {
+    return parseInt(lineContent, 10);
 }
 
-process.stdin.on('end', () => {
-    const rawInputLines = fullStreamAccumulator.split(/\r?\n/);
-    const cleanInputLines = rawInputLines.filter(line => line.trim().length > 0);
+function calculateAndDisplay(inputLines) {
+    const multiplierConstant = 2;
 
-    initiateProcessing(cleanInputLines);
-});
+    var firstNum = parseLineAsInt(inputLines[0]);
+    var secondNum = parseLineAsInt(inputLines[1]);
 
-function initiateProcessing(receivedLines) {
-    if (receivedLines.length < 2) {
-        console.error('[FATAL] Not enough input data provided. Expected at least two lines.');
-        process.exit(1);
-    }
+    var intermediateProduct = multiplierConstant * secondNum;
+    var finalResult = intermediateProduct - firstNum;
 
-    const primaryInputValue = safeParseInteger(receivedLines[0]);
-    const secondaryInputValue = safeParseInteger(receivedLines[1]);
+    console.log(finalResult);
 
-    const doubledSecondary = secondaryInputValue * 2;
-    const finalCalculatedMetric = doubledSecondary - primaryInputValue;
-
-    console.log(finalCalculatedMetric);
+    return 0;
 }

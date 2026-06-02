@@ -1,104 +1,95 @@
-let currentMazeStructure;
-let levelDimensions;
-let objectiveStrength;
+const fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = fileContent.trim().split('\n');
 
-let pathMemo;
+const [gridWidth, gridHeight, maxCollectibleValue] = lineSegments.shift().split(' ').map(Number);
 
-const directionOffsets = [
-  [-1, 0], // Up
-  [0, -1], // Left
-  [0, 1],  // Right
-  [1, 0]   // Down
-];
+let entryPointCoords = [];
+const initialMapGrid = lineSegments.reduce((accumulator, currentLine, rowIndex) => {
+    const rowCharacters = currentLine.split('');
+    const startColumnIndex = rowCharacters.indexOf('S');
+    if (startColumnIndex !== -1) {
+        entryPointCoords = [startColumnIndex, rowIndex];
+    }
+    accumulator.push(rowCharacters);
+    return accumulator;
+}, []);
 
-function generateGridHash(gridArr) {
-  return gridArr.map(row => row.join('')).join('|');
-}
+const [initialXCoord, initialYCoord] = entryPointCoords;
+initialMapGrid[initialYCoord][initialXCoord] = '.';
 
-function findOptimalRoute(presentRow, presentCol, collectedStrength, traveledSegments, currentGridState) {
-  const stateKey = `${presentRow},${presentCol},${collectedStrength},${generateGridHash(currentGridState)}`;
+function findShortestPath(startX, startY, mapData, targetCollectibleCount, width, height) {
+    const explorationQueue = [];
+    const visitedPathStates = new Set();
 
-  if (pathMemo.has(stateKey)) {
-    return pathMemo.get(stateKey);
-  }
+    const generateStateKey = (x, y, nextP, collectedLocations) => {
+        const sortedLocations = Array.from(collectedLocations).sort().join('|');
+        return `${x},${y},${nextP},${sortedLocations}`;
+    };
 
-  if (collectedStrength === objectiveStrength + 1) {
-    return traveledSegments;
-  }
+    const initialCollectedLocations = new Set();
+    const startingState = {
+        x: startX,
+        y: startY,
+        cost: 0,
+        requiredPower: 1,
+        collected: initialCollectedLocations
+    };
 
-  let minimumPath = Infinity;
+    const startingStateKey = generateStateKey(startingState.x, startingState.y, startingState.requiredPower, startingState.collected);
+    explorationQueue.push(startingState);
+    visitedPathStates.add(startingStateKey);
 
-  let nextStrength = collectedStrength;
-  const newGridForExploration = currentGridState.map(row => [...row]);
+    const movementVectors = [[0, -1], [-1, 0], [1, 0], [0, 1]];
 
-  if (newGridForExploration[presentRow][presentCol] === String(collectedStrength)) {
-    nextStrength++;
-    newGridForExploration[presentRow][presentCol] = '.';
-  }
+    while (explorationQueue.length > 0) {
+        const currentState = explorationQueue.shift();
 
-  for (const [dr, dc] of directionOffsets) {
-    const nextRow = presentRow + dr;
-    const nextCol = presentCol + dc;
+        if (currentState.requiredPower > targetCollectibleCount) {
+            return currentState.cost;
+        }
 
-    if (nextRow < 0 || nextRow >= levelDimensions[1] || nextCol < 0 || nextCol >= levelDimensions[0]) {
-      continue;
+        movementVectors.forEach(([deltaX, deltaY]) => {
+            const nextX = currentState.x + deltaX;
+            const nextY = currentState.y + deltaY;
+
+            if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height) {
+                return;
+            }
+
+            const cellValue = mapData[nextY][nextX];
+
+            if (cellValue === 'X') {
+                return;
+            }
+
+            let nextRequiredPower = currentState.requiredPower;
+            const newCollectedLocations = new Set(currentState.collected);
+
+            if (cellValue === String(nextRequiredPower) && !newCollectedLocations.has(`${nextY}_${nextX}`)) {
+                newCollectedLocations.add(`${nextY}_${nextX}`);
+                nextRequiredPower++;
+            }
+
+            const newState = {
+                x: nextX,
+                y: nextY,
+                cost: currentState.cost + 1,
+                requiredPower: nextRequiredPower,
+                collected: newCollectedLocations
+            };
+
+            const newStateKey = generateStateKey(newState.x, newState.y, newState.requiredPower, newState.collected);
+
+            if (!visitedPathStates.has(newStateKey)) {
+                visitedPathStates.add(newStateKey);
+                explorationQueue.push(newState);
+            }
+        });
     }
 
-    if (newGridForExploration[nextRow][nextCol] === 'X') {
-      continue;
-    }
-
-    const resultFromNeighbor = findOptimalRoute(
-      nextRow,
-      nextCol,
-      nextStrength,
-      traveledSegments + 1,
-      newGridForExploration
-    );
-
-    minimumPath = Math.min(minimumPath, resultFromNeighbor);
-  }
-
-  pathMemo.set(stateKey, minimumPath);
-  return minimumPath;
+    return -1;
 }
 
-function processGameData(inputString) {
-  const processedLines = inputString.trim().split('\n');
+const finalResult = findShortestPath(initialXCoord, initialYCoord, initialMapGrid, maxCollectibleValue, gridWidth, gridHeight);
 
-  const dimensionAndPower = processedLines.shift().split(' ').map(Number);
-  levelDimensions = [dimensionAndPower[0], dimensionAndPower[1]];
-  objectiveStrength = dimensionAndPower[2];
-
-  let initialSpot = [];
-  currentMazeStructure = [];
-  for (let r = 0; r < levelDimensions[1]; r++) {
-    const rowContent = processedLines.shift().split('');
-    const startColumn = rowContent.indexOf('S');
-    if (startColumn !== -1) {
-      initialSpot = [startColumn, r];
-    }
-    currentMazeStructure.push(rowContent);
-  }
-
-  pathMemo = new Map();
-
-  const startingMazeCopy = currentMazeStructure.map(row => [...row]);
-  if (initialSpot.length > 0) {
-    startingMazeCopy[initialSpot[1]][initialSpot[0]] = '.';
-  }
-
-  const calculatedAnswer = findOptimalRoute(
-    initialSpot[1],
-    initialSpot[0],
-    1,
-    0,
-    startingMazeCopy
-  );
-
-  return calculatedAnswer === Infinity ? -1 : calculatedAnswer;
-}
-
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalResult = processGameData(fileContent);
 console.log(finalResult);

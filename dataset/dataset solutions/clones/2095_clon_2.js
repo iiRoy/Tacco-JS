@@ -1,35 +1,20 @@
-'use strict'
-// This module analyzes character sequences from an input stream.
-function ProcessInputData(incomingText) {
-  // Divide the input string into individual character components.
-  let charComponents = incomingText.split("")
+'use strict';
 
-  // Transform all character components to their uppercase equivalent for normalization.
-  charComponents = charComponents.map(charElement => charElement.toUpperCase())
-
-  // Obtain the total quantity of character components.
-  const totalQuantity = charComponents.length
-
-  // Initialize a boolean indicator for detecting non-identical components.
-  let foundDivergence = false
-
-  // Commence the primary iteration through the components.
-  for (let firstLoopIndex = 0; firstLoopIndex < totalQuantity; ++firstLoopIndex) {
-    // Commence the secondary iteration through the components.
-    for (let secondLoopIndex = 0; secondLoopIndex < totalQuantity; ++secondLoopIndex) {
-      // Evaluate if the current indices refer to the same position.
-      if (firstLoopIndex === secondLoopIndex) {
-        // Bypass comparison if the indices are identical.
-        continue
+function ProcessInput(rawData) {
+  let stopPoints = rawData.split("");
+  stopPoints = stopPoints.map(charVal => charVal.toUpperCase());
+  const totalCount = stopPoints.length;
+  let foundDifference = false;
+  for (let idxA = 0; idxA < totalCount; ++idxA) {
+    for (let idxB = 0; idxB < totalCount; ++idxB) {
+      // Skip if indices are identical
+      if (idxA === idxB) {
+        continue;
       }
-      // Update the divergence indicator if the components at the current indices are distinct.
-      foundDivergence = foundDivergence || charComponents[firstLoopIndex] !== charComponents[secondLoopIndex]
+      foundDifference = foundDifference || stopPoints[idxA] !== stopPoints[idxB];
     }
   }
-
-  // Display the outcome based on the final state of the divergence indicator.
-  console.log(foundDivergence ? 'Yes' : 'No')
+  console.log(foundDifference ? 'Yes' : 'No');
 }
 
-// Invoke the data processing function with content acquired from standard input.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"))
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

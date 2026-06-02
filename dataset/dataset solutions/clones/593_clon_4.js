@@ -1,34 +1,39 @@
-const dataContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = dataContent.trim().split('\n').filter(Boolean);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = fileContent.trim().split("\n");
 
-const [dimensionSpecifier, ...valueEntries] = processedLines;
-const [nodeCount, operationCount] = dimensionSpecifier.split(' ').map(Number);
+let currentLineIndex = 0;
 
-const connectionCosts = valueEntries.slice(0, nodeCount - 1).map(Number);
-const movementInstructions = valueEntries.slice(nodeCount - 1).map(Number);
+const dimensionValues = dataLines[currentLineIndex++].split(" ").map(Number);
+const matrixRows = dimensionValues[0];
+const instructionCount = dimensionValues[1];
 
-const initialNodeIndex = 0;
-const modulusValue = 100000;
+const segmentArray = Array.from({ length: matrixRows - 1 }, (_, index) => Number(dataLines[currentLineIndex + index]));
+currentLineIndex += matrixRows - 1;
 
-const finalResult = movementInstructions.reduce((currentAggregate, singleInstruction) => {
-    let { positionIdentifier, cumulativeSum } = currentAggregate;
-    const directionModifier = Math.sign(singleInstruction);
-    const traversalMagnitude = Math.abs(singleInstruction);
+const movementSequence = Array.from({ length: instructionCount }, (_, index) => Number(dataLines[currentLineIndex + index]));
+currentLineIndex += instructionCount;
 
-    let segmentCostComponents = [];
-    if (directionModifier === 1) {
-        // Moving in positive direction: accumulate costs from current position up to (current + magnitude - 1)
-        segmentCostComponents = connectionCosts.slice(positionIdentifier, positionIdentifier + traversalMagnitude);
-    } else { // directionModifier === -1
-        // Moving in negative direction: accumulate costs from (current - magnitude) up to (current - 1)
-        segmentCostComponents = connectionCosts.slice(positionIdentifier - traversalMagnitude, positionIdentifier);
+const cumulativeSums = [0];
+for (let k = 0; k < segmentArray.length; k++) {
+    cumulativeSums.push(cumulativeSums[k] + segmentArray[k]);
+}
+
+let totalResult = 0;
+let currentPointerPosition = 0;
+
+movementSequence.forEach(moveInstruction => {
+    const moveDirection = (moveInstruction > 0) ? 1 : -1;
+    const absoluteMoveAmount = Math.abs(moveInstruction);
+
+    let rangeSumComponent;
+    if (moveDirection === 1) {
+        rangeSumComponent = cumulativeSums[currentPointerPosition + absoluteMoveAmount] - cumulativeSums[currentPointerPosition];
+    } else {
+        rangeSumComponent = cumulativeSums[currentPointerPosition] - cumulativeSums[currentPointerPosition - absoluteMoveAmount];
     }
 
-    const instructionTotal = segmentCostComponents.reduce((acc, cost) => acc + cost, 0);
-    cumulativeSum = (cumulativeSum + instructionTotal) % modulusValue;
-    positionIdentifier += (directionModifier * traversalMagnitude);
+    totalResult = (totalResult + rangeSumComponent) % 100000;
+    currentPointerPosition += moveInstruction;
+});
 
-    return { positionIdentifier, cumulativeSum };
-}, { positionIdentifier: initialNodeIndex, cumulativeSum: 0 });
-
-console.log(finalResult.cumulativeSum);
+console.log(totalResult);

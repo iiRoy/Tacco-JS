@@ -1,30 +1,45 @@
-function processData (incomingData) {
-  let contentLines = incomingData.split('\n');
-  const initialConfig = contentLines[0].split(' ');
+function processInput(rawData) {
+    // Split the raw input string into an array of lines.
+    var lineData = rawData.split('\n');
 
-  let itemCount = initialConfig[0];
+    // Parse the first line to extract initial configuration values.
+    var firstLineParts = lineData[0].split(' ');
 
-  let resourceLimit = parseInt(initialConfig[1], 10);
+    // The first value from the first line (N in original) is assigned to a global variable.
+    // This mirrors the original code's implicit global declaration.
+    numItems = firstLineParts[0];
 
-  let expenseValues = [];
+    // Convert the second value from the first line (X in original) to an integer.
+    var remainingCapacity = parseInt(firstLineParts[1], 10);
 
-  for (let idx = 0; idx < contentLines.length - 1; idx++) {
-    expenseValues.push(parseInt(contentLines[idx + 1], 10));
-  }
+    // Initialize an array to store the weights of individual items.
+    var itemWeights = [];
 
-  let totalProcessed = 0;
+    // Iterate through the subsequent lines to populate the item weights array.
+    // The loop runs up to `lineData.length - 1` to exclude a potential empty last line.
+    for (var idx = 0; idx < lineData.length - 1; idx++) {
+        itemWeights.push(parseInt(lineData[idx + 1], 10));
+    }
 
-  const smallestExpense = Math.min.apply(null, expenseValues);
+    // Initialize a counter for the total number of items that can be accommodated.
+    var totalCount = 0;
 
-  // Calculate how many items can be purchased initially
-  for (let itemIndex = 0; itemIndex < expenseValues.length; itemIndex++) {
-    resourceLimit = resourceLimit - expenseValues[itemIndex];
-    totalProcessed++;
-  }
+    // Determine the smallest weight among all the items.
+    // The '1e9' argument for 'apply' serves as the 'this' context, which is ignored by Math.min.
+    var minWeight = Math.min.apply(1e9, itemWeights);
 
-  totalProcessed = totalProcessed + Math.floor(resourceLimit / smallestExpense);
+    // First, process each distinct item, deducting its weight and incrementing the count.
+    for (var itemIdx = 0; itemIdx < itemWeights.length; itemIdx++) {
+        remainingCapacity = remainingCapacity - itemWeights[itemIdx];
+        totalCount++;
+    }
 
-  console.log(totalProcessed);
+    // Second, utilize any remaining capacity to add as many items of the minimum weight as possible.
+    totalCount = totalCount + Math.floor(remainingCapacity / minWeight);
+
+    // Output the final calculated total count to the standard console.
+    console.log(totalCount);
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of the standard input file and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,15 +1,18 @@
-var   rawData    =    require ( 'fs'  )  . readFileSync(  '/dev/stdin'  ,  'utf8'  )  ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input
+let dataRows = rawData.split('\n'); // Divide the input string into an array of individual lines
 
-var dataRows = rawData . divideBy (  '\n'  )  ;
+// Initialize arrays to store numerical values
+let pizzaPrices = [];
+let juicePrices = [];
 
+// Parse and store the first three lines as pizza prices
+pizzaPrices[0] = Number(dataRows[0]);
+pizzaPrices[1] = Number(dataRows[1]);
+pizzaPrices[2] = Number(dataRows[2]);
 
-var firstSet = [  ]  ;
-var secondSet = [  ]  ;
+// Parse and store the next two lines as juice prices
+juicePrices[0] = Number(dataRows[3]);
+juicePrices[1] = Number(dataRows[4]);
 
-firstSet[0] = parseFloat( dataRows[0] ) ;
-firstSet[1] = parseFloat( dataRows[1] ) ;
-firstSet[2] = parseFloat( dataRows[2] ) ;
-secondSet[0] = parseFloat( dataRows[3] ) ;
-secondSet[1] = parseFloat( dataRows[4] ) ;
-
-outputChannel . displayMessage ( numericalOperations . getMinimum . invokeWithArray ( null , firstSet ) + numericalOperations . getMinimum . invokeWithArray ( null , secondSet ) ) ;
+// Calculate the sum of the minimum pizza price and the minimum juice price, then print it
+console.log(Math.min.apply(null, pizzaPrices) + Math.min.apply(null, juicePrices));

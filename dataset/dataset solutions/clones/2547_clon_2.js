@@ -1,56 +1,42 @@
 "use strict";
 
+// This script reads input from standard input, processes it, and prints a result.
 
-const file_system_module = require('fs'); // Obtain the module for file system operations
+const inputContent = require('fs').readFileSync('/dev/stdin', 'UTF-8'); // Read all input as a string
+const inputLines = inputContent.split('\n'); // Split the input string into an array of lines
 
+const firstLineParts = inputLines[0].split(' '); // Parse the first line for N and K
+const permutationElements = inputLines[1].split(' '); // Parse the second line for the array P
 
-const input_content = file_system_module.readFileSync('/dev/stdin', 'UTF-8'); // Read all data from standard input
+const totalCount = parseInt(firstLineParts[0]); // Convert the first part of the first line to an integer (N)
+const segmentLength = parseInt(firstLineParts[1]); // Convert the second part of the first line to an integer (K)
 
+let uniquePermutations = {}; // Initialize an object to store unique permutations as keys
+let iterationIndex = 0; // Initialize a counter for the sliding window
 
-const input_lines = input_content.split('\n'); // Break the full input into an array of individual lines
-
-
-const first_line_parts = input_lines[0].split(' '); // Separate the components of the initial line
-
-
-const source_elements = input_lines[1].split(' '); // Divide the subsequent line into its constituent elements
-
-
-const total_count = parseInt(first_line_parts[0]); // Convert the first numerical part into an integer
-
-
-const segment_size = parseInt(first_line_parts[1]); // Convert the second numerical part into an integer
-
-
-let unique_permutations = {}; // Initialize an empty object to store distinct arrangements
-
-
-let iteration_index = 0; // Set up a counter for the looping process
-
-
-while (true) { // Begin an indefinite loop
-  if (iteration_index + segment_size > source_elements.length) { // Check if the current window exceeds bounds
-    break; // Exit the loop if no more full segments can be processed
+// Loop indefinitely until a break condition is met
+while (true) {
+  // Check if the current window exceeds the array bounds
+  if (iterationIndex + segmentLength > permutationElements.length) {
+    break; // Exit the loop if the window goes out of bounds
   }
 
+  // Extract the segment before the current window
+  const prefixSegment = permutationElements.slice(0, iterationIndex);
+  // Extract the current window segment and sort it lexicographically
+  const middleSortedSegment = permutationElements.slice(iterationIndex, iterationIndex + segmentLength).sort((valA, valB) => valA > valB);
+  // Extract the segment after the current window
+  const suffixSegment = permutationElements.slice(iterationIndex + segmentLength);
 
-  const prefix_segment = source_elements.slice(0, iteration_index); // Extract the elements preceding the current window
+  // Concatenate the three segments to form a new permutation
+  const currentPermutation = prefixSegment.concat(middleSortedSegment).concat(suffixSegment);
 
+  // Add the new permutation to the object as a key to ensure uniqueness
+  uniquePermutations[currentPermutation] = true;
 
-  const middle_sorted_segment = source_elements.slice(iteration_index, iteration_index + segment_size).sort((element_a, element_b) => element_a > element_b); // Get the current window elements and sort them
-
-
-  const suffix_segment = source_elements.slice(iteration_index + segment_size); // Obtain the elements following the current window
-
-
-  const current_arrangement = prefix_segment.concat(middle_sorted_segment).concat(suffix_segment); // Combine the three parts into a complete arrangement
-
-
-  unique_permutations[current_arrangement] = true; // Record this arrangement as encountered (its value doesn't matter)
-
-
-  iteration_index++; // Advance the counter for the next iteration
+  // Move the window forward by one position
+  iterationIndex++;
 }
 
-
-console.log(Object.keys(unique_permutations).length); // Output the total number of unique arrangements found
+// Print the total number of unique permutations found
+console.log(Object.keys(uniquePermutations).length);

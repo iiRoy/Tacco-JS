@@ -1,54 +1,41 @@
-const processData = (rawData) => {
-  const lineCollection = rawData.trim().split('\n');
-  lineCollection.shift(); // Discard the first line
+'use strict';
 
-  const initialPairs = [];
-  const groupedValues = new Map(); // Map<number, number[]>
+const formatNumberToSixDigits = (valueToPad) => String(valueToPad).padStart(6, '0');
 
-  for (const currentLine of lineCollection) {
-    const numericalElements = currentLine.split(' ').map(Number);
-    const principalIdentifier = numericalElements[0];
-    const subordinateValue = numericalElements[1];
+function processData(sourceInput) {
+    const dataLines = sourceInput.split('\n');
+    dataLines.shift();
 
-    initialPairs.push({ principal: principalIdentifier, subordinate: subordinateValue });
+    const parsedEntries = dataLines.map(entryLine => {
+        const numericParts = entryLine.split(' ').map(Number);
+        return { primaryKey: numericParts[0], secondaryValue: numericParts[1] };
+    });
 
-    if (!groupedValues.has(principalIdentifier)) {
-      groupedValues.set(principalIdentifier, []);
+    const groupedAndSortedValues = new Map();
+
+    for (const currentEntry of parsedEntries) {
+        if (!groupedAndSortedValues.has(currentEntry.primaryKey)) {
+            groupedAndSortedValues.set(currentEntry.primaryKey, []);
+        }
+        groupedAndSortedValues.get(currentEntry.primaryKey).push(currentEntry.secondaryValue);
     }
-    groupedValues.get(principalIdentifier).push(subordinateValue);
-  }
 
-  const calculatedRankings = new Map(); // Map<number, Map<number, number>>
-
-  for (const [groupKey, valuesList] of groupedValues.entries()) {
-    const sortedValues = [...valuesList].sort((alpha, beta) => alpha - beta);
-    const rankMapForGroup = new Map();
-
-    for (let position = 0; position < sortedValues.length; position++) {
-      const elementInSortedList = sortedValues[position];
-      if (!rankMapForGroup.has(elementInSortedList)) {
-        rankMapForGroup.set(elementInSortedList, position + 1);
-      }
+    for (const valueCollection of groupedAndSortedValues.values()) {
+        valueCollection.sort((valA, valB) => valA - valB);
     }
-    calculatedRankings.set(groupKey, rankMapForGroup);
-  }
 
-  const formatSixDigits = (numberToFormat) => {
-    return ('000000' + numberToFormat.toString()).slice(-6);
-  };
+    for (const originalEntry of parsedEntries) {
+        const currentPrimaryKey = originalEntry.primaryKey;
+        const currentSecondaryValue = originalEntry.secondaryValue;
 
-  for (const dataEntry of initialPairs) {
-    const primaryComponent = dataEntry.principal;
-    const secondaryComponent = dataEntry.subordinate;
+        const sortedValuesForCurrentKey = groupedAndSortedValues.get(currentPrimaryKey);
+        const calculatedRank = sortedValuesForCurrentKey.indexOf(currentSecondaryValue) + 1;
 
-    const groupRankMap = calculatedRankings.get(primaryComponent);
-    const finalRank = groupRankMap.get(secondaryComponent);
+        const primaryKeyString = formatNumberToSixDigits(currentPrimaryKey);
+        const rankString = formatNumberToSixDigits(calculatedRank);
 
-    const formattedPrimary = formatSixDigits(primaryComponent);
-    const formattedRank = formatSixDigits(finalRank);
-
-    console.log(formattedPrimary + formattedRank);
-  }
-};
+        console.log(primaryKeyString + rankString);
+    }
+}
 
 processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

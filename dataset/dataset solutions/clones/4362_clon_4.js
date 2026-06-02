@@ -1,15 +1,7 @@
-const processInput = (textData) => {
-    const pattern = /^(9|.?9)/;
-    const matchResult = textData.match(pattern);
-    const truthValue = !!matchResult;
-    const responseProvider = new Map([
-        [true, "Yes\n"],
-        [false, "No\n"]
-    ]);
-    return responseProvider.get(truthValue);
-};
+function analyzeString(sourceText) {
+    const relevantChars = [sourceText.charAt(0), sourceText.charAt(1)];
+    const hasNine = relevantChars.some(charValue => charValue === '9');
+    console.log(hasNine ? "Yes\n" : "No\n");
+}
 
-const fileSystem = require('node:fs');
-const standardInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-
-process.stdout.write(processInput(standardInput));
+analyzeString(require('fs').readFileSync('/dev/stdin', 'utf8'));

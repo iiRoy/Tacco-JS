@@ -1,113 +1,145 @@
 "use strict";
-// This class provides methods to parse input data from a multi-line string.
-function InputFeeder(sourceContent, itemConverter) {
-  // Store the input string split into an array of lines.
-  this._contentLines = sourceContent.split("\n");
-  // Initialize current column position for token extraction.
-  this._columnIndex = 0;
-  // Initialize current line position.
-  this._lineIndex = 0;
-  // Store the function used to convert extracted tokens (defaults to Number).
-  this._converterFunction = itemConverter || Number;
+
+/**
+ * Custom input parser class designed to read values from a multi-line string input.
+ * It processes the input line by line, and then token by token within each line.
+ *
+ * @param {string} sourceString - The complete input content as a single string.
+ * @param {function} valueParser - An optional function to parse each token (e.g., `Number`, `String`). Defaults to `Number`.
+ */
+function InputParser(sourceString, valueParser) {
+  this._sourceLines = sourceString.split("\n"); // Stores each line of the input as an array element.
+  this._currentColumn = 0; // Tracks the current token index within the active line.
+  this._currentLine = 0; // Tracks the current line index being processed.
+  this._parseFunction = valueParser || Number; // The function used to convert string tokens to their desired type.
 }
 
-// Prototype method to retrieve the next single data item.
-InputFeeder.prototype.fetchNextItem = function() {
-  // Get the current line from the stored content.
-  let currentLine = this._contentLines[this._lineIndex];
-  // If no more lines, return undefined.
-  if (!currentLine) return;
-
-  // Trim whitespace and split the line into individual parts.
-  let lineParts = currentLine.trim().split(" ");
-  // Extract the part at the current column index.
-  let extractedPart = lineParts[this._columnIndex];
-  // Advance the column index for the next extraction.
-  this._columnIndex++;
-
-  // If all parts of the current line have been processed, reset column and advance line.
-  if (lineParts.length === this._columnIndex) {
-    this._columnIndex = 0;
-    this._lineIndex++;
+/**
+ * Retrieves and parses the next single value (token) from the input stream.
+ * This method automatically advances the internal pointers to the next token or line.
+ *
+ * @returns {*} The parsed value, or `undefined` if there are no more tokens to read.
+ */
+InputParser.prototype.getNextValue = function() {
+  let lineContent = this._sourceLines[this._currentLine]; // Get the string content of the current line.
+  if (!lineContent) {
+    return; // If the line is empty or undefined, there's no more input.
   }
-  // Convert and return the extracted part.
-  return this._converterFunction(extractedPart);
+
+  let tokens = lineContent.trim().split(" "); // Split the current line into an array of string tokens.
+  let nextToken = tokens[this._currentColumn]; // Extract the token at the current column index.
+  this._currentColumn++; // Increment the column pointer to move to the next token.
+
+  // Check if all tokens on the current line have been consumed.
+  if (tokens.length === this._currentColumn) {
+    this._currentColumn = 0; // Reset column pointer for the new line.
+    this._currentLine++; // Advance to the next line.
+  }
+
+  return this._parseFunction(nextToken); // Parse the extracted token using the specified function and return it.
 };
 
-// Prototype method to retrieve all data items from the current line.
-InputFeeder.prototype.fetchLineItems = function() {
-  let currentLine = this._contentLines[this._lineIndex];
-  if (!currentLine) return; // No more lines available.
+/**
+ * Retrieves and parses all values from the current line as an array.
+ * This method consumes the entire current line and advances the internal line pointer.
+ *
+ * @returns {Array<*>} An array of parsed values from the current line, or `undefined` if no more lines.
+ */
+InputParser.prototype.getLineValues = function() {
+  let lineContent = this._sourceLines[this._currentLine]; // Get the string content of the current line.
+  if (!lineContent) {
+    return; // If the line is empty or undefined, there's no more input.
+  }
 
-  this._columnIndex = 0; // Reset column index for a new line.
-  this._lineIndex++;     // Move to the next line.
+  this._currentColumn = 0; // Reset column as the entire line is being consumed.
+  this._currentLine++; // Advance to the next line.
 
-  // Split the line into parts and convert each part using the stored function.
-  return currentLine.split(" ").map(this._converterFunction);
+  // Split the line into tokens and map each token to its parsed value.
+  return lineContent.split(" ").map(this._parseFunction);
 };
 
-// Main function to execute the problem-solving logic.
-function processChallenge(challengeData) {
-  // Create an instance of the input parser.
-  const dataParser = new InputFeeder(challengeData);
 
-  // Read the total count of elements and the target value.
-  const totalCount = dataParser.fetchNextItem();
-  const targetValue = dataParser.fetchNextItem();
+/**
+ * The primary function that orchestrates the problem-solving logic.
+ * It reads input, performs calculations, and outputs the final result.
+ *
+ * @param {string} rawInput - The complete raw input string received from standard input.
+ */
+function processInput(rawInput) {
+  // Initialize an instance of the custom input parser.
+  const parserInstance = new InputParser(rawInput);
 
-  // Populate an array with numerical values read from the input.
-  const numberList = [];
-  for (let idx = 0; idx < totalCount; idx++) {
-    numberList.push(dataParser.fetchNextItem());
+  // Read the initial problem parameters: N (number of elements) and X (target value).
+  const numElements = parserInstance.getNextValue();
+  const targetValue = parserInstance.getNextValue();
+  
+  // Read the array 'S' (dataArray) containing 'N' elements.
+  const dataArray = [];
+  for (let idx = 0; idx < numElements; idx++) {
+    dataArray.push(parserInstance.getNextValue());
   }
 
-  // Sort the list of numbers in ascending order.
-  numberList.sort((valA, valB) => valA - valB);
+  // Sort the 'dataArray' in ascending order, which is crucial for the `calculateCombinations` logic.
+  dataArray.sort((valA, valB) => valA - valB);
 
-  // Pre-calculate factorials up to totalCount, modulo 1000000007.
-  const factorialCache = [1, 1];
-  for (let idx = 2; idx <= totalCount; idx++) {
-    factorialCache[idx] = (factorialCache[idx - 1] * idx) % 1000000007;
+  // Pre-calculate factorials up to 'numElements' modulo 1000000007.
+  // This cache is used in the base case of the recursive function.
+  const factorialCache = [1, 1]; // 0! = 1, 1! = 1
+  const MODULO_CONSTANT = 1000000007; // The modulo value for all calculations.
+  for (let idx = 2; idx <= numElements; idx++) {
+    factorialCache[idx] = (factorialCache[idx - 1] * idx) % MODULO_CONSTANT;
   }
 
-  // Initiate the recursive computation and print the final result.
-  console.log(computeCombinations(targetValue, "0".repeat(totalCount)));
+  // Initiate the recursive calculation process with the target value and an initial mask
+  // where all elements are marked as unselected ("0").
+  console.log(calculateCombinations(targetValue, "0".repeat(numElements)));
 
-  // Recursive function to compute combinations.
-  function computeCombinations(currentAmount, selectionStatus) {
-    // Base case: if the current amount is less than the smallest number in the list.
-    if (currentAmount < numberList[0]) {
-      // Count unselected elements (marked '0') in the selection status string.
-      const unselectedCount = selectionStatus.split("").filter(charElement => charElement === "0").length;
-      // Return the product of current amount and factorial of unselected count.
-      return currentAmount * factorialCache[unselectedCount];
+  /**
+   * A recursive function to calculate the number of valid combinations.
+   * It explores different ways to reduce `currentRemainder` by selecting elements from `dataArray`.
+   *
+   * @param {number} currentRemainder - The current value that needs to be reduced.
+   * @param {string} selectionMask - A binary string where '1' indicates an element at that index has been selected,
+   *                                 and '0' indicates it has not.
+   * @returns {number} The total count of valid combinations modulo `MODULO_CONSTANT`.
+   */
+  function calculateCombinations(currentRemainder, selectionMask) {
+    // Base case: If the `currentRemainder` is smaller than the smallest element in `dataArray`,
+    // no further reduction is possible using elements from `dataArray`.
+    // The remaining '0's in the `selectionMask` represent elements that were not chosen.
+    // We multiply `currentRemainder` by the factorial of these unselected elements to account for their permutations.
+    if (currentRemainder < dataArray[0]) {
+      const unselectedCount = selectionMask.split("").filter(charItem => charItem === "0").length;
+      return (currentRemainder * factorialCache[unselectedCount]) % MODULO_CONSTANT;
     }
 
-    // Find the position where numbers in the list are greater than or equal to currentAmount.
-    let searchPosition = 0;
-    while (numberList[searchPosition] < currentAmount) {
-      searchPosition++;
+    // Find the index of the first element in `dataArray` that is greater than or equal to `currentRemainder`.
+    // All elements before this `firstLargerIndex` are strictly smaller than `currentRemainder`.
+    let firstLargerIndex = 0;
+    while (dataArray[firstLargerIndex] < currentRemainder) {
+      firstLargerIndex++;
     }
 
-    // Initialize the accumulated result for this level of recursion.
-    let accumulatedResult = 0;
-    // Iterate through numbers smaller than currentAmount.
-    for (let idx = 0; idx < searchPosition; idx++) {
-      // If the current number has not been selected yet (marked '0').
-      if (selectionStatus[idx] !== "1") {
-        // Create an updated selection status string by marking the current number as selected.
-        let updatedStatus = selectionStatus.split("");
-        updatedStatus[idx] = "1";
-        updatedStatus = updatedStatus.join("");
-        // Recursively call with the remainder and the updated selection status.
-        accumulatedResult += computeCombinations(currentAmount % numberList[idx], updatedStatus);
-        // Apply modulo operation to prevent overflow.
-        accumulatedResult = accumulatedResult % 1000000007;
+    let totalCombinations = 0; // Accumulator for the sum of combinations found in this branch.
+
+    // Iterate through elements in `dataArray` that are smaller than `currentRemainder`.
+    for (let idx = 0; idx < firstLargerIndex; idx++) {
+      // Only proceed if the element at `idx` has not been selected yet (i.e., its mask bit is '0').
+      if (selectionMask[idx] !== "1") {
+        // Create a new `selectionMask` by marking the current element as selected ('1').
+        let updatedMaskArray = selectionMask.split("");
+        updatedMaskArray[idx] = "1";
+        let newSelectionMask = updatedMaskArray.join("");
+
+        // Recursively call `calculateCombinations` with the new remainder (`currentRemainder % dataArray[idx]`)
+        // and the updated mask. Add the result to `totalCombinations`.
+        totalCombinations += calculateCombinations(currentRemainder % dataArray[idx], newSelectionMask);
+        totalCombinations = totalCombinations % MODULO_CONSTANT; // Apply modulo to prevent overflow.
       }
     }
-    return accumulatedResult;
+    return totalCombinations; // Return the accumulated count of combinations.
   }
 }
 
-// Read input from standard input and pass it to the main processing function.
-processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,54 @@
-let accumulatedInput = '';
-let inputPosition = 0;
+function runProgram() {
+    const countA = nextValue();
+    const countB = nextValue();
 
-const fetchNumericValue = () => {
-    return +accumulatedInput[inputPosition++];
-};
-
-const memoizationContainer = new Map();
-
-const computeOptimalMetric = (firstDimensionSize, secondDimensionSize, dimensionOneItems, dimensionTwoItems) => {
-    const uniqueKey = `${firstDimensionSize}-${secondDimensionSize}`;
-    if (memoizationContainer.has(uniqueKey)) {
-        return memoizationContainer.get(uniqueKey);
+    const leftWeights = Array(countA);
+    for (let i = 0; i < countA; i++) {
+        leftWeights[i] = nextValue();
     }
 
-    if (firstDimensionSize === 0) {
-        return 0;
-    }
-    if (secondDimensionSize === 0) {
-        return Number.POSITIVE_INFINITY;
+    const rightWeights = Array(countB);
+    for (let i = 0; i < countB; i++) {
+        rightWeights[i] = nextValue();
     }
 
-    const valueIfSkippingSecond = computeOptimalMetric(firstDimensionSize, secondDimensionSize - 1, dimensionOneItems, dimensionTwoItems);
+    const frontier = new Map();
+    frontier.set(0, 0);
+    for (let used = 1; used <= countA; used++) {
+        frontier.set(used, Infinity);
+    }
 
-    const currentProductTerm = dimensionOneItems[firstDimensionSize - 1] * dimensionTwoItems[secondDimensionSize - 1];
-    const valueIfIncludingBoth = computeOptimalMetric(firstDimensionSize - 1, secondDimensionSize - 1, dimensionOneItems, dimensionTwoItems) + currentProductTerm;
+    for (let slot = 0; slot < countB; slot++) {
+        for (let used = countA; used >= 1; used--) {
+            const skipThisSlot = frontier.get(used);
+            const arriveByTaking = frontier.get(used - 1) + leftWeights[used - 1] * rightWeights[slot];
+            frontier.set(used, Math.min(skipThisSlot, arriveByTaking));
+        }
+    }
 
-    const finalResult = Math.min(valueIfSkippingSecond, valueIfIncludingBoth);
-    memoizationContainer.set(uniqueKey, finalResult);
-    return finalResult;
-};
+    write(frontier.get(countA));
+}
 
-const commenceOperation = () => {
-    const countOfFirstSet = fetchNumericValue();
-    const countOfSecondSet = fetchNumericValue();
+let rawInput = '';
+let readPosition = 0;
 
-    const collectionOfFirstSet = Array.from({ length: countOfFirstSet }, fetchNumericValue);
-    const collectionOfSecondSet = Array.from({ length: countOfSecondSet }, fetchNumericValue);
+function nextValue(kind) {
+    if (kind === 'string') {
+        return rawInput[readPosition++];
+    }
+    return +rawInput[readPosition++];
+}
 
-    memoizationContainer.clear();
-
-    const ultimateOutcome = computeOptimalMetric(
-        countOfFirstSet,
-        countOfSecondSet,
-        collectionOfFirstSet,
-        collectionOfSecondSet
-    );
-
-    console.log(ultimateOutcome);
-};
+function write(value) {
+    console.log(value);
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (dataSegment) => {
-    accumulatedInput += dataSegment;
+process.stdin.on('data', function (chunk) {
+    rawInput += chunk;
 });
-
-process.stdin.on('end', () => {
-    accumulatedInput = accumulatedInput.split(/\s+/).filter(entry => entry !== '');
-    commenceOperation();
+process.stdin.on('end', function () {
+    rawInput = rawInput.split(/\s+/);
+    runProgram();
 });

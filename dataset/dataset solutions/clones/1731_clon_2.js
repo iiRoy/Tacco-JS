@@ -1,68 +1,74 @@
-// This module provides utilities for reading input from standard input.
-function* consoleInputGenerator()
-{
-  const inputTokens = require("fs")
-    .readFileSync("/dev/stdin", "utf-8")
-    .trim()
-    .split(/\s+/); // Changed regex for splitting input tokens
-  yield* inputTokens; // Yield each token from the processed input
+function* inputGenerator() {
+    // Reads the entire content from standard input, decodes it as UTF-8,
+    // trims leading/trailing whitespace, and splits it into tokens
+    // based on newlines or spaces.
+    const inputData = require("fs").readFileSync("/dev/stdin", "utf-8").trim().split(/\n|\s/);
+    // Yields each token from the processed input data.
+    yield* inputData;
 }
 
-/**
- * Retrieves a specified number of items from the input iterator.
- * @param {number} itemCount - The total quantity of items to retrieve.
- * @param {Generator|undefined} optionalIterator - An optional iterator source to utilize.
- * @returns {Array<string>} An array containing the retrieved string items.
- */
-function retrieveMultipleItems(itemCount, optionalIterator)
-{
-  const currentSource = optionalIterator || this.inputSource || (this.inputSource = consoleInputGenerator());
-  const collectedElements = []; // Initialize an empty array to store the gathered results
+// Utility function to retrieve a specified number of items from an iterator.
+function fetchMultiple(numItems, iteratorInstance) {
+    // Determines which iterator to use:
+    // 1. The one explicitly passed as 'iteratorInstance'.
+    // 2. The 'iter' property of the current 'this' context.
+    // 3. A newly created 'inputGenerator' instance, which is then stored on 'this.iter'.
+    const currentIterator = iteratorInstance || this.iter || (this.iter = inputGenerator());
+    const resultArray = []; // An array to store the collected items.
 
-  for (let itemIndex = 0; itemIndex < itemCount; itemIndex = itemIndex + 1) {
-    collectedElements.push(currentSource.next().value); // Add the next value from the source to the collection
-  }
+    // Loop to fetch 'numItems' values from the iterator.
+    for (let idx = 0; idx < numItems; idx += 1) {
+        resultArray.push(currentIterator.next().value); // Retrieves the next value and adds it to the array.
+    }
+    return resultArray; // Returns the array containing the fetched items.
+}
 
-  return collectedElements; // Return the complete array of collected items
-};
+// Main execution block wrapped in an Immediately Invoked Function Expression (IIFE).
+(function() {
+    // Reads the first input value, parses it as an integer, and destructures it into 'upperBound'.
+    const [ upperBound ] = fetchMultiple(1).map(itemStr => parseInt(itemStr));
 
-// Immediately invoked function expression (IIFE) encapsulating the primary program logic.
-(() => {
-  // Read the single integer representing the maximum value for iteration (N).
-  const [ maxValue ] = retrieveMultipleItems(1)
-                        .map(stringItem => parseInt(stringItem, 10)); // Parse the string item to an integer with base 10
+    // Outputs a starting message to the console.
+    console.log('start');
 
-  console.log('Initiating calculation...'); // Informative message before starting the main process
-  let totalAccumulator = 0; // Variable to accumulate the final sum
+    let totalSum = 0; // Initializes a variable to accumulate the final sum.
 
-  // Main loop: iterates through numbers from 1 up to and including 'maxValue'.
-  for (let currentNumber = 1; currentNumber <= maxValue; currentNumber = currentNumber + 1)
-  {
-    let divisorCount = 0; // Counter for the number of divisors of 'currentNumber'
+    // Outer loop iterates from 1 up to 'upperBound' (inclusive).
+    for (let currentNum = 1; currentNum <= upperBound; currentNum += 1) {
+        let divisorCount = 0; // Counter for the number of divisors of 'currentNum'.
 
-    // Inner loop: efficiently finds divisors by checking up to the square root of 'currentNumber'.
-    for (let divisorCandidate = 1; (divisorCandidate * divisorCandidate) <= currentNumber; divisorCandidate = divisorCandidate + 1) {
-      if (currentNumber % divisorCandidate === 0) { // If 'divisorCandidate' perfectly divides 'currentNumber'
-        divisorCount = divisorCount + 1; // Increment the divisor counter
-      }
+        // Inner loop iterates from 1 up to the square root of 'currentNum'
+        // to find its divisors efficiently.
+        for (let divisorCandidate = 1; divisorCandidate ** 2 <= currentNum; divisorCandidate += 1) {
+            // If 'divisorCandidate' divides 'currentNum' evenly, it's a divisor.
+            if (currentNum % divisorCandidate == 0) {
+                divisorCount += 1;
+            }
+        }
+
+        // Each divisor 'd' less than sqrt(currentNum) has a corresponding divisor 'currentNum / d'.
+        // So, we multiply the count by 2.
+        divisorCount *= 2;
+
+        // If 'currentNum' is a perfect square, its square root was counted only once
+        // in the inner loop (e.g., for 9, 3 is counted once).
+        // Since 'currentNum / sqrt(currentNum)' is also sqrt(currentNum), it's effectively
+        // counted twice by the `divisorCount *= 2` step. We subtract 1 to correct this.
+        if (Number.isInteger(Math.sqrt(currentNum))) {
+            divisorCount -= 1;
+        }
+
+        // Special case for the number 1: it has only one divisor (itself).
+        // The general logic might yield 2 (1*2 - 0 or 1*2 - 1 depending on exact sqrt(1) handling).
+        // Explicitly set to 1 for 'currentNum' equal to 1.
+        if (currentNum == 1) {
+            divisorCount = 1;
+        }
+
+        // Adds the product of 'currentNum' and its 'divisorCount' to the 'totalSum'.
+        totalSum += currentNum * divisorCount;
     }
 
-    divisorCount = divisorCount * 2; // Multiply by 2 because each divisor 'd' implies 'currentNumber/d' is also a divisor
-
-    // Adjustment for perfect squares: if 'currentNumber' is a perfect square, its square root was counted only once.
-    if (Number.isInteger(Math.sqrt(currentNumber))) {
-      divisorCount = divisorCount - 1; // Decrement by 1 to correct the double-counting for the square root
-    }
-
-    // Special case handling for the number 1, which has only one divisor (itself).
-    if (currentNumber === 1) {
-      divisorCount = 1;
-    }
-
-    // Accumulate the product of the current number and its total divisor count into the grand total.
-    totalAccumulator = totalAccumulator + (currentNumber * divisorCount);
-  }
-
-  // Output the final calculated total sum to the console.
-  console.log(totalAccumulator);
+    // Outputs the final calculated sum to the console.
+    console.log(totalSum);
 })();

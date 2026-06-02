@@ -1,97 +1,104 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataLines = sourceData.trim().split('\n');
+const fileSystem = require('fs');
 
-let currentLinePointer = 0;
-const collectedResults = [];
+function computePathCount(rowIdx, colIdx, gridWidth, gridHeight, gridData, memoizationTable) {
+    if (rowIdx < 0 || colIdx < 0 || colIdx >= gridWidth) {
+        return 0;
+    }
+
+    const memoKey = `${rowIdx},${colIdx}`;
+    if (memoizationTable.has(memoKey)) {
+        return memoizationTable.get(memoKey);
+    }
+
+    const currentCellType = gridData[rowIdx][colIdx];
+
+    if (currentCellType === 1) {
+        memoizationTable.set(memoKey, 0);
+        return 0;
+    }
+
+    let accumulatedPaths = 0;
+
+    if (rowIdx === 0) {
+        accumulatedPaths = (currentCellType === 0) ? 1 : 0;
+    } else {
+        const previousRowIdx = rowIdx - 1;
+        const twoRowsAgoIdx = rowIdx - 2;
+
+        let termA = 0;
+        if (colIdx > 0 && gridData[previousRowIdx][colIdx - 1] !== 2) {
+            termA = computePathCount(previousRowIdx, colIdx - 1, gridWidth, gridHeight, gridData, memoizationTable);
+        }
+
+        let termB = 0;
+        if (gridData[previousRowIdx][colIdx] !== 2) {
+            termB = computePathCount(previousRowIdx, colIdx, gridWidth, gridHeight, gridData, memoizationTable);
+        }
+
+        let termC = 0;
+        if (colIdx < gridWidth - 1 && gridData[previousRowIdx][colIdx + 1] !== 2) {
+            termC = computePathCount(previousRowIdx, colIdx + 1, gridWidth, gridHeight, gridData, memoizationTable);
+        }
+
+        let termD = 0;
+        if (twoRowsAgoIdx >= 0 && gridData[twoRowsAgoIdx][colIdx] === 2) {
+            termD = computePathCount(twoRowsAgoIdx, colIdx, gridWidth, gridHeight, gridData, memoizationTable);
+        }
+
+        if (currentCellType === 0) {
+            accumulatedPaths = termA + termB + termC + termD;
+        } else if (currentCellType === 2) {
+            accumulatedPaths = termB + termD;
+        }
+    }
+
+    memoizationTable.set(memoKey, accumulatedPaths);
+    return accumulatedPaths;
+}
+
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
+
+const allProblemSets = [];
+let currentLineIndex = 0;
 
 while (true) {
-    const puzzleDimensionLine = dataLines[currentLinePointer++].split(' ').map(Number);
-    const puzzleWidth = puzzleDimensionLine[0];
-    const puzzleHeight = puzzleDimensionLine[1];
+    const dimensionsLine = inputLines[currentLineIndex++].split(' ').map(Number);
+    const gridWidth = dimensionsLine[0];
+    const gridHeight = dimensionsLine[1];
 
-    if (puzzleWidth === 0 && puzzleHeight === 0) {
+    if (gridWidth === 0 && gridHeight === 0) {
         break;
     }
 
-    const cellConfigurations = [];
-    for (let rIndex = 0; rIndex < puzzleHeight; ++rIndex) {
-        cellConfigurations.push(dataLines[currentLinePointer++].split(' ').map(Number));
+    const problemGrid = [];
+    for (let r = 0; r < gridHeight; r++) {
+        problemGrid.push(inputLines[currentLineIndex++].split(' ').map(Number));
     }
-
-    const memoizationCache = Array.from({ length: puzzleHeight }, () =>
-        Array.from({ length: puzzleWidth }, () => undefined)
-    );
-
-    const calculatePathCount = (row, col) => {
-        if (row < 0 || col < 0 || row >= puzzleHeight || col >= puzzleWidth) {
-            return 0;
-        }
-
-        if (memoizationCache[row][col] !== undefined) {
-            return memoizationCache[row][col];
-        }
-
-        let currentCellContribution = 0;
-        const currentCellType = cellConfigurations[row][col];
-
-        if (row === 0) {
-            currentCellContribution = (currentCellType === 0) ? 1 : 0;
-        } else {
-            const upLeftContribution = (col === 0 || cellConfigurations[row - 1][col - 1] === 2)
-                ? 0
-                : calculatePathCount(row - 1, col - 1);
-
-            const upDirectContribution = (cellConfigurations[row - 1][col] === 2)
-                ? 0
-                : calculatePathCount(row - 1, col);
-
-            const upRightContribution = (col === puzzleWidth - 1 || cellConfigurations[row - 1][col + 1] === 2)
-                ? 0
-                : calculatePathCount(row - 1, col + 1);
-            
-            let upUpContribution = 0;
-            if (row >= 2) {
-                if (cellConfigurations[row - 2][col] === 2) {
-                    upUpContribution = calculatePathCount(row - 2, col);
-                } else {
-                    upUpContribution = 0;
-                }
-            }
-            
-            if (currentCellType === 0) {
-                currentCellContribution = upLeftContribution + upDirectContribution + upRightContribution + upUpContribution;
-            } else if (currentCellType === 1) {
-                currentCellContribution = 0;
-            } else if (currentCellType === 2) {
-                currentCellContribution = upDirectContribution + upUpContribution;
-            }
-        }
-
-        memoizationCache[row][col] = currentCellContribution;
-        return currentCellContribution;
-    };
-
-    for (let r = 0; r < puzzleHeight; ++r) {
-        for (let c = 0; c < puzzleWidth; ++c) {
-            calculatePathCount(r, c);
-        }
-    }
-
-    let finalAggregateScore = 0;
-    for (let rIter = puzzleHeight - 2; rIter < puzzleHeight; ++rIter) {
-        if (rIter < 0) continue;
-
-        for (let cIter = 0; cIter < puzzleWidth; ++cIter) {
-            if (puzzleHeight >= 2 && rIter === puzzleHeight - 2 && cellConfigurations[rIter][cIter] === 2) {
-                finalAggregateScore += memoizationCache[rIter][cIter];
-            }
-            if (puzzleHeight >= 1 && rIter === puzzleHeight - 1 && (cellConfigurations[rIter][cIter] === 0 || cellConfigurations[rIter][cIter] === 2)) {
-                finalAggregateScore += memoizationCache[rIter][cIter];
-            }
-        }
-    }
-
-    collectedResults.push(finalAggregateScore);
+    allProblemSets.push({ width: gridWidth, height: gridHeight, grid: problemGrid });
 }
 
-collectedResults.forEach(finalScore => console.log(finalScore));
+for (const problemInstance of allProblemSets) {
+    const { width: currentWidth, height: currentHeight, grid: currentGrid } = problemInstance;
+    const pathMemo = new Map();
+
+    let finalSum = 0;
+
+    if (currentHeight >= 2) {
+        for (let c = 0; c < currentWidth; c++) {
+            if (currentGrid[currentHeight - 2][c] === 2) {
+                finalSum += computePathCount(currentHeight - 2, c, currentWidth, currentHeight, currentGrid, pathMemo);
+            }
+        }
+    }
+
+    if (currentHeight >= 1) {
+        for (let c = 0; c < currentWidth; c++) {
+            const cellValue = currentGrid[currentHeight - 1][c];
+            if (cellValue === 0 || cellValue === 2) {
+                finalSum += computePathCount(currentHeight - 1, c, currentWidth, currentHeight, currentGrid, pathMemo);
+            }
+        }
+    }
+    console.log(finalSum);
+}

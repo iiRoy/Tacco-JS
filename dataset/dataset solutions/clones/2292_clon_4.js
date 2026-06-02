@@ -1,37 +1,19 @@
-const obtainResource = () => {
-    const fileSystemModule = require("node:fs");
-    const systemInputPath = "/dev/stdin";
-    const encodingOptions = { encoding: "utf-8" };
-    return fileSystemModule.readFileSync(systemInputPath, encodingOptions).trim();
-};
-
-const renderOutput = (contentToDisplay) => {
-    process.stdout.write(contentToDisplay + '\n');
-};
-
-const processInputData = (incomingTextualContent) => {
-    let firstExtractedPart = "";
-    let secondExtractedPart = undefined;
-
-    const extractedSegments = [];
-    let currentSegmentAccumulator = "";
-
-    for (let characterIndex = 0; characterIndex < incomingTextualContent.length; characterIndex++) {
-        const currentCharacter = incomingTextualContent[characterIndex];
-        if (currentCharacter === ' ') {
-            extractedSegments.push(currentSegmentAccumulator);
-            currentSegmentAccumulator = "";
-        } else {
-            currentSegmentAccumulator += currentCharacter;
+function processInput(sourceText) {
+    const findSegments = (text) => {
+        const separatorIndex = text.indexOf(' ');
+        if (separatorIndex === -1) {
+            return [text, undefined];
         }
-    }
-    extractedSegments.push(currentSegmentAccumulator);
+        const firstSegment = text.substring(0, separatorIndex);
+        const secondSegment = text.substring(separatorIndex + 1);
+        return [firstSegment, secondSegment];
+    };
 
-    firstExtractedPart = extractedSegments[0];
-    secondExtractedPart = extractedSegments[1];
+    const segments = findSegments(sourceText);
+    const initialSegment = segments[0];
+    const terminalSegment = segments[1];
 
-    renderOutput(secondExtractedPart + firstExtractedPart);
-};
+    console.log(`${terminalSegment}${initialSegment}`);
+}
 
-const sourceContent = obtainResource();
-processInputData(sourceContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

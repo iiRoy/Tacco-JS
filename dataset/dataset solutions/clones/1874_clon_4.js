@@ -1,40 +1,43 @@
-const dataSource = require("node:fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-((sourceData) => {
-    const textRows = sourceData.trim().split("\n");
-    const [bookCount, skillCount, targetSkill] = textRows[0].split(" ").map(Number);
+((sourceText) => {
+    const textLines = sourceText.split("\n");
+    const [bookCount, skillTypeCount, targetSkillLevel] = textLines[0].split(" ").map(Number);
 
-    const inventory = [];
-    for (let currentBookIndex = 0; currentBookIndex < bookCount; currentBookIndex++) {
-        const rowElements = textRows[currentBookIndex + 1].split(" ").map(Number);
-        inventory.push({
-            costValue: rowElements[0],
-            proficiencyGains: rowElements.slice(1)
+    const bookDetails = [];
+    for (let idx = 0; idx < bookCount; idx++) {
+        const lineParts = textLines[idx + 1].split(" ").map(Number);
+        bookDetails.push({
+            price: lineParts[0],
+            skillIncrements: lineParts.slice(1)
         });
     }
 
-    let minimumSpend = Infinity;
+    let minimumOverallCost = Infinity;
 
-    for (let combinationCode = 1; combinationCode < (1 << bookCount); combinationCode++) {
-        let currentSpend = 0;
-        const accumulatedProficiencies = Array(skillCount).fill(0);
+    const totalSubsets = 1 << bookCount;
+    for (let subsetMask = 1; subsetMask < totalSubsets; subsetMask++) {
+        let currentCost = 0;
+        const currentSkills = Array(skillTypeCount).fill(0);
 
-        for (let bookIdentifier = 0; bookIdentifier < bookCount; bookIdentifier++) {
-            if ((combinationCode >> bookIdentifier) & 1) {
-                currentSpend += inventory[bookIdentifier].costValue;
-                for (let proficiencyIndex = 0; proficiencyIndex < skillCount; proficiencyIndex++) {
-                    accumulatedProficiencies[proficiencyIndex] += inventory[bookIdentifier].proficiencyGains[proficiencyIndex];
+        for (let bookIndex = 0; bookIndex < bookCount; bookIndex++) {
+            if ((subsetMask >> bookIndex) & 1) {
+                const currentBook = bookDetails[bookIndex];
+                currentCost += currentBook.price;
+
+                for (let skillIdx = 0; skillIdx < skillTypeCount; skillIdx++) {
+                    currentSkills[skillIdx] += currentBook.skillIncrements[skillIdx];
                 }
             }
         }
 
-        const allRequirementsMet = accumulatedProficiencies.every(level => level >= targetSkill);
+        const allSkillsMet = currentSkills.every(skillLevel => skillLevel >= targetSkillLevel);
 
-        if (allRequirementsMet) {
-            minimumSpend = Math.min(minimumSpend, currentSpend);
+        if (allSkillsMet) {
+            minimumOverallCost = Math.min(minimumOverallCost, currentCost);
         }
     }
 
-    console.log(minimumSpend === Infinity ? -1 : minimumSpend);
+    console.log(minimumOverallCost === Infinity ? -1 : minimumOverallCost);
 
-})(dataSource);
+})(rawData);

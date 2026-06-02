@@ -1,30 +1,24 @@
-const transformDimensions = (sourceGrid) => {
-    const span = sourceGrid.length;
-    return Array.from({ length: span }, (_, currentY) =>
-        Array.from({ length: span }, (_, currentX) =>
-            sourceGrid[span - 1 - currentX][currentY]
-        )
-    );
-};
+const rotateMatrix = (sourceGrid) =>
+  Array.from({ length: 8 }, (_, newRowIndex) =>
+    Array.from({ length: 8 }, (_, newColumnIndex) =>
+      sourceGrid[7 - newColumnIndex][newRowIndex]
+    )
+  );
 
-const acquireSourceContent = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
 
-const parseContentIntoMatrix = (rawContent) => {
-    return rawContent.trim().split('\n').map(lineSegment => Array.from(lineSegment));
-};
+const initialGridState = inputLines.slice(0, 8).map(lineSegment => lineSegment.split(''));
 
-const orchestrateRotations = () => {
-    let currentMatrixState = parseContentIntoMatrix(acquireSourceContent());
+const rotationSequence = [
+  { label: "90" },
+  { label: "180" },
+  { label: "270" }
+];
 
-    const rotationStages = [90, 180, 270];
-    const outcomes = [];
-
-    for (const angle of rotationStages) {
-        currentMatrixState = transformDimensions(currentMatrixState);
-        outcomes.push(`${angle}\n${currentMatrixState.join('\n')}`);
-    }
-
-    outcomes.forEach(finalOutput => console.log(finalOutput));
-};
-
-orchestrateRotations();
+rotationSequence.reduce((currentGrid, rotationStep) => {
+  const nextGridState = rotateMatrix(currentGrid);
+  console.log(`${rotationStep.label}\n${nextGridState.join('\n')}`);
+  return nextGridState;
+}, initialGridState);

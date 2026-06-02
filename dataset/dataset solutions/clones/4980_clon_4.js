@@ -1,82 +1,77 @@
-class DataAcquirer {
-    static acquiredDataSegment = "";
-    static lineCollection = [];
-    static currentLinePosition = 0;
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-    static initiateDataStream() {
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8'); 
-        process.stdin.on('data', (chunk) => {
-            DataAcquirer.acquiredDataSegment += chunk;
-        });
-        process.stdin.on('end', () => {
-            DataAcquirer.lineCollection = DataAcquirer.acquiredDataSegment.split("\n");
-            executePrimaryLogic(); 
-        });
-        process.on('SIGINT', () => {
-            DataAcquirer.lineCollection = DataAcquirer.acquiredDataSegment.split("\n");
-            executePrimaryLogic();
-            process.exit(0);
-        });
-    }
+var input_stdin_buffer = "";
+var input_stdin_lines = [];
+var current_line_index = 0;
 
-    static retrieveNextSegment() {
-        return DataAcquirer.lineCollection[DataAcquirer.currentLinePosition++];
-    }
+process.stdin.on('data', function (data) {
+    input_stdin_buffer += data;
+});
+
+process.on('SIGINT', function(){
+    input_stdin_lines = input_stdin_buffer.split("\n");
+    executeProcessing();
+    process.exit();
+});
+
+process.stdin.on('end', function () {
+    input_stdin_lines = input_stdin_buffer.split("\n");
+    executeProcessing();    
+});
+
+function obtainLine() {
+    return input_stdin_lines[current_line_index++];
 }
 
-async function executePrimaryLogic() {
-    const gridParameters = DataAcquirer.retrieveNextSegment().split(" ").map(Number);
-    const totalRows = gridParameters[0];
-    const totalColumns = gridParameters[1];
-    const totalPoints = gridParameters[2];
+/////////////// ignore above this line ////////////////////
 
-    const pointLocations = [];
-    for (let pointIndex = 0; pointIndex < totalPoints; pointIndex++) {
-        pointLocations.push(DataAcquirer.retrieveNextSegment().split(" ").map(Number));
-    }
+function executeProcessing() {
+    const dimensionsAndCount = obtainLine().split(" ").map(Number);
+    const gridHeight = dimensionsAndCount[0];
+    const gridWidth = dimensionsAndCount[1];
+    const numInputPoints = dimensionsAndCount[2];
+    
+    const overlapTally = new Map();
 
-    const frequencyResult = analyzeGridOverlaps(totalRows, totalColumns, pointLocations);
+    Array.from({ length: numInputPoints }, (_, pointIndex) => {
+        const pointCoords = obtainLine().split(" ").map(Number);
+        const currentPointRow = pointCoords[0];
+        const currentPointCol = pointCoords[1];
 
-    for (let distributionKey = 0; distributionKey < 10; distributionKey++) {
-        console.log((frequencyResult.get(distributionKey) || 0).toString());
-    }
-}
+        const affectedGridCells = Array.from({ length: 3 }, (_, rOffset) => rOffset - 2)
+            .flatMap(rOffset => 
+                Array.from({ length: 3 }, (_, cOffset) => cOffset - 2)
+                    .map(cOffset => {
+                        const cellTopRow = currentPointRow + rOffset;
+                        const cellTopCol = currentPointCol + cOffset;
+                        return [cellTopRow, cellTopCol];
+                    })
+            )
+            .filter(([r, c]) => 
+                r >= 1 && r <= gridHeight - 2 && 
+                c >= 1 && c <= gridWidth - 2
+            );
 
-function analyzeGridOverlaps(rowsDimension, columnsDimension, pointSet) {
-    const squareTally = new Map(); 
+        affectedGridCells.forEach(([r, c]) => {
+            const cellIdentifier = `${r}_${c}`;
+            overlapTally.set(cellIdentifier, (overlapTally.get(cellIdentifier) || 0) + 1);
+        });
+    });
+    
+    const finalCounts = new Array(10).fill(0);
+    const totalPossibleThreeByThree = (gridHeight - 2) * (gridWidth - 2);
+    
+    let distinctCoveredCells = 0;
 
-    pointSet.forEach(currentPoint => {
-        const pointRow = currentPoint[0];
-        const pointColumn = currentPoint[1];
-
-        for (let rowShift = 0; rowShift <= 2; rowShift++) {
-            for (let columnShift = 0; columnShift <= 2; columnShift++) {
-                const squareTopRow = pointRow - rowShift;
-                const squareTopColumn = pointColumn - columnShift;
-
-                if (squareTopRow >= 1 && squareTopRow <= rowsDimension - 2 && 
-                    squareTopColumn >= 1 && squareTopColumn <= columnsDimension - 2) {
-                    
-                    const squareId = `${squareTopRow},${squareTopColumn}`;
-                    squareTally.set(squareId, (squareTally.get(squareId) || 0) + 1);
-                }
-            }
+    for (const countValue of overlapTally.values()) {
+        if (countValue >= 1 && countValue <= 9) {
+            finalCounts[countValue]++;
         }
-    });
+        distinctCoveredCells++;
+    }
 
-    const finalCountDistribution = new Map();
-    const overallPossibleSquares = (rowsDimension - 2) * (columnsDimension - 2);
-    let countedSquares = 0;
-
-    squareTally.forEach(occurrenceCount => {
-        finalCountDistribution.set(occurrenceCount, (finalCountDistribution.get(occurrenceCount) || 0) + 1);
-        countedSquares++;
-    });
-
-    finalCountDistribution.set(0, (finalCountDistribution.get(0) || 0) + (overallPossibleSquares - countedSquares));
-
-    return finalCountDistribution;
+    finalCounts[0] = totalPossibleThreeByThree - distinctCoveredCells;
+    
+    finalCounts.forEach(val => console.log(val.toString()));
 }
-
-DataAcquirer.initiateDataStream();

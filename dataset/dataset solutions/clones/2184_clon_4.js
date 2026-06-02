@@ -1,27 +1,17 @@
-function processInput(inputString) {
-  const [upperBoundStr, targetNonZeroCountStr] = inputString.split('\n');
-  const maxVal = Number(upperBoundStr);
-  const requiredNonZeros = Number(targetNonZeroCountStr);
+function ProcessInput(rawData) {
+  const sourceLines = rawData.split("\n");
+  const upperBoundary = parseInt(sourceLines[0], 10);
+  const requiredNonZeroDigits = parseInt(sourceLines[1], 10);
 
-  const assessNumericPattern = (valueToCheck, criterionCount) => {
-    let currentFigure = valueToCheck;
-    let talliedNonZeros = 0;
-    while (currentFigure > 0) {
-      const remainder = currentFigure % 10;
-      if (remainder !== 0) {
-        talliedNonZeros++;
-      }
-      currentFigure = Math.floor(currentFigure / 10);
-    }
-    return talliedNonZeros === criterionCount;
-  };
-
-  const matchingNumbers = Array.from({ length: maxVal }, (_, index) => index + 1)
-                               .filter(num => assessNumericPattern(num, requiredNonZeros));
-
-  const finalTally = matchingNumbers.length;
+  const finalTally = Array.from({ length: upperBoundary }, (_, index) => index + 1)
+    .filter(currentValue => {
+      const digitCharacters = String(currentValue).split('');
+      const nonZeroDigitCount = digitCharacters.filter(char => char !== '0').length;
+      return nonZeroDigitCount === requiredNonZeroDigits;
+    })
+    .length;
 
   console.log(finalTally);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,28 +1,29 @@
-function ProcessInput(incomingText)
-{
-  // This function orchestrates the primary data examination.
-  if ( !( incomingText . size % 2 ) )
-  {
-    console . log ( "No" ) ;
-    return ;
+// This function processes a given string to determine a specific pattern.
+function ProcessInput(dataString) {
+  // Check if the length of the input string is odd.
+  // If the length is even, it immediately prints "No" and exits.
+  if ( ( dataString.length % 2 ) === 0 ) {
+    console.log("No");
+    return;
   }
 
-  // Initialize a result indicator.
-  let outcomeFlag = "Yes" ;
+  // Initialize a flag to "Yes", assuming the pattern is found until proven otherwise.
+  let resultFlag = "Yes";
 
-  // Iterate through the input string, stepping by two characters each time.
-  for ( let idx = 0 ; idx < incomingText . size ; idx = idx + 2 )
-  {
-    // Checks for the presence of a specific substring at the current position.
-    if (incomingText . indexOf ( "hi" , idx ) !== -1 )
-    {
-      outcomeFlag = "No" ; // Found the forbidden sequence.
-      break ; // Terminate early as condition is met.
+  // Iterate through the string, checking every other character.
+  // The loop increment is by 2 to skip characters.
+  for ( let idx = 0; idx < dataString.length; idx += 2 ) {
+    // Search for the substring "hi" starting from the current index.
+    // If "hi" is found, it means the pattern is not met.
+    if ( dataString.indexOf("hi", idx) !== -1 ) {
+      resultFlag = "No"; // Set the flag to "No"
+      break; // Exit the loop early as the condition is already violated.
     }
   }
-  // Display the final determination.
-  console . log ( outcomeFlag ) ;
+
+  // Output the final determination.
+  console.log(resultFlag);
 }
 
-// Invoke the main processing routine with content from standard input.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the input from standard input asynchronously and pass it to the processing function.
+ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );

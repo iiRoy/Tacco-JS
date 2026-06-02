@@ -1,29 +1,28 @@
-function ProcessInputData(rawDataString) {
-  // Divide the raw input string into distinct lines
-  let lineArray = rawDataString.split('\n');
+function ProcessInput(rawData) {
+  // Split the incoming raw data string into individual lines.
+  let lineData = rawData.split("\n");
 
-  // If the final line is empty, remove it from the array
-  if (lineArray[lineArray.length - 1] === '') {
-    lineArray.pop();
+  // If the last element in the array is an empty string, remove it.
+  if (lineData[lineData.length - 0b1] === "") {
+    lineData.pop();
   }
 
-  // Extract the numeric iteration limit from the initial line
-  const limitValue = Number(lineArray[0].split(' ')[0]);
+  // Parse the first number from the first line to determine the iteration limit.
+  const limitValue = lineData[0x0].split(" ")[0x0] - 0x0;
 
-  // Initialize a counter variable for the sequence generation
-  let currentResult = 1;
+  // Initialize the primary calculation variable.
+  let currentResult = 0b1;
 
-  // Execute a loop for the predetermined number of cycles
-  for (let iterationIndex = 0; iterationIndex < limitValue; iterationIndex++) {
-    // Display the current value of the sequence
+  // Iterate a specific number of times as determined by 'limitValue'.
+  for (let loopCounter = 0x0; loopCounter < limitValue; loopCounter++) {
+    // Output the current value of the result variable.
     console.log(currentResult);
-
-    // Increment the sequence value based on its current magnitude
-    // The next value is currentResult plus 10 raised to the power of the floor of log10(currentResult + 1)
-    currentResult += Math.pow(10, Math.floor(Math.log10(currentResult + 1)));
+    
+    // Update the result using a specific mathematical formula involving logarithms and exponentiation.
+    currentResult += 0xA ** (Math.floor(Math.log10(currentResult + 0b1)));
   }
 }
 
-// The following code block is for handling standard input/output and should remain unchanged.
-// It reads all data from standard input and passes it to the primary processing function.
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// This part of the code handles reading input from standard input and invoking the main processing function.
+// It should not be altered as it manages the interaction with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,76 +1,66 @@
-const solutionProcessor = (inputString) => {
-    const dataChunks = inputString.trim().split("\n");
-    const [initialSize, conversionAllowance] = dataChunks[0].split(" ").map(Number);
-    const digitSequence = dataChunks[1].split("").map(Number);
-
-    const sequenceTotalLength = initialSize;
-    const allowedConversions = conversionAllowance;
-
-    // Handle special cases: all ones or all zeros
-    if (digitSequence.every(value => value === 1) || digitSequence.every(value => value === 0)) {
-        console.log(sequenceTotalLength);
-        return;
-    }
-
-    // Prepare the sequence for segment extraction, replicating original padding logic
-    let workingSequence = [...digitSequence];
-    let collectedSegmentLengths = [];
-
-    // Prepend a zero if the sequence starts with zero (mimics original S[0] !== 1 condition for list.push(0))
-    if (workingSequence[0] === 0) {
-        collectedSegmentLengths.push(0);
-    }
-    // Always append a zero to the sequence (mimics original S.push(0) due to S[S.length] always being undefined)
-    workingSequence.push(0);
-
-    // Use Array.prototype.reduce to extract alternating segment lengths
-    // This replaces the original imperative for-loop and streak variable
-    const runLengthProcessor = workingSequence.reduce((accumulator, currentElement, elementIndex, fullArray) => {
-        if (elementIndex === 0) {
-            // Initialize the run length for the first element
-            accumulator.currentRunCount = 1;
-            return accumulator;
-        }
-
-        if (currentElement === fullArray[elementIndex - 1]) {
-            accumulator.currentRunCount++;
-        } else {
-            accumulator.finishedRuns.push(accumulator.currentRunCount);
-            accumulator.currentRunCount = 1; // Start new run
-        }
-        return accumulator;
-    }, { finishedRuns: [], currentRunCount: 0 }); // Initial state for reduce
-
-    collectedSegmentLengths.push(...runLengthProcessor.finishedRuns);
-    collectedSegmentLengths.push(runLengthProcessor.currentRunCount); // Add the very last run length
-
-    // Calculate the maximum sum of segments using a recursive approach
-    // This replaces the final imperative for...in loop
-    const windowSizeForCalculation = (2 * allowedConversions) + 1;
-    let maximumOverallValue = 0;
-    let currentSubtotal = 0;
-
-    const processSegmentsByRecursion = (remainingSegmentsToProcess, currentChunkElementIndex) => {
-        if (remainingSegmentsToProcess.length === 0) {
-            maximumOverallValue = Math.max(maximumOverallValue, currentSubtotal);
-            return;
-        }
-
-        const [headValue, ...tailValues] = remainingSegmentsToProcess;
-        currentSubtotal += headValue;
-
-        if ((currentChunkElementIndex + 1) % windowSizeForCalculation === 0) {
-            maximumOverallValue = Math.max(maximumOverallValue, currentSubtotal);
-            currentSubtotal = 0; // Reset for the next chunk
-            processSegmentsByRecursion(tailValues, 0); // Reset index for the new chunk
-        } else {
-            processSegmentsByRecursion(tailValues, currentChunkElementIndex + 1);
-        }
-    };
-
-    processSegmentsByRecursion(collectedSegmentLengths, 0);
-
-    console.log(maximumOverallValue);
+const processInput = (rawInput) => {
+    const lines = rawInput.trim().split('\n');
+    const [firstNumber, secondNumber] = lines[0].split(' ').map(Number);
+    const binarySequence = Array.from(lines[1], Number);
+    return { totalLength: firstNumber, flipAllowance: secondNumber, initialBinaryArray: binarySequence };
 };
 
-solutionProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const calculateMaxSegmentSum = ({ totalLength, flipAllowance, initialBinaryArray }) => {
+    const containsZero = initialBinaryArray.includes(0);
+    const containsOne = initialBinaryArray.includes(1);
+
+    if (!containsZero || !containsOne) {
+        return totalLength;
+    }
+
+    let segmentCollection = [];
+    let sequenceForRunAnalysis = [...initialBinaryArray];
+
+    if (sequenceForRunAnalysis[0] === 0) {
+        segmentCollection.push(0);
+    }
+
+    sequenceForRunAnalysis.push(0);
+
+    let currentPosition = 0;
+    while (currentPosition < sequenceForRunAnalysis.length) {
+        let segmentValue = sequenceForRunAnalysis[currentPosition];
+        let runLength = 0;
+        let innerLoopPosition = currentPosition;
+        while (innerLoopPosition < sequenceForRunAnalysis.length && sequenceForRunAnalysis[innerLoopPosition] === segmentValue) {
+            runLength++;
+            innerLoopPosition++;
+        }
+        segmentCollection.push(runLength);
+        currentPosition = innerLoopPosition;
+    }
+
+    const blockWindowSize = 2 * flipAllowance + 1;
+    let maximumAchievedSum = 0;
+    let currentBlockAccumulation = 0;
+    let blockElementCounter = 0;
+
+    segmentCollection.reduce((_accumulator, segmentValue) => {
+        currentBlockAccumulation += segmentValue;
+        blockElementCounter++;
+
+        if (blockElementCounter === blockWindowSize) {
+            maximumAchievedSum = Math.max(maximumAchievedSum, currentBlockAccumulation);
+            currentBlockAccumulation = 0;
+            blockElementCounter = 0;
+        }
+        return _accumulator;
+    }, null);
+
+    maximumAchievedSum = Math.max(maximumAchievedSum, currentBlockAccumulation);
+
+    return maximumAchievedSum;
+};
+
+const executeProgram = (inputData) => {
+    const parsedData = processInput(inputData);
+    const finalResult = calculateMaxSegmentSum(parsedData);
+    console.log(finalResult);
+};
+
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

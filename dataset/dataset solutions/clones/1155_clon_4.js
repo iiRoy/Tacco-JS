@@ -1,65 +1,70 @@
-class ElementCommunity {
-    #ancestors;
-    #sizes;
+class DisjointSetManager {
+  constructor(nodeCount) {
+    this.parentRegistry = new Map();
+    this.componentSizes = new Map();
 
-    constructor(initialCapacity) {
-        this.#ancestors = Array(initialCapacity).fill(0).map((_, index) => index);
-        this.#sizes = Array(initialCapacity).fill(1);
+    for (let currentId = 0; currentId < nodeCount; currentId++) {
+      this.parentRegistry.set(currentId, currentId);
+      this.componentSizes.set(currentId, 1);
+    }
+  }
+
+  findRepresentative(elementIdentifier) {
+    let currentElement = elementIdentifier;
+    const pathNodes = [];
+
+    while (this.parentRegistry.get(currentElement) !== currentElement) {
+      pathNodes.push(currentElement);
+      currentElement = this.parentRegistry.get(currentElement);
     }
 
-    determineRepresentative(individual) {
-        let current = individual;
-        const pathNodes = [];
-
-        while (current !== this.#ancestors[current]) {
-            pathNodes.push(current);
-            current = this.#ancestors[current];
-        }
-
-        for (const nodeOnPath of pathNodes) {
-            this.#ancestors[nodeOnPath] = current;
-        }
-
-        return current;
+    for (const nodeToCompress of pathNodes) {
+      this.parentRegistry.set(nodeToCompress, currentElement);
     }
 
-    integrateComponents(individualA, individualB) {
-        let rootA = this.determineRepresentative(individualA);
-        let rootB = this.determineRepresentative(individualB);
+    return currentElement;
+  }
 
-        if (rootA === rootB) {
-            return false;
-        }
+  combineSets(firstElement, secondElement) {
+    let rootA = this.findRepresentative(firstElement);
+    let rootB = this.findRepresentative(secondElement);
 
-        if (this.#sizes[rootA] < this.#sizes[rootB]) {
-            [rootA, rootB] = [rootB, rootA];
-        }
-
-        this.#ancestors[rootB] = rootA;
-        this.#sizes[rootA] += this.#sizes[rootB];
-        return true;
+    if (rootA === rootB) {
+      return;
     }
 
-    areInSameComponent(individualA, individualB) {
-        return this.determineRepresentative(individualA) === this.determineRepresentative(individualB);
+    let sizeA = this.componentSizes.get(rootA);
+    let sizeB = this.componentSizes.get(rootB);
+
+    if (sizeA < sizeB) {
+      [rootA, rootB] = [rootB, rootA];
+      [sizeA, sizeB] = [sizeB, sizeA];
     }
+
+    this.parentRegistry.set(rootB, rootA);
+    this.componentSizes.set(rootA, sizeA + sizeB);
+    this.componentSizes.delete(rootB);
+  }
+
+  areConnected(firstElement, secondElement) {
+    return this.findRepresentative(firstElement) === this.findRepresentative(secondElement);
+  }
 }
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataRows = rawData.split("\n");
-const [totalElements, operationCount] = dataRows.shift().split(" ").map(Number);
+const fileContent = Buffer.from(require('fs').readFileSync('/dev/stdin')).toString();
+const allLines = fileContent.split("\n");
 
-const collective = new ElementCommunity(totalElements);
+const [nodeQuantity, queryQuantity] = allLines.shift().split(" ").map(val => parseInt(val, 10));
 
-dataRows.forEach(currentLine => {
-    const [actionType, firstIndex, secondIndex] = currentLine.split(" ").map(Number);
-    switch (actionType) {
-        case 0:
-            collective.integrateComponents(firstIndex, secondIndex);
-            break;
-        case 1:
-            const outcome = collective.areInSameComponent(firstIndex, secondIndex) ? 1 : 0;
-            console.log(outcome);
-            break;
-    }
-});
+const managerInstance = new DisjointSetManager(nodeQuantity);
+
+const queryDispatch = {
+  0: (valX, valY) => managerInstance.combineSets(valX, valY),
+  1: (valX, valY) => console.log(managerInstance.areConnected(valX, valY) ? 1 : 0)
+};
+
+for (const currentLine of allLines) {
+  if (!currentLine.trim()) continue;
+  const [operationType, valueA, valueB] = currentLine.split(" ").map(val => parseInt(val, 10));
+  queryDispatch[operationType](valueA, valueB);
+}

@@ -1,19 +1,12 @@
-const processScheduleData = (incomingText) => {
-  const [
-    startH,
-    startM,
-    endH,
-    endM,
-    deduction
-  ] = incomingText.split('\n')[0].split(' ').map(Number);
+function ProcessInput(sourceData) {
+  const [firstHour, firstMinute, secondHour, secondMinute, timePenalty] = sourceData
+    .split("\n")[0]
+    .split(' ')
+    .map(Number);
 
-  const convertToMinutes = (hoursComponent, minutesComponent) =>
-    (hoursComponent * 60) + minutesComponent;
+  const resultantDuration = ((secondHour - firstHour) * 60) + (secondMinute - firstMinute) - timePenalty;
 
-  const initialPoint = convertToMinutes(startH, startM);
-  const finalPoint = convertToMinutes(endH, endM);
+  console.log(resultantDuration);
+}
 
-  const durationDifference = finalPoint - initialPoint - deduction;
-
-  console.log(durationDifference);
-};
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

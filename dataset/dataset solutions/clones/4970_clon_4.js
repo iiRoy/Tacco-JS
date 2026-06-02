@@ -1,27 +1,28 @@
-((sourceText) => {
-    const playerIndexMap = { 'a': 0, 'b': 1, 'c': 2 };
-    const playerCardDecks = Array.from({ length: 3 }, () => []);
+(function(rawInputContent) {
+    const gameDecks = new Map(
+        rawInputContent
+            .trim()
+            .split('\n')
+            .slice(0, 3)
+            .map((lineSegment, segmentIndex) => [
+                ['a', 'b', 'c'][segmentIndex],
+                lineSegment.split('').reverse()
+            ])
+    );
 
-    const rawSegments = sourceText.trim().split('\n');
+    function resolveGameOutcome(currentTurnHolder, availableDecks) {
+        const currentDeckPile = availableDecks.get(currentTurnHolder);
 
-    for (let currentLineIndex = 0; currentLineIndex < rawSegments.length && currentLineIndex < 3; currentLineIndex++) {
-        playerCardDecks[currentLineIndex] = rawSegments[currentLineIndex].split('');
-    }
-
-    let currentTurnHolder = 'a';
-
-    for (;;) {
-        const currentHolderIndex = playerIndexMap[currentTurnHolder];
-        const holderDeck = playerCardDecks[currentHolderIndex];
-
-        if (holderDeck.length === 0) {
-            break;
+        if (currentDeckPile.length === 0) {
+            return currentTurnHolder;
         }
 
-        const nextHolderSymbol = holderDeck.shift();
-        currentTurnHolder = nextHolderSymbol;
+        const nextTurnHolder = currentDeckPile.pop();
+        return resolveGameOutcome(nextTurnHolder, availableDecks);
     }
 
-    console.log(currentTurnHolder.toUpperCase());
+    const winningPlayer = resolveGameOutcome('a', gameDecks);
+
+    console.log(winningPlayer.toUpperCase());
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

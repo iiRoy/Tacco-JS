@@ -1,32 +1,35 @@
-function performCalculation(dataSource) {
-    const firstLineElements = dataSource[0].trim().split(" ");
-    const initialValue = parseFloat(firstLineElements[0]);
-    const exclusionCount = parseFloat(firstLineElements[1]);
+function main(inputLines) {
+    const [initialValueText, forbiddenCountText] = inputLines[0].trim().split(" ");
+    const initialValue = parseInt(initialValueText);
+    const forbiddenCount = parseInt(forbiddenCountText);
 
-    if (exclusionCount === 0) {
-        return initialValue;
+    if (forbiddenCount === 0) {
+        console.log(initialValue);
     } else {
-        const excludedStrings = dataSource[1].trim().split(" ");
-        const prohibitedSet = new Set(excludedStrings.map(str => parseFloat(str)));
+        const forbiddenNumbersText = inputLines[1].trim().split(" ");
+        const excludedSet = new Set(forbiddenNumbersText.map(s => parseInt(s)));
 
-        const findNearestAllowed = (basePoint, currentDisplacement, prohibitedItems) => {
-            const lowerCandidate = basePoint - currentDisplacement;
-            if (!prohibitedItems.has(lowerCandidate)) {
-                return lowerCandidate;
+        function* createProximityIterator(startPoint) {
+            yield startPoint;
+            let currentOffset = 1;
+            while (true) {
+                yield startPoint - currentOffset;
+                yield startPoint + currentOffset;
+                currentOffset++;
             }
+        }
 
-            const upperCandidate = basePoint + currentDisplacement;
-            if (!prohibitedItems.has(upperCandidate)) {
-                return upperCandidate;
+        const valueSeeker = createProximityIterator(initialValue);
+        let foundCandidate;
+
+        for (const currentCheck of valueSeeker) {
+            if (!excludedSet.has(currentCheck)) {
+                foundCandidate = currentCheck;
+                break;
             }
-
-            return findNearestAllowed(basePoint, currentDisplacement + 1, prohibitedItems);
-        };
-
-        return findNearestAllowed(initialValue, 0, prohibitedSet);
+        }
+        console.log(foundCandidate);
     }
 }
 
-const obtainInputData = () => require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
-const finalResult = performCalculation(obtainInputData());
-console.info(finalResult);
+main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

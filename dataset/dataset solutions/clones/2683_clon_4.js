@@ -1,31 +1,25 @@
-const calculateNextElevation = (precedingElevation, currentRawElevation) =>
-    (precedingElevation === currentRawElevation) ? currentRawElevation :
-    (precedingElevation <= currentRawElevation - 1) ? currentRawElevation - 1 :
-    NaN;
+function processSequence(sourceData) {
+  const numericValues = sourceData.slice(1).map(Number);
+  const initialElement = numericValues[0];
 
-const AssessElevationSeries = (sourceContent) => {
-    const numericalComponents = sourceContent.trim().split(/\n|\s/).map(Number);
-    const elementCount = numericalComponents[0];
-    const elevationMeasures = numericalComponents.slice(1);
+  try {
+    numericValues.slice(1).reduce((previousModifiedValue, currentOriginalValue) => {
+      if (currentOriginalValue === previousModifiedValue) {
+        return currentOriginalValue;
+      } else if (currentOriginalValue >= previousModifiedValue + 1) {
+        return currentOriginalValue - 1;
+      } else {
+        throw new Error('SequenceInvalid');
+      }
+    }, initialElement);
+    console.log('Yes');
+  } catch (sequenceError) {
+    if (sequenceError.message === 'SequenceInvalid') {
+      console.log('No');
+    } else {
+      throw sequenceError;
+    }
+  }
+}
 
-    const initialCondition = { feasible: true, latestLevel: elevationMeasures[0] };
-
-    const outcome = elevationMeasures.slice(1).reduce((accumulator, currentElement) => {
-        if (!accumulator.feasible) {
-            return accumulator;
-        }
-
-        const calculatedNext = calculateNextElevation(accumulator.latestLevel, currentElement);
-
-        return {
-            feasible: !Number.isNaN(calculatedNext),
-            latestLevel: Number.isNaN(calculatedNext) ? accumulator.latestLevel : calculatedNext
-        };
-    }, initialCondition);
-
-    return outcome.feasible ? 'Yes' : 'No';
-};
-
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-const resultString = AssessElevationSeries(inputData);
-console.log(resultString);
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

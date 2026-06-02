@@ -1,67 +1,84 @@
-var inputData = [];
-const terminalIO = require('readline');
+var inputData = []; // Stores all lines read from standard input
+var lineReaderModule = require('readline'); // Imports the 'readline' module for input processing
 
-let streamHandler = terminalIO.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+var interfaceHandler = lineReaderModule.createInterface({ // Creates an interface to read input line by line
+    input: process.stdin, // Specifies standard input as the source
+    output: process.stdout // Specifies standard output for internal readline operations (not used for problem output)
 });
 
-streamHandler.on('line', function (currentText) {
-    inputData.push(currentText);
+interfaceHandler.on('line', function (currentLine) { // Event listener for each line received
+    inputData.push(currentLine); // Adds the current line to our array of input data
 });
 
-streamHandler.on('close', function () {
-    const nodeQuantity = Number(inputData[0]);
-    inputData.shift();
+interfaceHandler.on('close', function () { // Event listener for when the input stream ends
+    // The first line of input contains the number of nodes
+    var nodeCount = Number(inputData[0]);
+    inputData.shift(); // Removes the first line (node count) from the input array
 
-    const graphEdges = inputData.map(edgeString =>
-        edgeString.split(" ").map(numericVal => Number(numericVal))
-    );
+    // Parses the remaining lines into an array of edges (u, v, w)
+    // Each edge is represented as an array of three numbers
+    var edgeList = inputData.map(edgeStr => edgeStr.split(" ").map(valStr => Number(valStr)));
 
-    // This algorithm assigns one of two states (0 or 1) to each node.
-    // Nodes connected by an edge with an even weight will share the same state.
-    // Nodes connected by an edge with an odd weight will have differing states.
-    // The initial node (node 0, or 1-indexed 1) is arbitrarily assigned state 0.
+    // This algorithm assigns one of two colors (0 or 1) to each node.
+    // The color assignment depends on the weight of the edges connecting them.
+    // If an edge has an even weight, connected nodes must have the same color.
+    // If an edge has an odd weight, connected nodes must have different colors.
+    // Node 0 (index 0) is arbitrarily assigned color 0 to start the process.
 
-    // Sort the connections by their second node ID, then by their first node ID.
-    graphEdges.sort((linkA, linkB) => {
-        if (linkA[1] === linkB[1]) {
-            return (linkA[0] - linkB[0]);
+    // Sorts the edge list to prioritize processing.
+    // Edges are sorted primarily by the second node index (v), then by the first node index (u).
+    edgeList.sort((edgeA, edgeB) => {
+        if (edgeA[1] === edgeB[1]) {
+            return (edgeA[0] - edgeB[0]); // Secondary sort by first node if second nodes are equal
         } else {
-            return (linkA[1] - linkB[1]);
+            return (edgeA[1] - edgeB[1]); // Primary sort by second node
         }
     });
-    console.log(graphEdges);
 
-    let vertexShades = Array(nodeQuantity).fill(-1);
-    vertexShades[0] = 0;
+    // For debugging or verification, output the sorted edge list.
+    console.log(edgeList);
 
-    while (graphEdges.length > 0) {
-        let currentLink = graphEdges.shift();
-        let sourceID = currentLink[0];
-        let targetID = currentLink[1];
-        let linkCost = currentLink[2];
+    // Initializes an array to store the color of each node.
+    // -1 indicates an uncolored node.
+    var nodeColors = Array(nodeCount).fill(-1);
+    nodeColors[0] = 0; // Assigns color 0 to the first node (node with index 0)
 
-        if (vertexShades[sourceID - 1] !== -1) {
-            if (linkCost % 2 === 0) {
-                vertexShades[targetID - 1] = vertexShades[sourceID - 1];
-            } else {
-                vertexShades[targetID - 1] = 1 - vertexShades[sourceID - 1];
+    // Processes edges until all nodes are colored or no more progress can be made.
+    // Edges are processed in a loop, and if an edge cannot be processed (neither connected node is colored),
+    // it's pushed back to the end of the list to be retried later.
+    while (edgeList.length > 0) {
+        var currentEdge = edgeList.shift(); // Takes the first edge from the list
+        var nodeU = currentEdge[0]; // First node in the edge
+        var nodeV = currentEdge[1]; // Second node in the edge
+        var edgeWeight = currentEdge[2]; // Weight of the edge
+
+        // Check if the first node (U) has already been colored
+        if (nodeColors[nodeU - 1] !== -1) {
+            // If U is colored, determine V's color based on U's color and edge weight
+            if (edgeWeight % 2 === 0) { // Even weight: V gets the same color as U
+                nodeColors[nodeV - 1] = nodeColors[nodeU - 1];
+            } else { // Odd weight: V gets the opposite color of U
+                nodeColors[nodeV - 1] = 1 - nodeColors[nodeU - 1];
             }
         } else {
-            if (vertexShades[targetID - 1] !== -1) {
-                if (linkCost % 2 === 0) {
-                    vertexShades[sourceID - 1] = vertexShades[targetID - 1];
-                } else {
-                    vertexShades[sourceID - 1] = 1 - vertexShades[targetID - 1];
+            // If U is not colored, check if the second node (V) has been colored
+            if (nodeColors[nodeV - 1] !== -1) {
+                // If V is colored, determine U's color based on V's color and edge weight
+                if (edgeWeight % 2 === 0) { // Even weight: U gets the same color as V
+                    nodeColors[nodeU - 1] = nodeColors[nodeV - 1];
+                } else { // Odd weight: U gets the opposite color of V
+                    nodeColors[nodeU - 1] = 1 - nodeColors[nodeV - 1];
                 }
             } else {
-                graphEdges.push(currentLink);
+                // If neither U nor V is colored, this edge cannot be processed yet.
+                // Push it back to the end of the list to be retried later.
+                edgeList.push(currentEdge);
             }
         }
     }
 
-    for (let nodeIdx = 0; nodeIdx < nodeQuantity; nodeIdx++) {
-        console.log(vertexShades[nodeIdx]);
+    // After processing all edges, print the assigned color for each node.
+    for (var idx = 0; idx < nodeCount; idx++) {
+        console.log(nodeColors[idx]);
     }
 });

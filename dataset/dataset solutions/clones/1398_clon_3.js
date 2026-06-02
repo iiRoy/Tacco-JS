@@ -1,32 +1,38 @@
-function processInputExpressions(inputString) {
-    const sentinelValue = "?";
-    let expressionLines = inputString.split("\n").filter(line => line.trim().length > 0);
+function processInputData(rawDataContent) {
+    const lineSeparator = "\n";
+    var linesOfCode = rawDataContent.split(lineSeparator);
+    var currentProcessingIndex = 0;
 
-    if (expressionLines.length === 0) {
-        return;
-    }
+    const terminationSentinel = "?";
+    // The original loop condition checks if the '?' character exists anywhere in the array.
+    // This condition is static as 'linesOfCode' is not modified within the loop.
+    // If '?' is present, the loop will continue indefinitely or until an error occurs
+    // due to 'eval' or an out-of-bounds access.
+    const sentinelPresentInInput = linesOfCode.includes(terminationSentinel);
 
-    let currentExpressionIndex = 0;
-    const totalExpressions = expressionLines.length;
+    while (sentinelPresentInInput) {
+        // Retrieve the current line string from the array
+        const lineToEvaluate = linesOfCode[currentProcessingIndex];
 
-    while (currentExpressionIndex < totalExpressions) {
-        let currentLineContent = expressionLines[currentExpressionIndex].trim();
+        // Evaluate the string as JavaScript code
+        const evaluationOutcome = eval(lineToEvaluate);
 
-        if (currentLineContent === sentinelValue) {
-            break;
-        }
+        // Output the result of the evaluation
+        console.log(evaluationOutcome);
 
-        try {
-            let evaluationOutcome = eval(currentLineContent);
-            console.log(evaluationOutcome);
-        } catch (exceptionDetails) {
-            // Errors during evaluation are caught, but not explicitly logged
-            // to maintain a similar output behavior to the original,
-            // which would simply fail or output undefined for bad eval.
-        }
-
-        currentExpressionIndex++;
+        // Advance to the next line for processing
+        currentProcessingIndex++;
     }
 }
 
-processInputExpressions(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Define the standard input file path
+const standardInputFilePath = "/dev/stdin";
+
+// Access the Node.js file system module
+const fileSystemModule = require("fs");
+
+// Read the entire content of the standard input file synchronously
+const inputBuffer = fileSystemModule.readFileSync(standardInputFilePath, "utf8");
+
+// Invoke the main data processing function with the obtained input
+processInputData(inputBuffer);

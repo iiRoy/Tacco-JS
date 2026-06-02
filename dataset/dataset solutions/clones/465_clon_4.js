@@ -1,102 +1,114 @@
-function processor() {
-  const parseNum = Number;
+function rotateMatrix(matrix) {
+  const dimension = matrix.length;
+  return Array.from({ length: dimension }, (_, newRowIndex) =>
+    Array.from({ length: dimension }, (_, newColIndex) => matrix[dimension - 1 - newColIndex][newRowIndex])
+  );
+}
 
-  const extractNumericMatrix = (sourceLines, rowCount) =>
-    Array.from({ length: rowCount }, () =>
-      sourceLines.shift().split(/ +/).map(parseNum)
-    );
+function checkPatternMatchAndExtractFirstCoordinate(subImage, currentPattern, globalRowOffset, globalColOffset) {
+  const patternDimension = currentPattern.length;
 
-  const rotateBlockClockwise = (initialBlock) => {
-    const dimension = initialBlock.length;
-    return Array.from({ length: dimension }, (_, newRowIndex) =>
-      Array.from({ length: dimension }, (_, newColIndex) =>
-        initialBlock[dimension - 1 - newColIndex][newRowIndex]
-      )
-    );
-  };
+  const patternCells = currentPattern.flatMap((row, rIdx) =>
+    row.map((value, cIdx) => ({ value, rIdx, cIdx }))
+  );
 
-  const createAllOrientations = (baseBlock, rotatorFunction) =>
-    Array.from({ length: 4 }).reduce((accumulator, _, index) => {
-      accumulator.push(index === 0 ? baseBlock : rotatorFunction(accumulator[index - 1]));
+  const matchEvaluation = patternCells.reduce((accumulator, cell) => {
+    if (!accumulator.isMatch) return accumulator;
+
+    if (cell.value === -1) {
+      return accumulator;
+    }
+
+    const imageValue = subImage[cell.rIdx][cell.cIdx];
+    if (cell.value !== imageValue) {
+      return { isMatch: false, firstX: 0, firstY: 0, firstCoordSet: false };
+    }
+
+    if (!accumulator.firstCoordSet) {
+      return {
+        isMatch: true,
+        firstX: globalColOffset + cell.cIdx + 1,
+        firstY: globalRowOffset + cell.rIdx + 1,
+        firstCoordSet: true,
+      };
+    }
+    return accumulator;
+  }, { isMatch: true, firstX: 0, firstY: 0, firstCoordSet: false });
+
+  return { isMatch: matchEvaluation.isMatch, firstX: matchEvaluation.firstX, firstY: matchEvaluation.firstY };
+}
+
+function processInputAndSearch(allInputLines) {
+  let currentInputLines = allInputLines.slice();
+  const outputBuffer = [];
+
+  while (true) {
+    const dimensionsLine = currentInputLines.shift().split(/\s+/).map(Number);
+    const imageSize = dimensionsLine[0];
+    const patternSize = dimensionsLine[1];
+
+    if (imageSize === 0 && patternSize === 0) break;
+
+    const mainImage = Array.from({ length: imageSize }, () => currentInputLines.shift().split(/ +/).map(Number));
+    const initialPattern = Array.from({ length: patternSize }, () => currentInputLines.shift().split(/ +/).map(Number));
+
+    const allPatternRotations = Array.from({ length: 4 }).reduce((accumulator, _, index) => {
+      if (index === 0) {
+        accumulator.push(initialPattern);
+      } else {
+        accumulator.push(rotateMatrix(accumulator[index - 1]));
+      }
       return accumulator;
     }, []);
 
-  const evaluatePlacement = (mainCanvas, currentPattern, canvasRowShift, canvasColShift) => {
-    let firstFoundCol = 0;
-    let firstFoundRow = 0;
-
-    const isPerfectMatch = currentPattern.every((patternRowValues, patternRowIndex) =>
-      patternRowValues.every((patternValue, patternColIndex) => {
-        if (patternValue === -1) return true; // Wildcard bypass
-        
-        const canvasValue = mainCanvas[canvasRowShift + patternRowIndex][canvasColShift + patternColIndex];
-        if (canvasValue !== patternValue) return false; // Mismatch
-
-        if (firstFoundCol === 0 && firstFoundRow === 0) {
-          firstFoundCol = canvasColShift + patternColIndex + 1;
-          firstFoundRow = canvasRowShift + patternRowIndex + 1;
+    const searchSpaceConfigurations = [];
+    for (let rOffset = 0; rOffset < imageSize - patternSize; rOffset++) {
+      for (let cOffset = 0; cOffset < imageSize - patternSize; cOffset++) {
+        for (let rotationIdx = 0; rotationIdx < 4; rotationIdx++) {
+          searchSpaceConfigurations.push({ rOffset, cOffset, rotationIdx });
         }
-        return true;
-      })
-    );
-    return isPerfectMatch ? { matchPresent: true, initialCol: firstFoundCol, initialRow: firstFoundRow } : { matchPresent: false };
-  };
+      }
+    }
 
-  const generateAllSearchCoordinates = (canvasDimension, patternDimension) =>
-    Array.from({ length: canvasDimension - patternDimension + 1 }, (_, rIdx) => rIdx)
-      .flatMap(rIdx =>
-        Array.from({ length: canvasDimension - patternDimension + 1 }, (_, cIdx) => cIdx)
-          .flatMap(cIdx =>
-            Array.from({ length: 4 }, (_, oIdx) => ({ r: rIdx, c: cIdx, o: oIdx }))
-          )
+    const initialBestMatch = { found: false, bestX: 99999999, bestY: 99999999 };
+
+    const finalBestMatchResult = searchSpaceConfigurations.reduce((currentOptimal, config) => {
+      const { rOffset, cOffset, rotationIdx } = config;
+      const currentPattern = allPatternRotations[rotationIdx];
+
+      const subImageWindow = Array.from({ length: patternSize }, (_, rIdx) =>
+        Array.from({ length: patternSize }, (_, cIdx) => mainImage[rOffset + rIdx][cOffset + cIdx])
       );
 
-  let currentInputLines = rawDataStore.slice();
+      const matchCheckResult = checkPatternMatchAndExtractFirstCoordinate(subImageWindow, currentPattern, rOffset, cOffset);
 
-  while (true) {
-    const dimensionLine = currentInputLines.shift().split(/\s+/).map(parseNum);
-    const canvasDimension = dimensionLine[0];
-    const patternDimension = dimensionLine[1];
-
-    if (canvasDimension === 0 && patternDimension === 0) break;
-
-    const mainCanvas = extractNumericMatrix(currentInputLines, canvasDimension);
-    const basePattern = extractNumericMatrix(currentInputLines, patternDimension);
-    const allPatternOrientations = createAllOrientations(basePattern, rotateBlockClockwise);
-
-    const searchSpace = generateAllSearchCoordinates(canvasDimension, patternDimension);
-    const initialBestLocation = { initialCol: 99999999, initialRow: 99999999 };
-
-    const finalBestMatch = searchSpace.reduce((currentOptimal, currentAttempt) => {
-      const activePattern = allPatternOrientations[currentAttempt.o];
-      const resultOfPlacement = evaluatePlacement(mainCanvas, activePattern, currentAttempt.r, currentAttempt.c);
-
-      if (resultOfPlacement.matchPresent) {
-        const { initialCol, initialRow } = resultOfPlacement;
-        if (initialRow < currentOptimal.initialRow || (initialRow === currentOptimal.initialRow && initialCol < currentOptimal.initialCol)) {
-          return { initialRow: initialRow, initialCol: initialCol };
+      if (matchCheckResult.isMatch) {
+        const { firstX, firstY } = matchCheckResult;
+        if (firstY < currentOptimal.bestY || (firstY === currentOptimal.bestY && firstX < currentOptimal.bestX)) {
+          return { found: true, bestX: firstX, bestY: firstY };
         }
       }
       return currentOptimal;
-    }, initialBestLocation);
+    }, initialBestMatch);
 
-    if (finalBestMatch.initialCol !== 99999999 && finalBestMatch.initialRow !== 99999999) {
-      console.log(finalBestMatch.initialCol + ' ' + finalBestMatch.initialRow);
+    if (finalBestMatchResult.found) {
+      outputBuffer.push(`${finalBestMatchResult.bestX} ${finalBestMatchResult.bestY}`);
     } else {
-      console.log('NA');
+      outputBuffer.push('NA');
     }
   }
+  console.log(outputBuffer.join('\n'));
 }
 
-let inputBuffer = '';
-let rawDataStore;
+var
+input = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataChunk) {
-  inputBuffer += dataChunk;
+process.stdin.on('data', function(chunk) {
+  input += chunk;
 });
 process.stdin.on('end', function() {
-  rawDataStore = inputBuffer.split('\n');
-  processor();
+  const processedInput = input.split('\n');
+  processInputAndSearch(processedInput);
 });

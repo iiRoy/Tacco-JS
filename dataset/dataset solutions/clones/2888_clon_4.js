@@ -1,24 +1,19 @@
 'use strict';
 
-let storageUnit = '';
+function ProcessInputAndOutput(rawData) {
+  const polygonSides = Number(rawData);
+  const triangleCount = polygonSides - 2;
+  let totalAngleSum;
 
-process.stdin.on('data', (incomingBytes) => {
-    storageUnit += incomingBytes.toString();
-});
+  if (triangleCount === 0) {
+    totalAngleSum = 0;
+  } else if (triangleCount > 0) {
+    totalAngleSum = Array.from({ length: triangleCount }).reduce((currentSum) => currentSum + 180, 0);
+  } else {
+    totalAngleSum = Array.from({ length: Math.abs(triangleCount) }).reduce((currentSum) => currentSum - 180, 0);
+  }
 
-process.stdin.on('end', () => {
-    const cleansedInput = storageUnit.trim();
-    const initialNumericalValue = Number(cleansedInput);
+  console.log(totalAngleSum);
+}
 
-    const firstCoefficient = 90;
-    const secondCoefficient = 2;
-    const thirdCoefficient = 120;
-    const fourthCoefficient = 3;
-
-    const partialSum = initialNumericalValue * firstCoefficient * secondCoefficient;
-    const adjustmentValue = thirdCoefficient * fourthCoefficient;
-
-    const ultimateCalculation = partialSum - adjustmentValue;
-
-    process.stdout.write(String(ultimateCalculation) + '\n');
-});
+ProcessInputAndOutput(require("node:fs").readFileSync("/dev/stdin", "utf8").trim());

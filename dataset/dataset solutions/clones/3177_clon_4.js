@@ -1,69 +1,110 @@
-const processRawInput = (allText) => {
-    const parsedNumbers = allText.split(/\s+/).map(Number);
+"use strict";
 
-    const shrineCount = parsedNumbers.shift();
-    const templeCount = parsedNumbers.shift();
-    const queryCount = parsedNumbers.shift();
+// Helper function for binary search to find bounds within a sorted array.
+// It returns an object containing two indices:
+// 'before': The index of the largest element less than or equal to the target value.
+//           Returns -1 if all elements are greater than the target.
+// 'after': The index of the smallest element greater than or equal to the target value.
+//          Returns array.length if all elements are less than the target.
+function locateBoundaries(sortedCollection, targetValue) {
+    let beforeIndex = -1; 
+    let afterIndex = sortedCollection.length; 
 
-    const shrineLocations = parsedNumbers.splice(0, shrineCount);
-    const templeLocations = parsedNumbers.splice(0, templeCount);
-    const initialQueryPoints = parsedNumbers; 
+    // Binary search to find the 'afterIndex' (first element >= targetValue)
+    let leftCursor = 0;
+    let rightCursor = sortedCollection.length - 1;
+    while (leftCursor <= rightCursor) {
+        let midPoint = Math.floor((leftCursor + rightCursor) / 2);
+        if (sortedCollection[midPoint] >= targetValue) {
+            afterIndex = midPoint;
+            rightCursor = midPoint - 1;
+        } else {
+            leftCursor = midPoint + 1;
+        }
+    }
 
-    const indexedQueries = initialQueryPoints.map((val, idx) => ({
-        pointValue: val,
-        initialIndex: idx
+    // Binary search to find the 'beforeIndex' (last element <= targetValue)
+    leftCursor = 0;
+    rightCursor = sortedCollection.length - 1;
+    while (leftCursor <= rightCursor) {
+        let midPoint = Math.floor((leftCursor + rightCursor) / 2);
+        if (sortedCollection[midPoint] <= targetValue) {
+            beforeIndex = midPoint;
+            leftCursor = midPoint + 1;
+        } else {
+            rightCursor = midPoint - 1;
+        }
+    }
+
+    return { before: beforeIndex, after: afterIndex };
+}
+
+// Helper function to compute the minimum travel distance between a query point,
+// a potential shrine location, and a potential temple location.
+// It considers two distinct paths: Query -> Shrine -> Temple and Query -> Temple -> Shrine.
+function determineMinimumTravel(queryPosition, shrineCandidatePosition, templeCandidatePosition) {
+    const pathViaShrineFirst = Math.abs(queryPosition - shrineCandidatePosition) + Math.abs(shrineCandidatePosition - templeCandidatePosition);
+    const pathViaTempleFirst = Math.abs(queryPosition - templeCandidatePosition) + Math.abs(templeCandidatePosition - shrineCandidatePosition);
+    return Math.min(pathViaShrineFirst, pathViaTempleFirst);
+}
+
+function processInputAndGenerateSolution(rawInputData) {
+    const numericValues = rawInputData.split(/\s+/).map(Number);
+
+    let dataPointer = 0;
+    const numShrines = numericValues[dataPointer++];
+    const numTemples = numericValues[dataPointer++];
+    const numQueries = numericValues[dataPointer++];
+
+    // Extract shrine locations and sort them to enable efficient searching
+    const shrineCoordinates = numericValues.slice(dataPointer, dataPointer + numShrines);
+    shrineCoordinates.sort((a, b) => a - b);
+    dataPointer += numShrines;
+
+    // Extract temple locations and sort them to enable efficient searching
+    const templeCoordinates = numericValues.slice(dataPointer, dataPointer + numTemples);
+    templeCoordinates.sort((a, b) => a - b);
+    dataPointer += numTemples;
+
+    // Extract query points, associating each with its original index
+    const queryRequests = numericValues.slice(dataPointer, dataPointer + numQueries).map((value, originalIdx) => ({
+        pointValue: value,
+        initialIndex: originalIdx
     }));
 
-    indexedQueries.sort((a, b) => a.pointValue - b.pointValue);
+    // Sort query requests by their point value to optimize processing,
+    // but store results based on their original index.
+    queryRequests.sort((a, b) => a.pointValue - b.pointValue);
 
-    const finalResults = new Array(queryCount);
+    const finalOutputArray = new Array(numQueries);
 
-    let currentShrineLocationIndex = 0;
-    let currentTempleLocationIndex = 0;
+    for (const currentRequest of queryRequests) {
+        const currentQueryPoint = currentRequest.pointValue;
+        const originalResultIndex = currentRequest.initialIndex;
 
-    const MIN_COORD_VALUE = -200000000000000; 
-    const MAX_COORD_VALUE = 200000000000000;  
+        // Determine the two nearest shrine locations (one less than, one greater than or equal to the query point)
+        const shrineBoundaries = locateBoundaries(shrineCoordinates, currentQueryPoint);
+        const closestShrineBefore = (shrineBoundaries.before !== -1) ? shrineCoordinates[shrineBoundaries.before] : -1e14;
+        const closestShrineAfter = (shrineBoundaries.after !== shrineCoordinates.length) ? shrineCoordinates[shrineBoundaries.after] : 1e14;
 
-    const calculatePathLength = (startCoord, intermediateCoord, endCoord) => {
-        return Math.abs(startCoord - intermediateCoord) + Math.abs(intermediateCoord - endCoord);
-    };
+        // Determine the two nearest temple locations (one less than, one greater than or equal to the query point)
+        const templeBoundaries = locateBoundaries(templeCoordinates, currentQueryPoint);
+        const closestTempleBefore = (templeBoundaries.before !== -1) ? templeCoordinates[templeBoundaries.before] : -1e15;
+        const closestTempleAfter = (templeBoundaries.after !== templeCoordinates.length) ? templeCoordinates[templeBoundaries.after] : 1e15;
 
-    indexedQueries.forEach(singleQuery => {
-        const queryCoordinate = singleQuery.pointValue;
-        const originalOutputPosition = singleQuery.initialIndex;
+        // Calculate the overall minimum distance by considering all four combinations of closest shrines and temples.
+        // Each combination involves two possible travel paths (via shrine first or via temple first).
+        const overallMinimumDistance = Math.min(
+            determineMinimumTravel(currentQueryPoint, closestShrineBefore, closestTempleBefore),
+            determineMinimumTravel(currentQueryPoint, closestShrineBefore, closestTempleAfter),
+            determineMinimumTravel(currentQueryPoint, closestShrineAfter, closestTempleBefore),
+            determineMinimumTravel(currentQueryPoint, closestShrineAfter, closestTempleAfter)
+        );
+        
+        finalOutputArray[originalResultIndex] = overallMinimumDistance.toString();
+    }
 
-        while (currentShrineLocationIndex < shrineLocations.length && shrineLocations[currentShrineLocationIndex] < queryCoordinate) {
-            currentShrineLocationIndex++;
-        }
-        const closestShrineBefore = (currentShrineLocationIndex > 0) ? shrineLocations[currentShrineLocationIndex - 1] : MIN_COORD_VALUE;
-        const closestShrineAfter = (currentShrineLocationIndex < shrineLocations.length) ? shrineLocations[currentShrineLocationIndex] : MAX_COORD_VALUE;
+    console.log(finalOutputArray.join("\n").trim() + '\n');
+}
 
-        while (currentTempleLocationIndex < templeLocations.length && templeLocations[currentTempleLocationIndex] < queryCoordinate) {
-            currentTempleLocationIndex++;
-        }
-        const closestTempleBefore = (currentTempleLocationIndex > 0) ? templeLocations[currentTempleLocationIndex - 1] : MIN_COORD_VALUE;
-        const closestTempleAfter = (currentTempleLocationIndex < templeLocations.length) ? templeLocations[currentTempleLocationIndex] : MAX_COORD_VALUE;
-
-        const routeDistances = [
-            calculatePathLength(queryCoordinate, closestShrineAfter, closestTempleAfter),
-            calculatePathLength(queryCoordinate, closestShrineAfter, closestTempleBefore),
-            calculatePathLength(queryCoordinate, closestShrineBefore, closestTempleAfter),
-            calculatePathLength(queryCoordinate, closestShrineBefore, closestTempleBefore),
-            calculatePathLength(queryCoordinate, closestTempleAfter, closestShrineAfter),
-            calculatePathLength(queryCoordinate, closestTempleAfter, closestShrineBefore),
-            calculatePathLength(queryCoordinate, closestTempleBefore, closestShrineAfter),
-            calculatePathLength(queryCoordinate, closestTempleBefore, closestShrineBefore)
-        ];
-
-        finalResults[originalOutputPosition] = Math.min(...routeDistances);
-    });
-
-    return finalResults.join("\n") + "\n";
-};
-
-const runComputationalModule = () => {
-    const standardInput = require('fs').readFileSync("/dev/stdin", "utf8");
-    console.log(processRawInput(standardInput));
-};
-
-runComputationalModule();
+processInputAndGenerateSolution(require('fs').readFileSync("/dev/stdin", "utf8"));

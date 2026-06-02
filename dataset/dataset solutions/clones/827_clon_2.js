@@ -1,69 +1,43 @@
-let receivedData = require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Acquire raw data from the standard input stream.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input
+let lineSegments = (rawData.replace(/\n$/, "")).split("\n"); // Process the raw data into an array of lines, removing any trailing newline character
 
-// Process the acquired data: remove any trailing newline characters and then split into an array of individual lines.
-let dataLines = (receivedData.replace(/\n+$/, '')).split('\n');
+while (true) { // Begin main processing loop; continues indefinitely until an explicit break condition is met
+    let entryCount = lineSegments.shift() - 0; // Extract the first line, interpret it as the number of entries for the current block, and convert to a numeric type
 
-// Begin an infinite processing loop, which will terminate based on a specific input condition.
-for (;;) {
-
-    // Extract the first element from the data lines array, convert it to an integer, and use it as an item counter.
-    let itemCount = parseInt(dataLines.shift(), 10);
-
-    // If the item count is zero, it signifies the end of input, so exit the loop.
-    if (itemCount === 0) {
-        break;
+    if (entryCount === 0) { // Check if the extracted entry count is zero
+        break; // If zero, terminate the processing loop
     }
 
-    // Initialize an empty array to accumulate the calculated results for the current block of items.
-    let finalResults = [];
+    let resultsList = []; // Initialize an empty array to store the computed results for the current block of entries
 
-    // Iterate through the number of items specified by 'itemCount'.
-    for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
+    for (let idx = 0; idx < entryCount; idx++) { // Iterate through each entry within the current block, from index 0 up to (but not including) entryCount
+        let currentEntryData = (lineSegments.shift()).split(" "); // Retrieve the next line, representing an entry, and split it by spaces into an array of strings
 
-        // Retrieve the next line of data, split it by spaces, and store it as an array of strings.
-        let currentItemDetails = (dataLines.shift()).split(' ');
+        let entityName = currentEntryData.shift(); // Remove the first element from the entry data array, which is the entity's name
 
-        // Remove the first element (which is the item's name/label) from the details array.
-        let itemName = currentItemDetails.shift();
+        currentEntryData = currentEntryData.map(Number); // Convert all remaining string elements in the entry data array to numbers
 
-        // Convert all remaining elements in the details array from strings to floating-point numbers.
-        currentItemDetails = currentItemDetails.map(val => parseFloat(val));
+        currentEntryData.unshift(entityName); // Insert the previously extracted entity name back to the beginning of the numeric data array
 
-        // Re-insert the item's name/label at the beginning of the details array.
-        currentItemDetails.unshift(itemName);
-
-        // Execute an immediately-invoked function expression (IIFE) using the prepared item details.
-        // This function calculates performance and profit metrics for each item.
-        ((label, initialCost, valA, valB, valC, valD, valE, valF, valS, valM) => {
-            // Compute the total operational duration based on various contributing factors.
-            let totalDuration = valA + valB + valC + ((valD + valE) * valM);
-
-            // Calculate the net financial gain after deducting the initial cost.
-            let netProfit = (valF * valS * valM) - initialCost;
-
-            // Store the item's label, its calculated efficiency (profit per duration), and its original index.
-            finalResults.push([label, netProfit / totalDuration, currentIdx]);
-        }).apply(null, currentItemDetails); // Apply the function with the array elements as arguments.
+        // An anonymous function is defined and immediately invoked using 'apply' to process the current entry's data
+        (function (itemLabel, initialCost, paramA, paramB, paramC, paramD, paramE, paramF, paramS, paramM) {
+            let calcTime = paramA + paramB + paramC + ((paramD + paramE) * paramM); // Calculate a 'time' value based on several parameters
+            let calcProfit = (paramF * paramS * paramM) - initialCost; // Calculate a 'profit' value using other parameters and the initial cost
+            resultsList.push([itemLabel, calcProfit / calcTime, idx]); // Store the entity's label, the calculated profit-to-time ratio, and its original index in the results list
+        }).apply(null, currentEntryData); // The 'apply' method passes the elements of 'currentEntryData' as individual arguments to the anonymous function
     }
 
-    // Sort the collected results array. The primary sorting key is efficiency (descending),
-    // and the secondary key is the original input order (ascending) for tie-breaking.
-    finalResults.sort((firstItem, secondItem) => {
-        // If the efficiency values are identical, sort by their original processing index.
-        if (firstItem[1] === secondItem[1]) {
-            return firstItem[2] - secondItem[2];
-        }
-        // Otherwise, sort by efficiency in descending order (higher efficiency first).
-        else {
-            return secondItem[1] - firstItem[1];
+    resultsList.sort(function (itemOne, itemTwo) { // Sort the accumulated results list based on specific criteria
+        if (itemOne[1] === itemTwo[1]) { // If the profit-to-time ratios (second element) of two items are identical
+            return itemOne[2] - itemTwo[2]; // Sort them by their original index (third element) in ascending order
+        } else {
+            return itemTwo[1] - itemOne[1]; // Otherwise, sort them by their profit-to-time ratio in descending order
         }
     });
 
-    // Iterate through the sorted results and output only the label of each item.
-    finalResults.forEach(itemEntry => {
-        console.log(itemEntry[0]); // Display the main identifier for the item.
+    resultsList.forEach(function (resultItem) { // Iterate over each item in the now sorted results list
+        console.log(resultItem[0]); // Print the label (first element) of the current result item to the console
     });
 
-    // Print a hash symbol as a separator, indicating the completion of processing for the current block of items.
-    console.log("#");
+    console.log("#"); // Print a hash symbol as a separator after processing and displaying results for each block
 }

@@ -1,33 +1,52 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedString = sourceData.trim();
+var fileSystem = require('fs');
+var sourceText = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
 
-let greatestCountOfO = 0;
+let greatestOSequence = 0;
 
-for (let currentOffset = 0; currentOffset <= processedString.length; ++currentOffset) {
-    let jBlockLength = 0;
-    let oBlockLength = 0;
-    let iBlockLength = 0;
+let scanIndex = 0;
+while (scanIndex <= sourceText.length) {
+    let currentJCount = 0;
+    let currentOCount = 0;
+    let currentICount = 0;
 
-    let scanOffset = currentOffset;
+    let tempIndex = scanIndex;
 
-    while (scanOffset < processedString.length && processedString.charAt(scanOffset) === 'J') {
-        jBlockLength++;
-        scanOffset++;
+    // Count leading 'J's
+    while (tempIndex < sourceText.length && sourceText[tempIndex] === 'J') {
+        currentJCount++;
+        tempIndex++;
+    }
+    let afterJ = tempIndex;
+
+    // Count 'O's
+    while (tempIndex < sourceText.length && sourceText[tempIndex] === 'O') {
+        currentOCount++;
+        tempIndex++;
+    }
+    let afterO = tempIndex;
+
+    // Count trailing 'I's
+    while (tempIndex < sourceText.length && sourceText[tempIndex] === 'I') {
+        currentICount++;
+        tempIndex++;
+    }
+    let afterI = tempIndex;
+
+    // Apply the condition: J count >= O count AND I count >= O count
+    if (currentJCount >= currentOCount && currentICount >= currentOCount) {
+        if (currentOCount > greatestOSequence) {
+            greatestOSequence = currentOCount;
+        }
     }
 
-    while (scanOffset < processedString.length && processedString.charAt(scanOffset) === 'O') {
-        oBlockLength++;
-        scanOffset++;
-    }
-
-    while (scanOffset < processedString.length && processedString.charAt(scanOffset) === 'I') {
-        iBlockLength++;
-        scanOffset++;
-    }
-
-    if (jBlockLength >= oBlockLength && iBlockLength >= oBlockLength) {
-        greatestCountOfO = Math.max(greatestCountOfO, oBlockLength);
+    // Advance the scan index for the next potential match
+    // If a non-empty sequence was found, continue search from after that sequence.
+    // If only an empty sequence was found, advance by one character to prevent infinite loop.
+    if (afterI > scanIndex) {
+        scanIndex = afterI;
+    } else {
+        scanIndex++;
     }
 }
 
-console.log(greatestCountOfO);
+console.log(greatestOSequence);

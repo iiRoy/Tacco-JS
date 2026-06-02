@@ -1,71 +1,34 @@
-// This script processes numerical input to compute a specific product,
-// following a dynamic programming-like approach based on element frequencies.
+console.log((inputData => {
+  // Parse the input string:
+  // 1. Remove leading/trailing whitespace.
+  // 2. Split into lines.
+  // 3. For each line, split by space and convert parts to integers.
+  // 4. Destructure the result: first element of first line is numElements, second line is inputArray.
+  const [[numElements], inputArray] = inputData.trim().split('\n').map(lineStr => lineStr.split(' ').map(strVal => strVal | 0));
 
-console.log(
-  // The entire processing logic is encapsulated within an Immediately Invoked Function Expression (IIFE).
-  ( ( inputDataString ) => {
+  // Initialize an array to store counts and a modulo constant.
+  // The array 'elementCounts' will have a size of numElements + 1, filled with zeros.
+  const elementCounts = Array(numElements + 1).fill(0);
+  const primeModulo = 1000000007; // A large prime number for modulo operations.
 
-    // Input parsing section:
-    // 1. Trim any leading/trailing whitespace from the input string.
-    // 2. Split the string into an array of lines based on the newline character.
-    // 3. Map each line to an array of numbers:
-    //    a. Split the line by spaces.
-    //    b. Convert each resulting string segment into a numerical value.
-    const [
-        [ countOfElements ],   // Extracts the total number of elements from the first line.
-        elementValueArray      // Extracts the array of element values from the second line.
-    ] = inputDataString
-          .trim()
-          .split( '\n' )
-          .map( ( lineSegment ) =>
-            lineSegment
-              .split( ' ' )
-              .map( ( numberString ) =>
-                Number( numberString ) // Converts string to integer.
-              )
-          );
+  // Set the initial count for the zero index.
+  elementCounts[0] = 3;
 
-    // Initialization section:
-    // 1. Create an array to track the counts/frequencies of values,
-    //    sized appropriately (up to `countOfElements`).
-    // 2. Define the modulo constant, which is a large prime number.
-    const    valueFrequencyTracker = Array( countOfElements + 1 ).fill( 0 ),
-             resultModulo          = 1000000007; // A common prime modulus (10^9 + 7).
+  // Initialize the accumulator for the final product.
+  let finalProduct = 1;
 
-    // Set a base case or initial condition for the tracker.
-    valueFrequencyTracker[ 0 ] = 3;
+  // Iterate through the inputArray to perform calculations.
+  for (let idx = 0; idx < numElements; idx++) {
+    // Update the final product using the current element's count and modulo.
+    finalProduct = (finalProduct * elementCounts[inputArray[idx]]) % primeModulo;
 
-    // Initialize a variable to accumulate the product.
-    let      cumulativeProduct     = 1;
+    // Decrement the count for the current element's value.
+    elementCounts[inputArray[idx]]--;
 
-    // Main calculation loop:
-    // Iterates through each element in the `elementValueArray`.
-    for (
-          let currentElementIndex = 0; // Loop counter starting from zero.
-              currentElementIndex < countOfElements; // Loop until all specified elements are processed.
-              currentElementIndex++ // Increment the index for the next iteration.
-    )
-    {
-        // Get the value of the current element being processed.
-        const currentProcessingValue = elementValueArray[ currentElementIndex ];
+    // Increment the count for the next consecutive value.
+    elementCounts[inputArray[idx] + 1]++;
+  }
 
-        // Update the running product:
-        // Multiply the current product by the frequency of the current value,
-        // then apply the modulo operator to keep the number within bounds.
-        cumulativeProduct =
-            ( cumulativeProduct * valueFrequencyTracker[ currentProcessingValue ] ) % resultModulo;
-
-        // Adjust frequency counts:
-        // Decrement the count for the current value.
-        valueFrequencyTracker[ currentProcessingValue ]--;
-
-        // Increment the count for the next consecutive value.
-        valueFrequencyTracker[ currentProcessingValue + 1 ]++;
-    }
-
-    // Final result formatting:
-    // Convert the computed numerical product into a string before outputting.
-    return String( cumulativeProduct );
-
-  } )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) // Reads the entire content of standard input as a UTF-8 string.
-);
+  // Return the final calculated product as a string.
+  return `${finalProduct}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

@@ -1,61 +1,60 @@
-/*
- * This routine computes a specific numerical aggregation based on provided string data.
- */
-function SolveProblem(rawData)
-{
-    // Separate the incoming string by its delimiter to get individual components.
-    let parsedNumbers = rawData.split(' ');
+// This function processes the provided raw input string.
+function ProcessInput(rawData) {
+    // The input string is expected to contain two space-separated integers.
+    // We split the input to get these two numerical values.
+    const coords = rawData.split(' ');
 
-    // Convert the string components into integer values for processing.
-    let limitValue = parseInt(parsedNumbers[0]);
-    let divisorVal = parseInt(parsedNumbers[1]);
+    // Parse the first number as the upper limit for iteration (N).
+    const upperBound = parseInt(coords[0], 10);
+    // Parse the second number as the divisor value (k).
+    const divisorVal = parseInt(coords[1], 10);
 
-    // Initialize a counter to accumulate the final result.
-    let totalCount = 0;
+    // Initialize a counter to store the number of valid triplets found.
+    let resultCount = 0;
 
-    // Begin the primary iteration loop for the first operand.
-    for (let firstNum = 1; firstNum <= limitValue; firstNum++)
-    {
-        // Determine an initial value for the second operand using the modulo operator.
+    // Begin iterating for the first number in the triplet, 'firstNum' (original 'a').
+    // It ranges from 1 up to and including 'upperBound'.
+    for (let firstNum = 1; firstNum <= upperBound; firstNum++) {
+        // Calculate the initial value for 'secondNum' (original 'b').
+        // This ensures 'secondNum' is within the range [1, divisorVal] if 'firstNum' is a multiple of 'divisorVal',
+        // otherwise it's 'firstNum' modulo 'divisorVal'.
         let secondNum = firstNum % divisorVal;
+        if (secondNum === 0) {
+            secondNum = divisorVal; // If remainder is zero, use 'divisorVal' instead.
+        }
 
-        // If the modulo result is zero, reassign it to the divisor value.
-        if (secondNum == 0)
-            secondNum = divisorVal;
-
-        // Enter a nested loop for the second operand, continuing as long as it's within bounds.
-        while (secondNum <= limitValue)
-        {
-            // Calculate an initial value for the third operand, again using modulo.
+        // Loop for the second number, 'secondNum', incrementing by 'divisorVal' in each step.
+        while (secondNum <= upperBound) {
+            // Calculate the initial value for 'thirdNum' (original 'c'), similar to 'secondNum'.
             let thirdNum = firstNum % divisorVal;
+            if (thirdNum === 0) {
+                thirdNum = divisorVal; // If remainder is zero, use 'divisorVal' instead.
+            }
 
-            // Apply the same zero-check and reassignment for the third operand.
-            if (thirdNum === 0)
-                thirdNum = divisorVal;
-
-            // Commence the innermost loop for the third operand.
-            while (thirdNum <= limitValue)
-            {
-                // Evaluate a compound condition based on the sums of pairs of operands,
-                // checking if they are all perfectly divisible by the divisor value.
-                if ((firstNum + secondNum) % divisorVal === 0 &&
+            // Loop for the third number, 'thirdNum', incrementing by 'divisorVal' in each step.
+            while (thirdNum <= upperBound) {
+                // Check the conditions for the current triplet (firstNum, secondNum, thirdNum).
+                // All three pairwise sums must be perfectly divisible by 'divisorVal'.
+                if (
+                    (firstNum + secondNum) % divisorVal === 0 &&
                     (firstNum + thirdNum) % divisorVal === 0 &&
-                    (thirdNum + secondNum) % divisorVal === 0)
-                {
-                    // If all conditions are met, increment the main result counter.
-                    totalCount++;
+                    (thirdNum + secondNum) % divisorVal === 0
+                ) {
+                    // If all conditions are satisfied, increment the counter.
+                    resultCount++;
                 }
-                // Advance the third operand by the divisor value for the next iteration.
+                // Move to the next possible value for 'thirdNum'.
                 thirdNum += divisorVal;
             }
-            // Advance the second operand by the divisor value for its next iteration.
+            // Move to the next possible value for 'secondNum'.
             secondNum += divisorVal;
         }
     }
 
-    // Display the final computed aggregation to the console.
-    console.log(totalCount);
+    // Output the final calculated count of valid triplets to the console.
+    console.log(resultCount);
 }
 
-// The following line is essential for input handling and should not be altered.
-SolveProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// This line reads input from standard input and passes it to the main processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

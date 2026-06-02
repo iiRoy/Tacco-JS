@@ -1,169 +1,172 @@
-let lineProcessor = require('readline').establishInterface({
-  sourceStream: process.stdin,
-  destinationStream: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let dataStore;
-let receivedLines = [];
+var dataProcessor;
+var inputLines = [];
 
-lineProcessor.addEventListener('dataReceived',  function(currentLine)  {
-  receivedLines.append(currentLine);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-lineProcessor.addEventListener('streamClosed', function() {
-  dataStore = initializeProcessor(receivedLines);
-
-  logDebugMessage("--- application_start ---");
-  const startTime = new Date();
-
-  ExecuteMainLogic();
-
-  const elapsedTime = new Date() - startTime;
-  logDebugMessage("--- application_end ---");
-  logDebugMessage(`duration : ${elapsedTime} ms`);
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+  logDebugMessage("--- Program Start ---");
+  var startTime = new Date();
+  executeMainLogic();
+  var elapsedTime = new Date() - startTime;
+  logDebugMessage("--- Program End ---");
+  logDebugMessage("Execution Time: " + (elapsedTime) + "ms");
 });
 
-
-function retrieveInteger() { return transformData(fetchNextItem(), 1); }
-function retrieveStringArray() { return transformData(fetchNextItem(), 2); }
-function retrieveIntegerArray() { return transformData(fetchNextItem(), 4); }
-function retrieveCharacterArray() { return transformData(fetchNextItem(), 6); }
-
-function fetchNextItem() { return dataStore.fetchNextItem(); }
-function hasMoreItems() { return dataStore.hasMoreItems(); }
-
-
-function initializeProcessor(sourceInput) {
-  const processorObject = {
-    sourceList: sourceInput,
-    currentIndex: 0,
-    maximumItems: sourceInput.length,
-
-    hasMoreItems: function() {
-      return (this.currentIndex < this.maximumItems);
-    },
-
-    fetchNextItem: function() {
-      if (!this.hasMoreItems()) {
-        throw new Error("Input Boundary Exceeded: No more data available.");
-      }
-      let fetchedEntry = this.sourceList[this.currentIndex];
-      this.currentIndex++;
-      return fetchedEntry;
-    }
-  };
-  return processorObject;
+function getNextInteger(){
+  return convertInput(fetchNextLine(), 1);
 }
 
+function getNextStringArray(){
+  return convertInput(fetchNextLine(), 2);
+}
 
-function displayResult(outputValue) {
+function getNextIntegerArray(){
+  return convertInput(fetchNextLine(), 4);
+}
+
+function getNextCharacterArray(){
+  return convertInput(fetchNextLine(), 6);
+}
+
+function fetchNextLine(){
+  return dataProcessor.fetchNextLine();
+}
+
+function hasMoreLines(){
+  return dataProcessor.hasMoreLines();
+}
+
+function initializeInputHandler(inputData){
+  var handlerObject = {
+    lineList : inputData,
+    currentLineIndex : 0,
+    totalLines : inputData.length,
+
+    hasMoreLines : function(){
+      return (this.currentLineIndex < this.totalLines);
+    },
+
+    fetchNextLine : function(){
+      if(!this.hasMoreLines()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+      } else {
+        var currentInputLine = this.lineList[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentInputLine;
+      }
+    }
+  };
+  return handlerObject;
+}
+
+function printResult(outputValue){
   console.log(outputValue);
 }
 
-function logDebugMessage(messageText) {
-  console.error("debug_info: " + require("util").inspect(messageText, false, null));
+function logDebugMessage(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-// Data transformation utility.
-// Returns input as-is for unknown/error cases.
+// This function handles various input conversions.
+// Parameter `inputValue`: The input string or array to convert.
+// Parameter `conversionType`: Specifies the type of conversion.
 // 1: Convert to integer.
 // 2: Split by space into string array.
-// 4: Split by space into number array.
+// 4: Split by space into integer array.
 // 6: Split by character into string array.
-// 7: Split by character into number array.
+// 7: Split by character into integer array.
 // 8: Join array elements with space.
 // 9: Join array elements with newline.
 // 0: Join array elements without separator.
-function transformData(inputData, conversionType) {
+// Default: Return input as is.
+function convertInput(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputData);
-      case 2:
-        return inputData.divideByDelimiter(" ");
-      case 4:
-        return inputData.divideByDelimiter(" ").transformElements(Number);
-      case 6:
-        return inputData.divideByDelimiter("");
-      case 7:
-        return inputData.divideByDelimiter("").transformElements(Number);
-      case 8:
-        return inputData.combineElements(" ");
-      case 9:
-        return inputData.combineElements("\n");
-      case 0:
-        return inputData.combineElements("");
-      default:
-        return inputData;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (errorOccurred) {
-    return inputData;
+  } catch(e) {
+    return inputValue;
   }
 }
 
-function ExecuteMainLogic() {
-  const totalElements = retrieveInteger();
-  let numericalValues = new Array(totalElements);
-  let finalSum = 0;
-  let processingQueue = [];
+function executeMainLogic(){
+  var elementCount = getNextInteger();
+  var numberSequence = new Array(elementCount);
+  var totalDifference = 0;
+  var dequeStructure = [];
 
-  for (let idx = 0; idx < totalElements; idx++) {
-    numericalValues[idx] = retrieveInteger();
+  for(var idx = 0; idx < elementCount; idx++){
+    numberSequence[idx] = getNextInteger();
   }
 
-  numericalValues.arrangeAscending(function(valA, valB) {
+  numberSequence.sort(function(valA, valB){
     return valA - valB;
   });
 
-  processingQueue.append(numericalValues.removeFirst());
+  dequeStructure.push(numberSequence.shift());
 
-  while (numericalValues.length > 0) {
-    let frontElement = processingQueue[0];
-    let backElement = processingQueue[processingQueue.length - 1];
-    let incomingFront = numericalValues[0];
-    let incomingBack = numericalValues[numericalValues.length - 1];
+  while(numberSequence.length > 0){
+    var frontElement = dequeStructure[0];
+    var backElement = dequeStructure[dequeStructure.length - 1];
+    var incomingFront = numberSequence[0];
+    var incomingBack = numberSequence[numberSequence.length - 1];
 
-    if (frontElement === backElement && incomingFront === incomingBack) {
-      processingQueue.append(numericalValues.removeLast());
-    } else if (frontElement === backElement) {
-      if (Math.abs(frontElement - incomingFront) >= Math.abs(frontElement - incomingBack)) {
-        processingQueue.append(numericalValues.removeFirst());
+    if(frontElement === backElement && incomingFront === incomingBack){
+      dequeStructure.push(numberSequence.pop());
+    } else if(frontElement === backElement){
+      if(Math.abs(frontElement - incomingFront) >= Math.abs(frontElement - incomingBack)){
+        dequeStructure.push(numberSequence.shift());
       } else {
-        processingQueue.append(numericalValues.removeLast());
+        dequeStructure.push(numberSequence.pop());
       }
-    } else if (incomingFront === incomingBack) {
-      if (Math.abs(frontElement - incomingFront) >= Math.abs(backElement - incomingFront)) {
-        processingQueue.addFirst(numericalValues.removeFirst());
+    } else if(incomingFront === incomingBack){
+      if(Math.abs(frontElement - incomingFront) >= Math.abs(backElement - incomingFront)){
+        dequeStructure.unshift(numberSequence.shift());
       } else {
-        processingQueue.append(numericalValues.removeFirst());
+        dequeStructure.push(numberSequence.shift());
       }
     } else {
-      let diffA = Math.abs(incomingFront - frontElement);
-      let diffB = Math.abs(incomingFront - backElement);
-      let diffC = Math.abs(incomingBack - frontElement);
-      let diffD = Math.abs(incomingBack - backElement);
+      var diff1 = Math.abs(incomingFront - frontElement);
+      var diff2 = Math.abs(incomingFront - backElement);
+      var diff3 = Math.abs(incomingBack - frontElement);
+      var diff4 = Math.abs(incomingBack - backElement);
 
-      if (diffA >= diffB && diffA >= diffC && diffA >= diffD) {
-        processingQueue.addFirst(numericalValues.removeLast());
+      if(diff1 >= diff2 && diff1 >= diff3 && diff1 >= diff4){
+        dequeStructure.unshift(numberSequence.pop());
         continue;
       }
-      if (diffB >= diffA && diffB >= diffC && diffB >= diffD) {
-        processingQueue.append(numericalValues.removeFirst());
+      if(diff2 >= diff1 && diff2 >= diff3 && diff2 >= diff4){
+        dequeStructure.push(numberSequence.shift());
         continue;
       }
-      if (diffC >= diffA && diffC >= diffB && diffC >= diffD) {
-        processingQueue.addFirst(numericalValues.removeLast());
+      if(diff3 >= diff1 && diff3 >= diff2 && diff3 >= diff4){
+        dequeStructure.unshift(numberSequence.pop());
         continue;
       }
-      if (diffD >= diffA && diffD >= diffB && diffD >= diffC) {
-        processingQueue.append(numericalValues.removeLast());
+      if(diff4 >= diff1 && diff4 >= diff2 && diff4 >= diff3){
+        dequeStructure.push(numberSequence.pop());
       }
     }
   }
 
-  for (let idx = 1; idx < totalElements; idx++) {
-    finalSum += Math.abs(processingQueue[idx - 1] - processingQueue[idx]);
+  for(var idx = 1; idx < elementCount; idx++){
+    totalDifference += Math.abs(dequeStructure[idx - 1] - dequeStructure[idx]);
   }
-
-  displayResult(finalSum);
+  printResult(totalDifference);
 }

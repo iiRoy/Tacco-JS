@@ -1,80 +1,93 @@
-function TokenStreamProcessor(textContent) {
-    const extractedUnits = textContent.match(/\S+/g) || [];
-    let currentPositionIndex = 0;
+class InputParser {
+    #tokenSequence;
+    #currentPosition = 0;
 
-    const retrieveUnit = () => {
-        if (currentPositionIndex < extractedUnits.length) {
-            return extractedUnits[currentPositionIndex++];
+    constructor(sourceContent) {
+        const normalizedContent = sourceContent.replace(/[\n\t]+/g, " ");
+        this.#tokenSequence = normalizedContent.split(" ");
+    }
+
+    #retrieveNextElement() {
+        if (this.#currentPosition < this.#tokenSequence.length) {
+            return this.#tokenSequence[this.#currentPosition++];
         }
         return null;
-    };
+    }
 
-    return {
-        grabNext: () => retrieveUnit(),
-        grabNumericValue: () => {
-            const val = retrieveUnit();
-            return val !== null ? parseInt(val, 10) : null;
-        },
-        grabFloatingPoint: () => {
-            const val = retrieveUnit();
-            return val !== null ? parseFloat(val) : null;
-        },
-        grabByteRepresentation: () => {
-            retrieveUnit();
-            return null;
-        }
-    };
+    obtainString() {
+        return this.#retrieveNextElement();
+    }
+
+    obtainInteger() {
+        const element = this.#retrieveNextElement();
+        return element !== null ? parseInt(element, 10) : null;
+    }
+
+    obtainFloat() {
+        const element = this.#retrieveNextElement();
+        return element !== null ? parseFloat(element) : null;
+    }
+
+    obtainByteRepresentation() {
+        const element = this.#retrieveNextElement();
+        return element !== null ? new Int8Array(element.length) : null;
+    }
 }
 
-function SequenceHandler(dataSupplier) {
-    const totalNodes = dataSupplier.grabNumericValue();
-    let stepsToTake = dataSupplier.grabNumericValue();
+class SequenceProcessor {
+    #transitionGraph;
+    #startNode = 1;
+    #nodeCount;
 
-    const transitionMappings = new Map();
-    for (let k = 1; k <= totalNodes; ++k) {
-        transitionMappings.set(k, dataSupplier.grabNumericValue());
-    }
-
-    let currentNodeState = 1;
-    let visitedChronology = new Map();
-    let simulationIteration = 0;
-    
-    let cycleDetected = false;
-    let entryStepIndex = -1;
-    let cycleSpan = -1;
-
-    while (simulationIteration < totalNodes) {
-        currentNodeState = transitionMappings.get(currentNodeState);
-        if (visitedChronology.has(currentNodeState)) {
-            cycleDetected = true;
-            entryStepIndex = visitedChronology.get(currentNodeState);
-            cycleSpan = simulationIteration - entryStepIndex;
-            break;
+    constructor(config) {
+        this.#nodeCount = config.nodeCount;
+        this.#transitionGraph = new Map();
+        for (let i = 0; i < this.#nodeCount; i++) {
+            this.#transitionGraph.set(i + 1, config.dataParser.obtainInteger());
         }
-        visitedChronology.set(currentNodeState, simulationIteration);
-        simulationIteration++;
     }
 
-    if (cycleDetected) {
-        const preCycleSegmentLength = entryStepIndex - 1; 
-        stepsToTake = ((stepsToTake - preCycleSegmentLength) % cycleSpan) + preCycleSegmentLength;
-    }
+    processSteps(totalOperations) {
+        let currentNode = this.#startNode;
+        const pathHistory = new Map();
 
-    let ultimateOutcome = 1;
+        let currentIteration = 0;
+        let cycleEntryIteration = -1;
+        let cyclePeriod = 0;
 
-    const traversePathRecursive = (startPoint, remainingHops) => {
-        if (remainingHops === 0) {
-            return startPoint;
+        for (let i = 0; i < this.#nodeCount; i++) {
+            currentNode = this.#transitionGraph.get(currentNode);
+            if (pathHistory.has(currentNode)) {
+                cycleEntryIteration = pathHistory.get(currentNode);
+                cyclePeriod = i - cycleEntryIteration;
+                currentIteration = i;
+                break;
+            }
+            pathHistory.set(currentNode, i);
+            currentIteration = i;
         }
-        const nextPoint = transitionMappings.get(startPoint);
-        return traversePathRecursive(nextPoint, remainingHops - 1);
-    };
 
-    ultimateOutcome = traversePathRecursive(1, stepsToTake);
+        let adjustedOperations = totalOperations;
 
-    console.log(ultimateOutcome);
+        if (currentIteration < this.#nodeCount - 1) {
+            const preCycleLength = cycleEntryIteration - 1;
+            adjustedOperations = ((totalOperations - preCycleLength) % cyclePeriod) + preCycleLength;
+        }
+
+        let finalNode = this.#startNode;
+        finalNode = Array.from({ length: adjustedOperations }).reduce((accumulator, _, __) => {
+            return this.#transitionGraph.get(accumulator);
+        }, this.#startNode);
+
+        console.log(finalNode);
+    }
 }
 
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataInputMechanism = TokenStreamProcessor(acquiredData);
-SequenceHandler(dataInputMechanism);
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataParserInstance = new InputParser(fileContent);
+
+const N_value = dataParserInstance.obtainInteger();
+const K_value = dataParserInstance.obtainInteger();
+
+const sequenceHandler = new SequenceProcessor({ nodeCount: N_value, dataParser: dataParserInstance });
+sequenceHandler.processSteps(K_value);

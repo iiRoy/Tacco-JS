@@ -1,45 +1,50 @@
-"use strict"; // Enforce strict JavaScript parsing and error handling.
+"use strict";
 
 /**
- * Analyzes a given text block containing financial transaction records
- * and computes the cumulative worth based on specified conversion rates.
- * @param {string} sourceText - The entire raw input as a single string.
+ * This function processes a given input string to calculate a total monetary value.
+ * It reads the number of entries from the first line, then iterates through
+ * subsequent lines, parsing amounts and currency types.
+ * Bitcoin (BTC) amounts are converted using a fixed exchange rate.
+ *
+ * @param {string} rawData - The complete input string, typically read from standard input,
+ *                           where lines are separated by newline characters.
  */
-function ProcessFinancialData( sourceText )
-{
-  // Divide the input string into an array of individual lines or records.
-  let dataRows = sourceText . split ( '\n' );
+function ProcessInput(rawData) {
+    // Divide the entire input string into an array of individual lines.
+    let inputLines = rawData.split("\n");
 
-  // The very first line specifies the total count of entries to process.
-  // Convert this string representation to an integer using a bitwise OR operation.
-  let itemCount = dataRows[0] | 0;
+    // The very first line of the input specifies the total count of data entries
+    // that follow. We convert this string to a numerical value.
+    let numEntries = inputLines[0] - 0;
 
-  // Initialize a variable to store the running total of all processed values.
-  let aggregateValue = 0.0;
+    // Initialize a variable to store the cumulative sum of all processed values.
+    // This will hold our final result.
+    let totalValue = 0;
 
+    // Begin a loop that iterates through each data entry.
+    // The loop starts from index 1 because index 0 contained the entry count.
+    // It continues as long as the current index is less than or equal to the total number of entries.
+    for (let idx = 1; idx <= numEntries; idx++) {
+        // For each line representing an entry, split it by any whitespace character.
+        // This separates the numerical amount from its associated currency type.
+        let entryParts = inputLines[idx].split(/\s/);
 
-  // Iterate through each data record, starting from the second line (index 1)
-  // up to and including the total number of items indicated by 'itemCount'.
-  for ( let currentIdx = 1; currentIdx <= itemCount; currentIdx++ )
-  {
-    // For the current record, split it into distinct components using space as a delimiter.
-    let lineComponents = dataRows[ currentIdx ] . split ( ' ' );
+        // Extract the numerical amount from the first part of the split line
+        // and convert it into a number.
+        let amount = entryParts[0] - 0;
 
-    // Parse the first component of the line as a floating-point number, representing the quantity.
-    let numericValue = parseFloat( lineComponents[0] );
+        // Conditionally add the amount to our running total.
+        // If the currency type (the second part of the split line) is 'BTC',
+        // we multiply the amount by a predefined conversion rate (380,000.0).
+        // Otherwise, if it's any other currency, we add the amount as is.
+        totalValue += (entryParts[1] == 'BTC') ? amount * 380000.0 : amount;
+    }
 
-    // Evaluate the second component to determine the asset type.
-    // If it matches 'CRYPTO', apply a specific conversion multiplier.
-    // Otherwise, simply use the numeric value as it is.
-    aggregateValue += ( lineComponents[1] === 'CRYPTO' )
-      ? numericValue * 3.8e5
-      : numericValue;
-  }
-
-  // Display the final calculated aggregate value to the standard output console.
-  console.log( aggregateValue );
+    // After processing all entries, print the final calculated total value to the console.
+    console.log(totalValue);
 }
 
-// Initiate the data processing pipeline by reading content from standard input.
-// This operation uses Node.js's file system module to synchronously fetch the input.
-ProcessFinancialData( require( 'node:fs' ) . readFileSync( '/dev/stdin', 'utf8' ) );
+// The program execution starts here.
+// It reads the entire content of standard input as a UTF-8 encoded string
+// and then passes this string to the 'ProcessInput' function for processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,58 +1,59 @@
-// This program is designed to analyze and determine the intersection length of multiple numerical ranges.
-function    ProcessIntervals  (   incomingFeed    )   {
-        // First, segment the entire input string into individual lines.
-    const   parsedLines     =   incomingFeed.split(  "\n"  )   ;
+function ProcessInput(rawData) {
+  // The raw input string is split into an array of individual lines.
+  var lines = rawData.split("\n");
 
-        // The initial line contains fundamental configuration parameters.
-    let     firstLineData   =   parsedLines[   0   ].split(  " "  )   ;
-    const   firstNumericValue   =   parseInt(   firstLineData[   0   ]   )   ;   // Represents a primary data point.
-    const   totalRangeCount     =   parseInt(   firstLineData[   1   ]   )   ;   // Defines the number of interval pairs to process.
+  // The first line contains two space-separated values: N and M.
+  var parts = lines[0].split(" ");
+  var numItems = parts[0]; // This variable corresponds to 'N' in the problem description.
+  var numRanges = parts[1]; // This variable corresponds to 'M', the total number of ranges.
 
-        // Initialize dynamic arrays to store the starting and ending points of each range.
-    const   startPoints     =   new Array(  totalRangeCount  )   ;
-    const   endPoints       =   new Array(  totalRangeCount  )   ;
+  // Two arrays are initialized to store the left and right bounds of each range.
+  var leftBounds = Array(numRanges); // 'L' in the original code.
+  var rightBounds = Array(numRanges); // 'R' in the original code.
 
-        // Iterate through the subsequent lines to populate the range arrays.
-    for     (   let lineIterator    =   1   ;   lineIterator    <=  totalRangeCount ;   lineIterator++  )   {
-        let     currentRangeTokens  =   parsedLines[   lineIterator   ].split(  " "  )   ;
-        startPoints[   lineIterator - 1   ]   =   parseInt(   currentRangeTokens[   0   ]   )   ;   // Convert string to integer for starting boundary.
-        endPoints[     lineIterator - 1   ]   =   parseInt(   currentRangeTokens[   1   ]   )   ;   // Convert string to integer for ending boundary.
+  // A loop iterates from the second line of input (index 1) up to the M-th line.
+  // Each line represents a range with a left and right bound.
+  for (var idx = 1; idx <= numRanges; idx++) {
+    parts = lines[idx].split(" "); // The current line is split to get the two bounds.
+    leftBounds[idx - 1] = parts[0]; // The first part is stored as a left bound.
+    rightBounds[idx - 1] = parts[1]; // The second part is stored as a right bound.
+  }
+
+  // Variables are initialized to find the intersection of all ranges.
+  // 'currentMaxLeft' will store the largest of all left bounds.
+  // 'currentMinRight' will store the smallest of all right bounds.
+  var currentMaxLeft = leftBounds[0]; // Initialize with the first range's left bound.
+  var currentMinRight = rightBounds[0]; // Initialize with the first range's right bound.
+
+  // The 'leftBounds' array is iterated to determine the overall maximum left boundary.
+  leftBounds.forEach((boundVal, arrIndex) => {
+    if (boundVal > currentMaxLeft) {
+      currentMaxLeft = boundVal; // Update if a larger left bound is encountered.
     }
+  });
 
-        // Establish initial values for tracking the overall tightest interval.
-    let     overallMaximumStart     =   startPoints[   0   ]   ;
-    let     overallMinimumEnd       =   endPoints[     0   ]   ;
-
-        // Traverse the collection of start points to identify the highest starting boundary.
-    startPoints.forEach(  (  currentStartVal  ,  positionIndex  )   =>  {
-        if      (   currentStartVal     >   overallMaximumStart     )   {
-            overallMaximumStart     =   currentStartVal     ;
-        }
-    }   )   ;
-
-        // Examine the collection of end points to determine the lowest ending boundary.
-    endPoints.forEach(  (  currentEndVal  ,  positionIndex  )   =>  {
-        if      (   currentEndVal   <   overallMinimumEnd   )   {
-            overallMinimumEnd   =   currentEndVal   ;
-        }
-    }   )   ;
-
-        // Compute the length of the intersection of all ranges.
-    const   calculatedOverlap       =   overallMinimumEnd   -   overallMaximumStart     +   1   ;
-
-        // Output the calculated overlap length. If no positive overlap exists, print zero.
-    if      (   calculatedOverlap   >   0   )   {
-        console.log   (   calculatedOverlap   )   ;
-    }   else    {
-        console.log   (   0   )   ;
+  // The 'rightBounds' array is iterated to determine the overall minimum right boundary.
+  rightBounds.forEach((boundVal, arrIndex) => {
+    if (boundVal < currentMinRight) {
+      currentMinRight = boundVal; // Update if a smaller right bound is encountered.
     }
+  });
 
+  // The length of the intersection of all ranges is calculated.
+  // If 'currentMinRight' is less than 'currentMaxLeft', there is no valid intersection,
+  // and this calculation will result in a non-positive number.
+  var calculatedLength = currentMinRight - currentMaxLeft + 1;
+
+  // The result is printed to the console.
+  // If 'calculatedLength' is a positive number (truthy in JavaScript), it is printed.
+  // Otherwise (if it's zero or negative, which are falsy), 0 is printed.
+  if (calculatedLength) {
+    console.log(calculatedLength);
+  } else {
+    console.log(0);
+  }
 }
 
-// Execute the interval processing function by reading input from the standard input stream.
-ProcessIntervals(
-    require(  "fs"  ).readFileSync(
-        "/dev/stdin",
-        "utf8"
-    )
-);
+// This statement reads the entire content of standard input synchronously
+// and then passes it as a string to the 'ProcessInput' function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

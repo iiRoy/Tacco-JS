@@ -1,24 +1,28 @@
-(() => {
-    let accumulatedString = '';
-    const procModule = require('process');
-    const standardInputSource = procModule.stdin;
-    const standardOutputSink = procModule.stdout;
+(async () => {
+    let receivedContent = '';
 
-    const judgeValue = (numeric_expression) => {
-        const outcomes = ['No', 'Yes'];
-        const conditionMet = (numeric_expression >= 30);
-        return outcomes[Number(conditionMet)];
-    };
+    await new Promise((resolveStream, rejectStream) => {
+        process.stdin.on('data', (dataSegment) => {
+            receivedContent += dataSegment.toString();
+        });
 
-    standardInputSource.on('data', (incomingData) => {
-        accumulatedString += incomingData.toString();
+        process.stdin.on('end', () => {
+            resolveStream();
+        });
+
+        process.stdin.on('error', (issue) => {
+            rejectStream(issue);
+        });
+    }).catch((err) => {
+        throw err;
     });
 
-    standardInputSource.on('end', () => {
-        const processedNumber = Number(accumulatedString);
-        const finalVerdict = judgeValue(processedNumber);
-        standardOutputSink.write(finalVerdict + '\n');
-    });
+    const parsedNumericValue = Number(receivedContent);
 
-    standardInputSource.resume();
+    const resultMapping = new Map([
+        [true, 'Yes'],
+        [false, 'No']
+    ]);
+
+    console.log(resultMapping.get(parsedNumericValue >= 30));
 })();

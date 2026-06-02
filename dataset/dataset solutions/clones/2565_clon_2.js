@@ -1,95 +1,86 @@
-var lineReader = require('readline').createInterface({
+let inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-var dataHandler;
-var receivedLines = [];
+let dataProcessor;
+let inputLines = [];
 
-lineReader.on('line', function(lineData) {
-  receivedLines.push(lineData);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-lineReader.on('close', function() {
-  dataHandler = prepareInput(receivedLines);
-  console.error("\n"); 
-  var startTime = Date.now();
-  ExecuteLogic();
-  var elapsedTime = Date.now() - startTime;
-  logDebugMessage("execution_time : " + elapsedTime + "ms");
-  logDebugMessage("memory_usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+inputReader.on('close', function(){
+  dataProcessor = initializeProcessor(inputLines);
+  console.error("\n"); // Output a newline to stderr for formatting.
+  let startTime = Date.now();
+  ExecuteAlgorithm();
+  let duration = Date.now() - startTime;
+  logDebug("execution time: " + duration + "ms");
+  logDebug("memory usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function deepCopy(originalObject) {
+// Utility function to create a deep copy of an object.
+function duplicateObject(originalObject) {
   return JSON.parse(JSON.stringify(originalObject));
 }
 
-function getNextInteger() {
-  return processConversion(retrieveNext(), 1);
-}
+// Functions to retrieve and convert input data.
+function retrieveInteger() { return convertInput(getNextItem(), 1); }
+function retrieveStringArray() { return convertInput(getNextItem(), 2); }
+function retrieveIntegerArray() { return convertInput(getNextItem(), 4); }
+function retrieveCharacterArray() { return convertInput(getNextItem(), 6); }
 
-function getNextStringArray() {
-  return processConversion(retrieveNext(), 2);
-}
+// Core input navigation functions.
+function getNextItem() { return dataProcessor.getNext(); }
+function hasMoreItems() { return dataProcessor.hasMoreItems(); }
 
-function getNextIntegerArray() {
-  return processConversion(retrieveNext(), 4);
-}
-
-function getNextCharList() {
-  return processConversion(retrieveNext(), 6);
-}
-
-function retrieveNext() {
-  return dataHandler.retrieveNext();
-}
-
-function hasRemaining() {
-  return dataHandler.hasRemaining();
-}
-
-function prepareInput(inputLines) {
+// Initializes the input data processing object.
+function initializeProcessor(sourceData) {
   return {
-    sourceList: inputLines,
-    currentPointer: 0,
-    listBoundary: inputLines.length,
-    hasRemaining: function() {
-      return (this.currentPointer < this.listBoundary);
+    sourceList: sourceData,
+    currentPosition: 0,
+    maximumLength: sourceData.length,
+    hasMoreItems: function() {
+      return (this.currentPosition < this.maximumLength);
     },
-    retrieveNext: function() {
-      if (this.hasRemaining()) {
-        return this.sourceList[this.currentPointer++];
+    getNext: function() {
+      if (this.hasMoreItems()) {
+        return this.sourceList[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceededException: No more data available for processing";
+        throw new Error("InputBoundaryExceeded: No further input available.");
       }
     }
   };
 }
 
-function printOutput(messageContent) {
-  console.log(messageContent);
+// Displays a value to standard output.
+function displayOutput(valueToPrint) {
+  console.log(valueToPrint);
 }
 
-function logDebugMessage(messageContent) {
-  console.error("diagnostic_info:" + require("util").inspect(messageContent, false, null));
+// Logs debug information to standard error.
+function logDebug(debugMessage) {
+  console.error("DEBUG_INFO: " + require("util").inspect(debugMessage, false, null));
 }
 
-// The 'conversionType' parameter dictates the transformation applied to the input value.
-// Possible conversion types:
-// 1: Parse string to an integer.
-// 2: Split string by spaces into an array of strings.
-// 4: Split string by spaces and convert parts to numbers.
-// 6: Split string into an array of individual characters.
-// 7: Split string into characters and convert them to numbers (if applicable).
-// 8: Join array elements with spaces.
-// 9: Join array elements with newlines.
-// 0: Join array elements without any separator.
-// Default: Return the input value unchanged.
-function processConversion(inputValue, conversionType) {
+/*
+ * This function handles various input conversions based on the 'conversionType' parameter.
+ * - Default/Unknown: Returns the input as is.
+ * - 1: Parses the input string to an integer.
+ * - 2: Splits the input string by spaces into an array of strings.
+ * - 4: Splits by spaces and converts each part to a number.
+ * - 6: Splits the input string into an array of individual characters.
+ * - 7: Splits by characters and converts each to a number.
+ * - 8: Joins an array of strings with spaces.
+ * - 9: Joins an array of strings with newlines.
+ * - 0: Joins an array of strings without any separator.
+ */
+function convertInput(inputValue, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(inputValue);
+        return parseInt(inputValue, 10);
       case 2:
         return inputValue.split(" ");
       case 4:
@@ -107,55 +98,67 @@ function processConversion(inputValue, conversionType) {
       default:
         return inputValue;
     }
-  } catch (errorOccurred) {
+  } catch (error) {
+    // If conversion fails, return the original input value.
     return inputValue;
   }
 }
 
-// This section contains the core algorithm logic.
-function ExecuteLogic() {
-  var entryCount = getNextInteger(); 
-  var charChain = getNextCharList(); 
-  var maximumOverlap = 0; 
-  
-  // Continue processing as long as the character sequence is not empty.
-  while (charChain.length > 0) {
-    // Initialize an array to store Z-algorithm values for the current sequence.
-    var patternMatches = new Array(charChain.length);
-    patternMatches[0] = charChain.length; 
-    
-    var currentPos = 1; 
-    var matchLen = 0; 
-    
-    // Compute Z-values for the string.
-    while (currentPos < charChain.length) {
-      while ((currentPos + matchLen) < charChain.length && (charChain[matchLen] === charChain[currentPos + matchLen])) {
-        matchLen++;
+// Main algorithm execution function.
+function ExecuteAlgorithm() {
+  const inputCount = retrieveInteger(); // N
+  let charSequence = retrieveCharacterArray(); // s
+  let resultValue = 0; // output
+
+  // Loop as long as the character sequence has elements.
+  while (charSequence.length > 0) {
+    // Initialize Z-array for the current sequence.
+    const zArray = new Array(charSequence.length);
+    zArray[0] = charSequence.length;
+
+    let primaryIndex = 1; // i
+    let secondaryIndex = 0; // j
+
+    // Compute Z-array values.
+    while (primaryIndex < charSequence.length) {
+      // Expand the match.
+      while ((primaryIndex + secondaryIndex) < charSequence.length &&
+             (charSequence[secondaryIndex] === charSequence[primaryIndex + secondaryIndex])) {
+        secondaryIndex++;
       }
-      patternMatches[currentPos] = matchLen; 
-      
-      if (matchLen === 0) {
-        currentPos++; 
-        continue; 
+      zArray[primaryIndex] = secondaryIndex;
+
+      // If no match, move to the next primary index.
+      if (secondaryIndex === 0) {
+        primaryIndex++;
+        continue;
       }
-      
-      var offsetVal = 1; 
-      while ((currentPos + offsetVal) < charChain.length && (offsetVal + patternMatches[offsetVal] < matchLen)) {
-        patternMatches[currentPos + offsetVal] = patternMatches[offsetVal];
-        offsetVal++;
+
+      let tertiaryIndex = 1; // k
+      // Use previously computed Z-values to optimize.
+      while ((primaryIndex + tertiaryIndex) < charSequence.length &&
+             (tertiaryIndex + zArray[tertiaryIndex] < secondaryIndex)) {
+        zArray[primaryIndex + tertiaryIndex] = zArray[tertiaryIndex];
+        tertiaryIndex++;
       }
-      currentPos += offsetVal; 
-      matchLen -= offsetVal; 
+      primaryIndex += tertiaryIndex;
+      secondaryIndex -= tertiaryIndex;
     }
-    
-    // Scan the computed Z-array to find the largest valid overlap.
-    for (var reverseIdx = charChain.length - 1; reverseIdx >= 1; reverseIdx--) {
-      if (patternMatches[reverseIdx] <= charChain.length / 2) {
-        maximumOverlap = Math.max(maximumOverlap, patternMatches[reverseIdx]);
+
+    // Find the maximum Z-value that satisfies the condition.
+    for (let traversalIndex = charSequence.length - 1; traversalIndex >= 1; traversalIndex--) { // m
+      if (zArray[traversalIndex] <= charSequence.length / 2) {
+        resultValue = Math.max(resultValue, zArray[traversalIndex]);
       }
     }
-    charChain.shift(); // Remove the first element to process the suffix in the next iteration.
+
+    // Optional debug logging (commented out in original, so keep it commented or remove).
+    // logDebug(zArray);
+
+    // Remove the first character for the next iteration.
+    charSequence.shift();
   }
-  
-  printOutput(maximumOverlap); 
+
+  // Display the final computed result.
+  displayOutput(resultValue);
 }

@@ -1,111 +1,122 @@
-"use strict" // Enforce stricter parsing and error handling in the code.
+"use strict";
 
-// Function to initialize an input stream handler.
-const makeInputReader = () => {
-  // Read all input from standard input, decode as UTF-8, trim whitespace, and split into lines.
-  const linesData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+// This module provides utilities for reading input from stdin.
+const makeReader = () => {
+    // Read all input from standard input, decode as UTF-8, trim whitespace, and split into lines.
+    const dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-  // Create an object to manage reading from the input lines.
-  const dataIterator = {
-    contentArray: linesData, // Stores all input lines.
-    currentPosition: 0,      // Current index in the contentArray.
-    totalElements: linesData.length, // Total number of lines.
+    // Create an object to manage input line access.
+    const readerInstance = {
+        "lineStorage": dataLines, // Stores all input lines.
+        "currentPosition": 0,     // Current index for reading.
+        "totalLines": dataLines.length, // Total number of lines available.
 
-    // Checks if there are more lines to read.
-    hasMore: function() {
-      return this.currentPosition < this.totalElements;
-    },
+        // Method to check if there are more lines to read.
+        "hasMore": function() {
+            return this.currentPosition < this.totalLines;
+        },
 
-    // Retrieves the next line from the input.
-    retrieveNext: function() {
-      if (!this.hasMore()) {
-        throw "ArrayIndexOutOfBoundsException"; // Indicate end of input.
-      } else {
-        return this.contentArray[this.currentPosition++]; // Return current line and advance position.
-      }
-    }
-  };
-  return dataIterator; // Return the configured input handler.
+        // Method to retrieve the next line. Throws an error if no more lines.
+        "retrieveNext": function() {
+            if (!this.hasMore()) {
+                throw "ArrayIndexOutOfBoundsException"; // Indicate out-of-bounds access.
+            } else {
+                // Return the current line and increment the position.
+                return this.lineStorage[this.currentPosition++];
+            }
+        }
+    };
+    return readerInstance; // Return the configured reader object.
 };
 
-// Instantiate the input stream processor.
-const inputStream = makeInputReader();
+// Initialize the global input reader.
+const inputReader = makeReader();
 
-// Helper functions for convenient input parsing.
-const fetchNextString = () => inputStream.retrieveNext(); // Gets the next line as a string.
-const parseNextInteger = () => parseInt(inputStream.retrieveNext()); // Parses the next line as an integer.
-const fetchNextStringArray = () => inputStream.retrieveNext().split(" "); // Gets the next line and splits it into an array of strings.
-const parseNextIntegerArray = () => inputStream.retrieveNext().split(" ").map(item => parseInt(item)); // Gets the next line, splits, and maps to integers.
-const fetchNextCharacterArray = () => inputStream.retrieveNext().split(""); // Gets the next line and splits into an array of characters.
-const checkIfMoreInput = () => inputStream.hasMore(); // Checks if more input is available.
+// Helper function to fetch the next line as a string.
+const fetchNextLine = () => inputReader.retrieveNext();
 
-// Custom output function, using console.log.
-const outputToConsole = (...valuesToLog) => console.log(...valuesToLog);
+// Helper function to fetch the next line and parse it as an integer.
+const fetchNextInteger = () => parseInt(inputReader.retrieveNext());
 
-// The primary execution logic of the program.
-const executeMainLogic = () => {
-  // Read the initial count of numbers.
-  const elementCount = parseNextInteger();
-  // Read the initial array of numbers.
-  const initialNumbers = parseNextIntegerArray();
+// Helper function to fetch the next line and split it into an array of strings.
+const fetchStringArray = () => inputReader.retrieveNext().split(" ");
 
-  // Create a frequency map to store counts of each number.
-  let frequencyMap = {};
-  for (let currentNum of initialNumbers) {
-    if (!frequencyMap[currentNum]) {
-      frequencyMap[currentNum] = 1; // Initialize count if number not seen before.
-    } else {
-      frequencyMap[currentNum]++; // Increment count if number already exists.
+// Helper function to fetch the next line, split it, and parse elements as integers.
+const fetchIntegerArray = () => inputReader.retrieveNext().split(" ").map(el => parseInt(el));
+
+// Helper function to fetch the next line and split it into an array of characters.
+const fetchCharacterArray = () => inputReader.retrieveNext().split("");
+
+// Helper function to check if there are more lines available.
+const checkMoreLines = () => inputReader.hasMore();
+
+// Main program logic encapsulated in a function.
+const executeProgram = () => {
+    // Read the first integer, representing N.
+    const countN = fetchNextInteger();
+    // Read the array of initial numbers.
+    const initialNumbers = fetchIntegerArray();
+
+    // Create a frequency map for the initial numbers.
+    let frequencyMap = {};
+    for (let currentElement of initialNumbers) {
+        if (!frequencyMap[currentElement]) {
+            frequencyMap[currentElement] = 1; // Initialize count if not present.
+        } else {
+            frequencyMap[currentElement]++;   // Increment count if already present.
+        }
     }
-  }
 
-  // Read the number of queries.
-  const queryCount = parseNextInteger();
-  // Arrays to store 'from' and 'to' values for each query.
-  let sourceValues = [];
-  let targetValues = [];
+    // Read the number of queries, Q.
+    const queryCount = fetchNextInteger();
+    // Arrays to store 'from' and 'to' values for queries.
+    let fromValues = [];
+    let toValues = [];
 
-  // Read all query pairs (b, c) until no more input.
-  while (checkIfMoreInput()) {
-    let [sourceVal, targetVal] = parseNextIntegerArray(); // Destructure the pair.
-    sourceValues.push(sourceVal); // Add 'from' value.
-    targetValues.push(targetVal); // Add 'to' value.
-  }
-
-  // Calculate the initial sum based on the frequency map.
-  let currentTotalSum = 0;
-  for (let mapEntryKey of Object.keys(frequencyMap)) {
-    // Note: mapEntryKey is a string, convert to number for multiplication.
-    currentTotalSum = currentTotalSum + frequencyMap[mapEntryKey] * Number(mapEntryKey);
-  }
-
-  // Process each query.
-  for (let queryIndex = 0; queryIndex < queryCount; queryIndex++) {
-    let valToChange = sourceValues[queryIndex]; // The number to be replaced.
-    let newVal = targetValues[queryIndex];     // The number it will be replaced with.
-
-    // Scenario 1: Both 'from' and 'to' values exist in the map.
-    if (frequencyMap[valToChange] && frequencyMap[newVal]) {
-      // Update sum: subtract old value contribution, add new value contribution.
-      currentTotalSum = currentTotalSum - frequencyMap[valToChange] * valToChange + frequencyMap[valToChange] * newVal;
-      // Merge counts: add 'from' count to 'to' count.
-      frequencyMap[newVal] = frequencyMap[newVal] + frequencyMap[valToChange];
-      // Set 'from' count to zero as it's effectively removed.
-      frequencyMap[valToChange] = 0;
+    // Read all query pairs (b, c) until no more input.
+    while (checkMoreLines()) {
+        let [sourceVal, targetVal] = fetchIntegerArray(); // Destructure the pair.
+        fromValues.push(sourceVal);
+        toValues.push(targetVal);
     }
-    // Scenario 2: 'from' value exists, but 'to' value does not.
-    else if (frequencyMap[valToChange] && !frequencyMap[newVal]) {
-      // Update sum similarly.
-      currentTotalSum = currentTotalSum - frequencyMap[valToChange] * valToChange + frequencyMap[valToChange] * newVal;
-      // Assign 'from' count to 'to' count (effectively renaming 'from' to 'to').
-      frequencyMap[newVal] = frequencyMap[valToChange];
-      // Set 'from' count to zero.
-      frequencyMap[valToChange] = 0;
+
+    // Calculate the initial total sum based on the frequency map.
+    let totalSum = 0;
+    for (let mapEntryKey of Object.keys(frequencyMap)) {
+        // Ensure key is treated as a number for multiplication.
+        totalSum = totalSum + frequencyMap[mapEntryKey] * parseInt(mapEntryKey);
     }
-    // Output the updated total sum after each query.
-    outputToConsole(currentTotalSum);
-  }
+
+    // Process each query.
+    for (let loopIndex = 0; loopIndex < queryCount; loopIndex++) {
+        let oldValue = fromValues[loopIndex]; // The number to be replaced.
+        let newValue = toValues[loopIndex];   // The number it's replaced with.
+
+        // Check if the 'oldValue' exists in the frequency map.
+        if (frequencyMap[oldValue]) {
+            // Case 1: Both oldValue and newValue exist in the map.
+            if (frequencyMap[newValue]) {
+                // Update sum: subtract old value's contribution, add new value's contribution.
+                totalSum = totalSum - frequencyMap[oldValue] * oldValue + frequencyMap[oldValue] * newValue;
+                // Transfer counts from oldValue to newValue.
+                frequencyMap[newValue] = frequencyMap[newValue] + frequencyMap[oldValue];
+                // Set oldValue's count to zero (effectively removing it).
+                frequencyMap[oldValue] = 0;
+            }
+            // Case 2: oldValue exists, but newValue does not.
+            else {
+                // Update sum: subtract old value's contribution, add new value's contribution.
+                totalSum = totalSum - frequencyMap[oldValue] * oldValue + frequencyMap[oldValue] * newValue;
+                // Assign oldValue's count to newValue.
+                frequencyMap[newValue] = frequencyMap[oldValue];
+                // Set oldValue's count to zero.
+                frequencyMap[oldValue] = 0;
+            }
+        }
+        // Output the current total sum after each query.
+        console.log(totalSum);
+    }
 };
 
-// Begin program execution.
-executeMainLogic();
+// Execute the main program.
+executeProgram();

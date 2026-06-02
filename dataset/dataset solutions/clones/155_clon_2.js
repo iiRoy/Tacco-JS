@@ -1,29 +1,51 @@
-// Module for handling standard input operations
-const fileSystemHandler = require('node:fs');
+const fileSystem = require('fs'); // Import the file system module for I/O operations.
 
-let totalInputSize = fileSystemHandler.fstatSync(process.stdin.fd).size;
-let rawInputBuffer = Buffer.alloc(totalInputSize);
-let readByteCount = fileSystemHandler.readSync(process.stdin.fd, rawInputBuffer, 0, totalInputSize, 0);
+// Determine the total byte size of the incoming standard input stream.
+let fileSize = fileSystem.fstatSync(process.stdin.fd).size;
 
-let incomingDataLines = rawInputBuffer.toString('utf8', 0, readByteCount).trimEnd().split('\n');
+// Create a new buffer to store the raw data read from standard input.
+let dataBuffer = Buffer.alloc(fileSize);
 
-executeProcessing();
+// Read the content from standard input into the allocated buffer.
+let actualBytes = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
 
-function executeProcessing() {
-  for (let currentLineIdx = 0, totalInputLines = incomingDataLines.length; currentLineIdx < totalInputLines; currentLineIdx++) {
-    let numericValues = incomingDataLines[currentLineIdx]
-                          .trim()
-                          .split(',')
-                          .sort((valA, valB) => valB - valA)
-                          .map(Number);
+// Convert the buffer's content to a UTF-8 string, remove leading/trailing whitespace,
+// and then split the string into an array of individual lines based on newline characters.
+let linesOfInput = dataBuffer.toString('utf8', 0, actualBytes).trim().split('\n');
 
-    let finalOutcome = "no match";
+// Initiate the primary data processing routine.
+processGameData();
 
-    if ( (numericValues[0] === numericValues[1] && numericValues[1] === numericValues[2] && numericValues[2] === numericValues[3]) ||
-         (numericValues[1] === numericValues[2] && numericValues[2] === numericValues[3] && numericValues[3] === numericValues[4]) )
-    {
-      finalOutcome = "quadruple match";
+/**
+ * This function iterates through each line of input, processes it as a set of card values,
+ * and determines if a specific card pattern ("four card") is present.
+ */
+function processGameData() {
+  // Loop through every entry in the array of input lines.
+  for (let idx = 0, totalLines = linesOfInput.length; idx < totalLines; idx++) {
+    // For each line:
+    // 1. Remove any surrounding whitespace.
+    // 2. Split the string by commas to get individual card value strings.
+    // 3. Sort these values in descending numerical order.
+    // 4. Convert the sorted string values into actual numbers.
+    let cardValues = linesOfInput[idx].trim().split(',').sort(function(valA, valB) {
+      // Custom comparison function for numeric descending sort.
+      return valB - valA;
+    }).map(Number);
+
+    // Initialize a default message for the outcome.
+    let outcomeMessage = "null";
+
+    // Check for the "four card" condition:
+    // This occurs if either the first four sorted values are identical,
+    // or the last four sorted values (from the second to the fifth) are identical.
+    if ((cardValues[0] === cardValues[1] && cardValues[1] === cardValues[2] && cardValues[2] === cardValues[3]) ||
+      (cardValues[1] === cardValues[2] && cardValues[2] === cardValues[3] && cardValues[3] === cardValues[4])
+    ) {
+      outcomeMessage = "four card"; // Update the message if the pattern is found.
     }
-    console.info(finalOutcome);
+
+    // Print the determined outcome message to the console for the current input line.
+    console.log(outcomeMessage);
   }
 }

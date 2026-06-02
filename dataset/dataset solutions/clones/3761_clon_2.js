@@ -1,19 +1,19 @@
-// This function is designed to process an entire string of incoming information.
-function ProcessInputData ( inputString )
-{
-  // First, convert the received textual input into an integer value, specifying base 10.
-  let integerValue = Number.parseInt( inputString , 10 ) ;
+// This function processes the entire input data received.
+function ProcessInput(inputString) {
+  // Convert the provided string into an integer value.
+  const parsedNumber = parseInt(inputString);
 
-  // Now, evaluate if this numeric value exceeds a predefined maximum threshold.
-  if ( integerValue > 999 )
-  {
-    console.log( 'ABD' ) ; // Output a specific code for values that are too large.
-    return ; // Immediately exit the function in this scenario.
+  // Evaluate if the numerical value is greater than the threshold of 999.
+  if (parsedNumber > 999) {
+    // If the condition is met, print 'ABD' to the console.
+    console.log('ABD');
+    // Exit the function immediately after printing.
+    return;
   }
 
-  // If the value does not exceed the threshold, proceed with an alternative output.
-  console.log( 'ABC' ) ;
+  // Otherwise (if the number is 999 or less), print 'ABC' to the console.
+  console.log('ABC');
 }
 
-// The following code block is for system integration and should not be modified. It reads from standard input and calls the main processing routine.
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// The following line should not be altered; it manages reading from standard input and initiating the primary function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

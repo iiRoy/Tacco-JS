@@ -1,280 +1,224 @@
-// This module provides utilities for parsing input data from a multi-line string.
-var INPUT_PARSER = ( function ( ) {
-
-  /**
-   * Factory function to create a new input parser instance.
-   * @param {string} inputString The raw string containing all input lines.
-   * @returns {InputReader} A new instance of the InputReader.
-   */
-  function createParser ( inputString ) {
-    return new InputReader ( inputString );
+var INPUT_PARSER = (function() {
+  // This factory function creates a new instance of the DataProcessor.
+  function createParser(sourceText) {
+    return new DataProcessor(sourceText);
   }
 
-  /**
-   * Constructor for the InputReader class.
-   * Manages the parsing of input lines and tokens.
-   * @param {string} inputString The full string data to be processed.
-   */
-  function InputReader ( inputString ) {
-    this._sourceLines = inputString
-      .trim ( )
-      .split ( "\n" ); // Store lines after trimming and splitting
-    this._currentLineIndex = 0; // Initialize line cursor
+  // The DataProcessor constructor initializes the input source.
+  function DataProcessor(sourceText) {
+    // Stores the input text, split into individual lines after trimming.
+    this._sourceLines = sourceText.trim().split('\n');
+    // Keeps track of the current line being processed.
+    this._currentLineIndex = 0x0;
   }
 
-  // Define methods for the InputReader prototype.
+  // Reads a single token (number or string) from the current line.
+  DataProcessor.prototype.readNumber = function(asString) {
+    var lines = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var resultToken;
 
-  /**
-   * Fetches the next token from the current line.
-   * If the current line is a string, it's split and reversed to pop tokens from the end.
-   * Advances the line cursor if the current line becomes empty.
-   * @param {boolean} returnAsString If true, returns the token as a string; otherwise, converts to a number.
-   * @returns {string|number} The extracted token.
-   */
-  InputReader.prototype.fetchNextToken = function ( returnAsString ) {
-    var currentLines = this._sourceLines,
-      lineCursor = this._currentLineIndex,
-      extractedToken;
-
-    // If the current line hasn't been processed into an array of tokens yet
-    if ( typeof currentLines[lineCursor] === "string" ) {
-      currentLines[lineCursor] = currentLines[lineCursor]
-        .split ( " " )
-        .reverse ( );
+    // If the current line is still a single string, split it into tokens.
+    // Tokens are reversed to allow efficient popping from the end.
+    if (typeof lines[lineIdx] === 'string') {
+      lines[lineIdx] = lines[lineIdx].split(' ').reverse();
     }
 
-    extractedToken = currentLines[lineCursor].pop ( ); // Get the last token
+    // Extract the last token from the current line.
+    resultToken = lines[lineIdx].pop();
 
-    // If the current line is now empty, move to the next line
-    if ( !currentLines[lineCursor].length ) {
+    // If the current line is now empty, advance to the next line.
+    if (!lines[lineIdx].length) {
       this._currentLineIndex++;
     }
 
-    // Return as string or number based on the flag
-    return returnAsString ? extractedToken : +extractedToken;
+    // Return the token as a string or convert it to a number based on the 'asString' flag.
+    return asString ? resultToken : Number(resultToken);
   };
 
-  /**
-   * Retrieves all tokens from the current line.
-   * Advances the line cursor to the next line.
-   * @param {boolean} asStrings If true, returns tokens as strings; otherwise, converts to numbers.
-   * @returns {Array<string|number>} An array of tokens from the line.
-   */
-  InputReader.prototype.retrieveLineTokens = function ( asStrings ) {
-    // Get the current line, split it by space, and then increment the line index
-    var lineSegments = this._sourceLines[this._currentLineIndex++].split ( " " );
-    // Return as strings or map to numbers
-    return asStrings ? lineSegments : lineSegments.map ( tokenItem => +tokenItem );
+  // Reads an entire line of tokens, converting them to numbers by default.
+  DataProcessor.prototype.readNumbersLine = function(asStrings) {
+    // Get the current line, split it by spaces, and then advance the line index.
+    var lineTokens = this._sourceLines[this._currentLineIndex++].split(' ');
+    // Return tokens as strings or map them to numbers.
+    return asStrings ? lineTokens : lineTokens.map(val => Number(val));
   };
 
-  /**
-   * Reads a specified number of lines and parses them as a matrix.
-   * Advances the line cursor by the number of rows read.
-   * @param {number} numRows The number of rows to read for the matrix.
-   * @param {boolean} keepRaw If true, returns string arrays; otherwise, converts cell values to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array (matrix) of values.
-   */
-  InputReader.prototype.getMatrixData = function ( numRows, keepRaw ) {
-    // Slice the required number of lines and map each line to an array of tokens
-    var matrixRows = this._sourceLines
-      .slice ( this._currentLineIndex, ( this._currentLineIndex += numRows ) )
-      .map ( rowString => rowString.split ( " " ) );
-
-    // Return raw string matrix or convert cell values to numbers
-    return keepRaw ? matrixRows : matrixRows.map ( rowString => rowString.map ( cellString => +cellString ) );
+  // Reads a block of 'numRows' lines, treating each as a row in a matrix.
+  DataProcessor.prototype.readMatrix = function(numRows, asStrings) {
+    // Extract 'numRows' lines, split each into tokens, and then advance the line index.
+    var matrixData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(line => line.split(' '));
+    // Return the matrix as strings or map all elements to numbers.
+    return asStrings ? matrixData : matrixData.map(row => row.map(elem => Number(elem)));
   };
 
-  /**
-   * Reads a specified number of lines as raw text.
-   * Advances the line cursor by the number of lines read.
-   * @param {number} lineCount The number of lines to read.
-   * @param {boolean} preserveText If true, returns lines as strings; otherwise, converts to numbers.
-   * @returns {Array<string|number>} An array of lines.
-   */
-  InputReader.prototype.getRawLines = function ( lineCount, preserveText ) {
-    // Slice the required number of lines
-    var lineCollection = this._sourceLines
-      .slice ( this._currentLineIndex, ( this._currentLineIndex += lineCount ) );
-
-    // Return raw text lines or convert to numbers
-    return preserveText ? lineCollection : lineCollection.map ( lineContent => +lineContent );
+  // Reads 'numLines' raw lines, converting each line to a number by default.
+  DataProcessor.prototype.readRawLines = function(numLines, asStrings) {
+    // Extract 'numLines' lines and then advance the line index.
+    var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    // Return lines as strings or map them to numbers.
+    return asStrings ? rawLines : rawLines.map(lineVal => Number(lineVal));
   };
 
-  return createParser; // The factory function is the public interface
-} ) ( );
+  return createParser;
+})();
 
+// Initialize the input data parser by reading from standard input.
+var inputData = INPUT_PARSER(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Initialize the input data stream by reading from standard input.
-var dataStream = INPUT_PARSER ( require ( "fs" )
-  .readFileSync ( "/dev/stdin", "utf8" ) );
-
-
-/**
- * Dynamically constructs a multi-dimensional array with a given initial value.
- * @param {any} initialValue The value to fill the innermost array elements with.
- * @param {...number} dimArguments The dimensions of the array (e.g., dim1, dim2, dim3).
- * @returns {Array} The dynamically created multi-dimensional array.
- */
-function buildMultiArray ( initialValue ) {
-  var dimArguments = arguments,
-    dimLength = dimArguments.length,
-    arrayCreationString = "Array(dimArguments[" + --dimLength + "]).fill(0).map(elementPlaceholder=>{return " + initialValue + ";})";
-
-  // Build the string for nested array creation
-  while ( --dimLength ) {
-    arrayCreationString = "Array(dimArguments[" + dimLength + "]).fill(0).map(elementPlaceholder=>" + arrayCreationString + ")"
+// Function to create a multi-dimensional array initialized with a specific value.
+function createMultiDimArray(initialValue) {
+  var dimensions = arguments; // All arguments after initialValue are dimensions.
+  var dimCount = dimensions.length; // Total number of dimensions.
+  // Construct the string for the innermost array creation.
+  var arrayCreationString = 'Array(dimensions[' + --dimCount + ']).fill(0x0).map(x=>{return ' + initialValue + ';})';
+  // Loop to build up the string for higher dimensions.
+  while (--dimCount) {
+    arrayCreationString = 'Array(dimensions[' + dimCount + ']).fill(0x0).map(x=>' + arrayCreationString + ')';
   }
-
-  return eval ( arrayCreationString ); // Execute the generated string as code
+  // Evaluate the constructed string to create the array.
+  return eval(arrayCreationString);
 }
 
-
-// Self-executing anonymous function to encapsulate the MinHeap structure.
-var MinHeapStructure = ( function ( ) {
-
-  /**
-   * Factory method to create a new MinHeap instance.
-   * @returns {MinHeap} A new MinHeap object.
-   */
-  function createMinHeap ( ) {
-    return new MinHeap ( );
+// MinHeap implementation for priority queue functionality.
+var MinHeap = (function() {
+  // Factory function to create a new MinHeap instance.
+  function createMinHeap() {
+    return new MinHeapConstructor();
   }
 
-  /**
-   * Constructor for the MinHeap (Priority Queue) data structure.
-   * Uses an array to represent a binary heap.
-   */
-  function MinHeap ( ) {
-    this.internalStorage = [ ]; // The array that stores heap elements
+  // MinHeap constructor.
+  function MinHeapConstructor() {
+    this.elements = []; // The array that stores the heap elements.
   }
 
-  /**
-   * Inserts a new element into the heap while maintaining the min-heap property.
-   * @param {Array<number, any>} newItem An array where newItem[0] is the priority (key)
-   *                                    and newItem[1] is the associated value.
-   */
-  MinHeap.prototype.insertElement = function ( newItem ) {
-    var storageRef = this.internalStorage,
-      currentIndex = storageRef.length++, // Get current length, then increment for new element's position
-      parentIndex;
+  // Inserts an item into the min-heap, maintaining heap property.
+  MinHeapConstructor.prototype.insert = function(itemToInsert) {
+    var heapArray = this.elements;
+    var currentIndex = heapArray.length++; // Get the new index for the item and increment heap size.
+    var parentIndex;
 
-    // Bubble up the new element if it's smaller than its parent
-    while ( currentIndex ) {
-      parentIndex = ( currentIndex - 1 ) >> 1; // Calculate parent index
-      if ( storageRef[parentIndex][0] <= newItem[0] ) break; // If parent is smaller or equal, correct position found
-      storageRef[currentIndex] = storageRef[parentIndex]; // Move parent down
-      currentIndex = parentIndex; // Move up to parent's position
-    }
-    storageRef[currentIndex] = newItem; // Place the new element
-  };
-
-  /**
-   * Extracts the minimum element (root) from the heap and re-heapifies.
-   * @returns {Array<number, any>} The minimum element (root) of the heap.
-   */
-  MinHeap.prototype.extractMin = function ( ) {
-    var heapRef = this.internalStorage,
-      minValue = heapRef[0], // The minimum value is always at the root
-      lastElement = heapRef.pop ( ), // Remove the last element for re-heapification
-      currentSize = heapRef.length,
-      idx = 0,
-      childIdx;
-
-    // If the heap is empty after pop, return the removed minimum value
-    if ( currentSize === 0 ) return minValue;
-
-    var halfSize = currentSize >> 1; // Optimization: only need to check up to half the size
-    currentSize--; // Adjust currentSize for boundary checks
-
-    // Bubble down the last element to its correct position
-    while ( idx < halfSize ) {
-      childIdx = ( idx << 1 ) + 1; // Left child index
-      // Check if right child exists and is smaller than left child
-      if ( childIdx < currentSize && heapRef[childIdx + 1][0] < heapRef[childIdx][0] ) {
-        childIdx++; // Use right child if it's smaller
+    // Bubble up the new item until its correct position is found.
+    while (currentIndex) {
+      parentIndex = (currentIndex - 0b1) >> 0b1; // Calculate parent index.
+      // If the parent is smaller or equal, the item is in its correct place.
+      if (heapArray[parentIndex][0x0] <= itemToInsert[0x0]) {
+        break;
       }
-      if ( lastElement[0] <= heapRef[childIdx][0] ) break; // If lastElement is smaller or equal, correct position found
-      heapRef[idx] = heapRef[childIdx]; // Move child up
-      idx = childIdx; // Move down to child's position
+      // Otherwise, move the parent down and continue bubbling up.
+      heapArray[currentIndex] = heapArray[parentIndex];
+      currentIndex = parentIndex;
     }
-    heapRef[idx] = lastElement; // Place the last element
-
-    return minValue; // Return the original minimum value
+    heapArray[currentIndex] = itemToInsert; // Place the item in its final position.
   };
 
-  return createMinHeap; // The factory function is the public interface
-} ) ( );
+  // Extracts and returns the minimum item from the heap.
+  MinHeapConstructor.prototype.extractMin = function() {
+    var heapArray = this.elements;
+    var minElement = heapArray[0x0]; // The minimum element is always at the root.
+    var lastElement = heapArray.pop(); // Remove the last element from the heap.
+    var heapSize = heapArray.length;
+    var rootIndex = 0x0;
+    var childIndex;
 
+    // If the heap becomes empty after popping, return the extracted min element.
+    if (heapSize === 0x0) {
+      return minElement;
+    }
 
-// Output the result of the main processing function to the console.
-global.console.log ( processData ( ) );
+    var halfHeapSize = heapSize >> 0b1; // Optimization: only need to check up to half the heap.
+    heapSize--; // Adjust heapSize for boundary checks in the loop.
 
-/**
- * Main function to solve the problem.
- * Reads input, performs calculations, and returns the final answer.
- * @returns {number} The calculated result or -1 if no solution is found.
- */
-function processData ( ) {
-  // Read the total number of elements from the input stream.
-  var totalElements = dataStream.fetchNextToken ( );
+    // Bubble down the 'lastElement' from the root to maintain heap property.
+    while (rootIndex < halfHeapSize) {
+      childIndex = (rootIndex << 0b1) + 0b1; // Calculate the left child index.
+      // Check if a right child exists and if it's smaller than the left child.
+      if (childIndex < heapSize && heapArray[childIndex + 0b1][0x0] < heapArray[childIndex][0x0]) {
+        childIndex++; // Use the right child if it's smaller.
+      }
+      // If 'lastElement' is smaller than or equal to the smallest child, its position is found.
+      if (lastElement[0x0] <= heapArray[childIndex][0x0]) {
+        break;
+      }
+      // Otherwise, move the child up and continue bubbling down.
+      heapArray[rootIndex] = heapArray[childIndex];
+      rootIndex = childIndex;
+    }
+    heapArray[rootIndex] = lastElement; // Place 'lastElement' in its final position.
+    return minElement; // Return the original minimum element.
+  };
 
-  // Read two lists of numbers from the input stream.
-  var initialValues = dataStream.retrieveLineTokens ( );
-  var targetValues = dataStream.retrieveLineTokens ( );
+  return createMinHeap;
+})();
+
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
+
+// The main function that implements the problem's logic.
+function solveProblem() {
+  // Read the total count of elements.
+  var count = inputData.readNumber();
+  // Read the first array.
+  var arrayA = inputData.readNumbersLine();
+  // Read the second array.
+  var arrayB = inputData.readNumbersLine();
 
   // Initialize a min-priority queue.
-  var minHeapInst = MinHeapStructure ( );
+  var minPriorityQueue = MinHeap();
 
-  // Iterate through elements to populate the priority queue and check initial conditions.
-  for ( var elementIndex = 0; elementIndex < totalElements; elementIndex++ ) {
-    // If initial and target values are the same, no operation needed for this element.
-    if ( initialValues[elementIndex] === targetValues[elementIndex] ) continue;
-
-    // If an initial value is greater than its target, no solution is possible.
-    if ( initialValues[elementIndex] > targetValues[elementIndex] ) return -1;
-
-    // Push the negative target value and its index into the priority queue.
-    // Negative target value is used to simulate a max-heap for priority based on 'b' values.
-    minHeapInst.insertElement ( [ -targetValues[elementIndex], elementIndex ] );
+  // Initial check and population of the priority queue.
+  for (var idx = 0x0; idx < count; idx++) {
+    // If elements are already equal, no operation needed for this index.
+    if (arrayA[idx] === arrayB[idx]) {
+      continue;
+    }
+    // If arrayA[idx] is greater than arrayB[idx], it's an impossible state.
+    if (arrayA[idx] > arrayB[idx]) {
+      return -0b1; // Indicate failure.
+    }
+    // Push the negative of arrayB[idx] and its index.
+    // Using negative values allows the min-heap to effectively act as a max-heap
+    // for the original arrayB values (smallest negative means largest positive).
+    minPriorityQueue.insert([-arrayB[idx], idx]);
   }
 
-  // Initialize the counter for operations.
-  var operationCount = 0;
+  var resultValue = 0x0; // Initialize the counter for operations.
 
   // Process elements from the priority queue until it's empty.
-  while ( minHeapInst.internalStorage.length ) {
-    // Extract the item with the highest priority (smallest negative value, i.e., largest original 'b' value).
-    var poppedItem = minHeapInst.extractMin ( );
-    var currentElementIdx = poppedItem[1],
-      originalValue = -poppedItem[0]; // Get the actual target value 'b[j]'
+  while (minPriorityQueue.elements.length) {
+    // Extract the item with the smallest negative value (largest original B value).
+    var extractedItem = minPriorityQueue.extractMin();
+    var currentIdx = extractedItem[0b1]; // Get the original index.
+    var currentVal = -extractedItem[0x0]; // Get the actual positive B value.
 
-    // Calculate the sum of neighbors for the current element.
-    // Neighbors are wrapped around using modulo operator.
-    var neighborSum = targetValues[( currentElementIdx + totalElements - 1 ) % totalElements] + targetValues[( currentElementIdx + 1 ) % totalElements];
+    // Calculate the sum of the current element's neighbors in arrayB.
+    var neighborSum = arrayB[(currentIdx + count - 0b1) % count] + arrayB[(currentIdx + 0b1) % count];
 
-    // Calculate the number of full operations (integer division).
-    var divisionResult = targetValues[currentElementIdx] / neighborSum | 0;
+    // Perform integer division.
+    var divisionResult = arrayB[currentIdx] / neighborSum | 0x0;
 
-    // If divisionResult is 0, it means the current 'b[j]' cannot be reduced by neighbors,
-    // and since a[j] < b[j], no solution is possible.
-    if ( divisionResult === 0 ) return -1;
+    // If the division result is zero, it means arrayB[currentIdx] cannot be reduced
+    // further by its neighbors to reach arrayA[currentIdx] (if arrayA[currentIdx] < arrayB[currentIdx]).
+    if (divisionResult === 0x0) {
+      return -0b1; // Indicate failure.
+    }
 
-    // Add the number of operations to the total count.
-    operationCount += divisionResult;
+    // Add the number of operations to the total.
+    resultValue += divisionResult;
+    // Update arrayB[currentIdx] using the modulo operation.
+    arrayB[currentIdx] %= neighborSum;
 
-    // Update the current element's value by taking the remainder.
-    targetValues[currentElementIdx] %= neighborSum;
-
-    // Check conditions after modification.
-    // If the value now matches the initial value, no more operations needed for this element.
-    if ( initialValues[currentElementIdx] === targetValues[currentElementIdx] ) continue;
-
-    // If the modified value is less than the initial value, no solution is possible.
-    if ( initialValues[currentElementIdx] > targetValues[currentElementIdx] ) return -1;
-
-    // If the value still needs reduction, re-insert it into the priority queue.
-    minHeapInst.insertElement ( [ -targetValues[currentElementIdx], currentElementIdx ] );
+    // Re-check the condition for the modified element.
+    if (arrayA[currentIdx] === arrayB[currentIdx]) {
+      continue; // If equal, this element is now satisfied.
+    }
+    // If arrayA[currentIdx] became greater than arrayB[currentIdx] after modification, it's impossible.
+    if (arrayA[currentIdx] > arrayB[currentIdx]) {
+      return -0b1; // Indicate failure.
+    }
+    // If arrayA[currentIdx] is still less than arrayB[currentIdx], re-insert into the priority queue.
+    minPriorityQueue.insert([-arrayB[currentIdx], currentIdx]);
   }
 
-  return operationCount; // Return the total number of operations.
+  return resultValue; // Return the final count of operations.
 }

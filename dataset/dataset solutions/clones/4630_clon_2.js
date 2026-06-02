@@ -1,41 +1,43 @@
-(function(rawData){
-  // Process the raw input data, splitting it into individual lines
-  let linesOfText = rawData.split('\n');
+(function (inputData) {
+  // Process the raw input string by splitting it into individual lines.
+  var linesOfText = inputData.split("\n");
 
-  // Parse the first line to get the total number of elements
-  let countElements = Number.parseInt(linesOfText[0], 10);
+  // Parse the first line to determine the count of elements.
+  var elementCount = parseInt(linesOfText[0], 0xA);
 
-  // Split the second line into an array of strings, representing the sequence
-  let numberSequence = linesOfText[1].split(' ');
+  // Split the second line into an array of string representations of numbers.
+  var numericStrings = linesOfText[0x1].split(" ");
 
-  // Initialize a counter for the identified patterns
-  let resultCounter = 0;
+  // Initialize a counter for the result.
+  var resultCounter = 0x0;
 
-  // Flags to track if an increasing or decreasing trend has been observed
-  let isIncreasing = false;
-  let isDecreasing = false;
+  // Flags to track ascending and descending trends.
+  var isAscending = false;
+  var isDescending = false;
 
-  // Iterate through the sequence, comparing adjacent elements
-  // The loop runs up to the second-to-last element to allow comparison with the next one
-  for (let currentIdx = 0; currentIdx < countElements - 1; currentIdx++) {
-    // Check if the current element is less than the next one (increasing trend)
-    if (numberSequence[currentIdx] < numberSequence[currentIdx + 1]) {
-      isIncreasing = true; // Mark that an increase has been detected
+  // Iterate through the array of numeric strings, comparing adjacent elements.
+  for (var idx = 0x0; idx < elementCount - 0x1; idx++) {
+    // Check if the current element is less than the next one.
+    if (numericStrings[idx] < numericStrings[idx + 0x1]) {
+      isAscending = true; // Mark an ascending trend.
     }
 
-    // Check if the current element is greater than the next one (decreasing trend)
-    if (numberSequence[currentIdx] > numberSequence[currentIdx + 1]) {
-      isDecreasing = true; // Mark that a decrease has been detected
+    // Check if the current element is greater than the next one.
+    if (numericStrings[idx] > numericStrings[idx + 0x1]) {
+      isDescending = true; // Mark a descending trend.
     }
 
-    // If both an increasing and decreasing trend have been observed
-    // since the last reset, it signifies a complete "zig-zag" pattern
-    if (isIncreasing && isDecreasing) {
-      isIncreasing = isDecreasing = false; // Reset the flags for the next pattern search
-      resultCounter++;                     // Increment the pattern counter
+    // If both an ascending and a descending trend have been observed,
+    // it signifies a "peak" or "valley" pattern.
+    if (isAscending && isDescending) {
+      // Reset the flags for the next segment.
+      isAscending = false;
+      isDescending = false;
+      // Increment the result counter.
+      resultCounter++;
     }
   }
 
-  // Output the final count of detected patterns
+  // Output the final calculated result to the console.
   console.log("%d", resultCounter);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

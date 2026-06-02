@@ -1,39 +1,46 @@
-const systemIoInterface = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function* seriesTermGenerator(startValue) {
+  let currentVal = startValue;
+  yield currentVal;
 
-let accumulatedEntries = [];
-
-systemIoInterface.on('line', (singleEntry) => {
-  accumulatedEntries.push(singleEntry);
-});
-
-systemIoInterface.on('close', () => {
-  accumulatedEntries
-    .filter(textSegment => textSegment.trim().length > 0)
-    .map(textSegment => Number(textSegment))
-    .forEach(numericalComponent => {
-      process.stdout.write(deriveCumulativeSum(numericalComponent) + '\n');
-    });
-});
-
-const deriveCumulativeSum = (originator) => {
-  const calculateRecursiveSum = (currentTermValue, stepProgress, runningSummation) => {
-    if (stepProgress > 9) {
-      return runningSummation;
-    }
-
-    let nextTermValue;
-    if (stepProgress % 2 === 1) {
-      nextTermValue = currentTermValue * 2;
+  for (let termIdx = 1; termIdx < 10; termIdx++) {
+    if (termIdx % 2 !== 0) {
+      currentVal *= 2;
     } else {
-      nextTermValue = currentTermValue / 3;
+      currentVal /= 3;
     }
+    yield currentVal;
+  }
+}
 
-    return calculateRecursiveSum(nextTermValue, stepProgress + 1, runningSummation + nextTermValue);
-  };
+function computeSeriesTotal(initialValue) {
+  let accumulatedSum = 0;
+  for (const termValue of seriesTermGenerator(initialValue)) {
+    accumulatedSum += termValue;
+  }
+  return accumulatedSum;
+}
 
-  return calculateRecursiveSum(originator, 1, originator);
-};
+function processInputLines() {
+  rawInputBuffer.split('\n')
+    .map(function(lineText) {
+      const trimmedLine = lineText.trim();
+      return (trimmedLine === '') ? null : parseFloat(trimmedLine);
+    })
+    .filter(function(parsedValue) {
+      return parsedValue !== null;
+    })
+    .forEach(function(numericValue) {
+      console.log(computeSeriesTotal(numericValue));
+    });
+}
+
+let rawInputBuffer = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  rawInputBuffer += chunk;
+});
+process.stdin.on('end', function() {
+  processInputLines();
+});

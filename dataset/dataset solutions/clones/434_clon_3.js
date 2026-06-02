@@ -1,258 +1,140 @@
-let totalNodesCount; // Represents the total number of vertices in the graph, formerly 'n'
-let graphAdjacencyList; // Stores the graph's connections, formerly 'g'
+let nodeCount, adjList;
 
-/**
- * Orchestrates the processing of multiple graph scenarios.
- * Reads graph definitions and queries, then computes and outputs results.
- */
-function initiateProcessing() {
-    // Continuous loop to handle multiple test cases until a termination signal is received.
-    // Using a 'for(;;)' construct for an infinite loop with an explicit break.
-    for (;;) {
-        const numberOfEdges = readNumericInput(); // Number of edges for the current graph, formerly 'm'
-        totalNodesCount = readNumericInput();     // Number of nodes for the current graph, formerly 'n'
+function runSolver() {
+    while (true) {
+        let edgeCount = readInputToken();
+        nodeCount = readInputToken();
 
-        // Termination condition: If both nodes and edges are zero, end execution.
-        if (totalNodesCount === 0 && numberOfEdges === 0) {
-            break; // Exit the main processing loop.
+        if (nodeCount === 0 && edgeCount === 0) {
+            break;
         }
 
-        // Initialize the adjacency list. Each node gets an empty array to hold its neighbors.
-        // This ensures every node index from 0 to totalNodesCount-1 is available.
-        graphAdjacencyList = Array.from({ length: totalNodesCount }, () => []);
+        adjList = Array.from({ length: nodeCount }, () => []);
+        readGraphEdges(edgeCount);
 
-        // Populate the graph by reading edge information.
-        // Replaced the custom 'rep' utility function with a standard 'for' loop.
-        for (let edgeIndex = 0; edgeIndex < numberOfEdges; ++edgeIndex) {
-            const firstNodeId = readNumericInput() - 1; // Node A, adjusted to be 0-indexed
-            const secondNodeId = readNumericInput() - 1; // Node B, adjusted to be 0-indexed
-            const costWeightType1 = readNumericInput(); // Cost C for the first type
-            const costWeightType2 = readNumericInput(); // Cost D for the second type
-
-            // For an undirected graph, add edges in both directions.
-            // Edge information is stored as an object for clarity, instead of a raw array.
-            const edgeToSecondNode = {
-                targetVertex: secondNodeId,
-                weightType1: costWeightType1,
-                weightType2: costWeightType2
-            };
-            const edgeToFirstNode = {
-                targetVertex: firstNodeId,
-                weightType1: costWeightType1,
-                weightType2: costWeightType2
-            };
-
-            graphAdjacencyList[firstNodeId].push(edgeToSecondNode);
-            graphAdjacencyList[secondNodeId].push(edgeToFirstNode);
-        }
-
-        const numberOfQueries = readNumericInput(); // Number of pathfinding queries, formerly 'q'
-
-        // Process each shortest path query for the current graph.
-        for (let queryIndex = 0; queryIndex < numberOfQueries; ++queryIndex) {
-            const startingNode = readNumericInput() - 1; // Start node, 0-indexed
-            const destinationNode = readNumericInput() - 1; // Goal node, 0-indexed
-            const selectedCostCriterion = readNumericInput(); // Type of cost to use (0 or 1)
-
-            // Basic validation for the cost criterion. In competitive programming, inputs are often
-            // guaranteed valid, but for a robust Type III clone, adding such checks is appropriate.
-            if (selectedCostCriterion !== 0 && selectedCostCriterion !== 1) {
-                // If an invalid type is provided, we can log an error or default.
-                // For this example, we'll proceed, but a real application might throw.
-                console.error(`Warning: Invalid cost criterion '${selectedCostCriterion}' for query ${queryIndex}. Expected 0 or 1.`);
-                // The Dijkstra function will implicitly handle this by selecting a property that might be undefined or incorrect if not 0 or 1.
-            }
-
-            // Execute Dijkstra's algorithm to find the shortest path.
-            const shortestPathLength = computeDijkstraShortestPath(
-                startingNode,
-                destinationNode,
-                selectedCostCriterion
-            );
-            outputValue(shortestPathLength); // Display the computed shortest path.
-        }
+        let queryCount = readInputToken();
+        processQueries(queryCount);
     }
 }
 
-/**
- * Computes the shortest path from a starting vertex to a target vertex
- * using Dijkstra's algorithm with a specified edge weight type.
- * @param {number} startVertex - The index of the starting node (0-indexed).
- * @param {number} targetVertex - The index of the destination node (0-indexed).
- * @param {number} weightSelectionIndex - 0 to use 'weightType1', 1 to use 'weightType2' from edges.
- * @returns {number} The minimum distance from startVertex to targetVertex, or Infinity if unreachable.
- */
-function computeDijkstraShortestPath(startVertex, targetVertex, weightSelectionIndex) {
-    // A custom-built Min-Priority Queue (Min-Heap) implementation.
-    // Encapsulated within an object for better modularity.
-    const pathPriorityQueue = {
-        dataStore: [], // The array that holds the heap elements.
+function readGraphEdges(numEdges) {
+    for (let i = 0; i < numEdges; ++i) {
+        let nodeU = readInputToken() - 1;
+        let nodeV = readInputToken() - 1;
+        let costA = readInputToken();
+        let costB = readInputToken();
+        adjList[nodeU].push([costA, costB, nodeV]);
+        adjList[nodeV].push([costA, costB, nodeU]);
+    }
+}
 
-        /**
-         * Adds a new path candidate to the priority queue.
-         * Elements are objects: { distance: number, vertex: number }.
-         * @param {{distance: number, vertex: number}} pathInfo - The path details to enqueue.
-         */
-        enqueue: function(pathInfo) {
-            this.dataStore.push(pathInfo); // Add to the end.
-            let currentIndex = this.dataStore.length - 1;
+function processQueries(numQueries) {
+    for (let i = 0; i < numQueries; ++i) {
+        let sourceNode = readInputToken() - 1;
+        let targetNode = readInputToken() - 1;
+        let costMetricType = readInputToken();
+        outputResult(findShortestPath(sourceNode, targetNode, costMetricType));
+    }
+}
 
-            // Bubble up the new element to maintain the heap property.
-            while (currentIndex > 0) {
-                const parentIndex = Math.floor((currentIndex - 1) / 2);
-                // If parent's distance is less than or equal to current element's, we are in correct position.
-                if (this.dataStore[parentIndex].distance <= pathInfo.distance) {
-                    break;
+function findShortestPath(sourceNode, targetNode, costMetricType) {
+    const createMinPriorityQueue = () => {
+        const pq = [];
+
+        const push = (item) => {
+            let i = pq.length;
+            pq.push(item);
+            while (i > 0) {
+                const p = (i - 1) >> 1;
+                if (pq[p][0] <= item[0]) break;
+                pq[i] = pq[p];
+                i = p;
+            }
+            pq[i] = item;
+        };
+
+        const pop = () => {
+            const result = pq[0];
+            const lastItem = pq.pop();
+            if (!pq.length) return result;
+
+            let i = 0;
+            while (i * 2 + 1 < pq.length) {
+                let leftChildIdx = i * 2 + 1;
+                let rightChildIdx = i * 2 + 2;
+                let smallestChildIdx = leftChildIdx;
+
+                if (rightChildIdx < pq.length && pq[rightChildIdx][0] < pq[leftChildIdx][0]) {
+                    smallestChildIdx = rightChildIdx;
                 }
-                // Swap current element with its parent.
-                this.dataStore[currentIndex] = this.dataStore[parentIndex];
-                currentIndex = parentIndex;
+
+                if (pq[smallestChildIdx][0] >= lastItem[0]) break;
+
+                pq[i] = pq[smallestChildIdx];
+                i = smallestChildIdx;
             }
-            this.dataStore[currentIndex] = pathInfo; // Place the element in its final sorted position.
-        },
+            pq[i] = lastItem;
+            return result;
+        };
 
-        /**
-         * Extracts and returns the element with the smallest distance (highest priority).
-         * @returns {{distance: number, vertex: number} | undefined} The minimum element, or undefined if queue is empty.
-         */
-        dequeue: function() {
-            if (this.isEmpty()) {
-                return undefined;
-            }
+        const isEmpty = () => pq.length === 0;
 
-            const minPath = this.dataStore[0]; // The smallest element is always at the root.
-            const lastPath = this.dataStore.pop(); // Remove the last element.
-
-            // If the queue is not empty after popping, re-heapify.
-            if (!this.isEmpty()) {
-                this.dataStore[0] = lastPath; // Place the last element at the root temporarily.
-                let currentIndex = 0;
-                const currentHeapSize = this.dataStore.length;
-
-                // Bubble down the new root element.
-                while (true) {
-                    const leftChildIdx = 2 * currentIndex + 1;
-                    const rightChildIdx = 2 * currentIndex + 2;
-                    let swapIdx = currentIndex; // Assume current element is in correct position.
-
-                    // Find the smallest child.
-                    if (leftChildIdx < currentHeapSize && this.dataStore[leftChildIdx].distance < this.dataStore[swapIdx].distance) {
-                        swapIdx = leftChildIdx;
-                    }
-                    if (rightChildIdx < currentHeapSize && this.dataStore[rightChildIdx].distance < this.dataStore[swapIdx].distance) {
-                        swapIdx = rightChildIdx;
-                    }
-
-                    // If no child is smaller than current, heap property is restored.
-                    if (swapIdx === currentIndex) {
-                        break;
-                    }
-
-                    // Swap current element with its smallest child.
-                    [this.dataStore[currentIndex], this.dataStore[swapIdx]] = [this.dataStore[swapIdx], this.dataStore[currentIndex]];
-                    currentIndex = swapIdx;
-                }
-            }
-            return minPath;
-        },
-
-        /**
-         * Checks if the priority queue contains any elements.
-         * @returns {boolean} True if the queue is empty, false otherwise.
-         */
-        isEmpty: function() {
-            return this.dataStore.length === 0;
-        }
+        return { push, pop, isEmpty };
     };
 
-    // Array to keep track of the minimum distance found so far from the startVertex to every other vertex.
-    // Initialized to Infinity for all nodes, indicating they are unreachable initially.
-    const minimumDistances = new Array(totalNodesCount).fill(Infinity);
-    minimumDistances[startVertex] = 0; // Distance to the start node itself is zero.
+    const minPriorityQueue = createMinPriorityQueue();
+    const MAX_DIST = Infinity;
+    let distances = Array(nodeCount).fill(MAX_DIST);
 
-    // Add the starting node to the priority queue.
-    pathPriorityQueue.enqueue({ distance: 0, vertex: startVertex });
+    distances[sourceNode] = 0;
+    minPriorityQueue.push([0, sourceNode]);
 
-    // Dijkstra's main loop: continues as long as there are paths to explore.
-    while (!pathPriorityQueue.isEmpty()) {
-        // Extract the path with the smallest known distance.
-        // Using destructuring assignment for cleaner access to properties.
-        const { distance: currentPathDistance, vertex: currentVisitedVertex } = pathPriorityQueue.dequeue();
+    while (!minPriorityQueue.isEmpty()) {
+        const currentVertexData = minPriorityQueue.pop();
+        const currentDist = currentVertexData[0];
+        const u = currentVertexData[1];
 
-        // Optimization: If we've already found a shorter path to 'currentVisitedVertex'
-        // than what's currently being processed, skip this stale entry from the queue.
-        if (currentPathDistance > minimumDistances[currentVisitedVertex]) {
+        if (currentDist > distances[u]) {
             continue;
         }
 
-        // Iterate through all neighbors (edges) of the current vertex.
-        // Replaced the custom 'rep' utility with the native 'forEach' method for arrays.
-        graphAdjacencyList[currentVisitedVertex].forEach(connectedEdge => {
-            // Determine which weight attribute to use based on 'weightSelectionIndex'.
-            const edgeWeight = weightSelectionIndex === 0
-                ? connectedEdge.weightType1
-                : connectedEdge.weightType2;
+        for (const neighborEdge of adjList[u]) {
+            const edgeCost = neighborEdge[costMetricType];
+            const neighborV = neighborEdge[2];
+            const newDist = currentDist + edgeCost;
 
-            const candidateNeighborVertex = connectedEdge.targetVertex;
-            const potentialNewDistance = currentPathDistance + edgeWeight;
-
-            // If a shorter path to the 'candidateNeighborVertex' is found, update its distance
-            // and add this new, shorter path to the priority queue.
-            if (potentialNewDistance < minimumDistances[candidateNeighborVertex]) {
-                minimumDistances[candidateNeighborVertex] = potentialNewDistance;
-                pathPriorityQueue.enqueue({ distance: potentialNewDistance, vertex: candidateNeighborVertex });
+            if (newDist < distances[neighborV]) {
+                distances[neighborV] = newDist;
+                minPriorityQueue.push([newDist, neighborV]);
             }
-        });
+        }
     }
 
-    // Return the shortest distance computed for the target vertex.
-    return minimumDistances[targetVertex];
+    return distances[targetNode];
 }
 
-// --- Standard Input/Output Management ---
-
-// Global variables to buffer and manage input data.
-let bufferedInputData = '';
-let inputReadPointer = 0; // Tracks the current position in the buffered input array.
-
-// Resume standard input stream and set character encoding.
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// Event listener to accumulate incoming data chunks.
-process.stdin.on('data', function(chunk) {
-    bufferedInputData += chunk;
-});
+let rawInputBuffer = '';
+let currentTokenIndex = 0;
 
-// Event listener for when the entire input stream has ended.
-process.stdin.on('end', function() {
-    // Process the accumulated input:
-    // 1. Trim whitespace from start/end.
-    // 2. Split by any sequence of whitespace characters.
-    // 3. Filter out any empty strings that might result from splitting (e.g., multiple spaces).
-    bufferedInputData = bufferedInputData.trim().split(/\s+/).filter(Boolean);
-    initiateProcessing(); // Start the main logic after all input is prepared.
-});
-
-/**
- * Reads the next token from the buffered input array and converts it to an integer.
- * @returns {number} The parsed integer value of the next input token.
- */
-function readNumericInput() {
-    // Basic bounds check for robustness, though competitive programming inputs typically
-    // guarantee that we won't read past the end of available data.
-    if (inputReadPointer >= bufferedInputData.length) {
-        console.error("Error: Attempted to read past the end of buffered input data.");
-        return NaN; // Return Not-a-Number or throw an error in a real application.
+function readInputToken(type) {
+    if (type === 'string') {
+        return rawInputBuffer[currentTokenIndex++];
+    } else {
+        return +rawInputBuffer[currentTokenIndex++];
     }
-    const nextInputToken = bufferedInputData[inputReadPointer++];
-    return parseInt(nextInputToken, 10); // Explicitly specify base 10 for parsing.
 }
 
-/**
- * Outputs a given value to the console, typically a result from a computation.
- * @param {*} value - The value to be printed to standard output.
- */
-function outputValue(value) {
+function outputResult(value) {
     console.log(value);
 }
+
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
+});
+process.stdin.on('end', function() {
+    rawInputBuffer = rawInputBuffer.split(/\s+/);
+    runSolver();
+});

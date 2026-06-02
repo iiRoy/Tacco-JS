@@ -1,68 +1,65 @@
-const rawTransmission = require('node:fs').readFileSync(0, 'utf8');
+const getRawInput = require('fs').readFileSync;
 
-const signalSegments = rawTransmission.trim().split('\n');
+function evaluateGraphPatrol(currentDegrees, allVertices) {
+    const totalVertexCount = allVertices.size;
 
-let netMetrics = {
-  degreeRegistry: {},
-  nodeCensus: {}
-};
+    // Rule 1: If total number of nodes is even, it's not patrollable.
+    if (totalVertexCount % 2 === 0) {
+        return false;
+    }
 
-function clearMetrics(metricsObject) {
-  metricsObject.degreeRegistry = {};
-  metricsObject.nodeCensus = {};
-}
+    let oddDegreeVertexCount = 0;
+    // Iterate through degrees to count odd ones
+    for (const degreeValue of currentDegrees.values()) {
+        if (degreeValue % 2 !== 0) {
+            oddDegreeVertexCount++;
+        }
+    }
 
-function tallyConnection(metricsObject, pointId) {
-  const pIdStr = String(pointId);
-  metricsObject.degreeRegistry[pIdStr] = (metricsObject.degreeRegistry[pIdStr] || 0) + 1;
-  metricsObject.nodeCensus[pIdStr] = true;
-}
+    // Rule 2: If no nodes have an odd degree, it's patrollable.
+    if (oddDegreeVertexCount === 0) {
+        return true;
+    }
 
-function checkTraversalFeasibility(metricsObject) {
-  const distinctNodeCount = Object.keys(metricsObject.nodeCensus).length;
+    // Rule 3: If exactly two nodes have an odd degree, AND these specific nodes are 1 and 2, it's patrollable.
+    // Get degrees for nodes 1 and 2. If a node isn't in the map, its degree is 0 (even).
+    const degreeOfVertex1 = currentDegrees.get(1) || 0;
+    const degreeOfVertex2 = currentDegrees.get(2) || 0;
 
-  if (distinctNodeCount % 2 === 0) {
+    if (oddDegreeVertexCount === 2 && (degreeOfVertex1 % 2 !== 0) && (degreeOfVertex2 % 2 !== 0)) {
+        return true;
+    }
+
+    // If none of the above conditions are met, it's not patrollable.
     return false;
-  }
-
-  let oddDegreePointsAccumulator = 0;
-  let pointOneHasOddDegree = false;
-  let pointTwoHasOddDegree = false;
-
-  for (const pIdStr in metricsObject.degreeRegistry) {
-    const degree = metricsObject.degreeRegistry[pIdStr];
-    if (degree % 2 !== 0) {
-      oddDegreePointsAccumulator++;
-      const pIdNum = Number(pIdStr);
-      if (pIdNum === 1) pointOneHasOddDegree = true;
-      if (pIdNum === 2) pointTwoHasOddDegree = true;
-    }
-  }
-
-  if (oddDegreePointsAccumulator === 0) {
-    return true;
-  } else if (oddDegreePointsAccumulator === 2 && pointOneHasOddDegree && pointTwoHasOddDegree) {
-    return true;
-  }
-  return false;
 }
 
-function decodeSegment(segmentText) {
-  return segmentText.split(' ').map(Number);
-}
+// Main execution flow
+const rawInputData = getRawInput('/dev/stdin', 'utf8');
+const inputLines = rawInputData.trim().split('\n');
 
-function processTransmission(allSegments) {
-  for (const segment of allSegments) {
-    const [startPoint, endPoint] = decodeSegment(segment);
+let vertexDegrees = new Map(); // Stores degree for each vertex
+let uniqueVertices = new Set(); // Stores all unique vertices encountered
 
-    if (startPoint === 0 && endPoint === 0) {
-      console.log(checkTraversalFeasibility(netMetrics) ? 'OK' : 'NG');
-      clearMetrics(netMetrics);
+for (const currentLine of inputLines) {
+    const [firstNode, secondNode] = currentLine.split(' ').map(Number);
+
+    if (firstNode === 0 && secondNode === 0) {
+        // Sentinel value indicates end of current graph
+        const result = evaluateGraphPatrol(vertexDegrees, uniqueVertices) ? 'OK' : 'NG';
+        console.log(result);
+
+        // Reset for the next graph
+        vertexDegrees = new Map();
+        uniqueVertices = new Set();
     } else {
-      tallyConnection(netMetrics, startPoint);
-      tallyConnection(netMetrics, endPoint);
-    }
-  }
-}
+        // Add edges and update degrees
+        // For firstNode
+        vertexDegrees.set(firstNode, (vertexDegrees.get(firstNode) || 0) + 1);
+        uniqueVertices.add(firstNode);
 
-processTransmission(signalSegments);
+        // For secondNode
+        vertexDegrees.set(secondNode, (vertexDegrees.get(secondNode) || 0) + 1);
+        uniqueVertices.add(secondNode);
+    }
+}

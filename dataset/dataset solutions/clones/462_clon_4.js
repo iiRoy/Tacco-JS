@@ -1,60 +1,76 @@
-const xlr = require('readline');
-
-function obtainMappedDigit(octalValue) {
-    if (octalValue === 0) return '0';
-    if (octalValue === 1) return '1';
-    if (octalValue === 2) return '2';
-    if (octalValue === 3) return '3';
-    if (octalValue === 4) return '5';
-    if (octalValue === 5) return '7';
-    if (octalValue === 6) return '8';
-    if (octalValue === 7) return '9';
-    return '';
-}
-
-function transformNumericValue(decimalSource) {
-    if (decimalSource === 0) {
-        return '0';
+function convertToOctal(decimalValue) {
+    if (!Number.isFinite(decimalValue)) {
+        throw new TypeError("Cannot convert non-finite or non-numeric value to octal string.");
     }
 
-    let accumulator = '';
-    let current = decimalSource;
-
-    while (current > 0) {
-        let remainder = current % 8;
-        accumulator = obtainMappedDigit(remainder) + accumulator;
-        current = Math.floor(current / 8);
+    if (decimalValue === 0) {
+        return "0";
     }
-    return accumulator;
+
+    let octalDigits = [];
+    let workingValue = decimalValue;
+
+    while (workingValue > 0) {
+        octalDigits.unshift(workingValue % 8);
+        workingValue = Math.floor(workingValue / 8);
+    }
+
+    return octalDigits.join('');
 }
 
-const inputProcessor = xlr.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+function mapOctalDigitSwitch(octalChar) {
+    let resultChar;
+    switch (octalChar) {
+        case '0': resultChar = '0'; break;
+        case '1': resultChar = '1'; break;
+        case '2': resultChar = '2'; break;
+        case '3': resultChar = '3'; break;
+        case '4': resultChar = '5'; break;
+        case '5': resultChar = '7'; break;
+        case '6': resultChar = '8'; break;
+        case '7': resultChar = '9'; break;
+        default:
+            throw new Error(`Unexpected octal digit character encountered: ${octalChar}`);
+    }
+    return resultChar;
+}
 
-let allDataChunks = [];
+function processInputLines() {
+    let currentInputIndex = 0;
+    let parsedNumber;
 
-inputProcessor.on('line', (dataUnit) => {
-    allDataChunks.push(dataUnit);
-});
-
-inputProcessor.on('close', () => {
-    let currentPosition = 0;
     while (true) {
-        const currentChunk = allDataChunks[currentPosition++];
-        if (currentChunk === undefined) {
+        let currentRawLine;
+        if (currentInputIndex < allReceivedLines.length) {
+            currentRawLine = allReceivedLines[currentInputIndex];
+            currentInputIndex++;
+        } else {
+            currentRawLine = undefined;
+        }
+
+        parsedNumber = parseInt(currentRawLine, 10);
+
+        if (parsedNumber === 0) {
             break;
         }
 
-        const numericalRepresentation = Number(currentChunk);
-
-        if (numericalRepresentation === 0) {
-            break;
-        }
-
-        const finalRepresentation = transformNumericValue(numericalRepresentation);
-        console.log(finalRepresentation);
+        let octalStringForm = convertToOctal(parsedNumber);
+        let mappedStringArray = Array.from(octalStringForm).map(digit => mapOctalDigitSwitch(digit));
+        console.log(mappedStringArray.join(''));
     }
+}
+
+let accumulatedDataBuffer = '';
+let allReceivedLines;
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function(dataChunk) {
+    accumulatedDataBuffer += dataChunk;
+});
+
+process.stdin.on('end', function() {
+    allReceivedLines = accumulatedDataBuffer.split('\n');
+    processInputLines();
 });

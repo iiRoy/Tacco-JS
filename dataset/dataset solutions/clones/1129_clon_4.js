@@ -1,54 +1,30 @@
-const fileSystem = require('node:fs');
+const fileSystem = require('fs');
 
-const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-
-const eventLoopYield = () => {
-  return new Promise((resolve) => {
-    process.nextTick(() => {
-      resolve();
-    });
-  });
+const processInput = (inputString) => {
+  const lines = inputString.trim().split('\n');
+  const [targetValue, coinTypeCount] = lines[0].split(' ').map(Number);
+  const coinValues = lines[1].trim().split(' ').map(Number);
+  return { targetValue, coinTypeCount, coinValues };
 };
 
-const rawLines = inputData.trim().split('\n');
-const firstLineTokens = rawLines[0].split(' ').map(Number);
-const targetSumAmount = firstLineTokens[0];
-const totalCoinTypes = firstLineTokens[1];
-const availableDenominations = rawLines[1].trim().split(' ').map(Number);
+const determineMinimumCoins = (target, denominations) => {
+  const minimumCounts = new Array(target + 1).fill(target + 1);
+  minimumCounts[0] = 0;
 
-const minimumCoinCounts = new Array(targetSumAmount + 1).fill(targetSumAmount + 1);
-minimumCoinCounts[0] = 0;
-
-let computationTicks = 0;
-const tickThreshold = 1000000;
-
-const determineOptimalCoins = async () => {
-  for (let currentCoinIndex = 0; currentCoinIndex < totalCoinTypes; ++currentCoinIndex) {
-    const valueOfCurrentCoin = availableDenominations[currentCoinIndex];
-
-    for (let currentTarget = valueOfCurrentCoin; currentTarget <= targetSumAmount; ++currentTarget) {
-      if (minimumCoinCounts[currentTarget - valueOfCurrentCoin] !== targetSumAmount + 1) {
-        minimumCoinCounts[currentTarget] = Math.min(
-          minimumCoinCounts[currentTarget],
-          minimumCoinCounts[currentTarget - valueOfCurrentCoin] + 1
-        );
-      }
-
-      if (++computationTicks >= tickThreshold) {
-        await eventLoopYield();
-        computationTicks = 0;
-      }
+  for (const currentCoin of denominations) {
+    for (let currentSum = currentCoin; currentSum <= target; currentSum++) {
+      minimumCounts[currentSum] = Math.min(minimumCounts[currentSum], minimumCounts[currentSum - currentCoin] + 1);
     }
   }
 
-  if (minimumCoinCounts[targetSumAmount] === targetSumAmount + 1) {
-    return targetSumAmount;
-  } else {
-    return minimumCoinCounts[targetSumAmount];
-  }
+  return minimumCounts[target] > target ? target : minimumCounts[target];
 };
 
-(async () => {
-  const finalOutcome = await determineOptimalCoins();
-  console.log(finalOutcome);
-})();
+const mainExecution = () => {
+  const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+  const { targetValue, coinTypeCount, coinValues } = processInput(rawInput);
+  const finalResult = determineMinimumCoins(targetValue, coinValues);
+  console.log(finalResult);
+};
+
+mainExecution();

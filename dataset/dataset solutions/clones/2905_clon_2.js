@@ -1,68 +1,50 @@
 'use strict';
 
-// Main processing function for the incoming data stream
-function processInputData(incomingText) {
+// Main processing function for the input data
+function processInput(inputData) {
+  // Split the entire input string into individual lines
+  const lines = inputData.split('\n');
 
-  // Split the entire input string into an array of individual lines
-  const processedLines = incomingText.split('\n');
+  // Remove the first line, which might be a header or count
+  lines.shift();
 
-  // Remove the first line, which often contains metadata like a count
-  processedLines.shift();
-
-  // Transform each remaining line into a structured record
-  const parsedRecords = processedLines.map((currentItemString, currentIndex) => {
-    // Split the current line by spaces to get its components
-    const tempRecordArray = currentItemString.split(' ');
-    
+  // Process each remaining line to create structured data entries
+  const dataEntries = lines.map((currentLine, lineIndex) => {
+    // Split the line by space to get components
+    const tempArray = currentLine.split(' ');
     // Convert the second component to an integer (base 10)
-    tempRecordArray[1] = parseInt(tempRecordArray[1], 10);
-    
-    // Store the original 1-based index of the line
-    tempRecordArray[2] = currentIndex + 1;
-    
-    // Return the newly structured array for this record
-    return tempRecordArray;
+    tempArray[1] = parseInt(tempArray[1], 10);
+    // Add the original 1-based index of the line as the third component
+    tempArray[2] = lineIndex + 1;
+    return tempArray;
   });
-  
-  // Initialize an empty object to group records by their first component
+
+  // Create an object to group entries by their first component (key)
   const groupedData = {};
 
-  // Iterate over each parsed record to populate the grouped data object
-  parsedRecords.forEach(currentRecord => {
-    // If a group for this record's category doesn't exist, create an empty array
-    groupedData[currentRecord[0]] = groupedData[currentRecord[0]] || [];
-    
-    // Add the current record to its corresponding category group
-    groupedData[currentRecord[0]].push(currentRecord);
+  // Populate the groupedData object
+  dataEntries.forEach(entry => {
+    // Initialize an array for the key if it doesn't exist
+    groupedData[entry[0]] = groupedData[entry[0]] || [];
+    // Add the current entry to the corresponding group
+    groupedData[entry[0]].push(entry);
   });
 
-  // Retrieve all category keys from the grouped data and sort them alphabetically
-  const sortedCategories = Object.keys(groupedData).sort();
+  // Get all unique keys from the grouped data and sort them alphabetically
+  const sortedKeys = Object.keys(groupedData).sort();
 
-  // Iterate through each sorted category
-  sortedCategories.forEach(currentCategory => {
-    // Sort the items within the current category based on their second component in descending order
-    const sortedCategoryItems = groupedData[currentCategory].sort((recordA, recordB) => recordB[1] - recordA[1]);
-    
-    // For each item in the now-sorted category, display its original index
-    sortedCategoryItems.forEach(itemToPrint => outputStream.displayMessage(itemToPrint[2]));
+  // Iterate through the sorted keys
+  sortedKeys.forEach(currentKey => {
+    // For each key, get its associated entries and sort them in descending order
+    // based on their second component (the integer value)
+    const sortedEntries = groupedData[currentKey].sort((entryA, entryB) => entryB[1] - entryA[1]);
+    // Iterate through the sorted entries for the current key
+    sortedEntries.forEach(outputEntry => {
+      // Print the third component (original 1-based index) of each entry
+      console.log(outputEntry[2]);
+    });
   });
 }
 
-// Define a placeholder for the global require function and the console object
-// In a real scenario, 'getModule' would be actual 'require' and 'outputStream' would be 'console'
-const getModule = (moduleName) => {
-  if (moduleName === 'node:fs') {
-    return {
-      readTextFromFile: (path, encoding) => require('fs').readFileSync(path, encoding)
-    };
-  }
-  return {};
-};
-
-const outputStream = {
-  displayMessage: (msg) => console.log(msg)
-};
-
-// Execute the main processing function by reading input from a file
-processInputData(getModule('node:fs').readTextFromFile('/data/input.txt', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

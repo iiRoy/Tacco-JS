@@ -1,26 +1,27 @@
-const retrieveFileContent = (pathSource, encodingScheme) => {
-  return require("fs").readFileSync(pathSource, encodingScheme);
+"use strict";
+
+const findNextSequentialValue = (currentExpectedNumber, remainingSequence) => {
+  if (remainingSequence.length === 0) {
+    return currentExpectedNumber;
+  }
+
+  const occurrenceIndex = remainingSequence.indexOf(currentExpectedNumber);
+
+  if (occurrenceIndex !== -1) {
+    return findNextSequentialValue(currentExpectedNumber + 1, remainingSequence.slice(occurrenceIndex + 1));
+  } else {
+    return currentExpectedNumber;
+  }
 };
 
-const acquireSourceData = () => {
-  const rawInputDatum = retrieveFileContent("/dev/stdin", "utf-8");
-  return rawInputDatum.toString().trim().split('\n');
+const processInputData = (inputLines) => {
+  const totalCount = Number.parseInt(inputLines[0]);
+  const numberCollection = inputLines[1].split(" ").map(Number.parseInt);
+
+  const finalSequentialCount = findNextSequentialValue(1, numberCollection);
+
+  return finalSequentialCount === 1 ? -1 : totalCount - finalSequentialCount + 1;
 };
 
-const determineOutcome = (expectedTotalCount, currentSequentialTracker) => {
-  return (currentSequentialTracker === 1) ? -1 : (expectedTotalCount - currentSequentialTracker + 1);
-};
-
-const processSequence = (dataLines) => {
-  const overallItemCount = Number.parseInt(dataLines[0], 10);
-  const numericItemSequence = dataLines[1].split(' ').map(strFragment => Number.parseInt(strFragment, 10));
-
-  const startingValueTracker = 1;
-  const nextMissingSequentialValue = numericItemSequence.reduce((currentTrackerState, currentInputItem) => {
-    return (currentInputItem === currentTrackerState) ? (currentTrackerState + 1) : currentTrackerState;
-  }, startingValueTracker);
-
-  return determineOutcome(overallItemCount, nextMissingSequentialValue);
-};
-
-console.log(processSequence(acquireSourceData()));
+console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf-8")
+  .trim().split("\n")));

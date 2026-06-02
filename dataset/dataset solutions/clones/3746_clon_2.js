@@ -1,24 +1,17 @@
-/* This function processes incoming textual data to determine a specific outcome. */
-function ProcessInputData( rawDataString ) {
-  // The raw input string is split by spaces, and the parameter itself is re-assigned
-  // to hold the resulting array of string components.
-  rawDataString = rawDataString.split(' ');
+// This module handles processing of incoming data.
+function ProcessInput(incomingData) {
+  // The incoming data string is split into an array of strings.
+  incomingData = incomingData.split(' ');
 
-  // Check if both string components (now implicitly converted to numbers)
-  // are less than or equal to 8, using a bitwise AND operator.
-  // Note: While a logical AND (&&) is often used for boolean conditions,
-  // the original code explicitly utilized the bitwise AND (&).
-  if ( rawDataString[0] <= 8 & rawDataString[1] <= 8 )
-  {
-    console.log( 'Excellent!' ); // A positive confirmation message.
-  }
-  else
-  {
-    console.log( 'Alas!' );     // A message indicating a condition was not met.
+  // Evaluate a condition based on the first two elements of the processed array.
+  if (incomingData[0] <= 8 & incomingData[1] <= 8) {
+    // If the condition holds true, print a positive affirmation.
+    console.log('Yay!');
+  } else {
+    // Otherwise, print a negative expression.
+    console.log(':(');
   }
 }
 
-// The primary execution block:
-// Calls the main processing routine with content read from standard input.
-// The 'fs' module is employed for synchronous file system operations.
-ProcessInputData( require( "fs" ) . readFileSync( "/dev/stdin" , "utf8" ) );
+// Execute the main processing function by reading content from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

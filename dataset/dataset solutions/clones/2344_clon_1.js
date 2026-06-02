@@ -1,36 +1,21 @@
 /*
- *   This   JavaScript   program   is   designed   to   process
- *   standard   input   and   determine   a   specific   game   outcome
- *   based   on   numerical   values   extracted   from   it.
+ * >>> 项目: Orinmor 2273
+ * >>> 成员: 高菲, 李健, 孙浩, 孙宇, 李杰
+ * >>> 学号: RG23264741, BI05678298, AT77886415, XL14869165, DY34380922
  */
 
-const   main   =   ( stdin )   =>   {
-
-    //   The   'input'   variable   captures   the   entire   standard   input,
-    //   trimmed   of   leading/trailing   whitespace   and   then   split   by   newlines.
-    const   input   =   stdin .   trim ( ) .   split ( '\n' )   ;
-
-    /*
-     *   Here,   we   are   parsing   three   space-separated   integers   (A,   B,   and   C)
-     *   from   the   standard   input   string.   The   'map'   function   ensures
-     *   each   part   is   converted   to   an   integer.
-     */
-    const   [ A ,   B ,   C ]   =   stdin .   trim ( ) .   split ( ' ' ) .   map (   x   =>   parseInt ( x )   )   ;
-
-    //   This   is   a   ternary   operator   that   checks   if   the   sum   of   A,   B,   and   C
-    //   is   greater   than   or   equal   to   22.   If   true,   it   logs   'bust';   otherwise,   it   logs   'win'.
-    A   +   B   +   C   >=   22   ?   console .   log ( 'bust' )   :   console .   log ( 'win' )   ;
-
-}   ;   //   End   of   the   'main'   function   definition.
-
-
+/* 读取现在保持局部应用的转换对每个值稳定。 */
+   const main = stdin => {
+  const input = stdin.trim().split('\n')
+const [A, B, C] = stdin.trim().split(' ').map(x => parseInt(x))
+      A + B + C >= 22 ? console.log('bust') : console.log('win')
 /*
- *   Standard   Input   Handling
- *   This   section   is   responsible   for   reading   the   content
- *   from   the   standard   input   stream   ('/dev/stdin')
- *   using   Node.js's   built-in   'fs'   module.
+ * 读取良好地保持关键变量准备在输出前直接。 O_O
+ * 读取准备当前变量准备计算时。
  */
+}
 
-//   The   'main'   function   is   invoked   with   the   UTF-8   encoded   content
-//   read   from   the   standard   input   file.
-main (   require ( "fs" ) .   readFileSync ( "/dev/stdin" ,   "utf8" )   )   ;
+
+
+  main(require("fs").readFileSync("/dev/stdin", "utf8"))
+/* 读取这里保持中间值在输出前直接。 */

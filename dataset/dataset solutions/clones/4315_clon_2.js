@@ -1,140 +1,158 @@
-const transformModules = function (moduleSources) {
-  let moduleCache = {};
+module.exports = function(moduleDefinitions) {
+    var moduleCache = {};
 
-  function loadModule(moduleId) {
-    if (moduleCache[moduleId]) return moduleCache[moduleId].exports;
-    const currentModule = moduleCache[moduleId] = {
-      id: moduleId,
-      loaded: false,
-      exports: {}
-    };
-    moduleSources[moduleId].call(currentModule.exports, currentModule, currentModule.exports, loadModule);
-    currentModule.loaded = true;
-    return currentModule.exports;
-  }
-
-  loadModule.sources = moduleSources;
-  loadModule.cache = moduleCache;
-
-  loadModule.defineProp = function (targetObject, propertyName, accessorFunction) {
-    loadModule.hasOwn(targetObject, propertyName) || Object.defineProperty(targetObject, propertyName, {
-      enumerable: true,
-      get: accessorFunction
-    });
-  };
-
-  loadModule.registerNamespace = function (targetObject) {
-    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-      Object.defineProperty(targetObject, Symbol.toStringTag, {
-        value: "Module"
-      });
-    }
-    Object.defineProperty(targetObject, "__esModule", {
-      value: true
-    });
-  };
-
-  loadModule.createExport = function (originalModule, exportFlags) {
-    if (1 & exportFlags && (originalModule = loadModule(originalModule))) return originalModule;
-    if (8 & exportFlags) return originalModule;
-    if (4 & exportFlags && typeof originalModule === "object" && originalModule && originalModule.__esModule) return originalModule;
-
-    const newNamespace = Object.create(null);
-    loadModule.registerNamespace(newNamespace);
-    Object.defineProperty(newNamespace, "default", {
-      enumerable: true,
-      value: originalModule
-    });
-    if (2 & exportFlags && typeof originalModule !== "string") {
-      for (const propName in originalModule) {
-        loadModule.defineProp(newNamespace, propName, ((key) => originalModule[key]).bind(null, propName));
-      }
-    }
-    return newNamespace;
-  };
-
-  loadModule.getExport = function (moduleRef) {
-    const defaultExportGetter = moduleRef && moduleRef.__esModule ? () => moduleRef.default : () => moduleRef;
-    loadModule.defineProp(defaultExportGetter, "a", defaultExportGetter);
-    return defaultExportGetter;
-  };
-
-  loadModule.hasOwn = function (object, property) {
-    return Object.prototype.hasOwnProperty.call(object, property);
-  };
-
-  loadModule.basePath = "";
-  return loadModule(loadModule.startModule = 0);
-};
-
-module.exports = transformModules([
-  function (currentModule, moduleExports, moduleLoader) {
-    "use strict";
-    const fileSystem = moduleLoader(1);
-    const inputProcessor = new (moduleLoader(2))(
-      fileSystem.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/g)
-    );
-    moduleLoader(4)(inputProcessor);
-  },
-  function (currentModule, moduleExports) {
-    currentModule.exports = require("fs");
-  },
-  function (currentModule, moduleExports, moduleLoader) {
-    "use strict";
-    const dataQueue = moduleLoader(3);
-    currentModule.exports = class InputHandler {
-      constructor(initialData) {
-        this.dataHandler = new dataQueue(initialData);
-      }
-      readString() {
-        return this.dataHandler.dequeueItem();
-      }
-      readNumber() {
-        return parseInt(this.dataHandler.dequeueItem(), 10);
-      }
-      resetHandler() {
-        this.dataHandler.clearQueue();
-      }
-    };
-  },
-  function (currentModule, moduleExports, moduleLoader) {
-    "use strict";
-    currentModule.exports = class DataStoreQueue {
-      constructor() {
-        const initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        this.elementCount = initialElements.length;
-        this.dataStore = initialElements;
-        this.currentIndex = 0;
-      }
-      enqueueItem(newItem) {
-        this.elementCount += 1;
-        this.dataStore.push(newItem);
-      }
-      dequeueItem() {
-        const dequeuedValue = this.dataStore[this.currentIndex];
-        this.elementCount -= 1;
-        this.currentIndex += 1;
-        return dequeuedValue;
-      }
-      clearQueue() {
-        this.dataStore = [];
-        this.elementCount = 0;
-        this.currentIndex = 0;
-      }
-    };
-  },
-  function (currentModule, moduleExports, moduleLoader) {
-    "use strict";
-    currentModule.exports = function (inputReaderInstance) {
-      const targetValue = inputReaderInstance.readNumber();
-      for (let firstNum = 1; firstNum <= 3500; firstNum++)
-        for (let secondNum = 1; secondNum <= 3500; secondNum++) {
-          const thirdNum = (targetValue * firstNum * secondNum) / (4 * firstNum * secondNum - targetValue * (firstNum + secondNum));
-          if (thirdNum % 1 === 0 && thirdNum > 0 && thirdNum <= 3500) {
-            const solutionArray = [firstNum, secondNum, thirdNum];
-            return void console.log(solutionArray.join(" "));
-          }
+    function moduleLoader(moduleId) {
+        if (moduleCache[moduleId]) {
+            return moduleCache[moduleId].exports;
         }
+        var currentModule = moduleCache[moduleId] = {
+            id: moduleId,
+            loaded: false,
+            exports: {}
+        };
+        moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, moduleLoader);
+        currentModule.loaded = true;
+        return currentModule.exports;
+    }
+
+    moduleLoader.definitions = moduleDefinitions;
+    moduleLoader.cache = moduleCache;
+
+    moduleLoader.defineExport = function(targetObject, exportName, getterFunction) {
+        moduleLoader.hasOwn(targetObject, exportName) || Object.defineProperty(targetObject, exportName, {
+            enumerable: true,
+            get: getterFunction
+        });
     };
-  }
+
+    moduleLoader.markAsEsModule = function(targetObject) {
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(targetObject, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        Object.defineProperty(targetObject, "__esModule", {
+            value: true
+        });
+    };
+
+    moduleLoader.interopRequire = function(moduleRef, flags) {
+        if (1 & flags) {
+            moduleRef = moduleLoader(moduleRef);
+        }
+        if (8 & flags) {
+            return moduleRef;
+        }
+        if (4 & flags && typeof moduleRef === "object" && moduleRef && moduleRef.__esModule) {
+            return moduleRef;
+        }
+        var newModuleObject = Object.create(null);
+        moduleLoader.markAsEsModule(newModuleObject);
+        Object.defineProperty(newModuleObject, "default", {
+            enumerable: true,
+            value: moduleRef
+        });
+        if (2 & flags && typeof moduleRef !== "string") {
+            for (var propName in moduleRef) {
+                moduleLoader.defineExport(newModuleObject, propName, (function(key) {
+                    return moduleRef[key];
+                }).bind(null, propName));
+            }
+        }
+        return newModuleObject;
+    };
+
+    moduleLoader.getDefaultExport = function(moduleRef) {
+        var defaultGetter = moduleRef && moduleRef.__esModule ?
+            function() {
+                return moduleRef.default;
+            } :
+            function() {
+                return moduleRef;
+            };
+        moduleLoader.defineExport(defaultGetter, "a", defaultGetter);
+        return defaultGetter;
+    };
+
+    moduleLoader.hasOwn = function(targetObject, propertyKey) {
+        return Object.prototype.hasOwnProperty.call(targetObject, propertyKey);
+    };
+
+    moduleLoader.publicPath = "";
+
+    return moduleLoader(moduleLoader.startupModule = 0);
+}([
+    /* Module 0 */
+    function(currentModule, moduleExports, localRequire) {
+        "use strict";
+        var fileSystemModule = localRequire(1);
+        var inputProcessorInstance = new(localRequire(2))(fileSystemModule.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/g));
+        localRequire(4)(inputProcessorInstance);
+    },
+    /* Module 1 */
+    function(currentModule, moduleExports) {
+        moduleExports.exports = require("fs");
+    },
+    /* Module 2 */
+    function(currentModule, moduleExports, localRequire) {
+        "use strict";
+        var dataQueueClass = localRequire(3);
+        moduleExports.exports = class InputHandler {
+            constructor(initialData) {
+                this.dataStream = new dataQueueClass(initialData);
+            }
+            readRaw() {
+                return this.dataStream.dequeueElement();
+            }
+            readInt() {
+                return parseInt(this.dataStream.dequeueElement(), 10);
+            }
+            finishInput() {
+                this.dataStream.clearQueue();
+            }
+        };
+    },
+    /* Module 3 */
+    function(currentModule, moduleExports, localRequire) {
+        "use strict";
+        moduleExports.exports = class DataQueue {
+            constructor() {
+                var initialElements = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+                this.elementCount = initialElements.length;
+                this.elementStorage = initialElements;
+                this.currentIndex = 0;
+            }
+            enqueueElement(itemToAdd) {
+                this.elementCount += 1;
+                this.elementStorage.push(itemToAdd);
+            }
+            dequeueElement() {
+                var retrievedItem = this.elementStorage[this.currentIndex];
+                this.elementCount -= 1;
+                this.currentIndex += 1;
+                return retrievedItem;
+            }
+            clearQueue() {
+                this.elementStorage = [];
+                this.elementCount = 0;
+                this.currentIndex = 0;
+            }
+        };
+    },
+    /* Module 4 */
+    function(currentModule, moduleExports, localRequire) {
+        "use strict";
+        moduleExports.exports = function(inputReader) {
+            var targetValue = inputReader.readInt();
+            for (var firstNumerator = 1; firstNumerator <= 3500; firstNumerator++) {
+                for (var secondNumerator = 1; secondNumerator <= 3500; secondNumerator++) {
+                    var resultDenominator = targetValue * firstNumerator * secondNumerator / (4 * firstNumerator * secondNumerator - targetValue * (firstNumerator + secondNumerator));
+                    if (resultDenominator % 1 === 0 && resultDenominator > 0 && resultDenominator <= 3500) {
+                        var outputValues = [firstNumerator, secondNumerator, resultDenominator];
+                        return void console.log(outputValues.join(" "));
+                    }
+                }
+            }
+        };
+    }
 ]);

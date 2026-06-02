@@ -1,83 +1,31 @@
-function processGrid(rawData)
-{
-  // Extract grid dimensions from the initial input line
-  var gridHeight = parseInt(rawData[0].split(" ")[0], 10);
-  var gridWidth = parseInt(rawData[0].split(" ")[1], 10);
-
-  /*
-   * This array will hold the [row, column] coordinates
-   * of all odd-valued cells in the grid.
-   */
-  var oddCoordinates = [];
-  for (
-       var rowIndex = 1;
-       rowIndex <= gridHeight;
-       rowIndex++
-      ) {
-    oddCoordinates = oddCoordinates.concat(
-      rawData[rowIndex].split(" ").map(
-        (currentValue, colIndex) => {
-          // If the current cell's value is odd, store its coordinates
-          if (currentValue % 2 === 1) {
-            return [rowIndex, colIndex + 1]; // Adjust column to be 1-indexed
-          }
-          else {
-            return null; // Otherwise, it's an even number, so we don't care
-          }
-        }
-      )
-    ).filter(
-      coord => coord // Remove all the 'null' entries
-    );
+function runTask(rows) {
+  var rowsCount = rows[0].split(' ')[0]-0;
+  var colsCount = rows[0].split(' ')[1]-0;
+  var oddCells = [];
+  for(var row=1;row<=rowsCount;row++){
+    oddCells = oddCells.concat(rows[row].split(' ').map((cell,col)=>{
+      if(cell%2==1) return [row,col+1];
+      else return null;
+    })).filter(item=>item);
   }
-
-  // This list will accumulate all the required movement operations
-  var movementInstructions = [];
-
-  // Iterate through pairs of odd coordinates to generate paths
-  for (
-       var pairIndex = 0;
-       pairIndex < Math.floor(oddCoordinates.length / 2);
-       pairIndex++
-      )
-  {
-    var sourceCoord = oddCoordinates[pairIndex * 2];
-    var targetCoord = oddCoordinates[pairIndex * 2 + 1];
-
-    if (targetCoord == null) {
-      break; // Should not happen if length is floor(N/2), but good check
-    }
-
-    // Convert target coordinates to a string for comparison in the loop
-    var targetCoordStr = targetCoord.toString();
-
-    // While the current source coordinate is not the target coordinate
-    while (sourceCoord.toString() !== targetCoordStr) {
-      if (sourceCoord[1] < targetCoord[1]) {
-        // Move right: same row, increment column
-        movementInstructions.push([
-                                   sourceCoord[0],
-                                   sourceCoord[1],
-                                   sourceCoord[0],
-                                   ++sourceCoord[1]
-                                  ]);
-      } else {
-        // Move down: increment row, same column
-        movementInstructions.push([
-                                   sourceCoord[0],
-                                   sourceCoord[1],
-                                   ++sourceCoord[0],
-                                   sourceCoord[1]
-                                  ]);
+  var moves = [];
+  for(var idx=0;idx<Math.floor(oddCells.length/2);idx++){
+    var from = oddCells[idx*2];
+    var to = oddCells[idx*2+1];
+    if(to==null) break;
+    var toKey = to.toString();
+    while(from.toString() != toKey){
+      if(from[1] < to[1]){
+        moves.push([from[0],from[1],from[0],++from[1]]);
+      }else{
+        moves.push([from[0],from[1],++from[0],from[1]]);
       }
     }
   }
 
-  // Output the total count of movements
-  console.log(movementInstructions.length);
-  // Output each movement instruction on a new line
-  console.log(movementInstructions.join("\n"));
+  console.log(moves.length);
+  console.log(moves.join('\n'));
 }
 
 
-processGrid(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"))
+runTask(require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n'))

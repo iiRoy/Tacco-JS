@@ -1,114 +1,88 @@
-const outputDisplay = console.log;
+var output = console.log;
 
-if (typeof process !== "undefined" && process.stdin) {
-    let accumulatedRawData = "";
+const isLowercaseAlpha = (charElement) => {
+    const charCode = charElement.charCodeAt(0);
+    return charCode >= 97 && charCode <= 122;
+};
 
+if (typeof process !== "undefined") {
+    var rawDataBuffer = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', (dataSegment) => {
-        accumulatedRawData += dataSegment;
+    process.stdin.on('data', function (chunk) {
+        rawDataBuffer += chunk;
     });
-
-    process.stdin.on('end', () => {
-        const allInputLines = accumulatedRawData.split("\n");
-        orchestrateProgramExecution(allInputLines);
+    process.stdin.on('end', function () {
+        const initialInputLines = rawDataBuffer.split("\n");
+        processInputData(initialInputLines);
     });
-} else {
-    // This branch could handle alternative input methods or provide a warning
-    // if running in an unsupported environment without Node.js stdin.
 }
 
-function orchestrateProgramExecution(inputSegments) {
-    if (inputSegments.length === 0) {
-        outputDisplay("Error: No input lines provided for processing. Exiting.");
-        return;
-    }
-    
-    inputSegments.shift();
+function processInputData(inputLines) {
+    const _ = inputLines.shift();
 
-    let currentLineIndex = 0;
-
-    while (currentLineIndex < inputSegments.length) {
+    while (inputLines.length > 0) {
         try {
-            if (inputSegments.length - currentLineIndex < 2) {
-                outputDisplay(`Notice: Insufficient lines remaining for a full data pair at index ${currentLineIndex}. Remaining lines will be skipped.`);
+            if (inputLines.length < 2) {
                 break;
             }
 
-            const stringPairForAnalysis = [
-                inputSegments[currentLineIndex],
-                inputSegments[currentLineIndex + 1]
-            ];
-
-            const cleanedStringPair = stringPairForAnalysis.map((rawLine) => {
-                return rawLine.replace(/[^a-z]/g, '');
+            const currentDataSetRaw = inputLines.splice(0, 2);
+            const processedDataSet = currentDataSetRaw.map(lineContent => {
+                return lineContent.split("").filter(isLowercaseAlpha).join("");
             });
 
-            if (cleanedStringPair[0].length === 0 || cleanedStringPair[1].length === 0) {
-                outputDisplay("Warning: One or both strings in the current pair are empty after cleaning. This pair will be skipped.");
-            } else {
-                processAndAnalyzePair(cleanedStringPair);
-            }
-            
-            currentLineIndex += 2;
-
-        } catch (processingError) {
-            outputDisplay(`An error occurred while processing a data pair: ${processingError.message || "Unknown error"}. Skipping to next pair.`);
-            currentLineIndex += 2;
+            computeSimilarityMatrix(processedDataSet);
+        } catch (error) {
+            output(error);
         }
     }
 }
 
-function processAndAnalyzePair(stringDataPair) {
-    if (!Array.isArray(stringDataPair) || stringDataPair.length !== 2 || typeof stringDataPair[0] !== 'string' || typeof stringDataPair[1] !== 'string') {
-        outputDisplay("Error: Invalid input provided to processAndAnalyzePair. Expected an array of two strings.");
+function computeSimilarityMatrix(currentDataSet) {
+    const firstString = currentDataSet[0];
+    const secondString = currentDataSet[1];
+
+    if (firstString.length === 0 || secondString.length === 0) {
+        output(undefined);
         return;
     }
 
-    const firstInputString = stringDataPair[0];
-    const secondInputString = stringDataPair[1];
+    const similarityMatrix = Array.from({ length: firstString.length }, () => Array(secondString.length));
 
-    const len1 = firstInputString.length;
-    const len2 = secondInputString.length;
+    let lastRowIdx = 0;
+    let lastColIdx = 0;
 
-    if (len1 === 0 || len2 === 0) {
-        outputDisplay("Notice: One or both input strings are empty within processAndAnalyzePair. Skipping computation for this pair.");
-        return;
-    }
+    for (let rowIdx = 0; rowIdx < firstString.length; rowIdx++) {
+        lastRowIdx = rowIdx;
+        for (let colIdx = 0; colIdx < secondString.length; colIdx++) {
+            lastColIdx = colIdx;
 
-    let dpMatrix = [];
+            const charMatchValue = (firstString.charAt(rowIdx) === secondString.charAt(colIdx)) ? 1 : 0;
+            similarityMatrix[rowIdx][colIdx] = charMatchValue;
 
-    for (let rIdx = 0; rIdx < len1; rIdx++) {
-        dpMatrix[rIdx] = new Array(len2);
-
-        for (let cIdx = 0; cIdx < len2; cIdx++) {
-            let currentMatchScore = 0;
-            if (firstInputString.charAt(rIdx) === secondInputString.charAt(cIdx)) {
-                currentMatchScore = 1;
+            if (rowIdx === 0 && colIdx === 0) {
+                // The original code had A[i][j] += 0; which is a no-op.
+                // Current cell value is already charMatchValue.
+            } else if (rowIdx === 0) {
+                const prevRowSameColValue = similarityMatrix[rowIdx][colIdx - 1];
+                similarityMatrix[rowIdx][colIdx] = Math.max(prevRowSameColValue, similarityMatrix[rowIdx][colIdx]);
+            } else if (colIdx === 0) {
+                const prevColSameRowValue = similarityMatrix[rowIdx - 1][colIdx];
+                similarityMatrix[rowIdx][colIdx] = Math.max(prevColSameRowValue, similarityMatrix[rowIdx][colIdx]);
             } else {
-                currentMatchScore = 0;
-            }
+                const valueFromAbove = similarityMatrix[rowIdx - 1][colIdx];
+                const valueFromLeft = similarityMatrix[rowIdx][colIdx - 1];
+                const maxOfNeighbors = Math.max(valueFromAbove, valueFromLeft);
 
-            const valueFromAbove = (rIdx > 0) ? dpMatrix[rIdx - 1][cIdx] : 0;
-            const valueFromLeft = (cIdx > 0) ? dpMatrix[rIdx][cIdx - 1] : 0;
+                const currentCellBaseValue = similarityMatrix[rowIdx][colIdx];
+                const sumWithCurrentBase = maxOfNeighbors + currentCellBaseValue;
 
-            if (rIdx === 0 && cIdx === 0) {
-                dpMatrix[rIdx][cIdx] = currentMatchScore;
-            } else if (rIdx === 0) {
-                dpMatrix[rIdx][cIdx] = Math.max(valueFromLeft, currentMatchScore);
-            } else if (cIdx === 0) {
-                dpMatrix[rIdx][cIdx] = Math.max(valueFromAbove, currentMatchScore);
-            } else {
-                const maxOfAdjacentPaths = Math.max(valueFromAbove, valueFromLeft);
-                const combinedPathValue = maxOfAdjacentPaths + currentMatchScore;
+                const limitByMinDimension = Math.min(rowIdx, colIdx) + 1;
 
-                const coordinateBound = Math.min(rIdx, cIdx) + 1;
-
-                dpMatrix[rIdx][cIdx] = Math.min(combinedPathValue, coordinateBound);
+                similarityMatrix[rowIdx][colIdx] = Math.min(sumWithCurrentBase, limitByMinDimension);
             }
         }
     }
-    
-    outputDisplay(dpMatrix[len1 - 1][len2 - 1]);
+    output(similarityMatrix[lastRowIdx][lastColIdx]);
 }

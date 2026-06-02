@@ -1,40 +1,27 @@
 "use strict";
 
-const processInput = rawSequenceData => {
-    const parsedLines = rawSequenceData.trim().split('\n');
-    const configNumbers = parsedLines[0].split(' ').map(Number);
-    const limitValue = configNumbers[1];
+const processData = (inputString) => {
+    const lines = inputString.trim().split("\n");
+    const [numElementsStr, thresholdStr] = lines[0].split(" ");
+    const numElements = Number(numElementsStr);
+    const thresholdVal = Number(thresholdStr);
 
-    const numericElements = parsedLines[1].split(' ').map(Number);
+    const values = lines[1].split(" ").map(Number);
 
-    if (numericElements.length < 2) {
-        console.log(0);
-        return;
-    }
+    const { finalReductionCount } = values.slice(1).reduce(
+        (accumulator, currentElement) => {
+            const currentPairSum = accumulator.lastModifiedVal + currentElement;
+            const excessAmount = Math.max(0, currentPairSum - thresholdVal);
 
-    const initialAccumulator = {
-        currentLeftOperand: numericElements[0],
-        totalDecrements: 0
-    };
+            accumulator.finalReductionCount += excessAmount;
+            accumulator.lastModifiedVal = currentElement - excessAmount;
 
-    const finalState = numericElements.slice(1).reduce((accumulator, currentRightOperand) => {
-        const pairSum = accumulator.currentLeftOperand + currentRightOperand;
-        let decrementForThisStep = 0;
-        let newRightOperandValue = currentRightOperand;
+            return accumulator;
+        },
+        { finalReductionCount: 0, lastModifiedVal: values[0] }
+    );
 
-        if (pairSum > limitValue) {
-            const excessAmount = pairSum - limitValue;
-            decrementForThisStep = excessAmount;
-            newRightOperandValue = currentRightOperand - excessAmount;
-        }
-
-        return {
-            currentLeftOperand: newRightOperandValue,
-            totalDecrements: accumulator.totalDecrements + decrementForThisStep
-        };
-    }, initialAccumulator);
-
-    console.log(finalState.totalDecrements);
+    console.log(finalReductionCount);
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

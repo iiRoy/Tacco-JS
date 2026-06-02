@@ -1,67 +1,71 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let accumulatedInput = '';
-
-process.stdin.on('data', function(dataChunk) {
-    accumulatedInput += dataChunk;
+var inputAccumulator = '';
+process.stdin.on('data', function(chunk) {
+    inputAccumulator += chunk;
 });
 
 process.stdin.on('end', function() {
-    findEgyptianFractionSolution(accumulatedInput.split(/\r?\n/));
+    solveEquation(inputAccumulator.split(/\r?\n/));
 });
 
-function findEgyptianFractionSolution(inputLines) {
-    const targetNumber = parseInt(inputLines[0], 10);
-    const MAX_SEARCH_VALUE = 3500;
+function solveEquation(inputLines) {
+    const MAX_ITERATION_LIMIT = 3500;
 
-    let resultH = 0;
-    let resultN = 0;
-    let resultW = 0;
+    var targetValueN = parseInt(inputLines[0], 10);
+    var h_val = 0;
+    var n_val = 0;
+    var w_val = 0; // This variable will hold the current 'w' in the loop, not the final result.
 
-    let solutionFoundFlag = false;
+    var targetFraction = 4 / targetValueN;
+    // These variables (fixedTermB, fixedTermC) were present in the original code's declarations
+    // but only used in commented-out sections. They are kept for structural similarity.
+    var fixedTermB = 2 / MAX_ITERATION_LIMIT;
+    var fixedTermC = 1 / MAX_ITERATION_LIMIT;
 
-    // The core equation is 4/targetNumber = 1/h + 1/n + 1/w
-    // We are searching for positive integers h, n, w.
-    // To optimize, we assume h <= n <= w.
+    var solutionFound = false;
+    let finalH = 0; // Stores the 'h' value of the found solution
+    let finalN = 0; // Stores the 'n' value of the found solution
+    let finalW = 0; // Stores the 'w' value of the found solution
 
-    for (let currentH = 1; currentH <= MAX_SEARCH_VALUE; ++currentH) {
-        for (let currentN = currentH; currentN <= MAX_SEARCH_VALUE; ++currentN) {
-            // Rearrange the equation to solve for w:
-            // 1/w = 4/targetNumber - 1/currentH - 1/currentN
-            // 1/w = (4 * currentH * currentN - targetNumber * currentN - targetNumber * currentH) / (targetNumber * currentH * currentN)
-            // w = (targetNumber * currentH * currentN) / (4 * currentH * currentN - targetNumber * currentN - targetNumber * currentH)
+    for (h_val = 1; h_val <= MAX_ITERATION_LIMIT; h_val++) {
+        for (n_val = h_val; n_val <= MAX_ITERATION_LIMIT; n_val++) {
 
-            const numeratorForW = targetNumber * currentH * currentN;
-            const denominatorForW = (4 * currentH * currentN) - (targetNumber * currentN) - (targetNumber * currentH);
+            // Calculate the denominator for 'w'
+            const currentDenominator = (4 * h_val * n_val) - (targetValueN * h_val) - (targetValueN * n_val);
 
-            // Ensure the denominator is positive to yield a positive 'w'
-            if (denominatorForW > 0) {
-                // Check if 'w' is an integer
-                if (numeratorForW % denominatorForW === 0) {
-                    const candidateW = numeratorForW / denominatorForW;
+            // Proceed only if the denominator is not zero to avoid division by zero
+            if (currentDenominator !== 0) {
+                const currentNumerator = targetValueN * h_val * n_val;
+                const calculatedW = Math.ceil(currentNumerator / currentDenominator);
 
-                    // Verify that candidateW meets all criteria:
-                    // 1. It must be at least currentN (maintaining h <= n <= w)
-                    // 2. It must not exceed the maximum search value
-                    if (candidateW >= currentN && candidateW <= MAX_SEARCH_VALUE) {
-                        resultH = currentH;
-                        resultN = currentN;
-                        resultW = candidateW;
-                        solutionFoundFlag = true;
-                        break; // Exit the inner loop for currentN
+                // Check if calculatedW is a positive integer and if the equation holds
+                if (calculatedW > 0) {
+                    const sumOfFractions = (1 / h_val) + (1 / n_val) + (1 / calculatedW);
+                    
+                    // Compare the calculated sum with the target fraction
+                    if (targetFraction === sumOfFractions) {
+                        solutionFound = true;
+                        finalH = h_val;
+                        finalN = n_val;
+                        finalW = calculatedW;
+                        break; // Exit the inner loop as a solution is found
                     }
                 }
             }
+
+            if (solutionFound) {
+                break; // Exit the inner loop if solution found in the previous iteration
+            }
         }
 
-        if (solutionFoundFlag) {
-            break; // Exit the outer loop for currentH
+        if (solutionFound) {
+            break; // Exit the outer loop if solution found
         }
     }
 
-    console.log(`${resultH} ${resultN} ${resultW}`);
+    console.log(finalH + ' ' + finalN + ' ' + finalW);
 
-    // Indicate successful execution
     return 0;
 }

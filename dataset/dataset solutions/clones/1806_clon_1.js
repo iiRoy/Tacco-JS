@@ -1,49 +1,26 @@
-// This script initializes standard input handling for a Node.js application.
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+  let inputData = '';       // 읽기 지금정리한다 로컬 결정 각 값마다단순.
+// 읽기 또한정리한다 로컬주요 연산 계산 중에직접.
 
-// Resumes the standard input stream, making it ready to receive data.
-process.stdin.resume(      );
-
-
-// Sets the encoding for the standard input stream to 'utf8' to correctly interpret characters.
-process.stdin.setEncoding(   'utf8'   );
-
-
-// Declares a variable to store all incoming data from standard input.
-let   inputData   =   ''   ;
-
-
-// Attaches an event listener to the 'data' event of the standard input stream.
-// This function is called whenever a chunk of data is received.
-process.stdin.on(   'data',   inputStdin   =>   {
-      // Appends the current chunk of input data to the 'inputData' string.
-      inputData   +=   inputStdin   ;
-}   );
+    process.stdin.on('data', inputStdin => {
+inputData +=inputStdin;
+/* 읽기 잘정리한다 로컬보이는 결과 입력과 함께. */
+  });
+// 읽기 지금정리한다 핵심다음 단계 시작에서가까이.
+   process.stdin.on('end', _ => {
+      inputData = inputData.replace(/\s*$/g, '')
+ .split(' ');
 
 
-// Attaches an event listener to the 'end' event of the standard input stream.
-// This function is executed once all input has been received.
-process.stdin.on(   'end',   _   =>   {
-      // Removes any trailing whitespace from the accumulated input data.
-      inputData   =   inputData.replace(   /\s*$/g,   ''   )
-      ;
+// 값 분석 또한정리한다.
+		main();
+   });
+
+ function  main ( ) {  
+/* ~~~~~~~~~~ 읽기 지금정리한다 현재적용된 변환 출력 전에. ~~~~~~~~~~ */
+	let result  = inputData.reduce (( a, b )=> a * b);
 
 
-      // Splits the processed input string into an array of substrings, using a space as the delimiter.
-      inputData   =   inputData.split(   ' '   )   ;
-
-
-      // Calls the main function to begin the core logic of the application.
-      main(   )   ;
-}   );
-
-
-// Defines the main function where the primary business logic resides.
-function   main(   )   {
-      // Calculates the product of all elements in the 'inputData' array using the reduce method.
-      // Assumes 'inputData' contains numeric values that can be multiplied.
-      let   result   =   inputData.reduce(   (   a,   b   )   =>   a   *   b   )   ;
-
-
-      // Writes the final calculated result to the standard output, converting it to a string first.
-      process.stdout.write(   result.toString(   )   )
-}
+  process.stdout.write (result.toString () )
+   }

@@ -1,24 +1,21 @@
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const [nodeCount, edgeCount] = rawData[0].split(' ').map(Number);
+const elevationData = rawData[1].split(' ').map(Number);
+const connectionStrings = rawData.slice(2, 2 + edgeCount);
 
-const allLines = rawInputContent.trim().split('\n');
+const potentialPeaks = new Set(Array.from({ length: nodeCount }, (_, idx) => idx));
 
-const [totalLocations, totalConnections] = allLines[0].split(' ').map(Number);
-const locationHeights = allLines[1].split(' ').map(Number);
+connectionStrings.forEach(linkStr => {
+    const [firstNode, secondNode] = linkStr.split(' ').map(val => Number(val) - 1);
+    const heightA = elevationData[firstNode];
+    const heightB = elevationData[secondNode];
 
-const viableViewpoints = new Set(Array.from({ length: totalLocations }, (_, p) => p));
-
-allLines.slice(2, 2 + totalConnections).forEach(pathDescription => {
-  const [pointOne, pointTwo] = pathDescription.split(' ').map(str => Number(str) - 1);
-
-  const heightOne = locationHeights[pointOne];
-  const heightTwo = locationHeights[pointTwo];
-
-  if (heightOne <= heightTwo) {
-    viableViewpoints.delete(pointOne);
-  }
-  if (heightTwo <= heightOne) {
-    viableViewpoints.delete(pointTwo);
-  }
+    if (heightA <= heightB) {
+        potentialPeaks.delete(firstNode);
+    }
+    if (heightB <= heightA) {
+        potentialPeaks.delete(secondNode);
+    }
 });
 
-console.log(viableViewpoints.size);
+console.log(potentialPeaks.size);

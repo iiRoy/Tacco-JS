@@ -1,105 +1,64 @@
 "use strict";
 
-// Helper function to construct a frequency map for characters within a given string.
-// This optimizes repeated character counting operations by pre-calculating them.
-const buildCharFrequencyMap = (inputStringValue) => {
-    const characterOccurrenceMap = new Map();
-    // Iterate over each character in the input string.
-    for (const individualCharacter of inputStringValue) {
-        // Increment the count for the current character, or initialize if it's the first time seen.
-        characterOccurrenceMap.set(individualCharacter, (characterOccurrenceMap.get(individualCharacter) || 0) + 1);
+// Helper function to determine the count of a specific character within a given string.
+const getCharCount = (targetChar, sourceString) => {
+    let charOccurrenceCount = 0;
+    for (const charInSource of sourceString) {
+        if (charInSource === targetChar) {
+            charOccurrenceCount++;
+        }
     }
-    return characterOccurrenceMap;
+    return charOccurrenceCount;
 };
 
-// This is the primary routine responsible for processing the incoming text data.
-const processInputData = (sourceTextPayload) => {
-    // Normalize the input: remove leading/trailing whitespace and split into an array of lines.
-    const inputContentLines = sourceTextPayload.trim().split("\n");
+// Core logic for processing the input data and generating the desired output.
+const processInputData = (rawInputContent) => {
+    const inputLines = rawInputContent.trim().split("\n");
+    const numberOfStrings = parseInt(inputLines[0], 10); // Parse the first line as an integer, specifying radix.
+    const stringCollection = inputLines.slice(1, numberOfStrings + 1); // Extract the relevant strings.
 
-    // Implement a crucial guard clause: if the input is empty or just whitespace,
-    // there's nothing to process, so we output an empty string and exit.
-    if (inputContentLines.length === 0 || inputContentLines[0].length === 0) {
-        console.log("");
-        return;
-    }
+    const STANDARD_ALPHABET_SEQUENCE = "abcdefghijklmnopqrstuvwxyz";
+    const alphabetCharacters = STANDARD_ALPHABET_SEQUENCE.split("");
 
-    // The first line is expected to be an integer indicating the number of subsequent text fragments.
-    // We use Number() for explicit type conversion, with a fallback to 0 if parsing fails.
-    const expectedFragmentQuantity = Number(inputContentLines[0]) || 0;
+    let finalResultCharacters = [];
 
-    // Another validation: if the expected quantity is zero or less, no fragments exist,
-    // so we output an empty string.
-    if (expectedFragmentQuantity <= 0) {
-        console.log("");
-        return;
-    }
+    // Iterate through each character of the alphabet.
+    for (const currentAlphabetCharacter of alphabetCharacters) {
+        let minimumOccurrencesAcrossStrings = Infinity;
+        let characterFoundInAllStrings = true; // Flag to track if the character is present in every string.
 
-    // Extract the actual text fragments from the input lines, starting from the second line.
-    // We ensure to only take as many fragments as specified by expectedFragmentQuantity.
-    const textFragmentArray = inputContentLines.slice(1, expectedFragmentQuantity + 1);
+        // For the current alphabet character, check its occurrences in each string of the collection.
+        for (const currentInputString of stringCollection) {
+            const currentStringCharCount = getCharCount(currentAlphabetCharacter, currentInputString);
 
-    // A final check for input integrity: if the number of actual fragments doesn't match
-    // what was declared, or if the array is unexpectedly empty, we output an empty string.
-    if (textFragmentArray.length === 0 || textFragmentArray.length !== expectedFragmentQuantity) {
-        console.log("");
-        return;
-    }
-
-    // Pre-computation step: Transform each raw text fragment into its character frequency map.
-    // This allows for efficient lookups later without re-processing strings.
-    const fragmentCharFrequencyMaps = textFragmentArray.map(fragmentEntry => buildCharFrequencyMap(fragmentEntry));
-
-    // Dynamically generate an array containing all lowercase English alphabet characters.
-    // This is an alternative to hardcoding the alphabet string.
-    const englishLowerCaseAlphabet = Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index));
-
-    // This array will accumulate the common characters, each repeated by its minimum shared count.
-    const finalCharacterSequence = [];
-
-    // Begin the main processing loop: iterate through each character of the alphabet.
-    for (const currentAlphabetChar of englishLowerCaseAlphabet) {
-        let minimumCommonOccurrences = Infinity; // Initialize with a very large number to find the true minimum.
-        let isCharPresentAcrossAllFragments = true; // Flag to determine if the character exists in every fragment.
-
-        // Iterate through each pre-computed frequency map.
-        for (const currentFragmentMap of fragmentCharFrequencyMaps) {
-            // Retrieve the count of the current character from the map, defaulting to 0 if not found.
-            const characterCountInThisFragment = currentFragmentMap.get(currentAlphabetChar) || 0;
-
-            // If the character is entirely absent from even a single fragment,
-            // it cannot be a common character across all, so we can stop checking for this char.
-            if (characterCountInThisFragment === 0) {
-                isCharPresentAcrossAllFragments = false;
-                break; // Exit the inner loop as this character isn't universally present.
+            // If the character is not found in the current string, its minimum occurrence across all strings is 0.
+            // We can then stop checking this character against further strings.
+            if (currentStringCharCount === 0) {
+                minimumOccurrencesAcrossStrings = 0;
+                characterFoundInAllStrings = false; // Update flag.
+                break; // Exit the inner loop early.
+            } else {
+                // Update the minimum occurrences found so far for this character.
+                minimumOccurrencesAcrossStrings = Math.min(minimumOccurrencesAcrossStrings, currentStringCharCount);
             }
-
-            // Update the minimum occurrence count found so far across all fragments.
-            minimumCommonOccurrences = Math.min(minimumCommonOccurrences, characterCountInThisFragment);
         }
 
-        // If the character was found in every single fragment (and thus has a minimum count > 0),
-        // append it to our result buffer, repeated by its determined minimum frequency.
-        if (isCharPresentAcrossAllFragments) {
-            // Utilize String.prototype.repeat for efficient string construction.
-            finalCharacterSequence.push(currentAlphabetChar.repeat(minimumCommonOccurrences));
+        // If the character was found in all strings (or if minimumOccurrencesAcrossStrings > 0),
+        // add it to the result array as many times as its minimum occurrences.
+        // The check `characterFoundInAllStrings` is implicitly handled by `minimumOccurrencesAcrossStrings` being 0.
+        for (let repetitionIndex = 0; repetitionIndex < minimumOccurrencesAcrossStrings; repetitionIndex++) {
+            finalResultCharacters.push(currentAlphabetCharacter);
         }
     }
 
-    // Concatenate all accumulated character strings into a single result string and print it.
-    console.log(finalCharacterSequence.join(""));
+    // Output the final string by joining all collected characters.
+    console.log(finalResultCharacters.join(""));
 };
 
-// Entry point for execution: read input from standard input and pass it to the processor.
-// Includes error handling for robust input reading operations.
-try {
-    // Use the modern Node.js 'node:fs' module for file system operations.
-    const fileSystemModule = require('node:fs');
-    const incomingInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-    processInputData(incomingInputContent);
-} catch (inputReadError) {
-    // In case of an error during input reading, log the error and output an empty string
-    // as a graceful fallback, preventing program crashes.
-    console.error("An error occurred while attempting to read input:", inputReadError.message);
-    console.log(""); // Default to empty output on error.
-}
+// Main entry point for the script execution.
+const executeProgram = () => {
+    const fileContents = require('fs').readFileSync('/dev/stdin', 'utf8');
+    processInputData(fileContents);
+};
+
+executeProgram();

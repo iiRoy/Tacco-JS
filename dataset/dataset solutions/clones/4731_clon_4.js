@@ -1,9 +1,13 @@
-'use strict'
-const performEvaluation = rawInputContent => {
-    const digitSequence = rawInputContent.match(/^\s*(\d+)/);
-    const numericalValue = +digitSequence[1];
-    const competitionDesignations = ['ABC', 'ARC'];
-    const selectionIndex = +(numericalValue >= 1200);
-    process.stdout.write(competitionDesignations[selectionIndex] + '\n');
+'use strict';
+const processInput = rawData => {
+    const trimmedContent = rawData.trim();
+    const firstNumericMatch = trimmedContent.match(/^(\d+)/);
+    
+    const valueToEvaluate = firstNumericMatch ? +firstNumericMatch[1] : 0;
+
+    const outcomeLabels = ['ABC', 'ARC'];
+    
+    console.log(outcomeLabels[+(valueToEvaluate >= 1200)]);
 };
-performEvaluation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

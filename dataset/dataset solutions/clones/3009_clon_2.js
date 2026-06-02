@@ -1,153 +1,145 @@
 "use strict";
 
 /**
- * Main application entry point for processing input.
- * This function orchestrates parsing, computation, and output.
- *
- * @param {string} rawContent - The raw input string, typically from standard input.
+ * Main processing function for the input data.
+ * This function calculates the maximum GCD of all possible subarrays
+ * by using prefix and suffix GCD arrays.
+ * @param {string} rawData - The entire input string from stdin.
  */
-function ProcessData(rawContent) {
+function ProcessInput(rawData) {
+    // Initialize a data parser to handle input tokens.
+    let dataParser = new DataStreamProcessor(rawData);
 
-    // Initialize a content parsing utility object.
-    const dataParser = new ContentProcessor(rawContent);
-
-    // Retrieve the principal size parameter from the parsed input.
-    const arraySize = dataParser.retrieveInt();
-
-    // Fetch the main sequence of numerical values based on the determined size.
-    const numericSequence = dataParser.retrieveIntArray(arraySize);
+    // Read the number of elements.
+    let countElements = dataParser.getInt();
+    // Read the array of integer values.
+    let numericValues = dataParser.getIntArray(countElements);
 
     /**
      * Computes the greatest common divisor (GCD) of two non-negative integers.
-     * This implementation uses the Euclidean algorithm recursively.
-     *
-     * @param {number} val1 - The first integer value.
-     * @param {number} val2 - The second integer value.
-     * @returns {number} The greatest common divisor of val1 and val2.
+     * This is a recursive implementation of the Euclidean algorithm.
+     * @param {number} firstNum - The first integer.
+     * @param {number} secondNum - The second integer.
+     * @returns {number} The greatest common divisor of firstNum and secondNum.
      */
-    const greatestCommonDivisor = (val1, val2) => {
-        return val2 ? greatestCommonDivisor(val2, val1 % val2) : val1;
+    const findGCD = (firstNum, secondNum) => {
+        // Base case: if secondNum is 0, then firstNum is the GCD.
+        return secondNum ? findGCD(secondNum, firstNum % secondNum) : firstNum;
     };
 
+    // Initialize an array to store prefix GCDs.
+    // prefixGCDs[k] will store the GCD of numericValues[0]...numericValues[k-1].
+    // The array size is countElements + 1 to handle boundary conditions.
+    let prefixGCDs = new Array(countElements + 1);
+    prefixGCDs[0] = 0; // GCD with 0 is the other number, useful for initial state.
 
-    // Allocate and initialize an array for storing prefix GCDs.
-    // It's padded by one element at the beginning for easier indexing.
-    let prefixGCDs = new Array(arraySize + 1);
-    prefixGCDs[0] = 0; // Base value for prefix calculations.
+    // Initialize an array to store suffix GCDs.
+    // suffixGCDs[k] will store the GCD of numericValues[k]...numericValues[countElements-1].
+    // The array size is countElements + 1 to handle boundary conditions.
+    let suffixGCDs = new Array(countElements + 1);
+    suffixGCDs[countElements] = 0; // GCD with 0 is the other number, useful for initial state.
 
-    // Allocate and initialize an array for storing suffix GCDs.
-    // Padded by one element at the end.
-    let suffixGCDs = new Array(arraySize + 1);
-    suffixGCDs[arraySize] = 0; // Base value for suffix calculations.
-
-
-    // Iterate to compute and populate the prefix GCDs array.
-    // prefixGCDs[k+1] stores the GCD of numericSequence[0] up to numericSequence[k].
-    for (let index = 0; index <= arraySize; index++) {
-        prefixGCDs[index + 1] = greatestCommonDivisor(prefixGCDs[index], numericSequence[index]);
+    // Populate the prefix GCD array.
+    // prefixGCDs[idx+1] = GCD(prefixGCDs[idx], numericValues[idx])
+    for (let idx = 0; idx < countElements; idx++) {
+        prefixGCDs[idx + 1] = findGCD(prefixGCDs[idx], numericValues[idx]);
     }
 
-    // Iterate in reverse to compute and populate the suffix GCDs array.
-    // suffixGCDs[k] stores the GCD of numericSequence[k] up to numericSequence[arraySize-1].
-    for (let index = arraySize - 1; index >= 0; index--) {
-        suffixGCDs[index] = greatestCommonDivisor(suffixGCDs[index + 1], numericSequence[index]);
+    // Populate the suffix GCD array.
+    // suffixGCDs[idx] = GCD(suffixGCDs[idx+1], numericValues[idx])
+    for (let idx = countElements - 1; idx >= 0; idx--) {
+        suffixGCDs[idx] = findGCD(suffixGCDs[idx + 1], numericValues[idx]);
     }
 
-    // Create an array to hold the calculated GCDs for each 'element removal' scenario.
-    let intermediateGCDs = new Array(arraySize);
-
-    // Calculate the GCD for each possible removal of an element.
-    // For each 'index', it's the GCD of the prefix up to 'index-1' and the suffix from 'index+1'.
-    for (let index = 0; index < arraySize; index++) {
-        intermediateGCDs[index] = greatestCommonDivisor(prefixGCDs[index], suffixGCDs[index + 1]);
+    // Initialize an array to store the GCDs when one element is removed.
+    // combinedGCDs[idx] will store GCD(prefixGCDs[idx], suffixGCDs[idx+1]).
+    // This represents the GCD of the array if numericValues[idx] were removed.
+    let combinedGCDs = new Array(countElements);
+    for (let idx = 0; idx < countElements; idx++) {
+        combinedGCDs[idx] = findGCD(prefixGCDs[idx], suffixGCDs[idx + 1]);
     }
 
-    // Print the maximum value found among all computed intermediate GCDs.
-    console.log(Math.max(...intermediateGCDs));
+    // Output the maximum value found in the combined GCDs array.
+    // This is the maximum possible GCD of the array after removing one element.
+    console.log(Math.max(...combinedGCDs));
 }
 
 /**
- * A utility class designed to process and extract various data types
- * from a given input string by splitting it into tokens.
+ * Helper class for parsing input strings into various data types.
+ * It tokenizes the input by newlines and spaces and provides methods
+ * to retrieve integers and strings sequentially.
  */
-class ContentProcessor {
-
+class DataStreamProcessor {
     /**
-     * Constructs a new ContentProcessor instance.
-     *
-     * @param {string} sourceText - The complete string containing data to parse.
-     * @throws {Error} If `sourceText` is not provided.
+     * Constructs a new DataStreamProcessor instance.
+     * @param {string} sourceText - The raw input string to be processed.
+     * @throws {Error} If sourceText is undefined.
      */
     constructor(sourceText) {
         if (typeof sourceText === 'undefined') {
-            throw new Error('The input argument (sourceText) is mandatory!');
+            throw new Error('引数（stdin）を省略できません！');
         }
-        // Initialize a counter for tracking the current token position.
-        this.positionCounter = 0;
-        // Split the source text into individual tokens using newline or space as delimiters.
-        this.tokenElements = sourceText.split(/\n|\s/);
+        // Initialize the current index for token retrieval.
+        this.currentIndex = 0;
+        // Split the input string into tokens using newlines or spaces as delimiters.
+        this.parsedTokens = sourceText.split(/\n|\s/);
     }
 
     /**
-     * Retrieves and returns the next token as an integer.
-     * Advances the internal position counter.
-     *
-     * @returns {number} The next integer value.
+     * Retrieves the next token as an integer.
+     * @returns {number} The next integer from the input stream.
      */
-    retrieveInt() {
-        return this.tokenElements[this.positionCounter++] - 0;
+    getInt() {
+        // Convert the string token to a number using unary plus operator.
+        return +this.parsedTokens[this.currentIndex++];
     }
 
     /**
-     * Retrieves an array of integers of a specified length.
-     *
-     * @param {number} count - The number of integers to retrieve.
+     * Retrieves a specified number of tokens as an array of integers.
+     * @param {number} numItems - The number of integers to retrieve. Must be 1 or greater.
      * @returns {number[]} An array containing the retrieved integers.
-     * @throws {Error} If `count` is not provided or is less than 1.
+     * @throws {Error} If numItems is undefined.
      */
-    retrieveIntArray(count) {
-        if (typeof count === 'undefined' || count < 1) {
-            throw new Error('The argument (count) must be a positive integer!');
+    getIntArray(numItems) {
+        if (typeof numItems === 'undefined') {
+            throw new Error('引数（1以上）を省略できません！');
         }
-        let resultArray = new Array(count);
-        for (let elementIndex = 0; elementIndex < count; elementIndex++) {
-            resultArray[elementIndex] = this.retrieveInt();
+        let resultArray = new Array(numItems);
+        for (let elementIndex = 0; elementIndex < numItems; elementIndex++) {
+            resultArray[elementIndex] = this.getInt();
         }
         return resultArray;
     }
 
     /**
-     * Retrieves and returns the next token as a string.
-     * Advances the internal position counter.
-     *
-     * @returns {string} The next string token.
+     * Retrieves the next token as a string.
+     * @returns {string} The next string token from the input stream.
      */
-    retrieveString() {
-        return this.tokenElements[this.positionCounter++];
+    getStr() {
+        return this.parsedTokens[this.currentIndex++];
     }
 
     /**
-     * Retrieves an array of string tokens of a specified length.
-     *
-     * @param {number} count - The number of strings to retrieve.
+     * Retrieves a specified number of tokens as an array of strings.
+     * @param {number} numItems - The number of strings to retrieve. Must be 1 or greater.
      * @returns {string[]} An array containing the retrieved strings.
-     * @throws {Error} If `count` is not provided or is less than 1.
+     * @throws {Error} If numItems is undefined.
      */
-    retrieveStringArray(count) {
-        if (typeof count === 'undefined' || count < 1) {
-            throw new Error('The argument (count) must be a positive integer!');
+    getStrArray(numItems) {
+        if (typeof numItems === 'undefined') {
+            throw new Error('引数（1以上）を省略できません！');
         }
-        let resultArray = new Array(count);
-        for (let elementIndex = 0; elementIndex < count; elementIndex++) {
-            resultArray[elementIndex] = this.retrieveString();
+        let resultArray = new Array(numItems);
+        for (let elementIndex = 0; elementIndex < numItems; elementIndex++) {
+            resultArray[elementIndex] = this.getStr();
         }
         return resultArray;
     }
 }
 
-// Conditional execution block:
-// If the current environment is not a web browser (e.g., Node.js),
-// read input from a specified file path and execute the main processing function.
-if (typeof globalThis.window === "undefined") {
-    ProcessData(loadModule("file-system-module").syncRead("/system/input.data", "UTF-8"));
+// Entry point for execution:
+// If running in a Node.js environment (i.e., not in a browser),
+// read input from stdin and pass it to the main processing function.
+if (typeof window === "undefined") {
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

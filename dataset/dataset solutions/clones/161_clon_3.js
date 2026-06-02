@@ -1,151 +1,105 @@
-const fileSystemHandler = require('fs');
+var fileSystem = require('fs');
+var dataLength = fileSystem.fstatSync(process.stdin.fd).size;
+var inputBuffer = Buffer.alloc(dataLength);
+var readBytesCount = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+var hexInputLines = inputBuffer.toString('hex', 0, readBytesCount).split('0a');
 
 const ALPHABET_SIZE = 26;
-const ASCII_OFFSET_LOWER_A = 97; 
-const SPACE_HEX_CODE = '20'; 
-const NEWLINE_HEX_CODE = '0a'; 
-const MAX_ASCII_RANGE = 128; 
+const ASCII_A_CODE = 97;
+const INITIAL_TABLE_SIZE = 123;
+const HEX_RADIX = 16;
+const SPACE_HEX_DELIMITER = '20';
+const THAT_WORD_INDICES = [19, 7, 0, 19];
+const THIS_WORD_INDICES = [19, 7, 8, 18];
 
-const KNOWN_WORD_THAT_INDICES = [19, 7, 0, 19]; 
-const KNOWN_WORD_THIS_INDICES = [19, 7, 8, 18]; 
-
-function createIdentityMapping(size) {
-  const map = new Uint8Array(size);
-  for (let idx = 0; idx < size; idx++) {
-    map[idx] = idx;
-  }
-  return map;
+function initializeIdentityTable(tableSize) {
+    const table = new Int8Array(tableSize);
+    for (let i = tableSize; i--;) {
+        table[i] = i;
+    }
+    return table;
 }
 
-function computeAffineTransformedAlphabet(factor, shift) {
-  const currentTransformedAlphabet = new Uint8Array(ALPHABET_SIZE);
-  for (let charIdx = 0; charIdx < ALPHABET_SIZE; charIdx++) {
-    currentTransformedAlphabet[charIdx] = (charIdx * factor + shift) % ALPHABET_SIZE + ASCII_OFFSET_LOWER_A;
-  }
-  return currentTransformedAlphabet;
+function generateAffineCharMap(alpha, beta) {
+    const map = new Int8Array(ALPHABET_SIZE);
+    for (let charIdx = ALPHABET_SIZE; charIdx--;) {
+        map[charIdx] = (charIdx * alpha + beta) % ALPHABET_SIZE + ASCII_A_CODE;
+    }
+    return map;
 }
 
-function generateHexTargetWord(currentTransformedAlphabet, charIndices) {
-  let hexString = '';
-  for (const charIdx of charIndices) {
-    hexString += currentTransformedAlphabet[charIdx].toString(16).padStart(2, '0');
-  }
-  return hexString;
+function getHexRepresentation(charIndices, charMap) {
+    let hexString = '';
+    for (const index of charIndices) {
+        hexString += charMap[index].toString(HEX_RADIX);
+    }
+    return hexString;
 }
 
-function attemptLineDecryption(inputHexLine, coprimeFactors) {
-  if (!inputHexLine || inputHexLine.trim().length === 0) {
-    return null;
-  }
+function containsKeyword(hexWords, charMap) {
+    const thatHex = getHexRepresentation(THAT_WORD_INDICES, charMap);
+    const thisHex = getHexRepresentation(THIS_WORD_INDICES, charMap);
 
-  const hexWordSegments = inputHexLine.split(SPACE_HEX_CODE);
-  const segmentCount = hexWordSegments.length;
+    for (let i = hexWords.length; i--;) {
+        const currentWordHex = hexWords[i];
+        if (currentWordHex === thatHex || currentWordHex === thisHex) {
+            return true;
+        }
+    }
+    return false;
+}
 
-  for (let factorIdx = 0; factorIdx < coprimeFactors.length; factorIdx++) {
-    const currentMultiplicativeFactor = coprimeFactors[factorIdx];
+function createDecryptionTableForAttempt(baseIdentityTable, charMap) {
+    const specificTable = new Int8Array(baseIdentityTable);
+    for (let charIdx = ALPHABET_SIZE; charIdx--;) {
+        const fromCode = charMap[charIdx];
+        specificTable[fromCode] = charIdx + ASCII_A_CODE;
+    }
+    return specificTable;
+}
 
-    for (let currentAdditiveShift = 0; currentAdditiveShift < ALPHABET_SIZE; currentAdditiveShift++) {
+function decryptHexLine(hexLine, decryptionTable) {
+    let decryptedOutput = "";
+    for (let charPairIdx = 0; charPairIdx < hexLine.length; charPairIdx += 2) {
+        const hexChar = hexLine.substring(charPairIdx, charPairIdx + 2);
+        const asciiCode = parseInt(hexChar, HEX_RADIX);
+        decryptedOutput += String.fromCharCode(decryptionTable[asciiCode]);
+    }
+    return decryptedOutput;
+}
 
-      const currentTransformedAlphabet = computeAffineTransformedAlphabet(
-        currentMultiplicativeFactor,
-        currentAdditiveShift
-      );
+function processCipher(){
+  const coprimeFactors = new Int8Array([1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]);
+  const factorCount = coprimeFactors.length;
 
-      const hexTargetThat = generateHexTargetWord(currentTransformedAlphabet, KNOWN_WORD_THAT_INDICES);
-      const hexTargetThis = generateHexTargetWord(currentTransformedAlphabet, KNOWN_WORD_THIS_INDICES);
+  const baseIdentityDecryptionTable = initializeIdentityTable(INITIAL_TABLE_SIZE);
 
-      let keyMatchFound = false;
-      for (let segmentIdx = 0; segmentIdx < segmentCount; segmentIdx++) {
-        const currentHexSegment = hexWordSegments[segmentIdx];
-        if (currentHexSegment === hexTargetThat || currentHexSegment === hexTargetThis) {
-          keyMatchFound = true;
-          break; 
+  for(let lineIndex = 1; lineIndex < hexInputLines.length - 1; lineIndex++){
+    const currentLineHex = hexInputLines[lineIndex];
+    const hexWords = currentLineHex.split(SPACE_HEX_DELIMITER);
+  
+    let lineDecrypted = false;
+
+    for(let factorIdx = 0; factorIdx < factorCount; factorIdx++){
+      const currentFactor = coprimeFactors[factorIdx];
+      for(let shiftValue = ALPHABET_SIZE; shiftValue--;){
+        const currentAffineCharMap = generateAffineCharMap(currentFactor, shiftValue);
+
+        if(containsKeyword(hexWords, currentAffineCharMap)){
+          const finalDecryptionTable = createDecryptionTableForAttempt(baseIdentityDecryptionTable, currentAffineCharMap);
+          
+          const decryptedOutput = decryptHexLine(currentLineHex, finalDecryptionTable);
+          console.log(decryptedOutput);
+          
+          lineDecrypted = true;
+          break;
         }
       }
-
-      if (keyMatchFound) {
-        const currentDecryptionInverseMap = createIdentityMapping(MAX_ASCII_RANGE);
-
-        for (let charOriginalIndex = 0; charOriginalIndex < ALPHABET_SIZE; charOriginalIndex++) {
-          const encryptedAsciiValue = currentTransformedAlphabet[charOriginalIndex];
-          currentDecryptionInverseMap[encryptedAsciiValue] = charOriginalIndex + ASCII_OFFSET_LOWER_A;
-        }
-
-        let buildingDecryptedString = "";
-        for (let bytePairPosition = 0; bytePairPosition < inputHexLine.length; bytePairPosition += 2) {
-          const hexBytePair = inputHexLine.substring(bytePairPosition, bytePairPosition + 2);
-          const parsedAsciiCode = parseInt(hexBytePair, 16);
-
-          if (isNaN(parsedAsciiCode) || parsedAsciiCode < 0 || parsedAsciiCode >= MAX_ASCII_RANGE) {
-            buildingDecryptedString = null; 
-            break;
-          }
-          buildingDecryptedString += String.fromCharCode(currentDecryptionInverseMap[parsedAsciiCode]);
-        }
-
-        if (buildingDecryptedString !== null) {
-          return buildingDecryptedString;
-        }
+      if (lineDecrypted) {
+        break;
       }
     }
   }
-  return null;
 }
 
-function orchestrateDecryptionProcess() {
-  let rawInputBytes = null;
-  let bytesReadFromStdin = 0;
-  let totalInputSize = 0;
-
-  try {
-    totalInputSize = fileSystemHandler.fstatSync(process.stdin.fd).size;
-
-    if (totalInputSize === 0) {
-      console.log("No input data received from stdin. Exiting.");
-      return;
-    }
-
-    rawInputBytes = Buffer.alloc(totalInputSize);
-
-    bytesReadFromStdin = fileSystemHandler.readSync(
-      process.stdin.fd,
-      rawInputBytes,
-      0,
-      totalInputSize,
-      0
-    );
-
-    if (bytesReadFromStdin !== totalInputSize) {
-      console.warn(`Warning: Expected ${totalInputSize} bytes, but read ${bytesReadFromStdin} bytes.`);
-      rawInputBytes = rawInputBytes.slice(0, bytesReadFromStdin);
-    }
-  } catch (error) {
-    console.error(`Error reading from standard input: ${error.message}`);
-    return;
-  }
-
-  const allHexInputLines = rawInputBytes.toString('hex').split(NEWLINE_HEX_CODE);
-
-  let successfullyDecryptedLines = 0;
-
-  const affineCoprimeFactors = new Uint8Array([1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]);
-
-  for (let currentLineNum = 0; currentLineNum < allHexInputLines.length; currentLineNum++) {
-    const hexLineToProcess = allHexInputLines[currentLineNum];
-    
-    const decryptedResult = attemptLineDecryption(hexLineToProcess, affineCoprimeFactors);
-
-    if (decryptedResult !== null) {
-      console.log(decryptedResult);
-      successfullyDecryptedLines++;
-    }
-  }
-
-  if (allHexInputLines.length > 0) {
-    console.log(`\n--- Decryption Summary ---`);
-    console.log(`Processed ${allHexInputLines.length} potential input lines.`);
-    console.log(`Successfully decrypted ${successfullyDecryptedLines} lines.`);
-  }
-}
-
-orchestrateDecryptionProcess();
+processCipher();

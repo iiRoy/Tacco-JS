@@ -1,41 +1,17 @@
-const obtainInput = require('fs').readFileSync;
-const inputPath = 0;
-const textEncoding = 'utf8';
+const sourceContent = require('fs').readFileSync(0, 'utf8');
+const allInputLines = sourceContent.split('\n');
 
-const processContent = (fullText) => {
-    const allLines = fullText.trim().split('\n');
+const [boxHeight, boxWidth] = allInputLines[0].split(' ').map(Number);
 
-    const firstLine = allLines[0];
-    const subsequentLines = allLines.slice(1);
+const frameBoundary = '#'.repeat(boxWidth + 2);
 
-    let parsedDimensions = [];
-    let currentNumberString = '';
-    for (let char of firstLine) {
-        if (char === ' ') {
-            parsedDimensions.push(Number(currentNumberString));
-            currentNumberString = '';
-        } else {
-            currentNumberString += char;
-        }
-    }
-    parsedDimensions.push(Number(currentNumberString));
+const contentRows = allInputLines.slice(1, boxHeight + 1)
+                                 .map(lineData => `#${lineData}#`);
 
-    const contentRows = parsedDimensions[0];
-    const contentColumns = parsedDimensions[1];
+const finalOutputSegments = [
+    frameBoundary,
+    ...contentRows,
+    frameBoundary
+];
 
-    const frameCharacter = '#';
-    const frameLength = contentColumns + 2;
-    const boundaryString = Array.from({ length: frameLength }, () => frameCharacter).join('');
-
-    const transformedBody = subsequentLines
-        .slice(0, contentRows)
-        .map(lineItem => frameCharacter + lineItem + frameCharacter);
-
-    const finalOutputSegments = [boundaryString, ...transformedBody, boundaryString];
-
-    return finalOutputSegments.join('\n');
-};
-
-const outputResult = console.log;
-
-outputResult(processContent(obtainInput(inputPath, textEncoding)));
+console.log(finalOutputSegments.join('\n'));

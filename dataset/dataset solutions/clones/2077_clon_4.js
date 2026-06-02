@@ -1,44 +1,31 @@
-const charSequence = Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index));
+const fileSystem = require('fs');
 
-const initiateSequenceGeneration = (incomingData) => {
-  const targetLength = parseInt(incomingData.split('\n')[0], 10);
+const charCodeA = 'a'.charCodeAt(0);
 
-  const sequenceQueue = [{ currentPartial: '', highMarkIndex: -1 }];
-  const completedSequences = [];
-  let queueFront = 0;
+const generateSequences = (targetLen) => {
+    const sequenceStack = [['', -1]];
 
-  while (queueFront < sequenceQueue.length) {
-    const { currentPartial, highMarkIndex } = sequenceQueue[queueFront++];
+    while (sequenceStack.length > 0) {
+        const [currentFragment, maxIndexUsed] = sequenceStack.pop();
 
-    if (currentPartial.length === targetLength) {
-      completedSequences.push(currentPartial);
-      continue;
+        if (currentFragment.length === targetLen) {
+            console.log(currentFragment);
+            continue;
+        }
+
+        const nextCharUpperLimit = maxIndexUsed + 1;
+
+        for (let charIdx = nextCharUpperLimit; charIdx >= 0; charIdx--) {
+            const nextChar = String.fromCharCode(charCodeA + charIdx);
+            const newMaxIndex = Math.max(maxIndexUsed, charIdx);
+            sequenceStack.push([currentFragment + nextChar, newMaxIndex]);
+        }
     }
-
-    const effectiveHighMark = (highMarkIndex === -1) ? 0 : (highMarkIndex + 1);
-
-    for (let charIterator = 0; charIterator <= effectiveHighMark; charIterator++) {
-      const nextChar = charSequence[charIterator];
-      const newPartial = currentPartial + nextChar;
-      const newHighMarkIndex = Math.max(highMarkIndex, charIterator);
-
-      sequenceQueue.push({ currentPartial: newPartial, highMarkIndex: newHighMarkIndex });
-    }
-  }
-
-  completedSequences.forEach(seq => process.stdout.write(seq + '\n'));
 };
 
-let receivedData = '';
-process.stdin.on('data', dataChunk => {
-  receivedData += dataChunk.toString();
-});
+const processInputData = (inputContent) => {
+    const sequenceLength = Number(inputContent.split('\n')[0]);
+    generateSequences(sequenceLength);
+};
 
-process.stdin.on('end', () => {
-  initiateSequenceGeneration(receivedData);
-});
-
-process.stdin.on('error', err => {
-  process.stderr.write("Input stream error: " + err.message + '\n');
-  process.exit(1);
-});
+processInputData(fileSystem.readFileSync('/dev/stdin', 'utf8'));

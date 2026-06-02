@@ -1,27 +1,28 @@
-const acquiredContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawLines = sourceContent.split("\n");
 
-const rawTextLines = acquiredContent.split('\n');
-
-const stopMarkerIndex = rawTextLines.findIndex(segment => segment.trim() === '0 0');
-const actionableLines = rawTextLines.slice(0, stopMarkerIndex === -1 ? rawTextLines.length : stopMarkerIndex);
-
-const constructedOutputBlocks = actionableLines.map(lineValue => {
-    const numericalComponents = lineValue.split(' ').map(component => parseInt(component, 10));
-    
-    let blockHeightDimension = numericalComponents[0];
-    let blockWidthDimension = numericalComponents[1];
-
-    if (isNaN(blockHeightDimension) || blockHeightDimension < 0) {
-        blockHeightDimension = 0;
+let activeBlocks = [];
+for (const currentLine of rawLines) {
+    if (currentLine === '0 0') {
+        break;
     }
-    if (isNaN(blockWidthDimension) || blockWidthDimension < 0) {
-        blockWidthDimension = 0;
+    activeBlocks.push(currentLine);
+}
+
+const renderBlock = (hVal, wVal) => {
+    if (hVal === 0 || wVal === 0) {
+        return "";
     }
+    const singleRow = "*".repeat(wVal) + "\n";
+    return singleRow.repeat(hVal) + "\n";
+};
 
-    const singleRowPattern = '*'.repeat(blockWidthDimension) + '\n';
-    const completeBlockStructure = singleRowPattern.repeat(blockHeightDimension);
+const processedOutput = activeBlocks
+    .map(lineText => {
+        const dimensions = lineText.split(" ").map(Number);
+        return { heightDim: dimensions[0], widthDim: dimensions[1] };
+    })
+    .map(dimPair => renderBlock(dimPair.heightDim, dimPair.widthDim))
+    .join('');
 
-    return completeBlockStructure + '\n';
-});
-
-console.log(constructedOutputBlocks.join(''));
+console.log(processedOutput);

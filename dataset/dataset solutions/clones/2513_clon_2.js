@@ -1,202 +1,238 @@
-let DATA_PARSER = (function() {
-  // This self-executing function sets up a utility for parsing input data.
-
-  // The primary factory function, creates an instance of the InputReader.
-  function createInputHandler(textualData) {
-    return new InputReader(textualData);
+var DATA_PARSER = (function() {
+  /**
+   * Factory function to create an input parser instance.
+   * @param {string} inputString - The raw input string, typically from stdin.
+   * @returns {InputProcessor} A new instance of InputProcessor.
+   */
+  function createParser(inputString) {
+    return new InputProcessor(inputString);
   }
 
-  // InputReader class: Manages the state and methods for reading from the input.
-  function InputReader(rawInputContent) {
-    // Store the input content, trimmed and split into individual lines.
-    this._sourceLines = rawInputContent.trim().split("\n");
-    // Initialize a pointer to keep track of the current line being processed.
-    this._currentLinePosition = 0;
+  /**
+   * Handles parsing of input data line by line.
+   * @param {string} inputString - The raw input string.
+   */
+  function InputProcessor(inputString) {
+    // Store all lines, trimmed and split by newline.
+    this._sourceLines = inputString.trim().split("\n");
+    // Keep track of the current line being processed.
+    this._currentLineIndex = 0;
   }
 
-  // InputReader prototype method: Extracts a single token (word or number) from the current line.
-  InputReader.prototype.extractToken = function(asStringFlag) {
-    const lineSegments = this._sourceLines;
-    const currentLineIndex = this._currentLinePosition;
-    let resultToken;
+  /**
+   * Reads the next token from the current line. If the current line is exhausted,
+   * it moves to the next line. Tokens are space-separated.
+   * @param {boolean} returnAsString - If true, returns the token as a string; otherwise, as a number.
+   * @returns {string|number} The next token.
+   */
+  InputProcessor.prototype.readNextToken = function(returnAsString) {
+    var allLines = this._sourceLines,
+      lineIdx = this._currentLineIndex,
+      resultToken;
 
-    // Check if the current line has not yet been split into tokens.
-    // If it's still a single string, split it by spaces and reverse for efficient `pop()`.
-    if (typeof lineSegments[currentLineIndex] === "string") {
-      lineSegments[currentLineIndex] = lineSegments[currentLineIndex].split(" ").reverse();
+    // If the current line hasn't been split into tokens yet, do so.
+    // Tokens are read from right to left (popped), so reverse the split array.
+    if (typeof allLines[lineIdx] === "string") {
+      allLines[lineIdx] = allLines[lineIdx].split(" ").reverse();
     }
 
-    // Retrieve the last token from the (potentially reversed) array of tokens.
-    resultToken = lineSegments[currentLineIndex].pop();
+    // Pop the last token (which was the first in the original order).
+    resultToken = allLines[lineIdx].pop();
 
-    // If the current line is now empty after popping, advance the line pointer to the next line.
-    if (!lineSegments[currentLineIndex].length) {
-      this._currentLinePosition++;
+    // If the current line is now empty, advance to the next line.
+    if (!allLines[lineIdx].length) {
+      this._currentLineIndex++;
     }
-    // Return the token. If `asStringFlag` is true, return as-is (string); otherwise, convert to a number.
-    return asStringFlag ? resultToken : +resultToken;
+
+    // Return as string or convert to number.
+    return returnAsString ? resultToken : +resultToken;
   };
 
-  // InputReader prototype method: Reads an entire line and processes its tokens.
-  InputReader.prototype.processLineTokens = function(returnAsRawStrings) {
-    // Fetch the current line, increment the line pointer, and split the line into tokens.
-    const tokensOnLine = this._sourceLines[this._currentLinePosition++].split(" ");
-    // Return the tokens. If `returnAsRawStrings` is true, return as strings; otherwise, convert all to numbers.
-    return returnAsRawStrings ? tokensOnLine : tokensOnLine.map(item => +item);
+  /**
+   * Reads all tokens from the current line and advances to the next line.
+   * @param {boolean} returnAsString - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of tokens from the line.
+   */
+  InputProcessor.prototype.readLineTokens = function(returnAsString) {
+    var lineTokens = this._sourceLines[this._currentLineIndex++].split(" ");
+    return returnAsString ? lineTokens : lineTokens.map(val => +val);
   };
 
-  // InputReader prototype method: Acquires a specified number of lines and formats them as a matrix.
-  InputReader.prototype.acquireMatrix = function(numberOfRows, keepTextual) {
-    // Extract a slice of lines from the input source, updating the line pointer.
-    // Each line is then split into its individual tokens.
-    const collectedRows = this._sourceLines.slice(this._currentLinePosition, this._currentLinePosition += numberOfRows)
-      .map(rowStr => rowStr.split(" "));
-    // If `keepTextual` is true, return the matrix with string elements.
-    // Otherwise, map through each row and convert every element to a number.
-    return keepTextual ? collectedRows : collectedRows.map(row => row.map(elem => +elem));
+  /**
+   * Reads a matrix of 'numRows' rows, where each row is split by spaces.
+   * Advances the line index by 'numRows'.
+   * @param {number} numRows - The number of rows to read for the matrix.
+   * @param {boolean} returnAsString - If true, returns elements as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} The 2D array (matrix).
+   */
+  InputProcessor.prototype.readMatrix = function(numRows, returnAsString) {
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows)
+      .map(line => line.split(" "));
+    return returnAsString ? matrixRows : matrixRows.map(row => row.map(val => +val));
   };
 
-  // InputReader prototype method: Fetches a specified number of consecutive lines.
-  InputReader.prototype.fetchLines = function(numLinesToRead, asText) {
-    // Get a segment of lines from the input, advancing the line pointer.
-    const lineSegment = this._sourceLines.slice(this._currentLinePosition, this._currentLinePosition += numLinesToRead);
-    // Return the lines. If `asText` is true, return as strings; otherwise, convert each line to a number.
-    return asText ? lineSegment : lineSegment.map(val => +val);
+  /**
+   * Reads 'numLines' lines as individual strings or numbers.
+   * Advances the line index by 'numLines'.
+   * @param {number} numLines - The number of lines to read.
+   * @param {boolean} returnAsString - If true, returns lines as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of lines.
+   */
+  InputProcessor.prototype.readLines = function(numLines, returnAsString) {
+    var linesData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    return returnAsString ? linesData : linesData.map(val => +val);
   };
 
-  return createInputHandler; // The factory function is returned, making it accessible as `DATA_PARSER`.
+  return createParser;
 })();
 
-// Create an instance of the input parsing utility, reading data from standard input.
-const dataHandler = DATA_PARSER(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input parser with data from standard input.
+var inputData = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Utility function to construct a multi-dimensional array dynamically based on provided dimensions.
-function makeMultiDimArray(initialFillValue) {
-  // `arguments` contains the initial value followed by dimension sizes.
-  const dimensionArguments = arguments;
-  let dimensionCount = dimensionArguments.length;
-  // Start constructing the array creation string from the innermost dimension.
-  // The `--dimensionCount` correctly accesses the last argument for the innermost size.
-  let arrayBuildString = `Array(dimensionArguments[${--dimensionCount}]).fill(0).map((_)=> ( ${initialFillValue} ) )`;
-  // Loop backwards through the remaining arguments to build the outer dimensions.
-  while (--dimensionCount) {
-    arrayBuildString = `Array(dimensionArguments[${dimensionCount}]).fill(0).map((_)=> ${arrayBuildString} )`;
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * The dimensions are passed as subsequent arguments.
+ * Example: createMultiDimArray(0, 2, 3) creates [[0,0,0],[0,0,0]]
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  var args = arguments,
+    argIndex = args.length,
+    // Start building the array creation string from the innermost dimension.
+    arrayExpressionString = "Array(args[" + --argIndex + "]).fill(0).map(element => { return " + initialValue + "; })";
+
+  // Wrap the expression for each preceding dimension.
+  while (--argIndex) {
+    arrayExpressionString = "Array(args[" + argIndex + "]).fill(0).map(element => " + arrayExpressionString + ")";
   }
-  // Evaluate the dynamically constructed string to create the actual multi-dimensional array.
-  return eval(arrayBuildString);
+  // Evaluate the constructed string to create the array.
+  return eval(arrayExpressionString);
 }
 
-// Declare global variables to hold critical program state.
-let totalGraphNodes; // Stores the total count of nodes within the graph.
-let graphAdjacencyMatrix; // Represents the connections between nodes, as an adjacency matrix.
-let nodeReachabilityStatus; // Flags indicating whether a node is reachable from any '1' entry.
-let isolatedNodeCounter = 0; // Counts nodes that have no incoming '1' connections.
+// Global variables for graph processing.
+var nodeCount, // Total number of nodes in the graph.
+  adjMatrix, // Adjacency matrix representing the graph.
+  nodeHasIncoming, // Array indicating if a node has any incoming edges.
+  isolatedNodeCounter = 0; // Counts nodes with no incoming edges.
 
-// Execute the primary algorithm logic and print the final computed result to the console.
+// Execute the main logic and print the result.
 console.log(executeMainLogic());
 
-// Main function encapsulating the initial graph processing and problem setup.
+/**
+ * Main function to orchestrate graph processing.
+ * Reads input, determines initial graph properties, and calls the solver.
+ * @returns {number} The final calculated result.
+ */
 function executeMainLogic() {
-  totalGraphNodes = dataHandler.extractToken(); // Read the total number of nodes from input.
-  // Read the adjacency matrix, ensuring it's treated as an array of string arrays.
-  graphAdjacencyMatrix = dataHandler.fetchLines(totalGraphNodes, true);
-  // Initialize an array to track if nodes are reachable, default to 0 (false).
-  nodeReachabilityStatus = makeMultiDimArray(0, totalGraphNodes);
+  // Read the number of nodes.
+  nodeCount = inputData.readNextToken();
+  // Read the adjacency matrix (as strings "0" or "1").
+  adjMatrix = inputData.readLines(nodeCount, true);
+  // Initialize an array to track if each node has an incoming edge.
+  nodeHasIncoming = createMultiDimArray(0, nodeCount);
 
-  let connectionDiscovered = 0; // A flag, set to 1 if any '1' connection is found in the matrix.
+  var graphHasAnyEdges = 0; // Flag to check if the entire graph has at least one edge.
 
-  // Iterate through the adjacency matrix to identify reachable nodes.
-  for (let rowIdx = 0; rowIdx < totalGraphNodes; rowIdx++) {
-    for (let colIdx = 0; colIdx < totalGraphNodes; colIdx++) {
-      // If a '1' is found, it indicates that the node at `rowIdx` is reachable.
-      if (graphAdjacencyMatrix[rowIdx][colIdx] === "1") {
-        connectionDiscovered = nodeReachabilityStatus[rowIdx] = 1; // Mark node as reachable and set the flag.
-        break; // No need to check further columns for this row, as it's already marked reachable.
+  // Iterate through the adjacency matrix to identify nodes with incoming edges.
+  for (var nodeIndexOuter = 0; nodeIndexOuter < nodeCount; nodeIndexOuter++) {
+    for (var nodeIndexInner = 0; nodeIndexInner < nodeCount; nodeIndexInner++) {
+      // If an edge exists from nodeIndexOuter to nodeIndexInner.
+      if (adjMatrix[nodeIndexOuter][nodeIndexInner] === "1") {
+        // Mark that nodeIndexOuter has an incoming edge (from some node).
+        // Also set the global flag that the graph is not entirely empty.
+        graphHasAnyEdges = nodeHasIncoming[nodeIndexOuter] = 1;
+        break; // No need to check other outgoing edges from this node for 'hasIncoming'.
       }
     }
-    // After checking all columns for the current row, if the node is still not marked reachable,
-    // it means it has no incoming '1' connections, so increment the isolated node counter.
-    if (nodeReachabilityStatus[rowIdx] === 0) {
-      isolatedNodeCounter++;
+    // If after checking all outgoing edges, this node has no incoming edges.
+    if (nodeHasIncoming[nodeIndexOuter] === 0) {
+      isolatedNodeCounter++; // Increment the count of isolated nodes.
     }
   }
 
-  // If no '1' connections were found throughout the entire matrix, return the total number of nodes.
-  if (connectionDiscovered === 0) {
-    return totalGraphNodes;
+  // If the graph has no edges at all, the result is simply the number of nodes.
+  if (graphHasAnyEdges === 0) {
+    return nodeCount;
   }
-  // Otherwise, proceed to execute the path calculation algorithm.
-  return calculateMaxPath();
+
+  // Otherwise, proceed to solve the problem for connected components.
+  return calculateMaxDistance();
 }
 
-// Function to compute the maximum path length within the graph, considering specific connectivity rules.
-function calculateMaxPath() {
-  let maximumPathLength = 0; // Variable to store the longest path (maximum BFS level) found.
+/**
+ * Solves the problem by finding the maximum distance in the graph's connected components.
+ * This function implements a Breadth-First Search (BFS) like approach.
+ * @returns {number} The maximum path length found, or -1 if an inconsistency is detected.
+ */
+function calculateMaxDistance() {
+  var maxGraphDistance = 0; // Stores the maximum distance found across all BFS traversals.
 
-  // Iterate through each node in the graph, using its index as a starting point for BFS.
-  for (let nodeIdx = 0; nodeIdx < totalGraphNodes; nodeIdx++) {
-    // Skip nodes that were identified as not reachable (no incoming '1's).
-    if (nodeReachabilityStatus[nodeIdx] === 0) {
+  // Iterate through each node to potentially start a BFS from it.
+  for (var currentNodeIndex = 0; currentNodeIndex < nodeCount; currentNodeIndex++) {
+    // Only consider nodes that have at least one incoming edge (part of a component).
+    if (nodeHasIncoming[currentNodeIndex] === 0) {
       continue;
     }
 
-    // Initialize a distance tracker array for the current BFS iteration.
-    // -1 signifies an unvisited node.
-    let distanceTracker = makeMultiDimArray(-1, totalGraphNodes);
-    distanceTracker[nodeIdx] = 0; // The starting node is at distance 0 from itself.
+    // Initialize a distance map for the current BFS traversal.
+    // -1 means unvisited, 0 means start node, 1 means distance 1, etc.
+    var distanceMap = createMultiDimArray(-1, nodeCount);
+    distanceMap[currentNodeIndex] = 0; // The starting node has distance 0.
 
-    let bfsQueue = []; // This queue holds nodes to be processed at the current BFS level.
+    var currentLevelQueue = []; // Queue for nodes at the current distance level.
 
-    // Populate the initial BFS queue with direct neighbors of the starting node.
-    for (let neighborIdx = 0; neighborIdx < totalGraphNodes; neighborIdx++) {
-      // Only consider actual connections ('1' in the adjacency matrix).
-      if (graphAdjacencyMatrix[nodeIdx][neighborIdx] === "0") {
+    // Initialize the first level of BFS (distance 1 neighbors).
+    for (var neighborIndex = 0; neighborIndex < nodeCount; neighborIndex++) {
+      // If there's no edge from currentNodeIndex to neighborIndex, skip.
+      if (adjMatrix[currentNodeIndex][neighborIndex] === "0") {
         continue;
       }
-      distanceTracker[neighborIdx] = 1; // Direct neighbors are at distance 1.
-      bfsQueue.push(neighborIdx); // Add the neighbor to the queue.
+      distanceMap[neighborIndex] = 1; // Mark neighbor as distance 1.
+      currentLevelQueue.push(neighborIndex); // Add to the queue for the next level.
     }
 
-    let currentBfsLevel = 1; // Start BFS from level 1 (nodes directly connected to the source).
+    var currentDistanceLevel = 1; // Current distance level being processed.
 
-    // Continue the BFS as long as there are nodes in the current queue.
-    while (bfsQueue.length > 0) {
-      let nextBfsQueue = []; // A temporary queue to collect nodes for the next BFS level.
+    // Perform BFS traversal.
+    while (currentLevelQueue.length) {
+      var nextLevelQueue = []; // Queue for nodes at the next distance level.
 
-      // Process all nodes currently in the `bfsQueue`.
-      while (bfsQueue.length > 0) {
-        let currentProcessingNode = bfsQueue.pop(); // Get a node from the current level's queue.
+      // Process all nodes at the current distance level.
+      while (currentLevelQueue.length) {
+        var poppedNode = currentLevelQueue.pop(); // Get a node from the current level.
 
-        // Explore all potential neighbors of the current node.
-        for (let nextNeighborIdx = 0; nextNeighborIdx < totalGraphNodes; nextNeighborIdx++) {
-          // Skip if there is no connection between `currentProcessingNode` and `nextNeighborIdx`.
-          if (graphAdjacencyMatrix[currentProcessingNode][nextNeighborIdx] === "0") {
+        // Explore neighbors of the poppedNode.
+        for (var connectedNodeIdx = 0; connectedNodeIdx < nodeCount; connectedNodeIdx++) {
+          // If there's no edge from poppedNode to connectedNodeIdx, skip.
+          if (adjMatrix[poppedNode][connectedNodeIdx] === "0") {
             continue;
           }
 
-          // If the neighbor has not been visited yet (distance is -1).
-          if (distanceTracker[nextNeighborIdx] === -1) {
-            distanceTracker[nextNeighborIdx] = currentBfsLevel + 1; // Mark its distance.
-            nextBfsQueue.push(nextNeighborIdx); // Add it to the queue for the next level.
+          // If the connectedNodeIdx has not been visited yet.
+          if (distanceMap[connectedNodeIdx] === -1) {
+            distanceMap[connectedNodeIdx] = currentDistanceLevel + 1; // Assign its distance.
+            nextLevelQueue.push(connectedNodeIdx); // Add to the next level's queue.
           }
-          // If the neighbor has been visited, check for consistency.
-          // Its recorded distance must either be `currentBfsLevel - 1` (meaning it was processed in the previous level)
-          // or `currentBfsLevel + 1` (meaning it is being processed in the *current* level and connected from a different path).
-          // Any other distance indicates a structural inconsistency or an invalid path according to problem rules.
-          else if (distanceTracker[nextNeighborIdx] !== currentBfsLevel - 1 && distanceTracker[nextNeighborIdx] !== currentBfsLevel + 1) {
-            return -1; // Return -1 to signal an error or invalid graph configuration.
+          // If the connectedNodeIdx has been visited, check for consistency.
+          // It should either be at the previous level (u-1) or the current level (u+1, if it was added from another path).
+          // If it's anything else, it indicates a cycle or inconsistency that makes the graph invalid for this problem.
+          else if (distanceMap[connectedNodeIdx] !== currentDistanceLevel - 1 && distanceMap[connectedNodeIdx] !== currentDistanceLevel + 1) {
+            return -1; // Inconsistent state detected.
           }
         }
       }
-      currentBfsLevel++; // Advance to the next BFS level.
-      bfsQueue = nextBfsQueue; // Update the main queue with nodes for the next level.
+      currentDistanceLevel++; // Move to the next distance level.
+      currentLevelQueue = nextLevelQueue; // Set the next level's queue as the current one.
     }
-    // After completing BFS from `nodeIdx`, update `maximumPathLength` if a longer path was found.
-    // `currentBfsLevel` will be one greater than the max distance found in that BFS.
-    if (maximumPathLength < currentBfsLevel) {
-      maximumPathLength = currentBfsLevel;
+
+    // After BFS from currentNodeIndex, update the overall maximum distance.
+    if (maxGraphDistance < currentDistanceLevel) {
+      maxGraphDistance = currentDistanceLevel;
     }
   }
-  // The final result is the longest path found plus the count of isolated nodes.
-  return maximumPathLength + isolatedNodeCounter;
+
+  // The final result is the maximum distance found plus the count of isolated nodes.
+  return maxGraphDistance + isolatedNodeCounter;
 }

@@ -1,31 +1,72 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
-const placeElement = (currentItems, newcomer) => {
-    let insertionIndex = 0;
-    while (insertionIndex < currentItems.length && currentItems[insertionIndex] >= newcomer) {
-        insertionIndex++;
+const swapElements = (collection, firstIdx, secondIdx) => {
+    const tempVal = collection[firstIdx];
+    collection[firstIdx] = collection[secondIdx];
+    collection[secondIdx] = tempVal;
+};
+
+const maintainMaxOrder = (heapArray, rootIdx, currentHeapSize) => {
+    let current = rootIdx;
+    while (true) {
+        const leftChild = (current * 2) + 1;
+        const rightChild = (current * 2) + 2;
+        let largest = current;
+
+        if (leftChild < currentHeapSize && heapArray[leftChild] > heapArray[largest]) {
+            largest = leftChild;
+        }
+        if (rightChild < currentHeapSize && heapArray[rightChild] > heapArray[largest]) {
+            largest = rightChild;
+        }
+
+        if (largest !== current) {
+            swapElements(heapArray, current, largest);
+            current = largest;
+        } else {
+            break;
+        }
     }
-    currentItems.splice(insertionIndex, 0, newcomer);
-    return currentItems;
 };
 
-const removeTop = (currentItems) => {
-    return currentItems.shift();
+const establishMaxHeap = (sourceArray) => {
+    const arrayLength = sourceArray.length;
+    for (let i = Math.floor(arrayLength / 2) - 1; i >= 0; i--) {
+        maintainMaxOrder(sourceArray, i, arrayLength);
+    }
+    return sourceArray;
 };
 
-const processedCollection = sourceData.reduce((presentItems, currentLine) => {
-    const operationSegments = currentLine.split(' ');
-    const commandType = operationSegments[0];
+const addValueToHeap = (currentHeap, newValue) => {
+    if (currentHeap.length === 0 || currentHeap[0] < newValue) {
+        currentHeap.unshift(newValue);
+        return currentHeap;
+    } else {
+        currentHeap.unshift(newValue);
+        return establishMaxHeap(currentHeap);
+    }
+};
 
-    switch(commandType) {
+const retrieveMaxValue = (currentHeap) => {
+    const extractedVal = currentHeap.shift();
+    if (currentHeap.length > 0) {
+        currentHeap.unshift(currentHeap.pop());
+        establishMaxHeap(currentHeap);
+    }
+    return extractedVal;
+};
+
+const processedData = inputLines.reduce((accumulator, currentLine) => {
+    const commandParts = currentLine.split(' ');
+    const operation = commandParts[0];
+
+    switch(operation) {
         case 'insert':
-            const numericValue = Number(operationSegments[1]);
-            return placeElement(presentItems, numericValue);
+            return addValueToHeap(accumulator, Number(commandParts[1]));
         case 'extract':
-            const retrievedValue = removeTop(presentItems);
-            console.log(retrievedValue);
-            return presentItems;
+            console.log(retrieveMaxValue(accumulator));
+            return accumulator;
         default:
-            return presentItems;
+            return accumulator;
     }
 }, []);

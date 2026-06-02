@@ -1,96 +1,88 @@
 const fileSystem = require('fs');
 
-// Reads the entire standard input, splits it into tokens, and maintains an index.
-const inputSource = (() => {
-    const completeText = fileSystem.readFileSync(0, 'utf8'); // 0 represents stdin
-    const dataSegments = completeText.trim().split(/\s+/g);
-    let currentPosition = 0;
+function* inputTokenizer(rawText) {
+    const tokens = rawText.trim().split(/\s+/g);
+    for (const token of tokens) {
+        yield token;
+    }
+}
 
-    // Provides the next numerical token from the input.
-    const extractNumericValue = () => parseInt(dataSegments[currentPosition++], 10);
-    // Provides the next raw string token from the input (not strictly needed here but for completeness).
-    const extractStringValue = () => dataSegments[currentPosition++];
+function retrieveNumericValue(tokenGen) {
+    return parseInt(tokenGen.next().value, 10);
+}
 
-    return { extractNumericValue, extractStringValue };
-})();
+function calculateMinimumTraversalCosts(adjacencyMatrixFlat, dimensionSize) {
+    const costMatrix = Array.from(adjacencyMatrixFlat);
+    const infiniteCost = 9999999999;
 
-// --- Utility for calculating all-pairs shortest paths using Floyd-Warshall ---
-// Takes an adjacency matrix and returns a new matrix with shortest path distances.
-const determineAllConnections = (initialGraphMap) => {
-    const pointCount = initialGraphMap.length;
-    // Create a distinct copy of the input matrix.
-    const pathwayDistances = initialGraphMap.map(row => [...row]);
-
-    // The Floyd-Warshall iteration logic.
-    for (let pivotNode = 0; pivotNode < pointCount; pivotNode++) { // Intermediate node
-        for (let startPoint = 0; startPoint < pointCount; startPoint++) {    // Origin node
-            for (let endPoint = 0; endPoint < pointCount; endPoint++) {  // Destination node
-                if (pathwayDistances[startPoint][endPoint] > pathwayDistances[startPoint][pivotNode] + pathwayDistances[pivotNode][endPoint]) {
-                    pathwayDistances[startPoint][endPoint] = pathwayDistances[startPoint][pivotNode] + pathwayDistances[pivotNode][endPoint];
+    for (let intermediateVertex = 0; intermediateVertex < dimensionSize; intermediateVertex++) {
+        for (let sourceVertex = 0; sourceVertex < dimensionSize; sourceVertex++) {
+            for (let targetVertex = 0; targetVertex < dimensionSize; targetVertex++) {
+                const directCost = costMatrix[sourceVertex * dimensionSize + targetVertex];
+                const indirectCost = costMatrix[sourceVertex * dimensionSize + intermediateVertex] + costMatrix[intermediateVertex * dimensionSize + targetVertex];
+                if (directCost > indirectCost) {
+                    costMatrix[sourceVertex * dimensionSize + targetVertex] = indirectCost;
                 }
             }
         }
     }
-    return pathwayDistances;
-};
+    return costMatrix;
+}
 
-// --- Main program execution flow ---
-const manageNetworkQueries = () => {
-    // Read graph parameters: number of nodes, number of initial edges, and distance threshold.
-    const totalNodes = inputSource.extractNumericValue();
-    const initialEdgeCount = inputSource.extractNumericValue();
-    const maxLinkDistance = inputSource.extractNumericValue();
+function processNetworkQueries(inputContent) {
+    const tokenStream = inputTokenizer(inputContent);
+    const unreachableValue = 9999999999;
 
-    // Initialize the primary graph's adjacency matrix.
-    // Use Infinity for unreachable paths and 0 for self-loops.
-    const primaryGraphStructure = Array.from({ length: totalNodes }, (_, idx) =>
-        Array(totalNodes).fill(Infinity).map((val, colIdx) => (idx === colIdx ? 0 : val))
-    );
+    const vertexCount = retrieveNumericValue(tokenStream);
+    const edgeCount = retrieveNumericValue(tokenStream);
+    const proximityThreshold = retrieveNumericValue(tokenStream);
 
-    // Populate the primary graph with given edges.
-    for (let k = 0; k < initialEdgeCount; k++) {
-        const initialA = inputSource.extractNumericValue() - 1; // Convert to 0-indexed
-        const initialB = inputSource.extractNumericValue() - 1;   // Convert to 0-indexed
-        const edgeValue = inputSource.extractNumericValue();
-        primaryGraphStructure[initialA][initialB] = edgeValue;
-        primaryGraphStructure[initialB][initialA] = edgeValue; // Graph is undirected
+    const initialNetwork = Array(vertexCount * vertexCount).fill(unreachableValue);
+    for (let i = 0; i < vertexCount; i++) {
+        initialNetwork[i * vertexCount + i] = 0;
     }
 
-    // Compute all-pairs shortest paths for the primary graph.
-    const primaryShortestPaths = determineAllConnections(primaryGraphStructure);
+    for (let currentEdge = 0; currentEdge < edgeCount; currentEdge++) {
+        const firstEndpoint = retrieveNumericValue(tokenStream) - 1;
+        const secondEndpoint = retrieveNumericValue(tokenStream) - 1;
+        const connectionWeight = retrieveNumericValue(tokenStream);
+        initialNetwork[firstEndpoint * vertexCount + secondEndpoint] = Math.min(initialNetwork[firstEndpoint * vertexCount + secondEndpoint], connectionWeight);
+        initialNetwork[secondEndpoint * vertexCount + firstEndpoint] = Math.min(initialNetwork[secondEndpoint * vertexCount + firstEndpoint], connectionWeight);
+    }
 
-    // Construct a secondary graph based on the threshold.
-    // If a path in the primary graph is within 'maxLinkDistance', it becomes a direct link of cost 1 in the secondary graph.
-    const secondaryGraphStructure = Array.from({ length: totalNodes }, (_, idx) =>
-        Array(totalNodes).fill(Infinity).map((val, colIdx) => (idx === colIdx ? 0 : val))
-    );
+    const originalShortestPaths = calculateMinimumTraversalCosts(initialNetwork, vertexCount);
 
-    for (let rowIdx = 0; rowIdx < totalNodes; rowIdx++) {
-        for (let colIdx = 0; colIdx < totalNodes; colIdx++) {
-            if (primaryShortestPaths[rowIdx][colIdx] <= maxLinkDistance) {
-                secondaryGraphStructure[rowIdx][colIdx] = 1;
+    const transformedNetwork = Array(vertexCount * vertexCount).fill(unreachableValue);
+    for (let i = 0; i < vertexCount; i++) {
+        transformedNetwork[i * vertexCount + i] = 0;
+    }
+
+    for (let rowIdx = 0; rowIdx < vertexCount; rowIdx++) {
+        for (let colIdx = 0; colIdx < vertexCount; colIdx++) {
+            if (originalShortestPaths[rowIdx * vertexCount + colIdx] <= proximityThreshold) {
+                transformedNetwork[rowIdx * vertexCount + colIdx] = 1;
             }
         }
     }
 
-    // Compute all-pairs shortest paths for the secondary graph.
-    const finalShortestPaths = determineAllConnections(secondaryGraphStructure);
+    const finalTraversalCosts = calculateMinimumTraversalCosts(transformedNetwork, vertexCount);
 
-    // Process all incoming queries.
-    const queryQuantity = inputSource.extractNumericValue();
-    for (let qry = 0; qry < queryQuantity; qry++) {
-        const queryOrigin = inputSource.extractNumericValue() - 1; // Convert to 0-indexed
-        const queryDestination = inputSource.extractNumericValue() - 1;   // Convert to 0-indexed
+    const numberOfQueries = retrieveNumericValue(tokenStream);
 
-        const computedPathLength = finalShortestPaths[queryOrigin][queryDestination];
+    for (let queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
+        const queryOrigin = retrieveNumericValue(tokenStream) - 1;
+        const queryDestination = retrieveNumericValue(tokenStream) - 1;
+        const computedCost = finalTraversalCosts[queryOrigin * vertexCount + queryDestination];
 
-        if (computedPathLength === Infinity) {
-            console.log(-1); // Indicate no valid path
+        if (computedCost === unreachableValue) {
+            console.log(-1);
         } else {
-            console.log(computedPathLength - 1); // Output the path length adjusted by one
+            console.log(computedCost - 1);
         }
     }
-};
+}
 
-// Initiate the solution process.
-manageNetworkQueries();
+module.exports = function() {
+    const standardInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    processNetworkQueries(standardInputContent);
+};

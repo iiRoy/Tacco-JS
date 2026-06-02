@@ -1,71 +1,65 @@
-const FsModule = require('fs');
-const BaseUnit = 1000000000;
+function findLargestSmallerOrEqual(records, target) {
+    let lowIndex = 0;
+    let highIndex = records.length - 1;
+    let bestMatchIndex = 0;
 
-const performLargeNumberComparison = (firstOperand, secondOperand) => {
-    if (firstOperand[0] !== secondOperand[0]) {
-        return firstOperand[0] - secondOperand[0];
-    }
-    return firstOperand[1] - secondOperand[1];
-};
-
-const locateLastIndexLE = (dataSequence, searchCriterion) => {
-    let lowBoundary = 0;
-    let highBoundary = dataSequence.length - 1;
-    let optimalIndex = -1;
-
-    while (lowBoundary <= highBoundary) {
-        const midPoint = Math.floor((lowBoundary + highBoundary) / 2);
-        if (dataSequence[midPoint][0] <= searchCriterion) {
-            optimalIndex = midPoint;
-            lowBoundary = midPoint + 1;
+    while (lowIndex <= highIndex) {
+        let midPoint = Math.floor((lowIndex + highIndex) / 2);
+        if (records[midPoint].value <= target) {
+            bestMatchIndex = midPoint;
+            lowIndex = midPoint + 1;
         } else {
-            highBoundary = midPoint - 1;
+            highIndex = midPoint - 1;
         }
     }
-    return optimalIndex;
-};
+    return records[bestMatchIndex];
+}
 
-const executeProcessing = () => {
-    const rawInputContent = FsModule.readFileSync('/dev/stdin', 'utf8');
-    const inputContentLines = rawInputContent.trim().split('\n');
+let fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+let lineSegments = fileContent.trim().split('\n');
 
-    const firstNumericCollection = inputContentLines[1].split(' ').map(Number).sort((valX, valY) => valX - valY);
-    const secondNumericCollection = inputContentLines[3].split(' ').map(Number);
-    const thirdStringCollection = inputContentLines[4].split(' ');
+lineSegments.shift();
 
-    const cumulativeSumRecords = [];
-    let currentAccumulatedParts = [0, 0];
+let sortedNumbersA = lineSegments.shift().split(' ').map(Number);
+sortedNumbersA.sort((valX, valY) => valX - valY);
 
-    firstNumericCollection.forEach(valueElement => {
-        currentAccumulatedParts[1] += valueElement;
-        if (currentAccumulatedParts[1] >= BaseUnit) {
-            currentAccumulatedParts[0]++;
-            currentAccumulatedParts[1] -= BaseUnit;
-        }
-        cumulativeSumRecords.push([valueElement, currentAccumulatedParts.slice()]);
-    });
+lineSegments.shift();
 
-    secondNumericCollection.forEach((targetQueryValue, queryIndex) => {
-        const correspondingComparisonText = thirdStringCollection[queryIndex];
-        
-        const relevantRecordIndex = locateLastIndexLE(cumulativeSumRecords, targetQueryValue);
-        let chosenAggregateForComparison;
-        if (relevantRecordIndex === -1) {
-            chosenAggregateForComparison = [0, 0];
-        } else {
-            chosenAggregateForComparison = cumulativeSumRecords[relevantRecordIndex][1];
-        }
+let queryNumbersB = lineSegments.shift().split(' ').map(Number);
+let comparisonStringsC = lineSegments.shift().split(' ');
 
-        const stringHighPart = parseInt(correspondingComparisonText.slice(0, correspondingComparisonText.length - 9));
-        const stringLowPart = parseInt(correspondingComparisonText.slice(-9));
-        const parsedComparisonAmount = [stringHighPart, stringLowPart];
+let cumulativeSumRecords = [];
+cumulativeSumRecords.push({ value: 0, total: [0, 0] });
 
-        if (performLargeNumberComparison(parsedComparisonAmount, chosenAggregateForComparison) <= 0) {
-            console.log("Yes");
-        } else {
-            console.log("No");
-        }
-    });
-};
+let currentRunningTotal = [0, 0];
+const largeNumBase = 1000000000;
 
-executeProcessing();
+sortedNumbersA.forEach(itemValue => {
+    currentRunningTotal[1] += itemValue;
+    if (currentRunningTotal[1] >= largeNumBase) {
+        currentRunningTotal[0]++;
+        currentRunningTotal[1] -= largeNumBase;
+    }
+    cumulativeSumRecords.push({ value: itemValue, total: currentRunningTotal.slice() });
+});
+
+queryNumbersB.forEach((targetValue, index) => {
+    let relevantSumEntry = findLargestSmallerOrEqual(cumulativeSumRecords, targetValue);
+    let effectiveSum = relevantSumEntry.total;
+
+    let comparisonText = comparisonStringsC[index];
+    let textLength = comparisonText.length;
+
+    let parsedBigNum = [
+        parseInt(comparisonText.slice(0, textLength - 9), 10) || 0,
+        parseInt(comparisonText.slice(-9), 10) || 0
+    ];
+
+    let outcome = "No";
+    if (parsedBigNum[0] < effectiveSum[0]) {
+        outcome = "Yes";
+    } else if (parsedBigNum[0] === effectiveSum[0] && parsedBigNum[1] <= effectiveSum[1]) {
+        outcome = "Yes";
+    }
+    console.log(outcome);
+});

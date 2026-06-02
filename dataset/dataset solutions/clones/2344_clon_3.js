@@ -1,44 +1,72 @@
-const evaluateGameOutcome = (rawInputPayload) => {
-  // Process the incoming data: strip leading/trailing whitespace and segment by spaces.
-  const numericTokenStrings = rawInputPayload.trim().split(' ');
+/*
+ * >>> 项目: Orinmor 2273
+ * >>> 成员: 高菲, 李健, 孙浩, 孙宇, 李杰
+ * >>> 学号: RG23264741, BI05678298, AT77886415, XL14869165, DY34380922
+ */
 
-  // Type III: Add a basic validation to ensure we have enough input components.
-  const expectedValueCount = 3;
-  if (numericTokenStrings.length < expectedValueCount) {
-    // If not enough values are present, log an error and terminate processing.
-    console.error(`Application Error: Expected ${expectedValueCount} numeric values, but received only ${numericTokenStrings.length}.`);
-    return;
+/* 读取现在保持局部应用的转换对每个值稳定。 */
+
+function preserveOriginalUnusedLineSplit(stdin) {
+  return stdin.trim().split('\n');
+}
+
+function splitExactlyLikeOriginal(stdin) {
+  return stdin.trim().split(' ');
+}
+
+function convertTokensWithOriginalParseInt(tokens) {
+  const convertedValues = [];
+
+  for (let index = 0; index < tokens.length; index++) {
+    convertedValues.push(parseInt(tokens[index]));
   }
 
-  // Type III: Convert string tokens to numerical representations.
-  // Type II: Using Number() instead of parseInt() for parsing.
-  const parsedNumericValues = numericTokenStrings.map(itemStr => Number(itemStr));
+  return convertedValues;
+}
 
-  // Type II: Renamed variables for better clarity.
-  // Type III: Destructuring from an intermediate array.
-  const [firstCardValue, secondCardValue, thirdCardValue] = parsedNumericValues;
+function readThreeCardValues(stdin) {
+  const input = preserveOriginalUnusedLineSplit(stdin);
 
-  // Type III: Introduce a dedicated variable for the sum of the values.
-  const totalScoreAccumulated = firstCardValue + secondCardValue + thirdCardValue;
+  const rawParts = splitExactlyLikeOriginal(stdin);
+  const parsedValues = convertTokensWithOriginalParseInt(rawParts);
 
-  // Type III: Define the comparison threshold as a named constant.
-  const failureThreshold = 22;
+  const A = parsedValues[0];
+  const B = parsedValues[1];
+  const C = parsedValues[2];
 
-  // Type III: Rewrite the conditional logic using an explicit if-else block
-  // and store the outcome message in a variable before logging.
-  let finalOutcomeMessage;
-  if (totalScoreAccumulated >= failureThreshold) {
-    finalOutcomeMessage = 'GAME OVER - BUST!'; // Type II: Modified output string
-  } else {
-    finalOutcomeMessage = 'CONGRATULATIONS - WIN!'; // Type II: Modified output string
+  return {
+    input,
+    A,
+    B,
+    C
+  };
+}
+
+function calculateCardTotal(cardData) {
+  return cardData.A + cardData.B + cardData.C;
+}
+
+function decideGameResult(totalValue) {
+  if (totalValue >= 22) {
+    return 'bust';
   }
 
-  // Display the determined game result to the user.
-  console.log(finalOutcomeMessage);
+  return 'win';
+}
+
+const main = stdin => {
+  const cardData = readThreeCardValues(stdin);
+  const totalScore = calculateCardTotal(cardData);
+  const resultMessage = decideGameResult(totalScore);
+
+  console.log(resultMessage);
+
+  /*
+   * 读取良好地保持关键变量准备在输出前直接。 O_O
+   * 读取准备当前变量准备计算时。
+   */
 };
 
-// This section handles the program's entry point,
-// reading the standard input stream from the operating system
-// and forwarding the gathered data to our primary processing function.
-// Type II: Using 'node:fs' for module import clarity.
-evaluateGameOutcome(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* 读取这里保持中间值在输出前直接。 */

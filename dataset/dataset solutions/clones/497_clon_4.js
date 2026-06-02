@@ -1,100 +1,38 @@
-const acquireRawData = () => {
-    const fileDescriptor = global.process.stdin.fd;
-    const bufferSize = 1024;
-    let totalData = '';
-    let bytesRead;
-    const dataBuffer = Buffer.alloc(bufferSize);
+const fileSystem = require('fs');
 
-    while (true) {
-        try {
-            bytesRead = require('fs').readSync(fileDescriptor, dataBuffer, 0, bufferSize, null);
-        } catch (inputError) {
-            break;
+const processInputData = (sourceData) => {
+    const allInputLines = sourceData.trim().split("\n");
+    const iterationLimitString = allInputLines.shift();
+    const maximumIterations = Number(iterationLimitString);
+
+    function* quaternionDataGenerator(linesCollection, iterationCap) {
+        let processedCount = 0;
+        for (const currentLineEntry of linesCollection) {
+            if (processedCount >= iterationCap) break;
+            if (currentLineEntry === "0") break;
+
+            const numericalValues = currentLineEntry.split(" ").map(Number);
+            const quaternionOne = numericalValues.slice(0, 4);
+            const quaternionTwo = numericalValues.slice(4, 8);
+
+            yield { qA: quaternionOne, qB: quaternionTwo };
+            processedCount++;
         }
-        if (bytesRead === 0) {
-            break;
-        }
-        totalData += dataBuffer.toString('utf8', 0, bytesRead);
     }
-    return totalData;
+
+    const quaternionCalculations = quaternionDataGenerator(allInputLines, maximumIterations);
+
+    for (const quaternionPair of quaternionCalculations) {
+        const [q1_real, q1_i, q1_j, q1_k] = quaternionPair.qA;
+        const [q2_real, q2_i, q2_j, q2_k] = quaternionPair.qB;
+
+        const resultReal = q1_real * q2_real - q1_i * q2_i - q1_j * q2_j - q1_k * q2_k;
+        const resultI = q1_real * q2_i + q1_i * q2_real + q1_j * q2_k - q1_k * q2_j;
+        const resultJ = q1_real * q2_j - q1_i * q2_k + q1_j * q2_real + q1_k * q2_i;
+        const resultK = q1_real * q2_k + q1_i * q2_j - q1_j * q2_i + q1_k * q2_real;
+
+        console.log(`${resultReal} ${resultI} ${resultJ} ${resultK}`);
+    }
 };
 
-class Hypercomplex {
-    constructor(scalarComponent, iUnit, jUnit, kUnit) {
-        this.scalarComponent = scalarComponent;
-        this.iUnit = iUnit;
-        this.jUnit = jUnit;
-        this.kUnit = kUnit;
-    }
-
-    static fromNumericArray(componentSource) {
-        if (componentSource.length !== 4) {
-            throw new Error("Input array must provide four components.");
-        }
-        return new Hypercomplex(
-            componentSource[0],
-            componentSource[1],
-            componentSource[2],
-            componentSource[3]
-        );
-    }
-
-    performProduct(otherHypercomplex) {
-        const productScalar =
-            this.scalarComponent * otherHypercomplex.scalarComponent -
-            this.iUnit * otherHypercomplex.iUnit -
-            this.jUnit * otherHypercomplex.jUnit -
-            this.kUnit * otherHypercomplex.kUnit;
-
-        const productI =
-            this.scalarComponent * otherHypercomplex.iUnit +
-            this.iUnit * otherHypercomplex.scalarComponent +
-            this.jUnit * otherHypercomplex.kUnit -
-            this.kUnit * otherHypercomplex.jUnit;
-
-        const productJ =
-            this.scalarComponent * otherHypercomplex.jUnit -
-            this.iUnit * otherHypercomplex.kUnit +
-            this.jUnit * otherHypercomplex.scalarComponent +
-            this.kUnit * otherHypercomplex.iUnit;
-
-        const productK =
-            this.scalarComponent * otherHypercomplex.kUnit +
-            this.iUnit * otherHypercomplex.jUnit -
-            this.jUnit * otherHypercomplex.iUnit +
-            this.kUnit * otherHypercomplex.scalarComponent;
-
-        return new Hypercomplex(productScalar, productI, productJ, productK);
-    }
-
-    getFormattedOutput() {
-        return `${this.scalarComponent} ${this.iUnit} ${this.jUnit} ${this.kUnit}`;
-    }
-}
-
-const executeOperations = () => {
-    const rawDataContent = acquireRawData();
-    const allTextLines = rawDataContent.trim().split(/\r?\n/);
-
-    const operationCount = Number(allTextLines[0]);
-
-    const finalOutputs = allTextLines.slice(1).reduce((resultsCollection, currentDataLine, lineIndex) => {
-        if (currentDataLine === '0' || lineIndex >= operationCount) {
-            return resultsCollection;
-        }
-
-        const numericalElements = currentDataLine.split(' ').map(element => Number(element));
-
-        const firstHypercomplex = Hypercomplex.fromNumericArray(numericalElements.slice(0, 4));
-        const secondHypercomplex = Hypercomplex.fromNumericArray(numericalElements.slice(4, 8));
-
-        const resultantHypercomplex = firstHypercomplex.performProduct(secondHypercomplex);
-
-        resultsCollection.push(resultantHypercomplex.getFormattedOutput());
-        return resultsCollection;
-    }, []);
-
-    global.console.log(finalOutputs.join('\n'));
-};
-
-executeOperations();
+processInputData(fileSystem.readFileSync('/dev/stdin', 'utf8'));

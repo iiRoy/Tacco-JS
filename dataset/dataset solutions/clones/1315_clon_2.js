@@ -1,63 +1,55 @@
-( function ( rawInputData )
-{
-    // A mapping to store the frequency of each lowercase alphabet character.
-    const letterFrequencies = {};
+(function(sourceText) {
+    // This object will store the frequency of each lowercase letter.
+    let charCounts = {};
 
-    // Populate the frequency map with all lowercase letters, initialized to zero.
-    for ( let letterCode = 'a'.charCodeAt(0); letterCode <= 'z'.charCodeAt(0); letterCode++ )
-    {
-        letterFrequencies[ String.fromCharCode(letterCode) ] = 0;
+    // Initialize counts for all lowercase English alphabet characters to zero.
+    for (let charCodeVal = 'a'.charCodeAt(0); charCodeVal <= 'z'.charCodeAt(0); charCodeVal++) {
+        charCounts[String.fromCharCode(charCodeVal)] = 0;
     }
 
-    // Iterate through the input data to count character occurrences.
-    rawInputData.split('').forEach( function ( currentCharacter )
-    {
-        const normalizedChar = currentCharacter.toLowerCase();
-        // If the character is a lowercase alphabet letter, increment its count.
-        if ( normalizedChar in letterFrequencies )
-        {
-            letterFrequencies[normalizedChar]++;
+    // Process the input text character by character.
+    sourceText.split('').forEach(function(currentChar) {
+        // Convert the current character to lowercase for case-insensitive counting.
+        currentChar = currentChar.toLowerCase();
+        // If the character is one of the tracked lowercase letters, increment its count.
+        if (currentChar in charCounts) {
+            charCounts[currentChar]++;
         }
-    } );
+    });
 
-    // Format and display the character counts to the console.
-    console.log(
-        Object.keys(letterFrequencies).map( function ( charKey )
-        {
-            return charKey + ': ' + this[charKey];
-        }, letterFrequencies ).join('\n')
-    );
+    // Format and print the character counts to the console.
+    // The 'this' context for the map function is set to 'charCounts' itself.
+    console.log(Object.keys(charCounts).map(function(charKey) {
+        return charKey + ': ' + this[charKey];
+    }, charCounts).join('\n'));
 
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
 
-/*
- * This utility function processes a string, breaking it down into a two-dimensional array
- * based on provided field and record delimiters.
- *
- * @param {string} sourceString - The text content to be parsed.
- * @param {string} [fieldDelimiter=' '] - The character(s) used to separate fields within a record.
- * @param {string} [recordDelimiter='\n'] - The character(s) used to separate records (e.g., lines).
- * @returns {Array<Array<string>>} A nested array representing the parsed structure.
+/**
+ * Parses a multi-line string into a 2D array based on specified separators.
+ * @param {string} inputString - The string to be parsed.
+ * @param {string} [separatorChar=' '] - The character used to split individual lines into elements.
+ * @param {string} [terminatorChar='\n'] - The character used to split the input string into lines.
+ * @returns {Array<Array<string>>} A 2D array representing the parsed data.
  */
-function decomposeContent( sourceString, fieldDelimiter, recordDelimiter )
-{
-    // Assign default delimiters if not explicitly provided.
-    fieldDelimiter = ( typeof fieldDelimiter !== 'undefined' ) ? fieldDelimiter : ' ';
-    recordDelimiter = ( typeof recordDelimiter !== 'undefined' ) ? recordDelimiter : '\n';
+function processStringData(inputString, separatorChar, terminatorChar) {
+    // Set default separator if not provided.
+    separatorChar = (typeof separatorChar !== 'undefined') ? separatorChar : ' ';
+    // Set default terminator if not provided.
+    terminatorChar = (typeof terminatorChar !== 'undefined') ? terminatorChar : '\n';
 
-    // Remove a potential trailing record delimiter to avoid an empty final record.
-    sourceString = sourceString.replace( /\n$/, '' );
+    // Remove a trailing newline character if present.
+    inputString = inputString.replace(/\n$/, '');
 
-    // Split the source string into an array of records using the record delimiter.
-    const recordList = sourceString.split( recordDelimiter );
+    // Split the main string into an array of lines.
+    let resultArray = inputString.split(terminatorChar);
 
-    // Iterate through each record and split it further into fields using the field delimiter.
-    for ( let recordIdx = 0; recordIdx < recordList.length; recordIdx++ )
-    {
-        recordList[recordIdx] = recordList[recordIdx].split( fieldDelimiter );
+    // For each line, split it further by the separator character.
+    for (let idx = 0; idx < resultArray.length; idx++) {
+        resultArray[idx] = resultArray[idx].split(separatorChar);
     }
 
-    // Return the fully parsed two-dimensional array.
-    return recordList;
+    // Return the resulting 2D array.
+    return resultArray;
 }

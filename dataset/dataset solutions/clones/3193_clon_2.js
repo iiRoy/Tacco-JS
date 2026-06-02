@@ -1,187 +1,211 @@
 "use strict";
 
-function _destructArray(inputArray, limit) {
-  return _handleArrayHoles(inputArray) || _processIterableLimited(inputArray, limit) || _throwNonIterableError();
-}
+// Babel-generated helper functions for destructuring, kept as-is.
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-function _throwNonIterableError() {
-  throw new TypeError("Invalid attempt to decompose non-iterable instance");
-}
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-function _processIterableLimited(sourceIterable, maxElements) {
-  var collectedItems = [];
-  var notDone = true;
-  var hadError = false;
-  var encounteredError = undefined;
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-  try {
-    for (var iteratorInstance = sourceIterable[Symbol.iterator](), iteratorResult; !(notDone = (iteratorResult = iteratorInstance.next()).done); notDone = true) {
-      collectedItems.push(iteratorResult.value);
-      if (maxElements && collectedItems.length === maxElements) break;
-    }
-  } catch (caughtException) {
-    hadError = true;
-    encounteredError = caughtException;
-  } finally {
-    try {
-      if (!notDone && iteratorInstance["return"] != null) {
-        iteratorInstance["return"]();
-      }
-    } finally {
-      if (hadError) {
-        throw encounteredError;
-      }
-    }
-  }
-  return collectedItems;
-}
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-function _handleArrayHoles(potentialArray) {
-  if (Array.isArray(potentialArray)) return potentialArray;
-}
-
+// Main application logic wrapped in an immediately invoked function expression.
 !function () {
+
+  /**
+   * Parses a line of space-separated numbers into an array of integers.
+   * @param {string|string[]} inputLine - The input string or array of strings.
+   * @returns {number[]} An array of parsed integers.
+   */
   function parseNumbers(inputLine) {
-    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (parsedNum) {
-      return parseInt(parsedNum, 10);
+    // If the input is already an array, use it directly; otherwise, split the string by whitespace.
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+      return parseInt(numStr, 10); // Explicitly use base 10 for parsing.
     });
   }
 
-  function* generateSequence(beginVal, endVal) {
-    for (var currentVal = beginVal; currentVal < endVal; currentVal++) {
-      yield currentVal;
+  /**
+   * A generator function that yields numbers in a specified range.
+   * @param {number} beginVal - The starting value (inclusive).
+   * @param {number} endVal - The ending value (exclusive).
+   * @yields {number} Each number in the range.
+   */
+  function* numberSequence(beginVal, endVal) {
+    for (let currentIdx = beginVal; currentIdx < endVal; currentIdx++) {
+      yield currentIdx;
     }
   }
 
-  function orderByProperty(dataCollection, sortProps) {
-    if (!Array.isArray(sortProps)) sortProps = [sortProps];
-    return dataCollection.sort(function (itemA, itemB) {
-      var isIterationComplete = true;
-      var iterationHadError = false;
-      var iterationError = undefined;
+  /**
+   * Sorts an array of objects based on one or more properties.
+   * Supports ascending/descending order and numeric comparison.
+   * @param {Array<Object>} dataArray - The array of objects to sort.
+   * @param {string|Array<string|Array>} sortKeys - A key or an array of keys/key-direction pairs.
+   * @returns {Array<Object>} The sorted array.
+   */
+  function orderByProperties(dataArray, sortKeys) {
+    // Ensure sortKeys is always an array for consistent iteration.
+    if (!Array.isArray(sortKeys)) {
+      sortKeys = [sortKeys];
+    }
+
+    return dataArray.sort(function (itemA, itemB) {
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
 
       try {
-        for (var propIterator = sortProps[Symbol.iterator](), propStep; !(isIterationComplete = (propStep = propIterator.next()).done); isIterationComplete = true) {
-          var currentProp = propStep.value;
+        // Iterate through each sorting key provided.
+        for (var _iterator = sortKeys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var currentKey = _step.value;
 
-          if ("string" === typeof currentProp) {
-            var diffVal = itemA[currentProp] - itemB[currentProp];
-            if (0 !== diffVal) return diffVal;
+          if ('string' === typeof currentKey) {
+            // Simple numeric comparison for a single string key.
+            const diffVal = itemA[currentKey] - itemB[currentKey];
+            if (0.0 !== diffVal) {
+              return diffVal;
+            }
           } else {
-            var valDiff = itemA[currentProp[0]] - itemB[currentProp[0]];
-
-            var directionMultiplier = "desc" === currentProp[1] ? -1 : "asc" === currentProp[1] ? 1 : Number(currentProp[1]);
-            if (0 !== valDiff) return valDiff * directionMultiplier;
+            // Complex comparison with key and direction (e.g., ["property", "descending"]).
+            const propDiff = itemA[currentKey[0]] - itemB[currentKey[0]];
+            // Determine the sign multiplier based on sort direction.
+            const signMultiplier = 'descending' === currentKey[1] ? -1.0 : 'ascending' === currentKey[1] ? 1.0 : Number(currentKey[1]);
+            if (0.0 !== propDiff) {
+              return propDiff * signMultiplier;
+            }
           }
         }
-      } catch (caughtException) {
-        iterationHadError = true;
-        iterationError = caughtException;
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
       } finally {
         try {
-          if (!isIterationComplete && propIterator.return != null) {
-            propIterator.return();
+          if (!_iteratorNormalCompletion && _iterator.return != null) {
+            _iterator.return();
           }
         } finally {
-          if (iterationHadError) {
-            throw iterationError;
+          if (_didIteratorError) {
+            throw _iteratorError;
           }
         }
       }
 
-      return 0;
+      // If all keys are equal, the items are considered equal.
+      return 0x0;
     });
   }
 
+  // Main execution block, immediately invoked with input from stdin.
   !function (rawData) {
-    var inputLines = rawData.split("\n");
+    const inputLines = rawData.split("\n");
 
-    var parsedFirstLine = parseNumbers(inputLines[0]);
-    var destructuredFirstLine = _destructArray(parsedFirstLine, 2);
-    var targetValue = destructuredFirstLine[0];
-    var numDigits = destructuredFirstLine[1];
+    // Parse the first line for N (targetSum) and M (numDigits).
+    const _splitNum = parseNumbers(inputLines[0]),
+          _splitNum2 = _slicedToArray(_splitNum, 2),
+          targetSum = _splitNum2[0], // N: The target sum to achieve.
+          numDigits = _splitNum2[1]; // M: The number of available digits.
 
-    var availableDigits = parseNumbers(inputLines[1]).slice(0, numDigits);
-    var digitCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
-    var digitSpecs = availableDigits.map(function (valueDigit) {
+    // Parse the second line for available digits, taking only M of them.
+    const availableDigits = parseNumbers(inputLines[1]).slice(0, numDigits);
+
+    // Define the cost for each digit (0-9).
+    const digitCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
+
+    // Map available digits to objects containing their value and cost.
+    const digitInfo = availableDigits.map(function (val) {
       return {
-        digit: valueDigit,
-        cost: digitCosts[valueDigit]
+        val: val,
+        price: digitCosts[val]
       };
     });
-    orderByProperty(digitSpecs, [
-      ["digit", -1]
-    ]);
-    var memoTable = [
-      [0, null],
-      [Number.NEGATIVE_INFINITY, null]
-    ];
-    var outerIterationComplete = true;
-    var outerIterationHadError = false;
-    var outerIterationError = undefined;
+
+    // Sort the digit information in descending order of digit value.
+    orderByProperties(digitInfo, [["val", -1.0]]);
+
+    // Initialize dynamic programming table.
+    // memoTable[i] stores [max_length, digit_used_to_reach_this_length] for sum i.
+    const memoTable = [[0x0, void 0], [Number.NEGATIVE_INFINITY, void 0]];
+
+    var _iteratorNormalCompletion2 = true;
+    var _didIteratorError2 = false;
+    var _iteratorError2 = undefined;
 
     try {
-      for (var rangeIterator = generateSequence(2, targetValue + 1)[Symbol.iterator](), rangeStep; !(outerIterationComplete = (rangeStep = rangeIterator.next()).done); outerIterationComplete = true) {
-        var currentSum = rangeStep.value;
-        var maxCombination = [Number.NEGATIVE_INFINITY, null];
-        var innerIterationComplete = true;
-        var innerIterationHadError = false;
-        var innerIterationError = undefined;
+      // Iterate from sum 2 up to N (targetSum).
+      for (var _iterator2 = numberSequence(2.0, targetSum + 1.0)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+        const currentSum = _step2.value;
+        // Initialize max length and corresponding digit for the current sum.
+        let maxLenDigit = [Number.NEGATIVE_INFINITY, void 0];
+
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
 
         try {
-          for (var digitSpecIterator = digitSpecs[Symbol.iterator](), digitSpecStep; !(innerIterationComplete = (digitSpecStep = digitSpecIterator.next()).done); innerIterationComplete = true) {
-            var currentDigitSpec = digitSpecStep.value;
-            var currentDigitVal = currentDigitSpec.digit;
-            var currentDigitCost = currentDigitSpec.cost;
+          // Consider each available digit.
+          for (var _iterator3 = digitInfo[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var _step3$value = _step3.value,
+                val = _step3$value.val, // The digit's value.
+                price = _step3$value.price; // The digit's cost.
 
-            if (currentDigitCost <= currentSum) {
-              var currentLength = 1 + memoTable[currentSum - currentDigitCost][0];
-              if (currentLength > maxCombination[0]) maxCombination = [currentLength, currentDigitVal];
+            // If the current digit's cost can be afforded by the current sum.
+            if (price <= currentSum) {
+              // Calculate the length if this digit is used.
+              const currentLength = 1.0 + memoTable[currentSum - price][0];
+              // If this path yields a longer number, update maxLenDigit.
+              if (currentLength > maxLenDigit[0]) {
+                maxLenDigit = [currentLength, val];
+              }
             }
           }
-        } catch (caughtException) {
-          innerIterationHadError = true;
-          innerIterationError = caughtException;
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
         } finally {
           try {
-            if (!innerIterationComplete && digitSpecIterator.return != null) {
-              digitSpecIterator.return();
+            if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
+              _iterator3.return();
             }
           } finally {
-            if (innerIterationHadError) {
-              throw innerIterationError;
+            if (_didIteratorError3) {
+              throw _iteratorError3;
             }
           }
         }
 
-        memoTable[currentSum] = maxCombination;
+        // Store the best result for the current sum.
+        memoTable[currentSum] = maxLenDigit;
       }
-    } catch (caughtException) {
-      outerIterationHadError = true;
-      outerIterationError = caughtException;
+    } catch (err) {
+      _didIteratorError2 = true;
+      _iteratorError2 = err;
     } finally {
       try {
-        if (!outerIterationComplete && rangeIterator.return != null) {
-          rangeIterator.return();
+        if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+          _iterator2.return();
         }
       } finally {
-        if (outerIterationHadError) {
-          throw outerIterationError;
+        if (_didIteratorError2) {
+          throw _iteratorError2;
         }
       }
     }
 
-    var finalOutputString = "";
-    var remainingSum = targetValue;
+    // Reconstruct the largest number by backtracking.
+    let finalResult = "";
+    let remainingSum = targetSum;
 
-    for (; remainingSum > 0;) {
-      var memoEntry = _destructArray(memoTable[remainingSum], 2);
-      var selectedDigit = memoEntry[1];
+    // Backtrack through the memoTable to build the number.
+    for (; remainingSum > 0x0;) {
+      const _dp$matches = _slicedToArray(memoTable[remainingSum], 2),
+            chosenVal = _dp$matches[1]; // The digit chosen for this sum.
 
-      finalOutputString += selectedDigit;
-      remainingSum -= digitCosts[selectedDigit];
+      finalResult += chosenVal; // Append the digit to the result string.
+      remainingSum -= digitCosts[chosenVal]; // Subtract its cost from the remaining sum.
     }
 
-    console.log(finalOutputString);
-  }(require("fs").readFileSync("/dev/stdin", "utf8"));
+    // Output the final result to the console.
+    console.log(finalResult);
+
+  }(require("fs").readFileSync('/dev/stdin', "utf8")); // Read input from standard input.
 }();

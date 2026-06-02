@@ -1,69 +1,76 @@
-process.stdInputDevice.flowResume( );
-process.stdInputDevice.charEncoding( 'utf8' );
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-// Buffer to accumulate all incoming raw data
-let receivedInputData = '';
-// Array to hold processed lines after splitting
-let processedLines = '';
-// Pointer to the current line being accessed
-let currentLineIndex = 0x0;
+// Buffer to accumulate raw input data
+let rawInputBuffer = "";
+// Array to store input lines after splitting
+let inputLinesArray = [];
+// Index to keep track of the current line being read
+let currentLineIndex = 0;
 
-// Attach event listener for data chunks
-process.stdInputDevice.on( 'chunk', (dataChunk) => {
-    receivedInputData += dataChunk; // Concatenate new data to the buffer
-} );
+// Event listener for incoming data chunks
+process.stdin.on('data', function (incomingChunk) {
+    rawInputBuffer += incomingChunk;
+});
 
-// Attach event listener for process interruption signal
-process.on( 'INTERRUPT_SIGNAL', () => {
-    // Divide the full input string into an array of lines
-    processedLines = receivedInputData.split( '\n' );
-    performCoreLogic( ); // Execute the main processing routine
-    process.terminateProgram( ); // Exit the application gracefully
-} );
+// Event listener for SIGINT (Ctrl+C) signal
+process.on('SIGINT', function() {
+    // Split the accumulated input into an array of lines
+    inputLinesArray = rawInputBuffer.split("\n");
+    // Execute the main program logic
+    executeProgram();
+    // Exit the process
+    process.exit(0);
+});
 
-// Attach event listener for the end of the input stream
-process.stdInputDevice.on( 'finish', () => {
-    // Divide the full input string into an array of lines
-    processedLines = receivedInputData.split( '\n' );
-    performCoreLogic( ); // Execute the main processing routine
-} );
+// Event listener for the end of the input stream
+process.stdin.on('end', function () {
+    // Split the accumulated input into an array of lines
+    inputLinesArray = rawInputBuffer.split("\n");
+    // Execute the main program logic
+    executeProgram();
+});
 
 /**
- * Fetches the next available line from the pre-processed input array.
+ * Reads the next line from the buffered input array.
  * @returns {string} The next line of input.
  */
-function retrieveNextLine( ) {
-    return processedLines[currentLineIndex++];
+function fetchNextLine() {
+    return inputLinesArray[currentLineIndex++];
 }
 
-// Input acquisition and foundational utility methods conclude here //
+// Ignore everything above this line for the core logic //
 
 /**
- * This function encapsulates the primary logic of the application.
- * It reads grid dimensions, populates a grid, and then displays its rows.
+ * The main function containing the program's core logic.
  */
-function performCoreLogic( ) {
-    // Obtain the initial line containing dimension information
-    const currentInputString = retrieveNextLine( );
-    // Parse the dimension string into separate components
-    const dimensionStrings = currentInputString.split( ' ' );
+function executeProgram() {
+    // Read the first line which contains height and width
+    let inputString = fetchNextLine();
+    // Split the line by space to get individual values
+    inputString = inputString.split(" ");
 
-    // Convert string dimensions to numeric values
-    const gridHeight = Number.parseInt( dimensionStrings[0] );
-    const gridWidth = Number.parseInt( dimensionStrings[1] );
+    // Parse the height value from the first element
+    const heightVal = parseInt(inputString[0], 10);
+    // Parse the width value from the second element
+    const widthVal = parseInt(inputString[1], 10);
 
-    // Initialize a collection to store the grid's rows
-    const gridRows = [];
+    // Initialize an array to store the character grid
+    let charGrid = [];
 
-    // Iterate to read and store each row of the grid
-    for ( let rowIndex = 0; rowIndex < gridHeight; rowIndex++ ) {
-        const rowData = retrieveNextLine( ); // Get the content for the current row
-        gridRows.push( rowData ); // Add the row content to the grid collection
+    // Loop to read each row of the grid
+    for (let rowCounter = 0; rowCounter < heightVal; rowCounter++) {
+        // Read the content for the current row
+        let currentLineContent = fetchNextLine();
+        // Add the row content to our grid array
+        charGrid.push(currentLineContent);
     }
 
-    // Iterate to display each stored grid row, printing each twice
-    for ( let displayIndex = 0; displayIndex < gridHeight; displayIndex++ ) {
-        console.output( gridRows[displayIndex] ); // Display the row once
-        console.output( gridRows[displayIndex] ); // Display the row a second time
+    // Loop again to print each row twice as per the problem statement
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // Output the current row
+        console.log(charGrid[rowIdx]);
+        // Output the current row again
+        console.log(charGrid[rowIdx]);
     }
 }

@@ -1,54 +1,65 @@
+// This function processes the given raw input data.
 function ProcessInput(rawData) {
-  // Split the entire input string into individual lines.
+  // Split the raw input into individual lines.
   rawData = rawData.split("\n");
-  // Extract the first line and convert it into an array of characters.
-  var primarySequence = rawData[0].split("");
-  // Extract the second line and convert it into an array of characters.
-  var secondarySequence = rawData[1].split("");
-  var comparisonResult = "Yes"; // Initialize the outcome as positive.
 
-  // Continue processing as long as the secondary sequence has elements.
-  while (secondarySequence.length !== 0) {
-    // Iterate through elements starting from the second character in the current sequence.
-    for (let idx = 1; idx < secondarySequence.length; idx++) {
-      // Check for character equality at the current position in the secondary sequence.
-      if (secondarySequence[0] === secondarySequence[idx]) {
-        // If secondary characters match, ensure primary characters also match.
-        if (primarySequence[0] !== primarySequence[idx]) {
-          comparisonResult = "No"; // Mismatch found, set result to negative.
-          break; // Exit the inner loop.
+  // Extract the first string from the input and convert it into an array of characters.
+  let firstStringChars = rawData[0].split("");
+
+  // Extract the second string from the input and convert it into an array of characters.
+  let secondStringChars = rawData[1].split("");
+
+  // Initialize a flag variable to "Yes", assuming a match until a discrepancy is found.
+  let resultFlag = "Yes";
+
+  // Continue processing as long as the second character array is not empty.
+  while (secondStringChars.length !== 0) {
+    // Iterate through the characters of the second string, starting from the second element.
+    for (let idx = 1; idx < secondStringChars.length; idx++) {
+      // Check for consistency: if the first character of 'secondStringChars' matches another character in 'secondStringChars'...
+      if (secondStringChars[0] === secondStringChars[idx]) {
+        // ...then their corresponding characters in 'firstStringChars' must also match.
+        // If they do not match, set the flag to "No" and exit the inner loop.
+        if (firstStringChars[0] !== firstStringChars[idx]) {
+          resultFlag = "No";
+          break;
         }
       }
-      // Check for character equality at the current position in the primary sequence.
-      if (primarySequence[0] === primarySequence[idx]) {
-        // If primary characters match, ensure secondary characters also match.
-        if (secondarySequence[0] !== secondarySequence[idx]) {
-          comparisonResult = "No"; // Mismatch found, set result to negative.
-          break; // Exit the inner loop.
+
+      // Also check for consistency in the reverse direction:
+      // If the first character of 'firstStringChars' matches another character in 'firstStringChars'...
+      if (firstStringChars[0] === firstStringChars[idx]) {
+        // ...then their corresponding characters in 'secondStringChars' must also match.
+        // If they do not match, set the flag to "No" and exit the inner loop.
+        if (secondStringChars[0] !== secondStringChars[idx]) {
+          resultFlag = "No";
+          break;
         }
       }
     }
-    // If a mismatch was detected in the inner loop, exit the outer loop.
-    if (comparisonResult === "No") {
-      break;
+
+    // If the result flag has been set to "No" during the inner loop,
+    // it means a mismatch was found, so there's no need to continue.
+    if (resultFlag === "No") {
+      break; // Exit the outer loop.
     }
 
-    // Remove the first character from both sequences for the next iteration.
-    primarySequence.shift();
-    secondarySequence.shift();
+    // Remove the first character from both arrays to process the next pair of characters.
+    firstStringChars.shift();
+    secondStringChars.shift();
   }
 
-  // Output the final comparison outcome.
-  console.log('%s', comparisonResult);
+  // Output the final determination.
+  console.log('%s', resultFlag);
 }
 
-// This function provides a way to test the logic in a browser environment.
-function TestExecution() {
-  // Retrieve user-provided text from a DOM element.
-  var userInput = document.getElementById("input").value;
-  // Pass the user input to the main processing function.
-  ProcessInput(userInput);
+// This is a supplementary function for local testing purposes, often triggered by a UI event.
+function testFunction() {
+  // Retrieve input data from a specific HTML element.
+  var localInput = document.getElementById("input").value;
+  // Invoke the main processing function with the retrieved local input.
+  ProcessInput(localInput);
 }
 
-// Execute the primary function with input read from standard input (Node.js environment).
+// Execute the primary processing function, reading input from standard input.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

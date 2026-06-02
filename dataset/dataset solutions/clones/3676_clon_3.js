@@ -1,50 +1,43 @@
-const STDIN_FILE_DESCRIPTOR = 0;
+const fileSystemModule = require("fs");
+const rawInputBuffer = fileSystemModule.readFileSync(0);
+const inputContentString = rawInputBuffer.toString();
+const inputLinesArray = inputContentString.split('\n');
 
-let inputContentLines;
-try {
-    inputContentLines = String(require("fs").readFileSync(STDIN_FILE_DESCRIPTOR)).split('\n');
-} catch (readError) {
-    console.error("Input processing error: Unable to read from STDIN.", readError.message);
-    process.exit(1);
-}
+const sequenceLength = parseInt(inputLinesArray[0], 10);
+const characterSequence = inputLinesArray[1];
 
-const sequenceLength = parseInt(inputContentLines[0], 10);
-const baseSequenceString = inputContentLines[1];
+let totalMatchesCount = 0;
+const permutationFrequencyMap = {};
 
-const permutationCounts = {};
-let totalCountAccumulator = 0;
+function constructMaskedString(sourceString, currentBitmask, lengthN, charIndexResolver) {
+    let constructedString = "0";
+    for (let loopCounter = lengthN - 1; loopCounter >= 0; loopCounter--) {
+        const actualCharPosition = charIndexResolver(loopCounter, lengthN);
+        const characterToAppend = sourceString[actualCharPosition];
 
-for (let permutationMask = (1 << sequenceLength) - 1; permutationMask >= 0; permutationMask--) {
-    let currentPermutationString = "";
-
-    for (let charProcessingIndex = sequenceLength - 1; charProcessingIndex >= 0; charProcessingIndex--) {
-        const charToInclude = baseSequenceString[charProcessingIndex];
-
-        if ((permutationMask & (1 << charProcessingIndex)) !== 0) {
-            currentPermutationString = charToInclude + currentPermutationString;
+        if ((currentBitmask & (1 << loopCounter)) !== 0) {
+            constructedString = characterToAppend + constructedString;
         } else {
-            currentPermutationString = currentPermutationString + charToInclude;
+            constructedString = constructedString + characterToAppend;
         }
     }
-
-    permutationCounts[currentPermutationString] = (permutationCounts[currentPermutationString] || 0) + 1;
+    return constructedString;
 }
 
-for (let comparisonMask = (1 << sequenceLength) - 1; comparisonMask >= 0; comparisonMask--) {
-    let comparisonSequence = "";
+const totalPermutations = 1 << sequenceLength;
 
-    for (let reverseSequenceIndex = sequenceLength - 1; reverseSequenceIndex >= 0; reverseSequenceIndex--) {
-        const conceptualCharacterIndex = (2 * sequenceLength) + (~reverseSequenceIndex);
-        const charFromConceptualReversed = baseSequenceString[conceptualCharacterIndex];
+const firstLoopCharIndexResolver = (loopIndex, len) => loopIndex;
 
-        if ((comparisonMask & (1 << reverseSequenceIndex)) !== 0) {
-            comparisonSequence = charFromConceptualReversed + comparisonSequence;
-        } else {
-            comparisonSequence = comparisonSequence + charFromConceptualReversed;
-        }
-    }
-
-    totalCountAccumulator += (permutationCounts[comparisonSequence] || 0);
+for (let currentMaskValue = totalPermutations - 1; currentMaskValue >= 0; currentMaskValue--) {
+    const generatedPermutationString = constructMaskedString(characterSequence, currentMaskValue, sequenceLength, firstLoopCharIndexResolver);
+    permutationFrequencyMap[generatedPermutationString] = (permutationFrequencyMap[generatedPermutationString] || 0) + 1;
 }
 
-console.log(totalCountAccumulator);
+const secondLoopCharIndexResolver = (loopIndex, len) => (2 * len + (~loopIndex));
+
+for (let currentMaskValue = totalPermutations - 1; currentMaskValue >= 0; currentMaskValue--) {
+    const generatedPermutationString = constructMaskedString(characterSequence, currentMaskValue, sequenceLength, secondLoopCharIndexResolver);
+    totalMatchesCount += (permutationFrequencyMap[generatedPermutationString] || 0);
+}
+
+console.log(totalMatchesCount);

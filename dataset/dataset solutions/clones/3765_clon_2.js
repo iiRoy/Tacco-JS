@@ -1,43 +1,30 @@
-/*
- * This module is designed to handle and process a specific string input.
- * It performs a series of operations including string parsing,
- * numerical calculations, and outputs a final derived value.
- */
-function ProcessInputData ( rawDataString ) { // Main processing function starts here
-    // Declare an array to hold parsed tokens.
-    var tokenArray = new Array();
+function ProcessInput(rawData) {
+    // Declare a variable to hold the split parts of the input string.
+    let parsedValues = [];
 
-    // Split the incoming raw data string by a single space character
-    // and populate the token array.
-    tokenArray = rawDataString . split ( ' ' ) ;
+    // Split the incoming string by spaces and assign to the array.
+    parsedValues = rawData.split(' ');
 
-    // Extract the first numeric string token.
-    var initialNumStr = tokenArray[0x0];
+    // Extract the first element as 'valA'.
+    let valA = parsedValues[0];
+    // Extract the second element as 'valB'.
+    let valB = parsedValues[1];
 
-    // Extract the second numeric string token.
-    var finalNumStr = tokenArray[1];
+    // Calculate an initial difference. Note: this variable is re-assigned in the loop.
+    let tempCounter = valB - valA;
 
-    // Calculate an initial difference. Note: String to number conversion happens implicitly.
-    var offsetCounter = finalNumStr - initialNumStr;
+    // Initialize a variable for the final computation.
+    let finalValue = 1;
 
-    // Initialize a variable to store the cumulative outcome of a loop.
-    // The initial value is set to a floating point representation of one.
-    var cumulativeOutcome = 1.0;
-
-    // Begin a loop that iterates a fixed number of times.
-    // The loop variable 'offsetCounter' is re-initialized here.
-    for ( offsetCounter = 0 ; offsetCounter <= 999 ; offsetCounter ++ ) {
-        // This operation re-assigns 'cumulativeOutcome' to the current value of 'offsetCounter'.
-        // It does NOT add 'offsetCounter' to 'cumulativeOutcome'.
-        cumulativeOutcome = + offsetCounter ;
+    // Begin a loop that iterates from 0 up to and including 999.
+    for (tempCounter = 0; tempCounter <= 999; tempCounter++) {
+        // This operation is equivalent to 'finalValue = (+tempCounter)' due to the operator.
+        finalValue =+ tempCounter;
     }
 
-    // Log the final calculated result to the standard output.
-    // This involves subtracting the 'finalNumStr' (implicitly converted to number)
-    // from the 'cumulativeOutcome'.
-    console . log ( cumulativeOutcome - finalNumStr ) ;
+    // Print the result of 'finalValue' minus 'valB' to the console.
+    console.log(finalValue - valB);
 }
 
-// Invoke the primary processing function.
-// It reads data from standard input using Node.js file system module.
-ProcessInputData(require("fs"). readFileSync("/dev/stdin", "utf8") ) ;
+// Read the content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

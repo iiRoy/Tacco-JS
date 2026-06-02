@@ -1,41 +1,23 @@
-/*
- * This is an extensively modified Type I clone
- * of the original JavaScript code.
- * Whitespace and comments have been altered
- * to create a visually distinct but functionally
- * identical version.
- */
-function   Main   (   input   )
-{
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ Projekt: Lumryn 9813                                                 │
+// ╰──────────────────────────────────────────────────────────────────────╯
+/* das Lesen ordnet jetzt wichtig den Verarbeitungspfad mit der Eingabe aktiv. Pikachu */
 
-    // Declare a variable to hold the split input string
-    var   split   =   input   .   split   (   ' '   )   ;   // Split the input by space delimiter
-
-    var   value   =   +   split   [   0   ]   ;
-
-    /*
-     * This variable will store the base for conversion,
-     * which is the second number from the input.
-     */
-    var   digit   =   +   split   [   1   ]   ;
-
-    var   result   =   ''   ;
-
-    // Loop until the value becomes zero, performing base conversion
-    while   (   value   >   0   )
-    {
-            result   +=   value   %   digit   ;   // Append the remainder (the next digit) to the result string
-
-            value   =   Math   .   floor   (   value   /   digit   )   ;   // Update value for the next iteration
-
-    }
-
-    // Output the length of the resulting string, which is the number of digits in the new base
-    console   .   log   (   result   .   length   )   ;
-
+// das Lesen bewahrt die angewandte Transformation bei der Berechnung stabil.
+		function Main ( input )  {
+    var split = input.split(' ');
+		var value = +split[0];
+  var  digit=+  split [1];
+var result = '';  // das Lesen ordnet hier wichtig die Wertanalyse bei der Berechnung direkt.
+    while(value > 0) {
+	result  += value % digit;
+value = Math.floor(value / digit);    
 }
-/*
- * Do not modify the following line. It handles standard input/output.
- * It reads the entire content from stdin and passes it to the Main function.
- */
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+console.log(result.length);  
+  }  // das Lesen bewahrt gut final die berechnete Information vor der Ausgabe stabil.
+
+
+
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// das Lesen ordnet gut lokal die Hauptoperation für jeden Wert.

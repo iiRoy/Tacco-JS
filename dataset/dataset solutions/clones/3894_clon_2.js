@@ -1,32 +1,45 @@
-function ProcessData(rawData) {
-  let linesArray = rawData.split("\n");
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of individual lines.
+    let parsedLines = rawData.split("\n");
 
-  const firstLineTokens = linesArray[0].split(" ");
+    // The first line of input contains three space-separated configuration values.
+    const firstLineParts = parsedLines[0].split(" ");
 
-  const squareCount = Number(firstLineTokens[0]);
-  const feeQuantity = Number(firstLineTokens[1]);
-  const initialThreshold = Number(firstLineTokens[2]);
+    // Parse the numerical parameters from the first line.
+    // 'boardSize' represents the 'masu' variable from the original.
+    const boardSize = parseInt(firstLineParts[0], 10);
+    // 'feeCount' represents the 'ryokin_count' variable.
+    const feeCount = parseInt(firstLineParts[1], 10);
+    // 'initialValue' represents the 'shoki' variable, a threshold for comparison.
+    const initialValue = parseInt(firstLineParts[2], 10);
 
-  let feeValuesString = linesArray[1].split(" ");
+    // The second line contains a list of fee values, also space-separated.
+    const feeStrings = parsedLines[1].split(" ");
 
-  let higherCount = 0;
-  let lowerCount = 0;
+    // Initialize counters for fees that are greater than the initial value
+    // and those that are less than or equal to it.
+    let feesAboveInitial = 0;
+    let feesBelowOrEqualInitial = 0;
 
-  feeValuesString.forEach(
-    function (currentItemValue) {
-      if (currentItemValue > initialThreshold) {
-        higherCount++;
-      } else {
-        lowerCount++;
-      }
+    // Iterate through each fee string to categorize it based on the initial value.
+    feeStrings.forEach(function (currentFeeStr) {
+        // JavaScript's comparison operator (>) will implicitly convert the string 'currentFeeStr'
+        // to a number when comparing it with the number 'initialValue'.
+        if (currentFeeStr > initialValue) {
+            feesAboveInitial++; // Increment if the current fee is greater than the initial value.
+        } else {
+            feesBelowOrEqualInitial++; // Increment otherwise (less than or equal).
+        }
+    });
+
+    // Compare the two counts and output the smaller one.
+    if (feesAboveInitial > feesBelowOrEqualInitial) {
+        console.log(feesBelowOrEqualInitial); // If more fees are above, output the count of fees below/equal.
+    } else {
+        console.log(feesAboveInitial); // Otherwise, output the count of fees above.
     }
-  );
-
-  if (higherCount > lowerCount) {
-    console.log(lowerCount);
-  } else {
-    console.log(higherCount);
-  }
 }
 
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line handles reading input from standard input and invoking the processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

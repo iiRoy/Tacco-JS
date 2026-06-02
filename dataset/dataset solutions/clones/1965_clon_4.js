@@ -1,24 +1,14 @@
-const ioModule = require('node:fs');
-const rawData = ioModule.readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const upperBound = parseInt(rawData[0]);
 
-const dataSegments = rawData.split('\n');
+const valueStrings = rawData[1].split(' ');
+const numericValues = valueStrings.map(Number);
 
-const upperLimit = Number.parseInt(dataSegments[0], 10);
-
-const observedValues = dataSegments[1].split(' ').map(Number);
-
-const frequencyMap = observedValues.reduce((accumulator, currentElement) => {
-    accumulator.set(currentElement, (accumulator.get(currentElement) || 0) + 1);
+const occurrenceTally = numericValues.reduce((accumulator, currentVal) => {
+    accumulator[currentVal - 1]++;
     return accumulator;
-}, new Map());
+}, Array.from({ length: upperBound }, () => 0));
 
-let currentIdx = 1;
-const resultBuffer = [];
-
-while (currentIdx <= upperLimit) {
-    const currentFrequency = frequencyMap.get(currentIdx) || 0;
-    resultBuffer.push(currentFrequency);
-    currentIdx++;
+for (const tallyEntry of occurrenceTally) {
+    console.log(tallyEntry);
 }
-
-console.log(resultBuffer.join('\n'));

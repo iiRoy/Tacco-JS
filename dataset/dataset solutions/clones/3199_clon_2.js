@@ -1,19 +1,20 @@
-function processInput ( inputString )
-{
-  // This routine analyzes a supplied text string for a specific condition.
-  const [ firstPart , secondPart ] = inputString.replace( /\r?\n/g , "" ) . split ( " " ) ;
+function processInput(inputString) {
+    // Remove any newline characters and then split the input by space
+    const [tempNStr, tempKStr] = inputString.replace(/\r?\n/g, "").split(" ");
 
-  const valueA = Number ( firstPart ) ;
-  const valueB = Number ( secondPart ) ;
+    // Convert the extracted string values to numerical types
+    const numVal = Number(tempNStr);
+    const kVal = Number(tempKStr);
 
-  if ( valueA + 1 - ( valueB * 2 ) >= 0 )
-  {
-    console.log ( "YES" ) ;
-  }
-  else
-  {
-    console.log ( "NO" ) ;
-  }
+    // Evaluate a specific mathematical condition
+    if (numVal + 1 - (kVal * 2) >= 0) {
+        // If the condition holds true, print "YES" to the console
+        console.log("YES");
+    } else {
+        // Otherwise, if the condition is false, print "NO"
+        console.log("NO");
+    }
 }
 
-processInput( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

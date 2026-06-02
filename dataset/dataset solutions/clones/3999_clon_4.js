@@ -1,45 +1,57 @@
 "use strict";
 
-const dataStore = {
-  initialContent: null,
-  processedNumbers: []
-};
+const DEBUG_MODE = false;
 
-const obtainSource = (debugStatus) => {
-  if (debugStatus) {
-    return "30000 30000 30000";
-  } else {
-    return Buffer.from(require("node:fs").readFileSync("/dev/stdin")).toString("utf8").trim();
+const rawInput = DEBUG_MODE
+  ? "30000 30000 30000"
+  : require("fs")
+      .readFileSync("/dev/stdin", "utf8")
+      .trim();
+
+function buildJoinedText(leftText, rightText) {
+  var chars = [];
+
+  for (var i = 0; i < leftText.length; i++) {
+    chars.push(leftText[i]);
   }
-};
 
-const decomposeText = (inputLine) => {
-  let firstDivider = inputLine.indexOf(' ');
-  let secondDivider = inputLine.indexOf(' ', firstDivider + 1);
-
-  let firstValue = Number(inputLine.substring(0, firstDivider));
-  let secondValue = Number(inputLine.substring(firstDivider + 1, secondDivider));
-  let thirdValue = Number(inputLine.substring(secondDivider + 1));
-
-  dataStore.processedNumbers = [firstValue, secondValue, thirdValue];
-};
-
-const determineOutcome = (numericParameters) => {
-  const [paramOne, paramTwo, paramThree] = numericParameters;
-  
-  if (paramOne < paramTwo + paramThree) {
-    return "";
-  } else {
-    return "-1";
+  for (var j = 0; j < rightText.length; j++) {
+    chars.push(rightText[j]);
   }
-};
 
-const presentResult = (finalText) => {
-  process.stdout.write(finalText + "\n");
-};
+  return chars.join("");
+}
 
-const allowDebugging = false;
-dataStore.initialContent = obtainSource(allowDebugging);
-decomposeText(dataStore.initialContent);
-const computedResult = determineOutcome(dataStore.processedNumbers);
-presentResult(computedResult);
+function isLexicographicallyLessOrEqual(leftText, rightText) {
+  var minLength = Math.min(leftText.length, rightText.length);
+
+  for (var i = 0; i < minLength; i++) {
+    var leftCode = leftText.charCodeAt(i);
+    var rightCode = rightText.charCodeAt(i);
+
+    if (leftCode < rightCode) {
+      return true;
+    }
+
+    if (leftCode > rightCode) {
+      return false;
+    }
+  }
+
+  return leftText.length <= rightText.length;
+}
+
+function process(inputRaw) {
+  const inputs = inputRaw.split(" ");
+
+  const N = inputs[0];
+  const A = inputs[1];
+  const B = inputs[2];
+
+  const joinedAB = buildJoinedText(A, B);
+  const condition = isLexicographicallyLessOrEqual(joinedAB, N);
+
+  console.log(condition ? -1 : "");
+}
+
+process(rawInput);

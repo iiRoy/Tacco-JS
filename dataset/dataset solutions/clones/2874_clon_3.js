@@ -1,114 +1,64 @@
-const ioBridge = require('readline');
+var inputBuffer = [];
+var ioModule = require('readline');
 
-const OBSTACLE_MARKER = '#';
-const SAFE_PATH_MARKER = '.';
-
-let collectedInputLines = [];
-
-const inputLineReader = ioBridge.createInterface({
+var inputHandler = ioModule.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-const finalizeProgramOutput = (outcomeMessage) => {
-    console.log(outcomeMessage);
-    process.exit(0);
-};
-
-inputLineReader.on('line', (currentInputSegment) => {
-    collectedInputLines.push(currentInputSegment);
+inputHandler.on('line', function (currentInputLine) {
+    inputBuffer.push(currentInputLine);
 });
 
-inputLineReader.on('close', () => {
-    // Ensure sufficient input is available. This is an added robustness check.
-    if (collectedInputLines.length < 2) {
-        console.error("Input data incomplete. Expected at least two lines.");
-        process.exit(1);
-    }
+inputHandler.on('close', function () {
+    const firstLineValues = inputBuffer[0].split(" ").map(Number);
+    const numN = firstLineValues[0];
+    const startA = firstLineValues[1];
+    const startB = firstLineValues[2];
+    const endC = firstLineValues[3];
+    const endD = firstLineValues[4];
 
-    // Destructure and parse initial game parameters from the first line.
-    // The first value (N) is read but not utilized in the core logic, effectively removed from consideration.
-    const [
-        trackSizeVal,
-        playerA_StartIdx,
-        playerB_StartIdx,
-        playerA_TargetIdx,
-        playerB_TargetIdx
-    ] = collectedInputLines[0].split(" ").map(Number);
+    const pathChars = inputBuffer[1].split("");
 
-    // Convert the second input line into an array of characters representing the track.
-    const trackEnvironment = collectedInputLines[1].split("");
+    const HASH_CHAR = '#';
+    const DOT_CHAR = '.';
 
-    // Initialize a boolean flag to track if player B has a viable crossing passage.
-    let isCrossingPathAvailable = false;
+    let canFindTripleDot = false;
 
-    // Determine the maximum index relevant for movement checks, for efficiency.
-    const maxMovementBoundary = Math.max(playerA_TargetIdx, playerB_TargetIdx);
+    const maxRelevantEnd = Math.max(endC, endD);
 
-    // Iterate through the track layout to evaluate various conditions for movement.
-    for (let currentTrackPos = 0; currentTrackPos < trackEnvironment.length; currentTrackPos++) {
-        // Pre-calculate next positions for boundary checks and readability.
-        const nextTrackPos = currentTrackPos + 1;
-        const subsequentTrackPos = currentTrackPos + 2;
+    for (let charIndex = 0; charIndex < pathChars.length; charIndex++) {
+        const currentIsHash = pathChars[charIndex] === HASH_CHAR;
+        const nextIsHash = pathChars[charIndex + 1] === HASH_CHAR;
+        const isDoubleHashBlock = currentIsHash && nextIsHash;
 
-        // --- Condition Set 1: Check for immediate blocking obstacles ---
-        // If two consecutive obstacles are found, and they are within the relevant range for player A or B.
-        // Original: (S[i] === "#" && S[i + 1] === "#") && A <= i && i + 1 <= Math.max(C, D)
-        if (nextTrackPos < trackEnvironment.length &&
-            trackEnvironment[currentTrackPos] === OBSTACLE_MARKER &&
-            trackEnvironment[nextTrackPos] === OBSTACLE_MARKER) {
+        const isDoubleHashRelevantPosition = charIndex >= startA && (charIndex + 1) <= maxRelevantEnd;
 
-            // Verify if this obstacle pair is within the movement scope.
-            const isObstacleRelevant = playerA_StartIdx <= currentTrackPos && nextTrackPos <= maxMovementBoundary;
-            if (isObstacleRelevant) {
-                finalizeProgramOutput("No"); // Output "No" and terminate if a block is found.
-            }
+        if (isDoubleHashBlock && isDoubleHashRelevantPosition) {
+            console.log("No");
+            return 0;
         }
 
-        // --- Condition Set 2: Identify a three-empty-space crossing opportunity ---
-        // This condition is crucial for player B's movement, especially when targets might overlap.
-        // Original: (S[i] === "." && S[i + 1] === "." && S[i + 2] === ".") && B <= i && (i + 3 <= D || i + 1 === D)
-        if (subsequentTrackPos < trackEnvironment.length &&
-            trackEnvironment[currentTrackPos] === SAFE_PATH_MARKER &&
-            trackEnvironment[nextTrackPos] === SAFE_PATH_MARKER &&
-            trackEnvironment[subsequentTrackPos] === SAFE_PATH_MARKER) {
+        const currentIsDot = pathChars[charIndex] === DOT_CHAR;
+        const nextIsDot = pathChars[charIndex + 1] === DOT_CHAR;
+        const nextNextIsDot = pathChars[charIndex + 2] === DOT_CHAR;
+        const isTripleDotSequence = currentIsDot && nextIsDot && nextNextIsDot;
 
-            // Check if the starting point of this three-space sequence is valid for player B.
-            const isStartingPointValid = playerB_StartIdx <= currentTrackPos;
+        const isTripleDotRelevantRange = charIndex >= startB && (charIndex + 3 <= endD || charIndex + 1 === endD);
 
-            // Evaluate if this sequence provides a path towards player B's target.
-            // Rephrased: The sequence ends before or exactly at D, OR the middle of the sequence is at D.
-            const doesSequenceFacilitatePassage = (subsequentTrackPos < playerB_TargetIdx) || (nextTrackPos === playerB_TargetIdx);
-
-            if (isStartingPointValid && doesSequenceFacilitatePassage) {
-                isCrossingPathAvailable = true; // Mark that a crossing path has been found.
-            }
+        if (isTripleDotSequence && isTripleDotRelevantRange) {
+            canFindTripleDot = true;
         }
     }
 
-    // --- Final Condition Set: Special check for D < C and lack of crossing opportunity ---
-    // This scenario often implies player B needs to pass player A, and if no three-dot passage was found,
-    // additional obstacle checks around D and B become relevant.
-    // Original: D < C && (S[D - 2] === "#" || S[D] === "#") && (S[B - 2] === "#" || S[B] === "#") && flag === false
-    const isPlayerB_TargetBefore_PlayerA_Target = playerB_TargetIdx < playerA_TargetIdx;
+    const isD_LessThan_C = endD < endC;
+    const isPathBlockedAtD_or_D_minus_2 = (pathChars[endD - 2] === HASH_CHAR || pathChars[endD] === HASH_CHAR);
+    const isPathBlockedAtB_or_B_minus_2 = (pathChars[startB - 2] === HASH_CHAR || pathChars[startB] === HASH_CHAR);
 
-    if (isPlayerB_TargetBefore_PlayerA_Target && !isCrossingPathAvailable) {
-        // Evaluate obstacles at specific indices relative to player B's target (D) and start (B).
-        // Added explicit boundary checks for array access safety.
-        const isObstacleAtD_MinusTwo = (playerB_TargetIdx - 2 >= 0) && (trackEnvironment[playerB_TargetIdx - 2] === OBSTACLE_MARKER);
-        const isObstacleAtD_Position = (playerB_TargetIdx < trackEnvironment.length) && (trackEnvironment[playerB_TargetIdx] === OBSTACLE_MARKER);
-        const isObstacleAtB_MinusTwo = (playerB_StartIdx - 2 >= 0) && (trackEnvironment[playerB_StartIdx - 2] === OBSTACLE_MARKER);
-        const isObstacleAtB_Position = (playerB_StartIdx < trackEnvironment.length) && (trackEnvironment[playerB_StartIdx] === OBSTACLE_MARKER);
-
-        // Combine these checks as per original logic.
-        const isPathAroundTargetD_Blocked = isObstacleAtD_MinusTwo || isObstacleAtD_Position;
-        const isPathAroundStartB_Blocked = isObstacleAtB_MinusTwo || isObstacleAtB_Position;
-
-        if (isPathAroundTargetD_Blocked && isPathAroundStartB_Blocked) {
-            finalizeProgramOutput("No"); // Output "No" if these specific obstacles are present.
-        }
+    if (isD_LessThan_C && isPathBlockedAtD_or_D_minus_2 && isPathBlockedAtB_or_B_minus_2 && !canFindTripleDot) {
+        console.log("No");
+        return 0;
     }
 
-    // If no "No" conditions were met throughout the processing, then it's a "Yes" scenario.
-    finalizeProgramOutput("Yes");
+    console.log("Yes");
 });

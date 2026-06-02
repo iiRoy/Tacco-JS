@@ -1,153 +1,170 @@
-function       MinHeap    (   compareFunction   )
-{ // Constructor for our custom min-priority queue structure
-  this.heapElements = [ ] ;
-  this.compareFunction = compareFunction;
+function MinHeap( comparatorFn )
+{
+  // The internal array storing heap elements
+  this.heapArray = [];
+  // The comparison function to maintain heap property
+  this.comparatorFn = comparatorFn;
 }
 
-MinHeap.prototype.insert = function    ( itemToInsert )
-{ // Adds a new element and maintains heap property by sifting up
-  this.heapElements.push( itemToInsert ) ;
-  let currentElementIndex = this.heapElements.length-1;
+// Method to insert an element into the heap
+MinHeap.prototype.insert = function( elementToInsert )
+{
+  this.heapArray.push( elementToInsert );
+  let currentIdx = this.heapArray.length - 1; // Index of the newly added element
 
-  while( currentElementIndex > 0 )
+  // Bubble up the element to maintain heap property
+  while( currentIdx > 0 )
   {
-    let parentIndex = Math.floor( ( currentElementIndex - 1 ) / 2 ) ;
+    const parentIdx = Math.floor((currentIdx - 1) / 2); // Calculate parent index
     
-    // If parent is smaller or equal, then heap property is satisfied
-    if ( this.compareFunction( this.heapElements[ parentIndex ] , itemToInsert ) <= 0 )
-    {
+    // If parent is smaller or equal (for min-heap), stop
+    if( this.comparatorFn( this.heapArray[parentIdx], elementToInsert ) <= 0 )
       break;
-    }
 
-    this.heapElements[ currentElementIndex ] = this.heapElements[ parentIndex ];
-    currentElementIndex = parentIndex; // Move up
+    // Swap current element with its parent
+    this.heapArray[currentIdx] = this.heapArray[parentIdx];
+    currentIdx = parentIdx; // Move up
   }
 
-  // Place the new item in its correct position
-  if ( this.heapElements.length > 0 )
-    this.heapElements[ currentElementIndex ] = itemToInsert;
+  // Place the element at its final sorted position
+  if( this.heapArray.length > 0 )
+    this.heapArray[currentIdx] = elementToInsert;
 };
 
-MinHeap.prototype.extractMin = function() { // Removes and returns the smallest element
-  const smallestValue = this.top(); // Get the minimum value before removal
-  const lastItem = this.heapElements[ this.heapElements.length - 1 ];
-  this.heapElements.splice( this.heapElements.length - 1, 1 ); // Remove the last element
+// Method to extract the minimum element from the heap
+MinHeap.prototype.extractMin = function() {
+  const minVal = this.getMin(); // Get the minimum value (root)
+  const lastHeapElement = this.heapArray[this.heapArray.length - 1]; // Get the last element
+  this.heapArray.splice( this.heapArray.length - 1, 1 ); // Remove the last element
 
-  let rootIndex = 0; // Start sifting down from the root
+  let currentIdx = 0; // Start from the root
 
-  while ( ( rootIndex * 2 + 1 ) < this.heapElements.length )
+  // Bubble down the last element to maintain heap property
+  while( currentIdx * 2 + 1 < this.heapArray.length )
   {
-    const leftChildIdx = rootIndex * 2 + 1;
-    const rightChildIdx = rootIndex * 2 + 2;
-    let smallestChildIdx = leftChildIdx;
+    const leftChildIdx = currentIdx * 2 + 1;
+    const rightChildIdx = currentIdx * 2 + 2;
+    
+    // Determine the smallest child
+    // Note: The original code used 'comp' globally here, which is likely a typo.
+    // It should use 'this.comp' (renamed to 'this.comparatorFn') for consistency with the class.
+    const smallestChildIdx = rightChildIdx < this.heapArray.length && this.comparatorFn(this.heapArray[rightChildIdx], this.heapArray[leftChildIdx]) < 0 ? rightChildIdx : leftChildIdx;
 
-    // Determine the index of the smaller child
-    if ( ( rightChildIdx < this.heapElements.length ) && this.compareFunction( this.heapElements[ rightChildIdx ], this.heapElements[ leftChildIdx ] ) < 0 )
-    {
-      smallestChildIdx = rightChildIdx;
-    }
-
-    // If the last item is smaller than or equal to its smallest child, heap property is restored
-    if ( this.compareFunction( this.heapElements[ smallestChildIdx ], lastItem ) >= 0 )
-    {
+    // If the last element is smaller than or equal to its smallest child, stop
+    if( this.comparatorFn( this.heapArray[smallestChildIdx], lastHeapElement ) >= 0 )
       break;
-    }
 
-    this.heapElements[ rootIndex ] = this.heapElements[ smallestChildIdx ];
-    rootIndex = smallestChildIdx; // Move down
+    // Swap current element with its smallest child
+    this.heapArray[currentIdx] = this.heapArray[smallestChildIdx];
+    currentIdx = smallestChildIdx; // Move down
   }
 
-  // Place the last item in its correct position
-  if ( this.heapElements.length > 0 )
-    this.heapElements[ rootIndex ] = lastItem;
+  // Place the last element at its final sorted position
+  if( this.heapArray.length > 0 )
+    this.heapArray[currentIdx] = lastHeapElement;
 
-  return smallestValue; // Return the original minimum
+  return minVal; // Return the original minimum value
 };
 
-MinHeap.prototype.top = function() { // Returns the smallest element without removing it
-  return this.heapElements.length === 0 ? undefined : this.heapElements[0];
+// Method to get the minimum element without removing it
+MinHeap.prototype.getMin = function() {
+  // Return undefined if heap is empty, otherwise return the root element
+  return this.heapArray.length === 0 ? undefined : this.heapArray[0];
 };
 
-MinHeap.prototype.count = function() { // Returns the number of elements in the heap
-  return this.heapElements.length;
+// Method to get the number of elements in the heap
+MinHeap.prototype.count = function() {
+  return this.heapArray.length;
 };
 
-MinHeap.prototype.isVacant = function() { // Checks if the heap is empty
+// Method to check if the heap is empty
+MinHeap.prototype.isVacant = function() {
   return this.count() === 0;
 };
 
+// Constants for graph algorithm
 const MAX_NODES_COUNT = 100000;
-const HUGE_VAL = Number.MAX_SAFE_INTEGER; // A very large number
-var numVertices, numEdges, startingNode;
-var adjGraph; // Adjacency list representation of the graph
-var shortestDistances; // Array to store shortest distances from source
+const HUGE_DISTANCE = Number.POSITIVE_INFINITY / 4; // A large value representing infinity
+let vertexCount, edgeCount, sourceVertex;
+let graphAdjacencyList; // Adjacency list for the graph
+let shortestDistances; // Array to store shortest distances from source
 
-/*function shortestPathFinder ( sourceVertex )
-{ // Implements Dijkstra's algorithm using a priority queue
-  var minPriorityQ = new MinHeap( function( itemA, itemB ) { 
-    if ( itemA.distance !== itemB.distance )
-      return itemA.distance - itemB.distance;
+/*
+// Function to calculate shortest paths using Dijkstra's algorithm
+function calculateShortestPaths( startVertex )
+{
+  // Initialize a min-heap for Dijkstra's algorithm
+  const priorityQueueInstance = new MinHeap(function(itemOne, itemTwo) { 
+    // Compare based on distance first
+    if( itemOne.pathDistance !== itemTwo.pathDistance )
+      return itemOne.pathDistance - itemTwo.pathDistance;
 
-    return itemA.vertexId - itemB.vertexId;
-  } );
-  shortestDistances[ sourceVertex ] = 0;
-  minPriorityQ.insert( { distance: 0, vertexId: sourceVertex } );
+    // If distances are equal, compare based on vertex index
+    return itemOne.nodeIndex - itemTwo.nodeIndex;
+  });
+  
+  shortestDistances[startVertex] = 0; // Distance to source is 0
+  priorityQueueInstance.insert( { pathDistance: 0, nodeIndex: startVertex } ); // Add source to priority queue
 
-  while ( !minPriorityQ.isVacant() )
+  // Process nodes until the priority queue is empty
+  while( !priorityQueueInstance.isVacant() )
   {
-    var currentItem = minPriorityQ.extractMin();
+    const currentVertexInfo = priorityQueueInstance.extractMin(); // Get node with smallest distance
 
-    // If we've found a shorter path to this vertex already, skip
-    if ( shortestDistances[ currentItem.vertexId ] < currentItem.distance )
+    // If we found a shorter path already, skip
+    if( shortestDistances[currentVertexInfo.nodeIndex] < currentVertexInfo.pathDistance )
       continue;
 
-    // Explore neighbors
-    for ( var neighbourIdx = 0; neighbourIdx < adjGraph[ currentItem.vertexId ].length; ++neighbourIdx )
+    // Iterate through all neighbors of the current node
+    for( let neighborIdx = 0; neighborIdx < graphAdjacencyList[currentVertexInfo.nodeIndex].length; ++neighborIdx )
     {
-      var edgeData = adjGraph[ currentItem.vertexId ][ neighbourIdx ];
+      const edgeDetails = graphAdjacencyList[currentVertexInfo.nodeIndex][neighborIdx]; // Get edge details
 
-      // Relaxation step
-      if ( shortestDistances[ edgeData.targetNode ] > shortestDistances[ currentItem.vertexId ] + edgeData.weight )
+      // If a shorter path to the neighbor is found
+      if( shortestDistances[edgeDetails.destinationNode] > shortestDistances[currentVertexInfo.nodeIndex] + edgeDetails.edgeWeight )
       {
-        shortestDistances[ edgeData.targetNode ] = shortestDistances[ currentItem.vertexId ] + edgeData.weight;
-        minPriorityQ.insert( { distance: shortestDistances[ edgeData.targetNode ], vertexId: edgeData.targetNode } );
+        shortestDistances[edgeDetails.destinationNode] = shortestDistances[currentVertexInfo.nodeIndex] + edgeDetails.edgeWeight; // Update distance
+        priorityQueueInstance.insert( { pathDistance: shortestDistances[edgeDetails.destinationNode], nodeIndex: edgeDetails.destinationNode } ); // Add/update neighbor in priority queue
       }
     }
   }
-}*/
+}
+*/
 
-( function executeProgram ( rawData )
-{ // Self-executing function to process input and run algorithm
-  /*var inputLines = rawData.trim().split('\n');
-  var isFirstLine = true; // Flag to identify the first line containing graph dimensions
+// Main execution block (Immediately Invoked Function Expression)
+(function processGraphInput( rawInputData )
+{
+  /*
+  const inputLinesArray = rawInputData.trim().split('\n'); // Split input into lines
+  let isFirstLineProcessed = true; // Flag to identify the first line
 
-  for ( var lineCounter = 0; lineCounter < inputLines.length; ++lineCounter )
+  // Process each line of input
+  for( let lineIterator = 0; lineIterator < inputLinesArray.length; ++lineIterator )
   {
-    var lineTokens = inputLines[lineCounter].split(' ').map( Number ); // Parse numbers from line
+    const parsedLineValues = inputLinesArray[lineIterator].split(' ').map(Number); // Parse numbers from the line
 
-    if ( isFirstLine )
+    if( isFirstLineProcessed )
     {
-      numVertices = lineTokens[0];
-      numEdges = lineTokens[1];
-      startingNode = lineTokens[2];
+      vertexCount = parsedLineValues[0]; // Number of vertices
+      edgeCount = parsedLineValues[1]; // Number of edges
+      sourceVertex = parsedLineValues[2]; // Starting vertex for Dijkstra
 
-      adjGraph = [ ];
-      for ( var vertexIndex = 0; vertexIndex < numVertices; ++vertexIndex )
-        adjGraph[ vertexIndex ] = [ ]; // Initialize adjacency list for each vertex
+      graphAdjacencyList = []; // Initialize adjacency list
+      for( let i = 0; i < vertexCount; ++i )
+        graphAdjacencyList[i] = []; // Each vertex gets an empty list of neighbors
 
-      shortestDistances = ( new Array( numVertices ) ).fill( HUGE_VAL ); // Initialize distances to infinity
+      shortestDistances = (new Array(vertexCount)).fill(HUGE_DISTANCE); // Initialize distances to infinity
     }
-    else // Subsequent lines define edges
-    {
-      adjGraph[ lineTokens[0] ].push( { targetNode: lineTokens[1], weight: lineTokens[2] } );
-    }
+    else
+      // Add edge to the adjacency list
+      graphAdjacencyList[parsedLineValues[0]].push( { destinationNode: parsedLineValues[1], edgeWeight: parsedLineValues[2] } );
 
-    isFirstLine = false; // After processing the first line, set flag to false
+    isFirstLineProcessed = false; // Mark first line as processed
   }
 
-  shortestPathFinder( startingNode ); // Run Dijkstra's algorithm from the specified start node
+  calculateShortestPaths( sourceVertex ); // Run Dijkstra's algorithm
 
-  shortestDistances.forEach( function( currentDistance ) { // Output results
-    console.log( currentDistance === HUGE_VAL ? "INF" : currentDistance );
-  } );*/
-} ) ( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+  // Output the shortest distances
+  shortestDistances.forEach( function(currentDistance) { console.log( currentDistance === HUGE_DISTANCE ? "INF" : currentDistance ) } );
+  */
+})( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );

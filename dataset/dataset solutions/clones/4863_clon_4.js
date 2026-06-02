@@ -1,28 +1,34 @@
-const processGridData = (dataPayload) => {
-    const searchTarget = "snuke";
-    const gridLines = dataPayload.trim().split('\n');
+function processInputData(rawData) {
+    const cleanedInput = rawData.trim();
+    const allInputLines = cleanedInput.split('\n');
 
-    const [hVal, wVal] = gridLines[0].split(' ').map(Number); // hVal corresponds to original H
+    const [dimensionsLine, ...contentLines] = allInputLines;
+    const [heightString, widthString] = dimensionsLine.split(' ');
 
-    const discoveredLocations = gridLines.slice(1, hVal + 1).flatMap((currentLine, lineIdx) => {
-        const rowNumber = lineIdx + 1; 
-        const currentLineElements = currentLine.split(' ');
+    const effectiveHeight = Number(heightString);
+    // The 'widthString' (corresponding to original 'W') is parsed but not used,
+    // mirroring the original code's behavior for 'W'.
 
-        return currentLineElements.map((element, elementIdx) => {
-            const columnNumber = elementIdx + 1; 
-            if (element === searchTarget) {
-                const columnChar = String.fromCharCode(64 + columnNumber); // A=1, B=2, ...
-                return `${columnChar}${rowNumber}`;
-            }
-            return ''; 
-        }).filter(Boolean); 
-    });
+    const characterMap = Array.from({ length: 26 }, (_, charIdx) => String.fromCharCode(65 + charIdx));
 
-    const finalResultSequence = discoveredLocations.join('');
+    const accumulatedResult = contentLines
+        .slice(0, effectiveHeight) // Process only the relevant number of rows
+        .reduce((overallOutput, currentRowContent, rowIndex) => {
+            const rowItems = currentRowContent.split(' ');
+            const oneBasedRowIdentifier = rowIndex + 1; // Original 'i' is 1-based
 
-    console.log(finalResultSequence);
-};
+            const currentRowSegment = rowItems.reduce((rowOutputPart, currentItem, itemIndex) => {
+                if (currentItem === 'snuke') {
+                    const columnCharacter = characterMap[itemIndex]; // 0-based itemIndex maps to 0-based characterMap
+                    return rowOutputPart + columnCharacter + oneBasedRowIdentifier;
+                }
+                return rowOutputPart;
+            }, ''); // Accumulator for the current row's contributions
 
-const acquireSourceText = require("fs").readFileSync;
-const inputSourcePath = "/dev/stdin";
-processGridData(acquireSourceText(inputSourcePath, "utf8"));
+            return overallOutput + currentRowSegment;
+        }, ''); // Initial accumulator for the entire output string
+
+    console.log(accumulatedResult);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

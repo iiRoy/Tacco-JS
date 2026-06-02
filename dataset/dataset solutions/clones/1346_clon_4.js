@@ -1,24 +1,12 @@
-class GeometricProcessor {
-    static #circularConstant = 3.1415926535897932384626433832795;
+function processGeometry(rawData) {
+    const numericValue = Number.parseInt(rawData, 10);
+    const areaCalculation = Math.PI * Math.pow(numericValue, 2);
+    const perimeterCalculation = 2 * Math.PI * numericValue;
 
-    static computeMeasures(rawInput) {
-        const numericalValue = Number(rawInput);
-        const squaredResult = numericalValue * numericalValue;
-        const doubledValue = numericalValue + numericalValue;
+    const integralArea = Math.trunc(areaCalculation);
+    const integralPerimeter = Math.trunc(perimeterCalculation);
 
-        const areaOutcome = GeometricProcessor.#circularConstant * squaredResult;
-        const perimeterOutcome = GeometricProcessor.#circularConstant * doubledValue;
-
-        return [areaOutcome, perimeterOutcome];
-    }
-
-    static presentOutput(resultsTuple) {
-        console.log(resultsTuple[0].toString() + ' ' + resultsTuple[1].toString());
-    }
+    console.log(`${integralArea} ${integralPerimeter}`);
 }
 
-GeometricProcessor.presentOutput(
-    GeometricProcessor.computeMeasures(
-        require("fs").readFileSync("b.txt", "utf8")
-    )
-);
+processGeometry(require("fs").readFileSync("b.txt", "utf8"));

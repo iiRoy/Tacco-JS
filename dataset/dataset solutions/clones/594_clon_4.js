@@ -1,61 +1,27 @@
-const obtainSource = (sourcePath) => require('node:fs').readFileSync(sourcePath, 'utf8');
+const sourceReader = require('fs');
+const rawInputContent = sourceReader.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputContent.trim().split('\n');
 
-const processRawData = (rawData) => {
-    const cleansed = rawData.trim();
-    const segments = cleansed.split('\n');
-    return segments;
-};
+const [dimensionA, dimensionB] = processedLines.shift().split(' ').map(Number);
 
-const extractConfigAndData = (dataLines) => {
-    const configLine = dataLines[0].split(' ').map(Number);
-    const totalDimensions = configLine[0];
-    const instructionCount = configLine[1];
+const sequenceData = processedLines.splice(0, dimensionA - 1).map(Number);
+const movementInstructions = processedLines.splice(0, dimensionB).map(Number);
 
-    const elementSet = dataLines.slice(1, totalDimensions).map(Number);
-    const movementSet = dataLines.slice(totalDimensions, totalDimensions + instructionCount).map(Number);
+let currentPointerPosition = 0;
 
-    return { elementSet, movementSet };
-};
+const finalAccumulatedValue = movementInstructions.reduce((totalAccumulator, currentInstruction) => {
+    const directionIndicator = Math.sign(currentInstruction);
+    const absoluteSteps = Math.abs(currentInstruction);
+    let segmentContribution = 0;
 
-const computeTraversal = (stepsToTake) => {
-    const initialState = { currentPosition: 0, accumulatedPathIndices: [] };
+    if (directionIndicator === 1) {
+        segmentContribution = sequenceData.slice(currentPointerPosition, currentPointerPosition + absoluteSteps).reduce((subTotal, elementValue) => subTotal + elementValue, 0);
+    } else {
+        segmentContribution = sequenceData.slice(currentPointerPosition - absoluteSteps, currentPointerPosition).reduce((subTotal, elementValue) => subTotal + elementValue, 0);
+    }
 
-    const finalState = stepsToTake.reduce((previousState, singleStepInstruction) => {
-        const directionIndicator = singleStepInstruction > 0 ? 1 : -1;
-        const numberOfRepetitions = Math.abs(singleStepInstruction);
+    currentPointerPosition += currentInstruction;
+    return totalAccumulator + segmentContribution;
+}, 0);
 
-        const stepResults = Array.from({ length: numberOfRepetitions }).reduce((interimState) => {
-            let nextPos = interimState.currentPosition;
-            let currentIndices = [...interimState.pathIndices];
-
-            if (directionIndicator === 1) {
-                currentIndices.push(nextPos);
-                nextPos++;
-            } else {
-                nextPos--;
-                currentIndices.push(nextPos);
-            }
-            return { currentPosition: nextPos, pathIndices: currentIndices };
-        }, { currentPosition: previousState.currentPosition, pathIndices: [] });
-
-        return {
-            currentPosition: stepResults.currentPosition,
-            accumulatedPathIndices: previousState.accumulatedPathIndices.concat(stepResults.pathIndices)
-        };
-    }, initialState);
-
-    return finalState.accumulatedPathIndices;
-};
-
-const calculateFinalSum = (indices, values) => {
-    return indices.reduce((total, idx) => total + values[idx], 0);
-};
-
-const rawInputContent = obtainSource('/dev/stdin');
-const processedLines = processRawData(rawInputContent);
-const { elementSet, movementSet } = extractConfigAndData(processedLines);
-
-const allVisitedIndices = computeTraversal(movementSet);
-const finalOutcome = calculateFinalSum(allVisitedIndices, elementSet);
-
-console.log(finalOutcome);
+console.log(finalAccumulatedValue);

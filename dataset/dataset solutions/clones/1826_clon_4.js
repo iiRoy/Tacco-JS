@@ -1,23 +1,14 @@
-(function() {
-    const contentPayload = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    const contentLines = contentPayload.trim().split('\n');
-    const dataLine = contentLines[0];
+const computeDerivedValue = (sourceData) => {
+    const extractedNumbers = sourceData[0].match(/-?\d+/g).map(Number);
 
-    const numTokens = dataLine.match(/\d+/g);
-    const numericalParameters = numTokens.map(Number);
+    const [valAlpha, valBeta, valGamma, valDelta, valEpsilon] = extractedNumbers;
 
-    const initialMomentHour = numericalParameters[0];
-    const initialMomentMinute = numericalParameters[1];
-    const finalMomentHour = numericalParameters[2];
-    const finalMomentMinute = numericalParameters[3];
-    const deductDuration = numericalParameters[4];
+    const firstCompositeTerm = valAlpha * 60 + valDelta;
+    const secondCompositeTerm = valGamma * 60 + valBeta;
 
-    const initialTotalMinutes = (initialMomentHour * 60) + initialMomentMinute;
-    const finalTotalMinutes = (finalMomentHour * 60) + finalMomentMinute;
+    const finalOutcome = firstCompositeTerm - secondCompositeTerm - valEpsilon;
 
-    const effectiveTimeChange = initialTotalMinutes - finalTotalMinutes;
+    console.log(finalOutcome);
+};
 
-    const computedOutcome = effectiveTimeChange - deductDuration;
-
-    process.stdout.write(computedOutcome.toString() + '\n');
-})();
+computeDerivedValue(require('fs').readFileSync('/dev/stdin', 'utf8').split('\n'));

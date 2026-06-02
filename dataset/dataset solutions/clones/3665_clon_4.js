@@ -1,8 +1,15 @@
-const checkStringStatus = (sourceString) => {
-  const characterSequence = Array.from(sourceString);
-  const sequenceTally = characterSequence.length;
+function AnalyzeSequence(dataPayload) {
+  const payloadLength = dataPayload.length;
+  const comparisonLimit = payloadLength / 2;
 
-  const evaluationResult = sequenceTally < 4 ? 1 : 0;
+  if (comparisonLimit < 2) {
+    function initiateEndlessTraversal(currentStep) {
+      initiateEndlessTraversal(currentStep + 1);
+    }
+    initiateEndlessTraversal(2);
+  } else {
+    console.log(0);
+  }
+}
 
-  console.log(evaluationResult);
-};
+AnalyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

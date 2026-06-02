@@ -1,125 +1,143 @@
-function LinkNode(valEntry) {
-  this.value = valEntry;
-  this.next = null;
+function OrderedElementStore(comparisonFn) {
+  this.storageArray = [];
+  this.comparisonFn = comparisonFn;
 }
 
-function OrderedCollection(comparisonLogic) {
-  this.head = null;
-  this.logic = comparisonLogic;
-  this.totalElements = 0;
-}
-
-OrderedCollection.prototype.addEntry = function(newEntry) {
-  var newNode = new LinkNode(newEntry);
-
-  if (this.head === null || this.logic(newEntry, this.head.value) < 0) {
-    newNode.next = this.head;
-    this.head = newNode;
-  } else {
-    var current = this.head;
-    while (current.next !== null && this.logic(newEntry, current.next.value) >= 0) {
-      current = current.next;
-    }
-    newNode.next = current.next;
-    current.next = newNode;
+OrderedElementStore.prototype._bubbleUp = function(currentIndex) {
+  if (currentIndex === 0) {
+    return;
   }
-  this.totalElements++;
+  const parentIndex = Math.floor((currentIndex - 1) / 2);
+  if (this.comparisonFn(this.storageArray[parentIndex], this.storageArray[currentIndex]) > 0) {
+    [this.storageArray[parentIndex], this.storageArray[currentIndex]] = [this.storageArray[currentIndex], this.storageArray[parentIndex]];
+    this._bubbleUp(parentIndex);
+  }
 };
 
-OrderedCollection.prototype.fetchSmallest = function() {
-  if (this.head === null) {
+OrderedElementStore.prototype.addValue = function(incomingValue) {
+  this.storageArray.push(incomingValue);
+  this._bubbleUp(this.storageArray.length - 1);
+};
+
+OrderedElementStore.prototype._bubbleDown = function(currentIndex) {
+  const leftChildIdx = 2 * currentIndex + 1;
+  const rightChildIdx = 2 * currentIndex + 2;
+  let smallestChildIdx = currentIndex;
+
+  if (leftChildIdx < this.storageArray.length && this.comparisonFn(this.storageArray[leftChildIdx], this.storageArray[smallestChildIdx]) < 0) {
+    smallestChildIdx = leftChildIdx;
+  }
+  if (rightChildIdx < this.storageArray.length && this.comparisonFn(this.storageArray[rightChildIdx], this.storageArray[smallestChildIdx]) < 0) {
+    smallestChildIdx = rightChildIdx;
+  }
+
+  if (smallestChildIdx !== currentIndex) {
+    [this.storageArray[currentIndex], this.storageArray[smallestChildIdx]] = [this.storageArray[smallestChildIdx], this.storageArray[currentIndex]];
+    this._bubbleDown(smallestChildIdx);
+  }
+};
+
+OrderedElementStore.prototype.extractMinimum = function() {
+  if (this.storageArray.length === 0) {
     return undefined;
   }
-  var smallest = this.head.value;
-  this.head = this.head.next;
-  this.totalElements--;
-  return smallest;
-};
-
-OrderedCollection.prototype.examineTop = function() {
-  return this.head === null ? undefined : this.head.value;
-};
-
-OrderedCollection.prototype.elementCount = function() {
-  return this.totalElements;
-};
-
-OrderedCollection.prototype.noElements = function() {
-  return this.totalElements === 0;
-};
-
-const BIG_VAL = 999999999;
-const MAX_NODE_ID = 100000;
-
-function calculatePathCosts(inputData) {
-  const rawLines = inputData.trim().split('\n');
-
-  let nodeCount, edgeCount, sourceNode;
-  let firstLineParsed = false;
-  let adjacencyStructure = new Map();
-  let currentDistances = new Map();
-
-  for (let lineIndex = 0; lineIndex < rawLines.length; ++lineIndex) {
-    const numericParts = rawLines[lineIndex].split(' ').map(Number);
-
-    if (!firstLineParsed) {
-      nodeCount = numericParts[0];
-      edgeCount = numericParts[1];
-      sourceNode = numericParts[2];
-
-      for (let i = 0; i < nodeCount; ++i) {
-        adjacencyStructure.set(i, new Map());
-        currentDistances.set(i, BIG_VAL);
-      }
-      firstLineParsed = true;
-    } else {
-      const origin = numericParts[0];
-      const destination = numericParts[1];
-      const weight = numericParts[2];
-      adjacencyStructure.get(origin).set(destination, weight);
-    }
+  if (this.storageArray.length === 1) {
+    return this.storageArray.pop();
   }
 
-  const minHeapAlternative = new OrderedCollection(function(itemA, itemB) {
-    if (itemA.distanceVal !== itemB.distanceVal)
-      return itemA.distanceVal - itemB.distanceVal;
-    return itemA.nodeId - itemB.nodeId;
+  const minimumValue = this.storageArray[0];
+  this.storageArray[0] = this.storageArray.pop();
+  this._bubbleDown(0);
+
+  return minimumValue;
+};
+
+OrderedElementStore.prototype.viewMinimum = function() {
+  return this.storageArray.length === 0 ? undefined : this.storageArray[0];
+};
+
+OrderedElementStore.prototype.countElements = function() {
+  return this.storageArray.length;
+};
+
+OrderedElementStore.prototype.hasNoElements = function() {
+  return this.countElements() === 0;
+};
+
+const MAX_NODES_LIMIT = 100000;
+const PATH_INFINITY_VALUE = Number.POSITIVE_INFINITY / 4;
+let nodeCount, edgeCount, startNodeIdentifier;
+let graphAdjacency;
+let distanceMap;
+
+function calculateShortestPaths(sourceNodeIdentifier) {
+  const priorityStore = new OrderedElementStore(function(itemA, itemB) {
+    if (itemA.pathCost !== itemB.pathCost) {
+      return itemA.pathCost - itemB.pathCost;
+    }
+    return itemA.vertexIdentifier - itemB.vertexIdentifier;
   });
 
-  currentDistances.set(sourceNode, 0);
-  minHeapAlternative.addEntry({ distanceVal: 0, nodeId: sourceNode });
+  distanceMap[sourceNodeIdentifier] = 0;
+  priorityStore.addValue({
+    pathCost: 0,
+    vertexIdentifier: sourceNodeIdentifier
+  });
 
-  while (!minHeapAlternative.noElements()) {
-    const currentPath = minHeapAlternative.fetchSmallest();
-    
-    const processingNode = currentPath.nodeId;
-    const pathValue = currentPath.distanceVal;
+  while (!priorityStore.hasNoElements()) {
+    const {
+      pathCost: currentCost,
+      vertexIdentifier: currentVertex
+    } = priorityStore.extractMinimum();
 
-    if (currentDistances.get(processingNode) < pathValue) {
+    if (distanceMap[currentVertex] < currentCost) {
       continue;
     }
 
-    const neighborEdges = adjacencyStructure.get(processingNode);
-    if (neighborEdges) {
-      for (const [neighborId, edgeCost] of neighborEdges.entries()) {
-        const newCalculatedDistance = currentDistances.get(processingNode) + edgeCost;
+    graphAdjacency[currentVertex].forEach(currentEdge => {
+      const {
+        destinationNode: neighbor,
+        edgeWeight: weight
+      } = currentEdge;
 
-        if (newCalculatedDistance < currentDistances.get(neighborId)) {
-          currentDistances.set(neighborId, newCalculatedDistance);
-          minHeapAlternative.addEntry({ distanceVal: newCalculatedDistance, nodeId: neighborId });
-        }
+      if (distanceMap[neighbor] > distanceMap[currentVertex] + weight) {
+        distanceMap[neighbor] = distanceMap[currentVertex] + weight;
+        priorityStore.addValue({
+          pathCost: distanceMap[neighbor],
+          vertexIdentifier: neighbor
+        });
       }
-    }
+    });
   }
-
-  let outputLines = [];
-  for (let i = 0; i < nodeCount; ++i) {
-    const finalDistance = currentDistances.get(i);
-    outputLines.push(finalDistance === BIG_VAL ? "INF" : finalDistance);
-  }
-  return outputLines.join('\n');
 }
 
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalOutput = calculatePathCosts(fileContent);
-process.stdout.write(finalOutput);
+(function processGraphInput(rawData) {
+  const inputLines = rawData.trim().split('\n');
+  let isFirstLineProcessed = false;
+
+  inputLines.forEach(lineContent => {
+    const parsedNumbers = lineContent.split(' ').map(Number);
+
+    if (!isFirstLineProcessed) {
+      [nodeCount, edgeCount, startNodeIdentifier] = parsedNumbers;
+
+      graphAdjacency = Array.from({
+        length: nodeCount
+      }, () => []);
+      distanceMap = Array(nodeCount).fill(PATH_INFINITY_VALUE);
+      isFirstLineProcessed = true;
+    } else {
+      const [fromNode, toNode, weight] = parsedNumbers;
+      graphAdjacency[fromNode].push({
+        destinationNode: toNode,
+        edgeWeight: weight
+      });
+    }
+  });
+
+  calculateShortestPaths(startNodeIdentifier);
+
+  distanceMap.forEach(value => {
+    console.log(value === PATH_INFINITY_VALUE ? "INF" : value);
+  });
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

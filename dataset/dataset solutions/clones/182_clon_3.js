@@ -1,58 +1,39 @@
-const dataHandler = require("fs");
+let totalProductAccumulator = 0;
+let totalSecondValueAccumulator = 0;
+let entryCounter = 0;
 
-let totalValueAccumulator = 0;
-let totalItemCountSum = 0;
-let processedRecordCounter = 0;
+const fileSystemHandler = require("fs");
+const standardInputSource = "/dev/stdin";
+const fileContentEncoding = "utf8";
+const lineSeparator = '\n';
+const valueSeparator = ',';
 
-const sourceFilePath = "/dev/stdin";
-const fileEncoding = "utf8";
+const rawInputData = fileSystemHandler.readFileSync(standardInputSource, fileContentEncoding);
+const trimmedInput = rawInputData.trim();
+const inputLinesArray = trimmedInput.split(lineSeparator);
 
-let fileContentsRaw;
-try {
-    fileContentsRaw = dataHandler.readFileSync(sourceFilePath, fileEncoding);
-} catch (fileAccessError) {
-    console.error("Failed to retrieve data from " + sourceFilePath + ": " + fileAccessError.message);
-    process.exit(1);
+for (const currentInputLine of inputLinesArray) {
+    const lineSegments = currentInputLine.split(valueSeparator);
+
+    const firstSegmentValue = Number(lineSegments[0]);
+    const secondSegmentValue = Number(lineSegments[1]);
+
+    totalProductAccumulator += firstSegmentValue * secondSegmentValue;
+    totalSecondValueAccumulator += secondSegmentValue;
+    entryCounter++;
 }
 
-const inputLinesFiltered = fileContentsRaw.trim().split('\n');
+function calculateAndFormatOutput(productSum, secondValueSum, count) {
+    const averageOfSecondValues = secondValueSum / count;
+    const roundedAverage = ~~ (averageOfSecondValues + 0.5);
 
-if (inputLinesFiltered.length === 0 || (inputLinesFiltered.length === 1 && inputLinesFiltered[0] === '')) {
-    console.log("0\n0");
-    process.exit(0);
+    return productSum + lineSeparator + roundedAverage;
 }
 
-inputLinesFiltered.forEach(function(currentRecordEntry) {
-    if (!currentRecordEntry || currentRecordEntry.trim() === '') {
-        return;
-    }
+const finalOutputString = calculateAndFormatOutput(
+    totalProductAccumulator,
+    totalSecondValueAccumulator,
+    entryCounter
+);
 
-    const recordSegments = currentRecordEntry.split(',');
-
-    if (recordSegments.length !== 2) {
-        console.warn("Invalid data format for entry: '" + currentRecordEntry + "'. Skipping this record.");
-        return;
-    }
-
-    const valueComponentText = recordSegments[0].trim();
-    const quantityComponentText = recordSegments[1].trim();
-
-    const numericValue = parseFloat(valueComponentText);
-    const numericQuantity = parseInt(quantityComponentText, 10);
-
-    if (isNaN(numericValue) || isNaN(numericQuantity)) {
-        console.warn("Non-numeric data found in entry: '" + currentRecordEntry + "'. Skipping this record.");
-        return;
-    }
-
-    totalValueAccumulator += numericValue * numericQuantity;
-    totalItemCountSum += numericQuantity;
-    processedRecordCounter++;
-});
-
-let roundedAverageQuantity = 0;
-if (processedRecordCounter > 0) {
-    roundedAverageQuantity = Math.round(totalItemCountSum / processedRecordCounter);
-}
-
-console.log(totalValueAccumulator + '\n' + roundedAverageQuantity);
+console.log(finalOutputString);

@@ -1,26 +1,33 @@
-processInputData = (rawDataString) => {
-  const numericValuesArray = rawDataString.split(" ")
-    .map( ( currentStringValue ) => {
-      return Number(currentStringValue);
-    });
+processInputData = (rawData) => {
+  // Split the raw input string by spaces and convert each part to a number.
+  let numericValues = rawData.split(" ").map(itemStr => {
+    return Number(itemStr);
+  });
 
-  let firstNum = numericValuesArray[0];
-  let secondNum = numericValuesArray[1];
-  let thirdNum = numericValuesArray[2];
+  // Extract the three numerical components from the processed array.
+  let firstVal = numericValues[0];
+  let secondVal = numericValues[1];
+  let thirdVal = numericValues[2];
 
-  const determineCategory = (  ) =>  {
-    if ( firstNum === secondNum  &&  firstNum === thirdNum ) {
+  // Define an inner function to categorize the relationship between the three values.
+  let determineCategory = () => {
+    // Case 1: All three values are identical.
+    if (firstVal === secondVal && firstVal === thirdVal) {
       return 1;
     }
-    else if (  firstNum === secondNum  ||  firstNum === thirdNum  ||  thirdNum === secondNum  )  {
+    // Case 2: Exactly two values are identical.
+    else if (firstVal === secondVal || firstVal === thirdVal || thirdVal === secondVal) {
       return 2;
     }
-    else   {
+    // Case 3: All three values are distinct.
+    else {
       return 3;
     }
   };
 
-  console.log(  determineCategory()  );
+  // Output the result of the categorization function to the console.
+  console.log(determineCategory());
 };
 
-processInputData(  require("fs").readFileSync('/dev/stdin', 'utf-8')  );
+// Read input from standard input and pass it to the main processing function.
+processInputData(require("fs").readFileSync('/dev/stdin', 'utf-8'));

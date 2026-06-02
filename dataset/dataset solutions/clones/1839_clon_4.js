@@ -1,16 +1,17 @@
-function processPayload(rawText) {
-    const segments = rawText.split('\n');
-    const initialCount = Number(segments[0]);
+function processInputData(sourceText) {
+    const lines = sourceText.split('\n');
 
-    const finalOutputs = segments.reduce((accumulator, currentSegment, currentIndex) => {
-        if (currentIndex > 0 && currentIndex <= initialCount) {
-            const numericalValues = currentSegment.split(' ').map(Number);
-            const valuesToDisplay = numericalValues.slice(1);
-            accumulator.push(valuesToDisplay.join(' '));
-        }
-        return accumulator;
-    }, []);
+    const dataLineCount = Number(lines[0]);
 
-    finalOutputs.forEach(line => console.log(line));
+    Array.from({ length: dataLineCount }, (_, index) => lines[index + 1])
+        .forEach(currentLineContent => {
+            const numericalTokens = currentLineContent.split(' ').map(val => +val);
+
+            const firstElement = numericalTokens[0];
+            const secondElement = numericalTokens[1];
+
+            console.log(secondElement.join(' '));
+        });
 }
-processPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

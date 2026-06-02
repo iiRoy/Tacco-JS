@@ -1,38 +1,26 @@
-const fileSystemUtility = require('fs');
-const readInputFileContent = fileSystemUtility.readFileSync;
-const trimStringBoundaries = (textToClean) => textToClean.trim();
+// This module handles file system operations to read input.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
 
-const numericalParser = parseInt; // Helper for converting text to numbers
+// A previous line for testing might have been: // let rawData = "14";
 
-const outputDisplay = console.log; // Helper for sending messages to the console
+// Convert the input string into an integer for calculations.
+let currentNumber = parseInt(rawData);
+// Keep a copy of the initial number for the final output display.
+let originalValue = currentNumber;
 
-// --- Program Start ---
+// Initialize an array to store the prime factors as they are discovered.
+let primeFactors = [];
 
-// Retrieve raw data from the standard input stream, ensuring no leading/trailing spaces.
-const rawTextualData = trimStringBoundaries(readInputFileContent('/dev/stdin', 'utf8'));
-// For local testing, one might uncomment: // const exampleInputString = "14";
-
-// Convert the obtained textual data into its numerical representation.
-let currentWorkingNumber = numericalParser(rawTextualData);
-const initialNumericValue = currentWorkingNumber; // Store the original value for later output.
-
-// Initialize a dynamic array to hold the prime factors found.
-const discoveredFactors = [];
-
-// Create an alias for adding elements to our factor collection.
-const addElementToCollection = discoveredFactors.push.bind(discoveredFactors);
-
-// Iterate through potential divisors, starting from 2.
-for (let divisorCandidate = 2; divisorCandidate <= currentWorkingNumber; divisorCandidate++) {
-  // Continuously divide by the current candidate if it's a factor.
-  while (currentWorkingNumber % divisorCandidate === 0) {
-    addElementToCollection(divisorCandidate); // Record this prime factor.
-    currentWorkingNumber /= divisorCandidate; // Reduce the number for further factorization.
-  }
+// Begin iterating from the smallest possible prime factor (2) up to the current number.
+for (let divisorCandidate = 2; divisorCandidate <= currentNumber; divisorCandidate++) {
+    // Continuously divide the current number by the candidate as long as it's perfectly divisible.
+    while (currentNumber % divisorCandidate === 0) {
+        // If divisible, the candidate is a prime factor; add it to our collection.
+        primeFactors.push(divisorCandidate);
+        // Reduce the current number by dividing it by the found factor.
+        currentNumber /= divisorCandidate;
+    }
 }
 
-// Create an alias for joining array elements into a string.
-const concatenateElements = discoveredFactors.join.bind(discoveredFactors);
-
-// Output the original number followed by its prime factors, separated by spaces.
-outputDisplay(initialNumericValue + ': ' + concatenateElements(' '));
+// Print the original number followed by a colon and its prime factors, separated by spaces.
+console.log(originalValue + ': ' + primeFactors.join(' '));

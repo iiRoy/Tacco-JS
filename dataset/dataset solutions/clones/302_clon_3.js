@@ -1,82 +1,83 @@
-const determineLeapStatusForYear = (targetYear) => {
-    // This helper function evaluates if a given year adheres to the Gregorian calendar leap year rules.
-    // A year is a leap year if it is divisible by 4, unless it is divisible by 100 but not by 400.
-    const isDivisibleByFour = (targetYear % 4 === 0);
-    const isDivisibleByOneHundred = (targetYear % 100 === 0);
-    const isDivisibleByFourHundred = (targetYear % 400 === 0);
+function checkLeapYear(currentYear) {
+    const isDivisibleBy400 = currentYear % 400 === 0;
+    const isDivisibleBy100 = currentYear % 100 === 0;
+    const isDivisibleBy4 = currentYear % 4 === 0;
 
-    // The core logic for leap year determination.
-    // It's a leap year if (divisible by 4 AND not by 100) OR (divisible by 400).
-    const isIndeedLeap = (isDivisibleByFour && !isDivisibleByOneHundred) || isDivisibleByFourHundred;
-    return isIndeedLeap;
-};
+    if (isDivisibleBy400) {
+        return true;
+    } else if (isDivisibleBy100) {
+        return false;
+    } else if (isDivisibleBy4) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
-// Define constants for input paths to improve readability and maintainability.
-const STANDARD_INPUT_PATH = '/dev/stdin';
-const FILE_SYSTEM_MODULE_NAME = 'fs';
+function extractYearBounds(lineContent) {
+    const yearSegments = lineContent.split(' ');
+    const startBound = parseInt(yearSegments[0], 10);
+    const endBound = parseInt(yearSegments[1], 10);
+    return { startBound, endBound };
+}
 
-// Acquire the file system module.
-const fsModule = require(FILE_SYSTEM_MODULE_NAME);
+const fileSystemModule = require('fs');
+const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+let inputDataLines = rawInputData.split('\n');
 
-// Read the entire content from the standard input as a UTF-8 string.
-const rawInputData = fsModule.readFileSync(STANDARD_INPUT_PATH, 'utf8');
+let accumulatedOutputSegments = [];
 
-// Split the raw input into individual lines, representing year ranges.
-// Filter out any potential empty lines that might result from extra newlines in the input.
-const processedInputLines = rawInputData.split('\n').filter(line => line.trim() !== '');
-
-// This array will accumulate all the output segments before final printing.
-const accumulatedOutputSegments = [];
-
-// Initialize an index to iterate through the processed input lines.
-let lineIndex = 0;
-
-// Main processing loop: continues until a specific termination condition is met.
 while (true) {
-    // Retrieve the current line and advance the index for the next iteration.
-    const currentInputLine = processedInputLines[lineIndex++];
+    const currentInputLine = inputDataLines.shift();
 
-    // Split the current line into its constituent year tokens (start and end).
-    const currentYearRangeTokens = currentInputLine.split(' ');
+    if (currentInputLine === undefined) {
+        // This case might happen if the input file doesn't end with a newline,
+        // and all lines have been processed. The original code would then
+        // try to split undefined, leading to an error.
+        // However, `split('\n')` on a string without a trailing newline
+        // will not produce an empty string at the end.
+        // If the input is "1 2\n0 0", inputDataLines will be ["1 2", "0 0"].
+        // After "1 2", "0 0" is processed, inputDataLines is [].
+        // The next shift is undefined.
+        // The original code would then call `undefined.split(' ')` which throws.
+        // To match behavior, we must ensure `extractYearBounds` gets a string.
+        // If `currentInputLine` is undefined, it means we've exhausted the lines.
+        // The `0 0` check is the primary break. If we get here, it means
+        // the input didn't end with `0 0` or was malformed.
+        // The original code would crash. Let's assume valid input always ends with `0 0`.
+        // If it doesn't, the original code would crash on `undefined.split`.
+        // For strict equivalence, we should let it crash or ensure `0 0` is always present.
+        // Given the problem context, `0 0` is the sentinel.
+        // If `currentInputLine` is `undefined`, it means we've run out of lines before `0 0`.
+        // This is an edge case not explicitly handled by the original, but it would crash.
+        // For Type III, we assume valid input ends with `0 0`.
+        break; // Exit if no more lines, assuming 0 0 was processed or input is malformed.
+    }
 
-    // Parse the start and end years from the tokens, ensuring they are integers.
-    // Use parseInt with radix 10 for explicit base conversion.
-    const startYearBoundary = parseInt(currentYearRangeTokens[0], 10);
-    const endYearBoundary = parseInt(currentYearRangeTokens[1], 10);
+    const { startBound: startYear, endBound: endYear } = extractYearBounds(currentInputLine);
 
-    // Termination condition: if both start and end years are zero, exit the loop.
-    // This indicates the end of input data.
-    if (startYearBoundary === 0 && endYearBoundary === 0) {
+    if (startYear + endYear === 0) {
         break;
     }
 
-    // A temporary array to store all leap years found within the current range.
-    const foundLeapYearsInCurrentSegment = [];
-    let anyLeapYearFoundInSegment = false; // Flag to track if any leap year was found.
-
-    // Iterate through each year within the specified range (inclusive).
-    for (let yearPointer = startYearBoundary; yearPointer <= endYearBoundary; yearPointer++) {
-        // Check if the current year is a leap year using our dedicated function.
-        if (determineLeapStatusForYear(yearPointer)) {
-            // If it's a leap year, add its string representation to our temporary list.
-            foundLeapYearsInCurrentSegment.push(yearPointer.toString());
-            anyLeapYearFoundInSegment = true; // Set flag to true.
+    let currentRangeLeapYearsBuffer = '';
+    for (let yearCounter = startYear; yearCounter <= endYear; yearCounter++) {
+        if (checkLeapYear(yearCounter)) {
+            currentRangeLeapYearsBuffer += yearCounter + '\n';
         }
     }
 
-    // If no leap years were found in the current range, add 'NA' as per requirements.
-    if (!anyLeapYearFoundInSegment) {
-        foundLeapYearsInCurrentSegment.push('NA');
+    if (currentRangeLeapYearsBuffer.length === 0) {
+        currentRangeLeapYearsBuffer += 'NA\n';
     }
 
-    // Join the collected leap years (or 'NA') for the current segment with newlines,
-    // and add this formatted segment to our overall output accumulator.
-    accumulatedOutputSegments.push(foundLeapYearsInCurrentSegment.join('\n'));
+    accumulatedOutputSegments.push(currentRangeLeapYearsBuffer);
 }
 
-// Finally, join all the accumulated output segments with a single newline character
-// to form the complete output string.
-const finalOutputString = accumulatedOutputSegments.join('\n');
+let finalCombinedOutput = accumulatedOutputSegments.join('\n');
 
-// Print the complete, formatted output to the console.
-console.log(finalOutputString);
+if (finalCombinedOutput.length > 0) {
+    finalCombinedOutput = finalCombinedOutput.slice(0, finalCombinedOutput.length - 2);
+}
+
+console.log(finalCombinedOutput);

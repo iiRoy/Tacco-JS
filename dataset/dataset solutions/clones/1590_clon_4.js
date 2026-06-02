@@ -1,172 +1,179 @@
 "use strict";
-const retrieveDataSource = () => {
-  let allSourceTokens = [];
-  let currentTokenPointer = 0;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenStream = rawData.split(/ |\n/),
+  tokenIndex = 0;
 
-  const rawDataContent = require("fs").readFileSync("/dev/stdin", "utf8");
-  allSourceTokens = rawDataContent.split(/\s+/).filter(Boolean);
+function readInt() {
+  return +tokenStream[tokenIndex++];
+}
 
-  const extractNextNumericValue = () => parseInt(allSourceTokens[currentTokenPointer++], 10);
+function readString() {
+  return tokenStream[tokenIndex++];
+}
 
-  const extractSortedPair = () => {
-    const firstVal = extractNextNumericValue();
-    const secondVal = extractNextNumericValue();
-    return [firstVal, secondVal].sort((a, b) => a - b);
-  };
+function readBigInt() {
+  return BigInt(tokenStream[tokenIndex++]);
+}
 
-  const extractSortedTriplet = () => {
-    const valOne = extractNextNumericValue();
-    const valTwo = extractNextNumericValue();
-    const valThree = extractNextNumericValue();
-    return [valOne, valTwo, valThree].sort((a, b) => a - b);
-  };
+function readInts(count, asStrings) {
+  return asStrings ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
+}
 
-  return { extractNextNumericValue, extractSortedPair, extractSortedTriplet };
-};
+function readMatrix(height, width, asStrings) {
+  var resultMatrix = [],
+    rowIdx = 0;
+  if (asStrings)
+    for (; rowIdx < height; rowIdx++) resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
+  else
+    for (; rowIdx < height; rowIdx++) resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(val => +val));
+  return resultMatrix;
+}
 
-const executeCalculation = () => {
-  const { extractNextNumericValue, extractSortedPair, extractSortedTriplet } = retrieveDataSource();
+function initializeMultiArray(initialValue, ...dimensions) {
+  if (dimensions.length === 0) {
+    return initialValue;
+  }
+  const currentDimensionSize = dimensions[0];
+  const remainingDimensions = dimensions.slice(1);
+  return Array(currentDimensionSize).fill(null).map(() => initializeMultiArray(initialValue, ...remainingDimensions));
+}
 
-  const problemDimension = extractNextNumericValue();
+var finalResult = computeSolution();
+if (finalResult !== undefined) console.log(String(finalResult));
 
-  const memoizationTable = new Map();
-  let specialCaseCounter = 0;
+function computeSolution() {
+  var dimensionLimit = readInt();
+  var memoTable = initializeMultiArray(-1, dimensionLimit + 1, dimensionLimit + 1);
+  var specialCount = 0;
 
-  const queryMemoValue = (rowKey, colKey) => {
-    if (!memoizationTable.has(rowKey)) return -1;
-    const rowMap = memoizationTable.get(rowKey);
-    return rowMap.has(colKey) ? rowMap.get(colKey) : -1;
-  };
+  var initialPair = readInts(2).sort((a, b) => a - b);
+  memoTable[0][0] = memoTable[0][initialPair[0]] = memoTable[0][initialPair[1]] = memoTable[initialPair[0]][initialPair[1]] = 0;
 
-  const recordMemoValue = (rowKey, colKey, value) => {
-    if (!memoizationTable.has(rowKey)) {
-      memoizationTable.set(rowKey, new Map());
-    }
-    memoizationTable.get(rowKey).set(colKey, value);
-  };
+  for (var iteration = 1; iteration < dimensionLimit; iteration++) {
+    var currentTriplet = readInts(3).sort((a, b) => a - b);
+    const [valA, valB, valC] = currentTriplet;
 
-  const attemptUpdate = (targetRow, targetCol, sourceRow, sourceCol, incrementAmount) => {
-    const currentTargetValue = queryMemoValue(targetRow, targetCol);
-    const sourceValue = queryMemoValue(sourceRow, sourceCol);
-    const candidateNewValue = sourceValue + incrementAmount;
-    if (candidateNewValue > currentTargetValue) {
-      recordMemoValue(targetRow, targetCol, candidateNewValue);
-    }
-  };
+    const transitionResult = processStateTransition(valA, valB, valC, dimensionLimit);
 
-  recordMemoValue(0, 0, 0);
-  const initialDataPair = extractSortedPair();
-  recordMemoValue(0, initialDataPair[0], 0);
-  recordMemoValue(0, initialDataPair[1], 0);
-  recordMemoValue(initialDataPair[0], initialDataPair[1], 0);
-
-  const formulateUpdatesForTriplet = (firstItem, secondItem, thirdItem) => {
-    const potentialUpdates = [];
-
-    potentialUpdates.push([0, 0, firstItem, firstItem, 1]);
-    for (let currentIdx = 0; currentIdx < firstItem; currentIdx++) {
-      potentialUpdates.push([currentIdx, firstItem, 0, currentIdx, 0]);
-    }
-    for (let currentIdx = firstItem; currentIdx <= problemDimension; currentIdx++) {
-      potentialUpdates.push([firstItem, currentIdx, 0, currentIdx, 0]);
+    if (transitionResult.incrementSpecialCount) {
+      specialCount++;
+      continue;
     }
 
-    potentialUpdates.push([firstItem, secondItem, 0, 0, 0]);
-    potentialUpdates.push([0, secondItem, firstItem, firstItem, 1]);
-    if (firstItem < secondItem) {
-      potentialUpdates.push([0, firstItem, secondItem, secondItem, 1]);
-    } else {
-      for (let currentIdx = 0; currentIdx < firstItem; currentIdx++) {
-        potentialUpdates.push([0, currentIdx, currentIdx, firstItem, 1]);
-      }
-      for (let currentIdx = firstItem; currentIdx <= problemDimension; currentIdx++) {
-        potentialUpdates.push([0, currentIdx, firstItem, currentIdx, 1]);
+    const stagedUpdates = [];
+    for (const instruction of transitionResult.instructions) {
+      const sourceValue = memoTable[instruction.sr][instruction.sc];
+      if (sourceValue !== -1) {
+        const potentialNewValue = sourceValue + instruction.inc;
+        stagedUpdates.push([potentialNewValue, instruction.tc, instruction.tr]);
       }
     }
 
-    if (secondItem < thirdItem) {
-      potentialUpdates.push([firstItem, thirdItem, 0, 0, 0]);
-      potentialUpdates.push([0, thirdItem, firstItem, firstItem, 1]);
-      if (firstItem < thirdItem) {
-        potentialUpdates.push([0, firstItem, thirdItem, thirdItem, 1]);
-      } else {
-        for (let currentIdx = 0; currentIdx < firstItem; currentIdx++) {
-          potentialUpdates.push([0, currentIdx, currentIdx, firstItem, 1]);
-        }
-        for (let currentIdx = firstItem; currentIdx <= problemDimension; currentIdx++) {
-          potentialUpdates.push([0, currentIdx, firstItem, currentIdx, 1]);
-        }
-      }
-    }
-
-    if (firstItem < secondItem) {
-      potentialUpdates.push([secondItem, thirdItem, 0, 0, 0]);
-      potentialUpdates.push([0, thirdItem, secondItem, secondItem, 1]);
-      if (secondItem < thirdItem) {
-        potentialUpdates.push([0, secondItem, thirdItem, thirdItem, 1]);
-      } else {
-        for (let currentIdx = 0; currentIdx < secondItem; currentIdx++) {
-          potentialUpdates.push([0, currentIdx, currentIdx, secondItem, 1]);
-        }
-        for (let currentIdx = secondItem; currentIdx <= problemDimension; currentIdx++) {
-          potentialUpdates.push([0, currentIdx, secondItem, currentIdx, 1]);
-        }
-      }
-    }
-
-    potentialUpdates.push([secondItem, thirdItem, firstItem, firstItem, 1]);
-    if (firstItem < secondItem) {
-      potentialUpdates.push([firstItem, thirdItem, secondItem, secondItem, 1]);
-      if (secondItem < thirdItem) {
-        potentialUpdates.push([firstItem, secondItem, thirdItem, thirdItem, 1]);
-      } else {
-        for (let currentIdx = 0; currentIdx < firstItem; currentIdx++) {
-          potentialUpdates.push([currentIdx, firstItem, currentIdx, thirdItem, 1]);
-        }
-        for (let currentIdx = firstItem; currentIdx < thirdItem; currentIdx++) {
-          potentialUpdates.push([firstItem, currentIdx, currentIdx, thirdItem, 1]);
-        }
-        for (let currentIdx = thirdItem; currentIdx <= problemDimension; currentIdx++) {
-          potentialUpdates.push([firstItem, currentIdx, thirdItem, currentIdx, 1]);
-        }
-      }
-    } else {
-      potentialUpdates.push([firstItem, firstItem, thirdItem, thirdItem, 1]);
-      for (let currentIdx = 0; currentIdx < firstItem; currentIdx++) {
-        potentialUpdates.push([currentIdx, thirdItem, currentIdx, firstItem, 1]);
-      }
-      for (let currentIdx = firstItem; currentIdx < thirdItem; currentIdx++) {
-        potentialUpdates.push([currentIdx, thirdItem, firstItem, currentIdx, 1]);
-      }
-      for (let currentIdx = thirdItem; currentIdx <= problemDimension; currentIdx++) {
-        potentialUpdates.push([thirdItem, currentIdx, firstItem, currentIdx, 1]);
-      }
-    }
-
-    return potentialUpdates;
-  };
-
-  for (let iterationCount = 1; iterationCount < problemDimension; iterationCount++) {
-    const currentInputTriplet = extractSortedTriplet();
-    const [valA, valB, valC] = currentInputTriplet;
-
-    if (valA === valC) {
-      specialCaseCounter++;
-    } else {
-      const updatesQueue = formulateUpdatesForTriplet(valA, valB, valC);
-      for (const [targetR, targetC, sourceR, sourceC, delta] of updatesQueue) {
-        attemptUpdate(targetR, targetC, sourceR, sourceC, delta);
+    for (const [proposedValue, targetCol, targetRow] of stagedUpdates) {
+      if (memoTable[targetRow][targetCol] < proposedValue) {
+        memoTable[targetRow][targetCol] = proposedValue;
       }
     }
   }
 
-  const finalQueryValue = extractNextNumericValue();
+  var finalQueryVal = readInt();
+  return Math.max(memoTable[0][0], memoTable[finalQueryVal][finalQueryVal] + 1) + specialCount;
 
-  const finalOutcome = Math.max(queryMemoValue(0, 0), queryMemoValue(finalQueryValue, finalQueryValue) + 1) + specialCaseCounter;
-  return finalOutcome;
-};
+  function processStateTransition(valA, valB, valC, limitN) {
+    if (valA === valC) {
+      return {
+        instructions: [],
+        incrementSpecialCount: true
+      };
+    }
 
-const computedResult = executeCalculation();
-if (computedResult !== undefined) {
-  console.log(String(computedResult));
+    const instructions = [];
+    const addInstruction = (targetR, targetC, sourceR, sourceC, increment) => {
+      instructions.push({
+        tr: targetR,
+        tc: targetC,
+        sr: sourceR,
+        sc: sourceC,
+        inc: increment
+      });
+    };
+
+    // Equivalent of solve1(valA)
+    addInstruction(0, 0, valA, valA, 1);
+    Array.from({
+      length: valA
+    }, (_, idx) => idx).forEach(idx => {
+      addInstruction(idx, valA, 0, idx, 0);
+    });
+    Array.from({
+      length: limitN - valA + 1
+    }, (_, idx) => valA + idx).forEach(idx => {
+      addInstruction(valA, idx, 0, idx, 0);
+    });
+
+    // Equivalent of solve2(valA, valB)
+    addInstruction(valA, valB, 0, 0, 0);
+    addInstruction(0, valB, valA, valA, 1);
+    if (valA < valB) {
+      addInstruction(0, valA, valB, valB, 1);
+    } else { // valA === valB
+      Array.from({
+        length: valA
+      }, (_, idx) => idx).forEach(idx => {
+        addInstruction(0, idx, idx, valA, 1);
+      });
+      Array.from({
+        length: limitN - valA + 1
+      }, (_, idx) => valA + idx).forEach(idx => {
+        addInstruction(0, idx, valA, idx, 1);
+      });
+    }
+
+    // Equivalent of solve3(valA, valB, valC)
+    addInstruction(valB, valC, valA, valA, 1);
+    if (valA < valB) {
+      addInstruction(valA, valC, valB, valB, 1);
+      if (valB < valC) {
+        addInstruction(valA, valB, valC, valC, 1);
+      } else { // valB === valC
+        Array.from({
+          length: valA
+        }, (_, idx) => idx).forEach(idx => {
+          addInstruction(idx, valA, idx, valC, 1);
+        });
+        Array.from({
+          length: valC - valA
+        }, (_, idx) => valA + idx).forEach(idx => {
+          addInstruction(valA, idx, idx, valC, 1);
+        });
+        Array.from({
+          length: limitN - valC + 1
+        }, (_, idx) => valC + idx).forEach(idx => {
+          addInstruction(valA, idx, valC, idx, 1);
+        });
+      }
+    } else { // valA === valB
+      addInstruction(valA, valA, valC, valC, 1);
+      Array.from({
+        length: valA
+      }, (_, idx) => idx).forEach(idx => {
+        addInstruction(idx, valC, idx, valA, 1);
+      });
+      Array.from({
+        length: valC - valA
+      }, (_, idx) => valA + idx).forEach(idx => {
+        addInstruction(idx, valC, valA, idx, 1);
+      });
+      Array.from({
+        length: limitN - valC + 1
+      }, (_, idx) => valC + idx).forEach(idx => {
+        addInstruction(valC, idx, valA, idx, 1);
+      });
+    }
+
+    return {
+      instructions: instructions,
+      incrementSpecialCount: false
+    };
+  }
 }

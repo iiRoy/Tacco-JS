@@ -1,52 +1,48 @@
-// This software module processes a sequence of numerical inputs.
-function ProcessData ( rawInputArray )
-{
-    // The first numeric entry is considered a nominal count, though not directly used in the primary loop logic.
-    var  initialCountValue = Number.parseInt ( rawInputArray [ 0 ] , 10 ) ;
+function ProcessInput(dataArray) {
+    // The first input value, representing the total count of items.
+    // Although parsed, its direct use in the loop condition is not present in this specific algorithm.
+    let countOfItems = parseInt(dataArray[0], 10);
 
-    // The second numeric entry defines a critical upper boundary or limit.
-    var boundaryThreshold = Number.parseInt ( rawInputArray [ 1 ] , 10 ) ;
+    // The second input value, defining the maximum permissible accumulated distance.
+    let maxDistance = parseInt(dataArray[1], 10);
 
-    // All subsequent entries are transformed into an array of measurement values.
-    var measurementSet = rawInputArray . slice ( 2 ) . map (  singleItemString  =>  Number.parseInt ( singleItemString , 10 )  ) ;
+    // Extract the remaining input values, which are individual distances,
+    // and convert each of them into an integer.
+    const distances = dataArray.slice(2).map(itemStr => parseInt(itemStr, 10));
 
+    // Initialize a counter for the number of points that are reachable.
+    // It starts at 1 because the initial point (origin) is always considered reachable.
+    let reachablePoints = 1;
 
-    // A counter for specific conditions being met is initialized.
-    var successTally = 1 ;
+    // Initialize a variable to keep track of the current total distance accumulated.
+    let currentTotalDistance = 0;
 
-    // A running accumulation variable is set to its starting point.
-    var currentAccumulation = 0 ;
+    // Iterate through each distance in the 'distances' array.
+    for (let idx = 0; idx < distances.length; idx++) {
+        // Add the current distance to the running total.
+        currentTotalDistance += distances[idx];
 
-    // Commence iteration through the collection of measurements.
-    for ( var sequenceIndex = 0 ;  sequenceIndex < measurementSet.length ;  sequenceIndex++ )
-    {
-        // Add the current measurement to the ongoing total.
-        currentAccumulation += measurementSet [ sequenceIndex ] ;
-
-        // Evaluate if the accumulated sum remains below or at the defined threshold.
-        if ( currentAccumulation <= boundaryThreshold )
-        {
-            // If the condition holds, increment the success counter.
-            successTally ++ ;
-        }
-        else
-        {
-            // If the condition is violated, force an early exit from the loop.
-            // By setting the index to length, the loop condition (sequenceIndex < length)
-            // will immediately become false in the next iteration check.
-            sequenceIndex += measurementSet . length ;
+        // Check if the current accumulated total distance is within the allowed maximum.
+        if (currentTotalDistance <= maxDistance) {
+            // If it is within the limit, increment the count of reachable points.
+            reachablePoints++;
+        } else {
+            // If the accumulated distance exceeds the maximum,
+            // it means no further points can be reached.
+            // To efficiently exit the loop, we adjust the loop index
+            // so that the loop condition (idx < distances.length) becomes false
+            // in the next iteration.
+            idx += distances.length;
         }
     }
 
-    // Display the final computed result.
-    console . log ( successTally ) ;
+    // Print the final calculated number of reachable points to the console.
+    console.log(reachablePoints);
 }
 
-// The program's execution begins here. It reads data from standard input,
-// prepares it, and passes it to the core processing function.
-ProcessData (
-    require ( "node:fs" )
-        . readFileSync ( "/dev/stdin" , "utf8" ) // Read file content from standard input
-        . trim ( ) // Remove any leading or trailing whitespace
-        . split ( / [ \n\r\t]+ / ) // Split the string by one or more whitespace characters (space, newline, carriage return, tab)
-) ;
+// Read the entire content from standard input,
+// decode it as UTF-8, remove leading/trailing whitespace,
+// and then split the string into an array of substrings
+// using either newline characters or spaces as delimiters.
+// This array is then passed to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

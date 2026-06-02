@@ -1,211 +1,156 @@
-const rdr = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+(() => {
+  let inputAccumulator = [];
+  const inputReader = process.openStdin();
+  inputReader.setEncoding('utf8');
 
-let lineBuffer = [];
+  const operatorPrecedence = {
+    '+': 1,
+    'Z': 1, // 'Z' represents subtraction, as per original code's replacement
+    '*': 2,
+    '/': 2,
+  };
 
-const operatorWeights = {
-  '*': 2,
-  '/': 2,
-  '+': 1,
-  'S': 1 // 'S' stands for Subtraction, replacing 'Z' from original, which replaced '-'
-};
+  const isOperatorToken = (token) => operatorPrecedence.hasOwnProperty(token);
+  const isNumberToken = (token) => typeof token === 'number';
 
-const operationExecutors = {
-  '*': (op1, op2) => op1 * op2,
-  '/': (op1, op2) => Math.trunc(op1 / op2), // Integer division
-  '+': (op1, op2) => op1 + op2,
-  'S': (op1, op2) => op1 - op2
-};
+  // Converts an arithmetic expression string into an array of tokens.
+  // Handles numbers (including negative results from operations), operators, and parentheses.
+  const lexExpression = (expressionString) => {
+    const tokens = [];
+    let currentNumericString = '';
 
-// Function to break an expression string into tokens (numbers, operators, parentheses)
-function extractTokens(expressionSegment) {
-  const tokenList = [];
-  let currentNumAccum = '';
-  const binaryOperators = ['*', '/', '+', 'S']; // 'S' for Subtraction
-  const bracketSymbols = ['(', ')'];
+    for (let i = 0; i < expressionString.length; i++) {
+      const char = expressionString[i];
 
-  for (let charIndex = 0; charIndex < expressionSegment.length; charIndex++) {
-    const symbol = expressionSegment[charIndex];
-
-    if (/\d/.test(symbol)) {
-      currentNumAccum += symbol;
-    } else if (symbol === '-' && (charIndex === 0 || bracketSymbols.includes(expressionSegment[charIndex - 1]) || binaryOperators.includes(expressionSegment[charIndex - 1]) || expressionSegment[charIndex - 1] === ' ')) {
-      // This is a unary minus, part of a number (e.g., -5, 10*(-3)).
-      // It won't be from the initial '-' -> 'S' replacement.
-      if (currentNumAccum !== '') {
-        tokenList.push(parseInt(currentNumAccum, 10));
-        currentNumAccum = '';
-      }
-      currentNumAccum += symbol; // Start accumulating a negative number
-    } else { // Operator, parenthesis, or space
-      if (currentNumAccum !== '') {
-        tokenList.push(parseInt(currentNumAccum, 10));
-        currentNumAccum = '';
-      }
-      if (symbol === ' ') {
-        continue;
-      } else if (binaryOperators.includes(symbol) || bracketSymbols.includes(symbol)) {
-        tokenList.push(symbol);
+      if (/\d/.test(char)) {
+        currentNumericString += char;
       } else {
-        // Encountered an unexpected character.
-        // The original would likely return the unprocessed string.
-        // This tokenization should not fail, but subsequent RPN conversion/evaluation might.
-        // For now, push it as a string token, let later stages handle failure.
-        tokenList.push(symbol);
+        if (currentNumericString !== '') {
+          tokens.push(Number.parseInt(currentNumericString));
+          currentNumericString = '';
+        }
+
+        // Handle negative numbers that are results of previous operations (e.g., "-3")
+        // The original code's regex `(-?\d+)` would match these.
+        // All original hyphens are replaced by 'Z', so '-' only appears as a sign for a number result.
+        if (char === '-' && /\d/.test(expressionString[i + 1])) {
+          currentNumericString += char; // Start building a negative number
+        } else if (char === '(' || char === ')') {
+          tokens.push(char);
+        } else if (isOperatorToken(char)) { // This includes '+', 'Z', '*', '/'
+          tokens.push(char);
+        }
+        // Any other character is ignored (original code implicitly ignores non-matching parts)
       }
     }
-  }
-  if (currentNumAccum !== '') {
-    tokenList.push(parseInt(currentNumAccum, 10));
-  }
-  return tokenList;
-}
 
-// Converts infix token stream to Reverse Polish Notation (RPN) using Shunting-yard algorithm
-function convertToPostfixNotation(tokenStream) {
-  const rpnOutput = [];
-  const operatorHoldingStack = [];
+    if (currentNumericString !== '') {
+      tokens.push(Number.parseInt(currentNumericString));
+    }
+    return tokens;
+  };
 
-  for (const item of tokenStream) {
-    if (typeof item === 'number') {
-      rpnOutput.push(item);
-    } else if (item === '(') {
-      operatorHoldingStack.push(item);
-    } else if (item === ')') {
-      while (operatorHoldingStack.length > 0 && operatorHoldingStack[operatorHoldingStack.length - 1] !== '(') {
-        rpnOutput.push(operatorHoldingStack.pop());
+  // Implements the Shunting-yard algorithm to convert infix tokens to Reverse Polish Notation (RPN).
+  const transformToRPN = (infixTokens) => {
+    const outputQueue = [];
+    const operatorStack = [];
+
+    for (const token of infixTokens) {
+      if (isNumberToken(token)) {
+        outputQueue.push(token);
+      } else if (token === '(') {
+        operatorStack.push(token);
+      } else if (token === ')') {
+        while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1] !== '(') {
+          outputQueue.push(operatorStack.pop());
+        }
+        // Pop the '(' from the stack. Assuming balanced parentheses for valid input.
+        if (operatorStack.length > 0 && operatorStack[operatorStack.length - 1] === '(') {
+          operatorStack.pop();
+        }
+      } else if (isOperatorToken(token)) {
+        while (
+          operatorStack.length > 0 &&
+          isOperatorToken(operatorStack[operatorStack.length - 1]) &&
+          operatorPrecedence[operatorStack[operatorStack.length - 1]] >= operatorPrecedence[token]
+        ) {
+          outputQueue.push(operatorStack.pop());
+        }
+        operatorStack.push(token);
       }
-      if (operatorHoldingStack.length === 0 || operatorHoldingStack[operatorHoldingStack.length - 1] !== '(') {
-        // Mismatched parentheses (closing without opening)
-        return null; // Indicates a parsing error, similar to original returning unprocessed string
+    }
+
+    while (operatorStack.length > 0) {
+      outputQueue.push(operatorStack.pop());
+    }
+    return outputQueue;
+  };
+
+  // Evaluates an expression in Reverse Polish Notation (RPN) using a stack.
+  const computeRPN = (rpnTokens) => {
+    const valueStack = [];
+
+    for (const token of rpnTokens) {
+      if (isNumberToken(token)) {
+        valueStack.push(token);
+      } else if (isOperatorToken(token)) {
+        const operand2 = valueStack.pop();
+        const operand1 = valueStack.pop();
+
+        let calculationResult;
+        switch (token) {
+          case '+':
+            calculationResult = operand1 + operand2;
+            break;
+          case 'Z': // Subtraction
+            calculationResult = operand1 - operand2;
+            break;
+          case '*':
+            calculationResult = operand1 * operand2;
+            break;
+          case '/':
+            // Integer division truncating towards zero, matching original `^ 0` behavior
+            calculationResult = (operand1 / operand2) | 0;
+            break;
+          default:
+            // Should not be reached with valid operators
+            throw new Error(`Unrecognized operator: ${token}`);
+        }
+        valueStack.push(calculationResult);
       }
-      operatorHoldingStack.pop(); // Pop the '('
-    } else if (['*', '/', '+', 'S'].includes(item)) {
-      while (
-        operatorHoldingStack.length > 0 &&
-        ['*', '/', '+', 'S'].includes(operatorHoldingStack[operatorHoldingStack.length - 1]) &&
-        operatorWeights[operatorHoldingStack[operatorHoldingStack.length - 1]] >= operatorWeights[item]
-      ) {
-        rpnOutput.push(operatorHoldingStack.pop());
-      }
-      operatorHoldingStack.push(item);
+    }
+    return valueStack.pop();
+  };
+
+  // Main expression evaluation function, replacing the original 'proc'
+  const evaluateArithmeticExpression = (expressionInput) => {
+    const tokens = lexExpression(expressionInput);
+    const rpn = transformToRPN(tokens);
+    return computeRPN(rpn);
+  };
+
+  // Input data handler - preserving original's peculiar logic for 'a'
+  inputReader.on('data', (incomingChunk) => {
+    const chunkLines = incomingChunk.split("\n");
+    // This condition replicates the original's behavior:
+    // If chunkLines has more than 2 elements, or if chunkLines[1] is not NaN (i.e., it's an empty string or a number),
+    // then 'inputAccumulator' is replaced. Otherwise, only the first line is pushed.
+    // This means 'inputAccumulator' is typically overwritten by the last chunk if it contains a newline.
+    if (chunkLines.length > 2 || !Number.isNaN(chunkLines[1])) {
+      inputAccumulator = chunkLines;
     } else {
-      // Unknown token (e.g., an invalid character that wasn't filtered)
-      return null;
+      inputAccumulator.push(chunkLines[0]);
     }
-  }
+  });
 
-  while (operatorHoldingStack.length > 0) {
-    if (operatorHoldingStack[operatorHoldingStack.length - 1] === '(') {
-      // Unmatched opening parenthesis
-      return null; // Indicates a parsing error
+  // End of input handler
+  inputReader.on('end', () => {
+    const totalExpressions = Number.parseInt(inputAccumulator[0]);
+    for (let currentLineIndex = 1; currentLineIndex <= totalExpressions; ++currentLineIndex) {
+      // Extract the expression part before '=' and replace all '-' with 'Z'
+      const processedLine = inputAccumulator[currentLineIndex].slice(0, inputAccumulator[currentLineIndex].indexOf('=')).replaceAll('-', 'Z');
+      console.log(evaluateArithmeticExpression(processedLine));
     }
-    rpnOutput.push(operatorHoldingStack.pop());
-  }
+  });
 
-  return rpnOutput;
-}
-
-// Evaluates an RPN token stream
-function calculatePostfix(rpnSequence) {
-  const operandPile = [];
-  for (const element of rpnSequence) {
-    if (typeof element === 'number') {
-      operandPile.push(element);
-    } else if (['*', '/', '+', 'S'].includes(element)) {
-      const operand2 = operandPile.pop();
-      const operand1 = operandPile.pop();
-      if (operand1 === undefined || operand2 === undefined) {
-        return NaN; // Malformed RPN: not enough operands
-      }
-      const executor = operationExecutors[element];
-      operandPile.push(executor(operand1, operand2));
-    } else {
-      return NaN; // Unknown operator in RPN sequence
-    }
-  }
-  if (operandPile.length !== 1) {
-    return NaN; // Malformed RPN: too many or too few operands/operators
-  }
-  return operandPile.pop();
-}
-
-// Main expression evaluation function, recursively handling parentheses
-function evaluateComplexExpression(expressionText) {
-  let currentEvaluationText = expressionText;
-  let openParenPosition;
-
-  // Process parentheses recursively, mimicking the original's approach
-  while ((openParenPosition = currentEvaluationText.indexOf('(')) !== -1) {
-    let parenDepth = 1;
-    let closeParenPosition = openParenPosition + 1;
-
-    while (parenDepth > 0 && closeParenPosition < currentEvaluationText.length) {
-      if (currentEvaluationText[closeParenPosition] === '(') {
-        parenDepth++;
-      } else if (currentEvaluationText[closeParenPosition] === ')') {
-        parenDepth--;
-      }
-      closeParenPosition++;
-    }
-
-    // If parentheses are mismatched (no closing paren found), `closeParenPosition` will be `length`.
-    // The substring will be `(openParenPosition + 1, length - 1)`, replicating original's behavior.
-    if (parenDepth !== 0) {
-      closeParenPosition = currentEvaluationText.length;
-    }
-
-    const enclosedExpression = currentEvaluationText.substring(openParenPosition + 1, closeParenPosition - 1);
-    const evaluatedEnclosed = evaluateComplexExpression(enclosedExpression); // Recursive call
-
-    // Splice the evaluated result back into the string
-    currentEvaluationText = currentEvaluationText.substring(0, openParenPosition) + evaluatedEnclosed + currentEvaluationText.substring(closeParenPosition);
-  }
-
-  // After all parentheses are resolved, evaluate the flat expression using RPN
-  const flatTokens = extractTokens(currentEvaluationText);
-
-  // If the result is a single number, return it as a string
-  if (flatTokens.length === 1 && typeof flatTokens[0] === 'number') {
-    return flatTokens[0].toString();
-  }
-
-  const rpnForm = convertToPostfixNotation(flatTokens);
-
-  if (rpnForm === null) {
-    // RPN conversion failed (e.g., mismatched parentheses or invalid tokens)
-    return currentEvaluationText; // Return the unprocessed string, matching original's implicit failure
-  }
-
-  const finalResult = calculatePostfix(rpnForm);
-
-  if (isNaN(finalResult)) {
-    // RPN calculation failed (e.g., division by zero, malformed RPN)
-    return currentEvaluationText; // Return the unprocessed string
-  }
-
-  return finalResult.toString();
-}
-
-rdr.on('line', (individualLine) => {
-  lineBuffer.push(individualLine);
-});
-
-rdr.on('close', () => {
-  const expressionCount = parseInt(lineBuffer[0], 10);
-
-  for (let currentStatementIndex = 1; currentStatementIndex <= expressionCount; currentStatementIndex++) {
-    const fullStatement = lineBuffer[currentStatementIndex];
-    const computationPart = fullStatement.substring(0, fullStatement.indexOf('='));
-
-    // Replace all original hyphens with 'S' (mimicking original's 'Z' replacement for '-')
-    // This replacement happens only once for the initial input string, before recursion.
-    const modifiedComputationPart = computationPart.replace(/-/g, 'S');
-
-    const finalOutput = evaluateComplexExpression(modifiedComputationPart);
-    console.log(finalOutput);
-  }
-});
+})();

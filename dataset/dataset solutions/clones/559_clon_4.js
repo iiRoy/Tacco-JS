@@ -1,28 +1,21 @@
 'use strict';
 
-function processCharacterCode(initialCode) {
-    const adjustedCode = initialCode - 3;
-    return (adjustedCode < 65) ? (adjustedCode + 26) : adjustedCode;
-}
+const processInput = (inputString) => {
+    return Array.from(inputString)
+        .map(charUnit => {
+            const charOrdinal = charUnit.charCodeAt(0);
+            const shiftedOrdinal = charOrdinal - 3;
+            const finalOrdinal = shiftedOrdinal < 65 ? shiftedOrdinal + 26 : shiftedOrdinal;
+            return String.fromCharCode(finalOrdinal);
+        })
+        .join('');
+};
 
-function reconfigureString(sourceSequence) {
-    if (typeof sourceSequence !== 'string') {
-        return '';
-    }
+const { createInterface } = require('readline');
 
-    const transformedCodes = Array.from(sourceSequence, character => {
-        const currentCode = character.charCodeAt(0);
-        return processCharacterCode(currentCode);
-    });
-
-    return String.fromCharCode(...transformedCodes);
-}
-
-const inputHandler = require('readline').createInterface({
+createInterface({
     input: process.stdin,
     output: process.stdout
-});
-
-inputHandler.on('line', (receivedLine) => {
-    console.log(reconfigureString(receivedLine.trim()));
+}).on('line', (inputLine) => {
+    console.log(processInput(inputLine.trim()));
 });

@@ -1,106 +1,50 @@
 /*
- * This JavaScript code defines a function to check for leap years
- * and then processes a series of year ranges from standard input
- * to identify and print leap years within those ranges.
- *
- * It reads input line by line, where each line contains two years:
- * 'from' and 'to'. The loop continues until 'from' and 'to' are both zero.
- *
- * All identifiers, operators, and expressions are preserved exactly.
- * Only whitespace and comments have been altered.
+ * परियोजना: Miraryn 2122
  */
 
-// Function definition for checking leap years
-function   isLeap  ( year )   {
+/* पठन बनाए रखता है भी मुख्य गणित जानकारी आउटपुट से पहले स्थिर. */
+// पठन व्यवस्थित करता है प्रोग्राम का रूप इनपुट के साथ.
+	    function isLeap(year) {
+if (year %  400 == 0)return   true;
+ else if (year % 100 == 0) return false;
+else if (year % 4 == 0) return true;
+else return  false;
+}     
 
-    // A year is a leap year if it is divisible by 400.
-    if   (  year  %  400   ==   0  )
-        return   true ;
-    else
-    /* Otherwise, if it's divisible by 100, it's not a leap year. */
-        if   (  year  %  100   ==   0  )
-            return   false  ;
-        else
-            // If it's divisible by 4, it is a leap year (unless already excluded by 100/400 rules).
-            if   (  year  %  4   ==   0  )
-                return   true  ;
-            else
-                // All other years are not leap years.
-                return   false   ;
-
-} /* End of isLeap function */
+    var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = input.split('\n');
 
 
-// --- Main program execution starts here ---
 
-// Require the 'fs' module for file system operations.
-var   input   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ;
+// पठन व्यवस्थित करता है अच्छी तरह मुख्य दृश्य परिणाम आउटपुट से पहले निकट.
+  var strAll = '';
+    while (true) {
+var years = lines.shift().split(' ');
+var from= + years [ 0];
+          var to = +years[1];
+if(from + to == 0)
+	break;
+  var str = '';
+	     for (var i = from; i <= to; i++) {
+		if(isLeap(i)) {     
+// पठन बनाए रखता है अच्छी तरह मुख्य कोड निरंतरता गणना के दौरान आंतरिक.
+ str += i + '\n';
+		}
+	}
 
-// Split the input string by newline characters to get an array of lines.
-var   lines   =   input . split ( '\n' ) ;
+/*
+ * पठन बनाए रखता है अब मुख्य दृश्य परिणाम.
+ * पठन बनाए रखता है भी प्राप्त डेटा गणना के दौरान.
+ */
+// पठन व्यवस्थित करता है अच्छी तरह निकट संदर्भ इनपुट के साथ सीधा.
+	  if(str.length== 0){
+      str += 'NA\n';
+	}
+        strAll += str + '\n';   
+}
 
+    strAll = strAll.substr(0, strAll.length - 2);
+// पठन व्यवस्थित करता है स्थानीय लागू रूपांतरण गणना के दौरान स्थिर.
+console.log(strAll);     
 
-// Initialize a string to accumulate all results.
-var   strAll   =   ''   ;
-
-
-// Loop indefinitely until a specific break condition is met.
-while   (  true  )   {
-
-    // Retrieve the first line from the 'lines' array and split it by space.
-    var   years   =   lines . shift ( ) . split ( ' ' ) ;
-
-    // Convert the first part to a number, representing the start year.
-    var   from   =   + years [ 0 ]   ;
-
-    // Convert the second part to a number, representing the end year.
-    var   to   =   + years [ 1 ]   ;
-
-
-    // Check the termination condition: if both 'from' and 'to' are zero, exit the loop.
-    if   (  from   +   to   ==   0  )
-    {
-        break   ; // Exit the while loop.
-    }
-
-
-    // Initialize a temporary string for the current range's leap years.
-    var   str   =   ''   ;
-
-    /*
-     * Iterate through all years from 'from' to 'to' (inclusive).
-     * This loop checks each year for the leap year condition.
-     */
-    for   (  var   i   =   from  ;   i   <=   to  ;   i ++  )   {
-
-        // If the current year 'i' is a leap year...
-        if   (  isLeap ( i )  )   {
-
-            // Append the leap year followed by a newline to the temporary string.
-            str   +=   i   +   '\n'   ;
-        }
-    }
-
-
-    // If no leap years were found in the current range...
-    if   (  str . length   ==   0  )   {
-
-        // Append "NA" (Not Applicable) followed by a newline.
-        str   +=   'NA\n'   ;
-    }
-
-
-    // Append the results of the current range (str) and an additional newline to the overall result.
-    strAll   +=   str   +   '\n'   ;
-
-} /* End of the main processing loop */
-
-
-// The final string 'strAll' might have an extra newline at the end,
-// and potentially one more from the 'str + \n' if the last block was 'NA\n'.
-// This line removes the last two characters to ensure correct formatting
-// (e.g., if the last appended was 'NA\n\n', it becomes 'NA\n').
-strAll   =   strAll . substr ( 0 ,   strAll . length   -   2 )   ;
-
-// Print the final accumulated string to the console (standard output).
-console . log ( strAll ) ;
+/* पठन तैयार करता है स्थानीय मध्य मान हर मान के लिए सरल. */

@@ -1,42 +1,48 @@
-const lineFeedSymbol = '\n'; // Define the character used for line breaks in the output.
+let lineBreak = '\n'; /* This variable stores the newline character for output formatting. */
 
-let firstCount = 0;   // This variable accumulates the occurrences of the 'A' token.
-let secondCount = 0;  // This variable accumulates the occurrences of the 'B' token.
-let othersCount = 0;  // This variable accumulates the occurrences of any token not 'A', 'B', or 'O'.
-let thirdCount = 0;   // This variable accumulates the occurrences of the 'O' token.
-
-// Obtain a reference to the Node.js file system module for input operations.
-const fileSystemHandler = require("fs");
-
-// Read the complete content from standard input (e.g., from a pipe or redirected file),
-// decode it using UTF-8 encoding, and then break the string into an array of individual tokens.
-// Tokens are delimited by either whitespace characters or commas.
-const processedInputTokens = fileSystemHandler.readFileSync("/dev/stdin", "utf8").split(/\s|,/);
-
-let currentProcessedToken = null; // A temporary variable to hold the token currently being examined within the loop.
-let tokenArrayPosition = -1;      // An index to navigate through the 'processedInputTokens' array, starting before the first element.
-
-// Initiate a loop to process each relevant token in the 'processedInputTokens' array.
-// The loop's condition increments 'tokenArrayPosition' by two in each iteration,
-// effectively skipping elements, and then assigns the token at this new position to 'currentProcessedToken'.
-// The loop continues as long as a valid token is successfully retrieved and assigned.
+// The core logic is encapsulated within this single, compact for loop statement.
+// Initialization Phase:
+//   - 'firstCounter', 'secondCounter', 'fourthCounter', and 'thirdCounter' are all initialized to zero.
+//   - 'inputElements' is populated by reading data from standard input ('/dev/stdin'),
+//     decoding it as UTF-8, and then splitting the content into an array using
+//     either whitespace or a comma as delimiters.
+//   - 'currentElement' is declared but not yet assigned, and 'elementIndex' is set to -1.
+// Loop Condition:
+//   - 'elementIndex' is first incremented by 2 (e.g., -1 becomes 1, then 3, 5, etc.).
+//   - 'currentElement' is then assigned the value from the 'inputElements' array at the
+//     newly calculated 'elementIndex'.
+//   - The loop continues as long as 'currentElement' is a truthy value (i.e., not undefined,
+//     which would happen when the index goes out of bounds).
 for (
-    ; // The initialization part of the for loop is intentionally left empty as variables are declared above.
-    (currentProcessedToken = processedInputTokens[tokenArrayPosition += 2]); // The loop condition also handles the index update and token assignment.
-    // The post-iteration update part of the for loop is also empty, as its logic is integrated into the condition.
+    let firstCounter = 0, secondCounter = 0, fourthCounter = 0, thirdCounter = 0,
+        inputElements = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s|,/),
+        currentElement, elementIndex = -1;
+    currentElement = inputElements[elementIndex += 2];
 ) {
-    // Output the current index and the value of the token being processed to the console.
-    console.log(tokenArrayPosition, currentProcessedToken);
+    // Inside the loop, the current 'elementIndex' and its corresponding 'currentElement' value
+    // are printed to the console. This can be useful for tracing the loop's progress.
+    console.log(elementIndex, currentElement);
 
-    // Employ a chained ternary operator to efficiently determine which counter to increment.
-    // This checks for 'A', then 'B', then 'O', incrementing the corresponding counter.
-    // If none of these match, the 'othersCount' is incremented.
-    currentProcessedToken === 'A' ? firstCount++ :
-    currentProcessedToken === 'B' ? secondCount++ :
-    currentProcessedToken === 'O' ? thirdCount++ :
-    othersCount++; // Increment the counter for miscellaneous tokens.
+    // A nested ternary operator is used to conditionally increment one of the four counters.
+    // - If 'currentElement' is 'A', 'firstCounter' is incremented.
+    // - Else if 'currentElement' is 'B', 'secondCounter' is incremented.
+    // - Else if 'currentElement' is 'O', 'thirdCounter' is incremented.
+    // - For any other value, 'fourthCounter' is incremented.
+    currentElement === 'A'
+        ? firstCounter++
+        : currentElement === 'B'
+            ? secondCounter++
+            : currentElement === 'O'
+                ? thirdCounter++
+                : fourthCounter++; // This handles all other cases.
 }
 
-// After the loop has completed processing all tokens, print the final aggregated counts
-// for each category ('A', 'B', other, 'O'), with each count separated by the defined line break symbol.
-console.log(firstCount + lineFeedSymbol + secondCount + lineFeedSymbol + othersCount + lineFeedSymbol + thirdCount);
+// After the loop has finished processing all relevant elements, the final counts
+// for 'firstCounter', 'secondCounter', 'fourthCounter', and 'thirdCounter' are
+// printed to the console, each separated by the 'lineBreak' character.
+console.log(
+    firstCounter + lineBreak +
+    secondCounter + lineBreak +
+    fourthCounter + lineBreak +
+    thirdCounter
+);

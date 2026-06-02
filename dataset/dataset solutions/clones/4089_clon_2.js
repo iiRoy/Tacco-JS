@@ -1,44 +1,42 @@
-// This module manages interactive console input operations.
-var  io_handler_instance = require('readline').createInterface( {
-  input:  process.stdin,    // Refers to the standard input stream.
-  output: process.stdout    // Refers to the standard output stream.
-});
-
-
-//  Collection of all received text records.
-var  text_records_collection = [];
-
-//  Register a callback for each new line received.
-io_handler_instance.on(
-  'line',
-  ( current_text_line ) => {
-    text_records_collection.push( current_text_line ); // Add the current line to the collection.
-  }
+var inputHandler = require('readline').createInterface(
+    {
+        input: process.stdin, // Standard input stream for reading data
+        output: process.stdout // Standard output stream for writing data
+    }
 );
 
+// An array to accumulate all lines read from the input
+var inputBuffer = [];
 
-//  Register a callback for when the input stream concludes.
-io_handler_instance.on('close', () => {
+// Attach an event listener for each line received
+inputHandler.on('line', (currentLine) => {
+    // Add the current line to our collection
+    inputBuffer.push(currentLine);
+});
 
-  // Retrieve the first textual record from the gathered input.
-  var first_record_entry = text_records_collection[0];
-  // Divide the initial record entry into segments based on whitespace.
-  var divided_sections = first_record_entry.split(' ');
+// Attach an event listener for when the input stream is closed
+inputHandler.on('close', () => {
+    // Retrieve the initial line from the buffered input
+    var firstLine = inputBuffer[0];
 
-  // Extract the second numerical value.
-  var num_val_x = divided_sections[1];
-  // Extract the third numerical value.
-  var num_val_y = divided_sections[2];
+    // Divide the first line into distinct segments using space as a separator
+    var segments = firstLine.split(' ');
 
-  // Perform the core calculation for game progression.
-  var game_state_index = num_val_y - num_val_x - 1;
-  
-  // Determine the victorious participant based on the parity of the calculated index.
-  if ( game_state_index % 2 === 1 ) {
-    console.log('ChallengerOne'); // If odd, Challenger One wins.
-  }
-  else if ( game_state_index % 2 === 0 ) {
-    console.log('ChallengerTwo'); // If even, Challenger Two wins.
-  }
+    // Extract the second and third numerical values from the segments
+    // The first segment (index 0) is not used in the calculation
+    var valueOne = segments[1]; // Represents the first operand
+    var valueTwo = segments[2]; // Represents the second operand
 
+    // Compute the crucial difference value
+    var calculatedDifference = valueTwo - valueOne - 1;
+
+    // Evaluate the parity of the calculated difference to determine the outcome
+    if (calculatedDifference % 2 === 1) {
+        // If the remainder is 1, it's an odd number
+        console.log('Alice');
+    } else if (calculatedDifference % 2 === 0) {
+        // If the remainder is 0, it's an even number
+        console.log('Borys');
+    }
+    // No other conditions are specified, preserving original logic
 });

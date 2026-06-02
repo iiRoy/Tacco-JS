@@ -1,158 +1,145 @@
-let inputReader = require('readline').createInterface({
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let inputProcessor;
-let capturedLines = [];
 
-inputReader.on('line', function(currentLine) {
-  capturedLines.push(currentLine);
+let inputDataProcessor;
+const receivedLines = [];
+
+inputReader.on('line', (currentLine) => {
+  receivedLines.push(currentLine);
 });
 
-inputReader.on('close', function() {
-  inputProcessor = initializeProcessor(capturedLines);
-  console.error(" "); // A blank line for visual separation
-  let timingStart = Date.now();
-  ExecuteMainLogic();
-  let elapsedTime = Date.now() - timingStart;
-  logError("Execution duration : " + elapsedTime + "ms");
-  logError("Memory footprint : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+inputReader.on('close', () => {
+  inputDataProcessor = initializeInputProcessor(receivedLines);
+  console.error("\n");
+  const startTime = Date.now();
+  executeMainLogic();
+  const elapsedTime = Date.now() - startTime;
+  logDebugMessage("execution time : " + elapsedTime + "ms");
+  logDebugMessage("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function duplicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+function createDeepCopy(originalObject) {
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function getNextInteger() {
-  return convertInput(retrieveNextItem(), 1);
+function retrieveInteger() {
+  return convertInput(fetchNextLine(), 1);
 }
 
-function getNextStringArray() {
-  return convertInput(retrieveNextItem(), 2);
+function retrieveStringArray() {
+  return convertInput(fetchNextLine(), 2);
 }
 
-function getNextIntegerArray() {
-  return convertInput(retrieveNextItem(), 4);
+function retrieveIntegerArray() {
+  return convertInput(fetchNextLine(), 4);
 }
 
-function getNextCharacterArray() {
-  return convertInput(retrieveNextItem(), 6);
+function retrieveCharacterArray() {
+  return convertInput(fetchNextLine(), 6);
 }
 
-function retrieveNextItem() {
-  return inputProcessor.retrieveNextItem();
+function fetchNextLine() {
+  return inputDataProcessor.advanceAndGet();
 }
 
-function hasMoreInput() {
-  return inputProcessor.hasMoreInput();
+function hasMoreLines() {
+  return inputDataProcessor.canAdvance();
 }
 
-function initializeProcessor(rawInputLines) {
-  let processorInstance = {
-    lineBuffer: rawInputLines,
+function initializeInputProcessor(inputLinesBuffer) {
+  const processorObject = {
+    lineBuffer: inputLinesBuffer,
     currentPosition: 0,
-    maximumLines: rawInputLines.length,
-    hasMoreInput: function() {
-      return (this.currentPosition < this.maximumLines);
+    totalLines: inputLinesBuffer.length,
+    canAdvance: function() {
+      return (this.currentPosition < this.totalLines);
     },
-    retrieveNextItem: function() {
-      if (!this.hasMoreInput()) {
-        throw "EndOfInputException -- No further input available";
+    advanceAndGet: function() {
+      if (!this.canAdvance()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       } else {
-        let extractedLine = this.lineBuffer[this.currentPosition++];
-        return extractedLine;
+        const lineToReturn = this.lineBuffer[this.currentPosition++];
+        return lineToReturn;
       }
     }
   };
-  return processorInstance;
+  return processorObject;
 }
 
-function displayOutput(message) {
-  console.log(message);
+function printResult(outputValue) {
+  console.log(outputValue);
 }
 
-function logError(errorDetails) {
-  console.error("Debugging info: " + require("util").inspect(errorDetails, false, null));
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-// Helper function for type conversions:
-// conversionType 1: parse as integer.
-// conversionType 2: split by space.
-// conversionType 4: split by space and parse as integers.
-// conversionType 6: split into individual characters.
-// conversionType 7: split into individual characters and parse as integers.
-// conversionType 8: join array elements with spaces.
-// conversionType 9: join array elements with newlines.
-// conversionType 0: join array elements without any separator.
-// Default: return item as is.
-function convertInput(itemToConvert, conversionType) {
+function convertInput(inputValue, formatCode) {
   try {
-    switch (conversionType) {
+    switch (formatCode) {
       case 1:
-        return parseInt(itemToConvert, 10);
+        return parseInt(inputValue);
       case 2:
-        return itemToConvert.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return itemToConvert.split(" ").map(Number);
+        return inputValue.split(" ").map(Number);
       case 6:
-        return itemToConvert.split("");
+        return inputValue.split("");
       case 7:
-        return itemToConvert.split("").map(Number);
+        return inputValue.split("").map(Number);
       case 8:
-        return itemToConvert.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return itemToConvert.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return itemToConvert.join("");
+        return inputValue.join("");
       default:
-        return itemToConvert;
+        return inputValue;
     }
-  } catch (e) {
-    return itemToConvert;
+  } catch (error) {
+    return inputValue;
   }
 }
 
-// Utility functions and input handling end
-function ExecuteMainLogic() {
-  let graphSize = getNextInteger();
-  let adjacencyList = new Array(graphSize);
+function executeMainLogic() {
+  const nodeCount = retrieveInteger();
+  const nodeCollection = new Array(nodeCount);
 
-  for (let nodeIdx = 0; nodeIdx < graphSize; nodeIdx++) {
-    adjacencyList[nodeIdx] = {
-      childrenNodes: [],
-      visitedFlag: false,
-      nodeDepth: 1
+  for (let idxA = 0; idxA < nodeCount; idxA++) {
+    nodeCollection[idxA] = {
+      connected: [],
+      visited: false,
+      level: 1
     };
   }
 
-  for (let rowIdx = 0; rowIdx < graphSize; rowIdx++) {
-    let currentRowChars = getNextCharacterArray();
-    for (let colIdx = 0; colIdx < graphSize; colIdx++) {
-      if (rowIdx !== colIdx && currentRowChars[colIdx] === "1") {
-        adjacencyList[rowIdx].childrenNodes.push(colIdx);
+  for (let idxA = 0; idxA < nodeCount; idxA++) {
+    const tempChars = retrieveCharacterArray();
+    for (let idxB = 0; idxB < nodeCount; idxB++) {
+      if (idxA !== idxB && tempChars[idxB] === "1") {
+        nodeCollection[idxA].connected.push(idxB);
       }
     }
   }
 
   let finalResult = -1;
-  let conditionMet = false;
-
-  for (let currentNodeIndex = 0; currentNodeIndex < graphSize; currentNodeIndex++) {
-    if (adjacencyList[currentNodeIndex].childrenNodes.length === 1) {
-      conditionMet = true;
-      let processingQueue = [currentNodeIndex];
-      adjacencyList[currentNodeIndex].visitedFlag = true;
-
+  let isStartNodeFound = false;
+  for (let idxA = 0; idxA < nodeCount; idxA++) {
+    if (nodeCollection[idxA].connected.length === 1) {
+      isStartNodeFound = true;
+      const processingQueue = [idxA];
+      nodeCollection[idxA].visited = true;
       while (processingQueue.length > 0) {
-        let currentVertex = processingQueue.shift();
-        let neighbors = adjacencyList[currentVertex].childrenNodes;
-
-        for (let neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex++) {
-          if (!adjacencyList[neighbors[neighborIndex]].visitedFlag) {
-            adjacencyList[neighbors[neighborIndex]].visitedFlag = true;
-            adjacencyList[neighbors[neighborIndex]].nodeDepth = adjacencyList[currentVertex].nodeDepth + 1;
-            finalResult = Math.max(finalResult, adjacencyList[currentVertex].nodeDepth + 1);
-            processingQueue.push(neighbors[neighborIndex]);
+        const currentNodeIndex = processingQueue.shift();
+        const connectedNodes = nodeCollection[currentNodeIndex].connected;
+        for (let idxC = 0; idxC < connectedNodes.length; idxC++) {
+          if (!nodeCollection[connectedNodes[idxC]].visited) {
+            nodeCollection[connectedNodes[idxC]].visited = true;
+            nodeCollection[connectedNodes[idxC]].level = nodeCollection[currentNodeIndex].level + 1;
+            finalResult = Math.max(finalResult, nodeCollection[currentNodeIndex].level + 1);
+            processingQueue.push(connectedNodes[idxC]);
           }
         }
       }
@@ -160,22 +147,25 @@ function ExecuteMainLogic() {
     }
   }
 
-  if (!conditionMet) {
-    displayOutput(finalResult);
+  if (!isStartNodeFound) {
+    printResult(finalResult);
     return;
   }
-
-  for (let firstNode = 0; firstNode < graphSize - 1; firstNode++) {
-    for (let secondNode = firstNode + 1; secondNode < graphSize; secondNode++) {
-      if (adjacencyList[firstNode].nodeDepth === adjacencyList[secondNode].nodeDepth && (adjacencyList[firstNode].childrenNodes.indexOf(secondNode) !== -1 || adjacencyList[secondNode].childrenNodes.indexOf(firstNode) !== -1)) {
-        logError({
-          firstNode,
-          secondNode
+  for (let idxA = 0; idxA < nodeCount - 1; idxA++) {
+    for (let idxB = idxA + 1; idxB < nodeCount; idxB++) {
+      if (nodeCollection[idxA].level === nodeCollection[idxB].level &&
+          (nodeCollection[idxA].connected.indexOf(idxB) !== -1 || nodeCollection[idxB].connected.indexOf(idxA) !== -1)) {
+        logDebugMessage({
+          i: idxA,
+          j: idxB
         });
         finalResult = -1;
         break;
       }
     }
+    if (finalResult === -1) {
+      break;
+    }
   }
-  displayOutput(finalResult);
+  printResult(finalResult);
 }

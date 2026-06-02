@@ -1,37 +1,19 @@
 /*
- *   This is a meticulously crafted
- *   Type I clone example,
- *   demonstrating extensive whitespace
- *   and comment modifications
- *   while preserving the original code's
- *   exact logical structure and
- *   all non-whitespace tokens.
+ * ====================
+ * Proyecto: JCZA 4454
+ * Integrantes: Valentina Campos, Paula Castillo, Ana Flores, Gabriel Paredes
+ * ====================
  */
 
-//  Beginning of the primary execution block.
+function main(input) {
+   input = input.trim();
+   const a = input.split(' ');
 
-//  A significant amount of vertical spacing
-//  to differentiate from the original.
+   if (a[1] == '+') {
+      console.log(parseInt(a[0]) + parseInt(a[  2  ]));
+   } else if (a[1] == '-') {
+      console.log(parseInt(a[0]) - parseInt(a[  2  ]));
+   }
+}
 
-
-          console   //  Accessing the global console object.
-                 .  //  The member access operator.
-                 log  //  Invoking the 'log' method.
-                    ( //  Opening parenthesis for function arguments.
-
-                       "2\n4\n2\n0\n2\n6"  /*  This is the sole
-                                          *   argument: a string literal
-                                          *   containing multiple newline characters.
-                                          *   Its content is preserved exactly.
-                                          */
-                    ) //  Closing parenthesis for the function call.
-
-
-//  End of the script's functional part.
-
-/*
- *   Further comments
- *   to ensure maximum visual
- *   divergence from the source.
- *   No functional changes whatsoever.
- */
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

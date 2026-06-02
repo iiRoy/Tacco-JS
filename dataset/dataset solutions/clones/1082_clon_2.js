@@ -1,103 +1,60 @@
-class Unit {
-  constructor (
-    unitLabel,
-    unitPredecessor,
-    unitSuccessors
-  ) {
-    this._label = unitLabel;
-    this._predecessor = unitPredecessor;
-    this._successors = unitSuccessors;
+class TreeNode {
+  constructor(identifier, parentNode, childNodes) {
+    this.identifier = identifier;
+    this.parentNode = parentNode;
+    this.childNodes = childNodes;
   }
 
-  get category () {
-    if (this._predecessor === null) return 'origin';
-    if (this._successors.length === 0)
-      return 'end-point';
-    return 'mid-level element';
+  get nodeType() {
+    if (this.parentNode === null) return 'root';
+    if (this.childNodes.length === 0) return 'leaf';
+    return 'internal node';
   }
 
-  get altitude () {
-    const determineAltitude = (itemRef, currentCount) => {
-      return itemRef._predecessor === null
-        ? currentCount
-        : determineAltitude(itemRef._predecessor, currentCount + 1);
+  get depthLevel() {
+    const calculateNodeDepth = (currentNode, currentDepth) => {
+      return currentNode.parentNode === null ? currentDepth : calculateNodeDepth(currentNode.parentNode, currentDepth + 1);
     };
-    return determineAltitude(this, 0);
+    return calculateNodeDepth(this, 0);
   }
 
-  display () {
-    let predecessorInfo = this._predecessor !== null
-      ? this._predecessor._label
-      : -1;
-    let successorLabels = this._successors
-      .map(
-        eachSuccessor => eachSuccessor._label
-      )
-      .join(' | ');
-
-    return `unit_id_${this._label} :: predecessor = ${predecessorInfo}, altitude = ${this.altitude}, category: ${this.category}, [${successorLabels}]`;
+  toDisplayString() {
+    return `node ${this.identifier}: parent = ${this.parentNode !== null ? this.parentNode.identifier : -1}, depth = ${this.depthLevel}, ${this.nodeType}, [${this.childNodes.map(child => child.identifier).join(', ')}]`;
   }
 }
 
-class Hierarchy {
-  constructor(initialCapacity) {
-    this._elements = [];
+class Forest {
+  constructor(nodeCount) {
+    this.allNodes = [];
   }
 
-  incorporate (mainElementKey, dependentElementKeys) {
-    let primaryElement = this.retrieve(mainElementKey);
-
-    dependentElementKeys.forEach((dependentKey) => {
-      let linkedElement = this.retrieve(dependentKey);
-      linkedElement._predecessor = primaryElement;
-      linkedElement._label = dependentKey;
-      primaryElement._successors.push(linkedElement);
+  addChildRelations(parentId, childIdentifiers) {
+    let parentNodeRef = this.locateNode(parentId);
+    childIdentifiers.forEach((childId) => {
+      let childNodeRef = this.locateNode(childId);
+      childNodeRef.parentNode = parentNodeRef;
+      childNodeRef.identifier = childId;
+      parentNodeRef.childNodes.push(childNodeRef);
     });
   }
 
-  retrieve (targetKey) {
-    return this._elements[targetKey]
-      || (this._elements[targetKey] = new Unit(targetKey, null, []));
-  }
+  locateNode(nodeId) { return this.allNodes[nodeId] || (this.allNodes[nodeId] = new TreeNode(nodeId, null, []));}
 
-  renderAll () {
-    const sortedEntries = this._elements
-      .filter(Boolean)
-      .sort((entryA, entryB) =>
-        entryA._label - entryB._label
-      );
-
-    const formattedOutput = sortedEntries
-      .map(entry => entry.display())
-      .join(' \r\n ');
-
-    console.log(formattedOutput);
+  displayNodes() {
+    console.log(this.allNodes.sort((nodeA, nodeB) => nodeA.identifier - nodeB.identifier).map(singleNode => singleNode.toDisplayString()).join('\n'));
   }
 }
 
-(function executeProcessor () {
-  const fileSystemModule = require('fs');
-  const standardInputPath = '/dev/stdin';
-
-  let rawDataLines = fileSystemModule
-    .readFileSync(standardInputPath, 'utf8')
-    .trim()
-    .split('\n');
-
-  const totalEntriesHint = Number(rawDataLines.shift());
-
-  let hierarchyInstance = new Hierarchy(totalEntriesHint);
-
-  let currentMainId, numChildrenReported, associatedChildIds;
-
-  rawDataLines
-    .map(lineContent => lineContent.split(' '))
-    .forEach(function (parsedTokens) {
-      currentMainId = Number(parsedTokens.shift());
-      numChildrenReported = Number(parsedTokens.shift());
-      associatedChildIds = parsedTokens.map(Number);
-      hierarchyInstance.incorporate(currentMainId, associatedChildIds);
-    });
-
-  hierarchyInstance.renderAll();
+(function executeMainLogic() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalNodes = Number(inputLines.shift());
+  let nodeForest = new Forest(totalNodes);
+  let currentId, childCount, currentChildrenIds;
+  inputLines.map(lineContent => lineContent.split(' ')).forEach(function(parsedLineData) {
+    currentId = Number(parsedLineData.shift());
+    childCount = Number(parsedLineData.shift());
+    currentChildrenIds = parsedLineData.map(Number);
+    nodeForest.addChildRelations(currentId, currentChildrenIds);
+  });
+  nodeForest.displayNodes();
 })();

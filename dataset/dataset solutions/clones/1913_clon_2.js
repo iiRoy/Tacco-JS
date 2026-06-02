@@ -1,51 +1,47 @@
 'use strict';
-// This constant defines a dedicated function for displaying various messages.
-const outputPrinter = (  messageText  ) => console.log(messageText);
+
+// Utility function for logging messages to the console.
+const outputWriter = (messageContent) => console.log(messageContent);
 
 /*
- *  The following lines were originally intended for parsing multiple numeric inputs
- *  from the first line of source information. They are currently inactive.
- */
-// let valueOne, valueTwo, valueThree, valueFour;
-// [ valueOne, valueTwo, valueThree, valueFour ] = sourceInformation[0].trim().split(" ").map(item => Number.parseInt(item));
+  Original comments:
+  // let a,b,c,d;
+  // [a,b,c,d] = input[0].trim().split(" ").map(i => parseInt(i));
+*/
 
 /**
- * This is the core routine that takes input data and determines
- * if any number within a given range is perfectly divisible by a specified value.
- * @param {Array<string>} sourceInformation - The collection of input lines as strings.
+ * Processes the input data to determine if a number divisible by K exists
+ * within the range [A, B].
+ * @param {string[]} rawInputLines - An array of strings, where each string is a line of input.
  */
-function processInputData(sourceInformation) {
-  // Obtain the numeric divisor from the initial segment of the first input line.
-  let targetDivisor = sourceInformation[0].split(" ")[0];
+function analyzeRangeForDivisibility(rawInputLines) {
+  // Extract the divisor value from the first line of input.
+  let divisorValue = rawInputLines[0].split(" ")[0];
 
-  let lowerBound, upperBound;
-  // Extract and convert the numeric range (start and end points) from the second input line.
-  [ lowerBound, upperBound ] = sourceInformation[1].split(" ").map(item => Number.parseInt(item));
+  // Declare variables for the start and end of the range.
+  let rangeStart, rangeEnd;
 
-  // Initialize a boolean indicator to track if a matching number is discovered.
-  let successIndicator = false;
+  // Parse the start and end of the range from the second line of input.
+  [rangeStart, rangeEnd] = rawInputLines[1].split(" ").map(strItem => parseInt(strItem));
 
-  // Traverse through each integer starting from the lower bound up to and including the upper bound.
-  for (  let currentNumber = lowerBound; currentNumber < upperBound + 1; currentNumber++  ) {
-    // Evaluate if the current integer yields a zero remainder when divided by the target divisor.
-    if (  Math.floor(currentNumber % targetDivisor) === 0  ) {
-      // Upon finding a match, output 'OK', update the indicator, and terminate the function's execution.
-      outputPrinter('OK');
-      successIndicator = true;
-      return;
+  // A boolean indicator to track if a divisible number is found.
+  let foundDivisibleNumber = false;
+
+  // Iterate through the numbers in the specified range.
+  for (let currentNumber = rangeStart; currentNumber < rangeEnd + 1; currentNumber++) {
+    // Check if the current number is perfectly divisible by the divisor.
+    if (Math.floor(currentNumber % divisorValue) === 0) {
+      outputWriter('OK'); // Output 'OK' if a divisible number is found.
+      foundDivisibleNumber = true; // Set the flag to true.
+      return; // Exit the function immediately as the condition is met.
     }
   }
 
-  // If the iteration completes without setting the success indicator, it means no such number was found.
-  if (!successIndicator) {
-    outputPrinter('NO');
+  // If the loop completes and no divisible number was found.
+  if (!foundDivisibleNumber) {
+    outputWriter('NO'); // Output 'NO'.
   }
 }
 
-// Execute the primary data processing routine, feeding it content from standard input.
-processInputData(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-    .trim()
-    .split("\n")
-);
+// Read input from standard input, process it, and then call the main logic.
+analyzeRangeForDivisibility(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

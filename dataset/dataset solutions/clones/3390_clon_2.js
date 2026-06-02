@@ -1,38 +1,39 @@
-const handleTask = initialString => {
-  // Create a mutable array from the input string's characters.
-  const itemCollection = [...initialString];
-  // Initialize a counter to track the number of swap operations.
-  let operationTally = 0;
+const processInput = (rawData) => {
+  // Convert the incoming string data into an array of individual characters,
+  // each representing a 'stone' in the sequence.
+  const rockArray = [...rawData];
 
-  // Continue looping as long as a 'B' followed by a 'W' can be found and swapped.
+  // Initialize a variable to count the total number of successful swaps.
+  let swapCount = 0;
+
+  // Begin a loop that continues as long as at least one swap can be performed
+  // in a full iteration over the 'rockArray'.
   while (
-    itemCollection.some((elementValue, pos, workingArray) => {
-      // Check if the current element is 'B' and the next is 'W',
-      // ensuring we don't go out of bounds for the array.
-      if (
-        pos < workingArray.length - 1 &&  // Verify there's a subsequent element.
-        elementValue === "B" &&           // Check if the current item is 'B'.
-        workingArray[pos + 1] === "W"     // Check if the next item is 'W'.
-      ) {
-        // Perform an in-place swap of the 'B' and 'W' elements.
-        [workingArray[pos], workingArray[pos + 1]] = [
-          workingArray[pos + 1],
-          workingArray[pos],
-        ];
-        // Return true to indicate a swap occurred, which keeps the 'while' loop running.
+    rockArray.some((currentRock, idx, arrRef) => {
+      // Check for the specific condition: a 'B' stone followed by a 'W' stone.
+      // Ensure we are not at the very last element to prevent out-of-bounds access.
+      if (idx < arrRef.length - 1 && currentRock === "B" && arrRef[idx + 1] === "W") {
+        // If the condition is met, swap the positions of the 'B' and 'W' stones.
+        // This effectively moves 'W' to the left of 'B'.
+        [arrRef[idx], arrRef[idx + 1]] = [arrRef[idx + 1], arrRef[idx]];
+        // Return 'true' to indicate that a swap occurred in this iteration,
+        // which will cause the 'some' method to stop and the 'while' loop to continue.
         return true;
       }
-      // If no 'B' followed by 'W' is found at this position, return false.
+      // If no swap condition is met for the current pair, return 'false'.
       return false;
     })
   ) {
-    // Increment the operation tally for each successful pass where a swap was made.
-    operationTally++;
+    // If the 'some' method returned true (meaning at least one swap happened),
+    // increment the overall swap counter.
+    swapCount++;
   }
 
-  // Print the final count of swap operations to the standard output.
-  console.log(operationTally);
+  // After the loop finishes (no more 'B' followed by 'W' pairs exist),
+  // print the final count of swaps to the console.
+  console.log(swapCount);
 };
 
-// Invoke the main processing function with data read from standard input.
-handleTask(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input, assuming UTF-8 encoding,
+// and then pass it to our main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

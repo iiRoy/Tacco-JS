@@ -1,25 +1,31 @@
-function ProcessInput(incomingContent) {
-  // Split the raw incoming text into individual lines
-  incomingContent = incomingContent.split("\n");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // First, the raw input string is divided into an array of strings,
+    // where each element represents a line from the original input.
+    let processedData = rawData.split("\n");
 
-  // Extract the first segment of data, splitting it by spaces
-  let initialSegment = incomingContent[0].split(" ");
+    // We then extract the very first line from the processed data array.
+    // This line is further split by spaces to separate its constituent parts.
+    const firstLineParts = processedData[0].split(" ");
 
-  // Parse the first numeric component from the segment
-  let operandOne = parseInt(initialSegment[0]);
+    // The first part of the split line is converted into an integer.
+    let firstNumber = parseInt(firstLineParts[0]);
+    // Similarly, the second part of the split line is also converted into an integer.
+    let secondNumber = parseInt(firstLineParts[1]);
 
-  // Parse the second numeric component from the segment
-  let operandTwo = parseInt(initialSegment[1]);
-  
-  // Evaluate if the combined value exceeds a specific threshold
-  if (operandOne + operandTwo > 9) {
-    // If the sum is too large, indicate a problem
-    console.log("issue");
-  } else {
-    // Otherwise, display the successful sum
-    console.log(operandOne + operandTwo);
-  }
+    // A conditional check is performed: if the sum of the two integers
+    // is strictly greater than nine, a specific error message is output.
+    if (firstNumber + secondNumber > 9) {
+        console.log("error");
+    }
+    // Otherwise, if the sum is nine or less, the actual sum of the two integers
+    // is calculated and then displayed to the console.
+    else {
+        console.log(firstNumber + secondNumber);
+    }
 }
 
-// Retrieve content from standard input and pass it to the handler
+// The program initiates by reading the content of the standard input file.
+// The file is read synchronously and decoded using UTF-8 encoding.
+// The obtained content is then passed as an argument to the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,38 +1,21 @@
-const fileSystemInterface = require('fs');
-const rawTextData = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const numericSequence = rawTextData
-    .trim()
-    .split('\n')
-    .slice(1)
-    .map(val => Number(val));
+let processedData = rawInput.trim().split('\n').map(Number);
 
-const calculateMaxDifference = (dataElements) => {
-    if (dataElements.length < 2) {
-        return 0;
-    }
+let firstElement = processedData[0];
+let dataSequence = processedData.slice(1);
 
-    const allPossibleDifferences = dataElements.slice(0, dataElements.length - 1)
-        .flatMap((initialValue, initialIndex) =>
-            dataElements.map((secondaryValue, secondaryIndex) => {
-                if (initialIndex === secondaryIndex) {
-                    return null;
-                }
-                return initialValue - secondaryValue;
-            })
-        )
-        .filter(diff => diff !== null);
+let outerIterationLimit = Math.min(dataSequence.length, firstElement - 1);
 
-    if (allPossibleDifferences.length === 0) {
-        return 0;
-    }
+let allCalculatedDifferences = Array.from({ length: outerIterationLimit }, (_, indexA) => indexA)
+    .flatMap(indexA => {
+        return Array.from({ length: dataSequence.length }, (_, indexB) => indexB)
+            .filter(indexB => indexA !== indexB)
+            .map(indexB => dataSequence[indexA] - dataSequence[indexB]);
+    });
 
-    return allPossibleDifferences.reduce((accumulator, currentDifference) =>
-        Math.max(accumulator, currentDifference),
-        0
-    );
-};
+let finalResult = allCalculatedDifferences.reduce((currentMaximum, differenceValue) => Math.max(currentMaximum, differenceValue), 0);
 
-const maximumSpread = calculateMaxDifference(numericSequence);
-
-console.log(maximumSpread);
+console.log(finalResult);

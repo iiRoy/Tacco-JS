@@ -1,84 +1,88 @@
-const acquireSourceInformation = (sourceIdentifier) => {
-    return require('fs').readFileSync(sourceIdentifier, 'utf8');
-};
+const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+let lineCursor = 0;
 
-const parseInputData = (rawTextContent) => {
-    const allLines = rawTextContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    const processedCases = [];
-    let currentLineIndex = 0;
+// Helper function to calculate the largest rectangle in a histogram row
+const calculateHistogramMax = (histogramValues, width) => {
+    let currentMax = 0;
+    const valueStack = []; // Stores { val: height, pos: start_index }
 
-    while (true) {
-        const sizeDescriptor = allLines[currentLineIndex++].split(' ').map(Number);
-        const dimensionY = sizeDescriptor[0];
-        const dimensionX = sizeDescriptor[1];
+    // Append a sentinel value (0) to ensure all bars in the stack are processed
+    const processedHistogram = [...histogramValues, 0];
 
-        if (dimensionY === 0 && dimensionX === 0) {
-            break;
+    for (let p = 0; p < processedHistogram.length; p++) {
+        const currentHeightVal = processedHistogram[p];
+        
+        // Case 1: Stack is empty or current height is strictly greater than the top of the stack
+        // This corresponds to original's `if(s.length==0)` and `if(s[s.length-1][0]<v)`
+        if (valueStack.length === 0 || valueStack[valueStack.length - 1].val < currentHeightVal) {
+            valueStack.push({ val: currentHeightVal, pos: p });
+            continue;
         }
 
-        const characterMatrix = [];
-        for (let rowIdx = 0; rowIdx < dimensionY; rowIdx++) {
-            characterMatrix.push(allLines[currentLineIndex++].split(''));
+        // Case 2: Current height is equal to the top of the stack
+        // This corresponds to original's `else if(s[s.length-1][0]==v)continue;`
+        if (valueStack[valueStack.length - 1].val === currentHeightVal) {
+            continue;
         }
-        processedCases.push({ verticalSize: dimensionY, horizontalSize: dimensionX, visualRepresentation: characterMatrix });
+
+        // Case 3: Current height is smaller than the top of the stack
+        // This corresponds to original's `else if(s[s.length-1][0]>v)` block
+        let lastPoppedStart = p; // This variable mimics `last` from the original code
+        
+        // Mimic the original's `while(true)` loop for popping elements
+        for (;;) {
+            if (valueStack.length === 0) {
+                valueStack.push({ val: currentHeightVal, pos: lastPoppedStart });
+                break;
+            }
+            const poppedItem = valueStack.pop();
+            if (currentHeightVal > poppedItem.val) {
+                valueStack.push({ val: currentHeightVal, pos: lastPoppedStart });
+                break;
+            }
+            lastPoppedStart = poppedItem.pos; // Update `lastPoppedStart` with the position of the popped item
+            if (currentHeightVal === poppedItem.val) {
+                break; // Original's `if(v==r[0])break;`
+            } else { // currentHeightVal < poppedItem.val (original `else if(v<=r[0])`)
+                currentMax = Math.max(currentMax, poppedItem.val * (p - poppedItem.pos));
+            }
+        }
     }
-    return processedCases;
+    return currentMax;
 };
 
-const analyzeGridForLargestBlock = (caseDetails) => {
-    const columnContinuityHeights = [];
-    const matrixHeight = caseDetails.verticalSize;
-    const matrixWidth = caseDetails.horizontalSize;
-    const inputMatrix = caseDetails.visualRepresentation;
+let globalMaxArea = 0;
 
-    for (let r = 0; r < matrixHeight; r++) {
-        columnContinuityHeights[r] = [];
-        for (let c = 0; c < matrixWidth; c++) {
-            if (inputMatrix[r][c] === '.') {
-                columnContinuityHeights[r][c] = (r === 0) ? 1 : columnContinuityHeights[r - 1][c] + 1;
+// Main loop for processing multiple test cases
+for (;;) {
+    const dimensionsStr = dataLines[lineCursor++];
+    const [rowDim, colDim] = dimensionsStr.split(' ').map(Number);
+
+    if (rowDim === 0 && colDim === 0) {
+        break;
+    }
+
+    // Generate the height matrix (equivalent to `yx` in original)
+    // Each cell stores the height of consecutive '.' characters upwards
+    const heightMatrix = Array.from({ length: rowDim }, (_, rIdx) => {
+        const rowChars = dataLines[lineCursor++].split('');
+        return Array.from({ length: colDim }, (_, cIdx) => {
+            const char = rowChars[cIdx];
+            if (char === '.') {
+                // If it's the first row, height is 1. Otherwise, it's 1 + height from cell above.
+                return (rIdx === 0) ? 1 : heightMatrix[rIdx - 1][cIdx] + 1;
             } else {
-                columnContinuityHeights[r][c] = 0;
+                // If it's not '.', height is 0.
+                return 0;
             }
-        }
+        });
+    });
+
+    // Iterate through each row of the height matrix and calculate the largest rectangle
+    for (let r = 0; r < rowDim; r++) {
+        globalMaxArea = Math.max(globalMaxArea, calculateHistogramMax(heightMatrix[r], colDim));
     }
 
-    let overallMaximumExtent = 0;
-
-    const findMaximalSubArea = (heightProfile, startIndex, endIndex) => {
-        if (startIndex > endIndex) {
-            return 0;
-        }
-        if (startIndex === endIndex) {
-            return heightProfile[startIndex];
-        }
-
-        let minimumBarValue = heightProfile[startIndex];
-        let minimumBarIndex = startIndex;
-        for (let j = startIndex + 1; j <= endIndex; j++) {
-            if (heightProfile[j] < minimumBarValue) {
-                minimumBarValue = heightProfile[j];
-                minimumBarIndex = j;
-            }
-        }
-
-        const areaConsideringMinimum = minimumBarValue * (endIndex - startIndex + 1);
-        const areaOnLeft = findMaximalSubArea(heightProfile, startIndex, minimumBarIndex - 1);
-        const areaOnRight = findMaximalSubArea(heightProfile, minimumBarIndex + 1, endIndex);
-
-        return Math.max(areaConsideringMinimum, areaOnLeft, areaOnRight);
-    };
-
-    for (let r = 0; r < matrixHeight; r++) {
-        overallMaximumExtent = Math.max(overallMaximumExtent, findMaximalSubArea(columnContinuityHeights[r], 0, matrixWidth - 1));
-    }
-
-    return overallMaximumExtent;
-};
-
-const systemInput = acquireSourceInformation('/dev/stdin');
-const allProcessedScenarios = parseInputData(systemInput);
-
-for (const individualScenario of allProcessedScenarios) {
-    const computedResult = analyzeGridForLargestBlock(individualScenario);
-    console.log(computedResult);
+    console.log(globalMaxArea);
+    globalMaxArea = 0; // Reset for the next test case
 }

@@ -1,129 +1,111 @@
-(function(componentStore) { // Package loader bootstrap function
-    // A mapping of already loaded code components
-    var loadedUnits = {};
-
-    // The core function for loading modules
-    function __package_loader__(unitId) {
-
-        // Check if the requested component is already in our cache
-        if (loadedUnits[unitId]) {
-            return loadedUnits[unitId].output;
-        }
-        // If not, create a brand new component entry (and place it into the cache)
-        var currentUnit = loadedUnits[unitId] = {
-            identifier: unitId,
-            isLoaded: false,
-            output: {}
-        };
-
-        // Execute the component's primary function
-        componentStore[unitId].call(currentUnit.output, currentUnit, currentUnit.output, __package_loader__);
-
-        // Mark this component as successfully loaded
-        currentUnit.isLoaded = true;
-
-        // Return the exported values of this component
-        return currentUnit.output;
-    }
-
-    // Expose the entire collection of component functions
-    __package_loader__.map = componentStore;
-
-    // Expose the cache of loaded components
-    __package_loader__.cache = loadedUnits;
-
-    // Define a getter function for harmony exports (ES Modules)
-    __package_loader__.def = function(result, propName, accessor) {
-        if (!__package_loader__.own(result, propName)) {
-            Object.defineProperty(result, propName, {
-                enumerable: true,
-                get: accessor
-            });
-        }
-    };
-
-    // Define the __esModule property on exports for ES Modules
-    __package_loader__.register = function(result) {
-        if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-            Object.defineProperty(result, Symbol.toStringTag, {
-                value: 'Module'
-            });
-        }
-        Object.defineProperty(result, '__esModule', {
-            value: true
-        });
-    };
-
-    // Construct a simulated namespace object
-    // operationMode & 1: itemValue is a component ID, load it
-    // operationMode & 2: merge all properties from itemValue into the namespace object
-    // operationMode & 4: return itemValue if it's already a namespace object
-    // operationMode & 8|1: behave like a standard require call
-    __package_loader__.temp = function(itemValue, operationMode) {
-        if (operationMode & 1) itemValue = __package_loader__(itemValue);
-        if (operationMode & 8) return itemValue;
-        if ((operationMode & 4) && typeof itemValue === 'object' && itemValue && itemValue.__esModule) return itemValue;
-        var namespaceObj = Object.create(null);
-        __package_loader__.register(namespaceObj);
-        Object.defineProperty(namespaceObj, 'default', {
-            enumerable: true,
-            value: itemValue
-        });
-        if (operationMode & 2 && typeof itemValue != 'string')
-            for (var propKey in itemValue)
-                __package_loader__.def(namespaceObj, propKey, (function(propKey) {
-                    return itemValue[propKey];
-                }).bind(null, propKey));
-        return namespaceObj;
-    };
-
-    // Function to retrieve default exports for compatibility with non-harmony modules
-    __package_loader__.normalizer = function(inputUnit) {
-        var valueRetriever = inputUnit && inputUnit.__esModule ?
-            function fetchDefault() {
-                return inputUnit['default'];
-            } :
-            function fetchUnitOutputs() {
-                return inputUnit;
-            };
-        __package_loader__.def(valueRetriever, 'a', valueRetriever);
-        return valueRetriever;
-    };
-
-    // Utility function: Object.prototype.hasOwnProperty.call wrapper
-    __package_loader__.own = function(targetObject, keyProperty) {
-        return Object.prototype.hasOwnProperty.call(targetObject, keyProperty);
-    };
-
-    // The base path for public assets
-    __package_loader__.path = "";
-
-    // Initiate loading of the primary entry component and return its exports
-    return __package_loader__(__package_loader__.start = "./source/contest/problem_c.js");
-})
+/******/ (function(moduleDefinitions) { // This is the webpackBootstrap function, the entry point for the bundled modules.
+/******/ 	// The module cache stores already loaded modules to prevent redundant loading.
+/******/ 	var loadedModulesCache = {};
+/******/
+/******/ 	// The custom require function is responsible for loading modules.
+/******/ 	function __webpack_require__(moduleIdentifier) {
+/******/
+/******/ 		// Check if the module is already in the cache.
+/******/ 		if(loadedModulesCache[moduleIdentifier]) {
+/******/ 			return loadedModulesCache[moduleIdentifier].exports;
+/******/ 		}
+/******/ 		// If not, create a new module entry in the cache.
+/******/ 		var currentModule = loadedModulesCache[moduleIdentifier] = {
+/******/ 			i: moduleIdentifier, // Module ID
+/******/ 			l: false,            // Loaded flag, initially false
+/******/ 			exports: {}          // Module exports object
+/******/ 		};
+/******/
+/******/ 		// Execute the module function with its context (this, exports, require).
+/******/ 		moduleDefinitions[moduleIdentifier].call(currentModule.exports, currentModule, currentModule.exports, __webpack_require__);
+/******/
+/******/ 		// Mark the module as loaded after execution.
+/******/ 		currentModule.l = true;
+/******/
+/******/ 		// Return the exports of the module.
+/******/ 		return currentModule.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// Expose the modules object (__webpack_modules__) on the require function.
+/******/ 	__webpack_require__.m = moduleDefinitions;
+/******/
+/******/ 	// Expose the module cache on the require function.
+/******/ 	__webpack_require__.c = loadedModulesCache;
+/******/
+/******/ 	// Define a getter function for harmony exports (ESM compatibility).
+/******/ 	__webpack_require__.d = function(exportsObject, propertyName, getterFunction) {
+/******/ 		if(!__webpack_require__.o(exportsObject, propertyName)) {
+/******/ 			Object.defineProperty(exportsObject, propertyName, { enumerable: true, get: getterFunction });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// Define __esModule on exports for ES module identification.
+/******/ 	__webpack_require__.r = function(exportsObject) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exportsObject, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exportsObject, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// Create a fake namespace object for module interoperability.
+/******/ 	// mode & 1: value is a module id, require it.
+/******/ 	// mode & 2: merge all properties of value into the namespace.
+/******/ 	// mode & 4: return value when already a namespace object.
+/******/ 	// mode & 8|1: behave like require.
+/******/ 	__webpack_require__.t = function(valueToProcess, processingMode) {
+/******/ 		if(processingMode & 1) valueToProcess = __webpack_require__(valueToProcess);
+/******/ 		if(processingMode & 8) return valueToProcess;
+/******/ 		if((processingMode & 4) && typeof valueToProcess === 'object' && valueToProcess && valueToProcess.__esModule) return valueToProcess;
+/******/ 		var namespaceObject = Object.create(null);
+/******/ 		__webpack_require__.r(namespaceObject);
+/******/ 		Object.defineProperty(namespaceObject, 'default', { enumerable: true, value: valueToProcess });
+/******/ 		if(processingMode & 2 && typeof valueToProcess != 'string') for(var keyName in valueToProcess) __webpack_require__.d(namespaceObject, keyName, function(keyName) { return valueToProcess[keyName]; }.bind(null, keyName));
+/******/ 		return namespaceObject;
+/******/ 	};
+/******/
+/******/ 	// GetDefaultExport function for compatibility with non-harmony modules.
+/******/ 	__webpack_require__.n = function(moduleObject) {
+/******/ 		var exportGetter = moduleObject && moduleObject.__esModule ?
+/******/ 			function retrieveDefaultExport() { return moduleObject['default']; } :
+/******/ 			function retrieveModuleExports() { return moduleObject; };
+/******/ 		__webpack_require__.d(exportGetter, 'a', exportGetter);
+/******/ 		return exportGetter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call check for properties.
+/******/ 	__webpack_require__.o = function(targetObject, propertyKey) { return Object.prototype.hasOwnProperty.call(targetObject, propertyKey); };
+/******/
+/******/ 	// Public path for assets.
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load the entry module and return its exports.
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/panasonic2020/C.js");
+/******/ })
 /************************************************************************/
-({
+/******/ ({
 
-    "./source/contest/problem_c.js":
-        /*!*************************************!*
-          !*** ./source/contest/problem_c.js ***!
-          !*************************************/
-        /*! no static exports found */
-        (function(currentUnit, unitOutput, unitLoader) {
+/***/ "./src/panasonic2020/C.js":
+/*!********************************!*\
+  *** ./src/panasonic2020/C.js ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-            eval("function _decomposeArray(collection, limit) { return _arraySegment(collection) || _limitedIterableToArray(collection, limit) || _remainingNonIterable(); }\n\nfunction _remainingNonIterable() { throw new TypeError(\"Cannot destructure non-iterable instance\"); }\n\nfunction _limitedIterableToArray(collection, limit) { if (!(Symbol.iterator in Object(collection) || Object.prototype.toString.call(collection) === \"[object Arguments]\")) { return; } var _collection = []; var _notDone = true; var _hasError = false; var _errorObject = undefined; try { for (var _iterator = collection[Symbol.iterator](), _iteratorResult; !(_notDone = (_iteratorResult = _iterator.next()).done); _notDone = true) { _collection.push(_iteratorResult.value); if (limit && _collection.length === limit) break; } } catch (err) { _hasError = true; _errorObject = err; } finally { try { if (!_notDone && _iterator[\"return\"] != null) _iterator[\"return\"](); } finally { if (_hasError) throw _errorObject; } } return _collection; }\n\nfunction _arraySegment(collection) { if (Array.isArray(collection)) return collection; }\n\nvar fileSys = unitLoader(\"fileSystem\");\n\nvar processInput = function processInput(rawData) {\n    var _parsedDataLine = rawData.split('\\n')[0].split(' ').map(function(numStr) {\n        return numStr - 0;\n    }),\n        _decomposedInput = _decomposeArray(_parsedDataLine, 3),\n        valA = _decomposedInput[0],\n        valB = _decomposedInput[1],\n        valC = _decomposedInput[2];\n\n    valA = Math.round(Math.sqrt(valA) * 10);\n    valA = valA / 10;\n    valB = Math.round(Math.sqrt(valB) * 10);\n    valB = valB / 10;\n    valC = Math.round(Math.sqrt(valC) * 10);\n    valC = valC / 10;\n    var comparisonResult = valA + valB < valC;\n\n    if (comparisonResult) {\n        console.log('Affirmative');\n    } else {\n        console.log('Negative');\n    }\n};\n\nprocessInput(fileSys.readFileSync('/input/data.txt', 'utf8'));\n\n//# sourceURL=package://./source/contest/problem_c.js?");
+eval("function _slicedToArray(inputArr, idx) { return _arrayWithHoles(inputArr) || _iterableToArrayLimit(inputArr, idx) || _nonIterableRest(); }\\n\\nfunction _nonIterableRest() { throw new TypeError(\"Invalid attempt to destructure non-iterable instance\"); }\\n\\nfunction _iterableToArrayLimit(inputArr, limit) { if (!(Symbol.iterator in Object(inputArr) || Object.prototype.toString.call(inputArr) === \"[object Arguments]\")) { return; } var tempArray = []; var isDone = true; var hasError = false; var errorVal = undefined; try { for (var iterator = inputArr[Symbol.iterator](), currentItem; !(isDone = (currentItem = iterator.next()).done); isDone = true) { tempArray.push(currentItem.value); if (limit && tempArray.length === limit) break; } } catch (err) { hasError = true; errorVal = err; } finally { try { if (!isDone && iterator[\"return\"] != null) iterator[\"return\"](); } finally { if (hasError) throw errorVal; } } return tempArray; }\\n\\nfunction _arrayWithHoles(inputArr) { if (Array.isArray(inputArr)) return inputArr; }\\n\\nvar fileSystemModule = __webpack_require__(/*! fs */ \"fs\");\\n\\nvar processInputData = function processInputData(rawInputString) {\\n  var numericValuesFromInput = rawInputString.split('\\n')[0].split(' ').map(function (stringValue) {\\n    return Number(stringValue);\\n  });\\n\\n  var destructuredNumericValues = _slicedToArray(numericValuesFromInput, 3);\\n  var firstVal = destructuredNumericValues[0];\\n  var secondVal = destructuredNumericValues[1];\\n  var thirdVal = destructuredNumericValues[2];\\n\\n  firstVal = Math.round(Math.sqrt(firstVal) * 10.0);\\n  firstVal = firstVal / 10.0;\\n  secondVal = Math.round(Math.sqrt(secondVal) * 10.0);\\n  secondVal = secondVal / 10.0;\\n  thirdVal = Math.round(Math.sqrt(thirdVal) * 10.0);\\n  thirdVal = thirdVal / 10.0;\\n\\n  var comparisonResult = firstVal + secondVal < thirdVal;\\n\\n  if (comparisonResult) {\\n    console.log('Yes');\\n  } else {\\n    console.log('No');\\n  }\\n};\\n\\nprocessInputData(fileSystemModule.readFileSync('/dev/stdin', 'utf8'));\\n\\n//# sourceURL=webpack:///./src/panasonic2020/C.js?");
 
-        }),
+/***/ }),
 
-    "fileSystem":
-        /*!************************!*
-          !*** external "fileSystem" ***!
-          !************************!*/
-        /*! no static exports found */
-        (function(currentUnit, unitOutput) {
+/***/ "fs":
+/*!*********************!*\
+  *** external "fs" ***!
+  \*********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
 
-            eval("module.exports = require(\"fs\");\n\n//# sourceURL=package://external_%22fileSystem%22?");
+eval("module.exports = require(\"fs\");\\n\\n//# sourceURL=webpack:///external_%22fs%22?");
 
-        })
+/***/ })
 
-});
+/******/ });

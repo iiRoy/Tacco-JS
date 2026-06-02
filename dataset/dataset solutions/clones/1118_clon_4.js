@@ -1,49 +1,94 @@
-function createHighValueContainer() {
-  const collectionItems = [];
+const getParentIndex = (idx) => Math.floor((idx - 1) / 2);
+const getLeftChildIndex = (idx) => 2 * idx + 1;
+const getRightChildIndex = (idx) => 2 * idx + 2;
 
-  function addEntry(incomingValue) {
-    let insertionPoint = 0;
-    while (insertionPoint < collectionItems.length && incomingValue < collectionItems[insertionPoint]) {
-      insertionPoint++;
-    }
-    collectionItems.splice(insertionPoint, 0, incomingValue);
+const swapElements = (arr, i, j) => {
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+};
+
+class MaxHeap {
+  constructor() {
+    this.elements = [];
   }
 
-  function removeTop() {
-    if (collectionItems.length === 0) {
+  addValue(val) {
+    this.elements.push(val);
+    this.bubbleUp(this.elements.length - 1);
+  }
+
+  retrieveMax() {
+    if (this.elements.length === 0) {
       return undefined;
     }
-    return collectionItems.shift();
+    if (this.elements.length === 1) {
+      return this.elements.pop();
+    }
+
+    const topValue = this.elements[0];
+    this.elements[0] = this.elements.pop();
+    this.bubbleDown(0);
+    return topValue;
   }
 
-  return {
-    addEntry: addEntry,
-    removeTop: removeTop
-  };
-}
+  bubbleUp(startingIndex) {
+    let current = startingIndex;
+    let parent = getParentIndex(current);
 
-(function initiateProcessing() {
-  const fileSystemAccessor = require('fs');
-  const rawInput = fileSystemAccessor.readFileSync('/dev/stdin', 'utf8');
-  const processedInput = rawInput.trim();
-  const instructionLines = processedInput.split('\n');
-  const actualInstructions = instructionLines.slice(0, -1);
+    while (current > 0 && this.elements[current] > this.elements[parent]) {
+      swapElements(this.elements, current, parent);
+      current = parent;
+      parent = getParentIndex(current);
+    }
+  }
 
-  const priorityManager = createHighValueContainer();
-  let resultBuffer = '';
+  bubbleDown(startingIndex) {
+    let current = startingIndex;
+    const total = this.elements.length;
 
-  actualInstructions.forEach(function(currentDirective) {
-    const firstChar = currentDirective[0];
-    if (firstChar === 'i') {
-      const parts = currentDirective.split(' ');
-      const numericValue = Number(parts[1]);
-      priorityManager.addEntry(numericValue);
-    } else if (firstChar === 'e') {
-      const extractedValue = priorityManager.removeTop();
-      if (extractedValue !== undefined) {
-        resultBuffer += `${extractedValue}\n`;
+    while (true) {
+      let left = getLeftChildIndex(current);
+      let right = getRightChildIndex(current);
+      let largest = current;
+
+      if (left < total && this.elements[left] > this.elements[largest]) {
+        largest = left;
+      }
+
+      if (right < total && this.elements[right] > this.elements[largest]) {
+        largest = right;
+      }
+
+      if (largest !== current) {
+        swapElements(this.elements, current, largest);
+        current = largest;
+      } else {
+        break;
       }
     }
-  });
-  process.stdout.write(resultBuffer);
+  }
+}
+
+(function executeOperations() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const heapInstance = new MaxHeap();
+  const outputBuffer = [];
+
+  const commandDispatch = new Map([
+    ['i', (value) => heapInstance.addValue(Number(value))],
+    ['e', () => outputBuffer.push(`${heapInstance.retrieveMax()}\n`)]
+  ]);
+
+  const processedLines = inputLines.slice(0, -1);
+
+  for (const currentLine of processedLines) {
+    const lineSegments = currentLine.split(' ');
+    const operationKey = lineSegments[0].charAt(0);
+    const handler = commandDispatch.get(operationKey);
+
+    if (handler) {
+      handler(lineSegments[1]);
+    }
+  }
+
+  process.stdout.write(outputBuffer.join(''));
 })();

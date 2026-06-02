@@ -1,130 +1,83 @@
-function   howMuch ( items ,   item ,   s )   {
-  try
-  {
-
-    var
-      recipe,
-      price = items[item].price,
-      sum,
-      flag = false,
-      j;
-
-
-    s = s || [ ] ;
-
-
-    // This comment was originally used for debugging: console.log(item, s);
-
-
-    if ( ( recipe = items[item].recipe ) )
-    {
-      s.push(item);
-      sum = 0;
-      flag = true;
-
-      for ( j = 0 ; j < recipe.length ; j++ )
-      {
-        if ( s.indexOf(recipe[j]) !== -1 )
-        {
-          flag = false;
-          break;
+function howMuch(items, item, s) {
+    try {
+        var recipe, price = items[item].price,
+            sum, flag = false,
+            j;
+        s = s || [];
+        // Debugging: log current item and visited items
+        // console.log(item, s);
+        if (recipe = items[item].recipe) {
+            s.push(item);
+            sum = 0;
+            flag = true;
+            for (j = 0; j < recipe.length; j++) {
+                // Check for circular dependencies
+                if (s.indexOf(recipe[j]) !== -1) {
+                    flag = false;
+                    break;
+                }
+                // Recursively calculate cost of sub-items
+                sum += howMuch(items, recipe[j], s);
+            }
+            // If no circular dependency, update price with minimum
+            if (flag) {
+                price = min(price, sum);
+            }
+            s.pop(); // Backtrack
         }
-
-        sum += howMuch(items, recipe[j], s);
-      }
-
-
-      if ( flag )
-      {
-        price = min(price, sum);
-      }
-
-
-      s.pop();
+    } catch () {
+        // Handle potential errors, e.g., item not found
+        throw item;
     }
-  }
-
-  catch ( )
-  {
-    // An error occurred, likely a circular dependency or undefined item
-    throw item;
-  }
-
-  return price;
+    return price;
 }
-
 
 // Helper function to find the minimum of two numbers
-function   min ( x , y )   {
-  return   x < y   ?   x   :   y ;
+function min(x, y) {
+    return x < y ? x : y;
 }
 
-
-function   main ( )   {
-
-  var
-    i,
-    n,
-    m,
-    line,
-    len = input.length,
-    items;
-
-
-  // Loop through the entire input array
-  for ( i = 0 ; i < len ; )
-  {
-    items = {}; // Initialize items for the current test case
-
-    n = parseInt(input[i++], 10) + i; // Read number of items
-
-    if ( n === i )
-    {
-      break; // End of input
+function main() {
+    var i, n, m, line,
+        len = input.length,
+        items;
+    // Process each test case
+    for (i = 0; i < len;) {
+        items = {};
+        // Read number of items and their prices
+        n = parseInt(input[i++], 10) + i;
+        if (n === i) break; // Exit if no items
+        for (; i < n; i++) {
+            line = input[i].split(' ');
+            items[line[0]] = {
+                price: parseInt(line[1], 10)
+            };
+        }
+        // Read recipes for items
+        m = parseInt(input[i++], 10) + i;
+        for (; i < m; i++) {
+            line = input[i].split(' ');
+            items[line[0]].recipe = line.slice(2);
+        }
+        // Debugging: log the parsed items
+        // console.log(items);
+        // Calculate and print the cost of the final item
+        console.log(howMuch(items, input[i++]));
     }
-
-
-    // Process item definitions
-    for ( ; i < n ; i++ )
-    {
-      line = input[i].split(' ');
-      items[line[0]] = { price: parseInt(line[1], 10) };
-    }
-
-
-    m = parseInt(input[i++], 10) + i; // Read number of recipes
-
-    // Process recipes
-    for ( ; i < m ; i++ )
-    {
-      line = input[i].split(' ');
-      items[line[0]].recipe = line.slice(2);
-    }
-
-
-    // Original debug line was: console.log(items);
-    console.log(howMuch(items, input[i++])); // Calculate and print the result
-  }
 }
 
+// Global variable to store input
+var input = '';
 
-var
-  input = ''; // Global variable to accumulate all standard input
-
-
-// Resume standard input stream
+// Set up standard input stream
 process.stdin.resume();
-
-// Set encoding for standard input
 process.stdin.setEncoding('utf8');
-
-// Event listener for incoming data chunks
-process.stdin.on('data', function ( chunk ) {
-  input += chunk; // Append chunk to the global input string
+// Accumulate input data
+process.stdin.on('data', function(chunk) {
+    input += chunk;
 });
-
-// Event listener for the end of standard input
-process.stdin.on('end', function ( ) {
-  input = input.split('\n'); // Split the accumulated input by newlines
-  main(); // Call the main function to process the input
+// Process input when stream ends
+process.stdin.on('end', function() {
+    input = input.split('\n');
+    main();
 });

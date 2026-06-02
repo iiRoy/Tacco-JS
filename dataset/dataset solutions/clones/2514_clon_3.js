@@ -1,227 +1,162 @@
-const inputReader = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-
-let inputProcessor; // Manages reading and parsing input tokens
-const capturedLines = []; // Stores all lines read from standard input
-
-// Event listener for each line of input
-inputReader.on('line', (currentLine) => {
-  capturedLines.push(currentLine);
+var inputBuffer = [];
+var inputHandler;
+inputReader.on('line', function(inputLine){inputBuffer.push(inputLine);});
+inputReader.on('close', function(){
+  inputHandler = createInputHandler(inputBuffer);
+  console.error("\n");
+  const startTime = Date.now();
+  Main();
+  logPerformanceMetrics(startTime);
 });
 
-// Event listener for when input stream closes
-inputReader.on('close', () => {
-  inputProcessor = setupInputProcessor(capturedLines); // Initialize the input parsing object
-  console.error("\n"); // Add a newline for cleaner debug output separation
+function getNextInt(){return processInputConversion(getNextLine(),1);}
+function getNextStrArray(){return processInputConversion(getNextLine(),2);}
+function getNextIntArray(){return processInputConversion(getNextLine(),4);}
+function getNextCharArray(){return processInputConversion(getNextLine(),6);}
+function getNextLine(){return inputHandler.next();}
+function hasMoreInput(){return inputHandler.hasNext();}
 
-  const executionStartTime = Date.now(); // Record start time for performance measurement
-  ProcessGraphData(); // Execute the main application logic
-  const executionDuration = Date.now() - executionStartTime; // Calculate execution time
+class InputHandler {
+    constructor(sourceLines) {
+        this.sourceLines = sourceLines;
+        this.currentLineIdx = 0;
+        this.totalLineCount = sourceLines.length;
+    }
 
-  logDebugInfo(`Execution Time: ${executionDuration} ms`);
-  logDebugInfo(`Memory Usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
-});
+    hasNext() {
+        return this.currentLineIdx < this.totalLineCount;
+    }
 
-// Utility function for creating a deep copy of an object
-function createDeepCopy(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+    next() {
+        if (!this.hasNext()) {
+            throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+        }
+        const currentLineValue = this.sourceLines[this.currentLineIdx];
+        this.currentLineIdx++;
+        return currentLineValue;
+    }
 }
 
-// Input reading utilities
-function readInteger() { return dataConverter(fetchNextItem(), 1); }
-function readStringArray() { return dataConverter(fetchNextItem(), 2); }
-function readIntegerArray() { return dataConverter(fetchNextItem(), 4); }
-function readCharacterArray() { return dataConverter(fetchNextItem(), 6); }
+function createInputHandler(input) {
+    return new InputHandler(input);
+}
 
-function fetchNextItem() { return inputProcessor.getNextValue(); }
-function hasMoreItems() { return inputProcessor.hasRemainingValues(); }
+function outputResult(s){console.log(s);}
+function debugLog(s){console.error("debug:" + require("util").inspect(s,false,null));}
 
-// Initializes an object responsible for parsing input lines sequentially
-function setupInputProcessor(linesOfInput) {
-  return {
-    inputBuffer: linesOfInput, // Array of input strings
-    currentIndex: 0,           // Current position in the buffer
-    maxIndex: linesOfInput.length, // Total number of lines
+const conversionFunctionsMap = {
+    1: (str) => parseInt(str),
+    2: (str) => str.split(" "),
+    4: (str) => str.split(" ").map(Number),
+    6: (str) => str.split(""),
+    7: (str) => str.split("").map(Number),
+    8: (arr) => arr.join(" "),
+    9: (arr) => arr.join("\n"),
+    0: (arr) => arr.join(""),
+    default: (val) => val
+};
 
-    // Checks if there are more lines to process
-    hasRemainingValues: function() {
-      return (this.currentIndex < this.maxIndex);
-    },
+function processInputConversion(inputVal, conversionMode) {
+    try {
+        const converter = conversionFunctionsMap[conversionMode] || conversionFunctionsMap.default;
+        return converter(inputVal);
+    } catch (e) {
+        return inputVal;
+    }
+}
 
-    // Retrieves the next line from the input buffer
-    getNextValue: function() {
-      if (!this.hasRemainingValues()) {
-        throw new Error("InputBufferExhausted: No more input values available.");
+function logPerformanceMetrics(startTime) {
+    const endTime = Date.now() - startTime;
+    debugLog("time : " + endTime + "ms");
+    debugLog("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+}
+
+function resetGraphNodeStates(nodesCollection) {
+    for (let i = 0; i < nodesCollection.length; i++) {
+        nodesCollection[i].visitedStatus = false;
+        nodesCollection[i].nodeLevel = 1;
+    }
+}
+
+function performBfsTraversal(startNodeId, graphNodesCollection, totalNodesCount) {
+    resetGraphNodeStates(graphNodesCollection);
+
+    const bfsTraversalQueue = [startNodeId];
+    graphNodesCollection[startNodeId].visitedStatus = true;
+    let currentBfsMaxLevel = 0;
+
+    while (bfsTraversalQueue.length > 0) {
+        const currentNode = bfsTraversalQueue.shift();
+        const currentNodeData = graphNodesCollection[currentNode];
+        const currentNeighbors = currentNodeData.connectedNodes;
+        currentBfsMaxLevel = currentNodeData.nodeLevel;
+
+        for (let neighborIndex = 0; neighborIndex < currentNeighbors.length; neighborIndex++) {
+            const neighborId = currentNeighbors[neighborIndex];
+            const neighborNode = graphNodesCollection[neighborId];
+            if (!neighborNode.visitedStatus) {
+                neighborNode.visitedStatus = true;
+                neighborNode.nodeLevel = currentNodeData.nodeLevel + 1;
+                bfsTraversalQueue.push(neighborId);
+            }
+        }
+    }
+    return currentBfsMaxLevel;
+}
+
+function createGraphNode(nodeId) {
+    return {
+        nodeIdentifier: nodeId,
+        connectedNodes: [],
+        visitedStatus: false,
+        nodeLevel: 1
+    };
+}
+
+function Main(){
+  const numNodes = getNextInt();
+  const graphNodes = new Array(numNodes);
+
+  for(let i = 0; i < numNodes; i++){
+    graphNodes[i] = createGraphNode(i);
+  }
+
+  for(let i = 0; i < numNodes; i++){
+    const adjacencyMatrixRow = getNextCharArray();
+    const currentNode = graphNodes[i];
+    for(let j = 0; j < numNodes; j++){
+      if(i !== j && adjacencyMatrixRow[j] === "1"){
+        currentNode.connectedNodes.push(j);
       }
-      return this.inputBuffer[this.currentIndex++];
-    }
-  };
-}
-
-// Function to output results to standard output
-function displayResult(outputValue) {
-  console.log(outputValue);
-}
-
-// Function to output debug information to standard error
-function logDebugInfo(message) {
-  console.error("DEBUG_INFO:", require("util").inspect(message, { colors: true, depth: null }));
-}
-
-// Helper function for converting input data based on a specified format code
-// Format codes:
-// 1: Parse as integer
-// 2: Split string by space into an array of strings
-// 4: Split string by space into an array of numbers
-// 6: Split string into an array of characters
-// 7: Split string into an array of characters and convert each to number
-// 8: Join array elements with space
-// 9: Join array elements with newline
-// 0: Join array elements without separator
-// Default: Return input as is
-function dataConverter(inputValue, formatCode) {
-  try {
-    switch (formatCode) {
-      case 1: return parseInt(inputValue, 10);
-      case 2: return inputValue.split(" ");
-      case 4: return inputValue.split(" ").map(Number);
-      case 6: return inputValue.split("");
-      case 7: return inputValue.split("").map(Number);
-      case 8: return inputValue.join(" ");
-      case 9: return inputValue.join("\n");
-      case 0: return inputValue.join("");
-      default: return inputValue;
-    }
-  } catch (error) {
-    logDebugInfo(`Conversion error for value: ${inputValue}, format: ${formatCode}. Error: ${error.message}`);
-    return inputValue; // Return original value on error
-  }
-}
-
-// Main application logic for graph processing
-function ProcessGraphData() {
-  const numVertices = readInteger(); // Get the number of vertices from input
-
-  // Helper to create a new graph node object with initial state
-  const createGraphNode = (id) => ({
-    vertexId: id,
-    adjacentVertices: [],      // List of connected vertex identifiers
-    isDiscovered: false,       // Flag for BFS traversal (renamed from 'access')
-    pathDistance: -1,          // Shortest distance from the BFS starting node (renamed from 'depth')
-    parentVertex: null         // Added for potential path reconstruction (Type III addition)
-  });
-
-  // Initialize the array of graph nodes
-  const graphStructure = Array.from({ length: numVertices }, (_, i) => createGraphNode(i));
-
-  // Build adjacency list from the input matrix representation
-  for (let i = 0; i < numVertices; ++i) {
-    const adjacencyRowChars = readCharacterArray(); // Read row as array of characters ('0' or '1')
-    for (let j = 0; j < numVertices; ++j) {
-      // Add an edge if it's not a self-loop and the character indicates a connection
-      if (i !== j && adjacencyRowChars[j] === '1') {
-        graphStructure[i].adjacentVertices.push(j);
-      }
     }
   }
-
-  let overallLongestShortestPath = -1; // Stores the maximum distance found across all BFS runs
-
-  // Iterate through each node, performing BFS to find the longest shortest path from it
-  for (let startVertexIndex = 0; startVertexIndex < numVertices; ++startVertexIndex) {
-    const currentTraversalMaxDistance = findMaxDistanceBFS(startVertexIndex, graphStructure, numVertices);
-
-    // Update the overall maximum if a longer path is found
-    if (currentTraversalMaxDistance > overallLongestShortestPath) {
-      overallLongestShortestPath = currentTraversalMaxDistance;
-      // The original `maeList = list;` was unused and potentially problematic due to reference.
-      // It has been removed. The bipartite check will now use the state of `graphStructure`
-      // after the *last* BFS run, mirroring the original's implicit behavior.
+  
+  let overallMaxGraphDepth = -1;
+  for(let i = 0; i < numNodes; i++){
+    const currentBfsDepth = performBfsTraversal(i, graphNodes, numNodes);
+    if(overallMaxGraphDepth < currentBfsDepth){
+      overallMaxGraphDepth = currentBfsDepth;
     }
   }
+  
+  for(let i = 0; i < numNodes - 1; i++){
+    for(let j = i + 1; j < numNodes; j++){
+      const nodeA = graphNodes[i];
+      const nodeB = graphNodes[j];
 
-  // Perform a specific graph property check (similar to bipartite check)
-  // This check looks for adjacent nodes whose path distances from the last BFS source have the same parity.
-  // If such a pair exists, it implies a certain graph condition is not met.
-  const isConditionViolated = checkAdjacencyParityCondition(graphStructure, numVertices);
-  if (isConditionViolated) {
-    displayResult(-1); // Output -1 if the condition is violated
-    return;
-  }
+      const isConnectedAtoB = nodeA.connectedNodes.includes(j);
+      const isConnectedBtoA = nodeB.connectedNodes.includes(i);
 
-  displayResult(overallLongestShortestPath); // Output the determined longest shortest path length
-}
-
-// Helper function to check the adjacency parity condition
-function checkAdjacencyParityCondition(verticesArray, count) {
-  for (let i = 0; i < count - 1; ++i) {
-    for (let j = i + 1; j < count; ++j) {
-      // Check if there's an undirected edge between vertex i and vertex j
-      const iToJHasEdge = verticesArray[i].adjacentVertices.includes(j);
-      const jToIHasEdge = verticesArray[j].adjacentVertices.includes(i);
-
-      if (iToJHasEdge && jToIHasEdge) {
-        // If an edge exists, check if their path distances from the BFS source have the same parity
-        if ((verticesArray[i].pathDistance % 2) === (verticesArray[j].pathDistance % 2)) {
-          return true; // Condition violated
+      if(isConnectedAtoB && isConnectedBtoA){
+        if(nodeA.nodeLevel % 2 === nodeB.nodeLevel % 2){
+          outputResult(-1);
+          return;
         }
       }
     }
   }
-  return false; // Condition not violated
-}
-
-// Performs a Breadth-First Search starting from a given vertex
-// Returns the maximum distance found from the startVertex within this specific traversal.
-function findMaxDistanceBFS(startVertex, allVertices, totalVertexCount) {
-  // Guard clause for invalid input parameters
-  if (!allVertices || totalVertexCount <= 0 || startVertex < 0 || startVertex >= totalVertexCount) {
-    logDebugInfo(`BFS Error: Invalid input parameters for startVertex ${startVertex}`);
-    return 0;
-  }
-
-  // Reset traversal state for all nodes before starting a new BFS (Type III addition: helper function)
-  resetAllVertexStates(allVertices, totalVertexCount);
-
-  const explorationQueue = []; // Queue for BFS traversal
-  const initialNode = allVertices[startVertex];
-
-  initialNode.isDiscovered = true;
-  initialNode.pathDistance = 0; // Distance from source to itself is 0
-  explorationQueue.push(startVertex);
-
-  let currentMaxDistanceInTraversal = 0; // Tracks the max distance found in *this* BFS run
-
-  // BFS core loop: continue as long as there are nodes to explore
-  while (explorationQueue.length > 0) {
-    const activeVertexIndex = explorationQueue.shift(); // Dequeue the next vertex to process
-    const activeVertex = allVertices[activeVertexIndex];
-
-    // Update the maximum distance encountered so far in this traversal
-    currentMaxDistanceInTraversal = Math.max(currentMaxDistanceInTraversal, activeVertex.pathDistance);
-
-    // Explore all neighbors of the active vertex
-    for (const neighborId of activeVertex.adjacentVertices) {
-      const neighborNode = allVertices[neighborId];
-      // If the neighbor hasn't been discovered yet
-      if (!neighborNode.isDiscovered) {
-        neighborNode.isDiscovered = true;
-        const newDistance = activeVertex.pathDistance + 1; // Calculate new distance
-        neighborNode.pathDistance = newDistance;
-        neighborNode.parentVertex = activeVertexIndex; // Set parent (Type III addition)
-        explorationQueue.push(neighborId); // Enqueue the newly discovered neighbor
-      }
-    }
-  }
-  return currentMaxDistanceInTraversal;
-}
-
-// Helper function to reset the traversal state of all graph vertices (Type III addition)
-function resetAllVertexStates(vertices, count) {
-  for (let i = 0; i < count; ++i) {
-    vertices[i].isDiscovered = false;
-    vertices[i].pathDistance = -1; // Reset distance to unvisited state
-    vertices[i].parentVertex = null; // Clear parent reference
-  }
+  outputResult(overallMaxGraphDepth);
 }

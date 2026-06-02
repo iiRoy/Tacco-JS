@@ -1,70 +1,65 @@
-var processInputData = function(rawDataString) {
-  // Divide the raw string into an array of lines for processing.
-  var inputLines = rawDataString.split('\n');
+var processInput = function (rawData) {
+  // Split the entire input string into individual lines.
+  var lineSegments = rawData.split('\n');
 
-  // Parse the first number from the input; its value is not utilized in the core logic.
-  var firstLineVal = parseInt(inputLines[0], 10);
+  // Parse the first line as an integer, though it's not used in the core logic.
+  var unusedCount = parseInt(lineSegments[0]);
 
-  // Extract the second line, split it by spaces, and convert each part to an integer.
-  var availableQuantities = inputLines[1].split(' ').map(itemStr => parseInt(itemStr, 10));
+  // Process the second line: split by space, then convert each part to an integer.
+  var availableItems = lineSegments[1].split(' ').map(itemStr => parseInt(itemStr));
+  // Sort the array of available items in ascending order.
+  availableItems.sort();
 
-  // Sort the array of available quantities. Note: default sort is lexicographical.
-  availableQuantities = availableQuantities.sort();
+  // Parse the third line as an integer, representing the count of target items.
+  var requiredCount = parseInt(lineSegments[2]);
 
-  // Parse the third line to determine the total count of required items.
-  var numRequirements = parseInt(inputLines[2], 10);
-
-  // Extract the fourth line, split by spaces, and convert each segment to an integer.
-  var requiredItems = inputLines[3].split(' ').map(elementString => parseInt(elementString, 10));
-
-  // Sort the array of required items. Note: default sort is lexicographical.
-  requiredItems = requiredItems.sort();
+  // Process the fourth line: split by space, then convert each part to an integer.
+  var targetItems = lineSegments[3].split(' ').map(itemStr => parseInt(itemStr));
+  // Sort the array of target items in ascending order.
+  targetItems.sort();
 
   // Initialize the final outcome string to 'No'.
-  var resultStatus = 'No';
+  var finalResult = 'No';
+  // Declare a variable to hold the current target item being processed.
+  var currentItem;
 
-  // Declare a variable to temporarily hold the requirement being checked.
-  var currentRequirement;
+  // Iterate through the target items based on the 'requiredCount'.
+  for (var outerIdx = 0; outerIdx < requiredCount; outerIdx++) {
+    // Remove and retrieve the first element from the 'targetItems' array.
+    currentItem = targetItems.shift();
+    // Get the current length of the 'availableItems' array.
+    var currentLength = availableItems.length;
 
-  // Iterate through each of the specified requirements.
-  for (var reqIndex = 0; reqIndex < numRequirements; reqIndex = reqIndex + 1) {
-    // Retrieve the next requirement from the front of the required items list.
-    currentRequirement = requiredItems.shift();
-
-    // Determine the current number of items remaining in the available list.
-    var availableCount = availableQuantities.length;
-
-    // Search for a match for the current requirement within the available items.
-    for (var itemIndex = 0; itemIndex < availableCount; itemIndex++) {
-      // If a matching item is found:
-      if (currentRequirement == availableQuantities[itemIndex]) {
-        // Remove the matched item and all preceding items from the available list.
-        availableQuantities = availableQuantities.slice(itemIndex + 1);
-        // Exit this inner loop as the requirement has been fulfilled.
+    // Iterate through the 'availableItems' to find a match for 'currentItem'.
+    for (var innerIdx = 0; innerIdx < currentLength; innerIdx++) {
+      // If a match is found,
+      if (currentItem === availableItems[innerIdx]) {
+        // Remove the matched item and all preceding items from 'availableItems'.
+        availableItems = availableItems.slice(innerIdx + 1);
+        // Exit the inner loop as the current target item has been processed.
         break;
       }
     }
   }
 
-  // After all requirements are processed, append a hexadecimal zero to the required items array.
-  requiredItems.push(0x00);
+  // After the main processing loop, add a zero to the 'targetItems' array.
+  targetItems.push(0);
+  // Create a new array containing only the number zero for comparison.
+  var comparisonArray = [0];
 
-  // Define a distinct array containing a single hexadecimal zero for comparison purposes.
-  var comparisonArray = [0x00];
-
-  // Compare the 'requiredItems' array with 'comparisonArray'.
-  // In JavaScript, direct array comparison using '==' checks for reference equality,
-  // meaning this condition will always evaluate to false as they are distinct objects.
-  if (requiredItems == comparisonArray) {
-    resultStatus = 'Yes'; // This specific code path is effectively unreachable under default JS array comparison.
+  // Check if the 'targetItems' array is strictly equal (same reference) to 'comparisonArray'.
+  // Due to JavaScript's array comparison by reference, this condition will typically be false
+  // unless 'targetItems' somehow becomes the exact same object as 'comparisonArray'.
+  if (targetItems === comparisonArray) {
+    finalResult = 'Yes'; // This line is practically unreachable under normal circumstances.
   }
 
-  // Display the determined result status.
-  console.log(resultStatus);
+  // Output the determined final result to the console.
+  console.log(finalResult);
 
-  // Conclude the function by returning a numeric value, typically signifying successful execution.
-  return 0x0;
+  // The function returns 0, indicating successful execution.
+  return 0;
 };
 
-// Invoke the primary function, reading input from standard input stream, decoding as UTF-8, and trimming whitespace.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+// Read input from standard input, decode as UTF-8, and remove leading/trailing whitespace.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,63 +1,48 @@
-const transformValue = (inputNumber) => inputNumber - (inputNumber > 9 ? 9 : 0);
+const processDigitValue = (val) => val < 10 ? val : val - 9;
 
-const rawDataString = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const dataLines = rawDataString.trim().split('\n');
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split('\n');
 
-const [
-  _lineOne,
-  characterSequenceRaw,
-  _lineThree,
-  numericFactorSequenceRaw
-] = dataLines;
+const _unusedN = Number(inputLines.shift());
+const cardPattern = inputLines.shift().split('');
+const _unusedA = Number(inputLines.shift());
+const candidateDigits = inputLines.shift().split(' ').map(Number);
 
-const characterSequence = characterSequenceRaw.split('');
-const numericFactorSequence = numericFactorSequenceRaw.split(' ').map(Number);
-
-const { baseSumComponent, multiplierFactors } = characterSequence.reduce(
-  (accumulatorObject, currentCharacter, characterIndex) => {
-    if (currentCharacter === '*') {
-      accumulatorObject.multiplierFactors.push(characterIndex % 2 === 0 ? 1 : 2);
+const { multiplicationFactors, baseSum } = cardPattern.reduce((accumulator, char, index) => {
+    if (char === '*') {
+        accumulator.multiplicationFactors.push(index % 2 === 0 ? 1 : 2);
     } else {
-      const digitNumerical = parseInt(currentCharacter, 10);
-      if (characterIndex % 2 === 0) {
-        accumulatorObject.baseSumComponent += digitNumerical;
-      } else {
-        accumulatorObject.baseSumComponent += transformValue(digitNumerical * 2);
-      }
+        const digitValue = Number(char);
+        accumulator.baseSum += (index % 2 === 0 ? digitValue : processDigitValue(digitValue * 2));
     }
-    return accumulatorObject;
-  },
-  { baseSumComponent: 0, multiplierFactors: [] }
-);
+    return accumulator;
+}, { multiplicationFactors: [], baseSum: 0 });
 
-const MAXIMUM_POSSIBLE_SUM = 100;
+const maxPossibleSum = 100;
+let currentSumCounts = Array(maxPossibleSum).fill(0);
+currentSumCounts[0] = 1;
 
-let pathCountsTable = [Array.from({ length: MAXIMUM_POSSIBLE_SUM }, () => 0)];
-pathCountsTable[0][0] = 1;
+multiplicationFactors.forEach((currentFactor) => {
+    const nextSumCounts = Array(maxPossibleSum).fill(0);
+    currentSumCounts.forEach((count, currentPartialSum) => {
+        if (count === 0) return;
 
-const finalRowOfPaths = multiplierFactors.reduce((currentIntermediateRow, currentMultiplierValue) => {
-  const nextIntermediateRow = Array.from({ length: MAXIMUM_POSSIBLE_SUM }, () => 0);
-
-  numericFactorSequence.forEach((currentNumericFactor) => {
-    const valueToAddAfterTransformation = transformValue(currentNumericFactor * currentMultiplierValue);
-
-    currentIntermediateRow.forEach((countFromPreviousState, currentSumValue) => {
-      if (countFromPreviousState === 0) return;
-
-      const newAccumulatedSum = currentSumValue + valueToAddAfterTransformation;
-      if (newAccumulatedSum < MAXIMUM_POSSIBLE_SUM) {
-        nextIntermediateRow[newAccumulatedSum] += countFromPreviousState;
-      }
+        candidateDigits.forEach((digit) => {
+            const valueToAdd = processDigitValue(digit * currentFactor);
+            const newPartialSum = currentPartialSum + valueToAdd;
+            if (newPartialSum < maxPossibleSum) {
+                nextSumCounts[newPartialSum] += count;
+            }
+        });
     });
-  });
-  return nextIntermediateRow;
-}, pathCountsTable[0]);
+    currentSumCounts = nextSumCounts;
+});
 
-const finalAccumulatedCount = finalRowOfPaths.reduce((totalCount, countAtThisSum, sumIndex) => {
-  if ((baseSumComponent + sumIndex) % 10 === 0) {
-    return totalCount + countAtThisSum;
-  }
-  return totalCount;
+const totalValidCombinations = currentSumCounts.reduce((accumulator, count, finalPartialSum) => {
+    if ((baseSum + finalPartialSum) % 10 === 0) {
+        return accumulator + count;
+    }
+    return accumulator;
 }, 0);
 
-console.log(finalAccumulatedCount);
+console.log(totalValidCombinations);

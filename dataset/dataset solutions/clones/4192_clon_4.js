@@ -1,21 +1,26 @@
-'use strict'
+'use strict';
 
-function evaluateNumericalProperty(sourceTextValue) {
-    const rawNumericForm = Number(sourceTextValue)
-    let digitAccumulation = 0
-    let transientNumber = rawNumericForm
+function processInput(sourceData) {
+    const initialValue = Number(sourceData);
+    let currentNumber = initialValue;
+    let digitSummation = 0;
 
-    while (transientNumber > 0) {
-        digitAccumulation += transientNumber % 10
-        transientNumber = Math.floor(transientNumber / 10)
+    if (currentNumber === 0) {
+        digitSummation = 0;
+    } else {
+        while (currentNumber > 0) {
+            digitSummation += currentNumber % 10;
+            currentNumber = Math.floor(currentNumber / 10);
+        }
     }
-
-    const divisibilityCondition = Number.isInteger(rawNumericForm / digitAccumulation)
-    const outcomeMapping = ['No', 'Yes']
-    const finalOutcomeStatement = outcomeMapping[divisibilityCondition ? 1 : 0]
-
-    console.log(finalOutcomeStatement)
+    
+    let finalVerdict;
+    if (initialValue % digitSummation === 0) {
+        finalVerdict = 'Yes';
+    } else {
+        finalVerdict = 'No';
+    }
+    console.log(finalVerdict);
 }
 
-const receivedPayload = require('fs').readFileSync('/dev/stdin', 'utf8')
-evaluateNumericalProperty(receivedPayload)
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

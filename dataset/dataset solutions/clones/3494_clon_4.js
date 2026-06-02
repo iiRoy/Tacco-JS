@@ -1,49 +1,47 @@
 'use strict';
 
-const measureDistance = (xOne, yOne, xTwo, yTwo) => Math.abs(xOne - xTwo) + Math.abs(yOne - yTwo);
-
-const determinePyramidAttributes = (rawData) => {
-    const dataSegments = rawData.split('\n');
-    const totalObservationCount = Number(dataSegments[0]);
-
-    const observationRecords = dataSegments.slice(1, 1 + totalObservationCount).map(lineText => {
-        const numericFields = lineText.split(' ').map(Number);
+const processInputData = (rawData) => {
+    const dataLines = rawData.split('\n');
+    const totalPoints = parseInt(dataLines[0]);
+    const recordedObservations = dataLines.slice(1, 1 + totalPoints).map(lineContent => {
+        const coordinateParts = lineContent.split(' ');
         return {
-            spotX: numericFields[0],
-            spotY: numericFields[1],
-            elevation: numericFields[2],
+            coordX: parseInt(coordinateParts[0]),
+            coordY: parseInt(coordinateParts[1]),
+            elevation: parseInt(coordinateParts[2])
         };
     });
+    return { totalPoints, recordedObservations };
+};
 
-    const coordinateRange = Array.from({ length: 101 }, (_, index) => index);
+const findCentralPeak = (processedData) => {
+    const { recordedObservations } = processedData;
 
-    const verifiedCenter = coordinateRange.flatMap(centerXCandidate =>
-        coordinateRange.map(centerYCandidate => ({ centerX: centerXCandidate, centerY: centerYCandidate }))
-    ).find(potentialCenter => {
-        const initialReference = observationRecords[0];
-        const calculatedPeakElevation = initialReference.elevation +
-                                        measureDistance(potentialCenter.centerX, potentialCenter.centerY, initialReference.spotX, initialReference.spotY);
+    const searchGridResult = Array.from({ length: 101 }, (_, currentXPosition) => {
+        return Array.from({ length: 101 }, (_, currentYPosition) => {
+            const derivedElevations = recordedObservations.map(observation => {
+                return observation.elevation + Math.abs(currentXPosition - observation.coordX) + Math.abs(currentYPosition - observation.coordY);
+            });
 
-        const allRecordsAreConsistent = observationRecords.every(currentRecord => {
-            const derivedElevationAtSpot = calculatedPeakElevation -
-                                           measureDistance(potentialCenter.centerX, potentialCenter.centerY, currentRecord.spotX, currentRecord.spotY);
+            const firstDerivedElevation = derivedElevations[0];
+            const allDerivedElevationsConsistent = derivedElevations.every(eVal => eVal === firstDerivedElevation);
 
-            if (currentRecord.elevation === 0) {
-                return derivedElevationAtSpot === 0;
-            } else {
-                return derivedElevationAtSpot === currentRecord.elevation;
+            if (allDerivedElevationsConsistent) {
+                return { solutionFound: true, xCoord: currentXPosition, yCoord: currentYPosition, peakElevation: firstDerivedElevation };
             }
+            return { solutionFound: false };
         });
+    }).flatMap(rowResults => rowResults)
+      .find(resultItem => resultItem.solutionFound);
 
-        return allRecordsAreConsistent;
-    });
-
-    if (verifiedCenter) {
-        const initialReference = observationRecords[0];
-        const finalPeakElevation = initialReference.elevation +
-                                   measureDistance(verifiedCenter.centerX, verifiedCenter.centerY, initialReference.spotX, initialReference.spotY);
-        console.log(verifiedCenter.centerX, verifiedCenter.centerY, finalPeakElevation);
+    if (searchGridResult && searchGridResult.solutionFound) {
+        console.log(searchGridResult.xCoord, searchGridResult.yCoord, searchGridResult.peakElevation);
     }
 };
 
-determinePyramidAttributes(require("fs").readFileSync("/dev/stdin", "utf8"));
+const applicationEntry = (inputString) => {
+    const parsedData = processInputData(inputString);
+    findCentralPeak(parsedData);
+};
+
+applicationEntry(require("fs").readFileSync("/dev/stdin", "utf8"));

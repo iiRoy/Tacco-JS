@@ -1,49 +1,42 @@
-/* This module processes incoming textual records. */
-function primaryProcess ( rawData )
-{
-  // Divide the input into individual lines using the newline character.
-  rawData = rawData . split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // Divide the incoming raw data into an array of individual lines.
+  let parsedLines = rawData.split("\n");
 
-  // Convert the first line's content into an integer, using base 10.
-  var totalCount = parseInt ( rawData [ 0 ] , 0xa ) ;
+  // Convert the first line to an integer, representing the overall length.
+  const totalLength = parseInt(parsedLines[0], 10);
 
-  // Compute half of the parsed numerical value.
-  var halfCount = totalCount / 2 ;
+  // Calculate the length of each half segment.
+  const halfLength = totalLength / 2;
 
-  // Extract the second line as the primary data string.
-  var mainString = rawData [ 1 ] ;
+  // Obtain the second line, which is the string to be evaluated.
+  const targetString = parsedLines[1];
 
-  // Evaluate a specific condition based on the total count.
-  // Note: This condition checks if the result of (!totalCount) % 2 equals 0.
-  if ( ( ! totalCount ) % 2 === 0 )
-  {
-    console . log ( 'Negative' ) ; // Output 'Negative' if the condition is met.
-  }
-  else
-  {
-    // Initialize an empty array for storing string partitions.
-    var segmentArray = [ ] ;
+  // Evaluate if the total length is an odd number.
+  // The expression `! totalLength % 2 === 0` effectively checks if `totalLength` is odd.
+  // If `totalLength` is odd, `totalLength % 2` is `1`. `!1` is `false`. `false === 0` is `true`.
+  // If `totalLength` is even, `totalLength % 2` is `0`. `!0` is `true`. `true === 0` is `false`.
+  if ( ! totalLength % 2 === 0 ) {
+    console.log('No'); // If the length is odd, it cannot be split into two equal parts.
+  } else {
+    // Initialize an array to hold the two resulting string segments.
+    let stringParts = [];
 
-    // Iterate to partition the main string into sub-strings.
-    for ( var loopIndex = 0 ; loopIndex < mainString . length / halfCount ; loopIndex ++ )
-    {
-      // Extract a portion of the main string and append it to the array.
-      segmentArray . push ( mainString . substr ( loopIndex * halfCount , halfCount ) ) ;
+    // Iterate to extract the two halves of the target string.
+    // The loop runs twice because `targetString.length / halfLength` will be `totalLength / (totalLength / 2)`, which simplifies to `2`.
+    for (let idx = 0; idx < targetString.length / halfLength; idx++) {
+      // Extract a substring of `halfLength` characters, starting at `idx * halfLength`.
+      stringParts.push(targetString.substr(idx * halfLength, halfLength));
     }
 
-    // A previously commented-out debug statement: // console.log(segmentArray);
-
-    // Compare the initial two elements of the partitioned array.
-    if ( segmentArray [ 0 ] === segmentArray [ 1 ] )
-    {
-      console . log ( 'Positive' ) ; // If they are identical, output 'Positive'.
-    }
-    else
-    {
-      console . log ( 'Negative' ) ; // Otherwise, output 'Negative'.
+    // Compare the first and second extracted string segments.
+    if (stringParts[0] === stringParts[1]) {
+      console.log('Yes'); // If both segments are identical, output 'Yes'.
+    } else {
+      console.log('No'); // Otherwise, if they differ, output 'No'.
     }
   }
 }
 
-// Do not modify the following segment, it handles file system operations and function invocation.
-primaryProcess ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This section handles reading from standard input and invoking the main processing function.
+// It should remain unaltered to ensure proper execution in the given environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

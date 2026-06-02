@@ -1,61 +1,54 @@
-const ioSetup = {
+const inputSettings = {
     sourcePath: '/dev/stdin',
-    lineDelimiter: '\n'
+    lineSeparator: '\n'
 };
 
-const fileContents = require('fs').readFileSync(ioSetup.sourcePath, 'utf-8');
-const processedInput = fileContents.split(ioSetup.lineDelimiter);
+const inputLineData = require('fs').readFileSync(inputSettings.sourcePath, 'utf-8').split(inputSettings.lineSeparator);
 
-const rotationAngle = Math.PI / 3.0;
-const cosineValue = Math.cos(rotationAngle);
-const sineValue = Math.sin(rotationAngle);
+const makePoint = (coordX, coordY) => [coordX, coordY];
 
-const transformSegment = (segmentStart, segmentEnd) => {
-    const xA = segmentStart[0];
-    const yA = segmentStart[1];
-    const xB = segmentEnd[0];
-    const yB = segmentEnd[1];
-
-    const firstThirdX = (2 * xA + xB) / 3;
-    const firstThirdY = (2 * yA + yB) / 3;
-
-    const secondThirdX = (xA + 2 * xB) / 3;
-    const secondThirdY = (yA + 2 * yB) / 3;
-
-    const segmentDx = secondThirdX - firstThirdX;
-    const segmentDy = secondThirdY - firstThirdY;
-
-    const rotatedApexX = segmentDx * cosineValue - segmentDy * sineValue + firstThirdX;
-    const rotatedApexY = segmentDx * sineValue + segmentDy * cosineValue + firstThirdY;
-
-    return [
-        [firstThirdX, firstThirdY],
-        [rotatedApexX, rotatedApexY],
-        [secondThirdX, secondThirdY]
-    ];
-};
-
-const generateFractalPath = (operationCount) => {
-    let currentPointList = [[0.0, 0.0], [100.0, 0.0]];
-
-    for (let currentStep = 0; currentStep < operationCount; currentStep++) {
-        const nextPointList = [currentPointList[0]];
-
-        for (let i = 0; i < currentPointList.length - 1; i++) {
-            const pA = currentPointList[i];
-            const pB = currentPointList[i+1];
-
-            const intermediatePoints = transformSegment(pA, pB);
-            
-            nextPointList.push(...intermediatePoints);
-            nextPointList.push(pB);
-        }
-        currentPointList = nextPointList;
+const calculateKochFractal = (iterationCount) => {
+    if (iterationCount === 0) {
+        return [makePoint(0.0, 0.0), makePoint(100.0, 0.0)];
     }
-    return currentPointList;
+
+    let currentSegmentPoints = [makePoint(0.0, 0.0), makePoint(100.0, 0.0)];
+
+    const rotationCos = Math.cos(Math.PI / 3.0);
+    const rotationSin = Math.sin(Math.PI / 3.0);
+
+    for (let currentLevel = 0; currentLevel < iterationCount; currentLevel++) {
+        const nextLevelPoints = [];
+        for (let segmentIndex = 0; segmentIndex < currentSegmentPoints.length - 1; segmentIndex++) {
+            const startPoint = currentSegmentPoints[segmentIndex];
+            const endPoint = currentSegmentPoints[segmentIndex + 1];
+
+            const firstThirdX = (2 * startPoint[0] + endPoint[0]) / 3;
+            const firstThirdY = (2 * startPoint[1] + endPoint[1]) / 3;
+            const firstThird = makePoint(firstThirdX, firstThirdY);
+
+            const secondThirdX = (startPoint[0] + 2 * endPoint[0]) / 3;
+            const secondThirdY = (startPoint[1] + 2 * endPoint[1]) / 3;
+            const secondThird = makePoint(secondThirdX, secondThirdY);
+
+            const deltaX = secondThirdX - firstThirdX;
+            const deltaY = secondThirdY - firstThirdY;
+            const rotatedX = deltaX * rotationCos - deltaY * rotationSin + firstThirdX;
+            const rotatedY = deltaX * rotationSin + deltaY * rotationCos + firstThirdY;
+            const rotatedPoint = makePoint(rotatedX, rotatedY);
+
+            nextLevelPoints.push(startPoint);
+            nextLevelPoints.push(firstThird);
+            nextLevelPoints.push(rotatedPoint);
+            nextLevelPoints.push(secondThird);
+        }
+        nextLevelPoints.push(currentSegmentPoints[currentSegmentPoints.length - 1]);
+        currentSegmentPoints = nextLevelPoints;
+    }
+    return currentSegmentPoints;
 };
 
-const fractalLevel = parseInt(processedInput[0]);
-generateFractalPath(fractalLevel).forEach(pointTuple => {
-    console.log(pointTuple[0].toFixed(8), pointTuple[1].toFixed(8));
-});
+calculateKochFractal(parseInt(inputLineData[0]))
+    .forEach(pointCoords => {
+        console.log(pointCoords[0].toFixed(8), pointCoords[1].toFixed(8));
+    });

@@ -1,49 +1,54 @@
-// This routine processes the complete dataset provided as a string.
-function ProcessData(incomingText) {
+// This function processes the incoming data to determine a specific outcome.
+function ProcessInput(rawData) {
+    // Initialize the final outcome variable to a default error state.
+    let finalResult = -1;
 
-  let finalOutcome = -1; // Initialize the computed result
+    // Clean up the raw input by trimming whitespace and splitting it into individual lines.
+    let processedLines = rawData.trim().split("\n");
 
-  // The input string is first trimmed and then split into individual lines.
-  incomingText = incomingText.trim().split("\n");
+    // Extract the first numerical value from the first line. This value dictates the size of an array.
+    const arrayCapacity = parseInt(processedLines[0].split(' ').map((val) => (parseInt(val)))[0]);
 
-  // Extract the first number from the first line, which indicates the count of elements.
-  const elementCount = incomingText[0].split(' ').map((valString) => (Number.parseInt(valString)))[0];
+    // Obtain the subsequent lines, which contain the actual data segments for processing.
+    const dataSegments = processedLines.slice(1);
 
-  // Retrieve all subsequent lines of data, excluding the first line.
-  const itemRows = incomingText.slice(1);
+    // Create a new array with the determined capacity, pre-filling all its positions with a placeholder character.
+    let outcomeArray = new Array(arrayCapacity).fill('a');
 
-  // Initialize an array with a default placeholder character, 'a', for the specified count.
-  let targetArray = new Array(elementCount).fill('a');
+    // Iterate through each data segment to populate the outcome array based on the segment's content.
+    for (let segmentIndex = 0; segmentIndex < dataSegments.length; ++segmentIndex) {
+        // Parse the current segment into an array of integers.
+        const currentSegment = dataSegments[segmentIndex].split(' ').map((val) => (parseInt(val)));
+        // Use the first integer as an index (adjusting for zero-based indexing) and the second as the value to store.
+        outcomeArray[currentSegment[0] - 1] = currentSegment[1];
+    }
 
-  // Iterate through each of the data rows to populate the target array.
-  for (let recordIndex = 0; recordIndex < itemRows.length; recordIndex++) {
-    // Parse the current row into an array of two integers.
-    const currentEntryPair = itemRows[recordIndex].split(' ').map((numStr) => (Number.parseInt(numStr)));
+    // Join the elements of the outcome array into a single string.
+    // Then, clean this string: first, remove any leading placeholder characters.
+    // Second, replace any remaining placeholder characters within the string with '0'.
+    const manipulatedString = outcomeArray.join("").replace(/^a*/, '').replace(/a/g, '0');
 
-    // Assign the second integer to the position indicated by the first integer (adjusted for zero-based indexing).
-    targetArray[currentEntryPair[0] - 1] = currentEntryPair[1];
-  }
+    // Convert the cleaned string to an integer and then immediately back to a string.
+    // This step is crucial for handling cases where the string might represent a number with leading zeros,
+    // effectively removing them if they are not significant.
+    const numericalRepresentation = parseInt(manipulatedString).toString();
 
-  // Combine the array elements into a single string,
-  // then remove any leading 'a' characters, and replace all remaining 'a's with '0'.
-  const processedSequence = targetArray.join("").replace(/^a*/, '').replace(/a/g, '0');
+    // Evaluate the manipulated string to assign the final result based on specific conditions.
+    if (manipulatedString === '00') {
+        finalResult = 100; // Special case: if the string is '00', the result is 100.
+    } else if (manipulatedString === '0') {
+        finalResult = 10; // Special case: if the string is '0', the result is 10.
+    } else if (manipulatedString === numericalRepresentation) {
+        // If the manipulated string is identical to its integer-then-string conversion,
+        // it means no significant leading zeros were removed, so parse it as an integer.
+        finalResult = parseInt(numericalRepresentation);
+    }
 
-  // Convert the processed string to an integer and then back to a string for comparison.
-  const numericalRepresentation = Number.parseInt(processedSequence).toString();
-
-  // Evaluate the processed string to determine the final outcome.
-  if (processedSequence === '00') {
-    finalOutcome = 100; // Special case for '00'
-  } else if (processedSequence === '0') {
-    finalOutcome = 10; // Special case for '0'
-  } else if (processedSequence === numericalRepresentation) {
-    finalOutcome = Number.parseInt(numericalRepresentation); // If string matches its numeric form, use the numeric value.
-  }
-
-  // Output the calculated final outcome.
-  console.log(finalOutcome);
+    // Output the computed final result to the console.
+    console.log(finalResult);
 }
 
-// The following lines manage standard input/output and should not be altered.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
-// ProcessData(require('fs').readFileSync('./sample_data.txt', 'utf-8'));
+// The following lines are responsible for reading input from standard input
+// and invoking the main processing function. These should remain unaltered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// ProcessInput(require('fs').readFileSync('./input.txt', 'utf-8'));

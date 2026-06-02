@@ -1,24 +1,18 @@
-function calculateNetValue(dataInput) {
-  const allLines = dataInput.split('\n');
-  const firstCollection = allLines[1].split(' ').map(Number);
-  const secondCollection = allLines[2].split(' ').map(Number);
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const itemCount = Number(lineSegments[0]);
+  const valueStrings = lineSegments[1].split(' ');
+  const costStrings = lineSegments[2].split(' ');
 
-  function sumPositiveDifferences(index, currentTotal) {
-    if (index >= firstCollection.length) {
-      return currentTotal;
-    }
+  const numericValues = valueStrings.map(Number);
+  const numericCosts = costStrings.map(Number);
 
-    const valA = firstCollection[index];
-    const valB = secondCollection[index];
-    const differential = valA - valB;
+  const totalGain = numericValues.reduce((accumulatedProfit, currentVal, index) => {
+    const correspondingCost = numericCosts[index];
+    return accumulatedProfit + Math.max(0, currentVal - correspondingCost);
+  }, 0);
 
-    const updatedTotal = currentTotal + (differential > 0 ? differential : 0);
-
-    return sumPositiveDifferences(index + 1, updatedTotal);
-  }
-
-  const finalOutcome = sumPositiveDifferences(0, 0);
-  console.log(finalOutcome);
+  console.log(totalGain);
 }
 
-calculateNetValue(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

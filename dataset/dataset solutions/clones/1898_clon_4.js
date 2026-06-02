@@ -1,43 +1,25 @@
 'use strict';
 
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const contentLines = sourceData.trim().split('\n');
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = rawInput.split('\n');
 
-const structureHeightStrings = contentLines[1].split(' ');
-const actualElevations = structureHeightStrings.map(str => parseInt(str, 10));
+const towerHeights = lines[1].split(' ').map(Number);
+const numTowers = towerHeights.length;
 
-const connectionGraph = contentLines.slice(2).reduce((graphAccumulator, currentLine) => {
-  const connectionPoints = currentLine.split(' ').map(s => parseInt(s, 10) - 1);
-  const pointAlpha = connectionPoints[0];
-  const pointBeta = connectionPoints[1];
+const connectionMap = Array.from({ length: numTowers }, () => []);
 
-  if (!graphAccumulator.has(pointAlpha)) {
-    graphAccumulator.set(pointAlpha, new Set());
-  }
-  if (!graphAccumulator.has(pointBeta)) {
-    graphAccumulator.set(pointBeta, new Set());
-  }
+lines.slice(2).forEach(connectionLine => {
+  const [firstTower, secondTower] = connectionLine.split(' ').map(val => Number(val) - 1);
+  connectionMap[firstTower].push(secondTower);
+  connectionMap[secondTower].push(firstTower);
+});
 
-  graphAccumulator.get(pointAlpha).add(pointBeta);
-  graphAccumulator.get(pointBeta).add(pointAlpha);
+const totalPeaks = connectionMap.reduce((currentPeakCount, adjacentTowers, currentTowerIndex) => {
+  const isCurrentTowerPeak = adjacentTowers.every(neighborIdx => {
+    return towerHeights[currentTowerIndex] > towerHeights[neighborIdx];
+  });
 
-  return graphAccumulator;
-}, new Map());
+  return currentPeakCount + (isCurrentTowerPeak ? 1 : 0);
+}, 0);
 
-const totalStructures = actualElevations.length;
-const dominantStructuresCount = Array.from({ length: totalStructures }, (_, idx) => idx)
-  .filter(currentStructureIdentifier => {
-    const primaryElevation = actualElevations[currentStructureIdentifier];
-    const adjacentNodes = connectionGraph.get(currentStructureIdentifier);
-
-    if (!adjacentNodes || adjacentNodes.size === 0) {
-      return true;
-    }
-
-    return Array.from(adjacentNodes).every(connectedIdentifier => {
-      return primaryElevation > actualElevations[connectedIdentifier];
-    });
-  })
-  .length;
-
-console.log(dominantStructuresCount);
+console.log(totalPeaks);

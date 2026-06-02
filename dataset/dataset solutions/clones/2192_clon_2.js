@@ -1,31 +1,29 @@
-function primaryProcess(rawContent) {
-  /*
-   * This function processes the entire input string.
-   * It is expected that the input might need to be
-   * split into individual lines for further handling.
-   */
+function ProcessInput(rawData) {
+  // This function takes raw input as a single string.
+  // It then processes it to extract relevant information.
 
-  const receivedLines = rawContent.split("\n");
+  const parsedLines = rawData.split("\n"); // Divide the input string into an array of lines.
 
-  const firstEntryElements = receivedLines[0].split(" ");
-  const secondEntryComponents = receivedLines[1].split(' ');
+  const firstSegment = parsedLines[0].split(" "); // Split the initial line by spaces.
+  const secondSegment = parsedLines[1].split(' '); // Split the subsequent line by spaces.
 
+  console.log(firstSegment); // Display the components of the first line.
+  console.log(secondSegment); // Display the components of the second line.
 
-  console.log(firstEntryElements);
-  console.log(secondEntryComponents);
+  const numericStrings = secondSegment; // Assign the second segment's parts to a new variable.
 
-  const numericValues = secondEntryComponents;
-
-  const totalSummation = numericValues.reduce(function (currentVal, nextVal) {
-    return currentVal + nextVal;
+  // Calculate the total value by summing up the elements in the numericStrings array.
+  const totalValue = numericStrings.reduce(function (accumulator, currentElement) {
+    return accumulator + currentElement; // Perform addition.
   });
 
-  if (totalSummation > firstEntryElements[0]) {
-    console.log("Yes");
+  // Compare the calculated total with the first element of the first segment.
+  if (totalValue > firstSegment[0]) {
+    console.log("Yes"); // Output "Yes" if the total is greater.
   } else {
-    console.log("No");
+    console.log("No"); // Otherwise, output "No".
   }
-} // End of primaryProcess function definition.
+}
 
-// The following invocation ensures the program runs with standard input.
-primaryProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify this invocation line!
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

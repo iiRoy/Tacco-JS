@@ -1,25 +1,16 @@
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const determineDivisorCount = (currentDatum, finalDatum, dividendDatum, accumulatedTotal) => {
-  if (currentDatum > finalDatum) {
-    return accumulatedTotal;
-  }
-  const nextAccumulatedTotal = (dividendDatum % currentDatum === 0) ? accumulatedTotal + 1 : accumulatedTotal;
-  return determineDivisorCount(currentDatum + 1, finalDatum, dividendDatum, nextAccumulatedTotal);
-};
+process.stdin.on('data', function(inputBuffer) {
+  const inputValues = inputBuffer.toString().trim().split(/\s+/).map(Number);
 
-global.process.stdin.on('data', (incomingPayload) => {
-  const numericals = String(incomingPayload)
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(val => Number.parseInt(val, 10));
+  const lowerBound = inputValues[0];
+  const upperBound = inputValues[1];
+  const targetDivisor = inputValues[2];
 
-  const startPoint = numericals[0];
-  const endPoint = numericals[1];
-  const targetValue = numericals[2];
+  const divisorCount = Array.from({ length: upperBound - lowerBound + 1 }, (_, index) => lowerBound + index)
+    .filter(currentNumber => targetDivisor % currentNumber === 0)
+    .length;
 
-  const finalOutcome = determineDivisorCount(startPoint, endPoint, targetValue, 0);
-
-  global.console.info(finalOutcome);
+  console.log(divisorCount);
 });

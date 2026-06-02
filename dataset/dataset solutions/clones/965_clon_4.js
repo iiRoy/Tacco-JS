@@ -1,55 +1,52 @@
-const fsModule = require('node:fs');
+const appSettings = { input: '/dev/stdin', newline: '\n' };
 
-const BOARD_DIMENSION = 4;
+const GRID_SIZE_SQUARED = 16;
+const targetState = '123456789ABCDEF0';
 
-const TARGET_ARRANGEMENT = '123456789ABCDEF0';
-
-const initialBoardState = fsModule.readFileSync('/dev/stdin', 'ascii')
-  .toString()
+const fileContent = require('fs').readFileSync(appSettings.input, 'ascii');
+const startingArrangementString = fileContent
   .trim()
-  .split('\n')
-  .flatMap(rowStr => rowStr.split(' ').map(Number))
-  .map(val => val.toString(16).toUpperCase())
-  .join('');
+  .split(appSettings.newline)
+  .reduce((accumulator, currentLine) => {
+    const hexSegment = currentLine.split(' ').reduce((lineAccumulator, numberString) => {
+      return lineAccumulator + Number(numberString).toString(16);
+    }, '');
+    return accumulator + hexSegment;
+  }, '')
+  .toUpperCase();
 
-function determineAdjacentPositions(currentPos) {
-  const row = Math.floor(currentPos / BOARD_DIMENSION);
-  const col = currentPos % BOARD_DIMENSION;
+const startingArrangement = startingArrangementString.split('');
+
+function getAdjacentIndices(zeroPosition) {
   const possibleMoves = [];
+  const row = Math.floor(zeroPosition / 4);
+  const col = zeroPosition % 4;
 
-  if (row > 0) {
-    possibleMoves.push(currentPos - BOARD_DIMENSION);
-  }
-  if (row < BOARD_DIMENSION - 1) {
-    possibleMoves.push(currentPos + BOARD_DIMENSION);
-  }
-  if (col > 0) {
-    possibleMoves.push(currentPos - 1);
-  }
-  if (col < BOARD_DIMENSION - 1) {
-    possibleMoves.push(currentPos + 1);
-  }
+  if (row > 0) possibleMoves.push(zeroPosition - 4);
+  if (row < 3) possibleMoves.push(zeroPosition + 4);
+  if (col > 0) possibleMoves.push(zeroPosition - 1);
+  if (col < 3) possibleMoves.push(zeroPosition + 1);
+
   return possibleMoves;
 }
 
-function createNextBoardState(currentConfiguration, zeroTileIndex, targetTileIndex) {
-  const configurationChars = currentConfiguration.split('');
-  [configurationChars[zeroTileIndex], configurationChars[targetTileIndex]] =
-    [configurationChars[targetTileIndex], configurationChars[zeroTileIndex]];
-  return configurationChars.join('');
+function swapElements(sourceArray, indexA, indexB) {
+  const newArray = [...sourceArray];
+  [newArray[indexA], newArray[indexB]] = [newArray[indexB], newArray[indexA]];
+  return newArray;
 }
 
-function exploreDepthLimited(remainingSteps, currentConfiguration) {
-  if (remainingSteps === 0) {
-    return currentConfiguration === TARGET_ARRANGEMENT;
+function findSolutionPath(currentDepthLimit, currentArrangement) {
+  if (currentDepthLimit === 0) {
+    return currentArrangement.join('') === targetState;
   }
 
-  const blankTileLocation = currentConfiguration.indexOf('0');
-  const availableMoves = determineAdjacentPositions(blankTileLocation);
+  const zeroTilePosition = currentArrangement.indexOf('0');
+  const validSwapTargets = getAdjacentIndices(zeroTilePosition);
 
-  for (const nextTileLocation of availableMoves) {
-    const newConfiguration = createNextBoardState(currentConfiguration, blankTileLocation, nextTileLocation);
-    if (exploreDepthLimited(remainingSteps - 1, newConfiguration)) {
+  for (const targetIndex of validSwapTargets) {
+    const nextArrangement = swapElements(currentArrangement, zeroTilePosition, targetIndex);
+    if (findSolutionPath(currentDepthLimit - 1, nextArrangement)) {
       return true;
     }
   }
@@ -57,14 +54,11 @@ function exploreDepthLimited(remainingSteps, currentConfiguration) {
   return false;
 }
 
-let currentIterationDepth = 0;
-const maximumAllowedDepth = 45;
-
-while (currentIterationDepth <= maximumAllowedDepth) {
-  if (exploreDepthLimited(currentIterationDepth, initialBoardState)) {
+let finalSolutionDepth = 0;
+for (let depthIterator = 0; depthIterator <= 45; depthIterator++) {
+  if (findSolutionPath(depthIterator, startingArrangement)) {
+    finalSolutionDepth = depthIterator;
     break;
   }
-  currentIterationDepth++;
 }
-
-console.log(currentIterationDepth);
+console.log(finalSolutionDepth);

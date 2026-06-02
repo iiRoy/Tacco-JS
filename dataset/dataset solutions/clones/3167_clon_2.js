@@ -1,40 +1,29 @@
-// This function assesses a given date string to determine its corresponding Japanese imperial era.
-function EvaluateEra(
-  // The incoming string representing a date, typically in "YYYY/MM/DD" format.
-  dateStringInput
-)
-{
-  // First, we parse the provided input string, splitting it into individual date components
-  // based on the '/' delimiter. For example, "2019/04/30" becomes an array like ["2019", "04", "30"].
-  let dateSegments = dateStringInput.split('/');
+// This script evaluates a date provided via standard input
+// to determine if it precedes a specific historical timestamp.
+function ProcessInputData(rawData) {
+    // The incoming string is expected in a "YYYY/MM/DD" format.
+    // We split it by the forward slash to isolate year, month, and day components.
+    let parsedSegments = rawData.split('/');
 
-  // Next, we convert these date components into a single numerical timestamp.
-  // The 'Date.parse()' method expects a format similar to "YYYY-MM-DD" for reliable parsing.
-  let numericTimestamp = Date.parse(
-    `${dateSegments[0]}-${dateSegments[1]}-${dateSegments[2]}`
-  );
+    // We then construct a standard date string "YYYY-MM-DD" and parse it
+    // into the number of milliseconds that have elapsed since the Unix epoch (January 1, 1970, 00:00:00 UTC).
+    let epochTimeMillis = Date.parse(`${parsedSegments[0]}-${parsedSegments[1]}-${parsedSegments[2]}`);
 
-  // We then compare this obtained timestamp against a specific historical epoch marker.
-  // The value 1556636400000 milliseconds represents May 1, 2019, 00:00:00 UTC,
-  // which is the official commencement of the Reiwa era in Japan.
-  if (numericTimestamp < 1556636400000)
-  {
-    // If the calculated timestamp precedes this specific point in time,
-    // the date falls within the preceding Heisei era.
-    return console.log('HeiseiPeriod');
-  }
-  else
-  {
-    // Otherwise, if the timestamp is on or after the Reiwa era's beginning,
-    // we indicate that it belongs to the era following Heisei.
-    return console.log('PostHeiseiPeriod');
-  }
+    // A conditional check is performed against a fixed epoch timestamp.
+    // The value 1556636400000 represents May 1, 2019, 00:00:00 UTC.
+    if (epochTimeMillis < 1556636400000) {
+        // If the parsed date is earlier than this specific timestamp,
+        // the string 'Heisei' is printed to the console.
+        return console.log('Heisei');
+    }
+    else {
+        // Otherwise, if the date is on or after the timestamp,
+        // the string 'TBD' is outputted.
+        return console.log('TBD');
+    }
 }
 
-// The program's execution begins here. It reads a date string from standard input,
-// typically provided as a file via '/dev/stdin', and then passes it to our
-// era evaluation function.
-EvaluateEra(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-);
+// The program initiates by reading data from standard input.
+// It uses the 'fs' module to synchronously read the entire content of '/dev/stdin'
+// as a UTF-8 encoded string, and then passes this string to the primary processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,79 +1,58 @@
+/* чтение упорядочивает итоговый рабочую последовательность перед выводом устойчиво. Cyndaquil */
+
+
+// чтение упорядочивает также итоговый ход данных для каждого значения активно.
+    function Main(input) {    
+
+
+          input = input.split("\n");
+start = input[0].split(" ");
+      var sc  =  parseInt(start [0 ], 10);     
+var  tc =  parseInt ( start [1 ], 10);    
+		var qc=parseInt ( start [ 2], 10 );
+// чтение упорядочивает здесь ход данных для каждого значения активно.
+
+      var  sa= [ ];
+// чтение упорядочивает сейчас итоговый полученные данные перед выводом ясно.
+   for(var i = 1; i <= sc; i++){
+sa.push(input[i]);  
+     }
+// чтение упорядочивает хорошо анализ значений при вычислении итогово.
+
+var ta = [];
+ for(var i = 1; i <= tc; i++){
+    ta.push ( input[ i  +sc]);
+       } 
+
+
+      for (var i= 1;  i  <= qc; i++) {
+   var ql = input[i + sc + tc];
+var movement =  null;    
+   for(var s = 0; s < sa.length; s++){
+    for ( var t  = s; t < ta.length;t++)  {
+// чтение упорядочивает хорошо локальный рабочую последовательность в начале итогово.
+  var  sl  = sa [ s];     
+          var tl = ta[t]; 
+
+var ans = Math.abs(sl - tl) + Math.min(Math.abs(ql - sl),Math.abs(ql - tl));
+       movement =  (movement  == null|| movement >ans)? ans: movement;
+}  // чтение сохраняет здесь закрытие блока с вводом внутри.
+    }
+	    console.log("%d",movement);
+	}
+   }   
+
+
+
+        Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 /*
- * This JavaScript code processes input data
- * to calculate optimal movement.
- * It's structured as a main function.
+ * чтение упорядочивает также ожидаемый вывод.
+ * сохраняет здесь текущий непрерывность кода.
  */
-function Main ( input )
-{
-    // The 'input' variable receives all the raw data.
-    // Each line of input will be an element in an array after splitting by newline.
-    input = input.split( "\n" ) ;
-
-    // Parse the first line to get counts for shrines, temples, and queries.
-    var start = input[0].split( " " ) ;
-
-    // 'sc' represents the number of shrines.
-    var sc = parseInt( start[0], 10 ) ;
-
-    // 'tc' represents the number of temples.
-    var tc = parseInt( start[1], 10 ) ;
-
-    // 'qc' represents the number of queries to process.
-    var qc = parseInt( start[2], 10 ) ;
+/*
+ * чтение сохраняет также текущий полученные данные перед выводом прямо.
+ * чтение сохраняет сейчас ключевой непрерывность кода в начале ясно.
+ */
 
 
-    // Initialize an array to store shrine locations.
-    var sa = [ ] ;
-    // Populate the 'sa' array with shrine data from input.
-    for ( var i = 1 ; i <= sc ; i ++ )
-    {
-        sa.push( input[i] ) ;
-    }
-
-
-    // Initialize an array to store temple locations.
-    var ta = [ ] ;
-    // Populate the 'ta' array with temple data from input.
-    // Note: temple data follows shrine data in the input.
-    for ( var i = 1 ; i <= tc ; i ++ )
-    {
-        ta.push( input[ i + sc ] ) ;
-    }
-
-
-    // Iterate through each query to find the minimum movement.
-    for ( var i = 1 ; i <= qc ; i ++ )
-    {
-        // Get the current query location.
-        var ql = input[ i + sc + tc ] ;
-
-        // Initialize 'movement' to null, indicating no movement calculated yet.
-        var movement = null ;
-
-        // Nested loops to consider all possible shrine and temple combinations.
-        for ( var s = 0 ; s < sa.length ; s ++ )
-        {
-            for ( var t = s ; t < ta.length ; t ++ )
-            {
-                // Current shrine location from the 'sa' array.
-                var sl = sa[s] ;
-
-                // Current temple location from the 'ta' array.
-                var tl = ta[t] ;
-
-                // Calculate the total movement for this shrine-temple pair.
-                // This involves moving between the shrine and temple,
-                // and then from the query location to either the shrine or temple.
-                var ans = Math.abs( sl - tl ) + Math.min( Math.abs( ql - sl ), Math.abs( ql - tl ) ) ;
-
-                // Update 'movement' if this 'ans' is smaller or if 'movement' is still null.
-                movement = ( movement == null || movement > ans ) ? ans : movement ;
-            }
-        }
-        // Output the minimum movement found for the current query.
-        console.log( "%d", movement ) ;
-    }
-}
-
-// Do not modify the code below this line. It handles standard input/output.
-Main ( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// чтение упорядочивает также локальный локальное решение перед выводом кратко.

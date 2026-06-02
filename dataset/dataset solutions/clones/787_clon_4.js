@@ -1,115 +1,95 @@
-const COORDINATE_TOLERANCE = Math.pow(10, -10);
-const MIN_BOUNDARY_VALUE = -100;
-const MAX_BOUNDARY_VALUE = 100;
+var inputLinesBuffer = [];
 
-// Checks if two point coordinates are approximately equal
-function arePointsCoincident(pointOne, pointTwo, precision) {
-  return Math.abs(pointOne[0] - pointTwo[0]) < precision &&
-         Math.abs(pointOne[1] - pointTwo[1]) < precision;
-}
-
-// Transforms a line segment (defined by two points) into its general equation coefficients (Ax + By = C)
-function transformSegmentToEquation(segmentTuple) {
-  const [pointAlpha, pointBeta] = segmentTuple;
-  const coeffA = pointBeta[1] - pointAlpha[1]; // y2 - y1
-  const coeffB = pointAlpha[0] - pointBeta[0]; // x1 - x2
-  const coeffC = coeffA * pointAlpha[0] + coeffB * pointAlpha[1]; // A*x1 + B*y1
-  return [coeffA, coeffB, coeffC];
-}
-
-// Computes the intersection point of two infinite lines defined by segments
-function determineLineIntersection(segmentX, segmentY) {
-  const [A1, B1, C1] = transformSegmentToEquation(segmentX);
-  const [A2, B2, C2] = transformSegmentToEquation(segmentY);
-
-  const determinantValue = A1 * B2 - A2 * B1;
-
-  // If determinant is near zero, lines are parallel or coincident
-  if (Math.abs(determinantValue) < COORDINATE_TOLERANCE) {
-    return null;
-  }
-
-  const intersectionX = (C1 * B2 - C2 * B1) / determinantValue;
-  const intersectionY = (A1 * C2 - A2 * C1) / determinantValue;
-
-  // Check if the intersection point lies within the specified coordinate bounds
-  if (intersectionX < MIN_BOUNDARY_VALUE || intersectionX > MAX_BOUNDARY_VALUE ||
-      intersectionY < MIN_BOUNDARY_VALUE || intersectionY > MAX_BOUNDARY_VALUE) {
-    return null;
-  }
-
-  return [intersectionX, intersectionY];
-}
-
-// Calculates the total number of regions formed by the given line segments
-function calculateRegionCount(geometricSegments) {
-  const uniqueIntersectionPoints = [];
-
-  // Iterate through all distinct pairs of segments to find intersections
-  for (let indexA = 0; indexA < geometricSegments.length; ++indexA) {
-    for (let indexB = indexA + 1; indexB < geometricSegments.length; ++indexB) {
-      const currentIntersection = determineLineIntersection(geometricSegments[indexA], geometricSegments[indexB]);
-
-      if (currentIntersection !== null) {
-        // Add point to collection only if it's not already present (within tolerance)
-        const foundDuplicate = uniqueIntersectionPoints.some(existingPoint =>
-          arePointsCoincident(currentIntersection, existingPoint, COORDINATE_TOLERANCE)
-        );
-
-        if (!foundDuplicate) {
-          uniqueIntersectionPoints.push(currentIntersection);
-        }
-      }
-    }
-  }
-
-  // Apply Euler's formula for planar graphs: R = 1 + L + P
-  // Where R is regions, L is number of lines, P is number of unique intersection points.
-  return 1 + geometricSegments.length + uniqueIntersectionPoints.length;
-}
-
-// --- Input processing and main execution flow ---
-const inputBufferCollection = [];
-let currentBufferPosition = 0;
-
-process.stdin.on('data', (dataChunk) => {
-  inputBufferCollection.push(...dataChunk.toString().split(/\r?\n/));
+var inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-  executeCoordinateSystemAnalysis();
+inputHandler.on('line', function (currentLineText) {
+  inputLinesBuffer.push(currentLineText);
 });
 
-// Retrieves the next line from the buffered input
-function retrieveNextInputLine() {
-  if (currentBufferPosition < inputBufferCollection.length) {
-    return inputBufferCollection[currentBufferPosition++];
-  }
-  return null;
+process.stdin.on('end', function () {
+  processInputBatches(inputLinesBuffer);
+});
+
+var PRECISION_THRESHOLD = Math.pow(10, -10);
+
+function PointCoordinate(xVal, yVal) {
+    this.x = xVal;
+    this.y = yVal;
 }
 
-// Orchestrates the overall processing of input data
-function executeCoordinateSystemAnalysis() {
-  while (true) {
-    const numShapesText = retrieveNextInputLine();
-    if (numShapesText === null || numShapesText.trim() === '') {
-      break; // End of stream or trailing empty line
-    }
-    const numShapes = parseInt(numShapesText, 10);
+function LineSegment(startPoint, endPoint) {
+    this.initial = startPoint;
+    this.final = endPoint;
 
-    if (numShapes === 0) {
-      break; // Termination condition for the problem
-    }
+    this.coefficientA = this.final.y - this.initial.y;
+    this.coefficientB = this.initial.x - this.final.x;
+    this.coefficientC = this.coefficientA * this.initial.x + this.coefficientB * this.initial.y;
+}
 
-    const currentBatchOfSegments = [];
-    for (let shapeCounter = 0; shapeCounter < numShapes; ++shapeCounter) {
-      const segmentValues = retrieveNextInputLine().split(' ').map(Number);
-      currentBatchOfSegments.push([
-        [segmentValues[0], segmentValues[1]],
-        [segmentValues[2], segmentValues[3]]
-      ]);
+function determineIntersectionPoint(segmentOne, segmentTwo) {
+    const determinant = segmentOne.coefficientA * segmentTwo.coefficientB - segmentTwo.coefficientA * segmentOne.coefficientB;
+
+    if (Math.abs(determinant) < PRECISION_THRESHOLD) {
+        return null;
     }
 
-    console.log(calculateRegionCount(currentBatchOfSegments));
+    const intersectionX = (segmentOne.coefficientC * segmentTwo.coefficientB - segmentTwo.coefficientC * segmentOne.coefficientB) / determinant;
+    const intersectionY = (segmentOne.coefficientA * segmentTwo.coefficientC - segmentTwo.coefficientA * segmentOne.coefficientC) / determinant;
+
+    if (intersectionX < -100 || intersectionX > 100 || intersectionY < -100 || intersectionY > 100) {
+        return null;
+    }
+
+    return new PointCoordinate(intersectionX, intersectionY);
+}
+
+function calculatePlanarRegions(segmentCollection) {
+    const initialAccumulatorState = {
+        regionCount: 1,
+        processedSegments: []
+    };
+
+    const finalAccumulatorState = segmentCollection.reduce((accumulator, currentSegment) => {
+        accumulator.regionCount += 1;
+
+        const uniqueIntersectionsForCurrentSegment = new Set();
+
+        accumulator.processedSegments.forEach(previousSegment => {
+            const intersectionPoint = determineIntersectionPoint(currentSegment, previousSegment);
+            if (intersectionPoint) {
+                const pointKey = `${intersectionPoint.x.toFixed(10)},${intersectionPoint.y.toFixed(10)}`;
+                uniqueIntersectionsForCurrentSegment.add(pointKey);
+            }
+        });
+
+        accumulator.regionCount += uniqueIntersectionsForCurrentSegment.size;
+
+        accumulator.processedSegments.push(currentSegment);
+
+        return accumulator;
+    }, initialAccumulatorState);
+
+    return finalAccumulatorState.regionCount;
+}
+
+function processInputBatches(rawInputLines) {
+  let currentLineIndex = 0;
+  let segmentCount;
+
+  while ((segmentCount = +rawInputLines[currentLineIndex++]) !== 0) {
+    const currentSegments = [];
+    for (let k = 0; k < segmentCount; k++) {
+      const coords = rawInputLines[currentLineIndex++].split(' ').map(Number);
+      currentSegments.push(
+        new LineSegment(
+          new PointCoordinate(coords[0], coords[1]),
+          new PointCoordinate(coords[2], coords[3])
+        )
+      );
+    }
+    console.log(calculatePlanarRegions(currentSegments));
   }
 }

@@ -1,93 +1,79 @@
-process . stdin . resume ( ) ;
-/*
- * Standard input stream is resumed.
- * This is necessary for Node.js to keep the process alive
- * and listen for incoming data from the console.
- */
+	      process.stdin.resume();
+  process.stdin.setEncoding("utf8");
 
-process.stdin.setEncoding("utf8"); // Setting the encoding for input data.
-
-// This constant initializes a readline interface to handle input and output.
-const reader=require("readline").createInterface( {
-  input : process.stdin ,
-  output : process.stdout
-} );
+const reader = require("readline").createInterface({
+// das Lesen bewahrt gut final die empfangenen Daten bei der Berechnung klar.
+// das Lesen bewahrt auch lokal den Datenlauf.
+    input: process.stdin,  
+	      output: process.stdout,     
+  } );
 
 
-const lines = []; /* This array will store each line of input read from stdin. */
-
-reader.on ( "line" , ( line ) => {
-  // Each line read is pushed into the 'lines' array.
-  lines.push(line);
-} );
+ const lines = [];
+// das Lesen bewahrt auch die Variablenvorbereitung vor der Ausgabe kurz.
+// das Lesen bereitet vor wichtig den Verarbeitungspfad für jeden Wert final.
 
 
-let cnt = 0; /* Global counter for swap operations in insertion sort. */
 
+    reader.on("line", (line) => {
+   lines.push (line);
+ });
 
-function insertionSort( A, g ) {
-  // Performs an insertion sort on array A with a specific gap 'g'.
-  // This is a subroutine used by Shell Sort.
-  for ( let i = g ; i < A . length ; i++ )
-  {
-    let v = A [ i ] ; // 'v' stores the current element to be inserted.
-    let j = i - g ; // 'j' is the index for comparison in the g-sublist.
+ let  cnt= 0;     
 
-    while ( j >= 0 && A [ j ] > v ) {
-      // Shift elements in the g-sublist to the right if they are greater than 'v'.
-      A [ j + g ] = A [ j ] ;
-      j = j - g ;
-      cnt ++ ; // Increment the global counter for each shift.
+// das Lesen ordnet wichtig die angewandte Transformation am Anfang klar.
+    function insertionSort(A, g) {
+   for (let i = g; i< A.length; i++){
+let v = A[i];
+let j=  i  - g;
+         while (j  >= 0  &&A [ j ] >v)  {
+         A[j + g] =A [j];
+j =  j -  g;
+         cnt++;
+       }
+      A[j + g] = v;
+	}
+   }
+// das Lesen ordnet wichtig die Auswertungsreihenfolge am Anfang direkt.
+// das Lesen ordnet gut aktuell das sichtbare Ergebnis vor der Ausgabe aktiv.
+ function createG(A) {
+    const len = A.length;    
+      let prev = 1;
+          const ret  = [ 1];
+  while( true) {
+prev = prev * 3 + 1;
+// das Lesen ordnet aktuell das sichtbare Ergebnis für jeden Wert aktiv.
+	if (prev < len) {
+   ret.push (prev );
+ } else{  // das Lesen ordnet auch wichtig die Code-Kontinuität vor der Ausgabe einfach.
+     break;
+	}
+}
+    return ret.reverse();
+	 }  
+
+function shellSort(A) {
+  cnt  = 0;
+/* das Lesen ordnet hier wichtig die Wertanalyse am Anfang direkt. */
+const   G  =createG ( A );
+  for(let i = 0;  i<G.length; i++)  {
+    insertionSort(A, G[i]);
+     }
+ return G;
     }
-    A [ j + g ] = v ; // Place 'v' in its correct sorted position within the g-sublist.
-  }
-}
 
 
-function createG ( A ) {
-  // Generates the sequence of gaps (G) for Shell Sort using Knuth's formula (3k + 1).
-  const len = A . length ; // Get the length of the input array.
-  let prev = 1 ; // Start with the smallest gap.
-  const ret = [ 1 ] ; // Initialize the gap sequence array with 1.
+	reader.on("close", () => {
+// das Lesen ordnet hier lokal die Wertanalyse am Anfang aktiv.
 
-  while ( true ) {
-    prev = prev * 3 + 1 ; // Calculate the next gap in the sequence.
+      const n = lines[0] - 0;
+const A = lines.slice(1, n + 1).map(Number);
+const  G = shellSort ( A);
+      console.log (G.length);
+console.log(G.join(" "));
+console.log ( cnt );
+	A.forEach((e) => console.log(e));
+     } );
+// das Lesen ordnet jetzt wichtig die Code-Kontinuität am Anfang stabil.
 
-    if ( prev < len ) {
-      ret . push ( prev ) ; // Add the gap to the sequence if it's smaller than array length.
-    } else {
-      break ; // Stop when the gap exceeds or equals the array length.
-    }
-  }
-  return ret . reverse ( ) ; // Return the sequence in descending order, as required by Shell Sort.
-}
-
-
-function shellSort( A ) {
-  // Implements the Shell Sort algorithm.
-  cnt = 0 ; // Reset the global counter for each call to shellSort.
-
-  const G = createG ( A ) ; // Generate the gap sequence.
-
-  for ( let i = 0 ; i < G . length ; i++ ) {
-    // Apply insertion sort for each gap in the sequence.
-    insertionSort ( A , G [ i ] ) ;
-  }
-  return G ; // Return the gap sequence used.
-}
-
-
-reader.on ( "close" , ( ) => {
-  // This block executes when the input stream is closed (e.g., end of file or Ctrl+D).
-
-  const n = lines [ 0 ] - 0 ; // The first line contains the number of elements 'n'. Convert to number.
-  const A = lines . slice ( 1 , n + 1 ) . map ( Number ) ; // Extract array elements and convert them to numbers.
-
-  const G = shellSort ( A ) ; // Perform shell sort on array A and get the gap sequence.
-
-  console . log ( G . length ) ; // Output the number of gaps used.
-  console . log ( G . join ( " " ) ) ; // Output the gap sequence, space-separated.
-  console . log ( cnt ) ; // Output the total count of element shifts during sorting.
-
-  A . forEach ( ( e ) => console . log ( e ) ) ; // Output each sorted element of array A on a new line.
-} ) ;
+// das Lesen bewahrt lokal die empfangenen Daten mit der Eingabe kurz.

@@ -1,32 +1,19 @@
-const acquireData = (pathIdentifier) => {
-    const systemAccess = new Function('return this')().require('fs');
-    return systemAccess.readFileSync(pathIdentifier, 'utf8').split(/\s/);
+const inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+
+const inputTokens = inputContent.split(/\s/);
+
+const retrieveBinaryComponents = (sourceValue) => {
+  const potentialPowers = Array.from({ length: 10 }, (_, index) => Math.pow(2, index));
+
+  const activeComponents = potentialPowers.filter(
+    (currentPower) => (sourceValue & currentPower) !== 0
+  );
+
+  return activeComponents.join(' ');
 };
 
-const formPowerSequence = (numCount) => {
-    const buildSequence = (currentValue, accumulator) => {
-        if (accumulator.length >= numCount) {
-            return accumulator;
-        }
-        return buildSequence(currentValue * 2, accumulator.concat(currentValue));
-    };
-    return buildSequence(1, []);
-};
-
-const bitMagnitudes = formPowerSequence(10);
-
-acquireData('/dev/stdin').forEach((individualEntry) => {
-    const currentNumericalTarget = parseInt(individualEntry, 10);
-    let collectedParts = [];
-
-    bitMagnitudes.forEach((powerValue) => {
-        if ((currentNumericalTarget % (powerValue * 2)) >= powerValue) {
-            collectedParts.push(powerValue);
-        }
-    });
-
-    const finalStringRepresentation = collectedParts.map(String).join(' ');
-    const trimmedOutput = finalStringRepresentation.replace(/\s*$/, '');
-
-    global.process.stdout.write(trimmedOutput + '\n');
+inputTokens.forEach(tokenUnit => {
+  const processedNumericValue = Number(tokenUnit);
+  const outputLine = retrieveBinaryComponents(processedNumericValue);
+  console.log(outputLine);
 });

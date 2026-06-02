@@ -1,250 +1,226 @@
-// This module provides a flexible input parsing utility.
-var DATA_STREAM_PARSER = (function () {
-    /**
-     * Factory function to create an input handler instance.
-     * @param {string} sourceContent - The raw string input.
-     * @returns {LineBasedProcessor} An instance capable of processing lines.
-     */
-    function createInputHandler(sourceContent) {
-        return new LineBasedProcessor(sourceContent);
+var INPUT_PARSER = (function () {
+  function createParser(sourceText) {
+    return new TextProcessor(sourceText);
+  }
+
+  function TextProcessor(inputString) {
+    // Split the input string into an array of lines, then trim whitespace.
+    this._lines = inputString.trim().split("\n");
+    // Initialize the current line index for sequential reading.
+    this._currentLineIndex = 0;
+  }
+
+  // Method to extract a single value from the current line.
+  TextProcessor.prototype.extractValue = function (isString) {
+    var linesArray = this._lines;
+    var lineIdx = this._currentLineIndex;
+    var extractedToken;
+
+    // If the current line hasn't been processed into tokens yet, do so.
+    if (typeof linesArray[lineIdx] === "string") {
+      linesArray[lineIdx] = linesArray[lineIdx].split(" ").reverse();
     }
 
-    /**
-     * Handles line-by-line processing of input data.
-     * @class
-     * @param {string} sourceContent - The entire input as a single string.
-     */
-    function LineBasedProcessor(sourceContent) {
-        // Internal storage for lines, split by newline.
-        this._lineArray = sourceContent.trim().split("\n");
-        // Current index indicating which line is being processed.
-        this._currentIndex = 0;
+    // Pop the last token (which is the first in original order due to reverse).
+    extractedToken = linesArray[lineIdx].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if (!linesArray[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    /**
-     * Extracts the next numerical or string value from the current line.
-     * If the current line is not yet processed into an array, it splits it by space and reverses it.
-     * @param {boolean} [returnAsString=false] - If true, returns the value as a string; otherwise, as a number.
-     * @returns {number|string} The extracted value.
-     */
-    LineBasedProcessor.prototype.extractNextValue = function (returnAsString) {
-        const localLineArray = this._lineArray;
-        const linePosition = this._currentIndex;
-        let extractedItem;
+    // Return the token, either as a string or converted to a number.
+    return isString ? extractedToken : +extractedToken;
+  };
 
-        // Check if the current line needs to be split.
-        if (typeof localLineArray[linePosition] === "string") {
-            localLineArray[linePosition] = localLineArray[linePosition].split(" ").reverse();
-        }
+  // Method to extract all values from the current line.
+  TextProcessor.prototype.extractLine = function (asStrings) {
+    var lineTokens = this._lines[this._currentLineIndex++].split(" ");
+    // Return tokens as strings or numbers.
+    return asStrings ? lineTokens : lineTokens.map((val) => +val);
+  };
 
-        // Pop the last element (due to reverse order for easy popping).
-        extractedItem = localLineArray[linePosition].pop();
+  // Method to extract a matrix of values over multiple lines.
+  TextProcessor.prototype.extractMatrix = function (numRows, asStrings) {
+    var resultMatrix = this._lines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numRows))
+      .map((row) => row.split(" "));
+    // Return matrix elements as strings or numbers.
+    return asStrings
+      ? resultMatrix
+      : resultMatrix.map((row) => row.map((val) => +val));
+  };
 
-        // If the line is now empty, advance to the next line.
-        if (!localLineArray[linePosition].length) {
-            this._currentIndex++;
-        }
+  // Method to extract a specified number of lines as individual values.
+  TextProcessor.prototype.extractRows = function (count, asStrings) {
+    var resultRows = this._lines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += count)
+    );
+    // Return rows as strings or numbers.
+    return asStrings ? resultRows : resultRows.map((rowVal) => +rowVal);
+  };
 
-        // Return as string or parsed number.
-        return returnAsString ? extractedItem : +extractedItem;
-    };
-
-    /**
-     * Extracts all values from the current line, advancing the line pointer.
-     * @param {boolean} [keepStrings=false] - If true, returns values as strings; otherwise, as numbers.
-     * @returns {Array<number|string>} An array of values from the line.
-     */
-    LineBasedProcessor.prototype.extractLineValues = function (keepStrings) {
-        // Split the current line and advance the index.
-        const lineParts = this._lineArray[this._currentIndex++].split(" ");
-        return keepStrings ? lineParts : lineParts.map(elementItem => +elementItem);
-    };
-
-    /**
-     * Extracts a matrix of `numRows` rows, each split by space.
-     * @param {number} numRows - The number of rows to extract.
-     * @param {boolean} [preserveStrings=false] - If true, keeps values as strings; otherwise, converts to numbers.
-     * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
-     */
-    LineBasedProcessor.prototype.extractMatrix = function (numRows, preserveStrings) {
-        // Slice the required number of rows and map them.
-        const matrixData = this._lineArray.slice(this._currentIndex, this._currentIndex += numRows).map(elementItem => elementItem.split(" "));
-        return preserveStrings ? matrixData : matrixData.map(elementItem => elementItem.map(innerItem => +innerItem));
-    };
-
-    /**
-     * Extracts a specified number of raw lines.
-     * @param {number} numLines - The count of lines to extract.
-     * @param {boolean} [asStrings=false] - If true, returns lines as strings; otherwise, attempts to convert to numbers.
-     * @returns {Array<number|string>} An array of lines.
-     */
-    LineBasedProcessor.prototype.extractLines = function (numLines, asStrings) {
-        const lineSlice = this._lineArray.slice(this._currentIndex, this._currentIndex += numLines);
-        return asStrings ? lineSlice : lineSlice.map(elementItem => +elementItem);
-    };
-
-    return createInputHandler;
+  return createParser;
 })();
 
-// Initialize the input reader with data from standard input.
-var inputReader = DATA_STREAM_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input reader by reading from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Creates a multi-dimensional array initialized with a specific value.
- * @param {any} initialValue - The value to fill the array with.
- * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, ...).
- * @returns {Array} A new multi-dimensional array.
- */
+// Utility function to create a multi-dimensional array with an initial value.
 function initializeMultiDimArray(initialValue) {
-    const argsList = arguments;
-    let argsLength = argsList.length;
-    let arrayCreationCode = "Array(argsList[" + --argsLength + "]).fill(0).map(x=>{return " + initialValue + ";})";
-
-    // Construct the nested array creation string.
-    while (--argsLength) {
-        arrayCreationCode = "Array(argsList[" + argsLength + "]).fill(0).map(x=>" + arrayCreationCode + ")";
-    }
-    return eval(arrayCreationCode);
+  var args = arguments,
+    length = args.length,
+    arrayCreationString =
+      "Array(args[" +
+      --length +
+      "]).fill(0).map(x=>{return " +
+      initialValue +
+      ";})";
+  while (--length)
+    arrayCreationString =
+      "Array(args[" + length + "]).fill(0).map(x=>" + arrayCreationString + ")";
+  return eval(arrayCreationString);
 }
 
-// Stores boundary values for 6 different dimensions/directions.
-// Each inner array will store [min, max] for a dimension.
-var dimensionBounds = initializeMultiDimArray("[]", 6);
+// Global array to store boundary ranges for different directions.
+// Each sub-array will store [min_coord, max_coord].
+var boundaryRanges = initializeMultiDimArray("[]", 6);
+// A set to store unique candidate values for optimization.
+var uniqueValues = new Set([0]);
 
-// A set to store unique candidate shift values for area calculation.
-var possibleShiftValues = new Set([0]);
+// Output the result of the main processing function.
+console.log(processInputAndCalculate());
 
-// Execute the main program logic and print the result.
-console.log(runCalculation());
+// Main function to process input and compute the final answer.
+function processInputAndCalculate() {
+  var numOperations = inputReader.extractValue(); // Read the number of operations.
 
-/**
- * Main function to process input and determine the minimum area.
- * @returns {number} The calculated minimum area.
- */
-function runCalculation() {
-    const totalInstructions = inputReader.extractNextValue(); // Read the number of operations.
+  // Process each operation.
+  for (var opIndex = 0; opIndex < numOperations; opIndex++) {
+    var coordX = inputReader.extractValue();
+    var coordY = inputReader.extractValue();
+    var directionChar = inputReader.extractValue(1); // Read direction as string.
 
-    // Process each instruction to update dimension boundaries.
-    for (let instructionIdx = 0; instructionIdx < totalInstructions; instructionIdx++) {
-        const xCoord = inputReader.extractNextValue();
-        const yCoord = inputReader.extractNextValue();
-        const directionIndicator = inputReader.extractNextValue(true); // Read direction as string.
-
-        // Update bounds based on direction.
-        if (directionIndicator === "U") {
-            updateDimensionRange(0, yCoord); // Upward movement affects Y-max.
-            updateDimensionRange(5, xCoord); // Upward movement affects X-max.
-        } else if (directionIndicator === "R") {
-            updateDimensionRange(1, xCoord); // Rightward movement affects X-max.
-            updateDimensionRange(4, yCoord); // Rightward movement affects Y-max.
-        } else if (directionIndicator === "D") {
-            updateDimensionRange(2, yCoord); // Downward movement affects Y-min.
-            updateDimensionRange(5, xCoord); // Downward movement affects X-max.
-        } else { // 'L'
-            updateDimensionRange(3, xCoord); // Leftward movement affects X-min.
-            updateDimensionRange(4, yCoord); // Leftward movement affects Y-max.
-        }
-    }
-
-    // Calculate initial shift candidates from current bounds.
-    deriveShiftCandidates(dimensionBounds[0][1], dimensionBounds[4][1], dimensionBounds[2][1]);
-    deriveShiftCandidates(-dimensionBounds[2][0], -dimensionBounds[4][0], -dimensionBounds[0][0]);
-    deriveShiftCandidates(dimensionBounds[1][1], dimensionBounds[5][1], dimensionBounds[3][1]);
-    deriveShiftCandidates(-dimensionBounds[3][0], -dimensionBounds[5][0], -dimensionBounds[1][0]);
-
-    let minimumArea = 1e18; // Initialize with a very large value.
-
-    // Iterate through all possible shift values to find the minimum area.
-    for (const shiftValue of possibleShiftValues) {
-        // Calculate shifted boundaries for current shiftValue.
-        const currentUpperBound = findMaximum(dimensionBounds[0][1] + shiftValue, dimensionBounds[2][1] - shiftValue, dimensionBounds[4][1]);
-        const currentLowerBound = findMinimum(dimensionBounds[0][0] + shiftValue, dimensionBounds[2][0] - shiftValue, dimensionBounds[4][0]);
-        const currentRightBound = findMaximum(dimensionBounds[1][1] + shiftValue, dimensionBounds[3][1] - shiftValue, dimensionBounds[5][1]);
-        const currentLeftBound = findMinimum(dimensionBounds[1][0] + shiftValue, dimensionBounds[3][0] - shiftValue, dimensionBounds[5][0]);
-
-        // Calculate the area for the current set of bounds.
-        const computedArea = (currentUpperBound - currentLowerBound) * (currentRightBound - currentLeftBound);
-
-        // Update minimum area if current area is smaller.
-        if (computedArea < minimumArea) {
-            minimumArea = computedArea;
-        }
-    }
-    return minimumArea;
-}
-
-/**
- * Updates the min/max range for a specific dimension based on a coordinate value.
- * @param {number} dimensionIndex - The index of the dimension to update (0-5).
- * @param {number} coordinateVal - The coordinate value to incorporate into the range.
- */
-function updateDimensionRange(dimensionIndex, coordinateVal) {
-    // If the dimension range is already initialized.
-    if (dimensionBounds[dimensionIndex].length) {
-        // Update minimum if coordinateVal is smaller.
-        if (dimensionBounds[dimensionIndex][0] > coordinateVal) dimensionBounds[dimensionIndex][0] = coordinateVal;
-        // Update maximum if coordinateVal is larger.
-        else if (dimensionBounds[dimensionIndex][1] < coordinateVal) dimensionBounds[dimensionIndex][1] = coordinateVal;
+    // Update boundary ranges based on the direction.
+    if (directionChar === "U") {
+      updateBoundary(0, coordY); // Upward movement affects Y-max.
+      updateBoundary(5, coordX); // Upward movement affects X-max.
+    } else if (directionChar === "R") {
+      updateBoundary(1, coordX); // Rightward movement affects X-max.
+      updateBoundary(4, coordY); // Rightward movement affects Y-max.
+    } else if (directionChar === "D") {
+      updateBoundary(2, coordY); // Downward movement affects Y-min.
+      updateBoundary(5, coordX); // Downward movement affects X-max.
     } else {
-        // Initialize the range [coordinateVal, coordinateVal] if not set.
-        dimensionBounds[dimensionIndex][0] = dimensionBounds[dimensionIndex][1] = coordinateVal;
+      // Leftward movement.
+      updateBoundary(3, coordX); // Leftward movement affects X-min.
+      updateBoundary(4, coordY); // Leftward movement affects Y-max.
     }
+  }
+
+  // Calculate and add candidate values to the set based on boundary ranges.
+  addCandidateValues(
+    boundaryRanges[0][1],
+    boundaryRanges[4][1],
+    boundaryRanges[2][1]
+  );
+  addCandidateValues(
+    -boundaryRanges[2][0],
+    -boundaryRanges[4][0],
+    -boundaryRanges[0][0]
+  );
+  addCandidateValues(
+    boundaryRanges[1][1],
+    boundaryRanges[5][1],
+    boundaryRanges[3][1]
+  );
+  addCandidateValues(
+    -boundaryRanges[3][0],
+    -boundaryRanges[5][0],
+    -boundaryRanges[1][0]
+  );
+
+  var finalAnswer = 1e18; // Initialize with a very large number.
+
+  // Iterate through all candidate values to find the minimum area.
+  for (var currentOffset of uniqueValues) {
+    // Calculate bounds for the current offset.
+    var upperBound = findMaximum(
+      boundaryRanges[0][1] + currentOffset,
+      boundaryRanges[2][1] - currentOffset,
+      boundaryRanges[4][1]
+    );
+    var lowerCoord = findMinimum(
+      boundaryRanges[0][0] + currentOffset,
+      boundaryRanges[2][0] - currentOffset,
+      boundaryRanges[4][0]
+    );
+    var rightBound = findMaximum(
+      boundaryRanges[1][1] + currentOffset,
+      boundaryRanges[3][1] - currentOffset,
+      boundaryRanges[5][1]
+    );
+    var leftBound = findMinimum(
+      boundaryRanges[1][0] + currentOffset,
+      boundaryRanges[3][0] - currentOffset,
+      boundaryRanges[5][0]
+    );
+
+    // Calculate the area for the current bounds.
+    var currentArea = (upperBound - lowerCoord) * (rightBound - leftBound);
+
+    // Update the minimum answer if a smaller area is found.
+    if (currentArea < finalAnswer) {
+      finalAnswer = currentArea;
+    }
+  }
+
+  return finalAnswer;
 }
 
-/**
- * Calculates and adds potential shift values to the set.
- * These shifts are derived from differences between boundary values.
- * @param {number} boundOne - The first boundary value.
- * @param {number} boundTwo - The second boundary value.
- * @param {number} boundThree - The third boundary value.
- */
-function deriveShiftCandidates(boundOne, boundTwo, boundThree) {
-    // Add various combinations of differences, ensuring non-negative values.
-    possibleShiftValues.add(Math.max(0, (boundThree - boundTwo) || 0));
-    possibleShiftValues.add(Math.max(0, ((boundThree - boundOne) / 2) || 0));
-    possibleShiftValues.add(Math.max(0, (boundTwo - boundOne) || 0));
+// Function to update the min/max range for a specific boundary index.
+function updateBoundary(rangeIndex, coordinateValue) {
+  if (boundaryRanges[rangeIndex].length) {
+    // If range already exists, update min or max.
+    if (boundaryRanges[rangeIndex][0] > coordinateValue)
+      boundaryRanges[rangeIndex][0] = coordinateValue;
+    else if (boundaryRanges[rangeIndex][1] < coordinateValue)
+      boundaryRanges[rangeIndex][1] = coordinateValue;
+  } else {
+    // If range is empty, initialize it with the current coordinate.
+    boundaryRanges[rangeIndex][0] = boundaryRanges[rangeIndex][1] =
+      coordinateValue;
+  }
 }
 
-/**
- * Finds the maximum value among the provided arguments.
- * Handles non-numeric arguments by skipping them.
- * @param {...number} values - A variable number of numerical arguments.
- * @returns {number} The maximum value.
- */
+// Function to add potential candidate values to the uniqueValues set.
+function addCandidateValues(valU, valX, valD) {
+  uniqueValues.add(Math.max(0, (valD - valX) || 0));
+  uniqueValues.add(Math.max(0, ((valD - valU) / 2) || 0));
+  uniqueValues.add(Math.max(0, (valX - valU) || 0));
+}
+
+// Function to find the maximum value among its arguments, ignoring NaNs.
 function findMaximum() {
-    const valueArguments = arguments;
-    let currentMax = valueArguments[0]; // Initialize with the first argument.
-
-    // Iterate through remaining arguments to find the maximum.
-    for (let argIndex = 1; argIndex < valueArguments.length; argIndex++) {
-        // Skip if the argument is not a valid number.
-        if (isNaN(valueArguments[argIndex])) continue;
-        // If current max is already greater, continue.
-        if (currentMax > valueArguments[argIndex]) continue;
-        // Update currentMax if a larger value is found.
-        currentMax = valueArguments[argIndex];
-    }
-    return currentMax;
+  var allArguments = arguments;
+  var currentMax = allArguments[0];
+  for (var argIndex = 1; argIndex < allArguments.length; argIndex++) {
+    if (isNaN(allArguments[argIndex])) continue;
+    if (currentMax > allArguments[argIndex]) continue;
+    currentMax = allArguments[argIndex];
+  }
+  return currentMax;
 }
 
-/**
- * Finds the minimum value among the provided arguments.
- * Handles non-numeric arguments by skipping them.
- * @param {...number} values - A variable number of numerical arguments.
- * @returns {number} The minimum value.
- */
+// Function to find the minimum value among its arguments, ignoring NaNs.
 function findMinimum() {
-    const valueArguments = arguments;
-    let currentMin = valueArguments[0]; // Initialize with the first argument.
-
-    // Iterate through remaining arguments to find the minimum.
-    for (let argIndex = 1; argIndex < valueArguments.length; argIndex++) {
-        // Skip if the argument is not a valid number.
-        if (isNaN(valueArguments[argIndex])) continue;
-        // If current min is already smaller, continue.
-        if (currentMin < valueArguments[argIndex]) continue;
-        // Update currentMin if a smaller value is found.
-        currentMin = valueArguments[argIndex];
-    }
-    return currentMin;
+  var allArguments = arguments;
+  var currentMin = allArguments[0];
+  for (var argIndex = 1; argIndex < allArguments.length; argIndex++) {
+    if (isNaN(allArguments[argIndex])) continue;
+    if (currentMin < allArguments[argIndex]) continue;
+    currentMin = allArguments[argIndex];
+  }
+  return currentMin;
 }

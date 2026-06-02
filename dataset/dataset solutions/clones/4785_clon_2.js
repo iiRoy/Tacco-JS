@@ -1,92 +1,117 @@
-// Global declarations for graph dimensions
-let nodeCount = 0;
-let connectionCount = 0;
+let vertexCount = 0; // Global variable to store the total number of vertices.
+let edgeCount = 0;   // Global variable to store the total number of edges.
 
-// Array to hold information about vertices and their connections
-let connectionData = [];
+// This array will hold the graph's edge information, where each element is an array [source, destination, weight].
+let edgeList = [];
 
-// Storage for computed optimal path values, initially empty
-let optimalPaths = [];
+// This array is designated for storing shortest path calculations or related data.
+let shortestPaths = [];
 
-// Memoization array for tracking utilized path segments
-let segmentLog = [];
+// This array serves as a memoization structure, possibly to track visited routes or path segments.
+let routeMemory = [];
 
-// Recursive function to thoroughly explore path options
-function recursivePathExplorer ( initialNode, terminalNode ) {
-  // Base condition: If the start and end nodes are the same, the path cost is zero.
-  if ( initialNode === terminalNode ) {
+/**
+ * Recursively explores a path from a starting node to an ending node,
+ * summing direct edge costs along a specific sequence.
+ * @param {number} startNode - The current node from which to begin the path segment.
+ * @param {number} endNode - The target node for the path.
+ * @returns {number} The cumulative cost of the path segment.
+ */
+function explorePath(startNode, endNode) {
+  // Base condition: If the current node is the destination, the cost for this segment is zero.
+  if (startNode === endNode) {
     return 0;
   }
-  return fetchDirectWeight(initialNode, terminalNode) + recursivePathExplorer(initialNode + 1, terminalNode);
+  // Recursive step: Calculate the direct cost from startNode to endNode,
+  // then add the cost of exploring the path from the next sequential node (startNode + 1) to endNode.
+  return findDirectEdgeCost(startNode, endNode) + explorePath(startNode + 1, endNode);
 }
 
-// Locates and returns the direct cost between two specified nodes from connectionData
-function fetchDirectWeight ( nodeOne, nodeTwo ) {
-  let currentWeight = 0;
-  for ( let entryIndex = 0; entryIndex < nodeCount; entryIndex++ ) {
-    if ( connectionData[entryIndex][0] === nodeOne && connectionData[entryIndex][1] === nodeTwo ) {
-      currentWeight = connectionData[entryIndex][2];
-      break; // Direct edge found; exit loop
+/**
+ * Searches the global edge list for a direct connection between two specified nodes
+ * and returns the associated cost.
+ * @param {number} nodeA - The source node.
+ * @param {number} nodeB - The destination node.
+ * @returns {number} The weight of the direct edge from nodeA to nodeB, or 0 if no such direct edge is found.
+ */
+function findDirectEdgeCost(nodeA, nodeB) {
+  let directCost = 0; // Initialize the cost for a direct edge.
+  // Iterate through the `edgeList` to find a matching edge.
+  for (let edgeIndex = 0; edgeIndex < vertexCount; edgeIndex++) {
+    // Check if the current edge's source and destination match the input nodes.
+    if (edgeList[edgeIndex][0] === nodeA && edgeList[edgeIndex][1] === nodeB) {
+      directCost = edgeList[edgeIndex][2]; // If a match is found, retrieve its weight.
+      break; // Exit the loop as the direct edge has been found.
     }
   }
-  return currentWeight;
+  return directCost; // Return the cost of the direct edge.
 }
 
-// Primary function to process graph input and perform calculations
-function executeGraphProcess ( rawInputText ) {
-  rawInputText = rawInputText.split("\n");
-  let lineSegments = rawInputText[0].split(" ");
+/**
+ * The primary function responsible for parsing input data, initializing graph structures,
+ * and orchestrating the pathfinding process.
+ * @param {string} rawInputData - The complete input string, typically from standard input.
+ */
+function processGraphData(rawInputData) {
+  // Divide the raw input into an array of lines.
+  let inputLines = rawInputData.split("\n");
 
-  nodeCount = Number.parseInt(lineSegments[0]);
-  connectionCount = Number.parseInt(lineSegments[1]);
+  // Parse the first line to extract the number of vertices and edges.
+  let graphDimensions = inputLines[0].split(" ");
+  vertexCount = Number.parseInt(graphDimensions[0]); // Assign N from input.
+  edgeCount = Number.parseInt(graphDimensions[1]);   // Assign M from input.
 
-  // Reinitialize and populate the connection data array
-  connectionData = [];
-  for ( let nodeIdxA = 1; nodeIdxA <= connectionCount; nodeIdxA++ ) {
-    let edgeComponents = rawInputText[nodeIdxA].split(" ");
-    const parsedNumericalValues = edgeComponents.map(strVal => Number.parseInt(strVal));
-    connectionData.push(parsedNumericalValues);
+  // Re-initialize the edge list to ensure it's empty before population.
+  edgeList = [];
+  // Populate the `edgeList` with edge data from subsequent input lines.
+  for (let lineIndex = 1; lineIndex <= edgeCount; lineIndex++) {
+    let currentEdgeParts = inputLines[lineIndex].split(" ");
+    // Convert string components of an edge into numerical values.
+    let parsedEdgeData = currentEdgeParts.map(component => Number.parseInt(component));
+    edgeList.push(parsedEdgeData); // Add the processed edge to the list.
   }
 
-  // Set up the array for storing shortest path results
-  optimalPaths = [];
-  for ( let nodeIdxA = 1; nodeIdxA <= nodeCount; nodeIdxA++ ) {
-    for ( let nodeIdxB = 1; nodeIdxB <= nodeCount; nodeIdxB++ ) {
-      if ( nodeIdxA !== nodeIdxB && nodeIdxA < nodeIdxB ) {
-        optimalPaths.push([nodeIdxA, nodeIdxB, 0]);
+  // Prepare the `shortestPaths` array for path storage.
+  shortestPaths = [];
+  // Initialize `shortestPaths` with placeholder entries for all unique node pairs (i, j) where i < j.
+  for (let nodeIdx = 1; nodeIdx <= vertexCount; nodeIdx++) {
+    for (let innerNodeIdx = 1; innerNodeIdx <= vertexCount; innerNodeIdx++) {
+      if (nodeIdx !== innerNodeIdx && nodeIdx < innerNodeIdx) {
+        shortestPaths.push([nodeIdx, innerNodeIdx, 0]); // Each entry is [source, destination, initial_cost].
       }
     }
   }
 
-  // Initialize the segment tracking log with the same structure as optimalPaths
-  segmentLog = optimalPaths;
-  
-  // ----------------------------------------------------------------------
-  // This section contains the core algorithm execution.
-  // It aims to discover the most efficient path between any two vertices (A to B),
-  // storing these optimal routes in 'optimalPaths'.
-  // Paths used during this process are recorded in 'segmentLog'.
-  // The final step involves counting paths in 'segmentLog' that remain '0' for submission.
-  // ----------------------------------------------------------------------
-  
-  // Determine shortest paths from node X to node Y (where X != Y).
-  // Direct connections are given; indirect routes require exploration.
-  // This nested loop structure iterates through all potential start and end node pairs.
-  for ( let indexX = 1; indexX <= nodeCount; indexX++ ) {
-    for ( let indexY = 1; indexY <= nodeCount; indexY++ ) {
-      if ( indexX !== indexY && indexX < indexY ) {
-        // Execute the route finding process
-        let calculatedRouteCost = recursivePathExplorer(indexX, indexY);
+  // Assign the initialized `shortestPaths` array to `routeMemory`.
+  routeMemory = shortestPaths;
 
-        // Display results for debugging
-        console.log("For nodeX =", indexX, "and nodeY =", indexY, ", the minimal value is:");
-        console.log("Computed cost =", calculatedRouteCost);
-        console.log("Direct edge weight =", fetchDirectWeight(indexX, indexY));
-        // optimalPaths[indexX][indexY] = Math.min(calculatedRouteCost, fetchDirectWeight(indexX, indexY));
+  /*
+   * This section contains the main algorithm logic.
+   * The objective is to determine the most efficient path between any two distinct vertices (A to B)
+   * and record this information within the `shortestPaths` structure.
+   * `routeMemory` is intended to log the specific paths utilized.
+   * The final step, not fully implemented in the original, would involve counting paths
+   * that remain at their initial "0" state in `routeMemory`.
+   */
+
+  // Iterate through all possible unique pairs of nodes (outerNode, innerNode) where outerNode is less than innerNode.
+  for (let outerNode = 1; outerNode <= vertexCount; outerNode++) {
+    for (let innerNode = 1; innerNode <= vertexCount; innerNode++) {
+      if (outerNode !== innerNode && outerNode < innerNode) {
+        // Execute the path exploration function for the current node pair.
+        let calculatedPathValue = explorePath(outerNode, innerNode);
+
+        // Output diagnostic information to the console, preserving original string literals.
+        console.log("i=", outerNode, "j=", innerNode, "の最短値は");
+        console.log("計算値=", calculatedPathValue);
+        console.log("パラメータ=", findDirectEdgeCost(outerNode, innerNode));
+        // The original code included a commented-out line for updating shortestPaths,
+        // which is omitted here to maintain strict behavioral equivalence.
+        // shortestPaths[outerNode][innerNode] = Math.min(calculatedPathValue, findDirectEdgeCost(outerNode, innerNode));
       }
     }
   }
 }
 
-// Invoke the main processing function, reading input from standard input
-executeGraphProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function, reading input from the standard input stream.
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

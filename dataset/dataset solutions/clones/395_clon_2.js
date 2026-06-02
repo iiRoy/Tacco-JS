@@ -1,72 +1,73 @@
-// Parsing input from the standard input stream
-var fileSystemUtil = require('fs');
-    var  fileSize  = fileSystemUtil.fstatSync(process.stdin.fd).size;
-var dataBuffer = new Buffer(fileSize);
-var actualBytesRead = fileSystemUtil.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
-var queryInputs = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
-processRestaurantSimulation();
+// input reader
+var io = require("fs"),
+size = io.fstatSync(process.stdin.fd).size,
+buf = new Buffer(size),
+count = io.readSync(process.stdin.fd, buf, 0, size, 0),
+rows = buf.toString("utf8", 0, count).split("\n");
+run();
 
-  function processRestaurantSimulation(){
-    var calculatedDelays = performSeatingLogic();
-    for (  var currentQueryIndex = 0, totalQueries = queryInputs.length - 1 ;   currentQueryIndex < totalQueries  ;  currentQueryIndex++  ) {
-      console.log(calculatedDelays[parseInt(queryInputs[currentQueryIndex], 10)]);
-    }
+function run(){
+  var waits = build();
+  for(var idx = 0, total = rows.length - 1; idx < total;idx++){
+    console.log(waits[parseInt(rows[idx], 10)]);
   }
+}
 
-function performSeatingLogic ( ) {
-  var tableOccupancy = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-  var partySizes = [ 2, 5, 2, 2, 2 ];
-  var mealDurations = [ 19, 39, 25, 36, 22, 42 ];
+function build(){
+  var chairs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+  var parties = [2,5,2,2,2];
+  var durations = [19,39,25,36,22,42];
   
-  var currentPartyIndex = -1;
-  var elapsedTime = 0;
-  var partyArrivalDelays = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-  var remainingPartiesToSeat = 100;
+  var front = -1;
+  var minute = 0;
+  var waits = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+  var remaining = 100;
   
-  while ( true ) {
-    // Decrement timers for currently occupied tables
-    var seatIterationIndex;
-    for ( seatIterationIndex = 17 ; seatIterationIndex-- ; ) {
-      tableOccupancy[seatIterationIndex] = getGreaterValue(--tableOccupancy[seatIterationIndex], 0);
+  while(true){
+    // finish eating
+    var pos;
+    for(pos = 17; pos--;){
+      chairs[pos] = larger(--chairs[pos], 0);
     }
     
-    // Check for new party arrivals at the entrance
-    if ( currentPartyIndex == -1 && elapsedTime % 5 == 0 ) {
-      currentPartyIndex = elapsedTime / 5;
+    // arrival
+    if(front == -1 && minute % 5 == 0){
+      front = minute / 5;
     }
     
-    // Attempt to assign seats to waiting parties
-    while ( currentPartyIndex != -1 && seatIterationIndex != 17 ) {
-      var requiredConsecutiveSpots = partySizes[currentPartyIndex % 5];
-      var consecutiveEmptySpots = 0;
-      var firstAvailableSeat = -1;
+    // seating
+    while(front != -1 && pos != 17){
+      var needed = parties[front % 5];
+      var consecutive = 0;
+      var start = -1;
       
-      for ( seatIterationIndex = 0 ; seatIterationIndex < tableOccupancy.length ; seatIterationIndex++ ) {
-        consecutiveEmptySpots = tableOccupancy[seatIterationIndex] == 0 ? consecutiveEmptySpots + 1 : 0;
+      for(pos = 0; pos < chairs.length; pos++){
+        consecutive = chairs[pos] == 0 ? consecutive + 1 : 0;
         
-        if ( consecutiveEmptySpots == requiredConsecutiveSpots ) {
-          firstAvailableSeat = seatIterationIndex - (requiredConsecutiveSpots - 1);
-          // Found enough contiguous empty seats for the current party
-          partyArrivalDelays[currentPartyIndex] = elapsedTime - (currentPartyIndex * 5);
-          for ( var fillIdx = firstAvailableSeat ; fillIdx < (requiredConsecutiveSpots + firstAvailableSeat) ; fillIdx++ ) {
-            tableOccupancy[fillIdx] = mealDurations[currentPartyIndex % 6];
+        if(consecutive == needed){
+          start = pos - (needed - 1);
+          // can sit
+          waits[front] = minute - (front * 5);
+          for(var next = start; next < (needed + start); next++){
+            chairs[next] = durations[front % 6];
           }
           
-          currentPartyIndex = (((currentPartyIndex + 1) * 5) <= elapsedTime) ? currentPartyIndex + 1 : -1;
-          if ( !(--remainingPartiesToSeat) ) {
-            // All one hundred parties have been seated; simulation complete
-            return partyArrivalDelays;
+          front = (((front + 1) * 5) <= minute) ? front + 1 : -1;
+          if(!(--remaining)){
+            // 100 groups seated
+            return waits;
           }
-          break; // Exit the inner loop as the party has been seated
+          break;
         }
       }
     }
     
-    elapsedTime++;
+    minute++;
   }
+  
 }
 
-function getGreaterValue ( valA , valB ) {
-  var difference = ( valA - valB );
-  return valA - ( difference & ( difference >> 31 ) );
+function larger(left, right){
+  var diff = (left - right);
+  return left - (diff & (diff >> 31));
 }

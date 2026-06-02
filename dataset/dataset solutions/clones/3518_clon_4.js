@@ -1,73 +1,86 @@
-const numericValue = (dataString) => Number(dataString);
+const parseInteger = (val) => Number.parseInt(val, 10);
+const parseIntegerArray = (strArr) => strArr.map(parseInteger);
+const absoluteValue = (num) => Math.abs(num);
+const findMinimum = (...values) => Math.min(...values);
+const findMaximum = (...values) => Math.max(...values);
 
-const numericList = (dataStrings) => dataStrings.map(numericValue);
+const computeGCD = (...numbers) => {
+    const gcdTwo = (a, b) => {
+        while (b) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    };
+    return numbers.reduce(gcdTwo);
+};
 
-const obtainSourceText = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+((inputContent) => {
+    const processInputData = (rawInput) => {
+        const inputLines = rawInput.split('\n');
+        const totalPoints = parseInteger(inputLines[0]);
+        const coordinateCollection = [];
 
-function executeProgram(sourceText) {
-    const linesOfText = sourceText.split('\n');
-    const coordinateSetCount = numericValue(linesOfText[0]);
+        let initialPairSumParity = null;
+        for (let i = 0; i < totalPoints; i++) {
+            const currentCoordinatePair = parseIntegerArray(inputLines[i + 1].split(' '));
+            coordinateCollection.push(currentCoordinatePair);
 
-    let pointCollection = linesOfText.slice(1, coordinateSetCount + 1)
-                                .map(line => numericList(line.split(' ')));
+            const currentSumParity = (currentCoordinatePair[0] + currentCoordinatePair[1]) % 2;
+            if (i === 0) {
+                initialPairSumParity = currentSumParity;
+            } else if (currentSumParity !== initialPairSumParity) {
+                console.log(-1);
+                return;
+            }
+        }
 
-    const firstPointSumParity = (pointCollection[0][0] + pointCollection[0][1]) & 1;
+        if (initialPairSumParity === 1) {
+            coordinateCollection.forEach((pairEntry) => {
+                if (pairEntry[0] % 2 !== 0) {
+                    [pairEntry[0], pairEntry[1]] = [pairEntry[1], pairEntry[0]];
+                }
+            });
+        }
 
-    const parityInconsistencyDetected = pointCollection.some(
-        (currentPoint) => ((currentPoint[0] + currentPoint[1]) & 1) !== firstPointSumParity
-    );
+        let finalDimensionCount = 20;
+        if (coordinateCollection[0][0] % 2 !== 0) finalDimensionCount++;
+        if (coordinateCollection[0][1] % 2 !== 0) finalDimensionCount++;
 
-    if (parityInconsistencyDetected) {
-        console.log(-1);
-        return;
-    }
+        console.log(finalDimensionCount);
 
-    let adjustedPointCollection = pointCollection;
-    if (firstPointSumParity === 1) {
-        adjustedPointCollection = pointCollection.map(
-            (currentPoint) => ((currentPoint[0] & 1) === 0) ? currentPoint : [currentPoint[1], currentPoint[0]]
-        );
-    }
+        const directionSequence = Array.from({ length: finalDimensionCount }, () => 1).join(' ');
+        console.log(directionSequence);
 
-    const baseDimension = 20;
-    const systemDimension = baseDimension + (adjustedPointCollection[0][0] & 1) + (adjustedPointCollection[0][1] & 1);
-    
-    console.log(systemDimension);
-    console.log(Array(systemDimension).fill(1).join(' '));
+        const generateRepeatedChar = (count, charSymbol) => {
+            let segmentString = '';
+            for (let k = 0; k < count; k++) {
+                segmentString += charSymbol;
+            }
+            return segmentString;
+        };
 
-    const unitArm = 10;
-    const directionMap = {
-        positiveX: 'R',
-        negativeX: 'L',
-        positiveY: 'U',
-        negativeY: 'D'
+        coordinateCollection.forEach(pointData => {
+            let currentXValue = pointData[0];
+            let currentYValue = pointData[1];
+            const pathSegments = [];
+
+            if (currentXValue % 2 !== 0) {
+                pathSegments.push('R');
+                currentXValue++;
+            }
+            if (currentYValue % 2 !== 0) {
+                pathSegments.push('R');
+                currentYValue++;
+            }
+
+            pathSegments.push(generateRepeatedChar((10 + currentXValue) / 2, 'R'));
+            pathSegments.push(generateRepeatedChar((10 - currentXValue) / 2, 'L'));
+            pathSegments.push(generateRepeatedChar((10 + currentYValue) / 2, 'U'));
+            pathSegments.push(generateRepeatedChar((10 - currentYValue) / 2, 'D'));
+
+            console.log(pathSegments.join(''));
+        });
     };
 
-    const generateRepeatedString = (count, character) => Array(count).fill(character).join('');
-
-    const pathSegmentCollection = adjustedPointCollection.map(originalPoint => {
-        let moveInstruction = '';
-        let currentXCoord = originalPoint[0];
-        let currentYCoord = originalPoint[1];
-
-        if (currentXCoord & 1) {
-            moveInstruction += directionMap.positiveX;
-            currentXCoord++;
-        }
-        if (currentYCoord & 1) {
-            moveInstruction += directionMap.positiveX; // This is 'R' as per original logic
-            currentYCoord++;
-        }
-
-        moveInstruction += generateRepeatedString((unitArm + currentXCoord) / 2, directionMap.positiveX);
-        moveInstruction += generateRepeatedString((unitArm - currentXCoord) / 2, directionMap.negativeX);
-        moveInstruction += generateRepeatedString((unitArm + currentYCoord) / 2, directionMap.positiveY);
-        moveInstruction += generateRepeatedString((unitArm - currentYCoord) / 2, directionMap.negativeY);
-
-        return moveInstruction;
-    });
-
-    pathSegmentCollection.forEach(path => console.log(path));
-}
-
-executeProgram(obtainSourceText());
+    processInputData(inputContent);
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

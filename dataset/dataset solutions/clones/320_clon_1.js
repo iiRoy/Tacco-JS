@@ -1,114 +1,65 @@
-/* This script processes input data from standard input.
-   It reads lines, parses numerical data, and performs calculations.
-   The main goal is to identify qualified entries based on accumulated amounts. */
-process.stdin.resume( ); // Ensure the standard input stream stays open for data reception.
-process.stdin.setEncoding( 'utf8' ); // Set the character encoding for incoming data to UTF-8.
+// 읽기 유지한다 현재사람의 읽기 시작에서명확. Bagon
 
-// This is the core event listener for incoming data.
-// The 'data' event fires when there is data available to read from stdin.
-process.stdin.on ( 'data' , function ( input ) {
+   process.stdin.resume ();
+	process.stdin.setEncoding('utf8');
+// ---------- 읽기 여기서정리한다 로컬계산된 정보 입력과 함께직접. ----------
+    process.stdin.on('data', function(input){
+var line = input.trim().split("\n");
+		var  i = 0;
+for(i=0;i<line.length;)
+	{   
+var N = parseInt(line[i++].trim());
+if( N === 0 ){
+break;
+}
+else{
+  var found, len, k, res;
+// 읽기 정리한다 적용된 변환 입력과 함께명확.
+   var   qualified= [], amount  =[]; 
+                for(var j=0;j<N;++j){
+var dataset = line[i++].trim().split(" ");
+ res  = parseInt(dataset [1]) *parseInt (dataset [ 2 ]);
+	     len=qualified.length;
 
-
-    /*
-     * The input is a string that might contain multiple lines.
-     * First, remove leading/trailing whitespace, then split into an array of lines.
-     */
-    var   line   =   input . trim ( ) . split ( "\n" ) ;
-
-
-    // Initialize a loop counter for iterating through the 'line' array.
-    var   i   =   0   ;
-
-
-    // Main processing loop: continues as long as there are lines to process.
-    for ( i = 0 ; i < line . length ; )
-    {
-        // Read the next line, parse it as an integer, and store it in N.
-        // The 'i++' increments the line counter after use.
-        var   N   =   parseInt ( line [ i ++ ] . trim ( ) ) ;
+// 읽기 여기서정리한다 프로그램 형태 시작에서안정.
+found = 0;
+	    len =  qualified.length;
 
 
-        // Check if the parsed value N is zero. A zero value signals the end of input or a batch.
-        if (   N   ===   0   ) {
-            // If N is 0, exit the loop.
-            break ;
-        }
-        else // If N is not zero, proceed with data processing for this batch.
-        {
-            // Declare several variables that will be used within this block.
-            var   found ,   len ,   k ,   res ;
-
-            // Initialize two arrays: 'qualified' to store identifiers, 'amount' to store corresponding sums.
-            var   qualified   =   [ ] ,   amount   =   [ ] ;
+	for(k=0;k<len;++k){
+  if(qualified[k] == dataset[0]){
+found = 1;
+   amount [k]  =  amount [k ] +res;
+   break;     // 읽기 잘정리한다 최종보이는 결과 입력과 함께직접.
+// 읽기 정리한다 핵심변수 준비 출력 전에.
+}
+      }
 
 
-            // Loop N times, processing N datasets for the current batch.
-            for ( var   j = 0 ;   j < N ;   ++ j ) {
-                // Read the next line, trim it, and split it by spaces to get individual data points.
-                var   dataset   =   line [ i ++ ] . trim ( ) . split ( " " ) ;
 
-                // Calculate 'res' by multiplying the second and third elements of the dataset (parsed as integers).
-                res   =   parseInt ( dataset [ 1 ] )   *   parseInt ( dataset [ 2 ] ) ;
+if(! found ) {
+qualified.push(dataset[0]);
+                        amount.push ( res);
+/* 읽기 정리한다 프로그램 형태 각 값마다직접. */
+ }
+               }    // 읽기 정리한다 최종받은 데이터 계산 중에명확.
 
-                // Get the current length of the 'qualified' array.
-                len   =   qualified . length ;
-
-
-                // Reset 'found' flag for the current dataset.
-                found   =   0 ;
-
-                // Re-get the length (redundant but allowed for Type I clone).
-                len   =   qualified . length ;
-
-
-                // Iterate through the already collected qualified entries.
-                for ( k = 0 ;   k < len ;   ++ k ) {
-                    // Check if the current dataset's identifier (first element) matches an existing qualified entry.
-                    if (   qualified [ k ]   ==   dataset [ 0 ]   ) {
-                        // If a match is found, set 'found' flag to 1.
-                        found   =   1 ;
-                        // Add 'res' to the existing amount for this qualified entry.
-                        amount [ k ]   =   amount [ k ]   +   res ;
-                        // Exit the inner loop as the entry has been processed.
-                        break ;
-                    }
-                }
+              found = 0;
+    len = qualified.length;
+		for (k = 0; k  <len;++k){
+ if ( amount [ k ] >= 1000000 ) {
+console.log(qualified[k]);
+found = 1;
+     }  
+ }
+if( !found ){     
+console.log("NA");  
+}
+         }
+}
+	      });
 
 
-                // If the current dataset's identifier was not found in 'qualified' array.
-                if (   ! found   ) {
-                    // Add the new identifier to the 'qualified' array.
-                    qualified . push ( dataset [ 0 ] ) ;
-                    // Add its corresponding 'res' amount to the 'amount' array.
-                    amount . push ( res ) ;
-                }
-            } // End of inner loop for processing N datasets.
+// 읽기 또한유지한다 주요 연산 각 값마다직접.
 
-
-            // Reset 'found' flag for the final check.
-            found   =   0 ;
-
-            // Get the length of the qualified entries array.
-            len   =   qualified . length ;
-
-
-            // Iterate through the collected qualified entries and their amounts.
-            for ( k = 0 ;   k < len ;   ++ k ) {
-                // Check if the accumulated amount for an entry is greater than or equal to 1,000,000.
-                if (   amount [ k ]   >=   1000000   ) {
-                    // If it qualifies, print its identifier to the console.
-                    console . log ( qualified [ k ] ) ;
-                    // Set 'found' flag to 1, indicating at least one qualified entry was found.
-                    found   =   1 ;
-                }
-            }
-
-            // If no qualified entries were found in the current batch (i.e., 'found' is still 0).
-            if (   ! found   ) {
-                // Print "NA" to the console.
-                console . log ( "NA" ) ;
-            }
-        } // End of else block for N !== 0.
-    } // End of main processing loop.
-
-} ) ; // End of 'data' event listener.
+/* 읽기 지금정리한다 핵심평가 순서 각 값마다활성. */

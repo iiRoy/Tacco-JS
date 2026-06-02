@@ -1,91 +1,54 @@
-const parseData = (dataInputSource) => {
-  const dataLines = dataInputSource.split("\n");
-  const itemCount = parseInt(dataLines[0], 10);
-  const rawHeights = dataLines[1].split(" ").map(Number);
-  const rawScores = dataLines[2].split(" ").map(Number);
-  return { itemCount, rawHeights, rawScores };
+const parseInputData = (rawInputContent) => {
+    const inputLines = rawInputContent.split('\n');
+    const totalItemsCount = Number(inputLines[0]);
+    const itemHeightValues = inputLines[1].split(' ').map(Number);
+    const itemAmountValues = inputLines[2].split(' ').map(Number);
+    return { totalItemsCount, itemHeightValues, itemAmountValues };
 };
 
-const obtainScoreForAltitude = (targetAltitude, scoreRegistry) => {
-  let currentTopScore = 0;
-  for (const [registeredAltitude, registeredScore] of scoreRegistry.entries()) {
-    if (registeredAltitude <= targetAltitude) {
-      currentTopScore = Math.max(currentTopScore, registeredScore);
-    }
-  }
-  return currentTopScore;
+const determineMaxAccumulatedValue = ({ totalItemsCount, itemHeightValues, itemAmountValues }) => {
+    // maxAttainableValue[k] stores the highest sum achievable for a path ending at height k.
+    const maxAttainableValue = Array(totalItemsCount + 1).fill(0);
+    let globalMaximumSum = 0;
+
+    // Process each item to update the dynamic programming state.
+    itemHeightValues.forEach((currentHeight, itemIndex) => {
+        const currentAmount = itemAmountValues[itemIndex];
+        // Calculate the potential new maximum sum if this item is included.
+        const candidateSum = currentAmount + maxAttainableValue[currentHeight];
+
+        // Determine the exclusive upper bound for the propagation range.
+        // By default, propagate to the end of the array.
+        let propagationEndBoundary = totalItemsCount + 1;
+
+        // Find the first index (offset from currentHeight) where the existing value
+        // is already greater than or equal to the candidateSum. This marks where
+        // the propagation of candidateSum should stop.
+        const blockingElementOffset = maxAttainableValue
+                                      .slice(currentHeight, totalItemsCount + 1)
+                                      .findIndex(val => val >= candidateSum);
+
+        if (blockingElementOffset !== -1) {
+            // If a blocking element is found, adjust the propagation boundary.
+            propagationEndBoundary = currentHeight + blockingElementOffset;
+        }
+
+        // Efficiently update the range of maxAttainableValue using Array.prototype.fill.
+        // This replaces the original imperative inner loop for propagation.
+        maxAttainableValue.fill(candidateSum, currentHeight, propagationEndBoundary);
+
+        // Update the overall maximum sum found across all items.
+        globalMaximumSum = Math.max(globalMaximumSum, maxAttainableValue[currentHeight]);
+    });
+
+    return globalMaximumSum;
 };
 
-const cascadeScoreUpdate = (
-  startAltitude,
-  valueToPropagate,
-  scoreRegistry,
-  maximumPossibleAltitude
-) => {
-  if (startAltitude > maximumPossibleAltitude) {
-    return;
-  }
-
-  const existingScoreAtCurrent = obtainScoreForAltitude(startAltitude, scoreRegistry);
-
-  if (valueToPropagate > existingScoreAtCurrent) {
-    scoreRegistry.set(startAltitude, valueToPropagate);
-    cascadeScoreUpdate(
-      startAltitude + 1,
-      valueToPropagate,
-      scoreRegistry,
-      maximumPossibleAltitude
-    );
-  }
+const executeProgram = (inputPayload) => {
+    const processedData = parseInputData(inputPayload);
+    const finalResultValue = determineMaxAccumulatedValue(processedData);
+    console.log(String(finalResultValue));
+    return finalResultValue;
 };
 
-const processBlockRecursively = (
-  currentBlockIndex,
-  allBlockDetails,
-  currentMaxScoresMap,
-  ultimatePeakScore
-) => {
-  if (currentBlockIndex >= allBlockDetails.length) {
-    return ultimatePeakScore;
-  }
-
-  const currentBlock = allBlockDetails[currentBlockIndex];
-  const blockAltitude = currentBlock[0];
-  const blockWorth = currentBlock[1];
-
-  const maxScoreBeforeCurrent = obtainScoreForAltitude(blockAltitude, currentMaxScoresMap);
-  const potentialNewScore = blockWorth + maxScoreBeforeCurrent;
-
-  cascadeScoreUpdate(
-    blockAltitude,
-    potentialNewScore,
-    currentMaxScoresMap,
-    allBlockDetails.length 
-  );
-
-  const scoreAfterFullUpdate = obtainScoreForAltitude(blockAltitude, currentMaxScoresMap);
-  const newUltimatePeakScore = Math.max(ultimatePeakScore, scoreAfterFullUpdate);
-
-  return processBlockRecursively(
-    currentBlockIndex + 1,
-    allBlockDetails,
-    currentMaxScoresMap,
-    newUltimatePeakScore
-  );
-};
-
-const executeProcessing = (dataInput) => {
-  const { itemCount, rawHeights, rawScores } = parseData(dataInput);
-  const blockItems = rawHeights.map((hVal, idx) => [hVal, rawScores[idx]]);
-
-  const maxAttainableScoreMap = new Map(); 
-  const finalOutcome = processBlockRecursively(
-    0,
-    blockItems,
-    maxAttainableScoreMap,
-    0
-  );
-
-  console.log(finalOutcome.toString());
-  return finalOutcome;
-};
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

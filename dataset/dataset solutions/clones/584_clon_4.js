@@ -1,51 +1,56 @@
-function* acquireInputData(sourceData) {
-    const lines = sourceData.trim().split('\n');
-    let currentLineIndex = 0;
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
 
-    while (true) {
-        const boundaryValues = lines[currentLineIndex++].split(' ').map(Number);
-        const countA = boundaryValues[0];
-        const upperLimitB = boundaryValues[1];
+let linePointer = 0;
 
-        if (countA === 0 && upperLimitB === 0) {
-            break;
-        }
+const processNextCase = () => {
+    const dimensions = inputLines[linePointer++].split(" ").map(Number);
+    const countN = dimensions[0];
+    const limitM = dimensions[1];
 
-        const numericCollection = [];
-        for (let counter = 0; counter < countA; counter++) {
-            numericCollection.push(Number(lines[currentLineIndex++]));
-        }
-
-        yield { sizeValA: countA, limitValB: upperLimitB, elements: numericCollection };
+    if (countN === 0 && limitM === 0) {
+        return false;
     }
-}
 
-const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedOutcomes = [];
+    const valueList = Array.from({ length: countN }, (_, idx) => Number(inputLines[linePointer + idx]));
+    linePointer += countN;
+    valueList.push(0);
 
-for (const dataUnit of acquireInputData(rawInput)) {
-    const currentBound = dataUnit.limitValB;
-    const baseElements = [...dataUnit.elements, 0];
+    const potentialSums = valueList.flatMap((valX, idxX) =>
+        valueList.slice(idxX).map(valY => valX + valY)
+    ).filter(s => s <= limitM);
 
-    const possibleCombinations = baseElements.flatMap((itemOne, indexOne) =>
-        baseElements.slice(indexOne).map(itemTwo => itemOne + itemTwo)
-    ).filter(sumResult => sumResult <= currentBound);
+    potentialSums.sort((a, b) => a - b);
 
-    possibleCombinations.sort((valA, valB) => valA - valB);
+    let maximumAchievedSum = 0;
 
-    const finalResult = possibleCombinations.reduce((accumulator, firstOperand) => {
-        let currentRightPosition = accumulator.rightPtr;
-        while (currentRightPosition >= 0 && firstOperand + possibleCombinations[currentRightPosition] > currentBound) {
-            currentRightPosition--;
+    for (let idxP1 = 0; idxP1 < potentialSums.length; idxP1++) {
+        const currentP1 = potentialSums[idxP1];
+        const remainingTarget = limitM - currentP1;
+
+        let lowIdx = 0;
+        let highIdx = potentialSums.length - 1;
+        let bestMatchIdxForP2 = -1;
+
+        while (lowIdx <= highIdx) {
+            const midIdx = Math.floor((lowIdx + highIdx) / 2);
+            if (potentialSums[midIdx] <= remainingTarget) {
+                bestMatchIdxForP2 = midIdx;
+                lowIdx = midIdx + 1;
+            } else {
+                highIdx = midIdx - 1;
+            }
         }
-        if (currentRightPosition >= 0) {
-            accumulator.highestSum = Math.max(accumulator.highestSum, firstOperand + possibleCombinations[currentRightPosition]);
+
+        if (bestMatchIdxForP2 !== -1) {
+            maximumAchievedSum = Math.max(maximumAchievedSum, currentP1 + potentialSums[bestMatchIdxForP2]);
         }
-        accumulator.rightPtr = currentRightPosition;
-        return accumulator;
-    }, { highestSum: 0, rightPtr: possibleCombinations.length - 1 });
+    }
 
-    processedOutcomes.push(finalResult.highestSum);
+    console.log(maximumAchievedSum);
+    return true;
+};
+
+while (processNextCase()) {
+    // Continue processing cases until processNextCase returns false
 }
-
-processedOutcomes.forEach(finalValue => console.log(finalValue));

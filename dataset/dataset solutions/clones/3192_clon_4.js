@@ -1,20 +1,20 @@
-"use strict";
+const sourceData = require("node:fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .split("\n");
 
-const sourceData = require("node:fs").readFileSync("/dev/stdin", "utf8");
+const countVal = Number.parseInt(sourceData[0], 10);
 
-const parsedLines = sourceData.split("\n");
+const numericSequence = sourceData[1].split(" ").map((element) => Number.parseInt(element, 10));
 
-const elementCount = Number.parseInt(parsedLines[0], 10);
-
-const numericalCollection = parsedLines[1].split(" ").map(Number.parseInt);
-
-function determineGreatestCommonDivisor(valueA, valueB) {
-  if (valueB === 0) {
-    return valueA;
+function computeGreatestCommonDivisor(numA, numB) {
+  if (numB === 0) {
+    return numA;
   }
-  return determineGreatestCommonDivisor(valueB, valueA % valueB);
+  return computeGreatestCommonDivisor(numB, numA % numB);
 }
 
-const ultimateCommonDivisor = numericalCollection.reduce(determineGreatestCommonDivisor);
+const finalDivisor = numericSequence.reduce((currentGCD, nextNum) => {
+  return computeGreatestCommonDivisor(currentGCD, nextNum);
+});
 
-console.log(ultimateCommonDivisor);
+console.log(finalDivisor);

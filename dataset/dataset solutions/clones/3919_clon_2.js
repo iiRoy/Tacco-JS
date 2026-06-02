@@ -1,61 +1,60 @@
-// This function processes a numerical string and computes a specific value based on its parsed components.
-function evaluateNumbers(  dataString ) {
-  // Split the input string by spaces to get individual number strings.
-  var valueParts = dataString.split( ' '  );
-  var firstVal = parseInt( valueParts[0] ); // Parse the first numerical component.
-  var secondVal = parseInt(  valueParts[1] ); // Parse the second numerical component.
-  var thirdVal = parseInt( valueParts[2] );  // Parse the third numerical component.
+function computeValue(rawData) {
+  // Split the input string by space to get individual number strings.
+  var numStrings = rawData.split(' ');
 
-  // Check if all three values are identical. Note: This check might not behave as expected due to JavaScript's `===` chaining.
-  if ( firstVal === secondVal === thirdVal ) {
-    return 0; // Return zero if all values are considered equal by the comparison.
+  // Parse the string representations into integers.
+  var firstNum = parseInt(numStrings[0]);
+  var secondNum = parseInt(numStrings[1]);
+  var thirdNum = parseInt(numStrings[2]);
+
+  // Check if all three numbers are strictly equal.
+  // Note: This evaluates as (firstNum === secondNum) === thirdNum.
+  if (firstNum === secondNum === thirdNum) {
+    return 0; // If all are equal, the result is zero.
   }
 
-  // Determine the greatest and smallest values among the three.
-  var greatestValue = Math.max( firstVal, secondVal, thirdVal );
-  var smallestValue = Math.min( firstVal, secondVal, thirdVal );
+  // Determine the maximum and minimum values among the three numbers.
+  var maxValue = Math.max(firstNum, secondNum, thirdNum);
+  var minValue = Math.min(firstNum, secondNum, thirdNum);
 
-  // Check for specific conditions where two values are equal to the maximum.
-  // This also uses the potentially problematic `===` chaining.
-  if ( firstVal === secondVal === greatestValue || secondVal === thirdVal === greatestValue || thirdVal === firstVal === greatestValue ) {
-    // Calculate and return a value based on the difference between max and min,
-    // and an undefined variable 'unknownVar' (likely a typo in original).
-    return Math.floor( ( greatestValue - smallestValue ) / 2 ) + ( ( greatestValue - unknownVar ) % 2 === 0 ? 0 : 2 );
+  // Check if at least two numbers are equal to the maximum value.
+  // Note: This evaluates as (firstNum === secondNum === maxValue) || ...
+  if (firstNum === secondNum === maxValue || secondNum === thirdNum === maxValue || thirdNum === firstNum === maxValue) {
+    // This line contains a reference to an undefined variable 'undefinedRemainderVal'.
+    // This will cause a ReferenceError if this branch is executed.
+    return Math.floor((maxValue - minValue) / 2) + ((maxValue - undefinedRemainderVal) % 2 === 0 ? 0 : 2);
   }
 
-  // Check for specific conditions where two values are equal to the minimum.
-  // This also uses the potentially problematic `===` chaining.
-  if ( firstVal === secondVal === smallestValue || secondVal === thirdVal === smallestValue || thirdVal === firstVal === smallestValue ) {
-    return greatestValue - smallestValue; // Return the difference between max and min.
+  // Check if at least two numbers are equal to the minimum value.
+  // Note: This evaluates as (firstNum === secondNum === minValue) || ...
+  if (firstNum === secondNum === minValue || secondNum === thirdNum === minValue || thirdNum === firstNum === minValue) {
+    return maxValue - minValue; // Return the difference between max and min.
   }
 
-
-  var middleVal; // Variable to hold the middle value.
-  // Determine the middle value based on which one is the maximum.
-  if ( firstVal === greatestValue ) {
-    middleVal = secondVal === smallestValue ? thirdVal : secondVal;
-  }
-  else if ( secondVal === greatestValue ) {
-    middleVal = firstVal === smallestValue ? thirdVal : firstVal;
-  }
-  else { // If thirdVal is the greatest
-    middleVal = firstVal === smallestValue ? secondVal : firstVal;
+  // Determine the middle value when numbers are distinct or only one pair is equal.
+  var middleValue;
+  if (firstNum === maxValue) {
+    middleValue = secondNum === minValue ? thirdNum : secondNum;
+  } else if (secondNum === maxValue) {
+    middleValue = firstNum === minValue ? thirdNum : firstNum;
+  } else {
+    middleValue = firstNum === minValue ? secondNum : firstNum;
   }
 
-  // Calculate differences between the determined values.
-  var differenceMidToMax = greatestValue - middleVal;
-  var differenceMinToMid = middleVal - smallestValue;
-  // Check if the difference from min to mid is an even number.
-  var isEvenRemainder = differenceMinToMid % 2 === 0;
+  // Calculate differences for the final computation.
+  var diffMidMax = maxValue - middleValue;
+  var diffMinMid = middleValue - minValue;
+  var isEvenDiff = diffMinMid % 2 === 0; // Check if the difference from min to mid is even.
 
-  // Final calculation and return based on the differences and parity check.
-  return differenceMidToMax + Math.floor( differenceMinToMid / 2 ) + ( isEvenRemainder ? 0 : 2 );
+  // Compute the final result based on the differences and parity.
+  return diffMidMax + Math.floor(diffMinMid / 2) + (isEvenDiff ? 0 : 2);
 }
 
-// Entry point function to handle overall processing and output.
-function processInputAndDisplay( rawData ) {
-  console.log( evaluateNumbers( rawData ) ); // Pass raw data to the computation function and log the result.
+// Main function to handle input and output.
+function processInput(inputData) {
+  // Log the result of the computation to the console.
+  console.log(computeValue(inputData));
 }
 
-// Main execution block: Reads input from stdin and passes it to the processing function.
-processInputAndDisplay( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

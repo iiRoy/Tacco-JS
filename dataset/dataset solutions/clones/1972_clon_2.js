@@ -1,166 +1,142 @@
-const inputProcessor = require('readline').createInterface({
+// This section handles input and basic utilities.
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataStream;
-const capturedLines = [];
+var inputProcessor;
+var inputLines = [];
 
-inputProcessor.on('line', (currentLine) => {
-  capturedLines.push(currentLine);
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-inputProcessor.on('close', () => {
-  dataStream = initializeDataSource(capturedLines);
-  console.error('\n'); // Output a newline to error stream
-  const operationStart = Date.now();
-  ExecutePrincipalLogic();
-  const elapsedDuration = Date.now() - operationStart;
-  logDiagnostic(`time elapsed: ${elapsedDuration} ms`);
-  logDiagnostic(`memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
+inputReader.on('close', function() {
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n'); // Preserve exact output
+  var startTime = Date.now();
+  executeCalculation(); // Call the main logic
+  var duration = Date.now() - startTime;
+  logDebugMessage('execution time : ' + duration + 'ms'); // Preserve string literal
+  logDebugMessage('memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB'); // Preserve string literal
 });
 
-/**
- * Creates a deep copy of an object. Handles Sets specifically, otherwise uses JSON serialization.
- * @param {any} sourceObject - The object to replicate.
- * @returns {any} A deep clone of the source object.
- */
-function replicateObject(sourceObject) {
-  return (sourceObject instanceof Set)
-    ? new Set(Array.from(sourceObject))
-    : JSON.parse(JSON.stringify(sourceObject));
+// Creates a deep copy of an object or Set.
+function createDeepCopy(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-/**
- * Retrieves the next item from the data stream and converts it to an integer.
- * @returns {number} The next integer value.
- */
-function retrieveInteger() { return transformValue(fetchNextItem(), 1); }
+// Retrieves the next integer from input.
+function retrieveInteger() {
+  return performConversion(fetchNextToken(), 1);
+}
 
-/**
- * Retrieves the next item from the data stream and converts it to a string array.
- * @returns {string[]} The next string array.
- */
-function retrieveStringArray() { return transformValue(fetchNextItem(), 2); }
+// Retrieves the next string array from input.
+function retrieveStringArray() {
+  return performConversion(fetchNextToken(), 2);
+}
 
-/**
- * Retrieves the next item from the data stream and converts it to an integer array.
- * @returns {number[]} The next integer array.
- */
-function retrieveIntegerArray() { return transformValue(fetchNextItem(), 4); }
+// Retrieves the next integer array from input.
+function retrieveIntegerArray() {
+  return performConversion(fetchNextToken(), 4);
+}
 
-/**
- * Retrieves the next item from the data stream and converts it to a character array.
- * @returns {string[]} The next character array.
- */
-function retrieveCharacterArray() { return transformValue(fetchNextItem(), 6); }
+// Retrieves the next character array from input.
+function retrieveCharacterArray() {
+  return performConversion(fetchNextToken(), 6);
+}
 
-/**
- * Fetches the next available item from the data stream.
- * @returns {string} The next item as a string.
- */
-function fetchNextItem() { return dataStream.fetchNextItem(); }
+// Fetches the next token from the input stream.
+function fetchNextToken() {
+  return inputProcessor.getNext();
+}
 
-/**
- * Checks if there are more items available in the data stream.
- * @returns {boolean} True if more items exist, false otherwise.
- */
-function hasMoreItems() { return dataStream.hasMoreItems(); }
+// Checks if there are more tokens in the input stream.
+function hasMoreTokens() {
+  return inputProcessor.checkMore();
+}
 
-/**
- * Initializes and returns a data source object for sequential access.
- * @param {string[]} rawInputArray - An array of raw input strings.
- * @returns {object} An object with methods for sequential data access.
- */
-function initializeDataSource(rawInputArray) {
+// Initializes the input handling mechanism.
+function initializeInputHandler(incomingData) {
   return {
-    sourceData: rawInputArray,
+    dataList: incomingData,
     currentPosition: 0,
-    maximumLength: rawInputArray.length,
-
-    hasMoreItems: function() {
-      return (this.currentPosition < this.maximumLength);
+    totalEntries: incomingData.length,
+    checkMore: function() {
+      return (this.currentPosition < this.totalEntries);
     },
-
-    fetchNextItem: function() {
-      if (this.hasMoreItems()) {
-        return this.sourceData[this.currentPosition++];
+    getNext: function() {
+      if (this.checkMore()) {
+        return this.dataList[this.currentPosition++];
       } else {
-        throw 'InputSequenceExhaustedError: No further input available';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Preserve exact error message
       }
     }
   };
 }
 
-/**
- * Displays a message to the standard output.
- * @param {any} messageContent - The content to display.
- */
-function displayResult(messageContent) {
-  console.log(messageContent);
+// Displays a result to standard output.
+function displayResult(content) {
+  console.log(content);
 }
 
-/**
- * Logs a diagnostic message to the standard error stream.
- * @param {any} diagnosticMessage - The message or object to log.
- */
-function logDiagnostic(diagnosticMessage) {
-  console.error('diagnostics: ' + require('util').inspect(diagnosticMessage, false, null));
+// Logs a debug message to standard error.
+function logDebugMessage(messageContent) {
+  console.error('debug:' + require('util').inspect(messageContent, false, null)); // Preserve 'debug:' prefix
 }
 
-/* Parameter 'conversionType' specifies the transformation:
- *   - Default/unrecognized: Returns 'itemToConvert' unchanged.
- *   - 1: Parses as an integer.
- *   - 2: Splits string by spaces.
- *   - 4: Splits by spaces and converts parts to numbers.
- *   - 6: Splits string into individual characters.
- *   - 7: Splits into characters and converts to numbers.
- *   - 8: Joins array elements with spaces.
- *   - 9: Joins array elements with newlines.
- *   - 0: Joins array elements without separator. */
-function transformValue(itemToConvert, conversionType) {
+// Handles various data type conversions based on a specified type code.
+// Type codes:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and parse as numbers.
+// 6: Split into characters.
+// 7: Split into characters and parse as numbers.
+// 8: Join with space.
+// 9: Join with newline.
+// 0: Join without separator.
+function performConversion(item, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(itemToConvert);
+        return parseInt(item);
       case 2:
-        return itemToConvert.split(' ');
+        return item.split(' ');
       case 4:
-        return itemToConvert.split(' ').map(Number);
+        return item.split(' ').map(Number);
       case 6:
-        return itemToConvert.split('');
+        return item.split('');
       case 7:
-        return itemToConvert.split('').map(Number);
+        return item.split('').map(Number);
       case 8:
-        return itemToConvert.join(' ');
+        return item.join(' ');
       case 9:
-        return itemToConvert.join('\n');
+        return item.join('\n');
       case 0:
-        return itemToConvert.join('');
+        return item.join('');
       default:
-        return itemToConvert;
+        return item;
     }
-  } catch (exceptionError) {
-    return itemToConvert; // Return original item on conversion error
+  } catch (error) {
+    return item; // Return original item on conversion error
   }
 }
 
-/**
- * This is the primary execution function for the program's logic.
- */
-function ExecutePrincipalLogic() {
-  const firstInputSet = retrieveIntegerArray();
-  const upperBound = firstInputSet[0];
-  const lowerBound = firstInputSet[1];
-  const moduloConstant = 1000000007;
-  let finalAccumulator = 0;
+// Main program logic starts here.
+function executeCalculation() {
+  var firstInputRow = retrieveIntegerArray();
+  var upperBound = firstInputRow[0];
+  var lowerBound = firstInputRow[1];
+  var moduloValue = 1000000007; // A large prime number for modulo operations.
+  var finalSum = 0;
 
-  for (let loopCounter = lowerBound; loopCounter <= upperBound + 1; loopCounter++) {
-    const minimumSum = loopCounter * (loopCounter - 1) / 2;
-    const maximumSum = upperBound * loopCounter - minimumSum;
-    finalAccumulator += maximumSum - minimumSum + 1;
-    finalAccumulator %= moduloConstant;
+  // Iterate from lowerBound up to upperBound + 1.
+  for (var loopCounter = lowerBound; loopCounter <= upperBound + 1; loopCounter++) {
+    var minimumValue = loopCounter * (loopCounter - 1) / 2;
+    var maximumValue = upperBound * loopCounter - minimumValue;
+    finalSum += maximumValue - minimumValue + 1;
+    finalSum %= moduloValue; // Apply modulo to keep the sum within bounds.
   }
 
-  displayResult(finalAccumulator);
+  displayResult(finalSum); // Output the computed result.
 }

@@ -1,200 +1,272 @@
 "use strict";
-// Module for processing input data line by line
-var InputProcessor = (function() {
-    // Factory function to create a new text data handler
-    function createProcessor(sourceText) {
-        return new TextLineProcessor(sourceText);
+// This module provides a utility for parsing structured input from a string.
+const INPUT_PROCESSOR = (function () {
+  /**
+   * Creates a new input reader instance.
+   * @param {string} inputStringContent - The raw string content to parse.
+   * @returns {InputBuffer} An instance of the InputBuffer.
+   */
+  function createInputReader(inputStringContent) {
+    return new InputBuffer(inputStringContent);
+  }
+
+  /**
+   * Manages the parsing of input lines and tokens.
+   * @class
+   */
+  function InputBuffer(inputStringContent) {
+    // Store all input lines, trimmed and split by newline.
+    this._sourceLinesData = inputStringContent.trim().split("\n");
+    // Pointer to the current line being processed.
+    this._currentLinePointer = 0x0;
+  }
+
+  /**
+   * Reads the next token from the current line, treating it as an integer by default.
+   * If the current line is exhausted, it moves to the next line.
+   * @param {boolean} [asString=false] - If true, returns the token as a string; otherwise, as a number.
+   * @returns {string|number} The next token.
+   */
+  InputBuffer.prototype.readInteger = function (asString) {
+    let lineData = this._sourceLinesData;
+    let linePointer = this._currentLinePointer;
+    let extractedValue;
+
+    // If the current line hasn't been split into tokens yet, do so.
+    // Tokens are reversed so `pop()` gets them in original order.
+    if (typeof lineData[linePointer] === "string") {
+      lineData[linePointer] = lineData[linePointer].split(" ").reverse();
     }
 
-    // Constructor for the text data handler
-    function TextLineProcessor(rawInput) {
-        // Store lines, split by newline, after trimming overall whitespace
-        this._lineStorage = rawInput.trim().split("\n");
-        // Initialize current line pointer
-        this._currentLineIndex = 0;
+    // Extract the last token (which is the next in original order).
+    extractedValue = lineData[linePointer].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[linePointer].length) {
+      this._currentLinePointer++;
     }
 
-    // Prototype method to retrieve a single token from the current line
-    TextLineProcessor.prototype.readToken = function(asString) {
-        var lineArray = this._lineStorage;
-        var lineIdx = this._currentLineIndex;
-        var extractedToken;
+    // Return as string or convert to number.
+    return asString ? extractedValue : +extractedValue;
+  };
 
-        // If current line hasn't been split into tokens yet, do so
-        // Note: tokens are processed from right to left, hence the reverse
-        if (typeof lineArray[lineIdx] === "string") {
-            lineArray[lineIdx] = lineArray[lineIdx].split(" ").reverse();
-        }
-        
-        // Pop the last (original first) token
-        extractedToken = lineArray[lineIdx].pop();
-        
-        // If the line is now empty, advance to the next line
-        if (!lineArray[lineIdx].length) {
-            this._currentLineIndex++;
-        }
-        
-        // Return token as string or converted to number based on flag
-        return asString ? extractedToken : +extractedToken;
-    };
+  /**
+   * Reads an entire line and returns its tokens as an array.
+   * @param {boolean} [asString=false] - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of tokens from the line.
+   */
+  InputBuffer.prototype.readLineOfIntegers = function (asString) {
+    // Get the current line, split by space, and then advance the line pointer.
+    let lineTokens = this._sourceLinesData[this._currentLinePointer++].split(" ");
+    // Return as strings or convert all to numbers.
+    return asString ? lineTokens : lineTokens.map(item => +item);
+  };
 
-    // Prototype method to retrieve all tokens from the current line
-    TextLineProcessor.prototype.readLineTokens = function(asString) {
-        // Get the current line and advance the line pointer
-        var lineParts = this._lineStorage[this._currentLineIndex++].split(" ");
-        // Return tokens as strings or converted to numbers
-        return asString ? lineParts : lineParts.map(valStr => +valStr);
-    };
+  /**
+   * Reads a specified number of lines and parses them into a 2D array (matrix).
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} [asString=false] - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A matrix of tokens.
+   */
+  InputBuffer.prototype.readMatrixOfIntegers = function (numberOfLines, asString) {
+    // Extract a slice of lines and split each into tokens.
+    let matrixRows = this._sourceLinesData.slice(this._currentLinePointer, this._currentLinePointer += numberOfLines).map(item => item.split(" "));
+    // Return as strings or convert all elements in the matrix to numbers.
+    return asString ? matrixRows : matrixRows.map(item => item.map(subItem => +subItem));
+  };
 
-    // Prototype method to retrieve a matrix (N rows of tokens)
-    TextLineProcessor.prototype.readMatrix = function(numRows, asString) {
-        // Slice the required number of rows and advance the line pointer
-        var matrixRows = this._lineStorage.slice(this._currentLineIndex, this._currentLineIndex += numRows)
-                                        .map(rowStr => rowStr.split(" "));
-        // Return matrix as strings or converted to numbers
-        return asString ? matrixRows : matrixRows.map(rowStr => rowStr.map(valStr => +valStr));
-    };
+  /**
+   * Reads a specified number of lines and returns them as an array of strings or numbers.
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} [asString=false] - If true, returns lines as strings; otherwise, attempts to convert each line to a number.
+   * @returns {Array<string|number>} An array of lines.
+   */
+  InputBuffer.prototype.readLinesAsString = function (numberOfLines, asString) {
+    // Extract a slice of lines.
+    let linesContent = this._sourceLinesData.slice(this._currentLinePointer, this._currentLinePointer += numberOfLines);
+    // Return as strings or convert all to numbers.
+    return asString ? linesContent : linesContent.map(item => +item);
+  };
 
-    // Prototype method to retrieve N lines as an array
-    TextLineProcessor.prototype.readLines = function(numLines, asString) {
-        // Slice the required number of lines and advance the line pointer
-        var lineContents = this._lineStorage.slice(this._currentLineIndex, this._currentLineIndex += numLines);
-        // Return lines as strings or converted to numbers
-        return asString ? lineContents : lineContents.map(lineStr => +lineStr);
-    };
-
-    return createProcessor; // Return the factory function
+  return createInputReader;
 })();
 
-// Initialize the input reader with data from standard input
-var inputReader = InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input reader by reading from standard input.
+const inputReader = INPUT_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Utility function to create N-dimensional arrays
+/**
+ * Dynamically creates a multi-dimensional array with a specified initial value.
+ * This function uses `eval` for dynamic array creation based on provided dimensions.
+ * @param {*} initialValue - The value to fill the innermost array elements with.
+ * @param {...number} dimensions - The sizes of each dimension, from outermost to innermost.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
 function createMultiDimArray(initialValue) {
-    var args = arguments,
-        argCount = args.length,
-        arrayCreationCode = "Array(args[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
-    
-    // Build nested array creation code dynamically
-    while (--argCount) {
-        arrayCreationCode = "Array(args[" + argCount + "]).fill(0).map(x=>" + arrayCreationCode + ")";
-    }
-    
-    // Evaluate the generated code to create the array
-    return eval(arrayCreationCode);
+  const dimensions = arguments;
+  let dimCount = dimensions.length;
+  // Start building the string for the innermost array.
+  let arrayCreationString = `Array(dimensions[${--dimCount}]).fill(0x0).map(elementPlaceholder => { return ${initialValue}; })`;
+
+  // Build up the string for outer dimensions.
+  while (--dimCount) {
+    arrayCreationString = `Array(dimensions[${dimCount}]).fill(0x0).map(elementPlaceholder => ${arrayCreationString})`;
+  }
+
+  // Evaluate the string to create the array.
+  return eval(arrayCreationString);
 }
 
-// Global variables for graph structure and edge bitmasks
-var adjacencyList;
-var edgeBitmasks;
+// Global variables to store graph structure and edge bitmasks.
+let adjacencyList;
+let edgeBitmasks;
 
-// Execute the main processing logic and log the result if defined
-var finalResult = processGraphData();
-if (finalResult !== undefined) console.log(finalResult);
+// Execute the main program logic and capture its result.
+const programResult = executeProgram();
 
-// Main function to process graph data and compute the result
-function processGraphData() {
-    var nodeCount = inputReader.readToken(); // Read number of nodes
-    var sourceNodes = [],
-        targetNodes = []; // Arrays to store edge endpoints
+// If the program returns a value, print it to the console.
+if (programResult !== undefined) {
+  console.log(programResult);
+}
 
-    // Initialize adjacency list for the graph
-    adjacencyList = createMultiDimArray("[]", nodeCount);
-    // Initialize bitmasks for each edge, initially all zeros
-    edgeBitmasks = createMultiDimArray(0, nodeCount - 1);
+/**
+ * The main execution function of the program.
+ * It reads graph data, processes queries, and calculates a final result using dynamic programming.
+ * @returns {number} The final calculated value.
+ */
+function executeProgram() {
+  // Read the total number of nodes in the graph.
+  const nodeCount = inputReader.readInteger();
 
-    // Read N-1 edges
-    for (var edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
-        var firstNode = inputReader.readToken() - 1; // Read first node (0-indexed)
-        var secondNode = inputReader.readToken() - 1; // Read second node (0-indexed)
-        
-        // Store edge endpoints, ensuring canonical order (min, max)
-        sourceNodes[edgeIndex] = Math.min(firstNode, secondNode);
-        targetNodes[edgeIndex] = Math.max(firstNode, secondNode);
-        
-        // Add edges to the adjacency list (undirected graph)
-        adjacencyList[firstNode].push(secondNode);
-        adjacencyList[secondNode].push(firstNode);
-    }
+  // Arrays to store the two endpoints of each edge, ensuring min/max order.
+  const edgeStartNodes = [];
+  const edgeEndNodes = [];
 
-    var queryCount = inputReader.readToken(); // Read number of queries (paths)
+  // Initialize the adjacency list for the graph.
+  adjacencyList = createMultiDimArray("[]", nodeCount);
+  // Initialize an array to store bitmasks for each edge.
+  edgeBitmasks = createMultiDimArray(0x0, nodeCount - 0b1);
 
-    // Process each query
-    for (var loopCounter = 0; loopCounter < queryCount; loopCounter++) {
-        var queryStartNode = inputReader.readToken() - 1; // Read query start node
-        var queryEndNode = inputReader.readToken() - 1; // Read query end node
-        
-        var currentQueryBit = 1 << loopCounter; // Unique bit for this query
-        
-        // Find the path between queryStartNode and queryEndNode using DFS
-        // The pathNodes array will contain the sequence of nodes in the path
-        var pathNodes = findPathDepthFirst(queryStartNode, queryEndNode, -1, []);
-        
-        // Iterate through the path to identify edges and update their bitmasks
-        for (var pathSegmentIndex = 1; pathSegmentIndex < pathNodes.length; pathSegmentIndex++) {
-            var minNodeIdx = Math.min(pathNodes[pathSegmentIndex - 1], pathNodes[pathSegmentIndex]);
-            var maxNodeIdx = pathNodes[pathSegmentIndex - 1] + pathNodes[pathSegmentIndex] - minNodeIdx; // Sum - min = max
-            
-            // Find the corresponding edge in the stored edge list
-            for (var edgeSearchIndex = 0;; edgeSearchIndex++) {
-                if (sourceNodes[edgeSearchIndex] === minNodeIdx && targetNodes[edgeSearchIndex] === maxNodeIdx) {
-                    // Apply the query bitmask to this edge
-                    edgeBitmasks[edgeSearchIndex] |= currentQueryBit;
-                    break; // Edge found, move to next path segment
-                }
-            }
+  // Read N-1 edges to construct the graph.
+  for (let edgeIndex = 0x0; edgeIndex < nodeCount - 0b1; edgeIndex++) {
+    // Read two connected nodes (0-indexed).
+    const firstNode = inputReader.readInteger() - 0b1;
+    const secondNode = inputReader.readInteger() - 0b1;
+
+    // Store edges such that edgeStartNodes[i] <= edgeEndNodes[i].
+    edgeStartNodes[edgeIndex] = Math.min(firstNode, secondNode);
+    edgeEndNodes[edgeIndex] = Math.max(firstNode, secondNode);
+
+    // Add edges to the adjacency list for both directions.
+    adjacencyList[firstNode].push(secondNode);
+    adjacencyList[secondNode].push(firstNode);
+  }
+
+  // Read the number of queries.
+  const queryCount = inputReader.readInteger();
+
+  // Process each query.
+  for (let queryIndex = 0x0; queryIndex < queryCount; queryIndex++) {
+    // Read the start and end nodes for the current query (0-indexed).
+    const querySource = inputReader.readInteger() - 0b1;
+    const queryTarget = inputReader.readInteger() - 0b1;
+
+    // Create a unique bitmask for this query.
+    const currentQueryBit = 0b1 << queryIndex;
+
+    // Find the path between querySource and queryTarget using DFS.
+    const pathNodesList = findPathDFS(querySource, queryTarget, -0b1, []);
+
+    // Iterate through the path to identify edges and update their bitmasks.
+    for (let pathSegmentIndex = 0b1; pathSegmentIndex < pathNodesList.length; pathSegmentIndex++) {
+      // Get the two nodes forming the current edge segment.
+      const nodeA = pathNodesList[pathSegmentIndex - 0b1];
+      const nodeB = pathNodesList[pathSegmentIndex];
+
+      // Determine the smaller and larger node of the edge for consistent lookup.
+      const smallerNode = Math.min(nodeA, nodeB);
+      const largerNode = nodeA + nodeB - smallerNode; // Sum - smaller = larger
+
+      // Find the index of this edge in the stored edge lists.
+      for (let edgeLookupIndex = 0x0; ; edgeLookupIndex++) {
+        if (edgeStartNodes[edgeLookupIndex] === smallerNode && edgeEndNodes[edgeLookupIndex] === largerNode) {
+          // Apply the current query's bitmask to this edge.
+          edgeBitmasks[edgeLookupIndex] |= currentQueryBit;
+          break; // Edge found, move to next path segment.
         }
+      }
     }
+  }
 
-    // Dynamic programming section
-    var maxBitmask = 1 << queryCount; // Maximum possible bitmask value (2^m)
-    var dynamicProgState = createMultiDimArray(0, maxBitmask); // DP array initialized to zeros
-    dynamicProgState[0] = 1; // Base case: empty set has one way
+  // Calculate the maximum possible bitmask value (2^queryCount).
+  const maxBitmaskValue = 0b1 << queryCount;
+  // Initialize the dynamic programming table.
+  const dynamicProgrammingTable = createMultiDimArray(0x0, maxBitmaskValue);
+  // Base case: an empty set of queries (mask 0) has 1 way.
+  dynamicProgrammingTable[0x0] = 0b1;
 
-    // Iterate through each edge to update DP states
-    for (var edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
-        if (edgeBitmasks[edgeIndex] === 0) {
-            // If an edge is not part of any query path, it can be chosen or not
-            // effectively doubling the ways for all current states
-            for (var dpIndex = 0; dpIndex < maxBitmask; dpIndex++) dynamicProgState[dpIndex] *= 2;
+  // Iterate through each edge in the graph.
+  for (let currentEdgeIndex = 0x0; currentEdgeIndex < nodeCount - 0b1; currentEdgeIndex++) {
+    // If an edge is not part of any query path (bitmask is 0).
+    if (edgeBitmasks[currentEdgeIndex] === 0x0) {
+      // Each state can be reached in twice as many ways (edge can be chosen or not).
+      for (let maskIndex = 0x0; maskIndex < maxBitmaskValue; maskIndex++) {
+        dynamicProgrammingTable[maskIndex] *= 0b10; // Multiply by 2
+      }
+    } else {
+      // If the edge is part of one or more query paths.
+      // Iterate DP table in reverse to avoid using updated values in the same iteration.
+      for (let maskIndex = maxBitmaskValue; maskIndex--;) {
+        // If the current mask already includes all bits of the edge's bitmask.
+        if ((maskIndex | edgeBitmasks[currentEdgeIndex]) === maskIndex) {
+          // This edge doesn't add new query coverage, so it doubles the ways to reach this mask.
+          dynamicProgrammingTable[maskIndex] *= 0b10; // Multiply by 2
         } else {
-            // If an edge is part of query paths, update DP states based on its bitmask
-            for (var dpIndex = maxBitmask; dpIndex--;) { // Iterate downwards
-                // If the current state (i) already contains all bits of this edge's bitmask
-                if ((dpIndex | edgeBitmasks[edgeIndex]) === dpIndex) {
-                    dynamicProgState[dpIndex] *= 2; // Double ways, as this edge can be chosen or not
-                } else {
-                    // Otherwise, add ways from the state without this edge's bitmask
-                    // to the state that includes it
-                    dynamicProgState[dpIndex | edgeBitmasks[edgeIndex]] += dynamicProgState[dpIndex];
-                }
-            }
+          // This edge adds new query coverage. Add ways from the state without this edge's bits.
+          dynamicProgrammingTable[maskIndex | edgeBitmasks[currentEdgeIndex]] += dynamicProgrammingTable[maskIndex];
         }
+      }
     }
-    
-    // The final result is the number of ways to satisfy all queries (represented by maxBitmask - 1)
-    return dynamicProgState[maxBitmask - 1];
+  }
+
+  // The final result is the number of ways to satisfy all queries (mask maxBitmaskValue - 1).
+  return dynamicProgrammingTable[maxBitmaskValue - 0b1];
 }
 
-// Depth-First Search function to find a path between two nodes
-function findPathDepthFirst(currentVertex, goalVertex, parentVertex, visitedPath) {
-    visitedPath.push(currentVertex); // Add current vertex to the path
+/**
+ * Performs a Depth-First Search (DFS) to find a path between a start node and a target node.
+ * This function modifies the `currentPath` array in place.
+ * @param {number} currentNode - The node currently being visited.
+ * @param {number} targetNode - The node to find.
+ * @param {number} parentNode - The node from which `currentNode` was visited (to avoid going back).
+ * @param {Array<number>} currentPath - The array representing the path found so far.
+ * @returns {Array<number>|undefined} The path array if the target is found, otherwise undefined.
+ */
+function findPathDFS(currentNode, targetNode, parentNode, currentPath) {
+  // Add the current node to the path.
+  currentPath.push(currentNode);
 
-    // If goal is reached, return the path
-    if (goalVertex === currentVertex) return visitedPath;
+  // If the current node is the target node, we've found the path.
+  if (targetNode === currentNode) {
+    return currentPath;
+  }
 
-    // Explore neighbors
-    for (var neighborVertex of adjacencyList[currentVertex]) {
-        // Skip if neighbor is the parent (to avoid going back immediately)
-        if (neighborVertex === parentVertex) continue;
-        
-        // Recursively call DFS
-        var foundPath = findPathDepthFirst(neighborVertex, goalVertex, currentVertex, visitedPath);
-        
-        // If a path was found in the recursive call, return it immediately
-        if (foundPath) return foundPath;
+  // Explore neighbors of the current node.
+  for (const neighborNode of adjacencyList[currentNode]) {
+    // Skip the parent node to avoid cycles in a tree-like traversal.
+    if (neighborNode === parentNode) {
+      continue;
     }
-    
-    // If no path found through this branch, backtrack
-    visitedPath.pop();
+
+    // Recursively call DFS for the neighbor.
+    const foundPath = findPathDFS(neighborNode, targetNode, currentNode, currentPath);
+    // If a path was found in the recursive call, return it immediately.
+    if (foundPath) {
+      return foundPath;
+    }
+  }
+
+  // If no path was found through this branch, backtrack by removing the current node.
+  currentPath.pop();
+  // Return undefined if the target was not found in this branch.
+  return undefined;
 }

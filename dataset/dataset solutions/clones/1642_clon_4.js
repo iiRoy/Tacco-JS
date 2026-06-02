@@ -1,14 +1,24 @@
 "use strict";
 
-const computeScore = (inputString) => {
-  const numericGrade = Number.parseInt(inputString.trim(), 10);
+const processInputData = (inputString) => {
+  const numericValue = Number.parseInt(inputString.trim(), 10);
+  
+  const minimumThreshold = 400;
+  const maximumThreshold = 1999;
 
-  // The pattern observes that for every 200-point interval starting from 400,
-  // the resulting score decrements by 1, beginning from 8.
-  // This can be expressed by the formula: 8 - floor((numericGrade - 400) / 200).
-  const derivedOutcome = 8 - Math.floor((numericGrade - 400) / 200);
-
-  console.log(String(derivedOutcome));
+  if (numericValue >= minimumThreshold && numericValue <= maximumThreshold) {
+    const valueOffset = numericValue - minimumThreshold;
+    const intervalIdentifier = Math.floor(valueOffset / 200);
+    const finalResult = 8 - intervalIdentifier;
+    console.log(String(finalResult));
+  }
 };
 
-computeScore(require("node:fs").readFileSync(0, "utf-8"));
+const sorterUtility = (collection) => {
+  collection.sort((firstElement, secondElement) => firstElement - secondElement);
+  return collection;
+};
+
+let comparisonFunction = (valA, valB) => valA - valB;
+
+processInputData(require("node:fs").readFileSync("/dev/stdin", "utf-8"));

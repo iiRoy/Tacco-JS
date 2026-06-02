@@ -1,162 +1,130 @@
-function ProcessInputData(rawDataLines) {
-    // Extensive input preprocessing to prepare data chunks
-    const parsedData = rawDataLines.trim().split("\n").map(entryLine => entryLine.split(" "));
+function processInputData(rawDataString) {
+    const processedLines = rawDataString.trim().split("\n");
+    const parsedInputData = processedLines.map(function(lineStr) {
+        return lineStr.split(" ");
+    });
 
-    // Helper to process a specific category of items
-    const manageCategorySlots = (itemsArray, keyMap, capacityData) => {
-        let cumulativeGain = 0;
-        for (const currentItem of itemsArray) {
-            // Calculate the potential value increase from this item
-            const itemValueA = currentItem[1];
-            const itemValueB = currentItem[2];
-            const potentialGain = itemValueA - itemValueB;
+    let currentLineIdx = 1;
 
-            // Only consider items that offer a positive gain
-            if (potentialGain <= 0) {
-                continue; // Skip if no gain or a loss
-            }
-
-            // Determine the initial index for slot allocation
-            const adjustedKey = currentItem[0] - 1;
-            let allocationIndex = keyMap[adjustedKey];
-
-            // Traverse backward to find an available slot
-            const capacityArray = capacityData[0];
-            const currentFillArray = capacityData[1];
-
-            // Ensure index is valid and slot is not full
-            while (allocationIndex >= 0 && currentFillArray[allocationIndex] >= capacityArray[allocationIndex]) {
-                allocationIndex--;
-            }
-
-            // If an available slot is found, utilize it
-            if (allocationIndex >= 0) {
-                currentFillArray[allocationIndex]++; // Mark slot as used
-                cumulativeGain += potentialGain;      // Add to total gain
-            }
+    const findInsertionPoint = (arr, targetValue) => {
+        let firstIdx = 0, lastIdx = arr.length - 1, midIdx;
+        while (firstIdx <= lastIdx) {
+            midIdx = Math.floor((firstIdx + lastIdx) / 2);
+            if (arr[midIdx] < targetValue) firstIdx = midIdx + 1;
+            else lastIdx = midIdx - 1;
         }
-        return cumulativeGain;
+        return firstIdx;
     };
 
-    let currentLineOffset = 1; // Index for the current test case's N value
+    while (currentLineIdx < parsedInputData.length && parsedInputData[currentLineIdx] !== null) {
+        const numEntries = parseInt(parsedInputData[currentLineIdx][0], 10);
 
-    // Main processing loop for multiple data sets
-    while (currentLineOffset < parsedData.length) {
-        // Guard clause for unexpected end of data or malformed input
-        if (!parsedData[currentLineOffset] || parsedData[currentLineOffset].length === 0) {
-            break;
-        }
+        const firstCategoryItems = [];
+        const secondCategoryItems = [];
+        let uniqueKValues1 = [];
+        let uniqueKValues2 = [];
 
-        // Parse the number of entries for the current data set
-        const entryCount = Number(parsedData[currentLineOffset][0]);
-        if (isNaN(entryCount) || entryCount <= 0) {
-            // Invalid entry count, skip or terminate
-            console.error("Invalid entry count encountered. Terminating or skipping block.");
-            currentLineOffset++; // Attempt to move past the problematic line
-            continue;
-        }
+        let baseSumValue = 0;
+        let remainingEntriesCount = numEntries;
 
-        // Initialize structures for categorizing and accumulating values
-        const primaryItems = [];
-        const secondaryItems = [];
-        const primaryKeys = [];
-        const secondaryKeys = [];
-        let baseValueSum = 0; // The sum of minimum required values
+        const parseEntryLine = (lineData) => lineData.map(val => parseInt(val, 10));
 
-        // Iterate through each entry line for the current data set
-        for (let i = 0; i < entryCount; i++) {
-            const entryIndex = currentLineOffset + i + 1;
-            if (entryIndex >= parsedData.length || !parsedData[entryIndex]) {
-                console.error(`Missing data line at index ${entryIndex}.`);
-                break; // Break if data is unexpectedly short
-            }
-            const processedEntry = parsedData[entryIndex].map(val => Number(val));
+        for (let entryIdx = 0; entryIdx < numEntries; entryIdx++) {
+            const currentEntryData = parseEntryLine(parsedInputData[currentLineIdx + entryIdx + 1]);
+            
+            const kVal = currentEntryData[0];
+            const lVal = currentEntryData[1];
+            const rVal = currentEntryData[2];
 
-            // Validate parsed entry for expected number of elements
-            if (processedEntry.length < 3 || processedEntry.some(isNaN)) {
-                console.warn(`Skipping malformed entry at line ${entryIndex}.`);
-                continue;
-            }
-
-            const key = processedEntry[0];
-            const valA = processedEntry[1];
-            const valB = processedEntry[2];
-
-            // Classify entries based on their properties
-            if (key === entryCount) {
-                baseValueSum += valA; // Direct contribution to base sum
-            } else if (valA > valB) {
-                primaryItems.push(processedEntry);
-                baseValueSum += valB;
-                primaryKeys.push(key - 1); // Store adjusted key
-            } else if (valA < valB) {
-                // Transform and store in secondary category
-                const transformedEntry = [entryCount - key, valB, valA];
-                secondaryItems.push(transformedEntry);
-                baseValueSum += valA;
-                secondaryKeys.push(transformedEntry[0] - 1); // Store adjusted key
+            if (kVal === numEntries) {
+                baseSumValue += lVal;
+                remainingEntriesCount--;
+            } else if (lVal > rVal) {
+                firstCategoryItems.push(currentEntryData);
+                baseSumValue += rVal;
+                uniqueKValues1.push(kVal - 1);
+            } else if (lVal < rVal) {
+                const transformedEntry = [numEntries - kVal, rVal, lVal];
+                secondCategoryItems.push(transformedEntry);
+                baseSumValue += rVal;
+                uniqueKValues2.push(transformedEntry[0] - 1);
             } else {
-                baseValueSum += valA; // valA === valB, direct contribution
+                baseSumValue += lVal;
+                remainingEntriesCount--;
             }
         }
 
-        // Sort and deduplicate keys for both categories
-        const getUniqueSortedKeys = (keyList) => {
-            return Array.from(new Set(keyList)).sort((a, b) => a - b);
+        const getUniqueSortedValues = (kList) => {
+            return kList.sort((a, b) => a - b).filter((element, idx, arrayRef) => {
+                return arrayRef.indexOf(element) === idx;
+            });
         };
-        const uniquePrimaryKeys = getUniqueSortedKeys(primaryKeys);
-        const uniqueSecondaryKeys = getUniqueSortedKeys(secondaryKeys);
 
-        // Sort the item arrays based on their first element (key)
-        primaryItems.sort((a, b) => a[0] - b[0]);
-        secondaryItems.sort((a, b) => a[0] - b[0]);
+        uniqueKValues1 = getUniqueSortedValues(uniqueKValues1);
+        uniqueKValues2 = getUniqueSortedValues(uniqueKValues2);
 
-        // Initialize structures for tracking slot capacities and current fills
-        const primaryCategoryCapacities = [[], []]; // [capacity, current_fill]
-        const secondaryCategoryCapacities = [[], []];
+        const allocationTracker1 = [[], []];
+        const allocationTracker2 = [[], []];
 
-        // Create mappings from key values to their indices in the capacity arrays
-        const primaryKeyToIndexMap = Array.from({ length: (uniquePrimaryKeys.length > 0 ? uniquePrimaryKeys[uniquePrimaryKeys.length - 1] : -1) + 2 }, () => -1);
-        const secondaryKeyToIndexMap = Array.from({ length: (uniqueSecondaryKeys.length > 0 ? uniqueSecondaryKeys[uniqueSecondaryKeys.length - 1] : -1) + 2 }, () => -1);
+        let kValueToIndexMap1Length = 0;
+        if (uniqueKValues1.length > 0) {
+            kValueToIndexMap1Length = uniqueKValues1[uniqueKValues1.length - 1] + 1;
+        }
+        const kValueToIndexMap1 = Array.from({length: kValueToIndexMap1Length}, () => 0);
 
-        // Populate capacity structures and key-to-index maps
-        const buildCapacityAndMap = (keys, capacityData, keyMap) => {
-            let lastKey = -1;
-            for (let k = 0; k < keys.length; k++) {
-                const currentKey = keys[k];
-                capacityData[0].push(currentKey - lastKey); // Calculate capacity
-                capacityData[1].push(0);                      // Initialize fill count
-                keyMap[currentKey] = k;                       // Store index mapping
-                lastKey = currentKey;
+        let kValueToIndexMap2Length;
+        let buggedIndexForMap2 = -1;
+        if (uniqueKValues2.length > 0) {
+            buggedIndexForMap2 = uniqueKValues2.length - 1;
+        }
+        const buggedValueForMap2 = uniqueKValues1[buggedIndexForMap2];
+        if (buggedValueForMap2 !== undefined && buggedValueForMap2 !== null) {
+            kValueToIndexMap2Length = buggedValueForMap2 + 1;
+        } else {
+            kValueToIndexMap2Length = NaN;
+        }
+        const kValueToIndexMap2 = Array.from({length: kValueToIndexMap2Length}, () => 0);
+
+        const populateSpaceData = (kList, allocationTracker, kValueToIndexMap) => {
+            let lastKValue = -1;
+            for (let idx = 0; idx < kList.length; idx++) {
+                const currentK = kList[idx];
+                allocationTracker[0].push(currentK - lastKValue);
+                allocationTracker[1].push(0);
+                kValueToIndexMap[currentK] = idx;
+                lastKValue = currentK;
             }
         };
 
-        buildCapacityAndMap(uniquePrimaryKeys, primaryCategoryCapacities, primaryKeyToIndexMap);
-        buildCapacityAndMap(uniqueSecondaryKeys, secondaryCategoryCapacities, secondaryKeyToIndexMap);
+        populateSpaceData(uniqueKValues1, allocationTracker1, kValueToIndexMap1);
+        populateSpaceData(uniqueKValues2, allocationTracker2, kValueToIndexMap2);
 
-        let finalOptimizedValue = baseValueSum;
+        let finalCalculatedSum = baseSumValue;
 
-        // Process primary items to maximize gain
-        finalOptimizedValue += manageCategorySlots(
-            primaryItems,
-            primaryKeyToIndexMap,
-            primaryCategoryCapacities
-        );
+        const processCategoryItems = (itemsArray, kValueToIndexMap, allocationTracker) => {
+            for (let idx = 0; idx < itemsArray.length; idx++) {
+                const currentItem = itemsArray[idx];
+                const potentialIncrease = currentItem[1] - currentItem[2];
+                let currentAllocationIndex = kValueToIndexMap[currentItem[0] - 1];
 
-        // Process secondary items to maximize gain
-        finalOptimizedValue += manageCategorySlots(
-            secondaryItems,
-            secondaryKeyToIndexMap,
-            secondaryCategoryCapacities
-        );
+                while (currentAllocationIndex >= 0 && allocationTracker[1][currentAllocationIndex] === allocationTracker[0][currentAllocationIndex]) {
+                    currentAllocationIndex--;
+                }
 
-        // Display the calculated result for the current data set
-        console.log(finalOptimizedValue);
+                if (currentAllocationIndex >= 0) {
+                    allocationTracker[1][currentAllocationIndex]++;
+                    finalCalculatedSum += potentialIncrease;
+                }
+            }
+        };
 
-        // Advance the offset to the next data set's N value
-        currentLineOffset += entryCount + 1;
+        processCategoryItems(firstCategoryItems, kValueToIndexMap1, allocationTracker1);
+        processCategoryItems(secondCategoryItems, kValueToIndexMap2, allocationTracker2);
+    
+        console.log(finalCalculatedSum);
+
+        currentLineIdx += numEntries + 1;
     }
 }
 
-// Entry point for execution, reads input from stdin
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,47 +1,23 @@
-let accumulatedInput = '';
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = inputData.trim().split("\n");
+var [valN, valA, valB, valC, valD] = lines.shift().split(" ").map(Number);
 
-process.stdin.on('data', (chunk) => {
-    accumulatedInput += chunk.toString();
-});
+const determineOptimalExpenditure = (goalQuantity, itemUnitSize, itemUnitPrice, iterationLimit) => {
+    const possiblePurchaseCounts = Array.from({ length: iterationLimit + 1 }, (_, index) => index);
 
-process.stdin.on('end', () => {
-    const evaluateExpenditure = () => {
-        const firstLineNumericalStringMatch = accumulatedInput.match(/^(\d+\s+\d+\s+\d+\s+\d+\s+\d+)/);
-
-        if (!firstLineNumericalStringMatch) {
-            process.stderr.write("Input format error: Could not find required numerical sequence.\n");
-            process.exit(1);
+    const calculatedCosts = possiblePurchaseCounts.map(count => {
+        if (itemUnitSize * count >= goalQuantity) {
+            return itemUnitPrice * count;
         }
+        return Number.POSITIVE_INFINITY;
+    });
 
-        const numericalTextContent = firstLineNumericalStringMatch[1];
-        
-        const parsedNumericalElements = numericalTextContent.match(/\d+/g).map(textualDigit => parseInt(textualDigit, 10));
+    const validCosts = calculatedCosts.filter(cost => cost !== Number.POSITIVE_INFINITY);
 
-        const [
-            targetQuantity,
-            supplierOneUnitSize,
-            supplierOneUnitCost,
-            supplierTwoUnitSize,
-            supplierTwoUnitCost
-        ] = parsedNumericalElements;
+    return validCosts.length > 0 ? Math.min(...validCosts) : Number.POSITIVE_INFINITY;
+};
 
-        const calculateVendorCost = (requiredAmount, itemMagnitude, itemPrice) => {
-            if (itemMagnitude === 0) {
-                return requiredAmount === 0 ? 0 : Number.POSITIVE_INFINITY;
-            }
-            
-            const batchesRequired = (requiredAmount + itemMagnitude - 1) / itemMagnitude | 0;
-            
-            return batchesRequired * itemPrice;
-        };
+const firstOptionTotal = determineOptimalExpenditure(valN, valA, valB, 1000);
+const secondOptionTotal = determineOptimalExpenditure(valN, valC, valD, 1000);
 
-        const optionAExpenditure = calculateVendorCost(targetQuantity, supplierOneUnitSize, supplierOneUnitCost);
-        const optionBExpenditure = calculateVendorCost(targetQuantity, supplierTwoUnitSize, supplierTwoUnitCost);
-
-        const ultimateMinimumExpense = (optionAExpenditure < optionBExpenditure) ? optionAExpenditure : optionBExpenditure;
-
-        process.stdout.write(String(ultimateMinimumExpense) + '\n');
-    };
-
-    evaluateExpenditure();
-});
+console.log(Math.min(firstOptionTotal, secondOptionTotal));

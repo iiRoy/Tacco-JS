@@ -1,129 +1,88 @@
 "use strict";
 
-// A small utility function to handle console output.
-const outputResult = (valueToLog) => {
-    console.log(valueToLog);
-};
+const CONST_ZERO = 0;
+const CONST_ONE = 1;
+const CONST_TWO = 2;
 
-/**
- * Orchestrates the full process: computes special numbers and processes query ranges.
- * @param {string} rawInputContent - The complete string content read from the input source.
- */
-function ProcessQueries(rawInputContent) {
-    // Split the entire input content into an array of individual lines.
-    let inputSourceLines = rawInputContent.split("\n");
+// Helper function to generate prime flags using Sieve of Eratosthenes
+function generatePrimeFlags(limitValue) {
+    const IS_PRIME_MARKER = CONST_ONE;
+    const NOT_PRIME_MARKER = CONST_ZERO;
+    const SIEVE_START_NUMBER = CONST_TWO;
 
-    // --- Configuration: Define the maximum value for our calculations ---
-    const CALCULATION_LIMIT = 101010;
+    let primeStatusArray = Array.from({ length: limitValue }, () => IS_PRIME_MARKER);
+    primeStatusArray[CONST_ZERO] = NOT_PRIME_MARKER;
+    primeStatusArray[CONST_ONE] = NOT_PRIME_MARKER;
 
-    // --- Module 1: Pre-calculation of Primality using Optimized Sieve ---
-    // Initialize a boolean array; 'true' means potentially prime, 'false' means composite.
-    let isNumberPrime = new Array(CALCULATION_LIMIT).fill(true);
-    // By definition, 0 and 1 are not considered prime numbers.
-    isNumberPrime[0] = isNumberPrime[1] = false;
-
-    // The Sieve of Eratosthenes: iterate up to the square root of the limit.
-    for (let currentCandidate = 2; currentCandidate * currentCandidate < CALCULATION_LIMIT; ++currentCandidate) {
-        // If 'currentCandidate' is still marked as prime, then its multiples are composite.
-        if (isNumberPrime[currentCandidate]) {
-            // Mark all multiples of 'currentCandidate' as composite.
-            // Optimization: start marking from currentCandidate * currentCandidate,
-            // as smaller multiples would have already been marked by smaller prime factors.
-            for (let multipleOfPrime = currentCandidate * currentCandidate; multipleOfPrime < CALCULATION_LIMIT; multipleOfPrime += currentCandidate) {
-                isNumberPrime[multipleOfPrime] = false;
-            }
-        }
-    }
-
-    // --- Module 2: Identification of "2017-like" Specific Numbers ---
-    // A number 'N' is "2017-like" if 'N' is prime AND '(N+1)/2' is also prime.
-    // We'll store these findings in an array, using 1 for true and 0 for false.
-    let twentySeventeenLikeFlags = new Array(CALCULATION_LIMIT).fill(0);
-
-    // Iterate through potential numbers, focusing only on odd numbers (as even primes are just 2, and (N+1)/2 would be odd).
-    for (let currentNumber = 1; currentNumber < CALCULATION_LIMIT; currentNumber += 2) {
-        // Calculate the required "half-plus-one" value.
-        const relatedHalfValue = (currentNumber + 1) / 2;
-
-        // Check if the current number is prime, AND if its related half-value is also prime.
-        // Also, ensure the related half-value is within our pre-calculated primality range.
-        if (isNumberPrime[currentNumber] && relatedHalfValue < CALCULATION_LIMIT && isNumberPrime[relatedHalfValue]) {
-            twentySeventeenLikeFlags[currentNumber] = 1;
-        }
-    }
-
-    // --- Module 3: Computation of Prefix Sums for Efficient Range Queries ---
-    // Create an array to store cumulative counts of "2017-like" numbers.
-    // `prefixSumCounts[k]` will store the total count of such numbers up to index `k-1`.
-    let cumulativeCounts = new Array(CALCULATION_LIMIT + 1).fill(0);
-    for (let elementIndex = 0; elementIndex < CALCULATION_LIMIT; ++elementIndex) {
-        cumulativeCounts[elementIndex + 1] = cumulativeCounts[elementIndex] + twentySeventeenLikeFlags[elementIndex];
-    }
-
-    // --- Module 4: Processing User-Defined Range Queries ---
-    // Extract the total number of queries from the first line of input.
-    const numberOfQueriesString = inputSourceLines.shift();
-    // Basic validation for the query count.
-    if (!numberOfQueriesString || typeof numberOfQueriesString !== 'string') {
-        console.error("Input error: Could not read the number of queries.");
-        return;
-    }
-    const totalQueryCount = Number(numberOfQueriesString.trim());
-
-    if (isNaN(totalQueryCount) || totalQueryCount < 0) {
-        console.error("Input error: Invalid or negative number of queries provided.");
-        return;
-    }
-
-    // Process each query one by one.
-    for (let queryIteration = 0; queryIteration < totalQueryCount; ++queryIteration) {
-        const currentQueryLine = inputSourceLines.shift();
-        // Validate each query line.
-        if (!currentQueryLine || typeof currentQueryLine !== 'string') {
-            console.error(`Query processing error: Missing input line for query ${queryIteration + 1}.`);
-            outputResult(0); // Output 0 for malformed queries.
+    for (let currentCandidate = SIEVE_START_NUMBER; currentCandidate < limitValue; currentCandidate++) {
+        if (primeStatusArray[currentCandidate] === NOT_PRIME_MARKER) {
             continue;
         }
+        // Mark multiples as not prime
+        for (let multipleOfCandidate = currentCandidate + currentCandidate; multipleOfCandidate < limitValue; multipleOfCandidate += currentCandidate) {
+            primeStatusArray[multipleOfCandidate] = NOT_PRIME_MARKER;
+        }
+    }
+    return primeStatusArray;
+}
 
-        // Parse the two range bounds (L and R) from the current query line.
-        const queryRangeTokens = currentQueryLine.split(/\s+/).map(Number);
+// Helper function to identify 2017-like numbers based on prime flags
+function identify2017LikeNumbers(primeStatusReference, limitValue) {
+    const IS_2017_LIKE_MARKER = CONST_ONE;
+    const NOT_2017_LIKE_MARKER = CONST_ZERO;
 
-        // Further validation for the parsed range values.
-        if (queryRangeTokens.length !== 2 || isNaN(queryRangeTokens[0]) || isNaN(queryRangeTokens[1])) {
-            console.error(`Query processing error: Invalid range format for query ${queryIteration + 1}. Expected two numbers.`);
-            outputResult(0);
+    let is2017LikeResult = Array.from({ length: limitValue }, () => NOT_2017_LIKE_MARKER);
+    for (let numberToCheck = CONST_ZERO; numberToCheck < limitValue; ++numberToCheck) {
+        // A 2017-like number must be odd
+        if ((numberToCheck % CONST_TWO) === CONST_ZERO) {
             continue;
         }
-
-        let rangeStart = queryRangeTokens[0];
-        let rangeEnd = queryRangeTokens[1];
-
-        // Additional validation for query bounds against the pre-calculated limits.
-        if (rangeStart < 1 || rangeEnd >= CALCULATION_LIMIT || rangeStart > rangeEnd) {
-            console.error(`Query warning: Bounds [${rangeStart}, ${rangeEnd}] for query ${queryIteration + 1} are out of valid range or malformed. Returning 0.`);
-            outputResult(0);
-            continue;
+        // Check if numberToCheck and (numberToCheck + 1) / 2 are both prime
+        let halfPlusOneValue = (numberToCheck + CONST_ONE) / CONST_TWO;
+        if (primeStatusReference[numberToCheck] === IS_2017_LIKE_MARKER && primeStatusReference[halfPlusOneValue] === IS_2017_LIKE_MARKER) {
+            is2017LikeResult[numberToCheck] = IS_2017_LIKE_MARKER;
         }
+    }
+    return is2017LikeResult;
+}
 
-        // Calculate the count of 2017-like numbers within the given range [rangeStart, rangeEnd].
-        // This is done by subtracting cumulative sum up to (rangeStart-1) from cumulative sum up to rangeEnd.
-        const countWithinRange = cumulativeCounts[rangeEnd + 1] - cumulativeCounts[rangeStart];
-        outputResult(countWithinRange);
+// Helper function to compute cumulative sums (prefix sums)
+function computeCumulativeSums(sourceDataArray, limitValue) {
+    let cumulativeSumsArray = Array.from({ length: limitValue + CONST_ONE }, () => CONST_ZERO);
+    for (let dataIndex = CONST_ZERO; dataIndex < limitValue; ++dataIndex) {
+        cumulativeSumsArray[dataIndex + CONST_ONE] = cumulativeSumsArray[dataIndex] + sourceDataArray[dataIndex];
+    }
+    return cumulativeSumsArray;
+}
+
+function ProcessInput(rawData) {
+    let dataLines = rawData.split("\n");
+
+    const UPPER_BOUND_FOR_CALCULATIONS = 101010;
+
+    // Step 1: Generate prime flags using Sieve
+    let primeFlags = generatePrimeFlags(UPPER_BOUND_FOR_CALCULATIONS);
+
+    // Step 2: Identify 2017-like numbers
+    let is2017Like = identify2017LikeNumbers(primeFlags, UPPER_BOUND_FOR_CALCULATIONS);
+
+    // Step 3: Compute cumulative sums for 2017-like numbers
+    let prefixSum = computeCumulativeSums(is2017Like, UPPER_BOUND_FOR_CALCULATIONS);
+
+    // Step 4: Process queries
+    let queryCountString = dataLines.shift().trim().split(/\s/)[CONST_ZERO];
+    let numberOfQueries = parseInt(queryCountString, 10);
+
+    for (let currentQueryIndex = CONST_ZERO; currentQueryIndex < numberOfQueries; ++currentQueryIndex) {
+        let queryRangeStrings = dataLines.shift().split(/\s/);
+        let leftBoundary = parseInt(queryRangeStrings[CONST_ZERO], 10);
+        let rightBoundary = parseInt(queryRangeStrings[CONST_ONE], 10);
+        
+        let adjustedRightBoundary = rightBoundary + CONST_ONE;
+        
+        let queryResult = prefixSum[adjustedRightBoundary] - prefixSum[leftBoundary];
+        console.log(queryResult);
     }
 }
 
-// --- Main Execution Entry Point ---
-// Define the standard input file path.
-const STANDARD_INPUT_FILE_PATH = "/dev/stdin";
-
-try {
-    // Read the entire content of the standard input file.
-    const fileContent = require("fs").readFileSync(STANDARD_INPUT_FILE_PATH, "utf8");
-    // Pass the content to the main processing function.
-    ProcessQueries(fileContent);
-} catch (executionError) {
-    // Handle any errors that occur during file reading or processing.
-    console.error("Runtime Exception: An error occurred during program execution:", executionError.message);
-    // Exit the process with an error code.
-    process.exit(1);
-}
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

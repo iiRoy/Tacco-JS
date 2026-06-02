@@ -1,20 +1,15 @@
-function calculateOutcome(payload) {
-  const lines = payload.split('\n');
+const processData = (rawData) => {
+  const rawLines = rawData.split('\n');
+  const countItems = Number(rawLines[0]);
+  const [divisorVal, initialOffset] = rawLines[1].split(' ').map(Number);
 
-  const itemQuantity = Number(lines[0]);
-  
-  const [durationLimitStr, baseValueStr] = lines[1].split(' ');
-  const durationLimit = Number(durationLimitStr);
-  const baseValue = Number(baseValueStr);
+  const consumptionFactors = rawLines.slice(2, 2 + countItems).map(Number);
 
-  const consumptionRates = lines.slice(2, 2 + itemQuantity);
-
-  const cumulativeConsumption = consumptionRates.reduce((acc, currentRateStr) => {
-    const currentRate = Number(currentRateStr);
-    return acc + Math.ceil(durationLimit / currentRate);
+  const totalConsumed = consumptionFactors.reduce((accumulator, currentFactor) => {
+    return accumulator + Math.ceil(divisorVal / currentFactor);
   }, 0);
 
-  console.log(cumulativeConsumption + baseValue);
-}
+  console.log(totalConsumed + initialOffset);
+};
 
-calculateOutcome(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

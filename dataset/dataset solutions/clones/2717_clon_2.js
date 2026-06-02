@@ -1,27 +1,23 @@
-// Module for handling incoming data streams.
-var inputSource = require('readline').createInterface(
-  {
-    input:  process.stdin,
+// Module for handling input operations
+let inputHandler = require('readline').createInterface({
+    input: process.stdin,
     output: process.stdout
-  }
-);
-
-var collectedInput = [ ];
-
-inputSource.on('line', function (currentSegment) {
-  collectedInput.push(currentSegment);
 });
 
+let inputData = [];
 
-// The core processing routine.
-inputSource.on('close', function ( ) {
-  var initialValue = Number(collectedInput[0]);
+inputHandler.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
 
-  var candidateFactor = 1;
+// Main execution block
+inputHandler.on('close', function () {
+    let targetValue = Number(inputData[0]);
+    let divisorCandidate = 1;
 
-  while( initialValue % candidateFactor === 0 && initialValue / candidateFactor >= 1000000000 ) {
-    candidateFactor++;
-  }
+    while (targetValue % divisorCandidate === 0 && targetValue / divisorCandidate >= 1000000000) {
+        divisorCandidate++;
+    }
 
-  console.log( "0 0 " + candidateFactor + " 0 0 " + (initialValue / candidateFactor) );
+    console.log("0 0 " + divisorCandidate + " 0 0 " + (targetValue / divisorCandidate));
 });

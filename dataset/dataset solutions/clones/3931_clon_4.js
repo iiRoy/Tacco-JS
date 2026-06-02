@@ -1,46 +1,48 @@
-const processInputSeries = (inputSequence) => {
-    const seriesLength = inputSequence.length;
-    const initialCharacterAscii = 'a'.charCodeAt(0);
+const charOffset = 'a'.charCodeAt(0);
 
-    const produceCharacterRange = (startingCode, endingCode) =>
-        Array.from({ length: endingCode - startingCode + 1 }, (_, index) => String.fromCharCode(startingCode + index));
+const toCode = (char) => char.charCodeAt(0) - charOffset;
+const fromCode = (code) => String.fromCharCode(code + charOffset);
 
-    if (seriesLength < 26) {
-        const encounteredCharacters = new Set(Array.from(inputSequence));
-        const firstAbsentCharacter = produceCharacterRange(initialCharacterAscii, initialCharacterAscii + 25)
-            .find(ch => !encounteredCharacters.has(ch));
-        return inputSequence + firstAbsentCharacter;
+function processInputString(inputString) {
+    const stringLength = inputString.length;
+    let outputString;
+
+    if (stringLength < 26) {
+        const presentCodes = new Set(Array.from(inputString).map(toCode));
+        const firstMissingCode = Array.from({ length: 26 }, (_, codeValue) => codeValue)
+                                      .find(codeValue => !presentCodes.has(codeValue));
+        outputString = inputString + fromCode(firstMissingCode);
     } else {
-        if (inputSequence === "zyxwvutsrqponmlkjihgfedcba") {
-            return -1;
+        const reversedAlphabet = Array.from({ length: 26 }, (_, idx) => fromCode(25 - idx)).join('');
+        if (inputString === reversedAlphabet) {
+            console.log(-1);
+            return;
         }
 
-        const charactersOnRight = new Set();
-        const discoveredResult = Array.from(inputSequence).reduceRight((accumulatorResult, currentCharacter, currentPosition) => {
-            if (accumulatorResult !== null) {
-                return accumulatorResult;
+        const initialSeenCodes = new Set([toCode(inputString[stringLength - 1])]);
+
+        const finalState = Array.from(inputString.slice(0, -1)).reduceRight((accumulator, currentCharacter, relativeIndex) => {
+            if (accumulator.found) return accumulator;
+
+            const originalIndex = relativeIndex;
+            const characterCodeAtCurrentIndex = toCode(currentCharacter);
+
+            const potentialReplacementCode = Array.from({ length: 26 - characterCodeAtCurrentIndex }, (_, offset) => characterCodeAtCurrentIndex + offset)
+                                                 .find(codeCandidate => accumulator.seenCodes.has(codeCandidate));
+
+            if (potentialReplacementCode !== undefined) {
+                accumulator.prefix = inputString.substring(0, originalIndex);
+                accumulator.replacementCharacter = fromCode(potentialReplacementCode);
+                accumulator.found = true;
             }
 
-            if (currentPosition === seriesLength - 1) {
-                charactersOnRight.add(currentCharacter);
-                return null;
-            }
+            accumulator.seenCodes.add(characterCodeAtCurrentIndex);
+            return accumulator;
+        }, { seenCodes: initialSeenCodes, found: false, prefix: '', replacementCharacter: '' });
 
-            const currentCharacterCode = currentCharacter.charCodeAt(0);
-            const possibleSubstitutions = produceCharacterRange(currentCharacterCode, initialCharacterAscii + 25);
-
-            const chosenSubstitution = possibleSubstitutions.find(ch => charactersOnRight.has(ch));
-
-            if (chosenSubstitution) {
-                return inputSequence.substring(0, currentPosition) + chosenSubstitution;
-            }
-
-            charactersOnRight.add(currentCharacter);
-            return null;
-        }, null);
-
-        return discoveredResult === null ? inputSequence : discoveredResult;
+        outputString = finalState.prefix + finalState.replacementCharacter;
     }
-};
+    console.log(outputString);
+}
 
-console.log(processInputSeries(require("fs").readFileSync("/dev/stdin", "utf8").trim()));
+processInputString(require("fs").readFileSync("/dev/stdin", "utf8").trim());

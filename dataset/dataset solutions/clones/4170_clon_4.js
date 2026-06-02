@@ -1,27 +1,24 @@
-const fileSystemModule = require('fs');
+const fileSystem = require('fs');
 
-function processNumericalSeries(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const quantity = Number(contentLines[0]);
+const calculateTwoFactorCount = (currentNumericValue, accumulatedDivisions = 0) => {
+  if (currentNumericValue % 2 !== 0) {
+    return accumulatedDivisions;
+  }
+  return calculateTwoFactorCount(currentNumericValue / 2, accumulatedDivisions + 1);
+};
 
-    const numberStrings = contentLines[1].split(' ');
-    const relevantNumberStrings = numberStrings.slice(0, quantity);
+const processInputData = (inputContent) => {
+  const contentLines = inputContent.split('\n');
+  const initialCountValue = parseInt(contentLines[0], 10);
 
-    const numericValues = relevantNumberStrings.map(val => Number(val));
+  const numericSequence = contentLines[1].split(' ').map(valueString => parseInt(valueString, 10));
 
-    const calculateLeadingZerosOfBinary = (value) => {
-        if (value === 0) {
-            return Infinity; 
-        }
-        return Math.log2(value & -value);
-    };
+  const divisibilityCounts = numericSequence.map(calculateTwoFactorCount);
 
-    const divisionCounts = numericValues.map(calculateLeadingZerosOfBinary);
+  const minimumDivisibility = divisibilityCounts.reduce((currentMin, currentCount) => Math.min(currentMin, currentCount), 100);
 
-    const minimumDivisions = divisionCounts.reduce((accumulator, currentVal) => Math.min(accumulator, currentVal), 100);
+  console.log(minimumDivisibility);
+};
 
-    console.log(minimumDivisions);
-}
-
-const rawDataSource = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-processNumericalSeries(rawDataSource);
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInputData(rawInputContent);

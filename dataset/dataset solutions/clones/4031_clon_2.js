@@ -1,49 +1,44 @@
-var textEntries = [];
+var inputDataRows = [];
 
-var textInputHandler = require('readline');
+var ioModule = require('readline');
 
-var ioInterface = textInputHandler.createInterface({
+var inputHandler = ioModule.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-ioInterface.on('line', function (singleLine) {
-    textEntries.push(singleLine);
+inputHandler.on('line', function (currentLine) {
+    inputDataRows.push(currentLine);
 });
 
-ioInterface.on('close', function()
-{
-    var numericalGrid = textEntries.map(entryStr =>
-        entryStr.split(" ").map(strNum => +strNum)
-    );
+inputHandler.on('close', function () {
+    var matrixData = inputDataRows.map(rowStr => rowStr.split(" ").map(numStr => Number(numStr)));
     
-    // Attempt to deduce the initial beta components
-    for ( var alpha_0 = 0; alpha_0 <= 100; alpha_0++ )
-    {
-        var beta_0 = numericalGrid[0][0] - alpha_0;
-        var beta_1 = numericalGrid[1][0] - alpha_0;
-        var beta_2 = numericalGrid[2][0] - alpha_0;
+    // Assume values for b_i based on the first column
+    for (var valA1 = 0x0; valA1 <= 1e2; valA1++) {
+        var valB1 = matrixData[0][0] - valA1;
+        var valB2 = matrixData[1][0] - valA1;
+        var valB3 = matrixData[2][0] - valA1;
 
-        // Validate the assumed beta components using the second 'alpha' factor
-        for ( var alpha_1 = 0; alpha_1 <= 100; alpha_1++ )
-        {
-            if ( alpha_1 + beta_0 !== numericalGrid[0][1] ) { continue; }
-            if ( alpha_1 + beta_1 !== numericalGrid[1][1] ) { continue; }
-            if ( alpha_1 + beta_2 !== numericalGrid[2][1] ) { continue; }
+        // Validate the assumed b_i values using the second column
+        for (var valA2 = 0x0; valA2 <= 1e2; valA2++) {
+            if (valA2 + valB1 !== matrixData[0][1]) { continue; }
+            if (valA2 + valB2 !== matrixData[1][1]) { continue; }
+            if (valA2 + valB3 !== matrixData[2][1]) { continue; }
             
-            // Confirm the validity with the third 'alpha' factor
-            for ( var alpha_2 = 0; alpha_2 <= 100; alpha_2++ )
-            {
-                if ( alpha_2 + beta_0 !== numericalGrid[0][2] ) { continue; }
-                if ( alpha_2 + beta_1 !== numericalGrid[1][2] ) { continue; }
-                if ( alpha_2 + beta_2 !== numericalGrid[2][2] ) { continue; }
+            // If consistent, validate using the third column
+            for (var valA3 = 0x0; valA3 <= 1e2; valA3++) {
+                if (valA3 + valB1 !== matrixData[0][2]) { continue; }
+                if (valA3 + valB2 !== matrixData[1][2]) { continue; }
+                if (valA3 + valB3 !== matrixData[2][2]) { continue; }
                 
-                // A consistent set of values has been identified
+                // If all checks pass, output "Yes" and terminate
                 console.log("Yes");
-                return (0);
+                return (0x0);
             }
         }
     }
-    // No valid combination found after all possibilities exhausted
+    // If no valid combination is found after all iterations, output "No"
     console.log("No");
+
 });

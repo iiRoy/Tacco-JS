@@ -1,37 +1,52 @@
-const sourceData = process.stdin.readFileSync(0, 'utf8');
-const [ , firstLine, , secondLine, thirdLine ] = sourceData.trim().split('\n');
+const fileSystem = require('fs');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const numericSet = firstLine.split(' ').map(val => Number(val)).sort((val1, val2) => val1 - val2);
-const queryValues = secondLine.split(' ').map(val => Number(val));
-const thresholds = thirdLine.split(' ').map(val => Number(val));
+const lineSegments = rawContent.trim().split('\n');
 
-const aggregateTotals = [];
-numericSet.reduce((currentSum, currentVal, index) => {
-    const nextSum = currentSum + currentVal;
-    aggregateTotals[index] = nextSum;
-    return nextSum;
-}, 0);
+lineSegments.shift();
 
-const findCumulativeSum = (targetPoint) => {
-    let searchStart = 0;
-    let searchEnd = numericSet.length - 1;
-    let effectiveIndex = -1;
+const initialValues = lineSegments.shift().split(' ').map(Number);
+initialValues.sort((x, y) => x - y);
 
-    while (searchStart <= searchEnd) {
-        const midPoint = (searchStart + searchEnd) >> 1;
-        if (numericSet[midPoint] <= targetPoint) {
-            effectiveIndex = midPoint;
-            searchStart = midPoint + 1;
+lineSegments.shift();
+
+const queryValues = lineSegments.shift().split(' ').map(Number);
+const thresholds = lineSegments.shift().split(' ').map(Number);
+
+function findFloorIndex(sortedCollection, targetElement) {
+    let lowerBound = 0;
+    let upperBound = sortedCollection.length - 1;
+    let resultPosition = -1;
+
+    while (lowerBound <= upperBound) {
+        const midPoint = Math.floor((lowerBound + upperBound) / 2);
+        if (sortedCollection[midPoint] <= targetElement) {
+            resultPosition = midPoint;
+            lowerBound = midPoint + 1;
         } else {
-            searchEnd = midPoint - 1;
+            upperBound = midPoint - 1;
         }
     }
-    return (effectiveIndex === -1) ? 0 : aggregateTotals[effectiveIndex];
-};
+    return resultPosition;
+}
 
-const finalJudgments = queryValues.map((testValue, currentPosition) => {
-    const totalForTestValue = findCumulativeSum(testValue);
-    return (thresholds[currentPosition] <= totalForTestValue) ? "Yes" : "No";
-});
+const cumulativeSums = [];
+let runningTotal = 0;
 
-process.stdout.write(finalJudgments.join('\n') + '\n');
+for (let idx = 0; idx < initialValues.length; idx++) {
+    runningTotal += initialValues[idx];
+    cumulativeSums.push(runningTotal);
+}
+
+for (let k = 0; k < queryValues.length; k++) {
+    const currentQueryValue = queryValues[k];
+    let effectiveSumForQuery = 0;
+
+    const floorPosition = findFloorIndex(initialValues, currentQueryValue);
+
+    if (floorPosition !== -1) {
+        effectiveSumForQuery = cumulativeSums[floorPosition];
+    }
+
+    console.log((thresholds[k] <= effectiveSumForQuery) ? "Yes" : "No");
+}

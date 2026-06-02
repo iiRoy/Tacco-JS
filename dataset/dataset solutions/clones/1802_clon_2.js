@@ -1,70 +1,53 @@
-// This file contains a solution for a specific problem.
-// It processes a series of test cases based on input parameters.
+function processPuzzle(level, currentXORSum, valueArray, patternString) {
+  // Base case: if no more levels to process
+  if (level === 0) {
+    // Return true if the final XOR sum is zero, false otherwise
+    return currentXORSum === 0;
+  }
 
+  // Determine the character at the current level from the pattern string
+  const currentPatternChar = patternString[patternString.length - level];
 
-// Helper function to process a sequence recursively.
-// Parameters:
-//  - currentLength: The remaining length of the sequence to process.
-//  - currentXORSum: The current accumulated XOR sum.
-//  - xorValuesArray: An array of numbers used in XOR operations.
-//  - sequenceString: The string defining the sequence operations ('0' or '1').
-function processSequence( currentLength , currentXORSum , xorValuesArray , sequenceString )
-{
-  // Base case: If no more elements to process, check if XOR sum is zero.
-  if (currentLength === 0)   return currentXORSum === 0;
-
-  // Retrieve the character corresponding to the current position in the sequence.
-  const currentChar = sequenceString[ sequenceString.length - currentLength ];
-
-  // Conditional logic based on the character in the sequence string.
-  if ( currentChar === '1' )
-  {
-    // If '1', perform two recursive calls and combine their results with logical AND.
-    // First branch: XOR with the corresponding value from xorValuesArray.
-    const resultOne = processSequence( currentLength - 1 , currentXORSum ^ parseInt(xorValuesArray[ sequenceString.length - currentLength ], 10) , xorValuesArray , sequenceString );
-    // Second branch: Do not XOR, pass currentXORSum as is.
-    const resultTwo = processSequence( currentLength - 1 , currentXORSum , xorValuesArray , sequenceString );
-    // Both paths must return true for this branch to be true.
+  // Branch based on the current pattern character
+  if (currentPatternChar === '1') {
+    // If the character is '1', both recursive paths must return true
+    // Path 1: XOR with the corresponding value from the array
+    const resultOne = processPuzzle(level - 1, currentXORSum ^ valueArray[patternString.length - level], valueArray, patternString);
+    // Path 2: Do not XOR with the corresponding value
+    const resultTwo = processPuzzle(level - 1, currentXORSum, valueArray, patternString);
+    // Both outcomes must be true for this branch to be true
     return resultOne && resultTwo;
-  }
-  else
-  {
-    // If '0', perform two recursive calls and combine their results with logical OR.
-    // This implies that either path can lead to a valid solution.
-    return processSequence( currentLength - 1 , currentXORSum ^ parseInt(xorValuesArray[ sequenceString.length - currentLength ], 10) , xorValuesArray , sequenceString ) ||
-           processSequence( currentLength - 1 , currentXORSum , xorValuesArray , sequenceString ) ;
-  }
-}
-
-// Main execution function that orchestrates the program flow.
-// It reads input, parses test cases, and calls the processing function.
-function executeProgram( programInput )
-{
-  // Split the entire input string into individual lines.
-  const parsedLines = programInput.split( '\n' );
-
-  // Determine the total number of test cases from the first line.
-  const numTestCases = parseInt( parsedLines[0], 10 );
-
-  // Loop through each test case. Each case consists of 3 lines of data.
-  for ( let caseIndex = 0 ; caseIndex < numTestCases * 3 ; caseIndex += 3 )
-  {
-    // Extract parameters for the current test case.
-    // The 'N' value, converted to a number.
-    const caseNValue = parseInt( parsedLines[ caseIndex + 1 ], 10 );
-    // The array 'A', split by spaces.
-    const caseAValues = parsedLines[ caseIndex + 2 ].split( ' ' );
-    // The sequence string 'S'.
-    const caseSString = parsedLines[ caseIndex + 3 ];
-
-    // Invoke the recursive processing function with initial parameters.
-    const finalOutcome = processSequence( caseNValue , 0 , caseAValues , caseSString );
-
-    // Output the result as '0' if true, '1' if false.
-    console.log( finalOutcome ? '0' : '1' );
+  } else {
+    // If the character is '0', at least one recursive path must return true
+    // Path 1: XOR with the corresponding value from the array
+    // Path 2: Do not XOR with the corresponding value
+    // Either outcome being true is sufficient for this branch
+    return processPuzzle(level - 1, currentXORSum ^ valueArray[patternString.length - level], valueArray, patternString) || processPuzzle(level - 1, currentXORSum, valueArray, patternString);
   }
 }
 
+function entryPoint(rawData) {
+  // Split the entire input into individual lines
+  const parsedLines = rawData.split('\n');
+  // The first line contains the total number of test cases
+  const testCaseCount = Number(parsedLines[0]);
 
-// Entry point of the program. Reads from standard input and starts execution.
-executeProgram( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+  // Loop through each test case block, which consists of 3 lines
+  for (let idx = 0; idx < testCaseCount * 3; idx += 3) {
+    // Extract N for the current test case
+    const currentN = parsedLines[idx + 1];
+    // Extract array A, splitting by spaces
+    const valueArray = parsedLines[idx + 2].split(' ');
+    // Extract string S
+    const patternString = parsedLines[idx + 3];
+
+    // Call the core logic function with initial parameters
+    const finalOutcome = processPuzzle(currentN, 0, valueArray, patternString);
+
+    // Output '0' if the outcome is true, '1' if false
+    console.log(finalOutcome ? '0' : '1');
+  }
+}
+
+// Read input from standard input and pass it to the entry point function
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

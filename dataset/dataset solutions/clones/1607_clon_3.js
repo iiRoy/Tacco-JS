@@ -1,197 +1,116 @@
-const retrieveInputData = () => {
-    // Attempt to read input from standard input in UTF-8 format.
-    // This function encapsulates the file system interaction.
-    return require("fs").readFileSync("/dev/stdin", "utf8");
-};
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataLines = rawData.split('\n');
 
-const parseInputText = (inputTextContent) => {
-    // Process the raw input string into an array of lines.
-    // Remove any leading/trailing whitespace for cleanliness.
-    const textLines = inputTextContent.trim().split('\n');
+// Parse N (number of nodes) and K (maximum steps) from the first line
+const firstLineParts = dataLines[0].split(' ');
+const numNodes = Number(firstLineParts[0]);
+const maxSteps = Number(firstLineParts[1]);
 
-    // Parse the first line for initial parameters.
-    const [initialEntityCountStr, maximumAllowedMovesStr] = textLines[0].split(' ');
-    const initialEntityCount = Number(initialEntityCountStr);
-    const maximumAllowedMoves = Number(maximumAllowedMovesStr);
+// Parse P (next node array) and C (node values array)
+// Prepend null to make them 1-indexed, matching problem description
+const nextNodes = [null, ...dataLines[1].split(' ').map(Number)];
+const nodeValues = [null, ...dataLines[2].split(' ').map(Number)];
 
-    // Parse the second line for 'next' indices (P array in original).
-    // These indicate the next entity to move to.
-    const navigationIndices = textLines[1].split(' ').map(Number);
-
-    // Parse the third line for score values (C array in original).
-    // These are the scores associated with each entity.
-    const entityScores = textLines[2].split(' ').map(Number);
-
-    // For 1-based indexing convenience, prepend a null value to both arrays.
-    // This aligns array indices with entity IDs (1 to N).
-    navigationIndices.unshift(null);
-    entityScores.unshift(null);
-
-    return {
-        numEntities: initialEntityCount,
-        maxMoves: maximumAllowedMoves,
-        nextEntityMap: navigationIndices,
-        entityValueScores: entityScores
-    };
-};
-
-// Define a constant for the smallest possible score, used for initial maximum comparisons.
-const MINIMUM_POSSIBLE_SCORE_VALUE = Number.NEGATIVE_INFINITY;
+// Define a constant for the initial minimum score, used for comparisons
+const INITIAL_MIN_SCORE = -1000000000;
 
 /**
- * Calculates the maximum score achievable starting from a given entity.
- * This function models movement through a sequence of entities, accumulating scores,
- * and handles potential loops in the path.
- *
- * @param {number} startingEntityId The ID of the entity to begin the path from.
- * @param {number} totalAllowedSteps The maximum number of steps allowed for the path.
- * @param {number[]} entityNavigationMap An array where entityNavigationMap[i] is the next entity from i.
- * @param {number[]} entityValueScores An array where entityValueScores[i] is the score of entity i.
- * @returns {number} The maximum score achieved during the path traversal.
+ * Calculates the maximum score achievable starting from a given node
+ * within a specified number of steps, considering cycles.
+ * @param {number} initialNode The starting node for the traversal.
+ * @returns {number} The maximum score.
  */
-const determineOptimalPathScore = (startingEntityId, totalAllowedSteps, entityNavigationMap, entityValueScores) => {
-    // Map to keep track of visited entities and the step index when they were first visited.
-    const visitedPathEntryPoints = new Map(); // { entityId: stepIndexWhenFirstVisited }
+const calculateMaxScore = (initialNode) => {
+    // A Set is used to efficiently track nodes visited in the current path
+    // to detect cycles.
+    const visitedNodesInPath = new Set();
+    let currentNode = initialNode;
+    let currentPathSum = 0;
+    let maxPathScoreInCycle = INITIAL_MIN_SCORE;
+    let loopDetected = false;
+    let stepsTakenInFirstTraversal = 0;
 
-    let currentEntityIdentifier = startingEntityId;
-    let currentAccumulatedScore = 0;
-    let highestScoreEncountered = MINIMUM_POSSIBLE_SCORE_VALUE;
-    let stepsCompletedInPath = 0;
-    let wasLoopDetected = false;
-    let loopStartStepIndex = -1; // The step index (0-based) where the loop segment begins
+    // First traversal: Follow the path for up to `maxSteps` or until a loop is detected.
+    for (stepsTakenInFirstTraversal = 0; stepsTakenInFirstTraversal < maxSteps; stepsTakenInFirstTraversal++) {
+        // Mark the current node as visited before moving to the next.
+        visitedNodesInPath.add(currentNode);
+        
+        // Move to the next node in the sequence as defined by `nextNodes`.
+        currentNode = nextNodes[currentNode];
+        
+        // Add the value of the newly reached node to the running path sum.
+        currentPathSum += nodeValues[currentNode];
+        
+        // Update the maximum score encountered so far within this path segment.
+        maxPathScoreInCycle = Math.max(maxPathScoreInCycle, currentPathSum);
 
-    // First phase: Traverse the path step by step.
-    // This loop runs until maximumAllowedMoves is reached or a loop is detected.
-    for (let stepCounter = 0; stepCounter < totalAllowedSteps; stepCounter++) {
-        // If the current entity has been visited before, a cycle (loop) is formed.
-        if (visitedPathEntryPoints.has(currentEntityIdentifier)) {
-            wasLoopDetected = true;
-            loopStartStepIndex = visitedPathEntryPoints.get(currentEntityIdentifier);
-            break; // Exit traversal; loop analysis begins.
+        // Check if the current node has already been visited in this traversal.
+        // If so, a cycle has been detected.
+        if (visitedNodesInPath.has(currentNode)) {
+            loopDetected = true;
+            break; // Exit the loop as the cycle is found.
         }
-
-        // Mark the current entity as visited with its corresponding step index.
-        visitedPathEntryPoints.set(currentEntityIdentifier, stepCounter);
-
-        // Move to the next entity as per the navigation map.
-        currentEntityIdentifier = entityNavigationMap[currentEntityIdentifier];
-
-        // Add the score of the newly reached entity to the accumulated score.
-        const scoreOfCurrentEntity = entityValueScores[currentEntityIdentifier];
-        currentAccumulatedScore += scoreOfCurrentEntity;
-
-        // Update the highest score encountered along this path segment.
-        highestScoreEncountered = Math.max(highestScoreEncountered, currentAccumulatedScore);
-
-        // Increment the count of steps completed.
-        stepsCompletedInPath = stepCounter + 1;
     }
 
-    // If no loop was detected after 'totalAllowedSteps' steps,
-    // the highest score achieved during this direct traversal is the answer.
-    if (!wasLoopDetected) {
-        return highestScoreEncountered;
+    // If no loop was detected within the `maxSteps`, the maximum score is simply
+    // the highest value found during the linear traversal.
+    if (!loopDetected) {
+        return maxPathScoreInCycle;
     }
 
-    // --- Handling the scenario where a loop was detected ---
-
-    // Calculate the length of the detected loop segment.
-    const effectiveLoopLength = stepsCompletedInPath - loopStartStepIndex;
-
-    // Calculate the total score accumulated during one full iteration of the loop segment.
-    let scoreOfOneLoopTraversal = 0;
-    let maxScoreWithinOneLoopTraversal = MINIMUM_POSSIBLE_SCORE_VALUE; // Max score relative to loop segment start
-    let tempCurrentLoopNode = currentEntityIdentifier; // This is the node that was revisited, marking the loop end/start
-
-    // Re-traverse the loop segment to calculate its sum and internal peak.
-    // The `currentEntityIdentifier` here is the node *after* `stepsCompletedInPath` steps.
-    // We need to start from the node that *initiated* the loop (the one at `loopStartStepIndex`).
-    // Let's find the entity at `loopStartStepIndex` by re-simulating the path up to that point.
-    let nodeAtLoopStart = startingEntityId;
-    for (let s = 0; s < loopStartStepIndex; s++) {
-        nodeAtLoopStart = entityNavigationMap[nodeAtLoopStart];
-    }
-    // Now `nodeAtLoopStart` is the entity that was first visited at `loopStartStepIndex`.
-
-    let tempLoopScoreAccumulator = 0;
-    for (let i = 0; i < effectiveLoopLength; i++) {
-        nodeAtLoopStart = entityNavigationMap[nodeAtLoopStart];
-        tempLoopScoreAccumulator += entityValueScores[nodeAtLoopStart];
-        maxScoreWithinOneLoopTraversal = Math.max(maxScoreWithinOneLoopTraversal, tempLoopScoreAccumulator);
-    }
-    scoreOfOneLoopTraversal = tempLoopScoreAccumulator;
-
-    // Critical Guard: If the loop itself has a non-positive total score,
-    // repeating it multiple times would not increase the overall maximum.
-    // In this case, the highest score is simply the maximum achieved *before*
-    // any negative contributions from repeating the loop. This is represented by `highestScoreEncountered`.
-    if (scoreOfOneLoopTraversal <= 0) {
-        return highestScoreEncountered;
+    // If a loop was detected, but the total sum of one cycle is negative,
+    // repeating the cycle would only decrease the score. In this scenario,
+    // the best score is the maximum found before the cycle would repeat.
+    if (currentPathSum < 0) {
+        return maxPathScoreInCycle;
     }
 
-    // Calculate the number of full loop repetitions that fit into the remaining steps.
-    // This calculation aligns with the original code's `times` variable logic.
-    const fullLoopRepetitionsOptionA = Math.floor((totalAllowedSteps - 1) / effectiveLoopLength);
-    const fullLoopRepetitionsOptionB = Math.floor(totalAllowedSteps / effectiveLoopLength);
+    // Calculate the length of the detected cycle.
+    // `stepsTakenInFirstTraversal` is 0-indexed, so add 1 for the actual count.
+    const cycleLength = stepsTakenInFirstTraversal + 1;
 
-    // --- Scenario 1: Calculate score for `(repetitions - 1)` full loops + peak from the first loop pass ---
-    // This corresponds to `sum * (times - 1) + peak` in the original code.
-    // `currentAccumulatedScore` (from the first loop) acts as the `sum` for one pass of `k+1` steps.
-    // `highestScoreEncountered` acts as the `peak` for one pass of `k+1` steps.
-    const scoreFromOptionA = scoreOfOneLoopTraversal * (fullLoopRepetitionsOptionA - 1) + highestScoreEncountered;
+    // Determine the number of full cycles to apply for the main sum calculation.
+    // This logic precisely mirrors the original 'times' variable calculation.
+    const numFullCyclesToApply = maxSteps % cycleLength === 0
+        ? (maxSteps / cycleLength) - 1
+        : Math.floor(maxSteps / cycleLength);
 
-    // --- Scenario 2: Calculate score for `repetitions` full loops + peak from the remaining steps ---
-    // This corresponds to `sum * times + _peak` in the original code.
-    // `_peak` is the max score from the *original starting node* for `K % (k+1)` steps.
-    let tempNodeForFinalSegment = startingEntityId;
-    let tempScoreForFinalSegment = 0;
-    let maxScoreInFinalSegment = MINIMUM_POSSIBLE_SCORE_VALUE;
-    const stepsInFinalSegment = totalAllowedSteps % effectiveLoopLength;
+    // Determine the number of remaining steps after accounting for the full cycles.
+    // This logic precisely mirrors the original '_K' variable calculation.
+    const remainingStepsAfterCycles = maxSteps % cycleLength;
 
-    // Simulate the path for the remaining steps, starting again from the original start.
-    for (let s = 0; s < stepsInFinalSegment; s++) {
-        tempNodeForFinalSegment = entityNavigationMap[tempNodeForFinalSegment];
-        tempScoreForFinalSegment += entityValueScores[tempNodeForFinalSegment];
-        maxScoreInFinalSegment = Math.max(maxScoreInFinalSegment, tempScoreForFinalSegment);
+    // Initialize variables for calculating the score within the remainder path.
+    let remainderCurrentNode = initialNode; // Reset to the initial node for this calculation.
+    let remainderPathSum = 0;
+    let remainderMaxScore = INITIAL_MIN_SCORE;
+
+    // Traverse the `remainingStepsAfterCycles` to find the maximum score in this segment.
+    for (let rStep = 0; rStep < remainingStepsAfterCycles; rStep++) {
+        remainderCurrentNode = nextNodes[remainderCurrentNode];
+        remainderPathSum += nodeValues[remainderCurrentNode];
+        remainderMaxScore = Math.max(remainderMaxScore, remainderPathSum);
     }
-    const scoreFromOptionB = scoreOfOneLoopTraversal * fullLoopRepetitionsOptionB + maxScoreInFinalSegment;
 
-    // The ultimate maximum score is the best of these two scenarios.
-    return Math.max(scoreFromOptionA, scoreFromOptionB);
+    // Calculate two potential maximum scores based on the cycle and remainder:
+    // Option 1: `(numFullCyclesToApply - 1)` full cycles, plus the maximum score
+    //           achieved within the *next* full cycle (represented by `maxPathScoreInCycle`).
+    const scoreFromFullCyclesAndPeak = currentPathSum * (numFullCyclesToApply - 1) + maxPathScoreInCycle;
+    
+    // Option 2: `numFullCyclesToApply` full cycles, plus the maximum score
+    //           achieved within the `remainingStepsAfterCycles`.
+    const scoreFromFullCyclesAndRemainder = currentPathSum * numFullCyclesToApply + remainderMaxScore;
+
+    // Return the greater of the two calculated options.
+    return Math.max(scoreFromFullCyclesAndPeak, scoreFromFullCyclesAndRemainder);
 };
 
-// --- Main execution block ---
+let overallMaxScore = INITIAL_MIN_SCORE;
 
-// 1. Obtain raw input data.
-const rawInput = obtainRawInput();
-
-// 2. Parse and structure the input data.
-const { numEntities, maxMoves, nextEntityMap, entityValueScores } = parseInputText(rawInput);
-
-// 3. Initialize the overall maximum score found across all starting entities.
-let finalGlobalMaxScore = MINIMUM_POSSIBLE_SCORE_VALUE;
-
-// Optional: Add a guard clause for invalid input parameters.
-// If N or K are non-positive, there's no path to analyze.
-if (numEntities <= 0 || maxMoves <= 0) {
-    console.log(0); // Or handle as an error, or return MINIMUM_POSSIBLE_SCORE_VALUE
-    // For competitive programming, usually 0 is fine if no moves can be made.
-    // If scores can be negative, 0 might not be the actual max.
-    // Let's assume K=0 means 0 score.
-    // If K=0, the loop in determineOptimalPathScore won't run, and it will return MINIMUM_POSSIBLE_SCORE_VALUE.
-    // The problem context usually implies N, K >= 1.
-    // Let's stick to the behavior that it will return MINIMUM_POSSIBLE_SCORE_VALUE if no moves possible.
-    // So, no explicit guard here, as `determineOptimalPathScore` naturally handles K=0.
-} else {
-    // 4. Iterate through each possible starting entity (from 1 to N).
-    for (let currentStartEntity = 1; currentStartEntity <= numEntities; currentStartEntity++) {
-        // Calculate the maximum score for the path starting at the current entity.
-        const scoreForThisPath = determineOptimalPathScore(currentStartEntity, maxMoves, nextEntityMap, entityValueScores);
-
-        // Update the global maximum score if the current path yields a higher score.
-        finalGlobalMaxScore = Math.max(finalGlobalMaxScore, scoreForThisPath);
-    }
+// Iterate through all possible starting nodes (from 1 to N)
+// to find the global maximum score achievable.
+for (let currentStartNode = 1; currentStartNode <= numNodes; currentStartNode++) {
+    overallMaxScore = Math.max(overallMaxScore, calculateMaxScore(currentStartNode));
 }
 
-// 5. Output the final computed maximum score.
-console.log(finalGlobalMaxScore);
+// Output the final overall maximum score.
+console.log(overallMaxScore);

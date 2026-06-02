@@ -1,30 +1,21 @@
 'use strict';
 
-function ProcessIncomingData(rawStream) {
-    const textPattern = /^(?<firstPart>\S+)\s+(?<secondPart>\s*\S+)\s+(?<thirdPart>\s*\S+)/;
-    const extractedParts = rawStream.match(textPattern);
+const processInput = (rawData) => {
+    const elementList = rawData.split('\n')[0].split(' ');
 
-    const itemA = extractedParts.groups.firstPart;
-    const itemB = extractedParts.groups.secondPart.trim();
-    const itemC = extractedParts.groups.thirdPart.trim();
+    const frequencyMap = elementList.reduce((accumulator, currentItem) => {
+        return accumulator.set(currentItem, (accumulator.get(currentItem) || 0) + 1);
+    }, new Map());
 
-    const conditionOne = (itemA === itemB);
-    const conditionTwo = (itemA === itemC);
+    const uniqueCandidate = elementList.find(item => frequencyMap.get(item) === 1);
 
-    const lookupIndex = (conditionOne ? 2 : 0) + (conditionTwo ? 1 : 0);
-
-    const outcomeOptions = [itemA, itemB, itemC, itemC];
-
-    const finalOutcome = outcomeOptions[lookupIndex];
-
-    (new Function('valToDisplay', 'globalThis.console.log(valToDisplay)'))(finalOutcome);
-}
-
-const acquireExternalSource = () => {
-    const fileSystemProvider = globalThis['require']('fs');
-    const sourceIdentifier = '/dev/stdin';
-    const textEncoding = 'utf8';
-    return fileSystemProvider['readFileSync'](sourceIdentifier, textEncoding);
+    if (uniqueCandidate !== undefined) {
+        console.log(uniqueCandidate);
+    } else {
+        console.log(elementList[2]);
+    }
 };
 
-ProcessIncomingData(acquireExternalSource());
+const acquireSourceData = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
+
+processInput(acquireSourceData());

@@ -1,47 +1,31 @@
-'use strict'
+'use strict';
 
-const analyzeGraphInput = (rawGraphDescription) => {
-  const edgesAsNumbers = rawGraphDescription
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .flatMap(line => line.split(' ').map(Number));
+const processGraphData = (sourceText) => {
+  const numericPairs = sourceText.split('\n').map(lineSegment =>
+    lineSegment.split(' ').map(Number)
+  );
 
-  const nodeConnectionCounts = new Map();
-  [1, 2, 3, 4].forEach(nodeId => nodeConnectionCounts.set(nodeId, 0));
+  const nodeDegreeCounts = numericPairs.reduce((accumulator, currentEdge) => {
+    const [firstNode, secondNode] = currentEdge;
+    accumulator[firstNode - 1]++;
+    accumulator[secondNode - 1]++;
+    return accumulator;
+  }, [0, 0, 0, 0]);
 
-  edgesAsNumbers.forEach(nodeIdentifier => {
-    if (nodeConnectionCounts.has(nodeIdentifier)) {
-      nodeConnectionCounts.set(nodeIdentifier, nodeConnectionCounts.get(nodeIdentifier) + 1);
-    } else {
-      // Handle cases where input might contain node IDs outside 1-4,
-      // though the problem implies fixed 4 nodes.
-      // For this problem, it will simply be ignored in the final length check.
-      // Or, could initialize with all possible input nodes.
-      // Given the original had a fixed-size array, we stick to fixed-size nodes 1-4.
-    }
-  });
+  nodeDegreeCounts.sort((valA, valB) => valA - valB);
 
-  const vertexDegreeSequence = Array.from(nodeConnectionCounts.values());
-  vertexDegreeSequence.sort((firstVal, secondVal) => firstVal - secondVal);
+  const expectedDegreeSequence = [1, 1, 2, 2];
 
-  const expectedPattern = [1, 1, 2, 2];
+  const matchesExpected = nodeDegreeCounts.length === expectedDegreeSequence.length &&
+                          nodeDegreeCounts.every((countValue, index) =>
+                            countValue === expectedDegreeSequence[index]
+                          );
 
-  const validationResult =
-    vertexDegreeSequence.length === expectedPattern.length &&
-    vertexDegreeSequence.every((val, idx) => val === expectedPattern[idx]);
-
-  if (validationResult) {
-    console.log('YES');
-  } else {
-    console.log('NO');
-  }
+  console.log(matchesExpected ? 'YES' : 'NO');
 };
 
-const acquireInputAndProcess = (sourceFilePath) => {
-  const fileSystemModule = require('fs');
-  const rawInputData = fileSystemModule.readFileSync(sourceFilePath, 'utf8');
-  analyzeGraphInput(rawInputData);
+const main = (inputContent) => {
+    processGraphData(inputContent);
 };
 
-acquireInputAndProcess('/dev/stdin');
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

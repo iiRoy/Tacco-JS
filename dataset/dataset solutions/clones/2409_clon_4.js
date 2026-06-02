@@ -1,66 +1,67 @@
 'use strict';
 
-const getPartialSum = (collection, limitExclusive) => {
-  if (limitExclusive <= 0) {
-    return 0;
-  }
-  if (limitExclusive > collection.length) {
-    return NaN;
-  }
-  return collection.slice(0, limitExclusive).reduce((accumulator, value) => accumulator + value, 0);
-};
+const processInput = rawData => {
+  const sourceText = rawData.trim();
+  const lines = sourceText.split('\n');
+  const stringValues = lines[1].split(' ');
+  const numericValues = stringValues.map(val => Number.parseInt(val, 10));
 
-const processSegments = dataStream => {
-  const allLines = dataStream.trim().split('\n');
-  const segmentStrings = allLines[1].split(' ');
+  const totalSum = numericValues.reduce((accumulator, current) => accumulator + current, 0);
+  const targetHalf = totalSum / 2;
 
-  const numericalSegments = segmentStrings.map(s => parseInt(s, 10));
+  // Generate an array of prefix sums
+  // prefixSums[k] will store the sum of numericValues[0] through numericValues[k]
+  const prefixSums = numericValues.reduce((accumulator, value, index) => {
+    const previousSum = (index > 0) ? accumulator[index - 1] : 0;
+    accumulator.push(previousSum + value);
+    return accumulator;
+  }, []);
 
-  const grandTotal = numericalSegments.reduce((sum, num) => sum + num, 0);
-  const separationPoint = grandTotal / 2;
+  // Find the index in prefixSums where the sum first meets or exceeds targetHalf.
+  // This 'splitPointIndexInPrefix' corresponds to the index 'k' such that prefixSums[k] is the first sum >= targetHalf.
+  // If no such sum exists (i.e., all elements are too small), findIndex returns -1.
+  const splitPointIndexInPrefix = prefixSums.findIndex(currentSum => currentSum >= targetHalf);
 
-  let finalPosition;
-  let accumulatedValue;
+  let firstCandidateSum;
+  let secondCandidateSum;
 
-  if (separationPoint <= 0) {
-    finalPosition = 0;
-    accumulatedValue = 0;
+  if (splitPointIndexInPrefix === -1) {
+    // This scenario corresponds to the original loop where 'half' never reaches 'mokuhyo'
+    // and eventually becomes NaN due to adding 'undefined'.
+    // The original 'i' would become numericValues.length + 1.
+    // Both ans1 and ans2 would become NaN.
+    firstCandidateSum = NaN;
+    secondCandidateSum = NaN;
   } else {
-    const cumulativeRecords = numericalSegments.reduce((acc, currentVal, idx) => {
-      const prevSum = acc.length > 0 ? acc[acc.length - 1].sum : 0;
-      acc.push({ sum: prevSum + currentVal, index: idx });
-      return acc;
-    }, []);
+    // 'firstCandidateSum' corresponds to original 'ans1' (sum up to original 'i-1')
+    // which is sum(numericValues[0...splitPointIndexInPrefix])
+    firstCandidateSum = prefixSums[splitPointIndexInPrefix];
 
-    const firstExceedingRecord = cumulativeRecords.find(record => record.sum >= separationPoint);
-
-    if (firstExceedingRecord) {
-      finalPosition = firstExceedingRecord.index + 1;
-      accumulatedValue = firstExceedingRecord.sum;
+    // 'secondCandidateSum' corresponds to original 'ans2' (sum up to original 'i')
+    // which is sum(numericValues[0...splitPointIndexInPrefix+1])
+    // If splitPointIndexInPrefix is the last index, then numericValues[splitPointIndexInPrefix + 1] is undefined.
+    // The original code would add undefined, resulting in NaN.
+    if (splitPointIndexInPrefix + 1 < prefixSums.length) {
+      secondCandidateSum = prefixSums[splitPointIndexInPrefix + 1];
     } else {
-      finalPosition = numericalSegments.length + 1;
-      accumulatedValue = NaN;
+      // If splitPointIndexInPrefix is the last element, the next element is undefined.
+      // The sum up to this point (totalSum) plus undefined results in NaN.
+      secondCandidateSum = NaN;
     }
   }
 
-  const leftPartitionSumA = getPartialSum(numericalSegments, finalPosition);
-  const leftPartitionSumB = getPartialSum(numericalSegments, finalPosition + 1);
+  let finalResultA = firstCandidateSum;
+  let finalResultB = secondCandidateSum;
 
-  let outcomeA;
-  if (leftPartitionSumA === accumulatedValue && grandTotal - leftPartitionSumA === accumulatedValue) {
-    outcomeA = 0;
-  } else {
-    outcomeA = grandTotal - leftPartitionSumA;
-  }
+  // Adjust finalResultA based on original logic
+  const isPerfectSplitA = (finalResultA === targetHalf && totalSum - finalResultA === targetHalf);
+  finalResultA = isPerfectSplitA ? 0 : Math.abs(finalResultA - totalSum);
 
-  let outcomeB;
-  if (leftPartitionSumB === grandTotal) {
-    outcomeB = Infinity;
-  } else {
-    outcomeB = grandTotal - leftPartitionSumB;
-  }
+  // Adjust finalResultB based on original logic
+  const isFullSumB = (finalResultB === totalSum);
+  finalResultB = isFullSumB ? Infinity : Math.abs(finalResultB - totalSum);
 
-  console.log(Math.min(outcomeA, outcomeB));
+  console.log(Math.min(finalResultA, finalResultB));
 };
 
-processSegments(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

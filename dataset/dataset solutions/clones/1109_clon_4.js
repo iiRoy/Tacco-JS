@@ -1,32 +1,30 @@
-function processBinaryHeap(rawContent) {
-    const linesOfInput = rawContent.split('\n');
-    const totalNodes = Number.parseInt(linesOfInput[0].trim(), 10);
-    const nodeValues = linesOfInput[1].trim().split(' ').map(Number.parseInt);
+function Main(input) {
+    const allNumericValues = input.match(/\d+/g).map(Number);
+    const totalNodes = allNumericValues.shift();
+    const nodeKeyStorage = [null, ...allNumericValues];
 
-    function constructNodeOutput(nodeIndex, valuesArr, count) {
-        let outputString = `node ${nodeIndex}: key = ${valuesArr[nodeIndex - 1]}, `;
+    Array.from({ length: totalNodes }, (_, zeroBasedIndex) => zeroBasedIndex + 1).forEach(
+        (currentHeapIndex) => {
+            const outputSegments = [];
+            outputSegments.push(`node ${currentHeapIndex}: key = ${nodeKeyStorage[currentHeapIndex]}`);
 
-        const parentIndex = (nodeIndex / 2) | 0; // Bitwise OR 0 for floor division
-        if (parentIndex >= 1) {
-            outputString += `parent key = ${valuesArr[parentIndex - 1]}, `;
+            if (currentHeapIndex > 1) {
+                outputSegments.push(`parent key = ${nodeKeyStorage[Math.floor(currentHeapIndex / 2)]}`);
+            }
+
+            const leftChildPosition = currentHeapIndex * 2;
+            if (leftChildPosition <= totalNodes) {
+                outputSegments.push(`left key = ${nodeKeyStorage[leftChildPosition]}`);
+            }
+
+            const rightChildPosition = currentHeapIndex * 2 + 1;
+            if (rightChildPosition <= totalNodes) {
+                outputSegments.push(`right key = ${nodeKeyStorage[rightChildPosition]}`);
+            }
+
+            console.log(outputSegments.join(', ') + ', ');
         }
-
-        const leftChildIndex = nodeIndex * 2;
-        if (leftChildIndex <= count) {
-            outputString += `left key = ${valuesArr[leftChildIndex - 1]}, `;
-        }
-
-        const rightChildIndex = nodeIndex * 2 + 1;
-        if (rightChildIndex <= count) {
-            outputString += `right key = ${valuesArr[rightChildIndex - 1]}, `;
-        }
-
-        return outputString;
-    }
-
-    for (let currentPosition = 1; currentPosition <= totalNodes; ++currentPosition) {
-        console.info(constructNodeOutput(currentPosition, nodeValues, totalNodes));
-    }
+    );
 }
 
-processBinaryHeap(require("fs").readFileSync("/dev/stdin","utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

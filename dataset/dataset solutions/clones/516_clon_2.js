@@ -1,71 +1,54 @@
-// This program processes a sequence of numerical datasets from standard input.
-// Its primary goal is to compute and display the maximum possible product
-// derived from specific calculations within each dataset.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Acquire the raw input data from the standard input stream.
-// The 'fs' module is utilized for file system operations, specifically reading synchronous data.
-var dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the raw input data by trimming whitespace and splitting into an array of lines.
+var lineSegments = (rawData.trim()).split("\n");
 
-// Prepare the input: remove any leading/trailing whitespace and then
-// split the entire string into an array of individual lines.
-var lineBuffer = (dataSource.trim()).split("\n");
-
-// Begin the main processing loop. This loop continues indefinitely
-// until a specific break condition is encountered within its body.
+// Main processing loop for multiple test cases.
 while (true) {
-    // Extract the first element from the line buffer, which represents a count.
-    // The subtraction of zero explicitly converts the string to a number.
-    var quantityNum = lineBuffer.shift() - 0;
+    // Extract the first number from the line segments, converting it to a numeric type.
+    var countVal = lineSegments.shift() - 0;
 
-    // Check for the termination condition for the main loop.
-    // If the extracted count is zero, it signifies the end of input datasets.
-    if (quantityNum === 0) {
+    // If the extracted number is zero, it signifies the end of input, so break the loop.
+    if (countVal === 0) {
         break;
     }
 
-    // Process the next line to obtain the first set of numbers.
-    // It's split by spaces and each part is converted into a numerical value.
-    var firstSet = lineBuffer.shift().split(" ").map(Number);
+    // Parse the next line for initial values, splitting by space and mapping to numbers.
+    var initialValues = lineSegments.shift().split(" ").map(Number);
 
-    // Similarly, process the subsequent line to get the second set of numbers.
-    var secondSet = lineBuffer.shift().split(" ").map(Number);
+    // Parse the subsequent line for additional values, splitting by space and mapping to numbers.
+    var additionalValues = lineSegments.shift().split(" ").map(Number);
 
-    // Calculate the initial running sum by aggregating all numbers in the 'firstSet'.
-    var runningSum = firstSet.reduce(function(currentAccumulator, itemValue) {
-        return currentAccumulator + itemValue;
+    // Calculate the initial sum of all elements in the 'initialValues' array.
+    var currentTotal = initialValues.reduce(function(accumulator, currentValue) {
+        return accumulator + currentValue;
     });
 
-    // Sort the 'secondSet' of numbers in descending order.
-    // This strategy is crucial for optimizing the product calculation later on.
-    secondSet.sort(function(valueA, valueB) {
-        return valueB - valueA;
+    // Sort the 'additionalValues' array in descending order to process largest values first.
+    additionalValues.sort(function(firstElement, secondElement) {
+        return secondElement - firstElement;
     });
 
-    // Initialize the variable that will store the highest product found.
-    // Its initial value is the product of the current running sum and the quantity number.
-    var highestProduct = runningSum * quantityNum;
+    // Initialize the maximum product with the current total multiplied by the initial count.
+    var maximumProduct = currentTotal * countVal;
 
-    // Start an inner loop to iteratively process elements from the 'secondSet'.
+    // Inner loop to incorporate additional values and update the maximum product.
     while (true) {
-        // If the 'secondSet' is empty, there are no more additional values to process,
-        // so the inner loop terminates.
-        if (secondSet.length === 0) {
+        // If there are no more additional values, exit this inner loop.
+        if (additionalValues.length === 0) {
             break;
         }
 
-        // Decrement the quantity number for the current iteration.
-        quantityNum--;
+        // Decrement the count value for the next iteration.
+        countVal--;
 
-        // Add the largest remaining value from 'secondSet' to the running sum.
-        // `shift()` removes and returns the first element (which is the largest due to previous sort).
-        runningSum += secondSet.shift();
+        // Add the largest remaining additional value to the current total.
+        currentTotal += additionalValues.shift();
 
-        // Recalculate the product with the updated sum and quantity.
-        // Update 'highestProduct' if the new product is greater than the previously stored one.
-        highestProduct = Math.max(highestProduct, runningSum * quantityNum);
+        // Update the maximum product if the new product (currentTotal * countVal) is greater.
+        maximumProduct = Math.max(maximumProduct, currentTotal * countVal);
     }
 
-    // After processing all elements for a given dataset, output the final
-    // calculated highest product to the standard output.
-    console.log(highestProduct);
+    // Output the calculated maximum product for the current test case.
+    console.log(maximumProduct);
 }

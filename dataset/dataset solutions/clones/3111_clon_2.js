@@ -1,68 +1,67 @@
-var inputSource = initializeInputReader();
+var inputHandler = initializeInputReader();
 executeProgram();
-function readNumericValue() {
-  return transformData(fetchNextLine(), 1);
+
+function retrieveInteger() {
+  return performConversion(getNextLine(), 1);
 }
-function readStringArray() {
-  return transformData(fetchNextLine(), 2);
-} // Splits input string by a single space character.
-function readNumericArray() {
-  return transformData(fetchNextLine(), 4);
-} // Splits by space, then converts each part to a number.
-function readCharacterArray() {
-  return transformData(fetchNextLine(), 6);
-} // Divides the string into an array of individual characters.
-function fetchNextLine() {
-  return inputSource.fetchNextLine();
+
+function retrieveStringArray() {
+  return performConversion(getNextLine(), 2);
 }
+
+function retrieveIntegerArray() {
+  return performConversion(getNextLine(), 4);
+}
+
+function retrieveCharacterArray() {
+  return performConversion(getNextLine(), 6);
+}
+
+function getNextLine() {
+  return inputHandler.fetchNext();
+}
+
 function hasMoreLines() {
-  return inputSource.hasMoreLines();
+  return inputHandler.checkNext();
 }
-function getRawInput() {
+
+function readInputFile() {
   return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
+
 function initializeInputReader() {
-  var rawLines = getRawInput();
-  var readerInstance = {
-    lineBuffer: rawLines,
-    currentPosition: 0,
-    totalLines: rawLines.length,
-    hasMoreLines: function() {
-      return (this.currentPosition < this.totalLines);
+  var rawInputData = readInputFile();
+  var readerObject = {
+    "dataLines": rawInputData,
+    "currentLineIndex": 0,
+    "totalLines": rawInputData.length,
+    "checkNext": function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    fetchNextLine: function() {
-      if (!this.hasMoreLines()) {
+    "fetchNext": function() {
+      if (!this.checkNext()) {
         return "";
       } else {
-        var fetchedLine = this.lineBuffer[this.currentPosition];
-        this.currentPosition++;
-        return fetchedLine;
+        var currentInputLine = this.dataLines[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentInputLine;
       }
     }
   };
-  return readerInstance;
+  return readerObject;
 }
-function displayResult(messageContent) {
-  console.log(messageContent);
-} // Prints output to the standard console.
-function reportError(messageContent) {
-  console.error(messageContent);
-} // Sends diagnostic messages to the error console.
-/*
-  This function handles various data transformations based on the provided operation code.
-  - If the operation code is unrecognized or an error occurs, the input value is returned unchanged.
-  - Code 1: Converts the input string to an integer.
-  - Code 2: Splits the input string into an array using a space as a delimiter.
-  - Code 4: Splits the input string by spaces, then converts each resulting substring to a number.
-  - Code 6: Splits the input string into an array of single characters.
-  - Code 7: Splits the input string into characters, then converts each character to a number.
-  - Code 8: Joins array elements into a string, separated by a single space.
-  - Code 9: Joins array elements into a string, with each element on a new line.
-  - Code 0: Joins array elements into a single string without any separator.
-*/
-function transformData(inputValue, operationCode) {
+
+function printOutput(value) {
+  console.log(value);
+}
+
+function printError(value) {
+  console.error(value);
+}
+
+function performConversion(inputValue, conversionType) {
   try {
-    switch (operationCode) {
+    switch (conversionType) {
       case 1:
         return parseInt(inputValue);
       case 2:
@@ -82,35 +81,39 @@ function transformData(inputValue, operationCode) {
       default:
         return inputValue;
     }
-  } catch (conversionError) {
+  } catch (error) {
     return inputValue;
   }
 }
+
 function executeProgram() {
-  var datasetSize = readNumericValue();
-  var dataElements = readNumericArray();
-  for (var iterationIndex = 0; iterationIndex < datasetSize; iterationIndex++) {
-    if (dataElements[iterationIndex] > (iterationIndex + 1)) {
-      // Logic check: A value at position 'x' should not be greater than 'x+1'.
-      displayResult(-1);
+  var countElements = retrieveInteger();
+  var dataCollection = retrieveIntegerArray();
+
+  for (var loopIndex = 0; loopIndex < countElements; loopIndex++) {
+    if (dataCollection[loopIndex] > (loopIndex + 1)) {
+      printOutput(-1);
       return;
     }
   }
-  var resultCollection = [];
-  var currentCheckIndex = 0;
-  while (dataElements.length > 0) {
-    if (dataElements[currentCheckIndex] == currentCheckIndex + 1) {
-      currentCheckIndex++;
+
+  var resultSequence = [];
+  var currentPosition = 0;
+
+  while (dataCollection.length > 0) {
+    if (dataCollection[currentPosition] === currentPosition + 1) {
+      currentPosition++;
     } else {
-      if (dataElements[currentCheckIndex] < currentCheckIndex + 1) {
-        resultCollection.unshift(dataElements[currentCheckIndex - 1]);
-        dataElements.splice(currentCheckIndex - 1, 1);
-        currentCheckIndex = 0;
+      if (dataCollection[currentPosition] < currentPosition + 1) {
+        resultSequence.unshift(dataCollection[currentPosition - 1]);
+        dataCollection.splice(currentPosition - 1, 1);
+        currentPosition = 0;
       } else {
-        displayResult(-1);
+        printOutput(-1);
         return;
       }
     }
   }
-  displayResult(transformData(resultCollection, 9));
+
+  printOutput(performConversion(resultSequence, 9));
 }

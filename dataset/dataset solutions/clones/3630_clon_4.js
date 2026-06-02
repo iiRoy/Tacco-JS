@@ -1,43 +1,69 @@
-function analyzeSequence(rawData) {
-    const numericParts = rawData.split(/\s|\n/).filter(Boolean).map(Number);
+"use strict";
 
-    let currentOffset = 0;
-    const extractNextValue = () => numericParts[currentOffset++];
-    const obtainNumericArray = (length) => {
-        const collection = [];
-        for (let idx = 0; idx < length; idx++) {
-            collection.push(extractNextValue());
-        }
-        return collection;
-    };
+function ProcessInputAndCompute(rawInput) {
+    const dataReader = new DataStream(rawInput);
 
-    const elementCount = extractNextValue();
-    const modulusValue = extractNextValue();
-    const sourceNumbers = obtainNumericArray(elementCount);
+    const elementCount = dataReader.fetchInteger();
+    const modulusValue = dataReader.fetchInteger();
+    const numberSequence = dataReader.fetchIntegerArray(elementCount);
 
-    const initialProcessingState = {
-        totalSubsequencePairs: 0,
-        remainderFrequencyMap: new Map(),
-        currentAccumulatedSum: 0
-    };
-
-    initialProcessingState.remainderFrequencyMap.set(0, 1);
-
-    const finalProcessingState = sourceNumbers.reduce((accumulator, currentNumber) => {
-        accumulator.currentAccumulatedSum = (accumulator.currentAccumulatedSum + currentNumber) % modulusValue;
-
-        const currentRemainder = accumulator.currentAccumulatedSum;
-        const existingFrequency = accumulator.remainderFrequencyMap.get(currentRemainder) || 0;
-
-        accumulator.totalSubsequencePairs += existingFrequency;
-        accumulator.remainderFrequencyMap.set(currentRemainder, existingFrequency + 1);
-
+    const cumulativeSumsMod = numberSequence.reduce((accumulator, currentElement) => {
+        const previousSum = accumulator[accumulator.length - 1];
+        accumulator.push((previousSum + currentElement) % modulusValue);
         return accumulator;
-    }, initialProcessingState);
+    }, [0]);
 
-    console.log(finalProcessingState.totalSubsequencePairs);
+    const sumFrequencyMap = cumulativeSumsMod.reduce((accumulator, currentSumValue) => {
+        accumulator[currentSumValue] = (accumulator[currentSumValue] || 0) + 1;
+        return accumulator;
+    }, {});
+
+    const totalPairCount = Object.values(sumFrequencyMap).reduce((totalAccumulator, frequencyCount) => {
+        return totalAccumulator + (frequencyCount * (frequencyCount - 1) / 2);
+    }, 0);
+
+    console.log(totalPairCount);
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-    analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+class DataStream {
+    #tokenGenerator;
+
+    constructor(sourceText) {
+        const originalSplitItems = sourceText.split(/\n|\s/);
+        let tokenIndex = 0;
+
+        this.#tokenGenerator = (function* () {
+            while (tokenIndex < originalSplitItems.length) {
+                yield originalSplitItems[tokenIndex++];
+            }
+        })();
+    }
+
+    fetchInteger() {
+        const nextTokenResult = this.#tokenGenerator.next();
+        if (nextTokenResult.done) {
+            throw new Error("Input stream exhausted while fetching integer.");
+        }
+        return nextTokenResult.value - 0;
+    }
+
+    fetchIntegerArray(count) {
+        return Array.from({ length: count }, () => this.fetchInteger());
+    }
+
+    fetchString() {
+        const nextTokenResult = this.#tokenGenerator.next();
+        if (nextTokenResult.done) {
+            throw new Error("Input stream exhausted while fetching string.");
+        }
+        return nextTokenResult.value;
+    }
+
+    fetchStringArray(count) {
+        return Array.from({ length: count }, () => this.fetchString());
+    }
+}
+
+if (typeof window === "undefined") {
+    ProcessInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

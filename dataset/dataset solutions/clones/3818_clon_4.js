@@ -1,71 +1,54 @@
-(function() {
-    let standardInputBuffer = '';
+const fileSystem = require('fs');
 
-    globalThis.process.stdin.on('data', (incomingSegment) => {
-        standardInputBuffer += incomingSegment;
-    });
+function* numericTokenIterator(sourceText) {
+    const rawTokens = sourceText.trim().split(/\s+/g);
+    for (const currentToken of rawTokens) {
+        yield parseInt(currentToken, 10);
+    }
+}
 
-    globalThis.process.stdin.on('end', () => {
-        processCollectedInput(standardInputBuffer);
-    });
+function analyzeNumericSequence(sequenceData) {
+    if (sequenceData[0] !== 0) {
+        console.log(-1);
+        return;
+    }
 
-    const processCollectedInput = (fullText) => {
-        const numericTokens = fullText.trim().split(/\s+/g).map(Number);
-
-        if (numericTokens.length < 1) {
-            globalThis.console.log(-1);
-            return;
+    const sequenceReducer = (accumulator, currentElement) => {
+        if (accumulator.hasError) {
+            return accumulator;
         }
 
-        const countOfElements = numericTokens.shift();
+        const priorElement = accumulator.lastValue;
 
-        if (countOfElements === undefined || !Number.isInteger(countOfElements) || countOfElements < 0) {
-            globalThis.console.log(-1);
-            return;
-        }
-
-        const elementSequence = numericTokens.slice(0, countOfElements);
-
-        if (elementSequence.length === 0) {
-            globalThis.console.log(-1);
-            return;
-        }
-
-        if (elementSequence[0] !== 0) {
-            globalThis.console.log(-1);
-            return;
-        }
-
-        const initialProcessorState = { calculatedSum: 0, lastObservedValue: 0, encounteredError: false };
-
-        const finalProcessingResult = elementSequence.slice(1).reduce((currentState, currentElement) => {
-            if (currentState.encounteredError) {
-                return currentState;
+        if (priorElement <= currentElement) {
+            const difference = currentElement - priorElement;
+            if (difference > 1) {
+                return { totalOperations: 0, lastValue: 0, hasError: true };
+            } else if (difference === 1) {
+                return { totalOperations: accumulator.totalOperations + 1, lastValue: currentElement, hasError: false };
+            } else {
+                return { totalOperations: accumulator.totalOperations + currentElement, lastValue: currentElement, hasError: false };
             }
-
-            if (!Number.isInteger(currentElement)) {
-                return { calculatedSum: -1, lastObservedValue: 0, encounteredError: true };
-            }
-
-            const differenceFromPrevious = currentElement - currentState.lastObservedValue;
-
-            if (currentElement >= currentState.lastObservedValue) {
-                if (differenceFromPrevious > 1) {
-                    return { calculatedSum: -1, lastObservedValue: 0, encounteredError: true };
-                } else if (differenceFromPrevious === 1) {
-                    return { calculatedSum: currentState.calculatedSum + 1, lastObservedValue: currentElement, encounteredError: false };
-                } else { // differenceFromPrevious === 0
-                    return { calculatedSum: currentState.calculatedSum + currentElement, lastObservedValue: currentElement, encounteredError: false };
-                }
-            } else { // currentElement < currentState.lastObservedValue
-                return { calculatedSum: currentState.calculatedSum + currentElement, lastObservedValue: currentElement, encounteredError: false };
-            }
-        }, initialProcessorState);
-
-        if (finalProcessingResult.encounteredError) {
-            globalThis.console.log(-1);
         } else {
-            globalThis.console.log(finalProcessingResult.calculatedSum);
+            return { totalOperations: accumulator.totalOperations + currentElement, lastValue: currentElement, hasError: false };
         }
     };
-})();
+
+    const initialReductionState = { totalOperations: 0, lastValue: 0, hasError: false };
+
+    const finalState = sequenceData.slice(1).reduce(sequenceReducer, initialReductionState);
+
+    if (finalState.hasError) {
+        console.log(-1);
+    } else {
+        console.log(finalState.totalOperations);
+    }
+}
+
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numberGenerator = numericTokenIterator(rawInputContent);
+
+const sequenceLength = numberGenerator.next().value;
+const numericArray = Array.from({ length: sequenceLength }, () => numberGenerator.next().value);
+
+analyzeNumericSequence(numericArray);

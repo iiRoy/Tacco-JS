@@ -1,22 +1,15 @@
 "use strict";
 
-((sourceDatum) => {
-    const digitComponents = sourceDatum.trim().split(/\s+/).map(Number);
+const calculateSegmentSeparation = (inputData) => {
+    const [firstLineContent] = inputData.split("\n");
+    const [segmentLength, positionA, positionB] = firstLineContent.split(" ").map(Number);
 
-    const spanValue = digitComponents[0];
-    const initialPositionA = digitComponents[1];
-    const initialPositionB = digitComponents[2];
+    const endPositionA = positionA + segmentLength;
+    const endPositionB = positionB + segmentLength;
 
-    const firstSegmentBegin = initialPositionA;
-    const firstSegmentEnd = initialPositionA + spanValue;
-    const secondSegmentBegin = initialPositionB;
-    const secondSegmentEnd = initialPositionB + spanValue;
+    const separationDistance = Math.max(0, Math.max(positionA, positionB) - Math.min(endPositionA, endPositionB));
 
-    const maximumStart = Math.max(firstSegmentBegin, secondSegmentBegin);
-    const minimumEnd = Math.min(firstSegmentEnd, secondSegmentEnd);
+    console.log(separationDistance);
+};
 
-    const finalResult = Math.max(0, maximumStart - minimumEnd);
-
-    console.log(finalResult);
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+calculateSegmentSeparation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

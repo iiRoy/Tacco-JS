@@ -1,54 +1,37 @@
-const fileSystem = require('node:fs');
-const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
 
-const analyzeCircleConfiguration = (dataLine) => {
-  const numericValues = dataLine.split(' ').map(parseFloat);
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-  const [
-    c1x,
-    c1y,
-    r1,
-    c2x,
-    c2y,
-    r2,
-  ] = numericValues;
+const processedInputLines = rawInputContent.replace(/\n$/, '').split('\n');
 
-  const dx = c2x - c1x;
-  const dy = c2y - c1y;
+const testCaseCount = Number(processedInputLines[0]);
 
-  const distCenters = Math.hypot(dx, dy);
-
-  const radiiSum = r1 + r2;
-
-  let relationshipCode;
-
-  // Check for external separation
-  if (distCenters > radiiSum) {
-    relationshipCode = 0;
-  }
-  // Check for first circle strictly inside second (r1 contained in r2)
-  // This is equivalent to d < r2 - r1
-  else if (distCenters < r2 - r1) {
-    relationshipCode = -2;
-  }
-  // Check for second circle strictly inside first (r2 contained in r1)
-  // This is equivalent to d < r1 - r2
-  else if (distCenters < r1 - r2) {
-    relationshipCode = 2;
-  }
-  // All other cases imply intersection, external tangency, or internal tangency
-  else {
-    relationshipCode = 1;
-  }
-
-  return relationshipCode;
+const extractCircleParameters = (lineText) => {
+    return lineText.split(' ').map(Number);
 };
 
-const allInputLines = rawInput.trim().split('\n');
-const totalTestCases = parseInt(allInputLines[0], 10);
+const determineCircleRelationship = (circleData) => {
+    const [xCoord1, yCoord1, radius1, xCoord2, yCoord2, radius2] = circleData;
 
-const testDataEntries = allInputLines.slice(1);
+    const distanceBetweenCenters = Math.hypot(xCoord2 - xCoord1, yCoord2 - yCoord1);
 
-const finalResults = testDataEntries.slice(0, totalTestCases).map(analyzeCircleConfiguration);
+    if (distanceBetweenCenters > radius1 + radius2) {
+        return 0;
+    }
 
-console.log(finalResults.join('\n'));
+    if (distanceBetweenCenters < radius2 - radius1) {
+        return -2;
+    }
+
+    if (distanceBetweenCenters < radius1 - radius2) {
+        return 2;
+    }
+
+    return 1;
+};
+
+processedInputLines.slice(1, testCaseCount + 1).forEach(line => {
+    const currentCircleSet = extractCircleParameters(line);
+    const relationshipResult = determineCircleRelationship(currentCircleSet);
+    console.log(relationshipResult);
+});

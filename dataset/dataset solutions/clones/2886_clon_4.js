@@ -1,7 +1,26 @@
-const processGeomData = (dataFetcher) => {
-    const numericValue = Number(dataFetcher().slice().trim());
-    const finalResult = (numericValue * 180) - 360;
-    console.log(finalResult);
-};
+function run(source) {
+    const raw = source.trim();
+    const sides = parseInt(raw, 10);
 
-processGeomData(() => require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+    function accumulateAngle(times) {
+        if (Number.isNaN(times)) {
+            return NaN;
+        }
+        if (!Number.isFinite(times)) {
+            return times * 180;
+        }
+
+        let angle = 0;
+        let remaining = Math.abs(times);
+        while (remaining > 0) {
+            angle += 180;
+            remaining--;
+        }
+        return times < 0 ? -angle : angle;
+    }
+
+    const triangles = sides - 2;
+    console.log(accumulateAngle(triangles));
+}
+
+run(require('fs').readFileSync('/dev/stdin', 'utf8'));

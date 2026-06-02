@@ -1,31 +1,39 @@
-function processInputData(rawTextContent) {
-    /* This function takes raw text input, processes it, and prints a result. */
+function processInput(rawData) {
+  // Split the raw input string into an array of lines.
+  const lines = rawData.split('\n');
 
-    const inputLines = rawTextContent.split('\n') ; // Split the entire input into individual lines.
+  // Parse the first line to get the number of elements.
+  const numElements = parseInt(lines[0], 10);
 
-    const elementCount = parseInt(inputLines[0], 10) ; // Parse the first line to get the number of elements.
-    let numericValues = inputLines[1].split(' ') .map(strNum => parseInt(strNum, 10)) ; // Parse the second line into an array of integers.
+  // Process the second line: split by space, then convert each part to an integer.
+  let dataArray = lines[1].split(' ').map(item => parseInt(item, 10));
 
-    let tempCounter = 0; /* An auxiliary variable, currently not utilized in the main logic. */
-    let finalSum = 0; // Initialize the variable that will store the computed sum.
+  // Initialize a variable that is not used but present in the original structure.
+  let counterVar = 0;
 
-    // Sort the array of numeric values in ascending order.
-    numericValues = numericValues.sort((firstVal, secondVal) => firstVal - secondVal);
+  // Initialize the variable to store the computed sum or value.
+  let finalResult = 0;
 
-    if (elementCount === 1) {
-        // Special case: if there's only one element, assign the second element (index 1) to the sum.
-        // This assumes the input format or problem context ensures `numericValues[1]` is accessible.
-        finalSum = numericValues[1] ;
+  // Sort the array of numbers in ascending order.
+  dataArray = dataArray.sort((valA, valB) => valA - valB);
+
+  // Check a specific condition based on the number of elements.
+  if (numElements === 1) {
+    // If there's only one element, assign the second element (index 1) of the sorted array.
+    // Note: This implies the input array will always have at least 2 elements if N=1,
+    // or there's an implicit assumption about the problem context.
+    finalResult = dataArray[1];
+  } else {
+    // If there are more elements, iterate and sum specific elements.
+    // The loop starts from 'numElements' and goes up to '2 * numElements - 1'.
+    for (let idx = numElements; idx <= ((2 * numElements) - 1); idx++) {
+      finalResult += dataArray[idx]; // Add the element at the current index to the result.
     }
-    else {
-        // For multiple elements, iterate and sum specific elements based on the element count.
-        for ( let loopIndex = elementCount; loopIndex <= ( (2 * elementCount) - 1 ) ; loopIndex++ ) {
-            finalSum += numericValues[loopIndex] ; // Add the value at the current index to the running total.
-        }
-    }
+  }
 
-    console.log(finalSum) ; // Output the calculated final sum.
+  // Output the final calculated result to the console.
+  console.log(finalResult);
 }
 
 // Read input from standard input and pass it to the processing function.
-processInputData( require('fs') .readFileSync('/dev/stdin', 'utf8') ) ;
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

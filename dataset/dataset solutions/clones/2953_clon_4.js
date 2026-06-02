@@ -1,22 +1,28 @@
-(function(dataArray) {
-    const validMonths = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+const processInputForDateType = (inputCollection) => {
+    const sourceString = inputCollection[0];
 
-    const inputSequence = dataArray[0];
-    const firstPartValue = parseInt(inputSequence.substring(0, 2), 10);
-    const secondPartValue = parseInt(inputSequence.substring(2, 4), 10);
+    const digitCharToNumber = (char) => char.charCodeAt(0) - 48;
 
-    const checkValidity = (value) => validMonths.has(value);
+    const firstSegmentDigits = [digitCharToNumber(sourceString[0]), digitCharToNumber(sourceString[1])];
+    const secondSegmentDigits = [digitCharToNumber(sourceString[2]), digitCharToNumber(sourceString[3])];
 
-    const isFirstPartMonth = checkValidity(firstPartValue);
-    const isSecondPartMonth = checkValidity(secondPartValue);
+    const firstNumericValue = firstSegmentDigits[0] * 10 + firstSegmentDigits[1];
+    const secondNumericValue = secondSegmentDigits[0] * 10 + secondSegmentDigits[1];
 
-    const resultMatrix = {
-        "true_true": "AMBIGUOUS",
-        "false_true": "YYMM",
-        "true_false": "MMYY",
-        "false_false": "NA"
+    const validMonthSet = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    
+    const isFirstSegmentMonth = validMonthSet.has(firstNumericValue);
+    const isSecondSegmentMonth = validMonthSet.has(secondNumericValue);
+
+    const outcomeDispatch = {
+        '11': 'AMBIGUOUS',
+        '01': 'YYMM',
+        '10': 'MMYY',
+        '00': 'NA'
     };
 
-    const decisionKey = `${isFirstPartMonth}_${isSecondPartMonth}`;
-    return [resultMatrix[decisionKey]];
-})
+    const stateKey = `${Number(isFirstSegmentMonth)}${Number(isSecondSegmentMonth)}`;
+    return [outcomeDispatch[stateKey]];
+};
+
+export default processInputForDateType;

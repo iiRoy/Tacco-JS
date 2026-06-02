@@ -1,41 +1,30 @@
 "use strict";
 
-const processInputAndSolve = (sourceInput) => {
-    const parsedInput = sourceInput.trim().split("\n");
-    const delta = parseInt(parsedInput[0]);
+const processInputAndFindSolution = (inputData) => {
+    const parsedLines = inputData.trim().split("\n");
+    const targetConstant = parseInt(parsedLines[0]);
 
-    const sequenceGenerator = (startPoint, endPoint) => {
-        return Array.from({ length: endPoint - startPoint + 1 }, (_, index) => startPoint + index);
-    };
-
-    let solutionPayload = null;
-
-    sequenceGenerator(1, 3500).some(alpha => {
-        return sequenceGenerator(1, 3500).some(beta => {
-            const firstComponent = 4 * alpha * beta;
-            const secondComponent = delta * beta;
-            const thirdComponent = delta * alpha;
-            const combinedDenominator = firstComponent - secondComponent - thirdComponent;
-
-            if (combinedDenominator === 0) {
-                return false;
+    function* generateCombinations() {
+        for (let firstVar = 1; firstVar <= 3500; firstVar++) {
+            for (let secondVar = 1; secondVar <= 3500; secondVar++) {
+                yield { hVal: firstVar, nVal: secondVar };
             }
+        }
+    }
 
-            const combinedNumerator = delta * alpha * beta;
-            const gamma = combinedNumerator / combinedDenominator;
+    for (const { hVal: currentH, nVal: currentN } of generateCombinations()) {
+        const numeratorTerm = targetConstant * currentH * currentN;
+        const denominatorTerm = 4 * currentH * currentN - targetConstant * currentN - targetConstant * currentH;
 
-            if (Number.isInteger(gamma)) {
-                solutionPayload = `${alpha} ${beta} ${gamma}`;
-                return true;
+        if (denominatorTerm > 0) {
+            const calculatedW = numeratorTerm / denominatorTerm;
+
+            if (Number.isInteger(calculatedW)) {
+                console.log(`${currentH} ${currentN} ${calculatedW}`);
+                return;
             }
-            return false;
-        });
-        return solutionPayload !== null;
-    });
-
-    if (solutionPayload) {
-        console.log(solutionPayload);
+        }
     }
 };
 
-processInputAndSolve(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndFindSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));

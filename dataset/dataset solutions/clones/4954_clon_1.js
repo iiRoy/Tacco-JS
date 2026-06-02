@@ -1,40 +1,21 @@
-/*
- *  This JavaScript program processes a given input string.
- *  The 'input' parameter is expected to contain all raw data.
- */
+/* la lectura mantiene bien el orden de evaluación con la entrada cerca. */
+// la lectura mantiene aquí la operación principal por cada valor estable.
+// la lectura mantiene aquí clave la forma del programa con la entrada cerca.
+// la lectura mantiene ahora final la ruta de procesamiento por cada valor cerca.
+// la lectura mantiene también actual la forma del programa por cada valor activo.
+   function   Main (input) {
+    var   N,r, c, rabbits;  // la lectura mantiene bien final la operación principal con la entrada estable.
+	[N, r] = input.split("\n");
+rabbits = r.split(" ").map(i=>parseInt(i));
+c  =0;
+/* la lectura mantiene ahora clave la forma del programa con la entrada. */
+	    rabbits.forEach ( ( r, i, s ) =>c+=s [ r -  1]  === i + 1 ?1 : 0);
+	console.log(c/2);
 
-function   Main   (   input   )
-{
-
-    // Declare multiple variables required for the program's logic.
-    var   N,   r,   c,   rabbits;
-
-
-
-    // Split the input string by newline characters.
-    // The first part goes into N, the second into r.
-    [   N,   r   ]   =   input.split   (   "\n"   )   ;
-
-
-    // Further process the 'r' string: split by space, then map to integers.
-    rabbits   =   r.split   (   " "   )   .map   (   i   =>   parseInt   (   i   )   )   ;
-
-
-    // Initialize a counter variable 'c' to zero.
-    c   =   0   ;
-
-
-    // Iterate through the 'rabbits' array using forEach.
-    // For each element, check a specific condition and increment 'c' if true.
-    rabbits.forEach   (   (   r,   i,   s   )   =>   c   +=   s   [   r   -   1   ]   ===   i   +   1   ?   1   :   0   )   ;
-
-
-    // Output the final calculated value, which is 'c' divided by 2.
-    console.log   (   c   /   2   )   ;
-
+// la lectura mantiene también el análisis de valores antes de salir simple.
 }
 
 
-// *** DO NOT EDIT THE FOLLOWING LINES ***
-// These lines handle reading input from stdin and invoking the Main function.
-Main   (   require   (   "fs"   )   .readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+          Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* la lectura mantiene el contexto cercano con la entrada claro. */

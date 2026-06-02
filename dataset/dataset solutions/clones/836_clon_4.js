@@ -1,180 +1,142 @@
-class GameGridProcessor {
-    constructor(initialConfiguration) {
-        this.rows = 12;
-        this.cols = 6;
-        this.gridState = new Map(); // Stores cell values by string key "r,c"
-        for (let r = 0; r < this.rows; ++r) {
-            for (let c = 0; c < this.cols; ++c) {
-                this.gridState.set(`${r},${c}`, initialConfiguration[r][c]);
+const BOARD_ROWS = 12;
+const BOARD_COLS = 6;
+const ROW_OFFSETS = [-1, 0, 0, 1];
+const COL_OFFSETS = [0, -1, 1, 0];
+
+function isWithinBounds(r, c) {
+    return r >= 0 && r < BOARD_ROWS && c >= 0 && c < BOARD_COLS;
+}
+
+function discoverConnectedBlocks(startR, startC, blockType, currentBoard) {
+    const explorationQueue = [[startR, startC]];
+    const visitedCells = new Set();
+    const chainCoordinates = [];
+    let chainSize = 0;
+
+    visitedCells.add(`${startR},${startC}`);
+
+    let head = 0;
+    while (head < explorationQueue.length) {
+        const [currentRow, currentCol] = explorationQueue[head++];
+        chainCoordinates.push([currentRow, currentCol]);
+        chainSize++;
+
+        for (let k = 0; k < 4; k++) {
+            const neighborRow = currentRow + ROW_OFFSETS[k];
+            const neighborCol = currentCol + COL_OFFSETS[k];
+            const neighborKey = `${neighborRow},${neighborCol}`;
+
+            if (isWithinBounds(neighborRow, neighborCol) &&
+                currentBoard[neighborRow][neighborCol] === blockType &&
+                !visitedCells.has(neighborKey)) {
+                visitedCells.add(neighborKey);
+                explorationQueue.push([neighborRow, neighborCol]);
             }
         }
-        this.neighborOffsets = [[-1, 0], [0, -1], [0, 1], [1, 0]];
     }
+    return { size: chainSize, locations: chainCoordinates };
+}
 
-    // Checks if a given coordinate is within the board boundaries
-    isLocationValid(r, c) {
-        return r >= 0 && r < this.rows && c >= 0 && c < this.cols;
-    }
+function removeConnectedBlocks(startR, startC, blockType, currentBoard) {
+    const removalQueue = [[startR, startC]];
+    const processedCells = new Set();
 
-    // Retrieves the value of a cell at a given coordinate
-    getCellContent(r, c) {
-        return this.isLocationValid(r, c) ? this.gridState.get(`${r},${c}`) : undefined;
-    }
+    processedCells.add(`${startR},${startC}`);
+    currentBoard[startR][startC] = ".";
 
-    // Assigns a value to a cell at a given coordinate
-    setCellContent(r, c, val) {
-        if (this.isLocationValid(r, c)) {
-            this.gridState.set(`${r},${c}`, val);
-        }
-    }
+    let head = 0;
+    while (head < removalQueue.length) {
+        const [currentRow, currentCol] = removalQueue[head++];
 
-    // Identifies all cells belonging to a connected component of a specific character
-    // Returns an object containing the size of the component and a Set of its coordinates
-    discoverComponent(startR, startC, targetChar) {
-        const traversed = new Set();
-        const componentCells = new Set();
-        const searchQueue = [`${startR},${startC}`]; // Using a queue for iterative BFS
+        for (let k = 0; k < 4; k++) {
+            const neighborRow = currentRow + ROW_OFFSETS[k];
+            const neighborCol = currentCol + COL_OFFSETS[k];
+            const neighborKey = `${neighborRow},${neighborCol}`;
 
-        while (searchQueue.length > 0) {
-            const currentCoordKey = searchQueue.shift();
-            if (traversed.has(currentCoordKey)) continue;
-            traversed.add(currentCoordKey);
-
-            const [r, c] = currentCoordKey.split(',').map(Number);
-            
-            if (!this.isLocationValid(r, c) || this.getCellContent(r, c) !== targetChar) continue;
-
-            componentCells.add(currentCoordKey);
-
-            for (const [dr, dc] of this.neighborOffsets) {
-                const nextR = r + dr;
-                const nextC = c + dc;
-                const nextCoordKey = `${nextR},${nextC}`;
-                if (this.isLocationValid(nextR, nextC) && this.getCellContent(nextR, nextC) === targetChar && !traversed.has(nextCoordKey)) {
-                    searchQueue.push(nextCoordKey);
+            if (isWithinBounds(neighborRow, neighborCol) && !processedCells.has(neighborKey)) {
+                const neighborBlock = currentBoard[neighborRow][neighborCol];
+                if (neighborBlock === blockType || neighborBlock === "O") {
+                    processedCells.add(neighborKey);
+                    currentBoard[neighborRow][neighborCol] = ".";
+                    removalQueue.push([neighborRow, neighborCol]);
                 }
-            }
-        }
-        return { count: componentCells.size, locations: componentCells };
-    }
-
-    // Clears a connected component of a specific character and adjacent 'O' blocks
-    // This function modifies the gridState directly
-    removeComponent(startR, startC, targetChar) {
-        const processQueue = [[startR, startC]];
-        const processedForRecursion = new Set(); // To avoid processing the same cell multiple times for recursion
-        const cellsEffectivelyCleared = new Set(); // To track all cells that have been cleared to '.'
-
-        while (processQueue.length > 0) {
-            const [r, c] = processQueue.shift();
-            const currentCoordKey = `${r},${c}`;
-
-            if (processedForRecursion.has(currentCoordKey)) continue;
-            processedForRecursion.add(currentCoordKey);
-
-            const cellContent = this.getCellContent(r, c);
-
-            if (cellContent === targetChar) {
-                if (!cellsEffectivelyCleared.has(currentCoordKey)) {
-                    this.setCellContent(r, c, '.');
-                    cellsEffectivelyCleared.add(currentCoordKey);
-                }
-
-                for (const [dr, dc] of this.neighborOffsets) {
-                    const nextR = r + dr;
-                    const nextC = c + dc;
-                    const nextCoordKey = `${nextR},${nextC}`;
-
-                    if (this.isLocationValid(nextR, nextC)) {
-                        const nextCellContent = this.getCellContent(nextR, nextC);
-                        if (nextCellContent === targetChar && !processedForRecursion.has(nextCoordKey)) {
-                            processQueue.push([nextR, nextC]); // Continue chain reaction for same color
-                        } else if (nextCellContent === 'O' && !cellsEffectivelyCleared.has(nextCoordKey)) {
-                            this.setCellContent(nextR, nextC, '.'); // Clear 'O' block, but do not recurse from it
-                            cellsEffectivelyCleared.add(nextCoordKey);
-                        }
-                    }
-                }
-            }
-            // 'O' blocks are only cleared if they are neighbors of a 'targetChar' block.
-            // They don't initiate recursive clearing themselves in this function.
-        }
-    }
-
-    // Applies gravity to the entire board, moving blocks downwards to fill empty spaces
-    applyDownwardMovement() {
-        for (let c = 0; c < this.cols; ++c) {
-            const columnElements = [];
-            for (let r = this.rows - 1; r >= 0; --r) { // Scan column from bottom to top
-                const val = this.getCellContent(r, c);
-                if (val !== '.') {
-                    columnElements.push(val);
-                }
-            }
-            // Refill column from bottom, placing non-empty elements first, then '.'
-            for (let r = this.rows - 1; r >= 0; --r) {
-                this.setCellContent(r, c, columnElements.shift() || '.');
             }
         }
     }
 }
 
-// Main execution logic
-const receivedInput = process.stdin.readFileSync(0, 'utf8');
-const processedLines = receivedInput.trim().split("\n");
-const totalTestCases = parseInt(processedLines.shift());
+function applyBoardGravity(currentBoard) {
+    for (let col = 0; col < BOARD_COLS; col++) {
+        const columnBlocks = [];
+        for (let row = BOARD_ROWS - 1; row >= 0; row--) {
+            if (currentBoard[row][col] !== ".") {
+                columnBlocks.unshift(currentBoard[row][col]);
+            }
+        }
 
-for (let currentScenario = 0; currentScenario < totalTestCases; ++currentScenario) {
-    const scenarioGridData = [];
-    for (let r = 0; r < 12; ++r) {
-        scenarioGridData.push(processedLines.shift().split(''));
+        for (let row = 0; row < BOARD_ROWS - columnBlocks.length; row++) {
+            currentBoard[row][col] = ".";
+        }
+        for (let row = 0; row < columnBlocks.length; row++) {
+            currentBoard[BOARD_ROWS - columnBlocks.length + row][col] = columnBlocks[row];
+        }
     }
+}
 
-    const currentSimulationBoard = new GameGridProcessor(scenarioGridData);
-    let cumulativeChains = 0;
+function runGameSimulation(initialBoardState) {
+    let currentBoardState = initialBoardState.map(row => [...row]);
+    let totalClearPhases = 0;
 
     while (true) {
-        const eliminationTargets = new Set(); // Stores coordinates of all blocks to be cleared in this turn
-        const alreadyExplored = new Set(); // To prevent re-initiating component detection on already processed cells
+        const cellsToClear = new Set();
+        const visitedForDiscovery = new Set();
 
-        // Phase 1: Identify all components of 4 or more
-        for (let r = 0; r < currentSimulationBoard.rows; ++r) {
-            for (let c = 0; c < currentSimulationBoard.cols; ++c) {
-                const currentCellKey = `${r},${c}`;
-                if (alreadyExplored.has(currentCellKey)) continue;
+        for (let r = 0; r < BOARD_ROWS; r++) {
+            for (let c = 0; c < BOARD_COLS; c++) {
+                const currentBlock = currentBoardState[r][c];
+                const cellKey = `${r},${c}`;
 
-                const cellValue = currentSimulationBoard.getCellContent(r, c);
-                if (cellValue !== '.' && cellValue !== 'O') { // Only colored blocks can form chains
-                    const { count, locations } = currentSimulationBoard.discoverComponent(r, c, cellValue);
-                    
-                    // Mark all cells in this component as explored for this detection round
-                    locations.forEach(coord => alreadyExplored.add(coord));
+                if (currentBlock !== "." && currentBlock !== "O" && !visitedForDiscovery.has(cellKey)) {
+                    const chainResult = discoverConnectedBlocks(r, c, currentBlock, currentBoardState);
 
-                    if (count >= 4) {
-                        locations.forEach(coord => eliminationTargets.add(coord));
+                    chainResult.locations.forEach(([cr, cc]) => visitedForDiscovery.add(`${cr},${cc}`));
+
+                    if (chainResult.size >= 4) {
+                        chainResult.locations.forEach(([cr, cc]) => cellsToClear.add(`${cr},${cc}`));
                     }
                 }
             }
         }
 
-        if (eliminationTargets.size === 0) {
-            break; // No chains found in this iteration, simulation ends for this board
+        if (cellsToClear.size === 0) {
+            break;
         }
 
-        cumulativeChains++;
+        totalClearPhases++;
 
-        // Phase 2: Eliminate identified components
-        // Convert Set to Array to allow iteration and potential modification during processing
-        const coordinatesForRemoval = Array.from(eliminationTargets).map(s => s.split(',').map(Number));
-        coordinatesForRemoval.forEach(([r, c]) => {
-            const cellVal = currentSimulationBoard.getCellContent(r, c);
-            if (cellVal !== '.') { // Only attempt removal if cell hasn't already been cleared by a previous call
-                currentSimulationBoard.removeComponent(r, c, cellVal);
+        const uniqueClearCoords = Array.from(cellsToClear).map(s => s.split(',').map(Number));
+        
+        for (const [clearR, clearC] of uniqueClearCoords) {
+            if (currentBoardState[clearR][clearC] !== ".") {
+                removeConnectedBlocks(clearR, clearC, currentBoardState[clearR][clearC], currentBoardState);
             }
-        });
+        }
 
-        // Phase 3: Apply gravity
-        currentSimulationBoard.applyDownwardMovement();
+        applyBoardGravity(currentBoardState);
     }
-    console.log(cumulativeChains);
+
+    return totalClearPhases;
+}
+
+const fileInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileInput.trim().split("\n");
+
+const numberOfGames = parseInt(inputLines.shift(), 10);
+
+for (let gameIdx = 0; gameIdx < numberOfGames; gameIdx++) {
+    const initialBoard = [];
+    for (let rowIdx = 0; rowIdx < BOARD_ROWS; rowIdx++) {
+        initialBoard.push(inputLines.shift().split(""));
+    }
+    console.log(runGameSimulation(initialBoard));
 }

@@ -1,82 +1,90 @@
-const LARGE_PRIME_CONSTANT = 1000000007n;
-const MAX_FACTORIAL_INDEX = 100030;
+const PRIME_MODULUS = 10**9 + 7;
 
-const multiplyModulo = (firstOperand, secondOperand) => {
-    return (firstOperand * secondOperand) % LARGE_PRIME_CONSTANT;
+const modProduct = (val1, val2) => {
+    return (val1 * val2) % PRIME_MODULUS;
 };
 
-const powerRecursive = (baseVal, exponentVal) => {
-    if (exponentVal === 0n) return 1n;
-    if (exponentVal === 1n) return baseVal % LARGE_PRIME_CONSTANT;
-    let halfPower = powerRecursive(baseVal, exponentVal / 2n);
-    let result = multiplyModulo(halfPower, halfPower);
-    if (exponentVal % 2n === 1n) {
-        result = multiplyModulo(result, baseVal);
+const powerMod = (base, exponent) => {
+    if (exponent === 0) return 1;
+    if (exponent === 1) return base % PRIME_MODULUS;
+
+    let halfPower = powerMod(base, Math.floor(exponent / 2));
+    let result = modProduct(halfPower, halfPower);
+
+    if (exponent % 2 === 1) {
+        result = modProduct(result, base);
     }
     return result;
 };
 
-const getInverse = (value) => {
-    return powerRecursive(value, LARGE_PRIME_CONSTANT - 2n);
-};
+const decomposeIntoPrimes = (num) => {
+    const primeExponents = new Map();
+    let currentNum = num;
 
-const findPrimeExponents = (inputNumber) => {
-    let currentNumber = inputNumber;
-    const primeExponentMap = new Map();
-    for (let divisor = 2n; divisor * divisor <= currentNumber; divisor++) {
-        if (currentNumber % divisor === 0n) {
-            let count = 0n;
-            while (currentNumber % divisor === 0n) {
-                currentNumber /= divisor;
+    if (currentNum % 2 === 0) {
+        let count = 0;
+        while (currentNum % 2 === 0) {
+            currentNum /= 2;
+            count++;
+        }
+        primeExponents.set(2, count);
+    }
+
+    for (let i = 3; i * i <= currentNum; i += 2) {
+        if (currentNum % i === 0) {
+            let count = 0;
+            while (currentNum % i === 0) {
+                currentNum /= i;
                 count++;
             }
-            primeExponentMap.set(divisor, count);
+            primeExponents.set(i, count);
         }
     }
-    if (currentNumber > 1n) {
-        primeExponentMap.set(currentNumber, 1n);
+
+    if (currentNum > 1) {
+        primeExponents.set(currentNum, (primeExponents.get(currentNum) || 0) + 1);
     }
-    return primeExponentMap;
+    return primeExponents;
 };
 
-const calculateCoefficient = (totalItems, chooseItems, factorialArray, inverseFactorialArray) => {
-    if (totalItems === 0n && chooseItems === 0n) return 1n;
-    if (totalItems < chooseItems || chooseItems < 0n || totalItems < 0n) return 0n;
+const calculateCombinations = (upperBound, lowerBound) => {
+    if (lowerBound < 0 || lowerBound > upperBound) return 0;
+    if (lowerBound === 0 || lowerBound === upperBound) return 1;
     
-    let numeratorPart = factorialArray[Number(totalItems)];
-    let denominatorPart1 = inverseFactorialArray[Number(chooseItems)];
-    let denominatorPart2 = inverseFactorialArray[Number(totalItems - chooseItems)];
-
-    let tempResult = multiplyModulo(numeratorPart, denominatorPart1);
-    return multiplyModulo(tempResult, denominatorPart2);
-};
-
-const executeCalculation = (rawInput) => {
-    const [initialCount, targetProduct] = rawInput.split(" ").map(val => BigInt(val));
-
-    const factorialCache = new Array(MAX_FACTORIAL_INDEX);
-    const inverseFactorialCache = new Array(MAX_FACTORIAL_INDEX);
-
-    factorialCache[0] = 1n;
-    for (let idx = 1; idx < MAX_FACTORIAL_INDEX; idx++) {
-        factorialCache[idx] = multiplyModulo(factorialCache[idx - 1], BigInt(idx));
-    }
-    
-    inverseFactorialCache[MAX_FACTORIAL_INDEX - 1] = getInverse(factorialCache[MAX_FACTORIAL_INDEX - 1]);
-    for (let idx = MAX_FACTORIAL_INDEX - 2; idx >= 0; idx--) {
-        inverseFactorialCache[idx] = multiplyModulo(inverseFactorialCache[idx + 1], BigInt(idx + 1));
+    if (lowerBound > upperBound / 2) {
+        lowerBound = upperBound - lowerBound;
     }
 
-    const primeDivisorMap = findPrimeExponents(targetProduct);
+    let numeratorPart = 1;
+    for (let k = 0; k < lowerBound; k++) {
+        numeratorPart = modProduct(numeratorPart, (upperBound - k));
+    }
 
-    const ultimateResult = Array.from(primeDivisorMap.entries()).reduce((accumulator, [primeBase, exponentValue]) => {
-        const totalElements = exponentValue + initialCount - 1n;
-        const chosenElements = exponentValue;
-        const comboResult = calculateCoefficient(totalElements, chosenElements, factorialCache, inverseFactorialCache);
-        return multiplyModulo(accumulator, comboResult);
-    }, 1n);
+    let denominatorPart = 1;
+    for (let k = 1; k <= lowerBound; k++) {
+        denominatorPart = modProduct(denominatorPart, k);
+    }
 
-    console.log(Number(ultimateResult));
+    const invDenominator = powerMod(denominatorPart, PRIME_MODULUS - 2);
+
+    return modProduct(numeratorPart, invDenominator);
 };
 
-executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+const processInput = (inputString) => {
+    const [itemCount, totalValue] = inputString.split(" ").map(Number);
+
+    const primeDecomposition = decomposeIntoPrimes(totalValue);
+
+    let finalResult = 1;
+
+    for (const [prime, exponent] of primeDecomposition.entries()) {
+        const starsAndBarsN = exponent + itemCount - 1;
+        const starsAndBarsK = exponent;
+        
+        finalResult = modProduct(finalResult, calculateCombinations(starsAndBarsN, starsAndBarsK));
+    }
+
+    console.log(finalResult);
+};
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

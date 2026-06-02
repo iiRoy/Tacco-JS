@@ -1,123 +1,159 @@
-function Pathfinder(dataString) {
-    const inputLines = dataString.split('\n');
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
+    }
 
-    const parseCoordinates = (line) => line.split(' ').map(Number);
+    getParentIndex(i) { return Math.floor((i - 1) / 2); }
+    getLeftChildIndex(i) { return 2 * i + 1; }
+    getRightChildIndex(i) { return 2 * i + 2; }
 
-    const [gridHeight, gridWidth] = parseCoordinates(inputLines[0]);
-    const [startRow, startCol] = parseCoordinates(inputLines[1]).map(val => val - 1);
-    const [endRow, endCol] = parseCoordinates(inputLines[2]).map(val => val - 1);
+    hasParent(i) { return this.getParentIndex(i) >= 0; }
+    hasLeftChild(i) { return this.getLeftChildIndex(i) < this.heap.length; }
+    hasRightChild(i) { return this.getRightChildIndex(i) < this.heap.length; }
 
-    const mazeGrid = inputLines.slice(3, 3 + gridHeight).map(rowStr => rowStr.split(''));
+    getParent(i) { return this.heap[this.getParentIndex(i)]; }
+    getLeftChild(i) { return this.heap[this.getLeftChildIndex(i)]; }
+    getRightChild(i) { return this.heap[this.getRightChildIndex(i)]; }
 
-    const minCosts = new Map();
-    
-    const getCellKey = (r, c) => `${r},${c}`;
+    swapElements(i, j) {
+        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+    }
 
-    const heap = [];
-    const heapPush = (item) => {
-        heap.push(item);
-        let currentIdx = heap.length - 1;
-        while (currentIdx > 0) {
-            let parentIdx = Math.floor((currentIdx - 1) / 2);
-            if (heap[currentIdx][0] < heap[parentIdx][0]) {
-                [heap[currentIdx], heap[parentIdx]] = [heap[parentIdx], heap[currentIdx]];
-                currentIdx = parentIdx;
-            } else {
+    peekMinimum() {
+        if (this.heap.length === 0) return null;
+        return this.heap[0];
+    }
+
+    extractMinimum() {
+        if (this.heap.length === 0) return null;
+        if (this.heap.length === 1) return this.heap.pop();
+
+        const minimumElement = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this.heapifyDown();
+        return minimumElement;
+    }
+
+    insertElement(item) {
+        this.heap.push(item);
+        this.heapifyUp();
+    }
+
+    heapifyUp() {
+        let currentElementIndex = this.heap.length - 1;
+        while (this.hasParent(currentElementIndex) && this.getParent(currentElementIndex)[0] > this.heap[currentElementIndex][0]) {
+            this.swapElements(this.getParentIndex(currentElementIndex), currentElementIndex);
+            currentElementIndex = this.getParentIndex(currentElementIndex);
+        }
+    }
+
+    heapifyDown() {
+        let currentElementIndex = 0;
+        while (this.hasLeftChild(currentElementIndex)) {
+            let smallerChildIndex = this.getLeftChildIndex(currentElementIndex);
+            if (this.hasRightChild(currentElementIndex) && this.getRightChild(currentElementIndex)[0] < this.getLeftChild(currentElementIndex)[0]) {
+                smallerChildIndex = this.getRightChildIndex(currentElementIndex);
+            }
+
+            if (this.heap[currentElementIndex][0] < this.heap[smallerChildIndex][0]) {
                 break;
+            } else {
+                this.swapElements(currentElementIndex, smallerChildIndex);
+            }
+            currentElementIndex = smallerChildIndex;
+        }
+    }
+
+    get currentSize() {
+        return this.heap.length;
+    }
+}
+
+function processPathfinding(inputData) {
+    const inputLines = inputData.split('\n');
+    const gridDimensions = inputLines[0].split(' ').map(Number);
+    const startCoordinates = inputLines[1].split(' ').map(Number);
+    const goalCoordinates = inputLines[2].split(' ').map(Number);
+
+    const numRows = gridDimensions[0];
+    const numCols = gridDimensions[1];
+
+    const initialMapData = inputLines.splice(3, numRows).map(rowStr => rowStr.split(''));
+
+    const costMatrix = Array.from({ length: numRows }, () => Array(numCols).fill(Infinity));
+    const obstacleValue = -1; 
+
+    for (let r = 0; r < numRows; r++) {
+        for (let c = 0; c < numCols; c++) {
+            if (initialMapData[r][c] === '#') {
+                costMatrix[r][c] = obstacleValue;
             }
         }
-    };
-    const heapPop = () => {
-        if (heap.length === 0) return undefined;
-        if (heap.length === 1) return heap.pop();
+    }
 
-        const item = heap[0];
-        heap[0] = heap.pop();
-        let currentIdx = 0;
-        const lastIdx = heap.length - 1;
+    const pathQueue = new MinPriorityQueue();
 
-        while (true) {
-            let leftChildIdx = 2 * currentIdx + 1;
-            let rightChildIdx = 2 * currentIdx + 2;
-            let smallestChildIdx = currentIdx;
+    const startRow = startCoordinates[0] - 1;
+    const startCol = startCoordinates[1] - 1;
+    const goalRow = goalCoordinates[0] - 1;
+    const goalCol = goalCoordinates[1] - 1;
 
-            if (leftChildIdx <= lastIdx && heap[leftChildIdx][0] < heap[smallestChildIdx][0]) {
-                smallestChildIdx = leftChildIdx;
-            }
-            if (rightChildIdx <= lastIdx && heap[rightChildIdx][0] < heap[smallestChildIdx][0]) {
-                smallestChildIdx = rightChildIdx;
-            }
+    if (costMatrix[startRow][startCol] === obstacleValue || costMatrix[goalRow][goalCol] === obstacleValue) {
+        console.log(-1);
+        return;
+    }
 
-            if (smallestChildIdx !== currentIdx) {
-                [heap[currentIdx], heap[smallestChildIdx]] = [heap[smallestChildIdx], heap[currentIdx]];
-                currentIdx = smallestChildIdx;
-            } else {
-                break;
-            }
-        }
-        return item;
-    };
+    costMatrix[startRow][startCol] = 0;
+    pathQueue.insertElement([0, startRow, startCol]);
 
-    minCosts.set(getCellKey(startRow, startCol), 0);
-    heapPush([0, startRow, startCol]);
+    let finalResult = -1;
 
-    let finalCost = -1;
+    while (pathQueue.currentSize > 0) {
+        const [currentCost, r, c] = pathQueue.extractMinimum();
 
-    while (heap.length > 0) {
-        const [currentExpense, currentRow, currentCol] = heapPop();
-
-        if (currentExpense > (minCosts.get(getCellKey(currentRow, currentCol)) || Infinity)) {
+        if (currentCost > costMatrix[r][c] && costMatrix[r][c] !== obstacleValue) {
             continue;
         }
 
-        if (currentRow === endRow && currentCol === endCol) {
-            finalCost = currentExpense;
+        if (r === goalRow && c === goalCol) {
+            finalResult = currentCost;
             break;
         }
 
-        const immediateMoves = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-        for (const [dr, dc] of immediateMoves) {
-            const nextRow = currentRow + dr;
-            const nextCol = currentCol + dc;
+        const directMoveOffsets = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (const [dr, dc] of directMoveOffsets) {
+            const nextR = r + dr;
+            const nextC = c + dc;
 
-            if (
-                nextRow >= 0 && nextRow < gridHeight &&
-                nextCol >= 0 && nextCol < gridWidth &&
-                mazeGrid[nextRow][nextCol] !== '#'
-            ) {
-                const newExpense = currentExpense;
-                const nextCellKey = getCellKey(nextRow, nextCol);
-                if (newExpense < (minCosts.get(nextCellKey) || Infinity)) {
-                    minCosts.set(nextCellKey, newExpense);
-                    heapPush([newExpense, nextRow, nextCol]);
+            if (nextR >= 0 && nextR < numRows && nextC >= 0 && nextC < numCols && costMatrix[nextR][nextC] !== obstacleValue) {
+                if (currentCost < costMatrix[nextR][nextC]) {
+                    costMatrix[nextR][nextC] = currentCost;
+                    pathQueue.insertElement([currentCost, nextR, nextC]);
                 }
             }
         }
 
-        for (let rOffset = -2; rOffset <= 2; rOffset++) {
-            for (let cOffset = -2; cOffset <= 2; cOffset++) {
-                if (rOffset === 0 && cOffset === 0) continue;
+        const nextWarpCost = currentCost + 1;
+        for (let hOffset = -2; hOffset <= 2; hOffset++) {
+            for (let wOffset = -2; wOffset <= 2; wOffset++) {
+                if (hOffset === 0 && wOffset === 0) {
+                    continue;
+                }
 
-                const warpRow = currentRow + rOffset;
-                const warpCol = currentCol + cOffset;
+                const nextR = r + hOffset;
+                const nextC = c + wOffset;
 
-                if (
-                    warpRow >= 0 && warpRow < gridHeight &&
-                    warpCol >= 0 && warpCol < gridWidth &&
-                    mazeGrid[warpRow][warpCol] !== '#'
-                ) {
-                    const newExpense = currentExpense + 1;
-                    const warpCellKey = getCellKey(warpRow, warpCol);
-                    if (newExpense < (minCosts.get(warpCellKey) || Infinity)) {
-                        minCosts.set(warpCellKey, newExpense);
-                        heapPush([newExpense, warpRow, warpCol]);
+                if (nextR >= 0 && nextR < numRows && nextC >= 0 && nextC < numCols && costMatrix[nextR][nextC] !== obstacleValue) {
+                    if (nextWarpCost < costMatrix[nextR][nextC]) {
+                        costMatrix[nextR][nextC] = nextWarpCost;
+                        pathQueue.insertElement([nextWarpCost, nextR, nextC]);
                     }
                 }
             }
         }
     }
 
-    console.log(finalCost);
+    console.log(finalResult);
 }
 
-Pathfinder(require("fs").readFileSync("/dev/stdin", "utf8"));
+processPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));

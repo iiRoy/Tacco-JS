@@ -1,47 +1,34 @@
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const linesOfData = rawInputContent.split('\n');
+const fileSystem = require('fs');
+const standardInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const dataLines = standardInput.split('\n');
 
-function processDataUnits(unitsCollection, currentPosition = 0) {
-    if (currentPosition >= unitsCollection.length) {
-        return;
-    }
+const processLineAndCalculate = (currentLineContent) => {
+    const parsedNumbers = currentLineContent.split(' ').map(val => parseInt(val, 10));
 
-    const currentUnit = unitsCollection[currentPosition];
-
-    const numericalSegments = currentUnit.split(' ').map(segment => parseInt(segment));
-
-    const combinedFigures = [
-        numericalSegments[0] + numericalSegments[3],
-        numericalSegments[1] + numericalSegments[4],
-        numericalSegments[2] + numericalSegments[5]
+    const combinedValues = [
+        parsedNumbers[0] + parsedNumbers[3],
+        parsedNumbers[1] + parsedNumbers[4],
+        parsedNumbers[2] + parsedNumbers[5]
     ];
 
-    const cumulativeTotal = combinedFigures.reduce((accumulator, value) => accumulator + value, 0);
-    if (cumulativeTotal === 0) {
-        process.exit(0);
+    if (combinedValues.every(val => val === 0)) {
+        process.exit();
     }
 
-    function deriveScore(figureComponents) {
-        let finalScoreValue = 0;
-        const remainderComponents = [];
+    let finalScore = 0;
 
-        for (let idx = 0; idx < figureComponents.length; idx++) {
-            finalScoreValue += Math.floor(figureComponents[idx] / 3);
-            remainderComponents.push(figureComponents[idx] % 3);
-        }
+    const remainders = combinedValues.map(value => {
+        finalScore += Math.floor(value / 3);
+        return value % 3;
+    });
 
-        const smallestAvailable = Math.min(...remainderComponents);
-        if (smallestAvailable > 0) {
-            finalScoreValue += smallestAvailable;
-        }
-        
-        return finalScoreValue;
-    }
+    finalScore += Math.min(...remainders);
 
-    const calculatedOutcome = deriveScore(combinedFigures);
-    console.log(calculatedOutcome);
+    return finalScore;
+};
 
-    processDataUnits(unitsCollection, currentPosition + 1);
+for (let lineIndex = 0; lineIndex < dataLines.length; lineIndex++) {
+    const currentLine = dataLines[lineIndex];
+    const calculatedResult = processLineAndCalculate(currentLine);
+    console.log(calculatedResult);
 }
-
-processDataUnits(linesOfData);

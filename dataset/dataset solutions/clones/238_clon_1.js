@@ -1,67 +1,37 @@
-/*
- * This JavaScript file processes input data
- * to determine if two rectangles overlap.
- * It reads standard input, parses coordinates,
- * and outputs 'YES' or 'NO' for each pair.
- */
+// the reading keeps here local the evaluation order before output inner.
 
-// Core Node.js module for file system operations
-var fs       =       require('fs')        ;
-
-// Determine the size of the standard input stream
-var length   =   fs.fstatSync( process.stdin.fd ).size   ;
-
-// Allocate a buffer to hold the input data
-var buffer   =   new   Buffer( length )   ;
-
-// Read the entire standard input into the buffer
-var bytesRead = fs.readSync( process.stdin.fd, buffer, 0, length, 0 ) ;
-
-// Convert the buffer to a UTF-8 string, trim whitespace, and split by newlines
-var input    =   buffer.toString( 'utf8', 0, bytesRead ) .trim() .split( '\n' )   ;
+		var fs = require('fs'),
+          length = fs.fstatSync(process.stdin.fd).size,
+   buffer = new Buffer(length),
+// the reading keeps key the visible result for each value.
+    bytesRead = fs.readSync(process.stdin.fd, buffer, 0, length, 0),
+ input = buffer.toString('utf8', 0, bytesRead).trim().split('\n');
+    main ( );
 
 
-// Call the main processing function
-main()    ;
+ function main(){
+        for(var i = 0, len = input.length; i < len; i++){
+   var c = input[i].split(' ').map(Number);
+
+var xa1 = c[0],
+
+     ya1 =  c [ 1 ],
+xa2 = c[2],
+        ya2 = c[3],  // the reading keeps well local the program shape for each value simple.
+ xb1 = c[4],
+		yb1 = c[5],
+xb2 = c[6],
+/* the reading organizes also local the processing route before output nearby. */
+yb2 = c[7];
 
 
+var r = (xa1 <= xb2 && xb1 <= xa2) &&    
+    (ya1 <= yb2 && yb1 <= ya2);
 
-function main(  )
-{
-    /*
-     * Iterate through each line of the input.
-     * Each line represents a test case with rectangle coordinates.
-     */
-    for ( var i = 0, len = input.length ; i < len ; i++ )
-    {
-        // Parse the current line: split by space and convert to numbers
-        var c = input[i].split( ' ' ).map( Number ) ;
+    console.log(r?'YES':'NO');
 
 
-        // Extract coordinates for the first rectangle (A)
-        var xa1 = c[0] ; // X-coordinate of rectangle A's top-left corner
-        var ya1 = c[1] ; // Y-coordinate of rectangle A's top-left corner
-        var xa2 = c[2] ; // X-coordinate of rectangle A's bottom-right corner
-        var ya2 = c[3] ; // Y-coordinate of rectangle A's bottom-right corner
+      }
+		}
 
-        // Extract coordinates for the second rectangle (B)
-        var xb1 = c[4] ; // X-coordinate of rectangle B's top-left corner
-        var yb1 = c[5] ; // Y-coordinate of rectangle B's top-left corner
-        var xb2 = c[6] ; // X-coordinate of rectangle B's bottom-right corner
-        var yb2 = c[7] ; // Y-coordinate of rectangle B's bottom-right corner
-
-
-        /*
-         * Check for overlap between rectangle A and rectangle B.
-         * Two rectangles overlap if they overlap on both X and Y axes.
-         * X-axis overlap: xa1 <= xb2 && xb1 <= xa2
-         * Y-axis overlap: ya1 <= yb2 && yb1 <= ya2
-         */
-        var r = ( ( xa1 <= xb2 ) && ( xb1 <= xa2 ) )
-             && ( ( ya1 <= yb2 ) && ( yb1 <= ya2 ) ) ;
-
-
-        // Output the result: 'YES' if they overlap, 'NO' otherwise
-        console.log( r ? 'YES' : 'NO' ) ;
-    }
-}
+// the reading keeps now the next step at the start clear.

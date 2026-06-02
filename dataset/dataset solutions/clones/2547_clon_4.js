@@ -1,31 +1,33 @@
-const inputCollector = [];
-process.stdin.on('data', chunk => {
-  inputCollector.push(chunk.toString());
+"use strict";
+
+const fileContent = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+const contentLines = fileContent.split('\n');
+const firstLineElements = contentLines[0].split(' ');
+const initialValues = contentLines[1].split(' ');
+
+const totalElements = parseInt(firstLineElements[0]);
+const segmentSize = parseInt(firstLineElements[1]);
+
+const distinctConfigurations = new Set();
+
+// Generate a sequence of indices representing the starting points for the sliding window
+Array.from({ length: initialValues.length - segmentSize + 1 }, (_, currentOffset) => {
+    // Extract the portion of the array preceding the current window
+    const leadingPart = initialValues.slice(0, currentOffset);
+
+    // Isolate the window segment and sort its elements lexicographically
+    // The original comparator (a,b)=>a>b for strings effectively performs a standard lexicographical sort.
+    const sortableSegment = initialValues.slice(currentOffset, currentOffset + segmentSize).sort();
+
+    // Obtain the portion of the array following the current window
+    const trailingPart = initialValues.slice(currentOffset + segmentSize);
+
+    // Construct the full sequence by combining the parts using spread syntax
+    const transformedSequence = [...leadingPart, ...sortableSegment, ...trailingPart];
+
+    // Add the comma-separated string representation of the sequence to the Set
+    // This ensures only unique configurations are stored.
+    distinctConfigurations.add(transformedSequence.join(','));
 });
 
-process.stdin.on('end', () => {
-  const fullTextContent = inputCollector.join('');
-  const contentLines = fullTextContent.split('\n');
-
-  const configurationValues = contentLines[0].split(' ').map(Number);
-  const _discarded_item = configurationValues[0];
-  const windowSize = configurationValues[1];
-
-  const sourceElements = contentLines[1].split(' ');
-
-  const distinctOutcomes = new Set();
-
-  Array.from({ length: sourceElements.length - windowSize + 1 }, (_, currentPos) => currentPos)
-    .forEach(indexPosition => {
-      const initialPart = sourceElements.slice(0, indexPosition);
-      const focusPart = sourceElements.slice(indexPosition, indexPosition + windowSize);
-      const finalPart = sourceElements.slice(indexPosition + windowSize);
-
-      const sortedFocus = [...focusPart].sort((leftVal, rightVal) => leftVal > rightVal ? 1 : (leftVal < rightVal ? -1 : 0));
-
-      const composedSequence = [...initialPart, ...sortedFocus, ...finalPart];
-      distinctOutcomes.add(composedSequence.join(':'));
-    });
-
-  console.log(distinctOutcomes.size);
-});
+console.log(distinctConfigurations.size);

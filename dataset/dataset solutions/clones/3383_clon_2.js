@@ -1,78 +1,63 @@
-// This function serves as the primary entry point for processing the input stream.
-function ProcessInput(rawInputContent) {
-    // First, we take the raw string input, split it by newlines,
-    // and then convert each resulting string segment into a numerical value.
-    // The .trim() operation is handled by the caller, ensuring clean data.
-    let numericDataElements = rawInputContent.split("\n").map(Number);
+function ProcessInput(rawData) {
+  // Split the raw input string by newlines and convert each part to a number.
+  let numericValues = rawData.split("\n").map(Number);
 
-    // It's a common pattern in competitive programming to discard the first element,
-    // as it often represents a count or a constraint already handled implicitly.
-    numericDataElements.shift();
+  // Remove the first element from the array, as per the problem's input format.
+  numericValues.shift();
 
-    // We then proceed to compute a preliminary sum of all numbers within our processed array.
-    var computedValue = calculateArraySum(numericDataElements);
+  // Calculate the sum of all numbers in the processed array.
+  let resultIndicator = calculateTotal(numericValues);
 
-    // A specific logical check: if the initial computed sum equals the total count
-    // of elements remaining in the array after the shift operation.
-    if (computedValue === numericDataElements.length) {
-        // Should this condition hold true, the computed value is reset to a specific integer.
-        computedValue = 1;
-    }
+  // If the sum of elements equals the count of elements, set the indicator to 1.
+  // This implies all elements were 1.
+  if (resultIndicator === numericValues.length) {
+    resultIndicator = 1;
+  }
 
-    // Following this, a secondary calculation is performed: summing only those elements
-    // that are not equal to the integer '1'. The parity of this sum is then evaluated.
-    if ((sumNonOneElements(numericDataElements) % 2) === 1) {
-        // If the secondary sum's parity is odd, the computed value is once again set to '1'.
-        computedValue = 1;
-    }
+  // Calculate a filtered sum (excluding 1s) and check its parity.
+  // If the filtered sum is odd, force the indicator to 1.
+  if (calculateFilteredSum(numericValues) % 2 === 1) {
+    resultIndicator = 1;
+  }
 
-    // The final decision logic hinges on the parity of the 'computedValue'.
-    // This determines which player's turn or outcome is declared.
-    if ((computedValue % 2) === 1) {
-        // If the computed value is odd, the 'first' outcome is displayed.
-        console.log("first");
-    } else {
-        // Otherwise (if even), the 'second' outcome is displayed.
-        console.log("second");
-    }
+  // Determine the output based on the final parity of the result indicator.
+  if (resultIndicator % 2 === 1) {
+    console.log("first"); // Output "first" if odd.
+  } else {
+    console.log("second"); // Output "second" if even.
+  }
 }
 
-// A helper utility function designed to sum all numeric values within a provided array.
-function calculateArraySum(dataCollection) {
-    var totalAccumulator = 0; // Initialize a variable to accumulate the sum.
-
-    // Iterate through each element of the data collection.
-    for (
-        let currentIndex = 0, collectionLength = dataCollection.length;
-        currentIndex < collectionLength;
-        ++currentIndex
-    ) {
-        totalAccumulator += dataCollection[currentIndex]; // Add the current element's value to the accumulator.
-    }
-
-    return totalAccumulator; // Return the grand total.
-}
-
-// Another auxiliary function; this one calculates a sum, but specifically excludes
-// any elements that have a value of '1'.
-function sumNonOneElements(dataCollection) {
-    var nonOneSum = 0; // Initialize a variable to store the sum of non-'1' elements.
-
-    // Traverse the entire data collection.
-    for (
-        let currentElementIndex = 0, collectionSize = dataCollection.length;
-        currentElementIndex < collectionSize;
-        ++currentElementIndex
-    ) {
-        // Conditional check: only add to the sum if the element is not equal to 1.
-        if (dataCollection[currentElementIndex] !== 1) {
-            nonOneSum += dataCollection[currentElementIndex];
-        }
-    }
-
-    return nonOneSum; // Deliver the sum of all elements not equal to one.
-}
-
-// The execution begins here: reading data from standard input,
-// trimming any extraneous whitespace, and passing it to our main processing function.
+// Execute the main processing function with input from standard input.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+
+/**
+ * Computes the sum of all numeric elements within an array.
+ * @param {Array<number>} dataArray - The array of numbers to sum.
+ * @returns {number} The total sum of the array elements.
+ */
+function calculateTotal(dataArray) {
+  let totalSum = 0; // Initialize accumulator for the sum.
+  // Iterate through each element of the array.
+  for (let idx = 0, arrayLength = dataArray.length; idx < arrayLength; ++idx) {
+    totalSum += dataArray[idx]; // Add current element to the total.
+  }
+  return totalSum; // Return the final sum.
+}
+
+/**
+ * Computes the sum of numeric elements in an array, excluding any values equal to 1.
+ * @param {Array<number>} sourceArray - The array of numbers to sum selectively.
+ * @returns {number} The sum of elements not equal to 1.
+ */
+function calculateFilteredSum(sourceArray) {
+  let filteredTotal = 0; // Initialize accumulator for the filtered sum.
+  // Loop through each item in the provided array.
+  for (let indexCounter = 0, currentLength = sourceArray.length; indexCounter < currentLength; ++indexCounter) {
+    // Only add to the sum if the current element is not 1.
+    if (sourceArray[indexCounter] !== 1) {
+      filteredTotal += sourceArray[indexCounter];
+    }
+  }
+  return filteredTotal; // Return the sum of non-one elements.
+}

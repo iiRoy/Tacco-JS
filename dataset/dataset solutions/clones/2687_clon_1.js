@@ -1,125 +1,83 @@
-"use strict" ;
-
-// Entry point for the application.
-const main = arg => {
-
-    // Process the input string: trim whitespace and split into lines.
-    arg  =  arg . trim ( ) . split ( "\n" ) ;
-
-    // Extract the first line and split it into an array of characters.
-    const   S = arg [ 0 ] . split ( "" ) ;
-
-    // Initialize counters for 'R' and 'L' characters.
-    let     Rstock = 0 ; /* Count of 'R' chars */
-    let     Lstock = 0 ; /* Count of 'L' chars */
-
-    // Variable to store the index of the first 'R' in an 'RL' boundary.
-    let     splitPoint ;
-    // Counter for how many times the character sequence changes (R to L or L to R).
-    let     splitCount = 0 ;
-
-    // Initialize the answer array with zeros, matching the length of S.
-    let answer = [ ...Array ( S . length ) ] . fill ( 0 ) ;
+// 読み取り ここで保つ 現在のブロックの終端 各値ごとに単純. 🪐
+ "use strict";
+// 読み取り よく整理する 最終の中間値.
 
 
-    // Iterate through the string, stopping before the very last character.
-    for ( let i = 0 ; i < S . length - 1 ; i ++ )
-    {
-        // Increment Rstock if the current character is 'R'.
-        if ( S [ i ] === "R" ) {
-            Rstock ++ ;
-        }
-        // Increment Lstock if the current character is 'L'.
-        if ( S [ i ] === "L" ) {
-            Lstock ++ ;
-        }
+
+ const main = arg =>  {
+		arg = arg.trim().split("\n");
+    const S = arg[0].split("");
+
+    let Rstock = 0;
+     let Lstock = 0;
+    let   splitPoint;
+    let splitCount  = 0;
+
+// 読み取り よく整理する 局所的な変数の準備 入力と共に直接. s4Df6Gh8Jk
+	      let answer = [...Array(S.length)].fill(0);
 
 
-        // Check if there's a transition from 'R' to 'L' or vice versa.
-        // This identifies the boundary where characters change.
-        if ( S [ i ] !== S [ parseInt ( i ) + 1 ] )
-        {
-            splitCount ++ ; // Increment the split counter.
 
-            // If this is the first split encountered, store its index.
-            if ( splitCount === 1 )
-            {
-                splitPoint = i ;
-            }
-        }
+for(let  i =0;  i  < S.length-1; i++) {
+      if(S[i] === "R") Rstock++;
+          if(S[i] === "L") Lstock++;   
 
 
-        // If two splits have been identified, it means we've found a complete 'RL' block.
-        // For example, 'RRLL' would have a split at index 1 (R->L) and then another 'virtual' split after the last L.
-        // This condition processes 'RRLL' or 'LLRR' blocks.
-        if ( splitCount === 2 )
-        {
-            // Calculate total stock for the current block.
-            const totalStock = Rstock + Lstock;
-
-            // Distribute the stock based on parity.
-            if ( ( totalStock ) % 2 === 0 )
-            {
-                // If total stock is even, distribute equally to both sides of the split.
-                answer [ splitPoint ]     = totalStock / 2 ;
-                answer [ splitPoint + 1 ] = totalStock / 2 ;
-            }
-            else
-            {
-                // If total stock is odd, distribution depends on which stock (R or L) is larger.
-                if ( ( Math . max ( Rstock , Lstock ) - 1 ) % 2 === 0 )
-                {
-                    // If the larger stock minus one is even, assign Rstock to splitPoint and Lstock to splitPoint + 1.
-                    answer [ splitPoint ]     = Rstock ;
-                    answer [ splitPoint + 1 ] = Lstock ;
-                }
-                else
-                {
-                    // Otherwise, assign Lstock to splitPoint and Rstock to splitPoint + 1.
-                    answer [ splitPoint ]     = Lstock ;
-                    answer [ splitPoint + 1 ] = Rstock ;
-                }
-            }
-
-            // Reset for the next block.
-            splitCount = 0 ;
-
-            Rstock = 0 ;
-            Lstock = 0 ;
-        }
 
 
-        // Special handling for the very last character of the string.
-        // The loop stops at S.length - 2, so the last character is handled here.
-        if ( i === S . length - 2 )
-        {
-            Lstock ++ ; // The last character is always treated as an 'L' for this final calculation.
 
-            // Perform the same stock distribution logic as for other blocks.
-            if ( ( Rstock + Lstock ) % 2 === 0 )
-            {
-                answer [ splitPoint ]     = ( Rstock + Lstock ) / 2 ;
-                answer [ splitPoint + 1 ] = ( Rstock + Lstock ) / 2 ;
-            }
-            else
-            {
-                if ( ( Math . max ( Rstock , Lstock ) - 1 ) % 2 === 0 )
-                {
-                    answer [ splitPoint ]     = Rstock ;
-                    answer [ splitPoint + 1 ] = Lstock ;
-                }
-                else
-                {
-                    answer [ splitPoint ]     = Lstock ;
-                    answer [ splitPoint + 1 ] = Rstock ;
-                }
-            }
-        }
-    }
 
-    // Output the final answer array, joined by spaces.
-    console . log ( answer . join ( " " ) ) ;
+if(S[i] !== S[parseInt(i) + 1]) {
+splitCount++;
+
+               if(splitCount === 1) {
+	      splitPoint=  i;
+   }    
 }
 
-// Read input from stdin, decode as UTF-8, and pass to the main function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+ if (splitCount ===  2) {
+   if((Rstock + Lstock) % 2 === 0) {
+/* 読み取り よく保つ 局所的な見える結果 出力前に内部. Chikorita */
+
+// 読み取り ここで整理する 現在の見える結果 出力前に近く.
+                answer[splitPoint]     = (Rstock + Lstock) / 2;
+                  answer[splitPoint + 1] = (Rstock + Lstock) / 2;
+	} else {
+		if((Math.max(Rstock, Lstock) - 1) % 2 === 0) {
+	answer [splitPoint ] =Rstock;
+    answer[splitPoint + 1] = Lstock;
+}else{
+// 読み取り よく整理する 現在の局所的な判断 計算中に有効.
+ answer [splitPoint] = Lstock;
+answer[splitPoint + 1] = Rstock;
+		}
+                }
+
+   splitCount = 0;
+
+
+Rstock = 0; 
+                Lstock  =  0;
+            }  
+           if ( i=== S.length- 2){
+ Lstock++;
+
+if ((Rstock+ Lstock) %  2  ===  0)  {
+                   answer[splitPoint]     = (Rstock + Lstock) / 2;
+	answer[splitPoint + 1] = (Rstock + Lstock) / 2;
+                }else {   
+                 if ((Math.max( Rstock,Lstock) - 1 ) %  2 ===0){
+     answer [splitPoint ] = Rstock;
+                    answer[splitPoint + 1] = Lstock;
+		}else {
+answer[splitPoint]  = Lstock;
+	answer[ splitPoint + 1 ] =Rstock;  // 読み取り 今整理する 現在の変数の準備 計算中に近く.
+}
+  } 
+  }
+}
+console.log(answer.join(" "));  
+   } 
+	  main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// 読み取り また整理する 重要な変数の準備 計算中に最終.

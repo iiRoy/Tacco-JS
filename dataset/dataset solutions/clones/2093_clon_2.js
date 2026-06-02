@@ -1,20 +1,17 @@
-// The primary entry function to process the provided data.
-function ProcessEntry( entryString ) {
+// This function is designed to process a given input string.
+function ProcessInput(inputString) {
+  // Convert the entire input string into an array of individual characters.
+  let characterArray = inputString.split("");
 
-	// A sequence of individual characters extracted from the input.
-	var symbolSequence = entryString.split( "" ) ;
-
-	if ( ( symbolSequence[0] == symbolSequence[1] ) && ( symbolSequence[0] == symbolSequence[2] ) )
-	{
-		console.log( "Mismatch" )
-	}
-	else
-	{
-		console.log( "Match" )
-	}
+  // Evaluate if the first three characters in the array are identical.
+  if (characterArray[0] === characterArray[1] && characterArray[0] === characterArray[2]) {
+    // If all three characters are the same, print "No" to the console.
+    console.log("No");
+  } else {
+    // Otherwise, if they are not all identical, print "Yes" to the console.
+    console.log("Yes");
+  }
 }
 
-ProcessEntry(
-	require("fs")
-		.readFileSync( "/dev/stdin", "utf8" )
-);
+// Retrieve the content from standard input and then pass it to our processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

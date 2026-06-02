@@ -1,49 +1,40 @@
-// This script processes input data from standard input.
-// It reads lines, performs calculations, and outputs results based on specific patterns.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Load the necessary file system module to read data.
-var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// The input data is trimmed of leading/trailing whitespace and then split into an array of lines.
+let lineArray = rawData.trim().split("\n");
 
-// Process the raw input: trim whitespace and split into individual lines.
-var inputLines = (sourceData.trim()).split("\n");
+// This array will temporarily store the sum of pairs for each candidate (A, B, C, D).
+let scoreAccumulator = [];
 
-// Initialize an array to accumulate numerical results before processing.
-var scoreCollector = [];
+// Iterate through each line of the input array.
+for (let idx = 0; idx < lineArray.length; idx++) {
+    // Check for the termination condition: if the accumulator is empty and the current line is "0 0".
+    if (scoreAccumulator.length === 0 && lineArray[idx] === "0 0") {
+        break; // Exit the processing loop.
+    }
 
-// Iterate through each line of the processed input.
-for (var lineIterator = 0; lineIterator < inputLines.length; lineIterator++) {
+    // If four scores have been collected, it's time to process them.
+    if (scoreAccumulator.length === 4) {
+        // Find the maximum score among the four accumulated scores.
+        const highestScore = scoreAccumulator.reduce(function(valA, valB) {
+            return Math.max(valA, valB);
+        });
 
-  // Check for the termination condition: if the collector is empty and the current line is "0 0".
-  if (scoreCollector.length === 0 && inputLines[lineIterator] === "0 0") {
-    break; // Exit the loop if the termination sequence is found.
-  }
+        // Define the labels for the candidates.
+        const candidateLabels = "ABCD".split("");
 
-  // If the score collector has gathered exactly four entries, it's time to process them.
-  if (scoreCollector.length === 4) {
-    // Find the maximum value among the collected scores.
-    var highestValue = scoreCollector.reduce(function(currentMax, currentElement) {
-      return Math.max(currentMax, currentElement);
-    });
+        // Determine the label corresponding to the highest score.
+        const resultLabel = candidateLabels[scoreAccumulator.indexOf(highestScore)];
 
-    // Define an array of character identifiers for output.
-    var charIdentifiers = "ABCD".split("");
+        // Output the winning candidate's label and their highest score.
+        console.log(resultLabel + " " + highestScore);
 
-    // Determine the character corresponding to the index of the highest value.
-    var finalCharacter = charIdentifiers[scoreCollector.indexOf(highestValue)];
-
-    // Output the identified character along with its highest value.
-    console.log(finalCharacter + " " + highestValue);
-
-    // Reset the score collector for the next set of entries.
-    scoreCollector = [];
-
-  } else {
-    // If the collector has less than four entries, parse the current line and add to the collection.
-
-    // Split the current line by space and convert the parts to numbers.
-    var numericalPair = inputLines[lineIterator].split(" ").map(Number);
-
-    // Add the sum of the two numbers to the score collector.
-    scoreCollector.push(numericalPair[0] + numericalPair[1]);
-  }
+        // Reset the accumulator to prepare for the next set of four candidates.
+        scoreAccumulator = [];
+    } else {
+        // If fewer than four scores are accumulated, parse the current line.
+        // Split the line by space, convert the parts to numbers, and sum them.
+        const currentPair = lineArray[idx].split(" ").map(Number);
+        scoreAccumulator.push(currentPair[0] + currentPair[1]);
+    }
 }

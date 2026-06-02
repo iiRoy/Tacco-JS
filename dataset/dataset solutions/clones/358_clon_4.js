@@ -1,62 +1,65 @@
-function evaluateGridRegions(gridDataMatrix, gridRows, gridCols) {
-    const cellMap = gridDataMatrix.map(lineText => lineText.split(''));
-    const visitedFlags = Array(gridRows).fill(0).map(() => Array(gridCols).fill(false));
-    let distinctRegionCount = 0;
+const getStandardInput = require('fs').readFileSync;
+const processedLines = (getStandardInput('/dev/stdin', 'utf8').trim()).split("\n");
 
-    const rowMovements = [-1, 1, 0, 0];
-    const colMovements = [0, 0, -1, 1];
+let currentLineIndex = 0;
 
-    for (let currentRIndex = 0; currentRIndex < gridRows; currentRIndex++) {
-        for (let currentCIndex = 0; currentCIndex < gridCols; currentCIndex++) {
-            const currentCellIdentifier = cellMap[currentRIndex][currentCIndex];
+while (true) {
+    const dimensions = processedLines[currentLineIndex++].split(" ").map(Number);
+    const [rowCount, colCount] = dimensions;
 
-            if ((currentCellIdentifier === '@' || currentCellIdentifier === '#' || currentCellIdentifier === '*') && !visitedFlags[currentRIndex][currentCIndex]) {
-                distinctRegionCount++;
-                const explorationQueue = [];
-                explorationQueue.push([currentRIndex, currentCIndex]);
-                visitedFlags[currentRIndex][currentCIndex] = true;
+    if (rowCount === 0 && colCount === 0) {
+        break;
+    }
 
-                while (explorationQueue.length > 0) {
-                    const [focusR, focusC] = explorationQueue.shift();
-                    const initialRegionId = currentCellIdentifier;
+    const gridMap = [];
+    for (let r = 0; r < rowCount; r++) {
+        gridMap.push(processedLines[currentLineIndex++].split(""));
+    }
 
-                    for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
-                        const adjacentR = focusR + rowMovements[directionIndex];
-                        const adjacentC = focusC + colMovements[directionIndex];
+    let distinctBombClusters = 0;
+    const cardinalDirections = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // [deltaRow, deltaCol]
 
-                        if (adjacentR >= 0 && adjacentR < gridRows &&
-                            adjacentC >= 0 && adjacentC < gridCols &&
-                            !visitedFlags[adjacentR][adjacentC] &&
-                            cellMap[adjacentR][adjacentC] === initialRegionId) {
-                            visitedFlags[adjacentR][adjacentC] = true;
-                            explorationQueue.push([adjacentR, adjacentC]);
+    for (let r = 0; r < rowCount; r++) {
+        for (let c = 0; c < colCount; c++) {
+            const initialCellValue = gridMap[r][c];
+
+            if (initialCellValue === "@" || initialCellValue === "#" || initialCellValue === "*") {
+                distinctBombClusters++;
+
+                const cellsToPropagate = [[r, c]]; // BFS queue
+                let cellsModifiedInCluster = 0; // Tracks processed cells, mimicking original's CNT
+                let queuePointer = 0; // Manual queue head for performance
+
+                // Mark the starting cell and count it as processed
+                gridMap[r][c] = "m";
+                cellsModifiedInCluster++;
+
+                // Perform Breadth-First Search (BFS) to clear connected cells
+                while (queuePointer < cellsToPropagate.length && cellsModifiedInCluster < 50) {
+                    const [currentRow, currentCol] = cellsToPropagate[queuePointer++];
+
+                    for (const [dr, dc] of cardinalDirections) {
+                        const nextRow = currentRow + dr;
+                        const nextCol = currentCol + dc;
+
+                        // Check boundary conditions
+                        if (nextRow >= 0 && nextRow < rowCount && nextCol >= 0 && nextCol < colCount) {
+                            // If the neighbor cell matches the original cluster value
+                            // and we haven't hit the processing limit for this cluster
+                            if (gridMap[nextRow][nextCol] === initialCellValue) {
+                                if (cellsModifiedInCluster < 50) {
+                                    gridMap[nextRow][nextCol] = 0; // Mark as cleared
+                                    cellsToPropagate.push([nextRow, nextCol]); // Add to queue
+                                    cellsModifiedInCluster++; // Increment processed count
+                                }
+                                // If cellsModifiedInCluster is 50, we stop expanding from this path,
+                                // effectively mimicking the original's recursion limit.
+                            }
                         }
                     }
                 }
             }
         }
     }
-    return distinctRegionCount;
-}
-
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const contentLines = sourceContent.trim().split('\n');
-let contentCursor = 0;
-
-while (true) {
-    const dimensionSpecs = contentLines[contentCursor++].split(' ').map(Number);
-    const totalRows = dimensionSpecs[0];
-    const totalCols = dimensionSpecs[1];
-
-    if (totalRows === 0 && totalCols === 0) {
-        break;
-    }
-
-    const currentCaseGridLines = [];
-    for (let r = 0; r < totalRows; r++) {
-        currentCaseGridLines.push(contentLines[contentCursor++]);
-    }
-
-    const finalResult = evaluateGridRegions(currentCaseGridLines, totalRows, totalCols);
-    console.log(finalResult);
+    console.log(distinctBombClusters);
 }

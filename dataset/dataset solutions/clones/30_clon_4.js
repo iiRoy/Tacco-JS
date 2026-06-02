@@ -1,23 +1,19 @@
-const fileSystemOps = require("node:fs");
+var fileSystemModule = require("fs");
 
-function computeFinancialProjection(iterations) {
+function computeFinancialGrowth(periodCount) {
     const initialCapital = 100;
-    const annualMultiplier = 1.05;
+    // Generate an array of a specific length to drive the reduction process,
+    // effectively replacing an imperative loop with a functional iteration.
+    const iterationSequence = Array.from({ length: periodCount });
 
-    function recursivelyCalculateAccrual(remainingPeriods, currentPrincipal) {
-        if (remainingPeriods === 0) {
-            return currentPrincipal;
-        }
-        const nextPrincipal = Math.ceil(currentPrincipal * annualMultiplier);
-        return recursivelyCalculateAccrual(remainingPeriods - 1, nextPrincipal);
-    }
+    const finalCapital = iterationSequence.reduce((currentCapital, _, __) => {
+        // Apply the compounding growth with ceiling for each period.
+        return Math.ceil(currentCapital * 1.05);
+    }, initialCapital); // The initial value for the reduction.
 
-    const finalValueBeforeScaling = recursivelyCalculateAccrual(iterations, initialCapital);
-    const scalingFactor = 1000;
-    return finalValueBeforeScaling * scalingFactor;
+    // Apply the final scaling factor.
+    return finalCapital * 1000;
 }
 
-const rawInputData = fileSystemOps.readFileSync('/dev/stdin').toString().trim();
-const numberOfPeriods = Number.parseInt(rawInputData, 10);
-const totalEstimatedValue = computeFinancialProjection(numberOfPeriods);
-console.log(totalEstimatedValue);
+var rawInputData = fileSystemModule.readFileSync('/dev/stdin').toString().trim();
+console.log(computeFinancialGrowth(parseInt(rawInputData)));

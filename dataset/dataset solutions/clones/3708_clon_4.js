@@ -1,101 +1,66 @@
-const processRawData = (sourceText) => {
-    const dataLines = sourceText.trim().split('\n');
-    const totalElements = parseInt(dataLines[0], 10);
-    const numericSequence = dataLines[1].split(' ').map(Number);
-    return { totalElements, numericSequence };
-};
+function processData(inputPayload) {
+    const dataLines = inputPayload.split('\n');
+    const elementCount = parseInt(dataLines[0]);
+    const numericArray = dataLines[1].split(' ').map(Number);
 
-const generatePrefixSums = (sequence) => {
-    let currentAccumulation = 0;
-    // The prefixSums[k] will store the sum of elements from index 0 to k-1.
-    // prefixSums[0] is 0.
-    const prefixSums = [0, ...sequence.map(item => (currentAccumulation += item))];
-    return prefixSums;
-};
+    let runningTotal = 0;
+    const prefixSumCollection = numericArray.map(value => (runningTotal += value));
 
-const evaluatePartitions = (itemCount, cumulativeTotals) => {
-    let globalMinimumDifference = Number.MAX_SAFE_INTEGER;
+    let minimumOverallDifference = Infinity;
 
-    // The middle split point, 'boundaryQ_R', indicates the index
-    // where the Q block ends and the R block begins (0-indexed).
-    // It must allow at least one element for P, Q, R, and S.
-    // So: P(>=1), Q(>=1), R(>=1), S(>=1)
-    // P ends at boundaryP_Q - 1. Q ends at boundaryQ_R - 1.
-    // R ends at boundaryR_S - 1. S ends at itemCount - 1.
-    // boundaryP_Q >= 1
-    // boundaryQ_R - boundaryP_Q >= 1  => boundaryQ_R >= boundaryP_Q + 1
-    // boundaryR_S - boundaryQ_R >= 1  => boundaryR_S >= boundaryQ_R + 1
-    // itemCount - boundaryR_S >= 1    => boundaryR_S <= itemCount - 1
+    // Pointers for the internal split points.
+    // `firstPartitionEndIndex` marks the end of the first segment (P).
+    // `thirdPartitionEndIndex` marks the end of the third segment (R).
+    let firstPartitionEndIndex = 0;
+    let thirdPartitionEndIndex = 2; // Initial guess for the third split point when the middle split (idx2) is at its minimum (1).
+                                    // The third partition must start after the middle split, so thirdPartitionEndIndex >= middleSplitIndex + 1.
 
-    // Therefore, boundaryQ_R must be at least 2 (for P and Q to exist)
-    // and at most itemCount - 2 (for R and S to exist).
-    for (let boundaryQ_R = 2; boundaryQ_R <= itemCount - 2; ++boundaryQ_R) {
-
-        // --- Determine optimal boundaryP_Q (split between P and Q) ---
-        // boundaryP_Q is the index where P ends and Q begins.
-        // It can range from 1 to boundaryQ_R - 1.
-        let boundaryP_Q_candidate = 1;
-        const sumPQ = cumulativeTotals[boundaryQ_R]; // Sum of A[0]...A[boundaryQ_R-1]
-
-        // Find boundaryP_Q that minimizes |Sum(P) - Sum(Q)|
-        // |cumulativeTotals[boundaryP_Q] - (sumPQ - cumulativeTotals[boundaryP_Q])|
-        // = |2 * cumulativeTotals[boundaryP_Q] - sumPQ|
-        while (boundaryP_Q_candidate + 1 < boundaryQ_R) {
-            const currentAbsDiff = Math.abs(2 * cumulativeTotals[boundaryP_Q_candidate] - sumPQ);
-            const nextAbsDiff = Math.abs(2 * cumulativeTotals[boundaryP_Q_candidate + 1] - sumPQ);
-            if (nextAbsDiff <= currentAbsDiff) {
-                boundaryP_Q_candidate++;
-            } else {
-                break;
-            }
+    // Iterate through all possible positions for the middle split point (`middleSplitIndex`).
+    // `middleSplitIndex` is the index of the last element of the second segment (Q).
+    // It can range from 1 (P=A[0], Q=A[1]) to `elementCount - 3` (S=A[elementCount-1], R=A[elementCount-2]).
+    for (let middleSplitIndex = 1; middleSplitIndex <= elementCount - 3; ++middleSplitIndex) {
+        // --- Determine sums for the first two segments (P and Q) ---
+        // The segment to split is `A[0...middleSplitIndex]`. Its total sum is `prefixSumCollection[middleSplitIndex]`.
+        // `firstPartitionEndIndex` is the end index of P. It can range from `0` to `middleSplitIndex - 1`.
+        // This pointer only moves forward.
+        while (firstPartitionEndIndex < middleSplitIndex - 1 &&
+               Math.abs(prefixSumCollection[middleSplitIndex] - 2 * prefixSumCollection[firstPartitionEndIndex + 1]) <=
+               Math.abs(prefixSumCollection[middleSplitIndex] - 2 * prefixSumCollection[firstPartitionEndIndex])) {
+            firstPartitionEndIndex++;
         }
-        const blockP_sum = cumulativeTotals[boundaryP_Q_candidate];
-        const blockQ_sum = sumPQ - blockP_sum;
+        const sumP = prefixSumCollection[firstPartitionEndIndex];
+        const sumQ = prefixSumCollection[middleSplitIndex] - sumP;
 
-        // --- Determine optimal boundaryR_S (split between R and S) ---
-        // boundaryR_S is the index where R ends and S begins.
-        // It can range from boundaryQ_R + 1 to itemCount - 1.
-        let boundaryR_S_candidate = boundaryQ_R + 1;
-        const sumRS = cumulativeTotals[itemCount] - cumulativeTotals[boundaryQ_R]; // Sum of A[boundaryQ_R]...A[itemCount-1]
-
-        // Find boundaryR_S that minimizes |Sum(R) - Sum(S)|
-        // Sum(R) = cumulativeTotals[boundaryR_S] - cumulativeTotals[boundaryQ_R]
-        // Sum(S) = sumRS - Sum(R)
-        // |Sum(R) - Sum(S)| = |2 * Sum(R) - sumRS|
-        while (boundaryR_S_candidate + 1 <= itemCount - 1) {
-            const currentRsum = cumulativeTotals[boundaryR_S_candidate] - cumulativeTotals[boundaryQ_R];
-            const nextRsum = cumulativeTotals[boundaryR_S_candidate + 1] - cumulativeTotals[boundaryQ_R];
-
-            const currentAbsDiff = Math.abs(2 * currentRsum - sumRS);
-            const nextAbsDiff = Math.abs(2 * nextRsum - sumRS);
-
-            if (nextAbsDiff <= currentAbsDiff) {
-                boundaryR_S_candidate++;
-            } else {
-                break;
-            }
+        // --- Determine sums for the last two segments (R and S) ---
+        // The segment to split is `A[middleSplitIndex + 1 ... elementCount - 1]`.
+        // Its total sum is `prefixSumCollection[elementCount - 1] - prefixSumCollection[middleSplitIndex]`.
+        // `thirdPartitionEndIndex` is the end index of R. It can range from `middleSplitIndex + 1` to `elementCount - 2`.
+        // This pointer also only moves forward.
+        // Ensure `thirdPartitionEndIndex` is not behind `middleSplitIndex + 1`.
+        if (thirdPartitionEndIndex < middleSplitIndex + 1) {
+            thirdPartitionEndIndex = middleSplitIndex + 1;
         }
-        const blockR_sum = cumulativeTotals[boundaryR_S_candidate] - cumulativeTotals[boundaryQ_R];
-        const blockS_sum = sumRS - blockR_sum;
+        // Ensure `thirdPartitionEndIndex` does not exceed `elementCount - 2`.
+        // The segment `A[middleSplitIndex + 1 ... elementCount - 1]` must be split into two non-empty parts.
+        // So `thirdPartitionEndIndex` can be at most `elementCount - 2`.
+        while (thirdPartitionEndIndex < elementCount - 2 &&
+               Math.abs(2 * (prefixSumCollection[thirdPartitionEndIndex + 1] - prefixSumCollection[middleSplitIndex]) - (prefixSumCollection[elementCount - 1] - prefixSumCollection[middleSplitIndex])) <=
+               Math.abs(2 * (prefixSumCollection[thirdPartitionEndIndex] - prefixSumCollection[middleSplitIndex]) - (prefixSumCollection[elementCount - 1] - prefixSumCollection[middleSplitIndex]))) {
+            thirdPartitionEndIndex++;
+        }
+        const sumR = prefixSumCollection[thirdPartitionEndIndex] - prefixSumCollection[middleSplitIndex];
+        const sumS = prefixSumCollection[elementCount - 1] - prefixSumCollection[thirdPartitionEndIndex];
 
-        // --- Calculate range for this partition and update global minimum ---
-        const currentPartitionSums = [blockP_sum, blockQ_sum, blockR_sum, blockS_sum];
-        const maxCurrentSum = Math.max(...currentPartitionSums);
-        const minCurrentSum = Math.min(...currentPartitionSums);
-        const currentDifference = maxCurrentSum - minCurrentSum;
+        const currentMaximum = Math.max(sumP, sumQ, sumR, sumS);
+        const currentMinimum = Math.min(sumP, sumQ, sumR, sumS);
+        const currentDifference = currentMaximum - currentMinimum;
 
-        if (currentDifference < globalMinimumDifference) {
-            globalMinimumDifference = currentDifference;
+        if (minimumOverallDifference === Infinity || currentDifference < minimumOverallDifference) {
+            minimumOverallDifference = currentDifference;
         }
     }
-    return globalMinimumDifference;
-};
 
-const executeCalculation = (dataInput) => {
-    const { totalElements, numericSequence } = processRawData(dataInput);
-    const cumulativeTotals = generatePrefixSums(numericSequence);
-    const resultValue = evaluatePartitions(totalElements, cumulativeTotals);
-    console.log(resultValue);
-};
+    console.log(minimumOverallDifference);
+}
 
-executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

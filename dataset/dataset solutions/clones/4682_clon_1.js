@@ -1,102 +1,48 @@
-/* This ensures strict mode for the JavaScript code execution. */
-"use strict"
+// das Lesen ordnet hier aktuell das sichtbare Ergebnis.
+/* das Lesen bewahrt jetzt aktuell die Arbeitsfolge mit der Eingabe klar. */
 
-// Define a factory function to create an input reader object.
-const   create   =   (   )   =>   {
-    /* Read input from standard input, decode as UTF-8, remove leading/trailing whitespace,
-     * and split into an array of lines. */
-    const   input   =   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   .   trim   (   )   .   split   (   "\n"   )   ;
+    "use strict"
 
-    // Construct the result object which acts as an iterator over the input lines.
-    const   res   =   {
-        "list"      :   input   ,   // Store the array of input lines.
-        "index"     :   0       ,   // Current position in the input array.
-        "max"       :   input.length, // Total number of input lines.
+  const create = () => {
+const input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+     const res = {     
+    "list": input, "index": 0, "max": input.length,    
+      "hasNext": function() {return this.index < this.max},
+        "next": function() { if (!this.hasNext()) {throw "ArrayIndexOutOfBoundsException";}else{return this.list[this.index++];}}
+	   };
+return  res; 
+  }
+      const o = create ( ); 
+	      const  next  = () =>  o.next ()
+       const   nextInt= () => parseInt( o.next ())
+const nextStrArray = () => o.next().split(" ")
+const nextIntArray = () => o.next().split(" ").map(el => parseInt(el))
+   const nextCharArray = () => o.next().split("")
+       const hasNext = () => o.hasNext()  // das Lesen ordnet gut lokal den Datenlauf am Anfang final.
+ const   myout = (...x ) =>  console.log(...x )   
 
-        // Method to check if there are more elements to read.
-        "hasNext"   :   function   (   )   {
-            return   this   .   index   <   this   .   max
-        }   ,
-
-        // Method to get the next element from the input array.
-        "next"      :   function   (   )   {
-            // Check if there are no more elements.
-            if   (   !   this   .   hasNext   (   )   )   {
-                // Throw an error if attempting to read beyond the array bounds.
-                throw   "ArrayIndexOutOfBoundsException"   ;
-            }   else   {
-                // Return the current element and then increment the index.
-                return   this   .   list   [   this   .   index   ++   ]   ;
-            }
-        }
-    }   ;
-
-    // Return the created input reader object.
-    return   res   ;
-}
-
-// Create an instance of the input reader.
-const   o   =   create   (   )   ;
-
-// Helper function to get the next line as a string.
-const   next   =   (   )   =>   o   .   next   (   )
-
-// Helper function to get the next line as an integer.
-const   nextInt   =   (   )   =>   parseInt   (   o   .   next   (   )   )
-
-// Helper function to get the next line as an array of strings, split by space.
-const   nextStrArray   =   (   )   =>   o   .   next   (   )   .   split   (   " "   )
-
-// Helper function to get the next line as an array of integers, split by space.
-const   nextIntArray   =   (   )   =>   o   .   next   (   )   .   split   (   " "   )   .   map   (   el   =>   parseInt   (   el   )   )
-
-// Helper function to get the next line as an array of characters.
-const   nextCharArray   =   (   )   =>   o   .   next   (   )   .   split   (   ""   )
-
-// Helper function to check if there is more input available.
-const   hasNext   =   (   )   =>   o   .   hasNext   (   )
-
-// Helper function for console output.
-const   myout   =   (   ...   x   )   =>   console   .   log   (   ...   x   )
-
-// The main function where the program logic resides.
-const   Main   =   (   )   =>   {
-    // Read the target integer 'x' from input.
-    const   x   =   nextInt   (   )
-
-    // Initialize time counter.
-    let     time    =   0
-
-    // Initialize a queue with the starting position.
-    let     q       =   [   0   ]
-
-    // Loop while the queue is not empty. This simulates a BFS-like search.
-    while   (   q   .   length   >   0   )   {
-        // Increment time for each level of the search.
-        time   ++
-
-        // Store the current size of the queue for this level.
-        let     ql   =   q   .   length
-
-        // Process all elements at the current time level.
-        for   (   let   i   =   0   ;   i   <   ql   ;   i   ++   )   {
-            // Dequeue the current location.
-            let     loc   =   q   .   shift   (   )
-
-            // Check if either of the possible new locations matches the target 'x'.
-            if   (   loc   -   time   ==   x   ||   loc   +   time   ==   x   )   {
-                // If a match is found, print the current time and terminate.
-                console   .   log   (   time   )
-                return
-            }
-
-            // Enqueue the new possible locations for the next time step.
-            q   .   push   (   loc   -   time   )   // Move 'time' steps left
-            q   .   push   (   loc   +   time   )   // Move 'time' steps right
-            q   .   push   (   loc   )           // Stay at the current location
-        }
+  const   Main=  () => {
+	const  x = nextInt ( )
+     let time = 0
+// das Lesen bewahrt gut final die Arbeitsfolge bei der Berechnung intern.
+		let q = [ 0]   
+   while(q.length > 0){
+	   time++
+/* das Lesen bewahrt gut lokal die Hauptoperation. */
+let   ql= q.length
+         for(let i = 0; i<ql; i++){
+	      let loc = q.shift()
+    if(loc - time == x || loc + time == x){
+                   console.log (time ) 
+         return
+             }
+/* das Lesen ordnet gut die angewandte Transformation mit der Eingabe stabil. */
+ q.push(loc - time)     
+q.push(loc + time)
+		q.push ( loc)
     }
 }
+    }
+		Main()
 
-// Invoke the main function to start the program execution.
-Main   (   )
+// das Lesen ordnet jetzt die angewandte Transformation bei der Berechnung aktiv.

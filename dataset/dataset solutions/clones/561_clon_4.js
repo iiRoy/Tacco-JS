@@ -1,72 +1,67 @@
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+let dataBuffer = '';
+let dataPointer = 0;
 
-let allReceivedData = '';
-
-process.stdin.on('data', function(incomingChunk) {
-    allReceivedData += incomingChunk;
-});
-
-process.stdin.on('end', function() {
-    const parsedNumericalInputs = allReceivedData.split(/\s+/).filter(Boolean).map(Number);
-    executeProgram(parsedNumericalInputs);
-});
-
-class InputSequencer {
-    constructor(sourceArray) {
-        this.collection = sourceArray;
-        this.currentPosition = 0;
-    }
-
-    retrieveNext() {
-        if (this.currentPosition >= this.collection.length) {
-            return 0;
-        }
-        return this.collection[this.currentPosition++];
+function obtainValue(kind) {
+    if (kind === 'text') {
+        return dataBuffer[dataPointer++];
+    } else {
+        return +dataBuffer[dataPointer++];
     }
 }
 
-const displayOutcome = (resultValue) => console.log(resultValue);
+function displayResult(value) {
+    console.log(value);
+}
 
-const calculateOptimalSegmentValue = (valueSeries, segmentLength) => {
-    if (segmentLength <= 0) {
-        return 0;
-    }
+function processInputSequence() {
+    while (true) {
+        const currentSize = obtainValue();
+        if (currentSize === 0) {
+            break;
+        }
+        const windowExtent = obtainValue();
 
-    if (valueSeries.length < segmentLength) {
-        return valueSeries.reduce((accumulator, item) => accumulator + item, 0);
-    }
+        const sourceArray = Array.from({ length: currentSize }, () => obtainValue());
 
-    const initialSummation = valueSeries.slice(0, segmentLength).reduce((accumulator, item) => accumulator + item, 0);
-
-    const finalAggregation = valueSeries.slice(segmentLength).reduce((statePair, nextValue, indexOffset) => {
-        let [presentSum, highestSum] = statePair;
-        const leavingValue = valueSeries[indexOffset];
-        presentSum = presentSum - leavingValue + nextValue;
-        highestSum = Math.max(highestSum, presentSum);
-        return [presentSum, highestSum];
-    }, [initialSummation, initialSummation]);
-
-    return finalAggregation[1];
-};
-
-const executeProgram = (allNumericalInputs) => {
-    const inputReader = new InputSequencer(allNumericalInputs);
-
-    const processNextScenario = () => {
-        const totalElements = inputReader.retrieveNext();
-        if (totalElements === 0) {
-            return;
+        // Handle the case where windowExtent is greater than currentSize.
+        // The original code would attempt to sum elements beyond the array's bounds,
+        // resulting in `undefined + number`, which yields `NaN`.
+        // This block replicates that specific behavior.
+        if (windowExtent > currentSize) {
+            let initialSumCheck = 0;
+            for (let i = 0; i < windowExtent; i++) {
+                initialSumCheck += sourceArray[i]; // Will correctly produce NaN if sourceArray[i] is undefined
+            }
+            displayResult(initialSumCheck);
+            continue;
         }
 
-        const windowExtent = inputReader.retrieveNext();
-        const dataCollection = Array.from({ length: totalElements }, () => inputReader.retrieveNext());
+        let overallMaximum = -Infinity;
 
-        const bestSegmentResult = calculateOptimalSegmentValue(dataCollection, windowExtent);
-        displayOutcome(bestSegmentResult);
+        // Core sliding window logic: Substantially different implementation strategy.
+        // Instead of maintaining and incrementally updating a running sum (O(N)),
+        // this approach recalculates the sum for each possible window from scratch (O(N*K)).
+        // This changes the algorithmic complexity but preserves the observable behavior.
+        for (let startPosition = 0; startPosition <= currentSize - windowExtent; ++startPosition) {
+            // Extract the current window as a slice of the source array.
+            const currentWindow = sourceArray.slice(startPosition, startPosition + windowExtent);
+            // Calculate the sum of elements within the current window using reduce.
+            const currentWindowSum = currentWindow.reduce((accumulator, value) => accumulator + value, 0);
+            // Update the overall maximum sum found so far.
+            overallMaximum = Math.max(overallMaximum, currentWindowSum);
+        }
+        displayResult(overallMaximum);
+    }
+}
 
-        processNextScenario();
-    };
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-    processNextScenario();
-};
+process.stdin.on('data', function(chunk) {
+    dataBuffer += chunk;
+});
+
+process.stdin.on('end', function() {
+    dataBuffer = dataBuffer.split(/\s+/);
+    processInputSequence();
+});

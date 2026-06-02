@@ -1,63 +1,73 @@
-const interfaceModule = require('readline');
+var inputLines = [];
+var standardReadline = require('readline');
 
-let dataLines = [];
-
-const inputProcessor = interfaceModule.createInterface({
+var lineReader = standardReadline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-inputProcessor.on('line', (singleLine) => {
-    dataLines.push(singleLine);
+lineReader.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-inputProcessor.on('close', () => {
-    const firstEntry = dataLines.shift().split(' ').map(Number);
-    const vertexQuantity = firstEntry[0];
-    // const relationQuantity = firstEntry[1]; // Not directly used in DSU iteration
+lineReader.on('close', function () {
+    var totalNodes = Number(inputLines[0].split(" ")[0]);
+    var totalEdges = Number(inputLines[0].split(" ")[1]);
 
-    const relationDescriptors = dataLines.map(item => item.split(' ').map(Number));
+    inputLines.shift(); // Remove the first line containing N and M
 
-    class DisjointSetStructure {
-        constructor(dimension) {
-            this.parentArray = Array.from({ length: dimension + 1 }, (_, index) => index);
-            this.componentTally = dimension;
+    var edgeData = inputLines.map(entry => entry.split(" ").map(val => Number(val)));
+
+    // Disjoint Set Union (DSU) implementation
+    class NodeGroupManager {
+        constructor(nodeCount) {
+            // parentRegistry[i] stores the parent of node i. If parentRegistry[i] === i, then i is a root.
+            this.parentRegistry = Array(nodeCount).fill(0).map((_, idx) => idx);
+            // Initially, each node is its own component.
+            this.activeComponents = nodeCount; 
         }
 
-        identifyRoot(elementIndex) {
-            if (this.parentArray[elementIndex] === elementIndex) {
-                return elementIndex;
+        // Finds the representative (root) of the set containing element 'idx'
+        // Uses path compression for optimization.
+        locateRoot(idx) {
+            if (this.parentRegistry[idx] === idx) {
+                return idx;
             }
-            this.parentArray[elementIndex] = this.identifyRoot(this.parentArray[elementIndex]);
-            return this.parentArray[elementIndex];
+            this.parentRegistry[idx] = this.locateRoot(this.parentRegistry[idx]);
+            return this.parentRegistry[idx];
         }
 
-        unifySets(elementA, elementB) {
-            let rootA = this.identifyRoot(elementA);
-            let rootB = this.identifyRoot(elementB);
+        // Merges the sets containing elements 'idxA' and 'idxB'
+        // Returns true if a union occurred, false if they were already in the same set.
+        uniteSets(idxA, idxB) {
+            let rootA = this.locateRoot(idxA);
+            let rootB = this.locateRoot(idxB);
 
             if (rootA !== rootB) {
-                this.parentArray[rootB] = rootA;
-                this.componentTally--;
-                return true;
+                // Attach rootB's tree under rootA. (Simple union, not by rank/size)
+                this.parentRegistry[rootB] = rootA; 
+                // The number of distinct components decreases by one.
+                this.activeComponents--; 
+                return true; 
             }
-            return false;
-        }
-
-        retrieveComponentCount() {
-            return this.componentTally;
+            return false; 
         }
     }
 
-    const graphStructure = new DisjointSetStructure(vertexQuantity);
+    var graphManager = new NodeGroupManager(totalNodes);
 
-    for (const relation of relationDescriptors) {
-        const primaryNode = relation[0];
-        const secondaryNode = relation[1];
-        // The third element relation[2] is ignored, similar to the original logic
-        graphStructure.unifySets(primaryNode, secondaryNode);
+    // Iterate through each edge and unite the nodes it connects.
+    // The order of edges does not affect the final count of connected components.
+    for (let k = 0; k < edgeData.length; k++) {
+        let currentEdge = edgeData[k];
+        let nodeOne = currentEdge[0] - 1; // Adjust to 0-indexed
+        let nodeTwo = currentEdge[1] - 1; // Adjust to 0-indexed
+        // The third value (currentEdge[2], often 'z') is ignored,
+        // as it was not used in the original logic for component counting.
+        
+        graphManager.uniteSets(nodeOne, nodeTwo);
     }
 
-    const finalComponentCount = graphStructure.retrieveComponentCount();
-    console.log(finalComponentCount);
+    // The final count of active components is the answer.
+    console.log(graphManager.activeComponents);
 });

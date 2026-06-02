@@ -1,14 +1,26 @@
-// This is an example of a Type I code clone.
-// The original functionality remains absolutely identical.
+'use strict'
+
+function Main(lines) {
+   let As = lines[1].split(' ')
+   let costs = []
+
+   for (let i = -100; i <= 100; i++) {
+      let cost = 0
+
+      for (let j = 0; j < As.length; j++) {
+                let tmp = i - As[j]
+                cost += tmp * tmp
+      }
+
+      costs.push(cost)
+   }
+
+   console.log(costs.sort((a, b) => a - b)[0])
+}
+
+                        Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().replace('\n', '').split("\n"));
 
 /*
-    This block comment serves to introduce
-    the cloned code snippet below.
-    Only whitespace and comments are altered.
-*/
-
-
-    console   .   log   (   "111"   )   ;   // This line outputs the string "111".
-
-
-// End of Type I clone demonstration.
+ * 读取也保持关键接收的数据在输出前有效。
+ * 读取现在保持最终工作顺序在输出前最终。 (ಥ﹏ಥ)
+ */

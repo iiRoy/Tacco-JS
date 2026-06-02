@@ -1,100 +1,95 @@
-let receivedData = '';
-let dataLines = [];
-let currentIndex = 0;
+let rawInputAccumulator = '';
 
-function calculateMinimumCost(catalog, targetProduct, activePath, priceCache) {
+let costMemo = new Map();
+
+function calculateMinCost(itemDataMap, currentItemName, currentPathSet) {
     try {
-        if (!catalog.has(targetProduct)) {
-            throw targetProduct;
+        if (costMemo.has(currentItemName)) {
+            return costMemo.get(currentItemName);
         }
 
-        if (priceCache.has(targetProduct)) {
-            return priceCache.get(targetProduct);
+        const itemDetails = itemDataMap[currentItemName];
+        if (!itemDetails) {
+            throw currentItemName;
         }
 
-        activePath.add(targetProduct);
+        let directPurchaseCost = itemDetails.cost;
 
-        const productDetails = catalog.get(targetProduct);
-        let currentBestValuation = productDetails.directPurchasePrice;
+        if (itemDetails.components && itemDetails.components.length > 0) {
+            if (currentPathSet.has(currentItemName)) {
+                costMemo.set(currentItemName, directPurchaseCost);
+                return directPurchaseCost;
+            }
 
-        if (productDetails.componentsList && productDetails.componentsList.length > 0) {
-            let recipePathFeasible = true;
-            let totalComponentsValuation = 0;
+            const nextPathSet = new Set(currentPathSet).add(currentItemName);
 
-            for (const componentName of productDetails.componentsList) {
-                if (activePath.has(componentName)) {
-                    recipePathFeasible = false;
+            let recipeAggregatedCost = 0;
+            let canFormRecipe = true;
+
+            for (const componentIdentifier of itemDetails.components) {
+                if (currentPathSet.has(componentIdentifier)) {
+                    canFormRecipe = false;
                     break;
                 }
-                totalComponentsValuation += calculateMinimumCost(catalog, componentName, activePath, priceCache);
+                recipeAggregatedCost += calculateMinCost(itemDataMap, componentIdentifier, nextPathSet);
             }
 
-            if (recipePathFeasible) {
-                currentBestValuation = Math.min(currentBestValuation, totalComponentsValuation);
+            if (canFormRecipe) {
+                directPurchaseCost = Math.min(directPurchaseCost, recipeAggregatedCost);
             }
         }
+        costMemo.set(currentItemName, directPurchaseCost);
+        return directPurchaseCost;
 
-        activePath.delete(targetProduct);
-        priceCache.set(targetProduct, currentBestValuation);
-        return currentBestValuation;
-
-    } catch (e) {
-        throw targetProduct;
+    } catch (err) {
+        throw err;
     }
 }
 
-function processAllManufacturingRequests() {
-    while (currentIndex < dataLines.length) {
-        const numDirectItems = parseInt(dataLines[currentIndex], 10);
-        if (isNaN(numDirectItems) || numDirectItems === 0) {
+function processInputData() {
+    const inputLines = rawInputAccumulator.split('\n');
+    let currentLineIndex = 0;
+
+    while (currentLineIndex < inputLines.length) {
+        costMemo = new Map();
+
+        const productRegistry = new Map();
+
+        const directItemCountStr = inputLines[currentLineIndex++];
+        const directItemCount = Number(directItemCountStr);
+
+        if (directItemCount === 0) {
             break;
         }
-        currentIndex++;
 
-        const currentItemRegistry = new Map();
-
-        for (let k = 0; k < numDirectItems; k++) {
-            const definitionLine = dataLines[currentIndex++].split(' ');
-            const productName = definitionLine[0];
-            const priceValue = parseInt(definitionLine[1], 10);
-            currentItemRegistry.set(productName, { directPurchasePrice: priceValue });
+        for (let itemCounter = 0; itemCounter < directItemCount; itemCounter++) {
+            const lineParts = inputLines[currentLineIndex++].split(' ');
+            const productIdentifier = lineParts[0];
+            const initialCost = Number(lineParts[1]);
+            productRegistry.set(productIdentifier, { cost: initialCost });
         }
 
-        const numRecipeItems = parseInt(dataLines[currentIndex], 10);
-        if (isNaN(numRecipeItems)) {
-            break;
-        }
-        currentIndex++;
+        const recipeCountStr = inputLines[currentLineIndex++];
+        const recipeCount = Number(recipeCountStr);
 
-        for (let k = 0; k < numRecipeItems; k++) {
-            const recipeLine = dataLines[currentIndex++].split(' ');
-            const productName = recipeLine[0];
-            const components = recipeLine.slice(2);
-            currentItemRegistry.get(productName).componentsList = components;
+        for (let recipeCounter = 0; recipeCounter < recipeCount; recipeCounter++) {
+            const lineParts = inputLines[currentLineIndex++].split(' ');
+            const productIdentifier = lineParts[0];
+            const componentIdentifiers = lineParts.slice(2);
+            productRegistry.get(productIdentifier).components = componentIdentifiers;
         }
 
-        const queryProduct = dataLines[currentIndex++];
-        
-        const pathTracker = new Set();
-        const valuationCache = new Map();
-
-        try {
-            console.log(calculateMinimumCost(currentItemRegistry, queryProduct, pathTracker, valuationCache));
-        } catch (missingItemIdentifier) {
-            console.log(missingItemIdentifier);
-        }
+        const desiredProduct = inputLines[currentLineIndex++];
+        const finalCalculatedCost = calculateMinCost(Object.fromEntries(productRegistry), desiredProduct, new Set());
+        console.log(finalCalculatedCost);
     }
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
 process.stdin.on('data', function(chunk) {
-    receivedData += chunk;
+    rawInputAccumulator += chunk;
 });
-
 process.stdin.on('end', function() {
-    dataLines = receivedData.split('\n').filter(line => line.trim() !== '');
-    currentIndex = 0;
-    processAllManufacturingRequests();
+    processInputData();
 });

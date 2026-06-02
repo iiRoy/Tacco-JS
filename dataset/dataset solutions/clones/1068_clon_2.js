@@ -1,62 +1,58 @@
-const sourceTextLines =
-  require('fs')
-    .readContentFromFile(
-      'standardInputDevicePath',
-      'utf8Encoding'
-    )
-    .segmentByDelimiter('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
-// This function implements the Counting Sort algorithm for a non-negative integer array.
-const executeCountingSort = (
-  inputArrayOfNumbers
-) => {
-  // Determine the maximum value in the input array to define the range for counting.
-  const highestValue = inputArrayOfNumbers
-    .reduce((currentAccumulatedMax, currentItem) =>
-      currentAccumulatedMax < currentItem ? currentItem : currentAccumulatedMax
-    );
+/**
+ * Performs a counting sort on an array of non-negative integers.
+ * This function assumes input numbers are non-negative.
+ *
+ * @param {number[]} inputArray The array of numbers to be sorted.
+ * @returns {number[]} A new array containing the sorted numbers.
+ */
+const performCountingSort = (inputArray) => {
+    // Determine the largest value in the input array.
+    // This value 'maxValue' defines the range for our counting array.
+    // If 'inputArray' is empty, this 'reduce' call will throw a TypeError,
+    // which matches the behavior of the original code.
+    const maxValue = inputArray.reduce((currentMax, elementValue) => currentMax < elementValue ? elementValue : currentMax);
 
-  // Initialize a count storage array with zeros, sized to (highestValue + 1).
-  const countStorage =
-    [...Array(highestValue + 1)]
-      .map(
-        _dummy => 0
-      );
+    // Initialize a 'countArray' with zeros. Its size is 'maxValue + 1'
+    // to accommodate numbers from 0 up to 'maxValue' inclusive.
+    const countArray = [...Array(maxValue + 1)].map(_unused => 0);
 
-  // Initialize the array that will hold the final sorted sequence.
-  const finalSortedArray =
-    [...Array(inputArrayOfNumbers.length)];
+    // Create an empty array 'sortedOutput' of the same length as 'inputArray'.
+    // This will store the sorted elements.
+    const sortedOutput = [...Array(inputArray.length)];
 
-  // Populate the count storage: count occurrences of each number.
-  for (let idx = 0; idx < inputArrayOfNumbers.length; idx++) {
-    countStorage[inputArrayOfNumbers[idx]]++;
-  }
+    // First pass: Populate the 'countArray'.
+    // For each number in 'inputArray', increment its corresponding count in 'countArray'.
+    for (let idx = 0; idx < inputArray.length; idx++) {
+        countArray[inputArray[idx]]++;
+    }
 
-  // Transform countStorage to store cumulative counts.
-  // This indicates the final position of each number.
-  for (let idx = 1; idx <= highestValue; idx++) {
-    countStorage[idx] += countStorage[idx - 1];
-  }
+    // Second pass: Modify 'countArray' to store cumulative counts.
+    // Each element 'countArray[idx]' will now represent the total number of elements
+    // less than or equal to 'idx' in the original 'inputArray'.
+    for (let idx = 1; idx <= maxValue; idx++) {
+        countArray[idx] += countArray[idx - 1];
+    }
 
-  // Iterate backwards through the original array to place elements
-  // into their correct sorted positions in the finalSortedArray.
-  for (let idx = inputArrayOfNumbers.length - 1; idx >= 0; idx--) {
-    finalSortedArray[countStorage[inputArrayOfNumbers[idx]] - 1] = inputArrayOfNumbers[idx];
-    countStorage[inputArrayOfNumbers[idx]]--; // Decrement count to handle duplicates
-  }
+    // Third pass: Build the 'sortedOutput' array.
+    // Iterate through 'inputArray' in reverse to ensure stability (preserve relative order of equal elements).
+    for (let idx = inputArray.length - 1; idx >= 0; idx--) {
+        // Place the current element 'inputArray[idx]' into its correct sorted position.
+        // The position is determined by 'countArray[inputArray[idx]] - 1'.
+        sortedOutput[countArray[inputArray[idx]] - 1] = inputArray[idx];
+        // Decrement the count for this element to correctly place subsequent identical elements.
+        countArray[inputArray[idx]]--;
+    }
 
-  // Return the newly sorted array.
-  return finalSortedArray;
+    // Return the array containing the sorted numbers.
+    return sortedOutput;
 };
 
-// Process the second line of input data: split by space and convert to integers.
-const numericalDataset = sourceTextLines[1]
-  .segmentByDelimiter(' ')
-  .map(parseInt);
+// Read the second line of input (index 1), split it by spaces, and convert each part to a number.
+// This assumes the first line might contain metadata (like array size) which is not used here.
+const numericData = inputLines[1].split(' ').map(Number);
 
-// Execute the counting sort on the numerical data and display the result,
-// combining the sorted numbers with spaces.
-outputUtility.printLine(
-  executeCountingSort(numericalDataset)
-    .combineElements(' ')
-);
+// Apply the counting sort to the 'numericData' and then join the sorted numbers with spaces
+// before printing the final result to the console.
+console.log(performCountingSort(numericData).join(' '));

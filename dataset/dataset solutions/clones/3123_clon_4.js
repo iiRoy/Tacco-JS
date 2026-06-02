@@ -1,49 +1,44 @@
 function processString(inputSequence) {
-    const sequenceElements = inputSequence.split('');
-    const sequenceLength = sequenceElements.length;
-    let distinctSubsequenceCount = 0;
+    const sequenceLength = inputSequence.length;
+    let uniqueSubsequenceCount = 0;
 
-    function buildSubsequences(currentIndex, currentAccumulator) {
-        if (currentIndex === sequenceLength) {
-            if (currentAccumulator.length === 0) {
-                return;
+    const hasDistinctElements = (charArray) => {
+        if (charArray.length === 0) {
+            return false;
+        }
+        const elementTracker = new Set();
+        for (const element of charArray) {
+            if (elementTracker.has(element)) {
+                return false;
             }
+            elementTracker.add(element);
+        }
+        return true;
+    };
 
-            const visitedChars = new Set();
-            let hasDuplicateCharacters = false;
-            for (const charItem of currentAccumulator) {
-                if (visitedChars.has(charItem)) {
-                    hasDuplicateCharacters = true;
-                    break;
-                }
-                visitedChars.add(charItem);
-            }
-
-            if (!hasDuplicateCharacters) {
-                distinctSubsequenceCount++;
+    const generateAndEvaluate = (currentPosition, accumulatedCharacters) => {
+        if (currentPosition === sequenceLength) {
+            if (hasDistinctElements(accumulatedCharacters)) {
+                uniqueSubsequenceCount++;
             }
             return;
         }
 
-        buildSubsequences(currentIndex + 1, currentAccumulator);
-        buildSubsequences(currentIndex + 1, currentAccumulator + sequenceElements[currentIndex]);
-    }
+        generateAndEvaluate(currentPosition + 1, accumulatedCharacters);
 
-    buildSubsequences(0, '');
+        generateAndEvaluate(currentPosition + 1, [...accumulatedCharacters, inputSequence[currentPosition]]);
+    };
 
-    return distinctSubsequenceCount;
+    generateAndEvaluate(0, []);
+
+    return uniqueSubsequenceCount;
 }
 
-function executeProgram(inputDataPayload) {
-    const inputLines = inputDataPayload.split('\n');
-    const firstLineValue = inputLines[0];
+function mainProcessor(inputData) {
+    const inputLines = inputData.split("\n");
     const targetString = inputLines[1];
 
-    const resultValue = processString(targetString);
-    console.log(resultValue);
+    console.log(processString(targetString));
 }
 
-const fileSystemUtility = require('fs');
-const standardInputPath = '/dev/stdin';
-const rawInputContent = fileSystemUtility.readFileSync(standardInputPath, 'utf8');
-executeProgram(rawInputContent);
+mainProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));

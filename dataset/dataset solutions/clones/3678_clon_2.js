@@ -1,38 +1,28 @@
-function ProcessInputData(rawData) {
-  // This function takes a raw string, processes it, and prints a result.
+function ProcessInput(inputData) {
+  // The incoming string is split by spaces, and each resulting part is converted into a number.
+  // This creates an array of numerical values from the input.
+  let numericalComponents = inputData.split(" ").map(currentPart => +currentPart);
 
-  // First, split the input string by spaces and convert each part to a number.
-  // The 'map' function iterates over each string segment.
-  // The unary plus operator (+singleNumberString) converts the string to a number.
-  const numericValues = rawData.split(" ").map(singleNumberString => +singleNumberString);
+  // A variable is initialized to hold the outcome symbol, defaulting to "x".
+  var finalSymbol = "x";
 
-  // Initialize a variable to store the determined operation symbol.
-  let operationSymbol = "unknown"; // Default value indicating no match found yet.
-
-  // Check if the sum of the first two numbers equals 15.
-  if (numericValues[0] + numericValues[1] === 15) {
-    operationSymbol = "plus"; // Assign 'plus' if the condition is met.
+  // Check if the sum of the first two numerical components equals fifteen.
+  // If this condition is met, the symbol is updated to "+".
+  if (numericalComponents[0] + numericalComponents[1] === 15) {
+    finalSymbol = "+";
   }
 
-  // Check if the product of the first two numbers equals 15.
-  // This check happens regardless of the previous 'if' statement's outcome,
-  // potentially overwriting 'plus' if both conditions were true (though not possible with 15).
-  if (numericValues[0] * numericValues[1] === 15) {
-    operationSymbol = "times"; // Assign 'times' if this condition is met.
+  // Separately, check if the product of the first two numerical components equals fifteen.
+  // If this condition is met, the symbol is updated to "*".
+  // This check occurs after the sum check, meaning '*' will override '+' if both conditions are true.
+  if (numericalComponents[0] * numericalComponents[1] === 15) {
+    finalSymbol = "*";
   }
 
-  // Output the final determined operation symbol to the console.
-  console.log(operationSymbol);
+  // The determined symbol is then printed to the standard output.
+  console.log(finalSymbol);
 }
 
-
-// Entry point of the script:
-// Load the 'fs' (file system) module to handle file operations.
-const fileUtility = require("fs");
-
-// Read the content from the standard input file synchronously.
-// The content is expected to be UTF-8 encoded text.
-const fileContent = fileUtility.readFileSync("/dev/stdin", "textEncoding");
-
-// Call the main processing function with the obtained file content.
-ProcessInputData(fileContent);
+// The program reads the entire content of standard input as a UTF-8 encoded string.
+// This content is then passed as an argument to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

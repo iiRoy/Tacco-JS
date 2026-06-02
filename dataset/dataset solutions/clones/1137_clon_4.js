@@ -1,63 +1,46 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataLines = sourceData.trim().split("\n");
+const inputReader = require('fs');
+const rawInputContent = inputReader.readFileSync('/dev/stdin', 'utf8');
+const inputLineSegments = rawInputContent.trim().split("\n");
 
-const dimensions = dataLines.shift().split(" ").map(Number);
-const itemTypeCount = dimensions[0];
-const capacityLimit = dimensions[1];
+const [initialItemCount, knapsackCapacity] = inputLineSegments.shift().split(" ").map(Number);
 
-const consolidatedEntities = new Map();
-
-dataLines.forEach(line => {
-    const itemDetails = line.split(" ").map(Number);
-    const baseValue = itemDetails[0];
-    const baseWeight = itemDetails[1];
-
-    let scaleFactor = 1;
-    while (baseWeight * scaleFactor <= capacityLimit) {
-        const currentWeight = baseWeight * scaleFactor;
-        const currentValue = baseValue * scaleFactor;
-
-        if (!consolidatedEntities.has(currentWeight) || consolidatedEntities.get(currentWeight) < currentValue) {
-            consolidatedEntities.set(currentWeight, currentValue);
-        }
-        scaleFactor++;
-    }
+const sourceItemDefinitions = Array.from({ length: initialItemCount }, () => {
+    const [itemValue, itemWeight] = inputLineSegments.shift().split(" ").map(Number);
+    return { itemValue, itemWeight };
 });
 
-const eligibleItems = [null, ...Array.from(consolidatedEntities.entries())
-    .map(([weight, value]) => ({ size: weight, worth: value }))
-    .sort((a, b) => a.size - b.size)];
-
-const totalItemEntities = eligibleItems.length - 1;
-
-const valuationCache = Array(totalItemEntities + 1).fill(null).map(() => Array(capacityLimit + 1).fill(undefined));
-
-function calculateMaxWorth(entityIndex, currentVolume) {
-    if (entityIndex === 0 || currentVolume === 0) {
-        return 0;
+const generatedItemVariants = sourceItemDefinitions.flatMap(definition => {
+    const variants = [];
+    for (let currentMultiplier = 1; definition.itemWeight * currentMultiplier <= knapsackCapacity; currentMultiplier++) {
+        variants.push({
+            variantValue: definition.itemValue * currentMultiplier,
+            variantWeight: definition.itemWeight * currentMultiplier
+        });
     }
+    return variants;
+});
 
-    if (valuationCache[entityIndex][currentVolume] !== undefined) {
-        return valuationCache[entityIndex][currentVolume];
+const consolidatedItemRegistry = generatedItemVariants.reduce((accumulatorMap, currentVariant) => {
+    accumulatorMap.set(currentVariant.variantWeight, Math.max(accumulatorMap.get(currentVariant.variantWeight) || 0, currentVariant.variantValue));
+    return accumulatorMap;
+}, new Map());
+
+const finalItemSet = Array.from(consolidatedItemRegistry.entries())
+    .map(([weightKey, valueEntry]) => ({ itemValue: valueEntry, itemWeight: weightKey }));
+
+function calculateMaximumKnapsackValue(capacityLimit, availableItemsForSelection) {
+    const dpValues = Array(capacityLimit + 1).fill(0);
+
+    for (const currentConsideredItem of availableItemsForSelection) {
+        for (let currentCapacityIndex = capacityLimit; currentCapacityIndex >= currentConsideredItem.itemWeight; currentCapacityIndex--) {
+            dpValues[currentCapacityIndex] = Math.max(
+                dpValues[currentCapacityIndex],
+                currentConsideredItem.itemValue + dpValues[currentCapacityIndex - currentConsideredItem.itemWeight]
+            );
+        }
     }
-
-    const currentEntity = eligibleItems[entityIndex];
-
-    let valueIfSkipped = calculateMaxWorth(entityIndex - 1, currentVolume);
-    let valueIfTaken = 0;
-
-    if (currentEntity.size > currentVolume) {
-        valuationCache[entityIndex][currentVolume] = valueIfSkipped;
-        return valueIfSkipped;
-    }
-
-    valueIfTaken = currentEntity.worth + calculateMaxWorth(entityIndex - 1, currentVolume - currentEntity.size);
-
-    const maxVal = Math.max(valueIfSkipped, valueIfTaken);
-    valuationCache[entityIndex][currentVolume] = maxVal;
-    return maxVal;
+    return dpValues[capacityLimit];
 }
 
-const result = calculateMaxWorth(totalItemEntities, capacityLimit);
-
-console.log(result);
+const overallMaximumValue = calculateMaximumKnapsackValue(knapsackCapacity, finalItemSet);
+console.log(overallMaximumValue);

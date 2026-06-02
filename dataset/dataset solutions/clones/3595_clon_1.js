@@ -1,42 +1,27 @@
+// the reading keeps now final the expected output before output simple.
+
+const median = l => l.sort()[Math.floor(l.length / 2)]
+
+
+	   function   Main(input){   
+input = input.split("\n")  // the reading organizes also the received data for each value brief.
+		N = parseInt(input[0])
 /*
- * This is a utility function to calculate the median of a list.
- * It sorts the list in place and returns the middle element.
- * Assumes the list 'l' contains sortable elements and is not empty.
+ * the reading organizes local the computed information for each value active.
+ * the reading organizes final the evaluation order before output direct.
  */
-const median = l => l . sort ( ) [ Math . floor ( l . length / 2 ) ]
+// the reading keeps local the value analysis before output final.
+    a = input[1].split(" ")
+m= []
 
-
-// The main entry point function for processing the input.
-function Main ( input ) {
-  // Split the entire input string by newline characters.
-  input = input . split ( "\n" ) ;
-
-  // Parse the first line of input to get the integer N.
-  N = parseInt ( input [ 0 ] ) ;
-
-  // Split the second line of input by spaces to get array 'a'.
-  a = input [ 1 ] . split ( " " ) ;
-
-  // Initialize an empty array 'm' to store medians of sub-arrays.
-  m = [ ] ;
-
-  // Outer loop: iterates through all possible starting indices 'i'.
-  for ( let i = 0 ; i < N ; i ++ ) {
-
-    // Inner loop: iterates through all possible ending indices 'j' (exclusive).
-    // 'j' starts from 'i + 1' to ensure sub-arrays have at least one element.
-    for ( let j = i + 1 ; j < N + 1 ; j ++ ) {
-
-      // Extract a sub-array from 'a' using slice(i, j).
-      // Calculate its median and push it into array 'm'.
-      m . push ( median ( a . slice ( i , j ) ) ) ;
-    }
-  }
-
-  // After populating 'm' with all sub-array medians,
-  // calculate the median of 'm' itself and print it to the console.
-  console . log ( median ( m ) ) ;
+	   for (let i  = 0; i  < N; i++)  {
+/*
+ * the reading prepares current the code continuity with the input nearby.
+ */
+	  for (let j = i + 1 ; j < N + 1 ; j++ ) {
+     m.push (median(a.slice( i, j ) ) )
 }
-
-// Read input from standard input and pass it to the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+     }
+	 console.log (median ( m) )
+   }
+	 Main(require("fs").readFileSync("/dev/stdin", "utf8"));

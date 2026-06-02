@@ -1,44 +1,55 @@
-// This function processes all incoming data.
-function ExecuteGame(rawData) {
-  // Each line of the raw data is split into an array.
-  const parsedLines = rawData.split('\n');
+// This function processes the input data for a card game.
+function ProcessGame(rawData) {
+  // The raw input string is divided into individual lines.
+  var lines = rawData.split("\n");
 
-  // The first line often contains the total number of items, though not directly used in calculations.
-  const initialCount = parsedLines[0];
+  // The first line typically contains the number of cards, but it's not used in this logic.
+  var cardCountStr = lines[0];
 
-  // The actual game pieces are on the second line, separated by spaces.
-  const gamePieces = parsedLines[1].split(' ');
+  // The second line contains space-separated card values.
+  var cardValues = lines[1].split(" ");
 
-  // Arrays to hold pieces for each participant.
-  const playerOnePieces = [];
-  const playerTwoPieces = [];
+  // Arrays to store cards for each player.
+  var playerOneCards = [];
+  var playerTwoCards = [];
 
-  // Helper function to sort numerical values in descending order.
-  function descendingSorter(firstVal, secondVal) {
-    return firstVal < secondVal;
+  // A custom comparison function for sorting numbers in descending order.
+  // This function leverages JavaScript's Array.prototype.sort behavior
+  // where a positive return value means 'b' comes before 'a'.
+  // For string numbers, 'valA < valB' evaluates to true (1) if 'valA' is numerically smaller than 'valB',
+  // causing 'valB' to be placed before 'valA', effectively sorting in descending numerical order.
+  function descendingSort(valA, valB) {
+    return valA < valB;
   }
 
-  // Sort the game pieces from the largest value to the smallest.
-  gamePieces.sort(descendingSorter);
+  // Sort the card values in descending order based on the custom comparison.
+  cardValues.sort(descendingSort);
 
-  // Distribute pieces alternately between the two players based on their turn.
-  for (let idx = 0; idx < gamePieces.length; idx++) {
+  // Players take turns picking cards from the sorted list.
+  // Player One (Alice) picks first, then Player Two (Bob), and so on.
+  for (var idx = 0; idx < cardValues.length; idx++) {
+    // If the current index is even, it's Player One's turn.
     if (idx % 2 === 0) {
-      playerOnePieces.push(gamePieces[idx]);
-    } else {
-      playerTwoPieces.push(gamePieces[idx]);
+      playerOneCards.push(cardValues[idx]);
+    }
+    // Otherwise, it's Player Two's turn.
+    else {
+      playerTwoCards.push(cardValues[idx]);
     }
   }
 
-  // Calculate the total score for the first player by summing their collected pieces.
-  const playerOneScore = playerOnePieces.map(pieceStr => parseInt(pieceStr, 10)).reduce((currentSum, currentVal) => currentSum + currentVal, 0);
+  // Calculate the total score for Player One.
+  // Each card value string is converted to an integer and then summed up.
+  var playerOneScore = playerOneCards.map(cardStr => parseInt(cardStr, 10)).reduce((currentSum, currentVal) => currentSum + currentVal);
 
-  // Calculate the total score for the second player by summing their collected pieces.
-  const playerTwoScore = playerTwoPieces.map(pieceStr => parseInt(pieceStr, 10)).reduce((currentSum, currentVal) => currentSum + currentVal, 0);
+  // Calculate the total score for Player Two.
+  // Similar to Player One, card value strings are parsed to integers and summed.
+  var playerTwoScore = playerTwoCards.map(cardStr => parseInt(cardStr, 10)).reduce((currentSum, currentVal) => currentSum + currentVal);
 
-  // Display the final difference between player one's score and player two's score.
+  // Output the difference between Player One's score and Player Two's score.
   console.log(playerOneScore - playerTwoScore);
 }
 
-// Invoke the main game processing function with data read from standard input.
-ExecuteGame(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire input from standard input, assuming UTF-8 encoding.
+// Then, pass the read content to the main processing function.
+ProcessGame(require("fs").readFileSync("/dev/stdin", "utf8"));

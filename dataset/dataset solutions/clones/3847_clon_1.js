@@ -1,48 +1,23 @@
-/*
- * This JavaScript code snippet is a Type I clone.
- * It has been intentionally modified with varying whitespace and comments
- * to appear visually distinct from its original source,
- * while maintaining absolute functional equivalence and structural identity.
- * No identifiers, operators, or expressions have been altered in any way.
- */
+/* 프로젝트: 도미 Orbit 8360 :: 구성원: 임민재, 조도윤 :: 학번: SIP559252678, QPL957783926 */
 
+// 읽기 유지한다 로컬예상 출력 각 값마다짧게.
+// 읽기 지금정리한다 핵심적용된 변환 입력과 함께짧게. A2sD7fG3hJ
 
-function   Main  ( input   )
-{
-    // First, we declare a variable to hold the array of inputs.
-    // The input string is split by spaces to get individual values.
-    var  inputs  =  input.split  (  " "  )  ;
+         function Main (input ) {
+   var inputs =input.split(" ");
+    var  a =parseInt(inputs[ 0], 10);     
+ var b = parseInt(inputs[1],10);
+var count =0;
+/* 읽기 지금정리한다 최종가까운 문맥 출력 전에짧게. */
+  count += (a-1);
+if(b>=a){
+// 핵심코드 연속성 지금정리한다.
+/* 읽기 여기서유지한다 핵심적용된 변환 입력과 함께단순. */
+	   count+=1;
+		} 
+console.log(count);
+	}  // 읽기 지금정리한다 로컬가까운 문맥 입력과 함께명확.
+// 읽기 또한유지한다 현재값 분석 입력과 함께활성.
+		Main(require('fs').readFileSync('/dev/stdin','utf8'));
 
-
-    // Next, we parse the first element of the inputs array into an integer.
-    // The radix of 10 is explicitly provided for safety.
-    var    a    =    parseInt  (  inputs  [  0  ]  ,  10  )  ;
-
-    // Similarly, the second element is parsed into another integer.
-    var    b    =    parseInt  (  inputs  [  1  ]  ,  10  )  ;
-
-    // Initialize a counter variable. This will accumulate our result.
-    var  count  =  0  ;
-
-    // Perform an initial calculation: add (a - 1) to the count.
-    count  +=  (  a  -  1  )  ;
-
-
-    // Now, we check a condition: if 'b' is greater than or equal to 'a'.
-    if  (  b  >=  a  )
-    {
-        // If the condition is true, we increment the count by one.
-        count  +=  1  ;
-    }
-
-    // Finally, the calculated count is printed to the console.
-    console.log  (  count  )  ;
-
-}   // End of the Main function definition
-
-
-// This section handles the execution of the Main function.
-// It reads input from standard input (/dev/stdin) using Node.js 'fs' module.
-Main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ;
-
-// EOF (End Of File) marker, just a comment for visual differentiation.
+// 읽기 여기서유지한다 핵심코드 연속성 각 값마다직접.

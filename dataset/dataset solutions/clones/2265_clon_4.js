@@ -1,30 +1,33 @@
-const calculateSnooze = (sourceText) => {
-    const documentLines = sourceText.trim().split('\n');
+const processMusicData = (rawInputContent) => {
+    const contentLines = rawInputContent.trim().split('\n');
+    const _ = contentLines.shift();
+    const triggerIdentifier = contentLines.pop();
 
-    const initialItem = documentLines[0];
-    const terminalKey = documentLines[documentLines.length - 1];
-    const coreItems = documentLines.slice(1, documentLines.length - 1);
-
-    const structuredRecords = coreItems.map(singleItem => {
-        const components = singleItem.split(' ');
+    const trackManifest = contentLines.map(entryString => {
+        const parts = entryString.split(' ');
         return {
-            label: components[0],
-            duration: parseInt(components[1], 10)
+            designation: parts[0],
+            durationSeconds: parseInt(parts[1], 10)
         };
     });
 
-    const finalResult = structuredRecords.reduce((stateContainer, currentRecord) => {
-        if (!stateContainer.activated) {
-            if (currentRecord.label === terminalKey) {
-                stateContainer.activated = true;
-            }
-        } else {
-            stateContainer.cumulativeValue += currentRecord.duration;
-        }
-        return stateContainer;
-    }, { cumulativeValue: 0, activated: false });
+    const activationPoint = trackManifest.findIndex(
+        item => item.designation === triggerIdentifier
+    );
 
-    console.log(finalResult.cumulativeValue);
+    if (activationPoint === -1 || activationPoint === trackManifest.length - 1) {
+        console.log(0);
+        return;
+    }
+
+    const postTriggerSegments = trackManifest.slice(activationPoint + 1);
+
+    const accumulatedDuration = postTriggerSegments.reduce(
+        (currentSum, segment) => currentSum + segment.durationSeconds,
+        0
+    );
+
+    console.log(accumulatedDuration);
 };
 
-calculateSnooze(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processMusicData(require("fs").readFileSync("/dev/stdin", "utf8"));

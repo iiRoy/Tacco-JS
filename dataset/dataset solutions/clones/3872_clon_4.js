@@ -1,34 +1,19 @@
 "use strict";
 
-const baseValue = 700;
-const incrementUnit = 100;
-const targetMarker = "○";
-
-const obtainSourceContent = () => {
-    const fileSystemModule = require("fs");
-    const inputPath = "/dev/stdin";
-    const encodingFormat = "utf8";
-    return fileSystemModule.readFileSync(inputPath, encodingFormat).trim();
-};
-
-const calculateFinalSum = (charSequence) => {
-    const characterCollection = Array.from(charSequence);
+const computeFinalValue = (inputString) => {
+    const initialBase = 700;
     
-    const computedTotal = characterCollection.reduce((currentAccumulation, currentCharacter) => {
-        return currentCharacter === targetMarker ? currentAccumulation + incrementUnit : currentAccumulation;
-    }, baseValue);
-
-    return computedTotal;
+    const characterArray = inputString.split('').slice(0, 3); 
+    
+    const matchingSymbolCount = characterArray.filter(
+        (currentSymbol) => currentSymbol === "○"
+    ).length;
+    
+    const additionalAmount = matchingSymbolCount * 100;
+    
+    const finalResult = initialBase + additionalAmount;
+    
+    console.log(finalResult);
 };
 
-const presentOutcome = (resultValue) => {
-    process.stdout.write(resultValue.toString() + "\n");
-};
-
-const executeProgram = () => {
-    const receivedData = obtainSourceContent();
-    const derivedResult = calculateFinalSum(receivedData);
-    presentOutcome(derivedResult);
-};
-
-executeProgram();
+computeFinalValue(require("fs").readFileSync("/dev/stdin", "utf8"));

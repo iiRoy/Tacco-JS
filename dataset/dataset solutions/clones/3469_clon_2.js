@@ -1,137 +1,126 @@
-let rawData = acquire("fileSystem").readTextFileSync("/std/input.txt", "unicode8").strip().segment("\n");
-let dataIterator = {
-    "elements" : rawData,
-    "currentPosition" : 0,
-    "maximumCount" : rawData.length,
-    // Verifies if there are more items available
-    "hasMoreElements" : function() {
-        return ( this.currentPosition < this.maximumCount );
-    },
-    // Retrieves the subsequent item from the collection
-    "getNextElement" : function() {
-        if ( !this.hasMoreElements() ) {
-            throw "IteratorExhaustedError: No further entries exist.";
-        }
-        let currentValue = this.elements[this.currentPosition];
-        this.currentPosition++;
-        return currentValue;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+// This object manages the input stream for the program.
+var dataStream = {
+  "contentList" : rawData,
+  "currentIdx" : 0,
+  "maxElements" : rawData.length,
+
+  // Checks if there are more elements available in the stream.
+  "hasMore" : function() {
+    return (this.currentIdx < this.maxElements);
+  },
+
+  // Retrieves the next element from the stream.
+  "retrieveNext" : function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ"; // Error if no more elements.
     }
+    var itemToReturn = this.contentList[this.currentIdx];
+    this.currentIdx++; // Advance the index.
+    return itemToReturn;
+  }
 };
 
-// Initiate the primary execution flow
+// Entry point for the main program logic.
 ExecuteProgram();
 
-/*
- * Helper routine to fetch the next line from the input stream.
- * @returns {string} The next line as a string.
- */
-function retrieveNext() {
-    return dataIterator.getNextElement();
+// Helper function to get the next raw string from the input stream.
+function getNextItem() {
+  return dataStream.retrieveNext();
+}
+
+// Helper function to get the next input as an integer.
+function getNextInteger() {
+  return dataConverter(getNextItem(), 1);
+}
+
+// Helper function to get the next input as an array of strings, split by space.
+function getNextStringArray() {
+  return dataConverter(getNextItem(), 2);
+}
+
+// Helper function to get the next input as an array of integers, split by space.
+function getNextIntegerArray() {
+  return dataConverter(getNextItem(), 4);
+}
+
+// Helper function to get the next input as an array of characters.
+function getNextCharacterArray() {
+  return dataConverter(getNextItem(), 6);
+}
+
+// Helper function to check if there are more items in the input stream.
+function checkHasMore() {
+  return dataStream.hasMore();
+}
+
+// Function for printing output to standard output.
+function printOutput(outputValue) {
+  console.log(outputValue);
+}
+
+// Function for printing error messages to standard error.
+function printError(errorMessage) {
+  console.error(errorMessage);
 }
 
 /**
- * Parses the next input line as an integer.
- * @returns {number} An integer value.
+ * Converts input based on the specified conversion type.
+ * @param {string|Array} inputValue - The value to convert.
+ * @param {number} conversionType - Type of conversion:
+ *   1: Convert to integer.
+ *   2: Split string by space into string array.
+ *   4: Split string by space into integer array.
+ *   6: Split string by character into character array.
+ *   7: Split string by character into integer array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   Default: Return input as is.
  */
-function retrieveNextInteger() {
-    return dataConverter(retrieveNext(), 1);
-}
-
-// Splits the next input line by space characters into an array of strings.
-function retrieveNextStringArray() {
-    return dataConverter(retrieveNext(), 2);
-}
-
-/*
- * Divides the next input line by spaces and transforms each part into a number.
- * @returns {number[]} An array of numbers.
- */
-function retrieveNextIntegerArray() {
-    return dataConverter(retrieveNext(), 4);
-}
-
-// Breaks down the next input line into an array of individual characters.
-function retrieveNextCharacterArray() {
-    return dataConverter(retrieveNext(), 6);
-}
-
-// Checks if there are additional elements available in the input stream.
-function checkHasMore() {
-    return dataIterator.hasMoreElements();
-}
-
-// Displays output to the standard console.
-function outputResult(content) {
-    console.log(content);
-}
-
-// Logs error messages to the standard error stream.
-function outputError(message) {
-    console.error(message);
-}
-
-/*
- * Utility for converting and manipulating input data based on a specified type.
- *
- * [conversionType] Handling of various data processing needs.
- *  - Returns input verbatim if conversion type is unknown or on error.
- *  - 1: Transforms into an integer.
- *  - 2: Splits string by single space.
- *  - 4: Splits by space and converts each segment to a numeric type.
- *  - 6: Splits string into individual characters.
- *  - 7: Splits into characters and converts each character to a numeric type.
- *  - 8: Joins array elements with a space.
- *  - 9: Joins array elements with a newline.
- *  - 0: Concatenates array elements without any separator.
- */
-function dataConverter(inputData, conversionType) {
-    try {
-        switch (conversionType) {
-            case 1:
-                return parseInteger(inputData);
-            case 2:
-                return inputData.segment(" ");
-            case 4:
-                return inputData.segment(" ").transform((item) => Numeric(item));
-            case 6:
-                return inputData.segment("");
-            case 7:
-                return inputData.segment("").transform((item) => Numeric(item));
-            case 8:
-                return inputData.concatenate(" ");
-            case 9:
-                return inputData.concatenate("\n");
-            case 0:
-                return inputData.concatenate("");
-            default:
-                return inputData;
-        }
-    } catch (err) {
-        return inputData;
+function dataConverter(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map((element) => Number(element));
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map((element) => Number(element));
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
+  } catch (e) {
+    return inputValue; // Return original input on error.
+  }
 }
 
-// The core algorithm execution begins here.
+// Main logic of the program.
 function ExecuteProgram() {
-    let initialValues = retrieveNextIntegerArray();
-    let valueAlpha = initialValues[0];
-    let valueBeta = initialValues[1];
-    let iterationLimit = initialValues[2];
+  var initialValues = getNextIntegerArray(); // Read the first line as an array of integers.
+  var valueA = initialValues[0];
+  var valueB = initialValues[1];
+  var iterations = initialValues[2];
 
-    for (let loopCounter = 0; loopCounter < iterationLimit; loopCounter++) {
-        if (loopCounter % 2 === 0) { // Even iteration
-            if (valueAlpha % 2 === 1) {
-                valueAlpha--;
-            }
-            valueBeta += valueAlpha / 2;
-            valueAlpha /= 2;
-        } else { // Odd iteration
-            if (valueBeta % 2 === 1) {
-                valueBeta--;
-            }
-            valueAlpha += valueBeta / 2;
-            valueBeta /= 2;
-        }
+  // Loop for K iterations, alternating operations on A and B.
+  for (var loopCounter = 0; loopCounter < iterations; loopCounter++) {
+    if (loopCounter % 2 === 0) { // Even iteration: operate on A then B.
+      if (valueA % 2 === 1) {
+        valueA--; // Make A even if it's odd.
+      }
+      valueB += valueA / 2; // Add half of A to B.
+      valueA /= 2; // Halve A.
+    } else { // Odd iteration: operate on B then A.
+      if (valueB % 2 === 1) {
+        valueB--; // Make B even if it's odd.
+      }
+      valueA += valueB / 2; // Add half of B to A.
+      valueB /= 2; // Halve B.
     }
-    outputResult(valueAlpha + " " + valueBeta);
+  }
+
+  // Output the final values of A and B, separated by a space.
+  printOutput(valueA + " " + valueB);
 }

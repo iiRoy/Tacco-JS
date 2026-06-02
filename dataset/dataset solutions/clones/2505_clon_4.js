@@ -1,34 +1,47 @@
-const transformData = (dataString) => {
-    const contentLines = dataString.split('\n').filter(Boolean);
+function execute(data) {
+  const records = data.split("\n");
+  if (records[records.length - 1] === "") {
+    records.pop();
+  }
 
-    const elementQuantity = parseInt(contentLines[0].split(' ')[0], 10);
-    const rawNumbers = contentLines[1].split(' ').map(Number).sort((x, y) => x - y);
+  const total = records[0].split(" ")[0] - 0;
+  const pieces = records[1].split(" ");
 
-    const frequencyRegister = rawNumbers.reduce((accumulator, numberValue) => {
-        accumulator.set(numberValue, (accumulator.get(numberValue) || 0) + 1);
-        return accumulator;
-    }, new Map());
+  const bucket = new Map();
+  const singles = [];
+  for (let position = 0; position < pieces.length; position++) {
+    const item = pieces[position] - 0;
 
-    const sortedFrequencies = Array.from(frequencyRegister.values()).sort((x, y) => x - y);
+    if (item === 0) {
+      continue;
+    }
 
-    const accumulatedSums = sortedFrequencies.reduce((sumsList, currentFrequency, indexPosition) => {
-        const previousTotal = indexPosition > 0 ? sumsList[indexPosition - 1] : 0;
-        sumsList.push(previousTotal + currentFrequency);
-        return sumsList;
-    }, []);
+    if (Number.isNaN(item)) {
+      singles.push(1);
+      continue;
+    }
 
-    const finalResults = Array.from({ length: elementQuantity }, (_, zeroBasedIndex) => zeroBasedIndex + 1).map(currentIterationDivisor => {
-        const maximumQuotient = Math.floor(elementQuantity / currentIterationDivisor);
+    bucket.set(item, (bucket.get(item) || 0) + 1);
+  }
 
-        const sumLookupIndex = sortedFrequencies.length - currentIterationDivisor;
-        const currentFrequencyRangeSum = sumLookupIndex >= 0 ? accumulatedSums[sumLookupIndex] : 0;
+  const sizes = Array.from(bucket.values()).concat(singles);
+  sizes.sort((left, right) => {
+    return left - right;
+  });
 
-        const productOfSumAndDivisor = currentFrequencyRangeSum * currentIterationDivisor;
+  const prefix = [0];
+  for (let index = 0; index < sizes.length; index++) {
+    prefix[index + 1] = prefix[index] + sizes[index];
+  }
 
-        return Math.min(maximumQuotient, productOfSumAndDivisor);
-    });
+  let answers = [];
+  for (let width = 1; width <= total; width++) {
+    const usable = sizes.length - width + 1;
+    const cap = usable > 0 ? prefix[usable] : 0;
+    answers.push(Math.min(Math.floor(total / width), cap * width));
+  }
 
-    return finalResults.join('\n');
-};
+  console.log(answers.join("\n"));
+}
 
-console.log(transformData(require("fs").readFileSync("/dev/stdin", "utf8")));
+execute(require("fs").readFileSync("/dev/stdin", "utf8"));

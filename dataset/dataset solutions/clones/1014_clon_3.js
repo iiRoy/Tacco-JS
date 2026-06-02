@@ -1,116 +1,54 @@
-let _comparisonCounter = 0;
+const INPUT_SOURCE = '/dev/stdin';
+const NEWLINE_CHAR = '\n';
 
-const _ioConfiguration = {
-    sourcePath: 0,
-    lineSeparator: '\n',
-    encodingFormat: 'utf-8'
-};
+const inputLines = require('fs').readFileSync(INPUT_SOURCE, 'utf-8').split(NEWLINE_CHAR);
 
-const _retrieveInputLines = (configSettings) => {
-    try {
-        const rawContentBuffer = require('fs').readFileSync(configSettings.sourcePath, configSettings.encodingFormat);
-        const processedLines = rawContentBuffer.split(configSettings.lineSeparator);
-        return processedLines.filter(lineText => lineText.trim() !== '');
-    } catch (readError) {
-        return [];
-    }
-};
+let swapCount = 0;
 
-const _rawInputContent = _retrieveInputLines(_ioConfiguration);
-
-const _ZERO_VALUE = 0;
-const _ONE_VALUE = 1;
-const _THREE_VALUE = 3;
-
-const _performGappedInsertionSort = (targetCollection, currentGapSize) => {
-    if (currentGapSize <= _ZERO_VALUE) {
-        return;
-    }
-
-    let outerIterator = currentGapSize;
-    while (outerIterator < targetCollection.length) {
-        const elementToPlace = targetCollection[outerIterator];
-        let innerIterator = outerIterator - currentGapSize;
-
-        while (innerIterator >= _ZERO_VALUE && targetCollection[innerIterator] > elementToPlace) {
-            targetCollection[innerIterator + currentGapSize] = targetCollection[innerIterator];
-            innerIterator -= currentGapSize;
-            _comparisonCounter++;
+const insertionSortWithGap = (dataArray, gapValue) => {
+    const dataLength = dataArray.length;
+    for (let i = gapValue; i < dataLength; i++) {
+        const currentValue = dataArray[i];
+        let comparisonIndex = i - gapValue;
+        while (comparisonIndex >= 0 && dataArray[comparisonIndex] > currentValue) {
+            dataArray[comparisonIndex + gapValue] = dataArray[comparisonIndex];
+            comparisonIndex -= gapValue;
+            swapCount++;
         }
-        targetCollection[innerIterator + currentGapSize] = elementToPlace;
-        outerIterator += _ONE_VALUE;
+        dataArray[comparisonIndex + gapValue] = currentValue;
     }
 };
 
-const _generateKnuthGapSequence = (collectionLength) => {
-    const calculatedGaps = [];
-    let sequenceIndex = _ZERO_VALUE;
-    let nextSequenceTerm = _ONE_VALUE;
-    
-    while (nextSequenceTerm <= collectionLength) {
-        calculatedGaps.push(nextSequenceTerm);
-        sequenceIndex++;
-        nextSequenceTerm = (_THREE_VALUE * calculatedGaps[sequenceIndex - _ONE_VALUE]) + _ONE_VALUE;
-        if (nextSequenceTerm < _ZERO_VALUE) break;
+const performShellSort = (dataArray) => {
+
+    const gapSequenceAscending = [];
+    let currentGapElement = 1;
+    gapSequenceAscending.push(currentGapElement);
+
+    while (true) {
+        const nextCalculatedGap = 3 * currentGapElement + 1;
+        if (nextCalculatedGap > dataArray.length) {
+            break;
+        }
+        gapSequenceAscending.push(nextCalculatedGap);
+        currentGapElement = nextCalculatedGap;
     }
-    return calculatedGaps.reverse();
+
+    const finalGapSequence = gapSequenceAscending.reverse();
+
+    console.log(finalGapSequence.length);
+    console.log(finalGapSequence.map(element => element.toString()).join(' '));
+
+    for (let i = 0; i < finalGapSequence.length; i++) {
+        insertionSortWithGap(dataArray, finalGapSequence[i]);
+    }
+
+    return dataArray;
 };
 
-const _applyShellSortAlgorithm = (dataCollection) => {
-    if (!dataCollection || dataCollection.length <= _ONE_VALUE) {
-        return dataCollection;
-    }
+const arraySize = parseInt(inputLines[0]);
+const initialData = inputLines.slice(1, arraySize + 1).map(element => parseInt(element));
+const finalSortedArray = performShellSort(initialData);
 
-    const intervalSizes = _generateKnuthGapSequence(dataCollection.length);
-
-    let gapSearchIndex = _ZERO_VALUE;
-    while (gapSearchIndex < intervalSizes.length) {
-        const currentGap = intervalSizes[gapSearchIndex];
-        _performGappedInsertionSort(dataCollection, currentGap);
-        gapSearchIndex += _ONE_VALUE;
-    }
-
-    return dataCollection;
-};
-
-const _parseNumberSafely = (inputString, fallbackValue = _ZERO_VALUE) => {
-    const numericalValue = Number(inputString);
-    if (isNaN(numericalValue) || !isFinite(numericalValue)) {
-        return fallbackValue;
-    }
-    return Math.floor(numericalValue);
-};
-
-const _declaredElementCount = _parseNumberSafely(_rawInputContent[_ZERO_VALUE]);
-
-const _inputArrayForSorting = [];
-let parsingIndex = _ONE_VALUE;
-while (parsingIndex <= _declaredElementCount && parsingIndex < _rawInputContent.length) {
-    _inputArrayForSorting.push(_parseNumberSafely(_rawInputContent[parsingIndex]));
-    parsingIndex += _ONE_VALUE;
-}
-
-if (_inputArrayForSorting.length !== _declaredElementCount) {
-    // Intentionally allowing mismatch, or could adjust _declaredElementCount
-}
-
-const _finalSortedCollection = _applyShellSortAlgorithm(_inputArrayForSorting);
-
-const _formatOutput = (operationCount, sortedElements) => {
-    let resultString = operationCount.toString();
-    resultString += _ioConfiguration.lineSeparator;
-    
-    let elementStrings = [];
-    let currentElementIdx = _ZERO_VALUE;
-    while(currentElementIdx < sortedElements.length) {
-        elementStrings.push(sortedElements[currentElementIdx].toString());
-        currentElementIdx += _ONE_VALUE;
-    }
-    resultString += elementStrings.join(_ioConfiguration.lineSeparator);
-    
-    return resultString;
-};
-
-const _programOutput = _formatOutput(_comparisonCounter, _finalSortedCollection);
-
-console.log(_programOutput);
+console.log(swapCount);
+console.log(finalSortedArray.map(element => element.toString()).join('\n'));

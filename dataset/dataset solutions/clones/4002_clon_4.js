@@ -1,22 +1,19 @@
-'use strict'
+'use strict';
 
-const performCalculation = (sourceInformation) => {
-    const potentialNumericalMatch = sourceInformation.match(/^-?\d+/);
-    if (!potentialNumericalMatch || potentialNumericalMatch.length === 0) {
-        process.stdout.write(String(NaN) + '\n');
-        return;
-    }
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    const valueToProcess = Number(potentialNumericalMatch[0]);
-    const intermediateResult = valueToProcess / 3;
+const numericPattern = /^(-?\d+)/;
+const matchedValue = sourceData.match(numericPattern);
 
-    let finalOutcome = parseInt(intermediateResult, 10);
+const parsedNumber = Number(matchedValue[1]);
 
-    if (intermediateResult < 0 && intermediateResult !== finalOutcome) {
-        finalOutcome--;
-    }
+const intermediateQuotient = parsedNumber / 3;
+let computedResult;
 
-    process.stdout.write(String(finalOutcome) + '\n');
-};
+if (parsedNumber >= 0) {
+    computedResult = intermediateQuotient | 0;
+} else {
+    computedResult = (parsedNumber % 3 === 0) ? intermediateQuotient : (intermediateQuotient | 0) - 1;
+}
 
-performCalculation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+console.log(computedResult);

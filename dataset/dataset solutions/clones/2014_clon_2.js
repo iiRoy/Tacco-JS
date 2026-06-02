@@ -1,76 +1,94 @@
 "use strict";
 
-// This function computes and returns an ordered list of all positive divisors for a given integer.
-function getDivisorsForNumber(numericValue) {
-  // Initialize a mutable array to store the identified factors.
-  const factorList = [];
-  factorList[0] = 1; // The number 1 is always the first divisor.
+/**
+ * Calculates and returns an array containing all positive integer divisors of a given number.
+ * The order of divisors in the array is not guaranteed to be strictly ascending,
+ * but it will include 1 and the number itself.
+ * @param {number} inputNumber The positive integer for which to find divisors.
+ * @returns {number[]} An array of divisors.
+ */
+function obtainFactors(inputNumber) {
+  // Initialize an array to store the found factors.
+  const factorList = new Array();
+  // The number 1 is always a divisor of any positive integer.
+  factorList[0] = 1;
 
-  // Iterate through potential divisors starting from 2 up to the square root of the input.
-  for (let currentCheck = 2; currentCheck <= Math.sqrt(numericValue); currentCheck++) {
-    // If 'currentCheck' divides 'numericValue' evenly, it's a factor.
-    if (numericValue % currentCheck === 0) {
-      factorList.push(currentCheck); // Add this factor to our collection.
+  // Iterate from 2 up to the square root of the input number.
+  // This approach efficiently finds one part of each divisor pair (d, inputNumber/d).
+  for (let loopCounter = 2; loopCounter <= Math.sqrt(inputNumber); loopCounter++) {
+    // If 'loopCounter' divides 'inputNumber' without a remainder, it's a divisor.
+    if (inputNumber % loopCounter === 0) {
+      factorList.push(loopCounter); // Add this divisor to our collection.
     }
   }
 
-  // Store the current count of factors found (excluding their complementary pairs greater than sqrt).
-  const initialCount = factorList.length;
+  // Store the number of divisors found in the initial pass (up to sqrt(inputNumber)).
+  const initialFactorCount = factorList.length;
 
-  // Check if the input number is a perfect square. If not, the square root (if it was a factor)
-  // would not be the last element added. Add its complementary pair if it's missing.
-  // This also handles cases where 'numericValue' is prime or '1' by adding 'numericValue' itself.
-  if (Math.sqrt(numericValue) !== factorList[initialCount - 1]) {
-    // Add the paired divisor (numericValue / last_factor_found).
-    factorList.push(numericValue / factorList[initialCount - 1]);
+  // This conditional block handles the "other half" of the last divisor pair found.
+  // If 'inputNumber' is not a perfect square, or if the square root itself was not
+  // the last element added (e.g., if the square root is 1, or no divisors > 1 were found),
+  // then we need to add the corresponding larger divisor for the last smaller divisor.
+  // For perfect squares, Math.sqrt(inputNumber) will be equal to factorList[initialFactorCount - 1],
+  // so this block will be skipped, preventing duplication of the square root.
+  if (Math.sqrt(inputNumber) !== factorList[initialFactorCount - 1]) {
+    // Add the larger divisor corresponding to the last smaller divisor found.
+    factorList.push(inputNumber / factorList[initialFactorCount - 1]);
   }
 
-  // Iterate backwards through the already found factors (excluding the last one if it was a sqrt or its pair was just added)
-  // to find and add their corresponding larger divisors (e.g., if 2 is a factor of 12, then 6 is also a factor).
-  for (let j = initialCount - 2; j >= 0; j--) {
-    // Compute and add the complementary factor.
-    factorList.push(numericValue / factorList[j]);
+  // Now, iterate backwards through the smaller divisors (excluding 1 and potentially the last one
+  // if it was handled above) and add their corresponding larger divisors.
+  // This ensures all divisors are included without duplicates for perfect squares.
+  for (let loopCounter = initialFactorCount - 2; 0 <= loopCounter; loopCounter--) {
+    factorList.push(inputNumber / factorList[loopCounter]);
   }
 
-  // Return the complete and sorted list of divisors.
-  return factorList;
+  return factorList; // Return the complete array of divisors.
 }
 
-// This is the main execution block of the program, wrapped in an Immediately Invoked Function Expression (IIFE).
-(function processInput(rawDataString) {
-  // Convert the raw string input to an integer, ensuring any whitespace is removed.
-  const targetNumber = Number(rawDataString.trim());
-  
-  // Calculate the count of "sub-only" cases: these are the divisors of (targetNumber - 1), excluding the number 1 itself.
-  const countExclusive = getDivisorsForNumber(targetNumber - 1).length - 1;
-  
-  // Initialize a counter for "inclusive" cases, which will be determined by specific conditions.
-  let countInclusive = 0;
-  
-  // Obtain all positive divisors for the target number.
-  const allDivisorsOfTarget = getDivisorsForNumber(targetNumber);
-  allDivisorsOfTarget.shift(); // Remove the number 1 from this list, as it's handled separately or not relevant for subsequent logic.
-  
-  // Iterate through each divisor 'currentDivisor' in the modified list of target number's divisors.
-  for (let currentDivisor of allDivisorsOfTarget) {
-    let tempNumber = targetNumber; // Create a temporary mutable copy of the target number for division.
-    
-    // Repeatedly divide 'tempNumber' by 'currentDivisor' as long as it remains perfectly divisible.
+// This is an Immediately Invoked Function Expression (IIFE)
+// that serves as the main entry point for the program.
+(function processInput(rawInputString) {
+  // Convert the raw string input to a number, removing any leading/trailing whitespace.
+  const processedNumber = Number(rawInputString.trim());
+
+  // Calculate the number of divisors for (processedNumber - 1),
+  // then subtract 1 to exclude the divisor '1' from this count.
+  const countForNMinusOne = obtainFactors(processedNumber - 1).length - 1;
+
+  // Initialize a counter for specific divisors of 'processedNumber'.
+  let countForN = 0;
+
+  // Get all divisors of 'processedNumber'.
+  const factorsOfProcessedNumber = obtainFactors(processedNumber);
+  // Remove the first element, which is always 1, as per the problem's requirements.
+  factorsOfProcessedNumber.shift();
+
+  // Iterate over each remaining divisor of 'processedNumber'.
+  for (let currentDivisor of factorsOfProcessedNumber) {
+    let temporaryValue = processedNumber; // Use a temporary variable for division.
+
+    // Repeatedly divide 'temporaryValue' by 'currentDivisor' as long as it is perfectly divisible.
     do {
-      tempNumber /= currentDivisor;
-    } while (tempNumber % currentDivisor === 0);
-    
-    // After the repeated division, evaluate 'tempNumber' against specific conditions.
-    if (tempNumber === 1) {
-      // If 'tempNumber' has been reduced to 1, it means 'targetNumber' was a power of 'currentDivisor'.
-      countInclusive++; // Increment the inclusive count.
-    } else if (getDivisorsForNumber(tempNumber - 1).indexOf(currentDivisor) > -1) {
-      // If 'currentDivisor' is found within the list of divisors for (tempNumber - 1).
-      countInclusive++; // Increment the inclusive count.
+      temporaryValue /= currentDivisor;
+    } while (temporaryValue % currentDivisor === 0);
+
+    // After the loop, 'temporaryValue' holds the part of 'processedNumber'
+    // that is no longer divisible by 'currentDivisor'.
+
+    // Condition 1: If 'temporaryValue' is 1, it means 'processedNumber' was a power of 'currentDivisor'.
+    if (temporaryValue === 1) {
+      countForN++; // Increment the counter.
+    }
+    // Condition 2: If 'temporaryValue' is not 1, check if 'currentDivisor' is a divisor
+    // of (temporaryValue - 1).
+    else if (obtainFactors(temporaryValue - 1).indexOf(currentDivisor) > -1) {
+      countForN++; // Increment the counter.
     }
   }
-  
-  // Output the final sum of both exclusive and inclusive counts to the console.
-  console.log(countExclusive + countInclusive);
-  
-})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read the entire file content from standard input synchronously.
+
+  // Output the sum of the two calculated counts to the standard console.
+  console.log(countForNMinusOne + countForN);
+
+  // The input for this IIFE is read synchronously from standard input.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

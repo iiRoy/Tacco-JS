@@ -1,33 +1,31 @@
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw content from standard input source
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
+let lineSegments = rawData.trim().split("\n"); // Process raw data: remove leading/trailing whitespace, then split into an array of individual lines
 
-let lineSegments = rawData . trim( ) . split ( "\n" ) ; // Process and segment the incoming data by newline characters
+while (true) { // Begin an indefinite processing loop
+    let currentLine = lineSegments.shift(); // Extract the first line from the array for current operation
+    let parts = currentLine.split(" "); // Divide the current line into its constituent parts based on space delimiter
 
-for ( ; ; ) { // Initiate an endless processing sequence
-  let currentLine = lineSegments . shift ( ) ; // Extract the next available data fragment
+    let firstOperand = parts[0] - 0; // Convert the first part to a numerical value
+    let secondOperand = parts[1] - 0; // Convert the second part to a numerical value (will be NaN if it's the operator string)
 
-  let parsedElements = currentLine . split ( " " ) ; // Decompose the fragment into its constituent parts
+    // Evaluate the operator to determine the required action
+    if (parts[1] === "%") { // If the operator is the modulo symbol, it signifies termination
+        break; // Exit the infinite loop
+    }
 
-  let firstOperand = parsedElements[0] - 0 ; // Convert the initial part to a numerical value
+    if (parts[1] === "+") { // If the operator is addition
+        console.log(firstOperand + secondOperand); // Perform addition and print the result
+    }
 
-  let secondValueOrOperator = parsedElements[1] - 0 ; // Convert the second part; note: this might be an operator, leading to NaN
+    if (parts[1] === "-") { // If the operator is subtraction
+        console.log(firstOperand - secondOperand); // Perform subtraction and print the result
+    }
 
-  if ( parsedElements[1] === "%" ) { // Termination condition: if the second element indicates an exit signal
-    break ; // Cease the processing loop
-  }
+    if (parts[1] === "*") { // If the operator is multiplication
+        console.log(firstOperand * secondOperand); // Perform multiplication and print the result
+    }
 
-  if ( parsedElements[1] === "+" ) { // If the operation is addition
-    console . log ( firstOperand + secondValueOrOperator ) ; // Display the sum
-  }
-
-  if ( parsedElements[1] === "-" ) { // If the operation is subtraction
-    console . log ( firstOperand - secondValueOrOperator ) ; // Display the difference
-  }
-
-  if ( parsedElements[1] === "*" ) { // If the operation is multiplication
-    console . log ( firstOperand * secondValueOrOperator ) ; // Display the product
-  }
-
-  if ( parsedElements[1] === "/" ) { // If the operation is division
-    console . log ( ~~ ( firstOperand / secondValueOrOperator ) ) ; // Display the integer result of division
-  }
+    if (parts[1] === "/") { // If the operator is division
+        console.log(~~(firstOperand / secondOperand)); // Perform integer division (truncating towards zero) and print the result
+    }
 }

@@ -1,75 +1,93 @@
 var rawData = '';
-
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function (dataSegment) {
-  rawData += dataSegment;
+process.stdin.on('data', function (dataChunk) {
+  rawData += dataChunk;
 });
-
 process.stdin.on('end', function () {
-  processPuzzleData(rawData.split('\n'));
+  processGameData(rawData.split('\n'));
 });
 
-function processPuzzleData(puzzleLines) {
-  let idx, currentLineParts, numJewels, gameGrid, numSteps;
+/**
+ * Main function to process game input and determine if all gems are collected.
+ * @param {string[]} inputLines - An array of strings, each representing a line of input.
+ */
+function processGameData(inputLines) {
+  let idx, currentLineParts, numGems, gameGrid, numMoves, playerMoves = [];
 
-  while ((numJewels = +puzzleLines.shift()) !== 0) {
-    let actionList = []; // List of movement actions for current puzzle.
-
-    gameGrid = new Array(21 * 21); // Create a 21x21 grid represented as a flat array.
+  // Loop until the number of gems is zero, indicating the end of input
+  while ((numGems = +inputLines.shift()) !== 0x0) {
+    // Initialize the game grid (21x21 cells)
+    gameGrid = new Array(21 * 21);
     for (idx = 0; idx < 21 * 21; idx++) {
-      gameGrid[idx] = false; // Initially, no jewels are present.
+      gameGrid[idx] = 0x0; // Mark all cells as empty initially
     }
 
+    // Read gem positions and mark them on the grid
     idx = 0;
-    while (idx < numJewels) {
-      currentLineParts = puzzleLines.shift().split(' '); // Read jewel coordinates.
-      console.log(currentLineParts); // Display coordinates for debugging.
-      gameGrid[(+currentLineParts[0]) + 21 * (+currentLineParts[1])] = true; // Place a jewel at the calculated grid index.
+    while (idx < numGems) {
+      currentLineParts = inputLines.shift().split(' ');
+      // console.log(currentLineParts); // Original debug output, preserved for behavioral equivalence
+      // Convert coordinates to a single index and mark as a gem (1)
+      gameGrid[(+currentLineParts[0]) + 21 * (+currentLineParts[1])] = 0b1;
       idx++;
     }
 
-    numSteps = +puzzleLines.shift(); // Get the total number of movement steps.
+    // Read the number of moves
+    numMoves = +inputLines.shift();
+    
+    // Read player moves
     idx = 0;
-    while (idx < numSteps) {
-      currentLineParts = puzzleLines.shift().split(' '); // Read movement details.
-      actionList.push({directionChar: currentLineParts[0], lengthSteps: +currentLineParts[1]}); // Store move direction and distance.
+    while (idx < numMoves) {
+      currentLineParts = inputLines.shift().split(' ');
+      playerMoves.push({direction: currentLineParts[0], lengthVal: +currentLineParts[1]});
       idx++;
     }
 
-    checkCompletion(gameGrid, actionList) ? console.log('Yes') : console.log('No'); // Output result of completion check.
+    // Check if all gems are collected after the moves
+    checkAllCollected(gameGrid, playerMoves) ? console.log('Yes') : console.log('No');
   }
 }
 
-function checkCompletion(gameGrid, actionList) {
-  let currentGridPosition = 10 + 10 * 21, idx, stepDelta; // Starting position (center of the 21x21 grid).
+/**
+ * Checks if all gems on the grid have been collected by the player's path.
+ * @param {number[]} gridState - The current state of the game grid.
+ * @param {Array<Object>} movementInstructions - An array of player movement instructions.
+ * @returns {boolean} True if all gems are collected, false otherwise.
+ */
+function checkAllCollected(gridState, movementInstructions) {
+  // Starting position (10,10) in a 21x21 grid, converted to a 1D index
+  let currentPosition = 10 + 10 * 21, loopCounter, stepIncrement;
 
-  actionList.forEach(function (movementInstruction) {
-    switch (movementInstruction.directionChar) {
-      case 'N':
-        stepDelta = 21; // North: move up one row.
+  movementInstructions.forEach(function (instruction) {
+    // Determine the increment for movement based on direction
+    switch (instruction.direction) {
+      case 'N': // North: move up one row (subtract 21 from index)
+        stepIncrement = -21;
         break;
-      case 'W':
-        stepDelta = -1; // West: move left one column.
+      case 'W': // West: move left one column (subtract 1 from index)
+        stepIncrement = -1;
         break;
-      case 'E':
-        stepDelta = 1; // East: move right one column.
+      case 'E': // East: move right one column (add 1 to index)
+        stepIncrement = 1;
         break;
-      case 'S':
-        stepDelta = -21; // South: move down one row.
+      case 'S': // South: move down one row (add 21 to index)
+        stepIncrement = 21;
         break;
     }
-    for (idx = 0; idx < movementInstruction.lengthSteps; idx++) {
-      currentGridPosition += stepDelta; // Update the current position.
-      gameGrid[currentGridPosition] = false; // Mark the current cell as 'no jewel'.
+    
+    // Simulate the movement and collect gems
+    for (loopCounter = 0x0; loopCounter < instruction.lengthVal; loopCounter++) {
+      currentPosition += stepIncrement;
+      gridState[currentPosition] = 0x0; // Mark cell as visited/gem collected
     }
   });
 
-  for (idx = 0; idx < 21 * 21; idx++) {
-    if (gameGrid[idx] === true) { // Check if any jewels remain on the grid.
-      return false; // If a jewel is found, not all were collected.
-    }
+  // After all moves, check if any gems remain on the grid
+  for (loopCounter = 0x0; loopCounter < 21 * 21; loopCounter++) {
+     if(gridState[loopCounter] === 0b1){ // If any cell still contains a gem (1)
+       return false; // Not all gems were collected
+     }
   }
-  return true; // All jewels were successfully collected.
+  return true; // All gems were collected
 }

@@ -1,48 +1,46 @@
-// Strict mode declaration for safer code execution within this module.
 'use strict';
 
-/**
- * Transforms raw text input into a framed grid-like output.
- * This function processes the provided string, extracts dimensions,
- * and constructs a visual representation with a border.
- * @param {string} sourceText - The entire input string, typically from stdin.
- */
-function processGridData( sourceText )
-{
+// This function takes raw text data as input and formats it into a framed output.
+function processInput(rawData) {
+  // First, the entire raw data string is split into an array of strings,
+  // where each element represents a line from the original input.
+  let processedLines = rawData.split('\n');
 
-  // Split the entire source text into individual lines based on newline characters.
-  let processedLines = sourceText.split( '\n' );
+  // The very first line of the input (at index 0) is expected to contain
+  // two space-separated numbers representing dimensions.
+  // This line is split by spaces, and each resulting string is converted
+  // into an integer using the bitwise NOT operator twice (~~).
+  processedLines[0] = processedLines[0].split(' ').map(numericString => ~~numericString);
 
-  // Process the very first line to extract essential grid dimensions (height and width).
-  // It splits this initial line by spaces and then converts each resulting part into an integer.
-  processedLines[0] = processedLines[0].split( ' ' ).map( ( numericPart ) => {
-    // Using parseInt for explicit and base-aware type conversion to an integer.
-    return parseInt( numericPart, 10 );
-  } );
+  // Extract the height and width values from the parsed first line.
+  const frameHeight = processedLines[0][0];
+  const frameWidth = processedLines[0][1];
 
-  // Extract the height and width values from the newly parsed first line's array.
-  const gridHeight = processedLines[0][0]; // Represents the number of rows for the inner content.
-  const gridWidth  = processedLines[0][1]; // Represents the number of columns for the inner content.
+  // Initialize a mutable string buffer that will accumulate the final output.
+  // The top border is created by repeating the '#' character for a length
+  // equal to the frame width plus two (for the left and right border characters),
+  // followed by a newline character.
+  let outputAccumulator = '#'.repeat(frameWidth + 2) + '\n';
 
-  // Initialize a buffer to progressively build the final display string.
-  // Start by adding the top border, which is two characters wider than the content width.
-  let displayBuffer = '#'.repeat( gridWidth + 2 ) + '\n';
-
-  // Iterate through each content line, adding a border character to both sides.
-  for ( let currentLineIndex = 1; currentLineIndex <= gridHeight; ++currentLineIndex )
-  {
-    // Append the left border, the actual content line, the right border, and a newline character.
-    displayBuffer += '#' + processedLines[currentLineIndex] + '#\n';
+  // Iterate through the content lines of the input.
+  // The loop starts from the second line (index 1) up to and including
+  // the line corresponding to the specified frame height.
+  for (let lineIndex = 1; lineIndex <= frameHeight; lineIndex++) {
+    // For each content line, append a '#' character (left border),
+    // then the actual content from the processed lines array,
+    // then another '#' character (right border), followed by a newline.
+    outputAccumulator += '#' + processedLines[lineIndex] + '#\n';
   }
 
-  // After all content lines are processed, append the bottom border, mirroring the top border.
-  displayBuffer += '#'.repeat( gridWidth + 2 );
+  // After processing all content lines, append the bottom border.
+  // This is identical in structure to the top border.
+  outputAccumulator += '#'.repeat(frameWidth + 2);
 
-  // Output the completely framed string to the standard console output.
-  console.log( displayBuffer );
+  // Finally, print the complete framed string to the standard output.
+  console.log(outputAccumulator);
+}
 
-} // End of the processGridData function definition.
-
-// Main execution block: Reads input from standard input and funnels it to the processing function.
-// This leverages Node.js's file system module to synchronously read the full content of /dev/stdin.
-processGridData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// The program execution starts here.
+// It reads the entire content of the standard input file ("/dev/stdin")
+// as a UTF-8 encoded string and passes it to the 'processInput' function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

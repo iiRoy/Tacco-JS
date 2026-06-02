@@ -1,54 +1,51 @@
-function ExecuteCalculation(sourceData) {
-  // This function performs a series of calculations based on input values.
-  // It determines an output based on several conditional checks.
+function ProcessInput(rawData) {
+  // Deconstruct the input string into numerical values: initial position, number of steps, and step magnitude.
+  const [initialPos, numSteps, stepMagnitude] = rawData
+    .trim()
+    .split(" ")
+    .map((itemStr) => parseInt(itemStr, 10));
 
-  const [
-    startPosition,    // Initial numerical coordinate
-    totalMoves,       // Number of steps to take
-    moveDistance      // Magnitude of each step
-  ] =
-    sourceData
-      .trim()
-      .split(" ")
-      .map(
-        (currentPart) =>
-          parseInt(currentPart, 10) // Convert string parts to integers
-      );
+  // Calculate the absolute value of the ratio of initial position to step magnitude.
+  const absRatio = Math.abs(initialPos / stepMagnitude);
+  // Determine the remainder when the initial position is divided by the step magnitude.
+  const remainderValue = initialPos % stepMagnitude;
 
-  const absoluteRatio = Math.abs(startPosition / moveDistance); // Calculate absolute quotient
-  const remainingPortion = startPosition % moveDistance;       // Determine the remainder
-
-  if (Math.abs(startPosition) < moveDistance) {
-    // Case 1: The absolute start position is less than a single move distance.
-    if (totalMoves % 2 === 0) {
-      // If the total number of moves is even.
-      console.log(startPosition);
-    } else {
-      // If the total number of moves is odd.
-      console.log(startPosition + moveDistance);
+  // Evaluate the scenario based on the initial position relative to the step magnitude.
+  if (Math.abs(initialPos) < stepMagnitude) {
+    // If the number of steps is an even count.
+    if (numSteps % 2 === 0) {
+      console.log(initialPos); // Output the initial position.
     }
-  } else if (absoluteRatio > totalMoves) {
-    // Case 2: The absolute ratio of start position to move distance exceeds total moves.
-    if (startPosition > 0) {
-      // If the start position is positive.
-      console.log(Math.abs(startPosition - totalMoves * moveDistance));
-    } else {
-      // If the start position is negative or zero.
-      console.log(Math.abs(startPosition + totalMoves * moveDistance));
+    // If the number of steps is an odd count.
+    else {
+      console.log(initialPos + stepMagnitude); // Output the initial position adjusted by one step.
     }
-  } else {
-    // Case 3: The absolute ratio is less than or equal to total moves.
-    if (totalMoves % 2 === 0 && remainingPortion === 0) {
-      // If total moves are even AND there's no remainder.
-      console.log(moveDistance);
-    } else {
-      // Otherwise (odd moves OR a remainder exists).
-      console.log(remainingPortion);
+  }
+  // If the absolute ratio of initial position to step magnitude exceeds the number of steps.
+  else if (absRatio > numSteps) {
+    // If the initial position is a positive value.
+    if (initialPos > 0) {
+      // Calculate and output the absolute final position after moving 'numSteps' towards zero.
+      console.log(Math.abs(initialPos - numSteps * stepMagnitude));
+    }
+    // If the initial position is a negative or zero value.
+    else {
+      // Calculate and output the absolute final position after moving 'numSteps' towards zero.
+      console.log(Math.abs(initialPos + numSteps * stepMagnitude));
+    }
+  }
+  // For all other cases where the absolute ratio is less than or equal to the number of steps.
+  else {
+    // If the number of steps is even AND the remainder is exactly zero.
+    if (numSteps % 2 === 0 && remainderValue === 0) {
+      console.log(stepMagnitude); // Output the step magnitude.
+    }
+    // Otherwise (if steps are odd, or remainder is non-zero).
+    else {
+      console.log(remainderValue); // Output the remainder value.
     }
   }
 }
 
-// Invoke the primary processing function with data read from standard input.
-ExecuteCalculation(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// Read the input data from standard input and invoke the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

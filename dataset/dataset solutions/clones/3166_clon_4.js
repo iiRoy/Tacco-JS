@@ -1,46 +1,49 @@
-const acquireInputLines = () => {
-  return new Promise((resolveSolely) => {
-    const acquiredContent = [];
-    const streamProcessor = require('node:readline').createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: false
-    });
+var collectedInput = [];
+var inputSource = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    streamProcessor.on('line', (individualLine) => {
-      acquiredContent.push(individualLine);
-    });
+function evaluateDateCondition(dateRepresentation) {
+    const isPurelyNumeric = /^\d+$/.test(dateRepresentation);
+    if (!isPurelyNumeric) {
+        return false;
+    }
 
-    streamProcessor.on('close', () => {
-      resolveSolely(acquiredContent);
-    });
-  });
-};
+    const targetNumericString = '20190430';
 
-const evaluateTemporalState = (receivedData) => {
-  const boundaryMark = new Date(2019, 3, 30); // Month 3 is April (0-indexed)
+    const inputLength = dateRepresentation.length;
+    const targetLength = targetNumericString.length;
 
-  if (receivedData.length !== 1) {
-    return 'TBD';
-  }
+    if (inputLength < targetLength) {
+        return true;
+    }
+    if (inputLength > targetLength) {
+        return false;
+    }
 
-  const prospectiveDateTime = new Date(receivedData[0]);
+    return dateRepresentation <= targetNumericString;
+}
 
-  if (isNaN(prospectiveDateTime.getTime())) {
-    return 'TBD';
-  }
+inputSource.on('line', function (currentLine) {
+    collectedInput.push(currentLine);
+});
 
-  const comparisonResult = prospectiveDateTime.getTime() <= boundaryMark.getTime();
+inputSource.on('close', function () {
+    const finalResult = (function() {
+        if (collectedInput.length !== 1) {
+            return 'TBD';
+        }
 
-  const designationLookup = new Map([
-    [true, 'Heisei'],
-    [false, 'TBD']
-  ]);
+        const rawInputLine = collectedInput[0];
+        const processedDateString = rawInputLine.replace(/\//g, '');
 
-  return designationLookup.get(comparisonResult);
-};
+        if (evaluateDateCondition(processedDateString)) {
+            return 'Heisei';
+        } else {
+            return 'TBD';
+        }
+    })();
 
-acquireInputLines()
-  .then(evaluateTemporalState)
-  .then(console.log)
-  .catch(console.error);
+    console.log(finalResult);
+});

@@ -1,203 +1,171 @@
-/*
- * This script processes structural patterns from standard input.
- * It simulates operations on binary tree-like structures, specifically union and intersection.
- */
-
-let receivedData = ''; // Variable to accumulate all incoming raw input.
-
-// Resume the standard input stream to listen for data.
+let rawInputData = '';
 process.stdin.resume();
-// Set the character encoding for the input stream to ensure proper interpretation.
 process.stdin.setEncoding('utf8');
 
-// Event handler for when data chunks are received from standard input.
-process.stdin.on('data', function (dataBlock) {
-    receivedData += dataBlock; // Append the new data chunk to the accumulator.
+// Event listener for incoming data chunks
+process.stdin.on('data', function(dataSegment) {
+    rawInputData += dataSegment; // Accumulate all input data
 });
 
-// Event handler for when the input stream has ended, signaling all data has been received.
-process.stdin.on('end', function () {
-    // Split the accumulated data into individual lines for processing.
-    const lineEntries = receivedData.split('\n');
-    // Remove the last element, which is often an empty string due to a trailing newline character.
-    lineEntries.pop();
+// Event listener for end of input stream
+process.stdin.on('end', function() {
+    // Split the accumulated input into individual lines
+    const processedLines = rawInputData.split('\n');
+    // Remove the last empty line if present (common with stdin)
+    processedLines.pop();
 
     /**
-     * @class BinaryTreeNode
-     * @description Represents a node within our custom binary tree-like structure.
-     * Each node can have a primary child (analogous to left), a secondary child (analogous to right),
-     * and an ancestor (parent) reference for traversal.
+     * Represents a node in a binary tree structure.
+     * Each node can have a left child, a right child, and a parent.
      */
-    class BinaryTreeNode {
+    class BinaryNode {
         constructor() {
-            this.primaryChild = null;  // Reference to the first child node of this element.
-            this.secondaryChild = null; // Reference to the second child node of this element.
-            this.ancestor = null;      // Reference to the parent node of this element.
+            this.leftChild = null;  // Reference to the left child node
+            this.rightChild = null; // Reference to the right child node
+            this.parentNode = null; // Reference to the parent node
         }
 
         /**
-         * Attaches a new node as the primary child of the current node.
-         * Also sets the new child's ancestor property back to the current node.
-         * @param {BinaryTreeNode} newChild - The node to be attached as the primary child.
+         * Attaches a given node as the left child of the current node.
+         * Also sets the parent of the child node.
+         * @param {BinaryNode} childNode - The node to be inserted as the left child.
          */
-        attachPrimary(newChild) {
-            this.primaryChild = newChild;
-            newChild.ancestor = this;
+        attachLeft(childNode) {
+            this.leftChild = childNode;
+            childNode.parentNode = this;
         }
 
         /**
-         * Attaches a new node as the secondary child of the current node.
-         * Also sets the new child's ancestor property back to the current node.
-         * @param {BinaryTreeNode} newChild - The node to be attached as the secondary child.
+         * Attaches a given node as the right child of the current node.
+         * Also sets the parent of the child node.
+         * @param {BinaryNode} childNode - The node to be inserted as the right child.
          */
-        attachSecondary(newChild) {
-            this.secondaryChild = newChild;
-            newChild.ancestor = this;
+        attachRight(childNode) {
+            this.rightChild = childNode;
+            childNode.parentNode = this;
         }
 
         /**
-         * Generates a string representation of the node and its entire subtree.
-         * This method recursively calls itself on its children to build the full structural string.
-         * @returns {string} The string representation of the node's subtree, e.g., "((),())".
+         * Returns a string representation of the node's children structure.
+         * This is used for printing the tree.
+         * @returns {string} - A string like "(left_child_str,right_child_str)".
          */
-        getStructureString() {
-            return `(${this.primaryChild === null ? '' : this.primaryChild.getStructureString()},${this.secondaryChild === null ? '' : this.secondaryChild.getStructureString()})`;
+        toStructureString() {
+            const leftPart = this.leftChild === null ? '' : this.leftChild.toStructureString();
+            const rightPart = this.rightChild === null ? '' : this.rightChild.toStructureString();
+            return `(${leftPart},${rightPart})`;
         }
     }
 
-
     /**
-     * @function constructDiagram
-     * @description Parses a string pattern to build a binary tree-like structure.
-     * The pattern uses parentheses `()` to denote nested structures and commas `,` to separate children.
-     * For example, "((),())" represents a root with two children, each being a leaf node.
-     * @param {string} patternString - The string defining the tree structure to be built.
-     * @returns {BinaryTreeNode} The actual root of the constructed tree, which is the primary child
-     *                           of an initial dummy base node.
+     * Parses a string representation of a binary tree and constructs the tree.
+     * The string format is like "(left,right)".
+     * @param {string} inputString - The string to parse.
+     * @returns {BinaryNode} - The root node of the constructed tree.
      */
-    const constructDiagram = patternString => {
-        // Create an initial dummy base node to simplify the logic for handling the very first node.
-        const baseNode = new BinaryTreeNode();
-        let activeElement = baseNode; // Pointer to the currently active node during parsing.
-        let branchIndicator = 0;      // Flag: 0 indicates attaching a primary child, 1 indicates a secondary child.
+    const buildBinaryTree = (inputString) => {
+        const baseNode = new BinaryNode(); // A dummy root to hold the actual tree
+        let currentNode = baseNode;        // Pointer to the current node being processed
+        let commaEncountered = 0;          // Flag to distinguish left/right child insertion
 
-        // Iterate through each character of the input pattern string.
-        for (const symbolUnit of patternString) {
-            if (symbolUnit === "(") {
-                const newElement = new BinaryTreeNode(); // Create a new node for a new branch or leaf.
-                if (branchIndicator === 0) {
-                    activeElement.attachPrimary(newElement); // Attach the new node as a primary child.
+        // Iterate over each character in the input string
+        for (const charSymbol of inputString) {
+            if (charSymbol === "(") {
+                const newNode = new BinaryNode();
+                if (commaEncountered === 0) {
+                    currentNode.attachLeft(newNode); // Insert as left child
                 } else {
-                    activeElement.attachSecondary(newElement); // Attach the new node as a secondary child.
+                    currentNode.attachRight(newNode); // Insert as right child
                 }
-                activeElement = newElement; // Move the active pointer to the newly created child node.
+                currentNode = newNode; // Move down to the new child
             }
-            if (symbolUnit === ",") {
-                branchIndicator = 1; // Set the flag to indicate that the next child should be secondary.
+            if (charSymbol === ",") {
+                commaEncountered = 1; // Next child will be a right child
             }
-            if (symbolUnit === ")") {
-                activeElement = activeElement.ancestor; // Move the active pointer up to the parent node.
-                branchIndicator = 0; // Reset the flag to primary child for the parent's next potential child.
+            if (charSymbol === ")") {
+                currentNode = currentNode.parentNode; // Move up to the parent
+                commaEncountered = 0; // Reset for next sibling or parent's next child
             }
         }
-        // Return the actual root of the tree, which is the primary child of the initial dummy base node.
-        return baseNode.primaryChild;
+        return baseNode.leftChild; // The actual root of the tree is the left child of the dummy root
     };
-
 
     /**
-     * @function mergeStructures
-     * @description Performs a union-like operation on two tree-like structures.
-     * If a node (and its corresponding path) exists in either structure, it will exist in the merged structure.
-     * This is a recursive function that traverses both input structures simultaneously.
-     * @param {BinaryTreeNode} elementA - The first structure for the union operation.
-     * @param {BinaryTreeNode} elementB - The second structure for the union operation.
-     * @returns {BinaryTreeNode} A new structure representing the union of elementA and elementB.
+     * Computes the union of two binary trees.
+     * The union includes nodes present in either tree at corresponding positions.
+     * @param {BinaryNode} firstTree - The first tree.
+     * @param {BinaryNode} secondTree - The second tree.
+     * @returns {BinaryNode} - The root of the resulting union tree.
      */
-    const mergeStructures = (elementA, elementB) => {
-        const resultNode = new BinaryTreeNode(); // Create a new node for the merged result at this level.
+    const combineTrees = (firstTree, secondTree) => {
+        const resultNode = new BinaryNode(); // Create a new node for the result
 
-        // Base cases: if one structure is null, the union at this point is simply the other structure.
-        if (elementA === null) {
-            return elementB;
-        }
-        if (elementB === null) {
-            return elementA;
-        }
+        // Base cases: if one tree is null, return the other
+        if (firstTree === null) return secondTree;
+        if (secondTree === null) return firstTree;
 
-        // Recursively merge the primary children of both input elements.
-        let tempOutcome = mergeStructures(elementA.primaryChild, elementB.primaryChild);
-        if (tempOutcome !== null) {
-            resultNode.attachPrimary(tempOutcome); // Attach the merged primary child if it exists.
+        // Recursively compute union for left children
+        let recursiveResult = combineTrees(firstTree.leftChild, secondTree.leftChild);
+        if (recursiveResult !== null) {
+            resultNode.attachLeft(recursiveResult);
         }
 
-        // Recursively merge the secondary children of both input elements.
-        tempOutcome = mergeStructures(elementA.secondaryChild, elementB.secondaryChild);
-        if (tempOutcome !== null) {
-            resultNode.attachSecondary(tempOutcome); // Attach the merged secondary child if it exists.
+        // Recursively compute union for right children
+        recursiveResult = combineTrees(firstTree.rightChild, secondTree.rightChild);
+        if (recursiveResult !== null) {
+            resultNode.attachRight(recursiveResult);
         }
 
-        return resultNode; // Return the newly formed merged node for this level.
+        return resultNode; // Return the constructed union node
     };
-
 
     /**
-     * @function overlapElements
-     * @description Performs an intersection-like operation on two tree-like structures.
-     * A node (and its corresponding path) exists in the intersection only if it exists in both input structures.
-     * This is a recursive function that traverses both input structures simultaneously.
-     * @param {BinaryTreeNode} elementA - The first structure for the intersection operation.
-     * @param {BinaryTreeNode} elementB - The second structure for the intersection operation.
-     * @returns {BinaryTreeNode|null} A new structure representing the intersection, or null if no overlap
-     *                                  at this particular node or its children.
+     * Computes the intersection of two binary trees.
+     * The intersection includes nodes present in both trees at corresponding positions.
+     * @param {BinaryNode} treeA - The first tree.
+     * @param {BinaryNode} treeB - The second tree.
+     * @returns {BinaryNode} - The root of the resulting intersection tree, or null if no common nodes.
      */
-    const overlapElements = (elementA, elementB) => {
-        const resultNode = new BinaryTreeNode(); // Create a new node for the intersection result at this level.
+    const findCommonNodes = (treeA, treeB) => {
+        // If either tree is null, there's no intersection at this position
+        if (treeA === null || treeB === null) return null;
 
-        // Base case: if either structure is null, there's no intersection at this specific point.
-        if (elementA === null || elementB === null) {
-            return null;
+        const commonNode = new BinaryNode(); // Create a new node for the intersection result
+
+        // Recursively compute intersection for left children
+        let subResult = findCommonNodes(treeA.leftChild, treeB.leftChild);
+        if (subResult !== null) {
+            commonNode.attachLeft(subResult);
         }
 
-        // Recursively find the intersection of the primary children.
-        let tempOutcome = overlapElements(elementA.primaryChild, elementB.primaryChild);
-        if (tempOutcome !== null) {
-            resultNode.attachPrimary(tempOutcome); // Attach the intersected primary child if it exists.
+        // Recursively compute intersection for right children
+        subResult = findCommonNodes(treeA.rightChild, treeB.rightChild);
+        if (subResult !== null) {
+            commonNode.attachRight(subResult);
         }
 
-        // Recursively find the intersection of the secondary children.
-        tempOutcome = overlapElements(elementA.secondaryChild, elementB.secondaryChild);
-        if (tempOutcome !== null) {
-            resultNode.attachSecondary(tempOutcome); // Attach the intersected secondary child if it exists.
-        }
-
-        // Return the newly formed intersection node for this level.
-        // A node is considered part of the intersection if both elementA and elementB exist at this level,
-        // regardless of whether their children also intersect.
-        return resultNode;
+        return commonNode; // Return the constructed intersection node
     };
 
+    // Process each line of input
+    for (const currentLine of processedLines) {
+        // Destructure the line into operation type and two tree strings
+        const [operationType, firstTreeString, secondTreeString] = currentLine.split(' ');
 
-    // Main loop to process each line entry received from standard input.
-    for (const currentInputLine of lineEntries) {
-        // Destructure the line into the operation type and two tree string patterns.
-        const [actionKind, diagramStringOne, diagramStringTwo] = currentInputLine.split(' ');
+        // Build the binary trees from their string representations
+        const parsedTreeOne = buildBinaryTree(firstTreeString);
+        const parsedTreeTwo = buildBinaryTree(secondTreeString);
 
-        // Construct the first tree structure from its string representation.
-        const firstStructure = constructDiagram(diagramStringOne);
-        // Construct the second tree structure from its string representation.
-        const secondStructure = constructDiagram(diagramStringTwo);
+        let finalResultTree; // Variable to hold the result of the operation
 
-        let finalOutcome; // Variable to hold the result of the tree operation.
-
-        // Perform the specified operation based on the 'actionKind'.
-        if (actionKind === "u") { // 'u' for union operation.
-            finalOutcome = mergeStructures(firstStructure, secondStructure);
-        } else if (actionKind === "i") { // 'i' for intersection operation.
-            finalOutcome = overlapElements(firstStructure, secondStructure);
+        // Perform union or intersection based on the operation type
+        if (operationType === "u") {
+            finalResultTree = combineTrees(parsedTreeOne, parsedTreeTwo);
+        } else if (operationType === "i") {
+            finalResultTree = findCommonNodes(parsedTreeOne, parsedTreeTwo);
         }
 
-        // Print the string representation of the final resulting structure to standard output.
-        console.log(finalOutcome.getStructureString());
+        // Print the string representation of the resulting tree
+        console.log(finalResultTree.toStructureString());
     }
 });

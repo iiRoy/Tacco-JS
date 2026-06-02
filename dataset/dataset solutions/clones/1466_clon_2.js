@@ -1,60 +1,51 @@
-/*
- * This JavaScript module processes a series of game rounds to tally scores.
- * It's designed to read input containing round information and calculate
- * final scores for two players based on card comparisons.
- */
-function ProcessGameData ( rawData ) // Main routine for processing game information
-{
-    // First, preprocess the raw input string.
-    // Trim any leading/trailing whitespace and then split the string
-    // into an array of tokens using any whitespace or newline characters as delimiters.
-    var tokenizedData = rawData.trim().split( /[\s\n]+/ ) ;
+// This function processes game data received as a string
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of tokens, using any whitespace or newline as a delimiter.
+    // The `trim()` method removes leading/trailing whitespace from the input string.
+    let tokenList = rawData.trim().split(/[\s\n]+/);
 
-    // Initialize the score counters for Player One and Player Two.
-    // Both players start with zero points.
+    // Initialize scores for two players.
+    // `playerOneScore` will hold the score for the first player.
     let playerOneScore = 0;
+    // `playerTwoScore` will hold the score for the second player.
     let playerTwoScore = 0;
 
-    // The very first token in the data array represents the total number of rounds to be played.
-    // We extract this value and convert it from a string to an integer.
-    const numberOfRounds = parseInt( tokenizedData.shift() );
+    // The first token in the list represents the total number of rounds to be played.
+    // `parseInt()` converts this string token into an integer. The `10` specifies base-10 conversion.
+    const numRounds = parseInt(tokenList.shift(), 10);
 
-    // Begin the main game loop, iterating once for each specified round.
-    for ( let roundCounter = 0; roundCounter < numberOfRounds; roundCounter++ )
-    {
-        // For each round, extract the card value played by the first participant.
-        // These values are still strings as they are shifted directly from the array.
-        let firstPlayerCard = tokenizedData.shift();
+    // Loop through each round of the game.
+    // The loop continues as long as the `roundIndex` is less than the `numRounds`.
+    for (let roundIndex = 0; roundIndex < numRounds; roundIndex++) {
+        // In each round, two cards are drawn from the `tokenList`.
+        // `cardOne` is the card for the first player.
+        const cardOne = tokenList.shift();
+        // `cardTwo` is the card for the second player.
+        const cardTwo = tokenList.shift();
 
-        // Similarly, extract the card value played by the second participant.
-        let secondPlayerCard = tokenizedData.shift();
-
-        // Compare the cards played by both participants to determine the round's outcome.
-        // Note: Comparisons are string-based as per the original logic, which can differ
-        // from numerical comparison for multi-digit numbers.
-        if ( firstPlayerCard === secondPlayerCard ) // If both cards are identical (a tie)
-        {
-            // In case of a tie, both players receive one point.
-            playerOneScore++;
-            playerTwoScore++;
-        }
-        else // If the cards are different, one player wins the round.
-        {
-            // Use a ternary operator to concisely award three points to the winner.
-            // The player with the numerically smaller card (when compared as strings) loses.
-            firstPlayerCard < secondPlayerCard
-                ? ( playerTwoScore += 3 ) // If Player Two's card is 'greater' (lexicographically), Player Two wins.
-                : ( playerOneScore += 3 ) ; // Otherwise, Player One wins.
+        // Compare the two cards to determine the outcome of the round.
+        // Using strict equality `===` for string comparison.
+        if (cardOne === cardTwo) {
+            // If the cards are identical, both players receive one point.
+            playerOneScore++; // Increment score for player one.
+            playerTwoScore++; // Increment score for player two.
+        } else {
+            // If the cards are different, determine which player has the higher card.
+            // A ternary operator is used for concise conditional scoring.
+            // If `cardOne` is lexicographically less than `cardTwo`, player two gets 3 points.
+            // Otherwise (if `cardOne` is greater than `cardTwo`), player one gets 3 points.
+            (cardOne < cardTwo) ? (playerTwoScore += 3) : (playerOneScore += 3);
         }
     }
 
-    // After all rounds have been processed, print the final scores.
-    // The scores are displayed on a single line, separated by a space.
-    console.log( playerOneScore + " " + playerTwoScore );
+    // After all rounds are played, print the final scores of both players.
+    // The scores are concatenated with a space in between.
+    console.log(playerOneScore + " " + playerTwoScore);
 }
 
-// This section handles the execution entry point.
-// It reads all data from standard input (typically a file redirected to /dev/stdin)
-// using Node.js's file system module, converts it to a UTF-8 string,
-// and then passes this raw data to the primary processing function.
-ProcessGameData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// This line reads the input from standard input.
+// `require("fs")` imports the Node.js file system module.
+// `readFileSync("/dev/stdin", "utf8")` reads the entire content of the standard input file
+// as a UTF-8 encoded string.
+// The read content is then passed to the `ProcessInput` function for processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

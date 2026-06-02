@@ -1,99 +1,44 @@
-/**
- * This module provides a specialized function to solve a numerical puzzle.
- * It searches for a non-negative integer whose binary representation,
- * when interpreted as a base-(-2) number, matches a given target value.
- * The final output is the reversed binary string of the found number.
- */
-const performBaseNegTwoConversionSearch = (initialInputString) => {
+function processInput(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const targetDecimalValue = parseInt(inputLines[0], 10);
 
-    // --- Section 1: Input Processing and Validation ---
-    // The raw input is expected to be a string, potentially multi-line.
-    // We parse the first line to get our target integer.
-    const allInputLines = initialInputString.split('\n');
+    const MAX_ITERATIONS_LIMIT = 1000000000; // Represents Math.pow(10, 9)
 
-    // Implement a guard clause for malformed or empty input.
-    if (!allInputLines || allInputLines.length === 0 || allInputLines[0].trim().length === 0) {
-        console.error("Input data is invalid or empty. Cannot proceed.");
-        return; // Exiting early due to bad input.
-    }
+    let currentBinaryRepresentation = ''; // Will hold the binary string of the current number
+    let calculatedNegativeBaseValue = 0; // Value calculated in base -2
 
-    // Attempt to convert the first line into an integer.
-    const desiredTargetValue = parseInt(allInputLines[0], 10);
+    // Helper function to reverse a string
+    const reverseString = (strToReverse) => {
+        return strToReverse.split("").reverse().join("");
+    };
 
-    // Another validation step: ensure the parsed value is a valid number.
-    if (Number.isNaN(desiredTargetValue)) {
-        console.error(`Failed to parse a valid integer from "${allInputLines[0]}". Please check input format.`);
-        return;
-    }
+    for (let currentDecimalValue = 0; currentDecimalValue < MAX_ITERATIONS_LIMIT; currentDecimalValue++) {
+        currentBinaryRepresentation = currentDecimalValue.toString(2); // Convert current number to binary string
 
-    // Define a constant for the search upper limit, equivalent to 10^9.
-    // Using a numeric literal with underscores for readability.
-    const MAX_ITERATION_BOUNDARY = 1_000_000_000;
+        calculatedNegativeBaseValue = 0; // Reset for each new binary string
+        let currentPowerOfNegativeTwo = 1; // Starts at (-2)^0 = 1
 
-    // A mutable variable to hold the binary string that satisfies the condition.
-    // Initialized to null to explicitly indicate no match found yet.
-    let identifiedSolutionBinary = null;
-
-    // This variable captures the last binary string processed by the loop.
-    // It's used to replicate the original code's behavior of printing the last
-    // processed string if no match is found within the search limit.
-    let currentLoopBinaryRepresentation = '';
-
-    // --- Section 2: Iterative Search Algorithm ---
-    // We iterate through a range of non-negative integers.
-    for (let currentIntegerCandidate = 0; currentIntegerCandidate < MAX_ITERATION_BOUNDARY; ++currentIntegerCandidate) {
-
-        // Convert the current candidate integer into its base-2 string form.
-        const candidateBinaryString = currentIntegerCandidate.toString(2);
-        currentLoopBinaryRepresentation = candidateBinaryString; // Update for potential no-match scenario.
-
-        let computedBaseNegTwoEquivalent = 0; // Accumulator for the base-(-2) sum.
-
-        // Helper function to calculate powers of -2.
-        // This extracts a common calculation into a reusable utility.
-        const calculateNegativeTwoPower = (exponentVal) => {
-            if (exponentVal === 0) {
-                return 1; // (-2)^0 = 1
+        // Iterate through each bit of the binary string
+        for (let bitPosition = 0; bitPosition < currentBinaryRepresentation.length; bitPosition++) {
+            // If the bit is '1', add the corresponding power of -2
+            if (currentBinaryRepresentation[bitPosition] === '1') {
+                calculatedNegativeBaseValue += currentPowerOfNegativeTwo;
             }
-            let powerResult = 1;
-            for (let expCount = 0; expCount < exponentVal; expCount++) {
-                powerResult *= -2;
-            }
-            return powerResult;
-        };
-
-        // Traverse the binary string from right to left (least significant bit to most significant).
-        // The index `bitPosition` corresponds to the exponent in (-2)^bitPosition.
-        for (let bitPosition = 0; bitPosition < candidateBinaryString.length; ++bitPosition) {
-            // Only '1' bits contribute to the sum in a base-(-2) interpretation.
-            // If the bit is '0', it means 0 * (-2)^bitPosition, which adds nothing.
-            if (candidateBinaryString[bitPosition] === '1') {
-                // Add the corresponding power of -2 to the running total.
-                computedBaseNegTwoEquivalent += calculateNegativeTwoPower(bitPosition);
-            }
+            // Update the power of -2 for the next bit position
+            currentPowerOfNegativeTwo *= -2;
         }
 
-        // Check if our computed base-(-2) value matches the desired target.
-        if (computedBaseNegTwoEquivalent === desiredTargetValue) {
-            identifiedSolutionBinary = candidateBinaryString; // Store the found solution.
-            break; // Terminate the search loop early as the solution is found.
+        // Check if the calculated value matches the target
+        if (calculatedNegativeBaseValue === targetDecimalValue) {
+            break; // Exit the loop if a match is found
         }
     }
 
-    // --- Section 3: Result Finalization and Output ---
-    // Determine which binary string to use for the final output.
-    // If a solution was found, use it; otherwise, default to the last string processed.
-    const finalOutputCandidate = identifiedSolutionBinary !== null
-                                 ? identifiedSolutionBinary
-                                 : currentLoopBinaryRepresentation;
+    // The variable `currentBinaryRepresentation` will hold the binary string
+    // that either caused the loop to break (a match was found) or the last
+    // binary string processed if no match was found (i.e., for MAX_ITERATIONS_LIMIT - 1).
+    // This preserves the exact observable behavior of the original code.
+    console.log(reverseString(currentBinaryRepresentation));
+}
 
-    // Prepare the string for display: split into characters, reverse, and rejoin.
-    const reversedFinalString = finalOutputCandidate.split('').reverse().join('');
-
-    // Print the final result to the console.
-    console.log(reversedFinalString);
-};
-
-// This is the entry point for executing the script in a Node.js environment.
-// It reads input from standard input (/dev/stdin) and passes it to our function.
-performBaseNegTwoConversionSearch(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

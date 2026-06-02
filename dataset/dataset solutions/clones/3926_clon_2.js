@@ -1,62 +1,77 @@
 'use strict'
-
-function acquireText() {
+function getInputData() {
+  // This function is responsible for reading all input from standard input.
   return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function emitValue(res) {
-  console.log(res);
-} // Writes the final outcome to the console.
-
-/*
- * This utility function converts input strings based on a specific mode.
- * Mode definitions:
- *   0: Returns the input string as-is.
- *   1: Converts the string to an integer.
- *   2: Splits the string by space characters.
- *   3: Splits the string by newline characters.
- *   4: Splits by space, then converts each part to a number.
- *   5: Splits by newline, then converts each part to a number.
- *   6: Splits the string into individual characters.
- *   7: Splits into individual characters, then converts each to a number.
- */
-function parseContent(sourceText, conversionType) {
-  switch (conversionType) {
-    case 0:
-      return sourceText;
-    case 1:
-      return Number.parseInt(sourceText);
-    case 2:
-      return sourceText.split(" ");
-    case 3:
-      return sourceText.split("\n");
-    case 4:
-      return sourceText.split(" ").map((element) => Number(element));
-    case 5:
-      return sourceText.split("\n").map((item) => Number(item));
-    case 6:
-      return sourceText.split("");
-    case 7:
-      return sourceText.split("").map((char) => Number(char));
-  }
+function displayResult(resultValue) {
+  // This function prints the final calculated result to the console.
+  console.log(resultValue);
 }
 
-function ExecuteProgram(initialInput) {
-  initialInput = parseContent(initialInput, 3);
-  initialInput.shift();
+// A helper function to convert or split input strings based on a specified method.
+// The 'conversionType' parameter dictates the transformation:
+//   0: Return the string as is.
+//   1: Parse the string into an integer.
+//   2: Split the string by spaces into an array.
+//   3: Split the string by newlines into an array.
+//   4: Split by spaces, then convert each part to a number.
+//   5: Split by newlines, then convert each part to a number.
+//   6: Split the string into an array of individual characters.
+//   7: Split into characters, then convert each character to a number.
+function transformInput(inputString, conversionType) {
+  switch (conversionType) {
+    case 0:
+      return inputString;
+    case 1:
+      return parseInt(inputString);
+    case 2:
+      return inputString.split(" ");
+    case 3:
+      return inputString.split("\n");
+    case 4:
+      return inputString.split(" ").map((item) => Number(item));
+    case 5:
+      return inputString.split("\n").map((item) => Number(item));
+    case 6:
+      return inputString.split("");
+    case 7:
+      return inputString.split("").map((item) => Number(item));
+  }
+  // If conversionType is not 0-7, the original function would implicitly return undefined.
+  // We maintain this behavior by not having a default case or explicit return here.
+}
 
-  let finalSum = 0;
+function ProcessData(rawData) {
+  // Convert the multi-line input string into an array of strings, one per line.
+  rawData = transformInput(rawData, 3);
 
-  for (let counter = 0; counter < initialInput.length; counter++) {
-    let valX = Number.parseInt(initialInput[counter].split(" ")[0]);
-    let valY = Number.parseInt(initialInput[counter].split(" ")[1]);
+  // Remove the first line of the input, which is often a count or header.
+  rawData.shift();
 
-    if (valX < valY) {
-      finalSum += valY;
+  // Initialize a variable to store the cumulative sum of selected numbers.
+  var totalSum = 0;
+
+  // Iterate over each remaining line in the processed input array.
+  for (var idx = 0; idx < rawData.length; idx++) {
+    // Split the current line into two parts based on space.
+    var currentLineParts = rawData[idx].split(" ");
+    // Parse the first part as an integer.
+    var firstNum = parseInt(currentLineParts[0]);
+    // Parse the second part as an integer.
+    var secondNum = parseInt(currentLineParts[1]);
+
+    // Check if the first number is strictly less than the second number.
+    if (firstNum < secondNum) {
+      // If true, add the second number to our running total.
+      totalSum += secondNum;
     }
   }
 
-  emitValue(finalSum);
+  // Output the final calculated sum.
+  displayResult(totalSum);
 }
 
-ExecuteProgram(acquireText());
+// The entry point of the script:
+// First, retrieve the raw input data, then pass it to the main processing function.
+ProcessData(getInputData());

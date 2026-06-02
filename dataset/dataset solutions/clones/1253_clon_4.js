@@ -1,38 +1,35 @@
-const extractNumericSequence = (textualFragments) => {
-    const numericalParts = textualFragments.map(Number);
-    const countOfElements = numericalParts[0];
-    return numericalParts.slice(1, 1 + countOfElements);
-};
+function processInputAndCompute(rawInputSegments) {
+    const numericValues = rawInputSegments.map(Number);
 
-const deriveStatisticalMeasures = (numberCollection) => {
-    if (numberCollection.length === 0) {
-        return {
-            minimumObservation: Infinity,
-            maximumObservation: -Infinity,
-            aggregateSum: 0
-        };
-    }
+    const elementCount = numericValues[0];
+    const targetNumbers = numericValues.slice(1, elementCount + 1);
 
-    return numberCollection.reduce((accumulator, currentDatum) => {
-        accumulator.minimumObservation = Math.min(accumulator.minimumObservation, currentDatum);
-        accumulator.maximumObservation = Math.max(accumulator.maximumObservation, currentDatum);
-        accumulator.aggregateSum += currentDatum;
-        return accumulator;
-    }, { minimumObservation: Infinity, maximumObservation: -Infinity, aggregateSum: 0 });
-};
+    const retrieveMinimum = (arr) => {
+        if (arr.length === 0) {
+            return Infinity;
+        }
+        return arr.reduce((accumulator, currentElement) => (currentElement < accumulator ? currentElement : accumulator));
+    };
 
-const renderOutputString = (statisticalResults) => {
-    return `${statisticalResults.minimumObservation} ${statisticalResults.maximumObservation} ${statisticalResults.aggregateSum}`;
-};
+    const retrieveMaximum = (arr) => {
+        if (arr.length === 0) {
+            return -Infinity;
+        }
+        return arr.reduce((accumulator, currentElement) => (currentElement > accumulator ? currentElement : accumulator));
+    };
 
-const processIncomingBlock = (dataBlock) => {
-    const rawSegments = dataBlock.split(/\s+/);
-    const relevantNumbers = extractNumericSequence(rawSegments);
-    const calculatedStats = deriveStatisticalMeasures(relevantNumbers);
-    const finalDisplay = renderOutputString(calculatedStats);
-    process.stdout.write(finalDisplay);
-};
+    const computeSummation = (arr) => arr.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+
+    const minimumResult = retrieveMinimum(targetNumbers);
+    const maximumResult = retrieveMaximum(targetNumbers);
+    const totalSum = computeSummation(targetNumbers);
+
+    const finalResults = [minimumResult, maximumResult, totalSum];
+    process.stdout.write(finalResults.join(' '));
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', processIncomingBlock);
+process.stdin.on('data', function (dataChunk) {
+    processInputAndCompute(dataChunk.split(/\s+/));
+});

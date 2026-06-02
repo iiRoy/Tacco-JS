@@ -1,154 +1,122 @@
-function assessCompetitionOutcomes(competitionInputLines) {
-  // Validate initial input structure.
-  if (!competitionInputLines || competitionInputLines.length < 2) {
-    console.error("Input data is incomplete or invalid. Expected at least two lines.");
-    return;
-  }
+const parseInputData = (inputLines) => {
+    const firstLineParts = inputLines[0].split(' ').map(Number);
+    const secondLineParts = inputLines[1].split(' ').map(Number);
+    return {
+        numProblems: firstLineParts[0],
+        maxVoteValue: firstLineParts[1],
+        initialVoteCount: firstLineParts[2],
+        topRankThreshold: firstLineParts[3],
+        problemScores: secondLineParts
+    };
+};
 
-  // Parse global competition parameters from the first line.
-  const setupNumericValues = competitionInputLines[0].split(' ').map(Number);
-  const totalItemCount = setupNumericValues[0]; // Represents N
-  const maxVotesPerItem = setupNumericValues[1]; // Represents M
-  const totalSelectableCandidates = setupNumericValues[2]; // Represents V
-  const targetTopRank = setupNumericValues[3]; // Represents P
+/**
+ * @param {string[]} inputLines
+ */
+function Main(inputLines) {
+    const {
+        numProblems: totalProblems,
+        maxVoteValue: voteCap,
+        initialVoteCount: startingVotes,
+        topRankThreshold: rankLimit,
+        problemScores: rawScores
+    } = parseInputData(inputLines);
 
-  // Parse and sort the initial scores of all items in ascending order.
-  const initialScoresSorted = competitionInputLines[1].split(' ').map(Number).sort((scoreA, scoreB) => scoreA - scoreB);
+    /** @type {number[]} */
+    const sortedProblemScores = [...rawScores].sort((scoreA, scoreB) => scoreA - scoreB);
 
-  // Add guard clauses for critical parameters (Type III addition).
-  if (targetTopRank <= 0 || targetTopRank > totalItemCount) {
-    console.log(0); // If target rank is invalid, no item can qualify.
-    return;
-  }
-  if (totalSelectableCandidates < targetTopRank) {
-    // If we can't even select enough items to reach the target rank, no item qualifies.
-    console.log(0);
-    return;
-  }
+    let currentVotePool = startingVotes;
+    let potentialCandidateScore = null;
 
-  let lowestQualifyingScoreFound = -1; // Placeholder for the score of the lowest-ranked item that can reach targetTopRank.
+    for (let currentProblemIdx = 0; currentProblemIdx < sortedProblemScores.length; currentProblemIdx++) {
+        let scoreOfCurrentProblem = sortedProblemScores[currentProblemIdx];
+        let maxAchievableScoreForCurrent = scoreOfCurrentProblem + voteCap;
 
-  // `remainingSelectionsTracker` counts how many items from the `totalSelectableCandidates` pool
-  // are yet to be accounted for (either by being the current item, a duplicate, or a higher-ranked item).
-  let remainingSelectionsTracker = totalSelectableCandidates;
-
-  // Iterate through each item, from lowest score to highest, to find the threshold.
-  for (let currentCandidateIndex = 0; currentCandidateIndex < initialScoresSorted.length; ++currentCandidateIndex) {
-    const currentCandidateBaseScore = initialScoresSorted[currentCandidateIndex];
-
-    // Skip over items that have identical scores to the current one.
-    // These duplicates are implicitly covered if the current item qualifies.
-    while (currentCandidateIndex + 1 < initialScoresSorted.length && initialScoresSorted[currentCandidateIndex] === initialScoresSorted[currentCandidateIndex + 1]) {
-      currentCandidateIndex++;
-      remainingSelectionsTracker--; // Each duplicate reduces the pool of candidates we need to select.
-    }
-    remainingSelectionsTracker--; // The current candidate itself takes one slot from the pool.
-
-    // Calculate the maximum score this current candidate could achieve with `maxVotesPerItem`.
-    const potentialMaxScoreForCurrent = currentCandidateBaseScore + maxVotesPerItem;
-
-    let accumulatedVotesForGaps = 0;
-    // Calculate votes needed to bring up items between `currentCandidateBaseScore` and `potentialMaxScoreForCurrent`.
-    // These items are higher than the current candidate but could be boosted to its potential max score.
-    for (let higherItemIdx = currentCandidateIndex + 1; higherItemIdx < initialScoresSorted.length; ++higherItemIdx) {
-      const scoreOfHigherItem = initialScoresSorted[higherItemIdx];
-      if (scoreOfHigherItem >= potentialMaxScoreForCurrent) {
-        break; // Stop if items are already at or above the potential max score.
-      }
-      accumulatedVotesForGaps += (potentialMaxScoreForCurrent - scoreOfHigherItem);
-    }
-    
-    // Determine how many items can be completely covered by `maxVotesPerItem` from the accumulated votes.
-    const itemsCoveredByFullBoosts = (accumulatedVotesForGaps / maxVotesPerItem) | 0; // Bitwise OR for floor division.
-    let leftoverVotesFromGaps = accumulatedVotesForGaps % maxVotesPerItem;
-
-    // If the remaining selections are less than or equal to the items we can cover by bulk votes,
-    // it implies that the current item can indeed reach the target rank.
-    // All necessary higher items are either already high enough or can be boosted within `totalSelectableCandidates`.
-    if (remainingSelectionsTracker <= itemsCoveredByFullBoosts) {
-      lowestQualifyingScoreFound = currentCandidateBaseScore;
-      break; // Found the lowest possible qualifying score, no need to check further.
-    }
-
-    // Calculate how many distinct higher-scoring items must be selected and boosted with full votes.
-    const numberOfDistinctHigherItemsToBoost = remainingSelectionsTracker - itemsCoveredByFullBoosts;
-
-    // Ensure `slice` doesn't get a negative argument, which would reverse its behavior.
-    const actualSliceCount = Math.max(0, numberOfDistinctHigherItemsToBoost);
-    
-    // Get the scores of these highest-ranked items and apply `maxVotesPerItem` to them.
-    // This creates a hypothetical list of boosted scores for comparison.
-    const boostedScoresOfTopSelections = initialScoresSorted.slice(-actualSliceCount).map(score => score + maxVotesPerItem);
-
-    // If there are `leftoverVotesFromGaps`, distribute them among the `boostedScoresOfTopSelections`.
-    // This might reduce some of their boosted scores from `score + maxVotesPerItem`.
-    if (leftoverVotesFromGaps > 0) {
-      for (let boostElementIdx = 0; boostElementIdx < boostedScoresOfTopSelections.length; ++boostElementIdx) {
-        let currentBoostedElementScore = boostedScoresOfTopSelections[boostElementIdx];
-        // If subtracting leftover votes would drop the score below `potentialMaxScoreForCurrent`, cap it.
-        if (currentBoostedElementScore - leftoverVotesFromGaps < potentialMaxScoreForCurrent) {
-          boostedScoresOfTopSelections[boostElementIdx] = potentialMaxScoreForCurrent;
-          leftoverVotesFromGaps -= (currentBoostedElementScore - potentialMaxScoreForCurrent);
-        } else {
-          boostedScoresOfTopSelections[boostElementIdx] -= leftoverVotesFromGaps;
-          leftoverVotesFromGaps = 0; // All votes used.
-          break;
+        let duplicateCount = 0;
+        while (currentProblemIdx + 1 < sortedProblemScores.length && sortedProblemScores[currentProblemIdx] === sortedProblemScores[currentProblemIdx + 1]) {
+            currentProblemIdx++;
+            duplicateCount++;
         }
-      }
-      // If votes still remain after iterating, subtract from the highest score (last element).
-      if (leftoverVotesFromGaps > 0 && boostedScoresOfTopSelections.length > 0) {
-        boostedScoresOfTopSelections[boostedScoresOfTopSelections.length - 1] -= leftoverVotesFromGaps;
-      }
+        currentVotePool -= (duplicateCount + 1);
+
+        let votesRequiredForIntermediate = 0;
+        let higherScoreIterator = currentProblemIdx + 1;
+
+        while (higherScoreIterator < sortedProblemScores.length && sortedProblemScores[higherScoreIterator] < maxAchievableScoreForCurrent) {
+            votesRequiredForIntermediate += (maxAchievableScoreForCurrent - sortedProblemScores[higherScoreIterator]);
+            higherScoreIterator++;
+        }
+
+        let votesConsumedByIntermediate = Math.floor(votesRequiredForIntermediate / voteCap);
+        let remainderFromIntermediate = votesRequiredForIntermediate % voteCap;
+
+        if (currentVotePool <= votesConsumedByIntermediate) {
+            potentialCandidateScore = scoreOfCurrentProblem;
+            break;
+        }
+
+        const problemsToReceiveFullVotes = currentVotePool - votesConsumedByIntermediate;
+
+        /** @type {number[]} */
+        let scoresModifiedByRemaining = [];
+        if (problemsToReceiveFullVotes > 0) {
+            scoresModifiedByRemaining = sortedProblemScores.slice(-problemsToReceiveFullVotes).map((s) => s + voteCap);
+        }
+
+        if (remainderFromIntermediate > 0) {
+            for (let modifiedIdx = 0; modifiedIdx < scoresModifiedByRemaining.length; modifiedIdx++) {
+                let currentModifiedScore = scoresModifiedByRemaining[modifiedIdx];
+                if (currentModifiedScore - remainderFromIntermediate < maxAchievableScoreForCurrent) {
+                    remainderFromIntermediate -= (currentModifiedScore - maxAchievableScoreForCurrent);
+                    scoresModifiedByRemaining[modifiedIdx] = maxAchievableScoreForCurrent;
+                } else {
+                    scoresModifiedByRemaining[modifiedIdx] -= remainderFromIntermediate;
+                    remainderFromIntermediate = 0;
+                    break;
+                }
+            }
+            if (remainderFromIntermediate > 0 && scoresModifiedByRemaining.length > 0) {
+                scoresModifiedByRemaining[scoresModifiedByRemaining.length - 1] -= remainderFromIntermediate;
+            }
+        }
+
+        let isThisProblemViable = false;
+        for (let rankCheckCounter = 0; rankCheckCounter < rankLimit; rankCheckCounter++) {
+            let scoreForComparison;
+            if (rankCheckCounter < scoresModifiedByRemaining.length) {
+                scoreForComparison = scoresModifiedByRemaining[scoresModifiedByRemaining.length - 1 - rankCheckCounter];
+            } else {
+                const originalScorePosition = sortedProblemScores.length - 1 - rankCheckCounter;
+                if (originalScorePosition >= 0) {
+                    scoreForComparison = sortedProblemScores[originalScorePosition];
+                } else {
+                    scoreForComparison = -Infinity;
+                }
+            }
+
+            if (maxAchievableScoreForCurrent >= scoreForComparison) {
+                isThisProblemViable = true;
+                break;
+            }
+        }
+
+        if (isThisProblemViable) {
+            potentialCandidateScore = scoreOfCurrentProblem;
+            break;
+        }
     }
 
-    // Now, verify if the current candidate, with its `potentialMaxScoreForCurrent`,
-    // can be ranked within the `targetTopRank` position among all items.
-    let canCurrentCandidateQualify = true;
-    for (let rankPositionOffset = 0; rankPositionOffset < targetTopRank; ++rankPositionOffset) {
-      let scoreAtThisRank;
-      const effectiveIndexFromEnd = initialScoresSorted.length - 1 - rankPositionOffset;
-
-      if (rankPositionOffset < boostedScoresOfTopSelections.length) {
-        // Compare against the adjusted scores of the highest `numberOfDistinctHigherItemsToBoost` items.
-        // These are sorted, so `boostedScoresOfTopSelections[length - 1 - offset]` gets the `offset`-th highest.
-        scoreAtThisRank = boostedScoresOfTopSelections[boostedScoresOfTopSelections.length - 1 - rankPositionOffset];
-      } else {
-        // If we've exhausted the boosted items, compare against original scores of even higher items.
-        scoreAtThisRank = initialScoresSorted[effectiveIndexFromEnd];
-      }
-
-      // If any item at a higher rank position has a score greater than our current candidate's potential max,
-      // then the current candidate cannot achieve the `targetTopRank`.
-      if (potentialMaxScoreForCurrent < scoreAtThisRank) {
-        canCurrentCandidateQualify = false;
-        break;
-      }
+    let finalCandidateStartingIndex = sortedProblemScores.length;
+    if (potentialCandidateScore !== null) {
+        let tempSearchIndex = currentProblemIdx;
+        while (tempSearchIndex > 0 && sortedProblemScores[tempSearchIndex] === sortedProblemScores[tempSearchIndex - 1]) {
+            tempSearchIndex--;
+        }
+        finalCandidateStartingIndex = tempSearchIndex;
     }
 
-    if (canCurrentCandidateQualify) {
-      lowestQualifyingScoreFound = currentCandidateBaseScore;
-      break; // Found the threshold, exit loop.
-    }
-  }
-
-  // If no qualifying score was found, it means even the highest-scoring items cannot reach the `targetTopRank`.
-  if (lowestQualifyingScoreFound === -1) {
-      console.log(0);
-      return;
-  }
-
-  // After finding the lowest score that can qualify, count all items that are at least as good.
-  // The `currentCandidateIndex` might be positioned at the end of a block of identical scores.
-  // We need to backtrack to the first occurrence of this score to count all items with it.
-  let finalMatchingStartingIndex = currentCandidateIndex;
-  while (finalMatchingStartingIndex > 0 && initialScoresSorted[finalMatchingStartingIndex] === initialScoresSorted[finalMatchingStartingIndex - 1]) {
-    finalMatchingStartingIndex--;
-  }
-
-  const finalCountOfQualifyingItems = initialScoresSorted.length - finalMatchingStartingIndex;
-  console.log(finalCountOfQualifyingItems);
+    const finalResultCount = sortedProblemScores.length - finalCandidateStartingIndex;
+    console.log(finalResultCount);
 }
 
-// Standard competitive programming input handling.
-const rawInputDataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-assessCompetitionOutcomes(rawInputDataLines);
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

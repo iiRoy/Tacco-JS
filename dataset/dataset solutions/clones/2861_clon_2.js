@@ -1,94 +1,87 @@
-// Function to parse raw text data into a structured array
-function processTextData (rawData , convertToInts ) {
-  // Default the conversion flag if not provided
-  if ( typeof convertToInts === 'undefined' ) { convertToInts = false ; }
-  
-  let parsedLines = []; // Array to store processed lines
-  const textLines = rawData.split('\n'); // Split input by newline characters
+// This function processes raw input text into an array of arrays, optionally converting elements to integers.
+function parseInputData(rawData, convertToInt) {
+  // If the conversion flag is not explicitly provided, default it to false.
+  if (typeof convertToInt === 'undefined') {
+    convertToInt = false;
+  }
 
-  // Iterate over each line of the input
-  for ( let idx = 0; idx < textLines.length; idx += 1 ) {
-    if ( convertToInts ) {
-      // If conversion to integers is requested, split by space and parse each part
-      parsedLines.push(textLines[idx].split(' ').map(val => Number.parseInt(val, 10)));
-    }
-    else {
-      // Otherwise, just split the line by space
-      parsedLines.push(textLines[idx].split(' '));
+  let parsedLines = []; // This array will store the processed data.
+  const inputLines = rawData.split('\n'); // Split the entire input string into individual lines.
+
+  // Iterate through each line of the input.
+  for (let lineIdx = 0; lineIdx < inputLines.length; lineIdx += 1) {
+    if (convertToInt) {
+      // If integer conversion is requested, split the line by spaces and map each part to an integer.
+      parsedLines.push(inputLines[lineIdx].split(' ').map(function(valStr) {
+        return parseInt(valStr, 10); // Use base 10 for integer parsing.
+      }));
+    } else {
+      // Otherwise, just split the line by spaces and keep the parts as strings.
+      parsedLines.push(inputLines[lineIdx].split(' '));
     }
   }
-  return parsedLines; // Return the fully parsed data
+  return parsedLines; // Return the structured array of arrays.
 }
 
-// Helper function to create and initialize a dynamic programming array
+// Creates and initializes a new array for dynamic programming calculations.
 function initializeDynamicArray(arraySize, initialValue) {
-  // Create an array of size arraySize + 2 (for 0-based indexing and potential offsets)
-  // and fill it with the specified initial value.
+  // The array size is N+2 to accommodate 0-based indexing and potential boundary conditions.
   return Array(arraySize + 2).fill(initialValue);
 }
 
-/*
- * This function attempts to update a variable 'currentVal' to 'candidateVal'
- * if 'candidateVal' is smaller than 'currentVal'.
- * Note: In JavaScript, primitive types are passed by value,
- * so this function will only modify its local copy of 'currentVal'.
- * For external effect, it would need to return the new minimum or operate on an object property.
- */
-function updateMinimum (currentVal, candidateVal) {
-  if ( currentVal > candidateVal ) {
-    currentVal = candidateVal;
+// A utility function to find the minimum of two values and update the first.
+function checkAndMinimize(currentVal, compareVal) {
+  if (currentVal > compareVal) {
+    currentVal = compareVal; // Update currentVal if compareVal is smaller.
   }
 }
 
-// Similar to updateMinimum, but for maximum value.
-function updateMaximum ( currentVal , candidateVal ) {
-  if ( currentVal < candidateVal ) { currentVal = candidateVal; }
+// A utility function to find the maximum of two values and update the first.
+function checkAndMaximize(currentVal, compareVal) {
+  if (currentVal < compareVal) {
+    currentVal = compareVal; // Update currentVal if compareVal is larger.
+  }
 }
 
+// The main function that orchestrates the program's logic.
+function ProcessData(programInput) {
+  // Parse the input data, ensuring all numbers are converted to integers.
+  const processedData = parseInputData(programInput, true);
+  // Extract the target number (N) from the first element of the first processed line.
+  const targetNumber = processedData[0][0];
 
-// Main execution function for the problem solution
-function executeSolution (problemData) {
-  // Parse the input data, converting all elements to integers
-  const processedDataMatrix = processTextData(problemData, true);
-  
-  // Extract the total number of elements from the first line, first item
-  const totalElements = processedDataMatrix[0][0];
-  
-  // Collect 'forbidden' or 'blocked' indices from subsequent lines
-  let forbiddenElements = [];
-  for ( let k = 1; k < processedDataMatrix.length; k++ ) {
-    forbiddenElements.push(processedDataMatrix[k][0]);
+  // Collect all "forbidden" numbers from the subsequent lines of input.
+  let forbiddenNumbers = [];
+  for (let currentStep = 1; currentStep < processedData.length; currentStep += 1) {
+    forbiddenNumbers.push(processedData[currentStep][0]);
   }
-    
-  // Initialize the dynamic programming array.
-  // The size is totalElements + 2, filled with zeros.
-  let dynamicProgrammingArray = initializeDynamicArray(totalElements, 0);
-  dynamicProgrammingArray[0] = 1; // Base case: one way to reach position 0
 
-  // Iterate through each step from 1 up to totalElements
-  for ( let step = 1; step <= totalElements; step++ ) {
-    // Check if the current step is a forbidden element
-    if ( forbiddenElements.length > 0 && forbiddenElements[0] === step ) {
-      forbiddenElements.shift(); // Remove the forbidden element once processed
-      continue; // Skip calculations for forbidden steps
+  // Initialize the dynamic programming array with zeros.
+  let dynamicProgression = initializeDynamicArray(targetNumber, 0);
+  // Set the base case: there is one way to reach step 0 (by doing nothing).
+  dynamicProgression[0] = 1;
+
+  // Iterate from step 1 up to the target number to fill the DP array.
+  for (let currentStep = 1; currentStep <= targetNumber; currentStep += 1) {
+    // Check if the current step is one of the forbidden numbers.
+    if (forbiddenNumbers[0] === currentStep) {
+      forbiddenNumbers.shift(); // Remove the processed forbidden number from the list.
+      continue; // Skip this step as it's forbidden.
     }
-    
-    // Calculate the number of ways to reach the current step
-    // Add ways from the previous step
-    dynamicProgrammingArray[step] += dynamicProgrammingArray[step - 1];
-    
-    // If step is at least 2, also add ways from two steps back
-    if ( step >= 2 ) {
-      dynamicProgrammingArray[step] += dynamicProgrammingArray[step - 2];
+
+    // Add the number of ways to reach the previous step (currentStep - 1).
+    dynamicProgression[currentStep] += dynamicProgression[currentStep - 1];
+    // If currentStep is at least 2, also add the number of ways to reach step (currentStep - 2).
+    if (currentStep >= 2) {
+      dynamicProgression[currentStep] += dynamicProgression[currentStep - 2];
     }
-    
-    // Apply modulo operation to prevent integer overflow
-    dynamicProgrammingArray[step] %= 1000000007;
+    // Apply modulo operation to keep the result within a specific range (prevent overflow).
+    dynamicProgression[currentStep] %= 1000000007;
   }
 
-  // Output the final result: number of ways to reach the totalElements position
-  console.log(dynamicProgrammingArray[totalElements]);
+  // Print the final calculated number of ways to reach the target number.
+  console.log(dynamicProgression[targetNumber]);
 }
 
-// Read input from standard input and execute the main solution
-executeSolution(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read the input from standard input and pass it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

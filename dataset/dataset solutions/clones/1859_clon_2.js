@@ -1,164 +1,201 @@
-let fileContent = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ;
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function executeProgram( { dataStream, fetchData, booleanToText, calculateSummation, outputJson } ) {
-    // Acquire the total node count and connection count from input
-    const [nodeCount, edgeCount] = fetchData( 2 ) ;
-    // Acquire the lists of start and end nodes for all connections
-    const [startNodes, endNodes] = fetchData( edgeCount, 2 ) ;
+/**
+ * This function serves as the primary entry point for solving the graph problem.
+ * It implements a Breadth-First Search (BFS) to determine if all nodes are reachable
+ * from node 1 and to find the parent node for each reachable node.
+ *
+ * @param {object} params - An object containing various utility functions and input data.
+ * @param {string} params.input - The complete raw input string.
+ * @param {function(number, number, Function): (number[]|number[][])} params.load - A utility to parse structured data from the input.
+ * @param {function(boolean): string} params.yesno - A utility to convert a boolean value to 'Yes' or 'No' string.
+ * @param {function(number[]): number} params.math_sum - A utility to calculate the sum of an array of numbers.
+ * @param {function(*): void} params.log_json - A utility to log an object as a JSON string.
+ * @returns {string} 'No' if not all nodes are reachable, otherwise 'Yes' followed by the parent nodes (from node 2 onwards), each on a new line.
+ */
+function processGraph({ input, load, yesno, math_sum, log_json }) {
+    // Load the total number of nodes (N) and edges (M) from the input.
+    const [nodeCount, edgeCount] = load(2);
+    // Load the edge definitions: edgeStarts[i] connects to edgeEnds[i].
+    const [edgeStarts, edgeEnds] = load(edgeCount, 2);
     
-    // Initialize an array to track parent connections for each node.
-    // A value of 0 means unvisited, -1 means a special initial state for sentinel indices.
-    const connectionMap = new Array ( nodeCount + 1 ) . fill ( 0 ) ;
-    connectionMap [ 0 ] = -1 ; // Placeholder for index 0, not used for actual nodes
-    connectionMap [ 1 ] = -1 ; // The starting node's parent is considered itself or a root
+    // Initialize an array to store the "parent" or "signpost" for each node.
+    // pathTracker[k] will store the node from which we reached node k.
+    // A value of 0 means the node has not been visited yet.
+    const pathTracker = new Array(nodeCount + 1).fill(0);
+    pathTracker[0] = -1; // Sentinel value for the unused 0th index.
+    pathTracker[1] = -1; // Node 1 is the starting point, so it has no parent in this context.
 
-    // A queue for nodes pending processing in a breadth-first manner
-    const pendingNodes = [ 1 ] ;
-    while ( pendingNodes . length > 0 ) {
-        safeguardLoopExecution ( ) ; // Prevents potential infinite loops
+    // Initialize a queue for the BFS traversal, starting with node 1.
+    const pendingNodes = [1];
+    
+    // Begin the BFS traversal. The loop continues as long as there are nodes to visit.
+    while (pendingNodes.length > 0) {
+        // Call the loop guard to prevent infinite execution in case of problematic inputs.
+        loopGuard();
 
-        const currentNode = pendingNodes . shift ( ) ; // Get the next node to process
-        // Iterate through all available connections
-        for ( let connectionIndex = 0 ; connectionIndex < edgeCount ; connectionIndex++ ) {
-            let sourceNode = null ;
-            let targetNode = null ;
+        // Dequeue the next node to process.
+        const currentNode = pendingNodes.shift();
 
-            // Determine the direction of the connection relative to the currentNode
-            if ( startNodes [ connectionIndex ] === currentNode ) {
-                [ sourceNode, targetNode ] = [ endNodes [ connectionIndex ], startNodes [ connectionIndex ] ] ;
+        // Iterate through all defined edges to find connections from the currentNode.
+        for (let idx = 0; idx < edgeCount; idx++) {
+            let sourceNode = null; // The node connected to currentNode.
+            let targetNode = null; // The currentNode itself, acting as a parent.
+
+            // Check if the current edge (edgeStarts[idx], edgeEnds[idx]) involves currentNode.
+            if (edgeStarts[idx] === currentNode) {
+                [sourceNode, targetNode] = [edgeEnds[idx], edgeStarts[idx]];
             }
-            if ( endNodes [ connectionIndex ] === currentNode ) {
-                [ sourceNode, targetNode ] = [ startNodes [ connectionIndex ], endNodes [ connectionIndex ] ] ;
+            // Check the other direction of the edge.
+            if (edgeEnds[idx] === currentNode) {
+                [sourceNode, targetNode] = [edgeStarts[idx], edgeEnds[idx]];
             }
-            // If this connection does not involve the currentNode, skip to the next
-            if ( sourceNode === null ) continue ;
+            
+            // If the current edge does not connect to currentNode, skip to the next edge.
+            if (sourceNode === null) {
+                continue;
+            }
 
-            // If the sourceNode has not been visited yet (its entry in connectionMap is 0)
-            if ( ! connectionMap [ sourceNode ] ) {
-                connectionMap [ sourceNode ] = targetNode ; // Record its parent (the node from which it was reached)
-                pendingNodes . push ( sourceNode ) ; // Add this newly visited node to the queue
+            // If the connected node (sourceNode) has not been visited yet (pathTracker[sourceNode] is 0).
+            if (!pathTracker[sourceNode]) {
+                pathTracker[sourceNode] = targetNode; // Mark currentNode as the parent of sourceNode.
+                pendingNodes.push(sourceNode);       // Add sourceNode to the queue to be visited later.
             }
         }
     }
 
-    // After traversal, check if any node remains unvisited (value 0)
-    if ( connectionMap . includes ( 0 ) ) return booleanToText ( false ) ;
+    // After the BFS completes, check if any node (from 2 to nodeCount) remains unvisited.
+    // An unvisited node will still have a 0 in pathTracker.
+    if (pathTracker.includes(0)) {
+        return 'No'; // If any node is unreachable, return 'No'.
+    }
     
-    console . log ( booleanToText ( true ) ) ; // Output success message
-    // Return the parent connections for actual nodes, formatted as newline-separated strings
-    return connectionMap . slice ( 2 ) . join ( '\n' ) ;
+    // If all nodes are reachable, print 'Yes' and then the parent nodes.
+    console.log('Yes');
+    // The result requires parent nodes starting from index 2 (node 2, node 3, ...).
+    return pathTracker.slice(2).join('\n');
 }
 
 
-// Optional: Mark the start of performance measurement
-let parsedSegments = fileContent . split ( /[\s\n]/ ) ;
-let loopSafetyCounter = 0 ; // Global counter for loop safeguarding
-let programOutcome = executeProgram ( {
-    dataStream: fileContent,
-    // Utility to convert a boolean value to 'Yes' or 'No' string
-    booleanToText: checkValue => checkValue ? 'Yes' : 'No',
-    // Utility to calculate the sum of numbers in an array
-    calculateSummation: numericArray => numericArray . reduce ( ( accumulator, currentElement ) => accumulator + currentElement, 0 ),
-    // Utility function to load data from parsedSegments
-    fetchData ( numRows = 1, numCols = 1, dataType = Number ) {
-        const totalElements = numRows * numCols ;
-        let fetchedData = parsedSegments . splice ( 0, totalElements ) ;
-        // Convert elements to the specified data type, unless it's a String
-        if ( dataType !== String ) fetchedData = fetchedData . map ( dataType ) ;
+// --- Global Utilities and Execution Flow ---
+
+// Split the raw input data into an array of tokens, using whitespace or newlines as delimiters.
+let parsedTokens = rawData.split(/[\s\n]/);
+let guardCounter = 0; // Counter for the loop prevention mechanism.
+
+// Execute the main graph processing function, passing in the necessary helper functions.
+let finalOutput = processGraph({
+    input: rawData,
+    yesno: (value) => value ? 'Yes' : 'No',
+    math_sum: (numArray) => numArray.reduce((accumulator, current) => accumulator + current, 0),
+    load(numRows = 1, numCols = 1, dataType = Number) {
+        const totalLength = numRows * numCols;
+        // Extract the required number of tokens from the parsedTokens array.
+        let extractedTokens = parsedTokens.splice(0, totalLength);
         
-        // If multiple columns are specified, restructure into columnar arrays
-        if ( numCols > 1 ) {
-            const columnarArrays = new Array ( numCols ) ;
-            for ( let columnIndex = 0 ; columnIndex < numCols ; columnIndex++ ) {
-                columnarArrays [ columnIndex ] = new Array ( ) ;
-                for ( let rowIndex = 0 ; rowIndex < numRows ; rowIndex++ ) {
-                    columnarArrays [ columnIndex ] . push ( fetchedData [ rowIndex * numCols + columnIndex ] ) ;
+        // Convert the extracted tokens to the specified data type if it's not String.
+        if (dataType !== String) {
+            extractedTokens = extractedTokens.map(dataType);
+        }
+        
+        // If multiple columns are specified, restructure the flat array into an array of column arrays.
+        if (numCols > 1) {
+            const columnArrays = new Array(numCols);
+            for (let colIndex = 0; colIndex < numCols; colIndex++) {
+                columnArrays[colIndex] = new Array();
+                for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                    columnArrays[colIndex].push(extractedTokens[rowIndex * numCols + colIndex]);
                 }
             }
-            fetchedData = columnarArrays ;
+            extractedTokens = columnArrays;
         }
-        return fetchedData ;
+        return extractedTokens;
     },
-    // Utility to output data as a JSON string to console
-    outputJson ( dataPayload ) {
-        console . log ( JSON . stringify ( dataPayload ) ) ;
+    log_json(valueToLog) {
+        console.log(JSON.stringify(valueToLog));
     },
-} ) ;
+});
 
-// Handle the program's final outcome
-if ( programOutcome === undefined ) {
-    console . warn ( "Program did not return a defined outcome." ) ;
+// Check the result from the main function and print it to the console.
+if (finalOutput === undefined) {
+    console.warn("finalOutput is undefined");
 } else {
-    console . log ( programOutcome ) ;
+    console.log(finalOutput);
 }
-// Optional: Mark the end of performance measurement
 
 
 /**
- * Safeguards against infinite loops by incrementing a global counter
- * and throwing an error if a predefined limit is reached.
- * @param {number} limitValue - The maximum allowed iterations before an error is thrown.
+ * A safety mechanism to prevent infinite loops during execution.
+ * It increments a counter and throws an error if the counter exceeds a predefined maximum.
+ * @param {number} [maxIterations=100000] - The maximum number of times this function can be called before throwing an error.
+ * @throws {Error} If the iteration count exceeds `maxIterations`.
  */
-function safeguardLoopExecution ( limitValue = 100000 ) { // Default limit of 100,000 iterations
-    loopSafetyCounter++ ;
-    if ( loopSafetyCounter >= limitValue ) {
-        throw new Error ( "Loop iteration limit exceeded, potential infinite loop detected." ) ;
+function loopGuard(maxIterations = 100000) {
+    guardCounter++;
+    if (guardCounter >= maxIterations) {
+        throw new Error("Infinite loop detected!");
     }
 }
 
 /**
- * Finds the maximum value within an array of numbers.
- * @param {Array<number>} numericArray - The array of numbers to search through.
- * @param {number|null} startingPoint - An optional initial value to compare against.
- * @returns {number} The maximum value found.
+ * Calculates the maximum value within an array of numbers.
+ * @param {number[]} numArray - The array of numbers to search through.
+ * @param {number|null} [startVal=null] - An optional initial value to compare against. If null, the first element of numArray is used.
+ * @returns {number} The largest number found in the array.
  */
-function findMaximum ( numericArray, startingPoint = null ) {
-    let computedValue = ( startingPoint === null ) ? numericArray [ 0 ] : startingPoint ;
-    for ( const currentNum of numericArray ) {
-        if ( currentNum > computedValue ) {
-            computedValue = currentNum ;
+function calculateMax(numArray, startVal = null) {
+    let currentMax = (startVal === null) ? numArray[0] : startVal;
+    for (const num of numArray) {
+        if (num > currentMax) {
+            currentMax = num;
         }
     }
-    return computedValue ;
+    return currentMax;
 }
 
 /**
- * Finds the minimum value within an array of numbers.
- * @param {Array<number>} numericArray - The array of numbers to search through.
- * @param {number|null} startingPoint - An optional initial value to compare against.
- * @returns {number} The minimum value found.
+ * Calculates the minimum value within an array of numbers.
+ * @param {number[]} numArray - The array of numbers to search through.
+ * @param {number|null} [startVal=null] - An optional initial value to compare against. If null, the first element of numArray is used.
+ * @returns {number} The smallest number found in the array.
  */
-function findMinimum ( numericArray, startingPoint = null ) {
-    let computedValue = ( startingPoint === null ) ? numericArray [ 0 ] : startingPoint ;
-    for ( const currentNum of numericArray ) {
-        if ( currentNum < computedValue ) {
-            computedValue = currentNum ;
+function calculateMin(numArray, startVal = null) {
+    let currentMin = (startVal === null) ? numArray[0] : startVal;
+    for (const num of numArray) {
+        if (num < currentMin) {
+            currentMin = num;
         }
     }
-    return computedValue ;
+    return currentMin;
 }
 
-// Function to perform prime factorization on a given integer.
-// Returns an object where keys are prime factors and values are their exponents.
-function factorizeIntoPrimes ( inputNumber ) {
-    const primeFactorsMap = { } ;
+/**
+ * Performs prime factorization on a given integer.
+ * @param {number} numVal - The integer to factorize.
+ * @returns {object} An object where keys are prime factors and values are their corresponding powers.
+ *                   For example, `getPrimeFactors(12)` would return `{ '2': 2, '3': 1 }`.
+ */
+function getPrimeFactors(numVal) {
+    const factorsMap = {};
 
-    // Iterate from 2 up to the square root of the number
-    for ( let divisorCandidate = 2 ; divisorCandidate * divisorCandidate <= inputNumber ; divisorCandidate++ ) {
-        if ( inputNumber % divisorCandidate === 0 ) {
-            inputNumber /= divisorCandidate ;
-            primeFactorsMap [ divisorCandidate ] = 1 ; // First occurrence of this prime factor
+    // Iterate from 2 up to the square root of numVal.
+    for (let factor = 2; factor * factor <= numVal; factor++) {
+        if (numVal % factor === 0) {
+            numVal /= factor;
+            factorsMap[factor] = 1; // First occurrence of this prime factor.
             
-            // Continue dividing by the same prime factor until it's no longer a divisor
-            while ( inputNumber % divisorCandidate === 0 ) {
-                inputNumber /= divisorCandidate ;
-                primeFactorsMap [ divisorCandidate ]++ ; // Increment the exponent for this prime factor
+            // Continue dividing by the same factor until it's no longer divisible.
+            while (numVal % factor === 0) {
+                numVal /= factor;
+                factorsMap[factor]++;
             }
         }
     }
 
-    // If after all divisions, inputNumber is still greater than 1, it means the remaining inputNumber itself is a prime factor
-    if ( inputNumber > 1 ) primeFactorsMap [ inputNumber ] = 1 ;
+    // If numVal is still greater than 1 after the loop, it means the remaining numVal is a prime factor itself.
+    if (numVal > 1) {
+        factorsMap[numVal] = 1;
+    }
 
-    return primeFactorsMap ;
+    return factorsMap;
 }

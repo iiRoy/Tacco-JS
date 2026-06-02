@@ -1,44 +1,37 @@
-const currentEnv = require('readline');
+#!/usr/bin/node
+// Type IV Clone
 
-function processBatch(collectedInput) {
-    const totalItems = Number.parseInt(collectedInput[0], 10);
-    const dataEntries = collectedInput.slice(1, totalItems + 1);
+(function() {
+  let inputSegments = [];
+  const inputSource = process.openStdin();
+  inputSource.setEncoding('utf8');
 
-    const computedResults = dataEntries.map((entryString) => {
-        const [firstVal, secondVal, thirdVal] = entryString.split(" ").map(Number.parseInt);
+  inputSource.on('data', (dataChunk) => {
+    const chunkParts = dataChunk.split("\n");
+    inputSegments = (chunkParts.length > 2 || chunkParts[1] !== '')
+      ? chunkParts
+      : inputSegments.concat(chunkParts[0]);
+  });
 
-        const adjustedFirst = firstVal - 1;
-        const adjustedSecond = secondVal - 1;
+  inputSource.on('end', () => {
+    let count = parseInt(inputSegments.shift());
+    
+    Array.from({ length: count }).forEach((_, loopIndex) => {
+      const parsedLine = inputSegments[loopIndex].split(" ").map(Number);
 
-        const dynamicOffset = (adjustedFirst % 3 !== 2) ? Math.floor(adjustedSecond / 2) : 0;
+      const adjustedY = parsedLine[0] - 1;
+      const adjustedM = parsedLine[1] - 1;
 
-        const finalResult = 196471 -
-                            (adjustedFirst * 195) -
-                            (Math.floor(adjustedFirst / 3) * 5) -
-                            (adjustedSecond * 20) +
-                            dynamicOffset -
-                            thirdVal;
-        return finalResult;
+      const remainderCalc = (adjustedY % 3 !== 2) ? Math.floor(adjustedM / 2) : 0;
+
+      const baseValue = 196471;
+      const termYMultiplier = adjustedY * 195;
+      const termYFloor = Math.floor(adjustedY / 3) * 5;
+      const termMMultiplier = adjustedM * 20;
+      const finalSubtraction = parsedLine[2];
+
+      const result = baseValue - termYMultiplier - termYFloor - termMMultiplier + remainderCalc - finalSubtraction;
+      console.log(result);
     });
-
-    computedResults.forEach((outcome) => console.log(outcome));
-}
-
-function establishInputMechanism() {
-    const receivedLines = [];
-    const streamHandler = currentEnv.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
-
-    streamHandler.on('line', (singleLine) => {
-        receivedLines.push(singleLine);
-    });
-
-    streamHandler.on('close', () => {
-        processBatch(receivedLines);
-    });
-}
-
-establishInputMechanism();
+  });
+}).call(this);

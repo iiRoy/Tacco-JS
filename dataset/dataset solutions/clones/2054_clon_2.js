@@ -1,159 +1,123 @@
-/**
- * This script processes a grid of data to find the minimum number of cuts required
- * to satisfy a capacity constraint for each horizontal section.
- * The problem involves partitioning the grid rows and then checking column-wise sums.
- */
+// This script processes grid data to find the minimum number of cuts.
+function ProcessInput(inputData) {
+    // Parse grid dimensions and maximum allowed '1's per segment from the first line.
+    var GridHeight = inputData[0].split(" ")[0] - 0;
+    var GridWidth = inputData[0].split(" ")[1] - 0;
+    var MaxOnes = inputData[0].split(" ")[2] - 0;
 
-// Global variable to store the minimum number of cuts found across all partition schemes.
-let minCuts = 0;
-
-/**
- * Main entry point for the program execution.
- * Reads input data, parses dimensions and capacity, then iterates through
- * various row partitioning schemes to find the optimal solution.
- *
- * @param {string[]} dataSource - An array of strings representing the input data.
- *                                The first string contains dimensions and capacity.
- *                                Subsequent strings are the grid rows.
- */
-function ExecuteProgram(dataSource) {
-    // Parse grid dimensions and the maximum capacity from the first line of input.
-    const dimensions = dataSource[0].split(" ");
-    const rowDim = parseInt(dimensions[0], 10); // Number of rows in the grid.
-    const colDim = parseInt(dimensions[1], 10); // Number of columns in the grid.
-    const maxCapacity = parseInt(dimensions[2], 10); // Maximum allowed sum for a section.
-
-    // Initialize the grid data structure from the input.
-    const gridData = [];
-    for (let rowIndex = 1; rowIndex <= rowDim; rowIndex++) {
-        gridData[rowIndex - 1] = dataSource[rowIndex];
+    // Initialize an array to store the grid rows.
+    var GridData = [];
+    for (var rowIdx = 0; rowIdx < GridHeight; rowIdx++) {
+        GridData[rowIdx] = inputData[rowIdx + 1];
     }
 
-    // Initialize the minimum cuts with a worst-case scenario (all cells are cuts).
-    minCuts = rowDim * colDim;
+    // Initialize the global minimum cuts with a worst-case scenario (all cells cut).
+    MinCuts = GridHeight * GridWidth;
 
-    // Generate all possible horizontal partitioning schemes for the grid.
-    // There are 2^(rowDim-1) ways to cut the rows.
-    const partitionOptions = generatePartitions(rowDim - 1);
+    // Generate all possible horizontal cut combinations.
+    var BitCombinations = GenerateBitmasks(GridHeight - 1);
 
-    // Iterate through each generated partitioning scheme.
-    partitionOptions.forEach(partitionScheme => {
-        // Process the grid with the current partition scheme to evaluate cuts.
-        processGrid(gridData, partitionScheme, maxCapacity, rowDim);
+    // Iterate through each combination of horizontal cuts.
+    BitCombinations.forEach(CurrentCombination => {
+        EvaluateConfiguration(GridData, CurrentCombination, MaxOnes, GridHeight);
     });
 
-    // Output the final minimum number of cuts.
-    console.log(minCuts);
+    // Output the final minimum number of cuts found.
+    console.log(MinCuts);
 }
 
+// Global variable to store the minimum number of cuts found across all configurations.
+var MinCuts = 0;
+
 /**
- * Processes the grid for a given horizontal partitioning scheme to count necessary cuts.
- * This function iterates column by column, accumulating sums for each section
- * defined by the partition scheme. If a section's sum exceeds capacity, a cut is made.
- *
- * @param {string[]} gridData - The 2D grid of data (each string represents a row).
- * @param {object} partitionScheme - An object describing the current row partitioning.
- *                                   Contains 'count' (initial cuts) and 'vector' (binary string indicating cuts).
- * @param {number} maxCapacity - The maximum allowed sum for any section.
- * @param {number} rowDim - The number of rows in the grid.
+ * Evaluates a specific configuration of horizontal cuts to determine the required vertical cuts.
+ * @param {string[]} gridMatrix - The grid data as an array of strings.
+ * @param {object} currentMask - An object containing the bitmask count and value.
+ * @param {number} maxAllowedOnes - The maximum number of '1's allowed in a segment.
+ * @param {number} matrixHeight - The height of the grid.
+ * @returns {number} The number of cuts for this configuration, or undefined if it's invalid.
  */
-function processGrid(gridData, partitionScheme, maxCapacity, rowDim) {
-    // Initialize temporary cuts with the number of horizontal cuts defined by the scheme.
-    let tempCuts = partitionScheme.count;
-    const gridWidth = gridData[0].length; // Number of columns in the grid.
+function EvaluateConfiguration(gridMatrix, currentMask, maxAllowedOnes, matrixHeight) {
+    // Initialize the number of cuts for the current configuration with the horizontal cuts count.
+    var CurrentCuts = currentMask.cnt;
+    // Get the width of the grid (number of columns).
+    var ColumnLength = gridMatrix[0].length;
 
-    // Array to store the current sums for each horizontal section.
-    let sectionSums = [];
-    // Counter for a specific conditional logic block (previous count, often used for retry mechanisms).
-    let previousCount = 0;
+    // Array to store the sum of '1's in each segment for the current column.
+    var SegmentSums = [];
+    // Counter for a specific retry mechanism.
+    var PreviousCount = 0;
 
-    // Iterate through each column of the grid.
-    columnIteration: for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-        // Reset the current section index for each new column.
-        let currentSection = 0;
-
-        // Iterate through each cell in the current column.
-        for (let cellIndex = 0; cellIndex < rowDim; cellIndex++) {
-            // Initialize section sum if it doesn't exist.
-            if (!sectionSums[currentSection]) {
-                sectionSums[currentSection] = 0;
+    // Loop through each column of the grid.
+    ColumnIteration: for (var currentColumnIndex = 0; currentColumnIndex < ColumnLength; currentColumnIndex++) {
+        var SegmentIndex = 0; // Index for the current segment.
+        // Loop through each row in the current column.
+        for (var currentRowIndex = 0; currentRowIndex < matrixHeight; currentRowIndex++) {
+            // Initialize segment sum if not already present.
+            if (!SegmentSums[SegmentIndex]) {
+                SegmentSums[SegmentIndex] = 0;
             }
-
-            // If the cell contains '1', add it to the current section's sum.
-            if (gridData[cellIndex][colIndex] === "1") {
-                sectionSums[currentSection]++;
+            // If the current cell contains '1', add it to the current segment's sum.
+            if (gridMatrix[currentRowIndex][currentColumnIndex] === "1") {
+                SegmentSums[SegmentIndex] += 1;
             }
-
-            // If the partition scheme indicates a cut below this cell, move to the next section.
-            if (partitionScheme.vector[cellIndex] === "1") {
-                currentSection++;
+            // If a horizontal cut is defined at this row, move to the next segment.
+            if (currentMask.v[currentRowIndex] === "1") {
+                SegmentIndex++;
             }
+            // If any segment's sum exceeds the maximum allowed '1's.
+            if (SegmentSums[SegmentIndex] > maxAllowedOnes) {
+                CurrentCuts++; // Increment vertical cuts.
+                SegmentSums = []; // Reset segment sums for a new set of segments.
+                currentColumnIndex--; // Re-process the current column.
 
-            // If any section's sum exceeds the maximum capacity...
-            if (sectionSums[currentSection] > maxCapacity) {
-                tempCuts++; // Increment the number of cuts.
-                sectionSums = []; // Reset all section sums.
-                colIndex--; // Re-process the current column after making a cut.
-
-                // Handle a specific retry condition based on previousCount.
-                if (previousCount > 0) {
-                    previousCount = 0;
-                    continue columnIteration; // Restart column iteration from the current (decremented) column.
+                // Check for a specific retry condition.
+                if (PreviousCount > 0) {
+                    PreviousCount = 0; // Reset retry counter.
+                    continue ColumnIteration; // Continue to the next column (after re-processing current).
                 } else {
-                    // If no retry condition, this partition scheme is invalid, so return.
-                    return;
+                    return; // This configuration is invalid, return early.
                 }
             }
         }
-
-        // If this is the last column, update the global minimum cuts.
-        if (colIndex === gridWidth - 1) {
-            minCuts = Math.min(minCuts, tempCuts);
+        // If we successfully processed the last column without exceeding MaxOnes.
+        if (currentColumnIndex === ColumnLength - 1) {
+            MinCuts = Math.min(MinCuts, CurrentCuts); // Update the global minimum cuts.
         }
     }
-
-    return tempCuts; // Return the total cuts for this specific scheme.
+    return CurrentCuts; // Return the total cuts for this configuration.
 }
 
 /**
- * Generates a list of all possible binary partitioning schemes for a given length.
- * Each scheme includes the number of '1's (cuts) and the binary string representation.
- *
- * @param {number} lengthParam - The number of potential cut points (e.g., H-1 for H rows).
- * @returns {Array<object>} A sorted list of partition scheme objects.
+ * Generates a list of bitmask objects for horizontal cuts.
+ * Each object contains the count of set bits (cuts) and the binary string representation.
+ * @param {number} length - The number of potential cut positions (H-1).
+ * @returns {Array<object>} A sorted list of bitmask objects.
  */
-function generatePartitions(lengthParam) {
-    const schemeList = []; // Initialize an array to hold all generated schemes.
-
-    // Iterate from 0 up to 2^lengthParam - 1 to generate all binary combinations.
-    for (let iter = 0; iter < Math.pow(2, lengthParam); iter++) {
-        // Convert the integer to a binary string, padded with leading zeros.
-        const binaryString = ("0000000000" + iter.toString(2)).slice(-lengthParam);
-        schemeList.push({
-            count: countSetBits(iter), // Number of set bits (cuts) in this scheme.
-            vector: binaryString // The binary string representing the cut positions.
+function GenerateBitmasks(length) {
+    var MaskList = [];
+    // Iterate from 0 to 2^length - 1 to generate all bit combinations.
+    for (var maskValue = 0; maskValue < Math.pow(2, length); maskValue++) {
+        // Add an object with the bit count and the padded binary string.
+        MaskList.push({
+            cnt: CountSetBits(maskValue),
+            v: ('0'.repeat(10) + maskValue.toString(2)).slice(-length)
         });
     }
-
-    // Sort the schemes by their cut count in ascending order.
-    return schemeList.sort((schemeA, schemeB) => schemeA.count - schemeB.count);
+    // Sort the list by the number of set bits (cuts) in ascending order.
+    return MaskList.sort((maskA, maskB) => maskA.cnt - maskB.cnt);
 }
 
 /**
- * Counts the number of set bits (1s) in a 32-bit unsigned integer using a bit manipulation trick.
- * This is a highly optimized way to count bits.
- *
- * @param {number} numVal - The integer for which to count set bits.
+ * Counts the number of set bits (1s) in a 32-bit integer using a bit manipulation trick.
+ * @param {number} inputNumber - The integer to count set bits for.
  * @returns {number} The number of set bits.
  */
-function countSetBits(numVal) {
-    // Subtract (n >> 1) & 0x55555555: groups of 2 bits (e.g., 10_01 -> 1_0_0_1)
-    numVal = numVal - ((numVal >>> 1) & 0x55555555);
-    // Add (n >> 2) & 0x33333333 to (n & 0x33333333): groups of 4 bits (e.g., 1010_0101 -> 10_10_01_01)
-    numVal = (numVal & 0x33333333) + ((numVal >>> 2) & 0x33333333);
-    // Sum groups of 8 bits, then 16, then 32, and extract the final sum.
-    return ((numVal + (numVal >>> 4) & 0x0F0F0F0F) * 0x01010101) >>> 24;
+function CountSetBits(inputNumber) {
+    inputNumber = inputNumber - ((inputNumber >> 1) & 0x55555555);
+    inputNumber = (inputNumber & 0x33333333) + ((inputNumber >> 2) & 0x33333333);
+    return ((inputNumber + (inputNumber >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
 }
 
-// Execute the main program by reading input from standard input.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));
+// Entry point: Read input from stdin, process it, and call the main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

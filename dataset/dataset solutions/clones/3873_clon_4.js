@@ -1,20 +1,22 @@
-(function(sourceSegments) {
-    const [countsAndValues, ...numericalEntries] = sourceSegments;
+const processBudget = (rawData) => {
+    const [firstLineContent] = rawData;
+    const [itemQuantityString, initialFundsString] = firstLineContent.split(" ");
+    const itemQuantity = Number(itemQuantityString);
+    const initialFunds = Number(initialFundsString);
 
-    const [itemCount, initialMagnitude] = countsAndValues.split(" ").map(Number);
+    const itemValueLines = rawData.slice(1, itemQuantity + 1);
+    const itemCosts = itemValueLines.map(Number);
 
-    const relevantNumbers = numericalEntries.slice(0, itemCount).map(Number);
+    const totalExistingCost = itemCosts.reduce((currentSum, cost) => currentSum + cost, 0);
 
-    const totalAccumulated = relevantNumbers.reduce((currentSum, val) => currentSum + val, 0);
+    const minimumItemCost = Math.min(...itemCosts);
 
-    const orderedNumbers = [...relevantNumbers].sort((firstVal, secondVal) => firstVal - secondVal);
+    const remainingFunds = initialFunds - totalExistingCost;
 
-    const modifiedMagnitude = initialMagnitude - totalAccumulated;
+    const additionalPurchases = Math.floor(remainingFunds / minimumItemCost);
 
-    const lowestValue = orderedNumbers[0];
+    console.log(itemQuantity + additionalPurchases);
+};
 
-    const finalCalculation = itemCount + Math.floor(modifiedMagnitude / lowestValue);
-
-    console.log(finalCalculation);
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
+processBudget(inputSource);

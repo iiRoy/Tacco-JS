@@ -1,37 +1,51 @@
-function  processInput  (  rawData  )
-{
-  const  divisor  =  10000000007  ; /* This is a large prime number for modulo operations */
+// This function processes the raw input string to perform a specific calculation.
+function processInputData(rawInputString) {
+  // Define a large prime number for modulo operation.
+  let primeModulo = 10000000007;
 
-  let  unusedVar  =  0  ; /* This variable is present for structural equivalence but not actively used */
+  // An unused variable, kept for structural equivalence as per Type II rules.
+  let unusedPlaceholder = 0;
 
-  let  linesArray  =  rawData.split ( "\n" ) ; /* Split the entire input string into separate lines */
+  // Split the entire input string into an array of lines.
+  const inputLines = rawInputString.split("\n");
 
-  let  elementCount  =  Number ( linesArray [ 0 ] ) ; /* The first line provides the total count of items */
+  // The first line contains the total count of elements.
+  const elementCount = Number(inputLines[0]);
 
-  let  numericValues  =  rawData
-    .split ( "\n" )
-    [ 1 ]
-    .split ( " " )
-    .map (  currentNum  =>  parseInt ( currentNum , 10 )  ) ; /* Convert the second line of space-separated strings into an array of integers */
+  // The second line contains space-separated numbers.
+  // Parse these into an array of integers.
+  const numericValues = rawInputString
+    .split("\n")[1]
+    .split(" ")
+    .map(valStr => parseInt(valStr, 10));
 
-  let  partialSum  =  0  ; /* Initialize an accumulator for a sum operation */
+  // Initialize a variable to accumulate a partial sum.
+  let partialSum = 0;
 
-  for (  let  decrementIndex  =  elementCount  -  1  ;  0  <  decrementIndex  ;  decrementIndex--  )
-  {
-    partialSum  +=  numericValues [ decrementIndex ]  ; /* Sum elements from the end of the array, excluding the first */
+  // Iterate backwards from (elementCount - 1) down to 1 (exclusive of 0).
+  // This loop sums elements from index 1 up to (elementCount - 1).
+  for (let reverseIndex = elementCount - 1; reverseIndex > 0; reverseIndex--) {
+    partialSum += numericValues[reverseIndex];
   }
 
-  partialSum  /=  ( elementCount - 1 ) ; /* Calculate the average of the summed elements */
+  // Calculate the average of the summed elements.
+  // Assuming elementCount is greater than 1 to avoid division by zero.
+  partialSum /= (elementCount - 1);
 
-  let  productAccumulator  =  1  ; /* Initialize an accumulator for a product operation */
+  // Initialize a variable to calculate a factorial.
+  let calculatedFactorial = 1;
 
-  for (  let  incrementIndex  =  1  ;  incrementIndex  <  elementCount  ;  incrementIndex++  )
-  {
-    productAccumulator  *=  incrementIndex  ; /* Compute the product of numbers from 1 up to (elementCount - 1) */
+  // Calculate the factorial of (elementCount - 1).
+  // Loop from 1 up to (elementCount - 1).
+  for (let forwardIndex = 1; forwardIndex < elementCount; forwardIndex++) {
+    calculatedFactorial *= forwardIndex;
   }
 
-  console.log ( ( partialSum  *  productAccumulator )  %  divisor ) ; /* Output the final result, applying the modulo operation */
+  // Compute the final result: (average * factorial) modulo primeModulo.
+  // The console output is a critical part of the observable behavior.
+  console.log((partialSum * calculatedFactorial) % primeModulo);
 }
 
-const  fileSystem  =  require ( "fs" ) ;
-processInput (  fileSystem.readFileSync ( "/dev/input.txt" , "utf-8" )  ) ; /* Read the content of the standard input file and pass it to the processing function */
+// Read input from standard input using Node.js 'fs' module
+// and pass the UTF-8 decoded string to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

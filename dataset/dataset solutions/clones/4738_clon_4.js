@@ -1,69 +1,92 @@
-class DataReader {
-    constructor(sourceText) {
-        this.allLines = sourceText.trim().split("\n");
-        this.currentPosition = 0;
-        this.totalLines = this.allLines.length;
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const lineSegments = fileContent.trim().split("\n");
+
+class LineIterator {
+    #sourceLines;
+    #currentPosition;
+
+    constructor(lines) {
+        this.#sourceLines = lines;
+        this.#currentPosition = 0;
     }
 
-    fetchNextLine() {
-        if (!this.stillHasData()) {
-            throw new Error("NoMoreDataException: Data stream exhausted.");
+    fetchNext() {
+        if (!this.hasMore()) {
+            throw "NoSuchElementException:次に要素は無いよ";
         }
-        const fetchedLine = this.allLines[this.currentPosition];
-        this.currentPosition++;
-        return fetchedLine;
+        const currentLine = this.#sourceLines[this.#currentPosition];
+        this.#currentPosition++;
+        return currentLine;
     }
 
-    stillHasData() {
-        return this.currentPosition < this.totalLines;
+    hasMore() {
+        return this.#currentPosition < this.#sourceLines.length;
     }
 }
 
-const dataTransformers = {
-    1: (val) => parseInt(val, 10),
-    2: (val) => val.split(" "),
-    4: (val) => val.split(" ").map(Number),
-    6: (val) => val.split(""),
-    7: (val) => val.split("").map(Number),
-    8: (arr) => arr.join(" "),
-    9: (arr) => arr.join("\n"),
-    0: (arr) => arr.join(""),
-    default: (val) => val
-};
+const inputSource = new LineIterator(lineSegments);
 
-function processData(dataElement, transformKey) {
+const dataConverter = (value, conversionType) => {
     try {
-        const transformFunction = dataTransformers[transformKey] || dataTransformers.default;
-        return transformFunction(dataElement);
+        const conversionMap = {
+            1: (v) => parseInt(v),
+            2: (v) => v.split(" "),
+            4: (v) => v.split(" ").map(Number),
+            6: (v) => v.split(""),
+            7: (v) => v.split("").map(Number),
+            8: (v) => value.join(" "),
+            9: (v) => value.join("\n"),
+            0: (v) => value.join(""),
+        };
+        return (conversionMap[conversionType] || ((v) => v))(value);
     } catch (error) {
-        return dataTransformers.default(dataElement);
+        return value;
     }
-}
-
-const globalReader = new DataReader(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-const acquireEntry = () => globalReader.fetchNextLine();
-const acquireInteger = () => processData(acquireEntry(), 1);
-const acquireStringArray = () => processData(acquireEntry(), 2);
-const acquireIntegerArray = () => processData(acquireEntry(), 4);
-const acquireCharacterArray = () => processData(acquireEntry(), 6);
-const checkAvailability = () => globalReader.stillHasData();
-
-const emitResult = (content) => console.log(content);
-const emitError = (content) => console.error(content);
-
-const performCalculation = () => {
-    const primaryValue = acquireInteger();
-    
-    const baseScore = ((primaryValue / 11) | 0) * 2;
-    
-    const remainder = primaryValue % 11;
-    
-    const remainderScore = (remainder === 0) ? 0 : (remainder >= 7) ? 2 : 1;
-    
-    const finalScore = baseScore + remainderScore;
-    
-    emitResult(finalScore);
 };
 
-performCalculation();
+function retrieveNextLine() {
+    return inputSource.fetchNext();
+}
+
+function parseNextInteger() {
+    return dataConverter(retrieveNextLine(), 1);
+}
+
+function splitNextLineBySpace() {
+    return dataConverter(retrieveNextLine(), 2);
+}
+
+function parseNextIntegerArray() {
+    return dataConverter(retrieveNextLine(), 4);
+}
+
+function splitNextLineByChar() {
+    return dataConverter(retrieveNextLine(), 6);
+}
+
+function hasMoreLines() {
+    return inputSource.hasMore();
+}
+
+function displayOutput(content) {
+    console.log(content);
+}
+
+function displayError(content) {
+    console.error(content);
+}
+
+function processCalculation() {
+    const inputNumber = parseNextInteger();
+
+    const baseResult = Math.floor(inputNumber / 11) * 2;
+    const remainderValue = inputNumber % 11;
+
+    const additionalValue = (remainderValue >= 7) ? 2 : ((remainderValue > 0) ? 1 : 0);
+
+    const finalResult = baseResult + additionalValue;
+
+    displayOutput(finalResult);
+}
+
+processCalculation();

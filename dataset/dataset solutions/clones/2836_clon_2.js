@@ -1,146 +1,122 @@
-function ProcessCoordinates(rawData) {
-  // Variable to store the final computed area
-  let finalArea;
+function ProcessInput(dataArray) {
+    // A placeholder variable, not actively used in the original logic.
+    var finalOutcome;
 
-  // Parse the total number of data points from the raw input array
-  const pointCount = Number.parseInt(rawData.shift());
+    // Parse the total number of entries from the first element of the input array.
+    const countItems = parseInt(dataArray.shift());
+    // The remaining array elements contain the coordinate and direction data.
+    const coordinatesAndDirections = dataArray;
 
-  // The remaining array elements contain coordinate and direction data
-  const coordinateData = rawData;
+    // Initialize boundary variables for different movement direction groups.
+    // These are set to extreme values to ensure any actual coordinate will be smaller/larger.
+    var leftMinX = Number.MAX_SAFE_INTEGER;
+    var leftMaxX = Number.MIN_SAFE_INTEGER;
+    var leftRightMinY = Number.MAX_SAFE_INTEGER;
+    var leftRightMaxY = Number.MIN_SAFE_INTEGER;
+    var rightMinX = Number.MAX_SAFE_INTEGER;
+    var rightMaxX = Number.MIN_SAFE_INTEGER;
+    var upDownMinX = Number.MAX_SAFE_INTEGER;
+    var upDownMaxX = Number.MIN_SAFE_INTEGER;
+    var upMinY = Number.MAX_SAFE_INTEGER;
+    var upMaxY = Number.MIN_SAFE_INTEGER;
+    var downMinY = Number.MAX_SAFE_INTEGER;
+    var downMaxY = Number.MIN_SAFE_INTEGER;
 
-  // Initialize boundary variables for different movement directions
-  // Using MAX_SAFE_INTEGER for minimums and MIN_SAFE_INTEGER for maximums
-  // ensures any actual coordinate will be smaller/larger respectively.
+    // Flags to indicate if any points for a specific direction type were encountered.
+    var foundLeft = false;
+    var foundRight = false;
+    var foundUp = false;
+    var foundDown = false;
 
-  // Boundaries for points moving 'L' (Left)
-  let leftBoundaryMinX = Number.MAX_SAFE_INTEGER; // Smallest X-coordinate among 'L' points
-  let leftBoundaryMaxX = Number.MIN_SAFE_INTEGER; // Largest X-coordinate among 'L' points
+    // Loop through each set of (x, y, direction) data points.
+    for (var idx = 0; idx < countItems; idx++) {
+        // Extract the x-coordinate, y-coordinate, and direction string for the current point.
+        var coordX = parseInt(coordinatesAndDirections[idx * 3]);
+        var coordY = parseInt(coordinatesAndDirections[idx * 3 + 1]);
+        var directionStr = coordinatesAndDirections[idx * 3 + 2];
 
-  // Shared Y-boundaries for points moving 'L' or 'R' (Left or Right)
-  let horizontalMinY = Number.MAX_SAFE_INTEGER; // Smallest Y-coordinate among 'L'/'R' points
-  let horizontalMaxY = Number.MIN_SAFE_INTEGER; // Largest Y-coordinate among 'L'/'R' points
-
-  // Boundaries for points moving 'R' (Right)
-  let rightBoundaryMinX = Number.MAX_SAFE_INTEGER; // Smallest X-coordinate among 'R' points
-  let rightBoundaryMaxX = Number.MIN_SAFE_INTEGER; // Largest X-coordinate among 'R' points
-
-  // Shared X-boundaries for points moving 'U' or 'D' (Up or Down)
-  let verticalMinX = Number.MAX_SAFE_INTEGER; // Smallest X-coordinate among 'U'/'D' points
-  let verticalMaxX = Number.MIN_SAFE_INTEGER; // Largest X-coordinate among 'U'/'D' points
-
-  // Boundaries for points moving 'U' (Up)
-  let upBoundaryMinY = Number.MAX_SAFE_INTEGER; // Smallest Y-coordinate among 'U' points
-  let upBoundaryMaxY = Number.MIN_SAFE_INTEGER; // Largest Y-coordinate among 'U' points
-
-  // Boundaries for points moving 'D' (Down)
-  let downBoundaryMinY = Number.MAX_SAFE_INTEGER; // Smallest Y-coordinate among 'D' points
-  let downBoundaryMaxY = Number.MIN_SAFE_INTEGER; // Largest Y-coordinate among 'D' points;
-
-  // Flags to indicate if points for a particular direction were found
-  let foundLeftDirection = false;
-  let foundRightDirection = false;
-  let foundUpDirection = false;
-  let foundDownDirection = false;
-
-  // Iterate through all the provided coordinate data
-  for (let currentIdx = 0; currentIdx < pointCount; currentIdx++) {
-    // Extract X, Y coordinates and the movement direction for the current point
-    let pointX = Number.parseInt(rawData[currentIdx * 3]);
-    let pointY = Number.parseInt(rawData[currentIdx * 3 + 1]);
-    let movementDirection = rawData[currentIdx * 3 + 2];
-
-    // Process each point based on its movement direction
-    switch (movementDirection) {
-      case "L": // Point moves Left
-        leftBoundaryMinX = Math.min(leftBoundaryMinX, pointX);
-        leftBoundaryMaxX = Math.max(leftBoundaryMaxX, pointX);
-        horizontalMinY = Math.min(horizontalMinY, pointY);
-        horizontalMaxY = Math.max(horizontalMaxY, pointY);
-        foundLeftDirection = true;
-        break;
-      case "R": // Point moves Right
-        rightBoundaryMinX = Math.min(rightBoundaryMinX, pointX);
-        rightBoundaryMaxX = Math.max(rightBoundaryMaxX, pointX);
-        horizontalMinY = Math.min(horizontalMinY, pointY);
-        horizontalMaxY = Math.max(horizontalMaxY, pointY);
-        foundRightDirection = true;
-        break;
-      case "U": // Point moves Up
-        verticalMinX = Math.min(verticalMinX, pointX);
-        verticalMaxX = Math.max(verticalMaxX, pointX);
-        upBoundaryMinY = Math.min(upBoundaryMinY, pointY);
-        upBoundaryMaxY = Math.max(upBoundaryMaxY, pointY);
-        foundUpDirection = true;
-        break;
-      case "D": // Point moves Down
-        verticalMinX = Math.min(verticalMinX, pointX);
-        verticalMaxX = Math.max(verticalMaxX, pointX);
-        downBoundaryMinY = Math.min(downBoundaryMinY, pointY);
-        downBoundaryMaxY = Math.max(downBoundaryMaxY, pointY);
-        foundDownDirection = true;
-        break;
-      default:
-        // No specific action for other directions
-        break;
+        // Use a switch statement to handle different directions.
+        switch (directionStr) {
+            case "L": // Points moving left
+                leftMinX = Math.min(leftMinX, coordX);
+                leftMaxX = Math.max(leftMaxX, coordX);
+                leftRightMinY = Math.min(leftRightMinY, coordY);
+                leftRightMaxY = Math.max(leftRightMaxY, coordY);
+                foundLeft = true;
+                break;
+            case "R": // Points moving right
+                rightMinX = Math.min(rightMinX, coordX);
+                rightMaxX = Math.max(rightMaxX, coordX);
+                leftRightMinY = Math.min(leftRightMinY, coordY);
+                leftRightMaxY = Math.max(leftRightMaxY, coordY);
+                foundRight = true;
+                break;
+            case "U": // Points moving up
+                upDownMinX = Math.min(upDownMinX, coordX);
+                upDownMaxX = Math.max(upDownMaxX, coordX);
+                upMinY = Math.min(upMinY, coordY);
+                upMaxY = Math.max(upMaxY, coordY);
+                foundUp = true;
+                break;
+            case "D": // Points moving down
+                upDownMinX = Math.min(upDownMinX, coordX);
+                upDownMaxX = Math.max(upDownMaxX, coordX);
+                downMinY = Math.min(downMinY, coordY);
+                downMaxY = Math.max(downMaxY, coordY);
+                foundDown = true;
+                break;
+            default:
+                // No specific action for unrecognized direction strings.
+                break;
+        }
     }
-  }
 
-  // Initialize the minimum calculated area to a very large number
-  let minCalculatedArea = Number.MAX_SAFE_INTEGER;
+    // Initialize the variable to store the minimum bounding box area found.
+    var minArea = Number.MAX_SAFE_INTEGER;
+    // A boolean flag to control the simulation loop.
+    var continueIteration = true;
 
-  // Flag to control the simulation loop
-  let continueSimulation = true;
+    // This loop simulates the movement of points and calculates the bounding box area
+    // at each step until the area starts increasing or stabilizes.
+    while (continueIteration) {
+        // Calculate the overall minimum and maximum X coordinates across all relevant groups.
+        var currentMinX = Math.min(rightMinX, leftMinX, upDownMinX);
+        var currentMaxX = Math.max(rightMaxX, leftMaxX, upDownMaxX);
+        // Calculate the overall minimum and maximum Y coordinates across all relevant groups.
+        var currentMinY = Math.min(leftRightMinY, upMinY, downMinY);
+        var currentMaxY = Math.max(leftRightMaxY, upMaxY, downMaxY);
 
-  // Simulate movement and calculate bounding box area until stability
-  while (continueSimulation) {
-    // Determine the overall minimum and maximum X and Y coordinates
-    // considering all active directional boundaries
-    let currentGlobalMinX = Math.min(rightBoundaryMinX, leftBoundaryMinX, verticalMinX);
-    let currentGlobalMaxX = Math.max(rightBoundaryMaxX, leftBoundaryMaxX, verticalMaxX);
-    let currentGlobalMinY = Math.min(horizontalMinY, upBoundaryMinY, downBoundaryMinY);
-    let currentGlobalMaxY = Math.max(horizontalMaxY, upBoundaryMaxY, downBoundaryMaxY);
+        // Update the minimum area if the current bounding box area is smaller.
+        minArea = Math.min(minArea, (currentMaxX - currentMinX) * (currentMaxY - currentMinY));
 
-    // Update the minimum calculated area if the current bounding box is smaller
-    minCalculatedArea = Math.min(
-      minCalculatedArea,
-      (currentGlobalMaxX - currentGlobalMinX) * (currentGlobalMaxY - currentGlobalMinY)
-    );
+        // Determine if the simulation should continue. The loop terminates when
+        // the overall bounding box boundaries are determined by points that have
+        // already passed their optimal position (or if no such points exist).
+        continueIteration = !(
+            (currentMinX === leftMinX || !foundLeft) &&
+            (currentMaxX === rightMaxX || !foundRight) &&
+            (currentMinY === downMinY || !foundDown) &&
+            (currentMaxY === upMaxY || !foundUp)
+        );
 
-    // Check conditions to determine if the simulation should stop
-    // The simulation stops when the overall bounding box has stabilized,
-    // meaning its boundaries are determined by points that will move "outward"
-    // relative to the current overall min/max, or if no points for that direction exist.
-    continueSimulation = !(
-      (currentGlobalMinX === leftBoundaryMinX || !foundLeftDirection) &&
-      (currentGlobalMaxX === rightBoundaryMaxX || !foundRightDirection) &&
-      (currentGlobalMinY === downBoundaryMinY || !foundDownDirection) &&
-      (currentGlobalMaxY === upBoundaryMaxY || !foundUpDirection)
-    );
-
-    // Adjust boundaries for the next simulation step
-    // 'L' points move left (X decreases)
-    leftBoundaryMinX--;
-    leftBoundaryMaxX--;
-
-    // 'R' points move right (X increases)
-    rightBoundaryMinX++;
-    rightBoundaryMaxX++;
-
-    // 'U' points move up (Y increases)
-    upBoundaryMinY++;
-    upBoundaryMaxY++;
-
-    // 'D' points move down (Y decreases)
-    downBoundaryMinY--;
-    downBoundaryMaxY--;
-  }
-
-  // Output the smallest area found
-  console.log(minCalculatedArea);
+        // Simulate one unit of movement for each group of points.
+        // 'L' points move left (x-coordinates decrease).
+        leftMinX--;
+        leftMaxX--;
+        // 'R' points move right (x-coordinates increase).
+        rightMinX++;
+        rightMaxX++;
+        // 'U' points move up (y-coordinates increase).
+        upMinY++;
+        upMaxY++;
+        // 'D' points move down (y-coordinates decrease).
+        downMinY--;
+        downMaxY--;
+    }
+    // Print the smallest bounding box area found during the simulation.
+    console.log(minArea);
 }
 
-// Execute the main processing function with input read from stdin.
-// The input is trimmed and split by newlines or spaces.
-ProcessCoordinates(
-  require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/[\n\s]+/)
-);
+// The following line reads input from standard input, processes it, and calls the main function.
+// It reads the entire content, trims whitespace, and splits it by newlines or spaces into an array.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

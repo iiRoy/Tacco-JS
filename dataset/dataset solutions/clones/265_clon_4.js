@@ -1,39 +1,24 @@
 const fileSystemModule = require('fs');
 
-const extractAndConvertData = (rawTextContent) =>
-    rawTextContent
-        .trim()
-        .split('\n')
-        .map(parseFloat)
-        .filter(val => !Number.isNaN(val));
+function* produceGeometricParameters(sourceNumericData) {
+    let currentPosition = 0;
+    while (currentPosition + 1 < sourceNumericData.length) {
+        const dimensionBase = sourceNumericData[currentPosition];
+        const dimensionHeight = sourceNumericData[currentPosition + 1];
 
-const deriveShapeAreaMetric = (dimensionOne, dimensionTwo) => {
-    const termComponentA = dimensionOne * Math.sqrt(4 * Math.pow(dimensionTwo, 2) + Math.pow(dimensionOne, 2));
-    const termComponentB = Math.pow(dimensionOne, 2);
-    return termComponentA + termComponentB;
-};
+        if (dimensionBase === 0 && dimensionHeight === 0) {
+            break;
+        }
 
-const executeComputationFlow = (inputDatumSet, accumulatedResults = []) => {
-    if (inputDatumSet.length < 2) {
-        return accumulatedResults;
+        yield { baseValue: dimensionBase, heightValue: dimensionHeight };
+        currentPosition += 2;
     }
+}
 
-    const currentXValue = inputDatumSet[0];
-    const currentYValue = inputDatumSet[1];
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const processedNumericValues = rawInputContent.trim().split('\n').map(Number);
 
-    if (currentXValue === 0 && currentYValue === 0) {
-        return accumulatedResults;
-    }
-
-    const calculatedOutcome = deriveShapeAreaMetric(currentXValue, currentYValue);
-    accumulatedResults.push(calculatedOutcome.toFixed(5));
-
-    const remainingDatumSet = inputDatumSet.slice(2);
-    return executeComputationFlow(remainingDatumSet, accumulatedResults);
-};
-
-const rawDataStream = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const processedNumericalSeries = extractAndConvertData(rawDataStream);
-const finalRenderedValues = executeComputationFlow(processedNumericalSeries);
-
-console.log(finalRenderedValues.join('\n'));
+for (const { baseValue, heightValue } of produceGeometricParameters(processedNumericValues)) {
+    const calculatedArea = baseValue * Math.sqrt(4 * heightValue * heightValue + baseValue * baseValue) + baseValue * baseValue;
+    console.log(calculatedArea.toFixed(5));
+}

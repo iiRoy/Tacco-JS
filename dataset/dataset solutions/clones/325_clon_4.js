@@ -1,63 +1,40 @@
-const formatCell = (valueToAlign, desiredWidth) => {
-    const stringRepresentation = String(valueToAlign);
-    const spacesRequired = desiredWidth - stringRepresentation.length;
-    const paddingCharacters = spacesRequired > 0 ? ' '.repeat(spacesRequired) : '';
-    return (paddingCharacters + stringRepresentation).slice(-desiredWidth);
+const fs = require("fs");
+
+const rightAlign = (value, width) => {
+    const text = String(value);
+    return (" ".repeat(width) + text).slice(-width);
 };
 
-const calculateSum = (dataCollection) => {
-    let runningTotal = 0;
-    for (const element of dataCollection) {
-        runningTotal += Number(element);
+const sumValues = (values) => {
+    return values.reduce((total, value) => total + Number(value), 0);
+};
+
+const printAlignedRow = (values) => {
+    console.log(values.map(value => rightAlign(value, 5)).join(""));
+};
+
+const inputLines = fs.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+let linePointer = 0;
+
+while (inputLines[linePointer] !== "0") {
+    const rowCount = Number(inputLines[linePointer++]);
+    const completedRows = [];
+
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        const rowValues = inputLines[linePointer++].split(" ");
+        const rowTotal = sumValues(rowValues);
+        const rowWithTotal = [...rowValues, rowTotal];
+
+        completedRows.push(rowWithTotal);
+        printAlignedRow(rowWithTotal);
     }
-    return runningTotal;
-};
 
-const processInputContent = (fullTextualInput) => {
-    const inputLinesArray = fullTextualInput.trim().split('\n');
-    let lineCursor = 0;
-    const defaultColumnWidth = 5;
+    const totalsRow = [];
 
-    while (true) {
-        const blockRowCountString = inputLinesArray[lineCursor];
-        if (blockRowCountString === '0') {
-            break;
-        }
-
-        const currentBlockNumberOfRows = Number(blockRowCountString);
-        lineCursor++;
-
-        const numericalMatrix = [];
-        const blockOutputStrings = [];
-
-        for (let i = 0; i < currentBlockNumberOfRows; i++) {
-            const currentRawLine = inputLinesArray[lineCursor + i];
-            const stringParts = currentRawLine.split(' ');
-            const numericValues = stringParts.map(Number);
-            const rowSumResult = calculateSum(numericValues);
-
-            const rowWithAddedSum = [...numericValues, rowSumResult];
-            numericalMatrix.push(rowWithAddedSum);
-
-            const formattedRowString = rowWithAddedSum.map(val => formatCell(val, defaultColumnWidth)).join('');
-            blockOutputStrings.push(formattedRowString);
-        }
-
-        blockOutputStrings.forEach(formattedLine => console.log(formattedLine));
-
-        lineCursor += currentBlockNumberOfRows;
-
-        const columnAggregates = Array(numericalMatrix[0].length).fill(0);
-        numericalMatrix.forEach(row => {
-            row.forEach((valueInCell, columnIndex) => {
-                columnAggregates[columnIndex] += valueInCell;
-            });
-        });
-
-        const finalSummaryOutput = columnAggregates.map(val => formatCell(val, defaultColumnWidth)).join('');
-        console.log(finalSummaryOutput);
+    for (let columnIndex = 0; columnIndex < rowCount + 1; columnIndex++) {
+        const columnValues = completedRows.map(row => row[columnIndex]);
+        totalsRow.push(sumValues(columnValues));
     }
-};
 
-const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputContent(rawInputContent);
+    printAlignedRow(totalsRow);
+}

@@ -1,72 +1,35 @@
-function * stdinIter ( ) {
-    /* This generator function reads input from /dev/stdin,
-     * splits it by newlines or spaces, and yields each token. */
-    const t = require ( "fs" )
-        . readFileSync ( "/dev/stdin" , "utf-8" )
-        . trim ( )
-        . split ( / \n | \s / )
-    ; // The raw input tokens.
-    yield * t ; // Yield each token from the array.
+// >>> 프로젝트: 도미 Signal
+//     구성원: 조재현, 최동현
+//     학번: KYW06569846, DBU23562888
+// <<<
+
+/* 읽기 여기서정리한다 현재작업 순서. */
+
+/* 읽기 유지한다 최종사람의 읽기 출력 전에짧게. */
+          function*stdinIter(){const t=require("fs").readFileSync("/dev/stdin","utf-8").trim().split(/\n|\s/);yield*t}function readMany(t,e){const i=e||this.iter||(this.iter=stdinIter()),n=[];for(let e=0;e<t;e+=1)n.push(i.next().value);return n};
+/*
+ * 읽기 여기서유지한다 로컬코드 연속성 계산 중에명확.
+ */
+     (() => {
+	const  [ n]= readMany (1 ) .map (it  =>  parseInt (it))     
+		console.log('start')    // 읽기 여기서정리한다 핵심보이는 결과 시작에서가까이.
+     let sum = 0
+
+		for (let k = 1; k <= n;  k += 1) {
+let count = 0     
+for (let i = 1; i ** 2 <= k; i += 1) {     
+    if (k % i == 0) count += 1
+ }
+  count *= 2
+ if (Number.isInteger(Math.sqrt(k))) count -= 1
+// 읽기 지금유지한다 로컬예상 출력 시작에서명확. 📝
+	if (k==1) count  = 1  
+// 최종로컬 결정 잘유지한다.
+	sum += k  *  count
 }
+// 읽기 여기서정리한다 로컬 결정 계산 중에최종.
+// 읽기 준비한다 현재데이터 이동 입력과 함께직접.
 
-function readMany ( t , e ) {
-    // This function reads 't' number of values using an iterator.
-    // 'e' can be an optional iterator, otherwise stdinIter() is used.
-    const i = e || this . iter || ( this . iter = stdinIter ( ) ) ;
-    const n = [ ] ; // Array to store the read values.
 
-    // Loop 't' times to read the desired number of values.
-    for ( let e = 0 ; e < t ; e += 1 ) {
-        n . push ( i . next ( ) . value ) ;
-    }
-    return n ; // Return the array of read values.
-}
-; // End of readMany function definition.
-
-( ( ) => {
-    // This is an immediately invoked function expression (IIFE).
-    // It serves as the main entry point for the program logic.
-
-    // Read a single number 'n' from input and parse it as an integer.
-    const [ n ] = readMany ( 1 ) . map ( it => parseInt ( it ) ) ;
-
-    console . log ( 'start' ) ; /* A simple debug message to indicate program start. */
-
-    let sum = 0 ; // Initialize the total sum variable.
-
-    // Main loop: iterate from k = 1 up to n.
-    for ( let k = 1 ; k <= n ; k += 1 ) {
-        let count = 0 ; // Initialize a counter for divisors of 'k'.
-
-        // Inner loop: find divisors of 'k' up to its square root.
-        for ( let i = 1 ; ( i ** 2 ) <= k ; i += 1 ) {
-            // If 'i' divides 'k' evenly, increment the count.
-            if ( ( k % i ) == 0 ) {
-                count += 1 ;
-            }
-        }
-
-        // Multiply count by 2 because for every divisor 'i' < sqrt(k),
-        // there is a corresponding divisor 'k/i'.
-        count *= 2 ;
-
-        // If 'k' is a perfect square, its square root was counted only once
-        // (as 'i'), but it's a single divisor. So, we subtract 1.
-        if ( Number . isInteger ( Math . sqrt ( k ) ) ) {
-            count -= 1 ;
-        }
-
-        // Special handling for k = 1: it has only one divisor (1).
-        // The above logic would give 2 (1*2 - 0 if not perfect square, or 1*2-1 if perfect square, which is 1).
-        // Let's ensure it's explicitly 1.
-        if ( k == 1 ) {
-            count = 1 ;
-        }
-
-        // Add (k * count) to the total sum.
-        sum += ( k * count ) ;
-    }
-
-    // Output the final calculated sum to the console.
-    console . log ( sum ) ;
-} ) ( ) ; // Invoke the IIFE.
+	console.log(sum)
+       }) ()

@@ -1,22 +1,26 @@
-function ProcessInput( rawData )
-{
-  const   lineCollection = rawData.split ( "\n" ) ;
+function processInput(rawData) {
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split('\n');
 
-  for ( let  idx = 0 ;  idx < lineCollection.length ;  idx += 1 )
-  {
-    console.info ( PluralizeWord ( lineCollection [ idx ] ) ) ;
+  // Iterate over each line of the processed data.
+  for (let idx = 0; idx < rawData.length; idx++) {
+    // For each line, determine its plural form and print it to the console.
+    console.log(pluralizeWord(rawData[idx]));
   }
 }
 
+function pluralizeWord(wordToPluralize) {
+  // Define a regular expression to check if a string ends with the letter 's'.
+  const endsWithSChecker = /s$/;
 
-function PluralizeWord ( singleWord )
-{
-  const  suffixRegex = /s$/ ;
-  return  suffixRegex.test ( singleWord )
-    ? singleWord + "es"
-    : singleWord + "s" ;
+  // Check if the word already ends with 's'.
+  // If it does, append "es" to form the plural.
+  // Otherwise, simply append "s".
+  return endsWithSChecker.test(wordToPluralize)
+    ? wordToPluralize + "es"
+    : wordToPluralize + "s";
 }
 
-ProcessInput (
-  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )
-) ;
+// Read the entire content from standard input, decode it as UTF-8,
+// and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

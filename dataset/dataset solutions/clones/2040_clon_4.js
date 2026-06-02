@@ -1,26 +1,21 @@
-const streamHandler = require("fs");
-
-function pairCounter(totalEntities) {
-  if (totalEntities <= 1) {
+function countCombinationsOfTwo(upperBound) {
+  if (upperBound < 2) {
     return 0;
   }
-  return (totalEntities - 1) + pairCounter(totalEntities - 1);
+  let currentSum = 0;
+  for (let index = 1; index < upperBound; index++) {
+    currentSum += index;
+  }
+  return currentSum;
 }
 
-function processInputAndCompute() {
-  const inputData = streamHandler.readFileSync("/dev/stdin", "utf8").trim();
-  const firstLine = inputData.split('\n')[0];
-  const numericInputs = firstLine.split(' ').map(Number);
+const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataRows = fileData.trim().split("\n");
 
-  const valueA = numericInputs[0];
-  const valueB = numericInputs[1];
+const numericTokens = dataRows[0].split(' ');
+const firstOperand = Number(numericTokens[0]);
+const secondOperand = Number(numericTokens[1]);
 
-  const resultA = pairCounter(valueA);
-  const resultB = pairCounter(valueB);
+const resultValue = countCombinationsOfTwo(firstOperand) + countCombinationsOfTwo(secondOperand);
 
-  const finalResult = resultA + resultB;
-  return finalResult;
-}
-
-const computedValue = processInputAndCompute();
-console.log(computedValue);
+console.log(resultValue);

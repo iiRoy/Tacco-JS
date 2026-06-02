@@ -1,109 +1,69 @@
-const parseNumericString = (strValue) => parseInt(strValue, 10);
+const parseInteger = (strVal) => parseInt(strVal, 10);
+const mapToIntegers = (strArr) => strArr.map(parseInteger);
 
-const mapStringsToNumbers = (stringItems) => stringItems.map(parseNumericString);
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function processChallengeData(rawInputBlob) {
-    const inputLines = String(rawInputBlob).trim().split('\n');
+function solveProblem(rawInputString) {
+    const inputLines = rawInputString.split('\n');
+    const scoreMultiplier = 100;
 
-    if (inputLines.length < 2) {
-        console.error("Input processing error: Insufficient data lines provided.");
-        return;
+    const difficultyAndGoalParts = inputLines[0].split(' ');
+    const numCategories = parseInteger(difficultyAndGoalParts[0]);
+    const targetScorePoints = parseInteger(difficultyAndGoalParts[1]) / scoreMultiplier;
+
+    var categoryDataList = [];
+    var totalSolvedProblems = 0;
+    var currentTotalScore = 0;
+
+    for (var categoryIdx = 0; categoryIdx < numCategories; categoryIdx++) {
+        var currentLineParts = inputLines[categoryIdx + 1].split(' ');
+        var currentCategoryRawData = mapToIntegers(currentLineParts);
+
+        var numProblemsInCat = currentCategoryRawData[0];
+        var bonusPointsRaw = currentCategoryRawData[1];
+
+        var bonusPointsAdjusted = bonusPointsRaw / scoreMultiplier;
+        var difficultyLevelFactor = categoryIdx + 1;
+
+        var categorySortKey = difficultyLevelFactor + (bonusPointsAdjusted / numProblemsInCat);
+
+        // Store format: [numProblemsInCat, bonusPointsAdjusted, categorySortKey, difficultyLevelFactor]
+        categoryDataList[categoryIdx] = [numProblemsInCat, bonusPointsAdjusted, categorySortKey, difficultyLevelFactor];
     }
 
-    const globalConfigParameters = inputLines[0].split(' ');
-    if (globalConfigParameters.length !== 2) {
-        console.error("Input processing error: Global configuration line malformed.");
-        return;
-    }
-
-    const numberOfProblemCategories = parseNumericString(globalConfigParameters[0]);
-    const targetScoreThreshold = parseNumericString(globalConfigParameters[1]);
-
-    const problemCategoryDetails = [];
-
-    let currentTotalSolvedProblems = 0;
-    let accumulatedScore = 0;
-
-    for (let categoryIndex = 0; categoryIndex < numberOfProblemCategories; categoryIndex++) {
-        if (categoryIndex + 1 >= inputLines.length) {
-            console.error(`Input processing error: Missing data for problem category ${categoryIndex + 1}.`);
-            return;
-        }
-
-        const categoryNumericalData = mapStringsToNumbers(inputLines[categoryIndex + 1].split(' '));
-        if (categoryNumericalData.length !== 2) {
-            console.error(`Input processing error: Problem category line ${categoryIndex + 1} malformed.`);
-            return;
-        }
-
-        const problemsInThisCategory = categoryNumericalData[0];
-        const bonusForThisCategory = categoryNumericalData[1];
-
-        const basePointsPerProblemItem = categoryIndex + 1;
-
-        const calculatedEfficiencyMetric = basePointsPerProblemItem + (bonusForThisCategory / problemsInThisCategory);
-
-        problemCategoryDetails.push({
-            categoryIdentifier: categoryIndex,
-            numProblems: problemsInThisCategory,
-            bonusScore: bonusForThisCategory,
-            pointsPerItem: basePointsPerProblemItem,
-            sortKey: calculatedEfficiencyMetric,
-        });
-    }
-
-    problemCategoryDetails.sort((categoryA, categoryB) => categoryB.sortKey - categoryA.sortKey);
-
-    let minimumAdditionalProblemsForGoal = -1;
+    categoryDataList.sort(function(dataA, dataB) {
+        return dataB[2] - dataA[2];
+    });
 
     while (true) {
-        minimumAdditionalProblemsForGoal = -1;
+        var minAdditionalProblems = Infinity;
+        var solutionFoundInIteration = false;
 
-        for (let currentCategoryIteration = 0; currentCategoryIteration < problemCategoryDetails.length; currentCategoryIteration++) {
-            const currentCategory = problemCategoryDetails[currentCategoryIteration];
+        for (var loopIdx = 0; loopIdx < categoryDataList.length; loopIdx++) {
+            var currentCategory = categoryDataList[loopIdx];
+            var categoryProblemCount = currentCategory[0];
+            var categoryBonusScore = currentCategory[1];
+            var categoryDifficultyFactor = currentCategory[3];
 
-            const scoreFromAllItemsWithoutBonus = currentCategory.numProblems * currentCategory.pointsPerItem;
+            var scoreIfSolvingPartial = currentTotalScore + categoryProblemCount * categoryDifficultyFactor;
 
-            if (accumulatedScore + scoreFromAllItemsWithoutBonus >= targetScoreThreshold) {
-                const problemsRequiredFromCategory = Math.ceil(
-                    (targetScoreThreshold - accumulatedScore) / currentCategory.pointsPerItem
-                );
-
-                if (minimumAdditionalProblemsForGoal === -1 || problemsRequiredFromCategory < minimumAdditionalProblemsForGoal) {
-                    minimumAdditionalProblemsForGoal = problemsRequiredFromCategory;
-                }
-            } else if (accumulatedScore + scoreFromAllItemsWithoutBonus + currentCategory.bonusScore >= targetScoreThreshold) {
-                const problemsRequiredFromCategory = currentCategory.numProblems;
-
-                if (minimumAdditionalProblemsForGoal === -1 || problemsRequiredFromCategory < minimumAdditionalProblemsForGoal) {
-                    minimumAdditionalProblemsForGoal = problemsRequiredFromCategory;
-                }
+            if (scoreIfSolvingPartial >= targetScorePoints) {
+                var problemsNeededFromThisCat = Math.ceil((targetScorePoints - currentTotalScore) / categoryDifficultyFactor);
+                minAdditionalProblems = Math.min(minAdditionalProblems, problemsNeededFromThisCat);
+                solutionFoundInIteration = true;
+            } else if (scoreIfSolvingPartial + categoryBonusScore >= targetScorePoints) {
+                minAdditionalProblems = Math.min(minAdditionalProblems, categoryProblemCount);
+                solutionFoundInIteration = true;
             }
         }
 
-        if (minimumAdditionalProblemsForGoal !== -1) {
-            console.log(currentTotalSolvedProblems + minimumAdditionalProblemsForGoal);
-            return;
+        if (solutionFoundInIteration) {
+            console.log(totalSolvedProblems + minAdditionalProblems);
+            return 0;
         }
 
-        if (problemCategoryDetails.length === 0) {
-            console.error("Logic Error: Target score unreachable or problem set exhausted without solution.");
-            return;
-        }
-
-        const mostEfficientRemainingCategory = problemCategoryDetails[0];
-
-        currentTotalSolvedProblems += mostEfficientRemainingCategory.numProblems;
-        accumulatedScore += (mostEfficientRemainingCategory.numProblems * mostEfficientRemainingCategory.pointsPerItem) + mostEfficientRemainingCategory.bonusScore;
-
-        problemCategoryDetails.shift();
+        var highestPriorityCategory = categoryDataList.shift();
+        totalSolvedProblems += highestPriorityCategory[0];
+        currentTotalScore += highestPriorityCategory[0] * highestPriorityCategory[3] + highestPriorityCategory[1];
     }
-}
-
-try {
-    const fileSystemModule = require("fs");
-    const programInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    processChallengeData(programInputData);
-} catch (executionError) {
-    console.error("An unhandled error occurred during program execution:", executionError.message);
 }

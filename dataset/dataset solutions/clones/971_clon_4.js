@@ -1,15 +1,17 @@
 const fileSystem = require('fs');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const retrievedContent = fileSystem.readFileSync('/dev/stdin', { encoding: 'utf8' });
+const contentLines = rawContent.trim().split('\n');
+const primaryText = contentLines[0];
+const patternText = contentLines[1];
 
-const extractedSegments = retrievedContent.trim().split('\n');
-const sourceText = extractedSegments[0];
-const targetPattern = extractedSegments[1];
+const potentialStarts = Array.from({ length: primaryText.length }, (_, k) => k);
 
-let scanPosition = 0;
-let matchLocation;
+const foundPositions = potentialStarts.reduce((accumulator, currentPosition) => {
+    if (primaryText.substring(currentPosition, currentPosition + patternText.length) === patternText) {
+        accumulator.push(currentPosition);
+    }
+    return accumulator;
+}, []);
 
-while ((matchLocation = sourceText.indexOf(targetPattern, scanPosition)) !== -1) {
-    console.log(matchLocation);
-    scanPosition = matchLocation + 1;
-}
+foundPositions.forEach(position => console.log(position));

@@ -1,39 +1,32 @@
-// This module processes a series of numerical entries from an external source.
-function analyzeNumbers(incomingString) {
-   // Step 1: Convert the raw text input into an array of numerical values.
-   // Each line in the input string is treated as a distinct number.
-   let numericValues = incomingString
-      .split("\n") // Break the input string into individual lines.
-      .map((valueText) => Number(valueText)); // Transform each line string into its numerical equivalent.
+// This function is designed to process a given string of numerical data.
+function processNumericalData(incomingText) {
+    // The initial step involves parsing the input string.
+    // It's split by newline characters, and each resulting substring is converted into an integer.
+    var numericalArray = incomingText.split('\n').map((strValue) => parseInt(strValue, 10));
 
-   // Step 2: Store the first element, which often serves as a preliminary count or identifier.
-   // This element is then removed from the main dataset.
-   const initialCount = numericValues[0];
-   numericValues.shift(); // Remove the initial element from the array.
+    // The first element of the array is typically a count, which is stored but not directly used in the subsequent calculation.
+    var elementCount = numericalArray[0];
+    // This count element is then removed from the array to prepare for further operations.
+    numericalArray.shift();
 
-   // Step 3: Identify the largest numerical value present in the current dataset.
-   const greatestValue = Math.max.apply(
-      null,
-      numericValues
-   ); // Determine the maximum number within the array.
+    // Next, the largest value among the remaining numbers in the array is identified.
+    var highestNumber = Math.max.apply(null, numericalArray);
 
-   // Step 4: Find the zero-based index of this greatest value within the array.
-   let peakIndex = numericValues.indexOf(greatestValue);
+    // The position (index) of this highest number within the array is determined.
+    var highestNumberIndex = numericalArray.indexOf(highestNumber);
 
-   // Step 5: Modify the highest value by halving it and updating it in its original position.
-   numericValues[peakIndex] = numericValues[peakIndex] / 2;
+    // The value at the identified index (the highest number) is then divided by two.
+    numericalArray[highestNumberIndex] = (numericalArray[highestNumberIndex] / 2);
 
-   // Step 6: Compute the final aggregate sum of all numbers in the now-modified array.
-   let aggregateResult = numericValues.reduce(
-      (runningTotal, currentVal) => runningTotal + currentVal,
-      0
-   );
+    // Finally, all the numbers in the modified array are summed up.
+    var finalAccumulatedValue = numericalArray.reduce((currentTotal, itemValue) => currentTotal += itemValue, 0);
 
-   // Step 7: Output the calculated total to the standard console.
-   console.log(aggregateResult);
+    // The computed sum is then printed to the standard output.
+    console.log(finalAccumulatedValue);
 }
 
-// Application entry point: Read data from standard input (e.g., a file) and initiate processing.
-analyzeNumbers(
-   require("fs").readFileSync("/dev/stdin", "utf8")
-); // Retrieve file content and pass it to the primary data handler.
+// The program starts by reading data from standard input.
+// The 'fs' module is used to synchronously read the file located at '/dev/stdin',
+// interpreting its content as UTF-8 encoded text.
+// This read content is then passed to the main processing function.
+processNumericalData(require('fs').readFileSync('/dev/stdin', 'utf8'));

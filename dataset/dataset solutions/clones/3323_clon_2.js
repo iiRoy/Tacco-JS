@@ -1,72 +1,102 @@
-'use strict' // Enforces stricter parsing and error handling for the entire script.
+'use strict';
 
-function computeResult(itemCount, eventChances) {
-  // Initialize a dynamic programming grid (2D array) with zeros.
-  // The dimensions are (itemCount + 1) x (itemCount + 1) to accommodate 0-based indexing up to itemCount.
-  var dynProgGrid = new Array(itemCount + 1).fill(0).map(arrayEntry => new Array(itemCount + 1).fill(0));
+/**
+ * Computes the probability of having at least (N/2 + 1) successes
+ * given N trials and an array of individual success probabilities.
+ * This uses dynamic programming to calculate probabilities of exactly
+ * 'j' successes in 'i' trials.
+ *
+ * @param {number} numElements - The total number of trials (N).
+ * @param {number[]} probabilities - An array of probabilities P[0]...P[N-1] for each trial.
+ * @returns {number} The cumulative probability of having more than N/2 successes.
+ */
+function calculateProbability(numElements, probabilities) {
+  // Initialize a 2D array (DP table) to store probabilities.
+  // dynamicProgrammingTable[i][j] will store the probability of getting exactly 'j' successes in 'i' trials.
+  // The table size is (numElements + 1) x (numElements + 1).
+  const dynamicProgrammingTable = new Array(numElements + 1)
+    .fill(0)
+    .map(() => new Array(numElements + 1).fill(0));
 
-  // Iterate through each row of the dynamic programming grid.
-  for (var rowIndex = 0; rowIndex < dynProgGrid.length; rowIndex++) {
-    // Iterate through each column within the current row.
-    for (var columnIndex = 0; columnIndex < dynProgGrid[rowIndex].length; columnIndex++) {
-      // Base case: The very first cell (0,0) is initialized to 1, representing the start of a process.
-      if (rowIndex === 0 && columnIndex === 0) {
-        dynProgGrid[rowIndex][columnIndex] = 1;
-        continue; // Skip to the next iteration after setting the base value.
+  // Populate the dynamic programming table.
+  // Iterate through each trial count from 0 to numElements.
+  for (let rowIdx = 0; rowIdx <= numElements; rowIdx++) {
+    // Iterate through each possible number of successes from 0 to rowIdx.
+    for (let colIdx = 0; colIdx <= numElements; colIdx++) {
+      // Base case: 0 trials, 0 successes. Probability is 1 (certainty).
+      if (rowIdx === 0 && colIdx === 0) {
+        dynamicProgrammingTable[rowIdx][colIdx] = 1;
+        continue; // Move to the next iteration.
       }
 
-      // If the column index is greater than the row index, this state is impossible, so probability is 0.
-      if (columnIndex > rowIndex) {
-        dynProgGrid[rowIndex][columnIndex] = 0;
+      // If the number of successes (colIdx) is greater than the number of trials (rowIdx),
+      // this state is impossible, so probability is 0.
+      if (colIdx > rowIdx) {
+        dynamicProgrammingTable[rowIdx][colIdx] = 0;
       }
-      // If the column index equals the row index, the probability depends on a previous diagonal element.
-      else if (columnIndex === rowIndex) {
-        dynProgGrid[rowIndex][columnIndex] = eventChances[rowIndex - 1] * dynProgGrid[rowIndex - 1][columnIndex - 1];
+      // If the number of successes equals the number of trials,
+      // all previous trials must have been successes.
+      else if (colIdx === rowIdx) {
+        // The probability is the probability of the current trial being a success
+        // multiplied by the probability of (colIdx-1) successes in (rowIdx-1) trials.
+        dynamicProgrammingTable[rowIdx][colIdx] = probabilities[rowIdx - 1] * dynamicProgrammingTable[rowIdx - 1][colIdx - 1];
       }
-      // If the column index is less than the row index, a more complex calculation is needed.
-      else if (columnIndex < rowIndex) {
-        // Special case for the first column (columnIndex 0).
-        if (columnIndex === 0) {
-          dynProgGrid[rowIndex][columnIndex] = (1 - eventChances[rowIndex - 1]) * dynProgGrid[rowIndex - 1][columnIndex];
+      // If the number of successes is less than the number of trials.
+      else {
+        // Case: 0 successes in 'rowIdx' trials.
+        // This means the current trial must be a failure, and there were 0 successes in (rowIdx-1) trials.
+        if (colIdx === 0) {
+          dynamicProgrammingTable[rowIdx][colIdx] = (1 - probabilities[rowIdx - 1]) * dynamicProgrammingTable[rowIdx - 1][colIdx];
         }
-        // General case: Probability is a sum of two scenarios from the previous row.
-        // One scenario involves the event happening (from diagonal), the other involves it not happening (from direct above).
+        // General case: 'colIdx' successes in 'rowIdx' trials.
+        // This can happen in two ways:
+        // 1. Current trial is a success: P[rowIdx-1] * (colIdx-1 successes in rowIdx-1 trials)
+        // 2. Current trial is a failure: (1-P[rowIdx-1]) * (colIdx successes in rowIdx-1 trials)
         else {
-          dynProgGrid[rowIndex][columnIndex] = eventChances[rowIndex - 1] * dynProgGrid[rowIndex - 1][columnIndex - 1] + (1 - eventChances[rowIndex - 1]) * dynProgGrid[rowIndex - 1][columnIndex];
+          dynamicProgrammingTable[rowIdx][colIdx] =
+            probabilities[rowIdx - 1] * dynamicProgrammingTable[rowIdx - 1][colIdx - 1] +
+            (1 - probabilities[rowIdx - 1]) * dynamicProgrammingTable[rowIdx - 1][colIdx];
         }
       }
     }
   }
 
-  // Calculate the starting index for summing the final probabilities.
-  // This usually corresponds to a threshold, like "at least half" of the items.
-  var resultAccumulationPoint = parseInt(itemCount / 2) + 1;
-  var totalProbability = 0; // Initialize a variable to accumulate the final sum.
+  // Calculate the sum of probabilities for having more than N/2 successes.
+  // The problem asks for N/2 + 1 or more successes.
+  const startColumnIndex = Math.floor(numElements / 2) + 1;
+  let finalResult = 0.0; // Use float for precision.
 
-  // Sum up the probabilities from the last row of the DP grid, starting from the calculated threshold.
-  for (var summationIndex = resultAccumulationPoint; summationIndex < dynProgGrid[itemCount].length; summationIndex++) {
-    totalProbability += dynProgGrid[itemCount][summationIndex];
+  // Sum probabilities from startColumnIndex up to numElements for the last row (N trials).
+  for (let currentColumn = startColumnIndex; currentColumn <= numElements; currentColumn++) {
+    finalResult += dynamicProgrammingTable[numElements][currentColumn];
   }
-  return totalProbability; // Return the final aggregated probability.
+
+  return finalResult;
 }
 
-function processInputData(programInput) {
-  // Split the raw input string into an array of lines based on newline characters.
-  var dataRows = programInput.split("\n");
+/**
+ * Reads input from stdin, parses it, calls the main calculation function,
+ * and prints the result to stdout.
+ *
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function processInput(rawData) {
+  // Split the input string into individual lines.
+  const inputLines = rawData.split('\n');
 
-  // Parse the first line of input to get the total number of items, converting it to an integer.
-  var itemCount = parseInt(dataRows[0]);
+  // Parse the first line to get the number of elements (N).
+  const numElements = parseInt(inputLines[0], 10); // Specify radix for safety.
 
-  // Parse the second line: split by space, then map each part to a floating-point number.
-  var eventChances = dataRows[1].split(' ').map(probabilityString => parseFloat(probabilityString));
+  // Parse the second line to get the array of probabilities (P).
+  // Each probability is a space-separated float.
+  const probabilities = inputLines[1].split(' ').map(probString => parseFloat(probString));
 
-  // Call the core computation function with the parsed item count and probabilities.
-  var computedValue = computeResult(itemCount, eventChances);
+  // Call the core logic function to get the answer.
+  const solution = calculateProbability(numElements, probabilities);
 
-  // Output the final calculated value to the standard console.
-  console.log(computedValue);
+  // Output the computed result to the console.
+  console.log(solution);
 }
 
-// Read input from the standard input stream (e.g., from a pipe or file).
-// The input is read as UTF-8 encoded text.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

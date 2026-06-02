@@ -1,55 +1,46 @@
-/*
- * This self-executing function processes a given text input
- * to compute a specific modular product based on range boundaries.
- */
-( ( rawData ) => { // Start of the main processing unit, accepting raw text.
+((rawData) => {
+  // Process the raw input string into an array of lines.
+  const linesArray = rawData.split('\n');
 
-  // Split the input string by newline characters to obtain an array of individual lines.
-  const textSegments = rawData.split ( '\n' ) ;
+  // Extract the first line and split it into its constituent parts.
+  const firstLineParts = linesArray[0].split(' ');
 
-  // Process the very first line to extract numerical boundary values,
-  // splitting it by space characters.
-  const boundaryStrings = textSegments [ 0 ] . split ( ' ' ) ;
+  // Convert the first part to a number for the left boundary.
+  const leftBound = +firstLineParts[0];
+  // Convert the second part to a number for the right boundary.
+  const rightBound = +firstLineParts[1];
 
-  // Convert the string parts into numerical values for the lower and upper limits.
-  const lowerLimit = + boundaryStrings [ 0 ] ; // The starting integer for the range.
-  const upperLimit = + boundaryStrings [ 1 ] ; // The ending integer for the range.
-
-  // First conditional check: Determine if the range is wide enough
-  // to guarantee a product of 0 modulo 2019, or if 2019 is within the range.
-  if ( upperLimit - lowerLimit >= 2019 || lowerLimit - ( lowerLimit % 2019 ) + 2019 <= upperLimit )
-  {
-    // If the condition is met, the minimum product modulo 2019 must be 0.
-    console.log ( 0 ) ;
-    return ; // Terminate the function's execution immediately.
+  // Check for a special condition where the minimum product modulo 2019 is guaranteed to be zero.
+  // This occurs if the range [leftBound, rightBound] is wide enough to contain a multiple of 2019,
+  // or if the difference between rightBound and leftBound is sufficiently large.
+  if (rightBound - leftBound >= 2019 || leftBound - (leftBound % 2019) + 2019 <= rightBound) {
+    console.log(0); // Output zero as the result.
+    return; // Terminate execution early.
   }
 
-  // Second conditional check: Handle a specific edge case where the range difference is exactly one.
-  if ( upperLimit - lowerLimit === 1 ) {
-    // In this specific scenario, the result is simply the lower limit modulo 2019.
-    console . log ( lowerLimit % 2019 ) ;
-    return ; // Exit the function.
+  // Handle another special case where the range contains only two numbers.
+  // In this scenario, the minimum product modulo 2019 is simply the leftBound modulo 2019.
+  if (rightBound - leftBound === 1) {
+    console.log(leftBound % 2019); // Output the modulo result.
+    return; // Terminate execution.
   }
 
-  // Initialize a variable to store the smallest product found so far.
-  // Using 'let' for modern JavaScript variable declaration, initialized to positive infinity.
-  let smallestResult = Infinity ;
+  // Initialize a variable to store the minimum product modulo 2019 found so far.
+  // Start with positive infinity to ensure any valid product will be smaller.
+  var minimumProductMod = Infinity;
 
-  // Outer loop: Iterates 'firstFactor' from the lower limit up to one less than the upper limit.
-  for ( let firstFactor = lowerLimit ; firstFactor <= upperLimit - 1 ; firstFactor += 1 )
-  {
-    // Inner loop: Iterates 'secondFactor' from one greater than the lower limit up to the upper limit.
-    for ( let secondFactor = lowerLimit + 1 ; secondFactor <= upperLimit ; secondFactor += 1 )
-    {
-      // Calculate the product of the modulo 2019 values of the two current factors,
-      // then take the modulo 2019 of that product.
-      // Update 'smallestResult' if the current calculation yields a smaller value.
-      smallestResult = Math . min ( smallestResult , ( ( firstFactor % 2019 ) * ( secondFactor % 2019 ) ) % 2019 ) ;
+  // Iterate through all possible 'idxA' values from leftBound up to rightBound - 1.
+  for (var idxA = leftBound; idxA <= rightBound - 1; idxA += 1) {
+    // For each 'idxA', iterate through all possible 'idxB' values from leftBound + 1 up to rightBound.
+    for (var idxB = leftBound + 1; idxB <= rightBound; idxB += 1) {
+      // Calculate the product of (idxA % 2019) and (idxB % 2019), then take the modulo 2019 of that product.
+      // Update minimumProductMod if the newly calculated value is smaller.
+      minimumProductMod = Math.min(minimumProductMod, (idxA % 2019) * (idxB % 2019) % 2019);
     }
   }
 
-  // Output the final computed minimum modular product to the console.
-  console . log ( smallestResult ) ;
-} ) ( // Invoke the function immediately with the following input.
-  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) // Read content from standard input synchronously as UTF-8.
-) ; // End of the Immediately Invoked Function Expression (IIFE) and its execution.
+  // After checking all pairs, print the smallest product modulo 2019 found.
+  console.log(minimumProductMod);
+})(
+  require("fs").readFileSync("/dev/stdin", "utf8") // Read input from standard input.
+);

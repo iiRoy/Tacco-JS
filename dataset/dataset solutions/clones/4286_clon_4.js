@@ -1,22 +1,14 @@
-const operationHandler = (sourceMaterial) => {
-    const separatorPosition = sourceMaterial.indexOf('\n');
-    const firstLineContent = sourceMaterial.substring(0, separatorPosition);
-    const subsequentLinesContent = sourceMaterial.substring(separatorPosition + 1);
+const processData = (rawData) => {
+    const [exponentLine, numberSequenceLine] = rawData.split('\n');
 
-    const primaryExponent = parseInt(firstLineContent, 10);
+    const baseValue = Math.pow(3, Number(exponentLine));
 
-    const numericCollection = (subsequentLinesContent.match(/\d+/g) || []).map(Number);
-
-    const initialMagnitude = 3 ** primaryExponent;
-
-    const secondaryFactor = numericCollection.reduce((acc, currentNum) => {
-        if ((currentNum & 1) === 0) {
-            return acc * 2;
-        }
-        return acc;
+    const factorFromEvens = numberSequenceLine.split(' ').reduce((accumulator, currentString) => {
+        const numericValue = Number(currentString);
+        return accumulator * (numericValue % 2 === 0 ? 2 : 1);
     }, 1);
 
-    console.log(initialMagnitude - secondaryFactor);
+    console.log(baseValue - factorFromEvens);
 };
 
-operationHandler(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,68 +1,59 @@
-// This function processes textual input to determine a specific condition.
-function ExecuteLogic( rawText )
-{
-  // Split the entire input string by newline characters into an array of lines.
-  let inputLines = rawText.split('\n');
+// This function processes the given input data to determine a specific condition.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let parsedLines = rawData.split("\n");
 
-  // Parse the first line to get the number of elements.
-  const itemCount = parseInt( inputLines[0], 10 );
+  // Parse the first line to get the number of items.
+  const itemCount = parseInt(parsedLines[0], 10);
 
-  // Initialize two arrays of the specified size, filled with zeros.
-  let primaryValues = new Array(itemCount).fill(0);
-  let secondaryValues = new Array(itemCount).fill(0);
+  // Initialize two arrays with 'itemCount' zeros.
+  let arrayA = new Array(itemCount).fill(0);
+  let arrayB = new Array(itemCount).fill(0);
 
-  // Split the second line (index 1) into strings representing primary values.
-  const strPrimaryValues = inputLines[1].split(' ');
-  // Split the third line (index 2) into strings representing secondary values.
-  const strSecondaryValues = inputLines[2].split(' ');
+  // Split the second and third lines into string arrays.
+  const tempArrayAStrings = parsedLines[1].split(" ");
+  const tempArrayBStrings = parsedLines[2].split(" ");
 
-  // Initialize accumulators for sums and differences.
-  let totalPrimary = 0;
-  let totalSecondary = 0;
-  let totalAbsDiff = 0;   // Sum of absolute differences |primary[idx] - secondary[idx]|
-  let posDiffSum = 0;     // Sum of positive differences where secondary[idx] > primary[idx] (i.e., max(0, secondary[idx] - primary[idx]))
-  let negDiffSum = 0;     // Sum of positive differences where primary[idx] > secondary[idx] (i.e., max(0, primary[idx] - secondary[idx]))
+  // Initialize accumulator variables for sums and differences.
+  let totalA = 0;
+  let totalB = 0;
+  let absoluteDifferenceSum = 0;
+  let positiveDifferenceSum = 0;
+  let negativeDifferenceSum = 0;
 
-  // Iterate through the elements to populate arrays and calculate sums/differences.
-  for ( let idx = 0; idx < itemCount; idx++ )
-  {
-    // Convert string to integer for primary array element.
-    primaryValues[idx] = parseInt(strPrimaryValues[idx], 10);
-    // Accumulate sum for primary values.
-    totalPrimary += primaryValues[idx];
+  // Iterate through the items to populate arrays and calculate sums/differences.
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Convert string elements to integers and store them.
+    arrayA[idx] = parseInt(tempArrayAStrings[idx], 10);
+    totalA += arrayA[idx]; // Accumulate sum for array A
 
-    // Convert string to integer for secondary array element.
-    secondaryValues[idx] = parseInt(strSecondaryValues[idx], 10);
-    // Accumulate sum for secondary values.
-    totalSecondary += secondaryValues[idx];
+    arrayB[idx] = parseInt(tempArrayBStrings[idx], 10);
+    totalB += arrayB[idx]; // Accumulate sum for array B
 
-    // Calculate and accumulate absolute difference.
-    totalAbsDiff += Math.abs(primaryValues[idx] - secondaryValues[idx]);
-
-    // Accumulate positive differences (secondary[idx] - primary[idx] when secondary[idx] > primary[idx]).
-    posDiffSum += Math.max(0, secondaryValues[idx] - primaryValues[idx]);
-
-    // Accumulate negative differences (primary[idx] - secondary[idx] when primary[idx] > secondary[idx]).
-    negDiffSum += Math.max(0, primaryValues[idx] - secondaryValues[idx]);
+    // Calculate various difference metrics.
+    absoluteDifferenceSum += Math.abs(arrayA[idx] - arrayB[idx]);
+    positiveDifferenceSum += Math.max(0, arrayB[idx] - arrayA[idx]);
+    negativeDifferenceSum += Math.max(0, arrayA[idx] - arrayB[idx]);
   }
 
-  // Initialize the final decision string.
-  let finalVerdict = "No";
+  // Initialize the result string.
+  let resultString = "No";
 
-  // Evaluate a complex condition involving all calculated sums and differences.
-  // The condition checks several inequalities and a ratio.
-  if (totalPrimary <= totalSecondary &&
-      totalAbsDiff <= ( totalSecondary - totalPrimary ) * 3 &&
-      posDiffSum <= ( totalSecondary - totalPrimary ) * 2 &&
-      negDiffSum <= ( totalSecondary - totalPrimary ) &&
-      posDiffSum / negDiffSum <= 2)
-  {
-    finalVerdict = "Yes"; // If all conditions are met, set the verdict to "Yes".
+  // Evaluate the complex condition based on calculated sums and differences.
+  // The condition checks several inequalities involving sums and differences.
+  if (
+    totalA <= totalB &&
+    absoluteDifferenceSum <= (totalB - totalA) * 3 &&
+    positiveDifferenceSum <= (totalB - totalA) * 2 &&
+    negativeDifferenceSum <= (totalB - totalA) &&
+    positiveDifferenceSum / negativeDifferenceSum <= 2
+  ) {
+    resultString = "Yes"; // If all conditions are met, set result to "Yes".
   }
 
-  // Output the final verdict to the console.
-  console.log('%s', finalVerdict);
+  // Output the final result string to the console.
+  console.log('%s', resultString);
 }
 
-// Invoke the main processing function with data read from standard input.
-ExecuteLogic( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

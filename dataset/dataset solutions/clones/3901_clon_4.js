@@ -1,55 +1,45 @@
 "use strict";
 
-const calculateFactorial = (valueOperand) => {
-    if (valueOperand < 0) {
-        throw new Error("Factorial input must be non-negative.");
-    }
-    return (valueOperand <= 1) ? 1 : valueOperand * calculateFactorial(valueOperand - 1);
-};
-
-const sequentialProduct = (startingValue, termCount) => {
-    if (termCount < 0) {
-        throw new Error("Term count cannot be negative.");
-    }
-    if (termCount === 0) {
+const calculateArrangement = (totalItems, selectedItems) => {
+    if (selectedItems === 0) {
         return 1;
     }
-    return startingValue * sequentialProduct(startingValue - 1, termCount - 1);
+    return totalItems * calculateArrangement(totalItems - 1, selectedItems - 1);
 };
 
-const selectCombinations = (totalItems, selectedItems) => {
-    if (selectedItems < 0 || selectedItems > totalItems) {
-        return 0; 
-    }
-    const numerator = calculateFactorial(totalItems);
-    const denominator = calculateFactorial(selectedItems) * calculateFactorial(totalItems - selectedItems);
-    return numerator / denominator;
+const computeSelection = (totalItems, selectedItems) => {
+    const calculateFactorial = (numValue) => {
+        if (numValue < 0) return 0;
+        if (numValue === 0) return 1;
+        return numValue * calculateFactorial(numValue - 1);
+    };
+    return calculateFactorial(totalItems) / (calculateFactorial(selectedItems) * calculateFactorial(totalItems - selectedItems));
 };
 
-const processStreamedData = (incomingText) => {
-    const dataSegments = incomingText.trim().split(/\s*\n\s*/); 
+const processInputData = (inputContent) => {
+    const contentLines = inputContent.trim().split("\n");
+    const totalCount = Number(contentLines[0]);
+    const numericValues = contentLines[1].split(" ").map(Number);
     
-    const initialNumericValue = Number.parseInt(dataSegments[0], 10);
+    const descendingSortedValues = numericValues.sort((valA, valB) => valB - valA);
 
-    const numericalEntities = dataSegments[1].split(/\s+/).filter(Boolean).map(Number).sort((x, y) => y - x);
+    const primaryValue = descendingSortedValues[0];
+    const comparisonMidpoint = primaryValue / 2;
 
-    const peakMagnitude = numericalEntities[0];
+    const nearestElement = descendingSortedValues.reduce((currentBest, currentItem) => {
+        const currentDifference = Math.abs(comparisonMidpoint - currentItem);
+        const bestDifference = Math.abs(comparisonMidpoint - currentBest);
 
-    const proximityGoal = peakMagnitude / 2;
-
-    let minimumProximityDifference = Infinity;
-    let closestCandidateEntity = numericalEntities[0]; 
-
-    for (const currentEntity of numericalEntities) {
-        const currentAbsoluteDeviation = Math.abs(proximityGoal - currentEntity);
-
-        if (currentAbsoluteDeviation < minimumProximityDifference) {
-            minimumProximityDifference = currentAbsoluteDeviation;
-            closestCandidateEntity = currentEntity;
+        if (currentDifference < bestDifference) {
+            return currentItem;
+        } else if (currentDifference === bestDifference) {
+            return currentBest;
+        } else {
+            return currentBest;
         }
-    }
+    }, descendingSortedValues[0]);
     
-    console.log(`${peakMagnitude} ${closestCandidateEntity}`);
+    console.log(primaryValue + " " + nearestElement);
 };
 
-processStreamedData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

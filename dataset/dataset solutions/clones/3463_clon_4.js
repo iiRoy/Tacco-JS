@@ -1,58 +1,51 @@
-const obtainInteger = (txtVal) => Number.parseInt(txtVal, 10);
+const parseNum = (s) => Number.parseInt(s, 10);
+const processNumArray = (arr) => arr.map(parseNum);
+const getAbsoluteValue = (val) => Math.abs(val);
+const getMinOfArgs = (...vals) => Math.min(...vals);
+const getMaxOfArgs = (...vals) => Math.max(...vals);
 
-const determineMaximum = (valA, valB) => {
-    if (valA > valB) {
-        return valA;
+const iterativeGCD = (a, b) => {
+    while (b) {
+        [a, b] = [b, a % b];
     }
-    return valB;
+    return a;
 };
+const calculateGreatestCommonDivisor = (...nums) => nums.reduce(iterativeGCD);
 
-const executeCalculation = (rawInputContent) => {
-    const inputLines = rawInputContent.split('\n');
-    const elementQuantity = obtainInteger(inputLines[0]);
-    
-    const numericSequence = inputLines.slice(1, elementQuantity + 1)
-                                      .map(obtainInteger)
-                                      .sort((val1, val2) => val1 - val2);
+function executeSolution(rawInputData) {
+    const inputLines = rawInputData.split('\n');
+    const countElements = parseNum(inputLines[0]);
+    const numericValues = processNumArray(inputLines.slice(1, countElements + 1));
 
-    let candidateOneResult;
-    let candidateTwoResult;
+    numericValues.sort((a, b) => a - b);
 
-    if (elementQuantity % 2 === 0) {
-        const centralDivisionPoint = elementQuantity / 2;
-        
-        const sumOfLowerSegment = numericSequence.slice(0, centralDivisionPoint).reduce((accum, current) => accum + current, 0);
-        const sumOfUpperSegmentExcludingMiddle = numericSequence.slice(centralDivisionPoint + 2).reduce((accum, current) => accum + current, 0);
-        
-        candidateOneResult = (-2 * sumOfLowerSegment) +
-                             (3 * numericSequence[centralDivisionPoint]) +
-                             (1 * numericSequence[centralDivisionPoint + 1]) +
-                             (2 * sumOfUpperSegmentExcludingMiddle);
-        
-        candidateTwoResult = 0;
+    const computeWeightedSummation = (dataCollection, splitPointIndex) => {
+        return dataCollection.reduce((accumulator, currentVal, currentIndex) => {
+            return accumulator + (currentIndex < splitPointIndex ? -2 * currentVal : 2 * currentVal);
+        }, 0);
+    };
+
+    let finalResult;
+
+    if (countElements % 2 === 0) {
+        const midpoint = countElements / 2;
+        const initialSum = computeWeightedSummation(numericValues, midpoint);
+        finalResult = initialSum + numericValues[midpoint] - numericValues[midpoint + 1];
     } else {
-        const medianElementIndex = (elementQuantity - 1) / 2;
+        const centralIndex = (countElements - 1) / 2;
 
-        const sumOfFirstPartForX = numericSequence.slice(0, medianElementIndex).reduce((accum, current) => accum + current, 0);
-        const sumOfSecondPartForX = numericSequence.slice(medianElementIndex + 2).reduce((accum, current) => accum + current, 0);
-        candidateOneResult = (-2 * sumOfFirstPartForX) +
-                             (1 * numericSequence[medianElementIndex]) +
-                             (1 * numericSequence[medianElementIndex + 1]) +
-                             (2 * sumOfSecondPartForX);
+        const candidateA_initial = computeWeightedSummation(numericValues, centralIndex);
+        const candidateA_final = candidateA_initial - (numericValues[centralIndex] + numericValues[centralIndex + 1]);
 
-        const sumOfFirstPartForY = numericSequence.slice(0, medianElementIndex - 1).reduce((accum, current) => accum + current, 0);
-        const sumOfSecondPartForY = numericSequence.slice(medianElementIndex + 1).reduce((accum, current) => accum + current, 0);
-        candidateTwoResult = (-2 * sumOfFirstPartForY) +
-                             (-1 * numericSequence[medianElementIndex - 1]) +
-                             (-1 * numericSequence[medianElementIndex]) +
-                             (2 * sumOfSecondPartForY);
+        const candidateB_initial = computeWeightedSummation(numericValues, centralIndex + 1);
+        const candidateB_final = candidateB_initial + (numericValues[centralIndex] + numericValues[centralIndex - 1]);
+        
+        finalResult = getMaxOfArgs(candidateA_final, candidateB_final);
     }
 
-    const finalOutcome = determineMaximum(candidateOneResult, candidateTwoResult);
-    
-    globalThis.console.log(finalOutcome);
+    console.log(finalResult);
 
     return 0;
-};
+}
 
-executeCalculation(globalThis.process.binding('fs').read(0, 1024 * 1024, 0).toString('utf8'));
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

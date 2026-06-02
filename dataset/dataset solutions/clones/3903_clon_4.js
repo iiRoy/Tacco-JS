@@ -1,51 +1,56 @@
-const processIncomingData = (fullInput) => {
-    const parts = fullInput.split(/\s|\n/).filter(val => val.length > 0);
-    let currentPosition = 0;
-    const getNextInt = () => parseInt(parts[currentPosition++], 10);
-    const getMultipleInts = (howMany) => Array.from({ length: howMany }, getNextInt);
-    return { getNextInt, getMultipleInts };
+const processInputData = (rawData) => {
+    const dataTokens = rawData.split(/\s+/).filter(Boolean);
+    let tokenCursor = 0;
+
+    const extractInteger = () => parseInt(dataTokens[tokenCursor++], 10);
+
+    const extractIntegerSequence = (quantity) => {
+        const sequence = new Array(quantity);
+        for (let i = 0; i < quantity; i++) {
+            sequence[i] = extractInteger();
+        }
+        return sequence;
+    };
+
+    const elementCount = extractInteger();
+    const numericalValues = extractIntegerSequence(elementCount);
+
+    return { elementCount, numericalValues };
 };
 
-const executeLogic = (dataInput) => {
-    const dataParser = processIncomingData(dataInput);
-    const totalItems = dataParser.getNextInt();
-    const initialValues = dataParser.getMultipleInts(totalItems);
+function ProcessNumericalArray(rawInputText) {
+    const { elementCount: initialSize, numericalValues: dataArray } = processInputData(rawInputText);
 
-    if (totalItems === 0) {
-        return "0 0";
-    }
+    dataArray.sort((valA, valB) => valB - valA); // Sort in descending order
 
-    const sortedDescending = [...initialValues].sort((x, y) => y - x);
-    sortedDescending.push(0);
+    dataArray.push(0); // Append a zero for consistent boundary handling
 
-    const primaryValue = sortedDescending[0];
-    const midpointTarget = Math.floor(primaryValue / 2);
+    const primaryElement = dataArray[0];
+    const targetMidpoint = Math.floor(primaryElement / 2);
 
-    let candidateA, candidateB;
+    // Use Array.prototype.reduce to determine the two candidate values.
+    // The accumulator holds the current best pair [candidateA, candidateB].
+    // We iterate over indices from 1 up to (initialSize - 1),
+    // which corresponds to the 'n' loop in the original logic.
+    const [candidateA, candidateB] = Array.from({ length: initialSize - 1 }, (_, index) => index + 1)
+        .reduce((currentPair, currentIndex) => {
+            // If the current element in the sorted array is greater than or equal to the target midpoint,
+            // update the candidates to the current element and the one immediately following it.
+            if (targetMidpoint <= dataArray[currentIndex]) {
+                return [dataArray[currentIndex], dataArray[currentIndex + 1]];
+            }
+            // Otherwise, retain the previously established candidates.
+            return currentPair;
+        }, [0, 0]); // Initialize candidates to [0, 0]
 
-    const valuesToSearch = sortedDescending.slice(1);
-    const firstSmallerRelativeIndex = valuesToSearch.findIndex(elem => elem < midpointTarget);
+    // Select the candidate that is closer to the target midpoint.
+    const chosenCandidate = (Math.abs(targetMidpoint - candidateA) <= Math.abs(targetMidpoint - candidateB))
+        ? candidateA
+        : candidateB;
 
-    if (firstSmallerRelativeIndex === -1) {
-        candidateA = sortedDescending[sortedDescending.length - 2];
-        candidateB = sortedDescending[sortedDescending.length - 1];
-    } else {
-        const firstSmallerAbsoluteIndex = 1 + firstSmallerRelativeIndex;
-        candidateA = sortedDescending[firstSmallerAbsoluteIndex - 1];
-        candidateB = sortedDescending[firstSmallerAbsoluteIndex];
-    }
+    console.log(`${primaryElement} ${chosenCandidate}`);
+}
 
-    const proximityA = Math.abs(midpointTarget - candidateA);
-    const proximityB = Math.abs(midpointTarget - candidateB);
-
-    const finalSelection = (proximityA <= proximityB) ? candidateA : candidateB;
-
-    return `${primaryValue} ${finalSelection}`;
-};
-
-const initiateOperation = () => {
-    const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-    console.log(executeLogic(sourceData));
-};
-
-initiateOperation();
+if (typeof window === "undefined") {
+    ProcessNumericalArray(require("fs").readFileSync("/dev/stdin", "utf8"));
+}

@@ -1,9 +1,6 @@
-function processInputData(incomingText) {
-  const sequenceLength = incomingText.length;
-  const finalSequence = Array.from({ length: sequenceLength }).reduce((accumulator) => {
-    return accumulator + 'x';
-  }, '');
-  console.log(finalSequence);
+function Main(inputParameter) {
+  const outputSequence = 'x'.repeat(inputParameter.length);
+  console.log(outputSequence);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

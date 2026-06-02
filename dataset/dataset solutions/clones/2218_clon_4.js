@@ -1,33 +1,24 @@
 'use strict';
-const processSequence = (sourceData) => {
-    const [sizeOfSequence, elementsAsString] = sourceData;
-    const arrayLength = Number(sizeOfSequence);
-    const numericValues = elementsAsString.split(' ').map(Number);
 
-    const calculateSpecialElements = (currentIdx, minimumEncountered, dataSeries) => {
-        if (currentIdx >= dataSeries.length) {
-            return 0;
-        }
+const processInput = rawData => {
+  const elementCount = parseInt(rawData[0], 10);
+  const numericSequence = rawData[1].split(' ').map(Number);
 
-        const currentItem = dataSeries[currentIdx];
-        let contribution = 0;
+  const tallyResult = numericSequence.reduce((accumulator, currentElement) => {
+    if (currentElement <= accumulator.minimumEncountered) {
+      return {
+        countOfQualifiers: accumulator.countOfQualifiers + 1,
+        minimumEncountered: currentElement,
+      };
+    } else {
+      return {
+        countOfQualifiers: accumulator.countOfQualifiers,
+        minimumEncountered: accumulator.minimumEncountered,
+      };
+    }
+  }, { countOfQualifiers: 0, minimumEncountered: Infinity });
 
-        if (currentItem <= minimumEncountered) {
-            contribution = 1;
-        }
-
-        const nextMinimum = Math.min(minimumEncountered, currentItem);
-
-        return contribution + calculateSpecialElements(currentIdx + 1, nextMinimum, dataSeries);
-    };
-
-    const finalTally = calculateSpecialElements(0, Number.POSITIVE_INFINITY, numericValues);
-
-    console.log(finalTally);
+  console.log(tallyResult.countOfQualifiers);
 };
 
-const fileSystemUtility = require("fs");
-const rawFileContent = fileSystemUtility.readFileSync("/dev/stdin", "utf8");
-const contentLines = rawFileContent.split('\n').filter(Boolean);
-
-processSequence(contentLines);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

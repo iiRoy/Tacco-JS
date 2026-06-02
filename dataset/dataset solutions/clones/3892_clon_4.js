@@ -1,17 +1,23 @@
-const executeVerification = (sourceDatum) => {
-    const numericTokens = sourceDatum.match(/\d+/g).map(Number);
+'use strict';
 
-    const initialBound = numericTokens[0];
-    const spanValue = numericTokens[1];
-    const evalPoint = numericTokens[2];
-
-    const differenceLower = evalPoint - initialBound;
-    const differenceUpper = initialBound + spanValue - evalPoint;
-
-    const isWithinPermissibleSpan = (Math.min(differenceLower, differenceUpper) >= 0);
-
-    const responseCatalog = ['NO', 'YES'];
-    console.log(responseCatalog[+isWithinPermissibleSpan]);
+const extractAndConvert = (textSegment) => {
+    return Math.trunc(Number(textSegment));
 };
 
-executeVerification(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const evaluateCondition = (inputString) => {
+    const [firstDataLine] = inputString.trim().split('\n');
+    const [alpha, beta, gamma] = firstDataLine.split(' ').map(extractAndConvert);
+
+    const delta = gamma - alpha;
+
+    const rangeChecks = [
+        () => delta >= 0,
+        () => delta <= beta
+    ];
+
+    const allChecksPass = rangeChecks.every(check => check());
+
+    console.log(allChecksPass ? 'YES' : 'NO');
+};
+
+evaluateCondition(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,25 +1,23 @@
-const processOperation = (rawText) => {
-    const components = rawText.trim().split(' ');
-    const factorA = parseInt(components[0], 10);
-    const factorB = parseInt(components[1], 10);
+const processNumbers = (initialN, constantK) => {
+  const calculateNextValue = (currentValue) => Math.abs(currentValue - constantK);
 
-    const determineMagnitude = (val) => {
-        return (val < 0) ? -val : val;
-    };
+  const findStableDifference = (previousValue, currentValue) => {
+    if (currentValue <= previousValue) {
+      return currentValue;
+    }
+    const nextValue = calculateNextValue(currentValue);
+    return findStableDifference(currentValue, nextValue);
+  };
 
-    const calculateConvergence = (currentMetric, threshold) => {
-        const nextMetric = determineMagnitude(currentMetric - threshold);
-        if (nextMetric <= currentMetric) {
-            return nextMetric;
-        } else {
-            return calculateConvergence(nextMetric, threshold);
-        }
-    };
+  const firstTerm = calculateNextValue(initialN);
+  const secondTerm = calculateNextValue(firstTerm);
 
-    const startingMetric = determineMagnitude(factorA - factorB);
-    const finalResult = calculateConvergence(startingMetric, factorB);
-
-    console.log(finalResult);
+  return findStableDifference(firstTerm, secondTerm);
 };
 
-processOperation(require("fs").readFileSync("/dev/stdin", "utf8"));
+const mainExecution = (inputString) => {
+  const [numA, numB] = inputString.split(' ').map(Number);
+  console.log(processNumbers(numA, numB));
+};
+
+mainExecution(require("fs").readFileSync("/dev/stdin", "utf8"));

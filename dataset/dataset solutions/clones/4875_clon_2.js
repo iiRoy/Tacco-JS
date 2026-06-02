@@ -1,77 +1,99 @@
-'use strict'; // Enforce strict mode for cleaner code execution
+'use strict';
 
-let gridCanvas = []; // Global array to represent our grid or canvas
+// Declare a global variable to hold our grid, initialized as an empty array.
+let gridCanvas = [];
 
-function ExecuteProgram(rawInputData) {
-    // Parse the incoming string data into lines and then into segments
-    const processedLines = rawInputData.split('\n').map(lineSegment => lineSegment.split(' '));
+/**
+ * Main function to process the input string and perform operations.
+ * @param {string} rawData - The raw input string containing grid dimensions and operations.
+ */
+function ProcessInputData(rawData) {
+    // Split the input into lines, then split each line by space.
+    // Convert the resulting array of string arrays into a more usable format.
+    const parsedLines = rawData.split('\n').map(val => val.split(' '));
 
-    // Extract initial dimension and operation count information from the first line
-    let dimensionString = processedLines.shift();
-    const gridWidth = Number(dimensionString[0]); // Width of the grid
-    const gridHeight = Number(dimensionString[1]); // Height of the grid
-    const actionCount = Number(dimensionString[2]); // Number of operations to perform
+    // Extract the first line which contains the canvas dimensions and number of operations.
+    let firstLineParts = parsedLines.shift();
+    const canvasWidth = Number(firstLineParts[0]); // Width of the canvas
+    const canvasHeight = Number(firstLineParts[1]); // Height of the canvas
+    const numOperations = Number(firstLineParts[2]); // Number of drawing operations
 
     // Initialize the gridCanvas.
-    // Ensure it's empty before populating.
+    // Reset the global gridCanvas variable.
     gridCanvas = [];
-    // Populate the grid with initial values (e.g., 0 for unmarked)
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-        gridCanvas[rowIndex] = new Array(gridWidth).fill(0); // Each row is an array filled with 0s
+    // Populate the gridCanvas with rows, each filled with zeros.
+    // The outer loop iterates through the height (rows).
+    for (let rowIdx = 0; rowIdx < canvasHeight; rowIdx++) {
+        // The inner loop iterates through the width (columns) to create each row.
+        // This approach is slightly inefficient as it re-initializes the same row multiple times.
+        // A more typical initialization would be `gridCanvas.push(Array(canvasWidth).fill(0));`
+        // However, to maintain Type II clone structure, we replicate the original's loop structure.
+        for (let colIdx = 0; colIdx < canvasWidth; colIdx++) {
+            gridCanvas[rowIdx] = Array(canvasWidth).fill(0);
+        }
     }
 
-    // Process each operation based on the action type
-    for (let operationIndex = 0; operationIndex < actionCount; operationIndex++) {
-        // Determine the type of masking operation from the third element of the current line
-        switch (Number(processedLines[operationIndex][2])) {
-            case 1: // Type 1: Mark area from left edge up to a specified X coordinate
-                applyMask(0, processedLines[operationIndex][0], 0, gridHeight);
+    // Process each drawing operation.
+    // Iterate through the remaining lines, which describe the operations.
+    for (let opIdx = 0; opIdx < numOperations; opIdx++) {
+        // Determine the type of operation based on the third element of the current line.
+        switch (Number(parsedLines[opIdx][2])) {
+            case 1: // Fill region from x=0 to x=d[i][0]
+                fillRegion(0, parsedLines[opIdx][0], 0, canvasHeight);
                 break;
-            case 2: // Type 2: Mark area from a specified X coordinate to the right edge
-                applyMask(processedLines[operationIndex][0], gridWidth, 0, gridHeight);
+            case 2: // Fill region from x=d[i][0] to x=W
+                fillRegion(parsedLines[opIdx][0], canvasWidth, 0, canvasHeight);
                 break;
-            case 3: // Type 3: Mark area from top edge up to a specified Y coordinate
-                applyMask(0, gridWidth, 0, processedLines[operationIndex][1]);
+            case 3: // Fill region from y=0 to y=d[i][1]
+                fillRegion(0, canvasWidth, 0, parsedLines[opIdx][1]);
                 break;
-            case 4: // Type 4: Mark area from a specified Y coordinate to the bottom edge
-                applyMask(0, gridWidth, processedLines[operationIndex][1], gridHeight);
+            case 4: // Fill region from y=d[i][1] to y=H
+                fillRegion(0, canvasWidth, parsedLines[opIdx][1], canvasHeight);
                 break;
-            default: // No specific action for other types, just continue
+            default:
+                // No action for unknown operation types.
                 break;
         }
     }
-    // Output the fully marked grid for debugging purposes
+    // For debugging purposes, output the final state of the grid.
+    // This is part of the original's observable behavior.
     console.log(gridCanvas);
 
-    // Calculate the final count of unmarked cells
-    let unmarkedCells = 0;
-    // Iterate through each row of the grid
+    // Calculate the number of unpainted (value 0) cells.
+    let unpaintedCount = 0;
+    // Iterate over each row in the gridCanvas.
     for (const rowArray of gridCanvas) {
-        // Iterate through each cell in the current row
-        for (const cellContent of rowArray) {
-            // If a cell still contains its initial value (0), increment the counter
-            if (cellContent === 0) {
-                unmarkedCells++;
+        // Iterate over each cell value in the current row.
+        for (const cellValue of rowArray) {
+            // If the cell value is 0, it means it hasn't been "painted" (incremented).
+            if (cellValue === 0) {
+                unpaintedCount++; // Increment the counter for unpainted cells.
             }
         }
     }
 
-    // Display the final count of unmarked cells to the console
-    console.log(unmarkedCells);
+    // Output the final count of unpainted cells.
+    console.log(unpaintedCount);
 }
 
-// Function to apply a mask (mark cells) within a specified rectangular region
-function applyMask(minXCoord, maxXCoord, minYCoord, maxYCoord) {
-    // Loop through the Y coordinates (rows) within the specified vertical bounds
-    for (let currentY = minYCoord; currentY < maxYCoord; currentY++) {
-        // Loop through the X coordinates (columns) within the specified horizontal bounds
-        for (let currentX = minXCoord; currentX < maxXCoord; currentX++) {
-            // Increment the value of the cell at the current (Y, X) position
-            // This marks the cell as being covered by an operation
+/**
+ * Fills a specified rectangular region of the global gridCanvas by incrementing cell values.
+ * @param {number} startXCoord - The starting X-coordinate (inclusive).
+ * @param {number} endXCoord - The ending X-coordinate (exclusive).
+ * @param {number} startYCoord - The starting Y-coordinate (inclusive).
+ * @param {number} endYCoord - The ending Y-coordinate (exclusive).
+ */
+function fillRegion(startXCoord, endXCoord, startYCoord, endYCoord) {
+    // Loop through the Y-coordinates (rows) within the specified range.
+    for (let currentY = startYCoord; currentY < endYCoord; currentY++) {
+        // Loop through the X-coordinates (columns) within the specified range.
+        for (let currentX = startXCoord; currentX < endXCoord; currentX++) {
+            // Increment the value of the cell at the current (currentY, currentX) position.
+            // This marks the cell as "painted" or affected by an operation.
             gridCanvas[currentY][currentX] += 1;
         }
     }
 }
 
-// Execute the main program by reading input from standard input
-ExecuteProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

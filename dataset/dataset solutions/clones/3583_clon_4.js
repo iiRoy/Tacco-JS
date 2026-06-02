@@ -1,19 +1,21 @@
-const processDataUnit = (sourceContent) => {
-  const dataSegments = sourceContent.replace(/(^\s*)|(\s*$)/g, '').split(/\r?\n/);
-  const firstSegment = dataSegments[0];
+const main = (arg) => {
+  const processedLines = arg.trim().split('\n');
+  const targetLine = processedLines[0];
 
-  const partsCapture = firstSegment.match(/(\d+)\s+(\d+)/);
+  const dynamicParser = new Function('inputStringValue', `
+    const resultFromMap = inputStringValue.map(Number);
+    return resultFromMap;
+  `);
 
-  const paramA = Number(partsCapture[1]);
-  const paramB = Number(partsCapture[2]);
+  let parsedValuesContainer;
+  try {
+    parsedValuesContainer = dynamicParser(targetLine);
+  } catch (errorObject) {
+    throw errorObject;
+  }
 
-  const resultValue = paramA - paramB + 1;
-
-  globalThis.console.info(resultValue);
+  const [N, i] = parsedValuesContainer;
+  console.log(N - i + 1);
 };
 
-const obtainSourceMaterial = (fileDescriptor) => {
-  return require('node:fs').readFileSync(fileDescriptor, 'utf8');
-};
-
-processDataUnit(obtainSourceMaterial(0));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

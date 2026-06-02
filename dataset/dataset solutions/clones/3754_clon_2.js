@@ -1,29 +1,27 @@
-// This function meticulously processes a given block of text input.
-function DataProcessor(initialText) {
-  // Break down the initial text into an array of distinct lines.
-  let textLines = initialText.split('\n');
+function ProcessInput(rawData) {
+  // Split the incoming text into individual lines
+  let linesOfText = rawData.split("\n");
 
-  // Parse the second line of text into an array of numerical entities.
-  // Each string segment is converted to a base-10 integer.
-  let numericalEntities = textLines[1].split(' ').map(strVal => parseInt(strVal, 10));
+  // Parse the second line of input into an array of numbers
+  // The first line is typically metadata, we're interested in the actual data.
+  let numericValues = linesOfText[1].split(" ").map((val) => Number(val));
 
-  // Initialize a counter to track the cumulative count of divisions by two.
-  let divisionCount = 0.0; // Using a floating-point literal for initial value.
+  // Initialize a counter for the total number of divisions by two
+  let totalDivisions = 0;
 
-  // Iterate through every number within our collection of numerical entities.
-  for (const originalValue of numericalEntities) {
-    let workingValue = originalValue; // Create a temporary, mutable copy of the number.
-    // Continuously divide the number by two as long as it remains an even number.
-    while (workingValue % 2 === 0) {
-      workingValue = workingValue / 2; // Perform the division.
-      divisionCount += 1; // Increment the total count of divisions.
+  // Iterate through each number in our parsed array
+  for (let currentNumber of numericValues) {
+    // While the current number is even, keep dividing it by two
+    // and increment our division counter.
+    while (currentNumber % 2 === 0) {
+      currentNumber = currentNumber / 2;
+      totalDivisions++; // Increment the count of successful divisions
     }
   }
 
-  // Display the final computed division count to the standard output.
-  console.log(divisionCount);
+  // Output the final accumulated count of divisions
+  console.log(totalDivisions);
 }
 
-// The program's execution begins here.
-// It reads all content from standard input and then passes it to the data processing function.
-DataProcessor(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read input from standard input and pass it to our processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,54 +1,32 @@
-'use strict'; // Enforce strict JavaScript parsing and execution rules.
+'use strict';
 
 /*
- * This module is designed to process an input stream,
- * extract specific data segments, and output them in a duplicated fashion.
- * It serves as the primary controller for the application's logic.
+ * This function processes incoming text data.
+ * It splits the input into lines, extracts a numerical value from the first line,
+ * and then iterates through a specific range of subsequent lines,
+ * printing each one twice to the standard output.
+ *
+ * @param {string} rawTextContent - The complete string content received from the input source.
  */
-const orchestrateExecution = (  initialStream) => {
-    // Divide the entire input content into an array of individual lines.
-    // Using character code for newline to vary literal representation.
-    initialStream = initialStream.split( String.fromCharCode(10) ) ;
+const processInputData = (rawTextContent) => {
+    // Divide the entire input string into an array of individual lines.
+    rawTextContent = rawTextContent.split('\n');
 
-    // Parse the first numeric value from the first line to establish a key dimension.
-    // This dimension dictates the number of subsequent data units to process.
-    const dimension = parseInt(
-        initialStream[0].split( String.fromCharCode(32) )[0] , 10
-    );
+    // Determine the count of relevant lines by parsing the first number
+    // found on the initial line of the input.
+    const firstLineValue = parseInt(rawTextContent[0].split(' ')[0]);
 
-    // Extract a specific range of lines from the processed stream.
-    // These lines represent the core data units for further operations.
-    const processedUnits = initialStream.slice( 1, dimension + 1 ) ;
+    // Create a new array containing only the lines that are relevant
+    // based on the 'firstLineValue' extracted earlier.
+    const relevantLines = rawTextContent.slice(1, firstLineValue + 1);
 
-    // Establish a concise alias for the standard console logging function.
-    // This improves readability and provides an alternative identifier.
-    const outputLog = console.log;
-
-    // Iterate through each extracted data unit.
-    // For each unit, log its content twice to the console.
-    processedUnits.forEach( unitValue => {
-        outputLog( unitValue ) ; // First display of the current data unit.
-        outputLog( unitValue ) ; // Second, identical display of the data unit.
+    // For each line identified as relevant, print it to the console two times.
+    relevantLines.forEach(singleLine => {
+        console.log(singleLine); // First output of the current line.
+        console.log(singleLine); // Second output of the current line.
     });
 };
 
-/*
- * Main program entry point.
- * This block handles fetching the raw input and initiating the processing.
- */
-
-// Acquire the Node.js file system module for I/O operations.
-const fileSystemModule = require('fs') ;
-
-// Create a direct reference to the synchronous file reading method
-// to avoid repeated module access and introduce a new identifier.
-const obtainFileContent = fileSystemModule.readFileSync ;
-
-// Execute the primary orchestrator function.
-// It receives its input by reading from standard input.
-orchestrateExecution(
-    obtainFileContent(
-        '/dev/stdin' , // Specify the standard input device path.
-        'utf8'       // Define the character encoding for the input content.
-    )
-);
+// Execute the main processing function by reading the content
+// from standard input using Node.js's file system module.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

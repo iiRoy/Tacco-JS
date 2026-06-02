@@ -1,54 +1,51 @@
 "use strict";
 
-// This function calculates a score based on two input integer values.
-const calculateScore = ( rawInput ) => {
+const calculatePoints = (inputData) => {
+  // Process the raw input string: trim whitespace and split by newlines.
+  inputData = inputData.trim().split("\n");
 
-  // First, clean up the input string: remove leading/trailing whitespace and split into lines.
-  let dataLines = rawInput.trim().split( '\n' );
+  // Parse the first number from the first line of input.
+  const firstInputNumber = parseInt(inputData[0].split(" ")[0]);
+  // Parse the second number from the first line of input.
+  const secondInputNumber = parseInt(inputData[0].split(" ")[1]);
 
-  // Extract the first numeric quantity from the initial line of data.
-  const primaryValue = parseInt( dataLines[0].split( ' ' )[0] );
+  // Initialize a variable to accumulate points.
+  let cumulativePoints = 0;
 
-  // Extract the second numeric quantity from the initial line of data.
-  const secondaryValue = parseInt( dataLines[0].split( ' ' )[1] );
-
-  // Initialize a running total for the reward points.
-  let currentReward = 0;
-
-  // Apply points based on the primary value's category.
-  if ( primaryValue === 1 ) {
-    currentReward += 30000;
+  // Award points based on the value of the first input number.
+  if (firstInputNumber === 1) {
+    cumulativePoints += 30000;
   }
 
-  if ( primaryValue === 2 ) {
-    currentReward += 20000;
+  if (firstInputNumber === 2) {
+    cumulativePoints += 20000;
   }
 
-  if ( primaryValue === 3 ) {
-    currentReward += 10000;
+  if (firstInputNumber === 3) {
+    cumulativePoints += 10000;
   }
 
-  // Apply points based on the secondary value's category.
-  if ( secondaryValue === 1 ) {
-    currentReward += 30000;
+  // Award points based on the value of the second input number.
+  if (secondInputNumber === 1) {
+    cumulativePoints += 30000;
   }
 
-  if ( secondaryValue === 2 ) {
-    currentReward += 20000;
+  if (secondInputNumber === 2) {
+    cumulativePoints += 20000;
   }
 
-  if ( secondaryValue === 3 ) {
-    currentReward += 10000;
+  if (secondInputNumber === 3) {
+    cumulativePoints += 10000;
   }
 
-  // Add a special bonus if both values meet a specific condition.
-  if ( primaryValue === 1 && secondaryValue === 1 ) {
-    currentReward += 40000;
+  // Award bonus points if both input numbers are 1.
+  if (firstInputNumber === 1 && secondInputNumber === 1) {
+    cumulativePoints += 40000;
   }
 
-  // Display the final accumulated reward to the console.
-  console.log( currentReward );
+  // Output the final calculated points.
+  console.log(cumulativePoints);
 };
 
-// Invoke the score calculation function, feeding it content from standard input.
-calculateScore( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function.
+calculatePoints(require("fs").readFileSync("/dev/stdin", "utf8"));

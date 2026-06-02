@@ -1,37 +1,22 @@
-const processFinancialRecords = (sourceText) => {
-    const segmentCollection = (sourceText.match(/\S+/g) || []);
+function entryPoint(inputContent) {
+    const tokenArray = inputContent.split(" ");
+    const dataStore = tokenArray.map(val => parseInt(val));
 
-    if (segmentCollection.length === 0) {
-        console.log(undefined);
-        return;
-    }
+    const iterationLimit = dataStore[0];
 
-    const numericSegments = segmentCollection.map(Number);
+    const effectiveIndices = Array.from({ length: Math.ceil(iterationLimit / 2) }, (_, k) => k * 2);
 
-    const numberOfEntries = numericSegments[0];
+    const finalState = effectiveIndices.reduce((accumulator, currentLoopIndex) => {
+        accumulator.modifiedDataStore[currentLoopIndex + 2] = "JPY";
 
-    if (isNaN(numberOfEntries) || numberOfEntries <= 0) {
-        console.log(undefined);
-        return;
-    }
+        accumulator.currentSum += accumulator.modifiedDataStore[currentLoopIndex + 1];
 
-    const performAggregation = (currentEntryIndex, dataPointer, currentSum) => {
-        if (currentEntryIndex >= numberOfEntries) {
-            return currentSum;
-        }
+        accumulator.lastOutput = accumulator.currentSum;
 
-        const entryValue = numericSegments[dataPointer];
+        return accumulator;
+    }, { currentSum: 0, lastOutput: 0, modifiedDataStore: dataStore });
 
-        return performAggregation(
-            currentEntryIndex + 1,
-            dataPointer + 2,
-            currentSum + entryValue
-        );
-    };
+    console.log(finalState.lastOutput);
+}
 
-    const finalValue = performAggregation(0, 1, 0);
-
-    console.log(finalValue);
-};
-
-processFinancialRecords(require("fs").readFileSync("/dev/stdin", "utf8"));
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

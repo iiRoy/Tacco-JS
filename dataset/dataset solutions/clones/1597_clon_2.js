@@ -1,89 +1,78 @@
-const sourceData = require("node:fs").readFileContentSync("/proc/self/fd/0", "utf-8"); // Reads all content from standard input synchronously, using a different path and encoding specifier.
-const textLines = sourceData.separateByNewline('\n'); // Divides the input string into an array of lines based on the newline character.
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from standard input
+const dataRows = rawData.split('\n'); // Split the input string into an array of lines
 
-// Parses the first line as an integer, representing the upper bound for sequence elements.
-const maxNum = Number.parseInt(textLines[0], 10);
+// Parse the first line as the maximum value for sequence generation
+const maxVal = dataRows[0] - 0;
 
-// Processes the second line: splits it by spaces and converts each part to a number.
-const numberArray = textLines[1].split(' ').map((item) => Number(item));
+// Parse the second line as a list of numbers
+const valueList = dataRows[1].split(' ').map(Number);
 
 /**
- * Generates all possible strictly increasing sequences of a given length,
- * where each element is within a specified range (1 to upperLimit).
- * This function effectively generates combinations with replacement, then filters for strictly increasing.
+ * Generates sequences of numbers with a specified length and upper bound.
+ * This function implements a backtracking-like algorithm to produce combinations.
  *
- * @param {number} sequenceLength - The desired length of each generated sequence.
- * @param {number} upperLimit - The maximum value an element in the sequence can take.
- * @returns {Array<Array<number>>} An array containing all valid sequences.
+ * @param {number} targetLength - The desired length of each sequence.
+ * @param {number} upperBound - The maximum value (exclusive) for numbers in the sequence.
+ * @returns {Array<Array<number>>} An array containing all generated sequences.
  */
-const generateSequences = (sequenceLength, upperLimit) => {
-    // This collection will store all the completed sequences.
-    const allSequences = [];
-    // This array holds the sequence currently being built.
-    const currentSequence = [];
-    // This variable tracks the current numerical value being considered for addition to the sequence.
-    let currentValue = 0;
+const generateCombinations = (targetLength, upperBound) => {
+    const allCombinations = []; // Stores all complete sequences
+    const currentCombination = []; // Stores the sequence being built
+    let currentValue = 0; // The current number to consider adding
 
-    // The loop continues as long as 'currentValue' is a defined number, acting as a stack-based iteration.
+    // Loop until the backtracking process indicates no more values can be explored
     while (currentValue !== undefined) {
-        // If the current sequence has reached the desired length, it's a valid combination.
-        if (currentSequence.length === sequenceLength) {
-            // Add a clone of the current sequence to the results.
-            allSequences.push([...currentSequence]);
-            // Backtrack: remove the last element and update currentValue to resume exploration.
-            currentValue = currentSequence.pop();
+        // If the current sequence has reached the target length, save it and backtrack
+        if (currentCombination.length === targetLength) {
+            allCombinations.push([...currentCombination]); // Add a copy of the sequence
+            currentValue = currentCombination.pop(); // Backtrack: remove last element and get its value
         }
-        // If the current value exceeds the upper limit for elements, or if we've exhausted options for the current position.
-        else if (currentValue >= upperLimit) {
-            // Backtrack: remove the last element from the sequence and try a different value at the previous position.
-            currentValue = currentSequence.pop();
+        // If the current value exceeds the upper bound, backtrack
+        else if (currentValue >= upperBound) {
+            currentValue = currentCombination.pop(); // Backtrack: remove last element and get its value
         }
-        // Otherwise, we can try to extend the current sequence.
+        // Otherwise, increment the current value and add it to the sequence
         else {
-            // Increment the current value to explore the next number.
-            currentValue++;
-            // Add the new value to the sequence.
-            currentSequence.push(currentValue);
+            currentValue++; // Move to the next potential number
+            currentCombination.push(currentValue); // Add the number to the current sequence
         }
     }
-    // Return the complete collection of generated sequences.
-    return allSequences;
+    return allCombinations; // Return all collected sequences
 };
 
-// Generate all combinations of 3 numbers from 1 to maxNum.
-const generatedCombinations = generateSequences(3, maxNum);
+// Generate combinations of length 3 using numbers up to maxVal
+const triangleCombinations = generateCombinations(3, maxVal);
 
-// Initialize a counter for valid triangles.
-let validTriangleCount = 0;
+let validTriangleCount = 0; // Initialize a counter for valid triangles
 
-// Iterate through each generated combination (triplet of indices).
-for (let idx = 0; idx < generatedCombinations.length; ++idx) {
-    // Retrieve the actual numerical values from numberArray using the indices from the current combination.
-    // Note: The original problem implies 1-based indexing for the generated sequences, so we subtract 1.
-    const currentTriplet = [
-        numberArray[generatedCombinations[idx][0] - 1],
-        numberArray[generatedCombinations[idx][1] - 1],
-        numberArray[generatedCombinations[idx][2] - 1]
+// Iterate through each generated combination
+for (let idx = 0; idx < triangleCombinations.length; idx++) {
+    // Retrieve the side lengths from the valueList using the indices from the current combination
+    const currentTriangleSides = [
+        valueList[triangleCombinations[idx][0] - 1],
+        valueList[triangleCombinations[idx][1] - 1],
+        valueList[triangleCombinations[idx][2] - 1]
     ];
 
-    // Check for duplicate values within the triplet. If any two sides are equal, it's not a unique-sided triangle.
-    if (currentTriplet[0] === currentTriplet[1] || currentTriplet[0] === currentTriplet[2] || currentTriplet[1] === currentTriplet[2]) {
-        continue; // Skip this combination if it has duplicate side lengths.
+    // Check for distinct side lengths (a, b, c must be distinct for a non-degenerate triangle in this context)
+    if (currentTriangleSides[0] === currentTriangleSides[1] ||
+        currentTriangleSides[0] === currentTriangleSides[2] ||
+        currentTriangleSides[1] === currentTriangleSides[2]) {
+        continue; // Skip if any two sides are equal
     }
 
-    // Determine the longest side among the three values.
-    const longestDimension = Math.max(...currentTriplet);
+    // Find the longest side among the three
+    const longestSide = Math.max(...currentTriangleSides);
 
-    // Calculate the sum of the lengths of the other two sides.
-    // The initial value for reduce is explicitly set to 0.
-    const sumOfOtherDimensions = currentTriplet.reduce((accum, val) => accum + val, 0) - longestDimension;
+    // Calculate the sum of the other two sides
+    const otherSidesSum = currentTriangleSides.reduce((accumulator, currentElement) => accumulator + currentElement) - longestSide;
 
-    // Apply the triangle inequality theorem: the sum of the lengths of any two sides of a triangle must be greater than the length of the third side.
-    // Here, we only need to check if the longest side is less than the sum of the other two, as this implies the other two conditions will also hold true.
-    if (longestDimension < sumOfOtherDimensions) {
-        validTriangleCount++; // Increment the counter if it forms a valid triangle.
+    // Apply the triangle inequality theorem: the sum of any two sides must be greater than the third side.
+    // Since 'longestSide' is the largest, we only need to check if 'otherSidesSum' > 'longestSide'.
+    if (longestSide < otherSidesSum) {
+        validTriangleCount++; // Increment the counter if it forms a valid triangle
     }
 }
 
-// Output the final count of valid triangles to standard output, followed by a newline.
-process.stdout.write(validTriangleCount.toString() + '\n');
+// Output the total count of valid triangles
+console.log(validTriangleCount);

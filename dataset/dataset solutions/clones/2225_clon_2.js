@@ -1,96 +1,89 @@
 console.log((inputData => {
-  // This section parses the input data.
-  // The first line contains N (countElements), the second line contains array A (numberArray).
-  const [[countElements], numberArray] =
-    inputData
-      .trim()
-      .split`\n`
-      .map(lineStr => lineStr.split` `.map(valNum => 0 | valNum));
+  // Parse the input string. The first line contains the count of elements (N),
+  // and the second line contains the space-separated numbers (A).
+  const [[elementCount], numberSequence] = inputData.trim().split('\n').map(lineContent => lineContent.split(' ').map(stringValue => 0 | stringValue));
 
-  // Define essential constants for the algorithm.
-  const moduloVal = 1e9 + 7; // The modulus to be used for all arithmetic operations.
-  const maxValue = Math.max(...numberArray); // Determines the upper bound for prime calculations.
+  // Define the prime modulus for calculations and find the maximum value in the input array.
+  const primeModulo = 1_000_000_007; // A large prime number commonly used in competitive programming
+  const maximumValue = Math.max(...numberSequence);
 
-  // A custom modular multiplication function to handle large numbers within JavaScript's limits.
-  // It splits factorOne into 16-bit chunks to prevent overflow before applying the modulo.
-  const multiplyMod = (factorOne, factorTwo) => (
-    ((factorOne >> 16) * factorTwo % moduloVal * 65536) + ((factorOne & 65535) * factorTwo)
-  ) % moduloVal;
+  // A utility function for performing modular multiplication to prevent integer overflow.
+  // This specific implementation uses bitwise operations for efficiency.
+  const modularMultiply = (factorOne, factorTwo) => {
+    return ((factorOne >> 16) * factorTwo % primeModulo * 65536 + (factorOne & 65535) * factorTwo) % primeModulo;
+  };
 
-  // Initialize a boolean array for the Sieve of Eratosthenes.
-  // `isPrimeFlags[k]` is true if `k` is prime, false otherwise.
-  // Note: The array size is fixed at 1e6+1, implying `maxValue` is expected to be within this range.
-  const isPrimeFlags = Array(1e6 + 1).fill(true);
-  // This map stores the maximum exponent found for each prime factor across all numbers in `numberArray`.
+  // Initialize a boolean array for the Sieve of Eratosthenes to find primes up to a certain limit.
+  // `primeSieve[k]` will be true if k is prime, false otherwise.
+  const primeSieve = Array(1_000_000 + 1).fill(true);
+  // This Map will store the highest exponent found for each prime factor across all numbers in `numberSequence`.
   const maxPrimeExponents = new Map();
 
-  // Execute the Sieve of Eratosthenes and initialize `maxPrimeExponents` for relevant primes.
-  for (let currentPrime = 2; currentPrime <= maxValue; currentPrime++) {
-    if (!isPrimeFlags[currentPrime]) {
-      // If `currentPrime` has already been marked as composite, skip to the next number.
-      continue;
+  // Implement the Sieve of Eratosthenes to identify prime numbers up to `maximumValue`.
+  // For each prime, initialize its maximum exponent in `maxPrimeExponents` to zero.
+  for (let currentPrimeNum = 2; currentPrimeNum <= maximumValue; currentPrimeNum++) {
+    // If the current number is not marked as prime, skip it as its multiples would have been handled.
+    if (!primeSieve[currentPrimeNum]) continue;
+
+    // Mark all multiples of the current prime as not prime.
+    for (let idx = currentPrimeNum + currentPrimeNum; idx <= maximumValue; idx += currentPrimeNum) {
+      primeSieve[idx] = false;
     }
-    // Mark all multiples of `currentPrime` as composite.
-    for (let compositeIndex = currentPrime + currentPrime; compositeIndex <= maxValue; compositeIndex += currentPrime) {
-      isPrimeFlags[compositeIndex] = false;
-    }
-    // Initialize the maximum exponent for `currentPrime` to 0.
-    maxPrimeExponents.set(currentPrime, 0);
+    // Add the prime to our map of prime exponents, initially with an exponent of 0.
+    maxPrimeExponents.set(currentPrimeNum, 0);
   }
 
-  // This array will store the prime factorization (as Maps) for each number in `numberArray`.
-  const allPrimeFactorizations = [];
-  // Iterate through each number in the input array to find its prime factors.
-  for (let elementIndex = 0; elementIndex < countElements; elementIndex++) {
-    let currentNumber = numberArray[elementIndex]; // The number currently being factorized.
-    const currentNumberFactors = new Map(); // Map to hold prime factors and their exponents for `currentNumber`.
-    allPrimeFactorizations.push(currentNumberFactors);
+  // This array will store the prime factorization for each number in the `numberSequence`.
+  // Each element will be a Map where keys are primes and values are their exponents.
+  const allPrimeFactors = [];
 
-    // Iterate through all primes identified by the sieve.
-    for (const [primeFactor, maxExponentSoFar] of maxPrimeExponents) {
-      if (currentNumber === 1) {
-        // Optimization: If `currentNumber` is 1, all its prime factors have been extracted.
-        break;
+  // Iterate through each number in the input sequence to determine its prime factorization
+  // and update the global `maxPrimeExponents` map.
+  for (let indexCounter = 0; indexCounter < elementCount; indexCounter++) {
+    let currentNumber = numberSequence[indexCounter];
+    allPrimeFactors.push(new Map()); // Create a new map for the current number's factors
+
+    // Iterate through the primes identified by the sieve.
+    for (const [currentPrimeNum, highestExponent] of maxPrimeExponents) {
+      // If the current number has been reduced to 1, all its prime factors have been found.
+      if (currentNumber === 1) break;
+
+      let primePowerCount = 0; // Counter for the exponent of `currentPrimeNum` in `currentNumber`
+      // Continuously divide `currentNumber` by `currentPrimeNum` as long as it's divisible.
+      while (currentNumber % currentPrimeNum === 0) {
+        currentNumber /= currentPrimeNum;
+        primePowerCount++;
       }
-      let exponentCount = 0; // Counter for the exponent of `primeFactor` in `currentNumber`.
-      // Continuously divide `currentNumber` by `primeFactor` as long as it's divisible.
-      while (currentNumber % primeFactor === 0) {
-        currentNumber /= primeFactor;
-        exponentCount++;
-      }
-      if (exponentCount > 0) {
-        // If `primeFactor` is indeed a factor, store its exponent.
-        currentNumberFactors.set(primeFactor, exponentCount);
-      }
-      // Update the global maximum exponent for `primeFactor` if a higher exponent was found.
-      if (exponentCount > maxExponentSoFar) {
-        maxPrimeExponents.set(primeFactor, exponentCount);
-      }
+
+      // If `currentPrimeNum` was a factor, record its exponent for the current number.
+      if (primePowerCount > 0) allPrimeFactors[indexCounter].set(currentPrimeNum, primePowerCount);
+      // Update the global maximum exponent for `currentPrimeNum` if a higher one was found.
+      if (primePowerCount > highestExponent) maxPrimeExponents.set(currentPrimeNum, primePowerCount);
     }
   }
 
-  // Calculate the final sum based on the computed prime factorizations and maximum exponents.
-  let totalSum = 0; // Accumulator for the final result.
+  // Calculate the final sum based on the determined prime factorizations and maximum exponents.
+  let finalSumResult = 0;
+  for (let indexCounter = 0; indexCounter < elementCount; indexCounter++) {
+    let currentTermValue = 1; // Initialize the term B for the current number
 
-  // For each number, calculate a term and add it to the `totalSum`.
-  for (let elementIndex = 0; elementIndex < countElements; elementIndex++) {
-    let termValue = 1; // Initialize the term value for the current number.
-    // Iterate through all unique prime factors found across all numbers.
-    for (const [primeKey, globalMaxExponent] of maxPrimeExponents) {
-      if (!globalMaxExponent) {
-        // If this prime never appeared with an exponent greater than 0, skip it.
-        continue;
-      }
-      // Get the exponent of `primeKey` in the current number's factorization. Default to 0 if not present.
-      const currentNumberPrimeExponent = allPrimeFactorizations[elementIndex].get(primeKey) || 0;
-      // Multiply `termValue` by `primeKey` raised to the power of (globalMaxExponent - currentNumberPrimeExponent).
-      // All operations are performed modulo `moduloVal`.
-      termValue = multiplyMod(termValue, primeKey ** (globalMaxExponent - currentNumberPrimeExponent));
+    // Iterate through all unique primes and their globally highest exponents.
+    for (const [currentPrimeNum, requiredPower] of maxPrimeExponents) {
+      // If the required power for this prime is zero, it does not contribute to the product.
+      if (requiredPower === 0) continue;
+
+      // Retrieve the exponent of `currentPrimeNum` in the current number's factorization.
+      // Default to 0 if the prime is not a factor of the current number.
+      const currentNumPrimePower = allPrimeFactors[indexCounter].get(currentPrimeNum) || 0;
+
+      // Calculate the power difference (requiredPower - currentNumPrimePower) and
+      // multiply `currentTermValue` by `currentPrimeNum` raised to this difference, modulo `primeModulo`.
+      currentTermValue = modularMultiply(currentTermValue, currentPrimeNum ** (requiredPower - currentNumPrimePower));
     }
-    // Add the calculated `termValue` to `totalSum`, applying modulo.
-    totalSum = (totalSum + termValue) % moduloVal;
+    // Add the calculated `currentTermValue` to the `finalSumResult`, applying modulo.
+    finalSumResult = (finalSumResult + currentTermValue) % primeModulo;
   }
 
-  return totalSum; // Return the final computed sum.
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Reads input from standard input.
+  // Return the final computed sum.
+  return finalSumResult;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

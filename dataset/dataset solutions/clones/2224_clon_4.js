@@ -1,58 +1,48 @@
-const numeralConverter = (textSegment) => {
-    let accumulatedValue = 0;
-    for (let charIndex = 0; charIndex < textSegment.length; charIndex++) {
-        const charCodeValue = textSegment.charCodeAt(charIndex);
-        // Assuming ASCII digits '0' through '9'
-        accumulatedValue = accumulatedValue * 10 + (charCodeValue - 48);
-    }
-    return accumulatedValue;
-};
+function collectPieces(source) {
+    const lines = [];
+    let start = 0;
 
-function processInputSource(sourceContent) {
-    let firstNewlineLocation = -1;
-    let secondNewlineLocation = -1;
-
-    for (let k = 0; k < sourceContent.length; k++) {
-        if (sourceContent[k] === '\n') {
-            if (firstNewlineLocation === -1) {
-                firstNewlineLocation = k;
-            } else if (secondNewlineLocation === -1) {
-                secondNewlineLocation = k;
-                break;
-            }
-        }
-    }
-
-    const firstNumericalSegment = sourceContent.substring(0, firstNewlineLocation);
-    const middleLineSegment = sourceContent.substring(firstNewlineLocation + 1, secondNewlineLocation);
-    let finalTextSegment = sourceContent.substring(secondNewlineLocation + 1);
-
-    // Adjust for potential trailing newline in the last segment
-    const lastCharPosition = finalTextSegment.length - 1;
-    if (lastCharPosition >= 0 && finalTextSegment[lastCharPosition] === '\n') {
-        finalTextSegment = finalTextSegment.substring(0, lastCharPosition);
-    }
-
-    let spaceSeparatorLocation = -1;
-    for (let k = 0; k < middleLineSegment.length; k++) {
-        if (middleLineSegment[k] === ' ') {
-            spaceSeparatorLocation = k;
+    for (;;) {
+        const nextBreak = source.indexOf('\n', start);
+        if (nextBreak === -1) {
+            lines.push(source.slice(start));
             break;
         }
+        lines.push(source.slice(start, nextBreak));
+        start = nextBreak + 1;
     }
 
-    const middleNumericalOneSegment = middleLineSegment.substring(0, spaceSeparatorLocation);
-    const middleNumericalTwoSegment = middleLineSegment.substring(spaceSeparatorLocation + 1);
-
-    const firstNumeric = numeralConverter(firstNumericalSegment);
-    const middleNumericOne = numeralConverter(middleNumericalOneSegment);
-    const middleNumericTwo = numeralConverter(middleNumericalTwoSegment);
-
-    const aggregateSum = firstNumeric + middleNumericOne + middleNumericTwo;
-
-    const finalOutputString = aggregateSum + ' ' + finalTextSegment;
-
-    process.stdout.write(finalOutputString + '\n');
+    return lines;
 }
 
-processInputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
+function pickSecondLineNumbers(row) {
+    const firstGap = row.indexOf(' ');
+    const head = firstGap < 0 ? row : row.slice(0, firstGap);
+
+    let middle;
+    if (firstGap >= 0) {
+        const secondGap = row.indexOf(' ', firstGap + 1);
+        middle = secondGap < 0
+            ? row.slice(firstGap + 1)
+            : row.slice(firstGap + 1, secondGap);
+    }
+
+    return [head, middle];
+}
+
+function Main(input) {
+    const rows = collectPieces(input);
+    const fields = pickSecondLineNumbers(rows[1]);
+
+    const values = [rows[0], fields[0], fields[1]].map(function (part) {
+        return parseInt(part, 10);
+    });
+
+    const total = values.reduce(function (sum, value) {
+        return sum + value;
+    }, 0);
+
+    console.log('%d %s', total, rows[2]);
+}
+
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

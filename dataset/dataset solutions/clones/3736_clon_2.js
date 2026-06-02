@@ -1,75 +1,58 @@
-// This module performs a specific numerical calculation.
-// Initial version.
 "use strict";
-const rawSourceData = require("fs")
-  .readFileSync(
-    "/dev/stdin",
-    "utf8"
-  )
+// This script processes input data to compute a specific value.
+// It reads configuration and a list of numbers from standard input.
+const initialDataLines = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
   .trim()
   .split("\n");
 
-const CONFIG_DATA_LINE_IDX = 0;
-const NUMERIC_SEQUENCE_LINE_IDX = 1;
+// Constants for parsing input lines
+const CONFIG_LINE_IDX = 0;
+const DATA_LINE_IDX = 1;
+const CONFIG_N_POS = 0;
+const CONFIG_K_POS = 1;
+const FIELD_SEPARATOR = " ";
 
-const CONFIG_VALUE_A_IDX = 0;
-const CONFIG_VALUE_B_IDX = 1;
-
-const FIELD_SEPARATOR_CHAR = " ";
-
-// Parse the configuration line from the raw input array
-const configurationDetails = rawSourceData[CONFIG_DATA_LINE_IDX].split(FIELD_SEPARATOR_CHAR);
-const paramA = configurationDetails[CONFIG_VALUE_A_IDX];
-const paramB = configurationDetails[CONFIG_VALUE_B_IDX];
-
-// Parse the numeric sequence line, converting elements to integers
-const numericSequence = rawSourceData[NUMERIC_SEQUENCE_LINE_IDX]
-  .split(FIELD_SEPARATOR_CHAR)
-  .map(
-    currentElement => parseInt(currentElement)
-  );
+// Extract configuration parameters and the list of numbers
+const configParameters = initialDataLines[CONFIG_LINE_IDX].split(FIELD_SEPARATOR);
+const totalCount = configParameters[CONFIG_N_POS];
+const segmentLength = configParameters[CONFIG_K_POS];
+const numericValues = initialDataLines[DATA_LINE_IDX].split(FIELD_SEPARATOR).map(itemStr =>
+  parseInt(itemStr)
+);
 
 /**
- * Identifies the smallest value in an array of integers and its corresponding index.
- * @param {number[]} integerCollection - The array of numbers to search.
- * @returns {{valueFound: number, elementPosition: number}} An object containing the minimum value and its index.
+ * Locates the minimum element in a list of integers and returns its value and index.
+ * @param {number[]} numberCollection - The array of integers to search.
+ * @returns {{value: number, position: number}} An object containing the minimum value and its index.
  */
-const locateSmallestValue = (
-  integerCollection
-) =>
-  integerCollection.reduce(
-    (accumulatorObject, currentElement, elementPosition) =>
-      currentElement < accumulatorObject.valueFound
-        ? { valueFound: currentElement, elementPosition: elementPosition }
-        : accumulatorObject,
+const locateMinimumElement = (numberCollection) =>
+  numberCollection.reduce(
+    (currentMinInfo, currentValue, currentIndex) =>
+      currentValue < currentMinInfo.value ? { value: currentValue, position: currentIndex } : currentMinInfo,
     {
-      valueFound: integerCollection[0],
-      elementPosition: 0,
+      value: numberCollection[0],
+      position: 0,
     }
   );
 
 /**
- * Computes a final result based on input parameters and a numeric sequence.
- * @param {string} paramA_str - First configuration parameter (as string).
- * @param {string} paramB_str - Second configuration parameter (as string).
- * @param {number[]} numSequence - The array of numbers.
+ * Computes a result based on the total count, segment length, and a list of numbers.
+ * @param {string} totalCountStr - The string representation of N.
+ * @param {string} segmentLengthStr - The string representation of K.
+ * @param {number[]} dataArray - The array of numbers.
  * @returns {number} The calculated result.
  */
-const computeResult = (
-  paramA_str,
-  paramB_str,
-  numSequence
-) => {
-  const calculationOutcome = locateSmallestValue(numSequence);
-  const foundPosition = calculationOutcome.elementPosition; // The index of the smallest element
+const computeValue = (totalCountStr, segmentLengthStr, dataArray) => {
+  const minElementDetails = locateMinimumElement(dataArray);
+  const minPosition = minElementDetails.position;
+  
+  const N_val = parseInt(totalCountStr);
+  const K_val = parseInt(segmentLengthStr);
 
-  // Convert string parameters to integers for arithmetic operations
-  const actualParamA = parseInt(paramA_str);
-  const actualParamB = parseInt(paramB_str);
-
-  // Perform the ceiling division operations and sum them
-  return Math.ceil(foundPosition / (actualParamB - 1)) + Math.ceil(foundPosition / (actualParamA - actualParamB - 1));
+  // The core calculation involves two ceiling divisions
+  return Math.ceil(minPosition / (K_val - 1)) + Math.ceil(minPosition / (N_val - K_val - 1));
 };
 
-// Output the final computed value to the console
-console.log(computeResult(paramA, paramB, numericSequence));
+// Execute the main computation and print the result to console.
+console.log(computeValue(totalCount, segmentLength, numericValues));

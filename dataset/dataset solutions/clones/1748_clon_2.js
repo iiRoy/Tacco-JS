@@ -1,34 +1,43 @@
-/* This module provides functionality for converting numerical values into a custom base-26 string representation. */
-const processInput = ( sourceString ) => {
-  // Initialize a character mapping. The first element '0' serves as an offset.
-  const characterSet = '0abcdefghijklmnopqrstuvwxyz' ;
-  let remainingNum = BigInt ( sourceString.trim () ) ;
+const processInputData = (rawInputString) => {
+  // Define a string that maps numerical values (0-26) to their corresponding characters.
+  // The '0' at index 0 is crucial for the specific base conversion logic.
+  const charMap = '0abcdefghijklmnopqrstuvwxyz';
 
-  // A buffer to collect the resulting characters in reverse order.
-  const outputBuffer = [ ] ;
+  // Convert the input string, after trimming any leading/trailing whitespace,
+  // into a BigInt to handle potentially very large numbers.
+  let currentNumber = BigInt(rawInputString.trim());
 
-  // Continuously process the number until it becomes zero.
-  while ( remainingNum > 0n ) {
-    // Calculate the current remainder, which corresponds to a character in our set.
-    const currentDigit = Number ( remainingNum % 26n ) ;
+  // Initialize an array to store the characters of the result.
+  // Characters will be added in reverse order and then joined.
+  const outputCharacters = [];
 
-    // Add the character for the current digit to the beginning of the buffer.
-    outputBuffer.unshift ( characterSet [ currentDigit ] ) ;
+  // Loop as long as the current number is greater than zero.
+  // This performs a base-26-like conversion.
+  while (currentNumber > BigInt(0)) {
+    // Calculate the remainder when the current number is divided by 26.
+    // This remainder determines the character for the current position.
+    const currentRemainder = Number(currentNumber % BigInt(26));
 
-    // Update the number for the next iteration: adjust by the remainder and divide by 26.
-    remainingNum = ( remainingNum - BigInt ( currentDigit ) ) / 26n ;
+    // Add the character corresponding to the remainder to the beginning of the array.
+    // Using unshift builds the string in the correct order.
+    outputCharacters.unshift(charMap[currentRemainder]);
+
+    // Update the current number for the next iteration:
+    // Subtract the remainder to make it perfectly divisible by 26,
+    // then divide by 26 to shift to the next "digit" position.
+    currentNumber = (currentNumber - BigInt(currentRemainder)) / BigInt(26);
   }
 
-  // Print the concatenated string of characters to the standard output.
-  return console.log ( outputBuffer.join ( '' ) ) ;
+  // The following line was commented out in the original code and is preserved as such.
+  // if (currentNumber > BigInt(0)) outputCharacters.unshift(charMap[Number(currentNumber)]);
+
+  // Join all the collected characters into a single string and print it to the console.
+  return console.log(outputCharacters.join(''));
 };
 
-
-// Conditional execution block: checks for a global test flag to determine the input source.
-if ( globalThis.IS_TEST_MODE_ACTIVE ) {
-  // If the test flag is active, invoke a mock testing routine.
-  runTestScenario ( ) ;
-} else {
-  // Otherwise, read input from standard input and pass it to the primary processing function.
-  processInput ( require ( 'node:fs' ).readFileSync ( '/proc/self/fd/0' , 'utf-8' ) ) ;
-}
+// Determine the execution path based on an environment variable.
+// If 'RUN_TESTS' is set in the environment, execute a test routine (assumed to be defined elsewhere).
+// Otherwise, read input from standard input, decode it as UTF-8, and pass it to the main processing function.
+process.env.RUN_TESTS
+  ? executeTestRoutine()
+  : processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

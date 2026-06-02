@@ -1,93 +1,49 @@
-/*
- * This module provides a core mathematical operation function,
- * often used in contexts like quaternion algebra or complex vector transformations.
- * It also includes logic to read and process multiple sets of input data
- * from standard input, applying the core function to each set.
- */
+function computeValues(valA1, valB1, valC1, valD1, valA2, valB2, valC2, valD2) {
+  // Initialize intermediate products
+  let resultA = valA1 * valA2;
+  let resultB = valA1 * valB2;
+  let resultC = valA1 * valC2;
+  let resultD = valA1 * valD2;
 
-// This function performs a specific type of product or transformation
-// on two sets of four numerical components (e.g., quaternions or 4D vectors).
-// The parameters represent the components of the two input entities.
-function computeProductVector(
-    primaryX,
-    primaryY,
-    primaryZ,
-    primaryW,
-    secondaryX,
-    secondaryY,
-    secondaryZ,
-    secondaryW
-)
-{
-    // Initialize the four resultant components based on the first input's
-    // primaryX component multiplied by all components of the second input.
-    let productComponentA = primaryX * secondaryX;
-    let productComponentB = primaryX * secondaryY;
-    let productComponentC = primaryX * secondaryZ;
-    let productComponentD = primaryX * secondaryW;
+  // Incorporate second set of values
+  resultB += valB1 * valA2;
+  resultA -= valB1 * valB2;
+  resultD += valB1 * valC2;
+  resultC -= valB1 * valD2;
 
-    // Adjust the resultant components by incorporating terms from
-    // the primaryY component of the first input.
-    productComponentB += primaryY * secondaryX;
-    productComponentA -= primaryY * secondaryY;
-    productComponentD += primaryY * secondaryZ;
-    productComponentC -= primaryY * secondaryW;
-             
-    // Further adjust the resultant components using terms from
-    // the primaryZ component of the first input.
-    productComponentC += primaryZ * secondaryX;
-    productComponentD -= primaryZ * secondaryY;
-    productComponentA -= primaryZ * secondaryZ;
-    productComponentB += primaryZ * secondaryW;
-             
-    // Final adjustments to the resultant components using terms from
-    // the primaryW component of the first input.
-    productComponentD += primaryW * secondaryX;
-    productComponentC += primaryW * secondaryY;
-    productComponentB -= primaryW * secondaryZ;
-    productComponentA -= primaryW * secondaryW;
+  // Incorporate third set of values
+  resultC += valC1 * valA2;
+  resultD -= valC1 * valB2;
+  resultA -= valC1 * valC2;
+  resultB += valC1 * valD2;
 
-    // Return the final set of four computed components as an array.
-    return [
-        productComponentA,
-        productComponentB,
-        productComponentC,
-        productComponentD
-    ];
+  // Incorporate fourth set of values
+  resultD += valD1 * valA2;
+  resultC += valD1 * valB2;
+  resultB -= valD1 * valC2;
+  resultA -= valD1 * valD2;
+
+  // Return the calculated array
+  return [resultA, resultB, resultC, resultD];
 }
 
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// --- Main program execution block ---
+// Process input lines
+const lineArray = rawData.trim().split("\n");
 
-// Read all incoming data from the standard input stream as a UTF-8 string.
-let inputDataString = require('fs') . readFileSync(
-    '/dev/stdin',
-    'utf8'
-);
+// Get the number of iterations from the first line
+const numIterations = parseInt(lineArray.shift(), 10);
 
-// Process the acquired string data:
-// 1. Remove any leading or trailing whitespace.
-// 2. Split the string into an array, where each element is a line from the input.
-let processedLines = ( inputDataString.trim() ) . split( "\n" );
+// Loop through the remaining lines
+for (let idx = 0; idx < numIterations; idx++) {
+  // Parse current line into an array of numbers
+  const currentValues = lineArray[idx].split(" ").map(Number);
 
-// The very first line of the input is expected to contain the total count
-// of subsequent test cases. Extract this number and convert it to a float.
-let totalTestCases = processedLines.shift() - 0.0;
+  // Call the computation function with the parsed values
+  const finalResult = computeValues.apply(null, currentValues);
 
-// Loop through each test case specified by the totalTestCases count.
-for ( let currentCaseIndex = 0 ; currentCaseIndex < totalTestCases ; currentCaseIndex++ )
-{
-    // For the current line (representing a single test case):
-    // 1. Split the line string into individual string components based on spaces.
-    // 2. Convert each string component into a numerical value.
-    let currentInputValues = processedLines[currentCaseIndex] . split(" ") . map( Number );
-    
-    // Invoke the core computation function, passing the parsed numbers
-    // as individual arguments using the `apply` method.
-    // `null` is used as the `this` context since it's not relevant here.
-    let computedResultVector = computeProductVector.apply( null, currentInputValues );
-    
-    // Output the resulting array of components to the console.
-    // The components are joined together by spaces to form a single line of output.
-    console.log( computedResultVector . join( " " ) );
+  // Print the results joined by spaces
+  console.log(finalResult.join(" "));
 }

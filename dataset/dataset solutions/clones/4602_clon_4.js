@@ -1,45 +1,24 @@
-const evaluateSequence = (initialVal, divisorVal, remainderVal) => {
-    let currentTestVal = initialVal;
-    const maximumBound = 10000;
+const processInput = (sourceText) => {
+  const lineSegments = sourceText.trim().split('\n');
+  const [firstVal, secondVal, thirdVal] = lineSegments[0].split(' ').map(Number);
 
-    while (currentTestVal <= maximumBound) {
-        if (currentTestVal % divisorVal === remainderVal) {
-            return true;
-        }
-        currentTestVal += initialVal;
+  const determineOutcome = (currentIterationValue) => {
+    if (currentIterationValue > 10000) {
+      return false;
     }
-    return false;
+    if (currentIterationValue % secondVal === thirdVal) {
+      return true;
+    }
+    return determineOutcome(currentIterationValue + firstVal);
+  };
+
+  const finalResult = determineOutcome(firstVal);
+
+  if (finalResult) {
+    console.log('YES');
+  } else {
+    console.log('NO');
+  }
 };
 
-const processInputData = (incomingTextContent) => {
-    let currentReadPos = 0;
-    let spaceLoc = -1;
-    
-    spaceLoc = incomingTextContent.indexOf(' ', currentReadPos);
-    const firstStrValue = incomingTextContent.substring(currentReadPos, spaceLoc);
-    currentReadPos = spaceLoc + 1;
-
-    spaceLoc = incomingTextContent.indexOf(' ', currentReadPos);
-    const secondStrValue = incomingTextContent.substring(currentReadPos, spaceLoc);
-    currentReadPos = spaceLoc + 1;
-
-    const lineEndPos = incomingTextContent.indexOf('\n', currentReadPos);
-    const thirdStrValue = incomingTextContent.substring(currentReadPos, lineEndPos !== -1 ? lineEndPos : incomingTextContent.length);
-
-    const valOne = Number(firstStrValue);
-    const valTwo = Number(secondStrValue);
-    const valThree = Number(thirdStrValue);
-
-    if (evaluateSequence(valOne, valTwo, valThree)) {
-        process.stdout.write('YES\n');
-    } else {
-        process.stdout.write('NO\n');
-    }
-};
-
-const fileAccessModule = require('node:fs');
-const inputReader = fileAccessModule.readFileSync;
-
-const standardInputContent = inputReader('/dev/stdin', { encoding: 'utf8' });
-
-processInputData(standardInputContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

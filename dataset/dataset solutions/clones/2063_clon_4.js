@@ -1,64 +1,41 @@
 "use strict";
+var input=require("fs").readFileSync("/dev/stdin","utf8");
+var cin=input.split(/ |\n/),cid=0;
+function next(a){return a?cin[cid++]:+cin[cid++];}
+function nexts(n,a){return a?cin.slice(cid,cid+=n):cin.slice(cid,cid+=n).map(a=>+a);}
+function nextm(h,w,a){var r=[],i=0;if(a)for(;i<h;i++)r.push(cin.slice(cid,cid+=w));else for(;i<h;i++)r.push(cin.slice(cid,cid+=w).map(a=>+a));return r;}
+function xArray(v){var a=arguments,l=a.length,r="Array(a["+--l+"]).fill().map(x=>{return "+v+";})";while(--l)r="Array(a["+l+"]).fill().map(x=>"+r+")";return eval(r);}
 
-const acquireData = () => require("fs").readFileSync("/dev/stdin", "utf8");
-const processText = (textualData) => textualData.split(/\s+/).filter(Boolean);
+var myOut = main();
+if(myOut !== undefined)console.log(myOut);
 
-let dataSegments;
-let dataPointer = 0;
+function main(){
+  var quantity = next();
+  var charSequence = next(1);
 
-const extractNumericElement = () => {
-    return Number(dataSegments[dataPointer++]);
-};
+  const calculateInitialDifferences = (sequence, count) => {
+    return Array.from({ length: count - 1 }, (_, index) =>
+      Math.abs(sequence.charCodeAt(index) - sequence.charCodeAt(index + 1))
+    );
+  };
 
-const extractNumericCollection = (quantity) => {
-    const collection = [];
-    for (let currentIdx = 0; currentIdx < quantity; currentIdx++) {
-        collection.push(Number(dataSegments[dataPointer++]));
+  const reduceDifferencesRecursively = (currentDifferences) => {
+    if (currentDifferences.length <= 1) {
+      return currentDifferences[0];
     }
-    return collection;
-};
 
-function reduceSequenceRecursively(currentSequence) {
-    if (currentSequence.length <= 1) {
-        return currentSequence[0];
-    }
+    const halfSize = currentDifferences.length >> 1;
+    const nextLevelDifferences = Array.from({ length: halfSize }, (_, index) => {
+      const leftValue = currentDifferences[index];
+      const rightValue = currentDifferences[currentDifferences.length - 1 - index];
+      const absoluteDifference = Math.abs(leftValue - rightValue);
 
-    const currentLength = currentSequence.length;
-    const nextSequenceLength = Math.floor(currentLength / 2);
-    
-    const nextSequence = Array.from({ length: nextSequenceLength }, (_, index) => {
-        const valueA = currentSequence[index];
-        const valueB = currentSequence[currentLength - 1 - index];
-
-        if (valueA === valueB) {
-            return 0;
-        } else if (Math.abs(valueA - valueB) === 1) {
-            return 1;
-        } else {
-            return 2;
-        }
+      return (leftValue === rightValue) ? 0 : (absoluteDifference === 1) ? 1 : 2;
     });
 
-    return reduceSequenceRecursively(nextSequence);
-}
+    return reduceDifferencesRecursively(nextLevelDifferences);
+  };
 
-function executeCoreLogic() {
-    dataSegments = processText(acquireData());
-
-    const elementCount = extractNumericElement(); 
-    const initialNumericSeries = extractNumericCollection(elementCount); 
-
-    if (elementCount < 1) {
-        return undefined; // Consistent with original if n=0 or invalid input
-    }
-    
-    const differentialValues = initialNumericSeries.slice(0, elementCount - 1)
-        .map((val, idx) => Math.abs(val - initialNumericSeries[idx + 1]));
-
-    return reduceSequenceRecursively(differentialValues);
-}
-
-const finalResult = executeCoreLogic();
-if (finalResult !== undefined) {
-    console.log(finalResult);
+  const initialDifferences = calculateInitialDifferences(charSequence, quantity);
+  return reduceDifferencesRecursively(initialDifferences);
 }

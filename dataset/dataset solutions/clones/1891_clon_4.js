@@ -1,19 +1,14 @@
-const processStringSegment = (sourceString) => {
-    const targetSegment = sourceString.substring(1, 2);
-    const translationTable = new Map();
-    translationTable.set('B', 'ARC');
-    translationTable.set('R', 'ABC');
+function processInput(sourceData) {
+  const responseLookup = new Map([
+    ['B', 'ARC'],
+    ['R', 'ABC']
+  ]);
 
-    const resultValue = translationTable.get(targetSegment);
-    return resultValue;
-};
+  const outputValue = responseLookup.get(sourceData[1]);
 
-const runApplication = (fileSystemModule) => {
-    const rawContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    const outputMessage = processStringSegment(rawContent);
-    if (outputMessage !== undefined) {
-        console.log(outputMessage);
-    }
-};
+  if (outputValue !== undefined) {
+    console.log(outputValue);
+  }
+}
 
-runApplication(require("fs"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

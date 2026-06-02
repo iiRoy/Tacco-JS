@@ -1,36 +1,29 @@
 const process = require('process');
 
-let inputBuffer = '';
+function determineFinalFlagState(currentSequence, currentFlagValue) {
+  const deletionCandidateIndex = currentSequence.findIndex((_, position, sequenceArray) =>
+    position > 0 && position < sequenceArray.length - 1 && sequenceArray[position - 1] !== sequenceArray[position + 1]
+  );
 
-process.stdin.on('data', (dataChunk) => {
-    inputBuffer += dataChunk.toString();
-});
+  if (deletionCandidateIndex === -1) {
+    return currentFlagValue;
+  }
 
-process.stdin.on('end', () => {
-    const initialText = inputBuffer.trim();
+  const nextSequence = [...currentSequence];
+  nextSequence.splice(deletionCandidateIndex, 1);
 
-    const determinePlayOutcome = (currentSegment) => {
-        let potentialRemovalIndex = -1;
-        for (let positionIterator = 1; positionIterator < currentSegment.length - 1; positionIterator++) {
-            if (currentSegment.charAt(positionIterator - 1) !== currentSegment.charAt(positionIterator + 1)) {
-                potentialRemovalIndex = positionIterator;
-                break;
-            }
-        }
+  return determineFinalFlagState(nextSequence, !currentFlagValue);
+}
 
-        if (potentialRemovalIndex === -1) {
-            return 0;
-        } else {
-            const nextSegment = currentSegment.substring(0, potentialRemovalIndex) + currentSegment.substring(potentialRemovalIndex + 1);
-            return 1 + determinePlayOutcome(nextSegment);
-        }
-    };
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const initialString = inputData.trim();
 
-    const totalActions = determinePlayOutcome(initialText);
+const charArrayRepresentation = initialString.split('');
 
-    if (totalActions % 2 === 0) {
-        process.stdout.write("Second\n");
-    } else {
-        process.stdout.write("First\n");
-    }
-});
+const finalResultFlag = determineFinalFlagState(charArrayRepresentation, true);
+
+if (finalResultFlag) {
+  console.log("Second");
+} else {
+  console.log("First");
+}

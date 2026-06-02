@@ -1,127 +1,108 @@
-let acquiredTextFragments = [];
-let fragmentPointer = 0;
+var inputBuffer = '';
+var currentInputIndex = 0;
 
-function obtainDataElement(typeIndicator) {
-    if (typeIndicator === 'phrase') {
-        return acquiredTextFragments[fragmentPointer++];
+function readToken(tokenType) {
+    if (tokenType === 'string') {
+        return inputBuffer[currentInputIndex++];
     } else {
-        return Number(acquiredTextFragments[fragmentPointer++]);
+        return +inputBuffer[currentInputIndex++];
     }
 }
 
-function deliverOutcome(evaluation) {
-    console.log(evaluation);
+function displayResult(value) {
+    console.log(value);
 }
 
-class ComponentRelationshipExaminer {
+class CharacterGraphProcessor {
     constructor() {
-        this.nodeAdjacencies = new Map();
-        this.terminalBalance = new Map();
-        this.activeNodes = new Set();
+        this.nodeConnections = Array.from({ length: 26 }, () => new Set());
+        this.nodeBalance = new Array(26).fill(0);
+        this.traversalStatus = new Array(26).fill(false);
     }
 
-    assimilateWord(currentWord) {
-        const initialChar = currentWord[0];
-        const finalChar = currentWord[currentWord.length - 1];
+    addConnection(startChar, endChar) {
+        const charA = startChar.charCodeAt(0) - 'a'.charCodeAt(0);
+        const charB = endChar.charCodeAt(0) - 'a'.charCodeAt(0);
 
-        this.activeNodes.add(initialChar);
-        this.activeNodes.add(finalChar);
+        this.nodeConnections[charA].add(charB);
+        this.nodeConnections[charB].add(charA);
 
-        if (!this.nodeAdjacencies.has(initialChar)) {
-            this.nodeAdjacencies.set(initialChar, new Set());
-        }
-        if (!this.nodeAdjacencies.has(finalChar)) {
-            this.nodeAdjacencies.set(finalChar, new Set());
-        }
-
-        this.nodeAdjacencies.get(initialChar).add(finalChar);
-        this.nodeAdjacencies.get(finalChar).add(initialChar);
-
-        this.terminalBalance.set(initialChar, (this.terminalBalance.get(initialChar) || 0) + 1);
-        this.terminalBalance.set(finalChar, (this.terminalBalance.get(finalChar) || 0) - 1);
+        this.nodeBalance[charA]++;
+        this.nodeBalance[charB]--;
     }
 
-    discoverSegment(startingNode, visitedNodesRegister) {
-        const traversalQueue = [startingNode];
-        visitedNodesRegister.add(startingNode);
+    exploreComponent(startIndex) {
+        const visitQueue = [startIndex];
+        this.traversalStatus[startIndex] = true;
 
-        while (traversalQueue.length > 0) {
-            const currentVertex = traversalQueue.shift();
-            const connectedNeighbors = this.nodeAdjacencies.get(currentVertex) || new Set();
-
-            for (const neighborVertex of connectedNeighbors) {
-                if (!visitedNodesRegister.has(neighborVertex)) {
-                    visitedNodesRegister.add(neighborVertex);
-                    traversalQueue.push(neighborVertex);
+        let queuePointer = 0;
+        while (queuePointer < visitQueue.length) {
+            const current = visitQueue[queuePointer++];
+            for (const neighbor of this.nodeConnections[current]) {
+                if (!this.traversalStatus[neighbor]) {
+                    this.traversalStatus[neighbor] = true;
+                    visitQueue.push(neighbor);
                 }
             }
         }
     }
 
-    processDataSet() {
-        let entryCount = obtainDataElement();
-        if (entryCount === 0) {
-            return false;
+    analyzeGraph() {
+        for (let i = 0; i < 26; ++i) {
+            if (this.nodeConnections[i].size === 0) {
+                this.traversalStatus[i] = true;
+            }
         }
 
-        this.nodeAdjacencies.clear();
-        this.terminalBalance.clear();
-        this.activeNodes.clear();
-
-        for (let idx = 0; idx < entryCount; ++idx) {
-            this.assimilateWord(obtainDataElement('phrase'));
-        }
-
-        const exploredComponentNodes = new Set();
-        let primaryComponentSeed = null;
-
-        for (const characterKey of this.activeNodes) {
-            if (this.nodeAdjacencies.has(characterKey) && this.nodeAdjacencies.get(characterKey).size > 0) {
-                primaryComponentSeed = characterKey;
+        let firstUnvisited = -1;
+        for (let i = 0; i < 26; ++i) {
+            if (!this.traversalStatus[i]) {
+                firstUnvisited = i;
                 break;
             }
         }
 
-        if (primaryComponentSeed !== null) {
-            this.discoverSegment(primaryComponentSeed, exploredComponentNodes);
+        if (firstUnvisited !== -1) {
+            this.exploreComponent(firstUnvisited);
         }
 
-        let overallVerdict = true;
-
-        for (const characterKey of this.activeNodes) {
-            if (this.nodeAdjacencies.has(characterKey) && this.nodeAdjacencies.get(characterKey).size > 0) {
-                if (!exploredComponentNodes.has(characterKey)) {
-                    overallVerdict = false;
-                    break;
-                }
-            }
-
-            if ((this.terminalBalance.get(characterKey) || 0) !== 0) {
-                overallVerdict = false;
+        let overallValidity = true;
+        for (let i = 0; i < 26; ++i) {
+            if (!this.traversalStatus[i] || this.nodeBalance[i] !== 0) {
+                overallValidity = false;
                 break;
             }
         }
-        
-        deliverOutcome(overallVerdict ? 'OK' : 'NG');
-        return true;
+        return overallValidity ? 'OK' : 'NG';
+    }
+}
+
+function runProcessingLoop() {
+    while (true) {
+        const stringCount = readToken();
+        if (stringCount === 0) {
+            break;
+        }
+
+        const processor = new CharacterGraphProcessor();
+
+        for (let k = 0; k < stringCount; ++k) {
+            const currentString = readToken('string');
+            processor.addConnection(currentString[0], currentString[currentString.length - 1]);
+        }
+
+        displayResult(processor.analyzeGraph());
     }
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let completeInputAccumulator = '';
-
 process.stdin.on('data', function(chunk) {
-    completeInputAccumulator += chunk;
+    inputBuffer += chunk;
 });
 
 process.stdin.on('end', function() {
-    acquiredTextFragments = completeInputAccumulator.trim().split(/\s+/);
-    fragmentPointer = 0;
-
-    const systemEvaluator = new ComponentRelationshipExaminer();
-    while (systemEvaluator.processDataSet()) {
-        // Continue processing
-    }
+    inputBuffer = inputBuffer.split(/\s+/);
+    runProcessingLoop();
 });

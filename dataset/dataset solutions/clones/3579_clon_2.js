@@ -1,57 +1,77 @@
-var inputData = getModule("fileSystem").readContentSync("/dev/stdin", "utf8"); // Acquire raw input from standard input
-inputData = inputData . divideByNewline ( ) . transformToNumbers ( singleEntry => Number ( singleEntry ) ) ; // Process input: split by newline, convert each part to a numeric value
-outputChannel.printResult( processInput ( ) ) ; // Execute the core logic and display the final outcome
+const inputRawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function processInput ( )
-{
-  var negativeOutcome = "No" ; // Define the string for a negative result
-  var totalElements = inputData[0] ; // The first element in the array indicates the total count of subsequent elements
-  var visitedIndices = { } ; // Initialize an object to track visited indices or specific conditions
+// Parse the raw input string: split by newlines and convert each segment to a number.
+const numericInputArray = inputRawData.split("\n").map(item => +item);
 
-  // Iterate through the processed input data, starting from the second element (index 1)
-  for ( let currentIdx = 1 ; currentIdx <= totalElements ; currentIdx ++ ) {
-    // Check for an odd XOR result with 1, indicating a specific condition violation
-    if ( ( inputData[currentIdx] ^ currentIdx ) & 1 ) {
-      return negativeOutcome ; // If violated, immediately return the negative outcome
+// Execute the primary logic function and print its result to the standard output.
+console.log(evaluateSequence());
+
+/**
+ * Determines if a given sequence of numbers adheres to specific structural rules.
+ * The function processes the numericInputArray, performing various checks based on
+ * indices and values.
+ *
+ * @returns {string} "Yes" if the sequence is valid according to the rules, "No" otherwise.
+ */
+function evaluateSequence() {
+  // Constant string for indicating an invalid sequence.
+  const invalidSequenceIndicator = "No";
+  // The first element of the array specifies the total number of elements to process.
+  const totalElementsToProcess = numericInputArray[0];
+  // An object used as a hash map to keep track of certain indices or values that have been "marked".
+  const markedIndicesMap = {};
+
+  // Iterate through the input array, starting from the second element (index 1) up to totalElementsToProcess.
+  // The loop counter 'currentPosition' is intentionally modified within the loop body.
+  for (let currentPosition = 1; currentPosition <= totalElementsToProcess; currentPosition++) {
+    // First condition check: If the bitwise XOR of the current number and its index is odd,
+    // the sequence is immediately invalid.
+    if ((numericInputArray[currentPosition] ^ currentPosition) & 1) {
+      return invalidSequenceIndicator;
     }
 
-    var upperBound = inputData[currentIdx] ; // Initialize an upper bound value from the current data point
-    var lowerBound = currentIdx ; // Initialize a lower bound with the current index
+    // Initialize 'currentUpperLimit' with the value at the current position,
+    // and 'currentComparisonValue' with the current position itself.
+    let currentUpperLimit = numericInputArray[currentPosition];
+    let currentComparisonValue = currentPosition;
 
-    // Begin an inner loop that continues as long as the current index is less than the upper bound
-    while ( currentIdx < upperBound ) {
-      currentIdx ++ ; // Increment the current index
-
-      // Verify that the data point at the new index matches the new index itself
-      if ( inputData[currentIdx] !== currentIdx ) {
-        return negativeOutcome ; // If not, return the negative outcome
+    // Inner loop: continues as long as the 'currentPosition' is less than 'currentUpperLimit'.
+    while (currentPosition < currentUpperLimit) {
+      // Advance the 'currentPosition'.
+      currentPosition++;
+      // Second condition check: If the number at the new 'currentPosition' is not equal to 'currentPosition',
+      // the sequence is invalid.
+      if (numericInputArray[currentPosition] !== currentPosition) {
+        return invalidSequenceIndicator;
       }
 
-      currentIdx ++ ; // Increment the current index again
-
-      // Perform another odd XOR check for the newly advanced index
-      if ( ( inputData[currentIdx] ^ currentIdx ) & 1 ) {
-        return negativeOutcome ; // If violated, return the negative outcome
+      // Advance the 'currentPosition' again.
+      currentPosition++;
+      // Third condition check: Similar to the first, if the XOR of the current number and its index is odd,
+      // the sequence is invalid.
+      if ((numericInputArray[currentPosition] ^ currentPosition) & 1) {
+        return invalidSequenceIndicator;
       }
 
-      // If the current upper bound is less than the data point at the new index
-      if ( upperBound < inputData[currentIdx] ) {
-        upperBound = inputData[currentIdx] ; // Update the upper bound
-        visitedIndices[upperBound] = 1 ; // Mark this new upper bound as visited
-      }
-      // Else, if the lower bound matches the data point at the new index
-      else if ( lowerBound === inputData[currentIdx] ) {
-        // Increment the lower bound by 2 repeatedly until it points to an unvisited index
+      // Conditional logic based on the relationship between 'currentUpperLimit' and the number at 'currentPosition'.
+      if (currentUpperLimit < numericInputArray[currentPosition]) {
+        // If the number at 'currentPosition' is greater than 'currentUpperLimit', update 'currentUpperLimit'.
+        // Also, mark this new 'currentUpperLimit' in the 'markedIndicesMap'.
+        currentUpperLimit = numericInputArray[currentPosition];
+        markedIndicesMap[currentUpperLimit] = 1; // Mark as encountered/used
+      } else if (currentComparisonValue === numericInputArray[currentPosition]) {
+        // If 'currentComparisonValue' matches the number at 'currentPosition',
+        // increment 'currentComparisonValue' by 2 repeatedly until an unmarked index is found in 'markedIndicesMap'.
         do {
-          lowerBound += 2 ;
-        } while ( visitedIndices[lowerBound] ) ;
-      }
-      // If neither of the above conditions are met
-      else {
-        return negativeOutcome ; // Return the negative outcome
+          currentComparisonValue += 2;
+        } while (markedIndicesMap[currentComparisonValue]); // Check if 'currentComparisonValue' is already marked
+      } else {
+        // If neither of the above conditions is met, the sequence is invalid.
+        return invalidSequenceIndicator;
       }
     }
   }
 
-  return "Yes" ; // If all checks pass and loops complete, return a positive outcome
+  // If the function completes all loops and checks without returning "No", the sequence is valid.
+  return "Yes";
 }

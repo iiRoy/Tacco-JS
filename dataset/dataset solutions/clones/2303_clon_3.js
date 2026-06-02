@@ -1,89 +1,64 @@
-'use strict'
+'use strict';
 
-function computeGameOutcome(rawDataPayload) {
-  // Basic validation for the input data structure
-  if (!rawDataPayload || typeof rawDataPayload !== 'string') {
-    console.error("Error: Invalid raw input payload provided.");
-    return; // Or throw an error
-  }
+const parseNumericValues = (stringArray) => stringArray.map(item => parseInt(item, 10));
 
-  // Split the raw input into individual lines for processing
-  const inputLines = rawDataPayload.trim().split('\n');
+const calculateWinningScore = (moveType, rockWinValue, scissorsWinValue, paperWinValue) => {
+    switch (moveType) {
+        case 'r': return paperWinValue;
+        case 's': return rockWinValue;
+        case 'p': return scissorsWinValue;
+        default: return 0;
+    }
+};
 
-  // Ensure we have at least 3 lines of input as expected
-  if (inputLines.length < 3) {
-    console.error("Error: Insufficient input lines. Expected at least 3.");
-    return;
-  }
+function ProcessGameLogic(rawInputData) {
+    const inputLines = rawInputData.trim().split('\n');
 
-  // Parse the first line for game configuration parameters
-  const gameConfigurationStr = inputLines[0].split(' ');
-  const totalRounds = Number(gameConfigurationStr[0]);
-  const cooldownThreshold = Number(gameConfigurationStr[1]);
+    const firstLineData = parseNumericValues(inputLines[0].split(' '));
+    const totalGameRounds = firstLineData[0];
+    const repeatPenaltyPeriod = firstLineData[1];
 
-  // Validate parsed configuration values
-  if (isNaN(totalRounds) || totalRounds <= 0 || isNaN(cooldownThreshold) || cooldownThreshold < 0) {
-    console.error("Error: Invalid game configuration values (totalRounds or cooldownThreshold).");
-    return;
-  }
+    const secondLineData = parseNumericValues(inputLines[1].split(' '));
+    const scoreForWinningWithRock = secondLineData[0];
+    const scoreForWinningWithScissors = secondLineData[1];
+    const scoreForWinningWithPaper = secondLineData[2];
 
-  // Parse the second line for winning scores for each hand type
-  const handScoresStr = inputLines[1].split(' ');
-  const scoreForRockWin = Number(handScoresStr[0]);     // Score if we win against 's' (our 'r')
-  const scoreForScissorsWin = Number(handScoresStr[1]); // Score if we win against 'p' (our 's')
-  const scoreForPaperWin = Number(handScoresStr[2]);    // Score if we win against 'r' (our 'p')
+    const gameMoveSequence = inputLines[2];
 
-  // Create a lookup map for scores based on opponent's move
-  // 'r' (rock) opponent means we play 'p' (paper) to win, getting 'scoreForPaperWin'
-  // 's' (scissors) opponent means we play 'r' (rock) to win, getting 'scoreForRockWin'
-  // 'p' (paper) opponent means we play 's' (scissors) to win, getting 'scoreForScissorsWin'
-  const winningMoveScores = {
-    'r': scoreForPaperWin,
-    's': scoreForRockWin,
-    'p': scoreForScissorsWin
-  };
+    const roundResultScores = [];
 
-  // Get the sequence of opponent's moves
-  const opponentMoveSequence = inputLines[2];
+    for (let roundCounter = 0; roundCounter < totalGameRounds; ++roundCounter) {
+        const currentRoundMove = gameMoveSequence[roundCounter];
+        let scoreEarnedThisRound = 0;
 
-  // Initialize an array to store the score for each successful round
-  let accumulatedRoundScores = [];
+        const isWithinPenaltyRange = roundCounter >= repeatPenaltyPeriod;
+        if (isWithinPenaltyRange) {
+            const previousMoveInSequence = gameMoveSequence[roundCounter - repeatPenaltyPeriod];
+            const previousRoundScore = roundResultScores[roundCounter - repeatPenaltyPeriod];
 
-  // Iterate through each round of the game
-  for (let currentRoundIdx = 0; currentRoundIdx < totalRounds; ++currentRoundIdx) {
-    const currentOpponentPlay = opponentMoveSequence[currentRoundIdx];
-    let roundPoints = 0; // Default points for the current round
+            const isMovePenalized = (previousMoveInSequence === currentRoundMove && previousRoundScore > 0);
 
-    // Check if the current move is subject to a cooldown penalty
-    // This occurs if the same winning move was made 'cooldownThreshold' rounds ago
-    // AND that previous move actually contributed points (was not already a penalty round)
-    const previousRelevantRoundIdx = currentRoundIdx - cooldownThreshold;
-    if (
-      previousRelevantRoundIdx >= 0 &&
-      opponentMoveSequence[previousRelevantRoundIdx] === currentOpponentPlay &&
-      accumulatedRoundScores[previousRelevantRoundIdx] > 0
-    ) {
-      // If a cooldown penalty applies, this round yields no points
-      roundPoints = 0;
-    } else {
-      // Otherwise, calculate points based on the opponent's current move
-      // Use the lookup map for cleaner score assignment
-      if (winningMoveScores.hasOwnProperty(currentOpponentPlay)) {
-        roundPoints = winningMoveScores[currentOpponentPlay];
-      }
-      // If opponentMoveSequence contains unexpected characters, roundPoints remains 0, which is a sensible default.
+            if (!isMovePenalized) {
+                scoreEarnedThisRound = calculateWinningScore(
+                    currentRoundMove,
+                    scoreForWinningWithRock,
+                    scoreForWinningWithScissors,
+                    scoreForWinningWithPaper
+                );
+            }
+        } else {
+            scoreEarnedThisRound = calculateWinningScore(
+                currentRoundMove,
+                scoreForWinningWithRock,
+                scoreForWinningWithScissors,
+                scoreForWinningWithPaper
+            );
+        }
+        roundResultScores.push(scoreEarnedThisRound);
     }
 
-    // Record the points for the current round
-    accumulatedRoundScores.push(roundPoints);
-  }
-
-  // Calculate the total score by summing up all round scores
-  const finalTotalScore = accumulatedRoundScores.reduce((totalSum, currentValue) => totalSum + currentValue, 0);
-
-  // Output the final calculated score
-  console.log(finalTotalScore);
+    const sumAllScores = (accumulator, currentValue) => accumulator + currentValue;
+    console.log(roundResultScores.reduce(sumAllScores, 0));
 }
 
-// Entry point for execution, reading from standard input
-computeGameOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGameLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

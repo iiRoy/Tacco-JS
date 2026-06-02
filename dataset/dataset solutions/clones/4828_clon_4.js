@@ -1,46 +1,37 @@
-const stringReverser = (originalString) => {
-  let reversedForm = '';
-  let indexCounter = originalString.length;
-  while (indexCounter--) {
-    reversedForm += originalString[indexCounter];
-  }
-  return reversedForm;
-};
+"use strict";
+function ProcessInput(inputString) {
+  const sourceWords = ["dream", "dreamer", "erase", "eraser"];
 
-const wordFragments = ["dream", "dreamer", "erase", "eraser"].map(stringReverser);
+  const reversedSourceWords = sourceWords.map(strValue => reverseString(strValue));
 
-const checkParseability = (currentSegment) => {
-  if (currentSegment.length === 0) {
-    return true;
-  }
+  const reversedInput = reverseString(inputString);
 
-  let nextPortion = currentSegment;
-  let matchIdentified = false;
-
-  for (const lexiconItem of wordFragments) {
-    if (nextPortion.startsWith(lexiconItem)) {
-      nextPortion = nextPortion.substring(lexiconItem.length);
-      matchIdentified = true;
-      break;
+  function findDecomposition(currentSegment) {
+    if (currentSegment === "") {
+      return true;
     }
-  }
 
-  if (matchIdentified) {
-    return checkParseability(nextPortion);
-  } else {
+    for (const pattern of reversedSourceWords) {
+      if (currentSegment.startsWith(pattern)) {
+        const remainingSegment = currentSegment.substring(pattern.length);
+        if (findDecomposition(remainingSegment)) {
+          return true;
+        }
+      }
+    }
+
     return false;
   }
-};
 
-const entryPointFunction = (initialInput) => {
-  const transformedInput = stringReverser(initialInput);
-  const finalDetermination = checkParseability(transformedInput);
-
-  if (finalDetermination) {
+  if (findDecomposition(reversedInput)) {
     console.log("YES");
   } else {
     console.log("NO");
   }
-};
+}
 
-entryPointFunction(require("fs").readFileSync("/dev/stdin", "utf-8"));
+function reverseString(strValue) {
+  return strValue.split("").reverse().join("");
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

@@ -1,57 +1,41 @@
-const inputSource = require("fs");
-
-const rawInputBuffer = inputSource.readFileSync(process.stdin.fd);
-let fullInputPayload = rawInputBuffer.toString('utf8');
-
-if (!fullInputPayload.trim().length) {
-    console.log("");
-    process.exit(0);
-}
-
-const inputLineSegments = fullInputPayload.split('\n');
-const processedDataSegments = inputLineSegments.slice(1, -1);
-
-if (processedDataSegments.length === 0) {
-    console.log("");
-    process.exit(0);
-}
-
-const characterFrequencyMaps = processedDataSegments.map(dataString => {
-    const currentSegmentFrequencies = {};
-    for (const charElement of dataString) {
-        currentSegmentFrequencies[charElement] = (currentSegmentFrequencies[charElement] || 0) + 1;
+const computeCharacterFrequencies = (inputString) => {
+    const charFrequencyMap = {};
+    for (const charValue of inputString) {
+        charFrequencyMap[charValue] = (charFrequencyMap[charValue] || 0) + 1;
     }
-    return currentSegmentFrequencies;
+    return charFrequencyMap;
+};
+
+const fileSystemModule = require("fs");
+
+const rawInputBuffer = fileSystemModule.readFileSync(0);
+const fullInputContent = rawInputBuffer.toString();
+
+const allContentLines = fullInputContent.split('\n');
+
+const dataLines = allContentLines.slice(1, -1);
+
+const lineFrequencyMaps = dataLines.map(computeCharacterFrequencies);
+
+const aggregatedMinFrequencies = lineFrequencyMaps.reduce((currentMinMap, nextLineMap) => {
+    for (const characterIdentifier in currentMinMap) {
+        currentMinMap[characterIdentifier] = Math.min(
+            currentMinMap[characterIdentifier],
+            nextLineMap[characterIdentifier] || 0
+        );
+    }
+    return currentMinMap;
 });
 
-let aggregatedMinimumFrequencies = {};
+const finalOutputParts = [];
+const uniqueCharacters = Object.keys(aggregatedMinFrequencies);
 
-if (characterFrequencyMaps.length > 0) {
-    Object.assign(aggregatedMinimumFrequencies, characterFrequencyMaps[0]);
+for (const charKeyToRepeat of uniqueCharacters) {
+    const repetitionCount = aggregatedMinFrequencies[charKeyToRepeat];
+    finalOutputParts.push(charKeyToRepeat.repeat(repetitionCount));
 }
 
-for (let idx = 1; idx < characterFrequencyMaps.length; idx++) {
-    const nextFrequencyMap = characterFrequencyMaps[idx];
-    const temporaryAggregatedMap = {};
+finalOutputParts.sort();
+const finalResultString = finalOutputParts.join('');
 
-    for (const charKey in aggregatedMinimumFrequencies) {
-        const currentMinimum = aggregatedMinimumFrequencies[charKey];
-        const nextLineOccurrence = nextFrequencyMap[charKey] || 0; // Explicitly treat undefined as 0
-        temporaryAggregatedMap[charKey] = Math.min(currentMinimum, nextLineOccurrence);
-    }
-    aggregatedMinimumFrequencies = temporaryAggregatedMap;
-}
-
-const resultComponentArray = [];
-
-for (const charIdentifier in aggregatedMinimumFrequencies) {
-    const repetitionFactor = aggregatedMinimumFrequencies[charIdentifier];
-    if (repetitionFactor > 0) {
-        resultComponentArray.push(charIdentifier.repeat(repetitionFactor));
-    }
-}
-
-const sortedResultComponents = resultComponentArray.sort();
-const finalOutputResult = sortedResultComponents.join('');
-
-console.log(finalOutputResult);
+console.log(finalResultString);

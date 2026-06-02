@@ -1,99 +1,115 @@
-class CoordinateHeap {
-    constructor() { this.store = []; }
-    checkTop() { return this.store.length === 0 ? null : this.store[0]; }
-    insertElement(element) {
-        this.store.push(element);
-        this._bubbleUp(this.store.length - 1);
+"use strict";
+
+class InputProcessor {
+    constructor(sourceText) {
+        this.lineSegments = sourceText.trim().split('\n');
+        this.currentLineIndex = 0;
+        this.currentLineTokens = [];
+        this._loadTokensForCurrentLine();
     }
-    extractSmallest() {
-        if (this.store.length === 0) return null;
-        if (this.store.length === 1) return this.store.pop();
-        const smallest = this.store[0];
-        this.store[0] = this.store.pop();
-        this._sinkDown(0);
-        return smallest;
-    }
-    _bubbleUp(idx) {
-        while (idx > 0) {
-            const parentIdx = Math.floor((idx - 1) / 2);
-            if (this.store[parentIdx][0] <= this.store[idx][0]) break;
-            [this.store[parentIdx], this.store[idx]] = [this.store[idx], this.store[parentIdx]];
-            idx = parentIdx;
+
+    _loadTokensForCurrentLine() {
+        if (this.currentLineIndex < this.lineSegments.length) {
+            this.currentLineTokens = this.lineSegments[this.currentLineIndex].split(' ').reverse();
+        } else {
+            this.currentLineTokens = [];
         }
     }
-    _sinkDown(idx) {
-        const lastIdx = this.store.length - 1;
-        while (true) {
-            let leftChild = 2 * idx + 1;
-            let rightChild = 2 * idx + 2;
-            let smallest = idx;
 
-            if (leftChild <= lastIdx && this.store[leftChild][0] < this.store[smallest][0]) {
-                smallest = leftChild;
-            }
-            if (rightChild <= lastIdx && this.store[rightChild][0] < this.store[smallest][0]) {
-                smallest = rightChild;
-            }
+    _advanceToNextLine() {
+        this.currentLineIndex++;
+        this._loadTokensForCurrentLine();
+    }
 
-            if (smallest !== idx) {
-                [this.store[smallest], this.store[idx]] = [this.store[idx], this.store[smallest]];
-                idx = smallest;
-            } else {
-                break;
+    fetchToken(asString) {
+        if (this.currentLineTokens.length === 0) {
+            this._advanceToNextLine();
+            if (this.currentLineTokens.length === 0 && this.currentLineIndex >= this.lineSegments.length) {
+                throw new Error("End of input reached.");
             }
         }
+        const token = this.currentLineTokens.pop();
+        return asString ? token : Number(token);
     }
-    get currentSize() { return this.store.length; }
+
+    fetchLine(asString) {
+        if (this.currentLineIndex >= this.lineSegments.length) {
+            throw new Error("End of input reached.");
+        }
+        const lineContent = this.lineSegments[this.currentLineIndex++];
+        this._loadTokensForCurrentLine();
+        const tokens = lineContent.split(' ');
+        return asString ? tokens : tokens.map(Number);
+    }
+
+    fetchMatrix(rowsCount, asString) {
+        const resultMatrix = [];
+        for (let k = 0; k < rowsCount; k++) {
+            resultMatrix.push(this.fetchLine(asString));
+        }
+        return resultMatrix;
+    }
+
+    fetchRows(rowsCount, asString) {
+        const resultRows = [];
+        for (let k = 0; k < rowsCount; k++) {
+            if (this.currentLineIndex >= this.lineSegments.length) {
+                throw new Error("End of input reached while extracting rows.");
+            }
+            const row = this.lineSegments[this.currentLineIndex++];
+            resultRows.push(asString ? row : Number(row));
+        }
+        this._loadTokensForCurrentLine();
+        return resultRows;
+    }
 }
 
-function parseAllInput(inputString) {
-    const lines = inputString.trim().split("\n");
-    const firstLineTokens = lines[0].split(" ").map(Number);
-    const numItems = firstLineTokens.pop();
-    const distanceThreshold = firstLineTokens.pop();
-    const influenceFactor = firstLineTokens.pop();
+const createProcessor = (source) => new InputProcessor(source);
 
-    const itemCoordinates = lines.slice(1, numItems + 1).map(line => {
-        const parts = line.split(" ").map(Number);
-        return { pos: parts[0], val: parts[1] };
-    });
-
-    itemCoordinates.sort((a, b) => a.pos - b.pos);
-
-    return {
-        itemCount: numItems,
-        spanDistance: distanceThreshold,
-        effectMultiplier: influenceFactor,
-        coordinatePairs: itemCoordinates
+const constructMultiDimensionalArray = (initialValue, ...dimensions) => {
+    const buildArrayRecursively = (dims) => {
+        if (dims.length === 0) {
+            return initialValue;
+        }
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => buildArrayRecursively(remainingDimensions));
     };
-}
+    return buildArrayRecursively(dimensions);
+};
 
-function calculateTotalEffect(parameters) {
-    const { spanDistance, effectMultiplier, coordinatePairs } = parameters;
+const dataStream = createProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    let overallTally = 0;
-    let currentAccumulatedInfluence = 0;
-    const activeEffectQueue = new CoordinateHeap();
+function calculateProtection() {
+    const totalItems = dataStream.fetchToken();
+    const protectionRange = dataStream.fetchToken();
+    const effectMultiplier = dataStream.fetchToken();
 
-    for (const item of coordinatePairs) {
-        while (activeEffectQueue.currentSize > 0 && activeEffectQueue.checkTop()[0] < item.pos - spanDistance) {
-            const expiredEffect = activeEffectQueue.extractSmallest();
-            currentAccumulatedInfluence -= expiredEffect[1] * effectMultiplier;
+    const itemDetails = dataStream.fetchMatrix(totalItems).sort((firstItem, secondItem) => firstItem[0] - secondItem[0]);
+
+    const processingResult = itemDetails.reduce((accumulator, currentItem) => {
+        const [itemPosition, itemRequirement] = currentItem;
+
+        while (accumulator.activeProtections.length > 0 && accumulator.activeProtections[0].expiryPoint < itemPosition - protectionRange) {
+            const expiredProtection = accumulator.activeProtections.shift();
+            accumulator.currentEffect -= expiredProtection.unitsApplied;
         }
 
-        const deficit = item.val - currentAccumulatedInfluence * effectMultiplier;
+        const neededForCurrentItem = itemRequirement - accumulator.currentEffect * effectMultiplier;
 
-        if (deficit > 0) {
-            const unitsRequired = Math.ceil(deficit / effectMultiplier);
-            activeEffectQueue.insertElement([item.pos + spanDistance, unitsRequired]);
-            overallTally += unitsRequired;
-            currentAccumulatedInfluence += unitsRequired * effectMultiplier;
+        if (neededForCurrentItem > 0) {
+            const unitsToApply = Math.ceil(neededForCurrentItem / effectMultiplier);
+            accumulator.activeProtections.push({ expiryPoint: itemPosition + protectionRange, unitsApplied: unitsToApply });
+            accumulator.totalUnitsApplied += unitsToApply;
+            accumulator.currentEffect += unitsToApply;
         }
-    }
-    return overallTally;
+        return accumulator;
+    }, { totalUnitsApplied: 0, currentEffect: 0, activeProtections: [] });
+
+    return processingResult.totalUnitsApplied;
 }
 
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const processedData = parseAllInput(systemInput);
-const finalResult = calculateTotalEffect(processedData);
-console.log(finalResult);
+const finalOutput = calculateProtection();
+if (finalOutput !== undefined) {
+    console.log(finalOutput);
+}

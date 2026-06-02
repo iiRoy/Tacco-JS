@@ -1,32 +1,34 @@
 'use strict';
 
-function processSchedule(rawData) {
-    const textRows = rawData.trim().split('\n');
-    const jobCount = Number(textRows[0]);
+const processSchedule = (rawData) => {
+  const inputSegments = rawData.split('\n');
+  const taskCount = parseInt(inputSegments[0], 10);
 
-    const workItems = textRows.slice(1, 1 + jobCount).map(rowEntry => {
-        const segmentData = rowEntry.split(' ');
-        return {
-            timeRequirement: Number(segmentData[0]),
-            finishByMoment: Number(segmentData[1])
-        };
-    });
+  const workItems = inputSegments.slice(1, taskCount + 1).map(segment =>
+    segment.split(' ').map(Number)
+  );
 
-    const prioritizedWork = workItems.sort((firstActivity, secondActivity) => {
-        return firstActivity.finishByMoment - secondActivity.finishByMoment;
-    });
+  workItems.sort((itemA, itemB) => itemA[1] - itemB[1]);
 
-    let currentMoment = 0;
-    const allFeasible = prioritizedWork.every(itemDetails => {
-        currentMoment += itemDetails.timeRequirement;
-        return currentMoment <= itemDetails.finishByMoment;
-    });
+  const initialEvaluation = { currentCompletionTime: 0, feasible: true };
 
-    const finalVerdict = allFeasible ? 'Yes' : 'No';
-    return finalVerdict;
-}
+  const finalEvaluation = workItems.reduce((accumulator, currentItem) => {
+    if (!accumulator.feasible) {
+      return accumulator;
+    }
+    const [duration, deadline] = currentItem;
+    const newCompletionTime = accumulator.currentCompletionTime + duration;
+    const stillFeasible = newCompletionTime <= deadline;
 
-(function(sourceData) {
-    const outcome = processSchedule(sourceData);
-    console.log(outcome);
-})(require('node:fs').readFileSync(0, 'utf8'));
+    return {
+      currentCompletionTime: newCompletionTime,
+      feasible: stillFeasible
+    };
+  }, initialEvaluation);
+
+  const scheduleStatus = finalEvaluation.feasible ? 'Yes' : 'No';
+
+  console.log(scheduleStatus);
+};
+
+processSchedule(require('fs').readFileSync('/dev/stdin', 'utf8'));

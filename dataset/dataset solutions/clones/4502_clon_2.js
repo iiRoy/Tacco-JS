@@ -1,44 +1,38 @@
-'use strict'; // Enforce strict parsing for improved code quality
+'use strict';
 
-function primaryProcessor(rawData) { // Entry point function to handle the incoming data stream
+/*
+ * This module processes a given input string to determine a specific outcome.
+ * It parses numerical values and applies conditional logic.
+ */
+function processInput(inputString) {
+  // First, we clean up the input string.
+  // We take the first line, then split it by spaces, and convert each part to a number.
+  const numericValues = inputString.split('\n')[0].split(' ').map(currentNumStr => Number(currentNumStr));
 
-  // Process the raw input:
-  // 1. Split by newline to get the first line.
-  // 2. Split that line by spaces to get individual string components.
-  // 3. Map each string component to its integer representation (base 10).
-  let processedDataArray = rawData
-    .split('\n')[0] // Extract the initial line from the input
-    .split(' ')     // Segment the line by whitespace delimiters
-    .map(currentSegment => parseInt(currentSegment, 10)); // Transform each part into an integer
+  // Extract individual numerical components from the parsed array.
+  const firstVal = numericValues[0]; // Represents the 'x' value from the original problem.
+  const secondVal = numericValues[1]; // Represents the 'a' value.
+  const thirdVal = numericValues[2]; // Represents the 'b' value.
 
-  // Assign extracted numeric values to descriptive variables.
-  const firstComponent  = processedDataArray[0]; // The initial numeric value
-  const secondComponent = processedDataArray[1]; // The middle numeric value
-  const thirdComponent  = processedDataArray[2]; // The final numeric value
+  // Initialize a variable to store the final message.
+  let resultMessage = '';
 
-  // Initialize a placeholder for the resulting status message.
-  let decisionOutcome = '';
-
-  // Evaluate conditions to determine the outcome.
-  if (secondComponent >= thirdComponent) { // Check if the second value is at least the third
-    decisionOutcome = 'tasty'; // Set outcome to 'tasty'
+  // Apply the core decision-making logic.
+  if (secondVal >= thirdVal) {
+    // If 'a' is greater than or equal to 'b', the situation is 'delicious'.
+    resultMessage = 'delicious';
+  } else if (firstVal >= (thirdVal - secondVal)) {
+    // Otherwise, if 'x' is greater than or equal to the difference (b - a), it's 'safe'.
+    resultMessage = 'safe';
+  } else {
+    // In all other cases, the situation is deemed 'dangerous'.
+    resultMessage = 'dangerous';
   }
-  else if (firstComponent >= (thirdComponent - secondComponent)) { // Otherwise, check if the first value meets a derived threshold
-    decisionOutcome = 'secure'; // Set outcome to 'secure'
-  }
-  else { // If neither of the above conditions are met
-    decisionOutcome = 'risky'; // Default outcome is 'risky'
-  }
 
-  // Display the determined outcome to the console.
-  console.log(decisionOutcome);
+  // Output the determined message to the console.
+  console.log(resultMessage);
 }
 
-// Execute the main processing function by reading input from the standard input device.
-primaryProcessor(
-  require("fs") // Access the Node.js file system module
-    .fetchFileContent( // Utilize a function to read content from a specified path
-      "/dev/stdin", // Standard input path for reading data
-      "utf8"        // Encoding format for the input content
-    )
-);
+// The program starts by reading input from standard input.
+// It uses Node.js's 'fs' module to synchronously read the file.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

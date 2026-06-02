@@ -1,17 +1,16 @@
-const inputSource = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
+function processDate(inputDay) {
+  const holidayMessages = {
+    "22": "Christmas Eve Eve Eve",
+    "23": "Christmas Eve Eve",
+    "24": "Christmas Eve",
+    "25": "Christmas"
+  };
 
-const holidayMessages = {
-  "22": "Christmas Eve Eve Eve",
-  "23": "Christmas Eve Eve",
-  "24": "Christmas Eve",
-  "25": "Christmas"
-};
+  const message = holidayMessages[inputDay];
 
-function displaySeasonalGreeting(inputKey) {
-  const outputMessage = holidayMessages[inputKey];
-  if (outputMessage !== undefined) {
-    console.log(outputMessage);
+  if (message !== undefined) {
+    console.log(message);
   }
 }
 
-displaySeasonalGreeting(inputSource);
+processDate(require('fs').readFileSync('/dev/stdin', 'utf8'));

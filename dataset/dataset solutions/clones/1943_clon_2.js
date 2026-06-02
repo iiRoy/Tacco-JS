@@ -1,23 +1,21 @@
-// This utility function processes incoming numerical data to evaluate a specific condition.
-function runEvaluation ( dataLines )
-{
-    // Extract the primary numeric component from the first position of the input array.
-    var primaryValue   =   parseInt( dataLines[0], 10 );
-    // Secure the initial divisor value from the second input element.
-    var divisorOne     =   parseInt( dataLines[1], 10 );
-    // Retrieve the secondary numeric component from the third position.
-    var secondaryValue =   parseInt( dataLines[2], 10 );
-    // Obtain the second divisor value from the fourth input element.
-    var divisorTwo     =   parseInt( dataLines[3], 10 );
+function ProcessInput(dataArray) {
+    // Parse the first integer value from the input array.
+    var valX = parseInt(dataArray[0], 10);
+    // Parse the second integer value.
+    var valY = parseInt(dataArray[1], 10);
+    // Parse the third integer value.
+    var valZ = parseInt(dataArray[2], 10);
+    // Parse the fourth integer value.
+    var valW = parseInt(dataArray[3], 10);
 
-    // Compute the number of iterations required for the secondary process, rounding up to the nearest whole number.
-    var targetIterations = Math.ceil( secondaryValue / divisorOne );
-    // Calculate the number of iterations available from the primary resource, also rounding up.
-    var sourceIterations = Math.ceil( primaryValue   / divisorTwo );
+    // Calculate the ceiling of the division of valZ by valY.
+    var firstCount = Math.ceil(valZ / valY);
+    // Calculate the ceiling of the division of valX by valW.
+    var secondCount = Math.ceil(valX / valW);
 
-    // Display the outcome: 'Affirmative' if the target iterations are less than or equal to the source, 'Negative' otherwise.
-    console.log( targetIterations <= sourceIterations ? 'Affirmative' : 'Negative' );
+    // Output 'Yes' if firstCount is less than or equal to secondCount, otherwise 'No'.
+    console.log(firstCount <= secondCount ? 'Yes' : 'No');
 }
 
-// Execute the evaluation function by feeding it parsed data from standard input.
-runEvaluation( require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/) );
+// Read input from standard input, decode as UTF-8, trim whitespace, and split by newlines or spaces.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

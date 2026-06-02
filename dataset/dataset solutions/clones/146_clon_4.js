@@ -1,32 +1,27 @@
-const { execSync: executeExternalCommand } = require('child_process');
-const rawInputContent = executeExternalCommand('cat /dev/stdin', { encoding: 'utf8' });
+const fs = require("fs");
 
-const trimmedGlobalInput = rawInputContent.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/gu, '');
-const contentBlocks = trimmedGlobalInput.split(/\n\s*\n/);
+const inputContent = fs.readFileSync("/dev/stdin", "utf8").trim();
+const contentBlocks = inputContent.split('\n\n');
 
-const classificationRules = [
-    { patternSignature: "1111", outputCharacter: "C" },
-    { patternSignature: "111", outputCharacter: "F" },
-    { patternSignature: "1101", outputCharacter: "D" },
-    { patternSignature: "101", outputCharacter: "B" },
-    { patternSignature: "1000001", outputCharacter: "G" },
-    { patternSignature: "10000001", outputCharacter: "A" },
+const decisionMatrix = [
+    { sequence: "1111", designation: "C" },
+    { sequence: "111", designation: "F" },
+    { sequence: "1101", designation: "D" },
+    { sequence: "101", designation: "B" },
+    { sequence: "1000001", designation: "G" },
+    { sequence: "10000001", designation: "A" }
 ];
-
-const finalClassifications = [];
+const defaultDesignation = "E";
 
 for (const currentBlock of contentBlocks) {
-    const normalizedBlock = currentBlock.replace(/\p{White_Space}/gu, '');
+    const normalizedBlock = currentBlock.replace(/\s/g, '');
 
-    let designatedCharacter = "E";
-
-    for (const ruleEntry of classificationRules) {
-        if (normalizedBlock.includes(ruleEntry.patternSignature)) {
-            designatedCharacter = ruleEntry.outputCharacter;
+    let assignedDesignation = defaultDesignation;
+    for (const ruleEntry of decisionMatrix) {
+        if (normalizedBlock.includes(ruleEntry.sequence)) {
+            assignedDesignation = ruleEntry.designation;
             break;
         }
     }
-    finalClassifications.push(designatedCharacter);
+    console.log(assignedDesignation);
 }
-
-process.stdout.write(finalClassifications.join('\n') + '\n');

@@ -1,65 +1,75 @@
-const MOD_CONSTANT = 1000000007;
+function* tokenIterator(rawInput) {
+  const lineSegments = rawInput.split("\n");
+  let currentLineIndex = 0;
+  let currentTokenIndex = 0;
 
-function acquireInputData(sourceInput) {
-    let tokenArray = sourceInput.trim().split(/\s+/).map(Number);
-    let currentPosition = 0;
+  while (currentLineIndex < lineSegments.length) {
+    const activeLine = lineSegments[currentLineIndex].trim();
+    if (activeLine === "") {
+      currentLineIndex++;
+      currentTokenIndex = 0;
+      continue;
+    }
+    const lineTokens = activeLine.split(" ");
 
-    return {
-        retrieveNext: () => {
-            if (currentPosition >= tokenArray.length) {
-                return undefined;
-            }
-            return tokenArray[currentPosition++];
-        }
+    while (currentTokenIndex < lineTokens.length) {
+      const tokenValue = lineTokens[currentTokenIndex];
+      if (tokenValue !== "") {
+        yield Number(tokenValue);
+      }
+      currentTokenIndex++;
+    }
+    currentLineIndex++;
+    currentTokenIndex = 0;
+  }
+}
+
+function processInput(inputData) {
+  const inputReader = tokenIterator(inputData);
+
+  const totalElements = inputReader.next().value;
+  const targetValue = inputReader.next().value;
+
+  const sourceNumbers = Array.from({ length: totalElements }, () => inputReader.next().value);
+
+  sourceNumbers.sort((a, b) => a - b);
+
+  const MODULO_CONST = 1000000007;
+
+  const factorialValues = Array.from({ length: totalElements + 1 }, (_, idx) => {
+    if (idx <= 1) return 1;
+    return (factorialValues[idx - 1] * idx) % MODULO_CONST;
+  });
+
+  if (sourceNumbers[0] === 1) {
+    console.log(0);
+  } else {
+    const memoizationCache = new Map();
+
+    const computeResult = (currentVal, remainingCount) => {
+      const cacheKey = `${currentVal},${remainingCount}`;
+      if (memoizationCache.has(cacheKey)) {
+        return memoizationCache.get(cacheKey);
+      }
+
+      if (currentVal < sourceNumbers[0]) {
+        const baseResult = (currentVal * factorialValues[remainingCount]) % MODULO_CONST;
+        memoizationCache.set(cacheKey, baseResult);
+        return baseResult;
+      }
+
+      const accumulatedSum = sourceNumbers
+        .filter(num => num < currentVal)
+        .reduce((acc, divisor) => {
+          return (acc + computeResult(currentVal % divisor, remainingCount - 1)) % MODULO_CONST;
+        }, 0);
+
+      memoizationCache.set(cacheKey, accumulatedSum);
+      return accumulatedSum;
     };
+
+    console.log(computeResult(targetValue, totalElements));
+  }
 }
 
-function calculateResult(primaryInput) {
-    const inputReader = acquireInputData(primaryInput);
-
-    const numberCount = inputReader.retrieveNext();
-    const initialValue = inputReader.retrieveNext();
-
-    const valueSet = [];
-    for (let iteration = 0; iteration < numberCount; iteration++) {
-        valueSet.push(inputReader.retrieveNext());
-    }
-
-    valueSet.sort((valA, valB) => valA - valB);
-
-    const factorialCache = new Array(numberCount + 1);
-    factorialCache[0] = 1;
-    for (let idx = 1; idx <= numberCount; idx++) {
-        factorialCache[idx] = (factorialCache[idx - 1] * idx) % MOD_CONSTANT;
-    }
-
-    if (valueSet[0] === 1) {
-        console.log(0);
-    } else {
-        console.log(solveRecursive(initialValue, numberCount, valueSet, factorialCache));
-    }
-}
-
-function solveRecursive(currentFocusValue, remainingItems, sortedReferenceSet, precomputedFactorials) {
-    if (currentFocusValue < sortedReferenceSet[0]) {
-        return (currentFocusValue * precomputedFactorials[remainingItems]) % MOD_CONSTANT;
-    }
-
-    let runningSum = 0;
-    let upperBoundary = 0;
-    
-    let foundIndex = sortedReferenceSet.findIndex(element => element >= currentFocusValue);
-    if (foundIndex === -1) {
-        upperBoundary = sortedReferenceSet.length;
-    } else {
-        upperBoundary = foundIndex;
-    }
-
-    for (let itemIndex = 0; itemIndex < upperBoundary; itemIndex++) {
-        runningSum = (runningSum + solveRecursive(currentFocusValue % sortedReferenceSet[itemIndex], remainingItems - 1, sortedReferenceSet, precomputedFactorials)) % MOD_CONSTANT;
-    }
-
-    return runningSum;
-}
-
-calculateResult(require("node:fs").readFileSync(0, "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

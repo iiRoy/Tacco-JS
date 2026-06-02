@@ -1,107 +1,95 @@
-const fileSystemModule = require('fs');
+const readAndParseInputData = (sourcePath) => {
+    const rawFileContent = require('fs').readFileSync(sourcePath, 'utf8');
+    return rawFileContent.trim().split("\n");
+};
 
-const standardInputPathSpecifier = '/dev/stdin';
+const extractNextDimensions = (dataLines) => {
+    const dimensionLine = dataLines.shift();
+    const dimensionValues = dimensionLine.split(" ").map(Number);
+    const currentHeight = dimensionValues[0];
+    const currentWidth = dimensionValues[1];
+    const isTerminationCondition = (currentHeight === 0 && currentWidth === 0);
+    return {
+        height: currentHeight,
+        width: currentWidth,
+        isTermination: isTerminationCondition
+    };
+};
 
-const acquireInputLines = () => {
-    try {
-        const rawInputBuffer = fileSystemModule.readFileSync(standardInputPathSpecifier, 'utf8');
-        if (!rawInputBuffer || rawInputBuffer.trim().length === 0) {
-            console.error("Warning: Input source is empty or contains only whitespace. Proceeding with no data.");
-            return [];
-        }
-        return rawInputBuffer.trim().split('\n');
-    } catch (ioError) {
-        console.error(`Failed to read from standard input path '${standardInputPathSpecifier}':`, ioError.message);
-        return [];
+const computeCellHeight = (isFirstGridRow, characterValue, heightFromPreviousRow) => {
+    if (characterValue === ".") {
+        return isFirstGridRow ? 1 : heightFromPreviousRow + 1;
+    } else {
+        return 0;
     }
 };
 
-let bufferedInputLines = acquireInputLines();
+let inputLines = readAndParseInputData('/dev/stdin');
 
 while (true) {
-    const dimensionLine = bufferedInputLines.shift();
+    const currentProblemDimensions = extractNextDimensions(inputLines);
 
-    if (!dimensionLine) {
-        console.error("Error: Unexpected end of input while expecting grid dimensions. Terminating.");
+    if (currentProblemDimensions.isTermination) {
         break;
     }
 
-    const gridSizeDetails = dimensionLine.split(' ').map(str => parseInt(str, 10));
+    const gridHeight = currentProblemDimensions.height;
+    const gridWidth = currentProblemDimensions.width;
 
-    const gridRowsCount = gridSizeDetails[0];
-    const gridColsCount = gridSizeDetails[1];
+    const heightMapGrid = [];
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        const rowCharacters = inputLines.shift().split("");
+        heightMapGrid[rowIndex] = [];
 
-    if (gridRowsCount === 0 && gridColsCount === 0) {
-        break;
+        rowCharacters.forEach((charValue, colIndex) => {
+            const isFirstRow = (rowIndex === 0);
+            const previousRowCellHeight = isFirstRow ? 0 : heightMapGrid[rowIndex - 1][colIndex];
+            heightMapGrid[rowIndex][colIndex] = computeCellHeight(isFirstRow, charValue, previousRowCellHeight);
+        });
     }
 
-    const heightAccumulatorGrid = new Array(gridRowsCount);
-    for (let rIdx = 0; rIdx < gridRowsCount; ++rIdx) {
-        heightAccumulatorGrid[rIdx] = new Array(gridColsCount).fill(0);
-    }
+    let currentCaseMaxArea = 0;
 
-    for (let currentRowIter = 0; currentRowIter < gridRowsCount; ++currentRowIter) {
-        const charRowData = bufferedInputLines.shift();
+    for (let currentRowIndex = 0; currentRowIndex < gridHeight; currentRowIndex++) {
+        const heightStack = [];
+        const currentHistogramRow = heightMapGrid[currentRowIndex];
+        currentHistogramRow[gridWidth] = 0;
 
-        if (!charRowData || charRowData.length !== gridColsCount) {
-            console.error(`Warning: Malformed row data at row ${currentRowIter}. Expected width ${gridColsCount}, got "${charRowData}". Skipping this row's processing.`);
-            heightAccumulatorGrid[currentRowIter].fill(0);
-            continue;
-        }
+        for (let colIndex = 0; colIndex <= gridWidth; colIndex++) {
+            const currentBarHeight = currentHistogramRow[colIndex];
+            const stackLength = heightStack.length;
 
-        const charactersInRow = charRowData.split('');
-
-        for (let currentColIter = 0; currentColIter < gridColsCount; ++currentColIter) {
-            const charInCell = charactersInRow[currentColIter];
-
-            if (charInCell === '.') {
-                heightAccumulatorGrid[currentRowIter][currentColIter] = (currentRowIter === 0) ? 1 : heightAccumulatorGrid[currentRowIter - 1][currentColIter] + 1;
-            } else {
-                heightAccumulatorGrid[currentRowIter][currentColIter] = 0;
-            }
-        }
-    }
-
-    let overallMaxRectangleArea = 0;
-
-    for (let activeRowIndex = 0; activeRowIndex < gridRowsCount; ++activeRowIndex) {
-        const decreasingHeightStack = [];
-        const currentHistogramBars = [...heightAccumulatorGrid[activeRowIndex], 0];
-
-        for (let currentBarColumn = 0; currentBarColumn <= gridColsCount; ++currentBarColumn) {
-            const currentBarHeightValue = currentHistogramBars[currentBarColumn];
-            let effectiveStartColumnForCurrentBar = currentBarColumn;
-
-            if (decreasingHeightStack.length === 0) {
-                if (currentBarHeightValue > 0) {
-                    decreasingHeightStack.push([currentBarHeightValue, effectiveStartColumnForCurrentBar]);
-                }
-            } else if (decreasingHeightStack[decreasingHeightStack.length - 1][0] < currentBarHeightValue) {
-                decreasingHeightStack.push([currentBarHeightValue, effectiveStartColumnForCurrentBar]);
-            } else if (decreasingHeightStack[decreasingHeightStack.length - 1][0] === currentBarHeightValue) {
+            if (stackLength === 0) {
+                heightStack.push([currentBarHeight, colIndex + 1]);
                 continue;
-            } else { // decreasingHeightStack[decreasingHeightStack.length - 1][0] > currentBarHeightValue
-                while (decreasingHeightStack.length > 0) {
-                    const poppedElementDetails = decreasingHeightStack.pop();
-                    const poppedElementHeight = poppedElementDetails[0];
-                    const poppedElementStartIndex = poppedElementDetails[1];
+            }
 
-                    if (currentBarHeightValue > poppedElementHeight) {
-                        decreasingHeightStack.push([poppedElementHeight, poppedElementStartIndex]);
+            const topOfStack = heightStack[stackLength - 1];
+            const topStackHeight = topOfStack[0];
+
+            if (topStackHeight < currentBarHeight) {
+                heightStack.push([currentBarHeight, colIndex]);
+            } else if (topStackHeight === currentBarHeight) {
+                continue;
+            } else {
+                while (heightStack.length > 0) {
+                    const poppedElement = heightStack.pop();
+                    const poppedElementHeight = poppedElement[0];
+                    const poppedElementStartIndex = poppedElement[1];
+
+                    if (currentBarHeight > poppedElementHeight) {
+                        heightStack.push(poppedElement);
                         break;
-                    } else if (currentBarHeightValue === poppedElementHeight) {
+                    } else if (currentBarHeight === poppedElementHeight) {
                         break;
-                    } else { // currentBarHeightValue < poppedElementHeight
-                        const calculatedAreaForPopped = poppedElementHeight * ((currentBarColumn + 1) - poppedElementStartIndex);
-                        overallMaxRectangleArea = Math.max(overallMaxRectangleArea, calculatedAreaForPopped);
-                        effectiveStartColumnForCurrentBar = poppedElementStartIndex;
+                    } else {
+                        const rectangleWidth = (colIndex + 1) - poppedElementStartIndex;
+                        const calculatedArea = poppedElementHeight * rectangleWidth;
+                        currentCaseMaxArea = Math.max(currentCaseMaxArea, calculatedArea);
                     }
                 }
-                if (currentBarHeightValue > 0 && (decreasingHeightStack.length === 0 || decreasingHeightStack[decreasingHeightStack.length - 1][0] < currentBarHeightValue)) {
-                    decreasingHeightStack.push([currentBarHeightValue, effectiveStartColumnForCurrentBar]);
-                }
             }
         }
     }
-    console.log(overallMaxRectangleArea);
+    console.log(currentCaseMaxArea);
 }

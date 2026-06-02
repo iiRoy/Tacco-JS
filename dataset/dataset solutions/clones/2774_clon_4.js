@@ -1,111 +1,206 @@
-let inputLines = [];
-let lineIndex = 0;
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-inputReader.on('line', (line) => { inputLines.push(line); });
-inputReader.on('close', () => {
-    processCalculation();
-    process.exit(0);
+var inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function retrieveNextLine() {
-    if (lineIndex < inputLines.length) {
-        return inputLines[lineIndex++];
-    }
-    throw new Error('End of input data reached.');
+var inputSource;
+var rawLines = [];
+
+inputHandler.on('line', function(inputLine) {
+  rawLines.push(inputLine);
+});
+
+inputHandler.on('close', function() {
+  inputSource = initializeInput(rawLines);
+  console.error('\n↑入力 ↓出力');
+  executeProgram();
+});
+
+function readInt() {
+  return dataTransformer(readNext(), 1);
 }
 
-function extractNumericArray() {
-    return retrieveNextLine().split(' ').map(Number);
+function readStrArr() {
+  return dataTransformer(readNext(), 2);
 }
 
-function emitResult(value) {
-    console.log(value);
+function readIntArr() {
+  return dataTransformer(readNext(), 4);
 }
 
-const PRIME_MODULUS = 1000000007;
-
-function processCalculation() {
-    const initialParameters = extractNumericArray();
-    const totalNodes = initialParameters[0];
-    const availableColors = initialParameters[1];
-
-    const graphAdjacency = new Map();
-
-    for (let i = 0; i < totalNodes; i++) {
-        graphAdjacency.set(i, []);
-    }
-
-    for (let i = 0; i < totalNodes - 1; i++) {
-        const connection = extractNumericArray();
-        const nodeA = connection[0] - 1;
-        const nodeB = connection[1] - 1;
-        graphAdjacency.get(nodeA).push(nodeB);
-        graphAdjacency.get(nodeB).push(nodeA);
-    }
-
-    graphAdjacency.forEach(connections => connections.sort((a, b) => a - b));
-
-    const pathTraversalTracker = new Set();
-
-    const finalCalculatedProduct = determineColoringWays(
-        0,
-        -1,
-        availableColors,
-        availableColors,
-        graphAdjacency,
-        pathTraversalTracker
-    );
-
-    emitResult(finalCalculatedProduct);
+function readCharArr() {
+  return dataTransformer(readNext(), 6);
 }
 
-function determineColoringWays(
-    currentVertex,
-    previousVertex,
-    currentVertexColorOptions,
-    overallColorLimit,
-    adjacencyStructure,
-    visitedTracker
-) {
-    visitedTracker.add(currentVertex);
+function readNext() {
+  return inputSource.readNextLine();
+}
 
-    let ancestorConstraintCount = 0;
-    if (previousVertex === -1) {
-        ancestorConstraintCount = 1;
-    } else {
-        ancestorConstraintCount = 2;
+function hasMore() {
+  return inputSource.hasMoreLines();
+}
+
+function initializeInput(inputData) {
+  return {
+    lineList: inputData,
+    currentIdx: 0,
+    maxLines: inputData.length,
+
+    hasMoreLines: function() {
+      return this.currentIdx < this.maxLines;
+    },
+
+    readNextLine: function() {
+      if (this.hasMoreLines()) {
+        return this.lineList[this.currentIdx++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
+  };
+}
 
-    let subtreeProduct = currentVertexColorOptions;
+function outputResult(s) {
+  console.log(s);
+}
 
-    let childProcessingOrder = 0;
-    const neighborsOfCurrent = adjacencyStructure.get(currentVertex) || [];
+function debugLog(s) {
+  console.error('debug:' + require('util').inspect(s, false, null));
+}
 
-    const eligibleChildren = neighborsOfCurrent.filter(
-        neighbor => !visitedTracker.has(neighbor)
-    ).sort((a, b) => a - b);
-
-    for (const childNode of eligibleChildren) {
-        const childNodeColorOptions =
-            overallColorLimit - childProcessingOrder - ancestorConstraintCount;
-
-        const childSubtreeResult = determineColoringWays(
-            childNode,
-            currentVertex,
-            childNodeColorOptions,
-            overallColorLimit,
-            adjacencyStructure,
-            visitedTracker
-        );
-
-        subtreeProduct = (subtreeProduct * childSubtreeResult) % PRIME_MODULUS;
-        subtreeProduct = (subtreeProduct + PRIME_MODULUS) % PRIME_MODULUS;
-        
-        childProcessingOrder++;
+function dataTransformer(inputVal, transformType) {
+  try {
+    switch (transformType) {
+      case 1:
+        return parseInt(inputVal);
+      case 2:
+        return inputVal.split(' ');
+      case 4:
+        return inputVal.split(' ').map(Number);
+      case 6:
+        return inputVal.split('');
+      case 7:
+        return inputVal.split('').map(Number);
+      case 8:
+        return inputVal.join(' ');
+      case 9:
+        return inputVal.join('\n');
+      case 0:
+        return inputVal.join('');
+      default:
+        return inputVal;
     }
+  } catch (e) {
+    return inputVal;
+  }
+}
 
-    return (subtreeProduct + PRIME_MODULUS) % PRIME_MODULUS;
+function createGraph(nodeCount) {
+  var graph = new Array(nodeCount);
+
+  for (var nodeId = 0; nodeId < nodeCount; nodeId++) {
+    graph[nodeId] = [];
+  }
+
+  return graph;
+}
+
+function addUndirectedEdge(graph, leftNode, rightNode) {
+  graph[leftNode].push(rightNode);
+  graph[rightNode].push(leftNode);
+}
+
+function multiplyLikeOriginal(currentValue, factorValue, moduloValue) {
+  currentValue *= factorValue;
+  currentValue %= moduloValue;
+  return currentValue;
+}
+
+function countAvailableColorsForChild(parentNode, childOrder, colorLimit) {
+  if (parentNode === -1) {
+    return colorLimit - childOrder;
+  }
+
+  return colorLimit - 1 - childOrder;
+}
+
+function calculateColoringProduct(graph, colorLimit) {
+  var moduloValue = 1000000007;
+  var answer = 1;
+
+  var stack = [];
+  stack.push({
+    node: 0,
+    parent: -1
+  });
+
+  var visited = new Array(graph.length).fill(false);
+  visited[0] = true;
+
+  answer = multiplyLikeOriginal(answer, colorLimit, moduloValue);
+
+  while (stack.length > 0) {
+    var current = stack.pop();
+    var currentNode = current.node;
+    var parentNode = current.parent;
+
+    var childOrder = 1;
+
+    for (var edgeIndex = 0; edgeIndex < graph[currentNode].length; edgeIndex++) {
+      var nextNode = graph[currentNode][edgeIndex];
+
+      if (nextNode === parentNode) {
+        continue;
+      }
+
+      if (visited[nextNode]) {
+        continue;
+      }
+
+      visited[nextNode] = true;
+
+      var availableColorCount = countAvailableColorsForChild(
+        parentNode,
+        childOrder,
+        colorLimit
+      );
+
+      answer = multiplyLikeOriginal(
+        answer,
+        availableColorCount,
+        moduloValue
+      );
+
+      stack.push({
+        node: nextNode,
+        parent: currentNode
+      });
+
+      childOrder++;
+    }
+  }
+
+  return answer;
+}
+
+function executeProgram() {
+  var firstLineData = readIntArr();
+
+  var nodeCount = firstLineData[0];
+  var colorLimit = firstLineData[1];
+
+  var graph = createGraph(nodeCount);
+
+  for (var edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+    var edgeData = readIntArr();
+
+    var leftNode = edgeData[0] - 1;
+    var rightNode = edgeData[1] - 1;
+
+    addUndirectedEdge(graph, leftNode, rightNode);
+  }
+
+  var result = calculateColoringProduct(graph, colorLimit);
+
+  outputResult(result);
 }

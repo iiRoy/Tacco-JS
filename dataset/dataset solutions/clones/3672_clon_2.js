@@ -1,82 +1,79 @@
-// This function is designed to handle and process a multi-line string input.
-function     processInput (    rawData    ) {
-    // The raw input string is split into an array of individual lines.
-    var    lineSegments    = rawData.split('\n');
-    // The first line of the input specifies the total number of test cases.
-    var    testCount    = parseInt(lineSegments[0]   ,   10);
+function processInput(rawData) {
+  // Split the entire input string into individual lines.
+  var lineSegments = rawData.split('\n');
 
-    // A loop iterates through each test case, starting from the second line of input.
-    for (
-        var currentCase = 1;
-        currentCase <= testCount;
-        currentCase++
-    ) {
-        // A boolean-like flag, initialized to 0, indicates if the outcome for the current case has been determined.
-        var    outcomeDetermined = 0;
+  // The first line indicates the total number of test cases to process.
+  var caseCount = parseInt(lineSegments[0], 10);
 
-        // The current line is further split into an array of strings based on space delimiters.
-        var    valueStrings    = lineSegments[currentCase].split(' ');
+  // Iterate through each test case, starting from the second line (index 1).
+  for (var idx = 1; idx <= caseCount; idx++) {
+    // Initialize a boolean-like flag for tracking a specific condition.
+    var foundSolution = 0;
 
-        // Four primary integer values are parsed from the split strings for the current test.
-        var    processValue     = parseInt(valueStrings[0]);
-        var    thresholdValue   = parseInt(valueStrings[1]);
-        var    upperBound       = parseInt(valueStrings[2]);
-        var    adjustmentValue  = parseInt(valueStrings[3]);
+    // Split the current line into numeric components.
+    var currentNumbers = lineSegments[idx].split(' ');
 
-        // The initial state of 'processValue' is stored for later comparison purposes.
-        var    originalProcessValue = processValue;
-        // A temporary calculation is performed using the modulo operator.
-        var    tempProcessValue     = processValue % thresholdValue;
+    // Parse the four integer values for the current test case.
+    var valX = parseInt(currentNumbers[0]);
+    var valY = parseInt(currentNumbers[1]);
+    var valZ = parseInt(currentNumbers[2]);
+    var valW = parseInt(currentNumbers[3]);
 
-        // Series of conditional checks to determine an early "No" or "Yes" outcome.
-        if (processValue < thresholdValue) {
-            console.log("No");
-            continue; // Move to the next test case
-        }
+    // Store the initial value of valX for later comparison.
+    var initialX = valX;
 
-        if (adjustmentValue < thresholdValue) {
-            console.log("No");
-            continue; // Move to the next test case
-        }
+    // Calculate the remainder of valX divided by valY.
+    var tempX = valX % valY;
 
-        if (processValue < upperBound) {
-            console.log("Yes");
-            continue; // Move to the next test case
-        }
-
-        // The 'processValue' is re-assigned based on the temporary value and the threshold.
-        processValue = tempProcessValue + thresholdValue;
-
-        // The main iterative processing loop begins.
-        while (processValue >= thresholdValue) {
-            // Conditional logic applies different transformations to 'processValue'.
-            if ((processValue - thresholdValue) <= upperBound) {
-                tempProcessValue = processValue - thresholdValue + adjustmentValue;
-                processValue     = tempProcessValue;
-            }
-            else {
-                tempProcessValue = processValue - thresholdValue;
-                processValue     = tempProcessValue;
-            }
-
-            // A check within the loop to see if a specific state has been reached.
-            if (processValue >= (2 * originalProcessValue) || processValue === originalProcessValue) {
-                console.log("Yes");
-                outcomeDetermined = 1; // Set flag to indicate outcome found
-                break; // Exit the while loop
-            }
-        }
-        // If the 'outcomeDetermined' flag is still 0 after the loop, it means no "Yes" was found.
-        if (outcomeDetermined === 0) {
-            console.log("No");
-        }
+    // First set of conditional checks.
+    // If valX is less than valY, it's an immediate "No".
+    if (valX < valY) {
+      console.log("No");
+      continue; // Move to the next test case.
     }
+
+    // If valW is less than valY, it's also an immediate "No".
+    if (valW < valY) {
+      console.log("No");
+      continue; // Move to the next test case.
+    }
+
+    // If valX is less than valZ, it's an immediate "Yes".
+    if (valX < valZ) {
+      console.log("Yes");
+      continue; // Move to the next test case.
+    }
+
+    // Adjust valX using the calculated remainder and valY.
+    valX = tempX + valY;
+
+    // Main loop for the core logic.
+    while (valX >= valY) {
+      // Check a specific condition involving valX, valY, and valZ.
+      if ((valX - valY) <= valZ) {
+        // Update tempX based on the condition.
+        tempX = valX - valY + valW;
+        valX = tempX; // Reassign valX.
+      } else {
+        // Update tempX if the condition is not met.
+        tempX = valX - valY;
+        valX = tempX; // Reassign valX.
+      }
+
+      // Check for a termination condition for the loop.
+      if (valX >= 2 * initialX || valX == initialX) {
+        console.log("Yes"); // Output "Yes" if condition met.
+        foundSolution = 1; // Set the flag.
+        break; // Exit the while loop.
+      }
+    }
+
+    // After the loop, if the flag was not set, output "No".
+    if (foundSolution == 0) {
+      console.log("No");
+    }
+  }
 }
 
-// The program initiates by reading data from standard input using Node.js 'fs' module.
-processInput(
-    require('fs').readFileSync(
-        '/dev/stdin',
-        'utf8'
-    )
-);
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

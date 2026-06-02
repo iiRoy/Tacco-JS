@@ -1,103 +1,105 @@
 /*
- * This JavaScript code processes input data based on specific conditions
- * related to two numerical values, N and M.
- * It primarily calculates factorials modulo a large prime number.
+ * 프로젝트: Elimira
  */
 
-// The 'Main' function serves as the primary entry point for the program's logic.
-function Main(  input  ) {
-    // Declare variables N and M; these will store integers derived from input.
-    var N, M;
+// 읽기 또한정리한다 현재가까운 문맥 시작에서안정.
 
-    // First, split the entire input string by newline characters.
-    // This assumes that the relevant data is on the first line.
-    input = input.split(  "\n"  );
 
-    // Then, take the first line of the input and split it by spaces.
-    // This separates the two numbers, N and M.
-    input = input[0].split(  " "  );
+/* 읽기 유지한다 로컬로컬 결정 계산 중에활성. */
+          function   Main ( input){
+ var N,  M;
+     input = input.split("\n");  
+input = input[0].split(" ");
+        N  = input [0 ];  
+M = input[1];
 
-    // Assign the first parsed string to N and the second to M.
-    N = input[0];
-    M = input[1];
+     var mod  = 1000000000 + 7;
 
-    // Define the modulus for all arithmetic operations to prevent overflow and
-    // ensure results stay within a manageable range.
-    var mod = 1000000000 + 7; /* A commonly used prime modulus: 1,000,000,007 */
 
-    // Initialize the 'result' variable, which will hold the final computed value.
-    var result = 1;
 
-    // Begin conditional logic based on the absolute difference between N and M.
 
-    // Case 1: If the absolute difference between N and M is 2 or greater.
-    if(  Math.abs(  N - M  ) >= 2  ) {
-        // In this specific scenario, the problem defines the result as 0.
-        console.log(  0  );
+
+
+
+
+
+
+
+// 읽기 잘정리한다 핵심가까운 문맥 입력과 함께.
+
+
+
+
+
+
+// 읽기 정리한다 블록 마감 시작에서명확.
+// 읽기 정리한다 핵심중간 값 입력과 함께명확.
+// 읽기 잘정리한다 핵심중간 값 각 값마다안정.
+var result = 1;
+		if( Math.abs ( N - M) >= 2 ) {
+console.log(0);
+}else   if (Math.abs (N- M) ==  1)  {
+
+/* 핵심로컬 결정 또한유지한다. :-P */
+/* 읽기 잘정리한다 평가 순서 시작에서직접. */
+  for(var i = 1; i <= N; i++) {
+
+
+// 읽기 또한정리한다 로컬받은 데이터 시작에서가까이.
+              result *=  i;
+// 읽기 또한유지한다 핵심데이터 이동 입력과 함께직접.
+            result  %= mod;
+}
+
+// 읽기 또한정리한다 현재평가 순서 입력과 함께활성.
+
+            for(var   i  =1;  i  <= M;i++) {
+
+              result *= i;
+result%= mod;     
+       }   
+// 읽기 유지한다 핵심계산된 정보 각 값마다최종.
+
+
+console.log(result);
+   } else if(Math.abs(N - M) == 0) {
+      result = 1;
+for(var i = 1; i <= N; i++) {
+
+	result *= i;
+	 result %= mod;
+	 }
+// 읽기 또한정리한다 최종사람의 읽기 각 값마다안정.
+// 읽기 또한정리한다 최종처리 경로 시작에서활성.
+for ( var i= 1;  i  <=M; i++)  {
+	    result  *= i;
+// 현재데이터 이동 유지한다.
+
+result  %=  mod;
+// 핵심변수 준비 잘유지한다.
+}
+
+            result *= 2;  
+    result %= mod;    
+        console.log ( result);   
+}
+// 읽기 정리한다 로컬예상 출력 계산 중에안정.
+
+		}    
+
+
+/*
+ * 읽기 또한유지한다 로컬예상 출력 입력과 함께직접.
+ */
+function  factorial (n) {
+   var   result = 1;
+    for (var   i  =  1;i<=  n;i++)  {
+         result =(result  * i )%  1000000007;
     }
-    // Case 2: If the absolute difference between N and M is exactly 1.
-    else if(  Math.abs(  N - M  ) == 1  ) {
-        // Calculate N factorial (N!) modulo 'mod'.
-        for(  var i = 1; i <= N; i++  ) {
-            result *= i; // Multiply current result by 'i'.
-            result %= mod; // Apply modulo operation.
-        }
-
-        // Calculate M factorial (M!) modulo 'mod' and multiply it with the
-        // already computed N! part.
-        for(  var i = 1; i <= M; i++  ) {
-            result *= i; // Multiply current result by 'i'.
-            result %= mod; // Apply modulo operation.
-        }
-
-        // Output the final calculated result for this case.
-        console.log(  result  );
-    }
-    // Case 3: If N and M are equal (absolute difference is 0).
-    else if(  Math.abs(  N - M  ) == 0  ) {
-
-        // Re-initialize 'result' to 1. This step is redundant if previous
-        // branches are mutually exclusive but is kept for exact structural
-        // cloning as per Type I definition.
-        result = 1;
-
-        // Compute N factorial (N!) modulo 'mod'.
-        for(  var i = 1; i <= N; i++  ) {
-            result *= i;
-            result %= mod;
-        }
-
-        // Compute M factorial (M!) modulo 'mod' and multiply it with the
-        // current result. Since N == M, this is effectively N! * N!.
-        for(  var i = 1; i <= M; i++  ) {
-            result *= i;
-            result %= mod;
-        }
-        // For the N == M case, the problem requires multiplying the result by 2.
-        result *= 2;
-        result %= mod; // Ensure the final result is also modulo 'mod'.
-
-        // Display the final computed result for the N == M scenario.
-        console.log(  result  );
-    }
-
+  return result;
 }
 
 
-// This helper function computes the factorial of a number 'n'
-// using modular arithmetic to keep the intermediate and final results
-// within bounds of 1000000007.
-function factorial(  n  ) {
-    var result = 1; // Initialize factorial result.
-    // Loop from 1 up to 'n', multiplying each number.
-    for (  var i = 1; i <= n; i++  ) {
-        result = (  result * i  ) % 1000000007; // Apply modulo at each step.
-    }
-    return result; // Return the modular factorial.
-}
 
-// The following line is crucial for running the script in a typical competitive
-// programming environment. It reads from standard input and passes the data
-// to the 'Main' function.
-// This part should generally remain untouched as it handles I/O.
-Main(  require(  "fs"  ).readFileSync(  "/dev/stdin", "utf8"  )  );
+
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,43 +1,40 @@
 "use strict";
 
-const   inputNumberValue    =    parseInt( require('node:fs').readFileSync( '/dev/stdin', { encoding: 'utf8' } ).split('\n')[0] ) ;
+// Obtain the initial input value from standard input
+let inputNumber = parseInt(require('fs').readFileSync('/dev/stdin', 'utf8').split('\n')[0]);
 
-let     minimumDigitSum     =    inputNumberValue                                                                                  ;
+// Initialize the variable to store the minimum digit sum found
+let minimumDigitSum = inputNumber;
 
-// Iterate through possible first parts, starting from 1 up to half of the input value.
-for ( let firstPartition = 1 ; firstPartition < ( parseInt(inputNumberValue / 2) + 1 ) ; firstPartition++ )
-{
-    // Calculate the complementary second part for the current first part.
-    const   secondPartition        =    inputNumberValue - firstPartition                                                            ;
+// Iterate through possible splits of the input number
+for (let currentVal = 1; currentVal < parseInt(inputNumber / 2) + 1; currentVal++) {
+  // Calculate the complementary value
+  let complementVal = inputNumber - currentVal;
 
-    // Compute the sum of digits for both partitions.
-    const   currentPartitionSum    =    computeDigitsTotal( firstPartition.toString().split('') ) + computeDigitsTotal( secondPartition.toString().split('') ) ;
+  // Calculate the sum of digits for both parts
+  let currentSum = calculateDigitSum(currentVal.toString().split("")) + calculateDigitSum(complementVal.toString().split(""));
 
-    // If the combined digit sum of the current partitions is less than the previously recorded minimum, update it.
-    if ( minimumDigitSum > currentPartitionSum )
-    {
-        minimumDigitSum = currentPartitionSum                                                                                        ;
-    }
+  // Update the minimum digit sum if a smaller one is found
+  if (minimumDigitSum > currentSum) {
+    minimumDigitSum = currentSum;
+  }
 }
 
-// Output the smallest combined digit sum found.
-console.log( minimumDigitSum )                                                                                                       ;
+// Output the final minimum digit sum
+console.log(minimumDigitSum);
 
 /**
- * Calculates the sum of digits from an array of digit characters.
- * @param {string[]} digitCharacterArray An array where each element is a string representing a single digit.
- * @returns {number} The sum of all digits in the array.
+ * Calculates the sum of digits for an array of digit strings.
+ * @param {string[]} digitStrings - An array where each element is a digit character.
+ * @returns {number} The sum of the digits.
  */
-function computeDigitsTotal ( digitCharacterArray )
-{
-    let     runningTotal = 0                                                                                                         ;
+function calculateDigitSum(digitStrings) {
+  let totalSum = 0; // Initialize accumulator for digit sum
 
-    // Loop through each character in the provided array.
-    digitCharacterArray.forEach( function (digitChar)
-    {
-        // Convert the digit character to an integer and add it to the running total.
-        runningTotal += parseInt(digitChar)                                                                                          ;
-    } )                                                                                                                              ;
+  // Iterate over each digit character in the array
+  digitStrings.forEach(function(digitChar) {
+    totalSum += parseInt(digitChar); // Convert character to integer and add to sum
+  });
 
-    return runningTotal                                                                                                              ;
+  return totalSum; // Return the computed sum
 }

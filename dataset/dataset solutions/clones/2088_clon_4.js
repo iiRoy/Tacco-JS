@@ -1,39 +1,37 @@
-const acquireInputSource = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+function acquireInput() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-const contentTransformers = {
-  "identity": (val) => val,
-  "toInteger": (val) => parseInt(val, 10),
-  "splitBySpace": (val) => val.split(" "),
-  "splitByLine": (val) => val.split("\n"),
-  "numbersBySpace": (val) => val.split(" ").map(Number),
-  "numbersByLine": (val) => val.split("\n").map(Number),
-  "splitToChars": (val) => val.split(""),
-  "numbersByChar": (val) => val.split("").map(Number),
-};
+function parseNumericLine(lineContent) {
+  return lineContent.split(" ").map(Number);
+}
 
-const processRetailOffers = (sourcePayload) => {
-  const lineSegments = contentTransformers.splitByLine(sourcePayload);
+function parseAllLines(fullText) {
+  return fullText.split("\n");
+}
 
-  const [componentCountX, componentCountY, offerCount] = contentTransformers.numbersBySpace(lineSegments[0]);
+function processData(rawData) {
+  const allInputLines = parseAllLines(rawData);
 
-  const baseItemsX = contentTransformers.numbersBySpace(lineSegments[1]);
-  const baseItemsY = contentTransformers.numbersBySpace(lineSegments[2]);
+  const [countAlpha, countBeta, numOffers] = parseNumericLine(allInputLines[0]);
+  const alphaPrices = parseNumericLine(allInputLines[1]);
+  const betaPrices = parseNumericLine(allInputLines[2]);
 
-  const discountRecords = lineSegments.slice(3).map(contentTransformers.numbersBySpace);
-
-  const initialPriceCandidates = baseItemsX.flatMap(itemX =>
-    baseItemsY.map(itemY => itemX + itemY)
+  const initialCombinedPrices = alphaPrices.flatMap(priceA =>
+    betaPrices.map(priceB => priceA + priceB)
   );
 
-  const allPriceVariations = discountRecords.reduce((accumulator, currentRecord) => {
-    const [targetItemX, targetItemY, priceReduction] = currentRecord;
-    const basePriceIndex = (targetItemX - 1) * componentCountY + (targetItemY - 1);
-    
-    accumulator.push(initialPriceCandidates[basePriceIndex] - priceReduction);
-    return accumulator;
-  }, [...initialPriceCandidates]);
+  const discountOfferLines = allInputLines.slice(3);
 
-  console.log(Math.min(...allPriceVariations));
-};
+  const discountedPrices = discountOfferLines.map(offerLine => {
+    const [idxX, idxY, discountAmount] = parseNumericLine(offerLine);
+    const baseIndex = (idxX - 1) * countBeta + (idxY - 1);
+    return initialCombinedPrices[baseIndex] - discountAmount;
+  });
 
-processRetailOffers(acquireInputSource());
+  const allPossiblePrices = [...initialCombinedPrices, ...discountedPrices];
+
+  console.log(Math.min(...allPossiblePrices));
+}
+
+processData(acquireInput());

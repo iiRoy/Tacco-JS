@@ -1,24 +1,20 @@
-const fileSystemModule = require('fs');
-
-let entirePayload;
-try {
-  entirePayload = fileSystemModule.readFileSync(0, 'utf8');
-} catch (issue) {
-  entirePayload = '';
-}
-
-const originalSequence = 'Hoshino';
-const newSequence = 'Hoshina';
-
-let modifiedPayload;
-const matchPosition = entirePayload.indexOf(originalSequence);
-
-if (matchPosition !== -1) {
-  const initialSegment = entirePayload.slice(0, matchPosition);
-  const trailingSegment = entirePayload.slice(matchPosition + originalSequence.length);
-  modifiedPayload = initialSegment + newSequence + trailingSegment;
-} else {
-  modifiedPayload = entirePayload;
-}
-
-process.stdout.write(modifiedPayload + '\n');
+let accumulatedContent = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (dataSegment) => {
+  accumulatedContent += dataSegment;
+});
+process.stdin.on('end', () => {
+  const searchPattern = 'Hoshino';
+  const substituteValue = 'Hoshina';
+  const firstOccurrencePosition = accumulatedContent.indexOf(searchPattern);
+  let processedResult;
+  if (firstOccurrencePosition !== -1) {
+    processedResult = accumulatedContent.substring(0, firstOccurrencePosition) +
+                      substituteValue +
+                      accumulatedContent.substring(firstOccurrencePosition + searchPattern.length);
+  } else {
+    processedResult = accumulatedContent;
+  }
+  console.log(processedResult);
+});

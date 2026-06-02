@@ -1,49 +1,21 @@
-const acquireSourceData = () => require("node:fs").readFileSync("/dev/stdin", "utf8").trim();
+function evaluateNumericSequence(sourceData) {
+  const numericalElements = sourceData.split('\n').slice(1, 2)[0].split(' ').map(Number);
 
-const parseNumericSequence = (fullContent) => {
-    const linePattern = /(?:.*\n)(.*)/;
-    const secondLineMatch = fullContent.match(linePattern);
-    
-    let processedValues = [];
-    if (secondLineMatch && secondLineMatch[1]) {
-        const digitClusters = secondLineMatch[1].match(/\d+/g);
-        if (digitClusters) {
-            processedValues = digitClusters.reduce((collectorArray, textFragment) => {
-                collectorArray.push(Number(textFragment));
-                return collectorArray;
-            }, []);
-        }
-    }
-    return processedValues;
-};
+  const fourMultiplesCount = numericalElements.filter(
+    (currentValue) => currentValue % 4 === 0
+  ).length;
 
-const tallyDivisibility = (numericalCollection) => {
-    return numericalCollection.reduce((accumulatedCounts, currentElement) => {
-        if (currentElement % 4 === 0) {
-            accumulatedCounts.divisibleByFour = (accumulatedCounts.divisibleByFour || 0) + 1;
-        } else if (currentElement % 2 === 0) {
-            accumulatedCounts.divisibleByTwoNotFour = (accumulatedCounts.divisibleByTwoNotFour || 0) + 1;
-        }
-        return accumulatedCounts;
-    }, { divisibleByFour: 0, divisibleByTwoNotFour: 0 });
-};
+  const twoMultiplesOnlyCount = numericalElements.filter(
+    (currentValue) => currentValue % 2 === 0 && currentValue % 4 !== 0
+  ).length;
 
-const performEvaluation = () => {
-    const initialInput = acquireSourceData();
-    const parsedNumericalArray = parseNumericSequence(initialInput);
-    const categorizedCounts = tallyDivisibility(parsedNumericalArray);
+  const adjustedTwoCount = Math.max(0, twoMultiplesOnlyCount - 2);
 
-    let countOfFourMultiples = categorizedCounts.divisibleByFour;
-    let countOfTwoNotFourMultiples = categorizedCounts.divisibleByTwoNotFour;
+  const elementCount = numericalElements.length;
 
-    let adjustedTwoNotFourCount = countOfTwoNotFourMultiples - 2;
-    adjustedTwoNotFourCount = (adjustedTwoNotFourCount < 0) ? 0 : adjustedTwoNotFourCount;
+  const conditionResult = (fourMultiplesCount * 3 + adjustedTwoCount) >= elementCount;
 
-    const totalQuantity = parsedNumericalArray.length;
+  console.log(conditionResult ? "Yes" : "No");
+}
 
-    const finalCriterionMet = (countOfFourMultiples * 3 + adjustedTwoNotFourCount >= totalQuantity);
-
-    process.stdout.write(finalCriterionMet ? "Yes" : "No");
-};
-
-performEvaluation();
+evaluateNumericSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());

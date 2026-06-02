@@ -1,62 +1,77 @@
-const platformIdentifier = typeof require !== 'undefined';
+const fs = require('fs');
 
-function obtainRawData() {
-  if (!platformIdentifier) {
-    return document.getElementById('input').value;
+const source = fs.readFileSync(0, 'utf8');
+const lines = source.split('\n');
+const total = parseInt(lines[0]);
+const sequence = lines.slice(1, total + 1).map(function (line) {
+  return parseInt(line);
+});
+
+function sameAsOriginalForOddValues(list) {
+  if (list.length === 0) {
+    return 1;
   }
-  return require('fs').readFileSync('/dev/stdin').toString();
+
+  const slots = [list[0]];
+
+  list.slice(1).forEach(function (value) {
+    slots[placeFor(slots, value)] = value;
+  });
+
+  return slots.length;
 }
 
-function outputDiagnostic(infoPayload) {
-  if (!platformIdentifier) {
-    console.error(infoPayload);
-  }
-}
-
-function locateAppropriateIndex(dataArray, targetElement, lowerBound = 0, upperBound = dataArray.length) {
-  if (lowerBound === upperBound) {
-    return lowerBound;
-  }
-
-  const middleIndex = Math.floor(lowerBound + (upperBound - lowerBound) / 2);
-
-  if (dataArray[middleIndex] < targetElement) {
-    return locateAppropriateIndex(dataArray, targetElement, middleIndex + 1, upperBound);
-  } else {
-    return locateAppropriateIndex(dataArray, targetElement, lowerBound, middleIndex);
-  }
-}
-
-function calculateOptimalSubsequenceLength(numericSeries) {
-  if (numericSeries.length === 0) {
+function placeFor(slots, value) {
+  if (slots.length === 0 || value <= slots[0]) {
     return 0;
   }
 
-  const resultingTails = numericSeries.slice(1).reduce((currentTails, currentNumber) => {
-    const potentialInsertionPoint = locateAppropriateIndex(currentTails, currentNumber);
+  let low = 0;
+  let high = slots.length;
 
-    if (potentialInsertionPoint === currentTails.length) {
-      currentTails.push(currentNumber);
+  while (low + 1 < high) {
+    const middle = Math.floor((low + high + 1) / 2);
+    if (slots[middle] < value) {
+      low = middle;
     } else {
-      currentTails[potentialInsertionPoint] = currentNumber;
+      high = middle;
     }
-    outputDiagnostic(currentTails);
-    return currentTails;
-  }, [numericSeries[0]]);
+  }
 
-  return resultingTails.length;
+  return low + 1;
 }
 
-function initiateProcessing() {
-  const acquiredData = obtainRawData();
-  const dataLines = acquiredData.split('\n');
+function longestByIndependentSearch(list) {
+  if (list.length === 0) {
+    return 1;
+  }
 
-  const sequenceQuantity = Number.parseInt(dataLines[0], 10);
-  const numberCollection = dataLines.slice(1, sequenceQuantity + 1).map(individualLine => Number.parseInt(individualLine, 10));
+  const bestEndingHere = new Array(list.length).fill(1);
+  let answer = 1;
 
-  console.log(calculateOptimalSubsequenceLength(numberCollection));
+  for (let right = 0; right < list.length; right++) {
+    for (let left = 0; left < right; left++) {
+      if (list[left] < list[right]) {
+        const possible = bestEndingHere[left] + 1;
+        if (possible > bestEndingHere[right]) {
+          bestEndingHere[right] = possible;
+        }
+      }
+    }
+    if (bestEndingHere[right] > answer) {
+      answer = bestEndingHere[right];
+    }
+  }
+
+  return answer;
 }
 
-if (platformIdentifier) {
-  initiateProcessing();
-}
+const hasParsedHole = sequence.some(function (value) {
+  return Number.isNaN(value);
+});
+
+const result = hasParsedHole
+  ? sameAsOriginalForOddValues(sequence)
+  : longestByIndependentSearch(sequence);
+
+console.log(result);

@@ -1,74 +1,34 @@
-/*
- *  This program reads input from standard input,
- *  generates an arithmetic sequence,
- *  performs a series of operations on it,
- *  and finally outputs a specific element.
- */
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
+let dataLines = rawData.trim().split("\n"); // Split input into an array of lines
 
-var getModule = require;
+const sequenceLength = dataLines.shift() - 0; // Get the length of the sequence, convert to number
 
-// Retrieve all content from the designated input file path.
-var fileContent = getModule('fs') . readFileSync (
-    '/dev/stdin',
-    'utf8'
-);
+const [firstTerm, commonDifference] = dataLines.shift().split(" ").map(Number); // Get initial term and common difference
 
+let resultArray = []; // Initialize an array to hold the generated sequence
 
-// Process the raw input: trim whitespace and split into an array of lines.
-var lineArray = fileContent . trim ( ) . split ( "\n" ) ;
-
-
-// The very first line specifies the total number of elements for our sequence.
-var countElements = parseInt ( lineArray . shift ( ) ) ;
-
-
-// The second line provides the initial term and the common difference.
-var [ startValue , difference ] = lineArray . shift ( ) . split ( " " ) . map ( parseInt ) ;
-
-
-// Initialize an empty array that will store our arithmetic progression.
-var sequenceResult = [ ] ;
-
-
-// Populate the sequence with 'countElements' terms.
-for ( var idx = 0 ;
-      idx < countElements ;
-      idx++
-) {
-    sequenceResult . push ( startValue + idx * difference ) ;
+// Generate the arithmetic sequence
+for (let idx = 0; idx < sequenceLength; idx++) {
+    resultArray.push(firstTerm + idx * commonDifference);
 }
 
+const operationCount = dataLines.shift() - 0; // Get the number of operations to perform
 
-// The next line indicates how many modification operations are to be performed.
-var operationNum = parseInt ( lineArray . shift ( ) ) ;
+// Process each operation
+for (let opIdx = 0; opIdx < operationCount; opIdx++) {
+    const [operationType, firstIndex, secondIndex] = dataLines.shift().split(" ").map(Number); // Parse operation details
 
-
-// Iterate through each specified operation.
-for ( var opCounter = 0 ; opCounter < operationNum ; opCounter ++ )
-{
-    // Each operation consists of an action type and two 1-based indices.
-    var [ actionType , firstPos , secondPos ] = lineArray . shift ( ) . split ( " " ) . map ( parseInt ) ;
-
-    // If the action type is 0, swap the elements at the two given positions.
-    if ( actionType === 0 )
-    {
-        [ sequenceResult [ firstPos - 1 ] ,
-          sequenceResult [ secondPos - 1 ] ] =
-        [ sequenceResult [ secondPos - 1 ] ,
-          sequenceResult [ firstPos - 1 ] ] ;
-    }
-    // Otherwise, assign the value from the second position to the first position.
-    else
-    {
-        sequenceResult [ firstPos - 1 ] = sequenceResult [ secondPos - 1 ] ;
+    // Perform swap or assignment based on operation type
+    if (operationType === 0) {
+        // Swap elements at (firstIndex - 1) and (secondIndex - 1)
+        [resultArray[firstIndex - 1], resultArray[secondIndex - 1]] = [resultArray[secondIndex - 1], resultArray[firstIndex - 1]];
+    } else {
+        // Assign value from (secondIndex - 1) to (firstIndex - 1)
+        resultArray[firstIndex - 1] = resultArray[secondIndex - 1];
     }
 }
 
+const targetIndex = dataLines.shift() - 0; // Get the final index to retrieve
 
-// The final line of input specifies the 1-based index of the element to output.
-var finalIndex = parseInt ( lineArray . shift ( ) ) ;
-
-
-// Display the value of the element at the calculated final index to the console.
-console . log ( sequenceResult [ finalIndex - 1 ] ) ;
+console.log(resultArray[targetIndex - 1]); // Output the element at the specified index

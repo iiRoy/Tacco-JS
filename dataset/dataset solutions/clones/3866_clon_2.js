@@ -1,55 +1,56 @@
-// This module defines a primary function to process a text-based input.
-function Processor( inputStr ) {
-  // Initially, the input is a single string; we parse it into an array of lines.
-  inputStr = inputStr.split( '\n' );
+function ProcessInput(inputLines) {
+  // The input string is first split into individual lines.
+  inputLines = inputLines.split("\n");
 
-  // The very first line of the input is interpreted as a numeric value,
-  // indicating the total number of entries or dimensions.
-  let countVal = +inputStr[0];
+  // The first line of input provides the dimension for our operations.
+  const dimension = +inputLines[0];
 
-  // An array is prepared to hold the processed textual components.
-  var dataMatrix = [];
+  // An array is initialized to hold processed string data.
+  let stringMatrix = [];
 
-  // A loop to populate the data structure. Each input line (after the first)
-  // is duplicated and stored at two distinct positions within the array.
-  for ( var idxA = 0; idxA < countVal; idxA++ ) {
-    // The concatenation operation effectively doubles the string content.
-    dataMatrix[ idxA + countVal ] = dataMatrix[ idxA ] = inputStr[ idxA + 1 ] + inputStr[ idxA + 1 ];
+  // This loop populates the stringMatrix. Each relevant input line (from index 1 to 'dimension')
+  // is duplicated and stored at two positions: 'idx' and 'idx + dimension'.
+  for (let rowIdx = 0; rowIdx < dimension; rowIdx++) {
+    stringMatrix[rowIdx + dimension] = stringMatrix[rowIdx] = inputLines[rowIdx + 1] + inputLines[rowIdx + 1];
   }
 
-  // A variable is set up to accumulate the aggregate outcome of subsequent calculations.
-  let finalResult = 0;
+  // A variable to accumulate the total count of symmetric configurations.
+  let totalCount = 0;
 
-  // These nested loops iterate through all possible combinations of row and column displacements.
-  for ( idxA = 0; idxA < countVal; idxA++ )
-    for ( let colIdx = 0; colIdx < countVal; colIdx++ ) {
-      // For each displacement pair, a sub-routine is invoked, and its returned value
-      // is added to the running total.
-      finalResult += checkSymmetry( idxA, colIdx );
+  // Nested loops iterate through all possible starting row and column offsets
+  // within the given dimension.
+  for (let rowIdx = 0; rowIdx < dimension; rowIdx++) {
+    for (let colIdx = 0; colIdx < dimension; colIdx++) {
+      // For each pair of offsets, a symmetry check is performed, and its result is added to the total count.
+      totalCount += checkSymmetry(rowIdx, colIdx);
     }
+  }
 
-  // The computed final result is then displayed to the standard output.
-  console.log( finalResult );
+  // The final accumulated count is printed to the console.
+  console.log(totalCount);
 
-  // This internal helper function assesses a specific symmetry property
-  // within the `dataMatrix` based on the provided coordinate offsets.
-  function checkSymmetry( offsetX, offsetY ) {
-
-    // These inner loops traverse through pairs of indices in a triangular fashion,
-    // ensuring each pair is checked exactly once for a given offset.
-    for ( let innerRow = 0; innerRow < countVal; innerRow++ )
-      for ( let innerCol = innerRow + 1; innerCol < countVal; innerCol++ ) {
-        // A condition checks if the element at a transformed coordinate
-        // is not identical to its symmetrically opposite counterpart.
-        if ( dataMatrix[ innerRow + offsetX ][ innerCol + offsetY ] !== dataMatrix[ innerCol + offsetY ][ innerRow + offsetX ] )
-          // If any asymmetry is detected, the function immediately signals failure.
-          return 0;
+  /**
+   * Determines if a sub-matrix, defined by the given offsets, exhibits symmetry.
+   * @param {number} rowOffset - The starting row index offset for the sub-matrix.
+   * @param {number} colOffset - The starting column index offset for the sub-matrix.
+   * @returns {number} Returns 1 if the sub-matrix is symmetric, otherwise returns 0.
+   */
+  function checkSymmetry(rowOffset, colOffset) {
+    // This nested loop iterates through all unique pairs of indices (firstIdx, secondIdx)
+    // such that firstIdx is less than secondIdx.
+    for (let firstIdx = 0; firstIdx < dimension; firstIdx++) {
+      for (let secondIdx = firstIdx + 1; secondIdx < dimension; secondIdx++) {
+        // It compares characters at mirrored positions within the stringMatrix,
+        // adjusted by the provided row and column offsets.
+        // If any pair of characters does not match, the sub-matrix is not symmetric.
+        if (stringMatrix[firstIdx + rowOffset][secondIdx + colOffset] !== stringMatrix[secondIdx + colOffset][firstIdx + rowOffset]) {
+          return 0; // Asymmetry detected, return 0 immediately.
+        }
       }
-    // Should all checks pass without finding asymmetry, the function indicates success.
-    return 1;
+    }
+    return 1; // If all pairs are symmetric, return 1.
   }
 }
 
-// The main processing logic is initiated by reading content from standard input,
-// interpreted as a UTF-8 encoded string.
-Processor( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The main processing function is invoked with content read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

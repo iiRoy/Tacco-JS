@@ -1,108 +1,93 @@
-const processInputData = (rawText) => {
-    const lines = rawText.split('\n');
-    const firstLineValues = lines[0].split(' ').map(Number);
-    const secondLineValues = lines[1].split(' ').map(Number);
-    return {
-        keyLimit: firstLineValues[1],
-        numberList: secondLineValues,
-    };
-};
-
-const obtainMaximum = (numericList) => {
-    if (numericList.length === 0) return -Infinity;
-    let currentMax = numericList[0];
-    for (let i = 1; i < numericList.length; i++) {
-        if (numericList[i] > currentMax) {
-            currentMax = numericList[i];
+function findMaximum(collection) {
+    let currentMax = -Infinity;
+    for (const element of collection) {
+        if (element > currentMax) {
+            currentMax = element;
         }
     }
     return currentMax;
-};
+}
 
-const computeTotalSum = (numericList) => {
-    let total = 0;
-    for (const num of numericList) {
-        total += num;
+function calculateTotal(collection) {
+    let totalSum = 0;
+    for (const element of collection) {
+        totalSum += element;
     }
-    return total;
-};
+    return totalSum;
+}
 
-const checkBalancePossibility = (adjustmentPairs, expenditureCap) => {
-    let balanceState = new Map();
-    balanceState.set(0, 0);
+function exploreBalancePaths(choices, maxAllowedSum) {
+    const processingStack = [[0, 0, 0]]; // [currentChoiceIndex, currentLeftSum, currentRightSum]
 
-    for (const [leftAdj, rightAdj] of adjustmentPairs) {
-        const nextBalanceState = new Map(balanceState);
-        
-        for (const [currentDiff, currentLeftSum] of balanceState.entries()) {
-            const currentRightSum = currentLeftSum - currentDiff;
+    while (processingStack.length > 0) {
+        const [choiceIndex, currentLeftSum, currentRightSum] = processingStack.pop();
 
-            const nextLeftSumA = currentLeftSum + leftAdj;
-            const nextRightSumA = currentRightSum;
-            const nextDiffA = nextLeftSumA - nextRightSumA;
-
-            if (nextLeftSumA <= expenditureCap && nextRightSumA <= expenditureCap) {
-                nextBalanceState.set(nextDiffA, Math.min(nextBalanceState.get(nextDiffA) || Infinity, nextLeftSumA));
-            }
-
-            const nextLeftSumB = currentLeftSum;
-            const nextRightSumB = currentRightSum + rightAdj;
-            const nextDiffB = nextLeftSumB - nextRightSumB;
-
-            if (nextLeftSumB <= expenditureCap && nextRightSumB <= expenditureCap) {
-                nextBalanceState.set(nextDiffB, Math.min(nextBalanceState.get(nextDiffB) || Infinity, nextLeftSumB));
-            }
-        }
-        balanceState = nextBalanceState;
-    }
-
-    return balanceState.has(0);
-};
-
-const validateDivisor = (candidateDivisor, numberList, keyLimit) => {
-    const requiredAdjustments = [];
-    let initialBudgetCheck = 2 * keyLimit;
-
-    for (const num of numberList) {
-        const remainder = num % candidateDivisor;
-        if (remainder === 0) {
+        if (currentLeftSum > maxAllowedSum || currentRightSum > maxAllowedSum) {
             continue;
         }
 
-        const adjustment1 = remainder;
-        const adjustment2 = candidateDivisor - remainder;
+        if (choiceIndex === choices.length) {
+            if (currentLeftSum === currentRightSum) {
+                return true;
+            }
+            continue;
+        }
 
-        if (keyLimit < Math.min(adjustment1, adjustment2)) {
+        const [optionA, optionB] = choices[choiceIndex];
+
+        processingStack.push([choiceIndex + 1, currentLeftSum + optionA, currentRightSum]);
+        processingStack.push([choiceIndex + 1, currentLeftSum, currentRightSum + optionB]);
+    }
+
+    return false;
+}
+
+function checkDivisorValidity(candidateDivisor, valueSet, maxBudget) {
+    const remainderChoices = [];
+    let minCostAccumulator = 2 * maxBudget;
+
+    for (const val of valueSet) {
+        const remainderA = val % candidateDivisor;
+
+        if (remainderA === 0) {
+            continue;
+        }
+
+        const remainderB = candidateDivisor - remainderA;
+
+        if (maxBudget < Math.min(remainderA, remainderB)) {
             return false;
         }
 
-        initialBudgetCheck -= Math.min(adjustment1, adjustment2);
-        if (initialBudgetCheck < 0) {
+        minCostAccumulator -= Math.min(remainderA, remainderB);
+        if (minCostAccumulator < 0) {
             return false;
         }
 
-        requiredAdjustments.push([adjustment1, adjustment2]);
+        remainderChoices.push([remainderA, remainderB]);
     }
 
-    return checkBalancePossibility(requiredAdjustments, keyLimit);
-};
+    return exploreBalancePaths(remainderChoices, maxBudget);
+}
 
-const performComputation = (inputString) => {
-    const { keyLimit, numberList } = processInputData(inputString);
+function processInput(rawData) {
+    const parsedLines = rawData.split("\n").map(line => line.split(" ").map(val => parseInt(val, 10)));
 
-    const maxValInList = obtainMaximum(numberList);
-    const totalListSum = computeTotalSum(numberList);
+    const maxBudget = parsedLines[0][1];
+    const valueSet = parsedLines[1];
 
-    const searchCeiling = Math.min(maxValInList + keyLimit, totalListSum);
+    const largestElement = findMaximum(valueSet);
+    const totalSumOfElements = calculateTotal(valueSet);
 
-    for (let currentDivisor = searchCeiling; currentDivisor > 1; currentDivisor--) {
-        if (validateDivisor(currentDivisor, numberList, keyLimit)) {
-            return currentDivisor;
+    const potentialDivisorLimit = Math.min(largestElement + maxBudget, totalSumOfElements);
+
+    for (let currentDivisor = potentialDivisorLimit; currentDivisor > 1; currentDivisor--) {
+        if (checkDivisorValidity(currentDivisor, valueSet, maxBudget)) {
+            return console.log(currentDivisor);
         }
     }
 
-    return 1;
-};
+    return console.log(1);
+}
 
-const result = performComputation(require('fs').readFileSync('/dev/stdin', 'utf8'));
-console.log(result);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

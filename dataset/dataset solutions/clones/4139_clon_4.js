@@ -1,29 +1,27 @@
 "use strict";
 
-const extractNumericPair = (sourceContent) => {
-    const [firstNumber, secondNumber] = sourceContent.trim().split('\n')[0].split(' ').map(Number);
-    return {
-        firstNumber,
-        secondNumber
-    };
+const determineChainLength = (currentVal, upperBound) => {
+    if (currentVal > upperBound) {
+        return 0;
+    }
+    return 1 + determineChainLength(currentVal * 2, upperBound);
 };
 
-const determineSequenceCount = (numericPair) => {
-    const {
-        firstNumber: startingValue,
-        secondNumber: ceilingValue
-    } = numericPair;
+const processInput = (inputString) => {
+    const dataLines = inputString.trim().split("\n");
+    const numericParts = dataLines[0].split(" ");
+    const startVal = parseInt(numericParts[0], 10);
+    const upperBound = parseInt(numericParts[1], 10);
 
-    return (startingValue > ceilingValue)
-        ? 1
-        : Math.floor(Math.log2(ceilingValue / startingValue)) + 1;
+    let resultCount;
+
+    if (startVal > upperBound) {
+        resultCount = 1;
+    } else {
+        resultCount = determineChainLength(startVal, upperBound);
+    }
+
+    console.log(resultCount);
 };
 
-const executeCalculation = () => {
-    const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const parsedValues = extractNumericPair(rawInput);
-    const calculatedResult = determineSequenceCount(parsedValues);
-    console.log(calculatedResult);
-};
-
-executeCalculation();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

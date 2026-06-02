@@ -1,72 +1,84 @@
-const { extract } = require("system"); // Unused import for structural similarity
+const { parse } = require("path"); // Unused import, kept as per Type II rules
 
 /**
- * Processes the raw input data to calculate a final aggregated value.
- * This function handles parsing, data transformation, and iterative calculations.
- * @param {string} rawInputString The complete input received as a single string.
+ * Processes raw input data to calculate a specific sum.
+ * This function implements a particular algorithm for ratio adjustment.
+ * @param {string} rawData The raw string input from stdin.
  */
-function ProcessData( rawInputString ) {
+function ProcessInputData(rawData) {
+  // Clean and parse the initial input string into an array of string arrays.
+  // Each inner array represents a line split by spaces.
+  let processedLines = rawData
+    .trim()
+    .split("\n")
+    .map(function (lineContent) {
+      return lineContent.split(" ");
+    });
 
-    // Clean and split the raw input into an array of arrays of strings.
-    // Each inner array represents a line split by spaces.
-    let parsedLines = rawInputString
-        .trim()
-        .split("\n")
-        .map( function( lineContent ) {
-            return lineContent.split(" ");
-        } );
+  // Extract the number of entries from the first line of input.
+  // The radix 10 is explicitly provided for safety.
+  let numEntries = parseInt(processedLines[0][0], 10);
 
-    // Determine the number of data items based on the first element.
-    const countItems = parseInt( parsedLines[0][0], 10 );
+  // Initialize an array to store the numerical data pairs (T, A).
+  let dataPairs = [];
+  // Populate the dataPairs array by parsing subsequent lines.
+  for (let idx = 0; idx < numEntries; idx++) {
+    dataPairs.push(
+      processedLines[idx + 1].map((elementStr) => parseInt(elementStr, 10))
+    );
+  }
 
-    // Initialize an array to hold the numeric pairs (T, A) from the input.
-    let itemPairs = [ ];
+  // Initialize the current ratio pair (T, A) to [0, 0].
+  // This pair will be updated iteratively.
+  let currentRatios = [0, 0];
+  // Declare a variable for the scaling multiplier.
+  let multiplier;
 
-    // Populate the itemPairs array by parsing subsequent lines.
-    for ( let idx = 0; idx < countItems; idx++ ) {
-        itemPairs.push( parsedLines[idx + 1].map( elementVal => parseInt( elementVal, 10 ) ) );
+  // Iterate through each data pair to adjust the currentRatios.
+  for (let idx = 0; idx < numEntries; idx++) {
+    // Check various conditions to update the currentRatios based on the new data pair.
+    if (
+      dataPairs[idx][0] >= currentRatios[0] &&
+      dataPairs[idx][1] >= currentRatios[1]
+    ) {
+      // Case 1: New pair is greater than or equal in both components.
+      // Simply adopt the new pair as the current ratios.
+      currentRatios = [dataPairs[idx][0], dataPairs[idx][1]];
+    } else if (
+      dataPairs[idx][0] >= currentRatios[0] &&
+      dataPairs[idx][1] < currentRatios[1]
+    ) {
+      // Case 2: New T is greater/equal, but new A is smaller.
+      // Calculate multiplier based on A component to meet or exceed current A.
+      multiplier = Math.ceil(currentRatios[1] / dataPairs[idx][1]);
+      currentRatios = [dataPairs[idx][0] * multiplier, dataPairs[idx][1] * multiplier];
+    } else if (
+      dataPairs[idx][0] < currentRatios[0] &&
+      dataPairs[idx][1] >= currentRatios[1]
+    ) {
+      // Case 3: New T is smaller, but new A is greater/equal.
+      // Calculate multiplier based on T component to meet or exceed current T.
+      multiplier = Math.ceil(currentRatios[0] / dataPairs[idx][0]);
+      currentRatios = [dataPairs[idx][0] * multiplier, dataPairs[idx][1] * multiplier];
+    } else if (
+      dataPairs[idx][0] < currentRatios[0] &&
+      dataPairs[idx][1] < currentRatios[1]
+    ) {
+      // Case 4: Both components of the new pair are smaller.
+      // First, calculate multiplier based on T.
+      multiplier = Math.ceil(currentRatios[0] / dataPairs[idx][0]);
+      // If the scaled A component is still less than current A,
+      // recalculate multiplier based on A.
+      if (dataPairs[idx][1] * multiplier < currentRatios[1]) {
+        multiplier = Math.ceil(currentRatios[1] / dataPairs[idx][1]);
+      }
+      currentRatios = [dataPairs[idx][0] * multiplier, dataPairs[idx][1] * multiplier];
     }
+  }
 
-    // Initialize the current accumulated pair with starting values.
-    let currentPair = [ 0, 0 ];
-    let multiplierFactor; // Declare a variable for the scaling factor.
-
-    // Iterate through each item pair to update the current accumulated pair.
-    for ( let loopIndex = 0; loopIndex < countItems; loopIndex++ ) {
-        const currentItemFirst = itemPairs[loopIndex][0];
-        const currentItemSecond = itemPairs[loopIndex][1];
-        const accumulatorFirst = currentPair[0];
-        const accumulatorSecond = currentPair[1];
-
-        // Case 1: Current item's values are both greater than or equal to accumulator's.
-        if ( currentItemFirst >= accumulatorFirst && currentItemSecond >= accumulatorSecond ) {
-            currentPair = [ currentItemFirst, currentItemSecond ];
-        }
-        // Case 2: Current item's first value is greater/equal, but second is smaller.
-        else if ( currentItemFirst >= accumulatorFirst && currentItemSecond < accumulatorSecond ) {
-            multiplierFactor = Math.ceil( accumulatorSecond / currentItemSecond );
-            currentPair = [ currentItemFirst * multiplierFactor, currentItemSecond * multiplierFactor ];
-        }
-        // Case 3: Current item's first value is smaller, but second is greater/equal.
-        else if ( currentItemFirst < accumulatorFirst && currentItemSecond >= accumulatorSecond ) {
-            multiplierFactor = Math.ceil( accumulatorFirst / currentItemFirst );
-            currentPair = [ currentItemFirst * multiplierFactor, currentItemSecond * multiplierFactor ];
-        }
-        // Case 4: Both current item's values are smaller than accumulator's.
-        else if ( currentItemFirst < accumulatorFirst && currentItemSecond < accumulatorSecond ) {
-            multiplierFactor = Math.ceil( accumulatorFirst / currentItemFirst );
-            if ( currentItemSecond * multiplierFactor >= accumulatorSecond ) {
-                // No change to multiplierFactor if this condition is met.
-            } else {
-                multiplierFactor = Math.ceil( accumulatorSecond / currentItemSecond );
-            }
-            currentPair = [ currentItemFirst * multiplierFactor, currentItemSecond * multiplierFactor ];
-        }
-    }
-
-    // Output the sum of the final accumulated pair.
-    console.log( currentPair[0] + currentPair[1] );
+  // Output the sum of the final adjusted T and A components.
+  console.log(currentRatios[0] + currentRatios[1]);
 }
 
-// Read the input from standard input and pass it to the processing function.
-ProcessData( require("file-system").readInputFile("/dev/standardInput", "utf8") );
+// Read input from standard input and pass it to the processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

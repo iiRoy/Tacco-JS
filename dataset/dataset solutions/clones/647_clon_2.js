@@ -1,38 +1,37 @@
-// Load raw data from the standard input source.
-var fileData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
 
-// Process the acquired data: trim leading/trailing whitespace and split into individual lines.
-var inputLines = fileData .trim() . split( "\n" ) ;
+// Process the raw input: trim whitespace and split into an array of lines
+var lineSegments = rawData.trim().split("\n");
 
-// Extract the first line, split it by space, and convert each part to a number.
-// These numbers represent the target quantity and parameters for two different purchasing options.
-var [ goalQuantity, itemCountA, itemPriceA, itemCountB, itemPriceB ] = inputLines . shift() . split( " " ) . map( Number ) ;
+// Extract and parse numerical values from the first line of input
+// The first line is shifted from the array and then split by space,
+// with each part converted to a number.
+var [targetValue, factorOne, costOne, factorTwo, costTwo] = lineSegments.shift().split(" ").map(Number);
 
-// Initialize a variable to store the lowest calculated cost.
-// Set it to positive infinity so any valid cost will be lower.
-var cheapestOption = Infinity ;
+// Initialize a variable to store the minimum calculated price.
+// Start with a very large number (infinity) so any valid price will be smaller.
+var lowestPrice = Infinity;
 
-// First purchasing strategy: iterate through possible multiples of 'itemCountA'.
-// If buying 'iterationCount' packs meets or exceeds 'goalQuantity',
-// calculate the cost and update 'cheapestOption' if this cost is lower.
-for ( var iterationCount = 0 ; iterationCount <= 1000 ; iterationCount++ )
-{
-  if ( itemCountA * iterationCount >= goalQuantity )
-  {
-    cheapestOption = Math . min( cheapestOption , itemPriceA * iterationCount ) ;
-  }
+// First optimization loop:
+// Iterate from 0 to 1000 (inclusive) to find the minimum cost using factorOne and costOne.
+// This loop checks if the product of factorOne and the current index 'idx' meets or exceeds the targetValue.
+// If it does, update 'lowestPrice' if the current cost (costOne * idx) is lower.
+for (var idx = 0; idx <= 1000; idx++) {
+    if (factorOne * idx >= targetValue) {
+        lowestPrice = Math.min(lowestPrice, costOne * idx);
+    }
 }
 
-// Second purchasing strategy: similar to the first, but using 'itemCountB' and 'itemPriceB'.
-// Iterate through possible multiples of 'itemCountB'.
-// Update 'cheapestOption' if a better cost is found.
-for ( var iterationCount = 0 ; iterationCount <= 1000 ; iterationCount++ )
-{
-  if ( itemCountB * iterationCount >= goalQuantity )
-  {
-    cheapestOption = Math . min( cheapestOption , itemPriceB * iterationCount ) ;
-  }
+// Second optimization loop:
+// Similar to the first, but uses factorTwo and costTwo.
+// This loop also iterates from 0 to 1000 (inclusive).
+// It checks if the product of factorTwo and 'idx' meets or exceeds the targetValue.
+// If so, it updates 'lowestPrice' if the current cost (costTwo * idx) is lower than the previously found minimum.
+for (var idx = 0; idx <= 1000; idx++) {
+    if (factorTwo * idx >= targetValue) {
+        lowestPrice = Math.min(lowestPrice, costTwo * idx);
+    }
 }
 
-// Output the final minimum cost found to the console.
-console . log( cheapestOption ) ;
+// Output the final calculated minimum price to the console.
+console.log(lowestPrice);

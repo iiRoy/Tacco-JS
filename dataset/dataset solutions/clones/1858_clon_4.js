@@ -1,58 +1,60 @@
-const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
-
-((incomingText) => {
-    const contentLines = incomingText.split('\n');
-
-    const firstLineNumbers = contentLines[0].split(' ').map(Number);
-    const totalVertices = firstLineNumbers[0];
-    const totalEdges = firstLineNumbers[1];
-
-    const connectionPairs = contentLines
-        .slice(1, totalEdges + 1)
-        .map(lineContent => lineContent.split(' ').map(Number));
+const processInput = (rawInput) => {
+    const lines = rawInput.split('\n');
+    const [nodeCount, edgeCount] = lines[0].split(' ').map(Number);
 
     const adjacencyStructure = new Map();
-    for (let currentId = 1; currentId <= totalVertices; currentId++) {
-        adjacencyStructure.set(currentId, new Set());
+    for (let i = 1; i <= nodeCount; i++) {
+        adjacencyStructure.set(i, new Set());
     }
 
-    connectionPairs.forEach(([sourceNode, targetNode]) => {
-        adjacencyStructure.get(sourceNode).add(targetNode);
-        adjacencyStructure.get(targetNode).add(sourceNode);
-    });
+    for (let i = 0; i < edgeCount; i++) {
+        const [u, v] = lines[i + 1].split(' ').map(Number);
+        adjacencyStructure.get(u).add(v);
+        adjacencyStructure.get(v).add(u);
+    }
 
-    const traversalQueue = [1];
-    const visitedSet = new Set();
-    visitedSet.add(1);
+    const parentRegistry = new Map();
+    const discoveryQueue = [];
+    const visitedTracker = new Set();
 
-    const parentMap = new Map();
+    discoveryQueue.push(1);
+    visitedTracker.add(1);
 
-    let currentPointer = 0;
-    while (currentPointer < traversalQueue.length) {
-        const activeVertex = traversalQueue[currentPointer++];
+    let queueIndex = 0;
+    while (queueIndex < discoveryQueue.length) {
+        const currentVertex = discoveryQueue[queueIndex++];
+        const neighbors = adjacencyStructure.get(currentVertex);
 
-        const linkedVertices = adjacencyStructure.get(activeVertex);
-        for (const linkedNode of linkedVertices) {
-            if (!visitedSet.has(linkedNode)) {
-                visitedSet.add(linkedNode);
-                parentMap.set(linkedNode, activeVertex);
-                traversalQueue.push(linkedNode);
+        if (neighbors) {
+            for (const connectedNode of neighbors) {
+                if (!visitedTracker.has(connectedNode)) {
+                    visitedTracker.add(connectedNode);
+                    discoveryQueue.push(connectedNode);
+                    if (connectedNode !== 1) {
+                        parentRegistry.set(connectedNode, currentVertex);
+                    }
+                }
             }
-        }
-    }
-
-    const finalVertexParents = new Array(totalVertices).fill(undefined);
-
-    for (let nodeIndex = 2; nodeIndex <= totalVertices; nodeIndex++) {
-        if (parentMap.has(nodeIndex)) {
-            finalVertexParents[nodeIndex - 1] = parentMap.get(nodeIndex);
         }
     }
 
     console.log('Yes');
 
-    for (let outputIndex = 1; outputIndex < totalVertices; outputIndex++) {
-        console.log(finalVertexParents[outputIndex]);
+    const resultParents = new Array(nodeCount - 1);
+    for (let i = 2; i <= nodeCount; i++) {
+        if (parentRegistry.has(i)) {
+            resultParents[i - 2] = parentRegistry.get(i);
+        } else {
+            resultParents[i - 2] = undefined;
+        }
     }
 
-})(rawData);
+    resultParents.forEach(val => {
+        if (val !== undefined) {
+            console.log(val);
+        }
+    });
+};
+
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+processInput(inputData);

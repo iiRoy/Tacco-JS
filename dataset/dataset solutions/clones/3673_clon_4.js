@@ -1,68 +1,52 @@
-function calculateIntersectionProduct(inputPayload) {
-    const [lineA, lineB] = inputPayload.trim().split('\n');
-    const charCount = parseInt(lineA, 10);
-    const primarySequence = lineB;
-    const invertedSequence = primarySequence.split('').reverse().join('');
+function generateSubsequencePartitions(sourceString, length) {
+    const partitionKeys = [];
 
-    const mapA = new Map();
-    const mapB = new Map();
-
-    function generateSubsequences(
-        currentIndex,
-        currentPrimaryPart1,
-        currentPrimaryPart2,
-        currentInvertedPart1,
-        currentInvertedPart2
-    ) {
-        if (currentIndex === charCount) {
-            const keyPrimary = currentPrimaryPart1.join('') + ',' + currentPrimaryPart2.join('');
-            const keyInverted = currentInvertedPart1.join('') + ',' + currentInvertedPart2.join('');
-
-            mapA.set(keyPrimary, (mapA.get(keyPrimary) || 0) + 1);
-            mapB.set(keyInverted, (mapB.get(keyInverted) || 0) + 1);
+    function explorePartitions(currentIdx, subseqOne, subseqTwo) {
+        if (currentIdx === length) {
+            partitionKeys.push(subseqOne + "," + subseqTwo);
             return;
         }
 
-        const charPrimary = primarySequence[currentIndex];
-        const charInverted = invertedSequence[currentIndex];
-
-        // Option 1: Add current characters to the first partition
-        currentPrimaryPart1.push(charPrimary);
-        currentInvertedPart1.push(charInverted);
-        generateSubsequences(
-            currentIndex + 1,
-            currentPrimaryPart1,
-            currentPrimaryPart2,
-            currentInvertedPart1,
-            currentInvertedPart2
-        );
-        currentPrimaryPart1.pop(); // Backtrack
-        currentInvertedPart1.pop(); // Backtrack
-
-        // Option 2: Add current characters to the second partition
-        currentPrimaryPart2.push(charPrimary);
-        currentInvertedPart2.push(charInverted);
-        generateSubsequences(
-            currentIndex + 1,
-            currentPrimaryPart1,
-            currentPrimaryPart2,
-            currentInvertedPart1,
-            currentInvertedPart2
-        );
-        currentPrimaryPart2.pop(); // Backtrack
-        currentInvertedPart2.pop(); // Backtrack
+        explorePartitions(currentIdx + 1, subseqOne + sourceString[currentIdx], subseqTwo);
+        explorePartitions(currentIdx + 1, subseqOne, subseqTwo + sourceString[currentIdx]);
     }
 
-    generateSubsequences(0, [], [], [], []);
+    explorePartitions(0, "", "");
+    return partitionKeys;
+}
 
-    let finalAccumulation = 0;
-    for (const [key, countA] of mapA.entries()) {
-        if (mapB.has(key)) {
-            finalAccumulation += countA * mapB.get(key);
+function ProcessInput(inputContent) {
+    const lines = inputContent.split("\n");
+    const stringLength = +lines[0];
+    const originalString = lines[1];
+
+    const reversedString = originalString.split("").reverse().join("");
+
+    const originalPartitions = generateSubsequencePartitions(originalString, stringLength);
+    const reversedPartitions = generateSubsequencePartitions(reversedString, stringLength);
+
+    const originalCounts = originalPartitions.reduce((acc, currentKey) => {
+        acc.set(currentKey, (acc.get(currentKey) || 0) + 1);
+        return acc;
+    }, new Map());
+
+    const reversedCounts = reversedPartitions.reduce((acc, currentKey) => {
+        acc.set(currentKey, (acc.get(currentKey) || 0) + 1);
+        return acc;
+    }, new Map());
+
+    let totalMatches = 0;
+
+    for (const partitionKey of originalCounts.keys()) {
+        const countInOriginal = originalCounts.get(partitionKey);
+        const countInReversed = reversedCounts.get(partitionKey);
+
+        if (countInReversed !== undefined) {
+            totalMatches += countInOriginal * countInReversed;
         }
     }
 
-    console.log(finalAccumulation);
+    console.log(totalMatches);
 }
 
-calculateIntersectionProduct(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

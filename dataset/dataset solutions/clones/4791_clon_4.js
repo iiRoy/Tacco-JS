@@ -1,48 +1,68 @@
-"use strict"
-const acquireInputData = () => {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const firstLine = rawContent.split("\n")[0];
-    const parsedNumbers = firstLine.split(" ").map(val => Number(val));
-    return parsedNumbers;
+"use strict";
+
+const createInputProcessor = () => {
+    const rawLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    let currentLineIndex = 0;
+    const totalLines = rawLines.length;
+
+    const lineGenerator = (function* () {
+        while (currentLineIndex < totalLines) {
+            yield rawLines[currentLineIndex++];
+        }
+    })();
+
+    const getNextLine = () => {
+        const { value, done } = lineGenerator.next();
+        if (done) {
+            throw "ArrayIndexOutOfBoundsException";
+        }
+        return value;
+    };
+
+    return {
+        getLine: getNextLine,
+        checkMoreData: () => currentLineIndex < totalLines
+    };
 };
 
-const calculateValue = (valA, valB) => {
-    const absoluteA = valA < 0 ? -valA : valA;
-    const absoluteB = valB < 0 ? -valB : valB;
-    const differenceAbs = absoluteA - absoluteB;
-    let baseResult = differenceAbs < 0 ? -differenceAbs : differenceAbs;
+const dataStream = createInputProcessor();
 
-    const evaluationMap = new Map();
-    // Key format: `${signA},${signB},${isALessThanB}`
-    // sign: -1 for negative, 0 for zero, 1 for positive
-    // isALessThanB: 1 for true, 0 for false
+const retrieveLine = () => dataStream.getLine();
+const parseInteger = () => parseInt(dataStream.getLine());
+const splitStringArray = () => dataStream.getLine().split(" ");
+const splitIntegerArray = () => dataStream.getLine().split(" ").map(val => parseInt(val));
+const splitCharacterArray = () => dataStream.getLine().split("");
+const hasMoreData = () => dataStream.checkMoreData();
+const outputResult = (...args) => console.log(...args);
 
-    // Cases for +1 increment
-    evaluationMap.set("-1,1,1", 1); // x<0, y>0, x<y (e.g. -2,3)
-    evaluationMap.set("1,-1,0", 1); // x>0, y<0, x not< y (false) (e.g. 2,-3)
-    evaluationMap.set("1,0,0", 1);  // x>0, y=0, x not< y (false) (e.g. 3,0)
-    evaluationMap.set("0,-1,0", 1); // x=0, y<0, x not< y (false) (e.g. 0,-3)
+const executeCalculation = () => {
+    const [firstValue, secondValue] = splitIntegerArray();
 
-    // Cases for +2 increment
-    evaluationMap.set("1,1,1", 2);   // x>0, y>0, x<y (e.g. 1,5)
-    evaluationMap.set("-1,-1,1", 2); // x<0, y<0, x<y (e.g. -5,-1)
-    evaluationMap.set("0,1,1", 2);   // x=0, y>0, x<y (e.g. 0,5)
-    evaluationMap.set("-1,0,1", 2);  // x<0, y=0, x<y (e.g. -5,0)
+    let baseDifference = Math.abs(Math.abs(firstValue) - Math.abs(secondValue));
+    let additionalSteps = 0;
 
-    const signOfA = valA > 0 ? 1 : (valA < 0 ? -1 : 0);
-    const signOfB = valB > 0 ? 1 : (valB < 0 ? -1 : 0);
-    const isALessThanB = valA < valB ? 1 : 0;
+    const adjustmentRules = [
+        {
+            condition: (a, b) => a * b < 0,
+            step: 1
+        },
+        {
+            condition: (a, b) => (a > 0 && b === 0) || (a === 0 && b < 0),
+            step: 1
+        },
+        {
+            condition: (a, b) => a < b,
+            step: 2
+        }
+    ];
 
-    const mapKey = `${signOfA},${signOfB},${isALessThanB}`;
-    const additionalIncrement = evaluationMap.get(mapKey) || 0;
+    const foundRule = adjustmentRules.find(rule => rule.condition(firstValue, secondValue));
+    if (foundRule) {
+        additionalSteps = foundRule.step;
+    }
 
-    return baseResult + additionalIncrement;
+    const finalOutcome = baseDifference + additionalSteps;
+    outputResult(finalOutcome);
 };
 
-const mainProgram = () => {
-    const [alpha, beta] = acquireInputData();
-    const finalResult = calculateValue(alpha, beta);
-    console.log(finalResult);
-};
-
-mainProgram();
+executeCalculation();

@@ -1,49 +1,10 @@
-function ProcessSource ( rawSource ) {
-
-  /*
-   * This module examines the initial segment of the provided textual content
-   * to determine the presence of a specific predefined character sequence.
-   */
-  console
-
-    .log (
-
-      rawSource
-
-        .split(
-          "\n"
-        )
-        [
-          0
-        ]
-        .indexOf("YAKI")
-
-        ===
-
-        0
-
-          ?
-
-          "Yes"
-
-          :
-
-          "No"
-    )
-
-  ;
+function ProcessData(receivedText) {
+  // Check if the first line of the input starts with "YAKI"
+  console.log(receivedText.split("\n")[0].indexOf("YAKI") === 0 ? "Yes" : "No");
 }
 
-
-// The subsequent code block should remain unaltered; it manages standard input operations
-// and subsequently invokes the primary processing function with the acquired data.
-ProcessSource(
-  require (
-    "fs"
-  )
-    .readFileSync (
-      "/dev/stdin",
-
-      "utf8"
-    )
-);
+/*
+ * Do not modify the following lines.
+ * This section handles reading from standard input and invoking the primary function.
+ */
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,29 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (incomingDataBuffer) => {
-    const rawInputLines = String(incomingDataBuffer).split(/\r?\n/);
 
-    if (rawInputLines.length < 2) {
-        console.error("Error: Insufficient input lines provided.");
-        return;
+const displayArrayState = (arr) => {
+  console.log(arr.join(" "));
+};
+
+process.stdin.on('data', function (inputSegment) {
+  const processedLines = inputSegment.toString().split('\n');
+
+  const arraySize = Number(processedLines[0]);
+  const numericArray = processedLines[1].split(' ').map(val => Number(val));
+
+  displayArrayState(numericArray);
+
+  const loopStartIndex = 1;
+
+  for (let mainLoopIndex = loopStartIndex; mainLoopIndex < arraySize; mainLoopIndex++) {
+    const currentElementValue = numericArray[mainLoopIndex];
+    let insertionIndex = mainLoopIndex - 1;
+
+    while (insertionIndex >= 0 && numericArray[insertionIndex] > currentElementValue) {
+      numericArray[insertionIndex + 1] = numericArray[insertionIndex];
+      insertionIndex--;
     }
-
-    const expectedElementCount = parseInt(rawInputLines[0].trim(), 10);
-
-    if (isNaN(expectedElementCount) || expectedElementCount <= 0) {
-        console.error("Error: Invalid or non-positive element count specified.");
-        return;
-    }
-
-    let numericDataCollection = rawInputLines[1].split(/\s+/).filter(Boolean).map(Number);
-
-    if (numericDataCollection.length !== expectedElementCount) {
-        console.error(`Warning: Expected ${expectedElementCount} elements but found ${numericDataCollection.length}.`);
-    }
-
-    const renderArrayState = (arr) => arr.join(' ');
-
-    console.log(renderArrayState(numericDataCollection));
-
-    for (let currentPosition = 1; currentPosition < expectedElementCount; ++currentPosition) {
-        const valueToPlace = numericDataCollection[currentPosition];
-        let comparisonPointer = currentPosition - 1;
-
-        while (comparisonPointer >= 0 && numericDataCollection[comparisonPointer] > valueToPlace) {
-            const elementBeingShifted = numericDataCollection[comparisonPointer];
-            numericDataCollection[comparisonPointer + 1] = elementBeingShifted;
-            --comparisonPointer;
-        }
-
-        numericDataCollection[comparisonPointer + 1] = valueToPlace;
-
-        console.log(renderArrayState(numericDataCollection));
-    }
+    numericArray[insertionIndex + 1] = currentElementValue;
+    displayArrayState(numericArray);
+  }
 });

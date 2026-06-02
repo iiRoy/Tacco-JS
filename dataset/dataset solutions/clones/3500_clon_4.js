@@ -1,41 +1,21 @@
-let inputAccumulator = '';
+const fileSystem = require('fs');
 
-function findGreatestCommonFactor(valueX, valueY) {
-    if (valueY === 0) {
-        return valueX;
+function computeGreatestCommonDivisor(firstOperand, secondOperand) {
+    if (secondOperand === 0) {
+        return firstOperand;
     }
-    return findGreatestCommonFactor(valueY, valueX % valueY);
+    return computeGreatestCommonDivisor(secondOperand, firstOperand % secondOperand);
 }
 
-process.stdin.on('data', (chunk) => {
-    inputAccumulator += chunk.toString();
-});
+const inputLines = fileSystem.readFileSync('/dev/stdin', 'UTF-8').split('\n');
 
-process.stdin.on('end', () => {
-    const processCompleteInput = inputAccumulator.trim();
-    
-    const delimiterPosition = processCompleteInput.indexOf(' ');
-    
-    let firstNumericEntity;
-    let secondNumericEntity;
+const initialLine = inputLines[0];
+const parsedNumbers = initialLine.split(' ').map(Number);
 
-    if (delimiterPosition !== -1) {
-        const firstPartString = processCompleteInput.substring(0, delimiterPosition);
-        const secondPartString = processCompleteInput.substring(delimiterPosition + 1);
+const [divisor, originalDividend] = parsedNumbers;
 
-        firstNumericEntity = parseInt(firstPartString, 10);
-        secondNumericEntity = parseInt(secondPartString, 10);
-    } else {
-        firstNumericEntity = parseInt(processCompleteInput, 10);
-        secondNumericEntity = NaN; 
-    }
+const quotientPart = Math.floor(originalDividend / divisor);
+const remainderPart = originalDividend % divisor;
 
-    const initialDividend = Math.floor(secondNumericEntity / firstNumericEntity);
-    const initialModuloResult = secondNumericEntity % firstNumericEntity;
-    
-    const ultimateOutcome = findGreatestCommonFactor(initialDividend, initialModuloResult);
-    
-    process.stdout.write(ultimateOutcome.toString() + '\n');
-});
-
-process.stdin.resume();
+const finalResult = computeGreatestCommonDivisor(quotientPart, remainderPart);
+console.log(finalResult);

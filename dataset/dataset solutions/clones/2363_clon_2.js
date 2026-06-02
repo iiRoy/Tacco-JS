@@ -1,113 +1,135 @@
-"use strict"; // Enable strict mode for secure and robust JavaScript execution.
+"use strict";
 
-// This module encapsulates functionality for structured input processing.
-var InputProcessor = (function() {
+// This module provides utilities for parsing input from a source string.
+const INPUT_PARSER = (function () {
+  /**
+   * Creates a new input parser instance.
+   * @param {string} sourceText - The raw input string.
+   * @returns {InputSource} A new input source object.
+   */
+  function createParser(sourceText) {
+    return new InputSource(sourceText);
+  }
 
-    // Primary factory method to instantiate an InputReader.
-    function createInputReader(sourceContent) {
-        return new InputReader(sourceContent);
+  /**
+   * Represents an input source, allowing sequential reading of lines and values.
+   * @param {string} sourceText - The raw input string.
+   */
+  function InputSource(sourceText) {
+    // Store lines after trimming and splitting.
+    this._lines = sourceText.trim().split("\n");
+    // Keep track of the current line being processed.
+    this._currentLineIndex = 0;
+  }
+
+  /**
+   * Extracts the next value from the current line.
+   * If the current line is exhausted, it moves to the next.
+   * @param {boolean} [asString=false] - If true, returns the value as a string; otherwise, as a number.
+   * @returns {string|number} The extracted value.
+   */
+  InputSource.prototype.extractNextValue = function (asString) {
+    const currentLineParts = this._lines;
+    const lineIdx = this._currentLineIndex;
+    let extractedPart;
+
+    // If the current line hasn't been split into parts yet, do it.
+    if (typeof currentLineParts[lineIdx] === "string") {
+      currentLineParts[lineIdx] = currentLineParts[lineIdx].split(" ").reverse();
     }
 
-    // Constructor function for the InputReader object.
-    function InputReader(initialTextData) {
-        // Internal storage for lines of text, pre-processed.
-        this._linesOfText = initialTextData.trim().split("\n");
-        // Index tracking the current line being processed.
-        this._currentLineIndex = 0;
+    // Pop the last element (which is the first in original order due to reverse).
+    extractedPart = currentLineParts[lineIdx].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if (!currentLineParts[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Prototype method to extract a single data token from the current line.
-    InputReader.prototype.getSegment = function(returnAsText) {
-        var currentDataStore = this._linesOfText, // Reference to the lines array.
-            linePosition = this._currentLineIndex, // Current reading position.
-            extractedToken; // Variable to hold the result.
+    // Return as string or convert to number.
+    return asString ? extractedPart : +extractedPart;
+  };
 
-        // If the current line is still a single string, split it into tokens (reversed for easy popping).
-        if (typeof currentDataStore[linePosition] === "string") {
-            currentDataStore[linePosition] = currentDataStore[linePosition].split(" ").reverse();
-        }
+  /**
+   * Reads an entire line from the input source.
+   * @param {boolean} [asString=false] - If true, returns parts as strings; otherwise, as numbers.
+   * @returns {string[]|number[]} An array of values from the line.
+   */
+  InputSource.prototype.readNextLine = function (asString) {
+    const lineContent = this._lines[this._currentLineIndex++].split(" ");
+    return asString ? lineContent : lineContent.map((item) => +item);
+  };
 
-        // Retrieve the next token from the end of the (reversed) array.
-        extractedToken = currentDataStore[linePosition].pop();
+  /**
+   * Reads a specified number of lines as a matrix.
+   * @param {number} numRows - The number of rows to read.
+   * @param {boolean} [asString=false] - If true, returns elements as strings; otherwise, as numbers.
+   * @returns {string[][]|number[][]} A 2D array (matrix) of values.
+   */
+  InputSource.prototype.readMatrix = function (numRows, asString) {
+    const matrixRows = this._lines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numRows))
+      .map((rowStr) => rowStr.split(" "));
+    return asString
+      ? matrixRows
+      : matrixRows.map((row) => row.map((item) => +item));
+  };
 
-        // If the current line is exhausted, advance the line pointer.
-        if (!currentDataStore[linePosition].length) {
-            this._currentLineIndex++;
-        }
+  /**
+   * Reads a specified number of raw lines.
+   * @param {number} numRows - The number of lines to read.
+   * @param {boolean} [asString=false] - If true, returns lines as strings; otherwise, attempts to convert to number.
+   * @returns {string[]|number[]} An array of lines.
+   */
+  InputSource.prototype.readLines = function (numRows, asString) {
+    const rawLines = this._lines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += numRows)
+    );
+    return asString ? rawLines : rawLines.map((item) => +item);
+  };
 
-        // Return the token either as its raw string form or as a numeric value.
-        return returnAsText ? extractedToken : +extractedToken;
-    };
-
-    // Prototype method to read an entire line, splitting it into tokens.
-    InputReader.prototype.getLine = function(returnAsText) {
-        // Fetch the line, increment the index, and split by spaces.
-        var parsedLineTokens = this._linesOfText[this._currentLineIndex++].split(" ");
-
-        // Return the array of tokens, either as strings or numerically mapped.
-        return returnAsText ? parsedLineTokens : parsedLineTokens.map(tokenItem => +tokenItem);
-    };
-
-    // Prototype method to read a block of lines, each split into tokens, forming a matrix.
-    InputReader.prototype.getMatrix = function(numRows, returnAsText) {
-        // Slice the required number of lines, then update the line index.
-        // Each line is then mapped to an array of its space-separated tokens.
-        var collectedRows = this._linesOfText
-                               .slice(this._currentLineIndex, this._currentLineIndex += numRows)
-                               .map(rowContent => rowContent.split(" "));
-
-        // Return the matrix, either with string tokens or numeric tokens.
-        return returnAsText ? collectedRows : collectedRows.map(row => row.map(item => +item));
-    };
-
-    // Prototype method to read a specified number of raw lines without splitting them.
-    InputReader.prototype.getRawLines = function(numRows, returnAsText) {
-        // Extract a block of lines directly, then advance the line index.
-        var rawLineBlock = this._linesOfText.slice(this._currentLineIndex, this._currentLineIndex += numRows);
-
-        // Return the lines, either as strings or attempting numeric conversion for each.
-        return returnAsText ? rawLineBlock : rawLineBlock.map(lineValue => +lineValue);
-    };
-
-    // The immediately invoked function expression returns the factory method.
-    return createInputReader;
-
+  return createParser;
 })();
 
+// Initialize the input reader by reading from standard input.
+const inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Instantiate an input reader, sourcing data from standard input.
-var readerInstance = InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-
-// Utility function to dynamically construct multi-dimensional arrays.
-function multiDimArrayCreator(initialFillValue) {
-    var passedArguments = arguments, // Access all arguments for dimension sizes.
-        dimensionCount = passedArguments.length, // Total number of dimensions.
-        // Start building the string for the innermost array creation.
-        arrayBuildString = "Array(passedArguments[" + --dimensionCount + "]).fill(0).map(cell => { return " + initialFillValue + "; })";
-
-    // Loop backwards to construct outer dimensions, nesting the array creation string.
-    while (--dimensionCount) {
-        arrayBuildString = "Array(passedArguments[" + dimensionCount + "]).fill(0).map(cell => " + arrayBuildString + ")";
-    }
-
-    // Evaluate the constructed string to produce the multi-dimensional array.
-    return eval(arrayBuildString);
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., 2, 3 for a 2x3 array).
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  const argsList = arguments;
+  let argCount = argsList.length;
+  let arrayCreationString =
+    "Array(argsList[" +
+    --argCount +
+    "]).fill(0).map(x=>{return " +
+    initialValue +
+    ";})";
+  while (--argCount) {
+    arrayCreationString =
+      "Array(argsList[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
+  }
+  return eval(arrayCreationString);
 }
 
+// Output the result of the main processing function.
+console.log(processInput());
 
-// Execute the main program logic and print its output to the console.
-console.log(executeMainLogic());
+/**
+ * Main function to process the input and determine the result.
+ * @returns {number} The calculated result based on input.
+ */
+function processInput() {
+  // Read the first line of data.
+  let dataLine = inputReader.readNextLine();
+  // Read the second line of data (this line is intentionally duplicated in the original).
+  dataLine = inputReader.readNextLine();
 
-// Main function encapsulating the primary business logic.
-function executeMainLogic() {
-    // Read the first line of input data.
-    var firstDataLine = readerInstance.getLine();
-    // Read the second line of input data.
-    // Note: This variable declaration shadows the previous 'firstDataLine' in the original code's logic.
-    var secondDataLine = readerInstance.getLine();
-
-    // Evaluate a condition based on the second element of the last read line.
-    // Returns 1 if true, 0 if false.
-    return secondDataLine[1] === 1 ? 1 : 0;
+  // Check the second element of the last read line.
+  return dataLine[1] === 1 ? 1 : 0;
 }

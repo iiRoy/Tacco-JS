@@ -1,35 +1,15 @@
-const ProcessInput = ( rawDataValue => {
+Solve = (src => {
   "use strict";
-
-  let parsedWords = rawDataValue . split ( "\n" ) [ 1 ] . split ( " " ) ;
-
-  let wordFrequencyMap = { } ;
-
-  for ( const currentWordItem of parsedWords ) {
-    wordFrequencyMap[ currentWordItem ] = ( wordFrequencyMap[ currentWordItem ] || 0 ) + 1 ;
-  }
-
-  for ( const uniqueKey of Object.keys( wordFrequencyMap ) ) {
-    wordFrequencyMap[ uniqueKey ] = {
-      itemCount: wordFrequencyMap[ uniqueKey ],
-      combinationsOfTwo: wordFrequencyMap[ uniqueKey ] * ( wordFrequencyMap[ uniqueKey ] - 1 ) / 2,
-      combinationsExcludingSelf: ( wordFrequencyMap[ uniqueKey ] - 1 ) * ( wordFrequencyMap[ uniqueKey ] - 2 ) / 2
-    };
-  }
-
-  let finalSummation ;
-
-  for ( let positionIndex = 0; positionIndex < parsedWords.length; positionIndex++ ) {
-    const currentElement = parsedWords[ positionIndex ];
-    finalSummation = 0 ;
-
-    for ( const comparedKey of Object.keys( wordFrequencyMap ) ) {
-      finalSummation += ( currentElement === comparedKey )
-        ? wordFrequencyMap[ comparedKey ].combinationsExcludingSelf
-        : wordFrequencyMap[ comparedKey ].combinationsOfTwo;
-    }
-    console.log( finalSummation ) ;
+  src = src.split("\n")[1].split(" ");
+  let freq = {};
+  for (const val of src) freq[val] = (freq[val] || 0) + 1;
+  for (const key of Object.keys(freq)) freq[key] = { p: freq[key], q: freq[key] * (freq[key] - 1) / 2, r: (freq[key] - 1) * (freq[key] - 2) / 2 };
+  var sum;
+  for (let idx = 0; idx < src.length; idx++) {
+    const cur = src[idx];
+    sum = 0;
+    for (const key of Object.keys(freq)) sum += cur == key ? freq[key].r : freq[key].q;
+    console.log(sum);
   }
 });
-
-ProcessInput( require( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) . trim ( ) ) ;
+Solve(require("fs").readFileSync("/dev/stdin", "utf8").trim());

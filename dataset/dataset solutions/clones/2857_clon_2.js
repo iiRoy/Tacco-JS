@@ -1,38 +1,46 @@
-// This JavaScript function calculates the minimal absolute difference between the sums of two continuous subarrays
-// formed by splitting a primary array of numerical values at various points.
-function processInputData(sourceContent) {
-  // The first line of the input string provides the total count of numerical elements.
-  const totalItemCount = parseInt(sourceContent.split('\n')[0], 10);
+function processInput(rawData) {
+  // The first line of the input string contains the total number of items.
+  const itemCount = rawData.split('\n')[0];
 
-  // The second line contains space-separated numerical values, which are parsed into an array of numbers.
-  const numericValues = sourceContent.split('\n')[1].split(' ').map((strValue) => parseFloat(strValue));
+  // The second line contains space-separated weight values.
+  // We split it by newline, then by space, and convert each part to an integer.
+  const weights = rawData.split('\n')[1].split(' ').map((numStr) => parseInt(numStr, 10));
 
-  // A collection to store the absolute differences obtained from each possible array partition.
-  let absoluteDifferences = [];
+  // This array will store the absolute differences calculated for each possible split point.
+  var diffsArray = [];
 
-  // Iterate through all possible indices where the array can be divided.
-  // The 'dividerIndex' ranges from 1 up to 'totalItemCount - 1', ensuring both segments are non-empty.
-  for (let dividerIndex = 1; dividerIndex < totalItemCount; dividerIndex++) {
-    let firstSegmentSum = 0.0; // Sum for the elements before the divider.
-    let secondSegmentSum = 0.0; // Sum for the elements from the divider onwards.
+  // Iterate through all possible positions to split the array of weights.
+  // 'splitPoint' represents the index where the second group begins.
+  // It starts from 1 because a split at index 0 would mean the first group is empty.
+  // It goes up to (but not including) itemCount, as a split at itemCount would mean the second group is empty.
+  for (var splitPoint = 1; splitPoint < itemCount; splitPoint++) {
+    // Initialize sums for the two groups for the current split configuration.
+    var firstGroupSum = 0;
+    var secondGroupSum = 0;
 
-    // Calculate the sum of the elements in the first part of the array.
-    for (let currentLeftIndex = 0; currentLeftIndex < dividerIndex; currentLeftIndex++) {
-      firstSegmentSum += numericValues[currentLeftIndex];
+    // Calculate the sum of weights for the first group.
+    // This group includes elements from the beginning up to 'splitPoint - 1'.
+    for (var idx1 = 0; idx1 < splitPoint; idx1++) {
+      firstGroupSum += weights[idx1];
     }
 
-    // Calculate the sum of the elements in the second part of the array.
-    for (let currentRightIndex = dividerIndex; currentRightIndex < totalItemCount; currentRightIndex++) {
-      secondSegmentSum += numericValues[currentRightIndex];
+    // Calculate the sum of weights for the second group.
+    // This group includes elements from 'splitPoint' up to the end of the array.
+    for (var idx2 = splitPoint; idx2 < itemCount; idx2++) {
+      secondGroupSum += weights[idx2];
     }
 
-    // Store the absolute value of the difference between the two segment sums.
-    absoluteDifferences.push(Math.abs(firstSegmentSum - secondSegmentSum));
+    // Compute the absolute difference between the sums of the two groups.
+    // Add this difference to our collection array.
+    diffsArray.push(Math.abs(firstGroupSum - secondGroupSum));
   }
 
-  // Print the smallest absolute difference found across all possible divisions to the console.
-  console.log(Math.min.apply(null, absoluteDifferences));
+  // After evaluating all possible splits, find the minimum absolute difference recorded.
+  // Then, print this minimum value to the console.
+  console.log(Math.min.apply(null, diffsArray));
 }
 
-// Execute the data processing function using content read from standard input.
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content from standard input synchronously.
+// The input is expected to be UTF-8 encoded.
+// Then, pass this content to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

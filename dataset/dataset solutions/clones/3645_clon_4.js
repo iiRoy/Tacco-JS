@@ -1,47 +1,53 @@
 "use strict";
 
-const SEQUENCE_TARGET = "ABC";
-const NUMERIC_LIMIT = 1000000007;
-const TARGET_LEN = SEQUENCE_TARGET.length;
+function Main(source) {
+    const pieces = source.split(/\n|\s/);
+    const S = pieces[0];
+    const n = S.length;
 
-let memoizedSolutions;
-let currentWorkingString;
-let stringDataLength;
+    const MOD = 1000000007n;
+    const INV3 = 333333336n;
 
-function calculateMatchings(positionInString, targetSegmentIndex) {
-    if (memoizedSolutions[positionInString][targetSegmentIndex] !== null) {
-        return memoizedSolutions[positionInString][targetSegmentIndex];
+    let wild = 0;
+    for (let i = 0; i < n; i++) {
+        if (S[i] === '?') wild++;
     }
 
-    if (targetSegmentIndex === TARGET_LEN) {
-        return 1;
-    }
-    if (positionInString === stringDataLength) {
-        return 0;
-    }
-
-    let currentWays = 0;
-    const charAtCurrentPosition = currentWorkingString[positionInString];
-
-    currentWays = (currentWays + calculateMatchings(positionInString + 1, targetSegmentIndex) * (charAtCurrentPosition === '?' ? 3 : 1)) % NUMERIC_LIMIT;
-
-    if (charAtCurrentPosition === '?' || charAtCurrentPosition === SEQUENCE_TARGET[targetSegmentIndex]) {
-        currentWays = (currentWays + calculateMatchings(positionInString + 1, targetSegmentIndex + 1)) % NUMERIC_LIMIT;
+    const pow3 = new Array(wild + 1);
+    pow3[0] = 1n;
+    for (let i = 1; i <= wild; i++) {
+        pow3[i] = (pow3[i - 1] * 3n) % MOD;
     }
 
-    memoizedSolutions[positionInString][targetSegmentIndex] = currentWays;
-    return currentWays;
+    const suffixC = new Array(n + 1);
+    suffixC[n] = 0n;
+    for (let i = n - 1; i >= 0; i--) {
+        let add = 0n;
+        if (S[i] === 'C') add = 1n;
+        else if (S[i] === '?') add = INV3;
+        suffixC[i] = (suffixC[i + 1] + add) % MOD;
+    }
+
+    let answer = 0n;
+    let prefixA = 0n;
+
+    for (let i = 0; i < n; i++) {
+        if (S[i] === 'B' || S[i] === '?') {
+            const middleUsesWildcard = S[i] === '?' ? 1 : 0;
+            let contribution = pow3[wild - middleUsesWildcard];
+            contribution = (contribution * prefixA) % MOD;
+            contribution = (contribution * suffixC[i + 1]) % MOD;
+            answer = (answer + contribution) % MOD;
+        }
+
+        if (S[i] === 'A') {
+            prefixA = (prefixA + 1n) % MOD;
+        } else if (S[i] === '?') {
+            prefixA = (prefixA + INV3) % MOD;
+        }
+    }
+
+    console.log(answer.toString());
 }
 
-function processInputAndDisplay(rawInput) {
-    currentWorkingString = rawInput.trim();
-    stringDataLength = currentWorkingString.length;
-
-    memoizedSolutions = new Array(stringDataLength + 1).fill(null).map(() => new Array(TARGET_LEN + 1).fill(null));
-
-    console.log(calculateMatchings(0, 0));
-}
-
-if (typeof window === "undefined") {
-    processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));
-}
+if (typeof window == "undefined") Main(require("fs").readFileSync("/dev/stdin", "utf8"));

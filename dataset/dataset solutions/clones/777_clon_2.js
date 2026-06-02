@@ -1,85 +1,59 @@
-/*
- * This JavaScript module handles input stream processing.
- * Its purpose is to decode sequences of numbers into textual messages,
- * mimicking a traditional mobile phone keypad input method.
- */
+// This script processes input from stdin to decode messages based on a T9-like keypad mapping.
 
-// Initialize the standard input stream to ensure it remains active
-process.stdin.resume();
+process.stdin.resume(); // Ensures the standard input stream remains active.
+process.stdin.setEncoding("utf8"); // Configures the character encoding for incoming data.
 
-// Configure the encoding for the incoming data to UTF-8
-process.stdin.setEncoding( "utf8" );
+process.stdin.on("data", function (inputBuffer) {
+  // Callback function executed when data is received from the standard input.
+  var linesOfInput = inputBuffer.trim().split("\n"); // Cleans the raw input and splits it into an array of lines.
 
-// Attach an event listener to the standard input stream for 'data' events.
-// This function will execute whenever a chunk of data is received.
-process.stdin.on ( "data", function ( inputBuffer ) {
+  var numCases = linesOfInput.shift(); // The first line contains the total number of test cases.
 
-    // Process the raw incoming data block:
-    // 1. Remove leading/trailing whitespace.
-    // 2. Split the entire block into an array of individual lines.
-    var parsedLines = inputBuffer.trim ( ) .split ( "\n" );
+  // Defines the character mappings for a T9-style keypad.
+  // The array index corresponds to the digit pressed.
+  var keypadMappings = [
+    "",          // Digit 0 (unused for character mapping)
+    ".,!? ",     // Digit 1
+    "abc",       // Digit 2
+    "def",       // Digit 3
+    "ghi",       // Digit 4
+    "jkl",       // Digit 5
+    "mno",       // Digit 6
+    "pqrs",      // Digit 7
+    "tuv",       // Digit 8
+    "wxyz"       // Digit 9
+  ];
 
-    // The initial line in the input specifies the total number of message sequences to decode.
-    // This line is extracted from the `parsedLines` array.
-    var messageCount = parsedLines.shift ( );
+  // Transforms each string mapping into an array of individual characters.
+  keypadMappings = keypadMappings.map(function (mappingString) {
+    return mappingString.split("");
+  });
 
-    // Define the character mappings for a T9-style keypad.
-    // Each array index corresponds to a digit (0-9), and its value is a string of characters.
-    var keypadDigits = [
-        "",           // Index 0: No characters
-        ".,!? ",      // Index 1
-        "abc",        // Index 2
-        "def",        // Index 3
-        "ghi",        // Index 4
-        "jkl",        // Index 5
-        "mno",        // Index 6
-        "pqrs",       // Index 7
-        "tuv",        // Index 8
-        "wxyz"        // Index 9
-    ];
+  // Iterates through each of the specified test cases.
+  for (var caseIndex = 0; caseIndex < numCases; caseIndex++) {
+    // Parses the current test case's digit sequence into an array of numbers.
+    var currentCaseDigits = linesOfInput[caseIndex].split("").map(Number);
 
-    // Transform the `keypadDigits` array:
-    // Each string of characters is split into an array of single characters,
-    // making it easier to access individual characters by index.
-    keypadDigits = keypadDigits.map( function ( digitString ) {
-        return digitString.split( "" );
-    } );
+    var decodedMessage = '';    // Accumulates the characters to form the final message.
+    var currentCharacter = '';  // Stores the character being formed by consecutive key presses.
+    var pressCount = 0;         // Tracks the number of consecutive presses for the current key.
 
-    // Iterate through each message sequence as indicated by `messageCount`.
-    for ( var messageIdx = 0; messageIdx < messageCount; messageIdx++ ) {
+    // Processes each digit in the current sequence.
+    currentCaseDigits.forEach(function (digitValue) {
+      if (digitValue > 0) {
+        // If the digit is non-zero, it's a character key press.
+        // Determines the character based on the digit and the current press count (modulo the key's character length).
+        currentCharacter = keypadMappings[digitValue][pressCount % keypadMappings[digitValue].length];
+        pressCount++; // Increments the press counter for the current key.
+      } else {
+        // If the digit is zero, it signifies the completion of a character.
+        decodedMessage += currentCharacter; // Appends the formed character to the message.
+        currentCharacter = '';              // Resets the temporary character storage.
+        pressCount = 0;                     // Resets the press counter.
+      }
+    });
 
-        // For the current message sequence:
-        // 1. Get the string from `parsedLines`.
-        // 2. Split it into individual digit characters.
-        // 3. Convert each character to its numeric representation.
-        var numericSequence = parsedLines[ messageIdx ].split( "" ).map( Number );
-
-        // Initialize variables for decoding the current message.
-        var outputMessage = "";       // This will accumulate the final decoded text.
-        var currentCharacter = "";    // Stores the character currently being selected by presses.
-        var tapCounter = 0;           // Tracks consecutive taps on the same digit key.
-
-        // Process each digit value within the `numericSequence`.
-        numericSequence.forEach( function ( currentDigitValue ) {
-
-            // If the digit is greater than zero, it signifies a key press.
-            if ( currentDigitValue > 0 ) {
-                // Determine the character based on the digit and the number of taps.
-                // The modulo operator ensures cycling through available characters for that digit.
-                currentCharacter = keypadDigits[ currentDigitValue ][ tapCounter % keypadDigits[ currentDigitValue ].length ];
-                tapCounter++; // Increment the tap counter for the ongoing sequence of presses.
-            } else {
-                // A zero digit acts as a delimiter or confirmation for the current character.
-                // Append the `currentCharacter` to the `outputMessage`.
-                outputMessage += currentCharacter;
-
-                // Reset `currentCharacter` and `tapCounter` for the next character sequence.
-                currentCharacter = "";
-                tapCounter = 0;
-            }
-        } );
-
-        // Once the entire numeric sequence is processed, print the decoded message.
-        console.log( outputMessage );
-    }
-} );
+    // Prints the fully decoded message for the current test case to the console.
+    console.log(decodedMessage);
+  }
+});

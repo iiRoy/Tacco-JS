@@ -1,91 +1,105 @@
-const rawSource = require('node:fs').readFileSync(0, 'utf8');
-const lineSegments = rawSource.trim().split('\n');
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedInputLines = rawInputContent.trim().split('\n');
 
-const missionPlans = [];
-let segmentPointer = 0;
+const extractDimensions = (lineContent) => {
+    const [widthString, heightString] = lineContent.split(' ');
+    return { boundaryWidth: Number(widthString), boundaryHeight: Number(heightString) };
+};
 
-while (segmentPointer < lineSegments.length) {
-    const fieldDimensions = lineSegments[segmentPointer++];
-    if (fieldDimensions === '0 0') {
-        break;
-    }
+const initialRobotPosition = { xCoord: 1, yCoord: 1, orientation: 0 }; // orientation: 0=Up, 1=Right, 2=Down, 3=Left
 
-    const [maxXExtent, maxYExtent] = fieldDimensions.split(' ').map(Number);
-    const directives = [];
-    while (segmentPointer < lineSegments.length) {
-        const directiveLine = lineSegments[segmentPointer++];
-        const commandTokens = directiveLine.split(' ');
-        const actionType = commandTokens[0];
-        if (actionType === 'STOP') {
-            break;
-        }
-        directives.push({
-            operation: actionType,
-            magnitude: commandTokens.length > 1 ? Number(commandTokens[1]) : 0
+// These displacement vectors are derived directly from the original code's logic,
+// including its specific (and potentially unconventional) movement for orientation 3 (Left).
+// orientation: 0 (UP), 1 (RIGHT), 2 (DOWN), 3 (LEFT)
+const forwardDisplacementVectors = [
+    { deltaX: 0, deltaY: 1 }, // 0: UP -> yCoord++
+    { deltaX: 1, deltaY: 0 }, // 1: RIGHT -> xCoord++
+    { deltaX: 0, deltaY: -1 },// 2: DOWN -> yCoord--
+    { deltaX: 0, deltaY: -1 }  // 3: LEFT -> yCoord-- (Original code's xy[2]-- for xy[0]==3)
+];
+
+const backwardDisplacementVectors = [
+    { deltaX: 0, deltaY: -1 },// 0: UP -> yCoord-- (backward from UP is DOWN)
+    { deltaX: -1, deltaY: 0 },// 1: RIGHT -> xCoord-- (backward from RIGHT is LEFT)
+    { deltaX: 0, deltaY: 1 }, // 2: DOWN -> yCoord++ (backward from DOWN is UP)
+    { deltaX: 1, deltaY: 0 }  // 3: LEFT -> xCoord++ (backward from LEFT is RIGHT)
+];
+
+const constrainCoordinates = (currentX, currentY, maxW, maxH) => ({
+    xCoord: Math.max(1, Math.min(currentX, maxW)),
+    yCoord: Math.max(1, Math.min(currentY, maxH))
+});
+
+const commandExecutors = {
+    "RIGHT": (currentPos, stepCount, maxW, maxH) => {
+        const nextOrientation = (currentPos.orientation + 1) % 4;
+        return { ...currentPos, orientation: nextOrientation };
+    },
+    "LEFT": (currentPos, stepCount, maxW, maxH) => {
+        const nextOrientation = (currentPos.orientation - 1 + 4) % 4; // Ensure positive modulo
+        return { ...currentPos, orientation: nextOrientation };
+    },
+    "FORWARD": (currentPos, stepCount, maxW, maxH) => {
+        const displacement = forwardDisplacementVectors[currentPos.orientation];
+        let tempX = currentPos.xCoord;
+        let tempY = currentPos.yCoord;
+
+        Array.from({ length: stepCount }).forEach(() => {
+            tempX += displacement.deltaX;
+            tempY += displacement.deltaY;
+            const constrained = constrainCoordinates(tempX, tempY, maxW, maxH);
+            tempX = constrained.xCoord;
+            tempY = constrained.yCoord;
         });
+        return { ...currentPos, xCoord: tempX, yCoord: tempY };
+    },
+    "BACKWARD": (currentPos, stepCount, maxW, maxH) => {
+        const displacement = backwardDisplacementVectors[currentPos.orientation];
+        let tempX = currentPos.xCoord;
+        let tempY = currentPos.yCoord;
+
+        Array.from({ length: stepCount }).forEach(() => {
+            tempX += displacement.deltaX;
+            tempY += displacement.deltaY;
+            const constrained = constrainCoordinates(tempX, tempY, maxW, maxH);
+            tempX = constrained.xCoord;
+            tempY = constrained.yCoord;
+        });
+        return { ...currentPos, xCoord: tempX, yCoord: tempY };
     }
-    missionPlans.push({
-        zoneWidth: maxXExtent,
-        zoneHeight: maxYExtent,
-        actionsList: directives
-    });
-}
+};
 
-const resultCoordinates = [];
-
-// Define movement vectors based on original code's behavior
-// 0: North, 1: East, 2: South, 3: West
-const advanceVectors = [
-    { deltaX: 0, deltaY: 1 },  // North: Y increases
-    { deltaX: 1, deltaY: 0 },  // East: X increases
-    { deltaX: 0, deltaY: -1 }, // South: Y decreases
-    { deltaX: 0, deltaY: -1 }  // West: Y decreases (replicating original's specific behavior)
-];
-
-const retreatVectors = [
-    { deltaX: 0, deltaY: -1 }, // North: Y decreases
-    { deltaX: -1, deltaY: 0 }, // East: X decreases
-    { deltaX: 0, deltaY: 1 },  // South: Y increases
-    { deltaX: 1, deltaY: 0 }   // West: X increases (replicating original's specific behavior)
-];
-
-for (const currentPlan of missionPlans) {
-    let robotPositionX = 1;
-    let robotPositionY = 1;
-    let robotOrientationIndex = 0; // 0: N, 1: E, 2: S, 3: W
-
-    const currentZoneWidth = currentPlan.zoneWidth;
-    const currentZoneHeight = currentPlan.zoneHeight;
-
-    for (const currentDirective of currentPlan.actionsList) {
-        switch (currentDirective.operation) {
-            case 'RIGHT':
-                robotOrientationIndex = (robotOrientationIndex + 1) % 4;
-                break;
-            case 'LEFT':
-                robotOrientationIndex = (robotOrientationIndex - 1 + 4) % 4;
-                break;
-            case 'FORWARD':
-                {
-                    const motionVector = advanceVectors[robotOrientationIndex];
-                    robotPositionX += motionVector.deltaX * currentDirective.magnitude;
-                    robotPositionY += motionVector.deltaY * currentDirective.magnitude;
-                }
-                break;
-            case 'BACKWARD':
-                {
-                    const motionVector = retreatVectors[robotOrientationIndex];
-                    robotPositionX += motionVector.deltaX * currentDirective.magnitude;
-                    robotPositionY += motionVector.deltaY * currentDirective.magnitude;
-                }
-                break;
-        }
-
-        // Clamp coordinates within boundaries
-        robotPositionX = Math.max(1, Math.min(currentZoneWidth, robotPositionX));
-        robotPositionY = Math.max(1, Math.min(currentZoneHeight, robotPositionY));
+const processRobotSimulation = (linesCollection, currentLineIndex = 0) => {
+    if (currentLineIndex >= linesCollection.length) {
+        return;
     }
-    resultCoordinates.push(`${robotPositionX} ${robotPositionY}`);
-}
 
-console.log(resultCoordinates.join('\n'));
+    const dimensionSpecification = linesCollection[currentLineIndex];
+    if (dimensionSpecification === "0 0") {
+        return;
+    }
+
+    const { boundaryWidth, boundaryHeight } = extractDimensions(dimensionSpecification);
+    const scenarioStartingPosition = { ...initialRobotPosition };
+
+    let commandBlockEndIndex = currentLineIndex + 1;
+    while (linesCollection[commandBlockEndIndex].split(' ')[0] !== "STOP") {
+        commandBlockEndIndex++;
+    }
+
+    const commandsForCurrentScenario = linesCollection.slice(currentLineIndex + 1, commandBlockEndIndex);
+
+    const finalRobotPosition = commandsForCurrentScenario.reduce((currentRobotState, commandEntry) => {
+        const [commandIdentifier, valueString] = commandEntry.split(' ');
+        const commandValue = Number(valueString);
+
+        const executor = commandExecutors[commandIdentifier];
+        return executor ? executor(currentRobotState, commandValue, boundaryWidth, boundaryHeight) : currentRobotState;
+    }, scenarioStartingPosition);
+
+    console.log(`${finalRobotPosition.xCoord} ${finalRobotPosition.yCoord}`);
+
+    processRobotSimulation(linesCollection, commandBlockEndIndex + 1);
+};
+
+processRobotSimulation(processedInputLines);

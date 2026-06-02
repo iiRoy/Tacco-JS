@@ -1,22 +1,22 @@
-var acquiredTextData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw data from standard input stream
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw data from standard input
+var lineSegments = (rawData.trim()).split("\n"); // Process raw data into an array of distinct lines
+var searchPattern = lineSegments[0]; // The initial line serves as the pattern to locate
+var totalOccurrences = 0; // Initialize a counter for the total number of pattern matches
 
-var documentLines = ( acquiredTextData . trim() ) . split ( "\n" ) ; // Process the raw input data into an array of individual lines
+// Iterate through the processed lines, starting from the second element
+for (let idx = 1; idx < lineSegments.length; idx++) {
+  // If a specific termination string is encountered, halt further processing
+  if (lineSegments[idx] === "END_OF_TEXT") {
+    break;
+  }
 
-var searchTargetPhrase = documentLines[0]; // Designate the very first line as the specific phrase to be counted
+  // Calculate the number of times the pattern appears in the current line
+  // This is done by splitting the line by the pattern and counting the resulting segments minus one.
+  var currentLineMatches = (lineSegments[idx].split(searchPattern)).length - 1;
 
-var totalOccurrencesCount = 0x0; // Initialize a counter for the total number of phrase occurrences, using hexadecimal for zero
-
-// Begin iteration through the collection of lines, starting from the second line (index 1)
-for ( var currentLineIndex = 0b1 ; currentLineIndex < documentLines.length ; currentLineIndex ++ ) { // Use 'var' for historical scoping, '0b1' for binary one as loop initializer
-
-    // Check if the current line signifies the termination of the text
-    if ( documentLines [ currentLineIndex ] === "END_OF_TEXT" ) break ; // Halt further processing upon encountering the designated end-of-text marker
-
-    // Calculate the number of times the target phrase appears within the current line
-    var occurrencesInCurrentLine = ( ( documentLines [ currentLineIndex ] ) . split ( searchTargetPhrase ) ) . length + ~0 ; // Determine occurrences by splitting and counting parts, using bitwise NOT for negative one
-
-    // Add the count from the current line to the overall total
-    totalOccurrencesCount += occurrencesInCurrentLine ; // Increment the aggregate count
+  // Accumulate the matches from the current line into the overall total
+  totalOccurrences += currentLineMatches;
 }
 
-console . log ( totalOccurrencesCount ) ; // Display the final computed tally of all phrase occurrences to the console
+// Display the final accumulated count of pattern occurrences
+console.log(totalOccurrences);

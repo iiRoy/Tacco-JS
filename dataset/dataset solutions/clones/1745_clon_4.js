@@ -1,27 +1,21 @@
-function processInputData(incomingString) {
-  const interpretAsInteger = (textRepresentation) => parseInt(textRepresentation, 10);
-  let initialQuantity = interpretAsInteger(incomingString);
+function processInputAndConvert(inputString) {
+  let initialValue = parseInt(inputString, 10);
 
-  const recursivelyFormWord = (numericValue) => {
-    if (numericValue === 0) {
+  const characterMap = "abcdefghijklmnopqrstuvwhyz";
+
+  function generateColumnIdentifier(currentValue) {
+    if (currentValue === 0) {
       return "";
     }
-    const residue = (numericValue - 1) % 26;
-    const nextValue = Math.floor((numericValue - 1) / 26);
-    const character = String.fromCharCode(97 + residue); // 'a' is ASCII 97
-    return recursivelyFormWord(nextValue) + character;
-  };
 
-  const finalOutcome = recursivelyFormWord(initialQuantity);
-  console.log(finalOutcome);
+    const digitIndex = (currentValue - 1) % 26;
+    const nextValue = Math.floor((currentValue - 1) / 26);
+
+    return generateColumnIdentifier(nextValue) + characterMap[digitIndex];
+  }
+
+  let finalOutput = generateColumnIdentifier(initialValue);
+  console.log(finalOutput);
 }
 
-const retrieveDataSource = (filePath) => {
-  const filesystemModule = require("fs");
-  return filesystemModule.readFileSync(filePath, "utf8");
-};
-
-const standardInputPath = "/dev/stdin";
-const rawIncomingData = retrieveDataSource(standardInputPath);
-
-processInputData(rawIncomingData);
+processInputAndConvert(require("fs").readFileSync("/dev/stdin", "utf8"));

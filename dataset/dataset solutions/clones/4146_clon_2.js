@@ -1,25 +1,30 @@
 'use strict';
 
-const numericInputData = require('fs') // Retrieve file system utility
-  .readFileSync('/dev/stdin', 'utf8') // Obtain raw content from standard input
-  .trim() // Remove leading/trailing whitespace
-  .split(' ') // Divide the string by spaces into an array
-  .map(currentNumber => Number(currentNumber)); // Convert each string element to a number
+// Obtain raw input from the standard input stream,
+// process it by removing leading/trailing whitespace,
+// splitting it into an array of strings by space,
+// and then converting each string element to a number.
+const dataArray = require('fs').readFileSync('/dev/stdin', 'utf8')
+    .trim()
+    .split(' ')
+    .map(item => item * 1);
 
-let operationCount = 0; // Initialize a counter for the operations
+let resultCount = 0; // Initialize a variable to store the final tally.
 
-// Defines the upper boundary for the process
-let upperLimit = numericInputData[1];
+// Extract the maximum threshold value from the second element of the processed input.
+let upperBound = dataArray[1];
 
-// The base value for multiplication
-let startingBase = numericInputData[0];
+// Extract the starting divisor value from the first element of the processed input.
+let initialValue = dataArray[0];
 
-// The number that gets progressively multiplied
-let currentMultiplier = startingBase;
+// Initialize a temporary numeric variable with the starting divisor.
+let currentMultiple = initialValue;
 
-while (currentMultiplier <= upperLimit) { // Continue as long as the current value is within the limit
-  operationCount++; // Increment the counter
-  currentMultiplier *= 2; // Double the progressing number
+// Execute a loop as long as the temporary number does not exceed the maximum threshold.
+while (currentMultiple <= upperBound) {
+    resultCount++; // Increment the counter for each iteration.
+    currentMultiple *= 2; // Double the temporary number for the next iteration.
 }
 
-console.log(operationCount); // Output the final count
+// Print the final calculated count to the console.
+console.log(resultCount);

@@ -1,56 +1,35 @@
-console.log((inputContentString => {
-    const parseInputData = (textualData) => {
-        const lineSegments = textualData.trim().split('\n');
-        const numCount = BigInt(lineSegments[0].split(' ')[0]);
-        const valueArray = lineSegments[1].split(' ').map(BigInt);
-        return { countInfo: numCount, numberSet: valueArray };
-    };
+const processInputData = (sourceContent) => {
+    const contentLines = sourceContent.trim().split('\n');
+    const firstLineNumericValues = contentLines[0].split(' ').map(BigInt);
+    const totalElementCount = firstLineNumericValues[0];
+    const dataValueList = contentLines[1].split(' ').map(BigInt);
+    return { totalElementCount, dataValueList };
+};
 
-    const findDesiredValueRecursively = (
-        trialCandidate,
-        upperLimit,
-        initialOperandA,
-        initialOperandB,
-        constantXorAccumulator
-    ) => {
-        if (trialCandidate > upperLimit) {
-            return null;
-        }
+function* createBigIntRangeGenerator(startPoint, endPoint) {
+    let currentPoint = startPoint;
+    while (currentPoint <= endPoint) {
+        yield currentPoint;
+        currentPoint++;
+    }
+}
 
-        const evaluatedTermA = initialOperandA - trialCandidate;
-        const evaluatedTermB = initialOperandB + trialCandidate;
-        const xorVerificationResult = evaluatedTermA ^ evaluatedTermB ^ constantXorAccumulator;
+const determineSolution = ({ totalElementCount, dataValueList }) => {
+    const firstArrayElement = dataValueList[0];
+    const secondArrayElement = dataValueList[1];
+    const searchUpperLimit = firstArrayElement;
 
-        if (xorVerificationResult === 0n) {
-            return trialCandidate.toString();
-        }
+    const subsequentArrayElements = dataValueList.slice(2, Number(totalElementCount));
 
-        return findDesiredValueRecursively(
-            trialCandidate + 1n,
-            upperLimit,
-            initialOperandA,
-            initialOperandB,
-            constantXorAccumulator
-        );
-    };
+    const matchingIterationValue = Array.from(createBigIntRangeGenerator(1n, searchUpperLimit)).find(currentIterationCandidate => {
+        let currentXorAccumulator = (firstArrayElement - currentIterationCandidate) ^ (secondArrayElement + currentIterationCandidate);
+        
+        const finalXorResult = subsequentArrayElements.reduce((accumulator, currentValue) => accumulator ^ currentValue, currentXorAccumulator);
 
-    const orchestrateSolution = (content) => {
-        const { countInfo: elementCount, numberSet: sequenceOfNumbers } = parseInputData(content);
+        return finalXorResult === 0n;
+    });
 
-        const fixedXorSumPortion = sequenceOfNumbers
-            .slice(2, Number(elementCount))
-            .reduce((accumulator, currentVal) => accumulator ^ currentVal, 0n);
+    return matchingIterationValue !== undefined ? String(matchingIterationValue) : '-1';
+};
 
-        const solutionCandidate = findDesiredValueRecursively(
-            1n,
-            sequenceOfNumbers[0],
-            sequenceOfNumbers[0],
-            sequenceOfNumbers[1],
-            fixedXorSumPortion
-        );
-
-        return solutionCandidate === null ? '-1' : solutionCandidate;
-    };
-
-    return orchestrateSolution(inputContentString);
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(determineSolution(processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'))));

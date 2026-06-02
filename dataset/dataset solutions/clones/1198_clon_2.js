@@ -1,125 +1,127 @@
-/*
- * This script processes a series of dice configurations
- * to determine if any configuration is a duplicate of a previously seen one,
- * considering all possible rotations and orientations of a standard six-sided die.
- */
+function shiftDice(directionChar, currentDiceFaces) {
+  // Extract individual face values for clarity
+  let faceOne = currentDiceFaces[0]; // Top face
+  let faceTwo = currentDiceFaces[1]; // Front face
+  let faceThree = currentDiceFaces[2]; // Right face
+  let faceFour = currentDiceFaces[3]; // Left face
+  let faceFive = currentDiceFaces[4]; // Back face
+  let faceSix = currentDiceFaces[5]; // Bottom face
 
-// Function to simulate shifting the dice's orientation based on a cardinal direction
-function  shiftBlock  (  directionIndicator  ,  faceArray  )
-{
-   // Extract individual face values from the input array
-   var  topFace  =  faceArray[ 0 ] ; // Represents the current top face
-   var  frontFace  =  faceArray[ 1 ] ; // Represents the current front face
-   var  rightFace  =  faceArray[ 2 ] ; // Represents the current right face
-   var  leftFace  =  faceArray[ 3 ] ; // Represents the current left face
-   var  backFace  =  faceArray[ 4 ] ; // Represents the current back face
-   var  bottomFace  =  faceArray[ 5 ] ; // Represents the current bottom face
+  // Array to store the new orientation after the move
+  let nextOrientation = [];
 
-   var  transformedFaces  =  [ ] ; // Array to hold the new face configuration
+  // Determine the new arrangement based on the movement direction
+  if (directionChar === "N") {
+    // North: Top becomes Front, Front becomes Bottom, Bottom becomes Back, Back becomes Top
+    nextOrientation = [faceTwo, faceSix, faceThree, faceFour, faceOne, faceFive];
+  } else if (directionChar === "S") {
+    // South: Top becomes Back, Back becomes Bottom, Bottom becomes Front, Front becomes Top
+    nextOrientation = [faceFive, faceOne, faceThree, faceFour, faceSix, faceTwo];
+  } else if (directionChar === "E") {
+    // East: Top becomes Left, Left becomes Bottom, Bottom becomes Right, Right becomes Top
+    nextOrientation = [faceFour, faceTwo, faceOne, faceSix, faceFive, faceThree];
+  } else if (directionChar === "W") {
+    // West: Top becomes Right, Right becomes Bottom, Bottom becomes Left, Left becomes Top
+    nextOrientation = [faceThree, faceTwo, faceSix, faceOne, faceFive, faceFour];
+  }
 
-   // Apply the transformation based on the given direction
-   if  ( directionIndicator  ===  "N" )  transformedFaces  =  [ frontFace , bottomFace , rightFace , leftFace , topFace , backFace ] ; // Move North
-   if  ( directionIndicator  ===  "S" )  transformedFaces  =  [ backFace , topFace , rightFace , leftFace , bottomFace , frontFace ] ; // Move South
-   if  ( directionIndicator  ===  "E" )  transformedFaces  =  [ leftFace , frontFace , topFace , bottomFace , backFace , rightFace ] ; // Move East
-   if  ( directionIndicator  ===  "W" )  transformedFaces  =  [ rightFace , frontFace , bottomFace , topFace , backFace , leftFace ] ; // Move West
-
-   return  transformedFaces ; // Return the new orientation
+  // Return the new dice orientation
+  return nextOrientation;
 }
 
+function rotateDice(initialFaces) {
+  // Extract current face values
+  let topFace = initialFaces[0];
+  let frontFace = initialFaces[1];
+  let rightFace = initialFaces[2];
+  let leftFace = initialFaces[3];
+  let backFace = initialFaces[4];
+  let bottomFace = initialFaces[5];
 
-// Function to simulate a specific rotation (e.g., clockwise spin) of the dice
-function  rotateBlock  (  faceArray  )
-{
-   // Extract individual face values
-   var  topFace  =  faceArray[ 0 ] ;
-   var  frontFace  =  faceArray[ 1 ] ;
-   var  rightFace  =  faceArray[ 2 ] ;
-   var  leftFace  =  faceArray[ 3 ] ;
-   var  backFace  =  faceArray[ 4 ] ;
-   var  bottomFace  =  faceArray[ 5 ] ;
+  // Array to hold the faces after rotation
+  let rotatedFaces = [];
 
-   var  transformedFaces  =  [ ] ; // Array to hold the new face configuration
+  // Rotate the dice clockwise around the vertical axis (top/bottom stay, others shift)
+  // Top (d1) and Bottom (d6) remain in place
+  // Front (d2) moves to Right (d3) position
+  // Right (d3) moves to Back (d5) position
+  // Back (d5) moves to Left (d4) position
+  // Left (d4) moves to Front (d2) position
+  rotatedFaces = [topFace, rightFace, backFace, frontFace, leftFace, bottomFace];
 
-   // Apply the fixed rotation: Top stays, Front -> Right, Right -> Back, Back -> Left, Left -> Front, Bottom stays
-   transformedFaces  =  [ topFace , rightFace , backFace , frontFace , leftFace , bottomFace ] ;
-
-   return  transformedFaces ; // Return the rotated orientation
+  return rotatedFaces;
 }
 
+// Global map to store unique dice configurations encountered
+let GLOBAL_STATE_MAP = {};
+// Global variable to track the final outcome
+let finalOutcome = "Yes";
 
-// Function to explore all 4 rotations of a given dice configuration
-// and register them, checking for duplicates against a global set.
-function  exploreOrientations  (  blockState  )
-{
-   var  configRegistry  =  { } ; // Local registry for current block's rotations
+function processRotations(diceState) {
+  // Local object to store unique states for the current dice configuration
+  let uniqueStates = {};
 
-   // Iterate through 4 rotations to find all unique configurations for the current top face
-   for  ( var  idx  =  0 ;  idx  <  4 ;  ++idx  )
-   {
-      var  stateString  =  blockState.join( "," ) ; // Create a string key for the current configuration
-      // If this specific rotation hasn't been seen for the current block, register it
-      if  (  ! configRegistry.hasOwnProperty( stateString )  )  {
-         configRegistry[ stateString ]  =  true ;
-      }
-      blockState  =  rotateBlock( blockState ) ; // Apply the rotation for the next iteration
-   }
+  // Perform 4 rotations around the vertical axis
+  for (let idx = 0; idx < 4; idx++) {
+    // Convert the current dice state array to a comma-separated string
+    let stateString = diceState.join(",");
+    // If this specific state hasn't been seen for the current dice, add it
+    if (!uniqueStates.hasOwnProperty(stateString)) {
+      uniqueStates[stateString] = true;
+    }
+    // Rotate the dice for the next iteration
+    diceState = rotateDice(diceState);
+  }
 
-   // Now, check the locally registered unique rotations against the global registry
-   for  ( var  registeredKey  in  configRegistry  )
-   {
-      // If this configuration (key) is already in the global registry, it's a duplicate
-      if  (  globalSeenConfigurations.hasOwnProperty( registeredKey )  )  {
-         finalVerdict  =  "No" ; // Set the global flag to indicate a duplicate
-      }
-      else  {
-         globalSeenConfigurations[ registeredKey ]  =  true ; // Register this new unique configuration globally
-      }
-   }
+  // After checking all 4 vertical rotations, compare with the global map
+  for (let keyStr in uniqueStates) {
+    // Check if this unique configuration (including its rotations) has been seen globally
+    if (GLOBAL_STATE_MAP.hasOwnProperty(keyStr)) {
+      // If it has, then this dice is a duplicate
+      finalOutcome = "No";
+    } else {
+      // If it's a new configuration, add it to the global map
+      GLOBAL_STATE_MAP[keyStr] = true;
+    }
+  }
 }
-
-
-// --- Main Program Execution ---
 
 // Read input from standard input
-var  rawData  =  require( 'fs' ).readFileSync( '/dev/stdin' ,  'utf8' ) ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 // Process input: trim whitespace and split into lines
-var  inputLines  =  ( rawData.trim() ).split( "\n" ) ;
-// Get the number of dice configurations to process (first line of input)
-var  numConfigurations  =  inputLines.shift() - 0 ; // Convert string to number explicitly
+let inputLines = (rawData.trim()).split("\n");
 
-var  globalSeenConfigurations  =  { } ; // Global object to store all unique dice configurations encountered
-var  finalVerdict  =  "Yes" ; // Initial assumption: all configurations are unique
+// Get the number of dice configurations to process
+let numCases = inputLines.shift() - 0; // Convert to number
 
-// Loop through each provided dice configuration
-for  ( var  idx  =  0 ;  idx  <  numConfigurations ;  ++idx  )
-{
-   // Parse the current dice configuration from the input line
-   var  currentBlock  =  inputLines[ idx ].split( " " ).map( Number ) ;
+// Loop through each dice configuration
+for (let caseIndex = 0; caseIndex < numCases; caseIndex++) {
+  // Parse the current line into an array of numbers representing dice faces
+  let currentDice = inputLines[caseIndex].split(" ").map(Number);
 
-   // Explore 24 total orientations for each dice:
-   // 4 rotations for each of the 6 possible top faces.
-   // This loop explores 4 rotations for the current top face.
-   for  ( var  iterationCount  =  0 ;  iterationCount  <  4 ;  ++iterationCount  )
-   {
-      exploreOrientations( currentBlock ) ; // Explore and register rotations
-      currentBlock  =  shiftBlock( "N" , currentBlock ) ; // Shift the block "North" to change the top face
-   }
+  // Perform a series of moves and rotations to check all 24 orientations
+  // First, check 4 rotations for the initial 'N' orientation
+  for (let rotationIndex = 0; rotationIndex < 4; rotationIndex++) {
+    processRotations(currentDice);
+    currentDice = shiftDice("N", currentDice); // Move North
+  }
 
-   // After 4 "N" shifts, the block has returned to its original top face but potentially a different front face.
-   // Now, shift East to get a new set of 4 top faces for exploration.
-   currentBlock  =  shiftBlock( "E" , currentBlock ) ;
-   exploreOrientations( currentBlock ) ; // Explore rotations for this new orientation
+  // Move East once
+  currentDice = shiftDice("E", currentDice);
+  // Check 4 rotations for the 'E' orientation
+  processRotations(currentDice);
 
-   // Shift South twice to get another new orientation (effectively West then South)
-   currentBlock  =  shiftBlock( "S" , currentBlock ) ;
-   currentBlock  =  shiftBlock( "S" , currentBlock ) ;
-   exploreOrientations( currentBlock ) ; // Explore rotations for this final orientation
+  // Move South twice (equivalent to moving North twice from the 'E' orientation)
+  currentDice = shiftDice("S", currentDice);
+  currentDice = shiftDice("S", currentDice);
+  // Check 4 rotations for this 'S' orientation
+  processRotations(currentDice);
 
-   // If a duplicate was found at any point, stop processing
-   if  ( finalVerdict  ===  "No" )  {
-      break ;
-   }
+  // If a duplicate dice configuration was found, no need to check further
+  if (finalOutcome === "No") {
+    break;
+  }
 }
 
 // Output the final result
-console.log( finalVerdict ) ;
+console.log(finalOutcome);

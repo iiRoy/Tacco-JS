@@ -1,28 +1,33 @@
-const obtainCommonElementCount = (firstCollection, secondCollection) =>
-    new Set([...firstCollection].filter(item => secondCollection.has(item))).size;
+function processInput(rawInputText) {
+    const trimmedInput = rawInputText.trim();
+    const inputLines = trimmedInput.split("\n");
 
-const analyzeTextSegments = (sourceContent) => {
-    const [lengthDescriptor, characterSequence] = sourceContent.trim().split('\n');
+    const totalLength = Number(inputLines[0]);
+    const targetString = inputLines[1];
 
-    const sequenceLengthValue = Number(lengthDescriptor);
-    
-    const partitionIndexes = Array.from({ length: sequenceLengthValue - 1 }, (_, idx) => idx + 1);
+    const splitPointIndicators = Array.from({ length: totalLength - 1 }, (_, index) => index + 1);
 
-    const calculatedOverlapCounts = partitionIndexes.map(currentSplitPoint => {
-        const initialSegment = characterSequence.slice(0, currentSplitPoint);
-        const terminalSegment = characterSequence.slice(currentSplitPoint);
+    const calculatedIntersectionSizes = splitPointIndicators.map(currentSplitPoint => {
+        const firstSegment = targetString.slice(0, currentSplitPoint);
+        const secondSegment = targetString.slice(currentSplitPoint, totalLength);
 
-        const distinctInitialChars = new Set(initialSegment);
-        const distinctTerminalChars = new Set(terminalSegment);
+        const uniqueCharsInFirst = new Set([...firstSegment]);
+        const uniqueCharsInSecond = new Set([...secondSegment]);
 
-        return obtainCommonElementCount(distinctInitialChars, distinctTerminalChars);
+        let currentIntersectionCount = 0;
+        for (const character of uniqueCharsInFirst) {
+            if (uniqueCharsInSecond.has(character)) {
+                currentIntersectionCount++;
+            }
+        }
+        return currentIntersectionCount;
     });
 
-    const highestOverlap = calculatedOverlapCounts.length > 0
-        ? Math.max(...calculatedOverlapCounts)
-        : -Infinity;
+    if (calculatedIntersectionSizes.length === 0) {
+        console.log(-Infinity);
+    } else {
+        console.log(Math.max(...calculatedIntersectionSizes));
+    }
+}
 
-    console.log(highestOverlap);
-};
-
-analyzeTextSegments(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

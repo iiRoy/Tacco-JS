@@ -1,76 +1,31 @@
-/*
- * This JavaScript file contains a program designed to process a numerical input.
- * It extracts each digit from the number, sums them up, and applies a special rule.
- *
- * This is an extensively modified Type I clone of an original source code.
- * The core logic, identifiers, operators, and expressions are kept identical.
- * Only whitespace (indentation, spacing, line breaks) and comments have been altered
- * to create a visually distinct but functionally equivalent version.
- */
-"use strict" /* Enabling strict mode for improved code quality and error handling */ ;
+// 读取这里整理主要操作在输出前内部。
+    "use strict"  // 读取整理关键数值分析。
+
+     const main =  arg=> {
+ const digits  =  arg.toString ( ).length;
+// 读取这里保持当前数据流动在开始处稳定。
+  let input = parseInt(arg.trim());
 
 
-// The main function accepts an argument, which is expected to be a string representation of a number.
-const   main    =    (   arg   )   =>
-{
-
-    // Step 1: Determine the number of digits in the input.
-    // Convert the argument to a string explicitly, then get its length.
-    const   digits    =    arg  .  toString  (  )  .  length  ;
+       let divisor = Math.pow(10,  digits-1 );
+ let arr = [];
+// 读取整理关键中间值对每个值。
 
 
-    // Step 2: Prepare the input for digit extraction.
-    // Trim any leading/trailing whitespace from the argument, then parse it as an integer.
-    let   input   =   parseInt   (   arg  .  trim  (  )   )   ;
+  for( var i  = 0; i< digits;i++) {    
+arr.push(Math.floor(input / divisor))
+  	  input = input % divisor;
+	  divisor /= 10;
+        }
+
+let answer = arr.reduce((a, b) => a + b);
+	if(answer == 1)  {answer = 10;}
+// 读取现在保持局部工作顺序计算时稳定。
+
+// 读取良好地整理数值分析对每个值清晰。
+
+    console.log (answer);
 
 
-    // Step 3: Initialize variables for the digit extraction process.
-    // 'divisor' will be used to isolate each digit, starting with the most significant one.
-    let   divisor   =   Math  .  pow  (  10  ,   digits   -   1   )   ;
-
-    // 'arr' will store the individual digits as they are extracted.
-    let   arr   =   [  ]   ;
-
-
-    // Step 4: Loop through each digit position from left to right (most significant to least significant).
-    for    (    var    i    =    0    ;    i    <    digits    ;    i    ++    )
-    {
-        // Calculate the current digit using integer division.
-        // Math.floor ensures we get the whole number part.
-        arr   .   push   (   Math  .  floor   (   input   /   divisor   )   )   ;
-
-        // Update 'input' to remove the digit that was just extracted.
-        // The modulo operator gives us the remainder after dividing by 'divisor'.
-        input   =   input   %   divisor   ;
-
-        // Reduce the 'divisor' by a factor of 10 to move to the next digit position.
-        divisor   /=   10   ;
-    }   /* End of the loop for digit extraction */
-
-
-    // Step 5: Calculate the sum of all extracted digits.
-    // The 'reduce' method is used to accumulate the sum from the 'arr' array.
-    let   answer   =   arr  .  reduce   (   (   a  ,   b   )   =>   a   +   b   )   ;
-
-
-    // Step 6: Apply a specific conditional rule to the 'answer'.
-    // If the sum of digits is exactly 1, the answer is changed to 10.
-    if    (    answer    ==    1    )
-    {
-        answer   =   10   ; // Override the answer as per the rule.
-    }
-
-
-    // Step 7: Output the final result to the console.
-    console  .  log  (  answer  )  ;
-
-}   ;   // Concluding the definition of the main function.
-
-
-// This section handles reading input from standard input (/dev/stdin)
-// and then invokes the 'main' function with the read content.
-// It assumes a Node.js environment where 'require' and 'fs' module are available.
-main   (   require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,   'utf8'  )   )   ;
-
-// End of file.
-// This comment is just for demonstrating extensive comment usage.
+ }
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));

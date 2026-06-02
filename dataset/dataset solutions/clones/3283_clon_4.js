@@ -1,20 +1,24 @@
-const documentContent = require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
 
-const parsedLines = documentContent.trim().split('\n').map(segment => segment.split(' ').map(Number));
+    const totalElements = Number(lines[0]);
+    const [limitOne, limitTwo] = lines[1].split(" ").map(Number);
 
-const [elementCount] = parsedLines[0];
-const [lowerBoundary, upperBoundary] = parsedLines[1];
-const numericalValues = parsedLines[2];
+    const numericValues = lines[2].split(" ").map(Number);
+    numericValues.sort((valA, valB) => valA - valB);
 
-const categorizedTally = numericalValues.reduce((acc, currentVal) => {
-    if (currentVal <= lowerBoundary) {
-        acc.groupOne++;
-    } else if (currentVal <= upperBoundary) {
-        acc.groupTwo++;
-    } else {
-        acc.groupThree++;
-    }
-    return acc;
-}, { groupOne: 0, groupTwo: 0, groupThree: 0 });
+    const categoryCounts = numericValues.reduce((acc, currentVal) => {
+        if (currentVal <= limitOne) {
+            acc.groupAlpha++;
+        } else if (currentVal <= limitTwo) {
+            acc.groupBeta++;
+        } else {
+            acc.groupGamma++;
+        }
+        return acc;
+    }, { groupAlpha: 0, groupBeta: 0, groupGamma: 0 });
 
-console.log(Math.min(categorizedTally.groupOne, categorizedTally.groupTwo, categorizedTally.groupThree));
+    console.log(Math.min(categoryCounts.groupAlpha, categoryCounts.groupBeta, categoryCounts.groupGamma));
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,47 +1,52 @@
-const formatDecimalPrecision = (numericValue, precisionDigits) => {
-    if (!Number.isFinite(numericValue)) {
-        return String(numericValue);
+function createInputParser(rawSource) {
+    const dataTokens = rawSource.split(/\s+/).filter(Boolean);
+    let currentTokenIndex = 0;
+
+    function getNextStringToken() {
+        if (currentTokenIndex >= dataTokens.length) {
+            throw new Error("Input stream exhausted.");
+        }
+        return dataTokens[currentTokenIndex++];
     }
 
-    const isNegative = numericValue < 0;
-    const absoluteValue = Math.abs(numericValue);
-
-    let integerPartString = Math.floor(absoluteValue).toString();
-    
-    const scaleFactor = Math.pow(10, precisionDigits);
-    let scaledFraction = Math.round((absoluteValue - Math.floor(absoluteValue)) * scaleFactor);
-
-    if (scaledFraction >= scaleFactor) {
-        integerPartString = (parseInt(integerPartString, 10) + 1).toString();
-        scaledFraction = 0;
+    function getNextNumericToken() {
+        const tokenValue = getNextStringToken();
+        const parsedNumber = Number(tokenValue);
+        if (isNaN(parsedNumber)) {
+            throw new Error(`Invalid numeric format encountered: ${tokenValue}`);
+        }
+        return parsedNumber;
     }
 
-    let fractionalPartString = scaledFraction.toString();
-    while (fractionalPartString.length < precisionDigits) {
-        fractionalPartString = '0' + fractionalPartString;
+    return {
+        readInteger: getNextNumericToken
+    };
+}
+
+function outputResultWithDoubleNewline(valueToPrint) {
+    console.log(valueToPrint + "\n");
+}
+
+function processAndCalculate(sourceData) {
+    const dataReader = createInputParser(sourceData);
+
+    const firstOperand = dataReader.readInteger();
+    const secondOperand = dataReader.readInteger();
+
+    const reciprocalSum = (1 / firstOperand) + (1 / secondOperand);
+    const finalResult = 1 / reciprocalSum;
+
+    const formattedOutput = finalResult.toFixed(10);
+
+    outputResultWithDoubleNewline(formattedOutput);
+}
+
+function executeDebugMode() {
+    if (typeof document !== 'undefined' && document.getElementById("input")) {
+        processAndCalculate(document.getElementById("input").value);
+    } else {
+        console.error("Debug mode requires a DOM environment with an 'input' element.");
     }
+}
 
-    const sign = isNegative ? '-' : '';
-    return `${sign}${integerPartString}.${fractionalPartString}`;
-};
-
-const executeComputation = (sourceText) => {
-    const [firstNumericalValue, secondNumericalValue] = sourceText
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map(Number);
-
-    const calculatedProportion = (firstNumericalValue * secondNumericalValue) / (firstNumericalValue + secondNumericalValue);
-
-    return formatDecimalPrecision(calculatedProportion, 10);
-};
-
-const displayResultString = (contentToDisplay) => {
-    console.log(contentToDisplay);
-};
-
-const beginExecution = (inputSourceContent) => {
-    const formattedResult = executeComputation(inputSourceContent);
-    displayResultString(formattedResult);
-};
+processAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,30 @@
-function processInputData( rawDataString ) {
+function processInput(rawData) {
+  // Parse the input string to extract N, D, and the list of points.
+  // The first line contains N (number of points, though not explicitly used after destructuring) and D (maximum distance).
+  // Subsequent lines contain the coordinates of each point.
+  const [[numPoints, maxDistance], ...pointCoordinates] = rawData
+    .split('\n') // Split the input into individual lines
+    .map(lineText => lineText.split(' ').map(Number)); // For each line, split by space and convert to numbers
 
-  const [ [ numItems ,  allowedDistance ] , ...coordinateSet ] =
-    rawDataString
-      .split( '\n' )
-      .map(  singleLineContent  =>  singleLineContent.split( ' ' ).map( Number )  )
-  ;
+  // Initialize a counter for points that satisfy the distance condition.
+  let validPointsCount = 0;
 
-  let eligiblePointsCount = 0
-  ;
+  // Iterate over each point in the list of coordinates.
+  pointCoordinates.forEach(currentPoint => {
+    // Destructure the current point's coordinates into x and y.
+    const [coordX, coordY] = currentPoint;
 
-  coordinateSet.forEach( currentPointValue => {
-    const [ xComponent , yComponent ] = currentPointValue ;
-    Math.sqrt( xComponent * xComponent + yComponent * yComponent ) <= allowedDistance && eligiblePointsCount++ ;
-  } ) ;
+    // Calculate the Euclidean distance from the origin (0,0) to the current point.
+    // If this distance is less than or equal to the maximum allowed distance (maxDistance),
+    // increment the counter for valid points.
+    if (Math.sqrt(coordX * coordX + coordY * coordY) <= maxDistance) {
+      validPointsCount++;
+    }
+  });
 
-  console.log( eligiblePointsCount ) ;
-
+  // Output the final count of points that are within the specified distance.
+  console.log(validPointsCount);
 }
 
-processInputData( require('fs').readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

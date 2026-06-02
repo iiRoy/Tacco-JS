@@ -2,194 +2,241 @@ var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var inputSource;
-var rawInputLines = [];
 
-/* Event handler for each line received */
-inputReader.on('line', function(incomingLine) {
-  rawInputLines.push(incomingLine);
+// Global variables for input processing
+var dataProcessor;
+var inputLines = [];
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-/* Event handler upon input stream closure */
-inputReader.on('close', function() {
-  inputSource = initializeInputProcessor(rawInputLines);
-  console.error("\n"); // Output a newline for cleaner debug logs
-  var executionStartTime = Date.now();
+// Event listener for end of input
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+
+  // Separator for debug output
+  console.error("\n");
+
+  // Measure execution time
+  var startTime = Date.now();
   executeSolution();
-  var totalExecutionTime = Date.now() - executionStartTime;
-  logDebug("Execution duration: " + (totalExecutionTime) + "ms");
-  logDebug("Memory usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+  var elapsedTime = Date.now() - startTime;
+
+  // Log performance metrics
+  logDebug("time : " + (elapsedTime) + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-/* Creates a deep copy of a given object. */
-function createDeepCopy(originalObject) {
-  return JSON.parse(JSON.stringify(originalObject));
+/**
+ * Creates a deep copy of an object.
+ * @param {object} sourceObject - The object to clone.
+ * @returns {object} A new object that is a deep copy of the source.
+ */
+function createDeepCopy(sourceObject){
+  return JSON.parse(JSON.stringify(sourceObject));
 }
 
-/* Retrieves the next integer from the input. */
-function getInteger() {
-  return convertInputToken(getNextToken(), 1);
+/**
+ * Retrieves the next input token as an integer.
+ * @returns {number} The next integer from input.
+ */
+function getNextInteger(){
+  return convertInput(getNextToken(), 1);
 }
 
-/* Retrieves the next string array from the input. */
-function getStringArray() {
-  return convertInputToken(getNextToken(), 2);
+/**
+ * Retrieves the next input token as an array of strings.
+ * @returns {string[]} The next string array from input.
+ */
+function getNextStringArray(){
+  return convertInput(getNextToken(), 2);
 }
 
-/* Retrieves the next integer array from the input. */
-function getIntegerArray() {
-  return convertInputToken(getNextToken(), 4);
+/**
+ * Retrieves the next input token as an array of integers.
+ * @returns {number[]} The next integer array from input.
+ */
+function getNextIntegerArray(){
+  return convertInput(getNextToken(), 4);
 }
 
-/* Retrieves the next character array from the input. */
-function getCharacterArray() {
-  return convertInputToken(getNextToken(), 6);
+/**
+ * Retrieves the next input token as an array of characters.
+ * @returns {string[]} The next character array from input.
+ */
+function getNextCharacterArray(){
+  return convertInput(getNextToken(), 6);
 }
 
-/* Advances the input stream and returns the next token. */
-function getNextToken() {
-  return inputSource.getNextToken();
+/**
+ * Retrieves the next raw input token.
+ * @returns {string} The next raw token.
+ */
+function getNextToken(){
+  return dataProcessor.retrieveNextToken();
 }
 
-/* Checks if there are more tokens in the input stream. */
-function hasMoreTokens() {
-  return inputSource.hasMoreTokens();
+/**
+ * Checks if there are more input tokens available.
+ * @returns {boolean} True if more tokens exist, false otherwise.
+ */
+function hasMoreTokens(){
+  return dataProcessor.checkMoreTokens();
 }
 
-/* Sets up the input processing object. */
-function initializeInputProcessor(dataInput) {
+/**
+ * Initializes the input handler object.
+ * @param {string[]} inputData - An array of input strings.
+ * @returns {object} An object with methods to process input.
+ */
+function initializeInputHandler(inputData){
   return {
-    dataLines: dataInput,
-    currentPosition: 0,
-    totalLines: dataInput.length,
-    hasMoreTokens: function() {
-      return (this.currentPosition < this.totalLines);
+    sourceList : inputData,
+    currentPosition : 0,
+    totalItems : inputData.length,
+
+    /**
+     * Checks if there are more items in the input list.
+     * @returns {boolean} True if more items, false otherwise.
+     */
+    checkMoreTokens : function(){
+      return (this.currentPosition < this.totalItems);
     },
-    getNextToken: function() {
-      if (this.hasMoreTokens()) {
-        return this.dataLines[this.currentPosition++];
+
+    /**
+     * Retrieves the next item from the input list.
+     * @returns {string} The next item.
+     * @throws {string} If no more input is available.
+     */
+    retrieveNextToken : function(){
+      if(this.checkMoreTokens()){
+        return this.sourceList[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceededException - No further input available";
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       }
     }
   };
 }
 
-/* Prints the final computed result to standard output. */
-function printResult(dataToOutput) {
-  console.log(dataToOutput);
-}
-
-/* Logs debug information to standard error. */
-function logDebug(debugMessage) {
-  console.error("debug output: " + require("util").inspect(debugMessage, false, null));
-}
-
-/*
- * This function handles various input type conversions.
- * conversionType parameter:
- * - default: returns input as-is.
- * - 1: parses input as an integer.
- * - 2: splits input by spaces into a string array.
- * - 4: splits input by spaces and converts to an integer array.
- * - 6: splits input into a character array.
- * - 7: splits input into a character array and converts to integer array.
- * - 8: joins array elements with spaces.
- * - 9: joins array elements with newlines.
- * - 0: joins array elements without a separator.
+/**
+ * Prints a message to standard output.
+ * @param {*} message - The message to print.
  */
-function convertInputToken(inputValue, conversionType) {
+function printResult(message){
+  console.log(message);
+}
+
+/**
+ * Prints a debug message to standard error.
+ * @param {*} debugMessage - The message to print.
+ */
+function logDebug(debugMessage){
+  console.error("debug:" + require("util").inspect(debugMessage, false, null));
+}
+
+/**
+ * Converts input based on a specified format code.
+ * @param {*} inputItem - The item to convert.
+ * @param {number} formatCode - The conversion format code.
+ * @returns {*} The converted item.
+ */
+function convertInput(inputItem, formatCode){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(formatCode){
+      case 1: return parseInt(inputItem);
+      case 2: return inputItem.split(" ");
+      case 4: return inputItem.split(" ").map(Number);
+      case 6: return inputItem.split("");
+      case 7: return inputItem.split("").map(Number);
+      case 8: return inputItem.join(" ");
+      case 9: return inputItem.join("\n");
+      case 0: return inputItem.join("");
+      default: return inputItem;
     }
-  } catch (err) {
-    return inputValue;
+  } catch(error) {
+    return inputItem; // Return original on error
   }
 }
 
-/* Main processing logic for the problem */
-function executeSolution() {
-  var dimensionsData = getIntegerArray();
-  var heightVal = dimensionsData[0];
-  var widthVal = dimensionsData[1];
+/**
+ * Main function to solve the problem.
+ */
+function executeSolution(){
+  // Read initial dimensions
+  var dimensions = getNextIntegerArray();
+  var heightVal = dimensions[0];
+  var widthVal = dimensions[1];
 
-  var minimumDifference = 100000000000; // Initialize with a very large value
+  // Initialize minimum difference with a large value
+  var minDifference = 100000000000;
 
-  // First pass: Iterate through possible vertical splits of heightVal
-  for (var splitIndex = 1; splitIndex <= heightVal - 2; splitIndex++) {
-    var vertSegment1 = splitIndex;
-    var vertSegment2 = Math.floor((heightVal - splitIndex) / 2);
-    var vertSegment3 = Math.ceil((heightVal - splitIndex) / 2);
+  // First set of calculations: splitting along height
+  for(var splitIndex = 1; splitIndex <= heightVal - 2; splitIndex++){
+    // Calculate areas for vertical splits
+    var vertSlice1 = splitIndex;
+    var vertSlice2 = Math.floor((heightVal - splitIndex) / 2);
+    var vertSlice3 = Math.ceil((heightVal - splitIndex) / 2);
 
-    var maxVerticalSegment = Math.max.apply(null, [vertSegment1, vertSegment2, vertSegment3]);
-    var minVerticalSegment = Math.min.apply(null, [vertSegment1, vertSegment2, vertSegment3]);
+    // Find max and min of these vertical slices
+    var maxVertSlice = Math.max.apply(null, [vertSlice1, vertSlice2, vertSlice3]);
+    var minVertSlice = Math.min.apply(null, [vertSlice1, vertSlice2, vertSlice3]);
 
-    // Update minimum difference based on vertical splits and full width
-    minimumDifference = Math.min(minimumDifference, (maxVerticalSegment - minVerticalSegment) * widthVal);
+    // Update minDifference with the difference of vertical slices multiplied by width
+    minDifference = Math.min(minDifference, (maxVertSlice - minVertSlice) * widthVal);
 
-    var horizSplit1 = Math.floor(widthVal / 2);
-    var horizSplit2 = widthVal - horizSplit1;
+    // Calculate areas for horizontal splits within the remaining part
+    var horizSlice1 = Math.floor(widthVal / 2);
+    var horizSlice2 = widthVal - horizSlice1;
 
-    var areaPiece1 = splitIndex * widthVal;
-    var areaPiece2 = (heightVal - splitIndex) * horizSplit1;
-    var areaPiece3 = (heightVal - splitIndex) * horizSplit2;
+    var area1 = splitIndex * widthVal;
+    var area2 = (heightVal - splitIndex) * horizSlice1;
+    var area3 = (heightVal - splitIndex) * horizSlice2;
 
-    var maxHorizontalArea = Math.max.apply(null, [areaPiece1, areaPiece2, areaPiece3]);
-    var minHorizontalArea = Math.min.apply(null, [areaPiece1, areaPiece2, areaPiece3]);
+    // Find max and min of these areas
+    var maxArea = Math.max.apply(null, [area1, area2, area3]);
+    var minArea = Math.min.apply(null, [area1, area2, area3]);
 
-    // Update minimum difference based on areas from mixed splits
-    minimumDifference = Math.min(minimumDifference, maxHorizontalArea - minHorizontalArea);
+    // Update minDifference with the difference of these areas
+    minDifference = Math.min(minDifference, maxArea - minArea);
   }
 
-  // Swap heightVal and widthVal to consider the other orientation
+  // Swap height and width to perform symmetric calculations
   var tempDim = heightVal;
   heightVal = widthVal;
   widthVal = tempDim;
 
-  // Second pass: Repeat the process with swapped dimensions
-  for (var splitIndex = 1; splitIndex <= heightVal - 2; splitIndex++) {
-    var vertSegment1 = splitIndex;
-    var vertSegment2 = Math.floor((heightVal - splitIndex) / 2);
-    var vertSegment3 = Math.ceil((heightVal - splitIndex) / 2);
+  // Second set of calculations: splitting along new height (original width)
+  for(var splitIndex = 1; splitIndex <= heightVal - 2; splitIndex++){
+    // Calculate areas for vertical splits (now effectively horizontal in original orientation)
+    var vertSlice1 = splitIndex;
+    var vertSlice2 = Math.floor((heightVal - splitIndex) / 2);
+    var vertSlice3 = Math.ceil((heightVal - splitIndex) / 2);
 
-    var maxVerticalSegment = Math.max.apply(null, [vertSegment1, vertSegment2, vertSegment3]);
-    var minVerticalSegment = Math.min.apply(null, [vertSegment1, vertSegment2, vertSegment3]);
+    // Find max and min of these slices
+    var maxVertSlice = Math.max.apply(null, [vertSlice1, vertSlice2, vertSlice3]);
+    var minVertSlice = Math.min.apply(null, [vertSlice1, vertSlice2, vertSlice3]);
 
-    // Update minimum difference based on vertical splits and full width
-    minimumDifference = Math.min(minimumDifference, (maxVerticalSegment - minVerticalSegment) * widthVal);
+    // Update minDifference
+    minDifference = Math.min(minDifference, (maxVertSlice - minVertSlice) * widthVal);
 
-    var horizSplit1 = Math.floor(widthVal / 2);
-    var horizSplit2 = widthVal - horizSplit1;
+    // Calculate areas for horizontal splits within the remaining part (now effectively vertical)
+    var horizSlice1 = Math.floor(widthVal / 2);
+    var horizSlice2 = widthVal - horizSlice1;
 
-    var areaPiece1 = splitIndex * widthVal;
-    var areaPiece2 = (heightVal - splitIndex) * horizSplit1;
-    var areaPiece3 = (heightVal - splitIndex) * horizSplit2;
+    var area1 = splitIndex * widthVal;
+    var area2 = (heightVal - splitIndex) * horizSlice1;
+    var area3 = (heightVal - splitIndex) * horizSlice2;
 
-    var maxHorizontalArea = Math.max.apply(null, [areaPiece1, areaPiece2, areaPiece3]);
-    var minHorizontalArea = Math.min.apply(null, [areaPiece1, areaPiece2, areaPiece3]);
+    // Find max and min of these areas
+    var maxArea = Math.max.apply(null, [area1, area2, area3]);
+    var minArea = Math.min.apply(null, [area1, area2, area3]);
 
-    // Update minimum difference based on areas from mixed splits
-    minimumDifference = Math.min(minimumDifference, maxHorizontalArea - minHorizontalArea);
+    // Update minDifference
+    minDifference = Math.min(minDifference, maxArea - minArea);
   }
 
-  // Output the smallest difference found
-  printResult(minimumDifference);
+  // Output the final minimum difference
+  printResult(minDifference);
 }

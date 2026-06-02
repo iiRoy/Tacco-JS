@@ -1,97 +1,152 @@
-"use strict"; /* This directive enforces stricter parsing and error handling. */
-var rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-var tokenArray = rawInputData.split(/ |\n/),
-  tokenIndex = 0; // Initialize token list and current position.
+"use strict"; // Enforce strict parsing and error handling for better code quality
 
-function consumeNextToken(asString) {
-  // Retrieves the next token from the input array.
-  return asString ? tokenArray[tokenIndex++] : +tokenArray[tokenIndex++];
+// Read all input from the standard input stream as a UTF-8 string
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+
+// Split the raw input string into an array of tokens using spaces or newlines as delimiters
+let tokenStream = rawData.split(/ |\n/);
+let tokenIndex = 0; // Initialize an index to keep track of the current token position
+
+/**
+ * Retrieves the next token from the global token stream.
+ * @param {boolean} asString - If true, the token is returned as a string; otherwise, it's converted to a number.
+ * @returns {string|number} The next token from the stream.
+ */
+function getNextToken(asString) {
+  return asString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
-function consumeMultipleTokens(count, asString) {
-  // Grabs a specified number of tokens.
-  return asString ? tokenArray.slice(tokenIndex, tokenIndex += count) : tokenArray.slice(tokenIndex, tokenIndex += count).map(v => +v);
+/**
+ * Retrieves a specified number of tokens from the stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asString - If true, tokens are returned as strings; otherwise, they are converted to numbers.
+ * @returns {Array<string|number>} An array containing the retrieved tokens.
+ */
+function getMultipleTokens(count, asString) {
+  // Extract a slice of the token stream and then advance the global token index
+  const tokens = tokenStream.slice(tokenIndex, tokenIndex + count);
+  tokenIndex += count;
+  return asString ? tokens : tokens.map(item => +item);
 }
 
-function consumeMatrixTokens(numRows, numCols, asString) {
-  // Reads a matrix of tokens.
-  var resultMatrix = [],
-    rowIndex = 0;
-  if (asString)
-    for (; rowIndex < numRows; rowIndex++) resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += numCols));
-  else
-    for (; rowIndex < numRows; rowIndex++) resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += numCols).map(v => +v));
+/**
+ * Retrieves a matrix (2D array) of tokens from the stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} asString - If true, matrix elements are strings; otherwise, they are numbers.
+ * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+ */
+function getMatrixTokens(height, width, asString) {
+  let resultMatrix = [];
+  let rowIdx = 0;
+  if (asString) {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex + width));
+      tokenIndex += width;
+    }
+  } else {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex + width).map(item => +item));
+      tokenIndex += width;
+    }
+  }
   return resultMatrix;
 }
 
-function createMultiDimArray(defaultValue) {
-  // Creates a multi-dimensional array dynamically.
-  var args = arguments,
-    argCount = args.length,
-    arrayCreationString = "Array(args[" + --argCount + "]).fill().map(_=>{return " + defaultValue + ";})";
-  while (--argCount) arrayCreationString = "Array(args[" + argCount + "]).fill().map(_=>" + arrayCreationString + ")";
-  return eval(arrayCreationString);
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as subsequent arguments.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension, from outermost to innermost.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  let dimensions = arguments; // Access all arguments, including the initial value
+  let dimensionCount = dimensions.length; // Total number of arguments
+  // Construct a string of JavaScript code to create the array
+  let arrayCreationCode = "Array(dimensions[" + --dimensionCount + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--dimensionCount) {
+    arrayCreationCode = "Array(dimensions[" + dimensionCount + "]).fill().map(x=>" + arrayCreationCode + ")";
+  }
+  // Evaluate the constructed string to execute the array creation
+  return eval(arrayCreationCode);
 }
 
-var programResult = executeMainLogic();
+// Execute the main logic function and store its return value
+let programResult = executeLogic();
+
+// If the result is not undefined, print it to the console
 if (programResult !== undefined) {
   console.log(programResult);
 }
 
-function executeMainLogic() {
-  // Main function to process the input and determine validity.
-  var negativeOutcome = "No",
-    positiveOutcome = "Yes"; // Predefined strings for output.
+/**
+ * The core function containing the problem's solution logic.
+ * It determines if a collection of parenthesis strings can be balanced.
+ * @returns {string} "Yes" if the strings can be balanced, "No" otherwise.
+ */
+function executeLogic() {
+  const noOutcome = "No"; // Constant string for a negative result
+  const yesOutcome = "Yes"; // Constant string for a positive result
 
-  var numSequences = consumeNextToken(); // Read the total number of sequences.
-  var negativeBalancedSequences = [],
-    totalBalanceAccumulator = 0,
-    remainingPositiveBalance = 0; // Data structures and counters.
+  let numStrings = getNextToken(); // Read the total count of parenthesis strings
+  let unbalancedStrings = []; // Array to store strings that end with a non-positive balance
+  let totalBalance = 0; // Accumulator for the sum of final balances of all strings
+  let currentBalance = 0; // Represents the available positive balance from strings processed so far
 
-  // First pass: Process each sequence string.
-  for (var sequenceIndex = 0; sequenceIndex < numSequences; sequenceIndex++) {
-    var minBalanceDuringScan = 0,
-      currentSequenceBalance = 0; // State for current sequence.
-    var currentSequenceString = consumeNextToken(1); // Get the next sequence as a string.
+  // Loop through each of the input strings
+  for (let idx = 0; idx < numStrings; idx++) {
+    let minBalance = 0; // Tracks the minimum balance encountered within the current string
+    let currentStringBalance = 0; // Tracks the running balance for the current string
+    let currentString = getNextToken(true); // Read the current parenthesis string
 
-    // Scan characters within the current sequence.
-    for (var characterPosition = 0; characterPosition < currentSequenceString.length; characterPosition++) {
-      if (currentSequenceString[characterPosition] === "(") {
-        currentSequenceBalance++; // Increment balance for an opening parenthesis.
+    // Iterate over each character in the current string
+    for (let charIdx = 0; charIdx < currentString.length; charIdx++) {
+      if (currentString[charIdx] === "(") {
+        currentStringBalance++; // Increment balance for an opening parenthesis
       } else {
-        currentSequenceBalance--; // Decrement balance for a closing parenthesis.
-        if (currentSequenceBalance < minBalanceDuringScan) {
-          minBalanceDuringScan = currentSequenceBalance; // Update the minimum balance encountered.
+        currentStringBalance--; // Decrement balance for a closing parenthesis
+        if (currentStringBalance < minBalance) {
+          minBalance = currentStringBalance; // Update minBalance if a new minimum is reached
         }
       }
     }
-    totalBalanceAccumulator += currentSequenceBalance; // Add sequence's final balance to global total.
-    if (currentSequenceBalance > 0) {
-      remainingPositiveBalance += currentSequenceBalance; // Accumulate positive final balances.
+
+    totalBalance += currentStringBalance; // Add the final balance of this string to the overall total
+    if (currentStringBalance > 0) {
+      currentBalance += currentStringBalance; // If the string ends with a positive balance, add it to the 'currentBalance' pool
     } else {
-      negativeBalancedSequences.push([-minBalanceDuringScan, currentSequenceBalance]); // Store info for sequences ending with non-positive balance.
+      // If the string ends with a non-positive balance, store its required minimum balance (as positive)
+      // and its final balance.
+      unbalancedStrings.push([-minBalance, currentStringBalance]);
     }
   }
 
-  // Check if the total balance of all sequences is zero.
-  if (totalBalanceAccumulator !== 0) {
-    return negativeOutcome; // If not zero, the overall sequence is invalid.
+  // If the sum of all final balances is not zero, it's impossible to balance all strings
+  if (totalBalance !== 0) {
+    return noOutcome;
   }
 
-  // Sort sequences that ended with non-positive balance.
-  // Sorting by the required 'debt' (negative of minBalanceDuringScan) in descending order.
-  negativeBalancedSequences.sort((seqA, seqB) => seqB[0] - seqA[0]);
+  // Sort the 'unbalancedStrings' array. The primary sorting key is the absolute value of their
+  // minimum balance (requiredMin), in descending order. This ensures strings that "dip" the most
+  // are attempted to be balanced first.
+  unbalancedStrings.sort((strA, strB) => strB[0] - strA[0]);
 
-  // Second pass: Process sequences that ended with non-positive balance.
-  for (var processedIndex = 0; processedIndex < negativeBalancedSequences.length; processedIndex++) {
-    var [requiredBalance, sequenceFinalBalance] = negativeBalancedSequences[processedIndex]; // Destructure values.
+  // Iterate through the sorted unbalanced strings to see if they can be balanced
+  for (let idx = 0; idx < unbalancedStrings.length; idx++) {
+    let [requiredMin, finalBalance] = unbalancedStrings[idx]; // Destructure the stored values
 
-    // Check if the current positive balance can cover the deficit.
-    if (requiredBalance > remainingPositiveBalance) {
-      return negativeOutcome; // If not enough positive balance, invalid.
+    // If the minimum balance required for this string (how much it dips below zero)
+    // is greater than the currently available positive balance, it cannot be balanced.
+    if (requiredMin > currentBalance) {
+      return noOutcome;
     }
-    remainingPositiveBalance -= sequenceFinalBalance; // Deduct the (negative) final balance, effectively adding its absolute value.
+    // Update the 'currentBalance' pool by effectively adding the final balance of this string.
+    // Since finalBalance is non-positive, this operation either reduces 'currentBalance' (if finalBalance is negative)
+    // or keeps it the same (if finalBalance is zero).
+    currentBalance -= finalBalance;
   }
 
-  return positiveOutcome; // All conditions met, the overall sequence is valid.
+  // If all checks pass and all strings can be potentially balanced, return "Yes"
+  return yesOutcome;
 }

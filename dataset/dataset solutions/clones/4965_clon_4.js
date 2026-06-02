@@ -1,21 +1,13 @@
-const acquireData = () => require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
+const computeShapeArea = (sourceData) => {
+    const dataLines = sourceData.split('\n');
+    const numericInputs = dataLines.slice(0, 3).map(val => parseInt(val, 10));
 
-const computeGeometricValue = (sourceData) => {
-    const rawNumericalSequences = sourceData.match(/\d+/g);
+    const [firstBase, secondBase, altitude] = numericInputs;
 
-    const numericalFigures = rawNumericalSequences.map(Number);
+    const sumOfParallelSides = [firstBase, secondBase].reduce((accumulator, currentSide) => accumulator + currentSide, 0);
+    const rawAreaValue = sumOfParallelSides * altitude / 2;
 
-    const baseOne = numericalFigures[0];
-    const baseTwo = numericalFigures[1];
-    const perpendicularHeight = numericalFigures[2];
-
-    const halfPerpendicularHeight = perpendicularHeight / 2;
-
-    const totalCalculatedValue = (baseOne * halfPerpendicularHeight) + (baseTwo * halfPerpendicularHeight);
-
-    const finalDiscreteValue = Math.trunc(totalCalculatedValue);
-
-    process.stdout.write(finalDiscreteValue.toString() + '\n');
+    return Math.trunc(rawAreaValue);
 };
 
-computeGeometricValue(acquireData());
+console.log(computeShapeArea(require("fs").readFileSync("/dev/stdin", "utf8")));

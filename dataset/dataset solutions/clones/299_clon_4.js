@@ -1,51 +1,48 @@
-function* dataStream(rawSource) {
-    const lines = rawSource.trim().split('\n');
-    let currentLineIndex = 0;
-    while (true) {
-        const dimension = Number(lines[currentLineIndex++]);
-        if (dimension === 0) {
-            break;
-        }
-        const gridContent = lines.slice(currentLineIndex, currentLineIndex + dimension).map(line => line.split(''));
-        currentLineIndex += dimension;
-        yield { size: dimension, content: gridContent };
-    }
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = (input.trim()).split("\n");
+
+while (true) {
+   var n = Arr.shift() - 0;
+   if (n == 0) break;
+
+   var yx = [];
+   for (var i = 0; i < n; i++) {
+      var str = Arr.shift();
+      yx.push(str.split(""));
+   }
+
+   var blocked = [];
+   blocked[0] = [];
+   blocked[0][0] = 0;
+
+   for (var y = 0; y < n; y++) {
+      if (!blocked[y + 1]) blocked[y + 1] = [];
+      if (blocked[y + 1][0] === undefined) blocked[y + 1][0] = 0;
+      for (var x = 0; x < n; x++) {
+         var above = blocked[y] && blocked[y][x + 1] !== undefined ? blocked[y][x + 1] : 0;
+         var left = blocked[y + 1][x] !== undefined ? blocked[y + 1][x] : 0;
+         var diagonal = blocked[y] && blocked[y][x] !== undefined ? blocked[y][x] : 0;
+         blocked[y + 1][x + 1] = above + left - diagonal + (yx[y][x] == "*" ? 1 : 0);
+      }
+   }
+
+   var max = 0;
+   for (var side = Math.ceil(n); side >= 1; side--) {
+      var found = false;
+      for (var bottom = side; bottom <= n && !found; bottom++) {
+         for (var right = side; right <= n; right++) {
+            var top = bottom - side;
+            var left = right - side;
+            var total = blocked[bottom][right] - blocked[top][right] - blocked[bottom][left] + blocked[top][left];
+            if (total === 0) {
+               max = side;
+               found = true;
+               break;
+            }
+         }
+      }
+      if (found) break;
+   }
+
+   console.log(max);
 }
-
-const processMatrix = (matrixInfo) => {
-    const matSize = matrixInfo.size;
-    const initialLayout = matrixInfo.content;
-
-    let computedMeasures = new Array(matSize).fill(null).map(() => new Array(matSize).fill(null));
-
-    let maximumExtent = 0;
-
-    Array.from({ length: matSize }, (_, rIdx) => {
-        Array.from({ length: matSize }, (_, cIdx) => {
-            let currentCellIdentifier = initialLayout[rIdx][cIdx];
-            let calculatedValue;
-
-            calculatedValue = (currentCellIdentifier === '*') ? 0 :
-                              ((rIdx === 0 || cIdx === 0) ? 1 :
-                               (1 + Math.min(
-                                   computedMeasures[rIdx - 1][cIdx - 1],
-                                   computedMeasures[rIdx - 1][cIdx],
-                                   computedMeasures[rIdx][cIdx - 1]
-                               )));
-
-            computedMeasures[rIdx][cIdx] = calculatedValue;
-            maximumExtent = Math.max(maximumExtent, calculatedValue);
-        });
-    });
-
-    return maximumExtent;
-};
-
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const allResults = [];
-
-for (const matrixProblem of dataStream(sourceData)) {
-    allResults.push(processMatrix(matrixProblem));
-}
-
-allResults.forEach(finalValue => console.log(finalValue));

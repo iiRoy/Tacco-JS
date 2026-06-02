@@ -1,17 +1,28 @@
-const processInputData = (payloadContent) => {
-    const contentSegments = payloadContent.split('\n');
-    const primarySequence = contentSegments[0];
-    const strideValue = Number(contentSegments[1]);
+const obtainInteger = (valStr) => Math.trunc(Number(valStr));
 
-    const sourceExtent = primarySequence.length;
+const convertToIntegerArray = (strArray) => strArray.reduce((accumulator, current) => {
+    accumulator.push(obtainInteger(current));
+    return accumulator;
+}, []);
 
-    const extractedPatternFragments = Array.from(
-        { length: Math.ceil(sourceExtent / strideValue) },
-        (elementPlaceholder, currentOffset) => primarySequence[currentOffset * strideValue]
-    );
+const calculateAbsolute = (num) => Math.abs(num);
 
-    console.log(extractedPatternFragments.join(''));
-};
+const determineMinimum = (...values) => values.reduce((minVal, currentVal) => (currentVal < minVal ? currentVal : minVal));
 
-const fileSystemAccess = require('node:fs');
-processInputData(fileSystemAccess.readFileSync('/dev/stdin', 'utf8'));
+const determineMaximum = (...values) => values.reduce((maxVal, currentVal) => (currentVal > maxVal ? currentVal : maxVal));
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ 
+function processInputData(rawData) {
+	const lineSegments = rawData.split('\n');
+	const sourceSequence = lineSegments[0];
+	const extractionStep = obtainInteger(lineSegments[1]);
+	const sequenceLength = sourceSequence.length;
+
+	const extractedCharacters = Array.from({ length: Math.ceil(sequenceLength / extractionStep) }, (_, index) => {
+        const charIndex = index * extractionStep;
+        return sourceSequence[charIndex];
+    });
+
+	console.log(extractedCharacters.join(''));
+}

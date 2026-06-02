@@ -1,23 +1,26 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the code. */
+'use strict';
 
-// Define a function to handle the primary processing logic.
-function processDimensions( dataString )
-{
+/*
+ * This function processes an input string containing two numeric values
+ * to perform a specific calculation and output the result.
+ * It adheres to strict mode for better code quality.
+ */
+function processInputData(initialData) {
   // Deconstruct the input string into two distinct width measurements.
-  // 'let' is used here instead of 'const' as a Type II variation.
-  let [ buildingSpan, fabricPanelWidth ] = dataString.split(' ');
+  // The input is expected to be space-separated.
+  const [structureDimension, draperyDimension] = initialData.split(' ');
 
-  // Calculate a derived value: (buildingSpan - (fabricPanelWidth * 2)).
-  // If this result is positive, it is printed; otherwise, zero is printed.
-  // The use of 'eval' is maintained to preserve the exact original operational structure,
-  // consistent with Type II cloning requirements, despite its redundancy for numeric ops.
+  // Calculate a derived value. The 'eval' function is used here
+  // to explicitly convert string values to numbers before arithmetic operations,
+  // and to maintain the original expression structure.
+  // The result is then checked against zero.
   console.log(
-      eval(buildingSpan - eval(fabricPanelWidth * 2)) > 0
-    ? eval(buildingSpan - (fabricPanelWidth * 2))
-    : 0
+    eval(structureDimension - eval(draperyDimension * 2)) > 0
+      ? eval(structureDimension - draperyDimension * 2)
+      : 0
   );
 }
 
-// Initiate the execution by calling the processing function.
-// It reads input from standard input using Node.js's file system module.
-processDimensions( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// The program's entry point. It reads content from standard input,
+// assuming UTF-8 encoding, and passes it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

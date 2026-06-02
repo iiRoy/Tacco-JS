@@ -1,215 +1,304 @@
-var inputReader = require('line-reader').createInterface({
-  inputStream: process.stdin,
-  outputStream: process.stdout
-});
-var dataStore;
-var capturedLines = [];
-inputReader.on('dataReceived', function(receivedInput) {
-  capturedLines.push(receivedInput);
-});
-inputReader.on('endOfInput', function() {
-  dataStore = initializeData(capturedLines);
-  console.warn('\n--- Input above, Program output below ---');
-  executeProgram();
+// This section handles input processing and utility functions.
+// It's generally boilerplate for competitive programming.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function deepCopyObject(sourceObj) {
-  /*
-   * Creates a deep copy of an object.
-   * Special handling for Set objects, otherwise uses JSON serialization.
-   */
-  if (sourceObj instanceof Set) {
-    return new Set(Array.from(sourceObj));
-  } else {
-    return JSON.parse(JSON.stringify(sourceObj));
-  }
+var inputProcessor; // Will hold the object for reading tokens
+var inputLines = []; // Stores all lines read from stdin
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
+
+// Event listener for when input stream closes
+inputReader.on('close', function() {
+  inputProcessor = initializeInputProcessor(inputLines);
+  console.error('\n↑入力 ↓出力'); // Debug message for user
+  Solver(); // Call the main logic function
+});
+
+/**
+ * Creates a deep copy of an object or Set.
+ * @param {any} sourceObject The object to copy.
+ * @returns {any} A deep copy.
+ */
+function createDeepCopy(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-function retrieveInteger() {
-  return dataConverter(getNextItem(), 1);
+/**
+ * Reads the next token and parses it as an integer.
+ * @returns {number} The parsed integer.
+ */
+function readInteger() {
+  return convertInput(getNextToken(), 1);
 }
 
-function retrieveStringArray() {
-  return dataConverter(getNextItem(), 2);
+/**
+ * Reads the next token and splits it into a string array by spaces.
+ * @returns {string[]} An array of strings.
+ */
+function readStringArray() {
+  return convertInput(getNextToken(), 2);
 }
 
-function retrieveIntegerArray() {
-  return dataConverter(getNextItem(), 4);
+/**
+ * Reads the next token, splits it by spaces, and parses elements as integers.
+ * @returns {number[]} An array of integers.
+ */
+function readIntegerArray() {
+  return convertInput(getNextToken(), 4);
 }
 
-function retrieveCharacterArray() {
-  return dataConverter(getNextItem(), 6);
+/**
+ * Reads the next token and splits it into a character array.
+ * @returns {string[]} An array of characters.
+ */
+function readCharacterArray() {
+  return convertInput(getNextToken(), 6);
 }
 
-function getNextItem() {
-  return dataStore.fetchNextEntry();
+/**
+ * Retrieves the next token from the input processor.
+ * @returns {string} The next input token.
+ */
+function getNextToken() {
+  return inputProcessor.getNextToken();
 }
 
-function hasMoreItems() {
-  return dataStore.hasMoreEntries();
+/**
+ * Checks if there are more tokens to read.
+ * @returns {boolean} True if more tokens are available, false otherwise.
+ */
+function hasMoreTokens() {
+  return inputProcessor.hasMoreTokens();
 }
 
-function initializeData(inputLines) {
-  // Sets up the data source object for sequential line retrieval.
+/**
+ * Initializes the input processing object.
+ * @param {string[]} lines An array of input lines.
+ * @returns {object} An object with methods to read input.
+ */
+function initializeInputProcessor(lines) {
   return {
-    lineCollection: inputLines,
-    currentPosition: 0,
-    maximumLines: inputLines.length,
-    hasMoreEntries: function() {
-      return (this.currentPosition < this.maximumLines);
+    dataLines: lines, // The array of input lines
+    currentLineIndex: 0, // Current index in the dataLines array
+    totalLines: lines.length, // Total number of lines
+    /**
+     * Checks if there are more lines to read.
+     * @returns {boolean} True if more lines exist, false otherwise.
+     */
+    hasMoreTokens: function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    fetchNextEntry: function() {
-      if (this.hasMoreEntries()) {
-        return this.lineCollection[this.currentPosition++];
+    /**
+     * Retrieves the next line of input.
+     * @returns {string} The next line.
+     * @throws {string} If no more input is available.
+     */
+    getNextToken: function() {
+      if (this.hasMoreTokens()) {
+        return this.dataLines[this.currentLineIndex++];
       } else {
-        throw 'InputOutOfBoundsError : No more lines available for processing.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-function displayOutput(messageContent) {
-  console.log(messageContent);
-}
-
-function logDebugMessage(debugPayload) {
-  console.error('DEBUG INFO: ' + require('util').inspect(debugPayload, false, null));
-}
-
-/*
- * Utility function to convert input data based on a specified type.
- * conversionType values:
- * 1: Parse as integer.
- * 2: Split string by space into array.
- * 4: Split string by space, then parse each part as Number.
- * 6: Split string into character array.
- * 7: Split string into character array, then parse each char as Number.
- * 8: Join array elements with spaces.
- * 9: Join array elements with newlines.
- * 0: Join array elements without any separator.
- * Default: Return input as-is.
+/**
+ * Prints a message to the console.
+ * @param {any} message The message to print.
  */
-function dataConverter(inputData, conversionType) {
+function printResult(message) {
+  console.log(message);
+}
+
+/**
+ * Logs a debug message to stderr.
+ * @param {any} debugInfo The information to debug.
+ */
+function logDebug(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
+}
+
+/**
+ * Converts input based on a specified type.
+ * @param {string|string[]} input The input to convert.
+ * @param {number} conversionType The type of conversion.
+ *   1: parseInt, 2: split by space, 4: split by space and map to Number,
+ *   6: split by char, 7: split by char and map to Number,
+ *   8: join by space, 9: join by newline, 0: join without separator.
+ * @returns {any} The converted input.
+ */
+function convertInput(input, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(inputData);
+        return parseInt(input);
       case 2:
-        return inputData.split(' ');
+        return input.split(' ');
       case 4:
-        return inputData.split(' ').map(Number);
+        return input.split(' ').map(Number);
       case 6:
-        return inputData.split('');
+        return input.split('');
       case 7:
-        return inputData.split('').map(Number);
+        return input.split('').map(Number);
       case 8:
-        return inputData.join(' ');
+        return input.join(' ');
       case 9:
-        return inputData.join('\n');
+        return input.join('\n');
       case 0:
-        return inputData.join('');
+        return input.join('');
       default:
-        return inputData;
+        return input;
     }
-  } catch (conversionError) {
-    return inputData; // Return original data on conversion failure.
+  } catch (error) {
+    return input; // Return original input on error
   }
 }
 
-// --- End of utility functions and setup ---
+// End of input/output and utility functions.
 
-function executeProgram() {
-  const firstLineData = retrieveIntegerArray();
-  const elementCount = firstLineData[0];
-  const firstGroupSize = firstLineData[1];
-  const secondGroupSize = firstLineData[2];
+/**
+ * Main function containing the problem-solving logic.
+ */
+function Solver() {
+  // Read the first line containing N, K, L
+  var firstLineData = readIntegerArray();
+  var numElements = firstLineData[0]; // N
+  var numConnectionsK = firstLineData[1]; // K
+  var numConnectionsL = firstLineData[2]; // L
 
-  const ufStructureOne = disjointSetStructure(elementCount);
-  const ufStructureTwo = disjointSetStructure(elementCount);
+  // Initialize two Disjoint Set Union (Union-Find) structures
+  var unionFindK = DisjointSetUnion(numElements);
+  var unionFindL = DisjointSetUnion(numElements);
 
-  const resultArray = new Array(elementCount);
-  const groupOneConnections = new Array(firstGroupSize);
-  const groupTwoConnections = new Array(secondGroupSize);
+  // Array to store the final counts for each element
+  var finalCounts = new Array(numElements);
 
-  for (let idx = 0; idx < firstGroupSize; idx++) {
-    const tempPair = retrieveIntegerArray();
-    tempPair.sort((a, b) => a - b); // Ensure consistent order
-    tempPair[0]--; // Adjust to 0-based indexing
-    tempPair[1]--; // Adjust to 0-based indexing
-    groupOneConnections[idx] = tempPair;
-    ufStructureOne.performUnion(tempPair[0], tempPair[1]);
+  // Arrays to store connections (though not directly used after union,
+  // they are part of the original structure, so we keep them).
+  var connectionsK = new Array(numConnectionsK);
+  var connectionsL = new Array(numConnectionsL);
+
+  // Process K connections for the first Union-Find structure
+  for (var idx = 0; idx < numConnectionsK; idx++) {
+    var currentPair = readIntegerArray();
+    currentPair.sort((a, b) => a - b); // Ensure consistent order for processing
+    currentPair[0]--; // Convert to 0-indexed
+    currentPair[1]--; // Convert to 0-indexed
+    connectionsK[idx] = currentPair; // Store the pair
+    unionFindK.uniteSets(currentPair[0], currentPair[1]); // Perform union operation
   }
 
-  for (let idx = 0; idx < secondGroupSize; idx++) {
-    const tempPair = retrieveIntegerArray();
-    tempPair.sort((a, b) => a - b); // Ensure consistent order
-    tempPair[0]--; // Adjust to 0-based indexing
-    tempPair[1]--; // Adjust to 0-based indexing
-    groupTwoConnections[idx] = tempPair;
-    ufStructureTwo.performUnion(tempPair[0], tempPair[1]);
+  // Process L connections for the second Union-Find structure
+  for (var idx = 0; idx < numConnectionsL; idx++) {
+    var currentPair = readIntegerArray();
+    currentPair.sort((a, b) => a - b); // Ensure consistent order for processing
+    currentPair[0]--; // Convert to 0-indexed
+    currentPair[1]--; // Convert to 0-indexed
+    connectionsL[idx] = currentPair; // Store the pair
+    unionFindL.uniteSets(currentPair[0], currentPair[1]); // Perform union operation
   }
 
-  const frequencyMap = {};
-  for (let idx = 0; idx < elementCount; idx++) {
-    const rootKeyString = ufStructureTwo.getRepresentativeIndex(idx) + ":" + ufStructureOne.getRepresentativeIndex(idx);
-    if (frequencyMap[rootKeyString] === undefined) {
-      frequencyMap[rootKeyString] = 0;
+  // Map to store counts of combined root pairs
+  var rootPairCounts = {};
+
+  // Iterate through all elements to find their combined roots and count occurrences
+  for (var idx = 0; idx < numElements; idx++) {
+    var combinedRootKey = unionFindL.findSetRepresentative(idx) + ":" + unionFindK.findSetRepresentative(idx);
+    if (rootPairCounts[combinedRootKey] == null) { // Using == null to match original's behavior for undefined/null
+      rootPairCounts[combinedRootKey] = 0;
     }
-    frequencyMap[rootKeyString]++;
+    rootPairCounts[combinedRootKey]++;
   }
 
-  for (let idx = 0; idx < elementCount; idx++) {
-    resultArray[idx] = frequencyMap[ufStructureTwo.getRepresentativeIndex(idx) + ":" + ufStructureOne.getRepresentativeIndex(idx)];
+  // Populate the finalCounts array based on the calculated root pair counts
+  for (var idx = 0; idx < numElements; idx++) {
+    finalCounts[idx] = rootPairCounts[unionFindL.findSetRepresentative(idx) + ":" + unionFindK.findSetRepresentative(idx)];
   }
 
-  displayOutput(dataConverter(resultArray, 8));
+  // Output the results, joined by spaces
+  printResult(convertInput(finalCounts, 8));
 }
 
-function disjointSetStructure(totalElements) {
-  const dssInstance = {
-    // The internal array stores either the parent index (if positive)
-    // or the negative size of the group if it's a root (e.g., -5 for a group of 5).
-    "parentOrSize": new Array(totalElements).fill(-1),
+/**
+ * Implements a Disjoint Set Union (Union-Find) data structure.
+ * @param {number} elementCount The number of elements in the DSU.
+ * @returns {object} An object representing the DSU with its operations.
+ */
+function DisjointSetUnion(elementCount) {
+  var dsuInstance = {
+    // The 'parentOrSize' array stores either:
+    // - A negative value: indicates it's a root, and its absolute value is the size of the set.
+    // - A non-negative value: indicates it's a child, and the value is the index of its parent.
+    // Initially, all elements are roots of their own set of size 1.
+    "parentOrSize": new Array(elementCount).fill(-1),
 
-    // Checks if two elements belong to the same connected component.
+    /**
+     * Checks if two elements belong to the same set.
+     * @param {number} elementA The index of the first element.
+     * @param {number} elementB The index of the second element.
+     * @returns {boolean} True if they are in the same set, false otherwise.
+     */
     "areConnected": function(elementA, elementB) {
-      return this.getRepresentativeIndex(elementA) === this.getRepresentativeIndex(elementB);
+      return this.findSetRepresentative(elementA) == this.findSetRepresentative(elementB);
     },
 
-    // Finds the representative (root) of the set containing the given index.
-    // Also performs path compression for optimization.
-    "getRepresentativeIndex": function(targetIndex) {
+    /**
+     * Finds the representative (root) of the set containing the given element.
+     * Performs path compression during traversal.
+     * @param {number} targetIndex The index of the element.
+     * @returns {number} The index of the set's representative.
+     */
+    "findSetRepresentative": function(targetIndex) {
+      // If the element is a root (value is negative)
       if (this.parentOrSize[targetIndex] < 0) {
-        return targetIndex; // This element is a root
+        return targetIndex;
       } else {
-        // Recursively find the root and compress path
-        this.parentOrSize[targetIndex] = this.getRepresentativeIndex(this.parentOrSize[targetIndex]);
+        // Recursively find the root and perform path compression
+        this.parentOrSize[targetIndex] = this.findSetRepresentative(this.parentOrSize[targetIndex]);
         return this.parentOrSize[targetIndex];
       }
     },
 
-    // Merges the sets containing elementA and elementB.
-    // Uses union-by-size heuristic: attaches smaller tree to larger tree's root.
-    "performUnion": function(elementA, elementB) {
-      const rootA = this.getRepresentativeIndex(elementA);
-      const rootB = this.getRepresentativeIndex(elementB);
+    /**
+     * Unites the sets containing two given elements.
+     * Uses union by size/rank heuristic.
+     * @param {number} elementA The index of the first element.
+     * @param {number} elementB The index of the second element.
+     */
+    "uniteSets": function(elementA, elementB) {
+      var rootA = this.findSetRepresentative(elementA);
+      var rootB = this.findSetRepresentative(elementB);
 
-      if (!this.areConnected(rootA, rootB)) { // Only merge if they are in different sets
-        if (this.parentOrSize[rootA] <= this.parentOrSize[rootB]) { // rootA's tree is larger or equal (more negative value)
+      // If they are already in the same set, do nothing
+      if (!this.areConnected(rootA, rootB)) {
+        // Attach the smaller tree under the root of the larger tree
+        // (represented by more negative value, i.e., larger absolute size)
+        if (this.parentOrSize[rootA] <= this.parentOrSize[rootB]) { // rootA's set is larger or equal
           this.parentOrSize[rootA] += this.parentOrSize[rootB]; // Update size of new root
           this.parentOrSize[rootB] = rootA; // Make rootA the parent of rootB
-        } else { // rootB's tree is larger
+        } else { // rootB's set is larger
           this.parentOrSize[rootB] += this.parentOrSize[rootA]; // Update size of new root
           this.parentOrSize[rootA] = rootB; // Make rootB the parent of rootA
         }
       }
     },
 
-    // Returns the size of the group that the given index belongs to.
-    "getGroupSize": function(targetIndex) {
-      // The size is stored as a negative value at the root.
-      return -this.parentOrSize[this.getRepresentativeIndex(targetIndex)];
+    /**
+     * Gets the size of the set containing the given element.
+     * @param {number} targetIndex The index of the element.
+     * @returns {number} The size of the set.
+     */
+    "getSetSize": function(targetIndex) {
+      // The size is stored as the negative value at the root.
+      return -this.parentOrSize[this.findSetRepresentative(targetIndex)];
     }
   };
-  return dssInstance;
+  return dsuInstance;
 }

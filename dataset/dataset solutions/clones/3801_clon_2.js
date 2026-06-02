@@ -1,39 +1,56 @@
 "use strict";
 
-const processInput =  rawData  =>  {
-  rawData=rawData.trim().split("\n") ; // Preprocess the raw input data by trimming and splitting into lines.
-  const totalElements = parseInt(rawData[0].split(" ")[0]) ; // Extract the total number of elements from the first line.
-  const elementArray  = rawData[1].split("") ; // Convert the second line into an array of individual characters.
+const processInput = (inputData) => {
+  // Clean up the raw input string and split it into lines
+  inputData = inputData.trim().split("\n");
 
-  const eastCountTotal = elementArray.filter( charItem =>  charItem === "E" ).length ; // Calculate the total count of 'E' characters.
-  const westCountTotal = totalElements - eastCountTotal ; // Determine the total count of 'W' characters.
+  // Parse the total number of elements from the first line
+  const totalElements = parseInt(inputData[0].split(" ")[0]);
 
-  let currentEastPassed = 0; // Initialize a counter for 'E' characters encountered so far.
-  let currentWestPassed = 0; // Initialize a counter for 'W' characters encountered so far.
+  // Get the sequence of elements from the second line
+  const elementSequence = inputData[1].split("");
 
-  let minRotations = Infinity ; // Set the initial minimum rotations to a very large value.
+  // Calculate the initial total count of 'E' elements
+  const eastCountTotal = elementSequence.filter((directionChar) => directionChar === "E").length;
 
-  for ( let currentIndex = 0 ; currentIndex < totalElements ; currentIndex++ ) { // Iterate through each element in the array.
-    // Determine the number of 'W' elements to the left of the current position.
-    const requiredLeftMoves = currentWestPassed ;
+  // Calculate the initial total count of 'W' elements (not directly used in this algorithm, but conceptually present)
+  // const westCountTotal = totalElements - eastCountTotal;
 
-    // Calculate the number of 'E' elements to the right of the current position.
-    let requiredRightMoves = eastCountTotal - currentEastPassed ;
+  // Initialize counters for 'E' and 'W' elements encountered so far
+  let eastPassed = 0;
+  let westPassed = 0;
 
-    if ( elementArray[currentIndex] === "E" ) { // If the current element is an 'E', it doesn't need to move right.
-      requiredRightMoves -- ;
+  // Initialize the minimum number of turns required to a very large value
+  let minTurns = Infinity;
+
+  // Iterate through each position in the sequence
+  for (let idx = 0; idx < totalElements; idx++) {
+    // Determine the number of 'W' elements to the left of the current position
+    const currentWestMoves = westPassed;
+
+    // Determine the number of 'E' elements to the right of the current position
+    let remainingEastMoves = eastCountTotal - eastPassed;
+
+    // If the current element is 'E', it means it's part of the 'remainingEastMoves' calculation
+    // and should not be counted as needing to move if we consider it the "pivot"
+    if (elementSequence[idx] === "E") {
+      remainingEastMoves--;
     }
 
-    // Update the minimum rotations if the current configuration is better.
-    minRotations = Math.min( minRotations , requiredLeftMoves + requiredRightMoves ) ;
+    // Update the minimum turns if the current configuration yields a smaller sum
+    minTurns = Math.min(minTurns, currentWestMoves + remainingEastMoves);
 
-    if ( elementArray[currentIndex] === "W" ) { // If the current element is 'W', increment its counter.
-      currentWestPassed ++ ;
-    } else { // Otherwise, it's 'E', so increment its counter.
-      currentEastPassed ++ ;
+    // Update the counters based on the current element
+    if (elementSequence[idx] === "W") {
+      westPassed++;
+    } else {
+      eastPassed++;
     }
   }
 
-  console.log( minRotations ) ; // Output the final calculated minimum rotations.
-} ;
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8') ) ;
+  // Output the final minimum number of turns
+  console.log(minTurns);
+};
+
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

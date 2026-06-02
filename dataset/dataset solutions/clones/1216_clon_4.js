@@ -1,18 +1,15 @@
-const stdInDescriptor = 0;
-const inputBuffer = Buffer.alloc(1024);
-const bytesReadCount = require('fs').readSync(stdInDescriptor, inputBuffer, 0, inputBuffer.length, null);
-const rawTextContent = inputBuffer.toString('utf8', 0, bytesReadCount).trim();
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const extractedNumbers = rawTextContent.match(/\d+/g);
+const [firstOperand, secondOperand] = sourceContent
+  .split(' ')
+  .map(Number);
 
-const primaryOperand = Number(extractedNumbers[0]);
-const secondaryOperand = Number(extractedNumbers[1]);
+const comparisonOutcomeMap = {
+  '-1': "a < b",
+  '0': "a == b",
+  '1': "a > b",
+  'NaN': "a == b"
+};
 
-const comparisonOutcomes = new Map([
-  [-1, "a < b"],
-  [0, "a == b"],
-  [1, "a > b"]
-]);
-
-const outcomeIndicator = Math.sign(primaryOperand - secondaryOperand);
-process.stdout.write(comparisonOutcomes.get(outcomeIndicator) + '\n');
+const outcomeKey = Math.sign(firstOperand - secondOperand);
+console.log(comparisonOutcomeMap[outcomeKey]);

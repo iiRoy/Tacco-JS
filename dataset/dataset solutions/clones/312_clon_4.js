@@ -1,35 +1,40 @@
-const fileSource = require('node:fs').readFileSync('/dev/stdin').toString();
-const contentSegments = fileSource.trim().split('\n');
+const fileSystem = require('fs');
 
-const dimensionCount = Number(contentSegments[0]);
-const valueMatrix = contentSegments.slice(1).map(lineText =>
-    lineText.split(' ').map(Number)
-);
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawData.trim().split("\n");
 
-const calculateMax1DSum = (inputSequence) => {
-    let currentSumCandidate = -Infinity;
-    let overallHighestSum = -Infinity;
+const gridDimension = parseInt(lineSegments.shift(), 10);
 
-    for (const itemValue of inputSequence) {
-        currentSumCandidate = Math.max(itemValue, currentSumCandidate + itemValue);
-        overallHighestSum = Math.max(overallHighestSum, currentSumCandidate);
-    }
-    return overallHighestSum;
-};
+const valueGrid = lineSegments.map(segment => segment.split(" ").map(Number));
 
-let finalMaximumResult = -Infinity;
+let peakSum = -Infinity;
 
-for (let rowStart = 0; rowStart < dimensionCount; ++rowStart) {
-    let columnAggregations = Array.from({ length: dimensionCount }, () => 0);
+for (let topRow = 0; topRow < gridDimension; topRow++) {
+    const columnAggregates = new Array(gridDimension).fill(0);
 
-    for (let rowEnd = rowStart; rowEnd < dimensionCount; ++rowEnd) {
-        for (let columnIndex = 0; columnIndex < dimensionCount; ++columnIndex) {
-            columnAggregations[columnIndex] += valueMatrix[rowEnd][columnIndex];
+    for (let bottomRow = topRow; bottomRow < gridDimension; bottomRow++) {
+        for (let colIndex = 0; colIndex < gridDimension; colIndex++) {
+            columnAggregates[colIndex] += valueGrid[bottomRow][colIndex];
         }
 
-        const sliceMax = calculateMax1DSum(columnAggregations);
-        finalMaximumResult = Math.max(finalMaximumResult, sliceMax);
+        // Apply Kadane's algorithm to the current columnAggregates (1D array)
+        let sliceMax = -Infinity;
+        let currentSliceTotal = 0;
+
+        // Kadane's algorithm for 1D array, handles all negative numbers correctly
+        // Assumes gridDimension >= 1 based on typical problem constraints
+        sliceMax = columnAggregates[0];
+        currentSliceTotal = columnAggregates[0];
+
+        for (let k = 1; k < gridDimension; k++) {
+            currentSliceTotal = Math.max(columnAggregates[k], currentSliceTotal + columnAggregates[k]);
+            sliceMax = Math.max(sliceMax, currentSliceTotal);
+        }
+        
+        if (sliceMax > peakSum) {
+            peakSum = sliceMax;
+        }
     }
 }
 
-console.log(finalMaximumResult);
+console.log(peakSum);

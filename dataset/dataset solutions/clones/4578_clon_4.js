@@ -1,35 +1,31 @@
 "use strict";
 
-const operateGraphData = (sourceText) => {
-    const dataLines = sourceText.trim().split("\n");
+function main(input) {
+    const rows = input.split("\n");
+    const header = rows[0].split(" ");
+    const N = parseInt(header[0]);
+    const M = parseInt(header[1]);
 
-    const [totalVerticesStr, totalEdgesStr] = dataLines[0].split(" ");
-    const totalVertices = Number(totalVerticesStr);
-    const totalEdges = Number(totalEdgesStr);
+    const counts = new Array(10).fill(0);
+    const chosenRows = rows.slice(1, M + 1);
 
-    const vertexDegrees = dataLines.slice(1, totalEdges + 1).reduce((accumulatorMap, edgeDescription) => {
-        const [nodeAStr, nodeBStr] = edgeDescription.split(" ");
-        const nodeA = Number(nodeAStr);
-        const nodeB = Number(nodeBStr);
+    for (const row of chosenRows) {
+        for (let index = 0; index < row.length; index++) {
+            const ch = row[index];
+            if (ch === " ") {
+                continue;
+            }
 
-        accumulatorMap.set(nodeA, (accumulatorMap.get(nodeA) || 0) + 1);
-        accumulatorMap.set(nodeB, (accumulatorMap.get(nodeB) || 0) + 1);
-        return accumulatorMap;
-    }, new Map());
-
-    for (let currentVertexIdentifier = 1; currentVertexIdentifier <= totalVertices; currentVertexIdentifier++) {
-        if (!vertexDegrees.has(currentVertexIdentifier)) {
-            vertexDegrees.set(currentVertexIdentifier, 0);
+            const value = Number(ch);
+            if (Number.isInteger(value) && value >= 1 && value <= 9) {
+                counts[value]++;
+            }
         }
     }
 
-    for (let currentVertexIdentifier = 1; currentVertexIdentifier <= totalVertices; currentVertexIdentifier++) {
-        outputValue(vertexDegrees.get(currentVertexIdentifier));
+    for (let current = 1; current <= N; current++) {
+        console.log(current < counts.length ? counts[current] : 0);
     }
-};
+}
 
-const outputValue = (val) => {
-    process.stdout.write(String(val) + '\n');
-};
-
-operateGraphData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

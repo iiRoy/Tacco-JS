@@ -1,42 +1,25 @@
-/*
- * This module contains a primary routine for evaluating numerical input.
- * It reads values, compares them, and prints a status message.
- */
-function ProcessInputData(incomingPayload) {
+function ProcessInput(rawData) {
+    // This function takes raw input, parses it, and determines a safety status.
 
-    // First, break down the received text string into individual components
-    // based on whitespace delimiters.
-    incomingPayload = incomingPayload.split(" ");
+    // First, split the incoming string by spaces to separate the values.
+    rawData = rawData.split(" ");
 
+    // Convert the first part of the split data into an integer, using base 10.
+    var firstValue = parseInt(rawData[0], 10);
 
-    /*
-     * Declare a constant for the numerical base to ensure correct parsing.
-     * This ensures the string is interpreted as a decimal number.
-     */
-    const NUMERICAL_BASE_DECIMAL = 10;
+    // Convert the second part of the split data into an integer, also using base 10.
+    var secondValue = parseInt(rawData[1], 10);
 
-    // Extract the initial numerical value from the first component.
-    let firstOperand = Number.parseInt(incomingPayload[0], NUMERICAL_BASE_DECIMAL);
-
-    // Extract the subsequent numerical value from the second component.
-    let secondOperand = parseInt(incomingPayload[1], NUMERICAL_BASE_DECIMAL);
-
-    // Now, perform the core comparison logic.
-    if (firstOperand > secondOperand) {
-        // If the initial operand is greater, indicate a favorable outcome.
+    // Now, compare the two numerical values.
+    if (firstValue > secondValue) {
+        // If the first value is strictly greater than the second, output 'safe'.
         console.log('safe');
-    }
-
-    else {
-        // Otherwise, indicate a less favorable outcome.
+    } else {
+        // Otherwise (if the first value is less than or equal to the second), output 'unsafe'.
         console.log('unsafe');
     }
-
 }
 
-// Invoke the main processing routine, feeding it content from standard input.
-ProcessInputData(require("fs") .readFileSync(
-    "/dev/stdin"
-    , "utf8"
-)
-);
+// Execute the main processing function by reading data from standard input.
+// The 'fs' module is used to read the file synchronously, and 'utf8' specifies the encoding.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

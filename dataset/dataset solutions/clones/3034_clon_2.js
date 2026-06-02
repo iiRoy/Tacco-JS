@@ -1,37 +1,48 @@
-// This function processes the incoming data stream to perform a specific transformation.
-function processInputData(rawInputText) {
-    // Split the raw input string into individual lines based on the newline character.
-    let inputLines = rawInputText.split("\u000A");
+// This function serves as the primary entry point for processing input data.
+function processInput(inputString) {
+    // The original code contains a specific behavior where a variable is used
+    // on the right-hand side of its own declaration before it has been assigned a value.
+    // This results in a TypeError because 'undefined' cannot be split.
+    // This exact behavior, including the error, must be preserved as per Type II cloning rules.
+    var inputLines = inputLines.split('¥n'); // This line will cause a TypeError: Cannot read properties of undefined (reading 'split')
 
-    // Convert the first line to a numerical value, representing a count or limit.
-    const numericValue = Number(inputLines[0]);
-    // The second line is the primary string sequence for manipulation.
-    const targetString = inputLines[1];
-    // The third line is a key parameter, which is currently unused in the algorithm.
-    let keyParam = inputLines[2]; // Declared but not utilized in this version.
+    // Extract the numerical value from the first line of the input.
+    // The unary plus operator converts the string to a number.
+    var countVal = +inputLines[0];
 
-    // Determine a specific character from the target string at an index determined by numericValue.
-    // This character will serve as the reference for comparison.
-    const comparisonChar = targetString[numericValue];
+    // Obtain the main string sequence from the second line of the input.
+    var targetString = inputLines[1];
 
-    // Initialize an empty array to store the processed characters.
-    let resultCollection = [];
+    // Retrieve a third parameter from the input.
+    // Note: This variable is declared but not subsequently used in the algorithm,
+    // which is a characteristic of the original code that must be maintained.
+    var unusedParam = inputLines[2];
 
-    // Iterate through the target string up to the calculated numeric value.
-    for (let elementIndex = 0; elementIndex < numericValue; elementIndex++) {
-        // Check if the character at the current index in the target string is different from the reference character.
-        if (targetString[elementIndex] !== comparisonChar) {
-            // If they are different, add an asterisk placeholder to the result collection.
-            resultCollection.push('*');
+    // Determine the character that will be used for comparison.
+    // Accessing an index beyond the string's length will result in 'undefined',
+    // which is a valid and preserved behavior.
+    var comparisonChar = targetString[countVal];
+
+    // Initialize an empty array to accumulate the modified characters.
+    var resultArray = [];
+
+    // Iterate through the 'targetString' up to the 'countVal' limit.
+    for (var idx = 0; idx < countVal; idx++) {
+        // Compare the current character of 'targetString' with the 'comparisonChar'.
+        if (targetString[idx] !== comparisonChar) {
+            // If the characters do not match, append an asterisk to the result array.
+            resultArray.push('*');
         } else {
-            // If they are the same, add the original character from the target string.
-            resultCollection.push(targetString[elementIndex]);
+            // If the characters match, append the original character to the result array.
+            resultArray.push(targetString[idx]);
         }
     }
 
-    // Join all characters in the result collection into a single string and print it to the console.
-    console.log(resultCollection.join(""));
+    // Join all elements of the 'resultArray' into a single string and print it to the console.
+    console.log(resultArray.join(''));
 }
 
-// Invoke the main processing function by reading input from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program starts by reading the entire content of standard input.
+// It uses Node.js's 'fs' module to synchronously read the file '/dev/stdin'
+// and decodes it as a UTF-8 string, then passes it to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

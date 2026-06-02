@@ -1,81 +1,21 @@
-// This module exports a single function designed to ascertain if a specific numerical value,
-// derived from an input stream, qualifies as a perfect square.
-// Extensive whitespace variations are employed throughout the code for stylistic differentiation.
+function processInput(inputString) {
+    // Process the input string to extract relevant parts.
+    // First, split by newline and take the first line.
+    // Then, split that line by space to get individual values.
+    let parsedValues = inputString.split("\n")[0].split(" ");
 
-function checkSquareRootIntegrity
-(
-    rawInputText
-)
-{
-    // Begin by dissecting the provided textual data.
-    // The initial step involves splitting the input by newline characters,
-    // selecting only the first line of content.
-    // Subsequently, this isolated line is further segmented using space characters
-    // to yield an array of distinct tokens.
-    let extractedTokens = rawInputText
-        .split
-        (
-            "\n"
-        )
-        [
-            0
-        ]
-        .split
-        (
-            " "
-        )
-    ;
+    // Concatenate the first two parsed string values and convert to a number.
+    // This forms the number 'combinedNumber' from the input parts.
+    let combinedNumber = Number(parsedValues[0] + parsedValues[1]);
 
-    // Proceed to construct the core numeric entity for evaluation.
-    // This is achieved by concatenating the first two elements from our
-    // 'extractedTokens' array, which are inherently strings,
-    // and then explicitly casting the resulting combined string into a numerical type.
-    const potentialSquare = Number
-    (
-        extractedTokens
-        [
-            0
-        ]
-        +
-        extractedTokens
-        [
-            1
-        ]
-    )
-    ;
-
-    // The final stage involves determining if the 'potentialSquare' is indeed a perfect square.
-    // This is accomplished by calculating its square root (using power of 0.5)
-    // and then checking if the remainder when divided by 1 is strictly zero.
-    // A zero remainder indicates an integer result for the square root,
-    // thereby confirming the number as a perfect square.
-    console.log
-    (
-        Math.pow
-        (
-            potentialSquare,
-            0.5
-        )
-        %
-        1
-        ===
-        0
-            ? "Affirmative"  // Output string for a perfect square
-            : "Negative"     // Output string for a non-perfect square
-    )
-    ;
+    // Calculate the square root of the combined number.
+    // Check if the square root is an integer by using the modulo operator with 1.
+    // If the remainder is 0, it means the number is a perfect square.
+    // Output "Yes" if it's a perfect square, otherwise "No".
+    console.log(Math.sqrt(combinedNumber) % 1 === 0 ? "Yes" : "No");
 }
 
-// Invoke the primary analysis function.
-// The data source is the standard input stream, read synchronously from the file system.
-// The content is expected to be UTF-8 encoded.
-checkSquareRootIntegrity
-(
-    require("node:fs") // Utilizing the Node.js file system module
-        .readFileSync
-        (
-            "/dev/stdin", // Standard input file path
-            "utf8"        // Character encoding specification
-        )
-)
-;
+// Read the input from standard input using Node.js file system module.
+// The content is read synchronously and encoded as UTF-8.
+// This content is then passed to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

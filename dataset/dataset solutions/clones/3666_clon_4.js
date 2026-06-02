@@ -1,26 +1,23 @@
-const processSequence = (sourceContent) => {
-  const parsedLines = sourceContent.trim().split('\n');
-  const itemCount = Number(parsedLines[0]);
-  const valueCollection = parsedLines[1].split(' ').map(Number);
+let _counter;
 
-  if (itemCount <= 1) {
-    return 0;
-  }
-
-  const comparisonResult = valueCollection.slice(0, itemCount).reduce((accumulator, currentElement, elementIndex, fullCollection) => {
-    if (elementIndex > 0 && currentElement === fullCollection[elementIndex - 1]) {
-      return accumulator + 1;
+function processInputSegment(dataString, currentIndex, thresholdValue) {
+    if (dataString[currentIndex - 1] === dataString[currentIndex]) {
+        _counter = (_counter === undefined) ? NaN : _counter + 1;
     }
-    return accumulator;
-  }, 0);
+    processInputSegment(dataString, currentIndex + 1, thresholdValue);
+}
 
-  return comparisonResult;
-};
+function processMain(sourceText) {
+    _counter = undefined;
 
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const textEncoding = "utf8";
+    const firstChar = sourceText[0];
+    const numericThreshold = Number(firstChar) / 2;
 
-const rawData = fileSystemModule.readFileSync(standardInputPath, textEncoding);
-const finalOutcome = processSequence(rawData);
-console.log(finalOutcome);
+    if (2 > numericThreshold) {
+        processInputSegment(sourceText, 2, numericThreshold);
+    } else {
+        console.log(_counter);
+    }
+}
+
+processMain(require("fs").readFileSync("/dev/stdin", "utf8"));

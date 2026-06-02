@@ -1,87 +1,84 @@
 function processGridData(rawDataLines) {
-  // Extracting grid dimensions from the first line of input data.
-  // The first number represents the total number of rows in the grid.
-  var gridRows = rawDataLines[0].split(" ")[0] - 0;
-  // The second number represents the total number of columns in the grid.
-  var gridCols = rawDataLines[0].split(" ")[1] - 0;
+  // Extract grid dimensions from the initial line of input.
+  // The first number represents the height, the second is the width.
+  const gridHeight = rawDataLines[0].split(' ')[0] - 0;
+  const gridWidth = rawDataLines[0].split(' ')[1] - 0;
 
-  // This array will store the [row, column] coordinates of all cells
+  // This array will store the 1-indexed [row, column] coordinates of all cells
   // that contain an odd numerical value.
-  var oddCellCoordinates = [];
+  const oddCellCoordinates = [];
 
-  // Iterate through each row of the grid, starting from the first data row (index 1).
-  for (var rowIndex = 1; rowIndex <= gridRows; rowIndex++) {
-    // Check if the current row's index is an odd number.
-    if (rowIndex % 2 === 1) {
-      // For odd-indexed rows, cells are processed from left to right.
-      rawDataLines[rowIndex].split(" ").forEach((cellValue, colIndex) => {
-        // If the numeric value of the cell is odd, record its position.
+  // Iterate through each row of the grid data, starting from the first actual data row.
+  for (let currentRowIndex = 1; currentRowIndex <= gridHeight; currentRowIndex++) {
+    // For rows with an odd index, process cell values from left to right.
+    if (currentRowIndex % 2 === 1) {
+      rawDataLines[currentRowIndex].split(' ').forEach((cellValue, currentColOffset) => {
+        // If the current cell's value is odd, add its coordinates to our list.
         if (cellValue % 2 === 1) {
-          oddCellCoordinates.push([rowIndex, colIndex + 1]); // Store 1-based column index.
+          oddCellCoordinates.push([currentRowIndex, currentColOffset + 1]);
         }
       });
-    } else {
-      // For even-indexed rows, cells are processed in reverse order (right to left).
-      rawDataLines[rowIndex].split(" ").reverse().forEach((cellValue, reverseColIndex) => {
-        // If the numeric value of the cell is odd, record its position.
+    }
+    // For rows with an even index, process cell values from right to left.
+    else {
+      rawDataLines[currentRowIndex].split(' ').reverse().forEach((cellValue, currentColOffset) => {
+        // If the current cell's value is odd, add its coordinates to our list.
+        // The column index needs to be adjusted because of the reversed iteration.
         if (cellValue % 2 === 1) {
-          // Calculate the correct 1-based column index for reversed traversal.
-          oddCellCoordinates.push([rowIndex, gridCols - reverseColIndex]);
+          oddCellCoordinates.push([currentRowIndex, gridWidth - currentColOffset]);
         }
       });
     }
   }
 
-  // This array will accumulate all the individual movement steps required
-  // to connect the odd-valued cells in pairs.
-  var movementInstructions = [];
+  // This array will accumulate the individual movement segments.
+  // Each segment is represented as [start_row, start_col, end_row, end_col].
+  const pathSegments = [];
 
-  // Process the collected odd cell coordinates in consecutive pairs.
-  // Each pair defines a start and end point for a movement sequence.
-  for (var pairIterator = 0; pairIterator < Math.floor(oddCellCoordinates.length / 2); pairIterator++) {
-    // Get the current starting position for the path segment.
-    var currentPosition = oddCellCoordinates[pairIterator * 2];
-    // Get the designated target position for the path segment.
-    var targetPosition = oddCellCoordinates[pairIterator * 2 + 1];
+  // Process the collected odd cell coordinates in pairs.
+  // Each pair defines a path from a 'current' odd cell to a 'target' odd cell.
+  for (let pairIndex = 0; pairIndex < Math.floor(oddCellCoordinates.length / 2); pairIndex++) {
+    let currentPosition = oddCellCoordinates[pairIndex * 2];
+    const targetPosition = oddCellCoordinates[pairIndex * 2 + 1];
 
-    // If there is no valid target position (e.g., an odd total number of odd cells),
-    // break out of the loop as no further pairs can be formed.
+    // This check handles cases where a target position might be unexpectedly missing,
+    // though it's unlikely given the loop condition.
     if (targetPosition === null) {
       break;
     }
 
-    // Convert the target position array into a string for efficient comparison
-    // within the inner movement loop.
-    var targetPositionString = targetPosition.toString();
+    // Convert the target position array to a string for efficient comparison
+    // within the movement generation loop.
+    const targetPositionString = targetPosition.toString();
 
-    // Continue generating movement steps until the current position
-    // matches the target position.
+    // Generate a sequence of single-step moves to get from the current position
+    // to the target position.
     while (currentPosition.toString() !== targetPositionString) {
-      // Check if the current column is different from the target column.
+      // If the current column is different from the target column, move horizontally.
       if (currentPosition[1] !== targetPosition[1]) {
-        // If the current column is less than the target column, move right.
         if (currentPosition[1] < targetPosition[1]) {
-          movementInstructions.push([currentPosition[0], currentPosition[1], currentPosition[0], ++currentPosition[1]]);
-        }
-        // Otherwise (current column is greater), move left.
-        else {
-          movementInstructions.push([currentPosition[0], currentPosition[1], currentPosition[0], --currentPosition[1]]);
+          // Move one step to the right.
+          pathSegments.push([currentPosition[0], currentPosition[1], currentPosition[0], ++currentPosition[1]]);
+        } else {
+          // Move one step to the left.
+          pathSegments.push([currentPosition[0], currentPosition[1], currentPosition[0], --currentPosition[1]]);
         }
       }
-      // If the columns are the same, then the row must be different, so move down.
+      // If the columns are the same, it means we need to move vertically (downwards).
       else {
-        movementInstructions.push([currentPosition[0], currentPosition[1], ++currentPosition[0], currentPosition[1]]);
+        // Move one step down.
+        pathSegments.push([currentPosition[0], currentPosition[1], ++currentPosition[0], currentPosition[1]]);
       }
     }
   }
 
-  // Output the total count of generated movement instructions.
-  console.log(movementInstructions.length);
-  // Output each movement instruction on a new line, representing the path.
-  console.log(movementInstructions.join("\n"));
+  // Output the total count of generated movement segments.
+  console.log(pathSegments.length);
+  // Output each movement segment on a new line, formatted as "r1 c1 r2 c2".
+  console.log(pathSegments.join('\n'));
 }
 
-
-// Initiate the grid data processing by reading input from standard input.
-// The input is assumed to be UTF-8 encoded, trimmed of whitespace, and split by newlines.
-processGridData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+// Read the entire input from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and split it into an array of lines.
+// Then, pass this array to our main processing function.
+processGridData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n'));

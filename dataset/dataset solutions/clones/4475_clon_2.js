@@ -1,47 +1,52 @@
 "use strict";
 
-const   ProcessInput   =    (  sourceData )  =>
-{
-    // The raw input string is parsed into lines for further processing.
-    const   dataRows  =  sourceData.trim().split( '\n' );
+// This is the main entry point function for processing the input data.
+const ProcessInput = (rawData) => {
+    // First, clean up the raw input string by trimming whitespace
+    // and then splitting it into an array of individual lines.
+    let linesArray = rawData.trim().split('\n');
 
-    // Extract the total number of elements from the first line.
-    const   totalElements  =  Number(  dataRows[0].split( ' ' )[0]  );
+    // Extract numerical parameters from the first line of input.
+    // 'countItems' represents the total number of elements available.
+    let countItems = Number(linesArray[0].split(' ')[0]);
+    // 'numToSelect' indicates how many of the largest elements should be summed.
+    let numToSelect = Number(linesArray[0].split(' ')[1]);
 
-    // Determine how many top elements to select, also from the first line.
-    const   targetCount   =  Number(  dataRows[0].split( ' ' )[1]  );
+    // Initialize an empty array to hold the numeric values that will be processed.
+    let dataList = [];
 
-    // Initialize an array to hold the numeric values from the second line.
-    let   collectedNumbers  =  [];
-
-    // Populate the array with individual numbers from the second line of input.
-    for  (  let  itemIndex = 0;  itemIndex < totalElements;  itemIndex++  )
-    {
-        collectedNumbers.push(  dataRows[1].split( ' ' )[itemIndex]  );
+    // Iterate through the second line of input, splitting it by spaces,
+    // and adding each resulting string (which represents a number) to 'dataList'.
+    // The loop runs 'countItems' times, as specified by the first parameter.
+    for (let idx = 0; idx < countItems; idx++) {
+        dataList.push(linesArray[1].split(' ')[idx]);
     }
 
-    // Define a comparison function for sorting in descending order.
-    const   valueOrderer  =  (  secondVal,  firstVal  )  =>
-    {
-        // This expression results in a descending sort (largest to smallest).
-        return   firstVal  -  secondVal;
+    // Define a custom comparison function for sorting.
+    // This function is designed to sort elements in descending order.
+    // When 'valA' is greater than 'valB', 'valA - valB' is positive,
+    // causing 'valA' to be placed before 'valB' in the sorted array.
+    const sortDescending = (valB, valA) => {
+        return valA - valB;
     };
 
-    // Sort the array of collected numbers using the custom comparison logic.
-    collectedNumbers.sort(  valueOrderer  );
+    // Apply the custom sorting function to 'dataList', arranging its elements
+    // from largest to smallest.
+    dataList.sort(sortDescending);
 
-    // Initialize a variable to accumulate the sum of selected numbers.
-    let   runningTotal   =  0;
+    // Initialize a variable to store the cumulative sum of the selected elements.
+    let totalSum = 0;
 
-    // Iterate through the sorted numbers, summing up the top K elements.
-    for  (  let  countIdx = 0;  countIdx < targetCount;  countIdx++  )
-    {
-        runningTotal  +=  Number(  collectedNumbers[countIdx]  );
+    // Loop through the first 'numToSelect' elements of the now sorted 'dataList'.
+    // Convert each element to a number and add it to 'totalSum'.
+    for (let idx = 0; idx < numToSelect; idx++) {
+        totalSum += Number(dataList[idx]);
     }
 
-    // Output the final computed sum to the console.
-    console.log(  runningTotal  );
+    // Print the final calculated sum to the standard output.
+    console.log(totalSum);
 };
 
-// Execute the main processing function with data read from standard input.
-ProcessInput(  require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' )  );
+// Read the entire content of standard input synchronously,
+// decode it as UTF-8, and then pass it to the 'ProcessInput' function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

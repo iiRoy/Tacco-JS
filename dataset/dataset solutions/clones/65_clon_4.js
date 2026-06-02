@@ -1,56 +1,47 @@
-const fileSystemUtility = require('node:fs');
+const fileSys = require('fs');
 
-function obtainInstructionData() {
-    const dataStreamDescriptor = process.stdin.fd;
-    const streamProperties = fileSystemUtility.fstatSync(dataStreamDescriptor);
-    const totalDataCapacity = streamProperties.size;
-    const contentContainer = Buffer.alloc(totalDataCapacity);
-    const actualOctetsProcessed = fileSystemUtility.readSync(dataStreamDescriptor, contentContainer, 0, totalDataCapacity, 0);
-    return contentContainer.toString('utf8', 0, actualOctetsProcessed).trim();
-}
+const rawInputContent = fileSys.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawInputContent.trim().split('\n');
 
-function processMovementSequence() {
-    const rawMovementInput = obtainInstructionData();
-    const movementSegments = rawMovementInput.split('\n');
-
-    const parsedPathSegments = movementSegments.map(segmentLine => {
-        const components = segmentLine.split(',');
-        return {
-            distanceComponent: Number(components[0]),
-            angularChange: Number(components[1])
-        };
-    });
-
-    const initialVehicleState = {
-        horizontalPosition: 0,
-        verticalPosition: 0,
-        currentOrientation: 0,
-        operationTerminated: false
+function processMovement() {
+    const initialPositionState = {
+        horizontalPos: 0,
+        verticalPos: 0,
+        cumulativeRotation: 0,
+        terminatedSequence: false
     };
 
-    const finalVehicleState = parsedPathSegments.reduce((priorState, currentWaypoint) => {
-        if (priorState.operationTerminated) {
-            return priorState;
+    const finalPositionState = lineSegments.reduce((currentAccumulator, currentLineData) => {
+        if (currentAccumulator.terminatedSequence) {
+            return currentAccumulator;
         }
 
-        if (currentWaypoint.distanceComponent === 0 && currentWaypoint.angularChange === 0) {
-            return { ...priorState, operationTerminated: true };
+        const segmentComponents = currentLineData.split(',');
+        const distanceMagnitude = Number(segmentComponents[0]);
+        const angularIncrement = Number(segmentComponents[1]);
+
+        if (distanceMagnitude === 0 && angularIncrement === 0) {
+            return { ...currentAccumulator,
+                terminatedSequence: true
+            };
         }
 
-        const radianAngle = priorState.currentOrientation * Math.PI / 180;
-        const deltaX = currentWaypoint.distanceComponent * Math.sin(radianAngle);
-        const deltaY = currentWaypoint.distanceComponent * Math.cos(radianAngle);
+        const currentAngleInRadians = currentAccumulator.cumulativeRotation * Math.PI / 180;
+
+        const nextHorizontalPos = currentAccumulator.horizontalPos + distanceMagnitude * Math.sin(currentAngleInRadians);
+        const nextVerticalPos = currentAccumulator.verticalPos + distanceMagnitude * Math.cos(currentAngleInRadians);
+        const nextCumulativeRotation = currentAccumulator.cumulativeRotation + angularIncrement;
 
         return {
-            horizontalPosition: priorState.horizontalPosition + deltaX,
-            verticalPosition: priorState.verticalPosition + deltaY,
-            currentOrientation: priorState.currentOrientation + currentWaypoint.angularChange,
-            operationTerminated: false
+            horizontalPos: nextHorizontalPos,
+            verticalPos: nextVerticalPos,
+            cumulativeRotation: nextCumulativeRotation,
+            terminatedSequence: false
         };
-    }, initialVehicleState);
+    }, initialPositionState);
 
-    console.log(Math.trunc(finalVehicleState.horizontalPosition));
-    console.log(Math.trunc(finalVehicleState.verticalPosition));
+    console.log(~~finalPositionState.horizontalPos);
+    console.log(~~finalPositionState.verticalPos);
 }
 
-processMovementSequence();
+processMovement();

@@ -1,70 +1,77 @@
-function orchestrateProcess(  sourceData  )  {
+function processInput(rawData) {
+  // Split the raw input string by newline characters to get individual lines.
+  rawData = rawData.split('\n');
+  // Convert the first line to a number, representing the array size (though not directly used in this algorithm).
+  const arraySize = Number(rawData[0]);
+  // Split the second line into an array of characters, representing the color sequence.
+  const colorSequence = rawData[1].split('');
 
-  sourceData  =  sourceData.split(  '\n'  )  ;
-
-  const quantityValue  =  Number(  sourceData[0]  )  ;
-
-  const huesList  =  sourceData[1].split(  ''  )  ;
-
-  let operationTally  =  0  ;
-
-  while (  true  )  {
-    // Retrieve positions where 'W' is immediately followed by 'R'
-    let misplacedPairs  =  locateMismatches(  huesList  )  ;
-
-    // If no such sequences are found, the process is complete
-    if  (  misplacedPairs.length  ===  0  )  {
-        break  ;
+  // Initialize a counter for the number of swap operations performed.
+  let swapOperations = 0;
+  // Loop indefinitely until a break condition is met.
+  while (true) {
+    // Find all indices where a 'W' is immediately followed by an 'R'.
+    let mismatchedPairs = locateMismatchedWR(colorSequence);
+    // If no such problematic pairs are found, the sequence is sorted, so exit the loop.
+    if (mismatchedPairs.length === 0) {
+      break;
     }
 
-    // Identify the first occurrence of 'W'
-    let firstWhiteIndex  =  getLeadingWhite(  huesList  )  ;
-    // Identify the last occurrence of 'R'
-    let lastRedIndex  =  getTrailingRed(  huesList  )  ;
+    // Find the index of the first 'W' in the sequence.
+    let firstWhiteIndex = findFirstW(colorSequence);
+    // Find the index of the last 'R' in the sequence.
+    let lastRedIndex = findLastR(colorSequence);
 
-    // Perform the swap: change 'W' to 'R' and 'R' to 'W'
-    huesList[  firstWhiteIndex  ]  =  'R'  ;
-    huesList[  lastRedIndex  ]  =  'W'  ;
+    // Swap the 'W' at firstWhiteIndex with the 'R' at lastRedIndex.
+    // This moves a 'W' from the left side (where it shouldn't be) to the right,
+    // and an 'R' from the right side (where it shouldn't be) to the left.
+    colorSequence[firstWhiteIndex] = 'R';
+    colorSequence[lastRedIndex] = 'W';
 
-    // Increment the counter for the rearrangement
-    operationTally  ++  ;
+    // Increment the counter for successful swap operations.
+    swapOperations++;
   }
 
-  console.log(  operationTally  )  ;
+  // Output the total number of swap operations required to sort the sequence.
+  console.log(swapOperations);
 }
 
-
-function locateMismatches(  huesCollection  )  {
-  // Array to store the starting indices of 'W' followed by 'R'
-  let mismatchLocations  =  [  ]  ;
-
-  // Iterate through the collection, excluding the very last element
-  for  (  let idx  =  0  ;  idx  <  huesCollection.length  -  1  ;  idx  ++  )  {
-    // Check for the specific 'WR' pattern
-    if  (  huesCollection[  idx  ]  ===  'W'  &&  huesCollection[  idx  +  1  ]  ===  'R'  )  {
-      mismatchLocations.push(  idx  )  ;
+// This function identifies and returns the starting indices of all 'W' followed by 'R' pairs.
+function locateMismatchedWR(colorArray) {
+  let problematicIndices = []; // Array to store the indices of 'W' in 'WR' pairs.
+  // Iterate through the color array, stopping one element before the end.
+  for (let idx = 0; idx < colorArray.length - 1; idx++) {
+    // Check if the current element is 'W' and the next element is 'R'.
+    if (colorArray[idx] === 'W' && colorArray[idx + 1] === 'R') {
+      problematicIndices.push(idx); // If so, add the current index to the list.
     }
   }
-  return  mismatchLocations  ;
+  return problematicIndices; // Return the list of problematic indices.
 }
 
-function getLeadingWhite(  shadeSequence  )  {
-  // Scan the sequence from left to find the first 'W'
-  for  (  let loopIterator  =  0  ;  loopIterator  <  shadeSequence.length  ;  loopIterator  ++  )  {
-    if  (  shadeSequence[  loopIterator  ]  ===  'W'  )  {
-      return  loopIterator  ;
+// This function finds the index of the first occurrence of 'W' in the color array.
+function findFirstW(colorArr) {
+  // Iterate from the beginning of the array.
+  for (let idx = 0; idx < colorArr.length; idx++) {
+    // If 'W' is found, return its index.
+    if (colorArr[idx] === 'W') {
+      return idx;
     }
   }
+  // (Assumes 'W' will always be found if a swap is needed, based on algorithm logic.)
 }
 
-function getTrailingRed(  shadeSequence  )  {
-  // Scan the sequence from right to find the last 'R'
-  for  (  let loopIterator  =  shadeSequence.length  -  1  ;  loopIterator  >=  0  ;  loopIterator  --  )  {
-    if  (  shadeSequence[  loopIterator  ]  ===  'R'  )  {
-      return  loopIterator  ;
+// This function finds the index of the last occurrence of 'R' in the color array.
+function findLastR(colorArr) {
+  // Iterate from the end of the array backwards.
+  for (let idx = colorArr.length - 1; idx >= 0; idx--) {
+    // If 'R' is found, return its index.
+    if (colorArr[idx] === 'R') {
+      return idx;
     }
   }
+  // (Assumes 'R' will always be found if a swap is needed, based on algorithm logic.)
 }
 
-// Initiate the primary execution flow by reading input from standard stream.
-orchestrateProcess(  require(  'fs'  )  .readFileSync(  '/dev/stdin'  ,  'utf8'  )  .trim(  )  )  ;
+// Read input from standard input, decode it as UTF-8, remove leading/trailing whitespace, and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

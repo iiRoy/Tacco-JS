@@ -1,28 +1,19 @@
-const computationHandler = (rawDocument) => {
-    const [
-        _firstLineMetadata,
-        rawSetOneString,
-        _secondLineMetadata,
-        rawSetTwoString
-    ] = rawDocument.split('\n');
+const processInputAndCount = (rawData) => {
+    const lines = rawData.split('\n');
 
-    const valueSetOne = rawSetOneString.split(' ').map(Number);
-    const valueSetTwo = rawSetTwoString.split(' ').map(Number);
+    const primaryCount = Number.parseInt(lines[0], 10);
+    const queryCount = Number.parseInt(lines[2], 10);
 
-    const frequencyMapForTwo = valueSetTwo.reduce((map, element) => {
-        return map.set(element, (map.get(element) || 0) + 1);
-    }, new Map());
+    const primaryElements = lines[1].split(' ').map(Number);
+    const queryElements = lines[3].split(' ').map(Number);
 
-    const finalTally = valueSetOne.reduce((currentSum, elementOne) => {
-        return currentSum + (frequencyMapForTwo.get(elementOne) || 0);
+    const lookupSet = new Set(queryElements);
+
+    const totalMatches = primaryElements.reduce((accumulator, currentPrimaryValue) => {
+        return accumulator + (lookupSet.has(currentPrimaryValue) ? 1 : 0);
     }, 0);
 
-    console.log(finalTally);
+    console.log(totalMatches);
 };
 
-const executeProgram = (sourcePath) => {
-    const fileContent = require("fs").readFileSync(sourcePath, "utf8");
-    computationHandler(fileContent);
-};
-
-executeProgram("/dev/stdin");
+processInputAndCount(require("fs").readFileSync("/dev/stdin", "utf8"));

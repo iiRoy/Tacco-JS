@@ -1,15 +1,19 @@
-function computeLongestNucleotideSegment(rawText) {
-    const processedText = rawText.split('\n')[0];
-    const nucleotideBlocks = processedText.match(/([ACGT]+)/g);
-    
-    if (!nucleotideBlocks) {
-        console.log(0);
-        return;
-    }
+function processInput(sourceText) {
+  const lineData = sourceText.split('\n');
+  const targetString = lineData[0];
 
-    const peakLength = nucleotideBlocks.reduce((maximumSoFar, currentSequence) => Math.max(maximumSoFar, currentSequence.length), 0);
-    
-    console.log(peakLength);
+  const pattern = /[ACGT]+/g;
+  const matches = targetString.match(pattern);
+
+  let ultimateLength = 0;
+
+  if (matches) {
+    ultimateLength = matches.reduce((currentMax, segment) => {
+      return Math.max(currentMax, segment.length);
+    }, 0);
+  }
+
+  console.log(ultimateLength);
 }
 
-computeLongestNucleotideSegment(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

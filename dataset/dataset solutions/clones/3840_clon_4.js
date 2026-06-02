@@ -1,46 +1,59 @@
-const inputAcquisition = require('readline');
-
-const dataStream = inputAcquisition.createInterface({
+const inputProcessor = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false
 });
 
-let capturedLines = [];
+let inputContent = '';
+let targetIndexValue;
+let lineCounter = 0;
 
-dataStream.on('line', (currentLine) => {
-    capturedLines.push(currentLine);
+inputProcessor.on('line', (currentLine) => {
+    lineCounter++;
+    if (lineCounter === 1) {
+        inputContent = currentLine.toLowerCase() + '\n'; // Replicate original's data.toString() which includes newline
+    } else if (lineCounter === 2) {
+        targetIndexValue = Number(currentLine); // Number() handles trailing newlines
+        inputProcessor.close();
+    }
 });
 
-dataStream.on('close', () => {
-    const primaryText = capturedLines[0] ? capturedLines[0].toString().toLowerCase() : '';
-    const desiredIndex = capturedLines[1] ? Number(capturedLines[1]) : NaN;
-
-    const result = analyzeSubsequences(primaryText, desiredIndex);
-    console.log(result);
-    process.exit(0);
+inputProcessor.on('close', () => {
+    // Replicate the original code's bug: the K parameter passed to main was always Number(undefined), which is NaN.
+    processTextData(inputContent, NaN);
 });
 
-function analyzeSubsequences(sourceText, targetRank) {
-    const textSpan = sourceText.length;
+function processTextData(sourceText, selectionOrdinal) {
+    const contentLength = sourceText.length;
 
-    if (textSpan < 1 || textSpan > 5000) {
-        process.exit(0);
-    }
-    if (targetRank < 1 || targetRank > 5) {
-        process.exit(0);
+    if (contentLength < 1 || contentLength > 5000) {
+        process.exit();
     }
 
-    const generatedSegments = Array.from({ length: textSpan + 1 }, (_, startIdx) => {
-        return Array.from({ length: textSpan - startIdx + 1 }, (_, relativeEndIdx) => {
-            const endIdx = startIdx + relativeEndIdx;
-            return sourceText.substring(startIdx, endIdx);
-        });
-    }).flat();
+    // This check will never trigger process.exit() because selectionOrdinal is NaN,
+    // replicating the original code's behavior.
+    if (selectionOrdinal < 1 || selectionOrdinal > 5) {
+        process.exit();
+    }
 
-    const processedSegments = Array.from(new Set(
-        generatedSegments.filter(segment => segment.length > 0 && !segment.includes('\n'))
-    )).sort();
+    const allFragments = Array.from({ length: contentLength + 1 }, (_, startPosition) =>
+        Array.from({ length: contentLength - startPosition + 1 }, (__, fragmentLength) =>
+            sourceText.substring(startPosition, startPosition + fragmentLength)
+        )
+    ).flat();
 
-    return processedSegments[targetRank - 1];
+    const uniqueFilteredFragments = allFragments.reduce((accumulator, currentFragment) => {
+        if (currentFragment !== '' && !currentFragment.includes('\n')) {
+            accumulator.add(currentFragment);
+        }
+        return accumulator;
+    }, new Set());
+
+    const collectedFragments = Array.from(uniqueFilteredFragments);
+    collectedFragments.sort();
+
+    // selectionOrdinal is NaN, so selectionOrdinal - 1 is also NaN.
+    // Accessing an array with a NaN index results in undefined.
+    console.log(collectedFragments[selectionOrdinal - 1]);
+    process.exit();
 }

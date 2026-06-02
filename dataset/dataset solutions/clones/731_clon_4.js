@@ -1,34 +1,41 @@
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
-global.process.stdin.on('data', (payloadText) => {
-  const lineCollection = payloadText.split('\n');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-  lineCollection.forEach((individualEntry) => {
-    const dataParts = individualEntry.split(' ');
-    const numValueA = +dataParts[0] || 0;
-    const numValueB = +dataParts[1] || 0;
-    const numValueC = +dataParts[2] || 0;
+const processLineData = (lineContent) => {
+  const lineComponents = lineContent.split(' ');
 
-    if (numValueA || numValueB || numValueC) {
-      const calculationFactorX = numValueA / 100 + 1;
-      const calculationFactorY = numValueB / 100 + 1;
-      const comparisonTarget = numValueC;
+  const firstValue = lineComponents[0] | 0;
+  const secondValue = lineComponents[1] | 0;
+  const targetValue = lineComponents[2] | 0;
 
-      const operandRange = Array.from({ length: 999 }, (_, indexVal) => indexVal + 1);
+  if (!(firstValue || secondValue || targetValue)) {
+    return;
+  }
 
-      const ultimateValue = operandRange
-        .flatMap(operandOne =>
-          operandRange.map(operandTwo => [operandOne, operandTwo])
-        )
-        .filter(([operandOne, operandTwo]) =>
-          (Math.floor(operandOne * calculationFactorX) + Math.floor(operandTwo * calculationFactorX)) === comparisonTarget
-        )
-        .map(([operandOne, operandTwo]) =>
-          (Math.floor(operandOne * calculationFactorY) + Math.floor(operandTwo * calculationFactorY))
-        )
-        .reduce((currentHigh, currentVal) => Math.max(currentHigh, currentVal), 0);
+  const primaryRate = firstValue / 100 + 1;
+  const secondaryRate = secondValue / 100 + 1;
 
-      global.console.log(ultimateValue);
-    }
-  });
+  const firstIterators = Array.from({ length: 999 }, (_, index) => index + 1);
+  const secondIterators = Array.from({ length: 999 }, (_, index) => index + 1);
+
+  const finalResult = firstIterators.reduce((currentMaximum, iterI) => {
+    return secondIterators.reduce((innerMaximum, iterJ) => {
+      const primarySum = Math.floor(iterI * primaryRate) + Math.floor(iterJ * primaryRate);
+
+      if (primarySum === targetValue) {
+        const secondarySum = Math.floor(iterI * secondaryRate) + Math.floor(iterJ * secondaryRate);
+        return Math.max(innerMaximum, secondarySum);
+      }
+      return innerMaximum;
+    }, currentMaximum);
+  }, 0);
+
+  console.log(finalResult);
+};
+
+process.stdin.on('data', (inputBuffer) => {
+  inputBuffer.toString()
+    .split('\n')
+    .filter(line => line.trim() !== '')
+    .forEach(processLineData);
 });

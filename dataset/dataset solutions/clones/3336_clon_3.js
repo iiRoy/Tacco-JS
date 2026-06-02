@@ -1,113 +1,87 @@
-'use strict';
+'use strict'
 
-/**
- * Computes the optimal score difference for the first player in a stone-picking game.
- * The game involves two players taking turns to pick elements from either end of an array.
- * Each player aims to maximize their own score. The function returns the first player's
- * score minus the second player's score.
- *
- * @param {number} itemCount - The total number of elements in the value array.
- * @param {number[]} valueArray - An array of numerical values representing the stones.
- * @returns {number} The difference between the first player's optimal score and the second player's optimal score.
- */
-function computeOptimalScoreDiff(itemCount, valueArray) {
-  // Handle edge case for an empty game.
-  if (itemCount === 0) {
-    return 0;
+function calculateOptimalScore(numElements, inputArray) {
+  // Initialize memoization table (dp array)
+  // Original: var dp = new Array(N+1).fill(0).map(e => new Array(N+1).fill(0))
+  let memoTable = [];
+  for (let idx = 0; idx <= numElements; idx++) {
+    memoTable.push(new Array(numElements + 1).fill(0));
   }
 
-  // Initialize a memoization table (DP table) for storing optimal scores for sub-arrays.
-  // scoreMemo[i][j] will store the maximum score the current player can get from the sub-array valueArray[i...j].
-  // Using 0-based indexing for both dimensions.
-  const scoreMemo = Array.from({ length: itemCount }, () => new Array(itemCount).fill(0));
+  // Iterate through possible interval lengths
+  // Original loop structure iterated by starting column 'col' and then row 'r',
+  // deriving current column 'c'. This is equivalent to iterating by interval length.
+  // len represents the length of the subarray (j - i).
+  for (let len = 0; len < numElements; len++) {
+    // i is the 1-based starting index of the subarray
+    for (let i = 1; i <= numElements - len; i++) {
+      // j is the 1-based ending index of the subarray
+      let j = i + len;
 
-  // Iterate through sub-array lengths (currentLen) from 1 to itemCount.
-  // This ensures that smaller subproblems are solved before larger ones that depend on them.
-  for (let currentLen = 1; currentLen <= itemCount; currentLen++) {
-    // Iterate through all possible starting indices (currentStart) for the given currentLen.
-    for (let currentStart = 0; currentStart <= itemCount - currentLen; currentStart++) {
-      // Calculate the corresponding ending index (currentEnd) for the current sub-array.
-      const currentEnd = currentStart + currentLen - 1;
+      // Extract values from the input array for clarity and reuse
+      let valueFromLeft = inputArray[i - 1];
+      let valueFromRight = inputArray[j - 1];
 
-      // Base case: Sub-array contains only one element.
-      // The current player simply takes that element.
-      if (currentLen === 1) {
-        scoreMemo[currentStart][currentEnd] = valueArray[currentStart];
-      }
-      // Base case: Sub-array contains two elements.
-      // The current player takes the larger of the two.
-      else if (currentLen === 2) {
-        scoreMemo[currentStart][currentEnd] = Math.max(valueArray[currentStart], valueArray[currentEnd]);
-      }
-      // Recursive step: Sub-array contains three or more elements.
-      // The current player has two choices: pick the leftmost or the rightmost element.
-      // In each case, the opponent will play optimally to minimize the score the current player gets from the remaining elements.
-      else {
-        // Option 1: Current player picks the leftmost element (valueArray[currentStart]).
-        // After this, the opponent plays on the sub-array valueArray[currentStart+1...currentEnd].
-        // The opponent will pick either valueArray[currentStart+1] or valueArray[currentEnd].
-        //   - If opponent picks valueArray[currentStart+1], current player gets scoreMemo[currentStart+2][currentEnd] from remaining.
-        //   - If opponent picks valueArray[currentEnd], current player gets scoreMemo[currentStart+1][currentEnd-1] from remaining.
-        // The opponent chooses the move that yields the minimum score for the current player.
-        const scoreIfPickingLeft = valueArray[currentStart] + Math.min(
-          scoreMemo[currentStart + 2][currentEnd],      // Opponent picks left, next turn for player is [start+2...end]
-          scoreMemo[currentStart + 1][currentEnd - 1]   // Opponent picks right, next turn for player is [start+1...end-1]
-        );
+      if (len === 0) { // Base case: subarray of length 1 (i === j)
+        memoTable[i][j] = valueFromLeft;
+      } else if (len === 1) { // Base case: subarray of length 2 (j === i + 1)
+        memoTable[i][j] = Math.max(valueFromLeft, valueFromRight);
+      } else { // General case: subarray of length > 2
+        // Scenario 1: Current player picks the element from the left end (inputArray[i-1])
+        // The opponent is then left with the subarray from (i+1) to j.
+        // The opponent will play optimally to minimize the current player's score from the remaining elements.
+        // Opponent's choices:
+        //   1. Pick from (i+1): Remaining for current player is (i+2) to j. Score: memoTable[i+2][j]
+        //   2. Pick from j: Remaining for current player is (i+1) to (j-1). Score: memoTable[i+1][j-1]
+        let scoreIfLeftPicked = valueFromLeft + Math.min(memoTable[i + 2][j], memoTable[i + 1][j - 1]);
 
-        // Option 2: Current player picks the rightmost element (valueArray[currentEnd]).
-        // After this, the opponent plays on the sub-array valueArray[currentStart...currentEnd-1].
-        // The opponent will pick either valueArray[currentStart] or valueArray[currentEnd-1].
-        //   - If opponent picks valueArray[currentStart], current player gets scoreMemo[currentStart+1][currentEnd-1] from remaining.
-        //   - If opponent picks valueArray[currentEnd-1], current player gets scoreMemo[currentStart][currentEnd-2] from remaining.
-        // The opponent chooses the move that yields the minimum score for the current player.
-        const scoreIfPickingRight = valueArray[currentEnd] + Math.min(
-          scoreMemo[currentStart + 1][currentEnd - 1], // Opponent picks left, next turn for player is [start+1...end-1]
-          scoreMemo[currentStart][currentEnd - 2]      // Opponent picks right, next turn for player is [start...end-2]
-        );
+        // Scenario 2: Current player picks the element from the right end (inputArray[j-1])
+        // The opponent is then left with the subarray from i to (j-1).
+        // Opponent's choices:
+        //   1. Pick from i: Remaining for current player is (i+1) to (j-1). Score: memoTable[i+1][j-1]
+        //   2. Pick from (j-1): Remaining for current player is i to (j-2). Score: memoTable[i][j - 2]
+        let scoreIfRightPicked = valueFromRight + Math.min(memoTable[i + 1][j - 1], memoTable[i][j - 2]);
 
-        // The current player chooses the option that maximizes their own score.
-        scoreMemo[currentStart][currentEnd] = Math.max(scoreIfPickingLeft, scoreIfPickingRight);
+        // The current player chooses the move that maximizes their own score
+        memoTable[i][j] = Math.max(scoreIfLeftPicked, scoreIfRightPicked);
       }
     }
   }
 
-  // The first player's total score from the entire array (valueArray[0...itemCount-1])
-  const firstPlayerScore = scoreMemo[0][itemCount - 1];
+  // The total score Taro gets from the entire array (from index 1 to numElements)
+  let taroScore = memoTable[1][numElements];
 
-  // Calculate the total sum of all elements in the array.
-  // This can be done efficiently using reduce.
-  const totalGameSum = valueArray.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+  // Calculate the total sum of all elements in the input array
+  let totalSum = inputArray.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
 
-  // The second player's score is the total sum minus the first player's score.
-  const secondPlayerScore = totalGameSum - firstPlayerScore;
-
-  // The final result is the difference between the first player's score and the second player's score.
-  // This simplifies to (firstPlayerScore - (totalGameSum - firstPlayerScore))
-  // which is equivalent to (2 * firstPlayerScore - totalGameSum).
-  return 2 * firstPlayerScore - totalGameSum;
+  // The problem asks for Taro's score minus Jiro's score.
+  // We know: Taro's score + Jiro's score = totalSum
+  // Therefore: Jiro's score = totalSum - Taro's score
+  // The final result is: Taro's score - (totalSum - Taro's score)
+  // Which simplifies to: 2 * Taro's score - totalSum
+  return (2 * taroScore) - totalSum;
 }
 
-/**
- * Main execution function to read input, process it, and print the result.
- * @param {string} rawInputString - The raw input string from stdin.
- */
-function processInputAndExecute(rawInputString) {
-  // Split the input string into individual lines.
-  const inputLines = rawInputString.trim().split('\n');
+// Main function to handle input and output operations
+function processInputAndSolve(inputString) {
+  // Split the entire input string into individual lines
+  let inputLines = inputString.split('\n');
 
-  // Parse the number of elements from the first line.
-  const totalElements = Number(inputLines[0]);
+  // Parse the number of elements from the first line
+  let numElements = Number(inputLines[0]);
 
-  // Parse the array of element values from the second line.
-  // Each element is converted to a number.
-  const elementValues = inputLines[1].split(' ').map(Number);
+  // Parse the array of numbers from the second line
+  let inputArray = inputLines[1].split(' ').map(valStr => Number(valStr));
 
-  // Compute the final result using the core game logic.
-  const finalResult = computeOptimalScoreDiff(totalElements, elementValues);
+  // Call the core logic function to get the final result
+  let finalResult = calculateOptimalScore(numElements, inputArray);
 
-  // Output the computed result to the console.
+  // Output the computed result to the console
   console.log(finalResult);
 }
 
-// Execute the main function by reading input from standard input.
-processInputAndExecute(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Helper function to abstract reading from standard input
+const getStandardInputContent = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Execute the main processing function with content read from standard input
+processInputAndSolve(getStandardInputContent());

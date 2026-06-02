@@ -1,39 +1,31 @@
-const acquireData = () => {
-  const fileSystem = require('node:fs');
-  const dataBuffer = fileSystem.readFileSync('/dev/stdin');
-  const textContent = dataBuffer.toString('utf8');
-  const parts = textContent.trim().split(/\s+/);
+'use strict';
 
-  return [
-    parseInt(parts[0], 10),
-    parseInt(parts[1], 10),
-    parseInt(parts[2], 10)
-  ];
-};
+const acquireInputReader = () => {
+  let currentTokenIndex = 0;
+  let allTokens = [];
 
-const processValues = (numA, numB, numC) => {
-  const obtainSorted = (x, y, z) => {
-    const temporaryArr = [x, y, z];
-    if (temporaryArr[0] > temporaryArr[1]) { [temporaryArr[0], temporaryArr[1]] = [temporaryArr[1], temporaryArr[0]]; }
-    if (temporaryArr[1] > temporaryArr[2]) { [temporaryArr[1], temporaryArr[2]] = [temporaryArr[2], temporaryArr[1]]; }
-    if (temporaryArr[0] > temporaryArr[1]) { [temporaryArr[0], temporaryArr[1]] = [temporaryArr[1], temporaryArr[0]]; }
-    return temporaryArr;
+  const prepareTokenSource = () => {
+    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+    allTokens = fileContent.trim().split(/\s+/);
   };
 
-  const orderedNumbers = obtainSorted(numA, numB, numC);
-  const smallest = orderedNumbers[0];
-  const medium = orderedNumbers[1];
-  const largest = orderedNumbers[2];
+  prepareTokenSource();
 
-  return (largest * 10) + smallest + medium;
+  return () => {
+    return allTokens[currentTokenIndex++];
+  };
 };
 
-const presentOutcome = (finalNumber) => {
-  process.stdout.write(String(finalNumber) + '\n');
+const executeCalculation = (fetchNextNumericToken) => {
+  const firstValue = +fetchNextNumericToken();
+  const secondValue = +fetchNextNumericToken();
+  const thirdValue = +fetchNextNumericToken();
+
+  const maximumValue = Math.max(firstValue, secondValue, thirdValue);
+  const minimumValue = Math.min(firstValue, secondValue, thirdValue);
+  const centralValue = firstValue + secondValue + thirdValue - maximumValue - minimumValue;
+
+  console.log(maximumValue * 10 + minimumValue + centralValue);
 };
 
-(() => {
-  const figures = acquireData();
-  const outcome = processValues(figures[0], figures[1], figures[2]);
-  presentOutcome(outcome);
-})();
+executeCalculation(acquireInputReader());

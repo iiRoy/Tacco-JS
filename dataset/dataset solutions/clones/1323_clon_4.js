@@ -1,17 +1,29 @@
-const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+'use strict';
+(function(rawInputContent) {
+  const fullTextData = rawInputContent.toString();
 
-const relevantSection = inputContent.split('END_OF_TEXT')[0];
-const trimmedSection = relevantSection.replace(/^\s+|\s+$/g, '');
-const lineComponents = trimmedSection.split(/\r?\n/);
+  const endMarkerPosition = fullTextData.indexOf('END_OF_TEXT');
+  const contentBeforeMarker = endMarkerPosition !== -1
+    ? fullTextData.substring(0, endMarkerPosition)
+    : fullTextData;
 
-const keyTerm = lineComponents[0].toLowerCase();
-const subsequentLines = lineComponents.slice(1);
+  const trimmedContent = contentBeforeMarker.trim();
 
-const contentAsSingleString = subsequentLines.join('');
-const individualUnits = contentAsSingleString.split(' ').filter(Boolean);
+  const allTextLines = trimmedContent.split('\n');
 
-const finalTally = individualUnits.reduce((currentTotal, currentWord) => {
-    return currentTotal + (currentWord.toLowerCase() === keyTerm ? 1 : 0);
-}, 0);
+  const targetPhrase = allTextLines[0].toLowerCase();
+  const subsequentLines = allTextLines.slice(1);
 
-console.log(finalTally);
+  const combinedContentString = subsequentLines.join('');
+  const allContentWords = combinedContentString.split(' ');
+
+  let finalTally = 0;
+  for (let i = 0; i < allContentWords.length; i++) {
+    const currentElement = allContentWords[i];
+    if (currentElement.toLowerCase() === targetPhrase) {
+      finalTally++;
+    }
+  }
+
+  console.log(finalTally);
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

@@ -1,83 +1,69 @@
-/*
- * This script processes input data to determine connected components.
- * It identifies nodes that are reachable by both 'road' connections
- * and 'rail' connections, then counts their mutual connections.
- */
+function processInput(inputLines) {
+  // Parse initial parameters from the first line of input
+  const [nodeCount, roadCount, railCount] = inputLines[0].split(' ').map(Number);
 
-function processor ( inputLines ) {
+  // Initialize arrays for road and rail group identifiers, and final results
+  let roadGroups = [];
+  let railGroups = [];
+  let currentGroupMembers = []; // Temporary array to hold members of a connected component
+  let finalCounts = [];
 
-  const [ nodeCount, roadCount, railCount ] = inputLines[0].split( ' ' ).map( Number );
-
-  let
-    roadGroups = [],
-    railGroups = [],
-    tempGroup = [],
-    connectionCounts = [];
-  
-  // Initialize connection groups for roads and rails, and result array
-  for ( let idxA = 0; idxA < nodeCount; idxA++ ) {
-    roadGroups[ idxA ] = nodeCount + 1; // Assign a value larger than any valid node ID
-    railGroups[ idxA ] = nodeCount + 1; // Same for rail groups
-    connectionCounts[ idxA ] = 0;        // Initially, no connections counted
+  // Populate initial group identifiers and result placeholders
+  for (let idx = 0; idx < nodeCount; idx++) {
+    roadGroups[idx] = nodeCount + 1; // Initialize with a value larger than any valid node index
+    railGroups[idx] = nodeCount + 1; // Same for rail groups
+    finalCounts[idx] = 0; // Initialize result for each node to zero
   }
 
-  // Process all 'road' connection pairs
-  for ( let idxA = 1, limit = roadCount + 1; idxA < limit; idxA++ ) {
-    const [ firstNode, secondNode ] = inputLines[idxA].split( ' ' ).map( Number );
-    const minimumVal = Math.min(
-      roadGroups[ firstNode - 1 ],
-      roadGroups[ secondNode - 1 ],
-      firstNode
-    );
-    roadGroups[ firstNode - 1 ] = minimumVal;
-    roadGroups[ secondNode - 1 ] = minimumVal;
+  // Process road connections
+  // The loop starts from the second line (index 1) up to roadCount + 1
+  for (let idx = 1, loopLimit = roadCount + 1; idx < loopLimit; idx++) {
+    const [firstRoadNode, secondRoadNode] = inputLines[idx].split(' ').map(Number);
+    // Determine the minimum group identifier for the connected nodes
+    const minimumValue = Math.min(roadGroups[firstRoadNode - 1], roadGroups[secondRoadNode - 1], firstRoadNode);
+    // Assign the minimum group identifier to both connected nodes
+    roadGroups[firstRoadNode - 1] = minimumValue;
+    roadGroups[secondRoadNode - 1] = minimumValue;
   }
 
-  // Process all 'rail' connection pairs
-  for ( let idxA = roadCount + 1, limit = roadCount + railCount + 1; idxA < limit; idxA++ ) {
-    const [ nodeOne, nodeTwo ] = inputLines[idxA].split( ' ' ).map( Number );
-    const minimumVal = Math.min(
-      railGroups[ nodeOne - 1 ],
-      railGroups[ nodeTwo - 1 ],
-      nodeOne
-    );
-    railGroups[ nodeOne - 1 ] = minimumVal;
-    railGroups[ nodeTwo - 1 ] = minimumVal;
+  // Process rail connections
+  // The loop starts after road connections, from roadCount + 1 up to roadCount + railCount + 1
+  for (let idx = roadCount + 1, loopLimit = roadCount + railCount + 1; idx < loopLimit; idx++) {
+    const [firstRailNode, secondRailNode] = inputLines[idx].split(' ').map(Number);
+    // Determine the minimum group identifier for the connected nodes
+    const minimumValue = Math.min(railGroups[firstRailNode - 1], railGroups[secondRailNode - 1], firstRailNode);
+    // Assign the minimum group identifier to both connected nodes
+    railGroups[firstRailNode - 1] = minimumValue;
+    railGroups[secondRailNode - 1] = minimumValue;
   }
-  
-  // Determine and count mutually connected components
-  for ( let idxA = 0; idxA < nodeCount; idxA++ ) {
-    if ( connectionCounts[ idxA ] === 0 ) { // Only process if not already counted
-      tempGroup.length = 0; // Clear temporary group
-      tempGroup[ 0 ] = idxA; // Add current node to temporary group
 
-      // Check if current node is part of a valid road and rail group
-      if ( roadGroups[ idxA ] <= nodeCount && railGroups[ idxA ] <= nodeCount ) {
-        // Find other nodes in the same combined road and rail group
-        for ( let idxB = idxA + 1; idxB < nodeCount; idxB++ ) {
-          if (
-            roadGroups[ idxA ] === roadGroups[ idxB ] &&
-            railGroups[ idxA ] === railGroups[ idxB ]
-          ) {
-            tempGroup.push( idxB ); // Add node to current group
+  // Calculate the size of each connected component based on both road and rail groups
+  for (let idx = 0; idx < nodeCount; idx++) {
+    // Only process nodes that haven't been assigned a count yet
+    if (finalCounts[idx] === 0) {
+      currentGroupMembers.length = 0; // Clear the temporary array for the new component
+      currentGroupMembers[0] = idx; // Add the current node to its component
+
+      // Check if the current node has valid group assignments (not the initial N+1 value)
+      if (roadGroups[idx] <= nodeCount && railGroups[idx] <= nodeCount) {
+        // Iterate through subsequent nodes to find others belonging to the same component
+        for (let innerIdx = idx + 1; innerIdx < nodeCount; innerIdx++) {
+          // If both road and rail group identifiers match, they are in the same component
+          if (roadGroups[idx] === roadGroups[innerIdx] && railGroups[idx] === railGroups[innerIdx]) {
+            currentGroupMembers.push(innerIdx);
           }
         }
       }
-      
-      // Assign the count of the current group to all its members
-      for ( let idxB = 0, limit = tempGroup.length; idxB < limit; idxB++ ) {
-        connectionCounts[ tempGroup[ idxB ] ] = limit;
+      // Assign the size of the found component to all its members
+      for (let innerIdx = 0, loopLimit = currentGroupMembers.length; innerIdx < loopLimit; innerIdx++) {
+        finalCounts[currentGroupMembers[innerIdx]] = loopLimit;
       }
     }
   }
 
-  // Debugging output for intermediate arrays (if needed)
-  // console.log(roadGroups.join(' '));
-  // console.log(railGroups.join(' '));
-
-  // Output the final counts of connected components
-  console.log( connectionCounts.join( ' ' ) );
+  // Output the final counts for each node, space-separated
+  console.log(finalCounts.join(' '));
 }
 
-// Entry point: Read input from stdin, parse it, and pass to the processor function
-processor( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ).trim().split( '\n' ) );
+// Read input from stdin, process it, and call the main function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n'));

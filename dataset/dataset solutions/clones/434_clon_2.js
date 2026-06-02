@@ -1,148 +1,148 @@
-var nodeQuantity, neighborConnections;
+var nodeCount, adjList;
 
-function primaryExecution() {
-	while (true) {
-		var linkCount = acquireValue();
-		nodeQuantity = acquireValue();
-		if (nodeQuantity == 0 && linkCount == 0) {
-			break;
-		}
+function executeProgram() {
+    while (true) {
+        var edgeCount = readNextToken();
+        nodeCount = readNextToken();
+        if (nodeCount === 0 && edgeCount === 0) {
+            break;
+        }
 
-		neighborConnections = [];
-		performIteration(nodeQuantity, function(idx) {
-			neighborConnections[idx] = [];
-		});
-		performIteration(linkCount, function() {
-			var originNode = acquireValue() - 1;
-			var destNode = acquireValue() - 1;
-			var costParam1 = acquireValue();
-			var costParam2 = acquireValue();
-			neighborConnections[originNode].push([costParam1, costParam2, destNode]);
-			neighborConnections[destNode].push([costParam1, costParam2, originNode]);
-		});
+        adjList = [];
+        loopThrough(nodeCount, function(idx) {
+            adjList[idx] = [];
+        });
+        loopThrough(edgeCount, function() {
+            var nodeA = readNextToken() - 1;
+            var nodeB = readNextToken() - 1;
+            var costOne = readNextToken();
+            var costTwo = readNextToken();
+            adjList[nodeA].push([costOne, costTwo, nodeB]);
+            adjList[nodeB].push([costOne, costTwo, nodeA]);
+        });
 
-		var taskCount = acquireValue();
-		performIteration(taskCount, function() {
-			var initialPoint = acquireValue() - 1;
-			var finalDestination = acquireValue() - 1;
-			var metricType = acquireValue();
-			displayResult(calculateShortestPath(initialPoint, finalDestination, metricType));
-		});
-	}
+        var queryCount = readNextToken();
+        loopThrough(queryCount, function() {
+            var sourceNode = readNextToken() - 1;
+            var targetNode = readNextToken() - 1;
+            var costType = readNextToken();
+            displayOutput(calculateShortestPath(sourceNode, targetNode, costType));
+        });
+    }
 }
 
-function calculateShortestPath(initialPoint, finalDestination, metricType) {
-	var priorityQueue = [];
+function calculateShortestPath(sourceNode, targetNode, costType) {
+    var minHeap = [];
 
-	function insertIntoHeap(elementItem) {
-		var currentIndex = priorityQueue.length;
-		while (currentIndex > 0) {
-			var parentIndex = (currentIndex - 1) >> 1;
+    function insertIntoHeap(elementToInsert) {
+        var currentPosition = minHeap.length;
+        while (currentPosition > 0) {
+            var parentPosition = (currentPosition - 1) >> 1;
 
-			if (priorityQueue[parentIndex] <= elementItem) {
-				break;
-			}
+            if (minHeap[parentPosition] <= elementToInsert) {
+                break;
+            }
 
-			priorityQueue[currentIndex] = priorityQueue[parentIndex];
-			currentIndex = parentIndex;
-		}
-		priorityQueue[currentIndex] = elementItem;
-	}
+            minHeap[currentPosition] = minHeap[parentPosition];
+            currentPosition = parentPosition;
+        }
+        minHeap[currentPosition] = elementToInsert;
+    }
 
-	function extractMinFromHeap() {
-		var extractedMinimum = priorityQueue[0];
+    function extractMinFromHeap() {
+        var minElement = minHeap[0];
 
-		var lastElement = priorityQueue[priorityQueue.length - 1];
-		var currentLength = --priorityQueue.length;
+        var lastElement = minHeap[minHeap.length - 1];
+        var heapCurrentSize = --minHeap.length;
 
-		if (!currentLength) {
-			return extractedMinimum;
-		}
+        if (!heapCurrentSize) {
+            return minElement;
+        }
 
-		var sinkIndex = 0;
-		while (sinkIndex * 2 + 1 < currentLength) {
-			var leftChildIdx = sinkIndex * 2 + 1;
-			var rightChildIdx = sinkIndex * 2 + 2;
+        var heapifyIndex = 0;
+        while (heapifyIndex * 2 + 1 < heapCurrentSize) {
+            var childOneIndex = heapifyIndex * 2 + 1;
+            var childTwoIndex = heapifyIndex * 2 + 2;
 
-			if (rightChildIdx < currentLength && priorityQueue[rightChildIdx] < priorityQueue[leftChildIdx]) {
-				leftChildIdx = rightChildIdx;
-			}
+            if (childTwoIndex < heapCurrentSize && minHeap[childTwoIndex] < minHeap[childOneIndex]) {
+                childOneIndex = childTwoIndex;
+            }
 
-			if (priorityQueue[leftChildIdx] >= lastElement) {
-				break;
-			}
+            if (minHeap[childOneIndex] >= lastElement) {
+                break;
+            }
 
-			priorityQueue[sinkIndex] = priorityQueue[leftChildIdx];
-			sinkIndex = leftChildIdx;
-		}
-		priorityQueue[sinkIndex] = lastElement;
+            minHeap[heapifyIndex] = minHeap[childOneIndex];
+            heapifyIndex = childOneIndex;
+        }
+        minHeap[heapifyIndex] = lastElement;
 
-		return extractedMinimum;
-	}
+        return minElement;
+    }
 
-	function isHeapEmpty() {
-		return !priorityQueue.length;
-	}
+    function isHeapEmpty() {
+        return !minHeap.length;
+    }
 
-	var shortestPaths = [];
-	performIteration(nodeQuantity, function(idx) {
-		shortestPaths[idx] = Infinity;
-	});
+    var distValues = [];
+    loopThrough(nodeCount, function(idx) {
+        distValues[idx] = Infinity;
+    });
 
-	shortestPaths[initialPoint] = 0;
-	insertIntoHeap([0, initialPoint]);
-	while (!isHeapEmpty()) {
-		var nodeState = extractMinFromHeap();
+    distValues[sourceNode] = 0;
+    insertIntoHeap([0, sourceNode]);
+    while (!isHeapEmpty()) {
+        var poppedNodeInfo = extractMinFromHeap();
 
-		if (nodeState[0] > shortestPaths[nodeState[1]]) {
-			continue;
-		}
+        if (poppedNodeInfo[0] > distValues[poppedNodeInfo[1]]) {
+            continue;
+        }
 
-		performIteration(neighborConnections[nodeState[1]].length, function(idx) {
-			var connectionDetail = neighborConnections[nodeState[1]][idx];
-			if (shortestPaths[connectionDetail[2]] > shortestPaths[nodeState[1]] + connectionDetail[metricType]) {
-				shortestPaths[connectionDetail[2]] = shortestPaths[nodeState[1]] + connectionDetail[metricType];
-				insertIntoHeap([shortestPaths[connectionDetail[2]], connectionDetail[2]]);
-			}
-		});
-	}
+        loopThrough(adjList[poppedNodeInfo[1]].length, function(idx) {
+            var currentGraphEdge = adjList[poppedNodeInfo[1]][idx];
+            if (distValues[currentGraphEdge[2]] > distValues[poppedNodeInfo[1]] + currentGraphEdge[costType]) {
+                distValues[currentGraphEdge[2]] = distValues[poppedNodeInfo[1]] + currentGraphEdge[costType];
+                insertIntoHeap([distValues[currentGraphEdge[2]], currentGraphEdge[2]]);
+            }
+        });
+    }
 
-	return shortestPaths[finalDestination];
+    return distValues[targetNode];
 }
 
-function performIteration(startVal, endVal, callbackFunc) {
-	if (callbackFunc == null) {
-		callbackFunc = endVal;
-		endVal = startVal;
-		startVal = 0;
-	}
-	for (var loopCounter = startVal; loopCounter < endVal; ++loopCounter) {
-		callbackFunc(loopCounter);
-	}
+function loopThrough(loopStart, loopEnd, iterationCallback) {
+    if (iterationCallback == null) {
+        iterationCallback = loopEnd;
+        loopEnd = loopStart;
+        loopStart = 0;
+    }
+    for (var idx = loopStart; idx < loopEnd; ++idx) {
+        iterationCallback(idx);
+    }
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-var inputBuffer = '';
-var bufferPosition = 0;
+var rawInputBuffer = '';
+var bufferPointer = 0;
 
-function acquireValue(dataType) {
-	if (dataType === 'string') {
-		return inputBuffer[bufferPosition++];
-	} else {
-		return +inputBuffer[bufferPosition++];
-	}
+function readNextToken(dataType) {
+    if (dataType === 'string') {
+        return rawInputBuffer[bufferPointer++];
+    } else {
+        return +rawInputBuffer[bufferPointer++];
+    }
 }
 
-function displayResult(outputVal) {
-	console.log(outputVal);
+function displayOutput(valueToPrint) {
+    console.log(valueToPrint);
 }
 
 process.stdin.on('data', function(dataChunk) {
-	inputBuffer += dataChunk;
+    rawInputBuffer += dataChunk;
 });
 process.stdin.on('end', function() {
-	inputBuffer = inputBuffer.split(/\s+/);
-	primaryExecution();
+    rawInputBuffer = rawInputBuffer.split(/\s+/);
+    executeProgram();
 });

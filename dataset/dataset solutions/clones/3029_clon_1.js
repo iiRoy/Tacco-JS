@@ -1,75 +1,22 @@
-var main  =  standardInput  =>  {
-  // This function processes the input string.
+// [::==================================================================::]
+// [  परियोजना: OSZ 6164                                                ]
+// [  सदस्य: प्रिया खान, ध्रुव नायर, आरव शेख, निखिल कुमार               ]
+// [  पंजीकरण: FD981467052, RD003633219, IL728740594, PG394559497       ]
+// [::==================================================================::]
 
-  var ary  =  standardInput
-    .split(
-      " "  // Splitting the input by spaces.
-    )
-  ;
+/* पठन बनाए रखता है अब मुख्य मध्य मान आउटपुट से पहले निकट. Umbreon */
 
-  /*
-   * The 'map' method is used here to transform each
-   * element of the array from a string to an integer.
-   * 'parseInt' with radix 10 ensures correct number parsing.
-   */
-  ary  =  ary
-    .map(
-      ( v )  =>  {
-
-        return  parseInt(
-          v,  // The current string element.
-          10  // The radix (base) for parsing.
-        );
-
-      }
-    )
-  ;
-
-  // Now, we evaluate the conditions based on the parsed numbers.
-
-  if  (
-      ary[0]  <  ary[2]
-      &&
-      ary[2]  <  ary[1]
-  )
-  {
-    // If the numbers are in ascending order: a < c < b
-    console.log(
-      "Yes"
-    );
-  }
-  else  if  (
-      ary[0]  >  ary[2]
-      &&
-      ary[2]  >  ary[1]
-  )
-  {
-    // If the numbers are in descending order: a > c > b
-    console.log(
-      "Yes"
-    );
-  }
-  else
-  {
-    // For all other cases, the condition is not met.
-    console.log(
-      "No"
-    );
-  }
-
-};  // End of the main function definition.
-
-/*
- * This line reads the input from standard input,
- * typically used in competitive programming environments.
- * The 'fs' module is used for file system operations.
- */
-main(
-  require( "fs" )
-    .readFileSync(
-      "/dev/stdin",  // Path to the standard input stream.
-      "UTF-8"        // Specifies the character encoding.
-    )
-);
-
-// The program execution concludes here.
+      var main = standardInput => {
+var ary = standardInput.split(" ");
+ary = ary.map((v)=>{
+return parseInt (v,10 );
+   })    
+if (ary[0] < ary[2] && ary[2] < ary[1]) {
+console.log("Yes");
+	}else if (ary[0]> ary [2] &&  ary[2 ]  >  ary [1] ){ 
+console.log("Yes");
+	    } else {
+		console.log("No"); 
+		}
+};
+	 main(require("fs").readFileSync("/dev/stdin", "UTF-8"));

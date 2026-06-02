@@ -1,70 +1,64 @@
-let inputStringHolder;
-let finalAccumulator = 0;
-const sequenceBase = ["X", "Y", "Z"];
-const primeDivisor = 1000000007;
+let inputLine;
+let finalResult = 0;
+const modulusValue = Math.pow(10, 9) + 7;
 
-const inputProcessor = require('readline');
-const dataInterface = inputProcessor.createInterface({
+const standardChars = ["A", "B", "C"];
+
+const processInput = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-dataInterface.on('line', (dataLine) => {
-    inputStringHolder = dataLine;
+processInput.on('line', function (x) {
+    inputLine = x;
 });
 
-dataInterface.on('close', () => {
-    const originalCharacters = inputStringHolder.split("");
-    const wildcardPositions = [];
-    for (let k = 0; k < originalCharacters.length; k++) {
-        if (originalCharacters[k] === "?") {
-            wildcardPositions.push(k);
+processInput.on('close', function () {
+    const sourceChars = inputLine.split("");
+    const questionPositions = [];
+    for (let i = 0; i < sourceChars.length; i++) {
+        if (sourceChars[i] === '?') {
+            questionPositions.push(i);
         }
     }
 
-    const numWildcards = wildcardPositions.length;
-    const totalVariations = Math.pow(3, numWildcards);
+    const numQuestions = questionPositions.length;
+    const totalPermutations = Math.pow(3, numQuestions);
 
-    for (let variationIndex = 0; variationIndex < totalVariations; variationIndex++) {
-        let currentSequence = [...originalCharacters];
-        let tempValue = variationIndex;
+    for (let permutationIndex = 0; permutationIndex < totalPermutations; permutationIndex++) {
+        const tempPermutation = [...sourceChars];
+        let currentBaseThree = permutationIndex;
 
-        for (let q = 0; q < numWildcards; q++) {
-            const charSelector = tempValue % 3;
-            currentSequence[wildcardPositions[q]] = sequenceBase[charSelector];
-            tempValue = Math.floor(tempValue / 3);
+        for (let j = 0; j < numQuestions; j++) {
+            const baseThreeDigit = currentBaseThree % 3;
+            tempPermutation[questionPositions[j]] = standardChars[baseThreeDigit];
+            currentBaseThree = Math.floor(currentBaseThree / 3);
         }
-        evaluateSequence(currentSequence);
+        
+        finalResult = (finalResult + calculateValue(tempPermutation, modulusValue)) % modulusValue;
     }
-    console.log(finalAccumulator);
+
+    console.log(finalResult);
 });
 
-function evaluateSequence(characterSequence) {
-    const sequenceLength = characterSequence.length;
-    const scoreGrid = Array(sequenceLength).fill(0).map(() => Array(3).fill(0));
+function calculateValue(characterSequence, currentModulus) {
+    let currentA = 0;
+    let currentAB = 0;
+    let currentABC = 0;
 
-    if (characterSequence[0] === sequenceBase[0]) {
-        scoreGrid[0][0] = 1;
-    }
+    let bCount = 0; // Counts occurrences of 'B' in the sequence so far for 'AB' calculation
+    let cCount = 0; // Counts occurrences of 'C' in the sequence so far for 'ABC' calculation
 
-    for (let k = 1; k < sequenceLength; k++) {
-        if (characterSequence[k] === sequenceBase[0]) {
-            scoreGrid[k][0] = (scoreGrid[k - 1][0] + 1);
-        } else {
-            scoreGrid[k][0] = scoreGrid[k - 1][0];
+    for (const char of characterSequence) {
+        if (char === 'A') {
+            currentA = (currentA + 1) % currentModulus;
+        } else if (char === 'B') {
+            currentAB = (currentAB + currentA + bCount) % currentModulus;
+            bCount++;
+        } else if (char === 'C') {
+            currentABC = (currentABC + currentAB + cCount) % currentModulus;
+            cCount++;
         }
     }
-
-    for (let p = 1; p < 3; p++) {
-        const segmentTally = {};
-        for (let k = 1; k < sequenceLength; k++) {
-            if (characterSequence[k] === sequenceBase[p] && scoreGrid[k - 1][p - 1] !== 0) {
-                scoreGrid[k][p] = scoreGrid[k - 1][p - 1] + (segmentTally[characterSequence[k]] || 0);
-                segmentTally[characterSequence[k]] = (segmentTally[characterSequence[k]] || 0) + 1;
-            } else {
-                scoreGrid[k][p] = scoreGrid[k - 1][p];
-            }
-        }
-    }
-    finalAccumulator = (finalAccumulator + scoreGrid[sequenceLength - 1][2]) % primeDivisor;
+    return currentABC;
 }

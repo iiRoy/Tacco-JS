@@ -1,41 +1,51 @@
-const entryPoint = require('node:fs');
-const rawDataString = entryPoint.readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawDataString.trim().split('\n').map(line => line.split(' ').map(Number));
-
-const targetNodeIdentifier = processedLines[0][0];
-processedLines.shift(); 
-
-const adjacencyMap = Array.from({ length: targetNodeIdentifier + 1 }, () => []);
-processedLines.forEach(edgeInfo => {
-    const [origin, destination, weight] = edgeInfo;
-    adjacencyMap[origin].push({ destination, weight });
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var parsedLines = fileContent.split("\n").map((lineStr) => {
+    return lineStr.split(" ").map((numStr) => { return Number(numStr); });
 });
 
-let maximumAchievedValue = -1;
+var initialConfiguration = parsedLines[0];
+var finalNodeIdentifier = initialConfiguration[0];
+// var edgeQuantity = initialConfiguration[1]; // Original had E commented out, so I'll omit an equivalent
+var auxiliaryParameter = initialConfiguration[2]; // P in original, unused.
 
-function traverseNetwork(currentStation, currentAccumulation, visitedStations) {
-    if (currentStation === targetNodeIdentifier) {
-        maximumAchievedValue = Math.max(maximumAchievedValue, currentAccumulation);
-        return;
-    }
+parsedLines.shift(); // Remove the configuration line
 
-    if (visitedStations.has(currentStation)) {
-        return;
-    }
-
-    visitedStations.add(currentStation);
-
-    const connections = adjacencyMap[currentStation];
-    if (connections) {
-        for (const connection of connections) {
-            const nextStation = connection.destination;
-            const edgeValue = connection.weight;
-            
-            traverseNetwork(nextStation, currentAccumulation + edgeValue, new Set(visitedStations));
-        }
-    }
+var graphConnections = {};
+for (var nodeIndex = 1; nodeIndex <= finalNodeIdentifier; nodeIndex++) {
+    graphConnections[nodeIndex] = [];
 }
 
-traverseNetwork(1, 0, new Set());
+parsedLines.forEach((edgeDescription) => {
+    graphConnections[edgeDescription[0]].push([edgeDescription[1], edgeDescription[2]]);
+});
 
-console.log(maximumAchievedValue);
+var highestPathValue = -1;
+
+function exploreGraphRecursively(currentLocation, accumulatedWeight, visitedPathNodes) {
+    if (currentLocation === finalNodeIdentifier) {
+        highestPathValue = Math.max(highestPathValue, accumulatedWeight);
+        return;
+    }
+
+    visitedPathNodes.add(currentLocation);
+
+    const adjacentEdges = graphConnections[currentLocation] || [];
+    for (const [nextLocation, traversalCost] of adjacentEdges) {
+        if (!visitedPathNodes.has(nextLocation)) {
+            exploreGraphRecursively(nextLocation, accumulatedWeight + traversalCost, visitedPathNodes);
+        }
+        // If nextLocation is already in visitedPathNodes, it means a cycle is detected
+        // within the current path. The original code would print "loop detected" and
+        // effectively prune this branch by not continuing the traversal.
+        // This recursive implementation achieves the same pruning by simply not
+        // making a recursive call for cyclic paths.
+    }
+
+    visitedPathNodes.delete(currentLocation); // Backtrack: remove current node from the path for exploring other branches
+}
+
+// Initiate the graph traversal from node 1 with an initial accumulated weight of 0
+// and an empty set to track visited nodes in the current path.
+exploreGraphRecursively(1, 0, new Set());
+
+console.log(highestPathValue);

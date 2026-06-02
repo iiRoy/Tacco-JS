@@ -1,99 +1,87 @@
-const acquireData = (sourcePath) => require('fs').readFileSync(sourcePath, 'utf8');
-
-const processInputLines = (textContent) => textContent.trim().split('\n');
-
-const maximumAccumulatedValue = 5000;
-
-const constructLikelihoodGrid = (maxStageIdentifier) => {
-    const gridRows = Array.from({ length: maxStageIdentifier + 1 }, () =>
-        Array.from({ length: maximumAccumulatedValue + 1 }, () => 0.0)
-    );
-    gridRows[0][0] = 1.0;
-    return gridRows;
-};
-
-const evaluateScenario = (scenarioDetails) => {
-    const { branchFactor, finalStageIdentifier, stepIncrements, specialEffectRegistry } = scenarioDetails;
-
-    let likelihoodMatrix = constructLikelihoodGrid(finalStageIdentifier);
-
-    const resultingMatrix = Array.from({ length: finalStageIdentifier }).reduce((currentMatrixState, currentStageIndex) => {
-        currentMatrixState[currentStageIndex].forEach((probabilityValue, currentScoreValue) => {
-            if (probabilityValue === 0) return;
-
-            stepIncrements.forEach(stepMagnitude => {
-                let potentialNextStage = Math.min(currentStageIndex + stepMagnitude, finalStageIdentifier);
-                const contributionFraction = probabilityValue / branchFactor;
-
-                const appliedEffect = specialEffectRegistry.get(potentialNextStage);
-
-                if (appliedEffect) {
-                    const [effectKind, effectAmount] = appliedEffect;
-                    let ultimateStage = potentialNextStage;
-                    let ultimateScore = currentScoreValue;
-
-                    const effectDispatchers = {
-                        1: () => { ultimateStage = Math.min(potentialNextStage + effectAmount, finalStageIdentifier); },
-                        2: () => { ultimateScore = currentScoreValue + effectAmount; },
-                        3: () => { ultimateScore = currentScoreValue - effectAmount; }
-                    };
-                    (effectDispatchers[effectKind] || (() => {}))();
-
-                    // Allow JavaScript to handle out-of-bounds indices for `ultimateScore`.
-                    // This will result in `undefined + contributionFraction` which yields `NaN`,
-                    // replicating the original code's behavior for probabilities moving out of bounds.
-                    currentMatrixState[ultimateStage][ultimateScore] += contributionFraction;
-                } else {
-                    currentMatrixState[potentialNextStage][currentScoreValue] += contributionFraction;
-                }
-            });
-        });
-        return currentMatrixState;
-    }, likelihoodMatrix);
-
-    const finalExpectedValue = resultingMatrix[finalStageIdentifier].reduce((totalAccumulated, finalProbability, finalScore) => {
-        return totalAccumulated + finalScore * finalProbability;
-    }, 0);
-
-    return Math.floor(finalExpectedValue);
-};
-
-const processAllInputs = (dataFilePath) => {
-    const allTextLines = processInputLines(acquireData(dataFilePath));
-    let linePointer = 0;
-
-    const retrieveNumbersFromLine = (lineCount = 1) => {
-        const lineContent = allTextLines[linePointer++];
-        return lineContent.split(' ').map(Number);
+const createInputReader = (rawInput) => {
+    const lines = rawInput.trim().split("\n");
+    let currentLineIndex = 0;
+    return {
+        pull: () => {
+            if (currentLineIndex < lines.length) {
+                return lines[currentLineIndex++];
+            }
+            return undefined;
+        }
     };
-
-    const outputContainer = [];
-
-    while (true) {
-        const primaryParameters = retrieveNumbersFromLine(3);
-        if (primaryParameters.every(val => val === 0)) {
-            break;
-        }
-
-        const [bf, fsId, meCount] = primaryParameters;
-        const stepIncrementsData = retrieveNumbersFromLine(bf);
-
-        const eventRegistry = new Map();
-        for (let idx = 0; idx < meCount; ++idx) {
-            const [targetId, kind, amount] = retrieveNumbersFromLine(3);
-            eventRegistry.set(targetId, [kind, amount]);
-        }
-
-        const currentScenario = {
-            branchFactor: bf,
-            finalStageIdentifier: fsId,
-            stepIncrements: stepIncrementsData,
-            specialEffectRegistry: eventRegistry
-        };
-
-        outputContainer.push(evaluateScenario(currentScenario));
-    }
-    outputContainer.forEach(res => console.log(res));
 };
 
-processAllInputs('/dev/stdin');
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineStream = createInputReader(rawInputData);
+
+const parseNumericSequence = (lineContent) => lineContent.split(" ").map(Number);
+
+while (true) {
+    const currentConfigLine = lineStream.pull();
+    const [boardWidth, boardHeight, specialEventCount] = parseNumericSequence(currentConfigLine);
+
+    if (boardWidth === 0 && boardHeight === 0 && specialEventCount === 0) break;
+
+    const diceRollOutcomes = parseNumericSequence(lineStream.pull());
+
+    const boardEventRegistry = new Map(); // Map<position, { effectType, effectAmount }>
+    for (let i = 0; i < specialEventCount; i++) {
+        const [eventPosition, eventType, eventValue] = parseNumericSequence(lineStream.pull());
+        boardEventRegistry.set(eventPosition, { effectType: eventType, effectAmount: eventValue });
+    }
+
+    const maxPossibleScore = 5000;
+    const probabilityState = new Map(); // Map<boardPosition, Map<scoreValue, probability>>
+    probabilityState.set(0, new Map([[0, 1]])); // Initial state: position 0, score 0, probability 1
+
+    for (let currentPosition = 0; currentPosition < boardHeight; currentPosition++) {
+        const scoresAtCurrentPosition = probabilityState.get(currentPosition);
+        if (!scoresAtCurrentPosition) continue; // No probability to be at this position
+
+        for (const [currentScore, currentProb] of scoresAtCurrentPosition.entries()) {
+            if (currentProb === 0) continue;
+
+            for (const rollValue of diceRollOutcomes) {
+                let nextPosition = Math.min(boardHeight, currentPosition + rollValue);
+                let nextScore = currentScore;
+                const probContribution = currentProb / boardWidth;
+
+                const activeEvent = boardEventRegistry.get(nextPosition);
+                if (activeEvent) {
+                    switch (activeEvent.effectType) {
+                        case 1: // Move to a different position
+                            nextPosition = Math.min(boardHeight, nextPosition + activeEvent.effectAmount);
+                            break;
+                        case 2: // Increase score
+                            nextScore += activeEvent.effectAmount;
+                            break;
+                        case 3: // Decrease score
+                            nextScore -= activeEvent.effectAmount;
+                            break;
+                    }
+                }
+
+                // Accumulate probabilities for the calculated next state
+                if (!probabilityState.has(nextPosition)) {
+                    probabilityState.set(nextPosition, new Map());
+                }
+                const targetScoreMap = probabilityState.get(nextPosition);
+                targetScoreMap.set(nextScore, (targetScoreMap.get(nextScore) || 0) + probContribution);
+            }
+        }
+    }
+
+    let totalExpectedValue = 0;
+    const finalScoresMap = probabilityState.get(boardHeight);
+
+    if (finalScoresMap) {
+        // Only sum for scores within the defined range [0, maxPossibleScore]
+        for (let scoreIterator = 0; scoreIterator <= maxPossibleScore; scoreIterator++) {
+            const scoreProbability = finalScoresMap.get(scoreIterator);
+            if (scoreProbability) {
+                totalExpectedValue += scoreIterator * scoreProbability;
+            }
+        }
+    }
+    console.log(Math.floor(totalExpectedValue));
+}

@@ -1,202 +1,89 @@
 "use strict";
-// This module handles file system operations for input acquisition.
-const   rawData = require("fs")  .  readFileSync  (  "/std/in"  ,  "utf8"  )  ;
-// Tokenize the input string by spaces or newlines.
-let tokenStream = rawData.split ( / |\n/ )  ,  tokenIndex = 0  ;
+var source=require("fs").readFileSync("/dev/stdin","utf8");
+var tokens=source.split(/ |\n/),ptr=0;
+function read(flag){return flag?tokens[ptr++]:+tokens[ptr++];}
+function reads(num,flag){return flag?tokens.slice(ptr,ptr+=num):tokens.slice(ptr,ptr+=num).map(v=>+v);}
+function readm(rows,cols,flag){var out=[],idx=0;if(flag)for(;idx<rows;idx++)out.push(tokens.slice(ptr,ptr+=cols));else for(;idx<rows;idx++)out.push(tokens.slice(ptr,ptr+=cols).map(v=>+v));return out;}
+function makeArray(val){var args=arguments,len=args.length,res="Array(args["+--len+"]).fill().map(x=>{return "+val+";})";while(--len)res="Array(args["+len+"]).fill().map(x=>"+res+")";return eval(res);}
 
-// Retrieves the next token from the stream.
-function getNextToken (   isString  )   {
-  // If 'isString' is true, return the token as-is (string); otherwise, convert to number.
-  return isString ? tokenStream [tokenIndex++] : +tokenStream [tokenIndex++]  ;
-}
+var N,g,dep,res;
 
-// Fetches a specified number of tokens as an array.
-function getTokensArray ( count  ,  asString )   {
-  // Slices the token stream and increments the index.
-  const   startIdx = tokenIndex  ;
-  tokenIndex += count  ;
-  if   (  asString  )   {
-    return tokenStream.slice ( startIdx  ,  tokenIndex )  ;
-  }   else   {
-    // Map to numbers if not requested as strings.
-    return tokenStream.slice ( startIdx  ,  tokenIndex )  .  map ( item => +item )  ;
+//var printed = solve();
+//if(printed !== undefined)console.log(printed);
+
+function solve(){
+  N = read();
+  g = makeArray("[]", N);
+  dep = Array(N);
+  res = Array(N);
+  for(var k = 1; k < N; k++){
+    var u = read()-1, w = read()-1;
+    g[u].push(w);
+    g[w].push(u);
   }
-}
-
-// Reads a matrix of tokens with specified dimensions.
-function getMatrix (   height  ,  width  ,  asStrings  )   {
-  let resultMatrix = [  ]  ;
-  let rowIter = 0  ;
-  // If 'asStrings' is true, store rows as string arrays.
-  if (   asStrings   )   {
-    for (   ;   rowIter   <   height   ;   rowIter++   )   {
-      resultMatrix.push ( tokenStream.slice ( tokenIndex  ,  tokenIndex += width ) )  ;
+  walk(0,-1,0);
+  var odds = 0, evens = 0;
+  for(var k = 0; k < N; k++){
+    res[k] = dep[k] % 2;
+    if(res[k])odds++;
+    else evens++;
+  }
+  var part1 = Math.ceil(N/3), part3 = N/3|0, part2 = N-part1-part3;
+  var cur1 = 1, cur2 = 2, cur3 = 3;
+  if(odds <= part3){
+    for(var k = 0; k < N; k++){
+      if(res[k])res[k] = cur3, cur3 += 3;
+      else{
+        if(cur1 <= N)res[k] = cur1, cur1 += 3;
+        else if(cur2 <= N)res[k] = cur2, cur2 += 3;
+        else res[k] = cur3, cur3 += 3;
+      }
     }
-  }   else   {
-    // Otherwise, convert each element to a number.
-    for (   ;   rowIter   <   height   ;   rowIter++   )   {
-      resultMatrix.push ( tokenStream.slice ( tokenIndex  ,  tokenIndex += width )  .  map ( element => +element ) )  ;
+  }else if(evens <= part3){
+    for(var k = 0; k < N; k++){
+      if(res[k] === 0)res[k] = cur3, cur3 += 3;
+      else{
+        if(cur1 <= N)res[k] = cur1, cur1 += 3;
+        else if(cur2 <= N)res[k] = cur2, cur2 += 3;
+        else res[k] = cur3, cur3 += 3;
+      }
     }
-  }
-  return resultMatrix  ;
-}
-
-// Creates a multi-dimensional array dynamically based on provided dimensions and initial value expression.
-function createMultiDimArray (   initialValueExpression   )   {
-  const   args = arguments  ;
-  let dimLength = args.length  ;
-  let arrayCreationCode = "Array(args[" + --dimLength + "]).fill().map(x=>{return " + initialValueExpression + ";})"  ;
-  while (   --dimLength   )   {
-    arrayCreationCode = "Array(args[" + dimLength + "]).fill().map(x=>" + arrayCreationCode + ")"  ;
-  }
-  return eval ( arrayCreationCode )  ;
-}
-
-// Global variables for graph processing.
-let   nodeCount  ,  adjacencyList  ,  nodeDepths  ,  finalAssignment  ;
-
-// The primary execution function.
-function executeProgram (   )   {
-  // Read the total number of nodes.
-  nodeCount = getNextToken (   false   )  ;
-  // Initialize adjacency list for the graph.
-  adjacencyList = createMultiDimArray (   "[]"  ,  nodeCount   )  ;
-  // Initialize array to store depth of each node.
-  nodeDepths = new Array (   nodeCount   )  ;
-  // Initialize array for the final output values.
-  finalAssignment = new Array (   nodeCount   )  ;
-
-  // Process graph edges.
-  for (   let loopCounter = 1  ;  loopCounter < nodeCount  ;  loopCounter++   )   {
-    // Read two connected nodes (0-indexed).
-    const   edgeStartNode = getNextToken (   false   )   -   1  ;
-    const   edgeEndNode = getNextToken (   false   )   -   1  ;
-    // Add edges to the adjacency list (undirected graph).
-    adjacencyList [edgeStartNode] . push ( edgeEndNode )  ;
-    adjacencyList [edgeEndNode] . push ( edgeStartNode )  ;
-  }
-
-  // Perform Depth First Search starting from node 0 with depth 0.
-  traverseGraph (   0  ,  -1  ,  0   )  ;
-
-  let oddDepthsCount = 0  ;
-  let evenDepthsCount = 0  ;
-
-  // Calculate parity of depths and count odd/even depths.
-  for (   let loopCounter = 0  ;  loopCounter < nodeCount  ;  loopCounter++   )   {
-    finalAssignment [loopCounter] = nodeDepths [loopCounter] % 2  ;
-    if (   finalAssignment [loopCounter]   )   {
-        oddDepthsCount++  ;
-    }   else   {
-        evenDepthsCount++  ;
-    }
-  }
-
-  // Determine segment sizes for assigning values.
-  const   segmentOneSize = Math.ceil ( nodeCount / 3.0 )  ;
-  const   segmentThreeSize = Math.floor ( nodeCount / 3.0 )  ; // Using |0 for floor division
-  const   segmentTwoSize = nodeCount - segmentOneSize - segmentThreeSize  ; // This variable is not used in the original logic, just for completeness or possible future use.
-
-  // Initialize assignment values for different segments.
-  let currentValOne = 1  ;
-  let currentValTwo = 2  ;
-  let currentValThree = 3  ;
-
-  // Assign values based on parity counts.
-  if (   oddDepthsCount <= segmentThreeSize   )   {
-    // If odd-depth nodes are few, prioritize assigning them '3' multiples.
-    for (   let loopCounter = 0  ;  loopCounter < nodeCount  ;  loopCounter++   )   {
-      if (   finalAssignment [loopCounter]   )   {
-          finalAssignment [loopCounter] = currentValThree  ;
-          currentValThree += 3  ;
-      }   else   {
-        // Assign even-depth nodes '1' or '2' multiples first.
-        if (   currentValOne <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValOne  ;
-            currentValOne += 3  ;
-        }   else if (   currentValTwo <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValTwo  ;
-            currentValTwo += 3  ;
-        }   else   {
-            finalAssignment [loopCounter] = currentValThree  ;
-            currentValThree += 3  ;
+  }else{
+    for(var k = 0; k < N; k++){
+      if(res[k]){
+        if(cur1 <= N){
+          res[k] = cur1;
+          cur1 += 3;
+        }else{
+          res[k] = cur3;
+          cur3 += 3;
+        }
+      }else{
+        if(cur2 <= N){
+          res[k] = cur2;
+          cur2 += 3;
+        }else{
+          res[k] = cur3;
+          cur3 += 3;
         }
       }
     }
-  }   else if (   evenDepthsCount <= segmentThreeSize   )   {
-    // If even-depth nodes are few, prioritize assigning them '3' multiples.
-    for (   let loopCounter = 0  ;  loopCounter < nodeCount  ;  loopCounter++   )   {
-      if (   finalAssignment [loopCounter] === 0   )   {
-          finalAssignment [loopCounter] = currentValThree  ;
-          currentValThree += 3  ;
-      }   else   {
-        // Assign odd-depth nodes '1' or '2' multiples first.
-        if (   currentValOne <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValOne  ;
-            currentValOne += 3  ;
-        }   else if (   currentValTwo <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValTwo  ;
-            currentValTwo += 3  ;
-        }   else   {
-            finalAssignment [loopCounter] = currentValThree  ;
-            currentValThree += 3  ;
-        }
-      }
     }
-  }   else   {
-    // General case: both odd and even counts are high.
-    for (   let loopCounter = 0  ;  loopCounter < nodeCount  ;  loopCounter++   )   {
-      if (   finalAssignment [loopCounter]   )   {
-        // If current node has odd depth.
-        if (   currentValOne <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValOne  ;
-            currentValOne += 3  ;
-        }   else   {
-            finalAssignment [loopCounter] = currentValThree  ;
-            currentValThree += 3  ;
-        }
-      }   else   {
-        // If current node has even depth.
-        if (   currentValTwo <= nodeCount   )   {
-            finalAssignment [loopCounter] = currentValTwo  ;
-            currentValTwo += 3  ;
-        }   else   {
-            finalAssignment [loopCounter] = currentValThree  ;
-            currentValThree += 3  ;
-        }
-      }
-    }
-  }
   
-  // Join the final assigned values with spaces and return the string.
-  return finalAssignment.join (   " "   )  ;
+  return res.join(" ");
 }
 
-// Depth First Search utility function.
-function traverseGraph (   currentNode  ,  parentNode  ,  currentDepth   )   {
-  // Store the depth of the current node.
-  nodeDepths [currentNode] = currentDepth  ;
-  // Iterate through all neighbors of the current node.
-  for (   let loopCounter = 0  ;  loopCounter < adjacencyList [currentNode] . length  ;  loopCounter++   )   {
-    const   neighborNode = adjacencyList [currentNode] [loopCounter]  ;
-    // Skip if the neighbor is the parent node (to avoid going back up).
-    if (   neighborNode === parentNode   )   {
-        continue  ;
-    }
-    // Recursively call DFS for the neighbor, incrementing depth.
-    traverseGraph (   neighborNode  ,  currentNode  ,  currentDepth + 1   )  ;
+function walk(node,parent,dist){
+  dep[node] = dist;
+  for(var k = 0; k < g[node].length; k++){
+    var to = g[node][k];
+    if(to === parent)continue;
+    walk(to,node,dist+1);
   }
 }
 
-// Conditional execution for specific environments (e.g., competitive programming platforms).
-if (   process.argv.length <= 2   )   {
-  // If executed without arguments, re-run with increased stack size.
-  require (   "child_process"   )  .  fork (   "ProgramEntry.js"  ,  [ "1" ]  ,  { execArgv: [   "--stack-size=240000"   ] }   )  ;
-}   else   {
-  // Otherwise, execute the main program logic.
-  const programOutput = executeProgram (   )  ;
-  // Print the output if it's not undefined.
-  if (   programOutput !== undefined   )   {
-      console.log (   programOutput   )  ;
-  }
+if (process.argv.length <= 2) require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
+else {
+  var printed = solve();
+  if(printed !== undefined)console.log(printed);
 }

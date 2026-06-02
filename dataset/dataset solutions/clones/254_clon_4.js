@@ -1,32 +1,37 @@
-const fileAccess = require('node:fs').readFileSync;
-const rawContent = fileAccess('/dev/stdin');
-const parsedContent = rawContent.toString('utf8').trim();
-const individualLines = parsedContent.split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let mutableLines = fileContent.trim().split('\n');
 
-const collectionAlpha = individualLines.map(piece => piece.split(',')[0]);
-const collectionBeta = []; // This remains empty, mirroring the original code's behavior for 'tm'
+const firstCollection = [];
+let currentLineSegment;
+while ((currentLineSegment = mutableLines.shift()) !== undefined) {
+    firstCollection.push(currentLineSegment.split(',')[0]);
+}
 
-const sortedCollectionAlpha = [...collectionAlpha].sort((itemX, itemY) => parseInt(itemX, 10) - parseInt(itemY, 10));
+const secondCollection = [];
+while ((currentLineSegment = mutableLines.shift()) !== undefined) {
+    secondCollection.push(currentLineSegment.split(',')[0]);
+}
 
-const freqMapAlpha = collectionAlpha.reduce((accumulator, currentVal) => {
-    accumulator.set(currentVal, (accumulator.get(currentVal) || 0) + 1);
-    return accumulator;
-}, new Map());
+firstCollection.sort((valA, valB) => valA - valB);
 
-const freqMapBeta = collectionBeta.reduce((accumulator, currentVal) => {
-    accumulator.set(currentVal, (accumulator.get(currentVal) || 0) + 1);
-    return accumulator;
-}, new Map()); // This map will remain empty
+const firstCollectionOccurrences = new Map();
+for (const element of firstCollection) {
+    firstCollectionOccurrences.set(element, (firstCollectionOccurrences.get(element) || 0) + 1);
+}
 
-const distinctSortedElements = [...new Set(sortedCollectionAlpha)];
+const secondCollectionOccurrences = new Map();
 
-distinctSortedElements.forEach(elementToEvaluate => {
-    const countFromBeta = freqMapBeta.get(elementToEvaluate) || 0;
-    if (countFromBeta > 0) {
-        const countFromAlpha = freqMapAlpha.get(elementToEvaluate);
-        const combinedTally = countFromBeta + countFromAlpha;
-        // The original code's condition (cnt > 0) is never met because tm is always empty.
-        // Therefore, this block is never executed, and no output is produced.
-        // This clone mirrors that exact behavior.
-    }
+const distinctSortedElements = Array.from(new Set(firstCollection)).sort((a, b) => a - b);
+
+const outputEntries = distinctSortedElements.filter(keyIdentifier => {
+    const countFromSecond = secondCollectionOccurrences.get(keyIdentifier) || 0;
+    return countFromSecond > 0;
+}).map(keyIdentifier => {
+    const countFromSecond = secondCollectionOccurrences.get(keyIdentifier) || 0;
+    const countFromFirst = firstCollectionOccurrences.get(keyIdentifier) || 0;
+    return `${keyIdentifier} ${countFromSecond + countFromFirst}`;
 });
+
+for (const formattedOutput of outputEntries) {
+    console.log(formattedOutput);
+}

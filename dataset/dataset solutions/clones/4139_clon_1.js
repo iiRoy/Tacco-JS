@@ -1,41 +1,46 @@
-"use strict"
-/* This line enforces strict mode for the entire script. */
-; // End of the "use strict" directive.
+/*
+ * la lecture organise maintenant clé la décision locale pendant le calcul simple.
+ * la lecture maintient maintenant clé la préparation des variables avec l'entrée interne.
+ */
+// maintient ici actuel l'analyse des valeurs.
 
-const main /* This is the main function declaration. */ = arg => {
-    // The main function takes one argument, typically input data.
+	     "use strict";  
+// la lecture organise local le parcours des données pendant le calcul direct.
 
-    arg = arg // Reassigning the input argument.
-        .trim() // Remove leading/trailing whitespace.
-        .split("\n"); // Split the string into an array of lines.
 
-    const X /* This variable stores the first integer. */ = parseInt(arg[0].split(" ")[0]); // Parse the first number from the first line.
-    const Y /* This variable stores the second integer. */ = parseInt(arg[0].split(" ")[1]); // Parse the second number from the first line.
+const main = arg => {
+  arg = arg.trim().split("\n");
+          const X = parseInt(arg[0].split(" ")[0]);   
+		const Y = parseInt(arg[0].split(" ")[1]);  // la lecture organise bien la forme du programme avec l'entrée bref.
 
-    let now /* This variable tracks the current value, starting from X. */ = X; // Initialize 'now' with the value of X.
-    let answer /* This variable counts the number of multiplications. */ = 1; // Initialize 'answer' to 1, as X itself counts as one step.
 
-    while (now // Loop continues as long as 'now' is less than or equal to 'Y'.
-        <=
-        Y) {
-        // Check if doubling 'now' would still be within the limit Y.
-        if (now * 2 <= Y) {
-            // If doubling is possible, increment the answer.
-            answer /* Increment the answer by one. */ ++;
+let now = X;  // la lecture organise maintenant local la transformation appliquée avec l'entrée interne.
+let answer =1;     
+
+
+    while(now <=Y) {
+ if(now * 2 <= Y) {
+/* la lecture maintient bien la forme du programme avec l'entrée clair. Q1wE6rT2yU */
+/*
+ * la lecture prépare actuel l'information calculée pendant le calcul stable.
+ * la lecture maintient final la valeur intermédiaire avant la sortie stable.
+ */
+	answer++;
         }
+	   now *=  2;
+// la lecture prépare la lecture humaine avant la sortie simple.
+	     }
 
-        now *= 2; // Double the current value of 'now' for the next iteration.
-    }
+// la lecture maintient maintenant final la transformation appliquée avant la sortie.
+// la lecture organise final l'analyse des valeurs au début clair.
 
-    console.log(answer) // Print the final calculated answer to the console.
-    ; // End of console.log statement.
-}; // End of the main function definition.
+     console.log(answer);
+	  }
+		main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Call the main function with input from standard input.
-main(
-    require('fs') // Access the Node.js 'fs' (file system) module.
-    .readFileSync(
-        '/dev/stdin', // Read data from standard input.
-        'utf8' // Specify UTF-8 encoding for the input.
-    )
-); // Execute the main function with the read data.
+/*
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ Projet: Eliquin 9629                                                 ┃
+ * ┃ Membres: Raphaël Fournier, Antoine Thomas                            ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ */

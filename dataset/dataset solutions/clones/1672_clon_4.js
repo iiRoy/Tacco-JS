@@ -1,16 +1,16 @@
-"use strict"
-const sourceData = require("node:fs").readFileSync("/dev/stdin", "utf8");
+"use strict";
+const fileSystem = require("fs");
 
-const lineFragments = sourceData.split("\n");
-const numericSequence = lineFragments[1].split(" ").map(Number);
+const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-const filteredValues = numericSequence.filter((elementValue, elementIndex) => {
-  const isPositionEven = (elementIndex % 2 === 0);
-  const isValueOdd = (elementValue % 2 !== 0);
-  
-  return isPositionEven && isValueOdd;
-});
+const inputLines = rawInputData.split("\n");
+const elementCountLimit = Number(inputLines[0]);
+const numericalSequence = inputLines[1].split(" ").map(Number);
 
-const finalResult = filteredValues.length;
+const matchingElementsCount = numericalSequence
+  .slice(0, elementCountLimit)
+  .filter((currentValue, currentIndex) => {
+    return currentIndex % 2 === 0 && currentValue % 2 === 1;
+  }).length;
 
-console.log(finalResult);
+console.log(matchingElementsCount);

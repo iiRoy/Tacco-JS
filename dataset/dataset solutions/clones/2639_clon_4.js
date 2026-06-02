@@ -1,36 +1,42 @@
-const processInputData = (inputString) => {
+"use strict";
+
+const executeCalculation = (inputString) => {
     const lines = inputString.trim().split("\n");
+    const [nodeCountStr, queryCountStr] = lines[0].split(" ");
+    const nodeCount = parseInt(nodeCountStr);
+    const queryCount = parseInt(queryCountStr);
 
-    const firstLineParts = lines[0].split(" ");
-    const numberOfVertices = parseInt(firstLineParts[0]);
-    const numberOfOperations = parseInt(firstLineParts[1]);
+    const edgeDefinitions = lines.slice(1, nodeCount).map(line => line.split(" ").map(Number));
+    const pointAssignments = lines.slice(nodeCount, nodeCount + 1 + queryCount).map(line => line.split(" ").map(Number));
 
-    const connectionInfo = lines.slice(1, numberOfVertices).map(line => line.split(" ").map(Number));
-    const operationInfo = lines.slice(numberOfVertices, numberOfVertices + 1 + numberOfOperations).map(line => line.split(" ").map(Number));
-
-    const descendantLinks = Array(numberOfVertices).fill().map(() => []);
-
-    const vertexValues = Array(numberOfVertices).fill(0);
-
-    for (const [parentVertex, childVertex] of connectionInfo) {
-        descendantLinks[parentVertex - 1].push(childVertex - 1);
+    const adjacencyMap = new Map();
+    for (let i = 1; i <= nodeCount; i++) {
+        adjacencyMap.set(i, []);
     }
 
-    for (const [targetVertex, valueIncrement] of operationInfo) {
-        vertexValues[targetVertex - 1] += valueIncrement;
+    const scoreRegistry = new Array(nodeCount).fill(0);
+
+    for (const [parentIdentifier, childIdentifier] of edgeDefinitions) {
+        adjacencyMap.get(parentIdentifier).push(childIdentifier);
     }
 
-    const spreadValues = (currentVertexIndex, inheritedAmount) => {
-        vertexValues[currentVertexIndex] += inheritedAmount;
+    for (const [targetIdentifier, scoreValue] of pointAssignments) {
+        scoreRegistry[targetIdentifier - 1] += scoreValue;
+    }
 
-        for (const childIndex of descendantLinks[currentVertexIndex]) {
-            spreadValues(childIndex, vertexValues[currentVertexIndex]);
+    const distributeScoresRecursively = (currentIdentifier, inheritedScore) => {
+        scoreRegistry[currentIdentifier - 1] += inheritedScore;
+
+        const currentTotalScore = scoreRegistry[currentIdentifier - 1];
+
+        for (const childIdentifier of adjacencyMap.get(currentIdentifier)) {
+            distributeScoresRecursively(childIdentifier, currentTotalScore);
         }
     };
 
-    spreadValues(0, 0);
+    distributeScoresRecursively(1, 0);
 
-    console.log(vertexValues.join(" "));
+    console.log(scoreRegistry.join(" "));
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));

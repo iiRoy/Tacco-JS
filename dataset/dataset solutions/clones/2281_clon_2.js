@@ -1,71 +1,87 @@
 'use strict';
-/*
- * This module provides functionality to compute permutations of arrays.
- * It's structured as an Immediately Invoked Function Expression (IIFE).
- */
-( function () {
-  var computeArrangements = function ( collectedResults, currentCombination, remainingItems, depth ) {
-    var chosenElement, loopIndex, partialArray, initialLength;
-    if ( depth > 0 ) {
-      for ( loopIndex = 0, initialLength = remainingItems.length; loopIndex < initialLength; ++loopIndex ) {
-        partialArray = remainingItems.slice( 0 );
-        chosenElement = partialArray.splice( loopIndex, 1 );
-        computeArrangements( collectedResults, currentCombination.concat( chosenElement ), partialArray, depth - 1 );
+
+// This module provides functionality to generate permutations of an array.
+// It extends the Array prototype for convenience.
+(function() {
+  /**
+   * Recursively generates permutations.
+   * @param {Array<Array<any>>} resultCollection - The array to store all generated permutations.
+   * @param {Array<any>} currentSequence - The current partial permutation being built.
+   * @param {Array<any>} remainingElements - The elements still available to choose from.
+   * @param {number} countToSelect - The number of elements still needed for the current permutation.
+   */
+  const computeArrangements = function(resultCollection, currentSequence, remainingElements, countToSelect) {
+    let selectedItem, idx, tempRemaining, totalLength;
+
+    if (countToSelect > 0) {
+      for (idx = 0, totalLength = remainingElements.length; idx < totalLength; ++idx) {
+        tempRemaining = remainingElements.slice(0); // Create a shallow copy
+        selectedItem = tempRemaining.splice(idx, 1); // Remove one element
+        computeArrangements(resultCollection, currentSequence.concat(selectedItem), tempRemaining, countToSelect - 1);
       }
     } else {
-      // Base case: add the complete combination to the results
-      collectedResults.push( currentCombination );
+      // Base case: a complete permutation has been formed
+      resultCollection.push(currentSequence);
     }
   };
 
   /*
-   * Extends the native Array prototype with a custom method.
-   * Example: [1, 2, 3].generateCombinations(2)
-   * Result: [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]]
+   * Extends the native Array prototype with a method to generate permutations.
+   * Usage example: [1, 2, 3].getArrangements(2)
+   * Returns: [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]]
    */
-  Array.prototype.generateCombinations = function ( subsetSize ) {
-    if ( subsetSize == null ) subsetSize = this.length; // Default to full array length
-    var finalCombinations = [];
-    computeArrangements( finalCombinations, [], this, subsetSize );
-    return finalCombinations;
+  Array.prototype.getArrangements = function(selectionSize) {
+    // If selectionSize is not specified, default to the array's full length
+    if (selectionSize == null) {
+      selectionSize = this.length;
+    }
+    let finalArrangements = [];
+    // Initiate the recursive permutation generation
+    computeArrangements(finalArrangements, [], this, selectionSize);
+    return finalArrangements;
   };
-} )();
+})();
 
-const executeProcessing = rawInputLines => {
-  // Parse the first line for an integer value (though not directly used later)
-  const totalElementsCount = parseInt( rawInputLines[0] );
+/**
+ * Main function to process input and calculate the absolute difference
+ * between the indices of two given permutations in a sorted list of all permutations.
+ * @param {string[]} rawDataLines - An array of strings, each representing a line of input.
+ */
+const processInputData = rawDataLines => {
+  // Parse the number of elements (N)
+  const elementCount = parseInt(rawDataLines[0]);
 
-  // Process the second line into a sequence of numbers
-  const sequenceA = rawInputLines[1].split( ' ' ).map( itemString => parseInt( itemString ) );
+  // Parse the first sequence (P) from the second line
+  const firstSequence = rawDataLines[1].split(' ').map(val => parseInt(val));
 
-  // Process the third line into another sequence of numbers
-  const sequenceB = rawInputLines[2].split( ' ' ).map( itemString => parseInt( itemString ) );
+  // Parse the second sequence (Q) from the third line
+  const secondSequence = rawDataLines[2].split(' ').map(val => parseInt(val));
 
-  // Convert number sequences to their string representations for comparison
-  let stringA = sequenceA.join( '' );
-  let stringB = sequenceB.join( '' );
+  // Convert the sequences to string representations for comparison
+  let firstSequenceString = firstSequence.join('');
+  let secondSequenceString = secondSequence.join('');
 
-  // Generate all possible permutations of sequenceA and convert them to strings
-  let sortedPermutations = sequenceA.generateCombinations().map( combo => combo.join( '' ) );
+  // Generate all permutations of the first sequence and convert them to strings
+  let allPermutationStrings = firstSequence.getArrangements().map(val => val.join(''));
 
   // Sort the generated permutation strings lexicographically
-  sortedPermutations.sort();
+  allPermutationStrings.sort();
 
-  let indexA, indexB; // Variables to store the indices of stringA and stringB
+  let firstSequenceIndex, secondSequenceIndex;
 
-  // Iterate through the sorted permutations to find the indices
-  for ( let currentIndex = 0; currentIndex < sortedPermutations.length; currentIndex++ ) {
-    if ( stringA === sortedPermutations[currentIndex] ) {
-      indexA = currentIndex;
+  // Find the indices of the original sequences in the sorted list
+  for (let loopCounter = 0; loopCounter < allPermutationStrings.length; loopCounter++) {
+    if (firstSequenceString == allPermutationStrings[loopCounter]) {
+      firstSequenceIndex = loopCounter;
     }
-    if ( stringB === sortedPermutations[currentIndex] ) {
-      indexB = currentIndex;
+    if (secondSequenceString == allPermutationStrings[loopCounter]) {
+      secondSequenceIndex = loopCounter;
     }
   }
 
   // Output the absolute difference between the found indices
-  console.log( Math.abs( indexA - indexB ) );
+  console.log(Math.abs(firstSequenceIndex - secondSequenceIndex));
 };
 
-// Read input from standard input, process it, and execute the main logic
-executeProcessing( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ).split( '\n' ) );
+// Read input from standard input and pass it to the main processing function
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

@@ -1,55 +1,41 @@
-const inputHandler = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputChunk) {
+    const inputLines = inputChunk.toString().split('\n');
+    const numericalLimit = parseInt(inputLines[0], 10);
 
-const streamReader = inputHandler.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
-
-const evaluateCriterion = (itemValue) => {
-    const textualRepresentation = itemValue.toString();
-
-    // Condition 1: Check if the number is divisible by three
-    const conditionAlpha = (itemValue % 3 === 0);
-
-    // Condition 2: Check if the last digit is three
-    const conditionBeta = (textualRepresentation[textualRepresentation.length - 1] === '3');
-    
-    // Condition 3: Check if the tens digit is three AND the number is a multiple of ten
-    // (This covers cases like 30, 130, 230, etc.)
-    let conditionGamma = false;
-    if (itemValue >= 10 && itemValue % 10 === 0) {
-        const quotientBase = Math.floor(itemValue / 10);
-        if (quotientBase % 10 === 3) {
-            conditionGamma = true;
+    function* generateSequence(upperBound) {
+        let currentVal = 1;
+        while (currentVal <= upperBound) {
+            yield currentVal;
+            currentVal++;
         }
     }
 
-    return conditionAlpha || conditionBeta || conditionGamma;
-};
-
-const generateAndSelectIterative = (maximumCount) => {
-    const resultingCollection = [];
-    let currentNumber = 1;
-    while (currentNumber <= maximumCount) {
-        if (evaluateCriterion(currentNumber)) {
-            resultingCollection.push(currentNumber);
-        }
-        currentNumber++;
+    function assessValue(candidateNumber) {
+        const conditionChecks = [
+            (num) => num % 3 === 0,
+            (num) => String(num).endsWith('3'),
+            (num) => num === 30,
+            (num) => num % 10 === 0 && (num / 10) % 10 === 3
+        ];
+        return conditionChecks.some(testFunc => testFunc(candidateNumber));
     }
-    return resultingCollection;
-};
 
-streamReader.on('line', (dataLine) => {
-    const numericInput = Number.parseInt(dataLine.trim(), 10);
+    const collectedValues = [];
+    const sequenceIterator = generateSequence(numericalLimit);
 
-    const qualifyingNumbers = generateAndSelectIterative(numericInput);
-    const outputContent = qualifyingNumbers.join(' ');
+    for (const item of sequenceIterator) {
+        if (assessValue(item)) {
+            collectedValues.push(item);
+        }
+    }
 
-    if (outputContent.length > 0) {
-        process.stdout.write(' ' + outputContent + '\n');
+    const outputString = collectedValues.join(' ');
+
+    if (outputString) {
+        console.log('', outputString);
     } else {
-        process.stdout.write('\n');
+        console.log();
     }
-    streamReader.close();
 });

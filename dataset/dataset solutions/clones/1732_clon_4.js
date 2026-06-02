@@ -1,18 +1,21 @@
-const fileSystemManager = require("node:fs");
-const inputLineContent = fileSystemManager.readFileSync("/dev/stdin", "utf8");
-const limit = Number.parseInt(inputLineContent.trim(), 10);
+const fileSystem = require("fs");
+const inputLine = fileSystem.readFileSync("/dev/stdin");
+const limitVal = Number(inputLine);
+let totalSum = 0;
 
-const divisorCountsArray = new Array(limit + 1).fill(0);
+let currentDivisor = 1;
+while (currentDivisor <= limitVal) {
+  const kValue = Math.floor(limitVal / currentDivisor);
+  const blockEndDivisor = Math.floor(limitVal / kValue);
 
-for (let currentFactor = 1; currentFactor <= limit; currentFactor++) {
-    for (let currentMultiple = currentFactor; currentMultiple <= limit; currentMultiple += currentFactor) {
-        divisorCountsArray[currentMultiple]++;
-    }
+  const countInBlock = blockEndDivisor - currentDivisor + 1;
+  const sumOfDivisorsInBlock = (currentDivisor + blockEndDivisor) * countInBlock / 2;
+
+  const kTerm = kValue * (kValue + 1) / 2;
+
+  totalSum += kTerm * sumOfDivisorsInBlock;
+
+  currentDivisor = blockEndDivisor + 1;
 }
-
-let totalSum = divisorCountsArray.slice(1).reduce((accumulatedValue, countOfDivisors, zeroBasedIndex) => {
-    const actualNumber = zeroBasedIndex + 1; 
-    return accumulatedValue + (actualNumber * countOfDivisors);
-}, 0);
 
 console.log(totalSum);

@@ -1,13 +1,19 @@
 'use strict'
 
-function calculateProduct(sourceText) {
-    const collectedDigits = sourceText.match(/\d+/g).map(Number);
+function Main(input) {
+    const inputSegments = input.trim().split(' ');
+    const [durationUnit, itemsPerUnit, totalTimeLimit] = inputSegments.map(segment => parseInt(segment, 10));
 
-    const [alphaValue, betaValue, deltaValue] = collectedDigits;
+    let generatedProductCount = 0;
+    let currentAccumulatedTime = 0;
+    const adjustedTimeBoundary = totalTimeLimit + 0.5;
 
-    const finalQuantity = ((deltaValue + 0.5) / alphaValue | 0) * betaValue;
+    while (currentAccumulatedTime + durationUnit <= adjustedTimeBoundary) {
+        currentAccumulatedTime += durationUnit;
+        generatedProductCount += itemsPerUnit;
+    }
 
-    console.log(finalQuantity);
+    console.log(generatedProductCount);
 }
 
-calculateProduct(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,94 +1,118 @@
-const inputReader = require('readline').createInterface({
+const lineProcessor = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let inputProcessorInstance;
-const rawInputLines = [];
-inputReader.on('line', (line) => { rawInputLines.push(line); });
-inputReader.on('close', () => {
-  inputProcessorInstance = initializeInputProcessor(rawInputLines);
+
+let rawInputLines = [];
+lineProcessor.on('line', (inputLine) => { rawInputLines.push(inputLine); });
+
+let inputContext;
+
+lineProcessor.on('close', () => {
+  inputContext = createInputHandler(rawInputLines);
   console.error("\n");
   const startTime = Date.now();
-  executeCalculation();
+  processSequence();
   const endTime = Date.now() - startTime;
-  logError("execution_time : " + (endTime) + "ms");
-  logError("memory_usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+  logDiagnostic("time : " + (endTime) + "ms");
+  logDiagnostic("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-const createDeepCopy = (data) => JSON.parse(JSON.stringify(data));
-const retrieveNextInteger = () => convertInput(retrieveNextLine(), 1);
-const retrieveNextStringArray = () => convertInput(retrieveNextLine(), 2);
-const retrieveNextIntegerArray = () => convertInput(retrieveNextLine(), 4);
-const retrieveNextCharacterArray = () => convertInput(retrieveNextLine(), 6);
-const retrieveNextLine = () => inputProcessorInstance.retrieveNext();
-const hasMoreLines = () => inputProcessorInstance.hasMoreLines();
-const initializeInputProcessor = (lines) => {  
-  const processor = {
-    lineList : lines,
-    currentLineIndex : 0,
-    maximumLines : lines.length,
-    hasMoreLines : function(){ return (this.currentLineIndex < this.maximumLines); },
-    retrieveNext : function(){
-      if(!this.hasMoreLines()){ throw "EndOfInputException: No more lines to process"; }
-      else {
-        const currentInputLine = this.lineList[this.currentLineIndex];
-        this.currentLineIndex++;
-        return currentInputLine;
-      }
+
+function duplicateObject(sourceObject){return JSON.parse(JSON.stringify(sourceObject));}
+
+class InputHandler {
+  constructor(lines) {
+    this.sourceLines = lines;
+    this.currentLineIndex = 0;
+    this.totalLines = lines.length;
+  }
+
+  hasMoreInput() {
+    return (this.currentLineIndex < this.totalLines);
+  }
+
+  retrieveNextLine() {
+    if (!this.hasMoreInput()) {
+      throw new Error("EndOfInputException: No more lines available.");
     }
-  };
-  return processor;
-};
-const outputResult = (content) => { console.log(content); };
-const logError = (info) => { console.error("diagnostic:" + require("util").inspect(info,false,null)); };
-const convertInput = (data, formatCode) => {
+    const currentLine = this.sourceLines[this.currentLineIndex];
+    this.currentLineIndex++;
+    return currentLine;
+  }
+}
+
+function createInputHandler(lines) {
+  return new InputHandler(lines);
+}
+
+const dataConverter = new Map([
+  [1, (val) => parseInt(val)],
+  [2, (val) => val.split(" ")],
+  [4, (val) => val.split(" ").map(Number)],
+  [6, (val) => val.split("")],
+  [7, (val) => val.split("").map(Number)],
+  [8, (arr) => arr.join(" ")],
+  [9, (arr) => arr.join("\n")],
+  [0, (arr) => arr.join("")]
+]);
+
+function convertData(value, typeCode) {
   try {
-    switch(formatCode){
-      case 1: return parseInt(data);
-      case 2: return data.split(" ");
-      case 4: return data.split(" ").map(Number);
-      case 6: return data.split("");
-      case 7: return data.split("").map(Number);
-      case 8: return data.join(" ");
-      case 9: return data.join("\n");
-      case 0: return data.join("");
-      default: return data;
-    }
-  } catch(e) {
-    return data;
+    const converter = dataConverter.get(typeCode);
+    return converter ? converter(value) : value;
+  } catch (e) {
+    return value;
   }
-};
+}
 
-const executeCalculation = () => {
-  const totalElements = retrieveNextInteger();
-  
-  const allIncomingNumbers = Array.from({ length: totalElements }, () => retrieveNextInteger());
+function readInteger(){return convertData(retrieveNextLine(),1);}
+function readStringArray(){return convertData(retrieveNextLine(),2);}
+function readIntegerArray(){return convertData(retrieveNextLine(),4);}
+function readCharArray(){return convertData(retrieveNextLine(),6);}
+function retrieveNextLine(){return inputContext.retrieveNextLine();}
+function hasMoreInput(){return inputContext.hasMoreInput();}
 
-  const finalSequenceTails = allIncomingNumbers.reduce((currentTailValues, incomingValue) => {
-    if (currentTailValues.length === 0 || incomingValue > currentTailValues[currentTailValues.length - 1]) {
-      return [...currentTailValues, incomingValue];
+function outputResult(content){console.log(content);}
+function logDebug(message){console.error("debug:" + require("util").inspect(message,false,null));}
+
+function processSequence(){
+	const sequenceLength = readInteger();
+	let processedElements = [];
+
+	Array.from({ length: sequenceLength }).forEach((_, iterationCount) => {
+		const currentNumber = readInteger();
+		if(iterationCount === 0){
+			processedElements.push(currentNumber);
+		}else{
+			const insertionIndex = locateInsertionPoint(processedElements, currentNumber);
+			if(insertionIndex === processedElements.length){
+				processedElements.push(currentNumber);
+			}else{
+				processedElements[insertionIndex] = currentNumber;
+			}
+		}
+	});
+	outputResult(processedElements.length);
+}
+
+function locateInsertionPoint(dataArray, targetValue){
+  // This recursive function replicates the exact behavior of the original binarySearch.
+  // 'currentOk' corresponds to the original 'ok' variable, representing the largest index 'i' such that dataArray[i] < targetValue.
+  // 'currentNg' corresponds to the original 'ng' variable, representing the smallest index 'j' such that dataArray[j] >= targetValue.
+  // The function returns 'currentOk' when the search space narrows down.
+  function recursiveSearch(currentOk, currentNg) {
+    if (Math.abs(currentOk - currentNg) <= 1) {
+      return currentOk;
+    }
+
+    const midPoint = Math.floor((currentOk + currentNg) / 2);
+
+    if (dataArray[midPoint] < targetValue) {
+      return recursiveSearch(midPoint, currentNg);
     } else {
-      const replacementPosition = findAppropriatePosition(currentTailValues, incomingValue);
-      return [
-        ...currentTailValues.slice(0, replacementPosition),
-        incomingValue,
-        ...currentTailValues.slice(replacementPosition + 1)
-      ];
+      return recursiveSearch(currentOk, midPoint);
     }
-  }, []);
-
-  outputResult(finalSequenceTails.length);
-};
-
-const findAppropriatePosition = (sortedCollection, targetEntry, leftBoundary = 0, rightBoundary = sortedCollection.length) => {
-  if (leftBoundary >= rightBoundary) {
-    return leftBoundary;
   }
-
-  const middlePoint = Math.floor((leftBoundary + rightBoundary) / 2);
-
-  if (sortedCollection[middlePoint] < targetEntry) {
-    return findAppropriatePosition(sortedCollection, targetEntry, middlePoint + 1, rightBoundary);
-  } else {
-    return findAppropriatePosition(sortedCollection, targetEntry, leftBoundary, middlePoint);
-  }
-};
+  // Initial call with original 'ok' (dataArray.length) and 'ng' (-1) values.
+  return recursiveSearch(dataArray.length, -1);
+}

@@ -1,24 +1,28 @@
-"use strict"
+"use strict";
 
-const transformInput = (sourceText) => {
-    console.log(sourceText);
+const processInput = (rawTextContent) => {
+  console.log(rawTextContent);
 
-    const textLines = sourceText.trim().split('\n').filter(Boolean);
+  const contentLines = rawTextContent.trim().split('\n');
 
-    const requiredIndices = [0, 1, 2];
+  const segmentRetrievalPlan = [
+    { lineIdentifier: 0, segmentIdentifier: 0 },
+    { lineIdentifier: 1, segmentIdentifier: 1 },
+    { lineIdentifier: 2, segmentIdentifier: 2 }
+  ];
 
-    const extractedParts = requiredIndices.map((idx, lineNum) => {
-        const currentLine = textLines[lineNum];
-        if (currentLine === undefined) {
-            return undefined;
-        }
-        const numberSequences = currentLine.match(/\d+/g);
-        return (numberSequences && numberSequences[idx] !== undefined) ? numberSequences[idx] : undefined;
-    });
+  const collectedParts = segmentRetrievalPlan.map(planItem => {
+    const targetLine = contentLines[planItem.lineIdentifier];
+    if (!targetLine) {
+      return undefined;
+    }
+    const numericSequences = targetLine.match(/\d+/g);
+    return numericSequences ? numericSequences[planItem.segmentIdentifier] : undefined;
+  });
 
-    const finalResult = extractedParts.map(part => (part === undefined ? "undefined" : part)).join('');
+  const finalConcatenation = collectedParts.join('');
 
-    console.log(finalResult);
+  console.log(finalConcatenation);
 };
 
-transformInput(Buffer.from(require('fs').readFileSync(0)).toString());
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

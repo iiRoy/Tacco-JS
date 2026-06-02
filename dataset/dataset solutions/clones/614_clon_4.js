@@ -1,38 +1,21 @@
-const acquireRawInput = () => require('node:fs').readFileSync(0, 'utf8');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const decomposeInputIntoSegments = (fullContent) => {
-    const trimmedContent = fullContent.trim();
-    return trimmedContent.split('\n');
-};
+const processedLines = rawInputData.trim().split('\n');
+const elementCount = parseInt(processedLines.shift(), 10);
 
-const parseConfigurationAndElements = (segmentCollection) => {
-    const structuralCount = Number(segmentCollection[0]);
-    const dataElements = segmentCollection.slice(1);
-    return { structuralCount, dataElements };
-};
+const combinedValues = Array.from({ length: elementCount }, (_, firstIndex) =>
+    Array.from({ length: elementCount - (firstIndex + 1) }, (_, offset) => {
+        const secondIndex = firstIndex + 1 + offset;
+        const stringA = processedLines[firstIndex];
+        const stringB = processedLines[secondIndex];
+        return [
+            Number(stringA + stringB),
+            Number(stringB + stringA)
+        ];
+    })
+).flat(2);
 
-const synthesizeCompositeNumbers = (sourceElements) => {
-    return sourceElements.flatMap((leadingPart, primaryIndex) => {
-        return sourceElements.slice(primaryIndex + 1).flatMap((trailingPart) => {
-            const firstCombination = Number(leadingPart + trailingPart);
-            const secondCombination = Number(trailingPart + leadingPart);
-            return [firstCombination, secondCombination];
-        });
-    });
-};
+combinedValues.sort((valX, valY) => valX - valY);
 
-const orchestrateProcessing = () => {
-    const streamPayload = acquireRawInput();
-    const contentSegments = decomposeInputIntoSegments(streamPayload);
-    const { dataElements: numericComponents } = parseConfigurationAndElements(contentSegments);
-
-    const generatedNumericSet = synthesizeCompositeNumbers(numericComponents);
-
-    generatedNumericSet.sort((valueA, valueB) => valueA - valueB);
-
-    const desiredOutcome = generatedNumericSet[2];
-
-    console.log(desiredOutcome);
-};
-
-orchestrateProcessing();
+console.log(combinedValues[2]);

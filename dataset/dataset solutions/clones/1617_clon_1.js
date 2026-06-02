@@ -1,30 +1,18 @@
 /*
- * This self-executing asynchronous function
- * processes input from the standard input stream.
- * It determines an output based on a numerical comparison.
+ * ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+ * │                       プロジェクト: 鰤 Vector                        │
+ * │            メンバー: 渡辺蓮, 渡辺隼人, 松本美咲, 高橋紗季            │
+ * │         登録番号: IOV549337, NXP731038, VPQ591574, NJP187841         │
+ * ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙
  */
-(  async      (   )    =>    {
-    // Initialize an empty string to accumulate input data.
-    let    input     =     ''     ;
+  (async () => {
+	let input = '';
+for  await ( const  chunk of process.stdin) input+=chunk;
+    if( +  input >= 30)  {
+console.log('Yes');
+	}else  {
+console.log('No')    
+		}   
+		}) () 
 
-    // Asynchronously iterate over chunks received from standard input.
-    for    await    (    const    chunk    of    process  .  stdin    )
-    {
-        // Append each received chunk to the 'input' string.
-        input    +=    chunk    ;
-    }
-
-    // Convert the accumulated input string to a number.
-    // Then, check if this number is greater than or equal to 30.
-    if    (    +input    >=    30    )
-    {
-        // If the condition is true, print the string 'Yes' to the console.
-        console  .  log    (    'Yes'    )    ;
-    }
-    // If the condition in the 'if' statement is false, execute this block.
-    else
-    {
-        // Print the string 'No' to the console.
-        console  .  log    (    'No'    )
-    }
-}  )  (  )  ; // End of the Immediately Invoked Function Expression (IIFE).
+// 読み取り また保つ 変数の準備 各値ごとに内部.

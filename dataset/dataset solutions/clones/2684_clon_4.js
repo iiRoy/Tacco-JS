@@ -1,28 +1,34 @@
-function processSegments(receivedText) {
-    const dataLines = receivedText.split("\n");
-    const countQuantity = Number(dataLines[0]);
-    const seriesElements = dataLines[1].split(" ").map(Number);
+function processSequence(rawData) {
+    const parsedLines = rawData.split("\n");
+    const sequenceLength = parseInt(parsedLines[0], 10);
+    const heightValues = parsedLines[1].split(" ").map(Number);
 
-    const initialBase = seriesElements[countQuantity - 1];
-    const precedingElements = seriesElements.slice(0, countQuantity - 1);
+    if (sequenceLength <= 1) {
+        console.log('Yes');
+        return;
+    }
 
-    const validityCheck = precedingElements.reduceRight((currentStatus, currentMeasure) => {
-        if (!currentStatus.isAcceptable) {
-            return currentStatus;
-        }
+    const evaluationResult = heightValues.slice(0, sequenceLength - 1).reduceRight(
+        (currentStatus, leftElementCandidate) => {
+            if (!currentStatus.isFeasible) {
+                return currentStatus;
+            }
 
-        let effectiveMeasure = currentMeasure;
-        const rightwardMeasure = currentStatus.comparisonBase;
+            const rightAdjacentValue = currentStatus.previousAdjustedValue;
+            let processedLeftElement = leftElementCandidate;
 
-        if (effectiveMeasure - rightwardMeasure > 1) {
-            return { isAcceptable: false, comparisonBase: rightwardMeasure };
-        } else if (effectiveMeasure - rightwardMeasure === 1) {
-            effectiveMeasure--;
-        }
-        
-        return { isAcceptable: true, comparisonBase: effectiveMeasure };
-    }, { isAcceptable: true, comparisonBase: initialBase });
+            if (processedLeftElement - rightAdjacentValue > 1) {
+                return { isFeasible: false, previousAdjustedValue: rightAdjacentValue };
+            } else if (processedLeftElement - rightAdjacentValue === 1) {
+                processedLeftElement -= 1;
+            }
 
-    const finalAssessment = validityCheck.isAcceptable ? 'Yes' : 'No';
-    console.log(finalAssessment);
+            return { isFeasible: true, previousAdjustedValue: processedLeftElement };
+        },
+        { isFeasible: true, previousAdjustedValue: heightValues[sequenceLength - 1] }
+    );
+
+    console.log(evaluationResult.isFeasible ? 'Yes' : 'No');
 }
+
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

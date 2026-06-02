@@ -1,87 +1,77 @@
-function acquireData(rawInputContent) {
-    const contentLines = rawInputContent.split(/\r?\n/).filter(x => x.trim() !== '');
+class InputParser {
+    #inputLines;
 
-    const lineProcessor = {
-        elementConverter: function(textRepresentation) {
-            const numericValue = Number(textRepresentation);
-            return (isNaN(numericValue)) ? textRepresentation : numericValue;
-        },
-        segmentParser: function(lineString) {
-            return lineString.split(" ").map(this.elementConverter);
-        },
-        fetchLineContent: function(linePosition) {
-            return contentLines[linePosition];
-        },
-        fetchLineSegments: function(linePosition) {
-            return this.segmentParser(contentLines[linePosition]);
-        },
-        obtainContentRange: function(startingIndex, lengthLimit) {
-            const endingIndex = (lengthLimit !== undefined && lengthLimit !== null) ? startingIndex + lengthLimit : undefined;
-            return contentLines.slice(startingIndex, endingIndex).map(this.elementConverter);
-        },
-        obtainSegmentRange: function(startingIndex, lengthLimit) {
-            const endingIndex = (lengthLimit !== undefined && lengthLimit !== null) ? startingIndex + lengthLimit : undefined;
-            return contentLines.slice(startingIndex, endingIndex).map(this.segmentParser);
-        }
-    };
-
-    return lineProcessor;
-}
-
-function performCalculation() {
-    const dataAccessor = acquireData(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const initialParameters = dataAccessor.fetchLineSegments(0);
-    const totalItems = initialParameters[0];
-    const availableOptions = initialParameters[1];
-
-    const rawOptionDetails = dataAccessor.obtainSegmentRange(1);
-    const structuredOptions = [];
-
-    for (let currentOptionIndex = 0; currentOptionIndex < availableOptions; currentOptionIndex++) {
-        const costLineIdentifier = 2 * currentOptionIndex;
-        const coverageLineIdentifier = 2 * currentOptionIndex + 1;
-
-        const currentCost = rawOptionDetails[costLineIdentifier][0];
-        const rawCoverageIndices = rawOptionDetails[coverageLineIdentifier];
-
-        let coverageBitmask = 0;
-        for (const coverageValue of rawCoverageIndices) {
-            coverageBitmask |= (1 << (coverageValue - 1));
-        }
-
-        structuredOptions.push({
-            price: currentCost,
-            coverageMask: coverageBitmask
-        });
+    constructor(rawTextContent) {
+        this.#inputLines = rawTextContent.trim().split("\n");
     }
 
-    const stateMinimumCosts = new Map();
-    stateMinimumCosts.set(0, 0);
+    // Equivalent to original's getValue
+    fetchLineContent(linePosition) {
+        return this.#inputLines[linePosition];
+    }
 
-    const statesToProcess = [0];
-    let queueHead = 0;
+    // Equivalent to original's getArray
+    processLineIntoElements(linePosition) {
+        return this.#inputLines[linePosition].split(" ").map(this.#transformElement);
+    }
 
-    const desiredCoverageState = (1 << totalItems) - 1;
+    // Equivalent to original's slice
+    extractSegmentOfValues(startIdx, countLimit) {
+        const endIdx = (countLimit !== undefined) ? startIdx + countLimit : undefined;
+        return this.#inputLines.slice(startIdx, endIdx).map(this.#transformElement);
+    }
 
-    while (queueHead < statesToProcess.length) {
-        const currentState = statesToProcess[queueHead++];
-        const currentMinimumCost = stateMinimumCosts.get(currentState);
+    // Equivalent to original's sliceArray
+    extractSegmentOfElementArrays(startIdx, countLimit) {
+        const endIdx = (countLimit !== undefined) ? startIdx + countLimit : undefined;
+        return this.#inputLines.slice(startIdx, endIdx).map(line => line.split(" ").map(this.#transformElement));
+    }
 
-        for (const individualOption of structuredOptions) {
-            const nextAchievableState = currentState | individualOption.coverageMask;
-            const newTentativeCost = currentMinimumCost + individualOption.price;
+    // Equivalent to original's stox
+    #transformElement(valueString) {
+        const numericalForm = Number(valueString);
+        return Number.isFinite(numericalForm) ? numericalForm : valueString;
+    }
+}
 
-            if (!stateMinimumCosts.has(nextAchievableState) || newTentativeCost < stateMinimumCosts.get(nextAchievableState)) {
-                stateMinimumCosts.set(nextAchievableState, newTentativeCost);
-                statesToProcess.push(nextAchievableState);
+const dataHandler = new InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function calculateMinimumCost() {
+    const [totalRequiredItems, availableOptionCount] = dataHandler.processLineIntoElements(0);
+    const rawOptionData = dataHandler.extractSegmentOfElementArrays(1);
+
+    const itemAcquisitionOptions = Array.from({ length: availableOptionCount }, (_, optionIndex) => {
+        const currentBaseIndex = optionIndex * 2;
+        const optionPrice = rawOptionData[currentBaseIndex][0];
+        const itemsCoveredBitmask = rawOptionData[currentBaseIndex + 1].reduce((accumulatedMask, itemIdentifier) => {
+            return accumulatedMask | (1 << (itemIdentifier - 1));
+        }, 0);
+        return {
+            price: optionPrice,
+            coverageMask: itemsCoveredBitmask
+        };
+    });
+
+    const stateMinimumCosts = Array.from({ length: 1 << totalRequiredItems }, () => Number.POSITIVE_INFINITY);
+    stateMinimumCosts[0] = 0;
+
+    for (let currentCoverageState = 0; currentCoverageState < (1 << totalRequiredItems); ++currentCoverageState) {
+        if (stateMinimumCosts[currentCoverageState] === Number.POSITIVE_INFINITY) {
+            continue;
+        }
+
+        for (const option of itemAcquisitionOptions) {
+            const nextCoverageState = currentCoverageState | option.coverageMask;
+            const costToReachNextState = stateMinimumCosts[currentCoverageState] + option.price;
+            
+            if (costToReachNextState < stateMinimumCosts[nextCoverageState]) {
+                stateMinimumCosts[nextCoverageState] = costToReachNextState;
             }
         }
     }
 
-    const finalAchievedCost = stateMinimumCosts.get(desiredCoverageState);
-
-    return finalAchievedCost === undefined ? -1 : finalAchievedCost;
+    const finalTargetState = (1 << totalRequiredItems) - 1;
+    return stateMinimumCosts[finalTargetState] === Number.POSITIVE_INFINITY ? -1 : stateMinimumCosts[finalTargetState];
 }
 
-console.log(performCalculation());
+console.log(calculateMinimumCost());

@@ -1,64 +1,39 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const rawEntries = sourceData.trim().split('\n');
+const fs = require('fs');
+const rawInputContent = fs.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
 
-const totalEntries = parseInt(rawEntries[0], 10);
-const payloadEntries = rawEntries.slice(1);
+const totalEntries = Number(inputLines.shift());
 
-const processedTuples = payloadEntries.map(entryLine => {
-    const segments = entryLine.split(' ');
-    return [segments[0], parseInt(segments[1], 10)];
-});
+const processedSegments = inputLines.slice(0, totalEntries).reduce((accumulatorState, currentInputLine) => {
+    const [symbolIdentifier, numericValueString] = currentInputLine.split(' ');
+    const numericValue = Number(numericValueString);
 
-const initialAccumulatorState = {
-    flattenedStructure: [],
-    lastEncounteredSymbol: null
-};
-
-const finalSequence = processedTuples.reduce((accumulatorObject, currentTuple) => {
-    const [symbolComponent, valueComponent] = currentTuple;
-    if (symbolComponent === accumulatorObject.lastEncounteredSymbol) {
-        accumulatorObject.flattenedStructure[accumulatorObject.flattenedStructure.length - 1] += valueComponent;
+    if (accumulatorState.lastProcessedSymbol === symbolIdentifier) {
+        accumulatorState.resultSequence[accumulatorState.resultSequence.length - 1] += numericValue;
     } else {
-        accumulatorObject.flattenedStructure.push(symbolComponent);
-        accumulatorObject.flattenedStructure.push(valueComponent);
-        accumulatorObject.lastEncounteredSymbol = symbolComponent;
+        accumulatorState.resultSequence.push(symbolIdentifier, numericValue);
+        accumulatorState.lastProcessedSymbol = symbolIdentifier;
     }
-    return accumulatorObject;
-}, initialAccumulatorState).flattenedStructure;
+    return accumulatorState;
+}, { resultSequence: [], lastProcessedSymbol: null });
 
-const resultLength = finalSequence.length;
+const finalAggregatedSequence = processedSegments.resultSequence;
 
-if (resultLength % 4 !== 0) {
-    console.log("NO");
-    return;
+function* sequenceChunker(sourceCollection, chunkSize) {
+    let currentIndex = 0;
+    while (currentIndex < sourceCollection.length) {
+        yield sourceCollection.slice(currentIndex, currentIndex + chunkSize);
+        currentIndex += chunkSize;
+    }
 }
 
-const checkStructureIntegrity = (sequenceToVerify) => {
-    const groupedSections = sequenceToVerify.reduce((sections, element, index) => {
-        const sectionIndex = Math.floor(index / 4);
-        if (!sections[sectionIndex]) {
-            sections[sectionIndex] = [];
-        }
-        sections[sectionIndex].push(element);
-        return sections;
-    }, []);
+const isSequenceValid = Array.from(sequenceChunker(finalAggregatedSequence, 4)).every(currentChunk => {
+    const [openingSymbol, firstNumericComponent, closingSymbol, secondNumericComponent] = currentChunk;
+    return openingSymbol === '(' && closingSymbol === ')' && firstNumericComponent === secondNumericComponent;
+});
 
-    const integrityStatus = groupedSections.every(individualSection => {
-        if (individualSection.length !== 4) return false;
-        const [openingIndicator, firstValue, closingIndicator, secondValue] = individualSection;
-        return (
-            openingIndicator === '(' &&
-            typeof firstValue === 'number' &&
-            closingIndicator === ')' &&
-            typeof secondValue === 'number' &&
-            firstValue === secondValue
-        );
-    });
-    return integrityStatus;
-};
-
-if (checkStructureIntegrity(finalSequence)) {
-    console.log("YES");
-} else {
+if (!isSequenceValid) {
     console.log("NO");
+} else {
+    console.log("YES");
 }

@@ -1,75 +1,58 @@
 process.stdin.resume();
-
 process.stdin.setEncoding('utf8');
 
-let collectedBuffer = '';
-
-process.stdin.on('data', function(dataPiece) {
-    collectedBuffer += dataPiece;
+var globalInputBuffer = '';
+process.stdin.on('data', function(inputChunk) {
+    globalInputBuffer += inputChunk;
 });
 
 process.stdin.on('end', function() {
-    computeSolution(collectedBuffer.split(/\r?\n/));
+    ProcessInputData(globalInputBuffer.split(/\r?\n/));
 });
 
-const UPPER_BOUND_VALUE = 3500;
+function ProcessInputData(linesOfText) {
+    var targetValue = parseInt(linesOfText[0], 10);
+    var varH = 0;
+    var varN = 0;
+    var varW = 0;
 
-/**
- * Executes the primary algorithm to find integer solutions for a specific equation.
- * @param {string[]} linesOfText - An array of input strings, where the first element is a numeric value.
- * @returns {number} - Returns 0 upon successful completion.
- */
-function computeSolution(linesOfText) {
-    const targetValue = parseInt(linesOfText[0], 10);
+    var coeffA = 4 / targetValue;
+    var coeffB = 2 / 3500;
+    var coeffC = 1 / 3500;
 
-    let firstVar = 0;
-    let secondVar = 0;
-    let thirdVar = 0;
+    var solutionFound = false;
+    for (varH = Math.floor(1 / (coeffA - coeffB)); varH < 3500; varH++) {
 
-    const coefficientA = 4 / targetValue;
-    const coefficientB = 2 / UPPER_BOUND_VALUE;
-    const coefficientC = 1 / UPPER_BOUND_VALUE;
-
-    let solutionLocated = false;
-
-    for (firstVar = Math.floor(1 / (coefficientA - coefficientB));
-         firstVar < UPPER_BOUND_VALUE;
-         firstVar++) {
-
-        if (coefficientA < (1 / firstVar) + coefficientB) {
-            // console.log('debug_h_skip');
+        if (coeffA < 1 / varH + coeffB) {
+            console.log('a');
             continue;
         }
 
-        for (secondVar = Math.floor(1 / (coefficientA - (1 / firstVar) - coefficientC));
-             secondVar < UPPER_BOUND_VALUE;
-             secondVar++) {
+        for (varN = Math.floor(1 / (coeffA - 1 / varH - coeffC)); varN < 3500; varN++) {
 
-            if (coefficientA < (1 / firstVar) + (1 / secondVar) + coefficientC) {
+            if (coeffA < 1 / varH + 1 / varN + coeffC) {
                 continue;
             }
 
-            for (thirdVar = secondVar;
-                 thirdVar < UPPER_BOUND_VALUE;
-                 thirdVar++) {
+            for (varW = varN; varW < 3500; varW++) {
 
-                if (coefficientA === (1 / firstVar) + (1 / secondVar) + (1 / thirdVar)) {
-                    solutionLocated = true;
+                if (coeffA === 1 / varH + 1 / varN + 1 / varW) {
+                    solutionFound = true;
                     break;
                 }
             }
 
-            if (solutionLocated) {
+            if (solutionFound) {
                 break;
             }
         }
 
-        if (solutionLocated) {
+        if (solutionFound) {
             break;
         }
     }
 
-    console.log(`${firstVar} ${secondVar} ${thirdVar}`);
+    console.log(varH + ' ' + varN + ' ' + varW);
 
     return 0;
 }

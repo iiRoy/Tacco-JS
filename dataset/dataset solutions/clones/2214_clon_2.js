@@ -1,59 +1,33 @@
-// This JavaScript program is designed to process incoming textual data,
-// specifically to extract numerical values and then construct a result string.
+function ProcessInput(rawData) {
+  // Split the incoming raw data by space to get individual string tokens.
+  var tokenizedData = rawData.split(" ");
 
+  // Parse the first token as an integer, using base 10.
+  var firstNumber = parseInt(tokenizedData[0], 10);
 
-function ProcessRawInput(receivedData)
-{
-    // First, we decompose the entire input string into an array of smaller string segments.
-    // The splitting operation uses a single space character as the delimiter.
-    const parsedParts = receivedData.split(" ");
+  // Parse the second token as an integer, also using base 10.
+  var secondNumber = parseInt(tokenizedData[1], 10);
 
-    // Next, we extract the first numeric component from the array.
-    // It's converted to an integer, explicitly specifying base 10 to avoid
-    // any unintended octal or hexadecimal interpretations.
-    let firstInteger =    parseInt(parsedParts[0],    10);
+  // Initialize an empty string to build the final result.
+  var resultString = "";
 
-    // Similarly, the second numeric component is extracted and converted.
-    // This value will also be treated as a decimal integer.
-    let secondInteger = parseInt(parsedParts[1],       10);
-
-
-    // An empty string is initialized here. This variable will progressively
-    // accumulate characters to form the final output.
-    let generatedString = "";
-
-
-    // A conditional check is performed to compare the two parsed integer values.
-    // This comparison dictates the subsequent repetitive string construction logic.
-    if (firstInteger < secondInteger)
-    {
-        // If the first integer is strictly less than the second,
-        // the first integer's string representation is appended repeatedly.
-        // The number of repetitions is determined by the value of the second integer.
-        for (let iterationIndex = 0; iterationIndex < secondInteger; iterationIndex++)
-        {
-            generatedString += firstInteger;
-        }
+  // Check if the first number is strictly less than the second number.
+  if (firstNumber < secondNumber) {
+    // If 'firstNumber' is smaller, append 'firstNumber' to the result 'secondNumber' times.
+    for (var loopCounter = 0; loopCounter < secondNumber; loopCounter++) {
+      resultString += firstNumber;
     }
-    else
-    {
-        // Conversely, if the first integer is greater than or equal to the second,
-        // the second integer's string representation is appended instead.
-        // The repetition count in this scenario is governed by the value of the first integer.
-        for (let iterationIndex = 0; iterationIndex < firstInteger; iterationIndex++)
-        {
-            generatedString += secondInteger;
-        }
+  } else {
+    // Otherwise (if 'firstNumber' is greater than or equal to 'secondNumber'),
+    // append 'secondNumber' to the result 'firstNumber' times.
+    for (var loopCounter = 0; loopCounter < firstNumber; loopCounter++) {
+      resultString += secondNumber;
     }
+  }
 
-    // Finally, the complete string that has been assembled is printed to the standard output.
-    // This is typically the console in a Node.js environment.
-    console.log(generatedString);
+  // Print the constructed string to the console.
+  console.log(resultString);
 }
 
-
-// The main execution point of the script begins here.
-// It retrieves the required 'fs' (file system) module from Node.js core libraries.
-// Subsequently, it synchronously reads the entire content of '/dev/stdin' (standard input stream)
-// as a UTF-8 encoded string. This acquired data is then passed to our primary processing function.
-ProcessRawInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input using Node.js 'fs' module and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,52 @@
-const acquireInputContent = () => require("fs").readFileSync("/dev/stdin", "utf8");
+const processInputData = (rawInputText) => {
+    const numberSequence = rawInputText.match(/\d+/g).map(Number);
+    let sequenceIndex = 0;
 
-const parseNumericSequence = (textSegment) => textSegment.split(" ").map(Number);
+    const gridHeight = numberSequence[sequenceIndex++];
+    const gridWidth = numberSequence[sequenceIndex++];
+    const stepIncrement = numberSequence[sequenceIndex++];
 
-const calculateManhattanDistance = (coordA, coordB) => {
-    const [rowA, colA] = coordA;
-    const [rowB, colB] = coordB;
-    return Math.abs(rowA - rowB) + Math.abs(colA - colB);
+    const valueToPositionMap = new Map();
+    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+            const cellContent = numberSequence[sequenceIndex++];
+            valueToPositionMap.set(cellContent, { r: rowIdx, c: colIdx });
+        }
+    }
+
+    const totalQueries = numberSequence[sequenceIndex++];
+    const queryPairs = [];
+    for (let qIdx = 0; qIdx < totalQueries; qIdx++) {
+        queryPairs.push({ initial: numberSequence[sequenceIndex++], final: numberSequence[sequenceIndex++] });
+    }
+
+    return { gridHeight, gridWidth, stepIncrement, valueToPositionMap, queryPairs };
 };
 
-const processInputData = (dataSource) => {
-    const parsedLines = dataSource.trim().split("\n");
+const calculateManhattanDistance = (coordA, coordB) => {
+    return Math.abs(coordA.r - coordB.r) + Math.abs(coordA.c - coordB.c);
+};
 
-    const [rowCount, colCount, stepMagnitude] = parseNumericSequence(parsedLines[0]);
+const executeSolution = (inputString) => {
+    const { gridHeight, gridWidth, stepIncrement, valueToPositionMap, queryPairs } = processInputData(inputString);
 
-    const valueToCoordinateMap = new Map();
-    for (let currentGridRow = 0; currentGridRow < rowCount; ++currentGridRow) {
-        const rowValues = parseNumericSequence(parsedLines[currentGridRow + 1]);
-        for (let currentGridCol = 0; currentGridCol < colCount; ++currentGridCol) {
-            valueToCoordinateMap.set(rowValues[currentGridCol], [currentGridRow, currentGridCol]);
+    const maximumGridValue = gridHeight * gridWidth;
+    const cumulativePathCosts = new Array(maximumGridValue + 1).fill(0);
+
+    for (let currentVal = maximumGridValue - 1; currentVal >= 1; currentVal--) {
+        const nextVal = currentVal + stepIncrement;
+        if (nextVal <= maximumGridValue) {
+            const currentCoord = valueToPositionMap.get(currentVal);
+            const nextCoord = valueToPositionMap.get(nextVal);
+            cumulativePathCosts[currentVal] = calculateManhattanDistance(currentCoord, nextCoord) + cumulativePathCosts[nextVal];
         }
     }
 
-    const pathCosts = new Map();
-    const totalPossibleValues = rowCount * colCount;
-
-    for (let startingPoint = 1; startingPoint <= stepMagnitude; ++startingPoint) {
-        const sequenceValues = [];
-        for (let currentVal = startingPoint; currentVal <= totalPossibleValues; currentVal += stepMagnitude) {
-            sequenceValues.push(currentVal);
-        }
-
-        let cumulativeCostForSequence = 0;
-        if (sequenceValues.length > 0) {
-            pathCosts.set(sequenceValues[sequenceValues.length - 1], 0);
-            for (let k = sequenceValues.length - 2; k >= 0; --k) {
-                const currentVal = sequenceValues[k];
-                const nextValInSequence = sequenceValues[k + 1];
-
-                const currentCoord = valueToCoordinateMap.get(currentVal);
-                const nextCoord = valueToCoordinateMap.get(nextValInSequence);
-
-                const segmentDistance = calculateManhattanDistance(currentCoord, nextCoord);
-                cumulativeCostForSequence += segmentDistance;
-                pathCosts.set(currentVal, cumulativeCostForSequence);
-            }
-        }
-    }
-
-    const queryCount = Number(parsedLines[rowCount + 1]);
-
-    const queryResults = [];
-    for (let queryIdx = 0; queryIdx < queryCount; ++queryIdx) {
-        const [startValue, endValue] = parseNumericSequence(parsedLines[rowCount + 2 + queryIdx]);
-        const finalPathCost = pathCosts.get(startValue) - pathCosts.get(endValue);
-        queryResults.push(finalPathCost);
-    }
+    const queryResults = queryPairs.map(query => {
+        return cumulativePathCosts[query.initial] - cumulativePathCosts[query.final];
+    });
 
     console.log(queryResults.join("\n"));
 };
 
-processInputData(acquireInputContent());
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

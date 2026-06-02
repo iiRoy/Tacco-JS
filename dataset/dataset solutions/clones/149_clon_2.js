@@ -1,142 +1,128 @@
-( function ( rawData ) {
-  // This section processes the initial input string.
-  // It removes any trailing newline and then splits the input into individual lines.
-  let lineSegments = rawData . replace ( / \n $ / , '' ) . split ( ' \n ' ) ;
+(function(sourceData) {
+  // Remove any trailing newline character and split the input into an array of lines.
+  var lineSegments = sourceData.replace(/\n$/, '').split('\n');
+  // Initialize a 2D array to represent the grid map.
+  var gridMap = [];
+  // Iterate through each line to populate the grid map.
+  for (var idx = 0; idx < lineSegments.length; idx++) {
+    // Convert each character in the line to a number and add it as a row to the grid.
+    gridMap.push(lineSegments[idx].split('').map(Number));
+  }
+  // Start the path navigation from coordinates (0,0) with an initial direction 'R'.
+  // The first 'R' is prepended to the result of the recursive navigation.
+  console.log('R' + navigatePath(gridMap, 0, 0, 'R'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read the entire content of /dev/stdin as a UTF-8 string.
 
-  // A two-dimensional array (matrix) is initialized to store the parsed numerical data.
-  const gridMatrix = [ ] ;
+/**
+ * Recursively determines the path through a grid based on current position and direction.
+ * This function attempts to move in a specific order of priority based on the current direction.
+ *
+ * @param {Array<Array<number>>} gridMap - The 2D array representing the grid, where 1 means traversable.
+ * @param {number} coordX - The current X-coordinate (column index).
+ * @param {number} coordY - The current Y-coordinate (row index).
+ * @param {string} currentDirection - The current direction of movement ('R', 'L', 'D', 'U').
+ * @returns {string} A string representing the sequence of moves taken.
+ */
+function navigatePath(gridMap, coordX, coordY, currentDirection) {
+  // Log the current state for debugging purposes; this is a behavior-critical output.
+  console.log(gridMap, coordX, coordY, currentDirection);
 
-  // Iterate through each line segment obtained from the input.
-  for ( let idx = 0 ; idx < lineSegments . length ; idx ++ )
-  {
-    // Each line is further split into individual characters, which are then converted to numbers.
-    // These numerical arrays representing rows are pushed into the grid matrix.
-    gridMatrix . push ( lineSegments [ idx ] . split ( '' ) . map ( Number ) ) ;
+  // Base case: If the path returns to the origin (0,0) and the last attempted move was 'L',
+  // it signifies the completion of a cycle or the end of the path.
+  if (coordX === 0 && coordY === 0 && currentDirection === 'L') {
+    return ''; // Return an empty string to terminate the recursion.
   }
 
-  // The main traversal function is called to find a path, starting at (0,0) with an initial 'Right' direction.
-  // The resulting path string is then printed to the console, prefixed with 'Right'.
-  console . log ( 'Right' + traversePath ( gridMatrix , 0 , 0 , 'Right' ) ) ;
-} ) ( require ( ' fs ' ) . readFileSync ( ' /dev/stdin ' , ' utf8 ' ) ) ; // Reads content from standard input synchronously.
-
-// This recursive function attempts to find a valid path through the grid.
-function traversePath ( currentGrid , currentX , currentY , currentDirection )
-{
-  // Logs the current state (grid, coordinates, and direction) for debugging purposes.
-  console . log ( currentGrid , currentX , currentY , currentDirection ) ;
-
-  // Base case for stopping the recursion: If the traversal returns to the origin (0,0)
-  // and attempts to move 'Left', it indicates a loop or an invalid starting condition.
-  if ( currentX === 0 && currentY === 0 && currentDirection === 'Left' )
-  {
-    return '' ; // Returns an empty string to terminate the path.
+  // Logic for moving when the current direction is 'R' (Right).
+  if (currentDirection === 'R') {
+    // Priority 1: Try to move Up-Right (x+1, y-1) and change direction to 'U'.
+    if (checkGridCell(gridMap, coordX + 1, coordY - 1)) {
+      return 'U' + navigatePath(gridMap, coordX + 1, coordY - 1, 'U');
+    }
+    // Priority 2: Try to move Right (x+1, y) and maintain direction 'R'.
+    if (checkGridCell(gridMap, coordX + 1, coordY)) {
+      return 'R' + navigatePath(gridMap, coordX + 1, coordY, 'R');
+    }
+    // Priority 3: Try to move Down-Right (x+1, y+1) and change direction to 'D'.
+    if (checkGridCell(gridMap, coordX + 1, coordY + 1)) {
+      return 'D' + navigatePath(gridMap, coordX + 1, coordY + 1, 'D');
+    }
+    // If no other moves are possible, turn Left (stay at current position conceptually for the turn).
+    return 'L' + navigatePath(gridMap, coordX, coordY, 'L');
   }
 
-  // Logic for moving when the current direction is 'Right'.
-  if ( currentDirection === 'Right' )
-  {
-    // First, attempt a diagonal 'Up' and 'Right' move.
-    if ( checkBoundary ( currentGrid , currentX + 1 , currentY - 1 ) )
-    {
-      return 'Up' + traversePath ( currentGrid , currentX + 1 , currentY - 1 , 'Up' ) ;
+  // Logic for moving when the current direction is 'L' (Left).
+  if (currentDirection === 'L') {
+    // Priority 1: Try to move Down (x, y+1) and change direction to 'D'.
+    if (checkGridCell(gridMap, coordX, coordY + 1)) {
+      return 'D' + navigatePath(gridMap, coordX, coordY + 1, 'D');
     }
-    // If not possible, attempt a straight 'Right' move.
-    if ( checkBoundary ( currentGrid , currentX + 1 , currentY ) )
-    {
-      return 'Right' + traversePath ( currentGrid , currentX + 1 , currentY , 'Right' ) ;
+    // Priority 2: Try to move Left (x-1, y) and maintain direction 'L'.
+    if (checkGridCell(gridMap, coordX - 1, coordY)) {
+      return 'L' + navigatePath(gridMap, coordX - 1, coordY, 'L');
     }
-    // If not possible, attempt a diagonal 'Down' and 'Right' move.
-    if ( checkBoundary ( currentGrid , currentX + 1 , currentY + 1 ) )
-    {
-      return 'Down' + traversePath ( currentGrid , currentX + 1 , currentY + 1 , 'Down' ) ;
+    // Priority 3: Try to move Up (x, y-1) and change direction to 'U'.
+    if (checkGridCell(gridMap, coordX, coordY - 1)) {
+      return 'U' + navigatePath(gridMap, coordX, coordY - 1, 'U');
     }
-    // If none of the above are valid, make a 'Left' turn without moving position.
-    return 'Left' + traversePath ( currentGrid , currentX , currentY , 'Left' ) ;
+    // If no other moves are possible, turn Right.
+    return 'R' + navigatePath(gridMap, coordX, coordY, 'R');
   }
 
-  // Logic for moving when the current direction is 'Left'.
-  if ( currentDirection === 'Left' )
-  {
-    // First, attempt a diagonal 'Down' and 'Left' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY + 1 ) )
-    {
-      return 'Down' + traversePath ( currentGrid , currentX , currentY + 1 , 'Down' ) ;
+  // Logic for moving when the current direction is 'D' (Down).
+  if (currentDirection === 'D') {
+    // Priority 1: Try to move Right (x, y+1) and change direction to 'R'.
+    if (checkGridCell(gridMap, coordX, coordY + 1)) {
+      return 'R' + navigatePath(gridMap, coordX, coordY + 1, 'R');
     }
-    // If not possible, attempt a straight 'Left' move.
-    if ( checkBoundary ( currentGrid , currentX - 1 , currentY ) )
-    {
-      return 'Left' + traversePath ( currentGrid , currentX - 1 , currentY , 'Left' ) ;
+    // Priority 2: Try to move Down (x, y+2) and maintain direction 'D'.
+    if (checkGridCell(gridMap, coordX, coordY + 2)) {
+      return 'D' + navigatePath(gridMap, coordX, coordY + 2, 'D');
     }
-    // If not possible, attempt a diagonal 'Up' and 'Left' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY - 1 ) )
-    {
-      return 'Up' + traversePath ( currentGrid , currentX , currentY - 1 , 'Up' ) ;
+    // Priority 3: Try to move Left-Down (x-1, y+1) and change direction to 'L'.
+    if (checkGridCell(gridMap, coordX - 1, coordY + 1)) {
+      return 'L' + navigatePath(gridMap, coordX - 1, coordY + 1, 'L');
     }
-    // If none of the above are valid, make a 'Right' turn without moving position.
-    return 'Right' + traversePath ( currentGrid , currentX , currentY , 'Right' ) ;
+    // If no other moves are possible, turn Up.
+    return 'U' + navigatePath(gridMap, coordX, coordY, 'U');
   }
 
-  // Logic for moving when the current direction is 'Down'.
-  if ( currentDirection === 'Down' )
-  {
-    // First, attempt a 'Right' turn and then 'Down' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY + 1 ) )
-    {
-      return 'Right' + traversePath ( currentGrid , currentX , currentY + 1 , 'Right' ) ;
+  // Logic for moving when the current direction is 'U' (Up).
+  if (currentDirection === 'U') {
+    // Priority 1: Try to move Left-Up (x-1, y-1) and change direction to 'L'.
+    if (checkGridCell(gridMap, coordX - 1, coordY - 1)) {
+      return 'L' + navigatePath(gridMap, coordX - 1, coordY - 1, 'L');
     }
-    // If not possible, attempt a double 'Down' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY + 2 ) )
-    {
-      return 'Down' + traversePath ( currentGrid , currentX , currentY + 2 , 'Down' ) ;
+    // Priority 2: Try to move Up (x, y-2) and maintain direction 'U'.
+    if (checkGridCell(gridMap, coordX, coordY - 2)) {
+      return 'U' + navigatePath(gridMap, coordX, coordY - 2, 'U');
     }
-    // If not possible, attempt a 'Left' turn and then 'Down' move.
-    if ( checkBoundary ( currentGrid , currentX - 1 , currentY + 1 ) )
-    {
-      return 'Left' + traversePath ( currentGrid , currentX - 1 , currentY + 1 , 'Left' ) ;
+    // Priority 3: Try to move Right (x, y-1) and change direction to 'R'.
+    if (checkGridCell(gridMap, coordX, coordY - 1)) {
+      return 'R' + navigatePath(gridMap, coordX, coordY - 1, 'R');
     }
-    // If none of the above are valid, make an 'Up' turn without moving position.
-    return 'Up' + traversePath ( currentGrid , currentX , currentY , 'Up' ) ;
-  }
-
-  // Logic for moving when the current direction is 'Up'.
-  if ( currentDirection === 'Up' )
-  {
-    // First, attempt a 'Left' turn and then 'Up' move.
-    if ( checkBoundary ( currentGrid , currentX - 1 , currentY - 1 ) )
-    {
-      return 'Left' + traversePath ( currentGrid , currentX - 1 , currentY - 1 , 'Left' ) ;
-    }
-    // If not possible, attempt a double 'Up' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY - 2 ) )
-    {
-      return 'Up' + traversePath ( currentGrid , currentX , currentY - 2 , 'Up' ) ;
-    }
-    // If not possible, attempt a 'Right' turn and then 'Up' move.
-    if ( checkBoundary ( currentGrid , currentX , currentY - 1 ) )
-    {
-      return 'Right' + traversePath ( currentGrid , currentX , currentY - 1 , 'Right' ) ;
-    }
-    // If none of the above are valid, make a 'Down' turn without moving position.
-    return 'Down' + traversePath ( currentGrid , currentX , currentY , 'Down' ) ;
+    // If no other moves are possible, turn Down.
+    return 'D' + navigatePath(gridMap, coordX, coordY, 'D');
   }
 }
 
-// This helper function verifies if a given coordinate (colCoord, rowCoord) is within the bounds
-// of the provided matrixData and if the cell at that coordinate contains the value 1.
-function checkBoundary ( matrixData , colCoord , rowCoord )
-{
-  // Check if the row coordinate is outside the vertical limits of the grid.
-  if ( rowCoord < 0 || rowCoord >= matrixData . length )
-  {
-    return false ; // Coordinate is out of bounds vertically.
+/**
+ * Checks if a given cell in the grid is within bounds and contains a traversable value (1).
+ *
+ * @param {Array<Array<number>>} gridMap - The 2D array representing the grid.
+ * @param {number} coordX - The X-coordinate (column index) to check.
+ * @param {number} coordY - The Y-coordinate (row index) to check.
+ * @returns {number} Returns 1 (truthy) if the cell is valid and contains 1, otherwise 0 (falsy).
+ */
+function checkGridCell(gridMap, coordX, coordY) {
+  // Check if the Y-coordinate is out of the vertical bounds of the grid.
+  if (coordY < 0 || coordY >= gridMap.length) {
+    return 0; // Out of bounds vertically.
   }
-
-  // Check if the column coordinate is outside the horizontal limits for the specific row.
-  if ( colCoord < 0 || colCoord >= matrixData [ rowCoord ] . length )
-  {
-    return false ; // Coordinate is out of bounds horizontally.
+  // Check if the X-coordinate is out of the horizontal bounds for the specific row.
+  if (coordX < 0 || coordX >= gridMap[coordY].length) {
+    return 0; // Out of bounds horizontally.
   }
-
-  // If within bounds, check if the cell value is 1, indicating a traversable path segment.
-  return matrixData [ rowCoord ] [ colCoord ] === 1 ;
+  // Return 1 if the cell contains a 1 (traversable), otherwise 0.
+  return gridMap[coordY][coordX] === 1;
 }

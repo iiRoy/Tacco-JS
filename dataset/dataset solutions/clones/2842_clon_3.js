@@ -1,157 +1,100 @@
-function ProcessInputData(rawDataString) {
-  // Split the raw input string into an array of individual lines.
-  let inputLines = rawDataString.split("\n");
+function processPointData(rawInputString) {
+  const dataLines = rawInputString.split("\n");
+  dataLines.pop(); // Remove the last empty line if present
 
-  // Validate and potentially remove a trailing empty line, which can occur
-  // when reading files, especially on Unix-like systems.
-  if (inputLines.length > 0 && inputLines[inputLines.length - 1].trim() === '') {
-    inputLines.pop();
-  }
+  const totalPointsCount = parseInt(dataLines.shift(), 10);
+  const pointCoordinates = [];
 
-  // The first line contains the total number of coordinate pairs.
-  // Convert it to a number using Number() for explicit type conversion.
-  const totalPointCount = Number(inputLines.shift());
-
-  // Initialize a mutable array to store parsed point objects.
-  let initialPointCollection = [];
-
-  // Iterate through the remaining lines to parse each coordinate pair.
-  for (let pointIndex = 0; pointIndex < totalPointCount; pointIndex++) {
-    const lineOfCoords = inputLines[pointIndex];
-
-    // Basic input validation: ensure the line is not empty or undefined.
-    if (!lineOfCoords || lineOfCoords.trim() === '') {
-      // This is a Type III addition: a guard clause for malformed input.
-      console.warn(`Warning: Skipping malformed line at index ${pointIndex}.`);
-      continue;
-    }
-
-    const coordinateStrings = lineOfCoords.split(' ');
-    // Parse x and y values as integers, specifying base 10 for safety.
-    const xCoordValue = parseInt(coordinateStrings[0], 10);
-    const yCoordValue = parseInt(coordinateStrings[1], 10);
-
-    // Store the coordinates as an object with descriptive keys.
-    initialPointCollection.push({
-      xValue: xCoordValue,
-      yValue: yCoordValue
-    });
-  }
-
-  // Sort the collection of points. The primary sort key is xValue,
-  // and the secondary sort key is yValue for points with identical xValues.
-  const orderedPoints = initialPointCollection.sort((pointAlpha, pointBeta) => {
-    // If xValues are different, sort by xValue.
-    if (pointAlpha.xValue !== pointBeta.xValue) {
-      return pointAlpha.xValue - pointBeta.xValue;
-    }
-    // If xValues are the same, sort by yValue.
-    return pointAlpha.yValue - pointBeta.yValue;
-  });
-
-  // --- Phase 1: Determine the frequency of all possible displacement vectors ---
-  // A dictionary (object) to store counts of each unique displacement vector.
-  // The key will be a string like "deltaX,deltaY".
-  let displacementVectorFrequencies = {};
-
-  // Iterate through all unique pairs of points to calculate their displacement vectors.
-  // This is an O(N^2) operation.
-  for (let firstPointIdx = 0; firstPointIdx < totalPointCount; firstPointIdx++) {
-    for (let secondPointIdx = 0; secondPointIdx < totalPointCount; secondPointIdx++) {
-      // Points must be distinct to form a displacement vector.
-      if (firstPointIdx === secondPointIdx) {
-        continue;
-      }
-
-      const currentPointA = orderedPoints[firstPointIdx];
-      const currentPointB = orderedPoints[secondPointIdx];
-
-      // Calculate the difference in x and y coordinates.
-      const deltaXComponent = currentPointA.xValue - currentPointB.xValue;
-      const deltaYComponent = currentPointA.yValue - currentPointB.yValue;
-
-      // Construct a unique string key for this specific vector.
-      const vectorKey = `${deltaXComponent},${deltaYComponent}`;
-
-      // Increment the count for this vector. If it's the first time seeing it, initialize to 1.
-      displacementVectorFrequencies[vectorKey] = (displacementVectorFrequencies[vectorKey] || 0) + 1;
-    }
-  }
-
-  // --- Phase 2: Identify the most frequent displacement vector ---
-  let highestFrequencyEncountered = 0;
-  let keyOfMostFrequentVector = "0,0"; // Default value, will be updated.
-
-  // Retrieve all unique vector keys from the frequency map.
-  const allKnownVectorKeys = Object.keys(displacementVectorFrequencies);
-
-  // Iterate over these keys to find which vector appeared most often.
-  for (const currentVectorKey of allKnownVectorKeys) {
-    const currentVectorFrequency = displacementVectorFrequencies[currentVectorKey];
-
-    // If the current vector's frequency surpasses the highest recorded, update.
-    if (currentVectorFrequency > highestFrequencyEncountered) {
-      highestFrequencyEncountered = currentVectorFrequency;
-      keyOfMostFrequentVector = currentVectorKey;
-    }
-  }
-
-  // Parse the components (dx, dy) of the most frequent vector from its string key.
-  const [dominantDxString, dominantDyString] = keyOfMostFrequentVector.split(',');
-  const dominantDxValue = Number(dominantDxString);
-  const dominantDyValue = Number(dominantDyString);
-
-  // --- Phase 3: Count the number of 'sets' of points ---
-  // A 'set' is defined by points that are related by integer multiples of the most frequent vector.
-  let totalNumberOfDistinctSets = 0;
-  // Create a mutable copy of the ordered points to modify during processing.
-  let mutablePointsToProcess = [...orderedPoints];
-
-  // Helper function to determine if a difference is a valid multiple of a step.
-  // This is a Type III addition for code clarity and modularity.
-  const isDifferenceAMultiple = (difference, step) => {
-    // If the step is zero, the difference must also be zero for it to be a "multiple".
-    // Otherwise, perform a standard modulo check.
-    return (step === 0) ? (difference === 0) : (difference % step === 0);
+  // Helper function to parse a single point
+  const parsePoint = (lineString) => {
+    const coordinatePairStrings = lineString.split(' ');
+    const xCoord = parseInt(coordinatePairStrings[0], 10);
+    const yCoord = parseInt(coordinatePairStrings[1], 10);
+    return { x: xCoord, y: yCoord };
   };
 
-  // Continue as long as there are points remaining to be grouped into sets.
-  while (mutablePointsToProcess.length > 0) {
-    // Take the first point from the remaining collection as the origin for a new set.
-    const currentSetOriginPoint = mutablePointsToProcess.shift();
-    // Increment the counter for distinct sets found.
-    totalNumberOfDistinctSets++;
+  for (let idx = 0; idx < totalPointsCount; idx++) {
+    pointCoordinates.push(parsePoint(dataLines[idx]));
+  }
 
-    // Iterate through the rest of the points to find others belonging to this set.
-    // We use a traditional for loop with manual index management due to `splice` operations.
-    for (let pointIterator = 0; pointIterator < mutablePointsToProcess.length; /* pointIterator adjusted manually */ ) {
-      const candidatePointForSet = mutablePointsToProcess[pointIterator];
+  // Sort points: primary by x, secondary by y
+  pointCoordinates.sort((pA, pB) => {
+    const xValA = pA.x;
+    const xValB = pB.x;
+    if (xValA === xValB) {
+      const yValA = pA.y;
+      const yValB = pB.y;
+      return yValA - yValB;
+    }
+    return xValA - xValB;
+  });
 
-      // Calculate the displacement from the current set origin to the candidate point.
-      const xDifferenceFromOrigin = candidatePointForSet.xValue - currentSetOriginPoint.xValue;
-      const yDifferenceFromOrigin = candidatePointForSet.yValue - currentSetOriginPoint.yValue;
+  const vectorCounts = {}; // Stores counts of (dx, dy) vectors
 
-      // Check if this displacement is an integer multiple of the dominant vector.
-      const isXComponentAligned = isDifferenceAMultiple(xDifferenceFromOrigin, dominantDxValue);
-      const isYComponentAligned = isDifferenceAMultiple(yDifferenceFromOrigin, dominantDyValue);
+  // Helper function to generate a unique key for a vector
+  const generateVectorKey = (xComponent, yComponent) => `${xComponent},${yComponent}`;
 
-      if (isXComponentAligned && isYComponentAligned) {
-        // If both components align, this candidate point belongs to the current set.
-        // Remove it from the collection of points still to be processed.
-        mutablePointsToProcess.splice(pointIterator, 1);
-        // Crucially, decrement the iterator because the array has shifted,
-        // and the next element is now at the current `pointIterator` position.
-      } else {
-        // If not aligned, this point does not belong to the current set; move to the next.
-        pointIterator++;
+  // Calculate all pairwise differences and count their occurrences
+  for (let idx = 0; idx < totalPointsCount; idx++) {
+    for (let jdx = 0; jdx < totalPointsCount; jdx++) {
+      if (idx === jdx) {
+        continue; // Skip self-comparison
+      }
+      const diffX = pointCoordinates[idx].x - pointCoordinates[jdx].x;
+      const diffY = pointCoordinates[idx].y - pointCoordinates[jdx].y;
+      const currentVectorKey = generateVectorKey(diffX, diffY);
+
+      vectorCounts[currentVectorKey] = (vectorCounts[currentVectorKey] || 0) + 1;
+    }
+  }
+
+  const allVectorKeys = Object.keys(vectorCounts);
+  let maximumCount = 0;
+  let dominantVectorKey = '0,0'; // Default, will be overwritten
+
+  // Find the most frequent (dx, dy) vector
+  for (let idx = 0; idx < allVectorKeys.length; idx++) {
+    const currentKey = allVectorKeys[idx];
+    const countForKey = vectorCounts[currentKey];
+    if (countForKey > maximumCount) {
+      maximumCount = countForKey;
+      dominantVectorKey = currentKey;
+    }
+  }
+
+  const keyParts = dominantVectorKey.split(',');
+  const dominantDeltaX = parseInt(keyParts[0], 10);
+  const dominantDeltaY = parseInt(keyParts[1], 10);
+
+  let minimumLinesRequired = 0;
+
+  // Helper function to check if two points are collinear with a given vector
+  const arePointsCollinear = (point1, point2, dX, dY) => {
+    const pointDiffX = point2.x - point1.x;
+    const pointDiffY = point2.y - point1.y;
+
+    const isXAligned = (dX === 0 && pointDiffX === 0) || (dX !== 0 && pointDiffX % dX === 0);
+    const isYAligned = (dY === 0 && pointDiffY === 0) || (dY !== 0 && pointDiffY % dY === 0);
+
+    return isXAligned && isYAligned;
+  };
+
+  // Iteratively cover points with lines defined by the dominant vector
+  while (pointCoordinates.length > 0) {
+    const referencePoint = pointCoordinates.shift(); // Take the first available point
+    minimumLinesRequired++; // This point starts a new line
+
+    // Iterate through remaining points to find others on the same line
+    for (let idx = 0; idx < pointCoordinates.length; idx++) {
+      const comparisonPoint = pointCoordinates[idx];
+      if (arePointsCollinear(referencePoint, comparisonPoint, dominantDeltaX, dominantDeltaY)) {
+        pointCoordinates.splice(idx, 1); // Remove the covered point
+        idx--; // Adjust index due to splice
       }
     }
   }
 
-  // Output the final calculated number of distinct sets.
-  console.log(totalNumberOfDistinctSets);
+  console.log(minimumLinesRequired);
 }
 
-// Standard boilerplate for reading input in competitive programming environments.
-// This part is typically kept as-is as it interacts with the execution environment.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processPointData(require("fs").readFileSync("/dev/stdin", "utf8"));

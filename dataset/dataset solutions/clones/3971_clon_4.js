@@ -1,100 +1,88 @@
 "use strict";
-const dataFeedHandler = (sourceText) => {
-    let internalTokens = sourceText.split(/\s|\n/).filter(token => token.length > 0);
-    let tokenPointer = 0;
+function ProcessCoordinates(sourceInput) {
+    let inputReader = new DataStream(sourceInput);
+    let pointCount = inputReader.fetchInteger();
+    let redCoordinates = [];
+    let blueCoordinates = [];
 
-    const obtainNumber = () => {
-        if (tokenPointer >= internalTokens.length) {
-            throw new Error("Insufficient data for number extraction.");
-        }
-        return parseInt(internalTokens[tokenPointer++], 10);
-    };
-
-    const obtainNumberSequence = (count) => {
-        if (count < 1) throw new Error('Count must be 1 or more for number sequence.');
-        let sequence = [];
-        for (let i = 0; i < count; i++) {
-            sequence.push(obtainNumber());
-        }
-        return sequence;
-    };
-
-    const obtainText = () => {
-        if (tokenPointer >= internalTokens.length) {
-            throw new Error("Insufficient data for text extraction.");
-        }
-        return internalTokens[tokenPointer++];
-    };
-
-    const obtainTextSequence = (count) => {
-        if (count < 1) throw new Error('Count must be 1 or more for text sequence.');
-        let sequence = [];
-        for (let i = 0; i < count; i++) {
-            sequence.push(obtainText());
-        }
-        return sequence;
-    };
-
-    return {
-        fetchNumeric: obtainNumber,
-        fetchNumericList: obtainNumberSequence,
-        fetchText: obtainText,
-        fetchTextList: obtainTextSequence,
-    };
-};
-
-const determineOptimalPairings = (rawData) => {
-    const dataSource = dataFeedHandler(rawData);
-    const itemQuantity = dataSource.fetchNumeric();
-
-    const groupAItems = [];
-    const groupBItems = [];
-
-    for (let i = 0; i < itemQuantity; i++) {
-        groupAItems.push({ xPos: dataSource.fetchNumeric(), yPos: dataSource.fetchNumeric() });
+    for (let redIndex = 0; redIndex < pointCount; redIndex++) {
+        redCoordinates.push([inputReader.fetchInteger(), inputReader.fetchInteger()]);
     }
-    for (let i = 0; i < itemQuantity; i++) {
-        groupBItems.push({ xPos: dataSource.fetchNumeric(), yPos: dataSource.fetchNumeric() });
+    for (let blueIndex = 0; blueIndex < pointCount; blueIndex++) {
+        blueCoordinates.push([inputReader.fetchInteger(), inputReader.fetchInteger()]);
     }
 
-    groupBItems.sort((p1, p2) => p1.xPos === p2.xPos ? p1.yPos - p2.yPos : p1.xPos - p2.xPos);
-    groupAItems.sort((p1, p2) => p1.xPos === p2.xPos ? p1.yPos - p2.yPos : p1.xPos - p2.xPos);
+    const pointComparator = (firstPoint, secondPoint) => firstPoint[0] === secondPoint[0] ? firstPoint[1] - secondPoint[1] : firstPoint[0] - secondPoint[0];
 
-    let successfulLinkages = 0;
-    let availableGroupA = [];
-    let groupACursor = 0;
+    blueCoordinates.sort(pointComparator);
+    redCoordinates.sort(pointComparator);
 
-    for (const currentGroupB of groupBItems) {
-        while (groupACursor < groupAItems.length && groupAItems[groupACursor].xPos < currentGroupB.xPos) {
-            availableGroupA.push(groupAItems[groupACursor]);
-            groupACursor++;
+    let matchedPairs = 0;
+    let availableRedCandidates = [];
+    let currentRedPointer = 0;
+
+    for (let currentBlueIndex = 0; currentBlueIndex < pointCount; currentBlueIndex++) {
+        let currentBluePoint = blueCoordinates[currentBlueIndex];
+
+        while (currentRedPointer < pointCount && redCoordinates[currentRedPointer][0] < currentBluePoint[0]) {
+            availableRedCandidates.push(redCoordinates[currentRedPointer]);
+            currentRedPointer++;
         }
 
-        let bestCandidateIndex = -1;
-        let highestYValue = -Infinity;
+        let bestRedCandidatePosition = -1;
+        let highestRedY = -1;
 
-        for (let i = 0; i < availableGroupA.length; i++) {
-            const potentialGroupA = availableGroupA[i];
-            if (potentialGroupA.yPos < currentGroupB.yPos) {
-                if (potentialGroupA.yPos > highestYValue) {
-                    highestYValue = potentialGroupA.yPos;
-                    bestCandidateIndex = i;
+        for (let candidatePosition = 0; candidatePosition < availableRedCandidates.length; candidatePosition++) {
+            let candidateRedPoint = availableRedCandidates[candidatePosition];
+            if (candidateRedPoint[1] < currentBluePoint[1]) {
+                if (candidateRedPoint[1] > highestRedY) {
+                    highestRedY = candidateRedPoint[1];
+                    bestRedCandidatePosition = candidatePosition;
                 }
             }
         }
 
-        if (bestCandidateIndex !== -1) {
-            successfulLinkages++;
-            availableGroupA.splice(bestCandidateIndex, 1);
+        if (bestRedCandidatePosition !== -1) {
+            matchedPairs++;
+            availableRedCandidates.splice(bestRedCandidatePosition, 1);
         }
     }
 
-    console.log(successfulLinkages);
-};
-
-if (typeof window === "undefined") {
-    determineOptimalPairings(require("fs").readFileSync("/dev/stdin", "utf8"));
-} else {
-    // For browser or alternative environments, if needed
-    // determineOptimalPairings(window.inputStringForTesting);
+    console.log(matchedPairs);
 }
+
+class DataStream {
+    constructor(sourceText) {
+        if (typeof sourceText === 'undefined') throw new Error('Input source cannot be omitted!');
+        this.segmentPointer = 0;
+        this.dataSegments = sourceText.split(/\n|\s/);
+    }
+
+    fetchInteger() {
+        return parseInt(this.dataSegments[this.segmentPointer++], 10);
+    }
+
+    fetchIntegerArray(elementCount) {
+        if (typeof elementCount === 'undefined') throw new Error('Element count (>=1) cannot be omitted!');
+        let resultArray = new Array(elementCount);
+        for (let loopIndex = 0; loopIndex < elementCount; loopIndex++) {
+            resultArray[loopIndex] = this.fetchInteger();
+        }
+        return resultArray;
+    }
+
+    fetchString() {
+        return this.dataSegments[this.segmentPointer++];
+    }
+
+    fetchStringArray(elementCount) {
+        if (typeof elementCount === 'undefined') throw new Error('Element count (>=1) cannot be omitted!');
+        let resultArray = new Array(elementCount);
+        for (let loopIndex = 0; loopIndex < elementCount; loopIndex++) {
+            resultArray[loopIndex] = this.fetchString();
+        }
+        return resultArray;
+    }
+}
+
+if (typeof window === "undefined") ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,151 +1,124 @@
-// Global variable to store the total count for operations.
-let totalCount;
-
-// Global array to hold the calculated sequence of numbers.
-let dataCollection = new Array();
+let countVal; // Stores the current input number for calculations
+let dataArray = []; // An array to store precomputed sums
 
 /**
- * Initializes the dataCollection array based on the current totalCount.
- * The first element is set to 0, and subsequent elements are cumulative sums.
+ * Initializes the dataArray based on the current countVal.
+ * Fills dataArray such that dataArray[i] = 0 + 1 + ... + i.
  */
-function initializeCollection() {
-    // Set the initial value of the collection's first element.
-    dataCollection[0] = 0;
-
-    // Iterate from 1 up to (but not including) totalCount.
-    // Each element is the sum of the previous element and its index.
-    iterateRange(1, totalCount, function(index) {
-        dataCollection[index] = dataCollection[index - 1] + index;
+function initializeData() {
+    dataArray[0] = 0; // Base case: sum up to 0 is 0
+    // Iterate from 1 up to countVal (inclusive)
+    iterateRange(1, countVal + 1, function(idx) {
+        dataArray[idx] = dataArray[idx - 1] + idx; // Calculate cumulative sum
     });
 }
 
 /**
- * Searches for a target value within the dataCollection array using binary search.
- * @param {number} targetValue - The value to search for.
- * @returns {boolean} True if the targetValue is found, false otherwise.
+ * Performs a binary search on the precomputed dataArray to check if a target value exists.
+ * @param {number} targetVal The value to search for.
+ * @returns {boolean} True if targetVal is found in dataArray, false otherwise.
  */
-function locateValue(targetValue) {
-    // Define the lower and upper bounds for the binary search.
-    let lowerBound = 0;
-    let upperBound = totalCount;
+function findValue(targetVal) {
+    let leftPtr = 0; // Left boundary of the search range
+    let rightPtr = countVal; // Right boundary of the search range (exclusive)
 
-    // Continue searching while there's more than one element in the current range.
-    while (upperBound - lowerBound > 1) {
-        // Calculate the middle point of the current range.
-        const midPoint = Math.floor((lowerBound + upperBound) / 2);
-
-        // If the value at the midpoint is less than or equal to the target,
-        // move the lower bound to the midpoint.
-        if (dataCollection[midPoint] <= targetValue) {
-            lowerBound = midPoint;
-        }
-        // Otherwise, move the upper bound to the midpoint.
-        else {
-            upperBound = midPoint;
+    // Binary search loop
+    while (rightPtr - leftPtr > 1) {
+        let midPtr = (leftPtr + rightPtr) >>> 1; // Calculate middle index using unsigned right shift
+        if (dataArray[midPtr] <= targetVal) {
+            leftPtr = midPtr; // If value at mid is less than or equal, move left pointer to mid
+        } else {
+            rightPtr = midPtr; // Otherwise, move right pointer to mid
         }
     }
-    // After the loop, check if the value at the lower bound matches the target.
-    return dataCollection[lowerBound] === targetValue;
+    // After loop, leftPtr points to the potential match or the largest element less than targetVal
+    return dataArray[leftPtr] === targetVal; // Check if the element at leftPtr is the target
 }
 
 /**
  * The primary execution function of the program.
- * Reads input, performs calculations, and displays results.
+ * Reads numbers, performs calculations, and outputs results.
  */
-function executeProgram() {
-    // Loop as long as valid numerical input is provided for totalCount.
-    while ((totalCount = retrieveInputNumber())) {
-        // Prepare the data collection for the current totalCount.
-        initializeCollection();
+function primaryExecution() {
+    // Loop as long as a valid non-zero number is read from input
+    while ((countVal = readInputNumber()) !== 0) {
+        initializeData(); // Prepare the data array for the current countVal
+        let resultCount = 0; // Counter for successful matches
 
-        // Initialize a counter for the final result.
-        let finalResult = 0;
-
-        // Iterate through the dataCollection from index 0 up to totalCount - 1.
-        iterateRange(0, totalCount - 1, function(idx) {
-            // Check if the sum of the current collection element and totalCount
-            // can be found in the collection.
-            if (locateValue(dataCollection[idx] + totalCount)) {
-                // If found, increment the result counter.
-                finalResult++;
+        // Iterate from 0 up to countVal - 1
+        iterateRange(0, countVal, function(idx) {
+            // Check if the sum of dataArray[idx] and countVal exists in dataArray
+            if (findValue(dataArray[idx] + countVal)) {
+                ++resultCount; // Increment counter if found
             }
         });
-        // Display the calculated final result.
-        displayOutput(finalResult);
+        outputValue(resultCount); // Print the final count for the current input
     }
 }
 
 /**
- * A utility function to iterate through a range and apply a callback.
- * Can be called with (start, end, callback) or (end, callback) where start defaults to 0.
- * @param {number} startVal - The starting value of the loop counter.
- * @param {number} endVal - The exclusive upper bound of the loop counter.
- * @param {Function} callbackFn - The function to call for each iteration.
+ * A utility function for iterating over a range, similar to Python's range.
+ * Supports optional start value (defaults to 0).
+ * @param {number} startVal The starting index (inclusive).
+ * @param {number} endVal The ending index (exclusive).
+ * @param {function(number): boolean} callbackFn The function to call for each index.
+ *                                              If it returns false, iteration stops.
  */
 function iterateRange(startVal, endVal, callbackFn) {
-    // If the callback function is undefined, it means the (end, callback) signature was used.
+    // Handle case where only two arguments are provided (start is 0)
     if (callbackFn === undefined) {
-        // Adjust parameters: endVal becomes callbackFn, startVal becomes endVal, startVal defaults to 0.
         callbackFn = endVal;
         endVal = startVal;
         startVal = 0;
     }
-
-    // Loop from startVal up to (but not including) endVal.
-    for (let loopCounter = startVal; loopCounter < endVal; ++loopCounter) {
-        // If the callback function returns false, break the loop prematurely.
-        if (callbackFn(loopCounter) === false) {
-            break;
+    // Loop through the specified range
+    for (let loopIndex = startVal; loopIndex < endVal; ++loopIndex) {
+        if (callbackFn(loopIndex) === false) {
+            break; // Stop iteration if callback returns false
         }
     }
 }
 
-// Buffer to accumulate raw input from stdin.
-let rawInputBuffer = '';
+let rawInputBuffer = ''; // Buffer to store raw input from stdin
 
 /**
- * Retrieves and converts the next number from the processed input buffer.
- * @returns {number} The next number from the input.
+ * Reads and returns the next number from the processed input buffer.
+ * @returns {number} The next number from input.
  */
-function retrieveInputNumber() {
-    // Pop the last element from the reversed input buffer and convert it to a number.
-    return Number(rawInputBuffer.pop());
+function readInputNumber() {
+    return +rawInputBuffer.pop(); // Pop the last element and convert to number
 }
 
 /**
- * Retrieves the next string from the processed input buffer.
- * @returns {string} The next string from the input.
+ * Reads and returns the next string from the processed input buffer.
+ * (Not used in this specific problem, but kept for completeness based on original structure)
+ * @returns {string} The next string from input.
  */
-function retrieveInputString() {
-    // Pop the last element from the reversed input buffer.
-    return rawInputBuffer.pop();
+function readInputString() {
+    return rawInputBuffer.pop(); // Pop the last element (as a string)
 }
 
 /**
- * Displays a value to the console.
- * @param {*} outputValue - The value to be printed.
+ * Outputs a value to the console.
+ * @param {*} valueToPrint The value to be printed.
  */
-function displayOutput(outputValue) {
-    // Use the standard console.log for output.
-    console.log(outputValue);
+function outputValue(valueToPrint) {
+    console.log(valueToPrint); // Use console.log for output
 }
 
-// Resume standard input stream.
-process.stdin.resume();
-// Set the encoding for the input stream.
-process.stdin.setEncoding('utf8');
+// Set up standard input processing
+process.stdin.resume(); // Keep the process alive for input
+process.stdin.setEncoding('utf8'); // Set input encoding
 
-// Event listener for incoming data chunks from stdin.
-process.stdin.on('data', function(inputChunk) {
-    // Append the received chunk to the raw input buffer.
-    rawInputBuffer += inputChunk;
+// Event listener for incoming data chunks
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk; // Append new data to the buffer
 });
 
-// Event listener for the end of the input stream.
+// Event listener for end of input stream
 process.stdin.on('end', function() {
-    // Process the accumulated raw input: trim whitespace, split by any whitespace, and reverse the array.
-    // Reversing allows efficient popping from the end.
+    // Process the entire input: trim whitespace, split by any whitespace, and reverse
+    // Reversing makes `pop()` retrieve elements in original order
     rawInputBuffer = rawInputBuffer.trim().split(/\s+/).reverse();
-    // Start the main program execution.
-    executeProgram();
+    primaryExecution(); // Start the main program logic
 });

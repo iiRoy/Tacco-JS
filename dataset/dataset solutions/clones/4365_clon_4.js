@@ -1,16 +1,17 @@
-const determineOverallLength = (sourceData) => {
-    const lineSegments = [...sourceData.matchAll(/(\d+) (\d+)/g)];
+function processRangeData(rawData) {
+    const parsedRanges = rawData
+        .split('\n')
+        .slice(1)
+        .map(lineSegment =>
+            lineSegment.split(' ').map(val => parseInt(val, 10))
+        );
 
-    const cumulativeExtent = lineSegments.reduce((currentTotal, currentSegmentMatch) => {
-        const startingPoint = Number(currentSegmentMatch[1]);
-        const endingPoint = Number(currentSegmentMatch[2]);
-        return currentTotal + (endingPoint - startingPoint + 1);
+    const totalSpan = parsedRanges.reduce((accumulator, currentPair) => {
+        const [lowerBound, upperBound] = currentPair;
+        return accumulator + (upperBound - lowerBound + 1);
     }, 0);
 
-    return cumulativeExtent;
-};
+    console.log('%d', totalSpan);
+}
 
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalSummation = determineOverallLength(acquiredData);
-
-process.stdout.write(`${finalSummation}\n`);
+processRangeData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,48 @@
-const obtainCommonFactor = (num1, num2) => {
-    while (num2 !== 0) {
-        let tempValue = num2;
-        num2 = num1 % num2;
-        num1 = tempValue;
-    }
-    return num1;
+const obtainCommonDivisor = (valA, valB) => {
+  while (valB !== 0) {
+    const temp = valB;
+    valB = valA % valB;
+    valA = temp;
+  }
+  return valA;
 };
 
-const determineGreatestCommonDivisor = (numericCollection) => {
-    if (numericCollection.length === 0) {
-        return 0;
+function computeDivisor(valueCollection) {
+  if (!Array.isArray(valueCollection) || valueCollection.length === 0) {
+    return 0;
+  }
+  return valueCollection.reduce((accumulator, currentElement) =>
+    obtainCommonDivisor(accumulator, currentElement)
+  );
+}
+
+function processInput(rawData) {
+  const limitValue = parseInt(rawData, 10);
+  let totalAccumulator = 0;
+
+  const iterateAndSum = (currentA, currentB, currentC) => {
+    if (currentA > limitValue) {
+      return;
     }
-    if (numericCollection.length === 1) {
-        return numericCollection[0];
+
+    if (currentC > limitValue) {
+      iterateAndSum(currentA, currentB + 1, 1);
+      return;
     }
-    return numericCollection.reduce((accumulatorValue, currentElement) => {
-        return obtainCommonFactor(accumulatorValue, currentElement);
-    });
-};
 
-const ExecuteCalculation = (dataString) => {
-    const upperLimit = Number.parseInt(dataString, 10);
-    let cumulativeSum = 0;
+    if (currentB > limitValue) {
+      iterateAndSum(currentA + 1, 1, 1);
+      return;
+    }
 
-    const generateAndSumCombinations = (currentValuesArray, currentPosition) => {
-        if (currentPosition === 3) {
-            cumulativeSum += determineGreatestCommonDivisor(currentValuesArray);
-            return;
-        }
+    totalAccumulator += computeDivisor([currentA, currentB, currentC]);
 
-        for (let iterationValue = 1; iterationValue <= upperLimit; iterationValue++) {
-            currentValuesArray[currentPosition] = iterationValue;
-            generateAndSumCombinations(currentValuesArray, currentPosition + 1);
-        }
-    };
+    iterateAndSum(currentA, currentB, currentC + 1);
+  };
 
-    generateAndSumCombinations(new Array(3), 0);
-    console.log(cumulativeSum);
-};
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
-ExecuteCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+  iterateAndSum(1, 1, 1);
+
+  console.log(totalAccumulator);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

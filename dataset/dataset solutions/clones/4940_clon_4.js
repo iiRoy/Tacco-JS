@@ -1,85 +1,102 @@
 'use strict';
 
-let componentRoots;
-let componentSizes;
+function ProcessInput(rawData) {
+    const lineData = rawData.split("\n");
+    const dimensions = lineData[0].split(" ");
+    const gridWidth = parseInt(dimensions[0]);
+    const gridHeight = parseInt(dimensions[1]);
 
-function setupComponents(countOfElements) {
-    componentRoots = Array.from({ length: countOfElements }, (_, i) => i);
-    componentSizes = Array.from({ length: countOfElements }, () => 1);
-}
-
-function findComponentRoot(elementIndex) {
-    if (componentRoots[elementIndex] === elementIndex) {
-        return elementIndex;
-    }
-    return componentRoots[elementIndex] = findComponentRoot(componentRoots[elementIndex]);
-}
-
-function mergeComponents(indexA, indexB) {
-    let rootA = findComponentRoot(indexA);
-    let rootB = findComponentRoot(indexB);
-
-    if (rootA !== rootB) {
-        if (componentSizes[rootA] < componentSizes[rootB]) {
-            [rootA, rootB] = [rootB, rootA];
-        }
-        componentRoots[rootB] = rootA;
-        componentSizes[rootA] += componentSizes[rootB];
-        return true;
-    }
-    return false;
-}
-
-function calculateMinimumSpanningStructure(inputData) {
-    const allLines = inputData.split('\n');
-
-    const [horizontalExtent, verticalExtent] = allLines[0].split(' ').map(Number);
-
-    const hConnectionCosts = allLines.slice(1, 1 + horizontalExtent).map(s => Number(s) || Number.MAX_SAFE_INTEGER);
-
-    const vConnectionCosts = allLines.slice(1 + horizontalExtent, 1 + horizontalExtent + verticalExtent).map(s => Number(s) || Number.MAX_SAFE_INTEGER);
-
-    const totalGridPoints = (horizontalExtent + 1) * (verticalExtent + 1);
-    const pointsPerVerticalSlice = horizontalExtent + 1;
-
-    const allPossibleConnections = [];
-
-    for (let currentY = 0; currentY <= verticalExtent; currentY++) {
-        for (let currentX = 0; currentX < horizontalExtent; currentX++) {
-            const pointA = currentY * pointsPerVerticalSlice + currentX;
-            const pointB = currentY * pointsPerVerticalSlice + (currentX + 1);
-            const connectionWeight = hConnectionCosts[currentX];
-            allPossibleConnections.push({ origin: pointA, destination: pointB, cost: connectionWeight });
-        }
+    const horizontalEdgeCosts = [];
+    for (let i = 0; i < gridWidth; i++) {
+        horizontalEdgeCosts.push(lineData[1 + i]);
     }
 
-    for (let currentY = 0; currentY < verticalExtent; currentY++) {
-        for (let currentX = 0; currentX <= horizontalExtent; currentX++) {
-            const pointA = currentY * pointsPerVerticalSlice + currentX;
-            const pointB = (currentY + 1) * pointsPerVerticalSlice + currentX;
-            const connectionWeight = vConnectionCosts[currentY];
-            allPossibleConnections.push({ origin: pointA, destination: pointB, cost: connectionWeight });
-        }
+    const verticalEdgeCosts = [];
+    for (let i = 0; i < gridHeight; i++) {
+        verticalEdgeCosts.push(lineData[1 + gridWidth + i]);
     }
 
-    allPossibleConnections.sort((connA, connB) => connA.cost - connB.cost);
+    const numPointsX = gridWidth + 1;
+    const numPointsY = gridHeight + 1;
+    const totalGraphVertices = numPointsX * numPointsY;
+    const infiniteEdgeWeight = 100000001;
 
-    setupComponents(totalGridPoints);
+    const graphEdges = [];
 
-    let minimumTotalCost = 0;
-    let connectionsFormed = 0;
-
-    for (const connection of allPossibleConnections) {
-        if (mergeComponents(connection.origin, connection.destination)) {
-            minimumTotalCost += connection.cost;
-            connectionsFormed++;
-            if (connectionsFormed === totalGridPoints - 1) {
-                break;
+    // Construct horizontal edges
+    for (let yPosition = 0; yPosition < numPointsY; yPosition++) {
+        for (let xPosition = 0; xPosition < gridWidth; xPosition++) {
+            const edgeWeight = parseInt(horizontalEdgeCosts[xPosition]) || infiniteEdgeWeight;
+            if (edgeWeight < infiniteEdgeWeight) {
+                const vertexA = yPosition * numPointsX + xPosition;
+                const vertexB = yPosition * numPointsX + (xPosition + 1);
+                graphEdges.push({ u: vertexA, v: vertexB, w: edgeWeight });
             }
         }
     }
 
-    console.log(minimumTotalCost);
+    // Construct vertical edges
+    for (let xPosition = 0; xPosition < numPointsX; xPosition++) {
+        for (let yPosition = 0; yPosition < gridHeight; yPosition++) {
+            const edgeWeight = parseInt(verticalEdgeCosts[yPosition]) || infiniteEdgeWeight;
+            if (edgeWeight < infiniteEdgeWeight) {
+                const vertexA = yPosition * numPointsX + xPosition;
+                const vertexB = (yPosition + 1) * numPointsX + xPosition;
+                graphEdges.push({ u: vertexA, v: vertexB, w: edgeWeight });
+            }
+        }
+    }
+
+    // Sort edges by their weight in ascending order
+    graphEdges.sort((edgeOne, edgeTwo) => edgeOne.w - edgeTwo.w);
+
+    class DisjointSetStructure {
+        constructor(elementCount) {
+            this.parentArray = Array.from({ length: elementCount }, (_, idx) => idx);
+            this.rankArray = Array(elementCount).fill(0);
+            this.componentCount = elementCount;
+        }
+
+        findRepresentative(elementIdx) {
+            if (this.parentArray[elementIdx] === elementIdx) {
+                return elementIdx;
+            }
+            return this.parentArray[elementIdx] = this.findRepresentative(this.parentArray[elementIdx]);
+        }
+
+        mergeComponents(indexOne, indexTwo) {
+            let rootOne = this.findRepresentative(indexOne);
+            let rootTwo = this.findRepresentative(indexTwo);
+
+            if (rootOne !== rootTwo) {
+                if (this.rankArray[rootOne] < this.rankArray[rootTwo]) {
+                    this.parentArray[rootOne] = rootTwo;
+                } else if (this.rankArray[rootOne] > this.rankArray[rootTwo]) {
+                    this.parentArray[rootTwo] = rootOne;
+                } else {
+                    this.parentArray[rootTwo] = rootOne;
+                    this.rankArray[rootOne]++;
+                }
+                this.componentCount--;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    const dsuInstance = new DisjointSetStructure(totalGraphVertices);
+    let minimumSpanningTreeWeight = 0;
+
+    for (const currentEdge of graphEdges) {
+        if (dsuInstance.mergeComponents(currentEdge.u, currentEdge.v)) {
+            minimumSpanningTreeWeight += currentEdge.w;
+        }
+        if (dsuInstance.componentCount === 1) {
+            break;
+        }
+    }
+
+    console.log(minimumSpanningTreeWeight);
 }
 
-calculateMinimumSpanningStructure(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

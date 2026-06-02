@@ -1,124 +1,136 @@
-const OrientationScheme = {
-    NO_GUIDELINE: 0,
-    X_AXIS_GUIDELINE: 1, // Point chosen to fix a vertical line at its X-coordinate
-    Y_AXIS_GUIDELINE: 2, // Point chosen to fix a horizontal line at its Y-coordinate
-};
-
-function GeographicMarker(xVal, yVal, influence, initialOrdinal) {
-    this.xCoord = xVal;
-    this.yCoord = yVal;
-    this.influenceFactor = influence;
-    this.initialIndex = initialOrdinal;
-}
-
-function evaluateScenario(totalMarkers, allMarkers, selectionProfile) {
-    const markerSpecificCosts = new Array(totalMarkers);
-
-    allMarkers.forEach(marker => {
-        markerSpecificCosts[marker.initialIndex] = Math.min(Math.abs(marker.xCoord), Math.abs(marker.yCoord)) * marker.influenceFactor;
-    });
-
-    const sortedByXCoordinate = [...allMarkers].sort((m1, m2) => m1.xCoord - m2.xCoord);
-    
-    let currentXReference = null;
-    sortedByXCoordinate.forEach(marker => {
-        if (selectionProfile[marker.initialIndex] === OrientationScheme.X_AXIS_GUIDELINE) {
-            currentXReference = marker.xCoord;
-            markerSpecificCosts[marker.initialIndex] = 0;
-        } else if (currentXReference !== null) {
-            markerSpecificCosts[marker.initialIndex] = Math.min(
-                markerSpecificCosts[marker.initialIndex],
-                Math.abs(marker.xCoord - currentXReference) * marker.influenceFactor
-            );
-        }
-    });
-
-    currentXReference = null;
-    for (let i = totalMarkers - 1; i >= 0; i--) {
-        const marker = sortedByXCoordinate[i];
-        if (selectionProfile[marker.initialIndex] === OrientationScheme.X_AXIS_GUIDELINE) {
-            currentXReference = marker.xCoord;
-            markerSpecificCosts[marker.initialIndex] = 0;
-        } else if (currentXReference !== null) {
-            markerSpecificCosts[marker.initialIndex] = Math.min(
-                markerSpecificCosts[marker.initialIndex],
-                Math.abs(marker.xCoord - currentXReference) * marker.influenceFactor
-            );
+const InputProcessor = (function() {
+    function* tokenIterator(text) {
+        const parts = text.split(/\s+/);
+        for (const part of parts) {
+            yield part;
         }
     }
 
-    const sortedByYCoordinate = [...allMarkers].sort((m1, m2) => m1.yCoord - m2.yCoord);
-
-    let currentYReference = null;
-    sortedByYCoordinate.forEach(marker => {
-        if (selectionProfile[marker.initialIndex] === OrientationScheme.Y_AXIS_GUIDELINE) {
-            currentYReference = marker.yCoord;
-            markerSpecificCosts[marker.initialIndex] = 0;
-        } else if (currentYReference !== null) {
-            markerSpecificCosts[marker.initialIndex] = Math.min(
-                markerSpecificCosts[marker.initialIndex],
-                Math.abs(marker.yCoord - currentYReference) * marker.influenceFactor
-            );
-        }
-    });
-
-    currentYReference = null;
-    for (let i = totalMarkers - 1; i >= 0; i--) {
-        const marker = sortedByYCoordinate[i];
-        if (selectionProfile[marker.initialIndex] === OrientationScheme.Y_AXIS_GUIDELINE) {
-            currentYReference = marker.yCoord;
-            markerSpecificCosts[marker.initialIndex] = 0;
-        } else if (currentYReference !== null) {
-            markerSpecificCosts[marker.initialIndex] = Math.min(
-                markerSpecificCosts[marker.initialIndex],
-                Math.abs(marker.yCoord - currentYReference) * marker.influenceFactor
-            );
+    function* parsedIterator(text, parserFunc) {
+        const parts = text.split(/\s+/);
+        for (const part of parts) {
+            yield parserFunc(part);
         }
     }
 
-    return markerSpecificCosts.reduce((accumulated, value) => accumulated + value, 0);
+    function createStringGetter(text) {
+        const iter = tokenIterator(text);
+        return () => iter.next().value;
+    }
+
+    function createIntegerGetter(text) {
+        const iter = tokenIterator(text);
+        return () => parseInt(iter.next().value, 10);
+    }
+
+    function createBigIntegerGetter(text) {
+        const iter = tokenIterator(text);
+        return () => BigInt(iter.next().value);
+    }
+
+    return {
+        createStringGetter: createStringGetter,
+        createIntegerGetter: createIntegerGetter,
+        createBigIntegerGetter: createBigIntegerGetter
+    };
+})();
+
+const fs = require('fs');
+
+function processInput(inputLines) {
+    const getNextNumber = InputProcessor.createIntegerGetter(inputLines);
+    const cityCount = getNextNumber();
+    const cityDetails = [];
+    for (let k = 0; k < cityCount; k++) {
+        const coordX = getNextNumber();
+        const coordY = getNextNumber();
+        const powerFactor = getNextNumber();
+        cityDetails.push({ x: coordX, y: coordY, p: powerFactor, originalIdx: k });
+    }
+    console.log(computeMinimumCosts(cityCount, cityDetails).join('\n'));
 }
 
-function processGeographicData(rawInputText) {
-    const inputLines = rawInputText.trim().split('\n');
-    const firstLineFields = inputLines[0].split(/\s+/);
-    const numberOfMarkers = parseInt(firstLineFields[0]);
+function computeMinimumCosts(numCities, cityData) {
+    const minimumCostsPerStationCount = Array(numCities + 1).fill(Number.MAX_SAFE_INTEGER);
 
-    const geographicMarkers = Array.from({ length: numberOfMarkers }, (_, index) => {
-        const fields = inputLines[index + 1].split(/\s+/);
-        return new GeographicMarker(
-            parseInt(fields[0]),
-            parseInt(fields[1]),
-            parseInt(fields[2]),
-            index
-        );
-    });
+    const xSortedIndices = Array.from({ length: numCities }, (_, i) => i).sort((a, b) => cityData[a].x - cityData[b].x);
+    const ySortedIndices = Array.from({ length: numCities }, (_, i) => i).sort((a, b) => cityData[a].y - cityData[b].y);
 
-    const finalMinimumOutlays = new Array(numberOfMarkers + 1).fill(Number.MAX_SAFE_INTEGER);
+    const totalCombinations = Math.pow(3, numCities);
+    for (let comboId = 0; comboId < totalCombinations; comboId++) {
+        const currentPlacementChoices = Array(numCities);
+        let activeStationCount = 0;
+        let tempComboId = comboId;
 
-    const possibleCombinations = Math.pow(3, numberOfMarkers);
-
-    for (let comboIteration = 0; comboIteration < possibleCombinations; comboIteration++) {
-        const currentSelectionChoices = new Array(numberOfMarkers).fill(OrientationScheme.NO_GUIDELINE);
-        let activeGuidelineCount = 0;
-        let temporaryComboValue = comboIteration;
-
-        for (let markerIndex = 0; markerIndex < numberOfMarkers; markerIndex++) {
-            const choiceForMarker = temporaryComboValue % 3;
-            currentSelectionChoices[markerIndex] = choiceForMarker;
-            if (choiceForMarker === OrientationScheme.X_AXIS_GUIDELINE || choiceForMarker === OrientationScheme.Y_AXIS_GUIDELINE) {
-                activeGuidelineCount++;
+        for (let j = 0; j < numCities; j++) {
+            const choiceType = tempComboId % 3; // 0: None, 1: X-axis, 2: Y-axis
+            currentPlacementChoices[j] = choiceType;
+            if (choiceType !== 0) {
+                activeStationCount++;
             }
-            temporaryComboValue = Math.floor(temporaryComboValue / 3);
+            tempComboId = Math.floor(tempComboId / 3);
         }
 
-        const currentScenarioCost = evaluateScenario(numberOfMarkers, geographicMarkers, currentSelectionChoices);
-        finalMinimumOutlays[activeGuidelineCount] = Math.min(finalMinimumOutlays[activeGuidelineCount], currentScenarioCost);
+        const currentConfigurationCost = calculateConfigCost(numCities, cityData, currentPlacementChoices, xSortedIndices, ySortedIndices);
+        minimumCostsPerStationCount[activeStationCount] = Math.min(minimumCostsPerStationCount[activeStationCount], currentConfigurationCost);
     }
 
-    return finalMinimumOutlays.join('\n');
+    return minimumCostsPerStationCount;
 }
 
-function main(inputContent) {
-    return processGeographicData(inputContent);
+function calculateConfigCost(numCities, cityData, choices, xIndices, yIndices) {
+    const individualCityCosts = Array(numCities);
+
+    for (let i = 0; i < numCities; i++) {
+        if (choices[i] === 1 || choices[i] === 2) {
+            individualCityCosts[i] = 0;
+        } else {
+            individualCityCosts[i] = Math.min(Math.abs(cityData[i].x), Math.abs(cityData[i].y)) * cityData[i].p;
+        }
+    }
+
+    let lastXStationPosition = null;
+    for (const cityIdx of xIndices) {
+        if (choices[cityIdx] === 1) {
+            lastXStationPosition = cityData[cityIdx].x;
+        } else if (lastXStationPosition !== null) {
+            individualCityCosts[cityIdx] = Math.min(individualCityCosts[cityIdx], Math.abs(cityData[cityIdx].x - lastXStationPosition) * cityData[cityIdx].p);
+        }
+    }
+
+    lastXStationPosition = null;
+    for (let k = numCities - 1; k >= 0; k--) {
+        const cityIdx = xIndices[k];
+        if (choices[cityIdx] === 1) {
+            lastXStationPosition = cityData[cityIdx].x;
+        } else if (lastXStationPosition !== null) {
+            individualCityCosts[cityIdx] = Math.min(individualCityCosts[cityIdx], Math.abs(cityData[cityIdx].x - lastXStationPosition) * cityData[cityIdx].p);
+        }
+    }
+
+    let lastYStationPosition = null;
+    for (const cityIdx of yIndices) {
+        if (choices[cityIdx] === 2) {
+            lastYStationPosition = cityData[cityIdx].y;
+        } else if (lastYStationPosition !== null) {
+            individualCityCosts[cityIdx] = Math.min(individualCityCosts[cityIdx], Math.abs(cityData[cityIdx].y - lastYStationPosition) * cityData[cityIdx].p);
+        }
+    }
+
+    lastYStationPosition = null;
+    for (let k = numCities - 1; k >= 0; k--) {
+        const cityIdx = yIndices[k];
+        if (choices[cityIdx] === 2) {
+            lastYStationPosition = cityData[cityIdx].y;
+        } else if (lastYStationPosition !== null) {
+            individualCityCosts[cityIdx] = Math.min(individualCityCosts[cityIdx], Math.abs(cityData[cityIdx].y - lastYStationPosition) * cityData[cityIdx].p);
+        }
+    }
+
+    return individualCityCosts.reduce((total, current) => total + current, 0);
+}
+
+if (require.main === module) {
+    const inputData = fs.readFileSync("/dev/stdin", "utf8");
+    processInput(inputData);
 }

@@ -1,56 +1,37 @@
-let accumulatedChunks = [];
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (incomingPayload) => {
-  accumulatedChunks.push(incomingPayload);
+let accumulatedInput = '';
+
+process.stdin.on('data', (chunk) => {
+    accumulatedInput += chunk;
 });
 
 process.stdin.on('end', () => {
-  const completeTextualInput = Buffer.concat(accumulatedChunks).toString('utf8');
-  const allParsedLines = completeTextualInput.split('\n').filter(Boolean);
+    const inputLines = accumulatedInput.split('\n');
+    const outputCollection = [];
 
-  const outcomeLookup = new Map([
-    ["length_one_or_three", [3, 3, 3]],
-    ["missing_one", [1, 2, 0]],
-    ["missing_two", [2, 0, 1]],
-    ["missing_three", [0, 1, 2]]
-  ]);
+    while (inputLines[0] !== '0') {
+        const currentBlock = inputLines.splice(0, 5);
 
-  const categorizeDistincts = (distinctValueStrings) => {
-    const valueCount = distinctValueStrings.length;
+        const distinctItems = Array.from(new Set(currentBlock));
 
-    if (valueCount === 3 || valueCount === 1) {
-      return "length_one_or_three";
-    } else {
-      if (!distinctValueStrings.includes('1')) {
-        return "missing_one";
-      }
-      if (!distinctValueStrings.includes('2')) {
-        return "missing_two";
-      }
-      if (!distinctValueStrings.includes('3')) {
-        return "missing_three";
-      }
-      return "unmatched_state";
+        const logicMap = new Map([
+            [1, () => [3, 3, 3]],
+            [2, () => [1, 2, 0]],
+            [3, () => [3, 3, 3]],
+            [0, () => [1, 2, 0]], // Handles empty block, falls into original's 'else'
+            [4, () => [1, 2, 0]], // Handles blocks with 4 distinct items, falls into original's 'else'
+            [5, () => [1, 2, 0]], // Handles blocks with 5 distinct items, falls into original's 'else'
+        ]);
+
+        const outcomeArray = logicMap.has(distinctItems.length)
+            ? logicMap.get(distinctItems.length)()
+            : [1, 2, 0]; // Default for any other length, matching original's 'else' branch
+
+        currentBlock.forEach(valString => {
+            outputCollection.push(outcomeArray[Number(valString) - 1]);
+        });
     }
-  };
-
-  const processInputSegments = (remainingEntries, currentOffset = 0) => {
-    if (currentOffset >= remainingEntries.length || remainingEntries[currentOffset] === '0') {
-      return;
-    }
-
-    const currentSegmentBlock = remainingEntries.slice(currentOffset, currentOffset + 5);
-    const uniqueSegmentValues = Array.from(new Set(currentSegmentBlock));
-
-    const classificationKey = categorizeDistincts(uniqueSegmentValues);
-    const designatedOutputMapping = outcomeLookup.get(classificationKey);
-
-    currentSegmentBlock.forEach((individualValueString) => {
-      console.log(designatedOutputMapping[Number(individualValueString) - 1]);
-    });
-
-    processInputSegments(remainingEntries, currentOffset + 5);
-  };
-
-  processInputSegments(allParsedLines);
+    console.log(outputCollection.join('\n'));
 });

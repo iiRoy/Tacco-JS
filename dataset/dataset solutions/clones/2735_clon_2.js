@@ -1,32 +1,40 @@
-function ExecuteProcess ( rawData ) {
+// This function processes the entire input dataset.
+function ProcessInput(rawData) {
+  // The rawData string is split into an array of lines.
+  let lineData = rawData.split("\n");
 
-  // This function processes all incoming input
-  rawData = rawData . split ( "\n" ) ;
+  // The first line contains the count of subsequent numbers.
+  // The first assignment is redundant and immediately overwritten.
+  let itemCount = parseInt(lineData[0], 10);
 
-
-  var numElements = rawData [ 0 ] ;
-  var numElements = parseInt ( rawData [ 0 ] , 10 ) ; // Re-parsing for robustness
-  var primaryList = [ ] ; // Initialize a dynamic collection
-
-  for ( var idx = 0 ; idx < numElements ; idx ++ ) {
-    var elementValue = parseInt ( rawData [ idx + 1 ] , 10 ) ;
-    primaryList [ idx ] = elementValue ;
+  // Initialize an array to hold the numeric values.
+  let originalNumbers = [];
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Parse each subsequent line as an integer.
+    let currentNum = parseInt(lineData[idx + 1], 10);
+    originalNumbers[idx] = currentNum; // Store the number in the array.
   }
 
-  var backupArray = primaryList . concat ( ) ; // Create a full duplicate for reset operations
+  // Create a temporary copy of the numbers array.
+  let tempNumbers = originalNumbers.concat();
 
-  for ( var idx = 0 ; idx < numElements ; idx ++ ) {
-    primaryList . splice ( idx , 1 ) ; // Remove one item at the current position
+  // Iterate through the numbers, removing one at a time and finding the maximum of the rest.
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Remove the element at the current index from the 'originalNumbers' array.
+    originalNumbers.splice(idx, 1);
 
-    primaryList . sort ( function ( valA , valB ) {
-      return valB - valA ; // Sort in descending order
-    } ) ;
+    // Sort the modified array in descending order.
+    originalNumbers.sort(function(valA, valB) {
+      return valB - valA; // Descending sort.
+    });
 
-    console . log ( primaryList [ 0 ] ) ; // Display the highest remaining value
+    // Output the largest remaining number (which is at index 0 after sorting).
+    console.log(originalNumbers[0]);
 
-    primaryList = backupArray . concat ( ) ; // Restore the list to its original state for the next iteration
+    // Restore the 'originalNumbers' array to its initial state for the next iteration.
+    originalNumbers = tempNumbers.concat();
   }
 }
 
-// Do not alter the following section (handles standard input/output and function invocation)
-ExecuteProcess ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the code below this line (it handles standard input/output and calls the main function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

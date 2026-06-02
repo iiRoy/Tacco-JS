@@ -1,37 +1,37 @@
-const sourceText = process.stdin.readFileSync(0, 'utf8').trim();
+const fs = require('fs');
 
-const adjustedSequence = (sourceText.charAt(0) === '>') ? '<' + sourceText : sourceText;
+const inputData = fs.readFileSync('/dev/stdin', 'utf8').trim();
 
-const symbolicUnits = adjustedSequence.match(/<+|>\+/g);
-
-if (!symbolicUnits) {
-    console.log(0);
-    return;
+let adjustedInput = inputData;
+if (adjustedInput.charAt(0) === '>') {
+    adjustedInput = '<' + adjustedInput;
 }
 
-const countPairs = [];
-for (let posIndex = 0; posIndex < symbolicUnits.length; posIndex += 2) {
-    const leftwardSegmentLength = symbolicUnits[posIndex].length;
-    const rightwardSegmentLength = (symbolicUnits[posIndex + 1]) ? symbolicUnits[posIndex + 1].length : 0;
-    countPairs.push([leftwardSegmentLength, rightwardSegmentLength]);
-}
-
-const calculateArithmeticSeries = (upperBound) => {
-    if (upperBound < 0) return 0;
-    return (upperBound * (upperBound + 1)) / 2;
+const sumUpTo = (upperBound) => {
+    if (upperBound < 0) {
+        return 0;
+    }
+    return upperBound * (upperBound + 1) / 2;
 };
 
-const accumulatedValue = countPairs.reduce((currentTotal, pair) => {
-    const [leftwards, rightwards] = pair;
-    let iterationSum = 0;
-    if (leftwards > rightwards) {
-        iterationSum += calculateArithmeticSeries(leftwards);
-        iterationSum += calculateArithmeticSeries(rightwards - 1);
-    } else {
-        iterationSum += calculateArithmeticSeries(leftwards - 1);
-        iterationSum += calculateArithmeticSeries(rightwards);
-    }
-    return currentTotal + iterationSum;
-}, 0);
+const characterBlocks = adjustedInput.match(/(<+)|(>+)/g) || [];
 
-console.log(accumulatedValue);
+let cumulativeValue = 0;
+
+for (let blockIndex = 0; blockIndex < characterBlocks.length; blockIndex += 2) {
+    const leftBlock = characterBlocks[blockIndex];
+    const rightBlock = characterBlocks[blockIndex + 1];
+
+    const leftCount = leftBlock ? leftBlock.length : 0;
+    const rightCount = rightBlock ? rightBlock.length : 0;
+
+    if (leftCount > rightCount) {
+        cumulativeValue += sumUpTo(leftCount);
+        cumulativeValue += sumUpTo(rightCount - 1);
+    } else {
+        cumulativeValue += sumUpTo(leftCount - 1);
+        cumulativeValue += sumUpTo(rightCount);
+    }
+}
+
+console.log(cumulativeValue);

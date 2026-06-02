@@ -1,73 +1,53 @@
-/*
- * This JavaScript module processes a string of numerical data
- * to determine a specific count of operations required to balance
- * the last two elements of a sorted array against the first.
- */
-function ProcessNumericData(  inputStringData  ) {
+function ProcessInput(inputString) {
+  // Parse the input string into an array of numbers, sort them in descending order.
+  // The input is expected to be a single line of space-separated integers.
+  let numericValues = inputString
+    .split("\n")[0] // Extract the first line of the input string
+    .split(" ") // Split the line by spaces to get individual number strings
+    .map(elementValue => parseInt(elementValue, 10)) // Convert each string element to an integer
+    .sort((firstNum, secondNum) => secondNum - firstNum); // Sort the numbers in descending order
 
-  // Parse the input string:
-  // 1. Split by newline, take the first line.
-  // 2. Split by space to get individual string numbers.
-  // 3. Convert each string number to an integer (base 10).
-  // 4. Sort the resulting numbers in descending order.
-  let  numericValuesArray  =  inputStringData
-                                .split(  "\n"  )
-                                [  0  ]
-                                .split(  " "  )
-                                .map(  (  currentElementStr  )  =>  parseInt(  currentElementStr,  10  )  )
-                                .sort(  (  valA,  valB  )  =>  valB  -  valA  );
+  // Initialize a counter to track the number of operations performed.
+  let operationCount = 0;
 
-  // Initialize a counter for the total operations performed.
-  let  operationTally  =  0;
-
-  // Check the parity of the difference between the second and third elements.
-  // This initial condition dictates the first approach to balancing the values.
-  if  (  (  numericValuesArray[1]  -  numericValuesArray[2]  )  %  2  ===  0  )  {
-    // Case where the difference between the second and third values is even.
-    // Continue adjusting values until the first element is equal to both the second and third.
-    while  (  numericValuesArray[0]  !==  numericValuesArray[1]  ||  numericValuesArray[0]  !==  numericValuesArray[2]  )  {
-      // If the first element is strictly greater than the second,
-      // increment both the second and third elements by one.
-      if  (  numericValuesArray[0]  >  numericValuesArray[1]  )  {
-        numericValuesArray[1]  =  numericValuesArray[1]  +  1;
-        numericValuesArray[2]  =  numericValuesArray[2]  +  1;
-        operationTally  =  operationTally  +  1; // Increment operation counter for this step.
-      }  else  {
-        // Otherwise (first element is less than or equal to the second),
-        // increment only the third element by two.
-        numericValuesArray[2]  =  numericValuesArray[2]  +  2;
-        operationTally  =  operationTally  +  1; // Increment operation counter for this step.
+  // Check if the difference between the second and third largest numbers is even.
+  if ((numericValues[1] - numericValues[2]) % 2 === 0) {
+    // If the difference is even, proceed with adjustments until all three numbers are equal.
+    while (numericValues[0] !== numericValues[1] || numericValues[0] !== numericValues[2]) {
+      // If the largest number is greater than the second largest, increment the second and third numbers.
+      if (numericValues[0] > numericValues[1]) {
+        numericValues[1]++;
+        numericValues[2]++;
+        operationCount++; // Increment the operation counter
+      } else {
+        // Otherwise, increment the third number by two.
+        numericValues[2] += 2;
+        operationCount++; // Increment the operation counter
       }
     }
-  }  else  {
-    // Case where the difference between the second and third values is odd.
-    // Perform an initial adjustment to make the difference even,
-    // by incrementing the first two elements.
-    numericValuesArray[0]  =  numericValuesArray[0]  +  1;
-    numericValuesArray[1]  =  numericValuesArray[1]  +  1;
-    operationTally  =  operationTally  +  1; // Increment operation counter for this initial adjustment.
-
-    // Now, with the difference between the second and third values likely even
-    // (after the initial adjustment), proceed with the same adjustment logic as above.
-    while  (  numericValuesArray[0]  !==  numericValuesArray[1]  ||  numericValuesArray[0]  !==  numericValuesArray[2]  )  {
-      // If the first element is strictly greater than the second,
-      // increment both the second and third elements by one.
-      if  (  numericValuesArray[0]  >  numericValuesArray[1]  )  {
-        numericValuesArray[1]  =  numericValuesArray[1]  +  1;
-        numericValuesArray[2]  =  numericValuesArray[2]  +  1;
-        operationTally  =  operationTally  +  1; // Increment operation counter.
-      }  else  {
-        // Otherwise, increment only the third element by two.
-        numericValuesArray[2]  =  numericValuesArray[2]  +  2;
-        operationTally  =  operationTally  +  1; // Increment operation counter.
+  } else {
+    // If the difference is odd, perform an initial adjustment: increment the largest and second largest numbers.
+    numericValues[0]++;
+    numericValues[1]++;
+    operationCount++; // Increment the operation counter
+    // Then, proceed with further adjustments until all three numbers are equal.
+    while (numericValues[0] !== numericValues[1] || numericValues[0] !== numericValues[2]) {
+      // If the largest number is greater than the second largest, increment the second and third numbers.
+      if (numericValues[0] > numericValues[1]) {
+        numericValues[1]++;
+        numericValues[2]++;
+        operationCount++; // Increment the operation counter
+      } else {
+        // Otherwise, increment the third number by two.
+        numericValues[2] += 2;
+        operationCount++; // Increment the operation counter
       }
     }
   }
 
-  // Output the final accumulated count of operations to the console.
-  console.log(  operationTally  );
+  // Output the final calculated operation count to the console.
+  console.log(operationCount);
 }
 
-// Entry point for execution: Read data from standard input using Node.js 'fs' module
-// and pass the UTF-8 encoded string content to the main processing function.
-ProcessNumericData(  require(  "fs"  ).readFileSync(  "/dev/stdin",  "utf8"  )  );
+// Read the entire content of standard input, decode it as UTF-8, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

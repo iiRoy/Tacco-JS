@@ -1,13 +1,14 @@
-const evaluateData = (sourceString) => {
-  const dividerPos = sourceString.indexOf(' ');
-  const valA = +sourceString.slice(0, dividerPos);
-  const valB = +sourceString.slice(dividerPos + 1);
+function processInput(rawData) {
+  const numericParts = rawData.split(" ").map(parseFloat);
+  const [firstVal, secondVal] = numericParts;
 
-  const outcomeMap = {
-    addition: valA + valB,
-    subtraction: valA - valB,
-    multiplication: valA * valB
-  };
-};
+  const operations = [
+    (a, b) => a + b,
+    (a, b) => a - b,
+    (a, b) => a * b,
+  ];
 
-evaluateData(require("fs").readFileSync("/dev/stdin", "utf8"));
+  const computedValues = operations.map(op => op(firstVal, secondVal));
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

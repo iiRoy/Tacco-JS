@@ -1,176 +1,76 @@
 "use strict";
-
-const INF_VAL = 1e18;
-const MAX_SILVER_CAP = 2500;
-
-let dataString = require("fs").readFileSync("/dev/stdin", "utf8");
-let tokenArray = dataString.split(/ |\n/);
-let tokenIndex = 0;
-
-function getNextToken(asString) {
-  return asString ? tokenArray[tokenIndex++] : +tokenArray[tokenIndex++];
-}
-
-function getMultipleTokens(count, asString) {
-  return asString ? tokenArray.slice(tokenIndex, (tokenIndex += count)) : tokenArray.slice(tokenIndex, (tokenIndex += count)).map(val => +val);
-}
-
-function getMatrixTokens(rows, cols, asString) {
-  let resultMatrix = [];
-  let currentRows = 0;
-  if (asString) {
-    for (; currentRows < rows; currentRows++) {
-      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += cols)));
+var source=require("fs").readFileSync("/dev/stdin","utf8");
+var tokens=source.split(/ |\n/),ptr=0;
+function read(one){return one?tokens[ptr++]:+tokens[ptr++];}
+function reads(cnt,one){return one?tokens.slice(ptr,ptr+=cnt):tokens.slice(ptr,ptr+=cnt).map(z=>+z);}
+function readGrid(row,col,one){var box=[],idx=0;if(one)for(;idx<row;idx++)box.push(tokens.slice(ptr,ptr+=col));else for(;idx<row;idx++)box.push(tokens.slice(ptr,ptr+=col).map(z=>+z));return box;}
+function buildArray(val){var arg=arguments,len=arg.length,res="Array(arg["+--len+"]).fill().map(y=>{return "+val+";})";while(--len)res="Array(arg["+len+"]).fill().map(y=>"+res+")";return eval(res);}
+var makeQueue=(function(){
+  function g(){return new Queue();}
+  function Queue(){
+    this.store=[];
+  }
+  Queue.prototype.push=function(item){
+    var h=this.store,i=h.length++,j;
+    while(i){
+      j=i-1>>1;
+      if(h[j][0]<=item[0])break;
+      h[i]=h[j],i=j;
     }
-  } else {
-    for (; currentRows < rows; currentRows++) {
-      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += cols)).map(val => +val));
-    }
-  }
-  return resultMatrix;
-}
-
-function createMultiDimArray(initialValue) {
-  let dimensions = arguments;
-  let dimLength = dimensions.length;
-  let arrayCreationString = "Array(dimensions[" + --dimLength + "]).fill().map(_=>{return " + initialValue + ";})";
-  while (--dimLength) {
-    arrayCreationString = "Array(dimensions[" + dimLength + "]).fill().map(_=>" + arrayCreationString + ")";
-  }
-  return eval(arrayCreationString);
-}
-
-const minHeapFactory = (function () {
-  function createHeapInstance() {
-    return new MinPriorityQueue();
-  }
-
-  function MinPriorityQueue() {
-    this.dataStore = [];
-  }
-
-  MinPriorityQueue.prototype.insertElement = function (item) {
-    const storeRef = this.dataStore;
-    let currentIndex = storeRef.length++;
-    let parentIndex;
-
-    while (currentIndex) {
-      parentIndex = (currentIndex - 1) >> 1;
-      if (storeRef[parentIndex][0] <= item[0]) break;
-      storeRef[currentIndex] = storeRef[parentIndex];
-      currentIndex = parentIndex;
-    }
-    storeRef[currentIndex] = item;
+    h[i]=item;
   };
-
-  MinPriorityQueue.prototype.extractMin = function () {
-    const storeRef = this.dataStore;
-    const minElement = storeRef[0];
-    const lastElement = storeRef.pop();
-
-    const currentLength = storeRef.length;
-    if (currentLength === 0) return minElement;
-
-    let currentIndex = 0;
-    const halfLength = currentLength >> 1;
-    const finalLengthMinusOne = currentLength - 1;
-
-    while (currentIndex < halfLength) {
-      let childIndex = (currentIndex << 1) + 1;
-      if (childIndex < finalLengthMinusOne && storeRef[childIndex + 1][0] < storeRef[childIndex][0]) {
-        childIndex++;
-      }
-      if (lastElement[0] <= storeRef[childIndex][0]) break;
-      storeRef[currentIndex] = storeRef[childIndex];
-      currentIndex = childIndex;
+  Queue.prototype.pop=function(){
+    var h=this.store,res=h[0],item=h.pop(),len=h.length,i=0,j;
+    if(len===0)return res;
+    var half=len>>1;len--;
+    while(i<half){
+      j=(i<<1)+1;
+      if(j<len&&h[j+1][0]<h[j][0])j++;
+      if(item[0]<=h[j][0])break;
+      h[i]=h[j],i=j;
     }
-    storeRef[currentIndex] = lastElement;
-    return minElement;
+    h[i]=item;
+    return res;
   };
-
-  return createHeapInstance;
+  return g;
 })();
 
-let programResult = executeProgram();
-if (programResult !== undefined) {
-  console.log(programResult);
-}
+var output = solve();
+if(output !== undefined)console.log(output);
 
-function executeProgram() {
-  const [nodeCount, edgeCount, initialSilver] = getMultipleTokens(3);
-
-  const adjList = createMultiDimArray("[]", nodeCount);
-
-  for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-    const [nodeA, nodeB, silverCost, timeCost] = getMultipleTokens(4);
-    const u_idx = nodeA - 1;
-    const v_idx = nodeB - 1;
-    adjList[u_idx].push([v_idx, silverCost, timeCost]);
-    adjList[v_idx].push([u_idx, silverCost, timeCost]);
+function solve(){
+  var [nodes,edges,silver] = reads(3);
+  var route = buildArray("[]",nodes);
+  for(var idx = 0; idx < edges; idx++){
+    var [from,to,cost,time] = reads(4);
+    from--,to--;
+    route[from].push([to,cost,time]);
+    route[to].push([from,cost,time]);
   }
-
-  const exchangeRates = getMatrixTokens(nodeCount, 2);
-
-  const minTimeMap = createMultiDimArray(INF_VAL, nodeCount, MAX_SILVER_CAP + 1);
-
-  let remainingNodes = nodeCount;
-  const finalTimes = createMultiDimArray(INF_VAL, nodeCount);
-
-  const priorityQueueInstance = minHeapFactory();
-
-  let currentInitialSilver = initialSilver > MAX_SILVER_CAP ? MAX_SILVER_CAP : initialSilver;
-  
-  priorityQueueInstance.insertElement([0, 0, currentInitialSilver]);
-  minTimeMap[0][currentInitialSilver] = 0;
-
-  while (remainingNodes) {
-    const extractedState = priorityQueueInstance.extractMin();
-    if (!extractedState) break;
-
-    const [currentTime, currentNode, currentSilver] = extractedState;
-
-    if (minTimeMap[currentNode][currentSilver] < currentTime) {
-        continue;
+  var exchange = readGrid(nodes,2);
+  var dist = buildArray(1e18,nodes,2501);
+  var remain = nodes;
+  var answer = buildArray(1e18,nodes);
+  var que = new makeQueue();
+  if(silver > 2500)silver = 2500;
+  que.push([0,0,silver]);
+  while(remain){
+    var [now,place,coin] = que.pop();
+    if(answer[place] === 1e18)remain--, answer[place] = now;
+    if(dist[place][coin] < now)continue;
+    if(coin < 2500){
+      var nt = now + exchange[place][1];
+      var nc = coin + exchange[place][0];
+      if(nc >= 2500)nc = 2500;
+      if(dist[place][nc] > now)dist[place][nc] = nt, que.push([nt,place,nc]);
     }
-    
-    if (finalTimes[currentNode] === INF_VAL) {
-      remainingNodes--;
-      finalTimes[currentNode] = currentTime;
-    }
-
-    if (currentSilver < MAX_SILVER_CAP) {
-      const timeForExchange = exchangeRates[currentNode][1];
-      const silverGained = exchangeRates[currentNode][0];
-      
-      const nextTimeAfterExchange = currentTime + timeForExchange;
-      let nextSilverAfterExchange = currentSilver + silverGained;
-
-      if (nextSilverAfterExchange > MAX_SILVER_CAP) {
-        nextSilverAfterExchange = MAX_SILVER_CAP;
-      }
-
-      if (minTimeMap[currentNode][nextSilverAfterExchange] > nextTimeAfterExchange) {
-        minTimeMap[currentNode][nextSilverAfterExchange] = nextTimeAfterExchange;
-        priorityQueueInstance.insertElement([nextTimeAfterExchange, currentNode, nextSilverAfterExchange]);
-      }
-    }
-
-    for (let neighborEdgeIdx = 0; neighborEdgeIdx < adjList[currentNode].length; neighborEdgeIdx++) {
-      const [neighborNode, edgeSilverCost, edgeTimeCost] = adjList[currentNode][neighborEdgeIdx];
-
-      const silverAfterTravel = currentSilver - edgeSilverCost;
-
-      if (silverAfterTravel < 0) {
-        continue;
-      }
-
-      const timeAfterTravel = currentTime + edgeTimeCost;
-
-      if (minTimeMap[neighborNode][silverAfterTravel] > timeAfterTravel) {
-        minTimeMap[neighborNode][silverAfterTravel] = timeAfterTravel;
-        priorityQueueInstance.insertElement([timeAfterTravel, neighborNode, silverAfterTravel]);
-      }
+    for(var idx = 0; idx < route[place].length; idx++){
+      var nc = coin - route[place][idx][1];
+      if(nc < 0)continue;
+      var nt = now + route[place][idx][2], nxt = route[place][idx][0];
+      if(dist[nxt][nc] <= nt)continue;
+      que.push([nt,nxt,nc]);
     }
   }
-  return finalTimes.slice(1).join("\n");
+  return answer.slice(1).join("\n");
 }

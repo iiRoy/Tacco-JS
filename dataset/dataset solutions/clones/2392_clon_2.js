@@ -1,22 +1,32 @@
-// This function processes the entire incoming data as a single text block.
-function ExecuteCipher(sourceData) {
+function ProcessInput(rawData) {
+  // This function processes the input data to perform a Caesar cipher-like shift.
 
-  // For testing purposes: const sampleInput = "2\nABC";
-  const parsedLines = sourceData.split('\n');
+  // Split the raw input string into an array of lines.
+  const inputLines = rawData.split("\n");
 
-  const rotationValue = parseInt(parsedLines[0], 10);
-  const originalLetters = parsedLines[1].split('');
+  // Extract the shift amount from the first line and convert it to an integer.
+  const shiftAmount = ~~inputLines[0];
 
-  const characterSet = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+  // Convert the second line of input into an array of individual characters.
+  const inputChars = [...inputLines[1]];
 
-  const transformedString = originalLetters.reduce( (outputBuffer, inputChar) => {
-    const positionInSet = (characterSet.indexOf(inputChar) + rotationValue) % 26;
-    return outputBuffer + characterSet[positionInSet];
-  }, '' );
+  // Define the standard English alphabet as an array of characters.
+  const alphabetArray = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 
-  // Output the processed string to the console.
-  console.log(transformedString);
+  // Iterate over each character in the input string and apply the shift.
+  const shiftedString = inputChars.reduce((accumulator, currentChar) => {
+    // Find the current character's position in the alphabet.
+    // Add the shift amount, then use modulo 26 to wrap around the alphabet.
+    const shiftedIndex = (alphabetArray.indexOf(currentChar) + shiftAmount) % 26;
+
+    // Append the new, shifted character to the accumulator string.
+    return accumulator += alphabetArray[shiftedIndex];
+  }, ""); // Initialize the accumulator as an empty string.
+
+  // Output the final shifted string to the console.
+  console.log(shiftedString);
 }
 
-// The following line handles input/output and should not be modified.
-ExecuteCipher( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// The following line reads input from standard input and calls the main processing function.
+// It should not be modified as it handles the environment's input mechanism.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

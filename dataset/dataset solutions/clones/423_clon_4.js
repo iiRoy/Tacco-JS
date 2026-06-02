@@ -1,42 +1,41 @@
-function probeSequenceLength(orderedSet, itemToLocate, lowerBound, upperBound, comparisonTally) {
-    if (lowerBound >= upperBound) {
-        return comparisonTally;
-    }
+const fileSystem = require('fs');
 
-    const pivotIndex = (lowerBound + upperBound) >> 1; 
-    const currentTally = comparisonTally + 1; 
+function findKeyPosition(dataCollection, targetValue) {
+    const recursiveSearch = (startIndex, endIndex, currentComparisonCount) => {
+        if (startIndex >= endIndex) {
+            return currentComparisonCount;
+        }
 
-    if (orderedSet[pivotIndex] === itemToLocate) {
-        return currentTally;
-    } else if (itemToLocate < orderedSet[pivotIndex]) {
-        return probeSequenceLength(orderedSet, itemToLocate, lowerBound, pivotIndex, currentTally);
-    } else {
-        return probeSequenceLength(orderedSet, itemToLocate, pivotIndex + 1, upperBound, currentTally);
-    }
+        const nextComparisonCount = currentComparisonCount + 1;
+        const middleIndex = Math.floor((startIndex + endIndex) / 2);
+        const middleValue = dataCollection[middleIndex];
+
+        if (middleValue === targetValue) {
+            return nextComparisonCount;
+        } else if (targetValue < middleValue) {
+            return recursiveSearch(startIndex, middleIndex, nextComparisonCount);
+        } else {
+            return recursiveSearch(middleIndex + 1, endIndex, nextComparisonCount);
+        }
+    };
+
+    return recursiveSearch(0, dataCollection.length, 0);
 }
 
-function* inputReader(lines) {
-    let i = 0;
-    while (i < lines.length) {
-        yield parseInt(lines[i++], 10);
-    }
-}
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputContent.trim().split('\n');
+let lineCursor = 0;
 
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = fileContent.trim().split("\n");
-const dataStream = inputReader(processedLines);
+const extractNextNumericValue = () => parseInt(processedLines[lineCursor++], 10);
 
 while (true) {
-    const elementCount = dataStream.next().value;
-    if (elementCount === 0) {
+    const currentDataSetSize = extractNextNumericValue();
+    if (currentDataSetSize === 0) {
         break;
     }
 
-    const numericSequence = [];
-    for (let idx = 0; idx < elementCount; idx++) {
-        numericSequence.push(dataStream.next().value);
-    }
+    const dataSet = Array.from({ length: currentDataSetSize }, extractNextNumericValue);
+    const searchTarget = extractNextNumericValue();
 
-    const itemToLocate = dataStream.next().value;
-    console.log(probeSequenceLength(numericSequence, itemToLocate, 0, numericSequence.length, 0));
+    console.log(findKeyPosition(dataSet, searchTarget));
 }

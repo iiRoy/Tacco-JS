@@ -1,15 +1,20 @@
-function calculateRectangularArea(rawDataText) {
-    const extractedNumbers = Array.from(rawDataText.matchAll(/(\d+)/g)).map(m => Number(m[1]));
+function calculateGridPlacementOptions(inputStringData) {
+    const parseAndConvert = (str) => str.split('\n').map(val => parseInt(val, 10));
 
-    const [masterDimension, heightRestriction, widthRestriction] = extractedNumbers;
+    const [totalDimension, itemHeight, itemWidth] = parseAndConvert(inputStringData);
 
-    const calculateAdjustedDimension = (principal, constraint) => principal - constraint + 1;
+    const computeValidPositions = (total, item) => total - item + 1;
 
-    const adjustedWidth = calculateAdjustedDimension(masterDimension, widthRestriction);
-    const adjustedHeight = calculateAdjustedDimension(masterDimension, heightRestriction);
+    const widthPositions = computeValidPositions(totalDimension, itemWidth);
+    const heightPositions = computeValidPositions(totalDimension, itemHeight);
 
-    const finalProduct = adjustedWidth * adjustedHeight;
-
-    console.log(finalProduct);
+    return widthPositions * heightPositions;
 }
-calculateRectangularArea(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+function processStandardInput() {
+    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+    const finalResult = calculateGridPlacementOptions(inputContent);
+    console.log(finalResult);
+}
+
+processStandardInput();

@@ -1,124 +1,83 @@
-const obtainSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-let dataFeed = obtainSourceData();
-let lineIndex = 0;
+const inputSourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim();
 
-const extractEntry = () => {
-  if (lineIndex >= dataFeed.length) {
-    throw new Error("End of data reached: No more entries available.");
-  }
-  return dataFeed[lineIndex++];
-};
-
-const processNumericPair = (str) => str.split(" ").map(Number);
-const decomposeIntoChars = (str) => str.split("");
-
-const displayOutput = (val) => {
-  console.log(val);
-};
-
-class GridPoint {
-  constructor(r, c, d) {
-    this.r = r;
-    this.c = c;
-    this.d = d;
-  }
-
-  get key() {
-    return `${this.r}_${this.c}`;
+function* inputLineStream(textContent) {
+  const linesArray = textContent.split("\n");
+  for (const currentSegment of linesArray) {
+    yield currentSegment;
   }
 }
 
-class PathQueue {
-  constructor() {
-    this.elements = [];
-    this.head = 0;
+const lineProvider = inputLineStream(inputSourceData);
+
+const fetchNextInput = () => {
+  const { value: retrievedValue, done: isFinished } = lineProvider.next();
+  if (isFinished) {
+    throw new Error("Input exhausted: No further lines available.");
+  }
+  return retrievedValue;
+};
+
+const convertToNumbers = (strValue) => strValue.split(" ").map(Number);
+const convertToCharacters = (strValue) => strValue.split("");
+
+function executePathfinding() {
+  const initialLine = fetchNextInput();
+  const [heightDimension, widthDimension] = convertToNumbers(initialLine);
+
+  const gridLayout = [];
+  for (let rIndex = 0; rIndex < heightDimension; rIndex++) {
+    gridLayout.push(convertToCharacters(fetchNextInput()));
   }
 
-  add(item) {
-    this.elements.push(item);
-  }
+  const visitedLocations = new Set();
+  const explorationFrontier = [];
 
-  remove() {
-    if (this.isEmpty()) {
-      return undefined;
-    }
-    const item = this.elements[this.head];
-    this.head++;
-    if (this.head > 2048 && this.head > this.elements.length / 2) {
-      this.elements = this.elements.slice(this.head);
-      this.head = 0;
-    }
-    return item;
-  }
+  const startRow = 0;
+  const startCol = 0;
+  const startPathLength = 0;
 
-  isEmpty() {
-    return this.head >= this.elements.length;
-  }
-}
+  visitedLocations.add(`${startRow},${startCol}`);
+  explorationFrontier.push({ r: startRow, c: startCol, d: startPathLength });
 
-const initiateProcessing = () => {
-  const initialDimensions = processNumericPair(extractEntry());
-  const rowCount = initialDimensions[0];
-  const colCount = initialDimensions[1];
+  let minimumPathLength = Number.MAX_SAFE_INTEGER;
 
-  const terrainMap = [];
-  for (let r = 0; r < rowCount; r++) {
-    terrainMap.push(decomposeIntoChars(extractEntry()));
-  }
-
-  const movementVectors = [
-    [-1, 0],
-    [0, -1],
-    [1, 0],
-    [0, 1]
+  const movementDirections = [
+    { deltaR: -1, deltaC: 0 },
+    { deltaR: 1, deltaC: 0 },
+    { deltaR: 0, deltaC: -1 },
+    { deltaR: 0, deltaC: 1 }
   ];
 
-  const minimumPathLengths = new Map();
-  
-  const traversalQueue = new PathQueue();
-  
-  const startingPoint = new GridPoint(0, 0, 0);
-  traversalQueue.add(startingPoint);
-  minimumPathLengths.set(startingPoint.key, 0);
+  while (explorationFrontier.length > 0) {
+    const { r: currentR, c: currentC, d: currentD } = explorationFrontier.shift();
 
-  let finalDestinationPathLength = Infinity;
-
-  while (!traversalQueue.isEmpty()) {
-    const currentPoint = traversalQueue.remove();
-    const { r, c, d } = currentPoint;
-
-    if (r === rowCount - 1 && c === colCount - 1) {
-      finalDestinationPathLength = Math.min(finalDestinationPathLength, d);
+    if (currentR === heightDimension - 1 && currentC === widthDimension - 1) {
+      minimumPathLength = Math.min(minimumPathLength, currentD);
     }
 
-    for (const [dr, dc] of movementVectors) {
-      const nextR = r + dr;
-      const nextC = c + dc;
+    for (const direction of movementDirections) {
+      const nextR = currentR + direction.deltaR;
+      const nextC = currentC + direction.deltaC;
+      const nextD = currentD + 1;
+      const locationKey = `${nextR},${nextC}`;
 
-      if (nextR >= 0 && nextR < rowCount && nextC >= 0 && nextC < colCount) {
-        const neighborKey = `${nextR}_${nextC}`;
-        if (terrainMap[nextR][nextC] === "." && d + 1 < (minimumPathLengths.get(neighborKey) ?? Infinity)) {
-          minimumPathLengths.set(neighborKey, d + 1);
-          traversalQueue.add(new GridPoint(nextR, nextC, d + 1));
-        }
+      const isValidRowBound = nextR >= 0 && nextR < heightDimension;
+      const isValidColBound = nextC >= 0 && nextC < widthDimension;
+
+      if (isValidRowBound && isValidColBound && gridLayout[nextR][nextC] === "." && !visitedLocations.has(locationKey)) {
+        visitedLocations.add(locationKey);
+        explorationFrontier.push({ r: nextR, c: nextC, d: nextD });
       }
     }
   }
 
-  if (finalDestinationPathLength === Infinity) {
-    displayOutput(-1);
+  if (minimumPathLength === Number.MAX_SAFE_INTEGER) {
+    console.log(-1);
   } else {
-    let totalWalkableCells = 0;
-    for (let r = 0; r < rowCount; r++) {
-      for (let c = 0; c < colCount; c++) {
-        if (terrainMap[r][c] === ".") {
-          totalWalkableCells++;
-        }
-      }
-    }
-    const resultValue = totalWalkableCells - (finalDestinationPathLength + 1);
-    displayOutput(resultValue);
+    const totalOpenCells = gridLayout.flat().filter(cell => cell === ".").length;
+    const finalCalculation = totalOpenCells - (minimumPathLength + 1);
+    console.log(finalCalculation);
   }
-};
+}
 
-initiateProcessing();
+executePathfinding();

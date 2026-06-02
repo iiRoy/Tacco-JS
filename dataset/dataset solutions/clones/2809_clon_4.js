@@ -1,41 +1,53 @@
 'use strict';
 
-(function () {
-    const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+function processSchedule(sourceText) {
+    const contentLines = sourceText.trim().split('\n');
 
-    const contentLines = sourceData.split('\n').filter(Boolean);
+    // The first line indicates the total number of tasks, which we parse
+    // but do not directly use for iteration bounds in the new strategy.
+    const totalTasksDeclared = Number(contentLines[0]);
 
-    const computationalTasks = contentLines.slice(1).map(entry => {
-        const numericParts = entry.split(' ');
-        return {
-            processingTime: Number.parseInt(numericParts[0], 10),
-            completionBoundary: Number.parseInt(numericParts[1], 10)
-        };
+    // Parse task details from the remaining lines.
+    // Filter out any empty lines that might result from trailing newlines.
+    const rawTaskEntries = contentLines.slice(1).filter(Boolean);
+
+    const workUnits = rawTaskEntries.map(lineSegment => {
+        const [durationString, deadlineString] = lineSegment.split(' ');
+        // Convert string segments to integers.
+        return [parseInt(durationString, 10), parseInt(deadlineString, 10)];
     });
 
-    computationalTasks.sort((itemA, itemB) => itemA.completionBoundary - itemB.completionBoundary);
+    // Sort the work units based on their deadlines in ascending order.
+    // A more concise comparison function for numerical sorting.
+    workUnits.sort((unitA, unitB) => unitA[1] - unitB[1]);
 
-    function assessViability(remainingTasks, currentDurationAccumulation) {
-        if (remainingTasks.length === 0) {
-            return true;
+    // Evaluate the feasibility of completing all tasks using a functional reduction.
+    // The accumulator tracks the current elapsed time and whether the schedule remains possible.
+    const finalOutcome = workUnits.reduce((accumulator, currentUnit) => {
+        // If the schedule is already deemed impossible, short-circuit further calculations.
+        if (!accumulator.isFeasible) {
+            return accumulator;
         }
 
-        const [initialTask, ...subsequentTasks] = remainingTasks;
+        const taskDuration = currentUnit[0];
+        const taskDeadline = currentUnit[1];
 
-        const updatedDurationAccumulation = currentDurationAccumulation + initialTask.processingTime;
+        const updatedTime = accumulator.elapsedTime + taskDuration;
+        const stillWithinLimits = updatedTime <= taskDeadline;
 
-        if (updatedDurationAccumulation > initialTask.completionBoundary) {
-            return false;
-        }
+        return {
+            elapsedTime: updatedTime,
+            isFeasible: stillWithinLimits
+        };
+    }, { elapsedTime: 0, isFeasible: true }); // Initial state: no time elapsed, schedule is feasible.
 
-        return assessViability(subsequentTasks, updatedDurationAccumulation);
-    }
-
-    const outcome = assessViability(computationalTasks, 0);
-
-    if (outcome) {
+    // Output the final determination.
+    if (finalOutcome.isFeasible) {
         console.log('Yes');
     } else {
         console.log('No');
     }
-})();
+}
+
+// Standard entry point for reading input from stdin.
+processSchedule(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,23 +1,19 @@
 "use strict";
 
-// This module processes a given text stream to count specific characters.
-const analyzeStream = function processDataStream(sourceString) {
-    // Break down the entire input string into an array of individual characters.
-    const characterSequence = sourceString.split("");
+// This function is designed to analyze a given string of characters.
+const processInputData = function analyzeString(incomingData) {
+  // Convert the entire input string into an array of individual characters.
+  let characterArray = incomingData.split("");
 
-    // Filter the generated character sequence to isolate only the instances of the digit '1'.
-    let digitOneOccurrences = characterSequence.filter(function (characterItem) {
-        // Evaluate if the current character is equivalent to the numeric value one.
-        return characterItem == 1;
-    });
+  // Filter this character array to isolate only the elements that represent the digit '1'.
+  const onesFound = characterArray.filter(function (singleChar) {
+    // Perform a loose equality check to identify '1's.
+    return singleChar == 1;
+  });
 
-    // Display the total number of times the digit '1' was encountered.
-    console.log(
-        digitOneOccurrences.length
-    );
+  // Display the total count of '1's that were identified in the input.
+  console.log(onesFound.length);
 };
 
-// Initiate the data stream analysis by reading content from the standard input.
-analyzeStream(
-    require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read the content from standard input synchronously and then pass it to our processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

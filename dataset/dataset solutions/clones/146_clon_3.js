@@ -1,45 +1,55 @@
-const dataIOUtility = require("node:fs");
+const fsModule = require("fs");
 
-const primaryInputPath = "/dev/stdin";
-const textEncodingStandard = "utf8";
-const sectionBreakDelimiter = '\n\n';
-const whitespaceRemovalRegex = /\s/g;
+const PATTERN_C_VAL = "1111";
+const PATTERN_F_VAL = "111";
+const PATTERN_D_VAL = "1101";
+const PATTERN_B_VAL = "101";
+const PATTERN_G_VAL = "1000001";
+const PATTERN_A_VAL = "10000001";
 
-const patternToCategoryMap = new Map([
-    ["1111", "C"],
-    ["111", "F"],
-    ["1101", "D"],
-    ["101", "B"],
-    ["1000001", "G"],
-    ["10000001", "A"]
-]);
+function evaluateStringPatterns(inputString) {
+    let foundIndex;
 
-const fallbackCategoryIdentifier = "E";
-
-function assignCategorization(inputSequence) {
-    if (!inputSequence || typeof inputSequence !== 'string' || inputSequence.length === 0) {
-        return fallbackCategoryIdentifier;
+    foundIndex = inputString.indexOf(PATTERN_C_VAL);
+    if (foundIndex !== -1) {
+        return "C";
     }
 
-    for (let [currentPattern, associatedCategory] of patternToCategoryMap.entries()) {
-        if (inputSequence.includes(currentPattern)) {
-            return associatedCategory;
-        }
+    foundIndex = inputString.indexOf(PATTERN_F_VAL);
+    if (foundIndex !== -1) {
+        return "F";
     }
 
-    return fallbackCategoryIdentifier;
+    foundIndex = inputString.indexOf(PATTERN_D_VAL);
+    if (foundIndex !== -1) {
+        return "D";
+    }
+
+    foundIndex = inputString.indexOf(PATTERN_B_VAL);
+    if (foundIndex !== -1) {
+        return "B";
+    }
+
+    foundIndex = inputString.indexOf(PATTERN_G_VAL);
+    if (foundIndex !== -1) {
+        return "G";
+    }
+
+    foundIndex = inputString.indexOf(PATTERN_A_VAL);
+    if (foundIndex !== -1) {
+        return "A";
+    }
+
+    return "E";
 }
 
-const rawContentBuffer = dataIOUtility.readFileSync(primaryInputPath, textEncodingStandard);
+const rawFileContent = fsModule.readFileSync("/dev/stdin", "utf8");
 
-const cleanedGlobalContent = rawContentBuffer.trim();
+const trimmedContent = rawFileContent.trim();
+const inputBlocks = trimmedContent.split('\n\n');
 
-const distinctProcessingUnits = cleanedGlobalContent.split(sectionBreakDelimiter);
-
-distinctProcessingUnits.map(function(singleRawUnit) {
-    const normalizedSequence = singleRawUnit.replace(whitespaceRemovalRegex, '');
-
-    const determinedCategory = assignCategorization(normalizedSequence);
-
-    console.log(determinedCategory);
+inputBlocks.forEach((currentInputSegment) => {
+    const cleanedSegment = currentInputSegment.replace(/\s/g, '');
+    const determinedCharacterCode = evaluateStringPatterns(cleanedSegment);
+    console.log(determinedCharacterCode);
 });

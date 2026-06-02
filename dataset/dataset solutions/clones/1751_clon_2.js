@@ -1,61 +1,43 @@
 'use strict';
 
-function ProcessData (receivedContent) {
-  // Input structure description:
-  // First line: Total number of initial items
-  // Second line: Space-separated initial numeric values
-  // Third line: Number of modification queries
-  // Subsequent lines: Each line contains two numbers (old value, new value) for a query
+function ProcessInput(rawData) {
+    // This function processes the input data.
+    // The input format is expected to be:
+    // First line: N (number of elements)
+    // Second line: A1 A2 A3...An (space-separated elements)
+    // Third line: Q (number of queries)
+    // Subsequent lines: B1 C1, B2 C2, ... BQ CQ (query pairs)
+    let parsedLines = rawData.trim().split('\n');
+    const countElements = Number(parsedLines[0]);
+    let initialNumbers = parsedLines[1]
+        .split(' ')
+        .sort((valA, valB) => valA - valB)
+        .map((elementValue) => BigInt(elementValue));
+    const numQueries = Number(parsedLines[2]);
+    const queryOperations = parsedLines.splice(3).map((queryPart) => queryPart.split(' ').map((queryPart) => BigInt(queryPart)));
 
-  let contentLines = receivedContent.trim().split('\n');
+    // Initialize a frequency array for numbers up to 100000
+    let frequencyMap = new Array(100001).fill(0n);
+    // Populate the frequency map with initial numbers
+    for (const currentNum of initialNumbers) {
+        frequencyMap[currentNum] += 1n;
+    }
 
-  // Parse the total count of initial items
-  const itemCount = parseInt(contentLines[0]);
+    // Calculate the initial sum based on frequencies
+    let totalSum = frequencyMap.reduce((accumulator, freqCount, indexVal) => accumulator + freqCount * BigInt(indexVal));
 
-  // Extract, sort, and convert initial numeric values to BigInt
-  let initialNumbers = contentLines[1]
-    .split(' ')
-    .sort((valA, valB) => valA - valB)
-    .map((numStr) => BigInt(numStr));
+    // Process each query operation
+    for (const [oldVal, newVal] of queryOperations) {
+        // Calculate the change in sum due to replacing 'oldVal' with 'newVal'
+        const changeAmount = (newVal - oldVal) * frequencyMap[oldVal];
+        totalSum += changeAmount;
+        // Output the current total sum as a string
+        console.log(String(totalSum));
+        // Update the frequency map: move counts from 'oldVal' to 'newVal'
+        frequencyMap[newVal] += frequencyMap[oldVal];
+        frequencyMap[oldVal] = 0n; // Clear the count for 'oldVal'
+    }
 
-  // Parse the total count of modification queries
-  const queryCount = parseInt(contentLines[2]);
-
-  // Extract and parse all modification operations
-  const modificationsList = contentLines.splice(3).map((lineStr) =>
-    lineStr.split(' ').map((valStr) => BigInt(valStr))
-  );
-
-  // Initialize an array to store frequencies of numbers, up to a certain maximum.
-  // Using BigInt for counts to match the sum's type.
-  let occurrenceCounts = new Array(100001).fill(0n);
-
-  // Populate the frequency map with initial numbers
-  for (const element of initialNumbers) {
-    occurrenceCounts[Number(element)] += 1n;
-  }
-
-  // Calculate the initial weighted sum of all numbers
-  // Sum = (value * its frequency) for all values
-  let overallSum = occurrenceCounts.reduce((accumulator, countAtIdx, currentIdx) =>
-    accumulator + countAtIdx * BigInt(currentIdx), 0n);
-
-  // Process each modification query
-  for (const [oldVal, newVal] of modificationsList) {
-    // Calculate the change in sum due to this operation
-    const delta = (newVal - oldVal) * occurrenceCounts[Number(oldVal)];
-    overallSum += delta;
-
-    // Output the current overall sum after the modification
-    console.log(String(overallSum));
-
-    // Update the frequency map: move all occurrences from oldVal to newVal
-    occurrenceCounts[Number(newVal)] += occurrenceCounts[Number(oldVal)];
-    occurrenceCounts[Number(oldVal)] = 0n; // Clear occurrences at the old value
-  }
-
-  return; // Function completes its execution
+    return; // Function completes
 }
-
-// Read input from standard input and pass it to the processing function
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

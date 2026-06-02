@@ -1,102 +1,108 @@
 'use strict';
-class ConnectionSet {
-    constructor(nodeCount) {
-        this.representatives = Array.from({ length: nodeCount }, (_, i) => i);
-        this.groupCount = nodeCount;
+
+function Main(inputData) {
+    const lines = inputData.split("\n");
+    const dimensions = lines[0].split(" ");
+    const widthVal = parseInt(dimensions[0]);
+    const heightVal = parseInt(dimensions[1]);
+
+    const horizontalCosts = [];
+    for (let i = 0; i < widthVal; i++) {
+        horizontalCosts.push(lines[1 + i]);
     }
 
-    findRoot(elementId) {
-        if (this.representatives[elementId] === elementId) {
-            return elementId;
+    const verticalCosts = [];
+    for (let i = 0; i < heightVal; i++) {
+        verticalCosts.push(lines[1 + widthVal + i]);
+    }
+
+    // Disjoint Set Union (DSU) structure
+    let parentSets;
+    let setRanks;
+
+    function initializeDSU(nodeCount) {
+        parentSets = Array(nodeCount).fill(0).map((_, idx) => idx);
+        setRanks = Array(nodeCount).fill(0);
+    }
+
+    function findRoot(idx) {
+        if (parentSets[idx] === idx) {
+            return idx;
         }
-        this.representatives[elementId] = this.findRoot(this.representatives[elementId]);
-        return this.representatives[elementId];
+        parentSets[idx] = findRoot(parentSets[idx]); // Path compression
+        return parentSets[idx];
     }
 
-    mergeGroups(idA, idB) {
-        let rootA = this.findRoot(idA);
-        let rootB = this.findRoot(idB);
+    function uniteSets(idxA, idxB) {
+        let rootA = findRoot(idxA);
+        let rootB = findRoot(idxB);
 
         if (rootA !== rootB) {
-            this.representatives[rootB] = rootA;
-            this.groupCount--;
-            return true;
+            // Union by rank
+            if (setRanks[rootA] < setRanks[rootB]) {
+                parentSets[rootA] = rootB;
+            } else if (setRanks[rootA] > setRanks[rootB]) {
+                parentSets[rootB] = rootA;
+            } else {
+                parentSets[rootB] = rootA;
+                setRanks[rootA]++;
+            }
+            return true; // A merge occurred
         }
-        return false;
+        return false; // Already in the same set
     }
 
-    get remainingGroups() {
-        return this.groupCount;
-    }
-}
+    // Generate all possible edges with their costs
+    const allEdges = [];
+    const numCols = widthVal + 1; // Number of nodes horizontally
+    const numRows = heightVal + 1; // Number of nodes vertically
+    const totalNodes = numCols * numRows;
 
-class EdgeData {
-    constructor(originNode, targetNode, linkValue) {
-        this.start = originNode;
-        this.end = targetNode;
-        this.weight = linkValue;
-    }
-}
-
-function ProcessInput(sourceData) {
-    let textLines = sourceData.split("\n");
-    let gridDimensions = textLines[0].split(" ");
-    let gridWidth = parseInt(gridDimensions[0]);
-    let gridHeight = parseInt(gridDimensions[1]);
-
-    let horizontalLinkValues = [];
-    for (let currentIdx = 0; currentIdx < gridWidth; currentIdx++) {
-        horizontalLinkValues.push(parseInt(textLines[1 + currentIdx]) || 100000001);
-    }
-
-    let verticalLinkValues = [];
-    for (let currentIdx = 0; currentIdx < gridHeight; currentIdx++) {
-        verticalLinkValues.push(parseInt(textLines[1 + gridWidth + currentIdx]) || 100000001);
-    }
-
-    let allGraphEdges = [];
-    let totalGridPoints = (gridWidth + 1) * (gridHeight + 1);
-
-    // Generate horizontal edges
-    for (let rowIdx = 0; rowIdx <= gridHeight; rowIdx++) {
-        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
-            let pointA = (gridWidth + 1) * rowIdx + colIdx;
-            let pointB = (gridWidth + 1) * rowIdx + (colIdx + 1);
-            let edgeWeight = horizontalLinkValues[colIdx];
-            allGraphEdges.push(new EdgeData(pointA, pointB, edgeWeight));
+    // Horizontal edges: (y, x) to (y, x+1)
+    // These edges exist for 0 <= y <= heightVal and 0 <= x < widthVal
+    for (let yCoord = 0; yCoord < numRows; yCoord++) {
+        for (let xCoord = 0; xCoord < widthVal; xCoord++) {
+            const nodeIdxU = yCoord * numCols + xCoord;
+            const nodeIdxV = yCoord * numCols + (xCoord + 1);
+            const edgeWeight = parseInt(horizontalCosts[xCoord]);
+            allEdges.push({ u: nodeIdxU, v: nodeIdxV, w: edgeWeight });
         }
     }
 
-    // Generate vertical edges
-    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-        for (let colIdx = 0; colIdx <= gridWidth; colIdx++) {
-            let pointA = (gridWidth + 1) * rowIdx + colIdx;
-            let pointB = (gridWidth + 1) * (rowIdx + 1) + colIdx;
-            let edgeWeight = verticalLinkValues[rowIdx];
-            allGraphEdges.push(new EdgeData(pointA, pointB, edgeWeight));
+    // Vertical edges: (y, x) to (y+1, x)
+    // These edges exist for 0 <= y < heightVal and 0 <= x <= widthVal
+    for (let xCoord = 0; xCoord < numCols; xCoord++) {
+        for (let yCoord = 0; yCoord < heightVal; yCoord++) {
+            const nodeIdxU = yCoord * numCols + xCoord;
+            const nodeIdxV = (yCoord + 1) * numCols + xCoord;
+            const edgeWeight = parseInt(verticalCosts[yCoord]);
+            allEdges.push({ u: nodeIdxU, v: nodeIdxV, w: edgeWeight });
         }
     }
 
-    // Sort edges by weight
-    allGraphEdges.sort((edgeOne, edgeTwo) => edgeOne.weight - edgeTwo.weight);
+    // Sort all edges by weight in ascending order
+    allEdges.sort((edgeA, edgeB) => edgeA.w - edgeB.w);
 
-    let dsuManager = new ConnectionSet(totalGridPoints);
-    let cumulativeValue = 0;
-    let edgesAccepted = 0;
-    let requiredConnections = totalGridPoints - 1; // For a connected graph
+    // Initialize DSU for all nodes
+    initializeDSU(totalNodes);
 
-    for (let edgeIndex = 0; edgeIndex < allGraphEdges.length; edgeIndex++) {
-        let currentEdge = allGraphEdges[edgeIndex];
-        if (dsuManager.mergeGroups(currentEdge.start, currentEdge.end)) {
-            cumulativeValue += currentEdge.weight;
-            edgesAccepted++;
-            if (edgesAccepted === requiredConnections) {
+    let totalMstCost = 0;
+    let edgeCount = 0; // Number of edges added to the MST
+
+    // Kruskal's algorithm
+    for (const currentEdge of allEdges) {
+        if (uniteSets(currentEdge.u, currentEdge.v)) {
+            totalMstCost += currentEdge.w;
+            edgeCount++;
+            // An MST for N nodes has N-1 edges.
+            // If totalNodes is 0 or 1, totalNodes - 1 is -1 or 0, which is handled correctly.
+            if (edgeCount === totalNodes - 1) {
                 break;
             }
         }
     }
 
-    console.log(cumulativeValue);
+    console.log(totalMstCost);
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

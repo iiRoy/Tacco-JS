@@ -1,105 +1,135 @@
-const tallySetBits = (val) => {
-    let count = 0;
-    let tempValue = val;
-    while (tempValue > 0) {
-        tempValue &= (tempValue - 1);
-        count++;
-    }
-    return count;
-};
+var getParser = (function() {
+    function createInputProcessor(rawInputContent) {
+        var allInputLines = rawInputContent.trim().split('\n');
+        var currentLinePointer = 0;
+        var currentLineTokensForGrabItem = [];
+        var tokensRemainingForGrabItem = 0;
 
-const acquisitionModule = (function() {
-    function createAcquirer(dataPayload) {
-        return new DataAcquirer(dataPayload);
-    }
-
-    function DataAcquirer(sourceText) {
-        this.rawLines = sourceText.trim().split('\n');
-        this.lineCursor = 0;
-        this.tokenBufferForLine = [];
-    }
-
-    DataAcquirer.prototype.retrieveNextNumericalToken = function() {
-        if (this.tokenBufferForLine.length === 0) {
-            if (this.lineCursor >= this.rawLines.length) {
-                throw new Error("Input exhaustion.");
+        function retrieveNextItemToken() {
+            if (tokensRemainingForGrabItem === 0) {
+                if (currentLinePointer >= allInputLines.length) {
+                    throw new Error("Input exhausted for 'grabItem' method.");
+                }
+                currentLineTokensForGrabItem = allInputLines[currentLinePointer].split(' ').reverse();
+                tokensRemainingForGrabItem = currentLineTokensForGrabItem.length;
+                currentLinePointer++;
             }
-            this.tokenBufferForLine = this.rawLines[this.lineCursor].split(' ');
-            this.lineCursor++;
+            tokensRemainingForGrabItem--;
+            return currentLineTokensForGrabItem.pop();
         }
-        return parseInt(this.tokenBufferForLine.shift(), 10);
-    };
 
-    return createAcquirer;
+        return {
+            grabItem: function(returnAsString) {
+                var token = retrieveNextItemToken();
+                return returnAsString ? token : Number(token);
+            },
+
+            grabLine: function(returnAsString) {
+                if (currentLinePointer >= allInputLines.length) {
+                    throw new Error("Input exhausted for 'grabLine' method.");
+                }
+                var lineContent = allInputLines[currentLinePointer++];
+                var tokens = lineContent.split(' ');
+                return returnAsString ? tokens : tokens.map(function(val) { return Number(val); });
+            },
+
+            grabMatrix: function(lineCount, returnAsString) {
+                if (currentLinePointer + lineCount > allInputLines.length) {
+                    throw new Error("Not enough lines for 'grabMatrix' method.");
+                }
+                var matrixResult = [];
+                for (var i = 0; i < lineCount; i++) {
+                    var lineContent = allInputLines[currentLinePointer++];
+                    var tokens = lineContent.split(' ');
+                    matrixResult.push(returnAsString ? tokens : tokens.map(function(val) { return Number(val); }));
+                }
+                return matrixResult;
+            },
+
+            grabRawLines: function(lineCount, returnAsString) {
+                if (currentLinePointer + lineCount > allInputLines.length) {
+                    throw new Error("Not enough lines for 'grabRawLines' method.");
+                }
+                var rawLinesResult = allInputLines.slice(currentLinePointer, currentLinePointer + lineCount);
+                currentLinePointer += lineCount;
+                return returnAsString ? rawLinesResult : rawLinesResult.map(function(val) { return Number(val); });
+            }
+        };
+    }
+    return createInputProcessor;
 })();
 
-function executePathFinding() {
-    const totalDimensions = inputProcessor.retrieveNextNumericalToken();
-    const originPoint = inputProcessor.retrieveNextNumericalToken();
-    const destinationPoint = inputProcessor.retrieveNextNumericalToken();
+var inputReader = getParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const originBitSum = tallySetBits(originPoint);
-    const destinationBitSum = tallySetBits(destinationPoint);
+console.log(processMainLogic());
 
-    if ((originBitSum + destinationBitSum) % 2 !== 0) {
-        console.log("NO");
-        return;
+function processMainLogic() {
+    var bitCount = inputReader.grabItem();
+    var startValue = inputReader.grabItem();
+    var endValue = inputReader.grabItem();
+    var totalSetBits = 0;
+
+    for (var bitPosition = 0; bitPosition < bitCount; bitPosition++) {
+        var currentBitMask = 1 << bitPosition;
+        if (startValue & currentBitMask) totalSetBits++;
+        if (endValue & currentBitMask) totalSetBits++;
     }
 
-    const finalPathArray = new Array(1 << totalDimensions);
+    if (totalSetBits % 2 === 0) return "NO";
 
-    const recursiveSegmentBuilder = (currentStartNode, currentEndNode, currentLockedBits, currentArrayIndexOffset) => {
-        if (currentStartNode === currentEndNode) {
-            finalPathArray[currentArrayIndexOffset] = currentStartNode;
-            return;
+    var pathSequence = Array(1 << bitCount);
+
+    function generatePath(initialCurrentVal, initialTargetVal, initialFixedBitsMask, initialOutputIndex) {
+        var callStack = [[initialCurrentVal, initialTargetVal, initialFixedBitsMask, initialOutputIndex]];
+
+        while (callStack.length > 0) {
+            var currentFrame = callStack.pop();
+            var currentVal = currentFrame[0];
+            var targetVal = currentFrame[1];
+            var fixedBitsMask = currentFrame[2];
+            var outputIndex = currentFrame[3];
+
+            if (currentVal === targetVal) {
+                pathSequence[outputIndex] = currentVal;
+                continue;
+            }
+
+            var xorDifference = currentVal ^ targetVal;
+            var intermediateY = currentVal;
+            var intermediateZ = currentVal;
+            var foundFirstCommonBit = false;
+            var foundFirstDiffBit = false;
+            var fixedBitCount = 0;
+            var firstDiffBitMask = 0;
+
+            for (var bitPosition = 0; bitPosition < bitCount; bitPosition++) {
+                var currentBitMask = 1 << bitPosition;
+                if (currentBitMask & fixedBitsMask) {
+                    fixedBitCount++;
+                    continue;
+                }
+
+                if ((xorDifference & currentBitMask) === 0) {
+                    if (!foundFirstCommonBit) {
+                        foundFirstCommonBit = true;
+                        intermediateY ^= currentBitMask;
+                        intermediateZ ^= currentBitMask;
+                    }
+                } else {
+                    if (!foundFirstDiffBit) {
+                        foundFirstDiffBit = true;
+                        intermediateZ ^= currentBitMask;
+                        firstDiffBitMask = currentBitMask;
+                    }
+                }
+            }
+
+            callStack.push([intermediateZ, targetVal, fixedBitsMask | firstDiffBitMask, outputIndex + (1 << (bitCount - fixedBitCount - 1))]);
+            callStack.push([currentVal, intermediateY, fixedBitsMask, outputIndex]);
         }
+    }
 
-        const bitDifferences = currentStartNode ^ currentEndNode;
-        let nextLockedBits = currentLockedBits;
-
-        let selectedSharedBitIndex = -1;
-        let selectedVariedBitIndex = -1;
-
-        const allBitsMask = (1 << totalDimensions) - 1; 
-        
-        const effectiveDifferingBits = bitDifferences & (~currentLockedBits) & allBitsMask;
-        const effectiveCommonBits = (~bitDifferences) & (~currentLockedBits) & allBitsMask;
-
-        // Using bit manipulation to find the lowest set bit index (LSB)
-        // This replaces the iterative loop in the original's `f` function for `u` and `v` flags.
-        if (effectiveCommonBits !== 0) {
-            selectedSharedBitIndex = Math.log2(effectiveCommonBits & -effectiveCommonBits);
-        }
-        if (effectiveDifferingBits !== 0) {
-            selectedVariedBitIndex = Math.log2(effectiveDifferingBits & -effectiveDifferingBits);
-        }
-
-        let tempPathMiddleA = currentStartNode;
-        let tempPathMiddleB = currentStartNode;
-
-        // Apply bit flips based on selected dimensions, mimicking original `u` and `v` logic
-        if (selectedSharedBitIndex !== -1) {
-            const sharedBitModifier = 1 << selectedSharedBitIndex;
-            tempPathMiddleA ^= sharedBitModifier;
-            tempPathMiddleB ^= sharedBitModifier;
-        }
-        if (selectedVariedBitIndex !== -1) {
-            const variedBitModifier = 1 << selectedVariedBitIndex;
-            tempPathMiddleB ^= variedBitModifier;
-            nextLockedBits |= variedBitModifier;
-        }
-
-        const countOfLockedBits = tallySetBits(nextLockedBits);
-        const subdivisionOffset = (1 << (totalDimensions - countOfLockedBits - 1));
-
-        recursiveSegmentBuilder(currentStartNode, tempPathMiddleA, nextLockedBits, currentArrayIndexOffset);
-        recursiveSegmentBuilder(tempPathMiddleB, currentEndNode, nextLockedBits, currentArrayIndexOffset + subdivisionOffset);
-    };
-
+    generatePath(startValue, endValue, 0, 0);
     console.log("YES");
-    recursiveSegmentBuilder(originPoint, destinationPoint, 0, 0);
-    console.log(finalPathArray.join(" "));
+    return pathSequence.join(" ");
 }
-
-const inputProcessor = acquisitionModule(require("fs").readFileSync("/dev/stdin", "utf8"));
-executePathFinding();

@@ -1,56 +1,49 @@
-// Function to reorder elements around a chosen pivot within an array segment
-function segmentArray( arrayData, startIdx, endIdx )
-{
-    // The pivot element is chosen from the last position of the current segment
-    const pivotVal = arrayData[endIdx];
+function segmentArray(dataElements, startPoint, endPoint) {
+  // Select the pivot element from the end of the current segment
+  var pivotValue = dataElements[endPoint];
+  // Initialize an index for elements smaller than the pivot
+  var lesserBoundary = startPoint - 1;
 
-    // Initialize a pointer, 'lesserPtr', to track the boundary of elements smaller than the pivot
-    let lesserPtr = startIdx - 1;
-
-    // Iterate through the array segment from the beginning up to (but not including) the pivot element
-    for ( let currentIdx = startIdx; currentIdx < endIdx; currentIdx++ )
-    {
-        // If the current element encountered is less than or equal to the pivot value
-        if ( arrayData[currentIdx] <= pivotVal )
-        {
-            // Increment the 'lesserPtr' to point to the next position for a smaller element
-            lesserPtr++;
-
-            // Perform a swap: move the element at 'currentIdx' to the 'lesserPtr' position
-            let temporary = arrayData[lesserPtr];
-            arrayData[lesserPtr] = arrayData[currentIdx];
-            arrayData[currentIdx] = temporary;
-        }
+  // Iterate through the segment from the start to just before the pivot
+  for (var iteratorIndex = startPoint; iteratorIndex < endPoint; iteratorIndex++) {
+    // If the current element is less than or equal to the pivot
+    if (dataElements[iteratorIndex] <= pivotValue) {
+      // Increment the boundary for smaller elements
+      lesserBoundary++;
+      // Swap the current element with the element at the lesserBoundary
+      var swapBuffer = dataElements[lesserBoundary];
+      dataElements[lesserBoundary] = dataElements[iteratorIndex];
+      dataElements[iteratorIndex] = swapBuffer;
     }
+  }
 
-    // After the loop, place the pivot element into its final sorted position
-    // It should be placed immediately after all elements that are smaller than it (at lesserPtr + 1)
-    let temporary = arrayData[lesserPtr + 1];
-    arrayData[lesserPtr + 1] = arrayData[endIdx]; // Move pivot to its final spot
-    arrayData[endIdx] = temporary; // Move the element that was at (lesserPtr + 1) to the pivot's old spot
+  // After the loop, place the pivot element in its correct sorted position
+  // Swap the pivot with the element just after the lesserBoundary
+  var swapBuffer = dataElements[lesserBoundary + 1];
+  dataElements[lesserBoundary + 1] = dataElements[endPoint];
+  dataElements[endPoint] = swapBuffer;
 
-    // Return the final index where the pivot element is now located
-    return lesserPtr + 1;
+  // Return the final index of the pivot element
+  return lesserBoundary + 1;
 }
 
-// Acquire the 'fs' (file system) module to handle input operations
-var rawDataString = require('fs') . readFileSync ( '/dev/stdin', 'utf8' ) ;
-// Split the entire raw input string into an array of individual lines
-var parsedLines = rawDataString.split ( '\n' ) ;
+// Read input from standard input
+var rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into an array of lines
+var processedLines = rawInputContent.split('\n');
 
-// Extract the first line from the input, convert it to a number, representing the total element count
-var elementCount = +parsedLines.shift ( ) ;
-// Extract the next line, split it by spaces, and then transform each resulting string part into a number
-var arrayData = parsedLines.shift ( ) . split ( ' ' ) . map (
-    function ( itemString ) {
-        return +itemString ; // Convert the string item to a number
-    }
-) ;
+// The first line contains the total number of items (not used in this specific logic)
+var totalItems = +processedLines.shift();
+// The second line contains space-separated numbers, convert them to an array of numbers
+var dataElements = processedLines.shift().split(' ').map(function(strItem) {
+  return +strItem;
+});
 
-// Invoke the partitioning function on the 'arrayData', specifying the full range
-// The result is the final index of the pivot element after rearrangement
-var pivotResultIdx = segmentArray ( arrayData, 0, arrayData.length - 1 ) ;
-// Modify the element at the 'pivotResultIdx' by enclosing its value in square brackets
-arrayData[pivotResultIdx] = '[' + arrayData[pivotResultIdx] + ']' ;
-// Output the modified array elements, joined by a single space, to the console
-console.log ( arrayData.join ( ' ' ) ) ;
+// Perform the partitioning operation on the entire array
+var pivotIndexResult = segmentArray(dataElements, 0, dataElements.length - 1);
+
+// Enclose the pivot element in square brackets for output
+dataElements[pivotIndexResult] = '[' + dataElements[pivotIndexResult] + ']';
+
+// Print the modified array elements joined by spaces
+console.log(dataElements.join(' '));

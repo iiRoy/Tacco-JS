@@ -1,23 +1,15 @@
-var determineResult = function(v1, v2, v3) {
-  var midDiff = v3 - v1 - v2;
-  return (midDiff > 0 && (4 * v1 * v2 < midDiff * midDiff)) ? 'Yes' : 'No';
-};
+'use strict';
+function ProcessInput(rawContent) {
+  const [firstLine] = rawContent.split("\n");
+  const [numOne, numTwo, numThree] = firstLine.split(' ').map(Number);
 
-var processAndOutput = function(rawContentString) {
-  var lines = rawContentString.split('\n');
-  var numbersAsStrings = lines[0].split(' ');
-  var n1 = parseFloat(numbersAsStrings[0]);
-  var n2 = parseFloat(numbersAsStrings[1]);
-  var n3 = parseFloat(numbersAsStrings[2]);
+  const intermediateValue = numThree - numOne - numTwo;
 
-  var finalDecision = determineResult(n1, n2, n3);
-  process.stdout.write(finalDecision + '\n');
-};
+  const finalVerdict = (intermediateValue > 0 && 4 * numOne * numTwo < intermediateValue * intermediateValue)
+    ? 'Yes'
+    : 'No';
 
-var bootstrapper = function(pathIdentifier) {
-  var fileSystemModule = require('node:fs');
-  var fullContent = fileSystemModule.readFileSync(pathIdentifier, 'utf8');
-  processAndOutput(fullContent);
-};
+  console.log(finalVerdict);
+}
 
-bootstrapper('/dev/stdin');
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

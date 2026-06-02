@@ -1,38 +1,29 @@
-((sourceStream) => {
-    const cleansedContent = sourceStream.trimEnd();
-    const contentSegments = cleansedContent.split('\n');
+(function(rawData) {
+  const processCircleData = (c1x, c1y, r1, c2x, c2y, r2) => {
+    const deltaX = c2x - c1x;
+    const deltaY = c2y - c1y;
+    const centerDistance = Math.hypot(deltaX, deltaY);
 
-    const totalTrials = parseInt(contentSegments[0], 10);
-    const inputLinesForTrials = contentSegments.slice(1);
+    const sumOfRadii = r1 + r2;
+    const absoluteRadiusDifference = Math.abs(r1 - r2);
 
-    const checkCircleRelation = (x1, y1, r1, x2, y2, r2) => {
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const distSq = (dx * dx) + (dy * dy);
-        const actualDist = Math.sqrt(distSq);
+    if (centerDistance > sumOfRadii) {
+      return 0;
+    } else if (centerDistance < absoluteRadiusDifference) {
+      return (r1 > r2) ? 2 : -2;
+    } else {
+      return 1;
+    }
+  };
 
-        const sumR = r1 + r2;
-        const diffR_B_A = r2 - r1;
-        const diffR_A_B = r1 - r2;
+  const inputLines = rawData.split('\n').filter(Boolean);
+  const numberOfCases = Number(inputLines[0]);
 
-        if (actualDist > sumR) {
-            return 0;
-        } else if (actualDist < diffR_B_A) {
-            return -2;
-        } else if (actualDist < diffR_A_B) {
-            return 2;
-        } else {
-            return 1;
-        }
-    };
+  inputLines.slice(1, numberOfCases + 1)
+    .map(lineContent => {
+      const [c1x, c1y, r1, c2x, c2y, r2] = lineContent.split(' ').map(Number);
+      return processCircleData(c1x, c1y, r1, c2x, c2y, r2);
+    })
+    .forEach(computedResult => console.log(computedResult));
 
-    const trialOutcomes = inputLinesForTrials.map((currentTrialLine) => {
-        const numericValues = currentTrialLine.split(' ').map(parseFloat);
-        return checkCircleRelation(...numericValues);
-    });
-
-    trialOutcomes.forEach((finalResult) => {
-        console.log(finalResult);
-    });
-
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

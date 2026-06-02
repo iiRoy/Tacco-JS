@@ -1,90 +1,82 @@
-/*
- * This module provides functionality for searching within sorted data.
- * It reads input from standard input, processes it, and performs
- * an iterative search operation.
- */
+// This function performs a binary search on a pre-defined global sorted array.
+// It takes a target value and returns the number of comparisons (iterations)
+// required to find the value or determine its absence.
+function findInSortedArray(targetValue) {
+    let lowIndex = 0; // The starting index for the search range (inclusive).
+    let highIndex = sortedData.length; // The ending index for the search range (exclusive).
+    let iterationCount = 0; // A counter to track how many steps the search takes.
 
-/**
- * Executes an iterative search for a specific numeric value within a globally accessible,
- * pre-sorted array of numbers. This function is an example of Type II code cloning.
- * @param {number} targetVal The specific numeric element that needs to be found.
- * @returns {number} The total count of steps or iterations performed during the search process.
- */
-function findPosition(targetVal) {
-    let lowerBound = 0; /*  Initialize the starting index for the search segment. */
-    let upperBound = numericDataSet.length; /*  Set the ending index to the total size of the array. */
-    let searchCycleCount = 0; /*  Initialize a counter to track the number of iterations. */
-
-    // Begin an indefinite loop for the core search algorithm.
+    // The core binary search loop. It continues until the search range is empty.
     while (true) {
-        searchCycleCount++; // Increment the iteration counter for the current cycle.
+        iterationCount++; // Increment the counter for each comparison step.
 
-        // If the lower bound meets or surpasses the upper bound, it means the search space has collapsed.
-        if (lowerBound >= upperBound) {
-            break; // Exit the loop; the element is not found or the range is invalid.
+        // If the lower bound meets or exceeds the upper bound, the element is not in the array.
+        if (lowIndex >= highIndex) {
+            break; // Exit the loop as the search range has collapsed.
         }
 
-        // Compute the midpoint index of the current search interval.
-        // Math.floor ensures an integer index is used for array access.
-        const middleIndex = Math.floor((lowerBound + upperBound) / 2);
+        // Calculate the middle index of the current search segment.
+        // Math.floor ensures we get an integer index.
+        const midPoint = Math.floor((lowIndex + highIndex) / 2);
 
-        // Check if the element at the computed middle index matches the target value.
-        if (numericDataSet[middleIndex] === targetVal) {
-            return searchCycleCount; // Element found, return the total iterations.
+        // Compare the element at the midpoint with our target value.
+        if (sortedData[midPoint] === targetValue) {
+            return iterationCount; // Target found, return the number of iterations.
         }
-        // If the target value is numerically smaller than the element at the middle index,
-        // the search space is narrowed to the left half.
-        else if (targetVal < numericDataSet[middleIndex]) {
-            upperBound = middleIndex; // Adjust the upper boundary to the middle index.
+        // If the target is smaller than the midpoint element, search the left half.
+        else if (targetValue < sortedData[midPoint]) {
+            highIndex = midPoint; // Adjust the upper bound to the midpoint.
         }
-        // If the target value is numerically larger, the search space is narrowed to the right half.
+        // If the target is larger than the midpoint element, search the right half.
         else {
-            lowerBound = middleIndex + 1; // Adjust the lower boundary to one position past the middle.
+            lowIndex = midPoint + 1; // Adjust the lower bound to one past the midpoint.
         }
     }
-
-    // If the loop concludes without finding the target, return the final count of iterations.
-    return searchCycleCount;
+    // If the loop completes without finding the target, return the total iterations.
+    // This count represents the effort to confirm absence.
+    return iterationCount;
 }
 
-// --- Main Program Flow Starts Here ---
+// Declare a global array that will hold the numbers to be searched.
+// This array is re-populated for each test case from the input.
+let sortedData = [];
 
-// Acquire all incoming data from the standard input stream, interpreting it as UTF-8 text.
-const rawDataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read all standard input as a single UTF-8 string.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Pre-process the raw input: remove any leading/trailing whitespace and then divide it into an array of lines.
-const parsedLines = (rawDataStream.trim()).split("\n");
+// Process the raw input: remove leading/trailing whitespace and split into lines.
+const lineSegments = (rawData.trim()).split("\n");
 
-let linePointer = 0; // Establish an index to navigate through the 'parsedLines' array.
+// Initialize an index to navigate through the lines of input.
+let currentLineIdx = 0;
 
-// Initiate the primary loop designed to process multiple distinct test cases.
+// Main program loop: processes multiple test cases from the input.
+// It continues until a test case with size 0 is encountered.
 while (true) {
-    // Extract the count of elements for the current test case from the present line.
-    // The '-0' idiom converts the string representation into a numerical type.
-    let countOfElements = parsedLines[linePointer] - 0;
-    linePointer++; // Advance the line pointer to the subsequent line.
+    // Read the number of elements for the current test case.
+    // The `-0` is a concise way to convert a string to a number.
+    const dataSize = lineSegments[currentLineIdx] - 0;
+    currentLineIdx++; // Advance to the next line in the input.
 
-    // A zero value for 'countOfElements' signals the termination of input data.
-    if (countOfElements === 0) {
-        break; // Terminate the main processing loop.
+    // Check for the termination condition: a data size of 0.
+    if (dataSize === 0) {
+        break; // Exit the main processing loop.
     }
 
-    // Declare and initialize an empty array to hold the numeric data for the current test case.
-    // This array will be utilized by the 'findPosition' function.
-    let numericDataSet = [];
+    // Clear the global array to prepare for the new set of numbers for this test case.
+    sortedData = [];
 
-    // Iterate to populate the 'numericDataSet' array with 'countOfElements' values from the input.
-    for (let indexVal = 0; indexVal < countOfElements; indexVal++) {
-        numericDataSet.push(parsedLines[linePointer] - 0); // Append the parsed number to the data set.
-        linePointer++; // Move the line pointer to the next input line.
+    // Populate the global array with `dataSize` numbers from the input.
+    for (let loopVar = 0; loopVar < dataSize; loopVar++) {
+        sortedData.push(lineSegments[currentLineIdx] - 0); // Add number to array.
+        currentLineIdx++; // Advance to the next line.
     }
 
-    // Parse the target search value from the next line in the input.
-    let searchTarget = parsedLines[linePointer] - 0;
-    linePointer++; // Increment the line pointer once more.
+    // Read the search value for the current test case.
+    const searchValue = lineSegments[currentLineIdx] - 0;
+    currentLineIdx++; // Advance to the next line.
 
-    // Invoke the search function with the determined target and output its result to the console.
-    console.log(findPosition(searchTarget));
+    // Execute the binary search function with the current search value
+    // and print the returned iteration count to the console.
+    console.log(findInSortedArray(searchValue));
 }
-
-// End of script execution.

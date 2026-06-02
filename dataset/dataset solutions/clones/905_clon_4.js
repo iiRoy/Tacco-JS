@@ -1,100 +1,113 @@
-class InputParser {
-    constructor() {
-        this.dataBuffer = '';
-        this.tokenPointer = 0;
-        this.allTokens = [];
+var stream = '';
+var cursor = 0;
 
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
+function nextNumber() {
+    return +stream[cursor++];
+}
 
-        process.stdin.on('data', (chunk) => {
-            this.dataBuffer += chunk;
-        });
+function nextToken() {
+    return stream[cursor++];
+}
 
-        process.stdin.on('end', () => {
-            this.allTokens = this.dataBuffer.trim().split(/\s+/);
-            this.executeParenthesisSolver();
-        });
+function profileOf(token) {
+    var balance = 0;
+    var lowest = 0;
+
+    for (var i = 0; i < token.length; ++i) {
+        balance += token.charAt(i) === '(' ? 1 : -1;
+        if (balance < lowest) {
+            lowest = balance;
+        }
     }
 
-    retrieveNextInteger() {
-        return parseInt(this.allTokens[this.tokenPointer++], 10);
+    var missingLeft = -lowest;
+    return [missingLeft, balance + missingLeft];
+}
+
+function MinIndexTree(values) {
+    this.size = 1;
+    while (this.size < values.length) {
+        this.size <<= 1;
     }
 
-    retrieveNextText() {
-        return this.allTokens[this.tokenPointer++];
+    this.data = new Array(this.size * 2);
+    for (var i = 0; i < this.data.length; ++i) {
+        this.data[i] = Infinity;
     }
-
-    executeParenthesisSolver() {
-        const totalInputCount = this.retrieveNextInteger();
-        const initialSegmentStrings = [];
-        for (let idx = 0; idx < totalInputCount; ++idx) {
-            initialSegmentStrings.push(this.retrieveNextText());
-        }
-
-        const processedSegmentCharacteristics = initialSegmentStrings.map(segment => this.analyzeParenthesisSegment(segment));
-
-        const overallNetBalance = processedSegmentCharacteristics.reduce((accumulator, current) => accumulator + (current.addedOpen - current.neededClose), 0);
-        if (overallNetBalance !== 0) {
-            console.log('No');
-            return;
-        }
-
-        const segmentsThatOnlyAddBalance = processedSegmentCharacteristics.filter(segment => segment.neededClose === 0);
-        const segmentsThatRequireBalance = processedSegmentCharacteristics.filter(segment => segment.neededClose > 0);
-
-        segmentsThatOnlyAddBalance.sort((first, second) => second.addedOpen - first.addedOpen);
-
-        segmentsThatRequireBalance.sort((first, second) => {
-            if (first.neededClose !== second.neededClose) {
-                return first.neededClose - second.neededClose;
-            }
-            return second.addedOpen - first.addedOpen;
-        });
-
-        let currentAccumulatedBalance = 0;
-        let solutionAchievable = true;
-
-        for (const segment of segmentsThatOnlyAddBalance) {
-            currentAccumulatedBalance += segment.addedOpen;
-        }
-
-        for (const segment of segmentsThatRequireBalance) {
-            if (currentAccumulatedBalance < segment.neededClose) {
-                solutionAchievable = false;
-                break;
-            }
-            currentAccumulatedBalance += (segment.addedOpen - segment.neededClose);
-        }
-        
-        if (currentAccumulatedBalance !== 0) {
-             solutionAchievable = false;
-        }
-
-        console.log(solutionAchievable ? 'Yes' : 'No');
+    for (var j = 0; j < values.length; ++j) {
+        this.data[this.size + j] = values[j][0];
     }
-
-    analyzeParenthesisSegment(segmentString) {
-        let temporaryOpenBalance = 0;
-        let leadingClosingDeficit = 0;
-
-        Array.from(segmentString).forEach(character => {
-            if (character === '(') {
-                temporaryOpenBalance++;
-            } else { // character === ')'
-                if (temporaryOpenBalance > 0) {
-                    temporaryOpenBalance--;
-                } else {
-                    leadingClosingDeficit++;
-                }
-            }
-        });
-
-        return {
-            neededClose: leadingClosingDeficit,
-            addedOpen: temporaryOpenBalance
-        };
+    for (var k = this.size - 1; k > 0; --k) {
+        this.data[k] = Math.min(this.data[k << 1], this.data[(k << 1) | 1]);
     }
 }
 
-new InputParser();
+MinIndexTree.prototype.firstAtMost = function(limit) {
+    if (this.data[1] > limit) {
+        return -1;
+    }
+
+    var node = 1;
+    while (node < this.size) {
+        var left = node << 1;
+        if (this.data[left] <= limit) {
+            node = left;
+        } else {
+            node = left | 1;
+        }
+    }
+    return node - this.size;
+};
+
+MinIndexTree.prototype.erase = function(index) {
+    var node = this.size + index;
+    this.data[node] = Infinity;
+    node >>= 1;
+    while (node > 0) {
+        this.data[node] = Math.min(this.data[node << 1], this.data[(node << 1) | 1]);
+        node >>= 1;
+    }
+};
+
+function solve() {
+    var n = nextNumber();
+    var words = [];
+
+    for (var i = 0; i < n; ++i) {
+        words[i] = nextToken();
+    }
+
+    var blocks = [];
+    for (var j = 0; j < n; ++j) {
+        blocks[j] = profileOf(words[j]);
+    }
+
+    var tree = new MinIndexTree(blocks);
+    var balance = 0;
+    var possible = true;
+
+    for (var step = 0; step < n; ++step) {
+        var chosen = tree.firstAtMost(balance);
+        if (chosen < 0) {
+            possible = false;
+            break;
+        }
+
+        balance += blocks[chosen][1] - blocks[chosen][0];
+        tree.erase(chosen);
+    }
+
+    console.log(possible && balance === 0 ? 'Yes' : 'No');
+}
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function(chunk) {
+    stream += chunk;
+});
+
+process.stdin.on('end', function() {
+    stream = stream.trim().split(/\s+/);
+    solve();
+});

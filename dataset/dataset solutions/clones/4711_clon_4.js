@@ -1,20 +1,21 @@
-const dataStream = require("node:fs").readFileSync("/dev/stdin", "utf8");
+'use strict';
 
-const interpretFigure = (segment) => ({
-    '1': 14
-}[segment] || Number(segment));
-
-const [playerOneScore, playerTwoScore] = dataStream
-    .trim()
-    .split(/\s+/)
-    .map(interpretFigure);
-
-const resultMatrix = {
-    '0': 'Draw',
-    '1': 'Alice',
-    '-1': 'Bob'
+const scoreAdjuster = (inputToken) => {
+  const specialValueMap = { '1': 14 };
+  return specialValueMap[inputToken] ?? Number(inputToken);
 };
 
-const comparisonKey = (playerOneScore === playerTwoScore) ? 0 : (playerOneScore > playerTwoScore ? 1 : -1);
+function processGame(inputLine) {
+  const [firstPlayerRaw, secondPlayerRaw] = inputLine.split(' ');
 
-console.log(resultMatrix[comparisonKey]);
+  const firstPlayerScore = scoreAdjuster(firstPlayerRaw);
+  const secondPlayerScore = scoreAdjuster(secondPlayerRaw);
+
+  const gameResult = firstPlayerScore === secondPlayerScore
+    ? 'Draw'
+    : (firstPlayerScore > secondPlayerScore ? 'Alice' : 'Bob');
+
+  console.log(gameResult);
+}
+
+processGame(require("fs").readFileSync("/dev/stdin", "utf8"));

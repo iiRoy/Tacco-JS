@@ -1,41 +1,35 @@
-const fileSystemUtility = require('node:fs');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const processClockTimes = (rawData) => {
-    const calculateAngularSeparation = (hourInput, minuteInput) => {
-        const minuteHandAngularUnit = minuteInput;
-        const hourHandAngularUnit = (hourInput % 12) * 5 + minuteInput / 12;
-        
-        let rawAngularUnitDifference = Math.abs(hourHandAngularUnit - minuteHandAngularUnit);
-        
-        let angularSeparationDegrees = rawAngularUnitDifference * 6;
-        
-        return Math.min(angularSeparationDegrees, 360 - angularSeparationDegrees);
-    };
-
-    const classifyAngle = (angleInDegrees) => {
-        const assessmentCriteria = [
-            { upperBoundary: 30, outcomeLabel: "alert" },
-            { upperBoundary: 90, outcomeLabel: "warning" },
-            { upperBoundary: 181, outcomeLabel: "safe" }
-        ];
-
-        return assessmentCriteria.find(criterion => angleInDegrees < criterion.upperBoundary).outcomeLabel;
-    };
-
-    const dataLines = rawData.trim().split('\n');
-    const numberOfTimeEntries = Number(dataLines[0]);
-    
-    const computedResults = dataLines.slice(1, numberOfTimeEntries + 1).map(timeString => {
-        const timePattern = timeString.match(/^(\d{1,2}):(\d{2})$/);
-        
-        const parsedHour = Number(timePattern[1]);
-        const parsedMinute = Number(timePattern[2]);
-
-        const finalAngularGap = calculateAngularSeparation(parsedHour, parsedMinute);
-        return classifyAngle(finalAngularGap);
-    });
-
-    computedResults.forEach(resultText => console.log(resultText));
+const processInputLines = (rawData) => {
+    const cleanedLines = rawData.split('\n').filter(Boolean);
+    const entryCount = Number(cleanedLines.shift());
+    return { entryCount, timeStrings: cleanedLines };
 };
 
-processClockTimes(fileSystemUtility.readFileSync('/dev/stdin', 'utf8'));
+const calculateClockAngle = (timeValue) => {
+    const [hourPart, minutePart] = timeValue.split(':');
+    const currentHour = Number(hourPart);
+    const currentMinute = Number(minutePart);
+
+    const hourHandPosition = (currentHour % 12) * 5 + currentMinute / 12;
+    const minuteHandPosition = currentMinute;
+
+    const absolutePositionDifference = Math.abs(hourHandPosition - minuteHandPosition);
+    const finalAngleDegrees = Math.min(absolutePositionDifference, 60 - absolutePositionDifference) * 6;
+
+    return finalAngleDegrees;
+};
+
+const evaluateAngleCategory = (angleMeasurement) => {
+    return (angleMeasurement >= 0 && angleMeasurement < 30) ? "alert" :
+           (angleMeasurement >= 90 && angleMeasurement <= 180) ? "safe" :
+           "warning";
+};
+
+const { entryCount, timeStrings } = processInputLines(sourceData);
+
+timeStrings.slice(0, entryCount).forEach(timeEntry => {
+    const angleResult = calculateClockAngle(timeEntry);
+    const categoryOutcome = evaluateAngleCategory(angleResult);
+    console.log(categoryOutcome);
+});

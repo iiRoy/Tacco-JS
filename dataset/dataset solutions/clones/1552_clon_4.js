@@ -1,64 +1,37 @@
-const assessCharacterDifferences = (firstSegment, secondSegment) => {
-  return Array.from({ length: firstSegment.length }, (_, charPosition) => {
-    const firstChar = firstSegment[charPosition];
-    const secondChar = secondSegment[charPosition];
-    return firstChar !== secondChar ? 1 : 0;
-  }).reduce((totalDifferences, comparisonResult) => totalDifferences + comparisonResult, 0);
+var fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+var lines = fileData.split("\n");
+var sourceText = lines[0];
+var targetPattern = lines[1];
+
+var sourceLength = sourceText.length;
+var patternLength = targetPattern.length;
+var maxOffset = sourceLength - patternLength;
+
+var currentMinimumMismatch = Infinity;
+
+var calculateMismatches = function(segment, pattern) {
+    return Array.from(segment).reduce(function(mismatchCount, charInSegment, charIndex) {
+        return mismatchCount + (charInSegment !== pattern[charIndex] ? 1 : 0);
+    }, 0);
 };
 
-const processInputSegments = (
-  primarySource,
-  secondaryTarget,
-  currentDisplacement,
-  maxDisplacement,
-  cumulativeScores
-) => {
-  if (currentDisplacement > maxDisplacement) {
-    return;
-  }
+var processSegmentsRecursively = function(currentOffset) {
+    if (currentOffset > maxOffset) {
+        return;
+    }
 
-  const currentSlice = primarySource.substring(
-    currentDisplacement,
-    currentDisplacement + secondaryTarget.length
-  );
+    var currentSegment = sourceText.substring(currentOffset, currentOffset + patternLength);
 
-  if (currentSlice === secondaryTarget) {
-    process.stdout.write("0\n");
-    process.exit(0);
-  } else {
-    const calculatedDifferences = assessCharacterDifferences(currentSlice, secondaryTarget);
-    const updatedScores = [...cumulativeScores, calculatedDifferences];
-    const minimumFound = updatedScores.reduce(
-      (minSoFar, currentScore) => Math.min(minSoFar, currentScore),
-      Infinity
-    );
-    process.stdout.write(minimumFound + "\n");
-    processInputSegments(
-      primarySource,
-      secondaryTarget,
-      currentDisplacement + 1,
-      maxDisplacement,
-      updatedScores
-    );
-  }
+    if (currentSegment === targetPattern) {
+        console.log(0);
+        process.exit(0);
+    } else {
+        var segmentMismatchCount = calculateMismatches(currentSegment, targetPattern);
+        currentMinimumMismatch = Math.min(currentMinimumMismatch, segmentMismatchCount);
+        console.log(currentMinimumMismatch);
+    }
+
+    processSegmentsRecursively(currentOffset + 1);
 };
 
-const rawTextContent = require("node:fs").readFileSync(0, "utf8");
-const textLines = rawTextContent.split("\n");
-
-const firstLineSource = textLines[0];
-const secondLineTarget = textLines[1];
-
-const primaryLengthMetric = firstLineSource.length;
-const secondaryLengthMetric = secondLineTarget.length;
-const maximumDisplacementValue = primaryLengthMetric - secondaryLengthMetric;
-
-if (maximumDisplacementValue >= 0) {
-  processInputSegments(
-    firstLineSource,
-    secondLineTarget,
-    0,
-    maximumDisplacementValue,
-    []
-  );
-}
+processSegmentsRecursively(0);

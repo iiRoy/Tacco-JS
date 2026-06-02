@@ -1,63 +1,40 @@
-function performBubbleSortAnalysis(inputContentStream) {
-    const { datasetLength, numberArray } = parseInputForSorting(inputContentStream);
+function main(inputString) {
+    const inputLines = inputString.split('\n');
 
-    if (datasetLength <= 1) {
-        console.log(numberArray.join(' '));
-        console.log(0);
-        return;
-    }
+    const parseNumericArrayLine = (lineContent) => lineContent.split(' ').map(Number);
 
-    let totalExchangeCount = 0;
-    let rightmostSortedBoundary = 0;
-    let didAnySwapOccurInCurrentPass;
+    const arrayLength = Number(inputLines[0]);
+    const dataArray = parseNumericArrayLine(inputLines[1]);
 
-    do {
-        didAnySwapOccurInCurrentPass = false;
+    let elementsAlreadySorted = 0;
 
-        for (let currentElementIndex = datasetLength - 1; currentElementIndex > rightmostSortedBoundary; currentElementIndex--) {
-            const precedingElementIndex = currentElementIndex - 1;
+    const swapCounterReference = { value: 0 };
 
-            const valueAtCurrent = numberArray[currentElementIndex];
-            const valueAtPreceding = numberArray[precedingElementIndex];
-
-            if (valueAtCurrent < valueAtPreceding) {
-                [numberArray[currentElementIndex], numberArray[precedingElementIndex]] = [valueAtPreceding, valueAtCurrent];
-                didAnySwapOccurInCurrentPass = true;
-                totalExchangeCount++;
+    const executeBubblePass = (currentArray, sortedBoundary, swapRef) => {
+        let passHadSwap = false;
+        const loopStartIdx = arrayLength - 1;
+        for (let currentIdx = loopStartIdx; currentIdx > sortedBoundary; currentIdx--) {
+            if (currentArray[currentIdx] < currentArray[currentIdx - 1]) {
+                [currentArray[currentIdx], currentArray[currentIdx - 1]] = [currentArray[currentIdx - 1], currentArray[currentIdx]];
+                passHadSwap = true;
+                swapRef.value++;
             }
         }
-        rightmostSortedBoundary++;
-    } while (didAnySwapOccurInCurrentPass);
-
-    console.log(numberArray.join(' '));
-    console.log(totalExchangeCount);
-}
-
-function parseInputForSorting(rawTextPayload) {
-    const inputLinesCollection = rawTextPayload.split(/[\r\n]+/);
-
-    const arraySizeDeclared = parseInt(inputLinesCollection.shift(), 10);
-
-    const numericDataElements = inputLinesCollection.shift()
-                                                   .split(/\s+/)
-                                                   .filter(entry => entry !== '')
-                                                   .map(Number);
-    
-    const actualDatasetLength = numericDataElements.length;
-
-    return {
-        datasetLength: actualDatasetLength,
-        numberArray: numericDataElements
+        return passHadSwap;
     };
+
+    while (true) {
+        const didAnySwapInPass = executeBubblePass(dataArray, elementsAlreadySorted, swapCounterReference);
+        if (!didAnySwapInPass) {
+            break;
+        }
+        elementsAlreadySorted++;
+    }
+
+    const totalSwapCount = swapCounterReference.value;
+
+    console.log(dataArray.join(' '));
+    console.log(totalSwapCount);
 }
 
-(function executeApplication() {
-    try {
-        const fileSystem = require('fs');
-        const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-        performBubbleSortAnalysis(rawInputData);
-    } catch (operationError) {
-        console.error("An error occurred during input processing or sorting execution:");
-        console.error("Details:", operationError.message);
-    }
-})();
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,83 +1,54 @@
-const Toolbox = {
-    convertToInt: (textValue) => Number.parseInt(textValue, 10),
-    convertToFloat: (textValue) => Number.parseFloat(textValue),
+let collectedData = '';
 
-    orderElementsAsc: (dataArray, typeIndicator = 'text') => {
-        const tempCopy = [...dataArray];
-        if (typeIndicator === 'numeric') {
-            return tempCopy.sort((valX, valY) => valX - valY);
-        }
-        return tempCopy.sort();
-    },
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-    orderElementsDesc: (dataArray, typeIndicator = 'text') => {
-        const tempCopy = [...dataArray];
-        if (typeIndicator === 'numeric') {
-            return tempCopy.sort((valX, valY) => valY - valX);
-        }
-        return tempCopy.sort().reverse();
-    },
-
-    pruneSpecific: (dataArray, itemToRemove) => {
-        return dataArray.filter(currentElement => currentElement !== itemToRemove);
-    }
-};
-
-const InputManager = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+process.stdin.on('data', (dataChunk) => {
+  collectedData += dataChunk;
 });
 
-let gatheredRawLines = [];
+process.stdin.on('end', () => {
+  let processedInputLines = collectedData.split('\n').map((lineSegment) => lineSegment.trim());
 
-InputManager.on('line', (incomingRowText) => {
-    gatheredRawLines.push(incomingRowText.trim());
+  if (processedInputLines.length > 0 && processedInputLines[processedInputLines.length - 1] === '') {
+    processedInputLines.pop();
+  }
+
+  evaluateConnectivity(processedInputLines);
 });
 
-InputManager.on('close', () => {
-    if (gatheredRawLines.length > 0 && gatheredRawLines[gatheredRawLines.length - 1] === '') {
-        gatheredRawLines.pop();
-    }
-    commenceAnalysis(gatheredRawLines);
-});
+function evaluateConnectivity(inputDataSegments) {
+  const sourceString = inputDataSegments[0];
+  let currentAccumulator = '';
+  const parsedTokens = [];
 
-function commenceAnalysis(processedDataUnits) {
-    const primarySourceText = processedDataUnits[0]; // This can be undefined
-
-    const parsedConstituents = [];
-    let currentScanPosition = 0;
-
-    // Manual string splitting to diverge from String.prototype.split()
-    if (primarySourceText !== undefined) {
-        while (true) {
-            const spaceOccurrence = primarySourceText.indexOf(' ', currentScanPosition);
-            if (spaceOccurrence === -1) {
-                parsedConstituents.push(primarySourceText.substring(currentScanPosition));
-                break;
-            }
-            parsedConstituents.push(primarySourceText.substring(currentScanPosition, spaceOccurrence));
-            currentScanPosition = spaceOccurrence + 1;
-        }
+  for (let charIndex = 0; charIndex < sourceString.length; charIndex++) {
+    const character = sourceString[charIndex];
+    if (character === ' ') {
+      parsedTokens.push(currentAccumulator.trim());
+      currentAccumulator = '';
     } else {
-        // If primarySourceText is undefined, parsedConstituents remains empty
-        // This will lead to undefined access below, matching original error behavior
+      currentAccumulator += character;
     }
+  }
+  parsedTokens.push(currentAccumulator.trim());
 
-    const componentAlpha = parsedConstituents[0];
-    const componentBeta = parsedConstituents[1];
-    const componentGamma = parsedConstituents[2];
+  const firstComponent = parsedTokens[0];
+  const secondComponent = parsedTokens[1];
+  const thirdComponent = parsedTokens[2];
 
-    // Using String.prototype.at() for character access to diverge from direct indexing
-    // and correctly handle out-of-bounds/empty string cases (returns undefined)
-    const finalCharAlpha = componentAlpha.at(-1);
-    const initialCharBeta = componentBeta.at(0);
-    const finalCharBeta = componentBeta.at(-1);
-    const initialCharGamma = componentGamma.at(0);
+  function checkSequenceLink(componentA, componentB, componentC) {
+    const lastCharOfA = componentA.slice(-1);
+    const firstCharOfB = componentB.charAt(0);
+    const lastCharOfB = componentB.slice(-1);
+    const firstCharOfC = componentC.charAt(0);
 
-    const conditionMetA = (finalCharAlpha === initialCharBeta);
-    const conditionMetB = (finalCharBeta === initialCharGamma);
+    if (lastCharOfA === firstCharOfB && lastCharOfB === firstCharOfC) {
+      return "YES";
+    } else {
+      return "NO";
+    }
+  }
 
-    const decisionOutput = (conditionMetA && conditionMetB) ? "YES" : "NO";
-    process.stdout.write(decisionOutput + "\n");
+  console.log(checkSequenceLink(firstComponent, secondComponent, thirdComponent));
 }

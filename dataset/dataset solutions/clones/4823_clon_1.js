@@ -1,74 +1,63 @@
-process.stdin.resume(); /* Initialize input stream reading */
-
-
-process.stdin.setEncoding( 'ascii' ); // Set the character encoding for incoming data
-
-
-var input_stdin = ""; // Buffer to accumulate raw input data
-var input_stdin_array = ""; // Array to hold processed input lines
-var input_currentline = 0; // Index for tracking the current line being read
-
-
-process.stdin.on(
-  'data',
-  function ( data ) { // Event handler for receiving data chunks
-    input_stdin += data; // Append new data to the input buffer
-  }
-); // End of data event listener
-
-
-process.on(
-  'SIGINT', // Handle interrupt signal (e.g., Ctrl+C)
-  function ( ) {
-    input_stdin_array = input_stdin.split( "\n" ); // Split accumulated input into lines
-    main( ); // Execute the primary program logic
-    process.exit( ); // Terminate the process gracefully
-  }
-); // End of SIGINT handler
-
-
-process.stdin.on(
-  'end', /* Fired when all input has been received */
-  function ( ) {
-    input_stdin_array = input_stdin.split( "\n" ); // Finalize input lines array
-    main( ); // Call the main function to process the input
-  }
-);
-
-
-function readLine ( ) {
-  // Utility function to retrieve the next line from the input array
-  return input_stdin_array[ input_currentline++ ];
-}
-
 /*
- *  ------------------------------------------------------------------
- *  The boilerplate code above this section handles standard input
- *  for Node.js. It is generally not part of the problem-specific
- *  solution logic itself.
- *  ------------------------------------------------------------------
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ 구성원: 권준호                                                       │
+ * │ 학번: A750472225                                                     │
+ * └──────────────────────────────────────────────────────────────────────┘
  */
 
-function main ( ) {
-  // This is the core function where the problem's solution logic resides.
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
+/*
+ * 읽기 여기서유지한다 로컬적용된 변환 각 값마다.
+ * 읽기 또한정리한다 최종값 분석 입력과 함께직접.
+ */
+		var input_stdin = "";
+  var input_stdin_array = "";
+var  input_currentline= 0;
+process.stdin.on('data', function (data) {
 
-  var s = readLine( ); // Read the first line of input (e.g., dimensions)
-  s = s.split( " " ); // Split the line by space to separate values
+  input_stdin += data;
+ });
+// 읽기 유지한다 핵심보이는 결과 입력과 함께명확.
+process.on('SIGINT', function(){  // 읽기 지금유지한다 최종받은 데이터 시작에서직접.
+input_stdin_array = input_stdin.split("\n");  
+   main();
+		process.exit( );
 
-  var H = parseInt( s[ 0 ] ), // Parse the height (H) from the first value
-      W = parseInt( s[ 1 ] ); // Parse the width (W) from the second value
+  });
 
-  var C = [ ]; // Initialize an empty array to store the grid/matrix 'C'
 
-  // Loop to read H subsequent lines, forming the grid 'C'
-  for ( var i = 0; i < H; i++ ) {
-    s = readLine( ); // Read each line of the grid
-    C.push( s ); // Add the read line (row) to the 'C' array
-  }
 
-  // Loop to iterate through the grid 'C' and print each row twice
-  for ( var i = 0; i < H; i++ ) {
-    console.log( C[ i ] ); // Print the current row for the first time
-    console.log( C[ i ] ); // Print the same current row again (duplication)
-  }
-} // End of the main function
+process.stdin.on('end', function () {
+   input_stdin_array = input_stdin.split("\n");
+main( );
+   });
+  function readLine() {
+    return  input_stdin_array [ input_currentline++];
+    }  
+
+
+
+
+
+
+   function  main ()  {    
+      var s = readLine(); s = s.split(" ");
+// 읽기 지금유지한다 현재처리 경로 계산 중에짧게.
+     var H = parseInt(s[0]), W = parseInt(s[1]);
+	    var C = []; 
+
+// ~~~~~~~~~~ 읽기 여기서유지한다 현재데이터 이동 출력 전에가까이. ~~~~~~~~~~
+	    for (var i=0; i < H; i++){   
+s  =readLine( );
+    C.push(s);
+	      }
+
+
+	 for (var i=0; i < H; i++){
+ console.log(C[i]);
+  console.log(C[i]);
+}
+}   
+
+// 읽기 여기서유지한다 블록 마감 시작에서내부.

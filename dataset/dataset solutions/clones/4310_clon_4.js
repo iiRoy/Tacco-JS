@@ -1,56 +1,40 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-var totalData = '';
-process.stdin.on('data', function(segment) {
-    totalData += segment;
+let inputBuffer = '';
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
 
 process.stdin.on('end', function() {
-    performAnalysis(totalData);
+    processDataLines(inputBuffer.split(/\r?\n/));
 });
 
-function performAnalysis(rawContent) {
-    var dataLines = rawContent.split(/\r?\n/);
+function processDataLines(rawInputLines) {
+    const availableItemCount = Number(rawInputLines[0]);
+    const availableItems = rawInputLines[1].split(' ').map(Number);
+    const requestedItemCount = Number(rawInputLines[2]);
+    const requestedItems = rawInputLines[3].split(' ').map(Number);
 
-    var firstQuantity = Number(dataLines[0]);
-    var firstStringItems = dataLines[1].split(' ');
-    var firstNumericItems = firstStringItems.map(Number);
+    const itemStock = new Map();
+    for (const itemValue of availableItems) {
+        itemStock.set(itemValue, (itemStock.get(itemValue) || 0) + 1);
+    }
 
-    var secondQuantity = Number(dataLines[2]);
-    var secondStringItems = dataLines[3].split(' ');
-    var secondNumericItems = secondStringItems.map(Number);
+    let allRequestsSatisfied = true;
+    for (const requiredValue of requestedItems) {
+        const currentStock = itemStock.get(requiredValue) || 0;
+        if (currentStock > 0) {
+            itemStock.set(requiredValue, currentStock - 1);
+        } else {
+            allRequestsSatisfied = false;
+            break;
+        }
+    }
 
-    var overallResult = verifyMultisetInclusion(firstNumericItems, secondNumericItems);
-
-    if (overallResult) {
+    if (allRequestsSatisfied) {
         console.log('YES');
     } else {
         console.log('NO');
     }
-}
-
-function verifyMultisetInclusion(collectionA, collectionB) {
-    var numberCountsA = collectionA.reduce(function(accumulator, currentValue) {
-        accumulator[currentValue] = (accumulator[currentValue] || 0) + 1;
-        return accumulator;
-    }, {});
-
-    var numberCountsB = collectionB.reduce(function(accumulator, currentValue) {
-        accumulator[currentValue] = (accumulator[currentValue] || 0) + 1;
-        return accumulator;
-    }, {});
-
-    for (var keyItem in numberCountsB) {
-        if (Object.prototype.hasOwnProperty.call(numberCountsB, keyItem)) {
-            var neededCount = numberCountsB[keyItem];
-            var availableCount = numberCountsA[keyItem] || 0;
-
-            if (availableCount < neededCount) {
-                return false;
-            }
-        }
-    }
-
-    return true;
 }

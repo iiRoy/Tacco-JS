@@ -1,39 +1,49 @@
 "use strict";
 
-let inputBuffer = null;
-let currentLineIndex = 0;
+const establishInputProcessor = () => {
+    const sourceTextContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+    const lineSegments = sourceTextContent.split("\n");
+    let currentSegmentIndex = 0;
+    const totalSegmentCount = lineSegments.length;
 
-const primeInputSystem = () => {
-    const rawTextContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-    inputBuffer = rawTextContent.trim().split("\n");
+    const verifySegmentAvailability = () => {
+        if (currentSegmentIndex >= totalSegmentCount) {
+            throw "InputSequenceDepletedError";
+        }
+    };
+
+    const processorInstance = {
+        retrieveNextSegment: () => {
+            verifySegmentAvailability();
+            return lineSegments[currentSegmentIndex++];
+        },
+        retrieveNextInteger: () => parseInt(processorInstance.retrieveNextSegment()),
+        retrieveStringElements: () => processorInstance.retrieveNextSegment().split(" "),
+        retrieveIntegerElements: () => processorInstance.retrieveNextSegment().split(" ").map(Number),
+        retrieveCharacterElements: () => processorInstance.retrieveNextSegment().split(""),
+        hasMoreSegments: () => currentSegmentIndex < totalSegmentCount
+    };
+    return processorInstance;
 };
 
-const obtainNextSourceLine = () => {
-    if (currentLineIndex >= inputBuffer.length) {
-        throw new Error("Input data exhausted.");
-    }
-    return inputBuffer[currentLineIndex++];
+const dataStreamHandler = establishInputProcessor();
+
+const fetchLine = () => dataStreamHandler.retrieveNextSegment();
+const fetchInteger = () => dataStreamHandler.retrieveNextInteger();
+const fetchStringArray = () => dataStreamHandler.retrieveStringElements();
+const fetchIntegerArray = () => dataStreamHandler.retrieveIntegerElements();
+const fetchCharArray = () => dataStreamHandler.retrieveCharacterElements();
+const checkMoreInput = () => dataStreamHandler.hasMoreSegments();
+const outputResult = (...values) => console.log(...values);
+
+const executePrimaryLogic = () => {
+    const [firstNumericalValue, secondNumericalValue] = fetchIntegerArray();
+
+    const finalCalculationOutcome = (secondNumericalValue <= (2 * firstNumericalValue))
+        ? Math.floor(secondNumericalValue / 2)
+        : Math.floor((2 * firstNumericalValue + secondNumericalValue) / 4);
+
+    outputResult(finalCalculationOutcome);
 };
 
-const parseTwoIntegers = () => {
-    const lineSegments = obtainNextSourceLine().split(" ");
-    return [parseInt(lineSegments[0], 10), parseInt(lineSegments[1], 10)];
-};
-
-const runComputation = () => {
-    primeInputSystem();
-
-    const [firstValue, secondValue] = parseTwoIntegers();
-
-    let computedResult;
-
-    if (secondValue <= (firstValue * 2)) {
-        computedResult = Math.floor(secondValue / 2);
-    } else {
-        computedResult = Math.floor(((firstValue << 1) + secondValue) / 4);
-    }
-
-    console.info(computedResult);
-};
-
-runComputation();
+executePrimaryLogic();

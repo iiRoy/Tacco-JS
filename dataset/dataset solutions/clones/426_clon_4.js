@@ -1,60 +1,49 @@
-const fetchSourceData = () => require('node:fs').readFileSync(0, 'utf8');
+const fileSystemModule = require('fs');
+const sourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const dataLines = sourceData.trim().split("\n");
 
-const symbolMapping = Object.freeze({
-    0: 'A',
-    1: 'B',
-    2: 'C',
-    3: 'D',
-    4: 'E'
-});
+function* groupProducer(lines) {
+    let currentCollection = [];
+    const requiredSize = 5;
 
-const processAllRecords = (fullContent) => {
-    const lines = fullContent.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-    
-    const finalOutputLines = lines.reduce((accumulator, currentLine) => {
-        let { temporaryGroup, processedResults } = accumulator;
-
-        if (temporaryGroup.length === 0 && currentLine === '0 0') {
-            accumulator.terminate = true;
-            return accumulator;
-        }
-        
-        if (accumulator.terminate) {
-            return accumulator;
+    for (const line of lines) {
+        // Termination condition check: if the collection is empty and "0 0" is encountered, stop.
+        if (currentCollection.length === 0 && line === "0 0") {
+            return; // Exit the generator function
         }
 
-        temporaryGroup.push(currentLine);
+        // Parse the current line, sum its numeric components, and add to the collection.
+        const numericParts = line.split(" ").map(Number);
+        currentCollection.push(numericParts[0] + numericParts[1]);
 
-        if (temporaryGroup.length === 5) {
-            const numericPairs = temporaryGroup.map(str => str.split(' ').map(Number));
-            const combinedValues = numericPairs.map(pair => pair[0] + pair[1]);
+        // If the collection has reached the required size, yield it as a complete group
+        // and then reset the collection for the next group.
+        if (currentCollection.length === requiredSize) {
+            yield currentCollection;
+            currentCollection = [];
+        }
+    }
+    // Any remaining elements in `currentCollection` (if not a full group of 5) are implicitly
+    // discarded, matching the original code's behavior which only processes full groups.
+}
 
-            let greatestValue = -Infinity;
-            let greatestIdx = -1;
+const charMappings = ['A', 'B', 'C', 'D', 'E'];
 
-            for (let k = 0; k < combinedValues.length; k++) {
-                if (combinedValues[k] > greatestValue) {
-                    greatestValue = combinedValues[k];
-                    greatestIdx = k;
-                }
+// Iterate through the groups produced by the generator.
+for (const group of groupProducer(dataLines)) {
+    // For each complete group, find the maximum sum and its corresponding index.
+    const { value: finalMaxSum, index: finalCharIndex } = Array.from(group.entries()).reduce(
+        (accumulator, [idx, val]) => {
+            // If the current value is greater than the accumulated maximum, update.
+            if (val > accumulator.value) {
+                return { value: val, index: idx };
             }
+            // Otherwise, keep the current accumulated maximum.
+            return accumulator;
+        },
+        { value: -Infinity, index: -1 } // Initial accumulator for comparison.
+    );
 
-            const chosenSymbol = symbolMapping[greatestIdx];
-            processedResults.push(`${chosenSymbol} ${greatestValue}`);
-            
-            accumulator.temporaryGroup = [];
-        }
-        
-        return accumulator;
-    }, { temporaryGroup: [], processedResults: [], terminate: false });
-
-    return finalOutputLines.processedResults;
-};
-
-const beginExecution = () => {
-    const rawData = fetchSourceData();
-    const reports = processAllRecords(rawData);
-    reports.forEach(entry => console.log(entry));
-};
-
-beginExecution();
+    // Print the character corresponding to the maximum sum's index and the maximum sum itself.
+    console.log(`${charMappings[finalCharIndex]} ${finalMaxSum}`);
+}

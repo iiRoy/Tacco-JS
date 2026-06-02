@@ -1,22 +1,25 @@
-process.stdin.on('data', function(inputBlob) {
-    var sourceData = inputBlob.toString().trim();
-    var extractedValues = sourceData.match(/\d+/g);
+"use strict";
 
-    var valP = +extractedValues[0];
-    var valQ = +extractedValues[1];
-    var valR = +extractedValues[2];
+const extractNumericValues = (rawInputContent) => {
+    const firstLineSegment = rawInputContent.split('\n')[0];
+    const spaceSeparatedTokens = firstLineSegment.split(' ');
 
-    var intermediateCalc = (valQ / valP);
-    var adjustedValue = intermediateCalc | 0;
+    const numericalComponents = spaceSeparatedTokens.reduce((accumulator, currentToken, idx) => {
+        if (idx < 3) {
+            accumulator.push(parseInt(currentToken, 10));
+        }
+        return accumulator;
+    }, []);
 
-    var ultimateOutcome;
-    if (adjustedValue >= valR) {
-        ultimateOutcome = valR;
-    } else {
-        ultimateOutcome = adjustedValue;
-    }
+    return numericalComponents;
+};
 
-    process.stdout.write(ultimateOutcome.toString() + '\n');
-});
+const processAndOutputResult = (inputDataString) => {
+    const [alpha, beta, gamma] = extractNumericValues(inputDataString);
 
-process.stdin.resume();
+    const calculatedQuotient = Math.floor(beta / alpha);
+    
+    console.log(Math.min(gamma, calculatedQuotient));
+};
+
+processAndOutputResult(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,17 +1,21 @@
-function EvaluateInputs ( sourceData ) {
-  // Process the incoming text to extract key elements.
-  sourceData = sourceData . split ( "\n" ) [ 0 ] . split ( " " ) ;
+function ProcessInput(rawData) {
+    // This section parses the incoming raw string data.
+    // It first splits by newline, takes the first line, then splits that line by spaces.
+    let parsedData = rawData.split("\n")[0].split(" ");
 
-  var componentOne = sourceData [ 0 ] ;
-  var componentTwo = sourceData [ 1 ] ;
-  var componentThree = sourceData [ 2 ] ;
+    // Individual components are extracted from the processed array.
+    let valX = parsedData[0];
+    let valY = parsedData[1];
+    let valZ = parsedData[2];
 
-  var finalVerdict = ( componentOne == componentTwo && componentTwo == componentThree )
-    ? "Identical"
-    : "Different" ;
+    // A conditional check determines the final output string.
+    // The outcome is "Yes" if all three values are strictly equal, otherwise "No".
+    const finalOutcome = (valX == valY && valY == valZ) ? "Yes" : "No";
 
-  console . log ( '%s' , finalVerdict ) ;
+    // The computed outcome is then printed to the standard output.
+    console.log('%s', finalOutcome);
 }
 
-// Do not modify anything below this line (reads from standard input and invokes the primary function).
-EvaluateInputs ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This line handles reading input from the standard input stream and initiating the processing.
+// It is typically used in competitive programming environments and should remain as is for execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

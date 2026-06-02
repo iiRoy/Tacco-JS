@@ -1,16 +1,24 @@
-function processData(entireContent) {
-    const lineSegments = entireContent.split('\n');
+function processInputData(sourceText) {
+  const lineSegments = sourceText.split('\n');
 
-    const headCount = parseInt(lineSegments[0].split(' ')[0], 10);
+  console.log(lineSegments);
 
-    const collectedItems = lineSegments.flatMap((textLine, position) => {
-        if (position >= 2 && position % 2 === 0) {
-            return textLine.split(' ');
-        }
-        return [];
-    });
+  const initialValue = Number.parseInt(lineSegments[0].split(' ')[0], 10);
 
-    const distinctElementCount = new Set(collectedItems).size;
+  const allCollectedItems = lineSegments.reduce((accumulator, currentLine, currentIndex) => {
+    if (currentIndex >= 2 && currentIndex % 2 === 0) {
+      return accumulator.concat(currentLine.split(' '));
+    }
+    return accumulator;
+  }, []);
+  
+  const uniqueSet = new Set(allCollectedItems);
+  const distinctElementsArray = Array.from(uniqueSet);
 
-    return headCount - distinctElementCount;
+  console.log(distinctElementsArray);
+
+  const finalResult = initialValue - distinctElementsArray.length;
+  console.log(finalResult);
+  
+  return finalResult;
 }

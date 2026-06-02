@@ -1,121 +1,103 @@
-const makeItem = (datum, subA = null, subB = null) => ({
-  datum: datum,
-  subA: subA,
-  subB: subB
-});
+const makeNode = (val, l = null, r = null) => ({ val, l, r });
 
-const makeStructure = () => {
-  let topElement = null;
+const makeBinarySearchTree = () => {
+    let top = null;
 
-  // This function handles the very first insertion, then reassigns itself
-  let addValueInternal = (itemValue) => {
-    topElement = makeItem(itemValue);
-    // For all subsequent insertions, use a recursive approach
-    addValueInternal = (newValue) => {
-      const newItem = makeItem(newValue);
-      const insertRecursively = (currentElement) => {
-        if (newValue < currentElement.datum) {
-          if (currentElement.subA === null) {
-            currentElement.subA = newItem;
-          } else {
-            insertRecursively(currentElement.subA);
-          }
-        } else { // newValue >= currentElement.datum
-          if (currentElement.subB === null) {
-            currentElement.subB = newItem;
-          } else {
-            insertRecursively(currentElement.subB);
-          }
-        }
-      };
-      insertRecursively(topElement);
+    const addValue = (val) => {
+        const insertRecursive = (current, newValue) => {
+            if (current === null) {
+                return makeNode(newValue);
+            }
+            if (newValue < current.val) {
+                current.l = insertRecursive(current.l, newValue);
+            } else {
+                current.r = insertRecursive(current.r, newValue);
+            }
+            return current;
+        };
+        top = insertRecursive(top, val);
     };
-  };
 
-  const locateValue = (targetValue) => {
-    let current = topElement;
-    // Iterate through the structure to find the value
-    while (current !== null) {
-      if (current.datum === targetValue) {
-        return true;
-      }
-      current = (targetValue < current.datum) ? current.subA : current.subB;
-    }
-    return false;
-  };
+    const locateValue = (valToFind) => {
+        let currentSpot = top;
+        while (currentSpot !== null) {
+            if (currentSpot.val === valToFind) {
+                return true;
+            }
+            currentSpot = (valToFind < currentSpot.val) ? currentSpot.l : currentSpot.r;
+        }
+        return false;
+    };
 
-  const displayMidOrder = () => {
-    let resultParts = [];
-    let current = topElement;
-    let traversalStack = []; // Explicit stack for iterative traversal
+    const traverseInOrder = () => {
+        let outputString = '';
+        const nodeStack = [];
+        let currentPointer = top;
 
-    while (current !== null || traversalStack.length > 0) {
-      // Traverse left subtree
-      while (current !== null) {
-        traversalStack.push(current);
-        current = current.subA;
-      }
-      current = traversalStack.pop(); // Visit node
-      resultParts.push(current.datum);
-      current = current.subB; // Traverse right subtree
-    }
-    console.log(resultParts.map(d => ` ${d}`).join(''));
-  };
+        while (currentPointer !== null || nodeStack.length > 0) {
+            while (currentPointer !== null) {
+                nodeStack.push(currentPointer);
+                currentPointer = currentPointer.l;
+            }
+            currentPointer = nodeStack.pop();
+            outputString += ` ${currentPointer.val}`;
+            currentPointer = currentPointer.r;
+        }
+        return outputString;
+    };
 
-  const displayFrontOrder = () => {
-    let resultParts = [];
-    if (topElement === null) {
-      console.log(''); // Consistent with original's empty output for empty tree
-      return;
-    }
+    const traversePreOrder = () => {
+        let outputString = '';
+        if (top === null) {
+            return outputString;
+        }
 
-    let traversalStack = [topElement]; // Start with the root
-    while (traversalStack.length > 0) {
-      let current = traversalStack.pop(); // Visit node
-      resultParts.push(current.datum);
-      // Push right child first so left is processed first (LIFO stack behavior)
-      if (current.subB !== null) {
-        traversalStack.push(current.subB);
-      }
-      if (current.subA !== null) {
-        traversalStack.push(current.subA);
-      }
-    }
-    console.log(resultParts.map(d => ` ${d}`).join(''));
-  };
+        const nodeStack = [top];
+        while (nodeStack.length > 0) {
+            const currentSpot = nodeStack.pop();
+            outputString += ` ${currentSpot.val}`;
 
-  const outputAll = () => {
-    displayMidOrder();
-    displayFrontOrder();
-  };
+            if (currentSpot.r !== null) {
+                nodeStack.push(currentSpot.r);
+            }
+            if (currentSpot.l !== null) {
+                nodeStack.push(currentSpot.l);
+            }
+        }
+        return outputString;
+    };
 
-  return {
-    addValue: (val) => addValueInternal(val), // Public interface for insertion
-    checkPresence: locateValue,
-    showAll: outputAll
-  };
+    const displayAll = () => {
+        console.log(traverseInOrder());
+        console.log(traversePreOrder());
+    };
+
+    return {
+        addValue,
+        locateValue,
+        displayAll
+    };
 };
 
 (function processInput() {
-  const sourceLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const countOfOperations = Number(sourceLines.shift()); // Reads the count, but not used (matches original)
+    const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+    const totalCommands = Number(inputLines.shift());
 
-  const structureInstance = makeStructure();
-  sourceLines.forEach(function(commandText) {
-    const commandParts = commandText.split(' ');
-    const operationType = commandParts[0];
-    const operationParam = Number(commandParts[1]);
+    const searchTree = makeBinarySearchTree();
+    for (const commandLine of inputLines) {
+        const firstChar = commandLine.charAt(0);
+        const parts = commandLine.split(' ');
 
-    switch(operationType) {
-      case 'i':
-        structureInstance.addValue(operationParam);
-        break;
-      case 'f':
-        console.log(structureInstance.checkPresence(operationParam) ? 'yes' : 'no');
-        break;
-      default: // 'p' for print
-        structureInstance.showAll();
-        break;
+        switch (firstChar) {
+            case 'i':
+                searchTree.addValue(Number(parts[1]));
+                break;
+            case 'f':
+                console.log(searchTree.locateValue(Number(parts[1])) ? 'yes' : 'no');
+                break;
+            default:
+                searchTree.displayAll();
+                break;
+        }
     }
-  });
 })();

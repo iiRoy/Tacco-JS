@@ -1,27 +1,38 @@
-function calculateCombinations(inputString)
-{  // This function processes a string input to determine a specific count based on two numerical values.
-  var stringParts = inputString.split(' '); // Divides the input text into an array using space as a delimiter.
-  var countS = Number(stringParts[0]);  // Converts the first segment of the array to a numerical quantity representing 'S' items.
-  var countC = Number(stringParts[1]);  // Converts the second segment of the array to a numerical quantity representing 'C' items.
-  var outcome = 0; // Initializes a variable to store the final computed value, starting at zero.
+function ProcessInput(rawData) {
+  // Divide the incoming string into separate parts based on space characters.
+  let tokenizedData = rawData.split(' ');
 
-    // This block iterates to find combinations where one 'S' unit and two 'C' units are consumed together.
-  while (countS >= 1 && countC >= 2)
-  {
-    countS = countS - 1; // Decrements the 'S' unit count by one for each successful combination.
-    countC = countC - 2; // Decrements the 'C' unit count by two for each successful combination.
-    outcome = outcome + 1; // Increments the total number of combinations found.
+  // Extract the first numeric value, representing the count of 's' items.
+  let sCount = Number(tokenizedData[0]);
+
+  // Extract the second numeric value, representing the count of 'c' items.
+  let cCount = Number(tokenizedData[1]);
+
+  // Initialize a variable to keep track of the total number of successful combinations.
+  let finalTally = 0;
+
+  // First phase: Prioritize forming combinations that require both 's' and 'c' items.
+  // Each such combination consumes one 's' and two 'c' items.
+  while (sCount >= 1 && cCount >= 2) {
+    sCount -= 1; // Decrement the available 's' items.
+    cCount -= 2; // Decrement the available 'c' items.
+    finalTally += 1; // Increment the count of completed combinations.
   }
 
-  // This block continues to find combinations using only 'C' units, where four 'C' units form one combination.
-  while (countC >= 4)
-  {
-    countC -= 4; // Reduces the 'C' unit count by four.
-    outcome++; // Increases the total combination tally.
+  // Second phase: After exhausting 's' items or 'c' items for the first type of combination,
+  // form combinations using only 'c' items. Each such combination requires four 'c' items.
+  while (cCount >= 4) {
+    cCount -= 4; // Decrement the available 'c' items by four.
+    finalTally += 1; // Increment the count of completed combinations.
   }
-  console.log(outcome); // Prints the final calculated total of combinations to the console.
+
+  // Display the final calculated total number of combinations.
+  console.log(finalTally);
 }
 
-// A commented-out line showing how the function could be called with a direct string.
-// calculateCombinations("50 100");
-calculateCombinations(require("fs").readFileSync("/dev/stdin", "utf8")); // Executes the core logic by reading data from standard input.
+// The following line is commented out in the original, so it remains commented here.
+// ProcessInput("12345 678901");
+
+// Read the input data from standard input using Node.js file system module
+// and then pass it to our processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

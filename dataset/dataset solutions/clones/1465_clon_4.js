@@ -1,45 +1,39 @@
-const inputRouter = require('readline');
-const dataStream = process.stdin;
-const outputChannel = process.stdout;
+function processGameData(inputLines) {
+    const totalRounds = parseInt(inputLines[0], 10);
+    const gameRecords = inputLines.slice(1, totalRounds + 1);
 
-const scoreTally = (gameSequence) => {
-    const roundCount = Number(gameSequence[0]);
-    const gameRounds = gameSequence.slice(1, 1 + roundCount);
+    const determineRoundOutcome = (playerACard, playerBCard) => {
+        if (playerACard === playerBCard) return 'DRAW';
+        if (playerACard > playerBCard) return 'PLAYER_A_WINS';
+        return 'PLAYER_B_WINS';
+    };
 
-    const initialTally = [0, 0];
+    const pointAllocation = {
+        'DRAW': [1, 1],
+        'PLAYER_A_WINS': [3, 0],
+        'PLAYER_B_WINS': [0, 3]
+    };
 
-    const finalTally = gameRounds.reduce((accumulatedTally, roundInfo) => {
-        const contestants = roundInfo.split(/\s+/);
-        const playerOneMark = contestants[0];
-        const playerTwoMark = contestants[1];
+    const finalTally = gameRecords.reduce((currentScores, roundEntry) => {
+        const [cardAValue, cardBValue] = roundEntry.split(/\s+/);
+        const outcomeKey = determineRoundOutcome(cardAValue, cardBValue);
+        const [pointsForA, pointsForB] = pointAllocation[outcomeKey];
 
-        const outcomeKey = (playerOneMark === playerTwoMark) ? 0 : (playerOneMark > playerTwoMark) ? 1 : -1;
-        const roundPoints = {
-            '0': [1, 1],
-            '1': [3, 0],
-            '-1': [0, 3]
-        }[outcomeKey];
+        return {
+            playerA: currentScores.playerA + pointsForA,
+            playerB: currentScores.playerB + pointsForB
+        };
+    }, { playerA: 0, playerB: 0 });
 
-        accumulatedTally[0] += roundPoints[0];
-        accumulatedTally[1] += roundPoints[1];
-        return accumulatedTally;
-    }, initialTally);
+    console.log(finalTally.playerA, finalTally.playerB);
+}
 
-    outputChannel.write(`${finalTally[0]} ${finalTally[1]}\n`);
-};
-
-const collectedSegments = [];
-
-const readerInstance = inputRouter.createInterface({
-    input: dataStream,
-    output: outputChannel,
-    terminal: false
+let inputSegments = [];
+process.stdin.on('data', (dataFragment) => {
+    inputSegments.push(dataFragment);
 });
 
-readerInstance.on('line', (lineContent) => {
-    collectedSegments.push(lineContent);
-});
-
-readerInstance.on('close', () => {
-    scoreTally(collectedSegments);
+process.stdin.on('end', () => {
+    const allInputLines = inputSegments.join('').split('\n');
+    processGameData(allInputLines);
 });

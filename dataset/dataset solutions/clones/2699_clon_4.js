@@ -1,12 +1,18 @@
-const evaluateSequence = (inputBlob) => {
-    const contentSegments = inputBlob.split('\n');
-    const elementQuantity = Number.parseInt(contentSegments[0], 10);
-    const initialArrangement = contentSegments[1].split(' ').map(Number.parseInt);
-    const orderedReference = initialArrangement.slice().sort((leftVal, rightVal) => leftVal - rightVal);
-    const discrepancyCount = initialArrangement.reduce((countAccumulator, currentElement, positionIndex) => {
-        return countAccumulator + (currentElement !== orderedReference[positionIndex] ? 1 : 0);
+function processInputData(inputData) {
+    const lineSegments = inputData.split('\n');
+    const elementCount = Number(lineSegments[0]);
+    
+    const initialSequence = lineSegments[1].split(' ').map(Number); 
+
+    const orderedSequence = [...initialSequence].sort((valA, valB) => valA - valB);
+
+    console.log(initialSequence, orderedSequence);
+
+    const discrepancyTally = initialSequence.reduce((accumulator, currentElement, index) => {
+        return accumulator + (currentElement !== orderedSequence[index] ? 1 : 0);
     }, 0);
-    return discrepancyCount <= 2 ? "YES" : "NO";
-};
-const receivedInput = require("node:fs").readFileSync("/dev/stdin", "utf8");
-console.log(evaluateSequence(receivedInput));
+
+    console.log(discrepancyTally <= 2 ? "YES" : "NO");
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

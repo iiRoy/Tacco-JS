@@ -1,56 +1,56 @@
-let receivedLines = [];
-let currentLinePosition = 0;
+const readline = require('readline');
+const util = require('util');
 
-function grabNextLine() {
-    if (currentLinePosition >= receivedLines.length) {
-        throw new Error('Input exhausted.');
+const bufferedLines = [];
+
+readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+}).on('line', (line) => {
+  bufferedLines.push(line);
+}).on('close', () => {
+  console.error('\n');
+  const startedAt = Date.now();
+  solveFromLines(bufferedLines);
+  const elapsed = Date.now() - startedAt;
+  debugLog('time : ' + elapsed + 'ms');
+  debugLog('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+});
+
+function readLeadingInteger(lines) {
+  if (lines.length === 0) {
+    throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+  }
+  return parseInt(lines[0]);
+}
+
+function debugLog(value) {
+  console.error('debug:' + util.inspect(value, false, null));
+}
+
+function solveFromLines(lines) {
+  const limit = readLeadingInteger(lines);
+  let total = 0;
+
+  if (limit >= 1) {
+    const divisorsPerNumber = Object.create(null);
+
+    let divisor = 1;
+    while (divisor <= limit) {
+      let multiple = divisor;
+      while (multiple <= limit) {
+        divisorsPerNumber[multiple] = (divisorsPerNumber[multiple] || 0) + 1;
+        multiple += divisor;
+      }
+      divisor++;
     }
-    return receivedLines[currentLinePosition++];
-}
 
-function parseNumericalInput() {
-    return parseInt(grabNextLine(), 10);
-}
-
-function sendOutput(value) {
-    console.log(value);
-}
-
-function evaluateCalculation() {
-    let upperLimit = parseNumericalInput();
-    let totalAccumulation = 0;
-    let iterationIndex = 1;
-
-    while (iterationIndex <= upperLimit) {
-        let currentGroupValue = Math.floor(upperLimit / iterationIndex);
-        let nextIndexBoundary = Math.floor(upperLimit / currentGroupValue) + 1;
-
-        let blockEndIndex = nextIndexBoundary - 1;
-        let sumOfIndicesInBlock = (iterationIndex + blockEndIndex) * (blockEndIndex - iterationIndex + 1) / 2;
-
-        let sumFromOneToGroupValue = currentGroupValue * (currentGroupValue + 1) / 2;
-        
-        totalAccumulation += sumFromOneToGroupValue * sumOfIndicesInBlock;
-
-        iterationIndex = nextIndexBoundary;
+    let number = 1;
+    while (number <= limit) {
+      total += number * (divisorsPerNumber[number] || 0);
+      number++;
     }
-    sendOutput(totalAccumulation);
+  }
+
+  console.log(total);
 }
-
-const inputHandler = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-inputHandler.on('line', function(textLine) {
-    receivedLines.push(textLine);
-});
-
-inputHandler.on('close', function() {
-    const operationStart = Date.now();
-    evaluateCalculation();
-    const operationDuration = Date.now() - operationStart;
-    console.error('\n');
-    console.error('diagnostics: execution duration: ' + operationDuration + 'ms');
-    console.error('diagnostics: heap usage: ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
-});

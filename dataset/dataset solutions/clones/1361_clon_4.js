@@ -1,50 +1,40 @@
-const input_handler = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+process.stdin.on('data', function(inputBuffer) {
+  const sourceText = inputBuffer.toString();
 
-input_handler.on('line', (data_stream) => {
-  let temporary_token = '';
-  const extracted_units = [];
-  let last_char_space = true;
-
-  for (let idx = 0; idx < data_stream.length; idx++) {
-    const character_value = data_stream[idx];
-    if (character_value === ' ') {
-      if (!last_char_space) {
-        extracted_units.push(temporary_token);
-        temporary_token = '';
-      }
-      last_char_space = true;
-    } else {
-      temporary_token += character_value;
-      last_char_space = false;
+  const delimiterPositions = [-1];
+  for (let charIndex = 0; charIndex < sourceText.length; charIndex++) {
+    if (sourceText[charIndex] === ' ') {
+      delimiterPositions.push(charIndex);
     }
   }
-  if (temporary_token.length > 0 || !last_char_space) {
-    extracted_units.push(temporary_token);
+  delimiterPositions.push(sourceText.length);
+
+  const parsedSegments = [];
+  for (let i = 0; i < delimiterPositions.length - 1; i++) {
+    const segmentStart = delimiterPositions[i] + 1;
+    const segmentEnd = delimiterPositions[i + 1];
+    parsedSegments.push(sourceText.substring(segmentStart, segmentEnd));
   }
 
-  const ordered_elements = extracted_units;
-  for (let i_pos = 1; i_pos < ordered_elements.length; i_pos++) {
-    let current_focus_string = ordered_elements[i_pos];
-    let current_focus_numeric = Number(current_focus_string);
-    let j_pos = i_pos - 1;
-    while (j_pos >= 0 && Number(ordered_elements[j_pos]) > current_focus_numeric) {
-      ordered_elements[j_pos + 1] = ordered_elements[j_pos];
-      j_pos--;
+  const segmentCount = parsedSegments.length;
+  for (let i = 1; i < segmentCount; i++) {
+    let currentSegment = parsedSegments[i];
+    let currentNumericValue = Number(currentSegment);
+    let j = i - 1;
+    while (j >= 0 && Number(parsedSegments[j]) > currentNumericValue) {
+      parsedSegments[j + 1] = parsedSegments[j];
+      j--;
     }
-    ordered_elements[j_pos + 1] = current_focus_string;
+    parsedSegments[j + 1] = currentSegment;
   }
 
-  let final_presentation_string = '';
-  for (let k_pos = 0; k_pos < ordered_elements.length; k_pos++) {
-    final_presentation_string += ordered_elements[k_pos];
-    if (k_pos < ordered_elements.length - 1) {
-      final_presentation_string += ' ';
+  let finalOutput = '';
+  if (segmentCount > 0) {
+    finalOutput += parsedSegments[0];
+    for (let k = 1; k < segmentCount; k++) {
+      finalOutput += ' ' + parsedSegments[k];
     }
   }
 
-  process.stdout.write(final_presentation_string + '\n');
+  console.log(finalOutput);
 });

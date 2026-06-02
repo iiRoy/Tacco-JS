@@ -1,41 +1,41 @@
-const calculateAndOutput = (dataString) => {
-  /* This constant holds a large prime number often used for
-   * modulo arithmetic to prevent integer overflows in calculations. */
-  const primeDivisor = 1_000_000_000 + 7;
+const processInput = (rawData) => {
+  // A large prime number used for modulo arithmetic to prevent overflow
+  const primeModulo = 10**9 + 7;
 
-  // Deconstructs the input string into two numerical values
-  // after stripping whitespace and splitting by space.
-  const [upperLimit, startPoint] = dataString .  trim (  ) . split ( ' ' ) . map ( Number ) ;
+  // Parse the input string into two numerical values: N and K
+  const [upperBound, lowerBound] = rawData.trim().split(' ').map(Number);
 
+  // Initialize a variable to store the cumulative result
+  let totalCount = 0;
 
-  let cumulativeSum = 0; // Initialize a variable to accumulate the final result.
+  // Loop through possible lengths of sequences, from K up to N+1
+  for (let currentLength = lowerBound; currentLength <= upperBound + 1; currentLength++) {
+    // Calculate the sum of integers from 0 to (currentLength - 1)
+    // This represents the sum of the smallest possible 'currentLength' integers (0, 1, ..., currentLength-1)
+    const startSum = (currentLength - 1) * currentLength / 2;
 
-  // Loop from the initial starting point up to one more than the upper limit.
-  for ( let iterationIndex = startPoint ; iterationIndex <= upperLimit + 1 ; iterationIndex++ ) {
-    // Calculate the sum of an arithmetic progression starting from 0 up to (iterationIndex - 1).
-    const sumOfLowerSequence = ( iterationIndex - 1 ) * iterationIndex / 2 ;
+    // Determine the starting value for the largest possible 'currentLength' integers
+    // If currentLength is 1, it's N. If currentLength is N+1, it's 0.
+    const blockFirst = upperBound - currentLength + 1;
 
-    // Determine the first term of the upper sequence based on the upper limit and current index.
-    const firstTermOfUpperSequence = upperLimit - iterationIndex + 1 ;
+    // Calculate the sum of integers from 'blockFirst' to 'upperBound'
+    // This represents the sum of the largest possible 'currentLength' integers
+    const blockSum = (blockFirst + upperBound) * currentLength / 2;
 
-    // Compute the sum of an arithmetic progression for the upper sequence.
-    // This sequence starts from 'firstTermOfUpperSequence' and goes up to 'upperLimit',
-    // with 'iterationIndex' terms.
-    const sumOfUpperSequence = ( firstTermOfUpperSequence + upperLimit ) * iterationIndex / 2 ;
-
-    // Add the difference between the upper and lower sums, plus one, to the cumulative total.
-    cumulativeSum += sumOfUpperSequence - sumOfLowerSequence + 1 ;
+    // Add the difference between the largest sum and smallest sum, plus one, to the total count
+    // This effectively counts the number of possible sums for sequences of 'currentLength'
+    totalCount += blockSum - startSum + 1;
   }
 
-  // Output the final result, ensuring it remains within the bounds of the prime divisor
-  // using double modulo for correct handling of negative results (though not expected here).
-  return console . log ( ( ( cumulativeSum % primeDivisor ) + primeDivisor ) % primeDivisor ) ;
-} ;
+  // Output the final calculated total count, ensuring it remains within the modulo range
+  return console.log((totalCount % primeModulo + primeModulo) % primeModulo);
+};
 
-// Conditional execution block:
-// Checks for an environment variable to determine execution mode.
-process.env.RUN_TEST_ENV
-  ? (process.env.RUN_TEST_ENV === 'test'
-      ? runTestCases() // Execute specific test cases if 'test' mode is active.
-      : calculateAndOutput(require('fs').readFileSync('dev/stdin', 'utf8'))) // Read from 'dev/stdin' for other test environments.
-  : calculateAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8')) ; // Default execution: read from '/dev/stdin'.
+// Conditional execution block based on environment variables
+// This part handles reading input either from a test function or standard input
+process.env.MYTEST
+  ? (process.env.MYTEST === 'test'
+      ? test() // If MYTEST is 'test', execute a test function (assumed to be defined elsewhere)
+      : processInput(require('fs').readFileSync('dev/stdin', 'utf8')) // Otherwise, read from 'dev/stdin'
+    )
+  : processInput(require('fs').readFileSync('/dev/stdin', 'utf8')); // If MYTEST is not set, read from '/dev/stdin'

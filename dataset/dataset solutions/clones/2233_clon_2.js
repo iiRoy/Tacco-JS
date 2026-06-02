@@ -1,42 +1,45 @@
-var sourceData = require('fs') .readFileSync(  '/dev/stdin'  , 'utf8'  );
+// This script processes robot data from standard input to find the maximum number of non-overlapping intervals.
 
-// Process the raw input string, removing leading/trailing whitespace and splitting into individual lines.
-var parsedLines = sourceData
+// Import the file system module to read input from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Process the raw input string: remove leading/trailing whitespace and split into an array of lines.
+const parsedLines = rawData
   .trim()
   .split('\n');
 
-/*
- * This section transforms the raw line data into a structured format.
- * It skips the first line (often a count or metadata).
- * Each subsequent line "x y" is converted into an interval [x-y, x+y].
- */
-var intervals = parsedLines
-  .slice(1)
-  .map(segment => segment.split(' ').map(Number))
-  .map(segment => [segment[0] - segment[1], segment[0] + segment[1]]);
+// Transform the input lines into a list of "mechanisms".
+// Each mechanism is represented by its start and end points.
+// The first line of input (usually a count) is skipped.
+const mechanisms = parsedLines
+  .slice(1) // Discard the initial line (often a count of items)
+  .map(item => item.split(' ').map(Number)) // Convert each line string "X Y" into a [X, Y] number array
+  .map(item => [item[0] - item[1], item[0] + item[1]]); // Transform [position, radius] to [start_point, end_point]
 
-// Sort the collection of intervals based on their ending points in ascending order.
-intervals.sort((itemA, itemB) => itemA[1] - itemB[1]);
+// Sort the mechanisms based on their end points in ascending order.
+// This is a crucial step for the greedy algorithm to work correctly.
+mechanisms.sort((firstMech, secondMech) => firstMech[1] - secondMech[1]);
 
-// Initialize a list to store the selected non-overlapping intervals, starting with the first one.
-var chosenIntervals = [intervals[0]];
+// Initialize a list to store the chosen non-overlapping mechanisms.
+// The first mechanism (which has the earliest end point due to sorting) is always chosen initially.
+const chosenMechanisms = [mechanisms[0]];
 
-// Iterate through the remaining intervals, starting from the second one.
-for (var idx = 1; idx < intervals.length; idx++) {
-    // Retrieve the last interval that was selected.
-    var lastChosenSegment = chosenIntervals[chosenIntervals.length - 1];
-    // Extract the ending point of the last selected interval.
-    var lastChosenEnd = lastChosenSegment[1];
+// Iterate through the remaining mechanisms starting from the second one.
+for (let idx = 1; idx < mechanisms.length; idx++) {
+  // Retrieve the end point of the last mechanism that was added to our chosen list.
+  const finalChosenMechanism = chosenMechanisms[chosenMechanisms.length - 1];
+  const finalChosenMechanismEnd = finalChosenMechanism[1];
 
-    // Get the starting point of the current interval under consideration.
-    var currentBegin = intervals[idx][0];
+  // Get the start point of the current mechanism being considered in the loop.
+  const currentMechanismStart = mechanisms[idx][0];
 
-    // Check if the current interval's start is after or at the end of the last chosen interval.
-    if (lastChosenEnd <= currentBegin) {
-        // If they do not overlap, add the current interval to the selected list.
-        chosenIntervals.push(intervals[idx]);
-    }
+  // If the current mechanism's start point is greater than or equal to the end point
+  // of the last chosen mechanism, it means they do not overlap.
+  // In this case, the current mechanism can be added to our list of chosen mechanisms.
+  if (finalChosenMechanismEnd <= currentMechanismStart) {
+    chosenMechanisms.push(mechanisms[idx]);
+  }
 }
 
-// Display the total count of non-overlapping intervals that were successfully chosen.
-console.log(chosenIntervals.length);
+// Output the total number of non-overlapping mechanisms found.
+console.log(chosenMechanisms.length);

@@ -1,32 +1,65 @@
-const inputProcessor = require("fs");
-const primeModulus = 1000000007;
-
-const secureModulo = (value) => (value % primeModulus + primeModulus) % primeModulus;
-
 (async () => {
-  try {
-    const completeInput = inputProcessor.readFileSync(0, "utf8");
-    const firstNonSpaceSequence = completeInput.trim().split(/\s+/)[0];
+    const MOD_CONSTANT = 1000000007;
 
-    if (!firstNonSpaceSequence) {
-      console.log(0);
-      return;
+    const applyModulo = (value) => (value % MOD_CONSTANT + MOD_CONSTANT) % MOD_CONSTANT;
+
+    class InputSegmentExtractor {
+        constructor(sourceText) {
+            this.source = sourceText;
+            this.currentOffset = 0;
+        }
+
+        retrieveNextSegment() {
+            // Advance past any leading whitespace or newline characters
+            while (this.currentOffset < this.source.length && /\s|\n/.test(this.source[this.currentOffset])) {
+                this.currentOffset++;
+            }
+
+            // If we've reached the end of the source, no more segments
+            if (this.currentOffset >= this.source.length) {
+                return undefined;
+            }
+
+            const segmentStart = this.currentOffset;
+            // Find the end of the current segment (until whitespace/newline or end of source)
+            while (this.currentOffset < this.source.length && !/\s|\n/.test(this.source[this.currentOffset])) {
+                this.currentOffset++;
+            }
+
+            return this.source.substring(segmentStart, this.currentOffset);
+        }
     }
 
-    const frequencyCounter = new Map();
-    for (const characterUnit of firstNonSpaceSequence) {
-      frequencyCounter.set(characterUnit, (frequencyCounter.get(characterUnit) || 0) + 1);
-    }
+    const acquireInputProcessor = async () => {
+        return new Promise((resolve, reject) => {
+            let collectedInput = '';
+            process.stdin.setEncoding('utf8');
+            process.stdin.on('data', (dataChunk) => {
+                collectedInput += dataChunk;
+            });
+            process.stdin.on('end', () => {
+                resolve(new InputSegmentExtractor(collectedInput));
+            });
+            process.stdin.on('error', (err) => {
+                reject(err);
+            });
+        });
+    };
 
-    let productAccumulator = 1;
-    for (const countValue of frequencyCounter.values()) {
-      productAccumulator = secureModulo(productAccumulator * (countValue + 1));
-    }
+    const processorInstance = await acquireInputProcessor();
+    const primarySegment = processorInstance.retrieveNextSegment();
 
-    const finalResult = secureModulo(productAccumulator - 1);
-    console.log(finalResult);
+    // The original code would throw a TypeError if primarySegment is undefined
+    // (e.g., if input is empty or only whitespace).
+    // Array.from(undefined) will replicate this exact TypeError.
+    const characterFrequencies = Array.from(primarySegment).reduce((frequencyMap, charKey) => {
+        frequencyMap.set(charKey, (frequencyMap.get(charKey) || 0) + 1);
+        return frequencyMap;
+    }, new Map());
 
-  } catch (operationError) {
-    console.error("Input processing failed:", operationError);
-  }
+    const cumulativeProduct = Array.from(characterFrequencies.values()).reduce((currentResult, countValue) => {
+        return applyModulo(currentResult * (1 + countValue));
+    }, 1);
+
+    console.log(applyModulo(cumulativeProduct - 1));
 })();

@@ -1,83 +1,85 @@
-const convertToInteger = (inputStringValue) => {
-    // Converts a string to an integer, ensuring base 10 parsing.
-    return parseInt(inputStringValue, 10);
-};
+var parseInteger = (inputString) => parseInt(inputString, 0xA); // Converts a string to an integer using base 10.
+var parseIntegerArray = (stringArray) => stringArray.map((elementString) => parseInteger(elementString)); // Maps an array of strings to an array of integers.
+var absoluteValue = (numericValue) => (numericValue > 0x0 ? numericValue : -numericValue); // Returns the absolute value of a number.
 
-const convertNumericStrings = (sourceStringArray) => {
-    // Transforms an array of string numbers into an array of actual integers.
-    return sourceStringArray.map((strElement) => convertToInteger(strElement));
-};
-
-const getMagnitude = (numericalInput) => {
-    // Computes the absolute value of a number.
-    return numericalInput > 0 ? numericalInput : -numericalInput;
-};
-
+/**
+ * Finds the minimum value among the provided arguments.
+ * @returns {number} The smallest number.
+ */
 function findMinimum() {
-    var argumentSet = arguments; // Collects all passed arguments.
-    var currentSmallest = argumentSet[0];
-    for (var loopCounter = 1; loopCounter < argumentSet.length; loopCounter++) {
-        if (argumentSet[loopCounter] < currentSmallest) {
-            currentSmallest = argumentSet[loopCounter];
-        }
+  var allArguments = arguments;
+  var currentMinimum = allArguments[0x0]; // Initialize with the first argument.
+  // Iterate through the rest of the arguments to find a smaller value.
+  for (var idx = 0b1; idx < allArguments.length; idx++) {
+    if (allArguments[idx] < currentMinimum) {
+      currentMinimum = allArguments[idx]; // Update if a smaller value is found.
     }
-    return currentSmallest;
+  }
+  return currentMinimum;
 }
 
+/**
+ * Finds the maximum value among the provided arguments.
+ * @returns {number} The largest number.
+ */
 function findMaximum() {
-    let argumentSet = arguments; // Gathers all arguments into a collection.
-    let currentLargest = argumentSet[0];
-    for (let loopCounter = 1; loopCounter < argumentSet.length; loopCounter++) {
-        if (argumentSet[loopCounter] > currentLargest) {
-            currentLargest = argumentSet[loopCounter];
-        }
+  var inputValues = arguments;
+  var currentMaximum = inputValues[0x0]; // Assume the first value is the maximum initially.
+  // Loop through subsequent values to check for a larger one.
+  for (var indexCounter = 0b1; indexCounter < inputValues.length; indexCounter++) {
+    if (inputValues[indexCounter] > currentMaximum) {
+      currentMaximum = inputValues[indexCounter]; // Update if a greater value is encountered.
     }
-    return currentLargest;
+  }
+  return currentMaximum;
 }
 
-// Initiates the primary program flow by reading from standard input.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Entry point for processing the standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function ExecuteProgram(rawProgramInput) {
-    // Splits the entire raw input into an array of individual lines.
-    const inputLineSegments = rawProgramInput.split('\n');
+/**
+ * Main function to process the input data.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function ProcessInput(rawData) {
+  // Split the raw input into an array of lines.
+  var linesOfData = rawData.split('\n');
 
-    // Parses the first line to extract two initial numerical parameters.
-    const initialConfiguration = convertNumericStrings(inputLineSegments[0].split(' '));
-    var totalElementsCount = initialConfiguration[0]; // Corresponds to 'n'.
-    var specificThreshold = initialConfiguration[1]; // Corresponds to 'x'.
+  // Parse the first line to get N and X.
+  var firstLineNumbers = parseIntegerArray(linesOfData[0x0].split(' '));
+  var countN = firstLineNumbers[0x0]; // N: number of elements.
+  var valueX = firstLineNumbers[0b1]; // X: a specific value used in calculations.
 
-    // Converts the second line of input into an array of integers.
-    var dataElementCollection = convertNumericStrings(inputLineSegments[1].split(' '));
+  // Parse the second line to get the array of numbers (xs).
+  var dataArray = parseIntegerArray(linesOfData[0b1].split(' '));
 
-    // Computes prefix sums for the data element collection.
-    var runningCumulativeSums = [dataElementCollection[0]];
+  // Calculate prefix sums for the dataArray.
+  var prefixSums = [dataArray[0x0]]; // Initialize with the first element.
+  for (var loopIndex = 0b1; loopIndex < countN; loopIndex++) {
+    prefixSums[loopIndex] = dataArray[loopIndex] + prefixSums[loopIndex - 0b1];
+  }
 
-    for (var currentIdx = 1; currentIdx < totalElementsCount; currentIdx++) {
-        runningCumulativeSums[currentIdx] = dataElementCollection[currentIdx] + runningCumulativeSums[currentIdx - 1];
+  // Initialize the final result with a base calculation.
+  var finalResult = (countN + 0b1) * valueX;
+
+  // Variable to track a count in the reverse loop.
+  var currentCount = 0x0;
+
+  // Iterate through the data array in reverse order.
+  for (var reverseIndex = countN - 0b1; reverseIndex > ~0; reverseIndex--) {
+    currentCount++; // Increment the counter for each iteration.
+
+    // Conditional logic based on currentCount and calculated values.
+    if (currentCount < 0b11 || prefixSums[reverseIndex] * (currentCount - 0b1) * 0b10 - dataArray[reverseIndex] * 0b10 < valueX) {
+      // Apply a specific formula if the condition is met.
+      finalResult += dataArray[reverseIndex] * (findMaximum(currentCount, 0b10) * 0b10 + 0b1);
+    } else {
+      // Apply an alternative formula if the condition is not met.
+      currentCount = 0b1; // Reset currentCount.
+      finalResult += dataArray[reverseIndex] * 0b101 + valueX;
     }
+  }
 
-    // Establishes an initial value for the final computation result.
-    var overallComputedResult = (totalElementsCount + 1) * specificThreshold;
-
-    // A counter to track occurrences within the reverse iteration.
-    var iterationOccurrence = 0;
-
-    // Iterates through the data elements in reverse order for complex calculations.
-    for (var currentIdx = totalElementsCount - 1; currentIdx > -1; currentIdx--) {
-        iterationOccurrence++; // Increments the occurrence tracker.
-
-        // Evaluates a conditional expression to determine the calculation path.
-        if (iterationOccurrence < 3 || runningCumulativeSums[currentIdx] * (iterationOccurrence - 1) * 2 - dataElementCollection[currentIdx] * 2 < specificThreshold) {
-            // Applies a calculation involving the maximum of two values and current element.
-            overallComputedResult += dataElementCollection[currentIdx] * (findMaximum(iterationOccurrence, 2) * 2 + 1);
-        } else {
-            // Resets the occurrence tracker and applies an alternative calculation.
-            iterationOccurrence = 1;
-            overallComputedResult += dataElementCollection[currentIdx] * 5 + specificThreshold;
-        }
-    }
-
-    // Prints the final calculated result to the console.
-    console.log(overallComputedResult);
+  // Output the final calculated result to the console.
+  console.log(finalResult);
 }

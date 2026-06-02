@@ -1,149 +1,129 @@
-"use strict"; /* This directive ensures strict mode for the script. */
+"use strict";
 
-
-// A utility function to generate a multi-dimensional array dynamically.
-function constructNestedArray( initialValue )
-{
-  // Access all arguments passed to this function.
-  var argumentList = arguments;
-  // Get the total number of dimensions from the arguments.
-  var totalDimensions = argumentList.length;
-  // Build the innermost array creation string.
-  var creationString = `Array(argumentList[${--totalDimensions}]).fill(0).map( _ => {return ${initialValue};})`;
-
-  // Loop to wrap the array creation for higher dimensions.
-  while ( --totalDimensions ) {
-    creationString = `Array(argumentList[${totalDimensions}]).fill(0).map( _ => ${creationString} )`;
+/**
+ * Utility function to create a multi-dimensional array initialized with a specific value.
+ * This function is present in the original code but not invoked by the main logic.
+ * @param {any} valToFill - The value to populate the innermost array elements.
+ * @param {...number} dimensions - The desired dimensions for the array.
+ * @returns {Array} A newly created multi-dimensional array.
+ */
+function createMultiDimArray(valToFill) {
+  const functionArguments = arguments;
+  let currentLength = functionArguments.length;
+  // Construct the string for the innermost array creation
+  let generatedArrayString = "Array(functionArguments[" + --currentLength + "]).fill(0).map(x => { return valToFill; })";
+  // Construct strings for the outer array dimensions iteratively
+  while (--currentLength) {
+    generatedArrayString = "Array(functionArguments[" + currentLength + "]).fill(0).map(x => " + generatedArrayString + ")";
   }
-  // Evaluate the constructed string to create the array.
-  return eval( creationString );
+  // Execute the constructed string to produce the array
+  return eval(generatedArrayString);
 }
 
+// Defines a mapping to invert 'R' to 'B' and 'B' to 'R'
+const colorInversionMap = {
+  "R": "B",
+  "B": "R"
+};
 
-// A mapping to toggle between two states (e.g., colors or states).
-var colorSwitcher = { "R": "B", "B": "R" };
+// Initialize the readline interface for standard input and output
+const ioInterface = require("readline").createInterface(process.stdin, process.stdout);
 
-// Initialize the readline interface for standard input/output operations.
-const inputReader = require("readline").createInterface( process.stdin, process.stdout );
+// The main asynchronous processing flow implemented as a generator function
+const mainProcessingFlow = (function* () {
+  // Helper function to asynchronously get a single line of input
+  const getNextInputLine = () => ioInterface.once("line", (receivedLine) => mainProcessingFlow.next(receivedLine));
 
-// The main asynchronous generator function for the problem solving logic.
-const solverProcess = ( function* () {
+  let finalResultArray = []; // Array to store the determined 'R' or 'B' sequence
+  let numElementsString = yield getNextInputLine(); // Read the first line (N)
+  let numElements = +numElementsString; // Convert N to a numeric type
 
-  // Helper function to read a single line from input.
-  const readNextLine = () => inputReader.once("line", ( inputString ) => solverProcess.next( inputString ) );
+  const doubleNumElements = numElements * 0b10; // Calculate 2 * N
 
-  // Array to store the final computed solution.
-  var finalResult = [];
-  // Variable to hold the problem's primary dimension size.
-  var dimensionSize = yield readNextLine();
-  // Ensure dimensionSize is treated as a number.
-  dimensionSize = Number( dimensionSize );
-  // Calculate double the primary dimension.
-  var doubleDimension = 2 * dimensionSize;
-  // Array to hold the current pattern of indices for queries.
-  var queryIndices = [];
+  let currentPermutation = []; // Array to hold the permutation for queries
 
-  // Populate the initial query pattern with sequential numbers.
-  for ( var counter = 1; counter <= dimensionSize; counter++ )
-  {
-    queryIndices[ counter - 1 ] = counter;
+  // Initialize the first permutation with values from 1 to N
+  for (let currentIdx = 0b1; currentIdx <= numElements; currentIdx++) {
+    currentPermutation[currentIdx - 0b1] = currentIdx;
   }
 
-  // Output the first query to the interactive judge.
-  console.log( "?", queryIndices.join(" ") );
-  // Await the response from the judge for the first query.
-  var firstQueryOutput = yield readNextLine();
+  // First query to the external system
+  console.log("?", currentPermutation.join(" "));
+  let firstQueryResponse = yield getNextInputLine(); // Get the response for the initial query
 
-  // Variables for binary search-like logic.
-  var lowerBound = 1, upperBound = dimensionSize + 1, midPoint;
+  let leftSearchBound = 0b1; // Lower bound for the binary search
+  let rightSearchBound = numElements + 0b1; // Upper bound for the binary search
+  let determinedValue; // Variable to store the result of the binary search
 
-  // Perform a search to find a critical value.
-  while ( upperBound - lowerBound > 1 )
-  {
-    // Calculate the midpoint using bitwise right shift for integer division.
-    midPoint = ( upperBound + lowerBound + 1 ) >> 1;
-    // Update the query pattern based on the current midpoint.
-    for ( var counter = 0; counter < dimensionSize; counter++ )
-    {
-      queryIndices[ counter ] = midPoint + counter;
+  // Perform a binary search to find a specific value
+  while (rightSearchBound - leftSearchBound > 0b1) {
+    determinedValue = Math.floor((rightSearchBound + leftSearchBound + 0b1) / 0b10); // Calculate the midpoint
+
+    // Prepare a new permutation based on the determined value for the query
+    for (let currentIdx = 0b0; currentIdx < numElements; currentIdx++) {
+      currentPermutation[currentIdx] = determinedValue + currentIdx;
     }
-    // Output the current query pattern.
-    console.log( "?", queryIndices.join(" ") );
-    // Await the response from the judge.
-    var queryFeedback = yield readNextLine();
 
-    // Adjust bounds based on the comparison of responses.
-    if ( firstQueryOutput[0] !== queryFeedback[0] )
-    {
-      upperBound = midPoint;
-    }
-    else
-    {
-      lowerBound = midPoint;
+    // Send the query with the new permutation
+    console.log("?", currentPermutation.join(" "));
+    let currentQueryResponse = yield getNextInputLine(); // Get the response for this query
+
+    // Adjust the search bounds based on the comparison of responses
+    if (firstQueryResponse[0b0] !== currentQueryResponse[0b0]) {
+      rightSearchBound = determinedValue;
+    } else {
+      leftSearchBound = determinedValue;
     }
   }
 
-  // Assign the determined critical value.
-  midPoint = upperBound;
+  determinedValue = rightSearchBound; // The value found by the binary search
 
-  // Populate parts of the final result array based on the critical value and initial response.
-  finalResult[ midPoint - 2 ] = firstQueryOutput[0];
-  finalResult[ midPoint - 2 + dimensionSize ] = colorSwitcher[ firstQueryOutput[0] ];
+  // Assign initial colors based on the binary search result and the first response
+  finalResultArray[determinedValue - 0b10] = firstQueryResponse[0b0];
+  finalResultArray[determinedValue - 0b10 + numElements] = colorInversionMap[firstQueryResponse[0b0]];
 
-  // Array for a secondary pattern of indices.
-  var complementaryIndices = [];
-  // Set to keep track of indices included in the first pattern.
-  var includedElements = new Set();
+  let secondaryPermutation = []; // Another array for constructing permutations
+  let visitedIndicesSet = new Set(); // A set to keep track of indices already part of 'p'
 
-  // Generate the initial part of the secondary pattern and track included elements.
-  for ( var counter = 0; counter < dimensionSize - 1; counter++ )
-  {
-    queryIndices[ counter ] = ( midPoint + counter ) % doubleDimension;
-    complementaryIndices[ counter ] = ( queryIndices[ counter ] + dimensionSize - 1 ) % doubleDimension + 1;
-    includedElements.add( queryIndices[ counter ] );
+  // Prepare a base permutation for subsequent queries
+  for (let currentIdx = 0b0; currentIdx < numElements - 0b1; currentIdx++) {
+    currentPermutation[currentIdx] = (determinedValue + currentIdx) % doubleNumElements;
+    secondaryPermutation[currentIdx] = (currentPermutation[currentIdx] + numElements - 0b1) % doubleNumElements + 0b1;
+    visitedIndicesSet.add(currentPermutation[currentIdx]);
   }
 
-  // Iterate through all possible indices to fill the remaining parts of the solution.
-  for ( var counter = 1; counter <= doubleDimension; counter++ )
-  {
-    // Skip if the current index already has a determined value in the result.
-    if ( finalResult[ counter - 1 ] ) {
+  // Iterate through all possible indices from 1 to 2*N to determine their colors
+  for (let currentIdx = 0b1; currentIdx <= doubleNumElements; currentIdx++) {
+    // If the color for the current index is already known, skip
+    if (finalResultArray[currentIdx - 0b1]) {
       continue;
     }
 
-    // Check if the current index is part of the 'includedElements' set.
-    if ( includedElements.has( counter ) )
-    {
-      // If so, use the complementary pattern for the query.
-      complementaryIndices[ dimensionSize - 1 ] = counter;
-      console.log( "?", complementaryIndices.join(" ") );
-      var queryFeedback = yield readNextLine();
-      // Assign the result based on the query feedback.
-      if ( queryFeedback[0] === "R" ) {
-        finalResult[ counter - 1 ] = "R";
+    // Check if the current index is part of the 'p' set
+    if (visitedIndicesSet.has(currentIdx)) {
+      secondaryPermutation[numElements - 0b1] = currentIdx; // Complete the 'q' permutation
+      console.log("?", secondaryPermutation.join(" ")); // Query with 'q'
+      let queryResult = yield getNextInputLine();
+      if (queryResult[0b0] === "R") {
+        finalResultArray[currentIdx - 0b1] = "R";
       } else {
-        finalResult[ counter - 1 ] = "B";
+        finalResultArray[currentIdx - 0b1] = "B";
       }
-    }
-    else
-    {
-      // Otherwise, use the primary pattern for the query.
-      queryIndices[ dimensionSize - 1 ] = counter;
-      console.log( "?", queryIndices.join(" ") );
-      var queryFeedback = yield readNextLine();
-      // Assign the result based on the query feedback.
-      if ( queryFeedback[0] === "R" ) {
-        finalResult[ counter - 1 ] = "R";
+    } else {
+      currentPermutation[numElements - 0b1] = currentIdx; // Complete the 'p' permutation
+      console.log("?", currentPermutation.join(" ")); // Query with 'p'
+      let queryResult = yield getNextInputLine();
+      if (queryResult[0b0] === "R") {
+        finalResultArray[currentIdx - 0b1] = "R";
       } else {
-        finalResult[ counter - 1 ] = "B";
+        finalResultArray[currentIdx - 0b1] = "B";
       }
     }
   }
 
-  // Output the final computed solution.
-  console.log( "!", finalResult.join("") );
+  // Output the final sequence of 'R' and 'B'
+  console.log("!", finalResultArray.join(""));
+})();
 
-} )(); // Immediately invoke the generator function.
-
-// Start the generator to begin processing.
-solverProcess.next();
+// Initiate the execution of the generator function
+mainProcessingFlow.next();

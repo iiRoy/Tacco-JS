@@ -1,26 +1,41 @@
-const processRawData = (rawData) => {
-  const numericalString = rawData.split("\n")[0].split(" ")[0];
-  return +numericalString;
-};
+function Main(stdin) {
+  const rows = stdin.split("\n");
+  const first = rows[0].split(" ")[0];
+  const value = Number.parseInt(first);
 
-const calculateLogDepth = (startingValue) => {
-  if (startingValue <= 1) {
-    return 0;
+  let depth = 0;
+
+  if (value > 1) {
+    if (!Number.isFinite(value)) {
+      while (true) {}
+    }
+
+    let left = 1;
+    let right = 2;
+
+    while (Math.pow(2, right) <= value) {
+      left = right;
+      right *= 2;
+    }
+
+    while (right - left > 1) {
+      const middle = Math.floor((left + right) / 2);
+      if (Math.pow(2, middle) <= value) {
+        left = middle;
+      } else {
+        right = middle;
+      }
+    }
+
+    depth = left;
   }
-  return startingValue.toString(2).length - 1;
-};
 
-const computeFinalOutcome = (depth) => {
-  return depth <= 1
-    ? 1
-    : (depth * depth - 1) + (1 << depth);
-};
+  let result = 1;
+  if (depth > 1) {
+    result = (depth * depth - 1) + Math.pow(2, depth);
+  }
 
-const orchestrateCalculation = (externalData) => {
-  const initialNumericDatum = processRawData(externalData);
-  const derivedLogarithmicFactor = calculateLogDepth(initialNumericDatum);
-  const resultantQuantity = computeFinalOutcome(derivedLogarithmicFactor);
-  console.log(resultantQuantity);
-};
+  console.log(result);
+}
 
-orchestrateCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

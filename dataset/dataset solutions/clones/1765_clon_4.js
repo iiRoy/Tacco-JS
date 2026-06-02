@@ -1,18 +1,20 @@
-function processInputSeries(inputData) {
-    const segments = inputData.split('\n');
-    const initialSequence = segments[0];
-    const valueUnits = initialSequence.split(' ');
-    
-    let foundOrdinal = valueUnits.slice(0, 5).findIndex(elementValue => elementValue === '0');
-    
-    let computedResult;
-    if (foundOrdinal === -1) {
-        computedResult = Number.NaN;
-    } else {
-        computedResult = foundOrdinal + 1;
-    }
-    
-    console.log(computedResult);
-}
+const processInputData = (sourceContent) => {
+    const contentLines = sourceContent.split('\n');
+    const primaryValues = contentLines[0].split(' ');
 
-processInputSeries(require("fs").readFileSync("/dev/stdin","utf8"));
+    const searchRange = Array.from({ length: 5 }, (_, index) => index);
+
+    const determinedPosition = searchRange.reduceRight((currentResult, currentElementIndex) => {
+        if (currentResult !== '') {
+            return currentResult;
+        }
+        if (primaryValues[currentElementIndex] === '0') {
+            return String(currentElementIndex);
+        }
+        return '';
+    }, '');
+
+    console.log(Number.parseInt(determinedPosition) + 1);
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,73 +1,48 @@
-function AnalyzeParticipantSelections(rawInputString) {
+function processInputData(rawInputString) {
+    const DECIMAL_RADIX = 10;
 
-    // Divide the comprehensive input string into individual data entries, line by line.
-    const dataSegments = rawInputString.split("\n");
+    const inputLines = rawInputString.split("\n");
+    
+    const dimensionsArray = inputLines[0].split(" ");
+    const numCustomers = parseInt(dimensionsArray[0], DECIMAL_RADIX);
+    const numMenuItems = parseInt(dimensionsArray[1], DECIMAL_RADIX);
 
-    // Extract the primary configuration values from the initial data segment.
-    // These values dictate the overall scope of the analysis.
-    const configurationTokens = dataSegments[0].split(" ");
-    const totalParticipantCount = Number(configurationTokens[0]); // Denotes 'N' participants.
-    const availableCategoryCount = Number(configurationTokens[1]); // Denotes 'M' distinct categories.
+    let totalMatchedMenus = 0;
 
-    // Implement basic input validation for core parameters.
-    // If 'N' or 'M' are invalid (not positive integers), an error is logged, and processing halts.
-    if (isNaN(totalParticipantCount) || totalParticipantCount <= 0 ||
-        isNaN(availableCategoryCount) || availableCategoryCount <= 0) {
-        console.error("Input Error: The number of participants or categories must be a positive integer.");
-        return;
-    }
+    // Helper function to parse a string into an integer with a specified radix
+    const parseNum = (str) => parseInt(str, DECIMAL_RADIX);
 
-    // Initialize a data structure to store each participant's chosen items.
-    // An array of Sets is used to ensure efficient checking for item presence and to handle unique selections.
-    // Participant data begins from the second line of the input (index 1).
-    const allParticipantSelections = [];
-    for (let participantDataIndex = 1; participantDataIndex <= totalParticipantCount; participantDataIndex++) {
-        // Parse the current participant's choice line. The first token is the count of items they chose.
-        const currentParticipantRawChoices = dataSegments[participantDataIndex].split(" ");
-        const numItemsChosenByParticipant = Number(currentParticipantRawChoices[0]);
+    // Loop through each possible menu item, starting from 1
+    for (let currentMenuItemId = 1; currentMenuItemId <= numMenuItems; currentMenuItemId++) {
+        let matchingCustomerCount = 0; // Reset count for the current menu item
 
-        // A new Set is created for each participant to hold their unique item identifiers.
-        const distinctChosenItems = new Set();
-        for (let itemPositionInLine = 1; itemPositionInLine <= numItemsChosenByParticipant; itemPositionInLine++) {
-            const itemIdentifier = Number(currentParticipantRawChoices[itemPositionInLine]);
-            // Validate each item identifier before adding to the set.
-            if (!isNaN(itemIdentifier) && itemIdentifier > 0) {
-                distinctChosenItems.add(itemIdentifier);
+        // Loop through each customer, starting from 1 (as inputLines[0] is dimensions)
+        for (let customerIdx = 1; customerIdx <= numCustomers; customerIdx++) {
+            const currentCustomerPreferenceLine = inputLines[customerIdx];
+            const customerPreferenceTokens = currentCustomerPreferenceLine.split(" ");
+            
+            // The first token is the number of choices this customer made
+            const numCustomerChoices = parseNum(customerPreferenceTokens[0]);
+            
+            // Iterate through each choice made by the current customer
+            for (let choiceIdx = 1; choiceIdx <= numCustomerChoices; choiceIdx++) {
+                const customerChoiceId = parseNum(customerPreferenceTokens[choiceIdx]);
+
+                // If the customer's choice matches the current menu item being evaluated
+                if (customerChoiceId === currentMenuItemId) {
+                    matchingCustomerCount++;
+                }
             }
         }
-        allParticipantSelections.push(distinctChosenItems);
-    }
-
-    // This counter will track how many categories have been selected by *all* participants.
-    let categoriesUniversallySelected = 0;
-
-    // Begin the main analysis loop: iterate through each possible category ID.
-    // Categories are typically identified starting from 1.
-    for (let currentCategory = 1; currentCategory <= availableCategoryCount; currentCategory++) {
-        let participantsSatisfiedWithCategory = 0; // Resets for each new category.
-
-        // Now, for the current category, check every participant's selections.
-        // The 'allParticipantSelections' array is 0-indexed.
-        for (let pIndex = 0; pIndex < totalParticipantCount; pIndex++) {
-            const participantItemSet = allParticipantSelections[pIndex];
-
-            // Utilize the Set's 'has' method for quick lookup to see if the participant chose this category.
-            if (participantItemSet.has(currentCategory)) {
-                participantsSatisfiedWithCategory++;
-            }
-        }
-
-        // If the count of participants who selected this category matches the total participant count,
-        // then this category is considered "universally selected".
-        if (participantsSatisfiedWithCategory === totalParticipantCount) {
-            categoriesUniversallySelected++;
+        
+        // After checking all customers for the current menu item,
+        // if the total count of 'likes' for this menu item equals the number of customers
+        if (matchingCustomerCount === numCustomers) {
+            totalMatchedMenus++;
         }
     }
-
-    // Output the final tally of categories that meet the universal selection criteria.
-    console.log(categoriesUniversallySelected);
+    
+    console.log(totalMatchedMenus);
 }
 
-// The following line is standard boilerplate for competitive programming environments
-// and should not be altered, as it handles reading input and initiating the process.
-AnalyzeParticipantSelections(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

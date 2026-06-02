@@ -1,91 +1,72 @@
-'use strict'; // Enforce stricter parsing and error handling for the entire script
+'use strict'; // Enforce strict mode for cleaner code execution
 
 /**
- * Determines if every numerical entry within a given array is strictly zero.
- * This helper function is used to check for the termination condition of the main loop.
- * @param {Array<number>} dataList - The array of numerical values to be examined.
- * @returns {boolean} Returns true if all elements are zero, false otherwise.
+ * Determines if all elements within a given array are zero.
+ * @param {Array<number>} inputArray - The array of numbers to check.
+ * @returns {boolean} True if all elements are zero, false otherwise.
  */
-function areAllElementsZero(dataList) {
-  // Iterate through each individual number in the provided list.
-  for (let elementValue of dataList) {
-    // If any element is found that is not equal to zero,
-    // it means the condition (all elements are zero) is not met.
-    if (elementValue !== 0) {
-      return false; // Exit early as a non-zero element was found.
+function checkAllZeros(inputArray) {
+  // Iterate through each element in the provided array.
+  for (let currentElement of inputArray) {
+    // If any element is not equal to zero, the array is not entirely zeros.
+    if (currentElement !== 0) {
+      return false; // Found a non-zero element, so return false immediately.
     }
   }
-  // If the loop completes without finding any non-zero elements,
-  // it implies that all elements in the array are indeed zero.
+  // If the loop completes, all elements were zero.
   return true;
 }
 
-
 /**
- * This is the primary function that orchestrates the solution logic.
- * It reads input, performs calculations based on an iterative process,
- * and then outputs the final result.
- * @param {string} sourceContent - The raw string content obtained from the input source.
+ * Main function to process input data and calculate the minimum operations.
+ * @param {string} rawData - The raw input string, typically from stdin.
  */
-function runSolution(sourceContent) {
-  // Process the raw input string by splitting it into individual lines.
-  // The 'Array.from' ensures we get a proper array from the iterable split result.
-  const parsedLines = Array.from(sourceContent.split('\n'));
+function processInputData(rawData) {
+  // Split the input string into lines and store them temporarily.
+  const temporaryLines = Array.from(rawData.split('\n'));
 
-  // The first line of input typically contains a single integer,
-  // which we parse and store (though not directly used in the loop logic here).
-  const totalCount = parseInt(parsedLines[0], 10);
+  // Parse the first line to get the number of elements (N).
+  // Although N is read, it's not directly used in the current algorithm's loop,
+  // but it defines the size of the subsequent array.
+  const numberOfElements = parseInt(temporaryLines[0], 10);
 
-  // The second line contains space-separated numbers.
-  // We split this line into strings, then convert each string segment into an integer.
-  // This forms the dynamic data series that will be modified during the process.
-  const dataSeries = parsedLines[1].split(' ').map((elementString) => parseInt(elementString, 10));
+  // Parse the second line, splitting by space, and converting each part to an integer.
+  const heightsArray = temporaryLines[1].split(' ').map((elementString) => parseInt(elementString, 10));
 
+  let operationCount = 0; // Initialize a counter for the operations performed.
 
-  // Initialize a counter to keep track of the number of operations performed.
-  let stepsTaken = 0;
+  // Continue processing as long as the heightsArray contains non-zero elements.
+  while (!checkAllZeros(heightsArray)) {
+    // Find the maximum value currently present in the heights array.
+    const currentMaximumValue = heightsArray.reduce((maxAccumulator, currentElement) => Math.max(maxAccumulator, currentElement));
 
-  // The main processing loop continues as long as the 'dataSeries' contains
-  // at least one element that is not zero.
-  while (!areAllElementsZero(dataSeries)) {
-    // Identify the maximum value present in the current 'dataSeries'.
-    // The 'reduce' method is used to iterate and find the highest number.
-    const peakValue = dataSeries.reduce((accumulatorMax, valueToCompare) => Math.max(accumulatorMax, valueToCompare));
+    // Find the index of the first occurrence of the maximum value.
+    const maximumValueStartIndex = heightsArray.indexOf(currentMaximumValue);
 
-    // Find the index of the first occurrence of this maximum value.
-    const firstPeakIndex = dataSeries.indexOf(peakValue);
+    // Initialize the end index of the contiguous block of maximum values.
+    let maximumValueEndIndex = maximumValueStartIndex;
 
-    // Initialize the end index of the peak segment. It starts at the same point as the beginning.
-    let lastPeakIndex = firstPeakIndex;
-
-    // Extend the 'lastPeakIndex' to encompass all consecutive elements
-    // that also hold the 'peakValue'. This identifies the full contiguous peak.
-    while (dataSeries[lastPeakIndex + 1] === peakValue) {
-      lastPeakIndex++;
+    // Extend the end index as long as subsequent elements are also equal to the maximum value.
+    while (heightsArray[maximumValueEndIndex + 1] === currentMaximumValue) {
+      maximumValueEndIndex++;
     }
 
-    // Construct an array of indices that represent the entire range of the identified peak.
-    // This allows easy iteration over all elements that need to be modified.
-    const targetIndices = Array.from(new Array(lastPeakIndex - firstPeakIndex + 1)
-      .fill(0) // Placeholder values, the actual value doesn't matter for map
-      .map((_, loopIndex) => loopIndex + firstPeakIndex)); // Map to actual indices
+    // Create an array of indices that correspond to the contiguous block of maximum values.
+    // This range includes all indices from maximumValueStartIndex to maximumValueEndIndex.
+    const maximumValueIndices = Array.from(new Array(maximumValueEndIndex - maximumValueStartIndex + 1).fill(0).map((_unused, indexOffset) => indexOffset + maximumValueStartIndex));
 
-    // Iterate through each index within the 'targetIndices' array.
-    for (let currentAffectedIndex of targetIndices) {
-      // Decrement the value at the current index in the 'dataSeries'.
-      // This simulates "reducing" the peak.
-      dataSeries[currentAffectedIndex]--;
+    // For each index in the identified range of maximum values, decrement the height by one.
+    for (let currentMaxIndex of maximumValueIndices) {
+      heightsArray[currentMaxIndex]--; // Reduce the height at this specific index.
     }
 
-    // After successfully processing one peak, increment the operation counter.
-    stepsTaken++;
+    // Increment the operation counter after processing one "cut" operation.
+    operationCount++;
   }
 
-  // Once the loop terminates (all elements in 'dataSeries' are zero),
-  // print the total number of operations performed to the console.
-  console.log(stepsTaken);
+  // Output the total number of operations required to make all heights zero.
+  console.log(operationCount);
 }
 
-// Invoke the main solution function by reading input from standard input.
-// 'require('fs').readFileSync' is used to synchronously read the file content.
-runSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

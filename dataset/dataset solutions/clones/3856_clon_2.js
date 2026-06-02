@@ -1,87 +1,88 @@
-'use strict'; // Enforce stricter rules for code execution.
-
-// Define constants for specific character representations within the grid.
-const EMPTY_SPACE_CHAR = '.';
-const FILLED_SPACE_CHAR = '#';
+'use strict';
 
 /**
- * Evaluates a grid layout provided as a string to determine if all filled cells have at least one filled neighbor.
- * This function processes the input, constructs a grid, and then checks the adjacency condition.
+ * Processes the input string to determine if a grid of '#' characters
+ * has any isolated '#' cells (i.e., '#' cells with no '#' neighbors).
  *
- * @param {string} rawInputString - The complete input as a single string, including dimensions and grid rows.
+ * @param {string} inputString - The raw input string, typically from stdin.
  */
-function evaluateGridCondition(rawInputString) {
+function processInput(inputString) {
+  // Split the entire input into lines based on newline characters.
+  const lines = inputString.split('\n');
 
-  // Break down the multi-line input string into an array of individual string lines.
-  let stringLinesArray = rawInputString.split('\n');
+  // Parse grid dimensions from the first line of the input.
+  // The original code extracts both height and width from the first element of the split string.
+  // This behavior, including any potential implications, is preserved.
+  const dimensionParts = lines[0].split(' ');
+  const gridHeight = Number(dimensionParts[0]);
+  const gridWidth = Number(dimensionParts[0]); // Preserving the original logic for width assignment.
 
-  // Parse the grid's dimensions from the very first line of the input.
-  // Note: The original code uses the first dimension for both height and width.
-  const dimensionParts = stringLinesArray[0].split(' ');
-  const matrixHeight = parseInt(dimensionParts[0], 10); // Convert string to integer for height.
-  const matrixWidth = parseInt(dimensionParts[0], 10);  // Clone behavior: width also derived from first dimension.
+  // Extract the actual grid data.
+  // It skips the first line (dimensions) and the last line (often empty or EOF marker).
+  // Each remaining line is then split into individual characters to form a 2D array of characters.
+  const charGrid = lines.slice(1, -1).map(rowString => rowString.split(''));
 
-  // Create a 2D array (matrix) of characters from the input lines.
-  // We skip the first line (dimensions) and the last line (often empty from input stream).
-  const characterMatrix = stringLinesArray
-    .slice(1, -1) // Exclude the header line and any potential trailing newline.
-    .map(currentLine => currentLine.split('')); // Transform each row string into an array of its characters.
+  // Initialize a flag to 'Yes', assuming all '#' cells have neighbors until proven otherwise.
+  let resultFlag = 'Yes';
 
-  // Initialize a boolean-like string variable for the final outcome.
-  let outcomeMessage = 'TRUE';
-
-  // Iterate through each individual cell in the character matrix.
-  for (let currentY = 0; currentY < matrixHeight; currentY++) {
-    for (let currentX = 0; currentX < matrixWidth; currentX++) {
-
-      // If the current cell is an empty space, it doesn't need filled neighbors, so we skip checking it.
-      if (characterMatrix[currentY][currentX] === EMPTY_SPACE_CHAR) {
-        continue;
+  // Iterate through each row of the character grid.
+  for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    // Iterate through each column in the current row.
+    for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+      // If the current cell contains a '.', it's an empty space and doesn't need neighbor checking.
+      if (charGrid[rowIdx][colIdx] === '.') {
+        continue; // Move to the next cell.
       }
 
-      // This cell contains a filled character. Now, count its filled neighbors.
-      let adjacentFilledCount = 0;
+      // Initialize a counter for adjacent '#' characters.
+      let neighborCount = 0;
 
-      // Check the cell directly above.
-      if (currentY - 1 >= 0) { // Ensure we are not above the top boundary.
-        if (characterMatrix[currentY - 1][currentX] === FILLED_SPACE_CHAR) {
-          adjacentFilledCount = adjacentFilledCount + 1;
+      // Check the cell directly above the current cell.
+      // Ensure the row index is within bounds.
+      if (rowIdx - 1 >= 0) {
+        if (charGrid[rowIdx - 1][colIdx] === '#') {
+          neighborCount += 1;
         }
       }
 
-      // Check the cell directly below.
-      if (currentY + 1 < matrixHeight) { // Ensure we are not below the bottom boundary.
-        if (characterMatrix[currentY + 1][currentX] === FILLED_SPACE_CHAR) {
-          adjacentFilledCount += 1;
+      // Check the cell directly below the current cell.
+      // Ensure the row index is within bounds.
+      if (rowIdx + 1 < gridHeight) {
+        if (charGrid[rowIdx + 1][colIdx] === '#') {
+          neighborCount += 1;
         }
       }
 
-      // Check the cell to the immediate right.
-      if (currentX + 1 < matrixWidth) { // Ensure we are not past the right boundary.
-        if (characterMatrix[currentY][currentX + 1] === FILLED_SPACE_CHAR) {
-          adjacentFilledCount++;
+      // Check the cell to the right of the current cell.
+      // Ensure the column index is within bounds.
+      if (colIdx + 1 < gridWidth) {
+        if (charGrid[rowIdx][colIdx + 1] === '#') {
+          neighborCount += 1;
         }
       }
 
-      // Check the cell to the immediate left.
-      if (currentX - 1 >= 0) { // Ensure we are not past the left boundary.
-        if (characterMatrix[currentY][currentX - 1] === FILLED_SPACE_CHAR) {
-          adjacentFilledCount++;
+      // Check the cell to the left of the current cell.
+      // Ensure the column index is within bounds.
+      if (colIdx - 1 >= 0) {
+        if (charGrid[rowIdx][colIdx - 1] === '#') {
+          neighborCount += 1;
         }
       }
 
-      // If a filled cell has no filled neighbors, the condition is not met.
-      if (adjacentFilledCount === 0) {
-        outcomeMessage = 'FALSE';
-        // The original code continues checking other cells but 'outcomeMessage' will not revert.
+      // If a '#' cell has no '#' neighbors, it means it's isolated.
+      // In this case, the overall result is 'No'.
+      if (neighborCount === 0) {
+        resultFlag = 'No';
+        // The original code continues iterating even after finding an isolated cell.
+        // This behavior is maintained to preserve the exact control flow.
       }
     }
   }
 
-  // Display the final determination to the console.
-  console.info(outcomeMessage);
+  // Output the final determination to the console.
+  console.log(resultFlag);
 }
 
-// Acquire input data from standard input using Node.js's file system module,
-// then pass it to the grid evaluation function.
-evaluateGridCondition(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

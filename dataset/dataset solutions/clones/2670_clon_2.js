@@ -1,88 +1,65 @@
-var inputDataStream = require ( 'fs' ) . readFileSync ( '/proc/self/fd/0' ,   'utf-8' )
-  . split ( "\n" )
-  . map ( ( currentRow ) => {
-    return currentRow . split ( " " )
-      . map ( ( numericalString ) => { return Number ( numericalString ) ; } ) ;
-  } ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8')
+  .split("\n").map((lineStr) => {
+    return lineStr.split(" ").map((numStr) => {
+      return Number(numStr);
+    });
+  });
 
+var nodeCount = rawData[0][0];
+var penaltyValue = rawData[0][2];
+rawData.shift();
 
-var totalVertices = inputDataStream[ 0 ][ 0 ] ;
-// The second element in the first row (E) was unused in the original.
-var traversalPenalty = inputDataStream[ 0 ][ 2 ] ;
-
-inputDataStream . shift ( ) ; // Remove the initial line containing totalVertices and traversalPenalty
-
-
-var adjacencyGraph = new Object ( ) ;
-for ( var vertexIdentifier = 1 ; vertexIdentifier <= totalVertices ; vertexIdentifier ++ ) {
-  adjacencyGraph[ vertexIdentifier ] = new Array ( ) ;
+var adjacencyList = {};
+for (var idx = 1; idx <= nodeCount; idx++) {
+  adjacencyList[idx] = [];
 }
+rawData.forEach((edgeData) => {
+  adjacencyList[edgeData[0]].push([edgeData[1], edgeData[2]]);
+});
 
-inputDataStream . forEach ( ( connectionDetail ) => {
-  adjacencyGraph [ connectionDetail[ 0 ] ] . push ( [ connectionDetail[ 1 ] , connectionDetail[ 2 ] ] ) ;
-} ) ;
+var maxScore = -1;
 
+(() => {
 
-var highestAchievableScore = -1.0 ;
-
-
-( function evaluateAllPaths ( ) {
-
-  var currentTraversalPath = [ 1.0 ] ;
-  var accumulatedSegmentProfits = [ 0.0 ] ;
-  var explorationBranches = [ Array . from ( adjacencyGraph[ 1 ] ) ] ;
-  var activeBranchSegments = explorationBranches . pop ( ) ;
+  var currentPathNodes = [1];
+  var currentPathGains = [0];
+  var backtrackStack = [Array.from(adjacencyList[1])];
+  var currentOptions = backtrackStack.pop();
 
   do {
+    var option = currentOptions.pop();
+    var currentNode = option[0];
 
-    var nextPathSegment = activeBranchSegments . pop ( ) ;
-    var destinationVertex = nextPathSegment[ 0 ] ;
-
-    // Debugging message for path visualization, removed in clone
-    // console . log ( "-> " + currentTraversalPath + " | " + destinationVertex ) ;
-
-    if ( destinationVertex === totalVertices ) {
-      // We have successfully reached the final destination vertex
-      var calculatedPathValue = accumulatedSegmentProfits . reduce ( ( previousSum , currentItem ) => {
-          return previousSum + currentItem ;
-        } , 0.0 )
-        + nextPathSegment[ 1 ]
-        - traversalPenalty * ( currentTraversalPath . length + 1.0 ) ;
-
-      highestAchievableScore = Math . max ( calculatedPathValue , highestAchievableScore ) ;
+    if (currentNode === nodeCount) {
+      var calculatedScore = currentPathGains.reduce((prevSum, currentGain) => {
+        return prevSum + currentGain;
+      }, 0) + option[1] - penaltyValue * (currentPathNodes.length + 1);
+      maxScore = Math.max(calculatedScore, maxScore);
     }
 
-
-    if ( currentTraversalPath . indexOf ( destinationVertex ) === -1.0 ) {
-      // Check if the current vertex has further connections to explore
-      if ( adjacencyGraph[ destinationVertex ] . length > 0.0 ) {
-        explorationBranches . push ( activeBranchSegments ) ;
-        activeBranchSegments = Array . from ( adjacencyGraph[ destinationVertex ] ) ;
-        currentTraversalPath . push ( destinationVertex ) ;
-        accumulatedSegmentProfits . push ( nextPathSegment[ 1 ] ) ;
-        continue ; // Continue with the newly pushed path segment
+    if (currentPathNodes.indexOf(currentNode) === -1) {
+      if (adjacencyList[currentNode].length > 0) {
+        backtrackStack.push(currentOptions);
+        currentOptions = Array.from(adjacencyList[currentNode]);
+        currentPathNodes.push(currentNode);
+        currentPathGains.push(option[1]);
+        continue;
       }
     } else {
-      // Log a message if a cycle is detected, preventing infinite loops
-      console . log ( "Cycle detected in graph traversal." ) ;
+      console.log("loop detected");
     }
 
-
-    while ( activeBranchSegments . length === 0.0 ) {
-      currentTraversalPath . pop ( ) ;
-      accumulatedSegmentProfits . pop ( ) ;
-      if ( explorationBranches . length > 0.0 ) {
-        activeBranchSegments = explorationBranches . pop ( ) ;
+    while (currentOptions.length === 0) {
+      currentPathNodes.pop();
+      currentPathGains.pop();
+      if (backtrackStack.length > 0) {
+        currentOptions = backtrackStack.pop();
       } else {
-        // All possible paths have been fully explored, terminate the function
-        // console . log ( "Traversal complete." ) ;
-        return ;
+        return;
       }
     }
+  } while (true);
 
-  } while ( Boolean ( 1 ) ) ; // Loop indefinitely until an explicit return or break
+})();
 
-} ) ( ) ; // Immediately invoke the path evaluation function
-
-
-console . log ( highestAchievableScore ) ;
+console.log(maxScore);

@@ -1,161 +1,216 @@
-class HeapStructure {
-    constructor(comparisonFn = (v1, v2) => v1 - v2) {
-        this.store = [];
-        this.compare = comparisonFn;
-    }
-
-    _getParentIndex(idx) { return Math.floor((idx - 1) / 2); }
-    _getLeftChildIndex(idx) { return 2 * idx + 1; }
-    _getRightChildIndex(idx) { return 2 * idx + 2; }
-    _hasLeftChild(idx) { return this._getLeftChildIndex(idx) < this.store.length; }
-    _hasRightChild(idx) { return this._getRightChildIndex(idx) < this.store.length; }
-
-    _exchange(idx1, idx2) {
-        [this.store[idx1], this.store[idx2]] = [this.store[idx2], this.store[idx1]];
-    }
-
-    _heapifyUp(idx) {
-        while (idx > 0 && this.compare(this.store[idx], this.store[this._getParentIndex(idx)]) < 0) {
-            this._exchange(idx, this._getParentIndex(idx));
-            idx = this._getParentIndex(idx);
-        }
-    }
-
-    _heapifyDown(idx) {
-        let preferredChildIdx = idx;
-        const left = this._getLeftChildIndex(idx);
-        const right = this._getRightChildIndex(idx);
-
-        if (this._hasLeftChild(idx) && this.compare(this.store[left], this.store[preferredChildIdx]) < 0) {
-            preferredChildIdx = left;
-        }
-        if (this._hasRightChild(idx) && this.compare(this.store[right], this.store[preferredChildIdx]) < 0) {
-            preferredChildIdx = right;
-        }
-
-        if (preferredChildIdx !== idx) {
-            this._exchange(idx, preferredChildIdx);
-            this._heapifyDown(preferredChildIdx);
-        }
-    }
-
-    addEntry(item) {
-        this.store.push(item);
-        this._heapifyUp(this.store.length - 1);
-    }
-
-    peekTop() {
-        if (this.isEmpty()) return undefined;
-        return this.store[0];
-    }
-
-    removeTop() {
-        if (this.isEmpty()) return undefined;
-        if (this.store.length === 1) return this.store.pop();
-
-        const topItem = this.store[0];
-        this.store[0] = this.store.pop();
-        this._heapifyDown(0);
-        return topItem;
-    }
-
-    isEmpty() {
-        return this.store.length === 0;
-    }
-
-    currentSize() {
-        return this.store.length;
-    }
-
-    getAllItems() {
-        return [...this.store];
-    }
-}
-
-class MinimumHeap extends HeapStructure {
+class MinHeap {
     constructor() {
-        super((v1, v2) => v1 - v2);
+        this._heap = [];
+    }
+
+    size() {
+        return this._heap.length;
+    }
+
+    peek() {
+        return this._heap.length === 0 ? undefined : this._heap[0];
+    }
+
+    push(value) {
+        this._heap.push(value);
+        this._bubbleUp(this._heap.length - 1);
+    }
+
+    pop() {
+        if (this._heap.length === 0) return undefined;
+        if (this._heap.length === 1) return this._heap.pop();
+
+        const root = this._heap[0];
+        this._heap[0] = this._heap.pop();
+        this._bubbleDown(0);
+        return root;
+    }
+
+    _bubbleUp(idx) {
+        while (idx > 0) {
+            const parentIdx = Math.floor((idx - 1) / 2);
+            if (this._heap[parentIdx] <= this._heap[idx]) break;
+            [this._heap[parentIdx], this._heap[idx]] = [this._heap[idx], this._heap[parentIdx]];
+            idx = parentIdx;
+        }
+    }
+
+    _bubbleDown(idx) {
+        const lastIdx = this._heap.length - 1;
+        while (true) {
+            let leftChildIdx = 2 * idx + 1;
+            let rightChildIdx = 2 * idx + 2;
+            let smallestIdx = idx;
+
+            if (leftChildIdx <= lastIdx && this._heap[leftChildIdx] < this._heap[smallestIdx]) {
+                smallestIdx = leftChildIdx;
+            }
+            if (rightChildIdx <= lastIdx && this._heap[rightChildIdx] < this._heap[smallestIdx]) {
+                smallestIdx = rightChildIdx;
+            }
+
+            if (smallestIdx === idx) break;
+
+            [this._heap[idx], this._heap[smallestIdx]] = [this._heap[smallestIdx], this._heap[idx]];
+            idx = smallestIdx;
+        }
+    }
+
+    toArray() {
+        return [...this._heap];
     }
 }
 
-const inputUtility = (function() {
-    const sourceContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-    const sourceLines = sourceContent.split("\n");
-    let currentLinePointer = 0;
-    let currentLineTokensBuffer = [];
+function findTopK(elementsCollection, countLimit) {
+    const heapInstance = new MinHeap();
+    for (const currentElement of elementsCollection) {
+        if (heapInstance.size() < countLimit) {
+            heapInstance.push(currentElement);
+        } else if (currentElement > heapInstance.peek()) {
+            heapInstance.pop();
+            heapInstance.push(currentElement);
+        }
+    }
+    return heapInstance.toArray();
+}
 
-    function acquireNextToken(retrieveAsString = false) {
-        if (currentLineTokensBuffer.length === 0) {
-            if (currentLinePointer >= sourceLines.length) {
-                throw new Error("No more input lines available.");
+var INPUT_PARSER = (function() {
+    class InputReader {
+        constructor(sourceText) {
+            this._sourceLines = sourceText.trim().split('\n');
+            this._currentLineIndex = 0;
+            this._cachedTokens = [];
+            this._currentTokenIndex = 0;
+        }
+
+        _loadNextLineTokens() {
+            if (this._currentLineIndex < this._sourceLines.length) {
+                this._cachedTokens = this._sourceLines[this._currentLineIndex].split(' ');
+                this._currentTokenIndex = 0;
+                this._currentLineIndex++;
+            } else {
+                this._cachedTokens = [];
+                this._currentTokenIndex = 0;
             }
-            currentLineTokensBuffer = sourceLines[currentLinePointer].split(" ").reverse();
         }
-        const tokenValue = currentLineTokensBuffer.pop();
-        if (currentLineTokensBuffer.length === 0) {
-            currentLinePointer++;
+
+        fetchAtom(asString) {
+            if (this._currentTokenIndex >= this._cachedTokens.length) {
+                this._loadNextLineTokens();
+                if (this._currentTokenIndex >= this._cachedTokens.length) {
+                    return undefined;
+                }
+            }
+            const tokenValue = this._cachedTokens[this._currentTokenIndex];
+            this._currentTokenIndex++;
+            return asString ? tokenValue : +tokenValue;
         }
-        return retrieveAsString ? tokenValue : Number(tokenValue);
+
+        fetchLine(asStrings) {
+            if (this._currentLineIndex >= this._sourceLines.length) {
+                return [];
+            }
+            const lineContent = this._sourceLines[this._currentLineIndex];
+            this._currentLineIndex++;
+            this._cachedTokens = [];
+            this._currentTokenIndex = 0;
+            const lineTokens = lineContent.split(' ');
+            return asStrings ? lineTokens : lineTokens.map(Number);
+        }
+
+        fetchMatrix(numLines, asStrings) {
+            const resultMatrix = [];
+            for (let i = 0; i < numLines; i++) {
+                if (this._currentLineIndex >= this._sourceLines.length) break;
+                const lineContent = this._sourceLines[this._currentLineIndex];
+                this._currentLineIndex++;
+                this._cachedTokens = [];
+                this._currentTokenIndex = 0;
+                const lineTokens = lineContent.split(' ');
+                resultMatrix.push(asStrings ? lineTokens : lineTokens.map(Number));
+            }
+            return resultMatrix;
+        }
+
+        fetchRaw(numLines, asStrings) {
+            const rawLines = [];
+            for (let i = 0; i < numLines; i++) {
+                if (this._currentLineIndex >= this._sourceLines.length) break;
+                const lineContent = this._sourceLines[this._currentLineIndex];
+                this._currentLineIndex++;
+                this._cachedTokens = [];
+                this._currentTokenIndex = 0;
+                rawLines.push(asStrings ? lineContent : Number(lineContent));
+            }
+            return rawLines;
+        }
     }
 
-    function acquireFullLine(retrieveAsString = false) {
-        if (currentLinePointer >= sourceLines.length) {
-            throw new Error("No more input lines available.");
-        }
-        const lineContent = sourceLines[currentLinePointer];
-        currentLinePointer++;
-        currentLineTokensBuffer = [];
-        const values = lineContent.split(" ");
-        return retrieveAsString ? values : values.map(Number);
+    function createInputReaderInstance(source) {
+        const readerInstance = new InputReader(source);
+        return {
+            a: (asString) => readerInstance.fetchAtom(asString),
+            l: (asStrings) => readerInstance.fetchLine(asStrings),
+            m: (count, asStrings) => readerInstance.fetchMatrix(count, asStrings),
+            r: (count, asStrings) => readerInstance.fetchRaw(count, asStrings)
+        };
     }
-
-    return {
-        fetchValue: acquireNextToken,
-        fetchLine: acquireFullLine
-    };
+    return createInputReaderInstance;
 })();
 
-
-function performCalculation() {
-    const firstLimit = inputUtility.fetchValue();
-    const secondLimit = inputUtility.fetchValue();
-    const thirdLimit = inputUtility.fetchValue();
-    const targetCount = inputUtility.fetchValue();
-
-    const collectionA = inputUtility.fetchLine().sort((val1, val2) => val2 - val1);
-    const collectionB = inputUtility.fetchLine().sort((val1, val2) => val2 - val1);
-    const collectionC = inputUtility.fetchLine().sort((val1, val2) => val2 - val1);
-
-    const firstStageResultHeap = new MinimumHeap();
-    for (let idxA = 0; idxA < firstLimit; idxA++) {
-        for (let idxB = 0; idxB < secondLimit; idxB++) {
-            const currentSumAB = collectionA[idxA] + collectionB[idxB];
-            if (firstStageResultHeap.currentSize() < targetCount) {
-                firstStageResultHeap.addEntry(currentSumAB);
-            } else if (currentSumAB > firstStageResultHeap.peekTop()) {
-                firstStageResultHeap.removeTop();
-                firstStageResultHeap.addEntry(currentSumAB);
-            }
+function createMultiDimArray(fillValue, ...dimensions) {
+    const buildDimensionRecursively = (dimIdx) => {
+        if (dimIdx === dimensions.length - 1) {
+            return Array(dimensions[dimIdx]).fill(fillValue);
+        } else {
+            return Array(dimensions[dimIdx]).fill(null).map(() => buildDimensionRecursively(dimIdx + 1));
         }
-    }
-    const intermediateSumsSorted = firstStageResultHeap.getAllItems().sort((val1, val2) => val2 - val1);
-
-    const finalResultHeap = new MinimumHeap();
-    for (let idxC = 0; idxC < thirdLimit; idxC++) {
-        const iterationLimit = Math.min(intermediateSumsSorted.length, targetCount - idxC);
-        for (let idxU = 0; idxU < iterationLimit; idxU++) {
-            const finalCombinedSum = collectionC[idxC] + intermediateSumsSorted[idxU];
-            if (finalResultHeap.currentSize() < targetCount) {
-                finalResultHeap.addEntry(finalCombinedSum);
-            } else if (finalCombinedSum > finalResultHeap.peekTop()) {
-                finalResultHeap.removeTop();
-                finalResultHeap.addEntry(finalCombinedSum);
-            }
-        }
-    }
-    const finalSumsSorted = finalResultHeap.getAllItems().sort((val1, val2) => val2 - val1);
-
-    return finalSumsSorted.join("\n");
+    };
+    return buildDimensionRecursively(0);
 }
 
-console.log(performCalculation());
+var o = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processMain() {
+    const countX = o.a();
+    const countY = o.a();
+    const countZ = o.a();
+    const limitK = o.a();
+
+    const arrayA = o.l().sort((val1, val2) => val2 - val1);
+    const arrayB = o.l().sort((val1, val2) => val2 - val1);
+    const arrayC = o.l().sort((val1, val2) => val2 - val1);
+
+    const allFirstCombinations = arrayA.slice(0, countX).flatMap(itemA =>
+        arrayB.slice(0, countY).map(itemB => itemA + itemB)
+    );
+
+    let intermediateResultSums;
+    if (allFirstCombinations.length > limitK) {
+        intermediateResultSums = findTopK(allFirstCombinations, limitK);
+    } else {
+        intermediateResultSums = allFirstCombinations;
+    }
+    intermediateResultSums.sort((val1, val2) => val2 - val1);
+
+    const allSecondCombinations = [];
+    for (let i = 0; i < countZ; i++) {
+        const currentJLimit = Math.min(intermediateResultSums.length, limitK - i);
+        if (currentJLimit <= 0) break;
+
+        for (let j = 0; j < currentJLimit; j++) {
+            allSecondCombinations.push(arrayC[i] + intermediateResultSums[j]);
+        }
+    }
+
+    let finalOutputSums;
+    if (allSecondCombinations.length > limitK) {
+        finalOutputSums = findTopK(allSecondCombinations, limitK);
+    } else {
+        finalOutputSums = allSecondCombinations;
+    }
+
+    return finalOutputSums.sort((val1, val2) => val2 - val1).join('\n');
+}
+
+console.log(processMain());

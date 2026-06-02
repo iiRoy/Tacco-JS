@@ -1,83 +1,46 @@
-const reportExecutionFailure = (issueCode = -1) => {
-    console.log(issueCode.toString());
-    process.exit(0);
-};
+function logOutput(message) {
+    console.log(message);
+}
 
-function processGraphConfiguration(rawGraphData) {
-    if (!rawGraphData || rawGraphData.trim().length === 0) {
-        reportExecutionFailure("Empty input provided.");
-    }
+function executeGraphProcessing(rawInputString) {
+    const ERROR_INDICATOR = "-1";
 
-    let graphLines = rawGraphData.trim().split('\n');
+    const trimmedInput = rawInputString.trim();
+    const inputLines = trimmedInput.split("\n");
 
-    if (graphLines.length === 0) {
-        reportExecutionFailure("No data lines detected.");
-    }
-
-    const dimensionInfoLine = graphLines[0];
-    const dimensionComponents = dimensionInfoLine.split(' ');
-
-    if (dimensionComponents.length < 2) {
-        reportExecutionFailure("Malformed dimension line detected.");
-    }
-
-    const numberOfNodes = Number.parseInt(dimensionComponents[0], 10);
-    const totalEdges = Number.parseInt(dimensionComponents[1], 10);
+    const firstLineParts = inputLines[0].split(" ");
+    const totalNodes = parseInt(firstLineParts[0]);
+    const totalEdges = parseInt(firstLineParts[1]);
 
     if (totalEdges % 2 !== 0) {
-        reportExecutionFailure();
+        console.log(ERROR_INDICATOR);
+        return;
     }
 
-    graphLines.shift();
+    inputLines.shift();
 
-    const nodeConnections = new Map();
+    const graphAdjacencyList = {};
 
-    for (let nodeIndex = 1; nodeIndex <= numberOfNodes; nodeIndex++) {
-        nodeConnections.set(nodeIndex.toString(), []);
+    for (let currentNodeId = 1; currentNodeId <= totalNodes; currentNodeId++) {
+        graphAdjacencyList[currentNodeId] = [];
     }
 
-    if (graphLines.length < totalEdges) {
-        reportExecutionFailure("Insufficient edge definitions provided.");
+    for (let currentEdgeIndex = 0; currentEdgeIndex < totalEdges; currentEdgeIndex++) {
+        const edgeParts = inputLines[currentEdgeIndex].split(" ");
+        const nodeIdentifierA = edgeParts[0];
+        const nodeIdentifierB = edgeParts[1];
+
+        graphAdjacencyList[nodeIdentifierA].push(nodeIdentifierB);
+        graphAdjacencyList[nodeIdentifierB].push(nodeIdentifierA);
     }
 
-    for (let edgeIndex = 0; edgeIndex < totalEdges; edgeIndex++) {
-        const currentEdgeDefinition = graphLines[edgeIndex];
-        const connectedNodes = currentEdgeDefinition.split(' ');
-
-        if (connectedNodes.length < 2) {
-            reportExecutionFailure("Invalid edge format on data line " + (edgeIndex + 2) + ".");
-        }
-
-        const firstNodeIdentifier = connectedNodes[0];
-        const secondNodeIdentifier = connectedNodes[1];
-
-        if (!nodeConnections.has(firstNodeIdentifier) || !nodeConnections.has(secondNodeIdentifier)) {
-            reportExecutionFailure("Edge references a non-existent node.");
-        }
-        
-        nodeConnections.get(firstNodeIdentifier).push(secondNodeIdentifier);
-        nodeConnections.get(secondNodeIdentifier).push(firstNodeIdentifier);
-    }
-
-    for (let currentNodeId = 1; currentNodeId <= numberOfNodes; currentNodeId++) {
-        const currentIdString = currentNodeId.toString();
-        const nodeDegree = nodeConnections.get(currentIdString).length;
-
+    for (let currentNodeId = 1; currentNodeId <= totalNodes; currentNodeId++) {
+        const nodeDegree = graphAdjacencyList[currentNodeId].length;
         if (nodeDegree % 2 !== 0) {
-            reportExecutionFailure();
+            console.log(ERROR_INDICATOR);
+            return;
         }
     }
-
-    for (let traversalStep = 0; traversalStep < totalEdges; traversalStep++) {
-        // Placeholder for potential future graph traversal or analysis steps.
-    }
 }
 
-try {
-    const fileSystemModule = require("fs");
-    const standardInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    processGraphConfiguration(standardInputContent);
-} catch (inputError) {
-    console.error("An unhandled system error occurred:", inputError.message);
-    process.exit(1);
-}
+executeGraphProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

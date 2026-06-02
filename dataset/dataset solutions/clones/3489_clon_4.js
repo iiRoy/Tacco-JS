@@ -1,25 +1,27 @@
-const obtainSourceContent = require('node:fs').readFileSync;
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = sourceData.split('\n');
 
-const processExecution = (sourcePath) => {
-    const rawDataSections = obtainSourceContent(sourcePath, 'utf8').split('\n');
+const [itemCountStr, timeLimitStr] = allLines.shift().split(' ');
+const totalEntries = Number(itemCountStr);
+const maxDuration = Number(timeLimitStr);
 
-    const [primaryConfig, ...taskDetails] = rawDataSections;
-    const [_, maxDuration] = primaryConfig.split(' ').map(Number);
+const processedEntries = allLines.slice(0, totalEntries).map(lineContent => {
+    const [costValueStr, durationValueStr] = lineContent.split(' ');
+    return {
+        pricePoint: Number(costValueStr),
+        timeRequired: Number(durationValueStr)
+    };
+});
 
-    const viableChoices = taskDetails
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(entry => {
-            const [costValue, timeValue] = entry.split(' ').map(Number);
-            return { costValue, timeValue };
-        })
-        .filter(item => item.timeValue <= maxDuration);
+const viableOptions = processedEntries.filter(entry => entry.timeRequired <= maxDuration);
 
-    const resultingMinimum = viableChoices.reduce((acc, currentItem) => {
-        return Math.min(acc, currentItem.costValue);
+let finalResult;
+if (viableOptions.length === 0) {
+    finalResult = 'TLE';
+} else {
+    finalResult = viableOptions.reduce((currentMinPrice, currentEntry) => {
+        return Math.min(currentMinPrice, currentEntry.pricePoint);
     }, Infinity);
+}
 
-    console.log(resultingMinimum === Infinity ? 'TLE' : resultingMinimum);
-};
-
-processExecution('/dev/stdin');
+console.log(finalResult);

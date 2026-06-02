@@ -1,293 +1,204 @@
 "use strict";
+// This script processes input data from standard input to compute a specific mathematical expression modulo a large prime number.
 
-// This module handles file system operations for input reading
-var necessitate = require("fs");
+// Read all input from the standard input stream.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Input processing setup
-var rawData = necessitate.obtainFileSync("/std/in", "utf8"); // Acquire input from a standard source
-var tokenStream = rawData.split(/ |\n/); // Divide input into tokens by spaces or newlines
-var tokenIndex = 0; // Current pointer for token access
+// Split the raw input string into an array of tokens using spaces or newlines as delimiters.
+var tokenArray = rawData.split(/ |\n/),
+  tokenIndex = 0; // Initialize an index to keep track of the current token.
 
-/**
- * Retrieves the next numerical token from the stream.
- * @returns {number} The parsed numerical value.
- */
-function acquireNum() {
-  return +tokenStream[tokenIndex++];
+// Function to retrieve and parse the next token as a number.
+function getNextNum() {
+  return +tokenArray[tokenIndex++];
 }
 
-/**
- * Retrieves the next string token from the stream.
- * @returns {string} The textual token.
- */
-function acquireText() {
-  return tokenStream[tokenIndex++];
+// Function to retrieve the next token as a string.
+function getNextStr() {
+  return tokenArray[tokenIndex++];
 }
 
-/**
- * Retrieves the next BigInt token from the stream.
- * @returns {BigInt} The parsed large integer.
- */
-function acquireBigInt() {
-  return BigInt(tokenStream[tokenIndex++]);
+// Function to retrieve and parse the next token as a BigInt.
+function getNextBigInt() {
+  return BigInt(tokenArray[tokenIndex++]);
 }
 
-/**
- * Acquires a sequence of tokens from the stream.
- * @param {number} count The number of tokens to extract.
- * @param {boolean} isString If true, returns strings; otherwise, parses to numbers.
- * @returns {Array<string|number>} The sequence of extracted tokens.
- */
-function acquireSeq(count, isString) {
-  // Determine if elements should be returned as strings or numbers
+// Function to retrieve a specified number of tokens, optionally parsing them as numbers.
+// 'count' is the number of tokens to retrieve. 'isString' determines if they remain strings or are converted to numbers.
+function getNumsOrStrs(count, isString) {
   if (isString) {
-    return tokenStream.slice(tokenIndex, tokenIndex += count);
+    return tokenArray.slice(tokenIndex, (tokenIndex += count));
   } else {
-    return tokenStream.slice(tokenIndex, tokenIndex += count).map(currentVal => +currentVal);
+    return tokenArray.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
   }
 }
 
-/**
- * Acquires and sorts a sequence of numerical tokens.
- * @param {number} count The number of tokens to retrieve.
- * @param {boolean} descendingOrder If true, sorts in reverse order; otherwise, ascending.
- * @returns {Array<number>} The sorted numerical sequence.
- */
-function acquireSortedSeq(count, descendingOrder) {
-  // Extract and convert tokens to numbers
-  var parsedNumbers = tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
-
-  // Apply sorting based on the flag
-  if (descendingOrder) {
-    return parsedNumbers.sort((valA, valB) => valB - valA);
+// Function to retrieve a specified number of tokens, parse them as numbers, and sort them.
+// 'count' is the number of tokens. 'descending' determines the sort order (true for descending, false for ascending).
+function getSortedNums(count, descending) {
+  if (descending) {
+    return tokenArray.slice(tokenIndex, (tokenIndex += count)).map((val) => +val).sort((a, b) => b - a);
   } else {
-    return parsedNumbers.sort((valA, valB) => valA - valB);
+    return tokenArray.slice(tokenIndex, (tokenIndex += count)).map((val) => +val).sort((a, b) => a - b);
   }
 }
 
-/**
- * Acquires a 2D matrix (array of arrays) from the token stream.
- * @param {number} rows The total number of rows.
- * @param {number} cols The number of columns per row.
- * @param {boolean} asStrings If true, elements remain strings; otherwise, parsed to numbers.
- * @returns {Array<Array<string|number>>} The resulting matrix.
- */
-function acquireMatrix(rows, cols, asStrings) {
-  var resultMatrix = [];
-  var rowCounter = 0;
-
-  // Process each row
-  if (asStrings) {
-    for (; rowCounter < rows; rowCounter++) {
-      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
+// Function to retrieve a 2D matrix (array of arrays) from the tokens.
+// 'height' is the number of rows, 'width' is the number of columns.
+// 'isStringMatrix' determines if matrix elements remain strings or are converted to numbers.
+function getMatrix(height, width, isStringMatrix) {
+  var resultMatrix = [],
+    rowCounter = 0;
+  if (isStringMatrix) {
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += width)));
     }
   } else {
-    for (; rowCounter < rows; rowCounter++) {
-      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols).map(item => +item));
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += width)).map((val) => +val));
     }
   }
   return resultMatrix;
 }
 
-/**
- * Constructs a multi-dimensional array initialized with a specific value.
- * @param {*} initialValue The value to populate array elements with.
- * @param {...number} dimensions The desired dimensions of the array.
- * @returns {Array} The dynamically created multi-dimensional array.
- */
+// Function to dynamically create a multi-dimensional array initialized with a given value.
+// The dimensions are passed as subsequent arguments after the initial value.
 function createMultiDimArray(initialValue) {
-  var dimensionArgs = arguments;
-  var dimensionCount = dimensionArgs.length;
-  var expression = "Array(dimensionArgs[" + --dimensionCount + "]).fill().map(elem => {return " + initialValue + ";})";
-
-  // Iteratively build the nested array creation expression
-  while (--dimensionCount) {
-    expression = "Array(dimensionArgs[" + dimensionCount + "]).fill().map(elem =>" + expression + ")";
+  var args = arguments,
+    argCount = args.length,
+    // Start building the array creation expression from the innermost dimension.
+    expression = "Array(args[" + --argCount + "]).fill().map(x=>{return " + initialValue + ";})";
+  // Wrap the expression for each outer dimension.
+  while (--argCount) {
+    expression = "Array(args[" + argCount + "]).fill().map(x=>" + expression + ")";
   }
-
-  // Execute the generated string as JavaScript code
+  // Evaluate the constructed string to create the array.
   return eval(expression);
 }
 
-// Global buffer for collecting output
+// An array to buffer output lines before printing them to console.
 var outputBuffer = [];
-/**
- * Appends a data item to the global output buffer.
- * @param {*} dataItem The content to add to the buffer.
- */
-function appendToOutput(dataItem) {
-  outputBuffer.push(dataItem);
+
+// Function to add a string to the output buffer.
+function addToOutput(content) {
+  outputBuffer.push(content);
 }
 
+// Define the prime modulus for all modular arithmetic operations.
+var primeModulus = 1000000007; // This is 10^9 + 7
 
-// --- Modular Arithmetic Utilities ---
-
-// A large prime number used as the modulo base
-var primeModulus = 1000000007;
-
-/**
- * Performs modular multiplication for an arbitrary number of operands.
- * @param {...number} operands Numbers to be multiplied.
- * @returns {number} The modular product of all operands.
- */
-function modularMultiply() {
-  var operands = arguments;
-  var currentProduct = operands[0];
-  var argIndex = operands.length;
-
-  // Loop through operands, applying modular multiplication at each step
-  while (--argIndex) {
-    // Optimized modular multiplication to avoid intermediate overflows
-    currentProduct = (((currentProduct >> 16) * operands[argIndex] % primeModulus * 65536) + ((currentProduct & 65535) * operands[argIndex])) % primeModulus;
+// Function for modular multiplication of an arbitrary number of arguments.
+// It uses a specific optimization for multiplication modulo a prime.
+function multiplyMod() {
+  for (var operands = arguments, product = operands[0], i = operands.length; --i;) {
+    // This calculation is equivalent to (product * operands[i]) % primeModulus
+    // It splits 'product' into two 16-bit parts to avoid potential overflow before the modulo operation,
+    // assuming intermediate products might exceed standard 32-bit integer limits but fit within 53-bit safe integers.
+    product = ((product >>> 16) * operands[i] % primeModulus * 65536 + (product & 65535) * operands[i]) % primeModulus;
   }
-  return currentProduct;
+  return product;
 }
 
-// Caches for precomputed combinatorial values
-var factorialCache = [];
-var invFactorialCache = [];
-var modularInverses = []; // This array is typically commented out in the original implementation
-var powerOfTwoCache = []; // This array is typically commented out in the original implementation
+// Caches for precomputed values used in modular arithmetic.
+var factorialCache = [], // Stores factorials (n!)
+  invFactorialCache = [], // Stores inverse factorials ((n!)^-1 mod primeModulus)
+  inverseCache = [], // (Commented out in original, so remains commented)
+  powerOfTwoCache = []; // (Commented out in original, so remains commented)
 
-/**
- * Precomputes factorials and their modular inverses up to a specified limit.
- * @param {number} upperLimit The maximum number for precomputation.
- */
-function precomputeCombinatorics(upperLimit) {
-  // Initialize and compute factorials
-  factorialCache.length = upperLimit + 1;
+// Function to precompute factorials and their modular inverses up to a given limit.
+function setupFactorials(limit) {
+  factorialCache.length = limit + 1;
   factorialCache[0] = factorialCache[1] = 1;
-  for (var k = 2; k <= upperLimit;) {
-    factorialCache[k] = modularMultiply(factorialCache[k - 1], k++);
+  // Compute factorials iteratively.
+  for (var i = 2; i <= limit;) {
+    factorialCache[i] = multiplyMod(factorialCache[i - 1], i++);
   }
 
-  // Initialize and compute inverse factorials
-  invFactorialCache.length = upperLimit + 1;
+  invFactorialCache.length = limit + 1;
   invFactorialCache[0] = invFactorialCache[1] = 1;
-  invFactorialCache[upperLimit] = modularInverse(factorialCache[upperLimit]);
-
-  // Compute inverse factorials in descending order
-  for (k = upperLimit; 2 < k;) {
-    invFactorialCache[k - 1] = modularMultiply(invFactorialCache[k], k--);
+  // Compute the inverse factorial of the largest number first using modularInverse.
+  invFactorialCache[limit] = modularInverse(factorialCache[limit]);
+  // Compute other inverse factorials iteratively downwards.
+  for (i = limit; 2 < i;) {
+    invFactorialCache[i - 1] = multiplyMod(invFactorialCache[i], i--);
   }
 
-  // The following sections are for optional precomputations, often commented out:
-  // modularInverses.length=upperLimit+1,modularInverses[0]=modularInverses[1]=1;
-  // for(k=2;k<=upperLimit;)modularInverses[k]=modularMultiply(factorialCache[k-1],invFactorialCache[k++]);
-  // powerOfTwoCache.length=upperLimit+1,powerOfTwoCache[0]=1;
-  // for(k=1;k<=upperLimit;k++)powerOfTwoCache[k]=powerOfTwoCache[k-1]*2%primeModulus;
+  // The following sections were commented out in the original code and are kept commented here.
+  // inverseCache.length = limit + 1;
+  // inverseCache[0] = inverseCache[1] = 1;
+  // for (i = 2; i <= limit;) {
+  //   inverseCache[i] = multiplyMod(factorialCache[i - 1], invFactorialCache[i++]);
+  // }
+  // powerOfTwoCache.length = limit + 1;
+  // powerOfTwoCache[0] = 1;
+  // for (i = 1; i <= limit; i++) {
+  //   powerOfTwoCache[i] = powerOfTwoCache[i - 1] * 2 % primeModulus;
+  // }
 }
 
-/**
- * Computes the modular multiplicative inverse of a number using the Extended Euclidean Algorithm.
- * @param {number} value The number for which to find the inverse.
- * @returns {number} The modular inverse of 'value' modulo 'primeModulus'.
- */
-function modularInverse(value) {
-  var currentMod = primeModulus;
-  var u = 0,
-    v = 1;
-  var temp;
-
-  // Apply the Extended Euclidean Algorithm
-  while (value) {
-    temp = currentMod / value | 0; // Integer division
-    currentMod -= temp * value;
+// Function to compute the modular multiplicative inverse of 'valueB' modulo 'primeModulus'.
+// Uses the extended Euclidean algorithm.
+function modularInverse(valueB) {
+  for (var valueA = primeModulus, u = 0, v = 1, temp; valueB; v = temp) {
+    temp = Math.floor(valueA / valueB); // Integer division
+    valueA -= temp * valueB;
     u -= temp * v;
-
-    // Swap 'currentMod' and 'value', and 'u' and 'v'
-    temp = currentMod;
-    currentMod = value;
-    value = temp;
-
+    temp = valueA;
+    valueA = valueB;
+    valueB = temp;
     temp = u;
     u = v;
-    v = temp;
   }
-
-  // Ensure the result is positive
   u %= primeModulus;
-  return u < 0 ? u + primeModulus : u;
+  return u < 0 ? u + primeModulus : u; // Ensure the result is positive.
 }
 
-/**
- * Computes modular exponentiation (base^exponent % primeModulus).
- * Uses the exponentiation by squaring method.
- * @param {number} baseVal The base number.
- * @param {number} exponentVal The exponent.
- * @returns {number} The result of baseVal raised to exponentVal modulo primeModulus.
- */
-function modularExponentiation(baseVal, exponentVal) {
-  var res = 1; // Initialize the result accumulator
-  // Iterate while the exponent is greater than zero
-  for (; exponentVal; baseVal = modularMultiply(baseVal, baseVal), exponentVal >>= 1) {
-    if (exponentVal & 1) { // If the current bit of the exponent is set
-      res = modularMultiply(baseVal, res);
+// Function to compute modular exponentiation (base^exponent % primeModulus) using binary exponentiation (exponentiation by squaring).
+function modularPower(base, exponent) {
+  for (var result = 1; exponent; base = multiplyMod(base, base), exponent >>= 1) {
+    if (exponent & 1) { // If the current bit of exponent is 1
+      result = multiplyMod(base, result);
     }
   }
-  return res;
+  return result;
 }
 
-/**
- * Calculates "n choose r" (combinations) modulo primeModulus.
- * This function assumes that `precomputeCombinatorics` has been called.
- * @param {number} totalItems The total number of items (n).
- * @param {number} chosenItems The number of items to choose (r).
- * @returns {number} The value of nCr modulo primeModulus.
- */
-function calculateCombinations(totalItems, chosenItems) {
-  return modularMultiply(factorialCache[totalItems], invFactorialCache[chosenItems], invFactorialCache[totalItems - chosenItems]);
+// Function to compute "n choose r" (combinations) modulo primeModulus.
+function nCrMod(nVal, rVal) {
+  return multiplyMod(factorialCache[nVal], invFactorialCache[rVal], invFactorialCache[nVal - rVal]);
 }
 
-/**
- * Calculates "n permute r" (permutations) modulo primeModulus.
- * This function assumes that `precomputeCombinatorics` has been called.
- * @param {number} totalElements The total number of elements (n).
- * @param {number} selectedElements The number of elements to select (r).
- * @returns {number} The value of nPr modulo primeModulus.
- */
-function calculatePermutations(totalElements, selectedElements) {
-  return modularMultiply(factorialCache[totalElements], invFactorialCache[totalElements - selectedElements]);
+// Function to compute "n permute r" (permutations) modulo primeModulus.
+function nPrMod(nVal, rVal) {
+  return multiplyMod(factorialCache[nVal], invFactorialCache[nVal - rVal]);
 }
 
-/**
- * Ensures a number is positive and correctly applies the modulo operation.
- * @param {number} inputNumber The number to normalize.
- * @returns {number} The positive number within the [0, primeModulus-1] range.
- */
-function ensurePositiveModulo(inputNumber) {
-  return (inputNumber % primeModulus + primeModulus) % primeModulus;
+// Function to normalize a number to be within the [0, primeModulus-1] range.
+function normalizeMod(num) {
+  return (num % primeModulus + primeModulus) % primeModulus;
 }
 
 
-// --- Main Program Execution Block ---
+// Execute the main problem-solving logic.
+var finalResult = calculateSolution();
 
-// Execute the primary logic function of the program
-var finalResult = executeProgram();
-
-// If the main function returns a defined value, print it to console
+// If the main function returned a value, print it to the console.
 if (finalResult !== undefined) {
   console.log(String(finalResult));
 }
 
-// If there are any buffered outputs, join them with newlines and print
-if (outputBuffer.length > 0) {
+// If there are any buffered output lines, print them to the console, each on a new line.
+if (outputBuffer.length) {
   console.log(outputBuffer.join("\n"));
 }
 
-/**
- * The main function encapsulating the core computational logic.
- * @returns {number} The final computed answer of the program.
- */
-function executeProgram() {
-  var elementCount = acquireNum(); // Obtain the main input value 'n'
-
-  // Calculate the expression (10^n - 9^n - 9^n + 8^n) modulo primeModulus
-  var calculatedAnswer = modularExponentiation(10, elementCount);
-  calculatedAnswer -= modularExponentiation(9, elementCount);
-  calculatedAnswer -= modularExponentiation(9, elementCount);
-  calculatedAnswer += modularExponentiation(8, elementCount);
-
-  // Return the result, ensuring it's positive and within the modulo range
-  return ensurePositiveModulo(calculatedAnswer);
+// The core logic for the specific problem.
+function calculateSolution() {
+  var inputVal = getNextNum(); // Read the single integer input 'n'.
+  var computedAnswer = modularPower(10, inputVal); // Calculate 10^n mod primeModulus.
+  computedAnswer -= modularPower(9, inputVal); // Subtract 9^n mod primeModulus.
+  computedAnswer -= modularPower(9, inputVal); // Subtract 9^n mod primeModulus again.
+  computedAnswer += modularPower(8, inputVal); // Add 8^n mod primeModulus.
+  // Normalize the final result to ensure it's positive and within the modulus range.
+  return normalizeMod(computedAnswer);
 }

@@ -1,92 +1,49 @@
-const factorialProduct = (upperBoundValue, termsCount) => {
-    if (termsCount <= 0) return 1;
-    let productAccumulator = 1;
-    for (let currentTermIdx = 0; currentTermIdx < termsCount; ++currentTermIdx) {
-        productAccumulator *= (upperBoundValue - currentTermIdx);
-    }
-    return productAccumulator;
+const calculatePermutations = (upperBound, count) => {
+    if (count < 0 || count > upperBound) return 0;
+    return Array.from({ length: count }, (_, index) => upperBound - index)
+                .reduce((product, value) => product * value, 1);
 };
 
-const waysToSelect = (totalAvailable, chosenCount) => {
-    // Replicates the original combination function's specific behavior for non-positive chosenCount.
-    // Original permutation(n,r) returns 1 for r <= 0.
-    // So, permutation(chosenCount, chosenCount) for chosenCount <= 0 also returns 1.
-    // Thus, combination(n,r) for r <= 0 returns 1 / 1 = 1.
-    if (chosenCount < 0) {
-        return 1;
-    }
-    return factorialProduct(totalAvailable, chosenCount) / factorialProduct(chosenCount, chosenCount);
+const calculateCombinations = (totalItems, chosenItems) => {
+    // Replicating the original's formula: P(n,r) / P(r,r)
+    return calculatePermutations(totalItems, chosenItems) / calculatePermutations(chosenItems, chosenItems);
 };
 
-const processInputData = (completeInputString) => {
-    const inputSegments = completeInputString.trim().split('\n');
-    const firstLineAttributes = inputSegments[0].split(' ');
-    const totalItemCount = Number(firstLineAttributes[0]);
-    const averageGroupSize = Number(firstLineAttributes[1]);
-    const maxCombinationRange = Number(firstLineAttributes[2]);
-
-    const itemValueStrings = inputSegments[1].split(' ');
-    const numericalItemValues = itemValueStrings.map(Number);
-
-    const descendingSortedValues = [...numericalItemValues].sort((valueOne, valueTwo) => valueTwo - valueOne);
-
-    let topValuesSum = 0;
-    let valueFrequencyMap = new Map();
-
-    for (let itemIndex = 0; itemIndex < totalItemCount; ++itemIndex) {
-        if (itemIndex < averageGroupSize) {
-            topValuesSum += descendingSortedValues[itemIndex];
-        }
-        valueFrequencyMap.set(descendingSortedValues[itemIndex], (valueFrequencyMap.get(descendingSortedValues[itemIndex]) || 0) + 1);
-    }
-
-    const calculatedAverage = topValuesSum / averageGroupSize;
-    console.log(calculatedAverage);
-
-    let computedSelectionWays = 0;
-    let currentIterationTally = 0;
-
-    if (descendingSortedValues[0] === descendingSortedValues[averageGroupSize]) {
-        // This branch replicates the original's hardcoded '50' and loop from '1'.
-        // This is an unusual specific behavior which must be mirrored exactly.
-        const fixedValueForCombinations = 50;
-        for (let loopCount = 1; loopCount <= maxCombinationRange; ++loopCount) {
-            computedSelectionWays += waysToSelect(fixedValueForCombinations, loopCount);
-        }
-    } else {
-        computedSelectionWays = 1; // Initial value for this branch, replicating 'comb = 1'
-
-        // Replicates Object.keys(C).length as the upper bound for the loop.
-        // This means iterating through the first 'distinctElementQuantity' elements of the sorted array.
-        const distinctElementQuantity = valueFrequencyMap.size;
-
-        for (let loopIndex = 0; loopIndex < distinctElementQuantity; ++loopIndex) {
-            const currentItemFromSorted = descendingSortedValues[loopIndex];
-            const totalOccurrencesOfCurrentItem = valueFrequencyMap.get(currentItemFromSorted);
-
-            if (totalOccurrencesOfCurrentItem >= 2) {
-                let dynamicSelectionCount;
-                const remainingSlotsForAverage = averageGroupSize - currentIterationTally;
-
-                if (totalOccurrencesOfCurrentItem > remainingSlotsForAverage) {
-                    dynamicSelectionCount = remainingSlotsForAverage;
-                } else {
-                    dynamicSelectionCount = totalOccurrencesOfCurrentItem;
-                }
-                computedSelectionWays *= waysToSelect(totalOccurrencesOfCurrentItem, dynamicSelectionCount);
-                currentIterationTally += totalOccurrencesOfCurrentItem;
-            } else {
-                currentIterationTally += totalOccurrencesOfCurrentItem;
-            }
-        }
-    }
-    console.log(computedSelectionWays);
-};
-
-let bufferedInputContent = '';
-process.stdin.on('data', (inputChunk) => {
-    bufferedInputContent += inputChunk.toString();
+const collectedLines = [];
+const inputInterface = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
-process.stdin.on('end', () => {
-    processInputData(bufferedInputContent);
+
+inputInterface.on('line', (currentInputLine) => {
+    collectedLines.push(currentInputLine);
+});
+
+inputInterface.on('close', () => {
+    const [configLine, dataLine] = collectedLines;
+
+    const [itemCountStr, minSelectionStr, maxSelectionStr] = configLine.split(" ");
+    const itemCount = Number(itemCountStr);
+    const minSelection = Number(minSelectionStr);
+    const maxSelection = Number(maxSelectionStr);
+
+    const dataValues = dataLine.split(" ").map(Number);
+
+    dataValues.sort((valA, valB) => valB - valA);
+
+    const topValuesSum = dataValues.slice(0, minSelection)
+                                   .reduce((sumAccumulator, currentVal) => sumAccumulator + currentVal, 0);
+    const highestAverage = topValuesSum / minSelection;
+    console.log(highestAverage);
+
+    let waysToSelect;
+
+    if (dataValues[0] !== dataValues[minSelection]) {
+        waysToSelect = 1;
+    } else {
+        waysToSelect = Array.from({ length: maxSelection }, (_, index) => index + 1)
+                            .reduce((totalWaysAccumulator, currentJ) =>
+                                totalWaysAccumulator + calculateCombinations(50, currentJ), 0);
+    }
+    console.log(waysToSelect);
 });

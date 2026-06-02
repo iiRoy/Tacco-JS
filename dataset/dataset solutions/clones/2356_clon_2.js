@@ -1,33 +1,38 @@
-// This function processes the entire input text provided.
-function PerformCalculation( incomingText )
-{
-  // Each line of input is separated into an array element.
-  let textLines = incomingText.split( "\n" ) ;
-  const elementCount = Number( textLines[0] ) ; // Convert the first line to an integer.
-  let numericValues = textLines[1].split( " " ) ; // Split the second line into an array of strings.
+// This function processes the provided raw data.
+function ProcessInput(rawData) {
+    // The raw data is split into individual lines.
+    let processedLines = rawData.split("\n");
 
-  let accumulatedResult = 0 ; // Initialize a variable to store the sum of XOR operations.
-  const moduloDivisor = 1000000007 ; // Define a constant for the modulo operation.
+    // The first line contains the total number of items.
+    const itemCount = parseInt(processedLines[0], 0xA);
 
-  // Iterate through the array to convert all string values to numbers.
-  for ( let firstLoopIdx = 0 ; firstLoopIdx < elementCount ; firstLoopIdx++ )
-  {
-    numericValues[firstLoopIdx] = Number( numericValues[firstLoopIdx] ) ;
-  }
+    // The second line contains space-separated numeric values.
+    let numericValues = processedLines[1].split(' ');
 
-  // Begin nested loops to calculate XOR sums for all unique pairs.
-  for ( let firstLoopIdx = 0 ; firstLoopIdx < elementCount - 1 ; firstLoopIdx++ )
-  {
-    for ( let secondLoopIdx = firstLoopIdx + 1 ; secondLoopIdx < elementCount ; secondLoopIdx++ )
-    {
-      accumulatedResult += numericValues[firstLoopIdx] ^ numericValues[secondLoopIdx] ; // Add the bitwise XOR of two elements to the total.
+    // Initialize a variable to accumulate the XOR sum.
+    let xorSum = 0x0;
+
+    // Define a constant for the modulo operation.
+    const moduloConstant = 1000000007;
+
+    // Convert all string values in the array to actual numbers.
+    for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+        numericValues[outerIndex] = Number(numericValues[outerIndex]);
     }
-  }
 
-  // Apply the modulo operation to the final sum.
-  accumulatedResult = accumulatedResult % moduloDivisor ;
-  console.log( accumulatedResult ) ; // Output the computed result to standard output.
+    // Perform nested iterations to calculate the XOR sum of all unique pairs.
+    for (let outerIndex = 0; outerIndex < itemCount - 1; outerIndex++) {
+        for (let innerIndex = outerIndex + 1; innerIndex < itemCount; innerIndex++) {
+            xorSum += numericValues[outerIndex] ^ numericValues[innerIndex];
+        }
+    }
+
+    // Apply the modulo operation to the final sum.
+    xorSum = xorSum % moduloConstant;
+
+    // Output the computed result to the console.
+    console.log(xorSum);
 }
 
-// The following section should not be altered as it handles standard I/O.
-PerformCalculation( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the following line; it handles standard input/output.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

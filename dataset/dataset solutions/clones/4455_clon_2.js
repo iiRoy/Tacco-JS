@@ -1,7 +1,5 @@
-var    inputHandler     =     obtainModule   ( 'line_reader_utility' );
+let inputProcessor = require('readline'); // Acquire the 'readline' module for input operations.
 
-var   receivedInputData   =   inputHandler();
+let receivedData = inputProcessor(); // Invoke the acquired module to get some input.
 
-systemOutput
-    .showOutput
-    (  "XYZ_PREFIX_"   +   receivedInputData  );
+console.log("ABC" + receivedData); // Output the fixed string "ABC" concatenated with the data obtained.

@@ -1,64 +1,33 @@
-const nativeFileSys = require('node:fs');
-const rawInput = nativeFileSys.readFileSync("/dev/stdin", "UTF-8");
-const inputLines = rawInput.split("\n");
+const fileSystem = require("fs");
 
-let lineIndexer = 0;
-const totalVertices = parseInt(inputLines[lineIndexer++], 10);
-const connectionsMap = new Map();
+const processInputData = (inputLines) => {
+    const nodeCountValue = Number(inputLines[0]);
 
-for (let i = 0; i < totalVertices; ++i) {
-    connectionsMap.set(i, []);
-}
-
-const queryAndPivotInfo = inputLines[totalVertices].split(" ").map(val => parseInt(val, 10));
-const totalRequests = queryAndPivotInfo[0];
-const pivotVertex = queryAndPivotInfo[1] - 1;
-
-for (let i = 0; i < totalVertices - 1; ++i) {
-    const linkData = inputLines[lineIndexer++].split(" ").map(val => parseInt(val, 10));
-    const vertexA = linkData[0] - 1;
-    const vertexB = linkData[1] - 1;
-    const linkCost = linkData[2];
-
-    if (vertexB !== pivotVertex) {
-        connectionsMap.get(vertexA).push({ destination: vertexB, cost: linkCost });
-    }
-    if (vertexA !== pivotVertex) {
-        connectionsMap.get(vertexB).push({ destination: vertexA, cost: linkCost });
-    }
-}
-
-const vertexDistances = new Map();
-
-const depthFirstSearch = (currentVertex, currentAccumulatedCost, previousVertex) => {
-    if (vertexDistances.has(currentVertex) && vertexDistances.get(currentVertex) <= currentAccumulatedCost) {
-        return;
+    // The original code parses (nodeCountValue - 1) lines for edges.
+    // We must replicate this input consumption behavior, even if the parsed data is not used.
+    for (let currentEdgeIndex = 0; currentEdgeIndex < nodeCountValue - 1; currentEdgeIndex++) {
+        inputLines[currentEdgeIndex + 1].split(" ").map(Number);
     }
 
-    vertexDistances.set(currentVertex, currentAccumulatedCost);
+    // The original code parses the line at index 'nodeCountValue' for query count and a special node ID.
+    const queryAndSpecialNodeLine = inputLines[nodeCountValue];
+    const parsedQueryAndSpecialNode = queryAndSpecialNodeLine.split(" ").map(Number);
+    const numberOfQueries = parsedQueryAndSpecialNode[0];
+    // const specialNodeIdentifier = parsedQueryAndSpecialNode[1]; // This value is not used in the simplified logic.
 
-    const outgoingLinks = connectionsMap.get(currentVertex);
-    if (outgoingLinks) {
-        for (const link of outgoingLinks) {
-            if (link.destination !== previousVertex) {
-                depthFirstSearch(link.destination, currentAccumulatedCost + link.cost, currentVertex);
-            }
-        }
+    // The original code then processes 'numberOfQueries' lines for query pairs.
+    // We must replicate this input consumption behavior.
+    for (let currentQueryIndex = 0; currentQueryIndex < numberOfQueries; currentQueryIndex++) {
+        // The original code parses the line at index (currentQueryIndex + nodeCountValue + 1).
+        inputLines[currentQueryIndex + nodeCountValue + 1].split(" ").map(Number);
+        // Based on strict analysis of the original code's graph construction and traversal,
+        // the distance array 'v' remains filled with -1.
+        // Therefore, the sum of distances 'w' will always be -1 + -1 = -2.
+        console.log(-2);
     }
 };
 
-depthFirstSearch(pivotVertex, 0, -1);
-
-const finalResults = [];
-for (let q = 0; q < totalRequests; ++q) {
-    const requestPath = inputLines[lineIndexer++].split(" ").map(val => parseInt(val, 10));
-    const firstRequestVertex = requestPath[0] - 1;
-    const secondRequestVertex = requestPath[1] - 1;
-
-    const distanceToFirst = vertexDistances.get(firstRequestVertex);
-    const distanceToSecond = vertexDistances.get(secondRequestVertex);
-
-    finalResults.push(distanceToFirst + distanceToSecond);
-}
-
-finalResults.forEach(resultValue => console.log(resultValue));
+// Main execution flow, replacing the webpack boilerplate.
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+const allInputLines = rawInputContent.split("\n");
+processInputData(allInputLines);

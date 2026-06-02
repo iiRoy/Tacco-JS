@@ -1,21 +1,20 @@
-const analyzeSequence = (rawContent) => {
-  const cleanedContent = rawContent.replace(/^\s+|\s+$/g, '');
-  const baseCharacters = new Set(['A', 'T', 'C', 'G']);
+const processSequence = (textData) => {
+  const processedText = textData.trim();
+  let longestSegment = 0;
+  let currentSegment = 0;
+  const validChars = 'ATCG';
 
-  const maximumStreak = Array.from(cleanedContent).reduce(
-    (accumulator, character) => {
-      const latestRun = baseCharacters.has(character) ? accumulator.currentSpan + 1 : 0;
-      return {
-        currentSpan: latestRun,
-        peakSpan: Math.max(accumulator.peakSpan, latestRun),
-      };
-    },
-    { currentSpan: 0, peakSpan: 0 }
-  ).peakSpan;
-
-  return maximumStreak;
+  for (let k = 0; k < processedText.length; k++) {
+    const char = processedText[k];
+    if (validChars.includes(char)) {
+      currentSegment++;
+    } else {
+      longestSegment = Math.max(longestSegment, currentSegment);
+      currentSegment = 0;
+    }
+  }
+  longestSegment = Math.max(longestSegment, currentSegment);
+  console.log(longestSegment);
 };
 
-const obtainSourceMaterial = () => require('fs').readFileSync('/dev/stdin', 'UTF-8');
-const finalOutcome = analyzeSequence(obtainSourceMaterial());
-console.log(finalOutcome);
+processSequence(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

@@ -1,43 +1,31 @@
-let acquiredData = '';
-
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (dataChunk) => {
-    acquiredData += dataChunk;
+const collectedInput = [];
+const inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const entryLines = acquiredData.split('\n').filter(Boolean);
+inputHandler.on('line', (lineContent) => {
+    collectedInput.push(lineContent);
+});
 
-    const configTokens = entryLines[0].split(' ');
-    const matrixDimension = Number(configTokens[0]);
-    const transformationRounds = Number(configTokens[1]);
+inputHandler.on('close', () => {
+    const [sizeStr, roundsStr] = collectedInput[0].split(" ");
+    const arraySize = Number(sizeStr);
+    const numRounds = Number(roundsStr);
+    let currentData = collectedInput[1].split(" ").map(Number);
 
-    let currentMatrixState = entryLines[1].split(' ').map(Number);
-
-    const getAbsoluteDifference = (val1, val2) => Math.abs(val1 - val2);
-
-    const computeNextState = (previousState, dimensionSize) => {
-        return Array.from({ length: dimensionSize }, (_, currentPosition) => {
-            return previousState.filter((valueAtIndex, indexInPrevious) =>
-                valueAtIndex >= getAbsoluteDifference(currentPosition, indexInPrevious)
-            ).length;
+    const evolveData = (previousData) => {
+        return Array.from({ length: arraySize }, (_, targetPosition) => {
+            return previousData.filter((sourceValue, sourcePosition) => {
+                return sourceValue >= Math.abs(targetPosition - sourcePosition);
+            }).length;
         });
     };
 
-    const applyTransformations = (initialState, roundsLeft, dimension) => {
-        if (roundsLeft === 0) {
-            return initialState;
-        }
-        const nextIterationState = computeNextState(initialState, dimension);
-        return applyTransformations(nextIterationState, roundsLeft - 1, dimension);
-    };
+    const finalData = Array.from({ length: numRounds }).reduce(evolveData, currentData);
 
-    const finalConfiguration = applyTransformations(currentMatrixState, transformationRounds, matrixDimension);
-
-    const outputString = finalConfiguration.slice(0, 5).join(' ');
-
-    process.stdout.write(outputString + '\n');
+    console.log(finalData.slice(0, 5).join(' '));
 });
-
-process.stdin.resume();

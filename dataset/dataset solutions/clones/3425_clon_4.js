@@ -1,26 +1,21 @@
-const sourceStream = require('node:fs');
+'use strict';
 
-const rawData = sourceStream.readFileSync('/dev/stdin', 'utf8');
+const obtainData = require('fs')
+  .readFileSync('/dev/stdin', 'utf8')
+  .split(/\s/);
 
-const calculateOptimalDeviation = (inputString) => {
-  const desiredMagnitude = 753;
-  let minimumDiscrepancy = Infinity;
-  const stringLength = inputString.length;
+const processSequence = (sourceData) => {
+  const mainSequence = sourceData[0];
+  const sequenceLength = mainSequence.length;
 
-  for (let pos = 0; pos <= stringLength - 3; ++pos) {
-    const digitOne = inputString.charCodeAt(pos) - 48;
-    const digitTwo = inputString.charCodeAt(pos + 1) - 48;
-    const digitThree = inputString.charCodeAt(pos + 2) - 48;
+  const differenceValues = Array.from({ length: sequenceLength - 2 }, (_, index) => {
+    const segment = mainSequence.substring(index, index + 3);
+    return Math.abs(Number(segment) - 753);
+  });
 
-    const currentNumericalValue = digitOne * 100 + digitTwo * 10 + digitThree;
-    const currentDifference = Math.abs(currentNumericalValue - desiredMagnitude);
+  const finalResult = Math.min(...differenceValues);
 
-    if (currentDifference < minimumDiscrepancy) {
-      minimumDiscrepancy = currentDifference;
-    }
-  }
-
-  return minimumDiscrepancy;
+  console.log(finalResult);
 };
 
-console.log(calculateOptimalDeviation(rawData.trim()));
+processSequence(obtainData);

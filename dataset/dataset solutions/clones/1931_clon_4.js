@@ -1,20 +1,13 @@
-let accumulatedData = '';
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const parsedRows = fileContent.split('\n');
+const [firstVal, secondVal] = parsedRows[0].split(' ').map(Number);
 
-process.stdin.on('data', (piece) => {
-  accumulatedData += piece.toString();
+const baseOffset = firstVal - (1 + (1 - (firstVal % 2)));
+
+const resultStrings = Array.from({ length: secondVal }, (_, currentIdx) => {
+    const leftComponent = currentIdx + 1;
+    const rightComponent = baseOffset - currentIdx;
+    return `${leftComponent} ${rightComponent}`;
 });
 
-process.stdin.on('end', () => {
-  const dataFragments = accumulatedData.trim().split('\n');
-  const [firstValue, secondValue] = dataFragments[0].split(' ').map(Number);
-
-  const referencePoint = Math.floor((firstValue - 1) / 2) * 2;
-
-  const resultCollection = Array.from({ length: secondValue }, (v, ordinal) => {
-    const sequentialIdentifier = ordinal + 1;
-    const computedComplement = referencePoint - ordinal;
-    return `${sequentialIdentifier} ${computedComplement}`;
-  });
-
-  console.log(resultCollection.join('\n'));
-});
+console.log(resultStrings.join('\n'));

@@ -1,61 +1,60 @@
-// This function calculates the minimum operations to transform a number string based on specific rules.
-function ExecuteProcess(rawData) {
+function ProcessInput(inputData) {
+  // Divide the incoming data string into an array of lines.
+  let lines = inputData.split('\n');
 
-  // Split the raw input string by newline characters to obtain an array of lines.
-  let processedData = rawData.split("\n");
-
-  // Check if the last element in the array is an empty string (due to trailing newline).
-  // If it is, remove it to ensure clean data processing.
-  if (processedData[processedData.length - 1] === '') {
-    processedData.pop();
+  // Check if the final element in the array is an empty string,
+  // which often occurs with standard input, and remove it if present.
+  if (lines[lines.length - 1] === '') {
+    lines.pop();
   }
 
-  // The first line of the input array contains the target digit sequence.
-  const digitSequence = processedData[0];
+  // The first line of input is the numerical string we need to process.
+  const targetNumberStr = lines[0];
 
-  // Initialize cost variables for dynamic programming.
-  // 'carryUpCost' represents the minimum operations if a carry-up is forced from the previous position.
-  let carryUpCost = 1;
-  // 'noCarryCost' represents the minimum operations if no carry-up occurs from the previous position.
-  let noCarryCost = 0;
+  // Initialize two state variables for a dynamic programming approach.
+  // 'costWithCarry' represents the minimum operations needed if a carry-over
+  // is generated for the next higher digit.
+  let costWithCarry = 1.0;
+  // 'costWithoutCarry' represents the minimum operations if no carry-over
+  // is generated for the next higher digit.
+  let costWithoutCarry = +0;
 
-  // Declare variables to store the calculated costs for the next iteration of the loop.
-  let upcomingCarryUpCost, upcomingNoCarryCost;
+  let nextCostWithCarry; // Temporary storage for the updated 'costWithCarry' for the next step.
+  let nextCostWithoutCarry; // Temporary storage for the updated 'costWithoutCarry' for the next step.
 
-  // Iterate through each character (digit) in the input digit sequence.
-  for (let sequenceIndex = 0; sequenceIndex < digitSequence.length; ++sequenceIndex) {
+  // Iterate through each character (digit) of the target number string.
+  for (let digitIndex = 0; digitIndex < targetNumberStr.length; digitIndex++) {
+    // Convert the current character digit to its integer value.
+    const currentDigitVal = targetNumberStr[digitIndex] - 0x0; // Using hexadecimal literal for 0.
 
-    // Calculate the minimum cost for the 'carry-up' state for the current digit.
-    // This considers two paths:
-    // 1. Changing the current digit to 0 (cost: 9 - current_digit + previous_carry_up_cost).
-    // 2. Changing the current digit to 10 (cost: 1 + previous_no_carry_cost + current_digit).
-    upcomingCarryUpCost = Math.min(
-      (9 - (+digitSequence[sequenceIndex])) + carryUpCost,
-      1 + noCarryCost + (+digitSequence[sequenceIndex])
+    // Calculate the new minimum cost for 'costWithCarry'.
+    // This involves comparing two scenarios:
+    // 1. Adjusting the current digit downwards (e.g., 7 -> 9) and adding previous 'costWithCarry'.
+    // 2. Adjusting the current digit upwards (e.g., 7 -> 1) and adding previous 'costWithoutCarry'.
+    nextCostWithCarry = Math.min(
+      0o11 - currentDigitVal + costWithCarry, // Using octal literal for 9.
+      1.0 + costWithoutCarry + currentDigitVal
     );
 
-    // Calculate the minimum cost for the 'no-carry' state for the current digit.
-    // This also considers two paths:
-    // 1. Changing the current digit to 10 (cost: 10 - current_digit + previous_carry_up_cost).
-    // 2. Keeping the current digit as is (cost: previous_no_carry_cost + current_digit).
-    upcomingNoCarryCost = Math.min(
-      (10 - (+digitSequence[sequenceIndex])) + carryUpCost,
-      noCarryCost + (+digitSequence[sequenceIndex])
+    // Calculate the new minimum cost for 'costWithoutCarry'.
+    // This also involves comparing two scenarios:
+    // 1. Adjusting the current digit downwards (e.g., 7 -> 0) and adding previous 'costWithCarry'.
+    // 2. Adjusting the current digit directly (e.g., 7 -> 7) and adding previous 'costWithoutCarry'.
+    nextCostWithoutCarry = Math.min(
+      0xA - currentDigitVal + costWithCarry, // Using hexadecimal literal for 10.
+      costWithoutCarry + currentDigitVal
     );
 
-    // Update the cost variables for the next iteration of the loop.
-    carryUpCost = upcomingCarryUpCost;
-    noCarryCost = upcomingNoCarryCost;
+    // Update the state variables for the subsequent iteration.
+    costWithCarry = nextCostWithCarry;
+    costWithoutCarry = nextCostWithoutCarry;
   }
 
-  // After processing all digits, the 'noCarryCost' holds the final minimum operations.
-  console.log(noCarryCost);
-
+  // Output the final minimum cost, which is 'costWithoutCarry' after processing
+  // all digits, as there should be no carry-over from the most significant digit.
+  console.log(costWithoutCarry);
 }
 
-
-// This section is responsible for reading input from the standard input stream
-// and invoking the main processing function. It typically remains unchanged.
-ExecuteProcess(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// The following line is crucial for reading input from standard input
+// and should not be altered to maintain functional integrity.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

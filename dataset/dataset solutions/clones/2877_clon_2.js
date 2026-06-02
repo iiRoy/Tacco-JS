@@ -1,36 +1,37 @@
 function ProcessInput(rawData) {
-  // Initialize the main string after removing leading/trailing whitespace
-  var processedString = rawData.trim();
-  // Determine the effective length of the string
-  var stringLength = processedString.length;
+    // Clean up the raw input by removing leading/trailing whitespace.
+    let textString = rawData.trim();
+    // Obtain the current length of the processed string.
+    let stringLength = textString.length;
+    // Initialize a counter for the number of successful pattern replacements.
+    let transformationCount = 0;
 
-  // Counter for the number of successful transformations
-  var transformationCount = 0;
+    // Only proceed if the string is long enough to contain the target pattern (3 characters).
+    if (stringLength >= 3) {
+        // Iterate through the string, checking for the pattern.
+        // The loop condition `stringLength - 2` ensures we can safely access `textString[idx + 2]`.
+        for (let idx = 0; idx < stringLength - 2; idx++) {
+            // Check if the current three characters form the specific sequence "ABC".
+            if (textString[idx] + textString[idx + 1] + textString[idx + 2] === "ABC") {
+                // Capture the segment of the string before the found "ABC".
+                let prefixPart = textString.slice(0, idx);
+                // Capture the segment of the string after the found "ABC".
+                let suffixPart = textString.slice(idx + 3);
 
-  /* Check if the string is long enough for the operation */
-  if (stringLength >= 3) {
-    // Iterate through the string, looking for specific patterns
-    for (var currentIndex = 0; currentIndex < stringLength - 2; currentIndex++) {
-      // Check for the "ABC" sequence
-      if (processedString[currentIndex] + processedString[currentIndex + 1] + processedString[currentIndex + 2] === "ABC") {
-        // Extract the part of the string before the matched sequence
-        var prefixSegment = processedString.slice(0, currentIndex);
-        // Extract the part of the string after the matched sequence
-        var suffixSegment = processedString.slice(currentIndex + 3);
-
-        // Replace "ABC" with "BCA" and reconstruct the string
-        processedString = prefixSegment + "BCA" + suffixSegment;
-        // Increment the transformation counter
-        transformationCount++;
-        // Adjust the loop index to re-evaluate potentially new "ABC" sequences
-        // that might have been formed by the transformation
-        currentIndex -= 2;
-      }
+                // Reconstruct the string, replacing "ABC" with "BCA".
+                textString = prefixPart + "BCA" + suffixPart;
+                // Increment the counter for this successful transformation.
+                transformationCount++;
+                // Adjust the loop index backward to re-evaluate the modified section.
+                // This is crucial because the replacement "BCA" might create a new "ABC"
+                // sequence that starts before the current `idx`.
+                idx -= 2;
+            }
+        }
     }
-  }
-  // Output the final count of transformations
-  console.log(transformationCount);
+    // Output the final tally of transformations to the console.
+    console.log(transformationCount);
 }
 
-// Read input from standard input and pass it to the processing function
+// Execute the main processing function by reading input from standard input.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

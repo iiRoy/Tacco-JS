@@ -1,99 +1,72 @@
-const getRawInputContent = (pathReference, encodingFormat) => {
-    const fileSystemModule = require('fs');
-    return fileSystemModule.readFileSync(pathReference, encodingFormat);
+const fs = require('fs');
+
+const parseTimeComponent = (timeString) => {
+    return +(new Date(`2000-01-01 ${timeString}`));
 };
 
-const convertHourMinuteToMilliseconds = (timeDescriptor) => {
-    const commonEpochDate = '2000-01-01 ';
-    return Number(new Date(commonEpochDate + timeDescriptor));
+const doesSlotOverlap = (slotA, slotB) => {
+    const slotA_start = slotA[0];
+    const slotA_end = slotA[1];
+    const slotB_start = slotB[0];
+
+    const noOverlapConditionMet = (slotA_end <= slotB_start) || (slotB_start <= slotA_start);
+    return !noOverlapConditionMet;
 };
 
-const displayResult = (finalValue) => {
-    console.log(finalValue);
+const fileContent = fs.readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContent.split('\n');
+
+const getNextInputLine = () => {
+    return inputLines.shift();
 };
 
-const inputSourceIdentifier = '/dev/stdin';
-const characterEncodingScheme = 'utf8';
+let currentInputLine;
+while ((currentInputLine = getNextInputLine()) !== null) {
+    const numberOfEntries = parseInt(currentInputLine, 10);
 
-const fullInputContent = getRawInputContent(inputSourceIdentifier, characterEncodingScheme);
-
-let inputLineSegments = fullInputContent.split('\n');
-
-let currentProcessedLine = null;
-
-while ((currentProcessedLine = inputLineSegments.shift()) !== undefined) {
-    const cleanedLine = currentProcessedLine.trim();
-
-    if (cleanedLine === '') {
-        continue;
-    }
-
-    const numberOfIntervalsInBlock = parseInt(cleanedLine, 10);
-
-    if (numberOfIntervalsInBlock === 0) {
+    if (numberOfEntries === 0) {
         break;
     }
 
-    const currentBlockIntervals = [];
-
-    for (let intervalReadIndex = 0; intervalReadIndex < numberOfIntervalsInBlock; intervalReadIndex++) {
-        const intervalTextLine = inputLineSegments.shift();
-
-        if (intervalTextLine === undefined) {
-            currentBlockIntervals.length = 0;
-            break;
-        }
-
-        const timeValueComponents = intervalTextLine.split(' ').map(convertHourMinuteToMilliseconds);
-        currentBlockIntervals.push(timeValueComponents);
+    let trainSchedule = [];
+    for (let entryIdx = 0; entryIdx < numberOfEntries; entryIdx++) {
+        const lineWithTimes = getNextInputLine();
+        const parsedTimeSlots = lineWithTimes.split(' ').map(parseTimeComponent);
+        trainSchedule.push(parsedTimeSlots);
     }
 
-    if (currentBlockIntervals.length === 0 && numberOfIntervalsInBlock > 0) {
-        continue;
-    }
+    let peakSimultaneousTrains = 1;
 
-    let peakSimultaneousOccurrences = 1;
+    for (let baseSlotIdx = 0; baseSlotIdx < trainSchedule.length; baseSlotIdx++) {
+        const baseTrainSlot = trainSchedule[baseSlotIdx];
 
-    for (let primaryIntervalIterator = 0; primaryIntervalIterator < currentBlockIntervals.length; primaryIntervalIterator++) {
-        let focalInterval = currentBlockIntervals[primaryIntervalIterator];
-
-        if (focalInterval === null) {
+        if (baseTrainSlot === null) {
             continue;
         }
 
-        let currentOverlapCount = 1;
-        const indicesMarkedForExclusion = [];
+        let currentSimultaneousCount = 1;
+        let overlappingTrainIndices = [];
 
-        for (let secondaryIntervalIterator = primaryIntervalIterator + 1; secondaryIntervalIterator < currentBlockIntervals.length; secondaryIntervalIterator++) {
-            let comparativeInterval = currentBlockIntervals[secondaryIntervalIterator];
+        for (let compareSlotIdx = baseSlotIdx + 1; compareSlotIdx < trainSchedule.length; compareSlotIdx++) {
+            const comparedTrainSlot = trainSchedule[compareSlotIdx];
 
-            if (comparativeInterval === null) {
+            if (comparedTrainSlot === null) {
                 continue;
             }
 
-            const focalEndMoment = focalInterval[1];
-            const comparativeStartMoment = comparativeInterval[0];
-            const focalStartMoment = focalInterval[0];
-
-            if (focalEndMoment > comparativeStartMoment && comparativeStartMoment > focalStartMoment) {
-                indicesMarkedForExclusion.push(secondaryIntervalIterator);
-                currentOverlapCount++;
+            if (doesSlotOverlap(baseTrainSlot, comparedTrainSlot)) {
+                overlappingTrainIndices.push(compareSlotIdx);
+                currentSimultaneousCount++;
             }
         }
 
-        for (const indexToNullify of indicesMarkedForExclusion) {
-            if (indexToNullify < currentBlockIntervals.length) {
-                currentBlockIntervals[indexToNullify] = null;
-            }
+        for (const indexToMarkNull of overlappingTrainIndices) {
+            trainSchedule[indexToMarkNull] = null;
         }
 
-        const compactedIntervalCollection = currentBlockIntervals.filter(
-            (elementConsidered) => elementConsidered !== null
-        );
-        currentBlockIntervals = compactedIntervalCollection;
+        trainSchedule = trainSchedule.filter(activeSlot => activeSlot !== null);
 
-        peakSimultaneousOccurrences = Math.max(peakSimultaneousOccurrences, currentOverlapCount);
+        peakSimultaneousTrains = Math.max(peakSimultaneousTrains, currentSimultaneousCount);
     }
-
-    displayResult(peakSimultaneousOccurrences);
+    console.log(peakSimultaneousTrains);
 }

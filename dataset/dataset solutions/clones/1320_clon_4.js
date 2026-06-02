@@ -1,35 +1,43 @@
-const inputSource = require("node:fs");
-const receivedData = inputSource.readFileSync("/dev/stdin", "utf8").trim().split('\n');
+const fileSystem = require("fs");
 
-const referenceSequence = receivedData[0];
-const targetSequence = receivedData[1];
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const parsedLines = rawInputContent.trim().split('\n');
 
-let matchDetermined = false;
+const sourceString = parsedLines[0];
+const patternToFind = parsedLines[1];
 
-if (referenceSequence.length === targetSequence.length) {
-    const sequenceLength = referenceSequence.length;
+const extendedSource = sourceString + sourceString;
 
-    if (sequenceLength === 0) {
-        matchDetermined = true;
-    } else {
-        for (let baseIndex = 0; baseIndex < sequenceLength; ++baseIndex) {
-            let currentAttemptMatch = true;
-            for (let charIndex = 0; charIndex < sequenceLength; ++charIndex) {
-                const charFromReference = referenceSequence[(baseIndex + charIndex) % sequenceLength];
-                const charFromTarget = targetSequence[charIndex];
+function performSubstringSearch(mainText, targetFragment) {
+    const mainLength = mainText.length;
+    const fragmentLength = targetFragment.length;
 
-                if (charFromReference !== charFromTarget) {
-                    currentAttemptMatch = false;
-                    break;
-                }
-            }
-            if (currentAttemptMatch) {
-                matchDetermined = true;
+    if (fragmentLength === 0) {
+        return true;
+    }
+    if (fragmentLength > mainLength) {
+        return false;
+    }
+
+    let currentMainIndex = 0;
+    while (currentMainIndex <= mainLength - fragmentLength) {
+        let fragmentMatch = true;
+        let currentFragmentIndex = 0;
+        while (currentFragmentIndex < fragmentLength) {
+            if (mainText[currentMainIndex + currentFragmentIndex] !== targetFragment[currentFragmentIndex]) {
+                fragmentMatch = false;
                 break;
             }
+            currentFragmentIndex++;
         }
+        if (fragmentMatch) {
+            return true;
+        }
+        currentMainIndex++;
     }
+    return false;
 }
 
-const finalVerdict = matchDetermined ? 'Yes' : 'No';
-console.log(finalVerdict);
+const isPatternPresent = performSubstringSearch(extendedSource, patternToFind);
+
+console.log(isPatternPresent ? 'Yes' : 'No');

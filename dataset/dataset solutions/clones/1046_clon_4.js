@@ -1,45 +1,47 @@
-const sourceText = require('fs').readFileSync(0, 'utf8');
-const textLines = sourceText.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedLines = rawData.trim().split('\n');
 
-const [numArticles, numVessels] = textLines[0].split(' ').map(Number);
-const articleWeights = textLines.slice(1).map(Number);
+const [itemCount, containerCount] = parsedLines[0].split(' ').map(Number);
+const itemWeights = parsedLines.slice(1).map(Number);
 
-const sumOfWeights = articleWeights.reduce((acc, val) => acc + val, 0);
-const maxIndividualWeight = Math.max(...articleWeights);
+const evaluateAllocation = (itemLoads, maxUnitCapacity, totalContainers) => {
+  const outcome = itemLoads.reduce((state, currentLoad) => {
+    if (!state.possible) return state;
 
-const evaluateCapacity = (articles, cap, vessels, currentLoad) => {
-    if (articles.length === 0) {
-        return true;
-    }
-    const currentArticle = articles[0];
-
-    if (currentArticle > cap) {
-        return false;
+    if (currentLoad > maxUnitCapacity) {
+      return { ...state, possible: false };
     }
 
-    if (currentLoad + currentArticle > cap) {
-        if (vessels <= 1) {
-            return false;
-        }
-        return evaluateCapacity(articles.slice(1), cap, vessels - 1, currentArticle);
+    if (state.currentContainerLoad + currentLoad <= maxUnitCapacity) {
+      return { ...state, currentContainerLoad: state.currentContainerLoad + currentLoad };
     } else {
-        return evaluateCapacity(articles.slice(1), cap, vessels, currentLoad + currentArticle);
+      const nextContainerCount = state.containersUsed + 1;
+      if (nextContainerCount > totalContainers) {
+        return { ...state, possible: false };
+      }
+      return { currentContainerLoad: currentLoad, containersUsed: nextContainerCount, possible: true };
     }
+  }, { currentContainerLoad: 0, containersUsed: 1, possible: true });
+
+  return outcome.possible;
 };
 
-const findOptimalThreshold = (articles, vesselsCount, lowerBound, upperBound) => {
-    if (lowerBound === upperBound) {
-        return lowerBound;
-    }
+const minPossibleCapacity = itemWeights.length > 0 ? Math.max(...itemWeights) : 0;
+const maxPossibleCapacity = itemWeights.reduce((sum, val) => sum + val, 0);
 
-    const midPoint = Math.floor((lowerBound + upperBound) / 2);
+let lowerBound = minPossibleCapacity;
+let upperBound = maxPossibleCapacity;
+let finalCapacity = maxPossibleCapacity;
 
-    if (evaluateCapacity(articles, midPoint, vesselsCount, 0)) {
-        return findOptimalThreshold(articles, vesselsCount, lowerBound, midPoint);
-    } else {
-        return findOptimalThreshold(articles, vesselsCount, midPoint + 1, upperBound);
-    }
-};
+while (lowerBound <= upperBound) {
+  const testCapacity = Math.floor((lowerBound + upperBound) / 2);
 
-const result = findOptimalThreshold(articleWeights, numVessels, maxIndividualWeight, sumOfWeights);
-console.log(result);
+  if (evaluateAllocation(itemWeights, testCapacity, containerCount)) {
+    finalCapacity = testCapacity;
+    upperBound = testCapacity - 1;
+  } else {
+    lowerBound = testCapacity + 1;
+  }
+}
+
+console.log(finalCapacity);

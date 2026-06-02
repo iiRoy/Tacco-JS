@@ -1,63 +1,61 @@
-const processInputData = (fullRawText) => {
-    const transformNumericResult = (numericValue) => {
-        if (Number.isInteger(numericValue)) {
-            return String(numericValue);
-        }
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-        let currentMultiplier = 1;
-        while (!Number.isInteger(numericValue * currentMultiplier)) {
-            currentMultiplier *= 2;
-        }
-        return `${numericValue * currentMultiplier}/${currentMultiplier}`;
-    };
-
-    const analyzeDirectionSequence = (rawSequence) => {
-        const cleanedSequence = rawSequence.replace(/orth|est/g, "");
-
-        if (cleanedSequence.length === 0) {
-            return 0;
-        }
-
-        const initialChar = cleanedSequence[0];
-        let initialState = {
-            currentBearing: initialChar === 'n' ? 0 : 90,
-            previousDirection: initialChar,
-            consecutiveCount: 1,
-        };
-
-        const finalState = Array.from(cleanedSequence.slice(1)).reduce((state, char) => {
-            let newBearing = state.currentBearing;
-            const prevDir = state.previousDirection;
-            const prevCount = state.consecutiveCount;
-
-            if (char === 'n' && prevDir !== 'n') {
-                newBearing -= 90 / Math.pow(2, prevCount);
-            } else if (char === 'w' && prevDir !== 'w') {
-                newBearing += 90 / Math.pow(2, prevCount);
-            }
-
-            const newCount = (prevDir === char) ? prevCount + 1 : 1;
-            const newDirection = char;
-
-            return {
-                currentBearing: newBearing,
-                previousDirection: newDirection,
-                consecutiveCount: newCount,
-            };
-        }, initialState);
-
-        return finalState.currentBearing;
-    };
-
-    const outputResults = fullRawText
-        .trim()
-        .split("\n")
-        .filter(line => line !== "#")
-        .map(line => analyzeDirectionSequence(line))
-        .map(numericResult => transformNumericResult(numericResult));
-
-    return outputResults.join("\n");
+const determineGreatestCommonDivisor = (firstValue, secondValue) => {
+    if (secondValue === 0) {
+        return firstValue;
+    }
+    return determineGreatestCommonDivisor(secondValue, firstValue % secondValue);
 };
 
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processInputData(sourceData));
+const expressAsFraction = (decimalValue) => {
+    if (Number.isInteger(decimalValue)) {
+        return decimalValue.toString();
+    }
+
+    let numeratorComponent = decimalValue;
+    let denominatorComponent = 1;
+
+    while (!Number.isInteger(numeratorComponent)) {
+        numeratorComponent *= 2;
+        denominatorComponent *= 2;
+    }
+
+    const commonFactor = determineGreatestCommonDivisor(numeratorComponent, denominatorComponent);
+    return `${numeratorComponent / commonFactor}/${denominatorComponent / commonFactor}`;
+};
+
+const processedOutputs = sourceData
+    .trim()
+    .split("\n")
+    .filter(lineEntry => lineEntry !== "#")
+    .map(rawInputSegment => {
+        const cleanedSegment = rawInputSegment.replace(/orth|est/g, "");
+
+        const initialBearing = (cleanedSegment[0] === 'n') ? 0 : 90;
+
+        const { finalBearing } = Array.from(cleanedSegment.slice(1)).reduce(
+            (accumulatorState, currentDirectionChar) => {
+                let currentPowerLevel = (currentDirectionChar === accumulatorState.lastDirectionChar)
+                    ? accumulatorState.powerLevel + 1
+                    : 1;
+                let bearingAdjustment = 0;
+
+                if (currentDirectionChar === 'n' && accumulatorState.lastDirectionChar !== 'n') {
+                    bearingAdjustment = -90 / Math.pow(2, currentPowerLevel);
+                } else if (currentDirectionChar === 'w' && accumulatorState.lastDirectionChar !== 'w') {
+                    bearingAdjustment = 90 / Math.pow(2, currentPowerLevel);
+                }
+
+                return {
+                    finalBearing: accumulatorState.finalBearing + bearingAdjustment,
+                    lastDirectionChar: currentDirectionChar,
+                    powerLevel: currentPowerLevel
+                };
+            },
+            { finalBearing: initialBearing, lastDirectionChar: cleanedSegment[0], powerLevel: 1 }
+        );
+
+        return expressAsFraction(finalBearing);
+    });
+
+processedOutputs.forEach(resultString => console.log(resultString));

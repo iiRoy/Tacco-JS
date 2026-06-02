@@ -1,35 +1,29 @@
-function checkOutcome(collection) {
-  const orderedCollection = [...collection].sort((alpha, beta) => alpha - beta);
+"use strict";
 
-  if (orderedCollection.length === 0) {
-    return false;
-  }
+const parseNumericalSequence = (textualData) => textualData.split(/\s+/).map(Number);
 
-  const cumulativeEffect = orderedCollection.reduce((tally, item, index, arr) => {
-    const isOdd = item % 2 !== 0;
-    const isLargest = (index === arr.length - 1);
-    const isGreaterThanOne = item > 1;
+const determineGameOutcome = (rawGameData) => {
+    const allParsedNumbers = parseNumericalSequence(rawGameData);
 
-    if (isOdd && (isLargest || isGreaterThanOne)) {
-      return tally + 1;
-    } else {
-      return tally;
-    }
-  }, 0);
+    const numberOfPiles = allParsedNumbers[0];
 
-  return cumulativeEffect % 2 !== 0;
-}
+    const actualPileDimensions = allParsedNumbers.slice(1, numberOfPiles + 1);
 
-function orchestrateProcess(dataSource) {
-  const allNumericTokens = dataSource.split(/\s+/).filter(Boolean).map(str => parseInt(str.trim(), 10));
+    actualPileDimensions.sort((valA, valB) => valA - valB);
 
-  const quantity = allNumericTokens[0];
+    const criticalOddPileTally = actualPileDimensions.reduce((currentTally, currentDimension, currentIndex, fullArray) => {
+        const isMaxDimension = currentIndex === fullArray.length - 1;
+        const isDimensionOdd = currentDimension % 2 !== 0;
 
-  const numericSequence = allNumericTokens.slice(1, quantity + 1);
+        if ((isMaxDimension && isDimensionOdd) || (!isMaxDimension && isDimensionOdd && currentDimension > 1)) {
+            return currentTally + 1;
+        }
+        return currentTally;
+    }, 0);
 
-  const ultimateVerdict = checkOutcome(numericSequence);
+    const playerOneIsVictor = criticalOddPileTally % 2 !== 0;
 
-  console.log(ultimateVerdict ? 'first' : 'second');
-}
+    console.log(playerOneIsVictor ? 'first' : 'second');
+};
 
-orchestrateProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
+determineGameOutcome(require('fs').readFileSync('/dev/stdin', 'utf8'));

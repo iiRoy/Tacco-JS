@@ -1,48 +1,60 @@
-function coefficientOfCombinations(upperLimit, lowerLimit) {
-    if (lowerLimit < 0 || lowerLimit > upperLimit) {
+function getBinomialCoefficient(upperValue, lowerValue) {
+    if (lowerValue < 0 || lowerValue > upperValue) {
         return 0;
     }
-    if (lowerLimit === 0 || lowerLimit === upperLimit) {
+    if (lowerValue === 0 || lowerValue === upperValue) {
         return 1;
     }
-    if (lowerLimit > upperLimit / 2) {
-        lowerLimit = upperLimit - lowerLimit;
+    if (lowerValue > upperValue / 2) {
+        lowerValue = upperValue - lowerValue;
     }
-    let finalValue = 1;
-    for (let currentStep = 1; currentStep <= lowerLimit; currentStep++) {
-        finalValue = finalValue * (upperLimit - currentStep + 1) / currentStep;
+
+    let currentResult = 1;
+    for (let i = 0; i < lowerValue; i++) {
+        currentResult = currentResult * (upperValue - i) / (i + 1);
     }
-    return finalValue;
+    return currentResult;
 }
 
-function evaluateBaseCombinations(valInput) {
-    if (valInput < 0) {
-        return 0;
+function calculateSumCombinations(targetValue) {
+    const termOneCoefficient = 1; // C(4,0)
+    const termTwoCoefficient = 4; // C(4,1)
+    const termThreeCoefficient = 6; // C(4,2)
+    const termFourCoefficient = 4; // C(4,3)
+    const termFiveCoefficient = 1; // C(4,4)
+
+    let finalCount = 0;
+
+    finalCount += termOneCoefficient * getBinomialCoefficient(targetValue + 3, 3);
+
+    if (targetValue >= 10) {
+        finalCount -= termTwoCoefficient * getBinomialCoefficient(targetValue - 10 + 3, 3);
     }
-    return coefficientOfCombinations(valInput + 3, 3);
-}
 
-function calculateDigitSumWays(desiredTotal) {
-    let totalPossibleWays = evaluateBaseCombinations(desiredTotal);
-    totalPossibleWays -= 4 * evaluateBaseCombinations(desiredTotal - 10);
-    totalPossibleWays += 6 * evaluateBaseCombinations(desiredTotal - 20);
-    totalPossibleWays -= 4 * evaluateBaseCombinations(desiredTotal - 30);
-    totalPossibleWays += 1 * evaluateBaseCombinations(desiredTotal - 40);
-    return totalPossibleWays;
-}
-
-function establishStreamListener(sourceStream, eventNameString, processingFunction) {
-    sourceStream.resume();
-    sourceStream.setEncoding('utf8');
-    sourceStream.on(eventNameString, processingFunction);
-}
-
-establishStreamListener(globalThis.process.stdin, "data", function(incomingPayload) {
-    var numericTargets = String(incomingPayload).trim().split("\n").map(Number);
-
-    for (var loopIndex = 0; loopIndex < numericTargets.length; loopIndex++) {
-        var currentNumericTarget = numericTargets[loopIndex];
-        var computedWays = calculateDigitSumWays(currentNumericTarget);
-        globalThis.console.log(computedWays);
+    if (targetValue >= 20) {
+        finalCount += termThreeCoefficient * getBinomialCoefficient(targetValue - 20 + 3, 3);
     }
+
+    if (targetValue >= 30) {
+        finalCount -= termFourCoefficient * getBinomialCoefficient(targetValue - 30 + 3, 3);
+    }
+
+    if (targetValue >= 40) {
+        finalCount += termFiveCoefficient * getBinomialCoefficient(targetValue - 40 + 3, 3);
+    }
+
+    return finalCount;
+}
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on("data", function(receivedData) {
+    const dataLines = String(receivedData).trim().split("\n");
+    const parsedNumbers = dataLines.map(lineText => parseInt(lineText, 10));
+
+    parsedNumbers.forEach(currentNumber => {
+        const combinationsResult = calculateSumCombinations(currentNumber);
+        console.log(combinationsResult);
+    });
 });

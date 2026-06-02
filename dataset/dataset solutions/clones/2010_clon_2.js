@@ -1,18 +1,15 @@
-// This script orchestrates the primary data ingestion workflow.
-function TopLevelHandler ( incomingData )
-{
-  // The core processing logic for the acquired information
-  // will be placed within this function body.
-  // Currently, it serves as an empty container.
+/**
+ * This function serves as the primary entry point for processing incoming data.
+ * Currently, it does not contain any operational logic.
+ * @param {string} rawData - The raw string data read from the input source.
+ */
+function ProcessData(rawData) {
+  // No specific operations are performed within this function at present.
+  // It is designed to be extended with business logic as needed.
 }
 
-// Initiate the data processing sequence by invoking the main handler.
-// The necessary input is sourced from a system-level file stream.
-TopLevelHandler(
-  getLibrary ( "diskAccess" )
-    .obtainContentSynchronously
-    (
-      "/sys/in" , // Specifies the system's standard input pathway.
-      "textEncoding" // Designates the character encoding for data interpretation.
-    )
-);
+// The application initiates by reading content from standard input.
+// The 'fs' module is utilized to synchronously read the file located at '/dev/stdin'.
+// The content is expected to be encoded in UTF-8.
+// Subsequently, the retrieved data is passed to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,47 +1,57 @@
-function processInputData(sourceText) {
-    let inputCharacters = sourceText.split('');
+function processInput(rawData) {
+    // Split the incoming data string into an array of individual characters.
+    const charArray = rawData.split('');
 
-    let standardLetters = 'abcdefghijklmnopqrstuvwxyz'.split(''); // Define the complete alphabet sequence
+    // Initialize a variable to hold the complete lowercase English alphabet.
+    var fullAlphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-    // Extract unique characters from the input and arrange them in alphabetical order.
-    let distinctElements = inputCharacters.filter(function (currentItem, positionIndex, entireArray) {
-        return entireArray.indexOf(currentItem) === positionIndex;
-    })
-        .sort();
+    // Filter the character array to remove any duplicate entries, then sort the unique characters alphabetically.
+    var uniqueChars = charArray.filter(function (currentItem, currentIndex, sourceArray) {
+        return sourceArray.indexOf(currentItem) === currentIndex;
+    }).sort();
 
-    let resultDifference = determineMissingComponents(distinctElements, standardLetters);
-    // Find the elements that are present in the reference set but absent from the processed input.
-    function determineMissingComponents(sourceCollection, comparisonCollection) {
-        let presenceTracker = {};
-        let missingItemsList = [];
+    // Compute the symmetric difference between the unique characters and the full alphabet.
+    var resultantDiff = calculateDifference(uniqueChars, fullAlphabet);
 
-        // Populate a tracker with all elements from the initial source collection.
-        for (let itemIndex = 0; itemIndex < sourceCollection.length; itemIndex++) {
-            presenceTracker[sourceCollection[itemIndex]] = true;
+    // This nested function determines the symmetric difference between two character sets.
+    function calculateDifference(firstSet, secondSet) {
+        var tempMap = []; // A temporary structure to track elements.
+        var differenceResult = []; // Stores the final difference.
+
+        // Populate the temporary map with elements from the first set.
+        // Each character from the first set becomes a key with a 'true' value.
+        for (var idx = 0; idx < firstSet.length; idx++) {
+            tempMap[firstSet[idx]] = true;
         }
 
-        // Iterate through the comparison collection.
-        // If an element is found in the tracker, it means it was in the source and should be ignored.
-        // If it's not found, it's a 'missing' element from the source, so mark it.
-        for (let charIdx = 0; charIdx < comparisonCollection.length; charIdx++) {
-            if (presenceTracker[comparisonCollection[charIdx]]) {
-                delete presenceTracker[comparisonCollection[charIdx]];
+        // Iterate through the second set to find common and unique elements.
+        // If an element from the second set is found in tempMap, it's common, so remove it.
+        // Otherwise, it's unique to the second set, so add it to tempMap.
+        for (var idx = 0; idx < secondSet.length; idx++) {
+            if (tempMap[secondSet[idx]]) {
+                delete tempMap[secondSet[idx]];
             } else {
-                presenceTracker[comparisonCollection[charIdx]] = true;
+                tempMap[secondSet[idx]] = true;
             }
         }
 
-        // Collect all remaining keys in the tracker, which now represent the actual missing items.
-        for (let elementKey in presenceTracker) {
-            missingItemsList.push(elementKey);
+        // Collect all remaining keys from the temporary map into the result array.
+        // These keys represent the symmetric difference.
+        for (var keyVal in tempMap) {
+            differenceResult.push(keyVal);
         }
-        return missingItemsList;
+        return differenceResult;
     }
 
-    if (resultDifference.length !== 0) {
-        console.log(resultDifference[0]);
+    // Check if any difference was found.
+    // If there are differing characters, print the first one.
+    // Otherwise, print 'None'.
+    if (resultantDiff.length !== 0) {
+        console.log(resultantDiff[0]);
     } else {
         console.log('None');
     }
 }
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from the standard input stream and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

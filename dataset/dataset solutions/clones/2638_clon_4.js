@@ -1,46 +1,41 @@
-module.exports = function(sourceInput) {
-    const numericTokens = sourceInput.trim().split(/\s+/).map(token => parseInt(token, 10));
+const fileSystem = require('fs');
 
-    let currentTokenIndex = 0;
-    const fetchNextValue = () => numericTokens[currentTokenIndex++];
+function processGraphData(inputContent) {
+    const inputLines = inputContent.split('\n');
 
-    const totalVertices = fetchNextValue();
-    const totalOperations = fetchNextValue();
+    const [vertexCount, modificationCount] = inputLines[0].split(' ').map(Number);
 
-    const connections = new Map();
-    for (let i = 0; i < totalVertices; ++i) {
-        connections.set(i, new Set());
+    const adjacencyStructure = Array.from({ length: vertexCount }, () => []);
+
+    for (let i = 0; i < vertexCount - 1; i++) {
+        const [firstNode, secondNode] = inputLines[i + 1].split(' ').map(s => Number(s) - 1);
+        adjacencyStructure[firstNode].push(secondNode);
+        adjacencyStructure[secondNode].push(firstNode);
     }
 
-    for (let i = 0; i < totalVertices - 1; ++i) {
-        const [nodeOne, nodeTwo] = [fetchNextValue() - 1, fetchNextValue() - 1];
-        connections.get(nodeOne).add(nodeTwo);
-        connections.get(nodeTwo).add(nodeOne);
+    const accumulatedValues = new Array(vertexCount).fill(0);
+
+    for (let i = 0; i < modificationCount; i++) {
+        const [targetIndex, incrementValue] = inputLines[i + vertexCount].split(' ').map(Number);
+        accumulatedValues[targetIndex - 1] += incrementValue;
     }
 
-    const vertexAccumulators = new Map();
-    for (let i = 0; i < totalVertices; ++i) {
-        vertexAccumulators.set(i, 0);
-    }
+    const bfsProcessingQueue = [0];
+    const visitedNodesSet = new Set([0]);
 
-    for (let i = 0; i < totalOperations; ++i) {
-        const targetVertex = fetchNextValue() - 1;
-        const effectMagnitude = fetchNextValue();
-        vertexAccumulators.set(targetVertex, (vertexAccumulators.get(targetVertex) || 0) + effectMagnitude);
-    }
+    while (bfsProcessingQueue.length > 0) {
+        const currentProcessingNode = bfsProcessingQueue.shift();
 
-    const traverseAndAggregate = (currentVertexId, previousVertexId, incomingSum) => {
-        vertexAccumulators.set(currentVertexId, (vertexAccumulators.get(currentVertexId) || 0) + incomingSum);
-
-        for (const connectedVertexId of connections.get(currentVertexId)) {
-            if (connectedVertexId !== previousVertexId) {
-                traverseAndAggregate(connectedVertexId, currentVertexId, vertexAccumulators.get(currentVertexId));
+        adjacencyStructure[currentProcessingNode].forEach(adjacentNode => {
+            if (!visitedNodesSet.has(adjacentNode)) {
+                accumulatedValues[adjacentNode] += accumulatedValues[currentProcessingNode];
+                visitedNodesSet.add(adjacentNode);
+                bfsProcessingQueue.push(adjacentNode);
             }
-        }
-    };
+        });
+    }
 
-    traverseAndAggregate(0, -1, 0);
+    console.log(accumulatedValues.join(' '));
+}
 
-    const finalOutput = Array.from({ length: totalVertices }, (_, index) => vertexAccumulators.get(index));
-    return finalOutput.join(' ');
-};
+processGraphData(fileSystem.readFileSync("/dev/stdin", "UTF-8"));

@@ -1,104 +1,101 @@
-let networkGraph = new Map();
-let nodeCount;
-let linkCount;
+let adjList = [];
+let nodeCount, edgeCount;
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (allInput) => {
-    const inputLines = allInput.split('\n').filter(line => line.trim() !== '');
+process.stdin.on('data', function(inputData) {
+  const inputLines = inputData.split('\n');
 
-    inputLines.forEach((currentLine, lineIndex) => {
-        if (lineIndex === 0) {
-            const initialValues = currentLine.split(' ').map(Number);
-            nodeCount = initialValues[0];
-            linkCount = initialValues[1];
+  for (let lineIndex = 0; lineIndex < inputLines.length; ++lineIndex) {
+    if (lineIndex === 0) {
+      const graphDimensions = inputLines[lineIndex].split(' ').map(Number);
+      nodeCount = graphDimensions[0];
+      edgeCount = graphDimensions[1];
 
-            for (let k = 0; k < nodeCount; ++k) {
-                networkGraph.set(k, []);
-            }
-        } else {
-            const connectionDetails = currentLine.split(' ').map(Number);
-            const startNode = connectionDetails[0];
-            const endNode = connectionDetails[1];
-            const capacityValue = connectionDetails[2];
-            
-            const forwardLinks = networkGraph.get(startNode);
-            const reverseLinks = networkGraph.get(endNode);
+      for (let vertexIndex = 0; vertexIndex < nodeCount; ++vertexIndex) {
+        adjList[vertexIndex] = [];
+      }
+    } else {
+      const connectionDetails = inputLines[lineIndex].split(' ').map(Number);
+      establishConnection(connectionDetails[0], connectionDetails[1], connectionDetails[2]);
+    }
+  }
 
-            forwardLinks.push({
-                destination: endNode,
-                currentCapacity: capacityValue,
-                reverseLinkIdx: reverseLinks.length
-            });
-
-            reverseLinks.push({
-                destination: startNode,
-                currentCapacity: 0,
-                reverseLinkIdx: forwardLinks.length - 1
-            });
-        }
-    });
-
-    console.log(computeMaximumThroughput(0, nodeCount - 1));
+  console.log(computeMaxFlow(0, nodeCount - 1));
 });
 
-function findAugmentingPath(sourceNode, terminalNode, graphData, totalNodes) {
-    const parentInfo = new Array(totalNodes).fill(null);
-    const pathCapacity = new Array(totalNodes).fill(0);
-    const traversalQueue = [];
-
-    traversalQueue.push(sourceNode);
-    parentInfo[sourceNode] = { predecessorNode: -1, edgeIndexInPredecessorList: -1 };
-    pathCapacity[sourceNode] = Number.POSITIVE_INFINITY;
-
-    while (traversalQueue.length > 0) {
-        const currentNode = traversalQueue.shift();
-
-        if (currentNode === terminalNode) {
-            break;
-        }
-
-        const adjacentLinks = graphData.get(currentNode);
-        for (let idx = 0; idx < adjacentLinks.length; ++idx) {
-            const currentLink = adjacentLinks[idx];
-            const nextNode = currentLink.destination;
-
-            if (parentInfo[nextNode] === null && currentLink.currentCapacity > 0) {
-                parentInfo[nextNode] = { predecessorNode: currentNode, edgeIndexInPredecessorList: idx };
-                pathCapacity[nextNode] = Math.min(pathCapacity[currentNode], currentLink.currentCapacity);
-                traversalQueue.push(nextNode);
-            }
-        }
-    }
-
-    if (parentInfo[terminalNode] === null) {
-        return 0;
-    }
-
-    let flowFound = pathCapacity[terminalNode];
-    let traceNode = terminalNode;
-
-    while (traceNode !== sourceNode) {
-        const { predecessorNode, edgeIndexInPredecessorList } = parentInfo[traceNode];
-        const forwardEdge = graphData.get(predecessorNode)[edgeIndexInPredecessorList];
-        const reverseEdge = graphData.get(traceNode)[forwardEdge.reverseLinkIdx];
-
-        forwardEdge.currentCapacity -= flowFound;
-        reverseEdge.currentCapacity += flowFound;
-
-        traceNode = predecessorNode;
-    }
-
-    return flowFound;
+function establishConnection(sourceNode, targetNode, capacityValue) {
+  adjList[sourceNode].push({
+    targetNode: targetNode,
+    capacityValue: capacityValue,
+    reverseEdgeIndex: adjList[targetNode].length
+  });
+  adjList[targetNode].push({
+    targetNode: sourceNode,
+    capacityValue: 0,
+    reverseEdgeIndex: adjList[sourceNode].length - 1
+  });
 }
 
-function computeMaximumThroughput(sourceNode, terminalNode) {
-    let currentTotalFlow = 0;
-    let newFlow;
+function findAugmentingPathBFS(startNode, endNode, predecessorEdgeIndices, predecessorNodes) {
+  const traversalQueue = [];
+  traversalQueue.push(startNode);
 
-    while ((newFlow = findAugmentingPath(sourceNode, terminalNode, networkGraph, nodeCount)) > 0) {
-        currentTotalFlow += newFlow;
+  predecessorEdgeIndices[startNode] = -2;
+  predecessorNodes[startNode] = -2;
+
+  const pathCapacities = new Array(nodeCount).fill(0);
+  pathCapacities[startNode] = Number.POSITIVE_INFINITY;
+
+  let head = 0;
+  while (head < traversalQueue.length) {
+    const currentNode = traversalQueue[head++];
+
+    if (currentNode === endNode) {
+      return pathCapacities[endNode];
     }
 
-    return currentTotalFlow;
+    for (let i = 0; i < adjList[currentNode].length; ++i) {
+      const currentEdge = adjList[currentNode][i];
+      if (predecessorEdgeIndices[currentEdge.targetNode] === -1 && currentEdge.capacityValue > 0) {
+        predecessorEdgeIndices[currentEdge.targetNode] = i;
+        predecessorNodes[currentEdge.targetNode] = currentNode;
+        pathCapacities[currentEdge.targetNode] = Math.min(pathCapacities[currentNode], currentEdge.capacityValue);
+        traversalQueue.push(currentEdge.targetNode);
+      }
+    }
+  }
+  return 0;
+}
+
+function computeMaxFlow(entryNode, exitNode) {
+  let totalFlow = 0;
+  let predecessorEdgeIndices;
+  let predecessorNodes;
+
+  while (true) {
+    predecessorEdgeIndices = new Array(nodeCount).fill(-1);
+    predecessorNodes = new Array(nodeCount).fill(-1);
+
+    const pathCapacity = findAugmentingPathBFS(entryNode, exitNode, predecessorEdgeIndices, predecessorNodes);
+
+    if (pathCapacity === 0) {
+      break;
+    }
+
+    totalFlow += pathCapacity;
+
+    let currentNode = exitNode;
+    while (currentNode !== entryNode) {
+      const previousNode = predecessorNodes[currentNode];
+      const edgeIndex = predecessorEdgeIndices[currentNode];
+      const forwardEdge = adjList[previousNode][edgeIndex];
+
+      forwardEdge.capacityValue -= pathCapacity;
+      adjList[forwardEdge.targetNode][forwardEdge.reverseEdgeIndex].capacityValue += pathCapacity;
+
+      currentNode = previousNode;
+    }
+  }
+  return totalFlow;
 }

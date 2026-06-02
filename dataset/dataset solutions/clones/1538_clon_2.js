@@ -1,36 +1,38 @@
 const processInputData = (rawData) => {
-  const linesOfData = rawData.split("\n");
+  // Split the entire input string into individual lines
+  let lineSegments = rawData.split("\n");
 
-  const totalPointsCount = Number(linesOfData[0]);
+  // Parse the first line to get the total count of coordinate pairs
+  var numPoints = Number(lineSegments[0]);
 
+  // Initialize an array to store the parsed coordinate data
   let coordinateList = [];
 
-  // Populate the array with parsed coordinate pairs
-  for (let idx = 1; idx <= totalPointsCount; idx++) {
-    coordinateList[idx] = linesOfData[idx].split(" ").map(valStr => Number(valStr));
+  // Loop through the input lines to populate the coordinate list
+  for (var idxA = 1; idxA <= numPoints; idxA++) {
+    // For each line, split by space and convert string parts to numbers
+    coordinateList[idxA] = lineSegments[idxA].split(" ").map(strVal => Number(strVal));
   }
 
-  /*
-   * Calculate all possible pairwise combinations of points
-   * The number of combinations is N * (N - 1) / 2
-   */
+  // This section calculates the maximum Manhattan distance between any two points.
+  // The total number of unique pairs is N * (N - 1) / 2.
   let maxDistanceFound = 0;
 
-  for (let firstPointIndex = 1; firstPointIndex <= totalPointsCount; firstPointIndex++) {
-    for (let secondPointIndex = firstPointIndex + 1; secondPointIndex <= totalPointsCount; secondPointIndex++) {
+  // Iterate through all possible unique pairs of points
+  for (var idxA = 1; idxA <= numPoints; idxA++) {
+    for (var idxB = idxA + 1; idxB <= numPoints; idxB++) {
+      // Calculate the Manhattan distance (L1 distance) between point A and point B
+      let currentDistance = Math.abs(coordinateList[idxA][0] - coordinateList[idxB][0]) + Math.abs(coordinateList[idxA][1] - coordinateList[idxB][1]);
 
-      // Compute Manhattan distance (L1 norm) between two points
-      const currentDistance = Math.abs(coordinateList[firstPointIndex][0] - coordinateList[secondPointIndex][0])
-                            + Math.abs(coordinateList[firstPointIndex][1] - coordinateList[secondPointIndex][1]);
-
-      // Keep track of the largest distance encountered so far
+      // Update the maximum distance if the current pair's distance is greater
       if (currentDistance > maxDistanceFound) {
         maxDistanceFound = currentDistance;
       }
     }
   }
-
+  // Output the largest distance found to the console
   console.log(maxDistanceFound);
 };
 
-processInputData(require('node:fs').readFileSync('/dev/fd/0', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

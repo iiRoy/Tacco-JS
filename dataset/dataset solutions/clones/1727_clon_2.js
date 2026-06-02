@@ -1,82 +1,52 @@
-// This function processes an incoming string of data
-function processInputData(rawDataString)
-{
+function processInput(rawData) {
+  // Split the raw input string into individual lines
+  const parsedLines = rawData.split('\n');
 
-  // Split the raw string into individual lines based on newline characters
-  const lineData = rawDataString.split('\n');
+  // Parse the first line for N, M, and K values
+  const [numA, numB, maxDuration] = parsedLines[0].split(' ').map(val => Number(val));
 
-  /*
-   * The very first line of the input contains three essential numerical parameters:
-   * numElementsA: Represents the total number of items found in the first collection.
-   * numElementsB: Represents the total number of items present in the second collection.
-   * maxAllowedValue: Specifies the maximum permissible cumulative value that can be accumulated.
-   */
-  const [numElementsA, numElementsB, maxAllowedValue] = lineData[0].split(' ').map(valStr => parseInt(valStr, 10));
+  // Process the second line to get durations for stack A, then reverse it
+  const stackA = parsedLines[1].split(' ').map(val => Number(val)).reverse();
 
-  // Parse the second line of the input into a reversed array of numbers for stackA
-  // The .reverse() call is crucial for treating it as a stack where .pop() gets the smallest element
-  const stackA = lineData[1].split(' ').map(valStr => parseInt(valStr, 10)).reverse();
+  // Process the third line to get durations for stack B, then reverse it
+  const stackB = parsedLines[2].split(' ').map(val => Number(val)).reverse();
 
-  // Similarly, parse the third line of the input into a reversed array of numbers for stackB
-  // This also effectively transforms the array into a stack-like structure
-  const stackB = lineData[2].split(' ').map(valStr => parseInt(valStr, 10)).reverse();
+  let booksRead = 0; // Counter for the number of items processed
+  let elapsedTime = 0; // Accumulator for the total time spent
 
+  // Loop as long as the total elapsed time does not exceed the maximum allowed duration
+  while (elapsedTime <= maxDuration) {
+    booksRead++; // Increment the count of items considered
 
-  // Initialize a counter to keep track of the number of successful item selections
-  let iterationCounter = 0;
-  // Initialize an accumulator variable to store the current total sum of selected item values
-  let currentSum = 0;
-
-
-  // Begin a loop that continues as long as the accumulated sum does not exceed the maximum allowed value
-  while (currentSum <= maxAllowedValue)
-  {
-
-    // Increment the counter for each potential item selection attempt within the loop
-    iterationCounter++;
-    // If both collections (stacks) are completely empty, it means no more items can be selected, so exit the loop
+    // If both stacks are empty, we can't read any more, so break the loop
     if ((stackA.length === 0) && (stackB.length === 0)) {
       break;
     }
 
+    let currentItemDuration; // Variable to hold the duration of the next item to be "read"
 
-    // Declare a variable to temporarily hold the value of the element chosen in the current iteration
-    let chosenElement;
-
-
-    // Decision-making logic to determine which element to pick next from the available collections:
-
-    // Case 1: If the first collection (stackA) is empty, we must pick from the second collection (stackB)
+    // Determine which item to pick next based on the greedy strategy
     if (stackA.length === 0) {
-      chosenElement = stackB.pop();
-    }
-    // Case 2: Else if the second collection (stackB) is empty, we must pick from the first collection (stackA)
-    else if (stackB.length === 0) {
-      chosenElement = stackA.pop();
-    }
-    // Case 3: Else if both collections have elements, compare their top elements (smallest values after reverse)
-    // If the top element of stackA is less than or equal to stackB's top element, pick from stackA
-    else if (stackA[stackA.length - 1] <= stackB[stackB.length - 1]) {
-      chosenElement = stackA.pop();
-    }
-    // Case 4: Otherwise (if stackB's top element is smaller), pick from stackB
-    else {
-      chosenElement = stackB.pop();
+      // If stack A is empty, take from stack B
+      currentItemDuration = stackB.pop();
+    } else if (stackB.length === 0) {
+      // If stack B is empty, take from stack A
+      currentItemDuration = stackA.pop();
+    } else if (stackA[stackA.length - 1] <= stackB[stackB.length - 1]) {
+      // If the top item of stack A is less than or equal to the top item of stack B, take from A
+      currentItemDuration = stackA.pop();
+    } else {
+      // Otherwise, take from stack B
+      currentItemDuration = stackB.pop();
     }
 
-
-    // Add the value of the chosen element to the current total sum
-    currentSum += chosenElement;
+    // Add the duration of the chosen item to the total elapsed time
+    elapsedTime += currentItemDuration;
   }
 
-
-  // Output the final count of items successfully selected.
-  // We subtract one from the iterationCounter because the loop increments before the final condition check
-  // that might have caused the loop to terminate.
-  console.log(iterationCounter - 1);
+  // Output the final count of books read, subtracting 1 because the loop overshoots by one successful read
+  console.log(booksRead - 1);
 }
 
-
-// Execute the primary processing function by reading input data from standard input.
-// This typically involves reading from a file or console stream in a Node.js environment.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,37 +1,48 @@
 "use strict";
 
-// This function orchestrates the primary data processing logic.
-const processInputData = rawDataString => {
-  // First, we clean up the incoming string and split it into individual lines.
-  let linesOfData = rawDataString.trim().split("\n");
+/*
+ * This module processes a sequence of numbers to find a specific pattern.
+ * It identifies how many elements need to be removed to achieve a consecutive sequence starting from 1.
+ */
+const processInput = (inputData) => {
+    // Clean up the raw input string and split it into lines.
+    // The first line contains the count of numbers, the second line contains the numbers themselves.
+    inputData = inputData.trim().split("\n");
 
-  // The first line provides the count of elements we expect.
-  const totalElements = parseInt(linesOfData[0]);
+    // Parse the first line to get the total number of elements.
+    const totalElements = parseInt(inputData[0], 10); // Explicitly specify radix 10 for safety.
 
-  // The second line contains space-separated numbers, which we convert to an array of integers.
-  const numericArray = linesOfData[1].split(" ").map(numStr => parseInt(numStr));
+    // Parse the second line, splitting by space and converting each part to an integer.
+    const numberArray = inputData[1].split(" ").map((currentNum) => parseInt(currentNum, 10));
 
-  // Initialize a counter to track consecutive matches.
-  let foundCount = 0;
+    // Initialize a counter to track the expected consecutive number.
+    // This counter represents the next number we are looking for in the sequence (1, 2, 3, ...).
+    let matchCount = 0;
 
-  // Iterate through each element in the processed numerical sequence.
-  for (let idx = 0; idx < totalElements; idx++) {
-    // Check if the current element matches our expected consecutive value.
-    if (numericArray[idx] === (foundCount + 1)) {
-      // If it matches, increment our consecutive match counter.
-      foundCount++;
+    // Iterate through each element of the number array.
+    for (let idx = 0; idx < totalElements; idx++) {
+        // Check if the current array element matches the value we are currently expecting in our sequence.
+        // For example, if matchCount is 0, we expect 1. If matchCount is 1, we expect 2, and so on.
+        if (numberArray[idx] === (matchCount + 1)) {
+            // If a match is found, increment our expected sequence counter.
+            // This means we successfully found the next number in the 1-based consecutive sequence.
+            matchCount++;
+        }
     }
-  }
 
-  // Based on the final count, determine the output.
-  if (foundCount !== 0) {
-    // If some matches were found, output the number of elements that didn't fit the sequence.
-    console.log(totalElements - foundCount);
-  } else {
-    // If no matches were found at all, output -1 as per requirements.
-    console.log(-1);
-  }
+    // After checking all numbers, determine the output based on the matchCount.
+    if (matchCount !== 0) {
+        // If matchCount is not zero, it means we found at least one number in the sequence (i.e., '1').
+        // The result is the total number of elements minus the count of successfully matched consecutive numbers.
+        // This represents the number of elements that are "out of place" or need to be removed.
+        console.log(totalElements - matchCount);
+    } else {
+        // If matchCount is zero, it means we didn't even find the number '1' in the array.
+        // In this scenario, no consecutive sequence starting from 1 can be formed.
+        // The problem specifies outputting -1 for this case.
+        console.log(-1);
+    }
 };
 
-// Execute the main processing function with data read from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

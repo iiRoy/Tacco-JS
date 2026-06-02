@@ -1,49 +1,43 @@
-/*
- * This module performs a specific iterative transformation on a sequence of numerical inputs.
- * The core logic involves repeatedly processing pairs of numbers from the sequence.
- */
-function ComputeResult(sourceText)
-{
-  // Divide the raw input string into an array of individual text lines.
-  const extractedSegments = sourceText.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines using the newline character as a delimiter.
+    let parsedLines = rawData.split("\n");
 
-  // The very first segment indicates how many processing cycles to perform.
-  let totalCycles = parseInt(extractedSegments[0], 10); // Ensure numeric type for iteration count.
+    // The first element of the parsed lines array represents the number of iterations.
+    let numIterations = parsedLines[0];
 
-  // The subsequent segments represent the initial array of values, converted to numbers.
-  let currentValues = extractedSegments.slice(1).map(Number); // Convert all elements to actual numbers.
+    // The remaining elements of the parsed lines array form the initial working array.
+    // We use slice(1) to exclude the first element (numIterations).
+    let currentArray = parsedLines.slice(1);
 
-  // Iterate through the specified number of cycles.
-  for (let cycleCount = 0; cycleCount < totalCycles; ++cycleCount)
-  {
-    // Initialize a new array to store the outcomes of the current cycle's calculations.
-    const transformedValues = [];
+    // This outer loop executes 'numIterations' times, transforming the array in each pass.
+    for (let outerLoopIndex = 0; outerLoopIndex < numIterations; ++outerLoopIndex) {
+        // Initialize a new array to store the results of the current transformation.
+        let nextArray = [];
 
-    // Traverse the 'currentValues' array, stepping by two to process pairs.
-    // The loop condition ensures we always have a valid pair (index and index + 1).
-    for (let elementPtr = 0; elementPtr < currentValues.length - 1; elementPtr += 2)
-    {
-      // Compare the two adjacent elements and apply a specific arithmetic rule.
-      if (currentValues[elementPtr] > currentValues[elementPtr + 1])
-      {
-        transformedValues.push(currentValues[elementPtr] - currentValues[elementPtr + 1]);
-      }
-      else if (currentValues[elementPtr] === currentValues[elementPtr + 1])
-      {
-        transformedValues.push(currentValues[elementPtr]);
-      }
-      else // If currentValues[elementPtr] < currentValues[elementPtr + 1]
-      {
-        transformedValues.push(currentValues[elementPtr + 1] - currentValues[elementPtr]);
-      }
+        // The inner loop iterates through the 'currentArray' in steps of two,
+        // processing elements in pairs (j and j+1).
+        // The loop continues as long as there's at least one pair left to process.
+        for (let innerLoopIndex = 0; innerLoopIndex < currentArray.length - 1; innerLoopIndex += 2) {
+            // Compare the two elements in the current pair.
+            if (currentArray[innerLoopIndex] > currentArray[innerLoopIndex + 1]) {
+                // If the first element is greater, push their difference (first - second) to the new array.
+                nextArray.push(currentArray[innerLoopIndex] - currentArray[innerLoopIndex + 1]);
+            } else if (currentArray[innerLoopIndex] == currentArray[innerLoopIndex + 1]) {
+                // If the elements are equal, push the value of the first element (or second, as they are identical).
+                nextArray.push(currentArray[innerLoopIndex]);
+            } else {
+                // If the second element is greater, push their difference (second - first) to the new array.
+                nextArray.push(currentArray[innerLoopIndex + 1] - currentArray[innerLoopIndex]);
+            }
+        }
+        // After completing an iteration of the outer loop, the 'nextArray' becomes the 'currentArray'
+        // for the subsequent transformation.
+        currentArray = nextArray;
     }
-    // Replace the old array with the newly computed values for the next iteration.
-    currentValues = transformedValues;
-  }
 
-  // Once all cycles are complete, print the first element of the final resulting array.
-  console.log(currentValues[0]);
+    // After all transformations are complete, print the first element of the final 'currentArray'.
+    console.log(currentArray[0]);
 }
 
-// Execute the computation by reading input from standard input stream.
-ComputeResult(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

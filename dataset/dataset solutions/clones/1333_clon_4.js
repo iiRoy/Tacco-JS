@@ -1,53 +1,43 @@
-function acquireSourceData() {
-    const filesystemInterface = require("fs");
-    const inputPathIdentifier = "/dev/stdin";
-    const characterEncodingType = "utf-8";
-    return filesystemInterface.readFileSync(inputPathIdentifier, characterEncodingType);
-}
+const processOperations = (inputData) => {
+    const sourceLines = inputData.split("\n");
 
-function processInstructions(sourceData) {
-    const segmentedLines = sourceData.split('\n');
-    let initialTextSequence = segmentedLines[0];
-    const numberOfOperations = +segmentedLines[1];
-    const operationDirectives = segmentedLines.slice(2, 2 + numberOfOperations);
+    let [initialContent, opCountString, ...operationInstructions] = sourceLines;
+    const operationLimit = Number(opCountString);
 
-    let currentCharacterArray = initialTextSequence.split('');
+    const relevantInstructions = operationInstructions.slice(0, operationLimit);
 
-    const operationDispatchTable = {
-        "print": (currentCharsState, instructionParts) => {
-            const startPosition = +instructionParts[1];
-            const endPosition = +instructionParts[2];
-            console.log(currentCharsState.slice(startPosition, endPosition + 1).join(''));
-            return currentCharsState;
+    const actionRegistry = {
+        "print": (currentContent, startPos, endPos, _substitute) => {
+            console.log(currentContent.substring(startPos, endPos + 1));
+            return currentContent;
         },
-        "replace": (currentCharsState, instructionParts) => {
-            const startPosition = +instructionParts[1];
-            const endPosition = +instructionParts[2];
-            const replacementContent = instructionParts[3];
-            const leadingSegment = currentCharsState.slice(0, startPosition);
-            const trailingSegment = currentCharsState.slice(endPosition + 1);
-            return [...leadingSegment, ...replacementContent.split(''), ...trailingSegment];
+        "replace": (currentContent, startPos, endPos, substituteText) => {
+            const contentChars = currentContent.split('');
+            contentChars.splice(startPos, endPos - startPos + 1, ...substituteText.split(''));
+            return contentChars.join('');
         },
-        "reverse": (currentCharsState, instructionParts) => {
-            const startPosition = +instructionParts[1];
-            const endPosition = +instructionParts[2];
-            const preSubsegment = currentCharsState.slice(0, startPosition);
-            const subsegmentToReverse = currentCharsState.slice(startPosition, endPosition + 1);
-            const postSubsegment = currentCharsState.slice(endPosition + 1);
-            const invertedSubsegment = subsegmentToReverse.reverse();
-            return [...preSubsegment, ...invertedSubsegment, ...postSubsegment];
+        "reverse": (currentContent, startPos, endPos, _substitute) => {
+            const contentChars = currentContent.split('');
+            const segmentToFlip = contentChars.splice(startPos, endPos - startPos + 1);
+            segmentToFlip.reverse();
+            contentChars.splice(startPos, 0, ...segmentToFlip);
+            return contentChars.join('');
         }
     };
 
-    operationDirectives.reduce((accumulatedCharacterState, currentDirectiveLine) => {
-        const directiveComponents = currentDirectiveLine.split(' ');
-        const commandIdentifier = directiveComponents[0];
-        const handlerFunction = operationDispatchTable[commandIdentifier];
-        if (handlerFunction) {
-            return handlerFunction(accumulatedCharacterState, directiveComponents);
-        }
-        return accumulatedCharacterState;
-    }, currentCharacterArray);
-}
+    relevantInstructions.reduce((currentAccumulatedContent, instructionLine) => {
+        const instructionParts = instructionLine.split(" ");
+        const commandKey = instructionParts[0];
+        const indexOne = Number(instructionParts[1]);
+        const indexTwo = Number(instructionParts[2]);
+        const optionalArgument = instructionParts[3];
 
-processInstructions(acquireSourceData());
+        const handlerFunction = actionRegistry[commandKey];
+        if (handlerFunction) {
+            return handlerFunction(currentAccumulatedContent, indexOne, indexTwo, optionalArgument);
+        }
+        return currentAccumulatedContent;
+    }, initialContent);
+};
+
+processOperations(require("fs").readFileSync("/dev/stdin", "utf-8"));

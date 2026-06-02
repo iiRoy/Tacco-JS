@@ -1,57 +1,59 @@
-/*
- * This module processes multi-line input to find specific numeric combinations.
- * It reads data from standard input, parses each line, and calculates
- * the number of unique triplets (a, b, c) such that a < b < c and a + b + c equals a target value.
- */
-function processInputData(inputRows) { // Primary routine to handle all input lines
-  let rowIndex = 0; // Initialize an index to track the current input line
-  for (;; rowIndex++) { // Loop indefinitely until a specific termination condition is met
-    // Check for the termination sequence, which signals the end of input sets.
-    if (inputRows[rowIndex] === '0 0') {
-      break; // Exit the loop if the termination sequence is encountered
+function processInputData(inputLines) {
+  // Iterate through the provided input lines.
+  // The loop continues indefinitely until a specific termination condition is met.
+  for (let lineIndex = 0; ; lineIndex++) {
+    // Check if the current line is the termination signal "0 0".
+    if (inputLines[lineIndex] === '0 0') {
+      break; // If it is, exit the processing loop.
     }
 
-    // Split the current line into its constituent numeric parts using whitespace as a delimiter.
-    const parsedNumbers = inputRows[rowIndex].split(/\s+/);
-    // The first number represents the upper bound for our combination elements.
-    const upperLimit = parseInt(parsedNumbers[0], 10);
-    // The second number is the target sum we are looking for.
-    const targetSum = parseInt(parsedNumbers[1], 10);
+    // Split the current line string into an array of strings,
+    // using one or more whitespace characters as the delimiter.
+    const numberStrings = inputLines[lineIndex].split(/\s+/);
+    // Parse the first string as an integer (base 10) to get the upper bound 'n'.
+    const upperBound = parseInt(numberStrings[0], 10);
+    // Parse the second string as an integer (base 10) to get the target sum 'x'.
+    const targetSum = parseInt(numberStrings[1], 10);
 
-    let validCombinationsCount = 0; // Initialize a counter for combinations that meet the criteria.
+    // Initialize a counter for the number of valid combinations found.
+    let combinationCount = 0;
 
-    // Begin the nested loops to find unique combinations of three distinct numbers.
-    // The first component of the triplet.
-    for (let firstComponent = 1; firstComponent <= upperLimit; firstComponent++) {
-      // The second component must be greater than the first to ensure uniqueness and order.
-      for (let secondComponent = firstComponent + 1; secondComponent <= upperLimit; secondComponent++) {
-        // The third component must be greater than the second, maintaining strict ascending order.
-        for (let thirdComponent = secondComponent + 1; thirdComponent <= upperLimit; thirdComponent++) {
-          // Check if the sum of the three components equals the desired target sum.
-          if (firstComponent + secondComponent + thirdComponent === targetSum) {
-            validCombinationsCount++; // Increment the counter if a valid combination is found.
+    // First number in the triplet, iterating from 1 up to 'upperBound'.
+    for (let firstNum = 1; firstNum <= upperBound; firstNum++) {
+      // Second number in the triplet, iterating from 'firstNum + 1' up to 'upperBound'.
+      // This ensures distinct numbers and ascending order.
+      for (let secondNum = firstNum + 1; secondNum <= upperBound; secondNum++) {
+        // Third number in the triplet, iterating from 'secondNum + 1' up to 'upperBound'.
+        // This further ensures distinct numbers and ascending order.
+        for (let thirdNum = secondNum + 1; thirdNum <= upperBound; thirdNum++) {
+          // Check if the sum of the three distinct numbers equals the 'targetSum'.
+          if (firstNum + secondNum + thirdNum === targetSum) {
+            combinationCount++; // If the sum matches, increment the combination counter.
           }
         }
       }
     }
-    // Output the total number of valid combinations found for the current input set.
-    console.log(validCombinationsCount);
+
+    // Output the total number of combinations found for the current set of 'upperBound' and 'targetSum'.
+    console.log(combinationCount);
   }
 }
 
-// Array to store incoming data segments from standard input.
-const dataBuffers = [];
+// An array to accumulate data chunks received from standard input.
+const dataParts = [];
 
-// Set up an event listener to capture 'data' events from standard input.
+// Set up an event listener for the 'data' event on standard input.
+// Each time a data chunk is received, it is pushed into the 'dataParts' array.
 process.stdin.on('data', function(dataSegment) {
-  dataBuffers.push(dataSegment); // Append each received data segment to our buffer array.
+  dataParts.push(dataSegment);
 });
 
-// Set up an event listener for the 'end' event, which signifies the end of standard input.
-process.stdin.on('end', () => {
-  // Join all buffered data segments into a single string, then split by newline characters
-  // to obtain an array of individual input lines.
-  const inputLines = dataBuffers.join('').split('\n');
-  // Pass the processed lines to our main routine for combination calculation.
+// Set up an event listener for the 'end' event on standard input.
+// This event fires when there is no more data to be read from stdin.
+process.stdin.on('end', function() {
+  // Join all the accumulated data chunks into a single string,
+  // then split that string by newline characters to get an array of individual lines.
+  const inputLines = dataParts.join('').split('\n');
+  // Call the main processing function with the prepared array of input lines.
   processInputData(inputLines);
 });

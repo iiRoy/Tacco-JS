@@ -1,117 +1,118 @@
-var dataStream = initializeInputReader();
-processData();
+var inputProcessor = initializeInputHandler();
+executePrimaryLogic();
 
 function retrieveInteger() {
-  return transformContent(fetchNextItem(), 1);
+  return transformValue(fetchNextLine(), 1);
 }
 
-function fetchWordArray() { // Splits by spaces
-  return transformContent(fetchNextItem(), 2);
+function retrieveStringArray() {
+  return transformValue(fetchNextLine(), 2);
+} // Splits by space
+
+function retrieveIntegerArray() {
+  return transformValue(fetchNextLine(), 4);
+} // Splits by space and converts to numbers
+
+function retrieveCharacterArray() {
+  return transformValue(fetchNextLine(), 6);
+} // Splits into individual characters
+
+function fetchNextLine() {
+  return inputProcessor.advanceAndFetch();
 }
 
-function fetchNumberArray() { // Splits by spaces and converts to numbers
-  return transformContent(fetchNextItem(), 4);
-}
-
-function fetchCharacterArray() { // Splits into single characters
-  return transformContent(fetchNextItem(), 6);
-}
-
-function fetchNextItem() {
-  return dataStream.fetch();
-}
-
-function hasMoreItems() {
-  return dataStream.hasMore();
+function hasMoreLines() {
+  return inputProcessor.checkAvailability();
 }
 
 function readInputFile() {
+  // Reads standard input, trims whitespace, and splits by newline.
   return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
-function initializeInputReader() {
-  var rawLines = readInputFile();
-  var inputReader = {
-    "sourceLines": rawLines,
-    "currentPosition": 0,
-    "totalLines": rawLines.length,
-    "hasMore": function() {
-      return (this.currentPosition < this.totalLines);
+function initializeInputHandler() {
+  var rawInputData = readInputFile();
+  var handlerInstance = {
+    lineCollection: rawInputData,
+    currentPosition: 0,
+    maximumLines: rawInputData.length,
+    checkAvailability: function() {
+      return this.currentPosition < this.maximumLines;
     },
-    "fetch": function() {
-      if (!this.hasMore()) {
-        throw new Error("InputBoundsExceeded: No more lines to read.");
+    advanceAndFetch: function() {
+      if (!this.checkAvailability()) {
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        var currentItem = this.sourceLines[this.currentPosition];
+        var currentLineContent = this.lineCollection[this.currentPosition];
         this.currentPosition++;
-        return currentItem;
+        return currentLineContent;
       }
     }
   };
-  return inputReader;
+  return handlerInstance;
 }
 
-function displayResult(message) {
-  console.log(message);
-}
+function displayOutput(content) {
+  console.log(content);
+} // Prints to standard output
 
-function reportError(errorMessage) {
-  console.error(errorMessage);
-}
+function reportError(message) {
+  console.error(message);
+} // Prints to standard error output
 
-// This function handles various data transformations.
-// 'input' is the value to be transformed.
-// 'conversionType' determines the type of operation.
-//  1: Parse as an integer.
-//  2: Split string by space.
-//  4: Split string by space and map to numbers.
-//  6: Split string into individual characters.
-//  7: Split string into characters and map to numbers.
-//  8: Join array elements with spaces.
-//  9: Join array elements with newlines.
-//  0: Join array elements without a separator.
-function transformContent(input, conversionType) {
+// This function handles various data transformations based on the 'conversionType' parameter.
+// 'inputValue' is the data to be transformed.
+// 'conversionType' specifies the desired transformation:
+// 1: Convert to integer.
+// 2: Split string by spaces into an array of strings.
+// 4: Split string by spaces and convert each part to a number.
+// 6: Split string into an array of individual characters.
+// 7: Split string into characters and convert each to a number.
+// 8: Join array elements with spaces.
+// 9: Join array elements with newlines.
+// 0: Join array elements without any separator.
+// Default: Return 'inputValue' unchanged if 'conversionType' is unknown or an error occurs.
+function transformValue(inputValue, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(input, 10);
+        return parseInt(inputValue);
       case 2:
-        return input.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return input.split(" ").map((element) => Number(element));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
-        return input.split("");
+        return inputValue.split("");
       case 7:
-        return input.split("").map((element) => Number(element));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
-        return input.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return input.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return input.join("");
+        return inputValue.join("");
       default:
-        return input;
+        return inputValue;
     }
-  } catch (err) {
-    return input; // Returns original input on error.
+  } catch (error) {
+    return inputValue;
   }
 }
 
-function processData() {
-  var inputString = fetchNextItem();
-  var finalScore = 0;
+function executePrimaryLogic() {
+  var inputString = fetchNextLine();
+  var resultValue = 0;
 
-  for (var k = 0; k < inputString.length; k++) {
-    // Logic for even indices, excluding the last character.
-    if (k % 2 === 0 && k !== inputString.length - 1) {
-      if (inputString[k] === "g") {
-        finalScore++;
+  for (var loopCounter = 0; loopCounter < inputString.length; loopCounter++) {
+    if (loopCounter % 2 === 0 && loopCounter !== inputString.length - 1) {
+      if (inputString[loopCounter] === "g") {
+        resultValue++;
       }
-    } else { // Logic for odd indices or the final character.
-      if (inputString[k] === "p") {
-        finalScore--;
+    } else {
+      if (inputString[loopCounter] === "p") {
+        resultValue--;
       }
     }
   }
-  displayResult(finalScore);
+  displayOutput(resultValue);
 }

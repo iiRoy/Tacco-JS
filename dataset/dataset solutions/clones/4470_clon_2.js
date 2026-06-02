@@ -1,31 +1,17 @@
-const ProcessIncomingData = ( rawInputString ) => {
+const ProcessInputData = (sourceData) => {
+    // This section parses the incoming string data.
+    let parsedNumbers = sourceData.trim().split(' ').map(strVal => parseInt(strVal, 10));
 
-  // First, clean the input string: remove leading/trailing whitespace,
-  // then split it into an array of strings based on spaces.
-  // Finally, convert each string element into a numeric value.
-  let numericalDataPoints = rawInputString
-    . trim()
-    . split ( ' ' )
-    . map ( valueItem => Number(valueItem) ); // Using Number() for type conversion
+    // We calculate the sum of the first two numerical entries.
+    let calculatedSum = parsedNumbers[0] + parsedNumbers[1] + 0;
 
-  // Calculate the aggregate of the first two processed numerical entries.
-  // A redundant zero addition is included to maintain expression structure.
-  let computedAggregate = numericalDataPoints[0] + numericalDataPoints[1] + ( 0.0 );
+    // Based on the sum's divisibility by three, a specific message is logged.
+    if (calculatedSum % 3 === 0) {
+        console.log('Possible'); // Output if the sum is perfectly divisible by 3.
+    } else if (calculatedSum % 3 !== 0) {
+        console.log('Impossible'); // Output if the sum is not divisible by 3.
+    }
+};
 
-  // Determine if the calculated aggregate is perfectly divisible by three.
-  if ( computedAggregate % 3 === 0 ) {
-    // If it is, log a positive outcome message.
-    console.log ( 'Possible' );
-  }
-
-  // Otherwise, if it's not perfectly divisible by three,
-  // log a negative outcome message.
-  else if ( computedAggregate % 3 !== 0 ) {
-    console.log ( 'Impossible' );
-  }
-
-}; // End of ProcessIncomingData function definition.
-
-// Execute the main processing function by reading content from standard input.
-// The file system module is used to synchronously read the input file as UTF-8 text.
-ProcessIncomingData( require ( 'node:fs' ) . readFileSync ( '/dev/stdin', 'utf-8' ) );
+// The primary function is invoked with content read from standard input.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,318 +1,156 @@
-const InputParserFactory = (function () {
-    // A utility function to safely convert string values to numbers.
-    // Returns 0 if conversion results in NaN, mirroring common competitive programming behavior.
-    function safeParseNumber(stringValue) {
-        const numericValue = Number(stringValue);
-        return isNaN(numericValue) ? 0 : numericValue;
+var InputParserFactory = (function() {
+    function createParser(inputString) {
+        return new InputParser(inputString);
     }
 
-    /**
-     * Creates an instance of the InputLineStream for processing input text.
-     * @param {string} sourceContent - The raw string content to be parsed.
-     * @returns {InputLineStream} A parser instance.
-     */
-    function createInputProcessor(sourceContent) {
-        // Guard clause for invalid or empty input content.
-        if (typeof sourceContent !== 'string' || sourceContent.trim() === '') {
-            console.warn("Warning: Input source content is empty or invalid. Initializing with empty data.");
-            return new InputLineStream("");
-        }
-        return new InputLineStream(sourceContent);
+    function InputParser(inputString) {
+        this.inputLines = inputString.trim().split("\n");
+        this.currentLineIndex = 0;
     }
 
-    /**
-     * @class InputLineStream
-     * @description Handles parsing of input text line by line, token by token.
-     */
-    function InputLineStream(rawData) {
-        // Store all input lines, trimmed to remove leading/trailing whitespace.
-        this.sourceLines = rawData.trim().split("\n");
-        // Tracks the current line index being processed from sourceLines.
-        this.currentLinePosition = 0;
-        // Buffer for tokens extracted from the current line, stored in reverse order
-        // to facilitate efficient 'pop' operations from the end.
-        this.currentLineTokensReversed = [];
-    }
+    InputParser.prototype.readItem = function(asString) {
+        const currentLineContent = this.inputLines[this.currentLineIndex];
+        let extractedValue;
 
-    /**
-     * Extracts the next single token (word) from the input stream.
-     * Tokens are read from right-to-left within a line.
-     * Advances to the next line only when the current line's tokens are exhausted.
-     * @param {boolean} [returnAsString=false] - If true, returns the token as a string; otherwise, as a number.
-     * @returns {string|number} The next token, or an empty string/0 if no more input.
-     */
-    InputLineStream.prototype.extractNextValue = function (returnAsString = false) {
-        // If the token buffer for the current line is empty, load the next line.
-        if (this.currentLineTokensReversed.length === 0) {
-            // Check if we have processed all available lines.
-            if (this.currentLinePosition >= this.sourceLines.length) {
-                // No more input, return default values.
-                return returnAsString ? "" : 0;
-            }
-
-            let activeLineContent = this.sourceLines[this.currentLinePosition];
-            // Skip empty or whitespace-only lines to prevent errors.
-            if (typeof activeLineContent !== 'string' || activeLineContent.trim() === '') {
-                this.currentLinePosition++; // Move to the subsequent line.
-                // Recursively call to find the next valid token from the next line.
-                return this.extractNextValue(returnAsString);
-            }
-
-            // Split the line by spaces and reverse to prepare for `pop()`.
-            this.currentLineTokensReversed = activeLineContent.split(" ").reverse();
-            // Note: currentLinePosition is NOT incremented here. It's incremented when the line is fully consumed.
+        // If the current line is still a string, split it into an array of words and reverse it.
+        // This modification is done in-place to the internal inputLines array.
+        if (typeof currentLineContent === "string") {
+            this.inputLines[this.currentLineIndex] = currentLineContent.trim().split(" ").reverse();
         }
 
-        const retrievedToken = this.currentLineTokensReversed.pop();
+        // Now, the current line is guaranteed to be an array of strings.
+        const lineAsArray = this.inputLines[this.currentLineIndex];
+        extractedValue = lineAsArray.pop(); // Get the last element (due to reverse)
 
-        // If the token buffer is now empty after popping, it means the current line is fully consumed.
-        // So, advance to the next line for future reads.
-        if (this.currentLineTokensReversed.length === 0) {
-            this.currentLinePosition++;
+        // If the current line becomes empty after popping, advance to the next line.
+        if (!lineAsArray.length) {
+            this.currentLineIndex++;
         }
 
-        // Handle cases where the retrieved token might be undefined (e.g., due to multiple spaces) or empty.
-        if (retrievedToken === undefined || retrievedToken === '') {
-            return returnAsString ? "" : 0;
-        }
-
-        return returnAsString ? retrievedToken : safeParseNumber(retrievedToken);
+        // Return the value as a string or a number based on the 'asString' flag.
+        return asString ? extractedValue : +extractedValue;
     };
 
-    /**
-     * Reads and processes all tokens from the current line, then advances to the next line.
-     * Any pending tokens in the currentLineTokensReversed buffer are discarded.
-     * @param {boolean} [returnAsString=false] - If true, returns tokens as strings; otherwise, as numbers.
-     * @returns {Array<string|number>} An array of tokens from the line.
-     */
-    InputLineStream.prototype.readFullLineTokens = function (returnAsString = false) {
-        if (this.currentLinePosition >= this.sourceLines.length) {
-            return []; // No more lines to read.
-        }
-        // Discard any partially processed tokens from the current line, as we are reading the whole line.
-        this.currentLineTokensReversed = [];
-        const lineContent = this.sourceLines[this.currentLinePosition++]; // Read line and advance position.
-        const tokens = lineContent.split(" ");
-        return returnAsString ? tokens : tokens.map(safeParseNumber);
+    InputParser.prototype.readLine = function(asString) {
+        const lineContent = this.inputLines[this.currentLineIndex++].split(" ");
+        return asString ? lineContent : lineContent.map(val => +val);
     };
 
-    /**
-     * Reads a specified number of lines, treating each as a row in a matrix,
-     * and splits each line into tokens. Advances the line position.
-     * @param {number} rowCount - The number of rows (lines) to read.
-     * @param {boolean} [returnAsString=false] - If true, returns matrix elements as strings; otherwise, as numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
-     */
-    InputLineStream.prototype.readMultiLineMatrix = function (rowCount, returnAsString = false) {
-        if (rowCount <= 0) return []; // Invalid row count.
-
-        // Determine the actual number of lines available to read.
-        let linesToProcess = Math.min(rowCount, this.sourceLines.length - this.currentLinePosition);
-        if (linesToProcess <= 0) return []; // No lines available.
-
-        // Discard any partially processed tokens from the current line.
-        this.currentLineTokensReversed = [];
-
-        // Extract the relevant lines and advance the position.
-        const matrixRawRows = this.sourceLines.slice(this.currentLinePosition, this.currentLinePosition + linesToProcess);
-        this.currentLinePosition += linesToProcess;
-
-        // Process each raw row into an array of tokens.
-        const processedMatrix = matrixRawRows.map(row => row.split(" "));
-        return returnAsString ? processedMatrix : processedMatrix.map(row => row.map(safeParseNumber));
+    InputParser.prototype.readMatrix = function(numRows, asString) {
+        const matrixRows = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += numRows);
+        const parsedMatrix = matrixRows.map(row => row.split(" "));
+        return asString ? parsedMatrix : parsedMatrix.map(row => row.map(val => +val));
     };
 
-    /**
-     * Reads a specified number of raw lines without splitting them into tokens.
-     * Advances the line position.
-     * @param {number} lineCount - The number of lines to read.
-     * @param {boolean} [returnAsString=false] - If true, returns lines as strings; otherwise, attempts to convert to number.
-     * @returns {Array<string|number>} An array of raw lines.
-     */
-    InputLineStream.prototype.readSequentialLines = function (lineCount, returnAsString = false) {
-        if (lineCount <= 0) return []; // Invalid line count.
-
-        // Determine the actual number of lines available to read.
-        let linesToProcess = Math.min(lineCount, this.sourceLines.length - this.currentLinePosition);
-        if (linesToProcess <= 0) return []; // No lines available.
-
-        // Discard any partially processed tokens from the current line.
-        this.currentLineTokensReversed = [];
-
-        // Extract the relevant lines and advance the position.
-        const rawLines = this.sourceLines.slice(this.currentLinePosition, this.currentLinePosition + linesToProcess);
-        this.currentLinePosition += linesToProcess;
-        return returnAsString ? rawLines : rawLines.map(safeParseNumber);
+    InputParser.prototype.readArray = function(numElements, asString) {
+        const arrayElements = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += numElements);
+        return asString ? arrayElements : arrayElements.map(val => +val);
     };
 
-    return createInputProcessor;
+    return createParser;
 })();
 
-// Replacement for xArray - creates multi-dimensional arrays without using eval.
-// Uses a recursive approach for safer and more readable array initialization.
-function createMultiDimArrayWithDefault(defaultValue, ...dimensions) {
-    // Base case: if no more dimensions, return the default value.
-    if (dimensions.length === 0) {
-        return defaultValue;
-    }
+var inputReader = InputParserFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const currentDimensionSize = dimensions[0];
-    // Basic validation for dimension size.
-    if (typeof currentDimensionSize !== 'number' || currentDimensionSize <= 0) {
-        // Return an empty array for invalid or non-positive dimension sizes.
-        return [];
-    }
+function createMultiDimArray(initialValue) {
+    const dimensions = Array.from(arguments).slice(1); // Extract dimensions from arguments
 
-    const remainingDimensions = dimensions.slice(1);
-    const newArrayInstance = new Array(currentDimensionSize);
-
-    // Recursively fill the array for each element in the current dimension.
-    for (let i = 0; i < currentDimensionSize; i++) {
-        newArrayInstance[i] = createMultiDimArrayWithDefault(defaultValue, ...remainingDimensions);
-    }
-    return newArrayInstance;
-}
-
-// Setup for reading standard input using the custom parser.
-const fileSystemModule = require("fs");
-
-/**
- * Helper function to read content from standard input.
- * Provides a robust way to get input for the parser.
- * @returns {string} The content read from /dev/stdin, or an empty string on error.
- */
-function acquireStandardInputContent() {
-    try {
-        return fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    } catch (error) {
-        // Log the error but continue execution with an empty string to avoid crashing.
-        console.error("Failed to read from /dev/stdin:", error.message);
-        return "";
-    }
-}
-
-// Initialize the input processor with content from standard input.
-const inputProcessor = InputParserFactory(acquireStandardInputContent());
-
-// Main function to execute the problem's logic.
-console.log(determineOptimalConfiguration());
-
-/**
- * Implements the core logic to determine an optimal value based on input data.
- * This function performs calculations, sorting, and a binary search.
- * @returns {number} The calculated optimal value.
- */
-function determineOptimalConfiguration() {
-    // Read initial problem parameters.
-    const numberOfItems = inputProcessor.extractNextValue();
-    const unitThreshold = inputProcessor.extractNextValue();
-
-    // Read the matrix of item details. Each row represents an item.
-    // Structure: [baseQuantity, basePrice, additionalPrice]
-    const itemDetailsList = inputProcessor.readMultiLineMatrix(numberOfItems);
-
-    let totalInitialBaseCost = 0; // Accumulates the sum of (baseQuantity * basePrice) for all items.
-
-    // First pass: Process each item to calculate its base cost and a derived "threshold remainder cost".
-    // The derived cost is then appended to the item's data array.
-    for (let currentItemIndex = 0; currentItemIndex < numberOfItems; currentItemIndex++) {
-        const currentItem = itemDetailsList[currentItemIndex];
-        const itemBaseQuantity = currentItem[0];
-        const itemBasePrice = currentItem[1];
-        const itemAdditionalPrice = currentItem[2];
-
-        // Calculate the base cost for the current item.
-        const currentItemBaseCost = itemBaseQuantity * itemBasePrice;
-        totalInitialBaseCost += currentItemBaseCost;
-
-        // Calculate the cost component for units beyond baseQuantity, up to unitThreshold.
-        // This is stored as the fourth element (index 3) of the item's array.
-        const costForThresholdRemainder = (unitThreshold - itemBaseQuantity) * itemAdditionalPrice;
-        currentItem.push(costForThresholdRemainder);
-    }
-
-    // Sort the items in descending order based on their calculated "threshold remainder cost" (index 3).
-    // This sorting strategy is crucial for the subsequent greedy-like processing in the binary search.
-    itemDetailsList.sort((itemA, itemB) => itemB[3] - itemA[3]);
-
-    // Binary search initialization.
-    // 'searchUpperBound' represents a "good" (feasible) value, 'searchLowerBound' represents a "bad" (infeasible) value.
-    // The search aims to find the smallest 'searchUpperBound' for which the condition holds.
-    let searchUpperBound = numberOfItems * unitThreshold; // An upper bound for the possible answer.
-    let searchLowerBound = -1; // A lower bound for the possible answer.
-
-    // Binary search loop: Continues as long as there's a gap greater than 1 between bounds.
-    while (searchUpperBound - searchLowerBound > 1) {
-        const midPointCapacity = Math.floor((searchUpperBound + searchLowerBound) / 2);
-
-        let currentReducedCost = totalInitialBaseCost; // Tracks the accumulated cost/value during evaluation.
-        let remainingCapacityBudget = midPointCapacity; // Represents the capacity or budget to distribute.
-
-        // Iterate through the sorted items to evaluate the current 'midPointCapacity'.
-        // The loop condition ensures we only process items while we have capacity and cost to reduce.
-        for (let itemProcessingIndex = 0;
-             itemProcessingIndex < numberOfItems && remainingCapacityBudget > 0 && currentReducedCost > 0;
-             itemProcessingIndex++) {
-
-            const currentItem = itemDetailsList[itemProcessingIndex];
-            const currentItemBaseQuantity = currentItem[0];
-            const currentItemBasePrice = currentItem[1];
-            const currentItemAdditionalPrice = currentItem[2];
-            const currentItemThresholdRemainderCost = currentItem[3];
-
-            // Scenario 1: If the remaining capacity allows taking a full 'unitThreshold' quantity from this item.
-            if (unitThreshold <= remainingCapacityBudget) {
-                // Subtract the total cost associated with taking 'unitThreshold' units from this item.
-                currentReducedCost -= (currentItemBaseQuantity * currentItemBasePrice + currentItemThresholdRemainderCost);
-                // Consume the 'unitThreshold' from the budget.
-                remainingCapacityBudget -= unitThreshold;
-            } else {
-                // Scenario 2: Remaining capacity is less than 'unitThreshold'.
-                // This block replicates the original code's specific and potentially complex logic.
-                // 'tempCalculatedValue' acts as the 'v' variable from the original code,
-                // initialized once with 'currentReducedCost' (original 'u').
-                let tempCalculatedValue = currentReducedCost;
-
-                // This inner loop continues processing items from the current 'itemProcessingIndex'.
-                // The 'itemProcessingIndex' is incremented within this loop.
-                // Crucially, 'remainingCapacityBudget' (original 'k') is NOT consumed or modified here.
-                for (; itemProcessingIndex < numberOfItems && tempCalculatedValue > 0; itemProcessingIndex++) {
-                    const innerLoopItem = itemDetailsList[itemProcessingIndex];
-                    const innerItemBaseQuantity = innerLoopItem[0];
-                    const innerItemBasePrice = innerLoopItem[1];
-                    const innerItemAdditionalPrice = innerLoopItem[2];
-
-                    if (remainingCapacityBudget < innerItemBaseQuantity) {
-                        // If the budget is less than the item's base quantity,
-                        // subtract the cost of using 'remainingCapacityBudget' units at the base price.
-                        tempCalculatedValue -= innerItemBasePrice * remainingCapacityBudget;
-                    } else {
-                        // If the budget covers the item's base quantity and possibly more,
-                        // subtract the cost of base quantity at base price, plus any remaining budget
-                        // (after covering base quantity) at the additional price.
-                        tempCalculatedValue -= (innerItemBaseQuantity * innerItemBasePrice +
-                                                (remainingCapacityBudget - innerItemBaseQuantity) * innerItemAdditionalPrice);
-                    }
-                }
-                // The 'itemProcessingIndex' was incremented one too many times by the inner loop.
-                // Decrement it to ensure the outer loop's 'itemProcessingIndex++' correctly advances to the *next* item
-                // that hasn't been fully processed by this inner block.
-                itemProcessingIndex--;
-                // Update 'currentReducedCost' with the final value from the inner loop's calculation.
-                currentReducedCost = tempCalculatedValue;
-            }
+    function buildNestedArray(dimIndex) {
+        // Base case: if we've processed all dimensions, return the initial value
+        if (dimIndex === dimensions.length) {
+            return initialValue;
         }
+        // Recursive step: create an array for the current dimension
+        const currentDimSize = dimensions[dimIndex];
+        return Array(currentDimSize).fill(0).map(() => buildNestedArray(dimIndex + 1));
+    }
 
-        // After evaluating all items for the current 'midPointCapacity':
-        if (currentReducedCost > 0) {
-            // If the cost is still positive, it means 'midPointCapacity' was too low (infeasible).
-            searchLowerBound = midPointCapacity;
+    return buildNestedArray(0); // Start building from the first dimension
+}
+
+console.log(solveProblem());
+
+function solveProblem() {
+    const numItems = inputReader.readItem();
+    const thresholdX = inputReader.readItem();
+    const itemData = inputReader.readMatrix(numItems);
+
+    let initialSum = 0;
+
+    // First pass: calculate initial sum and add derived property to each item
+    for (let idx = 0; idx < numItems; idx++) {
+        const currentItem = itemData[idx];
+        const baseProduct = currentItem[0] * currentItem[1];
+        initialSum += baseProduct;
+        const derivedProperty = (thresholdX - currentItem[0]) * currentItem[2];
+        currentItem.push(derivedProperty); // Add the derived property as the 4th element (index 3)
+    }
+
+    // Sort items based on the derived property in descending order
+    itemData.sort((itemA, itemB) => itemB[3] - itemA[3]);
+
+    let upperBound = numItems * thresholdX; // Max possible capacity
+    let lowerBound = -1; // Min possible capacity (exclusive)
+
+    // Binary search for the minimum capacity that satisfies the condition
+    while (upperBound - lowerBound > 1) {
+        const midValue = Math.floor((upperBound + lowerBound) / 2);
+
+        // Check if the current midValue capacity is feasible
+        if (checkFeasibility(midValue, initialSum, itemData, thresholdX)) {
+            upperBound = midValue;
         } else {
-            // If the cost is zero or negative, 'midPointCapacity' is feasible or potentially too high.
-            searchUpperBound = midPointCapacity;
+            lowerBound = midValue;
         }
     }
 
-    // The 'searchUpperBound' will hold the smallest feasible value.
-    return searchUpperBound;
+    return upperBound;
+}
+
+// Helper function to check if a given capacity can reduce the sum to 0 or less
+function checkFeasibility(capacityToCheck, totalInitialSum, items, thresholdXVal) {
+    let currentSum = totalInitialSum;
+    let remainingCapacity = capacityToCheck;
+    const numItems = items.length;
+
+    // Nested helper function to calculate reduction amount for an item
+    const calculateItemReduction = (item, currentCapacity) => {
+        if (currentCapacity < item[0]) {
+            return item[1] * currentCapacity;
+        } else {
+            return item[0] * item[1] + (currentCapacity - item[0]) * item[2];
+        }
+    };
+
+    for (let idx = 0; idx < numItems && remainingCapacity > 0 && currentSum > 0; idx++) {
+        const currentItem = items[idx];
+
+        if (thresholdXVal <= remainingCapacity) {
+            // If enough capacity, apply full item reduction
+            const fullItemCostReduction = currentItem[0] * currentItem[1] + currentItem[3];
+            currentSum -= fullItemCostReduction;
+            remainingCapacity -= thresholdXVal;
+        } else {
+            // This block replicates the original's complex inner loop behavior:
+            // `for(var v = u; i < n && v > 0; i++){ v = u; ... } u = v;`
+            // `v` is reset to `u` (currentSum) in each iteration of the inner loop.
+            // The `v > 0` condition is effectively `currentSum > 0` (the value of `u` when this else block starts).
+            // The `u = v` after the inner loop means `u` takes the value of `v` from the *last* iteration.
+            // The `i++` in the inner loop increments the outer `idx`.
+
+            let finalTempSumValue = currentSum; // This will store the `v` from the last iteration of the conceptual inner loop
+            let tempIdxForInnerLoop = idx; // Use a temporary index to simulate the inner loop's `i`
+
+            // Simulate the inner loop's iterations and update `finalTempSumValue`
+            while (tempIdxForInnerLoop < numItems && currentSum > 0) {
+                const innerLoopItem = items[tempIdxForInnerLoop];
+                // The `v = u` part is implicitly handled as `currentSum` is used for calculation
+                finalTempSumValue = currentSum - calculateItemReduction(innerLoopItem, remainingCapacity);
+                tempIdxForInnerLoop++;
+            }
+            currentSum = finalTempSumValue; // Update `currentSum` with the result from the last inner iteration
+            idx = tempIdxForInnerLoop - 1; // Adjust outer loop's `idx` as it will be incremented by the `for` loop
+        }
+    }
+    return currentSum <= 0; // Return true if the sum is reduced to 0 or less
 }

@@ -1,65 +1,60 @@
-function clearConnectedCells(startRow, startCol, targetChar) {
-   // Define offsets for checking adjacent cells: up, down, left, right
-   const rowDelta = [0, 0, -1, 1];
-   const colDelta = [-1, 1, 0, 0];
+let dimensions;
+let gridData;
 
-   // Iterate through the four possible directions
-   for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
-      // Calculate coordinates of the neighboring cell
-      const nextR = startRow + rowDelta[directionIndex];
-      const nextC = startCol + colDelta[directionIndex];
+function detonate(rowCoord, colCoord, targetVal) {
+   const rowOffsets = [0, 0, -1, 1];
+   const colOffsets = [-1, 1, 0, 0];
 
-      // Check if the adjacent cell is within the grid boundaries
-      if (nextR < 0 || nextR >= gridSizing[0] || nextC < 0 || nextC >= gridSizing[1]) {
-         continue; // Move to the next direction if out of bounds
+   for (let idx = 0; idx < 4; idx++) {
+      let nextRow = rowCoord + rowOffsets[idx];
+      let nextCol = colCoord + colOffsets[idx];
+
+      // Check if the adjacent cell is within the grid boundaries.
+      if (nextRow < 0 || nextRow >= dimensions[0] || nextCol < 0 || nextCol >= dimensions[1]) {
+         continue;
       }
 
-      // If the neighbor's content matches the target character, clear it and recurse
-      if (targetChar === cellGrid[nextR][nextC]) {
-         cellGrid[nextR][nextC] = '_'; // Mark cell as cleared using an underscore
-         clearConnectedCells(nextR, nextC, targetChar);
+      // If the cell's value matches the target, clear it and recursively process neighbors.
+      if (targetVal === gridData[nextRow][nextCol]) {
+         gridData[nextRow][nextCol] = 0;
+         detonate(nextRow, nextCol, targetVal);
       }
    }
 }
 
-// Acquire input data from standard input stream
-const rawTextData = require('node:fs').readFileSync(0, 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineSegments = (fileContent.trim()).split("\n");
 
-// Process the raw text into an array of individual lines
-let inputLines = rawTextData.trim().split('\n');
-
-// Main processing loop
 while (true) {
-   // Extract grid dimensions from the first line of the current input block
-   const gridSizing = inputLines.shift().split(' ').map(value => parseInt(value, 10));
+   // Read grid dimensions (rows and columns) for the current test case.
+   dimensions = (lineSegments.shift()).split(" ").map(Number);
 
-   // If both dimensions are zero, terminate the program
-   if (gridSizing[0] === 0 && gridSizing[1] === 0) break;
-
-   // Initialize a new grid structure for character data
-   let cellGrid = [];
-   // Populate the grid with characters from subsequent input lines
-   for (let rowIndex = 0; rowIndex < gridSizing[0]; rowIndex++) {
-      const currentLineChars = inputLines.shift().split('');
-      cellGrid.push(currentLineChars);
+   // If both dimensions are zero, it's the termination condition.
+   if (dimensions[0] === 0 && dimensions[1] === 0) {
+      break;
    }
 
-   // Initialize counter for distinct connected regions
-   let regionCount = 0;
+   // Initialize the 2D array representing the grid.
+   gridData = [];
+   for (let rowIndex = 0; rowIndex < dimensions[0]; rowIndex++) {
+      let currentLine = (lineSegments.shift()).split("");
+      gridData.push(currentLine);
+   }
 
-   // Iterate through each cell in the grid
-   for (let rowIndex = 0; rowIndex < gridSizing[0]; rowIndex++) {
-      for (let colIndex = 0; colIndex < gridSizing[1]; colIndex++) {
-         const elementVal = cellGrid[rowIndex][colIndex];
-         // Check if the cell contains a character that signifies a region start
-         // The original code had this commented out, so we maintain that structure
-         // if (elementVal === '@' || elementVal === '#' || elementVal === '*') {
-         //    regionCount++; // Increment the region counter
-         //    cellGrid[rowIndex][colIndex] = '_'; // Clear the starting cell
-         //    clearConnectedCells(rowIndex, colIndex, elementVal); // Propagate clearing
+   let totalCount = 0;
+
+   // Iterate through each cell of the grid to find and process features.
+   for (let rowIndex = 0; rowIndex < dimensions[0]; rowIndex++) {
+      for (let colIndex = 0; colIndex < dimensions[1]; colIndex++) {
+         let cellValue = gridData[rowIndex][colIndex];
+         // The original code had a commented-out block here, which is preserved.
+         // if (cellValue === "@" || cellValue === "#" || cellValue === "*") {
+         //    totalCount++;
+         //    gridData[rowIndex][colIndex] = 0;
+         //    detonate(rowIndex, colIndex, cellValue);
          // }
       }
    }
-   // Output the total count of identified regions
-   console.log(regionCount);
+   // Output the calculated count for the current grid.
+   console.log(totalCount);
 }

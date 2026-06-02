@@ -1,37 +1,21 @@
-const obtainSourceMaterial = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+function processInput(inputData) {
+  const firstDelimiterPosition = inputData.indexOf(' ');
+  let initialSegment, subsequentSegment;
 
-const presentResult = (indicatorText) => process.stdout.write(indicatorText + '\n');
-
-const evaluateSegments = (inputPayload) => {
-    let accumulatedFragment = '';
-    let parsedComponents = [];
-
-    for (let position = 0; position < inputPayload.length; position++) {
-        const characterAtPosition = inputPayload[position];
-        if (characterAtPosition === ' ') {
-            parsedComponents.push(accumulatedFragment);
-            accumulatedFragment = '';
-        } else {
-            accumulatedFragment += characterAtPosition;
-        }
+  if (firstDelimiterPosition === -1) {
+    initialSegment = inputData;
+    subsequentSegment = undefined;
+  } else {
+    initialSegment = inputData.substring(0, firstDelimiterPosition);
+    const nextDelimiterPosition = inputData.indexOf(' ', firstDelimiterPosition + 1);
+    if (nextDelimiterPosition === -1) {
+      subsequentSegment = inputData.substring(firstDelimiterPosition + 1);
+    } else {
+      subsequentSegment = inputData.substring(firstDelimiterPosition + 1, nextDelimiterPosition);
     }
-    // Add the final accumulated fragment after the loop
-    parsedComponents.push(accumulatedFragment);
+  }
 
-    const firstItem = parsedComponents[0];
-    const secondItem = parsedComponents[1]; // Will be undefined if fewer than two components
+  console.log((initialSegment === subsequentSegment) ? 'Yes' : 'No');
+}
 
-    const outcomeMap = new Map();
-    outcomeMap.set(true, 'Yes');
-    outcomeMap.set(false, 'No');
-
-    return outcomeMap.get(firstItem === secondItem);
-};
-
-const orchestrateExecution = () => {
-    const rawContent = obtainSourceMaterial();
-    const finalDecision = evaluateSegments(rawContent);
-    presentResult(finalDecision);
-};
-
-orchestrateExecution();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

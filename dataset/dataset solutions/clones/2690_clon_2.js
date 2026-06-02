@@ -1,219 +1,154 @@
 function processInput(rawData) {
-  // Parse the raw input string into a structured array of numbers.
-  // Each line is split by newline, then each line by space, and finally converted to integers.
-  const parsedInputData = rawData
-    .split("\n")
-    .map((textLine) =>
-      textLine.split(" ").map((numericVal) => Number.parseInt(numericVal, 10))
-    );
+    // Parse the raw input string into a structured array of numbers.
+    // Each line is split by space, and each part is converted to an integer.
+    var parsedData = rawData.split("\n").map(function(currentLine) {
+        return currentLine.split(" ").map(function(numericValue) {
+            return parseInt(numericValue, 10); // Explicitly use base 10 for parseInt
+        });
+    });
 
-  // Extract the constraint value (k) and the main number sequence from the parsed data.
-  const constraintK = parsedInputData[0][1];
-  const numericSequence = parsedInputData[1];
+    // Extract the threshold value and the main array from the parsed data.
+    var thresholdVal = parsedData[0][1];
+    var inputNumbers = parsedData[1];
 
-  // Find the maximum individual element within the numeric sequence.
-  const largestElement = getMaximumValue(numericSequence);
+    // Determine the maximum element in the input array.
+    var maximumElement = findMaximum(inputNumbers);
+ 
+    // Calculate an upper bound for the potential greatest common divisor (GCD).
+    // This helps optimize the search by reducing the range.
+    var maximumDivisor = Math.min(maximumElement + thresholdVal, calculateMaxPossible(inputNumbers));
 
-  // Determine the upper bound for the search of the greatest common divisor candidate.
-  // This upper bound is the minimum of (largest element + k) and a specially calculated sum.
-  const optimalDivisor = Math.min(
-    largestElement + constraintK,
-    calculateMaximumPairSum(numericSequence)
-  );
-
-  // Iterate downwards from the determined optimal divisor to 2.
-  // The goal is to find the largest divisor that satisfies the divisibility condition.
-  for (let currentDivisor = optimalDivisor; currentDivisor > 1; currentDivisor--) {
-    // Check if the current divisor candidate meets the specific divisibility requirements.
-    if (checkDivisibilityCondition(currentDivisor, numericSequence, constraintK)) {
-      return console.info(currentDivisor); // Output the first valid divisor found and exit.
+    // Iterate downwards from the calculated maximum divisor candidate.
+    // The first divisor that satisfies the condition is the answer.
+    for (var divisorCandidate = maximumDivisor; divisorCandidate > 1; divisorCandidate--) {
+        if (checkDivisibility(divisorCandidate, inputNumbers, thresholdVal)) {
+            // If a valid divisor is found, print it and exit.
+            return console.log(divisorCandidate);
+        }
     }
-  }
-
-  // If no suitable divisor greater than 1 is found after the search, output 1 as the default.
-  return console.info(1);
+    // If no such divisor greater than 1 is found, the answer is 1.
+    return console.log(1);
 }
 
-/*
- * This function calculates a special maximum sum from an array of numbers.
- * It sorts the array and attempts to balance two accumulating sums (left and right)
- * by strategically adding elements or indices.
- */
-function calculateMaximumPairSum(inputNumbers) {
-  // Create a shallow copy of the input array and sort it in ascending order.
-  const orderedNumbers = [...inputNumbers].sort((a, b) => a - b);
-  let leftAccumulator = 0; // Accumulator for the left partition of the array.
-  let rightAccumulator = 0; // Accumulator for the right partition of the array.
-  let rightPointer = orderedNumbers.length - 1; // Pointer starting from the end of the sorted array.
+// This function attempts to find a specific kind of maximum value related to array partitioning.
+// It's not a simple maximum, but rather a value derived from balancing sums of sorted elements.
+function calculateMaxPossible(inputCollection) {
+    // Create a sorted copy of the input array to avoid modifying the original.
+    var orderedCollection = [...inputCollection].sort((a, b) => a - b);
+    var leftAccumulator = 0; // Accumulator for the left part of the array.
+    var rightAccumulator = 0; // Accumulator for the right part of the array.
+    var rightPointer = orderedCollection.length - 1; // Pointer for the right end.
 
-  // Initialize the right accumulator with the largest element from the sorted array.
-  rightAccumulator = orderedNumbers[rightPointer];
+    // Initialize the right accumulator with the largest element.
+    rightAccumulator = orderedCollection[rightPointer];
 
-  // Iterate from the beginning of the array up to the rightPointer.
-  for (let leftIndex = 0; leftIndex < rightPointer; leftIndex++) {
-    // Add the current index (not the array element) to the left accumulator.
-    // Note: The original logic `sumLeft += i;` adds the index, not the array value.
-    leftAccumulator += leftIndex;
+    // Iterate from the left, trying to balance sums.
+    for (var leftPointer = 0; leftPointer < rightPointer; leftPointer++) {
+        leftAccumulator += leftPointer; // Add the index itself, not the value at the index. This seems unusual.
+        if (leftAccumulator <= rightAccumulator) {
+            // If left sum is still less or equal, continue adding to it.
+            continue;
+        } else {
+            // If left sum exceeds right sum, move the right pointer inwards
+            // and add elements from the right to balance.
+            rightPointer--;
+            while (rightAccumulator < leftAccumulator && rightPointer > leftPointer) {
+                rightAccumulator += orderedCollection[rightPointer];
+                rightPointer--;
+            }
+        }
+    }
+    // Return the minimum of the two balanced sums.
+    return Math.min(leftAccumulator, rightAccumulator);
+}
 
-    // Compare the accumulated sums.
-    if (leftAccumulator <= rightAccumulator) {
-      // If the left sum is not exceeding the right sum, continue expanding the left side.
-      continue;
+// Finds the maximum value within an array.
+function findMaximum(valueList) {
+    // Uses reduce to iterate and find the maximum.
+    return valueList.reduce(function(currentMax, nextValue) {
+        return Math.max(currentMax, nextValue);
+    });
+}
+
+// Calculates the sum of all elements in an array.
+function calculateSum(numberSeries) {
+    // Uses reduce to sum all elements, starting with an initial value of 0.
+    return numberSeries.reduce(function(accumulator, element) {
+        return accumulator + element;
+    }, 0);
+}
+
+// Checks if a given divisor 'divisorCheck' is valid for the 'sourceArray'
+// under the constraint of 'limitValue'.
+function checkDivisibility(divisorCheck, sourceArray, limitValue) {
+    var remainderPairs = []; // Stores pairs of (mod1, mod2) for each element.
+    var remainingBudget = limitValue + limitValue; // Initialize budget (2*k).
+
+    for (var idx = 0; idx < sourceArray.length; idx++) {
+        var remainderOne = sourceArray[idx] % divisorCheck; // Remainder when divided by divisorCheck.
+        if (remainderOne === 0) {
+            // If divisible, no cost incurred, move to the next element.
+            continue;
+        }
+        var remainderTwo = divisorCheck - remainderOne; // Cost to reach the next multiple of divisorCheck.
+
+        // If the cost to make it divisible (either remainderOne or remainderTwo)
+        // is greater than the allowed limitValue, then this divisor is invalid.
+        if (limitValue < Math.min(remainderOne, remainderTwo)) {
+            return false;
+        }
+        
+        // Deduct the minimum cost from the budget.
+        remainingBudget -= Math.min(remainderOne, remainderTwo);
+        if (remainingBudget < 0) {
+            // If budget runs out, this divisor is invalid.
+            return false;
+        }
+        // Store the remainder pair for further processing.
+        remainderPairs.push([remainderOne, remainderTwo]);
+    }
+    // After processing all elements, use a recursive traversal to check if
+    // the remaining costs can be balanced within the budget.
+    return traversePairs(remainderPairs, 0, 0, 0, limitValue);
+}
+
+// Recursive function to explore paths for balancing costs.
+function traversePairs(pairList, currentDepth, costLeft, costRight, maxBudget) {
+    // Base cases for pruning: if either cost exceeds the budget, this path is invalid.
+    if (costLeft > maxBudget) return false;
+    if (costRight > maxBudget) return false;
+
+    // Base case for recursion: if all pairs have been processed.
+    // The path is valid only if both costs are equal at the end.
+    if (currentDepth === pairList.length) {
+        return costLeft === costRight;
+    }
+
+    // Heuristic: prioritize exploring the path that keeps costs more balanced.
+    // This might help in finding a solution faster, but doesn't change correctness.
+    if (costLeft < costRight) {
+        // If left cost is smaller, try adding to left first, then to right.
+        return exploreLeftBranch(pairList, currentDepth, costLeft, costRight, maxBudget) ||
+               exploreRightBranch(pairList, currentDepth, costLeft, costRight, maxBudget);
     } else {
-      // If the left sum exceeds the right sum, adjust the right partition.
-      rightPointer--; // Move the right pointer inwards to consider smaller elements.
-      // While the right sum is less than the left sum and there's still space between pointers.
-      while (rightAccumulator < leftAccumulator && rightPointer > leftIndex) {
-        rightAccumulator += orderedNumbers[rightPointer]; // Add the element at the right pointer to the right sum.
-        rightPointer--; // Continue moving the right pointer inwards.
-      }
+        // If right cost is smaller or equal, try adding to right first, then to left.
+        return exploreRightBranch(pairList, currentDepth, costLeft, costRight, maxBudget) ||
+               exploreLeftBranch(pairList, currentDepth, costLeft, costRight, maxBudget);
     }
-  }
-  // Return the minimum of the two accumulated sums as the result.
-  return Math.min(leftAccumulator, rightAccumulator);
+    // This line should theoretically not be reached if all conditions are covered.
+    // It's a fallback, but the logic above ensures a return.
+    // return false;
 }
 
-/*
- * Utility function to find the largest numeric value in a given collection.
- * It leverages the Array.prototype.reduce method for an efficient computation.
- */
-function getMaximumValue(valueCollection) {
-  // Reduces the array to a single value by comparing each element to the current maximum.
-  return valueCollection.reduce((currentMax, nextValue) =>
-    Math.max(currentMax, nextValue)
-  );
+// Explores the path where the first element of the current pair is added to the left cost.
+function exploreLeftBranch(dataPairs, currentLevel, currentLeftCost, currentRightCost, totalBudget) {
+    return traversePairs(dataPairs, currentLevel + 1, currentLeftCost + dataPairs[currentLevel][0], currentRightCost, totalBudget);
 }
 
-/*
- * Computes the sum of all elements within a numeric series.
- * This function utilizes a reduction pattern, starting the accumulation from zero.
- */
-function calculateTotal(numberSeries) {
-  return numberSeries.reduce((runningTotal, itemValue) => runningTotal + itemValue, 0);
+// Explores the path where the second element of the current pair is added to the right cost.
+function exploreRightBranch(dataPairs, currentLevel, currentLeftCost, currentRightCost, totalBudget) {
+    return traversePairs(dataPairs, currentLevel + 1, currentLeftCost, currentRightCost + dataPairs[currentLevel][1], totalBudget);
 }
 
-/*
- * Determines if a given targetDivisor ('g') can satisfy specific conditions
- * with respect to an array of numbers and a cost constraint ('k').
- * This involves calculating remainders, deducting from a budget, and
- * then performing a recursive check for budget allocation.
- */
-function checkDivisibilityCondition(targetDivisor, originalNumbers, costConstraint) {
-  const remainderCosts = []; // An array to store pairs of (mod1, mod2) costs for each number.
-  let availableBudget = 2 * costConstraint; // Initialize a working budget, typically 2*k.
-
-  // Iterate through each number in the input array to calculate costs.
-  for (let elementIndex = 0; elementIndex < originalNumbers.length; elementIndex++) {
-    const remainderOne = originalNumbers[elementIndex] % targetDivisor;
-
-    // If the number is perfectly divisible by the target divisor, no cost is incurred.
-    if (remainderOne === 0) continue;
-
-    // Calculate the complementary remainder needed to reach the target divisor.
-    const remainderTwo = targetDivisor - remainderOne;
-
-    // If the minimum cost to make the number divisible is greater than 'k', it's impossible.
-    if (costConstraint < Math.min(remainderOne, remainderTwo)) return false;
-
-    // Deduct the minimum of the two remainders (costs) from the available budget.
-    availableBudget -= Math.min(remainderOne, remainderTwo);
-
-    // If the budget drops below zero at any point, it's impossible to satisfy the condition.
-    if (availableBudget < 0) return false;
-
-    // Store the pair of potential costs for this number for further recursive processing.
-    remainderCosts.push([remainderOne, remainderTwo]);
-  }
-
-  // After processing all numbers, use a recursive traversal to check the final budget allocation
-  // and see if the costs can be balanced within the original constraint 'k'.
-  return explorePossibilities(remainderCosts, 0, 0, 0, costConstraint);
-}
-
-/*
- * Recursively explores different paths to allocate costs from `costOptions`,
- * aiming to balance the `accumulatedLeftCost` and `accumulatedRightCost`
- * within a `maxAllowedBudget`. This is a form of depth-first search.
- */
-function explorePossibilities(
-  costOptions,
-  currentDepth,
-  accumulatedLeftCost,
-  accumulatedRightCost,
-  maxAllowedBudget
-) {
-  // Base cases for pruning the search space:
-  if (accumulatedLeftCost > maxAllowedBudget) return false; // If left cost exceeds budget, this path is invalid.
-  if (accumulatedRightCost > maxAllowedBudget) return false; // If right cost exceeds budget, this path is invalid.
-
-  // Base case for successful traversal: all options have been processed.
-  if (currentDepth === costOptions.length) {
-    return accumulatedLeftCost === accumulatedRightCost; // Check if the final costs are perfectly balanced.
-  }
-
-  // Recursive steps: prioritize the path that helps balance the costs more effectively.
-  if (accumulatedLeftCost < accumulatedRightCost) {
-    // If the left cost is currently smaller, try expanding the left branch first,
-    // or if that fails, try expanding the right branch.
-    return (
-      attemptLeftBranch(costOptions, currentDepth, accumulatedLeftCost, accumulatedRightCost, maxAllowedBudget) ||
-      attemptRightBranch(costOptions, currentDepth, accumulatedLeftCost, accumulatedRightCost, maxAllowedBudget)
-    );
-  } else {
-    // If the right cost is smaller or equal, try expanding the right branch first,
-    // or if that fails, try expanding the left branch.
-    return (
-      attemptRightBranch(costOptions, currentDepth, accumulatedLeftCost, accumulatedRightCost, maxAllowedBudget) ||
-      attemptLeftBranch(costOptions, currentDepth, accumulatedLeftCost, accumulatedRightCost, maxAllowedBudget)
-    );
-  }
-  // This return statement is logically unreachable because the preceding if/else block
-  // covers all possibilities and always returns a value. It's kept for structural fidelity.
-  return false;
-}
-
-/*
- * Helper function for `explorePossibilities`. It recursively attempts to
- * add the first cost option (costOptions[currentDepth][0]) to the
- * `accumulatedLeftCost` and continues the traversal to the next depth.
- */
-function attemptLeftBranch(
-  costOptions,
-  currentDepth,
-  accumulatedLeftCost,
-  accumulatedRightCost,
-  maxAllowedBudget
-) {
-  return explorePossibilities(
-    costOptions,
-    currentDepth + 1, // Move to the next level of cost options.
-    accumulatedLeftCost + costOptions[currentDepth][0], // Add the first cost to the left accumulator.
-    accumulatedRightCost, // Right accumulator remains unchanged.
-    maxAllowedBudget
-  );
-}
-
-/*
- * Helper function for `explorePossibilities`. It recursively attempts to
- * add the second cost option (costOptions[currentDepth][1]) to the
- * `accumulatedRightCost` and continues the traversal to the next depth.
- */
-function attemptRightBranch(
-  costOptions,
-  currentDepth,
-  accumulatedLeftCost,
-  accumulatedRightCost,
-  maxAllowedBudget
-) {
-  return explorePossibilities(
-    costOptions,
-    currentDepth + 1, // Move to the next level of cost options.
-    accumulatedLeftCost, // Left accumulator remains unchanged.
-    accumulatedRightCost + costOptions[currentDepth][1], // Add the second cost to the right accumulator.
-    maxAllowedBudget
-  );
-}
-
-// Invoke the primary function `processInput` with data read from standard input.
-// This is typically used in competitive programming environments.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Main execution point: reads input from stdin and passes it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

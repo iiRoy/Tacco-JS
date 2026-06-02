@@ -1,73 +1,75 @@
-/*
- * This module facilitates the sequential identification of a character fragment
- * within a potentially repeating primary textual sequence.
- * It computes the cumulative offset required to construct the fragment.
- */
-const ProcessInput =  sourceData  =>  {
-  // Divide the initial raw data string into individual lines using the newline character.
-  sourceData = sourceData . split ( "\n" ) ;
+const ProcessInput = rawData => {
+  // Split the raw input string into an array of lines using the newline character.
+  let lines = rawData.split("\n");
 
-  // Designate the first line as the principal string for searching.
-  const mainText = sourceData [ 0 ] ;
-  // Designate the second line as the specific character sequence to be located.
-  const searchTarget = sourceData [ 1 ] ;
+  // The first line is considered the primary string to search within.
+  const mainString = lines[0];
+  // The second line is the target word whose characters we need to find sequentially.
+  const targetWord = lines[1];
 
   /**
-   * Conducts a recursive search to determine the position of a subsequence.
-   * @param {number} currentFragmentIndex - The zero-based index of the character currently sought within 'searchTarget'.
-   * @param {string} currentSearchSpace   - The segment of 'mainText' being actively examined for the character.
-   * @param {boolean} hasCycledOnce       - A boolean indicating if the search has traversed beyond the initial 'mainText' length.
-   * @param {number} accumulatedShift     - The running total of character positions traversed so far.
-   * @returns {number} The final accumulated character shift if the 'searchTarget' is fully found, otherwise -1.
+   * This recursive utility function attempts to locate the target word's characters
+   * one by one within a dynamically expanding segment of the main string.
+   *
+   * @param {number} charIndex - The current index of the character in `targetWord` that we are searching for.
+   * @param {string} currentSegment - The current portion of `mainString` being examined.
+   * @param {boolean} hasFoundPrevious - A flag indicating if the previous character of `targetWord`
+   *                                     was successfully found within the *current* `currentSegment`.
+   *                                     This helps determine if `mainString` can be appended.
+   * @param {number} totalOffset - The cumulative character offset from the very beginning of the original `mainString`.
+   * @returns {number} The total offset if the `targetWord` is found, or -1 if it cannot be constructed.
    */
-  const findSubsequence = (
-    currentFragmentIndex,
-    currentSearchSpace,
-    hasCycledOnce,
-    accumulatedShift
-  ) => {
-    // Termination condition: If all characters of the 'searchTarget' have been successfully matched.
-    if ( currentFragmentIndex === searchTarget.length )
-    {
-      return accumulatedShift ;
+  const findSequence = (charIndex, currentSegment, hasFoundPrevious, totalOffset) => {
+    // Base case: If we have successfully found all characters of the target word,
+    // return the accumulated total offset.
+    if (charIndex === targetWord.length) {
+      return totalOffset;
     }
 
-    // Identify the starting position of the current character from 'searchTarget' within 'currentSearchSpace'.
-    const matchedPosition = currentSearchSpace.indexOf( searchTarget[currentFragmentIndex] ) ;
+    // Attempt to find the current character of the target word within the current segment.
+    const foundPosition = currentSegment.indexOf(targetWord[charIndex]);
 
-    // Evaluate the outcome of the search for the current character:
-    return (
-      matchedPosition !== -1
-        ? // Scenario 1: The character was found within the 'currentSearchSpace'.
-          findSubsequence(
-            currentFragmentIndex + 1, // Advance to the next character in 'searchTarget'.
-            currentSearchSpace.slice(matchedPosition, currentSearchSpace.length), // Adjust search space to start after the found character.
-            true, // Mark that a character has been found, potentially allowing subsequent wraps.
-            accumulatedShift + matchedPosition // Increment the total shift by the position found.
-          )
-        : // Scenario 2: The character was NOT found in 'currentSearchSpace'.
-          hasCycledOnce
-          ? // Sub-scenario 2a: The search has already wrapped around 'mainText' at least once.
-            // This indicates a need to extend the 'currentSearchSpace' by appending 'mainText' again.
-            findSubsequence(
-              currentFragmentIndex, // Remain at the same 'searchTarget' character, as it wasn't found.
-              currentSearchSpace + mainText, // Extend the search space with another instance of 'mainText'.
-              false, // Reset the 'hasCycledOnce' flag as we're effectively starting a new 'mainText' segment search.
-              accumulatedShift // Maintain the current total shift.
-            )
-          : // Sub-scenario 2b: The search has NOT wrapped around 'mainText' yet.
-            // This implies the character cannot be found under current conditions.
-            -1
-    ) ;
-  } ;
+    // Check if the character was found in the current segment.
+    if (foundPosition !== -1) {
+      // If the character is found:
+      // Recursively call the function for the next character in `targetWord`.
+      // The `currentSegment` is updated to start from the `foundPosition` to ensure sequential search.
+      // `hasFoundPrevious` is set to `true` because we just found a character.
+      // `totalOffset` is incremented by the `foundPosition` within the `currentSegment`.
+      return findSequence(
+        charIndex + 1,
+        currentSegment.slice(foundPosition, currentSegment.length),
+        true,
+        totalOffset + foundPosition
+      );
+    } else {
+      // If the character was NOT found in the current segment:
+      // We need to decide whether to extend the `currentSegment` or give up.
+      if (hasFoundPrevious) {
+        // If `hasFoundPrevious` is true, it means we found the *previous* character
+        // in this segment, but not the current one. This implies we should try
+        // extending the `currentSegment` by appending the `mainString` to it.
+        // We retry finding the *same* character (`charIndex`) in the extended segment.
+        // `hasFoundPrevious` is reset to `false` because we are effectively starting
+        // a new search attempt within the newly extended segment.
+        return findSequence(charIndex, currentSegment + mainString, false, totalOffset);
+      } else {
+        // If `hasFoundPrevious` is false, it means we couldn't find the current character
+        // even after potentially extending the segment in a previous step (or it's the very first attempt).
+        // In this scenario, it's impossible to form the target word, so we return -1.
+        return -1;
+      }
+    }
+  };
 
-  // Initiate the primary search operation and output its result.
-  // The search begins with the first character of the 'searchTarget' (index 0),
-  // using the complete 'mainText' as the initial search buffer,
-  // with the 'hasCycledOnce' flag initially set to false,
-  // and an initial 'accumulatedShift' value of 1, as per problem specifications.
-  console.log( findSubsequence( 0, mainText, false, 1 ) ) ;
-} ;
+  // Initiate the recursive search process.
+  // Start with the first character of the target word (index 0).
+  // The initial segment to search within is the `mainString`.
+  // `hasFoundPrevious` is `false` initially as no character has been found yet.
+  // `totalOffset` starts at 1, as per the problem's specific requirement for the initial offset.
+  console.log(findSequence(0, mainString, false, 1));
+};
 
-// Obtain the raw data from the standard input stream and pass it to the processing function.
-ProcessInput( require("fs").readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input (`/dev/stdin`) as a UTF-8 string.
+// Then, pass this raw input string to the `ProcessInput` function for execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

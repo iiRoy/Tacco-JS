@@ -1,71 +1,76 @@
-let rawTransmission = "";
-process.stdin.on("data", (dataChunk) => {
-  rawTransmission += dataChunk;
+let inputString = "";
+let currentLine = 0;
+process.stdin.on("data", (data) => {
+  inputString += data;
 });
-
-const establishInputInterface = (sourceData) => {
-  let processedSegments = sourceData
+process.stdin.on("end", function () {
+  inputString = inputString
     .trim()
     .split("\n")
-    .map((s) => s.trim());
-  let segmentPointer = 0;
-  return () => processedSegments[segmentPointer++];
-};
+    .map((str) => str.trim());
+  processGraphData();
+});
+function readLine() {
+  return inputString[currentLine++];
+}
 
-const orchestrateProcessing = (getNextSegment) => {
-  const firstLineParts = getNextSegment().split(" ").map(Number);
-  const vertexCount = firstLineParts[0]; // This variable is not utilized in the original logic, mirroring its behavior.
-  let linkQuantity = firstLineParts[1];
+function processGraphData() {
+  let [vertexCount, edgeCount] = readLine()
+    .split(" ")
+    .map((n) => parseInt(n));
 
-  const connectionRegistry = new Map(); // Stores connections: Map<Number, Set<Number>>
+  const adjacencyList = new Map();
+  const processedPairs = new Set();
 
-  for (let i = 0; i < linkQuantity; ++i) {
-    const [participantA, participantB] = getNextSegment().split(" ").map(Number);
+  for (let i = 0; i < edgeCount; i++) {
+    let [nodeA, nodeB] = readLine()
+      .split(" ")
+      .map((n) => parseInt(n));
 
-    // Add participantB to A's connections
-    if (!connectionRegistry.has(participantA)) {
-      connectionRegistry.set(participantA, new Set());
+    const normalizedPairKey = nodeA < nodeB ? `${nodeA}-${nodeB}` : `${nodeB}-${nodeA}`;
+
+    if (!processedPairs.has(normalizedPairKey)) {
+      processedPairs.add(normalizedPairKey);
+
+      if (!adjacencyList.has(nodeA)) adjacencyList.set(nodeA, new Set());
+      if (!adjacencyList.has(nodeB)) adjacencyList.set(nodeB, new Set());
+
+      adjacencyList.get(nodeA).add(nodeB);
+      adjacencyList.get(nodeB).add(nodeA);
     }
-    connectionRegistry.get(participantA).add(participantB);
-
-    // Add participantA to B's connections (undirected graph)
-    if (!connectionRegistry.has(participantB)) {
-      connectionRegistry.set(participantB, new Set());
-    }
-    connectionRegistry.get(participantB).add(participantA);
   }
 
-  let peakComponentDimension = 0;
-  const exploredUnits = new Set(); // Tracks visited nodes during traversal
+  let largestComponentSize = 0;
+  const exploredNodes = new Set();
 
-  // Iterate over all unique nodes that have at least one connection
-  for (const unitId of connectionRegistry.keys()) {
-    if (!exploredUnits.has(unitId)) {
-      let currentComponentSize = 0;
-      const traversalQueue = [unitId]; // BFS queue
-      exploredUnits.add(unitId); // Mark as visited upon enqueue
+  for (const startVertex of adjacencyList.keys()) {
+    if (!exploredNodes.has(startVertex)) {
+      const currentComponentSize = traverseComponentBFS(startVertex, adjacencyList, exploredNodes);
+      largestComponentSize = Math.max(largestComponentSize, currentComponentSize);
+    }
+  }
+  
+  console.log(largestComponentSize);
+}
 
-      while (traversalQueue.length > 0) {
-        const currentUnit = traversalQueue.shift();
-        currentComponentSize++;
+function traverseComponentBFS(startVertex, adjacencyList, exploredNodes) {
+  let componentNodeCount = 0;
+  const visitQueue = [startVertex];
+  exploredNodes.add(startVertex);
 
-        const connectedUnits = connectionRegistry.get(currentUnit);
-        if (connectedUnits) { // Ensure the node has neighbors in the registry
-          for (const adjacentUnit of connectedUnits) {
-            if (!exploredUnits.has(adjacentUnit)) {
-              exploredUnits.add(adjacentUnit);
-              traversalQueue.push(adjacentUnit);
-            }
-          }
+  while (visitQueue.length > 0) {
+    const currentVertex = visitQueue.shift();
+    componentNodeCount++;
+
+    const connectedVertices = adjacencyList.get(currentVertex);
+    if (connectedVertices) {
+      for (const adjacentVertex of connectedVertices) {
+        if (!exploredNodes.has(adjacentVertex)) {
+          exploredNodes.add(adjacentVertex);
+          visitQueue.push(adjacentVertex);
         }
       }
-      peakComponentDimension = Math.max(peakComponentDimension, currentComponentSize);
     }
   }
-  console.log(peakComponentDimension);
-};
-
-process.stdin.on("end", () => {
-  const getNextSegment = establishInputInterface(rawTransmission);
-  orchestrateProcessing(getNextSegment);
-});
+  return componentNodeCount;
+}

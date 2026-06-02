@@ -1,37 +1,66 @@
 'use strict';
-(function(rawInputData){
-    const processedLines = rawInputData.trim().split('\n');
-    const totalTrialsAmount = parseInt(processedLines[0], 10);
-    const individualSuccessRates = processedLines[1].split(/\s+/).map(value => parseFloat(value));
 
-    const outcomeCache = Array(totalTrialsAmount + 1).fill(null).map(() => Array(totalTrialsAmount + 1).fill(null));
+const processInputData = (rawTextContent) => {
+  const contentLines = rawTextContent.trim().split(/\n/);
+  const totalExperimentCount = Number(contentLines[0]);
+  const successRateSequence = contentLines[1].split(/\s+/).map(Number);
+  return { totalExperimentCount, successRateSequence };
+};
 
-    const calculateOutcomeChance = (trialNumber, successfulEvents) => {
-        if (successfulEvents < 0 || successfulEvents > trialNumber) {
-            return 0.0;
-        }
-        if (trialNumber === 0) {
-            return successfulEvents === 0 ? 1.0 : 0.0;
-        }
+const constructInitialProbabilityTable = (experimentCount) => {
+  const tableStructure = Array.from({ length: experimentCount + 3 }, (_, rowIndex) =>
+    Array.from({ length: rowIndex + 1 }, () => 0)
+  );
+  tableStructure[2][1] = 1;
+  return tableStructure;
+};
 
-        if (outcomeCache[trialNumber][successfulEvents] !== null) {
-            return outcomeCache[trialNumber][successfulEvents];
-        }
+const calculateFullProbabilityTable = (baseTable, experimentCount, ratesArray) => {
+  return Array.from({ length: experimentCount }, (_, k) => k + 3).reduce((currentTableState, currentRowIndex) => {
+    const currentRowCalculations = Array.from({ length: currentRowIndex + 1 }, (_, successOutcomeIndex) => {
+      if (successOutcomeIndex === 0 || successOutcomeIndex > currentRowIndex - 1) {
+        return 0;
+      }
 
-        const currentTrialRate = individualSuccessRates[trialNumber - 1];
-        const computedChance = (currentTrialRate * calculateOutcomeChance(trialNumber - 1, successfulEvents - 1)) +
-                               ((1 - currentTrialRate) * calculateOutcomeChance(trialNumber - 1, successfulEvents));
+      const currentTrialSuccessProbability = ratesArray[currentRowIndex - 3];
+      const previousRowSuccessProbability = currentTableState[currentRowIndex - 1][successOutcomeIndex - 1];
+      const previousRowNoSuccessProbability = currentTableState[currentRowIndex - 1][successOutcomeIndex];
 
-        outcomeCache[trialNumber][successfulEvents] = computedChance;
-        return computedChance;
-    };
+      return currentTrialSuccessProbability * previousRowSuccessProbability + (1 - currentTrialSuccessProbability) * previousRowNoSuccessProbability;
+    });
+    currentTableState[currentRowIndex] = currentRowCalculations;
+    return currentTableState;
+  }, baseTable);
+};
 
-    let aggregatedFinalChance = 0.0;
-    const minimumSuccessRequirement = Math.ceil((totalTrialsAmount + 1) / 2);
+const aggregateFinalProbability = (completedTable, experimentCount) => {
+  const lowerBoundForAggregation = (experimentCount + 3) / 2;
+  const upperBoundForAggregation = experimentCount + 1;
 
-    for (let successfulEvents = minimumSuccessRequirement; successfulEvents <= totalTrialsAmount; successfulEvents++) {
-        aggregatedFinalChance += calculateOutcomeChance(totalTrialsAmount, successfulEvents);
-    }
+  const relevantIndices = Array.from(
+    { length: Math.floor(upperBoundForAggregation - lowerBoundForAggregation + 1) },
+    (_, k) => lowerBoundForAggregation + k
+  );
 
-    console.log(aggregatedFinalChance);
-})(require('fs').readFileSync('/dev/stdin','utf8'));
+  return relevantIndices.reduce((accumulatedSum, currentColumnIndex) => {
+    return accumulatedSum + completedTable[experimentCount + 2][currentColumnIndex];
+  }, 0);
+};
+
+const executeProbabilityAnalysis = (sourceInput) => {
+  const { totalExperimentCount, successRateSequence } = processInputData(sourceInput);
+
+  const initialProbabilityDistribution = constructInitialProbabilityTable(totalExperimentCount);
+
+  const finalProbabilityDistribution = calculateFullProbabilityTable(
+    initialProbabilityDistribution,
+    totalExperimentCount,
+    successRateSequence
+  );
+
+  const overallResultProbability = aggregateFinalProbability(finalProbabilityDistribution, totalExperimentCount);
+
+  console.log(overallResultProbability);
+};
+
+executeProbabilityAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));

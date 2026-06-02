@@ -1,33 +1,58 @@
-"use strict";
+function createInputProcessor(rawInput, valueParser = Number) {
+    let currentLines = rawInput.split("\n");
+    let currentLineIndex = 0;
+    let currentTokenIndex = 0;
 
-const parseInputData = (inputString) => {
-    const lines = inputString.trim().split('\n');
-    const firstLineValues = lines[0].split(' ').map(Number);
-    return { initialQuantity: firstLineValues[0], totalQuantity: firstLineValues[1] };
-};
+    const grabValue = () => {
+        let activeLine = currentLines[currentLineIndex];
+        if (activeLine === undefined) {
+            return undefined;
+        }
 
-const generateFactors = (integerValue) => {
-    return Array.from({ length: integerValue }, (_, index) => index + 1)
-                .filter(potentialFactor => integerValue % potentialFactor === 0);
-};
+        let tokensOnLine = activeLine.trim().split(" ");
+        let value = tokensOnLine[currentTokenIndex];
+        currentTokenIndex++;
 
-const deriveFinalResult = (limitFactor, totalValue, allFactors) => {
-    const upperBoundary = totalValue / limitFactor;
-    
-    const eligibleFactors = allFactors.filter(unit => unit <= upperBoundary);
-    
-    if (eligibleFactors.length === 0) {
-        return 1; 
-    } else {
-        return Math.max(...eligibleFactors);
-    }
-};
+        if (currentTokenIndex === tokensOnLine.length) {
+            currentTokenIndex = 0;
+            currentLineIndex++;
+        }
+        return valueParser(value);
+    };
 
-const processExecution = (sourceData) => {
-    const { initialQuantity: P, totalQuantity: Q } = parseInputData(sourceData);
-    const allDivs = generateFactors(Q);
-    const finalOutcome = deriveFinalResult(P, Q, allDivs);
-    console.log(finalOutcome);
-};
+    const grabLine = () => {
+        let activeLine = currentLines[currentLineIndex];
+        if (activeLine === undefined) {
+            return [];
+        }
 
-processExecution(require("fs").readFileSync("/dev/stdin", "utf8"));
+        currentTokenIndex = 0;
+        currentLineIndex++;
+        return activeLine.split(" ").map(valueParser);
+    };
+
+    return { grabValue, grabLine };
+}
+
+function processInputData(inputStringData) {
+    const inputReader = createInputProcessor(inputStringData);
+
+    const limitN = inputReader.grabValue();
+    const targetM = inputReader.grabValue();
+
+    const potentialFactors = Array.from({ length: Math.floor(Math.sqrt(targetM)) }, (_, idx) => idx + 1);
+
+    const allFactorsAndComplements = potentialFactors
+        .filter(num => targetM % num === 0)
+        .flatMap(factor => [factor, targetM / factor]);
+
+    const uniqueSortedDivisors = Array.from(new Set(allFactorsAndComplements)).sort((a, b) => a - b);
+
+    const qualifyingDivisors = uniqueSortedDivisors.filter(d => targetM / d >= limitN);
+
+    const finalMaxDivisor = qualifyingDivisors.length > 0 ? qualifyingDivisors[qualifyingDivisors.length - 1] : 1;
+
+    console.log(finalMaxDivisor);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,88 +1,93 @@
-const horizontal_shifts = {
-    NORTH_DIR: 0,
-    SOUTH_DIR: 0,
-    EAST_DIR: 1,
-    WEST_DIR: -1
-};
+var xOffsets = { N: 0, S: 0, E: 1, W: -1 };
+var yOffsets = { N: 1, S: -1, E: 0, W: 0 };
 
-const vertical_shifts = {
-    NORTH_DIR: 1,
-    SOUTH_DIR: -1,
-    EAST_DIR: 0,
-    WEST_DIR: 0
-};
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get an array of lines.
+    rawData = rawData.split("\n");
 
-function ProcessInputData(rawInputText)
-{
-    let dataLines = rawInputText.split("\n");
+    // Initialize a line index counter.
+    var lineIndex = 0;
 
-    let currentLineIdx = 0;
+    // Main processing loop. Continues until a specific termination condition is met.
+    while (true) {
+        // Parse the number of initial points from the current line.
+        var numPoints = parseInt(rawData[lineIndex++], 10);
 
-    while (true)
-    {
-        let numTargetPoints = Number.parseInt(dataLines[currentLineIdx++], 10);
-
-        if (numTargetPoints === 0)
-        {
+        // If the number of points is zero, it's the termination signal.
+        if (numPoints === 0) {
             break;
         }
 
-        let locationStatusMap = [];
-        for (let rowIter = 0; rowIter <= 20; rowIter++)
-        {
-            locationStatusMap[rowIter] = [];
-            for (let colIter = 0; colIter <= 20; colIter++)
-            {
-                locationStatusMap[rowIter][colIter] = false;
+        // Initialize a 2D array (grid) to track the presence of points.
+        // The grid dimensions are fixed at 21x21 (indices 0-20).
+        var gridState = [];
+        for (var idx1 = 0; idx1 <= 20; idx1++) {
+            gridState[idx1] = [];
+            for (var idx2 = 0; idx2 <= 20; idx2++) {
+                gridState[idx1][idx2] = false; // Initially, no points are present.
             }
         }
-        for (let targetIter = 0; targetIter < numTargetPoints; targetIter++)
-        {
-            dataLines[currentLineIdx] = dataLines[currentLineIdx].split(" ");
-            locationStatusMap[parseInt(dataLines[currentLineIdx][0], 10)][parseInt(dataLines[currentLineIdx++][1], 10)] = true;
+
+        // Read and mark the initial points on the grid.
+        for (var idx1 = 0; idx1 < numPoints; idx1++) {
+            // Split the current line to get X and Y coordinates.
+            rawData[lineIndex] = rawData[lineIndex].split(" ");
+            // Mark the point as present (true) on the grid.
+            gridState[parseInt(rawData[lineIndex][0], 10)][parseInt(rawData[lineIndex++][1], 10)] = true;
         }
 
-        let totalMoves = parseInt(dataLines[currentLineIdx++], 10);
+        // Parse the number of movement operations.
+        var numMoves = parseInt(rawData[lineIndex++], 10);
 
-        let directionSequence = [], stepAmountList = [];
+        // Arrays to store movement directions and corresponding distances.
+        var moveDirections = [];
+        var moveDistances = [];
 
-        for (let moveIter = 0; moveIter < totalMoves; moveIter++)
-        {
-            dataLines[currentLineIdx] = dataLines[currentLineIdx].split(" ");
-            directionSequence[moveIter] = dataLines[currentLineIdx][0];
-            stepAmountList[moveIter] = Number.parseInt(dataLines[currentLineIdx++][1], 10);
+        // Read the movement operations.
+        for (var idx1 = 0; idx1 < numMoves; idx1++) {
+            // Split the current line to get direction and distance.
+            rawData[lineIndex] = rawData[lineIndex].split(" ");
+            moveDirections[idx1] = rawData[lineIndex][0]; // Store direction (e.g., 'N', 'S').
+            moveDistances[idx1] = parseInt(rawData[lineIndex++][1], 10); // Store distance.
         }
 
-        let collectedItemsCount = 0;
+        // Counter for the number of points collected.
+        var collectedCount = 0;
 
-        let currentGridX = 10, currentGridY = 10;
-        if (locationStatusMap[currentGridX][currentGridY])
-        {
-            locationStatusMap[currentGridX][currentGridY] = false;
-            collectedItemsCount++;
+        // Initial position of the "collector" on the grid.
+        var currentX = 10;
+        var currentY = 10;
+
+        // Check if the starting position itself contains a point.
+        if (gridState[currentX][currentY]) {
+            gridState[currentX][currentY] = false; // Mark as collected.
+            collectedCount++;
         }
 
-        for (let instrIter = 0; instrIter < totalMoves; instrIter++)
-        {
-            for (let stepIter = 0; stepIter < stepAmountList[instrIter]; stepIter++)
-            {
-                currentGridX += horizontal_shifts[directionSequence[instrIter]];
-                currentGridY += vertical_shifts[directionSequence[instrIter]];
-                if (locationStatusMap[currentGridX][currentGridY])
-                {
-                    locationStatusMap[currentGridX][currentGridY] = false;
-                    collectedItemsCount++;
+        // Process each movement operation.
+        for (var idx1 = 0; idx1 < numMoves; idx1++) {
+            // For each step within the current movement operation.
+            for (var loopCounterB = 0; loopCounterB < moveDistances[idx1]; loopCounterB++) {
+                // Update current coordinates based on the direction.
+                currentX += xOffsets[moveDirections[idx1]];
+                currentY += yOffsets[moveDirections[idx1]];
+
+                // Check if the new position contains a point.
+                if (gridState[currentX][currentY]) {
+                    gridState[currentX][currentY] = false; // Mark as collected.
+                    collectedCount++;
                 }
             }
         }
-        if (collectedItemsCount === numTargetPoints)
-        {
+
+        // Determine if all initial points were collected.
+        if (collectedCount === numPoints) {
             console.log("Yes");
-        }
-        else
-        {
+        } else {
             console.log("No");
         }
     }
 }
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

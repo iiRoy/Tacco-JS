@@ -1,38 +1,41 @@
+var inputData = [];
+var inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-let inputBuffer = [];
-const inputProcessor = require('readline').createInterface(  {
-    input: process.stdin,
-    output: process.stdout
-}  );
-inputProcessor.on('line', (currentSegment) =>  {
-    inputBuffer.push(currentSegment);
+
+inputProcessor.on('line', (currentLine) => {
+  inputData.push(currentLine);
 });
-inputProcessor.on('close', () =>  {
 
-    let numericValues = inputBuffer[1].split(' ');
-    for (let idx in numericValues) {
-        numericValues[idx] = parseInt(numericValues[idx]);
+inputProcessor.on('close', () => {
+
+  var numericValues = inputData[1].split(' ');
+  for (var indexKey in numericValues) {
+    numericValues[indexKey] = parseInt(numericValues[indexKey], 10);
+  }
+
+  var middleCount = 0;
+
+  for (var indexKey in numericValues) {
+    indexKey = parseInt(indexKey, 10);
+    if (indexKey === 0 || indexKey === numericValues.length - 1) {
+      continue;
     }
-
-    let medianCount = 0;
-
-    for (let idx in numericValues) {
-        idx = parseInt(idx);
-        if (idx === 0 || idx === numericValues.length - 1) {
-            continue;
-        }
-        let tempTriplet = [
-            numericValues[idx - 1],
-            numericValues[idx],
-            numericValues[idx + 1]
-        ];
-        tempTriplet = tempTriplet.sort((a, b) => a - b);
-        if (tempTriplet[1] === numericValues[idx]) {
-            medianCount++;
-        }
+    var tempArray = [
+      numericValues[indexKey - 1],
+      numericValues[indexKey],
+      numericValues[indexKey + 1]
+    ];
+    tempArray.sort();
+    if (tempArray[1] === numericValues[indexKey]) {
+      middleCount++;
     }
+  }
 
-    console.log(medianCount);
+  console.log(middleCount);
 
 });

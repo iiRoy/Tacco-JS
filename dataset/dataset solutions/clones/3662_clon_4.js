@@ -1,34 +1,45 @@
-function processSegmentData(rawInputText) {
-  const parsedLines = rawInputText.trim().split('\n');
-  const headerValues = parsedLines[0].split(' ').map(Number);
-  const numberOfEntries = headerValues[1];
+const processInputData = (rawData) => {
+    const lineSegments = rawData.trim().split('\n');
+    const [headerLine, ...intervalLines] = lineSegments;
+    const [itemCount, pairCount] = headerLine.split(' ').map(Number);
 
-  const allEntries = parsedLines.slice(1, numberOfEntries + 1)
-                              .map(entryLine => entryLine.split(' ').map(Number));
+    const intervalPairs = intervalLines.slice(0, pairCount).map(segment => segment.split(' ').map(Number));
+    return { pairCount, intervalPairs };
+};
 
-  const orderedEntries = [...allEntries].sort((itemA, itemB) => itemA[1] - itemB[1]);
+const solveIntervalProblem = (inputData) => {
+    const { pairCount, intervalPairs } = inputData;
 
-  if (orderedEntries.length === 0) {
-    console.log(0);
-    return;
-  }
-
-  const initialBoundary = orderedEntries[0][1] - 2;
-  const initialResult = { cutThreshold: initialBoundary, totalSelections: 1 };
-
-  const finalState = orderedEntries.slice(1).reduce((accumulator, currentItem) => {
-    const [startPoint, endPoint] = currentItem;
-    if (startPoint - 1 <= accumulator.cutThreshold) {
-      return accumulator;
-    } else {
-      return {
-        cutThreshold: endPoint - 2,
-        totalSelections: accumulator.totalSelections + 1
-      };
+    if (pairCount === 0) {
+        return 0;
     }
-  }, initialResult);
 
-  console.log(finalState.totalSelections);
-}
+    const orderedPairs = intervalPairs.sort((firstPair, secondPair) => firstPair[1] - secondPair[1]);
 
-processSegmentData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const initialSelectionState = {
+        chosenCount: 1,
+        currentBoundary: orderedPairs[0][1] - 2
+    };
+
+    const finalSelectionState = orderedPairs.slice(1).reduce((accumulator, currentPair) => {
+        const [startVal, endVal] = currentPair;
+        if (startVal - 1 > accumulator.currentBoundary) {
+            return {
+                chosenCount: accumulator.chosenCount + 1,
+                currentBoundary: endVal - 2
+            };
+        } else {
+            return accumulator;
+        }
+    }, initialSelectionState);
+
+    return finalSelectionState.chosenCount;
+};
+
+const entryPoint = (inputString) => {
+    const parsedData = processInputData(inputString);
+    const resultValue = solveIntervalProblem(parsedData);
+    console.log(resultValue);
+};
+
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

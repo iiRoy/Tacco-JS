@@ -1,145 +1,146 @@
-function performGraphProcessing(dataBuffer) {
-  /*
-   * This function orchestrates the graph analysis based on the provided input.
-   * It parses graph dimensions, builds an adjacency list, and then
-   * computes a specific predecessor for each node.
-   */
+function processInputData(incomingData) {
+  // Extracting the initial configuration from the first line of input.
+  const initialConfigLine = incomingData[0].split(' ');
 
-  // Extract graph parameters from the very first line of the input.
-  const initialSettings = dataBuffer[0].split(' ');
-  const vertexCount = parseInt(initialSettings[0], 10);
-  const arcCount = parseInt(initialSettings[1], 10);
+  // Parsing the total number of nodes from the configuration.
+  let totalNodes = parseInt(initialConfigLine[0], 10);
 
-  // Initialize a structure to hold the graph's connections (adjacency list).
-  const graphMap = {};
+  // Parsing the total number of additional edges from the configuration.
+  let extraEdgesCount = parseInt(initialConfigLine[1], 10);
 
-  // Process subsequent lines to populate the graph with edge information.
-  // The loop runs for a combined total of (vertexCount - 1) + arcCount edge definitions.
-  for (let k = 0; k < vertexCount - 1 + arcCount; ++k) {
-    const currentLineSegments = dataBuffer[k + 1].split(' ');
+  // Initializing an adjacency list (or map) to store graph connections.
+  const adjacencyMap = {};
 
-    // Create an object representing a single directed edge.
-    const edgeObject = {
-      source: parseInt(currentLineSegments[0], 10),
-      target: parseInt(currentLineSegments[1], 10)
+  // Loop through all edge definitions provided in the input.
+  for (let currentIdx = 0; currentIdx < totalNodes - 1 + extraEdgesCount; currentIdx++) {
+    // Splitting the current line to get source and target nodes for an edge.
+    const currentEdgeDefinition = incomingData[currentIdx + 1].split(' ');
+
+    // Creating an object to represent the current edge.
+    const edgeDetails = {
+      sourceNode: parseInt(currentEdgeDefinition[0], 10),
+      targetNode: parseInt(currentEdgeDefinition[1], 10)
     };
 
-    // If the target node hasn't been encountered yet, initialize its list of incoming edges.
-    if (!graphMap[edgeObject.target]) {
-      graphMap[edgeObject.target] = [];
+    // If the target node doesn't have an entry in the adjacency map, initialize it.
+    if (!adjacencyMap[edgeDetails.targetNode]) {
+      adjacencyMap[edgeDetails.targetNode] = [];
     }
-    // Add the current edge to the target node's list of incoming edges.
-    graphMap[edgeObject.target].push(edgeObject);
+    // Add the current edge to the list of incoming edges for the target node.
+    adjacencyMap[edgeDetails.targetNode].push(edgeDetails);
   }
 
-  // Prepare an array to store the final computed predecessor for each vertex.
-  const outputResults = [];
+  // Array to store the final results (parent nodes for each node).
+  const finalResults = [];
 
-  // Ensure every node from 1 to vertexCount exists in the graphMap,
-  // even if it has no incoming edges, by assigning an empty array.
-  for (let vId = 1; vId <= vertexCount; vId++) {
-    if (!graphMap[vId]) {
-      graphMap[vId] = [];
+  // Ensure every node from 1 to totalNodes has an entry in the adjacency map.
+  for (let nodeIdentifier = 1; nodeIdentifier <= totalNodes; nodeIdentifier++) {
+    if (!adjacencyMap[nodeIdentifier]) {
+      adjacencyMap[nodeIdentifier] = [];
     }
   }
 
-  // Iterate through each vertex to determine its specific predecessor.
-  for (let vId = 1; vId <= vertexCount; vId++) {
-    // If a node has more than one incoming edge, a more complex trace is needed.
-    if (graphMap[vId].length > 1) {
-      const ancestorNodes = determinePredecessors(vId, graphMap);
-      // Filter for valid (non-negative) ancestors and pick the first one found.
-      outputResults[vId - 1] = ancestorNodes.filter(val => val >= 0)[0];
+  // Iterate through each node to determine its parent.
+  for (let nodeIdentifier = 1; nodeIdentifier <= totalNodes; nodeIdentifier++) {
+    // If a node has multiple incoming edges, we need to find its true parent.
+    if (adjacencyMap[nodeIdentifier].length > 1) {
+      // Call a helper function to find the parent(s) for the current node.
+      const potentialParents = determineAncestors(nodeIdentifier, adjacencyMap);
+
+      // Assign the first valid parent found (non-negative) to the results array.
+      finalResults[nodeIdentifier - 1] = potentialParents.filter(val => val >= 0)[0];
     } else {
-      // If a node has one or no incoming edges, the predecessor is direct or zero.
-      outputResults[vId - 1] = graphMap[vId].length ? graphMap[vId][0].source : 0;
+      // If there's one or zero incoming edges, the parent is straightforward.
+      finalResults[nodeIdentifier - 1] = adjacencyMap[nodeIdentifier].length ? adjacencyMap[nodeIdentifier][0].sourceNode : 0;
     }
   }
-
-  // Output the computed results, with each result on a new line.
-  console.log(outputResults.join('\n'));
+  // Output the results, each on a new line.
+  console.log(finalResults.join('\n'));
 }
 
-/**
- * Traces backward through the graph from a given node to identify its
- * relevant predecessors, particularly when there are multiple incoming paths.
- * @param {number} currentNodeId The unique identifier of the node to begin the predecessor search from.
- * @param {object} graphData The complete graph represented as an adjacency list.
- * @returns {Array<number>} An array containing the identified predecessors or markers.
- */
-function determinePredecessors(currentNodeId, graphData) {
-  // A collection of paths currently under exploration, each being an array of edges.
-  const searchQueue = [];
-  // A list to track nodes visited during the backward traversal (not directly returned).
-  const visitedPath = [currentNodeId];
+// This function attempts to find the "true" parent(s) for a given node in a graph.
+function determineAncestors(startingNode, connectionGraph) {
+  // A queue-like structure to manage paths to explore.
+  const explorationQueue = [];
 
-  // Retrieve all edges that lead directly into the currentNodeId.
-  const incidentEdges = graphData[currentNodeId];
-  // Map these incident edges to their source nodes, which are our initial potential targets.
-  const potentialTargets = incidentEdges.map(edgeItem => edgeItem.source);
-  const numberOfIncidentEdges = incidentEdges.length;
+  // Keeping for structural similarity, though its purpose is unclear in the original.
+  const pathHistory = [startingNode];
 
-  // Initialize the searchQueue: for each incident edge, add paths starting from its source node.
-  for (let k = 0; k < graphData[currentNodeId].length; ++k) {
-    searchQueue.push([...graphData[graphData[currentNodeId][k].source]]);
+  // Get all incoming edges for the starting node.
+  const incomingConnections = connectionGraph[startingNode];
+
+  // Extract the source nodes of these incoming edges. These are our initial potential parents.
+  const initialSources = incomingConnections.map(edgeObj => edgeObj.sourceNode);
+
+  // Store the number of initial incoming connections.
+  const initialConnectionCount = incomingConnections.length;
+
+  // Initialize the exploration queue with edges leading to the initial sources.
+  for (let currentEdgeIndex = 0; currentEdgeIndex < connectionGraph[startingNode].length; currentEdgeIndex++) {
+    explorationQueue.push([...connectionGraph[connectionGraph[startingNode][currentEdgeIndex].sourceNode]]);
   }
 
-  // Flags to indicate if a potential target has been successfully traced back to.
-  const foundTargetFlags = [];
+  // A flag array to mark if a source has been "found" or processed.
+  const sourceFoundFlags = [];
 
-  // Continue the search as long as there are paths in the queue that are not empty.
-  while (searchQueue.filter(pathSegment => pathSegment.length).length) {
-    for (let pathIdx = 0; pathIdx < numberOfIncidentEdges; ++pathIdx) {
-      const currentPath = searchQueue[pathIdx];
-      // Skip if the current path segment is empty.
-      if (!currentPath.length) {
+  // Continue as long as there are active queues with elements to process.
+  while (explorationQueue.filter(queueSegment => queueSegment.length).length) {
+    // Iterate through each segment of the exploration queue.
+    for (let segmentIndex = 0; segmentIndex < initialConnectionCount; segmentIndex++) {
+      const currentSegment = explorationQueue[segmentIndex];
+
+      // If the current segment is empty, skip it.
+      if (!currentSegment.length) {
         continue;
       }
 
-      // Dequeue the next edge from the current path.
-      const dequeuedElement = currentPath.shift();
-      visitedPath.unshift(dequeuedElement.source); // Add source of dequeued edge to visited list.
+      // Dequeue the first edge from the current segment.
+      const processedEdge = currentSegment.shift();
 
-      // Check if the source of the dequeued edge matches one of our initial potential targets.
-      if (potentialTargets.filter(targetId => targetId === dequeuedElement.source).length) {
-        foundTargetFlags[pathIdx] = true;
-        // Mark the found target by changing its value to -1.
-        potentialTargets[potentialTargets.indexOf(dequeuedElement.source)] = -1;
+      // Prepend the source node of the processed edge to pathHistory.
+      pathHistory.unshift(processedEdge.sourceNode);
+
+      // Check if the source node of the processed edge is one of our initial potential sources.
+      if (initialSources.filter(potential => potential === processedEdge.sourceNode).length) {
+        // Mark this segment's initial source as found.
+        sourceFoundFlags[segmentIndex] = true;
+
+        // Invalidate this source in the initialSources array to prevent re-finding.
+        initialSources[initialSources.indexOf(processedEdge.sourceNode)] = -1;
       }
 
-      // If this path hasn't found its target yet AND the dequeued element's source node has outgoing edges.
-      if (!foundTargetFlags[pathIdx] && graphData[dequeuedElement.source]) {
-        // Extend the current path by adding all outgoing edges from the dequeued node's source.
-        for (let edgeIdx = 0; edgeIdx < graphData[dequeuedElement.source].length; ++edgeIdx) {
-          currentPath.push(graphData[dequeuedElement.source][edgeIdx]);
+      // If this segment's source hasn't been found yet and there are more connections from this node...
+      if (!sourceFoundFlags[segmentIndex] && connectionGraph[processedEdge.sourceNode]) {
+        // Add all incoming edges to the current node to the current segment for further exploration.
+        for (let incomingEdgeIdx = 0; incomingEdgeIdx < connectionGraph[processedEdge.sourceNode].length; incomingEdgeIdx++) {
+          currentSegment.push(connectionGraph[processedEdge.sourceNode][incomingEdgeIdx]);
         }
       }
     }
   }
-  // Return the modified list of potential targets.
-  return potentialTargets;
+  // Return the modified list of initial sources, where found ones are marked -1.
+  return initialSources;
 }
 
-/*
- * Standard boilerplate for handling input from stdin in Node.js environments.
- * Accumulates data chunks and processes them once all input has been received.
- */
-let incomingData = '';
+// Global variable to accumulate all incoming data from stdin.
+let rawInputBuffer = '';
 
-// Begin reading from standard input.
+// Resume stdin to start listening for data.
 process.stdin.resume();
-// Set the character encoding for the input stream.
+
+// Set the encoding for incoming data to UTF-8.
 process.stdin.setEncoding('utf8');
 
-// Event listener for incoming data chunks.
+// Event listener for 'data' chunks from stdin.
 process.stdin.on('data', function(dataChunk) {
-  incomingData += dataChunk;
+  rawInputBuffer += dataChunk; // Append the current chunk to the buffer.
 });
 
-// Event listener for when all input has been received.
+// Event listener for the 'end' of stdin input.
 process.stdin.on('end', function() {
-  // Split the accumulated input into individual lines.
-  incomingData = incomingData.split('\n');
-  // Invoke the main graph processing function with the prepared input.
-  performGraphProcessing(incomingData);
+  // Split the accumulated input into an array of lines.
+  const processedLines = rawInputBuffer.split('\n');
+
+  // Call the main processing function with the array of lines.
+  processInputData(processedLines);
 });

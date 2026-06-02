@@ -1,15 +1,23 @@
-const numericalUnit = 1;
-const sequenceLength = 3;
+'use strict'
 
-const numeralSequence = Array.from({ length: sequenceLength }, () => numericalUnit);
+const input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n")
+const numbers = input[1].trim().split(/\s+/).map(Number)
 
-const combinedText = numeralSequence.map(unit => String(unit)).join('');
+const n = numbers.length
+const sum = numbers.reduce((acc, value) => acc + value, 0)
+const squareSum = numbers.reduce((acc, value) => acc + value * value, 0)
 
-const outputMechanism = {
-  targetStream: process.stdout,
-  produce: function(contentToDisplay) {
-    this.targetStream.write(contentToDisplay + '\n');
-  }
-};
+const mean = sum / n
 
-outputMechanism.produce(combinedText);
+const clamp = value => Math.max(-100, Math.min(100, value))
+
+const candidates = [
+   clamp(Math.floor(mean)),
+   clamp(Math.ceil(mean))
+]
+
+const calcCost = target => {
+   return squareSum - 2 * target * sum + n * target * target
+}
+
+console.log(Math.min(...candidates.map(calcCost)))

@@ -1,61 +1,54 @@
 "use strict";
 
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let complete_input_string = '';
+let rawInputBuffer = '';
+let processedLines = [];
 
-global.process.stdin.on('data', function (incoming_data_segment) {
-    complete_input_string += incoming_data_segment;
+process.stdin.on('data', function (dataChunk) {
+    rawInputBuffer += dataChunk;
 });
 
-global.process.stdin.on('end', function () {
-    let line_fragments = complete_input_string.split('\n');
-    let count_of_items = Number.parseInt(line_fragments.shift(), 10);
-    let numerical_series = line_fragments.shift().split(' ').map(Number);
-    
-    initiate_solver(count_of_items, numerical_series);    
+process.stdin.on('end', function () {
+    processedLines = rawInputBuffer.split('\n');
+    initiateProcessing();
 });
 
-function initiate_solver(num_elements, numerical_data) {
-    // This array will store the minimum costs to reach each position,
-    // acting as a memoization cache for our recursive function.
-    // Initialized with null to signify uncomputed values.
-    let cost_registry = Array(num_elements).fill(null);
-  
-    // Base case: The cost to reach the first position (index 0) is 0.
-    cost_registry[0] = 0;
+let dataValues;
+let totalElements;
+let memoizedCosts;
 
-    // Recursive function to determine the minimum path cost to a given position.
-    // It uses memoization (cost_registry) to avoid redundant computations.
-    function determine_minimum_path_cost(current_position) {
-        // If the cost for this position has already been computed, return it.
-        if (cost_registry[current_position] !== null) {
-            return cost_registry[current_position];
-        }
-
-        let option_one_step_back = Number.POSITIVE_INFINITY;
-        let option_two_steps_back = Number.POSITIVE_INFINITY;
-
-        // Calculate cost if coming from the previous position (current_position - 1)
-        if (current_position >= 1) { // Ensure we don't go below index 0
-            option_one_step_back = determine_minimum_path_cost(current_position - 1) + 
-                                   Math.abs(numerical_data[current_position] - numerical_data[current_position - 1]);
-        }
-
-        // Calculate cost if coming from two positions back (current_position - 2)
-        if (current_position >= 2) { // Ensure we don't go below index 0
-            option_two_steps_back = determine_minimum_path_cost(current_position - 2) + 
-                                    Math.abs(numerical_data[current_position] - numerical_data[current_position - 2]);
-        }
-        
-        // Store the minimum of the possible options in the registry and return it.
-        // This is the memoization step.
-        return cost_registry[current_position] = Math.min(option_one_step_back, option_two_steps_back);
+function calculateMinPathCost(targetIdx) {
+    if (targetIdx === 0) {
+        return 0;
     }
 
-    // The final result is the minimum cost to reach the last element (num_elements - 1).
-    let final_result = determine_minimum_path_cost(num_elements - 1);
-    
-    global.console.log(final_result);
+    if (memoizedCosts[targetIdx] !== undefined) {
+        return memoizedCosts[targetIdx];
+    }
+
+    let costFromImmediatePredecessor = Infinity;
+    let costFromSecondPredecessor = Infinity;
+
+    if (targetIdx - 1 >= 0) {
+        costFromImmediatePredecessor = calculateMinPathCost(targetIdx - 1) + Math.abs(dataValues[targetIdx - 1] - dataValues[targetIdx]);
+    }
+
+    if (targetIdx - 2 >= 0) {
+        costFromSecondPredecessor = calculateMinPathCost(targetIdx - 2) + Math.abs(dataValues[targetIdx - 2] - dataValues[targetIdx]);
+    }
+
+    memoizedCosts[targetIdx] = Math.min(costFromImmediatePredecessor, costFromSecondPredecessor);
+    return memoizedCosts[targetIdx];
+}
+
+function initiateProcessing() {
+    totalElements = parseInt(processedLines.shift());
+    dataValues = processedLines[0].split(' ').map(Number);
+
+    memoizedCosts = Array(totalElements).fill(undefined);
+
+    const finalResult = calculateMinPathCost(totalElements - 1);
+    console.log(finalResult);
 }

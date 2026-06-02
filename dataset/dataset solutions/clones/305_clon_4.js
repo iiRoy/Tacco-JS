@@ -1,22 +1,32 @@
-const calculationModule = {
-    conversionConstant: 3.305785,
-    performConversion: (valA, valB) => (valA * valB) / calculationModule.conversionConstant
+const obtainStreamContent = () => {
+  return new Promise((resolveContent) => {
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    let accumulatedPayload = '';
+
+    process.stdin.on('data', (dataSegment) => {
+      accumulatedPayload += dataSegment;
+    });
+
+    process.stdin.on('end', () => {
+      resolveContent(accumulatedPayload);
+    });
+  });
 };
 
-async function processInputData() {
-    let allReceivedChunks = '';
+const performCalculation = (firstOperand, secondOperand, factor) => {
+  return (firstOperand * secondOperand) / factor;
+};
 
-    for await (const dataPiece of process.stdin) {
-        allReceivedChunks += dataPiece.toString('utf8');
-    }
+obtainStreamContent().then((fullStreamData) => {
+  const dataSegments = fullStreamData.split(' ');
 
-    const valueComponents = allReceivedChunks.split(' ');
-    const firstOperand = valueComponents[0];
-    const secondOperand = valueComponents[1];
+  const valueOne = Number(dataSegments[0]);
+  const valueTwo = Number(dataSegments[1]);
 
-    const finalCalculationResult = calculationModule.performConversion(firstOperand, secondOperand);
+  const conversionRatio = 3.305785;
 
-    process.stdout.write(finalCalculationResult.toString() + '\n');
-}
+  const computedOutcome = performCalculation(valueOne, valueTwo, conversionRatio);
 
-processInputData();
+  console.log(computedOutcome);
+});

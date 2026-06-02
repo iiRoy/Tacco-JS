@@ -1,49 +1,50 @@
-const fileSystem = require('fs');
-const rawInput = fileSystem.readFileSync(process.stdin.fd, 'utf8');
-const processedLines = rawInput.trim().split("\n");
+const inputLines = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const irrelevantNumber = Number(processedLines.shift());
-const [initialTerm, progressionDiff] = processedLines.shift().split(" ").map(Number);
-
-const totalOperations = Number(processedLines.shift());
-const operationRecords = [];
-for (let iter = 0; iter < totalOperations; ++iter) {
-    operationRecords.push(processedLines.shift().split(" "));
+function* lineIteratorGenerator(lines) {
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
+    }
 }
 
-const identifierRepresentations = operationRecords.reduce((currentMapping, currentAction) => {
-    const [actionType, primaryId, secondaryId] = currentAction;
+const lineStream = lineIteratorGenerator(inputLines);
 
-    if (!currentMapping.has(primaryId)) {
-        currentMapping.set(primaryId, primaryId);
+const initialValuePlaceholder = Number(lineStream.next().value);
+
+const [firstTerm, commonDifference] = lineStream.next().value.split(' ').map(Number);
+
+const aliasRegistry = new Map();
+
+const ensureAndRetrieveAlias = (registryMap, keyIdentifier) => {
+    if (!registryMap.has(keyIdentifier)) {
+        registryMap.set(keyIdentifier, keyIdentifier);
     }
-    if (!currentMapping.has(secondaryId)) {
-        currentMapping.set(secondaryId, secondaryId);
-    }
+    return registryMap.get(keyIdentifier);
+};
 
-    const primaryMappedValue = currentMapping.get(primaryId);
-    const secondaryMappedValue = currentMapping.get(secondaryId);
+const operationCount = Number(lineStream.next().value);
 
-    if (actionType === "0") {
-        currentMapping.set(primaryId, secondaryMappedValue);
-        currentMapping.set(secondaryId, primaryMappedValue);
+const operationInstructions = Array.from({ length: operationCount }, () => lineStream.next().value);
+
+operationInstructions.forEach(instructionLine => {
+    const [operationCode, primaryIdentifier, secondaryIdentifier] = instructionLine.split(' ');
+
+    const currentPrimaryAlias = ensureAndRetrieveAlias(aliasRegistry, primaryIdentifier);
+    const currentSecondaryAlias = ensureAndRetrieveAlias(aliasRegistry, secondaryIdentifier);
+
+    if (operationCode === '0') {
+        aliasRegistry.set(primaryIdentifier, currentSecondaryAlias);
+        aliasRegistry.set(secondaryIdentifier, currentPrimaryAlias);
     } else {
-        currentMapping.set(primaryId, secondaryMappedValue);
+        aliasRegistry.set(primaryIdentifier, currentSecondaryAlias);
     }
-    return currentMapping;
-}, new Map());
+});
 
-let queryTarget = String(Number(processedLines.shift()));
+let targetIndex = Number(lineStream.next().value);
 
-let effectiveTarget;
-if (identifierRepresentations.has(queryTarget)) {
-    effectiveTarget = identifierRepresentations.get(queryTarget);
-} else {
-    effectiveTarget = queryTarget;
+const targetIndexString = String(targetIndex);
+if (aliasRegistry.has(targetIndexString)) {
+    targetIndex = Number(aliasRegistry.get(targetIndexString));
 }
 
-const finalNumericIndex = Number(effectiveTarget);
-
-const computedResult = initialTerm + ((finalNumericIndex - 1) * progressionDiff);
-
-process.stdout.write(String(computedResult) + '\n');
+console.log(firstTerm + ((targetIndex - 1) * commonDifference));

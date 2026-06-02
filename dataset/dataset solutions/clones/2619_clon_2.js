@@ -1,90 +1,85 @@
-function ProcessData(rawData) {
-  // Parse the first line of input to get elementCount and factorValue
-  let elementCount = Number.parseInt(rawData.split('\n')[0].split(' ')[0]);
-  let factorValue = Number.parseInt(rawData.split('\n')[0].split(' ')[1]);
+function ProcessInput(rawData) {
+  // Parse the first line of input to get two integer values
+  let firstLineParts = rawData.split("\n")[0].split(" ");
+  let firstNum = parseInt(firstLineParts[0]); // Corresponds to N
+  let secondNum = parseInt(firstLineParts[1]); // Corresponds to K
 
-  // Extract the second line of data
-  const lineData = rawData.split('\n')[1];
+  // Extract the second line of input, which contains space-separated numbers
+  let dataLine = rawData.split("\n")[1];
 
-  // Convert the space-separated string into an array of numbers
-  const parsedArrayA = lineData.split(' ').map((currentValueA) => Number(currentValueA));
+  // Create an array from the second line, converting string numbers to actual numbers
+  let singleArray = dataLine.split(" ").map((item) => Number(item));
 
-  // Create a doubled version of the array for later calculations
-  const parsedArrayB = (lineData + ' ' + lineData).split(' ').map((currentValueB) => Number(currentValueB));
+  // Create a doubled array by concatenating the dataLine with itself
+  // This is used for calculating inversions over a repeated sequence
+  let doubleArray = (dataLine + " " + dataLine).split(" ").map((item) => Number(item));
 
-  // Initialize a flag to check if all elements in parsedArrayA are identical
-  let isHomogeneous = false;
-  for (let idx1 = 0; idx1 < parsedArrayA.length - 1; idx1++) {
-    // If any adjacent elements are different, set the flag and break
-    if (parsedArrayA[idx1] !== parsedArrayA[idx1 + 1]) {
-      isHomogeneous = true;
+  // A flag to check if all elements in the single array are identical
+  let isVaried = false;
+  for (let idx1 = 0; idx1 < singleArray.length - 1; idx1++) {
+    if (singleArray[idx1] !== singleArray[idx1 + 1]) {
+      isVaried = true; // Found at least two different elements
       break;
     }
   }
 
-  // If the array is homogeneous (all elements are the same), output 0 and exit
-  if (!isHomogeneous) {
-    console.log('0');
-    return;
+  // If all elements are the same, the number of inversions is 0
+  if (!isVaried) {
+    console.log("0");
+    return; // Exit the function early
   } else {
-    // Initialize an array to store cumulative inversion counts
-    let cumulativeResults = [];
-    // Initialize a counter for inversions
-    let inversionCounter = 0;
+    // This array will store the inversion counts for different scenarios
+    let inversionCounts = [];
+    let currentInversions = 0; // Temporary variable to hold inversion count
 
-    // Calculate inversions for the first array (parsedArrayA)
-    // A pair (i, j) is an inversion if i < j and array[i] > array[j]
-    for (let idx1 = 0; idx1 < parsedArrayA.length; idx1++) {
-      for (let idx2 = idx1 + 1; idx2 < parsedArrayA.length; idx2++) {
-        let firstElement = parsedArrayA[idx1];
-        let secondElement = parsedArrayA[idx2];
-        if (firstElement > secondElement) {
-          inversionCounter++;
+    // Calculate inversions for the single array
+    for (let idx1 = 0; idx1 < singleArray.length; idx1++) {
+      for (let idx2 = idx1 + 1; idx2 < singleArray.length; idx2++) {
+        let valA = singleArray[idx1];
+        let valB = singleArray[idx2];
+        if (valA > valB) {
+          currentInversions++; // Increment if an inversion is found
         }
       }
     }
-    // Store the total inversions for parsedArrayA
-    cumulativeResults.push(inversionCounter);
+    inversionCounts.push(currentInversions); // Store the count for the single array
 
-    // Reset the inversion counter for the second calculation
-    inversionCounter = 0;
+    currentInversions = 0; // Reset for the next calculation
 
-    // Calculate inversions for the doubled array (parsedArrayB)
-    for (let idx1 = 0; idx1 < parsedArrayB.length; idx1++) {
-      for (let idx2 = idx1 + 1; idx2 < parsedArrayB.length; idx2++) {
-        let firstElement = parsedArrayB[idx1];
-        let secondElement = parsedArrayB[idx2];
-        if (firstElement > secondElement) {
-          inversionCounter++;
+    // Calculate inversions for the doubled array
+    for (let idx1 = 0; idx1 < doubleArray.length; idx1++) {
+      for (let idx2 = idx1 + 1; idx2 < doubleArray.length; idx2++) {
+        let valA = doubleArray[idx1];
+        let valB = doubleArray[idx2];
+        if (valA > valB) {
+          currentInversions++; // Increment if an inversion is found
         }
       }
     }
-    // Store the total inversions for parsedArrayB
-    cumulativeResults.push(inversionCounter);
+    inversionCounts.push(currentInversions); // Store the count for the doubled array
 
-    // This variable is not used further but kept for structural consistency.
-    inversionCounter = 0;
+    currentInversions = 0; // Reset, though not strictly necessary here
 
-    // Determine output based on the factorValue
-    if (factorValue <= 2) {
-      // If factorValue is 1 or 2, output the corresponding stored result
-      console.log(cumulativeResults[factorValue - 1]);
+    // Determine the final output based on the value of secondNum (K)
+    if (secondNum <= 2) {
+      // If K is 1 or 2, output the corresponding pre-calculated inversion count
+      console.log(inversionCounts[secondNum - 1]);
     } else {
-      // For factorValue greater than 2, calculate iteratively
-      let iterationTracker = 2; // Start tracking iterations from 2
-
-      while (iterationTracker !== factorValue) {
-        // Calculate the next term using the previous two results
-        const nextSumTerm = cumulativeResults[0] + cumulativeResults[1] + cumulativeResults[1];
-        cumulativeResults.push(nextSumTerm); // Add the new term
-        cumulativeResults.shift();           // Remove the oldest term
-        iterationTracker++;                  // Increment the iteration counter
+      // If K is greater than 2, perform an iterative calculation
+      let iterationCounter = 2;
+      while (iterationCounter !== secondNum) {
+        // Calculate the next inversion count based on the pattern
+        // This pattern seems to be (inversions_for_single_array + inversions_for_double_array + inversions_for_double_array)
+        let nextSum = inversionCounts[0] + inversionCounts[1] + inversionCounts[1];
+        inversionCounts.push(nextSum); // Add the new count to the end
+        inversionCounts.shift(); // Remove the oldest count from the beginning
+        iterationCounter++; // Move to the next iteration
       }
-      // Output the second element of the remaining cumulativeResults, modulo (10^9 + 7)
-      console.log(cumulativeResults[1] % (1e9 + 7));
+      // Output the final calculated inversion count modulo (10^9 + 7)
+      console.log(inversionCounts[1] % (1e9 + 7));
     }
   }
 }
 
-// Read input from stdin and pass it to the main processing function
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

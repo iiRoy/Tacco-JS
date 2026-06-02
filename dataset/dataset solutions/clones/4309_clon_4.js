@@ -1,39 +1,29 @@
-const fileSystemAccess = require("fs");
+const fileSystemModule = require('fs');
 
-function compileItemFrequencies(itemSequenceText) {
-  return itemSequenceText.split(' ').reduce((itemCatalog, itemToken) => {
-    const itemValue = Number(itemToken);
-    itemCatalog.set(itemValue, (itemCatalog.get(itemValue) || 0) + 1);
-    return itemCatalog;
-  }, new Map());
-}
+const processInputData = (inputContent) => {
+    const contentLines = inputContent.split('\n');
 
-function verifyInventoryAvailability(availableStock, requiredDemand) {
-  return Array.from(requiredDemand.entries()).every(([desiredItem, neededAmount]) => {
-    const currentStock = availableStock.get(desiredItem) || 0;
-    return neededAmount <= currentStock;
-  });
-}
+    // The original code reads and converts contentLines[0] and contentLines[2] to numbers
+    // but then discards them. This clone maintains that behavior by not using them.
 
-function handleOrderValidation(incomingDataStream) {
-  const dataSegments = incomingDataStream.split('\n');
+    const generateCounts = (numberString) => {
+        return numberString.split(' ').reduce((accumulator, currentNumberStr) => {
+            const numericValue = Number(currentNumberStr);
+            accumulator[numericValue] = (accumulator[numericValue] || 0) + 1;
+            return accumulator;
+        }, {});
+    };
 
-  // The first and third lines (indices 0 and 2) contain counts that are not utilized
-  // in the core logic of determining availability, so they are effectively skipped.
-  const primaryItemList = dataSegments[1];
-  const secondaryItemList = dataSegments[3];
+    const primaryCounts = generateCounts(contentLines[1]);
+    const secondaryCounts = generateCounts(contentLines[3]);
 
-  const primaryInventoryMap = compileItemFrequencies(primaryItemList);
-  const secondaryDemandMap = compileItemFrequencies(secondaryItemList);
+    const checkInclusion = Object.entries(secondaryCounts).every(([itemKey, requiredCount]) => {
+        const itemValue = Number(itemKey);
+        const availableCount = primaryCounts[itemValue] || 0;
+        return requiredCount <= availableCount;
+    });
 
-  if (verifyInventoryAvailability(primaryInventoryMap, secondaryDemandMap)) {
-    return "YES";
-  } else {
-    return "NO";
-  }
-}
+    console.log(checkInclusion ? "YES" : "NO");
+};
 
-const inputPath = "/dev/stdin";
-const rawInput = fileSystemAccess.readFileSync(inputPath, "UTF-8");
-
-console.log(handleOrderValidation(rawInput));
+processInputData(fileSystemModule.readFileSync("/dev/stdin", "UTF-8"));

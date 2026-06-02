@@ -1,31 +1,15 @@
-function ComputeAndDisplay( rawInputString )
-{
-  // This function takes a string, processes it, and prints a calculated result.
+function ProcessInput(rawData) {
+  // This function takes raw input, processes it, and prints a calculated value.
+  // It first splits the input string by spaces and converts each segment into a floating-point number.
+  let parsedNumbers = rawData.split(' ').map(val => parseFloat(val));
 
-  // First, split the incoming string by spaces.
-  // Then, for each resulting segment, convert it into a floating-point number.
-  // Store these converted numerical elements in an array.
-  var numericalComponents = rawInputString
-    .split(' ')
-    .map( singleComponent =>
-      parseFloat(singleComponent)
-    );
+  // Then, it calculates the product of the first two numbers obtained from the input.
+  let calculationResult = parsedNumbers[0] * parsedNumbers[1];
 
-  // Now, calculate the multiplication of the first two numbers obtained.
-  var computedProduct = numericalComponents[0] * numericalComponents[1];
-
-  // Finally, print the smallest integer greater than or equal to the computed product.
-  console.log(
-    Math.ceil(computedProduct)
-  );
+  // Finally, it outputs the smallest integer greater than or equal to the calculated product.
+  console.log(Math.ceil(calculationResult));
 }
 
-// The program execution starts here.
-// Read all data from standard input, interpreting it as UTF-8 text.
-// Then, pass this entire string to our primary processing function.
-ComputeAndDisplay(
-  require("fs").readFileSync(
-    "/dev/stdin",
-    "utf8"
-  )
-);
+// The program initiates by reading the content from standard input,
+// decoding it as UTF-8, and then passing it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

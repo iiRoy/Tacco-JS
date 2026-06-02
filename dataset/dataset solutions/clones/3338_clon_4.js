@@ -1,45 +1,45 @@
-const primeModulus = 1000000007;
+'use strict'
 
-function tallyCombinations(participantCount, objectiveSum, capacities) {
-    if (objectiveSum === 0) {
-        return 1;
+const moduloConstant = 1e9 + 7
+
+function computeCombinations(countElements, targetSum, valueLimits) {
+  if (targetSum === 0) {
+    return 1
+  }
+
+  const memoizationTable = Array.from({ length: countElements }, () => Array(targetSum + 1).fill(null));
+
+  function findWays(elementIndex, currentTarget) {
+    if (currentTarget < 0) {
+      return 0;
+    }
+    if (elementIndex < 0) {
+      return currentTarget === 0 ? 1 : 0;
     }
 
-    let currentDistributionCounts = Array(objectiveSum + 1).fill(0);
-    currentDistributionCounts[0] = 1; // One way to achieve sum 0 (take nothing)
-
-    for (let currentParticipant = 0; currentParticipant < participantCount; currentParticipant++) {
-        const currentCapacity = capacities[currentParticipant];
-
-        const prefixTotals = Array(objectiveSum + 1).fill(0);
-        prefixTotals[0] = currentDistributionCounts[0];
-        for (let s = 1; s <= objectiveSum; s++) {
-            prefixTotals[s] = (prefixTotals[s - 1] + currentDistributionCounts[s]) % primeModulus;
-        }
-
-        const nextDistributionCounts = Array(objectiveSum + 1).fill(0);
-
-        for (let s = 0; s <= objectiveSum; s++) {
-            let upperIndexValue = prefixTotals[s];
-            let lowerIndexValue = (s - 1 - currentCapacity) >= 0 ? prefixTotals[s - 1 - currentCapacity] : 0;
-            
-            nextDistributionCounts[s] = (upperIndexValue - lowerIndexValue + primeModulus) % primeModulus;
-        }
-        currentDistributionCounts = nextDistributionCounts;
+    if (memoizationTable[elementIndex][currentTarget] !== null) {
+      return memoizationTable[elementIndex][currentTarget];
     }
 
-    return currentDistributionCounts[objectiveSum];
+    let totalCount = 0;
+    for (let numUses = 0; numUses <= valueLimits[elementIndex]; numUses++) {
+      totalCount = (totalCount + findWays(elementIndex - 1, currentTarget - numUses)) % moduloConstant;
+    }
+
+    return memoizationTable[elementIndex][currentTarget] = totalCount;
+  }
+
+  return findWays(countElements - 1, targetSum);
 }
 
-function processInputData(rawData) {
-    const dataLines = rawData.split("\n");
-    const firstLineValues = dataLines[0].split(' ').map(Number);
-    const numParticipants = firstLineValues[0];
-    const targetSum = firstLineValues[1];
-    const participantLimits = dataLines[1].split(' ').map(Number);
-
-    const finalResult = tallyCombinations(numParticipants, targetSum, participantLimits);
-    console.log(finalResult);
+function processInput(inputData) {
+  const inputLines = inputData.split("\n");
+  const parsedParams = inputLines[0].split(' ').map(val => parseInt(val));
+  const N = parsedParams[0];
+  const K = parsedParams[1];
+  const A = inputLines[1].split(' ').map(val => parseInt(val));
+  const finalResult = computeCombinations(N, K, A);
+  console.log(finalResult);
 }
 
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

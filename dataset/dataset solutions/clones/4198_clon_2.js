@@ -1,164 +1,133 @@
-const inputReader = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataStore;
-const receivedLines = [];
+var inputProcessor;
+var inputLines = [];
 
-// Attaches an event listener to capture each line of incoming text.
-inputReader.on('line', function(currentLineText) {
-  receivedLines.push(currentLineText);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-// Once all input has been read, this handler is triggered.
-inputReader.on('close', () => {
-  dataStore = initializeDataProcessor(receivedLines);
-  console.error('\n*** Input parsing complete, commencing execution ***');
-  executePrimaryLogic();
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑入力 ↓出力'); // This message is critical for behavior
+  executeProgram();
 });
 
-/**
- * Generates an independent copy of an object or Set structure.
- * @param {object|Set} originalObject - The data structure to be cloned.
- * @returns {object|Set} A new instance, a deep copy if JSON-serializable.
- */
-function duplicateStructure(originalObject) {
-  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
+// Creates a deep copy of an object or Set.
+function createDeepCopy(sourceObject){
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-// Utility functions for fetching and converting input data types.
-function retrieveInteger() {
-  return dataTransformer(getNextElement(), 1);
+// Helper functions to retrieve and convert input tokens
+function retrieveInteger(){
+  return performTypeConversion(fetchNextToken(), 1);
 }
 
-function retrieveStringArray() {
-  return dataTransformer(getNextElement(), 2);
+function retrieveStringArray(){
+  return performTypeConversion(fetchNextToken(), 2);
 }
 
-function retrieveIntegerArray() {
-  return dataTransformer(getNextElement(), 4);
+function retrieveIntegerArray(){
+  return performTypeConversion(fetchNextToken(), 4);
 }
 
-function retrieveCharacterArray() {
-  return dataTransformer(getNextElement(), 6);
+function retrieveCharacterArray(){
+  return performTypeConversion(fetchNextToken(), 6);
 }
 
-function getNextElement() {
-  return dataStore.next();
+function fetchNextToken(){
+  return inputProcessor.getNextItem();
 }
 
-function hasMoreElements() {
-  return dataStore.hasMoreElements();
+function hasMoreTokens(){
+  return inputProcessor.hasMore();
 }
 
-/**
- * Prepares an object to manage sequential access to input lines.
- * @param {Array<string>} sourceLines - The collection of input strings.
- * @returns {object} An iterator-like object for input lines.
- */
-function initializeDataProcessor(sourceLines) {
+// Sets up the input handling mechanism
+function initializeInputHandler(sourceInput){
   return {
-    elementList: sourceLines,
-    currentIndex: 0,
-    maximumElements: sourceLines.length,
+    dataStore : sourceInput,
+    currentPosition : 0,
+    totalItems : sourceInput.length,
 
-    hasMoreElements: function() {
-      return (this.currentIndex < this.maximumElements);
+    hasMore : function(){
+      return (this.currentPosition < this.totalItems);
     },
 
-    next: function() {
-      if (this.hasMoreElements()) {
-        return this.elementList[this.currentIndex++];
+    getNextItem : function(){
+      if(this.hasMore()){
+        return this.dataStore[this.currentPosition++];
       } else {
-        throw 'InputOutOfBoundsError: No further input tokens are available.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Critical error message
       }
     }
   };
 }
 
-/**
- * Displays a provided message to the standard output stream.
- * @param {*} messageContent - The information to output.
- */
-function displayOutput(messageContent) {
-  console.log(messageContent);
+// Displays the final computed result
+function displayResult(resultValue){
+  console.log(resultValue);
 }
 
-/**
- * Emits a detailed debug message to the standard error stream.
- * @param {*} messageContent - The data to inspect and log.
- */
-function logError(messageContent) {
-  console.error('Debug Trace: ' + require('util').inspect(messageContent, false, null));
+// Logs debug information to stderr
+function logDebugMessage(debugInfo){
+  console.error('debug:' + require('util').inspect(debugInfo, false, null)); // Critical debug output format
 }
 
-/**
- * Converts an input value based on a specified transformation code.
- * @param {*} inputValue - The value intended for conversion.
- * @param {number} transformationType - A numeric code indicating the desired conversion.
- *   - 1: Converts to a whole number.
- *   - 2: Splits a string by spaces into an array of strings.
- *   - 4: Splits a string by spaces and converts each part to a number.
- *   - 6: Splits a string into an array of individual characters.
- *   - 7: Splits a string into characters and converts each to a number.
- *   - 8: Joins array elements with a space character.
- *   - 9: Joins array elements with a newline character.
- *   - 0: Joins array elements without any separator.
- *   - Any other value: Returns the input value unchanged.
- * @returns {*} The result of the transformation or the original value if an error occurs.
- */
-function dataTransformer(inputValue, transformationType) {
+// Utility for converting input strings based on a specified format code
+// Format codes:
+// 1: parseInt
+// 2: split by space
+// 4: split by space and map to Number
+// 6: split by character
+// 7: split by character and map to Number
+// 8: join by space
+// 9: join by newline
+// 0: join without separator
+function performTypeConversion(inputValue, formatCode){
   try {
-    switch (transformationType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(' ');
-      case 4:
-        return inputValue.split(' ').map(Number);
-      case 6:
-        return inputValue.split('');
-      case 7:
-        return inputValue.split('').map(Number);
-      case 8:
-        return inputValue.join(' ');
-      case 9:
-        return inputValue.join('\n');
-      case 0:
-        return inputValue.join('');
-      default:
-        return inputValue;
+    switch(formatCode){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
     }
-  } catch (err) {
-    return inputValue;
+  } catch(conversionError){
+    return inputValue; // Return original value on error
   }
 }
 
-// The core algorithm implementation starts here.
-function executePrimaryLogic() {
-  const firstInputLine = retrieveIntegerArray();
-  const totalEntries = firstInputLine[0];
-  const capacityLimit = firstInputLine[1];
+// Main program execution logic
+function executeProgram(){
+  var firstLineData = retrieveIntegerArray();
+  var numEntries = firstLineData[0];
+  var capacityLimit = firstLineData[1]; // 'C' is read but not used in this specific problem logic
 
-  // Initialize an array, often used for difference array techniques or prefix sums.
-  const frequencyArray = new Array(100005).fill(0);
+  // Initialize an array to store frequency changes, sized for potential maximum index + 1
+  var frequencyArray = new Array(100005).fill(0);
 
-  // Iterate through provided entries to update the frequency distribution.
-  for (let idx = 0; idx < totalEntries; idx++) {
-    const currentEntry = retrieveIntegerArray();
-    frequencyArray[currentEntry[0]]++;
-    frequencyArray[currentEntry[1] + 1]--;
+  // Process N entries to mark start and end points for frequency calculation
+  for(var idx = 0; idx < numEntries; idx++){
+    var currentRange = retrieveIntegerArray();
+    frequencyArray[currentRange[0]]++; // Increment count at start of range
+    frequencyArray[currentRange[1] + 1]--; // Decrement count just after end of range
   }
 
-  let maximumOverlap = 1;
+  var maximumOverlap = 1; // Initialize with 1 as per problem constraints or typical base case
 
-  // Compute prefix sums and determine the peak value within the array.
-  for (let idx = 1; idx < 100005; idx++) {
-    frequencyArray[idx] += frequencyArray[idx - 1];
-    maximumOverlap = Math.max(maximumOverlap, frequencyArray[idx]);
+  // Calculate prefix sums to find actual frequencies and determine maximum overlap
+  for(var idx = 1; idx < 100005; idx++){
+    frequencyArray[idx] += frequencyArray[idx - 1]; // Accumulate frequencies
+    maximumOverlap = Math.max(maximumOverlap, frequencyArray[idx]); // Update maximum if current frequency is higher
   }
 
-  // Present the final calculated result.
-  displayOutput(maximumOverlap);
+  displayResult(maximumOverlap); // Output the final result
 }

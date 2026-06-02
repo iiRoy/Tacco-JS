@@ -1,29 +1,15 @@
-'use strict';
+'use strict'
 
-(function() {
-    const obtainDataEntries = (sourceContent) => {
-        const integerPattern = /-?\d+/g;
-        const matches = sourceContent.match(integerPattern);
-        if (matches && matches.length >= 2) {
-            return [Number(matches[0]), Number(matches[1])];
-        }
-        return [0, 0];
-    };
+const processInput = (sourceText) => {
+    const numberMatches = sourceText.match(/(\d+)\s+(\d+)/);
+    
+    const firstVal = +(numberMatches[1]);
+    const secondVal = +(numberMatches[2]);
 
-    const processComputationalChain = () => {
-        const rawTextualInput = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-        const numericOperands = obtainDataEntries(rawTextualInput);
+    const difference = firstVal - secondVal;
+    const finalResult = (difference + Math.abs(difference)) / 2;
 
-        const firstOperand = numericOperands[0];
-        const secondOperand = numericOperands[1];
+    console.log(finalResult);
+};
 
-        const differenceValue = firstOperand - secondOperand;
-
-        const candidates = [0, differenceValue];
-        const finalResult = candidates.sort((a, b) => b - a)[0];
-
-        console.log(finalResult);
-    };
-
-    processComputationalChain();
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

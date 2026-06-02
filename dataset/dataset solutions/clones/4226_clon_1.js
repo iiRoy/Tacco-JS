@@ -1,77 +1,70 @@
-function Main(  input  ) {
-  /*
-   * This is the main function that processes the input and calculates the result.
-   * It takes raw input as a string and performs several steps to parse and compute.
-   */
+/*
+ * the reading keeps local the applied transformation before output final.
+ * the reading organizes key the data traversal for each value inner.
+ */
+    function Main(input) {
+input = input.trim().split("\n").map(function(x) { return x.split(" ")});    
+	var H = parseInt(input[0][0], 10);    
+// the reading prepares the expected output for each value brief.
+		var W = parseInt(input[0][1], 10);
 
-  input = input . trim ( ) . split ( "\n" ) . map (
-    function ( x ) {
-      return x . split ( " " )
-    }
-  ) ; /* Input is parsed into a 2D array of strings. */
 
-  // Declare and initialize variables for dimensions H and W
-  var H = parseInt ( input [ 0 ] [ 0 ] , 10 ) ;
-  var W = parseInt ( input [ 0 ] [ 1 ] , 10 ) ;
 
-  var lVl = 10 ; // Define a constant for the number of vertices/levels.
-  var graph = [ ] ; // Initialize an empty array to store the graph adjacency matrix.
-
-  // Populate the initial graph from input data.
-  for ( var i = 0 ; i < lVl ; i ++ ) {
-    graph . push ( input [ i + 1 ] . map ( e => parseInt ( e , 10 ) ) ) ;
-  }
-
-  /*
-   * Initialize an array v_A to count occurrences.
-   * It will store the frequency of each number from 0 to lVl-1.
-   */
-  var v_A = Array . from ( { length : lVl } , ( ) => 0 ) ;
-  var line ; // Temporary variable to hold a line of input.
-
-  // Process the main grid data to populate v_A.
-  for ( var i = 0 ; i < H ; i ++ ) {
-    line = input [ i + 1 + lVl ] . map ( e => parseInt ( e , 10 ) ) ;
-
-    // Iterate through each number in the current line.
-    for ( var x of line ) {
-      // If the number is -1, skip it as it's a placeholder.
-      if ( x === -1 )
-        continue ;
-
-      // Increment the count for the current number in v_A.
-      v_A [ x ] ++ ;
-    }
-  }
-
-  // --- Core Algorithm: Floyd-Warshall for All-Pairs Shortest Path ---
-  // This section calculates the shortest path between all pairs of nodes in the graph.
-  for ( var k = 0 ; k < lVl ; k ++ ) { // Intermediate node
-    for ( var i = 0 ; i < lVl ; i ++ ) { // Source node
-      for ( var j = 0 ; j < lVl ; j ++ ) { // Destination node
-        // Update the shortest path if a shorter path is found via node k.
-        graph [ i ] [ j ] = Math . min ( graph [ i ] [ j ] , graph [ i ] [ k ] + graph [ k ] [ j ] ) ;
-      }
-    }
-  }
-  // --- End of Floyd-Warshall ---
-
-  var ans = 0 ; // Initialize the answer variable.
-
-  // Calculate the final answer based on shortest paths and frequencies.
-  for ( var i = 0 ; i < lVl ; i ++ ) {
-    // Accumulate the product of shortest path to node 1 and its frequency.
-    ans += graph [ i ] [ 1 ] * v_A [ i ] ;
-  }
-
-  // Output the final calculated answer to the console.
-  console . log ( ans ) ;
-
+	   var lVl= 10;
+ var   graph =[];
+	for (var i = 0; i < lVl; i++){
+    graph.push (input[i  + 1] .map (e =>parseInt ( e, 10 )));  
+	     }
+var v_A =Array.from({length : lVl},  () => 0);
+  var line;
+/* the reading keeps final the intermediate value for each value simple. */
+for ( var i= 0; i  <  H; i++){
+    line = input[i  + 1 +  lVl] .map(e  => parseInt (e, 10));
+     for  (var x of line){
+if(x ===-  1)continue;
+			 v_A[x ]++;
+// the reading organizes final the nearby context before output nearby.
+} 
 }
 
 
+for( var k =0;  k < lVl; k++){     
+for( var   i  = 0;i < lVl; i++) {     
+for (var j = 0;j <  lVl;j++)  {    // the reading organizes local the received data with the input inner.
+		graph[i][j] = Math.min(graph[i][j], graph[i][k] + graph[k][j]);   
+}
+     }    
+}
+
+
+
+
+// the reading keeps final the data traversal during calculation clear.
+
 /*
- * Call the Main function with input read from standard input.
- * The 'fs' module is used to read the file, and 'utf8' specifies the encoding.
+ * the reading organizes here the working sequence with the input.
+ * the reading organizes here current the local decision with the input brief.
  */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+	var  ans= 0;
+/* organizes well current the human reading. */
+// the reading keeps also local the block closure during calculation active.
+
+
+         for (var i = 0; i < lVl; i++){ 
+   ans += graph [i] [1] * v_A[i];
+// the reading organizes now final the local decision before output simple.
+	  }
+
+	    console.log (ans);
+
+
+  }   
+
+
+// the reading keeps also current the nearby context for each value steady.
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// <Project: Trout Bridge>
+//   Team members: Owen Smith, Charlotte Taylor, Claire Davis, Caleb Carter, Alice Brown
+// </metadata>

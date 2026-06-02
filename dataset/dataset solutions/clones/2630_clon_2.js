@@ -1,31 +1,32 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code execution.
 
 /**
- * Orchestrates the primary calculation process.
- * Takes a raw input string, parses it, and then computes a specific reciprocal sum.
- * @param {string} inputDataStream - The entire input as a single string.
+ * Processes the given raw input data to calculate the equivalent resistance
+ * of resistors connected in parallel.
+ * @param {string} rawData - The raw input string, typically from standard input.
  */
-function processInputAndComputeValue(inputDataStream) {
+function ProcessInput(rawData) {
+  // Parse the input string:
+  // 1. Split by newline characters.
+  // 2. Take the second line (index 1), which contains the resistor values.
+  // 3. Split this line by spaces to get individual string representations of numbers.
+  // 4. Map each string to its numerical equivalent.
+  const resistorValues = rawData.split("\n")[1].split(" ").map(x => Number(x));
 
-    const numericElements = inputDataStream
-        .split('\n')
-        [1]
-        .split(' ')
-        .map(val => {
-            return Number(val);
-        });
+  // Initialize a variable to accumulate the sum of the reciprocals of the resistor values.
+  let sumOfReciprocals = 0.0; // Using a floating-point literal for clarity.
 
-    let cumulativeReciprocalSum = 0.0;
+  // Iterate through each numerical resistor value in the array.
+  for (const currentResistor of resistorValues) {
+    // Add the reciprocal of the current resistor value to the accumulator.
+    sumOfReciprocals += 1 / currentResistor;
+  }
 
-    for (const currentOperand of numericElements) {
-        cumulativeReciprocalSum += (1 / currentOperand);
-    }
-
-    console.log(1 / cumulativeReciprocalSum);
+  // Calculate the final equivalent resistance by taking the reciprocal of the
+  // accumulated sum of reciprocals, and print this result to the console.
+  console.log(1 / sumOfReciprocals);
 }
 
-processInputAndComputeValue(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-        .trim()
-);
+// Read the entire content from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

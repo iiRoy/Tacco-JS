@@ -1,21 +1,20 @@
-// This module processes incoming textual information.
-function ProcessInputData ( rawData ) {
-  // Convert the raw input string into an array of individual characters.
-  const characterArray = Array . from ( rawData ) ;
+function ProcessInput(rawData) {
+  // Convert the input string into an array of individual characters.
+  const characterArray = [...rawData];
 
-  // Transform each character into its corresponding integer representation.
-  const numericValues = characterArray . map ( charItem => {
-    return Number . parseInt ( charItem , 10 ) ;
-  } ) ;
+  // Transform each character in the array into its integer representation.
+  const numberArray = characterArray.map(digitChar => {
+    return parseInt(digitChar, 10); // Explicitly use base 10 for parsing
+  });
 
-  // Compute the grand total of all the converted numeric values.
-  const totalSum = numericValues . reduce ( ( accumulatorValue , currentValue ) => {
-    return accumulatorValue + currentValue ;
-  } ) ;
+  // Calculate the sum of all numbers in the array.
+  const totalSum = numberArray.reduce((accumulator, currentValue) => {
+    return accumulator + currentValue;
+  });
 
-  // Output a specific message based on whether the total sum is divisible by nine.
-  console . log ( totalSum % 9 === 0 ? "YES" : "NO" ) ;
+  // Determine if the total sum is divisible by 9 and print the result.
+  console.log(totalSum % 9 === 0 ? "Yes" : "No");
 }
 
-// Execute the main processing function by reading data from standard input.
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

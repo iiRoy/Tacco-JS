@@ -1,97 +1,65 @@
-let boardCellsReference;
-let boardWidthReference;
-let memoizationStore;
-
-function navigateRoute(currentRow, currentColumn, currentPathLength) {
-    if (currentColumn < 0 || currentColumn >= boardWidthReference) {
-        return Infinity;
-    }
-
-    const locationKey = `${currentRow}_${currentColumn}`;
-
-    if (memoizationStore.has(locationKey) && currentPathLength >= memoizationStore.get(locationKey)) {
-        return Infinity;
-    }
-
-    memoizationStore.set(locationKey, currentPathLength);
-
-    if (currentColumn === boardWidthReference - 1 && boardCellsReference[currentRow][currentColumn] !== 2) {
-        return currentPathLength;
-    }
-
-    let adjustedColumn = currentColumn;
-    const cellKind = boardCellsReference[currentRow][currentColumn];
-
-    if (cellKind === 1) {
-        while (true) {
-            adjustedColumn++;
-            if (adjustedColumn >= boardWidthReference || boardCellsReference[currentRow][adjustedColumn] !== 1) {
-                adjustedColumn--;
-                break;
-            }
+const determineFinalColumn = (initialRowIdentifier, initialColumnIdentifier, gridLayout, totalGridColumns) => {
+    const cellDesignation = gridLayout[initialRowIdentifier][initialColumnIdentifier];
+    if (cellDesignation === 1) {
+        let scanColumn = initialColumnIdentifier;
+        while (scanColumn < totalGridColumns && gridLayout[initialRowIdentifier][scanColumn] === 1) {
+            scanColumn++;
         }
-    } else if (cellKind === 2) {
-        while (true) {
-            adjustedColumn--;
-            if (adjustedColumn < 0 || boardCellsReference[currentRow][adjustedColumn] !== 2) {
-                break;
-            }
+        return scanColumn - 1;
+    } else if (cellDesignation === 2) {
+        let scanColumn = initialColumnIdentifier;
+        while (scanColumn >= 0 && gridLayout[initialRowIdentifier][scanColumn] === 2) {
+            scanColumn--;
         }
+        return scanColumn + 1;
     }
-
-    let leastSteps = Infinity;
-
-    for (let colOffset = 0; colOffset <= 2; colOffset++) {
-        const nextRow = 1 - currentRow;
-        const nextColumn = adjustedColumn + colOffset;
-        
-        const stepsFromNext = navigateRoute(nextRow, nextColumn, currentPathLength + 1);
-        leastSteps = Math.min(leastSteps, stepsFromNext);
-    }
-
-    return leastSteps;
-}
-
-function solveBoardConfiguration(dimensionValue, cellData) {
-    boardWidthReference = dimensionValue;
-    boardCellsReference = cellData;
-    memoizationStore = new Map();
-
-    let outcomeFromTopStart = navigateRoute(0, 0, 0);
-    let outcomeFromBottomStart = navigateRoute(1, 0, 0);
-
-    const overallMinimum = Math.min(outcomeFromTopStart, outcomeFromBottomStart);
-
-    return overallMinimum === Infinity ? "NA" : String(overallMinimum);
-}
-
-const processInputCases = (inputLines, currentIndex, resultsCollection = []) => {
-    if (currentIndex >= inputLines.length) {
-        return resultsCollection;
-    }
-
-    const currentBoardDimension = parseInt(inputLines[currentIndex], 10);
-    if (currentBoardDimension === 0) {
-        return resultsCollection;
-    }
-
-    const currentBoardCells = [];
-    currentBoardCells[0] = inputLines[currentIndex + 1].split(' ').map(Number);
-    currentBoardCells[1] = inputLines[currentIndex + 2].split(' ').map(Number);
-
-    const currentOutcome = solveBoardConfiguration(currentBoardDimension, currentBoardCells);
-    resultsCollection.push(currentOutcome);
-
-    return processInputCases(inputLines, currentIndex + 3, resultsCollection);
+    return initialColumnIdentifier;
 };
 
-const executeMazeSolver = () => {
-    const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const allInputLines = rawInputData.trim().split('\n');
+const findMinimumSteps = (gridLayout, totalGridColumns) => {
+    let traversalQueue = [{ r: 0, c: 0, s: 0 }, { r: 1, c: 0, s: 0 }];
+    const visitedCoordinates = new Set();
 
-    const finalResults = processInputCases(allInputLines, 0);
+    let shortestPathLength = "NA";
 
-    console.log(finalResults.join('\n'));
+    let queueHeadPointer = 0;
+
+    while (queueHeadPointer < traversalQueue.length) {
+        const { r: currentR, c: currentC, s: currentS } = traversalQueue[queueHeadPointer++];
+
+        const coordinateKey = `${currentR},${currentC}`;
+        if (visitedCoordinates.has(coordinateKey)) {
+            continue;
+        }
+        visitedCoordinates.add(coordinateKey);
+
+        if (currentC === totalGridColumns - 1 && gridLayout[currentR][currentC] !== 2) {
+            shortestPathLength = currentS;
+            break;
+        }
+
+        const effectiveColumnAfterMovement = determineFinalColumn(currentR, currentC, gridLayout, totalGridColumns);
+
+        for (let columnOffset = 0; columnOffset <= 2; columnOffset++) {
+            const nextRowIndex = 1 - currentR;
+            const nextColumnIndex = effectiveColumnAfterMovement + columnOffset;
+            traversalQueue.push({ r: nextRowIndex, c: nextColumnIndex, s: currentS + 1 });
+        }
+    }
+    return shortestPathLength;
 };
 
-executeMazeSolver();
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split('\n');
+let currentLineIndex = 0;
+
+while (true) {
+    const currentGridWidth = parseInt(inputLines[currentLineIndex++], 10);
+    if (currentGridWidth === 0) break;
+
+    const gameGrid = [];
+    gameGrid[0] = inputLines[currentLineIndex++].split(' ').map(Number);
+    gameGrid[1] = inputLines[currentLineIndex++].split(' ').map(Number);
+
+    console.log(findMinimumSteps(gameGrid, currentGridWidth));
+}

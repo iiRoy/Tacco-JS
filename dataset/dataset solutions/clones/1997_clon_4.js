@@ -1,26 +1,13 @@
-const fileSystemAccess = require("node:fs");
+function processInputData(rawContent) {
+  const tokenArray = rawContent.split(" ");
 
-const retrieveSourceData = (locationIdentifier, encodingFormat) => {
-  return fileSystemAccess.readFileSync(locationIdentifier, encodingFormat);
-};
+  const valueMap = {
+    initialZero: parseInt(tokenArray[0], 10),
+    initialOne: parseInt(tokenArray[1], 10),
+    initialTwo: parseInt(tokenArray[2], 10)
+  };
 
-const processNumericalArrangement = (rawTextualInput) => {
-  // Extract all sequences of digits from the input string and convert them to numbers
-  const initialNumericElements = rawTextualInput.match(/\d+/g).map(Number);
+  console.log(`${valueMap.initialTwo} ${valueMap.initialZero} ${valueMap.initialOne}`);
+}
 
-  // Define the desired permutation of indices for reordering
-  const rearrangementPattern = [2, 0, 1];
-
-  // Apply the permutation to the initial elements to create the final ordered set
-  const finalOrderedSet = rearrangementPattern.map(
-    (sourceIndex) => initialNumericElements[sourceIndex]
-  );
-
-  // Format the output as a space-separated string
-  return finalOrderedSet.join(" ");
-};
-
-// Main execution flow
-const systemInputContent = retrieveSourceData("/dev/stdin", "utf8");
-const generatedOutput = processNumericalArrangement(systemInputContent);
-console.log(generatedOutput);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

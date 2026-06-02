@@ -1,359 +1,389 @@
 "use strict";
 
-// Internal utility to convert an iterable into an array, supporting spread operations.
-function _convertToArray(sourceIterable) {
-  return _arrayFromIterable(sourceIterable) || _convertIterToArr(sourceIterable) || _throwNonIterable();
+// Helper function to create a shallow copy of an array.
+function _getArrayCopy(inputArray) {
+  return _getArrayWithoutHoles(inputArray) || _transformIterableToArray(inputArray) || _throwNonIterableSpreadError();
 }
 
-// Throws a specific error if an entity is attempted to be spread but isn't iterable.
-function _throwNonIterable() {
-  throw new TypeError("Cannot spread a non-iterable instance");
+// Throws an error if an attempt is made to spread a non-iterable instance.
+function _throwNonIterableSpreadError() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance");
 }
 
-// Creates a new array from an existing array, ensuring no 'holes' (undefined elements).
-function _arrayFromIterable(inputArray) {
+// Helper to get an array without holes, if it's a true array.
+function _getArrayWithoutHoles(inputArray) {
   if (Array.isArray(inputArray)) {
-    for (var currentIdx = 0, resultArray = new Array(inputArray.length); currentIdx < inputArray.length; currentIdx++) {
-      resultArray[currentIdx] = inputArray[currentIdx];
+    for (var i = 0, newArray = new Array(inputArray.length); i < inputArray.length; i++) {
+      newArray[i] = inputArray[i];
     }
-    return resultArray;
+    return newArray;
   }
 }
 
-// Verifies that a class constructor has been invoked using 'new'.
-function _verifyInstance(objInstance, TargetClass) {
-  if (!(objInstance instanceof TargetClass)) {
-    throw new TypeError("Cannot call a class constructor as a function");
+// Verifies that a function is called as a constructor.
+function _verifyClassInstance(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
   }
 }
 
-// Defines multiple properties on a given object, configuring their attributes.
-function _setObjectProps(targetObject, propertyDescriptors) {
-  for (var propIdx = 0; propIdx < propertyDescriptors.length; propIdx++) {
-    var desc = propertyDescriptors[propIdx];
-    desc.enumerable = desc.enumerable || false;
-    desc.configurable = true;
-    if ("value" in desc) desc.writable = true;
-    Object.defineProperty(targetObject, desc.key, desc);
+// Defines properties on a target object.
+function _setObjectProperties(targetObject, propertiesList) {
+  for (var i = 0; i < propertiesList.length; i++) {
+    var propertyDescriptor = propertiesList[i];
+    propertyDescriptor.enumerable = propertyDescriptor.enumerable || false;
+    propertyDescriptor.configurable = true;
+    if ("value" in propertyDescriptor) propertyDescriptor.writable = true;
+    Object.defineProperty(targetObject, propertyDescriptor.key, propertyDescriptor);
   }
 }
 
-// Constructs a class with specified prototype methods and static properties.
-function _makeClass(ConstructorFunc, prototypeProperties, staticProperties) {
-  if (prototypeProperties) _setObjectProps(ConstructorFunc.prototype, prototypeProperties);
-  if (staticProperties) _setObjectProps(ConstructorFunc, staticProperties);
-  return ConstructorFunc;
+// Creates a class with prototype and static properties.
+function _constructClass(Constructor, prototypeProperties, staticProperties) {
+  if (prototypeProperties) _setObjectProperties(Constructor.prototype, prototypeProperties);
+  if (staticProperties) _setObjectProperties(Constructor, staticProperties);
+  return Constructor;
 }
 
-// Converts an array-like or iterable structure into a true array.
-function _extractArray(sourceArray) {
-  return _checkArrayType(sourceArray) || _convertIterToArr(sourceArray) || _throwInvalidRest();
+// Converts an iterable to an array.
+function _convertToArray(inputIterable) {
+  return _getArrayWithHoles(inputIterable) || _transformIterableToArray(inputIterable) || _throwNonIterableRestError();
 }
 
-// Converts a generic iterable (or arguments object) into an array.
-function _convertIterToArr(iterableObj) {
-  if (Symbol.iterator in Object(iterableObj) || Object.prototype.toString.call(iterableObj) === "[object Arguments]") return Array.from(iterableObj);
+// Transforms an iterable object into an array.
+function _transformIterableToArray(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
 }
 
-// Breaks an array into parts, potentially limiting the number of elements.
-function _splitArrayToParts(inputArr, limit) {
-  return _checkArrayType(inputArr) || _limitedIterToArray(inputArr, limit) || _throwInvalidRest();
+// Extracts a slice from an array with a limit.
+function _extractArraySlice(inputArray, limit) {
+  return _getArrayWithHoles(inputArray) || _limitIterableToArray(inputArray, limit) || _throwNonIterableRestError();
 }
 
-// Throws an error for an invalid attempt to destructure a non-iterable as a rest parameter.
-function _throwInvalidRest() {
-  throw new TypeError("Invalid attempt to destructure a non-iterable instance");
+// Throws an error for non-iterable destructuring.
+function _throwNonIterableRestError() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
-// Converts an iterable into an array, stopping after a specified number of elements.
-function _limitedIterToArray(iterableInput, limitNum) {
-  var tempArr = [];
-  var isDone = true;
-  var hasError = false;
-  var errorObj = undefined;
+// Limits an iterable to a certain number of elements and converts to array.
+function _limitIterableToArray(inputArray, limitCount) {
+  var _tempArray = [];
+  var _isNormal = true;
+  var _hasError = false;
+  var _errorDetails = undefined;
   try {
-    for (var _iterSource = iterableInput[Symbol.iterator](), _iterItem; !(isDone = (_iterItem = _iterSource.next()).done); isDone = true) {
-      tempArr.push(_iterItem.value);
-      if (limitNum && tempArr.length === limitNum) break;
+    for (var _iterator = inputArray[Symbol.iterator](), _step; !(_isNormal = (_step = _iterator.next()).done); _isNormal = true) {
+      _tempArray.push(_step.value);
+      if (limitCount && _tempArray.length === limitCount) break;
     }
   } catch (err) {
-    hasError = true;
-    errorObj = err;
+    _hasError = true;
+    _errorDetails = err;
   } finally {
     try {
-      if (!isDone && _iterSource["return"] != null) {
-        _iterSource["return"]();
-      }
+      if (!_isNormal && _iterator["return"] != null) _iterator["return"]();
     } finally {
-      if (hasError) throw errorObj;
+      if (_hasError) throw _errorDetails;
     }
   }
-  return tempArr;
+  return _tempArray;
 }
 
-// Checks if the provided argument is an Array type.
-function _checkArrayType(potentialArray) {
-  if (Array.isArray(potentialArray)) return potentialArray;
+// Returns an array if it's a true array.
+function _getArrayWithHoles(inputArray) {
+  if (Array.isArray(inputArray)) return inputArray;
 }
 
-// The core program execution function.
-function _executeProgram() {
-  // --- Start of helper functions ---
-
-  // Parses a string or array of strings into an array of integers.
-  function parseNumbers(inputStr) {
-    return (Array.isArray(inputStr) ? inputStr : inputStr.split(/\s+/)).map(function (numVal) {
-      return parseInt(numVal);
+// Main execution function for the program.
+function _executePrimaryLogic() {
+  // Helper function to parse numbers from a string or array.
+  function parseNumbersFromString(inputLine) {
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+      return parseInt(numStr);
     });
   }
 
-  // Implementation of an arbitrary-precision unsigned integer class.
-  var BigIntContainer =
+  /**
+   * Implementation of an arbitrary-precision unsigned integer.
+   * This class handles large numbers by storing them in segments.
+   */
+  var BigIntHandler =
   /*#__PURE__*/
   function () {
-    function BigIntContainer(initialValue) {
-      _verifyInstance(this, BigIntContainer); // Ensure constructor is called correctly.
+    // Constructor initializes the big integer with a given value.
+    function BigIntHandler(initialValue) {
+      _verifyClassInstance(this, BigIntHandler); // Ensure it's called with 'new'.
 
-      // Stores number segments; sufficient for 64-bit values.
-      this.components = [0, 0, 0];
-      var indexPos = 0;
+      // Internal array to store number segments. Enough for 64-bit values.
+      this.dataSegments = [0, 0, 0];
+      var currentSegmentIndex = 0;
 
+      // Convert the initial value into segments.
       while (initialValue !== 0) {
-        this.components[indexPos] = initialValue % BigIntContainer.boundary;
-        initialValue = Math.floor(initialValue / BigIntContainer.boundary);
-        indexPos++;
+        this.dataSegments[currentSegmentIndex] = initialValue % BigIntHandler.segmentBoundary;
+        initialValue = Math.floor(initialValue / BigIntHandler.segmentBoundary);
+        currentSegmentIndex++;
       }
     }
 
-    _makeClass(BigIntContainer, [{
-      key: "sum",
-      value: function sum(otherContainer) {
-        var sumResult = new BigIntContainer(0);
-        var maxLength = Math.max(this.components.length, otherContainer.components.length);
-        var overflow = 0;
-        var currIndex = 0;
+    // Define methods for the BigIntHandler class.
+    _constructClass(BigIntHandler, [{
+      key: "performAddition",
+      value: function performAddition(otherOperand) {
+        var operationResult = new BigIntHandler(0); // Initialize result.
+        var maxLength = Math.max(this.dataSegments.length, otherOperand.dataSegments.length);
+        var carryOver = 0;
+        var segmentIterator = 0;
 
-        for (; currIndex < maxLength; currIndex++) {
-          var currentSum = (this.components[currIndex] || 0) + (otherContainer.components[currIndex] || 0) + overflow;
-          sumResult.components[currIndex] = currentSum % BigIntContainer.boundary;
-          overflow = Math.floor(currentSum / BigIntContainer.boundary);
+        // Iterate through segments, performing addition with carry.
+        for (; segmentIterator < maxLength; segmentIterator++) {
+          var currentSum = (this.dataSegments[segmentIterator] || 0) + (otherOperand.dataSegments[segmentIterator] || 0) + carryOver;
+          operationResult.dataSegments[segmentIterator] = currentSum % BigIntHandler.segmentBoundary;
+          carryOver = Math.floor(currentSum / BigIntHandler.segmentBoundary);
         }
 
-        if (overflow > 0) {
-          sumResult.components[currIndex] = overflow;
+        // If there's a remaining carry, add it as a new segment.
+        if (carryOver > 0) {
+          operationResult.dataSegments[segmentIterator] = carryOver;
         }
 
-        return sumResult;
+        return operationResult;
       }
     }, {
-      key: "multiply",
-      value: function multiply(multiplier) {
-        var productResult = new BigIntContainer(0);
+      key: "performMultiplication",
+      value: function performMultiplication(otherOperand) {
+        var operationResult = new BigIntHandler(0); // Initialize result.
 
-        for (var leftIndex = 0; leftIndex < this.components.length; leftIndex++) {
-          for (var rightIndex = 0; rightIndex < multiplier.components.length; rightIndex++) {
-            var partialProduct = this.components[leftIndex] * multiplier.components[rightIndex];
-            var targetIndex = leftIndex + rightIndex;
-            var currentValue = partialProduct;
+        // Nested loops to multiply each segment.
+        for (var leftSegmentIndex = 0; leftSegmentIndex < this.dataSegments.length; leftSegmentIndex++) {
+          for (var rightSegmentIndex = 0; rightSegmentIndex < otherOperand.dataSegments.length; rightSegmentIndex++) {
+            var productPart = this.dataSegments[leftSegmentIndex] * otherOperand.dataSegments[rightSegmentIndex];
+            var targetSegmentIndex = leftSegmentIndex + rightSegmentIndex;
+            var currentProductValue = productPart;
 
-            while (currentValue > 0) {
-              var segmentSum = (productResult.components[targetIndex] || 0) + currentValue;
-              productResult.components[targetIndex] = segmentSum % BigIntContainer.boundary;
-              currentValue = Math.floor(segmentSum / BigIntContainer.boundary);
-              targetIndex++;
+            // Propagate carries from the product.
+            while (currentProductValue > 0) {
+              var segmentSum = (operationResult.dataSegments[targetSegmentIndex] || 0) + currentProductValue;
+              operationResult.dataSegments[targetSegmentIndex] = segmentSum % BigIntHandler.segmentBoundary;
+              currentProductValue = Math.floor(segmentSum / BigIntHandler.segmentBoundary);
+              targetSegmentIndex++;
             }
           }
         }
 
-        return productResult;
+        return operationResult;
       }
     }, {
-      key: "toText",
-      value: function toText() {
-        var reversedComponents = this.components.concat().reverse(); // Reverse a copy of components.
+      key: "toDecimalString",
+      value: function toDecimalString() {
+        // Create a reversed copy of the data segments.
+        var reversedDataSegments = this.dataSegments.concat().reverse();
 
-        // Custom function to find the index of the first non-zero component.
-        var firstNonZeroIndex = function (componentArray, predicateFn) {
-          for (var iterIndex = 0; iterIndex < componentArray.length; iterIndex++) {
-            if (predicateFn(componentArray[iterIndex], iterIndex)) {
-              return iterIndex;
+        // Find the index of the first non-zero segment.
+        var firstNonZeroIndex = function (inputArray, predicateFunction) {
+          for (var loopCounter = 0; loopCounter < inputArray.length; loopCounter++) {
+            if (predicateFunction(inputArray[loopCounter], loopCounter)) {
+              return loopCounter;
             }
           }
-          return null; // Return null if all components are zero.
-        } // This is a simplified `findIndex` equivalent.
-        (reversedComponents, function (componentValue) {
-          return componentValue !== 0;
+          return null; // Return null if no non-zero segment is found.
+        }(reversedDataSegments, function (currentValue) {
+          return currentValue !== 0;
         });
 
+        // If all segments are zero, the number is "0".
         if (firstNonZeroIndex == null) {
-          return "0"; // If all components are zero, the number is "0".
+          return "0";
         }
 
-        return reversedComponents.slice(firstNonZeroIndex).map(function (componentValue, iterIndex) {
-          if (iterIndex === 0) {
-            return String(componentValue);
+        // Convert segments to string, padding as necessary.
+        return reversedDataSegments.slice(firstNonZeroIndex).map(function (currentValue, index) {
+          if (index === 0) {
+            return String(currentValue); // First segment is not padded.
           } else {
-            // Pad subsequent components with leading zeros to maintain format.
-            return padPrefix(String(componentValue), BigIntContainer.numDigits, "0");
+            // Pad subsequent segments with leading zeros.
+            return padStringStart(String(currentValue), BigIntHandler.segmentDigits, "0");
           }
-        }).join(""); // Join all string components.
+        }).join(""); // Join all segment strings.
 
-        // Helper function to add padding characters to the start of a string.
-        function padPrefix(inputString, targetLength, paddingChar) {
-          var charsToAdd = targetLength - inputString.length;
-          var paddedString = "";
+        // Local helper function to pad a string at the start.
+        function padStringStart(inputString, targetLength, paddingChar) {
+          var paddingNeeded = targetLength - inputString.length;
+          var resultString = "";
 
-          for (var iter = 0; iter < charsToAdd; iter++) {
-            paddedString += paddingChar;
+          for (var loopCounter = 0; loopCounter < paddingNeeded; loopCounter++) {
+            resultString += paddingChar;
           }
 
-          return paddedString + inputString;
+          return resultString + inputString;
         }
       }
     }]);
 
-    return BigIntContainer;
+    return BigIntHandler;
   }();
-  // Specifies the number of decimal digits per component.
-  BigIntContainer.numDigits = 7;
-  // The numerical base for each component (e.g., 10^7).
-  BigIntContainer.boundary = Math.pow(10, BigIntContainer.numDigits);
 
-  // Disjoint Set Union (DSU) data structure for managing sets of integers.
+  /** Number of digits per segment. */
+  BigIntHandler.segmentDigits = 7;
+  /** The boundary value for each segment (10^segmentDigits). */
+  BigIntHandler.segmentBoundary = Math.pow(10, BigIntHandler.segmentDigits);
+
+  /**
+   * DisjointSet data structure for integers in [0, N).
+   * Used for managing connected components.
+   */
   var DisjointSet =
   /*#__PURE__*/
   function () {
-    function DisjointSet(elementCount) {
-      _verifyInstance(this, DisjointSet); // Validate the constructor call.
+    // Constructor initializes N elements, each in its own set.
+    function DisjointSet(totalElements) {
+      _verifyClassInstance(this, DisjointSet);
 
-      this.elements = new Array(elementCount).fill(null).map(function () {
+      this.elementNodes = new Array(totalElements).fill(null).map(function () {
         return {
-          ancestor: null, // Points to the parent node in the set.
-          // The count of members in the set; only valid for the root node.
-          memberCount: 1
+          parentNode: null, // Reference to parent node.
+          /**
+           * Size of the set.
+           * Meaningful only if this node is the root of its set.
+           */
+          setSize: 1
         };
       });
     }
-    // Locates the root (representative) of the set containing `itemIndex`.
-    _makeClass(DisjointSet, [{
+
+    /**
+     * Finds the root of the set containing the given element.
+     * Performs path compression during traversal.
+     */
+    _constructClass(DisjointSet, [{
       key: "findRoot",
-      value: function findRoot(itemIndex) {
-        var currentNode = this.elements[itemIndex];
-        var pathNodes = []; // Collects nodes along the path to the root.
+      value: function findRoot(elementId) {
+        var currentNode = this.elementNodes[elementId];
+        var pathCompressionRoute = []; // Stores nodes visited on the way to the root.
 
-        while (currentNode.ancestor != null) {
-          pathNodes.push(currentNode);
-          currentNode = currentNode.ancestor;
+        // Traverse up to find the root.
+        while (currentNode.parentNode != null) {
+          pathCompressionRoute.push(currentNode);
+          currentNode = currentNode.parentNode;
         }
 
-        // Applies path compression: all nodes on the path now point directly to the root.
-        for (var iterIndex = 0; iterIndex < pathNodes.length; iterIndex++) {
-          var pathNode = pathNodes[iterIndex];
-          pathNode.ancestor = currentNode; // Direct assignment to the root.
+        // Path compression: make all nodes on the path point directly to the root.
+        for (var _loopIndex = 0; _loopIndex < pathCompressionRoute.length; _loopIndex++) {
+          var routeNode = pathCompressionRoute[_loopIndex];
+          routeNode.parentNode = currentNode;
         }
 
-        return currentNode; // Returns the identified root node.
+        return currentNode; // Return the root node.
       }
-      // Merges two sets represented by `firstItem` and `secondItem`.
-      // @returns The new root of the combined set, or `undefined` if already united.
+      /**
+       * Unites two sets containing the given elements.
+       * @returns The new root of the merged set, or undefined if already in the same set.
+       */
+
     }, {
       key: "uniteSets",
-      value: function uniteSets(firstItem, secondItem) {
-        var rootOne = this.findRoot(firstItem);
-        var rootTwo = this.findRoot(secondItem);
+      value: function uniteSets(firstElement, secondElement) {
+        var rootOne = this.findRoot(firstElement);
+        var rootTwo = this.findRoot(secondElement);
 
+        // If elements are already in the same set, do nothing.
         if (rootOne === rootTwo) {
-          return; // Items are already in the same set.
+          return;
         }
 
-        // Merges the sets by making one root the ancestor of the other.
-        rootTwo.ancestor = rootOne;
-        rootOne.memberCount += rootTwo.memberCount; // Updates the size of the combined set.
-        return rootOne; // Returns the new root.
+        // Merge the smaller set into the larger one (by size, though not explicitly implemented here, just attaching).
+        rootTwo.parentNode = rootOne;
+        rootOne.setSize += rootTwo.setSize; // Update the size of the new root.
+        return rootOne;
       }
     }]);
 
     return DisjointSet;
   }();
 
-  // --- End of helper functions ---
-
-  // Main processing logic for the input data.
+  // ---------- Main program logic starts here ----------
   (function (rawData) {
-    var dataLines = rawData.split("\n");
+    var inputLines = rawData.split("\n");
 
-    var _parsedNums = parseNumbers(dataLines[0]),
-        _firstLineParts = _splitArrayToParts(_parsedNums, 2),
-        totalNodes = _firstLineParts[0],
-        totalEdges = _firstLineParts[1];
+    // Parse N (number of cities) and M (number of bridges) from the first line.
+    var _parsedConfig = parseNumbersFromString(inputLines[0]),
+        _extractedConfig = _extractArraySlice(_parsedConfig, 2),
+        numCities = _extractedConfig[0],
+        numBridges = _extractedConfig[1];
 
-    var connections = dataLines.slice(1, totalEdges + 1).map(function (connLine) {
-      var _connParts = parseNumbers(connLine),
-          _connPartsArray = _splitArrayToParts(_connParts, 2),
-          nodeA = _connPartsArray[0],
-          nodeB = _connPartsArray[1];
+    // Parse bridge connections from subsequent lines.
+    var bridgeConnections = inputLines.slice(1, numBridges + 1).map(function (currentLine) {
+      var _parsedBridge = parseNumbersFromString(currentLine),
+          _extractedBridge = _extractArraySlice(_parsedBridge, 2),
+          cityA = _extractedBridge[0],
+          cityB = _extractedBridge[1];
 
       return {
-        nodeA,
-        nodeB
+        cityA: cityA,
+        cityB: cityB
       };
     });
 
-    var computedResults = [];
-    connections.reverse(); // Process connections in reverse order for correct accumulation.
+    var unhappinessScores = []; // Stores the calculated unhappiness scores.
+    bridgeConnections.reverse(); // Process bridges in reverse order.
 
-    var disjointStructure = new DisjointSet(totalNodes);
-    var pairCount = 0; // Tracks the number of pairs that are connected.
-    var _iterComplete = true;
+    var cityDisjointSets = new DisjointSet(numCities); // Initialize DisjointSet for cities.
+    var currentPairCount = 0; // Tracks the number of connected pairs.
+
+    var _iterCompletionStatus = true;
     var _iterHadError = false;
-    var _iterErrorObj = undefined;
+    var _iterErrorDetails = undefined;
 
     try {
-      for (var _connIterator = connections[Symbol.iterator](), _iterStep; !(_iterComplete = (_iterStep = _connIterator.next()).done); _iterComplete = true) {
-        var _currentConn = _iterStep.value,
-            nodeA = _currentConn.nodeA,
-            nodeB = _currentConn.nodeB;
-        computedResults.push(pairCount); // Store the current pair count before processing the edge.
+      // Iterate through bridges in reverse order.
+      for (var _dataIterator = bridgeConnections[Symbol.iterator](), _currentStep; !(_iterCompletionStatus = (_currentStep = _dataIterator.next()).done); _iterCompletionStatus = true) {
+        var _currentBridgeData = _currentStep.value,
+            cityA = _currentBridgeData.cityA,
+            cityB = _currentBridgeData.cityB;
 
-        var rootOne = disjointStructure.findRoot(nodeA - 1);
-        var rootTwo = disjointStructure.findRoot(nodeB - 1);
+        unhappinessScores.push(currentPairCount); // Store current pair count before processing bridge.
 
-        if (rootOne === rootTwo) {
-          // If nodes are already in the same set, this edge doesn't connect new pairs.
+        var rootOfA = cityDisjointSets.findRoot(cityA - 1); // Find root of city A's set.
+        var rootOfB = cityDisjointSets.findRoot(cityB - 1); // Find root of city B's set.
+
+        // If cities are already connected, no change in pair count.
+        if (rootOfA === rootOfB) {
           continue;
         }
 
-        // If nodes were in different sets, adding this edge connects all pairs
-        // between the two sets.
-        pairCount += rootOne.memberCount * rootTwo.memberCount;
-        disjointStructure.uniteSets(nodeA - 1, nodeB - 1); // Merge the two sets.
+        // If cities are not connected, they will become connected.
+        // Add the product of their set sizes to currentPairCount.
+        currentPairCount += rootOfA.setSize * rootOfB.setSize;
+        cityDisjointSets.uniteSets(cityA - 1, cityB - 1); // Unite the sets.
       }
     } catch (err) {
       _iterHadError = true;
-      _iterErrorObj = err;
+      _iterErrorDetails = err;
     } finally {
       try {
-        if (!_iterComplete && _connIterator["return"] != null) {
-          _connIterator["return"]();
+        if (!_iterCompletionStatus && _dataIterator["return"] != null) {
+          _dataIterator["return"]();
         }
       } finally {
         if (_iterHadError) {
-          throw _iterErrorObj;
+          throw _iterErrorDetails;
         }
       }
     }
 
-    computedResults.reverse(); // Revert results to the original order of edges.
+    unhappinessScores.reverse(); // Reverse the results to get them in original bridge order.
 
-    // Calculate the final answer: total possible pairs minus the 'bad' connected pairs.
-    var finalOutcomes = computedResults.map(function (badPairs) {
-      return totalNodes * (totalNodes - 1) / 2 - badPairs;
+    // Calculate the final output values (total possible pairs - connected pairs).
+    var finalOutputValues = unhappinessScores.map(function (connectedPairs) {
+      return numCities * (numCities - 1) / 2 - connectedPairs;
     });
 
-    finalOutcomes.forEach(function (outputVal) {
-      return console.log(outputVal);
+    // Print each calculated value to the console.
+    finalOutputValues.forEach(function (outputValue) {
+      return console.log(outputValue);
     });
-  })(require("node:fs").readFileSync("/dev/stdin", "utf-8")); // Read input from standard input.
+  })(require("fs").readFileSync("/dev/stdin", "utf8"));
 }
 
-_executeProgram(); // Initiate the program.
+// Execute the primary logic function.
+_executePrimaryLogic();

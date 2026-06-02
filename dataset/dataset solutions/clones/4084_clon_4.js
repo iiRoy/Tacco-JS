@@ -1,54 +1,30 @@
-function travelEvaluator(sourceData) {
-    const rawSegments = sourceData.split('\n');
-    const specificSegments = rawSegments.slice(1);
+function processTravelLog(logData) {
+  const entryStrings = logData.split('\n').splice(1);
+  const destinationCoordinates = entryStrings.map(s => s.split(' ').map(Number));
 
-    const parsedWaypoints = specificSegments.reduce((accumulated, currentLine) => {
-        if (currentLine.trim() === '') return accumulated;
-        const numericParts = currentLine.split(' ').map(str => Number(str));
-        if (numericParts.length === 3) {
-            accumulated.push({
-                moment: numericParts[0],
-                coordX: numericParts[1],
-                coordY: numericParts[2]
-            });
-        }
-        return accumulated;
-    }, []);
+  const allPoints = [[0, 0, 0], ...destinationCoordinates];
 
-    const startingPoint = { moment: 0, coordX: 0, coordY: 0 };
+  const finalTravelState = allPoints.reduce((accumulator, currentDestination) => {
+    const [previousTime, previousX, previousY, overallFeasibility] = accumulator;
+    if (!overallFeasibility) {
+      return accumulator;
+    }
 
-    const determineFeasibility = (currentStepIndex, currentWaypoint, allWaypoints) => {
-        if (currentStepIndex >= allWaypoints.length) {
-            return true;
-        }
+    const [nextTime, nextX, nextY] = currentDestination;
 
-        const nextWaypoint = allWaypoints[currentStepIndex];
+    const timeElapsed = nextTime - previousTime;
+    const horizontalDistance = Math.abs(nextX - previousX);
+    const verticalDistance = Math.abs(nextY - previousY);
 
-        const elapsedSpan = nextWaypoint.moment - currentWaypoint.moment;
-        const deltaX = Math.abs(nextWaypoint.coordX - currentWaypoint.coordX);
-        const deltaY = Math.abs(nextWaypoint.coordY - currentWaypoint.coordY);
+    const requiredDistance = horizontalDistance + verticalDistance;
 
-        if (elapsedSpan < deltaX + deltaY) {
-            return false;
-        }
+    const stepFeasible = (timeElapsed >= requiredDistance) &&
+                         ((timeElapsed % 2) === (requiredDistance % 2));
 
-        if ((elapsedSpan % 2) === ((deltaX + deltaY) % 2)) {
-            return false;
-        }
+    return [nextTime, nextX, nextY, stepFeasible];
+  }, [0, 0, 0, true]);
 
-        return determineFeasibility(currentStepIndex + 1, nextWaypoint, allWaypoints);
-    };
-
-    const finalResult = determineFeasibility(0, startingPoint, parsedWaypoints);
-    outputDecision(finalResult ? 'Yes' : 'No');
+  console.log(finalTravelState[3] ? 'Yes' : 'No');
 }
 
-function outputDecision(decisionMessage) {
-    console.log(decisionMessage);
-}
-
-const inputProvider = require('node:fs').readFileSync;
-const inputSource = '/dev/stdin';
-const encodingType = 'utf8';
-
-travelEvaluator(inputProvider(inputSource, encodingType));
+processTravelLog(require('fs').readFileSync('/dev/stdin', 'utf8'));

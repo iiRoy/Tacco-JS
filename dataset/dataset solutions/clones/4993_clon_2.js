@@ -1,25 +1,27 @@
-'use strict' ;
+'use strict';
 
-const   textElements = require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" ) . split ( '' ) ;
+// This script reads characters from standard input and checks a specific condition.
 
-let   outcomeString = "Affirmative" ; // Initialize the default result as positive.
+const inputChars = require("fs").readFileSync("/dev/stdin", "utf8").split("");
+let resultString = "Yes"; // Initialize the outcome as "Yes"
 
-for   ( let   mainIndex = 0 ;  mainIndex < textElements . length ;  mainIndex ++ )
-{
-  let   charTally = 0 ; // Counter to track how many times the current character appears.
+// Iterate through each character in the input array
+for (let idx = 0; idx < inputChars.length; idx++) {
+  let charOccurrences = 0; // Counter for the current character's frequency
 
-  // Iterate through all characters to determine occurrences of the character at mainIndex.
-  textElements . forEach ( comparedChar => {
-    if   ( textElements [ mainIndex ]  ===  comparedChar )
-      charTally ++ ;
-  } ) ;
+  // Count the total occurrences of the character at the current index (inputChars[idx])
+  inputChars.forEach(currentChar => {
+    if (inputChars[idx] === currentChar) {
+      charOccurrences++; // Increment the counter if a match is found
+    }
+  });
 
-  // If the count for the current character is an odd number, the condition is not met.
-  if   ( charTally % 2 !== 0 )
-  {
-    outcomeString = "Negative" ; // Update the result to negative.
-    break ; // Exit the loop early as the condition is already violated.
+  // If the count of the current character is an odd number, the condition is not met
+  if (charOccurrences % 2 === 1) {
+    resultString = "No"; // Change the outcome to "No"
+    break; // Exit the loop immediately, no need to check further characters
   }
 }
 
-console . log ( outcomeString ) ;
+// Print the final determined result to the console
+console.log(resultString);

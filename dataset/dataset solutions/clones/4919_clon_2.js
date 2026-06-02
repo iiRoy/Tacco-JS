@@ -1,77 +1,64 @@
-function ProcessInputData(rawText) {
-  // This line preprocesses the raw input string.
-  // It removes leading/trailing whitespace and then splits it into an array of individual characters.
-  let inputChars = rawText
-    .trim()
-    .split("");
+function ProcessInput(rawData) {
+  // Process the raw input string: trim whitespace and split into an array of characters.
+  const charArray = rawData.trim().split("");
+  // Determine the total number of elements in the character array.
+  let arrayLength = charArray.length;
 
-  // 'charCount' stores the total number of characters obtained from the input.
-  let charCount = inputChars.length;
-
-  // The 'DetermineOutcome' function evaluates the result of a single round of interaction.
-  // 'playerChoice' represents the action taken by the player.
-  // 'opponentChoice' represents the action taken by the opposing entity.
-  function DetermineOutcome(playerChoice, opponentChoice) {
-    // If both participants choose the same action, the round is a draw.
-    if (playerChoice === opponentChoice) {
-      return 0; // A score of zero indicates no change in points.
+  // Define an internal utility function to compare two game choices.
+  // 'myChoice' represents the player's selection, 'opponentChoice' is the other player's.
+  function determineOutcome(myChoice, opponentChoice) {
+    // If both choices are identical, the round is a tie.
+    if (myChoice === opponentChoice) {
+      return 0;
     }
-
-    // This block defines a specific rule: if the player chooses 'g' and the opponent chooses 'p'.
-    if (playerChoice === "g" && opponentChoice === "p") {
-      return -1; // The player loses one point in this scenario.
+    // If player chooses 'g' (rock) and opponent chooses 'p' (paper), player loses.
+    if (myChoice === "g" && opponentChoice === "p") {
+      return -1;
     }
-
-    // This block defines another specific rule: if the player chooses 'p' and the opponent chooses 'g'.
-    if (playerChoice === "p" && opponentChoice === "g") {
-      return 1; // The player gains one point in this scenario.
+    // If player chooses 'p' (paper) and opponent chooses 'g' (rock), player wins.
+    if (myChoice === "p" && opponentChoice === "g") {
+      return 1;
     }
-  } // End of DetermineOutcome function.
+    // This function assumes only 'g' and 'p' are valid inputs for the game.
+  }
 
-  // 'scoreAccumulator' keeps track of the player's total score throughout the game.
-  let scoreAccumulator = 0;
-  // 'firstOptionWins' counts how many times the player chose the 'g' strategy.
-  let firstOptionWins = 0;
-  // 'secondOptionWins' counts how many times the player chose the 'p' strategy.
-  let secondOptionWins = 0;
+  // Initialize variables to track the cumulative score and counts of player's choices.
+  let scoreTotal = 0; // The running total of points.
+  let gChoiceCount = 0; // Counter for how many times 'g' was chosen by the player.
+  let pChoiceCount = 0; // Counter for how many times 'p' was chosen by the player.
 
-  // A loop to iterate through each character in the processed input array.
-  for (let currentIndex = 0; currentIndex < charCount; currentIndex++) {
-    // Special logic applied only to the very first character in the sequence.
-    if (currentIndex === 0) {
-      // For the initial move, the player always defaults to the 'g' choice.
-      scoreAccumulator += DetermineOutcome("g", inputChars[0]);
-      firstOptionWins++; // Increment the count for the 'g' strategy.
-    }
-    // Logic for all subsequent characters after the first one.
-    else {
-      // Condition 1: If the current opponent's action is 'g' AND the 'g' strategy has been
-      // utilized more frequently than the 'p' strategy by the player.
-      if (inputChars[currentIndex] === "g" && firstOptionWins > secondOptionWins) {
-        // In this specific case, the player chooses the 'p' strategy.
-        scoreAccumulator += DetermineOutcome("p", inputChars[currentIndex]);
-        secondOptionWins++; // Increment the count for the 'p' strategy.
+  // Iterate through each character in the input array to simulate game rounds.
+  for (let charIndex = 0; charIndex < arrayLength; charIndex++) {
+    // Handle the very first round differently.
+    if (charIndex === 0) {
+      // In the first round, the player always chooses 'g'.
+      scoreTotal += determineOutcome("g", charArray[0]);
+      gChoiceCount++; // Increment the 'g' choice counter.
+    } else {
+      // For subsequent rounds, apply a conditional strategy.
+      // If the current opponent's choice is 'g' AND the player has chosen 'g' more times than 'p'.
+      if (charArray[charIndex] === "g" && gChoiceCount > pChoiceCount) {
+        // Player chooses 'p' in response.
+        scoreTotal += determineOutcome("p", charArray[charIndex]);
+        pChoiceCount++; // Increment the 'p' choice counter.
       }
-      // Condition 2: If the current opponent's action is 'p' AND the 'g' strategy has been
-      // utilized more frequently than the 'p' strategy by the player.
-      else if (inputChars[currentIndex] === "p" && firstOptionWins > secondOptionWins) {
-        // Again, in this case, the player chooses the 'p' strategy.
-        scoreAccumulator += DetermineOutcome("p", inputChars[currentIndex]);
-        secondOptionWins++; // Increment the count for the 'p' strategy.
+      // If the current opponent's choice is 'p' AND the player has chosen 'g' more times than 'p'.
+      else if (charArray[charIndex] === "p" && gChoiceCount > pChoiceCount) {
+        // Player also chooses 'p' in response.
+        scoreTotal += determineOutcome("p", charArray[charIndex]);
+        pChoiceCount++; // Increment the 'p' choice counter.
       }
-      // Default case: If none of the above specific conditions are met.
+      // In all other scenarios (e.g., gChoiceCount <= pChoiceCount, or previous conditions not met).
       else {
-        // The player defaults to choosing the 'g' strategy.
-        scoreAccumulator += DetermineOutcome("g", inputChars[currentIndex]);
-        firstOptionWins++; // Increment the count for the 'g' strategy.
+        // Player chooses 'g'.
+        scoreTotal += determineOutcome("g", charArray[charIndex]);
+        gChoiceCount++; // Increment the 'g' choice counter.
       }
     }
-  } // End of iteration loop.
+  }
+  // Output the final calculated score to the console.
+  console.log(scoreTotal);
+}
 
-  // After processing all characters, the final accumulated score is printed to the console.
-  console.log(scoreAccumulator);
-} // End of ProcessInputData function.
-
-// This line reads the input from standard input, decodes it as UTF-8,
-// and then passes it to our main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from the standard input stream and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

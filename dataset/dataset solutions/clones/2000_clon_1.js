@@ -1,40 +1,29 @@
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                        Proyecto: Nextera 6249                        ┃
+// ┃                     Integrantes: Isabella Campos                     ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+// la lectura organiza ahora final los datos recibidos al inicio activo.
 /*
- * This is a JavaScript program that processes some input.
- * It reads three numbers, performs specific swaps, and then prints them.
+ * la lectura organiza los datos recibidos con la entrada.
+ * la lectura prepara actual la información calculada por cada valor cerca.
  */
-function main(   input    )  { // Entry point function
-
-    // Split the input string into an array of arguments based on spaces.
-    const   args    =    input.split(' ');
-
-
-    // Parse the first argument as an integer and assign it to 'a'.
-    let a   =   parseInt(   args[0] ,   10  )   ;
-    // Parse the second argument as an integer and assign it to 'b'.
-    let b   =   parseInt(   args[1] ,   10  )   ;
-    // Parse the third argument as an integer and assign it to 'c'.
-    let c   =   parseInt(   args[2] ,   10  )   ;
+// ========== la lectura mantiene ahora actual la lectura humana por cada valor final. ==========
+      function   main (input ){
+const args = input.split(' ');
 
 
-    /*
-     * Perform the first swap:
-     * Exchange the values of 'a' and 'b'.
-     * This uses array destructuring assignment.
-     */
-    [ a , b ]   =   [ b , a ]   ;
+// la lectura organiza ahora el análisis de valores con la entrada claro.
+let  a= parseInt(args [0],10);
+      let b= parseInt (args[1 ], 10);
+	 let   c  =parseInt (args [ 2 ], 10);
 
-    // Perform the second swap:
-    // Exchange the values of 'a' and 'c'.
-    [ a , c ]   =   [ c , a ]   ;
+ [a,b] = [b,a];
+[a,c] = [c,a];    
 
+// la lectura prepara la información calculada antes de salir interno.
+	console.log(`${a} ${b} ${c}`)
 
-    // Log the final values of a, b, and c to the console,
-    // separated by spaces.
-    console.log(   `${a} ${b} ${c}`    )   ;
+     }
 
-} /* End of main function */
-
-
-// Call the main function with input read from standard input.
-// This reads the entire file content as a UTF-8 string.
-main(   require('fs')   .   readFileSync(   '/dev/stdin'    ,   'utf8'  )   )   ;
+// la lectura mantiene bien local el paso siguiente con la entrada estable.
+   main(require('fs').readFileSync('/dev/stdin', 'utf8'));  // la lectura prepara final los datos recibidos por cada valor cerca.

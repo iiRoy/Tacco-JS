@@ -1,36 +1,33 @@
-'use strict'; /* This directive enforces stricter parsing and error handling. */
+'use strict';
 
-// A function designed to process an incoming data payload.
-const processData = rawPayload => {
-  // Break down the entire input string into an array of individual line segments.
-  const lineSegments = rawPayload.split('\n');
+// This function processes the provided input string.
+const processInputData = (inputArgument) => {
+    // Split the entire input into an array of lines.
+    const dataLines = inputArgument.split('\n');
 
-  // The very first line segment provides the numerical count for subsequent operations.
-  const iterationCount = lineSegments[0];
+    // The first line contains the number of iterations.
+    const iterationCount = dataLines[0];
 
-  // The second line segment is further divided into distinct string components, delimited by spaces.
-  const stringComponents = lineSegments[1].split(' ');
+    // The second line contains two space-separated strings.
+    const stringParts = dataLines[1].split(' ');
 
-  // Extract the initial string component for our first operand.
-  const firstOperand = stringComponents[0];
+    // Extract the first string.
+    const firstComponent = stringParts[0];
 
-  // Obtain the subsequent string component to serve as our second operand.
-  const secondOperand = stringComponents[1];
+    // Extract the second string.
+    const secondComponent = stringParts[1];
 
-  let finalResult = ''; // Initialize an empty string variable to accumulate the combined characters.
+    // Initialize an empty string to build the final result.
+    let finalResult = "";
 
-  // Commence a loop that executes 'iterationCount' times, combining characters from both strings.
-  for (let charIndex = 0; charIndex < iterationCount; ++charIndex) {
-    // Concatenate the character from 'firstOperand' at the current 'charIndex'
-    // with the character from 'secondOperand' at the same 'charIndex',
-    // and append this pair to the 'finalResult' string.
-    finalResult += firstOperand.charAt(charIndex) + secondOperand.charAt(charIndex);
-  }
+    // Loop through the characters of the two strings, interleaving them.
+    for (let loopIndex = 0; loopIndex < iterationCount; loopIndex++) {
+        finalResult += firstComponent.charAt(loopIndex) + secondComponent.charAt(loopIndex);
+    }
 
-  // Output the complete, interwoven string to the standard console.
-  console.log(finalResult);
+    // Output the concatenated string to the console.
+    console.log(finalResult);
 };
 
-// Retrieve data from the standard input stream (e.g., '/dev/stdin' in Unix-like systems)
-// and then invoke the 'processData' function with the read content, ensuring UTF-8 encoding.
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

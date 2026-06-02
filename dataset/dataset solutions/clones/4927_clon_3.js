@@ -1,155 +1,91 @@
-const DataTransformationMode = Object.freeze({
-    PARSE_INT_SINGLE: 1,
-    SPLIT_BY_SPACE_STRINGS: 2,
-    SPLIT_BY_SPACE_INTEGERS: 4,
-    SPLIT_INTO_CHARS: 6,
-    SPLIT_INTO_CHAR_INTEGERS: 7,
-    ARRAY_JOIN_WITH_SPACE: 8,
-    ARRAY_JOIN_WITH_NEWLINE: 9,
-    ARRAY_JOIN_CONCATENATE: 0
-});
+var inputHandler = initializeInputHandler();
 
-let programInputManager = initializeInputHandler();
+processInput();
 
-executePrimaryLogic();
+function readInt(){return convertInput(getNextLine(), 1);}
+function readStringArray(){return convertInput(getNextLine(), 2);}
+function readIntArray(){return convertInput(getNextLine(), 4);}
+function readCharArray(){return convertInput(getNextLine(), 6);}
 
-function getSingleIntegerLine() {
-    return applyDataTransformation(retrieveNextInputLine(), DataTransformationMode.PARSE_INT_SINGLE);
-}
+function getNextLine(){return inputHandler.next();}
+function hasMoreLines(){return inputHandler.hasNext();}
 
-function getSpaceSeparatedStrings() {
-    return applyDataTransformation(retrieveNextInputLine(), DataTransformationMode.SPLIT_BY_SPACE_STRINGS);
-}
+function getInputContent(){return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");}
 
-function getSpaceSeparatedIntegers() {
-    return applyDataTransformation(retrieveNextInputLine(), DataTransformationMode.SPLIT_BY_SPACE_INTEGERS);
-}
+function initializeInputHandler(){
+  const rawInputLines = getInputContent();
+  const OUT_OF_BOUNDS_ERROR_MSG = "ArrayIndexOutOfBoundsException これ以上ないよ";
 
-function getIndividualCharacters() {
-    return applyDataTransformation(retrieveNextInputLine(), DataTransformationMode.SPLIT_INTO_CHARS);
-}
-
-function retrieveNextInputLine() {
-    return programInputManager.fetchNextSegment();
-}
-
-function hasMoreInputLines() {
-    return programInputManager.checkAvailability();
-}
-
-function readStandardInputContent() {
-    const fs = require('node:fs');
-    const rawContent = fs.readFileSync(0, 'utf8');
-
-    const lines = rawContent.trimEnd().split('\n');
-
-    if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) {
-        logError("Warning: Standard input stream was found to be empty.");
+  const handlerInstance = {
+    "list" : rawInputLines,
+    "index" : 0,
+    "max" : rawInputLines.length,
+    "hasNext" : function(){
+      return (this.index < this.max);
+    },
+    "next" : function(){
+      if(!this.hasNext()){
+        throw OUT_OF_BOUNDS_ERROR_MSG;
+      }
+      const currentLine = this.list[this.index];
+      this.index++;
+      return currentLine;
     }
-    return lines;
+  };
+  return handlerInstance;
 }
 
-function initializeInputHandler() {
-    const rawInputLines = readStandardInputContent();
-    const inputHandler = {
-        inputDataLines: rawInputLines,
-        currentLineIndex: 0,
-        totalLinesCount: rawInputLines.length,
+function printResult(value){console.log(value);}
+function printError(value){console.error(value);}
 
-        checkAvailability: function() {
-            return this.currentLineIndex < this.totalLinesCount;
-        },
+const parseInteger = (val) => parseInt(val);
+const splitBySpace = (val) => val.split(" ");
+const splitAndMapToNumber = (val) => val.split(" ").map(Number);
+const splitByChar = (val) => val.split("");
+const splitCharAndMapToNumber = (val) => val.split("").map(Number);
+const joinWithSpace = (arr) => arr.join(" ");
+const joinWithNewline = (arr) => arr.join("\n");
+const joinWithoutSeparator = (arr) => arr.join("");
 
-        fetchNextSegment: function() {
-            if (!this.checkAvailability()) {
-                throw new Error("InputBufferExhausted: No more input lines are available for reading.");
-            }
-            const currentLineContent = this.inputDataLines[this.currentLineIndex];
-            this.currentLineIndex += 1;
-
-            if (currentLineContent === undefined) {
-                logError(`Undefined content retrieved for line index ${this.currentLineIndex - 1}. Returning empty string.`);
-                return "";
-            }
-            return currentLineContent;
-        }
-    };
-    return inputHandler;
-}
-
-function displayOutput(content) {
-    process.stdout.write(String(content) + '\n');
-}
-
-function logError(errorMessage) {
-    process.stderr.write(`[APP_ERROR] ${String(errorMessage)}\n`);
-}
-
-function applyDataTransformation(inputValue, transformationMode) {
-    try {
-        const stringInput = String(inputValue);
-
-        switch (transformationMode) {
-            case DataTransformationMode.PARSE_INT_SINGLE:
-                return Number.parseInt(stringInput, 10);
-
-            case DataTransformationMode.SPLIT_BY_SPACE_STRINGS:
-                return stringInput.split(' ').filter(s => s !== '');
-
-            case DataTransformationMode.SPLIT_BY_SPACE_INTEGERS:
-                return stringInput.split(' ').filter(s => s !== '').map(s => Number.parseInt(s, 10));
-
-            case DataTransformationMode.SPLIT_INTO_CHARS:
-                return stringInput.split('');
-
-            case DataTransformationMode.SPLIT_INTO_CHAR_INTEGERS:
-                return stringInput.split('').filter(s => s !== '').map(s => Number.parseInt(s, 10));
-
-            case DataTransformationMode.ARRAY_JOIN_WITH_SPACE:
-                return Array.isArray(inputValue) ? inputValue.join(' ') : stringInput;
-
-            case DataTransformationMode.ARRAY_JOIN_WITH_NEWLINE:
-                return Array.isArray(inputValue) ? inputValue.join('\n') : stringInput;
-
-            case DataTransformationMode.ARRAY_JOIN_CONCATENATE:
-                return Array.isArray(inputValue) ? inputValue.join('') : stringInput;
-
-            default:
-                logError(`Unrecognized data transformation mode identifier: ${transformationMode}. Original value returned.`);
-                return inputValue;
-        }
-    } catch (transformationError) {
-        logError(`Failed to transform value "${inputValue}" using mode ${transformationMode}. Details: ${transformationError.message}`);
-        return inputValue;
+function convertInput(inputValue, conversionType){
+  try {
+    let processedValue;
+    switch(conversionType){
+      case 1: processedValue = parseInteger(inputValue); break;
+      case 2: processedValue = splitBySpace(inputValue); break;
+      case 4: processedValue = splitAndMapToNumber(inputValue); break;
+      case 6: processedValue = splitByChar(inputValue); break;
+      case 7: processedValue = splitCharAndMapToNumber(inputValue); break;
+      case 8: processedValue = joinWithSpace(inputValue); break;
+      case 9: processedValue = joinWithNewline(inputValue); break;
+      case 0: processedValue = joinWithoutSeparator(inputValue); break;
+      default: processedValue = inputValue; break;
     }
+    return processedValue;
+  } catch(e) {
+    return inputValue;
+  }
 }
 
-function executePrimaryLogic() {
-    const inputCharacterSequence = retrieveNextInputLine();
+function processInput(){
+  const inputString = getNextLine();
+  let score = 0;
+  const stringLength = inputString.length;
 
-    if (typeof inputCharacterSequence !== 'string' || inputCharacterSequence.length === 0) {
-        logError("Primary logic received invalid or empty input sequence. Processing aborted.");
-        displayOutput(0);
-        return;
+  const shouldEvaluateForG = (idx, len) => (idx % 2 === 0 && idx !== len - 1);
+
+  for(let charIndex = 0; charIndex < stringLength; charIndex++){
+    const currentChar = inputString[charIndex];
+
+    if(shouldEvaluateForG(charIndex, stringLength)){
+      if(currentChar === "g"){
+        score++;
+      }
+    } else {
+      if(currentChar === "p"){
+        score--;
+      }
     }
-
-    let currentCalculatedScore = 0;
-
-    for (let charPosition = 0; charPosition < inputCharacterSequence.length; charPosition++) {
-        const isPositionEven = (charPosition % 2 === 0);
-        const isNotTheLastCharacter = (charPosition !== inputCharacterSequence.length - 1);
-        const charAtCurrentPosition = inputCharacterSequence[charPosition];
-
-        if (isPositionEven && isNotTheLastCharacter) {
-            if (charAtCurrentPosition === 'g') {
-                currentCalculatedScore++;
-            }
-        } else {
-            if (charAtCurrentPosition === 'p') {
-                currentCalculatedScore--;
-            }
-        }
-    }
-
-    displayOutput(currentCalculatedScore);
+  }
+  printResult(score);
 }

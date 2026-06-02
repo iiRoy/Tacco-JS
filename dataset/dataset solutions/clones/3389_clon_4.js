@@ -1,47 +1,38 @@
 'use strict'
 
-const performTransformationPass = (initialArrangement) => {
-  let currentIdx = 0;
-  let newArrangement = [];
-  let currentPassSwaps = 0;
+const processSequence = (inputString) => {
+  let currentSequence = inputString.split('\n')[0];
+  let totalOperations = 0;
+  let hasChanges = true;
 
-  while (currentIdx < initialArrangement.length) {
-    if (
-      currentIdx + 1 < initialArrangement.length &&
-      initialArrangement[currentIdx] === 'B' &&
-      initialArrangement[currentIdx + 1] === 'W'
-    ) {
-      newArrangement.push('W');
-      newArrangement.push('B');
-      currentPassSwaps++;
-      currentIdx += 2;
-    } else {
-      newArrangement.push(initialArrangement[currentIdx]);
-      currentIdx++;
+  while (hasChanges) {
+    hasChanges = false;
+    let nextSequenceChars = [];
+    let currentIdx = 0;
+    let operationsInPass = 0;
+
+    while (currentIdx < currentSequence.length) {
+      if (currentIdx + 1 < currentSequence.length &&
+          currentSequence[currentIdx] === 'B' &&
+          currentSequence[currentIdx + 1] === 'W') {
+        
+        nextSequenceChars.push('W');
+        nextSequenceChars.push('B');
+        operationsInPass++;
+        currentIdx += 2; // Consume both 'B' and 'W'
+        hasChanges = true;
+      } else {
+        nextSequenceChars.push(currentSequence[currentIdx]);
+        currentIdx++;
+      }
+    }
+    
+    if (hasChanges) {
+      totalOperations += operationsInPass;
+      currentSequence = nextSequenceChars.join('');
     }
   }
-  return {
-    nextArrangement: newArrangement.join(''),
-    swapsInPass: currentPassSwaps,
-  };
+  console.log(totalOperations);
 };
 
-const calculateAccumulatedSwaps = (currentArrangement, totalSwapsSoFar) => {
-  const passResult = performTransformationPass(currentArrangement);
-  if (passResult.swapsInPass === 0) {
-    return totalSwapsSoFar;
-  } else {
-    return calculateAccumulatedSwaps(
-      passResult.nextArrangement,
-      totalSwapsSoFar + passResult.swapsInPass
-    );
-  }
-};
-
-const processInputData = (incomingData) => {
-  const firstLine = incomingData.split('\n')[0];
-  const finalOutcome = calculateAccumulatedSwaps(firstLine, 0);
-  console.log(finalOutcome);
-};
-
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

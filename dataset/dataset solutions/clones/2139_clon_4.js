@@ -1,39 +1,25 @@
-'use strict'
+function ProcessInputData(rawData) {
+  const processedLines = rawData.trim().split('\n');
+  const initialCount = Number(processedLines[0]);
+  const numericElements = processedLines[1].split(' ').map(Number);
 
-const computeOptimalValue = (rawData) => {
-  const lines = rawData.trim().split('\n');
-  const countOfElements = Number(lines[0]);
-  const sourceNumbers = lines[1].split(' ').map(Number);
+  const searchLimit = 100;
 
-  const searchUpperBoundary = 100;
+  const existingValues = new Set(numericElements);
 
-  // Create a set of the input numbers for fast presence checking
-  const existingValues = new Set(sourceNumbers);
+  const optimalCost = Array.from({ length: searchLimit }, (_, idx) => idx + 1)
+    .reduce((currentMinimum, targetPoint) => {
+      if (!existingValues.has(targetPoint)) {
+        const calculatedSum = numericElements.reduce((accumulator, elementValue) => {
+          const difference = elementValue - targetPoint;
+          return accumulator + difference * difference;
+        }, 0);
+        return Math.min(currentMinimum, calculatedSum);
+      }
+      return currentMinimum;
+    }, Infinity);
 
-  // Generate all integers from 1 to searchUpperBoundary
-  // Then filter to keep only those integers NOT present in the input
-  const candidatePoints = Array.from({ length: searchUpperBoundary }, (_, index) => index + 1)
-                               .filter(pointValue => !existingValues.has(pointValue));
+  console.log(optimalCost);
+}
 
-  // For each valid candidate point, calculate the sum of squared differences
-  const computedCosts = candidatePoints.map(pointForAssessment => {
-    return sourceNumbers.reduce((accumulator, individualFigure) => {
-      const difference = individualFigure - pointForAssessment;
-      return accumulator + (difference * difference);
-    }, 0);
-  });
-
-  // Find the minimum cost among all computed costs.
-  // If computedCosts is empty (e.g., all numbers from 1 to 100 are in sourceNumbers),
-  // Math.min() will correctly return Infinity.
-  const finalScore = Math.min(...computedCosts);
-
-  console.log(finalScore);
-};
-
-const executeProgram = () => {
-  const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
-  computeOptimalValue(fileData);
-};
-
-executeProgram();
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

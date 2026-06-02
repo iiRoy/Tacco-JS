@@ -1,50 +1,72 @@
-const acquireInputData = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+async function mainExecution() {
+    let accumulatedInput = '';
 
-let capturedContent = '';
+    const inputReader = new Promise((resolve, reject) => {
+        process.stdin.setEncoding('utf8');
 
-acquireInputData.on('line', (lineFragment) => {
-    capturedContent += lineFragment + '\n';
-});
+        process.stdin.on('data', (chunk) => {
+            accumulatedInput += chunk;
+        });
 
-acquireInputData.on('close', () => {
-    const computedAnswer = processInputAndDerive(capturedContent.trim());
-    process.stdout.write(computedAnswer + '\n');
-});
+        process.stdin.on('end', () => {
+            resolve(accumulatedInput);
+        });
 
-function processInputAndDerive(completeTextStream) {
-    const separatedLines = completeTextStream.split('\n');
-    if (separatedLines.length !== 2) {
-        throw new Error("Data input mismatch: Expected two distinct lines for processing.");
+        process.stdin.on('error', (err) => {
+            reject(err);
+        });
+    });
+
+    try {
+        const rawInput = await inputReader;
+        const processedOutput = transformAndCalculate(rawInput);
+        process.stdout.write(processedOutput);
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
     }
-
-    const quantitySpecifier = parseInt(separatedLines[0], 10);
-    if (isNaN(quantitySpecifier)) {
-        throw new Error("Parsing failure: First line value is not a valid numerical representation.");
-    }
-
-    const numericalDataString = separatedLines[1];
-    const parsedNumericalElements = numericalDataString.split(' ').map(Number);
-
-    if (parsedNumericalElements.some(Number.isNaN)) {
-        throw new Error("Parsing failure: Second line contains non-numeric entries.");
-    }
-
-    const finalCalculationResult = calculateDivisibleByTwoCount(parsedNumericalElements);
-    return String(finalCalculationResult);
 }
 
-const calculateDivisibleByTwoCount = (collectionOfNumbers) => {
-    return collectionOfNumbers.reduce((runningTotal, currentElement) => {
-        let workingValue = currentElement;
-        let individualDivisionCounter = 0;
-        while (workingValue % 2 === 0 && workingValue !== 0) {
-            individualDivisionCounter++;
-            workingValue /= 2;
+function transformAndCalculate(fullInputString) {
+    const cleanedInput = fullInputString.trim();
+    const inputLines = cleanedInput.split('\n');
+
+    if (inputLines.length !== 2) {
+        throw new Error("Input format error: Expected exactly two lines.");
+    }
+
+    const firstLineValue = parseInt(inputLines[0], 10);
+    if (isNaN(firstLineValue)) {
+        throw new Error("Input format error: First line is not a valid integer.");
+    }
+
+    const numberStrings = inputLines[1].split(' ');
+    const parsedNumbers = [];
+    for (let i = 0; i < numberStrings.length; i++) {
+        const currentNumStr = numberStrings[i];
+        const num = parseInt(currentNumStr, 10);
+        if (isNaN(num)) {
+            throw new Error(`Input format error: "${currentNumStr}" in second line is not a valid integer.`);
         }
-        return runningTotal + individualDivisionCounter;
-    }, 0);
-};
+        parsedNumbers.push(num);
+    }
+
+    const finalResult = countDivisionsByTwo(parsedNumbers);
+    return finalResult.toString() + '\n';
+}
+
+function countDivisionsByTwo(integerArray) {
+    let totalDivisionsCount = 0;
+    for (let i = 0; i < integerArray.length; i++) {
+        let currentVal = integerArray[i];
+        let divisionsForCurrentNumber = 0;
+        while ((currentVal & 1) === 0) {
+            divisionsForCurrentNumber++;
+            currentVal = Math.floor(currentVal / 2);
+        }
+        totalDivisionsCount += divisionsForCurrentNumber;
+    }
+    return totalDivisionsCount;
+}
+
+mainExecution();

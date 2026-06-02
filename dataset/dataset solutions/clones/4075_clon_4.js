@@ -1,43 +1,39 @@
-const isFeasibleStep = (durationPeriod, xDisplacement, yDisplacement) => {
-    const totalDisplacement = xDisplacement + yDisplacement;
-    return (durationPeriod >= totalDisplacement) && ((durationPeriod & 1) === (totalDisplacement & 1));
+const validateMove = (elapsedTime, deltaX, deltaY) => {
+  const totalDistance = deltaX + deltaY;
+  return elapsedTime >= totalDistance && (elapsedTime - totalDistance) % 2 === 0;
 };
 
-const validatePathSegments = (journeyPoints) => {
-    const fullTrajectory = [[0, 0, 0], ...journeyPoints];
+const assessJourney = (pathSegments) => {
+  const initialPosition = [0, 0, 0]; // [time, x, y]
 
-    return fullTrajectory.every((currentPointData, pointIndex) => {
-        if (pointIndex === 0) {
-            return true;
-        }
+  const finalState = pathSegments.reduce((currentCoord, nextCoord) => {
+    if (currentCoord === null) {
+      return null; // Propagate failure
+    }
 
-        const previousPointData = fullTrajectory[pointIndex - 1];
+    const timeElapsed = nextCoord[0] - currentCoord[0];
+    const xDiff = Math.abs(currentCoord[1] - nextCoord[1]);
+    const yDiff = Math.abs(currentCoord[2] - nextCoord[2]);
 
-        const timeDelta = currentPointData[0] - previousPointData[0];
-        const deltaX = Math.abs(currentPointData[1] - previousPointData[1]);
-        const deltaY = Math.abs(currentPointData[2] - previousPointData[2]);
+    if (!validateMove(timeElapsed, xDiff, yDiff)) {
+      return null; // Mark as failed
+    }
 
-        return isFeasibleStep(timeDelta, deltaX, deltaY);
-    });
+    return nextCoord; // Update current position to the next point
+  }, initialPosition);
+
+  return finalState !== null;
 };
 
-function executeJourneyValidation(rawData) {
-    const allLines = rawData.trim().split(/\r?\n/);
-    const destinationEntries = allLines.slice(1).map(entryLine => {
-        const [timeVal, xVal, yVal] = entryLine.split(' ').map(Number);
-        return {
-            timestamp: timeVal,
-            positionX: xVal,
-            positionY: yVal
-        };
-    });
+const processInputAndDisplay = (rawInput) => {
+  const journeyPoints = rawInput
+    .split('\n')
+    .filter(Boolean)
+    .slice(1)
+    .map(segmentText => segmentText.split(' ').map(Number));
 
-    const structuredPathData = destinationEntries.map(entry => [entry.timestamp, entry.positionX, entry.positionY]);
+  const outcome = assessJourney(journeyPoints);
+  console.log(outcome ? 'Yes' : 'No');
+};
 
-    const finalOutcome = validatePathSegments(structuredPathData);
-
-    const formatResult = (status) => status ? 'Yes' : 'No';
-    console.log(formatResult(finalOutcome));
-}
-
-executeJourneyValidation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

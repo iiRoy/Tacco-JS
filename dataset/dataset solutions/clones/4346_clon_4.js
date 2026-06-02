@@ -1,24 +1,26 @@
-const transformAndCompute = (sourceContent) => {
-    const contentParts = sourceContent.trim().split('\n');
+"use strict";
 
-    const amountOfItems = Number(contentParts[0]);
-    const referencePoint = Number(contentParts[1]);
-    const itemValues = contentParts[2].split(' ').map(Number);
+function processData(rawData) {
+  const lineSegments = rawData.split('\n');
 
-    const interimSum = itemValues.reduce((accumulator, currentItem) => {
-        const pathA = currentItem;
-        const pathB = Math.abs(currentItem - referencePoint);
-        return accumulator + Math.min(pathA, pathB);
-    }, 0);
+  const firstLineParts = lineSegments[0].split(' ');
+  const itemCount = Number(firstLineParts[0]);
 
-    const finalProduct = interimSum * 2;
-    return finalProduct;
-};
+  const secondLineParts = lineSegments[1].split(' ');
+  const thresholdValue = Number(secondLineParts[0]);
 
-const initiateProcessing = () => {
-    const rawDataString = require("node:fs").readFileSync("/dev/stdin", "utf8");
-    const outcome = transformAndCompute(rawDataString);
-    console.log(outcome);
-};
+  const spherePositions = lineSegments[2].split(' ').map(Number);
 
-initiateProcessing();
+  const determineOptimalPath = (currentPosition, limit) =>
+    Math.min(currentPosition, Math.abs(currentPosition - limit));
+
+  const totalDistance = spherePositions.reduce((accumulatedDistance, currentPosition) => {
+    return accumulatedDistance + determineOptimalPath(currentPosition, thresholdValue);
+  }, 0);
+
+  const finalResult = totalDistance * 2;
+
+  console.log(finalResult);
+}
+
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

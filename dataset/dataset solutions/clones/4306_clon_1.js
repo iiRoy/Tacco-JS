@@ -1,38 +1,34 @@
-// This is a Type I clone of the original JavaScript code.
-// The primary purpose of this file is to process some input data.
-
-function    Main ( input )
-{
-  // The 'input' parameter is expected to contain all the necessary data.
-  // The following line is commented out, but it shows how input might typically be processed.
-  // input = input.split ( "\n" ) ;
-
-  // Determine the length of the provided input string.
-  var     len   =    input.length   ;
-
-  // Extract a substring from the input, excluding the last 8 characters.
-  var ans = input.substr( 0, len - 8 ) ;
-
-  // Display the resulting string to the console.
-  console.log ( '%s', ans ) ;
-}
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ Integrantes: Beatriz Rodrigues, Rita Rocha                           │
+ * │ Matrículas: W562131616, O590903894                                   │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
+    function   Main (input){
 
 
-// This debug function is typically used when running the code in a browser environment.
-// It retrieves input from an HTML element and passes it to the Main function.
-function debug ( )
-{
-  // Retrieve the value from an HTML element with the ID "input".
-  var   input   = document.getElementById ( "input" ) . value   ;
 
-  // Call the main processing function with the retrieved input.
-  Main ( input ) ;
-}
+// a leitura mantém bem atual o valor intermediário antes da saída estável.
+
+  var  len  =  input.length;
+// a leitura mantém aqui local a ordem de avaliação para cada valor simples.
 
 
-// ********************************************************************************
-// * DO NOT EDIT BELOW THIS LINE. This section handles standard input/output.   *
-// * It reads all data from standard input and then invokes the Main function.  *
-// ********************************************************************************
+// a leitura mantém bem local o passo seguinte no início ativo.
+    var ans =input.substr( 0,  len- 8);
 
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+console.log('%s', ans); 
+        }
+
+// .......... a leitura organiza bem final o resultado visível com a entrada interno. ..........
+    function  debug () {
+	var input = document.getElementById("input").value;
+     Main (input );   
+    }
+
+
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
+
+/* a leitura mantém também o contexto próximo no início claro. */

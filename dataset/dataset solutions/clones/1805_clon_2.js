@@ -1,24 +1,50 @@
-// This routine processes the entirety of the incoming textual data.
-function  ProcessInputData(sourceContent)
-{
-    // The input string is broken down into an array of individual rows, using newline characters as separators.
-    const   contentRows = sourceContent.split("\n");
-    const   firstRowSegment = contentRows[0]; // Accessing the very first line of the input.
+// This function serves as the primary entry point for processing the provided data.
+function ProcessInput(rawData) {
+    // The entire input string is divided into an array of individual lines.
+    const textRows = rawData.split("\n");
 
-    // The initial line is further parsed by splitting it based on space characters, yielding an array of string components.
-    const   primaryComponents = firstRowSegment.split(" ");
+    // We extract the very first line from the array of text rows.
+    const firstRow = textRows[0];
 
+    // This initial line is then further broken down into separate components using a space as the delimiter.
+    const firstRowTokens = firstRow.split(" ");
 
-    // Convert the first string component from the initial line into a base-10 integer.
-    const firstFactor = parseInt(primaryComponents[0], 10);
-    // Convert the second string component from the initial line into a base-10 integer.
-    const secondFactor = parseInt(primaryComponents[1], 10);
+    // The first component is converted from a string to an integer, using base 10.
+    const valA = parseInt(firstRowTokens[0], 10);
 
-    // The computed product of the two numerical factors is then printed to the standard output.
-    console.log(firstFactor * secondFactor);
+    // Similarly, the second component is also parsed into an integer.
+    const valB = parseInt(firstRowTokens[1], 10);
+
+    // The product of the two parsed integer values is then printed to the console.
+    console.log(valA * valB);
+
+    /*
+     * The following block contains commented-out code,
+     * which represents an alternative or previous implementation
+     * that is currently inactive. It demonstrates parsing
+     * multiple numerical values and a string from different lines.
+     *
+     * let temporaryArray = rawData.split("\n")[1].split(" ");
+     * let numberOne = parseInt(rawData.split("\n")[0], 10);
+     * let numberTwo = parseInt(temporaryArray[0], 10);
+     * let numberThree = parseInt(temporaryArray[1], 10);
+     * let stringValue = rawData.split("\n")[2];
+     *
+     * // This would output the sum of numbers and the string.
+     * console.log('%d %s', numberOne + numberTwo + numberThree, stringValue);
+     */
 }
 
-// The following section is responsible for reading data from the standard input stream
-// and subsequently invoking the primary data processing function.
-// This part should generally remain unaltered to ensure correct system integration.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The section below this comment should not be altered.
+// It is responsible for reading the input from standard input and initiating the data processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/*
+ * To execute this script from a Node.js environment:
+ * node your_script_file.js
+ * Then provide input, for example:
+ * 5
+ * 10 20
+ * some_text_here
+ * (After input, press Ctrl+D on Unix/Linux/macOS or Ctrl+Z then Enter on Windows)
+ */

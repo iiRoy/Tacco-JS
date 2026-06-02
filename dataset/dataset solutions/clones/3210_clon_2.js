@@ -1,56 +1,53 @@
-"use strict"; /* Enable strict mode for cleaner code */
+"use strict";
 
 /**
- * Orchestrates the processing of input data to calculate a minimum cost.
- * @param {string} rawData - The raw string input, typically from stdin.
+ * Processes raw input data to compute a specific minimum cost using dynamic programming.
+ * @param {string} rawData - The complete input string received from standard input.
  */
 function processInput(rawData) {
-    // Break down the entire input string into an array of individual lines.
-    const linesOfText = rawData.split("\n");
+  // Split the entire input string into an array of individual lines.
+  const lines = rawData.split("\n");
+  // The first line contains the total number of elements, parsed as an integer.
+  const count = Number(lines[0]);
 
-    // The very first line indicates the total count of subsequent data items.
-    const totalElements = Number(linesOfText[0]);
+  // Initialize an array to store the numeric values from the input.
+  const numbersArray = [];
+  // Iterate from the second line of input up to the 'count' to populate the numbers array.
+  for (let idx = 0; idx < count; idx++) {
+    numbersArray.push(Number(lines[idx + 1]));
+  }
 
-    // Initialize an array to store the numeric sequence for processing.
-    const numericSequence = [];
-    // Iterate through the input lines, starting from the second line, to populate the sequence.
-    for (let currentLineIndex = 0; currentLineIndex < totalElements; currentLineIndex++) {
-        numericSequence.push( Number(linesOfText[currentLineIndex + 1]));
-    }
+  // Declare and initialize a 2D array for dynamic programming.
+  // It will have (count + 1) rows and 5 columns.
+  const dynamicProgrammingTable = Array(count + 1).fill().map(() => Array(5).fill());
+  // Set the base case for the DP table: the first row (index 0) is all zeros.
+  dynamicProgrammingTable[0] = [0, 0, 0, 0, 0];
 
-    // Initialize a 2D dynamic programming table.
-    // Dimensions: (totalElements + 1) rows, 5 columns.
-    // Each cell will initially be undefined.
-    const dynamicCostMatrix = Array(totalElements + 1).fill().map(() => Array(5).fill());
-    // Set the base case for the first row of the matrix (index 0).
-    // All initial costs are zero before processing any elements.
-    dynamicCostMatrix[0] = [0, 0, 0, 0, 0];
+  // Iterate through each number to fill the DP table from the second row onwards.
+  for (let idx = 1; idx <= count; idx++) {
+    // Get the current number from the input array, adjusting for 0-based indexing.
+    let currentValue = numbersArray[idx - 1];
+    // Determine the "even cost": 2 if the number is 0, otherwise its remainder when divided by 2.
+    let currentEvenCost = numbersArray[idx - 1] === 0 ? 2 : currentValue % 2;
+    // Determine the "odd cost": (currentValue + 1) % 2.
+    let currentOddCost = (currentValue + 1) % 2;
 
-    // Iterate through each item in the numeric sequence to fill the dynamic programming table.
-    for (let elementCounter = 1; elementCounter <= totalElements; elementCounter++) {
-        // Retrieve the current numeric value from the sequence.
-        const currentNumericValue = numericSequence[elementCounter - 1];
-        // Calculate a specific cost component based on whether the current value is even or zero.
-        // If zero, cost is 2; otherwise, it's the remainder when divided by 2 (0 for even, 1 for odd).
-        const evenParityCost = currentNumericValue === 0 ? 2 : currentNumericValue % 2;
-        // Calculate another specific cost component based on the odd parity.
-        // (currentNumericValue + 1) % 2 will be 1 for even, 0 for odd.
-        const oddParityCost = (currentNumericValue + 1) % 2;
+    // Calculate values for the current row of the DP table based on the previous row.
+    // Column 0: Sum of previous column 0 and the current value.
+    dynamicProgrammingTable[idx][0] = dynamicProgrammingTable[idx - 1][0] + currentValue;
+    // Column 1: Minimum of previous column 0 and 1, plus the even cost.
+    dynamicProgrammingTable[idx][1] = Math.min(dynamicProgrammingTable[idx - 1][0], dynamicProgrammingTable[idx - 1][1]) + currentEvenCost;
+    // Column 2: Minimum of previous column 0, 1, and 2, plus the odd cost.
+    dynamicProgrammingTable[idx][2] = Math.min(dynamicProgrammingTable[idx - 1][0], dynamicProgrammingTable[idx - 1][1], dynamicProgrammingTable[idx - 1][2]) + currentOddCost;
+    // Column 3: Minimum of previous column 0, 1, 2, and 3, plus the even cost.
+    dynamicProgrammingTable[idx][3] = Math.min(dynamicProgrammingTable[idx - 1][0], dynamicProgrammingTable[idx - 1][1], dynamicProgrammingTable[idx - 1][2], dynamicProgrammingTable[idx - 1][3]) + currentEvenCost;
+    // Column 4: Minimum of all previous columns (0 through 4), plus the current value.
+    dynamicProgrammingTable[idx][4] = Math.min(dynamicProgrammingTable[idx - 1][0], dynamicProgrammingTable[idx - 1][1], dynamicProgrammingTable[idx - 1][2], dynamicProgrammingTable[idx - 1][3], dynamicProgrammingTable[idx - 1][4]) + currentValue;
+  }
 
-        // Populate the current row of the dynamic programming matrix based on previous calculations.
-        // Each column represents a different state or accumulated cost path.
-        dynamicCostMatrix[elementCounter][0] = dynamicCostMatrix[elementCounter - 1][0] + currentNumericValue;
-        dynamicCostMatrix[elementCounter][1] = Math.min(dynamicCostMatrix[elementCounter - 1][0], dynamicCostMatrix[elementCounter - 1][1]) + evenParityCost;
-        dynamicCostMatrix[elementCounter][2] = Math.min(dynamicCostMatrix[elementCounter - 1][0], dynamicCostMatrix[elementCounter - 1][1], dynamicCostMatrix[elementCounter - 1][2]) + oddParityCost;
-        dynamicCostMatrix[elementCounter][3] = Math.min(dynamicCostMatrix[elementCounter - 1][0], dynamicCostMatrix[elementCounter - 1][1], dynamicCostMatrix[elementCounter - 1][2], dynamicCostMatrix[elementCounter - 1][3]) + evenParityCost;
-        dynamicCostMatrix[elementCounter][4] = Math.min(dynamicCostMatrix[elementCounter - 1][0], dynamicCostMatrix[elementCounter - 1][1], dynamicCostMatrix[elementCounter - 1][2], dynamicCostMatrix[elementCounter - 1][3], dynamicCostMatrix[elementCounter - 1][4]) + currentNumericValue;
-    }
-
-    // After processing all elements, the minimum cost is found in the last row of the matrix.
-    // Use the spread operator to pass all elements of the last row to Math.min.
-    console.log(Math.min(...dynamicCostMatrix[totalElements]));
+  // Output the minimum value found in the last row of the dynamic programming table.
+  console.log(Math.min(...dynamicProgrammingTable[count]));
 }
 
-
-// Entry point for execution: Read input from standard in and pass it to the processing function.
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

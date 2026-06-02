@@ -1,62 +1,55 @@
-function determineOptimalCoverage(targetShortfall, remainingAssets, currentItems, assetIndex) {
-    if (targetShortfall <= 0) {
-        return currentItems;
+function Main(input) {
+    const inputLines = input.split("\n");
+    const elementCount = parseInt(inputLines[0], 10);
+    const primaryValues = inputLines[1].split(" ").map(Number);
+    const secondaryValues = inputLines[2].split(" ").map(Number);
+
+    const {
+        positiveDifferences,
+        negativeSumTotal,
+        initialNegativeItemCount
+    } = Array.from({ length: elementCount }).reduce((collector, _, idx) => {
+        const currentDelta = primaryValues[idx] - secondaryValues[idx];
+        if (currentDelta > 0) {
+            collector.positiveDifferences.push(currentDelta);
+        } else {
+            collector.negativeSumTotal += currentDelta;
+            collector.initialNegativeItemCount++;
+        }
+        return collector;
+    }, { positiveDifferences: [], negativeSumTotal: 0, initialNegativeItemCount: 0 });
+
+    const deficitMagnitude = -negativeSumTotal;
+
+    positiveDifferences.sort((valA, valB) => valB - valA);
+
+    let finalResult = initialNegativeItemCount;
+
+    if (deficitMagnitude === 0) {
+        if (positiveDifferences.length > 0) {
+            finalResult += 1;
+        }
+    } else {
+        let currentCumulativeSum = 0;
+        const cumulativeSurplusSeries = positiveDifferences.map((value) => {
+            currentCumulativeSum += value;
+            return currentCumulativeSum;
+        });
+
+        const coverageIndex = cumulativeSurplusSeries.findIndex(sumValue => sumValue >= deficitMagnitude);
+
+        if (coverageIndex !== -1) {
+            finalResult += (coverageIndex + 1);
+        } else {
+            finalResult = -1;
+        }
     }
-    if (assetIndex >= remainingAssets.length) {
-        return -1;
-    }
-    const newShortfall = targetShortfall - remainingAssets[assetIndex];
-    return determineOptimalCoverage(
-        newShortfall,
-        remainingAssets,
-        currentItems + 1,
-        assetIndex + 1
-    );
+
+    console.log('%s', finalResult);
 }
 
-function processEvent(inputBlob) {
-    const dataLines = inputBlob.split('\n');
-    const totalInstances = Number(dataLines[0]);
-    const firstCollection = dataLines[1].split(' ').map(Number);
-    const secondCollection = dataLines[2].split(' ').map(Number);
-
-    const categorization = Array.from({ length: totalInstances }).reduce(
-        (acc, _, pos) => {
-            const difference = firstCollection[pos] - secondCollection[pos];
-            if (difference > 0) {
-                acc.positiveAdjustments.push(difference);
-            } else {
-                acc.negativeTally += difference;
-                acc.initialSelections++;
-            }
-            return acc;
-        },
-        { positiveAdjustments: [], negativeTally: 0, initialSelections: 0 }
-    );
-
-    let targetShortfall = -categorization.negativeTally;
-    let resultValue = categorization.initialSelections;
-    const availablePositiveAdjustments = categorization.positiveAdjustments;
-
-    availablePositiveAdjustments.sort((valA, valB) => valB - valA);
-
-    if (targetShortfall <= 0) {
-        console.log(resultValue);
-        return;
-    }
-
-    resultValue = determineOptimalCoverage(
-        targetShortfall,
-        availablePositiveAdjustments,
-        resultValue,
-        0
-    );
-
-    console.log(resultValue);
+function debug(){
+  var input = document.getElementById("input").value;
+  Main(input);
 }
-
-function activateTest(){
-  var testData = document.getElementById("testData").value;
-  processEvent(testData);
-}
-processEvent(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,106 +1,63 @@
 "use strict";
 
-// Helper function to safely parse a string into an integer
-const parseNumericValue = (textualInput, defaultValue = 0) => {
-    const numericalResult = parseInt(textualInput, 10);
-    // Return the parsed number if valid, otherwise fall back to a default
-    return Number.isNaN(numericalResult) ? defaultValue : numericalResult;
-};
+// Helper function to determine which of two candidates is closer to a target value.
+// If distances are equal, the smaller candidate is preferred.
+const getCloserCandidate = (targetVal, candidateOne, candidateTwo) => {
+    const distanceOne = Math.abs(targetVal - candidateOne);
+    const distanceTwo = Math.abs(targetVal - candidateTwo);
 
-// Core logic to determine the most suitable number based on input parameters
-const evaluateClosestAvailable = (rawData) => {
-    // Divide the raw input into separate lines for processing
-    const inputLines = rawData.trim().split("\n");
-
-    // Validate that input lines are present
-    if (inputLines.length === 0) {
-        console.error("Input processing error: No data lines provided.");
-        return;
-    }
-
-    // Extract primary parameters from the initial line
-    const firstLineComponents = inputLines[0].split(" ");
-    if (firstLineComponents.length < 2) {
-        console.error("Input processing error: Malformed first line for parameters.");
-        return;
-    }
-
-    const primaryTarget = parseNumericValue(firstLineComponents[0]);
-    const numberExclusions = parseNumericValue(firstLineComponents[1]);
-
-    // Handle the special case where there are no excluded numbers.
-    // In this scenario, the primary target itself is the answer.
-    if (numberExclusions === 0) {
-        console.log(primaryTarget);
-        return; // Terminate execution early for this specific condition
-    }
-
-    // Proceed if there are numbers to exclude.
-    // Ensure the second line containing excluded numbers exists.
-    if (inputLines.length < 2) {
-        console.error("Input processing error: Missing second line for excluded numbers despite non-zero exclusion count.");
-        console.log(-1); // Indicate an unresolvable state due to incomplete input
-        return;
-    }
-
-    // Construct a set of forbidden numbers for efficient lookup
-    const forbiddenValueSet = new Set();
-    const rawExcludedNumbers = inputLines[1].split(" ");
-    for (const numString of rawExcludedNumbers) {
-        const parsedNum = parseNumericValue(numString);
-        // Only add valid numbers to the exclusion set
-        if (!Number.isNaN(parsedNum)) {
-            forbiddenValueSet.add(parsedNum);
-        }
-    }
-
-    // Define the universe of numbers to search within, as per original logic (0 to 100)
-    const lowerBound = 0;
-    const upperBound = 100;
-    const universeOfNumbers = Array.from({ length: upperBound - lowerBound + 1 }, (_, index) => lowerBound + index);
-
-    // Filter the universe to get only the numbers that are not forbidden
-    const permissibleNumbers = universeOfNumbers.filter(
-        (val) => !forbiddenValueSet.has(val)
-    );
-
-    // If no permissible numbers are found within the defined range,
-    // it means all numbers from 0-100 are forbidden.
-    if (permissibleNumbers.length === 0) {
-        console.log(-1); // Indicate no valid number could be identified
-        return;
-    }
-
-    // Initialize trackers for the closest number and its difference
-    let smallestDifference = Number.MAX_SAFE_INTEGER;
-    let optimalSelection = null;
-
-    // Iterate through the permissible numbers to find the one closest to the primary target
-    for (const potentialCandidate of permissibleNumbers) {
-        const currentAbsoluteDifference = Math.abs(primaryTarget - potentialCandidate);
-
-        // Update if a closer number is found
-        if (currentAbsoluteDifference < smallestDifference) {
-            smallestDifference = currentAbsoluteDifference;
-            optimalSelection = potentialCandidate;
-        } else if (currentAbsoluteDifference === smallestDifference) {
-            // If differences are equal, prioritize the smaller number
-            if (optimalSelection === null || potentialCandidate < optimalSelection) {
-                optimalSelection = potentialCandidate;
-            }
-        }
-    }
-
-    // Output the final selected number.
-    // This check ensures optimalSelection is not null, which it shouldn't be
-    // if permissibleNumbers.length was not zero.
-    if (optimalSelection !== null) {
-        console.log(optimalSelection);
+    if (distanceOne === distanceTwo) {
+        return Math.min(candidateOne, candidateTwo);
     } else {
-        // Fallback for an unexpected state, though handled by earlier checks
-        console.log(-1);
+        return (distanceOne < distanceTwo) ? candidateOne : candidateTwo;
     }
 };
 
-// Execute the main evaluation function by reading input from the standard input stream
-evaluateClosestAvailable(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const processInput = (rawData) => {
+    const parsedLines = rawData.trim().split("\n");
+
+    // Parse the first line for targetValue and numForbidden
+    const firstLineParts = parsedLines[0].split(" ");
+    const targetValue = Number(firstLineParts[0]);
+    const numForbidden = Number(firstLineParts[1]);
+
+    // Handle the special case where no forbidden numbers are specified
+    if (numForbidden === 0) {
+        console.log(targetValue);
+        return;
+    }
+
+    // Parse the list of forbidden numbers from the second line
+    const forbiddenNumbersRaw = parsedLines[1].split(" ");
+    const forbiddenNumbers = forbiddenNumbersRaw.map(currentNumStr => Number(currentNumStr));
+
+    // Convert the array of forbidden numbers into a Set for efficient lookup
+    const forbiddenSet = new Set(forbiddenNumbers);
+
+    // Generate a list of all possible numbers from 0 to 100
+    const allPossibleNumbers = Array.from({ length: 101 }, (_, index) => index);
+
+    // Filter out numbers that are present in the forbidden set
+    const availableNumbers = allPossibleNumbers.filter(currentNum => !forbiddenSet.has(currentNum));
+
+    // Find the number in availableNumbers that is closest to targetValue.
+    // The initial value 101 is used as a sentinel. If availableNumbers is empty,
+    // 101 will be the result, which then triggers the -1 output in the final check.
+    const finalClosestCandidate = availableNumbers.reduce((closestSoFar, currentConsideration) => {
+        return getCloserCandidate(targetValue, closestSoFar, currentConsideration);
+    }, 101);
+
+    // Calculate distances for the final comparison
+    const distanceToNegativeOne = Math.abs(targetValue + 1); // Equivalent to Math.abs(targetValue - (-1))
+    const distanceToFinalCandidate = Math.abs(targetValue - finalClosestCandidate);
+
+    // Output the result based on the problem's specific condition
+    if (distanceToFinalCandidate >= distanceToNegativeOne) {
+        console.log(-1);
+    } else {
+        console.log(finalClosestCandidate);
+    }
+};
+
+// Execute the main processing function with input from stdin
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

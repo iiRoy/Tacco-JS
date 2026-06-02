@@ -1,126 +1,169 @@
-const createPoint = (val, leftBranch = null, rightBranch = null) => ({
-  v: val,
-  l: leftBranch,
-  r: rightBranch
+const makeNode = (itemValue, ancestorRef = null, lowerBranch = null, higherBranch = null) => ({
+  itemValue,
+  ancestorRef,
+  lowerBranch,
+  higherBranch,
 });
 
-const appendData = (currentRoot, freshVal) => {
-  if (currentRoot === null) {
-    return createPoint(freshVal);
-  }
-  if (freshVal < currentRoot.v) {
-    return createPoint(currentRoot.v, appendData(currentRoot.l, freshVal), currentRoot.r);
-  } else { // freshVal >= currentRoot.v (includes duplicates and greater values, pushing to right)
-    return createPoint(currentRoot.v, currentRoot.l, appendData(currentRoot.r, freshVal));
-  }
+const isChildOnLeft = (nodeRef) => {
+  if (!nodeRef || !nodeRef.ancestorRef) return null;
+  return nodeRef.ancestorRef.lowerBranch === nodeRef;
 };
 
-const seekData = (currentRoot, targetVal) => {
-  let traveler = currentRoot;
-  while (traveler !== null) {
-    if (targetVal === traveler.v) {
-      return traveler;
-    } else if (targetVal < traveler.v) {
-      traveler = traveler.l;
-    } else {
-      traveler = traveler.r;
-    }
-  }
-  return null;
+const getChildSide = (nodeRef) => {
+  if (!nodeRef || !nodeRef.ancestorRef) return null;
+  return isChildOnLeft(nodeRef) ? 'lowerBranch' : 'higherBranch';
 };
 
-const fetchMinPoint = (branch) => {
-  let current = branch;
-  while (current.l !== null) {
-    current = current.l;
+const findInorderSuccessor = (nodeRef) => {
+  if (!nodeRef || !nodeRef.higherBranch) return null;
+  let current = nodeRef.higherBranch;
+  while (current.lowerBranch) {
+    current = current.lowerBranch;
   }
   return current;
 };
 
-const discardData = (currentRoot, targetVal) => {
-  if (currentRoot === null) {
+const createSearchTree = () => {
+  let treeRoot = null;
+
+  const addValueRecursive = (current, itemValue, parent = null) => {
+    if (!current) {
+      return makeNode(itemValue, parent);
+    }
+    if (itemValue < current.itemValue) {
+      current.lowerBranch = addValueRecursive(current.lowerBranch, itemValue, current);
+    } else {
+      current.higherBranch = addValueRecursive(current.higherBranch, itemValue, current);
+    }
+    return current;
+  };
+
+  const addValue = (itemValue) => {
+    if (!treeRoot) {
+      treeRoot = makeNode(itemValue);
+    } else {
+      addValueRecursive(treeRoot, itemValue);
+    }
+  };
+
+  const locateValue = (itemValue) => {
+    let current = treeRoot;
+    while (current) {
+      if (itemValue === current.itemValue) {
+        return current;
+      }
+      current = (itemValue < current.itemValue) ? current.lowerBranch : current.higherBranch;
+    }
     return null;
-  }
+  };
 
-  if (targetVal < currentRoot.v) {
-    return createPoint(currentRoot.v, discardData(currentRoot.l, targetVal), currentRoot.r);
-  } else if (targetVal > currentRoot.v) {
-    return createPoint(currentRoot.v, currentRoot.l, discardData(currentRoot.r, targetVal));
-  } else {
-    if (currentRoot.l === null) {
-      return currentRoot.r;
+  const removeValue = (itemValue) => {
+    let targetNode = locateValue(itemValue);
+    if (!targetNode) return;
+
+    const replaceNodeInParent = (nodeToReplace, newNode) => {
+      if (!nodeToReplace.ancestorRef) {
+        treeRoot = newNode;
+        if (newNode) newNode.ancestorRef = null;
+      } else {
+        const parentLink = getChildSide(nodeToReplace);
+        nodeToReplace.ancestorRef[parentLink] = newNode;
+        if (newNode) newNode.ancestorRef = nodeToReplace.ancestorRef;
+      }
+    };
+
+    const hasLeftChild = !!targetNode.lowerBranch;
+    const hasRightChild = !!targetNode.higherBranch;
+
+    if (!hasLeftChild && !hasRightChild) {
+      replaceNodeInParent(targetNode, null);
+    } else if (hasLeftChild && !hasRightChild) {
+      replaceNodeInParent(targetNode, targetNode.lowerBranch);
+    } else if (!hasLeftChild && hasRightChild) {
+      replaceNodeInParent(targetNode, targetNode.higherBranch);
+    } else {
+      const successor = findInorderSuccessor(targetNode);
+      
+      replaceNodeInParent(successor, successor.higherBranch);
+
+      successor.lowerBranch = targetNode.lowerBranch;
+      if (targetNode.lowerBranch) targetNode.lowerBranch.ancestorRef = successor;
+      
+      successor.higherBranch = targetNode.higherBranch;
+      if (targetNode.higherBranch) targetNode.higherBranch.ancestorRef = successor;
+
+      replaceNodeInParent(targetNode, successor);
     }
-    if (currentRoot.r === null) {
-      return currentRoot.l;
+  };
+
+  const displayInOrder = () => {
+    const result = [];
+    const nodeStack = [];
+    let current = treeRoot;
+
+    while (current || nodeStack.length > 0) {
+      while (current) {
+        nodeStack.push(current);
+        current = current.lowerBranch;
+      }
+      current = nodeStack.pop();
+      result.push(` ${current.itemValue}`);
+      current = current.higherBranch;
     }
-    const successor = fetchMinPoint(currentRoot.r);
-    return createPoint(successor.v, currentRoot.l, discardData(currentRoot.r, successor.v));
-  }
+    console.log(result.join(''));
+  };
+
+  const displayPreOrder = () => {
+    const result = [];
+    if (!treeRoot) {
+      console.log('');
+      return;
+    }
+    const nodeStack = [treeRoot];
+
+    while (nodeStack.length > 0) {
+      const current = nodeStack.pop();
+      result.push(` ${current.itemValue}`);
+
+      if (current.higherBranch) {
+        nodeStack.push(current.higherBranch);
+      }
+      if (current.lowerBranch) {
+        nodeStack.push(current.lowerBranch);
+      }
+    }
+    console.log(result.join(''));
+  };
+
+  const showAll = () => {
+    displayInOrder();
+    displayPreOrder();
+  };
+
+  return {
+    addValue,
+    locateValue,
+    removeValue,
+    showAll,
+  };
 };
 
-const traverseMedian = (currentRoot) => {
-  const resultCollector = [];
-  const pointStack = [];
-  let currentSpot = currentRoot;
-
-  while (currentSpot !== null || pointStack.length > 0) {
-    while (currentSpot !== null) {
-      pointStack.push(currentSpot);
-      currentSpot = currentSpot.l;
-    }
-    currentSpot = pointStack.pop();
-    resultCollector.push(currentSpot.v);
-    currentSpot = currentSpot.r;
-  }
-  return resultCollector.join(' ');
-};
-
-const traverseBefore = (currentRoot) => {
-  const resultCollector = [];
-  if (currentRoot === null) {
-    return '';
-  }
-  const pointStack = [currentRoot];
-
-  while (pointStack.length > 0) {
-    const currentSpot = pointStack.pop();
-    resultCollector.push(currentSpot.v);
-
-    if (currentSpot.r !== null) {
-      pointStack.push(currentSpot.r);
-    }
-    if (currentSpot.l !== null) {
-      pointStack.push(currentSpot.l);
-    }
-  }
-  return resultCollector.join(' ');
-};
-
-(function applicationEntry() {
+(function processCommands() {
   const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalCommands = Number(inputLines.shift()); // 'totalCommands' is not used, similar to original 'n'
+  const commandCount = Number(inputLines.shift());
 
-  let globalTree = null;
+  const myTree = createSearchTree();
 
   inputLines.forEach(function(commandLine) {
-    const parts = commandLine.split(' ');
-    const operation = parts[0];
-    const value = parts.length > 1 ? Number(parts[1]) : undefined;
+    const firstChar = commandLine.charAt(0);
+    const value = Number(commandLine.split(' ')[1]);
 
-    switch (operation.charAt(0)) {
-      case 'i':
-        globalTree = appendData(globalTree, value);
-        break;
-      case 'f':
-        console.log(seekData(globalTree, value) ? 'yes' : 'no');
-        break;
-      case 'd':
-        globalTree = discardData(globalTree, value);
-        break;
-      default: // 'p' for print
-        console.log(traverseMedian(globalTree));
-        console.log(traverseBefore(globalTree));
-        break;
+    switch (firstChar) {
+      case 'i': myTree.addValue(value); break;
+      case 'f': console.log(myTree.locateValue(value) ? 'yes' : 'no'); break;
+      case 'd': myTree.removeValue(value); break;
+      default: myTree.showAll(); break;
     }
   });
 })();

@@ -1,66 +1,28 @@
-const MOD_DIVISOR = 1000000007;
-
-const fastPower = (base, exponent, modulus) => {
-    let outcome = 1;
-    base %= modulus;
-    while (exponent > 0) {
-        if (exponent % 2 === 1) outcome = (outcome * base) % modulus;
-        base = (base * base) % modulus;
-        exponent = Math.floor(exponent / 2);
-    }
-    return outcome;
+const acquireDataElements = () => {
+  const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  return sourceContent.split('\n').flatMap(lineSegment => lineSegment.split(' '));
 };
 
-const inverseElement = (value, modulus) => fastPower(value, modulus - 2, modulus);
-
-const factorialModulo = (limit, modulus) => {
-    let currentProd = 1;
-    for (let currentNum = 2; currentNum <= limit; currentNum++) {
-        currentProd = (currentProd * currentNum) % modulus;
-    }
-    return currentProd;
+const computeProductSequence = (upperBound) => {
+  if (upperBound <= 1) return 1;
+  return upperBound * computeProductSequence(upperBound - 1);
 };
 
-const combinationsModulo = (total, chosen, modulus) => {
-    if (chosen < 0 || chosen > total) return 0;
-    if (chosen === 0 || chosen === total) return 1;
-    if (chosen > total / 2) chosen = total - chosen;
-
-    const numeratorPart = factorialModulo(total, modulus);
-    const denominatorPart1 = inverseElement(factorialModulo(chosen, modulus), modulus);
-    const denominatorPart2 = inverseElement(factorialModulo(total - chosen, modulus), modulus);
-
-    return (((numeratorPart * denominatorPart1) % modulus) * denominatorPart2) % modulus;
+const calculateCombinations = (totalItems, chosenItems) => {
+  return computeProductSequence(totalItems) / (computeProductSequence(chosenItems) * computeProductSequence(totalItems - chosenItems));
 };
 
-const extractNumbers = (textSource) => {
-    const numericRegex = /\d+/g;
-    const digits = [];
-    let currentMatch;
-    while ((currentMatch = numericRegex.exec(textSource)) !== null) {
-        digits.push(Number(currentMatch[0]));
-    }
-    return digits;
-};
+(() => {
+  const rawDataElements = acquireDataElements();
+  const totalCount = +rawDataElements[0];
+  const exclusionA = +rawDataElements[1];
+  const exclusionB = +rawDataElements[2];
 
-const acquireText = () => {
-    const rawBuffer = require('node:fs').readSync(0, 1024);
-    return Buffer.from(rawBuffer).toString().trim();
-};
+  const modulusValue = Math.pow(10, 9) + 7;
 
-((runner) => {
-    const dataStream = runner();
-    const parameters = extractNumbers(dataStream);
+  const finalSum = Array.from({ length: totalCount }, (_, index) => index + 1)
+    .filter(currentVal => currentVal !== exclusionA && currentVal !== exclusionB)
+    .reduce((accumulator, currentVal) => accumulator + calculateCombinations(totalCount, currentVal), 0);
 
-    const initialVal = parameters[0];
-    const excludedVal1 = parameters[1];
-    const excludedVal2 = parameters[2];
-
-    let totalPossible = fastPower(2, initialVal, MOD_DIVISOR);
-
-    totalPossible = (totalPossible - combinationsModulo(initialVal, 0, MOD_DIVISOR) + MOD_DIVISOR) % MOD_DIVISOR;
-    totalPossible = (totalPossible - combinationsModulo(initialVal, excludedVal1, MOD_DIVISOR) + MOD_DIVISOR) % MOD_DIVISOR;
-    totalPossible = (totalPossible - combinationsModulo(initialVal, excludedVal2, MOD_DIVISOR) + MOD_DIVISOR) % MOD_DIVISOR;
-
-    console.log(totalPossible);
-})(acquireText);
+  console.log(finalSum % modulusValue);
+})();

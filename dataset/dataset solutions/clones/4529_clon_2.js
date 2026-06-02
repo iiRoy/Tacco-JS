@@ -1,81 +1,79 @@
-"use strict"; // Enable strict mode for cleaner code execution
+"use strict";
 
 /**
- * Processes raw input data to calculate minimum and maximum possible distinct color counts.
- * This function handles parsing input, categorizing numeric values, and determining output.
- *
- * @param {string} inputString - The raw string input, typically from a file or command line.
+ * Analyzes input data to determine the range of distinct color categories.
+ * @param {string} inputContent - The raw string input, typically from standard input.
  */
-const processInputData = ( inputString ) => {
+const processInputData = (inputContent) => {
+    // Divide the input string into an array of lines.
+    inputContent = inputContent.split("\n");
 
-    // Split the input string into an array of lines
-    inputString = inputString.split( "\n" );
+    // Parse the first line, which represents the total number of items.
+    // Although 'initialCount' is not directly used in the subsequent logic,
+    // its parsing maintains the original input processing structure.
+    const initialCount = parseInt(inputContent[0], 10);
 
-    // Parse the first line for the initial quantity (though not directly used in the logic)
-    const initialQuantity = parseInt( inputString[0] );
+    // Process the second line: split by spaces and convert each part to an integer.
+    const scoreValues = inputContent[1].split(" ").map(val => parseInt(val, 10));
 
-    // Parse the second line, splitting by space and converting each part to an integer
-    const numericValues = inputString[1] .split( " " ) .map( ( currentVal ) => parseInt( currentVal ) );
+    // Initialize a counter for scores that exceed all predefined color thresholds.
+    let overflowCount = 0;
 
-    // Initialize a counter for values that don't fall into predefined categories
-    let wildcardCount = 0;
-
-    // Define an object to track the presence of different color categories
-    const colorPresenceTracker = {
-        ash:     false, // Represents values < 400
-        sepia:   false, // Represents values < 800
-        emerald: false, // Represents values < 1200
-        aqua:    false, // Represents values < 1600
-        azure:   false, // Represents values < 2000
-        gold:    false, // Represents values < 2400
-        flame:   false, // Represents values < 2800
-        crimson: false  // Represents values < 3200
+    // Define an object to track which color categories have been encountered.
+    // Each property represents a color, initialized to 'false' (not present).
+    const colorStatus = {
+        grey:   false,   // For scores less than 400
+        brown:  false,   // For scores less than 800
+        green:  false,   // For scores less than 1200
+        mizu:   false,   // For scores less than 1600 (a light blue/aqua color)
+        blue:   false,   // For scores less than 2000
+        yellow: false,   // For scores less than 2400
+        orange: false,   // For scores less than 2800
+        red:    false    // For scores less than 3200
     };
 
-    // Iterate through each value in the numericValues array
-    for ( let elementIndex in numericValues ) {
-        const value = numericValues[elementIndex]; // Get the current numeric value
+    // Iterate through each score value to categorize it.
+    for (let idx in scoreValues) {
+        const currentScore = scoreValues[idx]; // Retrieve the score at the current index.
 
-        // Categorize the value based on predefined thresholds
-        if ( value < 400 ) {
-            colorPresenceTracker.ash = true;
-        } else if ( value < 800 ) {
-            colorPresenceTracker.sepia = true;
-        } else if ( value < 1200 ) {
-            colorPresenceTracker.emerald = true;
-        } else if ( value < 1600 ) {
-            colorPresenceTracker.aqua = true;
-        } else if ( value < 2000 ) {
-            colorPresenceTracker.azure = true;
-        } else if ( value < 2400 ) {
-            colorPresenceTracker.gold = true;
-        } else if ( value < 2800 ) {
-            colorPresenceTracker.flame = true;
-        } else if ( value < 3200 ) {
-            colorPresenceTracker.crimson = true;
+        // Assign the score to its corresponding color category based on thresholds.
+        if (currentScore < 400) {
+            colorStatus.grey = true;
+        } else if (currentScore < 800) {
+            colorStatus.brown = true;
+        } else if (currentScore < 1200) {
+            colorStatus.green = true;
+        } else if (currentScore < 1600) {
+            colorStatus.mizu = true;
+        } else if (currentScore < 2000) {
+            colorStatus.blue = true;
+        } else if (currentScore < 2400) {
+            colorStatus.yellow = true;
+        } else if (currentScore < 2800) {
+            colorStatus.orange = true;
+        } else if (currentScore < 3200) {
+            colorStatus.red = true;
         } else {
-            // If the value exceeds all category thresholds, increment the wildcard counter
-            wildcardCount++;
+            // If the score is 3200 or higher, it's considered an 'overflow' score.
+            overflowCount++;
         }
     }
 
-    // Count how many distinct color categories have been marked as present (true)
-    const foundDistinctColors = Object.keys( colorPresenceTracker )
-                                     .filter( colorKey => colorPresenceTracker[colorKey] === true )
-                                     .length;
+    // Count the number of distinct color categories that were marked as 'true'.
+    const activeColorTypes = Object.keys(colorStatus).filter(colorName => colorStatus[colorName] === true).length;
 
-    // Calculate the minimum possible number of distinct colors
-    // If no distinct colors were found, the minimum is 1 (due to wildcard or just no category matches).
-    // Otherwise, it's simply the number of distinct colors found.
-    const minimumRequired = ( foundDistinctColors === 0 ) ? 1 : foundDistinctColors;
+    // Determine the minimum possible number of distinct categories.
+    // If no specific color categories are present, but there are overflow scores,
+    // then at least one category (representing the overflow) is considered.
+    const minPossible = activeColorTypes === 0 ? 1 : activeColorTypes;
 
-    // Calculate the maximum possible number of distinct colors
-    // This is the sum of distinct colors found and the wildcard count.
-    const maximumPotential = foundDistinctColors + wildcardCount;
+    // Determine the maximum possible number of distinct categories.
+    // This is the sum of the specific color categories found and the overflow scores.
+    const maxPossible = activeColorTypes + overflowCount;
 
-    // Output the calculated minimum and maximum values, separated by a space
-    console.log( minimumRequired + " " + maximumPotential );
+    // Output the calculated minimum and maximum values, separated by a space.
+    console.log(minPossible + " " + maxPossible);
 };
 
-// Read the input from standard input and pass it to the processing function
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content from standard input and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

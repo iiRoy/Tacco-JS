@@ -1,30 +1,30 @@
 "use strict";
 
-const parseInputData = (inputContent) => {
-    const contentLines = inputContent.trim().split('\n');
-    const [totalExtent, pointQuantity] = contentLines[0].split(' ').map(value => Number(value));
-    const pointLocations = contentLines[1].split(' ').map(value => Number(value));
-    return { totalExtent, pointQuantity, pointLocations };
-};
+const processData = (rawInput) => {
+    const [firstLineContent, secondLineContent] = rawInput.trim().split('\n');
+    const [totalLength, numPoints] = firstLineContent.split(' ').map(Number);
+    const pointPositions = secondLineContent.split(' ').map(Number);
 
-const determineOptimalRoute = ({ totalExtent, pointQuantity, pointLocations }) => {
-    const gapMeasures = Array.from({ length: pointQuantity }, (_, index) => {
-        if (index === pointQuantity - 1) {
-            return (totalExtent - pointLocations[index]) + pointLocations[0];
+    const segmentSpans = pointPositions.reduce((accumulatedSpans, currentPosition, index, allPositions) => {
+        let spanValue;
+        if (index === allPositions.length - 1) {
+            // For the last point, calculate the distance back to the first point,
+            // considering the circular nature of the track (totalLength).
+            spanValue = totalLength - currentPosition + allPositions[0];
         } else {
-            return pointLocations[index + 1] - pointLocations[index];
+            // For other points, calculate the distance to the next point in sequence.
+            spanValue = allPositions[index + 1] - currentPosition;
         }
-    });
+        accumulatedSpans.push(spanValue);
+        return accumulatedSpans;
+    }, []);
 
-    const peakGap = gapMeasures.reduce((currentMax, currentVal) => Math.max(currentMax, currentVal), 0);
+    // To find the minimum travel distance to visit all points,
+    // we subtract the longest segment from the total length of the track.
+    const maximumSpan = Math.max(...segmentSpans);
+    const shortestCircuit = totalLength - maximumSpan;
 
-    return totalExtent - peakGap;
+    console.log(shortestCircuit);
 };
 
-const executeProgram = (dataSource) => {
-    const processedData = parseInputData(dataSource);
-    const optimalRoute = determineOptimalRoute(processedData);
-    console.log(optimalRoute);
-};
-
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

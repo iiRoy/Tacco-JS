@@ -1,19 +1,29 @@
-const calculateOutcome = (inputDataStream) => {
-    const extractedValues = inputDataStream.match(/^(-?\d+)\s+(-?\d+)/);
+'use strict';
 
-    const firstQuantity = Number(extractedValues[1]);
-    const secondQuantity = Number(extractedValues[2]);
+const processInputData = rawData => {
+    const parsedValues = rawData.split('\n')[0].split(' ');
+    const firstNum = Number.parseInt(parsedValues[0], 10);
+    const secondNum = Number.parseInt(parsedValues[1], 10);
 
-    const rulesEngine = [
-        { conditionCheck: (val) => val >= 13, actionFormula: (operand) => operand },
-        { conditionCheck: (val) => val >= 6, actionFormula: (operand) => operand / 2 },
-        { conditionCheck: (val) => true, actionFormula: () => 0 }
+    const calculationRules = [
+        {
+            checkCondition: (valX) => valX >= 13,
+            performCalculation: (valY) => valY
+        },
+        {
+            checkCondition: (valX) => valX >= 6,
+            performCalculation: (valY) => valY / 2
+        },
+        {
+            checkCondition: (valX) => true,
+            performCalculation: () => 0
+        }
     ];
 
-    const applicableRule = rulesEngine.find(rule => rule.conditionCheck(firstQuantity));
-    const computedResult = applicableRule.actionFormula(secondQuantity);
+    const applicableRule = calculationRules.find(ruleEntry => ruleEntry.checkCondition(firstNum));
+    const finalResult = applicableRule.performCalculation(secondNum);
 
-    process.stdout.write(String(computedResult) + '\n');
+    console.log(finalResult);
 };
 
-calculateOutcome(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }));
+processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

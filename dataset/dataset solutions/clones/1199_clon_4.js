@@ -1,85 +1,70 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+const applyPermutation = (currentFaces, permutationIndices) =>
+  permutationIndices.map((index) => currentFaces[index]);
 
-const transformationSchemes = {
-    "N": { up: 'front', front: 'down', back: 'up', down: 'back' },
-    "S": { up: 'back', front: 'up', back: 'down', down: 'front' },
-    "E": { up: 'left', right: 'up', left: 'down', down: 'right' },
-    "W": { up: 'right', right: 'down', left: 'up', down: 'left' }
-};
+const orientationTransforms = new Map([
+  ["N", [1, 5, 2, 3, 0, 4]],
+  ["S", [4, 0, 2, 3, 5, 1]],
+  ["E", [3, 1, 0, 5, 4, 2]],
+  ["W", [2, 1, 5, 0, 4, 3]],
+]);
 
-const performTranslation = (currentLayout, directionIndicator) => {
-    const nextLayout = new Map(currentLayout);
-    const scheme = transformationSchemes[directionIndicator];
-    for (const [newPanel, oldPanel] of Object.entries(scheme)) {
-        nextLayout.set(newPanel, currentLayout.get(oldPanel));
+function reorientCube(directionKey, currentFaces) {
+  const permutation = orientationTransforms.get(directionKey);
+  return applyPermutation(currentFaces, permutation);
+}
+
+const spinPermutation = [0, 2, 4, 1, 3, 5];
+
+function spinCube(currentFaces) {
+  return applyPermutation(currentFaces, spinPermutation);
+}
+
+let globalSeenConfigurations = new Set();
+let finalOutcome = "YES";
+
+function checkAndRegisterOrientations(cubeFaces) {
+  const localUniqueRotations = new Set();
+  let mutableFaces = [...cubeFaces];
+
+  Array.from({ length: 4 }).forEach(() => {
+    const stateIdentifier = mutableFaces.join(",");
+    localUniqueRotations.add(stateIdentifier);
+    mutableFaces = spinCube(mutableFaces);
+  });
+
+  for (const configString of localUniqueRotations) {
+    if (globalSeenConfigurations.has(configString)) {
+      finalOutcome = "No";
+      return;
     }
-    return nextLayout;
-};
+    globalSeenConfigurations.add(configString);
+  }
+}
 
-const rotationScheme = { front: 'left', right: 'front', back: 'right', left: 'back' };
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputLines = rawInput.trim().split("\n");
 
-const spinAroundAxis = (currentLayout) => {
-    const nextLayout = new Map(currentLayout);
-    for (const [newPanel, oldPanel] of Object.entries(rotationScheme)) {
-        nextLayout.set(newPanel, currentLayout.get(oldPanel));
-    }
-    return nextLayout;
-};
+const numCubes = Number(inputLines.shift());
 
-const catalogConfigurations = (initialLayout, masterCollection) => {
-    let currentLayout = initialLayout;
-    const localCollection = new Set();
-    let collisionFlag = false;
+for (let i = 0; i < numCubes; i++) {
+  let currentCubeFaces = inputLines[i].split(" ").map(Number);
 
-    Array.from({ length: 4 }).forEach(() => {
-        const stringRepresentation = Array.from(currentLayout.values()).join(',');
-        if (masterCollection.has(stringRepresentation)) {
-            collisionFlag = true;
-        }
-        localCollection.add(stringRepresentation);
-        currentLayout = spinAroundAxis(currentLayout);
-    });
+  for (let j = 0; j < 4; j++) {
+    checkAndRegisterOrientations(currentCubeFaces);
+    if (finalOutcome === "No") break;
+    currentCubeFaces = reorientCube("N", currentCubeFaces);
+  }
+  if (finalOutcome === "No") break;
 
-    if (collisionFlag) {
-        return true;
-    } else {
-        localCollection.forEach(item => masterCollection.add(item));
-        return false;
-    }
-};
+  currentCubeFaces = reorientCube("E", currentCubeFaces);
+  checkAndRegisterOrientations(currentCubeFaces);
+  if (finalOutcome === "No") break;
 
-const processedSegments = dataStream.trim().split("\n");
-const quantityBlocks = parseInt(processedSegments.shift(), 10);
-
-const globalRegistry = new Set();
-let finalOutcome = 'AFFIRMATIVE';
-
-processedSegments.some(segmentLine => {
-    const numericFacings = segmentLine.split(" ").map(Number);
-    let activeBlock = new Map([
-        ["up", numericFacings[0]],
-        ["front", numericFacings[1]],
-        ["right", numericFacings[2]],
-        ["left", numericFacings[3]],
-        ["back", numericFacings[4]],
-        ["down", numericFacings[5]]
-    ]);
-
-    const phaseOneCollision = Array.from({ length: 4 }).some(() => {
-        const collision = catalogConfigurations(activeBlock, globalRegistry);
-        activeBlock = performTranslation(activeBlock, "N");
-        return collision;
-    });
-    if (phaseOneCollision) { finalOutcome = 'NEGATIVE'; return true; }
-
-    activeBlock = performTranslation(activeBlock, "E");
-    if (catalogConfigurations(activeBlock, globalRegistry)) { finalOutcome = 'NEGATIVE'; return true; }
-
-    activeBlock = performTranslation(activeBlock, "S");
-    activeBlock = performTranslation(activeBlock, "S");
-    if (catalogConfigurations(activeBlock, globalRegistry)) { finalOutcome = 'NEGATIVE'; return true; }
-
-    return false;
-});
+  currentCubeFaces = reorientCube("S", currentCubeFaces);
+  currentCubeFaces = reorientCube("S", currentCubeFaces);
+  checkAndRegisterOrientations(currentCubeFaces);
+  if (finalOutcome === "No") break;
+}
 
 console.log(finalOutcome);

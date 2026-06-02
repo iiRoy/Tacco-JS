@@ -1,65 +1,40 @@
-( function ( rawData ) {
-  /*
-  This script processes geometric coordinates to find the circumcenter
-  and circumradius of triangles defined by three points.
-  */
-  var processedLines = rawData
-    .replace( /\n$/, '' )
-    .split( '\n' );
-  var numCases = Number( processedLines.shift() );
+(function(rawData) {
+    // Process the raw input string into an array of lines.
+    // Remove any trailing newline character and then split by newline.
+    var linesArray = rawData.replace(/\n$/, '').split('\n');
 
-  for ( var caseIndex = 0; caseIndex < numCases; caseIndex++ ) {
-    var currentCoords = processedLines[ caseIndex ]
-      .split( ' ' )
-      .map( Number );
+    // The first line contains the number of test cases.
+    var numCases = Number(linesArray.shift());
 
-    // Original debug statement has been removed
-    // console.log(currentCoords);
+    // Iterate through each test case.
+    for (var idx = 0; idx < numCases; idx++) {
+        // Parse the current line's arguments into an array of numbers.
+        var coords = linesArray[idx].split(' ').map(Number);
 
-    var coordA_x = currentCoords.shift();
-    var coordA_y = currentCoords.shift();
-    var coordB_x = currentCoords.shift();
-    var coordB_y = currentCoords.shift();
-    var coordC_x = currentCoords.shift();
-    var coordC_y = currentCoords.shift();
+        // Extract the coordinates of the three vertices of the triangle.
+        var pt1X = coords.shift(); // First point's X-coordinate
+        var pt1Y = coords.shift(); // First point's Y-coordinate
+        var pt2X = coords.shift(); // Second point's X-coordinate
+        var pt2Y = coords.shift(); // Second point's Y-coordinate
+        var pt3X = coords.shift(); // Third point's X-coordinate
+        var pt3Y = coords.shift(); // Third point's Y-coordinate
 
-    var center_x = (
-        (
-          Math.pow( coordC_x, 2 ) - Math.pow( coordB_x, 2 ) +
-          Math.pow( coordC_y, 2 ) - Math.pow( coordB_y, 2 )
-        ) * ( coordB_y - coordA_y ) -
-        (
-          Math.pow( coordB_x, 2 ) - Math.pow( coordA_x, 2 ) +
-          Math.pow( coordB_y, 2 ) - Math.pow( coordA_y, 2 )
-        ) * ( coordC_y - coordB_y )
-      ) / 2 /
-      (
-        ( coordB_y - coordA_y ) * ( coordC_x - coordB_x ) -
-        ( coordB_x - coordA_x ) * ( coordC_y - coordB_y )
-      );
+        // Calculate the X-coordinate of the circumcenter using a specific formula.
+        // This formula is derived from the intersection of perpendicular bisectors.
+        var centerX = ((Math.pow(pt3X, 2) - Math.pow(pt2X, 2) + Math.pow(pt3Y, 2) - Math.pow(pt2Y, 2)) * (pt2Y - pt1Y)
+            - (Math.pow(pt2X, 2) - Math.pow(pt1X, 2) + Math.pow(pt2Y, 2) - Math.pow(pt1Y, 2)) * (pt3Y - pt2Y))
+            / 2 / ((pt2Y - pt1Y) * (pt3X - pt2X) - (pt2X - pt1X) * (pt3Y - pt2Y));
 
-    var center_y = (
-        (
-          Math.pow( coordC_y, 2 ) - Math.pow( coordB_y, 2 ) +
-          Math.pow( coordC_x, 2 ) - Math.pow( coordB_x, 2 )
-        ) * ( coordB_x - coordA_x ) -
-        (
-          Math.pow( coordB_y, 2 ) - Math.pow( coordA_y, 2 ) +
-          Math.pow( coordB_x, 2 ) - Math.pow( coordA_x, 2 )
-        ) * ( coordC_x - coordB_x )
-      ) / 2 /
-      (
-        ( coordB_x - coordA_x ) * ( coordC_y - coordB_y ) -
-        ( coordB_y - coordA_y ) * ( coordC_x - coordB_x )
-      );
+        // Calculate the Y-coordinate of the circumcenter using a similar formula.
+        var centerY = ((Math.pow(pt3Y, 2) - Math.pow(pt2Y, 2) + Math.pow(pt3X, 2) - Math.pow(pt2X, 2)) * (pt2X - pt1X)
+            - (Math.pow(pt2Y, 2) - Math.pow(pt1Y, 2) + Math.pow(pt2X, 2) - Math.pow(pt1X, 2)) * (pt3X - pt2X))
+            / 2 / ((pt2X - pt1X) * (pt3Y - pt2Y) - (pt2Y - pt1Y) * (pt3X - pt2X));
 
-    console.log(
-      center_x.toFixed( 3 ),
-      center_y.toFixed( 3 ),
-      Math.sqrt(
-        Math.pow( coordA_x - center_x, 2 ) +
-        Math.pow( coordA_y - center_y, 2 )
-      ).toFixed( 3 )
-    );
-  }
-} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+        // Calculate the circumradius. It's the distance from the circumcenter to any of the vertices.
+        // Using the distance formula: sqrt((x2-x1)^2 + (y2-y1)^2).
+        var circumRadius = Math.sqrt(Math.pow(pt1X - centerX, 2) + Math.pow(pt1Y - centerY, 2));
+
+        // Output the circumcenter coordinates and the circumradius, all formatted to 3 decimal places.
+        console.log(centerX.toFixed(3), centerY.toFixed(3), circumRadius.toFixed(3));
+    }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input as a UTF-8 string.

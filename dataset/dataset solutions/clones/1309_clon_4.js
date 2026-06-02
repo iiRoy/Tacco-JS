@@ -1,28 +1,19 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const rowList = sourceData.split('\n');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const processedLines = rowList.reduce((acc, currentLine) => {
-    if (currentLine === '0') {
-        return { stopProcessing: true, collected: acc.collected };
-    }
-    if (acc.stopProcessing) {
-        return acc;
-    }
-    return { stopProcessing: false, collected: [...acc.collected, currentLine] };
-}, { stopProcessing: false, collected: [] }).collected;
+const sourceLines = rawContent.split('\n');
 
-const deriveSumOfDigits = (digitSequence) => {
-    const numericUnits = Array.from(digitSequence, Number);
-    let currentTotal = 0;
-    for (let index = 0; index < numericUnits.length; index++) {
-        currentTotal += numericUnits[index];
-    }
-    return currentTotal;
-};
+const zeroMarkerIndex = sourceLines.findIndex(currentSegment => currentSegment === '0');
 
-const computedValues = processedLines.map(deriveSumOfDigits);
+const processableLines = zeroMarkerIndex === -1 ? sourceLines : sourceLines.slice(0, zeroMarkerIndex);
 
-const resultDisplay = computedValues.join('\n');
+const calculatedSums = processableLines.map(lineText => {
+    const digitArray = Array.from(lineText, Number);
+    const digitSum = digitArray.reduce((accumulatorValue, currentDigit) => accumulatorValue + currentDigit, 0);
+    return digitSum;
+});
 
-console.log(resultDisplay);
+const finalOutput = calculatedSums.join('\n');
+
+console.log(finalOutput.trim());

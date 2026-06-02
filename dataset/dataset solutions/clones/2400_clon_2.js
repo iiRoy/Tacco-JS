@@ -1,54 +1,42 @@
-// This function processes the raw text data received from standard input.
-function ProcessInput ( rawData ) {
-  // Split the input into individual lines and clean up whitespace.
-  const linesOfText = rawData . trim ( ) . split ( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the raw input into lines, removing leading/trailing whitespace.
+  var linesOfText = rawData.trim().split('\n');
 
-  // Parse the first line to get N and K values.
-  let firstLineTokens = linesOfText [ 0 ] . split ( ' ' ) ;
-  const countN = Math . floor ( firstLineTokens [ 0 ] ) ; // The expected count of numbers.
-  const divisorK = Math . floor ( firstLineTokens [ 1 ] ) ; // The divisor for modulo operations.
+  // Parse the first line to get N and K.
+  var firstLineParts = linesOfText[0].split(' ');
+  var countN = Math.floor(firstLineParts[0]); // N is the first number
+  var divisorK = Math.floor(firstLineParts[1]); // K is the second number
   
-  // Convert the second line into an array of integers.
-  const integerArray = linesOfText [ 1 ] . split ( ' ' ) . map ( ( stringValue ) => {
-    return parseInt ( stringValue , 10 ) ;
-  } ) ;
+  // Parse the second line into an array of integers.
+  var numberArray = linesOfText[1].split(' ').map(strVal => parseInt(strVal, 10));
+  var resultCount = 0; // Initialize the counter for valid sequences
   
-  // Initialize the final counter for valid sequences.
-  let finalCount = 0 ;
-  
-  // Iterate through the array to find subsequences.
-  for ( let outerIndex = 0 ; outerIndex < integerArray . length ; outerIndex ++ ) {
-    // Start a new subsequence sum with the current element.
-    let currentSum = integerArray [ outerIndex ] ;
+  // Iterate through the array to find sub-sequences.
+  for (var outerIndex = 0; outerIndex < numberArray.length; outerIndex++) {
+    var currentSum = numberArray[outerIndex]; // Start with the current element
+    console.log(numberArray[outerIndex]); // Log the current element
     
-    // Log the initial element of the subsequence for debugging.
-    console . log ( 'Starting element for subsequence: ' , integerArray [ outerIndex ] ) ;
-    
-    // Check if the single element itself satisfies the condition.
-    if ( integerArray [ outerIndex ] % divisorK === 1 ) {
-      finalCount ++ ; // Increment if condition met.
+    // Check the condition for a single-element sequence.
+    if (numberArray[outerIndex] % divisorK === 1) {
+      resultCount++;
     }
     
-    // Extend the subsequence by adding subsequent elements.
-    for ( let innerOffset = 1 ; innerOffset < integerArray . length - outerIndex ; innerOffset ++ ) {
-      currentSum += integerArray [ outerIndex + innerOffset ] ;
+    // Extend the sequence with subsequent elements.
+    for (var innerIndex = 1; innerIndex < numberArray.length - outerIndex; innerIndex++) {
+      currentSum += numberArray[outerIndex + innerIndex]; // Add the next element to the sum
+      console.log('tmp = ' + currentSum); // Log the running sum
       
-      // Display the running sum of the current subsequence.
-      console . log ( 'Current accumulated sum for subsequence: ' + currentSum ) ;
-      
-      // Check the condition for the extended subsequence.
-      if ( currentSum % divisorK === innerOffset + 1 ) {
-        finalCount ++ ; // Another valid sequence found.
+      // Check the condition for the extended sequence.
+      if (currentSum % divisorK === innerIndex + 1) {
+        resultCount++;
       }
-      
-      // Log the current state of the total count.
-      console . log ( 'Intermediate valid sequence count: ' , finalCount ) ;
+      console.log(resultCount); // Log the current count of valid sequences
     }
   }
   
-  // Output the final tally of valid subsequences.
-  console . log ( 'Total number of valid subsequences: ' , finalCount ) ;
+  // Output the final total count.
+  console.log(resultCount);
 }
 
-// Execute the main processing function with data from standard input.
-ProcessInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

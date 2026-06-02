@@ -1,28 +1,22 @@
 'use strict';
 
-function processInputData(sourceText) {
-    const allLines = sourceText.split('\n');
+function evaluateCandidates(sourceData) {
+    const dataLines = sourceData.split('\n');
 
-    // Extract the maximum allowed execution time from the first line
-    const maximumAllowedTime = Number(allLines[0].split(' ').pop());
+    const maxCostAllowed = Number(dataLines[0].split(' ')[1]);
 
-    // Transform and filter the remaining data records
-    const suitableRecords = allLines.slice(1)
-        .map(lineContent => lineContent.split(' ').map(Number)) // Convert each line to an array of [cost, time] numbers
-        .filter(([currentCost, executionDuration]) => executionDuration <= maximumAllowedTime); // Keep only records within the time limit
+    const viableOptions = dataLines.slice(1)
+        .map(entryLine => entryLine.split(' ').map(strNum => Number(strNum)))
+        .filter(optionPair => optionPair[1] <= maxCostAllowed);
 
-    // Determine the lowest cost among the suitable records
-    const minimumAchievableCost = suitableRecords.reduce((currentLowest, [currentCost, executionDuration]) => {
-        return Math.min(currentLowest, currentCost);
-    }, Infinity); // Initialize with a very high value (effectively no minimum found yet)
-
-    // Output the result based on whether a suitable cost was found
-    if (minimumAchievableCost === Infinity) {
-        console.log("TLE");
+    if (viableOptions.length === 0) {
+        return "TLE";
     } else {
-        console.log(minimumAchievableCost);
+        const candidateValues = viableOptions.map(optionPair => optionPair[0]);
+        const minimumAchievable = Math.min(...candidateValues);
+        return minimumAchievable;
     }
 }
 
-// Execute the data processing with content from standard input
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(evaluateCandidates(rawInputContent));

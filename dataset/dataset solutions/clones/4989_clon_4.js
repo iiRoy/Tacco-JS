@@ -1,16 +1,15 @@
 'use strict';
 
-const calculateTransactionValue = (sourceData) => {
-  const [totalUnits, firstTierLimit, firstTierPrice, subsequentTierPrice] = sourceData
-    .split('\n')
-    .slice(0, 4) // Ensure we only process the first four lines even if there's an empty line at the end
-    .map(entry => Number(entry));
+const processBilling = (rawInputData) => {
+    const [quantityTotal, initialUnits, rateForInitial, rateForAdditional] = rawInputData.split('\n').map(Number);
 
-  const accruedValue = totalUnits <= firstTierPrice
-    ? totalUnits * firstTierPrice
-    : (firstTierLimit * firstTierPrice) + ((totalUnits - firstTierLimit) * subsequentTierPrice);
+    const finalCalculatedAmount = (quantityTotal <= rateForInitial)
+        ? (quantityTotal * rateForInitial)
+        : (initialUnits * rateForInitial) + ((quantityTotal - initialUnits) * rateForAdditional);
 
-  process.stdout.write(String(accruedValue) + '\n');
+    console.log(finalCalculatedAmount);
 };
 
-calculateTransactionValue(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+const fileSystemModule = require("fs");
+
+processBilling(fileSystemModule.readFileSync("/dev/stdin", "utf8"));

@@ -1,102 +1,118 @@
-function createPlayerProfile(idValue, opponentSequence, currentMatchIndex, completedAllGames) {
-    return {
-        id: idValue,
-        designatedOpponents: opponentSequence,
-        matchPointer: currentMatchIndex,
-        allGamesFinished: completedAllGames,
-        peekNextOpponent: function() {
-            return (this.matchPointer < this.designatedOpponents.length) ? this.designatedOpponents[this.matchPointer] : null;
-        },
-        advanceMatch: function() {
-            const nextPointer = this.matchPointer + 1;
-            const newCompletionStatus = (nextPointer >= this.designatedOpponents.length);
-            return createPlayerProfile(this.id, this.designatedOpponents, nextPointer, newCompletionStatus);
+let inputBuffer = '';
+process.stdin.on('data', chunk => { inputBuffer += chunk; });
+process.stdin.on('end', () => {
+    const inputLines = inputBuffer.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    const inputHandler = createInputHandler(inputLines);
+    
+    console.error("\n");
+    const startTime = Date.now();
+    executeMainLogic(inputHandler);
+    const endTime = Date.now() - startTime;
+    logDebug("time : " + (endTime) + "ms");
+    logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function createInputHandler(lines) {
+    let currentLinePointer = 0;
+    const retrieveNextLine = () => {
+        if (currentLinePointer >= lines.length) {
+            throw new Error("Input source exhausted.");
         }
+        return lines[currentLinePointer++];
+    };
+
+    return {
+        fetchInteger: () => parseInt(retrieveNextLine(), 10),
+        fetchStringArray: () => retrieveNextLine().split(" "),
+        fetchIntegerArray: () => retrieveNextLine().split(" ").map(Number),
+        fetchCharacterArray: () => retrieveNextLine().split(""),
     };
 }
 
-function originalNextValue() {
-    return obj.next();
-}
+function outputResult(content) { console.log(content); }
+function logDebug(content) { console.error("debug:" + require("util").inspect(content, false, null)); }
 
-function originalConvert(value, type) {
-    return myconv(value, type);
-}
-
-function acquireNumericScalar() {
-    return originalConvert(originalNextValue(), 1);
-}
-
-function acquireNumericSeries() {
-    return originalConvert(originalNextValue(), 4);
-}
-
-function emitResult(content) {
-    myout(content);
-}
-
-function conductPeriodicContest(totalParticipantsCount, currentPeriodCount, participantRegistry) {
-    const allParticipantsAreDone = Array.from(participantRegistry.values()).every(profile => profile.allGamesFinished);
-    if (allParticipantsAreDone) {
-        return currentPeriodCount;
+class PlayerMatchRecord {
+    constructor(playerIdentifier, opponentSequenceData) {
+        this.playerIdentifier = playerIdentifier;
+        this.opponentSequenceData = opponentSequenceData;
+        this.currentMatchIndex = 0;
+        this.isCompletionAchieved = false;
     }
 
-    let engagedParticipantsThisPeriod = new Set();
-    let nextParticipantRegistry = new Map(participantRegistry);
-    let anyActivityThisPeriod = false;
+    get nextScheduledOpponent() {
+        return this.opponentSequenceData[this.currentMatchIndex];
+    }
 
-    const sortedParticipantIDs = Array.from(participantRegistry.keys()).sort((a, b) => a - b);
+    advanceMatchProgress() {
+        this.currentMatchIndex++;
+        if (this.currentMatchIndex >= this.opponentSequenceData.length) {
+            this.isCompletionAchieved = true;
+        }
+    }
+}
 
-    for (const participantId of sortedParticipantIDs) {
-        const currentProfile = nextParticipantRegistry.get(participantId);
+function executeMainLogic(inputSource) {
+    const totalParticipants = inputSource.fetchInteger();
+    const participantRecords = new Map();
 
-        if (!currentProfile || currentProfile.allGamesFinished || engagedParticipantsThisPeriod.has(participantId)) {
-            continue;
+    for (let pIndex = 1; pIndex <= totalParticipants; pIndex++) {
+        const opponentList = inputSource.fetchIntegerArray();
+        participantRecords.set(pIndex, new PlayerMatchRecord(pIndex, opponentList));
+    }
+
+    let elapsedDays = 0;
+    let remainingParticipants = Array.from({ length: totalParticipants }, (_, i) => i + 1);
+
+    while (true) {
+        elapsedDays++;
+        const participantsBattledToday = new Set();
+        const dailyEngagements = [];
+
+        const currentlyAvailableParticipants = remainingParticipants.filter(id => !participantRecords.get(id).isCompletionAchieved);
+
+        if (currentlyAvailableParticipants.length === 0) {
+            outputResult(elapsedDays - 1);
+            return;
         }
 
-        const potentialRivalId = currentProfile.peekNextOpponent();
-        if (potentialRivalId === null) {
-            if (!currentProfile.allGamesFinished) {
-                nextParticipantRegistry.set(participantId, createPlayerProfile(participantId, currentProfile.designatedOpponents, currentProfile.matchPointer, true));
+        let anyEngagementOccurred = false;
+
+        for (const currentParticipantId of currentlyAvailableParticipants) {
+            const participantA = participantRecords.get(currentParticipantId);
+
+            if (participantA.isCompletionAchieved || participantsBattledToday.has(currentParticipantId)) {
+                continue;
             }
-            continue;
-        }
 
-        const rivalProfile = nextParticipantRegistry.get(potentialRivalId);
+            const intendedOpponentId = participantA.nextScheduledOpponent;
+            const participantB = participantRecords.get(intendedOpponentId);
 
-        if (rivalProfile && !rivalProfile.allGamesFinished && !engagedParticipantsThisPeriod.has(potentialRivalId)) {
-            const mutualRivalCheck = rivalProfile.peekNextOpponent();
-            if (mutualRivalCheck === participantId) {
-                anyActivityThisPeriod = true;
-                engagedParticipantsThisPeriod.add(participantId);
-                engagedParticipantsThisPeriod.add(potentialRivalId);
+            if (participantB && !participantB.isCompletionAchieved && !participantsBattledToday.has(intendedOpponentId) &&
+                participantB.nextScheduledOpponent === currentParticipantId) {
 
-                nextParticipantRegistry.set(participantId, currentProfile.advanceMatch());
-                nextParticipantRegistry.set(potentialRivalId, rivalProfile.advanceMatch());
+                dailyEngagements.push([currentParticipantId, intendedOpponentId]);
+                participantsBattledToday.add(currentParticipantId);
+                participantsBattledToday.add(intendedOpponentId);
+                anyEngagementOccurred = true;
             }
         }
+
+        if (!anyEngagementOccurred) {
+            outputResult(-1);
+            return;
+        }
+
+        for (const [p1Id, p2Id] of dailyEngagements) {
+            participantRecords.get(p1Id).advanceMatchProgress();
+            participantRecords.get(p2Id).advanceMatchProgress();
+        }
+
+        remainingParticipants = Array.from(participantRecords.keys()).filter(id => !participantRecords.get(id).isCompletionAchieved);
+
+        if (remainingParticipants.length === 0) {
+            outputResult(elapsedDays);
+            return;
+        }
     }
-
-    if (!anyActivityThisPeriod) {
-        const remainingActiveParticipants = Array.from(nextParticipantRegistry.values()).filter(profile => !profile.allGamesFinished);
-        return (remainingActiveParticipants.length === 0) ? currentPeriodCount : -1;
-    }
-
-    return conductPeriodicContest(totalParticipantsCount, currentPeriodCount + 1, nextParticipantRegistry);
-}
-
-function orchestrateTournament() {
-    const totalPlayers = acquireNumericScalar();
-    const playerScheduleData = [];
-    for (let playerNum = 0; playerNum < totalPlayers; playerNum++) {
-        playerScheduleData.push(acquireNumericSeries());
-    }
-
-    const initialPlayerStates = new Map();
-    for (let p = 1; p <= totalPlayers; p++) {
-        initialPlayerStates.set(p, createPlayerProfile(p, playerScheduleData[p - 1], 0, false));
-    }
-
-    const outcomeValue = conductPeriodicContest(totalPlayers, 0, initialPlayerStates);
-    emitResult(outcomeValue);
 }

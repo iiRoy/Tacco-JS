@@ -1,42 +1,88 @@
-const sequenceOfEmissions = [
-  { content: '\n', destination: 'err', applyDebugPrefix: false },
-  { content: 'Yes', destination: 'out', applyDebugPrefix: false },
-  { content: 4, destination: 'out', applyDebugPrefix: false },
-  { content: '3 1 2 3', destination: 'out', applyDebugPrefix: false },
-  { content: '3 1 4 5', destination: 'out', applyDebugPrefix: false },
-  { content: '3 2 5 6', destination: 'out', applyDebugPrefix: false },
-  { content: '3 3 4 6', destination: 'out', applyDebugPrefix: false }
-];
+const lineProcessor = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+let lineCache = [];
+let globalDataStream;
 
-const dispatchMessage = (data, channel, usePrefix) => {
-  let formattedData = data;
-  if (channel === 'err' && usePrefix) {
-    formattedData = "debug:" + data;
-  }
+lineProcessor.on('line', (inputLine) => { lineCache.push(inputLine); });
+lineProcessor.on('close', () => {
+  globalDataStream = initializeStream(lineCache);
+  console.error("\n");
+  const startTime = Date.now();
+  executeProgram();
+  const elapsedTime = Date.now() - startTime;
+  logDiagnostic(`time : ${elapsedTime}ms`);
+  logDiagnostic(`memory : ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
+});
 
-  if (channel === 'out') {
-    console.log(formattedData);
-  } else if (channel === 'err') {
-    console.error(formattedData);
-  }
-};
+function deepCopy(sourceObject) { return JSON.parse(JSON.stringify(sourceObject)); }
 
-(function executeProgramCore() {
-  const initialDirective = sequenceOfEmissions[0];
-  dispatchMessage(initialDirective.content, initialDirective.destination, initialDirective.applyDebugPrefix);
+const conversionStrategies = new Map([
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (val) => val.join(" ")],
+    [9, (val) => val.join("\n")],
+    [0, (val) => val.join("")],
+]);
 
-  const startMoment = Date.now();
-  
-  sequenceOfEmissions.slice(1).forEach(instruction => {
-    dispatchMessage(instruction.content, instruction.destination, instruction.applyDebugPrefix);
-  });
+function transformInput(inputValue, conversionType) {
+    try {
+        const strategy = conversionStrategies.get(conversionType);
+        return strategy ? strategy(inputValue) : inputValue;
+    } catch (e) {
+        return inputValue;
+    }
+}
 
-  const endMoment = Date.now();
-  const elapsedMillis = endMoment - startMoment;
+class InputSourceIterator {
+    #lines;
+    #currentIndex;
 
-  const currentMemoryStats = process.memoryUsage();
-  const heapTotalKB = Math.round(currentMemoryStats.heapTotal / 1024);
+    constructor(inputLines) {
+        this.#lines = inputLines;
+        this.#currentIndex = 0;
+    }
 
-  dispatchMessage("time : " + elapsedMillis + "ms", 'err', true);
-  dispatchMessage("memory : " + heapTotalKB + "KB", 'err', true);
-})();
+    fetchNext() {
+        if (this.#currentIndex < this.#lines.length) {
+            return this.#lines[this.#currentIndex++];
+        } else {
+            throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+        }
+    }
+
+    hasRemaining() {
+        return this.#currentIndex < this.#lines.length;
+    }
+}
+
+function initializeStream(inputLines) {
+    return new InputSourceIterator(inputLines);
+}
+
+function advanceStream() { return globalDataStream.fetchNext(); }
+function hasMoreData() { return globalDataStream.hasRemaining(); }
+
+function retrieveInteger() { return transformInput(advanceStream(), 1); }
+function retrieveStringArray() { return transformInput(advanceStream(), 2); }
+function retrieveIntegerArray() { return transformInput(advanceStream(), 4); }
+function retrieveCharacterArray() { return transformInput(advanceStream(), 6); }
+
+function displayOutput(content) { console.log(content); }
+function logDiagnostic(message) { console.error(`diagnostic: ${require("util").inspect(message, false, null)}`); }
+
+function executeProgram() {
+    const fixedOutputSequence = [
+        "Yes",
+        4,
+        "3 1 2 3",
+        "3 1 4 5",
+        "3 2 5 6",
+        "3 3 4 6"
+    ];
+
+    fixedOutputSequence.forEach(item => displayOutput(item));
+}

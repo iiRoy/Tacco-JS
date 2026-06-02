@@ -1,73 +1,85 @@
-function ProcessInput( rawInputData ) {
-  // Normalize the incoming data: remove leading/trailing whitespace and split into individual lines.
-  const processedLines = rawInputData.trim().split( "\n" );
+function ProcessInput(rawData) {
+  // Process the raw input string: remove leading/trailing whitespace and split into individual lines.
+  rawData = rawData.trim().split("\n");
 
-  // Parse the first line to extract grid dimensions and the count of special items.
-  const [totalRows, totalCols, numItems] = processedLines.shift().split( " " ) .map( ( lineSegment ) => Number.parseInt( lineSegment, 10 ) );
+  // Extract the grid dimensions (number of rows, number of columns) and the count of value items
+  // from the first line of input. Convert these string values to integers.
+  const [numRows, numCols, numItems] = rawData.shift().split(" ").map((strVal) => parseInt(strVal, 10));
 
-  // Process the subsequent lines, converting each into an array of numeric item details.
-  const itemDetails = processedLines.map( ( dataRow ) =>
-    dataRow.split( " " ).map( ( numericSegment ) => Number.parseInt( numericSegment, 10 ) )
-  );
+  // Parse the remaining lines of input, each representing an item with its row, column, and value.
+  // Each line is split by space, and its components are converted to integers.
+  const itemData = rawData.map((strVal) => strVal.split(" ").map((subStrVal) => parseInt(subStrVal, 10)));
 
-  let rCoord, cCoord, statePhase; // Declare iterators for the grid and state dimensions.
-  let cellContents = []; // This array will store values for specific cells, indexed by (row, col).
-  let dynamicMemo = []; // This 2D array serves as the dynamic programming table for state calculations.
+  // Declare variables for loop indices and the main data structures used in the algorithm.
+  let rowIdx, colIdx, valIdx;
+  let gridValues = []; // This sparse array will store the actual values at specific (row, col) coordinates.
+  let dynamicProg = []; // This 3D array will store the dynamic programming states.
 
-  // Populate the 'cellContents' grid using the provided item data.
-  // Input coordinates are 1-indexed, so we convert them to 0-indexed for array access.
-  for ( let currentIdx = 0; currentIdx < numItems; currentIdx++ ) {
-    const [itemRowCoord, itemColCoord, itemValueAmount] = itemDetails[currentIdx];
-    cellContents[itemRowCoord - 1] = cellContents[itemRowCoord - 1] || [];
-    cellContents[itemRowCoord - 1][itemColCoord - 1] = itemValueAmount;
+  // Populate the 'gridValues' array using the parsed 'itemData'.
+  // The input coordinates are 1-indexed, so they are adjusted to be 0-indexed for array access.
+  for (let rowIdx = 0; rowIdx < numItems; rowIdx++) {
+    const [itemRow, itemCol, itemVal] = itemData[rowIdx];
+    // Ensure the target row array exists before attempting to assign a value to its column.
+    gridValues[itemRow - 1] = gridValues[itemRow - 1] || [];
+    // Assign the item's value to its corresponding 0-indexed position in the grid.
+    gridValues[itemRow - 1][itemCol - 1] = itemVal;
   }
 
-  // Begin the core dynamic programming iteration over the grid cells.
-  for ( rCoord = 0; rCoord < totalRows; rCoord++ ) {
-    dynamicMemo[rCoord] = dynamicMemo[rCoord] || [];
-    dynamicMemo[rCoord + 1] = dynamicMemo[rCoord + 1] || []; // Ensure the next row exists for potential future initialization/aliasing.
-    for ( cCoord = 0; cCoord < totalCols; cCoord++ ) {
-      // Initialize the current cell's state array if it hasn't been set yet.
-      dynamicMemo[rCoord][cCoord] = dynamicMemo[rCoord][cCoord] || [0, 0, 0, 0];
-      // Initialize the state array for the cell to the right in the current row.
-      dynamicMemo[rCoord][cCoord + 1] = dynamicMemo[rCoord][cCoord + 1] || [0, 0, 0, 0];
-      // IMPORTANT: The cell directly below the current cell is made to reference the current cell's state array.
-      // This means modifications to dynamicMemo[rCoord][cCoord] will also affect dynamicMemo[rCoord + 1][cCoord].
-      dynamicMemo[rCoord + 1][cCoord] = dynamicMemo[rCoord][cCoord];
+  // Initialize and compute the dynamic programming table.
+  // This involves iterating through each cell of the grid.
+  for (rowIdx = 0; rowIdx < numRows; rowIdx++) {
+    // Ensure that the current row and the next row in the DP table are initialized as arrays.
+    dynamicProg[rowIdx] = dynamicProg[rowIdx] || [];
+    dynamicProg[rowIdx + 1] = dynamicProg[rowIdx + 1] || [];
 
-      // Iterate through the state phases for the current cell to update values based on item presence.
-      for ( statePhase = 2; statePhase >= 0; statePhase-- ) {
-        const currentValue = (cellContents[rCoord] && cellContents[rCoord][cCoord]) || 0;
-        dynamicMemo[rCoord][cCoord][statePhase + 1] = Math.max(
-          dynamicMemo[rCoord][cCoord][statePhase + 1],
-          dynamicMemo[rCoord][cCoord][statePhase] + currentValue
+    for (colIdx = 0; colIdx < numCols; colIdx++) {
+      // Initialize the DP states for the current cell, the cell to its right, and the cell below it.
+      // Each state is an array of 4 elements, initialized to zeros.
+      dynamicProg[rowIdx][colIdx] = dynamicProg[rowIdx][colIdx] || [0, 0, 0, 0];
+      dynamicProg[rowIdx][colIdx + 1] = dynamicProg[rowIdx][colIdx + 1] || [0, 0, 0, 0];
+      dynamicProg[rowIdx + 1][colIdx] = dynamicProg[rowIdx + 1][colIdx] || [0, 0, 0, 0];
+
+      // This loop calculates the maximum value for the current cell's DP states,
+      // considering the possibility of picking up an item at this cell.
+      // It iterates backwards through the 'valIdx' dimension.
+      for (valIdx = 2; valIdx >= 0; valIdx--) {
+        // Get the value at the current grid position, or 0 if no item exists there.
+        const currentValue = (gridValues[rowIdx] && gridValues[rowIdx][colIdx]) || 0;
+        // Update the DP state for 'valIdx + 1' by taking the maximum of its current value
+        // and the sum of the 'valIdx' state and the current cell's item value.
+        dynamicProg[rowIdx][colIdx][valIdx + 1] = Math.max(
+          dynamicProg[rowIdx][colIdx][valIdx + 1],
+          dynamicProg[rowIdx][colIdx][valIdx] + currentValue
         );
       }
 
-      // Propagate maximum values from the current cell's states to adjacent cells (down and right).
-      // Due to the aliasing, the update to dynamicMemo[rCoord + 1][cCoord][0] also updates dynamicMemo[rCoord][cCoord][0].
-      for ( statePhase = 0; statePhase < 4; statePhase++ ) {
-        dynamicMemo[rCoord + 1][cCoord][0] = Math.max(
-          dynamicMemo[rCoord + 1][cCoord][0],
-          dynamicMemo[rCoord][cCoord][statePhase]
+      // This loop propagates the DP values from the current cell to its adjacent cells (down and right).
+      for (valIdx = 0; valIdx < 4; valIdx++) {
+        // Update the DP state for the cell directly below the current cell.
+        // The '0' index for the next row implies a transition without picking an item.
+        dynamicProg[rowIdx + 1][colIdx][0] = Math.max(
+          dynamicProg[rowIdx + 1][colIdx][0],
+          dynamicProg[rowIdx][colIdx][valIdx]
         );
-        dynamicMemo[rCoord][cCoord + 1][statePhase] = Math.max(
-          dynamicMemo[rCoord][cCoord + 1][statePhase],
-          dynamicMemo[rCoord][cCoord][statePhase]
+        // Update the DP state for the cell directly to the right of the current cell.
+        // The 'valIdx' is preserved, indicating the state carries over.
+        dynamicProg[rowIdx][colIdx + 1][valIdx] = Math.max(
+          dynamicProg[rowIdx][colIdx + 1][valIdx],
+          dynamicProg[rowIdx][colIdx][valIdx]
         );
       }
     }
   }
 
-  let calculatedMax = 0; // Initialize a variable to store the final maximum result.
-  // After all iterations, find the maximum value among all states in the bottom-rightmost cell.
-  for ( statePhase = 0; statePhase < 4; statePhase++ ) {
-    calculatedMax = Math.max( calculatedMax, dynamicMemo[totalRows - 1][totalCols - 1][statePhase] );
+  // After filling the DP table, find the maximum value among all states in the bottom-right cell.
+  let finalResult = 0;
+  for (valIdx = 0; valIdx < 4; valIdx++) {
+    finalResult = Math.max(finalResult, dynamicProg[numRows - 1][numCols - 1][valIdx]);
   }
-  // Output the final computed maximum value to the console.
-  console.log( calculatedMax );
+
+  // Print the final computed maximum result to the console.
+  console.log(finalResult);
 }
 
-// Read the input data from standard input (typically a file in competitive programming environments)
-// and then pass it to the main processing function.
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

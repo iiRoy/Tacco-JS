@@ -1,51 +1,44 @@
-// This module handles input parsing and game score calculation.
-// It reads data from a standard input stream to determine game outcomes.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
+var lineSegments = (rawData.trim()).split("\n"); // Split the input into an array of lines, removing leading/trailing whitespace
 
-let rawContentBuffer = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+// Main processing loop
+while (true) {
+    // Extract the number of rounds for the current game
+    // The `shift()` method removes the first element from the `lineSegments` array
+    // and returns that element. The `- 0` converts the string to a number.
+    var roundCount = lineSegments.shift() - 0;
 
-// The input content is first cleaned of leading/trailing whitespace.
-// Then, it's divided into an array of individual lines for sequential processing.
-let processedLinesArray = (rawContentBuffer.trim()).split("\n");
-
-
-// This main loop continues to process game scenarios until a specific termination condition is met.
-for (;;) {
-
-    // Extract the number of rounds for the current game from the head of the processed lines.
-    // The extracted string value is explicitly converted to a numeric type.
-    let currentGameRounds = Number(processedLinesArray.shift());
-
-    // A value of zero for 'currentGameRounds' signals the end of all game data.
-    if (currentGameRounds === 0) {
-        break; // Exit the infinite processing loop.
+    // If the round count is zero, it signifies the end of input, so break the loop.
+    if (roundCount === 0) {
+        break;
     }
 
-    // Initialize scoring variables for the two participants for the current game session.
-    let firstPlayerPoints = 0;
-    let secondPlayerPoints = 0;
+    // Initialize scores for two players for the current game
+    var playerOneScore = 0;
+    var playerTwoScore = 0;
 
+    // Iterate through each round of the current game
+    for (var roundIndex = 0; roundIndex < roundCount; roundIndex++) {
+        // Get the scores for the current round
+        // `shift()` gets the next line, `split(" ")` separates by space,
+        // and `map(Number)` converts each part to a number.
+        var roundScores = (lineSegments.shift()).split(" ").map(Number);
 
-    // Iterate through each individual round within the current game.
-    for (let roundCounter = 0; roundCounter < currentGameRounds; roundCounter++) {
-
-        // Retrieve the scores for the current round from the input lines.
-        // The line is split by space, and each segment is converted into a number.
-        let roundScoresData = (processedLinesArray.shift()).split(" ").map(Number);
-
-        // Compare the scores of the two players for this specific round.
-        if (roundScoresData[0] > roundScoresData[1]) {
-            // If player 1 scored higher, both players' round scores contribute to player 1's total.
-            firstPlayerPoints += roundScoresData[0] + roundScoresData[1];
-        } else if (roundScoresData[0] < roundScoresData[1]) {
-            // If player 2 scored higher, both players' round scores contribute to player 2's total.
-            secondPlayerPoints += roundScoresData[0] + roundScoresData[1];
+        // Compare scores and update player totals
+        if (roundScores[0] > roundScores[1]) {
+            // If player one's score is higher, add both scores to player one's total
+            playerOneScore += roundScores[0] + roundScores[1];
+        } else if (roundScores[0] < roundScores[1]) {
+            // If player two's score is higher, add both scores to player two's total
+            playerTwoScore += roundScores[0] + roundScores[1];
         } else {
-            // In case of a draw, each player receives their own score for the round.
-            firstPlayerPoints += roundScoresData[0];
-            secondPlayerPoints += roundScoresData[1];
+            // If scores are equal, add player one's score to player one's total
+            // and player two's score to player two's total
+            playerOneScore += roundScores[0];
+            playerTwoScore += roundScores[1];
         }
     }
 
-    // After all rounds for a game are processed, display the final accumulated scores.
-    console.log(`${firstPlayerPoints} ${secondPlayerPoints}`);
+    // Output the final scores for the current game, separated by a space
+    console.log(playerOneScore + " " + playerTwoScore);
 }

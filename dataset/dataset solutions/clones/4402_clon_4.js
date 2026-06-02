@@ -1,23 +1,22 @@
-const performCalculation = (sourceData) => {
-    const processedSegments = sourceData.split('\n');
-    const numberCollection = processedSegments[1].split(' ').map(Number);
+function processInputData(sourceContent) {
+    const lineSegments = sourceContent.split('\n');
+    const tokenStrings = lineSegments[1].split(' ');
+    const numericalSequence = tokenStrings.map(Number);
 
-    const tally = new Map();
-    numberCollection.forEach(val => {
-        if (!isNaN(val)) { // Exclude NaN values from counting
-            tally.set(val, (tally.get(val) || 0) + 1);
-        }
-    });
+    const occurrenceMap = numericalSequence.reduce((accumulator, currentElement) => {
+        accumulator.set(currentElement, (accumulator.get(currentElement) || 0) + 1);
+        return accumulator;
+    }, new Map());
 
-    const recurringElements = Array.from(tally.entries())
-        .filter(([, count]) => count % 2 === 0)
-        .map(([value]) => value)
+    const pairedElements = Array.from(occurrenceMap.entries())
+        .filter(([elementValue, elementCount]) => elementCount % 2 === 0)
+        .map(([elementValue, elementCount]) => elementValue)
         .sort((a, b) => b - a);
 
-    const topElement = recurringElements[0] || 0;
-    const secondTopElement = recurringElements[1] || 0;
+    const topValue = pairedElements[0] || 0;
+    const nextValue = pairedElements[1] || 0;
 
-    console.log(topElement * secondTopElement);
-};
+    console.log(topValue * nextValue);
+}
 
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

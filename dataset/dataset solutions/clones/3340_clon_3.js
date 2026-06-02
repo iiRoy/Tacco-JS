@@ -1,98 +1,64 @@
 'use strict';
-(function(rawInputString){
-  // Define a constant for modulo operation
-  const MOD_PRIME = Math.pow(10, 9) + 7;
+(function(rawData){
+  const moduloConstant = Math.pow(10, 9) + 7;
 
-  // Helper function to ensure results are always positive after modulo
-  const positiveModulo = (value, modulus) => (value % modulus + modulus) % modulus;
-
-  // Input processing and validation
-  if (!rawInputString || rawInputString.trim().length === 0) {
-    console.error("Error: Input string is empty or invalid.");
-    // In a real scenario, might throw an error or exit.
-    return;
-  }
-
-  // Parse the raw input string into an array of numeric values
-  const parsedNumbers = rawInputString.trim().split(/\s+/).map(str => {
-    const num = parseInt(str, 10);
-    if (isNaN(num)) {
-      console.error(`Error: Invalid number found in input: '${str}'`);
-      // Fallback or error handling for non-numeric input
-      return 0; // Or throw an error
-    }
-    return num;
-  });
-
-  // Extract problem parameters
-  const totalChildrenCount = parsedNumbers.shift();
-  const maxOverallCandies = parsedNumbers.shift();
-  const childCandyLimits = parsedNumbers; // Remaining numbers are individual child limits
-
-  // Basic validation for key parameters
-  if (totalChildrenCount === undefined || totalChildrenCount < 0 ||
-      maxOverallCandies === undefined || maxOverallCandies < 0) {
-    console.error("Error: Invalid child count or maximum candies. Must be non-negative integers.");
-    return;
-  }
-
-  // Initialize the dynamic programming table
-  // dpTable[i][k] will store the total ways to distribute 0 to 'k' candies
-  // among the first 'i+1' children (children from index 0 to i).
-  const dpTable = Array.from({ length: totalChildrenCount }, () =>
-    Array(maxOverallCandies + 1).fill(0)
-  );
-
-  // Define a conceptual base row for the DP calculation when no children are considered.
-  // This row signifies that there is 1 way to achieve any candy sum (by giving 0 to all children).
-  // This is a common base case in certain combinatorial DP problems.
-  const emptyChildrenBaseRow = Array(maxOverallCandies + 1).fill(1);
-
-  // Helper function to safely retrieve values from the DP table or base cases.
-  // This abstracts away the original code's `dp[-1]` and `dp[i][-1]` conceptual access.
-  const getDpValue = (childRowIndex, candyColumnIndex) => {
-    if (candyColumnIndex < 0) {
-      // If candy sum is negative, there are no ways.
-      return 0;
-    }
-    if (childRowIndex < 0) {
-      // If childRowIndex is -1, use the special base row.
-      return emptyChildrenBaseRow[candyColumnIndex];
-    }
-    // Otherwise, retrieve from the computed DP table.
-    return dpTable[childRowIndex][candyColumnIndex];
+  const calculateSafeModulo = (value, mod) => {
+      return (value % mod + mod) % mod;
   };
 
-  // Iterate through each child to build up the DP table
-  for (let currentChildIndex = 0; currentChildIndex < totalChildrenCount; currentChildIndex++) {
-    // For each child, iterate through all possible candy sums
-    for (let currentCandySum = 0; currentCandySum <= maxOverallCandies; currentCandySum++) {
-      // Calculate the lower bound index for subtraction in the recurrence relation.
-      // This corresponds to `k - a[i]` in the original code,
-      // used to remove ways where the current child takes more than their limit.
-      const subtractionPointIndex = Math.max(-1, currentCandySum - childCandyLimits[currentChildIndex] -1); // Adjusted by -1 from original for standard prefix sum DP
+  const executeCandyDistributionDP = (inputString) => {
+      const parsedNumericData = inputString.trim().split(/\s+/).map(Number);
+      const numberOfChildren = parsedNumericData.shift();
+      const maximumCandies = parsedNumericData.shift();
+      const childAllowanceLimits = parsedNumericData;
 
-      // Apply the recurrence relation:
-      // dpTable[currentChildIndex][currentCandySum] =
-      //   dpTable[currentChildIndex][currentCandySum - 1] (ways to use up to currentCandySum-1 for current child)
-      //   + getDpValue(currentChildIndex - 1, currentCandySum) (ways for previous children to sum up to currentCandySum)
-      //   - getDpValue(currentChildIndex - 1, subtractionPointIndex) (subtract ways where current child takes too many)
-      // All calculations are done using the helper `getDpValue` to handle base cases.
-      let waysForCurrentState = getDpValue(currentChildIndex, currentCandySum - 1); // Ways for current child with currentCandySum-1
-      waysForCurrentState = positiveModulo(waysForCurrentState + getDpValue(currentChildIndex - 1, currentCandySum), MOD_PRIME); // Add ways from previous children
-      waysForCurrentState = positiveModulo(waysForCurrentState - getDpValue(currentChildIndex - 1, subtractionPointIndex), MOD_PRIME); // Subtract invalid ways
+      // Initialize the dynamic programming table
+      // waysToDistribute[childIndex][candySum] stores the sum of ways to distribute 0 to candySum candies
+      // among children from 0 to childIndex.
+      const waysToDistribute = Array.from({ length: numberOfChildren }, () => Array(maximumCandies + 1).fill(0));
 
-      dpTable[currentChildIndex][currentCandySum] = waysForCurrentState;
-    }
-  }
+      // This array represents the base case for the "previous" row (conceptually dp[-1] from the original).
+      // It signifies the state before any children are considered.
+      // For 0 children, there is 1 way to distribute any sum of candies (by giving 0 to all).
+      let previousChildWays = Array(maximumCandies + 1).fill(1);
 
-  // The problem's usual interpretation for distributing K candies among N children
-  // implies the result should be dpTable[N-1][K].
-  // The original code outputted dp[N-1][0], which typically means "ways to distribute 0 candies".
-  // Assuming the intent is to find ways to distribute `maxOverallCandies` (K)
-  // among `totalChildrenCount` (N) children.
-  // If the original output was truly intended, `dpTable[totalChildrenCount - 1][0]` would be 1 (only one way: everyone takes 0).
-  const finalResult = getDpValue(totalChildrenCount - 1, maxOverallCandies);
-  console.log(finalResult);
+      for (let currentChildIndex = 0; currentChildIndex < numberOfChildren; currentChildIndex++) {
+          // Iterate through all possible candy sums for the current child
+          for (let currentCandySum = 0; currentCandySum <= maximumCandies; currentCandySum++) {
+              // Term 1: Equivalent to dp[currentChildIndex][currentCandySum - 1]
+              // This is the value from the *current* child's row, but for the previous candy sum.
+              // If currentCandySum is 0, this term is 0 (mimicking dp[i][-1] = 0).
+              const currentChildPrevSumTerm = (currentCandySum > 0)
+                  ? waysToDistribute[currentChildIndex][currentCandySum - 1]
+                  : 0;
 
+              // Term 2: Equivalent to dp[currentChildIndex - 1][currentCandySum]
+              // This is the value from the *previous* child's row, for the current candy sum.
+              const prevChildCurrentSumTerm = previousChildWays[currentCandySum];
+
+              // Calculate the lower bound for the subtraction term (l in original)
+              // This represents the point where child 'currentChildIndex' would exceed their candy limit.
+              const exclusionIndex = Math.max(-1, currentCandySum - childAllowanceLimits[currentChildIndex]);
+
+              // Term 3: Equivalent to dp[currentChildIndex - 1][exclusionIndex]
+              // This is the value from the *previous* child's row, at the calculated exclusion index.
+              // If exclusionIndex is -1, this term is 0 (mimicking dp[-1][-1] = 0).
+              const prevChildExclusionTerm = (exclusionIndex >= 0)
+                  ? previousChildWays[exclusionIndex]
+                  : 0;
+
+              // Apply the DP recurrence relation
+              let intermediateCalculation = currentChildPrevSumTerm + prevChildCurrentSumTerm - prevChildExclusionTerm;
+              waysToDistribute[currentChildIndex][currentCandySum] = calculateSafeModulo(intermediateCalculation, moduloConstant);
+          }
+          // After completing the current child's row, it becomes the 'previousChildWays' for the next iteration.
+          previousChildWays = waysToDistribute[currentChildIndex];
+      }
+
+      // The problem asks for the value at dp[N-1][0]
+      return waysToDistribute[numberOfChildren - 1][0];
+  };
+
+  const finalComputedResult = executeCandyDistributionDP(rawData);
+  console.log(finalComputedResult);
 })(require('fs').readFileSync('/dev/stdin','utf8'));

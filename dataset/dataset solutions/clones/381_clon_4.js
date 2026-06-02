@@ -1,60 +1,71 @@
-const acquireRawData = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const transformInputLines = (textPayload) => {
-    const adjustedPayload = textPayload.trimEnd();
-    return adjustedPayload.split('\n');
-};
+const determinePath = (startPoint, endPoint) => {
+    const progression = [startPoint];
+    let currentPoint = startPoint;
 
-const formulateNumericRanges = (startpoint, endpoint) => {
-    const ascendingProgression = (initial, final) => Array.from({ length: final - initial + 1 }, (_, idx) => initial + idx);
-    const descendingProgression = (initial, final) => Array.from({ length: initial - final + 1 }, (_, idx) => initial - idx);
+    const stepFunctions = {
+        incrementSimple: (val) => val + 1,
+        decrementSimple: (val) => val - 1,
+        incrementWrap: (val) => (val + 1 === 10) ? 5 : val + 1,
+        incrementThenDecrement: (val, state) => {
+            if (!state.direction) state.direction = 1;
+            let next = val + state.direction;
+            if (next === 10) {
+                next = 5;
+                state.direction = -1;
+            }
+            return next;
+        }
+    };
 
-    let resultingPath = [];
-
-    const pathStrategies = [
+    const strategyDefinitions = [
         {
-            test: (currentPosition, destination) => currentPosition < destination,
-            sequence: (currentPosition, destination) => ascendingProgression(currentPosition, destination)
+            condition: (s, g) => s < g,
+            logic: stepFunctions.incrementSimple
         },
         {
-            test: (currentPosition, destination) => currentPosition > destination && currentPosition <= 5,
-            sequence: (currentPosition, destination) => descendingProgression(currentPosition, destination)
+            condition: (s, g) => s > g && s <= 5,
+            logic: stepFunctions.decrementSimple
         },
         {
-            test: (currentPosition, destination) => currentPosition > destination && currentPosition >= 6 && destination >= 6,
-            sequence: (currentPosition, destination) => [...ascendingProgression(currentPosition, 10), ...ascendingProgression(5, destination)]
+            condition: (s, g) => s > g && s >= 6 && g >= 6,
+            logic: stepFunctions.incrementWrap
         },
         {
-            test: (currentPosition, destination) => currentPosition > destination && currentPosition >= 6 && destination <= 5,
-            sequence: (currentPosition, destination) => [...ascendingProgression(currentPosition, 10), ...descendingProgression(5, destination)]
+            condition: (s, g) => s > g && s >= 6 && g <= 5,
+            logic: stepFunctions.incrementThenDecrement
         }
     ];
 
-    for (const strat of pathStrategies) {
-        if (strat.test(startpoint, endpoint)) {
-            resultingPath = strat.sequence(startpoint, endpoint);
+    let activeLogic = null;
+    let logicState = {};
+
+    for (const definition of strategyDefinitions) {
+        if (definition.condition(startPoint, endPoint)) {
+            activeLogic = definition.logic;
             break;
         }
     }
-    return resultingPath;
+
+    if (!activeLogic) {
+        return progression;
+    }
+
+    while (currentPoint !== endPoint) {
+        currentPoint = activeLogic(currentPoint, logicState);
+        progression.push(currentPoint);
+    }
+
+    return progression;
 };
 
-const executeProcessing = () => {
-    const sourceData = acquireRawData();
-    const entryItems = transformInputLines(sourceData);
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawInput.trim().split('\n');
+const totalCases = Number(dataLines.shift());
 
-    const quantityOfOperations = parseInt(entryItems.shift(), 10);
-    const generatedOutputs = [];
-
-    Array.from({ length: quantityOfOperations }, (_, index) => {
-        const currentDataPair = entryItems[index].split(' ').map(val => parseInt(val, 10));
-        const initialValue = currentDataPair[0];
-        const finalValue = currentDataPair[1];
-        const computedSequence = formulateNumericRanges(initialValue, finalValue);
-        generatedOutputs.push(computedSequence.join(' '));
-    });
-
-    generatedOutputs.forEach(line => process.stdout.write(line + '\n'));
-};
-
-executeProcessing();
+dataLines.slice(0, totalCases).forEach(lineEntry => {
+    const [startValue, goalValue] = lineEntry.split(' ').map(Number);
+    const computedPath = determinePath(startValue, goalValue);
+    console.log(computedPath.join(' '));
+});

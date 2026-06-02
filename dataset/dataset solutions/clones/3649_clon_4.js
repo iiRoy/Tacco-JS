@@ -1,20 +1,12 @@
-const processInputValues = (sourceData) => {
-    const numericSequence = sourceData.split(' ').map(s => parseInt(s, 10));
+function ProcessInput(rawText) {
+    const numericValues = rawText.split(' ').map(val => parseInt(val, 10));
+    
+    const minimumElement = Math.min(...numericValues);
+    const maximumElement = Math.max(...numericValues);
 
-    if (numericSequence.length <= 1) {
-        return 0;
-    }
+    const spanResult = maximumElement - minimumElement;
 
-    const { min, max } = numericSequence.reduce((accumulator, currentValue) => {
-        return {
-            min: Math.min(accumulator.min, currentValue),
-            max: Math.max(accumulator.max, currentValue)
-        };
-    }, { min: numericSequence[0], max: numericSequence[0] });
+    console.log(spanResult);
+}
 
-    return max - min;
-};
-
-const dataStream = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-
-process.stdout.write(processInputValues(dataStream).toString() + '\n');
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

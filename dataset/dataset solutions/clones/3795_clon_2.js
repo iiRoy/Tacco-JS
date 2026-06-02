@@ -1,53 +1,64 @@
-var processInput = function ( rawData )
-{
-  // First, parse the raw input data.
-  rawData = rawData.split ( '\n' ) ;
+/*
+ * This module processes a given string input to find a specific minimum count.
+ * It's designed to analyze segments of a sequence based on character occurrences.
+ */
+const processInput = function (rawData) {
+  // Split the raw input string into an array of lines using the newline character as a delimiter.
+  let processedLines = rawData.split('\n');
 
-  // Extract the total number of records from the beginning.
-  var recordCount = rawData.shift ( ) ;
+  // Extract the first line from the array, which represents the total number of elements.
+  const numElements = processedLines.shift();
 
-  // Join the remaining parts into a single continuous string.
-  var dataString = rawData.join ( ) ;
+  // Join the remaining lines in the array back into a single continuous string.
+  const combinedString = processedLines.join('');
 
-  // Declare variables for segment analysis.
-  var leftSegment ; // Represents the current left portion of the string.
-  var leftFiltered ; // Left portion after filtering specific characters.
-  var rightSegment ; // Represents the current right portion of the string.
-  var rightFiltered ; // Right portion after filtering specific characters.
+  let leftSegment; // This variable will hold the substring to the left of the current split point.
+  let leftSegmentFiltered; // This variable will store the left segment after specific characters are removed.
+  let rightSegment; // This variable will hold the substring to the right of the current split point.
+  let rightSegmentFiltered; // This variable will store the right segment after specific characters are removed.
+  let currentMismatchCount; // This variable will temporarily store the calculated count for each iteration.
 
-  var currentCount ; // Holds the calculated count for the current iteration.
-  var minimumCount = 300000; // Initialize with a very large value.
+  // Initialize the minimum count with a large arbitrary value.
+  // This ensures that the first valid count found will be smaller and thus become the initial minimum.
+  let minimumMismatches = 300000; // Represents 3 * 100000, a sufficiently large upper bound.
 
-  // Iterate through each possible split point in the data string.
-  for ( var idx = 0 ; idx < recordCount ; idx ++ ) {
-    leftSegment = dataString.slice ( 0 , idx ) ;
-    rightSegment = dataString.slice ( idx + 1 , recordCount ) ;
+  // Iterate through the combined string, considering each possible split point.
+  // The loop runs from index 0 up to (but not including) the total number of elements.
+  for (let idx = 0; idx < numElements; idx++) {
+    // Extract the substring from the beginning of the combined string up to the current index.
+    leftSegment = combinedString.slice(0, idx);
+    // Extract the substring from the character immediately after the current index to the end.
+    rightSegment = combinedString.slice(idx + 1, numElements);
 
-    // Filter out 'W' characters from the left segment.
-    leftFiltered = leftSegment.split ( 'W' ) . join ( '' ) ;
+    // Create a filtered version of the left segment by removing all occurrences of the character 'W'.
+    leftSegmentFiltered = leftSegment.split('W').join('');
+    // Create a filtered version of the right segment by removing all occurrences of the character 'E'.
+    rightSegmentFiltered = rightSegment.split('E').join('');
 
-    // Filter out 'E' characters from the right segment.
-    rightFiltered = rightSegment.split ( 'E' ) . join ( '' ) ;
+    // Calculate the current mismatch count:
+    // It's the sum of 'W's in the left segment and 'E's in the right segment.
+    // This is determined by the difference in length before and after filtering.
+    currentMismatchCount = (leftSegment.length - leftSegmentFiltered.length) + (rightSegment.length - rightSegmentFiltered.length);
 
-    // Calculate the total count based on the lengths of segments.
-    currentCount = ( leftSegment.length - leftFiltered.length ) + ( rightSegment.length - rightFiltered.length ) ;
-
-    // Check for an optimal scenario where count is zero.
-    if ( currentCount === 0 || currentCount === -0 ) { // -0 is equivalent to 0 in JS, but keeping for structural parity.
-      minimumCount = 0 ;
-      break ; // No need to check further, 0 is the absolute minimum.
+    // Check if the current calculated count is zero (or negative zero, which is numerically equivalent).
+    // If it is, this is the absolute minimum possible, so we can stop further iterations.
+    if (currentMismatchCount === 0 || currentMismatchCount === -0) {
+      minimumMismatches = 0; // Set the minimum to zero.
+      break; // Exit the loop immediately.
     }
-    // Update the minimum count if the current count is smaller.
-    else if ( currentCount < minimumCount ) {
-      minimumCount = currentCount ;
+    // If the current count is not zero, check if it's smaller than the previously recorded minimum.
+    else if (currentMismatchCount < minimumMismatches) {
+      minimumMismatches = currentMismatchCount; // Update the minimum if a smaller count is found.
     }
   }
 
-  // Output the final calculated minimum count to the console.
-  console.log ( minimumCount ) ;
-  return 0 ; // Indicate successful execution.
+  // Output the final determined minimum mismatch count to the standard console.
+  console.log(minimumMismatches);
 
+  // Return a numerical status code, typically 0 for successful execution.
+  return 0;
 };
 
-// Execute the main processing function with data read from standard input.
-processInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) ) ;
+// This line executes the main processing function.
+// It reads the input from standard input, decodes it as UTF-8, and removes any leading/trailing whitespace.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

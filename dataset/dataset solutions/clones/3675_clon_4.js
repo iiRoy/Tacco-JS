@@ -1,40 +1,32 @@
-const documentText = process.stdin.readFileSync(0).toString();
-const documentLines = documentText.split('\n');
+const inputData = ("" + require("fs").readFileSync(0)).split('\n');
+const initialNumericString = inputData[0];
+const numericValue = parseInt(initialNumericString);
+const sourceSequence = inputData[1];
 
-const numericalParameter = parseInt(documentLines[0], 10);
-const symbolSequence = documentLines[1];
+const permutationFrequencies = {};
+let finalAccumulator = 0;
 
-const firstSegment = symbolSequence.substring(0, numericalParameter);
-const secondSegment = symbolSequence.substring(numericalParameter, 2 * numericalParameter);
+const generatePermutation = (baseSegment, length, bitmask, charSourceResolver) => {
+    const reverseIndices = Array.from({ length: length }, (_, index) => length - 1 - index);
 
-const frequencyTracker = new Map();
+    return reverseIndices.reduce((currentResult, originalIndex) => {
+        const characterToUse = charSourceResolver(originalIndex);
+        return (bitmask >> originalIndex) & 1 ? characterToUse + currentResult : currentResult + characterToUse;
+    }, baseSegment);
+};
 
-const firstPermutations = buildAllPermutations(numericalParameter - 1, String(numericalParameter), firstSegment);
-for (const permutation of firstPermutations) {
-    frequencyTracker.set(permutation, (frequencyTracker.get(permutation) || 0) + 1);
-}
+const allBitmasks = Array.from({ length: 1 << numericValue }, (_, maskIndex) => maskIndex);
 
-let finalTally = 0;
-const secondPermutations = buildAllPermutations(numericalParameter - 1, String(numericalParameter), secondSegment);
-for (const permutation of secondPermutations) {
-    finalTally += frequencyTracker.get(permutation) || 0;
-}
+allBitmasks.forEach(currentMask => {
+    const firstPartCharResolver = (idx) => sourceSequence[idx];
+    const constructedSequence = generatePermutation(initialNumericString, numericValue, currentMask, firstPartCharResolver);
+    permutationFrequencies[constructedSequence] = (permutationFrequencies[constructedSequence] || 0) + 1;
+});
 
-console.log(finalTally);
+allBitmasks.forEach(currentMask => {
+    const secondPartCharResolver = (idx) => sourceSequence[2 * numericValue - (idx + 1)];
+    const constructedSequence = generatePermutation(initialNumericString, numericValue, currentMask, secondPartCharResolver);
+    finalAccumulator += (permutationFrequencies[constructedSequence] || 0);
+});
 
-function buildAllPermutations(charIndex, currentString, characterSet) {
-    if (charIndex < 0) {
-        return [currentString];
-    }
-
-    const charToUse = characterSet[charIndex];
-    let collectedResults = [];
-
-    const prependedResults = buildAllPermutations(charIndex - 1, charToUse + currentString, characterSet);
-    collectedResults = collectedResults.concat(prepend edResults);
-
-    const appendedResults = buildAllPermutations(charIndex - 1, currentString + charToUse, characterSet);
-    collectedResults = collectedResults.concat(appendedResults);
-
-    return collectedResults;
-}
+console.log(finalAccumulator);

@@ -1,130 +1,128 @@
 "use strict";
-
-// Acquire raw content from the specified input source using Node.js file system module.
-const rawDataContent = require("fs").readFileSync("/path/to/input.txt", "utfEight");
-
-// Process the raw input data into an array of tokens, splitting by whitespace or newlines.
-// Initialize an index to keep track of the current token being processed.
-let processedTokens = rawDataContent.split(/[\s\n]+/),
-    currentTokenIndex = 0;
+// This line ensures strict mode for better error handling.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from standard input.
+var tokenStream = rawData.split(/ |\n/), // Split the input string by spaces or newlines into an array of tokens.
+    tokenIndex = 0; // Initialize an index to keep track of the current token.
 
 /**
- * Retrieves and converts the next token from the processedTokens array into a number.
- * Increments the token index after retrieval.
- * @returns {number} The next integer value.
+ * Retrieves the next token from the stream and converts it to a number.
+ * @returns {number} The next numeric token.
  */
-const obtainNextInteger = () => Number(processedTokens[currentTokenIndex++]);
-
-/**
- * Retrieves the next token from the processedTokens array as a string.
- * Increments the token index after retrieval.
- * @returns {string} The next string value.
- */
-const obtainNextString = () => processedTokens[currentTokenIndex++];
-
-/**
- * Retrieves and converts the next token from the processedTokens array into a BigInt.
- * Increments the token index after retrieval.
- * @returns {BigInt} The next BigInt value.
- */
-const obtainNextBigInt = () => BigInt(processedTokens[currentTokenIndex++]);
-
-/**
- * Reads a sequence of 'elementCount' tokens from the processedTokens array.
- * If 'returnAsStrings' is true, elements are returned as strings; otherwise, they are converted to numbers.
- * @param {number} elementCount - The number of elements to read.
- * @param {boolean} [returnAsStrings=false] - If true, elements are returned as strings.
- * @returns {Array<string|number>} An array of tokens.
- */
-const readSequenceOfElements = (elementCount, returnAsStrings = false) => {
-    return returnAsStrings
-        ? processedTokens.slice(currentTokenIndex, (currentTokenIndex += elementCount))
-        : processedTokens.slice(currentTokenIndex, (currentTokenIndex += elementCount)).map((individualElement) => Number(individualElement));
-};
-
-/**
- * Reads a 2D matrix of data, specified by 'numRows' and 'numCols'.
- * If 'returnElementsAsStrings' is true, matrix cells are returned as strings; otherwise, they are converted to numbers.
- * @param {number} numRows - The number of rows in the matrix.
- * @param {number} numCols - The number of columns per row.
- * @param {boolean} [returnElementsAsStrings=false] - If true, matrix cells are returned as strings.
- * @returns {Array<Array<string|number>>} The resulting matrix.
- */
-const readMatrixData = (numRows, numCols, returnElementsAsStrings = false) => {
-    const resultingMatrix = [];
-    let rowIndex = 0;
-
-    if (returnElementsAsStrings) {
-        for (; rowIndex < numRows; rowIndex++) {
-            resultingMatrix.push(processedTokens.slice(currentTokenIndex, (currentTokenIndex += numCols)));
-        }
-    } else {
-        for (; rowIndex < numRows; rowIndex++) {
-            resultingMatrix.push(processedTokens.slice(currentTokenIndex, (currentTokenIndex += numCols)).map((matrixCell) => Number(matrixCell)));
-        }
-    }
-    return resultingMatrix;
-};
-
-/**
- * Dynamically creates a multi-dimensional array based on provided dimensions.
- * Fills the innermost arrays with a specified 'initialFillValue'.
- * Utilizes `eval` for dynamic array construction based on the number of dimensions.
- * @param {*} initialFillValue - The value to fill the innermost array elements with.
- * @param {...number} dimensions - A variable number of arguments representing array dimensions.
- * @returns {Array} A multi-dimensional array.
- */
-const createDynamicArray = (initialFillValue) => {
-    const dimensionArgs = arguments;
-    let currentDimIndex = dimensionArgs.length;
-    let arrayStructureString = `Array(dimensionArgs[${--currentDimIndex}]).fill().map((_) => { return ${initialFillValue}; })`;
-
-    while (--currentDimIndex) {
-        arrayStructureString = `Array(dimensionArgs[${currentDimIndex}]).fill().map((_) => ${arrayStructureString})`;
-    }
-    return eval(arrayStructureString);
-};
-
-// Execute the main program logic and store its return value.
-const finalProgramResult = executeProgram();
-
-// If the program produced a result, print it to the console.
-if (finalProgramResult !== void 0) {
-    console.info(String(finalProgramResult));
+function getNextNum() {
+    return +tokenStream[tokenIndex++]; // Convert string token to number using unary plus operator.
 }
 
 /**
- * The core logic of the application.
- * Reads an integer, processes an array based on specific rules, and returns a sum.
+ * Retrieves the next token from the stream as a string.
+ * @returns {string} The next string token.
+ */
+function getNextStr() {
+    return tokenStream[tokenIndex++];
+}
+
+/**
+ * Retrieves the next token from the stream and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
+function getNextBigInt() {
+    return BigInt(tokenStream[tokenIndex++]);
+}
+
+/**
+ * Retrieves an array of numbers or strings from the token stream.
+ * @param {number} count - The number of elements to retrieve.
+ * @param {boolean} asStrings - If true, return strings; otherwise, return numbers.
+ * @returns {Array<number|string>} An array of tokens.
+ */
+function getArrayOfNums(count, asStrings) {
+    // If 'asStrings' is true, return tokens as-is (strings).
+    // Otherwise, map them to numbers.
+    return asStrings ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
+}
+
+/**
+ * Retrieves a 2D matrix (array of arrays) from the token stream.
+ * @param {number} height - The number of rows.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} asStrings - If true, return string elements; otherwise, return numbers.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function getMatrixOfNums(height, width, asStrings) {
+    var resultMatrix = [], // Initialize an empty array to store rows.
+        rowIndex = 0; // Loop counter for rows.
+
+    if (asStrings) {
+        // If elements should be strings, slice directly.
+        for (; rowIndex < height; rowIndex++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
+        }
+    } else {
+        // If elements should be numbers, slice and map.
+        for (; rowIndex < height; rowIndex++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(val => +val));
+        }
+    }
+    return resultMatrix;
+}
+
+/**
+ * Dynamically creates a multi-dimensional array with a specified fill value.
+ * This function uses eval, which should be used with caution.
+ * @param {*} fillValue - The value to fill the innermost array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, dim3).
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(fillValue) {
+    var args = arguments, // Get all arguments passed to the function.
+        argCount = args.length, // Number of arguments.
+        evalString = "Array(args[" + --argCount + "]).fill().map(x=>{return " + fillValue + ";})"; // Innermost array creation.
+
+    // Build the eval string for nested arrays.
+    while (--argCount) {
+        evalString = "Array(args[" + argCount + "]).fill().map(x=>" + evalString + ")";
+    }
+    return eval(evalString); // Execute the dynamically generated string.
+}
+
+// Call the main program logic and store its result.
+var programResult = executeProgram();
+
+// If the program returned a value, print it to the console.
+if (programResult !== undefined) {
+    console.log(String(programResult));
+}
+
+/**
+ * The main function containing the core logic of the program.
  * @returns {number} The final calculated sum.
  */
-const executeProgram = () => {
-    // Read the total number of items for processing.
-    const totalItems = obtainNextInteger();
+function executeProgram() {
+    // Read the integer 'n' from the input.
+    var count = getNextNum();
 
-    // Initialize the main data array with a leading zero, then concatenate with parsed items.
-    // The default behavior of readSequenceOfElements is to convert elements to numbers.
-    let numericData = [0].concat(readSequenceOfElements(totalItems));
+    // Create an array 'dataArray' by prepending 0 to the 'n' numbers read from input.
+    // This effectively makes the array 1-indexed for the problem's logic.
+    var dataArray = [0].concat(getArrayOfNums(count));
 
-    // Iterate backwards from totalItems down to 1.
-    for (let outerIterationIndex = totalItems; outerIterationIndex >= 1; outerIterationIndex--) {
-        // Initialize a running total for the current outer loop iteration.
-        let runningTotal = 0;
+    // Iterate backwards from 'n' down to 1.
+    for (var outerLoopVar = count; outerLoopVar >= 1; outerLoopVar--) {
+        var currentSum = 0; // Initialize sum for the current 'outerLoopVar'.
 
-        // Inner loop: Iterate through multiples of 'outerIterationIndex' up to 'totalItems'.
-        for (let innerIterationIndex = outerIterationIndex; innerIterationIndex <= totalItems; innerIterationIndex += outerIterationIndex) {
-            runningTotal += numericData[innerIterationIndex];
+        // Inner loop: iterate through multiples of 'outerLoopVar' up to 'n'.
+        for (var innerLoopVar = outerLoopVar; innerLoopVar <= count; innerLoopVar += outerLoopVar) {
+            currentSum += dataArray[innerLoopVar]; // Add the element at the current multiple to the sum.
         }
 
-        // If the running total for the current 'outerIterationIndex' is negative,
-        // reset all corresponding elements in 'numericData' to zero.
-        if (runningTotal < 0) {
-            for (let innerIterationIndexForReset = outerIterationIndex; innerIterationIndexForReset <= totalItems; innerIterationIndexForReset += outerIterationIndex) {
-                numericData[innerIterationIndexForReset] = 0;
+        // If the calculated sum is negative, set all elements at multiples of 'outerLoopVar' to 0.
+        if (currentSum < 0) {
+            for (var innerLoopVar = outerLoopVar; innerLoopVar <= count; innerLoopVar += outerLoopVar) {
+                dataArray[innerLoopVar] = 0; // Reset the value to zero.
             }
         }
     }
 
-    // Sum all elements in the modified 'numericData' array using a reducer.
-    return numericData.reduce((accumulatorValue, currentElement) => accumulatorValue + currentElement);
-};
+    // Calculate the sum of all elements in 'dataArray' using reduce.
+    // The initial 0 added at the beginning will also be included in the sum,
+    // but since it's 0, it doesn't affect the final result of the original problem.
+    return dataArray.reduce((accumulator, currentValue) => accumulator + currentValue);
+}

@@ -1,69 +1,58 @@
 const fileSystem = require('fs');
-const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const sourceLines = inputData.trim().split('\n').filter(Boolean);
+const processInput = (inputString) => {
+    const dataLines = inputString.trim().split('\n');
 
-const parametersLine = sourceLines.shift();
-const systemParameters = parametersLine.split(' ').map(Number);
+    const [nValue, mCount, pTarget] = dataLines.shift().split(' ').map(Number);
+    const nAdjusted = nValue - 1;
 
-const overallRangeCeiling = systemParameters[0]; // Corresponds to N_orig in my notes, N_bound in helper functions
-const itemCount = systemParameters[1]; // Corresponds to m
-const primaryAnchor = systemParameters[2]; // Corresponds to p, targetVal
+    const initialNumbers = dataLines.slice(0, mCount).map(Number);
 
-const uniqueLocations = new Set();
-for (let k = 0; k < itemCount; k++) {
-    const currentIncomingItem = Number(sourceLines.shift());
-    if (currentIncomingItem !== primaryAnchor) {
-        uniqueLocations.add(currentIncomingItem);
-    }
-}
-uniqueLocations.add(primaryAnchor);
+    const filteredAndSorted = initialNumbers
+        .filter(num => num !== pTarget)
+        .concat(pTarget)
+        .sort((a, b) => a - b);
 
-const orderedLocations = Array.from(uniqueLocations).sort((alpha, beta) => alpha - beta);
+    const potentialResults = filteredAndSorted.flatMap((currentValue, currentIndex, referenceArray) => {
+        const currentCandidates = [];
+        const arrayLength = referenceArray.length;
 
-// Helper functions for calculating various path costs based on location relative to primaryAnchor
-const computeLesserPathCosts = (currentPoint, currentIdx, allPointsArray, anchorPoint, maxRangeValue) => {
-    if (currentPoint < anchorPoint && currentIdx !== 0) {
-        return [(anchorPoint - currentPoint) * 2 + (maxRangeValue - anchorPoint) + allPointsArray[currentIdx - 1]];
-    }
-    return [];
+        const previousValue = currentIndex > 0 ? referenceArray[currentIndex - 1] : undefined;
+        const nextValue = currentIndex < arrayLength - 1 ? referenceArray[currentIndex + 1] : undefined;
+
+        // Case: currentValue is less than pTarget
+        if (currentValue < pTarget && previousValue !== undefined) {
+            currentCandidates.push((pTarget - currentValue) * 2 + (nAdjusted - pTarget + 1) + previousValue);
+        }
+
+        // Case: currentValue is equal to pTarget
+        if (currentValue === pTarget) {
+            if (currentIndex === 0) {
+                currentCandidates.push(referenceArray[arrayLength - 1] - currentValue);
+            }
+            if (currentIndex === arrayLength - 1) {
+                currentCandidates.push(currentValue - referenceArray[0]);
+            }
+            if (nextValue !== undefined) {
+                currentCandidates.push(pTarget + nAdjusted - nextValue + 1);
+            }
+            if (previousValue !== undefined) {
+                currentCandidates.push(nAdjusted - pTarget + 1 + previousValue);
+            }
+        }
+
+        // Case: currentValue is greater than pTarget
+        if (currentValue > pTarget && nextValue !== undefined) {
+            currentCandidates.push((currentValue - pTarget) * 2 + pTarget + (nAdjusted - nextValue + 1));
+        }
+
+        return currentCandidates;
+    });
+
+    const finalCalculatedMinimum = potentialResults.reduce((accumulator, current) => Math.min(accumulator, current), Infinity);
+
+    console.log(finalCalculatedMinimum * 100);
 };
 
-const computeEqualPathCosts = (currentPoint, currentIdx, allPointsArray, anchorPoint, maxRangeValue) => {
-    if (currentPoint !== anchorPoint) {
-        return [];
-    }
-    const candidateCosts = [];
-    if (currentIdx === 0) {
-        candidateCosts.push(allPointsArray[allPointsArray.length - 1] - currentPoint);
-    }
-    if (currentIdx === allPointsArray.length - 1) {
-        candidateCosts.push(currentPoint - allPointsArray[0]);
-    }
-    if (currentIdx !== allPointsArray.length - 1) {
-        candidateCosts.push(anchorPoint + maxRangeValue - allPointsArray[currentIdx + 1]);
-    }
-    if (currentIdx !== 0) {
-        candidateCosts.push(maxRangeValue - anchorPoint + allPointsArray[currentIdx - 1]);
-    }
-    return candidateCosts;
-};
-
-const computeGreaterPathCosts = (currentPoint, currentIdx, allPointsArray, anchorPoint, maxRangeValue) => {
-    if (currentPoint > anchorPoint && currentIdx !== allPointsArray.length - 1) {
-        return [(currentPoint - anchorPoint) * 2 + anchorPoint + (maxRangeValue - allPointsArray[currentIdx + 1])];
-    }
-    return [];
-};
-
-// Generate all possible costs using functional programming
-const allCalculatedCosts = orderedLocations.flatMap((locationValue, locationIndex) => [
-    ...computeLesserPathCosts(locationValue, locationIndex, orderedLocations, primaryAnchor, overallRangeCeiling),
-    ...computeEqualPathCosts(locationValue, locationIndex, orderedLocations, primaryAnchor, overallRangeCeiling),
-    ...computeGreaterPathCosts(locationValue, locationIndex, orderedLocations, primaryAnchor, overallRangeCeiling)
-]);
-
-// Determine the lowest cost. Handle empty array case gracefully (Math.min() on empty returns Infinity).
-const lowestCalculatedValue = Math.min(...allCalculatedCosts);
-
-console.log(lowestCalculatedValue * 100);
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInput(rawInputData);

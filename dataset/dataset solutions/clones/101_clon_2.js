@@ -1,57 +1,52 @@
-const fileHandler = require('fs'); // Include the necessary file system operations module
+var fileSystem = require('fs');
 
-// Determine the byte size of the standard input stream
-const dataSize = fileHandler.fstatSync(process.stdin.fd).size;
+// Obtain input from standard input stream
+// Determine the size of the input data
+var dataSize = fileSystem.fstatSync(process.stdin.fd).size;
 
-// Allocate a new buffer to hold the incoming raw data
-const rawBytes = new Buffer(dataSize);
+// Allocate a buffer to hold the raw input
+var rawData = new Buffer(dataSize);
 
-// Read the actual bytes from stdin into our buffer, starting at offset 0
-const numOctets = fileHandler.readSync(process.stdin.fd, rawBytes, 0, dataSize, 0);
+// Read the data from stdin into the buffer
+var readBytesCount = fileSystem.readSync(process.stdin.fd, rawData, 0, dataSize, 0);
 
-// Convert the buffer content to a UTF-8 string, remove leading/trailing whitespace, and split into an array of lines
-const textualData = rawBytes.toString('utf8', 0, numOctets).trim().split('\n');
+// Convert the buffer to a string, trim whitespace, and split into lines
+var processedLines = rawData.toString('utf8', 0, readBytesCount).trim().split('\n');
 
-// Initiate the primary data analysis routine
-startAnalysis();
+// Begin the primary execution flow
+executeProcessing();
 
 /**
- * Main function to process the collected textual data.
- * It iterates through pairs of lines to find different types of matches.
+ * Processes pairs of input lines to calculate "hits" and "brows".
+ * "Hits" are exact matches at the same position.
+ * "Brows" are matches where an element from the first line exists anywhere in the second line.
  */
-function startAnalysis ( ) {
+function executeProcessing() {
+  // Iterate through the processed lines, taking two lines at a time
+  for (var outerIdx = 0, totalLines = processedLines.length; outerIdx < totalLines; outerIdx += 2) {
+    // Initialize counters for exact and partial matches for the current pair of lines
+    var exactMatches = 0;
+    var partialMatches = 0;
 
-  // Loop through the input data, processing two lines at a time
-  for ( let primaryIdx = 0, collectionSize = textualData.length; primaryIdx < collectionSize; primaryIdx += 2 ) {
+    // Split the current pair of lines by space after trimming
+    var lineA = processedLines[outerIdx].trim().split(' ');
+    var lineB = processedLines[outerIdx + 1].trim().split(' ');
 
-    // Initialize counters for various match types for the current pair of lines
-    let exactMatches = 0;
-    let scatteredHits = 0;
-
-    // Split the current line into its constituent parts based on spaces
-    const segmentA = textualData[primaryIdx].trim().split(' ');
-
-    // Split the subsequent line into its constituent parts based on spaces
-    const segmentB = textualData[primaryIdx + 1].trim().split(' ');
-
-    // Iterate through the elements of the first segment
-    for ( let idxJ = 0, countA = segmentA.length; idxJ < countA; idxJ++ ) {
-
-      // Check for an exact match (same value at the same position)
-      if ( segmentA[idxJ] === segmentB[idxJ] ) {
-        exactMatches++; // Increment direct match counter
+    // Compare elements of lineA with lineB
+    for (var innerIdxA = 0, lenLineA = lineA.length; innerIdxA < lenLineA; innerIdxA++) {
+      // Check for an exact match at the same position
+      if (lineA[innerIdxA] == lineB[innerIdxA]) {
+        exactMatches++;
       }
 
-      // Perform a nested iteration to find any matches regardless of position
-      for ( let idxK = 0, countA_nested = segmentA.length; idxK < countA_nested; idxK++ ) {
-        // Check if the current element from segmentA exists anywhere in segmentB
-        if ( segmentA[idxJ] === segmentB[idxK] ) {
-          scatteredHits++; // Increment general match counter
+      // Check for partial matches (element from lineA[innerIdxA] exists anywhere in lineB)
+      for (var innerIdxB = 0, lenLineB = lineA.length; innerIdxB < lenLineB; innerIdxB++) {
+        if (lineA[innerIdxA] == lineB[innerIdxB]) {
+          partialMatches++;
         }
       }
     }
-
-    // Output the calculated match counts for the current pair of input lines
-    console.log(exactMatches, scatteredHits);
+    // Output the calculated exact and partial matches for the current pair
+    console.log(exactMatches, partialMatches);
   }
 }

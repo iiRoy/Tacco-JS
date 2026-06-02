@@ -14,7 +14,7 @@ process.stdin.on("data", inputStdin => {
 });
 process.stdin.on("end", () => {
   inputString = inputString.split("\n");
-  executeRoutine();
+  main();
 });
 function readline() {
   return inputString[currentLine++];
@@ -23,24 +23,72 @@ function readline() {
 // ************************ Ignore above this Line ******************************
 // **************************** Main Code Start *********************************
 
-function executeRoutine() {
-  const lineContent = readline();
-  const numericStrings = lineContent.split(" ");
+// Custom function for integer division (equivalent to Math.floor(dividend / divisor) for positive integers)
+// Implemented using repeated subtraction to provide a different strategy.
+function calculateIntegerQuotient(dividend, divisor) {
+    if (divisor === 0) {
+        // In the original code, if Min is 0:
+        // div = Math.floor(Max / 0) which is Infinity.
+        // mul = Math.floor(Max * 0) which is 0.
+        // ok = Math.floor(mul / div) which is Math.floor(0 / Infinity) = 0.
+        // To replicate this, if this function is called with divisor 0 for the first division (Max/Min),
+        // it should return Infinity. Then, when called for the final division (mul/div),
+        // calculateIntegerQuotient(0, Infinity) will correctly return 0.
+        return Infinity;
+    }
+    let quotientCount = 0;
+    let currentRemainder = dividend;
+    while (currentRemainder >= divisor) {
+        currentRemainder -= divisor;
+        quotientCount++;
+    }
+    return quotientCount;
+}
 
-  const firstOperand = parseInt(numericStrings[0], 10);
-  const secondOperand = parseInt(numericStrings[1], 10);
+// Custom function for integer multiplication (equivalent to factorOne * factorTwo)
+// Implemented using repeated addition to provide a different strategy.
+function calculateIntegerProduct(factorOne, factorTwo) {
+    let accumulatedSum = 0;
+    for (let i = 0; i < factorTwo; i++) {
+        accumulatedSum += factorOne;
+    }
+    return accumulatedSum;
+}
 
-  const findMaximum = (val1, val2) => (val1 > val2 ? val1 : val2);
-  const findMinimum = (val1, val2) => (val1 < val2 ? val1 : val2);
-  const getTruncatedQuotient = (dividend, divisor) => (dividend / divisor) | 0;
+function processInputAndCompute() {
+    let numberStrings = readline().split(" ");
+    let firstValue = parseInt(numberStrings[0]);
+    let secondValue = parseInt(numberStrings[1]);
 
-  const largerValue = findMaximum(firstOperand, secondOperand);
-  const smallerValue = findMinimum(firstOperand, secondOperand);
+    let greaterValue;
+    let lesserValue;
 
-  const divisionComponent = getTruncatedQuotient(largerValue, smallerValue);
-  const productComponent = firstOperand * secondOperand;
+    // Determine the greater and lesser values without using Math.max/Math.min
+    if (firstValue > secondValue) {
+        greaterValue = firstValue;
+        lesserValue = secondValue;
+    } else {
+        greaterValue = secondValue;
+        lesserValue = firstValue;
+    }
 
-  const finalOutput = getTruncatedQuotient(productComponent, divisionComponent);
+    // Handle the specific case where the lesser value is zero.
+    // As per original code's behavior: Max=X, Min=0 -> div=Infinity, mul=0, ok=floor(0/Infinity)=0.
+    if (lesserValue === 0) {
+        print(0);
+        return;
+    }
 
-  print(finalOutput);
+    // Perform the intermediate calculations using custom functions
+    let intermediateDivisorResult = calculateIntegerQuotient(greaterValue, lesserValue);
+    let intermediateProductResult = calculateIntegerProduct(greaterValue, lesserValue);
+
+    // Perform the final calculation using the custom integer division
+    let finalCalculationOutcome = calculateIntegerQuotient(intermediateProductResult, intermediateDivisorResult);
+
+    print(finalCalculationOutcome);
+}
+
+function main() {
+  processInputAndCompute();
 }

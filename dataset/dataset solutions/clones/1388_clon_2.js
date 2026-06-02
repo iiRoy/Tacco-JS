@@ -1,10 +1,7 @@
-// This script processes standard input line by line.
-let rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// This script processes input data line by line.
+var lineArray = inputData.split('\n');
 
-// Split the entire input data into an array of individual lines.
-const processedLines = rawInputContent.split('\n');
-
-// Iterate through each line to display its content with an associated segment number.
-for (let currentIdx = 0, finalIdx = processedLines.length; currentIdx < finalIdx; currentIdx++) {
-  console.log('Segment ' + currentIdx + ': ' + processedLines[currentIdx]);
+for ( var idx = 0, maxIdx = lineArray.length; idx < maxIdx; idx++ ) {
+    console.log('Case ' + idx + ': ' + lineArray[idx]);
 }

@@ -1,93 +1,130 @@
 "use strict";
 
-// This module handles input reading and performs a specific array manipulation task.
-const dataStream = require("node:fs").readFileSync("/dev/stdin", "utf8");
-let inputChunks = dataStream.split(/ |\n/);
-let chunkIndex = 0;
+// Acquire raw input data from the standard input stream
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Reads the next available chunk from the input as an integer.
-const readInteger = () => Number(inputChunks[chunkIndex++]);
+// Divide the entire input string into individual tokens, using spaces or newlines as separators
+let tokenArray = rawData.split(/ |\n/);
+let tokenIndex = 0; // Pointer to the current token being processed
 
-// Reads the next available chunk from the input as a string.
-function readText() {
-  return inputChunks[chunkIndex++];
+/**
+ * Extracts the subsequent token from the input sequence and converts it to a numeric type.
+ * @returns {number} The parsed numeric value.
+ */
+function getNextNumber() {
+  return +tokenArray[tokenIndex++];
 }
 
-// Reads the next available chunk from the input as a BigInt.
-const readBigInt = ( ) => BigInt( inputChunks[ chunkIndex++ ] );
+/**
+ * Retrieves the next token from the input sequence as a string.
+ * @returns {string} The string value of the token.
+ */
+function getNextString() {
+  return tokenArray[tokenIndex++];
+}
 
-// Reads a sequence of 'count' items from the input.
-// If 'asStrings' is true, returns them as strings; otherwise, converts them to numbers.
-function readSequence(count, asStrings) {
+/**
+ * Obtains the next token from the input sequence and transforms it into a BigInt.
+ * @returns {BigInt} The BigInt representation of the token.
+ */
+function getNextBigInt() {
+  return BigInt(tokenArray[tokenIndex++]);
+}
+
+/**
+ * Fetches a specified quantity of tokens from the input, returning them as an array.
+ * Elements can be returned either as numbers or as their original string form.
+ * @param {number} count - The total number of tokens to retrieve.
+ * @param {boolean} asStrings - If true, tokens are kept as strings; otherwise, they are converted to numbers.
+ * @returns {Array<number|string>} An array containing the retrieved values.
+ */
+function getNumbersArray(count, asStrings) {
   if (asStrings) {
-    return inputChunks.slice(chunkIndex, chunkIndex += count);
+    return tokenArray.slice(tokenIndex, (tokenIndex += count));
   } else {
-    return inputChunks.slice(chunkIndex, chunkIndex += count).map( (item) => Number(item) );
+    return tokenArray.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
   }
 }
 
-// Reads a matrix of 'height' rows and 'width' columns from the input.
-// If 'asStrings' is true, elements are strings; otherwise, they are numbers.
-function readMatrix(height, width, asStrings) {
-  let resultRows = [];
-  let rowIdx = 0;
+/**
+ * Constructs a two-dimensional matrix by reading tokens from the input.
+ * The matrix dimensions (height and width) are specified, and elements can be numbers or strings.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in each row.
+ * @param {boolean} asStrings - If true, matrix elements are strings; otherwise, they are numbers.
+ * @returns {Array<Array<number|string>>} The generated 2D array (matrix).
+ */
+function getMatrix(height, width, asStrings) {
+  let resultMatrix = [];
+  let rowIndex = 0;
   if (asStrings) {
-    for (; rowIdx < height; rowIdx++) {
-      resultRows.push(inputChunks.slice(chunkIndex, chunkIndex += width));
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += width)));
     }
   } else {
-    for (; rowIdx < height; rowIdx++) {
-      resultRows.push(inputChunks.slice(chunkIndex, chunkIndex += width).map((val) => Number(val)));
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += width)).map((element) => +element));
     }
   }
-  return resultRows;
+  return resultMatrix;
 }
 
-// Creates a multi-dimensional array dynamically based on provided dimensions and an initial value.
+/**
+ * Dynamically creates a multi-dimensional array based on provided dimensions and an initial value.
+ * This utility function is not directly utilized in the primary algorithm of this script.
+ * @param {*} initialValue - The value to populate the array elements with.
+ * @returns {Array} A newly created multi-dimensional array.
+ */
 function createMultiDimArray(initialValue) {
-  let dimensionArgs = arguments;
-  let numDimensions = dimensionArgs.length;
-  // Construct the array creation string from inner-most dimension outwards
-  let arrayCreationExpression = "Array(dimensionArgs[" + --numDimensions + "]).fill().map( _ => { return " + initialValue + "; } )";
-  while ( --numDimensions ) {
-    arrayCreationExpression = "Array(dimensionArgs[" + numDimensions + "]).fill().map( _ => " + arrayCreationExpression + " )";
+  let args = arguments;
+  let argCount = args.length;
+  let arrayCreationString = "Array(args[" + --argCount + "]).fill().map(_ => { return " + initialValue + "; })";
+  while (--argCount) {
+    arrayCreationString = "Array(args[" + argCount + "]).fill().map(_ => " + arrayCreationString + ")";
   }
-  return eval(arrayCreationExpression); // Execute the dynamically constructed array creation code
+  return eval(arrayCreationString);
 }
 
+// Invoke the main processing function and store its result
+let programOutput = executePrimaryLogic();
 
-// --- Main Program Execution ---
-const finalResult = processData();
+// Display the result to the console if a value was returned
+if (programOutput !== void 0) {
+  console.log(String(programOutput));
+}
 
-// Output the result if it's not undefined.
-if ( finalResult !== undefined ) { console.log(String(finalResult)); }
+/**
+ * Contains the core business logic of the application.
+ * This function processes an array based on specific rules involving sums of multiples.
+ * @returns {number} The final aggregated sum of the modified array elements.
+ */
+function executePrimaryLogic() {
+  // Read the total number of elements for the primary array
+  let inputCount = getNextNumber();
 
+  // Initialize the data array, prepending a zero to facilitate 1-based indexing
+  let dataValues = [0].concat(getNumbersArray(inputCount));
 
-// Main function to execute the problem logic.
-function processData() {
-  let totalElements = readInteger();
-  // Initialize a list of numbers, padding with a zero at the start.
-  let numberList = [0].concat(readSequence(totalElements));
+  // Outer iteration loop, running 'inputCount' times
+  for (let outerLoopIndex = 0; outerLoopIndex < inputCount; outerLoopIndex++) {
+    // Inner iteration loop, decrementing from 'inputCount' down to 1
+    for (let currentDivisor = inputCount; currentDivisor >= 1; currentDivisor--) {
+      let currentSum = 0; // Accumulator for the sum of multiples
 
-  // Outer loop: iterates 'totalElements' times.
-  for ( let outerCount = 0; outerCount < totalElements; outerCount++ )
-    // Inner loop: iterates from 'totalElements' down to 1.
-    // 'currentDivisor' acts as a divisor for subsequent elements.
-    for ( let currentDivisor = totalElements; currentDivisor >= 1; currentDivisor-- ) {
-      let currentSum = 0; // Accumulator for the sum of multiples.
-
-      // Calculate the sum of elements at indices that are multiples of 'currentDivisor'.
-      for ( let multipleIterator = currentDivisor; multipleIterator <= totalElements; multipleIterator += currentDivisor ) {
-        currentSum += numberList[multipleIterator];
+      // Calculate the sum of elements at indices that are multiples of 'currentDivisor'
+      for (let multipleIndex = currentDivisor; multipleIndex <= inputCount; multipleIndex += currentDivisor) {
+        currentSum += dataValues[multipleIndex];
       }
 
-      // If the calculated sum is negative, reset all corresponding multiples to zero.
-      if ( currentSum < 0 ) {
-        for ( let multipleIterator = currentDivisor; multipleIterator <= totalElements; multipleIterator += currentDivisor ) {
-          numberList[multipleIterator] = 0;
+      // If the calculated sum is negative, reset all corresponding elements to zero
+      if (currentSum < 0) {
+        for (let multipleIndex = currentDivisor; multipleIndex <= inputCount; multipleIndex += currentDivisor) {
+          dataValues[multipleIndex] = 0;
         }
       }
     }
-  // Return the sum of all elements in the modified list.
-  return numberList.reduce((accumulator, currentValue) => accumulator + currentValue);
+  }
+
+  // Compute and return the total sum of all elements in the final modified array
+  return dataValues.reduce((accumulator, currentValue) => accumulator + currentValue);
 }

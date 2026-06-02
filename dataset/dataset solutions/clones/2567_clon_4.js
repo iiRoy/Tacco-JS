@@ -1,100 +1,55 @@
-let dataStreamManager;
-let lineIndexTracker = 0;
-let totalLineCount = 0;
-let inputLineBuffer = [];
+const fs = require('fs');
 
-const prepareInputService = (linesProvided) => {
-    inputLineBuffer = linesProvided;
-    totalLineCount = linesProvided.length;
-    lineIndexTracker = 0;
-    dataStreamManager = {
-        retrieveNextItem: () => {
-            if (lineIndexTracker < totalLineCount) {
-                return inputLineBuffer[lineIndexTracker++];
-            } else {
-                throw new Error("Input consumption exceeded available data.");
-            }
-        },
-        hasMoreItems: () => lineIndexTracker < totalLineCount
-    };
-};
+const sourceText = fs.readFileSync(0, 'utf8');
+const rows = sourceText.length === 0 ? [] : sourceText.split(/\r?\n/);
+if (rows.length > 0 && /\n$/.test(sourceText)) rows.pop();
 
-const extractIntegerDatum = () => {
-    return parseInt(dataStreamManager.retrieveNextItem(), 10);
-};
+let cursor = 0;
+function takeLine() {
+  if (cursor < rows.length) return rows[cursor++];
+  throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+}
+function asInt(value) {
+  return parseInt(value);
+}
+function asChars(value) {
+  return value.split("");
+}
+function emit(value) {
+  console.log(value);
+}
+function debug(value) {
+  console.error("debug:" + require("util").inspect(value, false, null));
+}
 
-const parseCharacterSequence = () => {
-    return dataStreamManager.retrieveNextItem().split('');
-};
+function longestByIndependentScan(chars) {
+  let best = 0;
+  const total = chars.length;
 
-const deliverOutputResult = (computedValue) => {
-    console.log(computedValue);
-};
+  for (let anchor = 0; anchor < total; anchor++) {
+    const border = anchor + Math.ceil((total - anchor) / 2);
 
-const processStringPatterns = () => {
-    const ignoredInputSize = extractIntegerDatum();
-    const initialStringArray = parseCharacterSequence();
-    let maximumPatternMatch = 0;
-
-    for (let currentSuffixStart = 0; currentSuffixStart < initialStringArray.length; currentSuffixStart++) {
-        const activeSegment = initialStringArray.slice(currentSuffixStart);
-
-        if (activeSegment.length === 0) continue;
-
-        const segmentComparisonData = generatePrefixOverlapArray(activeSegment);
-
-        const midPointThreshold = activeSegment.length / 2;
-        let segmentHighestMatch = 0;
-
-        for (let positionIterator = activeSegment.length - 1; positionIterator >= Math.floor(midPointThreshold); positionIterator--) {
-            segmentHighestMatch = Math.max(segmentHighestMatch, segmentComparisonData[positionIterator]);
-        }
-        
-        maximumPatternMatch = Math.max(maximumPatternMatch, segmentHighestMatch);
+    for (let mate = total - 1; mate >= border; mate--) {
+      let same = 0;
+      while (mate + same < total && chars[anchor + same] == chars[mate + same]) {
+        same++;
+      }
+      if (same > best) best = same;
     }
+  }
 
-    deliverOutputResult(maximumPatternMatch);
-};
+  return best;
+}
 
-const generatePrefixOverlapArray = (sequenceToAnalyze) => {
-    const sequenceDimension = sequenceToAnalyze.length;
-    const overlapLengths = new Array(sequenceDimension).fill(0);
-    overlapLengths[0] = sequenceDimension;
+function main() {
+  const unusedCount = asInt(takeLine());
+  const sequence = asChars(takeLine());
+  emit(longestByIndependentScan(sequence));
+}
 
-    let currentScanPoint = 1;
-    let extentOfCurrentOverlap = 0;
-
-    while (currentScanPoint < sequenceDimension) {
-        while ((currentScanPoint + extentOfCurrentOverlap) < sequenceDimension &&
-               (sequenceToAnalyze[extentOfCurrentOverlap] === sequenceToAnalyze[currentScanPoint + extentOfCurrentOverlap])) {
-            extentOfCurrentOverlap++;
-        }
-        overlapLengths[currentScanPoint] = extentOfCurrentOverlap;
-
-        if (extentOfCurrentOverlap === 0) {
-            currentScanPoint++;
-            continue;
-        }
-
-        let copyOffsetIndex = 1;
-        while ((currentScanPoint + copyOffsetIndex) < sequenceDimension &&
-               (copyOffsetIndex + overlapLengths[copyOffsetIndex] < extentOfCurrentOverlap)) {
-            overlapLengths[currentScanPoint + copyOffsetIndex] = overlapLengths[copyOffsetIndex];
-            copyOffsetIndex++;
-        }
-
-        currentScanPoint += copyOffsetIndex;
-        extentOfCurrentOverlap -= copyOffsetIndex;
-    }
-    return overlapLengths;
-};
-
-read.on('close', function(){
-  prepareInputService(inLine);
-  console.error("\n");
-  var start = Date.now();
-  processStringPatterns();
-  var end = Date.now() - start;
-  myerr("time : " + end + "ms");
-  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-});
+console.error("\n");
+const startedAt = Date.now();
+main();
+const elapsed = Date.now() - startedAt;
+debug("time : " + elapsed + "ms");
+debug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");

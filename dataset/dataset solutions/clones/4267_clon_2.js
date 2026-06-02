@@ -1,38 +1,43 @@
-function  arrangeDescending (  inputArray  )
-{
-  return  inputArray.sort( ( firstElement,  secondElement  )  =>  secondElement  <  firstElement  )  ;
+function orderElements(dataCollection) {
+  // Sorts the provided array in descending order.
+  return dataCollection.sort((firstVal, secondVal) => secondVal < firstVal);
 }
 
+function processInputData(rawData) {
+  // Split the raw input string into individual lines.
+  const parsedLines = rawData.split('\n');
 
-function  processInputData ( rawDataString )
-{
-  const  inputLines  =  rawDataString.split( '\n' )  ;
+  // The first line contains the count of items.
+  const itemCount = parsedLines[0];
 
-  const  totalElementsCount  =  parseInt(  inputLines[0]  )  ;
+  // Process and sort the elements for the upper layer.
+  const upperLayer = orderElements(parsedLines[1].split(' ').map(numStr => Number(numStr)));
 
-  const  upperLayer  =  arrangeDescending(  inputLines[1].split(' ').map(  strNum  =>  parseInt(strNum,  10)  )  )  ;
-  const  middleLayer  =  arrangeDescending(  inputLines[2].split(' ').map(  numericString  =>  parseInt(numericString,  10)  )  )  ;
-  const  lowerLayer  =  arrangeDescending(  inputLines[3].split(' ').map(  numberText  =>  parseInt(numberText,  10)  )  )  ;
+  // Process and sort the elements for the middle layer.
+  const middleLayer = orderElements(parsedLines[2].split(' ').map(numStr => Number(numStr)));
 
-  let  validTripletsCounter  =  0  ;
-  let  idx1,  idx2,  idx3  ;
+  // Process and sort the elements for the lower layer.
+  const lowerLayer = orderElements(parsedLines[3].split(' ').map(numStr => Number(numStr)));
 
-  for  (  idx1  =  0  ;  idx1  <  totalElementsCount  ;  idx1++  )
-  {
-    for  (  idx2  =  0  ;  idx2  <  totalElementsCount  ;  idx2++  )
-    {
-      for  (  idx3  =  0  ;  idx3  <  totalElementsCount  ;  idx3++  )
-      {
-        if  (  upperLayer[idx1]  <  middleLayer[idx2]  &&  middleLayer[idx2]  <  lowerLayer[idx3]  )
-        {
-          validTripletsCounter  +=  1  ;
+  // Initialize a counter for valid combinations.
+  var totalMatches = 0;
+  var idxA, idxB, idxC;
+
+  // Iterate through all possible combinations of elements from the three layers.
+  for (idxA = 0; idxA < itemCount; idxA++) {
+    for (idxB = 0; idxB < itemCount; idxB++) {
+      for(idxC = 0; idxC < itemCount; idxC++) {
+        // Check if the current combination satisfies the condition: upper < middle < lower.
+        if (upperLayer[idxA] < middleLayer[idxB] && middleLayer[idxB] < lowerLayer[idxC]) {
+          totalMatches += 1; // Increment the counter if the condition is met.
         }
       }
     }
   }
 
-  console.log(  validTripletsCounter  )  ;
+  // Output the final count of valid combinations.
+  console.log(totalMatches);
 }
 
-
-processInputData(  require( 'fs' ).readFileSync( '/dev/stdin',  'utf8' )  )  ;
+// Read input from standard input and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

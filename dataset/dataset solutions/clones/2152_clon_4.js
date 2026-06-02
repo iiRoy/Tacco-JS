@@ -1,33 +1,30 @@
-function evaluateInputContent(incomingStream) {
-  const processedNumbers = incomingStream.split('\n').reduce((collectionAccumulator, currentEntry, entryIndex) => {
-    if (entryIndex === 0) {
-      return collectionAccumulator; // Skip the first line (N value)
-    }
-    const trimmedEntry = currentEntry.trim();
-    if (trimmedEntry === '') {
-      return collectionAccumulator; // Skip empty or whitespace-only lines
-    }
-    const numericForm = Number(trimmedEntry);
-    if (!Number.isNaN(numericForm)) {
-      collectionAccumulator.push(numericForm);
-    }
-    return collectionAccumulator;
-  }, []);
-
-  const anyViolationDetected = processedNumbers.some(currentItem => {
-    const isParityEven = currentItem % 2 === 0;
-    const failsDivisibilityCriteria = currentItem % 3 !== 0 && currentItem % 5 !== 0;
-    return isParityEven && failsDivisibilityCriteria;
-  });
-
-  const deniedOutcomeText = "REJECTED";
-  const approvedOutcomeText = "ACCEPTED";
-
-  if (anyViolationDetected) {
-    console.log(deniedOutcomeText);
-  } else {
-    console.log(approvedOutcomeText);
-  }
+function parseInputData(rawContent) {
+    const contentLines = rawContent.split('\n');
+    contentLines.shift();
+    return contentLines.map(val => Number(val));
 }
 
-evaluateInputContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+function checkDivisibilityRecursively(remainingNumbers) {
+    if (remainingNumbers.length === 0) {
+        return "APPROVED";
+    }
+
+    const currentVal = remainingNumbers[0];
+    const restOfNumbers = remainingNumbers.slice(1);
+
+    if (currentVal % 2 === 0) {
+        if (currentVal % 3 !== 0 && currentVal % 5 !== 0) {
+            return "DENIED";
+        }
+    }
+
+    return checkDivisibilityRecursively(restOfNumbers);
+}
+
+function processApplication(sourceText) {
+    const numericalSequence = parseInputData(sourceText);
+    const finalDecision = checkDivisibilityRecursively(numericalSequence);
+    console.log(finalDecision);
+}
+
+processApplication(require("fs").readFileSync("/dev/stdin", "utf8"));

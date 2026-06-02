@@ -1,98 +1,95 @@
-function Structure() {
-  this.childOne = null; // Reference to the first child element
-  this.childTwo = null; // Reference to the second child element
-  this.level = null; // Hierarchical level of this element
-  this.isLeaf = null; // Indicates if this element is a terminal node
+function GraphVertex() {
+  this.leftBranch = null; // Pointer to the left child vertex
+  this.rightBranch = null; // Pointer to the right child vertex
+  this.level = null; // The depth level of this vertex
+  this.isLeaf = null; // Indicates if this vertex is a leaf node
 }
 
-var collection = []; // Global storage for all generated elements
+let vertexCollection = []; // Global array to store all generated vertices
 
-function appendElementsRecursively(currentParentElem, targetLevel) {
-  // This function extends the branch from a given parent element
-  // up to a specified target level.
+function appendVerticesRecursively(ancestor, targetLevel) {
+  // This function adds new vertices from the ancestor's level up to the targetLevel.
 
-  let iteratorParent = currentParentElem;
-  for (let idx = currentParentElem.level + 1; idx <= targetLevel; idx++) {
-    const newElement = new Structure();
-    newElement.level = idx;
-    newElement.isLeaf = (idx === targetLevel); // Mark as leaf if it's the target level
+  let currentAncestor = ancestor; // Start from the provided ancestor
+  for (let idx = ancestor.level + 1; idx <= targetLevel; idx++) {
+    let newVertex = new GraphVertex(); // Create a fresh vertex instance
+    newVertex.level = idx; // Assign its hierarchical level
+    newVertex.isLeaf = (idx === targetLevel); // Mark as leaf if it's the final level
 
-    if (currentParentElem.childOne) {
-      // If the parent already has a first child, add to the second
-      iteratorParent.childTwo = newElement;
-    } else {
-      // Otherwise, add to the first child position
-      iteratorParent.childOne = newElement;
+    if (ancestor.leftBranch) { // If the original ancestor already has a left child
+      currentAncestor.rightBranch = newVertex; // Attach new vertex to the right of the current parent
+    } else { // Otherwise, attach to the left
+      currentAncestor.leftBranch = newVertex;
     }
-    collection.push(newElement); // Add the newly created element to the global collection
-    iteratorParent = newElement; // Move the iterator to the new element for the next iteration
+    vertexCollection.push(newVertex); // Add the newly created vertex to the global collection
+    currentAncestor = newVertex; // Move the 'current parent' reference to the newly added vertex
   }
 
-  // Ensure the collection is sorted by level after modification
-  collection.sort(function(elemA, elemB) {
-    return elemA.level - elemB.level;
+  // Sort the entire collection of vertices by their level for consistency
+  vertexCollection.sort(function (first, second) {
+    return first.level - second.level;
   });
 }
 
-function addElement(targetLevel) {
-  // Attempts to add a new element at the specified level
-  // by extending an existing suitable parent element.
+function tryAddVertexAtLevel(targetLevel) {
+  // Attempts to find an available parent vertex and add new vertices up to the specified level.
+  for (let idx = 0; idx < vertexCollection.length; idx++) {
+    let currentCandidate = vertexCollection[idx]; // Examine each vertex in the collection
 
-  for (let k = 0; k < collection.length; k++) {
-    const currentElem = collection[k];
-
-    // Skip elements that are already marked as leaves
-    if (currentElem.isLeaf) {
+    if (currentCandidate.isLeaf) { // If it's already a leaf, it cannot be a parent
       continue;
     }
-
-    // Skip elements that already have two children
-    if (currentElem.childOne && currentElem.childTwo) {
-      continue;
+    if (currentCandidate.leftBranch && currentCandidate.rightBranch) { // If both branches are occupied
+      continue; // This vertex cannot accept new children
     }
 
-    // Found a suitable parent, now extend it
-    appendElementsRecursively(currentElem, targetLevel);
-    return true; // Operation successful
+    // If an eligible parent is found, proceed to add the new vertices
+    appendVerticesRecursively(currentCandidate, targetLevel);
+    return true; // Indicate successful addition
   }
-  return false; // No suitable parent found
+  return false; // No suitable parent found for adding vertices
 }
 
-// The primary execution function, processing the input data.
-function ProcessInput(rawInputData) {
-  const dataRows = rawInputData.split("\n"); // Split input into individual lines
-  const firstRow = dataRows[0];
-  const secondRow = dataRows[1];
-  const secondRowTokens = secondRow.split(" "); // Split the second line by spaces
+// The primary execution function, processing raw input data.
+function ProcessInputData(rawData) {
+  // Split the entire input string into individual lines.
+  const dataRows = rawData.split("\n");
+  const firstRow = dataRows[0]; // Get the first line of input.
+  const secondRow = dataRows[1]; // Get the second line of input.
+  const secondRowElements = secondRow.split(" "); // Split the second line by spaces.
 
-  const numItems = parseInt(firstRow, 10); // Parse the first number from the first line
-  const itemValues = secondRowTokens.map(valString => parseInt(valString, 10)); // Parse numbers from the second line
+  // Parse the first line as an integer, representing the total count.
+  const totalCount = parseInt(firstRow, 10);
+  // Parse elements of the second line into an array of integers, representing level counts.
+  const levelCounts = secondRowElements.map(item => parseInt(item, 10));
 
-  // Validate the initial condition
-  if (itemValues[0] !== 0) {
-    console.log(-1);
-    return;
+  // Initial validation: the count for level 0 must be 0.
+  if (levelCounts[0] !== 0) {
+    console.log(-1); // Output error code if condition is not met.
+    return; // Terminate execution.
   }
 
-  // Initialize the root element
-  const initialElement = new Structure();
-  initialElement.level = 0;
-  initialElement.isLeaf = false;
-  collection.push(initialElement); // Add the root to the collection
+  // Initialize the root vertex for level 0.
+  let rootVertex = new GraphVertex();
+  rootVertex.level = 0; // Set its level to 0.
+  rootVertex.isLeaf = false; // It's not a leaf initially.
+  vertexCollection.push(rootVertex); // Add the root to the global collection.
 
-  // Iterate through the item values to build the structure
-  for (let outerIdx = 1; outerIdx <= numItems; outerIdx++) {
-    for (let innerIdx = 0; innerIdx < itemValues[outerIdx]; innerIdx++) {
-      const successFlag = addElement(outerIdx); // Attempt to add an element at the current level
-      if (!successFlag) {
-        console.log(-1); // If addition fails, output -1 and exit
-        return;
+  // Iterate through levels from 1 up to totalCount.
+  for (let idx = 1; idx <= totalCount; idx++) {
+    // For each level, add the specified number of vertices.
+    for (let k = 0; k < levelCounts[idx]; k++) {
+      let operationSuccess = tryAddVertexAtLevel(idx); // Attempt to add a vertex at the current level.
+      if (!operationSuccess) { // If adding failed (no suitable parent found)
+        console.log(-1); // Output error code.
+        return; // Terminate execution.
       }
     }
   }
 
-  console.log(collection.length); // Output the total count of elements generated
+  // After processing all levels, output the total number of vertices created.
+  console.log(vertexCollection.length);
 }
 
-// Standard boilerplate for reading input and calling the main processing function
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the following lines; they handle standard input/output and invoke the main function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

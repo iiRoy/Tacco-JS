@@ -1,127 +1,135 @@
-// Calculation commenced at -10 minutes.
+// This script was generated as a Type II clone.
 
-// Produces a deep copy of an array or object structure.
-function replicate(sourceArr, destinationArr) {
-    let itemKey;
-    const objTypeChecker = Object.prototype.toString;
-    const arrTypeString = '[object Array]';
-    const ownPropCheck = Object.prototype.hasOwnProperty;
+// Creates a deep copy of an object or array.
+function deepCopy(sourceObj, targetObj) {
+    let propKey;
+    const objToString = Object.prototype.toString;
+    const arrayString = '[object Array]';
+    const hasOwnProp = Object.prototype.hasOwnProperty;
 
-    destinationArr = destinationArr || []; /* Ensure destination is an array if not provided. */
+    // Initialize target object if not provided.
+    targetObj = targetObj || [];
 
-    for ( itemKey in sourceArr ) {
-        // Iterate over properties of the source object.
-        if ( ownPropCheck.call(sourceArr, itemKey) ) {
-            if ( typeof sourceArr[itemKey] === "object" && sourceArr[itemKey] !== null ) {
-                destinationArr[itemKey] = (objTypeChecker.call(sourceArr[itemKey]) === arrTypeString )
-                    ? [] // If it's an array, create a new empty array.
-                    : {}; // Otherwise, create a new empty object.
-                replicate(sourceArr[itemKey], destinationArr[itemKey]); // Recursively copy nested objects/arrays.
+    // Iterate over properties of the source object.
+    for (propKey in sourceObj) {
+        // Ensure the property belongs to the object itself, not its prototype chain.
+        if (hasOwnProp.call(sourceObj, propKey)) {
+            // If the property value is an object, recursively copy it.
+            if (typeof sourceObj[propKey] === "object") {
+                // Determine if it's an array or a plain object for initialization.
+                targetObj[propKey] = (objToString.call(sourceObj[propKey]) === arrayString) ? [] : {};
+                deepCopy(sourceObj[propKey], targetObj[propKey]);
             } else {
-                destinationArr[itemKey] = sourceArr[itemKey]; // Copy primitive values directly.
+                // For primitive values, directly assign.
+                targetObj[propKey] = sourceObj[propKey];
             }
         }
     }
-    return destinationArr;
+    return targetObj;
 }
 
-(function (rawData) {
-    // Rotates a collection of 2D points 90 degrees counter-clockwise.
-    function rotatePoints(pointSet) {
-        /*
-         * pointSet: The array of {xCoord, yCoord} coordinates to be rotated.
-         */
-        const tempSet = replicate(pointSet); // Create a fresh copy to avoid modifying original.
-        for ( let idx = 0, total = tempSet.length; idx < total; idx++ ) {
-            const temporaryX = tempSet[idx].xCoord; // Store original X coordinate.
-            tempSet[idx].xCoord = -tempSet[idx].yCoord; // New X is negative of original Y.
-            tempSet[idx].yCoord = temporaryX; // New Y is original X.
+(function (inputData) {
+    // Rotates an array of {x, y} coordinate objects 90 degrees counter-clockwise.
+    function rotatePoints(pointCoords) {
+        // Create a mutable copy of the input coordinates.
+        const clonedCoords = deepCopy(pointCoords);
+        for (let idx = 0, coordLen = clonedCoords.length; idx < coordLen; idx++) {
+            // Store original x-coordinate temporarily.
+            const tempX = clonedCoords[idx].x;
+            // Apply rotation transformation: new x = -old y, new y = old x.
+            clonedCoords[idx].x = -clonedCoords[idx].y;
+            clonedCoords[idx].y = tempX;
         }
-        return tempSet;
+        return clonedCoords;
     }
 
-    // Determines if two arrays of points are structurally and value-wise identical.
-    function comparePoints(firstSet, secondSet) {
-        if ( firstSet.length !== secondSet.length ) {
-            return false; // Different lengths mean they cannot be identical.
+    // Checks if two arrays of {x, y} coordinate objects are identical.
+    function areEquivalent(firstArr, secondArr) {
+        // If lengths differ, arrays cannot be equivalent.
+        if (firstArr.length !== secondArr.length) {
+            return false;
         }
-        for ( let pos = 0, count = firstSet.length; pos < count; pos++ ) {
-            if ( firstSet[pos].xCoord !== secondSet[pos].xCoord || firstSet[pos].yCoord !== secondSet[pos].yCoord ) {
-                return false; // Mismatch in coordinates found.
+        // Compare each coordinate pair.
+        for (let idx = 0, arrLen = firstArr.length; idx < arrLen; idx++) {
+            if (firstArr[idx].x !== secondArr[idx].x || firstArr[idx].y !== secondArr[idx].y) {
+                return false; // Mismatch found.
             }
         }
-        return true; // All points matched.
+        return true; // All coordinates match.
     }
 
-    const processedLines = rawData.replace(/\r/g, '').split("\n");
-    let numPoints, numSegments, outerLoopIdx, innerLoopIdx;
+    // Process input data: remove carriage returns and split into lines.
+    const inputLines = inputData.replace(/\r/g, '').split("\n");
+    let numSets, numPoints, outerIdx, rotCounter;
 
-    while ( Boolean(true) ) {
-        let allShapes = []; // Collection to hold all processed polyline datasets.
+    // Main loop to process multiple datasets.
+    while (true) {
+        const allPolylines = [];
 
-        numPoints = parseInt(processedLines.shift(), 10) + 1; // Read number of points for current dataset.
-        if ( numPoints === 1 ) {
-            break; // Exit loop if the sentinel value (0 + 1) is encountered.
+        // Read the number of polylines in the current dataset.
+        numSets = parseInt(inputLines.shift()) + 1;
+        // A value of 1 for numSets (meaning 0 actual polylines) indicates end of input.
+        if (numSets === 1) {
+            break;
         }
 
-        // Populate the list of polylines.
-        while ( numPoints-- ) {
-            let currentShape = []; // Array to store coordinates for the current polyline.
-            numSegments = parseInt(processedLines.shift(), 10) - 1; // Read number of segments.
+        // Parse and store each polyline.
+        while (numSets--) {
+            const currentPolyline = [];
+            numPoints = parseInt(inputLines.shift()) - 1; // Number of segments, so points - 1.
 
-            const coordsStr = processedLines.shift().split(' ');
-            const offsetX = parseInt(coordsStr[0], 10); // Base X coordinate for normalization.
-            const offsetY = parseInt(coordsStr[1], 10); // Base Y coordinate for normalization.
+            // Read the first point of the polyline, which serves as the origin for relative coordinates.
+            const coordLine = inputLines.shift().split(' ');
+            const originX = parseInt(coordLine[0]);
+            const originY = parseInt(coordLine[1]);
 
-            currentShape.push({xCoord: 0, yCoord: 0}); // First point is always (0,0) relative to base.
-            while ( numSegments-- ) {
-                const segmentStr = processedLines.shift().split(' ');
-                const currentX = parseInt(segmentStr[0], 10);
-                const currentY = parseInt(segmentStr[1], 10);
-                currentShape.push({
-                    xCoord: currentX - offsetX, // Relative X coordinate.
-                    yCoord: currentY - offsetY // Relative Y coordinate.
+            // The first point of the relative polyline is always (0,0).
+            currentPolyline.push({ x: 0, y: 0 });
+
+            // Read subsequent points and convert them to relative coordinates.
+            while (numPoints--) {
+                const nextCoordLine = inputLines.shift().split(' ');
+                const currentX = parseInt(nextCoordLine[0]);
+                const currentY = parseInt(nextCoordLine[1]);
+                currentPolyline.push({
+                    x: currentX - originX,
+                    y: currentY - originY
                 });
             }
-            allShapes.push(currentShape); // Add the normalized polyline to the collection.
+            allPolylines.push(currentPolyline);
         }
 
-        /* Debug: console.log(allShapes); // Output all collected shapes for inspection. */
+        // Extract the target polyline to search for.
+        const targetPolyline = allPolylines.shift();
 
-        // Extract the primary target pattern and its reversed counterpart.
-        const targetPattern = allShapes.shift(); // The first shape is the reference pattern.
-        const targetPatternReversed = (function() {
-            const tempReversed = replicate(targetPattern).reverse(); // Create a reversed copy.
-            const firstPointX = tempReversed[0].xCoord;
-            const firstPointY = tempReversed[0].yCoord;
-            for ( let revIdx = 0, revCount = tempReversed.length; revIdx < revCount; revIdx++ ) {
-                tempReversed[revIdx].xCoord -= firstPointX; // Normalize X.
-                tempReversed[revIdx].yCoord -= firstPointY; // Normalize Y.
+        // Generate the reversed version of the target polyline, normalized to (0,0).
+        const reversedTargetPolyline = (function () {
+            const tempReversed = deepCopy(targetPolyline).reverse();
+            const revLen = tempReversed.length;
+            const revOriginX = tempReversed[0].x;
+            const revOriginY = tempReversed[0].y;
+            for (let revIdx = 0; revIdx < revLen; revIdx++) {
+                tempReversed[revIdx].x -= revOriginX;
+                tempReversed[revIdx].y -= revOriginY;
             }
             return tempReversed;
         })();
 
-        /* Debug: console.log(targetPattern, targetPatternReversed); // Display target patterns. */
+        // Iterate through the remaining polylines in the dataset.
+        for (outerIdx = 0, dataLen = allPolylines.length; outerIdx < dataLen; outerIdx++) {
+            // For each polyline, check its rotations against the target and its reversed version.
+            for (rotCounter = 0; rotCounter < 4; rotCounter++) {
+                const rotatedPolyline = rotatePoints(allPolylines[outerIdx]);
 
-        // Process each remaining dataset.
-        for ( outerLoopIdx = 0, totalShapes = allShapes.length; outerLoopIdx < totalShapes; outerLoopIdx++ ) {
-            // Attempt to match by rotating the current shape up to four times.
-            for ( innerLoopIdx = 0; innerLoopIdx < 4; innerLoopIdx++ ) {
-                /* Console trace: console.log(allShapes[outerLoopIdx]); */
-                let rotatedShape = rotatePoints(allShapes[outerLoopIdx]); // Get a rotated version.
-                /* Console trace: console.log(rotatedShape); */
-                /* Console trace: console.log(targetPattern, comparePoints(targetPattern, rotatedShape)); */
-                /* Console trace: console.log(targetPatternReversed, comparePoints(targetPatternReversed, rotatedShape)); */
-                /* Console trace: console.log(); */
-
-                // Check if the rotated shape matches either the original or reversed target.
-                if ( comparePoints(rotatedShape, targetPattern) || comparePoints(rotatedShape, targetPatternReversed) ) {
-                    console.log(outerLoopIdx + 1); // Output 1-based index if a match is found.
-                    break; // Move to the next shape in allShapes.
+                // If the current rotated polyline matches the target or its reversed version.
+                if (areEquivalent(rotatedPolyline, targetPolyline) || areEquivalent(rotatedPolyline, reversedTargetPolyline)) {
+                    console.log(outerIdx + 1); // Output the 1-based index of the matching polyline.
+                    break; // Found a match, move to the next polyline in the dataset.
                 }
-                allShapes[outerLoopIdx] = rotatedShape; // Update the shape with its rotated version for the next iteration.
+                // Update the current polyline with its rotated version for the next iteration.
+                allPolylines[outerIdx] = rotatedPolyline;
             }
         }
-        console.log("#####"); // Separator for different test cases.
+        console.log("+++++"); // Separator for datasets.
     }
-})(require("fs").readFileSync("/dev/stdin", "utf-8"));
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

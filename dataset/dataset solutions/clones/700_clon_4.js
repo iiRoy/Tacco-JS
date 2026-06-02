@@ -1,78 +1,64 @@
-const replicateStructure = (sourceObject) => JSON.parse(JSON.stringify(sourceObject));
+const deepCopy = (sourceObject) => JSON.parse(JSON.stringify(sourceObject));
 
-const adjustReference = (pathPoints) => {
-    const freshPoints = replicateStructure(pathPoints);
-    if (freshPoints.length === 0) return [];
-    const anchorX = freshPoints[0].coordX;
-    const anchorY = freshPoints[0].coordY;
-    return freshPoints.map(point => ({
-        coordX: point.coordX - anchorX,
-        coordY: point.coordY - anchorY
-    }));
-};
+const rotatePoints = (pointList) =>
+  pointList.map(({ x, y }) => ({ x: -y, y: x }));
 
-const spinShape = (pathPoints) => {
-    return pathPoints.map(point => ({
-        coordX: -point.coordY,
-        coordY: point.coordX
-    }));
-};
+const areEquivalentPolylines = (pathOne, pathTwo) =>
+  pathOne.length === pathTwo.length &&
+  pathOne.every((point, idx) =>
+    point.x === pathTwo[idx].x && point.y === pathTwo[idx].y
+  );
 
-const verifyEquality = (pathA, pathB) => {
-    if (pathA.length !== pathB.length) return false;
-    return pathA.every((point, index) =>
-        point.coordX === pathB[index].coordX && point.coordY === pathB[index].coordY
-    );
-};
+((rawInput) => {
+    const rawInputLines = rawInput.replace(/\r/g, '').split("\n");
 
-((rawContent) => {
-    const inputLines = rawContent.replace(/\r/g, '').split("\n");
-    let lineCursor = 0;
-    const getNextLine = () => inputLines[lineCursor++];
-    const parseInteger = (str) => parseInt(str, 10);
+    const getNextInt = () => parseInt(rawInputLines.shift());
+    const getNextPoint = () => {
+        const [xStr, yStr] = rawInputLines.shift().split(' ');
+        return { x: parseInt(xStr), y: parseInt(yStr) };
+    };
 
     while (true) {
-        let sectionCount = parseInteger(getNextLine()) + 1;
-        if (sectionCount === 1) {
+        let currentN = getNextInt() + 1;
+        if (currentN === 1) {
             break;
         }
 
-        const currentShapeCollection = [];
+        const polylineCollection = Array.from({ length: currentN - 1 }, () => {
+            let segmentCount = getNextInt() - 1;
+            const initialPoint = getNextPoint();
+            const relativePoints = [{ x: 0, y: 0 }];
 
-        for (let idxA = 0; idxA < sectionCount - 1; idxA++) {
-            let segmentCount = parseInteger(getNextLine()) - 1;
+            Array.from({ length: segmentCount }).forEach(() => {
+                const { x: coordX, y: coordY } = getNextPoint();
+                relativePoints.push({ x: coordX - initialPoint.x, y: coordY - initialPoint.y });
+            });
+            return relativePoints;
+        });
 
-            const initialLine = getNextLine().split(' ').map(parseInteger);
-            const anchorX = initialLine[0];
-            const anchorY = initialLine[1];
+        const referencePolyline = polylineCollection.shift();
 
-            const segmentSequence = [{ coordX: 0, coordY: 0 }];
-            for (let idxB = 0; idxB < segmentCount; idxB++) {
-                const subLine = getNextLine().split(' ').map(parseInteger);
-                segmentSequence.push({
-                    coordX: subLine[0] - anchorX,
-                    coordY: subLine[1] - anchorY
-                });
-            }
-            currentShapeCollection.push(segmentSequence);
-        }
+        const reversedReferencePolyline = (() => {
+            const tempReversed = deepCopy(referencePolyline).reverse();
+            const { x: firstX, y: firstY } = tempReversed[0];
+            return tempReversed.map(pt => ({ x: pt.x - firstX, y: pt.y - firstY }));
+        })();
 
-        const referencePattern = currentShapeCollection.shift();
-        const invertedReferencePattern = adjustReference(replicateStructure(referencePattern).reverse());
+        polylineCollection.forEach((currentPolyline, polylineIndex) => {
+            let currentRotatedPolyline = currentPolyline;
+            let matchFound = false;
 
-        for (let idxA = 0; idxA < currentShapeCollection.length; idxA++) {
-            let currentPolyline = replicateStructure(currentShapeCollection[idxA]);
-            let matchDiscovered = false;
-
-            for (let rotationCounter = 0; rotationCounter < 4; rotationCounter++) {
-                if (verifyEquality(currentPolyline, referencePattern) || verifyEquality(currentPolyline, invertedReferencePattern)) {
-                    console.log(idxA + 1);
-                    matchDiscovered = true;
-                    break;
+            Array.from({ length: 4 }).some(() => {
+                if (areEquivalentPolylines(currentRotatedPolyline, referencePolyline) ||
+                    areEquivalentPolylines(currentRotatedPolyline, reversedReferencePolyline)) {
+                    console.log(polylineIndex + 1);
+                    matchFound = true;
+                    return true;
                 }
-                currentPolyline = spinShape(currentPolyline);
-            }
-        }
+                currentRotatedPolyline = rotatePoints(currentRotatedPolyline);
+                return false;
+            });
+        });
         console.log("+++++");
     }
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

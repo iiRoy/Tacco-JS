@@ -1,153 +1,93 @@
 "use strict";
-var dataSource = getModule("fileSystem").readTextFromFile("/std/inp", "textEncoding");
-var tokenStream = dataSource.split(/ |\n/), tokenIndex = 0;
+var data=require("fs").readFileSync("/dev/stdin","utf8");
+var tok=data.split(/ |\n/),ptr=0;
+function nxt(flag){return flag?tok[ptr++]:+tok[ptr++];}
+function nxts(len,flag){return flag?tok.slice(ptr,ptr+=len):tok.slice(ptr,ptr+=len).map(v=>+v);}
+function nxtm(h,w,flag){var out=[],j=0;if(flag)for(;j<h;j++)out.push(tok.slice(ptr,ptr+=w));else for(;j<h;j++)out.push(tok.slice(ptr,ptr+=w).map(v=>+v));return out;}
+function makeArray(val){var args=arguments,c=args.length,out="Array(args["+--c+"]).fill().map(x=>{return "+val+";})";while(--c)out="Array(args["+c+"]).fill().map(x=>"+out+")";return eval(out);}
 
-function getNextValue(asNumber) {
-    return asNumber ? tokenStream[tokenIndex++] : Number(tokenStream[tokenIndex++]);
-}
+var m,tree,level,par,res,byLevel;
 
-function getMultipleValues(count, asNumbers) {
-    var startIndex = tokenIndex;
-    tokenIndex += count;
-    return asNumbers ? tokenStream.slice(startIndex, tokenIndex).transform(val => Number(val)) : tokenStream.slice(startIndex, tokenIndex);
-}
+//var output = solve();
+//if(output !== undefined)console.log(output);
 
-function getMatrix(rows, cols, numeric) {
-    var resultMatrix = [], rowIndex = 0;
-    if (numeric) {
-        for (; rowIndex < rows; rowIndex++)
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols).transform(val => Number(val)));
-    } else {
-        for (; rowIndex < rows; rowIndex++)
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
+function solve(){
+  m = nxt();
+  tree = makeArray("[]", m);
+  level = Array(m);
+  byLevel = makeArray("[]",m);
+  par = Array(m);
+  res = Array(m);
+  for(var j = 1; j < m; j++){
+    var u = nxt()-1, v = nxt()-1;
+    tree[u].push(v);
+    tree[v].push(u);
+  }
+  walk(0,-1,0);
+  var oddCnt = 0, evenCnt = 0;
+  for(var j = 0; j < m; j++){
+    res[j] = level[j] % 2;
+    if(res[j])oddCnt++;
+    else evenCnt++;
+  }
+  var c1 = Math.ceil(m/3), c3 = m/3|0, c2 = m-c1-c3;
+  var p1 = 1, p2 = 2, p3 = 3;
+  if(oddCnt <= c3){
+    for(var j = 0; j < m; j++){
+      if(res[j])res[j] = p3, p3 += 3;
+      else{
+        if(p1 <= m)res[j] = p1, p1 += 3;
+        else if(p2 <= m)res[j] = p2, p2 += 3;
+        else res[j] = p3, p3 += 3;
+      }
     }
-    return resultMatrix;
-}
-
-function createMultiDimArray(initialValue) {
-    var argsList = arguments, lengthCounter = argsList.length, arrayCreationString = "Array(argsList[" + --lengthCounter + "]).fill().transform(_=>{return " + initialValue + ";})";
-    while (--lengthCounter)
-        arrayCreationString = "Array(argsList[" + lengthCounter + "]).fill().transform(_=>" + arrayCreationString + ")";
-    return executeString(arrayCreationString);
-}
-
-var nodeCount, adjacencyList, nodeDepths, parentNodes, finalAssignment, nodesAtDepth;
-var commandLineArgs = process.argv;
-var printToConsole = (message) => console.log(message);
-
-function computeSolution() {
-    nodeCount = getNextValue(false);
-    adjacencyList = createMultiDimArray("[]", nodeCount);
-    nodeDepths = Array(nodeCount);
-    nodesAtDepth = createMultiDimArray("[]", nodeCount);
-    parentNodes = Array(nodeCount);
-    finalAssignment = Array(nodeCount);
-
-    for (var loopVar = 1; loopVar < nodeCount; loopVar++) {
-        var nodeA = getNextValue(false) - 1, nodeB = getNextValue(false) - 1;
-        adjacencyList[nodeA].push(nodeB);
-        adjacencyList[nodeB].push(nodeA);
+  }else if(evenCnt <= c3){
+    for(var j = 0; j < m; j++){
+      if(res[j] === 0)res[j] = p3, p3 += 3;
+      else{
+        if(p1 <= m)res[j] = p1, p1 += 3;
+        else if(p2 <= m)res[j] = p2, p2 += 3;
+        else res[j] = p3, p3 += 3;
+      }
     }
-
-    traverseGraph(0, -1, 0);
-
-    var oddDepthCount = 0, evenDepthCount = 0;
-    for (var loopVar = 0; loopVar < nodeCount; loopVar++) {
-        finalAssignment[loopVar] = nodeDepths[loopVar] % 2;
-        if (finalAssignment[loopVar]) oddDepthCount++;
-        else evenDepthCount++;
-    }
-
-    var thirdCeil = Math.ceil(nodeCount / 3), thirdFloor = nodeCount / 3 | 0, remainingNodes = nodeCount - thirdCeil - thirdFloor;
-    var firstValue = 1, secondValue = 2, thirdValue = 3;
-
-    if (oddDepthCount <= thirdFloor) {
-        for (var loopVar = 0; loopVar < nodeCount; loopVar++) {
-            if (finalAssignment[loopVar]) {
-                finalAssignment[loopVar] = thirdValue;
-                thirdValue += 3;
-            } else {
-                if (firstValue <= nodeCount) finalAssignment[loopVar] = firstValue, firstValue += 3;
-                else if (secondValue <= nodeCount) finalAssignment[loopVar] = secondValue, secondValue += 3;
-                else finalAssignment[loopVar] = thirdValue, thirdValue += 3;
-            }
+  }else{
+    for(var j = 0; j < m; j++){
+      if(res[j]){
+        if(p1 <= m){
+          res[j] = p1;
+          p1 += 3;
+        }else{
+          res[j] = p3;
+          p3 += 3;
         }
-    } else if (evenDepthCount <= thirdFloor) {
-        for (var loopVar = 0; loopVar < nodeCount; loopVar++) {
-            if (finalAssignment[loopVar] === 0) {
-                finalAssignment[loopVar] = thirdValue;
-                thirdValue += 3;
-            } else {
-                if (firstValue <= nodeCount) finalAssignment[loopVar] = firstValue, firstValue += 3;
-                else if (secondValue <= nodeCount) finalAssignment[loopVar] = secondValue, secondValue += 3;
-                else finalAssignment[loopVar] = thirdValue, thirdValue += 3;
-            }
+      }else{
+        if(p2 <= m){
+          res[j] = p2;
+          p2 += 3;
+        }else{
+          res[j] = p3;
+          p3 += 3;
         }
-    } else {
-        for (var loopVar = 0; loopVar < nodeCount; loopVar++) {
-            if (finalAssignment[loopVar]) {
-                if (firstValue <= nodeCount) {
-                    finalAssignment[loopVar] = firstValue;
-                    firstValue += 3;
-                } else {
-                    finalAssignment[loopVar] = thirdValue;
-                    thirdValue += 3;
-                }
-            } else {
-                if (secondValue <= nodeCount) {
-                    finalAssignment[loopVar] = secondValue;
-                    secondValue += 3;
-                } else {
-                    finalAssignment[loopVar] = thirdValue;
-                    thirdValue += 3;
-                }
-            }
-        }
+      }
     }
-
-    return finalAssignment.join(" ");
+    }
+  
+  return res.join(" ");
 }
 
-function traverseGraph(currentNode, parentNode, currentDepth) {
-    nodeDepths[currentNode] = currentDepth;
-    nodesAtDepth[currentDepth].push(currentNode);
-    parentNodes[currentNode] = parentNode;
-    for (var neighborNode of adjacencyList[currentNode]) {
-        neighborNode = Number(neighborNode);
-        if (neighborNode === parentNode) continue;
-        traverseGraph(neighborNode, currentNode, currentDepth + 1);
-    }
+function walk(node,from,dist){
+  level[node] = dist;
+  byLevel[dist].push(node);
+  par[node] = from;
+  for(var to of tree[node]){
+    to = +to;
+    if(to === from)continue;
+    walk(to,node,dist+1);
+  }
 }
 
-var getModule = (moduleName) => {
-    if (moduleName === "fileSystem") {
-        return {
-            readTextFromFile: (path, encoding) => {
-                return require("fs").readFileSync(path, encoding);
-            }
-        };
-    }
-    if (moduleName === "childProcessModule") {
-        return {
-            spawnProcess: (script, args, options) => {
-                require("child_process").fork(script, args, { execArgv: options.executionArguments });
-            }
-        };
-    }
-    return require(moduleName);
-};
-
-var executeString = (codeString) => {
-    return eval(codeString);
-};
-
-if (!Array.prototype.transform) {
-    Array.prototype.transform = Array.prototype.map;
-}
-
-if (commandLineArgs.length <= 2) {
-    getModule("childProcessModule").spawnProcess("Executor.js", ["1"], { executionArguments: ["--stack-limit=240000"] });
-} else {
-    var solutionOutput = computeSolution();
-    if (solutionOutput !== undefined) printToConsole(solutionOutput);
+if (process.argv.length <= 2) require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
+else {
+  var output = solve();
+  if(output !== undefined)console.log(output);
 }

@@ -1,45 +1,25 @@
-// This function processes input data to compute a specific area based on given dimensions.
-function calculateRemainingArea ( sourceData ) {
+// This function processes the input to calculate a specific area.
+function ProcessInput(rawData) {
+    // Split the raw input string into individual lines.
+    rawData = rawData.split("\n");
 
-    // The raw input string is first divided into an array of lines.
-    sourceData = sourceData . split ( '\n' ) ;
+    // The first line contains the overall dimensions (height and width).
+    let dimensions = rawData[0].split(" ");
 
-    // The first line contains the overall dimensions of the primary geometric figure.
-    const overallDimensions = sourceData [ 0 ] . split ( ' ' ) ;
+    // The second line contains the dimensions of the area to be removed.
+    let removedArea = rawData[1].split(" ");
 
-    // The second line specifies the dimensions of a smaller section to be subtracted or considered separately.
-    const excludedDimensions = sourceData [ 1 ] . split ( ' ' ) ;
+    // Convert the string representations of dimensions into integer values.
+    const totalHeight = parseInt(dimensions[0]);
+    const totalWidth = parseInt(dimensions[1]);
 
-    // Convert the string representation of the total height into an integer.
-    const totalHeight = Number . parseInt ( overallDimensions [ 0 ] ) ;
+    const removedHeight = parseInt(removedArea[0]);
+    const removedWidth = parseInt(removedArea[1]);
 
-    // Convert the string representation of the total width into an integer.
-    const totalWidth = Number . parseInt ( overallDimensions [ 1 ] ) ;
-
-    // Convert the string representation of the height of the removed part into an integer.
-    const removedHeight = Number . parseInt ( excludedDimensions [ 0 ] ) ;
-
-    // Convert the string representation of the width of the removed part into an integer.
-    const removedWidth = Number . parseInt ( excludedDimensions [ 1 ] ) ;
-
-    // Output the final calculated value to the console.
-    // This calculation represents the area of a rectangle after a smaller, defined rectangular area is conceptually removed or adjusted.
-    // The formula is equivalent to (totalHeight - removedHeight) * (totalWidth - removedWidth)
-    console . log (
-        (
-            ( totalHeight * totalWidth )
-            - ( removedHeight * totalWidth )
-            - ( totalHeight * removedWidth )
-            + ( removedHeight * removedWidth )
-        )
-    ) ;
+    // Calculate the remaining area using the provided formula.
+    // This formula is equivalent to (totalHeight - removedHeight) * (totalWidth - removedWidth).
+    console.log((totalHeight * totalWidth) - (removedHeight * totalWidth) - (totalHeight * removedWidth) + (removedHeight * removedWidth));
 }
 
-
-// Initiate the processing by reading data from the standard input stream.
-calculateRemainingArea (
-    require ( 'fs' ) . readFileSync (
-        '/dev/stdin' ,
-        'utf8'
-    )
-) ;
+// Read the entire content from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

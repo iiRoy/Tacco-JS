@@ -1,40 +1,28 @@
-// This module handles text processing tasks.
-function ProcessString( incomingText )
-{
-  // First, remove any leading or trailing whitespace from the provided text.
-  incomingText.trim( ) ;
+function ProcessData(rawData) {
+  // Remove any leading or trailing whitespace from the initial string.
+  rawData.trim();
 
+  // Convert the processed string into an array of individual characters.
+  let charArray = rawData.split("");
 
-  // Convert the cleaned text into an array of individual characters.
-  // This allows for easier manipulation of each character.
-  var charArray = incomingText . split ( "" ) ;
+  // Create a reversed copy of the character array for comparison.
+  const reversedArray = charArray.slice().reverse();
 
-  // Create a reversed copy of the character array.
-  // This is used for comparison against the original.
-  var reversedArray = charArray . slice ( ) . reverse ( ) ;
+  // Initialize a counter for the number of differing characters.
+  let mismatchCount = charArray.length;
 
-  // Initialize a counter for differences.
-  // Initially, assume all characters might be different.
-  var mismatchCount = charArray . length ;
-
-  // Iterate through the character array from the beginning to the end.
-  for ( var idx = 0 ; idx < charArray . length ; idx ++ )
-  {
-    // Check if the character at the current index in the original array
-    // matches the character at the same index in the reversed array.
-    if ( charArray [ idx ] == reversedArray [ idx ] )
-    {
-      // If they match, it means this character pair doesn't contribute to a "difference"
-      // that needs to be corrected, so decrement the mismatch counter.
-      mismatchCount -- ;
+  // Iterate through the original character array using an index.
+  for (let idx = 0; idx < charArray.length; idx++) {
+    // If the character at the current position matches in both arrays,
+    // it means this pair does not contribute to the "mismatch" that needs fixing.
+    if (charArray[idx] === reversedArray[idx]) {
+      mismatchCount--; // Decrement the counter for each matching pair.
     }
   }
-  // The final result is half of the total mismatches,
-  // representing the minimum number of changes needed for a palindrome.
-  console . info ( mismatchCount / 2 ) ;
+
+  // The final result is half of the remaining mismatch count.
+  console.log(mismatchCount / 2);
 }
 
-// Entry point: Read input from standard input and pass it to our processing function.
-// Using 'fs' module to synchronously read the file content.
-var fsModule = require ( "fs" ) ;
-ProcessString ( fsModule . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the input data from standard input and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,78 +1,136 @@
-const sourceSettings = { origin: '/dev/stdin', separator: '\n' };
+const config = { input: '/dev/stdin', newline: '\n' };
 
-const rawInput = require('node:fs').readFileSync(sourceSettings.origin, 'ascii');
-const processedLines = rawInput.trim().split(sourceSettings.separator);
-
-const totalNodes = Number(processedLines.shift());
-
-const forwardGraph = new Map();
-const reverseGraph = new Map();
-
-const establishConnection = (graphMap, fromNode, toNode, edgeWeight) => {
-    if (!graphMap.has(fromNode)) {
-        graphMap.set(fromNode, new Map());
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
     }
-    graphMap.get(fromNode).set(toNode, edgeWeight);
+
+    enqueue(element, priority) {
+        this.heap.push({ element, priority });
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    dequeue() {
+        if (this.isEmpty()) return null;
+        const min = this.heap[0];
+        const last = this.heap.pop();
+        if (!this.isEmpty()) {
+            this.heap[0] = last;
+            this.sinkDown(0);
+        }
+        return min;
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    bubbleUp(index) {
+        const currentElement = this.heap[index];
+        while (index > 0) {
+            let parentIndex = Math.floor((index - 1) / 2);
+            let parentElement = this.heap[parentIndex];
+            if (currentElement.priority >= parentElement.priority) break;
+            this.heap[parentIndex] = currentElement;
+            this.heap[index] = parentElement;
+            index = parentIndex;
+        }
+    }
+
+    sinkDown(index) {
+        const length = this.heap.length;
+        const currentElement = this.heap[index];
+        while (true) {
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let leftChild, rightChild;
+            let swapIndex = null;
+
+            if (leftChildIndex < length) {
+                leftChild = this.heap[leftChildIndex];
+                if (leftChild.priority < currentElement.priority) {
+                    swapIndex = leftChildIndex;
+                }
+            }
+
+            if (rightChildIndex < length) {
+                rightChild = this.heap[rightChildIndex];
+                if (
+                    (swapIndex === null && rightChild.priority < currentElement.priority) ||
+                    (swapIndex !== null && rightChild.priority < leftChild.priority)
+                ) {
+                    swapIndex = rightChildIndex;
+                }
+            }
+
+            if (swapIndex === null) break;
+            this.heap[index] = this.heap[swapIndex];
+            this.heap[swapIndex] = currentElement;
+            index = swapIndex;
+        }
+    }
+}
+
+const fileContent = require('fs').readFileSync(config.input, 'ascii');
+const processedLines = fileContent.trim().split(config.newline);
+
+const nodeCount = Number(processedLines.shift());
+
+const graphForward = {};
+const graphBackward = {};
+
+const addGraphEdge = (graphMap, fromNode, toNode, edgeWeight) => {
+    if (!graphMap.hasOwnProperty(fromNode)) {
+        graphMap[fromNode] = {};
+    }
+    graphMap[fromNode][toNode] = edgeWeight;
 };
 
-processedLines.forEach(currentLine => {
-    const numericalValues = currentLine.split(' ').map(Number);
-    const originNode = numericalValues[0];
-    for (let currentIdx = 2; currentIdx < numericalValues.length; currentIdx += 2) {
-        const destinationNode = numericalValues[currentIdx];
-        const linkCost = numericalValues[currentIdx + 1];
-        establishConnection(forwardGraph, originNode, destinationNode, linkCost);
-        establishConnection(reverseGraph, destinationNode, originNode, linkCost);
+processedLines.forEach(currentLineEntry => {
+    const edgeDetails = currentLineEntry.split(' ').map(Number);
+    const sourceIdentifier = edgeDetails[0];
+    for (let k = 2; k < edgeDetails.length; k += 2) {
+        addGraphEdge(graphForward, sourceIdentifier, edgeDetails[k], edgeDetails[k + 1]);
+        addGraphEdge(graphBackward, edgeDetails[k], sourceIdentifier, edgeDetails[k + 1]);
     }
 });
 
-const minimumTravelCosts = new Array(totalNodes).fill(Infinity);
-minimumTravelCosts[0] = 0;
+const shortestPathDistances = new Array(nodeCount).fill(Number.MAX_VALUE);
+shortestPathDistances[0] = 0;
 
-const costQueue = [[0, 0]];
+const priorityQueue = new MinPriorityQueue();
+priorityQueue.enqueue(0, 0);
 
-while (costQueue.length > 0) {
-    costQueue.sort((entryA, entryB) => entryA[0] - entryB[0]);
-    const [currentCost, currentNode] = costQueue.shift();
+while (!priorityQueue.isEmpty()) {
+    const { element: currentNode, priority: currentDistance } = priorityQueue.dequeue();
 
-    if (currentCost > minimumTravelCosts[currentNode]) {
+    if (currentDistance > shortestPathDistances[currentNode]) {
         continue;
     }
 
-    if (forwardGraph.has(currentNode)) {
-        forwardGraph.get(currentNode).forEach((weight, neighborNode) => {
-            const potentialNewCost = currentCost + weight;
-            if (potentialNewCost < minimumTravelCosts[neighborNode]) {
-                minimumTravelCosts[neighborNode] = potentialNewCost;
-                costQueue.push([potentialNewCost, neighborNode]);
+    const neighborsAndWeights = graphForward[currentNode];
+    if (neighborsAndWeights) {
+        for (const neighborKey in neighborsAndWeights) {
+            const neighborNode = Number(neighborKey);
+            const edgeWeight = neighborsAndWeights[neighborKey];
+            const newCalculatedDistance = currentDistance + edgeWeight;
+
+            if (newCalculatedDistance < shortestPathDistances[neighborNode]) {
+                shortestPathDistances[neighborNode] = newCalculatedDistance;
+                priorityQueue.enqueue(neighborNode, newCalculatedDistance);
             }
-        });
+        }
     }
 }
 
-const minimumEdgeHops = new Array(totalNodes).fill(null);
-minimumEdgeHops[0] = 0;
-const traversalQueue = [0];
+const nodesOrderedByShortestPath = Array.from({ length: nodeCount }, (_, index) => index);
+nodesOrderedByShortestPath.sort((nodeA, nodeB) => shortestPathDistances[nodeA] - shortestPathDistances[nodeB]);
 
-let queuePointer = 0;
-while (queuePointer < traversalQueue.length) {
-    const currentHopNode = traversalQueue[queuePointer++];
-
-    if (forwardGraph.has(currentHopNode)) {
-        forwardGraph.get(currentHopNode).forEach((_, neighborHopNode) => {
-            if (minimumEdgeHops[neighborHopNode] === null) {
-                minimumEdgeHops[neighborHopNode] = minimumEdgeHops[currentHopNode] + 1;
-                traversalQueue.push(neighborHopNode);
-            }
-        });
-    }
-}
-
-const orderedNodeIndices = Array.from({ length: totalNodes }, (_, i) => i);
-
-orderedNodeIndices.sort((nodeA, nodeB) => minimumTravelCosts[nodeA] - minimumTravelCosts[nodeB]);
-
-const nodeRankings = new Map();
-orderedNodeIndices.forEach((nodeIndex, rank) => {
-    nodeRankings.set(nodeIndex, rank);
+const shortestPathRankMap = {};
+nodesOrderedByShortestPath.forEach((node, rank) => {
+    shortestPathRankMap[node] = rank;
 });
+
+for (let currentIdx = 0; currentIdx < nodeCount; currentIdx++) {
+    console.log(currentIdx + ' ' + shortestPathDistances[currentIdx]);
+}

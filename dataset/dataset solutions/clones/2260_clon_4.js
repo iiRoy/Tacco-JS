@@ -1,58 +1,50 @@
-const MODULUS_VALUE = 1000000007;
+function parseInputToNumbers(rawTextContent) {
+    return rawTextContent.split("\n").map(lineSegment =>
+        lineSegment.split(" ").map(Number)
+    );
+}
 
-const processRawData = (textualInput) => {
-    const lines = textualInput.trim().split('\n');
-    const config = lines[0].split(' ').map(Number);
-    const data = lines[1].split(' ').map(Number);
-    return { config, data };
-};
+function evaluatePatternDifference(sourceValues, selectedIndices) {
+    const subsetValues = selectedIndices.map(idx => sourceValues[idx - 1]);
+    const minimumElement = Math.min(...subsetValues);
+    const maximumElement = Math.max(...subsetValues);
+    return maximumElement - minimumElement;
+}
 
-const generateSubsets = (maxVal, subsetSize) => {
-    const allSubsets = [];
-    const currentSubset = [];
+function generateCombinations(totalElementsCount, chooseCount) {
+    const allCombinations = [];
 
-    const findSubsetsRecursive = (startIdx) => {
-        if (currentSubset.length === subsetSize) {
-            allSubsets.push([...currentSubset]);
+    function formSubset(startFrom, currentSubset) {
+        if (currentSubset.length === chooseCount) {
+            allCombinations.push([...currentSubset]);
             return;
         }
 
-        for (let elemIdx = startIdx; elemIdx <= maxVal; elemIdx++) {
-            currentSubset.push(elemIdx);
-            findSubsetsRecursive(elemIdx + 1);
+        for (let element = startFrom; element <= totalElementsCount; element++) {
+            currentSubset.push(element);
+            formSubset(element + 1, currentSubset);
             currentSubset.pop();
         }
-    };
+    }
 
-    findSubsetsRecursive(1);
-    return allSubsets;
-};
+    formSubset(1, []);
+    return allCombinations;
+}
 
-const computeRangeDelta = (valueArray, indexPattern) => {
-    if (indexPattern.length === 0) return 0;
+function processInputData(rawInputString) {
+    const primeModulo = 1000000007;
+    const numericDataArrays = parseInputToNumbers(rawInputString);
+    const [totalItems, selectionSize] = numericDataArrays[0];
+    const valueArray = numericDataArrays[1];
 
-    const selectedValues = indexPattern.map(idx => valueArray[idx - 1]);
+    const combinationSets = generateCombinations(totalItems, selectionSize);
 
-    const { min, max } = selectedValues.reduce((acc, current) => ({
-        min: Math.min(acc.min, current),
-        max: Math.max(acc.max, current)
-    }), { min: selectedValues[0], max: selectedValues[0] });
-
-    return max - min;
-};
-
-const performCalculations = (inputString) => {
-    const { config, data } = processRawData(inputString);
-    const [numElements, subsetLength] = config;
-
-    const combinationList = generateSubsets(numElements, subsetLength);
-
-    const totalDifferenceSum = combinationList.reduce((currentSum, pattern) => {
-        const delta = computeRangeDelta(data, pattern);
-        return (currentSum + delta) % MODULUS_VALUE;
+    const finalAccumulatedSum = combinationSets.reduce((currentSum, currentPattern) => {
+        const differenceValue = evaluatePatternDifference(valueArray, currentPattern);
+        return (currentSum + differenceValue) % primeModulo;
     }, 0);
 
-    console.log(totalDifferenceSum);
-};
+    console.log(finalAccumulatedSum);
+}
 
-performCalculations(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

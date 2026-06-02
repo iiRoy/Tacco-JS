@@ -1,101 +1,69 @@
 (function executeSortingProcess() {
-  // Utilizing the Node.js file system module for synchronous input reading.
-  const nodeFileSystemModule = require('fs');
+  const STDIN_PATH_CONSTANT = '/dev/stdin';
+  const OUTPUT_ELEMENT_DELIMITER = ' ';
+  const MAX_POSSIBLE_VALUE_LIMIT = 10000;
 
-  // Attempt to read the entire input from standard input.
-  const rawInputString = nodeFileSystemModule.readFileSync('/dev/stdin', 'utf8');
+  // Helper function to abstract file system input reading
+  const retrieveInputLines = (sourcePath) => {
+    const fileSystemModule = require('fs');
+    const rawContent = fileSystemModule.readFileSync(sourcePath, 'utf8');
+    const trimmedContent = rawContent.trim();
+    return trimmedContent.split('\n');
+  };
 
-  // --- Input Validation and Parsing ---
-  // Check if the input stream was empty.
-  if (!rawInputString || rawInputString.trim().length === 0) {
-    console.error("Error: No input data provided.");
-    process.exit(1); // Terminate with an error code
-  }
+  // Core counting sort algorithm encapsulated in a function
+  const applyCountingSort = (dataLines) => {
+    // Extract the number of elements from the first line
+    const numberOfElements = Number(dataLines.shift());
 
-  // Split the raw input string into an array of lines, removing leading/trailing whitespace.
-  const inputDataLines = rawInputString.trim().split('\n');
+    // Parse the array of numbers from the second line
+    const inputNumericArray = dataLines.shift().split(OUTPUT_ELEMENT_DELIMITER).map(Number);
 
-  // Extract the first line, which should contain the total count of elements.
-  const elementCountString = inputDataLines.shift();
-  if (!elementCountString) {
-    console.error("Error: Missing element count line in input.");
-    process.exit(1);
-  }
-  const totalElementsCount = Number(elementCountString);
+    // Initialize a frequency counter array with zeros
+    // This replaces the original loop-based initialization
+    const frequencyCounterArray = Array.from({ length: MAX_POSSIBLE_VALUE_LIMIT }, () => 0);
 
-  // Validate the parsed element count.
-  if (isNaN(totalElementsCount) || totalElementsCount < 0) {
-    console.error(`Error: Invalid element count "${elementCountString}". Must be a non-negative number.`);
-    process.exit(1);
-  }
-  if (totalElementsCount === 0) {
-    // If no elements, output an empty line and exit.
-    process.stdout.write('\n');
-    return;
-  }
-
-  // Extract the second line, which contains the space-separated numeric sequence.
-  const originalNumericSequenceString = inputDataLines.shift();
-  if (!originalNumericSequenceString) {
-    console.error("Error: Missing numeric sequence line in input.");
-    process.exit(1);
-  }
-
-  // Convert the string of numbers into an array of actual numbers.
-  const originalNumericSequence = originalNumericSequenceString.split(' ').map(val => Number(val));
-
-  // Verify that the number of parsed elements matches the declared count.
-  if (originalNumericSequence.length !== totalElementsCount) {
-    console.error(`Error: Declared element count (${totalElementsCount}) does not match actual elements found (${originalNumericSequence.length}).`);
-    process.exit(1);
-  }
-
-  // Define the maximum possible value + 1 for the counting array.
-  // This value is typically determined by problem constraints (e.g., 0 to 9999).
-  const MAX_VALUE_LIMIT = 10000;
-
-  // --- Counting Sort Implementation ---
-
-  // Initialize an array to store the frequency of each number.
-  // Using Array.fill(0) is a concise way to pre-populate with zeros.
-  let cumulativeCounts = Array(MAX_VALUE_LIMIT).fill(0);
-
-  // First pass: Count the occurrences of each number in the original sequence.
-  // This loop can also include a check for values exceeding MAX_VALUE_LIMIT.
-  originalNumericSequence.forEach(function(currentValue) {
-    if (currentValue < 0 || currentValue >= MAX_VALUE_LIMIT || isNaN(currentValue)) {
-      console.error(`Error: Input number ${currentValue} is out of expected range [0, ${MAX_VALUE_LIMIT - 1}] or invalid.`);
-      process.exit(1);
+    // Populate the frequency counter array
+    for (let currentIdx = 0; currentIdx < numberOfElements; currentIdx++) {
+      const value = inputNumericArray[currentIdx];
+      // Add a guard to ensure valid array access, preserving original behavior for out-of-bounds/undefined
+      if (value !== undefined && value >= 0 && value < MAX_POSSIBLE_VALUE_LIMIT) {
+        frequencyCounterArray[value]++;
+      }
     }
-    cumulativeCounts[currentValue]++;
-  });
 
-  // Second pass: Transform the frequency counts into cumulative counts.
-  // `cumulativeCounts[idx]` will now store the number of elements less than or equal to `idx`.
-  for (let idx = 1; idx < MAX_VALUE_LIMIT; ++idx) {
-    cumulativeCounts[idx] += cumulativeCounts[idx - 1];
-  }
+    // Calculate cumulative frequencies
+    for (let currentIdx = 1; currentIdx < MAX_POSSIBLE_VALUE_LIMIT; currentIdx++) {
+      frequencyCounterArray[currentIdx] += frequencyCounterArray[currentIdx - 1];
+    }
 
-  // Initialize the output array with the correct size.
-  let sortedOutputArray = new Array(totalElementsCount);
+    // Create the final sorted array
+    const finalSortedArray = [];
 
-  // Third pass: Build the sorted array.
-  // Iterate from the end of the original sequence to ensure stability (preserving relative order of equal elements).
-  for (let idx = totalElementsCount - 1; idx >= 0; --idx) {
-    const currentValue = originalNumericSequence[idx];
-    // Determine the correct 0-based index for the current value in the sorted array.
-    // The cumulative count gives the position *after* the last instance, so decrement it first.
-    const targetIndex = --cumulativeCounts[currentValue];
-    sortedOutputArray[targetIndex] = currentValue;
-  }
+    // Place elements into the sorted array from right to left
+    // The loop structure (from numberOfElements down to 0) is preserved
+    // to maintain exact observable behavior, including potential sparse array effects.
+    for (let currentIdx = numberOfElements; currentIdx >= 0; currentIdx--) {
+      const elementToPosition = inputNumericArray[currentIdx];
+      // Add guards to handle potential undefined values (e.g., inputNumericArray[numberOfElements])
+      // and ensure valid index access for frequencyCounterArray.
+      if (elementToPosition !== undefined && elementToPosition >= 0 && elementToPosition < MAX_POSSIBLE_VALUE_LIMIT) {
+        const targetPosition = frequencyCounterArray[elementToPosition];
+        if (targetPosition !== undefined) {
+          finalSortedArray[targetPosition] = elementToPosition;
+          frequencyCounterArray[elementToPosition]--;
+        }
+      }
+    }
 
-  // --- Output Generation ---
-  // Join the elements of the sorted array with spaces.
-  const resultString = sortedOutputArray.join(' ');
+    // Join the sorted elements with the specified delimiter
+    return finalSortedArray.join(OUTPUT_ELEMENT_DELIMITER);
+  };
 
-  // Output the sorted sequence to standard output, followed by a newline character.
-  const nodeProcessModule = process; // Reference to the global process object
-  nodeProcessModule.stdout.write(resultString + '\n');
+  // Execute the input reading and sorting process
+  const allInputContentLines = retrieveInputLines(STDIN_PATH_CONSTANT);
+  const processedOutputString = applyCountingSort(allInputContentLines);
 
-  // End of sorting process.
+  // Write the final sorted string to standard output
+  process.stdout.write(processedOutputString);
 })();

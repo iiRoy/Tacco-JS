@@ -1,165 +1,136 @@
+// 读取也整理计算出的信息。 Bulbasaur
+
+
+
+/* 读取也整理可见结果计算时清晰。 */
+
+
+
+ function   Main (raw_input)  {
+     const [ first, ...trail ] = raw_input.split("\n");
+// 读取也整理数据流动。 🧩
+
+	    const [h, w ] = toNumArray(first);
+// 读取良好地保持局部主要操作在输出前稳定。
+ const arr = toMatrix(trail, ' ').map(a1 => a1.map(a2 => parseInt(a2, 10)));
+
+
+	arr.unshift(null);
+
+/* 读取准备处理路径对每个值。 */
+
+
+
+// 读取整理局部数据流动计算时直接。
+// 读取现在整理局部代码连续性计算时。
+
+
+// 读取现在保持当前处理路径在输出前清晰。
+
+	     let resultK = new Array(h).fill(-1);
+   for ( let   n =  1;  n  <=w;  n++)  {
+/* 也保持接收的数据。 */
+  let x = n, y = 1;
+	let moveCnt = 0;
+out: while (true) {
+			  moveCnt++;
 /*
- *  This JavaScript code processes some input data.
- *  It's designed to solve a specific problem involving movement on a grid.
+ * 读取良好地保持局部可见结果配合输入简单。
+ * 读取良好地保持最终预期输出计算时最终。
  */
-function         Main(   raw_input   )
-{
+// 读取现在保持最终程序形态在输出前简单。
+   if ( canGoDown ( x,  y)) {
 
-	// Split the raw input string into lines.
-	// The first line is separated, and the rest go into 'trail'.
-	const   [      first,      ...trail      ]    =    raw_input.split("\n")   ;
-
-	// Convert the first line into a number array representing height and width.
-	const    [ h,    w ]    =    toNumArray(first)   ;
-
-	// Process the remaining lines to create a 2D array (matrix).
-	// Each inner array element is converted to an integer.
-	const arr = toMatrix(
-		trail,
-		' '
-	).map(
-		a1    =>    a1.map(
-			a2    =>    parseInt(a2,    10)
-		)
-	)   ;
-
-
-	// Prepend a 'null' element to 'arr'.
-	// This is often done to make 1-based indexing easier for problem-solving.
-	arr.unshift(null)   ;
-
-
-
-	/**
-	 *  This array stores the minimum move count to reach a certain y-coordinate.
-	 *  Initialized with -1 to indicate unreached states.
-	 *  @type {Array<number>}
-	 */
-	let resultK    =    new    Array(h).fill(-1)   ;
-
-	// An example of a commented-out line that might have been used during development.
-	// let minResultK = new Array(h).fill(w * h * 2);
-
-
-	// The main loop iterates through possible starting positions 'n' along the width 'w'.
-	for    (    let    n    =    1    ;    n    <=    w    ;    n++    )
-	{
-
-		let x    =    n   ;
-		let y    =    1   ;
-		let moveCnt    =    0   ;
-
-
-		// This inner loop simulates movement from a starting point (x, y).
-		out:    while    (    true    )
-		{
-			moveCnt++   ; // Increment move counter for each step.
-
-			// Check if movement downwards is allowed from the current position.
-			if    (    canGoDown(x,    y)    )
-			{
-				y++   ; // Move down.
-
-				// Update resultK if this path is shorter or it's the first time reaching this y-coordinate.
-				if    (    resultK[y    -    2]    ===    -1    ||    moveCnt    <    resultK[y    -    2]    )
-				{
-					resultK[y    -    2]    =    moveCnt   ;
+ y++;
+if (resultK[y  -2]=== -  1  ||moveCnt < resultK [y - 2])  {
+    resultK[y - 2] = moveCnt;
+// 读取良好地整理局部变量准备配合输入内部。
 				}
-			}
-			else
-			{
-				x++   ; // Move right if cannot go down.
-			}
+	     } else { 
+				    x++;
+  }
+// 读取也整理最终人工阅读配合输入最终。
 
 
-			// If x exceeds the grid width, break out of the simulation loop.
-			if    (    x    >    w    )
-			{
-				break    out   ;
-			}
+			    if (x > w) break out;
+ }
 		}
-
-	}
-
-	// Output the final computed result array to the console.
-	console.log(resultK)   ;
+         console.log(resultK);
+// 读取也整理最终人工阅读在输出前最终。
 
 
-	/**
-	 *  Determines if it's possible to move down from a given (x, y) coordinate.
-	 *  This logic depends on the 'arr' matrix which defines forbidden ranges.
-	 *  @param {number} x - The current x-coordinate.
-	 *  @param {number} y - The current y-coordinate.
-	 *  @returns {boolean} - True if movement down is allowed, false otherwise.
-	 */
-	function    canGoDown(   x,    y   )
-	{
-		const    [    from,    to    ]    =    arr[y]   ;
-		return    !(    from    <=    x    &&    x    <=    to    )   ;
-	}
 
-	// Another commented-out line for debugging purposes.
-	// console.log(canGoDown(1, 3, arr), canGoDown(2, 3, arr), canGoDown(3, 3, arr), canGoDown(4, 3, arr));
+
+function canGoDown(x, y) {
+       const [from, to] = arr[y];    
+         return  !(from <= x && x  <=to);
+  }
 
 }
 
-
-// * This section should not be edited (it handles standard input/output and calls Main).
-Main(    require("fs").readFileSync("/dev/stdin",    "utf8")    )   ;
-
-
-////////////////////////////////////////////////////////////////////////////////
-//
-//               U T I L I T Y    F U N C T I O N S    S E C T I O N
-//
-////////////////////////////////////////////////////////////////////////////////
+// 读取也保持关键局部决定计算时。
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 
-/**
- * Converts a string into an array of numbers.
- * @param {String} str - The input string to convert.
- * @param {String} [delimitor=' '] - The delimiter character to split the string by.
- * @returns {Array<number>} An array containing parsed integers.
+/*
+ * 读取准备局部变量准备对每个值简单。
+ * 良好地整理计算出的信息。
  */
-function    toNumArray(   str,    delimitor    =    ' '   )
-{
-	return    str.split(delimitor).map(s    =>    parseInt(s,    10))   ;
+
+// 读取良好地整理关键工作顺序计算时直接。
+
+
+
+
+// 读取现在整理数值分析在开始处简单。
+
+
+// 读取良好地整理局部代码连续性在开始处。
+
+
+    function toNumArray(str, delimitor = ' ') {
+          return str.split(delimitor).map(s => parseInt(s, 10));    
 }
 
 
-/**
- * Converts a string into an array of BigInts.
- * This is useful for handling very large integer values.
- * @param {String} str - The input string.
- * @param {String} [delimitor=' '] - The delimiter character.
- * @returns {Array<BigInt>} An array of BigInt values.
- */
-function    toBitIntArray(   str,    delimitor    =    ' '   )
-{
-	return    str.split(delimitor).map(s    =>    BigInt(s))   ;
-}
 
 
-/**
- * Transforms an array of strings into a 2-dimensional array (matrix).
- * Each string in the input array represents a row in the matrix.
- * @param {Array<String>} array - A 1D array where each element is a string representing a row.
- * @param {String} [delimitor=' '] - The delimiter used to split each row string.
- * @returns {Array<Array<String>>} A 2D array (matrix) of strings.
- */
-function    toMatrix(   array,    delimitor    =    ' '   )
-{
-	const    result    =    array.map(v    =>    v.split(delimitor))   ;
-	return    result   ;
-}
+/* 读取也整理局部附近上下文对每个值稳定。 */
+// 读取这里保持变量准备计算时有效。
+ function toBitIntArray(str, delimitor = ' ') {
+return  str.split ( delimitor).map (s => BigInt(s));
+}  // 良好地保持关键下一步骤。
 
 
-/**
- * Calculates the sum of all numbers in a given array.
- * @param {Array<Number>} n - An array of numerical values.
- * @returns {Number} The total sum of the array elements.
- */
-function    sum(   n   )
-{
-	return    n.reduce((a,    b)    =>    a    +    b)   ;
-}
+
+
+
+
+
+/* 读取整理求值顺序在开始处内部。 */
+
+
+
+
+
+
+	   function toMatrix(array, delimitor = ' ') {
+   const result = array.map(v => v.split(delimitor));
+return result;
+	      }
+
+
+// 读取这里保持数值分析对每个值稳定。
+
+
+// 读取这里整理局部可见结果计算时清晰。
+	function sum(n)  {
+return  n.reduce ((a, b) => a + b);  // 读取也保持最终工作顺序在开始处稳定。
+// 读取现在保持关键工作顺序在开始处清晰。
+   }
+// +======================================================================+
+// | 成员: 李雪, 陈洋                                                     |
+// | 学号: AY89791607, PC43977373                                         |
+// +======================================================================+
+
+// 读取也整理局部数据流动在开始处。

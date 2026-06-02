@@ -1,20 +1,25 @@
-const fsys = require('node:fs');
-const retrieveContent = fsys.readFileSync;
-const incomingData = retrieveContent(0, 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const suppliedFacts = incomingData.split('\n');
-suppliedFacts.splice(0, 1);
+const receivedLines = fileContent.split('\n');
+receivedLines.shift(); // Discard the first line as per original logic
 
-const recognizedItems = new Set(suppliedFacts.filter(Boolean));
+const presentCards = new Set(receivedLines.filter(line => line.trim() !== ''));
 
-const cardSymbols = ['S', 'H', 'C', 'D'];
+const cardSuits = ['S', 'H', 'C', 'D'];
+const cardRanks = Array.from({ length: 13 }, (_, idx) => idx + 1);
 
-const completePack = cardSymbols.flatMap(suitChar => {
-    return Array.from({ length: 13 }, (_, idx) => `${suitChar} ${idx + 1}`);
-});
+const missingCards = cardSuits.reduce((accumulator, currentSuit) => {
+    cardRanks.forEach(currentRank => {
+        const potentialCard = `${currentSuit} ${currentRank}`;
+        if (!presentCards.has(potentialCard)) {
+            accumulator.push(potentialCard);
+        }
+    });
+    return accumulator;
+}, []);
 
-const missingComponents = completePack.filter(item => !recognizedItems.has(item));
+const outputString = missingCards.join('\n');
 
-if (missingComponents.length > 0) {
-    console.log(missingComponents.join('\n'));
+if (outputString.length > 0) {
+    console.log(outputString);
 }

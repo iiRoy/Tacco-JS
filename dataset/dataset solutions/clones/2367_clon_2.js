@@ -1,61 +1,62 @@
-function acquireData() {
-  return require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim();
+function getInputData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function emitOutput(dataPayload) {
-  console.log(dataPayload);
+function displayResult(outputValue) {
+  console.log(outputValue); // Outputs the final computed value.
 }
 
-/*
-  This function handles various input transformations.
-  Mode 0: Returns the input value unchanged.
-  Mode 1: Converts the input value to an integer.
-  Mode 2: Splits the input string by spaces.
-  Mode 3: Splits the input string by newlines.
-  Mode 4: Splits by spaces and converts each resulting part to a number.
-  Mode 5: Splits by newlines and converts each resulting part to a number.
-  Mode 6: Splits the input string into individual characters.
-  Mode 7: Splits into individual characters and converts each to a number.
-*/
-function processInput(sourceVal, conversionMode) {
-  switch (conversionMode) {
+// This utility function handles various input transformations.
+// Parameter 'conversionType' dictates the transformation:
+// 0: No change, return as is.
+// 1: Convert to integer.
+// 2: Split by space.
+// 3: Split by newline.
+// 4: Split by space and convert to number array.
+// 5: Split by newline and convert to number array.
+// 6: Split into individual characters.
+// 7: Split into individual characters and convert to number array.
+function transformInput(rawData, conversionType) {
+  switch (conversionType) {
     case 0:
-      return sourceVal;
+      return rawData;
     case 1:
-      return parseInt(sourceVal);
+      return parseInt(rawData);
     case 2:
-      return sourceVal.split(" ");
+      return rawData.split(" ");
     case 3:
-      return sourceVal.split("\n");
+      return rawData.split("\n");
     case 4:
-      return sourceVal.split(" ").map((item) => Number(item));
+      return rawData.split(" ").map((item) => Number(item));
     case 5:
-      return sourceVal.split("\n").map((item) => Number(item));
+      return rawData.split("\n").map((item) => Number(item));
     case 6:
-      return sourceVal.split("");
+      return rawData.split("");
     case 7:
-      return sourceVal.split("").map((item) => Number(item));
+      return rawData.split("").map((item) => Number(item));
   }
 }
 
-function performAnalysis(primaryData) {
-  primaryData = processInput(primaryData, 1);
+function processCalculation(initialValue) {
+  // Convert the initial string input to an integer.
+  initialValue = transformInput(initialValue, 1);
 
-  let initialCostA = Math.floor(primaryData / 1.08);
-  let initialCostB = Math.ceil(primaryData / 1.08);
+  // Calculate two potential cost prices based on floor and ceil divisions.
+  let costPriceA = Math.floor(initialValue / 1.08);
+  let costPriceB = Math.ceil(initialValue / 1.08);
 
-  let calculatedValueA = Math.floor(initialCostA * 1.08);
-  let calculatedValueB = Math.floor(initialCostB * 1.08);
+  // Re-calculate the taxed price for verification.
+  let tempCalcA = Math.floor(costPriceA * 1.08);
+  let tempCalcB = Math.floor(costPriceB * 1.08);
 
-  if (primaryData == calculatedValueA) {
-    emitOutput(initialCostA);
-  } else if (primaryData == calculatedValueB) {
-    emitOutput(initialCostB);
+  // Check which cost price, if any, matches the initial value after tax.
+  if (initialValue === tempCalcA) {
+    displayResult(costPriceA);
+  } else if (initialValue === tempCalcB) {
+    displayResult(costPriceB);
   } else {
-    emitOutput(":(");
+    displayResult(":("); // No matching cost price found.
   }
 }
 
-performAnalysis(acquireData());
+processCalculation(getInputData());

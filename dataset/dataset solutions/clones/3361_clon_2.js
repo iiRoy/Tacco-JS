@@ -1,63 +1,63 @@
-/*
- * This module processes a series of numerical inputs
- * to calculate a cumulative value based on specific traversal logic.
- */
-function processInput(inputString) { // Main entry point for processing the provided string data.
-    // Split the entire input string into an array of individual lines.
-    let linesArray = inputString.split("\n");
+function processInput(inputData) {
+    // Split the entire input string into an array of lines.
+    var linesArray = inputData.split("\n");
 
-    // Parse the first line to extract two key configuration values.
-    // The first number represents a boundary or maximum limit.
-    const boundaryValue = Number.parseInt(linesArray[0].split(" ")[0]);
-    // The second number indicates the total number of processing iterations.
-    const iterationsCount = Number.parseInt(linesArray[0].split(" ")[1]);
+    // Parse the boundary length (L) and the number of iterations (N) from the first line.
+    var boundaryLength = parseInt(linesArray[0].split(" ")[0]);
+    var iterationCount = parseInt(linesArray[0].split(" ")[1]);
 
-    // Remove the configuration line as it's no longer needed in the data set.
+    // Remove the first line, as it has been processed.
     linesArray.shift();
 
-    // The remaining lines now exclusively contain the data items to be processed.
-    let dataItems = linesArray;
+    // The remaining lines represent the coordinates for processing.
+    var coordinateList = linesArray;
 
-    // Initialize the current position tracker. Starts at the beginning.
-    let currentPosition = 0;
-    // Initialize the accumulator for the final sum.
-    let cumulativeSum = 0;
+    // Initialize the current position to the starting point.
+    var currentPosition = 0;
 
-    // Iterate through the data items for the specified number of times.
-    for (let loopCounter = 0; loopCounter < iterationsCount; loopCounter++) {
-        // Retrieve and parse the first data item in the current sequence.
-        const firstElement = Number.parseInt(dataItems[0]);
-        // Retrieve and parse the last data item in the current sequence.
-        const lastElement = Number.parseInt(dataItems[dataItems.length - 1]);
+    // Initialize the total accumulated distance.
+    var cumulativeDistance = 0;
 
-        // Calculate the distance if moving from the current position to the first element.
-        const distanceForward = firstElement - currentPosition;
-        // Calculate the distance if moving from the current position to the last element,
-        // considering the boundary value.
-        const distanceBackward = (boundaryValue - lastElement) + currentPosition;
+    // Iterate through the coordinates for the specified number of times.
+    for (var loopIndex = 0; loopIndex < iterationCount; loopIndex++) {
+        // Get the first coordinate from the list.
+        var firstCoordinate = parseInt(coordinateList[0]);
 
-        // Log intermediate states for debugging or tracing.
-        console.log("Current position marker: " + currentPosition);
-        console.log("Accumulated value so far: " + cumulativeSum);
+        // Get the last coordinate from the list.
+        var lastCoordinate = parseInt(coordinateList[coordinateList.length - 1]);
 
-        // Determine the optimal path based on calculated distances.
-        if (distanceForward > distanceBackward) {
-            // If moving forward is more efficient or preferred.
-            cumulativeSum += distanceForward; // Add the forward distance to the total.
-            dataItems.shift(); // Remove the processed first element.
-            currentPosition = firstElement; // Update the current position.
-        }
-        else {
-            // If moving backward is more efficient or preferred.
-            cumulativeSum += distanceBackward; // Add the backward distance to the total.
-            dataItems.pop(); // Remove the processed last element.
-            currentPosition = lastElement; // Update the current position.
+        // Calculate the distance to move forward to the first coordinate.
+        var distanceToFirst = firstCoordinate - currentPosition;
+
+        // Calculate the distance to move backward to the last coordinate, considering the boundary.
+        var distanceToLast = (boundaryLength - lastCoordinate) + currentPosition;
+
+        // Output the current position for debugging or tracking.
+        console.log("now:" + currentPosition);
+        // Output the current total distance.
+        console.log("total:" + cumulativeDistance);
+
+        // Decide whether to move forward or backward based on which path is longer.
+        if (distanceToFirst > distanceToLast) {
+            // If moving forward is longer, add that distance to the total.
+            cumulativeDistance = cumulativeDistance + (distanceToFirst);
+            // Remove the first coordinate as it has been visited.
+            coordinateList.shift();
+            // Update the current position to the first coordinate.
+            currentPosition = firstCoordinate;
+        } else {
+            // Otherwise, add the backward distance to the total.
+            cumulativeDistance = cumulativeDistance + (distanceToLast);
+            // Remove the last coordinate as it has been visited.
+            coordinateList.pop();
+            // Update the current position to the last coordinate.
+            currentPosition = lastCoordinate;
         }
     }
 
-    // Output the final computed cumulative sum.
-    console.log(cumulativeSum);
+    // After the loop completes, print the final cumulative distance.
+    console.log(cumulativeDistance);
 }
 
-// Invoke the main processing function with data read from standard input.
+// Read input from standard input and pass it to the processing function.
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

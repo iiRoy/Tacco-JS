@@ -1,21 +1,20 @@
-function identifyAlphabetGap(sourceContent) {
-    const mainLineSegment = sourceContent.split('\n')[0];
-    const characterPresenceRegister = new Set(mainLineSegment.split(''));
+function Main(rawInput) {
+  const sourceText = rawInput.split("\n")[0];
 
-    const completeAlphabetSequence = Array.from({ length: 26 }, (_, charIndex) =>
-        String.fromCharCode(97 + charIndex)
-    );
+  const presentCharacters = new Set(sourceText);
 
-    const firstAbsentChar = completeAlphabetSequence.find(symbolUnit =>
-        !characterPresenceRegister.has(symbolUnit)
-    );
+  const alphabetSequence = Array.from({ length: 26 }, (_, index) =>
+    String.fromCharCode('a'.charCodeAt(0) + index)
+  );
 
-    if (firstAbsentChar !== undefined) {
-        process.stdout.write(firstAbsentChar + '\n');
-    } else {
-        process.stdout.write('None\n');
-    }
+  const firstMissingCharacter = alphabetSequence.find(charItem =>
+    !presentCharacters.has(charItem)
+  );
+
+  if (firstMissingCharacter !== undefined) {
+    console.log(firstMissingCharacter);
+  } else {
+    console.log("None");
+  }
 }
-
-const receivedData = process.stdin.readFileSync(0, 'utf8');
-identifyAlphabetGap(receivedData);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

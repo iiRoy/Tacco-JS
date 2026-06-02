@@ -1,14 +1,26 @@
-function manipulateQuantities(primaryLabel, secondaryLabel, initialAmount, auxiliaryAmount, referenceLabel) {
-    let outcomeA = Number(initialAmount);
-    let outcomeB = Number(auxiliaryAmount);
+const readline = require('readline');
 
-    const adjustmentRoutines = new Map();
-    adjustmentRoutines.set(true, (val1, val2) => [val1 - 1, val2]);
-    adjustmentRoutines.set(false, (val1, val2) => [val1, val2 - 1]);
+const processData = (inputLine) => {
+    const parts = inputLine.split(' ');
+    const [firstStr, secondStr, firstNumStr, secondNumStr, thirdStr] = parts;
 
-    const identityMatch = (primaryLabel === referenceLabel);
+    const numericValues = [parseInt(firstNumStr, 10), parseInt(secondNumStr, 10)];
+
+    const modificationIndex = (firstStr === thirdStr) ? 0 : 1;
     
-    const finalQuantities = adjustmentRoutines.get(identityMatch)(outcomeA, outcomeB);
+    const updatedValues = numericValues.map((val, idx) => 
+        idx === modificationIndex ? val - 1 : val
+    );
 
-    return `${finalQuantities[0]} ${finalQuantities[1]}`;
-}
+    return updatedValues.join(' ');
+};
+
+const inputHandler = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+inputHandler.on('line', (currentLine) => {
+    console.log(processData(currentLine));
+    inputHandler.close();
+});

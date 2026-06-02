@@ -1,21 +1,15 @@
-"use strict"
+"use strict";
 
-const processData = (sourceMaterial) => {
-  const rawContent = sourceMaterial.toString().trim();
-  const delimiterIndex = rawContent.indexOf(' ');
-  const firstComponent = parseInt(rawContent.substring(0, delimiterIndex), 10);
-  const secondComponent = parseInt(rawContent.substring(delimiterIndex + 1), 10);
+const computeOutcome = (rawText) => {
+  const numericalComponents = rawText.trim().split(' ').map(Number);
 
-  const multiplierConstant = 100;
-  const referenceValue = 10;
+  const primaryValue = numericalComponents[0];
+  const secondaryValue = numericalComponents[1];
 
-  const calculatedDifference = referenceValue - firstComponent;
-  const positiveDifference = Math.max(0, calculatedDifference);
-  const additionalTerm = multiplierConstant * positiveDifference;
+  const adjustmentFactor = Math.max(0, 10 - primaryValue);
+  const finalResult = secondaryValue + (adjustmentFactor * 100);
 
-  console.log(secondComponent + additionalTerm);
+  console.log(finalResult);
 };
 
-((executionTarget) => {
-  executionTarget(require("node:fs").readFileSync("/dev/stdin", "utf8"));
-})(processData);
+computeOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,29 +1,28 @@
-function performCheck ( initialString )
-{
-  // Split the incoming raw data string into an array of constituent parts
-  let partsArray = initialString.split ( " " ) ;
+// This function is designed to process a given string input.
+function processInput(rawData) {
+  // The initial string is split into an array of substrings using a space as a delimiter.
+  // The original 'rawData' variable is then reassigned to hold this array.
+  rawData = rawData.split(" ");
 
-  // Concatenate the first two elements of the array to form a new string
-  const joinedSection = partsArray[ 0 ] + partsArray[ 1 ] ;
+  // The first two elements of the resulting array are concatenated to form a new string.
+  let concatenatedDigits = rawData[0] + rawData[1];
 
-  // Parse the concatenated string into an integer, using base 10
-  let targetNumber = Number.parseInt ( joinedSection, 10 ) ;
+  // This concatenated string is then parsed into an integer using base 10.
+  let parsedNumber = parseInt(concatenatedDigits, 10);
 
-  // Calculate the square root of the resulting integer
-  var sqrtCandidate = Math.sqrt ( targetNumber ) ;
+  // The square root of the obtained integer is calculated.
+  let squareRootResult = Math.sqrt(parsedNumber);
 
-  // Check if the calculated square root is an integer
-  if ( Number.isInteger ( sqrtCandidate ) )
-  {
-    // If it is an integer, output "Yes" to indicate success
-    console.log ( "Yes" ) ;
-  }
-  else
-  {
-    // Otherwise, output "No"
-    console.log ( "No" ) ;
+  // A conditional check determines if the calculated square root is an integer.
+  if (Number.isInteger(squareRootResult)) {
+    // If the square root is an integer, "Yes" is printed to the console.
+    console.log("Yes");
+  } else {
+    // Otherwise (if it's not an integer), "No" is printed to the console.
+    console.log("No");
   }
 }
 
-// Read input from standard input and pass it to our main processing function
-performCheck ( require ( 'node:fs' ) .readFileSync ( '/dev/stdin', { encoding: 'utf8' } ) ) ;
+// The 'processInput' function is invoked with content read from standard input.
+// The 'fs' module is used to synchronously read the file at '/dev/stdin' as a 'utf8' string.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

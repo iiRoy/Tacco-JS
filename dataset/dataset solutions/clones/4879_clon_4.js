@@ -1,24 +1,10 @@
-function calculateAlternations(sourceData) {
-    const textSegment = sourceData[0];
-    const charEntities = textSegment.split('');
-
-    if (charEntities.length < 2) {
-        return 0;
-    }
-
-    const alternationCount = charEntities.slice(1).reduce((currentTally, presentChar, idx) => {
-        const priorChar = charEntities[idx];
-        if (presentChar !== priorChar) {
-            return currentTally + 1;
-        }
-        return currentTally;
-    }, 0);
-
-    return alternationCount;
+function processInputData(sourceData) {
+    const symbolArray = sourceData[0].split('');
+    const transitionTally = symbolArray.slice(1).filter((currentSymbol, index) => {
+        const previousSymbol = symbolArray[index];
+        return currentSymbol !== previousSymbol;
+    }).length;
+    console.log(transitionTally);
 }
 
-(function() {
-    const inputPayload = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
-    const finalOutcome = calculateAlternations(inputPayload);
-    console.log(finalOutcome);
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

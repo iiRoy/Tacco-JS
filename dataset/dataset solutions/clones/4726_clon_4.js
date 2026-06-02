@@ -1,26 +1,18 @@
-const processStream = (rawData) => {
-    const contentLines = rawData.split('\n');
-    const numeralSequenceText = contentLines[1];
+function Main(input) {
+  const lineSegments = input.split("\n");
+  const processingLimit = Number(lineSegments[0]);
 
-    const evenValueCounter = numeralSequenceText
-        .split(' ')
-        .reduce((currentTally, stringRepresentation) => {
-            const numericValue = Number(stringRepresentation);
-            // Check for evenness using bitwise AND
-            return currentTally + ((numericValue & 1) === 0 ? 1 : 0);
-        }, 0);
+  const numericTokens = lineSegments[1].split(" ");
 
-    // Use a lookup table for the final decision message
-    const resultMapping = {
-        true: "YES",  // If the count of even values is odd
-        false: "NO"   // If the count of even values is even
-    };
+  const evenNumbersTally = numericTokens
+    .slice(0, processingLimit)
+    .reduce((accumulator, currentToken) => {
+      const parsedValue = Number(currentToken);
+      return accumulator + (parsedValue % 2 === 0 ? 1 : 0);
+    }, 0);
 
-    // Determine if the count of even values is odd
-    const isEvenCountOdd = (evenValueCounter & 1) !== 0;
-    const finalOutput = resultMapping[isEvenCountOdd];
+  const finalOutcome = (evenNumbersTally % 2 !== 0) ? "YES" : "NO";
+  console.log(finalOutcome);
+}
 
-    console.log(finalOutput);
-};
-
-processStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

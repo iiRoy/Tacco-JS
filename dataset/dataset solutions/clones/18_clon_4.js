@@ -1,39 +1,34 @@
-const rdr = require('readline').createInterface({
-  input: process.stdin,
-  terminal: false
+let rawData = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  rawData += chunk;
+});
+process.stdin.on('end', function() {
+  processAllInput(rawData);
 });
 
-const outcomeCollection = [];
+function processAllInput(fullInputText) {
+  const inputLines = fullInputText.split('\n').filter(Boolean);
 
-const calculateEquationRoots = (coeffA, coeffB, coeffC, coeffD, coeffE, coeffF) => {
-  // System:
-  // coeffA * x_value + coeffB * y_value = coeffC
-  // coeffD * x_value + coeffE * y_value = coeffF
+  const computedSolutions = inputLines.map(currentLine => {
+    const equationParameters = currentLine.split(' ').map(Number);
+    
+    return determineSolution(equationParameters);
+  });
 
-  // Calculate determinants using Cramer's rule
-  const determinantMain = coeffA * coeffE - coeffB * coeffD;
-  const determinantX = coeffC * coeffE - coeffB * coeffF;
-  const determinantY = coeffA * coeffF - coeffC * coeffD;
+  computedSolutions.forEach(solutionPair => {
+    console.log(solutionPair[0].toFixed(3), solutionPair[1].toFixed(3));
+  });
+}
 
-  const x_value = determinantX / determinantMain;
-  const y_value = determinantY / determinantMain;
+function determineSolution(param) {
+  const [coeffA, coeffB, coeffC, coeffD, coeffE, coeffF] = param;
 
-  return { solutionX: x_value, solutionY: y_value };
-};
+  const resultX = (coeffC * coeffE - coeffF * coeffB) / (coeffA * coeffE - coeffD * coeffB);
 
-rdr.on('line', (currentLineData) => {
-  const numericCoefficients = currentLineData.split(' ').map(Number);
-  const [param1, param2, param3, param4, param5, param6] = numericCoefficients;
+  const resultY = (coeffC - coeffA * resultX) / coeffB;
 
-  const { solutionX, solutionY } = calculateEquationRoots(param1, param2, param3, param4, param5, param6);
-
-  outcomeCollection.push({ xResult: solutionX, yResult: solutionY });
-});
-
-rdr.on('close', () => {
-  for (const resultPair of outcomeCollection) {
-    const outputX = resultPair.xResult.toFixed(3);
-    const outputY = resultPair.yResult.toFixed(3);
-    process.stdout.write(`${outputX} ${outputY}\n`);
-  }
-});
+  return [resultX, resultY];
+}

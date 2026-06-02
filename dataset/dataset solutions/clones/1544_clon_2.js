@@ -1,102 +1,100 @@
-var rawData = require("node:fs").readFileSync("/proc/self/fd/0", "utfEightEncoding");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenizedInput = rawData.split(/ |\n/), tokenIndex = 0;
 
-var tokenArray = rawData.segment(/ |\n/);
-var currentTokenIndex = 0;
+// Helper function to get the next numeric token from the input stream
+function retrieveNextValue() {
+    return +tokenizedInput[tokenIndex++];
+}
 
 /*
- * Utility function to retrieve the next numerical token from the input stream.
+ * This class implements a Disjoint Set Union (DSU) data structure,
+ * also known as Union-Find. It supports efficient operations for
+ * merging sets and finding the representative of a set.
  */
-function getNextNumericValue( ) {
-  return Number( tokenArray[currentTokenIndex++] );
-}
-
-/* Class definition for a Disjoint Set data structure */
-var DisjointSetStructure = /*! custom class */ (function () {
-
-  // Constructor method for initializing the DisjointSetStructure
-  function DisjointSetStructure( totalElements ) {
-    this.parentNodes = [];
-    this.componentSizes = [];
-
-    // Initialize each element as its own parent and with a size of 1
-    for ( let elementIterator = 0; elementIterator < totalElements; elementIterator++ ) {
-      this.parentNodes.push( elementIterator );
-      this.componentSizes.push( 1 );
+var DisjointSet = /** @class */ (function () {
+    function DisjointSet(elementCount) {
+        this.parentArray = [];
+        this.groupSizes = [];
+        // Initialize each element as its own parent and set its group size to 1.
+        for (var idx = 0; idx < elementCount; idx++) {
+            this.parentArray.push(idx);
+            this.groupSizes.push(1);
+        }
+        // Keep track of the total number of distinct sets.
+        this.distinctSetsCount = elementCount;
     }
 
-    // Keep track of the total number of distinct sets
-    this.numDisjointSets = totalElements;
-  }
+    // Finds the representative (root) of the set containing nodeVal.
+    // Implements path compression for optimization.
+    DisjointSet.prototype.find = function (nodeVal) {
+        if (this.parentArray[nodeVal] === nodeVal) {
+            return nodeVal;
+        } else {
+            // Recursively find the root and compress the path.
+            var rootNode = this.find(this.parentArray[nodeVal]);
+            this.parentArray[nodeVal] = rootNode; // Path compression
+            return rootNode;
+        }
+    };
 
-  // Method to find the representative (root) of the set containing a given element
-  DisjointSetStructure.prototype.findRepresentative = function ( targetElement ) {
-    if ( this.parentNodes[targetElement] === targetElement ) {
-      return targetElement;
-    } else {
-      // Path compression: set the element's parent directly to the root
-      let representativeNode = this.findRepresentative( this.parentNodes[targetElement] );
-      this.parentNodes[targetElement] = representativeNode; // Update parent for optimization
-      return representativeNode;
-    }
-  };
+    // Merges the sets containing valA and valB.
+    // Implements union by size for optimization.
+    DisjointSet.prototype.unite = function (valA, valB) {
+        var rootA = this.find(valA);
+        var rootB = this.find(valB);
 
-  // Method to merge two sets containing the given elements
-  DisjointSetStructure.prototype.mergeSets = function ( firstElement, secondElement ) {
-    // If elements are already in the same set, do nothing
-    if ( this.findRepresentative( firstElement ) === this.findRepresentative( secondElement ) ) {
-      return;
-    }
+        // If they are already in the same set, do nothing.
+        if (rootA === rootB) return;
 
-    // Union by size heuristic: attach the smaller tree under the root of the larger tree
-    var [ largerRoot, smallerRoot ] = ( this.componentSizes[this.findRepresentative(firstElement)] >= this.componentSizes[this.findRepresentative(secondElement)] )
-      ? [ this.findRepresentative(firstElement), this.findRepresentative(secondElement) ]
-      : [ this.findRepresentative(secondElement), this.findRepresentative(firstElement) ];
+        // Determine which root has the larger set to attach the smaller one to.
+        var partition = this.groupSizes[rootA] >= this.groupSizes[rootB] ? [rootA, rootB] : [rootB, rootA];
+        var largerRoot = partition[0];
+        var smallerRoot = partition[1];
 
-    this.parentNodes[smallerRoot] = largerRoot; // Set parent of smaller root to larger root
-    this.componentSizes[largerRoot] += this.componentSizes[smallerRoot]; // Update size of the larger set
-    this.numDisjointSets--; // One less disjoint set after merging
-  };
+        // Attach the smaller tree under the root of the larger tree.
+        this.parentArray[smallerRoot] = largerRoot;
+        // Update the size of the larger tree.
+        this.groupSizes[largerRoot] += this.groupSizes[smallerRoot];
+        // One less distinct set after merging.
+        this.distinctSetsCount--;
+    };
 
-  // Method to check if two elements are in the same set
-  DisjointSetStructure.prototype.areConnected = function ( elementOne, elementTwo ) {
-    return this.findRepresentative( elementOne ) === this.findRepresentative( elementTwo );
-  };
+    // Checks if itemA and itemB belong to the same set.
+    DisjointSet.prototype.areInSameSet = function (itemA, itemB) {
+        return this.find(itemA) === this.find(itemB);
+    };
 
-  return DisjointSetStructure;
+    return DisjointSet;
 }());
 
-
 // Main execution function
-function executeProgramLogic() {
-  const ZERO_CONDITION_CODE = 0;
-  const CONNECTED_OUTPUT = 1;
-  const DISCONNECTED_OUTPUT = 0;
+function executeProgram() {
+    var totalElements = retrieveNextValue();
+    var queryCount = retrieveNextValue();
 
-  var elementCount = getNextNumericValue();
-  var queryCount = getNextNumericValue();
+    // Initialize the DisjointSet structure with the given number of elements.
+    var ds = new DisjointSet(totalElements);
 
-  var dsuInstance = new DisjointSetStructure(elementCount);
+    // Process each query.
+    while (queryCount--) {
+        var operationType = retrieveNextValue();
+        var firstOperand = retrieveNextValue();
+        var secondOperand = retrieveNextValue();
 
-  // Process each query
-  while (queryCount-- > 0) {
-    var operationType = getNextNumericValue();
-    var firstOperand = getNextNumericValue();
-    var secondOperand = getNextNumericValue();
-
-    // Perform union or check connection based on operation type
-    if (operationType === ZERO_CONDITION_CODE) {
-      dsuInstance.mergeSets(firstOperand, secondOperand);
-    } else {
-      if (dsuInstance.areConnected(firstOperand, secondOperand)) {
-        console.log(CONNECTED_OUTPUT);
-      } else {
-        console.log(DISCONNECTED_OUTPUT);
-      }
+        if (operationType === 0) {
+            // Operation 0: Unite (merge) two sets.
+            ds.unite(firstOperand, secondOperand);
+        } else {
+            // Operation 1: Check if two elements are in the same set.
+            if (ds.areInSameSet(firstOperand, secondOperand)) {
+                console.log(1); // Output 1 if they are in the same set.
+            } else {
+                console.log(0); // Output 0 if they are in different sets.
+            }
+        }
     }
-  }
-
-  return; // End of program logic
+    return;
 }
 
-// Invoke the main function to start execution
-executeProgramLogic();
+// Start the program execution.
+executeProgram();

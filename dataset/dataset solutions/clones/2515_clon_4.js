@@ -1,79 +1,133 @@
-function performAnalysis() {
-    const vertexCount = nextInt();
-    const graphConnections = new Map();
-    const inputMatrix = [];
+const inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
 
-    for (let i = 0; i < vertexCount; i++) {
-        graphConnections.set(i, new Set());
-        inputMatrix.push(nextCharArray());
+let rawInputLines = [];
+inputReader.on('line', (line) => rawInputLines.push(line));
+inputReader.on('close', () => {
+  const inputProcessor = setupInputProcessor(rawInputLines);
+  console.error("\n");
+  const startTime = Date.now();
+  processGraph(inputProcessor);
+  const endTime = Date.now() - startTime;
+  logDebug("time : " + endTime + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function setupInputProcessor(lines) {
+  let currentLineIndex = 0;
+  const totalLines = lines.length;
+
+  return {
+    hasMoreLines: () => currentLineIndex < totalLines,
+    getNextLine: () => {
+      if (!this.hasMoreLines()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      }
+      return lines[currentLineIndex++];
     }
+  };
+}
 
-    for (let i = 0; i < vertexCount; i++) {
-        const rowData = inputMatrix[i];
-        for (let j = 0; j < vertexCount; j++) {
-            if (i !== j && rowData[j] === "1") {
-                graphConnections.get(i).add(j);
-            }
+function outputResult(data) {
+  console.log(data);
+}
+
+function logDebug(message) {
+  console.error("debug:" + require("util").inspect(message, false, null));
+}
+
+const dataConverter = {
+  toInteger: (str) => parseInt(str, 10),
+  toStringArray: (str) => str.split(" "),
+  toIntegerArray: (str) => str.split(" ").map(Number),
+  toCharacterArray: (str) => str.split(""),
+  joinWithSpace: (arr) => arr.join(" "),
+  joinWithNewline: (arr) => arr.join("\n"),
+  joinWithoutSeparator: (arr) => arr.join("")
+};
+
+function readInteger(inputProc) { return dataConverter.toInteger(inputProc.getNextLine()); }
+function readStringArray(inputProc) { return dataConverter.toStringArray(inputProc.getNextLine()); }
+function readIntegerArray(inputProc) { return dataConverter.toIntegerArray(inputProc.getNextLine()); }
+function readCharacterArray(inputProc) { return dataConverter.toCharacterArray(inputProc.getNextLine()); }
+
+function processGraph(inputProc) {
+  const nodeCount = readInteger(inputProc);
+
+  const adjacencies = Array.from({ length: nodeCount }, () => []);
+
+  for (let i = 0; i < nodeCount; i++) {
+    const currentRowChars = readCharacterArray(inputProc);
+    for (let j = 0; j < nodeCount; j++) {
+      if (i !== j && currentRowChars[j] === "1") {
+        adjacencies[i].push(j);
+      }
+    }
+  }
+
+  let nodeDistances = new Array(nodeCount).fill(-1);
+  let nodeVisited = new Array(nodeCount).fill(false);
+
+  const farthestFromStart = exploreGraph(0, nodeCount, adjacencies, nodeDistances, nodeVisited);
+
+  nodeDistances.fill(-1);
+  nodeVisited.fill(false);
+
+  exploreGraph(farthestFromStart, nodeCount, adjacencies, nodeDistances, nodeVisited);
+
+  let finalResult = 0;
+  let conflictDetected = false;
+
+  for (let i = 0; i < nodeCount; i++) {
+    finalResult = Math.max(finalResult, nodeDistances[i]);
+
+    for (let j = i + 1; j < nodeCount; j++) {
+      if (nodeDistances[i] === nodeDistances[j] && (adjacencies[i].includes(j) || adjacencies[j].includes(i))) {
+        conflictDetected = true;
+        break;
+      }
+    }
+    if (conflictDetected) {
+      break;
+    }
+  }
+
+  if (conflictDetected) {
+    outputResult(-1);
+  } else {
+    outputResult(finalResult);
+  }
+
+  function exploreGraph(startNodeIdentifier, totalNodes, graphAdjacencies, distancesArray, visitedArray) {
+    const traversalQueue = [];
+    let queueHead = 0;
+
+    distancesArray[startNodeIdentifier] = 1;
+    visitedArray[startNodeIdentifier] = true;
+    traversalQueue.push(startNodeIdentifier);
+
+    let maximumDistance = 0;
+    let farthestNodeFound = startNodeIdentifier;
+
+    while (queueHead < traversalQueue.length) {
+      const currentNode = traversalQueue[queueHead++];
+      const currentNeighbors = graphAdjacencies[currentNode];
+
+      for (let neighborIndex = 0; neighborIndex < currentNeighbors.length; neighborIndex++) {
+        const neighborNode = currentNeighbors[neighborIndex];
+        if (!visitedArray[neighborNode]) {
+          visitedArray[neighborNode] = true;
+          distancesArray[neighborNode] = distancesArray[currentNode] + 1;
+          traversalQueue.push(neighborNode);
+
+          if (distancesArray[neighborNode] > maximumDistance) {
+            maximumDistance = distancesArray[neighborNode];
+            farthestNodeFound = neighborNode;
+          }
         }
+      }
     }
-
-    function explorePaths(graphStructure, startNodeIndex) {
-        const pathDistances = new Map();
-        const nodesToVisit = [{ node: startNodeIndex, dist: 0 }];
-        const alreadyVisited = new Set([startNodeIndex]);
-        pathDistances.set(startNodeIndex, 0);
-
-        let currentFarthestNode = startNodeIndex;
-        let greatestDistance = 0;
-        let head = 0;
-
-        while (head < nodesToVisit.length) {
-            const { node: currentVertex, dist: currentDist } = nodesToVisit[head++];
-
-            if (currentDist > greatestDistance) {
-                greatestDistance = currentDist;
-                currentFarthestNode = currentVertex;
-            }
-
-            const adjacentVertices = graphStructure.get(currentVertex) || new Set();
-            for (const neighborVertex of adjacentVertices) {
-                if (!alreadyVisited.has(neighborVertex)) {
-                    alreadyVisited.add(neighborVertex);
-                    pathDistances.set(neighborVertex, currentDist + 1);
-                    nodesToVisit.push({ node: neighborVertex, dist: currentDist + 1 });
-                }
-            }
-        }
-        return { pathDistances, currentFarthestNode, greatestDistance };
-    }
-
-    const firstTraversalOutput = explorePaths(graphConnections, 0);
-    const farthestFromInitial = firstTraversalOutput.currentFarthestNode;
-
-    const finalTraversalOutput = explorePaths(graphConnections, farthestFromInitial);
-    const finalDistancesMap = finalTraversalOutput.pathDistances;
-    let finalMaximumDistance = finalTraversalOutput.greatestDistance;
-
-    let finalResult = finalMaximumDistance;
-    let problemDetected = false;
-
-    Array.from({ length: vertexCount }).some((_, idx1) => {
-        return Array.from({ length: vertexCount }).some((_, idx2) => {
-            if (idx1 < idx2) {
-                const distA = finalDistancesMap.get(idx1);
-                const distB = finalDistancesMap.get(idx2);
-
-                const isDirectlyConnected = graphConnections.get(idx1).has(idx2) || graphConnections.get(idx2).has(idx1);
-
-                if (distA === distB && isDirectlyConnected) {
-                    finalResult = -1;
-                    problemDetected = true;
-                    return true;
-                }
-            }
-            return false;
-        });
-    });
-
-    myout(finalResult);
+    return farthestNodeFound;
+  }
 }

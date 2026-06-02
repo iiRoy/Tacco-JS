@@ -1,45 +1,36 @@
-// This module handles file system operations for input acquisition.
-const fileSystemModule = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var dataLines = (rawData.trim()).split("\n"); // Split input into an array of lines
 
-// Retrieve raw input data from standard input, encoded as UTF-8.
-let sourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+// Main processing loop
+while (true) {
+   // Get the next number from the array and convert it to a numeric type
+   var targetValue = dataLines.shift() - 0;
 
-// Process the raw input: trim leading/trailing whitespace and split into an array by newline characters.
-let lineCollection = (sourceData.trim()).split('\n');
+   // If the value is zero, terminate the loop
+   if (targetValue === 0) {
+      break;
+   }
 
-// Begin an indefinite processing loop, equivalent to 'while(true)'.
-for (;;) {
-    // Extract the next numerical target value from the collection.
-    // The `.shift()` method removes the first element, and `* 1` converts it to a number.
-    let targetValue = lineCollection.shift() * 1;
+   // Initialize minimum sum to a very large number
+   var minimumSum = Infinity;
 
-    // If the target value is zero, terminate the processing loop.
-    if (targetValue === 0) {
-        break;
-    }
+   // Loop for the first variable (z) from 0 to 100
+   for (var iterZ = 0; iterZ <= 100; iterZ++) {
+      // Loop for the second variable (y) from 0 to 1000
+      for (var iterY = 0; iterY <= 1000; iterY++) {
+         // Calculate the remaining value for x
+         var remainingX = targetValue - (Math.pow(iterZ, 3) + Math.pow(iterY, 2));
 
-    // Initialize a variable to store the smallest sum found so far, setting it to positive infinity.
-    let optimalSum = Number.POSITIVE_INFINITY;
+         // If remainingX is negative, it means iterY is too large for the current iterZ,
+         // so we can break from the inner loop and try the next iterZ.
+         if (remainingX < 0) {
+            break;
+         }
 
-    // Iterate through the first dimension (firstComponent) from 0 to 100, inclusive.
-    for (let firstDimension = 0; firstDimension <= 100; firstDimension++) {
-        // Iterate through the second dimension (secondComponent) from 0 to 1000, inclusive.
-        for (let secondDimension = 0; secondDimension <= 1000; secondDimension++) {
-            // Calculate the third component (thirdComponent) based on the target value and powers of the dimensions.
-            // Formula: thirdComponent = targetValue - (firstDimension^3 + secondDimension^2)
-            let thirdComponent = targetValue - (Math.pow(firstDimension, 3) + Math.pow(secondDimension, 2));
-
-            // If the third component becomes negative, it means further increments for secondDimension
-            // will also result in negative thirdComponents, so we can break the inner loop.
-            if (thirdComponent < 0) {
-                break;
-            }
-
-            // Update optimalSum if the current sum of the three components is smaller.
-            optimalSum = Math.min(optimalSum, firstDimension + secondDimension + thirdComponent);
-        } // End of inner loop for secondDimension
-    }     // End of outer loop for firstDimension
-
-    // Output the calculated optimal (minimum) sum for the current target value to the console.
-    console.info(optimalSum);
-} // End of main processing loop
+         // Update the minimum sum found so far
+         minimumSum = Math.min(minimumSum, iterZ + iterY + remainingX);
+      }
+   }
+   // Output the calculated minimum sum for the current targetValue
+   console.log(minimumSum);
+}

@@ -1,40 +1,24 @@
-/* This module handles string manipulation and output operations. */
-
-// A utility function to present messages to the user.
-function displayMessage( msgContent )
-{
-  console.log(msgContent) ; /* Emits the provided string to the console stream. */
+function printToConsole(messageContent) {
+  console.log(messageContent); // Outputs the provided text to the console
 }
 
-// The core algorithm for processing input data.
-function ProcessData( rawData )
-{
-  // Previous conversion attempts, now inactive:
-  // //  rawData =  parseInt( rawData )  ;
-  // //  rawData =  rawData.split(" ")  ;
+function ProcessInputData(rawData) {
+  // The original code had several commented-out lines for different input parsing strategies.
+  // We will keep the active parsing strategy.
+  rawData = rawData.split("\n");
 
-  rawData = rawData.split ( '\n' ) ; /* Divides the initial data by newline characters into an array of strings. */
-
-  // Further inactive processing options:
-  // //  rawData =  rawData.split(" ").map( (val) => Number(val) ) ;
-  // //  rawData =  rawData.split("\n").map( (val) => Number(val) ) ;
-
-  let resultString = '' ; // An accumulator for the final combined sequence of characters.
-
-  // Loop through each character position based on the length of the first data segment.
-  for ( let idx = 0 ; idx < rawData[0].length ; idx++ )
-  {
-    // Append a character from the first line followed by a character from the second line.
-    resultString += rawData[0].slice( idx, idx + 1 ) + rawData[1].slice( idx, idx + 1 ) ;
+  let resultString = ""; // Initialize an empty string to build the output
+  // Iterate through the characters of the first line of input
+  for (let idx = 0; idx < rawData[0].length; idx++) {
+    // Concatenate characters from the first and second lines of input
+    // at the current index 'idx'
+    resultString += rawData[0].slice(idx, idx + 1) + rawData[1].slice(idx, idx + 1);
   }
 
-  // Present the final processed string.
-  displayMessage( resultString ) ;
+  // Display the final concatenated string
+  printToConsole(resultString);
 }
 
-// Invokes the main processing function with data obtained from the system's standard input.
-ProcessData(
-  require ( "fs" )
-  . readFileSync ( "/std/input" , 'textEncoding' )
-  . trim ( )
-) ;
+// Read input from standard input, decode as UTF-8, and remove leading/trailing whitespace.
+// Then, pass the processed input to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

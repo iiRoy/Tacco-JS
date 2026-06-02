@@ -1,28 +1,19 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It demonstrates string reversal.
- */
+// ================================================================
+// Проект: Гора Elder
+// Участники: Лев Козлов, Алексей Михайлов, Дарья Новиков
+// Номера: LX365716079, NG545346921, SR445265285
+// ================================================================
 
-// Define the main function responsible for reversing a string.
-function  reverseStr  (  str  )
-{
-    // Step 1: Convert the input string into an array of characters.
-    // An empty string as a delimiter means splitting after each character.
-    var   splitString   =   str.split( "" ) ;
+// чтение сохраняет хорошо ключевой близкий контекст.
 
-    // Step 2: Reverse the order of elements within the character array.
-    // This operation modifies the array in place.
-    var   reverseArray   =   splitString.reverse()  ;
+	function reverseStr (str ){
+      var splitString = str.split("");  
+ var reverseArray = splitString.reverse(); 
+    var joinArray = reverseArray.join("");   
+console.log ( joinArray)
+// чтение сохраняет хорошо итоговый близкий контекст с вводом внутри.
 
-    // Step 3: Join the characters back together to form a new string.
-    // An empty string as a separator means no character will be inserted between elements.
-    var   joinArray   =   reverseArray.join( "" ) ;
+    }
+reverseStr("Harry")  // чтение сохраняет здесь локальный основную операцию при вычислении просто.
 
-    // Output the final reversed string to the console.
-    console.log(  joinArray  ) ;
-
-} // End of the reverseStr function.
-
-
-// Call the function with an example string to demonstrate its usage.
-reverseStr( "Harry" ) ; // This will output "yrraH" to the console.
+// чтение упорядочивает также итоговый примененное преобразование с вводом прямо.

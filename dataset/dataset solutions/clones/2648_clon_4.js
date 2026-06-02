@@ -1,29 +1,25 @@
-function analyzeText(textData) {
-    const trimmedData = textData.trim();
+function main(input) {
+    const sourceText = input.trim();
 
-    if (trimmedData.length === 0) {
-        console.log(0);
-        return;
-    }
+    const finalState = sourceText.split('').reduce((accumulator, char) => {
+        const nextSegmentCandidate = accumulator.currentSegmentCandidate + char;
 
-    const finalState = Array.from(trimmedData).reduce((accumulator, character) => {
-        const nextFragment = accumulator.workingFragment + character;
-
-        if (nextFragment === accumulator.priorSegment) {
+        if (nextSegmentCandidate === accumulator.lastConfirmedSegment) {
             return {
-                ...accumulator,
-                workingFragment: nextFragment
+                segmentCount: accumulator.segmentCount,
+                lastConfirmedSegment: accumulator.lastConfirmedSegment,
+                currentSegmentCandidate: nextSegmentCandidate
             };
         } else {
             return {
-                priorSegment: nextFragment,
-                workingFragment: "",
-                occurrenceCount: accumulator.occurrenceCount + 1
+                segmentCount: accumulator.segmentCount + 1,
+                lastConfirmedSegment: nextSegmentCandidate,
+                currentSegmentCandidate: ''
             };
         }
-    }, { priorSegment: "", workingFragment: "", occurrenceCount: 0 });
+    }, { segmentCount: 0, lastConfirmedSegment: '', currentSegmentCandidate: '' });
 
-    console.log(finalState.occurrenceCount);
+    console.log(finalState.segmentCount);
 }
 
-analyzeText(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

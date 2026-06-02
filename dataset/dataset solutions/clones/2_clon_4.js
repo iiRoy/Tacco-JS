@@ -1,11 +1,7 @@
-const generateSequence = (limit) => Array.from({ length: limit }, (_, index) => index + 1);
-
-const renderContent = (contentArray) => contentArray.forEach(item => process.stdout.write(item + '\n'));
-
-const allExpressions = generateSequence(9).flatMap(factorA =>
-    generateSequence(9).map(factorB =>
-        `${factorA}x${factorB}=${factorA * factorB}`
-    )
-);
-
-renderContent(allExpressions);
+Array.from({ length: 9 }, (_, firstMultiplierIndex) => firstMultiplierIndex + 1)
+  .forEach(firstMultiplierValue => {
+    Array.from({ length: 9 }, (_, secondMultiplierIndex) => secondMultiplierIndex + 1)
+      .forEach(secondMultiplierValue => {
+        console.log(`${firstMultiplierValue}x${secondMultiplierValue}=${firstMultiplierValue * secondMultiplierValue}`);
+      });
+  });

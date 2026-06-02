@@ -1,43 +1,103 @@
-function generateVisualPattern(firstInputVal, secondInputVal) {
-    const canvasDimension = 100;
-    const divisionPoint = 50;
+let inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+let receivedLines = [];
+let dataProcessor;
 
-    // Utilize a Map to efficiently store only the cell characters that deviate from the default pattern.
-    // Keys are string representations of coordinates (e.g., "row_col"), values are characters.
-    const modifiedLocations = new Map();
+inputReader.on('line', (currentInputLine) => {
+    receivedLines.push(currentInputLine);
+});
 
-    // Determine and record modifications for the first input value (paramA in original logic).
-    // These modifications place '.' characters in the top half of the grid (where default is '#').
-    Array.from({ length: firstInputVal - 1 }, (_, index) => {
-        const columnPosition = (index * 2) % canvasDimension;
-        const rowPosition = Math.floor(index / canvasDimension) * 2;
-        modifiedLocations.set(`${rowPosition}_${columnPosition}`, '.');
-    });
+inputReader.on('close', () => {
+    dataProcessor = initializeInputHandler(receivedLines);
+    logDebugMessage("-----start-----");
+    const startTime = new Date();
+    executePrimaryLogic();
+    const endTime = new Date();
+    const durationMs = endTime - startTime;
+    logDebugMessage("----- end -----");
+    logDebugMessage("time : " + durationMs + "ms");
+    logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
 
-    // Determine and record modifications for the second input value (paramB in original logic).
-    // These modifications place '#' characters in the bottom half of the grid (where default is '.').
-    Array.from({ length: secondInputVal - 1 }, (_, index) => {
-        const columnPosition = (index * 2) % canvasDimension;
-        const rowPosition = Math.floor(index / canvasDimension) * 2 + (divisionPoint + 1); // Equivalent to 51
-        modifiedLocations.set(`${rowPosition}_${columnPosition}`, '#');
-    });
+const transformationMap = new Map([
+    [1, (val) => Number.parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (val) => val.join(" ")],
+    [9, (val) => val.join("\n")],
+    [0, (val) => val.join("")]
+]);
 
-    // Construct the final grid by iterating through each cell and determining its character.
-    // If a cell's character is in 'modifiedLocations', use that; otherwise, use the default.
-    const finalGridLines = Array.from({ length: canvasDimension }, (_, rowIndex) => {
-        return Array.from({ length: canvasDimension }, (_, colIndex) => {
-            const cellIdentifier = `${rowIndex}_${colIndex}`;
-            if (modifiedLocations.has(cellIdentifier)) {
-                return modifiedLocations.get(cellIdentifier);
-            } else {
-                // Default character: '#' for top half, '.' for bottom half
-                return rowIndex < divisionPoint ? '#' : '.';
+function retrieveInteger(){return transformValue(fetchNextLine(),1);}
+function retrieveStringArray(){return transformValue(fetchNextLine(),2);}
+function retrieveIntegerArray(){return transformValue(fetchNextLine(),4);}
+function retrieveCharacterArray(){return transformValue(fetchNextLine(),6);}
+function fetchNextLine(){return dataProcessor.fetchNextLine();}
+function hasMoreLines(){return dataProcessor.hasMoreLines();}
+
+function initializeInputHandler(sourceLines) {
+    let currentLineIndex = 0;
+    const totalLines = sourceLines.length;
+
+    const lineIterator = {
+        hasMoreLines: () => currentLineIndex < totalLines,
+        fetchNextLine: () => {
+            if (!lineIterator.hasMoreLines()) {
+                throw "ArrayIndexOutOfBoundsException これ以上ないよ";
             }
-        }).join(''); // Join characters to form a single string for the current row
-    });
+            return sourceLines[currentLineIndex++];
+        }
+    };
+    return lineIterator;
+}
 
-    // Output the dimensions of the grid
-    console.log(`${canvasDimension} ${canvasDimension}`);
-    // Output each constructed row
-    finalGridLines.forEach(lineContent => console.log(lineContent));
+function transformValue(inputVal, transformationKey) {
+    try {
+        const transformer = transformationMap.get(transformationKey);
+        return transformer ? transformer(inputVal) : inputVal;
+    } catch (error) {
+        return inputVal;
+    }
+}
+
+function printOutputLine(content){console.log(content);}
+function logDebugMessage(message){console.error("debug:" + require("util").inspect(message,false,null));}
+
+function executePrimaryLogic(){
+    const inputValues = retrieveIntegerArray();
+    const valA = inputValues[0];
+    const valB = inputValues[1];
+    const gridDimension = 100;
+
+    const dotOverrideCoords = new Set();
+    for (let k = 0; k < valA - 1; k++) {
+        const currentX = (k * 2) % gridDimension;
+        const currentY = Math.floor(k / gridDimension) * 2;
+        dotOverrideCoords.add(`${currentY},${currentX}`);
+    }
+
+    const hashOverrideCoords = new Set();
+    for (let k = 0; k < valB - 1; k++) {
+        const currentX = (k * 2) % gridDimension;
+        const currentY = Math.floor(k / gridDimension) * 2 + 51;
+        hashOverrideCoords.add(`${currentY},${currentX}`);
+    }
+
+    const generatedGrid = Array.from({ length: gridDimension }, (_, r) =>
+        Array.from({ length: gridDimension }, (_, c) => {
+            const coordKey = `${r},${c}`;
+            if (r < 50) {
+                return dotOverrideCoords.has(coordKey) ? '.' : '#';
+            } else {
+                return hashOverrideCoords.has(coordKey) ? '#' : '.';
+            }
+        }).join('')
+    );
+
+    printOutputLine(`${gridDimension} ${gridDimension}`);
+    generatedGrid.forEach(rowString => printOutputLine(rowString));
 }

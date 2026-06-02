@@ -1,49 +1,42 @@
-const rawData = process.stdin.readFileSync(0, 'utf8');
-const trimmedData = rawData.trim();
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const lines = trimmedData.split('\n');
-const dimensions = lines.shift().split(' ').map(Number);
+const colorMapping = { 'W': '0', 'B': '1', 'R': '2' };
+const processedLines = rawData.trim().split('\n').map(line =>
+    Array.from(line).map(char => colorMapping[char] || char).join('')
+);
+
+const dimensions = processedLines.shift().split(' ').map(Number);
 const rowCount = dimensions[0];
 const colCount = dimensions[1];
 
-const rowCharCosts = lines.map(oneLine => {
-    let whiteReplacementCost = 0;
-    let blueReplacementCost = 0;
-    let redReplacementCost = 0;
-
-    for (let charIndex = 0; charIndex < colCount; ++charIndex) {
-        const charRepresentation = oneLine[charIndex];
-        if (charRepresentation !== 'W') whiteReplacementCost++;
-        if (charRepresentation !== 'B') blueReplacementCost++;
-        if (charRepresentation !== 'R') redReplacementCost++;
+const rowColorCosts = processedLines.map(lineContent => {
+    const colorCounts = Array(3).fill(0);
+    for (const charCode of lineContent) {
+        colorCounts[parseInt(charCode, 10)]++;
     }
-    return { w: whiteReplacementCost, b: blueReplacementCost, r: redReplacementCost };
+    return colorCounts.map(count => colCount - count);
 });
 
-const accumulativeWhiteEfforts = [0];
-const accumulativeBlueEfforts = [0];
-const accumulativeRedEfforts = [0];
+const cumulativeCosts = Array(3).fill(null).map(() => Array(rowCount + 1).fill(0));
 
-for (let currentIdx = 0; currentIdx < rowCount; ++currentIdx) {
-    accumulativeWhiteEfforts.push(accumulativeWhiteEfforts[currentIdx] + rowCharCosts[currentIdx].w);
-    accumulativeBlueEfforts.push(accumulativeBlueEfforts[currentIdx] + rowCharCosts[currentIdx].b);
-    accumulativeRedEfforts.push(accumulativeRedEfforts[currentIdx] + rowCharCosts[currentIdx].r);
-}
-
-let minimumTransformationEffort = Infinity;
-
-for (let firstSplitPoint = 1; firstSplitPoint < rowCount - 1; ++firstSplitPoint) {
-    for (let secondSplitPoint = firstSplitPoint + 1; secondSplitPoint < rowCount; ++secondSplitPoint) {
-
-        const currentWhiteSectionEffort = accumulativeWhiteEfforts[firstSplitPoint];
-        const currentBlueSectionEffort = accumulativeBlueEfforts[secondSplitPoint] - accumulativeBlueEfforts[firstSplitPoint];
-        const currentRedSectionEffort = accumulativeRedEfforts[rowCount] - accumulativeRedEfforts[secondSplitPoint];
-
-        const totalCurrentEffort = currentWhiteSectionEffort + currentBlueSectionEffort + currentRedSectionEffort;
-        if (totalCurrentEffort < minimumTransformationEffort) {
-            minimumTransformationEffort = totalCurrentEffort;
-        }
+for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+    for (let colorIndex = 0; colorIndex < 3; colorIndex++) {
+        cumulativeCosts[colorIndex][rowIndex + 1] = cumulativeCosts[colorIndex][rowIndex] + rowColorCosts[rowIndex][colorIndex];
     }
 }
 
-console.log(minimumTransformationEffort);
+let minimumTotalCost = Infinity;
+
+for (let firstSplit = 1; firstSplit < rowCount - 1; firstSplit++) {
+    for (let secondSplit = firstSplit + 1; secondSplit < rowCount; secondSplit++) {
+        const costForWhiteSection = cumulativeCosts[0][firstSplit];
+        const costForBlueSection = cumulativeCosts[1][secondSplit] - cumulativeCosts[1][firstSplit];
+        const costForRedSection = cumulativeCosts[2][rowCount] - cumulativeCosts[2][secondSplit];
+
+        const currentPartitionCost = costForWhiteSection + costForBlueSection + costForRedSection;
+        minimumTotalCost = Math.min(minimumTotalCost, currentPartitionCost);
+    }
+}
+
+console.log(minimumTotalCost);

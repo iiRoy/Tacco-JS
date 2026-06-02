@@ -1,38 +1,31 @@
-// The parameter 'rawData' holds the entire input stream.
-function ProcessNumericalData (rawData) {
+function ProcessInput(rawData) {
+  // Split the incoming string by spaces
+  rawData = rawData.split(" ");
 
+  // Convert the first element to an integer using base 10
+  let initialValue = parseInt(rawData[0], 10);
 
- rawData = rawData.split(" ");
+  // Declare a variable to store the computed outcome
+  let resultantNumber = 0;
 
- // Use parseInt to convert the string representation into a base-10 integer.
- var evaluatedNumericValue = parseInt ( rawData[0] , 10 ) ;
+  // Evaluate the initial value against various ranges
+  if (initialValue <= 9) {
+    let resultantNumber = initialValue; // Assign the value directly
+  } else if (initialValue >= 10 && initialValue <= 99) {
+    resultantNumber = 9; // Set to a fixed value for this range
+  } else if (initialValue >= 100 && initialValue <= 999) {
+    resultantNumber = initialValue - 99 + 9; // Calculate based on initial value
+  } else if (initialValue >= 1000 && initialValue <= 9999) {
+    resultantNumber = 909; // Another fixed value
+  } else if (initialValue >= 10000 && initialValue <= 99999) {
+    resultantNumber = initialValue - 9999 + 909; // Calculation for a larger range
+  } else {
+    let resultantNumber = 90909; // Default value for very large numbers
+  }
 
- var calculatedOutcome = 0;
-
- if ( evaluatedNumericValue <= 9 ) {
-  var calculatedOutcome = evaluatedNumericValue ;
- } else if ( evaluatedNumericValue >= 10 && evaluatedNumericValue <= 99 ) {
-  calculatedOutcome = 9;
- }
- else if ( evaluatedNumericValue >= 100 && evaluatedNumericValue <= 999 ) {
-  calculatedOutcome = evaluatedNumericValue - 99 + 9;
- }
- else if ( evaluatedNumericValue >= 1000 && evaluatedNumericValue <= 9999 ) {
-  calculatedOutcome = 909;
- }
-
- else if ( evaluatedNumericValue >= 10000 && evaluatedNumericValue <= 99999 ) {
-  calculatedOutcome = evaluatedNumericValue - 9999 + 909;
- }
- else {
-  var calculatedOutcome = 90909;
- }
-
-
- console.log( calculatedOutcome );
-
+  // Output the final calculated number to the console
+  console.log(resultantNumber);
 }
 
-
-// The following line should not be modified; it handles input/output and invokes the primary processing routine.
-ProcessNumericalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles standard input/output and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

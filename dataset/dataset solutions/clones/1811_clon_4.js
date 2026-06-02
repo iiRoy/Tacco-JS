@@ -1,81 +1,37 @@
-const fileIOModule = require('fs');
+function processInput(rawData) {
+  const inputLines = rawData.split('\n');
+  const targetLine = inputLines[1];
 
-const processInputData = (incomingText) => {
-  const retrieveSecondSegment = (text) => {
-    let newlinePosition = -1;
-    let newlineCount = 0;
-    for (let currentPos = 0; currentPos < text.length; ++currentPos) {
-      if (text.charCodeAt(currentPos) === 10) { // ASCII for '\n'
-        newlineCount++;
-        if (newlineCount === 1) {
-          newlinePosition = currentPos;
-        } else if (newlineCount === 2) {
-          return text.substring(newlinePosition + 1, currentPos);
-        }
-      }
+  let parsedNumbers = [];
+  if (targetLine !== undefined) {
+    const numberStrings = targetLine.split(' ');
+    for (let i = 0; i < numberStrings.length; i++) {
+      parsedNumbers.push(Number(numberStrings[i]));
     }
-    if (newlineCount === 1) {
-      return text.substring(newlinePosition + 1);
-    }
-    return undefined; // Replicates original's `undefined` for single-line input
-  };
+  } else {
+    // Replicate TypeError if targetLine is undefined, as original would do
+    // by calling .split(' ') on undefined.
+    // This path will lead to the same TypeError as the original.
+    targetLine.split(' ');
+  }
 
-  const parseNumericalSequence = (segment) => {
-    // If 'segment' is undefined, `segment.length` will throw a TypeError, replicating original behavior
-    let currentAccumulator = "";
-    const numericalEntities = [];
-    let characterIndex = 0;
-    while (characterIndex < segment.length) {
-      const charCode = segment.charCodeAt(characterIndex);
-      if (charCode === 32) { // ASCII for ' '
-        if (currentAccumulator.length > 0) {
-          numericalEntities.push(Number(currentAccumulator));
-          currentAccumulator = "";
-        }
-      } else {
-        currentAccumulator += segment.charAt(characterIndex);
-      }
-      characterIndex++;
-    }
-    if (currentAccumulator.length > 0) {
-      numericalEntities.push(Number(currentAccumulator));
-    }
-    // Replicate `[''].map(Number)` which yields `[0]` for an empty or space-only line
-    if (segment.trim().length === 0 && numericalEntities.length === 0) {
-      numericalEntities.push(0);
-    }
-    return numericalEntities;
-  };
+  let ultimateProduct = 1;
 
-  const computeProductAnomaly = (collection) => {
-    if (collection.length === 0) {
-      return 1;
-    }
-    let finalAnomaly = 1;
-    let loopCounter = 0;
-    while (loopCounter < collection.length) {
-      // This is the specific bug replication: multiplying by the entire array 'collection'
-      finalAnomaly = finalAnomaly * collection;
-      loopCounter++;
-    }
-    return finalAnomaly;
-  };
+  // The original code has a bug: `c*a` instead of `c*x` in the reduce.
+  // This means if `a` (the array of numbers) is not empty, the product
+  // will always become NaN because `1 * [num1, num2, ...]` results in NaN.
+  // We must replicate this exact observable behavior.
+  if (parsedNumbers.length > 0) {
+    ultimateProduct = NaN;
+  }
 
-  const targetSegment = retrieveSecondSegment(incomingText);
-  const parsedItems = parseNumericalSequence(targetSegment);
-  const anomalyResult = computeProductAnomaly(parsedItems);
+  const thresholdValue = 1000000000000000000; // 10^18
 
-  const giganticBoundary = 1000000000000000000;
+  if (ultimateProduct >= thresholdValue) {
+    console.log('-1');
+  } else {
+    console.log(ultimateProduct);
+  }
+}
 
-  return (anomalyResult >= giganticBoundary) ? '-1' : anomalyResult;
-};
-
-// Anonymous function execution to avoid a named 'main' function
-(() => {
-  const sourcePath = '/dev/stdin';
-  const textEncoding = 'utf8';
-  const rawContent = fileIOModule.readFileSync(sourcePath, textEncoding);
-  const trimmedContent = rawContent.trim(); // Apply trim at the same stage as original
-  const finalOutput = processInputData(trimmedContent);
-  console.log(finalOutput);
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

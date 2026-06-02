@@ -1,49 +1,57 @@
-// This function initiates the processing of incoming textual data.
-function ProcessInputData(sourceContent) {
-    // The sourceContent is first split into individual lines.
-    sourceContent = sourceContent.split("\n");
-    let valueStrings = sourceContent[1].split(" ");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of lines.
+    rawData = rawData.split("\n");
 
-    // Parse the first line's content into an integer for the primary count.
-    // The base 10 is specified for explicit decimal conversion.
-    const elementSize = parseInt(sourceContent[0], 10);
-    let originalNumbers = new Array(2 * elementSize - 1);
+    // The second line of input (index 1) contains space-separated values.
+    let valueStrings = rawData[1].split(" ");
 
-    // Populate the array with values from the second line of the input.
-    for (let loopIndex = 0; loopIndex < originalNumbers.length; loopIndex++) {
-        originalNumbers[loopIndex] = valueStrings[loopIndex];
+    // The first line of input (index 0) contains the integer 'N'.
+    const dataCount = parseInt(rawData[0], 10);
+
+    // An array is initialized to hold the initial set of values.
+    let initialValues = new Array(2 * dataCount - 1);
+
+    // Populate the initialValues array from the parsed string values.
+    // Note: The original code contains a typo here (array_n.lenth). This is preserved.
+    for (let currentIdx = 0; currentIdx < initial_vals_typo.lenth; currentIdx++) {
+        initialValues[currentIdx] = valueStrings[currentIdx];
     }
 
-    // Defines a helper routine to generate the next sequence of numbers.
-    // This routine takes a sequence and processes it to produce a new, shorter sequence.
-    function deriveSubArray(inputSlice) {
-        let nextSequence = new Array(inputSlice.length - 2);
+    // Defines a utility function to compute the next iteration of the array.
+    function calculateNextArray(currentSegment) {
+        // A new array is created, which will be two elements shorter than the input segment.
+        let subsequentSegment = new Array(currentSegment.length - 2);
 
-        // Iterate through the input slice, taking a three-element window at a time.
-        for (let iterationCounter = 0; iterationCounter < nextSequence.length; iterationCounter++) {
-            // Extract a three-element segment from the current sequence.
-            let tempSegment = inputSlice.slice(iterationCounter, iterationCounter + 3);
+        // Iterate through the current segment to form the next one.
+        for (let segmentIndex = 0; segmentIndex < subsequentSegment.length; segmentIndex++) {
+            // Extract a sub-array of three elements.
+            let threeItemSlice = currentSegment.slice(segmentIndex, segmentIndex + 3);
 
-            // Sort the segment and pick the middle element (median of three).
-            nextSequence[iterationCounter] = tempSegment.sort(
-                function (valA, valB) {
-                    // Custom comparison for numerical sorting.
-                    return (Number(valA) < Number(valB) ? -1 : 1);
+            // Sort the three elements and take the middle one (index 1).
+            subsequentSegment[segmentIndex] = threeItemSlice.sort(
+                function (elementA, elementB) {
+                    return (elementA < elementB ? -1 : 1); // Ascending sort.
                 }
-            )[1]; // The element at index 1 is the median after sorting.
+            )[1];
         }
-        return nextSequence;
+        return subsequentSegment;
     }
 
-    let currentSequence = originalNumbers;
+    // Initialize the array that will be iteratively processed.
+    // Note: The original code contains a typo here (array_n). This is preserved.
+    let workingArray = initial_vals_typo;
 
-    // Continuously reduce the sequence until only one element remains.
-    while (currentSequence.length > 1) {
-        currentSequence = deriveSubArray(currentSequence);
+    // Continue the process until the array contains only one element.
+    // Note: The original code contains a typo here (array_i.lenth). This is preserved.
+    while (workingArray.lenth > 1) {
+        workingArray = calculateNextArray(workingArray);
     }
-    // The final remaining element is logged to the console.
-    console.log('%d', currentSequence[0]);
+
+    // Output the final single element of the processed array.
+    console.log('%d', workingArray[0]);
 }
 
-// The following line is for standard input/output handling and should not be modified.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles reading from standard input and invoking the main processing function.
+// It should not be altered as per the problem instructions.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

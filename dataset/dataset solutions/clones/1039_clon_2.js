@@ -1,41 +1,58 @@
-// This file presents a solution to an online judge problem, implemented with contemporary JavaScript features.
+/*
+ * This file demonstrates a binary search implementation
+ * and its application to count occurrences of query elements
+ * within a sorted dataset read from standard input.
+ * The code adheres to ES6 standards.
+ */
 
-// A utility function designed to locate a specific element within an ordered collection.
-const findValueInSortedArray = function(targetElement, arraySize, sortedCollection) {
-  // Initialize range boundaries for the search operation.
-  // The 'lowerBound' begins at the first index, and 'upperBound' is set to one past the last valid index.
-  let lowerBound = 0;
-  let upperBound = arraySize;
+// Function to perform a binary search on a sorted array.
+var findValueInSortedArray = function(targetElement, arraySize, sortedCollection) {
+  // Initialize pointers for the search range.
+  // 'startIndex' points to the beginning, 'endIndex' points just past the end.
+  var startIndex = 0;
+  var endIndex = arraySize;
 
-  while (lowerBound < upperBound) {
-    // Calculate the midpoint index, ensuring it's an integer.
-    const middleIndex = Math.floor((lowerBound + upperBound) / 2);
-    if (sortedCollection[middleIndex] === targetElement) {
-      return true; // The desired element has been successfully located.
-    } else if (targetElement < sortedCollection[middleIndex]) {
-      // If the target is smaller, restrict the search to the left segment.
-      upperBound = middleIndex;
+  // Continue searching as long as the range is valid.
+  while (startIndex < endIndex) {
+    // Calculate the middle index of the current search range.
+    var middlePoint = Math.floor((startIndex + endIndex) / 2);
+
+    // Check if the element at the middle index is our target.
+    if (sortedCollection[middlePoint] === targetElement) {
+      return true; // Target found.
+    } else if (targetElement < sortedCollection[middlePoint]) {
+      // If the target is smaller, narrow the search to the left half.
+      endIndex = middlePoint;
     } else {
-      // If the target is larger, shift the search to the right segment.
-      lowerBound = middleIndex + 1;
+      // If the target is larger, narrow the search to the right half.
+      startIndex = middlePoint + 1;
     }
   }
-  return false; // The element was not found within the collection.
+  return false; // Target not found in the array.
 };
 
-( (inputDataStream) => {
-  // Parse the incoming string data by trimming whitespace and splitting into individual lines.
-  const inputLines = inputDataStream.trim().split('\n');
+// Main execution block, wrapped in an IIFE to handle input/output.
+(function(inputDataStream) {
+  // Process the raw input string: trim whitespace and split into lines.
+  var inputLines = (inputDataStream.trim()).split('\n');
 
-  // Extract and convert the main sequence of numbers and the query elements from specific lines.
-  const mainSequence = inputLines[1].split(" ").map(Number);
-  const queryElements = inputLines[3].split(" ").map(Number);
+  // Parse the main dataset (second line of input) into an array of numbers.
+  var mainDataSet = inputLines[1].split(" ").map(Number);
+  // Parse the query elements (fourth line of input) into an array of numbers.
+  var queryElements = inputLines[3].split(" ").map(Number);
 
-  let foundCount = 0; // Counter to tally how many query elements are present.
-  for (let idx = 0; idx < queryElements.length; ++idx) {
-    // For each query element, execute the search function and accumulate the results.
-    foundCount += findValueInSortedArray(queryElements[idx], mainSequence.length, mainSequence);
+  // Initialize a counter for the number of found elements.
+  var foundCount = 0;
+
+  // Iterate through each query element.
+  for (var idx = 0; idx < queryElements.length; idx++) {
+    // Perform a binary search for the current query element in the main dataset.
+    // The boolean result (true/false) is implicitly converted to 1/0 and added to the count.
+    foundCount += findValueInSortedArray(queryElements[idx], mainDataSet.length, mainDataSet);
   }
-  // Display the final tally of found elements.
+
+  // Output the final count of found elements to the console.
   console.log(foundCount);
-})( require('node:fs').readFileSync('/dev/stdin', 'utf8') );
+
+// Read input from standard input using Node.js 'fs' module.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

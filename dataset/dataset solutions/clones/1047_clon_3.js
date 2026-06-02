@@ -1,105 +1,96 @@
-const acquireInputData = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+(function executeProcess() {
+  const fileSystem = require('fs');
+  const inputFilePath = '/dev/stdin';
+  const rawInput = fileSystem.readFileSync(inputFilePath, 'utf8');
+  const inputLines = rawInput.trim().split("\n");
 
-const parseRawInputIntoLines = (rawContent) => rawContent.trim().split('\n');
+  const firstLineData = inputLines.shift().split(' ');
+  // The original 'n' (numItems) was read but never used, so it's removed.
+  const numContainers = Number(firstLineData[1]); // Original 'k'
 
-const extractNumbersFromString = (numericString) => numericString.split(' ').map(Number);
+  const itemWeights = inputLines.map(Number); // Original 'w'
+  const totalWeight = itemWeights.reduce((previousValue, currentValue) => previousValue + currentValue, 0); // Original 'sum'
 
-const presentFinalResult = (value) => console.log(value);
-
-(function executeDistributionLogic() {
-  // Obtain the raw input data from standard input
-  let rawInputData = acquireInputData();
-  // Process the raw input into an array of individual lines
-  let processedLines = parseRawInputIntoLines(rawInputData);
-
-  // The first line contains two numbers: total item count (unused) and number of partitions (containers)
-  let [itemQuantity, partitionCount] = extractNumbersFromString(processedLines.shift());
-
-  // The remaining lines represent the weights of individual items
-  let individualWeights = processedLines.map(Number);
-
-  // Calculate the sum of all item weights, which is the total weight to be distributed
-  let grandTotalWeight = 0;
-  for (const weightValue of individualWeights) {
-    grandTotalWeight += weightValue;
-  }
-
-  // If there's only one partition, no balancing is necessary; all items are in that single partition
-  if (partitionCount === 1) {
-    presentFinalResult(grandTotalWeight);
+  if (numContainers === 1) {
+    console.log(totalWeight);
     return;
   }
 
-  // Initialize two arrays:
-  // 1. partitionWeightTotals: Stores the current sum of weights for each partition.
-  // 2. partitionItemLists: Stores the actual list of item weights within each partition.
-  let partitionWeightTotals = Array(partitionCount).fill(0);
-  let partitionItemLists = Array(partitionCount).map(() => []);
+  // Initialize container loads and contents arrays
+  const containerLoads = new Array(numContainers).fill(0); // Original 't'
+  // Using Array.from to ensure each element is a distinct empty array
+  const containerContents = Array.from({ length: numContainers }, () => []); // Original 't2'
 
-  // Initially, all items are placed into the first partition
-  partitionWeightTotals[0] = grandTotalWeight;
-  // Use spread syntax to create a shallow copy of the individualWeights array for the first partition
-  partitionItemLists[0] = [...individualWeights];
+  containerLoads[0] = totalWeight;
+  containerContents[0] = [...itemWeights]; // Shallow copy of itemWeights to the first container
 
-  // A flag to indicate if any item movement occurred during a complete iteration through all partition pairs
-  let movementOccurredInCycle = true;
+  // The original 'max' and 'min' variables were effectively constant due to a bug
+  // in their update logic within the loop. They were initialized to 'sum' and '0'
+  // respectively, and never actually changed. We preserve this behavior by making
+  // them explicit constants.
+  const maxLoadThreshold = totalWeight; // Original 'max'
+  const minLoadThreshold = 0; // Original 'min'
 
-  // The main balancing loop continues as long as items are being moved between partitions
-  do {
-    movementOccurredInCycle = false; // Reset the flag at the start of each cycle
+  let movementOccurredInIteration = false; // Original 'flg'
 
-    // Iterate through adjacent pairs of partitions (from 0 to partitionCount - 2)
-    for (let currentPartitionIndex = 0; currentPartitionIndex < partitionCount - 1; currentPartitionIndex++) {
-      let currentPartitionContents = partitionItemLists[currentPartitionIndex];
-      let nextPartitionContents = partitionItemLists[currentPartitionIndex + 1];
+  while (true) {
+    movementOccurredInIteration = false;
+    const lastPossibleContainerIndex = numContainers - 1; // Helper constant for loop boundary
 
-      // Identify potential items for movement based on the original algorithm's logic:
-      // - The last item from the current partition (if moving right)
-      // - The first item from the next partition (if moving left)
-      let itemToMoveFromCurrentToEnd = currentPartitionContents.length > 0 ? currentPartitionContents[currentPartitionContents.length - 1] : undefined;
-      let itemToMoveFromNextFromStart = nextPartitionContents.length > 0 ? nextPartitionContents[0] : undefined;
+    for (let currentContainerIndex = 0; currentContainerIndex < lastPossibleContainerIndex; currentContainerIndex++) {
+      const nextContainerIndex = currentContainerIndex + 1;
 
-      // Heuristic 1: Check if moving an item from the current (left) partition to the next (right) partition
-      // would help balance their sums. The condition implies the left partition is significantly heavier.
-      if (itemToMoveFromCurrentToEnd !== undefined &&
-          partitionWeightTotals[currentPartitionIndex] > partitionWeightTotals[currentPartitionIndex + 1] + itemToMoveFromCurrentToEnd / 2) {
+      const currentContainerLoad = containerLoads[currentContainerIndex];
+      const nextContainerLoad = containerLoads[nextContainerIndex];
 
-        // Perform the item transfer:
-        // 1. Remove the item from the end of the current partition
-        let transferredWeight = currentPartitionContents.pop();
-        // 2. Update the total weight for both partitions
-        partitionWeightTotals[currentPartitionIndex] -= transferredWeight;
-        partitionWeightTotals[currentPartitionIndex + 1] += transferredWeight;
-        // 3. Add the item to the beginning of the next partition
-        nextPartitionContents.unshift(transferredWeight);
+      // Retrieve the first and last item weights from the current container.
+      // If the container is empty, these will be 'undefined', which implicitly
+      // causes conditions involving them (e.g., division by 2 resulting in NaN)
+      // to evaluate to false, matching the original code's behavior.
+      const firstItemOfCurrentContainer = containerContents[currentContainerIndex][0]; // Original 't0_l'
+      const lastItemOfCurrentContainer = containerContents[currentContainerIndex][containerContents[currentContainerIndex].length - 1]; // Original 't0_r'
 
-        movementOccurredInCycle = true; // Mark that a movement occurred
+      // Condition to move an item from the current container to the next container
+      // (pop from current, unshift to next)
+      // Original: t[i] > t[i+1] + t0_r/2 && t[i+1] + t0_r < max && t[i] > min
+      if (currentContainerLoad > nextContainerLoad + lastItemOfCurrentContainer / 2 &&
+          nextContainerLoad + lastItemOfCurrentContainer < maxLoadThreshold &&
+          currentContainerLoad > minLoadThreshold) {
+
+        const itemToTransfer = containerContents[currentContainerIndex].pop(); // Original 'tmp'
+        containerLoads[currentContainerIndex] -= itemToTransfer;
+        containerLoads[nextContainerIndex] += itemToTransfer;
+        containerContents[nextContainerIndex].unshift(itemToTransfer);
+        movementOccurredInIteration = true;
       }
-      // Heuristic 2: Check if moving an item from the next (right) partition to the current (left) partition
-      // would help balance their sums. The condition implies the right partition is significantly heavier.
-      else if (itemToMoveFromNextFromStart !== undefined &&
-               partitionWeightTotals[currentPartitionIndex] + itemToMoveFromNextFromStart / 2 < partitionWeightTotals[currentPartitionIndex + 1]) {
+      // Condition to move an item from the next container to the current container
+      // (shift from next, push to current)
+      // Original: t[i] + t0_l/2 < t[i+1] && t[i] + t0_l < max && t[i+1] > min
+      else if (currentContainerLoad + firstItemOfCurrentContainer / 2 < nextContainerLoad &&
+               currentContainerLoad + firstItemOfCurrentContainer < maxLoadThreshold &&
+               nextContainerLoad > minLoadThreshold) {
 
-        // Perform the item transfer:
-        // 1. Remove the item from the beginning of the next partition
-        let transferredWeight = nextPartitionContents.shift();
-        // 2. Update the total weight for both partitions
-        partitionWeightTotals[currentPartitionIndex + 1] -= transferredWeight;
-        partitionWeightTotals[currentPartitionIndex] += transferredWeight;
-        // 3. Add the item to the end of the current partition
-        currentPartitionContents.push(transferredWeight);
-
-        movementOccurredInCycle = true; // Mark that a movement occurred
+        const itemToTransfer = containerContents[nextContainerIndex].shift(); // Original 'tmp'
+        containerLoads[nextContainerIndex] -= itemToTransfer;
+        containerLoads[currentContainerIndex] += itemToTransfer;
+        containerContents[currentContainerIndex].push(itemToTransfer);
+        movementOccurredInIteration = true;
       }
+      // The original code contained lines attempting to update 'max' and 'min'
+      // (e.g., `max = max < t[t] ? t[t] : max;`). These lines were functionally
+      // inert due to a bug where `t[t]` evaluates to `undefined`, causing `max`
+      // and `min` to retain their initial values. These non-essential, buggy
+      // lines have been removed to reflect the actual observable behavior.
     }
-  } while (movementOccurredInCycle); // Continue looping if any movements happened in the cycle
 
-  // After the balancing process completes, find the maximum sum among all partitions.
-  // Create a copy of the partition totals, sort them in descending order, and pick the first element.
-  let sortedPartitionSums = [...partitionWeightTotals].sort((sumA, sumB) => sumB - sumA);
-  let maximumPartitionLoad = sortedPartitionSums[0];
+    if (!movementOccurredInIteration) {
+      break; // Exit loop if no items were moved in the current iteration
+    }
+  }
 
-  // Display the final maximum partition load
-  presentFinalResult(maximumPartitionLoad);
-
+  // Calculate the maximum load among all containers.
+  // This is an equivalent and more direct way to find the maximum value
+  // compared to sorting the array and taking the first element.
+  const finalMaximumContainerLoad = Math.max(...containerLoads);
+  console.log(finalMaximumContainerLoad);
 })();

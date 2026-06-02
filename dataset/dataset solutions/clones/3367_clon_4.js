@@ -1,14 +1,17 @@
-const acquireContent = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+function processDataStream(textualContent) {
+    const targetCharacter = '2';
+    let currentPosition = -1;
+    const collectedOccurrences = [];
 
-const processSource = (incomingStream) => {
-    const identifiedElements = incomingStream.split('').filter(element => element === '2');
-    return (identifiedElements.length > 0 && identifiedElements) || 0;
-};
+    while ((currentPosition = textualContent.indexOf(targetCharacter, currentPosition + 1)) !== -1) {
+        collectedOccurrences.push(targetCharacter);
+    }
 
-const initiateWorkflow = () => {
-    const rawContent = acquireContent();
-    const finalOutcome = processSource(rawContent);
-    console.log(finalOutcome);
-};
+    if (collectedOccurrences.length === 0) {
+        console.log(0);
+    } else {
+        console.log(collectedOccurrences);
+    }
+}
 
-initiateWorkflow();
+processDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));

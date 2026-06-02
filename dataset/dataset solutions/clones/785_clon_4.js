@@ -1,115 +1,125 @@
-const GEOMETRIC_TOLERANCE = 1e-10;
+var inputLinesBuffer = [];
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+inputReader.on('line', function (currentLine) {
+  inputLinesBuffer.push(currentLine);
+});
+process.stdin.on('end', function () {
+  processInputData(inputLinesBuffer);
+});
 
-function createPoint(xVal, yVal) {
-    return { xCoord: xVal, yCoord: yVal };
-}
+const EPSILON_VAL = 1e-10;
 
-function arePointsCoincident(ptA, ptB) {
-    const deltaX = ptA.xCoord - ptB.xCoord;
-    const deltaY = ptA.yCoord - ptB.yCoord;
-    return (deltaX * deltaX + deltaY * deltaY) < GEOMETRIC_TOLERANCE;
-}
+function determineIntersection(segOne, segTwo) {
+    const [[x1a, y1a], [x1b, y1b]] = segOne;
+    const [[x2a, y2a], [x2b, y2b]] = segTwo;
 
-const vectorOperations = {
-    vectorFromPoints: (p1, p2) => createPoint(p2.xCoord - p1.xCoord, p2.yCoord - p1.yCoord),
-    crossProductScalar: (v1, v2) => v1.xCoord * v2.yCoord - v1.yCoord * v2.xCoord,
-    scaleVector: (v, factor) => createPoint(v.xCoord * factor, v.yCoord * factor),
-    addVectorToPoint: (p, v) => createPoint(p.xCoord + v.xCoord, p.yCoord + v.yCoord)
-};
+    // Represent line 1 as A1x + B1y = C1
+    const coeffA1 = y1b - y1a;
+    const coeffB1 = x1a - x1b;
+    const constC1 = coeffA1 * x1a + coeffB1 * y1a;
 
-function obtainSegmentIntersection(segmentAlpha, segmentBeta) {
-    const alphaStartPt = segmentAlpha[0];
-    const alphaEndPt = segmentAlpha[1];
-    const betaStartPt = segmentBeta[0];
-    const betaEndPt = segmentBeta[1];
+    // Represent line 2 as A2x + B2y = C2
+    const coeffA2 = y2b - y2a;
+    const coeffB2 = x2a - x2b;
+    const constC2 = coeffA2 * x2a + coeffB2 * y2a;
 
-    const directionAlpha = vectorOperations.vectorFromPoints(alphaStartPt, alphaEndPt);
-    const directionBeta = vectorOperations.vectorFromPoints(betaStartPt, betaEndPt);
-    const startToStartVec = vectorOperations.vectorFromPoints(alphaStartPt, betaStartPt);
+    // Calculate the determinant of the coefficient matrix
+    const systemDeterminant = coeffA1 * coeffB2 - coeffA2 * coeffB1;
 
-    const crossDenom = vectorOperations.crossProductScalar(directionAlpha, directionBeta);
-
-    if (Math.abs(crossDenom) < GEOMETRIC_TOLERANCE) {
-        return null; // Lines are parallel or collinear
-    }
-
-    const alphaParam = vectorOperations.crossProductScalar(startToStartVec, directionBeta) / crossDenom;
-
-    // The original code uses a strict inequality for r (parameterAlpha)
-    // meaning the intersection must be strictly between the endpoints of the first segment.
-    if (alphaParam < GEOMETRIC_TOLERANCE || (1.0 - alphaParam) < GEOMETRIC_TOLERANCE) {
+    // If determinant is close to zero, lines are parallel or collinear
+    if (Math.abs(systemDeterminant) < EPSILON_VAL) {
         return null;
     }
 
-    const intersectionLoc = vectorOperations.addVectorToPoint(alphaStartPt, vectorOperations.scaleVector(directionAlpha, alphaParam));
-    return intersectionLoc;
+    // Solve for intersection point (x, y) using Cramer's rule
+    const intersectX = (constC1 * coeffB2 - constC2 * coeffB1) / systemDeterminant;
+    const intersectY = (coeffA1 * constC2 - coeffA2 * constC1) / systemDeterminant;
+
+    // Check if the intersection point lies strictly between the endpoints of the FIRST segment.
+    // This replicates the original code's specific behavior (r < EPS || 1-r < EPS returns null).
+    
+    const deltaX1 = x1b - x1a;
+    const deltaY1 = y1b - y1a;
+    const segmentOneLengthSq = deltaX1 * deltaX1 + deltaY1 * deltaY1;
+
+    let parameterT;
+    if (Math.abs(segmentOneLengthSq) < EPSILON_VAL) {
+        // Segment one is effectively a point, not a line.
+        // Original code would return null if 'temp' (determinant of direction vectors) is near zero.
+        // If segment one is a point, deltaX1 and deltaY1 are zero, making original 'temp' zero.
+        return null;
+    }
+
+    // Calculate parameter 't' for the first segment using projection
+    // t = ((P - A) . (B - A)) / |B - A|^2
+    parameterT = ((intersectX - x1a) * deltaX1 + (intersectY - y1a) * deltaY1) / segmentOneLengthSq;
+
+    // If 't' is too close to 0 or 1, the intersection is at an endpoint of the first segment.
+    // The original code explicitly excludes these points.
+    if (parameterT < EPSILON_VAL || (1 - parameterT) < EPSILON_VAL) {
+        return null;
+    }
+
+    return { x: intersectX, y: intersectY };
 }
 
-function determinePlanarRegions(allInputSegments) {
-    // According to Euler's formula for planar graphs (V - E + F = 1 + C)
-    // For arrangement of lines, regions R = 1 + L + I, where L is number of lines, I is number of intersection points.
-    // However, the original code calculates this iteratively: R_n = R_{n-1} + 1 + k_n
-    // where k_n is the number of new intersection points created by line n with previous lines.
-    const finalRegionCount = allInputSegments.reduce((currentRegionTotal, currentSegmentEntity, currentSegmentIndex) => {
-        let intersectionPointsAddedByCurrentSegment = 0;
-        const distinctIntersectionsForThisSegment = [];
+function calculateRegions(lineSegments) {
+    // The total number of regions starts at 1 (the entire plane).
+    // Each new line segment adds at least one new region.
+    // Each unique intersection point found for the current segment with previous segments
+    // further divides a region, adding one more region.
+    // This functional approach using reduce accumulates the total regions.
 
-        // Iterate through all previously processed segments
-        for (let previousSegmentIndex = 0; previousSegmentIndex < currentSegmentIndex; ++previousSegmentIndex) {
-            const priorSegmentEntity = allInputSegments[previousSegmentIndex];
-            const potentialCrossingPoint = obtainSegmentIntersection(currentSegmentEntity, priorSegmentEntity);
+    return lineSegments.reduce((accumulatedRegions, currentSegment, currentSegmentIndex, allSegments) => {
+        // Each new segment inherently adds one region to the total.
+        let regionsFromCurrentSegment = 1;
 
-            if (potentialCrossingPoint) {
-                // Check if this intersection point is already counted for the current segment
-                const alreadyRecorded = distinctIntersectionsForThisSegment.some(existingPnt =>
-                    arePointsCoincident(existingPnt, potentialCrossingPoint)
-                );
+        // A Set is used to store unique intersection points for the current segment.
+        // Points are stringified to leverage Set's uniqueness property for objects.
+        const uniqueIntersectionKeys = new Set();
 
-                if (!alreadyRecorded) {
-                    distinctIntersectionsForThisSegment.push(potentialCrossingPoint);
-                    intersectionPointsAddedByCurrentSegment++;
-                }
+        // Iterate through all segments that appeared before the current one.
+        for (let priorSegmentIndex = 0; priorSegmentIndex < currentSegmentIndex; priorSegmentIndex++) {
+            const priorSegment = allSegments[priorSegmentIndex];
+            const intersectionResult = determineIntersection(currentSegment, priorSegment);
+
+            if (intersectionResult !== null) {
+                // Stringify the point coordinates to a fixed precision for consistent Set keys.
+                uniqueIntersectionKeys.add(`${intersectionResult.x.toFixed(10)},${intersectionResult.y.toFixed(10)}`);
             }
         }
-        // Each new segment adds at least one new region (the segment itself divides an existing region)
-        // Plus, each unique intersection point it creates with previous segments adds another new region.
-        return currentRegionTotal + 1 + intersectionPointsAddedByCurrentSegment;
-    }, 1); // Start with 1 region (the empty plane)
 
-    return finalRegionCount;
+        // The number of unique intersection points found for the current segment
+        // with previous segments directly corresponds to additional regions created.
+        regionsFromCurrentSegment += uniqueIntersectionKeys.size;
+
+        return accumulatedRegions + regionsFromCurrentSegment;
+    }, 1); // Initial value for accumulatedRegions: 1 (the plane itself)
 }
 
-function processAllInput(rawInputLines) {
-    const processedResults = [];
-    let linePtr = 0;
+function processInputData(allInputLines) {
+    let inputPointer = 0;
+    const outputResults = [];
 
-    while (linePtr < rawInputLines.length) {
-        const currentSegmentQuantity = parseInt(rawInputLines[linePtr++], 10);
-
-        if (currentSegmentQuantity === 0) {
-            break; // Sentinel value to end processing
+    while (true) {
+        const segmentCount = Number.parseInt(allInputLines[inputPointer++], 10);
+        if (segmentCount === 0) {
+            break; // Termination condition
         }
 
-        const testCaseSegments = [];
-        for (let m = 0; m < currentSegmentQuantity; ++m) {
-            const coordinates = rawInputLines[linePtr++].split(' ').map(Number);
-            testCaseSegments.push([
-                createPoint(coordinates[0], coordinates[1]),
-                createPoint(coordinates[2], coordinates[3])
+        const currentSetOfSegments = [];
+        for (let k = 0; k < segmentCount; k++) {
+            const coordinateStrings = allInputLines[inputPointer++].split(' ');
+            // Parse coordinates and store points as arrays [x, y]
+            currentSetOfSegments.push([
+                [Number.parseFloat(coordinateStrings[0]), Number.parseFloat(coordinateStrings[1])],
+                [Number.parseFloat(coordinateStrings[2]), Number.parseFloat(coordinateStrings[3])]
             ]);
         }
-        processedResults.push(determinePlanarRegions(testCaseSegments));
+        outputResults.push(calculateRegions(currentSetOfSegments));
     }
-    return processedResults;
+    outputResults.forEach(res => console.log(res));
 }
-
-const inputBuffer = [];
-require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-}).on('line', (individualLine) => {
-  inputBuffer.push(individualLine);
-}).on('close', () => {
-  const calculatedOutput = processAllInput(inputBuffer);
-  calculatedOutput.forEach(value => console.log(value));
-});

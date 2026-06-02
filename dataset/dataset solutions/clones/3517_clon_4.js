@@ -1,99 +1,93 @@
-const craftInputAccessor = (rawText) => {
-  let contentRows = rawText.split("\n");
-  let currentRowIndex = 0;
+const processInput = (sourceText) => {
+    let lineBuffer = sourceText.split("\n");
+    let currentLineIndex = 0;
+    let cachedTokens = null;
 
-  const extractSegment = (asStringFlag) => {
-    if (!contentRows[currentRowIndex]) {
-      return undefined;
-    }
-    
-    if (!contentRows[currentRowIndex]._tokens) {
-      contentRows[currentRowIndex]._tokens = contentRows[currentRowIndex].split(" ");
-    }
-    
-    const segment = contentRows[currentRowIndex]._tokens.shift();
-    if (contentRows[currentRowIndex]._tokens.length === 0) {
-      currentRowIndex++;
-    }
-    return asStringFlag ? segment : Number(segment);
-  };
+    const retrieveAtomicValue = (returnAsString) => {
+        if (cachedTokens === null) {
+            if (currentLineIndex >= lineBuffer.length) return undefined;
+            cachedTokens = lineBuffer[currentLineIndex].split(" ").reverse();
+        }
+        const token = cachedTokens.pop();
+        if (cachedTokens.length === 0) {
+            currentLineIndex++;
+            cachedTokens = null;
+        }
+        return returnAsString ? token : Number(token);
+    };
 
-  const obtainLineTokens = (asStringFlag) => {
-    const line = contentRows[currentRowIndex++];
-    const tokens = line.split(" ");
-    return asStringFlag ? tokens : tokens.map(token => Number(token));
-  };
+    const retrieveFullLine = (returnAsStrings) => {
+        if (currentLineIndex >= lineBuffer.length) return undefined;
+        cachedTokens = null; // Invalidate atom cache as a full line is consumed
+        const tokens = lineBuffer[currentLineIndex].split(" ");
+        currentLineIndex++;
+        return returnAsStrings ? tokens : tokens.map(Number);
+    };
 
-  const gatherLineBlocks = (count, asStringFlag) => {
-    const blocks = Array.from({ length: count }, () => 
-      obtainLineTokens(asStringFlag)
-    );
-    return blocks;
-  };
+    const retrieveMultipleLines = (count, returnAsStrings) => {
+        const collectedLines = [];
+        for (let k = 0; k < count; k++) {
+            if (currentLineIndex >= lineBuffer.length) break;
+            cachedTokens = null; // Invalidate atom cache for each line
+            const tokens = lineBuffer[currentLineIndex].split(" ");
+            collectedLines.push(returnAsStrings ? tokens : tokens.map(Number));
+            currentLineIndex++;
+        }
+        return collectedLines;
+    };
 
-  return {
-    fetchValue: extractSegment,
-    readLine: obtainLineTokens,
-    collectMatrix: gatherLineBlocks,
-  };
+    return {
+        getAtom: retrieveAtomicValue,
+        getLine: retrieveFullLine,
+        getMatrix: retrieveMultipleLines,
+    };
 };
 
-const inputSource = craftInputAccessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputReader = processInput(inputSource);
 
-console.log(processCoordinates());
+console.log(calculatePathSolution());
 
-function processCoordinates() {
-  const coordinateCount = inputSource.fetchValue();
-  const pointData = inputSource.collectMatrix(coordinateCount);
+function calculatePathSolution() {
+    const coordinateCount = inputReader.getAtom();
+    const coordinateSet = inputReader.getMatrix(coordinateCount);
 
-  const initialSumParity = (pointData[0][0] + pointData[0][1]) % 2;
-  
-  const allParitiesMatch = pointData.slice(1).every(pair => {
-    const currentSumParity = (pair[0] + pair[1]) % 2;
-    return currentSumParity === initialSumParity;
-  });
+    const firstPairSumParity = (coordinateSet[0][0] + coordinateSet[0][1]) & 1;
 
-  if (!allParitiesMatch) {
-    return -1;
-  }
-
-  const pathStepCount = initialSumParity === 0 ? 32 : 31;
-  const magnitudeSequence = Array.from({ length: pathStepCount }, (_, index) => {
-    if (initialSumParity === 0) {
-      return index === 31 ? 1 : Math.pow(2, 30 - index);
-    } else {
-      return Math.pow(2, 30 - index);
-    }
-  });
-
-  const movementTrails = pointData.map(currentPoint => {
-    let [currentX, currentY] = currentPoint;
-    let pathString = "";
-
-    magnitudeSequence.forEach(weightVal => {
-      const absoluteX = Math.abs(currentX);
-      const absoluteY = Math.abs(currentY);
-
-      if (absoluteX > absoluteY) {
-        if (currentX > 0) {
-          currentX -= weightVal;
-          pathString += "R";
-        } else {
-          currentX += weightVal;
-          pathString += "L";
-        }
-      } else {
-        if (currentY > 0) {
-          currentY -= weightVal;
-          pathString += "U";
-        } else {
-          currentY += weightVal;
-          pathString += "D";
-        }
-      }
+    const allPairsMatchParity = coordinateSet.every(pair => {
+        return ((pair[0] + pair[1]) & 1) === firstPairSumParity;
     });
-    return pathString;
-  });
 
-  return `${pathStepCount}\n${magnitudeSequence.join(" ")}\n${movementTrails.join("\n")}`;
+    if (!allPairsMatchParity) {
+        return -1;
+    }
+
+    const pathDimension = 32 - firstPairSumParity;
+
+    const stepMagnitudes = Array.from({ length: 31 }, (_, idx) => 1 << (30 - idx));
+    if (firstPairSumParity === 0) {
+        stepMagnitudes.push(1);
+    }
+
+    const generatedPaths = coordinateSet.map(originalCoords => {
+        let currentX = originalCoords[0];
+        let currentY = originalCoords[1];
+
+        return stepMagnitudes.reduce((pathAccumulator, currentStepValue) => {
+            const absCurrentX = Math.abs(currentX);
+            const absCurrentY = Math.abs(currentY);
+
+            let moveChar;
+            if (absCurrentX > absCurrentY) {
+                moveChar = currentX > 0 ? 'R' : 'L';
+                currentX += (currentX > 0 ? -1 : 1) * currentStepValue;
+            } else {
+                moveChar = currentY > 0 ? 'U' : 'D';
+                currentY += (currentY > 0 ? -1 : 1) * currentStepValue;
+            }
+            return pathAccumulator + moveChar;
+        }, "");
+    });
+
+    return `${pathDimension}\n${stepMagnitudes.join(" ")}\n${generatedPaths.join("\n")}`;
 }

@@ -1,18 +1,12 @@
-const assessJourney = (rawDatastring) => {
-    const numericElements = rawDatastring.match(/\S+/g).map(parseFloat);
-    const [pathLength, maxDuration, paceValue] = numericElements;
+const solveProblem = (inputString) => {
+    const numericValues = inputString.split(" ").map(Number);
+    const distanceVal = numericValues[0];
+    const timeLimit = numericValues[1];
+    const speedVal = numericValues[2];
 
-    const timeRequired = pathLength / paceValue;
-    const canComplete = maxDuration >= timeRequired;
+    const isPossible = timeLimit * speedVal >= distanceVal;
 
-    const outcomeLabels = ['No', 'Yes'];
-    return outcomeLabels[+canComplete];
+    console.log(isPossible ? "Yes" : "No");
 };
 
-const initiateOperation = () => {
-    const incomingData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const finalVerdict = assessJourney(incomingData);
-    process.stdout.write(finalVerdict + '\n');
-};
-
-initiateOperation();
+solveProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));

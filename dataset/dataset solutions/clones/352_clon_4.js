@@ -1,54 +1,41 @@
-function commenceProcessing(allStatements) {
-    allStatements
-        .map(resolveArithmeticPuzzle)
-        .forEach(displayOutcome);
-}
+let equationLines = '';
 
-function resolveArithmeticPuzzle(statementText) {
-    const patternMatch = statementText.match(/^(\S+)\+(\S+)=(\S+)$/);
-    if (!patternMatch) {
-        return "NA";
-    }
-    const [, componentOne, componentTwo, targetValue] = patternMatch;
+function solveEquations() {
+    const processedEquationTexts = equationLines.trim().split('\n');
 
-    const possibleCandidateDigits = Array.from({ length: 10 }, (_, digitVal) => digitVal);
+    processedEquationTexts.forEach(currentEquationText => {
+        const [leftHandSide, rightHandSide] = currentEquationText.split('=');
+        const [firstTerm, secondTerm] = leftHandSide.split('+');
 
-    const solutionDigit = possibleCandidateDigits.find(currentCandidate => {
-        const startsWithUnknown = (segment) => segment.startsWith('X');
-
-        if (currentCandidate === 0 && (startsWithUnknown(componentOne) || startsWithUnknown(componentTwo) || startsWithUnknown(targetValue))) {
-            return false;
-        }
-
-        const deriveNumericalValue = (textSegment, replacementDigit) => {
-            const filledSegment = textSegment.replace(/X/g, replacementDigit.toString());
-            return Number(filledSegment);
+        const substituteAndParse = (segment, digitValue) => {
+            return parseInt(segment.replace(/X/g, digitValue));
         };
 
-        const valA = deriveNumericalValue(componentOne, currentCandidate);
-        const valB = deriveNumericalValue(componentTwo, currentCandidate);
-        const valC = deriveNumericalValue(targetValue, currentCandidate);
+        const checkLeadingX = (segmentToCheck) => segmentToCheck[0] === 'X';
 
-        return valA + valB === valC;
+        const potentialDigits = Array.from({ length: 10 }, (_, index) => index);
+
+        const foundSolutionDigit = potentialDigits.find(currentCandidate => {
+            if (currentCandidate === 0 && (checkLeadingX(firstTerm) || checkLeadingX(secondTerm) || checkLeadingX(rightHandSide))) {
+                return false;
+            }
+
+            const parsedFirstTerm = substituteAndParse(firstTerm, currentCandidate);
+            const parsedSecondTerm = substituteAndParse(secondTerm, currentCandidate);
+            const parsedRightHandSide = substituteAndParse(rightHandSide, currentCandidate);
+
+            return parsedFirstTerm + parsedSecondTerm === parsedRightHandSide;
+        });
+
+        console.log(foundSolutionDigit !== undefined ? foundSolutionDigit : "NA");
     });
-
-    return solutionDigit !== undefined ? solutionDigit.toString() : "NA";
 }
 
-function displayOutcome(finalResult) {
-    console.log(finalResult);
-}
-
-let accumulatedStreamData = '';
-
-const sysInputHandle = process.stdin;
-
-sysInputHandle.resume();
-sysInputHandle.setEncoding('utf8');
-sysInputHandle.on('data', (dataUnit) => {
-    accumulatedStreamData += dataUnit;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (dataChunk) {
+    equationLines += dataChunk;
 });
-sysInputHandle.on('end', () => {
-    const processedLines = accumulatedStreamData.trim().split('\n');
-    commenceProcessing(processedLines);
+process.stdin.on('end', function () {
+    solveEquations();
 });

@@ -1,62 +1,44 @@
-const transformValue = (inputNum) => (inputNum < 10) ? inputNum : (inputNum - 9);
+const transformDigit = (val) => String(val).split('').reduce((acc, char) => acc + Number(char), 0);
 
-const { readFileSync } = require('fs');
-const { stdin } = require('process');
+const rawInput = require('fs').readFileSync(0, 'utf8');
+const lines = rawInput.trim().split('\n');
 
-const entireContent = readFileSync(stdin.fd, 'utf8');
-const lineSegments = entireContent.trim().split('\n');
+const unusedN = Number(lines.shift());
+const idChars = Array.from(lines.shift());
+const unusedA = Number(lines.shift());
+const valueSet = lines.shift().split(' ').map(val => +val);
 
-const firstNumericVal = parseInt(lineSegments.shift(), 10);
-const characterSequence = lineSegments.shift().split('');
-const secondNumericVal = parseInt(lineSegments.shift(), 10);
-const numericCollection = lineSegments.shift().split(' ').map(Number);
-
-const { initialAccumulation, multiplierSequence } = characterSequence.reduce((accumulator, charElem, idx) => {
-    const isPositionEven = (idx % 2 === 0);
-    if (charElem === '*') {
-        accumulator.multiplierSequence.push(isPositionEven ? 1 : 2);
+const { multipliers: wildcardMultipliers, initialSum: baseSum } = idChars.reduce((accumulator, char, index) => {
+    const isEvenPosition = index % 2 === 0;
+    if (char === '*') {
+        accumulator.multipliers.push(isEvenPosition ? 1 : 2);
     } else {
-        const digitRepresentation = parseInt(charElem, 10);
-        if (isPositionEven) {
-            accumulator.initialAccumulation += digitRepresentation;
-        } else {
-            accumulator.initialAccumulation += transformValue(digitRepresentation * 2);
-        }
+        const digitValue = Number(char);
+        accumulator.initialSum += isEvenPosition ? digitValue : transformDigit(digitValue * 2);
     }
     return accumulator;
-}, { initialAccumulation: 0, multiplierSequence: [] });
+}, { multipliers: [], initialSum: 0 });
 
-const maxProcessingStages = multiplierSequence.length;
-const sumPossibilities = new Array(maxProcessingStages + 1).fill(null).map(() => new Map());
+let currentStates = new Map();
+currentStates.set(baseSum, 1);
 
-sumPossibilities[0].set(initialAccumulation, 1);
-
-for (let stageIndex = 0; stageIndex < maxProcessingStages; ++stageIndex) {
-    const currentMultiplier = multiplierSequence[stageIndex];
-    const previousStageMapping = sumPossibilities[stageIndex];
-    const nextStageMapping = sumPossibilities[stageIndex + 1];
-
-    if (previousStageMapping.size === 0) {
-        continue;
-    }
-
-    for (const [currentTotal, countOfWays] of previousStageMapping.entries()) {
-        for (const itemFromCollection of numericCollection) {
-            const amountToAdd = transformValue(itemFromCollection * currentMultiplier);
-            const newTotalSum = currentTotal + amountToAdd;
-            
-            nextStageMapping.set(newTotalSum, (nextStageMapping.get(newTotalSum) || 0) + countOfWays);
+for (const multiplier of wildcardMultipliers) {
+    const nextStates = new Map();
+    for (const [currentSum, count] of currentStates.entries()) {
+        for (const itemValue of valueSet) {
+            const increment = transformDigit(itemValue * multiplier);
+            const newSum = currentSum + increment;
+            nextStates.set(newSum, (nextStates.get(newSum) || 0) + count);
         }
     }
+    currentStates = nextStates;
 }
 
-let finalCount = 0;
-const finalStageMapping = sumPossibilities[maxProcessingStages];
-
-for (const [totalSumValue, waysCountValue] of finalStageMapping.entries()) {
-    if (totalSumValue % 10 === 0) {
-        finalCount += waysCountValue;
+let finalAnswer = 0;
+for (const [finalSum, count] of currentStates.entries()) {
+    if (finalSum <= 1000000 && finalSum % 10 === 0) {
+        finalAnswer += count;
     }
 }
 
-console.log(finalCount);
+console.log(finalAnswer);

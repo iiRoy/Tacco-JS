@@ -1,122 +1,82 @@
-const produceDigitSequences = (count, generatorFn) => {
-    const sequences = [];
-    for (let i = 0; i < count; i++) {
-        sequences.push(generatorFn(i));
-    }
-    return sequences;
+const getSortedNumericString = (inputStr) => {
+    return inputStr.split("").map(Number).sort((a, b) => a - b).join("");
 };
 
-const generateValidPatterns = () => {
-    const patternStore = {};
+function generateValidCombinations() {
+    const validCombinationSet = {};
 
-    const MAX_SINGLE_DIGIT = 9;
-    const MAX_SEQUENTIAL_TRIPLE_START = 7;
+    const segmentSourceA = "012,123,234,345,456,567,678";
+    const segmentSourceB = "000,111,222,333,444,555,666,777,888";
+    const suffixSourceC = "00,11,22,33,44,55,66,77,88";
 
-    const sequentialTriples = produceDigitSequences(MAX_SEQUENTIAL_TRIPLE_START, (index) =>
-        `${index}${index + 1}${index + 2}`
-    );
+    const initialSegmentsA = segmentSourceA.split(",");
+    const initialSegmentsB = segmentSourceB.split(",");
+    const combinedSegments = initialSegmentsA.concat(initialSegmentsB);
+    const finalSuffixes = suffixSourceC.split(",");
 
-    const repeatedTriples = produceDigitSequences(MAX_SINGLE_DIGIT, (index) =>
-        `${index}${index}${index}`
-    );
+    const segmentCount = combinedSegments.length;
+    const suffixCount = finalSuffixes.length;
 
-    const allKnownTriples = [...sequentialTriples, ...repeatedTriples];
-
-    const repeatedPairs = produceDigitSequences(MAX_SINGLE_DIGIT, (index) =>
-        `${index}${index}`
-    );
-
-    const triplePatternCount = allKnownTriples.length;
-    const pairPatternCount = repeatedPairs.length;
-
-    for (let componentAIndex = 0; componentAIndex < triplePatternCount; componentAIndex++) {
-        for (let componentBIndex = 0; componentBIndex < triplePatternCount; componentBIndex++) {
-            for (let componentCIndex = 0; componentCIndex < triplePatternCount; componentCIndex++) {
-                for (let componentDIndex = 0; componentDIndex < triplePatternCount; componentDIndex++) {
-                    for (let componentEIndex = 0; componentEIndex < pairPatternCount; componentEIndex++) {
-                        const rawDigitString =
-                            allKnownTriples[componentAIndex] +
-                            allKnownTriples[componentBIndex] +
-                            allKnownTriples[componentCIndex] +
-                            allKnownTriples[componentDIndex] +
-                            repeatedPairs[componentEIndex];
-
-                        const normalizedKey = rawDigitString
-                            .split("")
-                            .map(Number)
-                            .sort((digitOne, digitTwo) => digitOne - digitTwo)
-                            .join("");
-
-                        patternStore[normalizedKey] = true;
+    for (let idxA = 0; idxA < segmentCount; idxA++) {
+        for (let idxB = 0; idxB < segmentCount; idxB++) {
+            for (let idxC = 0; idxC < segmentCount; idxC++) {
+                for (let idxD = 0; idxD < segmentCount; idxD++) {
+                    for (let suffixIdx = 0; suffixIdx < suffixCount; suffixIdx++) {
+                        const rawCombinationString = combinedSegments[idxA] + combinedSegments[idxB] + combinedSegments[idxC] + combinedSegments[idxD] + finalSuffixes[suffixIdx];
+                        const processedString = getSortedNumericString(rawCombinationString);
+                        validCombinationSet[processedString] = true;
                     }
                 }
             }
         }
     }
-    return patternStore;
+    return validCombinationSet;
+}
+
+const parseLineToNumbers = (lineString) => {
+    return lineString.split("").map(Number);
 };
 
-const validDigitCombinations = generateValidPatterns();
-
-const getDigitFrequencies = (digitSequence) => {
-    const frequencies = {};
-    for (let d = 0; d < 9; d++) {
-        frequencies[d] = 0;
-    }
-    for (const digit of digitSequence) {
-        if (digit >= 0 && digit < 9) {
-            frequencies[digit]++;
+const getDigitFrequencies = (numberArray) => {
+    const counts = Array(9).fill(0);
+    for (const num of numberArray) {
+        if (num >= 0 && num < 9) {
+            counts[num]++;
         }
     }
-    return frequencies;
+    return counts;
 };
 
-try {
-    const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    let inputLines = rawInputContent.trim().split("\n");
+const precomputedCombinations = generateValidCombinations();
 
-    while (inputLines.length > 0) {
-        const currentInputDigitsString = inputLines.shift();
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const trimmedInput = rawInputData.trim();
+const processedInputLines = trimmedInput.split("\n");
 
-        if (!currentInputDigitsString || currentInputDigitsString.length === 0) {
+while (processedInputLines.length > 0) {
+    const currentInputLine = processedInputLines.shift();
+    const foundDigits = [];
+
+    for (let candidateDigit = 0; candidateDigit < 9; candidateDigit++) {
+        let modifiedDigitSequence = parseLineToNumbers(currentInputLine);
+
+        modifiedDigitSequence = modifiedDigitSequence.map(originalValue => originalValue - 1);
+
+        modifiedDigitSequence.push(candidateDigit);
+
+        modifiedDigitSequence.sort((a, b) => a - b);
+
+        const digitFrequencyCounts = getDigitFrequencies(modifiedDigitSequence);
+
+        const highestFrequency = Math.max(...digitFrequencyCounts);
+
+        if (highestFrequency >= 5) {
             continue;
         }
 
-        const potentialCompletions = [];
-
-        for (let candidateDigit = 0; candidateDigit < 9; candidateDigit++) {
-            const initialDigits = currentInputDigitsString.split('').map(Number);
-
-            if (initialDigits.some(isNaN)) {
-                potentialCompletions.push("INVALID_INPUT_FORMAT");
-                break;
-            }
-
-            const adjustedDigits = initialDigits.map(digit => digit - 1);
-            adjustedDigits.push(candidateDigit);
-            adjustedDigits.sort((a, b) => a - b);
-
-            const currentDigitFrequencies = getDigitFrequencies(adjustedDigits);
-            const maxFrequency = Math.max(...Object.values(currentDigitFrequencies));
-
-            if (maxFrequency >= 5) {
-                continue;
-            }
-
-            const sortedKey = adjustedDigits.join('');
-
-            if (validDigitCombinations.hasOwnProperty(sortedKey)) {
-                potentialCompletions.push(candidateDigit + 1);
-            }
-        }
-
-        if (potentialCompletions.includes("INVALID_INPUT_FORMAT")) {
-             console.log("ERROR: Non-numeric characters detected.");
-        } else {
-            console.log(potentialCompletions.length === 0 ? "0" : potentialCompletions.join(" "));
+        if (precomputedCombinations.hasOwnProperty(modifiedDigitSequence.join(""))) {
+            foundDigits.push(candidateDigit + 1);
         }
     }
-} catch (error) {
-    console.error("An error occurred during input processing:", error.message);
-    process.exit(1);
+    console.log((foundDigits.length === 0) ? "0" : foundDigits.join(" "));
 }

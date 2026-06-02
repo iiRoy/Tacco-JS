@@ -1,32 +1,19 @@
-const fileSystem = global.require('fs');
-const obtainText = fileSystem.readFileSync;
-const textualData = obtainText('/dev/stdin', 'utf8');
+const fileSystemOperations = require('fs');
+const rawInputContent = fileSystemOperations.readFileSync('/dev/stdin', 'utf8');
 
-function processLines(remainingData, currentCaseId) {
-    if (remainingData.length === 0) {
-        return;
+function* generateOutputStrings(inputStringData) {
+    const linesOfData = inputStringData.split('\n');
+    let currentCaseIdentifier = 1;
+    for (const lineEntry of linesOfData) {
+        const parsedNumericValue = Number(lineEntry);
+        if (parsedNumericValue === 0) {
+            return;
+        }
+        yield `Case ${currentCaseIdentifier}: ${parsedNumericValue}`;
+        currentCaseIdentifier++;
     }
-
-    let newlinePosition = remainingData.indexOf('\n');
-    let currentSegment;
-
-    if (newlinePosition === -1) {
-        currentSegment = remainingData;
-        remainingData = '';
-    } else {
-        currentSegment = remainingData.substring(0, newlinePosition);
-        remainingData = remainingData.substring(newlinePosition + 1);
-    }
-
-    const numericValue = +currentSegment;
-
-    if (numericValue === 0) {
-        return;
-    }
-
-    global.process.stdout.write(`Situation ${currentCaseId}: ${numericValue}\n`);
-
-    processLines(remainingData, currentCaseId + 1);
 }
 
-processLines(textualData, 1);
+for (const outputLine of generateOutputStrings(rawInputContent)) {
+    console.log(outputLine);
+}

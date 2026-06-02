@@ -1,49 +1,45 @@
-/*
- * This module processes raw input data for a specific problem.
- * The main function orchestrates the parsing, calculation, and final decision.
- */
-function ExecuteLogic(incomingData) {
-  // A variable to store the final outcome, initially set to a positive affirmation.
-  var finalDecision = "Yes";
+function ProcessInputData(incomingText) {
+  // Initialize a variable to store the final decision
+  let finalVerdict = "Yes";
 
-  // Clean and segment the input: remove extraneous whitespace, then split into distinct lines.
-  incomingData = incomingData.trim().split("\n");
+  // Clean up and parse the raw input string into an array of lines
+  const processedLines = incomingText.trim().split("\n");
 
-  // Extract problem parameters from the first line: total available items and the count of top items to consider.
-  const [totalItemCount, topItemSelectionLimit] = incomingData[0].split(" ").map((valueStr) => parseInt(valueStr, 10));
+  // Extract the first line to get N and M values
+  // N: total number of items, M: number of top items to consider
+  const [totalItems, selectedCount] = processedLines[0].split(" ").map((valTxt) => parseInt(valTxt, 10));
 
-  // Parse the second line to obtain a list of numerical scores for each item.
-  var itemScoresCollection = incomingData[1].split(" ").map((valueStr) => parseInt(valueStr, 10));
+  // Extract the second line to get the array of scores/votes
+  let candidateScores = processedLines[1].split(" ").map((scoreTxt) => parseInt(scoreTxt, 10));
 
-  // Arrange the item scores in descending order to easily identify the highest values.
-  itemScoresCollection.sort((scoreOne, scoreTwo) => scoreTwo - scoreOne);
+  // Sort the scores in descending order
+  candidateScores.sort((scoreA, scoreB) => scoreB - scoreA);
 
-  // Extract a subset containing only the highest-scoring items, up to the defined limit.
-  var highestRankedItems = itemScoresCollection.slice(0, topItemSelectionLimit);
+  // Get the top 'M' scores from the sorted list
+  const leadingScores = candidateScores.slice(0, selectedCount);
 
-  // Compute a dynamic qualification threshold based on the aggregated sum of all scores and the selection limit.
-  const minimumQualificationScore = (1 * calculateCollectionSum(itemScoresCollection)) / (4 * topItemSelectionLimit);
+  // Calculate the required minimum threshold for a score to be considered
+  // This threshold is (total sum of all scores) / (4 * M)
+  const minimumThreshold = (1 * calculateArraySum(candidateScores)) / (4 * selectedCount);
 
-  // Determine if the lowest score among the highest-ranked items meets the calculated threshold.
-  if (highestRankedItems[highestRankedItems.length - 1] < minimumQualificationScore) {
-    finalDecision = "No"; // If the condition is not met, update the decision to negative.
+  // Check if the lowest score among the top 'M' items is below the calculated threshold
+  if (leadingScores[leadingScores.length - 1] < minimumThreshold) {
+    finalVerdict = "No"; // If it is, the condition is not met
   }
 
-  /*
-   * Utility function to sum all numerical elements within a given array.
-   * @param {Array<number>} numericCollection - An array containing numbers to be summed.
-   * @returns {number} The cumulative sum of all numbers in the array.
-   */
-  function calculateCollectionSum(numericCollection) {
-    return numericCollection.reduce((accumulatorValue, currentValue, currentIndex, fullArrayRef) => {
-      return accumulatorValue + currentValue;
-    });
+  // Helper function to compute the sum of all numbers in an array
+  function calculateArraySum(numericList) {
+    return numericList.reduce((accumulator, currentValue) => {
+      return accumulator + currentValue;
+    }, 0); // Start sum from zero
   }
 
-  // Display the determined final decision to the standard output.
-  console.log(finalDecision);
+  // Output the final decision to the console
+  console.log(finalVerdict);
 }
 
-// Below this line, standard I/O mechanisms are utilized. Please refrain from altering this section.
-ExecuteLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
-// ExecuteLogic(require("fs").readFileSync("./input.txt", "utf-8"));
+// This section handles reading input from standard input and invoking the main processing function.
+// It should not be modified.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// For local testing, you might use:
+// ProcessInputData(require("fs").readFileSync("./input.txt", "utf-8"));

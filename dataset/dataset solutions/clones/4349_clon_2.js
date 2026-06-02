@@ -1,63 +1,58 @@
-// Function to process raw input data and compute optimal values.
-function ProcessData(rawDataString) {
-  // Split the input string into an array of string values based on spaces.
-  const sourceValues = rawDataString.split(" ");
+function ProcessInput(rawData) {
+  // Split the raw input string by spaces to get individual numeric values.
+  let parsedValues = rawData.split(" ");
 
-  // Parse the array elements into integer parameters.
-  // These parameters represent various coefficients or limits used in the calculation.
-  const baseUnitAmount = Number.parseInt(sourceValues[0], 10);       // Corresponds to original 'a'
-  const secondUnitAmount = Number.parseInt(sourceValues[1], 10);      // Corresponds to original 'b'
-  const firstAdditiveAmount = Number.parseInt(sourceValues[2], 10);   // Corresponds to original 'c'
-  const secondAdditiveAmount = Number.parseInt(sourceValues[3], 10);  // Corresponds to original 'd'
-  const ratioMultiplier = Number.parseInt(sourceValues[4], 10);       // Corresponds to original 'e'
-  const totalBudget = Number.parseInt(sourceValues[5], 10);           // Corresponds to original 'f'
+  // Parse integer values for various parameters from the input array.
+  const valA = parseInt(parsedValues[0], 10); // Represents a unit of water (e.g., 100g)
+  const valB = parseInt(parsedValues[1], 10); // Represents another unit of water (e.g., 100g)
+  const valC = parseInt(parsedValues[2], 10); // Represents a unit of sugar
+  const valD = parseInt(parsedValues[3], 10); // Represents another unit of sugar
+  const valE = parseInt(parsedValues[4], 10); // Represents maximum sugar solubility per 100g water
+  const valF = parseInt(parsedValues[5], 10); // Represents the maximum total weight of the solution
 
-  // Initialize variables to store the best found concentration ratio and associated quantities.
-  let maxConcentration = 0;             // Stores the highest ratio encountered, analogous to 's'
-  let optimalTotalQuantity = 0;         // Stores the total quantity for the optimal ratio, analogous to 's1'
-  let optimalAdditiveQuantity = 0;      // Stores the additive part for the optimal ratio, analogous to 's2'
+  // Initialize variables to store the maximum concentration found and corresponding weights.
+  let maxConcentration = 0; // Stores the highest sugar concentration percentage
+  let totalWeight = 0;      // Stores the total weight of the solution for maxConcentration
+  let sugarWeight = 0;      // Stores the sugar weight for maxConcentration
 
-  // Handle a specific initial condition or edge case.
-  // If the total budget minus a fixed amount of the first base unit is less than the first additive amount,
-  // set the initial optimal quantities accordingly.
-  if (totalBudget - 100 * baseUnitAmount < firstAdditiveAmount) {
-    optimalTotalQuantity = 100 * baseUnitAmount; // Set total quantity using only the first base unit.
-    optimalAdditiveQuantity = 0;                 // No additive part in this specific scenario.
+  // Handle a specific edge case: if the smallest possible water amount (100*valA)
+  // combined with the smallest sugar amount (valC) already exceeds the total capacity valF,
+  // or if valF is too small to even hold the smallest sugar amount with the smallest water.
+  // This condition implies that only water can be added, or the smallest water amount is the only option.
+  if (valF - 100 * valA < valC) {
+    totalWeight = 100 * valA; // The solution will consist only of the smallest water unit
+    sugarWeight = 0;          // No sugar can be added in this scenario
   } else {
-    // Begin a series of nested loops to systematically explore all valid combinations
-    // of component counts that do not exceed the 'totalBudget'.
+    // Iterate through all possible combinations of water and sugar amounts.
+    // idxI and idxJ represent multiples of water units (valA and valB).
+    for (let idxI = 0; idxI * 100 * valA <= valF; idxI++) {
+      for (let idxJ = 0; idxI * 100 * valA + idxJ * 100 * valB <= valF; idxJ++) {
+        // idxK and idxL represent multiples of sugar units (valC and valD).
+        for (let idxK = 0; idxI * 100 * valA + idxJ * 100 * valB + idxK * valC <= valF; idxK++) {
+          for (let idxL = 0; idxI * 100 * valA + idxJ * 100 * valB + idxK * valC + idxL * valD <= valF; idxL++) {
 
-    // Loop for the count of the first primary component.
-    for (let countA = 0; countA * 100 * baseUnitAmount <= totalBudget; countA++) {
-      // Loop for the count of the second primary component.
-      for (let countB = 0; countA * 100 * baseUnitAmount + countB * 100 * secondUnitAmount <= totalBudget; countB++) {
-        // Loop for the count of the first additive component.
-        for (let countC = 0; countA * 100 * baseUnitAmount + countB * 100 * secondUnitAmount + countC * firstAdditiveAmount <= totalBudget; countC++) {
-          // Loop for the count of the second additive component.
-          for (let countD = 0; countA * 100 * baseUnitAmount + countB * 100 * secondUnitAmount + countC * firstAdditiveAmount + countD * secondAdditiveAmount <= totalBudget; countD++) {
+            // Calculate current water and sugar amounts for this iteration.
+            const currentWaterAmount = idxI * 100 * valA + idxJ * 100 * valB;
+            const currentSugarAmount = idxK * valC + idxL * valD;
 
-            // Calculate the current quantity of additive parts and base parts.
-            const currentAdditivePart = countC * firstAdditiveAmount + countD * secondAdditiveAmount;
-            const currentBasePart = countA * 100 * baseUnitAmount + countB * 100 * secondUnitAmount;
+            // Check if the current sugar amount respects the solubility limit.
+            // Solubility is valE grams of sugar per 100 grams of water.
+            if (currentSugarAmount <= (currentWaterAmount / 100) * valE) {
+              // Calculate the total weight of the current solution.
+              const currentTotalWeight = currentWaterAmount + currentSugarAmount;
 
-            // Check if the current additive quantity satisfies a given ratio condition relative to the base quantity.
-            if (currentAdditivePart <= currentBasePart * ratioMultiplier) {
-              // Calculate the current total quantity.
-              const currentTotalQuantity = currentBasePart + currentAdditivePart;
+              // Ensure the total weight does not exceed the maximum allowed weight.
+              if (currentTotalWeight <= valF) {
+                // Calculate the current sugar concentration percentage.
+                // Avoid division by zero if currentTotalWeight is 0 (though unlikely with water present).
+                const currentConcentration = (currentTotalWeight === 0) ? 0 : (100 * currentSugarAmount / currentTotalWeight);
 
-              // Skip calculations if the total quantity is zero to avoid division by zero.
-              if (currentTotalQuantity === 0) {
-                continue;
-              }
-
-              // Calculate the current concentration (ratio of additive part to total quantity).
-              const currentConcentration = (100 * currentAdditivePart) / currentTotalQuantity;
-
-              // If the current concentration is higher than the previously found maximum, update the optimal values.
-              if (currentConcentration > maxConcentration) {
-                maxConcentration = currentConcentration;         // Update the highest concentration ratio.
-                optimalTotalQuantity = currentTotalQuantity;     // Update the total quantity for this optimal ratio.
-                optimalAdditiveQuantity = currentAdditivePart;   // Update the additive quantity for this optimal ratio.
+                // If this concentration is higher than the previously found maximum, update the results.
+                if (currentConcentration > maxConcentration) {
+                  maxConcentration = currentConcentration;
+                  totalWeight = currentTotalWeight;
+                  sugarWeight = currentSugarAmount;
+                }
               }
             }
           }
@@ -65,10 +60,10 @@ function ProcessData(rawDataString) {
       }
     }
   }
-  // Output the final optimal total quantity and optimal additive quantity to the console.
-  console.log('%s %d', optimalTotalQuantity, optimalAdditiveQuantity);
+
+  // Output the total weight and the sugar weight of the solution with the highest concentration.
+  console.log('%s %d', totalWeight, sugarWeight);
 }
 
-// Read input from the standard input stream using Node.js file system module,
-// and then invoke the main processing function with the read data.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

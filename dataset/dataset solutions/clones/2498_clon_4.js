@@ -1,29 +1,28 @@
-function processInputData(rawDataContent) {
-    const dataLines = rawDataContent.split('\n');
-    const collectionSize = Number(dataLines[0]);
-    const numberCollection = dataLines[1]
-        .split(/\s+/)
-        .filter(segment => segment !== '')
-        .map(numString => Number(numString));
+function main(inputStr) {
+    const lines = inputStr.split('\n');
+    const elementCount = Number(lines[0]);
+    const rawElements = lines[1].split(/\s/g);
 
-    numberCollection.sort((valA, valB) => valB - valA);
+    const processedElements = rawElements
+        .sort((valA, valB) => (valA < valB ? 1 : -1))
+        .map(Number);
 
-    let totalAccumulator = 0;
+    const ijPairs = Array.from({ length: elementCount }).flatMap((_, idxA) =>
+        Array.from({ length: Math.max(0, elementCount - 1 - (idxA + 1)) }).map((__, offsetJ) => ({
+            firstIndex: idxA,
+            secondIndex: idxA + 1 + offsetJ
+        }))
+    );
 
-    for (let currentPrimary = 0; currentPrimary < collectionSize - 2; currentPrimary++) {
-        let currentSecondary = currentPrimary + 1;
-        let currentTertiary = collectionSize - 1;
+    const finalResult = ijPairs.reduce((accumulator, { firstIndex, secondIndex }) => {
+        const kRange = Array.from({ length: Math.max(0, elementCount - secondIndex) }).map((_, offsetK) => elementCount - offsetK);
 
-        while (currentSecondary < currentTertiary) {
-            if (numberCollection[currentPrimary] < numberCollection[currentSecondary] + numberCollection[currentTertiary]) {
-                totalAccumulator += (currentTertiary - currentSecondary);
-                currentSecondary++;
-            } else {
-                currentTertiary--;
-            }
-        }
-    }
-    console.log(totalAccumulator);
+        const foundK = kRange.find(thirdIndex => processedElements[firstIndex] < processedElements[secondIndex] + processedElements[thirdIndex]);
+
+        return accumulator + (foundK !== undefined ? foundK - secondIndex : 0);
+    }, 0);
+
+    console.log(finalResult);
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

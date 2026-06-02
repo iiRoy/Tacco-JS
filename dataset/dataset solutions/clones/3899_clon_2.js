@@ -1,49 +1,75 @@
-'use strict'; // Enforce strict mode for cleaner code
+'use strict';
 
-const   upperBoundValue  =  109; // Defines the maximum possible value for elements
+// Define the upper bound for values in the input array
+let maximumValue = 109;
 
-function  countBasedOrder ( sourceElements ) { // Sorts an array using counting sort algorithm
-  const   finalArrangement  =  []; // Stores the sorted output
-  const   frequencyStore  =  Array.apply( null, { length: upperBoundValue + 1 } ).map(val => 0); // Initializes an array to store counts
+/**
+ * Sorts an array of non-negative integers using the counting sort algorithm.
+ * This implementation assumes values are within [0, maximumValue].
+ * @param {number[]} inputNumbers - The array of numbers to be sorted.
+ * @returns {number[]} A new array containing the sorted numbers.
+ */
+function performCountingSort(inputNumbers) {
+  // Initialize an array to store the sorted elements
+  const orderedElements = [];
+  // Create a frequency map (or count array) for each number up to maximumValue
+  // All counts are initially zero.
+  let frequencyMap = Array.apply(null, { length: maximumValue + 1 }).map(
+    (val) => 0
+  );
 
-  // Increment counts for each element in the input
-  for  ( let  position  in  sourceElements ) {
-    frequencyStore[sourceElements[position]]++;
+  // Populate the frequency map by counting occurrences of each number
+  for (let elementIndex in inputNumbers) {
+    frequencyMap[inputNumbers[elementIndex]]++;
   }
 
-  // Populate the sorted array based on frequencies
-  for   ( let  position  in  frequencyStore ) {
-    while   ( frequencyStore[position] ) {
-      finalArrangement.push( parseInt(position) ); // Add element to sorted list
-      frequencyStore[position]--; // Decrement count
+  // Reconstruct the sorted array using the frequency map
+  for (let elementIndex in frequencyMap) {
+    // While there are still occurrences of the current number
+    while (frequencyMap[elementIndex]) {
+      // Add the number to the sorted list
+      orderedElements.push(~~elementIndex);
+      // Decrement its count in the frequency map
+      frequencyMap[elementIndex]--;
     }
   }
 
-  return  finalArrangement; // Return the ordered list
+  // Return the fully sorted array
+  return orderedElements;
 }
 
-function  entryPoint ( initialString ) { // Main function to process data
-  let   numericData = initialString.split( /\n|\s/ ).map( numStr => parseInt(numStr) ); // Parse input string into numbers
+/**
+ * Main function to process input, perform sorting, and print results based on a median-like value.
+ * @param {string} rawData - The raw input string, typically from stdin.
+ */
+function processInputData(rawData) {
+  // Parse the input string into an array of numbers
+  let parsedNumbers = rawData.split(/\n|\s/).map((val) => ~~val);
 
-  const   totalItems  = numericData[0]; // First element is the count of items
-  const   rawElements = numericData.slice(1, -1); // Extract the actual data elements
+  // The first number in the input is the total count of elements
+  const totalCount = parsedNumbers[0];
+  // Extract the actual array of numbers to be processed, excluding the count and any trailing empty values
+  const originalValues = parsedNumbers.slice(1, -1);
 
-  const   sortedSequence  = countBasedOrder( rawElements ); // Perform the sorting operation
+  // Sort the extracted numbers using the counting sort algorithm
+  const sortedValues = performCountingSort(originalValues);
 
-  const   centralPoint  = sortedSequence[totalItems / 2]; // Determine the median-like value from sorted data
+  // Calculate the "median" value from the sorted array
+  // Note: This uses integer division for the index, which might not be a true median for even counts.
+  const medianValue = sortedValues[totalCount / 2];
 
-  // Iterate through original elements and output based on comparison with central point
-  for ( let currentIdx = 0; currentIdx < totalItems; currentIdx++ ) {
-    if ( rawElements[currentIdx] < centralPoint ) {
-      console.log( centralPoint ); // Output the central point if current element is smaller
+  // Iterate through the original (unsorted) values
+  for (let currentIdx = 0; currentIdx < totalCount; currentIdx++) {
+    // If the current original value is less than the calculated medianValue
+    if (originalValues[currentIdx] < medianValue) {
+      // Print the medianValue
+      console.log(medianValue);
     } else {
-      console.log( sortedSequence[totalItems / 2 - 1] ); // Output the element just before the central point
+      // Otherwise, print the element just before the median in the sorted array
+      console.log(sortedValues[totalCount / 2 - 1]);
     }
   }
 }
 
-// Read input from standard input and pass to the entry point
-entryPoint(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-);
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

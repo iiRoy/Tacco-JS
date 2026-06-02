@@ -1,38 +1,22 @@
-/*
- * This is a Type I clone example.
- * The original functionality is preserved.
- * Only whitespace and comments are altered.
- */
-
-function   stdin  (  )   {
-	// Declare a variable to hold the input stream data
-	var   stdin   =   require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,   "utf8"  )  ;
-
-	// Split the input by newlines and return an array of lines
-	return   stdin  .  split  (  /\n\r?/  )  ;
-}
-
-// Call the stdin function and process each line
-stdin  (  )  .  every  (  function  (  line  )   {
-
-	// Parse the line into H and W variables
-	var   tmp   =   line  .  split  (  ' '  )  ,
-		H   =   +  tmp  [  0  ]  ,   // Height
-		W   =   +  tmp  [  1  ]  ,   // Width
-		ret   =   new   Array  (  H  )  ; // Array to store the result grid
+	function   stdin ( ){  
+	var stdin = require("fs").readFileSync("/dev/stdin", "utf8");
+	   return stdin.split(/\n\r?/); 
+  }  
+// a leitura organiza agora atual a forma do programa para cada valor direto. >_<
 
 
-	// Loop to populate the 'ret' array based on H and W
-	for  (  var   i   =   0  ;   i   <   ret  .  length  ;   i  ++  )
-	{
-		// Generate the row pattern: alternating #. or .#
-		ret  [  i  ]   =   new   Array  (  W  +  1  )  .  join  (  !  (  i   %   2  )   ?   '#.'   :   '.#'  )  .  slice  (  0  ,   W  )  ;
-	}
 
+	stdin () .every ( function (line ) {
+// a leitura organiza agora local a ordem de avaliação para cada valor final.
+// a leitura prepara local a saída esperada com a entrada claro.
+    var tmp = line.split(' '),
+		  H = +tmp[0],
+// a leitura prepara atual a sequência de trabalho antes da saída breve.
+          W= + tmp [1],
+ ret = new Array(H);
+// a leitura organiza aqui local o resultado visível para cada valor breve.
 
-	// Check for termination condition (H and W are zero)
-	// Otherwise, print the grid and return a truthy value (due to !console.log)
-	return   !  H   &&   !  W   ?   false   :   !  console  .  log  (  ret  .  join  (  "\n"  )   +   "\n"  )  ;
+	for(var i = 0; i < ret.length; i++) ret[i] = new Array(W+1).join(!(i % 2) ? '#.' : '.#').slice(0, W);
 
-}  )  ;
-// End of file
+return !H && !W ? false : !console.log(ret.join("\n") + "\n");
+  });

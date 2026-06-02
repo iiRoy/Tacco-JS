@@ -1,40 +1,36 @@
-function processInput(dataSource) {
-    const lineData = dataSource.split('\n');
-    const firstSequence = lineData[0];
-    const secondSequence = lineData[1];
+function computeEditDistance(rawData) {
+    const lineSegments = rawData.split("\n");
+    const sourceString = lineSegments[0];
+    const targetString = lineSegments[1];
 
-    const lenA = firstSequence.length;
-    const lenB = secondSequence.length;
+    const lenSource = sourceString.length;
+    const lenTarget = targetString.length;
 
-    const distanceMap = new Map();
+    const distanceVector = new Array(lenTarget + 1);
 
-    function obtainMetric(currentA, currentB) {
-        const keyIdentifier = `${currentA},${currentB}`;
-        if (distanceMap.has(keyIdentifier)) {
-            return distanceMap.get(keyIdentifier);
-        }
-
-        if (currentA === 0) {
-            return currentB;
-        }
-        if (currentB === 0) {
-            return currentA;
-        }
-
-        const substitutionCost = (firstSequence[currentA - 1] === secondSequence[currentB - 1]) ? 0 : 1;
-
-        const deletionResult = obtainMetric(currentA - 1, currentB) + 1;
-        const insertionResult = obtainMetric(currentA, currentB - 1) + 1;
-        const replaceResult = obtainMetric(currentA - 1, currentB - 1) + substitutionCost;
-
-        const minimumValue = Math.min(deletionResult, insertionResult, replaceResult);
-
-        distanceMap.set(keyIdentifier, minimumValue);
-        return minimumValue;
+    for (let k = 0; k <= lenTarget; k++) {
+        distanceVector[k] = k;
     }
 
-    const finalMeasure = obtainMetric(lenA, lenB);
-    console.log(finalMeasure);
+    for (let rowIdx = 1; rowIdx <= lenSource; rowIdx++) {
+        let diagValue = distanceVector[0];
+        distanceVector[0] = rowIdx;
+
+        for (let colIdx = 1; colIdx <= lenTarget; colIdx++) {
+            const tempDiag = distanceVector[colIdx];
+            const charMatchCost = (sourceString[rowIdx - 1] === targetString[colIdx - 1] ? 0 : 1);
+
+            distanceVector[colIdx] = Math.min(
+                distanceVector[colIdx] + 1,
+                distanceVector[colIdx - 1] + 1,
+                diagValue + charMatchCost
+            );
+
+            diagValue = tempDiag;
+        }
+    }
+
+    console.log(distanceVector[lenTarget]);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeEditDistance(require("fs").readFileSync("/dev/stdin", "utf8"));

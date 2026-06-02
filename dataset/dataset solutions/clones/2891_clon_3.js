@@ -1,75 +1,40 @@
 (function() {
-  /**
-   * Defines the specific character that the analysis function will search for.
-   * This enhances readability and makes the code easier to modify.
-   */
-  const TARGET_CHARACTER_SYMBOL = 'x';
+  const retrieveFirstLine = (fullContent) => {
+    const contentSegments = fullContent.split("\n");
+    // Ensure a string is always returned, even for empty input
+    return contentSegments.length > 0 ? contentSegments[0] : "";
+  };
 
-  /**
-   * Sets the critical count threshold for the target character.
-   * If the number of occurrences meets or exceeds this value, a specific outcome is triggered.
-   */
-  const OCCURRENCE_LIMIT_THRESHOLD = 8;
+  function processStringData(targetString) {
+    const characterToCount = 'x';
+    let countOfTargetChar = 0;
 
-  /**
-   * Processes an incoming string of data to evaluate a specific condition
-   * based on the count of a predefined character within its first significant line.
-   *
-   * @param {string} incomingDataSource - The raw string data, potentially containing multiple lines.
-   */
-  function assessInputCondition(incomingDataSource) {
-    // Defensive programming: Validate the input type and content.
-    // An invalid or empty string cannot be meaningfully processed for character counts.
-    if (typeof incomingDataSource !== 'string' || incomingDataSource.trim().length === 0) {
-      // If the input is fundamentally invalid or empty, we can assume the condition
-      // for too many 'x's is not met. Thus, outputting 'YES' is a safe default.
-      console.log('YES');
-      return;
-    }
-
-    // Extract the primary line of interest from the raw data.
-    // The `.split('\n')[0]` ensures only the first line is considered,
-    // and `.trim()` removes any leading/trailing whitespace from that line.
-    const mainContentLine = incomingDataSource.split('\n')[0].trim();
-
-    // If, after extraction and trimming, the primary content line is empty,
-    // it implies no target characters can be found.
-    if (mainContentLine.length === 0) {
-      console.log('YES'); // No 'x's present, so the count is certainly below the threshold.
-      return;
-    }
-
-    // Initialize a counter for the occurrences of our target character.
-    let foundCharCount = 0;
-
-    // Iterate through each character of the cleaned main content line.
-    // Using a 'for...of' loop provides a clear and modern way to access individual characters.
-    for (const currentSymbol of mainContentLine) {
-      // Increment the counter if the current character matches our target symbol.
-      if (currentSymbol === TARGET_CHARACTER_SYMBOL) {
-        foundCharCount++;
+    // Iterate over each character using a modern loop construct
+    for (const singleChar of targetString) {
+      if (singleChar === characterToCount) {
+        countOfTargetChar++;
       }
     }
 
-    // Based on the total count of the target character, determine the final output.
-    // The logic here is an inversion of the original condition for Type III variation.
-    if (foundCharCount < OCCURRENCE_LIMIT_THRESHOLD) {
-      // If the count is strictly less than the threshold, the condition is met.
-      console.log('YES');
-    } else {
-      // Otherwise, the count is equal to or greater than the threshold.
-      console.log('NO');
-    }
+    // Define the comparison threshold as a constant
+    const minimumRequiredCount = 8;
+    const meetsCondition = countOfTargetChar >= minimumRequiredCount;
+
+    // Determine the output message using a conditional expression
+    const finalOutcomeMessage = meetsCondition ? 'NO' : 'YES';
+    console.log(finalOutcomeMessage);
   }
 
-  // --- Program Entry Point ---
-  // Access the Node.js 'fs' (file system) module to read standard input.
-  const fileSystemUtility = require("fs");
+  // Define constants for input source details
+  const standardInputPath = "/dev/stdin";
+  const fileReadEncoding = "utf8";
 
-  // Read the entire content from standard input ('/dev/stdin') using UTF-8 encoding.
-  const standardInputData = fileSystemUtility.readFileSync("/dev/stdin", "utf8");
+  // Read the raw content from the specified input source
+  const rawInputContent = require("fs").readFileSync(standardInputPath, fileReadEncoding);
 
-  // Invoke the main processing function with the data obtained from standard input.
-  assessInputCondition(standardInputData);
+  // Extract the relevant first line for processing
+  const processedInputLine = retrieveFirstLine(rawInputContent);
 
+  // Execute the core logic with the prepared input
+  processStringData(processedInputLine);
 }());

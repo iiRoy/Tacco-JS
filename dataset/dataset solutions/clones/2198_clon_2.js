@@ -1,28 +1,48 @@
-function ProcessInput ( initialPayload ) {
-  // Retrieve the initial data payload from the provided argument
-  let dataLines = initialPayload .split( "\n" ) ;
-  let firstLineTokens = dataLines[0] .split( ' ' ) ;
-  let processingValue = parseInt( firstLineTokens[0] , 10 ) ; // Convert string to integer, specifying radix
-  let cycleCounter = 0 ;
+function ProcessInput(rawData) {
+  // Acquire and parse the input parameters
+  // The raw input string is split by newline characters to get individual lines.
+  let lineData = rawData.split("\n");
 
-  // Process the numeric value through repeated halving operations
-  while ( processingValue > 1 )
-  {
-    if ( processingValue <= 1 ) {
-      break; // Exit loop if the value has reached or fallen below one
+  // The first line is further split by spaces to extract numerical parts.
+  let firstLineParts = lineData[0].split(" ");
+
+  // Convert the first part of the first line to an integer, representing the initial value.
+  let currentValue = Number.parseInt(firstLineParts[0]);
+
+  // Initialize a counter for the number of iterations.
+  let iterationCount = 0;
+
+  // Loop as long as the current value is greater than 1.
+  while (currentValue > 1) {
+    // This inner check is redundant because the while condition already covers it,
+    // but it preserves the original control flow.
+    if (currentValue <= 1) {
+      break; // Exit the loop if the value is 1 or less.
     }
-    // Perform integer division by two and update the value
-    processingValue = Math.floor( processingValue / 2 ) ;
-    cycleCounter += 1 ;
-    // Debugging: Output current processing state (commented out)
+
+    // Perform division operation: halve the current value and round down.
+    currentValue = Math.floor(currentValue / 2);
+
+    // Increment the iteration counter.
+    iterationCount++;
+
+    // console.log(currentValue, iterationCount); // Debugging output, currently disabled
   }
 
-  // Calculate and display the final computed outcome
-  let computedAnswer = 1 ;
-  if ( cycleCounter > 1 ) {
-    computedAnswer = ( cycleCounter * cycleCounter - 1 ) + Math.pow( 2 , cycleCounter ) ;
+  // Prepare and display the final answer.
+  // Initialize the result with a default value of 1.
+  let finalResult = 1;
+
+  // If the iteration count is greater than 1, calculate a more complex result.
+  if (iterationCount > 1) {
+    // The calculation involves the square of the iteration count and a power of 2.
+    finalResult = (iterationCount * iterationCount - 1) + Math.pow(2, iterationCount);
   }
-  console.log( computedAnswer ) ;
+
+  // Output the computed final result to the console.
+  console.log(finalResult);
 }
 
-ProcessInput( require( 'fs' ) .readFileSync( "/dev/stdin" , 'utf8' ) ) ;
+// Read input from standard input using Node.js file system module
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

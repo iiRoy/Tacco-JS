@@ -1,32 +1,33 @@
-const processAndCalculate = (inputString) => {
-    const lines = inputString.split('\n');
-    const numericalSequence = lines[1].split(' ').map(Number.parseInt);
+function processInputData(inputString) {
+  const lines = inputString.split("\n");
+  const elementCount = parseInt(lines[0], 10);
+  const dataPoints = lines[1].split(" ").map(val => parseInt(val, 10));
 
-    const maximumElement = numericalSequence.reduce((currentMax, element) => Math.max(currentMax, element), 0);
+  const valueFrequencies = new Map();
+  let highestValueEncountered = 0;
 
-    const tallyMap = numericalSequence.reduce((accum, value) => {
-        accum.set(value, (accum.get(value) || 0) + 1);
-        return accum;
-    }, new Map());
+  for (const point of dataPoints) {
+    valueFrequencies.set(point, (valueFrequencies.get(point) || 0) + 1);
+    if (point > highestValueEncountered) {
+      highestValueEncountered = point;
+    }
+  }
 
-    const occurrenceArray = Array.from({ length: maximumElement + 2 }, (_, index) => tallyMap.get(index) || 0);
+  let maximumNeighborSum = 0;
 
-    const secureValue = (arr, position) => (position >= 0 && position < arr.length) ? arr[position] : 0;
+  for (let currentNumber = 0; currentNumber <= highestValueEncountered; currentNumber++) {
+    const frequencyLeft = valueFrequencies.get(currentNumber - 1) || 0;
+    const frequencyCurrent = valueFrequencies.get(currentNumber) || 0;
+    const frequencyRight = valueFrequencies.get(currentNumber + 1) || 0;
 
-    const aggregateSums = Array.from({ length: maximumElement + 1 }, (_, currentKey) => {
-        const previousCount = secureValue(occurrenceArray, currentKey - 1);
-        const presentCount = secureValue(occurrenceArray, currentKey);
-        const subsequentCount = secureValue(occurrenceArray, currentKey + 1);
-        return previousCount + presentCount + subsequentCount;
-    });
+    const currentNeighborSum = frequencyLeft + frequencyCurrent + frequencyRight;
+    
+    if (currentNeighborSum > maximumNeighborSum) {
+      maximumNeighborSum = currentNeighborSum;
+    }
+  }
 
-    const ultimatePeak = aggregateSums.reduce((highestSum, currentSum) => Math.max(highestSum, currentSum), 0);
+  console.log(maximumNeighborSum);
+}
 
-    console.log(ultimatePeak);
-};
-
-const systemInitiator = (dataStream) => {
-    processAndCalculate(dataStream);
-};
-
-systemInitiator(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

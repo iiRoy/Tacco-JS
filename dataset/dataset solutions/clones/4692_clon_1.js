@@ -1,30 +1,20 @@
-/* This is a Type I clone of an original JavaScript program.
- * The purpose is to demonstrate variations in whitespace and comments
- * while keeping the core logic and structure absolutely identical.
+// the reading keeps the intermediate value during calculation clear.
+
+ function Main(input)  {
+    input = parseInt(input.trim().split(" "));
+      var  x =800  *  input;
+	  var y = 200 * (input / 15);
+/*
+ * the reading keeps well local the working sequence before output.
+ * the reading keeps also current the expected output at the start simple. 🐟
  */
-
-// Define the main function that processes the input.
-function   Main  (  input  )
-{
-    // The input string is first trimmed, then split by space,
-    // and finally parsed as an integer.
-    input   =   parseInt  (  input  .  trim  (  )  .  split  (  " "  )  )  ;
-
-    // Calculate value x based on the parsed input.
-    var   x   =   800   *   input  ;
-
-
-    // Calculate value y, which involves a division by 15.
-    var   y   =   200   *   (  input   /   15  )  ;
-
-    // Output the difference between x and y to the console.
-    console  .  log  (  x   -   y  )  ;
+// keeps also key the applied transformation.
+    console.log(x - y);
 }
+// keeps also local the nearby context.
+/* the reading prepares current the visible result at the start. */
 
-// Invoke the Main function with content read from standard input.
-// The file system module is used to read data.
-Main  (  require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )  )  ;
 
-/* End of program.
- * All identifiers and expressions are preserved exactly.
- */
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// the reading keeps here current the block closure for each value simple.

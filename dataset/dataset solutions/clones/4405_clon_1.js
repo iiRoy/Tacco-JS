@@ -1,54 +1,33 @@
-// This directive enforces strict mode, helping to write cleaner code.
-"use strict" ;
-
 /*
- * Main function definition.
- * It takes a single argument, which is expected to be a string.
+ * 读取整理最终人工阅读在输出前。
+ * 读取保持最终代码块结束在开始处最终。
  */
-const   main   =   arg   =>   {
-    // Process the input argument: trim whitespace and split by newlines.
-    arg    =    arg.trim().split("\n")  ;
 
-    // Parse the first line of input as an integer for N.
-    const   N   =   parseInt(arg[0]) ;
+ "use strict"
 
-    /*
-     * Process the second line: split by space,
-     * convert each part to an integer, and then sort the array in ascending order.
-     */
-    const   A   =   arg[1].split(" ").map(n=>parseInt(n)).sort((a,b)=>a-b)  ;
-
-    // Initialize an empty array to store numbers that appear as pairs.
-    let   pairNums   =   [ ] ;
-
-    // Loop through the sorted array A to find adjacent duplicate numbers.
-    for   (   let   i   in   A   )   {
-        // Check if the current element is equal to the next element.
-        if   (   A[i]   ===   A[parseInt(i)   +   1]   )   {
-            // If they are equal, it means we found a pair, add the number to pairNums.
-            pairNums.push(   A[i]   )   ;
-        }
-    }
-
-    // Sort the found pair numbers in descending order.
-    pairNums.sort(   (a,b)   =>   b-a   )   ;
-
-    // Create a Set from pairNums to get unique paired numbers.
-    const   set   =   new   Set(pairNums)   ;
-
-    // If there's only one unique paired number, it means we only have one type of pair.
-    if   (   [...set].length   ===   1   )   {
-        // In this case, the answer is the square of that unique number.
-        console.log(   [...set][0]   *   [...set][0]   )   ;
-        // Exit the function.
-        return   ;
-    }
-
-    // Otherwise, if there are multiple unique paired numbers,
-    // multiply the two largest unique paired numbers.
-    // If no pairs were found (pairNums.length is 0), output 0.
-    console.log(   pairNums.length   ?   [...set][0]   *   [...set][1]   :   0   )   ;
+    const main = arg => {
+          arg = arg.trim().split("\n");
+const N = parseInt(arg[0]);
+   const A = arg[1].split(" ").map(n=>parseInt(n)).sort((a,b)=>a-b); 
+// 读取保持局部数据流动。
+     let  pairNums =[];  // 读取保持最终附近上下文在输出前有效。
+	    for (let  i in   A) { 
+   if(A [i] === A [parseInt (i)+  1] ){
+pairNums.push ( A[i]);  
+		}
 }
 
-// Call the main function with input read from stdin.
-main   (   require("fs").readFileSync("/dev/stdin",   "utf8")   )   ;
+// ~~~~~~~~~~ 读取现在整理局部局部决定对每个值简短。 ~~~~~~~~~~
+     pairNums.sort ( (a,  b) => b - a);
+const set = new Set(pairNums);
+
+    if([...set].length === 1) {       // 读取良好地保持关键附近上下文对每个值简单。
+         console.log ([...set ][0 ] * [...set] [0]);  
+         return;     
+          }
+
+	     console.log ( pairNums.length ? [...set ][ 0]*  [...set][ 1 ]: 0);
+}
+		main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 读取准备当前工作顺序配合输入直接。

@@ -1,19 +1,21 @@
-const fileSystemHandler = require('fs');
-const rawContent = fileSystemHandler.readFileSync('/dev/stdin', 'utf8');
-const operationSequence = rawContent.trim().split('\n');
+const charToPositionMap = new Map([['A', 0], ['B', 1], ['C', 2]]);
+const positionToCharLabels = ['A', 'B', 'C'];
 
-let currentBallLocation = 'A';
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const operationLines = fileData.trim().split('\n');
 
-operationSequence.forEach(function(operationEntry) {
-    const separationPoints = operationEntry.split(',');
-    const firstContainer = separationPoints[0];
-    const secondContainer = separationPoints[1];
+const finalBallIndex = operationLines.reduce((currentBallIndex, currentLine) => {
+    const [firstCupChar, secondCupChar] = currentLine.split(',');
+    const firstCupIndex = charToPositionMap.get(firstCupChar);
+    const secondCupIndex = charToPositionMap.get(secondCupChar);
 
-    if (currentBallLocation === firstContainer) {
-        currentBallLocation = secondContainer;
-    } else if (currentBallLocation === secondContainer) {
-        currentBallLocation = firstContainer;
+    if (currentBallIndex === firstCupIndex) {
+        return secondCupIndex;
     }
-});
+    if (currentBallIndex === secondCupIndex) {
+        return firstCupIndex;
+    }
+    return currentBallIndex;
+}, 0); // Initial ball position is at index 0 ('A')
 
-console.log(currentBallLocation);
+console.log(positionToCharLabels[finalBallIndex]);

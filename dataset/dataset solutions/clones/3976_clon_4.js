@@ -1,143 +1,111 @@
-class SourceDataHydrator {
-    #inputLines;
-    #lineCursor;
-    #lineTokenCache;
+const createInputReader = (sourceContent) => {
+  const internalLines = sourceContent.trim().split("\n");
+  let linePointer = 0;
 
-    constructor(textualSource) {
-        this.#inputLines = textualSource.trim().split("\n");
-        this.#lineCursor = 0;
-        this.#lineTokenCache = [];
+  const readerMethods = {
+    extract: (asString) => {
+      if (typeof internalLines[linePointer] === "string") {
+        internalLines[linePointer] = internalLines[linePointer].split(" ").reverse();
+      }
+      const token = internalLines[linePointer].pop();
+      if (internalLines[linePointer].length === 0) {
+        linePointer++;
+      }
+      return asString ? token : Number(token);
+    },
+
+    line: (asString) => {
+      const tokens = internalLines[linePointer++].split(" ");
+      return asString ? tokens : tokens.map(Number);
+    },
+
+    matrix: (count, asString) => {
+      const result = [];
+      for (let i = 0; i < count; i++) {
+        result.push(internalLines[linePointer++].split(" "));
+      }
+      return asString ? result : result.map(row => row.map(Number));
+    },
+
+    rows: (count, asString) => {
+      const result = [];
+      for (let i = 0; i < count; i++) {
+        result.push(internalLines[linePointer++]);
+      }
+      return asString ? result : result.map(Number);
+    }
+  };
+  return readerMethods;
+};
+
+const inputReader = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+console.log(executeMainLogic());
+
+function executeMainLogic() {
+  const initialN = inputReader.extract();
+  let arrayA = inputReader.line();
+  let arrayB = inputReader.line();
+  let finalAnswer = 0;
+
+  const processBits = (inputArray, bitCount) => {
+    const frequencyMap = inputArray.reduce((acc, val) => {
+      acc.set(val, (acc.get(val) || 0) + 1);
+      return acc;
+    }, new Map());
+
+    const resultList = [];
+    const limit = 1 << (bitCount + 1);
+    for (let k = 0; k < limit; k++) {
+      if ((frequencyMap.get(k) || 0) % 2 !== 0) {
+        resultList.push(k);
+      }
+    }
+    return resultList;
+  };
+
+  const findInsertionPoint = (arr, target) => {
+    let low = 0;
+    let high = arr.length;
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if (arr[mid] < target) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
+  };
+
+  for (let currentBit = 28; currentBit >= 0; currentBit--) {
+    if (currentBit < 17) {
+      arrayB = processBits(arrayB, currentBit);
+      arrayA = processBits(arrayA, currentBit).reverse();
+    } else {
+      arrayB.sort((valA, valB) => valA - valB);
+      arrayA.sort((valA, valB) => valB - valA);
     }
 
-    #cacheCurrentLineTokens() {
-        if (this.#lineTokenCache.length === 0 && this.#lineCursor < this.#inputLines.length) {
-            this.#lineTokenCache = this.#inputLines[this.#lineCursor].split(" ").reverse();
-        }
+    const bitValue = 1 << currentBit;
+    const doubleBitValue = bitValue << 1;
+    const tripleBitValue = bitValue * 3;
+    let currentAccumulator = initialN;
+
+    for (const valA of arrayA) {
+      const count1 = findInsertionPoint(arrayB, bitValue - valA);
+      const count2 = findInsertionPoint(arrayB, doubleBitValue - valA);
+      const count3 = findInsertionPoint(arrayB, tripleBitValue - valA);
+      currentAccumulator += -count3 + count2 - count1;
     }
 
-    extractScalar(asPlainString = false) {
-        this.#cacheCurrentLineTokens();
-        if (this.#lineTokenCache.length === 0) {
-            throw new Error("No tokens available for scalar extraction.");
-        }
-        const extracted = this.#lineTokenCache.shift();
-        if (this.#lineTokenCache.length === 0) {
-            this.#lineCursor++;
-        }
-        return asPlainString ? extracted : Number(extracted);
+    if (currentAccumulator % 2 !== 0) {
+      finalAnswer += bitValue;
     }
 
-    extractSequence(asPlainStrings = false) {
-        if (this.#lineCursor >= this.#inputLines.length) {
-            throw new Error("No more sequences to extract.");
-        }
-        const currentLineContent = this.#inputLines[this.#lineCursor];
-        this.#lineCursor++;
-        this.#lineTokenCache = [];
-        const parts = currentLineContent.split(" ");
-        return asPlainStrings ? parts : parts.map(Number);
-    }
-
-    extractGrid(numRows, asPlainStrings = false) {
-        const collectedRows = [];
-        for (let k = 0; k < numRows; k++) {
-            if (this.#lineCursor >= this.#inputLines.length) {
-                throw new Error("Insufficient rows for grid extraction.");
-            }
-            const currentLineContent = this.#inputLines[this.#lineCursor];
-            this.#lineCursor++;
-            this.#lineTokenCache = [];
-            const parts = currentLineContent.split(" ");
-            collectedRows.push(asPlainStrings ? parts : parts.map(Number));
-        }
-        return collectedRows;
-    }
-
-    extractColumnVector(numElements, asPlainStrings = false) {
-        const collectedElements = [];
-        for (let k = 0; k < numElements; k++) {
-            if (this.#lineCursor >= this.#inputLines.length) {
-                throw new Error("Insufficient elements for column vector extraction.");
-            }
-            const currentLineContent = this.#inputLines[this.#lineCursor];
-            this.#lineCursor++;
-            this.#lineTokenCache = [];
-            collectedElements.push(asPlainStrings ? currentLineContent : Number(currentLineContent));
-        }
-        return collectedElements;
-    }
+    const mask = bitValue - 1;
+    arrayB = arrayB.map(item => item & mask);
+    arrayA = arrayA.map(item => item & mask);
+  }
+  return finalAnswer;
 }
-
-const selectOddCountElements = (elementCollection, bitCeiling) => {
-    const countsMap = new Map();
-    elementCollection.forEach(val => {
-        countsMap.set(val, (countsMap.get(val) || 0) + 1);
-    });
-    const oddOccurring = [];
-    for (const [value, frequency] of countsMap.entries()) {
-        if (frequency % 2 === 1) {
-            oddOccurring.push(value);
-        }
-    }
-    return oddOccurring;
-};
-
-const performComplexBitwiseOperation = () => {
-    const hydratorInstance = new SourceDataHydrator(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const arraySize = hydratorInstance.extractScalar();
-    const setAlpha = hydratorInstance.extractSequence();
-    const setBeta = hydratorInstance.extractSequence();
-
-    const recursivelyCalculateBitContribution = (focusBitIndex, currentAlpha, currentBeta, finalBitwiseSum) => {
-        if (focusBitIndex < 0) {
-            return finalBitwiseSum;
-        }
-
-        let processedAlpha, processedBeta;
-
-        if (focusBitIndex < 17) {
-            processedBeta = selectOddCountElements(currentBeta, focusBitIndex);
-            processedAlpha = selectOddCountElements(currentAlpha, focusBitIndex).reverse();
-        } else {
-            processedBeta = [...currentBeta].sort((val1, val2) => val1 - val2);
-            processedAlpha = [...currentAlpha].sort((val1, val2) => val2 - val1);
-        }
-
-        const currentBitWeight = 1 << focusBitIndex;
-        const twiceBitWeight = currentBitWeight << 1;
-        const thriceBitWeight = currentBitWeight * 3;
-
-        let cumulativeParityContribution = arraySize;
-        let idxOmega = 0;
-        let idxDelta = 0;
-        let idxGamma = 0;
-
-        for (const elementAlpha of processedAlpha) {
-            while (idxOmega < processedBeta.length && currentBitWeight - elementAlpha > processedBeta[idxOmega]) {
-                idxOmega++;
-            }
-            while (idxDelta < processedBeta.length && twiceBitWeight - elementAlpha > processedBeta[idxDelta]) {
-                idxDelta++;
-            }
-            while (idxGamma < processedBeta.length && thriceBitWeight - elementAlpha > processedBeta[idxGamma]) {
-                idxGamma++;
-            }
-            cumulativeParityContribution += (-idxGamma + idxDelta - idxOmega);
-        }
-
-        if (cumulativeParityContribution % 2 !== 0) {
-            finalBitwiseSum += currentBitWeight;
-        }
-
-        const lowerBitsMask = currentBitWeight - 1;
-        const reducedAlpha = currentAlpha.map(val => val & lowerBitsMask);
-        const reducedBeta = currentBeta.map(val => val & lowerBitsMask);
-
-        return recursivelyCalculateBitContribution(focusBitIndex - 1, reducedAlpha, reducedBeta, finalBitwiseSum);
-    };
-
-    return recursivelyCalculateBitContribution(28, setAlpha, setBeta, 0);
-};
-
-console.log(performComplexBitwiseOperation());

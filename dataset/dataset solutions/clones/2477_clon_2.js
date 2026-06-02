@@ -1,60 +1,80 @@
-let inputData = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . trim ( ) . split ( '\n' ) ;
+inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-let firstLineTokens = inputData . shift ( ) . split ( ' ' ) ;
+// Extract the first line and parse dimensions and target volume
+const firstLineParts = inputData.shift().split(' ');
 
-let widthVal = firstLineTokens . shift ( ) * 1 ;
-let depthVal = firstLineTokens . shift ( ) * 1 ;
-let targetVol = firstLineTokens . shift ( ) * 1 ;
+const dimA = Number(firstLineParts.shift()); // First dimension of the block
+const dimB = Number(firstLineParts.shift()); // Second dimension of the block
+const targetVol = Number(firstLineParts.shift()); // Desired water volume
 
-let angleLowerBound = 0 ;
-let angleUpperBound = 90 ;
-let currentAngle = 45 ;
-let iterationCount = 0 ;
+// Initialize variables for binary search
+let lowerBound = 0; // Lower limit for the angle search
+let upperBound = 90; // Upper limit for the angle search
+let currentAngle = 45; // Midpoint angle for iteration
 
-let totalPrismVolume = widthVal * widthVal * depthVal ; // Full container volume
+let loopCount = 0; // Counter to prevent infinite loops
 
-// Determine the calculation method based on target volume relative to half the total volume
-if ( totalPrismVolume / 2 < targetVol ) {
+// Calculate the total volume of the rectangular block
+const totalBlockVolume = dimA * dimA * dimB;
 
-    // Case 1: Target volume is greater than half the prism's volume.
-    // We are calculating the angle for the empty space (air)
-    while ( angleLowerBound < angleUpperBound ) {
-        let calcCurrentVolume = totalPrismVolume - ( ( widthVal * widthVal * Math . tan ( currentAngle / 180 * Math . PI ) ) / 2 * widthVal ) ;
+// Determine which scenario applies based on target volume relative to half the block's volume
+if (totalBlockVolume / 2 < targetVol) {
+    // Scenario 1: Water fills more than half the block.
+    // The empty space forms a triangular prism at the top.
+    // We are searching for the angle of the empty space.
+    while (lowerBound < upperBound) {
+        // Calculate the volume of the empty space (triangular prism)
+        // The base of the triangle is dimA, height is dimA * tan(currentAngle)
+        const emptySpaceVolume = (dimA * dimA * Math.tan(currentAngle / 180 * Math.PI)) / 2 * dimA;
+        // The actual water volume is total volume minus empty space
+        const calculatedVolume = totalBlockVolume - emptySpaceVolume;
 
-        if ( targetVol < calcCurrentVolume ) {
-            angleLowerBound = currentAngle ;
+        if (targetVol < calculatedVolume) {
+            // If target volume is less than calculated, the angle of empty space is too large
+            lowerBound = currentAngle;
         } else {
-            angleUpperBound = currentAngle ;
+            // If target volume is greater or equal, the angle of empty space is too small
+            upperBound = currentAngle;
         }
 
-        currentAngle = ( angleLowerBound + angleUpperBound ) / 2 ;
-        iterationCount ++ ;
+        // Update the current angle for the next iteration
+        currentAngle = (lowerBound + upperBound) / 2;
 
-        if ( iterationCount > 200 ) {
-            break ; // Prevent excessive iterations
+        // Increment iteration counter and break if too many iterations
+        loopCount++;
+        if (loopCount > 200) {
+            break;
         }
     }
-    console . log ( currentAngle . toFixed ( 10 ) ) ;
-
+    // Output the found angle, formatted to 10 decimal places
+    console.log(currentAngle.toFixed(10));
 } else {
+    // Scenario 2: Water fills half or less of the block.
+    // The water forms a triangular prism.
+    // We are searching for the angle of the water surface.
+    while (lowerBound < upperBound) {
+        // Calculate the volume of the water (triangular prism)
+        // The base of the triangle is dimB, height is dimB * tan(currentAngle)
+        const calculatedVolume = (dimB * dimB * Math.tan(currentAngle / 180 * Math.PI)) / 2 * dimA;
 
-    // Case 2: Target volume is less than or equal to half the prism's volume.
-    // We are directly calculating the angle of the liquid
-    while ( angleLowerBound < angleUpperBound ) {
-        let calcCurrentVolume = ( ( depthVal * depthVal * Math . tan ( currentAngle / 180 * Math . PI ) ) / 2 * widthVal ) ;
-
-        if ( targetVol < calcCurrentVolume ) {
-            angleUpperBound = currentAngle ;
+        if (targetVol < calculatedVolume) {
+            // If target volume is less than calculated, the angle of water is too large
+            upperBound = currentAngle;
         } else {
-            angleLowerBound = currentAngle ;
+            // If target volume is greater or equal, the angle of water is too small
+            lowerBound = currentAngle;
         }
 
-        currentAngle = ( angleLowerBound + angleUpperBound ) / 2 ;
-        iterationCount ++ ;
+        // Update the current angle for the next iteration
+        currentAngle = (lowerBound + upperBound) / 2;
 
-        if ( iterationCount > 200 ) {
-            break ; // Iteration safeguard
+        // Increment iteration counter and break if too many iterations
+        loopCount++;
+        if (loopCount > 200) {
+            break;
         }
     }
-    console . log ( ( 90 - currentAngle ) . toFixed ( 10 ) ) ;
+    // Output the complement of the found angle, formatted to 10 decimal places
+    // This is because the problem asks for the angle of tilt, not the water surface angle.
+    console.log((90 - currentAngle).toFixed(10));
 }

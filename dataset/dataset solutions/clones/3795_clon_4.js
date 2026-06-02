@@ -1,32 +1,35 @@
-const processInput = (rawText) => {
-    const lines = rawText.split('\n');
-    const seqLength = parseInt(lines[0], 10);
-    const charSequence = lines[1];
+const processInput = (rawInput) => {
+    const dataLines = rawInput.split('\n');
+    const sequenceLength = Number(dataLines.shift());
+    const characterString = dataLines.join('');
 
-    const westCountsBefore = new Array(seqLength + 1).fill(0);
-    const eastCountsAfter = new Array(seqLength + 1).fill(0);
+    const calculateCharCount = (textSegment, targetChar) =>
+        Array.from(textSegment).reduce((accumulator, currentCharacter) => accumulator + (currentCharacter === targetChar ? 1 : 0), 0);
 
-    for (let k = 0; k < seqLength; ++k) {
-        westCountsBefore[k + 1] = westCountsBefore[k] + (charSequence[k] === 'W' ? 1 : 0);
+    let lowestChangeCount = 300000;
+
+    if (sequenceLength === 0) {
+        console.log(lowestChangeCount);
+        return 0;
     }
 
-    for (let k = seqLength - 1; k >= 0; --k) {
-        eastCountsAfter[k] = eastCountsAfter[k + 1] + (charSequence[k] === 'E' ? 1 : 0);
+    const allIterationCounts = Array.from({ length: sequenceLength }, (_, currentIdx) => {
+        const prefixSegment = characterString.substring(0, currentIdx);
+        const suffixSegment = characterString.substring(currentIdx + 1, sequenceLength);
+
+        const prefixWestCount = calculateCharCount(prefixSegment, 'W');
+        const suffixEastCount = calculateCharCount(suffixSegment, 'E');
+
+        return prefixWestCount + suffixEastCount;
+    });
+
+    if (allIterationCounts.includes(0)) {
+        lowestChangeCount = 0;
+    } else {
+        lowestChangeCount = Math.min(...allIterationCounts);
     }
 
-    let minimumAdjustments = 300000;
-
-    for (let idx = 0; idx < seqLength; ++idx) {
-        const currentAdjustments = westCountsBefore[idx] + eastCountsAfter[idx + 1];
-        if (currentAdjustments < minimumAdjustments) {
-            minimumAdjustments = currentAdjustments;
-            if (minimumAdjustments === 0) {
-                break;
-            }
-        }
-    }
-
-    console.log(minimumAdjustments);
+    console.log(lowestChangeCount);
     return 0;
 };
 

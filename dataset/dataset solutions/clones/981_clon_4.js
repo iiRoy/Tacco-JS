@@ -1,27 +1,54 @@
-const resourceSettings = {
-  dataFile: 'tmp',
-  lineDelimiter: '\r\n'
-};
+const fileSettings = { sourcePath: 'tmp', lineSeparator: '\r\n' };
+//const fileSettings = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
 
-const fileAccessor = require('fs');
+const rawContent = require('fs').readFileSync(fileSettings.sourcePath, 'ascii');
+const contentSegments = rawContent.split(fileSettings.lineSeparator);
 
-let documentContent = fileAccessor.readFileSync(resourceSettings.dataFile, 'ascii');
-let contentSegments = documentContent.split(resourceSettings.lineDelimiter);
+const mainString = contentSegments[0];
+const queryCount = Number(contentSegments[1]);
+const patternList = contentSegments.slice(2, 2 + queryCount);
 
-const mainDocument = contentSegments[0];
-const totalQueries = Number(contentSegments[1]);
-const queryItems = contentSegments.slice(2, 2 + totalQueries);
+function locateSubstring(sourceString, targetPattern, alphabetSize, primeModulus) {
+    const sourceLen = sourceString.length;
+    const targetLen = targetPattern.length;
 
-contentSegments = null;
-documentContent = null;
+    if (targetLen === 0) return 1;
+    if (sourceLen < targetLen) return 0;
 
-function findSubsequence(sourceString, targetFragment) {
-  const safeTarget = targetFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const targetExpression = new RegExp(safeTarget);
-  return targetExpression.test(sourceString) ? 1 : 0;
+    let powerTerm = 1;
+    for (let k = 0; k < targetLen - 1; k++) {
+        powerTerm = (powerTerm * alphabetSize) % primeModulus;
+    }
+
+    let targetHash = 0;
+    let currentWindowHash = 0;
+
+    for (let k = 0; k < targetLen; k++) {
+        targetHash = (targetHash * alphabetSize + targetPattern.charCodeAt(k)) % primeModulus;
+        currentWindowHash = (currentWindowHash * alphabetSize + sourceString.charCodeAt(k)) % primeModulus;
+    }
+
+    for (let windowStart = 0; windowStart <= sourceLen - targetLen; windowStart++) {
+        if (targetHash === currentWindowHash) {
+            let matchFound = true;
+            for (let k = 0; k < targetLen; k++) {
+                if (sourceString.charCodeAt(windowStart + k) !== targetPattern.charCodeAt(k)) {
+                    matchFound = false;
+                    break;
+                }
+            }
+            if (matchFound) {
+                return 1;
+            }
+        }
+
+        if (windowStart < sourceLen - targetLen) {
+            currentWindowHash = (alphabetSize * (currentWindowHash - sourceString.charCodeAt(windowStart) * powerTerm) + sourceString.charCodeAt(windowStart + targetLen)) % primeModulus;
+            currentWindowHash = (currentWindowHash + primeModulus) % primeModulus;
+        }
+    }
+
+    return 0;
 }
 
-queryItems.forEach(function(currentFragment) {
-  const outcome = findSubsequence(mainDocument, currentFragment);
-  console.log(outcome);
-});
+patternList.forEach( (currentPattern) => console.log(locateSubstring(mainString, currentPattern, 256, Math.pow(2, 31) - 1)) );

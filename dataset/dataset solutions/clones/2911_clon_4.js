@@ -1,82 +1,77 @@
-class DataStreamReader {
-    constructor(sourceText) {
-        this.dataElements = sourceText.split(/ |\n/).filter(s => s.length > 0);
-        this.nextIndex = 0;
-    }
+"use strict";
 
-    fetchScalar() {
-        return Number(this.dataElements[this.nextIndex++]);
-    }
+const source = require("fs").readFileSync("/dev/stdin", "utf8");
+const cells = source.split(/ |\n/);
+let cursor = 0;
 
-    fetchCollection(count) {
-        const collection = [];
-        for (let i = 0; i < count; ++i) {
-            collection.push(Number(this.dataElements[this.nextIndex++]));
+const takeNumber = () => +cells[cursor++];
+const takeNumbers = (amount) => cells.slice(cursor, (cursor += amount)).map((item) => +item);
+
+function countByElimination() {
+    const switchTotal = takeNumber();
+    const lampTotal = takeNumber();
+
+    const masks = [];
+    let impossible = false;
+
+    for (let lamp = 0; lamp < lampTotal; lamp++) {
+        const connected = takeNumber();
+        const switches = takeNumbers(connected);
+        let mask = 0n;
+
+        for (const raw of switches) {
+            const position = raw - 1;
+            if (!Number.isInteger(position) || position < 0 || position >= switchTotal) {
+                impossible = true;
+            } else {
+                mask ^= 1n << BigInt(position);
+            }
         }
-        return collection;
+        masks.push(mask);
     }
+
+    const parity = takeNumbers(lampTotal);
+    if (impossible) return 0;
+
+    const equations = [];
+    for (let i = 0; i < lampTotal; i++) {
+        const need = parity[i];
+        if (need !== 0 && need !== 1) return 0;
+        equations.push({ mask: masks[i], rhs: need });
+    }
+
+    let rank = 0;
+    for (let bit = 0; bit < switchTotal; bit++) {
+        const pivotBit = 1n << BigInt(bit);
+        let pivot = -1;
+
+        for (let row = rank; row < equations.length; row++) {
+            if ((equations[row].mask & pivotBit) !== 0n) {
+                pivot = row;
+                break;
+            }
+        }
+
+        if (pivot < 0) continue;
+
+        const chosen = equations[pivot];
+        equations[pivot] = equations[rank];
+        equations[rank] = chosen;
+
+        for (let row = 0; row < equations.length; row++) {
+            if (row !== rank && (equations[row].mask & pivotBit) !== 0n) {
+                equations[row].mask ^= equations[rank].mask;
+                equations[row].rhs ^= equations[rank].rhs;
+            }
+        }
+        rank++;
+    }
+
+    for (const eq of equations) {
+        if (eq.mask === 0n && eq.rhs !== 0) return 0;
+    }
+
+    return 2 ** (switchTotal - rank);
 }
 
-const createDynamicArray = (size, initializer = null) => {
-    return Array.from({ length: size }, () => initializer);
-};
-
-const processSystem = (dataSource) => {
-    const switchCount = dataSource.fetchScalar();
-    const bulbCount = dataSource.fetchScalar();
-
-    const bulbConfigurations = createDynamicArray(bulbCount);
-
-    for (let i = 0; i < bulbCount; ++i) {
-        const connectedSwitchCount = dataSource.fetchScalar();
-        const connectedSwitchIndices = dataSource.fetchCollection(connectedSwitchCount).map(idx => idx - 1);
-        bulbConfigurations[i] = {
-            connections: connectedSwitchIndices,
-            expectedParity: 0
-        };
-    }
-
-    const requiredParities = dataSource.fetchCollection(bulbCount);
-
-    for (let i = 0; i < bulbCount; ++i) {
-        bulbConfigurations[i].expectedParity = requiredParities[i];
-    }
-
-    let successfulArrangements = 0;
-
-    const exploreStates = (currentSwitchPosition, currentSwitchStatesRegistry) => {
-        if (currentSwitchPosition === switchCount) {
-            let allConditionsMet = true;
-            for (const bulb of bulbConfigurations) {
-                let activeConnectionSum = 0;
-                for (const connectedIdx of bulb.connections) {
-                    activeConnectionSum += currentSwitchStatesRegistry[connectedIdx];
-                }
-                if (activeConnectionSum % 2 !== bulb.expectedParity) {
-                    allConditionsMet = false;
-                    break;
-                }
-            }
-            if (allConditionsMet) {
-                successfulArrangements++;
-            }
-            return;
-        }
-
-        currentSwitchStatesRegistry[currentSwitchPosition] = 0;
-        exploreStates(currentSwitchPosition + 1, currentSwitchStatesRegistry);
-
-        currentSwitchStatesRegistry[currentSwitchPosition] = 1;
-        exploreStates(currentSwitchPosition + 1, currentSwitchStatesRegistry);
-    };
-
-    const initialStates = createDynamicArray(switchCount, 0);
-    exploreStates(0, initialStates);
-
-    return successfulArrangements;
-};
-
-const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const interpreter = new DataStreamReader(rawInput);
-const finalResult = processSystem(interpreter);
-console.log(finalResult.toString());
+console.log(countByElimination().toString());

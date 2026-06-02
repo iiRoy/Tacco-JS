@@ -1,23 +1,20 @@
-function processInputData(rawData) {
-  const linesOfData = rawData.split('\n');
-  const charCollection = linesOfData[0].split('');
-  const numericalFactor = Number(linesOfData[1]);
+function processInput(rawData) {
+  const inputLines = rawData.split("\n");
+  const charSequence = inputLines[0].split("");
+  const multiplierValue = Number(inputLines[1]);
 
-  let pairCount = 0;
+  const adjacentMatchCount = Array.from({ length: Math.max(0, charSequence.length - 1) }, (_, index) => index)
+    .reduce((accumulator, currentPosition) => {
+      return accumulator + (charSequence[currentPosition] === charSequence[currentPosition + 1] ? 1 : 0);
+    }, 0);
 
-  if (charCollection.length === 0) {
-    pairCount = numericalFactor - 1;
-  } else {
-    const countConsecutivePairs = (sequence, currentIdx) => {
-      if (currentIdx >= sequence.length - 1) {
-        return 0;
-      }
-      const match = (sequence[currentIdx] === sequence[currentIdx + 1]) ? 1 : 0;
-      return match + countConsecutivePairs(sequence, currentIdx + 1);
-    };
-    pairCount = countConsecutivePairs(charCollection, 0);
-    pairCount *= numericalFactor;
+  let finalTally = adjacentMatchCount * multiplierValue;
+
+  if (charSequence[0] === charSequence[charSequence.length]) {
+    finalTally += multiplierValue - 1;
   }
-  console.log(pairCount);
+
+  console.log(finalTally);
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

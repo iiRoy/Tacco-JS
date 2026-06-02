@@ -1,105 +1,60 @@
-const processInputData = (inputPayload) => {
-    // Initialize processing environment
-    const cleanedPayload = inputPayload.trim();
-    const payloadLines = cleanedPayload.split("\n");
+"use strict";
 
-    // --- Input Validation and Parsing ---
-    // Ensure there are at least two lines for N and the array elements
-    if (payloadLines.length < 2) {
-        console.error("Error: Insufficient input data provided. Expected at least two lines.");
-        return; // Exit if input is malformed
-    }
-
-    // Parse the total number of elements specified on the first line
-    const declaredElementCountStr = payloadLines[0].split(" ")[0];
-    const declaredElementCount = parseInt(declaredElementCountStr, 10);
-
-    // Parse the sequence of numbers from the second line
-    let numericSequence = payloadLines[1].split(" ").map(valueString => parseInt(valueString, 10));
+const processInput = inputData => {
+    const lines = inputData.trim().split("\n");
+    const firstLineParts = lines[0].split(" ");
+    const elementCount = parseInt(firstLineParts[0]);
     
-    // Filter out any non-numeric values that might result from parsing errors
-    numericSequence = numericSequence.filter(num => !isNaN(num));
+    let numberList = lines[1].split(" ").map(numStr => parseInt(numStr)).sort((valA, valB) => valA - valB);
+    
+    let currentIdx = 0;
+    
+    while(currentIdx < elementCount) {
+        const currentValue = numberList[currentIdx];
 
-    // Align the effective element count with the actual number of successfully parsed elements
-    const actualElementCount = numericSequence.length;
-
-    // --- Data Preparation ---
-    // Sort the numeric sequence in ascending order, which is crucial for the algorithm
-    numericSequence.sort((valA, valB) => valA - valB);
-
-    // --- Helper Functions for Element Management ---
-    // Defines the sentinel value used to mark elements for removal
-    const REMOVED_SENTINEL = -1;
-
-    // Marks an element at a given index in the array as 'removed'
-    const markElementAsRemoved = (arrayRef, indexToMark) => {
-        if (indexToMark >= 0 && indexToMark < arrayRef.length) {
-            arrayRef[indexToMark] = REMOVED_SENTINEL;
-        }
-    };
-
-    // Checks if a given value is marked as 'removed'
-    const isElementMarked = (valueToCheck) => valueToCheck === REMOVED_SENTINEL;
-
-    // --- Core Algorithm Logic ---
-    let currentProcessingIndex = 0; // Primary pointer for iterating through the sorted sequence
-
-    // Main loop: Continues as long as the primary pointer is within bounds
-    while (currentProcessingIndex < actualElementCount) {
-        // If the current element has already been marked for removal, skip it and advance
-        if (isElementMarked(numericSequence[currentProcessingIndex])) {
-            currentProcessingIndex++;
+        if(currentValue === -1) {
+            currentIdx++;
             continue;
         }
+        
+        let foundDuplicate = false;
+        let firstNonMultipleIdx = null;
+        let firstNonMultipleFound = false;
+        
+        for(let checkIdx = currentIdx + 1; checkIdx < elementCount; checkIdx++) {
+            const candidateValue = numberList[checkIdx];
 
-        const currentPrimaryValue = numericSequence[currentProcessingIndex];
-
-        let hasDuplicateOccurred = false; // Flag to track if the currentPrimaryValue has duplicates
-        let nextPotentialStartIdx = -1; // Stores the index of the first element not divisible by currentPrimaryValue
-
-        // Inner loop: Compares the current primary value with all subsequent elements
-        for (let secondaryScanIndex = currentProcessingIndex + 1; secondaryScanIndex < actualElementCount; secondaryScanIndex++) {
-            // Skip elements in the secondary scan that are already marked for removal
-            if (isElementMarked(numericSequence[secondaryScanIndex])) {
+            if(candidateValue === -1) {
                 continue;
             }
+            
+            const isDivisibleByCurrent = (candidateValue % currentValue === 0);
 
-            const secondaryValue = numericSequence[secondaryScanIndex];
-
-            // Check if the secondary value is a duplicate of the primary value
-            if (secondaryValue === currentPrimaryValue) {
-                hasDuplicateOccurred = true;
+            if (candidateValue === currentValue) {
+                foundDuplicate = true;
             }
-
-            // If the secondary value is a multiple of the primary value, mark it for removal
-            if (secondaryValue % currentPrimaryValue === 0) {
-                markElementAsRemoved(numericSequence, secondaryScanIndex);
-            } else {
-                // If it's not a multiple, and we haven't yet determined the next potential start index, record it
-                if (nextPotentialStartIdx === -1) {
-                    nextPotentialStartIdx = secondaryScanIndex;
-                }
+            
+            if (isDivisibleByCurrent) {
+                numberList[checkIdx] = -1;
+            } else if (!firstNonMultipleFound) {
+                firstNonMultipleIdx = checkIdx;
+                firstNonMultipleFound = true;
             }
         }
-
-        // After the inner loop, if duplicates were found for the current primary value, mark it too
-        if (hasDuplicateOccurred) {
-            markElementAsRemoved(numericSequence, currentProcessingIndex);
+        
+        if(foundDuplicate) {
+            numberList[currentIdx] = -1; 
         }
-
-        // Adjust the primary processing index for the next iteration
-        if (nextPotentialStartIdx !== -1) {
-            currentProcessingIndex = nextPotentialStartIdx; // Jump to the first non-multiple found
+        
+        if(firstNonMultipleIdx !== null) {
+            currentIdx = firstNonMultipleIdx;
         } else {
-            currentProcessingIndex++; // Otherwise, just move to the next sequential element
+            currentIdx++;
         }
     }
-
-    // --- Final Result Calculation ---
-    // Filter out all elements that were marked for removal and count the remaining ones
-    const finalRetainedElements = numericSequence.filter(val => !isElementMarked(val));
-    console.log(finalRetainedElements.length);
+    
+    const finalFilteredList = numberList.filter(num => num !== -1);
+    console.log(finalFilteredList.length);
 };
 
-// Entry point for execution: Read input from standard input
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

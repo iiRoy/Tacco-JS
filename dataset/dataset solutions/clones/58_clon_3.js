@@ -1,63 +1,32 @@
-if (!String.prototype.removeBoundaryWhitespace) {
-    String.prototype.removeBoundaryWhitespace = function() {
-        return this.trim();
-    };
-}
+const fileSystemModule = require("fs");
+const standardInputPath = "/dev/stdin";
+const utf8Encoding = "utf8";
+const initialLoopValue = 600;
 
-if (!String.prototype.segmentByDelimiter) {
-    String.prototype.segmentByDelimiter = function(delimiter) {
-        return this.split(delimiter);
-    };
-}
+function processInputLineAndCalculateSum(lineContent) {
+    let accumulatedSum = 0;
+    const numericValueFromLine = Number(lineContent);
 
-const fileSystemUtility = require("fs");
-
-const inputSourceIdentifier = "/dev/stdin";
-const characterEncodingStandard = "utf8";
-const primaryCalculationLimit = 600;
-
-const outputResultToConsole = console.log;
-
-function deriveWeightedDecrementalSum(inputNumericalValue) {
-    if (Number.isNaN(inputNumericalValue)) {
-        return Number.NaN;
-    }
-
-    if (inputNumericalValue === 0) {
-        return 0;
-    }
-
-    let cumulativeAggregatedSum = 0;
-    let iteratingDecrementCounter = primaryCalculationLimit;
+    let loopDecrementingCounter = initialLoopValue;
 
     while (true) {
-        iteratingDecrementCounter -= inputNumericalValue;
-        if (iteratingDecrementCounter <= 0) {
+        loopDecrementingCounter -= numericValueFromLine;
+
+        if (loopDecrementingCounter === 0) {
             break;
         }
-        cumulativeAggregatedSum += (iteratingDecrementCounter * iteratingDecrementCounter * inputNumericalValue);
+
+        accumulatedSum += loopDecrementingCounter * loopDecrementingCounter * numericValueFromLine;
     }
 
-    return cumulativeAggregatedSum;
+    return accumulatedSum;
 }
 
-try {
-    const rawFileContentBuffer = fileSystemUtility.readFileSync(inputSourceIdentifier, characterEncodingStandard);
+const rawFileContent = fileSystemModule.readFileSync(standardInputPath, utf8Encoding);
 
-    const processedInputLines = rawFileContentBuffer
-                                .removeBoundaryWhitespace()
-                                .segmentByDelimiter('\n');
+const processedLines = rawFileContent.trim().split('\n');
 
-    const finalComputedValues = processedInputLines.map(singleLineText => {
-        const parsedNumericInput = Number(singleLineText);
-        return deriveWeightedDecrementalSum(parsedNumericInput);
-    });
-
-    finalComputedValues.forEach(calculatedResult => {
-        outputResultToConsole(calculatedResult);
-    });
-
-} catch (processingError) {
-    outputResultToConsole("An unexpected error interrupted the program execution:");
-    outputResultToConsole(processingError.message);
-}
+processedLines.map(function(singleInputLine) {
+    const finalResultForLine = processInputLineAndCalculateSum(singleInputLine);
+    console.log(finalResultForLine);
+});

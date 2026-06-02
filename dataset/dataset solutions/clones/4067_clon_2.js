@@ -1,31 +1,22 @@
-function processInput ( rawData )
-{
-    // Split the incoming string by spaces to get individual components.
-    let tokens = rawData.split ( ' ' ) ;
+function processInput(rawData) {
+    // Split the raw input string by space to get individual arguments
+    const parts = rawData.split(' ');
 
-    // Parse the first token into an integer, assuming base 10.
-    let firstNum = parseInt ( tokens [ 0 ] , 10 ) ;
+    // Parse the first part as an integer with base 10
+    const numOne = parseInt(parts[0], 10);
 
-    // Parse the second token into an integer, also base 10.
-    let secondNum = parseInt ( tokens [ 1 ] , 10 ) ;
+    // Parse the second part as an integer with base 10
+    const numTwo = parseInt(parts[1], 10);
 
-    /*
-     * Determine if the product of the two numbers is even or odd.
-     * An even number divided by 2 has a remainder of 0.
-     */
-    if ( ( firstNum * secondNum ) % 2 === 0 )
-    {
-        // Output result for an even product.
-        console . log ( 'Even' ) ;
-    }
-    else
-    {
-        // Output result for an odd product.
-        console . log ( 'Odd' ) ;
+    // Calculate the product of the two numbers and check if it's even or odd
+    if ((numOne * numTwo) % 2 === 0) {
+        // If the remainder when divided by 2 is 0, the product is even
+        console.log('Even');
+    } else {
+        // Otherwise, the product is odd
+        console.log('Odd');
     }
 }
 
-
-// Read the standard input synchronously and pass it to our processing function.
-// The file system module is required for this operation.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

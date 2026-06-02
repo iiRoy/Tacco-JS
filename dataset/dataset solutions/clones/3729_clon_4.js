@@ -1,33 +1,26 @@
-'use strict';
+'use strict'
 
-const runApplication = (dataInput) => {
-    const targetQuantity = Number(dataInput.split('\n')[0]);
+function main(inputString) {
+  const requestedCount = Number(inputString.split('\n')[0]);
 
-    const produceNineString = (length) => '9'.repeat(length);
+  const initialValues = [
+    ...Array.from({ length: 9 }, (_, index) => String(index + 1)),
+    ...Array.from({ length: 9 }, (_, index) => String((index + 1) * 10 + 9)),
+    '199'
+  ];
 
-    const groupOne = Array.from({ length: 9 }, (_, index) => String(index + 1));
+  const leadingDigits = Array.from({ length: 18 }, (_, index) => String(index + 2));
 
-    const groupTwo = Array.from({ length: 9 }, (_, index) => String(index + 1) + produceNineString(1));
+  const trailingNinesSeries = Array.from({ length: 21 }, (_, index) => '9'.repeat(index + 2));
 
-    const groupThree = ['1' + produceNineString(2)];
+  const dynamicallyGeneratedValues = trailingNinesSeries.flatMap(suffixPart =>
+    leadingDigits.map(prefixPart => prefixPart + suffixPart)
+  );
 
-    const subsequentGroups = Array.from({ length: 21 }, (_, iterationIndex) => {
-        const currentSuffixLength = 2 + iterationIndex;
-        const currentSuffixValue = produceNineString(currentSuffixLength);
+  const completeSequence = [...initialValues, ...dynamicallyGeneratedValues];
 
-        const prefixes = Array.from({ length: 18 }, (_, prefixIndex) => String(prefixIndex + 2));
+  const outputResult = completeSequence.slice(0, requestedCount).join('\n');
+  console.log(outputResult);
+}
 
-        return prefixes.map(p => p + currentSuffixValue);
-    }).flat();
-
-    const fullSequence = [...groupOne, ...groupTwo, ...groupThree, ...subsequentGroups];
-
-    const finalResult = fullSequence.slice(0, targetQuantity).join('\n');
-    console.log(finalResult);
-};
-
-(() => {
-    const systemInterface = require("fs");
-    const rawData = systemInterface.readFileSync("/dev/stdin", "utf8");
-    runApplication(rawData);
-})();
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

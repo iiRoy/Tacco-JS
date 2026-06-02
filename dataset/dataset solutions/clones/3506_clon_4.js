@@ -1,18 +1,27 @@
-const processInput = (rawData) => {
-    const initialText = rawData.split('\n')[0];
+function processInput(rawText) {
+  const initialNum = parseInt(rawText.split('\n')[0], 10);
 
-    const locateHomogeneousNumber = (digitSequence) => {
-        const uniqueCharacters = new Set(digitSequence.split(''));
-        if (uniqueCharacters.size === 1) {
-            console.log(digitSequence);
-            return;
-        }
+  const checkHomogeneity = (numVal) => {
+    const numTxt = String(numVal);
+    if (numTxt.length === 0) return false;
+    return numTxt === numTxt[0].repeat(numTxt.length);
+  };
 
-        const nextValue = BigInt(digitSequence) + 1n;
-        locateHomogeneousNumber(nextValue.toString());
-    };
+  function* homogeneousNumberSequence(startValue) {
+    let currentCandidate = startValue;
+    while (true) {
+      if (checkHomogeneity(currentCandidate)) {
+        yield currentCandidate;
+        return;
+      }
+      currentCandidate++;
+    }
+  }
 
-    locateHomogeneousNumber(initialText);
-};
+  const sequenceIterator = homogeneousNumberSequence(initialNum);
+  const foundNumber = sequenceIterator.next().value;
+
+  console.log(String(foundNumber));
+}
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,22 +1,30 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code execution
 
-const processInput = (rawData) => {
-  // Extract individual lines from the raw input string.
-  const lines = rawData.trim().split('\n');
+/**
+ * Processes the raw input data to perform a specific string manipulation.
+ * This function takes the entire input as a single string.
+ * @param {string} rawInputData - The complete input string, typically from stdin.
+ */
+const executeProcessing = (rawInputData) => {
+  // Split the input into individual lines after trimming any leading/trailing whitespace.
+  const inputLines = rawInputData.trim().split('\n');
 
-  // Parse the second numerical value from the first line to determine the target character position.
-  const positionIndex = parseInt(lines[0].split(' ')[1], 10);
+  // Parse the second element of the first line (after splitting by space) as an integer.
+  // This integer represents the 1-based index of the character to modify.
+  const positionToModify = parseInt(inputLines[0].split(' ')[1], 10);
 
-  // Get the string that needs modification.
-  const targetString = lines[1];
+  // The second line of the input is the string that will be manipulated.
+  const originalString = inputLines[1];
 
-  // Construct the final output string by converting the character at the specified index to lowercase.
-  console.log(
-    `${targetString.slice(0, positionIndex - 1)}` +
-    `${targetString.slice(positionIndex - 1, positionIndex).toLowerCase()}` +
-    `${targetString.slice(positionIndex)}`
-  );
+  // Construct the output string by:
+  // 1. Taking the part of the string before the target character (0 to positionToModify - 1).
+  // 2. Taking the target character itself (positionToModify - 1 to positionToModify) and converting it to lowercase.
+  // 3. Taking the part of the string after the target character (from positionToModify onwards).
+  const modifiedOutput = `${originalString.slice(0, positionToModify - 1)}${originalString.slice(positionToModify - 1, positionToModify).toLowerCase()}${originalString.slice(positionToModify)}`;
+
+  // Print the resulting modified string to the console.
+  console.log(modifiedOutput);
 };
 
-// Read the system's standard input and pass it to the processing function.
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+executeProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));

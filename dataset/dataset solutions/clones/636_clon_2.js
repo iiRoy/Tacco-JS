@@ -1,25 +1,31 @@
-let incomingDataStream = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let formattedInputLines = incomingDataStream.trim().split("\n");
+let lineCollection = rawData.trim().split("\n"); // Separate input into distinct lines
 
-formattedInputLines.shift();
+lineCollection.shift(); // Remove the initial line, often a count or header
 
-formattedInputLines.forEach(function (currentLineSegment) {
-    let distanceMeasurements = [];
-    let charSequenceArray = currentLineSegment.split('');
+lineCollection.forEach(function(currentLine) {
+    let resultValues = []; // Array to hold computed distances for the current line
+    let charSequence = currentLine.split(""); // Break the line into individual characters
 
-    let proximityCounter = -1;
+    let distanceTracker = -1; // Tracks distance from the last 'c'; -1 means no 'c' yet
 
-    for (let charIndexPosition = 0; charIndexPosition < charSequenceArray.length; charIndexPosition++) {
-        if (charSequenceArray[charIndexPosition] === 'c') {
-            distanceMeasurements.push(0);
-            proximityCounter = 1;
-        } else if (charSequenceArray[charIndexPosition] === '.' && proximityCounter === -1) {
-            distanceMeasurements.push(proximityCounter);
-        } else if (charSequenceArray[charIndexPosition] === '.' && proximityCounter !== -1) {
-            distanceMeasurements.push(proximityCounter);
-            proximityCounter++;
+    for (let charIndex = 0; charIndex < charSequence.length; charIndex++) {
+        // If the character is 'c', reset distance and mark it as 0
+        if (charSequence[charIndex] === "c") {
+            resultValues.push(0);
+            distanceTracker = 1; // Next character will be 1 unit away
+        }
+        // If it's a '.' and no 'c' has been found yet, keep -1
+        else if (charSequence[charIndex] === "." && distanceTracker === -1) {
+            resultValues.push(distanceTracker);
+        }
+        // If it's a '.' and a 'c' has been found, record current distance and increment
+        else if (charSequence[charIndex] === "." && distanceTracker !== -1) {
+            resultValues.push(distanceTracker);
+            distanceTracker++; // Increment for the subsequent character
         }
     }
-    console.log(distanceMeasurements.join(' '));
+
+    console.log(resultValues.join(" ")); // Output the results, space-separated
 });

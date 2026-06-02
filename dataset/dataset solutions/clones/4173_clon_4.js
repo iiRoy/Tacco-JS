@@ -1,33 +1,30 @@
-function processInputData(rawData) {
-  const allSegments = rawData.trim().split('\n');
-  const configurationData = allSegments[0].split(' ').map(Number);
-  const permittedDistinctGroups = configurationData[1]; // Corresponds to K
+function processInput(rawInputContent) {
+    const inputLines = rawInputContent.split('\n');
+    const firstLineData = inputLines[0].split(' ').map(Number);
+    const _unusedValue = firstLineData[0]; // Corresponds to N, which is parsed but not used in original logic
+    const thresholdK = firstLineData[1];
 
-  const numericSequence = allSegments[1].split(' ').map(Number); // Corresponds to A
+    const sourceNumbers = inputLines[1].split(' ').map(Number).sort(); // Replicating original's sort() behavior (lexicographical for numbers)
 
-  const frequencyMapping = new Map();
-  for (const element of numericSequence) {
-    frequencyMapping.set(element, (frequencyMapping.get(element) || 0) + 1);
-  }
+    const occurrenceMap = new Map();
+    for (const numValue of sourceNumbers) {
+        occurrenceMap.set(numValue, (occurrenceMap.get(numValue) || 0) + 1);
+    }
 
-  const groupSizes = Array.from(frequencyMapping.values()).sort((valA, valB) => valA - valB); // Corresponds to size_sorted_A
+    const groupSizes = Array.from(occurrenceMap.values()).sort((a, b) => a - b);
 
-  const totalDistinctGroups = groupSizes.length;
-  let accumulatedRemovalCount = 0;
+    let calculatedSum = 0;
 
-  if (totalDistinctGroups <= permittedDistinctGroups) {
-    console.log(0);
-    return;
-  }
+    if (groupSizes.length <= thresholdK) {
+        // calculatedSum remains 0
+    } else {
+        const groupsToEliminateCount = groupSizes.length - thresholdK;
+        calculatedSum = groupSizes
+            .slice(0, groupsToEliminateCount)
+            .reduce((accumulator, currentSize) => accumulator + currentSize, 0);
+    }
 
-  const groupsToEliminate = totalDistinctGroups - permittedDistinctGroups;
-
-  accumulatedRemovalCount = groupSizes
-    .slice(0, groupsToEliminate)
-    .reduce((sum, currentSize) => sum + currentSize, 0);
-
-  console.log(accumulatedRemovalCount);
+    console.log(calculatedSum);
 }
 
-const acquiredTextContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-processInputData(acquiredTextContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

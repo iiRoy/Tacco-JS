@@ -1,36 +1,22 @@
-const inputChannel = require("readline").createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+process.stdin.on("data", function(inputBuffer) {
+  String(inputBuffer).trim().split("\n").forEach(function(currentLine) {
+    const numericalInput = Number(currentLine);
 
-function valueProcessor(lineBuffer) {
-  const processedValue = Number(lineBuffer.trim());
+    if (numericalInput <= 0) {
+      while (true) {}
+    }
 
-  if (Number.isNaN(processedValue) || processedValue === 0) {
-    return 0;
-  }
+    const upperThreshold = 600;
+    const maximumMultiplier = Math.floor((upperThreshold - 1) / numericalInput);
 
-  if (processedValue < 0) {
-    while (true) { /* program execution halts indefinitely */ }
-  }
-
-  const iterationLimit = Math.floor(599 / processedValue);
-  let finalResult = 0;
-
-  if (iterationLimit > 0) {
-    const squaredSumPart = (iterationLimit * (iterationLimit + 1) * (2 * iterationLimit + 1)) / 6;
-    finalResult = processedValue * processedValue * processedValue * squaredSumPart;
-  }
-
-  return finalResult;
-}
-
-inputChannel.on("line", (currentLine) => {
-  const calculationOutcome = valueProcessor(currentLine);
-  process.stdout.write(calculationOutcome + "\n");
-});
-
-inputChannel.on("close", () => {
-  // Input stream has ended.
-});
+    let computedTotal;
+    if (maximumMultiplier <= 0) {
+      computedTotal = 0;
+    } else {
+      const sumOfSquaresTerms = maximumMultiplier * (maximumMultiplier + 1) * (2 * maximumMultiplier + 1) / 6;
+      computedTotal = Math.pow(numericalInput, 3) * sumOfSquaresTerms;
+    }
+    
+    console.log(computedTotal);
+  });
+}).resume();

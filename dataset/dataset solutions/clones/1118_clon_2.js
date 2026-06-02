@@ -1,115 +1,93 @@
-class TopPriorityCollection {
-  // This is the constructor method for our priority queue implementation.
+class BinaryHeap {
   constructor() {
-    this.itemStore = []; // The internal array that holds the heap elements.
-
-    // Extend the Number prototype with utility methods for navigating the heap structure.
-    Number.prototype.getUpstreamIndex = function() {
-      // Calculates the parent node's index for the current index.
-      // Using unsigned right shift for potential minor performance or clarity.
-      return (this - 1) >>> 1;
+    this.heapElements = []; // Stores the elements of the heap
+    // Extend Number.prototype for convenience in index calculations
+    Number.prototype.parentIdx = function() {
+      return (this - 1) >> 1;
     };
-
-    Number.prototype.getLeftChildIndex = function() {
-      // Determines the index of the left child node.
+    Number.prototype.leftIdx = function() {
       return (this << 1) + 1;
     };
-
-    Number.prototype.getRightChildIndex = function() {
-      // Determines the index of the right child node.
+    Number.prototype.rightIdx = function() {
       return (this << 1) + 2;
     };
   }
 
-  // Method to add a new value into the collection, maintaining the heap property.
-  addEntry(newValue) {
-    this.bubbleUpElement(this.itemStore.push(newValue) - 1); // Add and then adjust its position.
+  // Adds a new value to the heap and maintains the heap property
+  addValue(val) {
+    this.bubbleUp(this.heapElements.push(val) - 1);
   }
 
-  // This function moves an element up the heap from a given index
-  // until the max-heap property is restored.
-  bubbleUpElement(currentIndex) {
-    const elementContainer = this.itemStore; // Get a reference to the array for efficiency.
-
-    // Loop continues as long as the current element is not the root
-    // and is greater than its parent.
+  // Moves an element up the heap to restore the heap property
+  bubbleUp(currentIndex) {
+    const elements = this.heapElements;
     for (
-      let currentPosition = currentIndex,
-        parentPosition = currentPosition.getUpstreamIndex();
-      currentPosition > 0 && elementContainer[currentPosition] > elementContainer[parentPosition];
-      currentPosition = parentPosition,
-        parentPosition = currentPosition.getUpstreamIndex()
+      let currentPosition = currentIndex, parentPosition = currentIndex.parentIdx();
+      currentPosition > 0 && elements[currentPosition] > elements[parentPosition];
+      currentPosition = parentPosition, parentPosition = currentPosition.parentIdx()
     ) {
-      // Swap the element with its parent using a concise array destructuring trick.
-      elementContainer[parentPosition] = [elementContainer[currentPosition], (elementContainer[currentPosition] = elementContainer[parentPosition])][0];
+      // Swap elements using array destructuring trick
+      elements[parentPosition] = [elements[currentPosition], elements[currentPosition] = elements[parentPosition]][0];
     }
   }
 
-  // Retrieves and removes the highest priority element (the root) from the collection.
-  removeHighest() {
-    const resultValue = this.itemStore[0]; // Store the highest priority value.
-    this.itemStore[0] = this.itemStore.pop(); // Replace the root with the last element.
-    this.siftDownElement(0); // Restore the heap property starting from the new root.
-    return resultValue; // Return the extracted highest priority value.
+  // Removes and returns the maximum element from the heap
+  removeMax() {
+    const resultValue = this.heapElements[0]; // The maximum element is always at the root
+    this.heapElements[0] = this.heapElements.pop(); // Move the last element to the root
+    this.heapifyDown(0); // Restore heap property from the root
+    return resultValue;
   }
 
-  // This method ensures that the subtree rooted at 'currentIndex' satisfies the max-heap property.
-  siftDownElement(currentIndex) {
-    const elementContainer = this.itemStore, // Reference to the underlying data array.
-      totalElements = elementContainer.length; // Total number of elements in the heap.
+  // Moves an element down the heap to restore the heap property
+  heapifyDown(rootIndex) {
+    const elements = this.heapElements;
+    const elementCount = elements.length;
 
-    // Define a nested helper function for the recursive sifting process.
-    const recursiveSift = (targetPosition) => {
-      let leftChild,
-        rightChild,
-        largestElementIndex = targetPosition; // Assume current node is largest initially.
+    // Helper function for recursive heapify
+    const recursiveHeapify = (currentRoot) => {
+      let leftChildIndex, rightChildIndex, largestElementIndex = currentRoot;
 
-      leftChild = targetPosition.getLeftChildIndex(); // Calculate index of the left child.
-      rightChild = targetPosition.getRightChildIndex(); // Calculate index of the right child.
+      leftChildIndex = currentRoot.leftIdx();
+      rightChildIndex = currentRoot.rightIdx();
 
-      // Check if the left child exists and is larger than the current largest.
-      if (leftChild < totalElements && elementContainer[leftChild] > elementContainer[largestElementIndex]) {
-        largestElementIndex = leftChild;
+      // Check if left child exists and is larger than current largest
+      if (leftChildIndex < elementCount && elements[leftChildIndex] > elements[largestElementIndex]) {
+        largestElementIndex = leftChildIndex;
       }
-      // Check if the right child exists and is larger than the current largest.
-      if (rightChild < totalElements && elementContainer[rightChild] > elementContainer[largestElementIndex]) {
-        largestElementIndex = rightChild;
+      // Check if right child exists and is larger than current largest
+      if (rightChildIndex < elementCount && elements[rightChildIndex] > elements[largestElementIndex]) {
+        largestElementIndex = rightChildIndex;
       }
 
-      // If the largest element is not the current node, a swap is needed.
-      if (largestElementIndex !== targetPosition) {
-        // Perform the swap operation.
-        elementContainer[largestElementIndex] = [elementContainer[targetPosition], (elementContainer[targetPosition] = elementContainer[largestElementIndex])][0];
-        recursiveSift(largestElementIndex); // Recursively call sift-down on the affected subtree.
+      // If the largest element is not the current root, swap and recurse
+      if (largestElementIndex !== currentRoot) {
+        elements[largestElementIndex] = [elements[currentRoot], elements[currentRoot] = elements[largestElementIndex]][0];
+        recursiveHeapify(largestElementIndex);
       }
     };
-    recursiveSift(currentIndex); // Start the sifting process from the initial index.
+    recursiveHeapify(rootIndex);
   }
 }
 
-// This immediately invoked function expression (IIFE) serves as the main entry point for the program.
-(function programEntry() {
-  // Read input from stdin, decode as UTF-8, remove leading/trailing whitespace,
-  // split into lines, and then remove the last (empty) line.
-  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n').slice(0, -1);
+// Main program execution block
+(function executeProgram() {
+  // Read input from stdin, trim whitespace, split by newlines, and remove the last empty line
+  const inputCommands = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n').slice(0, -1);
+  const priorityDataStructure = new BinaryHeap(); // Instantiate the priority queue
+  let outputBuffer = ''; // Buffer to accumulate output strings
 
-  const dataStructure = new TopPriorityCollection(); // Instantiate our custom priority queue.
-  let outputAccumulator = ''; // Initialize an empty string to accumulate output.
-
-  // Iterate over each command line received from the input.
-  inputLines.forEach(function(commandText) {
-    // Use a switch statement to handle different command types based on the first character.
-    switch (commandText.charAt(0)) {
-      case 'i': // 'i' indicates an insert operation.
-        // Extract the numeric value from the command string and add it to the queue.
-        dataStructure.addEntry(Number(commandText.split(' ')[1]));
+  // Process each command line
+  inputCommands.forEach(function(currentCommand) {
+    switch (currentCommand.charAt(0)) {
+      case 'i': // 'insert' command
+        priorityDataStructure.addValue(Number(currentCommand.split(' ')[1]));
         break;
-      case 'e': // 'e' indicates an extract operation.
-        // Extract the highest priority element, append it to the output string, followed by a newline.
-        outputAccumulator += `${dataStructure.removeHighest()}\n`;
+      case 'e': // 'extract' command
+        outputBuffer += `${priorityDataStructure.removeMax()}\n`;
         break;
     }
   });
-  // Write the entire accumulated output string to standard output.
-  process.stdout.write(outputAccumulator);
+  // Write the accumulated output to stdout
+  process.stdout.write(outputBuffer);
 })();

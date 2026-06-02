@@ -1,50 +1,57 @@
-const ingestData = (rawDataSegment) => {
-    const dataLines = rawDataSegment.split('\n').filter(Boolean);
-    const [initialParameters, ...entityHealthData] = dataLines;
-    const [mobCount, alphaDamage, betaDamage] = initialParameters.split(' ').map(Number);
-    const mobHPs = entityHealthData.map(Number);
-    return { mobCount, alphaDamage, betaDamage, mobHPs };
-};
+((inputString) => {
+  const processedLines = inputString.trim().split('\n');
 
-const evaluateFeasibility = (trialValue, alphaDamage, betaDamage, mobHPs) => {
-    const damageDifference = alphaDamage - betaDamage;
-    const supplementalStrikesNeeded = mobHPs.reduce((totalRequired, currentHP) => {
-        const remainingHP = currentHP - trialValue * betaDamage;
-        if (remainingHP <= 0) {
-            return totalRequired;
+  const [totalEntities, primaryForce, secondaryForce] = processedLines[0].split(' ').map(Number);
+  const entityResistances = processedLines.slice(1).map(Number);
+
+  const determineFeasibility = (
+    currentTrialValue,
+    mainPower,
+    subPower,
+    resistanceLevels
+  ) => {
+    let availableCharges = currentTrialValue;
+    const netDamagePerHit = mainPower - subPower;
+
+    const finalChargeBalance = resistanceLevels.reduce(
+      (accumulatorCharges, currentResistance) => {
+        if (accumulatorCharges < 0) {
+          return accumulatorCharges;
         }
-        return totalRequired + Math.ceil(remainingHP / damageDifference);
-    }, 0);
-    return trialValue >= supplementalStrikesNeeded;
-};
 
-const determineOptimalValue = (floorVal, ceilingVal, alphaDamage, betaDamage, mobHPs) => {
-    if (floorVal + 1 >= ceilingVal) {
-        return ceilingVal;
-    }
-    const pivot = Math.floor((floorVal + ceilingVal) / 2);
-    if (evaluateFeasibility(pivot, alphaDamage, betaDamage, mobHPs)) {
-        return determineOptimalValue(floorVal, pivot, alphaDamage, betaDamage, mobHPs);
-    } else {
-        return determineOptimalValue(pivot, ceilingVal, alphaDamage, betaDamage, mobHPs);
-    }
-};
+        const resistanceAfterCharges = currentResistance - currentTrialValue * subPower;
 
-const orchestrateSolution = (inputPayload) => {
-    const { mobCount, alphaDamage, betaDamage, mobHPs } = ingestData(inputPayload);
-
-    const initialFloor = 0;
-    const initialCeiling = 2 * 10**9 + 7; // A sufficiently large upper bound for attacks
-
-    const finalOutcome = determineOptimalValue(
-        initialFloor,
-        initialCeiling,
-        alphaDamage,
-        betaDamage,
-        mobHPs
+        if (resistanceAfterCharges <= 0) {
+          return accumulatorCharges;
+        } else {
+          const hitsRequired = Math.ceil(resistanceAfterCharges / netDamagePerHit);
+          return accumulatorCharges - hitsRequired;
+        }
+      },
+      availableCharges
     );
 
-    return String(finalOutcome);
-};
+    return finalChargeBalance >= 0;
+  };
 
-console.log((orchestrateSolution(require('fs').readFileSync('/dev/stdin','utf8'))));
+  let lowestPossibleValue = 10 ** 9 + totalEntities;
+  let highestImpossibleValue = 0;
+
+  while (lowestPossibleValue > highestImpossibleValue + 1) {
+    const testValue = (lowestPossibleValue + highestImpossibleValue) >>> 1;
+    if (
+      determineFeasibility(
+        testValue,
+        primaryForce,
+        secondaryForce,
+        entityResistances
+      )
+    ) {
+      lowestPossibleValue = testValue;
+    } else {
+      highestImpossibleValue = testValue;
+    }
+  }
+
+  return `${lowestPossibleValue}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

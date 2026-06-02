@@ -1,43 +1,31 @@
-const acquireNumericalData = (sourceText) => {
-    const digitsPattern = /\d+/g;
-    const numericLines = sourceText.trim().split('\n').map(l => Array.from(l.matchAll(digitsPattern), m => Number(m[0])));
-    return {
-        limit: numericLines[0][0],
-        forbiddenPositions: numericLines.slice(1).map(r => r[0])
-    };
+const parseTextData = (sourceText, convertToNumbers = false) => {
+  const lines = sourceText.split('\n');
+  return lines.map(line => {
+    const parts = line.split(' ');
+    return convertToNumbers ? parts.map(val => Number.parseInt(val, 10)) : parts;
+  });
 };
 
-const establishPathCounts = (totalSteps, initialVal) => Array.from({ length: totalSteps + 2 }, () => initialVal);
+const initializeCounts = (size, initialValue) => Array.from({ length: size + 2 }, () => initialValue);
 
-const processSimulation = (inputString) => {
-    const { limit, forbiddenPositions } = acquireNumericalData(inputString);
-    const MODULO_VAL = 1000000007;
+const processInputData = (rawData) => {
+  const parsedLines = parseTextData(rawData, true);
+  const targetValue = parsedLines[0][0];
+  const excludedSteps = new Set(parsedLines.slice(1).map(entry => entry[0]));
 
-    const excludedSet = new Set(forbiddenPositions);
+  const wayCounts = initializeCounts(targetValue, 0);
+  wayCounts[0] = 1;
 
-    const waysToReach = establishPathCounts(limit, 0);
-    waysToReach[0] = 1;
+  const MODULO_CONSTANT = 1000000007;
 
-    const finalCounts = Array.from({ length: limit }, (_, idx) => idx + 1)
-        .reduce((accumulator, currentStep) => {
-            if (excludedSet.has(currentStep)) {
-                accumulator[currentStep] = 0;
-            } else {
-                let currentWays = accumulator[currentStep - 1];
-                if (currentStep >= 2) {
-                    currentWays = (currentWays + accumulator[currentStep - 2]) % MODULO_VAL;
-                }
-                accumulator[currentStep] = currentWays;
-            }
-            return accumulator;
-        }, waysToReach);
+  Array.from({ length: targetValue }, (_, index) => index + 1)
+       .forEach(currentStep => {
+           if (!excludedSteps.has(currentStep)) {
+               wayCounts[currentStep] = (wayCounts[currentStep - 1] + (currentStep >= 2 ? wayCounts[currentStep - 2] : 0)) % MODULO_CONSTANT;
+           }
+       });
 
-    return finalCounts[limit];
+  console.log(wayCounts[targetValue]);
 };
 
-const entryPoint = (dataFeed) => {
-    const outcome = processSimulation(dataFeed);
-    console.log(outcome);
-};
-
-entryPoint(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

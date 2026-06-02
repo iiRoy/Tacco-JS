@@ -1,141 +1,138 @@
-/*
- * This extension adds a custom padding method to the String prototype.
- * It allows prepending a character (or string) to achieve a desired total length.
- */
-String.prototype.padWithZeros = function( desiredLength, paddingCharacter ) {
-  let sourceText = this; // Store the original string in a new variable.
-
-  // If no padding character is specified, default to '0'.
-  if ( typeof paddingCharacter === 'undefined' ) {
-    paddingCharacter = "0";
-  }
-
-  /*
-   * Validate the length: if the current string's length is already greater
-   * than the target padded length, it indicates an invalid operation.
-   */
-  if ( sourceText.length > paddingCharacter.length * desiredLength ) {
-    throw new Error( `Length violation: original string '${ sourceText }' (length ${ sourceText.length }) ` +
-                     `exceeds maximum padded length (${ paddingCharacter.length * desiredLength }).` );
-  }
-
-  // Generate the full padded string by repeating the padding character and then slicing it.
-  return ( paddingCharacter.repeat( desiredLength ) + this ).slice( -1 * paddingCharacter.length * desiredLength );
+String.prototype.padWithLeadingZeros = function(count, padChar) {
+    let currentString = this; // Reference to the string instance
+    if (typeof padChar === 'undefined') {
+        padChar = "0"; // Default padding character
+    }
+    // Check for potential overflow if the string is already too long
+    if (currentString.length > padChar.length * count) {
+        throw new Error("String length exceeds padding capacity: " + currentString.length + " > " + (padChar.length * count));
+    }
+    // Generate padding and concatenate, then slice from the end
+    return (padChar.repeat(count) + this).slice(-1 * padChar.length * count);
 };
 
-/*
- * The primary function to process problem data and determine the minimum
- * number of questions to attempt to achieve a specific target score.
- *
- * @param {string} problemData - The raw input data as a string.
- * @returns {number} The fewest number of problems to solve.
- */
-function ProcessInputData( problemData ) {
-  // Break down the input string into an array of lines.
-  problemData = problemData.split( "\n" );
+function ProcessContestData(rawData){
+    // Split the input string into individual lines
+    rawData = rawData.split("\n");
 
-  // Extract the first line, split it by space, and convert to numbers.
-  let taskConfig = problemData.shift().split( " " ).map( val => ~~val );
-  const difficultyCount = taskConfig[0]; /* Number of distinct difficulty levels. */
-  const goalPoints = taskConfig[1] / 100; /* The required total score, scaled. */
+    // Parse the first line for problem count and target score
+    let difficultyGoal = rawData.shift().split(" ").map(val => parseInt(val, 10));
+    let numProblems = difficultyGoal[0]; // D from original
+    let targetScore = difficultyGoal[1] / 100; // G from original, converted to hundreds
 
-  // Arrays to hold the number of problems and bonus points for each difficulty level.
-  const questionCounts = [];
-  const completionBonuses = [];
+    let problemPoints = []; // p from original
+    let bonusScores = [];   // c from original
+    
+    // The 'total' variable is declared but not used in the original, maintaining its presence.
+    let total = 0; 
 
-  // Populate the arrays by parsing subsequent input lines.
-  for ( let levelIdx = 0; levelIdx < difficultyCount; levelIdx++ ) {
-    let itemInfo = problemData.shift().split( " " ).map( val => ~~val );
-    questionCounts.push( itemInfo[0] );       // Store problems per level.
-    completionBonuses.push( itemInfo[1] / 100 ); // Store bonus points per level, scaled.
-  }
-
-  // Calculate the total number of possible ways to choose complete difficulty sets.
-  const totalOptions = Math.pow( 2, difficultyCount );
-
-  // This array will store the total number of problems solved for each valid scenario.
-  const lowestSolvedCount = [];
-
-  // Iterate through all possible combinations of fully solving difficulty levels.
-  for ( let comboIdx = 0; comboIdx < totalOptions; comboIdx++ ) {
-    // Convert the current combination index to its binary representation, padded.
-    const selectedLevelsBinary = comboIdx.toString( 2 ).padWithZeros( difficultyCount );
-
-    let currentScore = 0;     // Accumulated score for this combination.
-    let problemsAttempted = 0; // Number of problems solved for this combination.
-
-    // First pass: Calculate score and problems for levels chosen to be fully completed.
-    for ( let levelIndex = 0; levelIndex < difficultyCount; levelIndex++ ) {
-      if ( selectedLevelsBinary[levelIndex] === "1" ) { // If this level is fully completed.
-        problemsAttempted += questionCounts[levelIndex];
-        currentScore += questionCounts[levelIndex] * ( levelIndex + 1 ) + completionBonuses[levelIndex];
-      }
+    // Loop through the remaining lines to populate problem data
+    for (let problemIndex = 0; problemIndex < numProblems; problemIndex++) {
+        let problemComponent = rawData.shift().split(" ").map(val => parseInt(val, 10));
+        problemPoints.push(problemComponent[0]);
+        bonusScores.push(problemComponent[1] / 100); // Convert bonus to hundreds
     }
+    
+    // Calculate total number of combinations (2^D)
+    let combinationsCount = Math.pow(2, numProblems);
+    
+    let minProblemsSolved = []; // Stores the minimum problems solved for each valid combination
+    
+    // Iterate through all possible combinations of solving problems
+    for (let comboIndex = 0; comboIndex < combinationsCount; comboIndex++) {
+        // Convert combination index to binary string and pad it
+        let selectionPattern = comboIndex.toString(2).padWithLeadingZeros(numProblems);
+        let currentScore = 0;
+        let problemsSolvedCount = 0;
 
-    // If the target score is already met or exceeded with full completions.
-    if ( goalPoints <= currentScore ) {
-      lowestSolvedCount.push( problemsAttempted ); // Record this valid solution.
-      continue; // Move to the next combination.
+        // Evaluate the current combination
+        for (let difficultyLevel = 0; difficultyLevel < numProblems; difficultyLevel++) {
+            if (selectionPattern[difficultyLevel] === "1") { // If this problem set is selected
+                problemsSolvedCount += problemPoints[difficultyLevel];
+                currentScore += problemPoints[difficultyLevel] * (difficultyLevel + 1) + bonusScores[difficultyLevel];
+            }
+        }
+        
+        // If the target score is already met with selected problems
+        if (targetScore <= currentScore) {
+            minProblemsSolved.push(problemsSolvedCount);
+            continue; // Move to the next combination
+        }
+        
+        // If target score not met, try to solve remaining problems partially
+        for (let difficultyLevel = 0; difficultyLevel < numProblems; difficultyLevel++) {
+            if (selectionPattern[difficultyLevel] === "1") {
+                continue; // Skip problems already selected
+            }
+            // Calculate how many problems of this difficulty are needed to reach the target
+            let neededPartial = Math.floor((targetScore - currentScore) / (difficultyLevel + 1));
+            // If we need more than available problems (minus one, as we can't solve all if we need partial)
+            if (neededPartial > problemPoints[difficultyLevel] - 1) {
+                continue; // Cannot solve enough from this category
+            }
+            minProblemsSolved.push(problemsSolvedCount + neededPartial);
+        }
     }
-
-    // Second pass: If the target isn't met, try solving additional problems from uncompleted levels.
-    // We iterate backwards from highest difficulty to lowest for potential optimization.
-    for ( let levelIndex = difficultyCount - 1; levelIndex >= 0; levelIndex-- ) {
-      if ( selectedLevelsBinary[levelIndex] === "1" ) { // Skip already fully completed levels.
-        continue;
-      }
-
-      // Calculate how many problems from this specific level are needed.
-      const requiredSubproblems = Math.floor( ( goalPoints - currentScore ) / ( levelIndex + 1 ) );
-
-      // Check if solving these problems is feasible and worthwhile.
-      if ( requiredSubproblems <= 0 || requiredSubproblems >= questionCounts[levelIndex] ) {
-        continue; // Not enough problems needed, or too many required for this level.
-      }
-
-      // Record the total problems attempted if this scenario is valid.
-      lowestSolvedCount.push( problemsAttempted + requiredSubproblems );
-    }
-  }
-
-  // Return the absolute minimum number of problems found across all valid scenarios.
-  return Math.min( ...lowestSolvedCount );
+    
+    // Return the minimum number of problems solved across all valid combinations
+    return Math.min(...minProblemsSolved);
 }
 
-/*
- * This self-invoking function handles the execution environment:
- * it detects if it's running in Node.js (for competitive programming platforms)
- * or in a browser (for local testing/development).
- */
-( ( inputSourceText, executionOutput, resultKind ) => {
-  // Check if the 'require' function is available (typical in Node.js).
-  if ( "undefined" !== typeof require ) {
-    // Node.js environment: read from stdin, process, and output to console.
-    console.log( ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) );
-  } else {
-    // Browser environment: simulate input/output for testing purposes.
-    inputSourceText = inputSourceText.split( "\n" ).slice( 1, -1 ).join( "\n" ); // Clean up input.
-    executionOutput = ( () => {
-      try {
-        return ProcessInputData( inputSourceText ); // Run the main logic.
-      } catch ( errorInstance ) {
-        return errorInstance.stack || errorInstance.message; // Capture error details.
-      }
-    } )();
-    resultKind = typeof executionOutput; // Determine the data type of the result.
+// This section handles input/output for different environments.
+// It's not part of the core algorithm logic.
 
-    // If the result isn't a string, convert it to JSON string representation.
-    if ( "string" === resultKind || ( executionOutput = JSON.stringify( executionOutput ) ) );
+((inputString, resultValue, resultType) => {
+    // Check if running in a Node.js-like environment (e.g., competitive programming platform)
+    if (typeof require !== "undefined") {
+        // Read input from stdin, process it, and print the result to console
+        console.log(ProcessContestData(require("fs").readFileSync("/dev/stdin", "utf8")));
+    } else {
+        // Assume browser environment for testing/display
+        // Prepare input string by removing first/last empty lines
+        inputString = inputString.split("\n").slice(1, -1).join("\n");
+        
+        // Execute the main processing function and capture any errors
+        resultValue = (() => {
+            try {
+                return ProcessContestData(inputString);
+            } catch (errorObject) {
+                return errorObject.stack || errorObject.message; // Return error details
+            }
+        })();
+        
+        // Determine the type of the result
+        resultType = typeof resultValue;
+        
+        // If the result is not a string, convert it to JSON string for display
+        if (resultType !== "string") {
+            resultValue = JSON.stringify(resultValue);
+        }
 
-    // Use a jQuery-like structure to display input, type, and output in the browser.
-    $( "<form>" ).append( [
-      [ 10, inputSourceText ], 0, [ 1, resultKind ], 0, [ 10, executionOutput ]
-    ].map( ( displayItem ) => {
-      return $( displayItem ? "<textarea>" : "<br>", displayItem && { rows: displayItem[0], cols: 40, text: displayItem[1] } );
-    } ) ).appendTo( "body" );
-  }
-} )( `
+        // Create a form with textareas to display input, result type, and result value
+        // This part uses jQuery, assuming it's available in a browser context.
+        $("<form>")
+            .append(
+                [
+                    [10, inputString], // Input data textarea
+                    0,                 // Separator (br)
+                    [1, resultType],   // Result type textarea
+                    0,                 // Separator (br)
+                    [10, resultValue]  // Result value textarea
+                ].map(elementData => {
+                    // For non-zero elements, create a textarea; otherwise, a <br>
+                    return elementData
+                        ? $("<textarea>", {
+                              rows: elementData[0],
+                              cols: 40,
+                              text: elementData[1],
+                          })
+                        : $("<br>");
+                })
+            )
+            .appendTo("body"); // Add the form to the document body
+    }
+})(`
 2 700
 3 500
 5 800
-` );
+`);

@@ -1,48 +1,72 @@
-const obtainInputLines = () => {
-    return require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split("\n").filter(Boolean);
+"use strict";
+
+const establishInput = () => {
+    const sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    let currentLineIndex = 0;
+
+    const retrieveNextLine = () => {
+        if (currentLineIndex >= sourceLines.length) {
+            throw "ArrayIndexOutOfBoundsException";
+        }
+        return sourceLines[currentLineIndex++];
+    };
+
+    const retrieveNextInteger = () => parseInt(retrieveNextLine());
+    const retrieveNextStringArray = () => retrieveNextLine().split(" ");
+    const retrieveNextIntegerArray = () => retrieveNextLine().split(" ").map(el => parseInt(el));
+    const retrieveNextCharacterArray = () => retrieveNextLine().split("");
+    const hasMoreInput = () => currentLineIndex < sourceLines.length;
+
+    return {
+        retrieveNextLine,
+        retrieveNextInteger,
+        retrieveNextStringArray,
+        retrieveNextIntegerArray,
+        retrieveNextCharacterArray,
+        hasMoreInput
+    };
 };
 
-let inputLineBuffer = obtainInputLines();
-let currentLineIndex = 0;
+const inputSource = establishInput();
+const grabLine = () => inputSource.retrieveNextLine();
+const grabInt = () => inputSource.retrieveNextInteger();
+const grabStrArr = () => inputSource.retrieveNextStringArray();
+const grabIntArr = () => inputSource.retrieveNextIntegerArray();
+const grabCharArr = () => inputSource.retrieveNextCharacterArray();
+const hasMore = () => inputSource.hasMoreInput();
 
-const fetchNextLine = () => {
-    if (currentLineIndex >= inputLineBuffer.length) {
-        throw new Error("InputConsumptionError: Attempted to read past end of input.");
+const emitOutput = (...args) => console.log(...args);
+
+const processChallenge = () => {
+    const count = grabInt();
+    const firstValues = [];
+    const secondValues = [];
+
+    while (hasMore()) {
+        const currentPair = grabIntArr();
+        firstValues.push(currentPair[0]);
+        secondValues.push(currentPair[1]);
     }
-    return inputLineBuffer[currentLineIndex++];
+
+    const adjustmentValues = new Array(count);
+
+    Array.from({ length: count }, (_, i) => i)
+        .reduceRight((currentCumulativeAdjustment, idx) => {
+            const targetSum = firstValues[idx] + currentCumulativeAdjustment;
+            const divisor = secondValues[idx];
+
+            const requiredMultiplier = Math.max(1, Math.ceil(targetSum / divisor));
+
+            const currentAdjustment = requiredMultiplier * divisor - targetSum;
+
+            adjustmentValues[idx] = currentAdjustment;
+
+            return currentCumulativeAdjustment + currentAdjustment;
+        }, 0);
+
+    const totalAdjustment = adjustmentValues.reduce((sum, val) => sum + val, 0);
+
+    emitOutput(totalAdjustment);
 };
 
-const parseNumericValue = (textSegment) => Number.parseInt(textSegment, 10);
-
-const parseNumericArray = (textLine) => textLine.split(" ").map(parseNumericValue);
-
-const presentResult = (outcome) => console.log(outcome);
-
-const performCalculation = () => {
-    const dataPairCount = parseNumericValue(fetchNextLine());
-
-    const dataPairs = [];
-    for (let i = 0; i < dataPairCount; i++) {
-        const [componentA, componentB] = parseNumericArray(fetchNextLine());
-        dataPairs.push({ componentA, componentB });
-    }
-
-    const finalState = dataPairs.reduceRight((accumulator, currentEntry) => {
-        const currentComponentA = currentEntry.componentA;
-        const currentComponentB = currentEntry.componentB;
-        const previousCumulativeAdjustment = accumulator.cumulativePriorAdjustment;
-
-        const requiredFactor = Math.ceil((currentComponentA + previousCumulativeAdjustment) / currentComponentB);
-
-        const currentEntryCorrection = (requiredFactor * currentComponentB) - (currentComponentA + previousCumulativeAdjustment);
-
-        return {
-            totalAccumulatedCorrection: accumulator.totalAccumulatedCorrection + currentEntryCorrection,
-            cumulativePriorAdjustment: previousCumulativeAdjustment + currentEntryCorrection,
-        };
-    }, { totalAccumulatedCorrection: 0, cumulativePriorAdjustment: 0 });
-
-    presentResult(finalState.totalAccumulatedCorrection);
-};
-
-performCalculation();
+processChallenge();

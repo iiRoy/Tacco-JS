@@ -1,106 +1,92 @@
-class DataExtractor {
-    constructor(sourceData) {
-        this.dataSegments = sourceData.split(/\s|\n/).filter(Boolean);
-        this.segmentPointer = 0;
+"use strict";
+
+class Inputer {
+    constructor(t) {
+        if (typeof t === 'undefined') throw new Error('引数（stdin）を省略できません！');
+        this.cnt = 0;
+        this.items = t.split(/\n|\s/);
     }
 
-    retrieveNumericValue() {
-        if (this.segmentPointer >= this.dataSegments.length) {
-            throw new Error("No more data segments available.");
+    getInt() {
+        return parseInt(this.items[this.cnt++], 10);
+    }
+
+    getIntArray(t) {
+        if (typeof t === 'undefined') throw new Error('引数（1以上）を省略できません！');
+        let r = new Array(t);
+        for (let e = 0; e < t; e++) r[e] = this.getInt();
+        return r;
+    }
+
+    getStr() {
+        return this.items[this.cnt++];
+    }
+
+    getStrArray(t) {
+        if (typeof t === 'undefined') throw new Error('引数（1以上）を省略できません！');
+        let r = new Array(t);
+        for (let e = 0; e < t; e++) r[e] = this.getStr();
+        return r;
+    }
+}
+
+function calculateOptimalProfit(itemCollection, itemCount, circuitLength) {
+    const N = itemCount;
+    const C = circuitLength;
+
+    const extendedItems = [...itemCollection, { pos: C, val: 0 }];
+
+    const prefixProfits = Array(N + 1).fill(0);
+    for (let k = 1; k <= N; k++) {
+        prefixProfits[k] = prefixProfits[k - 1] + extendedItems[k].val - (extendedItems[k].pos - extendedItems[k - 1].pos);
+    }
+
+    const suffixProfits = Array(N + 1).fill(0);
+    suffixProfits[N] = 0;
+    for (let k = N - 1; k >= 0; k--) {
+        suffixProfits[k] = suffixProfits[k + 1] + extendedItems[k + 1].val - (extendedItems[k + 2].pos - extendedItems[k + 1].pos);
+    }
+
+    let currentMaximumProfit = Number.MIN_SAFE_INTEGER;
+
+    for (let n = 0; n <= N; n++) {
+        currentMaximumProfit = Math.max(currentMaximumProfit, prefixProfits[n]);
+    }
+
+    for (let n = 0; n <= N; n++) {
+        for (let m = n; m < N; m++) {
+            const combinedPathProfit = prefixProfits[n] - extendedItems[n].pos + suffixProfits[m];
+            currentMaximumProfit = Math.max(currentMaximumProfit, combinedPathProfit);
         }
-        return Number(this.dataSegments[this.segmentPointer++]);
     }
 
-    retrieveNumericArray(quantity) {
-        const numericArray = [];
-        for (let i = 0; i < quantity; i++) {
-            numericArray.push(this.retrieveNumericValue());
-        }
-        return numericArray;
-    }
+    return currentMaximumProfit;
 }
 
-function evaluateRouteMetrics(itemCount, totalDimension, pointsOfInterest) {
-    // pointsOfInterest: array of { position: number, reward: number }
-    // itemCount: N, totalDimension: C
+function Main(input) {
+    let inputParser = new Inputer(input);
+    let N_items = inputParser.getInt();
+    let C_circumference = inputParser.getInt();
 
-    // Construct the full coordinate sequence including 0 and C
-    // Original X equivalent: [0, X1, ..., XN, C]
-    const fullCoordinates = [0, ...pointsOfInterest.slice(1).map(p => p.position), totalDimension];
-
-    // forwardAccumulation: analogous to L array
-    // F[k] = net reward when traveling from 0 to item k
-    const forwardAccumulation = Array(itemCount + 1).fill(0);
-    for (let k = 1; k <= itemCount; k++) {
-        forwardAccumulation[k] = forwardAccumulation[k - 1] + pointsOfInterest[k].reward - (fullCoordinates[k] - fullCoordinates[k - 1]);
+    let originalItemData = [{ pos: 0, val: 0 }];
+    for (let i = 0; i < N_items; i++) {
+        originalItemData.push({ pos: inputParser.getInt(), val: inputParser.getInt() });
     }
 
-    // backwardAccumulation: analogous to R array
-    // B[k] = net reward when traveling counter-clockwise from C to item k+1
-    const backwardAccumulation = Array(itemCount + 1).fill(0);
-    for (let k = itemCount - 1; k >= 0; k--) {
-        backwardAccumulation[k] = backwardAccumulation[k + 1] + pointsOfInterest[k + 1].reward - (fullCoordinates[k + 2] - fullCoordinates[k + 1]);
+    let overallMaximum = calculateOptimalProfit(originalItemData, N_items, C_circumference);
+
+    let counterClockwiseItems = [{ pos: 0, val: 0 }];
+    for (let i = N_items; i >= 1; i--) {
+        counterClockwiseItems.push({
+            pos: C_circumference - originalItemData[i].pos,
+            val: originalItemData[i].val
+        });
     }
+    counterClockwiseItems.sort((a, b) => a.pos - b.pos);
 
-    let currentOptimalBenefit = Number.MIN_SAFE_INTEGER;
+    overallMaximum = Math.max(overallMaximum, calculateOptimalProfit(counterClockwiseItems, N_items, C_circumference));
 
-    // Analyze all possible path combinations
-    for (let k = 0; k <= itemCount; k++) {
-        // Path type 1: Travel from 0 clockwise to item k and stop
-        currentOptimalBenefit = Math.max(currentOptimalBenefit, forwardAccumulation[k]);
-
-        for (let j = k; j < itemCount; j++) {
-            // Path type 2: Travel 0 -> item k (clockwise), then item k -> 0 (return),
-            // then C -> item j+1 (counter-clockwise)
-            // Equivalent to: L[n] - X[n] + R[m]
-            const combinedPathBenefit = forwardAccumulation[k] - fullCoordinates[k] + backwardAccumulation[j];
-            currentOptimalBenefit = Math.max(currentOptimalBenefit, combinedPathBenefit);
-        }
-    }
-
-    return currentOptimalBenefit;
+    console.log(overallMaximum);
 }
 
-function ExecuteCalculation(rawSource) {
-    const dataStream = new DataExtractor(rawSource);
-    const numberOfItems = dataStream.retrieveNumericValue(); // N
-    const pathCircumference = dataStream.retrieveNumericValue(); // C
-
-    const itemDetails = Array(numberOfItems + 1).fill(null).map(() => ({ position: 0, reward: 0 }));
-    // itemDetails[0] is a virtual start point (pos:0, reward:0)
-    // itemDetails[1] to itemDetails[numberOfItems] are the actual items
-    for (let i = 1; i <= numberOfItems; i++) {
-        itemDetails[i].position = dataStream.retrieveNumericValue();
-        itemDetails[i].reward = dataStream.retrieveNumericValue();
-    }
-
-    let overallMaximumBenefit = Number.MIN_SAFE_INTEGER;
-
-    // --- Scenario 1: Clockwise traversal logic ---
-    overallMaximumBenefit = Math.max(overallMaximumBenefit, evaluateRouteMetrics(numberOfItems, pathCircumference, itemDetails));
-
-    // --- Scenario 2: Counter-clockwise traversal logic (by transforming input) ---
-    // This transformation mirrors the original code's approach:
-    // 1. Invert item positions relative to C: x' = C - x
-    // 2. Reverse the order of items.
-    // 3. Adjust rewards (implicit in combined structure).
-
-    const alteredItemDetails = Array(numberOfItems + 1).fill(null);
-    alteredItemDetails[0] = { position: 0, reward: 0 }; // New virtual start point
-
-    for (let i = 1; i <= numberOfItems; i++) {
-        // The i-th item in the altered collection corresponds to the (N - i + 1)-th item from the original.
-        alteredItemDetails[i] = {
-            position: pathCircumference - itemDetails[numberOfItems - i + 1].position,
-            reward: itemDetails[numberOfItems - i + 1].reward
-        };
-    }
-
-    overallMaximumBenefit = Math.max(overallMaximumBenefit, evaluateRouteMetrics(numberOfItems, pathCircumference, alteredItemDetails));
-
-    console.log(overallMaximumBenefit);
-}
-
-if (typeof window === "undefined") {
-    ExecuteCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
-}
+if (typeof window === "undefined") Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,17 +1,16 @@
-function processString(sourceText) {
-  const charTransformer = new Map([
+function Main(inputString) {
+  const characterReplacements = new Map([
     ['1', '9'],
     ['9', '1']
   ]);
 
-  const performSubstitution = (source) => {
-    const relevantSegment = source.substring(0, 3); 
-    return Array.from(relevantSegment)
-                .map(symbol => charTransformer.has(symbol) ? charTransformer.get(symbol) : symbol)
-                .join('');
-  };
+  const transformedCharacters = Array.from(inputString).map(singleCharacter => {
+    return characterReplacements.has(singleCharacter) ? characterReplacements.get(singleCharacter) : singleCharacter;
+  });
 
-  return performSubstitution(sourceText);
+  const finalResult = transformedCharacters.join('');
+
+  return finalResult;
 }
 
-console.log(processString(require("fs").readFileSync("/dev/stdin", "utf8")));
+console.log(Main(require("fs").readFileSync("/dev/stdin", "utf8")));

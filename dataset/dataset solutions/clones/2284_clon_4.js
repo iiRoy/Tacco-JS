@@ -1,48 +1,63 @@
 "use strict";
 
-function processInput(sourceData) {
-    const digitCount = Number.parseInt(sourceData[0]);
-    let firstLimit = Number.parseInt(sourceData[1].replace(/\s/g, ''));
-    let secondLimit = Number.parseInt(sourceData[2].replace(/\s/g, ''));
+function processInput(inputLines) {
+    const targetDigitCount = parseInt(inputLines[0]);
+    let lowerMarker = parseInt(inputLines[1].trim().split(" ").join(""));
+    let upperMarker = parseInt(inputLines[2].trim().split(" ").join(""));
 
-    if (firstLimit === secondLimit) {
+    if (lowerMarker === upperMarker) {
         console.log(0);
         return;
     }
 
-    if (firstLimit > secondLimit) {
-        const swapHolder = firstLimit;
-        firstLimit = secondLimit;
-        secondLimit = swapHolder;
+    if (upperMarker < lowerMarker) {
+        [lowerMarker, upperMarker] = [upperMarker, lowerMarker];
     }
 
-    const sourceDigits = Array.from({ length: digitCount }, (_, i) => i + 1);
+    const iterationStartValues = [12, 123, 1234, 12345, 123456, 1234567, 12345678];
+    const iterationStart = iterationStartValues[targetDigitCount - 2];
+    const iterationEnd = 87654321;
 
-    const producedValues = [];
-
-    function formCombinations(currentBuild, remainingPool) {
-        if (remainingPool.length === 0) {
-            producedValues.push(Number(currentBuild.join('')));
-            return;
+    const isPermutationLike = (numValue, requiredLength) => {
+        const numText = String(numValue);
+        if (numText.length !== requiredLength) {
+            return false;
+        }
+        if (numText.includes('0')) {
+            return false;
         }
 
-        for (let position = 0; position < remainingPool.length; position++) {
-            const pickedDigit = remainingPool[position];
-            const nextPool = [...remainingPool.slice(0, position), ...remainingPool.slice(position + 1)];
-            formCombinations([...currentBuild, pickedDigit], nextPool);
+        const digitPresence = new Uint8Array(requiredLength + 1).fill(0);
+        for (let k = 0; k < numText.length; k++) {
+            const currentDigit = parseInt(numText[k]);
+            if (currentDigit > requiredLength || digitPresence[currentDigit] > 0) {
+                return false;
+            }
+            digitPresence[currentDigit]++;
+        }
+        return true;
+    };
+
+    function* generateCountableNumbers(startPoint, endPoint, requiredLen, activationMarker, terminationMarker) {
+        let countingActive = false;
+        for (let currentVal = startPoint; currentVal <= endPoint; currentVal++) {
+            if (currentVal === activationMarker) {
+                countingActive = true;
+            }
+            if (currentVal === terminationMarker) {
+                break;
+            }
+            if (countingActive && isPermutationLike(currentVal, requiredLen)) {
+                yield currentVal;
+            }
         }
     }
 
-    formCombinations([], sourceDigits);
-
-    let finalTally = 0;
-    for (const item of producedValues) {
-        if (item >= firstLimit && item <= secondLimit) {
-            finalTally++;
-        }
+    let finalResult = 0;
+    for (const validNum of generateCountableNumbers(iterationStart, iterationEnd, targetDigitCount, lowerMarker, upperMarker)) {
+        finalResult++;
     }
-
-    console.log(finalTally);
+    console.log(finalResult);
 }
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

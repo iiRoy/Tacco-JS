@@ -1,51 +1,45 @@
-const determineStrongestBeacons = (incomingData) => {
-  const processedLines = incomingData.trim().split('\n');
+const processInputData = (sourceContent) => {
+  const contentLines = sourceContent.trim().split('\n');
+  const [totalNodesStr, totalEdgesStr] = contentLines[0].split(' ');
+  const totalNodes = Number(totalNodesStr);
+  const totalEdges = Number(totalEdgesStr);
 
-  const initialParameters = processedLines[0].split(' ').map(parseFloat);
-  const totalBeacons = initialParameters[0];
-  const connectionCount = initialParameters[1];
+  const nodeStrengths = new Map();
+  contentLines[1].split(' ').map(Number).forEach((strengthValue, idx) => {
+    nodeStrengths.set(idx + 1, strengthValue);
+  });
 
-  const beaconHeights = new Map();
-  const heightsLine = processedLines[1].split(' ').map(parseFloat);
-  heightsLine.forEach((height, idx) => beaconHeights.set(idx + 1, height));
+  const competitionPairs = contentLines.slice(2).map(line =>
+    line.split(' ').map(Number)
+  );
 
-  const nonStrongestBeacons = new Set();
+  return { totalNodes, totalEdges, nodeStrengths, competitionPairs };
+};
 
-  const connectionDetails = processedLines.slice(2);
+const determineDominantNodes = ({ totalNodes, nodeStrengths, competitionPairs }) => {
+  const eliminatedNodes = new Set();
 
-  connectionDetails.forEach(connectionString => {
-    const pair = connectionString.split(' ').map(parseFloat);
-    const firstBeacon = pair[0];
-    const secondBeacon = pair[1];
+  competitionPairs.forEach(([nodeOne, nodeTwo]) => {
+    const strengthOne = nodeStrengths.get(nodeOne);
+    const strengthTwo = nodeStrengths.get(nodeTwo);
 
-    const heightOfFirst = beaconHeights.get(firstBeacon);
-    const heightOfSecond = beaconHeights.get(secondBeacon);
-
-    if (heightOfFirst <= heightOfSecond) {
-      nonStrongestBeacons.add(firstBeacon);
+    if (strengthOne <= strengthTwo) {
+      eliminatedNodes.add(nodeOne);
     }
-    if (heightOfSecond <= heightOfFirst) {
-      nonStrongestBeacons.add(secondBeacon);
+    if (strengthTwo <= strengthOne) {
+      eliminatedNodes.add(nodeTwo);
     }
   });
 
-  const strongestCount = totalBeacons - nonStrongestBeacons.size;
-
-  console.log(strongestCount);
+  return totalNodes - eliminatedNodes.size;
 };
 
-const startProcessing = (logicFunction) => {
-  const envVariable = process.env.EXECUTION_CONTEXT_SWITCH;
-
-  if (envVariable) {
-    if (envVariable === 'test_scenario') {
-      return;
-    } else {
-      logicFunction(require('node:fs').readFileSync('dev/stdin', 'utf8'));
-    }
-  } else {
-    logicFunction(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
-  }
+const runApplication = (inputPayload) => {
+  const parsedData = processInputData(inputPayload);
+  const dominantCount = determineDominantNodes(parsedData);
+  console.log(dominantCount);
 };
 
-startProcessing(determineStrongestBeacons);
+process.env.MYTEST
+  ? (process.env.MYTEST === 'test' ? test() : runApplication(require('fs').readFileSync('dev/stdin', 'utf8')))
+  : runApplication(require('fs').readFileSync('/dev/stdin', 'utf8'));

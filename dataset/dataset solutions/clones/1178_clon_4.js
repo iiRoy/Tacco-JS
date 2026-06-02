@@ -1,51 +1,52 @@
-const determinePopulationDeviation = (numberSequence) => {
-    const elementCount = numberSequence.length;
+function main(rawInputString) {
+    const parseProblemSets = (sourceText) => {
+        const segments = sourceText.split('\n');
+        const collectedSets = [];
+        let segmentIndex = 0;
 
-    if (elementCount === 0) {
-        return 0.0;
-    }
+        while (segmentIndex < segments.length) {
+            const countIdentifier = segments[segmentIndex];
+            if (countIdentifier === '0') {
+                break;
+            }
 
-    const sumTotal = numberSequence.reduce((total, num) => total + num, 0);
-    const centralTendency = sumTotal / elementCount;
+            const elementCount = parseInt(countIdentifier, 10);
+            const dataLine = segments[segmentIndex + 1];
+            const numericValues = dataLine.split(' ').map(Number);
 
-    const totalSquaredDeviations = numberSequence.reduce((sumOfSquares, num) => {
-        const deviation = num - centralTendency;
-        return sumOfSquares + (deviation * deviation);
-    }, 0);
-
-    const populationVariance = totalSquaredDeviations / elementCount;
-
-    return Math.sqrt(populationVariance);
-};
-
-const processNumericalCollections = (sourceDataStream) => {
-    const dataSegments = sourceDataStream.split('\n');
-
-    const processNextSegment = (remainingSegments, collectedResults) => {
-        if (remainingSegments.length < 2) {
-            return collectedResults;
+            collectedSets.push({
+                quantity: elementCount,
+                measurements: numericValues
+            });
+            segmentIndex += 2;
         }
-
-        const countText = remainingSegments[0];
-        if (countText === '0') {
-            return collectedResults;
-        }
-
-        const numericQuantity = Number(countText);
-        const sequenceText = remainingSegments[1];
-        const currentSequence = sequenceText.split(' ').map(Number);
-
-        const blockDeviation = determinePopulationDeviation(currentSequence);
-        const formattedOutcome = blockDeviation.toFixed(4);
-
-        return processNextSegment(
-            remainingSegments.slice(2),
-            [...collectedResults, formattedOutcome]
-        );
+        return collectedSets;
     };
 
-    const finalOutcomes = processNextSegment(dataSegments, []);
-    finalOutcomes.forEach(outcome => console.log(outcome));
-};
+    const computePopulationStandardDeviation = (dataPoints) => {
+        const dataSize = dataPoints.length;
+        if (dataSize === 0) {
+            return 0;
+        }
 
-processNumericalCollections(require('fs').readFileSync('/dev/stdin', 'utf8'));
+        const sumOfElements = dataPoints.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+        const centralTendency = sumOfElements / dataSize;
+
+        const sumOfSquaredDeviations = dataPoints.reduce((accumulator, currentVal) => {
+            const deviation = currentVal - centralTendency;
+            return accumulator + (deviation * deviation);
+        }, 0);
+
+        const variance = sumOfSquaredDeviations / dataSize;
+        return Math.sqrt(variance);
+    };
+
+    const allProblemCases = parseProblemSets(rawInputString);
+
+    allProblemCases.forEach(currentCase => {
+        const calculatedDeviation = computePopulationStandardDeviation(currentCase.measurements);
+        console.log(calculatedDeviation.toFixed(4));
+    });
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

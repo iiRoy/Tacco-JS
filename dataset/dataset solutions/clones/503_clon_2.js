@@ -1,85 +1,92 @@
-var rawData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-var lineData = rawData . trim ( ) . split ( "\n" ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-while ( true ) {
+var lineData = rawData.trim().split("\n");
 
-   var dimensions = lineData . shift ( ) . split ( " " ) . map ( Number ) ;
-   if ( dimensions . join ( " " ) == "0 0" ) { break ; }
+while (true) {
+    var nodeEdgeCounts = lineData.shift().split(" ").map(Number);
 
-   var numNodes = dimensions [ 0 ] ;
-   var numEdges = dimensions [ 1 ] ;
-   var stateCapacity = 2 ; // Represents different states or conditions
-   var startNode = 1 ;
-   var targetNode = numNodes ;
+    if (nodeEdgeCounts.join(" ") === "0 0") {
+        break;
+    }
 
-   var edgeList = [ ] ;
-   for ( var edgeIndex = 0 ; edgeIndex < numEdges ; edgeIndex ++ ) {
-      edgeList . push ( lineData . shift ( ) . split ( " " ) . map ( Number ) ) ;
-   }
+    var numNodes = nodeEdgeCounts[0];
+    var numEdges = nodeEdgeCounts[1];
 
-   var minCosts = [ ] ;
-   for ( var nodeIndex = 0 ; nodeIndex <= numNodes ; nodeIndex ++ ) {
-      minCosts [ nodeIndex ] = [ ] ;
-      for ( var stateIndex = 0 ; stateIndex <= stateCapacity ; stateIndex ++ ) {
-         minCosts [ nodeIndex ] [ stateIndex ] = Infinity ;
-      }
-   }
+    var stateCount = 2;
+    var startNode = 1;
+    var destinationNode = numNodes;
 
-   minCosts [ startNode ] [ 0 ] = 0 ;
-   var processingQueue = [ startNode ] ;
-   var visitedTracker = { } ;
+    var edgeList = [];
+    for (var loopVar = 0; loopVar < numEdges; loopVar++) {
+        edgeList.push(lineData.shift().split(" ").map(Number));
+    }
 
-   while ( true ) {
-      if ( processingQueue . length == 0 ) {
-         break ;
-      }
-      var currentProcessingNode = processingQueue . shift ( ) ;
+    var minCosts = [];
+    for (var nodeIdx = 0; nodeIdx <= numNodes; nodeIdx++) {
+        minCosts[nodeIdx] = [];
+        for (var stateIdx = 0; stateIdx <= stateCount; stateIdx++) {
+            minCosts[nodeIdx][stateIdx] = Infinity;
+        }
+    }
 
-      if ( visitedTracker . hasOwnProperty ( currentProcessingNode ) ) {
-         continue ;
-      }
-      visitedTracker [ currentProcessingNode ] = true ;
+    minCosts[startNode][0] = 0;
 
-      edgeList . forEach ( function ( currentEdgeData ) {
-         var originNode = currentEdgeData [ 0 ] ;
-         var destinationNode = currentEdgeData [ 1 ] ;
-         var pathWeight = currentEdgeData [ 2 ] ;
+    var queueNodes = [startNode];
+    var visitedNodes = {};
 
-         if ( originNode == currentProcessingNode ) {
-            for ( var costState = 2 ; costState >= 0 ; costState -- ) {
-               var costValue = minCosts [ originNode ] [ costState ] ;
-               if ( costState == 0 ) {
-                  minCosts [ destinationNode ] [ 0 ] = Math . min ( minCosts [ destinationNode ] [ 0 ] , costValue + pathWeight ) ;
-                  minCosts [ destinationNode ] [ 1 ] = Math . min ( minCosts [ destinationNode ] [ 1 ] , costValue ) ;
-               } else if ( costState == 1 ) {
-                  minCosts [ destinationNode ] [ 2 ] = Math . min ( minCosts [ destinationNode ] [ 2 ] , costValue ) ;
-               } else if ( costState == 2 ) {
-                  minCosts [ destinationNode ] [ 2 ] = Math . min ( minCosts [ destinationNode ] [ 2 ] , costValue + pathWeight ) ;
-               }
+    while (true) {
+        if (queueNodes.length === 0) {
+            break;
+        }
+
+        var currentNode = queueNodes.shift();
+
+        if (visitedNodes.hasOwnProperty(currentNode)) {
+            continue;
+        }
+        visitedNodes[currentNode] = true;
+
+        edgeList.forEach(function (currentEdge) {
+            var nodeA = currentEdge[0];
+            var nodeB = currentEdge[1];
+            var edgeWeight = currentEdge[2];
+
+            if (nodeA === currentNode) {
+                for (var stateIter = 2; stateIter >= 0; stateIter--) {
+                    var currentCost = minCosts[nodeA][stateIter];
+                    if (stateIter === 0) {
+                        minCosts[nodeB][0] = Math.min(minCosts[nodeB][0], currentCost + edgeWeight);
+                        minCosts[nodeB][1] = Math.min(minCosts[nodeB][1], currentCost);
+                    } else if (stateIter === 1) {
+                        minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], currentCost);
+                    } else if (stateIter === 2) {
+                        minCosts[nodeB][2] = Math.min(minCosts[nodeB][2], currentCost + edgeWeight);
+                    }
+                }
+                queueNodes.push(nodeB);
+            } else if (nodeB === currentNode) {
+                for (var stateIter = 2; stateIter >= 0; stateIter--) {
+                    var currentCost = minCosts[nodeB][stateIter];
+                    if (stateIter === 0) {
+                        minCosts[nodeA][0] = Math.min(minCosts[nodeA][0], currentCost + edgeWeight);
+                        minCosts[nodeA][1] = Math.min(minCosts[nodeA][1], currentCost);
+                    } else if (stateIter === 1) {
+                        minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], currentCost);
+                    } else if (stateIter === 2) {
+                        minCosts[nodeA][2] = Math.min(minCosts[nodeA][2], currentCost + edgeWeight);
+                    }
+                }
+                queueNodes.push(nodeA);
             }
-            processingQueue . push ( destinationNode ) ;
-         } else if ( destinationNode == currentProcessingNode ) {
-            for ( var costState = 2 ; costState >= 0 ; costState -- ) {
-               var costValue = minCosts [ destinationNode ] [ costState ] ;
-               if ( costState == 0 ) {
-                  minCosts [ originNode ] [ 0 ] = Math . min ( minCosts [ originNode ] [ 0 ] , costValue + pathWeight ) ;
-                  minCosts [ originNode ] [ 1 ] = Math . min ( minCosts [ originNode ] [ 1 ] , costValue ) ;
-               } else if ( costState == 1 ) {
-                  minCosts [ originNode ] [ 2 ] = Math . min ( minCosts [ originNode ] [ 2 ] , costValue ) ;
-               } else if ( costState == 2 ) {
-                  minCosts [ originNode ] [ 2 ] = Math . min ( minCosts [ originNode ] [ 2 ] , costValue + pathWeight ) ;
-               }
-            }
-            processingQueue . push ( originNode ) ;
-         }
-      } ) ;
-   }
+        });
+    }
 
-   var finalAnswer = Infinity ;
-   minCosts [ targetNode ] . forEach ( function ( valueEntry , entryIndex ) {
-      if ( entryIndex != 1 ) {
-         finalAnswer = Math . min ( finalAnswer , valueEntry ) ;
-      }
-   } ) ;
-   console . log ( finalAnswer ) ;
+    var finalAnswer = Infinity;
+    minCosts[destinationNode].forEach(function (finalCost, stateIndex) {
+        if (stateIndex !== 1) {
+            finalAnswer = Math.min(finalAnswer, finalCost);
+        }
+    });
+
+    console.log(finalAnswer);
 }

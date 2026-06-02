@@ -1,75 +1,60 @@
-const computeSpellTraversal = (rawInputData) => {
-
-    const parseNumericString = (strValue) => {
-        return Number.parseInt(strValue.trim(), 10);
-    };
-
-    const allInputLines = rawInputData.trim().split('\n');
-
-    const [configLine, ...remainingInputSegments] = allInputLines;
-    const [numRows, numColumns, stepDistance] = configLine.split(' ').map(parseNumericString);
-
-    const maxPossibleGridValue = numRows * numColumns;
-
-    const valueCoordinateMap = new Array(maxPossibleGridValue + 1).fill(null);
-
-    const gridDataEndIndex = numRows; // The grid occupies 'numRows' lines
-
-    for (let currentGridRowIndex = 0; currentGridRowIndex < numRows; ++currentGridRowIndex) {
-        const currentRowValues = remainingInputSegments[currentGridRowIndex].split(' ').map(parseNumericString);
-        for (let currentGridColumnIndex = 0; currentGridColumnIndex < numColumns; ++currentGridColumnIndex) {
-            const cellNumericValue = currentRowValues[currentGridColumnIndex];
-            valueCoordinateMap[cellNumericValue] = [currentGridRowIndex, currentGridColumnIndex];
-        }
-    }
-
-    const cumulativePathCosts = new Array(maxPossibleGridValue + 1).fill(0);
-
-    const calculateManhattanDistance = (coordA, coordB) => {
-        const [rowA, colA] = coordA;
-        const [rowB, colB] = coordB;
-        return Math.abs(rowA - rowB) + Math.abs(colA - colB);
-    };
-
-    for (let startingOffset = 1; startingOffset <= stepDistance; ++startingOffset) {
-        for (let currentPathNode = startingOffset; currentPathNode <= maxPossibleGridValue - stepDistance; currentPathNode += stepDistance) {
-            const nextPathNode = currentPathNode + stepDistance;
-
-            if (valueCoordinateMap[currentPathNode] && valueCoordinateMap[nextPathNode]) {
-                const segmentDistance = calculateManhattanDistance(
-                    valueCoordinateMap[currentPathNode],
-                    valueCoordinateMap[nextPathNode]
-                );
-                cumulativePathCosts[nextPathNode] = cumulativePathCosts[currentPathNode] + segmentDistance;
-            }
-        }
-    }
-
-    const numberOfQueriesLineIndex = gridDataEndIndex;
-    const totalQueries = parseNumericString(remainingInputSegments[numberOfQueriesLineIndex].split(' ')[0]);
-
-    const queryDataStartLine = gridDataEndIndex + 1;
-    const queryInstructions = remainingInputSegments.slice(queryDataStartLine, queryDataStartLine + totalQueries);
-
-    const computedQueryOutcomes = [];
-
-    for (let queryIterator = 0; queryIterator < totalQueries; ++queryIterator) {
-        const [queryStartPoint, queryEndPoint] = queryInstructions[queryIterator].split(' ').map(parseNumericString);
-
-        if (queryStartPoint < 1 || queryStartPoint > maxPossibleGridValue ||
-            queryEndPoint < 1 || queryEndPoint > maxPossibleGridValue) {
-            // In a real-world scenario, robust error handling or a default value might be pushed.
-            // For competitive programming, input is usually guaranteed valid.
-            computedQueryOutcomes.push(0); // Or throw an error
-            continue;
-        }
-
-        const currentQueryCalculatedCost = cumulativePathCosts[queryEndPoint] - cumulativePathCosts[queryStartPoint];
-        computedQueryOutcomes.push(currentQueryCalculatedCost);
-    }
-
-    return computedQueryOutcomes.join('\n');
+const parseIntegerLine = (lineContent) => {
+    return lineContent.split(' ').map(strVal => parseInt(strVal, 10));
 };
 
-const systemInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(computeSpellTraversal(systemInputContent));
+const calculateManhattanDistance = (pointOne, pointTwo) => {
+    const [rowCoord1, colCoord1] = pointOne;
+    const [rowCoord2, colCoord2] = pointTwo;
+    return Math.abs(rowCoord1 - rowCoord2) + Math.abs(colCoord1 - colCoord2);
+};
+
+const solveMagicGridProblem = (rawInputString) => {
+    const allInputLines = rawInputString.trim().split('\n');
+
+    const [gridHeight, gridWidth, stepDistance] = parseIntegerLine(allInputLines[0]);
+
+    const dataAndQueryLines = allInputLines.slice(1);
+
+    const totalGridCells = gridHeight * gridWidth;
+
+    const cellPositionMap = new Array(totalGridCells + 1);
+
+    for (let currentRowIndex = 0; currentRowIndex < gridHeight; currentRowIndex++) {
+        const currentGridRowValues = parseIntegerLine(dataAndQueryLines[currentRowIndex]);
+        for (let currentColIndex = 0; currentColIndex < gridWidth; currentColIndex++) {
+            const cellValue = currentGridRowValues[currentColIndex];
+            cellPositionMap[cellValue] = [currentRowIndex, currentColIndex];
+        }
+    }
+
+    const cumulativeMagicCost = new Array(totalGridCells + 1).fill(0);
+
+    for (let sequenceStartValue = 1; sequenceStartValue <= stepDistance; sequenceStartValue++) {
+        for (let currentCellVal = sequenceStartValue; currentCellVal <= totalGridCells - stepDistance; currentCellVal += stepDistance) {
+            const nextCellVal = currentCellVal + stepDistance;
+
+            const currentCellPos = cellPositionMap[currentCellVal];
+            const nextCellPos = cellPositionMap[nextCellVal];
+
+            const distanceBetweenSteps = calculateManhattanDistance(currentCellPos, nextCellPos);
+
+            cumulativeMagicCost[nextCellVal] = cumulativeMagicCost[currentCellVal] + distanceBetweenSteps;
+        }
+    }
+
+    const numberOfQueries = parseIntegerLine(dataAndQueryLines[gridHeight])[0];
+
+    const queryResultsList = [];
+
+    for (let queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
+        const queryLineData = dataAndQueryLines[gridHeight + 1 + queryIndex];
+        const [queryRangeStart, queryRangeEnd] = parseIntegerLine(queryLineData);
+
+        const queryTotalCost = cumulativeMagicCost[queryRangeEnd] - cumulativeMagicCost[queryRangeStart];
+        queryResultsList.push(queryTotalCost);
+    }
+
+    return queryResultsList.join('\n');
+};
+
+console.log(solveMagicGridProblem(require('fs').readFileSync('/dev/stdin', 'utf8')));

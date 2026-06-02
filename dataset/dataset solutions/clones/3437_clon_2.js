@@ -1,103 +1,81 @@
 'use strict';
-// This module provides a utility for reading input data from standard input.
-function LineReader( inputContent ) {
-    // Split the entire input string into an array of individual lines.
-    let textLines = inputContent.split( '\n' );
 
-    // If the last line is empty (often due to a trailing newline), remove it.
-    if ( textLines[ textLines.length - 1 ] === '' ) {
-        textLines.pop();
-    }
-
-    // Store the processed lines array as an instance property.
-    this.textLines = textLines;
-
-    // Initialize a pointer to keep track of the current line being processed.
-    this.currentLineIndex = 0;
+// This class helps in processing input data line by line.
+function InputProcessor(inputContent) {
+  let rawLines = inputContent.split('\n');
+  // Remove the last element if it's an empty string (common with readFileSync)
+  if (rawLines[rawLines.length - 1] === '') {
+    rawLines.pop();
+  }
+  this.dataLines = rawLines; // Stores all input lines
+  this.currentLineIndex = 0; // Tracks the current line being processed
 }
 
-// Method to parse a single line into an array of numbers.
-LineReader.prototype.fetchNumbers = function() {
-    // Retrieve the current line, split it by spaces, and convert each part to a number.
-    return this.textLines[ this.currentLineIndex++ ].split( ' ' ).map( numericValue => +numericValue );
+// Prototype method to read a line, split by spaces, and convert to numbers.
+InputProcessor.prototype.readNumbers = function() {
+  // Get the current line, then advance the index for the next read.
+  return this.dataLines[this.currentLineIndex++].split(' ').map(val => +val);
 };
 
-// Method to parse all remaining lines from the current position as numbers.
-LineReader.prototype.retrieveAllNumbers = function() {
-    // Store the starting index before advancing the pointer.
-    const startIdx = this.currentLineIndex;
-
-    // Advance the pointer to the end of the input.
-    this.currentLineIndex = this.textLines.length;
-
-    // Slice the array from the start index to the end and convert elements to numbers.
-    return this.textLines.slice( startIdx ).map( val => +val );
+// Prototype method to read all remaining lines and convert them to numbers.
+InputProcessor.prototype.readAllNumbers = function() {
+  const initialIndex = this.currentLineIndex;
+  // Set the index to the end, indicating all lines have been processed.
+  this.currentLineIndex = this.dataLines.length;
+  return this.dataLines.slice(initialIndex).map(val => +val);
 };
 
-// Method to retrieve all remaining lines from the current position as strings.
-LineReader.prototype.retrieveAllLines = function() {
-    // Capture the initial position.
-    const initialPosition = this.currentLineIndex;
-
-    // Move the line pointer to the very end of the line collection.
-    this.currentLineIndex = this.textLines.length;
-
-    // Return all lines from the initial position onwards as an array of strings.
-    return this.textLines.slice( initialPosition );
+// Prototype method to read all remaining lines as strings.
+InputProcessor.prototype.readAllStrings = function() {
+  const initialIndex = this.currentLineIndex;
+  // Set the index to the end, indicating all lines have been processed.
+  this.currentLineIndex = this.dataLines.length;
+  return this.dataLines.slice(initialIndex);
 };
 
-// Method to fetch a specified number of lines from the current position as strings.
-LineReader.prototype.fetchNLines = function( lineCount ) {
-    // Record the current reading position.
-    const initialPosition = this.currentLineIndex;
-
-    // Increment the line pointer by the requested count.
-    this.currentLineIndex += lineCount;
-
-    // Extract and return the requested block of lines.
-    return this.textLines.slice( initialPosition, initialPosition + lineCount );
+// Prototype method to read a specific number of lines as strings.
+InputProcessor.prototype.readNStrings = function(count) {
+  const initialIndex = this.currentLineIndex;
+  // Advance the index by the number of lines read.
+  this.currentLineIndex += count;
+  return this.dataLines.slice(initialIndex, initialIndex + count);
 };
 
-// Create an instance of our custom input reader, loading data from standard input.
-const inputSource = new LineReader( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Create an instance of InputProcessor, reading from standard input.
+const inputReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Immediately Invoked Function Expression (IIFE) to encapsulate the main program logic.
-( () => {
+// Main execution block using an Immediately Invoked Function Expression (IIFE).
+(() => {
+  // Read the first number from the input, which represents the total count of elements.
+  const totalElements = inputReader.readNumbers()[0];
+  // Read the next line, which contains the array of numbers.
+  const numberArray = inputReader.readNumbers();
 
-    // Read the first number from the input, which represents the total count of elements.
-    const elementCount = inputSource.fetchNumbers()[0];
+  let totalSum = 0; // Initialize a variable to accumulate the sum of elements.
+  // Iterate through the array to calculate the sum of all its elements.
+  for (let currentElement of numberArray) {
+    totalSum += currentElement;
+  }
 
-    // Read the next line of input as an array of numerical values.
-    const valueArray = inputSource.fetchNumbers();
+  // Calculate the average value of the numbers in the array.
+  let averageValue = totalSum / totalElements;
 
-    // Initialize a variable to accumulate the sum of all elements.
-    let sumTotal = 0;
+  // Initialize 'closestValue' with the first element of the array.
+  let closestValue = numberArray[0];
+  // Initialize 'closestIndex' with the index of the first element.
+  let closestIndex = 0;
 
-    // Iterate through each element in the array to compute their sum.
-    for ( const currentElement of valueArray ) {
-        sumTotal += currentElement;
+  // Loop through the array starting from the second element (index 1).
+  for (let idx = 1; idx < totalElements; idx++) {
+    // Compare the absolute difference between the current element and the average
+    // with the absolute difference between the 'closestValue' found so far and the average.
+    if (Math.abs(numberArray[idx] - averageValue) < Math.abs(closestValue - averageValue)) {
+      // If the current element is closer to the average, update 'closestValue' and 'closestIndex'.
+      closestValue = numberArray[idx];
+      closestIndex = idx;
     }
+  }
 
-    // Calculate the arithmetic mean (average) of the elements.
-    let calculatedMean = sumTotal / elementCount;
-
-    // Initialize 'nearestValue' with the first element of the array.
-    let nearestValue = valueArray[0];
-    // Initialize 'targetIndex' to store the index of the element closest to the mean.
-    let targetIndex = 0;
-
-    // Loop through the array starting from the second element.
-    for ( let loopIndex = 1; loopIndex < elementCount; loopIndex++ ) {
-        // Compare the absolute difference of the current element from the mean
-        // with the absolute difference of the currently nearest value from the mean.
-        if ( Math.abs( valueArray[ loopIndex ] - calculatedMean ) < Math.abs( nearestValue - calculatedMean ) ) {
-            // If the current element is closer to the mean, update 'nearestValue' and 'targetIndex'.
-            nearestValue = valueArray[ loopIndex ];
-            targetIndex = loopIndex;
-        }
-    }
-
-    // Output the index of the element found to be closest to the calculated mean.
-    console.log( targetIndex );
-
-} )();
+  // Output the index of the element that is closest to the average value.
+  console.log(closestIndex);
+})();

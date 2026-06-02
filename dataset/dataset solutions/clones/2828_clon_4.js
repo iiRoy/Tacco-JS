@@ -1,28 +1,29 @@
-const analyzeGeometry = (inputLine) => {
-  const [dimWidth, dimHeight, positionX, positionY] = inputLine.split(" ").map(val => parseInt(val, 10));
+const processDimensions = (rawData) => {
+  const [widthStr, heightStr, xStr, yStr] = rawData[0].split(" ");
 
-  const partitionA = dimHeight * Math.min(positionX, dimWidth - positionX);
-  const partitionB = dimWidth * Math.min(positionY, dimHeight - positionY);
+  const widthVal = Number(widthStr);
+  const heightVal = Number(heightStr);
+  const xCoord = Number(xStr);
+  const yCoord = Number(yStr);
 
-  const maxOfSmallerPartitions = Math.max(partitionA, partitionB);
-  const areaOfHalfRectangle = (dimWidth * dimHeight) / 2;
+  const totalHalfArea = (widthVal * heightVal) / 2;
 
-  let outcomeArea;
-  let indicatorValue;
+  const verticalCutArea = heightVal * Math.min(xCoord, widthVal - xCoord);
+  const horizontalCutArea = widthVal * Math.min(yCoord, heightVal - yCoord);
 
-  if (partitionA === 0 && partitionB === 0) {
-    outcomeArea = areaOfHalfRectangle;
-    indicatorValue = 0;
-  } else {
-    outcomeArea = maxOfSmallerPartitions;
-    indicatorValue = ((partitionA === partitionB && partitionA !== 0) || (maxOfSmallerPartitions === areaOfHalfRectangle)) ? 1 : 0;
-  }
+  const isZeroIntersection = (verticalCutArea === 0 && horizontalCutArea === 0);
+  const maxPartitionArea = Math.max(verticalCutArea, horizontalCutArea);
+  const isMaxAreaEqualToHalf = (maxPartitionArea === totalHalfArea);
+  const areBothCutsEqual = (verticalCutArea === horizontalCutArea);
 
-  return `${outcomeArea} ${indicatorValue}`;
+  const outputValue = isZeroIntersection ? totalHalfArea : maxPartitionArea;
+
+  const outputFlag = (
+    (areBothCutsEqual && !isZeroIntersection) ||
+    isMaxAreaEqualToHalf
+  ) ? 1 : 0;
+
+  console.log(`${outputValue} ${outputFlag}`);
 };
 
-const executeCalculations = (dataRows) => {
-  return analyzeGeometry(dataRows[0]);
-};
-
-console.log(executeCalculations(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n")));
+processDimensions(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n"));

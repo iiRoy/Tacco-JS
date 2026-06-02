@@ -1,52 +1,31 @@
-// This module handles processing of a textual data stream.
-function processDataStream(incomingText)
-{
-    // First, clean up the raw input and split it into individual lines.
-    let parsedLines = incomingText
-        .trim()
-        .split("\n")
-    ;
+function processInput(rawData) {
+    // Normalize the incoming data: remove leading/trailing whitespace and split into individual lines.
+    rawData = rawData.trim().split("\n");
 
-    // Extract the primary numeric target from the first line.
-    // The parseInt function will automatically handle the array of strings
-    // by using the first element after implicit coercion to string.
-    const overallTarget = parseInt(
-        parsedLines[0].split(" "),
-        10
-    ) ;
+    // Parse the initial numerical value from the first line of the input.
+    // It's assumed the first line contains a single number or a space-separated string where the first part is the number.
+    var totalCapacity = parseInt(rawData[0].split(" ")[0], 10);
 
-    // Initialize a counter for summing up values from the second line.
-    let accumulatedQuantity = 0;
+    // Initialize a variable to accumulate a sum from subsequent data.
+    var elapsedTime = 0;
 
-    // Iterate through the numeric strings on the second line
-    // and add their integer values to the accumulator.
-    parsedLines[1] .split(" ")
-        .forEach( currentNumericString => {
-            accumulatedQuantity += parseInt(
-                currentNumericString,
-                10
-            );
-        })
-    ; // End of forEach loop
+    // Iterate through the elements of the second line of the input.
+    // Each element is expected to be a number, separated by spaces.
+    rawData[1].split(" ").forEach(currentValue => {
+        // Convert the current string element to an integer and add it to the accumulator.
+        elapsedTime += parseInt(currentValue, 10);
+    });
 
-    // Perform a comparison to determine the final output.
-    if (overallTarget - accumulatedQuantity < 0) {
-        // If the difference is negative, indicate an invalid state.
+    // Evaluate the difference between the initial capacity and the accumulated time.
+    // If the result is negative, it indicates an overflow or insufficient capacity.
+    if (totalCapacity - elapsedTime < 0) {
+        // Output a specific error code for negative results.
         console.log(-1);
+    } else {
+        // Otherwise, output the calculated remaining capacity.
+        console.log(totalCapacity - elapsedTime);
     }
-    else
-    {
-        // Otherwise, print the calculated remaining value.
-        console.log(
-            overallTarget - accumulatedQuantity
-        );
-    }
-} // End of function processDataStream
+}
 
-// Invoke the main processing function with data read from standard input.
-processDataStream(
-    require("fs") .readFileSync(
-        "/dev/stdin",
-        "utf8"
-    )
-);
+// Read the entire content of standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

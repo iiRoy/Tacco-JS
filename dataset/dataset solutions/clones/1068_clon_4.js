@@ -1,37 +1,32 @@
-const dataStream = require('node:fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
-function consolidateSortedSegments(segmentA, segmentB) {
-    let mergedCollection = [];
-    let ptrA = 0;
-    let ptrB = 0;
-
-    while (ptrA < segmentA.length && ptrB < segmentB.length) {
-        if (segmentA[ptrA] < segmentB[ptrB]) {
-            mergedCollection.push(segmentA[ptrA]);
-            ptrA++;
-        } else {
-            mergedCollection.push(segmentB[ptrB]);
-            ptrB++;
-        }
+const orderNumbers = (sourceNumbers) => {
+    if (sourceNumbers.length === 0) {
+        return [];
     }
 
-    return mergedCollection.concat(segmentA.slice(ptrA)).concat(segmentB.slice(ptrB));
-}
+    const maxValue = Math.max(...sourceNumbers);
 
-function orderSequence(inputCollection) {
-    if (inputCollection.length <= 1) {
-        return inputCollection;
-    }
+    const tally = Array.from({ length: maxValue + 1 }, () => 0);
+    sourceNumbers.forEach(num => tally[num]++);
 
-    const midPoint = Math.floor(inputCollection.length / 2);
-    const leftPart = inputCollection.slice(0, midPoint);
-    const rightPart = inputCollection.slice(midPoint);
+    let currentSum = 0;
+    const cumulativeTally = tally.map(count => {
+        currentSum += count;
+        return currentSum;
+    });
 
-    const sortedLeftPart = orderSequence(leftPart);
-    const sortedRightPart = orderSequence(rightPart);
+    const orderedSequence = new Array(sourceNumbers.length);
+    const placementIndices = [...cumulativeTally];
 
-    return consolidateSortedSegments(sortedLeftPart, sortedRightPart);
-}
+    sourceNumbers.reduceRight((_, currentNum) => {
+        placementIndices[currentNum]--;
+        orderedSequence[placementIndices[currentNum]] = currentNum;
+        return null;
+    }, null);
 
-const numericalValues = dataStream[1].split(' ').map(Number);
-console.log(orderSequence(numericalValues).join(' '));
+    return orderedSequence;
+};
+
+const numericData = inputLines[1].split(' ').map(Number);
+console.log(orderNumbers(numericData).join(' '));

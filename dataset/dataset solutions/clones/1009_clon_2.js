@@ -1,114 +1,93 @@
-function verifyStability(  inputElements  ) {
-    // This function is currently a placeholder for future stability checks.
-    // It's designed to receive an array and determine if a sorting operation
-    // has preserved the relative order of equal elements.
-} /* End of verifyStability function definition */
+function verifyStability(inputCollection) {
+  // This function is intentionally left without implementation,
+  // mirroring the original code's structure.
+}
 
+/**
+ * Sorts an array using the Bubble Sort algorithm.
+ * Prints the sorted array and returns a stability indicator.
+ * @param {number} dataLength - The number of elements in the array.
+ * @param {Array<string[]>} dataElements - The array of elements to sort.
+ * @returns {string} A string indicating "Stable".
+ */
+function performBubbleSort(dataLength, dataElements) {
+  let didSwapOccur = 1; // Flag to track if any swaps happened in a pass
+  let swapCounter = 0; // Counter for total swaps (not used for logic, but preserved)
 
-function  performBubbleSort(   arrayLength,
-                                        dataCollection   ) {
-    /*
-     * Implements the bubble sort algorithm to arrange elements.
-     * It iterates through the list, repeatedly comparing adjacent elements
-     * and swapping them if they are in the wrong order.
-     * This version tracks if any swaps occurred in an iteration.
-     */
-    let   hasSwapped = 1; // Flag to indicate if any swaps happened in the current pass
-    let   exchangeCount = 0; // Counter for the total number of element exchanges
+  // Loop until no swaps occur in a full pass
+  while (didSwapOccur) {
+    didSwapOccur = 0; // Reset flag for the current pass
 
-    // Loop until no swaps are made in a complete pass
-    while(hasSwapped) {
-        hasSwapped = 0; // Reset flag for the new pass
-
-        // Iterate through the array to compare adjacent elements
-        for(let   currentIndex = 0;
-                                currentIndex < arrayLength - 1;
-                                        currentIndex++   ) {
-            // Compare the second part (index 1) of adjacent sub-arrays numerically
-            if(Number(dataCollection[currentIndex][1]) > Number(dataCollection[currentIndex + 1][1])) {
-                // If elements are out of order, swap them using array destructuring
-                [dataCollection[currentIndex], dataCollection[currentIndex + 1]] =
-                [dataCollection[currentIndex + 1], dataCollection[currentIndex]];
-
-                hasSwapped = 1; // Mark that a swap occurred
-                exchangeCount++; // Increment the swap counter
-            }
-        }
+    // Iterate through the array, comparing adjacent elements
+    for (let outerLoopIndex = 0; outerLoopIndex < dataLength - 1; outerLoopIndex++) {
+      // Compare the second part of the current and next element (numeric value)
+      if (Number(dataElements[outerLoopIndex][1]) > Number(dataElements[outerLoopIndex + 1][1])) {
+        // Swap elements if they are in the wrong order
+        [dataElements[outerLoopIndex], dataElements[outerLoopIndex + 1]] = [dataElements[outerLoopIndex + 1], dataElements[outerLoopIndex]];
+        didSwapOccur = 1; // Mark that a swap occurred
+        swapCounter++; // Increment swap count
+      }
     }
-    // Output the sorted array elements joined by spaces
-    console.log( dataCollection.join(" ") );
+  }
 
-    // This return value is consistent with the original code's misleading return,
-    // as bubble sort itself isn't inherently stable without specific modifications.
-    return "Stable";
-} /* End of performBubbleSort function */
+  // Output the sorted array elements joined by spaces
+  console.log(dataElements.join(" "));
+  return "Stable"; // Bubble sort is generally stable
+}
 
+/**
+ * Sorts an array using the Selection Sort algorithm.
+ * Prints the sorted array.
+ * @param {number} arraySize - The number of elements in the array.
+ * @param {Array<string[]>} elementsToSort - The array of elements to sort.
+ */
+function performSelectionSort(arraySize, elementsToSort) {
+  let exchangeCount = 0; // Counter for exchanges (not used for logic, but preserved)
 
-function   executeSelectionSort(
-    listSize, /* The total number of items in the collection */
-    itemCollection /* The array of items to be sorted */
-) {
-    // Initialize a counter for the number of actual swaps performed
-    let   exchangeTally = 0;
+  // Iterate through the array to find the minimum element
+  for (let currentPos = 0; currentPos < arraySize - 1; currentPos++) {
+    let minElementIdx = currentPos; // Assume current element is the minimum
 
-    // Outer loop: iterate through the array from the first element up to the second to last
-    for(let   outerPointer = 0;
-                            outerPointer < listSize - 1;
-                                    outerPointer++   ) {
-        // Assume the current element is the minimum
-        let   minimumIndex = outerPointer;
-
-        // Inner loop: find the smallest element in the unsorted part of the array
-        for(let   innerPointer = outerPointer;
-                                innerPointer < listSize;
-                                        innerPointer++   ) {
-            // Compare the numerical value of the second part of the current element
-            // with the second part of the assumed minimum element
-            if(Number(itemCollection[innerPointer][1]) < Number(itemCollection[minimumIndex][1])) {
-                // If a smaller element is found, update the minimum index
-                minimumIndex = innerPointer;
-            }
-        }
-
-        // If the assumed minimum was not the actual minimum, perform a swap
-        if(outerPointer !== minimumIndex) {
-            // Swap the elements at outerPointer and minimumIndex using destructuring assignment
-            [itemCollection[outerPointer], itemCollection[minimumIndex]] =
-            [itemCollection[minimumIndex], itemCollection[outerPointer]];
-
-            exchangeTally++; // Increment the swap counter
-        }
+    // Find the actual minimum element in the unsorted part
+    for (let innerLoopIndex = currentPos; innerLoopIndex < arraySize; innerLoopIndex++) {
+      // Compare the second part of the current element with the assumed minimum
+      if (Number(elementsToSort[innerLoopIndex][1]) < Number(elementsToSort[minElementIdx][1])) {
+        minElementIdx = innerLoopIndex; // Update index of the true minimum
+      }
     }
-    // After sorting, print the elements of the array joined by spaces
-    console.log(itemCollection.join(" "));
-} /* End of executeSelectionSort function */
 
+    // If the minimum element is not at the current position, swap them
+    if (currentPos !== minElementIdx) {
+      [elementsToSort[currentPos], elementsToSort[minElementIdx]] = [elementsToSort[minElementIdx], elementsToSort[currentPos]];
+      exchangeCount++; // Increment exchange count
+    }
+  }
 
-function   orchestrateProcessing(
-    rawDataInput /* The raw input string containing data for sorting */
-) {
-    // Split the input string into lines
-    // The first line contains the array size, the second line contains the elements
-    let   [arrayDimension, elementString] = rawDataInput.split("\n");
+  // Output the sorted array elements joined by spaces
+  console.log(elementsToSort.join(" "));
+}
 
-    // Create a copy of the elements for bubble sort
-    let   bubbleSortTarget = elementString.split(" ");
-    // Create another copy of the elements for selection sort
-    let   selectionSortTarget = elementString.split(" ");
+/**
+ * Main function to process input, sort arrays, and compare stability.
+ * @param {string} rawInputContent - The raw input string from stdin.
+ */
+function executeProcessing(rawInputContent) {
+  // Split the input into lines
+  const [arraySizeValue, secondLineContent] = rawInputContent.split("\n");
 
-    // Execute bubble sort and log its result (which is "Stable" from the function)
-    console.log( performBubbleSort(arrayDimension, bubbleSortTarget) );
+  // Create two copies of the data for different sorting algorithms
+  let selectionArrayCopy = secondLineContent.split(" ");
+  let originalArrayCopy = secondLineContent.split(" ");
 
-    // Execute selection sort on its own copy of the data
-    executeSelectionSort(arrayDimension, selectionSortTarget);
+  // Perform bubble sort and log its output
+  console.log(performBubbleSort(arraySizeValue, originalArrayCopy));
 
-    // Compare the string representations of the two sorted arrays to check for stability
-    // Log "Stable" if they are identical, "Not stable" otherwise
-    console.log( selectionSortTarget.join() === bubbleSortTarget.join() ? "Stable" : "Not stable" );
-} /* End of orchestrateProcessing function */
+  // Perform selection sort
+  performSelectionSort(arraySizeValue, selectionArrayCopy);
 
+  // Compare the results of the two sorts to determine stability
+  console.log(selectionArrayCopy.join() === originalArrayCopy.join() ? "Stable" : "Not stable");
+}
 
-// Main execution block:
-// Read input from standard input using Node.js file system module
-// and pass it to the primary processing function.
-orchestrateProcessing( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the main processing function
+executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

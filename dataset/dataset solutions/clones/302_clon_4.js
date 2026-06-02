@@ -1,40 +1,27 @@
-const calculateEpochValidity = (yearValue) => {
-    const isFactorOfFour = (yearValue % 4 === 0);
-    const isFactorOfHundred = (yearValue % 100 === 0);
-    const isFactorOfFourHundred = (yearValue % 400 === 0);
-    return isFactorOfFourHundred || (isFactorOfFour && !isFactorOfHundred);
-};
+const checkYearForLeap = (yr) => (yr % 400 === 0) || (yr % 4 === 0 && yr % 100 !== 0);
 
-let accumulatedData = '';
+const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const dataSegments = sourceData.split('\n');
 
-process.stdin.on('data', (incomingData) => {
-    accumulatedData += incomingData.toString();
-});
+const finalOutputBuffer = [];
+let lineCursor = 0;
 
-process.stdin.on('end', () => {
-    const rawEntries = accumulatedData.trim().split('\n');
+while (true) {
+    const currentLine = dataSegments[lineCursor++];
+    const yearBounds = currentLine.split(' ').map(Number);
+    const startBoundary = yearBounds[0];
+    const endBoundary = yearBounds[1];
 
-    const processedOutputs = rawEntries
-        .reduce((acc, entryLine) => {
-            const boundaryValues = entryLine.split(' ').map(Number);
-            const lowerBound = boundaryValues[0];
-            const upperBound = boundaryValues[1];
+    if (startBoundary + endBoundary === 0) {
+        break;
+    }
 
-            if (lowerBound === 0 && upperBound === 0) {
-                return acc;
-            }
+    const rangeLength = endBoundary - startBoundary + 1;
+    const rangeYears = Array.from({ length: rangeLength > 0 ? rangeLength : 0 }, (_, index) => startBoundary + index);
+    const foundLeapYears = rangeYears.filter(checkYearForLeap);
 
-            const yearSequence = Array.from({ length: upperBound - lowerBound + 1 }, (_, index) => lowerBound + index);
+    const segmentResult = foundLeapYears.length > 0 ? foundLeapYears.join('\n') + '\n' : 'NA\n';
+    finalOutputBuffer.push(segmentResult);
+}
 
-            const validEpochs = yearSequence.filter(calculateEpochValidity);
-
-            if (validEpochs.length > 0) {
-                acc.push(validEpochs.join('\n'));
-            } else {
-                acc.push('NA');
-            }
-            return acc;
-        }, []);
-
-    console.log(processedOutputs.join('\n\n'));
-});
+console.log(finalOutputBuffer.join('\n\n'));

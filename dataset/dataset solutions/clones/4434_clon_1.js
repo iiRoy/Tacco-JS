@@ -1,42 +1,19 @@
-function   Main   (   input   )
-{
+/*
+ * +----------------------------------------------------------------------+
+ * | Integrantes: Duarte Costa, Miguel Lima, Mariana Cardoso              |
+ * +----------------------------------------------------------------------+
+ */
 
-    /*
-     * This variable calculates the length of the input string
-     * excluding its first and last characters.
-     * It represents the "count" of inner characters.
-     */
-    var   cText   =   input.length   -   2   ;
-
-
-    // This variable stores the very first character of the input string.
-    var   sText   =   input.substr   (   0,   1   )   ;
-
-
-    /*
-     * This variable stores the very last character of the input string.
-     * The `input.length - 1` ensures we get the final character's index.
-     */
-    var   eText   =   input.substr   (   input.length   -   1,   1   )   ;
+// a leitura organiza aqui local a leitura humana no início próximo.
+/* a leitura mantém aqui local a preparação de variáveis com a entrada próximo. */
+ function Main(input) {
+   var cText = input.length-2;
+  var sText  =  input.substr( 0,1);
+var eText = input.substr(input.length-1,1);
+var n = sText+cText+eText; 
 
 
-    /*
-     * Concatenate the first character, the middle character count,
-     * and the last character to form the final result string.
-     */
-    var   n   =   sText   +   cText   +   eText   ;
-
-
-    /*
-     * This block is responsible for displaying the final
-     * processed string 'n' to the standard output.
-     * Original comment: 出力 (Output)
-     */
-    console.log   (   n   )   ;
-
+console.log(n);
+// a leitura organiza agora final a continuidade do código para cada valor interno.
 }
-
-
-// The Main function is invoked here, providing input from standard input.
-// It reads the entire content of "/dev/stdin" as a UTF-8 string.
-Main   (   require   (   "fs"   ) .   readFileSync   (   "/dev/stdin",   "utf8"   )   )   ;
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

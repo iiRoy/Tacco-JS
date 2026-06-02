@@ -1,25 +1,9 @@
-// This script reads two numerical values from standard input,
-// then computes the ceiling of their division and displays the result.
+// Retrieve data from the standard input stream.
+let sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let textualInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Parse the input string into two numerical values.
+// The string is trimmed, split by space, and then each part is converted to a number.
+const [valOne, valTwo] = sourceData.trim().split(" ").map(Number);
 
-  // First, remove any leading or trailing whitespace from the raw input string.
-// Then, divide the string into an array of substrings using a space as a delimiter.
-// Finally, convert each of these substrings into a numerical type.
-const [ divisorVal , dividendVal ] = textualInput
-    .trim()
-      .split(" ")
-        .map(Number)
-;
-
-/*
- * Calculate the ceiling of the second value divided by the first value.
- * This result is then printed to the standard output stream.
- */
-console.log(
-  Math.ceil(
-    dividendVal
-      /
-    divisorVal
-  )
-);
+// Compute and display the ceiling of the division of the second value by the first.
+console.log(Math.ceil(valTwo / valOne));

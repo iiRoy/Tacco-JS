@@ -1,39 +1,35 @@
-'use strict';
+'use strict'; // Enforce strict parsing and error handling
 
-/*
- * This function orchestrates the primary data processing workflow.
- * It takes raw textual input and computes a specific range based on character positions.
+/**
+ * This function processes the provided raw text input to calculate a specific distance.
+ * It determines the span between the first occurrence of 'A' and the last occurrence of 'Z'
+ * within the initial line of the input.
+ *
+ * @param {string} rawData The complete input string, typically read from a file or stdin.
  */
 const processInput = (rawData) => {
     // Extract the very first line from the multi-line input string.
-    const firstLineText = rawData.split('\n')[0];
+    const targetString = rawData.split('\n')[0];
 
-    // Convert the extracted line into an array of individual characters.
-    const charSequence = firstLineText.split('');
+    // Convert the extracted string into an array of individual characters.
+    const characterSequence = targetString.split('');
 
-    // Create a reversed copy of the character sequence.
-    // This helps in efficiently locating the last occurrence of a specific character.
-    const reversedSequence = charSequence.slice().reverse();
+    // Create a reversed copy of the character array for easier 'last occurrence' finding.
+    const reversedCharacterSequence = characterSequence.slice().reverse();
 
-    // Determine the total number of characters in the original sequence.
-    const sequenceLength = charSequence.length;
+    // Store the total number of characters in the original string.
+    const totalStringLength = characterSequence.length;
 
-    // Locate the first occurrence of the character 'A' within the character sequence.
-    const firstMarkerPosition = charSequence.indexOf('A');
+    // Find the zero-based index of the first 'A' character.
+    const firstAIndex = characterSequence.indexOf('A');
 
-    // Calculate the position of the last occurrence of 'Z' in the original sequence.
-    // This is achieved by finding 'Z' in the reversed sequence and
-    // adjusting its index relative to the original sequence's length.
-    const lastMarkerPosition = sequenceLength - reversedSequence.indexOf('Z');
+    // Calculate the zero-based index of the last 'Z' character.
+    // This is done by finding 'Z' in the reversed array and subtracting its index from the total length.
+    const lastZIndex = totalStringLength - reversedCharacterSequence.indexOf('Z');
 
-    // Output the computed difference between the last marker's position
-    // and the first marker's position to the standard output.
-    console.log(lastMarkerPosition - firstMarkerPosition);
+    // Output the difference between the last 'Z' index and the first 'A' index.
+    console.log(lastZIndex - firstAIndex);
 };
 
-
-// This is the primary execution point of the script.
-// It reads content from the standard input stream (e.g., from a pipe or file redirection)
-// using Node.js's file system module, decoding it as UTF-8,
-// and then passes this content to the main processing function.
-processInput( require('fs').readFileSync( '/dev/stdin', 'utf-8' ) );
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

@@ -1,50 +1,56 @@
-const executeProcessing = (rawInput) => {
-    const inputLines = rawInput.split('\n');
-    const discardedLine = inputLines.shift();
-    const characterSequence = inputLines.shift().split('');
-    const sequenceLength = characterSequence.length;
-    const transformationInstructions = inputLines.map(line => line.split(' '));
+function processInputAndCalculate(inputString) {
+    const inputLines = inputString.split("\n");
+    const _initialLine = inputLines.shift();
+    const charPattern = inputLines.shift().split("");
+    const patternLength = charPattern.length;
+    const transformationRules = inputLines.map(line => line.split(" "));
 
-    const initialTallies = Array.from({ length: sequenceLength }, () => 1);
+    let currentParticleDistribution = new Map();
+    for (let i = 0; i < patternLength; i++) {
+        currentParticleDistribution.set(i, 1);
+    }
 
-    const applyInstruction = (currentTallies, instruction) => {
-        const targetSymbol = instruction[0];
-        const movementDirective = instruction[1];
+    const executeTransformation = (distribution, pattern, length, rule) => {
+        const [triggerChar, moveDirection] = rule;
+        const nextDistributionState = new Map();
+        const mutableIntermediateDistribution = new Map(distribution);
 
-        const { transientTallies, futureTallies } = Array.from({ length: sequenceLength }).reduce(
-            (accumulator, _, currentPosition) => {
-                const symbolAtPosition = characterSequence[currentPosition];
-                const tallyAtPosition = accumulator.transientTallies[currentPosition];
+        for (let pos = 0; pos < length; pos++) {
+            const particleCount = mutableIntermediateDistribution.get(pos) || 0;
 
-                if (symbolAtPosition !== targetSymbol) {
-                    accumulator.futureTallies[currentPosition] += tallyAtPosition;
+            if (particleCount === 0) {
+                continue;
+            }
+
+            if (pattern[pos] !== triggerChar) {
+                nextDistributionState.set(pos, (nextDistributionState.get(pos) || 0) + particleCount);
+            } else {
+                if (moveDirection === 'L') {
+                    const targetPos = pos - 1;
+                    if (targetPos >= 0) {
+                        nextDistributionState.set(targetPos, (nextDistributionState.get(targetPos) || 0) + particleCount);
+                    }
                 } else {
-                    if (movementDirective === 'L') {
-                        if (currentPosition - 1 >= 0) {
-                            accumulator.futureTallies[currentPosition - 1] += tallyAtPosition;
-                        }
-                    } else if (movementDirective === 'R') {
-                        if (currentPosition + 1 < sequenceLength) {
-                            accumulator.transientTallies[currentPosition + 1] += tallyAtPosition;
-                        }
+                    const targetPos = pos + 1;
+                    if (targetPos < length) {
+                        mutableIntermediateDistribution.set(targetPos, (mutableIntermediateDistribution.get(targetPos) || 0) + particleCount);
                     }
                 }
-                return accumulator;
-            },
-            {
-                transientTallies: Array.from(currentTallies),
-                futureTallies: Array.from({ length: sequenceLength }).fill(0)
             }
-        );
-
-        return futureTallies;
+        }
+        return nextDistributionState;
     };
 
-    const finalTallies = transformationInstructions.reduce(applyInstruction, initialTallies);
+    for (const rule of transformationRules) {
+        currentParticleDistribution = executeTransformation(currentParticleDistribution, charPattern, patternLength, rule);
+    }
 
-    const totalSum = finalTallies.reduce((summation, value) => summation + value, 0);
+    let totalCount = 0;
+    for (const count of currentParticleDistribution.values()) {
+        totalCount += count;
+    }
 
-    console.log(totalSum);
-};
+    console.log(totalCount);
+}
 
-executeProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

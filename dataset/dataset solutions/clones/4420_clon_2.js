@@ -1,25 +1,33 @@
-function ProcessData(rawData) {
-  // This function takes raw string input, processes it, and outputs a count.
-  // First, parse the input string into numerical components.
-  const parsedValues = rawData.split(" ").map(Number);
+// This module is designed to process a sequence of numerical values.
+// It identifies how many numbers within a specific range also fall into another defined range.
+function ProcessData(incomingText) {
+    // The initial text input is expected to be a string of space-separated numbers.
+    // We parse this string into an array of string representations of numbers.
+    // The local variable 'numericParts' now holds these string segments.
+    var numericParts = incomingText.split(" ");
 
-  // Initialize a counter for numbers that fall within the specified range.
-  let foundInstances = 0;
+    // A counter is initialized to keep track of numbers that satisfy our conditions.
+    var matchCounter = 0;
 
-  // Iterate through the primary range defined by the first two parsed values.
-  for (let currentNumber = parsedValues[0]; currentNumber <= parsedValues[1]; currentNumber++) {
-    // Check if the current number is also within the secondary, inner range
-    // defined by the third and fourth parsed values.
-    if (currentNumber >= parsedValues[2] && currentNumber <= parsedValues[3]) {
-      // If it falls within both ranges, increment the counter.
-      foundInstances++;
+    // We iterate through a numerical range. The start and end points of this range
+    // are determined by the first two elements of the 'numericParts' array.
+    // JavaScript's type coercion will convert these string elements to numbers for the loop.
+    for (let currentValue = numericParts[0]; currentValue <= numericParts[1]; currentValue++) {
+        // Inside the loop, we check if the 'currentValue' falls within a second,
+        // inner range, defined by the third and fourth elements of 'numericParts'.
+        // Again, string-to-number coercion occurs for the comparisons.
+        if (currentValue >= numericParts[2] && currentValue <= numericParts[3]) {
+            // If the 'currentValue' is within both specified ranges, we increment our counter.
+            matchCounter++;
+        }
     }
-  }
 
-  // Display the total count of numbers found within the inner range.
-  console.log(foundInstances);
+    // Finally, the total count of numbers that met both criteria is printed to the console.
+    console.log(matchCounter);
 }
 
-// Execute the data processing logic by reading standard input.
-// The input is read synchronously as a UTF-8 string from /dev/stdin.
+// The program starts by reading input from standard input.
+// 'require("fs")' is used to access the Node.js file system module.
+// 'readFileSync' synchronously reads the content of "/dev/stdin" (standard input)
+// and decodes it as a UTF-8 string. This string is then passed to our main processing function.
 ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

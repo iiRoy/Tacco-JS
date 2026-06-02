@@ -1,112 +1,62 @@
 "use strict";
 
-/* This script processes input from standard input, performs calculations, and prints the result. */
+// This function constructs an object capable of reading input line by line.
+const buildDataStream = () => {
+  const sourceContent = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+  const streamHandler = {
+    lineCollection: sourceContent,
+    readPointer: 0,
+    maximumIndex: sourceContent.length,
 
-/**
- * Initializes and returns an object to access input lines sequentially.
- * @returns {object} An input data accessor object.
- */
-const initiateInputReader = ( ) => {
+    // Checks if there are more lines to process.
+    hasMoreElements: function () {
+      return this.readPointer < this.maximumIndex;
+    },
 
-    // Read all input from stdin, decode as UTF-8, trim whitespace, and split into an array of lines.
-    const rawInputLines = require("fs") . readFileSync( "/dev/stdin" ,  "utf8" ) . trim() . split( "\n" ) ;
-
-    // Create an accessor object with methods to navigate the input.
-    const dataAccessor = {
-        "lineCollection"    : rawInputLines,           // Stores the array of input lines.
-        "currentLineIndex"  : 0,                       // Current position in the lineCollection.
-        "totalLineCount"    : rawInputLines.length,    // Total number of lines available.
-
-        /**
-         * Checks if there are more lines to read.
-         * @returns {boolean} True if more lines are available, false otherwise.
-         */
-        "hasMoreLines" : function (  ) {
-            return this.currentLineIndex < this.totalLineCount;
-        },
-
-        /**
-         * Retrieves the next available line.
-         * Throws an error if no more lines are available.
-         * @returns {string} The next line from input.
-         */
-        "fetchNextLine" : function ( ) {
-            if ( ! this.hasMoreLines() ) {
-                throw "EndOfInputReachedException"; // Custom error message for out-of-bounds access.
-            } else {
-                return this.lineCollection[ this.currentLineIndex++ ]; // Return current line and increment index.
-            }
-        }
-    };
-    return dataAccessor; // Provide the fully configured accessor.
+    // Retrieves the next line from the input.
+    fetchItem: function () {
+      if (!this.hasMoreElements()) {
+        throw "ArrayIndexOutOfBoundsException"; // Indicate end of input
+      } else {
+        return this.lineCollection[this.readPointer++];
+      }
+    },
+  };
+  return streamHandler;
 };
 
-// Global instance of our input reader.
-const globalReader = initiateInputReader();
+const inputProcessor = buildDataStream();
 
-/**
- * Retrieves the next complete line as a string.
- * @returns {string} The next input line.
- */
-const retrieveNextLine = () => globalReader.fetchNextLine();
+// Helper function to get the next raw line.
+const getNextLine = () => inputProcessor.fetchItem();
 
-/**
- * Parses the next input line as an integer.
- * @returns {number} The integer value of the next line.
- */
-const parseNextInteger = () => parseInt(globalReader.fetchNextLine(), 10); // Base 10 explicitly.
+// Helper function to parse the next line as an integer.
+const getNextInteger = () => parseInt(inputProcessor.fetchItem());
 
-/**
- * Reads the next line and splits it into an array of strings by space.
- * @returns {string[]} An array of strings.
- */
-const readStringArray = () => globalReader.fetchNextLine().split(" ");
+// Helper function to get the next line as an array of strings, split by space.
+const getNextStringArray = () => inputProcessor.fetchItem().split(" ");
 
-/**
- * Reads the next line, splits it by space, and maps each part to an integer.
- * @returns {number[]} An array of integers.
- */
-const readIntegerArray = () => globalReader.fetchNextLine().split(" ").map(elementValue => parseInt(elementValue, 10));
+// Helper function to get the next line as an array of integers, split by space.
+const getNextIntegerArray = () => inputProcessor.fetchItem().split(" ").map((itemStr) => parseInt(itemStr));
 
-/**
- * Reads the next line and splits it into an array of characters.
- * @returns {string[]} An array of characters.
- */
-const readCharacterArray = () => globalReader.fetchNextLine().split("");
+// Helper function to get the next line as an array of characters.
+const getNextCharacterArray = () => inputProcessor.fetchItem().split("");
 
-/**
- * Checks if there are additional lines available in the input stream.
- * @returns {boolean} True if more input lines exist, false otherwise.
- */
-const checkMoreLines = () => globalReader.hasMoreLines();
+// Helper function to check if more data is available.
+const checkIfMoreData = () => inputProcessor.hasMoreElements();
 
-/**
- * A utility function to output arguments to the console.
- * @param {...any} outputArguments - Arguments to be logged.
- */
-const outputToConsole = (...outputArguments) => console.log(...outputArguments);
+// Custom output function for logging results.
+const displayOutput = (...valuesToLog) => console.log(...valuesToLog);
 
+// The primary execution logic of the program.
+const ExecuteProgram = () => {
+  const [countN, limitM] = getNextIntegerArray(); // Read two integers from the first line.
 
-/**
- * The primary execution function for the application logic.
- */
-const executePrimaryLogic = () => {
-    // Read two integer parameters from the first line of input.
-    const [firstParam, secondParam] = readIntegerArray();
+  // Calculate the final result based on the given conditions.
+  let calculatedValue = limitM <= 2 * countN ? Math.floor(limitM / 2) : Math.floor((2 * countN + limitM) / 4);
 
-    let solutionResult;
-
-    // Calculate the solution based on the given condition.
-    // This logic determines the maximum possible value based on firstParam and secondParam.
-    if (secondParam <= 2 * firstParam) {
-        solutionResult = Math.floor(secondParam / 2);
-    } else {
-        solutionResult = Math.floor((2 * firstParam + secondParam) / 4);
-    }
-
-    // Display the calculated result to standard output.
-    outputToConsole(solutionResult);
+  displayOutput(calculatedValue); // Output the computed value.
 };
 
-// Invoke the main application logic to start execution.
-executePrimaryLogic();
+// Invoke the main program function.
+ExecuteProgram();

@@ -1,85 +1,106 @@
-function ProcessInput(rawData) {
-    rawData = rawData.split("\n");
+function ProcessData(rawData) {
+  // Divide the incoming string into individual lines.
+  rawData = rawData.split("\n");
 
-    var itemCount = parseInt(rawData[0]);
+  // Extract the numerical count from the first line of input.
+  var countElements = parseInt(rawData[0]);
 
-    // Initialize the primary data sequence
-    let dataSequence = new Array(itemCount);
+  // Initialize a primary array with the determined size.
+  elementArray = new Array(countElements);
 
-    let tempParts = rawData[1].split(" ");
+  // Split the second line of input into temporary string components.
+  tempValues = rawData[1].split(" ");
 
-    // Populate the data sequence from parsed input
-    for ( let idx = 0; idx < itemCount; idx++ ) {
-        dataSequence[idx] = parseInt(tempParts[idx]);
-    }
+  // Populate the primary array by converting temporary string components to integers.
+  for (idx = 0; idx < countElements; idx++) {
+    elementArray[idx] = parseInt(tempValues[idx]);
+  }
 
-    var finalResult = 1; // Initial value for the result, will be overwritten
-    var stateIndicator = 0; // Control flow state flag
+  // Declare a variable for an intermediate result, which will be immediately superseded.
+  var initialResult = 1;
 
-    finalResult = 0; // Actual initial value for the result
-    var counterValue = 1; // A dynamic counter
+  // Initialize a state tracking variable.
+  var stateIndicator = 0;
 
-    // Create an auxiliary array based on the first element of the data sequence
-    let auxiliaryArray = new Array(dataSequence[0]).fill(1);
+  // Declare the variable that will hold the ultimate computed result.
+  var finalResult = 0;
 
-    // Main processing loop
-    for ( let currentIdx = 1; currentIdx < itemCount; currentIdx++ ) {
-        if (stateIndicator === 2) {
-            // Check consistency within auxiliaryArray
-            for ( let innerIdx = 0; innerIdx < auxiliaryArray.length; innerIdx++ ) {
-                if (auxiliaryArray[innerIdx] !== auxiliaryArray[0]) {
-                    stateIndicator = 1;
-                    break;
-                } else {
-                    stateIndicator = 0;
-                }
-            }
+  // Initialize a counter variable, starting from one.
+  var counterVar = 1;
+
+  // Create a secondary array, filled with ones, its size determined by the first element of the primary array.
+  bufferArray = new Array(elementArray[0]).fill(1);
+
+  // Begin the main processing loop, iterating through the primary array from the second element.
+  for (idx = 1; idx < countElements; idx++) {
+    // If the state indicator is set to its third condition (2).
+    if (stateIndicator == 2) {
+      // Iterate through the secondary array.
+      for (subIdx = 0; subIdx < bufferArray.length; subIdx++) {
+        // Check if any element in the secondary array differs from its first element.
+        if (bufferArray[subIdx] != bufferArray[0]) {
+          stateIndicator = 1; // Transition state to the second condition (1).
+          break; // Exit the inner loop prematurely.
+        } else {
+          stateIndicator = 0; // Otherwise, reset the state to its initial condition (0).
         }
+      }
+    }
 
-        if (dataSequence[currentIdx] > dataSequence[currentIdx - 1]) {
-            // Expand auxiliaryArray if current data point is larger than previous
-            for ( let fillIdx = 0; fillIdx < dataSequence[currentIdx] - dataSequence[currentIdx - 1]; fillIdx++ ) {
-                auxiliaryArray.push(1);
-                if (stateIndicator !== 0) {
-                    stateIndicator = 1;
-                }
-            }
-        } else if (stateIndicator === 0) {
-            // Modify and truncate auxiliaryArray in state 0
-            auxiliaryArray[dataSequence[currentIdx] - 1] = auxiliaryArray[dataSequence[currentIdx] - 1] + 1;
-            auxiliaryArray = auxiliaryArray.slice(0, dataSequence[currentIdx]);
-            if (auxiliaryArray.length !== 1) {
-                stateIndicator = 1;
-                counterValue++;
-            }
-        } else if (stateIndicator === 1) {
-            // Process auxiliaryArray in state 1
-            auxiliaryArray = auxiliaryArray.slice(0, dataSequence[currentIdx]);
-            for ( let reverseIdx = dataSequence[currentIdx] - 1; reverseIdx >= 0; reverseIdx-- ) {
-                if (auxiliaryArray[reverseIdx] === counterValue) {
-                    auxiliaryArray[reverseIdx] = 1;
-                } else if (auxiliaryArray[reverseIdx] !== counterValue) {
-                    auxiliaryArray[reverseIdx] = auxiliaryArray[reverseIdx] + 1;
-                    stateIndicator = 2;
-                    break;
-                }
-            }
+    // Evaluate the relationship between the current and preceding elements in the primary array.
+    if (elementArray[idx] > elementArray[idx - 1]) {
+      // If the current element is greater, append '1's to the secondary array.
+      for (subIdx = 0; subIdx < elementArray[idx] - elementArray[idx - 1]; subIdx++) {
+        bufferArray.push(1);
+        // If the state is not the initial condition (0), set it to the second condition (1).
+        if (stateIndicator != 0) {
+          stateIndicator = 1;
         }
+      }
+    } else if (stateIndicator == 0) {
+      // If the state is the initial condition (0) and the current element is not greater.
+      // Increment the value at a specific index within the secondary array.
+      bufferArray[elementArray[idx] - 1] = bufferArray[elementArray[idx] - 1] + 1;
+      // Truncate the secondary array to a new length.
+      bufferArray = bufferArray.slice(0, elementArray[idx]);
+      // If the secondary array's length is not one, update the state and increment the counter.
+      if (bufferArray.length != 1) {
+        stateIndicator = 1;
+        counterVar++;
+      }
+    } else if (stateIndicator == 1) {
+      // If the state is the second condition (1).
+      // Truncate the secondary array to a new length.
+      bufferArray = bufferArray.slice(0, elementArray[idx]);
+      // Iterate backward through the secondary array.
+      for (subIdx = elementArray[idx] - 1; subIdx >= 0; subIdx--) {
+        // If an element matches the counter variable, reset it to one.
+        if (bufferArray[subIdx] == counterVar) {
+          bufferArray[subIdx] = 1;
+        } else if (bufferArray[subIdx] != counterVar) {
+          // If an element differs, increment it and transition the state to the third condition (2).
+          bufferArray[subIdx] = bufferArray[subIdx] + 1;
+          stateIndicator = 2;
+          break; // Exit the inner loop.
+        }
+      }
     }
+  }
 
-    // Determine the maximum value in the final auxiliaryArray
-    for ( let resultIdx = 0; resultIdx < auxiliaryArray.length; resultIdx++ ) {
-        finalResult = Math.max(finalResult, auxiliaryArray[resultIdx]);
-    }
+  // After the primary loop concludes, determine the maximum value present in the secondary array.
+  for (idx = 0; idx < bufferArray.length; idx++) {
+    finalResult = Math.max(finalResult, bufferArray[idx]);
+  }
 
-    console.log('%s', finalResult);
+  // Output the final computed result to the console, formatted as a string.
+  console.log('%s', finalResult);
 }
 
-// Function for testing purposes, typically triggered by a UI event
+// This auxiliary function is intended for debugging within a browser environment.
 function performDebug() {
-    let testInput = document.getElementById("input").value;
-    ProcessInput(testInput);
+  var rawData = document.getElementById("input").value;
+  ProcessData(rawData);
 }
 
-// Execute the primary logic with input from standard I/O
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function, reading input from standard input.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

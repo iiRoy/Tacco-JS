@@ -1,43 +1,39 @@
-const PRIME_DIVISOR = 1000000007;
+const MOD_VAL = 1000000007;
 
-const calculateProductSequence = (upperBound, modulus) => {
-    const performRecursion = (currentValue, currentProduct) => {
-        if (currentValue === 0) {
-            return currentProduct;
-        }
-        return performRecursion(currentValue - 1, (currentProduct * currentValue) % modulus);
-    };
-    return performRecursion(upperBound, 1);
+const computeFactorialModulo = (val) => {
+  if (val < 0) {
+    return 0;
+  }
+  if (val === 0) {
+    return 1;
+  }
+  return Array.from({ length: val }, (_, idx) => idx + 1)
+    .reduce((accumulator, currentElement) => (accumulator * currentElement) % MOD_VAL, 1);
 };
 
-const processInputData = (dataString) => {
-    const numericTokens = dataString.match(/(\d+)\s+(\d+)/);
-    const valueA = Number(numericTokens[1]);
-    const valueB = Number(numericTokens[2]);
+function processInputData(rawData) {
+  const [firstNumber, secondNumber] = rawData.trim().split(' ').map(Number);
 
-    const absoluteDifference = Math.abs(valueA - valueB);
+  const absoluteDifference = Math.abs(firstNumber - secondNumber);
 
-    const multiplierRegistry = new Map([
-        [0, 2],
-        [1, 1]
-    ]);
+  let finalOutputValue;
 
-    const retrieveMultiplier = (deltaValue) => {
-        if (deltaValue >= 2) {
-            return 0;
-        }
-        return multiplierRegistry.get(deltaValue);
-    };
+  if (absoluteDifference >= 2) {
+    finalOutputValue = 0;
+  } else {
+    const factorialA = computeFactorialModulo(firstNumber);
+    const factorialB = computeFactorialModulo(secondNumber);
 
-    const finalMultiplier = retrieveMultiplier(absoluteDifference);
+    let productIntermediate = (factorialA * factorialB) % MOD_VAL;
 
-    const productA = calculateProductSequence(valueA, PRIME_DIVISOR);
-    const productB = calculateProductSequence(valueB, PRIME_DIVISOR);
+    if (absoluteDifference === 0) {
+      productIntermediate = (productIntermediate * 2) % MOD_VAL;
+    }
 
-    const intermediateResult = (productA * productB) % PRIME_DIVISOR;
-    const finalResult = (intermediateResult * finalMultiplier) % PRIME_DIVISOR;
+    finalOutputValue = productIntermediate;
+  }
 
-    console.log(finalResult);
-};
+  console.log(finalOutputValue);
+}
 
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

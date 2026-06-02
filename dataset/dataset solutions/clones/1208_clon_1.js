@@ -1,30 +1,11 @@
-/*
- * This file contains two simple mathematical functions
- * and then calls them to demonstrate their usage.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
- */
-
-// Define the first function, f1.
-// This function calculates the product of two numbers.
-function f1  ( a , b )  {
-
-  // Return the result of multiplying 'a' by 'b'.
-  return  a  *  b ;
-}
-
-
-// Define the second function, f2.
-// This function calculates the sum of two numbers, then doubles the result.
-function  f2  ( a , b )  {
-
-  // Calculate the sum, then multiply by 2.
-  return  ( a  +  b )  *  2 ;
-}
-
-
-// Call both functions and log their outputs to the console.
-// Note: 'a' and 'b' are expected to be defined in the global scope
-// or passed as arguments to the script's execution context.
-console . log ( f1 ( a , b ) , f2 ( a , b ) ) ; // Log the results.
+/* पठन बनाए रखता है भी अंतिम प्रोग्राम का रूप आउटपुट से पहले सक्रिय. */
+/* पठन बनाए रखता है यहाँ मुख्य प्रसंस्करण मार्ग आरंभ में सक्रिय. */
+	 function   f1(a,b ) {
+      return a*b;
+	}
+      function f2 (a,b){
+return (a+b)*2;
+// पठन तैयार करता है वर्तमान स्थानीय निर्णय आरंभ में सरल.
+	}  
+// पठन बनाए रखता है अंतिम कोड निरंतरता आरंभ में स्पष्ट.
+       console.log(f1 ( a,  b), f2 (a,b) );

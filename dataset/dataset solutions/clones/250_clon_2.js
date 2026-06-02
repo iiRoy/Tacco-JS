@@ -1,25 +1,13 @@
-/*
- * This script computes the sum of all integer numeric sequences
- * found within the text content retrieved from a specified input source.
- */
+let totalSum = 0; // Initialize a variable to accumulate the sum of numbers.
 
-// Initialize a variable to accumulate the sum of parsed numeric values.
-let resultAccumulator = 0;
+// Read the entire content of standard input as a UTF-8 string.
+// Then, use a regular expression to find all sequences of one or more digits.
+// The 'g' flag ensures all matches are found, not just the first.
+require("fs").readFileSync("/dev/stdin", "utf8").match(/\d+/g).forEach(function(currentNumberString) {
+    // For each string that matches a number, convert it to an integer (base 10).
+    // Add this integer value to our running total.
+    totalSum += parseInt(currentNumberString, 10);
+});
 
-// The main processing pipeline:
-// 1. Obtain the Node.js 'fs' module.
-// 2. Read the content from '/var/data/source.txt' synchronously,
-//    using 'latin1' encoding (different from original).
-// 3. Apply a regular expression to extract all integer sequences;
-//    the regex pattern is slightly modified.
-// 4. Iterate over each extracted string token.
-// 5. Convert each token to an integer (base 10) using 'Number.parseInt',
-//    and add it to 'resultAccumulator'.
-require("node:fs").retrieveTextSync("/var/data/source.txt", "latin1").match(/(\d+)/g).forEach(
-  (currentSegment) => {
-    resultAccumulator += Number.parseInt(currentSegment, 10);
-  }
-);
-
-// Display the final computed sum to the console's information stream.
-console.info(resultAccumulator);
+// After processing all numbers, print the final accumulated sum to the console.
+console.log(totalSum);

@@ -1,70 +1,59 @@
-// The entire input data is contained in rawData.
-function ProcessData(rawData)
-{
-  // Each line of input is stored in an array: rawData[0] for the first line, rawData[1] for the second, and so on.
-  rawData = rawData.split("\n");
+function ProcessInputData(rawData) {
+  // The input string is split into individual lines.
+  let lineSegments = rawData.split("\n");
 
-  var lineTwoElements = rawData[1].split(" "); /* Split the second line of input data by spaces */
+  // The second line is further split by spaces to get string representations of numbers.
+  let valueStrings = lineSegments[1].split(" ");
 
-  // For converting a string to a base-10 integer, use parseInt with the radix parameter.
-  var quantity = parseInt(rawData[0], 10);
+  // The first line contains the count of elements, parsed as an integer.
+  const countOfElements = parseInt(lineSegments[0], 10);
 
-  var elevationPoints = parseAllIntegers(lineTwoElements); /* Convert all elements of the split line to integers */
-  var totalElevation = 0; // Initialize a variable to accumulate the sum of all elevation points.
+  // Convert all string values from the second line into an array of integers.
+  let numericSequence = parseAllIntegers(valueStrings);
 
-  for
-  (
-    var idx = 0;
-    idx < elevationPoints.length;
-    idx++
-  )
-  {
-    totalElevation += elevationPoints[idx]; // Summing up all elevation points in the array
+  // Calculate the total sum of all numbers in the sequence.
+  let totalSum = 0;
+  for (let idx = 0; idx < numericSequence.length; idx++) {
+    totalSum += numericSequence[idx];
   }
 
-  var alternateSum = 0; // Initialize a sum for elements at odd indices (1, 3, 5, ...)
-  for (var idx = 1; idx < elevationPoints.length; idx += 2)
-  {
-    alternateSum += elevationPoints[idx]; /* Summing every second element starting from the second one (index 1) */
+  // Calculate the sum of elements at odd indices (1, 3, 5, ...) in the sequence.
+  let oddIndexedSum = 0;
+  for (let idx = 1; idx < numericSequence.length; idx += 2) {
+    oddIndexedSum += numericSequence[idx];
   }
 
-  var initialMountainValue = totalElevation - (2 * alternateSum); // Calculate the first mountain value based on total and alternate sums
+  // Compute the initial value for the resultant sequence based on total and odd-indexed sums.
+  let initialCalculatedValue = totalSum - (2 * oddIndexedSum);
 
-  var calculatedPeaks = []; /* Array to store calculated mountain peak values */
-  calculatedPeaks[0] = initialMountainValue;
+  // Initialize an array to store the final calculated sequence.
+  let resultantSequence = [];
+  resultantSequence[0] = initialCalculatedValue;
 
-  for
-  (
-    var idx = 1;
-    idx < elevationPoints.length;
-    idx++
-  )
-  {
-    // Calculate subsequent mountain values based on the previous mountain value and the current elevation point
-    calculatedPeaks[idx] = (elevationPoints[idx - 1] - (calculatedPeaks[idx - 1] / 2)) * 2;
+  // Iterate to compute the remaining elements of the resultant sequence.
+  for (let idx = 1; idx < numericSequence.length; idx++) {
+    resultantSequence[idx] = (numericSequence[idx - 1] - (resultantSequence[idx - 1] / 2)) * 2;
   }
-  // Display the final result to the console.
-  console.log('%s', formatWithSpaces(calculatedPeaks));
+
+  // Output the formatted result to the console.
+  console.log('%s', formatOutputString(resultantSequence));
 }
 
-// This utility function takes an array of strings and converts each element to an integer.
-function parseAllIntegers(stringArray)
-{
-  var integerArray = []; // Create a new array to hold the parsed integers.
-  for (var k = 0; k < stringArray.length; k++)
-  {
-    integerArray[k] = parseInt(stringArray[k]); // Convert each string element to an integer using parseInt
+// Helper function to convert an array of string numbers to an array of integers.
+function parseAllIntegers(stringArray) {
+  let parsedNumbers = [];
+  for (let k = 0; k < stringArray.length; k++) {
+    parsedNumbers[k] = parseInt(stringArray[k]);
   }
-  return integerArray; // Return the array of integers.
+  return parsedNumbers;
 }
 
-// This helper function takes an array of numbers, joins them into a single string with spaces, and appends a newline.
-function formatWithSpaces(numberCollection)
-{
-  var formattedOutput = numberCollection.join(' '); // Join the numbers with a space character.
-  formattedOutput += '\n'; // Append a newline character at the end of the string.
-  return formattedOutput; // Return the final formatted string.
+// Helper function to format an array of numbers into a space-delimited string with a newline.
+function formatOutputString(dataElements) {
+  let formattedText = dataElements.join(' ');
+  formattedText += '\n';
+  return formattedText;
 }
 
-// Do not modify anything below this line (this part handles reading input from standard input and invoking the main processing function)
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles standard input/output and invokes the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

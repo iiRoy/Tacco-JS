@@ -1,97 +1,127 @@
-let dataString=require('fs').readFileSync('/dev/stdin','utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const textRows=dataString.split('\n');
+const dataRows = rawData.split('\n');
 
-let numPoints=textRows[0].split(' ')[0]-0;
-let numEdges=textRows[0].split(' ')[1]-0;
-let initialLevel=textRows[0].split(' ')[2]-0;
+const numNodes = Number(dataRows[0].split(' ')[0]);
+const numEdges = Number(dataRows[0].split(' ')[1]);
+const initialWaterLevel = Number(dataRows[0].split(' ')[2]);
 
-let loopA, loopB, loopC;
-let elevationData=Array(numPoints);
+let idxA, idxB, idxC; // Loop counters, idxB and idxC are unused in this specific logic.
+const nodeHeights = Array(numNodes); // Stores the height associated with each node.
 
-let adjacencyList=Array(numPoints);
-const pathQueue=[];
+const adjList = Array(numNodes); // Adjacency list for the graph.
+const processingQueue = []; // Queue for managing states during the search.
 
-for(loopA=0;loopA<numPoints;loopA++){
- elevationData[loopA]=textRows[loopA+1]-0;
- adjacencyList[loopA]=[];
+// Initialize node heights and adjacency lists.
+for (idxA = 0; idxA < numNodes; idxA++) {
+  nodeHeights[idxA] = Number(dataRows[idxA + 1]);
+  adjList[idxA] = [];
 }
 
-let currentLineParts, startNodeIdx, endNodeIdx, travelCost;
-for (loopA=0;loopA<numEdges;loopA++){
-  currentLineParts = textRows[loopA+numPoints+1].split(' ');
-  startNodeIdx = currentLineParts[0] - 1;
-  endNodeIdx = currentLineParts[1] - 1;
-  travelCost = currentLineParts[2] - 0;
-  adjacencyList[startNodeIdx].push({
-    destination: endNodeIdx,
-    edgeCost: travelCost
-  });
-  adjacencyList[endNodeIdx].push({
-    destination: startNodeIdx,
-    edgeCost: travelCost
-  });
+let edgeData, nodeU, nodeV, travelDuration; // Variables for parsing edge details.
+
+// Populate the adjacency list with edge information.
+for (idxA = 0; idxA < numEdges; idxA++) {
+   edgeData = dataRows[idxA + numNodes + 1].split(' ');
+   nodeU = Number(edgeData[0]) - 1; // Convert to 0-indexed.
+   nodeV = Number(edgeData[1]) - 1; // Convert to 0-indexed.
+   travelDuration = Number(edgeData[2]); // Time to traverse this edge.
+
+   // Add edges for an undirected graph.
+   adjList[nodeU].push({
+     destination: nodeV,
+     duration: travelDuration
+   });
+   adjList[nodeV].push({
+     destination: nodeU,
+     duration: travelDuration
+   });
 }
 
-pathQueue.push({
-  currentNodeIdx: 0,
-  edgeCost: 0,
-  currentLevel: initialLevel,
-  visitedPath:[0]
+// Push the initial state onto the processing queue.
+processingQueue.push({
+  currentPoint: 0, // Starting node index.
+  elapsedTime: 0, // Time elapsed so far.
+  currentWaterLevel: initialWaterLevel, // Current water level.
+  pathTaken: [0] // History of visited nodes in this path.
 });
 
-let currentPath, nextNodeIdx, edgeDetail, finalPath;
-let minimumTime=Infinity;
+let currentNodeState, nextNodeIdx, edgeInfo, finalPathState;
+let minimumTime = Infinity; // Initialize minimum time to reach destination.
 
-while(pathQueue.length>0){
-  currentPath=pathQueue.pop();
-  if(currentPath.edgeCost>=minimumTime){
+// Main search loop.
+while (processingQueue.length > 0){
+  currentNodeState = processingQueue.pop(); // Get the next state to process.
+
+  // If current path's time already exceeds or equals the minimum found, skip.
+  if (currentNodeState.elapsedTime >= minimumTime) {
     continue;
   }
-  for(loopA=0;loopA<adjacencyList[currentPath.currentNodeIdx].length;loopA++){
-    edgeDetail=adjacencyList[currentPath.currentNodeIdx][loopA];
-    nextNodeIdx=edgeDetail.destination;
-    if(currentPath.visitedPath.indexOf(nextNodeIdx)!==-1){
+
+  // Explore neighbors of the current node.
+  for (idxA = 0; idxA < adjList[currentNodeState.currentPoint].length; idxA++) {
+    edgeInfo = adjList[currentNodeState.currentPoint][idxA];
+    nextNodeIdx = edgeInfo.destination;
+
+    // If the next node is already in the current path, skip to avoid cycles.
+    if (currentNodeState.pathTaken.indexOf(nextNodeIdx) !== -1) {
       continue;
     }
     
-    if(elevationData[currentPath.currentNodeIdx]<edgeDetail.edgeCost){
+    // Check if the current node's height is sufficient for traversal.
+    if (nodeHeights[currentNodeState.currentPoint] < edgeInfo.duration) {
       continue;
     }
-    if(elevationData[nextNodeIdx]+edgeDetail.edgeCost<currentPath.currentLevel){
-      pathQueue.push({
-        currentNodeIdx: nextNodeIdx,
-        edgeCost: currentPath.edgeCost+edgeDetail.edgeCost+currentPath.currentLevel-(elevationData[nextNodeIdx]+edgeDetail.edgeCost),
-        currentLevel: elevationData[nextNodeIdx],
-        visitedPath: currentPath.visitedPath.concat(nextNodeIdx)
+
+    // Determine the next state based on water level conditions.
+    if (nodeHeights[nextNodeIdx] + edgeInfo.duration < currentNodeState.currentWaterLevel ) {
+      processingQueue.push({
+        currentPoint: nextNodeIdx,
+        elapsedTime: currentNodeState.elapsedTime + edgeInfo.duration + currentNodeState.currentWaterLevel - (nodeHeights[nextNodeIdx] + edgeInfo.duration),
+        currentWaterLevel: nodeHeights[nextNodeIdx],
+        pathTaken: currentNodeState.pathTaken.concat(nextNodeIdx)
       });
-    }else if(elevationData[nextNodeIdx+edgeDetail.edgeCost]>=currentPath.currentLevel&&currentPath.currentLevel>=edgeDetail.edgeCost){
-      pathQueue.push({
-        currentNodeIdx: nextNodeIdx,
-        edgeCost: currentPath.edgeCost+edgeDetail.edgeCost,
-        currentLevel: currentPath.currentLevel-edgeDetail.edgeCost,
-        visitedPath: currentPath.visitedPath.concat(nextNodeIdx)
-      });
-    }else{
-      pathQueue.push({
-        currentNodeIdx: nextNodeIdx,
-        edgeCost: currentPath.edgeCost+edgeDetail.edgeCost+edgeDetail.edgeCost-currentPath.currentLevel,
-        currentLevel: 0,
-        visitedPath: currentPath.visitedPath.concat(nextNodeIdx)
-      });
+    } else {
+      // Replicating the original code's potentially buggy indexing:
+      // `h[next + obj.t >= node.height && node.height >= obj.t]`
+      // This evaluates the boolean expression `(nextNodeIdx + edgeInfo.duration >= currentNodeState.currentWaterLevel) && (currentNodeState.currentWaterLevel >= edgeInfo.duration)`
+      // and uses its numeric equivalent (0 for false, 1 for true) as an index for `nodeHeights`.
+      const conditionResult = (nextNodeIdx + edgeInfo.duration >= currentNodeState.currentWaterLevel) && (currentNodeState.currentWaterLevel >= edgeInfo.duration);
+      if (nodeHeights[Number(conditionResult)]) {
+        processingQueue.push({
+          currentPoint: nextNodeIdx,
+          elapsedTime: currentNodeState.elapsedTime + edgeInfo.duration,
+          currentWaterLevel: currentNodeState.currentWaterLevel - edgeInfo.duration,
+          pathTaken: currentNodeState.pathTaken.concat(nextNodeIdx)
+        });
+      } else {
+        processingQueue.push({
+          currentPoint: nextNodeIdx,
+          elapsedTime: currentNodeState.elapsedTime + edgeInfo.duration + edgeInfo.duration - currentNodeState.currentWaterLevel,
+          currentWaterLevel: 0,
+          pathTaken: currentNodeState.pathTaken.concat(nextNodeIdx)
+        });
+      }
     }
     
-    if(nextNodeIdx===numPoints-1){
-      finalPath=pathQueue.pop();
-      minimumTime=Math.min(minimumTime,finalPath.edgeCost+elevationData[numPoints-1]-finalPath.currentLevel);
+    // If the destination node (numNodes - 1) is reached, update minimum time.
+    if(nextNodeIdx === numNodes - 1) {
+      // Replicating the original code's behavior of popping from the queue here.
+      // This might remove an unrelated element from the queue, depending on its state.
+      finalPathState = processingQueue.pop();
+      minimumTime = Math.min(minimumTime, finalPathState.elapsedTime + nodeHeights[numNodes - 1] - finalPathState.currentWaterLevel);
     }
   }
-  pathQueue.sort(function(pathA,pathB){
-    return pathB.edgeCost-pathA.edgeCost;
+  // Sort the processing queue in descending order of elapsed time.
+  // This ensures that `pop()` retrieves the element with the smallest `elapsedTime`.
+  processingQueue.sort(function (pathA, pathB) {
+    return pathB.elapsedTime - pathA.elapsedTime;
   });
 }
-if(minimumTime===Infinity){
-  console.log(-1);
-}else{
-  console.log(minimumTime);
+
+// Output the final result.
+if (minimumTime === Infinity) {
+  console.log(-1); // Destination was unreachable.
+} else {
+  console.log(minimumTime); // The calculated minimum time.
 }

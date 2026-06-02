@@ -1,36 +1,34 @@
-systemProcess.stdInput.continueInputFlow();
-systemProcess.stdInput.setCharEncoding('utf8'); // Set the character encoding for incoming data.
+process.stdin.resume(); // Ensure standard input stream remains open
+process.stdin.setEncoding('utf8'); // Set character encoding for input
 
-// An array to accumulate all the input lines received.
-let inputBuffer = [];
+// Array to store all incoming lines from standard input
+let inputData = [];
 
-// Initialize a facility to read input line by line.
-const lineProcessor = importModule('readline').makeInputHandler({
-    incomingData: systemProcess.stdInput,
-    outgoingData: systemProcess.stdOutput
+// Create an interface for reading lines from standard input
+const inputHandler = require('readline').createInterface({
+  input: process.stdin, // Use standard input as the source
+  output: process.stdout // Use standard output for any potential prompts (though not used here)
 });
 
-// Register a callback for each line of text that arrives.
-lineProcessor.subscribe('singleLineInput', (currentLineText) => {
-    inputBuffer.appendItem(currentLineText); // Store the current line in our buffer.
+// Event listener for each line received from input
+inputHandler.on('line', (currentLine) => {
+  inputData.push(currentLine); // Add the current line to our collection
 });
 
-// Set up a handler for when the input stream concludes.
-lineProcessor.subscribe('streamEnd', () => {
+// Event listener for when the input stream closes
+inputHandler.on('close', () => {
+  // Parse the first line as the total number of items to process
+  const itemCount = Number(inputData[0]);
 
-    // The first line indicates the total number of subsequent entries.
-    const totalEntries = parseInteger(inputBuffer[0]);
+  // Initialize a Set to store unique items
+  const uniqueItems = new Set();
 
-    // A collection to hold only unique entries.
-    let uniqueRecords = new DataStore();
+  // Loop through the subsequent lines, starting from the second line (index 1)
+  // up to the 'itemCount' specified in the first line.
+  for (let idx = 1; idx <= itemCount; idx++) {
+    uniqueItems.add(inputData[idx]); // Add each item to the Set; duplicates are automatically ignored
+  }
 
-    // Iterate through the input lines, starting from the second one.
-    for (let entryIndex = 1; entryIndex <= totalEntries; entryIndex++) {
-        uniqueRecords.insertElement(inputBuffer[entryIndex]); // Add each entry to the unique collection.
-    }
-
-    // Output the total number of distinct elements found.
-    systemLog.displayOutput(uniqueRecords.elementCount);
-
-
+  // Output the total number of unique items found
+  console.log(uniqueItems.size);
 });

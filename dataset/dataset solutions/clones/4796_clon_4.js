@@ -1,97 +1,111 @@
-var storedLines = [];
-var dataStreamHandler;
+const standardInput = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
 
-function setupInputProcessor(contentLines) {
-  return {
-    sourceData: contentLines,
-    currentPosition: 0,
-    totalEntries: contentLines.length,
-    hasMoreEntries: function() {
-      return (this.currentPosition < this.totalEntries);
-    },
-    fetchNextEntry: function() {
-      if (this.hasMoreEntries()) {
-        return this.sourceData[this.currentPosition++];
-      } else {
-        throw new Error('No further input entries are available.');
-      }
-    }
-  };
+let collectedLines = [];
+let inputManagerInstance;
+
+standardInput.on('line', function(currentLine){
+  collectedLines.push(currentLine);
+});
+
+standardInput.on('close', function(){
+  inputManagerInstance = new InputManager(collectedLines);
+  console.error('\n↑Input ↓Output');
+  executeCalculation();
+});
+
+function createDeepCopy(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-function transformInputSegment(segment, conversionType) {
-  if (conversionType === 4) {
-    const parts = segment.split(' ');
-    const numericParts = [];
-    for (let i = 0; i < parts.length; i++) {
-      let currentNum = 0;
-      let isNegative = false;
-      let charIndex = 0;
-      if (parts[i].length > 0 && parts[i][0] === '-') {
-        isNegative = true;
-        charIndex = 1;
-      }
-      for (; charIndex < parts[i].length; charIndex++) {
-        currentNum = currentNum * 10 + (parts[i].charCodeAt(charIndex) - 48);
-      }
-      numericParts.push(isNegative ? -currentNum : currentNum);
-    }
-    return numericParts;
-  }
-  // This function is only expected to be called with conversionType 4 based on original code usage.
-  return segment;
-}
-
-function retrieveNumericSequence() {
-  return transformInputSegment(dataStreamHandler.fetchNextEntry(), 4);
-}
-
-function publishOutput(message) {
-  console.log(message);
-}
-
-function executeCalculationFlow() {
-  const numericData = retrieveNumericSequence();
-
-  const [
-    firstPieceCount,
-    secondPieceCount,
-    thirdPieceCount,
-    fourthPieceCount,
-    fifthPieceCount,
-    sixthPieceCount,
-    seventhPieceCount
-  ] = numericData;
-
-  const calculateEvenPart = (val) => (val >> 1) << 1;
-  const calculateAdjustedEvenPart = (val) => ((val - 1) >> 1) << 1;
-
-  let optionOneSum = 0;
-  optionOneSum += calculateEvenPart(firstPieceCount);
-  optionOneSum += calculateEvenPart(fourthPieceCount);
-  optionOneSum += calculateEvenPart(fifthPieceCount);
-
-  let optionTwoSum = 0;
-  optionTwoSum += calculateAdjustedEvenPart(firstPieceCount);
-  optionTwoSum += calculateAdjustedEvenPart(fourthPieceCount);
-  optionTwoSum += calculateAdjustedEvenPart(fifthPieceCount);
-  optionTwoSum += 3;
-
-  let primaryResult;
-  if (optionOneSum > optionTwoSum) {
-    primaryResult = optionOneSum;
-  } else {
-    primaryResult = optionTwoSum;
+class InputManager {
+  constructor(lines) {
+    this.dataStore = lines;
+    this.currentPosition = 0;
+    this.totalLines = lines.length;
   }
 
-  const finalResult = primaryResult + secondPieceCount;
+  hasMoreData() {
+    return this.currentPosition < this.totalLines;
+  }
 
-  publishOutput(finalResult);
+  retrieveNextLine() {
+    if (this.hasMoreData()) {
+      return this.dataStore[this.currentPosition++];
+    } else {
+      throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+    }
+  }
 }
 
-// The boilerplate's `read.on('close')` function would need to be modified to call:
-// `dataStreamHandler = setupInputProcessor(storedLines);`
-// and then `executeCalculationFlow();`
-// And `read.on('line')` would need to be modified to:
-// `read.on('line', function(input){storedLines.push(input);});`
-executeCalculationFlow();
+const conversionHandlers = {
+  1: (val) => parseInt(val, 10),
+  2: (val) => val.split(' '),
+  4: (val) => val.split(' ').map(Number),
+  6: (val) => val.split(''),
+  7: (val) => val.split('').map(Number),
+  8: (arr) => arr.join(' '),
+  9: (arr) => arr.join('\n'),
+  0: (arr) => arr.join(''),
+  default: (val) => val
+};
+
+function applyConversion(inputValue, operationCode) {
+  try {
+    const handler = conversionHandlers[operationCode] || conversionHandlers.default;
+    return handler(inputValue);
+  } catch (e) {
+    return inputValue;
+  }
+}
+
+function fetchNextInput() {
+  return inputManagerInstance.retrieveNextLine();
+}
+
+function checkInputAvailability() {
+  return inputManagerInstance.hasMoreData();
+}
+
+function fetchNextInteger() {
+  return applyConversion(fetchNextInput(), 1);
+}
+
+function fetchNextStringArray() {
+  return applyConversion(fetchNextInput(), 2);
+}
+
+function fetchNextIntegerArray() {
+  return applyConversion(fetchNextInput(), 4);
+}
+
+function fetchNextCharacterArray() {
+  return applyConversion(fetchNextInput(), 6);
+}
+
+function displayResult(content) {
+  console.log(content);
+}
+
+function logDiagnostic(message) {
+  console.error('debug:' + require('util').inspect(message, false, null));
+}
+
+function calculateEvenFloor(value) {
+  return value - (value % 2);
+}
+
+function executeCalculation() {
+  const [aI, aO, aT, aJ, aL, aS, aZ] = fetchNextIntegerArray();
+
+  const relevantValuesA = [aI, aJ, aL];
+  const sumA = relevantValuesA.reduce((accumulator, currentVal) => accumulator + calculateEvenFloor(currentVal), 0);
+
+  const relevantValuesB = [aI - 1, aJ - 1, aL - 1];
+  const sumB = relevantValuesB.reduce((accumulator, currentVal) => accumulator + calculateEvenFloor(currentVal), 0) + 3;
+
+  const finalOutcome = Math.max(sumA, sumB) + aO;
+
+  displayResult(finalOutcome);
+}

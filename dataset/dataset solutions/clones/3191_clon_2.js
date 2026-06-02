@@ -1,35 +1,55 @@
-// All input data is passed to the primary handler.
 function ProcessInput(rawData) {
-  // The initial line is at 'sourceLines[0]', the subsequent at 'sourceLines[1]', etc.
-  rawData = rawData.split('\n'); // Split raw input into individual lines.
+  // The rawData parameter contains the entire input string.
+  // We first split the input string into an array of lines.
+  let lines = rawData.split("\n");
 
-  var firstLineTokens = rawData[0].split(' '); // Parse the first line into tokens.
-  var elementCount = Number(firstLineTokens[0]); // Extract the total count of elements.
+  // The first line contains the count of elements.
+  // We split the first line by space and convert the first part to a number.
+  const firstLineParts = lines[0].split(" ");
+  const elementCount = Number(firstLineParts[0]);
 
-  var numberArray = rawData[1].split(' '); // Get the second line, which contains the numbers.
-  for (var idx = 0; idx < elementCount; idx++) { // Iterate to convert string elements to numbers.
+  // The second line contains the space-separated numbers.
+  // We split this line into an array of strings.
+  let numberArray = lines[1].split(" ");
+
+  // Convert each string element in the array to a number.
+  for (let idx = 0; idx < elementCount; idx++) {
     numberArray[idx] = Number(numberArray[idx]);
   }
 
-  var matchCount = 0; // Initialize a counter for elements matching the current minimum.
-  while (matchCount != elementCount) // Continue until all elements match the current minimum.
-  {
-    matchCount = 0; // Reset the counter for the new iteration.
-    var currentMinVal = Math.min(...numberArray); // Find the smallest value in the current array.
+  // Initialize a counter for elements that have become zero (or the current minimum).
+  let zeroedElements = 0;
 
-    for (var idx = 0; idx < elementCount; idx++) { // Process each element in the array.
-      var remainderVal = numberArray[idx] % currentMinVal; // Calculate the remainder.
-      if (remainderVal !== 0) { // If there's a remainder, replace the number with the remainder.
-        numberArray[idx] = remainderVal;
-      } else { // If no remainder, replace the number with the current minimum and increment the match counter.
-        numberArray[idx] = currentMinVal;
-        matchCount++;
+  // Continue the process until all elements in the array are equal to the final GCD.
+  while (zeroedElements !== elementCount) {
+    // Reset the counter for each iteration of the outer loop.
+    zeroedElements = 0;
+
+    // Find the minimum value among the current elements in the array.
+    const currentMin = Math.min(...numberArray);
+
+    // Iterate through the array to apply the Euclidean algorithm step.
+    for (let idx = 0; idx < elementCount; idx++) {
+      // Calculate the remainder when the current element is divided by the minimum.
+      const remainder = numberArray[idx] % currentMin;
+
+      // If the remainder is not zero, update the element with the remainder.
+      if (remainder !== 0) {
+        numberArray[idx] = remainder;
+      } else {
+        // If the remainder is zero, it means the current element is a multiple of currentMin.
+        // In this case, replace the element with currentMin, and increment the zeroedElements counter.
+        numberArray[idx] = currentMin;
+        zeroedElements++;
       }
     }
   }
 
-  console.log(Math.min(...numberArray)); // Output the final minimum value.
+  // After the loop terminates, all elements in numberArray will be equal to their greatest common divisor.
+  // We can just output the minimum (which will be the GCD).
+  console.log(Math.min(...numberArray));
 }
-// DO NOT MODIFY THE FOLLOWING LINES (handles standard I/O and invokes the primary routine)
+
+// This part handles reading from standard input and calling the main processing function.
+// It should not be modified.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
-// Example usage: ProcessInput("3\n10 20 30")

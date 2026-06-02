@@ -1,67 +1,43 @@
-const obtainText = require('node:fs').readFileSync;
-const entireContent = obtainText('/dev/stdin', 'utf8').trim();
+const rawInputText = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-function* createLineFeeder(fullText) {
-    const segments = fullText.split('\n');
-    let current = 0;
-    while (current < segments.length) {
-        yield segments[current++];
+function* problemSetParser(lineSegments) {
+    let linePointer = 0;
+    while (linePointer < lineSegments.length) {
+        const currentCount = Number(lineSegments[linePointer++]);
+        if (currentCount === 0) {
+            return;
+        }
+        const problemEntries = [];
+        for (let i = 0; i < currentCount; i++) {
+            problemEntries.push(lineSegments[linePointer++].split(' ').map(Number));
+        }
+        yield { entryCount: currentCount, dataPairs: problemEntries };
     }
 }
 
-const lineFeeder = createLineFeeder(entireContent);
+const rawLineSegments = rawInputText.trim().split('\n');
+const problemSequence = problemSetParser(rawLineSegments);
 
-const fetchNumericLine = () => Number(lineFeeder.next().value);
-const fetchTextLine = () => lineFeeder.next().value;
+for (const currentProblemSet of problemSequence) {
+    const dataPairsForProblem = currentProblemSet.dataPairs;
 
-function validateSequence(remainingElements, accumulatedValue) {
-    if (remainingElements.length === 0) {
-        return true;
-    }
+    const initialAggregateValue = dataPairsForProblem.reduce((accumulator, currentPair) => accumulator + currentPair[0], 0);
 
-    const [currentContribution, currentThreshold] = remainingElements[0];
+    const orderedDataPairs = [...dataPairsForProblem].sort((pairOne, pairTwo) => pairTwo[1] - pairOne[1]);
 
-    if (accumulatedValue > currentThreshold) {
-        return false;
-    }
+    const validationOutcome = orderedDataPairs.reduce((currentValidationState, currentDataPair) => {
+        if (!currentValidationState.isValid) {
+            return currentValidationState;
+        }
 
-    return validateSequence(
-        remainingElements.slice(1),
-        accumulatedValue - currentContribution
-    );
+        const [pairValue, pairThreshold] = currentDataPair;
+
+        if (currentValidationState.currentAggregate > pairThreshold) {
+            return { isValid: false, currentAggregate: currentValidationState.currentAggregate };
+        }
+
+        return { isValid: true, currentAggregate: currentValidationState.currentAggregate - pairValue };
+    }, { isValid: true, currentAggregate: initialAggregateValue });
+
+    console.log(validationOutcome.isValid ? "Yes" : "No");
 }
-
-function evaluateSituation() {
-    const caseQuantity = fetchNumericLine();
-
-    if (caseQuantity === 0) {
-        return null;
-    }
-
-    const components = Array.from({ length: caseQuantity }, () =>
-        fetchTextLine().split(' ').map(Number)
-    );
-
-    const initialTotal = components.reduce((aggregate, element) => aggregate + element[0], 0);
-
-    const arrangedComponents = components.toSorted((firstOperand, secondOperand) =>
-        secondOperand[1] - firstOperand[1]
-    );
-
-    const isFeasible = validateSequence(arrangedComponents, initialTotal);
-
-    return isFeasible ? "Yes" : "No";
-}
-
-function processAllSituations(collector = []) {
-    const outcome = evaluateSituation();
-
-    if (outcome === null) {
-        return collector;
-    }
-
-    return processAllSituations([...collector, outcome]);
-}
-
-const finalOutcomes = processAllSituations();
-finalOutcomes.forEach(result => console.log(result));

@@ -1,69 +1,75 @@
-process.stdin.resume(); // Activate standard input stream for data capture.
-process.stdin.setEncoding('utf8'); // Set character encoding to UTF-8 for input interpretation.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-var entire_buffer_content = ''; // Initialize an empty string to accumulate all incoming data.
+// Buffer to accumulate all incoming data
+let entireInputBuffer = '';
 
-// Register a callback function for 'data' events from the input stream.
-process.stdin.on('data', function(received_segment) {
-    entire_buffer_content += received_segment; // Append each data segment to the buffer.
+// Event listener for data chunks
+process.stdin.on('data', function(dataSegment) {
+    entireInputBuffer += dataSegment;
 });
 
-// Register a callback function for the 'end' event, signifying input completion.
+// Event listener for the end of input stream
 process.stdin.on('end', function() {
-    // Split the accumulated input into individual lines.
-    var input_text_lines = entire_buffer_content.split('\n');
+    // Split the accumulated input into individual lines
+    const inputLines = entireInputBuffer.split('\n');
 
-    // The first line contains the total count of items.
-    var item_quantity = input_text_lines[0];
-    // The second line contains space-separated values.
-    var value_tokens = input_text_lines[1].split(' ');
+    // The first line contains the count of numbers
+    let elementCount = parseInt(inputLines[0], 10); // Parse as integer
 
-    var original_items_collection = []; // Create an array to hold parsed numeric values.
-    // Iterate through the value tokens and convert them to integers.
-    for (var index_counter = 0; index_counter < item_quantity; index_counter++) {
-        original_items_collection.push(parseInt(value_tokens[index_counter]));
+    // The second line contains space-separated numbers
+    const numberStrings = inputLines[1].split(' ');
+
+    // Array to store the original numbers as integers
+    const originalNumbers = [];
+    for (let k = 0; k < elementCount; k++) {
+        originalNumbers.push(parseInt(numberStrings[k], 10));
     }
 
-    // Create a copy of the original collection and sort it to get ordered values.
-    var ordered_items_copy = original_items_collection.slice();
-    ordered_items_copy.sort();
+    // Create a sorted copy of the numbers
+    const orderedNumbers = originalNumbers.slice();
+    orderedNumbers.sort((a, b) => a - b); // Ensure numeric sort
 
-    // Initialize a map to store values and their original string-based indices.
-    var value_to_positions_map = {};
-    // Populate the map: key is the sorted value, value is an array of its original string indices.
-    for (var current_key_str in original_items_collection) {
-        var current_sorted_value = ordered_items_copy[current_key_str];
-        if (current_sorted_value in value_to_positions_map) {
-            value_to_positions_map[current_sorted_value].push(current_key_str);
+    // Create a map to store original indices for each value in the sorted list
+    // This is crucial for the logic to determine which median to pick
+    const indexMap = {};
+    for (let k in originalNumbers) { // Iterate over indices
+        const itemValue = orderedNumbers[k];
+        if (itemValue in indexMap) {
+            indexMap[itemValue].push(k); // Add original index
         } else {
-            value_to_positions_map[current_sorted_value] = [current_key_str];
+            indexMap[itemValue] = [k]; // Start new list of indices
         }
     }
 
-    // Adjust the item quantity for zero-based indexing in the subsequent loop.
-    item_quantity--;
+    // Adjust elementCount to be the last valid index for 0-based arrays
+    elementCount -= 1;
 
-    // Iterate through the original items to determine and output the required median.
-    for (var output_idx = 0; output_idx <= item_quantity; output_idx++) {
-        var original_item_at_idx = original_items_collection[output_idx];
-        // Retrieve and remove the last original string index associated with the current value.
-        var retrieved_position = value_to_positions_map[original_item_at_idx.toString()].pop();
+    // Iterate through the original numbers to determine the output for each
+    for (let k = 0; k <= elementCount; k++) {
+        const currentValue = originalNumbers[k];
 
-        // Calculate the midpoint index for the sorted collection.
-        var midpoint = Math.floor(item_quantity / 2);
-        // Get the value at the lower median position.
-        var lower_median = ordered_items_copy[midpoint];
-        // Get the value at the upper median position.
-        var upper_median = ordered_items_copy[midpoint + 1];
+        // Retrieve an original index for the current value from the map
+        // Using pop() ensures each index is used only once
+        const originalPosition = indexMap[currentValue.toString()].pop();
 
-        var final_answer = 0; // Initialize the result variable.
-        // Determine which median value to output based on the retrieved original index.
-        if (retrieved_position <= midpoint) {
-            final_answer = upper_median;
+        // Calculate the midpoint index of the sorted array
+        const midpointIndex = Math.floor(elementCount / 2);
+
+        // Determine the two potential median candidates
+        const lowerMedianCandidate = orderedNumbers[midpointIndex];
+        const upperMedianCandidate = orderedNumbers[midpointIndex + 1];
+
+        let resultValue = 0; // Initialize result
+
+        // Logic to select the median based on the original position
+        if (originalPosition <= midpointIndex) {
+            resultValue = upperMedianCandidate;
         } else {
-            final_answer = lower_median;
+            resultValue = lowerMedianCandidate;
         }
-        // Output the calculated answer to the console.
-        console.log(final_answer.toString());
+
+        // Output the result for the current number
+        console.log(resultValue.toString());
     }
 });

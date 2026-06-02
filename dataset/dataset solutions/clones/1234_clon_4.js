@@ -1,31 +1,10 @@
-const lineProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedValues = Array.from(rawInputContent.split('\n'), Number);
 
-let processedLines = [];
-
-lineProcessor.on('line', (currentInput) => {
-  if (currentInput !== '0 0') {
-    const dividerPosition = currentInput.indexOf(' ');
-    if (dividerPosition > -1) {
-      const firstPart = currentInput.substring(0, dividerPosition);
-      const secondPart = currentInput.substring(dividerPosition + 1);
-
-      if (firstPart > secondPart) {
-        processedLines.push(secondPart + ' ' + firstPart);
-      } else {
-        processedLines.push(firstPart + ' ' + secondPart);
-      }
-    } else {
-      processedLines.push(currentInput);
-    }
+for (const singleValue of processedValues) {
+  switch (true) {
+    default:
+      console.log(singleValue.split(' ').sort().join(' '));
   }
-});
-
-lineProcessor.on('close', () => {
-  for (const element of processedLines) {
-    console.log(element);
-  }
-});
+}

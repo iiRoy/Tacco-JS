@@ -1,58 +1,54 @@
-process.stdin.setEncoding('utf8');
+"use strict";
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-let receivedInput = '';
+const inputLines = [];
 
-process.stdin.on('data', (dataFragment) => {
-  receivedInput += dataFragment;
+const inputReader = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-  const textLines = receivedInput.trim().split('\n');
+inputReader.on("line", (currentLine) => {
+  inputLines.push(currentLine.split(/\s/).map(Number));
+});
 
-  const totalElements = parseInt(textLines[0], 10);
-  const mainValues = textLines[1].split(/\s/).map(Number);
-  const comparisonValues = textLines[2].split(/\s/).map(Number);
+inputReader.on("close", () => {
+  const collectionSize = inputLines.shift()[0];
+  const firstCollection = inputLines.shift();
+  const secondCollection = inputLines.shift();
 
-  const sumOfMain = mainValues.reduce((agg, current) => agg + current, 0);
-  const sumOfComparison = comparisonValues.reduce((agg, current) => agg + current, 0);
+  const firstCollectionTotal = firstCollection.reduce((acc, val) => acc + val, 0);
+  const secondCollectionTotal = secondCollection.reduce((acc, val) => acc + val, 0);
 
-  if (sumOfMain < sumOfComparison) {
+  if (firstCollectionTotal < secondCollectionTotal) {
     console.log(-1);
     return;
   }
 
-  const analysisResult = mainValues.reduce((accumulator, primaryVal, elementIndex) => {
-    const differential = primaryVal - comparisonValues[elementIndex];
-    if (differential <= 0) {
-      accumulator.mandatoryContributions++;
-      accumulator.cumulativeDeficit += differential;
-    } else {
-      accumulator.potentialOffsets.push(differential);
+  const { nonPositiveElementCount, totalNegativeContribution, positiveDifferences } =
+    Array.from({ length: collectionSize }, (_, idx) => firstCollection[idx] - secondCollection[idx])
+      .reduce((accumulator, currentDifference) => {
+        if (currentDifference > 0) {
+          accumulator.positiveDifferences.push(currentDifference);
+        } else {
+          accumulator.nonPositiveElementCount++;
+          accumulator.totalNegativeContribution += currentDifference;
+        }
+        return accumulator;
+      }, { nonPositiveElementCount: 0, totalNegativeContribution: 0, positiveDifferences: [] });
+
+  positiveDifferences.sort((valA, valB) => valB - valA);
+
+  const determineRequiredPositives = (currentBalance, remainingPositiveValues, selectedCount) => {
+    if (currentBalance >= 0 || remainingPositiveValues.length === 0) {
+      return selectedCount;
     }
-    return accumulator;
-  }, {
-    mandatoryContributions: 0,
-    cumulativeDeficit: 0,
-    potentialOffsets: []
-  });
-
-  analysisResult.potentialOffsets.sort((valA, valB) => valB - valA);
-
-  const determineOffsetCount = (currentDeficitState, availableOffsets, offsetTally = 0) => {
-    if (currentDeficitState >= 0) {
-      return offsetTally;
-    }
-    if (availableOffsets.length === 0) {
-      return offsetTally;
-    }
-
-    const nextOffset = availableOffsets[0];
-    const remainingOffsets = availableOffsets.slice(1);
-
-    return determineOffsetCount(currentDeficitState + nextOffset, remainingOffsets, offsetTally + 1);
+    const [nextPositiveValue, ...restOfValues] = remainingPositiveValues;
+    return determineRequiredPositives(currentBalance + nextPositiveValue, restOfValues, selectedCount + 1);
   };
 
-  const supplementaryOffsets = determineOffsetCount(analysisResult.cumulativeDeficit, analysisResult.potentialOffsets);
+  const neededPositiveCount = determineRequiredPositives(totalNegativeContribution, positiveDifferences, 0);
 
-  console.log(analysisResult.mandatoryContributions + supplementaryOffsets);
+  console.log(nonPositiveElementCount + neededPositiveCount);
 });

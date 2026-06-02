@@ -1,68 +1,55 @@
-let inputBuffer = '';
+function mainEntry() {
+    const ROW_COUNT = acquireToken();
+    const COL_COUNT = acquireToken();
 
-function* createTokenGenerator() {
-    const tokens = inputBuffer.split(/\s+/).filter(Boolean);
-    for (const token of tokens) {
-        yield token;
-    }
-}
+    Array.from({ length: ROW_COUNT }, (_, lineIndex) => {
+        const CURRENT_LINE_STR = acquireToken('string');
 
-let tokenSource;
-
-const getNextValue = (isText) => {
-    const token = tokenSource.next().value;
-    return isText ? token : Number(token);
-};
-
-const outputValue = (value) => {
-    console.log(value);
-};
-
-const determineProximityIndicators = (sequence, sequenceLength) => {
-    const initialCalculationState = { calculatedValues: [], currentOffset: -1 };
-
-    const finalCalculationState = Array.from({ length: sequenceLength }).reduce((state, _, position) => {
-        const charAtPosition = sequence[position];
-        let newCalculatedValues = [...state.calculatedValues];
-        let newOffset = state.currentOffset;
-
-        if (charAtPosition === 'c') {
-            newCalculatedValues.push(0);
-            newOffset = 1;
-        } else {
-            newCalculatedValues.push(newOffset !== -1 ? newOffset : -1);
-            if (newOffset !== -1) {
-                newOffset++;
+        function* distanceGenerator(inputString) {
+            let currentDistanceCounter = -1;
+            for (const character of inputString) {
+                if (character === 'c') {
+                    yield 0;
+                    currentDistanceCounter = 1;
+                } else {
+                    if (currentDistanceCounter !== -1) {
+                        yield currentDistanceCounter;
+                        currentDistanceCounter++;
+                    } else {
+                        yield -1;
+                    }
+                }
             }
         }
-        return { calculatedValues: newCalculatedValues, currentOffset: newOffset };
-    }, initialCalculationState);
 
-    return finalCalculationState.calculatedValues.join(' ');
-};
-
-const orchestrateExecution = (linesToProcess, segmentLength) => {
-    if (linesToProcess <= 0) {
-        return;
-    }
-
-    const lineContent = getNextValue('text');
-    const resultString = determineProximityIndicators(lineContent, segmentLength);
-    outputValue(resultString);
-
-    orchestrateExecution(linesToProcess - 1, segmentLength);
-};
+        const RESULT_DISTANCES = Array.from(distanceGenerator(CURRENT_LINE_STR));
+        outputLine(RESULT_DISTANCES.join(' '));
+    });
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (chunk) => {
-    inputBuffer += chunk;
+let inputBuffer = '';
+let tokenIndex = 0;
+
+function acquireToken(tokenType) {
+    if (tokenType === 'string') {
+        return inputBuffer[tokenIndex++];
+    } else {
+        return +inputBuffer[tokenIndex++];
+    }
+}
+
+function outputLine(valueToDisplay) {
+    console.log(valueToDisplay);
+}
+
+process.stdin.on('data', function(chunkData) {
+    inputBuffer += chunkData;
 });
 
-process.stdin.on('end', () => {
-    tokenSource = createTokenGenerator();
-    const totalLines = getNextValue(false);
-    const segmentLength = getNextValue(false);
-    orchestrateExecution(totalLines, segmentLength);
+process.stdin.on('end', function() {
+    inputBuffer = inputBuffer.split(/\s+/);
+    mainEntry();
 });

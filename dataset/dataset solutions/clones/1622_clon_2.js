@@ -1,26 +1,27 @@
-function ProcessInput( rawText ) {
+function analyzeData(incomingText) {
+  // This function processes raw text input to count specific data points.
+  let textLines = incomingText.split('\n');
 
-  let lines = rawText.split( '\n' ) ;
+  // The second numeric value from the first line defines our threshold.
+  const radiusThreshold = textLines[0].split(' ')[1] - 0;
 
-  const maxRadius = Number( lines[0].split( ' ' )[1] ) ;
+  // Initialize a counter for items meeting the criteria.
+  let validPointsCount = 0;
 
-  let countInside = 0 ;
-
-  for ( let lineIdx = 1 ; lineIdx < lines.length ; lineIdx++ ) {
-
-    let currentCoords = lines[lineIdx].split( ' ' ) ;
-    let xVal = Number( currentCoords[0] ) ;
-    let yVal = Number( currentCoords[1] ) ;
-
-    if ( ( xVal * xVal ) + ( yVal * yVal ) <= ( maxRadius * maxRadius ) ) {
-      countInside++ ;
+  // Iterate through the data lines, skipping the first configuration line.
+  for (let lineIterator = 1; lineIterator < textLines.length; lineIterator++) {
+    // For each line, extract two numeric components.
+    // Calculate the sum of their squares and compare it to the threshold's square.
+    if (textLines[lineIterator].split(' ')[0] ** 2 + textLines[lineIterator].split(' ')[1] ** 2 <= radiusThreshold ** 2) {
+      // If the condition is met, increment our counter.
+      validPointsCount++;
     }
   }
 
-  console.log( countInside ) ;
+  // Display the final tally of valid points.
+  console.log(validPointsCount);
 }
 
-
-// This section handles reading standard input and invoking the primary processing function.
-// Please do not modify the code below this line.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// The following code segment is responsible for reading standard input and invoking the primary processing function.
+// It should remain unaltered to ensure proper execution in the target environment.
+analyzeData(require('fs').readFileSync('/dev/stdin', 'utf8'));

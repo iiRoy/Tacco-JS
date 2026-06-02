@@ -1,35 +1,21 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (chunk) {
+    const inputParts = chunk.toString().split('\n');
+    const countVal = parseInt(inputParts[0]);
+    const instructionSeq = inputParts[1];
 
-const operationMap = Object.freeze({
-    'I': 1,
-    'D': -1,
-    '': -1 // Handles cases where the character sequence is shorter than the operation count
-});
+    const initialAccumulator = { currentBalance: 0, peakBalance: 0 };
 
-process.stdin.on('data', function (dataPacket) {
-    const textLines = dataPacket.toString().split('\n');
-    
-    const totalOperations = parseInt(textLines[0], 10);
-    const instructionString = textLines[1];
+    const indices = Array.from({ length: countVal }, (_, idx) => idx);
 
-    const processingFunction = (currentAccumulator, indexValue) => {
-        const currentInstructionChar = instructionString.charAt(indexValue);
-        const effect = operationMap[currentInstructionChar];
-        
-        currentAccumulator.currentElevation += effect;
-        currentAccumulator.highestElevation = Math.max(currentAccumulator.highestElevation, currentAccumulator.currentElevation);
-        
-        return currentAccumulator;
-    };
+    const finalResult = indices.reduce((acc, idx) => {
+        const char = instructionSeq.charAt(idx);
+        const balanceChange = (char === 'I' ? 1 : -1);
+        const newBalance = acc.currentBalance + balanceChange;
+        const newPeak = Math.max(acc.peakBalance, newBalance);
+        return { currentBalance: newBalance, peakBalance: newPeak };
+    }, initialAccumulator);
 
-    const initialLevelState = {
-        currentElevation: 0,
-        highestElevation: 0
-    };
-
-    const finalLevelMetrics = Array.from({ length: totalOperations }, (_, idx) => idx)
-        .reduce(processingFunction, initialLevelState);
-
-    console.log(finalLevelMetrics.highestElevation);
+    console.log(finalResult.peakBalance);
 });

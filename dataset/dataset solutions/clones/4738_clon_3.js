@@ -1,222 +1,74 @@
-const StandardInputPath = "/dev/stdin";
+const STANDARD_INPUT_PATH = "/dev/stdin";
 
-// Core utility for reading input and managing its state
-const inputBufferManager = {
-  // Collection of raw data lines from standard input
-  lineBuffer: [],
-  // Current position for reading within the lineBuffer
-  readPointer: 0,
-  // Total number of lines available in the buffer
-  totalLines: 0,
+function createInputReader() {
+  const rawDataLines = require("fs").readFileSync(STANDARD_INPUT_PATH, "utf8").trim().split("\n");
+  let currentLineIndex = 0;
+  const totalAvailableLines = rawDataLines.length;
 
-  // Initializes the input buffer by reading from stdin
-  initializeBuffer: function() {
-    try {
-      const fs = require("fs");
-      const rawData = fs.readFileSync(StandardInputPath, "utf8");
-      this.lineBuffer = rawData.trim().split("\n");
-      this.totalLines = this.lineBuffer.length;
-
-      // Add a check for empty input (Type III addition)
-      if (this.totalLines === 0 && rawData.trim().length === 0) {
-        logErrorMessage("Warning: Standard input was empty.");
-      } else if (this.totalLines === 0 && rawData.trim().length > 0) {
-        // This case would happen if input is just whitespace, trim() makes it empty, split("\n") results in [""]
-        // Handle single-line non-empty input that becomes [""] after split
-        if (this.lineBuffer.length === 1 && this.lineBuffer[0] === '') {
-            this.lineBuffer = [];
-            this.totalLines = 0;
-        }
+  const readerInstance = {
+    readNextLine: function() {
+      if (!this.hasMoreLines()) {
+        throw "NoSuchElementException:次に要素は無いよ";
       }
-
-    } catch (error) {
-      logErrorMessage(`Failed to read standard input: ${error.message}`);
-      // In a real application, you might want to exit or provide a mock input
-      this.lineBuffer = [];
-      this.totalLines = 0;
+      const lineToReturn = rawDataLines[currentLineIndex];
+      currentLineIndex++;
+      return lineToReturn;
+    },
+    hasMoreLines: function() {
+      return (currentLineIndex < totalAvailableLines);
     }
-  },
-
-  // Retrieves the next available line from the buffer
-  fetchNextElement: function() {
-    // Check if there are more elements before attempting to read
-    if (!this.hasMoreElements()) {
-      throw new Error("NoMoreDataException: Attempted to read past end of input stream.");
-    }
-    // Retrieve the current element and then advance the pointer
-    const currentElement = this.lineBuffer[this.readPointer];
-    this.readPointer = this.readPointer + 1; // Explicit increment (Type III change)
-    return currentElement;
-  },
-
-  // Checks if there are more elements left to read in the buffer
-  hasMoreElements: function() {
-    return this.readPointer < this.totalLines;
-  }
-};
-
-// Initialize the buffer once at the start
-inputBufferManager.initializeBuffer();
-
-// Global helper functions for input/output operations
-
-/**
- * Retrieves the next raw string value from the input stream.
- * @returns {string} The next string from input.
- */
-function retrieveNextValue() {
-  return inputBufferManager.fetchNextElement();
+  };
+  return readerInstance;
 }
 
-/**
- * Parses the next input value as an integer.
- * @returns {number} The parsed integer.
- */
-function parseNextInteger() {
-  return dataTransformer(retrieveNextValue(), "TO_INT");
-}
+const globalInputReader = createInputReader();
 
-/**
- * Fetches the next input line and splits it into an array of strings by space.
- * @returns {string[]} An array of strings.
- */
-function fetchStringArray() {
-  return dataTransformer(retrieveNextValue(), "SPLIT_BY_SPACE");
-}
+function getNextInputLine() { return globalInputReader.readNextLine(); }
+function readInteger() { return processInputData(getNextInputLine(), 1); }
+function readStringArray() { return processInputData(getNextInputLine(), 2); }
+function readIntegerArray() { return processInputData(getNextInputLine(), 4); }
+function readCharacterArray() { return processInputData(getNextInputLine(), 6); }
+function canReadMore() { return globalInputReader.hasMoreLines(); }
 
-/**
- * Fetches the next input line, splits it by space, and converts elements to numbers.
- * @returns {number[]} An array of numbers.
- */
-function fetchIntegerArray() {
-  return dataTransformer(retrieveNextValue(), "SPLIT_AND_MAP_TO_INT");
-}
+function printOutput(content) { console.log(content); }
+function printError(content) { console.error(content); }
 
-/**
- * Fetches the next input line and splits it into an array of characters.
- * @returns {string[]} An array of characters.
- */
-function fetchCharacterArray() {
-  return dataTransformer(retrieveNextValue(), "SPLIT_BY_CHAR");
-}
-
-/**
- * Checks if there is more input data available.
- * @returns {boolean} True if more input exists, false otherwise.
- */
-function hasMoreInput() {
-  return inputBufferManager.hasMoreElements();
-}
-
-/**
- * Displays a result to the standard output.
- * @param {*} content The content to display.
- */
-function displayResult(content) {
-  console.log(content);
-}
-
-/**
- * Logs an error message to the standard error stream.
- * @param {*} message The error message to log.
- */
-function logErrorMessage(message) {
-  console.error(message);
-}
-
-// Data transformation utility function
-// This function handles various conversions and manipulations of input data.
-// Type III: Refactored conversion types to descriptive strings, added more checks.
-function dataTransformer(inputValue, conversionType) {
-  // Input validation (Type III addition)
-  if (inputValue === null || inputValue === undefined) {
-    logErrorMessage(`Attempted to transform null/undefined input with type: ${conversionType}`);
-    return inputValue; // Return original in case of invalid input
-  }
-
+function processInputData(inputValue, conversionType) {
   try {
     switch (conversionType) {
-      case "TO_INT":
-        // Using Number() for potentially more robust parsing than parseInt() alone
-        const num = Number(inputValue);
-        if (isNaN(num)) {
-            logErrorMessage(`Warning: Could not convert "${inputValue}" to an integer.`);
-            return NaN; // Indicate failure to parse
-        }
-        return Math.floor(num); // Ensure it's an integer
-      case "SPLIT_BY_SPACE":
-        return inputValue.split(" ");
-      case "SPLIT_AND_MAP_TO_INT":
-        // Introduce intermediate variable for split result (Type III addition)
-        const spaceSplitValues = inputValue.split(" ");
-        return spaceSplitValues.map(val => {
-            const parsedVal = Number(val);
-            if (isNaN(parsedVal)) {
-                logErrorMessage(`Warning: Element "${val}" in array could not be converted to number.`);
-            }
-            return parsedVal;
-        });
-      case "SPLIT_BY_CHAR":
-        return inputValue.split("");
-      case "SPLIT_AND_MAP_TO_INT_CHAR": // New conversion type (Type III addition)
-        return inputValue.split("").map(Number);
-      case "JOIN_BY_SPACE": // For output array joining (Type III addition)
-        if (Array.isArray(inputValue)) return inputValue.join(" ");
-        return String(inputValue);
-      case "JOIN_BY_NEWLINE": // For output array joining (Type III addition)
-        if (Array.isArray(inputValue)) return inputValue.join("\n");
-        return String(inputValue);
-      case "JOIN_NO_DELIMITER": // For output array joining (Type III addition)
-        if (Array.isArray(inputValue)) return inputValue.join("");
-        return String(inputValue);
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map((item) => Number(item));
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map((item) => Number(item));
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
       default:
-        // Log an unknown conversion type (Type III addition)
-        logErrorMessage(`Unknown conversion type requested: "${conversionType}". Returning original input.`);
         return inputValue;
     }
-  } catch (error) {
-    logErrorMessage(`Error during data transformation for "${inputValue}" with type "${conversionType}": ${error.message}`);
-    return inputValue; // Return original value on error
+  } catch (e) {
+    return inputValue;
   }
 }
 
-// Main program execution function
-function executeProgram() {
-  // Retrieve the primary numerical value from input
-  let numericalValue = parseNextInteger();
+function executeMainLogic() {
+  const inputNumber = readInteger();
 
-  // Robust input validation (Type III addition)
-  if (isNaN(numericalValue) || numericalValue < 0) {
-    logErrorMessage("Critical Error: Invalid or non-positive numerical input detected. Cannot proceed with calculation.");
-    displayResult("Error: Invalid Input");
-    return; // Terminate execution for invalid input
+  const BASE_MULTIPLIER_FOR_FULL_BLOCKS = 2;
+  let calculatedResult = Math.floor(inputNumber / 11) * BASE_MULTIPLIER_FOR_FULL_BLOCKS;
+
+  const remainderValue = inputNumber % 11;
+
+  if (remainderValue > 0) {
+    if (remainderValue >= 7) {
+      calculatedResult += BASE_MULTIPLIER_FOR_FULL_BLOCKS;
+    } else {
+      calculatedResult++;
+    }
   }
 
-  // Calculate the base contribution based on multiples of 11
-  const baseQuotient = Math.floor(numericalValue / 11);
-  const initialResultComponent = baseQuotient * 2;
-
-  // Determine the remainder component
-  const remainderComponent = numericalValue % 11;
-
-  // Initialize the final result with the base component
-  let finalComputedResult = initialResultComponent;
-
-  // Apply additional contribution based on the remainder value
-  // Rewritten conditional logic for clarity and potential future expansion (Type III change)
-  if (remainderComponent === 0) {
-    // No additional contribution needed
-  } else if (remainderComponent >= 7) {
-    // If remainder is 7 or more, add a larger increment
-    finalComputedResult += 2;
-  } else { // This covers 1 <= remainderComponent <= 6
-    // For smaller positive remainders, add a smaller increment
-    finalComputedResult += 1;
-  }
-
-  // Display the final computed result to the user
-  displayResult(finalComputedResult);
+  printOutput(calculatedResult);
 }
 
-// Initiate the program execution
-executeProgram();
+executeMainLogic();

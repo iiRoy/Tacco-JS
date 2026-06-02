@@ -1,33 +1,29 @@
-// Function designed to handle the primary processing of incoming textual data
-function processInputData(rawData)
-{
-    // First, eliminate any leading or trailing whitespace from the provided raw input string.
-    let cleanedData = rawData.trim();
+function processInput(rawData) {
+  // Remove leading/trailing whitespace from the raw input string.
+  rawData = rawData.trim();
 
+  // Split the cleaned string by spaces, then convert each part to a number.
+  // This creates an array of three numeric values.
+  const [firstVal, secondVal, thirdVal] = rawData.split(" ").map(Number);
 
-    // Now, split the refined string into multiple parts based on space delimiters.
-    // Each part is then converted into a numerical value.
-    // These numerical segments are subsequently destructured into distinct variables.
-    const [firstStringSegment, middleStringSegment, lastStringSegment] = cleanedData.split(" ") .map(Number);
+  // Check a specific condition involving the last digit of the first number
+  // and the first digit of the second number, and similarly for the second
+  // and third numbers.
+  // Note: Number.slice() is not valid. The original code implies string slicing.
+  // This means the variables a, b, c are expected to be strings, not numbers,
+  // for the slice method to work.
+  // The original code has a subtle bug/feature where `Number` conversion happens,
+  // but then `slice` is called, which is a string method. JavaScript will
+  // implicitly convert the numbers back to strings for `slice` to work.
+  // We must preserve this behavior.
+  if (String(firstVal).slice(-1) == String(secondVal).slice(0, 1) && String(secondVal).slice(-1) == String(thirdVal).slice(0, 1)) {
+    // If the condition is met, print "YES" to the console.
+    console.log("YES");
+  } else {
+    // Otherwise, print "NO" to the console.
+    console.log("NO");
+  }
+}
 
-    // Evaluate a compound condition to determine the output:
-    // Check if the very last character of the initial segment matches the first character of the middle segment,
-    // AND concurrently, if the last character of the middle segment aligns with the first character of the final segment.
-    if ( (firstStringSegment.slice(-1) == middleStringSegment.slice(0, 1)) && (middleStringSegment.slice(-1) == lastStringSegment.slice(0, 1)) )
-    {
-        // Should both conditions be satisfied, print a positive confirmation.
-        console.log("YES");
-    }
-    else
-    {
-        // Otherwise, if the conditions are not met, print a negative response.
-        console.log("NO");
-    }
-
-} // Termination of the processInputData routine
-
-
-// The entry point for execution:
-// Synchronously read all content from the standard input stream, interpreting it as UTF-8 encoded text.
-// Subsequently, this acquired content is passed as an argument to our main processing function.
-processInputData( require("fs") .readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

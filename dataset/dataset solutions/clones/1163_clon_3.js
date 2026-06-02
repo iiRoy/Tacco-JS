@@ -1,169 +1,121 @@
-var printOutput = console.log;
+var consoleLogger = console.log;
 
-const isNodeEnvironment = typeof process !== "undefined" && typeof process.stdin !== "undefined";
-
-let rawInputBuffer = "";
-
-function setupInputProcessing() {
-    if (isNodeEnvironment) {
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-
-        process.stdin.on('data', function (inputChunk) {
-            rawInputBuffer += inputChunk;
-        });
-
-        process.stdin.on('end', function () {
-            if (!rawInputBuffer.trim()) {
-                console.error("Error: No input received. Exiting.");
-                return;
-            }
-            let graphDataLines = rawInputBuffer.split("\n");
-            graphDataLines = graphDataLines.filter(line => line.trim() !== "");
-            processGraphInput(graphDataLines);
-        });
-    } else {
-        printOutput("Warning: Not running in a Node.js environment. Input must be provided manually or via a different mechanism.");
-    }
+// Helper function to parse a space-separated string into an array of numbers
+function parseNumericLine(lineContent) {
+    return lineContent.split(" ").map(Number);
 }
 
-function processGraphInput(inputLines) {
-    if (!inputLines || inputLines.length === 0) {
-        console.error("Error: Input lines are empty. Cannot process graph.");
-        return;
+// Standard input handling for Node.js environment
+if (typeof process !== "undefined") {
+    let rawDataBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+        rawDataBuffer += chunk;
+    });
+    process.stdin.on('end', () => {
+        let inputLines = rawDataBuffer.split("\n");
+        processGraphData(inputLines);
+    });
+}
+
+// Main function to process graph data and find bridges
+function processGraphData(inputLines) {
+    // Preserve original behavior: if the last line is not empty, remove it and add undefined.
+    // If it is empty, remove it.
+    const lastLineRemoved = inputLines.pop();
+    if (lastLineRemoved !== "") {
+        inputLines.push(undefined);
     }
 
-    const graphContext = {
-        vertexCount: 0,
-        edgeCount: 0,
-        adjacencyList: [],
-        visitedVertices: [],
-        discoveryTime: [],
-        lowestReachableTime: [],
-        timeCounter: 0,
-        foundBridges: [],
-        edgePairs: []
-    };
+    // Parse all input lines into arrays of numbers
+    const parsedInputData = inputLines.map(parseNumericLine);
 
-    const graphDimensionsLine = inputLines.shift();
-    if (!graphDimensionsLine) {
-        console.error("Error: Missing graph dimensions line. Exiting.");
-        return;
-    }
-    const dimensionValues = graphDimensionsLine.split(" ").map(Number);
+    // Extract graph configuration (number of vertices and edges)
+    const graphConfig = parsedInputData.shift();
+    const numVertices = graphConfig[0];
+    // const numEdges = graphConfig[1]; // numEdges is read but not explicitly used in the algorithm
 
-    if (dimensionValues.length < 2 || isNaN(dimensionValues[0]) || isNaN(dimensionValues[1])) {
-        console.error("Error: Invalid graph dimensions provided. Expected 'V E'. Exiting.");
-        return;
-    }
+    // Initialize graph data structures
+    const adjacencyList = Array.from({ length: numVertices }, () => []);
+    const visitedNodes = Array(numVertices).fill(false);
+    const discoveryOrder = Array(numVertices).fill(0);
+    const lowLinkValue = Array(numVertices).fill(numVertices); // Initialize lowlink with V as per original
+    const foundBridges = Array.from({ length: numVertices }, () => []);
+    
+    // Initialize a 2D array to track visited edges (for back-edge detection)
+    const edgeVisited = Array.from({ length: numVertices }, () => Array(numVertices).fill(false));
 
-    graphContext.vertexCount = dimensionValues[0];
-    graphContext.edgeCount = dimensionValues[1];
-
-    if (graphContext.vertexCount <= 0) {
-        console.error("Error: Vertex count must be positive. Exiting.");
-        return;
-    }
-
-    graphContext.adjacencyList = Array.from({ length: graphContext.vertexCount }, () => []);
-    graphContext.visitedVertices = Array.from({ length: graphContext.vertexCount }, () => false);
-    graphContext.discoveryTime = Array.from({ length: graphContext.vertexCount }, () => 0);
-    graphContext.lowestReachableTime = Array.from({ length: graphContext.vertexCount }, () => graphContext.vertexCount);
-    graphContext.foundBridges = Array.from({ length: graphContext.vertexCount }, () => []);
-
-    inputLines.forEach(function (lineContent) {
-        const currentEdgeNodes = lineContent.split(" ").map(Number);
-        if (currentEdgeNodes.length === 2 && !isNaN(currentEdgeNodes[0]) && !isNaN(currentEdgeNodes[1])) {
-            const nodeA = currentEdgeNodes[0];
-            const nodeB = currentEdgeNodes[1];
-
-            if (nodeA < 0 || nodeA >= graphContext.vertexCount || nodeB < 0 || nodeB >= graphContext.vertexCount) {
-                console.warn(`Warning: Edge (${nodeA}, ${nodeB}) contains out-of-bounds vertex. Skipping this edge.`);
-                return;
-            }
-
-            graphContext.adjacencyList[nodeA].push(nodeB);
-            graphContext.adjacencyList[nodeB].push(nodeA);
-            graphContext.edgePairs.push([nodeA, nodeB]);
-        } else {
-            console.warn(`Warning: Invalid edge format '${lineContent}'. Skipping this line.`);
-        }
+    // Populate adjacency list from input edges
+    parsedInputData.forEach(edgePair => {
+        const nodeA = edgePair[0];
+        const nodeB = edgePair[1];
+        adjacencyList[nodeA].push(nodeB);
+        adjacencyList[nodeB].push(nodeA);
     });
 
-    /**
-     * Performs a Depth First Search to compute discovery and lowest reachable times for bridge detection.
-     * @param {object} state - The graph context object containing all necessary graph data.
-     * @param {number} currentNode - The current vertex being visited in the DFS traversal.
-     * @param {number} parentNode - The parent of the currentNode in the DFS tree (-1 for the root of a DFS tree).
-     */
-    function depthFirstSearchForBridges(state, currentNode, parentNode = -1) {
-        state.visitedVertices[currentNode] = true;
-        state.discoveryTime[currentNode] = state.timeCounter;
-        state.lowestReachableTime[currentNode] = state.timeCounter;
-        state.timeCounter++;
+    let discoveryCounter = 0; // Counter for discovery order
 
-        const neighborNodes = state.adjacencyList[currentNode];
+    // Depth-First Search function to find discovery times and low-link values
+    function depthFirstSearch(currentNode) {
+        visitedNodes[currentNode] = true;
+        discoveryOrder[currentNode] = discoveryCounter;
+        lowLinkValue[currentNode] = discoveryCounter;
+        discoveryCounter++;
 
-        for (const neighbor of neighborNodes) {
-            if (neighbor === parentNode) {
-                continue; // Skip the edge that led us to the current node
-            }
+        for (const neighborNode of adjacencyList[currentNode]) {
+            if (!visitedNodes[neighborNode]) {
+                // Mark the edge as visited in both directions to prevent re-processing as a back-edge
+                edgeVisited[currentNode][neighborNode] = true;
+                edgeVisited[neighborNode][currentNode] = true;
+                
+                depthFirstSearch(neighborNode); // Recursive call
 
-            if (!state.visitedVertices[neighbor]) {
-                // This is a tree edge, recurse into the neighbor's subtree
-                depthFirstSearchForBridges(state, neighbor, currentNode);
-
-                // After returning from recursion, update the lowest reachable time for the current node.
-                // It can reach at least as low as its neighbor's lowest reachable time.
-                state.lowestReachableTime[currentNode] = Math.min(state.lowestReachableTime[currentNode], state.lowestReachableTime[neighbor]);
-            } else {
-                // This is a back-edge (neighbor is visited and not the parent).
-                // Update the lowest reachable time with the neighbor's discovery time.
-                state.lowestReachableTime[currentNode] = Math.min(state.lowestReachableTime[currentNode], state.discoveryTime[neighbor]);
+                // Update low-link value after child subtree is processed
+                lowLinkValue[currentNode] = Math.min(lowLinkValue[currentNode], lowLinkValue[neighborNode]);
+            } else if (!edgeVisited[neighborNode][currentNode]) {
+                // This is a back-edge to an already visited node (not the parent edge)
+                lowLinkValue[currentNode] = Math.min(lowLinkValue[currentNode], discoveryOrder[neighborNode]);
             }
         }
     }
 
-    // Iterate through all vertices to ensure all connected components are processed.
-    for (let vIdx = 0; vIdx < graphContext.vertexCount; vIdx++) {
-        if (!graphContext.visitedVertices[vIdx]) {
-            depthFirstSearchForBridges(graphContext, vIdx);
+    // Start DFS from vertex 0 (assuming the graph is connected)
+    depthFirstSearch(0);
+
+    // Helper to ensure consistent order for bridge checking (u < v based on discovery order)
+    function getOrderedEdge(vertex1, vertex2, orderArray) {
+        if (orderArray[vertex1] > orderArray[vertex2]) {
+            return [vertex2, vertex1];
         }
+        return [vertex1, vertex2];
     }
 
-    // After DFS, identify bridges by iterating through all original edges.
-    graphContext.edgePairs.forEach(function (edgePair) {
-        let nodeU = edgePair[0];
-        let nodeV = edgePair[1];
+    // Iterate through original edges to identify bridges
+    parsedInputData.forEach(edgePair => {
+        let vertexU = edgePair[0];
+        let vertexV = edgePair[1];
 
-        // Ensure nodeU is the ancestor or discovered earlier for consistent comparison.
-        if (graphContext.discoveryTime[nodeU] > graphContext.discoveryTime[nodeV]) {
-            [nodeU, nodeV] = [nodeV, nodeU]; // Swap for canonical order (smaller discovery time first)
-        }
+        // Ensure vertexU has a smaller discovery order than vertexV for consistent bridge identification
+        [vertexU, vertexV] = getOrderedEdge(vertexU, vertexV, discoveryOrder);
 
-        // An edge (nodeU, nodeV) is a bridge if nodeV (the child) cannot reach nodeU (the parent)
-        // or any ancestor of nodeU through a back-edge from its subtree.
-        if (graphContext.discoveryTime[nodeU] < graphContext.lowestReachableTime[nodeV]) {
-            // Store the bridge with the smaller node index first for consistent output.
-            const bridgeStartNode = Math.min(nodeU, nodeV);
-            const bridgeEndNode = Math.max(nodeU, nodeV);
-            graphContext.foundBridges[bridgeStartNode].push(bridgeEndNode);
+        // Bridge condition: discoveryOrder[u] < lowLinkValue[v]
+        if (discoveryOrder[vertexU] < lowLinkValue[vertexV]) {
+            const bridgeMinNode = Math.min(vertexU, vertexV);
+            const bridgeMaxNode = Math.max(vertexU, vertexV);
+            foundBridges[bridgeMinNode].push(bridgeMaxNode);
         }
     });
 
-    // Sort bridges originating from each source node for consistent output order.
-    graphContext.foundBridges = graphContext.foundBridges.map(function (connectedBridges) {
-        return connectedBridges.sort((a, b) => a - b); // Numerical ascending sort
+    // Sort the bridges within each source node in descending order
+    const sortedBridges = foundBridges.map(bridgeList => {
+        return bridgeList.sort((nodeA, nodeB) => nodeB - nodeA); // Equivalent to b < a for numbers
     });
 
-    // Output all identified bridges.
-    for (let sourceNode = 0; sourceNode < graphContext.vertexCount; sourceNode++) {
-        const bridgesFromSource = graphContext.foundBridges[sourceNode];
-        for (let bridgeIdx = 0; bridgeIdx < bridgesFromSource.length; bridgeIdx++) {
-            const targetNode = bridgesFromSource[bridgeIdx];
-            printOutput(`${sourceNode} ${targetNode}`);
+    // Output the identified bridges
+    for (let sourceNode = 0; sourceNode < numVertices; sourceNode++) {
+        for (const targetNode of sortedBridges[sourceNode]) {
+            consoleLogger(sourceNode + " " + targetNode);
         }
     }
 }
-
-setupInputProcessing();

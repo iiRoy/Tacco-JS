@@ -1,42 +1,35 @@
-let dataBuffer = '';
+const { readFileSync: acquireFileContents } = require('fs');
 
-process.stdin.on('data', (chunk) => {
-    dataBuffer += chunk.toString();
-});
+function* patternProducer(characterSequence) {
+    for (let separatorCount = 0; separatorCount < 47; ++separatorCount) {
+        const currentSeparator = '.'.repeat(separatorCount);
+        const constructedPattern = characterSequence.join(currentSeparator);
 
-process.stdin.on('end', () => {
-    const lineSegments = dataBuffer.trim().split('\n');
-    const iterationLimit = Number(lineSegments.shift());
-    const primaryUnits = lineSegments.shift().split('');
-    const candidatePhrases = lineSegments.slice(0, iterationLimit);
-
-    const evaluatePhrase = (textUnderExamination, baseSequenceElements, separatorIndex = 0) => {
-        if (separatorIndex >= 47) {
-            return false;
+        if (Number(constructedPattern) >= 100) {
+            return;
         }
+        yield constructedPattern;
+    }
+}
 
-        const interstitialFiller = '.'.repeat(separatorIndex);
-        const formedExpression = baseSequenceElements.join(interstitialFiller);
+const rawTextData = acquireFileContents('/dev/stdin', 'utf8');
+const processedLines = rawTextData.trim().split('\n');
 
-        if (formedExpression >= 100) {
-            return false;
+const targetStringQuantity = Number(processedLines.shift());
+const baseCharacterArray = processedLines.shift().split('');
+
+let successfulMatchCount = 0;
+
+for (let currentTargetIdx = 0; currentTargetIdx < targetStringQuantity; ++currentTargetIdx) {
+    const currentTargetValue = processedLines[currentTargetIdx];
+
+    for (const candidatePattern of patternProducer(baseCharacterArray)) {
+        const patternRegex = new RegExp(candidatePattern);
+        if (patternRegex.test(currentTargetValue)) {
+            successfulMatchCount++;
+            break;
         }
+    }
+}
 
-        const patternRecognizer = new RegExp(formedExpression);
-
-        if (patternRecognizer.test(textUnderExamination)) {
-            return true;
-        }
-
-        return evaluatePhrase(textUnderExamination, baseSequenceElements, separatorIndex + 1);
-    };
-
-    const consecutiveMatches = candidatePhrases.reduce((cumulativeSum, phraseToInspect) => {
-        if (evaluatePhrase(phraseToInspect, primaryUnits)) {
-            return cumulativeSum + 1;
-        }
-        return cumulativeSum;
-    }, 0);
-
-    process.stdout.write(String(consecutiveMatches));
-});
+console.log(successfulMatchCount);

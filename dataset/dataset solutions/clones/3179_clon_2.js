@@ -1,39 +1,56 @@
-// The entire input dataset is provided within the rawData parameter.
-function ProcessInputData(rawData) {
-    // The first line of data is stored in rawData[0], the second in rawData[1], and so forth.
-    rawData = rawData.split("\n") ;
-    let initialParams = rawData[0] . split(" ") ;
-    var sacredSiteCount = parseInt( initialParams[0] , 10 ) ; // Quantity of sacred locations
-    var holyPlaceCount = parseInt( initialParams[1] , 10 ) ;  // Number of holy places
-    var queryRequestCount = parseInt( initialParams[2] , 10 ) ; // Count of travel inquiries
+// This function processes the entire input data provided as a string.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    // The first line will be lines[0], the second lines[1], and so on.
+    let lines = rawData.split("\n");
 
-    // Store the sacred site coordinates into an array.
-    let sacredLocations = [] ;
-    for ( let idx = 1 ; idx <= sacredSiteCount ; idx++ ) {
-        sacredLocations.push(rawData[idx]) ;
+    // Parse the first line to get the counts of shrines, temples, and queries.
+    let initialCounts = lines[0].split(" ");
+    let shrineCount = parseInt(initialCounts[0], 10); // Number of shrines
+    let templeCount = parseInt(initialCounts[1], 10); // Number of temples
+    let queryCount = parseInt(initialCounts[2], 10); // Number of queries
+
+    // Populate an array with shrine locations.
+    // Locations are read from subsequent lines.
+    let shrineLocations = [];
+    for (let k = 1; k <= shrineCount; k++) {
+        shrineLocations.push(parseInt(lines[k], 10)); // Convert to number
     }
 
-    // Store the holy place coordinates into an array.
-    let holyLocations = [] ;
-    for ( let idx = 1 ; idx <= holyPlaceCount ; idx++ ) {
-        holyLocations.push(rawData[idx + sacredSiteCount]) ;
+    // Populate an array with temple locations.
+    // Locations follow the shrine locations in the input.
+    let templeLocations = [];
+    for (let k = 1; k <= templeCount; k++) {
+        templeLocations.push(parseInt(lines[k + shrineCount], 10)); // Convert to number
     }
 
-    for ( let idx = 1 ; idx <= queryRequestCount ; idx++ ) {
-        let currentQueryLocation = rawData[idx + sacredSiteCount + holyPlaceCount] ;
-        let minimumTravelDistance = null ;
-        for ( let sacredIdx = 0 ; sacredIdx < sacredLocations.length ; sacredIdx++ ) {
-            for ( let holyIdx = sacredIdx ; holyIdx < holyLocations.length ; holyIdx++ ) {
-                // Evaluate each pairing of a sacred site and a holy place.
-                let sacredCoord = sacredLocations[sacredIdx] ; // Distance from west to sacred site
-                let holyCoord = holyLocations[holyIdx] ; // Distance from west to holy place
-                // Calculate the path if starting from a sacred site.
-                let potentialPathLength = Math.abs(sacredCoord - holyCoord) + Math.min(Math.abs(currentQueryLocation - sacredCoord), Math.abs(currentQueryLocation - holyCoord)) ;
-                minimumTravelDistance = (minimumTravelDistance == null || minimumTravelDistance > potentialPathLength) ? potentialPathLength : minimumTravelDistance ;
+    // Process each query.
+    for (let k = 1; k <= queryCount; k++) {
+        // Get the current query's location.
+        let currentQueryLocation = parseInt(lines[k + shrineCount + templeCount], 10);
+        let minTravelDistance = null; // Initialize minimum travel distance for this query
+
+        // Iterate through all possible shrine-temple pairs.
+        for (let shrineIdx = 0; shrineIdx < shrineLocations.length; shrineIdx++) {
+            for (let templeIdx = shrineIdx; templeIdx < templeLocations.length; templeIdx++) {
+                // Retrieve the location of the current shrine and temple.
+                let currentShrineLoc = shrineLocations[shrineIdx]; // Distance from west to shrine
+                let currentTempleLoc = templeLocations[templeIdx]; // Distance from west to temple
+
+                // Calculate the total travel distance for this specific shrine-temple combination.
+                // This involves traveling between the shrine and temple, and then from the query location to one of them.
+                let calculatedDistance = Math.abs(currentShrineLoc - currentTempleLoc) + Math.min(Math.abs(currentQueryLocation - currentShrineLoc), Math.abs(currentQueryLocation - currentTempleLoc));
+
+                // Update the minimum travel distance if the current combination is better.
+                if (minTravelDistance === null || calculatedDistance < minTravelDistance) {
+                    minTravelDistance = calculatedDistance;
+                }
             }
         }
-        console.log("%d", minimumTravelDistance) ;
+        // Output the minimum travel distance found for the current query.
+        console.log("%d", minTravelDistance);
     }
 }
-/* This section should not be modified. It handles reading from standard input and invoking the primary data processing function. */
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8")) ;
+
+// Do not modify the following line. It reads input from standard input and calls the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

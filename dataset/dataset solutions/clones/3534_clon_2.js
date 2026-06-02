@@ -1,80 +1,67 @@
-const PRIME_MODULUS = 1000000007;
+const MODULO = 10**9+7
+// divisors[d].e+n-1、において max(n)=10**5, max(divisors[d].e)=log(M)=log(10**9)=29.89..=30
+const LIMIT = 10**5+30
 
-// This constant defines an upper limit for array sizes, accommodating maximum values for N and prime exponents.
-const MAX_VAL_PLUS_OFFSET = 100000 + 30;
+let fact = [...new Array(LIMIT)].fill(0)
+let invFact = [...new Array(LIMIT)].fill(0)
+const multiply = (x,y) => ((x>>16)*y%MODULO*65536+(x&65535)*y)%MODULO;
 
-let factorial_values = [ ...new Array(MAX_VAL_PLUS_OFFSET) ].fill(0);
-let inverse_factorial_values = [ ...new Array(MAX_VAL_PLUS_OFFSET) ].fill(0);
-
-const perform_multiplication = (val_a, val_b) => ( ( (val_a >>> 16) * val_b % PRIME_MODULUS * 65536 ) + ( (val_a & 65535) * val_b ) ) % PRIME_MODULUS;
-
-const get_prime_decomposition = (input_number) => {
-    let prime_factors_list = [ ];
-
-    for ( let divisor_candidate = 2; divisor_candidate * divisor_candidate <= input_number; divisor_candidate++ ) {
-        let power_count = 0;
-        while ( input_number % divisor_candidate === 0 ) {
-            input_number /= divisor_candidate;
-            power_count++;
+const factorize = (value) => {
+    let divisors= []
+    for(let idx=2; idx*idx<=value; idx++) {
+        let count = 0
+        while(value%idx===0) {
+            value /= idx
+            count++
         }
-        if ( power_count ) {
-            prime_factors_list.push( { base_prime: divisor_candidate, prime_exponent: power_count } );
+        if(count) {
+            divisors.push({p:idx, e:count})
         }
     }
     
-    if ( input_number !== 1 ) {
-        prime_factors_list.push( { base_prime: input_number, prime_exponent: 1 } );
+    if(value!==1) {
+        divisors.push({p:value, e:1})
     }
+    return divisors
+}
 
-    return prime_factors_list;
-};
-
-const modular_exponentiation = (base_val, power_val) => {
-    let result_accumulator = 1;
-    let current_base = base_val;
-
-    while ( power_val !== 0 ) {
-        if ( power_val & 1 ) {
-            result_accumulator = perform_multiplication(result_accumulator, current_base);
-        }
-        current_base = perform_multiplication(current_base, current_base);
-        power_val = power_val >>> 1;
+const powerMod = (base, exp) => {
+    result = 1;
+    let current = base
+    while(exp != 0){
+        if(exp & 1) result = multiply(result,current);
+        current = multiply(current,current);
+        exp = exp >> 1;
     }
-    return result_accumulator;
-};
+    return result;
+}
 
-const calculate_combinations = (total_items, selected_items) => {
-    if ( total_items === 0 && selected_items === 0 ) return 1;
-    if ( total_items < selected_items || total_items < 0 ) return 0;
+const choose = (top, bottom) => {
+    if(top == 0 && bottom == 0) return 1;
+    if(top < bottom || top < 0) return 0;
+    return multiply(invFact[top], multiply(fact[bottom], invFact[top-bottom]))
+}
 
-    return perform_multiplication( inverse_factorial_values[total_items], perform_multiplication( factorial_values[selected_items], inverse_factorial_values[total_items - selected_items] ) );
-};
-
-const initialize_combinatorics_arrays = () => {
-    factorial_values[0] = 1;
-    inverse_factorial_values[0] = 1;
-
-    for ( let current_index = 0; current_index < MAX_VAL_PLUS_OFFSET - 1; current_index++ ) {
-        factorial_values[current_index + 1] = perform_multiplication( factorial_values[current_index], (current_index + 1) );
-        inverse_factorial_values[current_index + 1] = modular_exponentiation( factorial_values[current_index + 1], PRIME_MODULUS - 2 );
+const prepare = () => {
+    fact[0] = 1;
+    invFact[0] = 1;
+    for(let idx=0; idx<LIMIT; idx++){
+        fact[idx+1] = multiply(fact[idx],(idx+1));
+        invFact[idx+1] = powerMod(fact[idx+1], MODULO - 2)
     }
-};
+}
 
-const process_input_and_calculate = (input_string_data) => {
-    let [ first_param, second_param ] = input_string_data.split(" ").map(Number);
+const solve = (src) => {
+    let [n, m] = src.split(" ").map(Number)
+    let divisors = factorize(m)
+    let answer = 1
+    prepare()
+    Object.keys(divisors).forEach(d=>{
+        let upper = divisors[d].e+n-1
+        let lower = divisors[d].e
+        answer = multiply(answer,choose(upper, lower))
+    })
+    console.log(answer)
+}
 
-    let prime_components = get_prime_decomposition(second_param);
-    let final_result = 1;
-
-    initialize_combinatorics_arrays();
-
-    Object.keys(prime_components).forEach( factor_index => {
-        let num_items_total = prime_components[factor_index].prime_exponent + first_param - 1;
-        let num_items_select = prime_components[factor_index].prime_exponent;
-        final_result = perform_multiplication( final_result, calculate_combinations(num_items_total, num_items_select) );
-    } );
-
-    console.log(final_result);
-};
-
-process_input_and_calculate( require("fs").readFileSync("/dev/stdin", "utf8") );
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

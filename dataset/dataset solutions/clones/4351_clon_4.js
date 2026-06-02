@@ -1,71 +1,67 @@
-'use strict'
+'use strict';
 
-const produceQuantities = (baseUnit1, baseUnit2, maxCapacity) => {
-    const quantitySet = new Set([0]); // Include the option of zero quantity
+function processSolution(rawData) {
+    const dataLines = rawData.split('\n');
+    const params = dataLines.shift().split(' ').map(Number);
 
-    // Calculate maximum loop iterations for each base unit.
-    // If a base unit is 0, its effectiveMax is 0, meaning its loop runs only once (for i=0 or j=0).
-    const effectiveMaxI = (baseUnit1 > 0) ? Math.floor(maxCapacity / baseUnit1) : 0;
-    const effectiveMaxJ = (baseUnit2 > 0) ? Math.floor(maxCapacity / baseUnit2) : 0;
+    const waterUnitA = params[0];
+    const waterUnitB = params[1];
+    const sugarUnitC = params[2];
+    const sugarUnitD = params[3];
+    const maxSolubilityE = params[4];
+    const maxTotalWeightF = params[5];
 
-    for (let i = 0; i <= effectiveMaxI; ++i) {
-        const currentAmount1 = baseUnit1 * i;
-        if (currentAmount1 > maxCapacity) break;
-
-        for (let j = 0; j <= effectiveMaxJ; ++j) {
-            const currentAmount2 = baseUnit2 * j;
-            if (currentAmount2 > maxCapacity) break;
-
-            const totalCombinedAmount = currentAmount1 + currentAmount2;
-            if (totalCombinedAmount <= maxCapacity) {
-                quantitySet.add(totalCombinedAmount);
-            } else {
-                // Since amounts are non-negative, if current total exceeds cap,
-                // further increments of j will also exceed, so break inner loop.
-                break;
-            }
-        }
-    }
-    return Array.from(quantitySet);
-};
-
-const processSolution = (rawInputData) => {
-    const [coeffA, coeffB, coeffC, coeffD, concE, totalF] = rawInputData
-        .trim()
-        .split(/\s+/)
-        .map(Number);
-
-    const maxAllowedConcentrationRatio = concE / (100 + concE);
-
-    const waterQuantities = produceQuantities(100 * coeffA, 100 * coeffB, totalF);
-    const sugarQuantities = produceQuantities(coeffC, coeffD, totalF);
-
-    let optimalMixture = { volume: totalF, sweet: 0 };
-    let highestConcentration = 0;
-
-    for (const currentWater of waterQuantities) {
-        for (const currentSugar of sugarQuantities) {
-            const currentTotalVolume = currentWater + currentSugar;
-
-            if (currentTotalVolume <= totalF && currentTotalVolume > 0) {
-                const currentConcentration = currentSugar / currentTotalVolume;
-
-                if (currentConcentration <= maxAllowedConcentrationRatio) {
-                    if (currentConcentration > highestConcentration) {
-                        highestConcentration = currentConcentration;
-                        optimalMixture = { volume: currentWater, sweet: currentSugar };
-                    }
-                }
-            }
+    const availableWaterAmounts = new Set();
+    for (let i = 0; ; i++) {
+        const termA = 100 * waterUnitA * i;
+        if (termA > maxTotalWeightF) break;
+        for (let j = 0; ; j++) {
+            const termB = 100 * waterUnitB * j;
+            const currentWaterMass = termA + termB;
+            if (currentWaterMass > maxTotalWeightF) break;
+            availableWaterAmounts.add(currentWaterMass);
         }
     }
 
-    console.log(`${optimalMixture.volume + optimalMixture.sweet} ${optimalMixture.sweet}`);
-};
+    const availableSugarAmounts = new Set();
+    for (let i = 0; ; i++) {
+        const termC = sugarUnitC * i;
+        if (termC > maxTotalWeightF) break;
+        for (let j = 0; ; j++) {
+            const termD = sugarUnitD * j;
+            const currentSugarMass = termC + termD;
+            if (currentSugarMass > maxTotalWeightF) break;
+            availableSugarAmounts.add(currentSugarMass);
+        }
+    }
 
-const systemIO = require('fs');
-const readInputFile = systemIO.readFileSync;
-const standardIn = '/dev/stdin';
-const textEncoding = 'utf8';
+    const maxAllowedSugarRatio = maxSolubilityE / (100 + maxSolubilityE);
 
-processSolution(readInputFile(standardIn, textEncoding));
+    const feasibleMixtures = Array.from(availableWaterAmounts).flatMap(solventMass => {
+        return Array.from(availableSugarAmounts)
+            .map(soluteMass => [solventMass, soluteMass])
+            .filter(([w, s]) => {
+                const totalMass = w + s;
+                if (totalMass === 0) return false;
+                const currentRatio = s / totalMass;
+                return totalMass <= maxTotalWeightF && currentRatio <= maxAllowedSugarRatio;
+            });
+    });
+
+    const bestMixture = feasibleMixtures.reduce((currentBest, candidate) => {
+        const [bestWater, bestSugar] = currentBest;
+        const [candidateWater, candidateSugar] = candidate;
+
+        const bestTotalMass = bestWater + bestSugar;
+        const candidateTotalMass = candidateWater + candidateSugar;
+
+        const bestDensity = bestTotalMass === 0 ? -1 : (100 * bestSugar) / bestTotalMass;
+        const candidateDensity = candidateTotalMass === 0 ? -1 : (100 * candidateSugar) / candidateTotalMass;
+
+        return candidateDensity > bestDensity ? candidate : currentBest;
+    }, [maxTotalWeightF, 0]);
+
+    console.log((bestMixture[0] + bestMixture[1]) + ' ' + bestMixture[1]);
+}
+
+processSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));

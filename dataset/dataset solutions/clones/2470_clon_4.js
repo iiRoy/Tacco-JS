@@ -1,27 +1,20 @@
-const checkDivisibilityCondition = (valueToExamine, divisorCandidate = 1) => {
-    if (divisorCandidate > 9) {
-        return false;
-    }
+function processInput(inputData) {
+    const targetValue = Number(inputData);
 
-    const remainderIsZero = valueToExamine % divisorCandidate === 0;
-    const divisionResultIsSmall = (valueToExamine / divisorCandidate) < 10;
+    const firstFactorRange = Array.from({ length: 9 }, (_, index) => index + 1);
+    const secondFactorRange = Array.from({ length: 10 }, (_, index) => index);
 
-    if (remainderIsZero && divisionResultIsSmall) {
-        return true;
-    } else {
-        return checkDivisibilityCondition(valueToExamine, divisorCandidate + 1);
-    }
-};
+    const resultFound = firstFactorRange.some(currentFirst => {
+        return secondFactorRange.some(currentSecond => {
+            return currentFirst * currentSecond === targetValue;
+        });
+    });
 
-const processInputAndOutput = (rawInputString) => {
-    const numericValueFromInput = Number(rawInputString);
-    if (checkDivisibilityCondition(numericValueFromInput)) {
+    if (resultFound) {
         console.log('Yes');
     } else {
         console.log('No');
     }
-};
+}
 
-const fileReader = require('fs');
-const receivedData = fileReader.readFileSync('/dev/stdin', 'utf8');
-processInputAndOutput(receivedData);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

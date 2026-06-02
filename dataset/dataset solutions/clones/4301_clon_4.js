@@ -1,58 +1,66 @@
 'use strict'
 
-let totalNodes, totalConnections;
-let neighborLists; // Adjacency list representation
-let entryTimestamps; // Corresponds to discoveryTimes
-let lowestReachableTimestamps; // Corresponds to lowLinkValues
-let timeCounter;
-let identifiedBridges;
+let nodeCount;
+let edgeCount;
+let adjacencyList;
+let discoveryTimes;
+let lowLinkValues;
+let visitedStatus;
+let timeTracker;
+let bridgeCounter;
 
-const visitAndEvaluate = (currentPoint, priorPoint) => {
-    entryTimestamps[currentPoint] = lowestReachableTimestamps[currentPoint] = timeCounter++;
-    
-    for (const adjacentPoint of neighborLists[currentPoint]) {
-        if (adjacentPoint === priorPoint) continue;
+const findBridgesDFS = (currentNode, parentNode) => {
+  visitedStatus[currentNode] = true;
+  discoveryTimes[currentNode] = lowLinkValues[currentNode] = timeTracker++;
 
-        if (entryTimestamps[adjacentPoint] !== -1) { // Back-edge to an already visited node
-            lowestReachableTimestamps[currentPoint] = Math.min(lowestReachableTimestamps[currentPoint], entryTimestamps[adjacentPoint]);
-        } else { // Tree-edge to an unvisited node
-            visitAndEvaluate(adjacentPoint, currentPoint);
-            lowestReachableTimestamps[currentPoint] = Math.min(lowestReachableTimestamps[currentPoint], lowestReachableTimestamps[adjacentPoint]);
-            
-            // Condition for a bridge
-            if (lowestReachableTimestamps[adjacentPoint] > entryTimestamps[currentPoint]) {
-                identifiedBridges++;
-            }
-        }
+  for (const neighborNode of adjacencyList[currentNode]) {
+    if (neighborNode === parentNode) {
+      continue;
     }
+
+    if (visitedStatus[neighborNode]) {
+      lowLinkValues[currentNode] = Math.min(lowLinkValues[currentNode], discoveryTimes[neighborNode]);
+    } else {
+      findBridgesDFS(neighborNode, currentNode);
+      lowLinkValues[currentNode] = Math.min(lowLinkValues[currentNode], lowLinkValues[neighborNode]);
+
+      if (lowLinkValues[neighborNode] > discoveryTimes[currentNode]) {
+        bridgeCounter++;
+      }
+    }
+  }
 };
 
-const manageGraphOperations = incomingData => {
-    const dataLines = incomingData.trim().split('\n');
-    const [nc, lc] = dataLines[0].split(' ').map(Number);
-    totalNodes = nc;
-    totalConnections = lc;
+function processGraphInput(rawInput) {
+  const parsedLines = rawInput.split('\n').map(line => line.split(' ').map(Number));
 
-    neighborLists = Array.from({ length: totalNodes }, () => []);
+  nodeCount = parsedLines[0][0];
+  edgeCount = parsedLines[0][1];
 
-    for (let i = 1; i <= totalConnections; i++) {
-        const [point1, point2] = dataLines[i].split(' ').map(Number);
-        neighborLists[point1 - 1].push(point2 - 1);
-        neighborLists[point2 - 1].push(point1 - 1);
+  const edgeData = parsedLines.slice(1, -1);
+
+  adjacencyList = Array.from({ length: nodeCount }, () => []);
+
+  for (let k = 0; k < edgeCount; k++) {
+    const nodeU = edgeData[k][0] - 1;
+    const nodeV = edgeData[k][1] - 1;
+    adjacencyList[nodeU].push(nodeV);
+    adjacencyList[nodeV].push(nodeU);
+  }
+
+  discoveryTimes = Array(nodeCount).fill(-1);
+  lowLinkValues = Array(nodeCount).fill(-1);
+  visitedStatus = Array(nodeCount).fill(false);
+  timeTracker = 0;
+  bridgeCounter = 0;
+
+  for (let i = 0; i < nodeCount; i++) {
+    if (!visitedStatus[i]) {
+      findBridgesDFS(i, -1);
     }
+  }
 
-    entryTimestamps = Array(totalNodes).fill(-1);
-    lowestReachableTimestamps = Array(totalNodes).fill(-1);
-    timeCounter = 0;
-    identifiedBridges = 0;
+  console.log(bridgeCounter);
+}
 
-    for (let i = 0; i < totalNodes; i++) {
-        if (entryTimestamps[i] === -1) {
-            visitAndEvaluate(i, -1); // -1 indicates no parent for the root of a DFS tree
-        }
-    }
-
-    console.log(identifiedBridges);
-};
-
-manageGraphOperations(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphInput(require("fs").readFileSync("/dev/stdin", "utf8"));

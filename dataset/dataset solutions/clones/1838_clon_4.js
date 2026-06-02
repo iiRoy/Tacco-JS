@@ -1,161 +1,189 @@
-const rawSourceContent = require("fs").readFileSync("/dev/stdin", "utf8");
+"use strict";
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const sourceIterator = (() => {
-    const dataSegments = rawSourceContent.split(/\s+/).filter(Boolean);
-    let currentPointer = 0;
-    return {
-        retrieveValue: () => {
-            const segment = dataSegments[currentPointer++];
-            return BigInt(segment);
-        }
-    };
+const tokenStream = (function* () {
+    const tokens = fileContent.split(/ |\n/).filter(t => t !== '');
+    let currentTokenIdx = 0;
+    while (currentTokenIdx < tokens.length) {
+        yield tokens[currentTokenIdx++];
+    }
 })();
 
-class OrderedVault {
-    constructor() {
-        this._storage = [];
+function getNextInteger() { return +tokenStream.next().value; }
+function getNextString() { return tokenStream.next().value; }
+function getNextBigInt() { return BigInt(tokenStream.next().value); }
+
+function getMultipleValues(count, parseFn = Number) {
+    const results = [];
+    for (let i = 0; i < count; i++) {
+        results.push(parseFn(tokenStream.next().value));
     }
-
-    _bubbleUp(idx) {
-        if (idx === 0) return;
-        const parentIdx = (idx - 1) >> 1;
-        if (this._storage[parentIdx][0] > this._storage[idx][0]) {
-            [this._storage[parentIdx], this._storage[idx]] = [this._storage[idx], this._storage[parentIdx]];
-            this._bubbleUp(parentIdx);
-        }
-    }
-
-    _sinkDown(idx) {
-        const leftChild = (idx << 1) + 1;
-        const rightChild = (idx << 1) + 2;
-        let smallestChild = idx;
-
-        if (leftChild < this._storage.length && this._storage[leftChild][0] < this._storage[smallestChild][0]) {
-            smallestChild = leftChild;
-        }
-        if (rightChild < this._storage.length && this._storage[rightChild][0] < this._storage[smallestChild][0]) {
-            smallestChild = rightChild;
-        }
-
-        if (smallestChild !== idx) {
-            [this._storage[idx], this._storage[smallestChild]] = [this._storage[smallestChild], this._storage[idx]];
-            this._sinkDown(smallestChild);
-        }
-    }
-
-    deposit(priorityValue, associatedNode) {
-        this._storage.push([priorityValue, associatedNode]);
-        this._bubbleUp(this._storage.length - 1);
-    }
-
-    extractMinElement() {
-        if (this._storage.length === 0) return undefined;
-        if (this._storage.length === 1) return this._storage.pop();
-
-        const minElement = this._storage[0];
-        this._storage[0] = this._storage.pop();
-        this._sinkDown(0);
-        return minElement;
-    }
-
-    get currentSize() {
-        return this._storage.length;
-    }
-
-    get topElement() {
-        return this._storage[0];
-    }
+    return results;
 }
 
-const selectMinimum = (valA, valB) => valA < valB ? valA : valB;
+function getMatrix(rows, cols, parseFn = Number) {
+    const matrix = [];
+    for (let r = 0; r < rows; r++) {
+        matrix.push(getMultipleValues(cols, parseFn));
+    }
+    return matrix;
+}
 
-function determineShortestPath() {
-    const loopCount = sourceIterator.retrieveValue();
-    const resultCollector = [];
+function generateMultiDimArray(initialVal, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialVal;
+    }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () => generateMultiDimArray(initialVal, ...remainingDimensions));
+}
 
-    for (let currentLoop = 0; currentLoop < loopCount; currentLoop++) {
-        const startingPoint = sourceIterator.retrieveValue();
-        const operationWeights = [
-            sourceIterator.retrieveValue(),
-            sourceIterator.retrieveValue(),
-            sourceIterator.retrieveValue()
-        ];
+class MinHeapStore {
+    constructor() {
+        this.heapElements = [];
+    }
 
-        const baseTraversalCost = sourceIterator.retrieveValue();
+    insertElement(priority, data) {
+        this.heapElements.push([priority, data]);
+        let currentPosition = this.heapElements.length - 1;
+        while (currentPosition > 0) {
+            const parentPosition = (currentPosition - 1) >> 1;
+            if (this.heapElements[parentPosition][0] <= this.heapElements[currentPosition][0]) {
+                break;
+            }
+            [this.heapElements[currentPosition], this.heapElements[parentPosition]] =
+            [this.heapElements[parentPosition], this.heapElements[currentPosition]];
+            currentPosition = parentPosition;
+        }
+    }
 
-        const precomputedCosts = new Array(5);
-        precomputedCosts[0] = 0n;
-        precomputedCosts[1] = baseTraversalCost;
-        precomputedCosts[2] = baseTraversalCost + selectMinimum(baseTraversalCost, operationWeights[0]);
-        precomputedCosts[3] = baseTraversalCost + selectMinimum(precomputedCosts[2], operationWeights[1]);
-        
-        let optionA = precomputedCosts[3] + baseTraversalCost;
-        let optionB = precomputedCosts[2] + operationWeights[0];
-        let optionC = baseTraversalCost + operationWeights[2];
-        
-        let minOption = selectMinimum(optionA, optionB);
-        minOption = selectMinimum(minOption, optionC);
-        precomputedCosts[4] = minOption;
+    extractMin() {
+        const minElement = this.heapElements[0];
+        const lastElement = this.heapElements.pop();
+        if (this.heapElements.length === 0) {
+            return minElement;
+        }
 
-        const pathExplorer = new OrderedVault();
-        pathExplorer.deposit(0n, startingPoint);
-        const discoveredPaths = new Map();
-        discoveredPaths.set(startingPoint, 0n);
+        this.heapElements[0] = lastElement;
+        let currentPosition = 0;
+        const heapSize = this.heapElements.length;
 
-        while (pathExplorer.currentSize > 0) {
-            const [currentPathCost, currentNode] = pathExplorer.extractMinElement();
+        while (true) {
+            const leftChildPosition = 2 * currentPosition + 1;
+            const rightChildPosition = 2 * currentPosition + 2;
+            let smallestChildPosition = currentPosition;
 
-            if (discoveredPaths.has(currentNode) && discoveredPaths.get(currentNode) < currentPathCost) {
-                continue;
+            if (leftChildPosition < heapSize && this.heapElements[leftChildPosition][0] < this.heapElements[smallestChildPosition][0]) {
+                smallestChildPosition = leftChildPosition;
+            }
+            if (rightChildPosition < heapSize && this.heapElements[rightChildPosition][0] < this.heapElements[smallestChildPosition][0]) {
+                smallestChildPosition = rightChildPosition;
             }
 
-            if (currentNode === 0n) {
-                resultCollector.push(currentPathCost.toString());
+            if (smallestChildPosition === currentPosition) {
                 break;
             }
 
-            if (currentNode < 5n) {
-                const finalCostToZero = currentPathCost + precomputedCosts[Number(currentNode)];
-                if (!discoveredPaths.has(0n) || discoveredPaths.get(0n) > finalCostToZero) {
-                    discoveredPaths.set(0n, finalCostToZero);
-                    pathExplorer.deposit(finalCostToZero, 0n);
-                }
+            [this.heapElements[currentPosition], this.heapElements[smallestChildPosition]] =
+            [this.heapElements[smallestChildPosition], this.heapElements[currentPosition]];
+            currentPosition = smallestChildPosition;
+        }
+        return minElement;
+    }
+
+    get count() {
+        return this.heapElements.length;
+    }
+
+    get topElement() {
+        return this.heapElements[0];
+    }
+}
+
+const problemOutput = solveProblem();
+if (problemOutput !== undefined) console.log(problemOutput);
+
+function solveProblem() {
+    const testCaseCount = getNextInteger();
+    const primeDivisors = [2n, 3n, 5n];
+
+    const minBigInt = (a, b) => (a < b ? a : b);
+
+    for (let caseIndex = 0; caseIndex < testCaseCount; caseIndex++) {
+        const targetValue = getNextBigInt();
+        const divisionCosts = getMultipleValues(3, BigInt); // a in original
+
+        const baseUnitCost = getNextBigInt(); // d[1] in original
+        const smallNumberCosts = new Array(5);
+        smallNumberCosts[0] = 0n;
+        smallNumberCosts[1] = baseUnitCost;
+
+        // Calculate smallNumberCosts[2]
+        smallNumberCosts[2] = minBigInt(baseUnitCost * 2n, divisionCosts[0] + baseUnitCost);
+
+        // Calculate smallNumberCosts[3]
+        smallNumberCosts[3] = minBigInt(smallNumberCosts[2] + baseUnitCost, divisionCosts[1] + baseUnitCost);
+
+        // Calculate smallNumberCosts[4]
+        const option4_1 = smallNumberCosts[3] + baseUnitCost;
+        const option4_2 = smallNumberCosts[2] + divisionCosts[0];
+        const option4_3 = baseUnitCost + divisionCosts[2];
+        smallNumberCosts[4] = minBigInt(option4_1, minBigInt(option4_2, option4_3));
+
+        const costFrontier = new MinHeapStore();
+        costFrontier.insertElement(0n, targetValue);
+        const minimumPathCosts = new Map();
+        minimumPathCosts.set(targetValue, 0n);
+
+        const processNeighbor = (destinationNumber, transitionCost) => {
+            const totalPathCost = currentCost + transitionCost;
+            if (!minimumPathCosts.has(destinationNumber) || minimumPathCosts.get(destinationNumber) > totalPathCost) {
+                minimumPathCosts.set(destinationNumber, totalPathCost);
+                costFrontier.insertElement(totalPathCost, destinationNumber);
+            }
+        };
+
+        while (true) {
+            const [currentCost, currentNumber] = costFrontier.extractMin();
+
+            if (minimumPathCosts.has(currentNumber) && minimumPathCosts.get(currentNumber) < currentCost) {
                 continue;
             }
 
-            const primeDivisors = [2n, 3n, 5n];
-            for (let i = 0; i < 3; i++) {
-                const divisor = primeDivisors[i];
-                const opWeight = operationWeights[i];
-
-                const targetNodeFloor = currentNode / divisor;
-                let costToFloor = opWeight + baseTraversalCost * (currentNode % divisor);
-                let costBySubtracting = (currentNode - targetNodeFloor) * baseTraversalCost;
-                costToFloor = selectMinimum(costToFloor, costBySubtracting);
-
-                const totalCostFloor = currentPathCost + costToFloor;
-                if (!discoveredPaths.has(targetNodeFloor) || discoveredPaths.get(targetNodeFloor) > totalCostFloor) {
-                    discoveredPaths.set(targetNodeFloor, totalCostFloor);
-                    pathExplorer.deposit(totalCostFloor, targetNodeFloor);
-                }
-
-                if (currentNode % divisor !== 0n) {
-                    const targetNodeCeil = targetNodeFloor + 1n;
-                    let costToCeil = opWeight + baseTraversalCost * (divisor - (currentNode % divisor));
-                    let costBySubtractingCeil = (currentNode - targetNodeCeil) * baseTraversalCost;
-                    costToCeil = selectMinimum(costToCeil, costBySubtractingCeil);
-
-                    const totalCostCeil = currentPathCost + costToCeil;
-                    if (!discoveredPaths.has(targetNodeCeil) || discoveredPaths.get(targetNodeCeil) > totalCostCeil) {
-                        discoveredPaths.set(targetNodeCeil, totalCostCeil);
-                        pathExplorer.deposit(totalCostCeil, targetNodeCeil);
-                    }
-                }
+            if (currentNumber === 0n) {
+                console.log(currentCost.toString());
+                break;
             }
+
+            if (currentNumber < 5n) {
+                const costToReachZero = smallNumberCosts[Number(currentNumber)];
+                processNeighbor(0n, costToReachZero);
+                continue;
+            }
+
+            primeDivisors.forEach((divisor, divisorIndex) => {
+                const directDivisionCost = divisionCosts[divisorIndex];
+
+                const calculateCostForQuotient = (num, div, targetQuotient) => {
+                    const costByAddingRemainder = directDivisionCost + baseUnitCost * (num % div);
+                    const costBySubtractingToQuotient = (num - targetQuotient) * baseUnitCost;
+                    return minBigInt(costByAddingRemainder, costBySubtractingToQuotient);
+                };
+
+                const calculateCostForCeilQuotient = (num, div, targetQuotient) => {
+                    const costByAddingToNextMultiple = directDivisionCost + baseUnitCost * (div - (num % div));
+                    const costBySubtractingToCeilQuotient = (num - targetQuotient) * baseUnitCost;
+                    return minBigInt(costByAddingToNextMultiple, costBySubtractingToCeilQuotient);
+                };
+
+                const floorQuotient = currentNumber / divisor; // Integer division
+                processNeighbor(floorQuotient, calculateCostForQuotient(currentNumber, divisor, floorQuotient));
+
+                if (currentNumber % divisor !== 0n) {
+                    const ceilQuotient = floorQuotient + 1n;
+                    processNeighbor(ceilQuotient, calculateCostForCeilQuotient(currentNumber, divisor, ceilQuotient));
+                }
+            });
         }
     }
-    return resultCollector.join('\n');
 }
-
-const finalOutput = determineShortestPath();
-if (finalOutput !== undefined && finalOutput !== '') console.log(finalOutput);

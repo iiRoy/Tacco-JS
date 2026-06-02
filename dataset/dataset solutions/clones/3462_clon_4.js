@@ -1,32 +1,27 @@
-function processNumericalInput(inputContent) {
-    const lineSegments = inputContent.split('\n').filter(Boolean);
-    let rawNumericalValues = lineSegments.map(Number.parseFloat);
+console.log(main(require("fs").readFileSync("/dev/stdin","utf8")));
 
-    const actualCount = rawNumericalValues.shift();
-    const finalActualValue = rawNumericalValues.pop();
-    rawNumericalValues.unshift(finalActualValue);
+function main(inputString){
+    const rawLines = inputString.split('\n');
+    const itemCount = Number(rawLines[0]);
+    
+    const sortedValues = rawLines.slice(1, itemCount + 1).map(Number);
+    sortedValues.sort((valA, valB) => valA - valB);
 
-    const orderedNumericalSet = rawNumericalValues.sort((first, second) => first - second);
+    const midPoint = Math.floor((itemCount + 1) / 2);
 
-    const totalElements = orderedNumericalSet.length;
-    const centralIndex = Math.floor((totalElements + 1) / 2);
+    let accumulatedResult = sortedValues.reduce((currentAccumulator, currentValue, currentIndex) => {
+        return currentAccumulator + (currentIndex < midPoint ? -2 * currentValue : 2 * currentValue);
+    }, 0);
 
-    const lowerSegmentSum = orderedNumericalSet.slice(0, centralIndex)
-                                                .reduce((accumulator, value) => accumulator - value, 0);
-    const upperSegmentSum = orderedNumericalSet.slice(centralIndex)
-                                                .reduce((accumulator, value) => accumulator + value, 0);
+    if (itemCount % 2 === 0) {
+        accumulatedResult = accumulatedResult - sortedValues[midPoint] + sortedValues[midPoint - 1];
+    } else {
+        const firstVal = sortedValues[midPoint - 1];
+        const secondVal = sortedValues[midPoint - 2];
+        const thirdVal = sortedValues[midPoint];
+        
+        accumulatedResult = accumulatedResult + (firstVal + secondVal > firstVal * 3 - thirdVal ? firstVal + secondVal : firstVal * 3 - thirdVal);
+    }
 
-    let initialScore = (lowerSegmentSum + upperSegmentSum) * 2;
-
-    const isTotalEven = totalElements % 2 === 0;
-
-    const medianCandidate = orderedNumericalSet[centralIndex - 1];
-    const postMedianCandidate = orderedNumericalSet[centralIndex];
-    const preMedianCandidate = orderedNumericalSet[centralIndex - 2];
-
-    return isTotalEven
-        ? initialScore - postMedianCandidate + medianCandidate
-        : ((medianCandidate + preMedianCandidate) > (medianCandidate * 3 - postMedianCandidate)
-            ? initialScore + medianCandidate + preMedianCandidate
-            : initialScore + medianCandidate * 3 - postMedianCandidate);
+    return accumulatedResult;
 }

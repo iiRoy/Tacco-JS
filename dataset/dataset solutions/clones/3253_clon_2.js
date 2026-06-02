@@ -1,177 +1,124 @@
-"use strict"; /* Enforce strict mode for modern JavaScript practices. */
+"use strict";
 
-/*
- *   Primary function to process input data and generate output.
- *   @param {string} sourceData - The raw input string, typically from stdin.
- */
-function ProcessInput( sourceData ) {
-    // Prepare the incoming text data: trim, split into lines, and reverse for easy popping.
-    let processedLines = sourceData.trim().split('\n').reverse();
+function ProcessInputData(inputContent) {
+  // Prepare the input by trimming, splitting into lines, and reversing for easy popping.
+  let inputLinesReversed = inputContent.trim().split("\n").reverse();
+  // Initialize an array to store all output lines.
+  let outputBuffer = [];
 
-    // Initialize an array to accumulate all results before final output.
-    let outputCollection = [];
+  // Helper function to get the next line from the input.
+  function retrieveLine() {
+    return inputLinesReversed.pop();
+  }
 
-    /**
-     *   Fetches the next line from the prepared input array.
-     *   @returns {string} The next line of input.
-     */
-    function retrieveLine() {
-        return processedLines.pop();
+  // Helper function to parse a line of space-separated numbers into an array of integers.
+  function parseLineOfIntegers() {
+    return retrieveLine().split(" ").map(stringNumber => parseInt(stringNumber));
+  }
+
+  // Helper function to add a value to the output buffer.
+  function appendToOutput(itemToProcess) {
+    outputBuffer.push(itemToProcess);
+  }
+
+  // Helper function to check if an element exists in a collection.
+  function isElementPresent(targetItem, sourceCollection) {
+    return new Set(sourceCollection).has(targetItem);
+  }
+
+  // Helper function to find the maximum value in a numeric array.
+  function findArrayMaximum(numericArray) {
+    return numericArray.reduce(function(accumulatorValue, currentElement) {
+      return Math.max(accumulatorValue, currentElement);
+    });
+  }
+
+  // Helper function to find the minimum value in a numeric array.
+  function findArrayMinimum(numericArray) {
+    return numericArray.reduce(function(accumulatorValue, currentElement) {
+      return Math.min(accumulatorValue, currentElement);
+    });
+  }
+
+  // Helper function to calculate the sum of elements in a numeric array.
+  function calculateArraySum(numericArray) {
+    return numericArray.reduce(function(accumulatorValue, currentElement) {
+      return accumulatorValue + currentElement;
+    });
+  }
+
+  // Helper function to sort an array of arrays/objects by a specific index/key.
+  function sortArrayByIndex(arrayToSort, sortKeyPosition) {
+    arrayToSort.sort((elementA, elementB) => elementA[sortKeyPosition] - elementB[sortKeyPosition]);
+  }
+
+  // Helper function to check if all boolean elements in an array are true.
+  function checkAllTrue(booleanCollection) {
+    return booleanCollection.reduce(function(accumulatorValue, currentElement) {
+      return accumulatorValue && currentElement;
+    });
+  }
+
+  // Helper function to check if any boolean element in an array is true.
+  function checkAnyTrue(booleanCollection) {
+    return booleanCollection.reduce(function(accumulatorValue, currentElement) {
+      return accumulatorValue || currentElement;
+    });
+  }
+
+  // Helper function to convert an iterable to an array.
+  function convertToList(sourceIterable) {
+    return Array.from(sourceIterable);
+  }
+
+  // Helper function to convert an iterable of strings to an array of integers.
+  function convertStringsToIntegers(sourceIterable) {
+    return Array.from(sourceIterable, stringItem => parseInt(stringItem));
+  }
+
+  // Helper function to create an array filled with a specific value.
+  function createFilledArray(fillElement, arraySize) {
+    return Array(arraySize).fill(fillElement);
+  }
+
+  // Helper function to generate a numeric sequence.
+  const generateNumericSequence = (sequenceStart, sequenceEnd, stepIncrement) => Array.from(
+    { length: (sequenceEnd - sequenceStart) / stepIncrement },
+    (_unused, indexCounter) => sequenceStart + (indexCounter * stepIncrement)
+  );
+
+  /* Core Logic Begins */
+
+  // Read the initial number from input.
+  let currentValue = parseInt(retrieveLine());
+
+  // Check for base cases for the Collatz conjecture.
+  if (currentValue === 1 || currentValue === 2) {
+    appendToOutput(4); // Specific output for these initial values.
+  } else {
+    let iterationCount = 2; // Initialize step counter.
+    // Loop until the value reaches 1.
+    while (currentValue !== 1) {
+      // Apply Collatz rules: if odd, 3n+1; if even, n/2.
+      if (currentValue % 2 === 1) {
+        currentValue = 3 * currentValue + 1;
+      } else {
+        currentValue /= 2;
+      }
+      iterationCount++; // Increment step counter.
     }
+    appendToOutput(iterationCount); // Output the total steps.
+  }
 
-    /**
-     *   Reads a line, splits it by space, and converts each part to an integer.
-     *   @returns {number[]} An array of integers.
-     */
-    function parseNumericLine() {
-        return retrieveLine().split(' ').map( individualNumStr => parseInt(individualNumStr, 10) );
-    }
+  /* Core Logic Ends */
 
-    /**
-     *   Adds a value to the output collection.
-     *   @param {*} itemToOutput - The value to be stored for output.
-     */
-    function appendResult( itemToOutput ) {
-        outputCollection.push( itemToOutput );
-    }
-
-    /**
-     *   Checks if a specific element exists within a given array.
-     *   @param {*} soughtItem - The item to search for.
-     *   @param {Array} targetArray - The array to search within.
-     *   @returns {boolean} True if the item is found, false otherwise.
-     */
-    function checkElementPresence( soughtItem, targetArray ) {
-        return new Set( targetArray ).has( soughtItem );
-    }
-
-    /**
-     *   Finds the maximum numeric value in an array.
-     *   @param {number[]} numericValues - Array of numbers.
-     *   @returns {number} The largest number in the array.
-     */
-    function locateMaximum( numericValues ) {
-        return numericValues.reduce( (valA, valB) => Math.max(valA, valB) );
-    }
-
-    /**
-     *   Finds the minimum numeric value in an array.
-     *   @param {number[]} numericValues - Array of numbers.
-     *   @returns {number} The smallest number in the array.
-     */
-    function locateMinimum( numericValues ) {
-        return numericValues.reduce( (valA, valB) => Math.min(valA, valB) );
-    }
-
-    /**
-     *   Calculates the sum of all numbers in an array.
-     *   @param {number[]} numericValues - Array of numbers.
-     *   @returns {number} The sum of all numbers.
-     */
-    function computeSum( numericValues ) {
-        return numericValues.reduce( (valA, valB) => valA + valB );
-    }
-
-    /**
-     *   Sorts an array of objects in-place based on a specified property/index.
-     *   @param {Array<Object>} dataRecords - The array of objects to sort.
-     *   @param {string|number} propertyIndex - The key or index to sort by.
-     */
-    function sortRecordsByIndex( dataRecords, propertyIndex ) {
-        dataRecords.sort( (recordX, recordY) => recordX[propertyIndex] - recordY[propertyIndex] );
-    }
-
-    /**
-     *   Checks if all boolean values in an array are true.
-     *   @param {boolean[]} booleanStates - Array of boolean values.
-     *   @returns {boolean} True if all are true, false otherwise.
-     */
-    function verifyAllTrue( booleanStates ) {
-        return booleanStates.reduce( (stateA, stateB) => stateA && stateB );
-    }
-
-    /**
-     *   Checks if any boolean value in an array is true.
-     *   @param {boolean[]} booleanStates - Array of boolean values.
-     *   @returns {boolean} True if any is true, false otherwise.
-     */
-    function verifyAnyTrue( booleanStates ) {
-        return booleanStates.reduce( (stateA, stateB) => stateA || stateB );
-    }
-
-    /**
-     *   Converts any iterable into a standard JavaScript Array.
-     *   @param {Iterable} sourceIterable - The iterable to convert.
-     *   @returns {Array} A new array containing elements from the iterable.
-     */
-    function convertToArray( sourceIterable ) {
-        return Array.from( sourceIterable );
-    }
-
-    /**
-     *   Converts an iterable of string representations of numbers into an array of integers.
-     *   @param {Iterable<string>} stringNumbers - Iterable of strings that can be parsed as integers.
-     *   @returns {number[]} An array of integers.
-     */
-    function convertToIntegers( stringNumbers ) {
-        return Array.from( stringNumbers, str => parseInt(str, 10) );
-    }
-
-    /**
-     *   Creates a new array of a specified length, filled with a given value.
-     *   @param {*} fillerValue - The value to fill the array with.
-     *   @param {number} desiredLength - The length of the new array.
-     *   @returns {Array} A new array filled with fillerValue.
-     */
-    function buildFilledArray( fillerValue, desiredLength ) {
-        return Array( desiredLength ).fill( fillerValue );
-    }
-
-    /**
-     *   Generates a sequence of numbers within a specified range with a given step.
-     *   @param {number} sequenceStart - The starting number of the sequence.
-     *   @param {number} sequenceEnd - The end number (exclusive) of the sequence.
-     *   @param {number} sequenceIncrement - The step size between numbers.
-     *   @returns {number[]} An array representing the numeric sequence.
-     */
-    const generateNumericSequence = ( sequenceStart, sequenceEnd, sequenceIncrement ) => Array.from(
-        { length: ( sequenceEnd - sequenceStart ) / sequenceIncrement },
-        ( _, indexOffset ) => sequenceStart + ( indexOffset * sequenceIncrement )
-    );
-
-    // --- Core Logic Execution ---
-
-    // Read the initial numeric parameter from the input.
-    let currentNumber = parseInt( retrieveLine(), 10 );
-
-    // Apply specific logic based on the initial value of 'currentNumber'.
-    if ( currentNumber === 1 || currentNumber === 2 ) {
-        appendResult( 4 ); // Output a predefined value for these specific cases.
-    } else {
-        let operationCount = 2; // Initialize a counter for the steps in the sequence.
-        // Iterate following the Collatz conjecture rules until the number reaches 1.
-        while ( currentNumber !== 1 ) {
-            if ( currentNumber % 2 === 1 ) {
-                currentNumber = ( 3 * currentNumber ) + 1; // If odd, apply (3n + 1).
-            } else {
-                currentNumber /= 2; // If even, apply (n / 2).
-            }
-            operationCount++; // Increment the step counter for each transformation.
-        }
-        appendResult( operationCount ); // Store the total number of operations.
-    }
-
-    // --- End of Core Logic ---
-
-    // Combine all collected output lines into a single string, separated by newlines.
-    let finalOutputString = outputCollection.join('\n');
-
-    // Display the final generated output to the console.
-    console.log( finalOutputString );
-
-    // Return the final output string.
-    return finalOutputString;
+  // Join all collected output lines with newlines.
+  outputBuffer = outputBuffer.join("\n");
+  // Print the final output to the console.
+  console.log(outputBuffer);
+  // Return the output string.
+  return outputBuffer;
 }
 
-// Invoke the main processing function, reading input from the standard input stream.
-ProcessInput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Execute the main function with input read from stdin.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

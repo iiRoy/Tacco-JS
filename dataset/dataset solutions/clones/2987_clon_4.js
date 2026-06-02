@@ -1,39 +1,39 @@
-const entryHandler = require('readline');
+const inputLines = [];
+const lineProcessor = require('readline');
 
-async function extractValue() {
-    const sourceStream = entryHandler.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        crlfDelay: Infinity
-    });
+const streamConfig = {
+    input: process.stdin,
+    output: process.stdout,
+};
 
-    let dataSegments = [];
-    for await (const segment of sourceStream) {
-        dataSegments.push(segment);
-    }
-    return dataSegments[0];
-}
+const inputHandler = lineProcessor.createInterface(streamConfig);
 
-async function primaryExecution() {
-    const inputString = await extractValue();
-    const processedNumeric = Number(inputString);
+inputHandler.on('line', (currentInput) => {
+    inputLines.push(currentInput);
+});
 
-    const squareRootApprox = Math.sqrt(processedNumeric);
-    const upperBoundary = Number.isInteger(squareRootApprox) ? squareRootApprox - 1 : Math.floor(squareRootApprox);
+inputHandler.on('close', () => {
+    const numericValue = Number(inputLines[0]);
 
-    const numericalSequence = Array.from({ length: Math.max(0, upperBoundary) }, (_, idx) => idx + 1);
-
-    const finalAccumulation = numericalSequence.reduce((totalCurrent, currentIteration) => {
-        const isFactor = processedNumeric % currentIteration === 0;
-        const distinctCondition = currentIteration !== (processedNumeric / currentIteration) - 1;
-
-        if (isFactor && distinctCondition) {
-            return totalCurrent + (processedNumeric / currentIteration - 1);
+    function* generateDivisorCandidates(upperBoundExclusive) {
+        let candidate = 1;
+        while (candidate < upperBoundExclusive) {
+            yield candidate;
+            candidate++;
         }
-        return totalCurrent;
-    }, 0);
+    }
 
-    console.log(finalAccumulation);
-}
+    let accumulatedResult = 0;
 
-primaryExecution();
+    for (const currentFactor of generateDivisorCandidates(Math.sqrt(numericValue))) {
+        const divisionResult = numericValue / currentFactor;
+        const isExactDivision = Number.isInteger(divisionResult);
+        const specificCondition = currentFactor !== divisionResult - 1;
+
+        if (isExactDivision && specificCondition) {
+            accumulatedResult += (divisionResult - 1);
+        }
+    }
+
+    console.log(accumulatedResult);
+});

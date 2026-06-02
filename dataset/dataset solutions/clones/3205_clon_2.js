@@ -1,38 +1,28 @@
-const rawData = require('fs').readFileSync(    '/dev/stdin' ,  'utf8'  ); // Retrieve raw text from the standard input stream
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire input data from standard input stream
 
-const tokenArray = rawData.split(' '); // Divide the raw string into an array of substrings
+const tokenizedData = rawData.split(' '); // Divide the raw input string into an array of substrings using space as a delimiter
 
-const paramA = Number( tokenArray[ 0 ] ); // Parse the first substring as a numeric value
+const valK = Number(tokenizedData[0]); // Convert the first token to a numerical value and assign it to 'valK'
 
-const paramB = Number(tokenArray[1]); // Parse the second substring as a numeric value
+const valA = Number(tokenizedData[1]); // Convert the second token to a numerical value and assign it to 'valA'
 
-const paramC = Number ( tokenArray[2] ); // Parse the third substring as a numeric value
+const valB = Number(tokenizedData[2]); // Convert the third token to a numerical value and assign it to 'valB'
 
-const processValues = () => {
-    // Evaluate the first condition: if paramA is less than paramB plus one
-    if (paramA < paramB + 1)
-    {
-        console.log(paramA + 1); // Output paramA incremented by one
-    }
-    // Otherwise, evaluate the second condition: if paramC is less than or equal to paramB plus two
-    else if (paramC <= paramB + 2)
-    {
-        console.log( paramA + 1 ); // Output paramA incremented by one
-    }
-    // Otherwise, evaluate the third condition: if a specific expression's parity is even
-    else if ( ( paramA - paramB + 1 ) % 2 === 0 )
-    {
-        // Calculate and display the result for the even case
-        let result_even_scenario = paramB + (paramC - paramB) * (paramA - paramB + 1) / 2;
-        console.log( result_even_scenario );
-    }
-    // If none of the above conditions are met (i.e., the expression's parity is odd)
-    else
-    {
-        // Calculate and display the result for the odd case
-        let result_odd_scenario = paramB + ( paramC - paramB ) * ( paramA - paramB ) / 2 + 1;
-        console.log( result_odd_scenario );
-    }
+const processAndDisplay = () => {
+  // This function encapsulates the core logic to compute and output the result based on the input values.
+  if (valK < valA + 1) {
+    // If 'valK' is less than 'valA' plus one, print 'valK' plus one.
+    console.log(valK + 1);
+  } else if (valB <= valA + 2) {
+    // Otherwise, if 'valB' is less than or equal to 'valA' plus two, print 'valK' plus one.
+    console.log(valK + 1);
+  } else if ((valK - valA + 1) % 2 === 0) {
+    // Otherwise, if the expression (valK - valA + 1) is an even number, calculate and print a specific value.
+    console.log(valA + (valB - valA) * (valK - valA + 1) / 2);
+  } else {
+    // In all other cases, calculate and print a different specific value.
+    console.log(valA + (valB - valA) * (valK - valA) / 2 + 1);
+  }
 };
 
-processValues(); // Initiate the primary function to execute the program's logic
+processAndDisplay(); // Invoke the function to execute the processing and display the final outcome.

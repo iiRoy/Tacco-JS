@@ -1,58 +1,37 @@
 "use strict";
+var input=require("fs").readFileSync("/dev/stdin","utf8");
+var cin=input.split(/ |\n/),cid=0;
+function next(){return +cin[cid++];}
+function nextstr(){return cin[cid++];}
+function nextbig(){return BigInt(cin[cid++]);}
+function nexts(n,a){return a?cin.slice(cid,cid+=n):cin.slice(cid,cid+=n).map(a=>+a);}
+function nextm(h,w,a){var r=[],i=0;if(a)for(;i<h;i++)r.push(cin.slice(cid,cid+=w));else for(;i<h;i++)r.push(cin.slice(cid,cid+=w).map(a=>+a));return r;}
+function xArray(v){var a=arguments,l=a.length,r="Array(a["+--l+"]).fill().map(x=>{return "+v+";})";while(--l)r="Array(a["+l+"]).fill().map(x=>"+r+")";return eval(r);}
 
-let acquiredData = '';
+var myOut = main();
+if(myOut !== undefined)console.log(String(myOut));
 
-process.stdin.on('data', chunk => {
-    acquiredData += chunk.toString();
-});
+function main(){
+  const elementCount = next();
+  const valueSet = [0].concat(nexts(elementCount));
 
-process.stdin.on('end', () => {
-    const parsedSegments = acquiredData.split(/\s+/).filter(Boolean);
-    const finalProduct = processAlgorithm(parsedSegments);
-    if (finalProduct !== undefined) {
-        process.stdout.write(String(finalProduct) + '\n');
-    }
-});
+  Array.from({ length: elementCount }).forEach((_, roundIndex) => {
+    Array.from({ length: elementCount }, (_, offset) => elementCount - offset)
+      .forEach(currentDivisor => {
+        const affectedIndices = Array.from(
+          { length: Math.floor(elementCount / currentDivisor) },
+          (_, multipleFactor) => (multipleFactor + 1) * currentDivisor
+        );
 
-let currentParseIndex = 0;
+        const aggregateSum = affectedIndices.reduce((acc, idx) => acc + valueSet[idx], 0);
 
-const retrieveNumericItem = (dataArray) => {
-    return Number(dataArray[currentParseIndex++]);
-};
-
-function processAlgorithm(sourceCollection) {
-    const totalElementsDimension = retrieveNumericItem(sourceCollection);
-
-    const initialValueSequence = Array.from({ length: totalElementsDimension + 1 }, (_, position) => {
-        if (position === 0) return 0;
-        return retrieveNumericItem(sourceCollection);
-    });
-
-    const performRecursiveTransformation = (currentArrayState, processingLevel) => {
-        if (processingLevel === 0) {
-            return currentArrayState;
+        if (aggregateSum < 0) {
+          affectedIndices.forEach(idx => {
+            valueSet[idx] = 0;
+          });
         }
+      });
+  });
 
-        const involvedIndices = [];
-        let accumulatedValue = 0;
-
-        for (let steppingIndex = processingLevel; steppingIndex <= totalElementsDimension; steppingIndex += processingLevel) {
-            accumulatedValue += currentArrayState[steppingIndex];
-            involvedIndices.push(steppingIndex);
-        }
-
-        let nextArrayState = [...currentArrayState];
-
-        if (accumulatedValue < 0) {
-            involvedIndices.forEach(idx => {
-                nextArrayState[idx] = 0;
-            });
-        }
-
-        return performRecursiveTransformation(nextArrayState, processingLevel - 1);
-    };
-
-    const finalTransformedSequence = performRecursiveTransformation(initialValueSequence, totalElementsDimension);
-
-    return finalTransformedSequence.reduce((sumAccumulator, currentElement) => sumAccumulator + currentElement, 0);
+  return valueSet.reduce((acc, val) => acc + val, 0);
 }

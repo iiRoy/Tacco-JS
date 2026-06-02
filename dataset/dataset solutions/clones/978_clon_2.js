@@ -1,48 +1,69 @@
-const processConfig = {
-    sourceFilePath: '/dev/stdin', // Standard input file path
-    recordSeparator: '\n'       // Character sequence for line termination
+const appSettings = {
+  // This configuration points to standard input for data acquisition.
+  // For alternative input methods (e.g., file system), adjust 'sourcePath' and 'lineSeparator'.
+  sourcePath: '/dev/stdin',
+  lineSeparator: '\n'
 };
 
-let rawInputRecords = require('fs')
-    .readFileSync(processConfig.sourceFilePath, 'utf8')
-    .split(processConfig.recordSeparator);
+// Retrieve all lines from the specified input source, treating them as ASCII text.
+let rawInputRows = require('fs').readFileSync(appSettings.sourcePath, 'ascii')
+  .split(appSettings.lineSeparator);
 
-rawInputRecords[0] = rawInputRecords[0].split(' ').map(parseInt);
-const primaryHeight = rawInputRecords[0][0];
-const primaryWidth = rawInputRecords[0][1];
+// The initial line contains the dimensions of the primary grid.
+rawInputRows[0] = rawInputRows[0].split(' ').map(Number);
+let primaryGridHeight = rawInputRows[0][0];
+let primaryGridWidth = rawInputRows[0][1];
 
-const primaryGridData = rawInputRecords.slice(1, 1 + primaryHeight);
+// Extract the actual grid data based on the determined height.
+let mainGridContent = rawInputRows.slice(1, 1 + primaryGridHeight);
 
-rawInputRecords[1 + primaryHeight] = rawInputRecords[1 + primaryHeight].split(' ').map(parseInt);
-const templateRows = rawInputRecords[1 + primaryHeight][0];
-const templateCols = rawInputRecords[1 + primaryHeight][1];
+// The line immediately following the main grid data specifies the dimensions of the pattern.
+rawInputRows[1 + primaryGridHeight] = rawInputRows[1 + primaryGridHeight].split(' ').map(Number);
+let patternHeight = rawInputRows[1 + primaryGridHeight][0];
+let patternWidth = rawInputRows[1 + primaryGridHeight][1];
 
-const searchTemplateData = rawInputRecords.slice(1 + primaryHeight + 1, 1 + primaryHeight + 1 + templateRows);
+// Extract the pattern data itself.
+let searchPatternData = rawInputRows.slice(1 + primaryGridHeight + 1, 1 + primaryGridHeight + 1 + patternHeight);
 
-if (primaryHeight < templateRows || primaryWidth < templateCols) {
-    process.exit();
+// If the pattern's dimensions exceed the main grid's, no match is possible.
+// Exit the process immediately to save computation.
+if (primaryGridHeight < patternHeight || primaryGridWidth < patternWidth) {
+  process.exit();
 }
 
-const subGridSegments = primaryGridData.map(function (currentLineContent) {
-    const segmentList = [];
-    let segmentIndex;
-    for (segmentIndex = 0; segmentIndex <= primaryWidth - templateCols; segmentIndex++) {
-        segmentList.push(currentLineContent.slice(segmentIndex, segmentIndex + templateCols));
-    }
-    return segmentList;
+// Transform the main grid into a collection of all possible horizontal segments
+// that match the pattern's width. This pre-computation optimizes the search.
+let horizontalSegments = mainGridContent.map(function (gridRowString) {
+  let rowSlices = []; // Array to hold all width-C slices for the current row.
+  let currentSliceIndex; // Iterator for column positions.
+  for (currentSliceIndex = 0; currentSliceIndex <= primaryGridWidth - patternWidth; currentSliceIndex++) {
+    rowSlices.push(gridRowString.slice(currentSliceIndex, currentSliceIndex + patternWidth));
+  }
+  return rowSlices;
 });
 
-for (let rowOffset = 0; rowOffset <= primaryHeight - templateRows; rowOffset++) {
-    for (let colOffset = 0; colOffset <= primaryWidth - templateCols; colOffset++) {
-        let isPatternMatch = true;
-        for (let templateRowIdx = 0; templateRowIdx < templateRows; templateRowIdx++) {
-            if (subGridSegments[rowOffset + templateRowIdx][colOffset] !== searchTemplateData[templateRowIdx]) {
-                isPatternMatch = false;
-                break;
-            }
-        }
-        if (isPatternMatch) {
-            console.log(rowOffset, colOffset);
-        }
+// Begin the search for the pattern within the main grid.
+// Iterate through all possible top-left starting positions for the pattern.
+let currentGridRow;
+let currentGridCol;
+let currentPatternRowIndex;
+
+for (currentGridRow = 0; currentGridRow <= primaryGridHeight - patternHeight; currentGridRow++) {
+  for (currentGridCol = 0; currentGridCol <= primaryGridWidth - patternWidth; currentGridCol++) {
+    let isMatchFound = true; // Assume a match until a discrepancy is found.
+    // Compare each row of the pattern with the corresponding segment of the main grid.
+    for (currentPatternRowIndex = 0; currentPatternRowIndex < patternHeight; currentPatternRowIndex++) {
+      // If a segment of the main grid does not match the pattern's row,
+      // then this starting position is not a match.
+      if (horizontalSegments[currentGridRow + currentPatternRowIndex][currentGridCol] !== searchPatternData[currentPatternRowIndex]) {
+        isMatchFound = false; // Mark as no match.
+        break; // No need to check further rows for this specific starting point.
+      }
     }
+    // If 'isMatchFound' remains true after checking all pattern rows,
+    // it means the pattern was successfully located.
+    if (isMatchFound) {
+      console.log(currentGridRow, currentGridCol); // Output the top-left coordinates.
+    }
+  }
 }

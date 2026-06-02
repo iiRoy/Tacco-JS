@@ -1,74 +1,83 @@
-function numParse(txtLine) {
-    return txtLine.split(" ").map(Number);
-}
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 
-function ingestData(rawData) {
-    const lines = rawData.split("\n");
-    const firstLineNums = numParse(lines[0]);
-    const totalItems = firstLineNums[0];
-    const mappingArray = numParse(lines[1]);
-    const linkPairs = lines.slice(2).map(line => {
-        const [left, right] = numParse(line);
-        return { initial: left, final: right };
-    });
-    return { totalItems, mappingArray, linkPairs };
-}
+function solveProblem(rawData) {
+    const { totalElements, connectionCount, permutationMap, linkPairs } = processRawData(rawData);
 
-function locateRoot(element, parents) {
-    if (parents[element] === element) {
-        return element;
-    }
-    parents[element] = locateRoot(parents[element], parents);
-    return parents[element];
-}
+    const groupHandler = new UnionFindSystem(totalElements);
 
-function mergeGroups(elemA, elemB, parents, heights) {
-    let rootA = locateRoot(elemA, parents);
-    let rootB = locateRoot(elemB, parents);
-
-    if (rootA !== rootB) {
-        if (heights[rootA] < heights[rootB]) {
-            [rootA, rootB] = [rootB, rootA];
-        }
-        parents[rootB] = rootA;
-        if (heights[rootA] === heights[rootB]) {
-            heights[rootA]++;
-        }
-        return true;
-    }
-    return false;
-}
-
-function formStructures(itemCount, connections) {
-    const parents = Array.from({ length: itemCount + 1 }, (_, i) => i);
-    const heights = Array(itemCount + 1).fill(0);
-
-    connections.forEach(pair => {
-        mergeGroups(pair.initial, pair.final, parents, heights);
+    linkPairs.forEach(({ firstNode, secondNode }) => {
+        groupHandler.uniteSets(firstNode, secondNode);
     });
 
-    return {
-        parents: parents,
-        shareComponent: (a, b) => locateRoot(a, parents) === locateRoot(b, parents)
-    };
-}
-
-function AssessMappings(rawData) {
-    const { totalItems, mappingArray, linkPairs } = ingestData(rawData);
-
-    const { shareComponent } = formStructures(totalItems, linkPairs);
-
-    let tally = 0;
-    for (let i = 0; i < mappingArray.length; i++) {
-        const mappedValue = mappingArray[i];
-        const originalIndex = i + 1;
-        if (shareComponent(mappedValue, originalIndex)) {
-            tally++;
+    let finalTally = 0;
+    for (let i = 0; i < totalElements; i++) {
+        if (groupHandler.areConnected(permutationMap[i], i + 1)) {
+            finalTally++;
         }
     }
 
-    console.log(tally);
-    return tally;
+    console.log(finalTally);
+    return finalTally;
+}
+exports.Equals = solveProblem;
+
+class UnionFindSystem {
+    constructor(size) {
+        this.nodeParents = Array.from({ length: size + 1 }, (_, i) => i);
+        this.nodeRanks = Array(size + 1).fill(0);
+    }
+
+    findRoot(element) {
+        if (this.nodeParents[element] === element) {
+            return element;
+        }
+        this.nodeParents[element] = this.findRoot(this.nodeParents[element]);
+        return this.nodeParents[element];
+    }
+
+    uniteSets(element1, element2) {
+        let rootA = this.findRoot(element1);
+        let rootB = this.findRoot(element2);
+
+        if (rootA !== rootB) {
+            if (this.nodeRanks[rootA] < this.nodeRanks[rootB]) {
+                [rootA, rootB] = [rootB, rootA];
+            }
+            this.nodeParents[rootB] = rootA;
+            if (this.nodeRanks[rootA] === this.nodeRanks[rootB]) {
+                this.nodeRanks[rootA]++;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    areConnected(element1, element2) {
+        return this.findRoot(element1) === this.findRoot(element2);
+    }
 }
 
-AssessMappings(require("fs").readFileSync("/dev/stdin", "utf8"));
+function processRawData(inputString) {
+    const lines = inputString.split("\n");
+
+    const [initialLine, mappingLine, ...remainingLines] = lines;
+
+    const [totalElements, connectionCount] = parseNumericSequence(initialLine);
+    const permutationMap = parseNumericSequence(mappingLine);
+
+    const linkPairs = remainingLines.reduce((acc, currentLine) => {
+        if (currentLine.trim() === "") return acc;
+        const [xVal, yVal] = parseNumericSequence(currentLine);
+        acc.push({ firstNode: xVal, secondNode: yVal });
+        return acc;
+    }, []);
+
+    return { totalElements, connectionCount, permutationMap, linkPairs };
+}
+
+function parseNumericSequence(textLine) {
+    return textLine.split(" ").map(Number);
+}
+
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

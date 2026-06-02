@@ -1,52 +1,42 @@
-let collectedTextualContent = '';
+const fs = require('fs');
 
-process.stdin.on('data', (dataChunkSegment) => {
-    collectedTextualContent += dataChunkSegment.toString();
-});
+const acquireInputData = () => {
+    const sourceContent = fs.readFileSync('/dev/stdin', 'utf8');
+    return sourceContent.split('\n').filter(Boolean);
+};
 
-process.stdin.on('end', () => {
-    initiateGeometricAnalysis(collectedTextualContent);
-});
+const evaluateSegments = (coordinateSequence) => {
+    const numericalCoordinates = coordinateSequence.split(',').map(Number);
 
-function calculateVectorGradient(firstCoordinatePair, secondCoordinatePair) {
-    const verticalDisplacement = firstCoordinatePair[1] - secondCoordinatePair[1];
-    const horizontalDisplacement = firstCoordinatePair[0] - secondCoordinatePair[0];
-
-    if (horizontalDisplacement === 0) {
-        return verticalDisplacement > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    const vertices = [];
+    for (let i = 0; i < numericalCoordinates.length; i += 2) {
+        vertices.push({ x: numericalCoordinates[i], y: numericalCoordinates[i + 1] });
     }
-    return verticalDisplacement / horizontalDisplacement;
-}
 
-function evaluatePolygonOrientation(inputLineOfNumbers) {
-    const numericCoordinates = inputLineOfNumbers.split(',').map(Number);
-    
-    const pointOne = [numericCoordinates[0], numericCoordinates[1]];
-    const pointTwo = [numericCoordinates[2], numericCoordinates[3]];
-    const pointThree = [numericCoordinates[4], numericCoordinates[5]];
-    const pointFour = [numericCoordinates[6], numericCoordinates[7]];
-
-    const segmentGradientsSequence = [
-        calculateVectorGradient(pointOne, pointTwo),
-        calculateVectorGradient(pointTwo, pointThree),
-        calculateVectorGradient(pointThree, pointFour),
-        calculateVectorGradient(pointFour, pointOne)
+    const pathSegments = [
+        { initial: vertices[0], terminal: vertices[1] },
+        { initial: vertices[1], terminal: vertices[2] },
+        { initial: vertices[2], terminal: vertices[3] },
+        { initial: vertices[3], terminal: vertices[0] }
     ];
 
-    const countOfAscendingSegments = segmentGradientsSequence.filter(val => val >= 0).length;
+    const checkGradientSign = (pointOne, pointTwo) => {
+        const yDelta = pointOne.y - pointTwo.y;
+        const xDelta = pointOne.x - pointTwo.x;
+        const gradient = yDelta / xDelta;
+        return gradient >= 0;
+    };
 
-    return countOfAscendingSegments % 2 === 1 ? 'YES' : 'NO';
-}
+    const positiveGradientCount = pathSegments.reduce((tally, segment) => {
+        return tally + (checkGradientSign(segment.initial, segment.terminal) ? 1 : 0);
+    }, 0);
 
-function initiateGeometricAnalysis(fullInputDataStream) {
-    const parsedDataEntries = fullInputDataStream
-        .trim()
-        .split('\n')
-        .filter(entry => entry.length > 0);
+    console.log(positiveGradientCount % 2 === 1 ? 'YES' : 'NO');
+};
 
-    const computedOutcomes = parsedDataEntries.map(evaluatePolygonOrientation);
+const processAllEntries = (entryLines) => {
+    entryLines.forEach(evaluateSegments);
+};
 
-    if (computedOutcomes.length > 0) {
-        process.stdout.write(computedOutcomes.join('\n') + '\n');
-    }
-}
+const allInputLines = acquireInputData();
+processAllEntries(allInputLines);

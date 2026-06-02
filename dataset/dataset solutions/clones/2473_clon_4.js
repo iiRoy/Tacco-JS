@@ -1,16 +1,21 @@
 'use strict';
 
-const processData = dataLines => {
-  const integerValue = Number(dataLines[0]);
-  
-  const leastSum = Array.from({ length: Math.floor(Math.sqrt(integerValue)) }, (_, idx) => idx + 1)
-    .filter(factor => integerValue % factor === 0)
-    .map(divisorComponent => divisorComponent + integerValue / divisorComponent - 2)
-    .reduce((currentMin, calculatedSum) => Math.min(currentMin, calculatedSum), Number.MAX_SAFE_INTEGER);
+const executeCalculation = (rawData) => {
+  const targetNumber = parseInt(rawData[0]);
 
-  console.log(leastSum);
+  const upperLimit = Math.floor(Math.sqrt(targetNumber));
+
+  const potentialDivisors = Array.from({ length: upperLimit }, (_, index) => index + 1);
+
+  const minimumExpressionValue = potentialDivisors
+    .filter(currentDivisor => targetNumber % currentDivisor === 0)
+    .map(currentDivisor => currentDivisor - 2 + targetNumber / currentDivisor)
+    .reduce(
+      (accumulator, currentValue) => Math.min(accumulator, currentValue),
+      Infinity
+    );
+
+  console.log(minimumExpressionValue);
 };
 
-const acquirePayload = () => require("node:fs").readFileSync(process.stdin.fd, "utf8").split('\n');
-
-processData(acquirePayload());
+executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

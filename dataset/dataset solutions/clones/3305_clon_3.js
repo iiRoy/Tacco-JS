@@ -1,123 +1,88 @@
-function solveKnapsackProblem(rawDataString) {
-  // Parse the raw input string into an array of individual lines.
-  const inputLinesArray = rawDataString.split('\n');
+function processInput(rawData) {
+  const parseNumbers = (str) => str.split(' ').map(val => parseInt(val, 10));
 
-  // Perform basic validation to ensure input is not empty.
-  if (inputLinesArray.length === 0) {
-    console.error("Input data is missing or empty. Cannot proceed.");
-    return;
+  const inputLines = rawData.split('\n');
+  const configParams = parseNumbers(inputLines.shift());
+  const numItems = configParams[0];
+  const maxWeightCapacity = configParams[1];
+
+  const itemDetailsList = inputLines.map(line => parseNumbers(line));
+
+  const initialItemEntry = itemDetailsList.shift();
+  const initialItemWeight = initialItemEntry[0];
+  const initialItemValue = initialItemEntry[1];
+
+  let currentMaxPossibleValue = initialItemValue;
+  
+  // Using a Map to handle sparse DP table and replicate 'undefined' behavior
+  // for non-existent values, which is crucial for NaN propagation.
+  const minWeightRequiredForValue = new Map();
+  minWeightRequiredForValue.set(0, 0); // 0 value requires 0 weight
+
+  // Initialize DP table with the first item's contribution
+  // Original logic: any value from 1 to initialItemValue can be achieved with initialItemWeight
+  for (let valIdx = 1; valIdx <= initialItemValue; valIdx++) {
+    minWeightRequiredForValue.set(valIdx, initialItemWeight);
   }
 
-  // Extract the first line which contains the total item count (N) and knapsack capacity (W).
-  const parameterLine = inputLinesArray.shift();
-  // Convert parameter strings to integers, trimming whitespace.
-  const knapsackParameters = parameterLine.split(' ').map(str => parseInt(str.trim(), 10));
+  // Iterate through the remaining items
+  for (let itemIndex = 0; itemIndex < itemDetailsList.length; itemIndex++) {
+    const currentItemDetails = itemDetailsList[itemIndex];
+    const currentItemWeight = currentItemDetails[0];
+    const currentItemValue = currentItemDetails[1];
 
-  // Validate the parsed knapsack parameters.
-  if (knapsackParameters.length < 2 || isNaN(knapsackParameters[0]) || isNaN(knapsackParameters[1])) {
-    console.error("Invalid knapsack configuration parameters provided. Expected N and W.");
-    return;
-  }
+    // Update the maximum possible value that can be achieved
+    currentMaxPossibleValue += currentItemValue;
 
-  const totalItemsCount = knapsackParameters[0]; // Represents 'N' from problem statement
-  const maxWeightCapacity = knapsackParameters[1]; // Represents 'W' from problem statement
+    // Iterate backwards through possible values to update DP table
+    for (let targetValue = currentMaxPossibleValue; targetValue > 0; targetValue--) {
+      const existingMinWeight = minWeightRequiredForValue.get(targetValue);
+      
+      if (targetValue >= currentItemValue) {
+        // Option 1: Achieve targetValue by taking current item and
+        // achieving (targetValue - currentItemValue) with previous items.
+        const weightForPreviousValue = minWeightRequiredForValue.get(targetValue - currentItemValue);
+        
+        // Calculate candidate weight. If weightForPreviousValue is undefined, result will be NaN.
+        const candidateWeightFromPrev = currentItemWeight + weightForPreviousValue;
 
-  // Define a helper utility to parse individual item specification lines.
-  const parseItemSpecs = (lineContent) => {
-    const parts = lineContent.split(' ').map(s => parseInt(s.trim(), 10));
-    // Return an item object or a placeholder for invalid lines.
-    if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) {
-      return { weight: 0, value: 0 }; // Treat as an item with no contribution
-    }
-    return { weight: parts[0], value: parts[1] };
-  };
-
-  // Process all remaining lines to get item specifications.
-  const itemSpecifications = inputLinesArray.map(parseItemSpecs);
-
-  // Filter out any invalid or empty item lines that might have resulted from parsing.
-  const validItemSpecs = itemSpecifications.filter(item => item.weight >= 0 && item.value >= 0);
-
-  // Handle edge cases: no valid items or zero/negative knapsack capacity.
-  if (validItemSpecs.length === 0 || maxWeightCapacity <= 0) {
-    console.log(0); // No items or no capacity means 0 achievable value.
-    return;
-  }
-
-  // --- Dynamic Programming Table Initialization ---
-  // `minWeightForValue[v]` will store the minimum weight required to achieve a total value of `v`.
-  // Initialize all values to `Number.MAX_SAFE_INTEGER` (representing infinity/unachievable).
-
-  // First, calculate the maximum possible sum of values to correctly size the DP array.
-  let theoreticalMaxValueSum = 0;
-  for (const item of validItemSpecs) {
-    theoreticalMaxValueSum += item.value;
-  }
-
-  // Initialize the DP array with a size based on the maximum possible value.
-  // `minWeightForValue[0]` is set to 0, as 0 value requires 0 weight.
-  const minWeightForValue = new Array(theoreticalMaxValueSum + 1).fill(Number.MAX_SAFE_INTEGER);
-  minWeightForValue[0] = 0;
-
-  // This variable tracks the highest value for which we currently have a valid weight,
-  // helping to bound the inner loop for efficiency.
-  let currentMaxAchievableValue = 0;
-
-  // Iterate through each item to update the dynamic programming table.
-  for (let itemIndex = 0; itemIndex < validItemSpecs.length; ++itemIndex) {
-    const currentItem = validItemSpecs[itemIndex];
-    const itemWeight = currentItem.weight;
-    const itemValue = currentItem.value;
-
-    // Update the `currentMaxAchievableValue` based on the item just processed.
-    // This value represents the maximum value that could possibly be formed by items considered so far.
-    currentMaxAchievableValue += itemValue;
-    // Ensure it does not exceed the total possible sum of all item values.
-    currentMaxAchievableValue = Math.min(currentMaxAchievableValue, theoreticalMaxValueSum);
-
-    // Iterate backwards through possible target values.
-    // This reverse iteration ensures that for each item, we are using the DP values
-    // from the *previous* item's state, preventing an item from being used multiple times
-    // within the same iteration (which would be incorrect for 0/1 Knapsack).
-    for (let targetVal = currentMaxAchievableValue; targetVal >= itemValue; --targetVal) {
-      // Calculate the value that would need to be achieved by previous items
-      // if the current item is included.
-      const previousStateTargetVal = targetVal - itemValue;
-
-      // Check if `previousStateTargetVal` was achievable with prior items.
-      if (minWeightForValue[previousStateTargetVal] !== Number.MAX_SAFE_INTEGER) {
-        // Calculate the total weight if we include the current item.
-        const weightIfIncludingCurrent = minWeightForValue[previousStateTargetVal] + itemWeight;
-
-        // Update the DP table: take the minimum weight to achieve `targetVal`.
-        // This is either the weight already stored (meaning we don't include current item),
-        // or the new `weightIfIncludingCurrent`.
-        minWeightForValue[targetVal] = Math.min(
-          minWeightForValue[targetVal],
-          weightIfIncludingCurrent
-        );
+        if (existingMinWeight === undefined) {
+          // If targetValue was not achievable before, set it to the new candidate
+          minWeightRequiredForValue.set(targetValue, candidateWeightFromPrev);
+        } else {
+          // If targetValue was already achievable, take the minimum
+          minWeightRequiredForValue.set(targetValue, Math.min(candidateWeightFromPrev, existingMinWeight));
+        }
+      } else {
+        // Option 2: If targetValue is less than currentItemValue,
+        // the original logic allows achieving targetValue by just taking the current item
+        // and paying its full weight.
+        if (existingMinWeight === undefined) {
+          // If targetValue was not achievable before, set it to current item's weight
+          minWeightRequiredForValue.set(targetValue, currentItemWeight);
+        } else {
+          // If targetValue was already achievable, take the minimum
+          minWeightRequiredForValue.set(targetValue, Math.min(currentItemWeight, existingMinWeight));
+        }
       }
     }
   }
 
-  // --- Determine the Optimal Achieved Value ---
-  let optimalAchievedValue = 0; // Initialize the result to 0.
+  let maxValueAchieved = 0;
 
-  // Iterate backwards from the maximum possible value down to 0.
-  // The first value `v` found where `minWeightForValue[v]` is within the
-  // `maxWeightCapacity` is our answer, as we want the highest value.
-  for (let potentialValue = theoreticalMaxValueSum; potentialValue >= 0; --potentialValue) {
-    if (minWeightForValue[potentialValue] <= maxWeightCapacity) {
-      optimalAchievedValue = potentialValue;
-      break; // Found the maximum value that fits, so we can exit.
+  // Find the maximum value whose minimum required weight does not exceed maxWeightCapacity
+  for (let finalValueIndex = currentMaxPossibleValue; finalValueIndex >= 0; finalValueIndex--) {
+    const weightForCurrentValue = minWeightRequiredForValue.get(finalValueIndex);
+    
+    // Check if the weight is a valid number (not undefined or NaN) and within capacity
+    if (weightForCurrentValue !== undefined && !isNaN(weightForCurrentValue) && weightForCurrentValue <= maxWeightCapacity) {
+      maxValueAchieved = finalValueIndex;
+      break;
     }
   }
 
-  // Output the final optimal value.
-  console.log(optimalAchievedValue);
+  // Output the result, preserving the original's `+0` for type consistency (though not strictly necessary)
+  console.log(maxValueAchieved + 0);
 }
 
-// Standard entry point for competitive programming environments reading from stdin.
-// Reads the entire file content, then passes it to the main processing function.
-const inputFileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-solveKnapsackProblem(inputFileContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

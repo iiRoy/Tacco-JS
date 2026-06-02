@@ -1,70 +1,58 @@
-var inputRecords = [ ]; var outcomeValue = 0;
-  var inputProcessor = require('readline');
+var inputStrings = [];
+var finalOutcome = 0; // This variable is declared but not used in the original logic.
+var standardInput = require('readline');
 
-var readerInterface = inputProcessor.createInterface(
-  {
+var inputHandler = standardInput.createInterface({
     input: process.stdin,
     output: process.stdout,
-  }
-);
+});
 
-readerInterface.on(
-  'line',
-  function (receivedString)
-  {
-    inputRecords.push(receivedString);
-  }
-);
+// Event listener for each line of input received
+inputHandler.on('line', function (currentLine) {
+    inputStrings.push(currentLine);
+});
 
-readerInterface.on('close',
-  function () {
-    // Obtain character array from the initial input line
-    var sourceSequence = inputRecords[0].split("");
-    // Convert the second input line to a numerical rank
-    var desiredRank = Number(inputRecords[1]);
+// Event listener for when the input stream closes
+inputHandler.on('close', function () {
+    // The first line of input is the string to process
+    var charArray = inputStrings[0].split("");
+    // The second line of input is the target index (K)
+    var targetIndex = Number(inputStrings[1]);
 
-    // Initialize a 2D array to store potential substrings
-    var fragmentGrid = Array(sourceSequence.length).fill(null).map(
-      _ => Array(sourceSequence.length).fill("")
-    );
-    var lexiconStore = [];
+    // Initialize a 2D array to store substrings, pre-filling with empty strings
+    // The size is based on the length of the input character array
+    var substringMatrix = Array(charArray.length).fill("").map(_ => Array(charArray.length).fill(""));
+    // An array to collect all generated substrings
+    var uniqueSubstrings = [];
 
-    // Loop through all possible starting positions for substrings
-    for (
-      var beginPos = 0;
-      beginPos < sourceSequence.length;
-      beginPos++
-    ) {
-      // Loop through all possible ending positions for substrings
-      for (
-        var finishPos = beginPos;
-        finishPos < sourceSequence.length;
-        finishPos++
-      ) {
-        // If the current substring length exceeds the desired rank, no need to continue for this start position
-        if (desiredRank <= fragmentGrid[beginPos][finishPos].length) {
-          break;
+    // Outer loop: iterates through all possible starting characters of a substring
+    for (var startIdx = 0; startIdx < charArray.length; startIdx++) {
+        // Inner loop: iterates through all possible ending characters of a substring,
+        // starting from the current startIdx
+        for (var endIdx = startIdx; endIdx < charArray.length; endIdx++) {
+            // If the length of the current substring exceeds or equals K,
+            // we can break early for this startIdx as longer substrings
+            // will also exceed K and are not relevant for the K-th smallest.
+            // This optimization is based on the original code's logic.
+            if (targetIndex <= substringMatrix[startIdx][endIdx].length) {
+                break;
+            } else {
+                // Build the substring by appending the current character
+                substringMatrix[startIdx][endIdx + 1] = substringMatrix[startIdx][endIdx] + charArray[endIdx];
+                // Add the newly formed substring to our collection
+                uniqueSubstrings.push(substringMatrix[startIdx][endIdx + 1]);
+            }
         }
-        else {
-          // Build the next substring by appending the current character
-          fragmentGrid[beginPos][finishPos + 1] = fragmentGrid[beginPos][finishPos] + sourceSequence[finishPos];
-          // Add the newly formed substring to our collection
-          lexiconStore.push(fragmentGrid[beginPos][finishPos + 1]);
-        }
-      }
     }
 
     // Filter out duplicate substrings to ensure uniqueness
-    lexiconStore = lexiconStore.filter(
-      (currentFragment, currentIdx, allFragments) =>
-      {
-        return (allFragments.indexOf(currentFragment) === currentIdx);
-      }
-    );
+    uniqueSubstrings = uniqueSubstrings.filter((currentValue, currentIndex, fullArray) => {
+        return (fullArray.indexOf(currentValue) === currentIndex);
+    });
 
     // Sort the unique substrings alphabetically
-    lexiconStore.sort();
-    // Output the substring at the (desiredRank - 1) index (0-based)
-    console.log(lexiconStore[desiredRank - 1]);
-  }
-);
+    uniqueSubstrings.sort();
+
+    // Output the K-th smallest unique substring (K is 1-indexed, so we use K-1)
+    console.log(uniqueSubstrings[targetIndex - 1]);
+});

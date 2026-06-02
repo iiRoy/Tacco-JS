@@ -1,43 +1,38 @@
-const fileOps = require('fs');
+const stdio = require('fs');
 
-const createRepeatedString = (countValue, characterToRepeat) =>
-  characterToRepeat.repeat(countValue);
+const rawInputContent = stdio.readFileSync(process.stdin.fd, 'utf8');
+const primaryInputLine = rawInputContent.split('\n')[0];
 
-const entireInputContent = fileOps.readFileSync(0, 'utf8');
-const linesOfText = entireInputContent.split('\n');
-const designatedInput = linesOfText[0];
+function generateBrainfuckSequence() {
+    const initialBrainfuckPrefix = '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>';
+    const initialCellValues = [30, 30, 30, 60, 60, 60, 90, 90, 90, 120];
 
-function executeConversion() {
-  const initialBrainfuckSegment = '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>';
-  const initialMemoryValues = [30, 30, 30, 60, 60, 60, 90, 90, 90, 120];
+    const characterArray = Array.from(primaryInputLine);
 
-  const processingResult = Array.from(designatedInput).reduce((accumulator, currentCharacter) => {
-    const charCode = currentCharacter.charCodeAt(0);
-    const targetBinIndex = Math.floor((charCode - 33) / 11);
+    const finalAccumulatedState = characterArray.reduce((currentAccumulator, charElement) => {
+        const charCodeValue = charElement.charCodeAt(0);
+        const targetCellIndex = Math.floor((charCodeValue - 33) / 11);
 
-    const pointerDifference = targetBinIndex - accumulator.currentPointerPosition;
-    const pointerMovementCount = Math.abs(pointerDifference);
-    const pointerDirectionSymbol = (pointerDifference > 0) ? '>' : '<';
-    accumulator.resultString += createRepeatedString(pointerMovementCount, pointerDirectionSymbol);
+        const pointerShiftMagnitude = Math.abs(currentAccumulator.activePointerIndex - targetCellIndex);
+        const pointerShiftDirection = currentAccumulator.activePointerIndex < targetCellIndex ? '>' : '<';
+        currentAccumulator.generatedOutput += pointerShiftDirection.repeat(pointerShiftMagnitude);
 
-    const valueDifference = charCode - accumulator.cellStateArray[targetBinIndex];
-    const valueModificationSymbol = (valueDifference > 0) ? '+' : '-';
-    const absoluteValueDifference = Math.abs(valueDifference);
-    accumulator.resultString += createRepeatedString(absoluteValueDifference, valueModificationSymbol);
+        const cellValueDelta = charCodeValue - currentAccumulator.cellMemory[targetCellIndex];
+        const cellValueOperation = cellValueDelta > 0 ? '+' : '-';
+        currentAccumulator.generatedOutput += cellValueOperation.repeat(Math.abs(cellValueDelta));
 
-    accumulator.resultString += '.';
+        currentAccumulator.cellMemory[targetCellIndex] = charCodeValue;
+        currentAccumulator.generatedOutput += '.';
+        currentAccumulator.activePointerIndex = targetCellIndex;
 
-    accumulator.cellStateArray[targetBinIndex] = charCode;
-    accumulator.currentPointerPosition = targetBinIndex;
+        return currentAccumulator;
+    }, {
+        generatedOutput: initialBrainfuckPrefix,
+        cellMemory: [...initialCellValues],
+        activePointerIndex: 0
+    });
 
-    return accumulator;
-  }, {
-    resultString: initialBrainfuckSegment,
-    currentPointerPosition: 0,
-    cellStateArray: [...initialMemoryValues]
-  });
-
-  console.log(processingResult.resultString);
+    console.log(finalAccumulatedState.generatedOutput);
 }
 
-executeConversion();
+generateBrainfuckSequence();

@@ -1,79 +1,62 @@
-"use strict" ;
+"use strict";
 
-/*
- * This function orchestrates the entire solution process.
- * It takes raw input and performs calculations to answer queries.
- */
-function ExecuteSolution ( sourceText )
-{
-  let dataRows = sourceText.split ( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines
+  let inputLines = rawData.split("\n");
 
-  // Begin Sieve of Eratosthenes implementation
-  // to identify prime numbers up to a specific limit.
+  // Implement a sieve-like algorithm to find prime numbers up to a certain limit
+  // This is the upper limit for numbers we are interested in.
+  const UPPER_BOUND = 101010;
+  // Initialize an array to mark numbers as potentially prime (1) or not (0)
+  let isPrimary = new Array(UPPER_BOUND).fill(1);
+  // 0 and 1 are not prime numbers
+  isPrimary[0] = isPrimary[1] = 0;
 
-  const LIMIT_VAL = 101010 ; // Define maximum value for primality test.
-  let primalityFlags = new Array( LIMIT_VAL ) . fill ( 1 ) ;
-
-  primalityFlags [ 0 ] = primalityFlags [ 1 ] = 0 ; // 0 and 1 are not prime.
-
-  for ( let currentNum = 2 ; currentNum < LIMIT_VAL ; currentNum ++ )
-  {
-    if ( ! primalityFlags [ currentNum ] )
-    {
-      continue ; // Skip if already marked as non-prime.
-    }
-
-    // Mark all multiples of the current prime as non-prime.
-    for ( let multipleVal = currentNum * 2 ; multipleVal < LIMIT_VAL ; multipleVal += currentNum )
-    {
-      primalityFlags [ multipleVal ] = 0 ;
+  // Iterate from 2 up to the upper bound
+  for (let idx = 2; idx < UPPER_BOUND; idx++) {
+    // If the current number is not marked as prime, skip it
+    if (!isPrimary[idx]) continue;
+    // Mark all multiples of the current prime number as not prime
+    for (let multipleIdx = idx * 2; multipleIdx < UPPER_BOUND; multipleIdx += idx) {
+      isPrimary[multipleIdx] = 0;
     }
   }
 
-  // Identify "2017-like" numbers.
-  // A number 'x' is 2017-like if 'x' is prime and (x+1)/2 is also prime.
-
-  let candidateFlags = new Array ( LIMIT_VAL ) . fill ( 0 ) ;
-
-  for ( let testIndex = 0 ; testIndex < LIMIT_VAL ; ++ testIndex )
-  {
-    if ( testIndex % 2 === 0 )
-    { // Only odd numbers can be 2017-like (except 2, but (2+1)/2 isn't int).
-      continue ;
-    }
-
-    if ( primalityFlags [ testIndex ] && primalityFlags [ ( testIndex + 1 ) / 2 ] )
-    {
-      candidateFlags [ testIndex ] = 1 ; // Mark as a special number.
+  // Determine which numbers are "2017-like"
+  // A number 'x' is 2017-like if 'x' is prime, 'x' is odd, and (x+1)/2 is also prime.
+  let likeNumbers = new Array(UPPER_BOUND).fill(0);
+  for (let currentNum = 0; currentNum < UPPER_BOUND; ++currentNum) {
+    // Only consider odd numbers
+    if (currentNum % 2 === 0) continue;
+    // Check if the number itself is prime AND (number + 1) / 2 is also prime
+    if (isPrimary[currentNum] && isPrimary[(currentNum + 1) / 2]) {
+      likeNumbers[currentNum] = 1; // Mark as 2017-like
     }
   }
 
-
-  // Compute prefix sums (cumulative totals) for the special numbers.
-  // This allows for efficient range sum queries later.
-
-  let cumulativeTotals = new Array ( LIMIT_VAL + 1 ) . fill ( 0 ) ;
-
-  for ( let sumIndex = 0 ; sumIndex < LIMIT_VAL ; ++ sumIndex )
-  {
-    cumulativeTotals [ sumIndex + 1 ] = cumulativeTotals [ sumIndex ] + candidateFlags [ sumIndex ] ;
+  // Calculate prefix sums for the 'likeNumbers' array
+  // This allows for efficient range sum queries.
+  let prefixSums = new Array(UPPER_BOUND + 1).fill(0);
+  for (let sumIdx = 0; sumIdx < UPPER_BOUND; ++sumIdx) {
+    prefixSums[sumIdx + 1] = prefixSums[sumIdx] + likeNumbers[sumIdx];
   }
 
+  // Process the queries
+  // The first line of inputLines contains the number of queries
+  let numQueries = parseInt(inputLines.shift().trim().split(/\s/)[0], 10);
 
-  // Process the incoming range queries.
-  // Each query asks for the count of special numbers within a given range [L, R].
-
-  const queryCount = dataRows . shift ( ) . trim ( ) . split ( /\s/ ) [ 0 ] - 0 ;
-
-  for ( let queryIteration = 0 ; queryIteration < queryCount ; ++ queryIteration )
-  {
-    let queryRange = dataRows . shift ( ) . split ( /\s/ ) . map ( ( stringValue ) => stringValue - 0 ) ;
-    let startIdx = queryRange [ 0 ] , endIdx = queryRange [ 1 ] ;
-    ++ endIdx ; // Adjust end index for prefix sum calculation.
-
-    console . log ( cumulativeTotals [ endIdx ] - cumulativeTotals [ startIdx ] ) ;
+  // Loop through each query
+  for (let queryIdx = 0; queryIdx < numQueries; ++queryIdx) {
+    // Each subsequent line contains two numbers, L and R, representing a range
+    let rangeBounds = inputLines.shift().split(/\s/).map((valStr) => parseInt(valStr, 10));
+    let leftBound = rangeBounds[0];
+    let rightBound = rangeBounds[1];
+    // Adjust the right bound for 1-based indexing in prefix sums
+    ++rightBound;
+    // Output the count of 2017-like numbers in the range [leftBound, rightBound-1]
+    console.log(prefixSums[rightBound] - prefixSums[leftBound]);
   }
 }
 
-// Entry point: Read input from standard input and pass to the solution function.
-ExecuteSolution ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

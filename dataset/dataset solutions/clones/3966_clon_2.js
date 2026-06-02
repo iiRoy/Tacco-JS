@@ -1,53 +1,62 @@
 "use strict";
-/*
- * This script processes raw input data to calculate a peak score.
- * It identifies positive and negative entries and tallies their impact.
+
+/**
+ * Analyzes a given input string to determine a maximum score based on word occurrences.
+ * Words appearing in the 'blue' section increment their respective counts,
+ * while words from the 'red' section decrement them. The final output is the
+ * highest positive count achieved, or zero if all counts are negative.
+ *
+ * @param {string} incomingTextData - The raw string input, expected to contain
+ *                                    numbers and words separated by newlines or spaces.
  */
-function primaryProcess ( rawData )
-{
-    // Split the incoming string by newlines or spaces into an array of tokens.
-    rawData = rawData . split ( / \n | \s / ) ;
+function processInputData(incomingTextData) {
+  // Divide the input string into an array of individual tokens (words or numbers).
+  let parsedTokens = incomingTextData.split(/\n|\s/);
 
-    // Determine the count of initial positive entries from the first token.
-    const initialCount = ~~ rawData [ 0 ] ;
+  // Extract the count of blue-associated items from the beginning of the tokens.
+  const countOfBlueItems = ~~parsedTokens[0];
+  // Extract the count of red-associated items. This value is read but not directly used
+  // in subsequent slicing, maintaining the original input parsing structure.
+  const countOfRedItems = ~~parsedTokens[countOfBlueItems + 1];
 
-    // Determine a subsequent count, positioned after the initial entries.
-    const subsequentCount = ~~ rawData [ initialCount + 1 ] ;
+  // Isolate the list of 'blue' words based on the extracted count.
+  const blueWordCollection = parsedTokens.slice(1, countOfBlueItems + 1);
+  // Isolate the list of 'red' words, starting after the blue items and their count.
+  const redWordCollection = parsedTokens.slice(countOfBlueItems + 2);
 
-    // Extract the array of positive entries.
-    const positiveEntries = rawData . slice ( 1 , initialCount + 1 ) ;
+  // Initialize an object to store the calculated scores for each unique word.
+  let wordScoreRegistry = {};
 
-    // Extract the array of negative entries.
-    const negativeEntries = rawData . slice ( initialCount + 2 ) ;
+  // Iterate through the 'blue' words to increment their scores.
+  for (let blueEntryIndex in blueWordCollection) {
+    const currentWord = blueWordCollection[blueEntryIndex];
+    // Increment the word's score. If the word is encountered for the first time,
+    // its score starts at 1.
+    wordScoreRegistry[currentWord] = (wordScoreRegistry[currentWord] || 0) + 1;
+  }
 
-    let tallyScores = { } ; // Initialize an empty object for score tracking.
+  // Iterate through the 'red' words to decrement their scores.
+  for (let redEntryIndex in redWordCollection) {
+    const currentWord = redWordCollection[redEntryIndex];
+    // Decrement the word's score. If the word is encountered for the first time
+    // via a 'red' entry, its score starts at -1.
+    wordScoreRegistry[currentWord] = (wordScoreRegistry[currentWord] || 0) - 1;
+  }
 
-    // Iterate through each positive entry to increment its score.
-    for ( let idx in positiveEntries )
-    {
-        tallyScores [ positiveEntries [ idx ] ] = tallyScores [ positiveEntries [ idx ] ] + 1 || 1 ;
-    }
+  // Determine the highest score recorded among all words.
+  let peakScoreValue = 0;
+  for (let wordKeyIdentifier in wordScoreRegistry) {
+    // Update the peak score if the current word's score is greater.
+    peakScoreValue = Math.max(peakScoreValue, wordScoreRegistry[wordKeyIdentifier]);
+  }
 
-    // Iterate through each negative entry to decrement its score.
-    for ( let idx in negativeEntries )
-    {
-        tallyScores [ negativeEntries [ idx ] ] = tallyScores [ negativeEntries [ idx ] ] - 1 || -1 ;
-    }
+  // Ensure the final reported score is not negative; if it is, default to zero.
+  peakScoreValue = peakScoreValue >= 0 ? peakScoreValue : 0;
 
-    let peakValue = 0 ; // Variable to store the highest observed score.
-
-    // Traverse the tallied scores to find the maximum value.
-    for ( let itemKey in tallyScores )
-    {
-        peakValue = Math . max ( peakValue , tallyScores [ itemKey ] ) ;
-    }
-
-    // Ensure the final result is not negative; if it is, set it to zero.
-    peakValue = ( peakValue >= 0 ) ? peakValue : 0 ;
-
-    // Output the final calculated peak score to the console.
-    console . log ( peakValue ) ;
+  // Output the final calculated peak score to the console.
+  console.log(peakScoreValue);
 }
 
-// Invoke the primary processing function with data read from standard input.
-primaryProcess ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it
+// to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

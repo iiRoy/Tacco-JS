@@ -1,102 +1,72 @@
-function ProcessPathData(rawData) {
-    // This function processes path data to find a sequence of jumps.
-    // rawData: The entire input string, typically from standard input.
+function solveProblem(problemData) {
+    const dataLines = problemData.split("\n");
+    const [totalDistanceStr, maxJumpStr] = dataLines[0].split(" ");
+    const totalDistance = Number(totalDistanceStr);
+    const maxJump = Number(maxJumpStr);
+    const landingSpots = dataLines[1];
 
-    // Step 1: Parse the input data into individual lines.
-    const parsedLines = rawData.split('\n');
+    let finalResult;
+    const VALID_LANDING_CHAR = '0';
 
-    // Step 2: Extract and convert numerical parameters from the first line.
-    // targetDistance (N): The total distance to cover.
-    // maxJumpLen (M): The maximum length of a single jump.
-    let [targetDistance, maxJumpLen] = parsedLines[0].split(' ').map(Number);
-
-    // Step 3: Extract the terrain map from the second line.
-    // terrainMap (S): A string where '0' indicates a valid landing spot, '1' indicates an obstacle.
-    // Assuming terrainMap is 0-indexed, and terrainMap[k] describes position k.
-    const terrainMap = parsedLines[1];
-
-    // Initialize the variable to store the final computed path or error indicator.
-    let finalOutcome = null;
-
-    // Step 4: Implement robust input validation (Type III addition: guard clauses).
-    // Check for negative distances, invalid jump lengths, or missing/insufficient map data.
-    if (targetDistance < 0 || maxJumpLen <= 0 || !terrainMap || terrainMap.length < targetDistance) {
-        console.warn("Path computation warning: Invalid or insufficient input parameters detected.");
-        finalOutcome = -1; // Indicate an impossible path due to bad input
-        console.log(finalOutcome); // Output the error and exit early
-        return;
-    }
-
-    // Step 5: Handle the trivial case where the target is within a single jump from the start.
-    if (targetDistance <= maxJumpLen) {
-        finalOutcome = targetDistance;
+    if (totalDistance <= maxJump) {
+        // If the total distance is less than or equal to the maximum jump,
+        // we can reach 0 in one step of size 'totalDistance'.
+        finalResult = totalDistance;
     } else {
-        // Step 6: Initialize structures for complex path finding.
-        // jumpSequence: An array to store the lengths of the successful jumps.
-        //              It's built in reverse order, then unshifted to maintain correct sequence.
         const jumpSequence = [];
-        // coveredPathLength: Tracks the cumulative distance covered from the origin (position 0).
-        let coveredPathLength = 0;
+        let currentPosition = totalDistance; // Start at the total distance, moving towards 0
+        let isPathPossible = true;
 
-        // Step 7: Main path-finding loop (Type III structural change: while loop with inner for loop).
-        // This loop continues until the target distance is fully covered or no valid path can be found.
-        while (coveredPathLength < targetDistance) {
-            let currentSegmentFound = false; // Flag to indicate if a valid jump was found in this iteration.
+        // Continue finding jumps until we reach or pass position 0
+        while (currentPosition > 0) {
+            let stepFoundInIteration = false;
+            // Iterate from the largest possible jump down to 1
+            // (A jump of 0 is not considered a valid move)
+            for (let currentJumpSize = maxJump; currentJumpSize >= 1; currentJumpSize--) {
+                const potentialTargetPosition = currentPosition - currentJumpSize;
 
-            // Inner loop: Searches for the largest possible valid jump from the current position.
-            // Iterates backwards from maxJumpLen down to 1 (a jump of 0 length makes no progress).
-            for (let candidateJumpSize = maxJumpLen; candidateJumpSize >= 1; candidateJumpSize--) {
-                // Calculate the absolute position on the terrainMap if this jump is made.
-                // The logic works backward from the target. `targetDistance - coveredPathLength` is the remaining distance.
-                // `potentialLandingSpot` is the point on the map we would land at, assuming we made a jump of `candidateJumpSize`
-                // to cover part of the `targetDistance - coveredPathLength` segment.
-                const potentialLandingSpot = targetDistance - coveredPathLength - candidateJumpSize;
-
-                // Condition A: Can we reach the origin (position 0 or less) with this jump?
-                // This means the remaining distance `targetDistance - coveredPathLength` is less than or equal to `candidateJumpSize`.
-                if (potentialLandingSpot <= 0) {
-                    // Successfully reached the origin. The final jump length is the remaining distance.
-                    jumpSequence.unshift(targetDistance - coveredPathLength);
-                    coveredPathLength = targetDistance; // Mark as fully covered.
-                    currentSegmentFound = true;
-                    break; // Exit inner loop, as a path segment is found.
+                if (potentialTargetPosition < 0) {
+                    // This jump would overshoot position 0, so try a smaller jump
+                    continue;
                 }
 
-                // Condition B: Is the potential landing spot a valid '0' on the terrainMap?
-                // Ensure the `potentialLandingSpot` is within valid bounds of the `terrainMap` string.
-                if (potentialLandingSpot >= 0 && potentialLandingSpot < terrainMap.length && terrainMap.charAt(potentialLandingSpot) === '0') {
-                    // Valid landing spot found. Add this jump length to the sequence.
-                    jumpSequence.unshift(candidateJumpSize);
-                    // Update the total covered path length.
-                    coveredPathLength += candidateJumpSize;
-                    currentSegmentFound = true;
-                    // Break from the inner loop to restart the search for the next segment from `maxJumpLen`.
-                    break;
+                if (potentialTargetPosition === 0) {
+                    // We can land exactly on position 0 with this jump
+                    jumpSequence.push(currentJumpSize);
+                    currentPosition = 0; // Destination reached
+                    stepFoundInIteration = true;
+                    break; // Found a step, move to the next segment or finish
+                }
+
+                // Check if the potential target position is a valid landing spot
+                if (landingSpots[potentialTargetPosition] === VALID_LANDING_CHAR) {
+                    jumpSequence.push(currentJumpSize);
+                    currentPosition = potentialTargetPosition; // Move to the new position
+                    stepFoundInIteration = true;
+                    break; // Found a step, restart search for the next jump from the new position
                 }
             }
 
-            // If no valid jump was found in the current iteration, the path is impossible.
-            if (!currentSegmentFound) {
-                finalOutcome = -1; // Indicate impossible path.
-                break; // Exit outer while loop.
+            if (!stepFoundInIteration && currentPosition > 0) {
+                // If no valid jump was found from the current position to move closer to 0,
+                // then it's impossible to reach 0.
+                isPathPossible = false;
+                break; // Exit the main loop
             }
         }
 
-        // Step 8: Determine the final output based on whether the path was completed.
-        if (coveredPathLength === targetDistance) {
-            finalOutcome = jumpSequence.join(" "); // Format the sequence of jumps as a space-separated string.
+        if (!isPathPossible) {
+            finalResult = -1;
         } else {
-            // If the loop exited without covering the full distance, it means finalOutcome must be -1.
-            // This is a fallback to ensure finalOutcome is -1 if it wasn't explicitly set.
-            if (finalOutcome === null) {
-                finalOutcome = -1;
-            }
+            // The jumps were collected in reverse order (from totalDistance down to 0),
+            // so reverse the array to get the correct sequence from start to end.
+            finalResult = jumpSequence.reverse().join(" ");
         }
     }
 
-    // Step 9: Output the final result.
-    console.log(`${finalOutcome}`);
+    // Output the result
+    console.log('%s', finalResult);
 }
 
-// Do not modify the code below this line (standard input/output handling).
-ProcessPathData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Standard input/output handling
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

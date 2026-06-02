@@ -1,24 +1,27 @@
-function retrieveDigitSum(numericValue) {
-    let currentSummation = 0;
-    let temporaryNumber = numericValue;
-    while (temporaryNumber > 0) {
-        currentSummation += temporaryNumber % 10;
-        temporaryNumber = Math.floor(temporaryNumber / 10);
-    }
-    return currentSummation;
-}
+function processInputData(inputLine) {
+    const parameterValues = inputLine.split(" ").map(Number);
+    const iterationLimit = parameterValues[0];
+    const lowerThreshold = parameterValues[1];
+    const upperThreshold = parameterValues[2];
 
-function calculateSpecialSum(sourceData) {
-    const [maximumValue, lowerBoundInclusive, upperBoundInclusive] = sourceData[0].split(' ').map(Number);
+    const calculateSumOfDigits = (numberValue) => {
+        let currentDigitSum = 0;
+        let temporaryNumber = numberValue;
+        while (temporaryNumber > 0) {
+            currentDigitSum += temporaryNumber % 10;
+            temporaryNumber = Math.floor(temporaryNumber / 10);
+        }
+        return currentDigitSum;
+    };
 
-    const resultantSum = Array.from({ length: maximumValue }, (_, index) => index + 1)
-        .filter(numberToEvaluate => {
-            const digitAggregation = retrieveDigitSum(numberToEvaluate);
-            return digitAggregation >= lowerBoundInclusive && digitAggregation <= upperBoundInclusive;
+    const accumulatedSum = Array.from({ length: iterationLimit }, (_, index) => index + 1)
+        .filter(numCandidate => {
+            const candidateDigitSum = calculateSumOfDigits(numCandidate);
+            return candidateDigitSum >= lowerThreshold && candidateDigitSum <= upperThreshold;
         })
-        .reduce((accumulatedTotal, currentNumber) => accumulatedTotal + currentNumber, 0);
+        .reduce((total, currentElement) => total + currentElement, 0);
 
-    console.log(resultantSum);
+    console.log(accumulatedSum);
 }
 
-calculateSpecialSum(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n")[0]);

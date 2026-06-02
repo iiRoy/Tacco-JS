@@ -1,116 +1,94 @@
-let dataSourceContent = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
+var dataInput = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process raw input data into an array of lines
-let inputLines = dataSourceContent.trim().split("\n");
+var lineArray = dataInput.trim().split("\n");
 
-// Main processing loop for multiple test cases
 while (true) {
-   // Extract the line containing grid width and height
-   let currentDimsString = inputLines.shift();
+    var dimensionsStr = lineArray.shift();
 
-   // Check for termination condition
-   if (currentDimsString === "0 0") {
-      break;
-   }
+    if (dimensionsStr === "0 0") {
+        break;
+    }
 
-   // Parse the dimensions string into numbers
-   let gridDimensions = currentDimsString.split(" ").map(val => parseInt(val, 10));
+    var parsedDims = dimensionsStr.split(" ").map(Number);
+    var widthVal = parsedDims[0];
+    var heightVal = parsedDims[1];
 
-   // Assign width and height
-   let gridWidth = gridDimensions[0];
-   let gridHeight = gridDimensions[1];
+    var currentPosAndDir = [0, 1, 1]; // [direction, x-coordinate, y-coordinate]
 
-   // Initialize robot state: [direction, x-coordinate, y-coordinate]
-   // Direction: 0=North, 1=East, 2=South, 3=West
-   let robotState = [0, 1, 1];
+    while (true) {
+        var commandParts = lineArray.shift().split(" ");
 
-   // Loop for processing robot commands within the current grid
-   while (true) {
-      // Get the next command line and split it into tokens
-      let commandTokens = inputLines.shift().split(' ');
+        if (commandParts.length === 2) {
+            commandParts[1] = commandParts[1] - 0;
+        }
 
-      // Convert the second token to a number if it exists (for movement commands)
-      if (commandTokens.length === 2) {
-         commandTokens[1] = parseInt(commandTokens[1], 10);
-      }
+        if (commandParts[0] === "STOP") {
+            break;
+        }
 
-      // Check for command sequence termination
-      if (commandTokens[0] === "STOP") {
-         break;
-      }
-
-      // Handle 'RIGHT' command: rotate clockwise
-      if (commandTokens[0] === "RIGHT") {
-         robotState[0] = robotState[0] + 1;
-         if (robotState[0] === 4) {
-            robotState[0] = 0;
-         }
-      }
-
-      // Handle 'LEFT' command: rotate counter-clockwise
-      if (commandTokens[0] === "LEFT") {
-         robotState[0] = robotState[0] - 1;
-         if (robotState[0] === -1) {
-            robotState[0] = 3;
-         }
-      }
-
-      // Handle 'FORWARD' command: move in current direction
-      if (commandTokens[0] === "FORWARD") {
-         while (commandTokens[1]--) { // Decrement steps remaining
-            if (robotState[0] === 0) { // North (Y increases)
-               robotState[2] = robotState[2] + 1;
+        if (commandParts[0] === "RIGHT") {
+            currentPosAndDir[0]++;
+            if (currentPosAndDir[0] === 4) {
+                currentPosAndDir[0] = 0;
             }
-            if (robotState[0] === 1) { // East (X increases)
-               robotState[1] = robotState[1] + 1;
-            }
-            if (robotState[0] === 2) { // South (Y decreases)
-               robotState[2] = robotState[2] - 1;
-            }
-            if (robotState[0] === 3) { // West (X decreases)
-               robotState[2] = robotState[2] - 1;
-            }
-         }
-      }
+        }
 
-      // Handle 'BACKWARD' command: move opposite to current direction
-      if (commandTokens[0] === "BACKWARD") {
-         while (commandTokens[1]--) { // Decrement steps remaining
-            if (robotState[0] === 0) { // South (Y decreases)
-               robotState[2] = robotState[2] - 1;
+        if (commandParts[0] === "LEFT") {
+            currentPosAndDir[0]--;
+            if (currentPosAndDir[0] === -1) {
+                currentPosAndDir[0] = 3;
             }
-            if (robotState[0] === 1) { // West (X decreases)
-               robotState[1] = robotState[1] - 1;
+        }
+
+        if (commandParts[0] === "FORWARD") {
+            while (commandParts[1]--) {
+                if (currentPosAndDir[0] === 0) { // North
+                    currentPosAndDir[2]++;
+                }
+                if (currentPosAndDir[0] === 1) { // East
+                    currentPosAndDir[1]++;
+                }
+                if (currentPosAndDir[0] === 2) { // South
+                    currentPosAndDir[2]--;
+                }
+                if (currentPosAndDir[0] === 3) { // West (original code decreases y, preserving this)
+                    currentPosAndDir[2]--;
+                }
             }
-            if (robotState[0] === 2) { // North (Y increases)
-               robotState[2] = robotState[2] + 1;
+        }
+
+        if (commandParts[0] === "BACKWARD") {
+            while (commandParts[1]--) {
+                if (currentPosAndDir[0] === 0) { // North, move backward (South)
+                    currentPosAndDir[2]--;
+                }
+                if (currentPosAndDir[0] === 1) { // East, move backward (West)
+                    currentPosAndDir[1]--;
+                }
+                if (currentPosAndDir[0] === 2) { // South, move backward (North)
+                    currentPosAndDir[2]++;
+                }
+                if (currentPosAndDir[0] === 3) { // West, move backward (East)
+                    currentPosAndDir[1]++;
+                }
             }
-            if (robotState[0] === 3) { // East (X increases)
-               robotState[1] = robotState[1] + 1;
-            }
-         }
-      }
+        }
 
-      // Enforce boundary constraints for X-coordinate
-      if (robotState[1] < 1) {
-         robotState[1] = 1;
-      }
-      if (robotState[1] > gridWidth) {
-         robotState[1] = gridWidth;
-      }
+        if (currentPosAndDir[1] < 1) {
+            currentPosAndDir[1] = 1;
+        }
+        if (currentPosAndDir[2] < 1) {
+            currentPosAndDir[2] = 1;
+        }
+        if (currentPosAndDir[1] > widthVal) {
+            currentPosAndDir[1] = widthVal;
+        }
+        if (currentPosAndDir[2] > heightVal) {
+            currentPosAndDir[2] = heightVal;
+        }
+    }
 
-      // Enforce boundary constraints for Y-coordinate
-      if (robotState[2] < 1) {
-         robotState[2] = 1;
-      }
-      if (robotState[2] > gridHeight) {
-         robotState[2] = gridHeight;
-      }
-   }
+    currentPosAndDir.shift(); // Remove the direction component
 
-   // Remove the direction component, leaving only X and Y coordinates
-   robotState.shift();
-
-   // Output the final X and Y coordinates, separated by a space
-   console.log(robotState.join(' '));
+    console.log(currentPosAndDir.join(" "));
 }

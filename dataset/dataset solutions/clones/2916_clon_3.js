@@ -1,107 +1,117 @@
-const DataStreamHandler = (function() {
-    function createStreamReader(sourceText) {
-        return new StreamProcessor(sourceText);
+var InputParserFactory=(function(){
+    function createParser(sourceString){
+        return new InputParser(sourceString);
     }
 
-    function StreamProcessor(rawInput) {
-        this._sourceLinesBuffer = rawInput.trim().split("\n");
-        this._lineCursor = 0;
+    class InputParser {
+        constructor(sourceString) {
+            this._sourceLines = sourceString.trim().split("\n");
+            this._currentLineIndex = 0;
+        }
+
+        _popValue(lineArray) {
+            const value = lineArray.pop();
+            if (!lineArray.length) {
+                this._currentLineIndex++;
+            }
+            return value;
+        }
+
+        readAtom(asString) {
+            let currentLine = this._sourceLines[this._currentLineIndex];
+            if (typeof currentLine === "string") {
+                this._sourceLines[this._currentLineIndex] = currentLine.split(" ").reverse();
+            }
+            const result = this._popValue(this._sourceLines[this._currentLineIndex]);
+            return asString ? result : +result;
+        }
+
+        readLine(asStrings) {
+            const lineContent = this._sourceLines[this._currentLineIndex++];
+            const parts = lineContent.split(" ");
+            return asStrings ? parts : parts.map(val => +val);
+        }
+
+        readMatrix(rowCount, asStrings) {
+            const startIdx = this._currentLineIndex;
+            this._currentLineIndex += rowCount;
+            const selectedLines = this._sourceLines.slice(startIdx, this._currentLineIndex);
+            return asStrings
+                ? selectedLines.map(line => line.split(" "))
+                : selectedLines.map(line => line.split(" ").map(val => +val));
+        }
+
+        readRawLines(rowCount, asStrings) {
+            const startIdx = this._currentLineIndex;
+            this._currentLineIndex += rowCount;
+            const selectedLines = this._sourceLines.slice(startIdx, this._currentLineIndex);
+            return asStrings ? selectedLines : selectedLines.map(val => +val);
+        }
     }
 
-    StreamProcessor.prototype.extractSingleValue = function(asString = false) {
-        let currentLineParts = this._sourceLinesBuffer[this._lineCursor];
-
-        if (typeof currentLineParts === 'string') {
-            this._sourceLinesBuffer[this._lineCursor] = currentLineParts.split(" ").reverse();
-            currentLineParts = this._sourceLinesBuffer[this._lineCursor];
-        }
-
-        const extractedItem = currentLineParts.pop();
-
-        if (currentLineParts.length === 0) {
-            this._lineCursor++;
-        }
-        return asString ? extractedItem : Number(extractedItem);
-    };
-
-    StreamProcessor.prototype.readLineAsArray = function(returnStrings = false) {
-        const currentLineContent = this._sourceLinesBuffer[this._lineCursor++];
-        const splitContent = currentLineContent.split(" ");
-        return returnStrings ? splitContent : splitContent.map(val => Number(val));
-    };
-
-    StreamProcessor.prototype.readBlockAsMatrix = function(numLines, asStrings = false) {
-        let matrixData = [];
-        const startIndex = this._lineCursor;
-        const endIndex = startIndex + numLines;
-
-        const actualEndIndex = Math.min(endIndex, this._sourceLinesBuffer.length);
-
-        for (let i = startIndex; i < actualEndIndex; i++) {
-            const lineParts = this._sourceLinesBuffer[i].split(" ");
-            matrixData.push(asStrings ? lineParts : lineParts.map(val => Number(val)));
-        }
-        this._lineCursor = actualEndIndex;
-        return matrixData;
-    };
-
-    StreamProcessor.prototype.readBlockOfLines = function(count, asStrings = false) {
-        const linesToProcess = this._sourceLinesBuffer.slice(this._lineCursor, this._lineCursor + count);
-        this._lineCursor += count;
-        return asStrings ? linesToProcess : linesToProcess.map(val => Number(val));
-    };
-
-    return createStreamReader;
+    return createParser;
 })();
 
-const inputReader = DataStreamHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+var inputReader = InputParserFactory(require("fs").readFileSync("/dev/stdin","utf8"));
 
-function outputResult(finalSum) {
-    console.log(finalSum);
+function createMultiDimArray(initialValue) {
+    var args = arguments,
+        argCount = args.length,
+        arrayCreationString = "Array(args[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+    while (--argCount) {
+        arrayCreationString = "Array(args[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
+    }
+    return eval(arrayCreationString);
 }
 
-outputResult(processDataAndFindMaxSum());
+console.log(solveProblem());
 
-function processDataAndFindMaxSum() {
-    const totalElementsAvailable = inputReader.extractSingleValue();
-    const maxOperationsBudget = inputReader.extractSingleValue();
-    const dataValues = inputReader.readLineAsArray();
+function solveProblem(){
+    const totalElements = inputReader.readAtom();
+    const maxOperations = inputReader.readAtom();
+    const valueArray = inputReader.readLine();
 
-    let currentMaxSum = 0;
+    let maxSum = 0;
 
-    for (let totalElementsToTake = 0; totalElementsToTake <= maxOperationsBudget && totalElementsToTake <= totalElementsAvailable; ++totalElementsToTake) {
-        for (let elementsFromLeft = 0; elementsFromLeft <= totalElementsToTake; ++elementsFromLeft) {
-            let windowNegativeValues = [];
-            let currentWindowSum = 0;
+    for(let totalTakenCount = 0; totalTakenCount <= maxOperations && totalTakenCount < totalElements; ++totalTakenCount){
+        for(let leftTakenCount = 0; leftTakenCount <= totalTakenCount; ++leftTakenCount){
+            let currentSum = 0;
+            const negativeValuesCollected = [];
 
-            for (let leftIndex = 0; leftIndex < elementsFromLeft; ++leftIndex) {
-                const value = dataValues[leftIndex];
-                if (value < 0) {
-                    windowNegativeValues.push(value);
+            const rightTakenCount = totalTakenCount - leftTakenCount;
+
+            // Process elements from the left side
+            for(let leftIdx = 0; leftIdx < leftTakenCount; ++leftIdx){
+                const elementValue = valueArray[leftIdx];
+                currentSum += elementValue;
+                if(elementValue < 0){
+                    negativeValuesCollected.push(elementValue);
                 }
-                currentWindowSum += value;
             }
 
-            const elementsFromRight = totalElementsToTake - elementsFromLeft;
-
-            for (let rightIndex = 0; rightIndex < elementsFromRight; ++rightIndex) {
-                const value = dataValues[totalElementsAvailable - 1 - rightIndex];
-                if (value < 0) {
-                    windowNegativeValues.push(value);
+            // Process elements from the right side
+            for(let rightIdx = 0; rightIdx < rightTakenCount; ++rightIdx){
+                const elementValue = valueArray[totalElements - 1 - rightIdx];
+                currentSum += elementValue;
+                if(elementValue < 0){
+                    negativeValuesCollected.push(elementValue);
                 }
-                currentWindowSum += value;
             }
 
-            windowNegativeValues.sort((a, b) => a - b);
+            // Sort negative values to easily discard the smallest ones
+            negativeValuesCollected.sort((a, b) => a - b);
 
-            const discardOperationsBudget = maxOperationsBudget - totalElementsToTake;
+            // Determine how many items can be discarded (up to k - totalTakenCount)
+            const discardAllowance = maxOperations - totalTakenCount;
+            const negativesToDiscard = Math.min(discardAllowance, negativeValuesCollected.length);
 
-            for (let discardCount = 0; discardCount < discardOperationsBudget && discardCount < windowNegativeValues.length; ++discardCount) {
-                currentWindowSum -= windowNegativeValues[discardCount];
+            // Discard the smallest negative values to maximize sum
+            for(let discardIdx = 0; discardIdx < negativesToDiscard; ++discardIdx){
+                currentSum -= negativeValuesCollected[discardIdx];
             }
-
-            currentMaxSum = Math.max(currentMaxSum, currentWindowSum);
+            
+            maxSum = Math.max(maxSum, currentSum);
         }
     }
-    return currentMaxSum;
+    return maxSum;
 }

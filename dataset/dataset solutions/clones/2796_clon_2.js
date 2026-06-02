@@ -1,281 +1,202 @@
-/*
- * Auxiliary code for input processing.
- * This section handles reading input lines and preparing them for the main solution logic.
- */
-const inputReader = require('readline').createInterface({
+// This section handles input/output operations.
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let inputProcessor;
-const receivedLines = [];
 
-inputReader.on('line', (dataLine) => {
-  receivedLines.push(dataLine);
+var inputProcessor; // Will hold the utility for processing input lines.
+var bufferedLines = []; // Stores all lines read from stdin.
+
+inputReader.on('line', function(currentLine){
+  bufferedLines.push(currentLine);
 });
 
-inputReader.on('close', () => {
-  inputProcessor = initializeProcessor(receivedLines);
-  console.error('\n'); // Add a newline for better console output separation
-  const startTime = Date.now();
-  ExecuteSolution(); // Invoke the core problem-solving function
-  const elapsedTime = Date.now() - startTime;
-  logDebug(`Execution time: ${elapsedTime} ms`);
-  logDebug(`Memory usage: ${Math.floor(process.memoryUsage().heapTotal / 1024)} KB`);
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(bufferedLines);
+  console.error("\n"); // Prints a newline to stderr for formatting.
+
+  var startTime = Date.now();
+  executeProgram(); // Call the main logic function.
+  var elapsedTime = Date.now() - startTime;
+
+  logDebug("time : " + elapsedTime + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-/**
- * Creates a deep copy of a given object.
- * @param {object} sourceObject - The object to duplicate.
- * @returns {object} A new, independent copy of the object.
- */
-function duplicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+// Utility function to create a deep copy of an object.
+function duplicateObject(originalObj){
+  return JSON.parse(JSON.stringify(originalObj));
 }
 
-/**
- * Fetches the next input line and parses it as an integer.
- * @returns {number} The parsed integer value.
- */
-function getNextInteger() {
-  return convertInput(fetchNext(), 1);
+// Input parsing functions.
+function retrieveInteger(){
+  return convertInput(fetchNextItem(), 1);
 }
 
-/**
- * Fetches the next input line and splits it into a string array.
- * @returns {string[]} An array of strings.
- */
-function getNextStringArray() {
-  return convertInput(fetchNext(), 2);
+function retrieveStringArray(){
+  return convertInput(fetchNextItem(), 2);
 }
 
-/**
- * Fetches the next input line, splits it, and parses each part as an integer.
- * @returns {number[]} An array of integers.
- */
-function getNextIntegerArray() {
-  return convertInput(fetchNext(), 4);
+function retrieveIntegerArray(){
+  return convertInput(fetchNextItem(), 4);
 }
 
-/**
- * Fetches the next input line and splits it into a character array.
- * @returns {string[]} An array of characters.
- */
-function getNextCharacterArray() {
-  return convertInput(fetchNext(), 6);
+function retrieveCharacterArray(){
+  return convertInput(fetchNextItem(), 6);
 }
 
-/**
- * Retrieves the next available input line from the processor.
- * @returns {string} The next input line.
- */
-function fetchNext() {
-  return inputProcessor.retrieveNext();
+// Core input retrieval functions.
+function fetchNextItem(){
+  return inputProcessor.getNextLine();
 }
 
-/**
- * Checks if there are more input lines to process.
- * @returns {boolean} True if more input is available, false otherwise.
- */
-function hasMoreInput() {
+function hasMoreItems(){
   return inputProcessor.checkAvailability();
 }
 
-/**
- * Sets up the input processing object with methods for sequential access.
- * @param {string[]} rawInput - Array of raw input strings.
- * @returns {object} An object with input access methods.
- */
-function initializeProcessor(rawInput) {
-  const processorInstance = {
-    inputLines: rawInput,
-    currentIdx: 0,
-    maxLines: rawInput.length,
-    checkAvailability: function() {
-      return (this.currentIdx < this.maxLines);
+// Initializes the input handling object.
+function initializeInputHandler(dataLines){
+  var handlerInstance = {
+    lineCollection : dataLines,
+    currentPosition : 0,
+    totalLines : dataLines.length,
+
+    checkAvailability : function(){
+      return (this.currentPosition < this.totalLines);
     },
-    retrieveNext: function() {
-      if (!this.checkAvailability()) {
-        throw "InputOutOfBoundsError: No further entries available";
+
+    getNextLine : function(){
+      if(!this.checkAvailability()){
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       } else {
-        const retrievedEntry = this.inputLines[this.currentIdx++];
-        return retrievedEntry;
+        var extractedLine = this.lineCollection[this.currentPosition++];
+        return extractedLine;
       }
     }
   };
-  return processorInstance;
+  return handlerInstance;
 }
 
-/**
- * Prints the final result to standard output.
- * @param {*} value - The value to be printed.
- */
-function printResult(value) {
-  console.info(value);
+// Output function for results.
+function printResult(content){
+  console.log(content);
 }
 
-/**
- * Logs debugging information to standard error.
- * @param {*} message - The message or object to debug.
- */
-function logDebug(message) {
-  console.error("DEBUG_INFO:" + require("util").inspect(message, {
-    showHidden: false,
-    depth: null
-  }));
+// Debug logging function.
+function logDebug(message){
+  console.error("debug:" + require("util").inspect(message, false, null));
 }
 
-/*
- * This function performs various type conversions based on the specified type code.
- * @param {*} item - The input item to convert.
- * @param {number} conversionType - Numeric code indicating the desired conversion.
- *   - 1: Parse as integer.
- *   - 2: Split by spaces into string array.
- *   - 4: Split by spaces and map to numbers.
- *   - 6: Split into character array.
- *   - 7: Split into character array and map to numbers.
- *   - 8: Join array elements with spaces.
- *   - 9: Join array elements with newlines.
- *   - 0: Join array elements without a separator.
- *   - Default: Return item as is.
- * @returns {*} The converted item.
- */
-function convertInput(item, conversionType) {
+// Input conversion utility.
+// 'conversionType' parameter:
+// 1: parseInt
+// 2: split by space
+// 4: split by space and map to Number
+// 6: split by character
+// 7: split by character and map to Number
+// 8: join by space
+// 9: join by newline
+// 0: join with no character
+// default: return as is
+function convertInput(inputVal, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return Number.parseInt(item, 10);
-      case 2:
-        return item.split(' ');
-      case 4:
-        return item.split(' ').map(val => Number(val));
-      case 6:
-        return item.split('');
-      case 7:
-        return item.split('').map(val => Number(val));
-      case 8:
-        return item.join(' ');
-      case 9:
-        return item.join('\r\n');
-      case 0:
-        return item.join('');
-      default:
-        return item;
+    switch(conversionType){
+      case 1: return parseInt(inputVal);
+      case 2: return inputVal.split(" ");
+      case 4: return inputVal.split(" ").map(Number);
+      case 6: return inputVal.split("");
+      case 7: return inputVal.split("").map(Number);
+      case 8: return inputVal.join(" ");
+      case 9: return inputVal.join("\n");
+      case 0: return inputVal.join("");
+      default: return inputVal;
     }
-  } catch (err) {
-    // If conversion fails, return the original item
-    return item;
+  } catch(e) {
+    return inputVal;
   }
 }
 
-/*
- * End of utility functions.
- * The core solution logic begins below this point.
- */
-function ExecuteSolution() {
-  const initialData = getNextIntegerArray();
-  const numNodes = initialData[0];
-  const numEdges = initialData[1];
+// Main program logic starts here.
+function executeProgram(){
+  var firstLineData = retrieveIntegerArray();
+  var nodeCount = firstLineData[0];
+  var edgeCount = firstLineData[1];
 
-  // Adjacency list representation for the graph
-  const adjacencyList = new Array(numNodes);
-  // Auxiliary structure to store node properties for BFS/DFS
-  const nodeProperties = new Array(numNodes);
+  var graphStructure = new Array(nodeCount);
+  var processedGraph = new Array(nodeCount);
 
-  // Initialize graph structures for all nodes
-  for (let nodeIdx = 0; nodeIdx < numNodes; nodeIdx++) {
-    adjacencyList[nodeIdx] = {
-      successors: []
+  for(var idx = 0; idx < nodeCount; idx++){
+    graphStructure[idx] = {
+      successors : []
     };
-    nodeProperties[nodeIdx] = {
-      predecessors: new Set(), // Using a Set to store unique predecessors
-      visited: false, // Flag for traversal
-      level: 0 // Distance/depth from a source in BFS
+    processedGraph[idx] = {
+      predecessors : new Set(),
+      visitedFlag : false,
+      levelValue : 0
     };
   }
 
-  // Populate the adjacency list based on input edges
-  for (let edgeIdx = 0; edgeIdx < numEdges; edgeIdx++) {
-    const currentEdge = getNextIntegerArray();
-    // Adjusting for 0-based indexing from 1-based input
-    adjacencyList[currentEdge[0] - 1].successors.push(currentEdge[1] - 1);
+  for(var idx = 0; idx < edgeCount; idx++){
+    var tempValues = retrieveIntegerArray();
+    graphStructure[tempValues[0] - 1].successors.push(tempValues[1] - 1);
   }
 
-  // Perform a Depth-First Search for each node as a root
-  // This populates the 'predecessors' sets for nodes reachable within 3 steps
-  for (let startNode = 0; startNode < numNodes; startNode++) {
-    traverseDepthFirst(startNode, startNode, 0);
+  // Perform DFS for each node as root to populate 'predecessors' based on depth 3 paths.
+  for(var idx = 0; idx < nodeCount; idx++){
+    performDfs(idx, idx, 0);
   }
 
-  // Read the source and target nodes for the pathfinding query
-  const pathEndpoints = getNextIntegerArray();
-  const sourceNode = pathEndpoints[0] - 1; // 0-indexed source
-  const targetNode = pathEndpoints[1] - 1; // 0-indexed target
+  var tempValues = retrieveIntegerArray();
+  var startNodeIdx = tempValues[0] - 1;
+  var targetNodeIdx = tempValues[1] - 1;
 
-  // Initialize Breadth-First Search (BFS) variables
-  let frontPointer = 0;
-  let rearPointer = 1;
-  // Queue for BFS; size chosen to accommodate typical constraints
-  const bfsQueue = new Array(100000 + 7);
+  var queueFront = 0;
+  var queueRear = 1;
+  var bfsQueue = new Array(100007); // Pre-allocate a large array for the queue.
 
-  // Start BFS from the target node
-  bfsQueue[0] = targetNode;
-  nodeProperties[targetNode].visited = true;
+  bfsQueue[0] = targetNodeIdx;
+  processedGraph[targetNodeIdx].visitedFlag = true;
 
-  let shortestPathLength = -1; // Stores the result, -1 if no path found
+  var finalDistance = -1;
 
-  // BFS loop continues as long as there are nodes in the queue
-  while (frontPointer !== rearPointer) {
-    const currentNode = bfsQueue[frontPointer];
-    frontPointer++; // Move front pointer to the next element
+  // BFS traversal to find the shortest path from targetNodeIdx to startNodeIdx
+  // using the 'predecessors' (which are actually nodes that can reach 'now' in 3 steps).
+  while(queueFront !== queueRear){
+    var currentNode = bfsQueue[queueFront];
+    queueFront++;
 
-    // If the current node is the source, we found the shortest path
-    if (currentNode === sourceNode) {
-      shortestPathLength = nodeProperties[currentNode].level;
+    if(currentNode === startNodeIdx){
+      finalDistance = processedGraph[currentNode].levelValue;
       break;
     }
 
-    // Get predecessors of the current node
-    const parentNodes = Array.from(nodeProperties[currentNode].predecessors);
-
-    // Iterate through all predecessors
-    for (let pIdx = 0; pIdx < parentNodes.length; pIdx++) {
-      const predecessor = parentNodes[pIdx];
-      // If a predecessor hasn't been visited yet
-      if (!nodeProperties[predecessor].visited) {
-        nodeProperties[predecessor].visited = true; // Mark as visited
-        // Update its level (distance from target)
-        nodeProperties[predecessor].level = nodeProperties[currentNode].level + 1;
-        bfsQueue[rearPointer] = predecessor; // Add to queue
-        rearPointer++; // Increment rear pointer
+    var parentNodes = Array.from(processedGraph[currentNode].predecessors);
+    for(var idx = 0; idx < parentNodes.length; idx++){
+      if(!processedGraph[parentNodes[idx]].visitedFlag){
+        processedGraph[parentNodes[idx]].visitedFlag = true;
+        processedGraph[parentNodes[idx]].levelValue = processedGraph[currentNode].levelValue + 1;
+        bfsQueue[queueRear] = parentNodes[idx];
+        queueRear++;
       }
     }
   }
 
-  // logDebug(adjacencyList); // Optional: view the graph structure
-  // logDebug(nodeProperties); // Optional: view the processed node properties
+  // logDebug(graphStructure); // Original graph structure (commented out debug)
+  // logDebug(processedGraph); // Transformed graph structure (commented out debug)
+  printResult(finalDistance);
 
-  printResult(shortestPathLength); // Output the final path length
 
-  /**
-   * Performs a Depth-First Search to find nodes reachable within 3 steps.
-   * Populates the 'predecessors' set in `nodeProperties`.
-   * @param {number} initialRoot - The starting node for this DFS traversal.
-   * @param {number} currentVertex - The node currently being visited.
-   * @param {number} currentDepth - The current depth of the traversal.
-   */
-  function traverseDepthFirst(initialRoot, currentVertex, currentDepth) {
-    // If maximum depth is reached, add the initial root as a predecessor
-    if (currentDepth === 3) {
-      nodeProperties[currentVertex].predecessors.add(initialRoot);
+  // Nested DFS function to build the 'predecessors' set in processedGraph.
+  // It finds nodes 'originNode' that can reach 'currentNodeDfs' in exactly 3 steps.
+  function performDfs(originNode, currentNodeDfs, currentDepth){
+    if(currentDepth === 3){
+      processedGraph[currentNodeDfs].predecessors.add(originNode);
       return;
     }
 
-    // Get successors of the current vertex
-    const currentSuccessors = adjacencyList[currentVertex].successors;
-
-    // Recursively call DFS for each successor
-    for (let k = 0; k < currentSuccessors.length; k++) {
-      traverseDepthFirst(initialRoot, currentSuccessors[k], currentDepth + 1);
+    var childrenNodes = graphStructure[currentNodeDfs].successors;
+    for(var childIdx = 0; childIdx < childrenNodes.length; childIdx++){
+      performDfs(originNode, childrenNodes[childIdx], currentDepth + 1);
     }
     return;
   }

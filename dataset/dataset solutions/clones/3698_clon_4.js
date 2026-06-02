@@ -1,49 +1,23 @@
 "use strict";
 
-function calculateNumericSpan(sourcePayload) {
-    let contentLines = sourcePayload.split('\n');
-    let targetDataLine = contentLines[1];
+function processInput(inputData) {
+    const rawLineSegment = inputData.split("\n")[1];
+    const numericalTokens = rawLineSegment.split(" ");
 
-    let currentMaximum = -Infinity;
-    let currentMinimum = Infinity;
-    let currentSegment = "";
-    let isInitialValue = true;
+    let lowestValue = Infinity;
+    let highestValue = -Infinity;
 
-    const updateExtremes = (val) => {
-        if (isInitialValue) {
-            currentMaximum = val;
-            currentMinimum = val;
-            isInitialValue = false;
-        } else {
-            if (val > currentMaximum) currentMaximum = val;
-            if (val < currentMinimum) currentMinimum = val;
+    for (let i = 0; i < numericalTokens.length; i++) {
+        const currentNumeric = Number(numericalTokens[i]);
+        if (currentNumeric < lowestValue) {
+            lowestValue = currentNumeric;
         }
-    };
-
-    for (let charUnit of targetDataLine) {
-        if (charUnit === ' ') {
-            let processedValue;
-            if (currentSegment === "") {
-                processedValue = 0;
-            } else {
-                processedValue = parseInt(currentSegment, 10);
-            }
-            updateExtremes(processedValue);
-            currentSegment = "";
-        } else {
-            currentSegment += charUnit;
+        if (currentNumeric > highestValue) {
+            highestValue = currentNumeric;
         }
     }
-    
-    let finalProcessedValue;
-    if (currentSegment === "") {
-        finalProcessedValue = 0;
-    } else {
-        finalProcessedValue = parseInt(currentSegment, 10);
-    }
-    updateExtremes(finalProcessedValue);
 
-    console.log(currentMaximum - currentMinimum);
+    console.log(highestValue - lowestValue);
 }
 
-calculateNumericSpan(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

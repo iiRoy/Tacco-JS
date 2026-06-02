@@ -1,29 +1,22 @@
-let collectedData = '';
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedNumbers = rawInput.split('\n').map(Number);
 
-process.stdin.on('data', (portion) => {
-    collectedData += portion.toString();
-});
+let finalResult;
 
-process.stdin.on('end', () => {
-    const numericalElements = collectedData
-        .split('\n')
-        .map(item => Number(item));
+if (parsedNumbers.length === 0) {
+  finalResult = NaN;
+} else {
+  const extrema = parsedNumbers.reduce(
+    (currentExtrema, val) => {
+      return {
+        lowValue: Math.min(currentExtrema.lowValue, val),
+        highValue: Math.max(currentExtrema.highValue, val),
+      };
+    },
+    { lowValue: Infinity, highValue: -Infinity }
+  );
 
-    const containsNonNumeric = numericalElements.some(val => isNaN(val));
+  finalResult = (extrema.highValue * 10 - extrema.lowValue * 10) / 10;
+}
 
-    if (containsNonNumeric) {
-        process.stdout.write(NaN.toString() + '\n');
-        return;
-    }
-
-    const largestElement = numericalElements.reduce((currentHighest, currentEntry) => {
-        return Math.max(currentHighest, currentEntry);
-    }, -Infinity);
-
-    const smallestElement = numericalElements.reduce((currentLowest, currentEntry) => {
-        return Math.min(currentLowest, currentEntry);
-    }, Infinity);
-
-    const ultimateResult = largestElement - smallestElement;
-    process.stdout.write(ultimateResult.toString() + '\n');
-});
+console.log(finalResult);

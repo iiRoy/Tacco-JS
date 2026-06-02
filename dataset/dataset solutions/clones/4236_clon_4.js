@@ -1,43 +1,59 @@
-const obtainSystemData = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(rawData) {
+  const [firstLineContent] = rawData.split('\n');
+  const [paramA, paramB, paramC] = firstLineContent.split(' ').map(Number);
 
-const processRawText = (textualData) => {
-    const primaryLine = textualData.trim().split('\n')[0];
-    const numericSegments = primaryLine.split(' ');
-    return numericSegments.map(segment => Number(segment));
-};
+  const dividendValue = paramA - paramC;
+  const divisorValue = paramC + paramB;
 
-const computeIntegerQuotient = (dividendValue, divisorValue) => {
-    if (divisorValue === 0) {
-        return dividendValue > 0 ? Infinity : (dividendValue < 0 ? -Infinity : NaN);
-    }
-    if (dividendValue === 0) return 0;
+  let finalResult;
 
-    if (divisorValue < 0) {
-        return computeIntegerQuotient(-dividendValue, -divisorValue);
-    }
-
+  if (divisorValue === 0) {
     if (dividendValue > 0) {
-        if (dividendValue < divisorValue) return 0;
-        return 1 + computeIntegerQuotient(dividendValue - divisorValue, divisorValue);
+      finalResult = Infinity;
+    } else if (dividendValue < 0) {
+      finalResult = -Infinity;
     } else {
-        return -1 + computeIntegerQuotient(dividendValue + divisorValue, divisorValue);
+      finalResult = NaN; // 0/0
     }
-};
+  } else {
+    let currentQuotient = 0;
+    let currentAccumulator = 0; // Represents currentQuotient * effectiveDivisor
 
-const executeLogic = (sourceText) => {
-    const [operandA, operandB, operandC] = processRawText(sourceText);
+    if (divisorValue > 0) {
+      if (dividendValue >= 0) {
+        while (currentAccumulator + divisorValue <= dividendValue) {
+          currentAccumulator += divisorValue;
+          currentQuotient++;
+        }
+      } else { // dividendValue < 0
+        while (currentAccumulator > dividendValue) {
+          currentAccumulator -= divisorValue;
+          currentQuotient--;
+        }
+      }
+    } else { // divisorValue < 0
+      // To handle negative divisors, we can transform the problem:
+      // floor(A/B) where B < 0 is equivalent to floor(-A / -B)
+      // This allows us to reuse the logic for positive divisors.
+      const transformedDividend = -dividendValue;
+      const transformedDivisor = -divisorValue;
 
-    const numeratorExpression = operandA - operandC;
-    const denominatorExpression = operandC + operandB;
+      if (transformedDividend >= 0) {
+        while (currentAccumulator + transformedDivisor <= transformedDividend) {
+          currentAccumulator += transformedDivisor;
+          currentQuotient++;
+        }
+      } else { // transformedDividend < 0
+        while (currentAccumulator > transformedDividend) {
+          currentAccumulator -= transformedDivisor;
+          currentQuotient--;
+        }
+      }
+    }
+    finalResult = currentQuotient;
+  }
 
-    const finalOutput = computeIntegerQuotient(numeratorExpression, denominatorExpression);
-    return finalOutput;
-};
+  console.log('%s', finalResult);
+}
 
-const presentOutcome = (resultValue) => {
-    console.log(resultValue);
-};
-
-const fullInputData = obtainSystemData();
-const computedResult = executeLogic(fullInputData);
-presentOutcome(computedResult);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

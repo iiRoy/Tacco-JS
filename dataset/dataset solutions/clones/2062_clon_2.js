@@ -1,55 +1,40 @@
-function ProcessInput(incomingText) {
-  // Split the raw input string into an array of lines based on newline characters.
-  // This prepares the data for processing in blocks.
-  let textLines = incomingText.split('\n');
+// This function serves as the primary entry point for processing the provided input data.
+function ProcessInput(rawData) {
+    // The raw input string is first split into an array of individual lines.
+    let linesOfData = rawData.split("\n");
 
-  // Iterate through the processed lines, handling two lines at a time.
-  // The 'blockIndex' increments by two to process a pair of input lines in each cycle.
-  for (let blockIndex = 0; blockIndex < textLines.length; blockIndex += 2) {
+    // We iterate through the array of lines, processing two lines at a time.
+    // The first line of each pair contains an integer 'N', and the second contains a sequence of digits.
+    for (let outerLoopIndex = 0; outerLoopIndex < linesOfData.length; outerLoopIndex += 2) {
+        // Parse the current line as an integer, which represents the value 'N' for this iteration.
+        let currentNValue = parseInt(linesOfData[outerLoopIndex]);
 
-    // Convert the first line of the current block (which is a string) into an integer.
-    // This value often represents a count or a limit for subsequent operations.
-    const primaryValue = Number(textLines[blockIndex]);
+        // The next line is split into an array of character strings, each representing a digit.
+        let charArray = linesOfData[outerLoopIndex + 1].split("");
 
-    // Take the second line of the current block, split it into individual characters,
-    // and store them as an array of strings.
-    const digitStrings = textLines[blockIndex + 1].split('');
+        // This array of character digits is then mapped to an array of actual numbers.
+        let numArray = charArray.map(Number);
 
-    // Transform the array of character strings into an array of actual numbers.
-    // Each string character is explicitly converted to an integer.
-    let numberPool = digitStrings.map(val => parseInt(val, 10));
-
-
-    // This outer loop controls the reduction steps of the number pool.
-    // It starts from 'primaryValue' and continues until 'outerIterator' is greater than 1.
-    for (let outerIterator = primaryValue; outerIterator > 1; outerIterator--) {
-
-      // The inner loop processes elements within the current number pool.
-      // It iterates 'outerIterator' times for each step of the outer loop.
-      for (let innerIterator = 0; innerIterator < outerIterator; innerIterator++) {
-
-        // Calculate the absolute difference between the first two elements in the 'numberPool'.
-        const absoluteDelta = Math.abs(numberPool[0] - numberPool[1]);
-
-        // Add this newly computed difference to the end of the 'numberPool'.
-        numberPool.push(absoluteDelta);
-
-        // Remove the first element from the 'numberPool'.
-        // This effectively shifts all elements to the left and removes the oldest element.
-        numberPool.shift();
-      }
-
-      // After the inner loop completes, remove the last element from the 'numberPool'.
-      // This is part of the reduction logic.
-      numberPool.pop();
+        // This nested loop structure performs a specific transformation on the numArray.
+        // The outer part of this loop runs from 'N' down to 2.
+        for (let innerLoopCounter = currentNValue; innerLoopCounter > 1; innerLoopCounter--) {
+            // The inner part of this loop executes 'innerLoopCounter' times.
+            for (let innermostLoopIndex = 0; innermostLoopIndex < innerLoopCounter; innermostLoopIndex++) {
+                // Calculate the absolute difference between the first two elements of the array.
+                let differenceValue = Math.abs(numArray[0] - numArray[1]);
+                // Add this calculated difference to the end of the array.
+                numArray.push(differenceValue);
+                // Remove the first element from the array, effectively shifting elements.
+                numArray.shift();
+            }
+            // After the inner loop completes, the last element of the array is removed.
+            numArray.pop();
+        }
+        // Finally, the first (and only remaining) element of the processed array is printed to the console.
+        console.log(numArray[0]);
     }
-
-    // Output the final remaining element in the 'numberPool' to the console.
-    // This represents the result of all reduction operations for the current input block.
-    console.log(numberPool[0]);
-  }
 }
 
-// Invoke the main processing function with data read from standard input.
-// The file system module is used to read the entire content of '/dev/stdin' as a UTF-8 string.
+// The program starts by reading the entire content of standard input as a UTF-8 string.
+// This content is then passed to the 'ProcessInput' function for execution.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

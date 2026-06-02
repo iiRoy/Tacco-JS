@@ -1,28 +1,26 @@
-"use strict"
+"use strict";
 
-// This module processes an input string to check for adjacent identical characters.
-
-const processInput = ( inputString ) => {
-  // Convert the incoming string into an array of individual characters.
-  let digitArray = inputString . split ( "" ) ;
-
-  // Initialize a status message, assuming a good condition by default.
-  let resultStatus = "Positive" ;
-
-  // Iterate through the character array, checking for adjacent pairs.
-  for ( let idx = 0 ; idx < 3 ; idx ++ )
-  {
-    // If a character is identical to the one immediately following it,
-    // update the status to indicate a negative condition.
-    if ( digitArray [ idx ] === digitArray [ idx + 1 ] )
-    {
-      resultStatus = "Negative" ;
+// This function processes the input string to check for consecutive identical characters.
+const evaluateSequence = (inputData) => {
+  // Split the input string into an array of individual characters.
+  let characterList = inputData.split("");
+  
+  // Initialize the verdict as "Good" by default.
+  let finalVerdict = "Good";
+  
+  // Iterate through the character list, checking up to the third character.
+  // The loop runs for indexPosition 0, 1, and 2.
+  for (let indexPosition = 0; indexPosition < 3; indexPosition++) {
+    // Compare the current character with the next character in the sequence.
+    if (characterList[indexPosition] === characterList[indexPosition + 1]) {
+      // If two consecutive characters are identical, set the verdict to "Bad".
+      finalVerdict = "Bad";
     }
   }
-
-  // Output the final determined status to the console.
-  console . log ( resultStatus ) ;
-}
+  
+  // Output the determined verdict to the console.
+  console.log(finalVerdict);
+};
 
 // Read the input from standard input and pass it to the processing function.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+evaluateSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

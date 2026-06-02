@@ -1,49 +1,11 @@
-class CalculationEngine {
-  #alphaValue;
-  #betaValue;
-  #computedResult;
+'use strict';
 
-  constructor(inputSignal) {
-    this.#extractComponents(inputSignal);
-    this.#performTransformation();
-  }
+const fs = require('fs');
+const raw = fs.readFileSync('/dev/stdin', 'utf8');
 
-  #extractComponents(dataStream) {
-    let tempNumBuffer = '';
-    let firstFound = false;
-    let dataPointer = 0;
+const row = raw.trim().split('\n').shift();
+const cells = row.split(' ').slice(0, 2).map(Number);
+const heap = [cells[0], cells[0], cells[0], cells[1]];
 
-    while (dataPointer < dataStream.length) {
-      const symbol = dataStream[dataPointer];
-      if (symbol >= '0' && symbol <= '9') {
-        tempNumBuffer += symbol;
-      } else if (tempNumBuffer !== '') {
-        if (!firstFound) {
-          this.#alphaValue = parseInt(tempNumBuffer, 10);
-          firstFound = true;
-        } else {
-          this.#betaValue = parseInt(tempNumBuffer, 10);
-          break;
-        }
-        tempNumBuffer = '';
-      }
-      dataPointer++;
-    }
-  }
-
-  #performTransformation() {
-    this.#computedResult = ((this.#alphaValue * 3) + this.#betaValue) >> 1;
-  }
-
-  getFinalOutput() {
-    return this.#computedResult;
-  }
-}
-
-(() => {
-  const resourceReader = require("fs").readFileSync("/dev/stdin", "utf8");
-  const rawContent = resourceReader.toString();
-
-  const processorInstance = new CalculationEngine(rawContent);
-  console.log(processorInstance.getFinalOutput());
-})();
+const total = heap.reduce((carry, value) => carry + value, 0);
+console.log(Math.floor(total / 2));

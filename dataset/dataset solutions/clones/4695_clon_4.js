@@ -1,27 +1,23 @@
-const inputSource = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const divisorConstant = 1000000007;
+let parsedInputNumber;
+const moduloValue = 1000000007;
 
-const lineReader = inputSource.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
-
-let inputNumberValue;
-
-lineReader.on('line', (individualLine) => {
-    inputNumberValue = parseInt(individualLine.trim(), 10);
-});
-
-lineReader.on('close', () => {
-    if (typeof inputNumberValue === 'number' && !isNaN(inputNumberValue)) {
-        const sequenceForProduct = Array.from({ length: inputNumberValue }, (_, idx) => idx + 1);
-
-        const calculatedResult = sequenceForProduct.reduce((currentProduct, factorElement) => {
-            return (currentProduct * factorElement) % divisorConstant;
-        }, 1);
-
-        console.log(calculatedResult);
+const obtainFactorialModulo = (currentValue, modulusDivisor) => {
+    if (currentValue === 0) {
+        return 1;
     }
+    return (currentValue * obtainFactorialModulo(currentValue - 1, modulusDivisor)) % modulusDivisor;
+};
+
+process.stdin.on('data', function (inputChunk) {
+    inputChunk.trim().split('\n').forEach(function(inputLine) {
+        parsedInputNumber = parseInt(inputLine, 10);
+    });
+});
+
+process.stdin.on('end', function () {
+    const finalResult = obtainFactorialModulo(parsedInputNumber, moduloValue);
+    console.log(finalResult);
 });

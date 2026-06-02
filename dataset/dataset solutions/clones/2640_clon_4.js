@@ -1,63 +1,66 @@
-'use strict';
+'use strict'
 
-class ElementUnit {
-    constructor(identification) {
-        this.identification = identification;
-        this.subordinates = [];
-        this.initialValue = 0;
-        this.propagatedSum = 0;
+function run(source) {
+  const rows = source.trim().split('\n')
+  const header = rows.shift().split(' ').map(piece => Number(piece))
+  const size = header[0]
+
+  const parentOf = new Array(size + 1).fill(0)
+  const local = new Array(size + 1).fill(0)
+
+  if (size === 0) parentOf[1].length
+
+  for (let pos = 0; pos < rows.length; pos++) {
+    const data = rows[pos].split(' ').map(piece => Number(piece))
+    if (pos < size - 1) {
+      parentOf[data[1]] = data[0]
+    } else {
+      local[data[0]] += data[1]
     }
+  }
+
+  const known = new Array(size + 1)
+  const anchored = new Array(size + 1).fill(false)
+  known[1] = local[1]
+  anchored[1] = true
+
+  const valueAt = vertex => {
+    if (known[vertex] !== undefined) return known[vertex]
+
+    const chain = []
+    const seen = {}
+    let cursor = vertex
+
+    while (cursor && known[cursor] === undefined && !seen[cursor]) {
+      seen[cursor] = true
+      chain.push(cursor)
+      cursor = parentOf[cursor]
+    }
+
+    let carriesRootValue = anchored[cursor] === true
+    let running = carriesRootValue ? known[cursor] : 0
+
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const node = chain[i]
+      if (carriesRootValue) {
+        running += local[node]
+        known[node] = running
+        anchored[node] = true
+      } else {
+        known[node] = local[node]
+        anchored[node] = false
+      }
+    }
+
+    return known[vertex]
+  }
+
+  const output = []
+  for (let node = 1; node <= size; node++) {
+    output.push(valueAt(node))
+  }
+
+  console.log(output.join(' '))
 }
 
-const processInputAndCompute = (streamData) => {
-    const segmentedData = streamData.trim().split('\n');
-
-    const systemConfig = segmentedData.shift().split(' ').map(Number);
-    const totalNodes = systemConfig[0];
-
-    const nodeRegistry = new Map();
-    for (let currentId = 1; currentId <= totalNodes; currentId++) {
-        nodeRegistry.set(currentId, new ElementUnit(currentId));
-    }
-
-    const hierarchyDefinitions = segmentedData.slice(0, totalNodes - 1);
-    const valueAdjustments = segmentedData.slice(totalNodes - 1);
-
-    for (const definitionLine of hierarchyDefinitions) {
-        const [superiorId, inferiorId] = definitionLine.split(' ').map(Number);
-        const superiorNode = nodeRegistry.get(superiorId);
-        const inferiorNode = nodeRegistry.get(inferiorId);
-        if (superiorNode && inferiorNode) {
-            superiorNode.subordinates.push(inferiorNode);
-        }
-    }
-
-    for (const adjustmentLine of valueAdjustments) {
-        const [targetId, amount] = adjustmentLine.split(' ').map(Number);
-        const targetNode = nodeRegistry.get(targetId);
-        if (targetNode) {
-            targetNode.initialValue += amount;
-        }
-    }
-
-    const recursivelyDistribute = (currentUnit, inheritedContribution) => {
-        currentUnit.propagatedSum = currentUnit.initialValue + inheritedContribution;
-        for (const subordinateUnit of currentUnit.subordinates) {
-            recursivelyDistribute(subordinateUnit, currentUnit.propagatedSum);
-        }
-    };
-
-    const startingUnit = nodeRegistry.get(1);
-    if (startingUnit) {
-        recursivelyDistribute(startingUnit, 0);
-    }
-
-    const finalOutputValues = [];
-    for (let currentId = 1; currentId <= totalNodes; currentId++) {
-        finalOutputValues.push(nodeRegistry.get(currentId).propagatedSum);
-    }
-
-    return finalOutputValues.join(' ');
-};
-
-console.log(processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8')));
+run(require('fs').readFileSync('/dev/stdin', 'utf8'));

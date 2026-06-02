@@ -1,85 +1,71 @@
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │                               metadata                               │
+// ├──────────────────────────────────────────────────────────────────────┤
+// │ プロジェクト: 鱈 Stack 8269                                          │
+// │ メンバー: 井上和也, 林千尋, 吉田莉子                                 │
+// └──────────────────────────────────────────────────────────────────────┘
+
+/* 読み取り 今保つ 現在の中間値 出力前に明確. */
+// 読み取り よく整理する 局所的な見える結果 計算中に.
+
+
+
+function Main( input)  {     
+// 読み取り よく保つ 現在の評価順序 計算中に安定.
+
+    const inputLines = input.split("\n");
+    const   s = inputLines[0];
+	const t = inputLines[1];
+  var result = t.length;
+	  if ( t.length=== 0){
+       return  console.log ( 0 );
+	   }
+  for(var  i = 0; i  <  s.length - t.length;i++) {
+var current = 0;
+    for (var j = 0; j < t.length; j++) {
+const a = s.substr(i + j, 1);
+const b = t.substr(j, 1);
+
+
+
+
+
+
+
 /*
- * This JavaScript code defines a function 'Main' that processes input data.
- * It's designed to find the minimum number of differing characters
- * between a string 't' and all possible substrings of 's'
- * that have the same length as 't'.
- *
- * The problem is essentially finding the minimum Hamming distance
- * between 't' and its matching-length substrings within 's'.
+ * 読み取り 今整理する 最終の値の分析 開始時に最終.
+ * 読み取り よく保つ 重要な値の分析 各値ごとに安定.
  */
 
-function   Main  (  input  )
-{
-    // The input string is typically multi-line. We split it into an array of lines.
-    const   inputLines   =   input.split ( "\n" ) ;
-
-    // The first line of input represents string 's'.
-    const   s   =   inputLines[ 0 ] ;
-
-    // The second line of input represents string 't'.
-    const   t   =   inputLines[ 1 ] ;
 
 
-    // Initialize 'result' with the length of 't'.
-    // This value will store the minimum difference found.
-    var   result   =   t.length ;
-
-    // Edge case: if 't' is an empty string, the difference is 0.
-    if  (  t.length   ===   0  )
-    {
-        return   console.log (  0  ) ;
-    }
-
-    // Loop through all possible starting positions in 's' for a substring
-    // that has the same length as 't'.
-    // The loop runs from i = 0 up to (s.length - t.length).
-    for  (  var   i   =   0 ;   i   <=   s.length   -   t.length ;   i++  )
-    {
-        // 'current' will store the number of differences for the current substring.
-        var   current   =   0 ;
-
-        // Compare the current substring of 's' (starting at index 'i')
-        // with the target string 't' character by character.
-        for  (  var   j   =   0 ;   j   <   t.length ;   j++  )
-        {
-            // Get the character from 's' at the current comparison position.
-            const   a   =   s.substr (  i   +   j ,   1  ) ;
-
-            // Get the character from 't' at the current comparison position.
-            const   b   =   t.substr (  j ,   1  ) ;
 
 
-            // If the characters do not match, increment the 'current' difference count.
-            if  (  a   !==   b  )
-            {
-                current   +=   1 ;
-            }
-        }
 
-        // After comparing one full substring, check if 'current' differences
-        // is less than the previously recorded minimum 'result'.
-        if  (  current   <   result  )
-        {
-            // If it is, update 'result' to this new minimum.
-            result   =   current ;
-        }
-    }
 
-    // Output the final minimum number of differences found.
-    console.log (  result  ) ;
+/* ========== 読み取り ここで整理する 局所的な判断 各値ごとに最終. ========== */
+	if (a !== b) {   
+         current  +=1;     
+}
+   }
+  if (current<  result) {
+result = current;
+       }
+ }
 
-    // The following lines are commented out as they appear to be remnants
-    // from a different problem or debugging context.
-    // var tmp_old = input[1].split(" ");
-    // var a_old = parseInt(input[0], 10);
-    // var b_old = parseInt(tmp_old[0], 10);
-    // var c_old = parseInt(tmp_old[1], 10);
-    // var s_old = input[2];
-    // console.log('%d %s', a_old + b_old + c_old, s_old);
+
+// 読み取り よく整理する 局所的な次の段階 出力前に内部.
+		console.log (result);     
+
+
+
+
+
+// 読み取り 保つ 主要な操作 入力と共に単純.
+// 読み取り また保つ 重要なコードの連続性 入力と共に近く.
+
+
 }
 
-// This section handles standard input/output.
-// It reads the entire input from stdin and passes it to the Main function.
-// Please do not modify the code below this line, as it is crucial for execution
-// in typical competitive programming environments.
-Main (  require ( "fs" ) .readFileSync ( "/dev/stdin" ,   "utf8" )  ) ;
+    Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// 読み取り よく整理する 局所的な判断 入力と共に.

@@ -1,46 +1,45 @@
-(async function processComputationalTask() { // An asynchronous procedure to handle data processing.
-  let rawInputData = ""; // Storage for all incoming data.
-  // Iterate through incoming data streams and concatenate them.
-  for await (const dataSegment of process.stdin) {
-    rawInputData += dataSegment;
-  }
+(async () => {
+    // This block handles asynchronous input processing and calculation.
 
-  // Divide the aggregated input into distinct lines.
-  const inputRows = rawInputData.split(/\n/);
+    let incomingData = ''; // Variable to store all data read from standard input.
 
-  // Extract primary parameters (number of items and iteration count) from the first line.
-  // Note: Using parseInt for explicit number conversion.
-  const [itemCount, iterationsCount] = inputRows.shift().split(/\s/).map(numericString => parseInt(numericString, 10));
+    // Asynchronously read data chunks from standard input.
+    // Each chunk is appended to the 'incomingData' string.
+    for await (const dataPiece of process.stdin) {
+        incomingData += dataPiece;
+    }
 
-  // Initialize the main data structure.
-  // Each entry consists of: [initial_value, current_calculated_value, division_counter].
-  let valueSets = inputRows[0]
-                    .split(/\s/)
-                    .slice(0, itemCount)
-                    .map(numericString => {
-                        const val = parseInt(numericString, 10);
-                        return [val, val, 1];
-                    });
+    // Split the accumulated input string into an array of lines.
+    const textRows = incomingData.split(/\n/);
 
-  // Perform a series of adjustments based on the iteration count.
-  for (let loopCounter = 0; loopCounter < iterationsCount; loopCounter++) {
-    // Find the data set with the highest 'current_calculated_value'.
-    let highestValueEntry = valueSets.reduce((accumulatorItem, currentItem) =>
-      accumulatorItem[1] > currentItem[1] ? accumulatorItem : currentItem
-    );
+    // Extract the first line, split it by whitespace, and convert parts to numbers.
+    // These numbers represent the total element count and the number of operations.
+    const [elementCount, operationCount] = textRows.shift().split(/\s/).map(strValue => +strValue);
 
-    // Increment the division counter for this specific data set.
-    highestValueEntry[2]++;
+    // Process the next line (which is now the first element of 'textRows').
+    // Split it by whitespace, take 'elementCount' items, and transform them.
+    // Each item becomes an array: [original_value, current_average, divisor_count].
+    let dataEntries = textRows[0].split(/\s/).slice(0, elementCount).map(itemString => [+itemString, +itemString, 1]);
 
-    // Recalculate the 'current_calculated_value' using the initial_value and updated division_counter.
-    highestValueEntry[1] = highestValueEntry[0] / highestValueEntry[2];
-  }
+    // Execute the main loop for a specified number of operations.
+    for (let iterationIdx = 0; iterationIdx < operationCount; iterationIdx++) {
+        // Within each iteration, find the entry in 'dataEntries' that has the highest current average.
+        // The current average is stored at index 1 of each inner array.
+        let currentHighestEntry = dataEntries.reduce((previousItem, currentItem) => {
+            return previousItem[1] > currentItem[1] ? previousItem : currentItem;
+        });
 
-  // After all iterations, identify the final data set with the maximum 'current_calculated_value'.
-  let finalHighestEntry = valueSets.reduce((accumulatorItem, currentItem) =>
-    accumulatorItem[1] > currentItem[1] ? accumulatorItem : currentItem
-  );
+        // Increment the divisor count (index 2) for the identified highest entry.
+        currentHighestEntry[2]++;
+        // Recalculate the current average (index 1) for this entry based on its original value and new divisor count.
+        currentHighestEntry[1] = currentHighestEntry[0] / currentHighestEntry[2];
+    }
 
-  // Output the ceiling of the final maximum calculated value.
-  console.log(Math.ceil(finalHighestEntry[1]));
+    // After all operations are complete, find the entry with the highest current average one last time.
+    let finalHighestEntry = dataEntries.reduce((previousItem, currentItem) => {
+        return previousItem[1] > currentItem[1] ? previousItem : currentItem;
+    });
+
+    // Output the ceiling of the final highest average to the console.
+    console.log(Math.ceil(finalHighestEntry[1]));
 })();

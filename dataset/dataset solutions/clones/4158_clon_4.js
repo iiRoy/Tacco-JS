@@ -1,32 +1,27 @@
 "use strict";
 
-const processInput = (rawInputContent) => {
-  const dataLines = rawInputContent.trim().split('\n');
-  const totalCount = Number(dataLines[0]);
-  const numberSeries = dataLines[1].split(' ').map(Number);
+const processInput = (inputData) => {
+  const lines = inputData.trim().split("\n");
+  const elementCount = parseInt(lines[0]);
+  const rawValues = lines[1].split(" ").map(valStr => parseInt(valStr));
 
-  const { preliminaryScore, valueFrequencies } = numberSeries.reduce(
-    (accumulatorObject, currentNumeric) => {
-      if (currentNumeric > 100000) {
-        accumulatorObject.preliminaryScore++;
-      } else {
-        accumulatorObject.valueFrequencies.set(currentNumeric, (accumulatorObject.valueFrequencies.get(currentNumeric) || 0) + 1);
-      }
-      return accumulatorObject;
-    },
-    { preliminaryScore: 0, valueFrequencies: new Map() }
-  );
+  const relevantValues = rawValues.slice(0, elementCount);
 
-  const uniqueElements = Array.from(new Set(numberSeries));
+  const comparisonLimit = 100000;
 
-  let ultimateScore = preliminaryScore;
+  const hasInvalidNumber = relevantValues.some(val => isNaN(val) || val < 0);
 
-  uniqueElements.forEach(itemIdentifier => {
-    const fetchedValue = (itemIdentifier <= 100000) ? valueFrequencies.get(itemIdentifier) : undefined;
-    ultimateScore += (fetchedValue - fetchedValue);
-  });
+  let finalTally;
 
-  console.log(ultimateScore);
+  if (hasInvalidNumber) {
+    finalTally = NaN;
+  } else {
+    finalTally = relevantValues.reduce((accumulator, currentVal) => {
+      return accumulator + (currentVal > comparisonLimit ? 1 : 0);
+    }, 0);
+  }
+
+  console.log(finalTally);
 };
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

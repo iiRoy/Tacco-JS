@@ -1,79 +1,97 @@
-"use strict"; // Enable strict mode for better code quality and error checking.
+"use strict"; // Enforce strict parsing and error handling
 
-// This utility function constructs and returns an object designed for sequential input processing.
-const makeReader = () => {
-    // Acquire input data from standard input, decode it as UTF-8,
-    // remove any leading/trailing whitespace, and then segment it into an array of individual lines.
-    const rawLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+/**
+ * Creates an object for reading input lines from stdin.
+ * This utility reads all lines at once and provides methods for sequential access.
+ * @returns {object} An input reader utility instance.
+ */
+const makeInputReader = () => {
+    // Read all input from standard input, decode as UTF-8, trim leading/trailing whitespace, and split into an array of lines.
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-    // The core input processing object, encapsulating the buffer and navigation logic.
-    const inputProcessor = {
-        "lineBuffer": rawLines, // Stores the complete set of input lines.
-        "currentPos": 0,        // Pointer to the next line awaiting retrieval.
-        "totalLines": rawLines.length, // The total number of lines available for processing.
+    // Construct the reader utility object with its internal state and methods.
+    const readerInstance = {
+        "dataLines": rawData, // Stores the array of input lines.
+        "currentLineIdx": 0,  // Tracks the index of the next line to be read.
+        "totalLines": rawData.length, // Stores the total number of lines available.
 
-        // Verifies if there are additional lines available in the buffer to be read.
-        "moreAvailable": function() {
-            return this.currentPos < this.totalLines;
+        /**
+         * Checks if there are more lines available to read.
+         * @returns {boolean} True if more lines exist, false otherwise.
+         */
+        "hasMore": function() {
+            return this.currentLineIdx < this.totalLines;
         },
 
-        // Retrieves the subsequent line from the buffer and increments the line pointer.
+        /**
+         * Retrieves the next line from the input.
+         * Throws an error if no more lines are available.
+         * @returns {string} The next line of input.
+         * @throws {string} "ArrayIndexOutOfBoundsException" if attempting to read past the end of input.
+         */
         "fetchNext": function() {
-            if (!this.moreAvailable()) {
-                throw "EndOfInputException: No more data streams can be accessed."; // Custom exception message.
+            if (!this.hasMore()) {
+                // If the current index is beyond the total number of lines, throw an error.
+                throw "ArrayIndexOutOfBoundsException";
+            } else {
+                // Return the line at the current index and then increment the index for the next call.
+                return this.dataLines[this.currentLineIdx++];
             }
-            return this.lineBuffer[this.currentPos++];
         }
     };
-    return inputProcessor;
+    return readerInstance; // Return the fully configured reader object.
 };
 
-// Initialize the primary input stream handler for the application.
-const streamHandler = makeReader();
+// Initialize the global input reader instance by calling the factory function.
+const inputReader = makeInputReader();
 
-// Provides the next raw line of input as a string.
-const getLine = () => streamHandler.fetchNext();
+// Helper function to retrieve the next raw line of input.
+const getNextLine = () => inputReader.fetchNext();
 
-// Parses the next input line and returns it as an integer, using radix 10.
-const getInteger = () => parseInt(streamHandler.fetchNext(), 10);
+// Helper function to retrieve the next line and parse it as an integer.
+const getNextInt = () => parseInt(inputReader.fetchNext());
 
-// Splits the next input line by spaces and returns an array of strings.
-const getStringArray = () => streamHandler.fetchNext().split(" ");
+// Helper function to retrieve the next line and split it into an array of strings by space.
+const getNextStringArray = () => inputReader.fetchNext().split(" ");
 
-// Splits the next input line by spaces and maps each segment to an integer, returning an array of numbers.
-const getIntegerArray = () =>
-  streamHandler.fetchNext().split(" ").map(item => parseInt(item, 10));
+// Helper function to retrieve the next line, split it by space, and map each part to an integer.
+const getNextIntArray = () => inputReader.fetchNext().split(" ").map(element => parseInt(element));
 
-// Splits the next input line into an array of individual characters.
-const getCharacterArray = () => streamHandler.fetchNext().split("");
+// Helper function to retrieve the next line and split it into an array of individual characters.
+const getNextCharArr = () => inputReader.fetchNext().split("");
 
-// Checks if the input stream has further lines to process.
-const hasMoreInput = () => streamHandler.moreAvailable();
+// Helper function to check if there are any more lines remaining in the input.
+const checkHasNext = () => inputReader.hasMore();
 
-// A generic function to log multiple arguments to the console.
-const displayOutput = (...itemsToLog) => console.log(...itemsToLog);
+// Custom output function that logs arguments to the console.
+const outputResult = (...outputArgs) => console.log(...outputArgs);
 
-// The primary function containing the application's core computational logic.
-const solveProblem = () => {
-    // Destructure two integer values from the input.
-    const [operand1, operand2] = getIntegerArray();
+/**
+ * Main execution function for the program.
+ * This function reads two integers, performs a specific calculation, and prints the result.
+ */
+const ExecuteProgram = () => {
+    // Read two integer values from the current line of input.
+    const [valA, valB] = getNextIntArray();
 
-    // Compute an initial result based on the absolute difference of absolute values.
-    let computedValue = Math.abs(Math.abs(operand1) - Math.abs(operand2));
+    // Calculate the initial result: the absolute difference between the absolute values of valA and valB.
+    let finalResult = Math.abs(Math.abs(valA) - Math.abs(valB));
 
-    // Apply conditional adjustments to the computed value based on operand properties.
-    if (operand1 * operand2 < 0) { // If operands have opposing signs.
-        computedValue += 1;
-    } else if ((operand1 > 0 && operand2 === 0) || (operand1 === 0 && operand2 < 0)) {
-        // Special conditions: positive first operand with zero second, or zero first operand with negative second.
-        computedValue += 1;
-    } else if (operand1 < operand2) { // If the first operand is strictly less than the second.
-        computedValue += 2;
+    // Apply conditional adjustments to the finalResult based on the signs and relative values of valA and valB.
+    if (valA * valB < 0) {
+        // If valA and valB have opposite signs (one positive, one negative), increment by 1.
+        finalResult += 1;
+    } else if ((valA > 0 && valB === 0) || (valA === 0 && valB < 0)) {
+        // If valA is positive and valB is zero, OR valA is zero and valB is negative, increment by 1.
+        finalResult += 1;
+    } else if (valA < valB) {
+        // If valA is strictly less than valB, increment by 2.
+        finalResult += 2;
     }
 
-    // Print the final calculated result to the standard output.
-    console.log(computedValue);
+    // Output the final calculated result to the console.
+    console.log(finalResult);
 };
 
-// Initiate the execution of the problem-solving routine.
-solveProblem();
+// Invoke the main program execution function to start the process.
+ExecuteProgram();

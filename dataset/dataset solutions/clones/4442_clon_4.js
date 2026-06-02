@@ -1,35 +1,33 @@
-function processData(sourceContent) {
-    const inputLines = sourceContent.split('\n');
+function processInputData(inputString) {
+  const [firstLineData, secondLineData, thirdLineData] = inputString.split('\n');
 
-    const [gridHeight, gridWidth] = inputLines[0].split(' ').map(Number);
-    const colorTypeCount = Number(inputLines[1]);
-    const typeQuantities = inputLines[2].split(' ').map(Number);
+  const [gridHeight, gridWidth] = firstLineData.split(' ').map(Number);
+  const colorTypeCount = Number(secondLineData);
+  const colorAmounts = thirdLineData.split(' ').map(Number);
 
-    const flattenedColors = typeQuantities.flatMap((qty, tIdx) =>
-        Array.from({ length: qty }, () => tIdx + 1)
-    );
+  const flatColorSequence = colorAmounts.flatMap((amountValue, typeIndex) =>
+    Array.from({ length: amountValue }, () => typeIndex + 1)
+  );
 
-    const displayMatrix = Array.from({ length: gridHeight }, (_, rIdx) => {
-        return Array.from({ length: gridWidth }, (_, cIdx) => {
-            let sequenceLookupIndex;
-            if (rIdx % 2 === 0) { // Even-indexed row (0, 2, ...)
-                sequenceLookupIndex = rIdx * gridWidth + cIdx;
-            } else { // Odd-indexed row (1, 3, ...)
-                // Replicating the original's specific indexing for odd rows,
-                // which might access elements beyond the flattenedColors array's bounds.
-                // Original: d[(i+1)*w-j]
-                sequenceLookupIndex = (rIdx + 1) * gridWidth - cIdx;
-            }
-            return flattenedColors[sequenceLookupIndex];
-        });
-    });
+  const getSequenceElement = (rowIdx, colIdx) => {
+    let sequencePosition;
+    if (rowIdx % 2 === 0) {
+      sequencePosition = rowIdx * gridWidth + colIdx;
+    } else {
+      sequencePosition = (rowIdx + 1) * gridWidth - colIdx;
+    }
+    return flatColorSequence[sequencePosition];
+  };
 
-    const resultText = displayMatrix
-        .map(rowElements => rowElements.join(' '))
-        .join('\n');
+  const generatedGridRows = Array.from({ length: gridHeight }, (_, rowIdx) => {
+    return Array.from({ length: gridWidth }, (_, colIdx) =>
+      getSequenceElement(rowIdx, colIdx)
+    ).join(' ');
+  });
 
-    return resultText;
+  const finalResultString = generatedGridRows.join('\n');
+
+  console.log(finalResultString.slice(0, finalResultString.length - 1));
 }
 
-const providedInput = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processData(providedInput));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

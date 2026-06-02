@@ -1,82 +1,39 @@
 "use strict";
 
-// This script processes input from standard input to find unique array configurations.
-// It identifies segments of a given length, sorts them, and then reconstructs the array.
+const inputStringContent = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+const inputLineSegments = inputStringContent.split('\n');
 
-// Core Node.js module for file system operations.
-const fsModule = require('fs');
+const firstLineData = inputLineSegments[0].split(' ');
+const permutationSourceElements = inputLineSegments[1].split(' ');
 
-// Read the entire content from the standard input as a UTF-8 string.
-const inputContentBuffer = fsModule.readFileSync('/dev/stdin', 'UTF-8');
+const totalElementCount = parseInt(firstLineData[0]); // N, not directly used in logic but parsed
+const subsegmentLength = parseInt(firstLineData[1]); // K
 
-// Defensive check: Ensure input content is not empty or just whitespace.
-if (!inputContentBuffer || inputContentBuffer.trim().length === 0) {
-    console.error("Error: No data received from standard input. Please provide valid input.");
-    process.exit(1); // Terminate script with an error code.
+const distinctPermutationStrings = new Set();
+
+// Iterate through all possible starting positions for the subsegment
+// The loop condition ensures that startIndex + subsegmentLength does not exceed the array length.
+for (let startIndex = 0; startIndex <= permutationSourceElements.length - subsegmentLength; startIndex++) {
+    // Extract the part of the array before the subsegment
+    const leadingElements = permutationSourceElements.slice(0, startIndex);
+
+    // Extract the subsegment that needs to be sorted
+    const segmentToSort = permutationSourceElements.slice(startIndex, startIndex + subsegmentLength);
+
+    // Create a sorted version of the subsegment
+    // The sort function (a, b) => a > b ? 1 : a < b ? -1 : 0 performs lexicographical string comparison.
+    const sortedSegment = [...segmentToSort].sort((a, b) => a > b ? 1 : a < b ? -1 : 0);
+
+    // Extract the part of the array after the subsegment
+    const trailingElements = permutationSourceElements.slice(startIndex + subsegmentLength);
+
+    // Combine the parts to form the current permutation
+    const currentCombinedPermutation = [...leadingElements, ...sortedSegment, ...trailingElements];
+    const currentPermutationKey = currentCombinedPermutation.join('');
+
+    // Add the string representation of the permutation to the Set to track uniqueness
+    distinctPermutationStrings.add(currentPermutationKey);
 }
 
-// Split the raw input buffer into individual lines.
-const inputLines = inputContentBuffer.split('\n');
-
-// The first line contains two space-separated numerical parameters.
-const firstInputLineParts = inputLines[0].split(' ');
-
-// The second line contains the array elements, also space-separated.
-const sourceElementStrings = inputLines[1].split(' ');
-
-// Parse the numerical parameters, ensuring they are integers.
-// `totalElementsCount` is the expected length of the source array.
-const totalElementsCount = parseInt(firstInputLineParts[0], 10);
-// `segmentLength` is the size of the window/segment to be sorted.
-const segmentLength = parseInt(firstInputLineParts[1], 10);
-
-// --- Robust Input Parameter Validation ---
-// Check if parsing resulted in valid numbers and if `segmentLength` is logical.
-if (isNaN(totalElementsCount) || isNaN(segmentLength) || segmentLength <= 0 || segmentLength > totalElementsCount) {
-    console.error(`Error: Invalid numerical parameters. N=${totalElementsCount}, K=${segmentLength}. K must be positive and not exceed N.`);
-    process.exit(1);
-}
-
-// A JavaScript Set is used here to efficiently store and manage unique string representations.
-// This is more performant than an array with `indexOf` checks for uniqueness.
-const uniqueConfigurations = new Set();
-
-// Calculate the maximum possible starting index for a segment of `segmentLength`.
-// This ensures the loop does not attempt to create segments beyond the array's bounds.
-const maxStartIndex = sourceElementStrings.length - segmentLength;
-
-// Iterate through the `sourceElementStrings` to generate all possible segment permutations.
-// Replaced the less direct `Array.prototype.map` on a dummy array with a clear `for` loop.
-for (let currentOffset = 0; currentOffset <= maxStartIndex; currentOffset++) {
-
-    // 1. Extract the initial part of the array, before the current segment.
-    const prefixSegment = sourceElementStrings.slice(0, currentOffset);
-
-    // 2. Extract the segment that needs to be sorted.
-    const unsortedMiddleSegment = sourceElementStrings.slice(currentOffset, currentOffset + segmentLength);
-
-    // 3. Create a sorted version of the middle segment.
-    // Use `localeCompare` for robust string sorting, as the original elements are strings.
-    const middleSortedSegment = [...unsortedMiddleSegment].sort((elemA, elemB) => elemA.localeCompare(elemB));
-
-    // 4. Extract the remaining part of the array, after the current segment.
-    const suffixSegment = sourceElementStrings.slice(currentOffset + segmentLength);
-
-    // 5. Reconstruct the full sequence by combining the three parts.
-    // Using spread syntax for cleaner array concatenation.
-    const combinedSequence = [...prefixSegment, ...middleSortedSegment, ...suffixSegment];
-
-    // 6. Convert the reconstructed array into a single string to serve as a unique identifier.
-    // This allows the Set to easily check for and store unique configurations.
-    const sequenceIdentifier = combinedSequence.join('');
-
-    // 7. Add the unique string identifier to the Set.
-    // If the identifier already exists, the Set will simply ignore the addition.
-    uniqueConfigurations.add(sequenceIdentifier);
-}
-
-// The original `count` variable has been removed as it was redundant;
-// the `Set.size` property directly provides the count of unique items.
-
-// Output the final count of all distinct configurations found.
-console.log(uniqueConfigurations.size);
+// Output the total count of unique permutations found
+console.log(distinctPermutationStrings.size);

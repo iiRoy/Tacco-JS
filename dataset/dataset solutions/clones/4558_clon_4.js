@@ -1,40 +1,45 @@
-const specialExclusionCode = 0;
-const primaryGroupCode = 1;
-const secondaryGroupCode = 2;
-const unassignedCode = 3;
+function ProcessData(rawData) {
+    const groupRegistry = new Map();
+    groupRegistry.set('primarySet', new Set([1, 3, 5, 7, 8, 12]));
+    groupRegistry.set('secondarySet', new Set([4, 6, 9, 11]));
 
-const categoryMapping = new Map([
-  [1, primaryGroupCode], [3, primaryGroupCode], [5, primaryGroupCode],
-  [7, primaryGroupCode], [8, primaryGroupCode], [12, primaryGroupCode],
-  [4, secondaryGroupCode], [6, secondaryGroupCode], [9, secondaryGroupCode],
-  [11, secondaryGroupCode],
-  [2, specialExclusionCode]
-]);
+    const firstInputChar = rawData[0];
+    const parsedTokens = firstInputChar.split(" ");
 
-const determineCategory = (value) =>
-  categoryMapping.has(value) ? categoryMapping.get(value) : unassignedCode;
+    const valueA = Number(parsedTokens[0]);
+    const valueB = Number(parsedTokens[1]); // This will be NaN as parsedTokens[1] is undefined
 
-const outcomeMatrix = [
-  //       specialExclusionCode (0)  primaryGroupCode (1)  secondaryGroupCode (2)  unassignedCode (3)
-  /* 0 */ ["No",                 "No",                "No",                 "No"],
-  /* 1 */ ["No",                 "Yes",               "No",                 "No"],
-  /* 2 */ ["No",                 "No",                "Yes",                "No"],
-  /* 3 */ ["No",                 "No",                "No",                 "No"]
-];
+    let finalVerdict;
 
-const evaluatePair = (sourceData) => {
-  const [firstValueString, secondValueString] = sourceData[0].split(" ");
-  const firstNumeric = Number.parseInt(firstValueString, 10);
-  const secondNumeric = Number.parseInt(secondValueString, 10);
+    if (valueA === 2 || valueB === 2) { // valueB === 2 will always be false (NaN !== 2)
+        finalVerdict = "No";
+    } else {
+        let groupOfA = null;
+        for (const [identifier, memberSet] of groupRegistry.entries()) {
+            if (memberSet.has(valueA)) {
+                groupOfA = identifier;
+                break;
+            }
+        }
 
-  const categoryA = determineCategory(firstNumeric);
-  const categoryB = determineCategory(secondNumeric);
+        let groupOfB = null;
+        for (const [identifier, memberSet] of groupRegistry.entries()) {
+            if (memberSet.has(valueB)) { // Set.has(NaN) is always false
+                groupOfB = identifier;
+                break;
+            }
+        }
 
-  return outcomeMatrix[categoryA][categoryB];
-};
+        // The condition for "Yes" in the original code requires both values to be in the same group.
+        // Since groupOfB will always be null (as valueB is NaN), this condition will always be false.
+        if (groupOfA !== null && groupOfB !== null && groupOfA === groupOfB) {
+            finalVerdict = "Yes"; // This branch will never be reached
+        } else {
+            finalVerdict = "No";
+        }
+    }
 
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const inputLines = fileContent.trim().split('\n');
-const finalResult = evaluatePair(inputLines);
+    console.log(finalVerdict);
+}
 
-console.log(finalResult);
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

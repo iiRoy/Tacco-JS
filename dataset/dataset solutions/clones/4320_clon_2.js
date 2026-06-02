@@ -1,44 +1,22 @@
-function ProcessString( incomingData )
-{
+function ProcessInput(rawData) {
+    // Remove leading/trailing whitespace from the input string
+    rawData = rawData.trim();
 
-  // Initial data sanitization: remove leading/trailing blank spaces.
-  incomingData  =  incomingData.trim() ;
+    // Initialize a counter for occurrences of '1'
+    let countOnes = 0;
 
-  // Initialize a counter for specific character occurrences.
-  let oneCount = 0 ;
-
-
-  // Traverse through each individual character within the provided string.
-  for
-  (
-    let charIndex = 0 ; // Begin the iteration from the first character (index 0).
-
-    charIndex < incomingData.length ; // Loop continues as long as the current index is within the string's bounds.
-
-    charIndex++ // Advance to the subsequent character in each iteration.
-  )
-  {
-    // Evaluate if the character at the current position is numerically equivalent to '1'.
-    if
-    (
-      incomingData.charAt(charIndex) === "1"
-    )
-    {
-      // If the condition is met, increment the occurrence counter.
-      oneCount++ ;
+    // Iterate through each character of the processed input string
+    for (let idx = 0; idx < rawData.length; idx++) {
+        // Check if the current character is '1'
+        if (rawData.slice(idx, idx + 1) === "1") {
+            // Increment the counter if '1' is found
+            countOnes++;
+        }
     }
-  }
 
-  // Output the final computed count to the standard information stream.
-  console.info(oneCount);
+    // Output the final count to the console
+    console.log(countOnes);
 }
 
-// --- Program Execution Entry Point ---
-
-// Obtain the raw data from the standard input stream.
-// Ensure the data is interpreted as UTF-8 encoded text.
-// Subsequently, invoke the primary processing function with this acquired data.
-ProcessString(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-);
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

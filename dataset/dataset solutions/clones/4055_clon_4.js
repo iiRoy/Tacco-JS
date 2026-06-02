@@ -1,30 +1,28 @@
-function Main(receivedContent) {
-  const contentLines = receivedContent.trim().split('\n');
+function Main(input) {
+  const lines = input.split('\n');
+  const elementCount = Number(lines[0]);
+  const firstRowElements = lines[1].split(' ').map(Number);
+  const secondRowElements = lines[2].split(' ').map(Number);
 
-  const dimensionCount = Number(contentLines[0]);
-  const upperSequence = contentLines[1].split(' ').map(Number);
-  const lowerSequence = contentLines[2].split(' ').map(Number);
+  const prefixSumsFirst = new Array(elementCount + 1).fill(0);
+  for (let k = 0; k < elementCount; k++) {
+    prefixSumsFirst[k + 1] = prefixSumsFirst[k] + firstRowElements[k];
+  }
 
-  const upperPrefixSums = upperSequence.reduce((accumulatorArray, currentElement, indexPosition) => {
-    const priorSum = indexPosition === 0 ? 0 : accumulatorArray[indexPosition - 1];
-    accumulatorArray.push(priorSum + currentElement);
-    return accumulatorArray;
-  }, []);
+  const suffixSumsSecond = new Array(elementCount + 1).fill(0);
+  for (let k = elementCount - 1; k >= 0; k--) {
+    suffixSumsSecond[k] = suffixSumsSecond[k + 1] + secondRowElements[k];
+  }
 
-  const lowerSuffixSums = new Array(dimensionCount).fill(0);
-  lowerSequence.reduceRight((runningTotal, currentElement, indexPosition) => {
-    const newRunningTotal = runningTotal + currentElement;
-    lowerSuffixSums[indexPosition] = newRunningTotal;
-    return newRunningTotal;
-  }, 0);
+  let currentMax = 0;
 
-  let highestPossibleSum = 0;
-  for (let splitPoint = 0; splitPoint < dimensionCount; splitPoint++) {
-    const combinedSegmentSum = upperPrefixSums[splitPoint] + lowerSuffixSums[splitPoint];
-    if (combinedSegmentSum > highestPossibleSum) {
-      highestPossibleSum = combinedSegmentSum;
+  for (let splitIndex = 0; splitIndex < elementCount; splitIndex++) {
+    const currentTotal = prefixSumsFirst[splitIndex + 1] + suffixSumsSecond[splitIndex];
+    if (currentTotal > currentMax) {
+      currentMax = currentTotal;
     }
   }
 
-  console.log(highestPossibleSum);
+  console.log('%d', currentMax);
 }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

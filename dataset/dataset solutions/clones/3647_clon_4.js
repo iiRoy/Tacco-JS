@@ -1,44 +1,73 @@
-function InitiateCalculation(rawTextData) {
-    const inputSegments = rawTextData.trim().split(/\s+/);
-    const targetString = inputSegments[0];
+"use strict";
+function solveProblem(inputContent) {
+    let dataHandler = new TextStreamProcessor(inputContent);
+    let inputSequence = dataHandler.extractString();
+    let sequenceLength = inputSequence.length;
 
-    const characterSet = ['A', 'B', 'C'];
-    const numericalModulus = 1000000007;
-    const textSequenceLength = targetString.length;
+    const targetPattern = "ABC";
+    const moduloConstant = 1000000007;
 
-    const computationCache = new Map();
+    let memoizationStore = new Map();
 
-    function determineSubsequencePaths(currentIdx, patternProgress) {
-        if (patternProgress === characterSet.length) {
-            return 1;
-        }
-        if (currentIdx === textSequenceLength) {
-            return 0;
-        }
-
-        const memoKey = `${currentIdx}-${patternProgress}`;
-        if (computationCache.has(memoKey)) {
-            return computationCache.get(memoKey);
+    function countValidSubsequences(currentIdx, patternIdx) {
+        const cacheKey = `${currentIdx}_${patternIdx}`;
+        if (memoizationStore.has(cacheKey)) {
+            return memoizationStore.get(cacheKey);
         }
 
-        let totalWays = 0;
-        const currentCharacter = targetString[currentIdx];
-
-        let waysFromNextChar = determineSubsequencePaths(currentIdx + 1, patternProgress);
-        if (currentCharacter === '?') {
-            waysFromNextChar = (waysFromNextChar * 3) % numericalModulus;
-        }
-        totalWays = (totalWays + waysFromNextChar) % numericalModulus;
-
-        if (currentCharacter === '?' || currentCharacter === characterSet[patternProgress]) {
-            totalWays = (totalWays + determineSubsequencePaths(currentIdx + 1, patternProgress + 1)) % numericalModulus;
+        if (currentIdx === sequenceLength) {
+            return patternIdx === 3 ? 1 : 0;
         }
 
-        computationCache.set(memoKey, totalWays);
-        return totalWays;
+        let currentCharacter = inputSequence[currentIdx];
+        let waysCount = 0;
+
+        let multiplierForNonMatch = (currentCharacter === '?' ? 3 : 1);
+        waysCount = (countValidSubsequences(currentIdx + 1, patternIdx) * multiplierForNonMatch) % moduloConstant;
+
+        if (patternIdx < 3 && (currentCharacter === '?' || currentCharacter === targetPattern[patternIdx])) {
+            waysCount = (waysCount + countValidSubsequences(currentIdx + 1, patternIdx + 1)) % moduloConstant;
+        }
+
+        memoizationStore.set(cacheKey, waysCount);
+        return waysCount;
     }
 
-    const finalResult = determineSubsequencePaths(0, 0);
+    let finalResult = countValidSubsequences(0, 0);
     console.log(finalResult);
 }
-if (typeof window == "undefined") InitiateCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+class TextStreamProcessor {
+    constructor(sourceText) {
+        this.positionPointer = 0;
+        this.tokenArray = sourceText.split(/\n|\s/);
+    }
+
+    extractInteger() {
+        return parseInt(this.tokenArray[this.positionPointer++], 10);
+    }
+
+    extractIntegerSequence(count) {
+        let sequence = new Array(count);
+        for (let k = 0; k < count; k++) {
+            sequence[k] = this.extractInteger();
+        }
+        return sequence;
+    }
+
+    extractString() {
+        return this.tokenArray[this.positionPointer++];
+    }
+
+    extractStringSequence(count) {
+        let sequence = new Array(count);
+        for (let k = 0; k < count; k++) {
+            sequence[k] = this.extractString();
+        }
+        return sequence;
+    }
+}
+
+if (typeof window === "undefined") {
+    solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+}

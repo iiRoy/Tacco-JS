@@ -1,27 +1,18 @@
-function ProcessEntry( sourceData )
-{
+function ProcessInput(rawData) {
+  // Convert the raw input to a string and then split it by spaces.
+  const parsedValues = rawData.toString().split(" ");
 
-  // Convert the received data into a string format, then partition it using spaces.
-  const parsedTokens = sourceData . toString ()
-                                  . split ( " " );
+  // Assign the first element to itemCount and the second to targetValue.
+  const itemCount = parsedValues[0];
+  const targetValue = parsedValues[1];
 
-  // Retrieve the initial element, representing a numerical factor.
-  const factorA = parsedTokens[0];
+  // Output the two extracted values.
+  console.log(itemCount, targetValue);
 
-  // Obtain the subsequent element, serving as a boundary value.
-  const limitB = parsedTokens[1];
-
-
-  // Output the gathered numeric factor and the boundary value.
-  console.log( factorA, limitB );
-
-  // Evaluate if five hundred times the factor exceeds the boundary.
-  // Display 'YES' for true, otherwise 'NO'.
-  console.log( ( 500 * factorA ) > limitB ? "YES" : "NO" );
-
+  // Evaluate a condition and print "YES" or "NO" based on the result.
+  console.log(500 * itemCount > targetValue ? "YES" : "NO");
 }
 
-
-// The following line is responsible for reading standard input and initiating the processing routine.
-// Please refrain from modifying this part of the code as it handles core system interaction.
-ProcessEntry( require("fs").readFileSync( "/dev/stdin", "utf8" ) );
+// This section reads from standard input and calls the main processing function.
+// It should remain unchanged to ensure proper execution in the environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

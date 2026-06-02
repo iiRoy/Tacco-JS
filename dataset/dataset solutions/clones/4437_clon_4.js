@@ -1,38 +1,31 @@
-const computeDecision = (rawTextualData) => {
-  const allNumericEntries = rawTextualData.match(/\d+/g).map(Number);
-  const entityCount = allNumericEntries[0];
-  const numericalValues = allNumericEntries.slice(1);
+function processInputData(rawData) {
+  const inputLines = rawData.split('\n');
+  const totalElements = Number(inputLines[0]);
+  const numericSequence = inputLines[1].split(' ').map(Number);
 
-  const tallyElements = (pos, currentImpair, currentQuad) => {
-    if (pos >= entityCount) {
-      return { imparities: currentImpair, quadruples: currentQuad };
+  const elementCounts = numericSequence.reduce((accumulator, currentNumber) => {
+    if (currentNumber % 2 !== 0) {
+      accumulator.oddCount++;
     }
-    const elementValue = numericalValues[pos];
-    return tallyElements(
-      pos + 1,
-      currentImpair + (elementValue % 2 !== 0 ? 1 : 0),
-      currentQuad + (elementValue % 4 === 0 ? 1 : 0)
-    );
-  };
+    if (currentNumber % 4 === 0) {
+      accumulator.fourMultipleCount++;
+    }
+    return accumulator;
+  }, { oddCount: 0, fourMultipleCount: 0 });
 
-  const calculatedTallies = tallyElements(0, 0, 0);
-  const imparities = calculatedTallies.imparities;
-  const quadruples = calculatedTallies.quadruples;
-  const overallSize = entityCount;
+  const { oddCount, fourMultipleCount } = elementCounts;
 
-  const primarySatisfied = (imparities <= quadruples);
-  const secondarySatisfied = (
-    (overallSize & 1) &&
-    (imparities - quadruples === 1) &&
-    (quadruples > 0)
+  const isTotalElementsOdd = (totalElements % 2 !== 0);
+  const oddMinusFourDifference = oddCount - fourMultipleCount;
+
+  const outcomeIsPositive = (
+    oddCount <= fourMultipleCount ||
+    (isTotalElementsOdd && oddMinusFourDifference === 1 && fourMultipleCount > 0)
   );
 
-  const resultVerdict = (primarySatisfied || secondarySatisfied) ? "Affirmative" : "Negative";
+  const finalResult = outcomeIsPositive ? "Yes" : "No";
 
-  console.log(resultVerdict === "Affirmative" ? "Yes" : "No");
-};
+  console.log('%s', finalResult);
+}
 
-const systemFile = require("node:fs");
-const incomingStream = systemFile.readFileSync("/dev/stdin", "utf8");
-
-computeDecision(incomingStream);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

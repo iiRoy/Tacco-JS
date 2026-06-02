@@ -1,51 +1,39 @@
-/*
- * This module manages a collection of numbers,
- * adding or removing them based on their presence.
- */
-function ProcessData( sourceText ) {
-    // Convert the incoming textual data into an array of numerical values.
-    // Each line break signifies a new number.
-    let numArray = sourceText
-        .split( "\n" )
-        .map( Number ) ;
+function ProcessInputData(rawDataString) {
+  // Convert the raw input string into an array of numerical values.
+  // Each line is treated as a separate number.
+  let numericValues = rawDataString.split("\n").map(Number);
 
-    // The very first number in the processed array often represents
-    // an initial quantity or total count, though it's not directly used
-    // in the core logic's iteration.
-    let initialQuantity = numArray[ 0 ] ;
+  // The first number in the input is stored, though not used in the subsequent logic.
+  const initialCount = numericValues[0];
 
-    // Remove the last element from the array.
-    numArray.pop() ;
+  // Remove the very last element from the array of numbers.
+  numericValues.pop();
 
-    // Discard the initial quantity element from the front of the array.
-    numArray.shift() ;
+  // Remove the first element from the array (which was stored in initialCount).
+  numericValues.shift();
 
-    // Initialize a dynamic collection with the new first element
-    // remaining in the 'numArray'. This collection will track unique items.
-    let currentCollection = [ numArray[ 0 ] ] ;
+  // Initialize a dynamic collection with the current first element of the processed array.
+  let uniqueElementsTracker = [numericValues[0]];
 
-    // Remove the element that was just used to initialize 'currentCollection'
-    // from the 'numArray'.
-    numArray.shift() ;
+  // Remove this element from the main array as it's now in the tracker.
+  numericValues.shift();
 
-    // Iterate through each remaining item in the 'numArray'.
-    numArray.forEach( itemValue => {
-        // Check if the current 'itemValue' is already present
-        // within our 'currentCollection'.
-        if ( currentCollection.some( collectionItem => collectionItem === itemValue ) ) {
-            // If the 'itemValue' exists, locate its index and remove it.
-            currentCollection.splice( currentCollection.indexOf( itemValue ), 1 ) ;
-        }
-        else {
-            // If the 'itemValue' is not found, add it to the collection.
-            currentCollection.push( itemValue ) ;
-        }
-    } ) ;
+  // Iterate through each remaining number in the array.
+  numericValues.forEach((currentValue) => {
+    // Check if the current number is already present in our unique elements collection.
+    if (uniqueElementsTracker.some((trackedItem) => trackedItem === currentValue)) {
+      // If it is found, remove the first instance of this number from the collection.
+      uniqueElementsTracker.splice(uniqueElementsTracker.indexOf(currentValue), 1);
+    } else {
+      // If it's not found, add the current number to the collection.
+      uniqueElementsTracker.push(currentValue);
+    }
+  });
 
-    // Output the final number of items remaining in the 'currentCollection'.
-    console.log( currentCollection.length ) ;
+  // Print the final number of elements remaining in the unique elements collection.
+  console.log(uniqueElementsTracker.length);
 }
 
-// Execute the main data processing function by reading
-// input from the standard input stream.
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to our data processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

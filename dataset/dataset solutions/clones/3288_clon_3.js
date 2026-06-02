@@ -1,419 +1,298 @@
-/*! path: utilities/data-processing/grid-solver.js */
-/******/ (function(componentDefinitions) { // Module Orchestrator
-/******/ 	// The component cache storage
-/******/ 	let loadedComponents = {};
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	var installedModules = {};
 /******/
-/******/ 	// The component loading function
-/******/ 	function componentLoader(componentKey) {
-/******/
-/******/ 		// Check if component is in cache
-/******/ 		if(loadedComponents[componentKey]) {
-/******/ 			return loadedComponents[componentKey].outputPayload;
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
 /******/ 		}
-/******/ 		// Create a new component instance (and put it into the cache)
-/******/ 		let currentComp = loadedComponents[componentKey] = {
-/******/ 			moduleIdentifier: componentKey,
-/******/ 			isLoadedFlag: false,
-/******/ 			outputPayload: {}
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
 /******/ 		};
 /******/
-/******/ 		// Execute the component's main routine
-/******/ 		componentDefinitions[componentKey].call(currentComp.outputPayload, currentComp, currentComp.outputPayload, componentLoader);
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 /******/
-/******/ 		// Mark the component as fully loaded
-/******/ 		currentComp.isLoadedFlag = true;
+/******/ 		module.l = true;
 /******/
-/******/ 		// Return the component's public interface
-/******/ 		return currentComp.outputPayload;
+/******/ 		return module.exports;
 /******/ 	}
 /******/
-/******/
-/******/ 	// expose the component definitions object (__webpack_modules__)
-/******/ 	componentLoader.definitions = componentDefinitions;
-/******/
-/******/ 	// expose the component cache (__webpack_require__.c)
-/******/ 	componentLoader.cache = loadedComponents;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	componentLoader.defineExport = function(outputPayload, exportName, getterFunction) {
-/******/ 		if(!componentLoader.hasOwnProp(outputPayload, exportName)) {
-/******/ 			Object.defineProperty(outputPayload, exportName, { enumerable: true, get: getterFunction });
+/******/ 	__webpack_require__.m = modules;
+/******/ 	__webpack_require__.c = installedModules;
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
 /******/ 		}
 /******/ 	};
-/******/
-/******/ 	// define __esModule on outputPayload
-/******/ 	componentLoader.markAsEsModule = function(outputPayload) {
+/******/ 	__webpack_require__.r = function(exports) {
 /******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(outputPayload, Symbol.toStringTag, { value: 'Module' });
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 		}
-/******/ 		Object.defineProperty(outputPayload, '__esModule', { value: true });
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a component id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	componentLoader.createNamespace = function(val, mode) {
-/******/ 		if(mode & 1) val = componentLoader(val);
-/******/ 		if(mode & 8) return val;
-/******/ 		if((mode & 4) && typeof val === 'object' && val && val.__esModule) return val;
-/******/ 		let namespaceObj = Object.create(null);
-/******/ 		componentLoader.markAsEsModule(namespaceObj);
-/******/ 		Object.defineProperty(namespaceObj, 'default', { enumerable: true, value: val });
-/******/ 		if(mode & 2 && typeof val != 'string') for(let propKey in val) componentLoader.defineExport(namespaceObj, propKey, function(propKey) { return val[propKey]; }.bind(null, propKey));
-/******/ 		return namespaceObj;
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
 /******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony components
-/******/ 	componentLoader.getCompatibilityExport = function(currentMod) {
-/******/ 		let getterFunction = currentMod && currentMod.__esModule ?
-/******/ 			function getStandardDefault() { return currentMod['default']; } :
-/******/ 			function getLegacyExports() { return currentMod; };
-/******/ 		componentLoader.defineExport(getterFunction, 'a', getterFunction);
-/******/ 		return getterFunction;
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
 /******/ 	};
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/ 	__webpack_require__.p = "";
 /******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	componentLoader.hasOwnProp = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); };
-/******/
-/******/ 	// Load entry component and return outputPayload
-/******/ 	return componentLoader(componentLoader.entryPoint = "./source/grid/pathfinder/main.ts");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/contest/atcoder/aising2019/c.ts");
 /******/ })
 /************************************************************************/
 /******/ ({
 
 /***/ "./node_modules/webpack/buildin/module.js":
-/*!************************************************!
-  *** (webpack)/buildin/module.js (utility for module polyfill) ***!
-  \************************************************/
-/*! no static exports found */
-/***/ (function(currentMod, outputPayload) {
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/***/ (function(module, exports) {
 
-currentMod.exports = function(moduleInstance) {
-	if (!moduleInstance.polyfillActive) {
-		moduleInstance.deprecateFunc = function() {};
-		moduleInstance.modulePaths = [];
-		// moduleInstance.parent is undefined by default
-		if (!moduleInstance.childModules) moduleInstance.childModules = [];
-		Object.defineProperty(moduleInstance, "isLoadedFlag", {
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
 			enumerable: true,
 			get: function() {
-				return moduleInstance.isLoadedFlag;
+				return module.l;
 			}
 		});
-		Object.defineProperty(moduleInstance, "moduleIdentifier", {
+		Object.defineProperty(module, "id", {
 			enumerable: true,
 			get: function() {
-				return moduleInstance.moduleIdentifier;
+				return module.i;
 			}
 		});
-		moduleInstance.polyfillActive = 1;
+		module.webpackPolyfill = 1;
 	}
-	return moduleInstance;
+	return module;
 };
 
 
 /***/ }),
 
-/***/ "./source/common/connectivity.ts":
-/*!***************************************!
-  *** ./source/common/connectivity.ts (Disjoint Set Data Structure) ***!
-  \***************************************/
-/*! no static exports found */
-/***/ (function(currentMod, outputPayload, componentLoader) {
+/***/ "./src/contest/atcoder/aising2019/c.ts":
+/*!*********************************************!*\
+  !*** ./src/contest/atcoder/aising2019/c.ts ***!
+  \*********************************************/
+/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
-outputPayload.DisjointSetStructure = null;
-/**
- * Manages disjoint sets for efficient connectivity checks.
- */
-class DisjointSetStructure {
-    /**
-     * Initializes the structure with 'elementCount' individual sets.
-     * @param {number} elementCount - The total number of elements to manage.
-     */
-    constructor(elementCount) {
-        if (elementCount <= 0) {
-            throw new Error("Element count for DisjointSetStructure must be positive.");
-        }
-        this.parentArray = Array.from({ length: elementCount }, () => -1);
-    }
-
-    /**
-     * Attempts to merge the sets containing idxA and idxB.
-     * Uses union-by-size optimization.
-     * @param {number} idxA - Index of the first element.
-     * @param {number} idxB - Index of the second element.
-     */
-    mergeSets(idxA, idxB) {
-        let rootA = this.findRepresentative(idxA);
-        let rootB = this.findRepresentative(idxB);
-
-        if (rootA !== rootB) { // Only merge if they are in different sets
-            const sizeA = this.parentArray[rootA]; // Negative value stores size
-            const sizeB = this.parentArray[rootB];
-
-            if (sizeA > sizeB) { // rootA's set is smaller (more negative means larger size)
-                this.parentArray[rootA] += this.parentArray[rootB];
-                this.parentArray[rootB] = rootA;
-            } else { // rootB's set is smaller or equal
-                this.parentArray[rootB] += this.parentArray[rootA];
-                this.parentArray[rootA] = rootB;
-            }
-        }
-    }
-
-    /**
-     * Checks if two elements are part of the same set.
-     * @param {number} idxA - Index of the first element.
-     * @param {number} idxB - Index of the second element.
-     * @returns {boolean} True if elements are in the same set, false otherwise.
-     */
-    areInSameSet(idxA, idxB) {
-        return this.findRepresentative(idxA) === this.findRepresentative(idxB);
-    }
-
-    /**
-     * Finds the representative (root) of the set containing the given element.
-     * Applies path compression for efficiency.
-     * @param {number} idx - The element's index.
-     * @returns {number} The index of the set's representative.
-     */
-    findRepresentative(idx) {
-        if (this.parentArray[idx] < 0) {
-            return idx; // This element is a root
-        }
-        // Path compression: set parent to root directly
-        this.parentArray[idx] = this.findRepresentative(this.parentArray[idx]);
-        return this.parentArray[idx];
-    }
-
-    /**
-     * Returns the size of the set containing the given element.
-     * @param {number} idx - The element's index.
-     * @returns {number} The number of elements in the set.
-     */
-    getComponentSize(idx) {
-        // The root's parentArray value stores the negative size of the set.
-        return -this.parentArray[this.findRepresentative(idx)];
-    }
-}
-outputPayload.DisjointSetStructure = DisjointSetStructure;
-
-
-/***/ }),
-
-/***/ "./source/common/input-parser.ts":
-/*!***************************************!
-  *** ./source/common/input-parser.ts (Input Parsing Utilities) ***!
-  \***************************************/
-/*! no static exports found */
-/***/ (function(currentMod, outputPayload, componentLoader) {
-
-"use strict";
-
-outputPayload.retrieveBigInt = outputPayload.retrieveInt = outputPayload.retrieveString = outputPayload.parseAndIterate = outputPayload.iterateTokens = null;
-
-/**
- * Creates an iterator to yield string tokens from an input string.
- * @param {string} inputString - The string to tokenize.
- * @returns {Generator<string>} An iterator for string tokens.
- */
-function* tokenStream(inputString) {
-    const parts = inputString.split(/\s+/).filter(Boolean); // Filter out empty strings from multiple spaces
-    for (const part of parts) {
-        yield part;
-    }
-}
-outputPayload.iterateTokens = tokenStream;
-
-/**
- * Creates an iterator to yield parsed tokens from an input string.
- * @param {string} sourceString - The string to tokenize and parse.
- * @param {(s: string) => T} parsingFunction - The function to parse each token.
- * @returns {Generator<T>} An iterator for parsed tokens.
- * @template T
- */
-function* parsedTokenStream(sourceString, parsingFunction) {
-    const parts = sourceString.split(new RegExp('\\s+')).filter(Boolean);
-    for (const part of parts) {
-        yield parsingFunction(part);
-    }
-}
-outputPayload.parseAndIterate = parsedTokenStream;
-
-/**
- * Returns a function that, when called, provides the next string token from the input line.
- * @param {string} inputLine - The full input string.
- * @returns {() => string} A function to get the next string.
- */
-function createStringRetriever(inputLine) {
-    const iteratorInstance = tokenStream(inputLine);
-    return () => iteratorInstance.next().value ?? ''; // Ensure a string is always returned
-}
-outputPayload.retrieveString = createStringRetriever;
-
-/**
- * Returns a function that, when called, provides the next integer token from the input line.
- * @param {string} inputLine - The full input string.
- * @returns {() => number} A function to get the next integer.
- */
-function createIntRetriever(inputLine) {
-    const iteratorInstance = tokenStream(inputLine);
-    return () => Number.parseInt(iteratorInstance.next().value, 10);
-}
-outputPayload.retrieveInt = createIntRetriever;
-
-/**
- * Returns a function that, when called, provides the next BigInt token from the input line.
- * @param {string} inputLine - The full input string.
- * @returns {() => bigint} A function to get the next BigInt.
- */
-function createBigIntRetriever(inputLine) {
-    const iteratorInstance = tokenStream(inputLine);
-    return () => BigInt(iteratorInstance.next().value);
-}
-outputPayload.retrieveBigInt = createBigIntRetriever;
-
-
-/***/ }),
-
-/***/ "./source/grid/pathfinder/main.ts":
-/*!****************************************!
-  *** ./source/grid/pathfinder/main.ts (Main Grid Processing Logic) ***!
-  \****************************************/
-/*! no static exports found */
-/***/ (function(currentMod, outputPayload, componentLoader) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(moduleInstance) {
-let importHandler = (this && this.__importDefault) || function (mod) {
+/* WEBPACK VAR INJECTION */(function(module) {
+var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-outputPayload.__esModule = true;
-outputPayload.runMainLogic = null;
-const fileSystemAccess = importHandler(componentLoader("fs"));
-const inputOutputUtils = componentLoader("./source/common/input-parser.ts");
-const disjointSetLogic = componentLoader("./source/common/connectivity.ts");
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = void 0;
+const fs_1 = __importDefault(__webpack_require__(/*! fs */ "fs"));
+const io_1 = __webpack_require__(/*! ../../common/io */ "./src/contest/common/io.ts");
+const uf_1 = __webpack_require__(/*! ../../common/uf */ "./src/contest/common/uf.ts");
 
-// Relative offsets for checking right and down neighbors
-const displacementVectors = [
-    [1, 0], // Move right (column increment)
-    [0, 1]  // Move down (row increment)
-];
+const rowOffsets = [1, 0];
+const colOffsets = [0, 1];
 
-/**
- * Computes the product of black and white cells within connected components
- * where adjacent cells of different colors are considered connected.
- * @param {object} gridParameters - Object containing grid dimensions and data.
- * @param {number} gridParameters.dimHeight - Number of rows in the grid.
- * @param {number} gridParameters.dimWidth - Number of columns in the grid.
- * @param {string[]} gridParameters.gridSymbols - Array of strings representing grid rows.
- * @returns {number} The total sum of (black_count * white_count) for each component.
- */
-function computeConnectedComponentsProduct({ dimHeight, dimWidth, gridSymbols }) {
-    if (dimHeight <= 0 || dimWidth <= 0) {
-        return 0; // No grid or invalid dimensions, no pairs possible.
-    }
+const BLACK_CELL_CHAR = '#';
+const WHITE_CELL_CHAR = '.';
 
-    // Initialize Disjoint Set Union structure for all grid cells.
-    // Each cell (r, c) maps to a flat index r * dimWidth + c.
-    const componentTracker = new disjointSetLogic.DisjointSetStructure(dimHeight * dimWidth);
+const getFlatIndex = (row, col, width) => row * width + col;
 
-    // Phase 1: Build connectivity based on adjacent cells of DIFFERENT colors.
-    for (let rowIndex = 0; rowIndex < dimHeight; ++rowIndex) {
-        for (let colIndex = 0; colIndex < dimWidth; ++colIndex) {
-            const currentCellIndex = rowIndex * dimWidth + colIndex;
-            const currentCellSymbol = gridSymbols[rowIndex][colIndex];
+const isValidCoordinate = (row, col, height, width) => {
+    return row >= 0 && row < height && col >= 0 && col < width;
+};
 
-            // Check neighbors (right and down)
-            for (const [dRow, dCol] of displacementVectors) {
-                const nextRow = rowIndex + dRow;
-                const nextCol = colIndex + dCol;
+function solveProblem({ gridHeight, gridWidth, gridData }) {
+    const unionFindStructure = new uf_1.UnionFind(gridHeight * gridWidth);
 
-                // Validate neighbor coordinates
-                if (nextRow < dimHeight && nextCol < dimWidth) {
-                    const neighborCellIndex = nextRow * dimWidth + nextCol;
-                    const neighborCellSymbol = gridSymbols[nextRow][nextCol];
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+            const currentCellId = getFlatIndex(rowIndex, colIndex, gridWidth);
+            const currentCellChar = gridData[rowIndex][colIndex];
 
-                    // If current cell and neighbor have different symbols, they are connected.
-                    if (currentCellSymbol !== neighborCellSymbol) {
-                        componentTracker.mergeSets(currentCellIndex, neighborCellIndex);
-                    }
+            for (let offsetIdx = 0; offsetIdx < rowOffsets.length; offsetIdx++) {
+                const neighborRow = rowIndex + rowOffsets[offsetIdx];
+                const neighborCol = colIndex + colOffsets[offsetIdx];
+
+                if (!isValidCoordinate(neighborRow, neighborCol, gridHeight, gridWidth)) {
+                    continue;
+                }
+
+                const neighborCellId = getFlatIndex(neighborRow, neighborCol, gridWidth);
+                const neighborCellChar = gridData[neighborRow][neighborCol];
+
+                if (currentCellChar !== neighborCellChar) {
+                    unionFindStructure.union(currentCellId, neighborCellId);
                 }
             }
         }
     }
 
-    // Phase 2: Count black and white cells within each connected component.
-    const blackCounts = new Map(); // Stores count of '#' cells for each component root
-    const whiteCounts = new Map(); // Stores count of '.' cells for each component root
+    const blackCellCounts = new Map();
+    const whiteCellCounts = new Map();
 
-    for (let rowIndex = 0; rowIndex < dimHeight; ++rowIndex) {
-        for (let colIndex = 0; colIndex < dimWidth; ++colIndex) {
-            const cellFlatIndex = rowIndex * dimWidth + colIndex;
-            const componentRoot = componentTracker.findRepresentative(cellFlatIndex);
-            const cellSymbol = gridSymbols[rowIndex][colIndex];
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+            const currentCellId = getFlatIndex(rowIndex, colIndex, gridWidth);
+            const componentRoot = unionFindStructure.root(currentCellId);
+            const cellType = gridData[rowIndex][colIndex];
 
-            if (cellSymbol === '#') {
-                blackCounts.set(componentRoot, (blackCounts.get(componentRoot) || 0) + 1);
-            } else { // Assuming '.'' for non-'#' cells
-                whiteCounts.set(componentRoot, (whiteCounts.get(componentRoot) || 0) + 1);
+            if (cellType === BLACK_CELL_CHAR) {
+                blackCellCounts.set(componentRoot, (blackCellCounts.get(componentRoot) ?? 0) + 1);
+            } else {
+                whiteCellCounts.set(componentRoot, (whiteCellCounts.get(componentRoot) ?? 0) + 1);
             }
         }
     }
 
-    // Phase 3: Calculate the final score.
-    // For each component, multiply its black count by its white count and sum these products.
-    let finalScore = 0;
-    for (const [rootKey, currentBlackCount] of blackCounts.entries()) {
-        const currentWhiteCount = whiteCounts.get(rootKey) || 0;
-        finalScore += currentBlackCount * currentWhiteCount;
+    let totalPairs = 0;
+
+    for (const [componentRoot, darkCount] of blackCellCounts.entries()) {
+        const lightCount = whiteCellCounts.get(componentRoot) ?? 0;
+        totalPairs += darkCount * lightCount;
     }
 
-    return finalScore;
+    return totalPairs;
 }
 
-/**
- * Main entry point function for processing standard input.
- * @param {string} rawInputText - The entire input content as a single string.
- */
-function entryPointFunction(rawInputText) {
-    const tokenProvider = inputOutputUtils.retrieveString(rawInputText);
-    const gridH = Number.parseInt(tokenProvider(), 10);
-    const gridW = Number.parseInt(tokenProvider(), 10);
-
-    const symbolGrid = [];
-    for (let i = 0; i < gridH; ++i) {
-        symbolGrid.push(tokenProvider());
+function readGridInput(inputTokenizer) {
+    const height = parseInt(inputTokenizer());
+    const width = parseInt(inputTokenizer());
+    const gridRows = [];
+    for (let i = 0; i < height; i++) {
+        gridRows.push(inputTokenizer());
     }
-
-    const result = computeConnectedComponentsProduct({ dimHeight: gridH, dimWidth: gridW, gridSymbols: symbolGrid });
-    process.stdout.write(String(result) + '\n');
-}
-outputPayload.runMainLogic = entryPointFunction;
-
-// Check if this module is the entry point (e.g., run directly via Node.js or webpack's entry)
-// This condition mimics webpack's entry point detection for execution.
-if (componentLoader.cache[componentLoader.entryPoint] === moduleInstance) {
-    const rawContent = fileSystemAccess.default.readFileSync("/dev/stdin", "utf8");
-    entryPointFunction(rawContent);
+    return { gridHeight: height, gridWidth: width, gridData: gridRows };
 }
 
-/* WEBPACK VAR INJECTION */}.call(this, componentLoader("./node_modules/webpack/buildin/module.js")(currentMod)))
+function main(inputLine) {
+    const getNextToken = io_1.getNext(inputLine);
+    const parsedInput = readGridInput(getNextToken);
+    console.log(solveProblem(parsedInput));
+}
+exports.main = main;
+
+if (__webpack_require__.c[__webpack_require__.s] === module) {
+    const fileContent = fs_1.default.readFileSync("/dev/stdin", "utf8");
+    main(fileContent);
+}
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
+
+/***/ }),
+
+/***/ "./src/contest/common/io.ts":
+/*!**********************************!*\
+  !*** ./src/contest/common/io.ts ***!
+  \**********************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getNextBigInt = exports.getNextInt = exports.getNext = exports.getIteratorWithParser = exports.getIterator = void 0;
+function* getIterator(line) {
+    const tokens = line.split(/\s+/);
+    for (const token of tokens) {
+        yield token;
+    }
+}
+exports.getIterator = getIterator;
+function* getIteratorWithParser(line, parser) {
+    const tokens = line.split(/\s+/);
+    for (const token of tokens) {
+        yield parser(token);
+    }
+}
+exports.getIteratorWithParser = getIteratorWithParser;
+function getNext(line) {
+    const it = getIterator(line);
+    return () => it.next().value;
+}
+exports.getNext = getNext;
+function getNextInt(line) {
+    const it = getIterator(line);
+    return () => parseInt(it.next().value);
+}
+exports.getNextInt = getNextInt;
+function getNextBigInt(line) {
+    const it = getIterator(line);
+    return () => BigInt(it.next().value);
+}
+exports.getNextBigInt = getNextBigInt;
+
+
+/***/ }),
+
+/***/ "./src/contest/common/uf.ts":
+/*!**********************************!*\
+  !*** ./src/contest/common/uf.ts ***!
+  \**********************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UnionFind = void 0;
+class UnionFind {
+    constructor(n) {
+        this.v = new Array(n);
+        this.v.fill(-1);
+    }
+    union(a, b) {
+        if (!this.find(a, b)) {
+            const ra = this.root(a);
+            const rb = this.root(b);
+            if (this.size(ra) > this.size(rb)) {
+                this.v[ra] += this.v[rb];
+                this.v[rb] = ra;
+            }
+            else {
+                this.v[rb] += this.v[ra];
+                this.v[ra] = rb;
+            }
+        }
+    }
+    find(a, b) {
+        return this.root(a) === this.root(b);
+    }
+    root(a) {
+        if (this.v[a] < 0) {
+            return a;
+        }
+        this.v[a] = this.root(this.v[a]);
+        return this.v[a];
+    }
+    size(a) {
+        return -this.v[this.root(a)];
+    }
+}
+exports.UnionFind = UnionFind;
+
 
 /***/ }),
 
 /***/ "fs":
-/*!***************************************!
-  *** external "fs" (Node.js File System) ***!
-  \***************************************/
-/*! no static exports found */
-/***/ (function(currentMod, outputPayload) {
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/***/ (function(module, exports) {
 
-currentMod.exports = require("fs");
+module.exports = require("fs");
 
 /***/ })
 

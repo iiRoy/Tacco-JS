@@ -1,44 +1,64 @@
-const processGridData = (sourceTxt) => {
-    const lines = sourceTxt.trim().split('\n');
-    const dimensions = lines[0].split(' ').map(Number);
-    const gridHeight = dimensions[0];
-    const gridWidth = dimensions[1];
+function Main(inputData) {
+    const lines = inputData.split("\n");
+    const [gridHeight, gridWidth] = lines[0].split(" ").map(Number);
 
-    const outcomeTallies = new Array(10).fill(0);
+    const activeCells = new Set();
 
-    if (gridHeight < 3 || gridWidth < 3) {
-        outcomeTallies[0] = (gridHeight - 2) * (gridWidth - 2);
-        return outcomeTallies;
-    }
+    const centerCounts = new Map();
 
-    const markedCoordinates = new Set();
-    if (lines.length > 1) {
-        for (let k = 1; k < lines.length; k++) {
-            const coords = lines[k].split(' ').map(Number);
-            markedCoordinates.add(`${coords[0] - 1}_${coords[1] - 1}`);
+    const outcomeTally = new Array(10).fill(0);
+
+    if (gridHeight >= 3 && gridWidth >= 3) {
+        for (let rIdx = 1; rIdx < gridHeight - 1; rIdx++) {
+            for (let cIdx = 1; cIdx < gridWidth - 1; cIdx++) {
+                const centerKey = `${rIdx},${cIdx}`;
+                centerCounts.set(centerKey, 0);
+            }
         }
+        outcomeTally[0] = (gridHeight - 2) * (gridWidth - 2);
+    } else {
+        outcomeTally[0] = (gridHeight - 2) * (gridWidth - 2);
     }
 
-    for (let r = 1; r <= gridHeight - 2; r++) {
-        for (let c = 1; c <= gridWidth - 2; c++) {
-            let currentNeighborCount = 0;
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (markedCoordinates.has(`${r + dr}_${c + dc}`)) {
-                        currentNeighborCount++;
-                    }
+    if (lines.length === 1) {
+        console.log(outcomeTally.join("\n"));
+        return;
+    }
+
+    for (let k = 1; k < lines.length; k++) {
+        const [rawRow, rawCol] = lines[k].split(" ").map(Number);
+        const markedRow = rawRow - 1;
+        const markedCol = rawCol - 1;
+        const markedCellKey = `${markedRow},${markedCol}`;
+
+        if (activeCells.has(markedCellKey)) {
+            continue;
+        }
+        activeCells.add(markedCellKey);
+
+        for (let deltaX = -1; deltaX <= 1; deltaX++) {
+            for (let deltaY = -1; deltaY <= 1; deltaY++) {
+                const potentialCenterX = markedRow - deltaX;
+                const potentialCenterY = markedCol - deltaY;
+                const centerIdentifier = `${potentialCenterX},${potentialCenterY}`;
+
+                if (
+                    potentialCenterX >= 1 && potentialCenterX < gridHeight - 1 &&
+                    potentialCenterY >= 1 && potentialCenterY < gridWidth - 1
+                ) {
+                    const currentCount = centerCounts.get(centerIdentifier);
+
+                    outcomeTally[currentCount]--;
+
+                    centerCounts.set(centerIdentifier, currentCount + 1);
+
+                    outcomeTally[currentCount + 1]++;
                 }
             }
-            outcomeTallies[currentNeighborCount]++;
         }
     }
 
-    return outcomeTallies;
-};
+    console.log(outcomeTally.join("\n"));
+}
 
-const invokeProcedure = (inputPayload) => {
-    const finalCounts = processGridData(inputPayload);
-    console.log(finalCounts.join('\n'));
-};
-
-invokeProcedure(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

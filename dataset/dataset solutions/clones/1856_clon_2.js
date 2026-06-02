@@ -1,38 +1,48 @@
-"use strict";
+"use strict"; // Enforce strict mode for the entire script.
 
-/*
- * This JavaScript module calculates the straight-line distance between the
- * endpoints of two clock hands (or vectors) given their lengths and the time.
- * It leverages the Law of Cosines for the computation.
+/**
+ * This function serves as the primary entry point for processing input data.
+ * It calculates the distance between the tips of two clock hands (represented as vectors)
+ * using the Law of Cosines, given their lengths and the current time.
+ *
+ * @param {string} rawData - The complete input string, expected to contain
+ *                           space-separated numerical values on the first line.
  */
-const determineLength = (    rawData   ) => { // Primary function to execute the calculation process
-    // Split the entire provided input string into an array of lines.
-    const parsedSegments = rawData .  split(  '\n'  );
+const processInput = (rawData) => {
+    // Split the incoming raw data string into an array of lines.
+    // For this problem, we only care about the first line.
+    const lineParts = rawData.split('\n');
 
-    // From the very first line of input, extract and parse the necessary numeric values.
-    // 'segmentA' and 'segmentB' represent the individual lengths of the two arms.
-    // 'timeHour' and 'timeMinute' specify the current time, influencing the angle.
-    const [ segmentA, segmentB, timeHour, timeMinute ] = parsedSegments[0] . split(   ' '  ) . map(  ( numStr ) => parseInt(numStr, 10)  );
+    // Extract the numerical values from the first line.
+    // These represent the lengths of the two clock hands (sideA, sideB),
+    // and the current hour (hourVal) and minute (minuteVal).
+    // Each string element is converted to an integer.
+    const [sideA, sideB, hourVal, minuteVal] = lineParts[0].split(' ').map(elementStr => parseInt(elementStr));
 
-    // Compute the angular position of the first arm (hour hand) in degrees.
-    // The hour hand moves 30 degrees per hour and an additional 0.5 degrees per minute.
-    const firstArmRotation = timeHour * 30.0 + timeMinute * 0.5;
+    // Calculate the angle of the shorter hand (hour hand) in degrees.
+    // The hour hand moves 30 degrees per hour (360/12) and an additional 0.5 degrees per minute (30/60).
+    const shortHandAngle = hourVal * 30 + minuteVal * 0.5;
 
-    // Calculate the angular position of the second arm (minute hand) in degrees.
-    // The minute hand moves 6 degrees for every minute.
-    const secondArmRotation = 6 * timeMinute;
+    // Calculate the angle of the longer hand (minute hand) in degrees.
+    // The minute hand moves 6 degrees per minute (360/60).
+    const longHandAngle = 6 * minuteVal;
 
-    // Ascertain the angular separation between the two arms.
-    // The precise angle value doesn't matter for Math.cos due to its periodic and even nature.
-    const thetaAngle = firstArmRotation - secondArmRotation;
+    // Determine the angular difference between the two hands.
+    // The sign of this difference does not affect the cosine value,
+    // as cos(x) = cos(-x).
+    const angleDifference = shortHandAngle - longHandAngle;
 
-    // Apply the Law of Cosines to find the square of the distance between the arm tips.
-    // Formula: c^2 = a^2 + b^2 - 2ab * cos(angle_between_a_and_b)
-    const finalSquaredValue = segmentA * segmentA + segmentB * segmentB - 2 * segmentA * segmentB * Math.cos( Math.PI / 180 * thetaAngle );
+    // Apply the Law of Cosines to find the square of the distance between the hand tips.
+    // The formula is c^2 = a^2 + b^2 - 2ab * cos(C), where C is the angle between sides a and b.
+    // Note: Math.cos expects angles in radians, so we convert degrees to radians (degrees * PI / 180).
+    const squaredDistance = sideA * sideA + sideB * sideB - 2 * sideA * sideB * Math.cos(Math.PI / 180 * angleDifference);
 
-    // Output the square root of the calculated squared distance, representing the actual distance.
-    console.log( Math.sqrt( finalSquaredValue ) );
+    // The final answer is the square root of the calculated squared distance.
+    // This value is then printed to the console.
+    console.log(Math.sqrt(squaredDistance));
 };
 
-// Initiate the calculation by reading input from the standard input stream.
-determineLength( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) );
+// Read the input from standard input using Node.js's file system module.
+// The input is expected to be UTF-8 encoded.
+// Once read, the input string is passed to the processInput function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

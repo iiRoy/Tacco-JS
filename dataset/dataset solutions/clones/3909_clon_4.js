@@ -1,10 +1,10 @@
-function checkProvidedData(sourceContent) {
-    const presencePattern = /(?=.*a)(?=.*b)(?=.*c)/;
-    const outcomeMap = {
-        true: "Yes",
-        false: "No"
-    };
-    const resultBool = presencePattern.test(sourceContent);
-    console.log(outcomeMap[resultBool]);
+function Main(input) {
+    const requiredCharacters = ['a', 'b', 'c'];
+    const presentCharacters = new Set(input.split(''));
+
+    const allRequiredFound = requiredCharacters.every(char => presentCharacters.has(char));
+
+    console.log(allRequiredFound ? "Yes" : "No");
 }
-checkProvidedData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,11 +1,11 @@
-function ProcessInput ( rawData )
-{
-    numericValues  =  rawData . split(  " "  ) . map (  function( elementString )
-    {
-        return   Number . parseInt(  elementString  ) ;
-    }  ) ;
 
-    console . log(  numericValues[ 0 ]  *  numericValues[ 1 ]  +  " "  +  (  numericValues[ 0 ]  +  numericValues[ 1 ]  )  *  2  ) ;
+
+function ProcessInputData(rawInput) {
+    values = rawInput.split(" ").map(function(piece) {
+        return parseInt(piece);
+    });
+
+    console.log(values[0] * values[1] + " " + (values[0] + values[1]) * 2);
 }
 
-ProcessInput(  require(  "fs"  ) . readFileSync(  "/dev/stdin"  )  ) ;
+ProcessInputData(require("fs").readFileSync("/dev/stdin"));

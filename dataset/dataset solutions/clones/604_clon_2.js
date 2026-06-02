@@ -1,5 +1,9 @@
-let sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let numberSequence = (sourceData.trim()).split("\n").map(Number);
-let minimumGroupOne = Math.min(numberSequence[0], numberSequence[1], numberSequence[2]);
-let minimumGroupTwo = Math.min(numberSequence[3], numberSequence[4]);
-console.log(minimumGroupOne + minimumGroupTwo - 50);
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+let numericValues = (rawData.trim()).split("\n").map(Number);
+
+let minPrice = Math.min(numericValues[0], numericValues[1], numericValues[2]);
+
+let minJuice = Math.min(numericValues[3], numericValues[4]);
+
+console.log(minPrice + minJuice - 50);

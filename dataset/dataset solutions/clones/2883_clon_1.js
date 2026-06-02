@@ -1,120 +1,103 @@
-/* This function processes the input to calculate optimal learning time. */
-function Main ( input )
-{
-  // Parse the number of elements, N, from the first line of input.
-  const N = parseInt ( input [ 0 ] . split ( / \s / ) [ 0 ] ) ;
-
-  // Parse X, a critical time value, from the first line after shifting.
-  // Note: input.shift() modifies the array.
-  const X = parseInt ( input . shift ( ) . split ( / \s / ) [ 1 ] ) ;
-
-  // Initialize an empty array to store processed BLU objects.
-  const BLU = [ ] ;
-
-  // Iterate over each remaining line of input to populate the BLU array.
-  input . forEach ( element =>
-  {
-    /* Split the current line by whitespace to get individual values. */
-    var sp = element . split ( / \s / ) ;
-
-    // Create a value object with B, L, U parsed as integers.
-    var value = {
-      B : parseInt ( sp [ 0 ] ) , /* Base time (B) */
-      L : parseInt ( sp [ 1 ] ) , /* Points per unit time (L) */
-      U : parseInt ( sp [ 2 ] )   /* Points per unit time for X-B (U) */
-    } ;
-
-    // Calculate MIN_POINT: points gained if B is prioritized.
-    value . MIN_POINT = value . B * value . L ; /* Points when minimum priority is given */
-
-    // Calculate MAX_DIV: potential difference covered if X hours are studied.
-    value . MAX_DIV = ( X - value . B ) * value . U ; /* Difference covered if X hours are spent */
-
-    // Add the processed value object to the BLU array.
-    BLU . push ( value ) ;
-  } ) ;
+/*
+ * 読み取り 今保つ 現在の見える結果 開始時に短く.
+ * 読み取り また保つ 重要な期待される出力 開始時に.
+ */
+function  Main (input ) {    
+const N = parseInt(input[0].split(/\s/)[0]);
+ const X = parseInt(input.shift().split(/\s/)[1]);
+	    const BLU  = [ ];
+input.forEach(element => {
+	var sp = element.split(/\s/);
 
 
-  // Sort the BLU array in descending order based on MAX_DIV.
-  BLU . sort ( ( a , b ) => b . MAX_DIV - a . MAX_DIV ) ; /* Sort descending by MAX_DIV */
+// 読み取り ここで整理する 局所的なプログラムの形 出力前に明確.
+	var  value ={
+                B: parseInt(sp[0]),    
+      L:parseInt( sp [1]),
+U: parseInt ( sp [ 2 ]),
+         };
+value.MIN_POINT = value.B* value.L;
+// 作業順序をここで整理する.
+         value.MAX_DIV = (X - value.B) * value.U;  
+	BLU.push ( value);
+});    
+BLU.sort((a, b) => b.MAX_DIV - a.MAX_DIV);  
 
 
-  // Initialize enemySum, representing total points if all items are at MIN_POINT.
-  var enemySum = 0 ; /* Total points of opponent if all items are set to minimum priority */
 
-  // Accumulate MIN_POINT for all elements into enemySum.
-  BLU . forEach ( element =>
-  {
-    enemySum += element . MIN_POINT ;
-  } ) ;
+    var  enemySum = 0;
+      BLU.forEach(element => {
+   enemySum+= element.MIN_POINT;
+});
 
 
-  // console.log ( BLU ) ; // Debugging line, kept commented out.
 
 
-  // Initialize variables for the main calculation loop.
-  var difference = enemySum ; // Remaining difference to cover
-  var learnTime = 0 ;         // Total learning time accumulated
-  var lastIndex = 0 ;         // Index where the loop breaks or ends
 
-  // Loop through the sorted BLU array to determine initial learning time.
-  for ( var i = 0 ; i < N ; i ++ )
-  {
-    var element = BLU [ i ] ; // Get current element from the BLU array.
-
-    // Subtract the potential maximum points (MAX_DIV + MIN_POINT) from the difference.
-    difference -= element . MAX_DIV + element . MIN_POINT ;
-
-    // Check if the difference has become non-positive, meaning the target is met.
-    if ( difference <= 0 )
-    {
-      // If it goes below zero, revert the subtraction for this element
-      // and break the loop, noting the current index as 'lastIndex'.
-      difference += element . MAX_DIV + element . MIN_POINT ;
-      /* Revert and break if the target is met or exceeded. */
-      lastIndex = i ;
-      break ;
-    }
-    else
-    {
-      // If difference is still positive, add full X hours to learnTime.
-      learnTime += X ;
-    }
-  }
-
-
-  // --- Final Adjustment Phase ---
-  // This section fine-tunes the learnTime based on the remaining difference.
-  var minLearnTime = Number . MAX_SAFE_INTEGER ; // Initialize with a very large number for comparison.
-
-  // Iterate from the last determined index to the end of the BLU array.
-  for ( var i = lastIndex ; i < N ; i ++ )
-  {
-    var element = BLU [ i ] ; // Current element for adjustment.
-
-    // Calculate the minimum additional time needed for this element to cover the remaining difference.
-    // Math.ceil is used to ensure enough time is allocated to cover the difference.
-    var currentElementLearnTime = Math . ceil ( ( difference - element . MIN_POINT ) / element . U ) + element . B ;
-    minLearnTime = Math . min ( minLearnTime , currentElementLearnTime ) ;
-
-    // console . log ( minLearnTime ) ; // Another commented out debug line.
-  }
-
-  // Add the minimum additional learning time found to the total learnTime.
-  learnTime += minLearnTime ;
-
-  // Output the final calculated total learning time to the console.
-  console . log ( learnTime ) ;
+var difference  =  enemySum;
+// 読み取り よく整理する 最終の人間の読み取り.
+    var learnTime = 0;
+var lastIndex=  0;    
+	    for (var i = 0; i < N; i++) {
+           var element = BLU[i]; 
+difference-=  element.MAX_DIV+ element.MIN_POINT;
+// 読み取り よく保つ 局所的な作業順序 開始時に直接.
+// 読み取り ここで保つ プログラムの形 出力前に最終.
+/*
+ * 読み取り 今保つ 重要な中間値.
+ * 読み取り よく整理する 近い文脈.
+ */
+	      if ( difference<=0) {
+    difference += element.MAX_DIV + element.MIN_POINT;
+// 読み取り よく整理する 重要なコードの連続性 開始時に単純.
+               lastIndex = i;
+      break;
+	     }else { 
+             learnTime += X;
+// 読み取り また整理する 現在のデータの移動 開始時に安定.
+}    
 }
 
-// Example usage section for reading input.
-// This part defines how the 'Main' function receives its 'input' argument.
 
-// Option 1: For a single line input.
-// Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) ) ;
 
-// Option 2: For input split by newlines.
-// Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) . split ( / \n / ) ) ;
 
-// The currently active input processing method: split by newlines.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) . split ( / \n / ) ) ;
+    var   minLearnTime =Number.MAX_SAFE_INTEGER;
+for (var i = lastIndex; i < N; i++) {
+// 読み取り ここで整理する 現在の主要な操作 各値ごとに内部.
+/*
+ * 読み取り よく保つ 受け取ったデータ 入力と共に.
+ * 重要な処理経路を今保つ.
+ */
+var element = BLU[i];
+minLearnTime = Math.min(minLearnTime, Math.ceil((difference - element.MIN_POINT) / element.U) + element.B);
+
+    }
+	      learnTime += minLearnTime
+   console.log(learnTime);
+// 読み取り 今保つ 現在の主要な操作 開始時に安定.
+}
+
+
+
+// 読み取り ここで整理する 最終の見える結果 計算中に.
+// 読み取り よく整理する 局所的な局所的な判断 入力と共に内部.
+
+
+
+
+
+
+/*
+ * 読み取り また整理する 最終の評価順序 計算中に明確.
+ * 読み取り よく保つ 現在の適用された変換 開始時に近く.
+ */
+// 読み取り 今保つ 最終の期待される出力 各値ごとに.
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n/));
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║ メンバー: 田中翔, 中村大翔, 佐々木彩乃, 伊藤琴音, 中村芽依           ║
+// ║ 登録番号: OK4306536, QD5638663, TD0011001, ZP9960030, AE7548959      ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+// 読み取り よく保つ 最終の処理経路 開始時に単純.

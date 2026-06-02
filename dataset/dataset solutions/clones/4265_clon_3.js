@@ -1,177 +1,125 @@
 const inputReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+  input: process.stdin, output: process.stdout
 });
 
-let dataProcessor;
-const collectedInputLines = [];
+let inputProcessor;
+const inputLineBuffer = [];
 
-inputReader.on('line', (currentLine) => {
-  collectedInputLines.push(currentLine);
+inputReader.on('line', function(lineContent){
+  inputLineBuffer.push(lineContent);
 });
 
-inputReader.on('close', () => {
-  dataProcessor = initializeInputProcessor(collectedInputLines);
-  console.error('\n--- Input Processing Complete ---\n--- Executing Main Logic ---');
+inputReader.on('close', function(){
+  inputProcessor = createInputHandler(inputLineBuffer);
+  console.error('\n↑入力 ↓出力');
   executeSolution();
 });
 
-// --- Utility functions for input processing ---
+class InputHandler {
+  constructor(lines) {
+    this.lines = lines;
+    this.currentIndex = 0;
+    this.maxLines = lines.length;
+  }
 
-/**
- * Creates an object to manage sequential access to input lines.
- * @param {string[]} lineData An array of strings, each representing a line of input.
- * @returns {object} An object with methods to check for next item and retrieve it.
- */
-function initializeInputProcessor(lineData) {
-  return {
-    lineSet: lineData,
-    currentIndex: 0,
-    totalLines: lineData.length,
-    /** Checks if there are more input lines to process. */
-    hasMoreItems: function() {
-      return (this.currentIndex < this.totalLines);
-    },
-    /** Retrieves the next input line and advances the cursor. */
-    fetchNextItem: function() {
-      if (this.hasMoreItems()) {
-        return this.lineSet[this.currentIndex++];
-      } else {
-        throw new Error('InputOutOfBoundsException: No further data available for retrieval.');
-      }
+  hasMoreValues() {
+    return (this.currentIndex < this.maxLines);
+  }
+
+  getNextValue() {
+    if (this.hasMoreValues()) {
+      return this.lines[this.currentIndex++];
+    } else {
+      throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
     }
-  };
+  }
 }
 
-/** Retrieves the next item from the input stream. */
-function fetchNext() { return dataProcessor.fetchNextItem(); }
+function createInputHandler(inputLines) {
+  return new InputHandler(inputLines);
+}
 
-/**
- * Converts a raw input string based on a specified transformation type.
- * @param {string} rawInput The raw string to transform.
- * @param {number} transformationType An integer indicating the desired transformation.
- * @returns {*} The transformed value.
- */
-function transformInput(rawInput, transformationType) {
+function readInteger() { return processInputToken(getNextValue(), 1); }
+function readStringArray() { return processInputToken(getNextValue(), 2); }
+function readIntegerArray() { return processInputToken(getNextValue(), 4); }
+function readCharacterArray() { return processInputToken(getNextValue(), 6); }
+
+function getNextValue() { return inputProcessor.getNextValue(); }
+function hasMoreValues() { return inputProcessor.hasMoreValues(); }
+
+function outputResult(data) { console.log(data); }
+function logDebug(data) { console.error('debug:' + require('util').inspect(data, false, null)); }
+
+function processInputToken(token, conversionType) {
   try {
-    switch (transformationType) {
-      case 1: // Parse as integer
-        return parseInt(rawInput, 10);
-      case 2: // Split by space into string array
-        return rawInput.split(' ');
-      case 4: // Split by space and parse each as integer array
-        return rawInput.split(' ').map(Number);
-      case 6: // Split into character array
-        return rawInput.split('');
-      default: // No transformation, return as-is
-        return rawInput;
+    switch (conversionType) {
+      case 1: return parseInt(token);
+      case 2: return token.split(' ');
+      case 4: return token.split(' ').map(Number);
+      case 6: return token.split('');
+      case 7: return token.split('').map(Number);
+      case 8: return token.join(' ');
+      case 9: return token.join('\n');
+      case 0: return token.join('');
+      default: return token;
     }
-  } catch (err) {
-    console.error(`Error during input transformation (type ${transformationType}): ${err.message}`);
-    return rawInput;
+  } catch (e) {
+    return token;
   }
 }
 
-/** Retrieves the next input line as an integer. */
-function retrieveInteger() { return transformInput(fetchNext(), 1); }
-/** Retrieves the next input line split into an array of strings. */
-function retrieveStringArray() { return transformInput(fetchNext(), 2); }
-/** Retrieves the next input line split into an array of integers. */
-function retrieveIntegerArray() { return transformInput(fetchNext(), 4); }
-/** Retrieves the next input line split into an array of characters. */
-function retrieveCharacterArray() { return transformInput(fetchNext(), 6); }
-
-/**
- * Prints the final computed result to standard output.
- * @param {*} result The value to be displayed.
- */
-function displayResult(result) {
-  console.log(result);
-}
-
-// --------------------------------------------------------------------------
-
-/**
- * Main function to solve the problem: Count combinations of (a, b, c) such that a < b < c.
- * This function orchestrates the reading of input, sorting, and calculation.
- */
 function executeSolution() {
-  const itemCount = retrieveInteger();
+  const arraySizeN = readInteger();
+  const arrayA = readIntegerArray();
+  const arrayB = readIntegerArray();
+  const arrayC = readIntegerArray();
 
-  if (itemCount <= 0) {
-    displayResult(0);
-    return;
+  arrayA.sort(compareNumbersAscending);
+  arrayB.sort(compareNumbersAscending);
+  arrayC.sort(compareNumbersAscending);
+
+  let totalCount = 0;
+
+  for (let currentIdx = 0; currentIdx < arraySizeN; currentIdx++) {
+    const bValue = arrayB[currentIdx];
+    const countALessThanB = findCountLessThan(arrayA, bValue);
+    const countCLargerThanB = findCountGreaterThan(arrayC, bValue);
+    totalCount += countALessThanB * countCLargerThanB;
   }
 
-  const collectionA = retrieveIntegerArray();
-  const collectionB = retrieveIntegerArray();
-  const collectionC = retrieveIntegerArray();
-
-  collectionA.sort((x, y) => x - y);
-  collectionB.sort((x, y) => x - y);
-  collectionC.sort((x, y) => x - y);
-
-  let finalTally = 0;
-
-  for (let k = 0; k < itemCount; k++) {
-    const currentBValue = collectionB[k];
-
-    // Find the count of elements in collection A strictly less than currentBValue.
-    // This is equivalent to finding the index of the first element >= currentBValue.
-    const countSmallerElements = findBoundaryIndex(collectionA, currentBValue, true);
-
-    // Find the count of elements in collection C strictly greater than currentBValue.
-    // This is equivalent to finding the index of the first element > currentBValue.
-    const countLargerElements = findBoundaryIndex(collectionC, currentBValue, false);
-
-    finalTally += countSmallerElements * countLargerElements;
-  }
-
-  displayResult(finalTally);
+  outputResult(totalCount);
 }
 
-/**
- * Performs a binary search to find an index based on the target value and search type.
- *
- * @param {number[]} sortedArray The array to search within (must be sorted ascending).
- * @param {number} targetValue The value to search for.
- * @param {boolean} isLowerBoundSearch If true, finds the index of the first element >= targetValue.
- *                                     If false, finds the index of the first element > targetValue.
- * @returns {number} The calculated count based on the search type.
- */
-function findBoundaryIndex(sortedArray, targetValue, isLowerBoundSearch) {
-  const arrayLength = sortedArray.length;
+function compareNumbersAscending(a, b) {
+  return a - b;
+}
 
-  if (arrayLength === 0) {
-    return 0;
-  }
+function findCountLessThan(searchTargetArray, targetValue) {
+  let lowerBoundIdx = -1;
+  let upperBoundIdx = searchTargetArray.length;
 
-  let lowIndex = -1;
-  let highIndex = arrayLength;
-
-  while (highIndex - lowIndex > 1) {
-    const midIndex = (lowIndex + highIndex) >>> 1;
-
-    if (isLowerBoundSearch) {
-      if (sortedArray[midIndex] >= targetValue) {
-        highIndex = midIndex;
-      } else {
-        lowIndex = midIndex;
-      }
-    } else { // This branch handles finding the first element strictly greater than targetValue (upper_bound).
-      if (sortedArray[midIndex] > targetValue) {
-        highIndex = midIndex;
-      } else {
-        lowIndex = midIndex;
-      }
+  while (Math.abs(upperBoundIdx - lowerBoundIdx) > 1) {
+    const midPointIdx = Math.floor((upperBoundIdx + lowerBoundIdx) / 2);
+    if (searchTargetArray[midPointIdx] >= targetValue) {
+      upperBoundIdx = midPointIdx;
+    } else {
+      lowerBoundIdx = midPointIdx;
     }
   }
+  return upperBoundIdx;
+}
 
-  if (isLowerBoundSearch) {
-    // highIndex is the count of elements strictly less than targetValue.
-    return highIndex;
-  } else {
-    // arrayLength - highIndex is the count of elements strictly greater than targetValue.
-    return arrayLength - highIndex;
+function findCountGreaterThan(searchTargetArray, targetValue) {
+  let lowerBoundIdx = -1;
+  let upperBoundIdx = searchTargetArray.length;
+
+  while (Math.abs(upperBoundIdx - lowerBoundIdx) > 1) {
+    const midPointIdx = Math.floor((upperBoundIdx + lowerBoundIdx) / 2);
+    if (searchTargetArray[midPointIdx] > targetValue) {
+      upperBoundIdx = midPointIdx;
+    } else {
+      lowerBoundIdx = midPointIdx;
+    }
   }
+  return searchTargetArray.length - upperBoundIdx;
 }

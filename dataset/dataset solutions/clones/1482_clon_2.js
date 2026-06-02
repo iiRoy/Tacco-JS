@@ -1,90 +1,101 @@
-let computeScalarProduct = (firstVector, secondVector) => {
-  // This function calculates the scalar product (dot product) of two numeric arrays.
-  let totalSum = 0;
-  for (let currentIdx = 0; currentIdx < firstVector.length; currentIdx++) {
-    totalSum = totalSum + firstVector[currentIdx] * secondVector[currentIdx];
-  }
-  return totalSum;
-};
+function multiplyVectors (firstVec, secondVec) {
+  // Initialize a variable to store the scalar product
+  let dotProduct = 0;
 
-function modifyAndCombineArrays(primaryList, secondaryList) {
-  /*
-   * This procedure modifies elements of two input arrays based on their current values.
-   * The first array's elements are updated with the sum of corresponding elements.
-   * The second array's elements are then updated with the sum of its original value
-   * and the *new* value from the first array.
-   */
-  for (let loopIndex = 0; loopIndex < primaryList.length; loopIndex++) {
-    primaryList[loopIndex] = primaryList[loopIndex] + secondaryList[loopIndex];
-    secondaryList[loopIndex] = secondaryList[loopIndex] + primaryList[loopIndex];
+  // Iterate through the elements of the input vectors
+  for (let idx = 0; idx < firstVec.length; idx++) {
+    // Accumulate the product of corresponding elements
+    dotProduct = dotProduct + firstVec[idx] * secondVec[idx];
+  }
+
+  // Return the computed dot product
+  return dotProduct;
+}
+
+function addVectors (firstVec, secondVec) {
+  // Loop through each element of the vectors
+  for (let idx = 0; idx < firstVec.length; idx++) {
+    // Update the first vector's element by adding the second vector's element
+    firstVec[idx] = firstVec[idx] + secondVec[idx];
+    // Update the second vector's element by adding the (now updated) first vector's element
+    secondVec[idx] = secondVec[idx] + firstVec[idx];
   }
 }
 
-const executeGraphProcessing = (programData) => {
-  // Parse the raw program input into a structured format.
-  programData = programData.split(/\n/).map(rowText => rowText.split(' ').map(valStr => +valStr));
 
-  // Extract graph dimensions.
-  const numberOfVertices = programData[0][0];
-  const numberOfLinks = programData[0][1];
+function ProcessGraphData (rawData) {
+    // Parse the input string into a 2D array of numbers
+    rawData = rawData.split(/\n/).map(line => line.split(' ').map(val => +val));
 
-  // Initialize the adjacency matrix for the graph.
-  let connectionMatrix = [];
-  for (let rIdx = 0; rIdx < numberOfVertices; rIdx++) {
-    connectionMatrix.push([]);
-    for (let cIdx = 0; cIdx < numberOfVertices; cIdx++) {
-      connectionMatrix[rIdx].push(0);
-    }
-  }
+    // Extract the number of nodes (N) and edges (M) from the first line
+    const numNodes = rawData[0][0];
+    const numEdges = rawData[0][1];
 
-  // Set diagonal elements to 1, indicating self-loops or initial connectivity.
-  for (let rIdx = 0; rIdx < numberOfVertices; rIdx++) {
-    connectionMatrix[rIdx][rIdx] = 1;
-  }
-
-  let nodeA, nodeB;
-  // Process each link (edge) provided in the input data.
-  for (let linkNum = 1; linkNum <= numberOfLinks; linkNum++) {
-    nodeA = programData[linkNum][0];
-    nodeB = programData[linkNum][1];
-    // Mark connections in both directions (undirected graph).
-    connectionMatrix[nodeA - 1][nodeB - 1] = 1;
-    connectionMatrix[nodeB - 1][nodeA - 1] = 1;
-  }
-
-  // Propagate connectivity information across the graph using the defined operations.
-  for (let rowOneIndex = 0; rowOneIndex < numberOfVertices; rowOneIndex++) {
-    for (let rowTwoIndex = 0; rowTwoIndex < numberOfVertices; rowTwoIndex++) {
-      // If two rows (representing nodes) have any common connections (non-zero scalar product),
-      // then combine their connection information.
-      if (computeScalarProduct(connectionMatrix[rowOneIndex], connectionMatrix[rowTwoIndex]) !== 0) {
-        modifyAndCombineArrays(connectionMatrix[rowOneIndex], connectionMatrix[rowTwoIndex]);
+    // Initialize an adjacency matrix for the graph
+    let adjacencyMatrix = [];
+    for (let rowIdx = 0; rowIdx < numNodes; rowIdx++) {
+      adjacencyMatrix.push([]); // Add a new row
+      for (let colIdx = 0; colIdx < numNodes; colIdx++) {
+        adjacencyMatrix[rowIdx].push(0); // Initialize all entries to 0
       }
     }
-  }
 
-  let componentClusters = [];
-  let visitedStatus = [...Array(numberOfVertices).keys()]; // Initially, all nodes are unvisited.
+    // Set diagonal elements to 1, indicating self-loops or initial connectivity
+    for (let rowIdx = 0; rowIdx < numNodes; rowIdx++) {
+      adjacencyMatrix[rowIdx][rowIdx] = 1;
+    }
 
-  // Identify connected components within the graph.
-  for (let currentNodeIdx = 0; currentNodeIdx < numberOfVertices; currentNodeIdx++) {
-    if (visitedStatus[currentNodeIdx] !== null) {
-      visitedStatus[currentNodeIdx] = null; // Mark current node as visited.
-      componentClusters.push([currentNodeIdx]); // Start a new cluster with this node.
+    // Process each edge from the input
+    let nodeA, nodeB;
+    for (let edgeIdx = 1; edgeIdx <= numEdges; edgeIdx++) {
+      nodeA = rawData[edgeIdx][0];
+      nodeB = rawData[edgeIdx][1];
+      // Mark connectivity in both directions (undirected graph)
+      adjacencyMatrix[nodeA - 1][nodeB - 1] = 1;
+      adjacencyMatrix[nodeB - 1][nodeA - 1] = 1;
+    }
 
-      for (let neighborNodeIdx = 0; neighborNodeIdx < numberOfVertices; neighborNodeIdx++) {
-        // If the current node is connected to another node (and it's not itself)
-        // and that neighbor hasn't been added to a cluster yet.
-        if (currentNodeIdx !== neighborNodeIdx && connectionMatrix[currentNodeIdx][neighborNodeIdx] !== 0) {
-          componentClusters[componentClusters.length - 1].push(neighborNodeIdx);
-          visitedStatus[neighborNodeIdx] = null; // Mark neighbor as visited.
+    // Propagate connectivity based on shared neighbors
+    // This effectively finds connected components
+    for (let outerIdx = 0; outerIdx < numNodes; outerIdx++) {
+      for (let anotherRowIdx = 0; anotherRowIdx < numNodes; anotherRowIdx++) {
+        // If two nodes share any common neighbor (dot product of their rows is non-zero)
+        if (multiplyVectors(adjacencyMatrix[outerIdx], adjacencyMatrix[anotherRowIdx]) !== 0) {
+          // Merge their connectivity information
+          addVectors(adjacencyMatrix[outerIdx], adjacencyMatrix[anotherRowIdx]);
         }
       }
     }
-  }
 
-  let finalOutcome = componentClusters.length - 1;
-  console.log(finalOutcome);
-};
+    // Identify distinct connected components
+    let connectedComponents = [];
+    // Create an array to keep track of visited nodes
+    let unvisitedNodes = [...Array(numNodes).keys()]; // [0, 1, ..., numNodes-1]
 
-executeGraphProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+    for (let rowIdx = 0; rowIdx < numNodes; rowIdx++) {
+      // If the current node has not been assigned to a component yet
+      if (unvisitedNodes[rowIdx] !== null) {
+        unvisitedNodes[rowIdx] = null; // Mark as visited
+        connectedComponents.push([rowIdx]); // Start a new component with this node
+
+        // Iterate through all other nodes to find connected ones
+        for (let colIdx = 0; colIdx < numNodes; colIdx++) {
+          // If it's a different node and there's a connection
+          if (rowIdx !== colIdx && adjacencyMatrix[rowIdx][colIdx] !== 0) {
+            // Add the connected node to the current component
+            connectedComponents[connectedComponents.length - 1].push(colIdx);
+            unvisitedNodes[colIdx] = null; // Mark the connected node as visited
+          }
+        }
+      }
+    }
+
+    // The result is the number of connected components minus one
+    // (assuming the problem asks for the number of "bridges" or "cuts" needed to disconnect,
+    // or simply the number of components if it's 0-indexed or similar interpretation)
+    let finalCount = connectedComponents.length - 1;
+    console.log(finalCount);
+}
+
+
+ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,99 +1,40 @@
-const x = require('readline');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = input.trim().split("\n").map(Number);
 
-const y = x.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-let z = []; // Store all numeric inputs
-
-y.on('line', (s) => {
-    z.push(Number(s));
-});
-
-y.on('close', () => {
-    // Initiate the recursive processing of input blocks
-    a(z, 0);
-});
-
-// Recursive function to process each block of input numbers
-function a(globalDataArray, currentOffset) {
-    const blockLength = globalDataArray[currentOffset];
-    if (blockLength === 0) {
-        return; // Termination condition for input processing
+function propagateValueBackward(sequenceState, valueToPropagate) {
+    let searchPosition = sequenceState.length - 2; // Start search from the element just before the last one
+    while (searchPosition >= 0 && sequenceState[searchPosition] !== valueToPropagate) {
+        searchPosition--;
     }
-
-    // Extract the numbers for the current block
-    const blockNumbers = globalDataArray.slice(currentOffset + 1, currentOffset + 1 + blockLength);
-
-    // Process the extracted block using a specialized sequence transformer
-    const transformedSequence = b(blockNumbers);
-
-    // Count occurrences of zero in the final sequence
-    const zeroCount = transformedSequence.filter(val => val === 0).length;
-
-    // Output the count
-    process.stdout.write(zeroCount + '\n');
-
-    // Recursively call for the next block of numbers
-    a(globalDataArray, currentOffset + 1 + blockLength);
+    const fillStartBoundary = searchPosition < 0 ? 0 : searchPosition + 1;
+    const updatedSequence = [...sequenceState]; // Create a new array to avoid direct mutation of the reducer's accumulator
+    for (let k = fillStartBoundary; k < updatedSequence.length - 1; k++) {
+        updatedSequence[k] = valueToPropagate;
+    }
+    return updatedSequence;
 }
 
-// Main sequence transformation function for a single block of numbers
-function b(inputBlock) {
-    // Delegate to a recursive helper to build the transformed sequence
-    return c(inputBlock, [], 0);
-}
+while (true) {
+    const blockSize = dataLines.shift();
+    if (blockSize === 0) break;
 
-// Recursive helper for building the transformed sequence
-function c(remainingElements, accumulatedResult, currentInputIndex) {
-    if (remainingElements.length === 0) {
-        return accumulatedResult; // Base case: no more elements to process
-    }
+    const blockElements = Array.from({ length: blockSize }, () => dataLines.shift());
 
-    const [firstElement, ...restElements] = remainingElements;
-    const isFirstPosition = (currentInputIndex + 1) % 2 === 1; // Check if it's an odd-indexed position (1-based)
-
-    if (isFirstPosition) {
-        // For odd positions, simply append the element
-        return c(restElements, accumulatedResult.concat(firstElement), currentInputIndex + 1);
-    } else {
-        // For even positions, complex logic applies
-        const lastInAccumulated = accumulatedResult[accumulatedResult.length - 1];
-
-        if (lastInAccumulated === firstElement) {
-            // If the last element matches, simply append
-            return c(restElements, accumulatedResult.concat(firstElement), currentInputIndex + 1);
-        } else {
-            // If mismatch, apply the propagation rule
-            const extendedResult = accumulatedResult.concat(firstElement);
-            const finalResultForStep = d(extendedResult, firstElement); // Apply propagation
-            return c(restElements, finalResultForStep, currentInputIndex + 1);
+    const finalProcessedElements = blockElements.reduce((accumulatorArray, currentElementValue, elementPosition) => {
+        const oneBasedPosition = elementPosition + 1;
+        if (oneBasedPosition % 2 === 1) { // Odd position (1st, 3rd, 5th, etc.)
+            return [...accumulatorArray, currentElementValue];
+        } else { // Even position (2nd, 4th, 6th, etc.)
+            if (accumulatorArray.length > 0 && accumulatorArray[accumulatorArray.length - 1] === currentElementValue) {
+                return [...accumulatorArray, currentElementValue];
+            } else {
+                // Value is different from the previous one at an even position, trigger backward propagation
+                const tempAccumulator = [...accumulatorArray, currentElementValue]; // Append current value first
+                return propagateValueBackward(tempAccumulator, currentElementValue);
+            }
         }
-    }
-}
+    }, []);
 
-// Function to handle the backward propagation logic (the complex part)
-function d(currentWorkingSequence, propagationValue) {
-    // Find the rightmost element (excluding the very last one) that matches propagationValue
-    // by reversing a slice and using findIndex.
-    const segmentToScan = currentWorkingSequence.slice(0, currentWorkingSequence.length - 1);
-    const reversedSegment = segmentToScan.reverse();
-
-    const reversedMatchPosition = reversedSegment.findIndex(item => item === propagationValue);
-
-    let effectiveMatchPosition = -1; // This will be the index in the original currentWorkingSequence
-    if (reversedMatchPosition !== -1) {
-        // Convert the reversed index back to the original sequence index
-        effectiveMatchPosition = currentWorkingSequence.length - 2 - reversedMatchPosition;
-    }
-
-    // Construct the new sequence by mapping, applying propagation rules
-    return currentWorkingSequence.map((element, index) => {
-        // Elements between the effectiveMatchPosition and the second-to-last (inclusive) are changed
-        if (index > effectiveMatchPosition && index < currentWorkingSequence.length - 1) {
-            return propagationValue;
-        }
-        return element; // Other elements remain as they are
-    });
+    const zeroOccurrences = finalProcessedElements.filter(item => item === 0).length;
+    console.log(zeroOccurrences);
 }

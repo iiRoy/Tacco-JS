@@ -1,36 +1,27 @@
-(  function  processStreamData (  )  {
-  'use strict' ;  //  Strict parsing activated.
+(function() {
+    "use strict";
 
-  //  Collection for all incoming text lines.
-  let  dataFragments  =  [  ] ;
+    var inputRows = [];
+    require("readline").createInterface({
+      input: process.stdin,
+      output: process.stdout
+    }).on("line", function(row) {
+      inputRows.push(row);
+    });
+    process.stdin.on("end", function() {
+      //inputRows.forEach(function(row) {
+        //var values = row.split(" ").map(Number);
+        //    console.log(values[0] + " " + values[1]);
+      //}
+      //)
+      ;
 
-  //  Configuring a mechanism to interpret input streams.
-  require ( 'readline' ) . createInterface ( {
-    input:   process . stdin  ,  //  Input comes from standard input.
-    output:  process . stdout   //  Output goes to standard output.
-  } ) . on ( 'line' ,  function  (  textualPortion  )  {
-    //  Append each processed textual segment to our list.
-    dataFragments . push ( textualPortion ) ;
-  } ) ;
+    // ToDo start
+      //var row2values = inputRows[1].split(" ")
+      console.log( Math.pow(parseInt(inputRows[0]),2) - parseInt(inputRows[1])  )
+    // ToDo end
 
-  //  Register a callback for when the input stream concludes.
-  process . stdin . on ( 'end' ,  function  (  )  {
+    });
 
-    //  (  Prior debug/alternative loop, now inactive  )
-    /*
-    dataFragments . forEach ( function ( item ) {
-      const parts = item . split ( ' ' ) . map ( Number ) ;
-      console . log ( parts [ 0 ] + ' ' + parts [ 1 ] ) ;
-    } ) ;
-    */
 
-    //  ---  Primary calculation begins  ---
-    //  Compute the square of the first numerical entry, then subtract the second numerical entry.
-    console . log (
-      Math . pow ( Number ( dataFragments [ 0 ] ) ,  2 )  -  Number ( dataFragments [ 1 ] )
-    ) ;
-    //  ---  Primary calculation ends  ---
-
-  } ) ;
-
-} ) ( ) ;
+})();

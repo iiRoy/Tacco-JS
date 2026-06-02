@@ -1,55 +1,63 @@
-function processInputData() {
+// This script processes numerical input from standard input,
+// performing a custom digit transformation before printing the results.
 
-  // Declare some local variables, though not all may be used in this version.
-  var currentReadline, tempValA, tempValB;
+function processInput() {
+  // Declare some local variables. These might not all be actively utilized
+  // in the core logic, but are part of the structural definition.
+  let unusedVarA, unusedVarB, unusedVarC;
+  let currentNumericValue; // Variable to hold the integer parsed from each line.
 
-  // Begin an infinite processing loop.
-  for ( ; ; ) {
-    // Attempt to parse the next line from the processed input array as an integer.
-    // The base 10 is explicitly specified for clarity.
-    numericInput = parseInt(processedLines.shift(), 10);
+  // Begin an indefinite loop to process input lines.
+  for (;;) {
+    // Extract the first line from our buffered input array and convert it to an integer.
+    // The 'shift()' method removes the first element and returns it.
+    // We specify base 10 for parsing.
+    currentNumericValue = parseInt(inputDataBuffer.shift(), 10);
 
-    // If the parsed number is zero, it's a termination signal.
-    if ( numericInput === 0 ) {
-      // Exit the infinite loop.
-      break;
+    // Check for the termination condition: if the parsed number is 0.
+    if (currentNumericValue === 0) {
+      break; // Exit the processing loop.
     }
 
-    // Convert the numeric input to its base-8 string representation.
-    // Then, split this string into an array of individual digit characters.
-    // Map each character using a custom digit substitution scheme.
-    // Finally, join the modified characters back into a single string.
-    console.log(numericInput.toString(8).split('').map(function (octalDigitChar) {
-      // The mapping string '01235789' provides the custom digit sequence.
-      // The unary plus operator converts the character digit to its numeric equivalent
-      // to be used as an index for the charAt method.
-      return '01235789'.charAt(+octalDigitChar);
-    }).join(''));
+    // Perform a series of transformations on the current number:
+    // 1. Convert the number to its octal (base 8) string representation.
+    // 2. Split this octal string into an array of individual character digits.
+    // 3. Map each octal digit character to a new character using a custom lookup table.
+    // 4. Join the transformed characters back into a single string.
+    // 5. Print the final transformed string to the console.
+    console.log(
+      currentNumericValue.toString(8).split('').map(function (octalChar) {
+        // The string '01235789' serves as a custom mapping for octal digits.
+        // For example, '4' (octal) maps to '5', '5' maps to '7', etc.
+        // The unary plus operator converts the character digit to a number for indexing.
+        return '01235789'.charAt(+octalChar);
+      }).join('')
+    );
   }
 }
 
+// A global variable to accumulate all incoming data from the standard input stream.
+// It starts as an empty string and will later be converted to an array of lines.
+let inputDataBuffer = '';
 
-// A global variable to accumulate incoming raw data chunks from standard input.
-var rawDataBuffer = '';
-
-// Begin listening for input from the standard input stream.
+// Activate the standard input stream to begin listening for data.
 process.stdin.resume();
 
-// Set the character encoding for the incoming data to UTF-8.
+// Configure the encoding for the standard input stream to 'utf8'.
 process.stdin.setEncoding('utf8');
 
-// Attach a listener for 'data' events on standard input.
-// Each time a chunk of data arrives, append it to the raw data buffer.
-process.stdin.on('data', function(dataChunk) {
-  rawDataBuffer += dataChunk;
+// Register an event handler for the 'data' event on standard input.
+// Each time a segment of data arrives, append it to our global buffer.
+process.stdin.on('data', function(receivedSegment) {
+  inputDataBuffer += receivedSegment;
 });
 
-// Attach a listener for the 'end' event on standard input.
-// This event fires when no more data is expected.
+// Register an event handler for the 'end' event on standard input.
+// This event signals that all input has been received.
 process.stdin.on('end', function() {
-  // Once all data has been received, split the entire buffer into an array of lines.
-  // Each element in the 'processedLines' array will correspond to a line from the input.
-  processedLines = rawDataBuffer.split('\n');
-  // Call the main processing function to handle the prepared input.
-  processInputData();
+  // Once all data is collected, split the entire buffer into an array of strings,
+  // using the newline character as the delimiter.
+  inputDataBuffer = inputDataBuffer.split('\n');
+  // After preparing the input, initiate the main processing routine.
+  processInput();
 });

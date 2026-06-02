@@ -1,1 +1,253 @@
-module.exports=(function(moduleDefinitions){var loadedModules={};/* The main module resolution function */function resolveModule(moduleId){if(loadedModules[moduleId])return loadedModules[moduleId].output;/* Create a new module (and put it in the cache) */var moduleObject=loadedModules[moduleId]={id:moduleId,isLoaded:false,output:{}};/* Execute the module function */moduleDefinitions[moduleId].call(moduleObject.output,moduleObject,moduleObject.output,resolveModule);/* Mark as loaded and return exports */moduleObject.isLoaded=true;return moduleObject.output}/* Attach properties to the resolver function */resolveModule.moduleDefinitions=moduleDefinitions;resolveModule.moduleCache=loadedModules;/* define getter functions for exports */resolveModule.defineExport=function(targetObj,propertyName,getterFunc){if(!resolveModule.hasOwnProp(targetObj,propertyName)){Object.defineProperty(targetObj,propertyName,{enumerable:true,get:getterFunc})}};/* Mark an object as an ES module */resolveModule.registerESModule=function(exportObj){if(typeof Symbol!=="undefined"&&Symbol.toStringTag){Object.defineProperty(exportObj,Symbol.toStringTag,{value:"Module"})}Object.defineProperty(exportObj,"__esModule",{value:true})};/* Interop for modules */resolveModule.interopRequire=function(modulePath,flags){if(1&flags){modulePath=resolveModule(modulePath)}if(8&flags)return modulePath;if(4&flags&&typeof modulePath==="object"&&modulePath&&modulePath.__esModule)return modulePath;var newObj=Object.create(null);resolveModule.registerESModule(newObj);Object.defineProperty(newObj,"default",{enumerable:true,value:modulePath});if(2&flags&&typeof modulePath!=="string"){for(var key in modulePath){resolveModule.defineExport(newObj,key,(function(item){return modulePath[item]}).bind(null,key))}}return newObj};/* Helper for default exports */resolveModule.defaultGetter=function(moduleObject){var getterFunc=moduleObject&&moduleObject.__esModule?function(){return moduleObject.default}:function(){return moduleObject};resolveModule.defineExport(getterFunc,"a",getterFunc);return getterFunc};/* Check if object has own property */resolveModule.hasOwnProp=function(obj,key){return Object.prototype.hasOwnProperty.call(obj,key)};resolveModule.publicPath="";/* Start execution by loading the entry module */return resolveModule(resolveModule.startupModule=0)})([/* Module 0: Main application logic */function(currentModule,moduleExports,localRequire){localRequire(1)(localRequire(3).readFileSync("/dev/stdin","UTF-8").split("\n"))},/* Module 1: Core calculation logic */function(currentModule,moduleExports,localRequire){/* Helper for destructuring arrays (like Babel's _slicedToArray) */function extractValues(sourceArray,limitCount){if(Array.isArray(sourceArray))return sourceArray;var resultArr=[],isDone=true,hadError=false,errorVal=undefined;try{for(var itemIterator,iter=sourceArray[Symbol.iterator]();!(isDone=(itemIterator=iter.next()).done)&&(resultArr.push(itemIterator.value),!limitCount||resultArr.length!==limitCount);isDone=true){/* Loop body is intentionally empty */}}catch(err){hadError=true;errorVal=err}finally{try{if(!isDone&&iter.return!=null){iter.return()}}finally{if(hadError)throw errorVal}}/* If none of the above, throw a TypeError (should not be reached if sourceArray is iterable) */throw new TypeError("Invalid attempt to destructure non-iterable instance")}var getPrimeFactors=localRequire(2);currentModule.exports=function(inputList){/* Parse the first line of input into two numbers */var parsedNumbers=extractValues(inputList[0].split(" ").map(function(valStr){return Number(valStr)}),2),firstNum=parsedNumbers[0],secondNum=parsedNumbers[1];/* Check if secondNum is divisible by firstNum */if(secondNum%firstNum!==0){/* If not, find the largest factor of secondNum that is less than firstNum */var factorsMap=getPrimeFactors(secondNum),smallestFactor=secondNum;/* Initialize with secondNum itself */for(var factorKey in factorsMap){/* Ensure factorKey is treated as a number for comparison */var numericFactorKey=Number(factorKey);if(numericFactorKey>=firstNum&&numericFactorKey<smallestFactor){smallestFactor=numericFactorKey}}var resultVal=secondNum/smallestFactor;console.log(resultVal)}else{/* If divisible, just output the division result */console.log(secondNum/firstNum)}}},/* Module 2: Prime factorization utility */function(currentModule,moduleExports){currentModule.exports=function(valueToFactor){var factorCounts={};var currentValue=valueToFactor;/* Calculate limit for prime factorization loop */var limitSqrt=Math.ceil(Math.sqrt(valueToFactor));/* Check for factors up to sqrt(valueToFactor) */for(var divisor=2;divisor<limitSqrt;divisor++){var count=0;/* Divide out all occurrences of the current divisor */while(currentValue%divisor===0){currentValue/=divisor;count++}/* If divisor was a factor, record its count */if(count>0){factorCounts[divisor]=count}/* Optimization: if currentValue becomes 1 or less, no more factors to find */if(currentValue<=0){break}}/* If any value remains after loop, it's a prime factor itself */if(currentValue>1){factorCounts[currentValue]=1}return factorCounts}},/* Module 3: File System module */function(currentModule,moduleExports){currentModule.exports=require("fs")}]);
+module.exports = function(moduleDefinitions) {
+  // This object serves as a cache for modules that have already been loaded.
+  var moduleCache = {};
+
+  // The primary function responsible for loading modules by their ID.
+  function loadModule(moduleId) {
+    // If the module is already present in the cache, return its exports immediately.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
+    }
+
+    // If the module is not cached, create a new entry for it in the cache.
+    // Each module entry contains its unique ID, a flag indicating if it's loaded,
+    // and an empty exports object to be populated by the module's code.
+    var currentModule = moduleCache[moduleId] = {
+      id: moduleId,
+      isLoaded: false,
+      exports: {}
+    };
+
+    // Execute the module's definition function.
+    // The function receives the module object, its exports object, and the 'loadModule' function itself.
+    moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, loadModule);
+
+    // After execution, mark the module as fully loaded.
+    currentModule.isLoaded = true;
+
+    // Return the exports of the newly loaded module.
+    return currentModule.exports;
+  }
+
+  // Attach the collection of module definitions to the loader function for internal access.
+  loadModule.moduleDefinitions = moduleDefinitions;
+  // Attach the module cache to the loader function.
+  loadModule.cache = moduleCache;
+
+  // A utility function to define a getter property on an object.
+  // This is used for lazy loading or exposing properties.
+  loadModule.defineGetter = function(targetObject, propertyName, getterFunction) {
+    // Only define the property if it doesn't already exist on the target object.
+    if (!loadModule.hasOwnProperty(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true, // Make the property enumerable so it appears in iteration.
+        get: getterFunction // The function to execute when the property is accessed.
+      });
+    }
+  };
+
+  // A utility function to mark a module as an ECMAScript module.
+  loadModule.registerESModule = function(targetModule) {
+    // If Symbol and Symbol.toStringTag are supported, set the module's string tag.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetModule, Symbol.toStringTag, {
+        value: "Module"
+      });
+    }
+    // Set the __esModule flag to true, indicating it's an ES module.
+    Object.defineProperty(targetModule, "__esModule", {
+      value: true
+    });
+  };
+
+  // A comprehensive interop function for handling various module types during 'require'.
+  loadModule.interopRequire = function(moduleRef, flags) {
+    // Flag 1: If set, 'moduleRef' is a module ID, so load it.
+    if (1 & flags) {
+      moduleRef = loadModule(moduleRef);
+    }
+    // Flag 8: If set, 'moduleRef' is already the desired export, return it directly.
+    if (8 & flags) {
+      return moduleRef;
+    }
+    // Flag 4: If set, and 'moduleRef' is an object and an ES module, return it directly.
+    if (4 & flags && typeof moduleRef === "object" && moduleRef && moduleRef.__esModule) {
+      return moduleRef;
+    }
+
+    // Create a new plain object to serve as the interop object.
+    var interopObject = Object.create(null);
+    // Register this new object as an ES module.
+    loadModule.registerESModule(interopObject);
+    // Define a 'default' property on the interop object, pointing to the original 'moduleRef'.
+    Object.defineProperty(interopObject, "default", {
+      enumerable: true,
+      value: moduleRef
+    });
+
+    // Flag 2: If set, and 'moduleRef' is not a string, copy all its properties to the interop object.
+    if (2 & flags && typeof moduleRef !== "string") {
+      for (var propName in moduleRef) {
+        loadModule.defineGetter(interopObject, propName, (function(key) {
+          return moduleRef[key];
+        }).bind(null, propName));
+      }
+    }
+    return interopObject;
+  };
+
+  // A utility function to retrieve the default export of a module.
+  loadModule.getDefaultExport = function(moduleRef) {
+    // Determine the getter function for the default export.
+    // If 'moduleRef' is an ES module, use its 'default' property; otherwise, use 'moduleRef' itself.
+    var defaultExportGetter = moduleRef && moduleRef.__esModule ?
+      function() {
+        return moduleRef.default;
+      } :
+      function() {
+        return moduleRef;
+      };
+    // Define a property 'a' on the getter function itself, pointing to the default export.
+    loadModule.defineGetter(defaultExportGetter, "a", defaultExportGetter);
+    return defaultExportGetter;
+  };
+
+  // A utility function to check if an object has a specific property directly (not inherited).
+  loadModule.hasOwnProperty = function(targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
+  };
+
+  // The public path for assets, typically used for dynamic imports or resource loading.
+  // It's an empty string in this configuration.
+  loadModule.publicPath = "";
+
+  // Set the entry point module ID and immediately load it to start the application.
+  return loadModule(loadModule.entryModuleId = 0);
+}([
+  // Module 0: The main entry point of the application.
+  function(modModule, modExports, modRequire) {
+    // Load Module 1 (the core logic) and pass it the processed input from stdin.
+    // The input is read from /dev/stdin, decoded as UTF-8, and split into an array of lines.
+    modRequire(1)(modRequire(3).readFileSync("/dev/stdin", "UTF-8").split("\n"));
+  },
+
+  // Module 1: Contains the primary business logic for processing the input numbers.
+  function(modModule, modExports, modRequire) {
+    // A helper function to extract a fixed number of elements from an iterable,
+    // mimicking array destructuring behavior.
+    function extractArrayElements(inputArray, elementLimit) {
+      // If the input is already an array, return it directly.
+      if (Array.isArray(inputArray)) {
+        return inputArray;
+      }
+
+      var collectedElements = []; // Array to store the extracted elements.
+      var isDone = true; // Flag to track if iteration is complete.
+      var hasError = false; // Flag to track if an error occurred during iteration.
+      var errorObject = undefined; // Stores any error that occurs.
+
+      try {
+        // Obtain an iterator for the input array.
+        for (var iteratorResult, arrayIterator = inputArray[Symbol.iterator](); !(isDone = (iteratorResult = arrayIterator.next()).done) && (collectedElements.push(iteratorResult.value), !elementLimit || collectedElements.length !== elementLimit); isDone = true) {
+          // Loop continues until the iterator is done or the element limit is reached.
+        }
+      } catch (err) {
+        hasError = true;
+        errorObject = err;
+      } finally {
+        try {
+          // If the iterator has a 'return' method and was not naturally done, call it for cleanup.
+          if (!isDone && arrayIterator.return != null) {
+            arrayIterator.return();
+          }
+        } finally {
+          // If an error occurred, re-throw it after cleanup.
+          if (hasError) {
+            throw errorObject;
+          }
+        }
+      }
+      return collectedElements;
+    }
+
+    // Import the prime factorization utility from Module 2.
+    var getPrimeFactors = modRequire(2);
+
+    // The main function exported by this module, which processes the input lines.
+    modModule.exports = function(inputLines) {
+      // Take the first line of input, split it by space, convert parts to numbers,
+      // and extract the first two numbers using the helper function.
+      var parsedNumbers = extractArrayElements(inputLines[0].split(" ").map(function(strNum) {
+        return Number(strNum);
+      }), 2);
+
+      var firstNumber = parsedNumbers[0]; // The first number from the input.
+      var secondNumber = parsedNumbers[1]; // The second number from the input.
+
+      // Check if the second number is not perfectly divisible by the first number.
+      if (secondNumber % firstNumber !== 0) {
+        // If not divisible, find the prime factors of the second number.
+        var factorsOfSecond = getPrimeFactors(secondNumber);
+        // Initialize 'smallestValidFactor' with 'secondNumber' itself.
+        var smallestValidFactor = secondNumber;
+
+        // Iterate through the prime factors found.
+        for (var currentFactor in factorsOfSecond) {
+          // Convert the factor key (which is a string) to a number for comparison.
+          var numericFactor = Number(currentFactor);
+          // Find the smallest prime factor that is greater than or equal to 'firstNumber'
+          // and also smaller than the current 'smallestValidFactor'.
+          if (numericFactor >= firstNumber && numericFactor < smallestValidFactor) {
+            smallestValidFactor = numericFactor;
+          }
+        }
+        // Calculate the final result using the determined smallest valid factor.
+        var finalResult = secondNumber / smallestValidFactor;
+        console.log(finalResult);
+      } else {
+        // If 'secondNumber' is perfectly divisible by 'firstNumber',
+        // the result is simply their quotient.
+        console.log(secondNumber / firstNumber);
+      }
+    };
+  },
+
+  // Module 2: Provides a function to compute the prime factorization of a given number.
+  function(modModule, modExports) {
+    modModule.exports = function(inputNumber) {
+      var factorCounts = {}; // An object to store each prime factor and its count.
+      var tempNumber = inputNumber; // A temporary variable to perform divisions.
+      // Calculate the upper limit for checking divisors, which is the ceiling of the square root of the input number.
+      var sqrtLimit = Math.ceil(Math.sqrt(inputNumber));
+
+      // Iterate through potential divisors starting from 2 up to the calculated square root limit.
+      for (var divisorCandidate = 2; divisorCandidate < sqrtLimit; divisorCandidate++) {
+        var factorCount = 0; // Counter for how many times the current 'divisorCandidate' divides 'tempNumber'.
+        // Continuously divide 'tempNumber' by 'divisorCandidate' as long as it's a factor.
+        while (tempNumber % divisorCandidate === 0) {
+          tempNumber /= divisorCandidate;
+          factorCount++;
+        }
+        // If 'divisorCandidate' was a factor at least once, record its count.
+        if (factorCount > 0) {
+          factorCounts[divisorCandidate] = factorCount;
+        }
+        // An optimization: if 'tempNumber' becomes 0 or less (should not happen with positive input), break the loop.
+        if (tempNumber <= 0) {
+          break;
+        }
+      }
+      // After the loop, if 'tempNumber' is still greater than 1, it means the remaining 'tempNumber'
+      // itself is a prime factor (and it's greater than sqrtLimit).
+      if (tempNumber > 1) {
+        factorCounts[tempNumber] = 1;
+      }
+      return factorCounts; // Return the object containing all prime factors and their exponents.
+    };
+  },
+
+  // Module 3: A simple module that exports the Node.js 'fs' (file system) built-in module.
+  function(modModule, modExports) {
+    modModule.exports = require("fs");
+  }
+]);

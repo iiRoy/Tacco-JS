@@ -1,27 +1,31 @@
 'use strict';
-function evaluatePassage(sourceData) {
-  const numericalComponents = sourceData.match(/\d+/g).map(numStr => parseInt(numStr, 10));
 
-  const P1_INDEX = 0;
-  const S1_INDEX = 1;
-  const P2_INDEX = 2;
-  const S2_INDEX = 3;
-  const TM_INDEX = 4;
+function evaluatePursuitScenario(rawInputData) {
+    const contentLines = rawInputData.trim().split(/\r?\n/g);
 
-  const currentPosition1 = numericalComponents[P1_INDEX];
-  const velocity1 = numericalComponents[S1_INDEX];
-  const currentPosition2 = numericalComponents[P2_INDEX];
-  const velocity2 = numericalComponents[S2_INDEX];
-  const durationInterval = numericalComponents[TM_INDEX];
+    const firstPairStrings = contentLines[0].split(' ');
+    const secondPairStrings = contentLines[1].split(' ');
+    const durationString = contentLines[2];
 
-  const calculateFuturePosition = (start, rate, span) => start + rate * span;
+    const initialPositionA = parseInt(firstPairStrings[0], 10);
+    const speedA = parseInt(firstPairStrings[1], 10);
 
-  const finalLocation1 = calculateFuturePosition(currentPosition1, velocity1, durationInterval);
-  const finalLocation2 = calculateFuturePosition(currentPosition2, velocity2, durationInterval);
+    const initialPositionB = parseInt(secondPairStrings[0], 10);
+    const speedB = parseInt(secondPairStrings[1], 10);
 
-  const outcomeMessage = (finalLocation1 > finalLocation2) ? 'YES' : 'NO';
+    const timeInterval = parseInt(durationString, 10);
 
-  console.log(outcomeMessage);
+    const finalPositionOfA = initialPositionA + speedA * timeInterval;
+    const finalPositionOfB = initialPositionB + speedB * timeInterval;
+
+    const outcomeIndicator = (finalPositionOfA > finalPositionOfB) ? 'YES' : 'NO';
+
+    return outcomeIndicator;
 }
 
-evaluatePassage(require("node:fs").readFileSync(process.stdin.fd, "utf8"));
+function executeSolution(inputSource) {
+    const computedResult = evaluatePursuitScenario(inputSource);
+    console.log(computedResult);
+}
+
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

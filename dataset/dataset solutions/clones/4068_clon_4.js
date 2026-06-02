@@ -1,15 +1,12 @@
-function evaluateNumericalProductParity(sourceText) {
-    const valuesAsStrings = sourceText.match(/\d+/g);
-    const firstFactor = Number(valuesAsStrings[0]);
-    const secondFactor = Number(valuesAsStrings[1]);
+function processInput(rawData) {
+    const [firstVal, secondVal] = rawData.split(' ').map(Number);
 
-    const firstFactorParity = firstFactor % 2;
-    const secondFactorParity = secondFactor % 2;
+    const isFirstOdd = firstVal % 2 !== 0;
+    const isSecondOdd = secondVal % 2 !== 0;
 
-    const aggregateParity = (firstFactorParity * secondFactorParity) % 2;
+    const finalOutcome = (isFirstOdd && isSecondOdd) ? 'Odd' : 'Even';
 
-    const resultOptions = ['Odd', 'Even'];
-    console.log(resultOptions[aggregateParity]);
+    console.log(finalOutcome);
 }
 
-evaluateNumericalProductParity(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,156 +1,103 @@
-const INPUT_SOURCE_PATH = "/dev/stdin";
-const DECIMAL_RADIX_BASE = 10;
-const ONE_BASED_INDEX_ADJUSTMENT = 1;
+const fileSystem = require("fs");
+const standardInputPath = "/dev/stdin";
+const textEncoding = "utf8";
+const RADIX_DECIMAL = 10;
+const QUERY_INDEX_ADJUSTMENT = 1; // Queries are 1-indexed, convert to 0-indexed
 
-// A robust utility function to parse string values into integers.
-// It includes basic validation to handle non-numeric inputs gracefully,
-// returning a default value and logging an error if parsing fails.
-const ensureParsedInteger = (stringValue, defaultValue = 0) => {
-    const parsedValue = parseInt(stringValue, DECIMAL_RADIX_BASE);
-    if (isNaN(parsedValue)) {
-        // In a production environment, one might throw an exception or use a more
-        // sophisticated logging mechanism. For competitive programming, assuming
-        // mostly valid input, this serves as a defensive check.
-        console.error(`Error: Failed to parse integer from input string: "${stringValue}". Defaulting to ${defaultValue}.`);
-        return defaultValue;
+/**
+ * Parses vector data from input lines.
+ * Each vector consists of a value and a weight.
+ * @param {string[]} lines - Array of input lines.
+ * @param {number} count - Number of vectors to parse.
+ * @param {number} startLineIdx - The starting line index in `lines` for vector data.
+ * @returns {Object.<number, number[]>} An object where keys are 0-indexed vector IDs
+ *                                      and values are arrays [value, weight].
+ */
+function parseVectorData(lines, count, startLineIdx) {
+    const vectors = {};
+    for (let i = 0; i < count; i++) {
+        const lineParts = lines[startLineIdx + i].split(" ");
+        const vectorValue = parseInt(lineParts[0], RADIX_DECIMAL);
+        const vectorWeight = parseInt(lineParts[1], RADIX_DECIMAL);
+        vectors[i] = [vectorValue, vectorWeight];
     }
-    return parsedValue;
-};
-
-// --- Section 1: Input Data Acquisition ---
-// Reads the entire content from the standard input synchronously.
-// The input is expected to be line-delimited, so it's split into an array of strings.
-const rawInputLines = require("fs").readFileSync(INPUT_SOURCE_PATH, "utf8").split("\n");
-
-// --- Section 2: Primary Data Set Parsing ---
-// The first line of the input file specifies the total count of primary data entries.
-const dataEntryCountString = rawInputLines[0];
-const totalDataEntries = ensureParsedInteger(dataEntryCountString);
-
-// Initialize an array to store the primary data. Each element will be an array
-// representing a [value, weight] pair, accessible by its 0-based index.
-const primaryInformationStore = [];
-
-// Populate the primary data store by iterating through the subsequent input lines.
-// Data lines start from the second line (index 1) of the raw input.
-for (let entryIndex = 0; entryIndex < totalDataEntries; ++entryIndex) {
-    const currentEntryLine = rawInputLines[ONE_BASED_INDEX_ADJUSTMENT + entryIndex];
-
-    // Basic validation: ensure the input line exists before attempting to process it.
-    if (!currentEntryLine) {
-        console.error(`Warning: Missing primary data entry line at expected index ${entryIndex}. Pushing default values.`);
-        primaryInformationStore.push([0, 0]); // Add default values to maintain array structure
-        continue;
-    }
-
-    const lineComponents = currentEntryLine.split(" ");
-    const valuePart = ensureParsedInteger(lineComponents[0]);
-    const weightPart = ensureParsedInteger(lineComponents[1]);
-
-    primaryInformationStore.push([valuePart, weightPart]);
+    return vectors;
 }
 
-// --- Section 3: Query Specifications Parsing ---
-// The line immediately following the primary data entries specifies the total number of queries.
-const queryCountLineOffset = ONE_BASED_INDEX_ADJUSTMENT + totalDataEntries;
-const queryCountString = rawInputLines[queryCountLineOffset];
-const totalQueriesToProcess = ensureParsedInteger(queryCountString);
-
-// Initialize an array to store all query specifications. Each element will be an array
-// representing a [initial_traversal_key, maximum_weight_threshold] pair.
-const querySpecificationsList = [];
-
-// Populate the query specifications list. Query lines start after the query count line.
-const queryLinesStartingIndex = queryCountLineOffset + ONE_BASED_INDEX_ADJUSTMENT;
-
-for (let queryIteration = 0; queryIteration < totalQueriesToProcess; ++queryIteration) {
-    const currentQueryRawLine = rawInputLines[queryLinesStartingIndex + queryIteration];
-
-    // Basic validation: ensure the query input line exists.
-    if (!currentQueryRawLine) {
-        console.error(`Warning: Missing query specification line at expected index ${queryIteration}. Pushing default values.`);
-        querySpecificationsList.push([0, 0]); // Add default values
-        continue;
+/**
+ * Parses query data from input lines.
+ * Each query specifies a starting vector index and a maximum allowed weight.
+ * @param {string[]} lines - Array of input lines.
+ * @param {number} count - Number of queries to parse.
+ * @param {number} startLineIdx - The starting line index in `lines` for query data.
+ * @returns {number[][]} An array of arrays, where each inner array is [initialVectorIndex, maxAllowedWeight].
+ */
+function parseQueryData(lines, count, startLineIdx) {
+    const queries = [];
+    for (let i = 0; i < count; i++) {
+        const lineParts = lines[startLineIdx + i].split(" ");
+        const initialVectorIndex = parseInt(lineParts[0], RADIX_DECIMAL) - QUERY_INDEX_ADJUSTMENT;
+        const maxAllowedWeight = parseInt(lineParts[1], RADIX_DECIMAL);
+        queries.push([initialVectorIndex, maxAllowedWeight]);
     }
-
-    const queryParameters = currentQueryRawLine.split(" ");
-
-    // The first parameter of a query is often 1-based in input, converting to 0-based for internal use.
-    const startingTraversalKey = ensureParsedInteger(queryParameters[0]) - ONE_BASED_INDEX_ADJUSTMENT;
-    const maxAllowedWeight = ensureParsedInteger(queryParameters[1]);
-
-    // Ensure the initial traversal key is not negative, providing a safety net.
-    const validatedTraversalKey = Math.max(0, startingTraversalKey);
-
-    querySpecificationsList.push([validatedTraversalKey, maxAllowedWeight]);
+    return queries;
 }
 
-// --- Section 4: Core Query Processing Function ---
-// This function encapsulates the logic for traversing a data structure
-// (conceptually similar to a segment tree or similar binary-indexed structure)
-// and accumulating values based on a cumulative weight limit.
-const executeWeightedTraversalQuery = (
-    initialKeyForTraversal, // The starting index for the traversal.
-    weightLimitThreshold,   // The maximum allowed cumulative weight.
-    dataSource              // The array containing [value, weight] pairs.
-) => {
-    let currentKey = initialKeyForTraversal;
-    let accumulatedResultValue = 0;
-    let cumulativeWeightSum = 0;
+/**
+ * Computes the total value for a given query based on a starting vector index and weight limit.
+ * The computation traverses up the "tree" by repeatedly halving the current index.
+ * @param {number} initialIndex - The 0-indexed starting vector ID for the query.
+ * @param {number} weightLimit - The maximum allowed accumulated weight.
+ * @param {Object.<number, number[]>} vectorMap - The map of all available vectors.
+ * @returns {number} The total accumulated value.
+ */
+function computeQueryValue(initialIndex, weightLimit, vectorMap) {
+    let currentProcessingIndex = initialIndex;
+    let accumulatedWeight = 0;
+    let accumulatedValue = 0;
 
-    // The traversal loop continues as long as the cumulative weight does not exceed the threshold.
-    // In each step, the current key is halved (integer division), moving towards the 'root' (index 0).
-    for (
-        ;
-        cumulativeWeightSum <= weightLimitThreshold;
-        currentKey = Math.floor(currentKey / 2) // Equivalent to a right bit-shift (currentKey >>= 1)
-    ) {
-        // Guard clause: Exit if the current key becomes invalid (negative) or exceeds the data source bounds.
-        // The original logic implies traversal stops at 0, but this adds robustness.
-        if (currentKey < 0 || currentKey >= dataSource.length) {
-            break;
+    while (true) {
+        const currentVectorEntry = vectorMap[currentProcessingIndex];
+        const vectorValue = currentVectorEntry[0];
+        const vectorWeight = currentVectorEntry[1];
+
+        accumulatedWeight += vectorWeight;
+
+        if (accumulatedWeight <= weightLimit) {
+            accumulatedValue += vectorValue;
         }
 
-        const dataEntry = dataSource[currentKey];
-        // Defensive check: ensure the data entry at the current key actually exists.
-        if (!dataEntry) {
-            break;
+        if (currentProcessingIndex === 0) {
+            break; // Stop if we've processed the root (index 0)
         }
-
-        const entryValue = dataEntry[0];
-        const entryWeight = dataEntry[1];
-
-        // Add the current entry's weight to the running cumulative total.
-        cumulativeWeightSum += entryWeight;
-
-        // Only add the entry's value to the result if the cumulative weight,
-        // after adding the current entry's weight, is still within the specified limit.
-        if (cumulativeWeightSum <= weightLimitThreshold) {
-            accumulatedResultValue += entryValue;
-        }
-
-        // Critical break condition: stop the traversal once the 'root' node (index 0) is processed.
-        if (currentKey === 0) {
-            break;
-        }
+        
+        currentProcessingIndex = Math.floor(currentProcessingIndex / 2); // Equivalent to x>>=1
     }
-    return accumulatedResultValue;
-};
+    return accumulatedValue;
+}
 
-// --- Section 5: Execute All Queries and Output Results ---
-// Iterate through each prepared query specification and apply the core traversal logic.
-for (let currentQuerySpecificationIndex = 0; currentQuerySpecificationIndex < totalQueriesToProcess; ++currentQuerySpecificationIndex) {
-    const currentQueryDetail = querySpecificationsList[currentQuerySpecificationIndex];
-    const queryStartingKey = currentQueryDetail[0];
-    const queryWeightLimit = currentQueryDetail[1];
+// --- Main execution flow ---
 
-    // Execute the query using the dedicated function and retrieve the calculated result.
-    const queryResult = executeWeightedTraversalQuery(
-        queryStartingKey,
-        queryWeightLimit,
-        primaryInformationStore
-    );
+const rawInputLines = fileSystem.readFileSync(standardInputPath, textEncoding).split("\n");
 
-    // Print the computed result for the current query to standard output.
-    console.log(queryResult);
+let currentInputLinePointer = 0;
+
+// Parse the number of vectors and then the vector data itself
+const numberOfVectors = parseInt(rawInputLines[currentInputLinePointer++], RADIX_DECIMAL);
+const vectorDataMap = parseVectorData(rawInputLines, numberOfVectors, currentInputLinePointer);
+currentInputLinePointer += numberOfVectors; // Advance pointer past all vector data lines
+
+// Parse the number of queries and then the query data itself
+const numberOfQueries = parseInt(rawInputLines[currentInputLinePointer++], RADIX_DECIMAL);
+const queryDataList = parseQueryData(rawInputLines, numberOfQueries, currentInputLinePointer);
+// currentInputLinePointer += numberOfQueries; // Not strictly necessary as no further input is read
+
+// Process each query and print the result
+for (let k = 0; k < numberOfQueries; k++) {
+    const currentQuery = queryDataList[k];
+    const queryStartIdx = currentQuery[0];
+    const queryWeightLimit = currentQuery[1];
+    
+    const result = computeQueryValue(queryStartIdx, queryWeightLimit, vectorDataMap);
+    console.log(result);
 }

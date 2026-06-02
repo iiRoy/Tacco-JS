@@ -1,148 +1,82 @@
-const parseIntegerVal = (stringValue) => {
-    const RADIX_BASE_DECIMAL = 10;
-    return parseInt(stringValue.trim(), RADIX_BASE_DECIMAL);
-};
+const parseInteger = val => parseInt(val, 10);
+const parseIntegerArray = collection => collection.map(item => parseInteger(item));
+const absoluteValue = num => num > 0 ? num : -num;
 
-function determineLargestValue(...numericalArguments) {
-    const collectionOfValues = numericalArguments;
-    if (collectionOfValues.length === 0) {
-        return Number.NEGATIVE_INFINITY;
-    }
-
-    let currentHighestValue = collectionOfValues[0];
-    let processingIndex = 1;
-
-    while (processingIndex < collectionOfValues.length) {
-        const valueToCompare = collectionOfValues[processingIndex];
-        if (valueToCompare > currentHighestValue) {
-            currentHighestValue = valueToCompare;
+function findMinimum() {
+    const args = arguments;
+    let currentMin = args[0];
+    for (let i = 1; i < args.length; i++) {
+        if (args[i] < currentMin) {
+            currentMin = args[i];
         }
-        processingIndex++;
     }
-    return currentHighestValue;
+    return currentMin;
 }
 
-try {
-    const fileSystemHandler = require("fs");
-    const standardInputPath = "/dev/stdin";
-    const textEncoding = "utf8";
-
-    const rawInputTextContent = fileSystemHandler.readFileSync(standardInputPath, textEncoding);
-
-    executeCoreProcessing(rawInputTextContent);
-
-} catch (inputReadError) {
-    console.error("Critical error during input acquisition:", inputReadError.message);
-    process.exit(1);
+function findMaximum() {
+    const args = arguments;
+    let currentMax = args[0];
+    for (let i = 1; i < args.length; i++) {
+        if (args[i] > currentMax) {
+            currentMax = args[i];
+        }
+    }
+    return currentMax;
 }
 
-function executeCoreProcessing(rawInputTextPayload) {
-    if (typeof rawInputTextPayload !== 'string' || rawInputTextPayload.trim().length === 0) {
-        console.error("Input processing aborted: Provided data is either not a string or is empty.");
-        return 1;
+function greatestCommonDivisor() {
+    const args = arguments;
+    let currentGcd = args[0];
+    const gcdRecursiveHelper = (a, b) => b ? gcdRecursiveHelper(b, a % b) : a;
+    for (let i = 1; i < args.length; i++) {
+        currentGcd = gcdRecursiveHelper(currentGcd, args[i]);
     }
+    return currentGcd;
+}
 
-    const inputLinesArray = rawInputTextPayload.split('\n');
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    if (inputLinesArray.length === 0 || inputLinesArray[0].trim().length === 0) {
-        console.error("Input processing aborted: First line containing element count is missing or empty.");
-        return 1;
-    }
-    const overallElementCount = parseIntegerVal(inputLinesArray[0]);
+function processInputData(rawInputString) {
+    const inputLines = rawInputString.split('\n');
+    const numElements = parseInteger(inputLines[0]);
 
-    if (isNaN(overallElementCount) || overallElementCount < 0) {
-        console.error("Input processing aborted: Invalid or negative element count detected.");
-        return 1;
-    }
+    const sortedNumbers = inputLines.slice(1, numElements + 1).map(parseInteger);
 
-    const parsedNumericDataCollection = [];
-    let currentLineCursor = 0;
+    sortedNumbers.sort((a, b) => a - b);
 
-    while (currentLineCursor < overallElementCount) {
-        const sourceLineIndex = currentLineCursor + 1;
+    let calcX = 0;
+    let calcY = 0;
 
-        if (sourceLineIndex >= inputLinesArray.length) {
-            console.warn(`Warning: Expected ${overallElementCount} data elements but only found ${currentLineCursor}.`);
-            break;
+    if (numElements % 2 === 0) {
+        const halfCount = numElements / 2;
+        const getMultiplierEven = (currentIdx) => (currentIdx >= halfCount) ? 2 : -2;
+
+        for (let idx = 0; idx < numElements; idx++) {
+            calcX += getMultiplierEven(idx) * sortedNumbers[idx];
         }
-
-        const currentNumericalString = inputLinesArray[sourceLineIndex];
-        const convertedNumber = parseIntegerVal(currentNumericalString);
-
-        if (isNaN(convertedNumber)) {
-            console.error(`Error: Non-numeric value detected on line ${sourceLineIndex + 1}: '${currentNumericalString}'. Skipping this entry.`);
-            currentLineCursor++;
-            continue;
-        }
-        parsedNumericDataCollection.push(convertedNumber);
-        currentLineCursor++;
-    }
-
-    parsedNumericDataCollection.sort((valueA, valueB) => {
-        if (valueA < valueB) {
-            return -1;
-        } else if (valueA > valueB) {
-            return 1;
-        } else {
-            return 0;
-        }
-    });
-
-    let firstAccumulatedTotal = 0;
-    let secondAccumulatedTotal = 0;
-
-    const isCountAnEvenNumber = (parsedNumericDataCollection.length % 2) === 0;
-
-    if (isCountAnEvenNumber) {
-        const midCountPosition = parsedNumericDataCollection.length / 2;
-        let iterationPointer = 0;
-
-        while (iterationPointer < parsedNumericDataCollection.length) {
-            const currentDataPoint = parsedNumericDataCollection[iterationPointer];
-            if (iterationPointer >= midCountPosition) {
-                firstAccumulatedTotal = firstAccumulatedTotal + (2 * currentDataPoint);
-            } else {
-                firstAccumulatedTotal = firstAccumulatedTotal - (2 * currentDataPoint);
-            }
-            iterationPointer++;
-        }
-        
-        const middleElementVal = parsedNumericDataCollection[midCountPosition];
-        const nextMiddleElementVal = parsedNumericDataCollection[midCountPosition + 1];
-        firstAccumulatedTotal = firstAccumulatedTotal + middleElementVal - nextMiddleElementVal;
-
+        const midEvenIdx = halfCount;
+        const nextMidEvenIdx = halfCount + 1;
+        calcX += sortedNumbers[midEvenIdx] - sortedNumbers[nextMidEvenIdx];
     } else {
-        const centralIndex = (parsedNumericDataCollection.length - 1) / 2;
-        const subsequentCentralIndex = (parsedNumericDataCollection.length + 1) / 2;
-        const precedingCentralIndex = (parsedNumericDataCollection.length - 3) / 2;
+        const midOddIdx = (numElements - 1) / 2;
+        const getMultiplierOddX = (currentIdx) => (currentIdx >= midOddIdx) ? 2 : -2;
+        const getMultiplierOddY = (currentIdx) => (currentIdx > midOddIdx) ? 2 : -2;
 
-        for (let idx = 0; idx < parsedNumericDataCollection.length; idx++) {
-            const dataElement = parsedNumericDataCollection[idx];
-
-            if (idx >= centralIndex) {
-                firstAccumulatedTotal = firstAccumulatedTotal + (2 * dataElement);
-            } else {
-                firstAccumulatedTotal = firstAccumulatedTotal - (2 * dataElement);
-            }
-
-            if (idx > centralIndex) {
-                secondAccumulatedTotal = secondAccumulatedTotal + (2 * dataElement);
-            } else {
-                secondAccumulatedTotal = secondAccumulatedTotal - (2 * dataElement);
-            }
+        for (let idx = 0; idx < numElements; idx++) {
+            calcX += getMultiplierOddX(idx) * sortedNumbers[idx];
+            calcY += getMultiplierOddY(idx) * sortedNumbers[idx];
         }
-        
-        const centralElementValue = parsedNumericDataCollection[centralIndex];
-        const nextCentralElementValue = parsedNumericDataCollection[subsequentCentralIndex];
-        const previousCentralElementValue = parsedNumericDataCollection[precedingCentralIndex];
+        const firstMidOddIdx = midOddIdx;
+        const secondMidOddIdx = (numElements + 1) / 2;
+        const thirdMidOddIdx = (numElements - 3) / 2;
 
-        firstAccumulatedTotal = firstAccumulatedTotal - (centralElementValue + nextCentralElementValue);
-        secondAccumulatedTotal = secondAccumulatedTotal + (centralElementValue + previousCentralElementValue);
+        calcX -= (sortedNumbers[firstMidOddIdx] + sortedNumbers[secondMidOddIdx]);
+        calcY += (sortedNumbers[firstMidOddIdx] + sortedNumbers[thirdMidOddIdx]);
     }
 
-    const ultimateOutcome = determineLargestValue(firstAccumulatedTotal, secondAccumulatedTotal);
+    const finalResult = findMaximum(calcX, calcY);
 
-    console.log(ultimateOutcome);
+    console.log(finalResult);
 
     return 0;
 }

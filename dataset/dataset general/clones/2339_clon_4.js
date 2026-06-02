@@ -1,1 +1,0 @@
-window['document'].addEventListener('DOMContentLoaded', function() {window['jQuery'](window['document'])[String['fromCharCode'](102, 111, 117, 110, 100, 97, 116, 105, 111, 110, 84, 111, 112, 66, 97, 114)]();});

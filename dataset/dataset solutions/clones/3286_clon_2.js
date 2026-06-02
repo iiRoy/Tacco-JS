@@ -1,84 +1,72 @@
-function ProcessInput ( rawData )
-{
-    rawData = rawData . split ( "\n" ) ;
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    rawData = rawData.split("\n");
 
-    let dimensionsData = rawData[0] . split ( " " ) ;
-    let boardHeight = Number ( dimensionsData[0] ) ;
-    let boardWidth = Number ( dimensionsData[1] ) ;
+    // The first line contains the grid dimensions (Height and Width) separated by a space.
+    let dimensions = rawData[0].split(" ");
 
-    let gameGrid = [ ] ;
-    let recordedConnections = [ ] ;
+    // Parse the height and width values from the dimensions array.
+    const heightVal = Number(dimensions[0]);
+    const widthVal = Number(dimensions[1]);
 
-    for
-        (
-            let currentY = 0 ;
-            currentY < boardHeight ;
-            currentY++
-        )
-    {
-        let rowContent = rawData[currentY + 1] . split ( "" ) ;
-        gameGrid . push ( rowContent ) ;
+    // Initialize an array to store the grid data.
+    let gridData = [];
+    // Initialize an array to record valid moves or positions.
+    let validMoves = [];
+
+    // Loop through the input lines to populate the grid data.
+    // Starting from the second line (index 1) as the first line was dimensions.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // Split each row string into an array of characters.
+        const rowChars = rawData[rowIdx + 1].split("");
+        // Add the character array representing the row to the grid data.
+        gridData.push(rowChars);
     }
 
-    for ( let currentY = 0 ; currentY < boardHeight ; currentY++ )
-    {
-        let checkFlag = false ;
-        for ( let currentX = 0 ; currentX < boardWidth ; currentX++ )
-        {
-            const blockedCell = "#" ;
-            const openCell = "." ;
+    // Iterate through each cell of the grid to find '#' (obstacle) characters.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // This variable is declared but not used in the original logic.
+        let foundObstacle = false;
 
-            if ( gameGrid[currentY][currentX] !== blockedCell )
-            {
-                continue ;
+        for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+            // Define characters for obstacle and empty space.
+            const obstacleChar = "#";
+            const emptyChar = ".";
+
+            // If the current cell is not an obstacle, skip to the next cell.
+            if (gridData[rowIdx][colIdx] !== obstacleChar) {
+                continue;
             }
 
-            if
-            (
-                ( currentY - 1 !== -1 )
-                &&
-                ( gameGrid[currentY - 1][currentX] === openCell )
-            )
-            {
-                recordedConnections . push ( [ [ currentY, currentX ], [ currentY - 1, currentX ] ] ) ;
+            // Check the cell above the current obstacle.
+            // If it's within bounds and is an empty space, record a potential move.
+            if (rowIdx - 1 !== -1 && gridData[rowIdx - 1][colIdx] === emptyChar) {
+                validMoves.push([[rowIdx, colIdx][rowIdx - 1, colIdx]]);
             }
 
-            if
-            (
-                ( currentX - 1 !== -1 )
-                &&
-                ( gameGrid[currentY][currentX - 1] === openCell )
-            )
-            {
-                recordedConnections . push ( [ [ currentY, currentX ], [ currentY, currentX - 1 ] ] ) ;
+            // Check the cell to the left of the current obstacle.
+            // If it's within bounds and is an empty space, record a potential move.
+            if (colIdx - 1 !== -1 && gridData[rowIdx][colIdx - 1] === emptyChar) {
+                validMoves.push([[rowIdx, colIdx][rowIdx, colIdx - 1]]);
             }
 
-            if
-            (
-                ( currentY + 1 < boardHeight )
-                &&
-                ( gameGrid[currentY + 1][currentX] === openCell )
-            )
-            {
-                recordedConnections . push ( [ [ currentY, currentX ], [ currentY + 1, currentX ] ] ) ;
+            // Check the cell below the current obstacle.
+            // If it's within bounds and is an empty space, record a potential move.
+            if (rowIdx + 1 < heightVal && gridData[rowIdx + 1][colIdx] === emptyChar) {
+                validMoves.push([[rowIdx, colIdx][rowIdx + 1, colIdx]]);
             }
 
-            if
-            (
-                ( currentX + 1 < boardWidth )
-                &&
-                ( gameGrid[currentY][currentX + 1] === openCell )
-            )
-            {
-                recordedConnections . push ( [ [ currentY, currentX ], [ currentY, currentX + 1 ] ] ) ;
+            // Check the cell to the right of the current obstacle.
+            // If it's within bounds and is an empty space, record a potential move.
+            if (colIdx + 1 < widthVal && gridData[rowIdx][colIdx + 1] === emptyChar) {
+                validMoves.push([[rowIdx, colIdx][rowIdx, colIdx + 1]]);
             }
         }
     }
-    console . log ( recordedConnections . length ) ;
+
+    // Output the total count of recorded valid moves.
+    console.log(validMoves.length);
 }
 
-
-ProcessInput
-(
-    require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )
-) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

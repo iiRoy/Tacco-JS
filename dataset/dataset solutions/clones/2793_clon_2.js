@@ -1,216 +1,200 @@
-// This section handles the initialization of input processing utilities.
-let inputReader = require('readline').buildInterface({
-  inputStream: process.stdin,
-  outputStream: process.stdout
-});
-let dataStore;
-let receivedLines = [];
-
-// Event handler for each incoming line of data.
-inputReader.attachHandler('inputLineEvent', function(currentLine) {
-  receivedLines.append(currentLine);
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-// Event handler triggered upon completion of input stream.
-inputReader.attachHandler('closingEvent', function() {
-  dataStore = initializeParser(receivedLines);
-  console.warn("\r\n"); // Output a newline for console formatting.
+var inputProcessor;
+var inputLines = [];
 
-  let startTime = Date.now(); // Record the starting timestamp.
-  PerformAnalysis(); // Execute the primary algorithm.
-  let endTime = Date.now() - startTime; // Calculate execution duration.
-
-  debugLog("duration : " + endTime + "milliseconds");
-  debugLog("memory : " + Math.floor(process.memoryUsage().rss / 1024) + "kilobytes");
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-// Creates a deep copy of a given JavaScript object.
-function duplicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+inputReader.on('close', function() {
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Add a newline for cleaner debug output separation
+  var startTime = Date.now();
+  executeAlgorithm();
+  var endTime = Date.now() - startTime;
+  logDebugMessage("time : " + endTime + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+// Utility function to create a deep copy of an object
+function createDeepCopy(originalObject) {
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-// Retrieves and converts the next input item to an integer.
-function retrieveInteger() {
-  return convertInput(getNextItem(), 1);
+// Helper functions for parsing different input types
+function getNextInteger() {
+  return convertInput(fetchNextLine(), 1);
 }
 
-// Retrieves and converts the next input item to an array of strings.
-function retrieveStringArray() {
-  return convertInput(getNextItem(), 2);
+function getNextStringArray() {
+  return convertInput(fetchNextLine(), 2);
 }
 
-// Retrieves and converts the next input item to an array of integers.
-function retrieveIntegerArray() {
-  return convertInput(getNextItem(), 4);
+function getNextIntegerArray() {
+  return convertInput(fetchNextLine(), 4);
 }
 
-// Retrieves and converts the next input item to an array of characters.
-function retrieveCharacterArray() {
-  return convertInput(getNextItem(), 6);
+function getNextCharacterArray() {
+  return convertInput(fetchNextLine(), 6);
 }
 
-// Fetches the next raw item from the data store.
-function getNextItem() {
-  return dataStore.fetchNext();
+function fetchNextLine() {
+  return inputProcessor.next();
 }
 
-// Checks if there are more items available in the data store.
-function hasMoreItems() {
-  return dataStore.hasMoreData();
+function hasMoreLines() {
+  return inputProcessor.hasMoreLines();
 }
 
-// Sets up the input parser with the provided source data.
-function initializeParser(sourceData) {
-  let parserInstance = {
-    dataLines: sourceData,
-    currentIndex: 0,
-    maximumIndex: sourceData.length,
-    // Method to check for more available input.
-    hasMoreData: function() {
-      return (this.currentIndex < this.maximumIndex);
+// Initializes the input handler with provided lines
+function initializeInputHandler(inputData) {
+  var handlerObject = {
+    dataLines: inputData,
+    currentLineIndex: 0,
+    totalLines: inputData.length,
+    hasMoreLines: function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    // Method to get the next input line.
-    fetchNext: function() {
-      if (!this.hasMoreData()) {
-        throw new Error("InputBufferExhausted: No further data available.");
+    next: function() {
+      if (!this.hasMoreLines()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       } else {
-        let currentDataItem = this.dataLines[this.currentIndex++];
-        return currentDataItem;
+        var retrievedLine = this.dataLines[this.currentLineIndex++];
+        return retrievedLine;
       }
     }
   };
-  return parserInstance;
+  return handlerObject;
 }
 
-// Displays a message to the standard output.
-function displayOutput(messageContent) {
-  console.info(messageContent);
+// Function to print the final result to standard output
+function printResult(dataToPrint) {
+  console.log(dataToPrint);
 }
 
-// Outputs a debug message to the error stream.
-function debugLog(debugMessage) {
-  console.warn("diagnostic:" + require("util").inspect(debugMessage, false, null));
+// Function to log debug messages to standard error
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-/*
- * This function performs various data type conversions on input values.
- * The 'conversionType' parameter dictates the operation:
- *  1: Parses the input as an integer.
- *  2: Splits the input string by spaces into a string array.
- *  4: Splits by spaces and converts each part to a number array.
- *  6: Splits the input string into a character array.
- *  7: Splits by characters and converts each part to a number array.
- *  8: Joins an array with spaces.
- *  9: Joins an array with newline characters.
- *  0: Joins an array without any separator.
- *  Default: Returns the input as is.
- */
+// Generic input conversion utility based on a type code
+// conversionType:
+//   1: Parse as integer
+//   2: Split string by spaces
+//   4: Split string by spaces and convert parts to numbers
+//   6: Split string into individual characters
+//   7: Split string into individual characters and convert to numbers
+//   8: Join array elements with spaces
+//   9: Join array elements with newlines
+//   0: Join array elements without any separator
 function convertInput(inputValue, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return Number.parseInt(inputValue, 10);
+        return parseInt(inputValue);
       case 2:
-        return inputValue.split(' ');
+        return inputValue.split(" ");
       case 4:
-        return inputValue.split(' ').map(val => parseInt(val, 10));
+        return inputValue.split(" ").map(Number);
       case 6:
-        return inputValue.split('');
+        return inputValue.split("");
       case 7:
-        return inputValue.split('').map(Number);
+        return inputValue.split("").map(Number);
       case 8:
-        return inputValue.join(' ');
+        return inputValue.join(" ");
       case 9:
-        return inputValue.join('\r\n');
+        return inputValue.join("\n");
       case 0:
-        return inputValue.join('');
+        return inputValue.join("");
       default:
         return inputValue;
     }
   } catch (error) {
-    return inputValue; // In case of conversion error, return original.
+    return inputValue;
   }
 }
 
-// This marks the end of the utility functions.
-function PerformAnalysis() {
-  let inputDimensions = retrieveIntegerArray(); // Read graph dimensions.
-  let nodeCount = inputDimensions[0];
-  let edgeCount = inputDimensions[1];
+// Main function containing the algorithm logic
+function executeAlgorithm() {
+  var firstInputRow = getNextIntegerArray();
+  var nodeCount = firstInputRow[0];
+  var edgeCount = firstInputRow[1];
 
-  // Initialize graph nodes with properties.
-  let graphNodes = Array.from({
-    length: nodeCount
-  }).map(() => ({
-    successors: [], // List of connected nodes.
-    predecessors: new Set(), // Set of nodes that can reach this one.
-    visitedFlag: false, // Flag for BFS/DFS traversal.
-    distanceValue: 0 // Distance from a source node.
-  }));
-
-  // Populate graph edges based on input.
-  for (let idx = 0; idx < edgeCount; idx++) {
-    let edgeData = retrieveIntegerArray();
-    graphNodes[edgeData[0] - 1].successors.append(edgeData[1] - 1);
+  // Initialize graph nodes with properties
+  var graphNodes = new Array(nodeCount);
+  for (var idx = 0; idx < nodeCount; idx++) {
+    graphNodes[idx] = {
+      childrenNodes: [],
+      parentNodes: new Set(),
+      visitedStatus: false,
+      pathLength: 0
+    };
   }
 
-  // Perform DFS from each node to build predecessor relationships up to depth 3.
-  for (let idx = 0; idx < nodeCount; idx++) {
-    traverseGraph(idx, idx, 0);
+  // Populate graph edges based on input
+  for (var idx = 0; idx < edgeCount; idx++) {
+    var tempValues = getNextIntegerArray();
+    graphNodes[tempValues[0] - 1].childrenNodes.push(tempValues[1] - 1);
   }
 
-  // Read the source and target nodes for the pathfinding.
-  let pathEndpoints = retrieveIntegerArray();
-  let sourceNodeIndex = pathEndpoints[0] - 1;
-  let targetNodeIndex = pathEndpoints[1] - 1;
+  // Perform Depth-First Search from each node to find parents within 3 steps
+  for (var idx = 0; idx < nodeCount; idx++) {
+    explorePath(idx, idx, 0);
+  }
 
-  // Initialize a queue for Breadth-First Search (BFS).
-  let processingQueue = [targetNodeIndex];
-  graphNodes[targetNodeIndex].visitedFlag = true; // Mark target as visited.
+  // Get the start and target nodes for the BFS
+  var tempValues = getNextIntegerArray();
+  var startNodeIdx = tempValues[0] - 1;
+  var targetNodeIdx = tempValues[1] - 1;
 
-  let resultDistance = 0; // Stores the shortest path length.
+  // Initialize BFS queue and state
+  var bfsQueue = [targetNodeIdx];
+  graphNodes[targetNodeIdx].visitedStatus = true;
+  var shortestPathResult = 0;
 
-  // Execute BFS to find the shortest path.
-  while (processingQueue.length > 0) {
-    let currentNode = processingQueue.shift(); // Dequeue the next node.
+  // Execute Breadth-First Search
+  while (bfsQueue.length > 0) {
+    var currentNodeIdx = bfsQueue.shift();
 
-    if (currentNode === sourceNodeIndex) {
-      resultDistance = graphNodes[currentNode].distanceValue; // Path found.
+    if (currentNodeIdx === startNodeIdx) {
+      shortestPathResult = graphNodes[currentNodeIdx].pathLength;
       break;
     }
 
-    // Explore predecessors of the current node.
-    let predecessorNodes = Array.from(graphNodes[currentNode].predecessors);
-    for (let idx = 0; idx < predecessorNodes.length; idx++) {
-      let currentPredecessor = predecessorNodes[idx];
-      if (!graphNodes[currentPredecessor].visitedFlag) {
-        graphNodes[currentPredecessor].visitedFlag = true; // Mark as visited.
-        graphNodes[currentPredecessor].distanceValue = graphNodes[currentNode].distanceValue + 1; // Update distance.
-        processingQueue.push(currentPredecessor); // Enqueue for further exploration.
+    var currentParents = Array.from(graphNodes[currentNodeIdx].parentNodes);
+    for (var childIdx = 0; childIdx < currentParents.length; childIdx++) {
+      if (!graphNodes[currentParents[childIdx]].visitedStatus) {
+        graphNodes[currentParents[childIdx]].visitedStatus = true;
+        graphNodes[currentParents[childIdx]].pathLength = graphNodes[currentNodeIdx].pathLength + 1;
+        bfsQueue.push(currentParents[childIdx]);
       }
     }
   }
 
-  // debugLog(graphNodes); // Uncomment to inspect the graph structure.
-
-  // Output the result.
-  if (resultDistance === 0) {
-    displayOutput(-1); // No path found or source/target are the same and not explicitly 0.
+  // Output the final result
+  // logDebugMessage(graphNodes); // Original code had this commented out
+  if (shortestPathResult === 0) {
+    printResult(-1);
   } else {
-    displayOutput(resultDistance); // Display the calculated shortest path length.
+    printResult(shortestPathResult);
   }
 
-  // Recursive Depth-First Search function to establish predecessor links.
-  function traverseGraph(initialNode, currentPosition, currentDepth) {
+  // Recursive Depth-First Search helper function
+  function explorePath(initialNode, currentNode, currentDepth) {
+    // Base case: if the depth limit is reached, add the initial node as a parent
     if (currentDepth === 3) {
-      graphNodes[currentPosition].predecessors.add(initialNode); // Link initial node as a predecessor.
+      graphNodes[currentNode].parentNodes.add(initialNode);
       return;
     }
 
-    // Recursively call for all successors.
-    let successorsList = graphNodes[currentPosition].successors;
-    for (let childIdx = 0; childIdx < successorsList.length; childIdx++) {
-      traverseGraph(initialNode, successorsList[childIdx], currentDepth + 1);
+    // Recursively visit children nodes
+    var childrenOfCurrent = graphNodes[currentNode].childrenNodes;
+    for (var childIdx = 0; childIdx < childrenOfCurrent.length; childIdx++) {
+      explorePath(initialNode, childrenOfCurrent[childIdx], currentDepth + 1);
     }
     return;
   }

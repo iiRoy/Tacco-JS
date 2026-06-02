@@ -1,44 +1,80 @@
-inputDataLines = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . split ( / \n / ) ; // Read all input lines from standard input stream
+const fileSystemModule = require('fs');
 
-for ( let lineIterator = 0 ; lineIterator < inputDataLines.length ; lineIterator ++ ) { // Process each line as a separate expression
+// This script reads Reverse Polish Notation (RPN) expressions from standard input,
+// evaluates them, and prints the results. Each line of input is treated as a
+// separate RPN expression to be calculated.
 
-  let tokenizedExpression = inputDataLines [ lineIterator ] . split ( / \s / ) ; // Split the current line into individual tokens (numbers or operators)
+// Read the entire content from the standard input stream ('/dev/stdin').
+// The content is decoded using UTF-8 encoding and then split into an array of
+// strings, where each string represents a distinct line from the input.
+const inputExpressionLines = fileSystemModule.readFileSync('/dev/stdin', 'utf8').split(/\n/);
 
-  let computationStack = new Array ( ) ; // Initialize an empty stack for Reverse Polish Notation (RPN) evaluation
+// Iterate through each individual line that was obtained from the input.
+// The loop variable 'currentLineIndex' tracks the position of the current line.
+for (let currentLineIndex = 0; currentLineIndex < inputExpressionLines.length; currentLineIndex++) {
+    // For the current line, split its content into an array of individual tokens.
+    // Tokens are separated by any whitespace characters. These tokens can be
+    // either numbers (operands) or arithmetic operators.
+    const expressionTokens = inputExpressionLines[currentLineIndex].split(/\s/);
 
-  for ( let tokenIterator = 0 ; tokenIterator < tokenizedExpression.length ; tokenIterator ++ ) { // Iterate through each token in the expression
+    // Initialize an empty array that will serve as the operand stack.
+    // This stack is crucial for evaluating the RPN expressions.
+    let calculationStack = [];
 
-    let currentElement = tokenizedExpression [ tokenIterator ] ; // Get the current token
+    // Process each token within the current expression line, from left to right.
+    // The loop variable 'tokenPosition' indicates the current token's index.
+    for (let tokenPosition = 0; tokenPosition < expressionTokens.length; tokenPosition++) {
+        // Retrieve the token at the current position for processing.
+        const currentProcessingToken = expressionTokens[tokenPosition];
 
-    switch ( currentElement ) { // Evaluate the token based on its type
-
-      case '+' :
-        computationStack.push ( computationStack.pop ( ) + computationStack.pop ( ) ) ; // Pop two operands, add them, and push the result
-        break ;
-
-      case '-' :
-        // For subtraction, the order of popping matters.
-        // The first pop is the second operand, the second pop is the first operand.
-        computationStack.push ( - computationStack.pop ( ) + computationStack.pop ( ) ) ; // Effectively: operand1 - operand2
-        break ;
-
-      case '*' :
-        computationStack.push ( computationStack.pop ( ) * computationStack.pop ( ) ) ; // Pop two operands, multiply them, and push the result
-        break ;
-
-      case '/' :
-        // For division, the order of popping matters.
-        // The first pop is the divisor (second operand), the second pop is the dividend (first operand).
-        computationStack.push ( 1 / computationStack.pop ( ) * computationStack.pop ( ) ) ; // Effectively: operand1 / operand2
-        break ;
-
-      default :
-        // If it's not an operator, it must be a number (or invalid).
-        // Convert to float, fix precision, and push onto the stack.
-        // If not a number, push 0.
-        computationStack.push ( isNaN ( currentElement ) ? 0 : parseFloat ( currentElement ) . toFixed ( 6 ) ) ;
-    } // End of switch statement for token evaluation
-  } // End of loop for processing tokens in an expression
-
-  console . log ( computationStack [ 0 ] ) ; // After processing all tokens, the result is the only element left on the stack
-} // End of loop for processing all input lines
+        // Use a switch statement to determine the type of the current token
+        // and perform the corresponding action.
+        switch (currentProcessingToken) {
+            case '+':
+                // If the token is an addition operator, pop the top two numbers
+                // from the stack, add them together, and then push the resulting
+                // sum back onto the stack. The order of popping does not affect
+                // the result for commutative operations like addition.
+                calculationStack.push(calculationStack.pop() + calculationStack.pop());
+                break;
+            case '-':
+                // If the token is a subtraction operator, pop the second operand
+                // (which is the subtrahend) first, then pop the first operand
+                // (which is the minuend). Calculate 'minuend - subtrahend' and
+                // push the difference back onto the stack.
+                const secondOperandForSubtraction = calculationStack.pop(); // This is 'B'
+                const firstOperandForSubtraction = calculationStack.pop();  // This is 'A'
+                calculationStack.push(firstOperandForSubtraction - secondOperandForSubtraction);
+                break;
+            case '*':
+                // If the token is a multiplication operator, pop the top two numbers
+                // from the stack, multiply them, and then push the resulting
+                // product back onto the stack. Multiplication is also commutative.
+                calculationStack.push(calculationStack.pop() * calculationStack.pop());
+                break;
+            case '/':
+                // If the token is a division operator, pop the second operand
+                // (which is the divisor) first, then pop the first operand
+                // (which is the dividend). Calculate 'dividend / divisor' and
+                // push the quotient back onto the stack.
+                const secondOperandForDivision = calculationStack.pop(); // This is 'B'
+                const firstOperandForDivision = calculationStack.pop();  // This is 'A'
+                calculationStack.push(firstOperandForDivision / secondOperandForDivision);
+                break;
+            default:
+                // If the token is not recognized as an operator, it is assumed
+                // to be an operand (a number).
+                // First, check if the token represents a valid number using isNaN().
+                // If it's not a number, push the numeric value 0.0 onto the stack.
+                // If it is a number, parse it as a floating-point number and then
+                // format it to a string representation with exactly 6 decimal places.
+                // This string will be implicitly converted back to a number by
+                // JavaScript when arithmetic operations are performed on it later.
+                calculationStack.push(isNaN(currentProcessingToken) ? 0.0 : parseFloat(currentProcessingToken).toFixed(6));
+        }
+    }
+    // After all tokens in a line have been processed, the final result of the
+    // RPN expression should be the sole element remaining on the calculation stack.
+    // Print this final result to the standard output.
+    console.log(calculationStack[0]);
+}

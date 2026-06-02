@@ -1,113 +1,93 @@
-/* This section handles system I/O and utility functions. It's not directly part of the core algorithm. */
-let inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-let dataStream;
-let receivedLines = [];
-
-inputReader.on('line', function(currentLine) {
-    receivedLines.push(currentLine);
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-inputReader.on('close', function() {
-    dataStream = initializeDataProcessor(receivedLines);
-    console.error('\n▲ Input ▼ Output'); // Informative message indicating I/O direction
-    ExecuteProgram();
+var dataHandler;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-function replicateObject(sourceObject) {
-    return (sourceObject instanceof Set)
-        ? new Set(Array.from(sourceObject))
-        : JSON.parse(JSON.stringify(sourceObject));
+inputReader.on('close', function(){
+  dataHandler = initializeInputProcessor(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executeMainLogic();
+});
+
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set)
+    ? new Set(Array.from(originalObject))
+    : JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveInteger()       { return transformValue(fetchNextItem(), 1); }
-function retrieveStringArray()   { return transformValue(fetchNextItem(), 2); }
-function retrieveIntegerArray()  { return transformValue(fetchNextItem(), 4); }
-function retrieveCharacterArray(){ return transformValue(fetchNextItem(), 6); }
+function retrieveInteger(){ return convertInput(getNextItem(), 1); }
+function retrieveStringArray(){ return convertInput(getNextItem(), 2); }
+function retrieveIntegerArray(){ return convertInput(getNextItem(), 4); }
+function retrieveCharacterArray(){ return convertInput(getNextItem(), 6); }
 
-function fetchNextItem() { return dataStream.next(); }
-function hasMoreItems()  { return dataStream.hasNext(); }
+function getNextItem(){ return dataHandler.fetchNext(); }
+function hasMoreItems(){ return dataHandler.checkAvailability(); }
 
-function initializeDataProcessor(incomingDataLines) {
-    return {
-        sourceCollection: incomingDataLines,
-        currentIndex: 0,
-        maximumCount: incomingDataLines.length,
-
-        // Checks if there are more items available for processing.
-        hasNext: function() {
-            return (this.currentIndex < this.maximumCount);
-        },
-
-        // Retrieves the next item from the collection.
-        next: function() {
-            if (this.hasNext()) {
-                return this.sourceCollection[this.currentIndex++];
-            } else {
-                throw new Error('DataProcessingError: No further input items available.'); // Custom error message
-            }
-        }
-    };
-}
-
-function displayResult(outputContent) {
-    console.log(outputContent);
-}
-
-function logErrorDetails(debugInfo) {
-    console.error('Diagnostic Log: ' + require('util').inspect(debugInfo, false, null));
-}
-
-/*
- * This utility function converts an input value based on a specified conversion type.
- *
- * Conversion Type Reference:
- *   - 1: Parses the input as an integer.
- *   - 2: Splits the input string by spaces into an array of strings.
- *   - 4: Splits the input string by spaces and converts each part to a number.
- *   - 6: Splits the input string into an array of individual characters.
- *   - 7: Splits the input string into individual characters and converts each to a number.
- *   - 8: Joins an array of strings with spaces.
- *   - 9: Joins an array of strings with newline characters.
- *   - 0: Joins an array of strings without any separator.
- *   - Default (or unknown type): Returns the input value unchanged.
- */
-function transformValue(inputValue, conversionType) {
-    try {
-        switch (conversionType) {
-            case 1: return parseInt(inputValue);
-            case 2: return inputValue.split(' ');
-            case 4: return inputValue.split(' ').map(val => Number(val));
-            case 6: return inputValue.split('');
-            case 7: return inputValue.split('').map(val => Number(val));
-            case 8: return inputValue.join(' ');
-            case 9: return inputValue.join('\n');
-            case 0: return inputValue.join('');
-            default: return inputValue;
-        }
-    } catch (conversionError) {
-        // In case of any conversion error, return the original input value.
-        return inputValue;
+function initializeInputProcessor(incomingLines){
+  return {
+    dataCollection : incomingLines,
+    currentPosition : 0,
+    maximumCount : incomingLines.length,
+    checkAvailability : function(){
+      return (this.currentPosition < this.maximumCount);
+    },
+    fetchNext : function(){
+      if(this.checkAvailability()){
+        return this.dataCollection[this.currentPosition++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
+  };
 }
 
-/* End of I/O and utility setup. */
-function ExecuteProgram() {
-    let initialParams = retrieveIntegerArray();
-    let elementCount = initialParams[0];
-    let firstValue = initialParams[1];
-    let secondValue = initialParams[2];
+function outputResult(content){
+  console.log(content);
+}
 
-    let numberSequence = retrieveIntegerArray();
+function outputDebug(debugContent){
+  console.error('debug:' + require('util').inspect(debugContent, false, null));
+}
 
-    if (elementCount === 1) {
-        displayResult(Math.abs(numberSequence[elementCount - 1] - secondValue));
-    } else {
-        displayResult(Math.max(
-            Math.abs(numberSequence[elementCount - 2] - numberSequence[elementCount - 1]),
-            Math.abs(numberSequence[elementCount - 1] - secondValue)
-        ));
+function convertInput(inputVal, conversionType){
+  try {
+    switch(conversionType){
+      case 1: return parseInt(inputVal);
+      case 2: return inputVal.split(' ');
+      case 4: return inputVal.split(' ').map(Number);
+      case 6: return inputVal.split('');
+      case 7: return inputVal.split('').map(Number);
+      case 8: return inputVal.join(' ');
+      case 9: return inputVal.join('\n');
+      case 0: return inputVal.join('');
+      default: return inputVal;
     }
+  } catch(error) {
+    return inputVal;
+  }
+}
+
+function executeMainLogic(){
+  var firstLineData = retrieveIntegerArray();
+  var countElements = firstLineData[0];
+  var valueZ = firstLineData[1];
+  var valueW = firstLineData[2];
+
+  var elementList = retrieveIntegerArray();
+
+  if(countElements == 1){
+    outputResult(Math.abs(elementList[countElements - 1] - valueW));
+  } else {
+    outputResult(Math.max(
+      Math.abs(elementList[countElements - 2] - elementList[countElements - 1]),
+      Math.abs(elementList[countElements - 1] - valueW)
+    ));
+  }
 }

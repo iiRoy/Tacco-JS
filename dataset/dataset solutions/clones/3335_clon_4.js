@@ -1,30 +1,34 @@
 'use strict';
-(function(initialData){
-  const parsedNumericData = initialData.trim().split(/\s+/).map(currentEntry => parseInt(currentEntry, 10));
-  const elementCount = parsedNumericData.shift();
-  const numericSequence = parsedNumericData;
+(function(rawInputString){
+  const processedData = rawInputString.trim().split(/\s+/).map(val => Number(val));
+  const elementCount = processedData.shift();
+  const valuesArray = processedData;
 
-  const outcomeMemoization = new Map();
+  const scoreMemo = Array.from({ length: elementCount }, () =>
+    Array.from({ length: elementCount }, () => undefined)
+  );
 
-  function calculateScoreDifference(leftPointer, rightPointer) {
-    if (leftPointer > rightPointer) {
+  const calculateOptimalDifference = (leftBoundary, rightBoundary) => {
+    if (leftBoundary > rightBoundary) {
       return 0;
     }
 
-    const currentRangeKey = `${leftPointer},${rightPointer}`;
-    if (outcomeMemoization.has(currentRangeKey)) {
-      return outcomeMemoization.get(currentRangeKey);
+    if (scoreMemo[leftBoundary][rightBoundary] !== undefined) {
+      return scoreMemo[leftBoundary][rightBoundary];
     }
 
-    const takeLeft = numericSequence[leftPointer] - calculateScoreDifference(leftPointer + 1, rightPointer);
-    const takeRight = numericSequence[rightPointer] - calculateScoreDifference(leftPointer, rightPointer - 1);
+    const takeLeftElement = valuesArray[leftBoundary] - calculateOptimalDifference(leftBoundary + 1, rightBoundary);
 
-    const optimalChoiceForCurrentPlayer = Math.max(takeLeft, takeRight);
-    outcomeMemoization.set(currentRangeKey, optimalChoiceForCurrentPlayer);
-    return optimalChoiceForCurrentPlayer;
-  }
+    const takeRightElement = valuesArray[rightBoundary] - calculateOptimalDifference(leftBoundary, rightBoundary - 1);
 
-  const finalScore = calculateScoreDifference(0, elementCount - 1);
+    const currentOptimal = Math.max(takeLeftElement, takeRightElement);
 
-  console.log(finalScore);
+    scoreMemo[leftBoundary][rightBoundary] = currentOptimal;
+    return currentOptimal;
+  };
+
+  const finalResult = calculateOptimalDifference(0, elementCount - 1);
+
+  console.log(finalResult);
+
 })(require('fs').readFileSync('/dev/stdin','utf8'));

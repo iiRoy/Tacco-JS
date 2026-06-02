@@ -1,24 +1,15 @@
-var     rawInputData    =   require('fs').readFileSync('/dev/stdin'    ,   'utf8'   ) ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input
 
-// Transform the obtained string into an array of numerical values
-// by splitting it based on spaces and converting each part to a number.
-var coordinateComponents    =   rawInputData
-    .split(' ')
-    .map(   function    (   element     )   {
-        return  +   element    ;
-    }   )   ;
+const numericValues = rawData.split(' ').map(function(item) {
+    return +item; // Convert each string segment to a number
+});
 
-// Deconstruct the array to assign specific coordinate values to distinct variables.
-var firstXCoord     =   coordinateComponents[0]   ;
-var firstYCoord     =   coordinateComponents[1]   ;
-var secondXCoord    =   coordinateComponents[2]   ;
-var secondYCoord    =   coordinateComponents[3]   ;
+let coord1X = numericValues[0]; // First point's X coordinate
+let coord1Y = numericValues[1]; // First point's Y coordinate
+let coord2X = numericValues[2]; // Second point's X coordinate
+let coord2Y = numericValues[3]; // Second point's Y coordinate
 
-// Calculate the square of the Euclidean distance between the two points.
-// This involves squaring the differences in both X and Y dimensions and summing them.
-var distanceSquaredValue    =   Math.pow(   firstXCoord     -   secondXCoord    ,   2   )   +
-                                Math.pow(   firstYCoord     -   secondYCoord    ,   2   )   ;
+// Compute the squared Euclidean distance between the two points
+const squaredDistance = Math.pow(coord1X - coord2X, 2) + Math.pow(coord1Y - coord2Y, 2);
 
-// Compute the final Euclidean distance by taking the square root
-// and then format the output to exactly five decimal places before displaying.
-console.log(    Math.sqrt(  distanceSquaredValue    )   .toFixed(   5   )   )   ;
+console.log(Math.sqrt(squaredDistance).toFixed(5)); // Display the square root of the squared distance, formatted to five decimal places

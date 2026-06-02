@@ -1,38 +1,24 @@
-// This JavaScript module processes incoming standard input.
-// Its primary function is to compare two lines of text provided via stdin
-// and report the number of character mismatches between them.
+process.stdin.resume();
 
-process
-  .stdin
-  .resume(); // Activates the standard input stream to listen for data.
+process.stdin.setEncoding("utf8"); // Set the character encoding for standard input
 
-process
-  .stdin
-  .setEncoding("utf8"); /* Configures the input stream's character encoding
-                                      to UTF-8, ensuring proper interpretation of diverse characters. */
+process.stdin.on("data", (rawData) => {
+  // When data is received from standard input, process it
+  const linesArray = rawData.split("\n"); // Split the input string into an array of lines
 
-process.stdin.on("data", var_received_payload => {
-  /* This anonymous function is executed whenever new data arrives on stdin.
-   * 'var_received_payload' holds the incoming text as a string. */
+  const firstString = linesArray[0]; // Get the first line as the first string for comparison
+  const secondString = linesArray[1]; // Get the second line as the second string for comparison
 
-  var extracted_segments = var_received_payload.split("\n"); // Divides the input string into an array of lines.
+  const strLen = firstString.length; // Determine the length of the first string
+  let diffCount = 0; // Initialize a counter for character differences
 
-  var first_text_line = extracted_segments[0]; // Retrieves the very first line of text.
-
-  var second_text_line = extracted_segments[1]; // Obtains the second line of text for comparison.
-
-  var common_char_length = first_text_line.length; // Determines the character count of the first line.
-
-  var char_difference_total = 0; // Initializes a counter for character discrepancies.
-
-  // Iterates through each character position, comparing corresponding characters from both lines.
-  for (var char_idx = 0; char_idx < common_char_length; char_idx++) {
-    // If characters at the current index do not match, increment the discrepancy counter.
-    if (first_text_line[char_idx] !== second_text_line[char_idx]) {
-      char_difference_total++; // Increment count for each differing character.
+  // Loop through each character position in the strings
+  for (let idx = 0; idx < strLen; idx++) {
+    // Compare characters at the current index
+    if (firstString[idx] !== secondString[idx]) {
+      diffCount++; // If characters are different, increment the counter
     }
   }
 
-  // Logs the final tally of character differences to the standard output.
-  console.info(char_difference_total);
+  console.log(diffCount); // Output the total count of differing characters
 });

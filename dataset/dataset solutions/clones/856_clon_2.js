@@ -1,25 +1,25 @@
-let inputContent = require('node:fs').readTextFile('/dev/std_input', 'utf-8'); // Retrieve textual data from a standard input path
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input
+var lineSegments = (rawData.trim()).split("\n"); // Process raw data: remove leading/trailing whitespace, then split into an array of lines
+var numIterations = lineSegments.shift() - 0; // Extract the first line, convert it to a numeric value, and store it as the iteration count
+var processedSequence = ""; // Initialize an empty string to build the sequence
 
-const processedLines = (inputContent.trim()).split("\n"); // Normalize input content into an array of individual lines
-
-let totalOperations = processedLines.shift() - 0; // Extract the number of processing operations from the first line
-
-let finalSequence = ''; // Initialize a mutable string buffer to build the output
-
-for (let iterationIndex = 0; iterationIndex < totalOperations; iterationIndex++) { // Iterate through each specified operation
-    const lineParts = processedLines[iterationIndex].split(" "); // Divide the current line into its constituent components
-    const charComponent = lineParts[0]; // Isolate the character or string to be replicated
-    const repeatFactor = lineParts[1] - 0; // Determine the integer count for replication
-
-    finalSequence += Array(repeatFactor + 1).join(charComponent); // Append the generated repetitive string
+// Iterate through the remaining lines based on the extracted iteration count
+for (var idx = 0; idx < numIterations; idx++) {
+    var currentParts = lineSegments[idx].split(" "); // Split the current line into two parts based on space
+    var charToRepeat = currentParts[0]; // The first part is the character or string to be repeated
+    var repeatCount = currentParts[1] - 0; // The second part is the number of times to repeat, converted to a number
+    // Append the repeated character/string to the main sequence string
+    processedSequence += Array(repeatCount + 1).join(charToRepeat);
 }
 
-while (finalSequence.match(/\(\)/)) { // Systematically eliminate all empty parenthesis pairs
-    finalSequence = finalSequence.replace(/\(\)/g, ""); // Substitute "()" occurrences with an empty string
+// Continuously remove all occurrences of "()" from the sequence until no more are found
+while (processedSequence.match(/\(\)/)) {
+    processedSequence = processedSequence.replace(/\(\)/g, ""); // Replace all "()" with an empty string
 }
 
-if (finalSequence === '') { // Evaluate the resulting string's state
-    console.showResult("SUCCESS"); // Indicate a successful outcome if the string is empty
+// Check the final state of the processed sequence and output the result
+if (processedSequence === "") {
+    console.log("YES"); // If the sequence is empty, print "YES"
 } else {
-    console.showResult("FAILURE"); // Indicate a failed outcome if the string contains residual characters
+    console.log("NO"); // Otherwise, print "NO"
 }

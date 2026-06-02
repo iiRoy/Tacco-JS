@@ -1,70 +1,61 @@
-function processJourney(rawData) {
-    const numericInputs = rawData.slice(0, 5).map(Number);
-    const worldHeight = numericInputs[0];
-    const worldWidth = numericInputs[1];
-    const travelSteps = numericInputs[2];
-    const startRow = numericInputs[3];
-    const startColumn = numericInputs[4];
+function Main(input) {
+    const gridHeight = parseInt(input.shift());
+    const gridWidth = parseInt(input.shift());
+    const moveCount = parseInt(input.shift());
+    const startRow = parseInt(input.shift());
+    const startCol = parseInt(input.shift());
+    const playerPath = input.shift();
+    const enemyPath = input.shift();
 
-    const participantActions = rawData[5];
-    const environmentalRestrictions = rawData[6];
-
-    const initialLimits = {
-        colMinimum: startColumn,
-        colMaximum: startColumn,
-        rowMinimum: startRow,
-        rowMaximum: startRow,
-        adventureStatus: "ACTIVE"
+    let currentRegion = {
+        x1: startCol,
+        x2: startCol,
+        y1: startRow,
+        y2: startRow
     };
 
-    const actionTransformers = {
-        'L': (currentBounds) => ({ ...currentBounds, colMinimum: currentBounds.colMinimum - 1 }),
-        'R': (currentBounds) => ({ ...currentBounds, colMaximum: currentBounds.colMaximum + 1 }),
-        'U': (currentBounds) => ({ ...currentBounds, rowMinimum: currentBounds.rowMinimum - 1 }),
-        'D': (currentBounds) => ({ ...currentBounds, rowMaximum: currentBounds.rowMaximum + 1 })
+    const playerActionMap = {
+        'L': (region) => ({ ...region, x1: region.x1 - 1 }),
+        'R': (region) => ({ ...region, x2: region.x2 + 1 }),
+        'U': (region) => ({ ...region, y1: region.y1 - 1 }),
+        'D': (region) => ({ ...region, y2: region.y2 + 1 })
     };
 
-    const restrictionAppliers = {
-        'L': (currentBounds, dimensions) => ({ ...currentBounds, colMaximum: Math.max(1, currentBounds.colMaximum - 1) }),
-        'R': (currentBounds, dimensions) => ({ ...currentBounds, colMinimum: Math.min(dimensions.width, currentBounds.colMinimum + 1) }),
-        'U': (currentBounds, dimensions) => ({ ...currentBounds, rowMaximum: Math.max(1, currentBounds.rowMaximum - 1) }),
-        'D': (currentBounds, dimensions) => ({ ...currentBounds, rowMinimum: Math.min(dimensions.height, currentBounds.rowMinimum + 1) })
+    const enemyActionMap = {
+        'L': (region) => ({ ...region, x2: Math.max(1, region.x2 - 1) }),
+        'R': (region) => ({ ...region, x1: Math.min(gridWidth, region.x1 + 1) }),
+        'U': (region) => ({ ...region, y2: Math.max(1, region.y2 - 1) }),
+        'D': (region) => ({ ...region, y1: Math.min(gridHeight, region.y1 + 1) })
     };
 
-    const finalState = Array.from({ length: travelSteps }).reduce((currentLimits, _, stepIndex) => {
-        if (currentLimits.adventureStatus === "ABORTED") {
-            return currentLimits;
+    const checkRegionValidity = (region) => {
+        return region.x1 > 0 && region.x2 <= gridWidth && region.y1 > 0 && region.y2 <= gridHeight;
+    };
+
+    const finalRegion = Array.from({ length: moveCount }).reduce((currentBounds, _, idx) => {
+        if (!currentBounds) {
+            return null;
         }
 
-        const currentAction = participantActions.charAt(stepIndex);
-        const currentRestriction = environmentalRestrictions.charAt(stepIndex);
+        const playerMoveChar = playerPath[idx];
+        let afterPlayerMove = playerActionMap[playerMoveChar](currentBounds);
 
-        let postActionLimits = currentLimits;
-        if (actionTransformers[currentAction]) {
-            postActionLimits = actionTransformers[currentAction](currentLimits);
+        if (!checkRegionValidity(afterPlayerMove)) {
+            return null;
         }
 
-        if (postActionLimits.colMinimum <= 0 || postActionLimits.colMaximum > worldWidth ||
-            postActionLimits.rowMinimum <= 0 || postActionLimits.rowMaximum > worldHeight) {
-            return { ...currentLimits, adventureStatus: "ABORTED" };
-        }
+        const enemyMoveChar = enemyPath[idx];
+        let afterEnemyMove = enemyActionMap[enemyMoveChar](afterPlayerMove);
 
-        let postRestrictionLimits = postActionLimits;
-        if (restrictionAppliers[currentRestriction]) {
-            postRestrictionLimits = restrictionAppliers[currentRestriction](postActionLimits, { width: worldWidth, height: worldHeight });
-        }
+        return afterEnemyMove;
 
-        return postRestrictionLimits;
-    }, initialLimits);
+    }, currentRegion);
 
-    if (finalState.adventureStatus === "ACTIVE") {
+    if (finalRegion) {
         console.log("YES");
     } else {
         console.log("NO");
     }
 }
 
-(function () {
-    const dataSource = require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/);
-    processJourney(dataSource);
-})();
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

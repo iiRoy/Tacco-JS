@@ -1,32 +1,53 @@
-const analyzeRegion = (firstPoint, secondPoint, thirdPoint) => {
-    const componentA = firstPoint.x * (secondPoint.y - thirdPoint.y);
-    const componentB = secondPoint.x * (thirdPoint.y - firstPoint.y);
-    const componentC = thirdPoint.x * (firstPoint.y - secondPoint.y);
-    return 0.5 * Math.abs(componentA + componentB + componentC);
+const fileSystem = require('fs');
+
+const AREA_COMPARISON_THRESHOLD = 0.0005;
+
+const makePoint = (xCoord, yCoord) => ({ x: xCoord, y: yCoord });
+
+const computeSignedAreaDoubled = (pA, pB, pC) => {
+    return (pB.x - pA.x) * (pC.y - pA.y) - (pB.y - pA.y) * (pC.x - pA.x);
 };
 
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedRecords = acquiredData.trim().split('\n');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInput.trim().split('\n');
 
-processedRecords.forEach(currentRecord => {
-    const numericalComponents = currentRecord.split(' ').map(Number);
+const CROSS_PRODUCT_THRESHOLD = 2 * AREA_COMPARISON_THRESHOLD;
 
-    const pointOne = { x: numericalComponents[0], y: numericalComponents[1] };
-    const pointTwo = { x: numericalComponents[2], y: numericalComponents[3] };
-    const pointThree = { x: numericalComponents[4], y: numericalComponents[5] };
-    const probePoint = { x: numericalComponents[6], y: numericalComponents[7] };
+processedLines.forEach(currentInputLine => {
+    const coordinateValues = currentInputLine.split(' ').map(Number);
 
-    const primaryArea = analyzeRegion(pointOne, pointTwo, pointThree);
+    const triangleVertex1 = makePoint(coordinateValues[0], coordinateValues[1]);
+    const triangleVertex2 = makePoint(coordinateValues[2], coordinateValues[3]);
+    const triangleVertex3 = makePoint(coordinateValues[4], coordinateValues[5]);
+    const testPoint = makePoint(coordinateValues[6], coordinateValues[7]);
 
-    const sumOfSubAreas = analyzeRegion(pointOne, pointTwo, probePoint) +
-                          analyzeRegion(pointOne, pointThree, probePoint) +
-                          analyzeRegion(pointTwo, pointThree, probePoint);
+    const orientation12P = computeSignedAreaDoubled(triangleVertex1, triangleVertex2, testPoint);
+    const orientation23P = computeSignedAreaDoubled(triangleVertex2, triangleVertex3, testPoint);
+    const orientation31P = computeSignedAreaDoubled(triangleVertex3, triangleVertex1, testPoint);
 
-    const toleranceThreshold = 0.0005;
+    const mainTriangleOrientation = computeSignedAreaDoubled(triangleVertex1, triangleVertex2, triangleVertex3);
 
-    if (Math.abs(primaryArea - sumOfSubAreas) < toleranceThreshold) {
-        process.stdout.write("YES\n");
+    let isPointWithinTriangle = false;
+
+    if (Math.abs(mainTriangleOrientation) < CROSS_PRODUCT_THRESHOLD) {
+        if (Math.abs(orientation12P) < CROSS_PRODUCT_THRESHOLD &&
+            Math.abs(orientation23P) < CROSS_PRODUCT_THRESHOLD &&
+            Math.abs(orientation31P) < CROSS_PRODUCT_THRESHOLD) {
+            isPointWithinTriangle = true;
+        } else {
+            isPointWithinTriangle = false;
+        }
     } else {
-        process.stdout.write("NO\n");
+        if (mainTriangleOrientation > 0) {
+            isPointWithinTriangle = (orientation12P >= -CROSS_PRODUCT_THRESHOLD &&
+                                     orientation23P >= -CROSS_PRODUCT_THRESHOLD &&
+                                     orientation31P >= -CROSS_PRODUCT_THRESHOLD);
+        } else {
+            isPointWithinTriangle = (orientation12P <= CROSS_PRODUCT_THRESHOLD &&
+                                     orientation23P <= CROSS_PRODUCT_THRESHOLD &&
+                                     orientation31P <= CROSS_PRODUCT_THRESHOLD);
+        }
     }
+
+    console.log(isPointWithinTriangle ? "YES" : "NO");
 });

@@ -1,21 +1,18 @@
-const processNumericalInput = (sourceContent) => {
-    const contentLines = sourceContent.trim().split("\n");
+function computeProducts(rawData) {
+  const dataLines = rawData.split('\n').filter(Boolean);
 
-    const [dimOne, dimTwo] = contentLines[0].split(" ").map(val => parseInt(val, 10));
+  const [rowDimension, colDimension] = dataLines.shift().split(' ').map(Number);
 
-    const dataMatrix = contentLines.slice(1, 1 + dimOne)
-                                   .map(line => line.split(" ").map(val => parseInt(val, 10)));
+  const matrixElements = dataLines.slice(0, rowDimension).map(line =>
+    line.split(' ').map(Number)
+  );
 
-    const dataVector = contentLines.slice(1 + dimOne, 1 + dimOne + dimTwo)
-                                   .map(val => parseInt(val, 10));
+  const vectorComponents = dataLines.slice(rowDimension, rowDimension + colDimension).map(Number);
 
-    const computedResults = dataMatrix.map(matrixRow => {
-        return matrixRow.reduce((accumulatedSum, matrixVal, vectorIdx) => {
-            return accumulatedSum + (matrixVal * dataVector[vectorIdx]);
-        }, 0);
-    });
+  matrixElements.map(currentMatrixRow =>
+    currentMatrixRow.reduce((sumAccumulator, matrixValue, elementIndex) =>
+      sumAccumulator + (matrixValue * vectorComponents[elementIndex]), 0)
+  ).forEach(finalResult => console.log(finalResult));
+}
 
-    computedResults.forEach(finalValue => console.log(finalValue));
-};
-
-processNumericalInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeProducts(require("fs").readFileSync("/dev/stdin", "utf8"));

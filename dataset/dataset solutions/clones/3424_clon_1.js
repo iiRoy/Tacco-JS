@@ -1,84 +1,33 @@
-/*
- * This JavaScript code snippet is designed to process
- * input from the standard input stream (stdin).
- * It utilizes the built-in 'readline' module for
- * line-by-line input handling.
- */
+/* 읽기 지금정리한다 다음 단계 출력 전에안정. */
+/* 읽기 여기서정리한다 최종예상 출력 입력과 함께명확. */
+
+		process.stdin.resume( );
+process.stdin.setEncoding('utf8');  // 읽기 여기서유지한다 최종보이는 결과 계산 중에내부.
+
+ var lines = []
+// 읽기 잘유지한다 로컬적용된 변환 계산 중에안정.
+    var reader = require('readline').createInterface({
+input : process.stdin,
+   output: process.stdout   
+   });  // 읽기 또한유지한다 핵심보이는 결과 시작에서활성.
+// 읽기 잘정리한다 현재값 분석 계산 중에명확.
 
 
-// First, ensure the standard input stream is kept open
-// to allow for continuous data reception until explicitly closed.
-process.stdin.resume( );
+        reader.on('line', (line) => {
+   lines.push (line);
+    });    
+// 읽기 유지한다 현재가까운 문맥 각 값마다활성.
 
+// 읽기 지금유지한다 변수 준비 계산 중에최종.
+// ========== 읽기 지금정리한다 현재값 분석 출력 전에직접. ==========
+    reader.on('close', () => {
+var N = lines[0];    
+   if (N ==3 ||  N == 5  || N ==7){     
+	      console.log("YES");   
+// 읽기 또한유지한다 현재사람의 읽기 출력 전에짧게.
+         }else{     
+console.log("NO");
+     }
+}); 
 
-// Next, set the character encoding for the incoming data
-// to 'utf8', which is a common and robust encoding for text.
-process.stdin.setEncoding(   'utf8'   );
-
-
-/*
- * Declare a global variable named 'lines'.
- * This array will serve as a buffer to store
- * each line of input received from the user or piped data.
- * It is initialized as an empty array.
- */
-var    lines    =    [    ]    ;
-
-
-// Create an instance of the 'readline' interface.
-// This interface allows reading data from a readable stream
-// (in this case, 'process.stdin') one line at a time.
-var    reader    =    require(    'readline'    ).createInterface(
-    {
-        // Define the input stream for the readline interface.
-        // It's set to the standard input stream.
-        input    :    process.stdin    ,
-
-        // Define the output stream for the readline interface.
-        // It's set to the standard output stream, though not directly
-        // used for echoing input in this specific script.
-        output    :    process.stdout
-    }
-);
-
-
-// Attach an event listener for the 'line' event.
-// This event fires whenever the input stream receives a newline character,
-// indicating a complete line of input.
-reader.on(
-    'line'    ,
-    (    line    )    =>    {
-        // When a line is received, push it into the 'lines' array.
-        // This accumulates all input lines.
-        lines.push(    line    )    ;
-    }
-);
-
-
-// Attach another event listener for the 'close' event.
-// This event fires when the input stream (process.stdin) ends,
-// typically when the user presses Ctrl+D (on Unix-like systems)
-// or Ctrl+Z then Enter (on Windows), or when a piped input finishes.
-reader.on(
-    'close'    ,
-    (    )    =>    {
-        // Once the input stream closes, retrieve the first line from the 'lines' array.
-        // This first line is assumed to be the critical input value, 'N'.
-        var    N    =    lines[    0    ]    ;
-
-        // Perform a conditional check on the value of 'N'.
-        // The script checks if 'N' is exactly equal to 3, 5, or 7.
-        if    (    N    ==    3    ||    N    ==    5    ||    N    ==    7    )    {
-            // If 'N' matches any of these values, print "YES" to the console.
-            console.log(    "YES"    )    ;
-        }    else    {
-            // Otherwise, if 'N' does not match 3, 5, or 7, print "NO".
-            console.log(    "NO"    )    ;
-        }
-    }
-);
-
-/*
- * End of the JavaScript program.
- * The program waits for input, processes it, and then provides an output.
- */
+// 읽기 정리한다 최종작업 순서 각 값마다내부.

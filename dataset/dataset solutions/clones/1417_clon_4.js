@@ -1,55 +1,48 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const dataLines = rawData.trim().split('\n');
-
-const terminationSequence = "-1 -1 -1";
-
-const assessmentCriteria = [
+const gradeEvaluationRules = [
     {
-        predicate: (primary, secondary, supplementary) => primary === -1 || secondary === -1,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore === -1 || secondaryScore === -1,
         outcome: "F"
     },
     {
-        predicate: (primary, secondary, supplementary) => (primary + secondary) >= 80,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore + secondaryScore >= 80,
         outcome: "A"
     },
     {
-        predicate: (primary, secondary, supplementary) => (primary + secondary) >= 65,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore + secondaryScore >= 65,
         outcome: "B"
     },
     {
-        predicate: (primary, secondary, supplementary) => (primary + secondary) >= 50,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore + secondaryScore >= 50,
         outcome: "C"
     },
     {
-        predicate: (primary, secondary, supplementary) => (primary + secondary) >= 30 && supplementary >= 50,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore + secondaryScore >= 30 && supplementaryScore >= 50,
         outcome: "C"
     },
     {
-        predicate: (primary, secondary, supplementary) => (primary + secondary) >= 30,
+        condition: (primaryScore, secondaryScore, supplementaryScore) => primaryScore + secondaryScore >= 30,
         outcome: "D"
-    },
-    {
-        predicate: (primary, secondary, supplementary) => true,
-        outcome: "F"
     }
 ];
 
-const obtainEvaluation = (componentOne, componentTwo, componentThree) => {
-    for (const criterion of assessmentCriteria) {
-        if (criterion.predicate(componentOne, componentTwo, componentThree)) {
-            return criterion.outcome;
-        }
-    }
-    return "F";
+const deriveFinalGrade = (scoreOne, scoreTwo, scoreThree) => {
+    const matchedRule = gradeEvaluationRules.find(rule =>
+        rule.condition(scoreOne, scoreTwo, scoreThree)
+    );
+    return matchedRule ? matchedRule.outcome : "F";
 };
 
-const finalGrades = dataLines
-    .filter(segment => segment !== terminationSequence)
-    .map(segment => {
-        const scoreComponents = segment.split(' ').map(Number);
-        const [major, minor, supplementary] = scoreComponents;
-        return obtainEvaluation(major, minor, supplementary);
-    });
+rawInputData
+    .trim()
+    .split("\n")
+    .filter(lineContent => lineContent !== "-1 -1 -1")
+    .forEach(lineContent => {
+        const numericValues = lineContent.split(" ").map(Number);
+        const [firstExam, secondExam, makeupExam] = numericValues;
 
-console.log(finalGrades.join('\n'));
+        const computedGrade = deriveFinalGrade(firstExam, secondExam, makeupExam);
+        console.log(computedGrade);
+    });

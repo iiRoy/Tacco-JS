@@ -1,24 +1,28 @@
-// This function processes all the received data.
-function ProcessInput( incomingData )
-{
-    let finalResult = 0; // Initialize the variable that will hold the final computed value.
+// This function processes the entire input data.
+function ProcessInput(rawData) {
+    var finalValue = 0; // Initialize the result accumulator.
 
-    // After processing, the data lines will be accessible as incomingData[0], incomingData[1], etc.
-    incomingData = incomingData.trim() .split( "\n" );
+    // The input string is first cleaned of leading/trailing whitespace,
+    // then split into an array of lines based on newline characters.
+    rawData = rawData.trim().split("\n");
 
-    // This section could be used for parsing multiple lines into an array.
-    // Or perhaps for mapping elements of the first line to integers.
+    // The following lines are commented out in the original and are not active logic.
+    // var lineSegments = rawData.trim().split("\n");
+    // var firstLineNumbers = rawData[0].split(' ').map(val => parseInt(val));
 
-    // Convert the initial portion of the input data into an integer value.
-    let integerVal = parseInt( incomingData );
+    // Parse the primary numerical value from the processed input array.
+    // When parseInt is called with an array, it attempts to parse the first element.
+    var parsedNumber = parseInt(rawData);
 
-    // Perform a calculation: N + N squared + N cubed.
-    finalResult = integerVal + ( integerVal * integerVal ) + ( integerVal * integerVal * integerVal );
+    // Calculate the sum of the number, its square, and its cube.
+    finalValue = parsedNumber + (parsedNumber * parsedNumber) + (parsedNumber * parsedNumber * parsedNumber);
 
-    // Output the calculated result.
-    console.log( finalResult );
+    // Output the computed result to the console.
+    console.log(finalValue);
 }
-// Do not modify the following segment of code; it is responsible for handling standard input/output and initiating the main processing function.
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
-// An alternative way to invoke the processing function using a local file for input.
-// ProcessInput( require('fs').readFileSync('./alternative_data.txt', 'utf-8') );
+
+// The lines below handle standard input/output and function invocation.
+// They should not be modified to preserve the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// An alternative for local testing, reading from a file named 'input.txt':
+// ProcessInput(require('fs').readFileSync('./input.txt', 'utf-8'));

@@ -1,10 +1,11 @@
-const fileData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const sumOfElements = (fileData.trim())
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericValues = fileContent
+  .trim()
   .split('\n')
-  .slice(0, 10)
-  .reduce((accumulator, currentString) => {
-    const numericRepresentation = +currentString;
-    return accumulator + numericRepresentation;
-  }, 0);
+  .map(val => Number(val));
 
-console.log(sumOfElements);
+const totalAccumulation = numericValues
+  .slice(0, 10)
+  .reduce((currentSum, currentVal) => currentSum + currentVal, 0);
+
+console.log(totalAccumulation);

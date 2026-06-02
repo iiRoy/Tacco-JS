@@ -1,48 +1,44 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let inputBuffer = [];
-let fileReader = require('readline').createInterface({
+var inputLines = [];
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-fileReader.on('line', (lineContent) => {
-  inputBuffer.push(lineContent);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-fileReader.on('close', () => {
-  const permutationSize = Number(inputBuffer[0]);
+inputReader.on('close', () => {
+    const sequenceLength = Number(inputLines[0]);
+    const firstSequence = inputLines[1].split(' ').map(Number);
+    const secondSequence = inputLines[2].split(' ').map(Number);
 
-  const factorialValues = new Array(permutationSize + 1);
-  factorialValues[0] = 1;
-  for (let index = 1; index <= permutationSize; index++) {
-    factorialValues[index] = factorialValues[index - 1] * index;
-  }
-
-  const getLexicographicalOrder = (elementSequence, sequenceLength) => {
-    let computedOrder = 0;
-    const elementUsedStatus = new Array(sequenceLength + 1).fill(false); // 1-indexed
-
-    for (let currentPosition = 0; currentPosition < sequenceLength; currentPosition++) {
-      const currentVal = elementSequence[currentPosition];
-      let availableSmallerCount = 0;
-      for (let checkValue = 1; checkValue < currentVal; checkValue++) {
-        if (!elementUsedStatus[checkValue]) {
-          availableSmallerCount++;
-        }
-      }
-      computedOrder += availableSmallerCount * factorialValues[sequenceLength - 1 - currentPosition];
-      elementUsedStatus[currentVal] = true;
+    const factorialCache = new Array(sequenceLength + 1);
+    factorialCache[0] = 1;
+    for (let counter = 1; counter <= sequenceLength; counter++) {
+        factorialCache[counter] = factorialCache[counter - 1] * counter;
     }
-    return computedOrder + 1; // Convert to 1-based rank
-  };
 
-  const firstInputSequence = inputBuffer[1].split(' ').map(numberString => Number(numberString));
-  const secondInputSequence = inputBuffer[2].split(' ').map(numberString => Number(numberString));
+    function determineLexicographicalOrder(targetSequence, len, cache) {
+        let computedOrder = 0;
+        const remainingDigits = Array.from({ length: len }, (_, index) => index + 1);
 
-  const firstSequenceRank = getLexicographicalOrder(firstInputSequence, permutationSize);
-  const secondSequenceRank = getLexicographicalOrder(secondInputSequence, permutationSize);
+        for (let position = 0; position < len; position++) {
+            const currentDigit = targetSequence[position];
+            const indexInRemaining = remainingDigits.indexOf(currentDigit);
+            
+            computedOrder += indexInRemaining * cache[len - 1 - position];
+            
+            remainingDigits.splice(indexInRemaining, 1);
+        }
+        return computedOrder + 1;
+    }
 
-  console.log(Math.abs(firstSequenceRank - secondSequenceRank));
+    const orderA = determineLexicographicalOrder(firstSequence, sequenceLength, factorialCache);
+    const orderB = determineLexicographicalOrder(secondSequence, sequenceLength, factorialCache);
+    
+    console.log(Math.abs(orderA - orderB));
 });

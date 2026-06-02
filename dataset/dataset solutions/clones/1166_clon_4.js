@@ -1,100 +1,107 @@
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+let adjList = [];
+let nodeCount, edgeCount;
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputData) {
+  const inputSegments = inputData.split('\n');
+
+  const graphDimensions = inputSegments[0].split(' ').map(Number);
+  nodeCount = graphDimensions[0];
+  edgeCount = graphDimensions[1];
+
+  for (let i = 0; i < nodeCount; ++i) {
+    adjList[i] = [];
+  }
+
+  inputSegments.slice(1).filter(Boolean).forEach(segment => {
+    const edgeDetails = segment.split(' ').map(Number);
+    establishFlowPath(edgeDetails[0], edgeDetails[1], edgeDetails[2]);
+  });
+
+  console.log(determineNetworkCapacity(0, nodeCount - 1));
 });
 
-function FlowLink(sourceNode, destinationNode, currentCapacity, reverseLinkReference) {
-    this.initialSource = sourceNode;
-    this.destination = destinationNode;
-    this.remainingCapacity = currentCapacity;
-    this.backLink = reverseLinkReference;
+class FlowEdge {
+  constructor(targetNode, capacityValue, reverseEdgeRef) {
+    this.targetNode = targetNode;
+    this.capacityValue = capacityValue;
+    this.reverseEdgeRef = reverseEdgeRef;
+  }
 }
 
-function FlowNetwork(nodeCount) {
-    this.nodeCount = nodeCount;
-    this.adjacencyLists = new Array(nodeCount).fill(null).map(() => []);
+function establishFlowPath(origin, destination, flowCapacity) {
+  const forwardEdge = new FlowEdge(destination, flowCapacity, null);
+  const backwardEdge = new FlowEdge(origin, 0, null);
+
+  forwardEdge.reverseEdgeRef = backwardEdge;
+  backwardEdge.reverseEdgeRef = forwardEdge;
+
+  adjList[origin].push(forwardEdge);
+  adjList[destination].push(backwardEdge);
 }
 
-FlowNetwork.prototype.addConnection = function(origin, terminal, capacityValue) {
-    const forwardPass = new FlowLink(origin, terminal, capacityValue, null);
-    const backwardPass = new FlowLink(terminal, origin, 0, null);
+function findAugmentingPathBFS(sourceNode, terminalNode, totalNodes) {
+  const traversalQueue = [];
+  const visitedNodes = new Array(totalNodes).fill(false);
+  const pathPredecessorEdge = new Array(totalNodes).fill(null);
 
-    forwardPass.backLink = backwardPass;
-    backwardPass.backLink = forwardPass;
+  traversalQueue.push(sourceNode);
+  visitedNodes[sourceNode] = true;
 
-    this.adjacencyLists[origin].push(forwardPass);
-    this.adjacencyLists[terminal].push(backwardPass);
-};
+  let pathFound = false;
+  while (traversalQueue.length > 0) {
+    const currentNode = traversalQueue.shift();
 
-FlowNetwork.prototype.computeMaxFlux = function(startPoint, endPoint) {
-    let totalFlux = 0;
-
-    while (true) {
-        const parentMap = new Array(this.nodeCount).fill(null);
-        const pathBottleneck = new Array(this.nodeCount).fill(0);
-        const traversalQueue = [];
-
-        traversalQueue.push(startPoint);
-        pathBottleneck[startPoint] = Number.MAX_SAFE_INTEGER;
-
-        let pathFound = false;
-        let queueIndex = 0;
-
-        while (queueIndex < traversalQueue.length) {
-            const currentNode = traversalQueue[queueIndex++];
-
-            if (currentNode === endPoint) {
-                pathFound = true;
-                break;
-            }
-
-            for (const connection of this.adjacencyLists[currentNode]) {
-                if (connection.remainingCapacity > 0 && parentMap[connection.destination] === null && connection.destination !== startPoint) {
-                    parentMap[connection.destination] = connection;
-                    pathBottleneck[connection.destination] = Math.min(pathBottleneck[currentNode], connection.remainingCapacity);
-                    traversalQueue.push(connection.destination);
-                }
-            }
-        }
-
-        if (!pathFound) {
-            break;
-        }
-
-        const augmentationAmount = pathBottleneck[endPoint];
-        totalFlux += augmentationAmount;
-
-        let currentPathNode = endPoint;
-        while (currentPathNode !== startPoint) {
-            const edgeInPath = parentMap[currentPathNode];
-            edgeInPath.remainingCapacity -= augmentationAmount;
-            edgeInPath.backLink.remainingCapacity += augmentationAmount;
-            currentPathNode = edgeInPath.initialSource;
-        }
+    if (currentNode === terminalNode) {
+      pathFound = true;
+      break;
     }
 
-    return totalFlux;
-};
+    for (const currentPathSegment of adjList[currentNode]) {
+      if (!visitedNodes[currentPathSegment.targetNode] && currentPathSegment.capacityValue > 0) {
+        visitedNodes[currentPathSegment.targetNode] = true;
+        pathPredecessorEdge[currentPathSegment.targetNode] = currentPathSegment;
+        traversalQueue.push(currentPathSegment.targetNode);
+      }
+    }
+  }
 
-let networkGraph;
-let vertexCount, edgeCount;
-let linesOfInput = [];
+  if (!pathFound) {
+    return 0;
+  }
 
-inputReader.on('line', (dataLine) => {
-    linesOfInput.push(dataLine);
-});
+  let pathIncrement = Infinity;
+  let current = terminalNode;
+  while (current !== sourceNode) {
+    const edgeToCurrent = pathPredecessorEdge[current];
+    pathIncrement = Math.min(pathIncrement, edgeToCurrent.capacityValue);
+    current = edgeToCurrent.reverseEdgeRef.targetNode;
+  }
 
-inputReader.on('close', () => {
-    const dimensions = linesOfInput[0].split(' ').map(Number);
-    vertexCount = dimensions[0];
-    edgeCount = dimensions[1];
+  current = terminalNode;
+  while (current !== sourceNode) {
+    const edgeToCurrent = pathPredecessorEdge[current];
+    edgeToCurrent.capacityValue -= pathIncrement;
+    edgeToCurrent.reverseEdgeRef.capacityValue += pathIncrement;
+    current = edgeToCurrent.reverseEdgeRef.targetNode;
+  }
 
-    networkGraph = new FlowNetwork(vertexCount);
+  return pathIncrement;
+}
 
-    for (let i = 1; i < linesOfInput.length; ++i) {
-        const edgeDetails = linesOfInput[i].split(' ').map(Number);
-        networkGraph.addConnection(edgeDetails[0], edgeDetails[1], edgeDetails[2]);
+function determineNetworkCapacity(sourceNode, terminalNode) {
+  let accumulatedFlow = 0;
+
+  while (true) {
+    const currentPathFlow = findAugmentingPathBFS(sourceNode, terminalNode, nodeCount);
+
+    if (currentPathFlow === 0) {
+      break;
     }
 
-    console.log(networkGraph.computeMaxFlux(0, vertexCount - 1));
-});
+    accumulatedFlow += currentPathFlow;
+  }
+
+  return accumulatedFlow;
+}

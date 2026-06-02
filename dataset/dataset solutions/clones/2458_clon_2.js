@@ -1,133 +1,143 @@
-function processSequenceData( rawDataString )
-{
-    // Split the entire input string into an array of individual lines.
-    let inputLines = rawDataString.split("\n");
+/**
+ * This module processes input strings to calculate a specific numerical result.
+ * It analyzes a sequence of characters to determine a cumulative score based on directional markers.
+ */
 
-    // Extract the first line and then split it into an array of characters, representing the core pattern.
-    const symbolPattern = inputLines[0].split("");
+/**
+ * Main processing function for the input data.
+ * It analyzes a sequence of characters to determine a cumulative score.
+ * @param {string} rawData - The raw input string, typically from stdin.
+ * @returns {number} The calculated total score.
+ */
+function ProcessInput(rawData) {
+  // Split the incoming data by newline characters to handle multi-line input.
+  rawData = rawData.split("\n");
 
-    // Calculate the effective length for our subsequent data structures, which is one greater than the symbol pattern's length.
-    const patternLength = symbolPattern.length + 1;
+  // Extract the first line and convert it into an array of individual characters for analysis.
+  let charSequence = rawData[0].split("");
 
-    // This variable serves as a placeholder; its value is initialized but not utilized in the main computation.
-    let unusedPlaceholder = 0;
+  // Determine the effective length for array initialization, which is one more than the character sequence length.
+  // This accounts for boundary conditions in the problem logic.
+  const sequenceLength = charSequence.length + 1;
 
-    // Initialize the variable that will accumulate the final calculated score.
-    let totalScore = 0;
+  // Initialize a variable that is declared in the original structure but not utilized in the final calculation.
+  let minimumValue = 0;
 
-    // Create an array to act as markers for specific positions within the sequence, initially uninitialized (undefined).
-    let boundaryIndices = new Array(patternLength);
+  // Initialize the variable that will store the final computed sum of scores.
+  let calculationResult = 0;
 
-    // --- First Iteration: Identify and set initial boundary markers ---
-    // Loop through the symbol pattern, stopping before the very last element.
-    for ( let charIndex = 0; charIndex < patternLength - 1; charIndex++ )
-    {
-        // Check for a '<' at the beginning of the sequence.
-        if ( charIndex === 0 && symbolPattern[charIndex] === "<" ) {
-            boundaryIndices[charIndex] = 0; // Mark this specific index.
-        }
-        // Check for a transition where a '>' is immediately followed by a '<'.
-        else if ( symbolPattern[charIndex] === ">" && symbolPattern[charIndex + 1] === "<" ) {
-            boundaryIndices[charIndex + 1] = 0; // Mark the index after the '>' (where '<' starts).
-        }
-        // Check for a '>' at the second-to-last position of the pattern.
-        else if ( charIndex === patternLength - 2 && symbolPattern[charIndex] === ">" ) {
-            boundaryIndices[charIndex + 1] = 0; // Mark the very last index.
-        }
+  // Create an array to mark specific boundary points within the sequence.
+  // These markers help in resetting counts during subsequent passes.
+  const boundaryMarkers = new Array(sequenceLength);
+
+  // First pass: Identify and mark initial boundary conditions based on character patterns.
+  // This loop iterates through the character sequence to find specific configurations.
+  for (let idx = 0; idx < sequenceLength - 1; idx++) {
+    // If at the very beginning of the sequence and the character is '<', mark the current position.
+    if (idx === 0 && charSequence[idx] === "<") {
+      boundaryMarkers[idx] = 0;
+    }
+    // If a '>' character is followed immediately by a '<' character, mark the position after the '>'.
+    else if (charSequence[idx] === ">" && charSequence[idx + 1] === "<") {
+      boundaryMarkers[idx + 1] = 0;
+    }
+    // If at the very end of the sequence and the character is '>', mark the last position.
+    else if (idx === sequenceLength - 2 && charSequence[idx] === ">") {
+      boundaryMarkers[idx + 1] = 0;
+    }
+  }
+
+  // Initialize counters for forward and backward traversals.
+  // These counters track consecutive '<' or '>' characters.
+  let currentCountForward = 0;
+  let currentCountBackward = 0;
+
+  // Initialize arrays to store cumulative counts from forward and backward passes, filled with zeros.
+  // These arrays will hold the scores for each position based on directional sequences.
+  const forwardCounts = new Array(sequenceLength).fill(0);
+  const backwardCounts = new Array(sequenceLength).fill(0);
+
+  // Second pass: Calculate cumulative counts based on '<' and '>' characters, respecting boundary markers.
+  // This loop performs two simultaneous traversals: one forward and one effectively backward.
+  for (let idx = 0; idx < sequenceLength - 1; idx++) {
+    // Reset the forward count if a boundary marker is encountered at the current position.
+    if (boundaryMarkers[idx] === 0) {
+      currentCountForward = 0;
     }
 
-
-    // Initialize counters for consecutive '<' and '>' characters.
-    let leftRunCount = 0;  // Counter for left-to-right accumulation.
-    let rightRunCount = 0; // Counter for right-to-left accumulation.
-
-    // Initialize arrays to store accumulated scores from both directions, filled with zeros.
-    let forwardScores = new Array(patternLength).fill(0);
-    let backwardScores = new Array(patternLength).fill(0);
-
-
-    // --- Second Iteration: Calculate cumulative scores from both ends ---
-    // This loop simultaneously processes the sequence from left-to-right and right-to-left.
-    for ( let position = 0; position < patternLength - 1; position++ )
-    {
-        // Reset the left counter if the current position is marked as a boundary.
-        if ( boundaryIndices[position] === 0 ) {
-            leftRunCount = 0;
-        }
-
-        // Process the symbol pattern from left to right.
-        if ( symbolPattern[position] === "<" ) {
-            leftRunCount++;
-            forwardScores[position + 1] = leftRunCount; // Store the incremented count.
-        } else {
-            leftRunCount = 0;
-            forwardScores[position + 1] = leftRunCount; // Reset count if not '<'.
-        }
-
-
-        // Determine the mirrored position for the right-to-left scan.
-        let reversePosition = patternLength - 1 - position;
-
-        // Reset the right counter if the mirrored position is marked as a boundary.
-        if ( boundaryIndices[reversePosition] === 0 ) {
-            rightRunCount = 0;
-        }
-
-        // Process the symbol pattern from right to left.
-        if ( symbolPattern[patternLength - 2 - position] === ">" ) {
-            rightRunCount++;
-            backwardScores[patternLength - 2 - position] = rightRunCount; // Store the incremented count.
-        } else {
-            rightRunCount = 0;
-            backwardScores[patternLength - 2 - position] = rightRunCount; // Reset count if not '>'.
-        }
+    // If a '<' character is found, increment the forward count and store it in the next position.
+    // Otherwise, reset the forward count.
+    if (charSequence[idx] === "<") {
+      currentCountForward++;
+      forwardCounts[idx + 1] = currentCountForward;
+    } else {
+      currentCountForward = 0;
+      forwardCounts[idx + 1] = currentCountForward;
     }
 
-
-    // Re-initialize the total score before the final summation.
-    totalScore = 0;
-
-    // --- Final Iteration: Aggregate the maximum scores ---
-    // Iterate through all positions in the generated score arrays.
-    for ( let currentIdx = 0; currentIdx < patternLength; currentIdx++ )
-    {
-        // Only add to the total score if the current position was NOT marked as an initial boundary (i.e., it's undefined or not 0).
-        if ( boundaryIndices[currentIdx] !== 0 ) {
-            totalScore += Math.max(forwardScores[currentIdx], backwardScores[currentIdx]);
-        }
+    // Reset the backward count if a boundary marker is encountered from the reverse direction.
+    if (boundaryMarkers[sequenceLength - 1 - idx] === 0) {
+      currentCountBackward = 0;
     }
 
+    // If a '>' character is found (when traversing from the end), increment the backward count and store it.
+    // Otherwise, reset the backward count.
+    if (charSequence[sequenceLength - 2 - idx] === ">") {
+      currentCountBackward++;
+      backwardCounts[sequenceLength - 2 - idx] = currentCountBackward;
+    } else {
+      currentCountBackward = 0;
+      backwardCounts[sequenceLength - 2 - idx] = currentCountBackward;
+    }
+  }
 
-    // Output the final computed total score to the standard console.
-    console.log('%s', totalScore);
+  // Re-initialize the result variable for the final summation, ensuring it starts from zero.
+  calculationResult = 0;
 
-    // Return the calculated score.
-    return totalScore;
+  // Third pass: Aggregate the maximum of forward and backward counts at each position.
+  // This loop calculates the final score by combining the directional counts.
+  for (let idx = 0; idx < sequenceLength; idx++) {
+    // Only consider positions that were marked as boundaries or are part of the sequence.
+    // The original logic implies that if L[i] is not 0, it contributes to the sum.
+    // This condition effectively filters positions based on the initial boundary marking.
+    if (boundaryMarkers[idx] !== 0) {
+      calculationResult += Math.max(forwardCounts[idx], backwardCounts[idx]);
+    }
+  }
+
+  // Output the final computed result to the console, formatted as a string.
+  console.log('%s', calculationResult);
+
+  // Return the final calculated result.
+  return calculationResult;
 }
 
+/**
+ * A utility function for testing the main logic within a web environment.
+ * It retrieves input from a DOM element, processes it, and displays the outcome.
+ * @param {number} testCaseNum - The identifier for the specific test case elements (e.g., "input1", "output1").
+ */
+function testSolution(testCaseNum) {
+  // Retrieve the input string from the designated HTML element using its ID.
+  let testInputString = document.getElementById("input" + testCaseNum).value;
 
-// This auxiliary function is designed for local testing and verifying the correctness of outputs.
-function validateTestCases( testIdentifier )
-{
-    // Fetch the input value associated with the given test identifier from a DOM element.
-    const sourceElementValue = document.getElementById("input" + testIdentifier).value;
+  // Execute the main processing function with the retrieved input to get the computed value.
+  let computedValue = ProcessInput(testInputString);
 
-    // Execute the main processing function with the retrieved input.
-    let calculatedValue = processSequenceData(sourceElementValue);
+  // Initialize the test outcome as "Wrong Answer" by default.
+  let testOutcome = "WA";
 
-    // Initialize the outcome string, defaulting to "Wrong Answer".
-    let validationOutcome = "WA";
+  // Compare the computed result with the expected output, which is retrieved from another HTML element.
+  // The expected output is also split by newline and only the first line is considered.
+  if (computedValue === document.getElementById("output" + testCaseNum).value.split("\n")[0]) {
+    // If the computed value matches the expected output, set the outcome to "Accepted".
+    testOutcome = "AC";
+  }
 
-    // Compare the result obtained from our function with the expected output from another DOM element.
-    if ( calculatedValue == document.getElementById("output" + testIdentifier).value.split("\n")[0] ) {
-        validationOutcome = "AC"; // If they match, update the outcome to "Accepted".
-    }
-
-    // Update the inner HTML of a designated result element with the determined validation outcome.
-    document.getElementById("result" + testIdentifier).innerHTML = validationOutcome;
+  // Display the final test outcome in the corresponding result HTML element.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-
-// The primary entry point for execution, typically used in a competitive programming setup.
-// It reads input from standard input and then calls the main processing function.
-processSequenceData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function with input read from standard input.
+// This is a common pattern in Node.js environments for competitive programming challenges.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,28 +1,22 @@
-const auxiliaryIO = require('readline');
+process.stdin.setEncoding('utf-8');
 
-const processingInterface = auxiliaryIO.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
-
-const PI_CONSTANT_VALUE = Math.PI;
-
-const deriveCircleProperties = (radialMeasurement) => {
-  const parsedMeasurement = Number(radialMeasurement);
-
-  const calculatedArea = PI_CONSTANT_VALUE * Math.pow(parsedMeasurement, 2);
-  const calculatedCircumference = 2 * PI_CONSTANT_VALUE * parsedMeasurement;
-
-  return { area: calculatedArea, circumference: calculatedCircumference };
+const calculateGeometricProperties = (radiusValue) => {
+  const PI_CONSTANT = Math.PI;
+  const squaredRadius = Math.pow(radiusValue, 2);
+  const areaResult = squaredRadius * PI_CONSTANT;
+  const circumferenceResult = PI_CONSTANT * 2 * radiusValue;
+  return { area: areaResult, circumference: circumferenceResult };
 };
 
-processingInterface.on('line', (dataFeed) => {
-  const primaryDatum = dataFeed.trim().split(' ')[0];
-  const { area, circumference } = deriveCircleProperties(primaryDatum);
+process.stdin.on('data', (incomingData) => {
+  const [radiusStringSegment] = incomingData.split(' ');
+  const numericRadius = parseInt(radiusStringSegment, 10);
 
-  const formattedArea = area.toFixed(5);
-  const formattedCircumference = circumference.toFixed(5);
+  const { area, circumference } = calculateGeometricProperties(numericRadius);
 
-  process.stdout.write(`${formattedArea} ${formattedCircumference}\n`);
+  const formattedParts = [area, circumference].map(
+    (valueToFormat) => valueToFormat.toFixed(5)
+  );
+
+  console.log(formattedParts.join(' '));
 });

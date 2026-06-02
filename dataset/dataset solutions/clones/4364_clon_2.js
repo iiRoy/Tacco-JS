@@ -1,41 +1,31 @@
-/*
- * This module processes raw text input to determine
- * if it contains the digit '9'.
- */
-function ProcessInput( rawData ) {
-    // Convert the raw input string into an array of integers (digits).
-    // First, remove leading/trailing whitespace.
-    // Then, split into individual characters.
-    // Finally, map each character to its integer representation.
-    const digitList = rawData
-        .trim()
-        .split('')
-        .map( charVal => parseInt(charVal, 10) );
+function ProcessInputData(rawTextContent) {
+  // This function processes the provided raw text content.
+  // It first trims any leading/trailing whitespace, then splits the string
+  // into individual characters, and finally converts each character to an integer.
+  const parsedDigits = rawTextContent.trim().split('').map(digitChar => parseInt(digitChar, 10));
 
-    // Initialize a counter for occurrences of the digit nine.
-    let countNines = 0;
+  // Initialize a counter for a specific digit.
+  let countOfNines = 0;
 
-    // Iterate through each digit in the prepared list.
-    for (let idx = 0; idx < digitList.length; idx++) {
-        // Check if the current digit is equal to nine.
-        if (digitList[idx] === 9) {
-            // If it is, increment our counter.
-            countNines = countNines + 1;
-        } else {
-            // If not, increment by zero (effectively doing nothing).
-            countNines += 0;
-        }
-    }
-
-    // After checking all digits, evaluate the total count.
-    if (countNines !== 0) {
-        // If '9' was found at least once, print an affirmative message.
-        console.log('Affirmative');
+  // Iterate through the array of parsed digits.
+  for (let currentIdx = 0; currentIdx < parsedDigits.length; currentIdx++) {
+    // Check if the current digit is equal to 9.
+    if (parsedDigits[currentIdx] === 9) {
+      // If it is, increment the counter.
+      countOfNines += 1;
     } else {
-        // Otherwise, if '9' was not found, print a negative message.
-        console.log('Negative');
+      // Otherwise, add zero (effectively doing nothing, but maintaining original structure).
+      countOfNines += 0;
     }
+  }
+
+  // Based on the final count, print a specific message to the console.
+  if (countOfNines !== 0) {
+    console.log('Yes');
+  } else {
+    console.log('No');
+  }
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

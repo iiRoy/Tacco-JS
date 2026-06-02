@@ -1,17 +1,11 @@
-/* This code snippet performs a multiplicative accumulation
- * based on a numeric value obtained from standard input.
- */
+// This JavaScript program processes a numeric input from standard input.
+// It performs a calculation similar to a factorial, but with specific loop conditions.
 for (
-  let productAccumulator = 1, // Initialize the variable that collects the product
-      decrementCounter = importModule("node:fs") // Load the Node.js File System module
-                         .readEntireFile(
-                           "/dev/input_stream", // Specify the input source path
-                           "utf-8"              // Define the character encoding for reading
-                         );
-  decrementCounter-- // Loop condition: continues while truthy, then decrements
+    var resultAccumulator = 1, // Initialize a variable to accumulate the product.
+        iterationCount = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from stdin, treating it as the initial iteration count.
+    iterationCount--; // Decrement the counter; the loop continues as long as the decremented value is truthy (non-zero).
 ) {
-  productAccumulator *= decrementCounter; // Multiply the accumulator by the current counter value
+    resultAccumulator *= iterationCount; // Multiply the accumulator by the current (decremented) iteration count.
 }
-
-// After the loop, 'decrementCounter' will be -1 due to the post-decrement in the condition.
-systemOutput.displayMessage(decrementCounter); // Output the final state of the counter variable
+// After the loop concludes, the 'iterationCount' variable will have reached zero.
+console.log(iterationCount); // Output the final value of the iteration counter, which will always be 0.

@@ -1,51 +1,41 @@
-const systemInputProvider = require('fs');
-const rawContentBuffer = systemInputProvider.readFileSync('/dev/stdin', 'utf8');
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = fileContent.trim().split("\n");
 
-let processedInputLines = rawContentBuffer.trim().split('\n');
-
-const extractNumericSequence = (lineString) => {
-    if (typeof lineString !== 'string' || lineString.length === 0) {
-        return [];
-    }
-    return lineString.split(' ').map(segment => Number.parseInt(segment.trim(), 10)).filter(num => !isNaN(num));
+const getNextNumericValue = () => {
+    const lineData = inputLines.shift();
+    return Number(lineData);
 };
 
-let currentReadPointer = 0;
+const getNextNumericArray = () => {
+    const lineData = inputLines.shift();
+    return lineData.split(" ").map(Number);
+};
+
+const calculateSum = (valueA, valueB) => valueA + valueB;
+
 while (true) {
-    if (currentReadPointer >= processedInputLines.length || processedInputLines[currentReadPointer].trim() === '') {
-        break;
-    }
-    const primaryItemCountString = processedInputLines[currentReadPointer++];
-    const initialItemQuantity = Number.parseInt(primaryItemCountString, 10);
-
-    if (initialItemQuantity === 0) {
+    let itemCount = getNextNumericValue();
+    if (itemCount === 0) {
         break;
     }
 
-    const scoreBaseLine = processedInputLines[currentReadPointer++];
-    const baseScoreComponents = extractNumericSequence(scoreBaseLine);
+    let initialItems = getNextNumericArray();
+    let bonusItems = getNextNumericArray();
 
-    const adjustmentFactorsLine = processedInputLines[currentReadPointer++];
-    let incrementalAdjustments = extractNumericSequence(adjustmentFactorsLine);
+    let currentTotal = initialItems.reduce(calculateSum, 0);
 
-    let totalCurrentScore = baseScoreComponents.reduce((acc, currentVal) => acc + currentVal, 0);
+    bonusItems.sort((valueA, valueB) => valueB - valueA);
 
-    incrementalAdjustments.sort((valA, valB) => valB - valA);
+    let overallMaxProduct = currentTotal * itemCount;
 
-    let highestAchievedProduct = totalCurrentScore * initialItemQuantity;
+    while (bonusItems.length > 0) {
+        itemCount = itemCount - 1;
+        const nextBonus = bonusItems.shift();
+        currentTotal = currentTotal + nextBonus;
 
-    let mutableItemCounter = initialItemQuantity;
-
-    while (incrementalAdjustments.length > 0) {
-        mutableItemCounter--;
-
-        const currentAdjustmentValue = incrementalAdjustments.shift();
-        totalCurrentScore += currentAdjustmentValue;
-
-        const potentialNewProduct = totalCurrentScore * mutableItemCounter;
-
-        highestAchievedProduct = Math.max(highestAchievedProduct, potentialNewProduct);
+        const potentialProduct = currentTotal * itemCount;
+        overallMaxProduct = Math.max(overallMaxProduct, potentialProduct);
     }
 
-    console.log(highestAchievedProduct);
+    console.log(overallMaxProduct);
 }

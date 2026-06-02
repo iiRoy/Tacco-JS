@@ -1,57 +1,45 @@
 'use strict';
 
-function ExecuteCalculation(rawText)
-{
-    // The objective is to calculate the total positive increments
-    // across a sequence of numeric values.
-    // If a value is less than its predecessor, it doesn't contribute
-    // positively to the running total; instead, it establishes a new lower baseline.
+function ProcessInput(rawData) {
+  // Split the entire input string into an array of lines.
+  const dataRows = rawData.split('\n');
 
-    const dataRows = rawText.split
-    (
-        '\n'
-    );
+  // Parse the first line to get the total number of elements.
+  // Although 'itemCount' is not directly used in the core logic, it's part of the input structure.
+  const itemCount = parseInt(dataRows[0], 10);
 
-    const totalElements = parseInt(dataRows[0], 10);
-    const elementMeasurements = dataRows[1]
-        .split(' ')
-        .map(
-            (val) => { return Number(val); }
-        );
+  // Process the second line: split by space and convert each part to a number.
+  const heightsArray = dataRows[1].split(' ').map(Number);
 
-    let lastMeasurement = 0;
-    let accumulatedDifference = 0; // This variable stores the final aggregate.
+  // Initialize a variable to keep track of the height of the preceding element.
+  let previousHeight = 0;
 
-    // Iterate through each individual measurement within the collection.
-    elementMeasurements.forEach(
-        currentMeasurement =>
-        {
-            if (currentMeasurement < lastMeasurement)
-            {
-                // Should the present measurement be less than the prior one,
-                // we simply update the 'last measurement' to this new, lower value
-                // and skip any summation for this particular step.
-                lastMeasurement = currentMeasurement;
-                return;
-            }
+  // Initialize a cumulative counter for the total additions required.
+  let totalAddedFlowers = 0;
 
-            // If the current measurement is equal to or greater than the previous,
-            // we compute the positive difference and add it to our growing sum.
-            accumulatedDifference += (currentMeasurement - lastMeasurement);
-            lastMeasurement = currentMeasurement;
-        }
-    );
+  // Iterate through each height value in the processed array.
+  heightsArray.forEach(currentHeight => {
+    // If the current element's height is less than the previous one,
+    // it implies a "reset" or a decrease, so no additions are made for this step.
+    // The 'previousHeight' is simply updated to the current value.
+    if (currentHeight < previousHeight) {
+      previousHeight = currentHeight;
+      return; // Move to the next element in the array.
+    }
 
-    console.log(accumulatedDifference);
+    // If the current element's height is greater than or equal to the previous one,
+    // calculate the difference and add it to the running total.
+    // This difference represents the number of units "added" to reach the current height.
+    totalAddedFlowers += currentHeight - previousHeight;
+
+    // Update the 'previousHeight' to the current element's height for the subsequent comparison.
+    previousHeight = currentHeight;
+  });
+
+  // Output the final calculated sum of all additions.
+  console.log(totalAddedFlowers);
 }
 
-// Invoke the primary processing function with input read from standard input.
-ExecuteCalculation
-(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8')
-);
-
-// Example test case for local development:
-// ExecuteCalculation(`7
-// 1 5 2 6 3 7 4`);
+// Read the input from standard input using Node.js 'fs' module
+// and then invoke the main processing function with the obtained data.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,34 +1,22 @@
-const fileSystemModule = require('node:fs');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\s/);
 
-const receivedContent = fileSystemModule.readFileSync(0).toString().trim();
-const numericStrings = receivedContent.match(/\S+/g) || [];
+const numericRange = Array.from({ length: 10 }, (_, k) => k + 1);
 
-const baseNumbers = Array.from({ length: 10 }, (_, k) => k + 1);
+const iterationCount = Math.max(0, Math.floor((sourceData.length - 2) / 3) + 1);
 
-const inputTriplets = Array.from({ length: Math.floor(numericStrings.length / 3) }, (_, groupIdx) => {
-    const startIndex = groupIdx * 3;
-    return [
-        Number(numericStrings[startIndex]),
-        Number(numericStrings[startIndex + 1]),
-        Number(numericStrings[startIndex + 2])
-    ];
-});
+Array.from({ length: iterationCount }, (_, groupIndex) => {
+    const currentBasePosition = groupIndex * 3;
 
-inputTriplets.forEach(currentTriplet => {
-    const [firstOperand, secondOperand, forbiddenValue] = currentTriplet;
+    const firstValue = Number(sourceData[currentBasePosition]);
+    const secondValue = Number(sourceData[currentBasePosition + 1]);
+    const thirdValue = Number(sourceData[currentBasePosition + 2]);
 
-    const thresholdValue = 20 - (firstOperand + secondOperand);
+    const upperBoundary = 20 - (firstValue + secondValue);
+    const excludedSet = new Set([firstValue, secondValue, thirdValue]);
 
-    const eligibleNumberCount = baseNumbers.filter(candidateNumber => {
-        return candidateNumber <= thresholdValue &&
-               candidateNumber !== forbiddenValue &&
-               candidateNumber !== secondOperand &&
-               candidateNumber !== firstOperand;
+    const qualifyingElementsCount = numericRange.filter(candidateNumber => {
+        return candidateNumber <= upperBoundary && !excludedSet.has(candidateNumber);
     }).length;
 
-    if (eligibleNumberCount >= 4) {
-        process.stdout.write("Yes\n");
-    } else {
-        process.stdout.write("No\n");
-    }
+    console.log(qualifyingElementsCount >= 4 ? "Yes" : "No");
 });

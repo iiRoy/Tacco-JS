@@ -1,29 +1,46 @@
-// The entire dataset is provided as incoming_data
-function calculateOutcome(sourceData)
-{
-  var dataRows = sourceData.split('\n');
+/*
+ This script processes raw input data to calculate a specific count.
+ It involves parsing numbers from the input and iterating through them
+ to apply a set of conditional rules.
+*/
+function ProcessInput(rawData) {
+    // Split the entire input string into individual lines.
+    const dataLines = rawData.split("\n");
 
-  var initialParameters = dataRows[0].split(' ');
+    // Take the first line and split it by space to get initial parameters.
+    const firstLineParts = dataLines[0].split(" ");
 
-  var upperLimit = Number(initialParameters[0]);
-  var requiredRemainder = Number(initialParameters[1]);
+    // Convert the first part to a number, representing the upper limit for iteration.
+    const upperBound = Number(firstLineParts[0]);
 
-  var finalCount = 0;
+    // Convert the second part to a number, representing the minimum required remainder.
+    const minimumRemainder = Number(firstLineParts[1]);
 
-  for ( var outerNum = requiredRemainder || 1; outerNum <= upperLimit; outerNum++ ) {
-    for ( var innerNum = requiredRemainder || 1; innerNum <= upperLimit; innerNum++ ) {
-      if ( outerNum < innerNum ) {
-        finalCount++;
-      } else {
-        if ( outerNum % innerNum >= requiredRemainder ) {
-          finalCount++;
+    // Initialize a counter for the final result.
+    let resultCount = 0;
+
+    // Outer loop: iterate from 'minimumRemainder' (or 1 if 'minimumRemainder' is falsy) up to 'upperBound'.
+    for (let firstNum = minimumRemainder || 1; firstNum <= upperBound; firstNum++) {
+        // Inner loop: iterate from 'minimumRemainder' (or 1 if 'minimumRemainder' is falsy) up to 'upperBound'.
+        for (let secondNum = minimumRemainder || 1; secondNum <= upperBound; secondNum++) {
+            // Check if the first number is strictly less than the second number.
+            if (firstNum < secondNum) {
+                // If true, increment the result counter.
+                resultCount++;
+            } else {
+                // Otherwise, check if the remainder of 'firstNum' divided by 'secondNum'
+                // is greater than or equal to 'minimumRemainder'.
+                if (firstNum % secondNum >= minimumRemainder) {
+                    // If this condition is met, increment the result counter.
+                    resultCount++;
+                }
+            }
         }
-      }
     }
-  }
 
-  console.log( finalCount );
+    // Output the final calculated count to the console.
+    console.log(resultCount);
 }
 
-// This section should not be altered (reads from stdio and calls the main processing function)
-calculateOutcome( require("fs").readFileSync("/dev/stdin", "utf8") );
+// The following line handles standard input/output and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

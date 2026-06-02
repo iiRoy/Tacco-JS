@@ -1,51 +1,37 @@
 'use strict';
-console.log((function(sourceData) {
-    const desiredValue = parseInt(sourceData.trim(), 10);
+console.log(function(inputString){
+  const targetNum = inputString.trim()|0;
+  const minOps = Array(targetNum + 1).fill(Infinity);
+  minOps[0] = 0;
 
-    if (desiredValue === 0) {
-        return '0';
+  const possibleSteps = new Set();
+  possibleSteps.add(1);
+
+  let currentMultiplier = 6;
+  while (currentMultiplier <= targetNum) {
+    possibleSteps.add(currentMultiplier);
+    if (targetNum / 6 < currentMultiplier) break;
+    currentMultiplier *= 6;
+  }
+
+  currentMultiplier = 9;
+  while (currentMultiplier <= targetNum) {
+    possibleSteps.add(currentMultiplier);
+    if (targetNum / 9 < currentMultiplier) break;
+    currentMultiplier *= 9;
+  }
+
+  const sortedStepSizes = Array.from(possibleSteps).sort((a, b) => a - b);
+
+  for (let currentVal = 1; currentVal <= targetNum; ++currentVal) {
+    for (const step of sortedStepSizes) {
+      if (currentVal - step >= 0) {
+        minOps[currentVal] = Math.min(minOps[currentVal], minOps[currentVal - step] + 1);
+      } else {
+        break;
+      }
     }
+  }
 
-    const availableAmounts = [1];
-    let multiplierSix = 6;
-    while (multiplierSix <= desiredValue) {
-        availableAmounts.push(multiplierSix);
-        if (multiplierSix > desiredValue / 6) break;
-        multiplierSix *= 6;
-    }
-
-    let multiplierNine = 9;
-    while (multiplierNine <= desiredValue) {
-        availableAmounts.push(multiplierNine);
-        if (multiplierNine > desiredValue / 9) break;
-        multiplierNine *= 9;
-    }
-
-    const cheapestPath = new Array(desiredValue + 1).fill(Number.MAX_SAFE_INTEGER);
-    cheapestPath[0] = 0;
-
-    const stateQueue = [[0, 0]];
-    let queueIndex = 0;
-
-    while (queueIndex < stateQueue.length) {
-        const [currentNumber, currentOperations] = stateQueue[queueIndex++];
-
-        if (currentOperations > cheapestPath[currentNumber]) {
-            continue;
-        }
-
-        for (const amountToAdd of availableAmounts) {
-            const nextNumber = currentNumber + amountToAdd;
-
-            if (nextNumber <= desiredValue) {
-                if (cheapestPath[nextNumber] > currentOperations + 1) {
-                    cheapestPath[nextNumber] = currentOperations + 1;
-                    stateQueue.push([nextNumber, currentOperations + 1]);
-                }
-            }
-        }
-    }
-
-    return cheapestPath[desiredValue].toString();
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+  return minOps[targetNum].toString();
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

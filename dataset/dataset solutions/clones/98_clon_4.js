@@ -1,23 +1,16 @@
-const acquireUtility = require('readline');
-let shouldContinueProcessing = true;
-const streamHandler = acquireUtility.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+const fs = require('fs');
+
+const lines = fs.readFileSync('/dev/stdin', 'utf8').split(/\n/);
+const values = lines.map((line) => +line);
+const limit = values.findIndex((value) => !value);
+const active = values.slice(0, limit < 0 ? values.length : limit);
+
+const int32Cell = new Int32Array(1);
+const answers = active.map((value) => {
+  int32Cell[0] = value * value / 98 + 2;
+  return String(int32Cell[0]);
 });
-streamHandler.on('line', (incomingData) => {
-  if (!shouldContinueProcessing) {
-    return;
-  }
-  const numericalValue = Number(incomingData);
-  if (!numericalValue) {
-    shouldContinueProcessing = false;
-    streamHandler.close();
-    return;
-  }
-  const computedResult = Math.floor(numericalValue * numericalValue / 98 + 2);
-  process.stdout.write(computedResult.toString() + '\n');
-});
-streamHandler.on('close', () => {
-  // No explicit action needed upon stream closure for this problem.
-});
+
+if (answers.length) {
+  process.stdout.write(answers.join('\n') + '\n');
+}

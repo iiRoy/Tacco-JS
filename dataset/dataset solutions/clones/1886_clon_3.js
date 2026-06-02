@@ -1,193 +1,116 @@
 "use strict";
+const fileSystem = require("fs");
+const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+let inputTokens = rawInputData.split(/ |\n/);
+let tokenPointer = 0;
 
-// Access the Node.js file system module for input/output operations.
-const fileSystemModule = require("fs");
+const getNextToken = (asString = false) => {
+    const tokenValue = inputTokens[tokenPointer++];
+    return asString ? tokenValue : Number(tokenValue);
+};
 
-// Read the entire content of the standard input stream.
-// The input is expected to be a string, which we decode as UTF-8.
-const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const getMultipleTokens = (count, asString = false) => {
+    const tokensSlice = inputTokens.slice(tokenPointer, tokenPointer + count);
+    tokenPointer += count;
+    return asString ? tokensSlice : tokensSlice.map(Number);
+};
 
-// Split the raw input string into an array of tokens.
-// We use a regular expression to split by one or more whitespace characters,
-// which makes the parsing more robust than splitting by just space or newline.
-const inputTokenArray = rawInputContent.split(/\s+/);
-
-// Maintain an index to keep track of the current position in the token array,
-// allowing sequential consumption of input values.
-let currentTokenPointer = 0;
-
-/**
- * Retrieves and consumes the next token from the global input array.
- * Includes a basic check to prevent reading beyond the available tokens.
- * @param {boolean} [shouldReturnAsString=false] - If true, the token is returned as a string. Otherwise, it's converted to a number.
- * @returns {string|number} The next token from the input stream.
- * @throws {Error} If an attempt is made to read past the end of the input stream.
- */
-function consumeNextToken(shouldReturnAsString = false) {
-    if (currentTokenPointer >= inputTokenArray.length) {
-        // This indicates an unexpected end of input, which might suggest malformed input.
-        throw new Error("Input stream exhausted: No more tokens available to read.");
+const getMatrixTokens = (rows, cols, asString = false) => {
+    const resultMatrix = [];
+    for (let r = 0; r < rows; r++) {
+        const rowTokens = inputTokens.slice(tokenPointer, tokenPointer + cols);
+        tokenPointer += cols;
+        resultMatrix.push(asString ? rowTokens : rowTokens.map(Number));
     }
-    const tokenValue = inputTokenArray[currentTokenPointer++];
-    return shouldReturnAsString ? tokenValue : Number(tokenValue);
+    return resultMatrix;
+};
+
+const createDynamicArray = (initialValue, ...dimensions) => {
+    let arrayConstructionString = `Array(dimensions[${dimensions.length - 1}]).fill().map(() => (${initialValue}))`;
+    for (let i = dimensions.length - 2; i >= 0; i--) {
+        arrayConstructionString = `Array(dimensions[${i}]).fill().map(() => ${arrayConstructionString})`;
+    }
+    return eval(arrayConstructionString);
+};
+
+const programResult = solveProblem();
+if (programResult !== undefined) {
+    console.log(programResult);
 }
 
-// Execute the central algorithm of the program.
-// The computed result will be stored in this variable.
-const finalProgramResult = evaluateParenthesisStringCollection();
+function solveProblem() {
+    const NO_RESPONSE = "No";
+    const YES_RESPONSE = "Yes";
 
-// If the algorithm produces a definite outcome (i.e., not undefined), print it to standard output.
-if (finalProgramResult !== undefined) {
-    console.log(finalProgramResult);
-}
+    const sequenceCount = getNextToken();
+    let positiveEndSequences = []; // Corresponds to 'ud' in original, sequences that start negative and end positive
+    let negativeEndSequences = []; // Corresponds to 'up' in original, sequences that start negative and end negative or zero
+    let totalBalanceSum = 0;
+    let currentAccumulatedBalance = 0; // Corresponds to 'rest' in original, balance from sequences starting non-negative
 
-/**
- * Analyzes a single parenthesis string to determine its balance characteristics.
- * It tracks the current balance and the lowest balance point reached within the string.
- * @param {string} parenthesisSequence - The string composed of '(' and ')' characters.
- * @returns {{ lowestPointReached: number, endingBalance: number }} An object containing
- *   the minimum balance achieved during traversal and the final balance of the sequence.
- */
-function analyzeSingleSequence(parenthesisSequence) {
-    let currentRunningBalance = 0;
-    let absoluteMinimumBalance = 0; // Tracks the minimum balance encountered so far.
-
-    // Iterate through each character of the provided sequence.
-    for (let charIdx = 0; charIdx < parenthesisSequence.length; charIdx++) {
-        const character = parenthesisSequence[charIdx];
-        if (character === '(') {
-            currentRunningBalance++;
-        } else if (character === ')') {
-            currentRunningBalance--;
-            // Update the absolute minimum balance if the current balance drops lower.
-            if (currentRunningBalance < absoluteMinimumBalance) {
-                absoluteMinimumBalance = currentRunningBalance;
+    const analyzeParenthesisSequence = (sequenceString) => {
+        let minBalanceEncountered = 0;
+        let currentSequenceBalance = 0;
+        for (let charIndex = 0; charIndex < sequenceString.length; charIndex++) {
+            if (sequenceString[charIndex] === "(") {
+                currentSequenceBalance++;
+            } else {
+                currentSequenceBalance--;
+                if (currentSequenceBalance < minBalanceEncountered) {
+                    minBalanceEncountered = currentSequenceBalance;
+                }
             }
         }
-        // For robustness, one could add an 'else' block here to handle invalid characters.
-        // For competitive programming, input format is usually guaranteed.
-    }
-    return { lowestPointReached: absoluteMinimumBalance, endingBalance: currentRunningBalance };
-}
+        return { min: minBalanceEncountered, final: currentSequenceBalance };
+    };
 
-/**
- * The primary function that implements the logic to determine if a collection of parenthesis
- * strings can be arranged and concatenated to form a single, perfectly balanced parenthesis string.
- * @returns {string} "Yes" if such an arrangement is possible, "No" otherwise.
- */
-function evaluateParenthesisStringCollection() {
-    const STATUS_IMPOSSIBLE = "No";
-    const STATUS_POSSIBLE = "Yes";
+    for (let i = 0; i < sequenceCount; i++) {
+        const currentSequence = getNextToken(true);
+        const { min: seqMinBalance, final: seqFinalBalance } = analyzeParenthesisSequence(currentSequence);
 
-    // Read the total number of parenthesis segments that need to be processed.
-    const totalSegmentsCount = consumeNextToken();
+        totalBalanceSum += seqFinalBalance;
 
-    // Initial validation for the segment count.
-    // If the count is invalid (e.g., negative or not a number), return "No".
-    // If 0 segments are provided, an empty string is considered balanced, hence "Yes".
-    if (isNaN(totalSegmentsCount) || totalSegmentsCount < 0) {
-        return STATUS_IMPOSSIBLE;
-    }
-    if (totalSegmentsCount === 0) {
-        return STATUS_POSSIBLE;
-    }
-
-    // Data structures to categorize segments based on their balance properties.
-    // 'segmentsNeedingInitialCorrection' are those that start with a deficit but end with a surplus, e.g., "))(".
-    // Stored as objects: { requiredPrefixToPreventNegative: N, netBalanceChange: M }.
-    const segmentsNeedingInitialCorrection = [];
-    
-    // 'segmentsEndingInNetDeficit' are those that go negative and conclude with a non-positive balance, e.g., "())".
-    // Stored as objects: { requiredPrefixToAchieveZeroAtEnd: N, netBalanceChange: M }.
-    const segmentsEndingInNetDeficit = [];
-    
-    // Accumulator for the sum of all final balances across all segments. Must be zero for overall balance.
-    let cumulativeFinalBalance = 0;
-    
-    // Tracks the current balance available from previously processed or "well-behaved" segments.
-    let currentlyAvailableBalance = 0;
-
-    // Loop through each of the provided parenthesis segments.
-    for (let segmentOrdinal = 0; segmentOrdinal < totalSegmentsCount; segmentOrdinal++) {
-        const currentParenthesisString = consumeNextToken(true);
-        const { lowestPointReached, endingBalance } = analyzeSingleSequence(currentParenthesisString);
-
-        cumulativeFinalBalance += endingBalance; // Update the total net balance.
-
-        // Categorize the current segment based on its analysis.
-        if (lowestPointReached >= 0) {
-            // This segment never drops below zero, meaning it's "safe" to append.
-            // Its entire ending balance can be immediately added to the available balance.
-            currentlyAvailableBalance += endingBalance;
-        } else if (endingBalance <= 0) {
-            // This segment drops below zero and ends at or below zero.
-            // It requires a specific number of leading '(' characters to make its *final* balance zero.
-            segmentsEndingInNetDeficit.push({
-                requiredPrefixToAchieveZeroAtEnd: -lowestPointReached + endingBalance,
-                netBalanceChange: endingBalance
-            });
-        } else { // lowestPointReached < 0 && endingBalance > 0
-            // This segment drops below zero but recovers to end with a positive balance.
-            // It requires a prefix of '(-lowestPointReached)' opening parentheses to prevent
-            // it from ever going negative during its own traversal.
-            segmentsNeedingInitialCorrection.push({
-                requiredPrefixToPreventNegative: -lowestPointReached,
-                netBalanceChange: endingBalance
-            });
+        if (seqMinBalance >= 0) {
+            // Sequence never goes negative, can be processed immediately
+            currentAccumulatedBalance += seqFinalBalance;
+        } else if (seqFinalBalance <= 0) {
+            // Sequence starts negative and ends negative or zero
+            // Stored as [-min_balance + final_balance, final_balance]
+            negativeEndSequences.push([-seqMinBalance + seqFinalBalance, seqFinalBalance]);
+        } else {
+            // Sequence starts negative and ends positive
+            // Stored as [-min_balance, final_balance]
+            positiveEndSequences.push([-seqMinBalance, seqFinalBalance]);
         }
     }
 
-    // First crucial check: The sum of all individual segment final balances must be zero.
-    // If not, it's impossible to form a perfectly balanced string.
-    if (cumulativeFinalBalance !== 0) {
-        return STATUS_IMPOSSIBLE;
+    if (totalBalanceSum !== 0) {
+        return NO_RESPONSE;
     }
 
-    // Phase 1: Process segments that need an initial correction but contribute positively.
-    // These segments can potentially increase 'currentlyAvailableBalance', so they are processed first.
-    // Sort them by the `requiredPrefixToPreventNegative` in ascending order.
-    // This strategy ensures we try to satisfy segments with lower prefix requirements first.
-    segmentsNeedingInitialCorrection.sort((segmentA, segmentB) => 
-        segmentA.requiredPrefixToPreventNegative - segmentB.requiredPrefixToPreventNegative
-    );
+    // Process positive-ending sequences first
+    // Sort by the required minimum balance (first element) in ascending order
+    positiveEndSequences.sort((a, b) => a[0] - b[0]);
 
-    for (const segmentDetails of segmentsNeedingInitialCorrection) {
-        const prefixNeeded = segmentDetails.requiredPrefixToPreventNegative;
-        const netValueContribution = segmentDetails.netBalanceChange;
-        
-        // If the `currentlyAvailableBalance` is insufficient to cover the `prefixNeeded`,
-        // then this particular arrangement fails.
-        if (prefixNeeded > currentlyAvailableBalance) {
-            return STATUS_IMPOSSIBLE;
+    for (let i = 0; i < positiveEndSequences.length; i++) {
+        const [requiredBalance, balanceChange] = positiveEndSequences[i];
+        if (requiredBalance > currentAccumulatedBalance) {
+            return NO_RESPONSE;
         }
-        // If successful, add its net contribution to the available balance.
-        currentlyAvailableBalance += netValueContribution;
+        currentAccumulatedBalance += balanceChange;
     }
 
-    // Phase 2: Process segments that end in a net deficit (or zero).
-    // These segments typically consume from `currentlyAvailableBalance` (since `netBalanceChange` <= 0).
-    // Sort them by `requiredPrefixToAchieveZeroAtEnd` in descending order.
-    // This prioritizes segments that require a larger initial buffer to make their *final* balance zero,
-    // ensuring we use the largest available balance for the most demanding segments.
-    segmentsEndingInNetDeficit.sort((segmentA, segmentB) => 
-        segmentB.requiredPrefixToAchieveZeroAtEnd - segmentA.requiredPrefixToAchieveZeroAtEnd
-    );
+    // Process negative-ending sequences next
+    // Sort by the required minimum balance (first element) in descending order
+    negativeEndSequences.sort((a, b) => b[0] - a[0]);
 
-    for (const segmentDetails of segmentsEndingInNetDeficit) {
-        const prefixRequiredToClear = segmentDetails.requiredPrefixToAchieveZeroAtEnd;
-        const netValueLoss = segmentDetails.netBalanceChange; // This value is always <= 0.
-
-        // If the `currentlyAvailableBalance` cannot meet the `prefixRequiredToClear`,
-        // then a balanced string cannot be formed.
-        if (prefixRequiredToClear > currentlyAvailableBalance) {
-            return STATUS_IMPOSSIBLE;
+    for (let i = 0; i < negativeEndSequences.length; i++) {
+        const [requiredBalance, balanceChange] = negativeEndSequences[i];
+        if (requiredBalance > currentAccumulatedBalance) {
+            return NO_RESPONSE;
         }
-        // Update the available balance. Since `netValueLoss` is non-positive, this will
-        // decrease or maintain the balance.
-        currentlyAvailableBalance += netValueLoss;
+        currentAccumulatedBalance += balanceChange;
     }
 
-    // If all checks pass and all segments can be successfully integrated,
-    // then it is possible to form a perfectly balanced string.
-    return STATUS_POSSIBLE;
+    return YES_RESPONSE;
 }

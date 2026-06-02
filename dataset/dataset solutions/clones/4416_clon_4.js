@@ -1,13 +1,12 @@
-const dataContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
+function Main(rawInput) {
+    const [firstVal, secondVal, thirdVal, fourthVal] = rawInput.split(" ").map(Number);
 
-const [firstVal, secondVal, thirdVal, fourthVal] = dataContent
-  .trim()
-  .split(/\s+/)
-  .map(Number);
+    const commonStartPoint = Math.max(firstVal, thirdVal);
+    const commonEndPoint = Math.min(secondVal, fourthVal);
 
-const intersectionResult = Math.max(
-  0,
-  Math.min(secondVal, fourthVal) - Math.max(firstVal, thirdVal)
-);
+    const segmentLength = Math.max(0, commonEndPoint - commonStartPoint);
 
-process.stdout.write(String(intersectionResult) + "\n");
+    console.log(segmentLength);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

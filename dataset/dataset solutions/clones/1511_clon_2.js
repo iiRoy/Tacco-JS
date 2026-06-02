@@ -1,50 +1,41 @@
-function PrimaryProcess(rawData) {
-  // First, tidy up the raw textual input.
-  let processedData = rawData.trim();
+function ProcessInput(rawData) {
+    rawData = rawData.trim(); // Remove leading/trailing whitespace
+    const targetNumber = parseInt(rawData, 10); // Convert input string to an integer with base 10
 
-  // Convert the cleaned string into an integer, using base 10.
-  const upperLimit = parseInt(processedData, 10);
+    // The task is to find the sum of divisor counts for (targetNumber - currentValue)
+    // where currentValue ranges from 1 up to targetNumber - 1.
 
-  // The objective is to find the sum of divisor counts for (upperLimit - iteratorVal).
+    let totalDivisorSum = 0; // Initialize accumulator for the total count
+    for (let currentValue = 1; currentValue < targetNumber; currentValue++) { // Iterate from 1 up to targetNumber - 1
+        const difference = targetNumber - currentValue; // Calculate the difference
 
-  let totalOccurrences = 0; // Initialize a variable to accumulate the total count.
-  for (let iteratorVal = 1; iteratorVal < upperLimit; iteratorVal++) {
-    // Calculate the difference between the upper bound and the current loop value.
-    const difference = upperLimit - iteratorVal;
-
-    // Add the number of divisors for this difference to our running total.
-    totalOccurrences += calculateDivisorCount(difference);
-  }
-
-  // Display the final computed sum of divisor counts.
-  console.log(totalOccurrences);
-}
-
-// A helper routine designed to ascertain the total number of positive divisors for an integer.
-function calculateDivisorCount(targetNumber) {
-  let divisorTally = 0; // This variable will store the count of divisors found.
-  let sqrtMatch = 0;    // This flag indicates if the target number is a perfect square.
-
-  // Iterate from 1 up to the square root of the target number.
-  // This optimizes the search as divisors come in pairs (except for the square root itself).
-  for (let factorCandidate = 1; factorCandidate * factorCandidate <= targetNumber; factorCandidate++) {
-    // If the current factorCandidate does not divide the targetNumber evenly, skip it.
-    if (targetNumber % factorCandidate !== 0) {
-      continue;
+        totalDivisorSum += calculateDivisorCount(difference); // Add the number of divisors of the difference to the total
     }
 
-    // If factorCandidate squared equals the targetNumber, it means factorCandidate is the square root.
-    // In this case, it's a single divisor, not a pair.
-    if (factorCandidate * factorCandidate === targetNumber) {
-      sqrtMatch++;
-    }
-    divisorTally++; // Increment our count for the found divisor.
-  }
-
-  // Multiply the count by 2 because each divisor (except square roots) has a corresponding pair.
-  // Subtract 'sqrtMatch' to correct for perfect squares, which were counted once but would be doubled.
-  return divisorTally * 2 - sqrtMatch;
+    console.log(totalDivisorSum); // Output the final calculated sum
 }
 
-// Invoke the primary processing function, reading input from standard input stream.
-PrimaryProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This function determines the total number of divisors for a given positive integer.
+function calculateDivisorCount(valueToCheck) {
+    let divisorCounter = 0; // Counter for divisors found
+    let perfectSquareDivisor = 0; // Flag for perfect square roots (to avoid double counting)
+
+    // Iterate up to the square root of the number
+    for (let iterator = 1; iterator * iterator <= valueToCheck; iterator++) {
+        if (valueToCheck % iterator !== 0) { // If 'iterator' is not a divisor, skip
+            continue;
+        }
+        if (iterator * iterator === valueToCheck) { // If 'iterator' is the square root, it's a single divisor
+            perfectSquareDivisor++; // Mark that we found a perfect square divisor
+        }
+        divisorCounter++; // Increment divisor count for 'iterator'
+    }
+
+    // Each divisor 'iterator' (less than sqrt) has a corresponding divisor 'valueToCheck / iterator'.
+    // So, we multiply the count by 2. If 'valueToCheck' is a perfect square, its square root was counted once,
+    // but it's only one divisor, so we subtract 1 (represented by 'perfectSquareDivisor').
+    return (divisorCounter * 2) - perfectSquareDivisor;
+}
+
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,22 +1,45 @@
-const fileSystemModule = require('fs');
+(function () {
+  let collectedInputBuffer = '';
 
-const retrieveAndProcess = () => {
-    const rawDataBuffer = fileSystemModule.readFileSync('/dev/stdin');
-    const textContent = rawDataBuffer.toString('utf8');
-    const firstLineValue = textContent.split('\n')[0];
-    return parseFloat(firstLineValue);
-};
+  function initiateProcessing() {
+    const deltaX = parseFloat(collectedInputBuffer[0]);
 
-const integrateSquaredIntervals = (intervalWidth, ceilingValue, currentIteration = 1, cumulativeSum = 0) => {
-    const currentPoint = currentIteration * intervalWidth;
-    if (currentPoint >= ceilingValue) {
-        return Math.round(cumulativeSum);
-    } else {
-        const segmentContribution = Math.pow(currentPoint, 2) * intervalWidth;
-        return integrateSquaredIntervals(intervalWidth, ceilingValue, currentIteration + 1, cumulativeSum + segmentContribution);
+    console.log(computeAreaApproximation(deltaX));
+  }
+
+  function* generateMultipliers(stepValue, limitValue) {
+    let currentFactor = 1;
+    while (currentFactor * stepValue < limitValue) {
+      yield currentFactor;
+      currentFactor++;
     }
-};
+  }
 
-const fixedUpperBoundary = 600;
-const inputParameter = retrieveAndProcess();
-console.log(integrateSquaredIntervals(inputParameter, fixedUpperBoundary));
+  function computeAreaApproximation(segmentWidth) {
+    const integrationUpperBoundary = 600;
+
+    if (segmentWidth <= 0) {
+      // Replicate original behavior: infinite loop for non-positive step sizes
+      while (true) {}
+    }
+
+    let totalAccumulatedSum = 0;
+    for (const currentIterationFactor of generateMultipliers(segmentWidth, integrationUpperBoundary)) {
+      const currentPointX = currentIterationFactor * segmentWidth;
+      totalAccumulatedSum += (currentPointX * currentPointX);
+    }
+
+    return Math.round(totalAccumulatedSum * segmentWidth);
+  }
+
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', function (dataChunk) {
+    collectedInputBuffer += dataChunk;
+  });
+
+  process.stdin.on('end', function () {
+    collectedInputBuffer = collectedInputBuffer.split('\n');
+    initiateProcessing();
+  });
+}());

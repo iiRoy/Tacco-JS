@@ -1,70 +1,63 @@
-// Function to analyze an input character sequence for specific patterns.
-function ProcessSequence(rawText) {
-    // Convert the raw input string into an array of individual characters.
-    // This allows for easier manipulation and removal of elements during processing.
-    let charArray = rawText.split("");
+function ProcessSequence(charSequence) {
+    // Convert the incoming string into an array of characters.
+    // This allows for easy manipulation like splicing.
+    let currentSequence = charSequence.split("");
 
+    // A boolean flag to track if any matching pairs were found during an iteration
+    // of the inner loop. It's initialized to true at the start of each outer loop pass.
+    let noMoreMatches = true;
 
-    // Initialize a flag to control the main processing loop.
-    // This flag will be set to 'true' if any modifications occur in a pass,
-    // indicating that another pass is needed.
-    let wasModifiedInPass = true;
+    // This variable will accumulate the count of successfully removed "10" or "01" pairs.
+    let matchCount = 0;
 
-    // Initialize a counter to keep track of the number of matched character pairs found.
-    // This count will be used to calculate the final result.
-    let totalMatches = 0;
+    // The main processing loop. It continues indefinitely until no more pairs can be found.
+    while (true) {
+        // Reset the flag for the current pass. If no pairs are found in the upcoming
+        // inner loop, this flag will remain true, causing the outer loop to terminate.
+        noMoreMatches = true;
 
+        // Iterate through the character array to find and remove "10" or "01" pairs.
+        // The loop condition `idx < currentSequence.length` is re-evaluated in each iteration,
+        // which is important because `splice` modifies the array length.
+        for (let idx = 0; idx < currentSequence.length; idx++) {
+            // Output the current state of the sequence. This is a critical part of the observable behavior.
+            console.log(currentSequence);
 
-    // Outer loop: Continues as long as modifications are being made within the character sequence.
-    // If an entire pass through the sequence completes without any changes, the loop terminates.
-    while (wasModifiedInPass) {
-        // Reset the modification flag at the beginning of each outer loop iteration.
-        // We assume no modifications will occur until one actually does.
-        wasModifiedInPass = false;
-
-        // Inner loop: Iterates through the character array to find and process target patterns.
-        // The loop condition uses 'charArray.length' which can change dynamically due to splicing.
-        for (let currentIdx = 0; currentIdx < charArray.length; currentIdx++) {
-            // Debugging output: Displays the current state of the character array at each step.
-            console.log(charArray);
-
-            // Check for the first specific pattern: a "1" character immediately followed by a "0".
-            // We also ensure that 'currentIdx + 1' is a valid index to prevent errors.
-            if (charArray[currentIdx] === "1" &&
-                charArray[currentIdx + 1] === "0")
-            {
-                // Increment the counter for successfully identified pairs.
-                totalMatches++;
-                // Set the flag to true, indicating that a modification has occurred in this pass.
-                wasModifiedInPass = true;
-                // Remove the two matched characters from the array starting at the current index.
-                charArray.splice(currentIdx, 2);
+            // Check for the "10" pattern at the current index and the next.
+            if (currentSequence[idx] === "1" && currentSequence[idx + 1] === "0") {
+                matchCount++; // Increment the counter for found pairs.
+                noMoreMatches = false; // A match was found, so the outer loop should continue.
+                // Remove the two matched characters from the array.
+                // Note: The loop index 'idx' is not decremented after splicing.
+                // This means the next iteration will check 'idx + 1' (relative to the original position),
+                // which might effectively skip an element or re-evaluate a new element at the same 'idx'
+                // due to the array shifting. This behavior is preserved from the original code.
+                currentSequence.splice(idx, 2);
             }
 
-            // Check for the second specific pattern: a "0" character immediately followed by a "1".
-            // This check is performed independently and might be affected by the previous splice operation
-            // if it occurred at the same 'currentIdx'.
-            if (charArray[currentIdx] === "0" &&
-                charArray[currentIdx + 1] === "1")
-            {
-                // Increment the counter for successfully identified pairs.
-                totalMatches++;
-                // Set the flag to true, indicating that a modification has occurred in this pass.
-                wasModifiedInPass = true;
+            // Separately check for the "01" pattern. This 'if' is independent of the previous one,
+            // meaning it will execute even if the array was modified by the first 'if' block
+            // in the same iteration, potentially acting on newly shifted elements.
+            if (currentSequence[idx] === "0" && currentSequence[idx + 1] === "1") {
+                matchCount++; // Increment the counter for found pairs.
+                noMoreMatches = false; // A match was found, so the outer loop should continue.
                 // Remove the two matched characters from the array.
-                charArray.splice(currentIdx, 2);
+                // Again, 'idx' is not adjusted, preserving the original algorithm's behavior.
+                currentSequence.splice(idx, 2);
             }
         }
 
-        // If no modifications were made during the entire inner loop pass (i.e., 'wasModifiedInPass' is still false),
-        // it signifies that no more patterns can be found, so we exit the outer processing loop.
-        if (!wasModifiedInPass) break;
+        // If, after a full pass of the inner loop, no matches were found,
+        // then the sequence cannot be reduced further, and the outer loop terminates.
+        if (noMoreMatches) {
+            break;
+        }
     }
 
-    // Output the final computed result: the total number of matched pairs multiplied by two.
-    console.log(totalMatches * 2);
+    // The final output is twice the total number of pairs found and removed.
+    console.log(matchCount * 2);
 }
 
-// Entry point for execution: Reads input from standard input and passes it to the processing function.
-// This line assumes a Node.js environment where 'fs' module is available for file system operations.
+// Read the input from standard input using Node.js file system module
+// and pass it to the main processing function.
 ProcessSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

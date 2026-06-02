@@ -1,34 +1,35 @@
-process
-  .stdin
-  .resume();
-process
-  .stdin
-  .setEncoding('utf8');
-var inputBuffer = [];
-var inputHandler = require('readline')
-  .createInterface({
-    sourceStream: process.stdin,
-    destinationStream: process.stdout
-  });
-// Listener for each line of data received
-inputHandler.on('line', (incomingRow) => {
-  inputBuffer
-    .push(incomingRow);
-});
-// Listener for the end of the input stream
-inputHandler.on('close', () => {
-  // Retrieve the initial data string
-  var mainSequence = inputBuffer[0];
-  // Initialize a counter for replacements
-  var modificationsMade = 0x0;
+process.stdin.resume(); // Activate the standard input stream
+process.stdin.setEncoding('utf8'); // Define the character encoding for incoming data
 
-  // Loop while the target pattern is present
-  while (mainSequence.includes("primaryPattern")) {
-    // Perform the string transformation
-    mainSequence = mainSequence.replace("primaryPattern", "secondaryPattern");
-    // Increment the counter
-    modificationsMade++;
+// This array will hold all the input lines received from stdin.
+var inputData = [];
+
+// Initialize a readline interface to handle input and output streams.
+var inputHandler = require('readline').createInterface({
+  input: process.stdin, // Specify standard input as the source
+  output: process.stdout // Specify standard output (though not directly used for writing by this interface)
+});
+
+// Attach an event listener for each 'line' of input received.
+inputHandler.on('line', (currentLine) => {
+  inputData.push(currentLine); // Store the current line in our data array.
+});
+
+// Attach an event listener for the 'close' event, which fires when the input stream ends.
+inputHandler.on('close', () => {
+  // Retrieve the first line of input, which is the string we need to process.
+  var inputString = inputData[0];
+  // Initialize a variable to keep track of the number of transformations.
+  var transformationCount = 0;
+
+  // Continue looping as long as the target substring "ABC" is found within the string.
+  while (inputString.includes("ABC")) {
+    // Replace the first occurrence of "ABC" with "BCA".
+    inputString = inputString.replace("ABC", "BCA");
+    // Increment the counter for each successful replacement.
+    transformationCount++;
   }
-  // Display the total number of transformations
-  console.log(modificationsMade);
+
+  // Output the final count of transformations to the console.
+  console.log(transformationCount);
 });

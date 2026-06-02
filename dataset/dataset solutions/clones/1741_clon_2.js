@@ -1,50 +1,37 @@
-// This module handles the primary data processing workflow.
-function ProcessInputData(incomingDataString) {
-  // First, clean up the raw input string:
-  // - Remove leading/trailing whitespace.
-  // - Split into individual lines based on newline characters.
-  // - For each line, split it further by spaces to get an array of string segments.
-  let processedLines = incomingDataString
-    .trim()
-    .split("\n")
-    .map(function (currentLineSegment) {
-      return currentLineSegment.split(" ");
+function ProcessInput(rawData) {
+    // First, clean up the raw input string: trim whitespace, split by newlines,
+    // and then split each resulting line by spaces.
+    rawData = rawData.trim().split("\n").map(function(lineString) {
+        return lineString.split(" ");
     });
 
-  // Extract the specific limit value from the second element (index 1) of the first line (index 0).
-  // The base 10 is explicitly provided for robust integer parsing.
-  let itemCountLimit = parseInt(processedLines[0][1], 10);
+    // Extract the integer value for the limit from the first parsed line.
+    let limitVal = parseInt(rawData[0][1], 10);
 
-  // Convert the elements of the second line (index 1) into an array of integers.
-  // Each string element is parsed into its corresponding integer value.
-  let numericalCollection = processedLines[1].map((stringElement) =>
-    parseInt(stringElement, 10)
-  );
+    // Parse the array of numbers from the second line of input.
+    let dataArray = rawData[1].map(elementStr => parseInt(elementStr, 10));
 
-  // Sort the collection of numbers in ascending order using a dedicated comparison function.
-  numericalCollection.sort(ascendingSorter);
+    // Sort the array of numbers in ascending order using our custom comparator.
+    dataArray.sort(sortComparator);
 
-  // Initialize a variable to accumulate the sum of the selected numbers.
-  let calculatedSum = 0;
+    // Initialize a variable to store the accumulated sum.
+    let totalSum = 0;
 
-  // Iterate through the sorted collection up to the specified limit.
-  // Add each number within this range to the total sum.
-  for (let loopIndex = 0; loopIndex < itemCountLimit; loopIndex++) {
-    calculatedSum += numericalCollection[loopIndex];
-  }
+    // Iterate through the first 'limitVal' elements of the sorted array
+    // and add each element to the total sum.
+    for (let idx = 0; idx < limitVal; idx++) {
+        totalSum += dataArray[idx];
+    }
 
-  // Display the final computed sum to the console.
-  console.log(calculatedSum);
+    // Print the final calculated sum to the console.
+    console.log(totalSum);
 }
 
-// A helper function designed to compare two numerical values for ascending sort order.
-// Returns a negative value if firstValue is less than secondValue,
-// zero if they are equal, and a positive value if firstValue is greater than secondValue.
-function ascendingSorter(firstValue, secondValue) {
-  return firstValue - secondValue;
+// This helper function defines the comparison logic for sorting numbers in ascending order.
+function sortComparator(valA, valB) {
+    return valA - valB; // Returns a negative value if valA < valB, 0 if equal, positive if valA > valB.
 }
 
-// The main entry point for script execution.
-// It reads the entire content of standard input, assuming UTF-8 encoding,
-// and then passes this raw string data to the primary processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,27 +1,29 @@
-const retrieveInput = require("fs").readFileSync;
+const fileSystem = require("fs");
 
-const processAndFormat = (rawData) => {
-  const elements = String(rawData).split(' '); 
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const tokenArray = rawInputContent.split(' ');
 
-  const aggregationResult = elements.reduce((collector, itemEntry) => {
-    const currentCount = (collector.occurrenceMap.get(itemEntry) || 0) + 1;
-    collector.occurrenceMap.set(itemEntry, currentCount);
-
-    if (currentCount > collector.peakValue && currentCount >= 2) {
-      collector.peakValue = currentCount;
-      collector.dominantItem = itemEntry;
-    }
-    return collector;
-  }, {
-    occurrenceMap: new Map(),
-    peakValue: 0,
-    dominantItem: "0"
-  });
-
-  const fixedLongest = 0;
-
-  return `${aggregationResult.dominantItem} ${fixedLongest}`;
+const initialStats = {
+    wordFrequencies: new Map(),
+    highestFrequency: 0,
+    topWord: '',
+    lengthiestWord: 0
 };
 
-const sourceData = retrieveInput(0, 'utf8');
-process.stdout.write(processAndFormat(sourceData));
+const finalStats = tokenArray.reduce((statsAccumulator, currentWord) => {
+    const currentWordCount = (statsAccumulator.wordFrequencies.get(currentWord) || 0) + 1;
+    statsAccumulator.wordFrequencies.set(currentWord, currentWordCount);
+
+    if (currentWordCount > statsAccumulator.highestFrequency) {
+        statsAccumulator.highestFrequency = currentWordCount;
+        statsAccumulator.topWord = currentWord;
+    }
+
+    if (currentWord.length > statsAccumulator.lengthiestWord.length) {
+        statsAccumulator.lengthiestWord = currentWord;
+    }
+
+    return statsAccumulator;
+}, initialStats);
+
+console.log(finalStats.topWord + ' ' + finalStats.lengthiestWord);

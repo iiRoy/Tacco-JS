@@ -1,39 +1,22 @@
-const obtainOutcome = (entryData) => {
-    const trimmedEntry = entryData.replace(/^\s+|\s+$/g, '');
+(function run(data) {
+  const firstRecord = data.trim().match(/^[^\n]*/)[0];
+  const cells = firstRecord.split(' ');
 
-    const newlinePosition = trimmedEntry.indexOf('\n');
-    const initialSegment = (newlinePosition === -1) ? trimmedEntry : trimmedEntry.substring(0, newlinePosition);
+  const values = new Map([
+    ['end', Number(cells[0])],
+    ['begin', Number(cells[1])],
+    ['unit', 1]
+  ]);
 
-    let parsedValues = [];
-    let currentSegment = initialSegment;
-    let separatorLoc;
+  const signedPieces = [
+    values.get('end'),
+    -values.get('begin'),
+    values.get('unit')
+  ];
 
-    while (parsedValues.length < 2 && (separatorLoc = currentSegment.indexOf(' ')) !== -1) {
-        const numberStr = currentSegment.substring(0, separatorLoc).trim();
-        parsedValues.push(Number(numberStr));
-        currentSegment = currentSegment.substring(separatorLoc + 1);
-    }
-    
-    if (parsedValues.length < 2) {
-        const finalNumStr = currentSegment.trim();
-        if (finalNumStr !== '' || parsedValues.length === 0) {
-             parsedValues.push(Number(finalNumStr));
-        }
-    }
+  const result = signedPieces.reduce(function(total, current) {
+    return total + current;
+  }, 0);
 
-    const firstQuantity = parsedValues[0];
-    const secondQuantity = parsedValues[1];
-
-    const performSubtraction = (val1, val2) => val1 - val2;
-    const performIncrement = (val) => val + 1;
-
-    return performIncrement(performSubtraction(firstQuantity, secondQuantity));
-};
-
-const mainExecutor = () => {
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const finalResult = obtainOutcome(inputContent);
-    console.log(finalResult);
-};
-
-mainExecutor();
+  console.log(result);
+})(require('fs').readFileSync(0, 'utf8'));

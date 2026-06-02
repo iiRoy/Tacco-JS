@@ -1,24 +1,21 @@
-function processInputData(rawData) {
-    const cleanedData = rawData.trim();
-    const lines = cleanedData.split('\n');
-    const symbolSequence = lines[1].split(' ');
+function processInput(rawData) {
+  const cleanedData = rawData.trim();
+  const lineSegments = cleanedData.split('\n');
+  const firstLineTokens = lineSegments[0].split(' ');
+  const firstNumericValue = parseInt(firstLineTokens[0], 10);
+  const secondLineElements = lineSegments[1].split(' ');
 
-    const requiredSymbols = new Set(['P', 'W', 'G', 'Y']);
-    let detectedSymbolCount = 0;
+  const presentSymbols = new Set(secondLineElements);
 
-    const uniqueInputSymbols = new Set(symbolSequence);
+  const targetSymbols = ['P', 'W', 'G', 'Y'];
+  const foundSymbolCount = targetSymbols.reduce((accumulator, currentSymbol) => {
+    return accumulator + (presentSymbols.has(currentSymbol) ? 1 : 0);
+  }, 0);
 
-    for (const characteristic of requiredSymbols) {
-        if (uniqueInputSymbols.has(characteristic)) {
-            detectedSymbolCount++;
-        }
-    }
-
-    if (detectedSymbolCount === 3) {
-        console.log("Three");
-    } else {
-        console.log("Four");
-    }
+  const resultLookup = {
+    3: "Three"
+  };
+  console.log(resultLookup[foundSymbolCount] || "Four");
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

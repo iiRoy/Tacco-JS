@@ -1,47 +1,39 @@
 "use strict";
 
-const processGeometry = (sourceMaterial) => {
+const parseNumericLine = (inputLine) => inputLine.split(' ').map(parseFloat);
 
-    const parseNumericalLine = (lineContent) => lineContent.split(' ').map(Number);
+const calculateSquaredDistance = (vectorOne, vectorTwo) =>
+  vectorOne.reduce((accumulatedSum, currentComponent, componentIndex) =>
+    accumulatedSum + (currentComponent - vectorTwo[componentIndex]) ** 2, 0);
 
-    const setupDataset = (material) => {
-        const textLines = material.trim().split('\n');
-        const [entryCount, dimensionCount] = parseNumericalLine(textLines.shift());
-        const coordinateVectors = textLines.map(parseNumericalLine);
-        return { entryCount, dimensionCount, coordinateVectors };
-    };
+const isWholeNumber = (valueToCheck) => valueToCheck % 1 === 0;
 
-    const calculateVectorDistance = (vectorA, vectorB, dimensionSize) => {
-        const sumOfSquaredDifferences = Array.from({ length: dimensionSize }, (_, axisIndex) => {
-            const componentDifference = vectorA[axisIndex] - vectorB[axisIndex];
-            return componentDifference * componentDifference;
-        }).reduce((totalSum, squareDiff) => totalSum + squareDiff, 0);
+function executeSolution(rawInputContent) {
+  const allInputLines = rawInputContent.trim().split('\n');
 
-        return Math.sqrt(sumOfSquaredDifferences);
-    };
+  const [vectorCount, dimensionCount] = parseNumericLine(allInputLines[0]);
 
-    const isAnInteger = (valueToCheck) => Number.isInteger(valueToCheck);
+  const coordinateVectors = allInputLines.slice(1).map(parseNumericLine);
 
-    const { entryCount, dimensionCount, coordinateVectors } = setupDataset(sourceMaterial);
+  const vectorIndexSequence = Array.from({ length: vectorCount }, (_, index) => index);
 
-    const integralDistanceCounter = Array.from({ length: entryCount }, (_, outerIndex) => {
-        return Array.from({ length: entryCount - (outerIndex + 1) }, (_, innerOffset) => {
-            const innerIndex = outerIndex + 1 + innerOffset;
-            const currentVector = coordinateVectors[outerIndex];
-            const comparisonVector = coordinateVectors[innerIndex];
+  const pairCombinations = vectorIndexSequence.flatMap((firstIndex) =>
+    vectorIndexSequence
+      .filter((secondIndex) => firstIndex < secondIndex)
+      .map((secondIndex) => [firstIndex, secondIndex])
+  );
 
-            const computedDistance = calculateVectorDistance(currentVector, comparisonVector, dimensionCount);
+  const integerDistanceCounter = pairCombinations.reduce((currentTally, [idxA, idxB]) => {
+    const vecA = coordinateVectors[idxA];
+    const vecB = coordinateVectors[idxB];
 
-            return isAnInteger(computedDistance) ? 1 : 0;
-        }).reduce((subtotal, countIncrement) => subtotal + countIncrement, 0);
-    }).reduce((finalTotal, segmentTotal) => finalTotal + segmentTotal, 0);
+    const squaredMagnitude = calculateSquaredDistance(vecA, vecB);
+    const euclideanMagnitude = Math.sqrt(squaredMagnitude);
 
-    return integralDistanceCounter;
-};
+    return isWholeNumber(euclideanMagnitude) ? currentTally + 1 : currentTally;
+  }, 0);
 
-const initiateExecution = (inputContent) => {
-    const finalOutcome = processGeometry(inputContent);
-    console.log(finalOutcome);
-};
+  console.log(integerDistanceCounter);
+}
 
-initiateExecution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));

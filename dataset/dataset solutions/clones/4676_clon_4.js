@@ -1,32 +1,22 @@
-function processBinaryInput(dataString) {
-  const inputElements = dataString.split(" ");
-  const elementA = inputElements[0];
-  const elementB = inputElements[1];
+function executeLogic(inputString) {
+  const charToNum = { 'H': 1, 'D': 0 };
+  const numToChar = { 1: 'H', 0: 'D' };
 
-  const decisionMatrix = {
-    "H": {
-      "H": "H",
-      "D": "D"
-    },
-    "D": {
-      "H": "D",
-      "D": "H"
-    }
-  };
+  const [firstSymbol, secondSymbol] = inputString.split(" ");
 
-  const outcomeSymbol = decisionMatrix[elementA][elementB];
+  const numericFirst = charToNum[firstSymbol];
+  const numericSecond = charToNum[secondSymbol];
 
-  console.log('%s', outcomeSymbol);
+  const outcomeValue = (numericFirst === numericSecond) ? 1 : 0;
+
+  const finalSymbol = numToChar[outcomeValue];
+
+  console.log('%s', finalSymbol);
 }
   
-function testWithBrowserInput(){
-  const testValue = document.getElementById("sourceInput").value;
-  processBinaryInput(testValue);
+function debug(){
+  var input = document.getElementById("input").value;
+  executeLogic(input);
 }
 
-function runProcessorFromStdin() {
-  const standardInput = require("node:fs").readFileSync("/dev/stdin", "utf8");
-  processBinaryInput(standardInput);
-}
-
-runProcessorFromStdin();
+executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,26 @@
-const initiateComputation = () => {
-    const incomingInformation = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+'use strict';
 
-    const parsedNumericUnits = incomingInformation.split(/\s+/).map(unit => parseInt(unit, 10));
+function processInputAndCalculate(rawData) {
+    const inputLines = rawData.split('\n');
+    const [firstLineContent, secondLineContent] = inputLines;
 
-    const quantityIndicator = parsedNumericUnits[0];
-    const pivotPoint = parsedNumericUnits[1];
-    const originalLocations = parsedNumericUnits.slice(2, 2 + quantityIndicator);
+    const [elementCount, referenceValue] = firstLineContent.split(' ').map(Number);
+    const sourceNumbers = secondLineContent.split(' ').map(Number);
 
-    const deviationMagnitudes = originalLocations.map(location => Math.abs(location - pivotPoint));
+    const absoluteDifferences = sourceNumbers.map(item => Math.abs(item - referenceValue));
 
-    const findLargestCommonFactor = (firstOperand, secondOperand) => {
-        return (secondOperand === 0) ? firstOperand : findLargestCommonFactor(secondOperand, firstOperand % secondOperand);
+    const computeGreatestCommonDivisor = (firstNum, secondNum) => {
+        if (secondNum === 0) {
+            return firstNum;
+        }
+        return computeGreatestCommonDivisor(secondNum, firstNum % secondNum);
     };
 
-    const finalFactor = deviationMagnitudes.reduce((runningFactor, nextValue) => findLargestCommonFactor(runningFactor, nextValue));
+    const finalResult = absoluteDifferences.reduce((accumulator, currentElement) =>
+        computeGreatestCommonDivisor(accumulator, currentElement)
+    );
 
-    console.log(finalFactor);
-};
+    console.log(finalResult);
+}
 
-initiateComputation();
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8").trim());

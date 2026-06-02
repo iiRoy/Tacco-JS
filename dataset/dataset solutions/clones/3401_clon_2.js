@@ -1,144 +1,184 @@
-var DATA_PARSER_FACTORY = (
-  function( ) {
-    // This function acts as a factory for creating input stream processors.
-    function createInputProcessor ( sourceContent ) {
-      return new StreamProcessor( sourceContent );
-    }
-
-    // The core class for parsing input data line by line.
-    function StreamProcessor ( sourceContent ) {
-      this._contentLines = sourceContent.trim( ).split( "\n" );
-      this._linePointer  = 0; // Tracks the current line being processed.
-    }
-
-    // Method to extract a single value (token) from the current line.
-    StreamProcessor.prototype.extractValue = function( returnAsText ) {
-      var lineSegments = this._contentLines, // Reference to all lines
-          currentLineIdx = this._linePointer, // Current line index
-          extractedSegment;                   // The token to be returned
-
-      // If the current line hasn't been split into tokens yet, do so and reverse it
-      // so 'pop' can retrieve tokens from the beginning of the original line.
-      if ( typeof lineSegments[ currentLineIdx ] === "string" ) {
-        lineSegments[ currentLineIdx ] = lineSegments[ currentLineIdx ].split( " " ).reverse( );
-      }
-
-      // Pop the last element (which is the first token from the original line).
-      extractedSegment = lineSegments[ currentLineIdx ].pop( );
-
-      // If the current line is now empty, advance the line pointer.
-      if ( !lineSegments[ currentLineIdx ].length ) {
-        this._linePointer++;
-      }
-
-      // Return as string or convert to number based on the flag.
-      return returnAsText ? extractedSegment : +extractedSegment;
-    };
-
-    // Method to retrieve an entire line, split into tokens.
-    StreamProcessor.prototype.retrieveLine = function( keepStrings ) {
-      // Get the current line, split by spaces, and then advance the pointer.
-      var lineParts = this._contentLines[ this._linePointer++ ].split( " " );
-
-      // Return as array of strings or array of numbers.
-      return keepStrings ? lineParts : lineParts.map( item => +item );
-    };
-
-    // Method to fetch a block of lines as a matrix.
-    StreamProcessor.prototype.fetchMatrix = function( numberOfRows, asStringMatrix ) {
-      // Slice the required number of rows, then split each row into tokens.
-      var matrixData = this._contentLines
-                         .slice( this._linePointer, this._linePointer += numberOfRows )
-                         .map( matrixRow => matrixRow.split( " " ) );
-
-      // Return as string matrix or convert all elements to numbers.
-      return asStringMatrix
-             ? matrixData
-             : matrixData.map( matrixRow => matrixRow.map( item => +item ) );
-    };
-
-    // Method to get a specified number of raw lines.
-    StreamProcessor.prototype.getLines = function( linesToRead, asStringArray ) {
-      // Slice the required number of lines.
-      var readLines = this._contentLines.slice( this._linePointer, this._linePointer += linesToRead );
-
-      // Return as string array or convert all elements to numbers.
-      return asStringArray ? readLines : readLines.map( item => +item );
-    };
-
-    return createInputProcessor; // The module exports the factory function.
+// This module provides utilities for parsing input data from a string source.
+var DATA_PARSER = (function() {
+  /**
+   * Factory function to create an InputProcessor instance.
+   * It takes a raw string and prepares it for sequential reading.
+   * @param {string} inputString - The complete raw input string.
+   * @returns {InputProcessor} A new instance of InputProcessor.
+   */
+  function createParser(inputString) {
+    return new InputProcessor(inputString);
   }
-)();
 
-// Initialize the data stream processor by reading from standard input.
-var dataStream = DATA_PARSER_FACTORY( require("fs").readFileSync("/dev/stdin", "utf8") );
+  /**
+   * InputProcessor class for handling structured input data.
+   * It manages the state of reading lines and values.
+   * @class
+   * @param {string} rawString - The entire input content as a single string.
+   */
+  function InputProcessor(rawString) {
+    // Internal storage for all input lines, trimmed and split by newline.
+    this._sourceLines = rawString.trim().split("\n");
+    // Pointer to the current line being processed.
+    this._currentLineIndex = 0;
+  }
 
-// Execute the main computation function and log its result.
-console.log( computeMaximumPath( ) );
+  /**
+   * Reads a single value from the current line.
+   * Values on a line are assumed to be space-separated and are read from right to left.
+   * @param {boolean} [returnAsString=false] - If true, returns the value as a string; otherwise, as a number.
+   * @returns {string|number} The extracted value.
+   */
+  InputProcessor.prototype.readSingleValue = function(returnAsString) {
+    let allInputLines = this._sourceLines;
+    let currentLinePosition = this._currentLineIndex;
+    let retrievedValue;
+
+    // If the current line is still a single string, split it into parts and reverse.
+    // Reversing allows efficient `pop()` operations to get values from the "front" of the line.
+    if (typeof allInputLines[currentLinePosition] === "string") {
+      allInputLines[currentLinePosition] = allInputLines[currentLinePosition].split(" ").reverse();
+    }
+
+    // Get the next value from the end of the reversed array.
+    retrievedValue = allInputLines[currentLinePosition].pop();
+
+    // If the current line has no more values, advance to the next line.
+    if (!allInputLines[currentLinePosition].length) {
+      this._currentLineIndex++;
+    }
+
+    // Return the value, optionally converted to a number.
+    return returnAsString ? retrievedValue : +retrievedValue;
+  };
+
+  /**
+   * Reads an entire line of space-separated values.
+   * @param {boolean} [returnAsStrings=false] - If true, returns values as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array containing all values from the line.
+   */
+  InputProcessor.prototype.readLineOfValues = function(returnAsStrings) {
+    // Get the current line, split it by spaces, and then increment the line index.
+    let lineSegments = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Return the segments, optionally mapped to numbers.
+    return returnAsStrings ? lineSegments : lineSegments.map(item => +item);
+  };
+
+  /**
+   * Reads a block of 'count' lines, where each line is split into space-separated values.
+   * @param {number} count - The number of lines to read.
+   * @param {boolean} [returnAsStrings=false] - If true, returns values as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+   */
+  InputProcessor.prototype.readMatrix = function(count, returnAsStrings) {
+    // Extract the specified number of lines and advance the line index.
+    let rawLineBlock = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Process each line by splitting it into parts.
+    let processedBlock = rawLineBlock.map(lineStr => lineStr.split(" "));
+    // Return the processed block, optionally mapping all inner values to numbers.
+    return returnAsStrings ? processedBlock : processedBlock.map(rowArr => rowArr.map(item => +item));
+  };
+
+  /**
+   * Reads a block of 'count' raw lines without splitting their content.
+   * @param {number} count - The number of lines to read.
+   * @param {boolean} [returnAsStrings=false] - If true, returns lines as strings; otherwise, attempts to convert each line to a number.
+   * @returns {Array<string|number>} An array of raw line contents.
+   */
+  InputProcessor.prototype.readRawLines = function(count, returnAsStrings) {
+    // Extract the specified number of lines and advance the line index.
+    let rawLineData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Return the raw lines, optionally mapped to numbers.
+    return returnAsStrings ? rawLineData : rawLineData.map(item => +item);
+  };
+
+  return createParser; // The factory function is the public interface of this module.
+})();
+
+// Initialize the input reader by parsing content from standard input.
+var inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Output the final result obtained from the problem-solving function.
+console.log(solveProblem());
 
 /**
- * Main function to calculate the maximum path length through a grid
- * considering certain forbidden zones.
- * @returns {number} The maximum reachable path length.
+ * Main function to solve the specific problem.
+ * It reads input parameters, processes obstacle data, and calculates a path-related value.
+ * @returns {number} The calculated minimum column index minus one, representing the answer.
  */
-function computeMaximumPath( ) {
-  // Read grid dimensions and number of obstacles from the input stream.
-  var totalMapHeight = dataStream.extractValue( );
-  var totalMapWidth  = dataStream.extractValue( );
-  var obstacleCount  = dataStream.extractValue( );
+function solveProblem() {
+  // Read the grid dimensions and the total number of obstacles.
+  let heightVal = inputReader.readSingleValue();     // Represents the height of the grid.
+  let widthVal = inputReader.readSingleValue();      // Represents the width of the grid.
+  let numObstacles = inputReader.readSingleValue();  // Total count of obstacles.
 
-  // Initialize a 2D structure (array of objects) to mark forbidden zones.
-  // The first row (index 0) is unused, so it's `totalMapHeight + 1`.
-  var forbiddenZones = Array( totalMapHeight + 1 )
-                         .fill( 0 )
-                         .map( placeholder => { return {}; } );
+  // Initialize a data structure to keep track of blocked cells.
+  // `blockedCells` is an array where each index `i` corresponds to row `i`.
+  // Each element is an object, allowing sparse storage of blocked columns for that row.
+  let blockedCells = Array(heightVal + 1).fill(0).map(rowPlaceholder => {
+    return {}; // Each row will be an object mapping column index to a blocked status (e.g., 1).
+  });
 
-  // Process each obstacle.
-  for ( var rowIndex = 0; rowIndex < obstacleCount; rowIndex++ ) {
-    var zoneCoordinates = dataStream.retrieveLine( ); // Read obstacle coordinates (row, column).
-    // If the x-coordinate is less than the y-coordinate, it's an invalid obstacle placement, skip it.
-    if ( zoneCoordinates[ 0 ] < zoneCoordinates[ 1 ] ) continue;
-    // Mark the cell (y, x) as forbidden.
-    forbiddenZones[ zoneCoordinates[ 1 ] ][ zoneCoordinates[ 0 ] ] = 1;
+  // Iterate through each obstacle to mark its position.
+  for (let idx = 0; idx < numObstacles; idx++) {
+    let obstacleCoords = inputReader.readLineOfValues(); // Reads [column, row] for the obstacle.
+    // The problem logic dictates that obstacles where the column index is less than the row index are ignored.
+    // Only obstacles where column >= row are considered.
+    if (obstacleCoords[0] < obstacleCoords[1]) {
+      continue; // Skip this obstacle if its column is less than its row.
+    }
+    // Mark the cell at `[row][column]` as blocked.
+    blockedCells[obstacleCoords[1]][obstacleCoords[0]] = 1;
   }
 
-  // Mark the column immediately to the right of the map width as forbidden for all rows.
-  // This acts as a boundary.
-  for ( rowIndex = 1; rowIndex <= totalMapHeight; rowIndex++ ) {
-    forbiddenZones[ rowIndex ][ totalMapWidth + 1 ] = 1;
+  // Add a boundary condition: mark all cells in the column immediately after the grid's width as blocked.
+  // This simplifies pathfinding logic by ensuring a "wall" at the right edge.
+  for (idx = 1; idx <= heightVal; idx++) {
+    blockedCells[idx][widthVal + 1] = 1;
   }
 
-  // Initialize the maximum path length based on the first row's first forbidden zone.
-  // Object.keys returns strings, so we convert to number and subtract 1.
-  var maximumPathLength = Object.keys( forbiddenZones[ 1 ] )[ 0 ] - 1;
-  var currentPathX      = 2; // Start path finding from column 2.
+  // Determine the initial result value. This is based on the first blocked cell in the first row.
+  // `Object.keys` returns string keys, so `[0]` gets the first key, and `+` converts it to a number.
+  let resultValue = Object.keys(blockedCells[1])[0] - 1;
 
-  // Iterate through rows starting from the second row, up to the current maximum path length
-  // and the total map height.
-  for ( rowIndex = 2; rowIndex <= maximumPathLength && rowIndex <= totalMapHeight; rowIndex++ ) {
-    // Skip columns in the current row until a non-forbidden cell is found.
-    while ( forbiddenZones[ rowIndex ][ currentPathX ] ) {
-      currentPathX++;
+  // Initialize `currentCol` to start checking from the second column.
+  let currentCol = 2;
+
+  // Iterate through rows, starting from the second row.
+  // The loop continues as long as the current row `idx` is within the current `resultValue` and grid `heightVal`.
+  for (idx = 2; idx <= resultValue && idx <= heightVal; idx++) {
+    // Advance `currentCol` past any blocked cells in the current row.
+    // This finds the first unblocked column in the current row, starting from `currentCol`.
+    while (blockedCells[idx][currentCol]) {
+      currentCol++;
     }
 
-    // Iterate through the forbidden zones (columns) in the current row.
-    for ( var zoneColumn in forbiddenZones[ rowIndex ] ) {
-      zoneColumn = +zoneColumn; // Ensure zoneColumn is a number.
+    // Iterate through all explicitly blocked cells in the current row.
+    // `for...in` iterates over string keys (column indices).
+    for (let cellKey in blockedCells[idx]) {
+      let colNum = +cellKey; // Convert the string key to a numeric column index.
 
-      // If the current path X position has already passed or is at this forbidden column, skip it.
-      if ( currentPathX >= zoneColumn ) continue;
-
-      // If this forbidden column is closer than the current maximum path length, update it.
-      if ( zoneColumn - 1 < maximumPathLength ) {
-        maximumPathLength = zoneColumn - 1;
+      // If the `currentCol` (the first unblocked column found so far) is already
+      // at or beyond this specific blocked cell, then this blocked cell is not relevant for updating `resultValue`.
+      if (currentCol >= colNum) {
+        continue;
       }
-      break; // Once the first relevant forbidden zone is found, move to the next row.
+
+      // If this blocked cell's column index minus one is less than the current `resultValue`,
+      // update `resultValue` to this new, smaller value.
+      if (colNum - 1 < resultValue) {
+        resultValue = colNum - 1;
+      }
+      break; // Once a relevant blocked cell is found and potentially updates `resultValue`, no need to check further in this row.
     }
 
-    currentPathX++; // Advance the path X position for the next row.
-    // If the path X position exceeds the total map width, no further path is possible.
-    if ( currentPathX > totalMapWidth ) break;
+    currentCol++; // Increment `currentCol` for the next row's check.
+
+    // If `currentCol` exceeds the grid's width, it means we've gone past the traversable area.
+    if (currentCol > widthVal) {
+      break; // Exit the loop as no further path can be found.
+    }
   }
 
-  return maximumPathLength; // Return the calculated maximum path length.
+  return resultValue; // Return the final calculated result.
 }

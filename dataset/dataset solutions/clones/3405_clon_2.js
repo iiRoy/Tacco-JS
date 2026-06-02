@@ -1,13 +1,25 @@
-// Acquire the raw input from the standard input stream.
-let systemInput = require("fs").readFileSync ( "/dev/stdin" , "utf8" ) ;
+const fileSystemModule = require("fs");
 
-// Initialize and conditionally assign the first part of the holiday suffix.
-let eventQualifier = systemInput == 24 ? " Eve" : "" ;
+const dayInput = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-// Further append " Eve" if the input matches other specific festive dates.
-eventQualifier += systemInput == 23 ? " Eve" : "" ;
-eventQualifier += systemInput == 22 ? " Eve" : "" ;
+let holidaySuffix = "";
 
-// If the input number corresponds to any of the specified holiday dates,
-// then proceed to display the complete festive greeting.
-systemInput.match( /25|24|23|22/ ) && console.log( "Christmas" + eventQualifier ) ;
+if (dayInput == 24) {
+    holidaySuffix = " Eve";
+} else {
+    holidaySuffix = "";
+}
+
+if (dayInput == 23) {
+    holidaySuffix += " Eve";
+}
+
+if (dayInput == 22) {
+    holidaySuffix += " Eve";
+}
+
+const isRelevantDay = dayInput.match(/25|24|23|22/);
+
+if (isRelevantDay) {
+    console.log("Christmas" + holidaySuffix);
+}

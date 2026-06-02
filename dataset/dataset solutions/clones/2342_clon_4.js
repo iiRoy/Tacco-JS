@@ -1,45 +1,19 @@
 'use strict';
-function processInput(rawData) {
-    let numericalExtracts = [];
-    let currentSegment = '';
-    let processedData = rawData.replace(/^\s+|\s+$/g, '');
 
-    for (let currentPos = 0; currentPos < processedData.length; currentPos++) {
-        let symbol = processedData[currentPos];
-        if (symbol === ' ') {
-            numericalExtracts.push(+currentSegment);
-            currentSegment = '';
-        } else {
-            currentSegment += symbol;
-        }
-    }
-    numericalExtracts.push(+currentSegment);
+function evaluateGameResult(rawInput) {
+  const tokenizedInput = rawInput.trim().split(' ');
 
-    const firstThreeValues = [
-        numericalExtracts[0],
-        numericalExtracts[1],
-        numericalExtracts[2]
-    ];
+  let accumulatedValue = 0;
+  for (let position = 0; position < 3; position++) {
+    accumulatedValue += Number(tokenizedInput[position]);
+  }
 
-    let calculatedSum = firstThreeValues.reduce((accumulated, val) => {
-        const numericVal = +val;
-        if (isNaN(accumulated) || isNaN(numericVal)) {
-            return NaN;
-        }
-        return accumulated + numericVal;
-    }, 0);
+  const outcomeMap = {
+    true: 'bust',
+    false: 'win'
+  };
 
-    let finalVerdict;
-    switch (true) {
-        case calculatedSum > 21:
-            finalVerdict = 'bust';
-            break;
-        default:
-            finalVerdict = 'win';
-            break;
-    }
-
-    console.log(finalVerdict);
+  console.log(outcomeMap[accumulatedValue > 21]);
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+evaluateGameResult(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,288 +1,208 @@
-const INPUT_READ_INTERFACE = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let parsedInputSource;
-const rawInputLines = [];
+let inputProcessor;
+const inputLines = [];
 
-// Custom logging utility for debugging
-const debugLogger = (message) => {
-  // Using console.error to ensure it goes to stderr, useful for competitive programming
-  console.error(`[DEBUG]: ${require("util").inspect(message, false, null)}`);
-};
-
-// Custom output utility for results
-const outputResult = (data) => {
-  console.log(data);
-};
-
-// Enum-like object for input conversion types
-const ConversionTypes = {
-  AS_INTEGER: 1,
-  SPLIT_BY_SPACE_STRINGS: 2,
-  SPLIT_BY_SPACE_INTEGERS: 4,
-  SPLIT_BY_CHARACTERS_STRINGS: 6,
-  SPLIT_BY_CHARACTERS_INTEGERS: 7,
-  JOIN_BY_SPACE: 8,
-  JOIN_BY_NEWLINE: 9,
-  JOIN_NO_DELIMITER: 0,
-  DEFAULT: -1 // For unknown or no specific conversion
-};
-
-INPUT_READ_INTERFACE.on('line', function(singleLineInput){
-  if (singleLineInput !== null && singleLineInput !== undefined) {
-    rawInputLines.push(singleLineInput);
-  }
+inputReader.on('line', (lineContent) => {
+  inputLines.push(lineContent);
 });
 
-INPUT_READ_INTERFACE.on('close', function(){
-  parsedInputSource = initializeInputParser(rawInputLines);
-  debugLogger("\n--- Program Execution Start ---");
+inputReader.on('close', () => {
+  inputProcessor = initializeInputProcessor(inputLines);
+  console.error("\n");
   const startTime = Date.now();
-  solveGraphProblem();
+  executeMainLogic();
   const endTime = Date.now() - startTime;
-  debugLogger(`Execution time: ${endTime}ms`);
-  debugLogger(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
-  debugLogger("--- Program Execution End ---");
+  printDebug("time : " + endTime + "ms");
+  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-/**
- * Initializes an object to handle sequential reading of input lines.
- * @param {string[]} inputSource An array of strings representing input lines.
- * @returns {object} An input handler object with methods to read lines.
- */
-function initializeInputParser(inputSource){
-  // Ensure inputSource is an array, even if empty
-  const processedSource = Array.isArray(inputSource) ? inputSource : [];
-
-  const inputHandler = {
-    sourceLines : processedSource,
-    currentLineIndex : 0,
-    totalLines : processedSource.length,
-
-    /**
-     * Checks if there are more lines to read.
-     * @returns {boolean} True if more lines exist, false otherwise.
-     */
-    hasMoreLines : function(){
-      return (this.currentLineIndex < this.totalLines);
-    },
-
-    /**
-     * Retrieves the next available input line.
-     * @returns {string} The next line from the input source.
-     * @throws {Error} If no more input lines are available.
-     */
-    getNextLine : function(){
-      if(!this.hasMoreLines()){
-        throw new Error("EndOfInputException: No more input lines to process.");
-      }
-      const currentInputLine = this.sourceLines[this.currentLineIndex];
-      this.currentLineIndex++; // Advance the pointer
-      return currentInputLine;
-    }
-  };
-  return inputHandler;
+function deepCopy(sourceObject) {
+  return JSON.parse(JSON.stringify(sourceObject));
 }
 
-/**
- * Reads the next input line and attempts to convert it to an integer.
- * @returns {number} The parsed integer.
- */
-function readInteger(){
-  const line = parsedInputSource.getNextLine();
-  return convertInputFormat(line, ConversionTypes.AS_INTEGER);
+function parseInteger(value) {
+  return parseInt(value, 10);
 }
 
-/**
- * Reads the next input line, splits it by spaces, and converts parts to integers.
- * @returns {number[]} An array of parsed integers.
- */
-function readIntArray(){
-  const line = parsedInputSource.getNextLine();
-  return convertInputFormat(line, ConversionTypes.SPLIT_BY_SPACE_INTEGERS);
+function splitBySpace(value) {
+  return value.split(" ");
 }
 
-/**
- * Reads the next input line, splits it by spaces, and returns parts as strings.
- * (Not used in this problem, but kept for Type III variation)
- * @returns {string[]} An array of strings.
- */
-function readStringArray(){
-  const line = parsedInputSource.getNextLine();
-  return convertInputFormat(line, ConversionTypes.SPLIT_BY_SPACE_STRINGS);
+function splitAndParseNumbers(value) {
+  return value.split(" ").map(Number);
 }
 
-/**
- * Reads the next input line, splits it into individual characters.
- * (Not used in this problem, but kept for Type III variation)
- * @returns {string[]} An array of single-character strings.
- */
-function readCharacterArray(){
-  const line = parsedInputSource.getNextLine();
-  return convertInputFormat(line, ConversionTypes.SPLIT_BY_CHARACTERS_STRINGS);
+function splitByChar(value) {
+  return value.split("");
 }
 
-/**
- * Converts an input value based on a specified conversion type.
- * @param {*} inputValue The value to convert.
- * @param {number} conversionType An identifier from ConversionTypes specifying the desired format.
- * @returns {*} The converted value.
- */
-function convertInputFormat(inputValue, conversionType){
-  if (inputValue === null || inputValue === undefined) {
-    debugLogger("Warning: Attempted to convert null/undefined input value.");
-    return inputValue;
-  }
+function splitAndParseCharsAsNumbers(value) {
+  return value.split("").map(Number);
+}
 
+function joinBySpace(arr) {
+  return arr.join(" ");
+}
+
+function joinByNewline(arr) {
+  return arr.join("\n");
+}
+
+function joinNoCharacter(arr) {
+  return arr.join("");
+}
+
+function convertInput(inputValue, conversionType) {
   try {
-    switch(conversionType){
-      case ConversionTypes.AS_INTEGER:
-        // Use Number() for more robust conversion than parseInt, also handles floats (though not expected here)
-        return Number(inputValue);
-      case ConversionTypes.SPLIT_BY_SPACE_STRINGS:
-        return String(inputValue).split(" ");
-      case ConversionTypes.SPLIT_BY_SPACE_INTEGERS:
-        return String(inputValue).split(" ").map(Number);
-      case ConversionTypes.SPLIT_BY_CHARACTERS_STRINGS:
-        return String(inputValue).split("");
-      case ConversionTypes.SPLIT_BY_CHARACTERS_INTEGERS:
-        return String(inputValue).split("").map(Number);
-      case ConversionTypes.JOIN_BY_SPACE:
-        if (Array.isArray(inputValue)) return inputValue.join(" ");
-        break;
-      case ConversionTypes.JOIN_BY_NEWLINE:
-        if (Array.isArray(inputValue)) return inputValue.join("\n");
-        break;
-      case ConversionTypes.JOIN_NO_DELIMITER:
-        if (Array.isArray(inputValue)) return inputValue.join("");
-        break;
+    switch (conversionType) {
+      case 1:
+        return parseInteger(inputValue);
+      case 2:
+        return splitBySpace(inputValue);
+      case 4:
+        return splitAndParseNumbers(inputValue);
+      case 6:
+        return splitByChar(inputValue);
+      case 7:
+        return splitAndParseCharsAsNumbers(inputValue);
+      case 8:
+        return joinBySpace(inputValue);
+      case 9:
+        return joinByNewline(inputValue);
+      case 0:
+        return joinNoCharacter(inputValue);
       default:
-        // For unknown or default, return as is
         return inputValue;
     }
-  } catch(error) {
-    debugLogger(`Error during input conversion (type: ${conversionType}): ${error.message}`);
-    // Fallback to returning original value on error
+  } catch (error) {
     return inputValue;
   }
-  return inputValue; // Default return if switch cases don't catch
 }
 
-/**
- * Main function to solve the graph problem: find shortest path in a specific graph.
- */
-function solveGraphProblem(){
-  const firstInputLine = readIntArray();
-  const nodeCount = firstInputLine[0];
-  const edgeCount = firstInputLine[1];
+function readInt() {
+  return convertInput(getNextLine(), 1);
+}
 
-  // Initialize graph nodes with their properties
-  const graphNodes = Array.from({ length: nodeCount }, () => ({
-    children : [], // Nodes reachable directly from this node
-    parents : new Set(), // Nodes that can reach this node (via a path of length 3)
-    isVisited : false, // Used in BFS to track visited nodes
-    distanceFromTarget : 0 // Distance in BFS from the target node
+function readStrArray() {
+  return convertInput(getNextLine(), 2);
+}
+
+function readIntArray() {
+  return convertInput(getNextLine(), 4);
+}
+
+function readCharArray() {
+  return convertInput(getNextLine(), 6);
+}
+
+function getNextLine() {
+  return inputProcessor.next();
+}
+
+function hasMoreLines() {
+  return inputProcessor.hasMoreLines();
+}
+
+function initializeInputProcessor(linesArray) {
+  const processor = {
+    dataLines: linesArray,
+    currentIndex: 0,
+    totalLines: linesArray.length,
+    hasMoreLines: function() {
+      return (this.currentIndex < this.totalLines);
+    },
+    next: function() {
+      if (!this.hasMoreLines()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      }
+      const currentLine = this.dataLines[this.currentIndex];
+      this.currentIndex++;
+      return currentLine;
+    }
+  };
+  return processor;
+}
+
+function printOutput(message) {
+  console.log(message);
+}
+
+function printDebug(message) {
+  console.error("debug:" + require("util").inspect(message, false, null));
+}
+
+function executeMainLogic() {
+  const MAX_DFS_DEPTH = 3;
+
+  const [nodeCount, edgeCount] = readIntArray();
+
+  const graphNodes = new Array(nodeCount).fill(null).map(() => ({
+    children: [],
+    parents: new Set(),
+    visited: false,
+    distance: 0
   }));
 
-  // Build graph edges (children connections)
-  for(let i = 0; i < edgeCount; i++){
-    const edgeData = readIntArray();
-    if (edgeData.length < 2) {
-      debugLogger(`Warning: Malformed edge data encountered: ${edgeData}`);
-      continue; // Skip invalid edge
-    }
-    const fromNode = edgeData[0] - 1; // Adjust to 0-indexed
-    const toNode = edgeData[1] - 1;   // Adjust to 0-indexed
-
-    // Basic validation for node indices
-    if (fromNode >= 0 && fromNode < nodeCount && toNode >= 0 && toNode < nodeCount) {
-      graphNodes[fromNode].children.push(toNode);
-    } else {
-      debugLogger(`Warning: Invalid node index for edge: (${edgeData[0]}, ${edgeData[1]})`);
-    }
+  for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+    const [sourceNodeRaw, destNodeRaw] = readIntArray();
+    const sourceNodeIndex = sourceNodeRaw - 1;
+    const destinationNodeIndex = destNodeRaw - 1;
+    graphNodes[sourceNodeIndex].children.push(destinationNodeIndex);
   }
 
-  // Populate 'parents' sets using a modified DFS for paths of length exactly 3
-  for(let startingNodeIdx = 0; startingNodeIdx < nodeCount; startingNodeIdx++){
-    explorePathRecursive(startingNodeIdx, startingNodeIdx, 0);
+  for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    findParentsDFS(nodeIdx, nodeIdx, 0);
   }
 
-  const startTargetPair = readIntArray();
-  const sourceNodeIndex = startTargetPair[0] - 1; // S
-  const targetNodeIndex = startTargetPair[1] - 1; // T
+  const [startNodeRaw, targetNodeRaw] = readIntArray();
+  const startNodeIndex = startNodeRaw - 1;
+  const targetNodeIndex = targetNodeRaw - 1;
 
-  // Validate start and target nodes
-  if (sourceNodeIndex < 0 || sourceNodeIndex >= nodeCount ||
-      targetNodeIndex < 0 || targetNodeIndex >= nodeCount) {
-    outputResult(-1);
-    return;
-  }
+  const bfsQueue = [targetNodeIndex];
+  graphNodes[targetNodeIndex].visited = true;
+  let shortestPathDistance = 0;
 
-  // Perform a Breadth-First Search (BFS) starting from the target node
-  // to find the shortest path to the source node using 'parent' connections.
-  const bfsQueue = [];
-  // Initialize target node for BFS
-  graphNodes[targetNodeIndex].isVisited = true;
-  graphNodes[targetNodeIndex].distanceFromTarget = 0;
-  bfsQueue.push(targetNodeIndex);
+  while (bfsQueue.length > 0) {
+    const currentNodeIndex = bfsQueue.shift();
+    const currentDistance = graphNodes[currentNodeIndex].distance;
 
-  let shortestPathLength = -1; // Initialize with -1 to indicate no path found
-
-  while(bfsQueue.length > 0){
-    const currentNodeIndex = bfsQueue.shift(); // Dequeue the front node
-
-    // If we've reached the source node, we've found the shortest path
-    if(currentNodeIndex === sourceNodeIndex){
-      shortestPathLength = graphNodes[currentNodeIndex].distanceFromTarget;
-      break; // Exit BFS as shortest path is found
+    if (currentNodeIndex === startNodeIndex) {
+      shortestPathDistance = currentDistance;
+      break;
     }
 
-    // Iterate through nodes that can reach the current node (parents)
-    // Using spread operator for Set to Array conversion, more modern syntax
-    const parentNodes = [...graphNodes[currentNodeIndex].parents];
+    const parentIndices = Array.from(graphNodes[currentNodeIndex].parents);
 
-    for(const potentialParentIndex of parentNodes){
-      // Ensure the neighbor is valid and not yet visited
-      if (potentialParentIndex >= 0 && potentialParentIndex < nodeCount &&
-          !graphNodes[potentialParentIndex].isVisited){
-
-        graphNodes[potentialParentIndex].isVisited = true;
-        graphNodes[potentialParentIndex].distanceFromTarget = graphNodes[currentNodeIndex].distanceFromTarget + 1;
-        bfsQueue.push(potentialParentIndex);
+    for (const parentIdx of parentIndices) {
+      if (!graphNodes[parentIdx].visited) {
+        graphNodes[parentIdx].visited = true;
+        graphNodes[parentIdx].distance = currentDistance + 1;
+        bfsQueue.push(parentIdx);
       }
     }
   }
 
-  // Output the result
-  outputResult(shortestPathLength);
+  if (shortestPathDistance === 0) {
+    printOutput(-1);
+  } else {
+    printOutput(shortestPathDistance);
+  }
 
-  /**
-   * Performs a Depth-First Search to find nodes reachable in exactly 3 steps.
-   * If a node `initialNode` can reach `currentNode` in `currentDepth` steps,
-   * and `currentDepth` is 3, then `initialNode` is added to `currentNode`'s parents set.
-   * This function is nested to have access to `graphNodes`.
-   * @param {number} initialNode The starting node index for the current DFS path.
-   * @param {number} currentNode The node currently being visited.
-   * @param {number} currentDepth The current depth of the path from `initialNode`.
-   */
-  function explorePathRecursive(initialNode, currentNode, currentDepth){
-    // Guard clause for invalid node or excessive depth
-    if (currentNode < 0 || currentNode >= nodeCount || currentDepth > 3) {
+  function findParentsDFS(dfsRootNode, currentNode, currentDepth) {
+    if (currentDepth === MAX_DFS_DEPTH) {
+      graphNodes[currentNode].parents.add(dfsRootNode);
       return;
     }
 
-    // Base case: If path length is exactly 3, add initialNode to currentNode's parents.
-    if(currentDepth === 3){
-      graphNodes[currentNode].parents.add(initialNode);
-      return;
-    }
+    const currentChildren = graphNodes[currentNode].children;
 
-    // Recursive step: Explore children
-    const childConnections = graphNodes[currentNode].children;
-    for(const nextChildNode of childConnections){
-      explorePathRecursive(initialNode, nextChildNode, currentDepth + 1);
+    for (const childNode of currentChildren) {
+      findParentsDFS(dfsRootNode, childNode, currentDepth + 1);
     }
-    // No explicit return value needed for this void function
+    return;
   }
 }

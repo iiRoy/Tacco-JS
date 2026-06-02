@@ -1,92 +1,56 @@
-const fileSystemModule = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+var dataLines = rawData.split('\n');
 
-// Define a large number to represent infinity for distances
-const MAX_PATH_VALUE = 1000000007; // A sufficiently large number
+var getNextInputLine = () => dataLines.shift();
 
-// Read the raw input data from standard input
-const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const inputLineSegments = rawInputContent.trim().split('\n');
+var nodeCount = +getNextInputLine();
+var adjacencyMatrix = Array.from({ length: nodeCount }, () => Array(nodeCount).fill(Number.POSITIVE_INFINITY));
 
-// Extract the total number of vertices from the first line
-const totalVertices = parseInt(inputLineSegments.shift(), 10);
-
-// Initialize the adjacency matrix for the graph
-// All distances are initially set to MAX_PATH_VALUE (infinity)
-// The distance from a node to itself is 0
-let graphConnections = Array.from({ length: totalVertices }, () => Array(totalVertices).fill(MAX_PATH_VALUE));
-for (let vertexIndex = 0; vertexIndex < totalVertices; vertexIndex++) {
-    graphConnections[vertexIndex][vertexIndex] = 0;
+for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    adjacencyMatrix[nodeIdx][nodeIdx] = 0;
 }
 
-// Populate the graph connections from the input lines
-for (let currentVertex = 0; currentVertex < totalVertices; currentVertex++) {
-    const vertexEdgeData = inputLineSegments.shift().trim().split(' ').map(value => parseInt(value, 10));
-    // The first element 'vertexEdgeData[0]' is the current vertex ID, which matches 'currentVertex'
-    const edgesCount = vertexEdgeData[1]; // Number of outgoing edges for this vertex
+for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+    const currentLineValues = getNextInputLine().trim().split(' ').map(Number);
+    const sourceNodeId = currentLineValues[0]; // This is always `nodeIdx` in this problem structure
+    const numNeighbors = currentLineValues[1];
 
-    // Iterate through the neighbor information
-    for (let edgeNum = 0; edgeNum < edgesCount; edgeNum++) {
-        const neighborNodeId = vertexEdgeData[2 + edgeNum * 2];
-        const travelCost = vertexEdgeData[2 + edgeNum * 2 + 1];
-        graphConnections[currentVertex][neighborNodeId] = travelCost;
+    for (let neighborOffset = 0; neighborOffset < numNeighbors; neighborOffset++) {
+        const dataStartIndex = 2 + neighborOffset * 2;
+        const adjacentNodeId = currentLineValues[dataStartIndex];
+        const edgeWeight = currentLineValues[dataStartIndex + 1];
+        adjacencyMatrix[sourceNodeId][adjacentNodeId] = edgeWeight;
     }
 }
 
-// Initialize distances for Dijkstra's algorithm
-// 'shortestDistances' will store the minimum distance from the source (node 0)
-let shortestDistances = Array(totalVertices).fill(MAX_PATH_VALUE);
-shortestDistances[0] = 0; // Distance from source to itself is 0
+var minPathDistances = Array.from({ length: nodeCount }, (_, idx) => idx === 0 ? 0 : Number.POSITIVE_INFINITY);
+var processedNodes = new Set();
 
-// 'isProcessed' tracks whether a node has been included in the shortest path tree
-let isProcessed = Array(totalVertices).fill(false);
+while (true) {
+    let currentNodeToProcess = -1;
+    let currentMinDistanceFound = Number.POSITIVE_INFINITY;
 
-/**
- * Helper function to find the unvisited node with the smallest known distance.
- * @param {number[]} distancesArray - Array of current shortest distances from the source.
- * @param {boolean[]} processedNodesArray - Array indicating if a node has been processed.
- * @param {number} numVertices - Total number of vertices in the graph.
- * @returns {number|null} The index of the next unvisited node with minimum distance, or null if all nodes are processed.
- */
-const selectNextUnvisitedNode = (distancesArray, processedNodesArray, numVertices) => {
-    let minimumDistanceFound = MAX_PATH_VALUE;
-    let chosenNode = null;
-
-    for (let nodeIterator = 0; nodeIterator < numVertices; nodeIterator++) {
-        // Check if the node is not yet processed and has a smaller distance
-        if (!processedNodesArray[nodeIterator] && distancesArray[nodeIterator] < minimumDistanceFound) {
-            minimumDistanceFound = distancesArray[nodeIterator];
-            chosenNode = nodeIterator;
+    for (let idx = 0; idx < nodeCount; idx++) {
+        if (!processedNodes.has(idx) && minPathDistances[idx] < currentMinDistanceFound) {
+            currentMinDistanceFound = minPathDistances[idx];
+            currentNodeToProcess = idx;
         }
     }
-    return chosenNode;
-};
 
-// Main loop for Dijkstra's algorithm
-while (true) {
-    // Find the unvisited node with the minimum distance
-    const activeProcessingNode = selectNextUnvisitedNode(shortestDistances, isProcessed, totalVertices);
-
-    // If no unvisited node is found (all nodes processed or unreachable), terminate
-    if (activeProcessingNode === null) {
+    if (currentNodeToProcess === -1) {
         break;
     }
 
-    // Mark the chosen node as processed
-    isProcessed[activeProcessingNode] = true;
+    processedNodes.add(currentNodeToProcess);
 
-    // Relax all adjacent edges of the currently processed node
-    for (let neighborCandidate = 0; neighborCandidate < totalVertices; neighborCandidate++) {
-        // Calculate the distance to the neighbor through the active node
-        const potentialNewPathDistance = shortestDistances[activeProcessingNode] + graphConnections[activeProcessingNode][neighborCandidate];
-
-        // If this path is shorter than the current known shortest path to the neighbor, update it
-        if (potentialNewPathDistance < shortestDistances[neighborCandidate]) {
-            shortestDistances[neighborCandidate] = potentialNewPathDistance;
+    for (let neighborIdx = 0; neighborIdx < nodeCount; neighborIdx++) {
+        const weightToNeighbor = adjacencyMatrix[currentNodeToProcess][neighborIdx];
+        if (weightToNeighbor !== Number.POSITIVE_INFINITY) { // Only consider actual edges
+            minPathDistances[neighborIdx] = Math.min(minPathDistances[neighborIdx], minPathDistances[currentNodeToProcess] + weightToNeighbor);
         }
     }
 }
 
-// Output the final shortest distances from the source node to all other nodes
-for (let resultVertex = 0; resultVertex < totalVertices; resultVertex++) {
-    console.log(resultVertex, shortestDistances[resultVertex]);
+for (let idx = 0; idx < nodeCount; idx++) {
+    console.log(idx, minPathDistances[idx]);
 }

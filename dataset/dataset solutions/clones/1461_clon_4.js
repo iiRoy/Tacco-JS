@@ -1,22 +1,20 @@
-function analyzeSequence(rawData) {
-    const parsedLines = rawData.match(/[^\r\n]+/g);
+function processInputData(sourceText) {
+    const inputLines = sourceText.trim().split('\n');
 
-    const checkables = parsedLines[1].split(" ").map(val => Number(val));
-    const itemMap = checkables.reduce((accumulator, currentNumber) => {
-        accumulator[currentNumber] = true;
-        return accumulator;
-    }, {});
+    const numbersForLookup = inputLines[1].split(' ').map(Number);
+    const iterationLimit = Number(inputLines[2]);
+    const numbersForComparison = inputLines[3].split(' ').map(Number);
 
-    const targetCount = Number(parsedLines[2]);
+    const existenceRegistry = new Map();
+    numbersForLookup.forEach(val => existenceRegistry.set(val, true));
 
-    const candidates = parsedLines[3].split(" ").map(val => Number(val));
+    const totalMatches = numbersForComparison
+        .slice(0, iterationLimit)
+        .reduce((currentCount, item) => {
+            return currentCount + (existenceRegistry.has(item) ? 1 : 0);
+        }, 0);
 
-    const occurrenceCount = candidates
-        .slice(0, targetCount)
-        .filter(num => itemMap[num])
-        .length;
-
-    console.log(occurrenceCount);
+    console.log(totalMatches);
 }
 
-analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

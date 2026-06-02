@@ -1,24 +1,18 @@
-const computeDeviation = (inputSequence) => {
-  const sequenceSize = inputSequence.length;
-  const comparisonLimit = Math.floor(sequenceSize / 2);
+function Main(inputString) {
+  const charSequence = [...inputString];
+  const sequenceLength = charSequence.length;
 
-  const charArray = Array.from(inputSequence);
-  const invertedArray = Array.from(inputSequence).reverse();
+  const midpointOffset = Math.floor((sequenceLength + 1) / 2);
 
-  const diffSum = Array.from({ length: comparisonLimit }, (_, idx) => idx).reduce((total, currentIdx) => {
-    if (charArray[currentIdx] !== invertedArray[currentIdx]) {
-      return total + 1;
-    }
-    return total;
-  }, 0);
+  const mismatchedPairs = Array.from({
+      length: sequenceLength - midpointOffset
+    }, (_, indexOffset) => midpointOffset + indexOffset)
+    .filter(rightSideIndex => {
+      const leftSideIndex = sequenceLength - 1 - rightSideIndex;
+      return charSequence[leftSideIndex] !== charSequence[rightSideIndex];
+    });
 
-  return diffSum;
-};
+  console.log(mismatchedPairs.length);
+}
 
-const systemModule = globalThis.require("node:fs");
-const filePath = "/dev/stdin";
-const fileContents = systemModule.readFileSync(filePath, "utf8");
-const cleanedContents = fileContents.trim();
-
-const finalResult = computeDeviation(cleanedContents);
-globalThis.console.log(finalResult);
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

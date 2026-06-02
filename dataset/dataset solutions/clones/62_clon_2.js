@@ -1,87 +1,73 @@
-/* This immediately invoked function processes a provided data stream
- * for performing large number additions. */
-(  function(dataStream)
-{
-    // Split the incoming stream into individual lines, discarding any trailing empty line.
-    var lineSegments = dataStream.replace(  /\n$/, '' ) .split( '\n'  );
+(function(rawData) {
+  // Process the raw input string: remove trailing newline and split into lines.
+  var lineSegments = rawData.replace(/\n$/, '').split('\n');
 
-    // The first line often indicates a count of operations, but is not used in the core logic here.
-    var totalCases = lineSegments.shift();
+  // The first line indicates the total number of test cases.
+  var testCaseCount = lineSegments.shift();
 
-    // Iterate through the remaining line segments, processing pairs of numbers.
-    while (lineSegments.length > 0)
-    {
-        // Extract the first number string for the current operation.
-        var firstNumStr = lineSegments.shift();
-        // Extract the second number string for the current operation.
-        var secondNumStr = lineSegments.shift();
+  // Iterate through each pair of numbers provided in the input.
+  while (lineSegments.length > 0) {
+    // Extract the string representations of the two numbers for the current test case.
+    var firstOperandStr = lineSegments.shift();
+    var secondOperandStr = lineSegments.shift();
 
-        // Compute the sum of the two extracted number strings.
-        var calculationResult = performBigAddition(firstNumStr, secondNumStr);
+    // Calculate their sum using the custom big integer addition function.
+    var computedSumResult = performBigIntAddition(firstOperandStr, secondOperandStr);
 
-        // Check if the calculated sum exceeds a predefined length limit.
-        if (calculationResult.length >= 80)
-        {
-            // If the sum is too long, indicate an overflow condition.
-            console.log('overflow');
-            // Move to the next pair of numbers without further processing this one.
-            continue;
-        }
-        // Otherwise, print the computed sum to the console.
-        console.log( '%s', calculationResult );
+    // Check if the resulting sum exceeds a predefined length limit.
+    if (computedSumResult.length >= 80) {
+      // If it's too long, print an 'overflow' message.
+      console.log('overflow');
+      continue; // Move to the next test case.
     }
-} ) ( require("node:fs").readFileSync(  '/proc/self/fd/0',  'utf8' ) ); // Execute the function with content from standard input.
 
+    // Otherwise, print the calculated sum.
+    console.log('%s', computedSumResult);
+  }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input.
 
-/*
- * This function performs addition on two large numbers represented as strings.
- * It handles arbitrary length integers by digit-by-digit processing.
- * @param {string} operandOne - The first number as a string.
- * @param {string} operandTwo - The second number as a string.
+/**
+ * Performs big integer addition on two numbers represented as strings.
+ * The function handles numbers of arbitrary length by processing them digit by digit.
+ *
+ * @param {string} firstOperandStr - The first number as a string.
+ * @param {string} secondOperandStr - The second number as a string.
  * @returns {string} The sum of the two numbers as a string.
  */
-function performBigAddition(operandOne, operandTwo)
-{
-    var longNumberDigits, shortNumberDigits; /* Arrays to hold digits of the numbers,
-                                              * reversed for easier addition. */
+function performBigIntAddition(firstOperandStr, secondOperandStr) {
+  var longNumDigits, shortNumDigits; // Arrays to hold digits of the numbers, reversed.
 
-    // Determine which operand is longer to assign 'a' to the longer one for carry propagation.
-    if (operandOne.length > operandTwo.length)
-    {
-        // Convert the longer string into an array of numbers (digits), then reverse it.
-        longNumberDigits = operandOne.split( '' ).map( Number ).reverse( );
-        // Convert the shorter string into an array of numbers (digits), then reverse it.
-        shortNumberDigits = operandTwo.split( '' ).map( Number ).reverse( );
-    }
-    else
-    {
-        // If operandTwo is longer or equal, assign its digits to 'longNumberDigits'.
-        shortNumberDigits = operandOne.split( '' ).map( Number ).reverse( );
-        // And operandOne's digits to 'shortNumberDigits'.
-        longNumberDigits = operandTwo.split( '' ).map( Number ).reverse( );
-    }
+  // Determine which number is longer to assign 'a' (longer) and 'b' (shorter) consistently.
+  if (firstOperandStr.length > secondOperandStr.length) {
+    longNumDigits = firstOperandStr.split('').map(Number).reverse();
+    shortNumDigits = secondOperandStr.split('').map(Number).reverse();
+  } else {
+    shortNumDigits = firstOperandStr.split('').map(Number).reverse();
+    longNumDigits = secondOperandStr.split('').map(Number).reverse();
+  }
 
-    // Perform digit-by-digit addition for the length of the shorter number.
-    for (var digitIndex = 0; digitIndex < shortNumberDigits.length; digitIndex++)
-    {
-        longNumberDigits[digitIndex] += shortNumberDigits[digitIndex];
-    }
+  // Add corresponding digits from the shorter number to the longer number.
+  for (var digitIndex = 0; digitIndex < shortNumDigits.length; digitIndex++) {
+    longNumDigits[digitIndex] += shortNumDigits[digitIndex];
+  }
 
-    // Handle carries for all digits in the potentially longer sum array.
-    for (var digitIndex = 0; digitIndex < longNumberDigits.length - 1; digitIndex++)
-    {
-        // If a digit position sum is 10 or greater, a carry is needed.
-        if (longNumberDigits[digitIndex] >= 10)
-        {
-            // Calculate the carry value (how many tens).
-            var carryValue = Math.floor(longNumberDigits[digitIndex] / 10);
-            // Update the current digit to be its remainder after carrying.
-            longNumberDigits[digitIndex] = longNumberDigits[digitIndex] % 10;
-            // Add the carry to the next digit position.
-            longNumberDigits[digitIndex + 1] += carryValue;
-        }
-    }
+  // Process carries from right to left (least significant to most significant digit).
+  for (var digitIndex = 0; digitIndex < longNumDigits.length; digitIndex++) {
+    // If a digit position's sum is 10 or more, a carry is generated.
+    if (longNumDigits[digitIndex] >= 10) {
+      var carryValue = Math.floor(longNumDigits[digitIndex] / 10); // Calculate the carry.
+      longNumDigits[digitIndex] = longNumDigits[digitIndex] % 10; // Keep only the unit digit.
 
-    // Reverse the digit array back to original order and join them into a result string.
-    return longNumberDigits.reverse().join('');
+      // Add the carry to the next digit position.
+      // If it's the last digit, this will extend the array.
+      if (digitIndex + 1 < longNumDigits.length) {
+        longNumDigits[digitIndex + 1] += carryValue;
+      } else {
+        longNumDigits.push(carryValue); // Append new digit if carry extends beyond original length.
+      }
+    }
+  }
+
+  // Reverse the array of digits back to the correct order and join them into a string.
+  return longNumDigits.reverse().join('');
 }

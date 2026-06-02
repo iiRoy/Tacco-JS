@@ -1,46 +1,60 @@
-let totalInversions = 0;
+const inputConfiguration = {
+    sourcePath: '/dev/stdin',
+    lineSeparator: '\n'
+};
 
-const combineParts = (leftHalf, rightHalf) => {
-    let combined = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+const fileContents = require('fs').readFileSync(inputConfiguration.sourcePath, 'utf-8');
+const rawDataLines = fileContents.split(inputConfiguration.lineSeparator);
 
-    while (leftIndex < leftHalf.length && rightIndex < rightHalf.length) {
-        if (leftHalf[leftIndex] <= rightHalf[rightIndex]) {
-            combined.push(leftHalf[leftIndex]);
-            leftIndex++;
+let inversionTally = 0;
+
+function uniteSubarrays(leftSegment, rightSegment) {
+    let mergedCollection = [];
+    let leftPointer = 0;
+    let rightPointer = 0;
+
+    while (leftPointer < leftSegment.length && rightPointer < rightSegment.length) {
+        if (leftSegment[leftPointer] <= rightSegment[rightPointer]) {
+            mergedCollection.push(leftSegment[leftPointer]);
+            leftPointer++;
         } else {
-            totalInversions += (leftHalf.length - leftIndex);
-            combined.push(rightHalf[rightIndex]);
-            rightIndex++;
+            inversionTally += (leftSegment.length - leftPointer);
+            mergedCollection.push(rightSegment[rightPointer]);
+            rightPointer++;
         }
     }
 
-    return combined.concat(leftHalf.slice(leftIndex)).concat(rightHalf.slice(rightIndex));
-};
-
-const divideAndConquer = (dataSegment) => {
-    if (dataSegment.length <= 1) {
-        return dataSegment;
+    while (leftPointer < leftSegment.length) {
+        mergedCollection.push(leftSegment[leftPointer]);
+        leftPointer++;
+    }
+    while (rightPointer < rightSegment.length) {
+        mergedCollection.push(rightSegment[rightPointer]);
+        rightPointer++;
     }
 
-    const midPoint = Math.floor(dataSegment.length / 2);
-    const leftHalf = divideAndConquer(dataSegment.slice(0, midPoint));
-    const rightHalf = divideAndConquer(dataSegment.slice(midPoint));
+    return mergedCollection;
+}
 
-    return combineParts(leftHalf, rightHalf);
-};
+function combineAndSort(numericSequence) {
+    if (numericSequence.length <= 1) {
+        return numericSequence;
+    }
 
-const sourceLocation = '/dev/stdin';
-const separatorChar = '\n';
+    const divisionPoint = Math.floor(numericSequence.length / 2);
+    const firstHalf = numericSequence.slice(0, divisionPoint);
+    const secondHalf = numericSequence.slice(divisionPoint);
 
-const fileContents = require('fs').readFileSync(sourceLocation, 'utf-8');
-const allLines = fileContents.split(separatorChar);
+    const sortedFirst = combineAndSort(firstHalf);
+    const sortedSecond = combineAndSort(secondHalf);
 
-const numericStrings = allLines[1].split(' ');
-const parsedNumbers = numericStrings.map(val => parseInt(val));
+    return uniteSubarrays(sortedFirst, sortedSecond);
+}
 
-const finalSortedArray = divideAndConquer(parsedNumbers);
+const numericInputString = rawDataLines[1];
+const parsedNumbers = numericInputString.split(' ').map(str => parseInt(str, 10));
+
+const finalSortedArray = combineAndSort(parsedNumbers);
 
 console.log(finalSortedArray.join(' '));
-console.log(totalInversions);
+console.log(inversionTally);

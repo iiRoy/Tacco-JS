@@ -1,9 +1,18 @@
-function performCalculation(rawText) {
-    const lines = rawText.split("\n");
-    const initialParameters = lines[0].split(" ").map(Number);
-    const criterion = initialParameters[1];
-    const dataPoints = lines[1].split(" ").map(Number);
-    const qualifyingElementsCount = dataPoints.filter(element => element >= criterion).length;
-    console.log(qualifyingElementsCount);
+function processData(rawData) {
+    const lineSegments = rawData.split("\n");
+
+    const [itemCountIdentifier, thresholdValueIdentifier] = lineSegments[0].split(" ");
+    const limitForProcessing = Number(itemCountIdentifier);
+    const comparisonBoundary = Number(thresholdValueIdentifier);
+
+    const numericSequence = lineSegments[1].split(" ").map(Number);
+
+    const relevantNumericSubset = numericSequence.slice(0, limitForProcessing);
+
+    const matchingElements = relevantNumericSubset.filter(currentElement => currentElement >= comparisonBoundary);
+    const finalTally = matchingElements.length;
+
+    console.log(finalTally);
 }
-performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,263 +1,101 @@
 /*
- * This file contains a JavaScript solution to a geometric problem.
- * It calculates the radius of the minimum enclosing circle for a set of points.
- * The solution considers cases for two points and multiple points.
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ 成员: 林倩                                                           ║
+ * ║ 学号: DLW87969357                                                    ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
-function Main
-(
-  input // The input string containing problem data.
-)
-{
+  function Main( input)  {
+ input = input.split("\n");
+var N = parseInt(input[0]);
+	input.shift();
+	input.splice( N,  input.length);
+var x = input.map(i => i.split(" ").map(i => parseInt(i)));
+  var ans=0;
+if (x.length  == 2)  {  // 读取也保持人工阅读配合输入邻近。
+    var ans = Math.sqrt(Math.pow(x[0][0]-x[1][0],2)+Math.pow(x[0][1]-x[1][1],2))/2;
+	} else{
+ for ( var i= 0;  i < N;  i++) {
+for(var j=i+1;j<N;j++){
+	for(var k=j+1;k<N;k++){
+/* 读取也保持当前数据流动在开始处清晰。 */
+	var edge = new Array();
+	     edge.push ([Math.pow(x[ i] [ 0]  -x[j][0 ], 2 )  + Math.pow ( x [ i ][ 1 ]-  x [j] [1],2 ),0]);  
+   edge.push([Math.pow(x[i][0]-x[k][0],2)+Math.pow(x[i][1]-x[k][1],2),1]);    
+	edge.push([ Math.pow ( x[k][0]  -  x [ j] [0 ],2)  + Math.pow (x[k] [1] -  x [j][ 1], 2), 2]);
+              edge.sort(function(a,b){return b[0]-a[0]});
+if (edge [0 ] [0 ]>  edge [1 ][0] +  edge[ 2] [0]){
+  if(edge[0][1]==0){
 
-  // Split the input string by newline characters to get an array of lines.
-  input  =  input . split ( "\n" ) ;
-
-
-  // Parse the first line to get the number of points, N.
-  var N  =  parseInt ( input [ 0 ] ) ;
-
-  // Remove the first line (which contained N) from the input array.
-  input . shift ( ) ;
-
-
-  // Remove any extra lines beyond N points if present.
-  input . splice ( N , input . length ) ;
-
-
-  // Map the remaining input lines to an array of coordinate pairs.
-  // Each line is split by space, and each part is parsed as an integer.
-  var x  =  input . map (
-    i  =>  i . split ( " " ) . map (
-      i  =>  parseInt ( i )
-    )
-  ) ;
-
-
-  // Initialize the answer variable.
-  var ans = 0 ;
-
-  // --- Handling the base case: only two points ---
-  if
-  (
-    x . length  ==  2
-  )
-  {
-    // If there are only two points, the minimum enclosing circle's diameter
-    // is the distance between these two points.
-    // The radius is half of this distance.
-    var ans  =  Math . sqrt (
-      Math . pow ( x [ 0 ] [ 0 ] - x [ 1 ] [ 0 ] , 2 )  +
-      Math . pow ( x [ 0 ] [ 1 ] - x [ 1 ] [ 1 ] , 2 )
-    ) / 2 ;
-  }
-  else
-  {
-    // --- General case: three or more points ---
-    // Iterate through all possible combinations of three points (i, j, k)
-    // to find the circumcircle or a circle defined by two points.
-    for
-    (
-      var i = 0 ;
-      i < N ;
-      i++
-    )
-    {
-
-      for
-      (
-        var j = i + 1 ;
-        j < N ;
-        j++
-      )
-      {
-
-        for
-        (
-          var k = j + 1 ;
-          k < N ;
-          k++
-        )
-        {
-          // Calculate squared distances between pairs of points (i, j), (i, k), (j, k).
-          // These represent the squared lengths of the sides of the triangle formed by points i, j, k.
-          var edge  =  new Array ( ) ;
-
-          // Squared distance between point i and point j
-          edge . push ( [ Math . pow ( x [ i ] [ 0 ] - x [ j ] [ 0 ] , 2 ) + Math . pow ( x [ i ] [ 1 ] - x [ j ] [ 1 ] , 2 ) , 0 ] ) ;
-          // Squared distance between point i and point k
-          edge . push ( [ Math . pow ( x [ i ] [ 0 ] - x [ k ] [ 0 ] , 2 ) + Math . pow ( x [ i ] [ 1 ] - x [ k ] [ 1 ] , 2 ) , 1 ] ) ;
-          // Squared distance between point k and point j
-          edge . push ( [ Math . pow ( x [ k ] [ 0 ] - x [ j ] [ 0 ] , 2 ) + Math . pow ( x [ k ] [ 1 ] - x [ j ] [ 1 ] , 2 ) , 2 ] ) ;
-
-          // Sort the edges in descending order of their squared lengths.
-          // This helps identify the longest side.
-          edge . sort (
-            function ( a , b )
-            {
-              return b [ 0 ] - a [ 0 ]
-            }
-          ) ;
-
-          // Check if the triangle is obtuse or right-angled.
-          // If the square of the longest side is greater than the sum of the squares of the other two sides,
-          // it's an obtuse triangle, and the minimum enclosing circle has the longest side as its diameter.
-          if
-          (
-            edge [ 0 ] [ 0 ]  >  edge [ 1 ] [ 0 ]  +  edge [ 2 ] [ 0 ]
-          )
-          {
-            // Case 1: Obtuse triangle. The diameter of the MEC is the longest edge.
-            // Determine which pair of points forms the longest edge.
-            if
-            (
-              edge [ 0 ] [ 1 ]  ==  0 // Longest edge is between i and j
-            )
-            {
-              var cx  =  ( x [ i ] [ 0 ]  +  x [ j ] [ 0 ] ) / 2 ; // Center X
-              var cy  =  ( x [ i ] [ 1 ]  +  x [ j ] [ 1 ] ) / 2 ; // Center Y
-              // Squared radius is squared distance from one endpoint to the center.
-              var r2  =  Math . pow ( x [ i ] [ 0 ] - cx , 2 )  +  Math . pow ( x [ i ] [ 1 ] - cy , 2 ) ;
-            }
-            else if
-            (
-              edge [ 0 ] [ 1 ]  ==  1 // Longest edge is between i and k
-            )
-            {
-              var cx  =  ( x [ i ] [ 0 ]  +  x [ k ] [ 0 ] ) / 2 ;
-              var cy  =  ( x [ i ] [ 1 ]  +  x [ k ] [ 1 ] ) / 2 ;
-              var r2  =  Math . pow ( x [ i ] [ 0 ] - cx , 2 )  +  Math . pow ( x [ i ] [ 1 ] - cy , 2 ) ;
-            }
-            else
-            { // Longest edge is between j and k
-              var cx  =  ( x [ j ] [ 0 ]  +  x [ k ] [ 0 ] ) / 2 ;
-              var cy  =  ( x [ j ] [ 1 ]  +  x [ k ] [ 1 ] ) / 2 ;
-              var r2  =  Math . pow ( x [ j ] [ 0 ] - cx , 2 )  +  Math . pow ( x [ j ] [ 1 ] - cy , 2 ) ;
-            }
-          }
-          else
-          {
-            // Case 2: Acute or right-angled triangle.
-            // The minimum enclosing circle is the circumcircle of the triangle.
-            // Calculate the circumcenter (cx, cy) and squared radius (r2).
-            // These are derived from the equations of perpendicular bisectors.
-
-            var cy  =  (
-              ( x [ k ] [ 0 ] - x [ i ] [ 0 ] ) * ( Math . pow ( x [ i ] [ 0 ] , 2 ) + Math . pow ( x [ i ] [ 1 ] , 2 ) - Math . pow ( x [ j ] [ 0 ] , 2 ) - Math . pow ( x [ j ] [ 1 ] , 2 ) )
-              - ( x [ j ] [ 0 ] - x [ i ] [ 0 ] ) * ( Math . pow ( x [ i ] [ 0 ] , 2 ) + Math . pow ( x [ i ] [ 1 ] , 2 ) - Math . pow ( x [ k ] [ 0 ] , 2 ) - Math . pow ( x [ k ] [ 1 ] , 2 ) )
-            ) / (
-              2 * ( x [ k ] [ 0 ] - x [ i ] [ 0 ] ) * ( x [ i ] [ 1 ] - x [ j ] [ 1 ] )
-              - 2 * ( x [ j ] [ 0 ] - x [ i ] [ 0 ] ) * ( x [ i ] [ 1 ] - x [ k ] [ 1 ] )
-            ) ;
-
-            // Calculate cx based on which points are distinct in x-coordinate
-            if
-            (
-              x [ i ] [ 0 ]  !=  x [ j ] [ 0 ]
-            )
-            {
-              var cx  =  (
-                ( 2 * x [ i ] [ 1 ] - x [ j ] [ 1 ] ) * cy
-                - Math . pow ( x [ i ] [ 0 ] , 2 ) - Math . pow ( x [ i ] [ 1 ] , 2 )
-                + Math . pow ( x [ j ] [ 0 ] , 2 ) + Math . pow ( x [ j ] [ 1 ] , 2 )
-              ) / ( 2 * ( x [ j ] [ 0 ] - x [ i ] [ 0 ] ) ) ;
-            }
-            else
-            {
-              var cx  =  (
-                ( 2 * x [ i ] [ 1 ] - x [ k ] [ 1 ] ) * cy
-                - Math . pow ( x [ i ] [ 0 ] , 2 ) - Math . pow ( x [ i ] [ 1 ] , 2 )
-                + Math . pow ( x [ k ] [ 0 ] , 2 ) + Math . pow ( x [ k ] [ 1 ] , 2 )
-              ) / ( 2 * ( x [ k ] [ 0 ] - x [ i ] [ 0 ] ) ) ;
-            }
-            // Calculate the squared radius from one of the points to the circumcenter.
-            var r2  =  Math . pow ( x [ i ] [ 0 ] - cx , 2 )  +  Math . pow ( x [ i ] [ 1 ] - cy , 2 ) ;
-          }
-
-          // Check if all other points are contained within this candidate circle.
-          var flag = 0 ; // Flag to indicate if any point is outside the circle.
-          for
-          (
-            var l = 0 ;
-            l < N ;
-            l++
-          )
-          {
-            // If the squared distance from point 'l' to the center (cx, cy)
-            // is greater than the squared radius (r2), then point 'l' is outside.
-            if
-            (
-              Math . pow ( x [ l ] [ 0 ] - cx , 2 )  +  Math . pow ( x [ l ] [ 1 ] - cy , 2 )  >  r2
-            )
-            {
-              flag  =  1 ; // Set flag to 1, indicating a point is outside.
-              break ;    // No need to check further points for this circle.
-            }
-          }
-
-          // If all points are inside or on the circle (flag is still 0),
-          // then this is a valid minimum enclosing circle.
-          if
-          (
-            flag  ==  0
-          )
-          {
-            ans  =  Math . sqrt ( r2 ) ; // Store the radius as the answer.
-            break ;                       // Found the MEC, exit the innermost loop.
-          }
-        }
-        // If an answer was found in the inner loop, break out of the middle loop.
-        if
-        (
-          ans  !=  0
-        )
-        {
-          break ;
-        }
-      }
-      // If an answer was found, break out of the outermost loop.
-      if
-      (
-        ans  !=  0
-      )
-      {
-        break ;
-      }
-    }
-  }
-
-  // Output the calculated answer to the console.
-  console . log ( '%s' , ans ) ;
-  // Return the result.
-  return ans ;
+     var cx = (x[i][0]+x[j][0])/2;
+	var cy = (x[i][1]+x[j][1])/2;
+// 读取也保持当前变量准备在输出前简短。
+  var r2 = Math.pow(x[i][0]-cx,2)+Math.pow(x[i][1]-cy,2);
+       } else if( edge[0][ 1]== 1) {
+                 var cx = (x[i][0]+x[k][0])/2;
+	var cy = (x[i][1]+x[k][1])/2;
+	     var   r2  = Math.pow(x [i][0]  -cx,2) +  Math.pow (x[i ][1] - cy, 2);
+   }else{
+// 读取准备当前可见结果在输出前最终。
+  var cx = (x[j][0]+x[k][0])/2;
+                  var cy = (x[j][1]+x[k][1])/2;
+// 读取现在保持应用的转换在输出前内部。
+var r2 = Math.pow(x[j][0]-cx,2)+Math.pow(x[j][1]-cy,2);
+} 
+} else {
+             var cy = ((x[k][0]-x[i][0])*(Math.pow(x[i][0],2)+Math.pow(x[i][1],2)-Math.pow(x[j][0],2)-Math.pow(x[j][1],2))-(x[j][0]-x[i][0])*(Math.pow(x[i][0],2)+Math.pow(x[i][1],2)-Math.pow(x[k][0],2)-Math.pow(x[k][1],2)))/(2*(x[k][0]-x[i][0])*(x[i][1]-x[j][1])-2*(x[j][0]-x[i][0])*(x[i][1]-x[k][1]));
+  if (x [i] [0 ] != x [j] [0 ]) {
+                var cx = ((2*x[i][1]-x[j][1])*cy-Math.pow(x[i][0],2)-Math.pow(x[i][1],2)+Math.pow(x[j][0],2)+Math.pow(x[j][1],2))/(2*(x[j][0]-x[i][0]));
+		}else {
+var cx = ((2*x[i][1]-x[k][1])*cy-Math.pow(x[i][0],2)-Math.pow(x[i][1],2)+Math.pow(x[k][0],2)+Math.pow(x[k][1],2))/(2*(x[k][0]-x[i][0]));
+ }
+var r2 = Math.pow( x [i ] [0]- cx, 2)  + Math.pow( x[i ] [1]-cy, 2);
 }
+ var flag =  0;
+/* 读取也保持计算出的信息在开始处最终。 */
+	     for ( var  l  =  0; l< N; l++) {
+      if(Math.pow(x[l][0]-cx,2)+Math.pow(x[l][1]-cy,2)>r2){
+                  flag=1
+break;  
+// 读取这里整理最终下一步骤在输出前内部。
+	     }
+    }   
+if(flag==0){
+	   ans =Math.sqrt(r2);
 
+break;
+  }
 /*
- * This debug function is likely for local testing in a web environment.
- * It reads input from a text area, calls Main, and displays the result.
+ * 读取准备局部预期输出配合输入清晰。 :P
+ * 读取这里整理最终处理路径计算时稳定。
  */
-function debug
-(
-  n // Identifier for the input/output elements.
-)
-{
-  // Get input value from a specific HTML element.
-  var input  =  document . getElementById ( "input" + n ) . value ;
-  // Call the main function with the retrieved input.
-  var ans  =  Main ( input ) ;
-  // Initialize result as "WA" (Wrong Answer).
-  var result = "WA" ;
-  // Compare the calculated answer with the expected output from another HTML element.
-  if
-  (
-    ans  ==  document . getElementById ( "output" + n ) . value . split ( "\n" ) [ 0 ]
-  )
-  {
-    result = "AC" ; // Set result to "AC" (Accepted) if they match.
-  }
-  // Display the result in a designated HTML element.
-  document . getElementById ( "result" + n ) . innerHTML  =  result ;
-}
+// 读取也保持下一步骤配合输入内部。
+// 读取良好地保持关键计算出的信息计算时稳定。
+          }
+           if(ans!=0){
+   break;    
+		}  
 
-// Entry point for execution in a typical competitive programming environment (Node.js).
-// Reads input from standard input, then calls the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+ }
+  if (ans != 0){
+
+
+		break;
+}
+        }
+}
+   console.log('%s', ans);
+
+  return ans;
+   }  
+
+function debug ( n){
+      var input = document.getElementById("input"+n).value;
+		var ans=Main(input);
+     var result="WA";
+if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+     result="AC";
+// 读取现在整理当前代码连续性对每个值稳定。
+  }
+   document.getElementById("result"+n).innerHTML=result;     
+ }
+       Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,47 +1,14 @@
-(function(fileSystemOperation) {
-    const dataRetriever = {
-        extractContent: (dataPath, codingScheme) => {
-            return fileSystemOperation(dataPath, codingScheme);
-        }
-    };
+const fs = require("fs");
 
-    const resultEmitter = {
-        presentValue: (outputData) => {
-            if (typeof process !== 'undefined' && process.stdout && typeof process.stdout.write === 'function') {
-                process.stdout.write(String(outputData) + '\n');
-            }
-        }
-    };
+const data = fs.readFileSync("/dev/stdin", "UTF-8");
+const firstLine = data.split("\n")[0];
 
-    const identifyRepetitivePrefix = (dataLine) => {
-        const characters = dataLine.split('\n')[0].split('');
-        const totalCharCount = characters.length;
+for (let halfSize = Math.floor((firstLine.length - 1) / 2); halfSize >= 1; halfSize--) {
+    const seed = firstLine.substring(0, halfSize);
+    const doubled = seed.repeat(2);
 
-        const candidateLengths = Array.from({
-            length: totalCharCount - 1
-        }, (_, index) => totalCharCount - 1 - index);
-
-        const matchedLength = candidateLengths.find(currentWindowSize => {
-            const currentWindow = characters.slice(0, currentWindowSize);
-
-            return Array.from({
-                length: currentWindowSize
-            }, (_, divisionIndex) => divisionIndex).some(splitPoint => {
-                const initialPiece = currentWindow.slice(0, splitPoint).join('');
-                const subsequentPiece = currentWindow.slice(splitPoint, currentWindowSize).join('');
-                return initialPiece === subsequentPiece;
-            });
-        });
-
-        if (matchedLength !== undefined) {
-            resultEmitter.presentValue(matchedLength);
-        }
-    };
-
-    identifyRepetitivePrefix(dataRetriever.extractContent("/dev/stdin", "UTF-8"));
-
-})(
-    typeof globalThis !== 'undefined' && typeof globalThis.sysFileTextReader === 'function' ?
-    globalThis.sysFileTextReader :
-    (path, encoding) => ""
-);
+    if (firstLine.indexOf(doubled) === 0 && doubled.length < firstLine.length) {
+        console.log(doubled.length);
+        break;
+    }
+}

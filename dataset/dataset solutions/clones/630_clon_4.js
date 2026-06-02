@@ -1,110 +1,166 @@
-const sourceReader = require('fs').readFileSync;
-
-function processRawData(fullTextContent) {
-    const dataRows = fullTextContent.split('\n');
-
-    let rowCursor = 0;
-    const initialParams = dataRows[rowCursor++].split(' ');
-    const totalNodes = Number.parseInt(initialParams[0], 10);
-    const totalConnections = Number.parseInt(initialParams[1], 10);
-    const startingEnergy = Number.parseInt(initialParams[2], 10);
-
-    const nodeLevels = new Map();
-    for (let currentId = 0; currentId < totalNodes; currentId++) {
-        nodeLevels.set(currentId, Number.parseInt(dataRows[rowCursor++], 10));
+class PriorityMinQueue {
+    constructor() {
+        this.heapElements = [];
     }
 
-    const networkGraph = new Map();
-    for (let currentId = 0; currentId < totalNodes; currentId++) {
-        networkGraph.set(currentId, []);
+    insert(element) {
+        this.heapElements.push(element);
+        this.heapifyUp();
     }
 
-    for (let i = 0; i < totalConnections; i++) {
-        const connectionParts = dataRows[rowCursor++].split(' ');
-        const pointOne = Number.parseInt(connectionParts[0], 10) - 1;
-        const pointTwo = Number.parseInt(connectionParts[1], 10) - 1;
-        const passageCost = Number.parseInt(connectionParts[2], 10);
-
-        networkGraph.get(pointOne).push({ destination: pointTwo, expenditure: passageCost });
-        networkGraph.get(pointTwo).push({ destination: pointOne, expenditure: passageCost });
+    extractMin() {
+        if (this.isEmpty()) return null;
+        const minVal = this.heapElements[0];
+        const lastVal = this.heapElements.pop();
+        if (!this.isEmpty()) {
+            this.heapElements[0] = lastVal;
+            this.heapifyDown();
+        }
+        return minVal;
     }
 
-    return {
-        numNodes: totalNodes,
-        initialSupply: startingEnergy,
-        levelMap: nodeLevels,
-        graphSchema: networkGraph
-    };
-}
+    isEmpty() {
+        return this.heapElements.length === 0;
+    }
 
-function computeMinimumDuration(systemDetails) {
-    const { numNodes, initialSupply, levelMap, graphSchema } = systemDetails;
-
-    const explorationQueue = [];
-    let shortestCompletionTime = Infinity;
-
-    explorationQueue.push({
-        currentPosition: 0,
-        elapsedTime: 0,
-        currentResource: initialSupply,
-        pathTrace: new Set([0])
-    });
-
-    while (explorationQueue.length > 0) {
-        const activeTraversal = explorationQueue.shift(); // BFS: process from the front
-
-        const currentPositionLevel = levelMap.get(activeTraversal.currentPosition);
-        const connectedSegments = graphSchema.get(activeTraversal.currentPosition);
-
-        for (const segment of connectedSegments) {
-            const nextPosition = segment.destination;
-            const segmentExpenditure = segment.expenditure;
-
-            if (activeTraversal.pathTrace.has(nextPosition)) {
-                continue;
-            }
-
-            if (currentPositionLevel < segmentExpenditure) {
-                continue;
-            }
-
-            let nextElapsedTime;
-            let nextResourceSupply;
-
-            const nextPositionLevel = levelMap.get(nextPosition);
-
-            if (nextPositionLevel + segmentExpenditure < activeTraversal.currentResource) {
-                nextElapsedTime = activeTraversal.elapsedTime + segmentExpenditure + activeTraversal.currentResource - (nextPositionLevel + segmentExpenditure);
-                nextResourceSupply = nextPositionLevel;
-            } else if (nextPositionLevel + segmentExpenditure >= activeTraversal.currentResource && activeTraversal.currentResource >= segmentExpenditure) {
-                nextElapsedTime = activeTraversal.elapsedTime + segmentExpenditure;
-                nextResourceSupply = activeTraversal.currentResource - segmentExpenditure;
+    heapifyUp() {
+        let currentIdx = this.heapElements.length - 1;
+        while (currentIdx > 0) {
+            let parentIdx = Math.floor((currentIdx - 1) / 2);
+            if (this.heapElements[parentIdx][0] > this.heapElements[currentIdx][0]) {
+                [this.heapElements[parentIdx], this.heapElements[currentIdx]] = [this.heapElements[currentIdx], this.heapElements[parentIdx]];
+                currentIdx = parentIdx;
             } else {
-                nextElapsedTime = activeTraversal.elapsedTime + segmentExpenditure + segmentExpenditure - activeTraversal.currentResource;
-                nextResourceSupply = 0;
-            }
-
-            const updatedPathTrace = new Set(activeTraversal.pathTrace);
-            updatedPathTrace.add(nextPosition);
-
-            if (nextPosition === numNodes - 1) {
-                const finalTripDuration = nextElapsedTime + levelMap.get(numNodes - 1) - nextResourceSupply;
-                shortestCompletionTime = Math.min(shortestCompletionTime, finalTripDuration);
-            } else {
-                explorationQueue.push({
-                    currentPosition: nextPosition,
-                    elapsedTime: nextElapsedTime,
-                    currentResource: nextResourceSupply,
-                    pathTrace: updatedPathTrace
-                });
+                break;
             }
         }
     }
 
-    return shortestCompletionTime === Infinity ? -1 : shortestCompletionTime;
+    heapifyDown() {
+        let currentIdx = 0;
+        const totalLength = this.heapElements.length;
+        const elementToSink = this.heapElements[0];
+
+        while (true) {
+            let leftChildIdx = 2 * currentIdx + 1;
+            let rightChildIdx = 2 * currentIdx + 2;
+            let leftChildElement, rightChildElement;
+            let swapIdx = null;
+
+            if (leftChildIdx < totalLength) {
+                leftChildElement = this.heapElements[leftChildIdx];
+                if (leftChildElement[0] < elementToSink[0]) {
+                    swapIdx = leftChildIdx;
+                }
+            }
+
+            if (rightChildIdx < totalLength) {
+                rightChildElement = this.heapElements[rightChildIdx];
+                if (
+                    (swapIdx === null && rightChildElement[0] < elementToSink[0]) ||
+                    (swapIdx !== null && rightChildElement[0] < leftChildElement[0])
+                ) {
+                    swapIdx = rightChildIdx;
+                }
+            }
+
+            if (swapIdx === null) break;
+            [this.heapElements[currentIdx], this.heapElements[swapIdx]] = [this.heapElements[swapIdx], this.heapElements[currentIdx]];
+            currentIdx = swapIdx;
+        }
+    }
 }
 
-const fullInputContent = sourceReader('/dev/stdin', 'utf8');
-const processedSystemData = processRawData(fullInputContent);
-const ultimateResult = computeMinimumDuration(processedSystemData);
-console.log(ultimateResult);
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawInputData.split('\n');
+
+const firstLineValues = dataLines[0].split(' ').map(Number);
+const vertexCount = firstLineValues[0];
+const edgeCount = firstLineValues[1];
+const initialFluidLevel = firstLineValues[2];
+
+const vertexElevations = Array(vertexCount);
+for (let i = 0; i < vertexCount; i++) {
+    vertexElevations[i] = Number(dataLines[i + 1]);
+}
+
+const adjacencyMap = Array(vertexCount);
+for (let i = 0; i < vertexCount; i++) {
+    adjacencyMap[i] = [];
+}
+
+for (let i = 0; i < edgeCount; i++) {
+    const edgeParts = dataLines[i + vertexCount + 1].split(' ').map(Number);
+    const sourceVertex = edgeParts[0] - 1;
+    const targetVertex = edgeParts[1] - 1;
+    const travelDuration = edgeParts[2];
+
+    adjacencyMap[sourceVertex].push({
+        destination: targetVertex,
+        duration: travelDuration
+    });
+    adjacencyMap[targetVertex].push({
+        destination: sourceVertex,
+        duration: travelDuration
+    });
+}
+
+const maxWaterLevel = 1001;
+const minTravelTimes = Array(vertexCount).fill(null).map(() => Array(maxWaterLevel).fill(Infinity));
+
+const pathFinder = new PriorityMinQueue();
+
+minTravelTimes[0][initialFluidLevel] = 0;
+pathFinder.insert([0, 0, initialFluidLevel]);
+
+while (!pathFinder.isEmpty()) {
+    const [currentTime, currentVertex, currentWaterLevel] = pathFinder.extractMin();
+
+    if (currentTime > minTravelTimes[currentVertex][currentWaterLevel]) {
+        continue;
+    }
+
+    for (const edgeDetails of adjacencyMap[currentVertex]) {
+        const nextVertex = edgeDetails.destination;
+        const travelDuration = edgeDetails.duration;
+
+        if (vertexElevations[currentVertex] < travelDuration) {
+            continue;
+        }
+
+        let nextTime, nextWaterLevel;
+
+        if (vertexElevations[nextVertex] + travelDuration < currentWaterLevel) {
+            nextWaterLevel = vertexElevations[nextVertex];
+            nextTime = currentTime + travelDuration + (currentWaterLevel - (vertexElevations[nextVertex] + travelDuration));
+        }
+        else if (vertexElevations[nextVertex] + travelDuration >= currentWaterLevel && currentWaterLevel >= travelDuration) {
+            nextWaterLevel = currentWaterLevel - travelDuration;
+            nextTime = currentTime + travelDuration;
+        }
+        else {
+            nextWaterLevel = 0;
+            nextTime = currentTime + travelDuration + travelDuration - currentWaterLevel;
+        }
+        
+        if (nextTime < minTravelTimes[nextVertex][nextWaterLevel]) {
+            minTravelTimes[nextVertex][nextWaterLevel] = nextTime;
+            pathFinder.insert([nextTime, nextVertex, nextWaterLevel]);
+        }
+    }
+}
+
+let overallMinimumJourneyTime = Infinity;
+const targetNodeIndex = vertexCount - 1;
+
+for (let w = 0; w < maxWaterLevel; w++) {
+    if (minTravelTimes[targetNodeIndex][w] !== Infinity) {
+        overallMinimumJourneyTime = Math.min(overallMinimumJourneyTime, minTravelTimes[targetNodeIndex][w] + vertexElevations[targetNodeIndex] - w);
+    }
+}
+
+if (overallMinimumJourneyTime === Infinity) {
+    console.log(-1);
+} else {
+    console.log(overallMinimumJourneyTime);
+}

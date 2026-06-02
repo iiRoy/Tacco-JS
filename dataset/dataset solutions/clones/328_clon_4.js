@@ -1,69 +1,39 @@
-const showResult = console.log;
+function processDataBlocks(inputContent) {
+    let currentInputLines = inputContent.split('\n');
 
-const lineToNumbers = (inputLine) => {
-    if (typeof inputLine !== 'string') {
-        return [];
-    }
-    return inputLine.split(/\s+/).filter(Boolean).map(Number);
-};
-
-const aggregateValues = (dataCollection) => {
-    if (!Array.isArray(dataCollection) || dataCollection.length === 0) {
-        return 0;
-    }
-    return dataCollection.reduce((accum, current) => accum + current, 0);
-};
-
-const formatElements = (elementCollection) => {
-    if (!Array.isArray(elementCollection)) {
-        return [];
-    }
-    return elementCollection.map((val) => String(val).padStart(5, ' '));
-};
-
-const processBatch = (remainingInputLines, outputEmitter) => {
-    if (remainingInputLines.length === 0) {
-        return;
-    }
-
-    const quantityRaw = remainingInputLines.shift();
-    const currentQuantity = Number(quantityRaw);
-
-    if (currentQuantity === 0) {
-        return;
-    }
-
-    let batchColumnAccumulators = Array(11).fill(0);
-
-    const iterateRows = (rowIndex, currentAccumulators) => {
-        if (rowIndex >= currentQuantity || isNaN(currentQuantity)) {
-            return currentAccumulators;
+    const handleNextBlock = (remainingLines) => {
+        if (remainingLines.length === 0) {
+            return;
         }
 
-        const rawDataRow = remainingInputLines.shift();
-        const numericRowData = lineToNumbers(rawDataRow);
-        const rowTotalValue = aggregateValues(numericRowData);
-        const completeRowData = [...numericRowData, rowTotalValue];
+        const blockRowCount = Number(remainingLines.shift());
 
-        outputEmitter(formatElements(completeRowData).join(''));
+        if (blockRowCount === 0) {
+            return;
+        }
 
-        const updatedAccumulators = currentAccumulators.map((sumComponent, index) => {
-            return sumComponent + (completeRowData[index] || 0);
+        const currentBlockRows = remainingLines.splice(0, blockRowCount);
+
+        let blockColumnAggregates = Array(blockRowCount + 1).fill(0);
+
+        currentBlockRows.forEach(rowString => {
+            const rowNumericValues = rowString.split(' ').map(val => Number(val));
+
+            const rowTotalSum = rowNumericValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+            const completeRowData = [...rowNumericValues, rowTotalSum];
+
+            console.log(completeRowData.map(num => String(num).slice(-5).padStart(5, ' ')).join(''));
+
+            blockColumnAggregates = blockColumnAggregates.map((aggregate, index) => aggregate + completeRowData[index]);
         });
 
-        return iterateRows(rowIndex + 1, updatedAccumulators);
+        console.log(blockColumnAggregates.map(num => String(num).slice(-5).padStart(5, ' ')).join(''));
+
+        handleNextBlock(remainingLines);
     };
 
-    batchColumnAccumulators = iterateRows(0, batchColumnAccumulators);
+    handleNextBlock(currentInputLines);
+}
 
-    outputEmitter(formatElements(batchColumnAccumulators.slice(0, currentQuantity + 1)).join(''));
-
-    processBatch(remainingInputLines, outputEmitter);
-};
-
-const entryPoint = (sourceText) => {
-    const dataLines = sourceText.split('\n');
-    processBatch(dataLines, showResult);
-};
-
-entryPoint(require("node:fs").readFileSync("input.txt", "utf8"));
+processDataBlocks(require("fs").readFileSync("input.txt", "utf8"));

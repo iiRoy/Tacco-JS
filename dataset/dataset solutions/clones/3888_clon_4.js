@@ -1,41 +1,28 @@
-"use strict";
+"use strict"
+function ProcessInput(inputData) {
+  const parsedValues = inputData.trim().split(' ').map(Number);
+  const [alpha, beta, gamma, zeta, eta] = parsedValues;
 
-const processValuation = (sourceData) => {
-    const numericElements = sourceData.split(/\s+/).filter(Boolean).map(item => Number(item));
+  // Calculate the cost if all required items are purchased individually.
+  const directAcquisitionCost = alpha * zeta + beta * eta;
 
-    const unitCostAlpha = numericElements[0];
-    const unitCostBeta = numericElements[1];
-    const unitCostCombined = numericElements[2];
-    const requiredAlpha = numericElements[3];
-    const requiredBeta = numericElements[4];
+  // Calculate the cost by purchasing a number of combined (AB) pairs
+  // equal to the minimum of the required A and B items,
+  // then buying any remaining items individually.
+  const commonQuantity = Math.min(zeta, eta);
+  const remainingZeta = Math.max(0, zeta - commonQuantity);
+  const remainingEta = Math.max(0, eta - commonQuantity);
+  const partialPairCost = (2 * gamma * commonQuantity) + (alpha * remainingZeta) + (beta * remainingEta);
 
-    const maximumCombinedUnits = 2 * Math.max(requiredAlpha, requiredBeta);
+  // Calculate the cost by purchasing enough combined (AB) pairs
+  // to satisfy the maximum of the required A and B items.
+  // This implies any excess of the smaller item from the pairs is effectively free.
+  const fullCoveragePairCost = 2 * gamma * Math.max(zeta, eta);
 
-    const sequenceOfCombinedUnits = Array.from(
-        { length: maximumCombinedUnits / 2 + 1 },
-        (_, index) => index * 2
-    );
+  // The minimum of these three distinct purchasing strategies yields the optimal cost.
+  const ultimateCost = Math.min(directAcquisitionCost, partialPairCost, fullCoveragePairCost);
 
-    const calculatedCosts = sequenceOfCombinedUnits.map(currentCombinedAmount => {
-        const remainingAlphaUnits = Math.max(0, requiredAlpha - currentCombinedAmount / 2);
-        const remainingBetaUnits = Math.max(0, requiredBeta - currentCombinedAmount / 2);
+  console.log(ultimateCost);
+}
 
-        return (
-            currentCombinedAmount * unitCostCombined +
-            remainingAlphaUnits * unitCostAlpha +
-            remainingBetaUnits * unitCostBeta
-        );
-    });
-
-    const lowestTotalCost = Math.min(...calculatedCosts);
-
-    return lowestTotalCost;
-};
-
-const executeComputation = () => {
-    const inputPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-    const resultValue = processValuation(inputPayload);
-    console.log(resultValue);
-};
-
-executeComputation();
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

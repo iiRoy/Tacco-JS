@@ -1,84 +1,83 @@
-function ProcessData ( rawData )
-{
-  // Split the raw input string by newlines to get individual lines.
-  rawData = rawData.split ( "\n" );
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of lines
+    rawData = rawData.split("\n");
 
-  // Extract the second line, split it by spaces, and convert each part to a number.
-  let numericSequence = rawData[1].split ( " " ).map ( Number );
+    // Extract the second line, split it by spaces, and convert elements to numbers
+    var dataArray = rawData[1].split(" ").map(Number);
 
-  // Sort the array of numbers in ascending order.
-  numericSequence = numericSequence.sort ( function ( valA , valB ) { return valA - valB } );
+    // Sort the numeric array in ascending order
+    dataArray = dataArray.sort(function(firstVal, secondVal) {
+        return firstVal - secondVal;
+    });
 
-  // Calculate the initial average of the first two elements.
-  let currentAverage = ( numericSequence[0] + numericSequence[1] ) / 2;
+    // Calculate the initial average of the first two elements
+    var currentAverage = (dataArray[0] + dataArray[1]) / 2;
 
-  // Remove the first two elements from the sequence.
-  numericSequence.shift ( );
-  numericSequence.shift ( );
+    // Remove the first two elements from the array
+    dataArray.shift();
+    dataArray.shift();
 
-  // Continue processing as long as there are elements remaining in the sequence.
-  while ( numericSequence.length !== 0 )
-  {
-    // Insert the current average back into the sequence at its sorted position.
-    numericSequence.splice ( findInsertionPoint ( numericSequence , currentAverage ) , 0 , currentAverage );
+    // Continue processing the array until it becomes empty
+    while (dataArray.length !== 0) {
+        // Find the correct insertion point for the current average and insert it into the array
+        dataArray.splice(binaryInsertPosition(dataArray, currentAverage), 0, currentAverage);
 
-    // Recalculate the average of the new first two elements.
-    currentAverage = ( numericSequence[0] + numericSequence[1] ) / 2;
+        // Recalculate the average using the new first two elements
+        currentAverage = (dataArray[0] + dataArray[1]) / 2;
 
-    // Again, remove the first two elements.
-    numericSequence.shift ( );
-    numericSequence.shift ( );
-  }
+        // Remove the first two elements again for the next iteration
+        dataArray.shift();
+        dataArray.shift();
+    }
 
-  // Display the final calculated average.
-  console.log ( currentAverage );
+    // Output the final calculated average to the console
+    console.log(currentAverage);
 }
 
-ProcessData ( require ( "fs" ).readFileSync ( "/dev/stdin" , "utf8" ).trim ( ) );
+// Invoke the main processing function, reading input from standard input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
 
-function findInsertionPoint ( dataCollection , valueToInsert )
-{
-  // Initialize an indicator for the found element's position.
-  let foundPosition = -1;
+/**
+ * Performs a binary search on a sorted array to find an element or its insertion point.
+ *
+ * @param {Array<number>} targetArray - The sorted array to search within.
+ * @param {number} valueToInsert - The value to locate or find an insertion index for.
+ * @returns {number} The index of the found value, or the index where it should be inserted
+ *                   to maintain the sorted order if not found.
+ */
+function binaryInsertPosition(targetArray, valueToInsert) {
+    var foundIndex = -1; // Stores the index if the value is found
 
-  // Define the starting index for the search range.
-  let lowerBound = 0;
+    // Initialize the left boundary of the search range
+    var leftBound = 0;
 
-  // Define the ending index for the search range.
-  let upperBound = dataCollection.length - 1;
+    // Initialize the right boundary of the search range
+    var rightBound = targetArray.length - 1;
 
-  // Perform binary search while the search range is valid.
-  while ( lowerBound <= upperBound )
-  {
-    // Calculate the midpoint of the current search range.
-    let midPoint = Math.floor ( ( lowerBound + upperBound ) / 2 );
+    // Loop as long as the search range is valid (left boundary is less than or equal to right boundary)
+    while (leftBound <= rightBound) {
+        // Calculate the middle index of the current search range
+        var midPoint = Math.floor((leftBound + rightBound) / 2);
 
-    // Compare the element at the midpoint with the target value.
-    if ( dataCollection[midPoint] === valueToInsert )
-    {
-      // If a match is found, record its position and terminate the search.
-      foundPosition = midPoint;
-      break;
+        // Compare the element at the middle index with the value we are looking for
+        if (targetArray[midPoint] === valueToInsert) {
+            // If a match is found, store its index and terminate the search
+            foundIndex = midPoint;
+            break;
+        } else if (targetArray[midPoint] < valueToInsert) {
+            // If the middle element is less than the target value, search in the right half
+            leftBound = midPoint + 1;
+        } else {
+            // If the middle element is greater than the target value, search in the left half
+            rightBound = midPoint - 1;
+        }
     }
-    else if ( dataCollection[midPoint] < valueToInsert )
-    {
-      // If the midpoint element is smaller, adjust the lower bound to search the right half.
-      lowerBound = midPoint + 1;
-    }
-    else
-    {
-      // If the midpoint element is larger, adjust the upper bound to search the left half.
-      upperBound = midPoint - 1;
-    }
-  }
 
-  // Return the found position if the element was present, otherwise return the appropriate insertion point.
-  if ( foundPosition !== -1 )
-  {
-    return foundPosition;
-  }
-  else
-  {
-    return lowerBound;
-  }
+    // If the value was found during the search, return its index
+    if (foundIndex !== -1) {
+        return foundIndex;
+    } else {
+        // If the value was not found, 'leftBound' indicates the correct insertion point
+        return leftBound;
+    }
 }

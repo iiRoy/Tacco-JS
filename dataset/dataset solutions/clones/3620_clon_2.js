@@ -1,35 +1,22 @@
-// This function handles the entire incoming data stream.
-function ProcessData (
-  receivedData
-) {
-  // The initial string is broken into components, with the first part at index 0, the second at index 1, etc.
-  receivedData = receivedData . split (
-    " "
-  ) ;
+// This function handles the primary processing of the provided data.
+function ProcessInput(rawData) {
+  // The raw input string is split into an array of strings based on spaces.
+  let parsedData = rawData.split(" ");
 
-  // To convert string fragments into base-10 integers, the parseInt utility is employed.
-  let primaryValue = parseInt(
-    receivedData[0],
-    10
-  );
-  let secondaryValue = parseInt(
-    receivedData[1],
-    10
-  );
+  // Convert the first and second elements of the array to integers.
+  // The radix 10 is explicitly used for decimal conversion.
+  const firstNum = parseInt(parsedData[0], 10);
+  const secondNum = parseInt(parsedData[1], 10);
 
-  // Display the outcome.
-  if (
-    primaryValue % secondaryValue === 0
-  ) {
-    console . log (
-      0
-    ) ;
+  // Determine the output based on a modulo operation.
+  if (firstNum % secondNum === 0) {
+    // If the remainder is zero, print 0.
+    console.log(0);
   } else {
-    console . log (
-      1
-    ) ;
+    // Otherwise, print 1.
+    console.log(1);
   }
 }
 
-/* Do not alter the code below this line; it manages standard input/output operations and invokes the primary processing routine. */
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// The following line is for standard input/output handling and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

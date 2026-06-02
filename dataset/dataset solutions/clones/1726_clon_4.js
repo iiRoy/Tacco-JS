@@ -1,71 +1,67 @@
-"use strict"
-const acquireDataStream = () => require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-
-let dataLines = acquireDataStream();
-let currentLineIndex = 0;
-
-const retrieveLine = () => {
-    if (currentLineIndex >= dataLines.length) {
-        throw new Error("Input stream exhausted");
-    }
-    return dataLines[currentLineIndex++];
+"use strict";
+const establishInputSource = () => {
+    const rawLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    let currentLineIndex = 0;
+    const totalLines = rawLines.length;
+    const inputMethods = {
+        acquireLine: () => {
+            if (currentLineIndex >= totalLines) {
+                throw "ArrayIndexOutOfBoundsException";
+            }
+            return rawLines[currentLineIndex++];
+        },
+        parseLineAsInteger: () => parseInt(inputMethods.acquireLine()),
+        splitLineIntoStrings: () => inputMethods.acquireLine().split(" "),
+        parseLineAsIntegerArray: () => inputMethods.acquireLine().split(" ").map(Number),
+        extractLineCharacters: () => inputMethods.acquireLine().split(""),
+        hasMoreInput: () => currentLineIndex < totalLines
+    };
+    return inputMethods;
 };
-
-const retrieveNumeric = () => parseInt(retrieveLine());
-const retrieveNumericSequence = () => retrieveLine().split(" ").map(Number);
-const retrieveTextSequence = () => retrieveLine().split(" ");
-const retrieveCharSequence = () => retrieveLine().split("");
-
-const publishResult = (...values) => console.log(...values);
-
-const findGreatestIndexBelowOrEqual = (sortedArray, target) => {
-    let lowBoundary = 0;
-    let highBoundary = sortedArray.length - 1;
-    let optimalIndex = 0;
-
-    while (lowBoundary <= highBoundary) {
-        const midPoint = Math.floor((lowBoundary + highBoundary) / 2);
-        if (sortedArray[midPoint] <= target) {
-            optimalIndex = midPoint;
-            lowBoundary = midPoint + 1;
+const inputProcessor = establishInputSource();
+const acquireLine = () => inputProcessor.acquireLine();
+const parseLineAsInteger = () => inputProcessor.parseLineAsInteger();
+const parseLineAsIntegerArray = () => inputProcessor.parseLineAsIntegerArray();
+const extractLineCharacters = () => inputProcessor.extractLineCharacters();
+const hasMoreInput = () => inputProcessor.hasMoreInput();
+const displayResult = (...args) => console.log(...args);
+const findMaxIndexForTime = (timeArray, availableTime) => {
+    let lowBound = 0;
+    let highBound = timeArray.length - 1;
+    let bestIndex = 0;
+    while (lowBound <= highBound) {
+        const midPoint = Math.floor((lowBound + highBound) / 2);
+        if (timeArray[midPoint] <= availableTime) {
+            bestIndex = midPoint;
+            lowBound = midPoint + 1;
         } else {
-            highBoundary = midPoint - 1;
+            highBound = midPoint - 1;
         }
     }
-    return optimalIndex;
+    return bestIndex;
 };
-
-const orchestrateProcess = () => {
-    const [alphaLen, betaLen, budgetConstraint] = retrieveNumericSequence();
-    const alphaSequence = retrieveNumericSequence();
-    const betaSequence = retrieveNumericSequence();
-
-    const alphaCumulative = alphaSequence.reduce((accumulator, currentValue) => {
-        accumulator.push(accumulator[accumulator.length - 1] + currentValue);
+const executeCalculation = () => {
+    const [countA, countB, timeLimit] = parseLineAsIntegerArray();
+    const booksA = parseLineAsIntegerArray();
+    const booksB = parseLineAsIntegerArray();
+    const cumulativeSumsA = booksA.reduce((accumulator, currentBookTime) => {
+        accumulator.push(accumulator[accumulator.length - 1] + currentBookTime);
         return accumulator;
     }, [0]);
-
-    const betaCumulative = betaSequence.reduce((accumulator, currentValue) => {
-        accumulator.push(accumulator[accumulator.length - 1] + currentValue);
+    const cumulativeSumsB = booksB.reduce((accumulator, currentBookTime) => {
+        accumulator.push(accumulator[accumulator.length - 1] + currentBookTime);
         return accumulator;
     }, [0]);
-
-    let maximumAchieved = 0;
-
-    for (let j = 0; j <= betaLen; j++) {
-        const currentBetaCost = betaCumulative[j];
-        const remainingBudget = budgetConstraint - currentBetaCost;
-
-        if (remainingBudget < 0) {
+    let maximumCombinedBooks = 0;
+    for (let i = 0; i <= countA; i++) {
+        const timeSpentA = cumulativeSumsA[i];
+        if (timeSpentA > timeLimit) {
             break;
         }
-        
-        const i_alpha = findGreatestIndexBelowOrEqual(alphaCumulative, remainingBudget);
-        
-        maximumAchieved = Math.max(maximumAchieved, i_alpha + j);
+        const remainingTime = timeLimit - timeSpentA;
+        const j = findMaxIndexForTime(cumulativeSumsB, remainingTime);
+        maximumCombinedBooks = Math.max(maximumCombinedBooks, i + j);
     }
-
-    publishResult(maximumAchieved);
+    displayResult(maximumCombinedBooks);
 };
-
-orchestrateProcess();
+executeCalculation();

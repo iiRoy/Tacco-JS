@@ -1,29 +1,24 @@
 'use strict'
 
-const solveProblem = (sourceData) => {
-  const processedLines = sourceData.trim().split('\n')
-  const numericalValues = processedLines[1].split(' ').map(str => Number(str))
+function processInput(rawData) {
+  const lines = rawData.trim().split('\n')
+  const elementCount = Number(lines[0])
+  const numericalSequence = lines[1].split(' ').map(Number)
 
-  if (numericalValues.length < 3) {
-    return 0
-  }
+  const intermediatePoints = Array.from({ length: elementCount - 2 }, (_, index) => index + 1)
+    .filter(currentIdx => {
+      const priorVal = numericalSequence[currentIdx - 1]
+      const centralVal = numericalSequence[currentIdx]
+      const subsequentVal = numericalSequence[currentIdx + 1]
 
-  const result = numericalValues.reduce((counter, currentElement, currentIndex, entireArray) => {
-    if (currentIndex > 0 && currentIndex < entireArray.length - 1) {
-      const precedingElement = entireArray[currentIndex - 1]
-      const succeedingElement = entireArray[currentIndex + 1]
+      // This condition is mathematically equivalent to:
+      // (priorVal < centralVal && centralVal < subsequentVal) || (priorVal > centralVal && centralVal > subsequentVal)
+      // It checks if centralVal is strictly between priorVal and subsequentVal.
+      return (priorVal - centralVal) * (centralVal - subsequentVal) > 0
+    })
+    .length
 
-      const firstDifference = currentElement - precedingElement
-      const secondDifference = currentElement - succeedingElement
-
-      if (firstDifference * secondDifference < 0) {
-        return counter + 1
-      }
-    }
-    return counter
-  }, 0)
-
-  return result
+  console.log(intermediatePoints)
 }
 
-console.log(solveProblem(require('fs').readFileSync('/dev/stdin', 'utf8')))
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'))

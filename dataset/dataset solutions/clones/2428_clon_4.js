@@ -1,22 +1,18 @@
-const evaluateInputPayload = (rawPayload) => {
-    const [lengthDescriptor, dataSequence] = rawPayload.split('\n');
-    const numericalLength = Number.parseInt(lengthDescriptor, 10);
+function Main(inputContent) {
+    const dataLines = inputContent.split("\n");
+    const stringLength = parseInt(dataLines[0], 10);
+    const sourceString = dataLines[1];
 
-    if ((numericalLength & 1) === 1) {
+    if ((stringLength & 1) === 1) {
         console.log('No');
         return;
     }
 
-    const halfLength = numericalLength / 2;
-    const initialSegment = dataSequence.slice(0, halfLength);
-    const terminalSegment = dataSequence.slice(halfLength, numericalLength);
+    const halfLength = stringLength >> 1;
 
-    const comparisonResult = (initialSegment === terminalSegment);
-    const responseLookup = {
-        true: 'Yes',
-        false: 'No'
-    };
-    console.log(responseLookup[comparisonResult]);
-};
+    const firstPart = sourceString.slice(0, halfLength);
+    const secondPart = sourceString.slice(halfLength);
 
-evaluateInputPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(firstPart === secondPart ? 'Yes' : 'No');
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

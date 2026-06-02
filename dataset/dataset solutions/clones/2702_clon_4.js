@@ -1,37 +1,39 @@
-function performComputation(sourceText) {
-    const contentLines = sourceText.split("\n");
+function processInputData(rawData) {
+  const dataLines = rawData.split('\n');
+  const totalItemCount = Number(dataLines[0]);
+  const resourceLevels = dataLines[1].split(' ').map(Number);
+  const demandQuantities = dataLines[2].split(' ').map(Number);
 
-    const primarySequence = contentLines[1].split(" ").map(val => Number(val));
-    const secondarySequence = contentLines[2].split(" ").map(val => Number(val));
+  let totalCollectedAmount = 0;
 
-    const resolveInteractions = (currentIdx, currentPrimary, secondaryElements, totalAccrued) => {
-        if (currentIdx >= secondaryElements.length) {
-            return totalAccrued;
-        }
+  demandQuantities.forEach((currentDemandQuantity, currentIdx) => {
+    const currentResourceA = resourceLevels[currentIdx];
+    const nextResourceAIndex = currentIdx + 1;
+    const nextResourceAValue = resourceLevels[nextResourceAIndex];
 
-        const firstUnit = currentPrimary[currentIdx];
-        const secondUnit = currentPrimary[currentIdx + 1];
-        const targetAmount = secondaryElements[currentIdx];
+    let collectedFromCurrentA = Math.min(currentDemandQuantity, currentResourceA);
+    let remainingDemand = currentDemandQuantity - collectedFromCurrentA;
 
-        let nextTotal = totalAccrued;
-        const updatedPrimary = [...currentPrimary]; 
+    let collectedFromNextA = 0;
+    let updatedNextResourceA = nextResourceAValue;
 
-        if (targetAmount <= firstUnit) {
-            nextTotal += targetAmount;
-        } else if (targetAmount < firstUnit + secondUnit) {
-            nextTotal += targetAmount;
-            updatedPrimary[currentIdx + 1] = secondUnit - (targetAmount - firstUnit);
-        } else {
-            nextTotal += firstUnit + secondUnit;
-            updatedPrimary[currentIdx + 1] = 0;
-        }
+    if (remainingDemand > 0) {
+      if (nextResourceAValue === undefined) {
+        // This scenario corresponds to the original's 'else' block when tmpA2 is undefined.
+        // Original behavior: output += tmpA1 + undefined (resulting in NaN), Alist[i+1] = 0.
+        collectedFromNextA = undefined; // Propagate NaN to totalCollectedAmount
+        updatedNextResourceA = 0; // Set the next resource to 0, potentially extending the array.
+      } else {
+        collectedFromNextA = Math.min(remainingDemand, nextResourceAValue);
+        updatedNextResourceA = nextResourceAValue - collectedFromNextA;
+      }
+    }
 
-        return resolveInteractions(currentIdx + 1, updatedPrimary, secondaryElements, nextTotal);
-    };
+    totalCollectedAmount += collectedFromCurrentA + collectedFromNextA;
+    resourceLevels[nextResourceAIndex] = updatedNextResourceA;
+  });
 
-    const finalOutcome = resolveInteractions(0, primarySequence, secondarySequence, 0);
-
-    console.log(finalOutcome);
+  console.log(totalCollectedAmount);
 }
 
-performComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

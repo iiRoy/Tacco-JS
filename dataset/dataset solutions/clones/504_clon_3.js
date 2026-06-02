@@ -1,184 +1,98 @@
-// This script processes a series of network configurations, each defining a set of locations and routes
-// with associated travel costs. The goal is to find the minimum cost to travel from a designated
-// starting location to a destination location, with the special condition of being allowed to use
-// one "free pass" on a single segment of the journey.
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLines = rawInput.trim().split("\n");
 
-// Utilize Node.js's built-in file system module to synchronously read all input from standard input.
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-// A reusable utility function to parse a single line of space-separated numbers.
-// It trims whitespace, splits the string into parts, and converts each part to a numeric value.
-const parseNumericLine = (lineString) => {
-    // Ensure the line is not empty or just whitespace before processing.
-    if (!lineString || lineString.trim() === '') {
-        // In a production scenario, one might throw an error or handle it differently.
-        // For this problem, we assume valid input format.
-        return [];
+// Helper function to apply cost updates for a directed edge (from -> to)
+// This function encapsulates the core DP state transition logic.
+const applyCostUpdates = (sourceNode, targetNode, edgeWeight, costsMatrix) => {
+    // State 0: Path to sourceNode used no special edges.
+    // Current edge is a normal edge.
+    if (costsMatrix[sourceNode][0] !== Infinity) {
+        costsMatrix[targetNode][0] = Math.min(costsMatrix[targetNode][0], costsMatrix[sourceNode][0] + edgeWeight);
+        // If we reached sourceNode normally, and this is a normal edge,
+        // then this edge can be considered the *first* special edge to reach targetNode.
+        costsMatrix[targetNode][1] = Math.min(costsMatrix[targetNode][1], costsMatrix[sourceNode][0]);
     }
-    return lineString.trim().split(" ").map(Number);
+
+    // State 1: Path to sourceNode used one special edge.
+    // Current edge is a normal edge.
+    if (costsMatrix[sourceNode][1] !== Infinity) {
+        // If we reached sourceNode with one special edge, and this is a normal edge,
+        // then this edge can be considered the *second* special edge to reach targetNode.
+        costsMatrix[targetNode][2] = Math.min(costsMatrix[targetNode][2], costsMatrix[sourceNode][1]);
+    }
+
+    // State 2: Path to sourceNode used two special edges.
+    // Current edge is a normal edge.
+    if (costsMatrix[sourceNode][2] !== Infinity) {
+        // If we reached sourceNode with two special edges, and this is a normal edge,
+        // then targetNode is reached with two special edges.
+        costsMatrix[targetNode][2] = Math.min(costsMatrix[targetNode][2], costsMatrix[sourceNode][2] + edgeWeight);
+    }
 };
 
-// Define symbolic constants for the states used in the dynamic programming table.
-// These states represent whether the free pass has been used and, if so, when.
-// STATE_NO_PASS: The journey segment leading to the current location was paid for, and the free pass has not been used yet.
-const STATE_NO_PASS = 0;
-// STATE_PASS_JUST_USED: The journey segment leading to the current location was covered by the free pass.
-// This state indicates the free pass was just consumed.
-const STATE_PASS_JUST_USED = 1;
-// STATE_PASS_USED_EARLIER: The free pass was used at some point *before* the current segment, and the current segment was paid for.
-const STATE_PASS_USED_EARLIER = 2;
-// Total number of distinct states for each location in the DP table.
-const TOTAL_DP_STATES = 3;
-
-// Split the entire raw input content into an array of individual lines.
-// This array will be consumed line by line.
-let inputDataLines = rawInputContent.trim().split("\n");
-
-// Begin the main processing loop for multiple network configurations.
-// The loop continues indefinitely until a specific termination condition is met.
 while (true) {
-    // Extract the network dimensions (number of locations and routes) from the first line of the current configuration.
-    // The `shift()` method removes the first element from `inputDataLines` and returns it.
-    const networkDimensions = parseNumericLine(inputDataLines.shift());
+    const nodeEdgeCountsStr = inputLines.shift();
+    const [numNodes, numEdges] = nodeEdgeCountsStr.split(" ").map(Number);
 
-    // Check for the termination signal: a line with "0 0".
-    // If found, it indicates the end of all network configurations.
-    if (networkDimensions[0] === 0 && networkDimensions[1] === 0) {
-        break; // Exit the main processing loop.
+    // Break condition for the main loop
+    if (numNodes === 0 && numEdges === 0) {
+        break;
     }
 
-    // Assign the extracted dimensions to clearly named variables.
-    const numberOfLocations = networkDimensions[0]; // Corresponds to 'n' in the original code.
-    const numberOfRoutes = networkDimensions[1];     // Corresponds to 'm' in the original code.
+    const maxSpecialEdgeStates = 2; // Corresponds to 'c' in original, meaning states 0, 1, 2
+    const startNode = 1;
+    const targetNode = numNodes;
 
-    // Define the fixed start and destination locations for each network.
-    const initialLocation = 1;         // The starting point is always location 1.
-    const finalDestination = numberOfLocations; // The destination is the last location 'N'.
-
-    // Read all route definitions for the current network.
-    // Each route is stored as an array: [Location A, Location B, Travel Cost].
-    const definedRoutes = [];
-    for (let i = 0; i < numberOfRoutes; i++) {
-        definedRoutes.push(parseNumericLine(inputDataLines.shift()));
+    const edgeList = [];
+    for (let i = 0; i < numEdges; i++) {
+        edgeList.push(inputLines.shift().split(" ").map(Number));
     }
 
-    // Initialize the Dynamic Programming table to store minimum costs.
-    // `minCosts[location_id][state_id]` will hold the minimum cost to reach `location_id`
-    // in `state_id`. All costs are initially set to `Infinity` to represent unreachable states.
-    const minCosts = Array.from({ length: numberOfLocations + 1 }, () =>
-        Array.from({ length: TOTAL_DP_STATES }, () => Infinity)
+    // Initialize minCosts (dp) array
+    // minCosts[node][state] stores the minimum cost to reach 'node' using 'state' special edges.
+    const minCosts = Array.from({ length: numNodes + 1 }, () =>
+        Array.from({ length: maxSpecialEdgeStates + 1 }, () => Infinity)
     );
 
-    // Set the initial condition: The cost to reach the `initialLocation` with `STATE_NO_PASS` is zero.
-    minCosts[initialLocation][STATE_NO_PASS] = 0;
+    // Initial state: cost to startNode with 0 special edges is 0.
+    minCosts[startNode][0] = 0;
 
-    // A queue for locations that need to be processed. This simulates a breadth-first search or
-    // a simplified Dijkstra's algorithm (without a priority queue).
-    let locationsToExplore = [initialLocation];
-    // A set to keep track of locations whose outgoing edges have already been fully processed
-    // in the current iteration of the main algorithm loop. This helps prevent redundant work.
-    const fullyProcessedLocations = new Set();
+    // Queue for nodes to process (similar to SPFA's queue)
+    const nodesToProcess = [startNode];
+    // Set to track nodes that have been processed from the queue in the current test case.
+    // This prevents redundant processing of a node if it's added to the queue multiple times
+    // before it's shifted out.
+    const processedNodesInCurrentPass = new Set();
 
-    // Main graph traversal loop: continues as long as there are locations to explore.
-    while (locationsToExplore.length > 0) {
-        // Retrieve and remove the next location from the front of the queue.
-        const currentLocation = locationsToExplore.shift();
+    while (nodesToProcess.length > 0) {
+        const currentNode = nodesToProcess.shift();
 
-        // If this location has already been fully processed, skip it to avoid cycles and redundant computations.
-        if (fullyProcessedLocations.has(currentLocation)) {
+        // If this node has already been processed in this pass, skip it.
+        if (processedNodesInCurrentPass.has(currentNode)) {
             continue;
         }
-        // Mark the current location as fully processed.
-        fullyProcessedLocations.add(currentLocation);
+        processedNodesInCurrentPass.add(currentNode);
 
-        // Iterate through all available routes to find connections originating from or leading to the `currentLocation`.
-        for (const routeDefinition of definedRoutes) {
-            // Destructure the route details for clarity.
-            const [pointA, pointB, segmentFare] = routeDefinition;
+        // Iterate through all edges to find neighbors of the currentNode
+        edgeList.forEach(edgeData => {
+            const [nodeA, nodeB, edgeWeight] = edgeData;
 
-            // Helper function to apply cost updates for a given segment (origin to destination).
-            // This encapsulates the complex DP state transition logic.
-            const updateCostsForSegment = (originNode, destinationNode, costOfSegment) => {
-                let costsWereUpdated = false; // Flag to track if any costs changed for `destinationNode`.
-
-                // Retrieve the current minimum costs for the `originNode` in all states.
-                const costAtOriginNoPass = minCosts[originNode][STATE_NO_PASS];
-                const costAtOriginJustPass = minCosts[originNode][STATE_PASS_JUST_USED];
-                const costAtOriginPassEarlier = minCosts[originNode][STATE_PASS_USED_EARLIER];
-
-                // --- Scenario 1: Transition from STATE_NO_PASS at `originNode` ---
-                if (costAtOriginNoPass !== Infinity) {
-                    // Option A: Pay for this segment. `destinationNode` is reached in STATE_NO_PASS.
-                    const newCostToDestNoPass = costAtOriginNoPass + costOfSegment;
-                    if (newCostToDestNoPass < minCosts[destinationNode][STATE_NO_PASS]) {
-                        minCosts[destinationNode][STATE_NO_PASS] = newCostToDestNoPass;
-                        costsWereUpdated = true;
-                    }
-                    // Option B: Use the free pass on this segment. `destinationNode` is reached in STATE_PASS_JUST_USED.
-                    // The cost for this segment is effectively zero.
-                    const newCostToDestJustPass = costAtOriginNoPass;
-                    if (newCostToDestJustPass < minCosts[destinationNode][STATE_PASS_JUST_USED]) {
-                        minCosts[destinationNode][STATE_PASS_JUST_USED] = newCostToDestJustPass;
-                        costsWereUpdated = true;
-                    }
-                }
-
-                // --- Scenario 2: Transition from STATE_PASS_JUST_USED at `originNode` ---
-                if (costAtOriginJustPass !== Infinity) {
-                    // This is a crucial and somewhat unusual transition as per the original code's logic:
-                    // If the free pass was *just used* to reach `originNode`, and we now move to `destinationNode`,
-                    // the original code implies this segment from `originNode` to `destinationNode` is also free,
-                    // and `destinationNode` is reached in `STATE_PASS_USED_EARLIER`.
-                    // This effectively means a "double free" or an extension of the free pass for one more segment
-                    // when transitioning from STATE_PASS_JUST_USED to STATE_PASS_USED_EARLIER.
-                    // If it were a standard paid segment, the update would be `costAtOriginJustPass + costOfSegment`.
-                    if (costAtOriginJustPass < minCosts[destinationNode][STATE_PASS_USED_EARLIER]) {
-                        minCosts[destinationNode][STATE_PASS_USED_EARLIER] = costAtOriginJustPass;
-                        costsWereUpdated = true;
-                    }
-                }
-
-                // --- Scenario 3: Transition from STATE_PASS_USED_EARLIER at `originNode` ---
-                if (costAtOriginPassEarlier !== Infinity) {
-                    // Option A: Pay for this segment. `destinationNode` is reached and remains in STATE_PASS_USED_EARLIER.
-                    const newCostToDestPassEarlier = costAtOriginPassEarlier + costOfSegment;
-                    if (newCostToDestPassEarlier < minCosts[destinationNode][STATE_PASS_USED_EARLIER]) {
-                        minCosts[destinationNode][STATE_PASS_USED_EARLIER] = newCostToDestPassEarlier;
-                        costsWereUpdated = true;
-                    }
-                }
-
-                // If any costs for the `destinationNode` were improved (updated),
-                // and it hasn't been fully processed yet, add it to the queue for re-exploration.
-                // This ensures that all paths and state transitions are properly considered.
-                if (costsWereUpdated && !fullyProcessedLocations.has(destinationNode)) {
-                    locationsToExplore.push(destinationNode);
-                }
-            };
-
-            // Check if the current route involves the `currentLocation` as either its start or end point.
-            if (pointA === currentLocation) {
-                // If `currentLocation` is `pointA`, process the route from `pointA` to `pointB`.
-                updateCostsForSegment(pointA, pointB, segmentFare);
-            } else if (pointB === currentLocation) {
-                // If `currentLocation` is `pointB`, process the route from `pointB` to `pointA`.
-                updateCostsForSegment(pointB, pointA, segmentFare);
+            if (nodeA === currentNode) {
+                // If currentNode is nodeA, update costs for nodeB
+                applyCostUpdates(nodeA, nodeB, edgeWeight, minCosts);
+                nodesToProcess.push(nodeB); // Add neighbor to queue for further processing
+            } else if (nodeB === currentNode) {
+                // If currentNode is nodeB, update costs for nodeA
+                applyCostUpdates(nodeB, nodeA, edgeWeight, minCosts);
+                nodesToProcess.push(nodeA); // Add neighbor to queue for further processing
             }
-        }
+        });
     }
 
-    // After the graph traversal completes, calculate the overall minimum cost to reach the `finalDestination`.
-    let overallMinJourneyCost = Infinity;
+    // Calculate the final minimum cost to the targetNode
+    // The problem statement implies we should consider paths with 0 or 2 special edges.
+    // State 1 (one special edge) is explicitly excluded from the final answer.
+    const finalMinCost = Math.min(minCosts[targetNode][0], minCosts[targetNode][2]);
 
-    // Iterate through all possible DP states at the `finalDestination`.
-    // As per the original problem logic, `STATE_PASS_JUST_USED` (index 1) is explicitly excluded from the final comparison.
-    // This implies that the journey must not terminate with the free pass having been used on the very last segment.
-    for (let stateIdx = 0; stateIdx < TOTAL_DP_STATES; stateIdx++) {
-        if (stateIdx !== STATE_PASS_JUST_USED) { // Exclude the state where the pass was just used to reach the destination.
-            overallMinJourneyCost = Math.min(overallMinJourneyCost, minCosts[finalDestination][stateIdx]);
-        }
-    }
-
-    // Output the calculated minimum cost for the current network configuration.
-    console.log(overallMinJourneyCost);
+    console.log(finalMinCost);
 }

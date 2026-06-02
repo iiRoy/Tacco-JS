@@ -1,72 +1,77 @@
-// Function to process input data and generate a grid pattern.
-function ProcessInputData(rawDataString) {
-  // Split the entire input into individual lines for easier parsing.
-  let parsedLines = rawDataString.split("\n");
+function ProcessInputData(rawInputData) {
+  // Split the entire input string by newline characters into an array of lines.
+  rawInputData = rawInputData.split('\n');
 
-  // Extract grid dimensions from the first line.
-  // The first element is height, the second is width.
-  const gridDimensions = parsedLines[0].split(" ");
-  const gridHeight = parseInt(gridDimensions[0], 10);
-  const gridWidth = parseInt(gridDimensions[1], 10);
+  // Parse grid dimensions from the first line of input.
+  // The first number is the height, the second is the width.
+  var gridDimensions = rawInputData[0].split(' ');
+  var gridHeight = parseInt(gridDimensions[0], 10); // Convert string to integer, specifying base 10.
+  var gridWidth = parseInt(gridDimensions[1], 10);
 
-  // Get the total number of distinct block types from the second line.
-  const blockTypeCount = parseInt(parsedLines[1], 10);
+  // Parse the total number of distinct color segments from the second line.
+  var numColorSegments = parseInt(rawInputData[1], 10);
 
-  // Parse the counts of each block type from the third line.
-  const blockCountsStr = parsedLines[2].split(" ");
+  // Extract the string array containing the lengths of each color segment from the third line.
+  var segmentLengthsArray = rawInputData[2].split(' ');
 
-  // This array will store the sequence of block IDs that fill the grid.
-  // Each block ID will be repeated according to its count.
-  let blockSequence = new Array();
+  // Initialize an empty array to store the flattened sequence of color blocks.
+  // Each element will represent a color ID for a cell in the grid.
+  var flatColorGrid = [];
 
-  // Populate the block sequence array.
-  // Iterate through each block type.
-  for (let blockTypeIdx = 0; blockTypeIdx < blockTypeCount; blockTypeIdx++) {
-    // Get the count for the current block type.
-    const currentBlockCount = parseInt(blockCountsStr[blockTypeIdx], 10);
-
-    // Add the block ID (blockTypeIdx + 1) to the sequence 'currentBlockCount' times.
-    for (let blockInstanceIdx = 0; blockInstanceIdx < currentBlockCount; blockInstanceIdx++) {
-      blockSequence.push(blockTypeIdx + 1);
+  // Populate the flatColorGrid based on the provided segment lengths.
+  // 'outerLoopCounter' here represents the segment index (0-based).
+  for (var outerLoopCounter = 0; outerLoopCounter < numColorSegments; outerLoopCounter++) {
+    // Get the length of the current color segment.
+    var currentSegmentLength = parseInt(segmentLengthsArray[outerLoopCounter], 10);
+    // Add the color ID (segment index + 1) to the flatColorGrid 'currentSegmentLength' times.
+    for (var innerLoopCounter = 0; innerLoopCounter < currentSegmentLength; innerLoopCounter++) {
+      flatColorGrid.push(outerLoopCounter + 1);
     }
   }
 
-  // String to accumulate the final grid output.
-  let finalOutputString = "";
-  // Array to hold string representations of each row before final assembly.
-  let outputRowsArray = new Array(gridHeight).fill("");
+  // Initialize an empty string that will accumulate the final formatted output.
+  var finalResultString = '';
+  // Create an array to hold the string representation of each row of the grid.
+  // It's initialized with 'gridHeight' empty strings.
+  var currentGridRows = new Array(gridHeight).fill('');
 
-  // Construct the grid row by row.
-  for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-    // Initialize the current row string with the first element.
-    outputRowsArray[rowIdx] = blockSequence[rowIdx * gridWidth];
+  // Iterate through each row of the grid to construct its string representation.
+  // 'outerLoopCounter' now represents the current row index.
+  for (var outerLoopCounter = 0; outerLoopCounter < gridHeight; outerLoopCounter++) {
+    // The first element of the current row is directly taken from the flatColorGrid.
+    // Its index is calculated as (current row index * grid width).
+    currentGridRows[outerLoopCounter] = flatColorGrid[outerLoopCounter * gridWidth];
 
-    // Populate the rest of the current row.
-    for (let colIdx = 1; colIdx < gridWidth; colIdx++) {
-      // Determine the order of appending based on row index (even/odd for snake pattern).
-      if (rowIdx % 2 === 0) {
-        // For even rows, append elements from left to right.
-        outputRowsArray[rowIdx] += " " + blockSequence[rowIdx * gridWidth + colIdx];
+    // Iterate through the remaining columns of the current row (starting from the second column).
+    // 'innerLoopCounter' now represents the current column index.
+    for (var innerLoopCounter = 1; innerLoopCounter < gridWidth; innerLoopCounter++) {
+      // Calculate the corresponding index in the flatColorGrid for the current cell.
+      var flatGridIndex = outerLoopCounter * gridWidth + innerLoopCounter;
+
+      // Alternate the order of concatenation based on whether the row index is even or odd.
+      // For even-indexed rows, append the new element to the right.
+      // For odd-indexed rows, prepend the new element to the left.
+      if (outerLoopCounter % 2 === 0) {
+        currentGridRows[outerLoopCounter] = currentGridRows[outerLoopCounter] + ' ' + flatColorGrid[flatGridIndex];
       } else {
-        // For odd rows, prepend elements from right to left (simulating a reversed row).
-        outputRowsArray[rowIdx] = blockSequence[rowIdx * gridWidth + colIdx] + " " + outputRowsArray[rowIdx];
+        currentGridRows[outerLoopCounter] = flatColorGrid[flatGridIndex] + ' ' + currentGridRows[outerLoopCounter];
       }
 
-      // If it's the last column of the current row, add a newline character.
-      if (colIdx === gridWidth - 1) {
-        outputRowsArray[rowIdx] += "\n";
+      // If this is the last column of the current row, append a newline character.
+      if (innerLoopCounter === gridWidth - 1) {
+        currentGridRows[outerLoopCounter] = currentGridRows[outerLoopCounter] + '\n';
       }
     }
-    // Append the completed row string to the overall output.
-    finalOutputString += outputRowsArray[rowIdx];
+    // Append the fully constructed row string to the final output string.
+    finalResultString += currentGridRows[outerLoopCounter];
   }
 
-  // Remove the trailing newline character from the final output string.
-  finalOutputString = finalOutputString.slice(0, -1);
+  // Remove the very last newline character from the final output string, if present.
+  finalResultString = finalResultString.slice(0, -1);
 
-  // Print the generated grid to the console.
-  console.log('%s', finalOutputString);
+  // Print the final formatted grid to the console.
+  console.log('%s', finalResultString);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessInputData( require("fs") . readFileSync( "/dev/stdin" ,  "utf8" ) );
+// Read input from standard input using Node.js 'fs' module and pass it to the processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

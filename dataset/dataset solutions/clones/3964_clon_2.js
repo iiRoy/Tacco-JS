@@ -1,27 +1,28 @@
-// This function processes all incoming raw data
+// This function processes the incoming raw data.
 function ProcessInput(rawData) {
+  // The raw data is split into individual lines for further processing.
+  let processedLines = rawData.split("\n");
 
-    // The initial data is split into individual lines
-    rawData = rawData.split("\n");
+  // The first line is then broken down into its constituent parts, separated by spaces.
+  const lineParts = processedLines[0].split(" ");
 
-    // The very first line is then broken down into its constituent parts
-    let firstLineTokens = rawData[0].split(" ");
+  // Numeric values are parsed from string segments, ensuring they are interpreted as base-10 integers.
+  const firstNum = parseInt(lineParts[0], 10);
+  const secondNum = parseInt(lineParts[1], 10);
+  const thirdNum = parseInt(lineParts[2], 10);
 
-    // We convert the string components to numerical integers using base 10 for precision
-    const firstValue = parseInt(firstLineTokens[0], 10);
-    const secondValue = parseInt(firstLineTokens[1], 10);
-    const thirdValue = parseInt(firstLineTokens[2], 10);
+  // Initialize a string to hold the final determination.
+  let resultString = "Yes";
 
-    let resultString = "Yes"; // Initialize a string variable for the outcome
+  // Evaluate the condition: if the sum of the first two numbers is less than the third.
+  if (firstNum + secondNum < thirdNum) {
+    // If the condition is met, update the result string.
+    resultString = "No";
+  }
 
-    // Check if the sum of the initial two values is strictly less than the third value
-    if (firstValue + secondValue < thirdValue) {
-        resultString = "No"; // If condition is met, alter the outcome string accordingly
-    }
-
-    // Display the final determined result to the console for output
-    console.log(resultString);
+  // Display the outcome to the console.
+  console.log(resultString);
 }
 
-// Do not modify the following section (it handles standard input/output and invokes the main processing function)
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// The following line handles standard input/output and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

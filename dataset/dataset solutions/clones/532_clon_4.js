@@ -1,150 +1,148 @@
-let globalInputSource = '';
-let globalInputPointer = 0;
+let rawInputBuffer = '';
+let currentTokenIndex = 0;
 
-function acquireToken(desiredFormat) {
-    if (desiredFormat === 'text') {
-        return globalInputSource[globalInputPointer++];
+function obtainInputToken(tokenType) {
+    if (tokenType === 'string') {
+        return rawInputBuffer[currentTokenIndex++];
     } else {
-        return +globalInputSource[globalInputPointer++];
+        return Number(rawInputBuffer[currentTokenIndex++]);
     }
 }
 
-function processGraphConstraints() {
-    const nodeCount = acquireToken();
-    const constraintQuantity = acquireToken();
+function outputResult(value) {
+    console.log(value);
+}
 
-    const staticEdgeList = [];
-    const flexibleEdgeChoices = [];
+function parseConstraintString(constraintText) {
+    const matchResult = constraintText.match(/(\d+)(<=|>=|\*|\+|-)(\d+)(<=|>=|\*|\+|-)(\d+)/);
+    if (!matchResult) {
+        throw new Error("Constraint string format error: " + constraintText);
+    }
 
-    Array.from({ length: constraintQuantity }).forEach(() => {
-        const expressionString = acquireToken('text');
+    const firstNodeIdx = Number(matchResult[1]) - 1;
+    const secondNodeIdx = Number(matchResult[3]) - 1;
+    const constraintVal = Number(matchResult[5]);
+    const operatorU = matchResult[2];
+    const operatorV = matchResult[4];
 
-        // Extract components from the expression string using a regex match
-        const expressionMatch = expressionString.match(/(\d+)\s*(<=|>=|\*)\s*(\d+)\s*([\+\-])?\s*(\d+)?/);
-        const nodeAIndex = +expressionMatch[1] - 1;
-        const nodeBIndex = +expressionMatch[3] - 1;
-        const comparisonOperator = expressionMatch[2]; // <=, >=, *
-        const valueSign = expressionMatch[4]; // +, - or undefined
-        const constantMagnitude = +expressionMatch[5]; // The numerical value, will be NaN if not present
+    let uCategory;
+    switch (operatorU) {
+        case '<=': uCategory = 0; break;
+        case '>=': uCategory = 1; break;
+        case '*':  uCategory = 2; break;
+        default: throw new Error("Unknown U operator: " + operatorU);
+    }
 
-        // Determine the primary constraint type (analogous to 'u' in original)
-        let primaryConstraintType;
-        if (comparisonOperator === '*') {
-            primaryConstraintType = 'EQUIVALENCE_CONSTRAINT'; // u = 2
-        } else if (comparisonOperator === '<=') {
-            primaryConstraintType = 'LESS_OR_EQUAL'; // u = 0
-        } else { // Must be '>='
-            primaryConstraintType = 'GREATER_OR_EQUAL'; // u = 1
-        }
+    let vCategory;
+    switch (operatorV) {
+        case '+': vCategory = 0; break;
+        case '-': vCategory = 1; break;
+        default: throw new Error("Unknown V operator: " + operatorV);
+    }
+    return { firstNodeIdx, secondNodeIdx, constraintVal, uCategory, vCategory };
+}
 
-        // Determine the value modifier type (analogous to 'v' in original)
-        let modifierType;
-        if (valueSign === '+') {
-            modifierType = 'POSITIVE_MODIFIER'; // v = 0
-        } else { // -, or no explicit sign
-            modifierType = 'NEGATIVE_OR_NO_MODIFIER'; // v = 1
-        }
+function* generateEdgeCombinations(edgePairs) {
+    if (edgePairs.length === 0) {
+        yield [];
+        return;
+    }
 
-        // Construct graph edges based on constraint types
-        switch (primaryConstraintType) {
-            case 'LESS_OR_EQUAL': // Original u=0
-                if (modifierType === 'POSITIVE_MODIFIER') { // Original v=0
-                    // Original: e.push([p[1], p[0], -p[2]])
-                    staticEdgeList.push([nodeBIndex, nodeAIndex, -constantMagnitude]);
-                } else { // Original v=1
-                    // Original: e.push([p[1], p[0], 0]); e.push([p[0], p[1], p[2]])
-                    staticEdgeList.push([nodeBIndex, nodeAIndex, 0]);
-                    staticEdgeList.push([nodeAIndex, nodeBIndex, constantMagnitude]);
-                }
-                break;
-            case 'GREATER_OR_EQUAL': // Original u=1
-                if (modifierType === 'POSITIVE_MODIFIER') { // Original v=0
-                    // Original: e.push([p[0], p[1], -p[2]])
-                    staticEdgeList.push([nodeAIndex, nodeBIndex, -constantMagnitude]);
-                } else { // Original v=1
-                    // Original: e.push([p[1], p[0], p[2]]); e.push([p[0], p[1], 0])
-                    staticEdgeList.push([nodeBIndex, nodeAIndex, constantMagnitude]);
-                    staticEdgeList.push([nodeAIndex, nodeBIndex, 0]);
-                }
-                break;
-            case 'EQUIVALENCE_CONSTRAINT': // Original u=2
-                if (modifierType === 'POSITIVE_MODIFIER') { // Original v=0
-                    // Original: f.push([[p[0], p[1], -p[2]], [p[1], p[0], -p[2]]])
-                    flexibleEdgeChoices.push([
-                        [nodeAIndex, nodeBIndex, -constantMagnitude],
-                        [nodeBIndex, nodeAIndex, -constantMagnitude]
-                    ]);
-                } else { // Original v=1
-                    // Original: e.push([p[1], p[0], p[2]]); e.push([p[0], p[1], p[2]])
-                    staticEdgeList.push([nodeBIndex, nodeAIndex, constantMagnitude]);
-                    staticEdgeList.push([nodeAIndex, nodeBIndex, constantMagnitude]);
-                }
-                break;
-        }
-    });
+    const [currentPair, ...remainingPairs] = edgePairs;
+    for (const subCombination of generateEdgeCombinations(remainingPairs)) {
+        yield [currentPair[0], ...subCombination];
+        yield [currentPair[1], ...subCombination];
+    }
+}
 
-    // Add baseline constraints: all nodes are non-negative relative to node 0
-    Array.from({ length: nodeCount }).forEach((_, currentIdx) => {
-        staticEdgeList.push([currentIdx, 0, 0]); // d[0] <= d[currentIdx] + 0
-    });
+function computeBellmanFordMaxDistance(totalNodes, graphEdges) {
+    const nodeDistances = Array(totalNodes).fill(Infinity);
+    nodeDistances[0] = 0;
 
-    let overallMaximumPotential = -Infinity;
-
-    // Iterate through all possible combinations for flexible constraints
-    const totalChoiceCombinations = 1 << flexibleEdgeChoices.length;
-    for (let selectionIndex = 0; selectionIndex < totalChoiceCombinations; ++selectionIndex) {
-        const currentIterationEdges = [...staticEdgeList]; // Start with all static edges
-
-        Array.from({ length: flexibleEdgeChoices.length }).forEach((_, choiceOptionIdx) => {
-            const chosenEdge = flexibleEdgeChoices[choiceOptionIdx][(selectionIndex >> choiceOptionIdx) & 1];
-            currentIterationEdges.push(chosenEdge);
-        });
-
-        const nodeValuePotentials = Array(nodeCount).fill(Infinity);
-        nodeValuePotentials[0] = 0; // Initialize potential of reference node (node 0) to 0
-
-        // Bellman-Ford-like relaxation process
-        // Run nodeCount iterations to ensure all paths up to length nodeCount-1 are found
-        // The last iteration checks for negative cycles affecting node 0
-        for (let relaxIteration = 0; relaxIteration < nodeCount; ++relaxIteration) {
-            for (const currentEdge of currentIterationEdges) {
-                const source = currentEdge[0];
-                const destination = currentEdge[1];
-                const weight = currentEdge[2];
-
-                if (nodeValuePotentials[source] !== Infinity &&
-                    nodeValuePotentials[destination] > nodeValuePotentials[source] + weight) {
-                    nodeValuePotentials[destination] = nodeValuePotentials[source] + weight;
-                }
+    Array.from({ length: totalNodes }).forEach(() => {
+        for (const [sourceNode, targetNode, edgeWeight] of graphEdges) {
+            if (nodeDistances[sourceNode] !== Infinity && nodeDistances[sourceNode] + edgeWeight < nodeDistances[targetNode]) {
+                nodeDistances[targetNode] = nodeDistances[sourceNode] + edgeWeight;
             }
         }
+    });
 
-        // Check if the reference node's potential remained 0 (no negative cycle affecting it)
-        if (nodeValuePotentials[0] === 0) {
-            const currentMaximum = Math.max(...nodeValuePotentials);
-            overallMaximumPotential = Math.max(overallMaximumPotential, currentMaximum);
+    if (nodeDistances[0] !== 0) {
+        return null;
+    }
+
+    return Math.max(...nodeDistances);
+}
+
+function executeProgram() {
+    const nodeCount = obtainInputToken();
+    const constraintCount = obtainInputToken();
+
+    const fixedGraphEdges = [];
+    const conditionalGraphEdgePairs = [];
+
+    const edgeConstructionMap = {
+        '0_0': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            fixedGraphEdges.push([secondNodeIdx, firstNodeIdx, -constraintVal]);
+        },
+        '0_1': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            fixedGraphEdges.push([secondNodeIdx, firstNodeIdx, 0]);
+            fixedGraphEdges.push([firstNodeIdx, secondNodeIdx, constraintVal]);
+        },
+        '1_0': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            fixedGraphEdges.push([firstNodeIdx, secondNodeIdx, -constraintVal]);
+        },
+        '1_1': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            fixedGraphEdges.push([secondNodeIdx, firstNodeIdx, constraintVal]);
+            fixedGraphEdges.push([firstNodeIdx, secondNodeIdx, 0]);
+        },
+        '2_0': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            conditionalGraphEdgePairs.push([[firstNodeIdx, secondNodeIdx, -constraintVal], [secondNodeIdx, firstNodeIdx, -constraintVal]]);
+        },
+        '2_1': ({ firstNodeIdx, secondNodeIdx, constraintVal }) => {
+            fixedGraphEdges.push([secondNodeIdx, firstNodeIdx, constraintVal]);
+            fixedGraphEdges.push([firstNodeIdx, secondNodeIdx, constraintVal]);
+        }
+    };
+
+    Array.from({ length: constraintCount }).forEach(() => {
+        const constraintString = obtainInputToken('string');
+        const { firstNodeIdx, secondNodeIdx, constraintVal, uCategory, vCategory } = parseConstraintString(constraintString);
+        edgeConstructionMap[`${uCategory}_${vCategory}`]({ firstNodeIdx, secondNodeIdx, constraintVal });
+    });
+
+    Array.from({ length: nodeCount }).forEach((_, i) => {
+        fixedGraphEdges.push([i, 0, 0]);
+    });
+
+    let overallMaximumDistance = -Infinity;
+
+    for (const currentConditionalEdges of generateEdgeCombinations(conditionalGraphEdgePairs)) {
+        const combinedGraphEdges = [...fixedGraphEdges, ...currentConditionalEdges];
+        const currentMaxDistance = computeBellmanFordMaxDistance(nodeCount, combinedGraphEdges);
+
+        if (currentMaxDistance !== null) {
+            overallMaximumDistance = Math.max(overallMaximumDistance, currentMaxDistance);
         }
     }
 
-    // Output the final result based on the calculated maximum potential
-    if (overallMaximumPotential === Infinity) {
-        console.log('inf');
-    } else if (overallMaximumPotential === -Infinity) {
-        console.log(-1);
+    if (overallMaximumDistance === Infinity) {
+        outputResult('inf');
+    } else if (overallMaximumDistance === -Infinity) {
+        outputResult(-1);
     } else {
-        console.log(overallMaximumPotential);
+        outputResult(overallMaximumDistance);
     }
 }
 
-// Setup input stream processing
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', function(dataChunk) {
-    globalInputSource += dataChunk;
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
 });
 
 process.stdin.on('end', function() {
-    globalInputSource = globalInputSource.split(/\s+/).filter(Boolean); // Split by whitespace and remove empty strings
-    processGraphConstraints();
+    rawInputBuffer = rawInputBuffer.split(/\s+/);
+    executeProgram();
 });

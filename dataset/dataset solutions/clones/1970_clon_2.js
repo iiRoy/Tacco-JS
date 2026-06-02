@@ -1,28 +1,27 @@
-const processInput = ( rawData ) => {
-  // This function orchestrates the primary computation based on the provided input string.
+const processInput = (rawData) => {
+  // Split the raw input string by spaces and convert each part to a number.
+  const parsedValues = rawData.split(' ').map(currentVal => Number(currentVal));
 
-  const numericValues = rawData.split ( ' ' ) . map ( itemString => Number ( itemString ) ) ;
+  // Calculate the first adjusted number.
+  const firstNumAdjusted = parsedValues[0] + 1;
+  // Retrieve the second number from the parsed values.
+  const secondNum = parsedValues[1];
 
-  // Derive an upper boundary value from the first parsed numerical component.
-  const upperBound = numericValues [ 0 ] + 1 ;
+  // Determine the upper bound for the loop iteration.
+  const upperBound = firstNumAdjusted - secondNum + 1;
 
-  // Obtain a specific subtraction coefficient from the second numerical component.
-  const subtractionFactor = numericValues [ 1 ] ;
+  // Initialize an accumulator for the sum.
+  let totalAccumulator = 0;
 
-  // Calculate the maximum iteration threshold for the subsequent accumulation loop.
-  const loopLimit = upperBound - subtractionFactor + 1 ;
-
-  // Initialize a running total variable to zero before commencing accumulation.
-  let totalAccumulator = 0 ;
-
-  // Begin a loop that iterates from an initial index up to the calculated limit.
-  for ( let counterIndex = 0 ; counterIndex < loopLimit ; counterIndex ++ ) {
-    totalAccumulator += loopLimit - counterIndex ; // Add a decreasing sequence to the total.
+  // Iterate from zero up to (but not including) the upper bound.
+  for (let loopIndex = 0; loopIndex < upperBound; loopIndex++) {
+    // Add the difference between the upper bound and the current index to the accumulator.
+    totalAccumulator += upperBound - loopIndex;
   }
 
-  // Display the final computed sum, ensuring it is modulo a large prime constant.
-  console.log ( totalAccumulator % ( 10 ** 9 + 7 ) ) ;
-} ;
+  // Output the final sum modulo a large prime number.
+  console.log(totalAccumulator % (10 ** 9 + 7));
+};
 
-// Initiate the processing by reading data from standard input asynchronously.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

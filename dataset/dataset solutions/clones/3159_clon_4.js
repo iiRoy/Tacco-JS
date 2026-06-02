@@ -1,24 +1,34 @@
-function processInputString(dataInput) {
-    let characterLedger = [];
-    let reductionCounter = 0;
-
-    for (const currentUnit of dataInput.split('')) {
-        if (characterLedger.length > 0) {
-            const lastRecorded = characterLedger[characterLedger.length - 1];
-
-            if ((lastRecorded === '1' && currentUnit === '0') ||
-                (lastRecorded === '0' && currentUnit === '1')) {
-                characterLedger.pop();
-                reductionCounter++;
-            } else {
-                characterLedger.push(currentUnit);
-            }
-        } else {
-            characterLedger.push(currentUnit);
+function revisarSecuencia(listaCaracteres, posicionActual, totalParejas, huboCambio) {
+    if (posicionActual >= listaCaracteres.length) {
+        if (huboCambio) {
+            return revisarSecuencia(listaCaracteres, 0, totalParejas, false);
         }
+
+        console.log(totalParejas * 2);
+        return;
     }
 
-    console.log(reductionCounter * 2);
+    console.log(listaCaracteres);
+
+    let contadorActualizado = totalParejas;
+    let cambioActualizado = huboCambio;
+
+    if (listaCaracteres[posicionActual] === "1" && listaCaracteres[posicionActual + 1] === "0") {
+        contadorActualizado++;
+        cambioActualizado = true;
+        listaCaracteres.splice(posicionActual, 2);
+    }
+
+    if (listaCaracteres[posicionActual] === "0" && listaCaracteres[posicionActual + 1] === "1") {
+        contadorActualizado++;
+        cambioActualizado = true;
+        listaCaracteres.splice(posicionActual, 2);
+    }
+
+    revisarSecuencia(listaCaracteres, posicionActual + 1, contadorActualizado, cambioActualizado);
 }
 
-processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));
+const contenidoEntrada = require("fs").readFileSync("/dev/stdin", "utf8");
+const caracteresEntrada = contenidoEntrada.split("");
+
+revisarSecuencia(caracteresEntrada, 0, 0, false);

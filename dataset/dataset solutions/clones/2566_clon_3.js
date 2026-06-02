@@ -1,96 +1,78 @@
-const processInputData = (inputStringData) => {
-    // Helper function to parse raw string input into structured data.
-    const extractProblemDetails = (rawData) => {
-        const linesOfInput = rawData.split('\n');
-        // Convert the first line to an integer for string length.
-        const sequenceLength = parseInt(linesOfInput[0].trim(), 10);
-        // The second line contains the character sequence.
-        const characterSequence = linesOfInput[1];
-        return { length: sequenceLength, sequence: characterSequence };
-    };
+function parseInputData(rawInputString) {
+    const inputLines = rawInputString.split("\n");
+    const sequenceLengthValue = parseInt(inputLines[0], 10);
+    const targetSequence = inputLines[1];
+    return { length: sequenceLengthValue, sequence: targetSequence };
+}
 
-    const { length: inputSize, sequence: targetCharStream } = extractProblemDetails(inputStringData);
+function computeLongestRepeatedSubstringLength(inputDataString) {
+    const parsedInput = parseInputData(inputDataString);
+    const stringLength = parsedInput.length;
+    const inputString = parsedInput.sequence;
 
-    // Initial validation: If the string is empty or invalid, the longest common repeated substring is 0.
-    if (inputSize <= 0 || !targetCharStream) {
-        console.log(0);
-        return;
-    }
+    // Initialize a 2D array (dynamic programming table)
+    // Each row will have (stringLength + 1) columns, all filled with 0.
+    // dp[i][j] will store the length of the longest common suffix of inputString[i...] and inputString[j...]
+    const dpTable = Array.from({ length: stringLength }, () =>
+        new Array(stringLength + 1).fill(0)
+    );
 
-    // Initialize a 2D array (Dynamic Programming table) to store lengths of common suffixes.
-    // Dimensions: (inputSize x (inputSize + 1)). The extra column is often for boundary conditions,
-    // and is pre-filled with zeros as a base case for calculations extending beyond string bounds.
-    let memoizationMatrix = Array(inputSize).fill(null).map(() => Array(inputSize + 1).fill(0));
+    const lastIndex = stringLength - 1;
 
-    // Phase 1: Populate the last row of the memoization matrix.
-    // This handles comparisons involving the very last character of the target sequence.
-    // The loop iterates backwards from the second-to-last column to the first.
-    for (let currentColumnIndex = inputSize - 1; currentColumnIndex >= 0; --currentColumnIndex) {
-        // When comparing the last character with itself (diagonal in the last row),
-        // the length of the common repeated substring is considered 0 to ensure non-overlapping matches.
-        if (currentColumnIndex === inputSize - 1) {
-            memoizationMatrix[inputSize - 1][currentColumnIndex] = 0;
+    // First phase: Initialize the last row of the DP table (row corresponding to index N-1)
+    // This handles the base cases where one of the substrings starts at the very end.
+    for (let currentColumnIndex = lastIndex; currentColumnIndex >= 0; currentColumnIndex--) {
+        if (currentColumnIndex === lastIndex) {
+            // When both indices are N-1, the common suffix length is 0 (as per problem logic)
+            dpTable[lastIndex][currentColumnIndex] = 0;
         } else {
-            // Compare the last character of the sequence with the character at currentColumnIndex.
-            const charFromEnd = targetCharStream[inputSize - 1];
-            const charAtCurrent = targetCharStream[currentColumnIndex];
-
-            // If they match, the common suffix length is 1; otherwise, it's 0.
-            memoizationMatrix[inputSize - 1][currentColumnIndex] = (charFromEnd === charAtCurrent) ? 1 : 0;
+            // Compare the last character of the string with the character at currentColumnIndex
+            const charAtLastIndex = inputString[lastIndex];
+            const charAtCurrentColumn = inputString[currentColumnIndex];
+            dpTable[lastIndex][currentColumnIndex] = (charAtLastIndex === charAtCurrentColumn) ? 1 : 0;
         }
     }
 
-    // Phase 2: Iterate through the rest of the memoization matrix from bottom-right to top-left.
-    // This calculates common suffix lengths for all other possible starting positions.
-    // The outer loop iterates through rows from the second-to-last up to the first.
-    for (let currentRowIndex = inputSize - 2; currentRowIndex >= 0; --currentRowIndex) {
-        // The inner loop iterates through columns from the second-to-last up to the first.
-        for (let currentColumnIndex = inputSize - 1; currentColumnIndex >= 0; --currentColumnIndex) {
+    // Second phase: Fill the rest of the DP table
+    // Iterate rows from N-2 down to 0
+    // Iterate columns from N-1 down to 0
+    const startRowForCalculation = stringLength - 2;
+    const startColumnForCalculation = stringLength - 1;
 
-            // If the row and column indices are identical, it means we are comparing a substring with itself starting at the same position.
-            // For finding *repeated* substrings, these are typically excluded (treated as 0 length) to enforce distinct occurrences.
-            if (currentRowIndex === currentColumnIndex) {
-                memoizationMatrix[currentRowIndex][currentColumnIndex] = 0;
-                continue; // Move to the next column.
+    for (let rowIndex = startRowForCalculation; rowIndex >= 0; rowIndex--) {
+        for (let columnIndex = startColumnForCalculation; columnIndex >= 0; columnIndex--) {
+            if (rowIndex === columnIndex) {
+                // If the starting indices are the same, the common substring length is 0
+                // This prevents considering a substring as "repeated" with itself starting at the same spot.
+                dpTable[rowIndex][columnIndex] = 0;
+                continue;
             }
 
-            // Extract characters for comparison to improve readability.
-            const charInRow = targetCharStream[currentRowIndex];
-            const charInColumn = targetCharStream[currentColumnIndex];
+            const charAtRow = inputString[rowIndex];
+            const charAtColumn = inputString[columnIndex];
 
-            // If the characters at the current indices match,
-            // the common suffix length is one plus the length of the common suffix
-            // from the diagonally preceding cell (dp[i+1][j+1]).
-            if (charInRow === charInColumn) {
-                const diagonalPreviousValue = memoizationMatrix[currentRowIndex + 1][currentColumnIndex + 1];
-                memoizationMatrix[currentRowIndex][currentColumnIndex] = diagonalPreviousValue + 1;
+            if (charAtRow === charAtColumn) {
+                // If characters match, extend the common substring from the diagonally next element
+                dpTable[rowIndex][columnIndex] = dpTable[rowIndex + 1][columnIndex + 1] + 1;
             } else {
-                // If characters do not match, the common suffix length at this point is 0.
-                memoizationMatrix[currentRowIndex][currentColumnIndex] = 0;
+                // If characters don't match, no common substring starting at these positions
+                dpTable[rowIndex][columnIndex] = 0;
             }
         }
     }
 
-    // After populating the entire memoization matrix, find the maximum value within it.
-    // This maximum value represents the length of the longest repeated substring.
-
-    // Flatten the 2D array into a 1D array for easier maximum finding.
-    const allComputedMatchLengths = memoizationMatrix.flat();
-
-    // Helper function to safely determine the maximum value in an array.
-    const determineOverallMaximum = (valueSet) => {
-        if (!valueSet || valueSet.length === 0) {
-            return 0; // Return 0 for an empty set of values.
+    // Find the maximum value in the completed DP table
+    let maximumFoundLength = 0;
+    for (let r = 0; r < stringLength; r++) {
+        for (let c = 0; c < stringLength + 1; c++) { // Iterate through all columns, including the N-th (index N)
+            const currentTableValue = dpTable[r][c];
+            if (currentTableValue > maximumFoundLength) {
+                maximumFoundLength = currentTableValue;
+            }
         }
-        // Use the spread operator to pass array elements as individual arguments to Math.max.
-        return Math.max(...valueSet);
-    };
+    }
 
-    const finalLongestLength = determineOverallMaximum(allComputedMatchLengths);
+    console.log(maximumFoundLength);
+}
 
-    // Output the result.
-    console.log(finalLongestLength);
-};
-
-// Execute the main processing function with input read from standard input.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeLongestRepeatedSubstringLength(require("fs").readFileSync("/dev/stdin", "utf8"));

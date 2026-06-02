@@ -1,73 +1,48 @@
-const streamReader = require('readline').createInterface({
-    input: process.stdin
-});
+const inputSourceConfig = { path: '/dev/stdin', terminator: '\n' };
 
-const collectedLines = [];
+const rawContent = require('fs').readFileSync(inputSourceConfig.path, 'ascii');
+const contentLines = rawContent.split(inputSourceConfig.terminator);
 
-streamReader.on('line', (entryData) => {
-    collectedLines.push(entryData);
-});
+let lineCursor = 0;
 
-streamReader.on('close', () => {
-    processAllData(collectedLines);
-});
+const extractDimensions = () => {
+  const [val1, val2] = contentLines[lineCursor++].split(' ').map(Number);
+  return { val1, val2 };
+};
 
-function processAllData(receivedData) {
-    const [mainGridRows, mainGridCols] = receivedData[0].split(' ').map(Number);
-    const primaryGrid = receivedData.slice(1, 1 + mainGridRows);
-    const [patternRows, patternCols] = receivedData[1 + mainGridRows].split(' ').map(Number);
-    const targetPattern = receivedData.slice(1 + mainGridRows + 1, 1 + mainGridRows + 1 + patternRows);
+const extractGrid = (height) => {
+  const gridSegment = contentLines.slice(lineCursor, lineCursor + height);
+  lineCursor += height;
+  return gridSegment;
+};
 
-    initiateSearch(mainGridRows, mainGridCols, primaryGrid, patternRows, patternCols, targetPattern);
+const { val1: fieldHeight, val2: fieldWidth } = extractDimensions();
+const fieldMatrix = extractGrid(fieldHeight);
+
+const { val1: patternHeight, val2: patternWidth } = extractDimensions();
+const patternMatrix = extractGrid(patternHeight);
+
+const rowMatchRegistry = new Set();
+
+for (let fRowIdx = 0; fRowIdx < fieldHeight; fRowIdx++) {
+  for (let pRowIdx = 0; pRowIdx < patternHeight; pRowIdx++) {
+    const safePatternRow = patternMatrix[pRowIdx].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rowMatcher = new RegExp(safePatternRow, 'g');
+
+    for (const matchResult of fieldMatrix[fRowIdx].matchAll(rowMatcher)) {
+      rowMatchRegistry.add(`${fRowIdx}-${pRowIdx}-${matchResult.index}`);
+    }
+  }
 }
 
-function initiateSearch(gridHeight, gridWidth, gridContent, patternHeight, patternWidth, patternContent) {
-    const horizontalAlignmentRegistry = new Map();
+const potentialStarts = Array.from({ length: fieldHeight - patternHeight + 1 }, (_, r) => r)
+  .flatMap(r =>
+    Array.from({ length: fieldWidth - patternWidth + 1 }, (_, c) => ({ r, c }))
+  );
 
-    for (let currentGridRow = 0; currentGridRow < gridHeight; currentGridRow++) {
-        for (let currentPatternRow = 0; currentPatternRow < patternHeight; currentPatternRow++) {
-            const currentGridRowString = gridContent[currentGridRow];
-            const currentPatternRowString = patternContent[currentPatternRow];
-
-            for (let colStart = 0; colStart <= currentGridRowString.length - patternWidth; colStart++) {
-                const segment = currentGridRowString.substring(colStart, colStart + patternWidth);
-                if (segment === currentPatternRowString) {
-                    if (!horizontalAlignmentRegistry.has(currentGridRow)) {
-                        horizontalAlignmentRegistry.set(currentGridRow, new Map());
-                    }
-                    const rowPatternMatches = horizontalAlignmentRegistry.get(currentGridRow);
-
-                    if (!rowPatternMatches.has(currentPatternRow)) {
-                        rowPatternMatches.set(currentPatternRow, new Set());
-                    }
-                    rowPatternMatches.get(currentPatternRow).add(colStart);
-                }
-            }
-        }
-    }
-
-    const discoveredLocations = [];
-
-    for (let referenceRow = 0; referenceRow <= gridHeight - patternHeight; referenceRow++) {
-        for (let referenceCol = 0; referenceCol <= gridWidth - patternWidth; referenceCol++) {
-            let completeMatchFound = true;
-            for (let pRowOffset = 0; pRowOffset < patternHeight; pRowOffset++) {
-                const correspondingGridRow = referenceRow + pRowOffset;
-                const patternRowToCheck = pRowOffset;
-
-                const rowMatchInfo = horizontalAlignmentRegistry.get(correspondingGridRow);
-
-                if (!rowMatchInfo || !rowMatchInfo.has(patternRowToCheck) || !rowMatchInfo.get(patternRowToCheck).has(referenceCol)) {
-                    completeMatchFound = false;
-                    break;
-                }
-            }
-
-            if (completeMatchFound) {
-                discoveredLocations.push(`${referenceRow} ${referenceCol}`);
-            }
-        }
-    }
-
-    discoveredLocations.forEach(location => console.log(location));
-}
+potentialStarts
+  .filter(startCoord => {
+    return Array.from({ length: patternHeight }, (_, k) => k)
+      .every(k => rowMatchRegistry.has(`${startCoord.r + k}-${k}-${startCoord.c}`));
+  })
+  .forEach(matchCoord => console.log(`${matchCoord.r} ${matchCoord.c}`));

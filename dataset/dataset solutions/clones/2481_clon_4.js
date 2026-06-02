@@ -1,43 +1,35 @@
-const computeOptimalValue = (dataLines) => {
-    const [ numItems, actionLimit ] = dataLines[0].split(' ').map(Number);
-    const initialQuantities = dataLines[1].split(' ').map(Number);
-    const reductionFactors = dataLines[2].split(' ').map(Number);
+const processInputAndSolve = (rawData) => {
+  const lines = rawData.split("\n");
 
-    const orderedQuantities = initialQuantities.sort((valueA, valueB) => valueB - valueA);
-    const orderedFactors = reductionFactors.sort((valueA, valueB) => valueA - valueB);
+  const [countItems, maxOperations] = lines[0].split(" ").map(Number);
+  const itemCosts = lines[1].split(" ").map(Number);
+  const itemFactors = lines[2].split(" ").map(Number);
 
-    const checkFeasibility = (targetCostThreshold) => {
-        const totalRequiredAdjustments = orderedQuantities.reduce((currentSum, currentQuantity, index) => {
-            const currentFactor = orderedFactors[index];
-            const excessValue = currentQuantity - targetCostThreshold / currentFactor;
-            return currentSum + (excessValue > 0 ? excessValue : 0);
-        }, 0);
-        return totalRequiredAdjustments <= actionLimit;
-    };
+  itemCosts.sort((valA, valB) => valB - valA);
 
-    const performRecursiveSearch = (lowerBound, upperBound, remainingIterations) => {
-        if (remainingIterations === 0) {
-            return { lowerResult: lowerBound, upperResult: upperBound };
-        }
-        const midPoint = (lowerBound + upperBound) / 2;
-        if (checkFeasibility(midPoint)) {
-            return performRecursiveSearch(lowerBound, midPoint, remainingIterations - 1);
-        } else {
-            return performRecursiveSearch(midPoint, upperBound, remainingIterations - 1);
-        }
-    };
+  itemFactors.sort((valA, valB) => valA - valB);
 
-    const initialLowerBound = 0;
-    const initialUpperBound = 1000000;
-    const numberOfIterations = 100;
+  let searchUpper = 1000000;
+  let searchLower = 0;
 
-    const finalBounds = performRecursiveSearch(initialLowerBound, initialUpperBound, numberOfIterations);
+  while (searchLower + 1 < searchUpper) {
+    const currentMid = (searchLower + searchUpper) / 2;
 
-    console.log(`lowerResult:${finalBounds.lowerResult} upperResult:${finalBounds.upperResult}`);
+    const totalRequired = itemCosts.reduce((accumulator, currentCost, index) => {
+      const factorValue = itemFactors[index];
+      return accumulator + Math.max(0, currentCost - currentMid / factorValue);
+    }, 0);
+
+    if (totalRequired <= maxOperations) {
+      searchUpper = currentMid;
+    } else {
+      searchLower = currentMid;
+    }
+  }
+
+  console.log("d:%s t:%s", searchLower, searchUpper);
 };
 
-computeOptimalValue(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-        .split("\n")
+processInputAndSolve(
+  require("fs").readFileSync("/dev/stdin", "utf8")
 );

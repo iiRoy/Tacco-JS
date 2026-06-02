@@ -1,47 +1,46 @@
-"use strict"
-// This JavaScript module is designed to process an incoming data string.
-function ProcessInputData(rawDataString)
-{
-    // The initial raw data is cleaned by removing leading/trailing whitespace
-    // and then broken down into individual lines.
-    rawDataString = rawDataString.trim().split('\n');
+"use strict"; // Enforce strict mode for the entire script
 
-    // The first line of the input is parsed to determine the primary quantity.
-    const itemQuantity = Number(rawDataString[0].trim());
+/**
+ * Processes raw input data to compute a specific sum based on a defined algorithm.
+ * This function reads numerical data, sorts it, and then sums specific elements.
+ * @param {string} rawInputData - The complete raw string input, typically from standard input.
+ */
+function ProcessDataStream(rawInputData) {
+  // First, clean up the input string by removing leading/trailing whitespace
+  // and then splitting it into an array of individual lines.
+  let parsedLines = rawInputData.trim().split('\n');
 
-    // The second line is processed: whitespace removed, values split by space,
-    // converted to numerical types, and subsequently sorted in descending order.
-    const descendingNumbers = rawDataString[1].trim().split(' ').map(Number).sort((valueOne, valueTwo) => valueTwo - valueOne);
+  // Extract the first number from the first line, which represents the count of elements.
+  // Ensure to trim any whitespace from this specific line before conversion.
+  const elementCount = Number(parsedLines[0].trim());
 
-    // A variable is initialized to hold the cumulative sum of selected elements.
-    let totalAccumulator = 0;
+  // Process the second line:
+  // 1. Trim whitespace.
+  // 2. Split the string by spaces to get an array of string numbers.
+  // 3. Convert each string number to an actual number using `map(Number)`.
+  // 4. Sort the resulting array of numbers in descending order (largest to smallest).
+  const sortedNumericValues = parsedLines[1].trim().split(' ').map(Number).sort((valueA, valueB) => valueB - valueA);
 
-    // A loop is initiated to traverse a specific range of indices within the sorted array.
-    // The loop begins from the second element (index 1) and continues up to,
-    // but not including, three times the item quantity.
-    for
-    (
-        let iterationIndex = 1;
-        iterationIndex < itemQuantity * 3;
-        iterationIndex++
-    )
-    {
-        // Inside the loop, a conditional check is performed:
-        // if the current iteration index is an even number...
-        if
-        (
-            iterationIndex % 2 === 0
-        )
-        {
-            // ...then the numeric value at that specific index
-            // from the descendingNumbers array is added to the total accumulator.
-            totalAccumulator += descendingNumbers[iterationIndex];
-        }
+  // Initialize an accumulator variable to store the sum of selected elements.
+  let accumulatedSum = 0;
+
+  // Iterate through a specific range of the sorted array.
+  // The loop starts from the second element (index 1) and goes up to (elementCount * 3) - 1.
+  for (let currentIdx = 1; currentIdx < elementCount * 3; currentIdx++) {
+    // Check if the current index is an even number.
+    // This condition selects elements at indices 2, 4, 6, etc.
+    if (currentIdx % 2 === 0) {
+      // If the index is even, add the corresponding value from the sorted array
+      // to our accumulated sum.
+      accumulatedSum += sortedNumericValues[currentIdx];
     }
+  }
 
-    // Finally, the calculated total sum is displayed on the console.
-    console.log(totalAccumulator);
+  // Output the final calculated sum to the console.
+  console.log(accumulatedSum);
 }
 
-// The main processing function is invoked with content read from standard input.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The entry point of the script:
+// Read the entire content of standard input synchronously as a UTF-8 string,
+// and then pass this raw string to our main processing function.
+ProcessDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));

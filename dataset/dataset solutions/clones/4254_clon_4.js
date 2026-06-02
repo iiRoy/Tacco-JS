@@ -1,23 +1,15 @@
-'use strict';
+'use strict'
 
-(function() {
-  const sourceText = require("fs").readFileSync("/dev/stdin", "utf8");
-  const numericalValue = Number(sourceText);
+function main(inputStr) {
+  const numVal = Number(inputStr);
 
-  function locateSquareRootInteger(targetBound, currentAttempt = 0) {
-    if (currentAttempt * currentAttempt >= targetBound) {
-      return currentAttempt;
-    }
-    return locateSquareRootInteger(targetBound, currentAttempt + 1);
-  }
+  const rootVal = Math.floor(Math.sqrt(numVal));
 
-  let computedOutcome;
-  if (numericalValue <= 0) {
-    computedOutcome = 1;
-  } else {
-    const discoveredRoot = locateSquareRootInteger(numericalValue);
-    computedOutcome = (discoveredRoot - 1) * (discoveredRoot - 1);
-  }
+  const finalBase = rootVal - (rootVal * rootVal === numVal ? 1 : 0);
 
-  console.log(computedOutcome);
-})();
+  const result = finalBase * finalBase;
+
+  console.log(result);
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

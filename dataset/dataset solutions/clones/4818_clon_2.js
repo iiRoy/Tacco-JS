@@ -1,19 +1,9 @@
-// This module handles character classification.
+"use strict"
 
-'use strict' ;
+const solve = data => {
+	const ch = data.trim()
+	if (["a", "e", "i", "o", "u"].includes(ch)) console.log("vowel")
+	else console.log("consonant")
+}
 
-const classifyLetter =  ( initialText )  =>  {
-	const  currentSymbol  = initialText . trim ( ) ;
-
-	if  ( [ 'a' , 'e' , 'i' , 'o' , 'u' ] . includes ( currentSymbol ) )
-	{
-		console . log ( 'Vowel' ) ; // Output for a vocalic character.
-	}
-	else
-	{
-		console . log ( 'Consonant' ) ; // Output for a non-vocalic character.
-	}
-} ;
-
-// Obtain system input from standard device.
-classifyLetter ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+solve(require("fs").readFileSync("/dev/stdin", "utf8"))

@@ -1,9 +1,10 @@
-function processInput(rawData) {
-    const cleanedData = rawData.replace(/^\s+|\s+$/g, '');
-    const matches = cleanedData.match(/1/g);
-    const totalOnes = matches ? matches.length : 0;
-    console.info(totalOnes);
+"use strict";
+
+function processInputAndLog(sourceText){
+  const processedCount = sourceText.trim().split('').reduce((accumulator, currentCharacter) => {
+    return accumulator + (currentCharacter === '1' ? 1 : 0);
+  }, 0);
+  console.log(processedCount);
 }
 
-const fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-processInput(fileContent);
+processInputAndLog(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,94 +1,70 @@
-const processRawData = require('node:fs').readFileSync;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawData.trim().split("\n");
 
-const retrieveAndProcessInput = () => {
-    const rawDataBuffer = processRawData('/dev/stdin', 'utf8');
-    const dataLines = rawDataBuffer.trim().split('\n');
+const arraySize = parseInt(lineSegments.shift(), 10);
+const initialValues = lineSegments.shift().split(" ").map(Number);
+const queryCount = parseInt(lineSegments.shift(), 10);
+const swapInstructions = lineSegments.map(segment => segment.split(" ").map(Number).map(val => val - 1));
 
-    const firstLineValue = parseInt(dataLines.shift(), 10);
-    const initialSequence = dataLines.shift().split(' ').map(Number);
-    const sortedSequence = [...initialSequence].sort((val1, val2) => val1 - val2);
-    const operationsCount = parseInt(dataLines.shift(), 10);
+swapInstructions.unshift([0, 0]);
 
-    const swapCoordinates = dataLines.map(line =>
-        line.split(' ').map(Number).map(coord => coord - 1)
-    );
-    swapCoordinates.unshift([0, 0]);
+const sortedValues = [...initialValues].sort((valX, valY) => valX - valY);
 
-    return {
-        initialSequence,
-        sortedSequence,
-        operationsCount,
-        swapCoordinates
-    };
-};
-
-const identifyDivergences = (sourceArr, targetArr) => {
-    const dynamicDivergentMap = new Map();
-    const staticDivergentMap = new Map();
-    let initialMismatchCount = 0;
-
-    for (let currentIdx = 0; currentIdx < sourceArr.length; currentIdx++) {
-        if (sourceArr[currentIdx] !== targetArr[currentIdx]) {
-            dynamicDivergentMap.set(currentIdx, sourceArr[currentIdx]);
-            staticDivergentMap.set(currentIdx, targetArr[currentIdx]);
-            initialMismatchCount++;
+const generateMismatchedMap = (sourceArr, targetArr) => {
+    const mismatchMap = new Map();
+    for (let idx = 0; idx < sourceArr.length; idx++) {
+        if (sourceArr[idx] !== targetArr[idx]) {
+            mismatchMap.set(idx, sourceArr[idx]);
         }
     }
-
-    const generateComparisonString = (map) => {
-        return Array.from(map.keys())
-                    .sort((k1, k2) => k1 - k2)
-                    .map(key => map.get(key))
-                    .join('');
-    };
-
-    const targetComparisonSignature = generateComparisonString(staticDivergentMap);
-
-    return {
-        dynamicDivergentMap,
-        targetComparisonSignature,
-        initialMismatchCount,
-        generateComparisonString
-    };
+    return mismatchMap;
 };
 
-const executeTransformation = () => {
-    const { initialSequence, sortedSequence, operationsCount, swapCoordinates } = retrieveAndProcessInput();
-    let { dynamicDivergentMap, targetComparisonSignature, initialMismatchCount, generateComparisonString } = identifyDivergences(initialSequence, sortedSequence);
-
-    if (initialMismatchCount === 0) {
-        console.log(0);
-        return;
+const compareMapsForEquivalence = (mapOne, mapTwo) => {
+    if (mapOne.size !== mapTwo.size) return false;
+    for (const [key, val] of mapOne.entries()) {
+        if (mapTwo.get(key) !== val) return false;
     }
-
-    let completionIndex = -1;
-    let foundCompletion = false;
-    let currentOperationIndex = 0;
-
-    while (currentOperationIndex <= operationsCount && !foundCompletion) {
-        const [firstSwapIdx, secondSwapIdx] = swapCoordinates[currentOperationIndex];
-
-        const valueAtFirst = dynamicDivergentMap.has(firstSwapIdx) ? dynamicDivergentMap.get(firstSwapIdx) : undefined;
-        const valueAtSecond = dynamicDivergentMap.has(secondSwapIdx) ? dynamicDivergentMap.get(secondSwapIdx) : undefined;
-
-        dynamicDivergentMap.set(firstSwapIdx, valueAtSecond);
-        dynamicDivergentMap.set(secondSwapIdx, valueAtFirst);
-        
-        const currentComparisonSignature = generateComparisonString(dynamicDivergentMap);
-
-        if (currentComparisonSignature === targetComparisonSignature) {
-            foundCompletion = true;
-            completionIndex = currentOperationIndex;
-        }
-
-        currentOperationIndex++;
-    }
-
-    if (foundCompletion) {
-        console.log(completionIndex);
-    } else {
-        console.log(-1);
-    }
+    return true;
 };
 
-executeTransformation();
+let initialDivergenceCount = 0;
+for (let idx = 0; idx < initialValues.length; idx++) {
+    if (initialValues[idx] !== sortedValues[idx]) {
+        initialDivergenceCount++;
+    }
+}
+
+const targetMismatchedValues = new Map();
+for (let idx = 0; idx < initialValues.length; idx++) {
+    if (initialValues[idx] !== sortedValues[idx]) {
+        targetMismatchedValues.set(idx, sortedValues[idx]);
+    }
+}
+
+const currentMutableArray = [...initialValues];
+
+let matchFoundAtIteration = -1;
+
+for (let iter = 0; iter <= queryCount; iter++) {
+    const currentSwapPair = swapInstructions[iter];
+    const indexA = currentSwapPair[0];
+    const indexB = currentSwapPair[1];
+
+    [currentMutableArray[indexA], currentMutableArray[indexB]] = [currentMutableArray[indexB], currentMutableArray[indexA]];
+
+    const currentMismatchedValues = generateMismatchedMap(currentMutableArray, sortedValues);
+
+    if (compareMapsForEquivalence(currentMismatchedValues, targetMismatchedValues)) {
+        matchFoundAtIteration = iter;
+        break;
+    }
+}
+
+if (initialDivergenceCount === 0) {
+    console.log(0);
+} else if (matchFoundAtIteration !== -1) {
+    console.log(matchFoundAtIteration);
+} else {
+    console.log(-1);
+}

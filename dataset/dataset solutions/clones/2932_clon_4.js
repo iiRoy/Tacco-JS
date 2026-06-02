@@ -1,23 +1,28 @@
 'use strict';
 
-function processData(sourceContent) {
-    const components = sourceContent.trim().split(' ');
-    const growthFactor = Number(components[0]);
-    const decrementOffset = Number(components[1]);
-    const initialObservation = Number(components[2]);
-
-    function generateNext(current, factor, offset, count, results) {
-        if (count === 0) {
-            return results;
-        }
-        const nextValue = factor * current - offset;
-        results.push(nextValue);
-        return generateNext(nextValue, factor, offset, count - 1, results);
-    }
-
-    const finalSequence = generateNext(initialObservation, growthFactor, decrementOffset, 10, []);
-
-    console.log(finalSequence.join('\n'));
+function* termProducer(startValue, multiplier, subtractor) {
+  let current = startValue;
+  while (true) {
+    yield current;
+    current = multiplier * current - subtractor;
+  }
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function processInputAndGenerate(sourceText) {
+  const rawParts = sourceText.trim().split(' ');
+  const numericParts = rawParts.map(parseFloat);
+
+  const multiplierVal = numericParts[0];
+  const subtractorVal = numericParts[1];
+  const initialVal = numericParts[2];
+
+  const sequenceGen = termProducer(initialVal, multiplierVal, subtractorVal);
+
+  sequenceGen.next();
+
+  const subsequentTerms = Array.from({ length: 10 }, () => sequenceGen.next().value);
+
+  console.log(subsequentTerms.join('\n'));
+}
+
+processInputAndGenerate(require('fs').readFileSync('/dev/stdin', 'utf8'));

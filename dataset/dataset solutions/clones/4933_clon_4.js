@@ -1,58 +1,55 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding("utf8");
 
-var inputBuffer = [];
-var inputParser = require('readline').createInterface({
+var lines = [];
+var reader = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputParser.on('line', (inputLine) => {
-  inputBuffer.push(inputLine);
+reader.on("line", function (line) {
+  lines.push(line);
 });
 
-inputParser.on('close', () => {
-    const [_, firstCap, secondCap] = inputBuffer[0].split(" ").map(Number);
-    const charSequence = inputBuffer[1].split("");
+reader.on("close", function () {
+  const config = lines[0].split(" ").map(function (v) {
+    return v - 0;
+  });
 
-    function determineApprovals(
-        remainingChars,
-        overallTally,
-        typeBTally,
-        resultsAccumulator
-    ) {
-        if (remainingChars.length === 0) {
-            return resultsAccumulator;
-        }
+  const N = config[0];
+  const A = config[1];
+  const B = config[2];
 
-        const currentCharacter = remainingChars[0];
-        const restOfChars = remainingChars.slice(1);
+  const applicants = lines[1].split("");
 
-        let currentVerdict = false;
-        let nextOverallTally = overallTally;
-        let nextTypeBTally = typeBTally;
+  const totalCapacity = A + B;
 
-        if (overallTally < (firstCap + secondCap)) {
-            if (currentCharacter === "a") {
-                nextOverallTally++;
-                currentVerdict = true;
-            } else if (currentCharacter === "b" && typeBTally < secondCap) {
-                nextOverallTally++;
-                nextTypeBTally++;
-                currentVerdict = true;
-            }
-        }
+  const domesticPositions = [];
+  const overseasPositions = [];
 
-        return determineApprovals(
-            restOfChars,
-            nextOverallTally,
-            nextTypeBTally,
-            [...resultsAccumulator, currentVerdict]
-        );
+  for (let index = 0; index < applicants.length; index++) {
+    if (applicants[index] === "a") {
+      domesticPositions.push(index);
+    } else if (applicants[index] === "b" && overseasPositions.length < B) {
+      overseasPositions.push(index);
     }
+  }
 
-    const finalDecisions = determineApprovals(charSequence, 0, 0, []);
+  const candidatePositions = domesticPositions
+    .concat(overseasPositions)
+    .sort(function (left, right) {
+      return left - right;
+    });
 
-    const formattedOutput = finalDecisions.map(decision => decision ? "Yes" : "No").join("\n");
-    console.log(formattedOutput);
+  const acceptedIndexSet = new Set(
+    candidatePositions.slice(0, totalCapacity)
+  );
+
+  const output = [];
+
+  for (let index = 0; index < applicants.length; index++) {
+    output.push(acceptedIndexSet.has(index) ? "Yes" : "No");
+  }
+
+  console.log(output.join("\n"));
 });

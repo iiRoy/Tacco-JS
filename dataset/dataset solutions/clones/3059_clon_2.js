@@ -1,99 +1,104 @@
-"use strict"; // Enforce strict mode for modern JavaScript practices
+"use strict";
 
 /**
- * Orchestrates the processing of input data according to specific problem logic.
- * This function handles sequence parsing, block identification, and final calculation.
+ * Processes raw input data to solve a specific problem.
+ * This function simulates the main logic of a competitive programming solution.
  *
- * @param {string} rawDataSource - The entire input provided as a single string.
+ * @param {string} rawData - The complete input string received from standard input.
  */
-function ProcessInput(rawDataSource) {
-  // Break down the raw input string into an array of individual lines.
-  const inputLines = rawDataSource.split("\n");
+function ProcessInput(rawData) {
+    // Split the entire input string into individual lines for easier parsing.
+    let inputLines = rawData.split("\n");
 
-  // Extract and parse the first line containing global configuration values.
-  // This line is removed from the inputLines array after processing.
-  const configurationParameters = inputLines.shift().split(/\s+/).map((valueString) => Number(valueString));
+    // Extract the first line which contains two space-separated integers (N and K).
+    // Convert these string values to numbers using the unary plus operator.
+    let numConfig = inputLines.shift().split(/\s/).map((valStr) => +valStr);
+    let totalElements = numConfig[0]; // Represents 'N' from the problem statement.
+    let maxOperations = numConfig[1]; // Represents 'K' from the problem statement.
 
-  // Assign the extracted configuration values to descriptive constants.
-  const totalElements = configurationParameters[0];
-  const maxOperations = configurationParameters[1];
+    // Extract the second line, which is a string of '0's and '1's.
+    // Split it into individual characters and convert each character to a number.
+    let dataSequence = inputLines.shift().split(/\s/)[0].split("").map((charVal) => +charVal);
 
-  // Process the second line, which represents the binary sequence.
-  // It's split into characters and each character is converted to an integer.
-  const binarySequence = inputLines.shift().split(/\s+/)[0].split("").map((charValue) => parseInt(charValue, 10));
+    // Initialize variables for segment identification (run-length encoding).
+    let currentIndex = 0; // Tracks the current position in the dataSequence.
+    let segmentList = []; // Stores objects representing consecutive segments of identical values.
 
-  // Initialize variables for traversing the sequence and storing identified blocks.
-  let currentSegmentStart = 0;
-  const blockSegmentInfo = []; // Stores objects describing consecutive blocks (e.g., type, start, length).
+    // Determine the type of the first segment (0 or 1).
+    let currentType = dataSequence[0];
 
-  // Set up a pointer for scanning and determine the type of the initial block.
-  let blockScanPointer;
-  let currentBlockDesignation = binarySequence[0];
+    // Iterate through the data sequence to find and record segments.
+    while (currentIndex < totalElements) {
+        let segmentEnd = currentIndex; // Marks the end of the current segment being examined.
 
-  // Iterate through the binary sequence to identify and categorize contiguous blocks.
-  // A block is only recorded if it is followed by a block of a different type.
-  // If a block extends to the end of the sequence, it is not explicitly added here.
-  while (currentSegmentStart < totalElements) {
-    // Advance the scan pointer until a different block type is encountered or the end is reached.
-    for (blockScanPointer = currentSegmentStart; blockScanPointer < totalElements && binarySequence[blockScanPointer] === currentBlockDesignation; blockScanPointer++) {
-      /* Loop body is intentionally empty; the pointer's final value is what matters. */
+        // Find the point where the current segment of 'currentType' ends.
+        for (; segmentEnd < totalElements && dataSequence[segmentEnd] === currentType; segmentEnd++) {
+            // This loop increments segmentEnd as long as the value matches currentType.
+        }
+
+        // IMPORTANT: A segment is only added to segmentList if it's NOT the very last segment
+        // that extends exactly to the end of the array. This preserves a specific behavior
+        // from the original code, which might be a subtle bug or an intentional design choice.
+        if (segmentEnd < totalElements) {
+            let segmentLength = segmentEnd - currentIndex; // Calculate the length of the identified segment.
+            // Add the segment's details to our list.
+            segmentList.push({ typeVal: currentType, startIdx: currentIndex, lengthVal: segmentLength });
+            // Toggle the type for the next segment (0 becomes 1, 1 becomes 0).
+            currentType = (currentType + 1) % 2;
+        }
+        // Move the currentIndex to the end of the segment just processed (or skipped).
+        currentIndex = segmentEnd;
     }
 
-    // If the block ended before the sequence's end, it means a type change occurred.
-    // Record this block and flip the expected type for the next segment.
-    if (blockScanPointer < totalElements) {
-      const segmentSpan = blockScanPointer - currentSegmentStart; // Calculate the length of the identified block.
-      blockSegmentInfo.push({ blockType: currentBlockDesignation, startIndex: currentSegmentStart, length: segmentSpan });
-      currentBlockDesignation = (currentBlockDesignation + 1) % 2; // Toggle the block type (0 to 1, or 1 to 0).
+    // Special handling: If the first segment in our list is a '0' segment,
+    // prepend a dummy '1' segment of zero length. This is often done to simplify
+    // sliding window calculations by ensuring a '1' segment always starts the sequence.
+    // This operation assumes segmentList is not empty, which would lead to an error otherwise.
+    if (segmentList[0].typeVal === 0) {
+        segmentList.unshift({ typeVal: 1, startIdx: 0, lengthVal: 0 });
     }
-    // Move the starting point for the next block search to where the previous one ended.
-    currentSegmentStart = blockScanPointer;
-  }
 
-  // Prepend a zero-length '1' block if the first identified block is '0'.
-  // This is a specific adjustment for problems where calculations assume a leading '1' block.
-  // Note: This access `blockSegmentInfo[0]` will cause a runtime error if `blockSegmentInfo` is empty,
-  // which replicates the exact behavior of the original code.
-  if (blockSegmentInfo[0].blockType === 0) {
-    blockSegmentInfo.unshift({ blockType: 1, startIndex: 0, length: 0 });
-  }
+    // Calculate the total count of '0' segments.
+    // This variable ('zs' in original) is computed but not used later in the provided code.
+    let zeroSegmentsCount = segmentList.reduce((accumulator, segmentItem) => {
+        return accumulator + (segmentItem.typeVal === 0 ? 1 : 0);
+    }, 0);
 
-  // Calculate the total count of '0' blocks within the collected segments.
-  // This variable is derived but not utilized in the subsequent calculations.
-  const zeroSegmentCounter = blockSegmentInfo.reduce((accumulatorValue, segmentItem) => {
-    return accumulatorValue + (segmentItem.blockType === 0 ? 1 : 0);
-  }, 0);
+    // Define a local helper function.
+    // This function calculates the sum of lengths for a given segment and its immediate neighbors.
+    // In the original code, this function ('f') is defined but never invoked.
+    // It is preserved here to maintain Type II cloning rules (no deletion of executable logic).
+    const calculateSegmentSum = (segmentIndex) => {
+        let currentSum = segmentList[segmentIndex].lengthVal;
+        if (segmentIndex > 0) {
+            currentSum += segmentList[segmentIndex - 1].lengthVal;
+        }
+        if (segmentIndex < segmentList.length - 1) {
+            currentSum += segmentList[segmentIndex + 1].lengthVal;
+        }
+        return currentSum;
+    };
 
-  // Define a helper function to determine the combined length of a segment and its immediate neighbors.
-  // This function is defined but ultimately not called within this particular code path.
-  const computeAdjacentBlockLength = (blockIndex) => {
-    let combinedLength = blockSegmentInfo[blockIndex].length;
-    if (blockIndex > 0) {
-      combinedLength += blockSegmentInfo[blockIndex - 1].length;
+    // Calculate the final result by summing the lengths of an initial set of segments.
+    // The loop iterates up to `maxOperations * 2`, effectively summing `maxOperations * 2 + 1` segments.
+    // This is typically part of a sliding window approach to find the maximum length
+    // of consecutive '1's achievable with 'K' flips.
+    let finalResult = 0; // Stores the accumulated length.
+    for (let i = 0; i <= maxOperations * 2; i++) {
+        // The original code accesses `segmentList[i]` directly without bounds checking.
+        // This implies that `segmentList` is expected to have enough elements for this loop,
+        // or that an out-of-bounds error is an expected behavior for certain inputs.
+        finalResult += segmentList[i].lengthVal;
     }
-    if (blockIndex < blockSegmentInfo.length - 1) {
-      combinedLength += blockSegmentInfo[blockIndex + 1].length;
-    }
-    return combinedLength;
-  };
 
-  // Compute the final result by summing the lengths of a specific number of initial blocks.
-  // The number of blocks considered is determined by `maxOperations * 2` plus one.
-  // If `blockSegmentInfo` has fewer than `maxOperations * 2 + 1` elements, accessing
-  // `blockSegmentInfo[currentBlockIter]` will lead to `undefined.length`, causing an error,
-  // consistent with the original code's behavior.
-  let cumulativeResult = 0;
-  for (let currentBlockIter = 0; currentBlockIter <= maxOperations * 2; currentBlockIter++) {
-    cumulativeResult += blockSegmentInfo[currentBlockIter].length;
-  }
+    // Output the final computed result to the console.
+    console.log(finalResult);
+}
 
-  // Output the final computed result to the console.
-  console.log(cumulativeResult);
-} // End of ProcessInput function definition
-
-// This conditional block determines the execution environment.
-// If running in a Node.js environment (i.e., not in a web browser),
-// it reads input from standard input and passes it to the main processing function.
+// Standard boilerplate for competitive programming in Node.js.
+// Checks if the script is running in a Node.js environment (not a browser).
 if (typeof window === "undefined") {
-  ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+    // If in Node.js, read the entire content of stdin synchronously.
+    // The 'utf8' encoding is specified for text input.
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

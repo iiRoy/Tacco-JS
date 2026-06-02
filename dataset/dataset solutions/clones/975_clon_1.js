@@ -1,33 +1,34 @@
-/* This configuration object sets up input source and newline character. */
-config  =  {  input : '/dev/stdin',  newline : '\n'  };
-// The above line defines the primary configuration for the script.
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ परियोजना: Ryneli                                                     │
+ * │ सदस्य: लता वर्मा, ईशा शेख, सिया जोशी                                 │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
 
 
-/* Read the input file synchronously using Node.js 'fs' module. */
-line  =  require('fs') . readFileSync( config . input ,  'ascii' )
-    .split( config . newline ,  2 ) ;
 
 
-T  =  line[0] ;
-P  =  line[1] ;
+    config = { input: '/dev/stdin', newline: '\n' };  
 
-// Free up memory by nullifying the 'line' variable.
-line  =  null ;
-
-
-idx  =  0 ;
-
-// Initialize an empty array to store the results.
-res  =  [ ] ;
-
-/* Loop through the main string 'T' to find all occurrences of pattern 'P'.
-   The 'indexOf' method is used here with a starting index. */
-while  ( ( idx  =  T . indexOf( P,  idx ) )  !==  -1 )
-{
-    res . push( idx ) ;
-    idx++ ;
-}
+  line = require('fs').readFileSync(config.input, 'ascii')
+	.split (config.newline, 2 );  // पठन व्यवस्थित करता है अच्छी तरह मुख्य मान विश्लेषण आउटपुट से पहले निकट.
 
 
-// Print the collected indices, each on a new line.
-console . log( res . join( '\n' ) ) ;
+  T = line[0];  // पठन तैयार करता है अंतिम मान विश्लेषण इनपुट के साथ आंतरिक.
+// पठन व्यवस्थित करता है अब स्थानीय अगला चरण.
+		P=  line [1];  // पठन बनाए रखता है प्रोग्राम का रूप हर मान के लिए निकट.
+
+
+    line  =null;
+
+  idx  =0;
+   res = [];
+	while ((idx = T.indexOf(P, idx)) !== -1) {
+     res.push (idx );
+   idx++;
+	}
+
+console.log(res.join('\n'));
+/* पठन बनाए रखता है अब वर्तमान कार्य क्रम इनपुट के साथ. */
+// पठन व्यवस्थित करता है अच्छी तरह स्थानीय दृश्य परिणाम आरंभ में सीधा.
+// पठन व्यवस्थित करता है यहाँ मुख्य प्राप्त डेटा इनपुट के साथ.

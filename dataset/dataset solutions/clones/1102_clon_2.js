@@ -1,181 +1,136 @@
-/* This script processes commands to manage a binary search tree. */
-// Resume standard input stream to listen for data.
 process.stdin.resume();
-// Set the encoding for the input data to UTF-8.
 process.stdin.setEncoding("utf8");
 
-// Variable to accumulate all incoming data from stdin.
-let receivedData = "";
-
-// Attach an event listener for "data" chunks.
-process.stdin.on("data", function (dataSegment) {
-    // Append each new data segment to the overall received data.
-    receivedData += dataSegment;
+let receivedData = ""; // Accumulates all incoming standard input data
+process.stdin.on("data", function(chunk) {
+    receivedData += chunk; // Append each data chunk to the buffer
 });
 
-// Attach an event listener for the "end" of the input stream.
-process.stdin.on("end", function () {
-    // Once all input is received, split it into lines and pass to the main execution routine.
-    executeProgram(receivedData.split("\n"));
+process.stdin.on("end", function() {
+    // Once all input is received, split it by newline and pass to the main processing function
+    processInputData(receivedData.split("\n"));
 });
-
 
 /**
- * Constructs and returns a brand new node object for the binary tree.
- * @param {number} nodeValue - The numerical value to be stored within this new node.
- * @returns {object} A fresh node instance, initialized with the provided value and null children pointers.
+ * Creates a new binary tree node object.
+ * @param {number} nodeValue - The numeric value to store in the node.
+ * @returns {object} A new node instance with the specified value and null children.
  */
 function createTreeNode(nodeValue) {
-    // Initialize a blank object to serve as our tree node.
-    let newNodeObject = {};
-    // Assign the given numerical value to the node's data field.
-    newNodeObject.value = nodeValue;
-    // Set the left child reference to null initially.
-    newNodeObject.leftChild = null;
-    // Set the right child reference to null initially.
-    return newNodeObject;
+    let nodeObject = {}; // Initialize a plain object for the node
+    nodeObject.val = nodeValue; // Assign the value
+    nodeObject.leftBranch = null; // Initialize left child as null
+    nodeObject.rightBranch = null; // Initialize right child as null
+    return nodeObject; // Return the newly created node
 }
 
 /**
- * Inserts a specified child node into the binary search tree, starting from a given root.
- * This function handles the recursive insertion logic.
- * @param {object | null} currentNode - The current node being examined in the tree, or null if empty.
- * @param {object} childNode - The node that needs to be positioned within the tree.
- * @returns {object} The root of the (potentially altered) subtree after insertion.
+ * Inserts a new node into a binary search tree.
+ * @param {object|null} currentNode - The current node being considered in the recursion.
+ * @param {object} newNode - The node to be inserted.
+ * @returns {object} The root of the (sub)tree after insertion.
  */
-function addNodeToTree(currentNode, childNode) {
-    // If the current position is empty, the child node becomes the new root of this subtree.
-    if (currentNode === null) {
-        return childNode;
+function addNodeToTree(currentNode, newNode) {
+    if (currentNode === null) { // If the current position is empty, insert the new node here
+        return newNode;
     }
-
-    // Compare the value of the node to be inserted with the current node's value.
-    if (childNode.value < currentNode.value) {
-        // If the child's value is smaller, attempt to insert it into the left subtree.
-        currentNode.leftChild = addNodeToTree(currentNode.leftChild, childNode);
+    // Decide whether to go left or right based on the new node's value
+    if (newNode.val < currentNode.val) {
+        currentNode.leftBranch = addNodeToTree(currentNode.leftBranch, newNode);
     } else {
-        // Otherwise (if value is greater or equal), insert into the right subtree.
-        currentNode.rightChild = addNodeToTree(currentNode.rightChild, childNode);
+        currentNode.rightBranch = addNodeToTree(currentNode.rightBranch, newNode);
     }
-    // Return the current node, whose children might have been updated.
-    return currentNode;
+    return currentNode; // Return the current node (root of this subtree)
 }
 
 /**
- * Searches for a node containing a specific numerical value within the binary tree.
- * @param {object | null} currentPoint - The starting point for the search operation.
- * @param {number} searchValue - The numeric value we are trying to locate.
- * @returns {object | null} The tree node if its value matches the search value, otherwise null.
+ * Searches for a node with a specific value in a binary search tree.
+ * @param {object|null} currentNode - The current node being examined.
+ * @param {number} searchValue - The value to search for.
+ * @returns {object|null} The node if found, otherwise null.
  */
-function locateNode(currentPoint, searchValue) {
-    // Continue the search as long as we haven't hit a null node and haven't found the value.
-    if (currentPoint !== null && currentPoint.value !== searchValue) {
-        // If the search value is less than the current node's value, proceed to the left child.
-        if (searchValue < currentPoint.value) {
-            currentPoint = locateNode(currentPoint.leftChild, searchValue);
-        }
-        // Otherwise, move to the right child.
-        else {
-            currentPoint = locateNode(currentPoint.rightChild, searchValue);
+function locateNode(currentNode, searchValue) {
+    // Continue searching if the current node is not null and its value doesn't match
+    if (currentNode !== null && currentNode.val !== searchValue) {
+        if (searchValue < currentNode.val) { // If search value is smaller, go left
+            currentNode = locateNode(currentNode.leftBranch, searchValue);
+        } else { // If search value is larger, go right
+            currentNode = locateNode(currentNode.rightBranch, searchValue);
         }
     }
-    // Return the node if found, or the null reference if the search ended unsuccessfully.
-    return currentPoint;
+    return currentNode; // Return the found node or null
 }
 
 /**
- * Performs an in-order traversal (Left-Root-Right) of the tree, collecting node values.
- * @param {object | null} nodePtr - The current node being visited during the traversal.
- * @param {Array<number>} resultArray - An array where the collected node values will be stored.
+ * Performs an in-order traversal of the tree, collecting node values into an array.
+ * (Left -> Root -> Right)
+ * @param {object|null} currentNode - The current node in the traversal.
+ * @param {Array<number>} resultArray - The array to accumulate node values.
  */
-function traverseInOrder(nodePtr, resultArray) {
-    // Base case for recursion: if the node pointer is null, simply return.
-    if (nodePtr === null) {
+function traverseInOrder(currentNode, resultArray) {
+    if (currentNode === null) { // Base case: if node is null, do nothing
         return;
     }
-    // Recursively visit the left child.
-    traverseInOrder(nodePtr.leftChild, resultArray);
-    // Add the current node's value to the result array.
-    resultArray.push(nodePtr.value);
-    // Recursively visit the right child.
-    traverseInOrder(nodePtr.rightChild, resultArray);
+    traverseInOrder(currentNode.leftBranch, resultArray); // Traverse left subtree
+    resultArray.push(currentNode.val); // Add current node's value
+    traverseInOrder(currentNode.rightBranch, resultArray); // Traverse right subtree
 }
 
 /**
- * Performs a pre-order traversal (Root-Left-Right) of the tree, gathering node values.
- * @param {object | null} nodePointer - The current node in the recursive traversal.
- * @param {Array<number>} outputCollection - The array used to accumulate the values in pre-order.
+ * Performs a pre-order traversal of the tree, collecting node values into an array.
+ * (Root -> Left -> Right)
+ * @param {object|null} currentNode - The current node in the traversal.
+ * @param {Array<number>} resultArray - The array to accumulate node values.
  */
-function traversePreOrder(nodePointer, outputCollection) {
-    // Base condition for the recursion: if the node is null, terminate this branch.
-    if (nodePointer === null) {
+function traversePreOrder(currentNode, resultArray) {
+    if (currentNode === null) { // Base case: if node is null, do nothing
         return;
     }
-    // First, add the current node's value to the collection.
-    outputCollection.push(nodePointer.value);
-    // Then, recursively traverse the left subtree.
-    traversePreOrder(nodePointer.leftChild, outputCollection);
-    // Finally, recursively traverse the right subtree.
-    traversePreOrder(nodePointer.rightChild, outputCollection);
+    resultArray.push(currentNode.val); // Add current node's value
+    traversePreOrder(currentNode.leftBranch, resultArray); // Traverse left subtree
+    traversePreOrder(currentNode.rightBranch, resultArray); // Traverse right subtree
 }
 
 /**
- * Outputs the contents of a tree to the console using a specified traversal method.
- * @param {object | null} rootNodeRef - The root node of the tree whose content is to be displayed.
- * @param {function} traversalFunction - The specific traversal function (e.g., traverseInOrder, traversePreOrder) to use.
+ * Executes a specified tree traversal function and prints the results to the console.
+ * @param {object|null} treeRootNode - The root of the tree to traverse.
+ * @param {Function} traversalFunction - The function to use for traversing (e.g., traverseInOrder, traversePreOrder).
  */
-function displayTreeContent(rootNodeRef, traversalFunction) {
-    // Create an empty array to temporarily store the elements during traversal.
-    let collectedElements = [];
-    // Call the provided traversal function to populate the array with node values.
-    traversalFunction(rootNodeRef, collectedElements);
-    // Format the collected elements with leading spaces and join them, then print to console.
-    console.log(collectedElements.map(elementItem => ` ${elementItem}`).join(""));
+function displayTraversal(treeRootNode, traversalFunction) {
+    let resultArray = []; // Initialize an empty array for traversal results
+    traversalFunction(treeRootNode, resultArray); // Populate the array using the provided traversal function
+    // Format and print the array contents, prefixed with a space for each item
+    console.log(resultArray.map(item => ` ${item}`).join(""));
 }
 
 /**
- * The primary function that orchestrates the execution of tree operations based on input commands.
- * @param {Array<string>} inputLines - An array where each string represents a single command line.
+ * Main function to parse input commands and perform operations on the binary search tree.
+ * @param {Array<string>} inputLines - An array of strings, where each string is a command line.
  */
-function executeProgram(inputLines) {
-    // Parse the first line to get the total number of operations to perform.
-    const totalOperations = Number(inputLines[0]);
-    // Initialize the root of the binary search tree to an empty state.
-    let treeRoot = null;
-    // Declare variables for temporary node storage, current key, and parsed line data.
-    let tempNode, currentKey, currentLineData;
+function processInputData(inputLines) {
+    const operationCount = Number(inputLines[0]); // First line indicates the number of operations
+    let treeRoot = null; // Initialize the binary search tree root as null
+    let tempNode, searchVal, currentLineParts; // Declare variables for temporary node, search value, and parsed line parts
 
-    // Iterate through each command line, starting from the second line of input.
-    for (let loopCounter = 0; loopCounter < totalOperations; loopCounter++) {
-        // Split the current command line by spaces to separate the command and its arguments.
-        currentLineData = inputLines[loopCounter + 1].split(" ");
-
-        // Use a switch statement to handle different command types.
-        switch (currentLineData[0][0]) {
-            case "i": // Command to 'insert' a new value.
-                // Convert the second part of the line to a number for the key.
-                currentKey = Number(currentLineData[1]);
-                // Create a new tree node with the extracted key.
-                tempNode = createTreeNode(currentKey);
-                // Insert the newly created node into the tree, updating the root if necessary.
-                treeRoot = addNodeToTree(treeRoot, tempNode);
+    // Loop through each operation command
+    for (let idx = 0; idx < operationCount; idx++) {
+        currentLineParts = inputLines[idx + 1].split(" "); // Split the command line into parts
+        switch (currentLineParts[0][0]) { // Check the first character of the command
+            case "i": // 'i' for insert
+                searchVal = Number(currentLineParts[1]); // Get the value to insert
+                tempNode = createTreeNode(searchVal); // Create a new node
+                treeRoot = addNodeToTree(treeRoot, tempNode); // Insert the node into the tree
                 break;
-
-            case "p": // Command to 'print' the tree contents using different traversals.
-                // Display the tree's values using in-order traversal.
-                displayTreeContent(treeRoot, traverseInOrder);
-                // Display the tree's values using pre-order traversal.
-                displayTreeContent(treeRoot, traversePreOrder);
+            case "p": // 'p' for print (traversals)
+                displayTraversal(treeRoot, traverseInOrder); // Print in-order traversal
+                displayTraversal(treeRoot, traversePreOrder); // Print pre-order traversal
                 break;
-
-            case "f": // Command to 'find' a specific value in the tree.
-                // Extract the key to be searched for from the command line.
-                currentKey = Number(currentLineData[1]);
-                // Attempt to locate the node with the specified key.
-                if (locateNode(treeRoot, currentKey) !== null) {
-                    console.log("yes"); // If the node is found, print "yes".
-                } else {
-                    console.log("no");  // If the node is not found, print "no".
+            case "f": // 'f' for find
+                searchVal = Number(currentLineParts[1]); // Get the value to find
+                if (locateNode(treeRoot, searchVal) !== null) { // If the node is found
+                    console.log("yes");
+                } else { // If the node is not found
+                    console.log("no");
                 }
                 break;
         }

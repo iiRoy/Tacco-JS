@@ -1,183 +1,131 @@
-var consoleInputHandler = require('readline').createInterface(
-  {
-    input: process.stdin,
-    output: process.stdout
-  }
-);
-
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 var dataProcessor;
-
-var collectedInputLines = [];
-
-consoleInputHandler.on('line', function(singleLineEntry) {
-  collectedInputLines.push(singleLineEntry);
+var inputLines = [];
+inputReader.on('line', function(inputLine){
+  inputLines.push(inputLine);
 });
-
-consoleInputHandler.on('close', function() {
-  dataProcessor = initializeInputData(collectedInputLines);
-
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
   console.error("\n");
-
-  var operationStartTime = Date.now();
-
-  ExecuteMainLogic();
-
-  var elapsedDuration = Date.now() - operationStartTime;
-
-  logDebugMessage("time duration : " + (elapsedDuration) + " ms");
-  logDebugMessage("allocated memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + " KB");
+  var startTime = Date.now();
+  executeMainLogic();
+  var elapsedTime = Date.now() - startTime;
+  logDebugMessage("execution time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function createDeepCopy(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function fetchNextInteger() {
-  return transformData(retrieveNextElement(), 1);
+function retrieveNextInteger(){
+  return convertInput(fetchNextLine(), 1);
 }
 
-function fetchNextStringArray() {
-  return transformData(retrieveNextElement(), 2);
+function retrieveNextStringArray(){
+  return convertInput(fetchNextLine(), 2);
 }
 
-function fetchNextIntegerArray() {
-  return transformData(retrieveNextElement(), 4);
+function retrieveNextIntegerArray(){
+  return convertInput(fetchNextLine(), 4);
 }
 
-function fetchNextCharacterArray() {
-  return transformData(retrieveNextElement(), 6);
+function retrieveNextCharacterArray(){
+  return convertInput(fetchNextLine(), 6);
 }
 
-function retrieveNextElement() {
-  return dataProcessor.getNextEntry();
+function fetchNextLine(){
+  return dataProcessor.getNextItem();
 }
 
-function hasMoreInput() {
+function hasMoreLines(){
   return dataProcessor.checkAvailability();
 }
 
-function initializeInputData(rawEntries) {
-  var dataStructure = {
-    entryCollection: rawEntries,
-    currentReadIndex: 0,
-    maximumEntries: rawEntries.length,
-
-    checkAvailability: function() {
-      return (this.currentReadIndex < this.maximumEntries);
+function initializeInputHandler(inputData){  
+  var handlerObject = {
+    lineBuffer : inputData,
+    currentPosition : 0,
+    totalLines : inputData.length,
+    checkAvailability : function(){
+      return (this.currentPosition < this.totalLines);
     },
-
-    getNextEntry: function() {
-      if (!this.checkAvailability()) {
-        throw new Error("InputBufferExhausted No more entries available");
+    getNextItem : function(){
+      if(!this.checkAvailability()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        var currentEntry = this.entryCollection[this.currentReadIndex];
-        this.currentReadIndex++;
-        return currentEntry;
+        var currentInputLine = this.lineBuffer[this.currentPosition];
+        this.currentPosition++;
+        return currentInputLine;
       }
     }
   };
-
-  return dataStructure;
+  return handlerObject;
 }
 
-function outputToConsole(messageContent) {
-  console.log(messageContent);
+function displayResult(outputContent){
+  console.log(outputContent);
 }
 
-function logDebugMessage(debugInfo) {
-  console.error("debug output: " + require("util").inspect(debugInfo, false, null));
+function logDebugMessage(debugInfo){
+  console.error("debug_output:" + require("util").inspect(debugInfo, false, null));
 }
 
-// Data transformation modes for the utility function.
-// Default: return input as is.
-// Mode 1: Parse to integer.
-// Mode 2: Split by single space into string array.
-// Mode 4: Split by single space and map to number array.
-// Mode 6: Split into character array.
-// Mode 7: Split into character array and map to number array.
-// Mode 8: Join array elements with single space.
-// Mode 9: Join array elements with newline.
-// Mode 0: Join array elements without separator.
-function transformData(inputValue, conversionMode) {
+function convertInput(inputValue, conversionType){
   try {
-    switch (conversionMode) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (err) {
+  } catch(error) {
     return inputValue;
   }
 }
 
-function ExecuteMainLogic() {
-  var totalItems = fetchNextInteger();
-  var sortedNumericList = [];
-
-  for (var iterationCounter = 0; iterationCounter < totalItems; iterationCounter++) {
-    var currentValue = fetchNextInteger();
-
-    if (iterationCounter === 0) {
-      sortedNumericList.push(currentValue);
-      continue;
-    }
-
-    var insertionPosition = findAppropriateIndex(sortedNumericList, currentValue);
-
-    if (insertionPosition === sortedNumericList.length) {
-      sortedNumericList.push(currentValue);
-    } else {
-      sortedNumericList[insertionPosition] = currentValue;
-    }
-    // logDebugMessage(sortedNumericList);
-  }
-
-  outputToConsole(sortedNumericList.length);
+function executeMainLogic(){
+	var elementCount = retrieveNextInteger();
+	var sortedSequence = [];
+	for(var loopCounter = 0; loopCounter < elementCount; loopCounter++){
+		var currentValue = retrieveNextInteger();
+		if(loopCounter === 0){
+			sortedSequence.push(currentValue);
+			continue;
+		}
+		var insertionPoint = findInsertionPoint(sortedSequence, currentValue);
+		if(insertionPoint === sortedSequence.length){
+			sortedSequence.push(currentValue);
+		} else {
+			sortedSequence[insertionPoint] = currentValue;
+		}
+	}
+	displayResult(sortedSequence.length);
 }
 
-function findAppropriateIndex(orderedCollection, targetElement) {
-  // The 'orderedCollection' is presumed to be sorted in ascending order.
-  // We use a binary search approach where 'goodIdx' represents a valid (too small)
-  // position and 'badIdx' represents an invalid (too large) position.
-  // The goal is to find the smallest index where targetElement could be inserted
-  // to maintain sorted order, replacing an existing element if targetElement is smaller.
-
-  var badIdx = -1; // Represents the largest index confirmed to be 'too small'
-  var goodIdx = orderedCollection.length; // Represents the smallest index confirmed to be 'large enough'
-
+function findInsertionPoint(orderedCollection, targetValue){
+  // The orderedCollection is assumed to be sorted in ascending order.
+  // We treat the right side as the valid area and the left side as the invalid area.
+  // The element (index) returned by targetValue will be:
+  // positiveBound: minimum value in the valid part, negativeBound: maximum value in the invalid part.
+  var negativeBound = -1;
+  var positiveBound = orderedCollection.length;
   var midPoint;
-
-  while (Math.abs(goodIdx - badIdx) > 1) {
-    midPoint = Math.floor((goodIdx + badIdx) / 2);
-
-    if (orderedCollection[midPoint] < targetElement) {
-      // If the element at midPoint is smaller than our target,
-      // then targetElement must be at or after midPoint.
-      // So, midPoint becomes our new 'badIdx' (elements before it are too small).
-      badIdx = midPoint;
+  while(Math.abs(positiveBound - negativeBound) > 1){
+    midPoint = Math.floor((positiveBound + negativeBound) / 2);
+    if(orderedCollection[midPoint] < targetValue){
+       positiveBound = midPoint;
     } else {
-      // If the element at midPoint is greater than or equal to our target,
-      // then targetElement could be at midPoint or before it.
-      // So, midPoint becomes our new 'goodIdx' (elements at or after it are large enough).
-      goodIdx = midPoint;
+       negativeBound = midPoint;
     }
   }
-  return goodIdx;
-  // Alternatively, to return the index where the target *would* be if it were strictly greater:
-  // return badIdx;
+  return positiveBound;
 }

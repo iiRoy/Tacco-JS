@@ -1,15 +1,13 @@
-const numberSequence = [2, 4, 2, 0, 2, 6];
-const newlineCharValue = 10;
-const asciiZeroOffset = 48;
+'use strict';
 
-const finalCharacterCodes = numberSequence.flatMap((currentDigit, currentIdx, fullArray) => {
-    const digitAscii = asciiZeroOffset + currentDigit;
-    if (currentIdx < fullArray.length - 1) {
-        return [digitAscii, newlineCharValue];
-    }
-    return [digitAscii];
-});
+const [x, op, y] = require('fs')
+   .readFileSync('/dev/stdin', 'utf8')
+   .trim()
+   .split(/\s+/);
 
-const ultimateContent = String.fromCharCode(...finalCharacterCodes);
+const operations = {
+   '+': (a, b) => a + b,
+   '-': (a, b) => a - b
+};
 
-console.log(ultimateContent);
+console.log(operations[op](Number(x), Number(y)));

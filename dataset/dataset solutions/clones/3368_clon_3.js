@@ -1,34 +1,33 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let fullInputStreamAccumulator = '';
-
-process.stdin.on('data', (inputSegment) => {
-    fullInputStreamAccumulator += inputSegment;
+var accumulatedRawData = '';
+process.stdin.on('data', function(inputChunk) {
+    accumulatedRawData += inputChunk;
 });
 
-process.stdin.on('end', () => {
-    const receivedInputLines = fullInputStreamAccumulator.split(/\r?\n/);
-    analyzeReceivedData(receivedInputLines);
+process.stdin.on('end', function() {
+    const linesFromInput = accumulatedRawData.split(/\r?\n/);
+    processInputContent(linesFromInput);
 });
 
-function analyzeReceivedData(inputDataCollection) {
-    if (!inputDataCollection || inputDataCollection.length === 0) {
-        console.log(0);
-        return;
-    }
+function determineTwoCount(sourceText) {
+    const targetDigit = '2';
+    const searchRegex = new RegExp(targetDigit, 'g');
+    const foundOccurrences = sourceText.match(searchRegex);
 
-    const processedCombinedString = inputDataCollection.join(',');
+    // If no matches are found, .match() returns null.
+    // We want to treat this as 0 occurrences for the count.
+    return foundOccurrences ? foundOccurrences.length : 0;
+}
 
-    const searchTargetDigit = '2';
+function processInputContent(inputLinesArray){
+  // The original code `input = input + ""` on an array converts it to a string
+  // by joining elements with commas. We explicitly replicate this behavior.
+  const combinedInputString = String(inputLinesArray);
 
-    const searchPattern = new RegExp(searchTargetDigit, 'g');
-    
-    const foundOccurrencesIterator = processedCombinedString.matchAll(searchPattern);
-    
-    const detectedMatches = Array.from(foundOccurrencesIterator);
+  // Utilize the helper function to perform the core counting logic
+  const finalCount = determineTwoCount(combinedInputString);
 
-    const finalCountResult = detectedMatches.length;
-
-    console.log(finalCountResult);
+  console.log(finalCount);
 }

@@ -1,82 +1,73 @@
-/*
- * This module processes a series of numerical inputs
- * to find the maximum contiguous sub-array sum for each
- * provided sequence.
- */
+function processInputData() {
+  // Declare variables for loop indices, sequence size, and sum calculations.
+  let
+    idx, outerLoopIdx, innerLoopIdx, countElements,
+    numberSequence, maximumSum, currentSum;
 
-function calcProc( )
-{ // Entry point for the primary calculation routine
-  var
-    idxX, // Main index for traversing input lines
-    idxY, // Secondary index for array population and sub-array start
-    idxZ, // Tertiary index for calculating sums within sub-arrays
-    elemNum, // Stores the count of elements for the current sequence
-    valArray, // Array to hold the numerical values of the current sequence
-    maxVal, // Holds the maximum sum found for the current sequence
-    curTotal; // Accumulator for the current sub-array sum
+  // The primary loop processes multiple sequences from the input.
+  // It reads the first number of each line as the count of elements for the current sequence.
+  // The loop continues as long as a valid positive integer is parsed for 'countElements'.
+  for (idx = 0; countElements = parseInt(rawData[idx++], 10);) {
+    // Initialize an array to store the numerical sequence for the current iteration.
+    numberSequence = [];
 
-  // Loop through the entryData, parsing sequence sizes
-  for(idxX = 0; elemNum = parseInt(entryData[idxX++], 10); )
-  {
-    // Initialize the array for the current numerical sequence
-    valArray = [];
-
-    // Populate the valArray with numbers from entryData
-    for(idxY = 0; idxY < elemNum; idxY++)
-    {
-      valArray[idxY] = parseInt(entryData[idxX + idxY], 10);
+    // Populate the 'numberSequence' array with 'countElements' integers.
+    // These integers are read from subsequent lines in the 'rawData' array.
+    for (outerLoopIdx = 0; outerLoopIdx < countElements; outerLoopIdx++) {
+      numberSequence[outerLoopIdx] = parseInt(rawData[idx + outerLoopIdx], 10);
     }
-    // Adjust the main index to skip the processed sequence elements
-    idxX += elemNum;
 
-    // Initialize maxVal to a very low number to ensure any sum is greater
-    maxVal = Number.NEGATIVE_INFINITY; /* This will correctly capture
-                                            even negative maximum sums */
+    // Adjust the main input index to point to the line immediately after the current sequence's data.
+    idx += countElements;
 
-    // Iterate through all possible starting points for sub-arrays
-    for(idxY = 0; idxY < elemNum; idxY++)
-    {
-      // Reset the current total for each new starting point
-      curTotal = 0;
-      // Iterate from the current starting point to the end of the sequence
-      for(idxZ = idxY; idxZ < elemNum; idxZ++)
-      {
-        // Add the current element to the running total
-        curTotal += valArray[idxZ];
-        // Check if the current total is greater than the overall maximum found
-        if(curTotal > maxVal)
-        {
-          maxVal = curTotal; // Update the maximum value
+    // Initialize 'maximumSum' to negative infinity. This ensures that any valid sum found
+    // within the sequence will be greater than this initial value.
+    maximumSum = -Infinity;
+
+    // This nested loop structure calculates the maximum subarray sum using a brute-force approach.
+    // The outer loop iterates through all possible starting points of a subarray.
+    for (outerLoopIdx = 0; outerLoopIdx < countElements; outerLoopIdx++) {
+      // Reset 'currentSum' for each new starting point of a subarray.
+      currentSum = 0;
+
+      // The inner loop iterates through all possible ending points of a subarray,
+      // starting from the current 'outerLoopIdx'.
+      for (innerLoopIdx = outerLoopIdx; innerLoopIdx < countElements; innerLoopIdx++) {
+        // Add the current element of the sequence to the running sum.
+        currentSum += numberSequence[innerLoopIdx];
+
+        // If the 'currentSum' is greater than the 'maximumSum' found so far, update 'maximumSum'.
+        if (currentSum > maximumSum) {
+          maximumSum = currentSum;
         }
       }
     }
-    // Output the maximum sum for the current sequence to the console
-    console.log(maxVal);
+    // After processing all subarrays for the current sequence, print the maximum sum found.
+    console.log(maximumSum);
   }
 }
 
-// Declare a global variable to accumulate incoming data
-var
-  entryData = ''; // Initialized as an empty string
+// Declare a variable to hold all incoming standard input data as a single string.
+let
+  rawData = '';
 
-// Resume the standard input stream to listen for data
+// Activate the standard input stream to begin receiving data.
 process.stdin.resume();
-
-// Set the encoding for the incoming data to UTF-8
+// Set the character encoding for the incoming data to UTF-8.
 process.stdin.setEncoding('utf8');
 
-// Register an event listener for when data chunks are received
-process.stdin.on('data', function (dataPiece)
-{
-  // Append each incoming dataPiece to the entryData string
-  entryData += dataPiece;
+// Attach an event listener for 'data' events on the standard input stream.
+// Each time a chunk of data is received, it is appended to the 'rawData' string.
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
 });
 
-// Register an event listener for when the input stream ends
-process.stdin.on('end', function ( )
-{
-  // Split the accumulated entryData by newline characters into an array of strings
-  entryData = entryData.split('\n');
-  // Call the primary processing routine to begin calculations
-  calcProc();
+// Attach an event listener for the 'end' event on the standard input stream.
+// This event fires when there is no more data to be read from stdin.
+process.stdin.on('end', function() {
+  // Once all data is received, split the 'rawData' string into an array of strings,
+  // using the newline character as the delimiter. Each element in the array will be a line from the input.
+  rawData = rawData.split('\n');
+  // Call the main processing function to handle the parsed input data.
+  processInputData();
 });

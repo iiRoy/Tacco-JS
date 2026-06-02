@@ -1,17 +1,17 @@
-const calculateOutcome = (rawData) => {
-    const [firstOperand, secondOperand, thirdOperand] = rawData.split(" ").map(val => parseInt(val, 10));
+function processInputAndCompute(rawInputText) {
+    const numericValues = rawInputText.split(" ").map(Number);
+    const [firstOperand, secondOperand, thirdOperand] = numericValues;
 
-    const parityCheckValue = thirdOperand - secondOperand;
+    const calculateEvenCase = (op2, op3) => (op3 - op2) / 2;
+    const calculateOddCase = (op1, op2, op3) => Math.min(op1 - op2, op3 - 1);
 
-    const isEvenFlag = Number(!(parityCheckValue & 1));
+    const isDifferenceEven = (thirdOperand - secondOperand) % 2 === 0;
 
-    const optionOne = firstOperand - secondOperand;
-    const optionTwo = thirdOperand - 1;
-    const oddCaseResult = (optionOne + optionTwo - Math.abs(optionOne - optionTwo)) / 2;
+    const finalOutcome = isDifferenceEven
+        ? calculateEvenCase(secondOperand, thirdOperand)
+        : calculateOddCase(firstOperand, secondOperand, thirdOperand);
 
-    const finalOutcome = (isEvenFlag * (parityCheckValue / 2)) + ((1 - isEvenFlag) * oddCaseResult);
+    console.log(finalOutcome);
+}
 
-    console.info(finalOutcome);
-};
-
-calculateOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

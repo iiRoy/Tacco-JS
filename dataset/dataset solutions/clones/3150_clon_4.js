@@ -1,31 +1,24 @@
-const processSourceData = (sourceData) => {
-    const numericElements = sourceData.match(/[-+]?([0-9]*\.[0-9]+|[0-9]+)/g).map(parseFloat);
+const processInputData = rawData => {
+    const numericValues = rawData.split(' ').reduce((accumulator, currentString) => {
+        accumulator.push(parseFloat(currentString));
+        return accumulator;
+    }, []);
 
-    const firstQuantity = numericElements[0];
-    const secondQuantity = numericElements[1];
-    const limitingFactor = numericElements[2];
+    const firstVal = numericValues[0];
+    const secondVal = numericValues[1];
+    const thirdVal = numericValues[2];
 
-    const deriveIntermediateValue = (q1, q2) => {
-        if (q1 > q2) {
-            return 0;
-        } else {
-            return q2 / q1;
-        }
-    };
+    const ratioCalculator = new Map();
+    ratioCalculator.set(true, () => 0);
+    ratioCalculator.set(false, (numerator, denominator) => numerator / denominator);
 
-    const determineFinalOutcome = (interimVal, limit) => {
-        if (interimVal >= limit) {
-            return limit;
-        } else {
-            return Math.floor(interimVal);
-        }
-    };
+    const computedRatio = ratioCalculator.get(firstVal > secondVal)(secondVal, firstVal);
 
-    const intermediateResult = deriveIntermediateValue(firstQuantity, secondQuantity);
-    const ultimateResult = determineFinalOutcome(intermediateResult, limitingFactor);
+    const resultSelector = new Map();
+    resultSelector.set(true, (valA, valB) => valB);
+    resultSelector.set(false, (valA, valB) => Math.trunc(valA));
 
-    process.stdout.write(ultimateResult.toString() + '\n');
+    console.log(resultSelector.get(computedRatio >= thirdVal)(computedRatio, thirdVal));
 };
 
-const rawInputContent = Buffer.from(require('node:fs').readFileSync(0)).toString('utf8');
-processSourceData(rawInputContent);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

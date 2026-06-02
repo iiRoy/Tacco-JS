@@ -1,42 +1,46 @@
-function ProcessDataStream(sourceText) {
-  // Divide the incoming string into lines.
-  sourceText = sourceText.split('\n');
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  // The first line will be at index 0, the second at index 1, and so on.
+  let processedLines = rawData.split("\n");
 
-  // The first line indicates the number of elements.
-  let problemSize = sourceText[0];
+  // Extract the number of elements from the first line.
+  let countElements = processedLines[0];
 
-  // Parse the second line into a numeric array.
-  const sequenceAlpha = sourceText[1].split(' ').map(parseFloat);
+  // Parse the second line into an array of numbers for sequence A.
+  let sequenceA = processedLines[1].split(" ").map(Number);
 
-  // Parse the third line into a numeric array.
-  const sequenceBeta = sourceText[2].split(' ').map(parseFloat);
+  // Parse the third line into an array of numbers for values B.
+  let valuesB = processedLines[2].split(" ").map(Number);
 
-  // Parse the fourth line into a numeric array.
-  const sequenceGamma = sourceText[3].split(' ').map(parseFloat);
+  // Parse the fourth line into an array of numbers for bonuses C.
+  let bonusesC = processedLines[3].split(" ").map(Number);
 
-  // Helper function to aggregate numbers in an array.
-  const calculateTotal = function(valueArray) {
-    let currentTotal = 0.0;
-    for (let k = 0; k < valueArray.length; ++k) {
-      currentTotal += valueArray[k];
+  // Define a utility function to compute the sum of elements in a numeric array.
+  const calculateTotal = function(numericArray) {
+    let currentTotal = 0; // Initialize accumulator for the sum.
+    // Iterate through each element of the provided array.
+    for (let idx = 0; idx < numericArray.length; ++idx) {
+      currentTotal += numericArray[idx]; // Add the current element to the total.
     }
-    return currentTotal;
+    return currentTotal; // Return the final sum.
   };
 
-  // Initialize the running total with the sum of the beta sequence.
-  let grandTotal = calculateTotal(sequenceBeta);
+  // Calculate the initial total sum using the values from array B.
+  let finalScore = calculateTotal(valuesB);
 
-  // Iterate through the sequences to apply conditional adjustments.
-  for (let idx = 0; idx < problemSize - 1; ++idx) {
-    // Check for a specific pattern in the alpha sequence.
-    if (sequenceAlpha[idx] === sequenceAlpha[idx + 1] - 1) {
-      // Apply an additional value from the gamma sequence if the condition is met.
-      grandTotal += sequenceGamma[idx];
+  // Iterate through sequence A to check for specific conditions and apply bonuses.
+  // The loop runs from the first element up to the second-to-last element.
+  for (let k = 0; k < countElements - 1; k++) {
+    // Check if the current element in sequence A is exactly one less than the next element.
+    if (sequenceA[k] === sequenceA[k + 1] - 1) {
+      // If the condition is met, add the corresponding bonus from array C to the final score.
+      finalScore = finalScore + bonusesC[k];
     }
   }
-  // Display the final computed aggregate.
-  console.info(grandTotal);
+
+  // Output the computed final score to the console.
+  console.log(finalScore);
 }
 
-// Execute the main processing logic by reading from standard input.
-ProcessDataStream(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

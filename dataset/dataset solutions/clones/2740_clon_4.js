@@ -1,45 +1,48 @@
-function ProcessBallGame(sourceText) {
-    const textLines = sourceText.trim().split('\n');
-    const overallCapacity = Number(textLines[0]);
-    const initialConfiguration = textLines[1].split(' ').map(Number);
+const memoizedDecisions = new Map();
 
-    const calculatedParities = new Map();
-    const activatedPositions = new Set();
+const determineToggleState = (currentBallZeroIndex, totalBallCount, desiredFinalStates) => {
+    if (memoizedDecisions.has(currentBallZeroIndex)) {
+        return memoizedDecisions.get(currentBallZeroIndex);
+    }
 
-    // Iterate through positions in descending order, from overallCapacity down to 1
-    Array.from({ length: overallCapacity }, (_, index) => overallCapacity - index).forEach(currentPosition => {
-        // Calculate the sum (modulo 2) of parities of positions that are multiples of currentPosition
-        // and have already been calculated (i.e., are greater than currentPosition).
-        const sumOfHigherMultiplesParity = Array.from(
-            { length: Math.floor(overallCapacity / currentPosition) - 1 },
-            (_, multiplierIndex) => (multiplierIndex + 2) * currentPosition
-        ).reduce((accumulator, dependentPosition) => {
-            // Retrieve the previously calculated parity for the dependent position
-            // Use 0 as default if not found (should not happen with correct iteration order)
-            return (accumulator + (calculatedParities.get(dependentPosition) || 0)) % 2;
-        }, 0);
+    const currentBallOneIndex = currentBallZeroIndex + 1;
+    let accumulatedToggleEffect = 0;
 
-        // Determine the parity for the currentPosition based on its initial state
-        // and the sum of parities of its higher multiples.
-        const currentPositionFinalParity = (sumOfHigherMultiplesParity + initialConfiguration[currentPosition - 1]) % 2;
+    const maxMultiplier = Math.floor(totalBallCount / currentBallOneIndex);
+    const relevantMultipliers = Array.from({ length: Math.max(0, maxMultiplier - 1) }, (_, k) => k + 2);
 
-        // Store the calculated parity for the current position
-        calculatedParities.set(currentPosition, currentPositionFinalParity);
+    accumulatedToggleEffect = relevantMultipliers.reduce((sum, multiplier) => {
+        const multipleBallZeroIndex = (currentBallOneIndex * multiplier) - 1;
+        return sum + determineToggleState(multipleBallZeroIndex, totalBallCount, desiredFinalStates);
+    }, 0);
 
-        // If the final parity for this position is 1, add it to the set of activated positions
-        if (currentPositionFinalParity === 1) {
-            activatedPositions.add(currentPosition);
+    const currentBallDecision = (desiredFinalStates[currentBallZeroIndex] + accumulatedToggleEffect) % 2;
+
+    memoizedDecisions.set(currentBallZeroIndex, currentBallDecision);
+    return currentBallDecision;
+};
+
+function Main(programInput) {
+    const inputLines = programInput.split('\n');
+    const ballQuantity = Number(inputLines[0]);
+    const targetStates = inputLines[1].split(' ').map(Number);
+
+    memoizedDecisions.clear();
+
+    const allToggleDecisions = Array.from({ length: ballQuantity }, (_, index) => index)
+        .map(ballIdx => determineToggleState(ballIdx, ballQuantity, targetStates));
+
+    const toggledBallIndices = allToggleDecisions.reduce((accumulator, decisionValue, decisionIndex) => {
+        if (decisionValue === 1) {
+            accumulator.push(decisionIndex + 1);
         }
-    });
+        return accumulator;
+    }, []);
 
-    // Output the count of activated positions
-    console.log(activatedPositions.size);
-
-    // If there are activated positions, output them space-separated and sorted numerically
-    if (activatedPositions.size > 0) {
-        console.log(Array.from(activatedPositions).sort((a, b) => a - b).join(" "));
+    console.log(toggledBallIndices.length);
+    if (toggledBallIndices.length > 0) {
+        console.log(toggledBallIndices.join(' '));
     }
 }
 
-// This section handles standard input/output and should not be modified by the problem solver.
-ProcessBallGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

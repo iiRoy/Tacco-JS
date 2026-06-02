@@ -1,15 +1,15 @@
-'use strict'
-// This module processes input strings to extract initials.
-const   processInput   =   (  rawData  )  =>   {
-	// First, clean the raw string by trimming whitespace and splitting into lines.
-	const   parsedLines   =   rawData  .  trim  (  )  .  split  (  '\n'  )  ;
+'use strict';
 
-	// Extract the initial set of components from the very first line.
-	let     wordParts     =   parsedLines  [  0  ]  .  split  (  ' '  )  ;
+const runApplication = (rawData) => {
+  // Process the raw input string by trimming whitespace and splitting into lines.
+  const parsedLines = rawData.trim().split('\n');
 
-	// Display the first character of the first three extracted components.
-	console  .  log  (  wordParts  [  0  ]  [  0  ]   +   wordParts  [  1  ]  [  0  ]   +   wordParts  [  2  ]  [  0  ]  )  ;
-}
+  // Take the first line and split it into individual word parts based on spaces.
+  let wordParts = parsedLines[0].split(' ');
 
-// Invoke the primary routine with data read from the standard input stream.
-processInput  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ;
+  // Log the concatenation of the first character of the first three word parts.
+  console.log(wordParts[0][0] + wordParts[1][0] + wordParts[2][0]);
+};
+
+// Execute the primary application function with data read from standard input.
+runApplication(require('fs').readFileSync('/dev/stdin', 'utf8'));

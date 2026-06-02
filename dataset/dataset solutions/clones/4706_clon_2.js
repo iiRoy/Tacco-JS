@@ -1,142 +1,137 @@
-// This section handles input processing and initial setup.
-var inputReader = require('readline') . buildChannel ( {
-  sourceStream : process.stdin,
-  sinkStream   : process.stdout
-} ) ;
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var inputProcessor;
+var inputLines = [];
 
-var dataStore;
-var receivedLines = [];
+inputReader.on('line', function(lineContent) {
+  inputLines.push(lineContent);
+});
 
-inputReader . addListener ( 'line' , function ( currentLineData ) {
-  receivedLines . push ( currentLineData ) ;
-} ) ;
+inputReader.on('close', function() {
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑ Input ↓ Output');
+  executeLogic();
+});
 
-inputReader . addListener ( 'close' , function ( ) {
-  dataStore = initializeData ( receivedLines ) ;
-  console . warn ( '\n↑Input ↓Output' ) ; // Alert for input/output sections.
-  executePrimaryLogic ( ) ;
-} ) ;
-
-/**
- * Creates a deep copy of an object or a Set.
- * @param {object|Set} originalItem - The item to duplicate.
- * @returns {object|Set} A new, independent copy.
- */
-function duplicateObject ( originalItem ) {
-  return ( originalItem instanceof Set ) ? new Set ( Array . from ( originalItem ) ) : JSON . parse ( JSON . stringify ( originalItem ) ) ;
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Input retrieval functions for different data types.
-function fetchInteger ( ) { return transformInput ( retrieveNextValue ( ) , 1 ) ; }
-function fetchStringArray ( ) { return transformInput ( retrieveNextValue ( ) , 2 ) ; }
-function fetchIntegerArray ( ) { return transformInput ( retrieveNextValue ( ) , 4 ) ; }
-function fetchCharacterArray ( ) { return transformInput ( retrieveNextValue ( ) , 6 ) ; }
+function retrieveInteger() {
+  return performConversion(fetchNextToken(), 1);
+}
 
-function retrieveNextValue ( ) { return dataStore . retrieveNextValue ( ) ; }
-function hasMoreElements ( ) { return dataStore . hasMoreElements ( ) ; }
+function retrieveStringArray() {
+  return performConversion(fetchNextToken(), 2);
+}
 
-/**
- * Initializes the data source object for sequential input reading.
- * @param {string[]} incomingContent - An array of strings representing input lines.
- * @returns {object} An object with methods to access input.
- */
-function initializeData ( incomingContent ) {
+function retrieveIntegerArray() {
+  return performConversion(fetchNextToken(), 4);
+}
+
+function retrieveCharacterArray() {
+  return performConversion(fetchNextToken(), 6);
+}
+
+function fetchNextToken() {
+  return inputProcessor.fetchNextToken();
+}
+
+function hasMoreTokens() {
+  return inputProcessor.hasMoreTokens();
+}
+
+function initializeInputHandler(dataInput) {
   return {
-    contentArray : incomingContent,
-    currentPosition : 0,
-    maximumElements : incomingContent . length,
-
-    hasMoreElements : function ( ) { return ( this . currentPosition < this . maximumElements ) ; },
-    retrieveNextValue : function ( ) {
-      if ( this . hasMoreElements ( ) ) {
-        return this . contentArray [ this . currentPosition++ ] ;
+    dataRows: dataInput,
+    currentPosition: 0,
+    totalRows: dataInput.length,
+    hasMoreTokens: function() {
+      return (this.currentPosition < this.totalRows);
+    },
+    fetchNextToken: function() {
+      if (this.hasMoreTokens()) {
+        return this.dataRows[this.currentPosition++];
       } else {
-        throw 'InputOutOfBoundsException : No further input available' ;
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
-  } ;
+  };
 }
 
-/**
- * Displays a result to standard output.
- * @param {*} resultContent - The content to be displayed.
- */
-function displayResult ( resultContent ) { console . log ( resultContent ) ; }
-
-/**
- * Logs detailed debugging information to standard error.
- * @param {*} debugPayload - The data to inspect and log.
- */
-function logDebuggingInfo ( debugPayload ) {
-  console . error ( 'debug_output: ' + require ( 'util' ) . inspect ( debugPayload , false , null ) ) ;
+function printResult(outputValue) {
+  console.log(outputValue);
 }
 
-// Parameter 'conversionType' determines the transformation.
-// 1: parse as integer.
-// 2: split by space.
-// 4: split by space and parse as numbers.
-// 6: split by single characters.
-// 7: split by single characters and parse as numbers.
-// 8: join with spaces.
-// 9: join with newlines.
-// 0: join without any separator.
-// Default: return as is.
-function transformInput ( valueToConvert , conversionType ) {
+function logDebug(debugMessage) {
+  console.error('debug:' + require('util').inspect(debugMessage, false, null));
+}
+
+function performConversion(inputValue, conversionType) {
   try {
-    switch ( conversionType ) {
-      case 1:  return parseInt ( valueToConvert ) ;
-      case 2:  return valueToConvert . split ( ' ' ) ;
-      case 4:  return valueToConvert . split ( ' ' ) . map ( Number ) ;
-      case 6:  return valueToConvert . split ( '' ) ;
-      case 7:  return valueToConvert . split ( '' ) . map ( Number ) ;
-      case 8:  return valueToConvert . join ( ' ' ) ;
-      case 9:  return valueToConvert . join ( '\n' ) ;
-      case 0:  return valueToConvert . join ( '' ) ;
-      default: return valueToConvert ;
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(' ');
+      case 4:
+        return inputValue.split(' ').map(Number);
+      case 6:
+        return inputValue.split('');
+      case 7:
+        return inputValue.split('').map(Number);
+      case 8:
+        return inputValue.join(' ');
+      case 9:
+        return inputValue.join('\n');
+      case 0:
+        return inputValue.join('');
+      default:
+        return inputValue;
     }
-  } catch ( errorObject ) {
-    return valueToConvert ; // Fallback in case of conversion error.
+  } catch (error) {
+    return inputValue;
   }
 }
 
-// Core application logic begins here.
-function executePrimaryLogic ( ) {
+function executeLogic() {
+  var countElements = retrieveInteger();
+  var initialState = "S";
+  var sequenceData = retrieveCharacterArray();
+  var stateTracker = ["S", "S"];
 
-  var inputLength = fetchInteger ( ) ;
-  var initialState = "S" ;
-  var characterSequence = fetchCharacterArray ( ) ;
-  var stateTracker = [ "S" , "S" ] ;
-
-  for ( var iteratorIndex = 1 ; iteratorIndex < inputLength ; iteratorIndex++ ) {
-    if ( characterSequence [ iteratorIndex ] == "o" ) {
-      if ( stateTracker [ iteratorIndex ] == "S" ) {
-        stateTracker . push ( stateTracker [ iteratorIndex - 1 ] ) ;
+  for (var idx = 1; idx < countElements; idx++) {
+    if (sequenceData[idx] === "o") {
+      if (stateTracker[idx] === "S") {
+        stateTracker.push(stateTracker[idx - 1]);
       } else {
-        if ( stateTracker [ iteratorIndex - 1 ] == "S" ) {
-          stateTracker . push ( "W" ) ;
+        if (stateTracker[idx - 1] === "S") {
+          stateTracker.push("W");
         } else {
-          stateTracker . push ( "S" ) ;
+          stateTracker.push("S");
         }
       }
     } else {
-      if ( stateTracker [ iteratorIndex ] == "S" ) {
-        if ( stateTracker [ iteratorIndex - 1 ] == "S" ) {
-          stateTracker . push ( "W" ) ;
+      if (stateTracker[idx] === "S") {
+        if (stateTracker[idx - 1] === "S") {
+          stateTracker.push("W");
         } else {
-          stateTracker . push ( "S" ) ;
+          stateTracker.push("S");
         }
       } else {
-        stateTracker . push ( stateTracker [ iteratorIndex - 1 ] ) ;
+        stateTracker.push(stateTracker[idx - 1]);
       }
     }
   }
 
-  logDebuggingInfo ( stateTracker . join ( "" ) ) ;
+  logDebug(stateTracker.join(""));
 
-  if ( stateTracker [ inputLength ] == initialState ) {
-    stateTracker . pop ( ) ;
-    displayResult ( stateTracker . join ( "" ) ) ;
+  if (stateTracker[countElements] === initialState) {
+    stateTracker.pop();
+    printResult(stateTracker.join(""));
   } else {
-    displayResult ( -1 ) ;
+    printResult(-1);
   }
 }

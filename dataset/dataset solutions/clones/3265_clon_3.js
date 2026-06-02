@@ -1,60 +1,29 @@
-function ProcessInputData(rawDataString) {
-    // Define the specific digits we are looking for.
-    const REQUIRED_DIGITS = ['1', '9', '7', '4'];
+function processInputData(rawInputString) {
+    const inputNumberStrings = rawInputString.split(" ");
 
-    // Initialize a Set to keep track of the unique required digits found.
-    const foundDistinctDigits = new Set();
+    const requiredNumbersSet = new Set([1, 9, 7, 4]);
+    const expectedMatchCount = requiredNumbersSet.size;
 
-    // Initialize a counter for how many of the first four tokens match any of our required digits.
-    let matchedTargetCount = 0;
+    const uniqueRequiredNumbersFound = new Set();
+    let totalMatchingElements = 0;
 
-    // Pre-process the raw input string: trim whitespace and split into individual tokens.
-    const trimmedInput = rawDataString.trim();
-    const inputTokens = trimmedInput.split(/\s+/); // Use regex to handle multiple spaces
+    for (let loopIndex = 0; loopIndex < inputNumberStrings.length; loopIndex++) {
+        const currentNumericValue = parseInt(inputNumberStrings[loopIndex], 10);
 
-    // Early exit if there aren't enough tokens to check the first four positions.
-    if (inputTokens.length < 4) {
-        console.log("NO");
-        return;
-    }
-
-    // Iterate through the first four tokens of the input.
-    for (let k = 0; k < 4; k++) {
-        const currentToken = inputTokens[k];
-
-        // Check if the current token is one of our required digits using a switch statement.
-        switch (currentToken) {
-            case '1':
-                foundDistinctDigits.add('1');
-                matchedTargetCount++;
-                break;
-            case '9':
-                foundDistinctDigits.add('9');
-                matchedTargetCount++;
-                break;
-            case '7':
-                foundDistinctDigits.add('7');
-                matchedTargetCount++;
-                break;
-            case '4':
-                foundDistinctDigits.add('4');
-                matchedTargetCount++;
-                break;
-            // No default case needed as we only care about these specific values.
+        if (requiredNumbersSet.has(currentNumericValue)) {
+            uniqueRequiredNumbersFound.add(currentNumericValue);
+            totalMatchingElements++;
         }
     }
 
-    // Determine the final result based on two conditions:
-    // 1. All unique required digits ('1', '9', '7', '4') must have been found.
-    // 2. Exactly four of the processed tokens must have been among these required digits.
-    //    This ensures that no "other" numbers were present in the first four positions
-    //    and that the count of matching digits is exactly four.
-    if (foundDistinctDigits.size === REQUIRED_DIGITS.length && matchedTargetCount === 4) {
+    const allRequiredFound = uniqueRequiredNumbersFound.size === expectedMatchCount;
+    const correctTotalMatches = totalMatchingElements === expectedMatchCount;
+
+    if (allRequiredFound && correctTotalMatches) {
         console.log("YES");
     } else {
         console.log("NO");
     }
 }
 
-// Read input from standard input and pass it to our processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

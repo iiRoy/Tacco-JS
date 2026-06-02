@@ -1,28 +1,28 @@
-function processInputAndCompute(rawText) {
-    const extractedData = rawText.split('\n').map(line => line.match(/\S+/g) || []).filter(arr => arr.length > 0);
+function processInputData(rawData) {
+    const processedLines = rawData.trim().split("\n").map(line => line.split(" "));
+    const sequenceSize = parseInt(processedLines[0][0], 10);
+    const numericSequence = processedLines[1].map(element => parseInt(element, 10));
 
-    const itemCount = Number(extractedData[0][0]);
-    const valueSequence = extractedData[1].map(Number);
+    const scoreDifferenceMatrix = Array.from({ length: sequenceSize }, () => Array(sequenceSize).fill(0));
 
-    const outcomeMatrix = Array(itemCount).fill(null).map(() => Array(itemCount).fill(0));
+    for (let startIdx = 0; startIdx < sequenceSize; startIdx++) {
+        scoreDifferenceMatrix[startIdx][startIdx] = numericSequence[startIdx];
+    }
 
-    for (let span = 1; span <= itemCount; ++span) {
-        for (let startIndex = 0; startIndex <= itemCount - span; ++startIndex) {
-            const endIndex = startIndex + span - 1;
+    for (let startIdx = 0; startIdx < sequenceSize - 1; startIdx++) {
+        scoreDifferenceMatrix[startIdx][startIdx + 1] = Math.abs(numericSequence[startIdx] - numericSequence[startIdx + 1]);
+    }
 
-            if (span === 1) {
-                outcomeMatrix[startIndex][endIndex] = valueSequence[startIndex];
-            } else if (span === 2) {
-                outcomeMatrix[startIndex][endIndex] = Math.abs(valueSequence[startIndex] - valueSequence[endIndex]);
-            } else {
-                const choiceLeft = valueSequence[startIndex] - outcomeMatrix[startIndex + 1][endIndex];
-                const choiceRight = valueSequence[endIndex] - outcomeMatrix[startIndex][endIndex - 1];
-                outcomeMatrix[startIndex][endIndex] = Math.max(choiceLeft, choiceRight);
-            }
+    for (let currentLength = 3; currentLength <= sequenceSize; currentLength++) {
+        for (let startIdx = 0; startIdx <= sequenceSize - currentLength; startIdx++) {
+            const endIdx = startIdx + currentLength - 1;
+            const scoreIfLeftChosen = numericSequence[startIdx] - scoreDifferenceMatrix[startIdx + 1][endIdx];
+            const scoreIfRightChosen = numericSequence[endIdx] - scoreDifferenceMatrix[startIdx][endIdx - 1];
+            scoreDifferenceMatrix[startIdx][endIdx] = Math.max(scoreIfLeftChosen, scoreIfRightChosen);
         }
     }
 
-    console.log(outcomeMatrix[0][itemCount - 1]);
+    console.log(scoreDifferenceMatrix[0][sequenceSize - 1]);
 }
 
-processInputAndCompute(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

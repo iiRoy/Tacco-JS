@@ -1,92 +1,98 @@
-// Standard input handling routine
-var outputPrinter = console.info;
+var outputFunc = console.log;
+
 if (typeof process !== "undefined") {
-    var receivedData = "";
+    let rawData = "";
     process.stdin.resume();
-
-    process.stdin.setEncoding('utf-8');
-
+    process.stdin.setEncoding('utf8');
     process.stdin.on('data', function (dataSegment) {
-        receivedData += dataSegment;
+        rawData += dataSegment;
     });
-
     process.stdin.on('end', function () {
-        var inputRows = receivedData.split("\n");
-        processInput(inputRows);
+        const inputLines = rawData.split("\n");
+        processInputData(inputLines);
     });
 }
 
-
-function processInput(rawLines) {
-    // Convert string inputs to numerical arrays or single numbers
-    rawLines = rawLines.map(function (currentString) {
-        if (currentString.split(/\s+/).length >= 2) {
-            return currentString.split(' ').map(function (numericString) {
-                return parseInt(numericString, 10);
+function processInputData(dataRows) {
+    // Process each line of input data.
+    const parsedRows = dataRows.map(function (currentRow) {
+        const parts = currentRow.split(" ");
+        if (parts.length >= 2) {
+            // If a line contains multiple space-separated values, parse them as numbers.
+            return parts.map(function (itemValue) {
+                return Number(itemValue);
             });
-        }
-        else {
-            return parseInt(currentString, 10);
+        } else {
+            // Otherwise, parse the single value on the line as a number.
+            return Number(currentRow);
         }
     });
 
-    var firstLineData = rawLines.shift();
-    var itemCount = firstLineData.shift();
-    var maxWeightCapacity = firstLineData.shift();
-    var itemDetails = rawLines;
+    // Extract configuration parameters from the first processed line.
+    let configLine = parsedRows.shift();
+    let itemCount = configLine.shift();
+    let capacityLimit = configLine.shift();
+    let itemDetails = parsedRows; // The remaining lines represent the items.
 
-    var loopCounter = itemCount; // This variable is declared but not used further, maintaining original structure.
+    // This variable is declared but not used further, maintaining original structure.
+    let loopCounter = itemCount;
 
-    var storageObject = {}; // This object is declared but not used further, maintaining original structure.
+    // This object is declared but not used, maintaining original structure.
+    let unusedMap = {};
 
-    calculateOptimalValue(itemDetails, maxWeightCapacity);
+    // Call the core function to compute the maximum value.
+    calculateMaxValue(itemDetails, capacityLimit);
 }
 
+function calculateMaxValue(availableItems, maxWeight) {
+    let currentValues = {}; // Stores the maximum values for each weight for the current item being processed.
+    let previousValues = {}; // Stores the maximum values for each weight from the previous item's processing.
 
-function calculateOptimalValue(availableItems, capacityLimit) {
-    var currentKnapsackStates = {};
-    var previousKnapsackStates = {};
+    // Iterate through each item available to be put into the knapsack.
+    for (let itemIndex = 0; itemIndex < availableItems.length; itemIndex++) {
+        const itemValue = availableItems[itemIndex][0]; // The value of the current item.
+        const itemWeight = availableItems[itemIndex][1]; // The weight of the current item.
 
-    for (var itemIndex = 0; itemIndex < availableItems.length; itemIndex++) {
-        var itemValue = availableItems[itemIndex][0];
-        var itemWeight = availableItems[itemIndex][1];
+        previousValues = currentValues; // Shift current state to previous state.
+        currentValues = {}; // Initialize current state for the new item.
 
-        previousKnapsackStates = currentKnapsackStates;
-        currentKnapsackStates = {};
+        // Iterate through all possible weights from the previous state.
+        for (let currentWeight in previousValues) {
+            currentWeight = Number(currentWeight); // Ensure the weight key is treated as a number.
 
-        for (var currentWeightKey in previousKnapsackStates) {
-            var currentWeight = Number.parseInt(currentWeightKey, 10);
-
-            // Copy existing state if it's better or new
-            if (currentKnapsackStates[currentWeight] === undefined || currentKnapsackStates[currentWeight] <= previousKnapsackStates[currentWeight]) {
-                currentKnapsackStates[currentWeight] = previousKnapsackStates[currentWeight];
+            // If the value for 'currentWeight' in the previous state is better or new, update 'currentValues'.
+            if (currentValues[currentWeight] <= previousValues[currentWeight] || !currentValues[currentWeight]) {
+                currentValues[currentWeight] = previousValues[currentWeight];
             }
 
-            // If adding the current item leads to a valid total weight, update the value.
-            if ((currentWeight + itemWeight) <= capacityLimit) {
-                if ((previousKnapsackStates[currentWeight + itemWeight] === undefined || previousKnapsackStates[currentWeight + itemWeight] <= previousKnapsackStates[currentWeight] + itemValue) &&
-                    (currentKnapsackStates[currentWeight + itemWeight] === undefined || currentKnapsackStates[currentWeight + itemWeight] <= previousKnapsackStates[currentWeight] + itemValue))
-                {
-                    currentKnapsackStates[currentWeight + itemWeight] = previousKnapsackStates[currentWeight] + itemValue;
+            // Check if adding the current item's weight to 'currentWeight' exceeds the 'maxWeight'.
+            if (currentWeight + itemWeight <= maxWeight) {
+                // If adding the current item yields a better value for the new total weight, update.
+                // This comparison ensures we take the maximum value for the given weight.
+                if ((previousValues[currentWeight + itemWeight] <= previousValues[currentWeight] + itemValue || !previousValues[currentWeight + itemWeight]) &&
+                    (currentValues[currentWeight + itemWeight] <= previousValues[currentWeight] + itemValue || !currentValues[currentWeight + itemWeight])) {
+                    currentValues[currentWeight + itemWeight] = previousValues[currentWeight] + itemValue;
                 }
             } else {
+                // If adding the current item exceeds the maximum weight,
+                // further iterations for larger 'currentWeight' will also exceed it, so we can break.
                 break;
             }
         }
 
-        // Also consider adding just the current item if it hasn't been added yet.
-        if ((previousKnapsackStates[itemWeight] === undefined || previousKnapsackStates[itemWeight] <= itemValue) &&
-            (currentKnapsackStates[itemWeight] === undefined || currentKnapsackStates[itemWeight] <= itemValue))
-        {
-            currentKnapsackStates[itemWeight] = itemValue;
+        // Consider the case where the current item is added by itself (or replaces a less valuable item at its weight).
+        if ((previousValues[itemWeight] <= itemValue || !previousValues[itemWeight]) &&
+            (currentValues[itemWeight] <= itemValue || !currentValues[itemWeight])) {
+            currentValues[itemWeight] = itemValue;
         }
     }
 
-    // Find the maximum value within the capacity limit
-    for (var optimalWeightSearchIndex = capacityLimit; optimalWeightSearchIndex > 0; optimalWeightSearchIndex--) {
-        if (currentKnapsackStates[optimalWeightSearchIndex] !== undefined) {
-            outputPrinter(currentKnapsackStates[optimalWeightSearchIndex]);
-            break;
+    // After processing all items, find the maximum value achievable within the 'maxWeight'.
+    // Iterate downwards from 'maxWeight' to find the largest value associated with any weight.
+    for (let weightIterator = maxWeight; weightIterator > 0; weightIterator--) {
+        if (!!currentValues[weightIterator]) { // If a value exists for this specific weight.
+            outputFunc(currentValues[weightIterator]); // Output the highest value found.
+            break; // Exit the loop as we've found the optimal solution (highest value for highest possible weight).
         }
     }
 }

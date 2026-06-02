@@ -1,128 +1,113 @@
-'use strict'
-; /* Strict mode enabled for cleaner code execution */
+'use strict'; // Enforce strict mode for cleaner code execution.
 
-process
-  .stdin
-  .resume(); /* Ensure input stream remains active for continuous data reception */
+process.stdin.resume(); // Keep the standard input stream open.
+process.stdin.setEncoding('utf-8'); // Specify UTF-8 encoding for incoming data.
 
-process
-  .stdin
-  .setEncoding(
-    'utf-8'
-  ); /* Configure the input stream to handle UTF-8 encoded text data */
+let rawInputData = ''; // Buffer to accumulate all received standard input.
+let lineIndex = 0;     // Pointer to track the current line being processed from the input.
 
+// Event handler for when data chunks are received from standard input.
+process.stdin.on('data', chunkOfData => {
+    rawInputData += chunkOfData; // Append the new data chunk to the buffer.
+});
 
-let bufferData = ''; // This variable accumulates all incoming input content
-let lineIndex = 0; // This counter tracks the current line number being processed from the input
+// Event handler for when the standard input stream ends.
+process.stdin.on('end', () => {
+    // Process the accumulated input:
+    // 1. Trim leading/trailing whitespace from the entire input.
+    // 2. Split the input into an array of lines based on newline characters.
+    // 3. For each line, trim leading/trailing whitespace.
+    rawInputData = rawInputData.trim().split('\n').map(singleLine => {
+        return singleLine.trim();
+    });
 
-process
-  .stdin
-  .on(
-    'data',
-    (chunkSegment) => { // Event handler for when new data chunks arrive
-      bufferData += chunkSegment; // Append the newly received data chunk to the overall buffer
-    }
-  );
-
-process
-  .stdin
-  .on(
-    'end',
-    (voidParam) => { // Event handler for when the input stream signals its end
-      // Pre-process the entire buffered input content
-      bufferData = bufferData
-        .trim() // Remove any leading or trailing whitespace from the full input string
-        .split('\n') // Split the string into an array of individual lines based on newline characters
-        .map(rawEntry => { // Iterate over each line in the array
-          return rawEntry.trim(); // For each line, remove its leading/trailing whitespace
-        });
-
-      executeProgram(); // Once all input is processed, initiate the primary logic of the application
-    }
-  );
+    // Once all input has been parsed and prepared, initiate the main program logic.
+    executeProgram();
+});
 
 /**
- * Retrieves the next available line from the pre-processed input buffer.
- * The internal line pointer is automatically advanced after each call.
- * @returns {string} The next line of input as a string.
+ * Retrieves the next available line from the processed input data.
+ * Increments the internal line counter after retrieval.
+ * @returns {string} The string content of the next line.
  */
-function fetchLine() {
-  return bufferData[lineIndex++]; // Access the current line and then increment the line index
+function readNextLine() {
+    return rawInputData[lineIndex++]; // Return the current line and then advance the index.
 }
 
 /**
- * Converts a space-separated string of numerical values into an array of actual numbers.
- * @param {string} textInput - The string containing numbers separated by spaces.
- * @returns {number[]} An array where each element is a numerical value.
+ * Converts a space-separated string of numbers into an array of numerical values.
+ * @param {string} inputStr - The string containing numbers separated by spaces.
+ * @returns {number[]} An array where each element is a number.
  */
-function parseNumArray(textInput) {
-  return textInput
-    .split(' ') // Divide the input string into parts using space as a delimiter
-    .map(numVal => Number(numVal)); // Convert each string part into its numerical representation
+function parseNumArray(inputStr) {
+    return inputStr.split(' ').map(val => Number(val));
 }
 
 /**
- * Transforms a given string into its integer representation.
- * @param {string} textInput - The string that needs to be converted to an integer.
- * @returns {number} The integer value derived from the input string.
+ * Transforms a string representation into its integer equivalent.
+ * @param {string} inputStr - The string to be converted to an integer.
+ * @returns {number} The integer value derived from the string.
  */
-function extractInteger(textInput) {
-  return Number(textInput); // Perform a direct conversion of the string to a number
+function parseInteger(inputStr) {
+    return Number(inputStr);
 }
 
 /**
- * Divides a string by space characters into an array of string segments.
- * No type conversion is performed on the segments.
- * @param {string} textInput - The string to be segmented.
- * @returns {string[]} An array of string fragments.
+ * Splits a space-separated string into an array of strings.
+ * (This utility function is present but not utilized in the current problem's logic).
+ * @param {string} inputStr - The string to be split.
+ * @returns {string[]} An array of string segments.
  */
-function parseStringArray(textInput) {
-  return textInput
-    .split(' ') // Break the string into an array using spaces as separators
-    .map(strFragment => strFragment); // Return each string fragment as is, without modification
+function parseStringArray(inputStr) {
+    return inputStr.split(' ').map(val => val);
 }
 
-/* --- Core Application Logic Starts Below This Point --- */
-
+// --- Main application logic for the frog jump problem ---
 
 /**
- * The primary execution function of the program.
- * It implements a dynamic programming approach to find the minimum cost path
- * through a sequence of values, with constraints on step size.
+ * Orchestrates the solution for the frog jump problem.
+ * It reads input, computes the minimum cost to reach the final stone,
+ * and outputs the result.
  */
 function executeProgram() {
-  const initialConfig = parseNumArray(fetchLine()); // Read the first line for initial parameters (e.g., array size, max step)
-  const sequenceLength = initialConfig[0]; // The total number of elements in the value sequence
-  const maxJump = initialConfig[1]; // The maximum distance one can jump between elements
+    // Read the first line of input, which contains N (arrayLength) and K (maxJump).
+    const initialParams = parseNumArray(readNextLine());
+    const arrayLength = initialParams[0]; // N: Total number of stones.
+    const maxJump = initialParams[1];     // K: Maximum distance a frog can jump.
 
-  const valueSequence = parseNumArray(fetchLine()); // Read the second line, which contains the sequence of values
-  const costMemo = new Array(sequenceLength); // Initialize a dynamic programming array to store calculated minimum costs
-  costMemo.fill(-1); // Populate the DP array with a sentinel value (-1) to denote uncomputed states
+    // Read the second line of input, which contains the heights of all stones.
+    const inputNumbers = parseNumArray(readNextLine());
 
-  // Define the base conditions for the dynamic programming calculation
-  costMemo[0] = 0; // The cost to reach the very first element is always zero
-  if (sequenceLength > 1) { // If there's more than one element in the sequence
-    costMemo[1] = Math.abs(valueSequence[1] - valueSequence[0]); // The cost to reach the second element is the absolute difference from the first
-  }
+    // Initialize a dynamic programming array to store the minimum cost to reach each stone.
+    // `minCost[i]` will hold the minimum cost to arrive at stone `i`.
+    const minCost = new Array(arrayLength);
+    minCost.fill(-1); // Populate the array with -1 to signify uncomputed states.
 
+    // Establish base cases for the DP calculation:
+    minCost[0] = 0; // The cost to reach the first stone (index 0) is zero.
+    // The cost to reach the second stone (index 1) is the absolute height difference from stone 0.
+    minCost[1] = Math.abs(inputNumbers[1] - inputNumbers[0]);
 
-  // Iterate through the sequence starting from the third element to compute minimum costs
-  for (let currentPos = 2; currentPos < sequenceLength; currentPos++) {
-    let minimumCost = Infinity; // Initialize the minimum cost for the current position to an infinitely high value
+    // Iterate through the stones starting from the third stone (index 2) up to the last one.
+    for (let currentIndex = 2; currentIndex < arrayLength; currentIndex++) {
+        let currentMinCost = 100; // Initialize with a sufficiently large value to find the minimum.
 
-    // Examine all possible preceding positions within the allowed jump range
-    for (let stepOffset = 1; stepOffset <= maxJump; stepOffset++) {
-      // Ensure that the potential previous position is valid (i.e., not before the start of the sequence)
-      if (currentPos - stepOffset >= 0) {
-        // Calculate the total cost to reach the current position via this specific stepOffset
-        const currentPathCost = costMemo[currentPos - stepOffset] + Math.abs(valueSequence[currentPos] - valueSequence[currentPos - stepOffset]);
-        // Update the overall minimum cost for the current position if a cheaper path is found
-        minimumCost = Math.min(minimumCost, currentPathCost);
-      }
+        // For the current stone, consider all possible previous stones from which a jump could have been made.
+        // A jump can be made from `currentIndex - jumpDistance`, where `jumpDistance` ranges from 1 to `maxJump`.
+        for (let jumpDistance = 1; jumpDistance <= maxJump; jumpDistance++) {
+            // Ensure that the potential previous stone's index is valid (not negative).
+            if (currentIndex - jumpDistance >= 0) {
+                // Calculate the cost to reach `currentIndex` from `currentIndex - jumpDistance`.
+                // This cost is `minCost[currentIndex - jumpDistance]` (cost to reach previous stone)
+                // plus `Math.abs(inputNumbers[currentIndex] - inputNumbers[currentIndex - jumpDistance])`
+                // (cost of the current jump).
+                currentMinCost = Math.min(currentMinCost, minCost[currentIndex - jumpDistance] + Math.abs(inputNumbers[currentIndex] - inputNumbers[currentIndex - jumpDistance]));
+            }
+        }
+        // Store the determined minimum cost to reach the `currentIndex` stone.
+        minCost[currentIndex] = currentMinCost;
     }
-    costMemo[currentPos] = minimumCost; // Store the determined minimum cost for the current position
-  }
 
-  // Finally, print the minimum cost required to reach the very last element of the sequence
-  console.log(costMemo[sequenceLength - 1]);
+    // Output the minimum cost required to reach the very last stone (at index `arrayLength - 1`).
+    console.log(minCost[arrayLength - 1]);
 }

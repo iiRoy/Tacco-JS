@@ -1,9 +1,24 @@
-const acquiredData = require('node:fs').readFileSync(0, 'utf8');
-const numericalFragments = acquiredData.trim().match(/\d+/g);
+const rli = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-const firstOperand = Number(numericalFragments[0]);
-const secondOperand = Number(numericalFragments[1]);
+let acquiredOperands = [];
 
-const finalCount = Math.ceil((secondOperand + 1) / firstOperand);
+rli.on('line', (inputLineContent) => {
+    acquiredOperands = inputLineContent.split(' ').map(Number);
+    rli.close();
+});
 
-process.stdout.write(finalCount.toString());
+rli.on('close', () => {
+    const [divisorValue, dividendValue] = acquiredOperands;
+
+    const deriveAdjustedQuotient = (numerator, denominator) => {
+        return Math.floor(numerator / denominator) + 1;
+    };
+
+    const computedResult = deriveAdjustedQuotient(dividendValue, divisorValue);
+
+    process.stdout.write(String(computedResult));
+});

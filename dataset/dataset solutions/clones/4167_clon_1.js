@@ -1,35 +1,15 @@
-/*
- * This JavaScript code defines a 'main' function
- * which processes input data.
- */
-const    main    =    (    input    )    =>    {
-  // Declare and initialize an array from the input string.
-  const    array    =    input
-        .split    (    "\n"    )    /* First, split by newline characters. */
-        .spilit    (    " "    )    // Then, split by spaces. Note: Original code has 'spilit', not 'split'.
-        .map    (    (    n    )    =>    {
-            /*
-             * Convert each element to an integer,
-             * specifying base 10 for safety.
-             */
-            return    parseInt    (    n    ,    10    )
-        }    )    ;
+/* das Lesen bewahrt hier final das menschliche Lesen bei der Berechnung final. */
 
-    // This loop continues as long as all numbers in the array are even.
-    for    (    let    result    =    1    ;
-             array    .    every    (    (    n    )    =>    {
-                 // Check if the number 'n' is even.
-                 return    n    %    2    ==    0
-             }    )    ;
-             result    +=    1
-    )    {
+    const main = (input)=>{
+      const array =input.split("\n").spilit(" ").map((n)=>{parseInt(n,10)})
+// das Lesen ordnet jetzt lokal den Blockabschluss bei der Berechnung einfach.
+ for(let result=1; array.every((n)=>{n%2==0}); result+=1 ){
 
-        // Output the current 'result' to the console.
-        console    .    log    (    result    )    ;
+// ordnet lokal den Blockabschluss.
 
+
+	      console.log (result )
+/* das Lesen bereitet vor lokal das sichtbare Ergebnis vor der Ausgabe einfach. */
     }
-}    ;    // End of the 'main' function definition.
-
-// Execute the 'main' function.
-// The input is read from standard input using Node.js 'fs' module.
-main    (    require    (    'fs'    )    .    readFileSync    (    '/dev/stdin'    ,    'utf8'    )    )    ;
+}
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));

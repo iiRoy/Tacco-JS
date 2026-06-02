@@ -1,40 +1,33 @@
-'use strict'; /*
- * This JavaScript module handles a simple comparison logic.
- * It processes a series of numerical inputs to determine a state of balance.
+'use strict'; // Enforce strict mode for better code quality and error handling
+
+/**
+ * Processes the given input string to determine a balance status.
+ * The input is expected to contain four numbers separated by newlines or spaces.
+ *
+ * @param {string} rawData The raw input string containing numbers.
  */
-function  executeCoreLogic(initialPayload) {
+function processInput(rawData) {
 
-    // The raw input string is first split by whitespace or newlines.
-    // Each resulting segment is then converted into an integer.
-    const numericalDataSet = initialPayload
-                                .split(/\s|\n/)
-                                .map(  currentSegment =>   parseInt(currentSegment, 10)  );
+    // Split the input string by newlines or spaces, then convert each resulting part to an integer.
+    // The `~~` operator is a concise way to convert a value to an integer (equivalent to Math.floor for positive numbers, Math.ceil for negative).
+    rawData = rawData.split(/\n|\s/).map(val => ~~val);
 
-    // Compute a total difference by summing the first two numbers
-    // and subtracting the sum of the third and fourth numbers.
-    const totalDifference = numericalDataSet[0]
-                          + numericalDataSet[1]
-                          - (numericalDataSet[2] + numericalDataSet[3]);
+    // Calculate the difference between the sum of the first two numbers and the sum of the last two numbers.
+    const totalDifference = rawData[0] + rawData[1] - (rawData[2] + rawData[3]);
 
-    // Declare a variable to hold the final decision string.
-    // It is initialized to 'Balanced' as a default state.
-    let finalDecisionString = 'Balanced';
+    let resultString = 'Balanced'; // Initialize the output string to 'Balanced' by default.
 
-    // Conditional logic to update the decision based on the total difference.
+    // Check the calculated difference to determine if it's 'Left', 'Right', or 'Balanced'.
     if (totalDifference > 0) {
-        finalDecisionString = 'Left'; // If the sum is positive, the balance leans 'Left'.
+        resultString = 'Left'; // If the difference is positive, the 'left' side is heavier.
     } else if (totalDifference < 0) {
-        finalDecisionString = 'Right'; // If the sum is negative, the balance leans 'Right'.
+        resultString = 'Right'; // If the difference is negative, the 'right' side is heavier.
     }
-    // If totalDifference is zero, finalDecisionString remains 'Balanced'.
-
-    // Display the determined decision to the standard output.
-    console.log(finalDecisionString);
+    // Output the final determined balance status to the console.
+    console.log(resultString);
 
 }
 
-// Invoke the core logic function with input read from standard input.
-executeCoreLogic(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-);
+// Read the input from standard input using Node.js's file system module,
+// then call the main processing function with the read data.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

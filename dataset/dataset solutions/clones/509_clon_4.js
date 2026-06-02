@@ -1,80 +1,70 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', function(allInput){
-    const contentLines = allInput.trim().split("\n");
-    let currentLineMarker = 0;
+const processInput = (inputBuffer) => {
+    const allLines = inputBuffer.trim().split("\n");
+    let currentLineIndex = 0;
 
-    const assessProgressionAnomaly = (figures) => {
-        const countOfFigures = figures.length;
-        
-        // Handle cases where the sequence is too short for the pattern analysis.
-        // Original code would error for countOfFigures < 2 due to accessing dataset[1].
-        // Assuming valid inputs always have at least 2 elements for the main logic.
-        // For countOfFigures < 2, the original code would not execute the core loop,
-        // and its edx (0) would lead to printing figures[0] for n=1, or an error.
-        // For n=2, original prints figures[0]. This path handles n=2 gracefully.
-        if (countOfFigures < 2) {
-            return figures[0]; 
+    const identifyAnomaly = (sourceData) => {
+        const numericValues = sourceData.map(Number);
+
+        if (numericValues.length < 2) {
+            return sourceData[0];
         }
 
-        const initialDelta = figures[1] - figures[0];
-
-        const progressionState = {
-            deltaVariations: 0,
-            lastVariationPosition: 0,
-            previousCalculatedDelta: initialDelta,
-            potentialOutput: figures[0]
+        const initialProcessingState = {
+            lastKnownValue: numericValues[1],
+            lastKnownDifference: numericValues[1] - numericValues[0],
+            differenceBreakpoints: [], // Stores indices (equivalent to 'ii' in original) where difference changed
+            finalOutputCandidate: null
         };
 
-        const analyzeSlice = (position, currentProgressionState) => {
-            if (position >= countOfFigures) {
-                return currentProgressionState.potentialOutput;
+        const completedState = numericValues.slice(2).reduce((stateAccumulator, currentValue, relativePosition) => {
+            if (stateAccumulator.finalOutputCandidate !== null) {
+                return stateAccumulator;
             }
 
-            const currentFigure = figures[position];
-            const priorFigure = figures[position - 1];
-            const currentCalculatedDelta = currentFigure - priorFigure;
+            const absoluteIndex = relativePosition + 2; // Corresponds to 'ii' in original loop
+            const currentCalculatedDifference = currentValue - stateAccumulator.lastKnownValue;
 
-            let nextDeltaVariations = currentProgressionState.deltaVariations;
-            let nextLastVariationPosition = currentProgressionState.lastVariationPosition;
-            let nextPotentialOutput = currentProgressionState.potentialOutput;
-
-            if (currentCalculatedDelta !== currentProgressionState.previousCalculatedDelta) {
-                nextLastVariationPosition = position;
-                nextDeltaVariations++;
+            if (currentCalculatedDifference !== stateAccumulator.lastKnownDifference) {
+                stateAccumulator.differenceBreakpoints.push(absoluteIndex);
             }
 
-            // Check termination conditions
-            if (nextDeltaVariations === 3) {
-                return figures[nextLastVariationPosition - 2];
-            } else if (nextDeltaVariations === 1 && position - nextLastVariationPosition > 1) {
-                return figures[nextLastVariationPosition - 2];
+            stateAccumulator.lastKnownValue = currentValue;
+            stateAccumulator.lastKnownDifference = currentCalculatedDifference;
+
+            const breakpointCount = stateAccumulator.differenceBreakpoints.length;
+            const latestBreakpointIndex = breakpointCount > 0 ? stateAccumulator.differenceBreakpoints[breakpointCount - 1] : 0;
+
+            if (breakpointCount === 3) {
+                stateAccumulator.finalOutputCandidate = sourceData[latestBreakpointIndex - 2];
+            } else if (breakpointCount === 1 && absoluteIndex - latestBreakpointIndex > 1) {
+                stateAccumulator.finalOutputCandidate = sourceData[latestBreakpointIndex - 2];
             }
 
-            // Update potential output for the final fallback if no early return
-            nextPotentialOutput = figures[nextLastVariationPosition];
+            return stateAccumulator;
+        }, initialProcessingState);
 
-            return analyzeSlice(position + 1, {
-                deltaVariations: nextDeltaVariations,
-                lastVariationPosition: nextLastVariationPosition,
-                previousCalculatedDelta: currentCalculatedDelta,
-                potentialOutput: nextPotentialOutput
-            });
-        };
+        if (completedState.finalOutputCandidate !== null) {
+            return completedState.finalOutputCandidate;
+        }
 
-        // Start analysis from the third element (index 2), mirroring original `ii=2` loop start
-        return analyzeSlice(2, progressionState);
+        const finalBreakpointCount = completedState.differenceBreakpoints.length;
+        const finalBreakpointIndex = finalBreakpointCount > 0 ? completedState.differenceBreakpoints[finalBreakpointCount - 1] : 0;
+
+        return sourceData[finalBreakpointIndex];
     };
 
-    while (currentLineMarker < contentLines.length) {
-        const itemQuantity = Number(contentLines[currentLineMarker++]);
-        if (itemQuantity === 0) break;
+    while (currentLineIndex < allLines.length) {
+        const itemQuantity = parseInt(allLines[currentLineIndex++]);
+        if (itemQuantity === 0) {
+            break;
+        }
 
-        const figureStrings = contentLines[currentLineMarker++].trim().split(" ");
-        const numericFigures = figureStrings.map(Number);
-
-        const outcome = assessProgressionAnomaly(numericFigures);
-        console.log(outcome);
+        const dataItems = allLines[currentLineIndex++].trim().split(" ");
+        console.log(identifyAnomaly(dataItems));
     }
-});
+};
+
+process.stdin.on('data', processInput);

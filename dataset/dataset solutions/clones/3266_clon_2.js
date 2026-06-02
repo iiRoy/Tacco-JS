@@ -1,37 +1,42 @@
-/* This module handles processing of incoming text data. */
-function ProcessInputData ( rawText )
-{
-    // Tokenize the input string by splitting it at spaces.
-    let processedTokens = rawText.split( ' ' );
+function ProcessInput(rawData) {
+    // The input string is split into an array of substrings using space as a delimiter.
+    let parsedData = rawData.split(" ");
 
-    // Initialize flags to track the presence of specific numeric digits.
-    let foundDigitOne   = false;
-    let foundDigitSeven = false;
-    let foundDigitNine  = false;
-    let foundDigitFour  = false;
+    // Initialize boolean flags to track the presence of specific numeric strings.
+    let hasOne = false;
+    let hasSeven = false;
+    let hasNine = false;
+    let hasFour = false;
 
-    // Iterate through the first four tokens of the processed input.
-    for ( let idx = 0 ; idx < 4 ; idx++ )
-    {
-        // Check for the presence of the digit '1'.
-        if ( processedTokens[ idx ] == '1' ) { foundDigitOne   = true; }
-        // Check for the presence of the digit '7'.
-        if ( processedTokens[ idx ] === '7' ) { foundDigitSeven = true; }
-        // Check for the presence of the digit '4'.
-        if ( processedTokens[ idx ] === '4' ) { foundDigitFour  = true; }
-        // Check for the presence of the digit '9'.
-        if ( processedTokens[ idx ] === '9' ) { foundDigitNine  = true; }
+    // Iterate through the first four elements of the parsed data array.
+    // The loop variable 'idx' is declared with 'let' for block-scoping.
+    for (let idx = 0; idx < 4; idx++) {
+        // Check if the current element is exactly the string "1" using strict equality.
+        if (parsedData[idx] === "1") {
+            hasOne = true;
+        }
+        // Check if the current element is the string "7" using loose equality.
+        if (parsedData[idx] == "7") {
+            hasSeven = true;
+        }
+        // Check if the current element is the string "4" using loose equality.
+        if (parsedData[idx] == "4") {
+            hasFour = true;
+        }
+        // Check if the current element is the string "9" using loose equality.
+        if (parsedData[idx] == "9") {
+            hasNine = true;
+        }
     }
 
-    // Determine if all required digits were found within the first four tokens.
-    if ( foundDigitOne && foundDigitSeven && foundDigitNine && foundDigitFour )
-    {
-        // If all digits are present, log a positive confirmation.
-        console.log( 'YES' );
+    // After checking all relevant elements, evaluate if all four specific strings were found.
+    if (hasOne && hasSeven && hasNine && hasFour) {
+        // If all conditions are met, print the string 'YES' to the standard output.
+        console.log('YES');
     }
+    // No action is taken if the condition is not met, preserving the original behavior.
+}
 
-} // End of ProcessInputData function.
-
-
-// Invoke the main processing function with data read from standard input.
-ProcessInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of the standard input file synchronously as a UTF-8 string.
+// Then, pass this raw string content to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

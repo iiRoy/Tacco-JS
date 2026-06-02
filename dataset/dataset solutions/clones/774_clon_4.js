@@ -1,51 +1,56 @@
-let receivedData = '';
-process.stdin.on('data', (segment) => { receivedData += segment; });
-process.stdin.on('end', () => {
-    const rawInputLines = receivedData.trim().split('\n');
+const fileSystemModule = require('fs');
 
-    const configureDetails = rawInputLines[0].split(' ').map(Number);
-    const nodeQuantity = configureDetails[0];
-    const edgeQuantity = configureDetails[1];
-    const commencementPoint = configureDetails[2] - 1;
-    const firstObjective = configureDetails[3] - 1;
-    const secondObjective = configureDetails[4] - 1;
+const inputByteLength = fileSystemModule.fstatSync(process.stdin.fd).size;
+const dataBuffer = Buffer.alloc(inputByteLength);
+const actualBytesRead = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, inputByteLength, 0);
+const rawInputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-    const distanceGrid = Array.from({ length: nodeQuantity }, (_, originIndex) =>
-        Array.from({ length: nodeQuantity }, (_, destinationIndex) =>
-            originIndex === destinationIndex ? 0 : Number.POSITIVE_INFINITY
-        )
-    );
+const initialConfigLine = rawInputLines.shift().split(' ');
+const nodeCount = parseInt(initialConfigLine[0]);
+const edgeCount = parseInt(initialConfigLine[1]);
+const startNodeIndex = parseInt(initialConfigLine[2]) - 1;
+const goal1Index = parseInt(initialConfigLine[3]) - 1;
+const goal2Index = parseInt(initialConfigLine[4]) - 1;
 
-    rawInputLines.slice(1, 1 + edgeQuantity).forEach(connectionDescriptor => {
-        const [startNode, endNode, connectionWeight] = connectionDescriptor.split(' ').map(Number);
-        distanceGrid[startNode - 1][endNode - 1] = connectionWeight;
+let currentPathData = new Map();
+
+Array.from({ length: nodeCount }).forEach((_, sourceNode) => {
+    const innerMap = new Map();
+    Array.from({ length: nodeCount }).forEach((_, targetNode) => {
+        innerMap.set(targetNode, sourceNode === targetNode ? 0 : Number.POSITIVE_INFINITY);
     });
-
-    const calculatePathUpdates = (currentGridState, passThroughIndex) => {
-        return Array.from({ length: nodeQuantity }, (_, originIndex) =>
-            Array.from({ length: nodeQuantity }, (_, destinationIndex) => {
-                const directPath = currentGridState[originIndex][destinationIndex];
-                const pathViaIntermediate = currentGridState[originIndex][passThroughIndex] + currentGridState[passThroughIndex][destinationIndex];
-                return Math.min(directPath, pathViaIntermediate);
-            })
-        );
-    };
-
-    let finalDistanceMap = distanceGrid;
-    for (let passThroughIndex = 0; passThroughIndex < nodeQuantity; ++passThroughIndex) {
-        finalDistanceMap = calculatePathUpdates(finalDistanceMap, passThroughIndex);
-    }
-
-    const allPossibleMidpoints = Array.from({ length: nodeQuantity }, (_, pointIndex) => pointIndex);
-    const minimalRouteCost = allPossibleMidpoints.reduce((minimumOverallCost, currentMidpoint) => {
-        const segment1Cost = finalDistanceMap[commencementPoint][currentMidpoint];
-        const segment2Cost = finalDistanceMap[currentMidpoint][firstObjective];
-        const segment3Cost = finalDistanceMap[currentMidpoint][secondObjective];
-        const totalCurrentPathCost = segment1Cost + segment2Cost + segment3Cost;
-        return Math.min(minimumOverallCost, totalCurrentPathCost);
-    }, Number.POSITIVE_INFINITY);
-
-    process.stdout.write(minimalRouteCost.toString() + '\n');
+    currentPathData.set(sourceNode, innerMap);
 });
 
-process.stdin.resume();
+const edgeInputSegment = rawInputLines.splice(0, edgeCount);
+edgeInputSegment.forEach(line => {
+    const [sourceStr, destinationStr, weightStr] = line.split(' ');
+    const source = parseInt(sourceStr) - 1;
+    const destination = parseInt(destinationStr) - 1;
+    const weight = parseFloat(weightStr);
+    currentPathData.get(source).set(destination, weight);
+});
+
+Array.from({ length: nodeCount }).forEach((_, pivotNode) => {
+    const nextIterationDistances = new Map();
+    Array.from({ length: nodeCount }).forEach((_, sourceNode) => {
+        const sourceDistances = new Map();
+        Array.from({ length: nodeCount }).forEach((_, targetNode) => {
+            const existingPath = currentPathData.get(sourceNode)?.get(targetNode) ?? Number.POSITIVE_INFINITY;
+            const pathThroughPivot = (currentPathData.get(sourceNode)?.get(pivotNode) ?? Number.POSITIVE_INFINITY) +
+                                     (currentPathData.get(pivotNode)?.get(targetNode) ?? Number.POSITIVE_INFINITY);
+            sourceDistances.set(targetNode, Math.min(existingPath, pathThroughPivot));
+        });
+        nextIterationDistances.set(sourceNode, sourceDistances);
+    });
+    currentPathData = nextIterationDistances;
+});
+
+const minimumCombinedPath = Array.from({ length: nodeCount }, (_, intermediatePoint) => {
+    const pathFromStart = currentPathData.get(startNodeIndex)?.get(intermediatePoint) ?? Number.POSITIVE_INFINITY;
+    const pathToGoal1 = currentPathData.get(intermediatePoint)?.get(goal1Index) ?? Number.POSITIVE_INFINITY;
+    const pathToGoal2 = currentPathData.get(intermediatePoint)?.get(goal2Index) ?? Number.POSITIVE_INFINITY;
+    return pathFromStart + pathToGoal1 + pathToGoal2;
+}).reduce((accumulator, currentValue) => Math.min(accumulator, currentValue), Number.POSITIVE_INFINITY);
+
+console.log(minimumCombinedPath);

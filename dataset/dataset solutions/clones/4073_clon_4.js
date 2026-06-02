@@ -1,34 +1,40 @@
-const journeyVerifier = (rawDataContent) => {
-    const allInputLines = rawDataContent.split("\n");
-    const quantityOfPoints = Number(allInputLines[0]);
-    const pointDescriptors = allInputLines.slice(1, quantityOfPoints + 1);
+function ProcessInputData(inputString) {
+    const lineSegments = inputString.split("\n");
 
-    const parseCoordinates = (descriptionString) => {
-        const numericParts = descriptionString.split(" ");
-        return numericParts.map(Number);
-    };
+    const totalRecords = Number(lineSegments.shift());
 
-    const parsedPoints = pointDescriptors.map(parseCoordinates);
+    const travelLog = lineSegments.slice(0, totalRecords).map(entryText => {
+        const numericCoordinates = entryText.split(" ").map(Number);
+        return {
+            eventTime: numericCoordinates[0],
+            xPosition: numericCoordinates[1],
+            yPosition: numericCoordinates[2]
+        };
+    });
 
-    let atLeastOneValidMove = false;
+    let hasAnyValidSegment = false;
 
-    if (quantityOfPoints >= 2) {
-        atLeastOneValidMove = Array.from({ length: quantityOfPoints - 1 }).some((_, segmentIndex) => {
-            const [timeA, posXA, posYA] = parsedPoints[segmentIndex];
-            const [timeB, posXB, posYB] = parsedPoints[segmentIndex + 1];
+    if (totalRecords > 1) {
+        hasAnyValidSegment = travelLog.slice(1).some((currentLocation, indexInSlice) => {
+            const priorLocation = travelLog[indexInSlice];
 
-            const elapsedDuration = timeB - timeA;
-            const absoluteSumDifference = Math.abs((posXB + posYB) - (posXA + posYA));
+            const elapsedDuration = currentLocation.eventTime - priorLocation.eventTime;
 
-            const withinTimeLimit = absoluteSumDifference <= elapsedDuration;
-            const parityMatches = (absoluteSumDifference % 2) === (elapsedDuration % 2);
+            const pathLength = Math.abs(
+                (currentLocation.xPosition + currentLocation.yPosition) -
+                (priorLocation.xPosition + priorLocation.yPosition)
+            );
 
-            return withinTimeLimit && parityMatches;
+            const durationSufficient = pathLength <= elapsedDuration;
+            const parityMatch = (pathLength % 2) === (elapsedDuration % 2);
+
+            return durationSufficient && parityMatch;
         });
     }
 
-    const finalVerdict = atLeastOneValidMove ? "YES" : "NO";
-    console.log(finalVerdict);
-};
+    const outcomeMessage = hasAnyValidSegment ? "YES" : "NO";
 
-journeyVerifier(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(outcomeMessage);
+}
+
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

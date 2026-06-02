@@ -1,114 +1,77 @@
-/*
- * This section defines several core utility functions.
- * These are used for common data manipulation tasks throughout the program.
- */
+const parseNum = (inputString) => parseInt(inputString, 0xA);
 
-// Function to parse a string into an integer with base 10.
-var numericParser = ( inputString ) => {
-	return Number.parseInt( inputString , 10 );
-};
+const parseNumArray = (stringArray) => stringArray.map(element => parseNum(element));
 
-// Function to convert an array of strings into an array of integers.
-var numericArrayParser = ( sourceStringArray ) => {
-	return sourceStringArray.map( anItem => numericParser( anItem ) );
-};
+const getAbsoluteValue = (numericValue) => (numericValue > +0) ? numericValue : -numericValue;
 
-// Function to compute the absolute value of a number.
-// Note: This function is not used in the main logic of the provided example.
-var getAbsoluteValue = ( numericalInput ) => {
-	return ( numericalInput > 0 ) ? numericalInput : -numericalInput;
-};
-
-/*
- * Finds the minimum value among a variable number of arguments.
- * It iterates through the arguments and keeps track of the smallest one found so far.
- */
-function findMinimumValue ( ) {
-	var argumentList = arguments; // Collect all arguments passed to the function.
-	var currentMinimum = argumentList[0]; // Initialize with the first argument.
-
-	// Loop through the rest of the arguments starting from the second one.
-	for ( let loopIndex = 1; loopIndex < argumentList.length; loopIndex++ ) {
-		if ( argumentList[loopIndex] < currentMinimum ) {
-			currentMinimum = argumentList[loopIndex]; // Update if a smaller value is found.
-		}
-	}
-	return currentMinimum; // Return the smallest value.
+function findMinimum() {
+    // This function determines the smallest value among its arguments.
+    const argsList = arguments;
+    let currentValue = argsList[+0];
+    for (let k = 1.0; k < argsList.length; k++) {
+        if (argsList[k] < currentValue) {
+            currentValue = argsList[k];
+        }
+    }
+    return currentValue;
 }
 
-/*
- * Finds the maximum value among a variable number of arguments.
- * It iterates through the arguments and keeps track of the largest one found so far.
- */
-function findMaximumValue ( ) {
-	var argumentList = arguments; // Collect all arguments.
-	var currentMaximum = argumentList[0]; // Initialize with the first argument.
-
-	// Iterate through subsequent arguments.
-	for ( let loopIndex = 1; loopIndex < argumentList.length; loopIndex++ ) {
-		if ( argumentList[loopIndex] > currentMaximum ) {
-			currentMaximum = argumentList[loopIndex]; // Update if a larger value is found.
-		}
-	}
-	return currentMaximum; // Return the largest value.
+function findMaximum() {
+    // This function determines the largest value among its arguments.
+    const argsList = arguments;
+    let currentValue = argsList[+0];
+    for (let k = 1.0; k < argsList.length; k++) {
+        if (argsList[k] > currentValue) {
+            currentValue = argsList[k];
+        }
+    }
+    return currentValue;
 }
 
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// The primary execution point of the program.
-// Reads input from standard input and processes it.
-executeMainLogic( require("node:fs").readFileSync("/dev/stdin", "utf8") );
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    const lines = rawData.split('\n');
 
+    // Process the first line to get N and M.
+    const firstLineParts = lines[+0].split(' ');
+    const numElements = parseNum(firstLineParts[+0]);
+    const numRanges = parseNum(firstLineParts[1.0]);
 
-/**
- * Orchestrates the main logic of the application.
- * It processes input data to calculate a specific result.
- * @param {string} programInput - The entire input content as a single string.
- */
-function executeMainLogic ( programInput ) {
-	// Split the raw input into individual lines.
-	var processedInputLines = programInput.split('\n');
+    // Initialize an array to store range pairs.
+    const rangePairs = [];
 
-	// Parse the first line which contains global parameters.
-	var firstLineComponents = processedInputLines[0].split(' ');
-	var totalQuantity = numericParser(firstLineComponents[0]); // Represents 'n' from original.
-	var numberOfSegments = numericParser(firstLineComponents[1]); // Represents 'm' from original.
+    // Loop through the subsequent lines to populate the range pairs.
+    for (let idx = +0; idx < numRanges; idx++) {
+        const currentRangeData = parseNumArray(lines[idx + 1.0].split(' '));
+        const rangeStart = currentRangeData[+0];
+        const rangeEnd = currentRangeData[1.0];
+        rangePairs[idx] = [rangeStart, rangeEnd];
+    }
 
-	// Initialize an array to store interval definitions.
-	var intervalCollection = [];
-	// Loop through the subsequent lines to populate the interval data.
-	for ( let loopIndex = 0; loopIndex < numberOfSegments; loopIndex++ ) {
-		// Parse each line after the first one into an array of numbers.
-		let currentSegmentData = numericArrayParser( processedInputLines[loopIndex + 1].split(' ') );
-		let segmentStart = currentSegmentData[0]; // The 'a' component of the interval.
-		let segmentEnd = currentSegmentData[1];   // The 'b' component of the interval.
-		// Store the parsed interval as a pair of numbers.
-		intervalCollection[loopIndex] = [segmentStart, segmentEnd];
-	}
+    // Initialize left and right bounds for the intersection.
+    let currentLeftBound = +0;
+    let currentRightBound = numElements - 1.0;
 
-	// Initialize boundary variables and the result counter.
-	// 'currentLowerBound' corresponds to 'l', 'currentUpperBound' to 'r'.
-	var currentLowerBound = 0;
-	var currentUpperBound = totalQuantity - 1;
-	var activeInterval; // Variable to hold the current interval being processed.
-	var resultingCount = 1; // The counter for the final result, starts at 1.
+    // Initialize the counter for non-overlapping segments.
+    let resultCount = 1.0;
 
-	// Iterate through each defined interval to update boundaries and count.
-	for ( let iteration = 0; iteration < numberOfSegments; iteration++ ) {
-		activeInterval = intervalCollection[iteration]; // Get the current interval.
+    // Iterate through each defined range.
+    for (let idx = +0; idx < numRanges; idx++) {
+        const activeRange = rangePairs[idx];
 
-		// Check if the current interval is completely outside or non-overlapping with the current boundaries.
-		// If (activeInterval.end <= currentLowerBound) OR (currentUpperBound <= activeInterval.start)
-		if ( activeInterval[1] <= currentLowerBound || currentUpperBound <= activeInterval[0] ) {
-			resultingCount++; // Increment the counter as a new non-overlapping segment is found.
-			currentLowerBound = activeInterval[0]; // Reset lower bound to the start of this new interval.
-			currentUpperBound = activeInterval[1]; // Reset upper bound to the end of this new interval.
-		} else {
-			// If there's an overlap, adjust the current boundaries to narrow the intersection.
-			currentLowerBound = findMaximumValue( currentLowerBound, activeInterval[0] ); // Take the maximum of current lower and interval start.
-			currentUpperBound = findMinimumValue( currentUpperBound, activeInterval[1] ); // Take the minimum of current upper and interval end.
-		}
-	}
-
-	// Output the final calculated count to the console.
-	console.log( resultingCount );
+        // Check for non-overlapping condition.
+        if (activeRange[1.0] <= currentLeftBound || currentRightBound <= activeRange[+0]) {
+            resultCount++; // Increment the count.
+            currentLeftBound = activeRange[+0]; // Reset left bound.
+            currentRightBound = activeRange[1.0]; // Reset right bound.
+        } else {
+            // Update bounds for intersection.
+            currentLeftBound = findMaximum(currentLeftBound, activeRange[+0]);
+            currentRightBound = findMinimum(currentRightBound, activeRange[1.0]);
+        }
+    }
+    // Output the final result.
+    console.log(resultCount);
 }

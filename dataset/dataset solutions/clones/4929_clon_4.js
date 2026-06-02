@@ -1,15 +1,12 @@
-const calculateDeviation = (incomingText) => {
-    const referenceSequence = "CODEFESTIVAL2016";
-    const incomingChars = incomingText.split('');
+function processInput(incomingText) {
+    const userCharacters = incomingText.split("");
+    const referenceSequence = ["C", "O", "D", "E", "F", "E", "S", "T", "I", "V", "A", "L", "2", "0", "1", "6"];
 
-    const totalMismatches = incomingChars.reduce((errorCount, currentInputChar, index) => {
-        if (currentInputChar !== referenceSequence[index]) {
-            return errorCount + 1;
-        }
-        return errorCount;
+    const mismatchCount = userCharacters.reduce((currentTotal, charFromInput, charIndex) => {
+        return currentTotal + (charFromInput !== referenceSequence[charIndex] ? 1 : 0);
     }, 0);
 
-    console.log(totalMismatches);
-};
+    console.log(mismatchCount);
+}
 
-calculateDeviation(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

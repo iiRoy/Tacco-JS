@@ -1,26 +1,14 @@
 'use strict';
 
-const systemInteraction = require("fs");
-const fetchContent = (resourcePath, format) => systemInteraction.readFileSync(resourcePath, format);
-const fragmentContent = (content) => [...content];
+const characterStream = require("fs").readFileSync("/dev/stdin", "utf8").split("");
 
-const sourceMaterial = fetchContent("/dev/stdin", "utf8");
-const constituentParts = fragmentContent(sourceMaterial);
+const frequencyMap = characterStream.reduce((accumulator, currentSymbol) => {
+  accumulator.set(currentSymbol, (accumulator.get(currentSymbol) || 0) + 1);
+  return accumulator;
+}, new Map());
 
-const frequencyLedger = new Map();
+const allCountsEven = Array.from(frequencyMap.values()).every(occurrenceCount => occurrenceCount % 2 === 0);
 
-for (const item of constituentParts) {
-    frequencyLedger.set(item, (frequencyLedger.get(item) || 0) + 1);
-}
+const finalOutcome = allCountsEven ? "Yes" : "No";
 
-let parityIssueDetected = false;
-for (const currentCount of frequencyLedger.values()) {
-    if (currentCount % 2 !== 0) {
-        parityIssueDetected = true;
-        break;
-    }
-}
-
-const outcomeDesignation = parityIssueDetected ? "No" : "Yes";
-
-console.log(outcomeDesignation);
+console.log(finalOutcome);

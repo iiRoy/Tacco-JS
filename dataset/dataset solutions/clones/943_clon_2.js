@@ -1,49 +1,61 @@
-(function(inputContent) {
-  // This self-executing function processes graph data from standard input.
+(function(inputData) {
+  // This section processes the raw input string, splitting it into individual lines.
+  var inputRows = inputData.trim().split('\n');
 
-  var inputRecords = inputContent.trim().split('\n'); // Clean and split the raw input into an array of lines.
-  var vertexCount = parseInt(inputRecords.shift(), 10); // The first line specifies the total number of vertices.
-  var adjacencies = []; // This array will store the adjacency lists for each vertex.
-  var nodeStatus = []; // This array tracks the visitation state of each node (e.g., 'WHITE', 'GRAY', 'BLACK').
+  // The initial line of input specifies the total quantity of nodes in the graph.
+  var nodeCount = parseInt(inputRows.shift(), 0xA);
 
-  inputRecords.forEach(function(recordLine) {
-    // For each subsequent line, parse the connected nodes.
-    // The first two elements (ID and degree) are skipped, as per problem format.
-    var neighborIndices = recordLine.split(' ').map(Number).slice(2);
-    adjacencies.push(neighborIndices); // Add the list of neighbors for the current node.
-    nodeStatus.push('WHITE'); // Initialize all nodes as 'WHITE' (unvisited).
+  // Data structures are initialized to represent the graph and track node states during traversal.
+  var adjacencyList = []; // Stores the list of connected neighbors for each node (using 0-based indexing).
+  var nodeStatus = [];    // An array to keep track of the current state of each node (e.g., 'UNVISITED', 'VISITING', 'VISITED').
+
+  // We iterate through the remaining input lines, each describing a node and its connections.
+  inputRows.forEach(function(rowContent) {
+    // Each row is parsed to extract the indices of adjacent nodes.
+    // The first two numbers in the row (node ID and degree) are typically skipped.
+    var neighborIndices = rowContent.split(' ').map(Number).slice(0x2);
+    adjacencyList.push(neighborIndices); // The extracted neighbors are added to the adjacency list.
+    nodeStatus.push('UNVISITED');       // All nodes are initially marked as 'UNVISITED'.
   });
 
-  var globalTimestamp = 0; // A counter for tracking discovery and finish times during traversal.
-  var discoveryTimestamps = []; // Stores the time when each node is first visited.
-  var finishTimestamps = []; // Stores the time when all descendants of a node have been visited.
+  // Variables are set up to record the discovery and finish times for nodes during the Depth-First Search.
+  var globalTimer = 0x0;      // A global counter that increments with each significant event (discovery/finish).
+  var discoveryTimes = [];    // An array to store the timestamp when a node is first encountered.
+  var finishTimes = [];       // An array to store the timestamp when a node and all its descendants have been fully processed.
 
   /**
-   * Implements a Depth-First Search (DFS) algorithm.
-   * Explores as far as possible along each branch before backtracking.
-   * @param {number} currentVertexId - The 1-based identifier of the node to start the traversal from.
+   * Executes a Depth-First Search traversal starting from a specified node.
+   * @param {number} currentNodeId - The 1-based identifier for the node from which the DFS should commence.
    */
-  function traverseGraphDepthFirst(currentVertexId) {
-    var zeroBasedIndex = currentVertexId - 1; // Convert the 1-based ID to a 0-based array index.
-    nodeStatus[zeroBasedIndex] = 'GRAY'; // Mark the current node as 'GRAY' (currently being explored).
-    discoveryTimestamps[zeroBasedIndex] = ++globalTimestamp; // Assign a discovery timestamp.
+  function depthFirstSearch(currentNodeId) {
+    // Convert the 1-based node identifier to a 0-based array index for internal use.
+    var zeroBasedIndex = currentNodeId - 0x1;
 
-    // Iterate through all nodes adjacent to the current node.
-    adjacencies[zeroBasedIndex].forEach(function(adjacentVertex) {
-      // If an adjacent node is 'WHITE' (unvisited), recursively call DFS on it.
-      if (nodeStatus[adjacentVertex - 1] === 'WHITE') {
-        traverseGraphDepthFirst(adjacentVertex);
+    // Mark the current node as 'VISITING' to indicate it's currently being processed.
+    nodeStatus[zeroBasedIndex] = 'VISITING';
+    // Record the exact moment this node was discovered.
+    discoveryTimes[zeroBasedIndex] = ++globalTimer;
+
+    // Traverse through all the neighbors connected to the current node.
+    adjacencyList[zeroBasedIndex].forEach(function(adjacentNodeId) {
+      // If a neighboring node has not yet been visited, recursively call DFS on it.
+      if (nodeStatus[adjacentNodeId - 0x1] === 'UNVISITED') {
+        depthFirstSearch(adjacentNodeId);
       }
     });
 
-    nodeStatus[zeroBasedIndex] = 'BLACK'; // Mark the current node as 'BLACK' (finished exploring).
-    finishTimestamps[zeroBasedIndex] = ++globalTimestamp; // Assign a finish timestamp.
+    // Once all neighbors and their respective subgraphs have been explored, mark the current node as 'VISITED'.
+    nodeStatus[zeroBasedIndex] = 'VISITED';
+    // Record the time when the processing of this node (and its entire subtree) is completed.
+    finishTimes[zeroBasedIndex] = ++globalTimer;
   }
 
-  traverseGraphDepthFirst(1); // Begin the DFS traversal from the first vertex (typically vertex 1).
+  // Begin the Depth-First Search process starting from the first node (node 1).
+  depthFirstSearch(0x1);
 
-  // Output the results: Node ID, Discovery Time, and Finish Time for each node.
-  for (var loopIndex = 0; loopIndex < vertexCount; loopIndex++) {
-    console.log([loopIndex + 1, discoveryTimestamps[loopIndex], finishTimestamps[loopIndex]].join(' '));
+  // Finally, iterate through all nodes and print their ID along with their discovery and finish times.
+  for (var idx = 0x0; idx < nodeCount; idx++) {
+    console.log([idx + 0x1, discoveryTimes[idx], finishTimes[idx]].join(' '));
   }
-})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input using Node.js 'fs' module.
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // The entire function is immediately invoked with input read from standard input.

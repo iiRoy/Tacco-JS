@@ -1,106 +1,104 @@
-class SequenceAlignmentProcessor {
-  constructor(targetSequenceChars) {
-    this.targetChars = Array.from(targetSequenceChars);
-    this.currentSourceChars = [];
-    this.distanceGrid = null;
-    this.predecessorGrid = null;
+'use strict';
+
+class BinaryMinHeap {
+  constructor() {
+    this._data = [];
   }
 
-  evaluateEditPath(sourceSequenceChars) {
-    this.currentSourceChars = Array.from(sourceSequenceChars);
-
-    const sourceLen = this.currentSourceChars.length;
-    const targetLen = this.targetChars.length;
-
-    this.distanceGrid = Array.from({
-      length: sourceLen + 1
-    }, (_, r) => Array(targetLen + 1).fill(0));
-    this.predecessorGrid = Array.from({
-      length: sourceLen + 1
-    }, (_, r) => Array(targetLen + 1).fill(null));
-
-    // Initialize the first row and column
-    for (let c = 0; c <= targetLen; c++) {
-      this.distanceGrid[0][c] = c;
-      if (c > 0) this.predecessorGrid[0][c] = [0, c - 1]; // Insertion into target
+  push(item) {
+    this._data.push(item);
+    let child = this._data.length - 1;
+    while (child > 0) {
+      const parent = (child - 1) >> 1;
+      if (this._data[parent][0] <= item[0]) break;
+      this._data[child] = this._data[parent];
+      child = parent;
     }
-    for (let r = 0; r <= sourceLen; r++) {
-      this.distanceGrid[r][0] = r;
-      if (r > 0) this.predecessorGrid[r][0] = [r - 1, 0]; // Deletion from source
-    }
-    this.predecessorGrid[0][0] = [-1, -1]; // Sentinel for origin
+    this._data[child] = item;
+  }
 
-    for (let r = 1; r <= sourceLen; r++) {
-      for (let c = 1; c <= targetLen; c++) {
-        const costOfSubstitution = (this.currentSourceChars[r - 1] === this.targetChars[c - 1]) ? 0 : 1;
-
-        const pathFromMatchOrSub = this.distanceGrid[r - 1][c - 1] + costOfSubstitution;
-        const pathFromDeletion = this.distanceGrid[r - 1][c] + 1;
-        const pathFromInsertion = this.distanceGrid[r][c - 1] + 1;
-
-        let minimumCost = pathFromMatchOrSub;
-        let chosenPredecessor = [r - 1, c - 1];
-
-        if (pathFromInsertion < minimumCost) {
-          minimumCost = pathFromInsertion;
-          chosenPredecessor = [r, c - 1];
+  pop() {
+    if (this._data.length === 0) return undefined;
+    const top = this._data[0];
+    const tail = this._data.pop();
+    if (this._data.length > 0) {
+      let parent = 0;
+      while (true) {
+        let child = parent * 2 + 1;
+        if (child >= this._data.length) break;
+        const right = child + 1;
+        if (right < this._data.length && this._data[right][0] < this._data[child][0]) {
+          child = right;
         }
-
-        if (pathFromDeletion < minimumCost) {
-          minimumCost = pathFromDeletion;
-          chosenPredecessor = [r - 1, c];
-        }
-
-        this.distanceGrid[r][c] = minimumCost;
-        this.predecessorGrid[r][c] = chosenPredecessor;
+        if (this._data[child][0] >= tail[0]) break;
+        this._data[parent] = this._data[child];
+        parent = child;
       }
+      this._data[parent] = tail;
     }
+    return top;
   }
 
-  getFinalDistance() {
-    if (!this.distanceGrid) {
-      throw new Error("Evaluation not performed. Call evaluateEditPath first.");
-    }
-    return this.distanceGrid[this.currentSourceChars.length][this.targetChars.length];
-  }
-
-  getAlignmentMarkers() {
-    if (!this.predecessorGrid) {
-      throw new Error("Evaluation not performed. Call evaluateEditPath first.");
-    }
-
-    const sourceMarkers = new Array(this.currentSourceChars.length).fill(false);
-    const targetMarkers = new Array(this.targetChars.length).fill(false);
-
-    let currentR = this.currentSourceChars.length;
-    let currentC = this.targetChars.length;
-
-    while (currentR > 0 || currentC > 0) {
-      const [prevR, prevC] = this.predecessorGrid[currentR][currentC];
-
-      // If it was a match or substitution operation (diagonal move)
-      if (currentR - prevR === 1 && currentC - prevC === 1) {
-        // If the cost was 0, it means a perfect match
-        if (this.distanceGrid[prevR][prevC] === this.distanceGrid[currentR][currentC]) {
-          sourceMarkers[currentR - 1] = true;
-          targetMarkers[currentC - 1] = true;
-        }
-      }
-      currentR = prevR;
-      currentC = prevC;
-    }
-    return {
-      source: sourceMarkers,
-      target: targetMarkers
-    };
+  get length() {
+    return this._data.length;
   }
 }
 
-const processInputAndOutput = (streamData) => {
-  const [firstLine, secondLine] = streamData.split("\n");
-  const processor = new SequenceAlignmentProcessor(firstLine);
-  processor.evaluateEditPath(secondLine);
-  console.log(processor.getFinalDistance());
+function measureEditRoute(referenceText, observedText) {
+  const reference = referenceText.split('');
+  const observed = observedText.split('');
+
+  const rows = observed.length + 1;
+  const cols = reference.length + 1;
+  const total = rows * cols;
+  const best = Array(total).fill(Infinity);
+
+  const encode = (r, c) => r * cols + c;
+  const queue = new BinaryMinHeap();
+  best[0] = 0;
+  queue.push([0, 0, 0]);
+
+  while (queue.length > 0) {
+    const [cost, r, c] = queue.pop();
+    const here = encode(r, c);
+    if (cost !== best[here]) continue;
+    if (r === observed.length && c === reference.length) return cost;
+
+    if (r < observed.length && c < reference.length) {
+      const step = observed[r] === reference[c] ? 0 : 1;
+      const next = encode(r + 1, c + 1);
+      const candidate = cost + step;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r + 1, c + 1]);
+      }
+    }
+
+    if (r < observed.length) {
+      const next = encode(r + 1, c);
+      const candidate = cost + 1;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r + 1, c]);
+      }
+    }
+
+    if (c < reference.length) {
+      const next = encode(r, c + 1);
+      const candidate = cost + 1;
+      if (candidate < best[next]) {
+        best[next] = candidate;
+        queue.push([candidate, r, c + 1]);
+      }
+    }
+  }
+
+  return best[total - 1];
+}
+
+const main = stdin => {
+  const [word, input] = stdin.split('\n');
+  console.log(measureEditRoute(word, input));
 };
 
-processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

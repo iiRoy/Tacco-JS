@@ -1,38 +1,39 @@
 'use strict';
+function acquireSourceData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
+function displayResult(finalValue) {
+  console.log(finalValue);
+}
 
-const UtilityBelt = (() => {
-    const loader = require;
-    const fileSystem = loader("node:fs");
+const inputTransformers = new Map([
+  [0, (val) => val],
+  [1, (val) => Number.parseInt(val)],
+  [2, (val) => val.split(" ")],
+  [3, (val) => val.split("\n")],
+  [4, (val) => val.split(" ").map(Number)],
+  [5, (val) => val.split("\n").map(Number)],
+  [6, (val) => val.split("")],
+  [7, (val) => val.split("").map(Number)]
+]);
 
-    const acquireData = () => fileSystem.readFileSync("/dev/stdin", "utf8").trim();
-    const transmitResult = (info) => process.stdout.write(String(info) + '\n');
+function applyInputTransformation(rawData, strategyKey) {
+  const transformer = inputTransformers.get(strategyKey);
+  return transformer ? transformer(rawData) : rawData;
+}
 
-    const aggregateConditionally = (items, currentSum = 0) => {
-        if (items.length === 0) {
-            return currentSum;
-        }
-        const [[valP, valQ], ...remainingItems] = items;
-        const nextSum = valP < valQ ? currentSum + valQ : currentSum;
-        return aggregateConditionally(remainingItems, nextSum);
-    };
+function processDataset(rawInputString) {
+  const dataLines = applyInputTransformation(rawInputString, 3).slice(1);
 
-    return {
-        grabRaw: acquireData,
-        sendFinal: transmitResult,
-        calculateSum: aggregateConditionally
-    };
-})();
+  const accumulatedSum = dataLines.reduce((currentSum, lineEntry) => {
+    const [firstValStr, secondValStr] = lineEntry.split(" ");
+    const firstNumeric = Number(firstValStr);
+    const secondNumeric = Number(secondValStr);
 
-(() => {
-    const sourceText = UtilityBelt.grabRaw();
+    return currentSum + (firstNumeric < secondNumeric ? secondNumeric : 0);
+  }, 0);
 
-    const parsedLines = sourceText
-        .split('\n')
-        .slice(1)
-        .filter(segment => segment.length > 0)
-        .map(segment => segment.split(' ').map(Number));
+  displayResult(accumulatedSum);
+}
 
-    const ultimateTotal = UtilityBelt.calculateSum(parsedLines);
-
-    UtilityBelt.sendFinal(ultimateTotal);
-})();
+processDataset(acquireSourceData());

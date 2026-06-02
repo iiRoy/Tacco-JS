@@ -1,21 +1,27 @@
-const entryPoint = (dataString) => {
-    const [firstValue, secondValue] = dataString.match(/\d+/g).map(Number);
+"use strict";
 
-    const scoreRules = [
-        (valA, valB) => (valA === 1 ? 30000 : 0),
-        (valA, valB) => (valA === 2 ? 20000 : 0),
-        (valA, valB) => (valA === 3 ? 10000 : 0),
-        (valA, valB) => (valB === 1 ? 30000 : 0),
-        (valA, valB) => (valB === 2 ? 20000 : 0),
-        (valA, valB) => (valB === 3 ? 10000 : 0),
-        (valA, valB) => (valA === 1 && valB === 1 ? 40000 : 0)
-    ];
+const processInput = (rawInput) => {
+    const [lineData] = rawInput.trim().split("\n");
+    const [valAStr, valBStr] = lineData.split(" ");
+    const valA = parseInt(valAStr, 10);
+    const valB = parseInt(valBStr, 10);
 
-    const accumulatedScore = scoreRules.reduce((currentSum, ruleFunction) => {
-        return currentSum + ruleFunction(firstValue, secondValue);
-    }, 0);
+    const pointTiers = Object.freeze({
+        1: 30000,
+        2: 20000,
+        3: 10000
+    });
 
-    console.log(accumulatedScore);
+    const calculateContribution = (value) => pointTiers[value] || 0;
+
+    const contributionA = calculateContribution(valA);
+    const contributionB = calculateContribution(valB);
+
+    const bonusPoints = (valA === 1 && valB === 1) ? 40000 : 0;
+
+    const totalScore = contributionA + contributionB + bonusPoints;
+
+    console.log(totalScore);
 };
 
-entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

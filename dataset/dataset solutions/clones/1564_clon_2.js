@@ -1,92 +1,78 @@
-// This function serves as the primary entry point, handling the initial data parsing and orchestrating the coprimality checks.
 function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  rawData = rawData.split("\n");
 
-  // Split the entire input string into individual lines.
-  const processedLines = rawData.split('\n');
+  // Parse the first line to get the number of elements (N)
+  let countElements = Number(rawData[0]);
+  // Parse the second line, split by space, and convert to an array of numbers
+  let numberList = rawData[1].split(" ").map(Number);
 
-  // The first line is typically a count, though its direct use might vary.
-  // We use parseInt for a slight type change from original 'Number'.
-  let elementCount = parseInt(processedLines[0], 10);
-
-  // Parse the second line into an array of integers.
-  var numberCollection = processedLines[1].split(' ').map(parseInt);
-
-  // First check: if the greatest common divisor of ALL numbers is not 1,
-  // then they cannot be pairwise or setwise coprime.
-  if (findGCD(...numberCollection) !== 1) {
+  // Check if the greatest common divisor of all numbers is not 1
+  // If it's not 1, they are not coprime at all.
+  if (calculateGCD(...numberList) !== 0x1) {
     console.log("not coprime");
-    return; // Terminate execution early.
+    return; // Exit early
   }
 
-  // Initialize an array to store the frequency of each number.
-  // The maximum possible value is 1,000,000, so the array size is 1,000,001.
-  const numberOccurrences = Array(1000001).fill(0);
+  // Initialize an array to track the frequency of each number up to 1,000,001
+  // This array will help in determining pairwise and setwise coprimality.
+  let occurrenceTracker = Array(1_000_001).fill(0x0);
 
-  // Iterate through each number in the collection to count occurrences and perform an initial check.
-  for (const currentNumber of numberCollection) {
-    // Numbers equal to 1 do not affect coprimality checks in this context, so they are skipped.
-    if (currentNumber === 1) {
-      continue;
-    }
-    
-    // Increment the count for the current number.
-    numberOccurrences[currentNumber]++;
-    
-    // If any number appears more than once, it immediately means they are not pairwise coprime.
-    // However, they could still be setwise coprime if their overall GCD is 1 (checked above).
-    // The problem statement implies this path leads to 'setwise coprime' if the overall GCD is 1.
-    if (numberOccurrences[currentNumber] > 1) {
+  // First pass: Populate the frequency array and check for immediate setwise coprimality
+  // If any number appears more than once, they are setwise coprime (not pairwise).
+  for (let currentNum of numberList) {
+    // Skip 1 as it doesn't affect GCD checks for other numbers
+    if (currentNum === 0x1) continue;
+
+    occurrenceTracker[currentNum]++; // Increment count for the current number
+    // If a number appears more than once, it means they share a common factor (themselves)
+    // and thus are setwise coprime, not pairwise.
+    if (occurrenceTracker[currentNum] > 0x1) {
       console.log("setwise coprime");
-      return; // Terminate execution.
+      return; // Exit early
     }
   }
 
-  // Second phase of checks: iterate through potential common divisors (starting from 2).
-  // This loop identifies if any prime factor (or composite factor) is shared by two or more numbers.
-  for (let divisorCandidate = 2; divisorCandidate <= 1000001; divisorCandidate++) {
-    var currentDivisorCount = 0; // Tracks how many numbers are divisible by 'divisorCandidate'.
+  // Second pass: Check for common prime factors among distinct numbers
+  // Iterate through potential prime factors starting from 2
+  for (let divisorCandidate = 0b10; divisorCandidate <= 1_000_001; divisorCandidate++) {
+    let divisorCount = 0x0; // Counter for numbers divisible by divisorCandidate
 
-    // For each divisor candidate, iterate through its multiples.
-    for (let multiple = divisorCandidate; multiple <= 1000001; multiple += divisorCandidate) {
-      // Add the occurrences of this multiple to our running total for the current divisor.
-      currentDivisorCount += numberOccurrences[multiple];
-      
-      // If two or more numbers share this common divisor, then they are setwise coprime.
-      if (currentDivisorCount >= 2) {
+    // Iterate through multiples of divisorCandidate
+    for (let multipleIndex = divisorCandidate; multipleIndex <= 1_000_001; multipleIndex += divisorCandidate) {
+      // Add the frequency of the current multiple to divisorCount
+      divisorCount += occurrenceTracker[multipleIndex];
+      // If two or more numbers share this common divisorCandidate,
+      // they are setwise coprime (not pairwise).
+      if (divisorCount >= 0b10) {
         console.log("setwise coprime");
-        return; // Terminate execution.
+        return; // Exit early
       }
     }
   }
 
-  // If none of the above conditions were met, it means no common divisors were found
-  // (other than 1), and no numbers were repeated. Thus, they are pairwise coprime.
+  // If all checks pass, it means no two numbers share a common factor greater than 1.
   console.log("pairwise coprime");
-
 }
 
 /**
- * Calculates the Greatest Common Divisor (GCD) for a dynamic list of numbers.
- * This function utilizes the Euclidean algorithm.
- * @param {...number} numbersToExamine - An array of numerical values.
- * @returns {number} The GCD of all input numbers.
+ * Calculates the Greatest Common Divisor (GCD) of an arbitrary number of integers.
+ * Uses the Euclidean algorithm.
+ * @param {...number} valuesToProcess - A list of numbers for which to calculate the GCD.
+ * @returns {number} The GCD of the provided numbers.
  */
-const findGCD = (...numbersToExamine) => {
-  // A recursive helper function to compute GCD of two integers.
-  // Uses ternary operator for conciseness.
-  const calculateRecursiveGCD = (firstVal, secondVal) => secondVal ? calculateRecursiveGCD(secondVal, firstVal % secondVal) : firstVal;
-  
-  // Initialize the result with the first number in the list.
-  let currentGCDResult = numbersToExamine[0];
-  
-  // Iterate through the rest of the numbers, updating the GCD cumulatively.
-  for (var index = 1; index < numbersToExamine.length; index++) {
-    currentGCDResult = calculateRecursiveGCD(currentGCDResult, numbersToExamine[index]);
-  }
-  
-  return currentGCDResult;
-};
+function calculateGCD(...valuesToProcess) {
+  // Inner helper function for the Euclidean algorithm (GCD of two numbers)
+  const euclideanAlgorithm = (valA, valB) => (valB ? euclideanAlgorithm(valB, valA % valB) : valA);
 
-// Execute the main processing function by reading input from standard input.
-// Using 'node:fs' for a slight variation from 'fs'.
-ProcessInput( require("node:fs").readFileSync("/dev/stdin", "utf8") );
+  // Initialize the result with the first number
+  let resultGCD = valuesToProcess[0];
+  // Iterate through the rest of the numbers, updating the GCD
+  for (let i = 0x1; i < valuesToProcess.length; i++) {
+    resultGCD = euclideanAlgorithm(resultGCD, valuesToProcess[i]);
+  }
+  return resultGCD;
+}
+
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,18 +1,17 @@
-/*
- * This module handles the primary computation logic.
- * It processes raw text input to produce a specific numerical output.
- */
-function calculateResult(receivedText)
-{
-   // Remove any leading or trailing whitespace from the received string data.
-   receivedText = receivedText.trim();
+function processInput(rawData) {
+  // Remove any leading or trailing whitespace from the initial string data.
+  let trimmedData = rawData.trim();
 
-   // Split the cleaned string by a space delimiter and convert each resulting segment into a numeric value.
-   const numberArray = receivedText.split(" ").map(Number);
+  // Parse the cleaned string: split by spaces and convert each segment into a numerical value.
+  const numArray = trimmedData.split(" ").map(Number);
 
-   // Compute the sum of the first two elements and then find the remainder when divided by 24, displaying the final value.
-   console.log((numberArray[0] + numberArray[1]) % 24);
+  // Compute the sum of the first two numerical elements, then apply a modulo 24 operation.
+  // The result is then printed to the standard output.
+  console.log((numArray[0] + numArray[1]) % 24);
 }
 
-// Initial invocation: obtain content from standard input using the Node.js 'fs' module and pass it to the main processing function.
-calculateResult(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the primary processing function by reading content from standard input.
+// The 'fs' module is used to access the file system, and 'readFileSync' reads the entire file synchronously.
+// '/dev/stdin' is the conventional path for standard input on Unix-like systems.
+// 'utf8' specifies the character encoding for the input data.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

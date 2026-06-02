@@ -1,14 +1,11 @@
-function processInputData(incomingText) {
-    const dataSegments = incomingText
-        .split('\n')
-        .map(segment => segment.trim())
-        .filter(segment => segment.length > 0);
-
-    const cycleCount = parseInt(dataSegments[0], 10);
-
-    const generatedPayload = Array(cycleCount).fill("ACL").join('');
-
-    console.log(generatedPayload);
+function processInput(rawData) {
+    const lines = rawData.split("\n").filter(Boolean);
+    
+    const countVal = Number(lines[0]);
+    
+    const outputString = "ACL".repeat(countVal);
+    
+    console.log(outputString);
 }
 
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

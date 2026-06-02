@@ -1,35 +1,56 @@
-const performAnalysis = (rawDataString) => {
-    const segmentData = rawDataString.split('\n');
-    const elementCount = Number(segmentData[0]);
-    const numericalSequence = segmentData[1].split(' ').map(Number);
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-    const calculateMinOperations = (sequence, initialTargetSign) => {
-        const startingState = { currentCumulativeValue: 0, totalAdjustmentCost: 0 };
+((rawInput) => {
+    const dataRows = rawInput.split('\n');
+    const sequenceLength = Number(dataRows[0]);
+    const numericSequence = dataRows[1].split(' ').map(Number);
 
-        const resultingState = sequence.reduce((accumulator, currentElement, elementIndex) => {
-            const targetSignForThisStep = (elementIndex % 2 === 0) ? initialTargetSign : -initialTargetSign;
-            const projectedCumulativeValue = accumulator.currentCumulativeValue + currentElement;
+    const processSequenceElement = (
+        currentAccumulatorState,
+        currentValue,
+        currentIndex,
+        initialParityShift
+    ) => {
+        const { accumulatedValue, totalAdjustments } = currentAccumulatorState;
 
-            const requiresModification = (targetSignForThisStep * projectedCumulativeValue <= 0);
+        const currentParityIndicator = (currentIndex + initialParityShift) % 2;
+        const targetSignValue = (currentParityIndicator === 1) ? -1 : 1;
 
-            const finalCumulativeValueForStep = requiresModification ? targetSignForThisStep : projectedCumulativeValue;
-            const incrementalCost = requiresModification ? Math.abs(projectedCumulativeValue - targetSignForThisStep) : 0;
+        const potentialNextSum = accumulatedValue + currentValue;
 
-            return {
-                currentCumulativeValue: finalCumulativeValueForStep,
-                totalAdjustmentCost: accumulator.totalAdjustmentCost + incrementalCost
-            };
-        }, startingState);
+        let adjustmentAmount = 0;
+        let nextAccumulatedSum = potentialNextSum;
 
-        return resultingState.totalAdjustmentCost;
+        const requiresCorrection =
+            (targetSignValue > 0 && potentialNextSum <= 0) ||
+            (targetSignValue < 0 && potentialNextSum >= 0);
+
+        if (requiresCorrection) {
+            adjustmentAmount = Math.abs(potentialNextSum - targetSignValue);
+            nextAccumulatedSum = targetSignValue;
+        }
+
+        return {
+            accumulatedValue: nextAccumulatedSum,
+            totalAdjustments: totalAdjustments + adjustmentAmount
+        };
     };
 
-    const firstScenarioResult = calculateMinOperations(numericalSequence, 1);
-    const secondScenarioResult = calculateMinOperations(numericalSequence, -1);
+    const calculateMinimumAdjustments = (sequence, initialOffset) => {
+        const initialAccumulatorState = { accumulatedValue: 0, totalAdjustments: 0 };
 
-    return Math.min(firstScenarioResult, secondScenarioResult);
-};
+        const finalAccumulatorState = sequence.reduce(
+            (acc, val, idx) => processSequenceElement(acc, val, idx, initialOffset),
+            initialAccumulatorState
+        );
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutput = performAnalysis(inputData);
-console.log(finalOutput);
+        return finalAccumulatorState.totalAdjustments;
+    };
+
+    const firstScenarioCost = calculateMinimumAdjustments(numericSequence, 0);
+
+    const secondScenarioCost = calculateMinimumAdjustments(numericSequence, 1);
+
+    console.log(Math.min(firstScenarioCost, secondScenarioCost));
+
+})(sourceData);

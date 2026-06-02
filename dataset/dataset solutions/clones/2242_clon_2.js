@@ -1,27 +1,35 @@
-function ProcessData(inputPayload) {
-	let numericComponents = inputPayload.trim().split(" ").map(
-		(strVal) => parseInt(strVal, 10)
-	);
+function ProcessInput(rawData) {
+	// This function processes raw input data.
+	// The initial string is cleaned, split by spaces, and each part converted to an integer.
+	let parsedNumbers = rawData.trim().split(" ").map((numStr) => parseInt(numStr, 10));
 
-	let totalItems = numericComponents[0];
-	let initialRange = numericComponents[1];
-	let baseItem = numericComponents[2];
+	let countElements = parsedNumbers[0]; // First number represents the total count.
+	let thresholdValue = parsedNumbers[1]; // Second number is a threshold.
+	let initialValue = parsedNumbers[2]; // Third number is a starting value.
 
-	let outputCollector = "";
+	let resultString = ""; // Accumulator for the output sequence.
 
-	for (let elementIndex = 1; elementIndex <= totalItems; elementIndex++) {
-		if (elementIndex <= initialRange) {
-			outputCollector += baseItem + " ";
+	// Iterate from 1 up to the total count.
+	for (let loopIndex = 1; loopIndex <= countElements; loopIndex++) {
+		if (loopIndex <= thresholdValue) {
+			// If the current index is within the threshold, append the initial value.
+			resultString += initialValue + " ";
 		} else {
-			if (baseItem === 1) {
-				outputCollector += (baseItem + 1) + " ";
+			// Otherwise, apply a conditional modification to the initial value.
+			if (initialValue === 1) {
+				resultString += (initialValue + 1) + " "; // If initial value is 1, use 1+1.
 			} else {
-				outputCollector += (baseItem - 1) + " ";
+				resultString += (initialValue - 1) + " "; // Otherwise, use initial value - 1.
 			}
 		}
 	}
-	outputCollector.replace(/ $/, '');
 
-	console.log(outputCollector);
+	// Attempt to remove a trailing space, but this operation does not modify the string in place.
+	resultString.replace(/ $/, '');
+
+	// Display the final generated string to the console.
+	console.log(resultString);
 }
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// The following lines handle standard input/output and should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

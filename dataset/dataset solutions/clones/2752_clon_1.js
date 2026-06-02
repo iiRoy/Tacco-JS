@@ -1,93 +1,56 @@
+// +======================================================================+
+// | プロジェクト: 島 Ember                                               |
+// | メンバー: 鈴木七海                                                   |
+// +======================================================================+
+     function myOut(text) {console.log ( text); }  // 読み取り 今整理する 局所的な判断 出力前に短く.
+ function Main(input) {
+/* 読み取り また保つ 次の段階 計算中に内部. */
+input= input.trim();
+/* 読み取り よく保つ ブロックの終端 計算中に短く. */
+
+
+input = input.split("\n");
+
+
+
+     var N = parseInt(input[0].split(" ")[0]);
+var M = parseInt(input[0].split(" ")[1]);
+    if(M % 2 == 1){
+/* 読み取り よく保つ 局所的な値の分析 出力前に内部. */
+console.log("-1");
+	return ;
+
 /*
- * This file contains a JavaScript program designed to process input data.
- * It includes functions for basic output and a main logic function.
+ * 読み取り また保つ 重要な主要な操作 計算中に最終.
+ * 読み取り よく保つ 最終の主要な操作 各値ごとに明確.
  */
+  }
+      input.shift (); 
+       var list = {};
+      for( var  i = 1; i <=N; i++){
+    list [i]  =  [ ];
+      }
+  for(var i = 0; i < M; i++){
+   var tmp1 = input[i].split(" ")[0]; 
+      var tmp2 = input[i].split(" ")[1];
+/* 読み取り よく保つ 重要な計算された情報 入力と共に近く. */
+  list[tmp1].push(tmp2);  // 読み取り ここで整理する 最終の期待される出力 出力前に単純.
+      list [tmp2].push (tmp1 );   
+          }
+// 読み取り また整理する 最終の中間値 各値ごとに明確.
+// 読み取り 整理する 現在のデータの移動.
+/* 読み取り 整理する 現在のコードの連続性 出力前に最終. */
+  for ( var  i = 1;  i <=  N; i++) { 
+	if(list[i].length % 2 == 1){
+console.log("-1");
+	return ;
+		}
+  }
+	for (var i = 1;  i <=  M;i++) {
+     }
+	}
+// 読み取り ここで保つ 処理経路 各値ごとに有効.
+// 読み取り また整理する 最終の適用された変換 開始時に安定.
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Function to handle standard console output.
-function myOut ( text ) {
-    console . log ( text ) ; // Displays the provided text to the console.
-}
-
-/**
- * The primary function that processes the input string.
- * @param {string} input - The raw input string read from stdin.
- */
-function Main ( input ) {
-
-    // Remove leading and trailing whitespace from the input string.
-    input = input . trim ( ) ;
-
-    // These lines are commented out, showing alternative input parsing strategies.
-    // input = input.split(" ");
-    // input = input.split(" ").map((a)=>Number(a));
-    // input = input.split("\n").map((a)=>Number(a));
-
-    // Split the input string into an array of lines based on the newline character.
-    input = input . split ( "\n" ) ;
-
-
-    // Parse the first line of input to extract N and M.
-    // N represents the number of nodes, M represents the number of edges.
-    var N = parseInt ( input [ 0 ] . split ( " " ) [ 0 ] ) ;
-    var M = parseInt ( input [ 0 ] . split ( " " ) [ 1 ] ) ;
-
-
-    // Check if the number of edges (M) is odd.
-    // If M is odd, a valid graph structure cannot be formed under certain conditions (e.g., Eulerian path/circuit).
-    if ( M % 2 == 1 ) {
-        console . log ( "-1" ) ; // Output -1 to indicate an invalid state or error.
-        return ;                  // Exit the function early.
-    }
-
-
-    // Remove the first line of input, as N and M have already been processed.
-    input . shift ( ) ;
-
-
-    // Initialize an empty object to represent the adjacency list of the graph.
-    var list = { } ;
-
-
-    // Populate the adjacency list with empty arrays for each node from 1 to N.
-    // This ensures every node has an entry even if it has no connections initially.
-    for ( var i = 1 ; i <= N ; i ++ ) {
-        list [ i ] = [ ] ;
-    }
-
-
-    // Process the remaining input lines to build the graph's adjacency list.
-    // Each line represents an edge between two nodes.
-    for ( var i = 0 ; i < M ; i ++ ) {
-        // Split the current line to get the two connected nodes.
-        var tmp1 = input [ i ] . split ( " " ) [ 0 ] ;
-        var tmp2 = input [ i ] . split ( " " ) [ 1 ] ;
-
-        // Add connections to the adjacency list for both directions (undirected graph).
-        list [ tmp1 ] . push ( tmp2 ) ;
-        list [ tmp2 ] . push ( tmp1 ) ;
-    }
-
-
-    // Iterate through each node to check the degree of each node.
-    // For a valid Eulerian path/circuit, all node degrees must be even.
-    for ( var i = 1 ; i <= N ; i ++ ) {
-        // If any node has an odd degree, it's an invalid graph for the problem's constraints.
-        if ( list [ i ] . length % 2 == 1 ) {
-            console . log ( "-1" ) ; // Output -1 to indicate an error.
-            return ;                  // Exit the function.
-        }
-    }
-
-
-    // This loop appears to be a placeholder or intended for future logic.
-    // It currently performs no operations.
-    for ( var i = 1 ; i <= M ; i ++ ) {
-        // No operations defined within this loop's body.
-    }
-
-} // End of the Main function.
-
-
-// Invoke the Main function with input read from standard input.
-// This is a common pattern for competitive programming in Node.js.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ; // Reads entire file as UTF-8 string.
+// 読み取り 今整理する 現在のプログラムの形 各値ごとに有効.

@@ -1,69 +1,86 @@
-// This function calculates the new state of a 3D block after a directional shift.
-// It takes the current block's face configuration and a direction code.
-function shiftBlock(directionCode, currentBlockState) {
-  // Extract individual face values from the current state array.
-  let faceOne   = currentBlockState[0];
-  let faceTwo   = currentBlockState[1];
-  let faceThree = currentBlockState[2];
-  let faceFour  = currentBlockState[3];
-  let faceFive  = currentBlockState[4];
-  let faceSix   = currentBlockState[5];
+function shiftDice(directionChar, currentDiceState) {
+    // Extract individual face values from the current dice state array
+    let faceOne = currentDiceState[0];
+    let faceTwo = currentDiceState[1];
+    let faceThree = currentDiceState[2];
+    let faceFour = currentDiceState[3];
+    let faceFive = currentDiceState[4];
+    let faceSix = currentDiceState[5];
 
-  // Initialize an array to hold the new face configuration.
-  let newState  = [];
+    // Initialize an array to hold the new dice state after the move
+    const nextDiceState = [];
 
-  // Based on the given direction, determine the new arrangement of faces.
-  if (directionCode === "N") {
-    newState = [faceTwo, faceSix, faceThree, faceFour, faceOne, faceFive]; // North shift
-  }
-  if (directionCode === "S") {
-    newState = [faceFive, faceOne, faceThree, faceFour, faceSix, faceTwo]; // South shift
-  }
-  if (directionCode === "E") {
-    newState = [faceFour, faceTwo, faceOne, faceSix, faceFive, faceThree]; // East shift
-  }
-  if (directionCode === "W") {
-    newState = [faceThree, faceTwo, faceSix, faceOne, faceFive, faceFour]; // West shift
-  }
+    // Determine the new arrangement of faces based on the direction
+    if (directionChar === 'N') {
+        // North move: top (1) goes to front (2), front (2) goes to bottom (6), bottom (6) goes to back (5), back (5) goes to top (1)
+        nextDiceState[0] = faceTwo;
+        nextDiceState[1] = faceSix;
+        nextDiceState[2] = faceThree;
+        nextDiceState[3] = faceFour;
+        nextDiceState[4] = faceOne;
+        nextDiceState[5] = faceFive;
+    } else if (directionChar === 'S') {
+        // South move: top (1) goes to back (5), back (5) goes to bottom (6), bottom (6) goes to front (2), front (2) goes to top (1)
+        nextDiceState[0] = faceFive;
+        nextDiceState[1] = faceOne;
+        nextDiceState[2] = faceThree;
+        nextDiceState[3] = faceFour;
+        nextDiceState[4] = faceSix;
+        nextDiceState[5] = faceTwo;
+    } else if (directionChar === 'E') {
+        // East move: top (1) goes to right (4), right (4) goes to bottom (6), bottom (6) goes to left (3), left (3) goes to top (1)
+        nextDiceState[0] = faceFour;
+        nextDiceState[1] = faceTwo;
+        nextDiceState[2] = faceOne;
+        nextDiceState[3] = faceSix;
+        nextDiceState[4] = faceFive;
+        nextDiceState[5] = faceThree;
+    } else if (directionChar === 'W') {
+        // West move: top (1) goes to left (3), left (3) goes to bottom (6), bottom (6) goes to right (4), right (4) goes to top (1)
+        nextDiceState[0] = faceThree;
+        nextDiceState[1] = faceTwo;
+        nextDiceState[2] = faceSix;
+        nextDiceState[3] = faceOne;
+        nextDiceState[4] = faceFive;
+        nextDiceState[5] = faceFour;
+    }
 
-  // Return the updated block state.
-  return newState;
+    // Return the new configuration of the dice
+    return nextDiceState;
 }
 
-// Read all input data from standard input, assuming UTF-8 encoding.
+// Read input from standard input
 const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input: trim whitespace, then split into an array of lines.
-let lineData = rawData.trim().split("\n");
+// Process the input data by splitting into lines
+let lineData = rawData.trim().split('\n');
 
-// The first line contains the initial configuration of the block's faces.
-// Split by space and convert each part to a number.
-let blockFaces = lineData[0].split(" ").map(Number);
+// The initial state of the dice (top, front, left, right, back, bottom)
+let currentCubeFaces = lineData[0].split(' ').map(Number);
 
-// Remove the first two lines from the processed input, as they are now consumed.
-// These lines likely contained setup information or were placeholders.
+// Remove the first two lines from the processed input array
+// The first line contains the initial dice state, which has already been parsed.
 lineData.shift();
+// The second line (which was originally the first target, but now it's the second line after the first shift)
+// is also removed as per the original logic.
 lineData.shift();
 
-// Define the possible movement directions as an array of characters.
-const moveDirections = "NSEW".split("");
+// Define the possible cardinal directions for movement
+const cardinalDirections = ['N', 'S', 'E', 'W'];
 
-// Iterate over the remaining lines of input, each representing a target state.
+// Iterate over each remaining line of input, which represents a target state
 lineData.forEach(function(lineContent) {
-  // Parse the target row and column from the current line.
-  // Using parseInt for explicit type conversion.
-  let targetRow = parseInt(lineContent.split(" ")[0], 10);
-  let targetCol = parseInt(lineContent.split(" ")[1], 10);
+    // Parse the target top and front faces from the current line
+    const targetFaceOne = parseInt(lineContent.split(' ')[0], 10); // Target top face
+    const targetFaceTwo = parseInt(lineContent.split(' ')[1], 10); // Target front face
 
-  // Keep shifting the block randomly until its top face (index 0) and front face (index 1)
-  // match the target row and column values.
-  while (!(blockFaces[0] === targetRow && blockFaces[1] === targetCol)) {
-    // Generate a random index to pick a direction (N, S, E, W).
-    let randomDirIndex = Math.floor(Math.random() * 4);
-    // Apply the random shift to the block and update its state.
-    blockFaces = shiftBlock(moveDirections[randomDirIndex], blockFaces);
-  }
-
-  // Once the target state is reached, print the value of the block's third face (index 2).
-  console.log(blockFaces[2]);
+    // Keep rolling the dice randomly until the current top and front faces match the target
+    while (!(currentCubeFaces[0] === targetFaceOne && currentCubeFaces[1] === targetFaceTwo)) {
+        // Generate a random index to pick a direction (0-3 for N, S, E, W)
+        const randomDirectionIndex = Math.floor(Math.random() * 4);
+        // Move the dice in the randomly chosen direction
+        currentCubeFaces = shiftDice(cardinalDirections[randomDirectionIndex], currentCubeFaces);
+    }
+    // Once the target state is reached, print the value of the bottom face (index 2)
+    console.log(currentCubeFaces[2]);
 });

@@ -1,68 +1,99 @@
-(function() {
-    const dataStreamProcessor = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    let collectedInputLines = [];
-    dataStreamProcessor.on('line', (individualLine) => {
-        collectedInputLines.push(individualLine);
-    });
-    dataStreamProcessor.on('close', () => {
-        const interpretNumericString = (textValue) => textValue.split(" ").map(Number);
+var read = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var inputProcessor;
+var inputLines = [];
+read.on('line', function(lineData){inputLines.push(lineData);});
+read.on('close', function(){
+  inputProcessor = initializeInput(inputLines);
+  console.error("\n");
+  var startTime = new Date();
+  processMainLogic();
+  var endTime = new Date() - startTime;
+  
+  debugLog("time : " + (endTime) + "ms");
+  debugLog("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
 
-        const initialParameters = interpretNumericString(collectedInputLines[0]);
-        const totalElements = initialParameters[0];
-        const requiredQuantity = initialParameters[1];
-        const rawElementValues = interpretNumericString(collectedInputLines[1]);
+function deepCopyObject(sourceObj){return JSON.parse(JSON.stringify(sourceObj));}
+function getNextInt(){return convertInput(getNextToken(),1);}
+function getNextStrArray(){return convertInput(getNextToken(),2);}
+function getNextIntArray(){return convertInput(getNextToken(),4);}
+function getNextCharArray(){return convertInput(getNextToken(),6);}
+function getNextToken(){return inputProcessor.retrieveNext();}
+function hasMoreTokens(){return inputProcessor.checkHasNext();}
 
-        if (requiredQuantity === 1) {
-            console.log(0);
-            return;
-        }
+function initializeInput(lines){  
+  var inputHandler = {
+    dataList : lines,
+    currentIndex : 0,
+    maxIndex : lines.length,
+    checkHasNext : function(){return (this.currentIndex < this.maxIndex);},
+    retrieveNext : function(){
+      if(!this.checkHasNext()){throw "InputOutOfBoundsException: No more input available";}
+      else{var currentInput = this.dataList[this.currentIndex];this.currentIndex++;return currentInput;}
+    }
+  };
+  return inputHandler;
+}
 
-        let overallMinimalCost = Number.MAX_SAFE_INTEGER;
+function outputResult(data){console.log(data);}
+function debugLog(message){console.error("debug:" + require("util").inspect(message,false,null));}
 
-        const calculateAdjustedExpense = (sequenceToEvaluate) => {
-            if (sequenceToEvaluate.length <= 1) return 0;
+function convertInput(value, conversionType){
+  try{
+    switch(conversionType){
+      case 1:return parseInt(value);
+      case 2:return value.split(" ");
+      case 4:return value.split(" ").map(Number);
+      case 6:return value.split("");
+      case 7:return value.split("").map(Number);
+      case 8:return value.join(" ");
+      case 9:return value.join("\n");
+      case 0:return value.join("");
+      default:return value;
+    }
+  }catch(e){return value;}
+}
 
-            const finalOutcome = sequenceToEvaluate.slice(1).reduce(
-                (accumulatorResult, currentItemValue) => {
-                    let currentAccumulatedExpense = accumulatorResult.currentCalculatedExpense;
-                    let lastKnownAdjustedValue = accumulatorResult.lastModifiedElement;
+function processMainLogic(){
+	const [totalBuildings, requiredVisible] = getNextIntArray();
+	const buildingHeights = getNextIntArray();
 
-                    if (currentItemValue <= lastKnownAdjustedValue) {
-                        let necessaryIncrease = lastKnownAdjustedValue - currentItemValue + 1;
-                        currentAccumulatedExpense += necessaryIncrease;
-                        lastKnownAdjustedValue += necessaryIncrease; 
-                    } else {
-                        lastKnownAdjustedValue = currentItemValue;
-                    }
-                    return { currentCalculatedExpense: currentAccumulatedExpense, lastModifiedElement: lastKnownAdjustedValue };
-                },
-                { currentCalculatedExpense: 0, lastModifiedElement: sequenceToEvaluate[0] }
-            );
-            return finalOutcome.currentCalculatedExpense;
-        };
+	if (requiredVisible === 1) {
+		outputResult(0);
+		return;
+	}
 
-        const generateAndProcessSubsequences = (focusIndex, currentSequenceValues) => {
-            if (focusIndex === totalElements) {
-                if (currentSequenceValues.length >= requiredQuantity) {
-                    const currentPathExpense = calculateAdjustedExpense(currentSequenceValues);
-                    overallMinimalCost = Math.min(overallMinimalCost, currentPathExpense);
-                }
-                return;
-            }
+	let minimumOverallCost = Number.MAX_SAFE_INTEGER;
 
-            // Branch 1: Incorporate the element at focusIndex
-            generateAndProcessSubsequences(focusIndex + 1, currentSequenceValues.concat(rawElementValues[focusIndex]));
+	const exploreBuildingOptions = (currentBuildingIndex, currentSelectionHeights, accumulatedCostForSelection) => {
+		if (currentBuildingIndex === totalBuildings) {
+			if (currentSelectionHeights.length >= requiredVisible) {
+				minimumOverallCost = Math.min(minimumOverallCost, accumulatedCostForSelection);
+			}
+			return;
+		}
 
-            // Branch 2: Exclude the element at focusIndex
-            generateAndProcessSubsequences(focusIndex + 1, currentSequenceValues);
-        };
+		exploreBuildingOptions(currentBuildingIndex + 1, currentSelectionHeights, accumulatedCostForSelection);
 
-        // Initiating the process; the first element is always included.
-        generateAndProcessSubsequences(1, [rawElementValues[0]]);
+		const lastSelectedHeight = currentSelectionHeights[currentSelectionHeights.length - 1];
+		const originalHeightOfCurrentBuilding = buildingHeights[currentBuildingIndex];
 
-        console.log(overallMinimalCost);
-    });
-})();
+		let costToAdjust = 0;
+		let adjustedHeightForCurrent = originalHeightOfCurrentBuilding;
+
+		if (originalHeightOfCurrentBuilding <= lastSelectedHeight) {
+			costToAdjust = lastSelectedHeight - originalHeightOfCurrentBuilding + 1;
+			adjustedHeightForCurrent = originalHeightOfCurrentBuilding + costToAdjust;
+		}
+
+		const newSelectionPath = [...currentSelectionHeights, adjustedHeightForCurrent];
+		exploreBuildingOptions(currentBuildingIndex + 1, newSelectionPath, accumulatedCostForSelection + costToAdjust);
+	};
+
+	exploreBuildingOptions(1, [buildingHeights[0]], 0);
+
+	outputResult(minimumOverallCost);
+}

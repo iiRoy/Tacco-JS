@@ -1,15 +1,15 @@
-'use strict';
-
-const processSpatialData = (rawGeometrySpec) => {
-  const [firstDimension, secondDimension, abscissa, ordinate] = rawGeometrySpec
+'use strict'
+const CalculateAndDisplay = (inputPayload) => {
+  const [widthDimension, heightDimension, xCoordinate, yCoordinate] = inputPayload
     .trim()
-    .split(/\s+/)
+    .split('\n')[0]
+    .split(' ')
     .map(Number);
 
-  const calculatedSurface = (firstDimension * secondDimension) / 2;
-  const isMidpoint = (firstDimension === (abscissa * 2) && secondDimension === (ordinate * 2)) | 0;
+  const computedAreaHalf = (widthDimension * heightDimension) / 2;
+  const isCentralPoint = + (xCoordinate === widthDimension / 2 && yCoordinate === heightDimension / 2);
 
-  console.log(calculatedSurface, isMidpoint);
+  console.log(computedAreaHalf, isCentralPoint);
 };
 
-processSpatialData(require("fs").readFileSync("/dev/stdin", "utf8"));
+CalculateAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,150 +1,149 @@
 class InputProcessor {
-    #sourceTextLines;
+    #sourceLines;
     #currentLineIndex;
-    #cachedLineTokens;
+    #currentLineTokens;
 
-    constructor(initialContent) {
-        this.#sourceTextLines = initialContent.split(/\r?\n/).map(txt => txt.trim()).filter(txt => txt.length > 0);
+    constructor(rawInput) {
+        this.#sourceLines = rawInput.trim().split("\n");
         this.#currentLineIndex = 0;
-        this.#cachedLineTokens = [];
+        this.#currentLineTokens = [];
     }
 
-    // Corresponds to GET.a() - reads a single token from the current line, right-to-left
-    fetchSingle(asString = false) {
-        if (this.#cachedLineTokens.length === 0) {
-            if (this.#currentLineIndex >= this.#sourceTextLines.length) {
-                throw new Error("No further input available.");
-            }
-            this.#cachedLineTokens = this.#sourceTextLines[this.#currentLineIndex].split(/\s+/).filter(t => t.length > 0).reverse();
+    #ensureTokens() {
+        if (this.#currentLineTokens.length === 0 && this.#currentLineIndex < this.#sourceLines.length) {
+            this.#currentLineTokens = this.#sourceLines[this.#currentLineIndex].split(" ").reverse();
         }
-        const tokenValue = this.#cachedLineTokens.pop();
-        if (this.#cachedLineTokens.length === 0) {
+    }
+
+    fetchToken(asString = false) {
+        this.#ensureTokens();
+        const token = this.#currentLineTokens.pop();
+        if (this.#currentLineTokens.length === 0) {
             this.#currentLineIndex++;
         }
-        return asString ? tokenValue : Number(tokenValue);
+        return asString ? token : Number(token);
     }
 
-    // Corresponds to GET.l() - reads an entire line as an array of tokens, left-to-right
     fetchLineTokens(asStrings = false) {
-        if (this.#currentLineIndex >= this.#sourceTextLines.length) {
-            throw new Error("No further input available.");
+        if (this.#currentLineIndex >= this.#sourceLines.length) {
+            return [];
         }
-        this.#cachedLineTokens = []; // Clear any partially consumed line tokens
-        const lineContent = this.#sourceTextLines[this.#currentLineIndex++];
-        const tokensArray = lineContent.split(/\s+/).filter(t => t.length > 0);
-        return asStrings ? tokensArray : tokensArray.map(Number);
+        const line = this.#sourceLines[this.#currentLineIndex++];
+        const tokens = line.split(" ");
+        return asStrings ? tokens : tokens.map(Number);
     }
 
-    // Corresponds to GET.m() - reads multiple lines as a 2D array
-    fetchMatrixTokens(lineCount, asStrings = false) {
-        const matrixResult = [];
-        for (let i = 0; i < lineCount; i++) {
-            matrixResult.push(this.fetchLineTokens(asStrings));
-        }
-        return matrixResult;
-    }
-
-    // Corresponds to GET.r() - reads multiple lines as a 1D array (each line is one element)
-    fetchSequentialValues(count, asStrings = false) {
-        const sequenceResult = [];
-        for (let i = 0; i < count; i++) {
-            if (this.#currentLineIndex >= this.#sourceTextLines.length) {
-                throw new Error("No further input available.");
+    fetchMatrix(rows, asStrings = false) {
+        const matrix = [];
+        for (let k = 0; k < rows; k++) {
+            if (this.#currentLineIndex >= this.#sourceLines.length) {
+                break;
             }
-            const lineValue = this.#sourceTextLines[this.#currentLineIndex++];
-            sequenceResult.push(asStrings ? lineValue : Number(lineValue));
+            const line = this.#sourceLines[this.#currentLineIndex++];
+            const tokens = line.split(" ");
+            matrix.push(asStrings ? tokens : tokens.map(Number));
         }
-        this.#cachedLineTokens = []; // Clear any partially consumed line tokens
-        return sequenceResult;
+        return matrix;
+    }
+
+    fetchLines(rows, asStrings = false) {
+        const lines = [];
+        for (let k = 0; k < rows; k++) {
+            if (this.#currentLineIndex >= this.#sourceLines.length) {
+                break;
+            }
+            const line = this.#sourceLines[this.#currentLineIndex++];
+            lines.push(asStrings ? line : Number(line));
+        }
+        return lines;
     }
 }
 
-const createDynamicArray = (...argumentsList) => {
-    const fillingValue = argumentsList[0];
-    const arrayDimensions = argumentsList.slice(1);
+const inputReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    if (arrayDimensions.length === 0) {
-        // Handles xArray(value) -> Array(value).map(() => value)
-        return Array.from({ length: fillingValue }).map(() => fillingValue);
+function makeMultiArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
     }
 
-    const recursiveArrayBuilder = (currentDepth) => {
-        if (currentDepth === arrayDimensions.length - 1) {
-            return Array.from({ length: arrayDimensions[currentDepth] }).map(() => fillingValue);
+    const createDimension = (dimIndex) => {
+        if (dimIndex === dimensions.length - 1) {
+            return Array.from({ length: dimensions[dimIndex] }, () => initialValue);
+        } else {
+            return Array.from({ length: dimensions[dimIndex] }, () => createDimension(dimIndex + 1));
         }
-        return Array.from({ length: arrayDimensions[currentDepth] }).map(() => recursiveArrayBuilder(currentDepth + 1));
     };
 
-    return recursiveArrayBuilder(0);
-};
+    return createDimension(0);
+}
 
-const performOverallCalculation = () => {
-    const dataStream = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(performCalculations());
 
-    const initialQuantity = dataStream.fetchSingle();
-    const listAlpha = dataStream.fetchLineTokens();
-    const listBeta = dataStream.fetchLineTokens();
+function performCalculations() {
+    const initialCapacity = inputReader.fetchToken();
+    const costsA = inputReader.fetchLineTokens();
+    const costsB = inputReader.fetchLineTokens();
 
-    const firstTransformationSet = listAlpha.reduce((accumulator, valueAlpha, index) => {
-        if (valueAlpha < listBeta[index]) {
-            accumulator.push({ cost: valueAlpha, gain: listBeta[index] });
+    const firstSet = costsA.reduce((acc, val, idx) => {
+        if (val < costsB[idx]) {
+            acc.costs.push(val);
+            acc.profits.push(costsB[idx]);
         }
-        return accumulator;
-    }, []);
+        return acc;
+    }, { costs: [], profits: [] });
 
-    const firstResult = determineOptimalValue(initialQuantity, firstTransformationSet);
+    const intermediateResult = calculateMaxProfit(initialCapacity, firstSet.costs, firstSet.profits);
 
-    const secondTransformationSet = listBeta.reduce((accumulator, valueBeta, index) => {
-        if (valueBeta < listAlpha[index]) {
-            accumulator.push({ cost: valueBeta, gain: listAlpha[index] });
+    const secondSet = costsA.reduce((acc, val, idx) => {
+        if (costsB[idx] < val) {
+            acc.costs.push(costsB[idx]);
+            acc.profits.push(val);
         }
-        return accumulator;
-    }, []);
+        return acc;
+    }, { costs: [], profits: [] });
 
-    return determineOptimalValue(firstResult, secondTransformationSet);
-};
+    return calculateMaxProfit(intermediateResult, secondSet.costs, secondSet.profits);
+}
 
-const determineOptimalValue = (startingValue, transformationsList) => {
-    const numTransformations = transformationsList.length;
+function calculateMaxProfit(currentCapacity, itemCosts, itemProfits) {
+    const itemCount = itemCosts.length;
 
-    if (numTransformations === 0) {
-        return startingValue;
+    if (itemCount === 0) {
+        return currentCapacity;
     }
 
-    if (numTransformations === 1) {
-        const { cost: singleCost, gain: singleGain } = transformationsList[0];
-        const applicationCount = Math.floor(startingValue / singleCost);
-        return startingValue - (applicationCount * singleCost) + (applicationCount * singleGain);
+    if (itemCount === 1) {
+        const numExchanges = Math.floor(currentCapacity / itemCosts[0]);
+        return currentCapacity + (numExchanges * (itemProfits[0] - itemCosts[0]));
     }
 
-    // Dynamic programming array: `maximizedValueAtCost[c]` stores the highest value achievable
-    // when a total 'cost' of `c` has been "spent" from the startingValue.
-    const maximizedValueAtCost = Array(startingValue + 1).fill(undefined);
-    maximizedValueAtCost[0] = startingValue; // Base case: 0 cost spent, value remains startingValue.
+    const profitTable = Array(currentCapacity + 1).fill(Number.MIN_SAFE_INTEGER);
+    profitTable[0] = currentCapacity;
 
-    // Iterate through each available transformation type
-    for (const { cost: currentCostAmount, gain: currentGainAmount } of transformationsList) {
-        // Iterate through all possible total costs from `currentCostAmount` up to `startingValue`
-        // This ensures that each transformation can be applied multiple times (unbounded knapsack-like)
-        for (let currentTotalCost = currentCostAmount; currentTotalCost <= startingValue; currentTotalCost++) {
-            if (maximizedValueAtCost[currentTotalCost - currentCostAmount] !== undefined) {
-                const calculatedNewValue = maximizedValueAtCost[currentTotalCost - currentCostAmount] + (currentGainAmount - currentCostAmount);
-                if (maxizedValueAtCost[currentTotalCost] === undefined || calculatedNewValue > maximizedValueAtCost[currentTotalCost]) {
-                    maximizedValueAtCost[currentTotalCost] = calculatedNewValue;
+    const items = itemCosts.map((cost, idx) => ({
+        cost: cost,
+        gain: itemProfits[idx] - cost
+    }));
+
+    for (const item of items) {
+        for (let currentCost = item.cost; currentCost <= currentCapacity; currentCost++) {
+            if (profitTable[currentCost - item.cost] !== Number.MIN_SAFE_INTEGER) {
+                const potentialNewValue = profitTable[currentCost - item.cost] + item.gain;
+                if (potentialNewValue > profitTable[currentCost]) {
+                    profitTable[currentCost] = potentialNewValue;
                 }
             }
         }
     }
 
-    // Scan for the maximum value within a specific range of total costs
-    let finalOptimizedResult = startingValue;
-    const scanLowerBound = Math.max(0, startingValue - 5000);
-    for (let currentTotalCost = scanLowerBound; currentTotalCost <= startingValue; currentTotalCost++) {
-        if (maximizedValueAtCost[currentTotalCost] !== undefined && maximizedValueAtCost[currentTotalCost] > finalOptimizedResult) {
-            finalOptimizedResult = maximizedValueAtCost[currentTotalCost];
+    let overallMax = currentCapacity;
+    const startIndex = Math.max(0, currentCapacity - 5000);
+
+    for (let i = startIndex; i <= currentCapacity; i++) {
+        if (profitTable[i] > overallMax) {
+            overallMax = profitTable[i];
         }
     }
-    return finalOptimizedResult;
-};
-
-console.log(performOverallCalculation());
+    
+    return overallMax;
+}

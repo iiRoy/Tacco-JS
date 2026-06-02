@@ -1,78 +1,60 @@
-'use strict'
+'use strict';
 
-function processInput ( inputString ) {
+function solve(source) {
+  source = source.split('\n')[0].split(' ').map(value => Number(value));
 
-  // Parse the input string: take the first line, split by space, convert to numbers.
-  inputString = inputString.split('\n')[0].split(' ').map(charVal => parseInt(charVal, 10));
+  const height = source[0];
+  const width = source[1];
 
-  const valueOne = inputString[0];
-  const valueTwo = inputString[1];
+  let result = Math.abs(height - 2) * Math.abs(width - 2);
 
-  // Perform an initial calculation using absolute differences.
-  let computedResult = Math.abs(valueOne - 2) * Math.abs(valueTwo - 2);
+  if (result > Number.MAX_SAFE_INTEGER) {
 
-  // Check if the result exceeds JavaScript's maximum safe integer.
-  if (computedResult > Number.MAX_SAFE_INTEGER) {
+    const multiplyLargeNumbers = (leftValue, rightValue) => {
+      const leftDigits = String(leftValue).split('').map(value => Number(value)).reverse();
+      const rightDigits = String(rightValue).split('').map(value => Number(value)).reverse();
 
-    // If the product exceeds the maximum safe integer, perform long multiplication with digit arrays.
-    const calculateExtendedProduct = (factorX, factorY) => {
-      // Convert the numbers to arrays of their individual digits, in reverse order.
-      const firstNumDigits  = String(factorX).split('').map(charVal => parseInt(charVal, 10)).reverse();
-      const secondNumDigits = String(factorY).split('').map(charVal => parseInt(charVal, 10)).reverse();
+      let productArray = [...Array(leftDigits.length + rightDigits.length)].fill(0);
 
-      // Initialize an array to store the product's digits, filled with zeros.
-      // Its length is the sum of the lengths of the two factor's digit arrays.
-      let productDigits = Array(firstNumDigits.length + secondNumDigits.length).fill(0);
+      const normalizeCarry = () => {
+        for (let pos = 0; pos < productArray.length; pos++) {
+          if (productArray[pos] >= 10) {
+            const carryPart = Number(String(productArray[pos]).split('')[0]);
+            const digitPart = Number(String(productArray[pos]).split('')[1]);
 
-      // This helper function handles carry-overs within the productDigits array.
-      const manageCarries = () => {
-        for (let currentPos = 0; currentPos < productDigits.length; currentPos++) {
-          if (productDigits[currentPos] >= 10) {
-            // Calculate the carry-over value (tens digit) and the remainder (units digit).
-            const carryValue = Math.floor(productDigits[currentPos] / 10);
-            const remainder  = productDigits[currentPos] % 10;
-
-            // Add the carry to the next higher significant digit position.
-            productDigits[currentPos - 1] += carryValue;
-            // Update the current position with the remainder.
-            productDigits[currentPos] = remainder;
+            productArray[pos - 1] += carryPart;
+            productArray[pos] = digitPart;
           }
         }
-      }
+      };
 
-      // Implement the core logic for long multiplication (similar to pencil-and-paper method).
-      for (let idxFactor1 = 0; idxFactor1 < firstNumDigits.length; idxFactor1++) {
-        for (let idxFactor2 = 0; idxFactor2 < secondNumDigits.length; idxFactor2++) {
-          // Calculate the partial product of two individual digits.
-          const partialProduct = firstNumDigits[idxFactor1] * secondNumDigits[idxFactor2];
-          // Determine the correct position in the result array for this partial product.
-          const targetDigitIndex = productDigits.length - (idxFactor1 + idxFactor2) - 1;
+      for (let i = 0; i < leftDigits.length; i++) {
+        for (let j = 0; j < rightDigits.length; j++) {
+          const partialProduct = leftDigits[i] * rightDigits[j];
+          const targetIndex = productArray.length - (i + j) - 1;
 
-          // Add the partial product to the corresponding digit position.
-          productDigits[targetDigitIndex] += partialProduct;
-          // Propagate any carries immediately after adding each partial product.
-          manageCarries();
+          productArray[targetIndex] += partialProduct;
+          normalizeCarry();
         }
       }
 
-      // Remove any leading zero digits from the result array.
-      for (let currentIdx = 0; currentIdx < productDigits.length; currentIdx++) {
-        if (productDigits[currentIdx] !== 0) {
-          productDigits = productDigits.slice(currentIdx);
+      for (let idx = 0; idx < productArray.length; idx++) {
+        if (productArray[idx] !== 0) {
+          productArray = productArray.slice(idx);
           break;
         }
       }
 
-      // Convert the array of result digits into a single string.
-      return productDigits.join('');
-    }
+      return productArray.join('');
+    };
 
-    // Assign the result of the extended product calculation to the main result variable.
-    computedResult = calculateExtendedProduct(Math.abs(valueOne - 2), Math.abs(valueTwo - 2));
+    result = multiplyLargeNumbers(
+      Math.abs(height - 2),
+      Math.abs(width - 2)
+    );
   }
 
-  // Output the final computed result to the console.
-  console.log(computedResult);
+  console.log(result);
 }
 
-processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

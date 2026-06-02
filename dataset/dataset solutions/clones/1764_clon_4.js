@@ -1,60 +1,41 @@
-const MOD_CONSTANT = 998244353n;
+const MOD_VAL = 998244353n;
 
-const calculatePowerModulo = (baseVal, exponentVal, modulusVal) => {
-    let outcome = 1n;
-    baseVal %= modulusVal;
-    while (exponentVal > 0n) {
-        if (exponentVal % 2n === 1n) {
-            outcome = (outcome * baseVal) % modulusVal;
-        }
-        baseVal = (baseVal * baseVal) % modulusVal;
-        exponentVal /= 2n;
-    }
-    return outcome;
-};
+const calculateGridValue = (startR, startC, endR, endC) => {
+    const rowDimension = Number(endR - startR) + 1;
+    const colDimension = Number(endC - startC) + 1;
 
-const determineGridValue = (originX, originY, targetX, targetY) => {
-    const gridSolutions = new Map();
+    const dpTable = Array.from({ length: rowDimension }, () => Array(colDimension).fill(0n));
 
-    const fetchSolution = (xId, yId) => {
-        if (!gridSolutions.has(xId)) return undefined;
-        return gridSolutions.get(xId).get(yId);
-    };
+    for (let rIndex = 0; rIndex < rowDimension; rIndex++) {
+        for (let cIndex = 0; cIndex < colDimension; cIndex++) {
+            const currentRCoord = startR + BigInt(rIndex);
+            const currentCCoord = startC + BigInt(cIndex);
 
-    const storeSolution = (xId, yId, val) => {
-        if (!gridSolutions.has(xId)) {
-            gridSolutions.set(xId, new Map());
-        }
-        gridSolutions.get(xId).set(yId, val);
-    };
-
-    for (let currentX = originX; currentX <= targetX; currentX++) {
-        for (let currentY = originY; currentY <= targetY; currentY++) {
-            let computedResult;
-            if (currentX === originX) {
-                computedResult = calculatePowerModulo(originX, currentY - originY, MOD_CONSTANT);
-            } else if (currentY === originY) {
-                computedResult = calculatePowerModulo(originY, currentX - originX, MOD_CONSTANT);
+            if (currentRCoord === startR) {
+                dpTable[rIndex][cIndex] = (startR ** (currentCCoord - startC)) % MOD_VAL;
+            } else if (currentCCoord === startC) {
+                dpTable[rIndex][cIndex] = (startC ** (currentRCoord - startR)) % MOD_VAL;
             } else {
-                let termA = (fetchSolution(currentX - 1n, currentY) * currentY) % MOD_CONSTANT;
-                let termB = (fetchSolution(currentX, currentY - 1n) * currentX) % MOD_CONSTANT;
-                let termC = (fetchSolution(currentX - 1n, currentY - 1n) * (currentX - 1n) * (currentY - 1n)) % MOD_CONSTANT;
+                const termOne = (dpTable[rIndex - 1][cIndex] * currentCCoord) % MOD_VAL;
+                const termTwo = (dpTable[rIndex][cIndex - 1] * currentRCoord) % MOD_VAL;
+                const termThree = (dpTable[rIndex - 1][cIndex - 1] * (currentRCoord - 1n) * (currentCCoord - 1n)) % MOD_VAL;
 
-                computedResult = (termA + termB - termC);
-                computedResult = (computedResult % MOD_CONSTANT + MOD_CONSTANT) % MOD_CONSTANT;
+                let intermediateResult = (termOne + termTwo - termThree);
+                dpTable[rIndex][cIndex] = (intermediateResult % MOD_VAL + MOD_VAL) % MOD_VAL;
             }
-            storeSolution(currentX, currentY, computedResult);
         }
     }
-    return fetchSolution(targetX, targetY);
+
+    return dpTable[rowDimension - 1][colDimension - 1];
 };
 
-const processInputAndOutput = (dataStream) => {
-    const dataLines = dataStream.split("\n");
-    const [firstVal, secondVal, thirdVal, fourthVal] = dataLines[0].split(" ").map(textNum => BigInt(textNum));
+const processInputData = (inputString) => {
+    const inputLines = inputString.split("\n");
+    const [valA, valB, valC, valD] = inputLines[0].split(" ").map(str => BigInt(str));
 
-    const finalCalculatedValue = determineGridValue(firstVal, secondVal, thirdVal, fourthVal);
-    console.log(Number(finalCalculatedValue));
+    const finalResult = calculateGridValue(valA, valB, valC, valD);
+
+    console.log(Number(finalResult));
 };
 
-processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

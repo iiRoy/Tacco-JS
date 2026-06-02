@@ -1,27 +1,22 @@
-'use strict'; // Enforce strict mode for better code quality and error handling.
+'use strict'; // Enforce strict mode for cleaner code execution
 
-/*
- * This routine processes a given string input to compute a specific numerical result.
- * The calculation involves a fixed base value and the converted numeric input.
- *
- * @param {string} inputStringValue - The raw string value provided, expected to represent a number.
+/**
+ * Calculates the total hours remaining until the next day, given a starting hour.
+ * This function assumes a 24-hour cycle.
+ * @param {string} inputString - The input string representing the current hour.
  */
-function processNumericalInput(inputStringValue)
-{
-    // Convert the received string into its numerical equivalent.
-    // This value is interpreted as a duration or an hour component.
-    const numericDuration = Number(inputStringValue);
+function calculateTime(inputString) {
+  // Convert the input string to a numerical value, representing the current hour.
+  const currentHour = Number(inputString);
 
-    // Execute the primary calculation: subtract the converted value from 24,
-    // then add 24 to the intermediate result. This pattern often relates to time spans.
-    const finalCalculatedValue = (24 - numericDuration) + 24;
+  // Calculate the hours remaining in the current day (24 - currentHour),
+  // then add another 24 hours to represent the full next day.
+  // This effectively calculates the time until the same hour on the day after tomorrow.
+  const totalHoursRemaining = (24 - currentHour) + 24;
 
-    // Display the computed numerical outcome to the standard output stream.
-    console.log(finalCalculatedValue);
+  // Output the calculated total hours to the console.
+  console.log(totalHoursRemaining);
 }
 
-// The script's execution entry point:
-// Synchronously read the entire content from standard input,
-// interpreting it as UTF-8 encoded text, and then pass this content
-// as an argument to our main processing function.
-processNumericalInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the input from standard input, decode it as UTF-8, and pass it to the main calculation function.
+calculateTime(require("fs").readFileSync("/dev/stdin", "utf8"));

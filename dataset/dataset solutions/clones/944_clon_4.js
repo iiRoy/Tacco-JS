@@ -1,45 +1,45 @@
-const sourcePath = '/dev/stdin';
-const terminatorChar = '\n';
+const cfg = { input: '/dev/stdin', newline: '\n' };
 
-const inputContent = require('node:fs').readFileSync(sourcePath, 'utf8');
-const dataLines = inputContent.trim().split(terminatorChar);
+const fileContent = require('fs').readFileSync(cfg.input, 'ascii');
+const inputLines = fileContent.trim().split(cfg.newline);
 
-const vertexQuantity = Number(dataLines.shift());
+const nodeCount = Number(inputLines.shift());
+const graphConnectionsNum = {};
 
-const graphRepresentation = new Map();
-
-dataLines.forEach(function (currentSegment) {
-  const elements = currentSegment.split(' ');
-  const originIdentifier = Number(elements.shift());
-  elements.shift(); // Discard the 'k' value
-  const connectedNodes = elements.map(Number);
-  connectedNodes.sort((firstNum, secondNum) => firstNum - secondNum);
-  graphRepresentation.set(originIdentifier, connectedNodes);
+inputLines.forEach(function(currentLine) {
+  const parts = currentLine.split(' ');
+  const sourceNodeIdentifier = Number(parts.shift());
+  parts.shift(); // Discard the count of neighbors
+  graphConnectionsNum[sourceNodeIdentifier] = parts.map(Number);
 });
 
-const entryEpochs = new Map();
-const exitEpochs = new Map();
-let globalClock = 0;
+for (const vertexId in graphConnectionsNum) {
+  graphConnectionsNum[vertexId].sort((a, b) => a - b);
+}
 
-function explorePath(currentIdentifier) {
-  globalClock++;
-  entryEpochs.set(currentIdentifier, globalClock);
+const entryTimesNum = {};
+const exitTimesNum = {};
+let timeMarkerNum = 0;
 
-  const adjacentElements = graphRepresentation.get(currentIdentifier) || [];
-  for (const adjacentIdentifier of adjacentElements) {
-    if (!entryEpochs.has(adjacentIdentifier)) {
-      explorePath(adjacentIdentifier);
+function exploreNodeDepthFirst(currentVertex) {
+  timeMarkerNum++;
+  entryTimesNum[currentVertex] = timeMarkerNum;
+
+  const adjacentVertices = graphConnectionsNum[currentVertex];
+  if (adjacentVertices) {
+    for (const adjacentVertex of adjacentVertices) {
+      if (!entryTimesNum.hasOwnProperty(adjacentVertex)) {
+        exploreNodeDepthFirst(adjacentVertex);
+      }
     }
   }
 
-  globalClock++;
-  exitEpochs.set(currentIdentifier, globalClock);
+  timeMarkerNum++;
+  exitTimesNum[currentVertex] = timeMarkerNum;
 }
 
-explorePath(1);
+exploreNodeDepthFirst(1);
 
-for (let nodeIndex = 1; nodeIndex <= vertexQuantity; nodeIndex++) {
-  const discoveryMoment = entryEpochs.get(nodeIndex);
-  const completionMoment = exitEpochs.get(nodeIndex);
-  process.stdout.write(`${nodeIndex} ${discoveryMoment} ${completionMoment}\n`);
+for (let nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+  console.log("%d %s %s", nodeIdx, entryTimesNum[nodeIdx], exitTimesNum[nodeIdx]);
 }

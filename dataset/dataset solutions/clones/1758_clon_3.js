@@ -1,157 +1,118 @@
-const inputHandler = require('readline').createInterface({
+const readlineModule = require('readline');
+const consoleInputReader = readlineModule.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let streamParser = null;
-let capturedLines = [];
+let inputProcessorInstance;
+const bufferedInputLines = [];
 
-inputHandler.on('line', function(singleLine) {
-  capturedLines.push(singleLine);
-});
+const setupInputProcessing = () => {
+    consoleInputReader.on('line', (currentLine) => {
+        bufferedInputLines.push(currentLine);
+    });
 
-inputHandler.on('close', function() {
-  streamParser = initializeStreamParser(capturedLines);
-  
-  debugLog("--- Application Execution Starting ---");
-  const startTime = new Date();
-  
-  performCalculation();
-  
-  const finishTime = new Date();
-  const elapsedTime = finishTime - startTime;
-  
-  debugLog("--- Application Execution Completed ---");
-  debugLog(`Elapsed time: ${elapsedTime} ms`);
-  
-  const memoryStats = process.memoryUsage();
-  debugLog(`Memory Usage (Heap): ${Math.round(memoryStats.heapUsed / 1024)} KB used / ${Math.round(memoryStats.heapTotal / 1024)} KB total`);
-});
-
-function retrieveInteger() { return dataConverter(getNextLine(), 1); }
-function retrieveStringArray() { return dataConverter(getNextLine(), 2); }
-function retrieveIntegerArray() { return dataConverter(getNextLine(), 4); }
-function retrieveCharacterArray() { return dataConverter(getNextLine(), 6); }
-
-function getNextLine() { return streamParser.pullNext(); }
-function hasMoreLines() { return streamParser.checkAvailability(); }
-
-function initializeStreamParser(rawInputData) {
-  if (!Array.isArray(rawInputData)) {
-    debugLog("Error: Input data for parser initialization is not an array. Proceeding with empty data.");
-    rawInputData = [];
-  }
-  
-  const parserInstance = {
-    sourceData : rawInputData,
-    currentPosition : 0,
-    totalLines : rawInputData.length,
-    
-    checkAvailability : function() {
-      return (this.currentPosition < this.totalLines);
-    },
-    
-    pullNext : function() {
-      if (!this.checkAvailability()) {
-        debugLog("Attempted to read beyond available input lines. Returning null.");
-        return null; // Changed from throwing a string error
-      } else {
-        const currentInputLine = this.sourceData[this.currentPosition];
-        this.currentPosition++;
-        return currentInputLine;
-      }
-    }
-  };
-  
-  if (parserInstance.totalLines === 0) {
-    debugLog("Parser initialized with no input lines.");
-  }
-  
-  return parserInstance;
-}
-
-function printResult(messageContent) {
-  console.log(messageContent);
-}
-
-function debugLog(messageContent) {
-  const timestamp = new Date().toISOString();
-  console.error(`[DEBUG ${timestamp}] ${messageContent}`);
-}
-
-// This object maps conversion type numbers to their respective functions.
-// This is a Type III change from a switch statement for better extensibility and readability.
-const conversionOperations = {
-  1: (val) => {
-    const num = parseInt(val, 10);
-    if (isNaN(num)) {
-      debugLog(`Warning: Failed to parse "${val}" as an integer. Returning original value.`);
-      return val;
-    }
-    return num;
-  },
-  2: (val) => String(val).trim().split(" "),
-  4: (val) => String(val).trim().split(" ").map(Number),
-  6: (val) => String(val).split(""),
-  7: (val) => String(val).split("").map(Number),
-  8: (val) => Array.isArray(val) ? val.join(" ") : String(val),
-  9: (val) => Array.isArray(val) ? val.join("\n") : String(val),
-  0: (val) => Array.isArray(val) ? val.join("") : String(val),
+    consoleInputReader.on('close', () => {
+        inputProcessorInstance = createInputProcessor(bufferedInputLines);
+        logDebugMessage("-----start-----");
+        const startTime = new Date();
+        executeMainLogic();
+        const endTimeDuration = new Date() - startTime;
+        logDebugMessage("----- end -----");
+        logDebugMessage("time : " + (endTimeDuration) + "ms");
+        
+        const memoryStats = process.memoryUsage();
+        const heapTotalBytes = memoryStats.heapTotal;
+        const heapTotalKB = Math.round(heapTotalBytes / 1024);
+        logDebugMessage("memory : " + heapTotalKB + "KB");
+    });
 };
 
-function dataConverter(inputValue, conversionType) {
-  try {
-    const operation = conversionOperations[conversionType];
-    if (operation) {
-      return operation(inputValue);
-    } else {
-      debugLog(`Unknown conversion type '${conversionType}' requested. Returning input as-is.`);
-      return inputValue;
-    }
-  } catch (conversionError) {
-    debugLog(`Error during data conversion for type ${conversionType}: ${conversionError.message}. Input: "${inputValue}". Returning original input.`);
-    return inputValue;
-  }
-}
+function readNextInteger(){ return processInputConversion(fetchNextLine(), 1); }
+function readNextStringArray(){ return processInputConversion(fetchNextLine(), 2); }
+function readNextIntegerArray(){ return processInputConversion(fetchNextLine(), 4); }
+function readNextCharacterArray(){ return processInputConversion(fetchNextLine(), 6); }
+function fetchNextLine(){ return inputProcessorInstance.fetchNextLine(); }
+function hasMoreInput(){ return inputProcessorInstance.hasMoreInput(); }
 
-// Main logic for the problem solution
-function performCalculation() {
-  const initialValue = retrieveInteger();
-  
-  // Type III: Added input validation guard clause.
-  // Original code would loop infinitely for N=0 or throw error for non-numeric.
-  if (initialValue === null || isNaN(initialValue) || initialValue <= 0) {
-    debugLog(`Invalid or non-positive initial value detected: ${initialValue}. Halting calculation.`);
-    printResult("Error: Invalid or unsuitable input provided.");
-    return;
-  }
-
-  let iterationCount = 0;
-  let currentSum = 0;
-
-  // Type III: Introduced a named constant for the magic number 360 for clarity.
-  const DEGREES_IN_FULL_CIRCLE = 360;
-  
-  // Type III: Added a safety maximum iteration count to prevent infinite loops
-  // in unforeseen edge cases, though for positive N this loop should always converge.
-  const MAX_PERMITTED_ITERATIONS = 1000000; 
-
-  while (true) {
-    currentSum += initialValue;
-    iterationCount++;
+function createInputProcessor(inputDataArray){  
+  const processorInstance = {
+    dataStore : inputDataArray,
+    currentIndex : 0,
+    maxIndex : inputDataArray.length,
     
-    // Type III: Introduced an intermediate variable for the modulo operation result.
-    const currentRemainder = currentSum % DEGREES_IN_FULL_CIRCLE;
-
-    if (currentRemainder === 0) {
-      printResult(iterationCount);
-      return;
+    hasMoreInput : function(){
+        return (this.currentIndex < this.maxIndex);
+    },
+    
+    fetchNextLine : function(){
+        if(!this.hasMoreInput()){
+            throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+        } else {
+            const currentInput = this.dataStore[this.currentIndex];
+            this.currentIndex++;
+            return currentInput;
+        }
     }
-
-    if (iterationCount > MAX_PERMITTED_ITERATIONS) {
-      debugLog(`Calculation exceeded ${MAX_PERMITTED_ITERATIONS} iterations without finding a multiple of ${DEGREES_IN_FULL_CIRCLE}. Exiting.`);
-      printResult("Calculation limit reached; result not found.");
-      return;
-    }
-  }
+  };
+  return processorInstance;
 }
+
+function printOutput(message){ console.log(message); }
+
+const utilInspector = require("util").inspect;
+function logDebugMessage(messageContent){
+    const inspectionOptions = {
+        showHidden: false,
+        depth: null
+    };
+    const inspectedOutput = utilInspector(messageContent, inspectionOptions.showHidden, inspectionOptions.depth);
+    console.error("debug:" + inspectedOutput);
+}
+
+function processInputConversion(inputValue, conversionType){
+    try {
+        const conversionStrategies = {
+            1: (val) => parseInt(val, 10),
+            2: (val) => val.split(" "),
+            4: (val) => val.split(" ").map(Number),
+            6: (val) => val.split(""),
+            7: (val) => val.split("").map(Number),
+            8: (val) => val.join(" "),
+            9: (val) => val.join("\n"),
+            0: (val) => val.join("")
+        };
+        
+        const strategyExecutor = conversionStrategies[conversionType];
+        if (strategyExecutor) {
+            return strategyExecutor(inputValue);
+        } else {
+            return inputValue;
+        }
+    } catch(conversionError){
+        return inputValue;
+    }
+}
+
+function executeMainLogic(){
+	const FULL_CIRCLE_DEGREES = 360;
+	let inputNumber = readNextInteger();
+	let iterationCount = 0;
+	let currentSum = 0;
+
+    const isRotationComplete = (value) => {
+        return (value % FULL_CIRCLE_DEGREES) === 0;
+    };
+
+	while(true){
+		currentSum = currentSum + inputNumber;
+		iterationCount = iterationCount + 1;
+		
+		if(isRotationComplete(currentSum)){
+			printOutput(iterationCount);
+			return;
+		}
+	}
+}
+
+setupInputProcessing();

@@ -1,87 +1,81 @@
-// Determine the state of a grid cell based on coordinates and pattern size
-function CalculateCellState(offsetXCoord, offsetYCoord, baseParity, patternDimension, targetXCoord, targetYCoord)
-{
-    let currentParity = baseParity;
+function DetermineColor(coordX, coordY, initialColor, gridSize, targetX, targetY) {
+    // Initialize the resulting color
+    let finalColor = initialColor;
 
-    // Check horizontal displacement for parity flip
-    if (Math.floor((targetXCoord - offsetXCoord) / patternDimension) % 2 !== 0) {
-        currentParity ^= 1; // Flip the parity bit
+    // Adjust color based on X-coordinate offset and grid size
+    if (Math.floor((targetX - coordX) / gridSize) % 2 !== 0) {
+        finalColor ^= 1; // Flip the color bit
     }
 
-    // Check vertical displacement for parity flip
-    if (Math.floor((targetYCoord - offsetYCoord) / patternDimension) % 2 !== 0) {
-        currentParity ^= 1; // Flip the parity bit again
+    // Adjust color based on Y-coordinate offset and grid size
+    if (Math.floor((targetY - coordY) / gridSize) % 2 !== 0) {
+        finalColor ^= 1; // Flip the color bit again
     }
-    return currentParity; // Return the final calculated parity
+
+    return finalColor;
 }
 
 
-// This function processes all incoming raw text data
-function ProcessInputData(rawDataString)
-{
-    // The input string is split into individual lines
-    const dataLines = rawDataString.split("\n");
+// The entire input data is passed to this function
+function ProcessInputData(rawData) {
+    // The first line is rawData[0], the second is rawData[1], and so on.
+    rawData = rawData.split("\n");
 
-    // Parse the first line for critical parameters
-    const initialParameters = dataLines[0].split(" ");
-    const totalDataPoints = Number(initialParameters[0]);
-    const patternGridSize = Number(initialParameters[1]);
+    let tempParts = rawData[0].split(" ");
+    let itemCount = Number(tempParts[0]); // Convert string to number
+    let gridDimension = Number(tempParts[1]); // Convert string to number
 
-    // Initialize arrays to store parsed point information
-    const xPositions = [];
-    const yPositions = [];
-    const pointStates = [];
+    let xCoordinates = [];
+    let yCoordinates = [];
+    let colors = [];
 
-    // Initialize the variable to track the highest number of matches found
+    // Initialize the maximum match count
     let maximumMatches = 0;
 
-    // Iterate through the remaining lines to populate point data
-    for (let currentLineIndex = 0; currentLineIndex < totalDataPoints; currentLineIndex++)
-    {
-        const pointDetails = dataLines[currentLineIndex + 1].split(" ");
-        xPositions.push(Number(pointDetails[0]));
-        yPositions.push(Number(pointDetails[1]));
-        // Convert "B" to 0, otherwise 1, for binary state representation
-        pointStates.push(pointDetails[2] === "B" ? 0 : 1);
+    // Loop through input lines to populate coordinate and color arrays
+    for (let idx = 0; idx < itemCount; idx++) {
+        tempParts = rawData[idx + 1].split(" ");
+        xCoordinates.push(Number(tempParts[0]));
+        yCoordinates.push(Number(tempParts[1]));
+        // Assign 0 for 'B' (Black) and 1 for 'W' (White)
+        colors.push(tempParts[2] === "B" ? 0 : 1);
     }
 
-    // Begin the main calculation loop, iterating through potential offsets
-    for (let masterIndex = 0; masterIndex < totalDataPoints; masterIndex++)
-    {
-        for (let xShiftAmount = 0; xShiftAmount < patternGridSize; xShiftAmount++)
-        {
-            for (let yShiftAmount = 0; yShiftAmount < patternGridSize; yShiftAmount++)
-            {
+    // Iterate through all possible starting points for the grid
+    for (let idx = 0; idx < itemCount; idx++) {
+        for (let offsetX = 0; offsetX < gridDimension; offsetX++) {
+            for (let offsetY = 0; offsetY < gridDimension; offsetY++) {
                 let currentMatchCount = 0;
-                // Calculate matches for the current offset combination
-                for (let dataPointIndex = 0; dataPointIndex < totalDataPoints; dataPointIndex++)
-                {
-                    // Call the helper function to determine the expected state for this point
-                    const expectedState = CalculateCellState(
-                        xPositions[masterIndex] - xShiftAmount,
-                        yPositions[masterIndex] - yShiftAmount,
-                        pointStates[0], // Use the first point's state as base for calculation
-                        patternGridSize,
-                        xPositions[dataPointIndex],
-                        yPositions[dataPointIndex]
+
+                // Calculate matches for the current grid configuration
+                for (let dataIdx = 0; dataIdx < itemCount; dataIdx++) {
+                    // Determine the expected color for the current data point
+                    // based on the shifted grid origin and the first item's color
+                    let expectedColor = DetermineColor(
+                        xCoordinates[idx] - offsetX,
+                        yCoordinates[idx] - offsetY,
+                        colors[0], // Use the first item's color as reference
+                        gridDimension,
+                        xCoordinates[dataIdx],
+                        yCoordinates[dataIdx]
                     );
-                    // Increment count if the expected state matches the actual state of the data point
-                    if (expectedState === pointStates[dataPointIndex]) {
+                    // If the expected color matches the actual color, increment count
+                    if (expectedColor === colors[dataIdx]) {
                         currentMatchCount++;
                     }
                 }
-                // Update the overall maximum if a new high is found
-                if (maximumMatches < currentMatchCount)
-                {
+
+                // Update the overall maximum matches found
+                if (maximumMatches < currentMatchCount) {
                     maximumMatches = currentMatchCount;
                 }
             }
         }
     }
 
-    // Output the final computed maximum number of matches
+    // Output the final result
     console.log('%d', maximumMatches);
 }
 
-// The following line should not be modified, it handles standard input/output and invokes the primary processing function.
+// Do not modify the following line (handles standard input/output)
 ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

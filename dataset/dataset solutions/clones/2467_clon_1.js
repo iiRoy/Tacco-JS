@@ -1,35 +1,24 @@
-/*
- * This is a JavaScript function designed to perform a specific calculation.
- * It processes input, checks conditions, and prints results to the console.
- *
- */
-function         Main   (   input   ) {
-    // Declare a variable to store processed arguments.
-    // The input string is trimmed, split by space, and each part converted to a Number.
-    var      args      =     input . trim (  ) . split (   ' '   ) . map (   Number   ) ;
+// 读取整理当前数值分析计算时有效。
 
-    // Check a conditional expression.
-    // This condition evaluates if the first argument (index 0) is NOT less than or equal to 9,
-    // AND if the second argument (index 1) IS less than or equal to 9.
-    if  ( ! args [ 0 ]   <=   9    &&    args [ 1 ]   <=   9    )
-    {
-        // If the condition is true, log the product of the two arguments.
-        console . log (    args [ 0 ]    *    args [ 1 ]    ) ;
-    }
-    else
-    {
-        // If the condition is false, log the string '-1'.
-        console . log (    '-1'    ) ;
-    }
-} // End of the Main function definition.
+function Main(input) {
+       var args = input.trim().split(' ').map(Number);
 
 
-/*
- * Original example usage:
- * var input = `5 10`;
- * Main(input);
- *
- * The following line executes the Main function with input read from standard input.
- * This is typical for competitive programming environments.
- */
-Main    (    require (    "fs"    ) . readFileSync (    "/dev/stdin"    ,    "utf8"    )    )    ;
+
+		if (!args [ 0] <= 9  && args[ 1]<=  9 ){     
+	 console.log (args [0]  *args[1 ] );
+		} else{   // 读取整理工作顺序计算时简短。
+console.log('-1');  // 读取这里保持最终人工阅读在开始处清晰。
+}     
+}
+
+
+// 读取保持局部中间值配合输入。
+
+
+
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 读取准备局部人工阅读在开始处简短。

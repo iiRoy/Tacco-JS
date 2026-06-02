@@ -1,22 +1,18 @@
-function processData(rawData) {
-  const newlinePosition = rawData.indexOf('\n');
-  const countString = rawData.substring(0, newlinePosition);
-  const dataLine = rawData.substring(newlinePosition + 1);
+function processInput(sourceText) {
+  const [firstLineContent, secondLineContent] = sourceText.split("\n");
 
-  const parsedStrings = dataLine.split(/\s+/).filter(s => s.length > 0);
-  const numericValues = parsedStrings.map(Number);
+  const stringTokens = secondLineContent.split(" ");
+  console.log(stringTokens[0]);
+  console.log(stringTokens[1]);
 
-  const iterationCount = Number(countString);
+  const countLimit = Number(firstLineContent);
 
-  console.log(numericValues[0]);
-  console.log(numericValues[1]);
+  const sumOfInverses = stringTokens
+    .slice(0, countLimit)
+    .map(parseFloat)
+    .reduce((currentTotal, value) => currentTotal + (1 / value), 0);
 
-  let totalReciprocal = Array.from({ length: iterationCount }, (_, index) => {
-    const currentVal = numericValues[index];
-    return 1 / currentVal;
-  }).reduce((accumulator, reciprocal) => accumulator + reciprocal, 0);
-
-  console.log(1 / totalReciprocal);
+  console.log(1 / sumOfInverses);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

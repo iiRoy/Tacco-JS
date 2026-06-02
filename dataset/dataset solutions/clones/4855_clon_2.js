@@ -1,47 +1,47 @@
-function ProcessInput (  rawData  )  {
-   // Obtain individual characters from the received input string.
-   const charSequence = rawData.split( "" ) ;
+function ProcessInput(rawData) {
+  // Split the incoming string into an array of individual characters.
+  const charSequence = rawData.split("");
 
-   // Verify if the total character count is an odd number.
-   // If it is, the string cannot fulfill the specific mirrored condition.
-   if ( charSequence.length % 2 !== 0 ) {
-      console.log( "No" ) ; // Indicate an inability to meet the criteria.
-      return ; // Terminate execution for this input.
-   }
+  // Check if the total number of characters is odd.
+  // If it is, the string cannot be split into two equal halves for comparison.
+  if (charSequence.length % 2 !== 0) {
+    console.log("No"); // Output "No" as it doesn't meet the criteria.
+    return; // Exit the function early.
+  }
 
-   // Divide the character sequence into two distinct, equally sized portions.
-   const firstHalf = charSequence.slice( 0, charSequence.length / 2 ) ;
-   const secondHalf = charSequence.slice( charSequence.length / 2, charSequence.length ) ;
+  // Divide the character sequence into two equal parts.
+  // The first part contains characters from the beginning up to the middle.
+  const firstSegment = charSequence.slice(0, charSequence.length / 2);
+  // The second part contains characters from the middle to the end.
+  const secondSegment = charSequence.slice(charSequence.length / 2, charSequence.length);
 
-   // Compare the concatenated first segment with a transformed second segment.
-   // The transformation involves reversing the second segment, then applying a character-specific reflection.
-   if ( firstHalf.join( "" ) === secondHalf.reverse().map( reflectChar ).join( "" ) ) {
-      console.log( "Yes" ) ; // Confirm that the condition is satisfied.
-   } else {
-      console.log( "No" ) ; // Indicate that the condition is not met.
-   }
+  // Compare the first segment with the mirrored and reversed second segment.
+  // 1. Join the characters of the first segment to form a string.
+  // 2. Reverse the second segment.
+  // 3. Map each character in the reversed second segment using the reflectChar function.
+  // 4. Join the mapped characters to form a string.
+  // If these two resulting strings are identical, then the condition is met.
+  if (firstSegment.join("") === secondSegment.reverse().map(reflectChar).join("")) {
+    console.log("Yes"); // Output "Yes" if they match.
+  } else {
+    console.log("No"); // Otherwise, output "No".
+  }
 
-
-   /**
-    * @param {string} originalChar - The character to be processed for its reflected counterpart.
-    * @returns {string|undefined} The character's reflection, or undefined if no specific rule applies.
-    * This nested utility function defines the mirroring logic for specific alphanumeric characters.
-    */
-   function reflectChar ( originalChar ) {
-      switch ( originalChar ) {
-         case "b":
-            return "d";
-         case "d":
-            return "b";
-         case "p":
-            return "q";
-         case "q":
-            return "p";
-         // For any other character, the function implicitly returns undefined,
-         // maintaining the original behavior where no explicit default case was present.
-      }
-   }
+  // Helper function to reflect specific characters.
+  // This function defines the "mirror" transformation for certain letters.
+  function reflectChar(charToReflect) {
+    switch (charToReflect) {
+      case "b":
+        return "d"; // 'b' reflects to 'd'
+      case "d":
+        return "b"; // 'd' reflects to 'b'
+      case "p":
+        return "q"; // 'p' reflects to 'q'
+      case "q":
+        return "p"; // 'q' reflects to 'p'
+    }
+  }
 }
 
-// Invoke the primary processing routine, feeding it content acquired from standard input.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

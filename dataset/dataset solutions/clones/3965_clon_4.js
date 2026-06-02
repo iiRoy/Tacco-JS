@@ -1,41 +1,39 @@
-const inputBuffer = [];
-const ioInterface = require('readline').createInterface({
+var inputLines = [];
+var lineReader = require('readline');
+
+var interfaceInstance = lineReader.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
 });
 
-ioInterface.on('line', (dataLine) => {
-    inputBuffer.push(dataLine);
+interfaceInstance.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-ioInterface.on('close', () => {
-    const allInput = inputBuffer;
-    const countA = parseInt(allInput.shift(), 10);
-    const setA = allInput.splice(0, countA);
-    const countB = parseInt(allInput.shift(), 10);
-    const setB = allInput.splice(0, countB);
+interfaceInstance.on('close', function () {
+    var positiveTermCount = Number(inputLines[0]);
+    var negativeTermCount = Number(inputLines[positiveTermCount + 1]);
 
-    const frequencyA = new Map();
-    setA.forEach(item => {
-        frequencyA.set(item, (frequencyA.get(item) || 0) + 1);
+    var positiveTally = new Map();
+    var negativeTally = new Map();
+
+    inputLines.slice(1, positiveTermCount + 1).forEach(term => {
+        positiveTally.set(term, (positiveTally.get(term) || 0) + 1);
     });
 
-    const frequencyB = new Map();
-    setB.forEach(item => {
-        frequencyB.set(item, (frequencyB.get(item) || 0) + 1);
+    inputLines.slice(positiveTermCount + 2, positiveTermCount + 2 + negativeTermCount).forEach(term => {
+        negativeTally.set(term, (negativeTally.get(term) || 0) + 1);
     });
 
-    const allDistinctItems = new Set([...frequencyA.keys(), ...frequencyB.keys()]);
-    let highestScore = 0;
+    var netScores = new Map();
 
-    allDistinctItems.forEach(item => {
-        const countFromA = frequencyA.get(item) || 0;
-        const countFromB = frequencyB.get(item) || 0;
-        const netCount = countFromA - countFromB;
-        if (netCount > highestScore) {
-            highestScore = netCount;
-        }
+    positiveTally.forEach((count, term) => {
+        netScores.set(term, count);
     });
 
-    console.log(highestScore);
+    negativeTally.forEach((count, term) => {
+        netScores.set(term, (netScores.get(term) || 0) - count);
+    });
+
+    console.log(Math.max(0, ...Array.from(netScores.values())));
 });

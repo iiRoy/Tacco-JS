@@ -1,75 +1,66 @@
 process.stdin.resume();
 process.stdin.setEncoding('ascii');
 
-var incomingTextBuffer = "";
-var processedLines = [];
-var currentLinePointer = 0;
+let rawInputBuffer = "";
+let inputLinesArray = [];
+let currentLineIndex = 0;
 
-process.stdin.on(
-  'data',
-  function (incomingDataChunk) {
-    incomingTextBuffer += incomingDataChunk;
-  }
-);
+process.stdin.on('data', function (chunkOfData) {
+    rawInputBuffer += chunkOfData;
+});
 
-process.on(
-  'SIGINT',
-  function () {
-    processedLines = incomingTextBuffer.split('\n');
-    performCoreLogic();
+process.on('SIGINT', function(){
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeProgram();
     process.exit();
-  }
-);
+});
 
-process.stdin.on(
-  'end',
-  function () {
-    processedLines = incomingTextBuffer.split('\n');
-    performCoreLogic();
-  }
-);
+process.stdin.on('end', function () {
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeProgram();
+});
 
-function retrieveNextLine() {
-  return processedLines[currentLinePointer++];
+function fetchNextLine() {
+    return inputLinesArray[currentLineIndex++];
 }
 
-/* Core application logic begins below this section. */
+// --- End of input handling boilerplate ---
 
-function performCoreLogic() {
-  var totalElements = parseInt(retrieveNextLine());
-  var sourceValuesArray = [], frequencyCounts = [];
-  var lineTokens = retrieveNextLine().split(" ");
+function executeProgram() {
+    let elementCount = parseInt(fetchNextLine());
+    let inputValues = [], frequencyTracker = [];
+    let lineParts = fetchNextLine().split(" ");
 
-  for (var elementIndex = 0; elementIndex < totalElements; elementIndex++) {
-    sourceValuesArray.push(parseInt(lineTokens[elementIndex]));
-    frequencyCounts.push(2);
-  }
-
-  frequencyCounts[0] = 1;
-
-  for (var elementIndex = 0; elementIndex < totalElements; elementIndex++) {
-    frequencyCounts[sourceValuesArray[elementIndex]]--;
-  }
-
-  // Validate array conditions
-  var startingPosition;
-  if (totalElements % 2 === 1) {
-    startingPosition = 0;
-  } else {
-    startingPosition = 1;
-  }
-
-  for (var arrayIterator = startingPosition; arrayIterator < totalElements; arrayIterator += 2) {
-    if (frequencyCounts[arrayIterator] !== 0) {
-      console.log("0");
-      return;
+    for (let idx = 0; idx < elementCount; idx++) {
+        inputValues.push(parseInt(lineParts[idx]));
+        frequencyTracker.push(2);
     }
-  }
 
-  // Compute the final numerical result
-  var finalNumericalResult = 1;
-  for (var multiplierIndex = 1; multiplierIndex < totalElements; multiplierIndex += 2) {
-    finalNumericalResult *= 2;
-  }
-  console.log(finalNumericalResult.toString());
+    frequencyTracker[0] = 1;
+
+    for (let idx = 0; idx < elementCount; idx++) {
+        frequencyTracker[inputValues[idx]]--;
+    }
+    
+    // --- Validation check ---
+    let startOffset;
+    if (elementCount % 2 === 1) {
+        startOffset = 0;
+    } else {
+        startOffset = 1;
+    }
+    
+    for (let idx = startOffset; idx < elementCount; idx += 2) {
+        if (frequencyTracker[idx] !== 0) {
+            console.log("0");
+            return;
+        }
+    }
+    
+    // --- Calculate final result ---
+    let finalResult = 1;
+    for (let idx = 1; idx < elementCount; idx += 2) {
+        finalResult *= 2;
+    }
+    console.log(finalResult.toString());
 }

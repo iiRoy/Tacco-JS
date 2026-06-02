@@ -1,24 +1,21 @@
-let inputSource = require('node:fs').readFileSync(0, 'utf8');
-let inputTokens = inputSource.trim().split(' ');
+var inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputTokens = inputSource.trim().split(' ');
 
-const operationMap = {
-  '+': (firstValue, secondValue) => firstValue + secondValue,
-  '-': (firstValue, secondValue) => firstValue - secondValue,
-  '*': (firstValue, secondValue) => firstValue * secondValue,
+const operationDispatch = {
+    '+': (firstVal, secondVal) => firstVal + secondVal,
+    '-': (firstVal, secondVal) => firstVal - secondVal,
+    '*': (firstVal, secondVal) => firstVal * secondVal,
 };
 
-function evaluateNextToken(currentDataStore, currentToken) {
-  const temporaryStore = [...currentDataStore];
+const finalResultStack = inputTokens.reduce((currentAccumulator, currentElement) => {
+    if (operationDispatch[currentElement]) {
+        const operandTwo = currentAccumulator.pop();
+        const operandOne = currentAccumulator.pop();
+        currentAccumulator.push(operationDispatch[currentElement](operandOne, operandTwo));
+    } else {
+        currentAccumulator.push(Number.parseInt(currentElement, 10));
+    }
+    return currentAccumulator;
+}, []);
 
-  if (operationMap[currentToken]) {
-    const valueB = Number.parseInt(temporaryStore.pop(), 10);
-    const valueA = Number.parseInt(temporaryStore.pop(), 10);
-    temporaryStore.push(operationMap[currentToken](valueA, valueB));
-  } else {
-    temporaryStore.push(Number.parseInt(currentToken, 10));
-  }
-  return temporaryStore;
-}
-
-let finalResultStore = inputTokens.reduce(evaluateNextToken, []);
-console.log(finalResultStore[0]);
+console.log(finalResultStack[0]);

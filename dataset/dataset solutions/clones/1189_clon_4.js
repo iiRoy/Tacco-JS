@@ -1,68 +1,64 @@
-const COMPONENT_INDICES = {
-    UPPER_FACE: 0,
-    SOUTHERN_FACE: 1,
-    EASTERN_FACE: 2,
-    WESTERN_FACE: 3,
-    NORTHERN_FACE: 4,
-    LOWER_FACE: 5
-};
+"use strict";
+const TOP_FACE = 0;
+const SOUTH_FACE = 1;
+const EAST_FACE = 2;
+const WEST_FACE = 3;
+const NORTH_FACE = 4;
+const BOTTOM_FACE = 5;
 
-const TRANSITION_TABLES = {
-    'N_MOVE': [COMPONENT_INDICES.NORTHERN_FACE, COMPONENT_INDICES.UPPER_FACE, COMPONENT_INDICES.EASTERN_FACE, COMPONENT_INDICES.WESTERN_FACE, COMPONENT_INDICES.LOWER_FACE, COMPONENT_INDICES.SOUTHERN_FACE],
-    'S_MOVE': [COMPONENT_INDICES.SOUTHERN_FACE, COMPONENT_INDICES.LOWER_FACE, COMPONENT_INDICES.EASTERN_FACE, COMPONENT_INDICES.WESTERN_FACE, COMPONENT_INDICES.UPPER_FACE, COMPONENT_INDICES.NORTHERN_FACE],
-    'W_MOVE': [COMPONENT_INDICES.WESTERN_FACE, COMPONENT_INDICES.SOUTHERN_FACE, COMPONENT_INDICES.UPPER_FACE, COMPONENT_INDICES.LOWER_FACE, COMPONENT_INDICES.NORTHERN_FACE, COMPONENT_INDICES.EASTERN_FACE],
-    'E_MOVE': [COMPONENT_INDICES.EASTERN_FACE, COMPONENT_INDICES.SOUTHERN_FACE, COMPONENT_INDICES.LOWER_FACE, COMPONENT_INDICES.UPPER_FACE, COMPONENT_INDICES.NORTHERN_FACE, COMPONENT_INDICES.WESTERN_FACE]
-};
+const rollPermutations = new Map([
+    ["N", [SOUTH_FACE, BOTTOM_FACE, EAST_FACE, WEST_FACE, TOP_FACE, NORTH_FACE]],
+    ["S", [NORTH_FACE, TOP_FACE, EAST_FACE, WEST_FACE, BOTTOM_FACE, SOUTH_FACE]],
+    ["W", [EAST_FACE, SOUTH_FACE, BOTTOM_FACE, TOP_FACE, NORTH_FACE, WEST_FACE]],
+    ["E", [WEST_FACE, SOUTH_FACE, TOP_FACE, BOTTOM_FACE, NORTH_FACE, EAST_FACE]]
+]);
 
-const transformConfiguration = (currentLayout, moveDirection) => {
-    const newLayout = new Array(6);
-    let mappingRule;
-    switch (moveDirection) {
-        case "N": mappingRule = TRANSITION_TABLES.N_MOVE; break;
-        case "S": mappingRule = TRANSITION_TABLES.S_MOVE; break;
-        case "W": mappingRule = TRANSITION_TABLES.W_MOVE; break;
-        case "E": mappingRule = TRANSITION_TABLES.E_MOVE; break;
-        default: throw new Error("Unknown move direction encountered.");
-    }
+function applyDiceRoll(currentFaces, direction) {
+    const permutationIndices = rollPermutations.get(direction);
+    const nextFaces = new Array(6);
     for (let i = 0; i < 6; i++) {
-        newLayout[i] = currentLayout[mappingRule[i]];
+        nextFaces[i] = currentFaces[permutationIndices[i]];
     }
-    return newLayout;
-};
+    return nextFaces;
+}
 
-const alignSouthernFace = (initialLayout, desiredSouth) => {
-    let currentConfig = initialLayout;
-    const rotationSequence = ["N", "N", "N", "W", "N", "N", "N", "W"];
-    for (let k = 0; k <= rotationSequence.length; k++) {
-        if (currentConfig[COMPONENT_INDICES.SOUTHERN_FACE] === desiredSouth) {
-            return currentConfig;
+function generateOrientationLookup(initialLabels) {
+    const faceLookup = new Map();
+    const visitedStates = new Set();
+    const stateQueue = [initialLabels];
+
+    const getUniqueStateKey = (faces) => faces.join(",");
+
+    visitedStates.add(getUniqueStateKey(initialLabels));
+    faceLookup.set(`${initialLabels[TOP_FACE]}_${initialLabels[SOUTH_FACE]}`, initialLabels[EAST_FACE]);
+
+    let queuePointer = 0;
+    while (queuePointer < stateQueue.length) {
+        const currentOrientation = stateQueue[queuePointer++];
+
+        for (const rollDirection of ["N", "S", "E", "W"]) {
+            const nextOrientation = applyDiceRoll(currentOrientation, rollDirection);
+            const nextStateIdentifier = getUniqueStateKey(nextOrientation);
+
+            if (!visitedStates.has(nextStateIdentifier)) {
+                visitedStates.add(nextStateIdentifier);
+                stateQueue.push(nextOrientation);
+                faceLookup.set(`${nextOrientation[TOP_FACE]}_${nextOrientation[SOUTH_FACE]}`, nextOrientation[EAST_FACE]);
+            }
         }
-        if (k < rotationSequence.length) {
-            currentConfig = transformConfiguration(currentConfig, rotationSequence[k]);
-        }
     }
-    return currentConfig; 
-};
+    return faceLookup;
+}
 
-const alignUpperFace = (initialLayout, desiredUpper) => {
-    let currentConfig = initialLayout;
-    while (currentConfig[COMPONENT_INDICES.UPPER_FACE] !== desiredUpper) {
-        currentConfig = transformConfiguration(currentConfig, "W");
-    }
-    return currentConfig;
-};
+function processDiceQueries(inputDataLines) {
+    const startingLabels = inputDataLines[0].split(" ");
+    const orientationMap = generateOrientationLookup(startingLabels);
 
-const performCalculations = (rawInstructions) => {
-    let currentLayout = rawInstructions[0].split(" ");
-
-    rawInstructions.slice(2).forEach(instructionLine => {
-        const [upperTarget, southernTarget] = instructionLine.split(" ");
-        
-        currentLayout = alignSouthernFace(currentLayout, southernTarget);
-        currentLayout = alignUpperFace(currentLayout, upperTarget);
-        
-        console.log(currentLayout[COMPONENT_INDICES.EASTERN_FACE]);
+    inputDataLines.slice(2).forEach(queryEntry => {
+        const [desiredTop, desiredSouth] = queryEntry.split(" ");
+        const queryKey = `${desiredTop}_${desiredSouth}`;
+        console.log(orientationMap.get(queryKey));
     });
-};
+}
 
-performCalculations(require("fs").readFileSync("/dev/stdin", "utf8").replace(/\r?\n$/, "").split(/\r?\n/));
+processDiceQueries(require("fs").readFileSync("/dev/stdin", "utf8").replace(/\r?\n$/, "").split(/\r?\n/));

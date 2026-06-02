@@ -1,27 +1,15 @@
-const fileSystem = require('node:fs');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(input);
+var list = input.split(' ');
 
-const documentContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const evaluateCondition = () => {
+  const targetValue = 2;
+  const checkPredicate = (item) => item === targetValue;
 
-console.log(documentContent);
+  const relevantElements = [list[0], list[1]];
+  const isAnyMatch = relevantElements.some(checkPredicate);
 
-const retrieveFirstTwoTokens = (sourceString) => {
-  return sourceString.split(' ').slice(0, 2);
+  return isAnyMatch ? 'No' : 'Yes';
 };
 
-const assessCondition = (tokensCollection) => {
-  const numericIndicator = tokensCollection.reduce((accumulator, currentToken) => {
-    return accumulator + (currentToken === '2' ? 1 : 0);
-  }, 0);
-  return numericIndicator > 0;
-};
-
-const resultMapping = new Map([
-  [true, 'No'],
-  [false, 'Yes']
-]);
-
-const processedTokens = retrieveFirstTwoTokens(documentContent);
-const conditionMet = assessCondition(processedTokens);
-const finalOutcome = resultMapping.get(conditionMet);
-
-console.log(finalOutcome);
+console.log(evaluateCondition());

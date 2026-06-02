@@ -1,70 +1,73 @@
 "use strict";
 
-function executeProcessing(dataLines) {
-  const desiredLength = Number.parseInt(dataLines[0], 10);
-  let startPermutation = Number.parseInt(dataLines[1].replace(/ /g, ""), 10);
-  let endPermutation = Number.parseInt(dataLines[2].replace(/ /g, ""), 10);
+function processInput(rawData) {
+  // Parse the first line for the number of digits
+  const digitCount = parseInt(rawData[0]);
+  // Parse the second line for the first boundary number
+  let firstBoundary = parseInt(rawData[1].trim().split(" ").join(""));
+  // Parse the third line for the second boundary number
+  let secondBoundary = parseInt(rawData[2].trim().split(" ").join(""));
 
-  let initialSequenceValues = [12, 123, 1234, 12345, 123456, 1234567, 12345678];
+  // Predefined starting numbers for different digit counts
+  let initialValues = [12, 123, 1234, 12345, 123456, 1234567, 12345678];
 
-  if (startPermutation === endPermutation) {
+  // If boundaries are identical, no numbers are between them
+  if (firstBoundary === secondBoundary) {
     console.log(0);
   } else {
-    // Ensure startPermutation is the smaller value
-    if (endPermutation < startPermutation) {
-      startPermutation = endPermutation + (endPermutation = startPermutation, 0); // Swaps values
+    // Ensure firstBoundary is always less than secondBoundary
+    if (secondBoundary < firstBoundary) {
+      // Swap values using a comma expression
+      firstBoundary = secondBoundary + (secondBoundary = firstBoundary, 0);
     }
 
-    let isRangeActive = false; // Flag to indicate if we are within the desired range
-    let validCount = 0;        // Counter for valid permutations
+    let isCountingActive = false; // Flag to indicate when to start counting
+    let validNumberCount = 0; // Accumulator for valid numbers
 
-    // Iterate through numbers from a calculated start to a fixed upper bound
-    for (let currentCandidate = initialSequenceValues[desiredLength - 2];
-         currentCandidate <= 87654321;
-         currentCandidate++
-    ) {
-      if (isRangeActive && (String(currentCandidate).length === desiredLength)) {
-        const candidateDigits = String(currentCandidate).split('');
-        let hasValidationFailed = false;
-        let digitFrequency = [0, 0, 0, 0, 0, 0, 0, 0]; // Stores frequency of digits 1-8
+    // Iterate through numbers from a predefined start up to 87654321
+    for (let currentNumber = initialValues[digitCount - 2]; currentNumber <= 87654321; currentNumber++) {
+      // Check if counting is active and the current number has the required digitCount
+      if (isCountingActive && ((currentNumber + "").length === digitCount)) {
+        const numberDigits = (currentNumber + "").trim().split(""); // Convert number to array of digits
+        let isInvalid = false; // Flag to mark if the number is invalid
+        let digitFrequency = [0, 0, 0, 0, 0, 0, 0, 0]; // Array to track digit occurrences
 
-        // Check for digit validity and uniqueness
-        for (let digitIndex = 0; digitIndex < candidateDigits.length; digitIndex++) {
-          const currentDigit = Number.parseInt(candidateDigits[digitIndex], 10);
-          digitFrequency[currentDigit - 1]++; // Increment count for the digit
-
-          if (currentDigit > desiredLength) { // Digit value exceeds desired length
-            hasValidationFailed = true;
+        // Check each digit for validity
+        for (let digitIndex = 0; digitIndex < numberDigits.length; digitIndex++) {
+          // Increment frequency for the current digit
+          digitFrequency[numberDigits[digitIndex] - 1]++;
+          // If digit is greater than digitCount, it's invalid
+          if (numberDigits[digitIndex] > digitCount) {
+            isInvalid = true;
             break;
-          } else if (digitFrequency[currentDigit - 1] > 1) { // Digit is not unique
-            hasValidationFailed = true;
+          }
+          // If digit appears more than once, it's invalid
+          else if (digitFrequency[numberDigits[digitIndex] - 1] > 1) {
+            isInvalid = true;
             break;
           }
         }
 
-        // If no validation issues and no zeros are present
-        if (!hasValidationFailed && (!String(currentCandidate).includes('0'))) {
-          validCount++;
+        // If the number is valid (no repeated digits, no digits > digitCount, and no '0')
+        if (!isInvalid && ((currentNumber + "").indexOf("0") === -1)) {
+          validNumberCount++; // Increment the count of valid numbers
+          // console.log(currentNumber); // Debugging: show valid numbers
         }
       }
 
-      // Activate the counting flag when the starting permutation is reached
-      if (currentCandidate === startPermutation) {
-        isRangeActive = true;
+      // Activate counting when the first boundary is reached
+      if (currentNumber === firstBoundary) {
+        isCountingActive = true;
       }
 
-      // Output the count and terminate when the ending permutation is reached
-      if (currentCandidate === endPermutation) {
-        console.log(validCount);
+      // When the second boundary is reached, print the count and exit
+      if (currentNumber === secondBoundary) {
+        console.log(validNumberCount);
         break;
       }
     }
   }
 }
 
-executeProcessing(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-    .trim()
-    .split('\n')
-);
+// Read input from stdin, process it, and pass to the main function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

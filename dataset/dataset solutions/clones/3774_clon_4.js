@@ -1,63 +1,72 @@
-'use strict'
+'use strict';
 
-function calculateMinimumDiscomfort(rawInputText) {
-    const numericValues = rawInputText.split(/\s+/).filter(Boolean).map(Number);
+function processGridData(rawData) {
+    const numericValues = rawData.split(/\s+/).map(Number);
 
-    const gridSide = numericValues.shift();
-    const colorOptions = numericValues.shift();
+    let currentParseIndex = 0;
+    const gridDimension = numericValues[currentParseIndex++];
+    const colorPaletteSize = numericValues[currentParseIndex++];
 
-    const colorDistances = Array.from({ length: colorOptions }, (_, rowIndex) =>
-        numericValues.splice(0, colorOptions)
-    );
-
-    const initialCellColors = Array.from({ length: gridSide }, (_, rowIndex) =>
-        Array.from({ length: gridSide }, (_, colIndex) => numericValues[rowIndex * gridSide + colIndex] - 1)
-    );
-
-    const cellPartitions = { 0: [], 1: [], 2: [] };
-    initialCellColors.forEach((row, rowIndex) => {
-        row.forEach((cellColor, colIndex) => {
-            cellPartitions[(rowIndex + colIndex) % 3].push(cellColor);
-        });
+    const discomfortMatrix = Array.from({ length: colorPaletteSize }, () => {
+        const rowSegment = numericValues.slice(currentParseIndex, currentParseIndex + colorPaletteSize);
+        currentParseIndex += colorPaletteSize;
+        return rowSegment;
     });
 
-    const groupDiscomforts = Object.keys(cellPartitions).map(groupKey => {
-        const currentGroup = cellPartitions[groupKey];
-        return Array.from({ length: colorOptions }, (_, targetColorIndex) =>
-            currentGroup.reduce((sum, originalColorIndex) =>
-                sum + colorDistances[originalColorIndex][targetColorIndex], 0
-            )
-        );
+    const initialGridColors = Array.from({ length: gridDimension }, () => {
+        const rowSegment = numericValues.slice(currentParseIndex, currentParseIndex + gridDimension).map(val => val - 1);
+        currentParseIndex += gridDimension;
+        return rowSegment;
     });
 
-    let minimalOverallDiscomfort = Infinity;
+    const groupedCellColors = new Map();
+    for (let i = 0; i < 3; i++) {
+        groupedCellColors.set(i, []);
+    }
 
-    function findOptimalCombination(discomfortMatrix, availableColorCount, currentSection, selectedPalette, currentAccumulation) {
-        if (currentSection === 3) {
-            minimalOverallDiscomfort = Math.min(minimalOverallDiscomfort, currentAccumulation);
-            return;
-        }
-
-        for (let potentialNewColor = 0; potentialNewColor < availableColorCount; potentialNewColor++) {
-            if (!selectedPalette.has(potentialNewColor)) {
-                selectedPalette.add(potentialNewColor);
-                findOptimalCombination(
-                    discomfortMatrix,
-                    availableColorCount,
-                    currentSection + 1,
-                    selectedPalette,
-                    currentAccumulation + discomfortMatrix[currentSection][potentialNewColor]
-                );
-                selectedPalette.delete(potentialNewColor);
-            }
+    for (let rowIndex = 0; rowIndex < gridDimension; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridDimension; colIndex++) {
+            groupedCellColors.get((rowIndex + colIndex) % 3).push(initialGridColors[rowIndex][colIndex]);
         }
     }
 
-    findOptimalCombination(groupDiscomforts, colorOptions, 0, new Set(), 0);
+    const groupTargetCosts = Array.from({ length: 3 }, () => Array(colorPaletteSize).fill(0));
 
-    console.log(minimalOverallDiscomfort);
+    for (let groupIdentifier = 0; groupIdentifier < 3; groupIdentifier++) {
+        const cellsInGroup = groupedCellColors.get(groupIdentifier);
+        for (let targetColorOption = 0; targetColorOption < colorPaletteSize; targetColorOption++) {
+            groupTargetCosts[groupIdentifier][targetColorOption] = cellsInGroup.reduce((accumulatedCost, originalCellColor) =>
+                accumulatedCost + discomfortMatrix[originalCellColor][targetColorOption], 0
+            );
+        }
+    }
+
+    const topColorOptions = Array.from({ length: 3 }, (_, groupIdentifier) => {
+        return Array.from({ length: colorPaletteSize }, (_, colorIndex) => ({
+            costValue: groupTargetCosts[groupIdentifier][colorIndex],
+            colorIdentifier: colorIndex
+        }))
+        .sort((a, b) => a.costValue - b.costValue)
+        .slice(0, 3);
+    });
+
+    const potentialTotalCosts = topColorOptions[0].flatMap(optionA =>
+        topColorOptions[1].flatMap(optionB =>
+            topColorOptions[2].map(optionC => {
+                const chosenColors = [optionA.colorIdentifier, optionB.colorIdentifier, optionC.colorIdentifier];
+                if (new Set(chosenColors).size === 3) {
+                    return optionA.costValue + optionB.costValue + optionC.costValue;
+                }
+                return Infinity;
+            })
+        )
+    ).filter(cost => cost !== Infinity);
+
+    const minimumDiscomfort = Math.min(...potentialTotalCosts);
+
+    console.log(minimumDiscomfort);
 }
 
 const fileSystem = require('fs');
-const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-calculateMinimumDiscomfort(inputData);
+const inputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processGridData(inputContent);

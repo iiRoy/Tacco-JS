@@ -1,125 +1,59 @@
-// Define aliased system functions and global objects to avoid original identifiers
-const getSystemModule = (moduleName) => require(moduleName); // Custom function to import a system module
-const fileSystemModule = getSystemModule('fs'); // Access the Node.js file system utility module
-const obtainFileContents = (filePath, encodingType) => fileSystemModule.readFileSync(filePath, encodingType); // Method to read content from a specified file path
-const removeOuterSpaces = (str) => str.trim(); // Utility to erase leading or trailing whitespace from a string
-const segmentString = (str, separator) => str.split(separator); // Function to divide a string into an array of substrings
-const popFirstElement = (arr) => arr.shift(); // Method to remove and return the initial item from an array
-const insertLastElement = (arr, element) => arr.push(element); // Method to add a new item to the end of an array
-const projectArrayElements = (arr, callback) => arr.map(callback); // Function to create a new array by applying a callback to each element
-const numericConverter = Number; // Reference to the global Number constructor/function for type conversion
-const mathematicalOperations = Math; // Alias for the standard JavaScript Math object
-const findMaximumValue = mathematicalOperations.max; // Function to determine the greater of two numerical values
-const infiniteValue = Infinity; // Representation of mathematical positive infinity
-const outputStream = console; // Interface for logging information to the console
-const printToConsole = (value) => outputStream.log(value); // Function to output a value to the standard console
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Retrieve raw data from a specified input source path
-const rawSourceData = obtainFileContents('/user/input/data.txt', 'utf8_encoding');
+var lineSegments = rawData.trim().split("\n"); // Split input into individual lines
 
-// Process the raw input string into a collection of distinct lines
-let segmentedLines = removeOuterSpaces(rawSourceData).segmentString('\n');
+var dimension = lineSegments.shift() - 0; // Get the initial size and convert to number
 
-// Extract the primary dimension parameter from the first line and convert it to a numerical type
-let arrayDimension = popFirstElement(segmentedLines) - 0;
+var gridValues = []; // This will store the parsed grid data
 
-// Initialize data structures for grid storage and intermediate calculations
-const coordinateGrid = [];
-const initialElementsRow = []; // A temporary array used for padding purposes
+var initialRow = []; // Temporary array for the first padded row
+for (var rowIdx = 0; rowIdx < dimension + 1; rowIdx++) {
+    initialRow.push(0); // Fill with zeros
+}
+gridValues.push(initialRow); // Add the zero-padded row to the grid
 
-// Populate the padding row with zero values based on the calculated dimension
-for (
-    let elementIndex = 0;
-    elementIndex < arrayDimension + 1;
-    ++elementIndex
-) {
-    initialElementsRow.insertLastElement(0);
+// Parse the remaining lines into number arrays, prepending a zero for padding
+for (var rowIdx = 0; rowIdx < dimension; rowIdx++) {
+    gridValues.push(("0 " + lineSegments.shift()).split(" ").map(Number));
 }
 
-// Prepend the padding row to the main grid data structure
-coordinateGrid.insertLastElement(initialElementsRow);
+dimension = dimension + 1; // Adjust dimension to include the padding
 
-// Construct the primary data grid from the remaining input lines
-// Each line is prefixed with '0' to align with 1-based indexing for prefix sums logic
-for (
-    let rowIndex = 0;
-    rowIndex < arrayDimension;
-    ++rowIndex
-) {
-    coordinateGrid.insertLastElement(
-        segmentString('0 ' + popFirstElement(segmentedLines), ' ').projectArrayElements(numericConverter)
-    );
+var prefixSumMatrix = []; // Initialize the 2D prefix sum array
+
+// Initialize the prefix sum matrix rows and copy the first column values
+for (var rowIdx = 0; rowIdx < dimension; rowIdx++) {
+    prefixSumMatrix[rowIdx] = []; // Create an empty row
+    prefixSumMatrix[rowIdx][0] = gridValues[rowIdx][0]; // Set the first element
 }
 
-// Increment the effective dimension to accommodate the added padding row/column
-arrayDimension = arrayDimension + 1;
-
-// Initialize the 2D array for storing prefix sums (aggregate sums)
-const aggregateSums = [];
-
-// Set up the first column of the aggregate sums matrix
-for ( let rowIndex = 0; rowIndex < arrayDimension; ++rowIndex )
-{
-    aggregateSums[rowIndex] = [];
-    aggregateSums[rowIndex][0] = coordinateGrid[rowIndex][0];
-}
-
-// Compute cumulative sums along each row of the grid
-for (
-    let rowIndex = 0;
-    rowIndex < arrayDimension;
-    ++rowIndex
-) {
-    for (
-        let colIndex = 1;
-        colIndex < arrayDimension;
-        ++colIndex
-    ) {
-        aggregateSums[rowIndex][colIndex] = aggregateSums[rowIndex][colIndex - 1] + coordinateGrid[rowIndex][colIndex];
+// Calculate horizontal prefix sums for each row
+for (var rowIdx = 0; rowIdx < dimension; rowIdx++) {
+    for (var colIdx = 1; colIdx < dimension; colIdx++) {
+        prefixSumMatrix[rowIdx][colIdx] = prefixSumMatrix[rowIdx][colIdx - 1] + gridValues[rowIdx][colIdx];
     }
 }
 
-// Accumulate sums vertically to complete the 2D prefix sum calculation
-for (
-    let rowIndex = 1;
-    rowIndex < arrayDimension;
-    ++rowIndex
-) {
-    for (
-        let colIndex = 0;
-        colIndex < arrayDimension;
-        ++colIndex
-    ) {
-        aggregateSums[rowIndex][colIndex] = aggregateSums[rowIndex - 1][colIndex] + aggregateSums[rowIndex][colIndex];
+// Calculate vertical prefix sums, completing the 2D prefix sum matrix
+for (var rowIdx = 1; rowIdx < dimension; rowIdx++) {
+    for (var colIdx = 0; colIdx < dimension; colIdx++) {
+        prefixSumMatrix[rowIdx][colIdx] = prefixSumMatrix[rowIdx - 1][colIdx] + prefixSumMatrix[rowIdx][colIdx];
     }
 }
 
-// Initialize the variable to track the maximal subarray sum found
-let maximalSubarraySum = -infiniteValue; // Begin with the smallest possible numerical value
+var greatestSum = -Infinity; // Initialize maximum sum to negative infinity
 
-// Iterate over all potential top-left coordinates of subarrays
-for ( let rowStartPos = 0; rowStartPos < arrayDimension; ++rowStartPos )
-{
-    for ( let colStartPos = 0; colStartPos < arrayDimension; ++colStartPos )
-    {
-        // Iterate over all potential bottom-right coordinates, ensuring they are valid and larger than top-left
-        for ( let rowEndPos = rowStartPos + 1; rowEndPos < arrayDimension; ++rowEndPos )
-        {
-            for ( let colEndPos = colStartPos + 1; colEndPos < arrayDimension; ++colEndPos )
-            {
-                // Apply the inclusion-exclusion principle for 2D prefix sums
-                // This formula calculates the sum of the sub-rectangle defined by (rowStartPos+1, colStartPos+1) to (rowEndPos, colEndPos)
-                maximalSubarraySum = findMaximumValue(
-                    maximalSubarraySum,
-                    aggregateSums[rowEndPos][colEndPos] -
-                    aggregateSums[rowStartPos][colEndPos] -
-                    aggregateSums[rowEndPos][colStartPos] +
-                    aggregateSums[rowStartPos][colStartPos]
-                );
+// Iterate through all possible submatrix top-left (r1, c1) and bottom-right (r2, c2) coordinates
+for (var r1 = 0; r1 < dimension; r1++) {
+    for (var c1 = 0; c1 < dimension; c1++) {
+        for (var r2 = r1 + 1; r2 < dimension; r2++) {
+            for (var c2 = c1 + 1; c2 < dimension; c2++) {
+                // Use the prefix sum formula to find the sum of the current submatrix
+                // Sum(r1,c1,r2,c2) = PS[r2][c2] - PS[r1][c2] - PS[r2][c1] + PS[r1][c1]
+                greatestSum = Math.max(greatestSum, prefixSumMatrix[r2][c2] - prefixSumMatrix[r1][c2] - prefixSumMatrix[r2][c1] + prefixSumMatrix[r1][c1]);
             }
         }
     }
 }
 
-// Display the ultimate result, which is the maximal subarray sum
-printToConsole(maximalSubarraySum);
+console.log(greatestSum); // Output the largest submatrix sum found

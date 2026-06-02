@@ -1,41 +1,34 @@
-function processSchedule(sourceInput) {
-    const cleansedData = sourceInput.trim();
-    const dataRows = cleansedData.split('\n');
+console.log((inputData => {
+  const lineSegments = inputData.trim().split('\n');
+  const [firstSegment, secondSegment] = lineSegments;
 
-    const mainParameters = dataRows[0].split(' ').map(Number);
-    const eventCount = mainParameters[0];
-    const baseDuration = mainParameters[1];
+  const [eventCount, timeDuration] = firstSegment.split(' ').map(Number);
+  const eventStartPoints = secondSegment.split(' ').map(Number);
 
-    const eventTimings = dataRows[1].split(' ').map(Number);
-    eventTimings.sort((val1, val2) => val1 - val2);
+  eventStartPoints.sort((a, b) => a - b);
 
-    if (eventCount === 0) {
-        return "0";
+  const { totalActiveTime } = eventStartPoints.reduce((accumulator, currentPoint, index) => {
+    if (index === 0) {
+      // For the very first event, simply add the full duration and set the initial merged end time.
+      accumulator.totalActiveTime = timeDuration;
+      accumulator.currentMergedIntervalEnd = currentPoint + timeDuration;
+    } else {
+      if (currentPoint < accumulator.currentMergedIntervalEnd) {
+        // If the current event starts before the merged interval ends, there's an overlap.
+        // We only add the portion that extends the existing merged interval.
+        const additionalContribution = Math.max(0, currentPoint + timeDuration - accumulator.currentMergedIntervalEnd);
+        accumulator.totalActiveTime += additionalContribution;
+        // Update the merged interval end to the maximum of its current end and the new event's end.
+        accumulator.currentMergedIntervalEnd = Math.max(accumulator.currentMergedIntervalEnd, currentPoint + timeDuration);
+      } else {
+        // If the current event starts after or exactly when the merged interval ends, there's no overlap.
+        // Add the full duration and update the merged interval end.
+        accumulator.totalActiveTime += timeDuration;
+        accumulator.currentMergedIntervalEnd = currentPoint + timeDuration;
+      }
     }
+    return accumulator;
+  }, { totalActiveTime: 0, currentMergedIntervalEnd: -Infinity }); // Initialize accumulator state
 
-    const initialCalculation = {
-        totalActiveTime: baseDuration,
-        currentEndBoundary: eventTimings[0] + baseDuration
-    };
-
-    const finalResult = eventTimings.slice(1).reduce((accumulatorObject, currentEventTime) => {
-        const previousEndBoundary = accumulatorObject.currentEndBoundary;
-        const potentialNewEnd = currentEventTime + baseDuration;
-
-        if (currentEventTime < previousEndBoundary) {
-            const addedSegment = potentialNewEnd - previousEndBoundary;
-            if (addedSegment > 0) {
-                accumulatorObject.totalActiveTime += addedSegment;
-            }
-            accumulatorObject.currentEndBoundary = Math.max(previousEndBoundary, potentialNewEnd);
-        } else {
-            accumulatorObject.totalActiveTime += baseDuration;
-            accumulatorObject.currentEndBoundary = potentialNewEnd;
-        }
-        return accumulatorObject;
-    }, initialCalculation);
-
-    return `${finalResult.totalActiveTime}`;
-}
-
-console.log(processSchedule(require('node:fs').readFileSync('/dev/stdin', 'utf8')));
+  return `${totalActiveTime}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

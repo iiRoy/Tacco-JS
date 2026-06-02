@@ -1,121 +1,95 @@
-const fileProcessor = require('fs');
+var fileSystem = require('fs');
+var fileDescriptorStats = fileSystem.fstatSync(process.stdin.fd);
+var bufferLength = fileDescriptorStats.size;
+var dataBuffer = Buffer.alloc(bufferLength);
+var bytesReadFromInput = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, bufferLength, 0);
+var inputDataLines = dataBuffer.toString('utf8', 0, bytesReadFromInput).trim().split('\n');
 
-const extractPuzzleData = () => {
-    const sourceContent = fileProcessor.readFileSync('/dev/stdin', 'utf8');
-    return sourceContent.trim().split('\n');
-};
+solveExpressions();
 
-const generateAllPermutations = (elements) => {
-    if (elements.length <= 1) {
-        return [elements];
-    }
-    const outcomes = [];
-    elements.forEach((firstElement, idx) => {
-        const remainingElements = elements.slice(0, idx).concat(elements.slice(idx + 1));
-        const subOutcomes = generateAllPermutations(remainingElements);
-        subOutcomes.forEach(subOutcome => outcomes.push([firstElement, ...subOutcome]));
-    });
-    return outcomes;
-};
+function solveExpressions() {
+    const arithmeticOperators = ['+', '-', '*'];
 
-const arithmeticSymbols = ['+', '-', '*'];
+    const calculateAndFormat = (leftOperand, operatorSymbol, rightOperand) => {
+        let computedValue;
+        switch (operatorSymbol) {
+            case '+': computedValue = leftOperand + rightOperand; break;
+            case '-': computedValue = leftOperand - rightOperand; break;
+            case '*': computedValue = leftOperand * rightOperand; break;
+            default: throw new Error('Invalid operator: ' + operatorSymbol);
+        }
+        return { resultValue: computedValue, expressionString: `(${leftOperand} ${operatorSymbol} ${rightOperand})` };
+    };
 
-const generateOperatorSequences = (desiredCount) => {
-    if (desiredCount === 0) {
-        return [[]];
-    }
-    const allSequences = [];
-    const previousSequences = generateOperatorSequences(desiredCount - 1);
-    arithmeticSymbols.forEach(symbol => {
-        previousSequences.forEach(prevSeq => allSequences.push([symbol, ...prevSeq]));
-    });
-    return allSequences;
-};
-
-const interpretPostfix = (tokenStream) => {
-    const valueStack = [];
-    const textualStack = [];
-
-    for (const item of tokenStream) {
-        if (typeof item === 'number') {
-            valueStack.push(item);
-            textualStack.push(item.toString());
-        } else { // Operator
-            const rightValue = valueStack.pop();
-            const leftValue = valueStack.pop();
-            let computedValue;
-            switch (item) {
-                case '+': computedValue = leftValue + rightValue; break;
-                case '-': computedValue = leftValue - rightValue; break;
-                case '*': computedValue = leftValue * rightValue; break;
+    function* generateAllPermutations(elementsArray) {
+        if (elementsArray.length === 0) {
+            yield [];
+            return;
+        }
+        for (let i = 0; i < elementsArray.length; i++) {
+            const currentElement = elementsArray[i];
+            const remainingElements = [...elementsArray.slice(0, i), ...elementsArray.slice(i + 1)];
+            for (const subPermutation of generateAllPermutations(remainingElements)) {
+                yield [currentElement, ...subPermutation];
             }
-            valueStack.push(computedValue);
-
-            const rightText = textualStack.pop();
-            const leftText = textualStack.pop();
-            const formattedText = `(${leftText} ${item} ${rightText})`;
-            textualStack.push(formattedText);
         }
     }
-    return { finalEvaluation: valueStack.pop(), finalTextualRepresentation: textualStack.pop() };
-};
 
-const expressionStructures = [
-    (numbers, ops) => [numbers[0], numbers[1], ops[0], numbers[2], ops[1], numbers[3], ops[2]], // ((N1 O1 N2) O2 N3) O3 N4
-    (numbers, ops) => [numbers[0], numbers[1], numbers[2], ops[0], ops[1], numbers[3], ops[2]], // (N1 O2 (N2 O1 N3)) O3 N4
-    (numbers, ops) => [numbers[0], numbers[1], ops[0], numbers[2], numbers[3], ops[1], ops[2]]  // (N1 O1 N2) O3 (N3 O2 N4)
-];
+    let currentInputEntry;
+    while ((currentInputEntry = inputDataLines.shift()) !== undefined && currentInputEntry !== '0 0 0 0') {
+        const initialDigits = currentInputEntry.split(' ').map(Number);
+        let lineSolutionFound = false;
 
-const executePuzzleSolver = () => {
-    const rawPuzzleLines = extractPuzzleData();
-    let currentLinePosition = 0;
+        for (const [digitA, digitB, digitC, digitD] of generateAllPermutations(initialDigits)) {
+            for (let opIndex1 = 0; opIndex1 < 3; opIndex1++) {
+                const operatorSymbol1 = arithmeticOperators[opIndex1];
+                for (let opIndex2 = 0; opIndex2 < 3; opIndex2++) {
+                    const operatorSymbol2 = arithmeticOperators[opIndex2];
+                    for (let opIndex3 = 0; opIndex3 < 3; opIndex3++) {
+                        const operatorSymbol3 = arithmeticOperators[opIndex3];
 
-    const allOpSequences = generateOperatorSequences(3);
-    // Mimic original behavior: skip the '---' operator sequence
-    const filteredOpSequences = allOpSequences.filter(seq => !(seq[0] === '-' && seq[1] === '-' && seq[2] === '-'));
+                        if (opIndex1 === 1 && opIndex2 === 1 && opIndex3 === 1) {
+                            continue;
+                        }
 
-    while (true) {
-        const currentPuzzle = rawPuzzleLines[currentLinePosition];
-        if (currentPuzzle === '0 0 0 0') {
-            break;
-        }
+                        let calculationOutcome;
 
-        const numericInputs = currentPuzzle.split(' ').map(Number);
-        let solutionDiscovered = false;
-        const processedPermutationHashes = new Set(); // Avoid redundant checks for same permutation key
+                        calculationOutcome = calculateAndFormat(digitA, operatorSymbol1, digitB);
+                        calculationOutcome = calculateAndFormat(calculationOutcome.resultValue, operatorSymbol2, digitC);
+                        calculationOutcome = calculateAndFormat(calculationOutcome.resultValue, operatorSymbol3, digitD);
+                        if (calculationOutcome.resultValue === 10) {
+                            console.log(calculationOutcome.expressionString);
+                            lineSolutionFound = true;
+                            break;
+                        }
 
-        const allNumberPermutations = generateAllPermutations(numericInputs);
+                        calculationOutcome = calculateAndFormat(digitB, operatorSymbol1, digitC);
+                        calculationOutcome = calculateAndFormat(digitA, operatorSymbol2, calculationOutcome.resultValue);
+                        calculationOutcome = calculateAndFormat(calculationOutcome.resultValue, operatorSymbol3, digitD);
+                        if (calculationOutcome.resultValue === 10) {
+                            console.log(calculationOutcome.expressionString);
+                            lineSolutionFound = true;
+                            break;
+                        }
 
-        for (const numberPermutation of allNumberPermutations) {
-            // Replicate original's `searched` array logic for permutation memoization
-            const permutationHash = numberPermutation[0] * 1000 + numberPermutation[1] * 100 + numberPermutation[2] * 10 + numberPermutation[3];
-            if (processedPermutationHashes.has(permutationHash)) {
-                continue;
-            }
-            processedPermutationHashes.add(permutationHash);
-
-            for (const operatorSequence of filteredOpSequences) {
-                for (const formConstructor of expressionStructures) {
-                    const postfixExpression = formConstructor(numberPermutation, operatorSequence);
-                    const { finalEvaluation, finalTextualRepresentation } = interpretPostfix(postfixExpression);
-
-                    if (finalEvaluation === 10) {
-                        console.log(finalTextualRepresentation);
-                        solutionDiscovered = true;
-                        // Exit all loops for current puzzle
-                        break;
+                        const leftSubExpression = calculateAndFormat(digitA, operatorSymbol1, digitB);
+                        const rightSubExpression = calculateAndFormat(digitC, operatorSymbol2, digitD);
+                        calculationOutcome = calculateAndFormat(leftSubExpression.resultValue, operatorSymbol3, rightSubExpression.resultValue);
+                        if (calculationOutcome.resultValue === 10) {
+                            console.log(calculationOutcome.expressionString);
+                            lineSolutionFound = true;
+                            break;
+                        }
                     }
+                    if (lineSolutionFound) break;
                 }
-                if (solutionDiscovered) break;
+                if (lineSolutionFound) break;
             }
-            if (solutionDiscovered) break;
+            if (lineSolutionFound) break;
         }
 
-        if (!solutionDiscovered) {
+        if (!lineSolutionFound) {
             console.log(0);
         }
-        currentLinePosition++;
     }
-};
-
-executePuzzleSolver();
+}

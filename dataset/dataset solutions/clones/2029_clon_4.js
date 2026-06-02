@@ -1,47 +1,32 @@
 "use strict";
 
-function extractNumericalParameters(sourceData) {
-    const rawValues = sourceData[0].split(" ").map(Number);
-    return {
-        countOfElements: rawValues[0],
-        portalA: rawValues[1],
-        portalB: rawValues[2]
-    };
-}
+function processGraphData(inputData) {
+  const inputLine = inputData[0].trim();
+  const [totalNodes, firstSpecial, secondSpecial] = inputLine.split(' ').map(Number);
 
-function coordinateProcessor(dataLines) {
-    const { countOfElements, portalA, portalB } = extractNumericalParameters(dataLines);
-
-    const elementIdentifiers = Array.from({ length: countOfElements }, (_, idx) => idx + 1);
-
-    const allPathLengths = elementIdentifiers.flatMap(node1 =>
-        elementIdentifiers
-            .filter(node2 => node2 > node1)
-            .map(node2 => {
-                const directPath = Math.abs(node2 - node1);
-                const portalPath = Math.abs(portalA - node1) + Math.abs(portalB - node2) + 1;
-                return Math.min(directPath, portalPath);
-            })
+  const allNodePairs = Array.from({ length: totalNodes }, (_, nodeAIndex) => nodeAIndex + 1)
+    .flatMap(nodeAIdentifier =>
+      Array.from({ length: totalNodes - nodeAIdentifier }, (_, nodeBOffset) => nodeBOffset + nodeAIdentifier + 1)
+        .map(nodeBIdentifier => ({ nodeA: nodeAIdentifier, nodeB: nodeBIdentifier }))
     );
 
-    const pathLengthFrequencies = allPathLengths.reduce((accumulator, currentLength) => {
-        accumulator.set(currentLength, (accumulator.get(currentLength) || 0) + 1);
-        return accumulator;
-    }, new Map());
+  const computedDistances = allNodePairs.map(pair => {
+    const pathDirect = pair.nodeB - pair.nodeA;
+    const pathViaSpecial = Math.abs(firstSpecial - pair.nodeA) + Math.abs(secondSpecial - pair.nodeB) + 1;
+    return Math.min(pathDirect, pathViaSpecial);
+  });
 
-    const statisticalResults = Array.from({ length: countOfElements - 1 }, (_, index) => {
-        const desiredLength = index + 1;
-        return pathLengthFrequencies.get(desiredLength) || 0;
-    });
+  const distanceTally = computedDistances.reduce((tallyMap, currentPathLength) => {
+    tallyMap.set(currentPathLength, (tallyMap.get(currentPathLength) || 0) + 1);
+    return tallyMap;
+  }, new Map());
 
-    statisticalResults.forEach(countValue => {
-        console.log(countValue);
-    });
+  const finalOutputValues = Array.from({ length: totalNodes - 1 }, (_, outputIndex) => {
+    const requiredPathLength = outputIndex + 1;
+    return distanceTally.get(requiredPathLength) || 0;
+  });
+
+  finalOutputValues.forEach(valueToPrint => console.log(valueToPrint));
 }
 
-function systemInitiator(inputSourcePath) {
-    const content = require('fs').readFileSync(inputSourcePath, 'utf8').trim().split("\n");
-    coordinateProcessor(content);
-}
-
-systemInitiator('/dev/stdin');
+processGraphData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

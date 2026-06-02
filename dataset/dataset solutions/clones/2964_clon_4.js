@@ -1,56 +1,71 @@
-var inputSegments = [];
-var lineParserModule = require('readline');
+var lines = [];
+var readline = require('readline');
 
-var interfaceHandler = lineParserModule.createInterface({
+var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-interfaceHandler.on('line', function (currentSegment) {
-    inputSegments.push(currentSegment);
+rl.on('line', function (x) {
+    lines.push(x);
 });
 
-interfaceHandler.on('close', function () {
-    var vertexCount = Number(inputSegments[0]);
-    var rawEdgeList = inputSegments.slice(1);
+rl.on('close', function () {
+    var nodeCount = Number(lines[0]);
+    lines.shift();
 
-    var adjacencyStructure = new Array(vertexCount).fill(null).map(() => []);
+    // Preserve original 'uvw' variable name for the required console.log output.
+    var uvw = lines.map(entry => entry.split(" ").map(Number));
 
-    for (let idx = 0; idx < rawEdgeList.length; idx++) {
-        let parts = rawEdgeList[idx].split(" ").map(s => Number(s));
-        let nodeA = parts[0] - 1;
-        let nodeB = parts[1] - 1;
-        let pathValue = parts[2];
+    // Preserve original sorting and console.log behavior.
+    uvw.sort((firstEdge, secondEdge) => {
+        if (firstEdge[1] === secondEdge[1]) { return (firstEdge[0] - secondEdge[0]); }
+        else { return (firstEdge[1] - secondEdge[1]); }
+    });
+    console.log(uvw);
 
-        adjacencyStructure[nodeA].push({ neighbor: nodeB, weight: pathValue });
-        adjacencyStructure[nodeB].push({ neighbor: nodeA, weight: pathValue });
+    // Build an adjacency list for graph traversal.
+    // Each element in graphAdjacency[i] is an object { connectedTo: j, weight: k }
+    const graphAdjacency = Array.from({ length: nodeCount }, () => []);
+    for (const [sourceNode, targetNode, edgeWeight] of uvw) {
+        // Adjust to 0-indexed node representation
+        graphAdjacency[sourceNode - 1].push({ connectedTo: targetNode - 1, weight: edgeWeight });
+        graphAdjacency[targetNode - 1].push({ connectedTo: sourceNode - 1, weight: edgeWeight });
     }
 
-    var vertexShades = new Array(vertexCount).fill(-1);
-    var visitQueue = [];
+    // Initialize an array to store the final colors of each node.
+    // null indicates an uncolored node.
+    const finalColors = new Array(nodeCount).fill(null);
+    finalColors[0] = 0; // Node 0 (which corresponds to original node 1) is colored white (0).
 
-    vertexShades[0] = 0;
-    visitQueue.push(0);
+    // Use a queue for Breadth-First Search (BFS) to traverse and color the graph.
+    const processingQueue = [];
+    processingQueue.push(0); // Start BFS from node 0.
 
-    let headPointer = 0;
-    while (headPointer < visitQueue.length) {
-        let currentVertex = visitQueue[headPointer++];
-        let currentShade = vertexShades[currentVertex];
+    let queuePointer = 0; // Manual pointer for queue to avoid performance overhead of Array.shift()
+    while (queuePointer < processingQueue.length) {
+        const currentVertexIndex = processingQueue[queuePointer++];
+        const currentVertexColor = finalColors[currentVertexIndex];
 
-        for (let connection of adjacencyStructure[currentVertex]) {
-            let connectedVertex = connection.neighbor;
-            let edgeVal = connection.weight;
+        // Iterate over all connections from the current vertex.
+        for (const connection of graphAdjacency[currentVertexIndex]) {
+            const adjacentVertexIndex = connection.connectedTo;
+            const edgeValue = connection.weight;
 
-            let requiredShade = (edgeVal % 2 === 0) ? currentShade : (1 - currentShade);
-
-            if (vertexShades[connectedVertex] === -1) {
-                vertexShades[connectedVertex] = requiredShade;
-                visitQueue.push(connectedVertex);
+            // If the adjacent vertex has not been colored yet.
+            if (finalColors[adjacentVertexIndex] === null) {
+                // Determine the color of the adjacent vertex:
+                // If edge weight is even, the color is the same as the current vertex.
+                // If edge weight is odd, the color is the opposite of the current vertex.
+                // This can be expressed as (currentVertexColor + edgeValue) % 2.
+                finalColors[adjacentVertexIndex] = (currentVertexColor + edgeValue) % 2;
+                processingQueue.push(adjacentVertexIndex); // Add the newly colored vertex to the queue.
             }
         }
     }
 
-    for (var idx = 0; idx < vertexCount; idx++) {
-        console.log(vertexShades[idx]);
+    // Output the final color for each node.
+    for (let i = 0; i < nodeCount; i++) {
+        console.log(finalColors[i]);
     }
 });

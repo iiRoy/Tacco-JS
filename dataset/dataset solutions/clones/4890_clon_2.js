@@ -1,53 +1,49 @@
-// This function handles the entirety of the provided raw input data.
+// Process raw input data
 function ProcessInput(rawData) {
-  // Each line of the input is separated by newlines; here we split it into an array of strings.
-  const linesOfData = rawData.split("\n");
+    // Split the input string into individual lines
+    let lines = rawData.split("\n");
 
-  // The second line of input is split by spaces to get individual elements.
-  let secondLineElements = linesOfData[1].split(" ");
+    // Extract the second line and split it by spaces
+    let tempValues = lines[1].split(" ");
 
-  // The first line contains a number, which we parse as an integer.
-  const countVal = parseInt(linesOfData[0], 10);
+    // Parse the first line as an integer to get the count
+    const count = parseInt(lines[0], 10);
 
-  // We initialize an array with a specific size determined by the parsed number.
-  let initialNumbers = new Array(2 * countVal - 1);
+    // Initialize an array to store the numbers
+    let initialNumbers = new Array(2 * count - 1);
 
-  // Iterate to populate the initial array by converting string elements to integers.
-  for (let idx = 0; idx < initialNumbers.length; idx++) {
-    initialNumbers[idx] = parseInt(secondLineElements[idx], 10);
-  }
-
-  // This helper function computes the next iteration of the number sequence.
-  function deriveNextSequence(currentSequence) {
-    // A new array is created to store the results of the current iteration.
-    let futureSequence = new Array(currentSequence.length - 2);
-
-    // Loop through the current sequence, taking triplets and finding their middle value.
-    for (let subIdx = 0; subIdx < futureSequence.length; subIdx++) {
-      // Extract a sub-array of three elements.
-      const tripletSlice = currentSequence.slice(subIdx, subIdx + 3);
-
-      // Sort the triplet and pick the middle element (index 1).
-      // The custom sort function ensures numeric comparison.
-      futureSequence[subIdx] = tripletSlice.sort(
-        function(elemA, elemB) {
-          return (elemA < elemB ? -1 : 1);
-        }
-      )[1];
+    // Populate the array by parsing values from the temporary array
+    for (let idx = 0; idx < initialNumbers.length; idx++) {
+        initialNumbers[idx] = parseInt(tempValues[idx], 10);
     }
-    return futureSequence; // Return the newly generated sequence.
-  }
 
-  // Start with the initial array as our working sequence.
-  let workingSequence = initialNumbers;
+    // Helper function to generate the next sequence by finding medians of three
+    function computeNextSequence(currentSequence) {
+        let nextSequence = new Array(currentSequence.length - 2);
+        for (let k = 0; k < nextSequence.length; k++) {
+            // Extract a sub-array of three elements
+            let subArray = currentSequence.slice(k, k + 3);
+            // Sort the sub-array and pick the middle element (median of three)
+            nextSequence[k] = subArray.sort(
+                function(valA, valB) {
+                    return (valA < valB ? -1 : 1);
+                }
+            )[1];
+        }
+        return nextSequence;
+    }
 
-  // Continue processing the sequence until only one element remains.
-  while (workingSequence.length > 1) {
-    workingSequence = deriveNextSequence(workingSequence);
-  }
+    // Start with the initial sequence
+    let workingSequence = initialNumbers;
 
-  // Display the final remaining value from the processed sequence.
-  console.log('%d', workingSequence[0]);
+    // Repeatedly compute the next sequence until only one element remains
+    while (workingSequence.length > 1) {
+        workingSequence = computeNextSequence(workingSequence);
+    }
+
+    // Output the final remaining element
+    console.log('%d', workingSequence[0]);
 }
-// Do not modify the following line; it handles reading input and calling the main processing function.
+
+// Do not modify the following lines (reads from standard input and calls ProcessInput)
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,61 +1,52 @@
-function solveCompetition(programInput) {
-    const dataLines = programInput.split("\n");
-    const totalVertices = Number(dataLines[0]);
+function Main(rawInput) {
+  const lines = rawInput.split("\n");
+  const nodeCount = parseInt(lines[0], 10);
 
-    const graphAdjacency = Array.from({ length: totalVertices }, () => []);
+  const graphAdjacency = Array.from({ length: nodeCount }, () => []);
 
-    dataLines.slice(1, totalVertices).forEach(connectionInfo => {
-        const [nodeA_str, nodeB_str] = connectionInfo.split(" ");
-        const nodeA = Number(nodeA_str) - 1;
-        const nodeB = Number(nodeB_str) - 1;
-        graphAdjacency[nodeA].push(nodeB);
-        graphAdjacency[nodeB].push(nodeA);
-    });
+  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+    const [nodeU, nodeV] = lines[edgeIndex + 1].split(" ").map(Number);
+    graphAdjacency[nodeU - 1].push(nodeV - 1);
+    graphAdjacency[nodeV - 1].push(nodeU - 1);
+  }
 
-    class DistanceCalculator {
-        constructor(vertexCount, adjacencyLists) {
-            this.vertexCount = vertexCount;
-            this.adjacencyLists = adjacencyLists;
+  const calculateShortestPaths = (startNode, totalNodes, adjList) => {
+    const pathDistances = Array(totalNodes).fill(Infinity);
+    const traversalQueue = [startNode];
+    pathDistances[startNode] = 0;
+
+    let queuePointer = 0;
+
+    while (queuePointer < traversalQueue.length) {
+      const currentNode = traversalQueue[queuePointer++];
+      for (const neighborNode of adjList[currentNode]) {
+        if (pathDistances[neighborNode] === Infinity) {
+          pathDistances[neighborNode] = pathDistances[currentNode] + 1;
+          traversalQueue.push(neighborNode);
         }
-
-        findPathLengths(startPoint) {
-            const currentPathLengths = new Array(this.vertexCount).fill(this.vertexCount);
-            const traversalQueue = [];
-
-            currentPathLengths[startPoint] = 0;
-            traversalQueue.push(startPoint);
-
-            let queueHeadIndex = 0;
-
-            while (queueHeadIndex < traversalQueue.length) {
-                const activeVertex = traversalQueue[queueHeadIndex++];
-                
-                this.adjacencyLists[activeVertex].forEach(connectedVertex => {
-                    if (currentPathLengths[connectedVertex] === this.vertexCount) {
-                        currentPathLengths[connectedVertex] = currentPathLengths[activeVertex] + 1;
-                        traversalQueue.push(connectedVertex);
-                    }
-                });
-            }
-            return currentPathLengths;
-        }
+      }
     }
+    return pathDistances;
+  };
 
-    const pathService = new DistanceCalculator(totalVertices, graphAdjacency);
-    const lengthsFromOrigin = pathService.findPathLengths(0);
-    const lengthsFromDestination = pathService.findPathLengths(totalVertices - 1);
+  const distancesFromZero = calculateShortestPaths(0, nodeCount, graphAdjacency);
+  const distancesFromNMinusOne = calculateShortestPaths(nodeCount - 1, nodeCount, graphAdjacency);
 
-    const fennecControlledZones = Array.from({ length: totalVertices }, (_, vertexIdentifier) => vertexIdentifier)
-        .filter(vertexIdentifier => vertexIdentifier !== 0 && vertexIdentifier !== totalVertices - 1)
-        .reduce((count, vertexIdentifier) => {
-            return count + (lengthsFromOrigin[vertexIdentifier] <= lengthsFromDestination[vertexIdentifier] ? 1 : 0);
-        }, 0);
+  const fennecTerritoryCount = Array.from({ length: nodeCount }, (_, index) => index)
+    .filter(nodeIndex => nodeIndex !== 0 && nodeIndex !== nodeCount - 1)
+    .reduce((currentCount, nodeIndex) => {
+      return currentCount + (distancesFromZero[nodeIndex] <= distancesFromNMinusOne[nodeIndex] ? 1 : 0);
+    }, 0);
 
-    const snukeControlledZones = (totalVertices - 2) - fennecControlledZones;
+  const totalIntermediateNodes = nodeCount - 2;
+  const snukeTerritoryCount = totalIntermediateNodes - fennecTerritoryCount;
 
-    const gameOutcome = (fennecControlledZones <= snukeControlledZones) ? "Snuke" : "Fennec";
+  let finalWinner = "Fennec";
+  if (fennecTerritoryCount <= snukeTerritoryCount) {
+    finalWinner = "Snuke";
+  }
 
-    console.log(gameOutcome);
+  console.log('%s', finalWinner);
 }
 
-solveCompetition(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

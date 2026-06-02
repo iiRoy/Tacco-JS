@@ -1,23 +1,15 @@
-const computeIntegralSpan = (dataStream) => {
-    const segments = dataStream.split('\n').filter(Boolean);
-    const rangeDescriptors = segments.slice(1);
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n');
+    const relevantSegments = lineSegments.slice(1);
 
-    const tallyRecursiveSum = (remainingDescriptors, accumulatedValue) => {
-        if (remainingDescriptors.length === 0) {
-            return accumulatedValue;
-        }
+    const totalSpan = relevantSegments.reduce((accumulator, currentSegment) => {
+        const numericBounds = currentSegment.split(' ');
+        const lowerBound = Number(numericBounds[0]);
+        const upperBound = Number(numericBounds[1]);
+        const currentSpan = upperBound - lowerBound + 1;
+        return accumulator + currentSpan;
+    }, 0);
 
-        const [currentDescriptor, ...subsequentDescriptors] = remainingDescriptors;
-        const [beginValue, endValue] = currentDescriptor.split(' ').map(val => Number(val));
-
-        const currentSpan = endValue - beginValue + 1;
-
-        return tallyRecursiveSum(subsequentDescriptors, accumulatedValue + currentSpan);
-    };
-
-    const finalResult = tallyRecursiveSum(rangeDescriptors, 0);
-
-    console.log(finalResult);
-};
-
-computeIntegralSpan(require("node:fs").readFileSync(process.stdin.fd, "utf8").trim());
+    console.log(totalSpan);
+}
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

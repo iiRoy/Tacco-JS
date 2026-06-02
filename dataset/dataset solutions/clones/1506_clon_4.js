@@ -1,40 +1,37 @@
 "use strict";
 
-const evaluateSeriesData = (inputDataText) => {
-    const segmentedInput = inputDataText.trim().split('\n');
+function processInputData(rawData) {
+  const allLines = rawData.trim().split('\n');
+  const entryCount = Number(allLines[0]);
 
-    const numberOfEntries = Number(segmentedInput[0]);
-    // Extract the data lines based on the count from the first line.
-    // The original code iterates from index 1 up to `numberOfEntries` (inclusive).
-    // So, `slice(1, numberOfEntries + 1)` correctly selects these lines.
-    const relevantEntries = segmentedInput.slice(1, numberOfEntries + 1);
+  let currentConsecutiveMatches = 0;
 
-    const resultingState = relevantEntries.reduce((currentState, singleEntry) => {
-        // If the success condition has already been met in a previous iteration,
-        // we can short-circuit and return the current state without further processing.
-        if (currentState.conditionAchieved) {
-            return currentState;
-        }
+  const hasThreeConsecutive = Array.from({ length: entryCount }, (_, i) => i + 1)
+    .some(idx => {
+      const lineContent = allLines[idx];
+      const [valA, valB] = lineContent.split(' ');
 
-        const parts = singleEntry.split(' ');
-        const areEquivalent = parts[0] === parts[1];
+      if (valA === valB) {
+        currentConsecutiveMatches++;
+      } else {
+        currentConsecutiveMatches = 0;
+      }
 
-        // Update the consecutive match count using a conditional (ternary) expression
-        const newConsecutiveMatchCount = areEquivalent ? currentState.consecutiveMatchCountValue + 1 : 0;
+      return currentConsecutiveMatches >= 3;
+    });
 
-        // Check if the new count meets or exceeds the target for success
-        const newConditionAchieved = currentState.conditionAchieved || (newConsecutiveMatchCount >= 3);
+  if (hasThreeConsecutive) {
+    console.log("Yes");
+  } else {
+    console.log("No");
+  }
+}
 
-        return {
-            consecutiveMatchCountValue: newConsecutiveMatchCount,
-            conditionAchieved: newConditionAchieved
-        };
-    }, { consecutiveMatchCountValue: 0, conditionAchieved: false }); // Initial accumulator object
+const numericOrder = (first, second) => first - second;
 
-    // Return "Yes" or "No" based on the final determined state
-    return resultingState.conditionAchieved ? "Yes" : "No";
-};
+function arrangeNumbers(collection) {
+  collection.sort(numericOrder);
+  return collection;
+}
 
-// Retrieve input from standard input and process it
-const sourceContent = require("node:fs").readFileSync("/dev/stdin", "utf-8");
-console.log(evaluateSeriesData(sourceContent));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf-8"));

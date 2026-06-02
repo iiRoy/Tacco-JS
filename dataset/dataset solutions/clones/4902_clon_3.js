@@ -1,101 +1,77 @@
-/**
- * Processes a schedule of activities to minimize inconvenience.
- * This simulation aims to select a different category each time if possible,
- * incurring a penalty if the same category must be chosen consecutively.
- *
- * @param {string} rawInputPayload The raw input string, typically from standard input.
- */
-function processActivitySchedule(rawInputPayload) {
-  // Split the raw input string into individual lines for easier parsing.
-  const activityLines = rawInputPayload.trim().split('\n');
+function processInputData(rawData) {
+  const lines = rawData.split("\n");
 
-  // Extract the primary operational parameters from the first line.
-  // 'capacityStr' represents the total number of operations to perform (analogous to K).
-  // 'categoryCountStr' is the total number of distinct categories (analogous to T),
-  // which is parsed but not directly utilized in the core simulation logic.
-  const [capacityStr, categoryCountStr] = activityLines[0].split(' ');
-  let capacityLimit = parseInt(capacityStr, 10);
-  const categoryCount = parseInt(categoryCountStr, 10); // This variable is parsed but not used in the processing loop.
+  const firstLineParts = lines[0].split(" ");
+  const totalItems = Number.parseInt(firstLineParts[0], 10); // K
+  const numTypes = Number.parseInt(firstLineParts[1], 10); // T (unused, but parsed for behavioral equivalence)
 
-  // Parse the initial quantities for each category from the second line.
-  // Each category is stored as an object to improve readability and maintainability,
-  // containing its unique 'categoryId' and its 'currentQuantity'.
-  let itemCategories = activityLines[1].split(' ').map((quantityString, categoryIdx) => ({
-    categoryId: categoryIdx,
-    currentQuantity: parseInt(quantityString, 10),
-  }));
+  const secondLineParts = lines[1].split(" ");
+  const itemCounts = secondLineParts.map((elementValue, currentIndex) => {
+    // Each element is an array: [original_index, count_value]
+    return [currentIndex, Number.parseInt(elementValue, 10)];
+  });
 
-  // Initialize tracking variables for the simulation.
-  // 'lastSelectedCategoryId' keeps track of the category chosen in the immediately preceding step,
-  // initialized to null to signify no previous selection.
-  // 'penaltyPoints' accumulates the total inconvenience score.
-  let lastSelectedCategoryId = null;
-  let penaltyPoints = 0;
+  let lastProcessedTypeIndex = -1; // Corresponds to 'last' in original
+  let penaltyCount = 0; // Corresponds to 'count' in original
+  let remainingItems = totalItems; // Corresponds to 'K' in original, renamed for clarity
 
-  // Begin the main simulation loop. It continues as long as there are operations remaining
-  // within the defined 'capacityLimit'.
-  while (capacityLimit > 0) {
-    // --- Type III: Added an intermediate step and a guard clause for robustness ---
-    // Calculate the sum of all remaining items across all categories.
-    // This helps in detecting scenarios where capacityLimit > 0 but no items are available,
-    // which would otherwise lead to an infinite loop (assuming valid input guarantees items).
-    const totalRemainingItems = itemCategories.reduce((sum, item) => sum + item.currentQuantity, 0);
-    if (totalRemainingItems === 0) {
-      // If no items are left but the capacity limit hasn't been met, it implies an
-      // unexpected state or invalid input. Break the loop to prevent infinite execution.
-      break;
+  // Define constants for array indices to improve readability
+  const TYPE_IDENTIFIER_INDEX = 0;
+  const ITEM_QUANTITY_VALUE = 1;
+
+  while (true) { // Equivalent to original 'while(1)'
+    // Guard clause: If no items are left, output the penalty count and exit.
+    if (remainingItems === 0) {
+      return console.log(penaltyCount);
     }
 
-    // Sort the categories in descending order based on their 'currentQuantity'.
-    // This greedy approach prioritizes categories with more available items for selection.
-    itemCategories.sort((categoryA, categoryB) => categoryB.currentQuantity - categoryA.currentQuantity);
+    // Sort the item counts in descending order based on their quantity.
+    // The original sort `a[1] < b[1]` effectively sorts in descending order of the second element.
+    itemCounts.sort((itemA, itemB) => itemB[ITEM_QUANTITY_VALUE] - itemA[ITEM_QUANTITY_VALUE]);
 
-    let chosenCategoryForThisCycle = null;
-    let preferredOptionChosen = false; // Flag to indicate if a non-consecutive category was successfully selected.
+    let itemProcessedInCurrentIteration = false; // Corresponds to 'found' in original
 
-    // --- Type III: Changed loop structure from 'for (var i=0; ...)' to 'for (const ... of ...)' ---
-    // First attempt: Try to find a category that is available (quantity > 0) AND
-    // is different from the one selected in the previous cycle.
-    for (const currentCategoryCandidate of itemCategories) {
-      if (currentCategoryCandidate.currentQuantity > 0 && currentCategoryCandidate.categoryId !== lastSelectedCategoryId) {
-        chosenCategoryForThisCycle = currentCategoryCandidate;
-        preferredOptionChosen = true;
-        break; // A suitable preferred category was found, exit this search.
+    // First attempt: Find an item that has a quantity greater than zero
+    // AND whose type index is different from the last processed type.
+    for (let idx = 0; idx < itemCounts.length; idx++) {
+      const currentItemEntry = itemCounts[idx];
+      const currentItemQuantity = currentItemEntry[ITEM_QUANTITY_VALUE];
+      const currentItemType = currentItemEntry[TYPE_IDENTIFIER_INDEX];
+
+      if (currentItemQuantity > 0 && currentItemType !== lastProcessedTypeIndex) {
+        // Process the item: decrement its quantity, decrement total remaining items,
+        // update the last processed type, and mark that an item was processed.
+        currentItemEntry[ITEM_QUANTITY_VALUE]--;
+        remainingItems--;
+        lastProcessedTypeIndex = currentItemType;
+        itemProcessedInCurrentIteration = true;
+        break; // Exit this loop as an item has been successfully processed
       }
     }
 
-    // If no preferred (non-consecutive) category could be chosen, proceed to select any available category.
-    // This scenario typically incurs a penalty.
-    if (!preferredOptionChosen) {
-      // --- Type III: Penalty logic is now explicitly associated with the fallback selection ---
-      // Iterate through categories again to find any available item, regardless of its previous selection status.
-      for (const currentCategoryCandidate of itemCategories) {
-        if (currentCategoryCandidate.currentQuantity > 0) {
-          chosenCategoryForThisCycle = currentCategoryCandidate;
-          penaltyPoints++; // Increment the penalty score as a non-preferred choice had to be made.
-          break; // An available category was found, exit this search.
+    // If no suitable item was found in the first attempt (meaning all remaining items
+    // are of the same type as the last processed one, or there are no items with quantity > 0
+    // that are not the last processed type), then we must pick any available item
+    // and incur a penalty.
+    if (!itemProcessedInCurrentIteration) {
+      // Second attempt: Find any item with a quantity greater than zero.
+      for (let idx = 0; idx < itemCounts.length; idx++) {
+        const currentItemEntry = itemCounts[idx];
+        const currentItemQuantity = currentItemEntry[ITEM_QUANTITY_VALUE];
+        const currentItemType = currentItemEntry[TYPE_IDENTIFIER_INDEX];
+
+        if (currentItemQuantity > 0) {
+          // Process the item: decrement its quantity, decrement total remaining items,
+          // update the last processed type, and increment the penalty count.
+          currentItemEntry[ITEM_QUANTITY_VALUE]--;
+          remainingItems--;
+          lastProcessedTypeIndex = currentItemType;
+          penaltyCount++; // This is where the penalty is applied
+          break; // Exit this loop as an item has been processed
         }
       }
     }
-
-    // Update the simulation state based on the category chosen for the current cycle.
-    if (chosenCategoryForThisCycle) {
-      lastSelectedCategoryId = chosenCategoryForThisCycle.categoryId; // Record the ID of the newly selected category.
-      chosenCategoryForThisCycle.currentQuantity--; // Decrement the quantity of the selected category.
-      capacityLimit--; // Decrement the total remaining operations.
-    } else {
-      // --- Type III: Added a guard clause for unexpected conditions ---
-      // This block should ideally not be reached if the 'totalRemainingItems' check is effective.
-      // If it is, it indicates a scenario where 'capacityLimit > 0' but no categories could be chosen,
-      // possibly due to an unhandled edge case or invalid input data.
-      console.error("Error: Remaining capacity exists, but no categories could be selected.");
-      break; // Break the loop to prevent an infinite execution in such unexpected circumstances.
-    }
   }
-
-  // After the simulation loop concludes, output the final accumulated penalty points.
-  console.log(penaltyPoints);
 }
 
-// Execute the activity schedule processing function by reading input from standard input.
-processActivitySchedule(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

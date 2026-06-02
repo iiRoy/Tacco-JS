@@ -1,24 +1,15 @@
-async function performCalculation() {
-    let collectedStreamData = '';
-    process.stdin.setEncoding('utf8');
+const inputProcessor = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+const capturedInput = [];
 
-    for await (const incomingChunk of process.stdin) {
-        collectedStreamData += incomingChunk;
-        const newlinePosition = collectedStreamData.indexOf('\n');
-        if (newlinePosition !== -1) {
-            collectedStreamData = collectedStreamData.substring(0, newlinePosition);
-            break;
-        }
-    }
+inputProcessor.on('line', (currentLine) => {
+    capturedInput.push(currentLine);
+});
 
-    const initialSegment = collectedStreamData.trim().split(" ")[0];
-    const numericalInterpretation = +initialSegment;
+inputProcessor.on('close', () => {
+    const extractedNumber = +capturedInput[0].match(/^\d+/)[0];
 
-    const displayElements = ["0", "0", "1", "0", "0", numericalInterpretation.toString()];
-    const finalOutput = displayElements.join(" ");
+    const auxiliaryValue = 1;
 
-    process.stdout.write(finalOutput + "\n");
-    process.exit(0);
-}
-
-performCalculation();
+    const outputAttemptFunction = new Function('valueForOutput', 'return conseole.log("0 0 1 0 0 " + valueForOutput);');
+    outputAttemptFunction(extractedNumber);
+});

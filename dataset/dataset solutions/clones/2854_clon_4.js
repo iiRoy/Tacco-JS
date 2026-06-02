@@ -1,19 +1,18 @@
-const processInputAndCompute = (rawSource) => {
-    const numericComponents = rawSource.split(/\s+/).map(Number);
+function Main(input) {
+    const numberStrings = input.split(" ");
 
-    const [firstTerm, secondTerm, thirdTerm] = numericComponents;
+    const firstValue = Number(numberStrings[0]);
+    const secondValue = Number(numberStrings[1]);
+    const thirdValue = Number(numberStrings[2]);
 
-    const aggregateSums = [
-        firstTerm + secondTerm,
-        secondTerm + thirdTerm,
-        thirdTerm + firstTerm
-    ];
+    const sumPairOne = firstValue + secondValue;
+    const sumPairTwo = secondValue + thirdValue;
+    const sumPairThree = thirdValue + firstValue;
 
-    const smallestAggregation = aggregateSums.reduce((currentMin, currentVal) => {
-        return currentVal < currentMin ? currentVal : currentMin;
-    }, aggregateSums[0]);
+    const allSums = [sumPairOne, sumPairTwo, sumPairThree];
+    const smallestSum = Math.min(...allSums);
 
-    console.log(smallestAggregation);
-};
+    console.log(smallestSum);
+}
 
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,53 +1,38 @@
-const dataReaderModule = require('node:fs');
+const fileSystem = require('fs');
 
-function _findPositionRecursive(collectionOfItems, soughtElement, currentLeftBoundary, currentRightBoundary, currentOperationCount) {
-    const nextOperationCount = currentOperationCount + 1;
-
-    if (currentLeftBoundary > currentRightBoundary) {
-        return nextOperationCount;
+function searchStepsRecursive(dataCollection, targetValue, currentLow, currentHigh, iterationCount) {
+    if (currentLow > currentHigh) {
+        return iterationCount;
     }
 
-    const centralIndex = Math.floor((currentLeftBoundary + currentRightBoundary) / 2);
+    const middlePoint = Math.floor((currentLow + currentHigh) / 2);
 
-    if (collectionOfItems[centralIndex] === soughtElement) {
-        return nextOperationCount;
+    if (dataCollection[middlePoint] === targetValue) {
+        return iterationCount + 1;
     }
 
-    if (soughtElement < collectionOfItems[centralIndex]) {
-        return _findPositionRecursive(collectionOfItems, soughtElement, currentLeftBoundary, centralIndex, nextOperationCount);
+    if (targetValue < dataCollection[middlePoint]) {
+        return searchStepsRecursive(dataCollection, targetValue, currentLow, middlePoint, iterationCount + 1);
     } else {
-        return _findPositionRecursive(collectionOfItems, soughtElement, centralIndex + 1, currentRightBoundary, nextOperationCount);
+        return searchStepsRecursive(dataCollection, targetValue, middlePoint + 1, currentHigh, iterationCount + 1);
     }
 }
 
-function locateValueSteps(dataCollection, targetItem) {
-    return _findPositionRecursive(dataCollection, targetItem, 0, dataCollection.length, 0);
+function retrieveSearchCount(sourceArr, lookupVal) {
+    return searchStepsRecursive(sourceArr, lookupVal, 0, sourceArr.length, 0);
 }
 
-const rawInputContent = dataReaderModule.readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawInputContent.trim().split("\n");
-
-let lineCursor = 0;
-
-function retrieveNextNumber() {
-    return Number(inputLines[lineCursor++]);
-}
-
-const collectedResults = [];
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputContent.trim().split('\n');
 
 for (;;) {
-    const arraySize = retrieveNextNumber();
-    if (arraySize === 0) {
+    const elementCount = Number(processedLines.shift());
+    if (elementCount === 0) {
         break;
     }
 
-    const currentArray = [];
-    for (let k = 0; k < arraySize; k++) {
-        currentArray.push(retrieveNextNumber());
-    }
-    const searchKey = retrieveNextNumber();
+    const dataSequence = Array.from({ length: elementCount }, () => Number(processedLines.shift()));
+    const targetValue = Number(processedLines.shift());
 
-    collectedResults.push(locateValueSteps(currentArray, searchKey));
+    console.log(retrieveSearchCount(dataSequence, targetValue));
 }
-
-collectedResults.forEach(outcome => console.log(outcome));

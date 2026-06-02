@@ -1,20 +1,14 @@
-const sourceData = require('node:fs').readFileSync(0, 'utf8');
-
-const transformedInput = sourceData
-    .trim()
-    .split('\n')
-    .slice(1)
-    .map(val => val.trim())
-    .sort((valA, valB) => Number(valA) - Number(valB))
-    .slice(0, 5);
-
-const combinedNumbers = transformedInput.flatMap((firstElement, currentIndex, fullArray) =>
-    fullArray.slice(currentIndex + 1).flatMap(secondElement => [
-        Number(firstElement + secondElement),
-        Number(secondElement + firstElement)
-    ])
-);
-
-const orderedResults = combinedNumbers.sort((x, y) => x - y);
-
-console.log(orderedResults[2]);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let processedLines = fileContent.trim().split("\n");
+const initialCount = Number(processedLines.shift());
+processedLines.sort((valA, valB) => Number(valA) - Number(valB));
+const selectedNumbers = processedLines.slice(0, 5);
+const resultCollection = selectedNumbers.flatMap((firstPart, firstIdx) => {
+    return selectedNumbers.slice(firstIdx + 1).flatMap(secondPart => {
+        const combinedOne = Number(firstPart + secondPart);
+        const combinedTwo = Number(secondPart + firstPart);
+        return [combinedOne, combinedTwo];
+    });
+});
+resultCollection.sort((numA, numB) => numA - numB);
+console.log(resultCollection[2]);

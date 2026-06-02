@@ -1,142 +1,135 @@
-function graphPathColoring(rawDataInput) {
-    const lines = rawDataInput.split("\n");
+function parseInputData(rawInputString) {
+    const lines = rawInputString.split("\n");
 
-    const vertexCount = parseInt(lines[0], 10);
-
-    const adjacencyList = new Map();
-    for (let currentId = 0; currentId < vertexCount; currentId++) {
-        adjacencyList.set(currentId, new Set());
+    const nodeCount = parseInt(lines[0], 10);
+    const edgeConnections = [];
+    for (let i = 1; i < nodeCount; i++) {
+        const [n1, n2] = lines[i].split(" ").map(Number);
+        edgeConnections.push([n1 - 1, n2 - 1]);
     }
 
-    for (let k = 1; k < vertexCount; k++) {
-        const edgeParts = lines[k].split(" ").map(Number);
-        const endpointA = edgeParts[0] - 1;
-        const endpointB = edgeParts[1] - 1;
-        adjacencyList.get(endpointA).add(endpointB);
-        adjacencyList.get(endpointB).add(endpointA);
+    const restrictionCount = parseInt(lines[nodeCount], 10);
+    const restrictionPairs = [];
+    for (let i = nodeCount + 1; i <= nodeCount + restrictionCount; i++) {
+        const [r1, r2] = lines[i].split(" ").map(Number);
+        restrictionPairs.push([r1 - 1, r2 - 1]);
     }
 
-    const { ancestorMap, levelMap } = establishTreeHierarchy(vertexCount, adjacencyList);
-
-    const constraintCount = parseInt(lines[vertexCount], 10);
-    const constraintPathEdges = [];
-    for (let k = 0; k < constraintCount; k++) {
-        const constraintLineIndex = vertexCount + 1 + k;
-        const constraintParts = lines[constraintLineIndex].split(" ").map(Number);
-        const constraintA = constraintParts[0] - 1;
-        const constraintB = constraintParts[1] - 1;
-        constraintPathEdges.push(findEdgePath(constraintA, constraintB, ancestorMap, levelMap));
-    }
-
-    const unionEdgeMappings = aggregateConstraintEdges(constraintPathEdges);
-
-    let exclusionTerm = 0;
-    const allSubsetMasks = Array.from(unionEdgeMappings.keys());
-
-    for (const subsetMask of allSubsetMasks) {
-        const numSetBits = countBitsSet(subsetMask);
-        const currentUnionSize = unionEdgeMappings.get(subsetMask).size;
-
-        if (numSetBits % 2 === 1) {
-            exclusionTerm += Math.pow(2, vertexCount - (1 + currentUnionSize));
-        } else {
-            exclusionTerm -= Math.pow(2, vertexCount - (1 + currentUnionSize));
-        }
-    }
-
-    console.log(Math.pow(2, vertexCount - 1) - exclusionTerm);
+    return { nodeCount, edgeConnections, restrictionPairs };
 }
 
-function establishTreeHierarchy(vCount, adjList) {
-    const parentTracker = new Map();
-    const levelTracker = new Map();
+function createEdgeIdentifier(nodeA, nodeB) {
+    return `${Math.min(nodeA, nodeB)}-${Math.max(nodeA, nodeB)}`;
+}
 
-    const queue = [];
+function establishTreeHierarchy(totalNodes, connections) {
+    const parentRegistry = new Map();
+    const depthRegistry = new Map();
+    const adjacencyList = new Map();
 
-    parentTracker.set(0, null);
-    levelTracker.set(0, 0);
-    queue.push(0);
+    for (let i = 0; i < totalNodes; i++) {
+        adjacencyList.set(i, new Set());
+    }
+    for (const [u, v] of connections) {
+        adjacencyList.get(u).add(v);
+        adjacencyList.get(v).add(u);
+    }
+
+    const traversalQueue = [0];
+    const visitedNodes = new Set([0]);
+    parentRegistry.set(0, null);
+    depthRegistry.set(0, 0);
 
     let head = 0;
-    while (head < queue.length) {
-        const currentVertex = queue[head++];
+    while (head < traversalQueue.length) {
+        const currentVertex = traversalQueue[head++];
 
-        for (const connectedVertex of adjList.get(currentVertex)) {
-            if (!parentTracker.has(connectedVertex)) {
-                parentTracker.set(connectedVertex, currentVertex);
-                levelTracker.set(connectedVertex, levelTracker.get(currentVertex) + 1);
-                queue.push(connectedVertex);
+        for (const neighbor of adjacencyList.get(currentVertex)) {
+            if (!visitedNodes.has(neighbor)) {
+                visitedNodes.add(neighbor);
+                parentRegistry.set(neighbor, currentVertex);
+                depthRegistry.set(neighbor, depthRegistry.get(currentVertex) + 1);
+                traversalQueue.push(neighbor);
             }
         }
     }
-    return { ancestorMap: parentTracker, levelMap: levelTracker };
+
+    return { parentRegistry, depthRegistry };
 }
 
-function findEdgePath(vertexA, vertexB, ancestorMap, levelMap) {
-    const pathEdges = new Set();
+function determineEdgePath(startNode, endNode, parentRegistry, depthRegistry) {
+    const pathEdgeSet = new Set();
+    let currentA = startNode;
+    let currentB = endNode;
 
-    let currentA = vertexA;
-    let currentB = vertexB;
-    let levelA = levelMap.get(currentA);
-    let levelB = levelMap.get(currentB);
-
-    while (levelA > levelB) {
-        const ancestorA = ancestorMap.get(currentA);
-        pathEdges.add(formatEdge(currentA, ancestorA));
-        currentA = ancestorA;
-        levelA--;
+    while (depthRegistry.get(currentA) > depthRegistry.get(currentB)) {
+        const parentA = parentRegistry.get(currentA);
+        pathEdgeSet.add(createEdgeIdentifier(currentA, parentA));
+        currentA = parentA;
     }
-    while (levelB > levelA) {
-        const ancestorB = ancestorMap.get(currentB);
-        pathEdges.add(formatEdge(currentB, ancestorB));
-        currentB = ancestorB;
-        levelB--;
+    while (depthRegistry.get(currentB) > depthRegistry.get(currentA)) {
+        const parentB = parentRegistry.get(currentB);
+        pathEdgeSet.add(createEdgeIdentifier(currentB, parentB));
+        currentB = parentB;
     }
 
     while (currentA !== currentB) {
-        const ancestorA = ancestorMap.get(currentA);
-        const ancestorB = ancestorMap.get(currentB);
-        
-        pathEdges.add(formatEdge(currentA, ancestorA));
-        pathEdges.add(formatEdge(currentB, ancestorB));
-
-        currentA = ancestorA;
-        currentB = ancestorB;
+        const parentA = parentRegistry.get(currentA);
+        const parentB = parentRegistry.get(currentB);
+        pathEdgeSet.add(createEdgeIdentifier(currentA, parentA));
+        pathEdgeSet.add(createEdgeIdentifier(currentB, parentB));
+        currentA = parentA;
+        currentB = parentB;
     }
 
-    return pathEdges;
+    return pathEdgeSet;
 }
 
-function formatEdge(u, v) {
-    return u < v ? `${u}-${v}` : `${v}-${u}`;
-}
+function computeInclusionExclusion(totalNodes, allRestrictionPaths) {
+    const totalTreeEdges = totalNodes - 1;
+    const totalEdgeSubsets = Math.pow(2, totalTreeEdges);
+    const numConstraints = allRestrictionPaths.length;
 
-function aggregateConstraintEdges(allConstraintPaths) {
-    const subsetUnionMap = new Map();
-    const totalConstraints = allConstraintPaths.length;
+    let inclusionExclusionSum = 0;
 
-    for (let i = 1; i < (1 << totalConstraints); i++) {
-        const currentUnion = new Set();
-        for (let j = 0; j < totalConstraints; j++) {
+    for (let i = 1; i < (1 << numConstraints); i++) {
+        const currentUnionOfEdges = new Set();
+        let subsetCardinality = 0;
+
+        for (let j = 0; j < numConstraints; j++) {
             if ((i >> j) & 1) {
-                for (const edge of allConstraintPaths[j]) {
-                    currentUnion.add(edge);
+                subsetCardinality++;
+                for (const edgeId of allRestrictionPaths[j]) {
+                    currentUnionOfEdges.add(edgeId);
                 }
             }
         }
-        subsetUnionMap.set(i, currentUnion);
+
+        const unionSize = currentUnionOfEdges.size;
+        const termValue = Math.pow(2, totalTreeEdges - unionSize);
+
+        if (subsetCardinality % 2 === 1) {
+            inclusionExclusionSum += termValue;
+        } else {
+            inclusionExclusionSum -= termValue;
+        }
     }
-    return subsetUnionMap;
+
+    return totalEdgeSubsets - inclusionExclusionSum;
 }
 
-function countBitsSet(numberValue) {
-    let count = 0;
-    let tempValue = numberValue;
-    while (tempValue > 0) {
-        tempValue &= (tempValue - 1);
-        count++;
-    }
-    return count;
+function executeGraphAnalysis(rawInput) {
+    const { nodeCount, edgeConnections, restrictionPairs } = parseInputData(rawInput);
+
+    const { parentRegistry, depthRegistry } = establishTreeHierarchy(nodeCount, edgeConnections);
+
+    const allRestrictionPaths = restrictionPairs.map(([u, v]) =>
+        determineEdgePath(u, v, parentRegistry, depthRegistry)
+    );
+
+    const finalResult = computeInclusionExclusion(nodeCount, allRestrictionPaths);
+
+    console.log(finalResult);
 }
 
-graphPathColoring(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeGraphAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));

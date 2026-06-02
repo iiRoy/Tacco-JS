@@ -1,101 +1,153 @@
-class Forest {
-  // Static factory for creating structural elements within the forest.
-  static get Element() {
+class GraphStructure {
+  // Static getter for the inner StructuralElement class, which defines individual components of the graph.
+  static get StructuralElement() {
+    // This nested class encapsulates the properties and behavior of a single node or element.
     return class {
-      // Constructs a new structural element.
-      constructor(key, masterKey, subordinateKeys, level) {
-        this.key = key;
-        this.masterKey = masterKey;
-        this.subordinateKeys = subordinateKeys;
-        this.level = level;
+      /**
+       * Constructs a new StructuralElement instance.
+       * @param {number} elementIdentifier - The unique numerical ID for this specific element.
+       * @param {number} parentIdentifier - The ID of this element's direct parent; -1 indicates a root element.
+       * @param {number[]} childIdentifiers - An array containing the IDs of all direct child elements.
+       * @param {number} hierarchyLevel - The calculated level or depth of this element within the graph structure.
+       */
+      constructor(elementIdentifier, parentIdentifier, childIdentifiers, hierarchyLevel) {
+        this.elementIdentifier = elementIdentifier;
+        this.parentIdentifier = parentIdentifier;
+        this.childIdentifiers = childIdentifiers;
+        this.hierarchyLevel = hierarchyLevel;
       }
 
-      // Determines the classification of the element (origin, terminal, intermediate).
-      get kind() {
-        if (this.masterKey === -1) {
-          return 'origin'; // This element has no parent, thus it's the root.
+      // A getter property that determines and returns the classification of the element.
+      get elementType() {
+        // If the element has no parent, it is considered the root of a tree.
+        if (this.parentIdentifier === -1) {
+          return 'root';
         }
-        if (this.subordinateKeys.length === 0) {
-          return 'terminal'; // This element has no children, thus it's a leaf.
+        // If the element has no children, it is a leaf node.
+        if (this.childIdentifiers.length === 0) {
+          return 'leaf';
         }
-        return 'intermediate entity'; // This element has both a parent and children.
+        // Otherwise, it is an internal node, having both a parent and children.
+        return 'internal node';
       }
 
-      // Provides a descriptive string representation of the element.
-      toDescription() {
-        return `entity ${this.key}: master = ${this.masterKey}, level = ${this.level}, ${this.kind}, [${this.subordinateKeys.join(', ')}]`;
+      // Provides a formatted string representation of the element's details.
+      toString() {
+        // The output format must precisely match the original implementation.
+        return `node ${this.elementIdentifier}: parent = ${this.parentIdentifier}, depth = ${this.hierarchyLevel}, ${this.elementType}, [${this.childIdentifiers.join(', ')}]`;
       }
     };
   }
 
-  // Initializes a new forest structure.
+  // Constructor for the main GraphStructure class.
   constructor() {
-    this.elements = new Array(); // Collection to hold all structural elements.
+    // Initializes an array to store all structural elements, using their IDs as indices.
+    this.elementsCollection = [];
   }
 
-  // Inserts a new link (or updates an existing one) into the forest.
-  insertLink(entityKey, connectedKeys) {
-    // Ensure the primary element exists; create if not.
-    this.elements[entityKey] = this.elements[entityKey] || new Forest.Element(entityKey, -1, connectedKeys, 0);
-    let currentElement = this.elements[entityKey];
-    currentElement.subordinateKeys = connectedKeys; // Update children for the main element.
+  /**
+   * Adds a new element to the graph or updates an existing one with its children.
+   * @param {number} elementIdentifier - The unique ID of the element to be added or modified.
+   * @param {number[]} childIdentifiers - An array of IDs representing the direct children of this element.
+   */
+  addElement(elementIdentifier, childIdentifiers) {
+    // If the element doesn't exist, create a new StructuralElement.
+    // Otherwise, retrieve the existing one. Initialize with default parent -1 and level 0.
+    this.elementsCollection[elementIdentifier] = this.elementsCollection[elementIdentifier] || new GraphStructure.StructuralElement(elementIdentifier, -1, childIdentifiers, 0);
 
-    let subEntity;
-    // Process all connected elements.
-    if (connectedKeys.length !== 0) {
-      connectedKeys.forEach( (subordinateId) => {
-        // Create or retrieve the subordinate element.
-        subEntity = this.elements[subordinateId] || new Forest.Element(subordinateId, entityKey, [], currentElement.level);
-        subEntity.masterKey = entityKey; // Set its parent.
-        subEntity.level = currentElement.level; // Inherit parent's level initially.
-        this.elements[subordinateId] = subEntity; // Store the updated subordinate.
-        this.adjustLevel(subordinateId); // Recursively adjust levels for its descendants.
+    // Obtain a reference to the element currently being processed.
+    let currentElementRef = this.elementsCollection[elementIdentifier];
+    // Update the list of child identifiers for this element.
+    currentElementRef.childIdentifiers = childIdentifiers;
+
+    // Declare a variable to hold references to child elements during iteration.
+    let childElementRef;
+
+    // Proceed only if the current element has children.
+    if (childIdentifiers.length !== 0) {
+      // Iterate through each child identifier provided.
+      childIdentifiers.forEach((childIdValue) => {
+        // If a child element doesn't exist, create it.
+        // Set its parent to the current element's ID and its initial level to the current element's level.
+        childElementRef = this.elementsCollection[childIdValue] || new GraphStructure.StructuralElement(childIdValue, elementIdentifier, [], currentElementRef.hierarchyLevel);
+
+        // Explicitly set the parent identifier for the child.
+        childElementRef.parentIdentifier = elementIdentifier;
+        // Explicitly set the hierarchy level for the child.
+        childElementRef.hierarchyLevel = currentElementRef.hierarchyLevel;
+        // Store the child element in the main collection.
+        this.elementsCollection[childIdValue] = childElementRef;
+
+        // Recursively call propagateLevel to adjust the levels of the child and its descendants.
+        this.propagateLevel(childIdValue);
       });
     }
   }
 
-  // Recursively updates the depth level of an element and its descendants.
-  adjustLevel(entityId) {
-    if (!this.elements[entityId]) {
-      return; // Element does not exist, nothing to adjust.
-    }
-    if (this.elements[entityId].subordinateKeys.length === 0) {
-      this.elements[entityId].level += 1; // Increment level for terminal elements.
+  /**
+   * Recursively adjusts the hierarchy level of an element and its subsequent descendants.
+   * This function implements a specific depth calculation logic where only leaf nodes
+   * directly increment their level, while internal nodes trigger the same logic for their children.
+   * @param {number} elementIdentifier - The ID of the element whose level needs to be propagated.
+   */
+  propagateLevel(elementIdentifier) {
+    // If the element does not exist in the collection, terminate the operation.
+    if (!this.elementsCollection[elementIdentifier]) {
       return;
     }
-    // For non-terminal elements, recursively adjust children.
-    this.elements[entityId].subordinateKeys.forEach( (childId) => this.adjustLevel(childId));
+
+    // Check if the current element is a leaf node (has no children).
+    if (this.elementsCollection[elementIdentifier].childIdentifiers.length === 0) {
+      // If it's a leaf, increment its hierarchy level by one.
+      this.elementsCollection[elementIdentifier].hierarchyLevel += 1;
+      return; // Stop recursion for leaf nodes.
+    }
+
+    // If the element is an internal node, iterate through its children.
+    // For each child, recursively call propagateLevel to continue the level adjustment process.
+    this.elementsCollection[elementIdentifier].childIdentifiers.forEach((descendantIdValue) => this.propagateLevel(descendantIdValue));
   }
 
-  // Outputs the sorted structure of all elements to the console.
-  displayStructure() {
-    console.log(this.elements
-      .sort((a, b) => a.key - b.key) // Sort elements by their unique key.
-      .map(element => element.toDescription()) // Convert each element to its string description.
-      .join('\n') // Join all descriptions with newline characters.
-    );
+  // Outputs the string representation of all elements in the graph to the console.
+  outputStructure() {
+    // First, sort the elements collection based on their unique identifiers in ascending order.
+    const sortedElements = this.elementsCollection.sort((firstElement, secondElement) => firstElement.elementIdentifier - secondElement.elementIdentifier);
+    // Then, map each sorted element to its string representation.
+    const elementStrings = sortedElements.map(element => element.toString());
+    // Finally, join all the string representations with newline characters and print to console.
+    console.log(elementStrings.join('\n'));
   }
 }
 
-// Main execution function for processing input and building the forest.
-(function executeProcessing() {
-  const obtainFileSystem = require('fs');
-  // Read input from stdin, clean it, and split into individual rows.
-  const inputRows = obtainFileSystem.readTextSynchronously('/dev/stdin', 'utf8')
-                                    .trimWhitespace()
-                                    .splitByNewline();
-  const totalEntries = parseInt(inputRows.shift()); // First line indicates total entries, though not used here.
+// An Immediately Invoked Function Expression (IIFE) to encapsulate the main program execution flow.
+(function mainExecutionBlock() {
+  // Read the entire content of standard input, decode it as UTF-8,
+  // remove leading/trailing whitespace, and split it into an array of lines.
+  const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  let dataForest = new Forest(); // Instantiate a new forest structure.
+  // The first line typically contains the total number of nodes.
+  // This value is parsed and stored, but not explicitly used in the subsequent logic of the original code.
+  const totalNodesCount = Number(inputDataLines.shift());
 
-  let currentKey, count, connectedEntityKeys;
-  // Process each remaining line to populate the forest.
-  inputRows.map(row => row.split(' ')).forEach(function(rowContent) {
-    currentKey = parseInt(rowContent.shift()); // First number is the element's key.
-    count = parseInt(rowContent.shift()); // Second number is the count of connected entities.
-    connectedEntityKeys = rowContent.map(parseInt); // Remaining numbers are keys of connected entities.
-    dataForest.insertLink(currentKey, connectedEntityKeys); // Add this link information to the forest.
+  // Instantiate a new GraphStructure object to manage the elements.
+  let graphInstance = new GraphStructure();
+
+  // Declare variables to temporarily hold parsed data from each input line.
+  let elementIdentifier, numChildrenCount, childIdentifiers;
+
+  // Process each remaining line from the input data.
+  inputDataLines.map(singleInputLine => singleInputLine.split(' ')).forEach(function(processedLineTokens) {
+    // Extract the element's unique identifier from the first token of the line.
+    elementIdentifier = Number(processedLineTokens.shift());
+    // Extract the count of children from the second token. This value is also not directly used.
+    numChildrenCount = Number(processedLineTokens.shift());
+    // Convert the rest of the tokens on the line into an array of child identifiers.
+    childIdentifiers = processedLineTokens.map(Number);
+
+    // Add or update the element in the graph structure with its associated children.
+    graphInstance.addElement(elementIdentifier, childIdentifiers);
   });
 
-  dataForest.displayStructure(); // Display the final forest structure.
+  // After processing all input lines and building the graph, output its structured representation.
+  graphInstance.outputStructure();
 })();

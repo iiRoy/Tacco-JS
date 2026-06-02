@@ -1,74 +1,56 @@
-const iNput = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+const rL = require('readline');
+
+const iS = rL.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
 });
 
-const direcTionMap = {
-  'north': '0',
-  'west': '1'
+const dM = new Map([
+    ['north', '0'],
+    ['west', '1']
+]);
+
+const rP = (s) => s.replace(/north|west/g, (m) => dM.get(m));
+
+const cD = (s) => {
+    const l = s.length;
+    if (l === 0) {
+        return { d: 0, p: -1 }; // Consistent with original's handling of empty string
+    }
+    const iP = l - 1;
+    const mD = 90 * Math.pow(2, iP);
+
+    const fD = s.split('').reduceRight((cD, c, i) => {
+        const v = parseInt(c, 10);
+        const tV = 90 * Math.pow(2, i);
+        return v === 1 ? Math.min(mD, cD + tV) : Math.max(0, cD - tV);
+    }, 0);
+
+    return { d: fD, p: iP };
 };
 
-const calcUlateValue = (inPutString) => {
-  const trimmedString = inPutString.trim();
-  if (trimmedString === "#") {
-    return null; 
-  }
-
-  let modIfiedString = trimmedString;
-  for (const key in direcTionMap) {
-    modIfiedString = modIfiedString.split(key).join(direcTionMap[key]);
-  }
-
-  const stringLeNgth = modIfiedString.length;
-
-  if (stringLeNgth === 0) {
-      return '0'; 
-  }
-
-  const maxVaLue = 90 * (1 << (stringLeNgth - 1));
-
-  const finalSum = Array.from({ length: stringLeNgth }, (_, i) => i).reduce((acc, currentIdx) => {
-    const charAtIdx = modIfiedString[currentIdx];
-    const powerForIdx = stringLeNgth - 1 - currentIdx;
-    const termValue = 90 * (1 << powerForIdx);
-
-    let newSum;
-    if (charAtIdx === '1') {
-      newSum = Math.min(acc + termValue, maxVaLue);
-    } else { 
-      newSum = Math.max(acc - termValue, 0);
+const sF = (n, e) => {
+    while (e > 0 && n % 2 === 0) {
+        n /= 2;
+        e--;
     }
-    return newSum;
-  }, 0);
-
-  const reduceFraction = (num, pwr) => {
-    if (pwr > 0 && num % 2 === 0) {
-      return reduceFraction(num / 2, pwr - 1);
-    }
-    return { numVal: num, pwrVal: pwr };
-  };
-
-  const simplified = reduceFraction(finalSum, stringLeNgth - 1);
-
-  if (simplified.pwrVal > 0) {
-    return `${simplified.numVal}/${(1 << simplified.pwrVal)}`;
-  } else {
-    return `${simplified.numVal}`;
-  }
+    return { n, e };
 };
 
-const allResuLts = [];
+iS.on('line', (lI) => {
+    if (lI === '#') {
+        iS.close();
+        return;
+    }
 
-iNput.on('line', (dataLine) => {
-  const processedResult = calcUlateValue(dataLine);
-  if (processedResult === null) {
-    iNput.close();
-    return;
-  }
-  allResuLts.push(processedResult);
-});
+    const tL = rP(lI);
+    const { d: currentDeg, p: initialPower } = cD(tL);
+    const { n: finalNum, e: finalExp } = sF(currentDeg, initialPower);
 
-iNput.on('close', () => {
-  allResuLts.forEach(res => process.stdout.write(res + '\n'));
+    if (finalExp > 0) {
+        console.log(`${finalNum}/${Math.pow(2, finalExp)}`);
+    } else {
+        console.log(finalNum);
+    }
 });

@@ -1,133 +1,135 @@
-function ProcessInput(rawText) {
-    // Separate the incoming text content into individual lines
-    var lines = rawText.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    var inputLines = rawData.split("\n");
 
-    // Extract the numerical value from the first line of input
-    var elementCount = parseInt(lines[0]);
+    // Parse the first line to get the total length of the character sequence.
+    var sequenceLength = parseInt(inputLines[0], 10);
 
-    // Break down the second line of input into an array of characters
-    var characterStream = lines[1].split("");
+    // Split the second line into an array of individual characters.
+    var charSequence = inputLines[1].split("");
 
-    // Initialize an empty array for a potential intermediate result (not directly used as an array later)
-    var initialResultHolder = [];
+    // This variable is declared as an array but will be re-declared as a string later.
+    var resultString = [];
 
-    // A flag to keep track of the current bracket type being processed (0 for '(', 1 for ')')
-    var bracketTypeFlag = 0;
+    // currentTypeIndicator: 0 typically represents '(', 1 represents ')'.
+    var currentTypeIndicator = 0;
 
-    // Create an array to store the counts of consecutive identical characters, sized for all possible segments
-    var segmentTallies = new Array(elementCount + 1).fill(0);
+    // segmentCounts: An array to store the lengths of consecutive runs of identical characters.
+    // For example, segmentCounts[0] might store the count of the first run of '(',
+    // segmentCounts[1] the count of the first run of ')', and so on.
+    var segmentCounts = new Array(sequenceLength + 1).fill(0);
 
-    // Initialize the current position within the segmentTallies array
-    var segmentPosition = 0;
+    // segmentIndex: Used to track the current position within the segmentCounts array.
+    var segmentIndex = 0;
 
-    // Check the very first character of the input stream
-    if (characterStream[0] === ")") {
-        // If the first character is a closing bracket, adjust the initial segment position and flag
-        segmentPosition = 1;
-        bracketTypeFlag = 1;
-        segmentTallies[segmentPosition]++;
+    // Handle the very first character of the sequence.
+    if (charSequence[0] === ")") {
+        // If the first character is ')', it means the first segment is of type ')'.
+        // We advance the segmentIndex to 1 (for the first ')' segment) and update the indicator.
+        segmentIndex = 1;
+        currentTypeIndicator = 1;
+        segmentCounts[segmentIndex]++;
     } else {
-        // Otherwise, it's an opening bracket, so increment the count for the initial segment
-        segmentTallies[segmentPosition]++;
+        // If the first character is '(', it's the initial segment.
+        segmentCounts[segmentIndex]++;
     }
 
-    // Iterate through the character stream starting from the second character
-    for (var charIterator = 1; charIterator < elementCount; charIterator++) {
-        // Compare the current character with the preceding one
-        if (characterStream[charIterator] === characterStream[charIterator - 1]) {
-            // If they are the same, increment the count for the current segment
-            segmentTallies[segmentPosition]++;
+    // Iterate through the rest of the character sequence to build up segmentCounts.
+    for (var k = 1; k < sequenceLength; k++) {
+        // If the current character is the same as the previous one, extend the current segment.
+        if (charSequence[k] === charSequence[k - 1]) {
+            segmentCounts[segmentIndex]++;
         } else {
-            // If they differ, advance to the next segment and increment its count
-            segmentPosition++;
-            segmentTallies[segmentPosition]++;
+            // If the character changes, it signifies the start of a new segment.
+            // Increment segmentIndex and start counting for the new segment.
+            segmentIndex++;
+            segmentCounts[segmentIndex]++;
         }
     }
 
-    // Variable to hold the calculated difference between paired segment counts
-    var currentPairDifference = 0;
-
-    // Accumulator for the total difference across all segment pairs
+    // Variables to calculate and accumulate differences between alternating segments.
+    var segmentDifference = 0;
     var overallBalance = 0;
 
-    // Process the segment tallies in steps of two to calculate overall balance
-    for (var pairIterator = 0; pairIterator < elementCount; pairIterator = pairIterator + 2) {
-        // Determine the difference between the current even-indexed segment and its subsequent odd-indexed segment
-        currentPairDifference = segmentTallies[pairIterator] - segmentTallies[pairIterator + 1];
-        // Add this difference to the running total of the overall balance
-        overallBalance += currentPairDifference;
+    // Loop through the segmentCounts array, comparing counts of alternating segment types.
+    // For instance, comparing segment 0 (e.g., '(') with segment 1 (e.g., ')'),
+    // then segment 2 ('(') with segment 3 (')'), and so on.
+    for (var k = 0; k < sequenceLength; k += 2) {
+        segmentDifference = segmentCounts[k] - segmentCounts[k + 1];
+        overallBalance += segmentDifference;
     }
 
-    // Initialize the string that will hold the final, balanced sequence of brackets
-    var finalBracketString = "";
+    // Re-declare resultString as an empty string, discarding the previous array declaration.
+    var resultString = "";
+    // Reset segmentIndex to the total sequence length for backward iteration logic.
+    segmentIndex = sequenceLength;
 
-    // Set an auxiliary index for adjustments, starting from the end of the segments
-    var adjustmentIndex = elementCount;
-
-    // Apply adjustments to segment counts based on the overall balance
+    // Adjust the segmentCounts based on the calculated overall balance to ensure a valid parenthesis structure.
     if (overallBalance < 0) {
-        // If the overall balance is negative, add the absolute value to the first segment
-        segmentTallies[0] -= overallBalance;
+        // If there's an overall deficit of '(' (i.e., an excess of ')'),
+        // add the absolute value of the deficit to the first '(' segment.
+        segmentCounts[0] -= overallBalance;
     } else if (overallBalance > 0) {
-        // If the overall balance is positive, find a suitable segment to absorb the difference
+        // If there's an overall surplus of '(', find the last non-zero segment.
         while (true) {
-            if (segmentTallies[adjustmentIndex] > 0) {
-                // If the current segment has a count
-                if (adjustmentIndex % 2 === 0) {
-                    // If it's an even-indexed segment, add the balance to the next (odd) segment
-                    segmentTallies[adjustmentIndex + 1] += overallBalance;
-                    break; // Exit the loop after adjustment
+            if (segmentCounts[segmentIndex] > 0) {
+                if (segmentIndex % 2 === 0) {
+                    // If the last non-zero segment is an '(' type, add the surplus to the *next* ')' type segment.
+                    segmentCounts[segmentIndex + 1] += overallBalance;
+                    break;
                 } else {
-                    // If it's an odd-indexed segment, add the balance to itself
-                    segmentTallies[adjustmentIndex] += overallBalance;
-                    break; // Exit the loop
+                    // If the last non-zero segment is a ')' type, add the surplus to *this* ')' type segment.
+                    segmentCounts[segmentIndex] += overallBalance;
+                    break;
                 }
             } else {
-                // If the segment is empty, move to the previous one
-                adjustmentIndex--;
+                // Move to the previous segment if the current one is zero.
+                segmentIndex--;
             }
         }
-    } else if (segmentTallies[0] - segmentTallies[1] < 0) {
-        // Special condition: if the first two segments show an imbalance (more ')' than '(')
-        var initialSegmentImbalance = segmentTallies[1] - segmentTallies[0];
-        segmentTallies[0] = segmentTallies[1]; // Equalize the first two segments
+    } else if (segmentCounts[0] - segmentCounts[1] < 0) {
+        // This handles a specific edge case: overall balance is zero, but the initial '(' segment
+        // is shorter than the initial ')' segment (e.g., "())(").
+        var initialMismatch = segmentCounts[1] - segmentCounts[0];
+        segmentCounts[0] = segmentCounts[1]; // Make the first '(' segment equal to the first ')' segment.
 
+        // Find the last non-zero segment and adjust it or the next one.
         while (true) {
-            if (segmentTallies[adjustmentIndex] > 0 && adjustmentIndex % 2 === 0) {
-                // If current segment is even and not empty, equalize it with the next segment
-                segmentTallies[adjustmentIndex + 1] = segmentTallies[adjustmentIndex];
-                break; // Exit
-            } else if (segmentTallies[adjustmentIndex] > 0 && adjustmentIndex % 2 === 1) {
-                // If current segment is odd and not empty, apply the initial imbalance
-                segmentTallies[adjustmentIndex] += initialSegmentImbalance;
-                break; // Exit
+            if (segmentCounts[segmentIndex] > 0 && segmentIndex % 2 === 0) {
+                // If the last non-zero segment is an '(' type, make the *next* ')' type segment equal to it.
+                segmentCounts[segmentIndex + 1] = segmentCounts[segmentIndex];
+                break;
+            } else if (segmentCounts[segmentIndex] > 0 && segmentIndex % 2 === 1) {
+                // If the last non-zero segment is a ')' type, add the initial mismatch to *this* ')' type segment.
+                segmentCounts[segmentIndex] += initialMismatch;
+                break;
             } else {
-                // If segment is empty, decrement the adjustment index
-                adjustmentIndex--;
+                // Move to the previous segment if the current one is zero.
+                segmentIndex--;
             }
         }
     }
 
-    // Generate the final bracket string based on the adjusted segment tallies
-    for (var sequenceBuilder = 0; sequenceBuilder < elementCount; sequenceBuilder++) {
-        if (sequenceBuilder % 2 === 0) {
-            // Even-indexed segments correspond to opening brackets
-            for (var charGen = 0; charGen < segmentTallies[sequenceBuilder]; charGen++) {
-                finalBracketString += "(";
+    // Construct the final output string based on the (potentially adjusted) segmentCounts.
+    for (var k = 0; k < sequenceLength; k++) {
+        if (k % 2 === 0) {
+            // Even-indexed segments correspond to '(' characters.
+            for (var m = 0; m < segmentCounts[k]; m++) {
+                resultString += "(";
             }
         }
 
-        if (sequenceBuilder % 2 === 1) {
-            // Odd-indexed segments correspond to closing brackets
-            for (var charGen = 0; charGen < segmentTallies[sequenceBuilder]; charGen++) {
-                finalBracketString += ")";
+        if (k % 2 === 1) {
+            // Odd-indexed segments correspond to ')' characters.
+            for (var m = 0; m < segmentCounts[k]; m++) {
+                resultString += ")";
             }
         }
     }
 
-    // Output the resulting balanced bracket string to the console
-    console.log(finalBracketString);
+    // Print the final generated string to the console.
+    console.log(resultString);
 }
 
-// Read input from the standard input stream and pass it to the processing function
+// Read the entire input from standard input as a UTF-8 string and pass it to the processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

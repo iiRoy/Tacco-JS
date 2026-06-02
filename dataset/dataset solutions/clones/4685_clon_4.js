@@ -1,65 +1,54 @@
-((sourceDataBlob) => {
-  const lineSegments = sourceDataBlob.split('\n');
-  const parameterSet = lineSegments[0].split(' ').map(parseFloat);
-  const totalSubjects = parameterSet[0];
-  const vehicleCapacity = parameterSet[1];
-  const timeAllowance = parameterSet[2];
+((inputData) => {
+  const lines = inputData.split('\n');
+  const [totalPassengersCount, capacityPerBus, timeLimitMinutes] = lines[0].split(' ').map(Number);
+  const sortedArrivalTimes = lines.slice(1).map(Number).sort((a, b) => a - b);
 
-  let subjectArrivalTimings = lineSegments.slice(1).map(parseFloat).sort((valA, valB) => valA - valB);
+  // A generator function to encapsulate the core logic's state transitions.
+  // This replaces the imperative 'for' loop with a functional, iterable pattern.
+  function* busLogicProcessor() {
+    let currentBusTally = 1; // Corresponds to 'count'
+    let firstPassengerOnCurrentBusIndex = 0; // Corresponds to 'j'
+    let passengerIterationIndex = 0; // Corresponds to 'i'
 
-  class DispatchOverseer {
-    constructor(timingsList, overallSubjects, maxCapacity, allowedDelay) {
-      this.arrivalSequences = timingsList;
-      this.fullSubjectCount = overallSubjects;
-      this.maxOccupants = maxCapacity;
-      this.delayTolerance = allowedDelay;
+    // The loop continues as long as 'j' (firstPassengerOnCurrentBusIndex) is less than 'N - 1' (totalPassengersCount - 1).
+    // This mirrors the original loop's termination condition.
+    while (firstPassengerOnCurrentBusIndex < totalPassengersCount - 1) {
+      // Calculate the departure deadline for the current bus. Corresponds to 'limit = T[j] + K'.
+      const currentBusDepartureDeadline = sortedArrivalTimes[firstPassengerOnCurrentBusIndex] + timeLimitMinutes;
 
-      this.tripCount = 1;
-      this.currentSubjectPointer = 0;
-      this.tripInitiatorPointer = 0;
-    }
-
-    advanceOperation() {
-      // Original loop termination condition: j < N - 1
-      // Equivalent to: this.tripInitiatorPointer < this.fullSubjectCount - 1
-      if (this.tripInitiatorPointer >= this.fullSubjectCount - 1) {
-        return false; // Signal to stop processing
+      // Check conditions for starting a new bus. Corresponds to 'T[i] >= limit || i === C'.
+      // Note: If 'passengerIterationIndex' exceeds the bounds of 'sortedArrivalTimes',
+      // 'sortedArrivalTimes[passengerIterationIndex]' will be 'undefined'.
+      // The comparison 'undefined >= number' evaluates to 'false', replicating the original behavior.
+      if (sortedArrivalTimes[passengerIterationIndex] >= currentBusDepartureDeadline || passengerIterationIndex === capacityPerBus) {
+        currentBusTally++; // Increment bus count
+        firstPassengerOnCurrentBusIndex = passengerIterationIndex; // Reset 'j' to 'i'
       }
 
-      const initiatorTime = this.arrivalSequences[this.tripInitiatorPointer];
-      const departureCutoff = initiatorTime + this.delayTolerance;
+      // Yield the current state after processing the passenger.
+      // This allows external iteration over the state changes.
+      yield { currentBusTally, firstPassengerOnCurrentBusIndex };
 
-      let subjectExceedsTimeLimit;
-      // Handle array out-of-bounds access for this.arrivalSequences[this.currentSubjectPointer]
-      // T[i] >= limit -> undefined >= number is false
-      if (this.currentSubjectPointer < this.fullSubjectCount) {
-        subjectExceedsTimeLimit = this.arrivalSequences[this.currentSubjectPointer] >= departureCutoff;
-      } else {
-        subjectExceedsTimeLimit = false;
-      }
-
-      // Original condition: T[i] >= limit || i === C
-      if (subjectExceedsTimeLimit || this.currentSubjectPointer === this.maxOccupants) {
-        this.tripCount++;
-        this.tripInitiatorPointer = this.currentSubjectPointer;
-      }
-
-      this.currentSubjectPointer++; // Original i++
-      return true; // Signal to continue processing
+      passengerIterationIndex++; // Increment 'i' for the next iteration
     }
-
-    retrieveFinalCount() {
-      return this.tripCount;
-    }
+    // After the loop terminates, the final state is implicitly the last yielded state.
+    // If the loop never runs (e.g., N=0 or N=1), the initial state is the final state.
   }
 
-  const manager = new DispatchOverseer(subjectArrivalTimings, totalSubjects, vehicleCapacity, timeAllowance);
+  let finalBusResult = 1; // Default for cases where the loop doesn't run (N=0 or N=1)
 
-  // Replicate the loop structure but using method calls
-  while (manager.advanceOperation()) {
-    // The core logic is inside advanceOperation
+  // Only process if there are passengers to consider beyond the initial bus setup.
+  if (totalPassengersCount > 0) {
+    let latestState = { currentBusTally: 1, firstPassengerOnCurrentBusIndex: 0 }; // Initial state before any generator yields
+
+    // Iterate through the states yielded by the generator.
+    // This replaces the explicit 'for' loop iteration.
+    for (const stateSnapshot of busLogicProcessor()) {
+      latestState = stateSnapshot; // Keep track of the most recent state
+    }
+    finalBusResult = latestState.currentBusTally; // The final bus count is from the last state
   }
 
-  console.log(manager.retrieveFinalCount());
+  console.log(finalBusResult);
 
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

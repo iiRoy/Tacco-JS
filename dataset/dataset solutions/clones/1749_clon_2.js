@@ -1,77 +1,63 @@
-let fileSystemModule = require('fs'); // Module to interact with the file system.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8'); // Reads the entire content from standard input.
+let lineData = fileContent.split('\n');
 
-let contentLines = rawInputContent.split('\n'); // Divides the input into an array of strings, one for each line.
-
-// The first numerical value on the first line, often representing a total count, is extracted but not utilized further.
-let initialDatasetSize = Number(contentLines.shift());
-
-// The second line contains space-separated numbers, which are parsed into an array of numerical values.
-let numericalDataset = contentLines.shift().split(' ').map(function(numAsString){
-    // Converts each string representation of a number into an actual number.
-    return Number(numAsString);
+const initialArrayLength = +lineData.shift();
+let currentNumbers = lineData.shift().split(' ').map(function(numericString) {
+    return (+numericString);
 });
 
-// The third line provides the total quantity of operations that need to be executed.
-let totalOperations = Number(contentLines.shift());
-
-contentLines.pop(); // Removes the last element from the array, which is typically an empty string due to a trailing newline.
+const numberOfQueries = +lineData.shift();
+lineData.pop();
 
 /**
- * This function is designed to incrementally sum two numerical values.
- * @param {number} currentAccumulation - The accumulated sum so far.
- * @param {number} itemToAdd - The number to be added to the accumulation.
- * @returns {number} The updated sum after addition.
+ * A simple reducer function to accumulate the sum of numbers.
+ * @param {number} accumulatorValue - The running total.
+ * @param {number} currentElement - The number to add to the total.
+ * @returns {number} The updated sum.
  */
-function accumulateValues (currentAccumulation, itemToAdd) {
-    currentAccumulation += itemToAdd; // Performs the addition operation.
-    return currentAccumulation;       // Returns the new total.
+function reducerFunction(accumulatorValue, currentElement) {
+    accumulatorValue += currentElement;
+    return accumulatorValue;
 }
 
-// These global variables store the target value for replacement and its substitute.
-let valueToFind;
-let valueToSubstitute;
-
 /**
- * A transformation function that checks if an input number matches a predefined target.
- * If a match is found, it returns a substitute value; otherwise, it returns the original number.
- * @param {number} originalNumber - The number to be evaluated for replacement.
- * @returns {number} Either the replacement value or the original number.
+ * A mapping function that replaces a specific value with another.
+ * It relies on 'valueToFind' and 'valueToInsert' being available in its scope.
+ * @param {number} itemToMap - The current number being processed.
+ * @returns {number} The replacement value if a match is found, otherwise the original item.
  */
-function applyValueTransform(originalNumber) {
-    if (originalNumber === valueToFind) { // Compares the number with the target value.
-        return valueToSubstitute;         // Returns the replacement if a match occurs.
+function replacementMapper(itemToMap) {
+    if (itemToMap === valueToFind) {
+        return valueToInsert;
     } else {
-        return originalNumber;            // Returns the original number if no match.
+        return itemToMap;
     }
 }
 
-let currentRunningSum = 0; // Initializes a variable to keep track of the sum of the numerical dataset.
+let totalSum = 0;
 
-// This loop processes each operation defined in the input.
-for (let opIndex = 0; opIndex < totalOperations; opIndex++) {
+// Process each query one by one.
+for (let queryIteration = 0; queryIteration < numberOfQueries; queryIteration++) {
+    const queryOperation = lineData[queryIteration].split(' ');
 
-    let operationParameters = contentLines[opIndex].split(' '); // Splits the current operation line into its constituent parts.
+    // These variables are declared with 'var' and are thus hoisted to the global scope,
+    // making them accessible to the 'replacementMapper' function.
+    var valueToFind = (+queryOperation[0]) | 0;
+    var valueToInsert = (+queryOperation[1]) | 0;
 
-    // Extracts the target value and ensures it's an integer.
-    valueToFind = Number(operationParameters[0]) | 0;
-    // Extracts the replacement value and ensures it's an integer.
-    valueToSubstitute = Number(operationParameters[1]) | 0;
-
-    // An optimization: if the current sum is already positive and the target value isn't present
-    // in the dataset, then performing the replacement operation would not change the sum.
-    // In such cases, the current sum can be printed directly, and the loop continues to the next operation.
-    if (currentRunningSum > 0 && numericalDataset.indexOf(valueToFind) === -1) {
-        console.log(currentRunningSum); // Outputs the sum without any changes.
-        continue;                       // Skips the rest of the current iteration.
+    // Optimization: If the current sum is positive and the value to find is not present in the array,
+    // the array (and thus its sum) will not change.
+    if (totalSum > 0 && currentNumbers.indexOf(valueToFind) === -1) {
+        console.log(totalSum);
+        continue;
     }
 
-    // Applies the transformation function to every element in the numerical dataset.
-    numericalDataset = numericalDataset.map(applyValueTransform);
+    // Apply the replacement logic to the array elements.
+    currentNumbers = currentNumbers.map(replacementMapper);
 
-    // Recalculates the total sum of the dataset after potential modifications.
-    currentRunningSum = numericalDataset.reduce(accumulateValues, 0);
+    // Recalculate the total sum of the modified array.
+    totalSum = currentNumbers.reduce(reducerFunction, 0);
 
-    console.log(currentRunningSum); // Prints the updated sum to the console.
+    console.log(totalSum);
 }

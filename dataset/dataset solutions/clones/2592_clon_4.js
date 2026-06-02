@@ -1,23 +1,23 @@
-let allIncomingData = '';
-
-process.stdin.on('data', (dataChunk) => {
-    allIncomingData += dataChunk;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+var receivedLines = [];
+var inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const inputSequences = allIncomingData.trim().split('\n');
+inputHandler.on('line', (currentLine) => {
+    receivedLines.push(currentLine);
+});
 
-    const firstSequence = inputSequences[0];
-    const secondSequence = inputSequences[1];
+inputHandler.on('close', () => {
+    "use strict";
+    const primaryString = receivedLines[0];
+    const secondaryString = receivedLines[1];
 
-    const comparisonPositions = [0, 1, 2];
+    const identicalCharCount = Array.from(primaryString.substring(0, 3)).filter((charElement, charIndex) => {
+        return charElement === secondaryString[charIndex];
+    }).length;
 
-    const totalMatchCount = comparisonPositions.reduce((accumulator, currentPos) => {
-        const charFromFirst = firstSequence ? firstSequence[currentPos] : undefined;
-        const charFromSecond = secondSequence ? secondSequence[currentPos] : undefined;
-        
-        return accumulator + (charFromFirst === charFromSecond ? 1 : 0);
-    }, 0);
-
-    console.log(totalMatchCount);
+    console.log(identicalCharCount);
 });

@@ -1,47 +1,27 @@
-const calculateBinaryDivisibility = (numberValue) => {
-  if (Number.isNaN(numberValue) || numberValue === 0) {
-    // If the number is 0 or non-numeric (e.g., empty string parsed as 0),
-    // it effectively doesn't constrain the minimum divisions for other numbers.
-    // In the original code, 0 % 2 == 0 is true, and 0 / 2 is 0.
-    // So 0 never becomes odd, and doesn't break the 'every' condition.
-    // Thus, its contribution to the 'minimum' should be treated as effectively infinite.
-    return Number.MAX_SAFE_INTEGER;
-  }
+function processInputData(inputContent) {
+  const numberStrings = inputContent.split('\n')[1].split(' ');
 
-  let shiftCount = 0;
-  let currentVal = numberValue;
-  // Use bitwise AND to check for evenness and right shift for division by 2.
-  // This is a different implementation strategy than modulo and arithmetic division.
-  while ((currentVal & 1) === 0) {
-    currentVal >>= 1; // Equivalent to integer division by 2
-    shiftCount++;
-  }
-  return shiftCount;
-};
+  const calculateTwoFactors = (valueString) => {
+    let currentNumericalValue = Number(valueString);
+    let divisionCount = 0;
 
-const processDataFromSource = (rawInputContent) => {
-  // Deconstruct the input string into lines and then elements.
-  const allLines = rawInputContent.split('\n');
-  const relevantLine = allLines[1];
-  const stringComponentList = relevantLine.split(' ');
+    if (currentNumericalValue === 0) {
+      return 0;
+    }
 
-  // Transform each string component into a number and then into its divisibility count.
-  const divisibilityValues = stringComponentList.map(strItem =>
-    calculateBinaryDivisibility(Number(strItem))
-  );
+    let absoluteValue = Math.abs(currentNumericalValue);
+    while (absoluteValue > 0 && absoluteValue % 2 === 0) {
+      absoluteValue /= 2;
+      divisionCount++;
+    }
+    return divisionCount;
+  };
 
-  // Determine the smallest divisibility count among all elements.
-  const smallestDivisionCount = divisibilityValues.reduce((currentMinimum, currentElement) =>
-    Math.min(currentMinimum, currentElement)
-  , Number.MAX_SAFE_INTEGER); // Initialize with a large number for min comparison
+  const allFactorCounts = numberStrings.map(calculateTwoFactors);
 
-  // Output the final computed value.
-  const displayResult = console.log;
-  displayResult(smallestDivisionCount);
-};
+  const leastCommonDivisions = Math.min(...allFactorCounts);
 
-// Retrieve input from the standard input stream and initiate processing.
-const systemIOModule = require('fs');
-const standardInputContent = systemIOModule.readFileSync('/dev/stdin', 'utf8');
+  console.log(leastCommonDivisions);
+}
 
-processDataFromSource(standardInputContent);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

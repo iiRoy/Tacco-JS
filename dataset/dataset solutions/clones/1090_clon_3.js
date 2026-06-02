@@ -1,135 +1,152 @@
-const fileSystemModule = require('fs');
-
-const processingSettings = {
-  sourcePath: '/dev/stdin',
-  lineSeparator: '\n'
-};
-
+const appConfiguration = { input: '/dev/stdin', newline: '\n' }; // linux
 const NO_CHILD_MARKER = '-1';
+const FS_MODULE = require('fs');
 
-let rawContentBuffer;
-try {
-  rawContentBuffer = fileSystemModule.readFileSync(processingSettings.sourcePath, 'utf8');
-} catch (dataReadError) {
-  console.error(`Failed to acquire input from ${processingSettings.sourcePath}: ${dataReadError.message}`);
-  process.exit(1);
+/**
+ * Reads and processes the input file based on the provided configuration.
+ * @param {object} configObj - Configuration object with input path and newline character.
+ * @returns {string[]} An array of processed input lines.
+ */
+function retrieveAndPrepareInput(configObj) {
+  const fileContent = FS_MODULE.readFileSync(configObj.input, 'ascii');
+  const trimmedContent = fileContent.trim();
+  const splitLines = trimmedContent.split(configObj.newline);
+  
+  // Remove the first line as per original logic
+  splitLines.shift(); 
+  
+  return splitLines;
 }
 
-const rawInputLineSegments = rawContentBuffer.trim().split(processingSettings.lineSeparator);
+const rawInputLines = retrieveAndPrepareInput(appConfiguration);
 
-const treeNodeInputEntries = rawInputLineSegments.slice(1);
-
-const binaryTreeNodes = new Map();
-
-function extractNodeDataFromLine(inputLineSegment) {
-  const componentParts = inputLineSegment.split(' ');
-  if (componentParts.length !== 3) {
-    throw new Error(`Malformed node descriptor: "${inputLineSegment}". Expected 3 space-separated values.`);
+/**
+ * Builds the tree structure from an array of input lines.
+ * @param {string[]} lines - Array of strings, each defining a node.
+ * @returns {object} An object representing the tree, where keys are node IDs.
+ */
+function constructNodeStructure(lines) {
+  const nodeStructure = {};
+  for (const lineEntry of lines) { // Using for...of for iteration
+    const nodeDefinitionParts = lineEntry.split(' ');
+    const nodeId = nodeDefinitionParts[0];
+    const leftChild = nodeDefinitionParts[1];
+    const rightChild = nodeDefinitionParts[2];
+    
+    nodeStructure[nodeId] = { 'left': leftChild, 'right': rightChild, 'isRootCandidate': true };
   }
-  return {
-    nodeKey: componentParts[0],
-    leftSubordinateKey: componentParts[1],
-    rightSubordinateKey: componentParts[2]
-  };
+  return nodeStructure;
 }
 
-treeNodeInputEntries.forEach(entryString => {
-  const nodeInfo = extractNodeDataFromLine(entryString);
-  binaryTreeNodes.set(nodeInfo.nodeKey, {
-    leftSubordinateKey: nodeInfo.leftSubordinateKey,
-    rightSubordinateKey: nodeInfo.rightSubordinateKey,
-    isCandidateRoot: true
-  });
-});
+const nodeStructure = constructNodeStructure(rawInputLines);
 
-const nonRootIdentifiers = new Set();
-
-for (const [nodeId, nodeDetails] of binaryTreeNodes.entries()) {
-  if (nodeDetails.leftSubordinateKey !== NO_CHILD_MARKER) {
-    nonRootIdentifiers.add(nodeDetails.leftSubordinateKey);
-    const leftChildRef = binaryTreeNodes.get(nodeDetails.leftSubordinateKey);
-    if (leftChildRef) leftChildRef.isCandidateRoot = false;
-  }
-  if (nodeDetails.rightSubordinateKey !== NO_CHILD_MARKER) {
-    nonRootIdentifiers.add(nodeDetails.rightSubordinateKey);
-    const rightChildRef = binaryTreeNodes.get(nodeDetails.rightSubordinateKey);
-    if (rightChildRef) rightChildRef.isCandidateRoot = false;
-  }
-}
-
-let primaryRootNodeIdentifier = null;
-for (const [nodeId, nodeDetails] of binaryTreeNodes.entries()) {
-  if (!nonRootIdentifiers.has(nodeId)) {
-    primaryRootNodeIdentifier = nodeId;
-    break;
-  }
-}
-
-function performPreOrderTraversal(currentKey) {
-  if (currentKey === NO_CHILD_MARKER || !binaryTreeNodes.has(currentKey)) {
-    return [];
+/**
+ * Determines the actual root node identifier from the constructed tree structure.
+ * @param {object} structure - The tree structure object.
+ * @param {string} noChildMarker - The string representing a missing child.
+ * @returns {string} The identifier of the root node.
+ */
+function identifyTreeRoot(structure, noChildMarker) {
+  // Mark nodes that are children as not root candidates
+  for (const nodeId in structure) {
+    const currentTreeNode = structure[nodeId];
+    if (currentTreeNode.left !== noChildMarker) {
+      if (structure[currentTreeNode.left]) { // Ensure child node exists in structure
+        structure[currentTreeNode.left].isRootCandidate = false;
+      }
+    }
+    if (currentTreeNode.right !== noChildMarker) {
+      if (structure[currentTreeNode.right]) { // Ensure child node exists in structure
+        structure[currentTreeNode.right].isRootCandidate = false;
+      }
+    }
   }
 
-  const currentTreeNode = binaryTreeNodes.get(currentKey);
-  let accumulatedTraversalPath = [currentKey];
-
-  const leftTraversalResult = performPreOrderTraversal(currentTreeNode.leftSubordinateKey);
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...leftTraversalResult];
-
-  const rightTraversalResult = performPreOrderTraversal(currentTreeNode.rightSubordinateKey);
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...rightTraversalResult];
-
-  return accumulatedTraversalPath;
-}
-
-function performInOrderTraversal(currentKey) {
-  if (currentKey === NO_CHILD_MARKER || !binaryTreeNodes.has(currentKey)) {
-    return [];
+  // Find the node that is still a root candidate
+  for (const nodeId in structure) {
+    if (structure[nodeId].isRootCandidate) {
+      return nodeId;
+    }
   }
-
-  const currentTreeNode = binaryTreeNodes.get(currentKey);
-  let accumulatedTraversalPath = [];
-
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...performInOrderTraversal(currentTreeNode.leftSubordinateKey)];
-
-  accumulatedTraversalPath.push(currentKey);
-
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...performInOrderTraversal(currentTreeNode.rightSubordinateKey)];
-
-  return accumulatedTraversalPath;
+  // This case should ideally not be reached if a valid tree is provided
+  return null; 
 }
 
-function performPostOrderTraversal(currentKey) {
-  if (currentKey === NO_CHILD_MARKER || !binaryTreeNodes.has(currentKey)) {
-    return [];
+const mainRootIdentifier = identifyTreeRoot(nodeStructure, NO_CHILD_MARKER);
+
+// Helper to check if a child exists
+const hasChild = (childId, marker) => childId !== marker;
+
+/**
+ * Performs a preorder traversal of the tree.
+ * @param {string} nodeIdentifier - The ID of the current node.
+ * @returns {string[]} An array of node IDs in preorder sequence.
+ */
+function performPreorderTraversal(nodeIdentifier) {
+  const currentTreeNode = nodeStructure[nodeIdentifier];
+  const leftNodeIdentifier = currentTreeNode.left;
+  const rightNodeIdentifier = currentTreeNode.right;
+  
+  let pathSequence = [nodeIdentifier]; // Start with current node
+
+  if (hasChild(leftNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performPreorderTraversal(leftNodeIdentifier)]; // Using spread syntax
   }
-
-  const currentTreeNode = binaryTreeNodes.get(currentKey);
-  let accumulatedTraversalPath = [];
-
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...performPostOrderTraversal(currentTreeNode.leftSubordinateKey)];
-
-  accumulatedTraversalPath = [...accumulatedTraversalPath, ...performPostOrderTraversal(currentTreeNode.rightSubordinateKey)];
-
-  accumulatedTraversalPath.push(currentKey);
-
-  return accumulatedTraversalPath;
+  if (hasChild(rightNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performPreorderTraversal(rightNodeIdentifier)]; // Using spread syntax
+  }
+  return pathSequence;
 }
 
-console.log('--- Binary Tree Traversal Report ---');
+console.log('Preorder');
+console.log(' ' + performPreorderTraversal(mainRootIdentifier).join(' '));
 
-if (primaryRootNodeIdentifier === null) {
-  console.error('CRITICAL ERROR: No singular root node could be identified. Traversal cannot proceed.');
-  process.exit(1);
+/**
+ * Performs an inorder traversal of the tree.
+ * @param {string} nodeIdentifier - The ID of the current node.
+ * @returns {string[]} An array of node IDs in inorder sequence.
+ */
+function performInorderTraversal(nodeIdentifier) {
+  const currentTreeNode = nodeStructure[nodeIdentifier];
+  const leftNodeIdentifier = currentTreeNode.left;
+  const rightNodeIdentifier = currentTreeNode.right;
+  
+  let pathSequence = [];
+
+  if (hasChild(leftNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performInorderTraversal(leftNodeIdentifier)];
+  }
+  pathSequence.push(nodeIdentifier); // Current node in the middle
+  if (hasChild(rightNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performInorderTraversal(rightNodeIdentifier)];
+  }
+  return pathSequence;
 }
 
-console.log('Pre-order Sequence:');
-console.log(` ${performPreOrderTraversal(primaryRootNodeIdentifier).join(' ')}`);
+console.log('Inorder');
+console.log(' ' + performInorderTraversal(mainRootIdentifier).join(' '));
 
-console.log('In-order Sequence:');
-console.log(` ${performInOrderTraversal(primaryRootNodeIdentifier).join(' ')}`);
+/**
+ * Performs a postorder traversal of the tree.
+ * @param {string} nodeIdentifier - The ID of the current node.
+ * @returns {string[]} An array of node IDs in postorder sequence.
+ */
+function performPostorderTraversal(nodeIdentifier) {
+  const currentTreeNode = nodeStructure[nodeIdentifier];
+  const leftNodeIdentifier = currentTreeNode.left;
+  const rightNodeIdentifier = currentTreeNode.right;
+  
+  let pathSequence = [];
 
-console.log('Post-order Sequence:');
-console.log(` ${performPostOrderTraversal(primaryRootNodeIdentifier).join(' ')}`);
+  if (hasChild(leftNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performPostorderTraversal(leftNodeIdentifier)];
+  }
+  if (hasChild(rightNodeIdentifier, NO_CHILD_MARKER)) {
+    pathSequence = [...pathSequence, ...performPostorderTraversal(rightNodeIdentifier)];
+  }
+  pathSequence.push(nodeIdentifier); // Current node at the end
+  return pathSequence;
+}
 
-console.log('--- End of Report ---');
+console.log('Postorder');
+console.log(' ' + performPostorderTraversal(mainRootIdentifier).join(' '));

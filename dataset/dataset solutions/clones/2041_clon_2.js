@@ -1,78 +1,72 @@
 'use strict';
 
-function ProcessStringData(incomingText)
-{
-    // The initial input string is cleaned from surrounding whitespace,
-    // then fragmented into an array of individual characters.
-    let characterSequence = incomingText.trim().split('');
+// This function processes a given string to determine if it meets specific palindrome-like criteria.
+function ProcessString(rawText) {
+  // Prepare the input: remove leading/trailing whitespace and convert to an array of characters.
+  let charArray = rawText.trim().split("");
 
-    // Establish critical dimensions and boundary indicators for string segmentation.
-    const totalCharCount = characterSequence.length;
-    let leftBoundaryIndex = (totalCharCount - 1) / 2;
-    let rightBoundaryIndex = (totalCharCount + 3) / 2;
+  // Determine the overall length of the character array.
+  let totalLength = charArray.length;
 
-    // Initialize containers for the two derived sub-partitions of the string.
-    let firstPartition = [];
-    let secondPartition = [];
+  // Calculate the midpoint for the left segment.
+  let leftBoundary = (totalLength - 1) / 2;
 
-    // Conduct the initial palindromic check on the entire character sequence.
-    // This loop iterates through the first half of the sequence.
-    for (
-        let currentIdx = 0;
-        currentIdx < Math.floor(characterSequence.length / 2);
-        currentIdx++
-    ) {
-        // Calculate the corresponding index from the opposite end of the sequence.
-        let mirrorIdx = characterSequence.length - 1 - currentIdx;
+  // Calculate the starting point for the right segment.
+  let rightBoundary = (totalLength + 3) / 2;
 
-        // If any character pair at symmetric positions does not match, the condition fails.
-        if (characterSequence[currentIdx] !== characterSequence[mirrorIdx]) {
-            console.log('No'); // Output the negative outcome.
-            return;            // Terminate further execution.
-        }
+  // Initialize arrays to hold the left and right segments.
+  let firstHalfChars = [];
+  let secondHalfChars = [];
+
+  // First palindrome check: Verify if the entire string (up to its middle) is a palindrome.
+  // Iterate from the beginning up to the middle of the string.
+  for (let idx = 0; idx < Math.floor(charArray.length / 2); idx++) {
+    // Calculate the index of the character opposite to the current one.
+    let oppositeIdx = charArray.length - 1 - idx;
+    // If characters at symmetric positions do not match, it's not a palindrome.
+    if (charArray[idx] !== charArray[oppositeIdx]) {
+      console.log('No'); // Output 'No' and terminate.
+      return;
     }
+  }
 
-    // Populate the first string partition based on the calculated left boundary.
-    for (let loopCounter = 0; loopCounter < leftBoundaryIndex; loopCounter++) {
-        firstPartition.push(characterSequence[loopCounter]);
+  // Populate the 'firstHalfChars' array with characters from the beginning up to 'leftBoundary'.
+  for (let idx = 0; idx < leftBoundary; idx++) {
+    firstHalfChars.push(charArray[idx]);
+  }
+
+  // Populate the 'secondHalfChars' array with characters from 'rightBoundary - 1' to the end.
+  for (let idx = rightBoundary - 1; idx < totalLength; idx++) {
+    secondHalfChars.push(charArray[idx]);
+  }
+
+  // Second palindrome check: Verify if the 'firstHalfChars' segment is a palindrome.
+  // Iterate through the first half of the 'firstHalfChars' array.
+  for (let idx = 0; idx < Math.floor(firstHalfChars.length / 2); idx++) {
+    // Calculate the symmetric index within this segment.
+    let oppositeIdx = firstHalfChars.length - 1 - idx;
+    // If characters don't match, it fails the condition.
+    if (firstHalfChars[idx] !== firstHalfChars[oppositeIdx]) {
+      console.log('No'); // Output 'No' and exit.
+      return;
     }
+  }
 
-    // Populate the second string partition starting from its calculated right boundary index.
-    for (let loopCounter = rightBoundaryIndex - 1; loopCounter < totalCharCount; loopCounter++) {
-        secondPartition.push(characterSequence[loopCounter]);
+  // Third palindrome check: Verify if the 'secondHalfChars' segment is a palindrome.
+  // Iterate through the first half of the 'secondHalfChars' array.
+  for (let idx = 0; idx < Math.floor(secondHalfChars.length / 2); idx++) {
+    // Calculate the symmetric index within this segment.
+    let oppositeIdx = secondHalfChars.length - 1 - idx;
+    // If characters don't match, it fails the condition.
+    if (secondHalfChars[idx] !== secondHalfChars[oppositeIdx]) {
+      console.log('No'); // Output 'No' and exit.
+      return;
     }
+  }
 
-    // Perform a palindromic validation on the 'firstPartition'.
-    // This loop checks characters from the start and end of this segment.
-    for (let iterationIdx = 0; iterationIdx < Math.floor(firstPartition.length / 2); iterationIdx++) {
-        // Determine the symmetrical position within 'firstPartition'.
-        let symmetricIdx = firstPartition.length - 1 - iterationIdx;
-
-        // If characters are not identical at symmetric points, the condition is not met.
-        if (firstPartition[iterationIdx] !== firstPartition[symmetricIdx]) {
-            console.log('No'); // Signal failure.
-            return;            // Halt the function.
-        }
-    }
-
-    // Execute a palindromic validation for the 'secondPartition'.
-    // This loop compares elements from both extremities of the segment.
-    for (let posIdx = 0; posIdx < Math.floor(secondPartition.length / 2); posIdx++) {
-        // Find the corresponding index at the other end of 'secondPartition'.
-        let oppositeIdx = secondPartition.length - 1 - posIdx;
-
-        // If a mismatch is found between characters at mirrored positions, the check fails.
-        if (secondPartition[posIdx] !== secondPartition[oppositeIdx]) {
-            console.log('No'); // Indicate a negative result.
-            return;            // Conclude the function's operation.
-        }
-    }
-
-    // If all preceding checks have passed without returning, the string structure is valid.
-    console.log('Yes'); // Affirmative output.
+  // If all checks pass, the string meets the criteria.
+  console.log('Yes');
 }
 
-
-// This segment handles standard I/O, fetching data to be processed by the main routine.
-// It should not be modified as it interacts with the execution environment.
-ProcessStringData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Standard input processing: reads from /dev/stdin and calls the main processing function.
+ProcessString(require("fs").readFileSync("/dev/stdin", "utf8"));

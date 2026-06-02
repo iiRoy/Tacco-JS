@@ -1,54 +1,48 @@
-// This function processes incoming textual data to perform a specific calculation.
-function ProcessInputData(rawDataString)
-{
-    // First, split the entire input string into an array of individual lines.
-    let linesArray = rawDataString.split("\n")  ;
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  rawData = rawData.split("\n");
 
-    // Parse the first line to extract three integer values.
-    // The first value represents the total count of elements.
-    let totalElementsCount = parseInt(linesArray[0].split(" ")[0]);
+  // Parse the first line to extract three integer values.
+  let count = parseInt(rawData[0].split(" ")[0]); // Represents 'n' from original.
+  let valZ = parseInt(rawData[0].split(" ")[1]);  // Represents 'z' from original.
+  let valW = parseInt(rawData[0].split(" ")[2]);  // Represents 'w' from original.
 
-    // The second value is an auxiliary parameter, perhaps for future use or another calculation branch.
-    let zetaValue = parseInt(linesArray[0].split(" ")[1])   ;
+  // Split the second line into an array of string representations of numbers.
+  let tempArr = rawData[1].split(" "); // Represents 'tmp' from original.
 
-    // The third value acts as a critical threshold or reference point for comparison.
-    let omegaValue = parseInt(linesArray[0].split(" ")[2])     ;
+  // Initialize a variable to store the final computed result.
+  let finalResult = 0; // Represents 'ans' from original.
 
-    // Extract the second line, which contains space-separated numbers.
-    const stringNumbersArray = linesArray[1].split(" ") ;
+  // Create a new array of size 'count' and fill it with zeros.
+  let dataArray = new Array(count).fill(0); // Represents 'a' from original.
 
-    // Initialize the variable that will store the ultimate computed outcome.
-    let finalResult = 0 ;
+  // Iterate through the temporary string array and parse each element into an integer,
+  // storing it in the main data array.
+  for (let idx = 0; idx < count; idx++) { // Represents 'i' from original.
+    dataArray[idx] = parseInt(tempArr[idx]);
+  }
 
-    // Create a new array, pre-filled with zeros, to store parsed numerical data.
-    let numericArray = new Array(totalElementsCount).fill(0) ;
+  // Initialize variables to find the maximum and minimum values in the data array.
+  let maxValue = 0; // Represents 'max' from original.
+  let minValue = 1000000000; // Represents 'min' from original, a large initial value.
 
-    // Iterate through the string numbers and convert them to integers, populating the numeric array.
-    for (let idx = 0 ; idx < totalElementsCount ; ++idx)
-    {
-        numericArray[idx] = parseInt(stringNumbersArray[idx])  ;
-    }
+  // Loop through the data array to determine the actual maximum and minimum values.
+  for (let idx = 0; idx < count; idx++) { // Represents 'i' from original.
+    maxValue = Math.max(maxValue, dataArray[idx]);
+    minValue = Math.min(minValue, dataArray[idx]);
+  }
 
-    // Initialize variables to track the maximum and minimum values found in the numeric array.
-    let currentMaximum = 0;
-    let currentMinimum = 1000000000; // Using a sufficiently large number for initial minimum.
+  // Calculate the final result using Math.max and Math.abs based on specific conditions.
+  // This involves comparing absolute differences between maxValue, valW, the last element of dataArray, and minValue.
+  finalResult = Math.max(
+    Math.abs(maxValue - valW),
+    Math.abs(maxValue - dataArray[count - 1]),
+    Math.abs(dataArray[count - 1] - minValue)
+  );
 
-    // Loop through the array to determine its actual maximum and minimum elements.
-    for (let idx = 0 ; idx < totalElementsCount ; ++idx)
-    {
-        currentMaximum = Math.max(currentMaximum, numericArray[idx]);
-        currentMinimum = Math.min(currentMinimum, numericArray[idx]);
-    }
-
-    // Calculate the final result based on specific absolute differences.
-    // This involves comparing the maximum element, the last element, and the minimum element with the omegaValue.
-    finalResult = Math.max(Math.abs(currentMaximum - omegaValue),
-                           Math.abs(currentMaximum - numericArray[totalElementsCount - 1]),
-                           Math.abs(numericArray[totalElementsCount - 1] - currentMinimum))   ;
-
-    // Output the calculated final result to the console.
-    console.log('%s', finalResult) ;
+  // Output the calculated final result to the console.
+  console.log('%s', finalResult);
 }
 
-// Invoke the primary processing function, reading input from standard input.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8")) ;
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

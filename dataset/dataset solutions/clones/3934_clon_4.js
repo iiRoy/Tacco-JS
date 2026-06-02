@@ -1,48 +1,50 @@
-const processInput = (inputNumber) => {
-    const figureCount = Number.parseInt(inputNumber, 10);
+function Main(input) {
+  const inputVal = parseInt(input);
 
-    if (figureCount < 3 || figureCount > 20000) {
-        console.log("しね");
-        return;
-    }
+  if (inputVal < 3 || inputVal > 20000) {
+    console.log("しね");
+    return;
+  }
 
-    const determineElementValue = (elementIndex, totalElements) => {
-        if (totalElements === 3) {
-            if (elementIndex === 0) return 3;
-            if (elementIndex === 1) return 25;
-            if (elementIndex === 2) return 2;
-        }
+  // Generate the sequence elements from index 2 up to inputVal - 1
+  // using a functional reduce pattern. The `Array.from` creates an array of indices.
+  const generatedElements = Array.from({ length: Math.max(0, inputVal - 2) }, (_, currentOffset) => currentOffset + 2)
+    .reduce((accumulator, currentIdx) => {
+      let elementValue;
+      if (currentIdx < 10002) {
+        // Corresponds to the first original loop's formula
+        elementValue = currentIdx * 3 - 4 - (currentIdx % 2);
+      } else if (currentIdx < 15000) {
+        // Corresponds to the second original loop's formula
+        elementValue = (currentIdx - 10000) * 6 + 3;
+      } else {
+        // Corresponds to the third original loop's formula
+        elementValue = (currentIdx - 14999) * 6;
+      }
+      accumulator.push(elementValue);
+      return accumulator;
+    }, []);
 
-        let calculatedValue;
-        if (elementIndex === 0) {
-            calculatedValue = 3;
-        } else if (elementIndex === 1) {
-            calculatedValue = 9;
-        } else if (elementIndex < 10002) {
-            calculatedValue = elementIndex * 3 - 4 - (elementIndex % 2);
-        } else if (elementIndex < 15000) {
-            calculatedValue = (elementIndex - 10000) * 6 + 3;
-        } else {
-            calculatedValue = (elementIndex - 14999) * 6;
-        }
+  // Combine the fixed initial values (3, 9) with the dynamically generated elements
+  let finalSequence = [3, 9, ...generatedElements];
 
-        if (elementIndex === totalElements - 1 && totalElements !== 3) {
-            const isOddOrSmall = (totalElements % 2 === 1 || totalElements < 15000);
-            if (isOddOrSmall) {
-                calculatedValue = 6;
-            }
-        }
-        return calculatedValue;
-    };
+  // Apply specific overrides based on inputVal, mirroring the original conditional logic
+  if (inputVal === 3) {
+    // Special case for N=3
+    finalSequence[1] = 25;
+  } else if (inputVal % 2 === 1 || inputVal < 15000) {
+    // This condition applies if inputVal is odd (and not 3, as 3 is handled above)
+    // OR if inputVal is even and less than 15000.
+    // Effectively, it applies unless inputVal is even AND inputVal >= 15000.
+    finalSequence[inputVal - 1] = 6;
+  }
 
-    const resultCollection = Array.from(
-        { length: figureCount },
-        (_, idx) => determineElementValue(idx, figureCount)
-    );
+  // Sort the sequence numerically in ascending order
+  finalSequence.sort((valA, valB) => valA - valB);
 
-    resultCollection.sort((valA, valB) => valA - valB);
+  // Output the space-separated elements
+  console.log(finalSequence.join(" "));
+}
 
-    console.log(resultCollection.join(" "));
-};
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Standard input reading for competitive programming environments
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,25 +1,46 @@
-const sourceAccessor = require('node:fs');
+module.exports = (() => {
+    const fileSystemAccess = require("fs");
+    const rawInputData = fileSystemAccess.readFileSync("/dev/stdin", "utf8");
 
-const inputParsingMechanism = (rawDataSource) => {
-    const trimmedContent = rawDataSource.trim();
-    if (trimmedContent === "") {
-        return { initialFigure: 0, subsequentValues: [] };
-    }
-    const tokenSeries = trimmedContent.split(/\s+/g);
-    const primaryNumber = parseInt(tokenSeries[0], 10);
-    const secondaryNumbers = tokenSeries.slice(1).map(Number); 
-    
-    return {
-        initialFigure: primaryNumber,
-        subsequentValues: secondaryNumbers
+    const createInputSource = (sourceString) => {
+        const dataTokens = sourceString.trim().split(/\s+/g);
+        let currentPosition = 0;
+
+        const retrieveNextToken = () => {
+            if (currentPosition >= dataTokens.length) {
+                return undefined;
+            }
+            return dataTokens[currentPosition++];
+        };
+
+        return {
+            extractRaw: retrieveNextToken,
+            extractInteger: () => parseInt(retrieveNextToken(), 10),
+        };
     };
-};
 
-const solutionExecutor = (processedDataContainer) => {
-    const mainCount = processedDataContainer.initialFigure;
-    console.log(mainCount);
-};
+    const executeProcessing = (inputSource) => {
+        const totalElements = inputSource.extractInteger();
+        const elementValues = Array.from({ length: totalElements }, () => inputSource.extractInteger());
 
-const acquiredContent = sourceAccessor.readFileSync("/dev/stdin", "utf8");
-const structuredData = inputParsingMechanism(acquiredContent);
-solutionExecutor(structuredData);
+        const consecutiveCounts = {};
+        consecutiveCounts[0] = 0;
+
+        for (let sequenceIndex = 1; sequenceIndex <= totalElements; ++sequenceIndex) {
+            const currentItem = (sequenceIndex < totalElements) ? elementValues[sequenceIndex] : undefined;
+            const previousItem = currentItem - 1;
+
+            consecutiveCounts[currentItem] = consecutiveCounts[previousItem] + 1;
+        }
+
+        let maxSequenceLength = 0;
+        for (let checkValue = 1; checkValue <= totalElements; ++checkValue) {
+            maxSequenceLength = Math.max(maxSequenceLength, consecutiveCounts[checkValue]);
+        }
+
+        console.log(totalElements - maxSequenceLength);
+    };
+
+    const inputProcessorInstance = createInputSource(rawInputData);
+    executeProcessing(inputProcessorInstance);
+})();

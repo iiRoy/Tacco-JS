@@ -1,110 +1,110 @@
-const calculatePrimesUpTo = (upperLimit) => {
-    const isComposite = new Array(upperLimit + 1).fill(false);
-    isComposite[0] = true;
-    isComposite[1] = true;
+"use strict";
 
-    const collectedPrimes = [];
-    for (let currentNumber = 2; currentNumber <= upperLimit; currentNumber += 1) {
-        if (!isComposite[currentNumber]) {
-            collectedPrimes.push(currentNumber);
-            let multiple = currentNumber * currentNumber;
-            while (multiple <= upperLimit) {
-                isComposite[multiple] = true;
-                multiple += currentNumber;
+class InputReader {
+    #tokenStream;
+    #valueParser;
+
+    constructor(sourceText, parserFunction = Number) {
+        this.#valueParser = parserFunction;
+        this.#tokenStream = this.#generateTokens(sourceText);
+    }
+
+    *#generateTokens(text) {
+        const lines = text.split('\n');
+        for (const lineContent of lines) {
+            const parts = lineContent.trim().split(' ');
+            for (const part of parts) {
+                if (part !== '') {
+                    yield this.#valueParser(part);
+                }
             }
         }
     }
-    return collectedPrimes;
-};
 
-const findCommonDivisor = (firstNum, secondNum) => {
-    while (secondNum !== 0) {
-        const temp = secondNum;
-        secondNum = firstNum % secondNum;
-        firstNum = temp;
-    }
-    return firstNum;
-};
-
-function* generateNumberTokens(rawStringContent) {
-    const lines = rawStringContent.split("\n");
-    for (const currentLine of lines) {
-        if (currentLine.trim() === "") continue;
-        const tokens = currentLine.trim().split(" ");
-        for (const token of tokens) {
-            if (token !== "") {
-                yield Number(token);
-            }
-        }
+    grab() {
+        const { value, done } = this.#tokenStream.next();
+        return done ? undefined : value;
     }
 }
 
-const verifyPrimeCondition = (candidatePrime, valueArray, limitIndex) => {
-    if (valueArray[0] % candidatePrime !== 0) {
-        return false;
+function obtainPrimes(upperBound) {
+    const primeFlags = new Map();
+    for (let i = 2; i <= upperBound; i++) {
+        primeFlags.set(i, true);
     }
 
-    for (let currentOffset = 1; currentOffset < candidatePrime; currentOffset++) {
-        let cumulativeSum = 0;
-        let traversalIndex = currentOffset;
-        while (traversalIndex <= limitIndex) {
-            cumulativeSum += valueArray[traversalIndex];
-            traversalIndex += (candidatePrime - 1);
-        }
-        if (cumulativeSum % candidatePrime !== 0) {
-            return false;
-        }
-    }
-    return true;
-};
-
-const executeProgram = (programInput) => {
-    const tokenIterator = generateNumberTokens(programInput);
-
-    const dataSize = tokenIterator.next().value;
-    const dataCollection = Array.from({ length: dataSize + 1 }, () => tokenIterator.next().value);
-    dataCollection.reverse();
-
-    const maximumDivisor = dataCollection.reduce((accumulator, currentElement) =>
-        findCommonDivisor(accumulator, currentElement)
-    );
-
-    const scaledDataCollection = dataCollection.map(val => val / maximumDivisor);
-
-    const primeNumberCache = calculatePrimesUpTo(100000);
-
-    const derivedFactors = primeNumberCache.filter(p => p <= dataSize)
-                                         .filter(p => verifyPrimeCondition(p, scaledDataCollection, dataSize));
-
-    let remainingCommonDivisor = maximumDivisor;
-    let commonDivisorFactors = [];
-    let primeIteratorIndex = 0;
-
-    while (remainingCommonDivisor > 1 && primeIteratorIndex < primeNumberCache.length) {
-        const currentPrimeFactor = primeNumberCache[primeIteratorIndex];
-        if (remainingCommonDivisor % currentPrimeFactor === 0) {
-            commonDivisorFactors.push(currentPrimeFactor);
-            while (remainingCommonDivisor % currentPrimeFactor === 0) {
-                remainingCommonDivisor /= currentPrimeFactor;
+    for (let p = 2; p * p <= upperBound; p++) {
+        if (primeFlags.get(p)) {
+            for (let multiple = p * p; multiple <= upperBound; multiple += p) {
+                primeFlags.set(multiple, false);
             }
         }
-        primeIteratorIndex++;
-    }
-    if (remainingCommonDivisor > 1) {
-        commonDivisorFactors.push(remainingCommonDivisor);
     }
 
-    const allCandidateFactors = [...derivedFactors, ...commonDivisorFactors];
+    return Array.from(primeFlags.entries())
+                .filter(([, isPrime]) => isPrime)
+                .map(([num]) => num);
+}
 
-    const uniqueSortedFactors = Array.from(new Set(allCandidateFactors)).sort((a, b) => a - b);
+function computeGCD(valA, valB) {
+    while (valB !== 0) {
+        const temporary = valB;
+        valB = valA % valB;
+        valA = temporary;
+    }
+    return valA;
+}
 
-    let lastPrintedValue;
-    uniqueSortedFactors.forEach(currentFactor => {
-        if (lastPrintedValue !== currentFactor) {
-            console.log(currentFactor);
+function* factorizeNumber(numberToFactor, primeList) {
+    let currentNumber = numberToFactor;
+    for (const p of primeList) {
+        if (p * p > currentNumber) break;
+        while (currentNumber % p === 0) {
+            yield p;
+            currentNumber /= p;
         }
-        lastPrintedValue = currentFactor;
-    });
-};
+    }
+    if (currentNumber > 1) {
+        yield currentNumber;
+    }
+}
 
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+const GLOBAL_PRIME_LIST = obtainPrimes(100000);
+
+function processData(inputContent) {
+    const inputReader = new InputReader(inputContent);
+
+    const countElements = inputReader.grab();
+    const initialValues = Array.from({ length: countElements + 1 }, () => inputReader.grab());
+    const reversedValues = initialValues.toReversed();
+
+    const overallCommonDivisor = reversedValues.reduce((accumulator, current) => computeGCD(accumulator, current));
+
+    const scaledValues = reversedValues.map(val => val / overallCommonDivisor);
+
+    const primesForConditionCheck = GLOBAL_PRIME_LIST.filter(p => p <= countElements);
+
+    const primesSatisfyingConditions = primesForConditionCheck.filter(currentPrime => {
+        if (scaledValues[0] % currentPrime !== 0) {
+            return false;
+        }
+
+        return Array.from({ length: currentPrime - 1 }, (_, index) => index + 1)
+            .every(startIndex => {
+                let currentSum = 0;
+                for (let k = startIndex; k <= countElements; k += (currentPrime - 1)) {
+                    currentSum += scaledValues[k];
+                }
+                return currentSum % currentPrime === 0;
+            });
+    });
+
+    const primeFactorsOfGCD = [...factorizeNumber(overallCommonDivisor, GLOBAL_PRIME_LIST)];
+
+    const allCollectedFactors = [...primesSatisfyingConditions, ...primeFactorsOfGCD];
+    const uniqueSortedFactors = Array.from(new Set(allCollectedFactors)).sort((a, b) => a - b);
+
+    uniqueSortedFactors.forEach(factor => console.log(factor));
+}
+
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

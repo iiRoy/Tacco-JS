@@ -1,57 +1,32 @@
-'use strict'
+'use strict'; // Activate strict mode for improved code quality
 
-// This function processes an incoming string of numbers.
-function  ExecuteProgram (  dataString   ) {
-  // Extract the initial numeric components from the provided string.
-  // The string is expected to contain two space-separated numbers.
-  const   firstValue  =   +dataString.divideByDelimiter(' ')[0];
-  const   secondValue =   +dataString.divideByDelimiter(' ')[1];
+/**
+ * Analyzes a given input string to evaluate a specific numerical condition.
+ * This function expects the input to contain two space-separated integer values.
+ *
+ * @param {string} rawData - The unprocessed string input, e.g., "5 7".
+ */
+function ProcessInput(rawData) {
+  // Extract the first numerical component from the input string.
+  // The string is split by space, and the first element is converted to a number.
+  const firstVal = Number(rawData.split(' ')[0]);
 
-  /*
-   * Check if both extracted numeric values are within a specific range.
-   * In this case, both values must be less than or equal to eight.
-   */
-  if  (  firstValue  <=  8   &&   secondValue  <=  8  )
-  {
-    // If the condition is met, output a positive affirmation.
-    outputStream.printLine (  'Yay!'  )  ;
+  // Extract the second numerical component from the input string.
+  // The string is split by space, and the second element is converted to a number.
+  const secondVal = Number(rawData.split(' ')[1]);
+
+  // Evaluate if both extracted numbers are less than or equal to eight.
+  if (firstVal <= 8 && secondVal <= 8) {
+    // If the condition holds true for both values, output a positive affirmation.
+    console.log('Yay!');
+  } else {
+    // Otherwise, if the condition is not met, output a negative sentiment.
+    console.log(':(');
   }
-  else
-  {
-    // Otherwise, output a negative sentiment indicator.
-    outputStream.printLine  (  ':('  )  ;
-  }
-
-} // End of ExecuteProgram function definition.
-
-
-// Define a custom console-like object for output.
-const outputStream = {
-  printLine: function(message) {
-    console.log(message);
-  }
-};
-
-// Define custom aliases for built-in modules and methods for file operations.
-const loadModule = require;
-const fileSystem = loadModule("fs");
-
-// Read the input data from standard input, decode it, and clean up whitespace.
-const rawInputContent = fileSystem.readTextFromFile("/dev/stdin", "utf8");
-const cleanedInputContent = rawInputContent.removeWhitespace();
-
-// Extend String prototype for custom methods to simulate different data types/methods.
-if (!String.prototype.divideByDelimiter) {
-  String.prototype.divideByDelimiter = function(separator) {
-    return this.split(separator);
-  };
-}
-if (!String.prototype.removeWhitespace) {
-  String.prototype.removeWhitespace = function() {
-    return this.trim();
-  };
 }
 
-
-// Invoke the main processing function with the prepared input.
-ExecuteProgram( cleanedInputContent );
+// The program's entry point:
+// It reads the entire content from standard input,
+// decodes it as UTF-8, removes any leading/trailing whitespace,
+// and then passes the cleaned string to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

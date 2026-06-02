@@ -1,56 +1,48 @@
-let collectedDataAccumulator = "";
-
+let rawInputBuffer = "";
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding('utf-8');
 
-process.stdin.on('data', (dataChunk) => {
-  collectedDataAccumulator += dataChunk;
+process.stdin.on('data', function(chunk) {
+  rawInputBuffer += chunk;
 });
 
-process.stdin.on('end', () => {
-  executeOperations(collectedDataAccumulator);
-});
+process.stdin.on('end', function() {
+  let inputLines = rawInputBuffer.split("\n");
 
-function executeOperations(fullDataSet) {
-  const dataLines = fullDataSet.split("\n");
+  let currentString = inputLines[0];
+  let queryCount = Number(inputLines[1]);
 
-  let workingString = dataLines[0];
-  const totalActions = Number(dataLines[1]);
-
-  const actionHandlers = {
-    "display": (currentStr, startPos, endPos, extraArg) => {
-      console.log(currentStr.substring(startPos, endPos + 1));
-      return currentStr;
+  const operationMap = {
+    "print": (str, startIdx, endIdx) => {
+      console.log(str.substring(startIdx, endIdx + 1));
+      return str;
     },
-    "invert": (currentStr, startPos, endPos, extraArg) => {
-      const firstSection = currentStr.substring(0, startPos);
-      const middleSection = currentStr.substring(startPos, endPos + 1);
-      const lastSection = currentStr.substring(endPos + 1);
-      const reversedMiddle = middleSection.split('').reverse().join('');
-      return firstSection + reversedMiddle + lastSection;
+    "reverse": (str, startIdx, endIdx) => {
+      let charArray = Array.from(str);
+      let segmentToReverse = charArray.slice(startIdx, endIdx + 1);
+      let reversedSegment = segmentToReverse.reverse();
+      charArray.splice(startIdx, segmentToReverse.length, ...reversedSegment);
+      return charArray.join('');
     },
-    "substitute": (currentStr, startPos, endPos, replacementText) => {
-      const firstSection = currentStr.substring(0, startPos);
-      const lastSection = currentStr.substring(endPos + 1);
-      return firstSection + replacementText + lastSection;
+    "replace": (str, startIdx, endIdx, replacementValue) => {
+      let charArray = Array.from(str);
+      let segmentLength = endIdx - startIdx + 1;
+      let replacementChars = Array.from(replacementValue);
+      charArray.splice(startIdx, segmentLength, ...replacementChars);
+      return charArray.join('');
     }
   };
 
-  const structuredCommands = dataLines.slice(2, 2 + totalActions).map(line => {
-    const parts = line.split(" ");
-    return {
-      type: parts[0],
-      first: Number(parts[1]),
-      second: Number(parts[2]),
-      third: parts[3]
-    };
-  });
+  inputLines.slice(2, 2 + queryCount + 1).forEach(queryLine => {
+    let parts = queryLine.split(" ");
+    let commandName = parts[0];
+    let firstParameter = Number(parts[1]);
+    let secondParameter = Number(parts[2]);
+    let thirdParameter = parts[3];
 
-  workingString = structuredCommands.reduce((currentStringState, currentCommand) => {
-    const handler = actionHandlers[currentCommand.type];
-    if (handler) {
-      return handler(currentStringState, currentCommand.first, currentCommand.second, currentCommand.third);
+    let commandExecutor = operationMap[commandName];
+    if (commandExecutor) {
+      currentString = commandExecutor(currentString, firstParameter, secondParameter, thirdParameter);
     }
-    return currentStringState;
-  }, workingString);
-}
+  });
+});

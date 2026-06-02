@@ -1,227 +1,198 @@
-const obtainSystemModule = require;
+module.exports = function (moduleDefinitions) {
+  var moduleCache = {};
 
-module.payload = (function ( moduleDefinitions ) {
-  var moduleRegistry = {};
-
-  function fetchModule ( moduleKey ) {
-    if ( moduleRegistry[moduleKey] ) {
-      return moduleRegistry[moduleKey].publishedOutput;
+  function moduleLoader(moduleId) {
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
-
-    var moduleEntry = moduleRegistry[moduleKey] = {
-      identification: moduleKey,
-      isProcessed: !1,
-      publishedOutput: {}
+    var currentModule = moduleCache[moduleId] = {
+      modId: moduleId,
+      isLoaded: false,
+      exports: {}
     };
-
-    moduleDefinitions[moduleKey].call(
-        moduleEntry.publishedOutput,
-        moduleEntry,
-        moduleEntry.publishedOutput,
-        fetchModule
-    );
-
-    moduleEntry.isProcessed = !0;
-    return moduleEntry.publishedOutput;
+    moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, moduleLoader);
+    currentModule.isLoaded = true;
+    return currentModule.exports;
   }
 
-  fetchModule.definitions = moduleDefinitions;
-  fetchModule.registry = moduleRegistry;
+  moduleLoader.modules = moduleDefinitions;
+  moduleLoader.cache = moduleCache;
 
-  fetchModule.defineOutputProperty = function ( targetObj, propName, valueGetter ) {
-    if ( !fetchModule.hasProperty( targetObj, propName ) ) {
-      Object.defineProperty( targetObj, propName, {
-        enumerable: !0,
-        get: valueGetter
-      } );
+  moduleLoader.defineExport = function (targetObject, propertyName, getterFunction) {
+    if (!moduleLoader.hasOwn(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true,
+        get: getterFunction
+      });
     }
   };
 
-  fetchModule.flagAsEsModule = function ( targetObj ) {
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( targetObj, Symbol.toStringTag, { value: "Module" } );
+  moduleLoader.registerModule = function (exportsObject) {
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, {
+        value: "Module"
+      });
     }
-    Object.defineProperty( targetObj, "__esModule", { value: !0 } );
+    Object.defineProperty(exportsObject, "__esModule", {
+      value: true
+    });
   };
 
-  fetchModule.createExportNamespace = function ( moduleVal, modeFlags ) {
-    if ( 1 & modeFlags ) {
-      moduleVal = fetchModule( moduleVal );
+  moduleLoader.interopRequireDefault = function (moduleValue, interopMode) {
+    if (1 & interopMode) {
+      moduleValue = moduleLoader(moduleValue);
     }
-    if ( 8 & modeFlags ) {
-      return moduleVal;
+    if (8 & interopMode) {
+      return moduleValue;
     }
-    if ( 4 & modeFlags && typeof moduleVal === "object" && moduleVal && moduleVal.__esModule ) {
-      return moduleVal;
+    if (4 & interopMode && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule) {
+      return moduleValue;
     }
-
-    var namespaceObj = Object.create( null );
-    fetchModule.flagAsEsModule( namespaceObj );
-    Object.defineProperty( namespaceObj, "default", { enumerable: !0, value: moduleVal } );
-
-    if ( 2 & modeFlags && typeof moduleVal !== "string" ) {
-      for ( var propertyKey in moduleVal ) {
-        fetchModule.defineOutputProperty( namespaceObj, propertyKey, ( function ( currentKey ) {
-          return moduleVal[currentKey];
-        } ).bind( null, propertyKey ) );
+    var newObject = Object.create(null);
+    moduleLoader.registerModule(newObject);
+    Object.defineProperty(newObject, "default", {
+      enumerable: true,
+      value: moduleValue
+    });
+    if (2 & interopMode && typeof moduleValue !== "string") {
+      for (var propName in moduleValue) {
+        moduleLoader.defineExport(newObject, propName, (function (propName) {
+          return moduleValue[propName];
+        }).bind(null, propName));
       }
     }
-    return namespaceObj;
+    return newObject;
   };
 
-  fetchModule.getPrimaryExport = function ( moduleRef ) {
-    var primaryExporter = moduleRef && moduleRef.__esModule ?
-        function () { return moduleRef.default; } :
-        function () { return moduleRef; };
-    fetchModule.defineOutputProperty( primaryExporter, "a", primaryExporter );
-    return primaryExporter;
+  moduleLoader.getModuleExports = function (moduleRef) {
+    var exportGetter = moduleRef && moduleRef.__esModule ?
+      function () {
+        return moduleRef.default;
+      } :
+      function () {
+        return moduleRef;
+      };
+    moduleLoader.defineExport(exportGetter, "a", exportGetter);
+    return exportGetter;
   };
 
-  fetchModule.hasProperty = function ( targetObj, propKey ) {
-    return Object.prototype.hasOwnProperty.call( targetObj, propKey );
+  moduleLoader.hasOwn = function (checkObject, checkProperty) {
+    return Object.prototype.hasOwnProperty.call(checkObject, checkProperty);
   };
 
-  fetchModule.assetPath = "";
+  moduleLoader.publicPath = "";
 
-  return fetchModule( fetchModule.initialModuleId = 0 );
-}( [
-  function ( moduleContext, moduleOutput, requireModule ) {
-    requireModule( 1 )(
-        requireModule( 2 )
-            .readSync( "/dev/stdin", "UTF-8" )
-            .split( "\n" )
-    );
+  return moduleLoader(moduleLoader.s = 0);
+}([
+  function (moduleObj, exportsObj, localRequire) {
+    localRequire(1)(localRequire(2).readFileSync("/dev/stdin", "UTF-8").split("\n"));
   },
-
-  function ( currentContext, moduleResults, requireModule ) {
+  function (moduleObj, exportsObj, localRequire) {
     "use strict";
 
-    function extractLimitedItems ( sourceIterable, maxItems ) {
-      if ( Array.isArray( sourceIterable ) ) {
-        return sourceIterable;
+    function destructureArray(inputIterable, limitCount) {
+      if (Array.isArray(inputIterable)) {
+        return inputIterable;
       }
-
-      var collectedItems = [],
-          iterationCompleted = !0,
-          exceptionOccurred = !1,
-          caughtEx = void 0;
-
+      var resultArray = [];
+      var isNotDone = true;
+      var hasError = false;
+      var errorValue = void 0;
       try {
-        for (
-            var currentItem, dataIterator = sourceIterable[Symbol.iterator]();
-            !( iterationCompleted = ( currentItem = dataIterator.next() ).done ) &&
-            ( collectedItems.push( currentItem.value ), !maxItems || collectedItems.length !== maxItems );
-            iterationCompleted = !0
-        ) { /* intentionally empty */ }
-      } catch ( iterationError ) {
-        exceptionOccurred = !0;
-        caughtEx = iterationError;
+        for (var iteratorItem, valueIterator = inputIterable[Symbol.iterator](); !(isNotDone = (iteratorItem = valueIterator.next()).done) && (resultArray.push(iteratorItem.value), !limitCount || resultArray.length !== limitCount); isNotDone = true);
+      } catch (err) {
+        hasError = true;
+        errorValue = err;
       } finally {
         try {
-          if ( !iterationCompleted && dataIterator["return"] != null ) {
-            dataIterator["return"]();
+          if (!isNotDone && valueIterator.return != null) {
+            valueIterator.return();
           }
         } finally {
-          if ( exceptionOccurred ) {
-            throw caughtEx;
+          if (hasError) {
+            throw errorValue;
           }
         }
       }
-
-      return collectedItems;
+      return resultArray;
     }
 
-    currentContext.output = function ( inputLines ) {
-      var graphDimensions = extractLimitedItems(
-          inputLines[0].split( " " ).map( function ( stringVal ) {
-            return Number( stringVal );
-          } ),
-          2
-      );
-      var numberOfNodes = graphDimensions[0];
-      var numberOfEdges = graphDimensions[1];
+    moduleObj.exports = function (inputLines) {
+      var firstLineValues = destructureArray(inputLines[0].split(" ").map(function (valStr) {
+        return Number(valStr);
+      }), 2);
+      var nodeCount = firstLineValues[0];
+      var edgeCount = firstLineValues[1];
 
-      var graphAdjacency = new Array( numberOfNodes );
-      for ( var currentIdx = 0; currentIdx < numberOfNodes; currentIdx++ ) {
-        graphAdjacency[currentIdx] = [];
+      var adjacencyList = new Array(nodeCount);
+      for (var nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+        adjacencyList[nodeIndex] = [];
       }
 
-      for ( var edgeIdx = 0; edgeIdx < numberOfEdges; edgeIdx++ ) {
-        var edgeEndpoints = extractLimitedItems(
-            inputLines[edgeIdx + 1].split( " " ).map( function ( numStr ) {
-              return Number( numStr ) - 1;
-            } ),
-            2
-        );
-        var originNode = edgeEndpoints[0];
-        var destinationNode = edgeEndpoints[1];
-        graphAdjacency[originNode].push( destinationNode );
+      for (var edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+        var currentEdge = destructureArray(inputLines[edgeIndex + 1].split(" ").map(function (valStr) {
+          return Number(valStr) - 1;
+        }), 2);
+        var sourceNode = currentEdge[0];
+        var targetNode = currentEdge[1];
+        adjacencyList[sourceNode].push(targetNode);
       }
 
-      for ( var entryNode = 0; entryNode < numberOfNodes; entryNode++ ) {
-        var pathTraversalStatus = new Array( numberOfNodes ).fill( !1 );
-        pathTraversalStatus[entryNode] = !0;
+      for (var startNodeIndex = 0; startNodeIndex < nodeCount; startNodeIndex++) {
+        var visitedNodes = new Array(nodeCount).fill(false);
+        visitedNodes[startNodeIndex] = 1;
 
-        var discoveryStack = [ { nodeIdentifier: entryNode, traversalFlags: pathTraversalStatus, currentPathLength: 1 } ];
-
-        while ( discoveryStack.length > 0 ) {
-          var currentPathPoint = discoveryStack.pop();
-
-          var iterationComplete = !0,
-              errorPresent = !1,
-              caughtException = void 0;
-
+        for (var traversalStack = [{
+            currentNode: startNodeIndex,
+            pathVisitedFlags: visitedNodes,
+            pathLength: 1
+          }]; traversalStack.length > 0;) {
+          var currentTraversalState = traversalStack.pop();
+          var isStillIterating = true;
+          var innerLoopHasError = false;
+          var innerLoopErrorValue = void 0;
           try {
-            for (
-                var adjacentItem, adjacentIterator = graphAdjacency[currentPathPoint.nodeIdentifier][Symbol.iterator]();
-                !( iterationComplete = ( adjacentItem = adjacentIterator.next() ).done );
-                iterationComplete = !0
-            ) {
-              var adjacentNode = adjacentItem.value;
-
-              if ( adjacentNode === entryNode ) {
-                console.log( currentPathPoint.currentPathLength );
-                for ( var pathNodeIdx = 0; pathNodeIdx < numberOfNodes; pathNodeIdx++ ) {
-                  if ( currentPathPoint.traversalFlags[pathNodeIdx] === !0 ) {
-                    console.log( pathNodeIdx + 1 );
+            for (var neighborNode, neighborIterator = adjacencyList[currentTraversalState.currentNode][Symbol.iterator](); !(isStillIterating = (neighborNode = neighborIterator.next()).done); isStillIterating = true) {
+              var currentNeighbor = neighborNode.value;
+              if (currentNeighbor === startNodeIndex) {
+                console.log(currentTraversalState.pathLength);
+                for (var checkIndex = 0; checkIndex < nodeCount; checkIndex++) {
+                  if (currentTraversalState.pathVisitedFlags[checkIndex] === 1) {
+                    console.log(checkIndex + 1);
                   }
                 }
                 return;
               }
-
-              if ( currentPathPoint.traversalFlags[adjacentNode] === !1 ) {
-                var updatedTraversalFlags = currentPathPoint.traversalFlags.concat();
-                updatedTraversalFlags[adjacentNode] = !0;
-
-                discoveryStack.push( {
-                  nodeIdentifier: adjacentNode,
-                  traversalFlags: updatedTraversalFlags,
-                  currentPathLength: currentPathPoint.currentPathLength + 1
-                } );
+              if (currentTraversalState.pathVisitedFlags[currentNeighbor] !== 1) {
+                var newVisitedState = currentTraversalState.pathVisitedFlags.concat();
+                newVisitedState[currentNeighbor] = 1;
+                traversalStack.push({
+                  currentNode: currentNeighbor,
+                  pathVisitedFlags: newVisitedState,
+                  pathLength: currentTraversalState.pathLength + 1
+                });
               }
             }
-          } catch ( traversalIssue ) {
-            errorPresent = !0;
-            caughtException = traversalIssue;
+          } catch (err) {
+            innerLoopHasError = true;
+            innerLoopErrorValue = err;
           } finally {
             try {
-              if ( !iterationComplete && adjacentIterator["return"] != null ) {
-                adjacentIterator["return"]();
+              if (!isStillIterating && neighborIterator.return != null) {
+                neighborIterator.return();
               }
             } finally {
-              if ( errorPresent ) {
-                throw caughtException;
+              if (innerLoopHasError) {
+                throw innerLoopErrorValue;
               }
             }
           }
         }
+        console.log(-1);
       }
-
-      console.log( -1 );
     };
   },
-
-  function ( moduleContext, moduleOutput ) {
-    moduleContext.output = obtainSystemModule( "fs" );
+  function (moduleObj, exportsObj) {
+    moduleObj.exports = localRequire("fs");
   }
-] );
+]);

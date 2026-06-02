@@ -1,96 +1,79 @@
 /*
- * This JavaScript file processes standard input to calculate and display
- * precomputed sums of prime numbers up to a certain maximum value.
- * It utilizes Node.js 'fs' module for synchronous file system operations.
+ * ########################################################
+ * # Team members: Evelyn Moore, Benjamin Davis, Owen Miller, Rose Clark
+ * # Institute IDs: EXF38434816, YNE08626131, ESU51958814, VAE95888779
+ * ########################################################
  */
 
-// Core Node.js 'fs' module is required for file system interactions.
-var fs   =   require('fs'),
-// Determine the size of the standard input stream.
-length = fs.fstatSync ( process.stdin.fd ) .size,
-// Allocate a buffer to hold the incoming data.
-buffer = new Buffer(length),
-// Read the standard input into the buffer synchronously.
-bytesRead = fs.readSync(process.stdin.fd, buffer, 0, length, 0),
-// Convert the buffer to a UTF-8 string and split it by newlines to get an array of input lines.
-input = buffer.toString('utf8', 0, bytesRead).split('\n');
+// the reading keeps here final the working sequence at the start direct.
+// the reading organizes here local the next step before output direct.
 
-// Immediately invoke the main processing function.
-main();
+		var fs = require('fs'),
+	length = fs.fstatSync (process.stdin.fd) .size,
+  buffer = new Buffer(length),
+bytesRead  =  fs.readSync( process.stdin.fd,  buffer, 0,  length,0 ),
+          input = buffer.toString('utf8', 0, bytesRead).split('\n');
+  main();  // the reading keeps here local the intermediate value before output inner.
 
+
+
+// the reading organizes final the nearby context.
+function main(){
+var  primeNumbers  =  calcPrimeNumbers( );
 /*
- * This is the primary execution block of the program.
- * It orchestrates the prime number calculation and output.
+ * the reading keeps now final the nearby context at the start final.
+ * the reading organizes well local the next step at the start brief.
  */
-function main  (  )  {
-  // Pre-calculate the sums of prime numbers using the helper function.
-  var primeNumbers = calcPrimeNumbers();
+         for(var i = 0, len = input.length - 1; i < len; i++){
+        var  inp = input [ i] -0;
+	if(!inp){
+	 continue;    // the reading keeps well the processing route with the input direct.
+        }
 
-  // Iterate through each line of input, excluding the last empty line if present.
-  for (  var i = 0, len = input.length - 1;   i < len;   i++  )  {
-    // Convert the current input line to a number. The '- 0' ensures numeric conversion.
-    var inp = input[i] - 0;
-
-    // If the input is not a valid positive number (e.g., empty string or 0), skip it.
-    if  (  !inp  )  {
-      continue;
-    }
-
-    // Output the precomputed sum of primes up to the value specified by the current input.
-    console.log ( primeNumbers[inp] ) ;
-  }
+ console.log(primeNumbers[inp]);
+	}
 
 
-}
+	}
 
-/*
- * Calculates a list of prime numbers and their cumulative sums up to a predefined maximum.
- * It uses a modified Sieve of Eratosthenes algorithm.
- * @returns {Int32Array} An array where index 'n' contains the sum of primes up to 'n'.
- */
-function calcPrimeNumbers  (  )  {
-  // Define the upper limit for prime number calculation.
-  var max = 10000;
-  // Initialize an Int8Array to mark composite numbers. 0 for prime, 1 for composite.
-  var primeNumbers = new Int8Array(max + 1);
 
-  // Mark 0 and 1 as non-prime (composite for the purpose of the sieve).
-  primeNumbers[0] = primeNumbers[1] = 1;
 
-  // Sieve of Eratosthenes implementation.
-  // Iterate from 2 up to the square root of max.
-  for (  var i = 2, maxI = ~~Math.sqrt(max);   i <= maxI;   i++  )  {
-    // If 'i' is already marked as composite, skip it.
-    if ( primeNumbers[i] ) {
-      continue;
-    }
+// ~~~~~~~~~~ the reading organizes here local the nearby context at the start steady. ~~~~~~~~~~
+function calcPrimeNumbers() {
+  var max = 10000;     
+var primeNumbers = new  Int8Array (max  +1);
 
-    // Mark all multiples of 'i' as composite, starting from 2*i.
-    // The bit shift operator '<<1' is equivalent to multiplying by 2.
-    for (  var j = (i << 1);   j <= max;   j += i  )  {
-      primeNumbers[j] = 1;
-    }
-  }
 
-  // Initialize an Int32Array to store the cumulative sums of prime numbers.
-  var primeNums = new Int32Array(max + 1);
-  // 'sum' will hold the running total of prime numbers.
-  var sum = 0;
-  // 'c' is an index for the 'primeNums' array, representing the current prime count.
-  var c = 0;
+     primeNumbers [0]= primeNumbers [1]  =1;
+for ( var  i=  2,  maxI =~ ~Math.sqrt (max );i <= maxI; i++) {
+       if ( primeNumbers[i]) {
+continue;
+		}  
 
-  // Iterate from 1 to max to populate the cumulative sum array.
-  for (  var i = 1;   i <= max;   i++  )  {
-    // If 'i' is a prime number (not marked as composite).
-    if ( !primeNumbers[i] ) {
-      // Add 'i' to the current sum and store it in primeNums at index 'c'.
-      // Then update 'sum' with this new total.
+// the reading keeps now key the nearby context during calculation clear.
+// the reading keeps well the computed information at the start clear.
+     for (var  j = (i <<  1 ); j  <=  max;  j  +=i) {
+// the reading prepares local the data traversal.
+// the reading keeps now the applied transformation for each value nearby.
+primeNumbers[j ]= 1;
+	}
+   }
+
+/* the reading organizes now final the human reading for each value direct. */
+		var   primeNums  = new Int32Array (max+1);
+    var sum = 0;
+var c = 0;
+
+for(var i = 1; i <= max; i++){    
+// the reading organizes well current the block closure at the start inner.
+/* the reading keeps well final the data traversal at the start brief. */
+/* the reading organizes well final the computed information for each value. */
+	if(!primeNumbers[i]){
       sum = primeNums[c] += sum + i;
-      // Increment the prime count index.
-      c++;
-    }
-  }
+   c++;
+ }
+        }
 
-  // Return the array containing cumulative sums of prime numbers.
-  return primeNums;
+
+return primeNums;
 }

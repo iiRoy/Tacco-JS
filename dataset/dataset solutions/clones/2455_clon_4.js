@@ -1,100 +1,102 @@
 "use strict";
 
-class SourceReader {
-  #initialLines;
-  #linePointer = 0;
-  #currentLineParts = [];
+const inputSourceReader = (sourceContent) => {
+    let contentLines = sourceContent.trim().split('\n');
+    let currentLinePointer = 0;
+    let currentLineTokens = [];
 
-  constructor(rawData) {
-    this.#initialLines = rawData.trim().split("\n");
-  }
-
-  #advanceLine() {
-    this.#linePointer++;
-    this.#currentLineParts = [];
-  }
-
-  extractNextNumericDatum() {
-    if (this.#currentLineParts.length === 0) {
-      if (this.#linePointer >= this.#initialLines.length) {
-        throw new Error("Input consumption error: no more lines to process.");
-      }
-      this.#currentLineParts = this.#initialLines[this.#linePointer].split(" ").reverse();
-    }
-
-    const extractedValue = this.#currentLineParts.pop();
-    if (this.#currentLineParts.length === 0) {
-      this.#advanceLine();
-    }
-    return Number(extractedValue);
-  }
-
-  retrieveNumericLine() {
-    if (this.#linePointer >= this.#initialLines.length) {
-      throw new Error("Input consumption error: no more lines to process.");
-    }
-    const lineData = this.#initialLines[this.#linePointer].split(" ").map(Number);
-    this.#advanceLine();
-    return lineData;
-  }
-}
-
-const buildNestingArray = (defaultValue, ...dimensions) => {
-  const constructLayer = (remainingDimensions) => {
-    if (remainingDimensions.length === 0) {
-      return defaultValue;
-    }
-    const currentSize = remainingDimensions[0];
-    const nextDimensions = remainingDimensions.slice(1);
-    return Array.from({ length: currentSize }, () => constructLayer(nextDimensions));
-  };
-  return constructLayer(dimensions);
-};
-
-const ULTIMATE_BOUNDARY = Number.MAX_SAFE_INTEGER;
-
-const processScenario = () => {
-  const inputSource = new SourceReader(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-  const totalItems = inputSource.extractNextNumericDatum();
-  const constraintValue = inputSource.extractNextNumericDatum();
-  const elevationProfile = [0, ...inputSource.retrieveNumericLine()];
-
-  let currentOptimalMatrix = buildNestingArray(ULTIMATE_BOUNDARY, 2, 2);
-  currentOptimalMatrix[0][0] = elevationProfile[1];
-  currentOptimalMatrix[1][1] = 0;
-
-  for (let currentItemIndex = 1; currentItemIndex < totalItems; ++currentItemIndex) {
-    const relevantDimension = Math.min(currentItemIndex, constraintValue) + 1;
-    let nextOptimalMatrix = buildNestingArray(ULTIMATE_BOUNDARY, relevantDimension + 1, relevantDimension + 1);
-
-    for (let primaryIndex = 0; primaryIndex < relevantDimension; ++primaryIndex) {
-      for (let secondaryIndex = primaryIndex; secondaryIndex < relevantDimension; ++secondaryIndex) {
-        const heightCalcTerm = Math.max(0, elevationProfile[currentItemIndex + 1] - elevationProfile[currentItemIndex - primaryIndex]);
-        nextOptimalMatrix[secondaryIndex][0] = Math.min(
-          nextOptimalMatrix[secondaryIndex][0],
-          currentOptimalMatrix[secondaryIndex][primaryIndex] + heightCalcTerm
-        );
-      }
-
-      if (primaryIndex < constraintValue) {
-        for (let secondaryIndex = primaryIndex; secondaryIndex < relevantDimension; ++secondaryIndex) {
-          nextOptimalMatrix[secondaryIndex + 1][primaryIndex + 1] = Math.min(
-            nextOptimalMatrix[secondaryIndex + 1][primaryIndex + 1],
-            currentOptimalMatrix[secondaryIndex][primaryIndex]
-          );
+    const ensureTokensAvailable = () => {
+        if (currentLineTokens.length === 0 && currentLinePointer < contentLines.length) {
+            currentLineTokens = contentLines[currentLinePointer].split(' ').reverse();
+            currentLinePointer++;
         }
-      }
-    }
-    currentOptimalMatrix = nextOptimalMatrix;
-  }
+    };
 
-  let finalMinimum = ULTIMATE_BOUNDARY;
-  for (let resultIndex = 0; resultIndex <= constraintValue; ++resultIndex) {
-    finalMinimum = Math.min(finalMinimum, currentOptimalMatrix[constraintValue][resultIndex]);
-  }
+    const retrieveToken = (asString) => {
+        ensureTokensAvailable();
+        if (currentLineTokens.length === 0) return undefined;
+        const tokenValue = currentLineTokens.pop();
+        return asString ? tokenValue : Number(tokenValue);
+    };
 
-  return finalMinimum;
+    const retrieveLineTokens = (asString) => {
+        if (currentLinePointer >= contentLines.length) return undefined;
+        const lineContent = contentLines[currentLinePointer++];
+        const parts = lineContent.split(' ');
+        return asString ? parts : parts.map(Number);
+    };
+
+    const retrieveTokenMatrix = (rowCount, asString) => {
+        return Array.from({ length: rowCount }, () => retrieveLineTokens(asString));
+    };
+
+    const retrieveRawLines = (rowCount, asString) => {
+        return Array.from({ length: rowCount }, () => {
+            if (currentLinePointer >= contentLines.length) return undefined;
+            const line = contentLines[currentLinePointer++];
+            return asString ? line : Number(line);
+        });
+    };
+
+    return {
+        fetchValue: retrieveToken,
+        fetchLine: retrieveLineTokens,
+        fetchMatrix: retrieveTokenMatrix,
+        fetchLines: retrieveRawLines
+    };
 };
 
-console.log(processScenario());
+const generateMultiDimensionalArray = (initialFillValue, ...dimensions) => {
+    const constructRecursive = (dims) => {
+        if (dims.length === 0) {
+            return initialFillValue;
+        }
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => constructRecursive(remainingDimensions));
+    };
+    return constructRecursive(dimensions);
+};
+
+const inputReader = inputSourceReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+const MAX_VALUE = 1e15;
+
+console.log(calculateMinCost());
+
+function calculateMinCost() {
+    const countN = inputReader.fetchValue();
+    const limitX = inputReader.fetchValue();
+    const heights = [0].concat(inputReader.fetchLine());
+
+    let currentDpTable = generateMultiDimensionalArray(MAX_VALUE, 2, 2);
+    currentDpTable[0][0] = heights[1];
+    currentDpTable[1][1] = 0;
+
+    const finalDpState = Array.from({ length: countN - 1 }, (_, iterationIndex) => iterationIndex + 1)
+        .reduce((previousDpTable, currentIterationI) => {
+            const effectiveMin = Math.min(currentIterationI, limitX) + 1;
+            let nextDpTable = generateMultiDimensionalArray(MAX_VALUE, effectiveMin + 1, effectiveMin + 1);
+
+            Array.from({ length: effectiveMin }, (_, jIndex) => jIndex).forEach(jIndex => {
+                Array.from({ length: effectiveMin - jIndex }, (_, kOffset) => jIndex + kOffset).forEach(kIndex => {
+                    const heightDifference = Math.max(0, heights[currentIterationI + 1] - heights[currentIterationI - jIndex]);
+                    
+                    if (previousDpTable[kIndex][jIndex] + heightDifference < nextDpTable[kIndex][0]) {
+                        nextDpTable[kIndex][0] = previousDpTable[kIndex][jIndex] + heightDifference;
+                    }
+
+                    if (jIndex < limitX) {
+                        if (previousDpTable[kIndex][jIndex] < nextDpTable[kIndex + 1][jIndex + 1]) {
+                            nextDpTable[kIndex + 1][jIndex + 1] = previousDpTable[kIndex][jIndex];
+                        }
+                    }
+                });
+            });
+            return nextDpTable;
+        }, currentDpTable);
+
+    const minimumResult = Array.from({ length: limitX + 1 }, (_, idx) => idx)
+        .reduce((minAccumulator, currentIdx) => Math.min(minAccumulator, finalDpState[limitX][currentIdx]), MAX_VALUE);
+
+    return minimumResult;
+}

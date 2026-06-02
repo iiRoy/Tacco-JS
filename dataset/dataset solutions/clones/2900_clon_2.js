@@ -1,46 +1,43 @@
-// This module's primary function is to interpret and execute a series of computational requests.
-function  ProcessQueries ( receivedText )
-{
-    // The raw input string is first segmented into distinct lines for easier processing.
-    let  processedLines  =  receivedText.split ( "\n" ) ;
+// This function processes the entire input data provided as a string.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    rawData = rawData.split("\n");
 
-    // The initial line specifies the total quantity of operations to be performed.
-    const  numOperations  =  parseInt ( processedLines [ 0 ] ) ;
+    // Parse the first line to get the total number of queries.
+    let queryCount = parseInt(rawData[0]);
 
-    // Subsequent lines are transformed into a collection of numerical arrays, each representing a single operation's parameters.
-    let  operationDetails  =  processedLines . slice ( 1, numOperations + 1 ) . map (
-        ( lineStr )  =>  lineStr . split ( " " ) . map ( ( numStr )  =>  parseInt ( numStr ) )
-    ) ;
+    // Extract query specifications from subsequent lines.
+    // Each line is split by space, and its parts are converted to integers.
+    const querySpecs = rawData.slice(1, queryCount + 1).map(lineData =>
+        lineData.split(" ").map(strVal => parseInt(strVal))
+    );
 
-    // An array is prepared to hold the final outcome for each processed operation, initialized to zero.
-    let  outputValues  =  Array ( numOperations ) . fill ( 0 ) ;
+    // Initialize an array to store the computed results for each query.
+    let resultsArray = new Array(queryCount);
+    // Fill the results array with an initial value of zero.
+    resultsArray.fill(0);
 
-    // We now iterate through each defined operation to compute its specific result.
-    for  ( let  opIndex  =  0 ;  opIndex  <  operationDetails . length ;  opIndex ++ )
-    {
-        // Extracting specific parameters for the current operation to enhance readability.
-        const  currentOpParams  =  operationDetails [ opIndex ] ;
-        const  initialValueTerm  =  currentOpParams [ 0 ] ;
-        const  progressionFactor  =  currentOpParams [ 1 ] ;
-        const  iterationLimit  =  currentOpParams [ 2 ] ;
-
-        // A nested loop performs the core calculation, iterating as specified by the operation.
-        for  ( let  stepCount  =  0 ;  stepCount  <  iterationLimit ;  stepCount ++ )
-        {
-            if  ( stepCount  ===  0 )
-            {
-                // The very first step involves a simple modulo operation on the initial term.
-                outputValues [ opIndex ]  =  initialValueTerm  %  1000003 ;
-            }
-            else
-            {
-                // Subsequent steps update the accumulated result using a multiplicative and additive formula, then applying modulo.
-                outputValues [ opIndex ]  =  ( outputValues [ opIndex ]  *  ( initialValueTerm  +  stepCount  *  progressionFactor ) )  %  1000003 ;
+    // Iterate through each query specification.
+    for (let outerIndex = 0; outerIndex < querySpecs.length; outerIndex++) {
+        // Perform calculations based on the current query's parameters.
+        // The third element of the query spec determines the number of inner iterations.
+        for (let innerCounter = 0; innerCounter < querySpecs[outerIndex][2]; innerCounter++) {
+            // For the very first iteration (innerCounter = 0),
+            // the result is the first parameter modulo a large prime.
+            if (innerCounter === 0) {
+                resultsArray[outerIndex] = querySpecs[outerIndex][0] % 1000003;
+            } else {
+                // For subsequent iterations, update the result using a specific formula.
+                // The formula involves the previous result, the first parameter,
+                // the inner counter, and the second parameter, all modulo the prime.
+                resultsArray[outerIndex] = (resultsArray[outerIndex] * (querySpecs[outerIndex][0] + innerCounter * querySpecs[outerIndex][1])) % 1000003;
             }
         }
-        // After all steps for an operation are complete, its final result is logged.
-        console . log ( outputValues [ opIndex ] ) ;
+        // Output the final computed result for the current query.
+        console.log(resultsArray[outerIndex]);
     }
 }
-// This concluding section is responsible for reading standard input and invoking the main processing function; it must not be altered.
-ProcessQueries ( require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" ) ) ;
+
+// The following line handles standard input/output and should not be modified.
+// It reads the entire content from standard input and passes it to the ProcessInput function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

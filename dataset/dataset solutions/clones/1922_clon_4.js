@@ -1,26 +1,43 @@
-'use strict';
-
-const process = require('process');
-const fileSystem = require('fs');
-
-const performCalculations = (sourceText) => {
-    const numericComponents = sourceText.match(/\d+/g).map(val => parseInt(val, 10));
-    const [alpha, beta, gamma] = numericComponents;
-    process.stdout.write(`${alpha} ${beta} ${gamma}\n`);
+"use strict";
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 
-let retrievedData;
-try {
-    const bufferCapacity = 1024;
-    const inputBuffer = Buffer.alloc(bufferCapacity);
-    const bytesAcquired = fileSystem.readSync(0, inputBuffer, 0, bufferCapacity, null);
-    retrievedData = inputBuffer.toString('utf8', 0, bytesAcquired).trim();
+(() => {
+    const fileSystemOps = __importStar(require("fs"));
 
-    if (!retrievedData) {
-        throw new Error("Input source provided no data.");
-    }
-} catch (inputError) {
-    retrievedData = '5 7 4';
-}
+    const isDevelopmentMode = false;
+    const sampleData = '5 7 4';
+    const inputFilePath = '/dev/stdin';
 
-performCalculations(retrievedData);
+    const extractNumericParameters = (textSegment) => {
+        const numericPattern = /^(\d+)(?:\s(\d+))?(?:\s(\d+))?/;
+        const matchedParts = textSegment.match(numericPattern);
+
+        const firstStr = matchedParts && matchedParts[1] !== undefined ? matchedParts[1] : undefined;
+        const secondStr = matchedParts && matchedParts[2] !== undefined ? matchedParts[2] : undefined;
+        const thirdStr = matchedParts && matchedParts[3] !== undefined ? matchedParts[3] : undefined;
+
+        return {
+            firstVal: Number(firstStr),
+            secondVal: Number(secondStr),
+            thirdVal: Number(thirdStr),
+        };
+    };
+
+    const processInputData = (sourceText) => {
+        const { firstVal, secondVal, thirdVal } = extractNumericParameters(sourceText);
+        console.log(firstVal, secondVal, thirdVal);
+    };
+
+    const acquiredSourceText = isDevelopmentMode
+        ? sampleData
+        : fileSystemOps.readFileSync(inputFilePath, 'utf8');
+
+    processInputData(acquiredSourceText);
+})();

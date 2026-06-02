@@ -1,23 +1,25 @@
-const dataStreamReader = require('fs');
-const completeText = dataStreamReader.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('node:fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const allLines = completeText.trim().split('\n');
+const processedLines = rawInputContent.trim().split('\n');
 
-const phraseToLocate = allLines[0];
+const targetPhrase = processedLines[0];
 
-const markerIndex = allLines.indexOf("END_OF_TEXT");
+const contentSegments = processedLines.slice(1);
 
-const relevantSections = (markerIndex === -1)
-    ? allLines.slice(1)
-    : allLines.slice(1, markerIndex);
+const endMarkerIndex = contentSegments.findIndex(segment => segment === 'END_OF_TEXT');
 
-const sanitizedPhrase = phraseToLocate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const effectiveContent = endMarkerIndex === -1
+    ? contentSegments
+    : contentSegments.slice(0, endMarkerIndex);
 
-const locatorPattern = new RegExp(sanitizedPhrase, 'g');
+const escapedTargetPhrase = targetPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const searchExpression = new RegExp(escapedTargetPhrase, 'g');
 
-const finalTally = relevantSections.reduce((cumulativeSum, currentSegment) => {
-    const matches = currentSegment.match(locatorPattern);
-    return cumulativeSum + (matches ? matches.length : 0);
+const finalCount = effectiveContent.reduce((currentTotal, currentLineText) => {
+    const foundMatches = currentLineText.match(searchExpression);
+    const lineMatchCount = foundMatches ? foundMatches.length : 0;
+    return currentTotal + lineMatchCount;
 }, 0);
 
-console.log(finalTally);
+console.log(finalCount);

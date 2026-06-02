@@ -1,75 +1,84 @@
-globalProcessContext.inputChannel.activate  ();
-globalProcessContext.inputChannel.configureCodec( 'utf-8' );
+process.stdin.resume(); // Initialize standard input stream
+process.stdin.setEncoding('utf8'); // Configure input encoding to UTF-8
 
-let collectedInputData = '';
+let globalInputBuffer = ''; // Buffer to store all incoming data from stdin
 
-globalProcessContext.inputChannel.on('dataReceived', function( dataPortion )
-{
-    // Append the received data segment to our buffer
-    collectedInputData += dataPortion;
+// Event listener for 'data' chunks received from stdin
+process.stdin.on('data', function(incomingChunk) {
+    globalInputBuffer += incomingChunk; // Append each data chunk to the buffer
 });
 
-globalProcessContext.inputChannel.on ( 'streamClosed' , function ()
-{
-    // Once input stream concludes, process the accumulated data
-    executeCoreLogic( collectedInputData.split( /[\r\n]+/ ) );
+// Event listener for 'end' of stdin stream
+process.stdin.on('end', function() {
+    // Once all input is received, split it into lines and pass to the main processing function
+    ProcessInputData(globalInputBuffer.split(/\r?\n/));
 });
 
-function executeCoreLogic( inputLines )
-{
-    // Parse the initial integer from the first line of input
-    const targetInteger = Number.parseInt( inputLines[0], 10 );
+/**
+ * Processes the input data to find integer solutions for a specific equation.
+ * The equation is derived from 4/N = 1/h + 1/n + 1/w.
+ * @param {string[]} dataLines - An array of strings, where the first element contains the integer N.
+ * @returns {number} - Returns 0 upon completion.
+ */
+function ProcessInputData(dataLines) {
+    // Parse the first line of input as the target integer N
+    const targetValue = parseInt(dataLines[0], 10);
 
-    // Initialize iteration variables for the nested loops
-    let loopVarH = 0;
-    let loopVarN = 0;
-    let loopVarW = 0;
+    // Declare variables for the equation's components
+    let varX = 0; // Corresponds to 'h' in the original problem
+    let varY = 0; // Corresponds to 'n' in the original problem
+    let varZ = 0; // Corresponds to 'w' in the original problem
 
-    // Define constant coefficients for the equation
-    const constantA = 4.0 / targetInteger;
-    const constantB = 2.0 / 3500.0;
-    const constantC = 1.0 / 3500.0;
+    // Pre-calculate constant coefficients for efficiency
+    const coeffA = 4 / targetValue; // Represents 4/N
+    const coeffB = 2 / 3500;        // A constant value, unused in the final logic but present in original comments
+    const coeffC = 1 / 3500;        // Another constant value, unused in the final logic but present in original comments
 
-    // Flag to indicate if a valid solution triple (h, n, w) has been found
-    let solutionIdentified = false;
+    let solutionFound = false; // Flag to track if a valid solution (h, n, w) has been identified
 
-    // Outer loop for the first variable, 'h'
-    for ( loopVarH = 1; loopVarH <= 3500; ++loopVarH )
-    {
-        // Inner loop for the second variable, 'n'
-        for ( loopVarN = loopVarH; loopVarN <= 3500; ++loopVarN )
-        {
-            // Calculate the denominator for 'w'. Avoid division by zero.
-            if ( ( 4 * loopVarH * loopVarN ) - ( targetInteger * loopVarH ) - ( targetInteger * loopVarN ) !== 0 )
-            {
-                // Calculate 'w' using ceiling to ensure it's an integer
-                loopVarW = Math.ceil( ( targetInteger * loopVarH * loopVarN ) / ( ( 4 * loopVarH * loopVarN ) - ( targetInteger * loopVarH ) - ( targetInteger * loopVarN ) ) );
+    // Iterate through possible values for the first variable, 'h' (renamed to varX)
+    // The loop runs from 1 up to 3500, inclusive.
+    for (varX = 1; varX <= 3500; varX++) {
 
-                // Check if 'w' is positive and the equation holds true
-                if ( loopVarW > 0 && constantA === ( 1.0 / loopVarH ) + ( 1.0 / loopVarN ) + ( 1.0 / loopVarW ) )
-                {
-                    solutionIdentified = true; // Mark as found
-                    break; // Exit inner 'n' loop
+        // Iterate through possible values for the second variable, 'n' (renamed to varY)
+        // The loop starts from 'h' (varX) to ensure n >= h, and runs up to 3500.
+        for (varY = varX; varY <= 3500; varY++) {
+
+            // Calculate the denominator for 'w' (varZ) to avoid division by zero.
+            // This corresponds to (4hn - Nh - Nn) from the rearranged equation.
+            const denominatorTerm = (4 * varX * varY) - (targetValue * varX) - (targetValue * varY);
+
+            // Proceed only if the denominator is not zero
+            if (denominatorTerm !== 0) {
+                // Calculate 'w' (varZ) using the rearranged equation: w = (Nhn) / (4hn - Nh - Nn)
+                // Math.ceil is used as per the original problem's logic.
+                varZ = Math.ceil((targetValue * varX * varY) / denominatorTerm);
+
+                // Check if 'w' (varZ) is positive and if the original equation holds true
+                // 4/N === 1/h + 1/n + 1/w
+                if (varZ > 0 && coeffA === (1 / varX) + (1 / varY) + (1 / varZ)) {
+                    solutionFound = true; // A solution has been found
+                    break; // Exit the inner loop (for varY) as we found a solution
                 }
             }
 
-            // If solution found, break from current 'n' loop
-            if ( solutionIdentified )
-            {
+            // If a solution was found in the current iteration of the inner loop,
+            // break out of the inner loop immediately.
+            if (solutionFound) {
                 break;
             }
         }
 
-        // If solution found, break from outer 'h' loop
-        if ( solutionIdentified )
-        {
+        // If a solution was found in the middle loop (for varY),
+        // break out of the outer loop (for varX) immediately.
+        if (solutionFound) {
             break;
         }
     }
 
-    // Output the found triplet (h, n, w) to the console
-    console.log( `${loopVarH} ${loopVarN} ${loopVarW}` );
+    // Output the values of h, n, and w (varX, varY, varZ) that satisfy the condition.
+    // If no solution is found, the last tried values will be printed.
+    console.log(varX + ' ' + varY + ' ' + varZ);
 
-    // Return a status code indicating successful execution
-    return 0;
+    return 0; // Indicate successful execution of the function
 }

@@ -1,80 +1,49 @@
-function processParenthesisString(rawData) {
-    // Type III: Add input validation for robustness
-    if (typeof rawData !== 'string' || rawData.trim() === '') {
-        console.error("Error: Input data must be a non-empty string.");
-        return;
-    }
-
-    // Type II: Rename 'input' to 'parsedLines' for clarity
+function processParenthesesString(rawData) {
     const parsedLines = rawData.split("\n");
+    const initialStringLength = parseInt(parsedLines[0], 10);
+    const originalInputString = parsedLines[1];
 
-    // Type III: Ensure minimum expected lines are present
-    if (parsedLines.length < 2) {
-        console.error("Error: Insufficient input lines provided. Expected at least two lines.");
-        return;
-    }
+    let workingCharList = originalInputString.split("");
 
-    // Type II: Rename 'str' to 'originalSequence'
-    const originalSequence = parsedLines[1];
-    // Type III: Add a new intermediate variable for sequence length
-    const sequenceCharacterCount = originalSequence.length;
+    const OPEN_PARENTHESIS = "(";
+    const CLOSE_PARENTHESIS = ")";
 
-    // Type III: Rewritten core logic for parenthesis balancing
-    // This replaces the original's 'temp' array and the first 'for' loop using 'splice'.
-    // A stack-based approach is used for improved efficiency and clarity.
-    // The 'unbalancedCharStack' will effectively hold characters that couldn't be matched.
-    const unbalancedCharStack = [];
+    let leadingParentheses = "";
+    let trailingParentheses = "";
 
-    for (let charIterator = 0; charIterator < sequenceCharacterCount; charIterator++) {
-        const currentSymbol = originalSequence[charIterator];
-
-        if (currentSymbol === '(') {
-            unbalancedCharStack.push('('); // Push opening parentheses onto the stack
-        } else if (currentSymbol === ')') {
-            // If a closing parenthesis is found, check for a matching opening one on top of the stack
-            if (unbalancedCharStack.length > 0 && unbalancedCharStack[unbalancedCharStack.length - 1] === '(') {
-                unbalancedCharStack.pop(); // A balanced pair is found, remove the opening parenthesis
-            } else {
-                // If no matching opening parenthesis is found, this closing parenthesis is unbalanced.
-                unbalancedCharStack.push(')'); // Add it to the stack to be balanced later
+    // First pass: Remove balanced parentheses from the working list.
+    // The outer loop iterates based on the initial length, not the dynamically changing list length.
+    // This behavior is crucial and preserved.
+    for (let outerLoopIndex = initialStringLength; outerLoopIndex >= 0; outerLoopIndex--) {
+        const currentOuterChar = workingCharList[outerLoopIndex];
+        if (currentOuterChar === CLOSE_PARENTHESIS) {
+            // Search backwards for a matching opening parenthesis
+            for (let innerLoopIndex = outerLoopIndex - 1; innerLoopIndex >= 0; innerLoopIndex--) {
+                const currentInnerChar = workingCharList[innerLoopIndex];
+                if (currentInnerChar === OPEN_PARENTHESIS) {
+                    // Found a pair, remove both.
+                    // Remove the character at the higher index first to avoid shifting issues for the lower index.
+                    workingCharList.splice(outerLoopIndex, 1);
+                    workingCharList.splice(innerLoopIndex, 1);
+                    break; // Exit inner loop after finding and removing a pair
+                }
             }
         }
-        // Type III: Implicitly ignore non-parenthesis characters, similar to original behavior
     }
 
-    // Type II: Rename 'n' to 'leadingBalanceChars'
-    let leadingBalanceChars = '';
-    // Type II: Rename 'm' to 'trailingBalanceChars'
-    let trailingBalanceChars = '';
-
-    // Type III: This second loop processes the 'unbalancedCharStack' which is the equivalent
-    // of the 'temp' array after the original's first loop.
-    // It determines what characters are needed to balance the remaining parentheses.
-    for (let stackIterator = 0; stackIterator < unbalancedCharStack.length; stackIterator++) {
-        const remainingUnmatchedChar = unbalancedCharStack[stackIterator];
-        if (remainingUnmatchedChar === ')') {
-            // For every unmatched closing parenthesis, we need to prepend an opening one
-            leadingBalanceChars += '(';
-        } else if (remainingUnmatchedChar === '(') {
-            // For every unmatched opening parenthesis, we need to append a closing one
-            trailingBalanceChars += ')';
+    // Second pass: Determine required leading and trailing parentheses from the remaining characters.
+    const finalCharListLength = workingCharList.length;
+    for (let finalLoopIndex = 0; finalLoopIndex < finalCharListLength; finalLoopIndex++) {
+        const remainingChar = workingCharList[finalLoopIndex];
+        if (remainingChar === CLOSE_PARENTHESIS) {
+            leadingParentheses += OPEN_PARENTHESIS;
+        } else { // Must be an OPEN_PARENTHESIS
+            trailingParentheses += CLOSE_PARENTHESIS;
         }
     }
 
-    // Type II: Reformat console.log
-    console.log(leadingBalanceChars + originalSequence + trailingBalanceChars);
+    // Output the final constructed string
+    console.log(leadingParentheses + originalInputString + trailingParentheses);
 }
 
-// Type III: Enhance input reading with error handling and explicit module import
-const fileSystem = require("fs");
-const standardInputPath = "/dev/stdin"; // Define input source path
-
-try {
-    const inputContent = fileSystem.readFileSync(standardInputPath, "utf8");
-    processParenthesisString(inputContent);
-} catch (readError) {
-    // Type III: Add robust error logging for file operations
-    console.error(`An error occurred while reading from ${standardInputPath}:`, readError.message);
-    // Optionally, exit the process or provide a fallback
-    // process.exit(1);
-}
+processParenthesesString(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,210 +1,269 @@
 "use strict";
 
-// Utility function to construct multi-dimensional arrays or nested array structures
-function createMultiDimArray( initialValue ) {
-  const args = arguments;
-  let arrayDimensionCount = args.length;
-  // Begin building the string representation for array initialization
-  let arrayCreationString = `Array(args[${--arrayDimensionCount}]).fill(null).map( _ => { return ${initialValue}; } )`;
+/**
+ * Constructs a multi-dimensional array with specified dimensions,
+ * initializing all elements with a given value.
+ *
+ * @param {any} initialValue - The value to populate the array elements.
+ * @param {...number} dimensions - The sizes for each dimension of the array.
+ * @returns {Array} A newly created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  const dimensionArguments = arguments;
+  let currentDimensionIndex = dimensionArguments.length;
+  // Start building the array creation expression from the innermost dimension.
+  let arrayCreationString = `Array(dimensionArguments[${--currentDimensionIndex}]).fill(0).map(element => { return ${initialValue}; })`;
 
-  // Iteratively nest array definitions for remaining dimensions
-  while ( --arrayDimensionCount ) {
-    arrayCreationString = `Array(args[${arrayDimensionCount}]).fill(null).map( _ => ${arrayCreationString} )`;
+  // Iteratively wrap the expression for outer dimensions.
+  while (--currentDimensionIndex) {
+    arrayCreationString = `Array(dimensionArguments[${currentDimensionIndex}]).fill(0).map(element => ${arrayCreationString})`;
   }
-  // Execute the generated string to produce the actual nested array
-  return eval( arrayCreationString );
+  // Execute the constructed string to generate the array structure.
+  return eval(arrayCreationString);
 }
 
-// Global state variables for the simulation environment
-var currentPathLength = 0, currentLocationNode = 0, simulationDay = 0, lastPickupDay = -1;
-var totalScore = 0;
+// Global variables representing the simulation state.
+let currentPathLength = 0; // Remaining steps in the current movement path.
+let currentLocationNode = 0; // The node where the delivery agent is currently located.
+let currentDay = 0; // The current day within the simulation timeline.
+let lastOrderDayProcessed = -1; // Tracks the last day for which new orders were ingested.
 
-// Graph structure and simulation parameters
-const HUGE_NUMBER = 1e9; // Represents an unreachable distance or infinity
-var totalVertices; // Total number of nodes in the network (e.g., 200-400)
-var totalConnections; // Total number of edges connecting nodes (e.g., 1.5V-2V)
-var shortestPaths; // Matrix storing the shortest distance between any two nodes
-var directConnections; // Matrix storing direct edge weights between adjacent nodes
-var adjacencyList; // List of neighbors for each node in the graph
-var initialData; // Placeholder for some initial configuration data
-var maxSimulationDays; // Maximum duration for the simulation in days (e.g., 10000)
-var timeLimitSquared; // Pre-calculated square of maxSimulationDays for score computation
-const activeDeliveries = new Set(); // Set of nodes that currently have orders awaiting delivery
-var deliveryTimestamps; // Stores the simulation day when orders were picked up for each node
-const inputQueue = []; // Buffer to store incoming data from standard input
-const outputResults = []; // Array to store the action taken on each simulation day
+let totalScore = 0; // The cumulative score achieved during the simulation.
 
-var queuePointer = 0; // Index for reading from the inputQueue
+const INFINITY_VAL = 1e9; // A large constant used to represent unreachable paths.
+let numNodes; // Total count of nodes in the graph.
+let numEdges; // Total count of edges connecting nodes in the graph.
 
-// Retrieves the next numerical value from the buffered input stream
-function getNextInput() {
-  return +inputQueue[queuePointer++];
+let shortestPathMatrix; // Stores the shortest path distances between all pairs of nodes.
+let edgeWeightMatrix; // Stores the direct weights (distances) of edges.
+let adjacencyList; // Represents the graph structure as an adjacency list.
+
+let someInputArray; // An array of numbers read from input, its specific use is not evident but must be preserved.
+
+let maxSimulationDays; // The maximum number of days the simulation is set to run.
+let maxSimulationDaysSquared; // Pre-calculated square of maxSimulationDays for score computation.
+
+const activeOrdersSet = new Set(); // A collection of nodes that currently have pending orders.
+let nodeOrderArrivalTimes; // Stores a list of arrival days for orders at each specific node.
+
+const inputQueue = []; // A buffer to hold parsed input data items.
+const dailyOutputNodes = []; // An array to store the agent's target node for each day's output.
+
+let inputQueuePointer = 0; // An index to track the current position in the inputQueue.
+
+/**
+ * Retrieves the next numerical value from the global inputQueue.
+ * Increments the inputQueuePointer after retrieval.
+ * @returns {number} The next numerical item from the input queue.
+ */
+function getNextInputItem() {
+  return +inputQueue[inputQueuePointer++];
 }
 
-// Decides the next movement or action for the delivery agent
-function determineNextAction() {
-  // If there are no active deliveries, the agent might return to origin or wait
-  if ( activeDeliveries.size === 0 ) {
-    if ( currentLocationNode === 0 ) return -2; // At origin, no deliveries, nothing to do
-    return advancePath( 0 ); // Move towards the origin node
+/**
+ * Determines the optimal next node for the delivery agent to move towards.
+ * Prioritizes nodes with more pending orders, considering reachability within remaining time.
+ *
+ * @returns {number} The ID of the next node to target, or -2 if no valid target is found.
+ */
+function determineNextDeliveryTarget() {
+  // If there are no active orders, the agent should return to the base (node 0).
+  if (activeOrdersSet.size === 0) {
+    if (currentLocationNode === 0) return -2; // Already at base, no action needed.
+    return findNextStepInPath(0); // Find path back to base.
   }
 
-  // Identify the best node to proceed to among those with pending deliveries
-  var bestDeliveryNodeId = -1, maxOrdersAtNode = 0;
-  for ( const nodeId of activeDeliveries ) {
-    // Criteria: node has more orders AND is reachable within remaining time
-    if ( maxOrdersAtNode < deliveryTimestamps[nodeId].length &&
-         shortestPaths[currentLocationNode][nodeId] <= maxSimulationDays - simulationDay ) {
-      bestDeliveryNodeId = nodeId;
-      maxOrdersAtNode = deliveryTimestamps[nodeId].length;
+  let bestTargetNodeId = -1; // Initialize with no best target.
+  let maxOrdersAtNode = 0; // Initialize with zero orders.
+
+  // Iterate through all nodes that currently have active orders.
+  for (const nodeWithOrders of activeOrdersSet) {
+    // Check if this node has more orders than the current maximum AND is reachable
+    // within the remaining simulation time.
+    if (maxOrdersAtNode < nodeOrderArrivalTimes[nodeWithOrders].length &&
+        shortestPathMatrix[currentLocationNode][nodeWithOrders] <= maxSimulationDays - currentDay) {
+      bestTargetNodeId = nodeWithOrders;
+      maxOrdersAtNode = nodeOrderArrivalTimes[nodeWithOrders].length;
     }
   }
-  // If no suitable delivery target is found, signal no immediate action
-  if ( bestDeliveryNodeId === -1 ) return -2;
 
-  // Initiate movement towards the chosen delivery node
-  return advancePath( bestDeliveryNodeId );
+  // If no suitable target node was found, return -2.
+  if (bestTargetNodeId === -1) return -2;
+
+  // Otherwise, determine the immediate next step on the shortest path to the best target.
+  return findNextStepInPath(bestTargetNodeId);
 }
 
-// Computes and sets the next immediate step along a shortest path to a destination
-function advancePath( targetNode ) {
-  // Examine each direct neighbor of the current node
-  for ( const neighborNode of adjacencyList[currentLocationNode] ) {
-    // Check if this neighbor is part of the shortest path to the target
-    if ( shortestPaths[currentLocationNode][targetNode] ===
-         directConnections[currentLocationNode][neighborNode] + shortestPaths[neighborNode][targetNode] ) {
-      // Set the remaining path segments and update the agent's current location
-      currentPathLength = directConnections[currentLocationNode][neighborNode] - 1;
-      return currentLocationNode = neighborNode;
+/**
+ * Calculates the next immediate node on the shortest path from the current location
+ * to a specified destination node. Updates the currentPathLength.
+ *
+ * @param {number} destinationNode - The ultimate target node for the path.
+ * @returns {number} The ID of the next node to move to, or -2 if no valid step is found.
+ */
+function findNextStepInPath(destinationNode) {
+  // Examine each direct neighbor of the current node.
+  for (const neighborNode of adjacencyList[currentLocationNode]) {
+    // If the neighbor lies on the shortest path to the destination,
+    // based on the precomputed shortest path matrix.
+    if (shortestPathMatrix[currentLocationNode][destinationNode] === edgeWeightMatrix[currentLocationNode][neighborNode] + shortestPathMatrix[neighborNode][destinationNode]) {
+      currentPathLength = edgeWeightMatrix[currentLocationNode][neighborNode] - 1; // Decrement path length for the step taken.
+      return currentLocationNode = neighborNode; // Move agent to this neighbor and return its ID.
     }
   }
-  // This return should ideally not be reached if a path exists; indicates an error or path end
-  return -2;
+  return -2; // This case should ideally not be reached if a path exists.
 }
 
-// Executes the operations for a single simulation day
-function processTurn() {
-  // If the agent is currently in transit, simply continue moving
-  if ( currentPathLength ) {
+/**
+ * Executes the primary action for the current day: either moving,
+ * processing new orders, or completing deliveries.
+ *
+ * @returns {number} The ID of the node the agent is currently at or moving towards.
+ */
+function executeDailyAction() {
+  // If the agent is currently in transit, simply decrement the path length.
+  if (currentPathLength) {
     currentPathLength--;
     return currentLocationNode;
   }
-  // If at the starting node (0), attempt to pick up new orders
-  if ( currentLocationNode === 0 ) pickupOrders();
-  // Otherwise, if at any other node, drop off available orders
-  else dropOffOrders();
 
-  // After processing pickups/dropoffs, determine the subsequent action
-  return determineNextAction();
+  // If the agent is at a node, perform an action based on the node.
+  if (currentLocationNode === 0) {
+    processIncomingOrders(); // At the base, process any new orders.
+  } else {
+    completeDelivery(); // At a delivery node, complete pending orders.
+  }
+  // After performing the action, determine the next delivery target.
+  return determineNextDeliveryTarget();
 }
 
-// Manages the process of picking up new orders introduced on current or previous days
-function pickupOrders() {
-  // Process all incoming orders for days up to the current simulation day
-  while ( lastPickupDay < simulationDay ) {
-    lastPickupDay++;
-    const numIncomingOrderGroups = getNextInput();
-    for ( let idx = 0; idx < numIncomingOrderGroups; idx++ ) {
-      const orderIdentifier = getNextInput() - 1; // Order ID (its usage is minimal here)
-      const deliveryTargetNode = getNextInput() - 1; // The node where this order needs to be delivered
-      activeDeliveries.add( deliveryTargetNode ); // Add this node to the set of active delivery points
-      deliveryTimestamps[deliveryTargetNode].push( lastPickupDay ); // Record the day this order was picked up
+/**
+ * Processes all new orders that have arrived up to the current simulation day.
+ * Updates the activeOrdersSet and nodeOrderArrivalTimes.
+ */
+function processIncomingOrders() {
+  // Loop through days from the last processed day up to the current day.
+  while (lastOrderDayProcessed < currentDay) {
+    lastOrderDayProcessed++;
+    const numNewOrders = getNextInputItem(); // Read the count of new orders for this day.
+    for (let i_order = 0; i_order < numNewOrders; i_order++) {
+      const orderTargetNodeId = getNextInputItem() - 1; // Read and adjust order target node ID (0-indexed).
+      const deliveryTargetNodeId = getNextInputItem() - 1; // Read and adjust delivery target node ID (0-indexed).
+      // Add the delivery node to the set of nodes with active orders.
+      activeOrdersSet.add(deliveryTargetNodeId);
+      // Record the day this order arrived at its target node.
+      nodeOrderArrivalTimes[deliveryTargetNodeId].push(lastOrderDayProcessed);
     }
   }
 }
 
-// Manages the process of dropping off orders at the current node
-function dropOffOrders() {
-  activeDeliveries.delete( currentLocationNode ); // Remove the current node from active delivery points
-  // Process all orders that are pending at the current node
-  while ( deliveryTimestamps[currentLocationNode].length ) {
-    const timeTaken = simulationDay - deliveryTimestamps[currentLocationNode].pop(); // Calculate delivery time
-    totalScore += timeLimitSquared - timeTaken * timeTaken; // Update total score based on delivery efficiency
+/**
+ * Completes all pending deliveries at the current node and updates the total score.
+ */
+function completeDelivery() {
+  // Remove the current node from the set of active orders as deliveries are being completed.
+  activeOrdersSet.delete(currentLocationNode);
+
+  // Process all orders that were pending at this specific node.
+  while (nodeOrderArrivalTimes[currentLocationNode].length) {
+    const orderArrivalDay = nodeOrderArrivalTimes[currentLocationNode].pop(); // Get the arrival day of an order.
+    const timeElapsed = currentDay - orderArrivalDay; // Calculate the time taken for delivery.
+    totalScore += maxSimulationDaysSquared - timeElapsed * timeElapsed; // Update the total score.
   }
 }
 
-// Initialize readline interface for input processing
-const inputReader = require("readline").createInterface( process.stdin, process.stdout );
+// Initialize readline interface for asynchronous input processing.
+const readInterface = require("readline").createInterface(process.stdin, process.stdout);
 
-// Main simulation logic encapsulated in a generator function
-const simulationGenerator = ( function* () {
-  // Helper function to asynchronously read a single line of input
-  const readNextLine = () => inputReader.once( "line", lineString => simulationGenerator.next( lineString ) );
+// A generator function to manage the sequential, asynchronous reading of input lines.
+const generatorFunction = (function* () {
+  // Helper function to get the next line from stdin asynchronously.
+  const getLineAsync = () => readInterface.once("line", line => generatorFunction.next(line));
 
-  // Read initial graph dimensions (vertices and edges)
-  let nodeCountString = yield readNextLine();
-  nodeCountString = nodeCountString.split(" ");
-  totalConnections = +nodeCountString[1];
-  totalVertices = +nodeCountString[0];
+  // Read the first line containing graph dimensions (V E).
+  let lineParts = yield getLineAsync();
+  lineParts = lineParts.split(" ");
+  numEdges = +lineParts[1];
+  numNodes = +lineParts[0];
 
-  // Initialize data structures for the graph
-  shortestPaths = createMultiDimArray( HUGE_NUMBER, totalVertices, totalVertices );
-  directConnections = createMultiDimArray( HUGE_NUMBER, totalVertices, totalVertices );
-  adjacencyList = createMultiDimArray( "[]", totalVertices );
+  // Initialize graph data structures.
+  shortestPathMatrix = createMultiDimArray(INFINITY_VAL, numNodes, numNodes);
+  edgeWeightMatrix = createMultiDimArray(INFINITY_VAL, numNodes, numNodes);
+  adjacencyList = createMultiDimArray("[]", numNodes);
 
-  // Set initial distance from a node to itself as zero
-  for ( let idx1 = 0; idx1 < totalVertices; idx1++ ) shortestPaths[idx1][idx1] = 0;
-
-  // Read and populate edge information for the graph
-  for ( let idx1 = 0; idx1 < totalConnections; idx1++ ) {
-    const lineParts = ( yield readNextLine() ).split(" ");
-    const nodeA = +lineParts[0] - 1;
-    const nodeB = +lineParts[1] - 1;
-    const distanceVal = +lineParts[2];
-    // Update direct and shortest path distances for this undirected edge
-    shortestPaths[nodeA][nodeB] = shortestPaths[nodeB][nodeA] = directConnections[nodeA][nodeB] = directConnections[nodeB][nodeA] = distanceVal;
-    // Add connections to the adjacency list
-    adjacencyList[nodeA].push( nodeB );
-    adjacencyList[nodeB].push( nodeA );
+  // Set distance from a node to itself as 0.
+  for (let i_node = 0; i_node < numNodes; i_node++) {
+    shortestPathMatrix[i_node][i_node] = 0;
   }
 
-  // Apply Floyd-Warshall algorithm to compute all-pairs shortest paths
-  for ( let intermediateNode = 0; intermediateNode < totalVertices; intermediateNode++ )
-    for ( let idx1 = 0; idx1 < totalVertices; idx1++ )
-      for ( let idx2 = 0; idx2 < totalVertices; idx2++ ) {
-        if ( shortestPaths[idx1][intermediateNode] + shortestPaths[intermediateNode][idx2] < shortestPaths[idx1][idx2] ) {
-          shortestPaths[idx1][idx2] = shortestPaths[idx1][intermediateNode] + shortestPaths[intermediateNode][idx2];
+  // Read and process all edge data.
+  for (let i_edge = 0; i_edge < numEdges; i_edge++) {
+    const edgeData = (yield getLineAsync()).split(" ");
+    const nodeA = +edgeData[0] - 1; // Convert to 0-indexed.
+    const nodeB = +edgeData[1] - 1; // Convert to 0-indexed.
+    const weight = +edgeData[2];
+
+    // Store direct edge weights and initialize shortest path matrix for direct connections.
+    shortestPathMatrix[nodeA][nodeB] = shortestPathMatrix[nodeB][nodeA] = edgeWeightMatrix[nodeA][nodeB] = edgeWeightMatrix[nodeB][nodeA] = weight;
+    // Populate adjacency list for both directions (undirected graph).
+    adjacencyList[nodeA].push(nodeB);
+    adjacencyList[nodeB].push(nodeA);
+  }
+
+  // Apply Floyd-Warshall algorithm to compute all-pairs shortest paths.
+  for (let k_node = 0; k_node < numNodes; k_node++) {
+    for (let i_node = 0; i_node < numNodes; i_node++) {
+      for (let j_node = 0; j_node < numNodes; j_node++) {
+        if (shortestPathMatrix[i_node][k_node] + shortestPathMatrix[k_node][j_node] < shortestPathMatrix[i_node][j_node]) {
+          shortestPathMatrix[i_node][j_node] = shortestPathMatrix[i_node][k_node] + shortestPathMatrix[k_node][j_node];
         }
       }
-
-  // Read and process additional initial configuration data
-  initialData = ( yield readNextLine() ).split(" ").map( val => +val );
-  maxSimulationDays = +( yield readNextLine() ); // Establish the total simulation duration
-
-  // Compute the square of the maximum simulation days for scoring
-  timeLimitSquared = maxSimulationDays * maxSimulationDays;
-
-  // Re-initialize delivery timestamps now that totalVertices is definitively known
-  deliveryTimestamps = createMultiDimArray( "[]", totalVertices );
-
-  // Main loop for the daily simulation cycle
-  for ( ; simulationDay < maxSimulationDays; simulationDay++ ) {
-    // Read and buffer daily order input
-    let dailyInputCount = +( yield readNextLine() );
-    inputQueue.push( dailyInputCount ); // Number of incoming order batches
-    for ( let idx = 0; idx < dailyInputCount; idx++ ) {
-      const parsedInput = ( yield readNextLine() ).split(" ").map( val => +val );
-      inputQueue.push( parsedInput[0], parsedInput[1] ); // Order ID and target delivery node
     }
-    dailyInputCount = +( yield readNextLine() ); // Read count for other input lines
-    for ( let idx = 0; idx < dailyInputCount; idx++ ) {
-      const otherInput = yield readNextLine(); // These input lines are discarded
+  }
+
+  // Read an array of numbers (someInputArray).
+  someInputArray = (yield getLineAsync()).split(" ").map(val => +val);
+
+  // Read the maximum number of simulation days.
+  maxSimulationDays = +(yield getLineAsync());
+  maxSimulationDaysSquared = maxSimulationDays * maxSimulationDays; // Pre-calculate for efficiency.
+
+  // Re-initialize nodeOrderArrivalTimes now that numNodes is defined.
+  nodeOrderArrivalTimes = createMultiDimArray("[]", numNodes);
+
+  // Main simulation loop, iterating for each day.
+  for (; currentDay < maxSimulationDays; currentDay++) {
+    // Read the number of new orders for the current day.
+    const dailyOrderCount = +(yield getLineAsync());
+    inputQueue.push(dailyOrderCount); // Add to input buffer.
+    for (let i_order = 0; i_order < dailyOrderCount; i_order++) {
+      const orderDetailParts = (yield getLineAsync()).split(" ").map(val => +val);
+      inputQueue.push(orderDetailParts[0], orderDetailParts[1]); // Add order details to buffer.
     }
 
-    // Execute the daily operation and record the result
-    outputResults[simulationDay] = processTurn() + 1;
-    console.log( outputResults[simulationDay] ); // Output the agent's current node (1-indexed)
+    // Read and discard a set of dummy input lines.
+    const dummyInputCount = +(yield getLineAsync());
+    for (let i_dummy = 0; i_dummy < dummyInputCount; i_dummy++) {
+      const dummyLine = yield getLineAsync(); // Discard the line content.
+    }
 
-    // Check for simulation termination signal
-    const terminationSignal = yield readNextLine();
-    if ( terminationSignal[0] !== "O" ) return; // If signal is not 'O', end simulation
+    // Execute the daily action and store the resulting node ID (1-indexed for output).
+    dailyOutputNodes[currentDay] = executeDailyAction() + 1;
+    console.log(dailyOutputNodes[currentDay]); // Print the daily output.
 
-    dailyInputCount = +( yield readNextLine() ); // Read another count
-    for ( let idx = 0; idx < dailyInputCount; idx++ ) {
-      const anotherInput = yield readNextLine(); // Discarded input
+    // Check the status line for simulation termination.
+    const statusLine = yield getLineAsync();
+    if (statusLine[0] !== "O") {
+      return; // If not 'O', terminate the generator.
+    }
+
+    // Read and discard another set of dummy input lines.
+    const finalDummyCount = +(yield getLineAsync());
+    for (let i_final_dummy = 0; i_final_dummy < finalDummyCount; i_final_dummy++) {
+      const finalDummyLine = yield getLineAsync(); // Discard the line content.
     }
   }
 })();
 
-// Initiate the simulation by starting the generator function
-simulationGenerator.next();
+// Initiate the generator to begin the simulation and input processing.
+generatorFunction.next();

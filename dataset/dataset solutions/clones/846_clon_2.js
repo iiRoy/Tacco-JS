@@ -1,25 +1,30 @@
-var dataSource = require('fs') .  readFileSync( '/dev/stdin' ,  'utf8' ) ;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var parsedContent = ( dataSource . trim() ) . replace( /red/g , "R" ) . replace( /blue/g , "B" ) ; // Standardize keywords to single characters
+// Process the initial input string by replacing specific patterns
+let processedSequence = (rawData.trim()).replace(/egg/g, "E").replace(/chicken/g, "C");
 
-while ( /RR/ . test ( parsedContent ) ) // Simplify consecutive 'R' patterns
-{
-    parsedContent = parsedContent . replace( /RR/ , "RVR" ) ;
+// Repeatedly replace "EE" with "EAE" until no more "EE" exist
+while ( /EE/.test(processedSequence) ) {
+    processedSequence = processedSequence.replace(/EE/, "EAE");
 }
 
-while ( /BB/ . test ( parsedContent ) ) { // Simplify consecutive 'B' patterns
-    parsedContent = parsedContent . replace( /BB/ , "BVB" ) ;
+// Repeatedly replace "CC" with "CAC" until no more "CC" exist
+while ( /CC/.test(processedSequence) ) {
+    processedSequence = processedSequence.replace(/CC/, "CAC");
 }
 
-var componentParts = parsedContent . split ( "V" ) ; // Divide the string into distinct segments
+// Split the modified sequence into segments using "A" as a delimiter
+const segmentList = processedSequence.split("A");
 
-var dominantPart = "" ; // Variable to store the longest segment found
+// Initialize a variable to store the longest segment found
+let longestSegment = "";
 
-componentParts . forEach ( function ( currentSection ) { // Iterate through each segment
-   if  ( dominantPart . length < currentSection . length ) // Check if the current segment is longer
-   {
-       dominantPart = currentSection ; // Update the dominant segment
-   }
-} ) ;
+// Iterate through each segment to find the one with the maximum length
+segmentList.forEach(function(currentPart) {
+    if (longestSegment.length < currentPart.length) {
+        longestSegment = currentPart;
+    }
+});
 
-console . log ( ( dominantPart . slice ( -1 ) == "R" ) ? "red" : "blue" ) ; // Determine the final output based on the dominant segment's last character
+// Determine the final output based on the last character of the longest segment
+console.log((longestSegment.slice(-1) === "E") ? "egg" : "chicken");

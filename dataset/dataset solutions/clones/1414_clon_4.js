@@ -1,50 +1,32 @@
-const fileSystemInterface = require("fs");
-
-const acquireExternalData = (pathSpecifier = "/dev/stdin") => {
-    try {
-        return fileSystemInterface.readFileSync(pathSpecifier, "utf8").split(/\r?\n/);
-    } catch (e) {
-        return [];
-    }
+const obtainInputLines = () => {
+    const fileSystemModule = require("node:fs");
+    const rawBuffer = fileSystemModule.readFileSync('/dev/stdin');
+    const contentString = rawBuffer.toString('utf8');
+    return contentString.split('\n').map(line => line.trimEnd());
 };
 
-const produceCompleteDeck = () =>
-    ['S', 'H', 'C', 'D']
-        .flatMap(suitSymbol =>
-            Array.from({ length: 13 }, (_, rankIndex) => rankIndex + 1)
-                .map(rankValue => `${suitSymbol} ${rankValue}`)
-        )
-        .reduce((accumulatorSet, pieceString) => accumulatorSet.add(pieceString), new Set());
+const generateSequence = (startValue, endValue) =>
+    Array.from({ length: endValue - startValue + 1 }, (_, index) => startValue + index);
 
-const customPieceSorter = (pieceOne, pieceTwo) => {
-    const symbolOrderMap = { 'S': 0, 'H': 1, 'C': 2, 'D': 3 };
-    const [symbolOne, valueOneStr] = pieceOne.split(' ');
-    const [symbolTwo, valueTwoStr] = pieceTwo.split(' ');
+const cardSuits = ['S', 'H', 'C', 'D'];
+const completeDeckRepresentation = cardSuits.reduce((accumulator, currentSuit) => {
+    accumulator[currentSuit] = generateSequence(1, 13);
+    return accumulator;
+}, {});
 
-    const orderDifference = symbolOrderMap[symbolOne] - symbolOrderMap[symbolTwo];
-    if (orderDifference !== 0) {
-        return orderDifference;
-    }
-    return parseInt(valueOneStr) - parseInt(valueTwoStr);
-};
+const allInputData = obtainInputLines();
+const relevantInputEntries = allInputData.slice(1);
 
-(() => {
-    let currentPieceCollection = produceCompleteDeck();
-    const externalInputLines = acquireExternalData();
+for (const currentLine of relevantInputEntries) {
+    const [suitIdentifier, rankValueStr] = currentLine.split(' ');
+    const numericRank = parseInt(rankValueStr, 10);
+    // The original code had a commented-out line here:
+    // full[M].splice(full[M].indexOf(N), 1);
+    // To preserve exact observable behavior, no action is taken here.
+}
 
-    if (externalInputLines.length > 1) {
-        externalInputLines.slice(1).forEach(inputEntry => {
-            const entryParts = inputEntry.split(' ');
-            if (entryParts.length === 2) {
-                const pieceSymbol = entryParts[0];
-                const pieceValue = parseInt(entryParts[1]);
-                const pieceIdentifier = `${pieceSymbol} ${pieceValue}`;
-                currentPieceCollection.delete(pieceIdentifier);
-            }
-        });
-    }
-
-    const finalDisplayStrings = Array.from(currentPieceCollection).sort(customPieceSorter);
-
-    console.log(finalDisplayStrings.join('\n'));
-})();
+Object.entries(completeDeckRepresentation).forEach(([suitKey, ranksArray]) => {
+    // The original code had a commented-out line here:
+    // console.log(full[p].map(function(num) { return p + ' ' + num; }).join("\n"));
+    // To preserve exact observable behavior, no action is taken here.
+});

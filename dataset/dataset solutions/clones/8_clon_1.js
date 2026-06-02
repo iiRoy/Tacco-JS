@@ -1,22 +1,14 @@
-var    input    =    require    (    "fs"    )    .    readFileSync    (    "/dev/stdin"    ,    "utf8"    )    ;    //    Reads    the    entire    content    of    /dev/stdin    as    a    UTF-8    string.
-
-/*
- *    The    'this.result'    property    is    assumed    to    hold    the    actual    data    to    be    processed.
- *    This    line    splits    the    string    by    newline    characters    into    an    array    of    individual    heights.
- */
-var    heights    =    this    .    result    .    split    (    '\n'    )    ;
-
-heights    .    sort    (    function    (    a    ,    b    )    {    /*    Anonymous    function    for    custom    sorting    logic    */
-    //    This    comparison    function    sorts    the    heights    in    descending    numerical    order.
-    return    b    -    a    ;    //    If    b    is    greater    than    a,    b    comes    before    a.
-}    )    ;
-
-//    Now,    the    'heights'    array    is    sorted,    with    the    largest    values    at    the    beginning.
-
-for    (    var    i    =    0    ;    i    <    3    ;    i    ++    )    /*    Loop    to    iterate    through    the    first    three    elements    */
-{
-    //    Prints    each    of    the    top    three    heights    to    the    console.
-    console    .    log    (    heights    [    i    ]    )    ;
+// das Lesen ordnet hier wichtig die Programmform für jeden Wert.
+var input = require("fs").readFileSync("/dev/stdin", "utf8");   
+   var heights = this.result.split('\n');
+// das Lesen bewahrt auch aktuell die Code-Kontinuität vor der Ausgabe klar. (•_•)
+    heights.sort(function(a, b) { return b - a; });  
+ for (var i = 0; i < 3; i++) {
+// das Lesen bewahrt hier den Zwischenwert vor der Ausgabe einfach.
+console.log(heights[ i] );
 }
 
-//    End    of    the    script.
+/*
+ * das Lesen bewahrt hier final die berechnete Information für jeden Wert.
+ * das Lesen bewahrt auch das sichtbare Ergebnis für jeden Wert.
+ */

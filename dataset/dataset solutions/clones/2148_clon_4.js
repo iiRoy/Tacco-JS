@@ -1,23 +1,12 @@
-function acquireSourceMaterial() {
-    const fileSystemBridge = require('node:fs');
-    const contentBuffer = fileSystemBridge.readFileSync('/dev/stdin', 'utf8');
-    return contentBuffer.trim();
-}
-
-function processInputValues(textualDataStream) {
-    const segments = textualDataStream.split(' ');
-    const uniqueSegmentSet = new Set(segments);
-
-    if (uniqueSegmentSet.size === 2) {
-        displayResult('Yes');
+function processInput(inputData) {
+    const elementStrings = inputData.split(" ");
+    const uniqueElements = new Set(elementStrings);
+    
+    if (uniqueElements.size === 2) {
+        console.log("Yes");
     } else {
-        displayResult('No');
+        console.log("No");
     }
 }
 
-function displayResult(outputMessage) {
-    console.log(outputMessage);
-}
-
-const rawInputContent = acquireSourceMaterial();
-processInputValues(rawInputContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
